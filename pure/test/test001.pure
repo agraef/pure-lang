@@ -1,0 +1,82 @@
+
+// A simple script with some function and variable definitions.
+// This is used to test the guts of the interpreter.
+
+square x = x*x;
+
+/* a multiline
+   comment */
+
+square 5;
+
+// Factorial, with guarded rules.
+
+fact1 n = n*fact1 (n-1) if n>0;
+        = 1 otherwise;
+
+let x = fact1 10; x;
+
+// Factorial, using case.
+
+fact2 n = case n of
+            n = n*fact2 (n-1) if n>0;
+              = 1 otherwise;
+          end;
+
+// Factorial, yet another one.
+
+fact3 n = case n of
+            0 = 1;
+            n = n*fact3 (n-1) if n>0;
+          end;
+
+// Factorial, with if-then-else.
+
+fact4 n = if n>0 then n*fact4 (n-1) else 1;
+
+// Factorial, with lambda ("pointless style").
+
+fact5 = \n -> if n>0 then n*fact5 (n-1) else 1;
+
+fact2 10;
+fact3 10;
+fact4 10;
+fact5 10;
+
+// Factorial, using bigints.
+
+fact n::int    = fact (bigint n);
+fact n::bigint = n*fact (n-1) if n>0;
+               = 1 otherwise;
+
+fact 50;
+
+// Fibonacci function, naive O(fib n) implementation.
+
+fib1 0 = 0;
+fib1 1 = 1;
+fib1 n = fib1 (n-2) + fib1 (n-1) if n>1;
+
+// Fibonacci function, O(n) implementation.
+
+fib2 n = case fibs n of
+	   a, b = a;
+         end
+         with
+           fibs n = 0, 1 if n<=0;
+                  = case fibs (n-1) of
+		      a, b = b, a+b;
+                    end otherwise;
+         end;
+
+// Fibonacci function, another O(N) implementation.
+
+fib3 n = a when a, b = fibs n end
+           with fibs n = 0, 1 if n<=0;
+                       = b, a+b when a, b = fibs (n-1) end
+                         otherwise;
+           end;
+
+map fib1 (1..10);
+map fib2 (1..10);
+map fib3 (1..10);

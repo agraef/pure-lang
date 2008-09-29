@@ -1,0 +1,348 @@
+let double_format = "%#0.3g";
+test (f/*0:101*/,x/*0:1101*/,y/*0:111*/) = puts (format (f/*0:101*/,x/*0:1101*/,y/*0:111*/,check (f/*0:101*/,x/*0:1101*/,y/*0:111*/) (catch __error__ (f/*1:101*/ x/*1:1101*/ y/*1:111*/))));
+test (f/*0:101*/,x/*0:11*/) = puts (format (f/*0:101*/,x/*0:11*/,check (f/*0:101*/,x/*0:11*/) (catch __error__ (f/*1:101*/ x/*1:11*/))));
+check _/*0:01*/ z/*0:1*/ = z/*0:1*/ if numberp z/*0:1*/;
+check (f/*0:0101*/,x/*0:01101*/,y/*0:0111*/) (g@_/*0:100*/ u/*0:101*/ v/*0:11*/) = __failed__ if f/*0:0101*/===g/*0:100*/&&x/*0:01101*/===u/*0:101*/&&y/*0:0111*/===v/*0:11*/;
+check (f/*0:0101*/,x/*0:011*/) (g@_/*0:10*/ u/*0:11*/) = __failed__ if f/*0:0101*/===g/*0:10*/&&x/*0:011*/===u/*0:11*/;
+check _/*0:01*/ z/*0:1*/ = z/*0:1*/;
+format (f/*0:101*/,x/*0:1101*/,y/*0:11101*/,z/*0:1111*/) = str f/*0:101*/+","+print x/*0:1101*/+","+print y/*0:11101*/+","+print z/*0:1111*/;
+format (f/*0:101*/,x/*0:1101*/,z/*0:111*/) = str f/*0:101*/+","+print x/*0:1101*/+","+print z/*0:111*/;
+print x/*0:1*/::double = str x/*0:1*/ if infp x/*0:1*/||nanp x/*0:1*/;
+print x/*0:1*/::double = sprintf double_format 0.0 if x/*0:1*/==0.0;
+print x/*0:1*/::double = sprintf double_format x/*0:1*/;
+print (x/*0:101*/+:y/*0:11*/) = print x/*0:101*/+"+:"+print y/*0:11*/;
+print (x/*0:101*/<:y/*0:11*/) = print x/*0:101*/+"<:"+print y/*0:11*/;
+print x/*0:1*/ = str x/*0:1*/;
+tests = puts "*** EXACT/INEXACT ***"$$do test (catmap (\op/*0:*/ -> catmap (\a/*0:*/ -> [(op/*1:*/,2,a/*0:*/)] {
+  rule #0: a = [(op,2,a)]
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) [2+:3,2<:3,2%3] {
+  rule #0: op = catmap (\a -> [(op,2,a)]) [2+:3,2<:3,2%3]
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) [(+),(-),(*),(%),(/),(^)])$$do test (catmap (\op/*0:*/ -> catmap (\a/*0:*/ -> [(op/*1:*/,a/*0:*/,2)] {
+  rule #0: a = [(op,a,2)]
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) [2+:3,2<:3,2%3] {
+  rule #0: op = catmap (\a -> [(op,a,2)]) [2+:3,2<:3,2%3]
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) [(+),(-),(*),(%),(/),(^)])$$puts "*** SYMBOLIC ***"$$do test (catmap (\op/*0:*/ -> catmap (\a/*0:*/ -> [(op/*1:*/,x,a/*0:*/)] {
+  rule #0: a = [(op,x,a)]
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) [2+:3,2<:3,2%3] {
+  rule #0: op = catmap (\a -> [(op,x,a)]) [2+:3,2<:3,2%3]
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) [(+),(-),(*),(%),(/),(^)])$$do test (catmap (\op/*0:*/ -> catmap (\a/*0:*/ -> [(op/*1:*/,a/*0:*/,x)] {
+  rule #0: a = [(op,a,x)]
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) [2+:3,2<:3,2%3] {
+  rule #0: op = catmap (\a -> [(op,a,x)]) [2+:3,2<:3,2%3]
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) [(+),(-),(*),(%),(/),(^)]);
+{
+  rule #0: check _ z = z if numberp z
+  rule #1: check (f,x,y) (g@_ u v) = __failed__ if f===g&&x===u&&y===v
+  rule #2: check (f,x) (g@_ u) = __failed__ if f===g&&x===u
+  rule #3: check _ z = z
+  state 0: #0 #1 #2 #3
+	<var> state 1
+	<app> state 3
+  state 1: #0 #3
+	<var> state 2
+  state 2: #0 #3
+  state 3: #0 #1 #2 #3
+	<var> state 4
+	<app> state 7
+  state 4: #0 #3
+	<var> state 5
+  state 5: #0 #3
+	<var> state 6
+  state 6: #0 #3
+  state 7: #0 #1 #2 #3
+	<var> state 8
+	, state 12
+  state 8: #0 #3
+	<var> state 9
+  state 9: #0 #3
+	<var> state 10
+  state 10: #0 #3
+	<var> state 11
+  state 11: #0 #3
+  state 12: #0 #1 #2 #3
+	<var> state 13
+  state 13: #0 #1 #2 #3
+	<var> state 14
+	<app> state 19
+  state 14: #0 #2 #3
+	<var> state 15
+	<app> state 16
+  state 15: #0 #3
+  state 16: #0 #2 #3
+	<var> state 17
+  state 17: #0 #2 #3
+	<var> state 18
+  state 18: #0 #2 #3
+  state 19: #0 #1 #2 #3
+	<var> state 20
+	<app> state 26
+  state 20: #0 #2 #3
+	<var> state 21
+  state 21: #0 #2 #3
+	<var> state 22
+	<app> state 23
+  state 22: #0 #3
+  state 23: #0 #2 #3
+	<var> state 24
+  state 24: #0 #2 #3
+	<var> state 25
+  state 25: #0 #2 #3
+  state 26: #0 #1 #2 #3
+	<var> state 27
+	, state 34
+  state 27: #0 #2 #3
+	<var> state 28
+  state 28: #0 #2 #3
+	<var> state 29
+  state 29: #0 #2 #3
+	<var> state 30
+	<app> state 31
+  state 30: #0 #3
+  state 31: #0 #2 #3
+	<var> state 32
+  state 32: #0 #2 #3
+	<var> state 33
+  state 33: #0 #2 #3
+  state 34: #0 #1 #2 #3
+	<var> state 35
+  state 35: #0 #1 #2 #3
+	<var> state 36
+  state 36: #0 #1 #2 #3
+	<var> state 37
+	<app> state 38
+  state 37: #0 #3
+  state 38: #0 #1 #2 #3
+	<var> state 39
+	<app> state 41
+  state 39: #0 #2 #3
+	<var> state 40
+  state 40: #0 #2 #3
+  state 41: #0 #1 #2 #3
+	<var> state 42
+  state 42: #0 #1 #2 #3
+	<var> state 43
+  state 43: #0 #1 #2 #3
+	<var> state 44
+  state 44: #0 #1 #2 #3
+}
+{
+  rule #0: format (f,x,y,z) = str f+","+print x+","+print y+","+print z
+  rule #1: format (f,x,z) = str f+","+print x+","+print z
+  state 0: #0 #1
+	<app> state 1
+  state 1: #0 #1
+	<app> state 2
+  state 2: #0 #1
+	, state 3
+  state 3: #0 #1
+	<var> state 4
+  state 4: #0 #1
+	<app> state 5
+  state 5: #0 #1
+	<app> state 6
+  state 6: #0 #1
+	, state 7
+  state 7: #0 #1
+	<var> state 8
+  state 8: #0 #1
+	<var> state 9
+	<app> state 10
+  state 9: #1
+  state 10: #0 #1
+	<var> state 11
+	<app> state 13
+  state 11: #1
+	<var> state 12
+  state 12: #1
+  state 13: #0 #1
+	<var> state 14
+	, state 17
+  state 14: #1
+	<var> state 15
+  state 15: #1
+	<var> state 16
+  state 16: #1
+  state 17: #0 #1
+	<var> state 18
+  state 18: #0 #1
+	<var> state 19
+  state 19: #0 #1
+}
+{
+  rule #0: test (f,x,y) = puts (format (f,x,y,check (f,x,y) (catch __error__ (f x y))))
+  rule #1: test (f,x) = puts (format (f,x,check (f,x) (catch __error__ (f x))))
+  state 0: #0 #1
+	<app> state 1
+  state 1: #0 #1
+	<app> state 2
+  state 2: #0 #1
+	, state 3
+  state 3: #0 #1
+	<var> state 4
+  state 4: #0 #1
+	<var> state 5
+	<app> state 6
+  state 5: #1
+  state 6: #0 #1
+	<var> state 7
+	<app> state 9
+  state 7: #1
+	<var> state 8
+  state 8: #1
+  state 9: #0 #1
+	<var> state 10
+	, state 13
+  state 10: #1
+	<var> state 11
+  state 11: #1
+	<var> state 12
+  state 12: #1
+  state 13: #0 #1
+	<var> state 14
+  state 14: #0 #1
+	<var> state 15
+  state 15: #0 #1
+}
+{
+  rule #0: print x::double = str x if infp x||nanp x
+  rule #1: print x::double = sprintf double_format 0.0 if x==0.0
+  rule #2: print x::double = sprintf double_format x
+  rule #3: print (x+:y) = print x+"+:"+print y
+  rule #4: print (x<:y) = print x+"<:"+print y
+  rule #5: print x = str x
+  state 0: #0 #1 #2 #3 #4 #5
+	<var> state 1
+	<var>::double state 2
+	<app> state 3
+  state 1: #5
+  state 2: #0 #1 #2 #5
+  state 3: #3 #4 #5
+	<var> state 4
+	<app> state 6
+  state 4: #5
+	<var> state 5
+  state 5: #5
+  state 6: #3 #4 #5
+	<var> state 7
+	+: state 10
+	<: state 13
+  state 7: #5
+	<var> state 8
+  state 8: #5
+	<var> state 9
+  state 9: #5
+  state 10: #3 #5
+	<var> state 11
+  state 11: #3 #5
+	<var> state 12
+  state 12: #3 #5
+  state 13: #4 #5
+	<var> state 14
+  state 14: #4 #5
+	<var> state 15
+  state 15: #4 #5
+}
+{
+  rule #0: tests = puts "*** EXACT/INEXACT ***"$$do test (catmap (\op -> catmap (\a -> [(op,2,a)]) [2+:3,2<:3,2%3]) [(+),(-),(*),(%),(/),(^)])$$do test (catmap (\op -> catmap (\a -> [(op,a,2)]) [2+:3,2<:3,2%3]) [(+),(-),(*),(%),(/),(^)])$$puts "*** SYMBOLIC ***"$$do test (catmap (\op -> catmap (\a -> [(op,x,a)]) [2+:3,2<:3,2%3]) [(+),(-),(*),(%),(/),(^)])$$do test (catmap (\op -> catmap (\a -> [(op,a,x)]) [2+:3,2<:3,2%3]) [(+),(-),(*),(%),(/),(^)])
+  state 0: #0
+}
+*** EXACT/INEXACT ***
+(+),2,2+:3,4+:3
+(+),2,2<:3,0.283<:1.50
+(+),2,2L%3L,8L%3L
+(-),2,2+:3,0+:-3
+(-),2,2<:3,3.99<:-0.0708
+(-),2,2L%3L,4L%3L
+(*),2,2+:3,4+:6
+(*),2,2<:3,4<:3
+(*),2,2L%3L,4L%3L
+(%),2,2+:3,4L%13L+:(-6L)%13L
+(%),2,2<:3,1L%1L<:-3
+(%),2,2L%3L,3L%1L
+(/),2,2+:3,0.308+:-0.462
+(/),2,2<:3,1.00<:-3
+(/),2,2L%3L,3.00
+(^),2,2+:3,-1.95+:3.49
+(^),2,2<:3,0.253<:0.196
+(^),2,2L%3L,1.59
+(+),2+:3,2,4+:3
+(+),2<:3,2,0.283<:1.50
+(+),2L%3L,2,8L%3L
+(-),2+:3,2,0+:3
+(-),2<:3,2,3.99<:3.07
+(-),2L%3L,2,(-4L)%3L
+(*),2+:3,2,4+:6
+(*),2<:3,2,4<:3
+(*),2L%3L,2,4L%3L
+(%),2+:3,2,1L%1L+:3L%2L
+(%),2<:3,2,1L%1L<:3
+(%),2L%3L,2,1L%3L
+(/),2+:3,2,1.00+:1.50
+(/),2<:3,2,1.00<:3
+(/),2L%3L,2,0.333
+(^),2+:3,2,-5.00+:12.0
+(^),2<:3,2,4.00<:-0.283
+(^),2L%3L,2,0.444
+*** SYMBOLIC ***
+(+),x,2+:3,__failed__
+(+),x,2<:3,__failed__
+(+),x,2L%3L,__failed__
+(-),x,2+:3,__failed__
+(-),x,2<:3,__failed__
+(-),x,2L%3L,__failed__
+(*),x,2+:3,__failed__
+(*),x,2<:3,__failed__
+(*),x,2L%3L,__failed__
+(%),x,2+:3,__failed__
+(%),x,2<:3,__failed__
+(%),x,2L%3L,__failed__
+(/),x,2+:3,__failed__
+(/),x,2<:3,__failed__
+(/),x,2L%3L,__failed__
+(^),x,2+:3,__failed__
+(^),x,2<:3,__failed__
+(^),x,2L%3L,__failed__
+(+),2+:3,x,__failed__
+(+),2<:3,x,__failed__
+(+),2L%3L,x,__failed__
+(-),2+:3,x,__failed__
+(-),2<:3,x,__failed__
+(-),2L%3L,x,__failed__
+(*),2+:3,x,__failed__
+(*),2<:3,x,__failed__
+(*),2L%3L,x,__failed__
+(%),2+:3,x,__failed__
+(%),2<:3,x,__failed__
+(%),2L%3L,x,__failed__
+(/),2+:3,x,__failed__
+(/),2<:3,x,__failed__
+(/),2L%3L,x,__failed__
+(^),2+:3,x,__failed__
+(^),2<:3,x,__failed__
+(^),2L%3L,x,__failed__
+tests;
+()

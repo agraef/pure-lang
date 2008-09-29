@@ -1,0 +1,1713 @@
+;;; pure-mode.el --- edit and run Pure scripts -*- Emacs-Lisp -*-
+
+;; Copyright (C) 1997-2002 Free Software Foundation, Inc.
+;; Copyright (C) 1999-2002 Albert Graef
+;; Copyright (C) 2008      Albert Graef
+
+;; Distributed under GPL V3 (or later; see the accompanying COPYING file).
+
+;; Author/Maintainer: Albert Graef
+;; <ag@muwiinfa.geschichte.uni-mainz.de, Dr.Graef@t-online.de>
+
+;; This is a quick and dirty hack of Q mode, which in turn was based on
+;; various different language modes like Prolog mode and Emacs Lisp mode. It
+;; desperately needs an overhaul; in particular, auto-indentation is pretty
+;; much broken right now. (Watch out for XXXFIXME.)
+
+;; INSTALLATION: If necessary, edit the values of the `pure-prog' and
+;; `pure-lib-dir' variables below.
+
+(defvar pure-prog "@bindir@/pure")
+(defvar pure-lib-dir "@libdir@/pure")
+
+;; Then copy this file to your site-lisp directory. The easiest way to make
+;; Pure mode available in emacs is to add the following to your emacs startup
+;; file:
+
+;; (require 'pure-mode)
+
+;; To enable Pure mode for *.pure files, add the following to your emacs
+;; startup file:
+
+;; (setq auto-mode-alist (cons '("\\.pure$" . pure-mode) auto-mode-alist))
+
+;; Furthermore, you can enable font lock (syntax highlighting) as follows:
+
+;; (add-hook 'pure-mode-hook 'turn-on-font-lock)
+;; (add-hook 'pure-eval-mode-hook 'turn-on-font-lock)
+
+;; Well, that's the way it works with XEmacs and newer GNU Emacs versions. For
+;; older versions of GNU Emacs you might have to try something like:
+
+;; (global-font-lock-mode t)
+;; (add-hook 'pure-mode-hook (lambda () (font-lock-mode 1)))
+;; (add-hook 'pure-eval-mode-hook (lambda () (font-lock-mode 1)))
+
+;; Using the Pure-Eval hook you can also rebind the cursor up and down keys to
+;; the history cycling commands:
+
+;; (add-hook 'pure-eval-mode-hook
+;;	   (lambda ()
+;;	     (define-key pure-eval-mode-map [up] 'comint-previous-input)
+;;	     (define-key pure-eval-mode-map [down] 'comint-next-input)))
+
+;; Finally, you might wish to add some global key bindings, e.g.:
+
+;; (global-set-key "\C-c\M-p" 'run-pure)
+
+;; NOTE: For reading the Pure online documentation, simply use Emacs' built-in
+;; manpage reader (M-? RET in XEmacs). Pure's 'help' command won't work in an
+;; Emacs buffer.
+
+(require 'comint)
+
+;; customizable variables
+
+(defgroup pure nil "Major mode for editing and running Pure scripts."
+  :group 'languages)
+
+(defcustom pure-default-rhs-indent 32
+  "*Default indentation of the right-hand side of a rule."
+  :type 'integer
+  :group 'pure )
+
+(defcustom pure-extra-decl-indent 2
+  "*Extra indentation of continuation lines in declarations."
+  :type 'integer
+  :group 'pure )
+
+(defcustom pure-extra-qual-indent 2
+  "*Extra indentation of qualifiers in rules."
+  :type 'integer
+  :group 'pure )
+
+(defcustom pure-hanging-comment-ender-p t
+  "*Controls what \\[fill-paragraph] does to Pure block comment enders.
+When set to nil, Pure block comment enders are left on their own line.
+When set to t, block comment enders will be placed at the end of the
+previous line (i.e. they `hang' on that line)."
+  :type 'boolean
+  :group 'pure)
+
+(defcustom pure-hanging-comment-starter-p t
+  "*Controls what \\[fill-paragraph] does to Pure block comment starters.
+When set to nil, Pure block comment starters are left on their own line.
+When set to t, text that follows a block comment starter will be
+placed on the same line as the block comment starter (i.e. the text
+`hangs' on that line)."
+  :type 'boolean
+  :group 'pure)
+
+(defcustom pure-prog-name pure-prog
+  "*Name of the interpreter executable."
+  :type 'string
+  :group 'pure)
+
+(defcustom pure-histfile "~/.pure_history"
+  "*Name of the command history file."
+  :type 'string
+  :group 'pure)
+
+(defcustom pure-histsize 500
+  "*Size of the command history."
+  :type 'integer
+  :group 'pure)
+
+(defcustom pure-query-before-kill nil
+  "*Indicates that the user should be prompted before zapping an existing
+interpreter process when starting a new one."
+  :type 'boolean
+  :group 'pure)
+
+(defcustom pure-prompt-regexp "^> \\|^[A-Za-z_0-9-]*> \\|^: "
+  "*Regexp to match prompts in the Pure interpreter. If you customize the
+interpreter's default prompt, you will have to change this value accordingly."
+  :type 'regexp
+  :group 'pure)
+
+(defcustom pure-msg-regexp
+  "^[ \t]*\\(\\([^:\n]+\\):\\([0-9]+\\)\\(\\.[0-9]+\\(-[0-9]+\\)?\\)?\\): "
+"*Regexp to match error and warning messages with source line references in
+the Pure eval buffer. Expression 1 denotes the whole source line info,
+expression 2 the file name and expression 3 the corresponding line number."
+  :type 'regexp
+  :group 'pure)
+
+(defcustom pure-mode-hook nil
+  "*Hook for customising Pure mode.
+For instance, add `turn-on-font-lock' to enable syntax highlighting."
+  :type 'hook
+  :group 'pure)
+
+(defcustom pure-eval-mode-hook nil
+  "*Hook for customising Pure eval mode.
+For instance, add `turn-on-font-lock' to enable syntax highlighting."
+  :type 'hook
+  :group 'pure)
+
+;; the following are used internally
+
+(defvar pure-output-list nil)
+(defvar pure-output-string nil)
+(defvar pure-receive-in-progress nil)
+(defvar pure-last-dir nil)
+(defvar pure-last-script nil)
+(defvar pure-last-path nil)
+
+;; font-lock support
+
+(defvar pure-eval-font-lock-keywords
+  (list
+;    (list pure-prompt-regexp 0 'font-lock-preprocessor-face t)
+   (list pure-msg-regexp 0 'font-lock-warning-face t)
+   (list "::\\([A-Za-z_][A-Za-z_0-9]*\\)" 1 'font-lock-type-face)
+;   (list "\\<\\(catch\\|throw\\)\\>" 0 'font-lock-builtin-face)
+   (list
+    (concat "\\<\\("
+	    "const\\|def\\|extern\\|infix[lr]?\\|"
+	    "let\\|nullary\\|p\\(r\\(efix\\|ivate\\)\\|ostfix\\)\\|"
+	    "using"
+	    "\\)\\>")
+    0 'font-lock-keyword-face))
+  "Rules for fontifying in Pure-Eval mode.")
+
+(defvar pure-font-lock-keywords
+  (list
+   (list "^#!.*" 0 'font-lock-comment-face t)
+   (list "::\\([A-Za-z_][A-Za-z_0-9]*\\)" 1 'font-lock-type-face)
+   (list "\\<\\(catch\\|throw\\)\\>" 0 'font-lock-builtin-face)
+   (list
+    (concat "\\<\\("
+	    "case\\|const\\|def\\|e\\(lse\\|nd\\|xtern\\)\\|i\\(f\\|nfix[lr]?\\)\\|"
+	    "let\\|nullary\\|o\\(f\\|therwise\\)\\|p\\(r\\(efix\\|ivate\\)\\|ostfix\\)\\|"
+	    "then\\|using\\|w\\(hen\\|ith\\)"
+	    "\\)\\>")
+    0 'font-lock-keyword-face))
+  "Rules for fontifying Pure scripts.")
+
+;; keymaps
+
+(defvar pure-mode-map nil)
+(cond ((not pure-mode-map)
+       (setq pure-mode-map (make-sparse-keymap))
+       (define-key pure-mode-map "\C-c\C-c" 'pure-run-script)
+       (define-key pure-mode-map "\C-c\C-u" 'pure-current-msg)
+       (define-key pure-mode-map "\C-c\C-n" 'pure-next-msg)
+       (define-key pure-mode-map "\C-c\C-p" 'pure-prev-msg)
+       (define-key pure-mode-map "\C-c\C-e" 'pure-last-msg)
+       (define-key pure-mode-map "\C-c\C-a" 'pure-first-msg)
+       (define-key pure-mode-map "\C-c\C-f" 'pure-find-script)
+       (define-key pure-mode-map "\C-c\C-v" 'pure-goto-input-line)
+       (define-key pure-mode-map "\t" 'pure-indent-line)
+       (define-key pure-mode-map "(" 'pure-electric-delim)
+       (define-key pure-mode-map ")" 'pure-electric-delim)
+       (define-key pure-mode-map "[" 'pure-electric-delim)
+       (define-key pure-mode-map "]" 'pure-electric-delim)
+       (define-key pure-mode-map "=" 'pure-electric-delim)
+       (define-key pure-mode-map "\e\C-i" 'pure-move-to-indent-column)
+       (define-key pure-mode-map "\e\C-q" 'pure-indent-current-rule)))
+
+(defvar pure-eval-mode-map nil)
+(cond ((not pure-eval-mode-map)
+       (setq pure-eval-mode-map (copy-keymap comint-mode-map))
+       (define-key pure-eval-mode-map "\t" 'comint-dynamic-complete)
+       (define-key pure-eval-mode-map "\C-a" 'comint-bol)
+       (define-key pure-eval-mode-map [home] 'comint-bol)
+;;       (define-key pure-eval-mode-map [up] 'comint-previous-input)
+;;       (define-key pure-eval-mode-map [down] 'comint-next-input)
+       (define-key pure-eval-mode-map [return] 'pure-current-msg-or-send)
+       (if (string-match "XEmacs\\|Lucid" emacs-version)
+	   (define-key pure-eval-mode-map [button2] 'pure-mouse-msg)
+	 (define-key pure-eval-mode-map [mouse-2] 'pure-mouse-msg))
+       (define-key pure-eval-mode-map "\C-c\C-u" 'pure-current-msg)
+       (define-key pure-eval-mode-map "\C-c\C-n" 'pure-next-msg)
+       (define-key pure-eval-mode-map "\C-c\C-p" 'pure-prev-msg)
+       (define-key pure-eval-mode-map "\C-c\C-e" 'pure-last-msg)
+       (define-key pure-eval-mode-map "\C-c\C-a" 'pure-first-msg)
+       (define-key pure-eval-mode-map "\C-c\C-f" 'pure-find-script)
+       (define-key pure-eval-mode-map "\C-c\C-v" 'pure-goto-input-line)))
+
+;; menus
+
+(defsubst pure-region-is-active-p ()
+  ;; Return t when the region is active.  The determination of region
+  ;; activeness is different in both Emacs and XEmacs.
+  (cond
+   ;; XEmacs
+   ((and (fboundp 'region-active-p)
+	 zmacs-regions)
+    (region-active-p))
+   ;; Emacs
+   ((boundp 'mark-active) mark-active)
+   ;; fallback; shouldn't get here
+   (t (mark t))))
+
+(defvar pure-mode-menu
+  (list "Pure"
+	["Describe Pure Mode"		describe-mode t]
+	["Customize"			(customize-group 'pure) t]
+	"-"
+	["Move to `=' Column"		pure-move-to-indent-column t]
+	["Indent Current Rule"		pure-indent-current-rule t]
+	["Indent Line or Region"	pure-indent-line-or-region t]
+	["Comment Out Region"		comment-region (pure-region-is-active-p)]
+	["Uncomment Region"		uncomment-region (pure-region-is-active-p)]
+	["Fill Comment Paragraph"	pure-fill-paragraph t]
+	"-"
+	["Run Script"			pure-run-script t]
+	["Find Main Script"		pure-find-script pure-last-script]
+	["Goto Input Line"		pure-goto-input-line
+					(get-process "pure-eval")]
+	"-"
+	["Current Message"		pure-current-msg
+					(get-buffer "*pure-eval*")]
+	["First Message"		pure-first-msg
+					(get-buffer "*pure-eval*")]
+	["Next Message"			pure-next-msg
+					(get-buffer "*pure-eval*")]
+	["Previous Message"		pure-prev-msg
+					(get-buffer "*pure-eval*")]
+	["Last Message"			pure-last-msg
+					(get-buffer "*pure-eval*")])
+  "Menu for Pure mode.")
+
+(defvar pure-eval-mode-menu
+  (list "Pure-Eval"
+	["Describe Pure-Eval Mode"	describe-mode t]
+	["Customize"			(customize-group 'pure) t]
+	"-"
+	["Find Main Script"		pure-find-script pure-last-script]
+	["Goto Input Line"		pure-goto-input-line
+					(get-process "pure-eval")]
+	"-"
+	["Current Message"		pure-current-msg
+					(get-buffer "*pure-eval*")]
+	["First Message"		pure-first-msg
+					(get-buffer "*pure-eval*")]
+	["Next Message"			pure-next-msg
+					(get-buffer "*pure-eval*")]
+	["Previous Message"		pure-prev-msg
+					(get-buffer "*pure-eval*")]
+	["Last Message"			pure-last-msg
+					(get-buffer "*pure-eval*")]
+	"-"
+	["Complete Symbol"		comint-dynamic-complete
+					(pure-at-command-prompt-p)])
+  "Menu for Pure-Eval mode.")
+
+;; some helper functions for pure/pure-eval-mode: check that we're on the
+;; command resp. debugger prompt
+
+(defun pure-at-pmark-p ()
+  (and (get-buffer "*pure-eval*")
+       (get-process "pure-eval")
+       (progn (set-buffer "*pure-eval*") (comint-after-pmark-p))))
+
+(defun pure-at-command-prompt-p ()
+  (and
+   (pure-at-pmark-p)
+   (save-excursion
+     (forward-line 0)
+     (looking-at pure-prompt-regexp))))
+		   
+(defun pure-at-debug-prompt-p ()
+  (and
+   (pure-at-pmark-p)
+   (save-excursion
+     (forward-line 0)
+     (looking-at ":"))))
+
+;; Pure mode
+
+;;;###autoload
+(defun pure-mode ()
+  "Major mode for editing Pure scripts.
+
+Provides the `pure-run-script' (\\[pure-run-script]) command to run the
+interpreter on the script in the current buffer. It will be verified that the
+buffer has a file associated with it, and you will be prompted to save edited
+buffers when invoking this command. Special commands to quickly locate the
+main script and the input line of the Pure eval buffer, and to visit the
+source lines shown in error messages are provided as well (see
+`pure-eval-mode').
+
+These operations can be selected from the Pure mode menu (accessible from
+the menu bar), which also provides commands for reading the online
+help and customizing the Pure/Pure-Eval mode setup.
+
+Command list:
+
+\\{pure-mode-map}
+Entry to this mode calls the value of pure-mode-hook if that value is
+non-nil."
+  (interactive)
+  (kill-all-local-variables)
+  (set-syntax-table (make-syntax-table))
+  (modify-syntax-entry ?_  "_")
+  (modify-syntax-entry ?\.  "_")
+  (modify-syntax-entry ?\+  ".")
+  (modify-syntax-entry ?\-  ".")
+  (modify-syntax-entry ?\=  ".")
+  (modify-syntax-entry ?\<  ".")
+  (modify-syntax-entry ?\>  ".")
+  (modify-syntax-entry ?\$  ".")
+  (modify-syntax-entry ?\|  ".")
+  ;; comment syntax a la C++ mode
+;  (cond
+;   ;; XEmacs 19 & 20
+;   ((memq '8-bit c-emacs-features)
+;    (modify-syntax-entry ?/  ". 1456")
+;    (modify-syntax-entry ?*  ". 23"))
+;   ;; Emacs 19 & 20
+;   ((memq '1-bit c-emacs-features)
+;    (modify-syntax-entry ?/  ". 124b")
+;    (modify-syntax-entry ?*  ". 23"))
+;   ;; incompatible
+;   (t (error "Pure Mode is incompatible with this version of Emacs")))
+  (cond
+   ((string-match "XEmacs\\|Lucid" emacs-version)
+    (modify-syntax-entry ?/  ". 1456")
+    (modify-syntax-entry ?*  ". 23"))
+   (t
+    (modify-syntax-entry ?/  ". 124b")
+    (modify-syntax-entry ?*  ". 23")))
+  (modify-syntax-entry ?\n "> b")
+  (modify-syntax-entry ?\^m "> b")
+  (setq major-mode 'pure-mode)
+  (setq mode-name "Pure")
+  (use-local-map pure-mode-map)
+  (make-local-variable 'paragraph-start)
+;;  (setq paragraph-start (concat "^$\\|" page-delimiter))
+;;  (setq paragraph-start (concat "^//\\|^$\\|" page-delimiter))
+  (setq paragraph-start (concat page-delimiter "\\|$"))
+  (make-local-variable 'paragraph-separate)
+  (setq paragraph-separate paragraph-start)
+  (make-local-variable 'paragraph-ignore-fill-prefix)
+  (setq paragraph-ignore-fill-prefix t)
+  (if (boundp 'fill-paragraph-function)
+      (progn
+	(make-local-variable 'fill-paragraph-function)
+	(setq fill-paragraph-function 'pure-fill-paragraph)))
+  (make-local-variable 'indent-line-function)
+  (setq indent-line-function 'pure-indent-line)
+  (make-local-variable 'indent-region-function)
+  (setq indent-region-function 'pure-indent-region)
+  (make-local-variable 'comment-start)
+  (make-local-variable 'comment-end)
+  (make-local-variable 'comment-column)
+  (make-local-variable 'comment-start-skip)
+  (make-local-variable 'comment-multi-line)
+  (setq comment-column 48
+	comment-start "// "
+	comment-end ""
+	comment-start-skip "/\\*+ *\\|// *\\|^#! *"
+	comment-multi-line nil
+	)
+  (make-local-variable 'comment-indent-function)
+  (setq comment-indent-function 'pure-comment-indent)
+  (make-local-variable 'font-lock-defaults)
+  (setq font-lock-defaults
+	'(pure-font-lock-keywords nil nil ((?_ . "w"))))
+  (require 'easymenu)  
+  (easy-menu-define pure-mode-menu-map pure-mode-map
+		    "Menu keymap for Pure mode." pure-mode-menu)
+  (easy-menu-add pure-mode-menu-map pure-mode-map)
+  (run-hooks 'pure-mode-hook))
+
+;; Pure eval mode
+
+(defun pure-eval-mode ()
+
+  "Major mode for interacting with the Pure interpreter, based on comint-mode.
+
+Provides the `pure-current-msg-or-send' (\\[pure-current-msg-or-send])
+command, which, when point is at an error message describing a source
+reference, visits the given line in the corresponding source file in another
+window. Otherwise it runs the `comint-send-input' command, which usually
+submits a command line to the interpreter, or copies it to the command prompt
+when point is not at the current command line.
+
+Error messages are indicated with a special font, and in XEmacs they will also
+be highlighted when the mouse passes over them. Moreover, pressing the middle
+mouse button (button2) over such a message visits the corresponding source
+line in another window (`pure-mouse-msg' command); anywhere else, the middle
+mouse button invokes the usual `mouse-yank' command, so that you can also use
+the mouse to perform xterm-like cut and paste in the Pure-Eval buffer.
+
+You can also use the `pure-first-msg' (\\[pure-first-msg]), `pure-next-msg'
+(\\[pure-next-msg]), `pure-prev-msg' (\\[pure-prev-msg]) and `pure-last-msg'
+(\\[pure-last-msg]) commands to scan through error messages found in the
+buffer. The `pure-find-script' (\\[pure-find-script]) command lets you visit
+the script that is currently running, and `pure-goto-input-line'
+(\\[pure-goto-input-line]) quickly takes you to the prompt at the current
+input line in the Pure eval buffer. (These commands are also provided in Pure
+mode. If you like, you can bind them globally, so that you can invoke them
+from other kinds of buffers as well.)
+
+Besides this, you can use the usual comint commands, see the description of
+`comint-mode' for details. Some important commands are listed below:
+
+\\[comint-previous-input] and \\[comint-next-input] cycle through the command history.
+\\[comint-previous-matching-input] and \\[comint-next-matching-input] search the command history.
+\\[comint-interrupt-subjob] sends a Ctl-C to the interpreter.
+\\[comint-send-eof] sends a Ctl-D to the interpreter.
+\\[comint-dynamic-list-input-ring] lists the command history.
+\\[comint-dynamic-complete] performs symbol and filename completion.
+
+Note that in difference to standard comint mode, the C-a/home keys are rebound
+to `comint-bol', to mimic the behaviour of the default binding of these keys
+in the interpreter.
+
+Most of these operations can also be selected from the Comint and Pure-Eval
+mode menus accessible from the menu bar. The Pure-Eval menu also provides
+operations for reading the online help and customizing Pure/Pure-Eval mode
+setup. Moreover, a History menu is provided from which the most recent
+commands can be selected.
+
+The interpreter's prompt and lines containing error messages are described by
+the variables `pure-prompt-regexp' and `pure-msg-regexp'. The history file and
+size is given by the `pure-histfile' and `pure-histsize' variables. Note that
+when the `pure-gnuclient' customization option is enabled, then Pure-Eval mode
+automatically tracks the current prompt string and hence you can safely use
+the `prompt' command in the interpreter.
+
+A complete command list is given below:
+
+\\{pure-eval-mode-map}
+Entry to this mode runs the hooks on `comint-mode-hook' and
+`pure-eval-mode-hook' (in that order)."
+
+  (interactive)
+  (kill-all-local-variables)
+  (comint-mode)
+  (set-syntax-table (make-syntax-table))
+  (modify-syntax-entry ?_  "_")
+  (modify-syntax-entry ?\.  "_")
+  (modify-syntax-entry ?\+  ".")
+  (modify-syntax-entry ?\-  ".")
+  (modify-syntax-entry ?\=  ".")
+  (modify-syntax-entry ?\<  ".")
+  (modify-syntax-entry ?\>  ".")
+  (modify-syntax-entry ?\|  ".")
+  (modify-syntax-entry ?\$  ".")
+  (modify-syntax-entry ?\/  ". 12")
+  (modify-syntax-entry ?\*  ".")
+  (modify-syntax-entry ?\n  ">")
+  (modify-syntax-entry ?\^m ">")
+  (setq major-mode 'pure-eval-mode)
+  (setq mode-name "Pure-Eval")
+  (use-local-map pure-eval-mode-map)
+  (setq comint-prompt-regexp pure-prompt-regexp)
+  (make-local-variable 'paragraph-start)
+  (setq paragraph-start comint-prompt-regexp)
+  (make-local-variable 'comment-start)
+  (make-local-variable 'comment-end)
+  (make-local-variable 'comment-column)
+  (make-local-variable 'comment-start-skip)
+  (make-local-variable 'comment-multi-line)
+  (setq comment-column 48
+	comment-start-skip "// *\\|^#! *"
+	comment-multi-line nil)
+  (make-local-variable 'font-lock-defaults)
+  (setq font-lock-defaults
+	'(pure-eval-font-lock-keywords nil nil ((?_ . "w"))))
+  (setq comint-input-ring-file-name pure-histfile
+	comint-input-ring-size pure-histsize
+	comint-dynamic-complete-functions
+	'(pure-complete comint-dynamic-complete-filename))
+  ;; mouse-sensitive messages (requires XEmacs)
+  (cond
+   ((string-match "XEmacs\\|Lucid" emacs-version)
+    (require 'mode-motion)
+    (setq mode-motion-hook 'pure-motion-hook)))
+  (comint-read-input-ring t)
+  (require 'easymenu)  
+  (easy-menu-define pure-eval-mode-menu-map pure-eval-mode-map
+		    "Menu keymap for Pure mode." pure-eval-mode-menu)
+  (easy-menu-add pure-eval-mode-menu-map pure-eval-mode-map)
+  (run-hooks 'pure-eval-mode-hook))
+
+(if (string-match "XEmacs" emacs-version)
+(defun pure-motion-hook (event)
+  (mode-motion-highlight-internal
+    event
+    #'beginning-of-line
+    #'(lambda () 
+	(if (looking-at pure-msg-regexp)
+	    (end-of-line))))
+))
+
+;; run a Pure script in a Pure Eval buffer
+
+;; make sure win32 XEmacs quotes arguments containing whitespace
+
+(if (string-match "XEmacs.*-win32" (emacs-version))
+    (defun pure-quote-arg (x)
+      (if (string-match "[ \t]" x) (concat "\"" x "\"") x))
+  (defun pure-quote-arg (x) x))
+
+;;;###autoload
+(defun run-pure (&rest args)
+
+  "Run the interpreter with given arguments, in buffer *pure-eval*.
+
+The interpreter is invoked in the directory of the current buffer (current
+default directory if no file is associated with the current buffer).
+If buffer exists but process is not running, make new process.
+If buffer exists and process is running, kill it and start a new one.
+
+Program used comes from variable `pure-prog-name'. The buffer is put in Pure
+eval mode, giving commands for visiting source files, sending input,
+manipulating the command history, etc. See `pure-eval-mode'.
+
+\(Type \\[describe-mode] in the Pure eval buffer for a list of commands.)"
+
+  (interactive)
+  (let* ((dir (if buffer-file-name
+		  (file-name-directory (buffer-file-name))
+		default-directory))
+	 (pure-eval-active (not (null (get-buffer "*pure-eval*"))))
+	 (pure-eval-running (comint-check-proc "*pure-eval*"))
+	 (pure-eval-buffer (get-buffer-create "*pure-eval*")))
+    (if (and pure-eval-running
+	     pure-query-before-kill
+	     (not
+	      (y-or-n-p
+	       "An interpreter process is still running. Start a new one? ")))
+	(message "Aborted")
+      (set-buffer pure-eval-buffer)
+      ;; give process some time to terminate, then blast it away
+      (if pure-eval-running
+	  (progn
+	    (comint-send-eof)
+	    (sleep-for .5)))
+      (if (comint-check-proc "*pure-eval*")
+	  (progn
+	    (comint-kill-subjob)
+	    (sleep-for .1)))
+      (cd dir)
+      (if (not pure-eval-active)
+	  (pure-eval-mode)
+	(if (and pure-eval-running
+		 (or (not (string-equal
+			   comint-input-ring-file-name pure-histfile))
+		     (not (= comint-input-ring-size pure-histsize))))
+	    ;; reset history in case any of the options have changed
+	    (progn
+	      (comint-write-input-ring)
+	      (setq comint-input-ring-file-name pure-histfile
+		    comint-input-ring-size pure-histsize)
+	      (comint-read-input-ring t))))
+      (goto-char (point-max))
+      ;; invoke the interpreter
+      (setenv "PURE_MORE" nil) ; disable paging in the interpreter
+      (comint-exec pure-eval-buffer "pure-eval" pure-prog-name nil
+		   (append (list "-q" "-i") args))
+      ;; set up process parameters
+      (setq pure-output-list nil
+	    pure-output-string nil
+	    pure-receive-in-progress nil
+	    pure-last-script nil
+	    pure-last-dir dir
+	    pure-last-path nil)
+      (set-process-sentinel (get-process "pure-eval") 'pure-eval-sentinel)
+      (if (not pure-query-before-kill)
+	  (process-kill-without-query (get-process "pure-eval")))
+      ;; switch to and go to the end of the eval buffer
+      (pop-to-buffer "*pure-eval*")
+      (goto-char (point-max))))
+  )
+
+(defun pure-run-script ()
+  "Run the interpreter with the script in the current buffer, in buffer
+*pure-eval*. See `run-pure' for details."
+  (interactive)
+  (let ((script-file
+	 (if (buffer-file-name)
+	     (file-name-nondirectory (buffer-file-name))
+	   (error "Buffer is not associated with any file"))))
+    (save-some-buffers)
+    (run-pure script-file)
+    (setq pure-last-script script-file)))
+
+;; find a script in the current directory or on the Pure library path
+
+(defun pure-locate-script (file)
+  (let ((script (locate-library file t (list "." pure-lib-dir))))
+    (if script
+	script
+      (error (concat "File " file " not found")))))
+
+;; visit source lines of error and debugging messages
+
+(defun pure-current-msg ()
+  "Show the source line referenced by an error message on the current line
+in the Pure eval buffer."
+  (interactive)
+  (let ((actwindow (selected-window)))
+    (if (get-buffer "*pure-eval*")
+	(pop-to-buffer "*pure-eval*")
+      (error "No script is running"))
+    (cond
+     ((save-excursion (forward-line 0) (looking-at pure-msg-regexp))
+      (forward-line 0) (recenter 0)
+      (let (visit-buffer
+	    visit-line
+	    (file (match-string 2)) (line (match-string 3)))
+	(setq visit-buffer (find-file-noselect (pure-locate-script file)))
+	(setq visit-line (string-to-number line))
+	(message "%s, line %s" file line)
+	(switch-to-buffer-other-window visit-buffer)
+	(goto-line visit-line)))
+     (t
+      (select-window actwindow)
+      (error "No message found")))))
+
+(defun pure-current-msg-or-send ()
+  "Depending on whether point is at an error message, either execute a
+`pure-current-msg' or a `comint-send-input' command. This must be invoked
+from the Pure eval buffer."
+  (interactive)
+  (if (save-excursion (forward-line 0) (looking-at pure-msg-regexp))
+      (pure-current-msg)
+    (comint-send-input)))
+
+(defun pure-next-msg (&optional count)
+  "Advance to the next Pure error message below the current line in the Pure
+eval buffer, and show the referenced source line in another window. When used
+with a numeric argument n, advance to the nth message below the current line
+(move backwards if numeric argument is negative).
+
+Note that this command can easily be fooled if the running script produces
+some output, or you insert some text, which looks like an error message, so
+you should take care what you're doing."
+  (interactive "P")
+  (if (and (numberp count) (< count 0))
+      (pure-prev-msg (- count))
+    (if (null count) (setq count 1))
+    (let ((actwindow (selected-window)))
+      (if (get-buffer "*pure-eval*")
+	  (pop-to-buffer "*pure-eval*")
+	(error "No script is running"))
+      (forward-line 0)
+      (if (looking-at pure-msg-regexp)
+	  (if (save-excursion (end-of-line) (not (eobp)))
+	      (forward-line 1)
+	    (error "No more messages")))
+      (let ((pos (re-search-forward pure-msg-regexp nil t count)))
+	(if pos
+	    (let ((file (match-string 2)) (line (match-string 3)))
+	      (goto-char pos)
+	      (recenter 0)
+	      (find-file-other-window (pure-locate-script file))
+	      (goto-line (string-to-number line))
+	      (message "%s, line %s" file line))
+	  (select-window actwindow)
+	  (error "No more messages"))))))
+
+(defun pure-prev-msg (&optional count)
+  "Advance to previous Pure error messages above the current line in the Pure
+eval buffer, and show the referenced source line in another window. Like
+`pure-next-msg', but moves backward."
+  (interactive "P")
+  (if (and (numberp count) (< count 0))
+      (pure-next-msg (- count))
+    (if (null count) (setq count 1))
+    (let ((actwindow (selected-window)))
+      (if (get-buffer "*pure-eval*")
+	  (pop-to-buffer "*pure-eval*")
+	(error "No script is running"))
+      (forward-line 0)
+      (let ((pos (re-search-backward pure-msg-regexp nil t count)))
+	(if pos
+	    (let ((file (match-string 2)) (line (match-string 3)))
+	      (goto-char pos)
+	      (recenter 0)
+	      (find-file-other-window (pure-locate-script file))
+	      (goto-line (string-to-number line))
+	      (message "%s, line %s" file line))
+	  (select-window actwindow)
+	  (error "No more messages"))))))
+
+(defun pure-last-msg ()
+  "Advance to the last message in a contiguous sequence of error messages at
+or below the current line, and show the referenced source line in another
+window."
+  (interactive)
+  (let ((actwindow (selected-window)))
+    (if (get-buffer "*pure-eval*")
+	(pop-to-buffer "*pure-eval*")
+      (error "No script is running"))
+    (forward-line 0)
+    (let ((pos
+	   (if (looking-at pure-msg-regexp)
+	       (point)
+	     (re-search-forward pure-msg-regexp nil t))))
+      (if pos
+	  (progn
+	    (goto-char pos)
+	    (while (and (save-excursion (end-of-line) (not (eobp)))
+			(save-excursion (forward-line 1)
+					(looking-at pure-msg-regexp)))
+	      (forward-line 1))
+	    (let ((file (match-string 2)) (line (match-string 3)))
+	      (recenter 0)
+	      (find-file-other-window (pure-locate-script file))
+	      (goto-line (string-to-number line))
+	      (message "%s, line %s" file line)))
+	(select-window actwindow)
+	(error "No more messages")))))
+
+(defun pure-first-msg ()
+  "Advance to the first message in a contiguous sequence of error messages at
+or above the current line, and show the referenced source line in another
+window."
+  (interactive)
+  (let ((actwindow (selected-window)))
+    (if (get-buffer "*pure-eval*")
+	(pop-to-buffer "*pure-eval*")
+      (error "No script is running"))
+    (forward-line 0)
+    (let ((pos
+	   (if (looking-at pure-msg-regexp)
+	       (point)
+	     (re-search-backward pure-msg-regexp nil t))))
+      (if pos
+	  (progn
+	    (goto-char pos)
+	    (while (and (not (bobp))
+			(save-excursion (forward-line -1)
+					(looking-at pure-msg-regexp)))
+	      (forward-line -1))
+	    (let ((file (match-string 2)) (line (match-string 3)))
+	      (recenter 0)
+	      (find-file-other-window (pure-locate-script file))
+	      (goto-line (string-to-number line))
+	      (message "%s, line %s" file line)))
+	(select-window actwindow)
+	(error "No more messages")))))
+
+(defun pure-mouse-msg (event)
+  "Show the source line referenced by an error message under the mouse."
+  (interactive "e")
+  (mouse-set-point event)
+  (if (save-excursion (forward-line 0) (looking-at pure-msg-regexp))
+      (progn (forward-line 0) (pure-current-msg))
+    (mouse-yank event)))
+
+;; visit main script and the eval buffer
+
+(defun pure-find-script ()
+  "Visit the script currently running in the Pure eval buffer."
+  (interactive)
+  (if (and pure-last-dir pure-last-script)
+      (if (not (string-equal (concat pure-last-dir pure-last-script)
+			     (buffer-file-name)))
+	  (find-file-other-window (concat pure-last-dir pure-last-script)))
+    (error "No script is running")))
+
+(defun pure-goto-input-line ()
+  "Move to the prompt in the Pure eval buffer."
+  (interactive)
+  (if (get-buffer "*pure-eval*")
+      (progn (pop-to-buffer "*pure-eval*") (goto-char (point-max)))
+    (error "No script is running")))
+
+;; completion
+
+(defun pure-complete ()
+  "Perform completion on the token preceding point."
+  (interactive)
+  (if (pure-at-command-prompt-p)
+      (let* ((end (point))
+	     (command
+	      (save-excursion
+		;; skip back one word/identifier or operator (punctuation)
+		(skip-syntax-backward "w_")
+		(and (eq (point) end)
+		     (skip-syntax-backward "."))
+		(and (looking-at pure-prompt-regexp)
+		     (goto-char (match-end 0)))
+		(buffer-substring-no-properties (point) end))))
+	(pure-send-list-and-digest
+	 (list (concat "completion_matches " command "\n")))
+	;; Sort the list
+	(setq pure-output-list
+	      (sort pure-output-list 'string-lessp))
+	;; Remove duplicates
+	(let* ((x pure-output-list)
+	       (y (cdr x)))
+	  (while y
+	    (if (string-equal (car x) (car y))
+		(setcdr x (setq y (cdr y)))
+	      (setq x y
+		    y (cdr y)))))
+	;; And let comint handle the rest
+	(comint-dynamic-simple-complete command pure-output-list))))
+
+;; send commands to the Pure interpreter and digest their results
+
+(defun pure-output-digest (proc string)
+  (setq string (concat pure-output-string string))
+  (while (string-match "\n" string)
+    (setq pure-output-list
+	  (append pure-output-list
+		  (list (substring string 0 (match-beginning 0))))
+	  string (substring string (match-end 0))))
+  (if (string-match pure-prompt-regexp string)
+      (setq pure-receive-in-progress nil))
+  (setq pure-output-string string))
+
+(defun pure-send-list-and-digest (list)
+  (let* ((pure-eval-buffer (get-buffer "*pure-eval*"))
+	 (proc (get-buffer-process pure-eval-buffer))
+	 (filter (process-filter proc))
+	 string)
+    (set-process-filter proc 'pure-output-digest)
+    (setq pure-output-list nil)
+    (unwind-protect
+	(while (setq string (car list))
+	  (setq pure-output-string nil
+		pure-receive-in-progress t)
+	  (comint-send-string proc string)
+	  (while pure-receive-in-progress
+	    (accept-process-output proc))
+	  (setq list (cdr list)))
+      (set-process-filter proc filter))))
+
+;; perform cleanup when the interpreter process is killed
+
+(defun pure-eval-sentinel (proc msg)
+  (if (null (buffer-name (process-buffer proc)))
+      ;; buffer has been killed
+      (set-process-buffer proc nil)
+    (set-buffer (process-buffer proc))
+    (comint-write-input-ring)
+    (setq pure-last-dir nil
+	  pure-last-script nil)
+    (goto-char (point-max))
+    (insert "\n*** Process Pure-Eval finished ***\n")))
+
+;; make sure that the history is written when exiting emacs
+(add-hook 'kill-emacs-hook
+	  (lambda ()
+	    (let ((pure-eval-buffer (get-buffer "*pure-eval*")))
+	      (cond
+	       (pure-eval-buffer
+		(set-buffer pure-eval-buffer)
+		(comint-write-input-ring))))))
+
+;; autoindent and fill support (preliminary)
+
+;; XXXFIXME: This needs to be completely rewritten. We still use the Q
+;; indentation rules here (with some minor tweaks), which don't work all that
+;; well even in Q mode.
+
+(defun pure-electric-delim (arg)
+  "Insert character and correct line's indentation."
+  (interactive "P")
+  (if (and (not arg)
+	   (save-excursion
+	     (skip-chars-backward " \t")
+	     (bolp)))
+      (progn
+	(insert last-command-char)
+	(pure-indent-line)
+	(delete-char -1)))
+  (self-insert-command (prefix-numeric-value arg)))
+
+;; find the position of the previous rule's rhs (`=' delimiter)
+(defun pure-prev-rhs ()
+  (if (not (pure-backward-to-delim "="))
+      nil
+    ;; back up to beginning of rule, then find 1st `=' at toplevel
+    (beginning-of-rule)
+    (if (not (pure-forward-to-delim "="))
+	nil ; this shouldn't happen
+      (backward-char)
+      (point))))
+
+(defvar pure-qual-keywords "\\<\\(if\\|otherwise\\|when\\|with\\)\\>")
+
+(defun pure-at-qual ()
+  (and (looking-at pure-qual-keywords)
+       (or (not (looking-at "else"))
+	   (save-excursion
+	     (backward-word 1)
+	     (not (looking-at "or"))))))
+
+;; find the position of the previous qualifier or conditional keyword (if,
+;; else, otherwise, etc.)
+(defun pure-prev-qual ()
+  (if (not (pure-backward-to-regexp pure-qual-keywords)) nil
+    (let ((success t) (done nil))
+      (while (and success (not done))
+	(setq done (pure-at-qual))
+	(setq success (or done (pure-backward-to-regexp pure-qual-keywords))))
+      (if (not done) nil
+	(let* ((p0 (point))
+	       (p (progn (beginning-of-line)
+			 (if (pure-forward-to-regexp pure-qual-keywords)
+			     (backward-word 1))
+			 (if (pure-at-qual) (point) p0))))
+	  (goto-char p))))))
+
+(defun pure-move-to-indent-column () 
+ "At end of line, move forward to the current `=' indentation column, as
+given by the most recent rule or the \\[pure-default-rhs-indent] variable."
+  (interactive)
+  (if (save-excursion
+	(skip-chars-forward " \t")
+	(eolp))
+      (let ((col (current-column))
+	    (icol (save-excursion
+		    (if (pure-prev-rhs)
+			(current-column)
+		      pure-default-rhs-indent))))
+	(if (> icol col)
+	    (move-to-column icol t)))))
+
+(defun pure-comment-indent ()
+  "Compute Pure comment indentation."
+  (cond ((looking-at "^#!") 0)
+	((looking-at "/[/*]")
+	 (let ((indent (pure-calculate-indent)))
+	   (if (consp indent) (car indent) indent)))
+	(t
+	 (save-excursion
+	       (skip-chars-backward " \t")
+	       (max (current-column)
+;;	       (max (1+ (current-column)) ;Insert one space at least
+		    comment-column)))
+	))
+
+;; FIXME: This stuff (beginning-of-rule, end-of-rule) is broken. It gets
+;; caught in block comments easily -- unfortunately, Pure definitions may look a
+;; lot like plain comment text ;-). There really seems to be no good way of
+;; doing this, because these routines need to be fast, so we can't just parse
+;; the whole file any time they are invoked.
+
+;; As implemented, beginning-of-rule looks for a line starting with a
+;; word/symbol constituent, open parentheses, string, or optional whitespace
+;; followed by a `=' character, whereas end-of-rule searches for a semicolon
+;; at line end (with maybe some single-line comments and whitespace in
+;; between). So reasonable formatting styles should all be parsed correctly.
+
+(defun beginning-of-rule ()
+  "Move backward to beginning of current or previous rule."
+  (interactive)
+  (if (or
+       (if (and (> (current-column) 0)
+		(save-excursion
+		  (beginning-of-line)
+		  (looking-at "[ \t]*=")))
+	   (progn (beginning-of-line) t)
+	 nil)
+       (re-search-backward "^\\w\\|^\\s_\\|^\\s(\\|^\\s\"\\|^[ \t]*="
+			   (point-min) 'mv))
+      (let ((p (point)))
+	(pure-backward-to-noncomment (point-min))
+	(if (and (not (bobp))
+		 (/= (preceding-char) ?\;)
+		 (/= (preceding-char) ?\:))
+	    (beginning-of-rule)
+	  (goto-char p)))))
+
+(defun end-of-rule ()
+  "Move forward to end of current or next rule."
+  (interactive)
+  (let ((p (point)))
+    (while (and (re-search-forward
+;;; match ";" + whitespace/comment sequence + "\n"
+";\\([ \t]+\\|/\\*+\\([^\n\\*]\\|\\*[^\n/]\\)*\\*+/\\)*\\(//.*\\)?\n"
+		 nil 'move)
+		(/= (1+ (match-beginning 0))
+		   (save-excursion
+		     (pure-backward-to-noncomment p)
+		     (point)))))))
+
+(defun pure-indent-line ()
+  "Indent current line as Pure code.
+Return the amount the indentation changed by."
+  (interactive)
+  (let ((indent (pure-calculate-indent nil))
+	start-of-block
+	beg shift-amt
+	(case-fold-search nil)
+	(pos (- (point-max) (point))))
+    (if (listp indent)
+	(progn
+	  (setq start-of-block (cdr indent))
+	  (setq indent (car indent)))
+      (setq start-of-block 0))
+    (beginning-of-line)
+    (setq beg (point))
+    (setq indent
+	  (cond ((eq indent nil) (current-indentation))
+		((eq indent t) (pure-calculate-indent-within-comment))
+		(t
+		 (skip-chars-forward " \t")
+		 (cond ((looking-at "^#!") 0)
+		       ((= (following-char) ?\)) start-of-block)
+		       (t indent)))))
+    (skip-chars-forward " \t")
+    (setq shift-amt (- indent (current-column)))
+    (if (zerop shift-amt)
+	(if (> (- (point-max) pos) (point))
+	    (goto-char (- (point-max) pos)))
+      (delete-region beg (point))
+      (indent-to indent)
+      ;; If initial point was within line's indentation,
+      ;; position after the indentation.  Else stay at same point in text.
+      (if (> (- (point-max) pos) (point))
+	  (goto-char (- (point-max) pos))))
+    shift-amt))
+
+(defvar pure-decl-keywords
+  (concat "\\<\\("
+	  "infix[lr]?\\|let\\|nullary\\|p\\(refix\\|ostfix\\)\\|using"
+	  "\\)\\>"))
+
+(defun pure-indent-col (col pos)
+  (if pos
+      (let ((col2 (save-excursion (goto-char pos) (current-column))))
+	(cons col col2))
+    col)
+)
+
+;; TODO: proper indentation of parenthesized if-then-else constructs
+(defun pure-calculate-indent (&optional parse-start)
+  "Return appropriate indentation for current line as Pure code.
+In usual case returns an integer: the column to indent to.
+Returns nil if line starts inside a string, t if in a comment,
+\(indent . start-of-block\) if line is within a paren block."
+  (save-excursion
+    (beginning-of-line)
+    (let ((indent-point (point))
+	  (case-fold-search nil)
+	  state
+	  containing-sexp
+	  (at-decl nil)
+	  (lhs-extra-indent 0)
+	  (rhs-extra-indent 
+	   (save-excursion
+	     (skip-chars-forward " \t")
+	     (if (pure-at-qual) pure-extra-qual-indent 0)))
+	  (following-character
+	   (save-excursion (skip-chars-forward " \t") (following-char))))
+      (if parse-start
+	  (goto-char parse-start)
+	(let ((p (point)))
+	  (pure-backward-to-noncomment (point-min))
+	  (if (and (not (bobp))
+		   (/= (preceding-char) ?\;))
+	      (beginning-of-rule)
+	    (goto-char p))))
+      ;; extra indent for continuation lines in declarations
+      (if (and (< (point) indent-point)
+	       (looking-at pure-decl-keywords))
+	  (setq at-decl t
+		lhs-extra-indent pure-extra-decl-indent))
+      (while (< (point) indent-point)
+	(setq parse-start (point))
+	(setq state (parse-partial-sexp (point) indent-point 0))
+	(setq containing-sexp (car (cdr state))))
+      ;; the above sometimes craps out even if we're inside a balanced pair
+      ;; of parens, but the following should work in any case
+      (if (null containing-sexp)
+	  (setq containing-sexp
+		(condition-case nil
+		    (scan-lists indent-point -1 1)
+		  (error nil))))
+      (if (or (nth 3 state) (nth 4 state))
+	  ;; return nil or t if should not change this line
+	  (nth 4 state)
+	;; Check to see whether we are inside a sexp, on the lhs, rhs,
+	;; qualifier, or at the = of a rule.
+	(goto-char indent-point)
+	(pure-backward-to-noncomment (or parse-start (point-min)))
+	(let (p0 p1 p2 p3 col1 col2 col3)
+	  (setq p0 containing-sexp
+		p1 (save-excursion
+		     (pure-backward-to-delim ";")
+		     (point))
+		p2 (save-excursion
+		     (if (pure-prev-rhs) (point) 0))
+		p3 (save-excursion
+		     (if (pure-prev-qual) (point) 0)))
+	  (if (> p2 0)
+	      (setq col1 (save-excursion
+			   (goto-char p2)
+			   (current-column))
+		    col2 (save-excursion
+			   (goto-char p2)
+			   (forward-char)
+			   (skip-chars-forward " \t")
+			   (current-column))
+		    col3 (save-excursion
+			   (goto-char p3)
+			   (current-column)))
+	    (setq col1 pure-default-rhs-indent
+		  col2 pure-default-rhs-indent
+		  col3 pure-default-rhs-indent))
+	  (cond
+	   ((and (not (null p0)) (>= p0 (max p1 p2 p3)))
+	    ;; inside a sexp (pair of balanced parens): indent at the column
+	    ;; to the right of the paren
+	    (let ((col (save-excursion (goto-char p0) (current-column))))
+	      (cons (1+ col) col)))
+	   ((or (= following-character ?=)
+		(= following-character ?\;)
+		(and at-decl (= following-character ?|)))
+	    ;; followup eqns (initial =), initial semi, and initial |
+	    ;; in declarations are indented at preceding =
+	    (pure-indent-col col1 p0))
+	   ((or at-decl (> p1 p2))
+	    ;; lhs: indent at lhs-extra-indent
+	    (pure-indent-col lhs-extra-indent p0))
+	   ((> p3 p2)
+	    ;; qualifier/conditional: indent at column of previous qualifier
+	    ;; keyword plus pure-extra-qual-indent if no keyword at bol
+	    (pure-indent-col
+	     (+ col3 (if (= 0 rhs-extra-indent) pure-extra-qual-indent 0)) p0))
+	   (t
+	    ;; rhs: indent at first token behind preceding =
+	    ;; add rhs-extra-indent for initial qualifier keyword
+	    (pure-indent-col (+ col2 rhs-extra-indent) p0))))))))
+
+(defun pure-calculate-indent-within-comment ()
+  "Return the indentation amount for line, assuming that
+the current line is to be regarded as part of a block comment."
+  (let (end star-start)
+    (save-excursion
+      (beginning-of-line)
+      (skip-chars-forward " \t")
+      (setq star-start (= (following-char) ?\*))
+      (skip-chars-backward " \t\n")
+      (setq end (point))
+      (beginning-of-line)
+      (skip-chars-forward " \t")
+      (and (re-search-forward "/\\*[ \t]*" end t)
+	   star-start
+	   (goto-char (1+ (match-beginning 0))))
+      (current-column))))
+
+(defun pure-backward-to-noncomment (lim)
+  (let (opoint stop)
+    (while (not stop)
+      (skip-chars-backward " \t\n\f" lim)
+      (setq opoint (point))
+      (if (and (>= (point) (+ 2 lim))
+	       (= (preceding-char) ?/) (= (char-after (- (point) 2)) ?*))
+	  (search-backward "/*" lim 'mv)
+	(let ((p (max lim (save-excursion (beginning-of-line) (point)))))
+	  (if (nth 4 (parse-partial-sexp p (point)))
+	      (re-search-backward "^#!\\|//" p 'mv)
+	    (goto-char opoint)
+	    (setq stop t)))))))
+
+(defun pure-forward-to-noncomment (lim)
+  (forward-char 1)
+  (while (progn
+	   (skip-chars-forward " \t\n" lim)
+	   (looking-at "^#!\\|//\\|/\\*"))
+    ;; Skip over comments and labels following openparen.
+    (if (looking-at "^#!\\|//")
+	(forward-line 1)
+      (forward-char 2)
+      (search-forward "*/" lim 'mv))))
+
+;; some added stuff for finding = and ; delimiters in rules
+
+(defun pure-at-toplevel-p ()
+  (let (p state)
+    (save-excursion
+      (setq p (save-excursion
+		(beginning-of-rule)
+		(point)))
+      (setq state (parse-partial-sexp p (point)))
+      (not (or (nth 1 state)
+	       (nth 3 state)
+	       (nth 4 state))))))
+
+(defun pure-backward-to-delim (delim-str)
+  (let ((success nil))
+    (while (and (search-backward delim-str nil 'mv)
+		(progn
+		  (setq success (pure-at-toplevel-p))
+		  (not success))
+		(not (bobp))))
+    (if success (point) nil)))
+
+(defun pure-forward-to-delim (delim-str)
+  (let ((success nil))
+    (while (and (search-forward delim-str nil 'mv)
+		(progn
+		  (setq success (pure-at-toplevel-p))
+		  (not success))
+		(not (eobp))))
+    (if success (point) nil)))
+
+(defun pure-backward-to-regexp (delim-str)
+  (let ((success nil))
+    (while (and (re-search-backward delim-str nil 'mv)
+		(progn
+		  (setq success (pure-at-toplevel-p))
+		  (not success))
+		(not (bobp))))
+    (if success (point) nil)))
+
+(defun pure-forward-to-regexp (delim-str)
+  (let ((success nil))
+    (while (and (re-search-forward delim-str nil 'mv)
+		(progn
+		  (setq success (pure-at-toplevel-p))
+		  (not success))
+		(not (eobp))))
+    (if success (point) nil)))
+
+(defun pure-indent-current-rule ()
+  "Indent all lines in the current rule."
+  (interactive)
+  (let (p)
+    (save-excursion
+      (end-of-rule)
+      (setq p (point-marker))
+      (beginning-of-rule)
+      (while (< (point) p)
+	(pure-indent-line)
+	(forward-line 1)))))
+
+;; this stuff is from (XEmacs) cc-mode
+
+(defun pure-indent-region (start end)
+  ;; Indent every line whose first char is between START and END inclusive.
+  (let (p)
+    (save-excursion
+      (goto-char start)
+      (setq p (copy-marker end))
+      (while (and (bolp)
+		  (not (eobp))
+		  (< (point) p))
+	(pure-indent-line)
+	(forward-line 1)))))
+
+(defun pure-indent-line-or-region ()
+  "When the region is active, indent it.  Otherwise indent the current line."
+  (interactive)
+  (if (pure-region-is-active-p)
+      (pure-indent-region (region-beginning) (region-end))
+    (pure-indent-line)))
+
+;; paragraph fill from (XEmacs) cc-mode, boiled down for Pure mode
+
+(defmacro pure-safe (&rest body)
+  ;; safely execute BODY, return nil if an error occurred
+  (` (condition-case nil
+	 (progn (,@ body))
+       (error nil))))
+
+(defmacro pure-forward-sexp (&optional arg)
+  ;; like forward-sexp except
+  ;;   1. this is much stripped down from the XEmacs version
+  ;;   2. this cannot be used as a command, so we're insulated from
+  ;;      XEmacs' losing efforts to make forward-sexp more user
+  ;;      friendly
+  ;;   3. Preserves the semantics most of CC Mode is based on
+  (or arg (setq arg 1))
+  `(goto-char (or (scan-sexps (point) ,arg)
+		  ,(if (numberp arg)
+		       (if (> arg 0) `(point-max) `(point-min))
+		     `(if (> ,arg 0) (point-max) (point-min))))))
+
+(defmacro pure-backward-sexp (&optional arg)
+  ;; See pure-forward-sexp and reverse directions
+  (or arg (setq arg 1))
+  `(pure-forward-sexp ,(if (numberp arg) (- arg) `(- ,arg))))
+
+(defsubst pure-point (position)
+  ;; Returns the value of point at certain commonly referenced POSITIONs.
+  ;; POSITION can be one of the following symbols:
+  ;; 
+  ;; bol  -- beginning of line
+  ;; eol  -- end of line
+  ;; 
+  ;; This function does not modify point or mark.
+  (let ((here (point)))
+    (cond
+     ((eq position 'bol)  (beginning-of-line))
+     ((eq position 'eol)  (end-of-line))
+     (t (error "unknown buffer position requested: %s" position))
+     )
+    (prog1
+	(point)
+      (goto-char here))))
+
+(defun pure-literal-limits (&optional lim near)
+  ;; Returns a cons of the beginning and end positions of the comment
+  ;; or string surrounding point (including both delimiters), or nil
+  ;; if point isn't in one.  If LIM is non-nil, it's used as the
+  ;; "safe" position to start parsing from.  If NEAR is non-nil, then
+  ;; the limits of any literal next to point is returned.  "Next to"
+  ;; means there's only [ \t] between point and the literal.  The
+  ;; search for such a literal is done first in forward direction.
+  ;;
+  ;; This is the Emacs 19 version.
+  (save-excursion
+    (let* ((pos (point))
+;;; FIXME: need a reasonable replacement for `beginning-of-defun' (bod) here.
+;;;	   (lim (or lim (pure-point 'bod)))
+	   (lim (or lim (point-min)))
+	   (state (parse-partial-sexp lim (point))))
+      (cond ((nth 3 state)
+	     ;; String.  Search backward for the start.
+	     (while (nth 3 state)
+	       (search-backward (make-string 1 (nth 3 state)))
+	       (setq state (parse-partial-sexp lim (point))))
+	     (cons (point) (or (pure-safe (pure-forward-sexp 1) (point))
+			       (point-max))))
+	    ((nth 7 state)
+	     ;; Line comment.  Search from bol for the comment starter.
+	     (beginning-of-line)
+	     (setq state (parse-partial-sexp lim (point))
+		   lim (point))
+	     (while (not (nth 7 state))
+	       (search-forward "//")	; Should never fail.
+	       (setq state (parse-partial-sexp
+			    lim (point) nil nil state)
+		     lim (point)))
+	     (backward-char 2)
+	     (cons (point) (progn (forward-comment 1) (point))))
+	    ((nth 4 state)
+	     ;; Block comment.  Search backward for the comment starter.
+	     (while (nth 4 state)
+	       (search-backward "/*")	; Should never fail.
+	       (setq state (parse-partial-sexp lim (point))))
+	     (cons (point) (progn (forward-comment 1) (point))))
+	    ((pure-safe (nth 4 (parse-partial-sexp ; Can't use prev state due
+			     lim (1+ (point))))) ; to bug in Emacs 19.34.
+	     ;; We're standing in a comment starter.
+	     (backward-char 2)
+	     (cons (point) (progn (forward-comment 1) (point))))
+	    (near
+	     (goto-char pos)
+	     ;; Search forward for a literal.
+	     (skip-chars-forward " \t")
+	     (cond
+	      ((eq (char-syntax (or (char-after) ?\ )) ?\") ; String.
+	       (cons (point) (or (pure-safe (pure-forward-sexp 1) (point))
+				 (point-max))))
+	      ((looking-at pure-comment-start-regexp) ; Line or block comment.
+	       (cons (point) (progn (forward-comment 1) (point))))
+	      (t
+	       ;; Search backward.
+	       (skip-chars-backward " \t")
+	       (let ((end (point)) beg)
+		 (cond
+		  ((eq (char-syntax (or (char-before) ?\ )) ?\") ; String.
+		   (setq beg (pure-safe (pure-backward-sexp 1) (point))))
+		  ((and (pure-safe (forward-char -2) t)
+			(looking-at "*/"))
+		   ;; Block comment.  Due to the nature of line
+		   ;; comments, they will always be covered by the
+		   ;; normal case above.
+		   (goto-char end)
+		   (forward-comment -1)
+		   ;; If LIM is bogus, beg will be bogus.
+		   (setq beg (point))))
+		 (if beg (cons beg end))))))
+	    ))))
+
+(defconst pure-comment-start-regexp "\\(/[/*]\\|^#!\\)")
+
+;; FIXME: I'm wondering why this code messes up the fontification of comment
+;; paragraphs since the same code apparently works in C/C++ mode, and the
+;; comment syntax is also the same. :( This only happens with XEmacs
+;; (21.1p10), no problems with GNU Emacs. Maybe the XEmacs font-lock stuff is
+;; broken, or has some special built-in support for the C modes? Anyway, if
+;; anyone knows how to fix this please let me know. -AG
+
+(defun pure-fill-paragraph (&optional arg)
+  "Like \\[fill-paragraph] but handles Pure (i.e., C/C++) style
+comments. If any of the current line is a comment or within a comment,
+fill the comment or the paragraph of it that point is in,
+preserving the comment indentation or line-starting decorations.
+
+If point is inside multiline string literal, fill it.  This currently
+does not respect escaped newlines, except for the special case when it
+is the very first thing in the string.  The intended use for this rule
+is in situations like the following:
+
+description = \"\\
+A very long description of something that you want to fill to make
+nicely formatted output.\"\;
+
+If point is in any other situation, i.e. in normal code, do nothing.
+
+Optional prefix ARG means justify paragraph as well."
+  (interactive "*P")
+  (let* ((point-save (point-marker))
+	 limits
+	 comment-start-place
+	 (first-line
+	  ;; Check for obvious entry to comment.
+	  (save-excursion
+	    (beginning-of-line)
+	    (skip-chars-forward " \t")
+	    (and (looking-at comment-start-skip)
+		 (setq comment-start-place (point)))))
+	 (re1 "\\|\\([ \t]*/\\*[ \t]*\\|[ \t]*\\*/[ \t]*\\|[ \t/*]*\\)"))
+    (if (save-excursion
+	  (beginning-of-line)
+	  (looking-at "#!\\|.*//"))
+	(let ((fill-prefix fill-prefix)
+	       ;; Lines containing just a comment start or just an end
+	       ;; should not be filled into paragraphs they are next
+	       ;; to.
+	      (paragraph-start (concat paragraph-start re1 "$"))
+	      (paragraph-separate (concat paragraph-separate re1 "$")))
+	  (save-excursion
+	    (beginning-of-line)
+	    ;; Move up to first line of this comment.
+	    (while (and (not (bobp))
+ 			(looking-at "[ \t]*//[ \t]*[^ \t\n]"))
+	      (forward-line -1))
+ 	    (if (not (looking-at ".*//[ \t]*[^ \t\n]"))
+		(forward-line 1))
+	    ;; Find the comment start in this line.
+	    (re-search-forward "[ \t]*//[ \t]*")
+	    ;; Set the fill-prefix to be what all lines except the first
+	    ;; should start with.  But do not alter a user set fill-prefix.
+	    (if (null fill-prefix)
+		(setq fill-prefix (buffer-substring (match-beginning 0)
+						    (match-end 0))))
+	    (save-restriction
+	      ;; Narrow down to just the lines of this comment.
+	      (narrow-to-region (pure-point 'bol)
+				(save-excursion
+				  (forward-line 1)
+				  (while
+				      (looking-at (regexp-quote fill-prefix))
+				    (forward-line 1))
+				  (point)))
+	      (or (pure-safe
+		   ;; fill-paragraph sometimes fails to detect when we
+		   ;; are between paragraphs.
+		   (beginning-of-line)
+		   (search-forward fill-prefix (pure-point 'eol))
+		   (looking-at paragraph-separate))
+		  ;; Avoids recursion
+		  (let (fill-paragraph-function)
+		    (fill-paragraph arg))))))
+      ;; else C style comments
+      (if (or first-line
+	      ;; t if we enter a comment between start of function and
+	      ;; this line.
+	      (save-excursion
+		(setq limits (pure-literal-limits))
+		(and (consp limits)
+		     (save-excursion
+		       (goto-char (car limits))
+		       (looking-at pure-comment-start-regexp))))
+	      ;; t if this line contains a comment starter.
+	      (setq first-line
+		    (save-excursion
+		      (beginning-of-line)
+		      (prog1
+			  (re-search-forward comment-start-skip
+					     (save-excursion (end-of-line)
+							     (point))
+					     t)
+			(setq comment-start-place (point)))))
+	      ;; t if we're in the whitespace after a comment ender
+	      ;; which ends its line.
+	      (and (not limits)
+		   (when (and (looking-at "[ \t]*$")
+			      (save-excursion
+				(beginning-of-line)
+				(looking-at ".*\\*/[ \t]*$")))
+		     (save-excursion
+		       (forward-comment -1)
+		       (setq comment-start-place (point)))
+		     t)))
+	  ;; Inside a comment: fill one comment paragraph.
+	  (let ((fill-prefix
+		 (or
+		  ;; Keep user set fill prefix if any.
+		  fill-prefix
+		  ;; The prefix for each line of this paragraph
+		  ;; is the appropriate part of the start of this line,
+		  ;; up to the column at which text should be indented.
+		  (save-excursion
+		    (beginning-of-line)
+		    (if (looking-at ".*/\\*.*\\*/")
+			(progn (re-search-forward comment-start-skip)
+			       (make-string (current-column) ?\ ))
+		      (if first-line
+			  (forward-line 1)
+			(if (and (looking-at "[ \t]*\\*/")
+				 (not (save-excursion
+					(forward-line -1)
+					(looking-at ".*/\\*"))))
+			    (forward-line -1)))
+
+		      (let ((line-width (progn (end-of-line)
+					       (current-column))))
+			(beginning-of-line)
+			(prog1
+			    (buffer-substring
+			     (point)
+
+			     ;; How shall we decide where the end of the
+			     ;; fill-prefix is?
+			     (progn
+			       (skip-chars-forward " \t*" (pure-point 'eol))
+			       ;; kludge alert, watch out for */, in
+			       ;; which case fill-prefix should *not*
+			       ;; be "*"!
+			       (if (and (eq (char-after) ?/)
+					(eq (char-before) ?*))
+				   (forward-char -1))
+			       (point)))
+
+			  ;; If the comment is only one line followed
+			  ;; by a blank line, calling move-to-column
+			  ;; above may have added some spaces and tabs
+			  ;; to the end of the line; the fill-paragraph
+			  ;; function will then delete it and the
+			  ;; newline following it, so we'll lose a
+			  ;; blank line when we shouldn't.  So delete
+			  ;; anything move-to-column added to the end
+			  ;; of the line.  We record the line width
+			  ;; instead of the position of the old line
+			  ;; end because move-to-column might break a
+			  ;; tab into spaces, and the new characters
+			  ;; introduced there shouldn't be deleted.
+
+			  ;; If you can see a better way to do this,
+			  ;; please make the change.  This seems very
+			  ;; messy to me.
+			  (delete-region (progn (move-to-column line-width)
+						(point))
+					 (progn (end-of-line) (point)))))))))
+
+		;; Lines containing just a comment start or just an end
+		;; should not be filled into paragraphs they are next
+		;; to.
+		(paragraph-start (concat paragraph-start re1 "$"))
+		(paragraph-separate (concat paragraph-separate re1 "$"))
+		(chars-to-delete 0)
+		)
+	    (save-restriction
+	      ;; Don't fill the comment together with the code
+	      ;; following it.  So temporarily exclude everything
+	      ;; before the comment start, and everything after the
+	      ;; line where the comment ends.  If comment-start-place
+	      ;; is non-nil, the comment starter is there.  Otherwise,
+	      ;; point is inside the comment.
+	      (narrow-to-region (save-excursion
+				  (if comment-start-place
+				      (goto-char comment-start-place)
+				    (search-backward "/*"))
+				  (if (and (not pure-hanging-comment-starter-p)
+					   (looking-at
+					    (concat pure-comment-start-regexp
+						    "[ \t]*$")))
+				      (forward-line 1))
+				  ;; Protect text before the comment
+				  ;; start by excluding it.  Add
+				  ;; spaces to bring back proper
+				  ;; indentation of that point.
+				  (let ((column (current-column)))
+				    (prog1 (point)
+				      (setq chars-to-delete column)
+				      (insert-char ?\  column))))
+				(save-excursion
+				  (if comment-start-place
+				      (goto-char (+ comment-start-place 2)))
+				  (search-forward "*/" nil 'move)
+				  (if (and (not pure-hanging-comment-ender-p)
+					   (save-excursion
+					     (beginning-of-line)
+					     (looking-at "[ \t]*\\*/")))
+				      (beginning-of-line)
+				    (forward-line 1))
+				  (point)))
+	      (or (pure-safe
+		   ;; fill-paragraph sometimes fails to detect when we
+		   ;; are between paragraphs.
+		   (beginning-of-line)
+		   (search-forward fill-prefix (pure-point 'eol))
+		   (looking-at paragraph-separate))
+		  ;; Avoids recursion
+		  (let (fill-paragraph-function)
+		    (fill-paragraph arg)))
+	      (save-excursion
+		;; Delete the chars we inserted to avoid clobbering
+		;; the stuff before the comment start.
+		(goto-char (point-min))
+		(if (> chars-to-delete 0)
+		    (delete-region (point) (+ (point) chars-to-delete)))
+		;; Find the comment ender (should be on last line of
+		;; buffer, given the narrowing) and don't leave it on
+		;; its own line, unless that's the style that's desired.
+		(goto-char (point-max))
+		(forward-line -1)
+		(search-forward "*/" nil 'move)
+		(beginning-of-line)
+		(if (and pure-hanging-comment-ender-p
+			 (looking-at "[ \t]*\\*/"))
+		    ;(delete-indentation)))))
+		    (let ((fill-column (+ fill-column 9999)))
+		      (forward-line -1)
+		      (fill-region-as-paragraph (point) (point-max))
+		      ;; If fill-prefix ended with a `*', it may be
+		      ;; taken away from the comment ender.  We got to
+		      ;; check this and put it back if that is the
+		      ;; case.
+		      (goto-char (- (point-max) 2))
+		      (if (not (= (char-before) ?*))
+			  (insert ?*))
+		      )))))
+	;; Else maybe a string.  Fill it if it's a multiline string.
+	;; FIXME: This currently doesn't handle escaped newlines.
+	;; Doing that correctly is a bit tricky.
+	(if (and limits
+		 (eq (char-syntax (char-after (car limits))) ?\")
+		 (save-excursion
+		   (goto-char (car limits))
+		   (end-of-line)
+		   (< (point) (cdr limits))))
+	    (let (fill-paragraph-function)
+	      (save-restriction
+		(narrow-to-region (save-excursion
+				    (goto-char (1+ (car limits)))
+				    (if (looking-at "\\\\$")
+					;; Some DWIM: Leave the start
+					;; line if it's nothing but an
+					;; escaped newline.
+					(1+ (match-end 0))
+				      (point)))
+				  (save-excursion
+				    (goto-char (1- (cdr limits)))
+				    ;; Inserting a newline and
+				    ;; removing it again after
+				    ;; fill-paragraph makes it more
+				    ;; predictable.
+				    (insert ?\n)
+				    (point)))
+		;; Do not compensate for the narrowed column.  This
+		;; way the literal will always be filled at the same
+		;; column internally.
+		(fill-paragraph arg)
+		(goto-char (1- (point-max)))
+		(delete-char 1)))
+	  )))
+    (goto-char (marker-position point-save))
+    (set-marker point-save nil)
+    ;; Always return t.  This has the effect that if filling isn't
+    ;; done above, it isn't done at all, and it's therefore
+    ;; effectively disabled in normal code.
+    t))
+
+(provide 'pure-mode)

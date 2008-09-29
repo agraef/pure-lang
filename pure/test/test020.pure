@@ -1,0 +1,64 @@
+// math.pure tests by Eddie Rucker
+
+/* CAVEAT: This test may fail on some systems (most notably, Windows) which
+   lack a POSIX-conformant implementation of the mathematical functions in the
+   C library. */
+
+using math;
+
+// unary operations
+
+let f = [sqrt, ln, log, exp, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh,
+	 asinh, acosh, atanh, abs, re, im, arg, conj, rect, polar, cis, ceil, 
+	 floor, round, frac, complexp, realp, rationalp, numberp, exactp, 
+	 inexactp, infp, nanp];
+// Note: the symbolic constant 'x' at the end of the list is for testing
+// operations with symbolic arguments (these should all yield '__failed__').
+let x = [1, -1, 0, 0.0, 1.2, -1.2, 1%3, -1%4, 1+:2, -1+:2, 1+:-2, -1.2+:4.3,
+	 1.2+:-4.3, 1%2+:1, 1%2+:3%4, 3<:1, -3<:1, 3.0<:-3, 3.1<:2.5, (2%3)<:2,
+	 (1%2)<:(3%4), -inf, nan, x];
+
+// binary operations
+
+let f2 = [(+), (-), (*), (/), (^), atan2, pow];
+let x2 = [i,j | i=x; j=x];
+
+// test instrumentation (AG)
+
+using system;
+
+/* This will print out each operation, arguments and result as a single
+   line. Exceptions are flagged with '__error__', evaluation failures with
+   '__failed__'. Floating point values are rounded in the output to 3
+   significant digits by default, to prevent 'make check' from failing due to
+   rounding discrepancies. */
+
+let double_format = "%#0.3g"; // modify as needed, to get more accuracy
+
+test (f,x,y) = puts $ format (f,x,y,check (f,x,y) (catch __error__ (f x y)));
+test (f,x) = puts $ format (f,x,check (f,x) (catch __error__ (f x)));
+
+check _ z = z if numberp z;
+check (f,x,y) (g@_ u v) = __failed__ if f===g && x===u && y===v;
+check (f,x) (g@_ u) = __failed__ if f===g && x===u;
+check _ z = z otherwise;
+
+format (f,x,y,z) = str f+","+print x+","+print y+","+print z;
+format (f,x,z) = str f+","+print x+","+print z;
+
+print x::double
+= str x if infp x || nanp x; // Windoze compatibility
+// Kludge: Some systems have -0.0, some don't, on some it's broken. Simply
+// ignore the sign of floating point zeros for now.
+= sprintf double_format 0.0 if x==0.0;
+= sprintf double_format x otherwise;
+
+print (x+:y) = print x+"+:"+print y;
+print (x<:y) = print x+"<:"+print y;
+print x = str x otherwise;
+
+tests =
+puts "*** UNARY ***" $$ void [test (f,x) | f=f; x=x] $$
+puts "*** BINARY ***" $$ void [test (f,x) | f=f2; x=x2];
+
+tests;

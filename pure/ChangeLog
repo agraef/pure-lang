@@ -1,0 +1,1114 @@
+2008-09-28  Albert Graef  <Dr.Graef@t-online.de>
+
+	* 0.8 release.
+
+	* test/test025.pure: matrix tests. NOTE: This test is expected to
+	fail if Pure was built without GSL support.
+
+	* test/test024.pure: catmap and stream tests.
+
+2008-09-27  Albert Graef  <Dr.Graef@t-online.de>
+
+	* configure.ac: Bump version number.
+
+	* lib/matrices.pure, runtime.cc/h: Added missing
+	complex->double/int matrix conversions. Thorough overhaul of
+	matrix<->pointer conversions, which now provide a complete set of
+	conversions from/to any reasonable C array representation,
+	including float, complex float, short and byte arrays.
+
+	* lib/prelude.pure: Fix a bug in cat which broke catmap on
+	strings. Reported by Eddie Rucker.
+
+2008-09-25  Albert Graef  <Dr.Graef@t-online.de>
+
+	* 0.7 release.
+
+	* examples/gauss.pure, examples/linalg.pure: Add some examples for
+	doing matrix computations in Pure.
+
+	* runtime.cc, lib/matrices.pure: Minor bugfixes.
+
+2008-09-23  Albert Graef  <Dr.Graef@t-online.de>
+
+	* lib/matrices.pure: Moved the matrix operations from
+	primitives.pure to their own module.
+
+	* lib/primitives.pure: Added a bunch of new matrix operations. In
+	particular, list operations like filter and map now work on
+	matrices, too.
+
+2008-09-20  Albert Graef  <Dr.Graef@t-online.de>
+
+	* Implemented basic GSL matrix support, including support for
+	symbolic matrices (which is independent from GSL, so these will
+	also work when building the interpreter without GSL) and matrix
+	comprehensions. Marshalling of matrices in the C interface is also
+	implemented, so that you can interface to GSL matrix functions
+	without much ado. This required many additions and changes to the
+	parser, interpreter, compiler, runtime and the prelude; details
+	can be found in the svn log (see r759 and r769ff.).
+
+	Preliminary documentation is in the NEWS file for now (the manual
+	still needs to be updated).
+
+2008-09-15  Albert Graef  <Dr.Graef@t-online.de>
+
+	* configure.ac: Bump version number.
+
+	* printer.cc: Fix up precedence calculation so that it properly
+	deals with the case of negative floating point zeros.
+
+	* lib/primitives.pure: Moved the inf and nan constants to the end
+	of the module so that double arithmetic is already defined when
+	these definitions are processed. Simplified the definitions of
+	infp and nanp. Corrected the definition of abs so that it always
+	returns 0.0 for both IEEE 754 positive and negative zeros.
+
+	* configure.ac: Add configury for GSL support. Also added basic
+	GSL checks and setup to interpreter.cc, pure.cc and runtime.cc.
+
+2008-09-12  Albert Graef  <Dr.Graef@t-online.de>
+
+	* 0.6 release.
+
+	* interpreter.cc: Speedups in pattern-matching code.
+
+2008-09-11  Albert Graef  <Dr.Graef@t-online.de>
+
+	* runtime.cc, lib/math.pure: More bugfixes.
+
+2008-09-06  Albert Graef  <Dr.Graef@t-online.de>
+
+	* pure.cc, lexer.ll: Add 'dump' command. This is similar to
+	'show', but dumps definitions to a file (named '.pure' by default,
+	which, if present, is loaded after .purerc during interactive
+	startup). This provides a quick-and-dirty means to save an
+	interactive session and have it restored later. (This is not
+	perfect, though, as variable values containing special objects
+	such as thunks and pointers can't be reconstructed, and 'using' or
+	'extern' declarations are not recorded. For those you should use
+	the .purerc file instead.)
+
+	* runtime.cc (pure_create_interp): Add new command line options
+	(see below).
+
+	* pure.cc (main): Source interactive startup files (first
+	$HOME/.purerc, then $PWD/.purerc).
+
+	Add options --norc to not source the rc files and --noediting to
+	suppress readline editing, as well as --noprelude (long form of
+	-n), --help (long form of -h) and --version (like --help, but only
+	print version information).
+
+	Overhaul help message.
+
+2008-09-05  Albert Graef  <Dr.Graef@t-online.de>
+
+	* pure.cc (main): In interactive mode, print a warning if -n was
+	not specified and the prelude wasn't found. Suggested by Rob
+	Hubbard.
+
+	* printer.cc (operator << (ostream& os, const pure_expr *x)):
+	Experimental support for calling a user-defined __show__ function
+	to override print representations of expressions at runtime.
+
+	* configure.ac, runtime.cc (pure_sys_vars): Add configure checks
+	for POSIX/ISOC99 complex types. (Requires reconfigure.)
+
+	* runtime.cc (pure_force): Fix a rather obscure segfault in the
+	thunk implementation. See also test/test023.pure.
+
+	* lexer.ll: Warn about used identifiers which are also interactive
+	commands.
+
+	* printer.cc: Changed <<...>> syntax for "external" objects such
+	as closures, thunks and pointers to #<...> syntax pilfered from
+	Scheme. This is less likely to be mistaken for a valid Pure
+	expression.
+
+	* pure.cc, lexer.ll: Renamed the interactive 'list' command to
+	'show', as suggested by John Cowan. This hopefully puts an end to
+	inadvertent execution of that command, since 'show' is no prelude
+	function and is deemed less likely to be used as a function name
+	by the programmer.
+
+2008-09-04  Albert Graef  <Dr.Graef@t-online.de>
+
+	* lib/prelude.pure: Added the normal order fixed point combinator,
+	'fix'.
+
+	* lib/prelude.pure: Overhaul of list operations in the prelude, so
+	that they properly work with "thunked" lists (streams). Where
+	possible, these operations have been redesigned to make them
+	non-strict, while keeping them tail-recursive for the parts of a
+	list which have already been evaluated.
+
+	In particular, the cat and catmap operations now handle infinite
+	streams of infinite streams, and hence list comprehensions can
+	draw values from infinite streams as well.
+
+	The 'list' function can be used to convert a (finite) stream to an
+	ordinary list, forcing its evaluation. Conversely, the new
+	'stream' function converts an ordinary list (tuple, string) to a
+	stream.
+
+	There are a few other related changes in the prelude:
+
+	- The slicing operation (!!) is now implemented in a completely
+	generic way which works with any container data structure which
+	implements the indexing (!) operation. It also works properly if
+	both operands are infinite streams.
+
+	- Arithmetic sequences (..) now take an infinity (inf or -inf) as
+	the second operand and will generate the appropriate stream in
+	such cases.
+
+	- The repeat and cycle functions have been rewritten to make them
+	Haskell-compatible, i.e., they only take a single argument now and
+	generate infinite streams. Haskell's iterate function is now also
+	implemented. The previous versions of repeat and cycle, which take
+	an additional integer parameter to denote the desired length of
+	the result and return an ordinary (eager) list, are now available
+	under the names repeatn and cyclen. (To make cyclen compatible
+	with cycle, it now also returns a list if applied to a string, use
+	strcat to convert the result back to a string if needed.)
+
+2008-09-01  Albert Graef  <Dr.Graef@t-online.de>
+
+	* interpreter.cc, runtime.cc, symtable.cc/h, lib/prelude.pure:
+	Added thunks (anonymous parameterless closures), represented using
+	the new postfix operator '&' (see prelude.pure). As usual, these
+	use "call by need", i.e., they will be evaluated (and the results
+	memoized) automatically when the value of a thunk is needed during
+	pattern-matching or when calling a C function.
+
+2008-08-31  Albert Graef  <Dr.Graef@t-online.de>
+
+	* lib/primitives.pure: Added references (expression pointers).
+
+2008-08-29  Albert Graef  <Dr.Graef@t-online.de>
+
+	* etc/gpure.lang: Added syntax highlighting for gedit. Contributed
+	by Eddie Rucker.
+
+2008-08-28  Albert Graef  <Dr.Graef@t-online.de>
+
+	* lib/system.pure: New definitions of fopen/popen and
+	fclose/pclose, using sentries which take care of closing a file
+	object automagically when it's garbage-collected.
+
+	* lib/primitives.pure: Add interface to sentries (see below).
+
+	* runtime.cc/h: Added sentries -- expression "guards" which are
+	applied to the target expression when it is garbage-collected.
+	Only sentries on applications and pointer objects are supported
+	right now.
+
+	* Makefile.in: Set LC_ALL=C, to work around failed math tests due
+	to locale-related problems on some systems. Note: This requires a
+	reconfigure.
+
+	* lib/system.pure: Add setlocale function.
+
+	* runtime.cc (pure_sys_vars): Add NULL and LC_* constants.
+
+	* lexer.ll: Add option -p to list only private/public symbols to
+	the 'list' command.
+
+2008-08-27  Albert Graef  <Dr.Graef@t-online.de>
+
+	* lib/: Clean up the public namespace.
+
+	* lexer.ll: Added limited support for unicode symbols. These can
+	now be declared as operator or nullary symbols. (At present this
+	is only guaranteed to work if your scripts are encoded in UTF-8.)
+
+	* parser.yy, etc.: Symbols can now be declared 'private'. These
+	aren't visible anywhere except in the module that declares them.
+
+2008-08-26  Albert Graef  <Dr.Graef@t-online.de>
+
+	* test/test022.pure: Add macro test script.
+
+	* lib/prelude.pure: Add optimization rules for ($) and (.) so that
+	they are expanded at compile time if possible.
+
+2008-08-25  Albert Graef  <Dr.Graef@t-online.de>
+
+	* parser.yy, lexer.ll, interpreter.cc: Added macro substitution
+	facility. Pure macros are meta functions executed at compile time,
+	which are defined by any number of equations (rewriting rules)
+	prefixed with the 'def' keyword, e.g.:
+
+	def foo (bar x) = foo x+1;
+	def foo x = x;
+
+	Only simple, unconditional rules are supported by now, but these
+	are quite powerful already, since, as shown above, the macro
+	parameters can be arbitrary patterns and macro definitions can
+	also be recursive.
+
+	Pure macros are lexically scoped, i.e., symbols on the rhs of a
+	macro definition can never refer to anything outside the macro
+	definition. (These are also known as "hygienic" macros.)
+
+	* configure.ac: Bump version number. (Needs reconfigure.)
+
+2008-08-24  Albert Graef  <Dr.Graef@t-online.de>
+
+	* 0.5 release.
+
+	* lib/prelude.pure: do operations now implemented with $$.
+
+	* test/test020.pure, test/test021.pure: Cosmetic changes, added
+	math.pure tests for checking exact/inexact/symbolic results.
+
+	NOTE: test020.log is fairly big and thus still needs to be
+	reviewed more thoroughly. If you can provide a helping hand there
+	by checking at least some of the tested operations and post
+	suspicious results to the mailing list, it will be much
+	appreciated. :-)
+
+	* lib/math.pure: Fixed the broken definition of the complex sqrt,
+	and did some cosmetic surgery on some operations, to make them
+	more compatible with established standards (IEEE 754, POSIX). This
+	probably isn't perfect yet, so please report any suspicious
+	results or glitches in branch cuts and the like.
+
+	I also checked some of the complex trig and hyperbolic operations
+	manually against my HP-50G calculator (whose numeric algorithms
+	are based on earlier HP calculator software designed by William
+	Kahan, the architect of IEEE 754), and they seem to provide the
+	proper branch cuts now, so that results are identical with the
+	calculator up to rounding discrepancies.
+
+	Note that operations will now return complex results only if
+	invoked with complex (or mixed complex/real) arguments, as
+	suggested by Eddie Rucker. I also added the necessary type guards
+	to ensure that operations are irreducible when invoked with
+	non-numeric arguments.
+
+2008-08-22  Albert Graef  <Dr.Graef@t-online.de>
+
+	* test/test020.pure: Added math.pure tests by Eddie Rucker.
+
+	* runtime.cc (same): Bugfix in comparison of global functions.
+	Handle the case of of an external which may chain to a Pure
+	definition of the same global. In that case we may safely assume
+	that the functions are the same anyway if they are represented by
+	the same global symbol.
+
+2008-08-21  Albert Graef  <Dr.Graef@t-online.de>
+
+	* interpreter.cc (subst): Defer const substitutions (and
+	propagation of type tags) until all variable bindings have been
+	processed, to prevent name capture in const substitutions.
+	Reported by Eddie Rucker.
+
+	* test/test019.pure: Regression test for the above.
+
+2008-08-20  Albert Graef  <Dr.Graef@t-online.de>
+
+	* expr.cc (env::operator=): Bugfix: Only set temporary level of a
+	constant or free variable if it wasn't defined previously at a
+	lower level.
+
+2008-08-19  Albert Graef  <Dr.Graef@t-online.de>
+
+	* parser.yy, lexer.ll, printer.cc, etc.: Renamed the 'def' keyword
+	to 'const', as originally proposed by Eddie Rucker. ('def' is
+	still a reserved keyword, since it's soon going to be used for
+	macro definitions.) Scripts and syntax highlighting files in the
+	distribution have been updated accordingly.
+
+2008-08-18  Albert Graef  <Dr.Graef@t-online.de>
+
+	* interpreter.cc (codegen): Generate tail-recursive code for
+	sequence operator.
+
+	* lib/prelude.pure, lib/primitives.pure: Definition of $$ sequence
+	operator.
+
+2008-08-17  Albert Graef  <Dr.Graef@t-online.de>
+
+	* pure.cc, interpreter.cc/h, runtime.cc: Overhaul of the script
+	and library search algorithms.
+
+	The prelude is now *always* searched for in PURELIB only, to
+	prevent code injection issues. Thus to use a custom prelude you'll
+	have to set the PURELIB environment variable accordingly, or
+	employ the '-n' option and explicitly specify the prelude on the
+	command line.
+
+	Scripts specified on the command line or with the 'run' command
+	will *only* be searched for in the current directory.
+
+	In addition to the PURELIB environment variable, new -I/-L command
+	line options and PURE_INCLUDE/PURE_LIBRARY environment variables
+	are now available to specify additional directories to search for
+	source files and dynamic libraries specified using relative
+	pathnames in 'using' clauses.
+
+	For source scripts opened with a 'using' clause, the interpreter
+	searches the following directories in the given order:
+
+	- the directory of the script containing the 'using' clause (or
+	the current working directory if the 'using' clause is read from
+	standard input),
+
+	- directories specified with -I, in the order in which they are
+	specified on the command line,
+
+	- directories specified in colon-separated format in the
+	PURE_INCLUDE variable, in the order in which they are specified,
+
+	- the PURELIB directory.
+
+	Similarly, dynamic libraries are searched for in:
+
+	- the directory of the script containing the 'using' clause (or
+	the current working directory if the 'using' clause is read from
+	standard input),
+
+	- directories specified with -L, in the order in which they are
+	specified on the command line,
+
+	- directories specified in colon-separated format in the
+	PURE_LIBRARY variable, in the order in which they are specified,
+
+	- the PURELIB directory,
+
+	- other platform-specific locations searched by the dynamic
+	linker, such as system library directories and LD_LIBRARY_PATH on
+	Linux.
+
+	Note that in either case the current working directory is *not*
+	searched by default (unless the 'using' clause is read from
+	standard input), but of course you can force this by adding '.' to
+	the corresponding search path.
+
+	* parser.yy, printer.cc et al: Revised list-of-tuples syntax. In
+	order to include a tuple in a proper list value you can simply put
+	the tuple inside parentheses now.
+
+	* parser.yy, lexer.ll: Revised 'using' syntax so that script names
+	are now separated with a comma. Updated library and sample scripts
+	accordingly.
+
+2008-08-16  Albert Graef  <Dr.Graef@t-online.de>
+
+	* pure.cc (main): More robust test for presence of the prelude.
+
+	* interpreter.cc, lexer.ll: Implemented new script search
+	algorithm, as discussed on the mailing list.
+
+	Scripts loaded with a 'using' clause are now first searched in the
+	directory of the script containing the 'using' clause, then in the
+	PURELIB directory and finally in the current directory. This
+	allows scripts to be installed in their own directory, along with
+	any other non-library modules they need. Scripts specified on the
+	command line or with the 'run' command are searched for in the
+	current directory and then in the PURELIB directory, as before.
+
+	Script names are now "canonicalized" by following symbolic links
+	(albeit only one level) and removing '.' and '..' directory
+	components in the absolute pathname. Also, checking whether a
+	script has already been loaded now uses the canonicalized pathname
+	so that, e.g., two scripts foo/baz.pure and bar/baz.pure are
+	considered distinct modules and can both be used in the same
+	program (unless they link to the same script file).
+
+2008-08-15  Albert Graef  <Dr.Graef@t-online.de>
+
+	* test/test018.pure: Add test for integer marshalling.
+
+	* interpreter.cc (declare_extern): All C int parameter types now
+	handle bigint arguments.
+
+	* lib/primitives.pure: Moved basic rounding functions from
+	math.pure, and fixed some minor glitches in the pow function.
+
+2008-08-14  Albert Graef  <Dr.Graef@t-online.de>
+
+	* lib/primitives.pure: Added routines to convert signed integers
+	to the corresponding unsigned quantities, as discussed on the
+	mailing list.
+
+	* lib/math.pure: Bugfixes, overhaul of number predicates, added
+	missing semantic number predicates.
+
+	* runtime.cc (pure_bigintval, same): Fix up bigint conversions and
+	syntactic comparisons of doubles for the inf/nan cases.
+
+	* lib/primitives.pure, runtime.cc/h: Removed obsolete fun and arg
+	functions, as 'arg' conflicted with math.pure. Also, applp is now
+	implemented directly in Pure, and the corresponding runtime
+	routine has been removed as well.
+
+2008-08-13  Albert Graef  <Dr.Graef@t-online.de>
+
+	* interpreter.cc (declare_extern, named_type, type_name): Add
+	support for single precision 'float' arguments and return values
+	to the C interface. Reported by Eddie Rucker.
+
+	* examples/signal.pure: Add signal processing example.
+
+	* runtime.cc (pure_catch, pure_invoke): Collecting temporary
+	values after an exception doesn't seem to be safe while an
+	evaluation is still in progress. Moved this to doeval/dodefn in
+	interpreter.cc where we're back at the toplevel and it is safe to
+	do this.
+
+2008-08-12  Albert Graef  <Dr.Graef@t-online.de>
+
+	* runtime.cc/h, lib/system.pure: Add 'trap' operation to configure
+	signal handlers.
+
+	* runtime.cc (pure_sys_vars): Add signal constants.
+
+	* pure.cc (main): Set up handlers for standard POSIX termination
+	signals, mapping these to orderly Pure exceptions of the form
+	'signal SIG'.
+
+	* interpreter.cc (builtin_codegen), runtime.cc(bigint_div,
+	bigint_mod): Handle division by zero by throwing a 'signal SIGFPE'
+	exception. Previously, these would just bail out with an unhandled
+	SIGFPE signal.
+
+	* lexer.ll: Fixed a bug in option parsing of the 'list' command
+	which would cause an option string starting with '-a' to be
+	interpreted as an ordinary argument.
+
+	* runtime.cc (pure_catch, pure_sys_vars): Fixed memory leaks.
+
+2008-08-11  Albert Graef  <Dr.Graef@t-online.de>
+
+	* runtime.cc (pure_catch): Fix wrong stack cleanup, causing
+	segfaults with catch/throw. Reported by Libor Spacek.
+
+	* configure.ac, Makefile.in: Additional configury for proper
+	handling of dynamic linking on OSX (-install_name option,
+	DYLD_LIBRARY_PATH). Reported by Ryan Schmidt. NOTE: This change
+	requires a reconfigure.
+
+2008-08-10  Albert Graef  <Dr.Graef@t-online.de>
+
+	* interpreter.cc (doeval, dodefn): Optimize the case of toplevel
+	evaluations and variable definitions of constant expressions.
+
+	* interpreter.cc (codegen): Fixed memory leak caused by the new
+	list and tuple code. Reported by Jiri Spitz. We now also impose a
+	minimum size for speeding up the generated code for smaller list
+	and tuple sizes.
+
+2008-08-09  Albert Graef  <Dr.Graef@t-online.de>
+
+	* interpreter.cc: Overhaul environment-handling code in the code
+	generator so that it properly handles nested 'with' environments.
+
+2008-07-30  Albert Graef  <Dr.Graef@t-online.de>
+
+	* w3centities.c: Updated to latest from W3C.
+
+2008-07-13  Albert Graef  <Dr.Graef@t-online.de>
+
+	* interpreter.cc (codegen): Streamline code for list and tuple
+	expressions. This works around some severe performance bugs in the
+	LLVM JIT, which gets awfully slow on deep call graphs.
+
+	* interpreter.cc (run): LLVM 2.3 requires that we add the default
+	shared library extension manually.
+
+2008-07-11  Albert Graef  <Dr.Graef@t-online.de>
+
+	* interpreter.cc/h: Apply Rooslan S. Khayrov's patches to make the
+	interpreter compile with LLVM 2.3.
+
+	Note that this means that Pure really needs LLVM 2.3 now. By
+	reverting these changes you can still make it work with LLVM 2.2,
+	but we really recommend using LLVM 2.3 now since it has many
+	improvements and bugfixes.
+
+2008-07-08  Albert Graef  <Dr.Graef@t-online.de>
+
+	* runtime.cc/h, lib/math.pure: Add random number generator
+	(Mersenne twister). Suggested by Jiri Spitz.
+
+	* examples/avltree.pure: Added to examples.
+
+	* lib/math.pure: Moved abs, sgn, min, max, pred and succ from
+	math.pure to primitives.pure, so that they are included in the
+	prelude. Make x%0 behave like x div 0 (which raises SIGFPE).
+
+	* lib/: Jiri Spitz' port of the Q container types were added to
+	the library (array.pure, dict.pure, heap.pure, set.pure).
+
+2008-07-07  Albert Graef  <Dr.Graef@t-online.de>
+
+	* lib/strings.pure: Make slicing work with strings.
+
+	* lib/prelude.pure: Fixed a bug in init function. Reported by
+	Libor Spacek.
+
+	* runtime.cc/h, lib/system.pure: Added strftime function.
+
+	* printer.cc: Add missing parens around low-precedence elements in
+	proper lists. Reported by Jiri Spitz.
+
+2008-07-06  Albert Graef  <Dr.Graef@t-online.de>
+
+	* lib/prelude.pure: Added new "mapsto" constructor. Requested by
+	Jiri Spitz.
+
+	* runtime.cc (pure_sys_vars): Turn system constants into real
+	constant definitions.
+
+	* runtime.cc/h, lib/system.pure: Added a few time functions to the
+	system interface.
+
+2008-07-03  Albert Graef  <Dr.Graef@t-online.de>
+
+	* interpreter.cc (run): Temporarily suppress verbose output for
+	using clause. This also makes the some of the test logs much
+	smaller. Reported by Jiri Spitz.
+
+2008-07-02  Albert Graef  <Dr.Graef@t-online.de>
+
+	* lib/math.pure: Added rational numbers.
+
+2008-07-01  Albert Graef  <Dr.Graef@t-online.de>
+
+	* lib/primitives.pure, runtime.cc/h: Add the GMP gcd and lcm
+	functions.
+
+	* lexer.ll: 'list' command now also prints fixity and nullary
+	declarations of listed symbols.
+
+	* lib/math.pure: Added various bits and pieces, most notably the
+	complex numbers. Also moved sqrt function from primitives.pure to
+	math.pure.
+
+2008-06-30  Albert Graef  <Dr.Graef@t-online.de>
+
+	* interpreter.cc (declare_extern): Fix a segfault in external
+	wrapper routines, due to the shadow stack not being popped when
+	an external fails and thus the default rule gets used.
+
+2008-06-29  Albert Graef  <Dr.Graef@t-online.de>
+
+	* etc/pure.xml: Improved syntax highlighting for Kate. Fixed up
+	highlighting of quoted string chars, as suggested by Eddie Rucker.
+	Also added folding support for comments and block structure
+	(case/with/when ... end).
+
+	* lib/math.pure: Started module with math operations (exp, ln,
+	trigonometric functions, etc.).
+
+2008-06-28  Albert Graef  <Dr.Graef@t-online.de>
+
+	* interpreter.cc: Promote type tags and substitute constants on
+	the rhs of variable and constant definitions.
+
+	* lib/prelude.pure: Using xs!ns for slicing conflicts with more
+	general indexing of containers with arbitrary keys. Use !! for
+	slicing instead. Restrict the definition to lists and tuples, and
+	simplify it by using a list comprehension. Suggested by Jiri
+	Spitz.
+
+2008-06-27  Albert Graef  <Dr.Graef@t-online.de>
+
+	* runtime.cc/h: Added pure_current_interp(), variable and constant
+	definitions, management of temporary definition levels.
+
+	* pure.cc, interpreter.cc, lexer.ll: Fix up completion support,
+	second attempt (constructor symbols without any rules were
+	still missing).
+
+2008-06-26  Albert Graef  <Dr.Graef@t-online.de>
+
+	* lexer.ll: Fix up list command to properly deal with the new
+	constant symbol category. -c now lists constant symbols, the
+	previous -c option (print matching automata) was renamed to -a.
+
+	* interpreter.cc et al: Implement constant definitions, as
+	discussed on the mailing list. These work like variable
+	definitions (using the new 'def' keyword in lieu of 'let'), but
+	constants cannot be redefined (unless you first clear an existing
+	definition), and constant values are directly substituted into the
+	right-hand sides of equations rather than being evaluated at
+	runtime.
+
+2008-06-25  Albert Graef  <Dr.Graef@t-online.de>
+
+	* examples/sort.c: Add another example for the runtime API.
+	This one shows how to implement a C function in a module to be
+	loaded by the Pure interpreter, which in turn calls other C and
+	Pure functions.
+
+2008-06-24  Albert Graef  <Dr.Graef@t-online.de>
+
+	* configure.ac: Bump version number.
+
+	* pure.cc, lexer.ll: Bugfix: include external symbols in command
+	completion.
+
+	* examples/poor.c: Add an example for the new public runtime API.
+	Shows how to interface to the Pure interpreter in a standalone C
+	application.
+
+	* interpreter.cc/h, runtime.cc/h, lib/strings.pure: Add error
+	reporting to the eval() routine.
+
+	* interpreter.cc: Bugfix to make recursive source file parses work
+	inside eval().
+
+	* runtime.h, runtime.cc: Refactored the runtime library to provide
+	a semantically complete public API for module writers.
+
+	These operations are meant to be used by client modules or
+	standalone applications which need to create their own Pure
+	interpreters and/or require direct access to Pure expression
+	data. See the PUBLIC API section in runtime.h for details. Modules
+	created with this API must be linked against the runtime library
+	(libpure.so).
+
+2008-06-23  Albert Graef  <Dr.Graef@t-online.de>
+
+	* runtime.h, runtime.cc: Make pure_invoke() callable from C.
+
+2008-06-22  Albert Graef  <Dr.Graef@t-online.de>
+
+	* expr.cc, interpreter.cc, parser.yy, lexer.ll, printer.cc:
+	Implement Haskell-style "as" patterns. Also make sure that '_' on
+	the lhs is always treated as the anonymous variable, even if it
+	occurs as the head symbol in a function application.
+
+2008-06-21  Albert Graef  <Dr.Graef@t-online.de>
+
+	* etc/pure-mode.el.in, etc/pure.vim, etc/pure.xml, etc/pure.lang:
+	Cosmetic changes, all modes now highlight catch/throw.
+
+	* lib/prelude.pure: Fixed a glitch in the definition of foldr1
+	which caused list elements to be processed in the wrong order.
+
+2008-06-20  Albert Graef  <Dr.Graef@t-online.de>
+
+	* 0.4 release.
+
+	* pure.cc, lexer.ll: Fake interactive mode when we're not
+	connected to a terminal but -i is specified. Thus sign-on message
+	and command prompts will be printed as usual. This is needed, in
+	particular, to make Emacs Pure-Eval mode work on Windows.
+
+2008-06-19  Albert Graef  <Dr.Graef@t-online.de>
+
+	* examples/symbolic.pure: Fix DNF example to accommodate changes
+	in the operator system.
+
+	* interpreter.cc (declare): Fix segfault in reporting of
+	conflicting fixity declarations.
+
+2008-06-18  Albert Graef  <Dr.Graef@t-online.de>
+
+	* runtime.cc, lib/primitives.pure: Add hash function to compute 32
+	bit hash codes of Pure expressions. Suggested by Jiri Spitz.
+
+	* parser.yy, lexer.ll, interpreter.hh/cc: Add syntax for multiple
+	left-hand sides in function definitions and 'case' rules, as
+	requested by Jiri Spitz and discussed on the mailing list. See the
+	manual page for details.
+
+	* symtable.cc, lib/prelude.pure, lib/primitives.pure: Rename the
+	bitwise operators '&' and '|' to 'and' and 'or'.
+
+2008-06-16  Albert Graef  <Dr.Graef@t-online.de>
+
+	* etc/pure.lang: New language definition file for Andre Simon's
+	highlight program (http:/www.andre-simon.de/). This allows you to
+	format Pure sources with syntax highlighting as HTML and LaTeX
+	files, for instance.
+
+	* configure.ac, Makefile.in: Clean up the source tree. Moved
+	auxiliary configure files and the syntax highlighting and
+	programming mode stuff into separate config and etc
+	subdirectories. Moreover, Makefile.in now has a target to
+	regenerate the configury using autoconf and autoheader.
+
+2008-06-15  Albert Graef  <Dr.Graef@t-online.de>
+
+	* matcher.hh: gcc 4.3 compatibility fixes. Suggested by Toni
+	Graffy.
+
+2008-06-14  Albert Graef  <Dr.Graef@t-online.de>
+
+	* lexer.ll: Various changes in order to facilitate script
+	execution and interfacing to Emacs.
+
+	Initial '#!' on a line now denotes a comment line, in order to
+	support shebangs (see below).
+
+	The new 'completion_matches' command provides information about
+	completions to programs driving the interpreter, such as Emacs
+	(see below).
+
+	Paging of the 'list' command is now implemented using the program
+	specified with the PURE_MORE environment variable. This allows you
+	to disable this option (if PURE_MORE is undefined) or choose any
+	pager program and options that you prefer. Define PURE_MORE=more
+	in your shell startup files to get back the old behaviour of
+	piping 'list' output through 'more'.
+
+	* pure.cc: Added new -q (quiet) and -x (execute) options. The
+	former is used in pure-mode.el to suppress the sign-on message of
+	the interpreter. The latter can be used in conjunction with the
+	new #! comment syntax to add shebangs to your script, see the
+	manpage for details.
+
+	* pure-mode.el.in: Added new Emacs Pure mode. This is a quick and
+	dirty hack of Q mode and still needs some work (in particular,
+	auto indentation is pretty much broken right now).
+
+2008-06-13  Albert Graef  <Dr.Graef@t-online.de>
+
+	* configure.ac, Makefile.in, etc.: Overhauled configury and bumped
+	the version number.
+
+	Building a separate runtime lib on x86-64 works now (but requires
+	a patched LLVM, see the INSTALL file for details). Linking the
+	runtime lib on OSX should also work now. Moreover, it is now
+	possible to install different Pure versions in parallel, again see
+	the INSTALL file for details.
+
+2008-06-06  Albert Graef  <Dr.Graef@t-online.de>
+
+	* 0.3 release.
+
+	* configure.ac, etc.: Added autoconf support. Various fixes for 64
+	bit and Windows compatibility. See the INSTALL file for updated
+	installation instructions.
+
+2008-06-01  Albert Graef  <Dr.Graef@t-online.de>
+
+	* Makefile, interpreter.cc: Put the runtime and interpreter into a
+	separate shared library, to make it possible for modules to link
+	against the runtime, and to reduce the memory footprint when
+	multiple instances of the interpreter are run as different
+	processes. Also, this makes it possible to access the runtime
+	routines on systems where a program cannot dlopen itself.
+
+2008-05-28  Albert Graef  <Dr.Graef@t-online.de>
+
+	* interpreter.cc, runtime.cc: Optimization of pure_freenew calls.
+
+	* lib/strings.pure: Make 'cycle' work on strings. Reported by
+	Eddie Rucker.
+
+	* lib/prelude.pure: Make 'index' work on lists. Code contributed
+	by Eddie Rucker.
+
+2008-05-27  Albert Graef  <Dr.Graef@t-online.de>
+
+	* lib/prelude.pure: Rewrite prelude operations to make them
+	tail-recursive.
+
+	* interpreter.cc (toplevel_codegen): Experimental support for
+	tail-recursive logical operators (&& and ||). This works but is
+	disabled, since it makes these operations behave in different ways
+	depending on the context, which is a really bad idea because it
+	violates referential transparency.
+
+2008-05-26  Albert Graef  <Dr.Graef@t-online.de>
+
+	* interpreter.cc, runtime.cc: Overhaul of the shadow stack
+	machinery. Environment vectors are now maintained on the shadow
+	stack, so that all local functions and anonymous closures are
+	eligible for tail call optimization, even if they need access to
+	their environment.
+
+2008-05-25  Albert Graef  <Dr.Graef@t-online.de>
+
+	* interpreter.cc, runtime.cc: Add marshalling between long (64
+	bit) ints and Pure bigints in the C interface. This means that
+	both Pure ints and bigints can now be passed for 'long' arguments
+	of externals (with sign extension/truncation as necessary), and
+	'long' values are promoted to Pure bigints on return. Hence C
+	functions taking 64 bit integers as arguments and returning them
+	as results can now be called from Pure without loosing bits due to
+	truncation.
+
+	* interpreter.cc: Make toplevel if-then-else properly
+	tail-recursive. Thus, e.g., the following function will now run in
+	constant stack space: count x = if x<=0 then x else count (x-1);
+	This also works with nested if-then-else constructs, as long as
+	they form the right-hand side of an equation.
+
+2008-05-24  Albert Graef  <Dr.Graef@t-online.de>
+
+	* interpreter.cc, runtime.cc: Fix more memory allocation bugs in
+	exception handling.
+
+	* runtime.cc, lib/system.pure: Bugfixes in the scanf
+	functions. Reported by Jiri Spitz.
+
+	* pure.cc, runtime.cc, util.cc: Windows/MinGW compatibility
+	fixes. Suggested by Jiri Spitz.
+
+2008-05-23  Albert Graef  <Dr.Graef@t-online.de>
+
+	* runtime.cc: Fix premature freeing of eval result, and a minor
+	memory allocation glitch in the catch function. Reported by Eddie
+	Rucker.
+
+	* Makefile: Bump version number.
+
+	* interpreter.cc: If there are any child environments, doeval and
+	dodefn both create semi-permanent environments now, so that the
+	child environments and the corresponding LLVM IR survive for the
+	entire lifetime of any embedded closures, which might still be
+	called at a later time. This fixes the segfaults occurring when a
+	closure gets called after its associated environment was purged. A
+	partial fix for some situations (as reported earlier by Chris
+	Double) was already in the 0.2 release, but this didn't deal with
+	all cases, such as closures constructed in a call to the eval
+	function, as reported by Eddie Rucker.
+
+2008-05-22  Albert Graef  <Dr.Graef@t-online.de>
+
+	* interpreter.cc, runtime.cc: Major overhaul of expression memory
+	handling. Fixed the shadow stack and memory debugging code. Both
+	function arguments and environment are now visible on the shadow
+	stack, and all remaining memory leaks have been fixed. Note that,
+	compared to previous revisions, the shadow stack slows down
+	compiled code by some 10% and it needs some additional memory.
+	OTOH, it also provides additional data that will be needed in the
+	planned symbolic debugger, and it seems to be the most efficient
+	way to handle dangling expression pointers after an exception
+	anyway.
+
+2008-05-17  Albert Graef  <Dr.Graef@t-online.de>
+
+	* runtime.cc (pure_free_internal): Fixed a glitch which was
+	causing big memleaks. Reported by Libor Spacek.
+
+	* interpreter.cc (define): Fixed error messages.
+	
+	* interpreter.cc, runtime.h: Reorganize pure_expr data structure
+	so that the data fields are *always* aligned on 8 byte boundaries.
+	This should now also work on 32 bit architectures where doubles
+	are aligned on 8 byte boundaries, such as Linux on 32 bit PPC.
+	Reported by Tim Haynes.
+
+	* interpreter.cc: Fixed some case labels in switch instructions
+	which should be signed rather than unsigned values. Also made
+	void* a pointer to a dummy struct in LLVM IR, so that it can be
+	distinguished from all other pointer types, and added support for
+	short (16 bit) and long (64 bit) integer types (as well as the
+	corresponding pointer types) in the C interface.
+
+	Please note that the typename 'long' *always* denotes signed 64
+	bit integers in Pure's extern declarations, even if the C 'long'
+	type is actually 32 bit (as it usually is even on most 64 bit
+	systems).
+
+2008-05-16  Albert Graef  <Dr.Graef@t-online.de>
+
+	* runtime.h: Fix compilation problems when header gets included
+	from C.
+
+2008-05-14  Albert Graef  <Dr.Graef@t-online.de>
+
+	* funcall.h: Reduce maximum number of function parameters to
+	64. This seems to be large enough for most purposes, and speeds up
+	compilation with -Ox by a factor of around 10.
+
+	* Makefile: Overhaul of build options. In particular, the
+	'default' build now includes basic optimization (-O) which makes
+	the interpreter almost as fast as with the 'release' build, and
+	produces a working interpreter also on 64 bit systems. (The
+	'debug' build is still broken there, but see the SYSTEM NOTES
+	section in the INSTALL file for a workaround.)
+
+	* interpreter.cc, runtime.cc: 64 bit compatibility fixes in bigint
+	handling.
+
+2008-05-12  Albert Graef  <Dr.Graef@t-online.de>
+
+	* interpreter.cc: Fix a severe bug in the environment handling
+	code of the code generator, which could cause failed assertions in
+	the code generator, or wrong code to be generated in some cases.
+	To resolve this issue, the code generator now properly keeps
+	separate environments for each rule of a function
+	definition. Reported by John Lunney.
+
+	* Makefile: Redirect warning and error messages from regression
+	tests to the logfile.
+
+2008-05-10  Albert Graef  <Dr.Graef@t-online.de>
+
+	* interpreter.cc (uminop): Handle the value -0x80000000 at the
+	border of the int range, so that it is correctly treated as a
+	machine int.
+
+2008-05-09  Albert Graef  <Dr.Graef@t-online.de>
+
+	* lexer.ll, printer.cc, etc.: Change the "G" suffix to denote
+	bigints to "L" ("G" can too easily be mistaken for a digit; also,
+	Python uses the same "L" notation for bigints). Reported by Eddie
+	Rucker.
+
+2008-05-06  Albert Graef  <Dr.Graef@t-online.de>
+
+	* lib/primitives.pure: Made the pow function work with all
+	combinations of integer and double arguments. Also added the sqrt
+	function and the ^ operator.
+
+	* runtime.cc, lib/primitives.pure: Added predicates funp, lambdap,
+	varp checking for named and anonymous closures and unbound global
+	variables, respectively. Requested by Libor Spacek.
+
+	* interpreter.cc (declare_extern, fun_prolog): Handle some obscure
+	cases of name collisions between Pure and C functions.
+
+2008-05-05  Albert Graef  <Dr.Graef@t-online.de>
+
+	* INSTALL: Add system-specific notes.
+
+	* Makefile: Massaged some rules for OSX compatibility. In
+	particular, -rdynamic is now in the LDFLAGS, so that it can be
+	removed more easily, and I also removed the install -s flag so
+	that the pure executable is installed without stripping the
+	symbols which are needed to properly resolve runtime externals on
+	OSX. Reported by Ryan Schmidt and others.
+
+	* matcher.cc (merge_ctrans): Fixed broken mpz_cmp() test causing
+	transitions on different (instead of equal) bigint constants to be
+	merged. Reported by Libor Spacek.
+
+2008-05-04  Albert Graef  <Dr.Graef@t-online.de>
+
+	* 0.2 release.
+
+	* lexer.ll, printer.cc: Add an explicit notation for big
+	integers. Any integer immediately followed by the uppercase letter
+	"G" (as in "biG" or "GMP") will now always be interpreted as a
+	bigint constant, even if it fits into a machine integer. This
+	notation is also used when printing bigint constants. This change
+	was necessary to make it possible to write rules matching against
+	"small bigint" constants.
+
+	* lib/primitives.pure: Added operations to recognize function
+	applications and extract the function and argument parts,
+	implemented in runtime.cc. Note that these operations can't be
+	defined in Pure because of the "head is function" rule which means
+	that in a pattern of the form f x, f is always a literal function
+	symbol and not a variable.
+
+2008-05-03  Albert Graef  <Dr.Graef@t-online.de>
+
+	* README: Moved installation instructions to a separate INSTALL
+	file, added Eddie Rucker's detailed instructions there.
+
+	* util.cc (myiconv): Apple's iconv takes const char** as 2nd
+	parameter. #ifdef that case. Reported by Ryan Schmidt.
+
+	* interpreter.cc (declare_extern): Fixed a bug in the generated
+	wrapper code for external calls, which caused function arguments
+	to be garbage-collected prematurely, when they were still needed
+	to create the default value, in the case of external calls
+	returning a null expression pointer to indicate failure. Reported
+	by Eddie Rucker.
+
+	* test/test4.pure: Disabled tail call checks, as they may fail on
+	some platforms. Reported by Ryan Schmidt.
+
+	* test/test1.pure: Corrected fact3 example, added test cases.
+	Reported by Libor Spacek.
+
+2008-05-02  Albert Graef  <Dr.Graef@t-online.de>
+
+	* Makefile: Overhaul of regression tests so that results of
+	expressions are recorded. Also, 'make check' doesn't depend on the
+	log files any more, so that the logs can be stored in svn. You can
+	now use the explicit goal 'make logs' to regenerate the logs for
+	changed test files.
+
+	* runtime.cc (same): Added a syntactic equality test. Requested by
+	Eddie Rucker.
+
+	* Makefile: Add $(LDFLAGS) and $(LIBS) to the link line, so that
+	the user can easily add his own linker options and local
+	libraries.
+
+	* lib/strings.pure: Add missing range check in string indexing
+	operation. Reported by Eddie Rucker.
+
+	* printer.cc (operator <<): Handle stack overflow while printing
+	an expression.
+
+	* interpreter.cc (dodefn): Fix a tricky bug causing the executable
+	code of closures bound to variables to be freed when it was still
+	needed. Reported by Chris Double.
+
+2008-05-01  Albert Graef  <Dr.Graef@t-online.de>
+
+	* interpreter.cc: Proper alignment of value fields in expression
+	struct on 64 bit systems. Reported by Tim Haynes.
+
+	* Makefile: g++ shouldn't be hardcoded, use $(CXX) instead.
+	Reported by Ryan Schmidt.
+
+	* runtime.cc (pure_sys_vars): More OSX compatibility fixes.
+	Reported by Ryan Schmidt.
+
+2008-04-30  Albert Graef  <Dr.Graef@t-online.de>
+
+	* interpreter.cc: Fix a compilation error (STL bug:
+	http://gcc.gnu.org/bugzilla/show_bug.cgi?id=11729) as well as some
+	bogus warnings with Apple gcc 4.0.1. Reported by Ryan Schmidt.
+
+	* Makefile (make depend): Get rid of bogus LLVM dependencies.
+	Reported by Ryan Schmidt.
+
+	* lexer.ll, parser.yy: Fixes for compatibility with newer flex and
+	bison versions. Reported by Eddie Rucker.
+
+2008-04-29  Albert Graef  <Dr.Graef@t-online.de>
+
+	* 0.1 release.
+
+2008-04-28  Albert Graef  <Dr.Graef@t-online.de>
+
+	* examples/symbolic.pure: Add symbolic evaluation example. This is
+	just a straightforward port of some Q examples.
+
+	* runtime.cc: Add support for advisory stack checks.
+
+	* matcher.cc: Bugfixes.
+
+2008-04-27  Albert Graef  <Dr.Graef@t-online.de>
+
+	* lib/string.pure: Added split and join functions.
+
+	* pure.1, examples/hello.pure: Overhaul n queens example, added
+	quicksort and binary search tree examples.
+
+	* lib/prelude.pure: Added void and curry/uncurry combinators, do,
+	zipdo.
+
+	* interpreter.cc, pure.cc, runtime.cc: Make SIGINT generate a
+	useful exception value.
+
+	* pure.cc: Add completion for global function and variable
+	symbols.
+
+2008-04-22  Albert Graef  <Dr.Graef@t-online.de>
+
+	* Got a working interpreter, at last. There's still lots of stuff
+	to do (see the TODO file), but the interpreter should now be
+	usable as it is.
+
+2008-03-27  Albert Graef  <Dr.Graef@t-online.de>
+
+	* ChangeLog started
+

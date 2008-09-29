@@ -1,0 +1,45 @@
+fact n/*0:1*/::int = n/*0:1*/*fact (n/*0:1*/-1) if n/*0:1*/>0;
+fact n/*0:1*/::double = n/*0:1*/*fact (n/*0:1*/-1) if n/*0:1*/>0;
+fact n/*0:1*/ = n/*0:1*/*fact (n/*0:1*/-1) if n/*0:1*/>0;
+fact n/*0:1*/::int = 1;
+fact n/*0:1*/::double = 1;
+fact n/*0:1*/ = 1;
+{
+  rule #0: fact n::int = n*fact (n-1) if n>0
+  rule #1: fact n::double = n*fact (n-1) if n>0
+  rule #2: fact n = n*fact (n-1) if n>0
+  rule #3: fact n::int = 1
+  rule #4: fact n::double = 1
+  rule #5: fact n = 1
+  state 0: #0 #1 #2 #3 #4 #5
+	<var> state 1
+	<var>::int state 2
+	<var>::double state 3
+  state 1: #2 #5
+  state 2: #0 #2 #3 #5
+  state 3: #1 #2 #4 #5
+}
+fact 10;
+3628800
+fact 10L;
+3628800L
+fact 10.0;
+3628800.0
+foo x/*0:1*/ = x/*0:1*/*y;
+bar y/*0:1*/ = x*y/*0:1*/;
+{
+  rule #0: foo x = x*y
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+{
+  rule #0: bar y = x*y
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+foo 99;
+99*y
+bar 99;
+x*99

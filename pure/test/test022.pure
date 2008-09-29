@@ -1,0 +1,30 @@
+
+// Macro substitution tests. (Pure 0.6)
+
+/* This macro just removes a 'bar' from its argument and turns it into '+1'.
+   This is done recursively so that bar (...(n times)...(bar x)...)  turns
+   into x+1+...(n times)...+1. */
+
+def foo (bar x) = foo x+1;
+def foo x = x;
+
+foo x;
+foo (bar x);
+foo (bar (bar x));
+foo (bar (bar (bar x)));
+
+/* Test for possible name capture issues. Pure is supposed to have hygienic
+   macros. If everything is all right, these tests should both return
+   201+(bar 100+1). */
+
+def goo (bar x) = goo x+y when y = x+1 end with bar x = 0 end;
+def goo x = x;
+
+goo (bar (bar (baz x))) with baz x = x+1 end when x = 99 end;
+goo (bar (bar (baz y))) with baz x = x+1 end when y = 99 end;
+
+/* These will return just 101, since the 'bar' is locally bound, so the first
+   goo rule doesn't apply. */
+
+goo (bar (bar x)) with bar x = x+1 end when x = 99 end;
+goo (bar (bar y)) with bar x = x+1 end when y = 99 end;

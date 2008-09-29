@@ -1,0 +1,129 @@
+
+// matrix stuff
+
+// NOTE: This test will fail if Pure was built without GSL support.
+
+using math;
+
+// Basic matrix ops.
+
+// int matrix
+let x = {1,2,3;4,5,6};
+
+x; x'; reverse x;
+#x; dim x; redim (3,2) x;
+x!(1,1); x!!(0,0..2); x!!(0..1,0..1);
+diag x; supdiag x 1; subdiag x 1; supdiag x 1===subdiag x (-1);
+
+// double matrix
+let x = {1.0,2.0,3.0;4.0,5.0,6.0};
+
+x; x'; reverse x;
+#x; dim x; redim (3,2) x;
+x!(1,1); x!!(0,0..2); x!!(0..1,0..1);
+diag x; supdiag x 1; subdiag x 1; supdiag x 1===subdiag x (-1);
+
+// complex matrix
+let x = {1.0+:-2.0,2.0+:-4.0,3.0+:-6.0;4.0+:1.0,5.0+:2.0,6.0+:3.0};
+
+x; x'; reverse x;
+#x; dim x; redim (3,2) x;
+x!(1,1); x!!(0,0..2); x!!(0..1,0..1);
+diag x; supdiag x 1; subdiag x 1; supdiag x 1===subdiag x (-1);
+
+// Numeric matrix conversions.
+
+let x = {1,2,3;4,5,6};
+let y = dmatrix x;
+let z = cmatrix y;
+
+x;y;z;
+
+imatrix x===x; dmatrix y===y; cmatrix z===z;
+
+imatrix y===x; re z===y; im z===dmatrix (dim x);
+
+imatrix z; dmatrix z;
+
+// Matrix-pointer conversions.
+
+// int matrix
+let x = {1,2,3;4,5,6};
+let y = int_matrix_view (3,2) (pointer x);
+x; y; list x==list y; dim x == reverse (dim y);
+
+let y = double_matrix (2,3) (double_pointer NULL x);
+x; y; x==y;
+
+let y = float_matrix (2,3) (float_pointer NULL x);
+x; y; x==y;
+
+let y = complex_matrix (2,3) (complex_pointer NULL x);
+x; y; x==y;
+
+let y = complex_float_matrix (2,3) (complex_float_pointer NULL x);
+x; y; x==y;
+
+let y = int_matrix (2,3) (int_pointer NULL x);
+x; y; x==y;
+
+let y = short_matrix (2,3) (short_pointer NULL x);
+x; y; x==y;
+
+let y = byte_matrix (2,3) (byte_pointer NULL x);
+x; y; x==y;
+
+// double matrix
+let x = dmatrix {1,2,3;4,5,6};
+let y = double_matrix_view (3,2) (pointer x);
+x; y; list x==list y; dim x == reverse (dim y);
+
+let y = double_matrix (2,3) (double_pointer NULL x);
+x; y; x==y;
+
+let y = float_matrix (2,3) (float_pointer NULL x);
+x; y; x==y;
+
+let y = complex_matrix (2,3) (complex_pointer NULL x);
+x; y; x==y;
+
+let y = complex_float_matrix (2,3) (complex_float_pointer NULL x);
+x; y; x==y;
+
+let y = int_matrix (2,3) (int_pointer NULL x);
+x; y; x==y;
+
+let y = short_matrix (2,3) (short_pointer NULL x);
+x; y; x==y;
+
+let y = byte_matrix (2,3) (byte_pointer NULL x);
+x; y; x==y;
+
+// complex matrix
+let x = cmatrix {1,2,3;4,5,6};
+let y = complex_matrix_view (3,2) (pointer x);
+x; y; list x==list y; dim x == reverse (dim y);
+
+let z = double_matrix_view (2,6) (pointer x);
+z; cat [[a,b]|a+:b=x]==list z;
+
+let y = double_matrix (2,6) (double_pointer NULL x);
+x; y; y==z;
+
+let y = float_matrix (2,6) (float_pointer NULL x);
+x; y; y==z;
+
+let y = complex_matrix (2,3) (complex_pointer NULL x);
+x; y; x==y;
+
+let y = complex_float_matrix (2,3) (complex_float_pointer NULL x);
+x; y; x==y;
+
+let y = int_matrix (2,6) (int_pointer NULL x);
+x; y; y==z;
+
+let y = short_matrix (2,6) (short_pointer NULL x);
+x; y; y==z;
+
+let y = byte_matrix (2,6) (byte_pointer NULL x);
+x; y; y==z;

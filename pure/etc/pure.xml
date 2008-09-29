@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE language SYSTEM "language.dtd">
+<language name="Pure" version="1.2" kateversion="2.4" section="Sources" extensions="*.pure">
+  <highlighting>
+    <list name="blockstarters">
+      <item> case </item>
+      <item> when </item>
+      <item> with </item>
+    </list>
+    <list name="blockenders">
+      <item> end </item>
+    </list>
+    <list name="keywords">
+      <item> const </item>
+      <item> def </item>
+      <item> else </item>
+      <item> extern </item>
+      <item> if </item>
+      <item> infix </item>
+      <item> infixl </item>
+      <item> infixr </item>
+      <item> let </item>
+      <item> nullary </item>
+      <item> of </item>
+      <item> otherwise </item>
+      <item> private </item>
+      <item> prefix </item>
+      <item> postfix </item>
+      <item> then </item>
+      <item> using </item>
+    </list>
+    <list name="special">
+      <item> catch </item>
+      <item> throw </item>
+    </list>
+    <list name="types">
+      <item> bigint </item>
+      <item> bool </item>
+      <item> char </item>
+      <item> double  </item>
+      <item> expr </item>
+      <item> short </item>
+      <item> int </item>
+      <item> long </item>
+      <item> string </item>
+      <item> pointer </item>
+      <item> void </item>
+      <item> matrix </item>
+      <item> dmatrix </item>
+      <item> cmatrix </item>
+      <item> imatrix </item>
+    </list>
+    <contexts>
+      <context attribute="Normal Text" lineEndContext="#stay" name="Normal">
+        <DetectSpaces />
+        <keyword attribute="Keyword" context="#stay" String="blockstarters" beginRegion="Block" />
+        <keyword attribute="Keyword" context="#stay" String="blockenders" endRegion="Block" />
+        <keyword attribute="Keyword" context="#stay" String="keywords"/>
+        <keyword attribute="Function" context="#stay" String="special"/>
+        <keyword attribute="Type" context="#stay" String="types"/>
+        <RegExpr attribute="Normal Text" context="#stay" String="[A-Za-z_][A-Za-z0-9_]*"/>
+        <RegExpr attribute="Number" context="#stay" String="0x[A-Za-z0-9]+"/>
+        <Float attribute="Number" context="#stay"/>
+        <Int attribute="Number" context="#stay"/>
+        <HlCChar attribute="Char" context="#stay"/>
+        <DetectChar attribute="String" context="String" char="&quot;"/>
+        <Detect2Chars attribute="Comment" context="Comment1" char="/" char1="*" beginRegion="Comment" />
+        <Detect2Chars attribute="Comment" context="Comment2" char="/" char1="/"/>
+      </context>
+      <context attribute="String" lineEndContext="#pop" name="String">
+        <LineContinue attribute="String" context="#stay"/>
+        <HlCStringChar attribute="String Char" context="#stay"/>
+        <DetectChar attribute="String" context="#pop" char="&quot;"/>
+      </context>
+      <context attribute="Region Marker" lineEndContext="#pop" name="Region Marker">
+      </context>
+      <context attribute="Comment" lineEndContext="#stay" name="Comment1">
+        <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="Comment"/>
+      </context>
+      <context attribute="Comment" lineEndContext="#pop" name="Comment2"/>
+    </contexts>
+    <itemDatas>
+      <itemData name="Normal Text" defStyleNum="dsNormal" />
+      <itemData name="Keyword"     defStyleNum="dsKeyword" />
+      <itemData name="Function"    defStyleNum="dsFunction"/>
+      <itemData name="Type"        defStyleNum="dsDataType"/>
+      <itemData name="Number"      defStyleNum="dsDecVal" />
+      <itemData name="String"      defStyleNum="dsString" />
+      <itemData name="String Char" defStyleNum="dsChar"/>
+      <itemData name="Comment"     defStyleNum="dsComment" />
+    </itemDatas>
+  </highlighting>
+  <general>
+    <keywords casesensitive="1" />
+    <comments>
+      <comment name="singleLine" start="//" />
+      <comment name="multiLine" start="/*" end="*/" />
+    </comments>
+  </general>
+</language>

@@ -1,0 +1,93 @@
+/* Several Solutions to the Queens Problem  Dr Libor Spacek, 21th May 2008
+   
+   (allqueens n) returns all solutions but is slow
+   (queens n) and (tailqueens n) return one different solution each
+   (thequeens n) does no search and is very fast even for large boards
+   
+Examples:
+ 
+    >allqueens 8; // returns all 92 solutions, as a list of lists
+    >queens 8;    // gives solution number 52 in the allqueens' list,
+    >tailqueens 8; // gives solution no. 89, which is a reflection of no. 52
+    >map succ (thequeens 8); // gives solution no. 56 */
+
+// row j in current column not attacked by any queens in preceding columns? 
+safe _ _ [] = 1;
+safe id::int j::int (j2::int:l) =  // id is the column positions difference
+	if (j==j2) || (id==j2-j) || (id==j-j2) then 0 else safe (1+id) j l;
+
+allqueens n::int = list (searchall n n []) // returns all possible solutions
+  with
+  	searchall n::int 0 p = p;
+   searchall n::int i::int p = 
+		tuple [searchall n (i-1) (j:p) | j = 1..n; safe 1 j p]
+  end;
+  
+// the solution is only the rows permutation, without the ordered columns (1..n) 
+// full 2D board coordinates can be reconstructed with zip (1..n) (queens n); 
+nullary failed;
+queens n::int = list (search n n n [])
+  with
+   search _ 0 _ p = ();  			// last i, solved
+   search _ _ 0 _ = failed;    	// failed, run out of alternative js
+   search n::int i::int j::int p = 
+     if (failed === solution) then search n i (j-1) p else j,solution
+     when solution = search n (i-1) n (j:p); end if safe 1 j p;   	          
+     = search n i (j-1) p	       // also try another j when unsafe
+  end;
+// this concise backtracking tailrecursive version throws a single solution
+tailqueens n::int = catch id (srch n n n []) 
+  with srch _ 0 _ p = throw p; 
+		 srch _ _ 0 _ = failed;
+       srch n::int i::int j::int p = if safe 1 j p then 
+         ( if failed === (srch n (i-1) n (j:p)) then srch n i (j-1) p else () ) 
+       else srch n i (j-1) p
+  end;
+  
+/*
+thequeens encodes my no search solution, which is to my knowledge the simplest 
+known algorithm for this problem.
+There always exists one fundamental centre-symmetrical solution of this form, 
+representing an orbit of just 4 reflected solutions, instead of the usual 8.
+These few lines of code are self-contained (not calling any square checking).
+The solutions had been tested exhaustively for board sizes 0 to 5000 and also
+individually for board size 50000x50000.
+
+Row numbering in 'thequeens' is changed for simplicity to 'C style'  0..n-1 
+Solution using 2D board coordinates (1..n)x(1..n) can be easily reconstructed 
+with: (fullboard (thequeens n)).
+*/
+
+fullboard simple = zip (1..(#simple)) (map succ simple);
+
+nullary nosolution; // returned for n=2 and n=3 when there are no solutions
+
+thequeens n::int = case n of
+	1 = [0];  // trivial solution to one square board
+	2 | 3 = nosolution;
+	n::int = map (newsquare n) (0..(n-1))   // rule for even sized boards n>3
+		with newsquare n::int x::int 
+			= (start+2*x) mod n if x < halfn; // right start square is crucial
+			= (start2+2*(x-halfn)) mod n // centre reflections fill the 2nd half
+		end
+		when 
+      	halfn::int = n div 2;  // local variable halfn 
+      	start::int = if (n mod 3) then (halfn-1) else 1;//(n mod 3) is special
+       	start2::int = n-((start + 2*(halfn-1)) mod n)-1 // start reflections
+		end if (n mod 2) == 0; 			 // even sized boards finished
+    = 0:(map succ (thequeens (n-1))) // corner start 0: solves odd size boards!   
+end; // end of case and thequeens
+  
+
+// The rest are test utilities for the queens problem:
+// checks one queens solution either in 0..7 encoding or in 1..8 encoding.
+// returns 1 for a correct result, including "nosolution" for sizes 2 and 3. 
+// returns 0 if a queen attack exists anywhere in the presented 'solution':
+checkqs [] = 1;
+checkqs (s::int:l) = if safe 1 s l then checkqs l else 0;
+checkqs (nosolution) = 1;
+
+// conducts an exhaustive test of solutions for boards of all listed sizes. 
+// examples of use: >queenstest (1..1000); >queenstest (5000,4999..4990);
+queenstest [] = 1;
+queenstest (h:l) = if checkqs (thequeens h) then queenstest l else 0;

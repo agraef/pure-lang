@@ -1,0 +1,29 @@
+
+/* Signal processing example. */
+
+using system;
+extern int getpid();
+
+/* The common POSIX termination signals like SIGHUP, SIGINT, SIGTERM etc. are
+   already remapped to Pure exceptions by the interpreter when it starts.
+   Other kinds of signals can be handled as Pure exceptions, too, if we rebind
+   them with the 'trap' function. (Try 'show -g SIG*' to see which standard
+   signal values are known on your system.) Example: */
+
+trap SIG_TRAP SIGTSTP;
+
+/* Running this function enters an endless loop reporting all signals
+   delivered to the process. */
+
+test = printf "Running as pid %d, try to kill me!\n" getpid $$ loop;
+
+loop = catch sig check $$ loop with
+  sig (signal k) = printf "Hey, I got signal %d.\n" k;
+end;
+
+/* Take a short nap so that the loop doesn't run busily. This also serves the
+   purpose of checking for pending signals. (Note that for performance reasons
+   the Pure interpreter only processes asynchronous signals at certain points,
+   such as the entry of a global Pure function.) */
+
+check = sleep 1;

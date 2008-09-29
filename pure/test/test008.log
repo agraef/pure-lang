@@ -1,0 +1,36 @@
+Binomial n/*0:01*/ k/*0:1*/ = Binomial n/*0:01*/ (n/*0:01*/-k/*0:1*/) if n/*0:01*/-k/*0:1*/<k/*0:1*/;
+Binomial n/*0:01*/ 0L = 1L;
+Binomial n/*0:01*/ 0 = 1;
+Binomial n/*0:01*/ 1L = n/*0:01*/;
+Binomial n/*0:01*/ 1 = n/*0:01*/;
+Binomial n/*0:01*/ k/*0:1*/ = Binomial nm2/*0:*/ (k/*1:1*/-2)+2*Binomial nm2/*0:*/ (k/*1:1*/-1)+Binomial nm2/*0:*/ k/*1:1*/ when nm2/*0:*/ = n/*0:01*/-2 {
+  rule #0: nm2 = n-2
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+{
+  rule #0: Binomial n k = Binomial n (n-k) if n-k<k
+  rule #1: Binomial n 0L = 1L
+  rule #2: Binomial n 0 = 1
+  rule #3: Binomial n 1L = n
+  rule #4: Binomial n 1 = n
+  rule #5: Binomial n k = Binomial nm2 (k-2)+2*Binomial nm2 (k-1)+Binomial nm2 k when nm2 = n-2 end
+  state 0: #0 #1 #2 #3 #4 #5
+	<var> state 1
+  state 1: #0 #1 #2 #3 #4 #5
+	<var> state 2
+	0::int state 3
+	1::int state 4
+	0L::bigint state 5
+	1L::bigint state 6
+  state 2: #0 #5
+  state 3: #0 #2 #5
+  state 4: #0 #4 #5
+  state 5: #0 #1 #5
+  state 6: #0 #3 #5
+}
+Binomial 5 2;
+10
+Binomial 5L 2L;
+10L

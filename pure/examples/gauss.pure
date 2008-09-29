@@ -1,0 +1,70 @@
+
+/* Pure matrix example: Gaussian elimination algorithm. 2008-09-25 AG */
+
+/* The Gaussian elimination algorithm brings a matrix into row echelon form,
+   which makes it possible to solve the original system of linear equations
+   using back substitution. Our version of the algorithm just returns the row
+   echelon form of the matrix, along with the corresponding permutation of the
+   row indices performed during pivoting. */
+
+gauss_elimination x::matrix = p,x
+when n,m = dim x; p,_,x = foldl step (0..n-1,0,x) (0..m-1) end;
+
+/* The elimination step. x is our matrix, i the current row index, j the
+   current column index, and p keeps track of the current permutation of the
+   row indices performed during pivoting. The algorithm returns the updated
+   matrix x, row index i and row permutation p. */
+
+/* Here is a brief rundown of the algorithm: First we find the pivot element
+   in column j of the matrix. (We're doing partial pivoting here, i.e., we
+   only look for the pivot in column j, starting at row i. That's usually good
+   enough to achieve numerical stability.) If the pivot is zero then we're
+   done (the pivot column is already zeroed out). Otherwise, we bring it into
+   the pivot position (swapping row i and the pivot row), divide the pivot row
+   by the pivot, and subtract suitable multiples of the pivot row to eliminate
+   the elements of the pivot column in all subsequent rows. Finally we update
+   i and p accordingly and return the result. */
+
+step (p,i,x) j
+= if max_x==0 then p,i,x
+  else
+    // updated row permutation and index:
+    transp i max_i p, i+1,
+    {// the top rows of the matrix remain unchanged:
+     x!!(0..i-1,0..m-1);
+     // the pivot row, divided by the pivot element:
+     {x!(i,l)/x!(i,j)                 | l=0..m-1};
+     // subtract suitable multiples of the pivot row:
+     {x!(k,l)-x!(k,j)*x!(i,l)/x!(i,j) | k=i+1..n-1; l=0..m-1}}
+when
+  n,m = dim x; max_i, max_x = pivot i (col x j);
+  x = if max_x>0 then swap x i max_i else x;
+end with
+  pivot i x       = foldl max (0,0) [j,abs (x!j)|j=i..#x-1];
+  max (i,x) (j,y) = if x<y then j,y else i,x;
+end;
+
+/* Swap rows i and j of the matrix x. This operation is used in the partial
+   pivoting step. (This is not really needed because we could just index the
+   rows indirectly through the row permutation readily available in our
+   implementation of the algorithm, but we omitted this here for clarity.) */
+
+swap x i j = x!!(transp i j (0..n-1),0..m-1) when n,m = dim x end;
+
+/* A little helper function to apply a transposition to a permutation. */
+
+transp i j p = [p!tr k | k=0..#p-1]
+with tr k = if k==i then j else if k==j then i else k end;
+
+/* For convenience, print a double matrix in "short" format a la Octave. */
+
+using system;
+__show__ x::matrix
+= strcat [printd j (x!(i,j))|i=0..n-1; j=0..m-1] + "\n"
+with printd 0 = sprintf "\n%10.5f"; printd _ = sprintf "%10.5f" end
+when n,m = dim x end if dmatrixp x;
+
+/* Example: */
+
+let x = dmatrix {2,1,-1,8; -3,-1,2,-11; -2,1,2,-3};
+x; gauss_elimination x;

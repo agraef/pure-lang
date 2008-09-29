@@ -1,0 +1,213 @@
+
+/* Basic string functions. */
+
+/* Copyright (c) 2008 by Albert Graef <Dr.Graef@t-online.de>.
+
+   This file is part of the Pure programming language and system.
+
+   Pure is free software: you can redistribute it and/or modify it under the
+   terms of the GNU General Public License as published by the Free Software
+   Foundation, either version 3 of the License, or (at your option) any later
+   version.
+
+   Pure is distributed in the hope that it will be useful, but WITHOUT ANY
+   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+   FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+   details.
+
+   You should have received a copy of the GNU General Public License along
+   with this program.  If not, see <http://www.gnu.org/licenses/>. */
+
+/* Convert between Pure expressions and strings. The str function gives you
+   the print representation of an expression in Pure syntax, as a string. The
+   eval function does the opposite, by parsing and returning the value of an
+   expression specified as a string in Pure syntax. (In fact, eval goes well
+   beyond this, as it can parse and execute arbitrary Pure code. In that case
+   it will return the last computed expression, if any.) Errors are reported
+   with the lasterr routine. This string value will be nonempty iff an error
+   was encountered during the most recent invokation of eval(). In that case
+   each reported error message is terminated with a newline character. */
+
+private pure_str;
+extern void* str(expr*) = pure_str;
+extern expr* eval(char*); // IMPURE!
+extern char* lasterr();
+
+str x			= cstring (pure_str x);
+
+/* Convert between Unicode character codes and single character strings. */
+
+private string_chr string_ord;
+extern expr* string_chr(int);
+extern expr* string_ord(void*);
+
+chr n::int		= string_chr n if n>0;
+ord s::string		= string_ord s if #s==1;
+
+/* Low-level conversions. The following routines are provided by the runtime
+   to turn a C char* pointer into a Pure string. (Normally you don't have to
+   worry about this, because the C interface already takes care of the
+   necessary conversions, but in some low-level code these operations are
+   useful.) The routines with a _dup suffix take a copy of the original
+   string, the ones without take ownership of the string pointer (assuming it
+   to be malloc'ed). The _cstring routines also convert from the system
+   encoding. */
+
+private pure_string pure_cstring pure_string_dup pure_cstring_dup;
+extern expr* pure_string(void* s);
+extern expr* pure_cstring(void* s);
+extern expr* pure_string_dup(void* s);
+extern expr* pure_cstring_dup(void* s);
+
+string s::pointer	= pure_string s;
+cstring s::pointer	= pure_cstring s;
+string_dup s::pointer	= pure_string_dup s;
+cstring_dup s::pointer	= pure_cstring_dup s;
+
+/* Construct a "byte string" from a string. The result is a raw pointer object
+   pointing to the converted string. The original string is copied (and, in
+   the case of pure_byte_cstring, converted to the system encoding). The
+   resulting byte string is a malloc'ed pointer which can be used like a C
+   char* (employing pointer arithmetic etc.; the usual caveats apply), and has
+   to be freed explicitly by the caller when no longer needed. */
+
+private pure_byte_string pure_byte_cstring;
+extern expr* pure_byte_string(void *s);
+extern expr* pure_byte_cstring(void *s);
+
+byte_string s::string	= pure_byte_string s;
+byte_cstring s::string	= pure_byte_cstring s;
+
+/* Character arithmetic. This allows single-character strings to be used,
+   e.g., in arithmetic sequences like "a".."z". */
+
+c::string+n::int	= chr (ord c+n) if #c==1;
+c::string-n::int	= chr (ord c-n) if #c==1 && ord c>=n;
+c::string-d::string	= ord c-ord d if #c==1 && #d==1;
+
+/* Basic string operations: size, indexing, and concatenation. These properly
+   deal with multibyte characters. Therefore indexing every character in a
+   string takes quadratic time; as a remedy, we also offer a linear-time
+   operation to determine the list of all characters of a string in one go. */
+
+private string_null string_size string_concat string_char_at string_chars;
+extern bool string_null(void*);
+extern int string_size(void*);
+extern expr* string_concat(void*, void*);
+extern expr* string_char_at(void*, int);
+extern expr* string_chars(void*);
+
+null s::string		= string_null s;
+#s::string		= string_size s;
+s::string!n::int	= string_char_at s n if n>=0 && n<#s;
+s::string+t::string	= string_concat s t;
+chars s::string		= string_chars s;
+
+/* Lexicographic string comparison. */
+
+private strcmp;
+extern int strcmp(void*, void*);
+
+x::string<y::string	= strcmp x y < 0;
+x::string>y::string	= strcmp x y > 0;
+x::string<=y::string	= strcmp x y <= 0;
+x::string>=y::string	= strcmp x y >= 0;
+x::string==y::string	= strcmp x y == 0;
+x::string!=y::string	= strcmp x y != 0;
+
+/* Compute and find substrings of a string. */
+
+private string_substr string_index;
+extern expr* string_substr(void*, int, int);
+extern int string_index(void*, void*);
+
+substr s::string pos::int size::int
+			= string_substr s (max 0 pos) (max 0 size)
+			  with max x y = if x>=y then x else y end;
+index s::string u::string
+			= string_index s u;
+
+/* Concatenate a list of strings. */
+
+private string_concat_list;
+extern expr* string_concat_list(expr*);
+strcat xs		= string_concat_list xs if listp xs && all stringp xs;
+
+/* Concatenate a list of strings, interpolating a given delimiter. */
+
+join delim::string []	= "";
+join delim::string (x::string:xs)
+			= x + strcat [delim+x | x = xs]
+			    if listp xs && all stringp xs;
+
+/* Split a string into parts delimited by the given (nonempty) string. */
+
+split delim::string s::string
+			= if null s then [] else split1 delim s
+with
+  split1 delim s	= case index s delim of
+			    n = take n s : split1 delim (drop (n+m) s) if n>=0;
+			      = [s] otherwise;
+			  end;
+end when m = #delim end if not null delim;
+
+/* Conversions between between strings and lists, streams and tuples. */
+
+list s::string		= chars s;
+stream s::string	= stream (chars s);
+tuple s::string		= tuple (chars s);
+
+string []		= "";
+string xs@(_::string:_)	= strcat xs if all stringp xs;
+
+/* Conversions between strings and matrices. */
+
+matrix s::string	= matrix (chars s);
+string x::matrix	= string (list x) if all stringp x;
+
+/* Define the customary list operations on strings, so that these can mostly
+   be used as if they were lists. */
+
+s::string+[]		= chars s;
+s::string+xs@(_:_)	= chars s+xs;
+[]+s::string+[]		= chars s;
+xs@(_:_)+s::string	= xs+chars s;
+
+reverse s::string	= strcat (reverse (chars s));
+catmap f s::string	= catmap f (chars s);
+
+cycle s::string		= cycle (chars s);
+cyclen n::int s::string	= cyclen n (chars s) if not null s;
+
+all p s::string		= all p (chars s);
+any p s::string		= any p (chars s);
+do f s::string		= do f (chars s);
+drop n::int s::string	= substr s n (#s-n);
+dropwhile p s::string	= strcat (dropwhile p (chars s));
+filter p s::string	= strcat (filter p (chars s));
+foldl f a s::string	= foldl f a (chars s);
+foldl1 f s::string	= foldl1 f (chars s);
+foldr f a s::string	= foldr f a (chars s);
+foldr1 f s::string	= foldr1 f (chars s);
+head s::string		= s!0 if not null s;
+init s::string		= substr s 0 (#s-1) if not null s;
+last s::string		= s!(#s-1) if not null s;
+map f s::string		= map f (chars s);
+scanl f a s::string	= scanl f a (chars s);
+scanl1 f s::string	= scanl1 f (chars s);
+scanr f a s::string	= scanr f a (chars s);
+scanr1 f s::string	= scanr1 f (chars s);
+take n::int s::string	= substr s 0 n;
+takewhile p s::string	= strcat (takewhile p (chars s));
+tail s::string		= substr s 1 (#s-1) if not null s;
+zip s::string t::string	= zip (chars s) (chars t);
+zip3 s::string t::string u::string
+			= zip3 (chars s) (chars t) (chars u);
+zipwith f s::string t::string
+			= zipwith f (chars s) (chars t);
+zipwith3 f s::string t::string u::string
+			= zipwith3 f (chars s) (chars t) (chars u);
+dowith f s::string t::string
+			= dowith f (chars s) (chars t);
+dowith3 f s::string t::string u::string
+			= dowith3 f (chars s) (chars t) (chars u);

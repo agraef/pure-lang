@@ -1,0 +1,108 @@
+foo x/*0:1*/ = bar/*0*/ with bar = x/*1:1*/ {
+  rule #0: bar = x
+  state 0: #0
+} end;
+foo2 x/*0:1*/ = bar/*0*/ x/*0:1*/ with bar 99 = bar/*1*/ (x/*1:1*/+1) {
+  rule #0: bar 99 = bar (x+1)
+  state 0: #0
+	99::int state 1
+  state 1: #0
+} end;
+foo3 x/*0:1*/ = bar/*0*/ with bar y/*0:1*/ = bar/*1*/ (y/*0:1*/+1) if y/*0:1*/==x/*1:1*/ {
+  rule #0: bar y = bar (y+1) if y==x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+{
+  rule #0: foo x = bar with bar = x end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+{
+  rule #0: foo2 x = bar x with bar 99 = bar (x+1) end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+{
+  rule #0: foo3 x = bar with bar y = bar (y+1) if y==x end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+foo 99;
+99
+foo2 99;
+#<closure bar> 100
+foo2 98;
+#<closure bar> 98
+foo3 99;
+#<closure bar>
+foo3 99 98;
+#<closure bar> 98
+foo3 99 99;
+#<closure bar> 100
+loop = loop;
+count n/*0:1*/ = ct/*0*/ n/*0:1*/ with ct n/*0:1*/::int = n/*0:1*/ if n/*0:1*/<=0; ct n/*0:1*/::int = ct/*1*/ (n/*0:1*/-1) {
+  rule #0: ct n::int = n if n<=0
+  rule #1: ct n::int = ct (n-1)
+  state 0: #0 #1
+	<var>::int state 1
+  state 1: #0 #1
+} end;
+{
+  rule #0: loop = loop
+  state 0: #0
+}
+{
+  rule #0: count n = ct n with ct n::int = n if n<=0; ct n::int = ct (n-1) end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+count 100;
+0
+count2 n/*0:1*/::int = n/*0:1*/ if n/*0:1*/<=0;
+count2 n/*0:1*/::int = count2 (n/*0:1*/-1);
+{
+  rule #0: count2 n::int = n if n<=0
+  rule #1: count2 n::int = count2 (n-1)
+  state 0: #0 #1
+	<var>::int state 1
+  state 1: #0 #1
+}
+count2 100;
+0
+count3 n/*0:1*/::int = if n/*0:1*/<=0 then n/*0:1*/ else count3 (n/*0:1*/-1);
+{
+  rule #0: count3 n::int = if n<=0 then n else count3 (n-1)
+  state 0: #0
+	<var>::int state 1
+  state 1: #0
+}
+count3 100;
+0
+test x/*0:1*/::int = t/*0*/ x/*0:1*/ with t n/*0:1*/::int = t/*1*/ (-n/*0:1*/) if n/*0:1*/<0; t n/*0:1*/::int = u/*0*/ (n/*0:1*/+2) with u _/*0:1*/ = n/*1:1*/+1 {
+  rule #0: u _ = n+1
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end {
+  rule #0: t n::int = t (-n) if n<0
+  rule #1: t n::int = u (n+2) with u _ = n+1 end
+  state 0: #0 #1
+	<var>::int state 1
+  state 1: #0 #1
+} end;
+{
+  rule #0: test x::int = t x with t n::int = t (-n) if n<0; t n::int = u (n+2) with u _ = n+1 end end
+  state 0: #0
+	<var>::int state 1
+  state 1: #0
+}
+test 98;
+99
+test (-97);
+98

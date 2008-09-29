@@ -1,0 +1,475 @@
+let x = {1,2,3;4,5,6};
+x;
+{1,2,3;4,5,6}
+x';
+{1,4;2,5;3,6}
+reverse x;
+{6,5,4;3,2,1}
+#x;
+6
+dim x;
+2,3
+redim (3,2) x;
+{1,2;3,4;5,6}
+x!(1,1);
+5
+x!!(0,0..2);
+{1,2,3}
+x!!(0..1,0..1);
+{1,2;4,5}
+diag x;
+{1,5}
+supdiag x 1;
+{2}
+subdiag x 1;
+{4}
+supdiag x 1===subdiag x (-1);
+1
+let x = {1.0,2.0,3.0;4.0,5.0,6.0};
+x;
+{1.0,2.0,3.0;4.0,5.0,6.0}
+x';
+{1.0,4.0;2.0,5.0;3.0,6.0}
+reverse x;
+{6.0,5.0,4.0;3.0,2.0,1.0}
+#x;
+6
+dim x;
+2,3
+redim (3,2) x;
+{1.0,2.0;3.0,4.0;5.0,6.0}
+x!(1,1);
+5.0
+x!!(0,0..2);
+{1.0,2.0,3.0}
+x!!(0..1,0..1);
+{1.0,2.0;4.0,5.0}
+diag x;
+{1.0,5.0}
+supdiag x 1;
+{2.0}
+subdiag x 1;
+{4.0}
+supdiag x 1===subdiag x (-1);
+1
+let x = {1.0+:-2.0,2.0+:-4.0,3.0+:-6.0;4.0+:1.0,5.0+:2.0,6.0+:3.0};
+x;
+{1.0+:-2.0,2.0+:-4.0,3.0+:-6.0;4.0+:1.0,5.0+:2.0,6.0+:3.0}
+x';
+{1.0+:-2.0,4.0+:1.0;2.0+:-4.0,5.0+:2.0;3.0+:-6.0,6.0+:3.0}
+reverse x;
+{6.0+:3.0,5.0+:2.0,4.0+:1.0;3.0+:-6.0,2.0+:-4.0,1.0+:-2.0}
+#x;
+6
+dim x;
+2,3
+redim (3,2) x;
+{1.0+:-2.0,2.0+:-4.0;3.0+:-6.0,4.0+:1.0;5.0+:2.0,6.0+:3.0}
+x!(1,1);
+5.0+:2.0
+x!!(0,0..2);
+{1.0+:-2.0,2.0+:-4.0,3.0+:-6.0}
+x!!(0..1,0..1);
+{1.0+:-2.0,2.0+:-4.0;4.0+:1.0,5.0+:2.0}
+diag x;
+{1.0+:-2.0,5.0+:2.0}
+supdiag x 1;
+{2.0+:-4.0}
+subdiag x 1;
+{4.0+:1.0}
+supdiag x 1===subdiag x (-1);
+1
+let x = {1,2,3;4,5,6};
+{
+  rule #0: y = dmatrix x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let y = dmatrix x;
+{
+  rule #0: z = cmatrix y
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let z = cmatrix y;
+x;
+{1,2,3;4,5,6}
+y;
+{1.0,2.0,3.0;4.0,5.0,6.0}
+z;
+{1.0+:0.0,2.0+:0.0,3.0+:0.0;4.0+:0.0,5.0+:0.0,6.0+:0.0}
+imatrix x===x;
+1
+dmatrix y===y;
+1
+cmatrix z===z;
+1
+imatrix y===x;
+1
+re z===y;
+1
+im z===dmatrix (dim x);
+1
+imatrix z;
+{1,0,2,0,3,0;4,0,5,0,6,0}
+dmatrix z;
+{1.0,0.0,2.0,0.0,3.0,0.0;4.0,0.0,5.0,0.0,6.0,0.0}
+let x = {1,2,3;4,5,6};
+{
+  rule #0: y = int_matrix_view (3,2) (pointer x)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let y = int_matrix_view (3,2) (pointer x);
+x;
+{1,2,3;4,5,6}
+y;
+{1,2;3,4;5,6}
+list x==list y;
+1
+dim x==reverse (dim y);
+1
+{
+  rule #0: y = double_matrix (2,3) (double_pointer #<pointer 0> x)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let y = double_matrix (2,3) (double_pointer #<pointer 0> x);
+x;
+{1,2,3;4,5,6}
+y;
+{1.0,2.0,3.0;4.0,5.0,6.0}
+x==y;
+1
+{
+  rule #0: y = float_matrix (2,3) (float_pointer #<pointer 0> x)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let y = float_matrix (2,3) (float_pointer #<pointer 0> x);
+x;
+{1,2,3;4,5,6}
+y;
+{1.0,2.0,3.0;4.0,5.0,6.0}
+x==y;
+1
+{
+  rule #0: y = complex_matrix (2,3) (complex_pointer #<pointer 0> x)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let y = complex_matrix (2,3) (complex_pointer #<pointer 0> x);
+x;
+{1,2,3;4,5,6}
+y;
+{1.0+:0.0,2.0+:0.0,3.0+:0.0;4.0+:0.0,5.0+:0.0,6.0+:0.0}
+x==y;
+1
+{
+  rule #0: y = complex_float_matrix (2,3) (complex_float_pointer #<pointer 0> x)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let y = complex_float_matrix (2,3) (complex_float_pointer #<pointer 0> x);
+x;
+{1,2,3;4,5,6}
+y;
+{1.0+:0.0,2.0+:0.0,3.0+:0.0;4.0+:0.0,5.0+:0.0,6.0+:0.0}
+x==y;
+1
+{
+  rule #0: y = int_matrix (2,3) (int_pointer #<pointer 0> x)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let y = int_matrix (2,3) (int_pointer #<pointer 0> x);
+x;
+{1,2,3;4,5,6}
+y;
+{1,2,3;4,5,6}
+x==y;
+1
+{
+  rule #0: y = short_matrix (2,3) (short_pointer #<pointer 0> x)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let y = short_matrix (2,3) (short_pointer #<pointer 0> x);
+x;
+{1,2,3;4,5,6}
+y;
+{1,2,3;4,5,6}
+x==y;
+1
+{
+  rule #0: y = byte_matrix (2,3) (byte_pointer #<pointer 0> x)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let y = byte_matrix (2,3) (byte_pointer #<pointer 0> x);
+x;
+{1,2,3;4,5,6}
+y;
+{1,2,3;4,5,6}
+x==y;
+1
+{
+  rule #0: x = dmatrix {1,2,3;4,5,6}
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let x = dmatrix {1,2,3;4,5,6};
+{
+  rule #0: y = double_matrix_view (3,2) (pointer x)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let y = double_matrix_view (3,2) (pointer x);
+x;
+{1.0,2.0,3.0;4.0,5.0,6.0}
+y;
+{1.0,2.0;3.0,4.0;5.0,6.0}
+list x==list y;
+1
+dim x==reverse (dim y);
+1
+{
+  rule #0: y = double_matrix (2,3) (double_pointer #<pointer 0> x)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let y = double_matrix (2,3) (double_pointer #<pointer 0> x);
+x;
+{1.0,2.0,3.0;4.0,5.0,6.0}
+y;
+{1.0,2.0,3.0;4.0,5.0,6.0}
+x==y;
+1
+{
+  rule #0: y = float_matrix (2,3) (float_pointer #<pointer 0> x)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let y = float_matrix (2,3) (float_pointer #<pointer 0> x);
+x;
+{1.0,2.0,3.0;4.0,5.0,6.0}
+y;
+{1.0,2.0,3.0;4.0,5.0,6.0}
+x==y;
+1
+{
+  rule #0: y = complex_matrix (2,3) (complex_pointer #<pointer 0> x)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let y = complex_matrix (2,3) (complex_pointer #<pointer 0> x);
+x;
+{1.0,2.0,3.0;4.0,5.0,6.0}
+y;
+{1.0+:0.0,2.0+:0.0,3.0+:0.0;4.0+:0.0,5.0+:0.0,6.0+:0.0}
+x==y;
+1
+{
+  rule #0: y = complex_float_matrix (2,3) (complex_float_pointer #<pointer 0> x)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let y = complex_float_matrix (2,3) (complex_float_pointer #<pointer 0> x);
+x;
+{1.0,2.0,3.0;4.0,5.0,6.0}
+y;
+{1.0+:0.0,2.0+:0.0,3.0+:0.0;4.0+:0.0,5.0+:0.0,6.0+:0.0}
+x==y;
+1
+{
+  rule #0: y = int_matrix (2,3) (int_pointer #<pointer 0> x)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let y = int_matrix (2,3) (int_pointer #<pointer 0> x);
+x;
+{1.0,2.0,3.0;4.0,5.0,6.0}
+y;
+{1,2,3;4,5,6}
+x==y;
+1
+{
+  rule #0: y = short_matrix (2,3) (short_pointer #<pointer 0> x)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let y = short_matrix (2,3) (short_pointer #<pointer 0> x);
+x;
+{1.0,2.0,3.0;4.0,5.0,6.0}
+y;
+{1,2,3;4,5,6}
+x==y;
+1
+{
+  rule #0: y = byte_matrix (2,3) (byte_pointer #<pointer 0> x)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let y = byte_matrix (2,3) (byte_pointer #<pointer 0> x);
+x;
+{1.0,2.0,3.0;4.0,5.0,6.0}
+y;
+{1,2,3;4,5,6}
+x==y;
+1
+{
+  rule #0: x = cmatrix {1,2,3;4,5,6}
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let x = cmatrix {1,2,3;4,5,6};
+{
+  rule #0: y = complex_matrix_view (3,2) (pointer x)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let y = complex_matrix_view (3,2) (pointer x);
+x;
+{1.0+:0.0,2.0+:0.0,3.0+:0.0;4.0+:0.0,5.0+:0.0,6.0+:0.0}
+y;
+{1.0+:0.0,2.0+:0.0;3.0+:0.0,4.0+:0.0;5.0+:0.0,6.0+:0.0}
+list x==list y;
+1
+dim x==reverse (dim y);
+1
+{
+  rule #0: z = double_matrix_view (2,6) (pointer x)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let z = double_matrix_view (2,6) (pointer x);
+z;
+{1.0,0.0,2.0,0.0,3.0,0.0;4.0,0.0,5.0,0.0,6.0,0.0}
+cat (catmap (\(a/*0:01*/+:b/*0:1*/) -> [[a/*0:01*/,b/*0:1*/]] {
+  rule #0: a+:b = [[a,b]]
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	+: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+}) x)==list z;
+1
+{
+  rule #0: y = double_matrix (2,6) (double_pointer #<pointer 0> x)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let y = double_matrix (2,6) (double_pointer #<pointer 0> x);
+x;
+{1.0+:0.0,2.0+:0.0,3.0+:0.0;4.0+:0.0,5.0+:0.0,6.0+:0.0}
+y;
+{1.0,0.0,2.0,0.0,3.0,0.0;4.0,0.0,5.0,0.0,6.0,0.0}
+y==z;
+1
+{
+  rule #0: y = float_matrix (2,6) (float_pointer #<pointer 0> x)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let y = float_matrix (2,6) (float_pointer #<pointer 0> x);
+x;
+{1.0+:0.0,2.0+:0.0,3.0+:0.0;4.0+:0.0,5.0+:0.0,6.0+:0.0}
+y;
+{1.0,0.0,2.0,0.0,3.0,0.0;4.0,0.0,5.0,0.0,6.0,0.0}
+y==z;
+1
+{
+  rule #0: y = complex_matrix (2,3) (complex_pointer #<pointer 0> x)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let y = complex_matrix (2,3) (complex_pointer #<pointer 0> x);
+x;
+{1.0+:0.0,2.0+:0.0,3.0+:0.0;4.0+:0.0,5.0+:0.0,6.0+:0.0}
+y;
+{1.0+:0.0,2.0+:0.0,3.0+:0.0;4.0+:0.0,5.0+:0.0,6.0+:0.0}
+x==y;
+1
+{
+  rule #0: y = complex_float_matrix (2,3) (complex_float_pointer #<pointer 0> x)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let y = complex_float_matrix (2,3) (complex_float_pointer #<pointer 0> x);
+x;
+{1.0+:0.0,2.0+:0.0,3.0+:0.0;4.0+:0.0,5.0+:0.0,6.0+:0.0}
+y;
+{1.0+:0.0,2.0+:0.0,3.0+:0.0;4.0+:0.0,5.0+:0.0,6.0+:0.0}
+x==y;
+1
+{
+  rule #0: y = int_matrix (2,6) (int_pointer #<pointer 0> x)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let y = int_matrix (2,6) (int_pointer #<pointer 0> x);
+x;
+{1.0+:0.0,2.0+:0.0,3.0+:0.0;4.0+:0.0,5.0+:0.0,6.0+:0.0}
+y;
+{1,0,2,0,3,0;4,0,5,0,6,0}
+y==z;
+1
+{
+  rule #0: y = short_matrix (2,6) (short_pointer #<pointer 0> x)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let y = short_matrix (2,6) (short_pointer #<pointer 0> x);
+x;
+{1.0+:0.0,2.0+:0.0,3.0+:0.0;4.0+:0.0,5.0+:0.0,6.0+:0.0}
+y;
+{1,0,2,0,3,0;4,0,5,0,6,0}
+y==z;
+1
+{
+  rule #0: y = byte_matrix (2,6) (byte_pointer #<pointer 0> x)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let y = byte_matrix (2,6) (byte_pointer #<pointer 0> x);
+x;
+{1.0+:0.0,2.0+:0.0,3.0+:0.0;4.0+:0.0,5.0+:0.0,6.0+:0.0}
+y;
+{1,0,2,0,3,0;4,0,5,0,6,0}
+y==z;
+1

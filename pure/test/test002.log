@@ -1,0 +1,63 @@
+fib n/*0:1*/ = a/*0:01*/ when a/*0:01*/,b/*0:1*/ = fibs/*0*/ n/*0:1*/ {
+  rule #0: a,b = fibs n
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+} end with fibs n/*0:1*/ = 0,1 if n/*0:1*/<=0; fibs n/*0:1*/ = b/*0:1*/,a/*0:01*/+b/*0:1*/ when a/*0:01*/,b/*0:1*/ = fibs/*1*/ (n/*0:1*/-1) {
+  rule #0: a,b = fibs (n-1)
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+} end {
+  rule #0: fibs n = 0,1 if n<=0
+  rule #1: fibs n = b,a+b when a,b = fibs (n-1) end
+  state 0: #0 #1
+	<var> state 1
+  state 1: #0 #1
+} end;
+fib2 n/*0:1*/ = a/*0:01*/ when a/*0:01*/,b/*0:1*/ = fibs/*0*/ (0L,1L) n/*0:1*/ {
+  rule #0: a,b = fibs (0L,1L) n
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+} end with fibs (a/*0:0101*/,b/*0:011*/) n/*0:1*/ = a/*0:0101*/,b/*0:011*/ if n/*0:1*/<=0; fibs (a/*0:0101*/,b/*0:011*/) n/*0:1*/ = fibs/*1*/ (b/*0:011*/,a/*0:0101*/+b/*0:011*/) (n/*0:1*/-1) {
+  rule #0: fibs (a,b) n = a,b if n<=0
+  rule #1: fibs (a,b) n = fibs (b,a+b) (n-1)
+  state 0: #0 #1
+	<app> state 1
+  state 1: #0 #1
+	<app> state 2
+  state 2: #0 #1
+	, state 3
+  state 3: #0 #1
+	<var> state 4
+  state 4: #0 #1
+	<var> state 5
+  state 5: #0 #1
+	<var> state 6
+  state 6: #0 #1
+} end;

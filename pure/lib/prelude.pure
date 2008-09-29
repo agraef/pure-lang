@@ -1,0 +1,614 @@
+
+/* Pure's standard prelude. */
+
+/* Copyright (c) 2008 by Albert Graef <Dr.Graef@t-online.de>.
+
+   This file is part of the Pure programming language and system.
+
+   Pure is free software: you can redistribute it and/or modify it under the
+   terms of the GNU General Public License as published by the Free Software
+   Foundation, either version 3 of the License, or (at your option) any later
+   version.
+
+   Pure is distributed in the hope that it will be useful, but WITHOUT ANY
+   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+   FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+   details.
+
+   You should have received a copy of the GNU General Public License along
+   with this program.  If not, see <http://www.gnu.org/licenses/>. */
+
+/* Signature of commonly used constant and operator symbols. This should be
+   the first thing in the prelude, as these symbols are heavily used almost
+   everywhere. */
+
+/* Built-in exception values. */
+
+nullary	   failed_cond;		// failed conditional (guard, if-then-else)
+nullary	   failed_match;	// failed pattern match (lambda, case, etc.)
+nullary    stack_fault;		// not enough stack space (PURE_STACK limit)
+//         bad_matrix_value x;	// error in matrix construction
+
+/* Other exceptions defined by the prelude. */
+
+nullary    malloc_error;	// memory allocation error
+nullary    out_of_bounds;	// tuple or list index is out of bounds (!)
+//         bad_list_value xs;	// not a proper list value (reverse, etc.)
+//         bad_tuple_value xs;	// not a proper tuple value (unzip, etc.)
+
+/* Other constants. */
+
+nullary    [] ();		// empty list and tuple
+
+/* Operators. Note that the parser will automagically give unary minus the
+   same precedence level as the corresponding binary operator. */
+
+infixl  0   $$ ;		// sequence operator
+infixr  0   $ ;			// right-associative application
+infixr  1   , ;			// pair (tuple)
+infix   2   .. ;		// arithmetic sequences
+infix   2   => ;		// mapsto constructor
+infixr  2   || ;		// logical or (short-circuit)
+infixr  3   && ;		// logical and (short-circuit)
+prefix  3   not ;		// logical negation
+infix   4   < > <= >= == != ;	// relations
+infix   4   === !== ;		// syntactic equality
+infixr  4   : ;			// list cons
+infixl  5   << >> ;		// bit shifts
+infixl  6   + - or ;		// addition, bitwise or
+infixl  7   * / div mod and ;	// multiplication, bitwise and
+prefix  7   ~ ;			// bitwise not
+postfix 7   ' ;			// matrix transposition
+infixr  8   ^ ;			// exponentiation
+prefix  8   # ;			// size operator
+infixl  9   ! !! ;		// indexing, slicing
+infixr  9   . ;			// function composition
+postfix 9   & ;			// thunk
+
+/* The truth values. These are just integers in Pure, but sometimes it's
+   convenient to refer to them using these symbolic constants. */
+
+const false, true = 0, 1;
+
+/* Pull in the primitives (arithmetic etc.) and the standard string functions.
+   Note that the math and system modules are *not* included here, so you have
+   to do that yourself if your program requires any of those operations. */
+
+using primitives, matrices, strings;
+
+/* Basic combinators. */
+
+f $ x		= f x;
+(f . g) x	= f (g x);
+
+void _		= ();
+id x		= x;
+cst x y		= x;
+
+flip f x y	= f y x;
+curry f x y	= f (x,y);
+curry3 f x y z	= f (x,y,z);
+uncurry f (x,y)	= f x y;
+uncurry3 f (x,y,z)
+		= f x y z;
+
+/* The (normal order) fixed point combinator. */
+
+fix f = y y with y x = f (x x&) end;
+
+/* Some convenient optimization rules which eliminate saturated calls of the
+   function composition combinators. */
+
+def f $ x	= f x;
+def (f . g) x	= f (g x);
+
+/* The following rule is always valid and optimizes the case of "throwaway"
+   list comprehensions (useful if a list comprehension is evaluated solely for
+   its side effects). */
+
+def void (catmap f x) = do f x;
+
+/* "Mapsto" operator. This constructor is declared here so that it can be used
+   in other standard library modules to denote special kinds of pairs which
+   map keys to values. Here we only define equality of such pairs. */
+
+(x=>v)==(y=>w)	= if x==y then v==w else 0;
+(x=>v)!=(y=>w)	= if x!=y then 1 else v!=w;
+
+/* Poor man's tuples(TM). These are constructed with the pairing operator ',',
+   are always flat and associate to the right. The empty tuple, denoted (), is
+   neutral with respect to ','. Operations are provided to test for equality/
+   inequality and emptiness, to determine the size of a tuple, for zero-based
+   indexing, and to reverse a tuple. */
+
+x,()		= x;
+(),y		= y;
+(x,y),z		= x,(y,z);
+
+()==()		= 1;
+(x,xs)==()	= 0;
+()==(x,xs)	= 0;
+(x,xs)==(y,ys)	= if x==y then xs==ys else 0;
+
+()!=()		= 0;
+(x,xs)!=()	= 1;
+()!=(x,xs)	= 1;
+(x,xs)!=(y,ys)	= if x!=y then 1 else xs!=ys;
+
+null ()		= 1;
+null (x,xs)	= 0;
+
+#()		= 0;
+#(x,xs)		= accum 1 xs with
+  accum n::int (x,xs)	= accum (n+1) xs;
+  accum n::int x	= n+1;
+end;
+
+(x,xs)!n::int	= throw out_of_bounds if n<0;
+(x,xs)!0	= x;
+(x,y,xs)!n::int	= (y,xs)!(n-1);
+(x,y)!1		= y;
+
+reverse ()	= ();
+reverse (x,xs)	= accum x xs with
+  accum ys (x,xs)	= accum (x,ys) xs;
+  accum ys x		= x,ys;
+end;
+
+/* Lists are the usual "conses" written using the infix ':' operator. '[]'
+   denotes the empty list. Moreover, the parser provides the customary sugar
+   for proper list values [x] where x is any singleton or tuple (in the latter
+   case you'll get a list made from all the elements of x). The usual basic
+   operations are provided to test for equality/inequality and emptiness, to
+   compute the size of a list, for indexing and concatenation, and for
+   reversing a list. */
+
+[]==[]		= 1;
+(x:xs)==[]	= 0;
+[]==(x:xs)	= 0;
+(x:xs)==(y:ys)	= if x==y then xs==ys else 0;
+
+[]!=[]		= 0;
+(x:xs)!=[]	= 1;
+[]!=(x:xs)	= 1;
+(x:xs)!=(y:ys)	= if x!=y then 1 else xs!=ys;
+
+null []		= 1;
+null (x:xs)	= 0;
+
+#[]		= 0;
+#(x:xs)		= accum 1 xs with
+  accum n::int (x:xs)	= accum (n+1) xs;
+  accum n::int []	= n;
+  accum	n::int xs	= n+#xs;
+end;
+
+[]!n::int	= throw out_of_bounds;
+(x:xs)!0	= x;
+(x:xs)!n::int	= xs!(n-1) if n>0;
+		= throw out_of_bounds otherwise;
+
+/* List concatenation. For a robust implementation which works with both
+   ordinary lists and streams, we want this to be tail-recursive *and*
+   non-strict. So we first walk down the list, popping elements from the first
+   operand until we find an empty or thunked tail ('tick'), then walk back up
+   again, pushing elements in front of the result list ('tack'). */
+
+[]+ys		= ys;
+xs@(_:_)+ys	= tick [] xs ys
+with
+  tick zs (x:xs) ys	= tack (x:zs) ((xs+ys)&) if thunkp xs;
+			= tick (x:zs) xs ys;
+  tick zs [] ys		= tack zs ys;
+  /* Handle an improper list tail (xs+ys is in normal form here). */
+  tick zs xs ys		= tack zs (xs+ys);
+  tack (x:xs) ys	= tack xs (x:ys);
+  tack [] ys		= ys;
+end;
+
+/* List reversal. This is a strict operation, of course, so it will loop on
+   infinite lists. Also, this is one of the few list operations which throws
+   an exception for improper lists, since in that case there really isn't any
+   meaningful value to return. */
+
+reverse []	= [];
+reverse (x:xs)	= accum [x] xs with
+  accum ys (x:xs)	= accum (x:ys) xs;
+  accum ys []		= ys;
+  accum	ys xs		= throw (bad_list_value xs);
+end;
+
+/* Conversions between lists, tuples and streams. */
+
+list ()		= [];
+list (x,xs)	= accum [x] xs with
+  accum ys (x,xs)	= accum (x:ys) xs;
+  accum ys x		= reverse (x:ys);
+end;
+
+tuple []	= ();
+tuple (x:xs)	= accum x xs with
+  accum ys (x:xs)	= accum (x,ys) xs;
+  accum ys []		= if tuplep ys then reverse ys else ys;
+  accum	ys xs		= ys,xs;
+end;
+
+list []		= [];
+list (x:xs)	= x:list xs;
+
+stream []	= [];
+stream (x:xs)	= x:xs if thunkp xs;
+		= x:stream xs& otherwise;
+
+stream ()	= [];
+stream xs@(_,_)	= stream (list xs);
+
+/* Slicing. xs!!ns returns the list (or tuple) of xs!n for all members n of
+   the index list ns which are in the valid index range. This is a generic
+   definition which will work with any kind of container data structure which
+   defines (!) in such a manner that it throws an exception when the index is
+   out of bounds. */
+
+xs!!ns		= if tuplep xs then tuple ys else ys
+		  when ys = catmap (nth xs) ns end
+		  with nth xs n = catch (cst []) [xs!n] end;
+
+/* Arithmetic sequences. */
+
+n1:n2..m	= if m===s*inf then iterate (\x->x+k) n1
+		  else while (\i->s*i<=s*m) (\x->x+k) n1
+		  when k = n2-n1; s = if k>0 then 1 else -1 end if n1!=n2;
+n..m		= if m===inf then iterate (\x->x+1) n
+		  else while (\i->i<=m) (\x->x+1) n;
+
+/* Common list functions. This mostly comes straight from the Q prelude which
+   in turn was based on the first edition of the Bird/Wadler book, and is very
+   similar to what you can find in the Haskell prelude. Some functions have
+   slightly different names, though, and of course everything is typed
+   dynamically. Some of the definitions aren't exactly pretty, but they are
+   like that because we want them to be both efficient and robust. In
+   particular, we require that they do all the necessary argument checking,
+   are tail-recursive and handle lazy lists as gracefully as possible. */
+
+all p []		= 1;
+all p (x:xs)		= if p x then all p xs else 0;
+
+any p []		= 0;
+any p (x:xs)		= if p x then 1 else any p xs;
+
+do f []			= ();
+do f (x:xs)		= f x $$ do f xs;
+
+drop n::int []		= [];
+drop n::int ys@(x:xs)	= drop (n-1) xs if n>1;
+			= xs if n==1;
+			= ys otherwise;
+
+dropwhile p []		= [];
+dropwhile p ys@(x:xs)	= dropwhile p xs if p x;
+			= ys otherwise;
+
+filter p []		= [];
+filter p xs@(_:_)	= tick [] xs
+with
+  add p x xs		= if p x then x:xs else xs;
+  tick zs (x:xs)	= tack (add p x zs) (filter p xs&) if thunkp xs;
+			= tick (add p x zs) xs;
+  tick zs []		= tack zs [];
+  tick _ xs		= throw (bad_list_value xs);
+  tack (x:xs) ys	= tack xs (x:ys);
+  tack [] ys		= ys;
+end;
+
+foldl f a []		= a;
+foldl f a (x:xs)	= foldl f (f a x) xs;
+
+foldl1 f (x:xs)		= foldl f x xs;
+
+foldr f a []		= a;
+foldr f a xs@(_:_)	= tick [] xs
+with
+  tick zs (x:xs)	= tack (x:zs) (foldr f a xs&) if thunkp xs;
+			= tick (x:zs) xs;
+  tick zs []		= tack zs a;
+  tick zs xs		= tack zs (foldr f a xs);
+  tack (x:xs) y		= tack xs (f x y);
+  tack [] y		= y;
+end;
+
+foldr1 f [x]		= x;
+foldr1 f xs@(_:_)	= tick [] xs
+with
+  /* Do the thunkp check first, before probing the tail. Note that the first
+     foldr1 rule above ensures that the topmost tail is already evaluated, so
+     that we always make some progress here. */
+  tick zs ys@(_:xs)	= tack zs (foldr1 f ys&) if thunkp xs;
+  tick zs xs		= case xs of
+			    [x]  = tack zs x;
+			    x:xs = tick (x:zs) xs;
+			    _    = tack zs (foldr1 f xs);
+			  end;
+  tack (x:xs) y		= tack xs (f x y);
+  tack [] y		= y;
+end;
+
+head (x:xs)		= x;
+
+init [x]		= [];
+init xs@(_:_)		= tick [] xs
+with
+  tick zs ys@(_:xs)	= tack zs (init ys&) if thunkp xs;
+  tick zs xs		= case xs of
+			    [x]  = tack zs [];
+			    x:xs = tick (x:zs) xs;
+			    _    = tack zs (init xs);
+			  end;
+  tack (x:xs) ys	= tack xs (x:ys);
+  tack [] ys		= ys;
+end;
+
+last [x]		= x;
+last (x:xs)		= last xs;
+
+map f []		= [];
+map f xs@(_:_)		= tick [] xs
+with
+  tick zs (x:xs)	= tack (f x:zs) (map f xs&) if thunkp xs;
+			= tick (f x:zs) xs;
+  tick zs []		= tack zs [];
+  tick zs xs		= tack zs (map f xs);
+  tack (x:xs) ys	= tack xs (x:ys);
+  tack [] ys		= ys;
+end;
+
+scanl f a []		= [a];
+scanl f a xs@(_:_)	= tick a [] xs
+with
+  tick a zs (x:xs)	= tack (a:zs) (scanl f (f a x) xs&) if thunkp xs;
+			= tick (f a x) (a:zs) xs;
+  tick a zs []		= tack zs [a];
+  tick a zs xs		= tack zs (scanl f a xs);
+  tack (x:xs) ys	= tack xs (x:ys);
+  tack [] ys		= ys;
+end;
+
+scanl1 f []		= [];
+scanl1 f (x:xs)		= scanl f x xs;
+
+scanr f a []		= [a];
+scanr f a xs@(_:_)	= tick [] xs
+with
+  /* Hack around with thunks to make these matches irrefutable. */
+  tick zs (x:xs)	= tack zs us when
+			    ys = scanr f a xs&;
+			    y  = (case ys of
+				    y:_ = y;
+				    scanr _ _ ys = throw (bad_list_value ys);
+				    _ = throw (bad_list_value ys);
+				  end)&;
+			    us = f x y : ys;
+			  end if thunkp xs;
+  tick zs (x:xs)	= tack zs (f x (y when y:_ = ys end)&:ys
+				   when ys = scanr f a xs& end) if thunkp xs;
+			= tick (x:zs) xs;
+  tick zs []		= tack zs [a];
+  tick zs xs		= throw (bad_list_value xs);
+  tack (x:xs) ys	= tack xs (f x y:ys) when y:_ = ys end;
+  tack [] ys		= ys;
+end;
+
+scanr1 f []		= [];
+scanr1 f [x]		= [x];
+scanr1 f xs@(_:_)	= tick [] xs
+with
+  tick zs (x:xs)	= tack zs us when
+			    ys = scanr1 f xs&;
+			    y  = (case ys of
+				    y:_ = y;
+				    scanr1 _ ys = throw (bad_list_value ys);
+				    _ = throw (bad_list_value ys);
+				  end)&;
+			    us = f x y : ys;
+			  end if thunkp xs;
+  tick zs xs		= case xs of
+			    [x]  = tack zs [x];
+			    x:xs = tick (x:zs) xs;
+			    _    = throw (bad_list_value xs);
+			  end;
+  tack (x:xs) ys	= tack xs (f x y:ys) when y:_ = ys end;
+  tack [] ys		= ys;
+end;
+
+tail (x:xs)		= xs;
+
+take n::int []		= [];
+take n::int xs@(_:_)	= tick n [] xs
+with
+  tick n::int zs xs	= tack zs [] if n<=0;
+			= tack zs (take n xs&) if thunkp xs;
+			= case xs of
+			    []   = tack zs [];
+			    x:xs = tick (n-1) (x:zs) xs;
+			    _    = tack zs (take n xs);
+			  end;
+  tack (x:xs) ys	= tack xs (x:ys);
+  tack [] ys		= ys;
+end;
+
+takewhile p []	= [];
+takewhile p xs@(_:_)	= tick [] xs
+with
+  tick zs xs		= tack zs (takewhile p xs&) if thunkp xs;
+			= case xs of
+			    []   = tack zs [];
+			    x:xs = tick (x:zs) xs if p x;
+			         = tack zs [];
+			    _    = tack zs (takewhile p xs);
+			  end;
+  tack (x:xs) ys	= tack xs (x:ys);
+  tack [] ys		= ys;
+end;
+
+/* Concatenate a list of lists. */
+
+cat []			= [];
+cat xs@(_:_)		= foldr (tick []) [] xs
+with
+  /* Unfortunately, the global list concatenation operator (+) isn't fully
+     lazy in Pure, because it's also used for arithmetic operations. Using it
+     here would make foldr (and hence cat) eager. Therefore we use our own
+     concatenation operation here, which properly deals with the case that ys
+     is an infinite stream when applied recursively. */
+  tick zs (x:xs) ys	= tack (x:zs) (tick [] xs ys&) if thunkp xs;
+			= tick (x:zs) xs ys;
+  tick zs [] ys		= tack zs ys;
+  tick zs xs ys		= tack zs (xs+ys);
+  tack (x:xs) ys	= tack xs (x:ys);
+  tack [] ys		= ys;
+end;
+
+/* Map a function to a list and concatenate the results. This is used by list
+   comprehensions. */
+
+catmap f []		= [];
+catmap f xs@(_:_)	= cat (map f xs);
+
+/* NOTE: This definition (from the Haskell prelude) is better, but doesn't
+   preserve left-to-right execution order. */
+//catmap f xs@(_:_)	= foldr ((+).f) [] xs;
+
+/* Search an element in a list. Returns -1 if not found, index of first
+   occurrence otherwise. */
+
+index [] _		= -1;
+index (x:xs) y		= search 0 (x:xs) with
+  search _ []		= -1;
+  search n::int (x:xs)	= n if x==y;
+			= search (n+1) xs;
+  search _ xs		= index xs y;
+end;
+
+/* Some useful (infinite) list generators. */
+
+iterate f x		= x : iterate f (f x)&;
+repeat x		= x : repeat x&;
+cycle ys@(x:xs)		= x : (xs+cycle ys)&;
+
+/* Some finite (and strict) generators. These work like the a combination of
+   takewhile/take and the above, but are implemented directly for maximum
+   efficiency. */
+
+while p f x		= accum [] p f x with
+			    accum xs p f x = accum (x:xs) p f (f x) if p x;
+				           = reverse xs otherwise;
+			  end;
+
+repeatn n::int x	= accum [] n x with
+  accum xs n::int x	= xs if n<=0;
+			= accum (x:xs) (n-1) x;
+end;
+
+cyclen n::int (x:xs)	= [] if n<=0;
+			= accum [] n with
+			    accum ys n::int = cat ys+take n xs if n<=m;
+			                    = accum (xs:ys) (n-m) otherwise;
+			  end when xs = x:xs; m::int = #xs end if listp xs;
+
+/* zip, unzip and friends. */
+
+zip [] _		|
+zip _ []		= [];
+zip xs@(_:_) ys@(_:_)	= tick [] xs ys
+with
+  tick us (x:xs) (y:ys)	= tack ((x,y):us) (zip xs ys&)
+			    if thunkp xs || thunkp ys;
+			= tick ((x,y):us) xs ys;
+  tick us [] _		|
+  tick us _ []		= tack us [];
+  tick us xs ys		= tack us (zip xs ys);
+  tack (u:us) vs	= tack us (u:vs);
+  tack [] vs		= vs;
+end;
+
+zip3 [] _ _		|
+zip3 _ [] _		|
+zip3 _ _ []		= [];
+zip3 xs@(_:_) ys@(_:_) zs@(_:_)
+			= tick [] xs ys zs
+with
+  tick us (x:xs) (y:ys) (z:zs)
+			= tack ((x,y,z):us) (zip3 xs ys zs&)
+			    if thunkp xs || thunkp ys || thunkp zs;
+			= tick ((x,y,z):us) xs ys zs;
+  tick us [] _ _	|
+  tick us _ [] _	|
+  tick us _ _ []	= tack us [];
+  tick us xs ys zs	= tack us (zip3 xs ys zs);
+  tack (u:us) vs	= tack us (u:vs);
+  tack [] vs		= vs;
+end;
+
+zipwith f [] _		|
+zipwith f _ []		= [];
+zipwith f xs@(_:_) ys@(_:_)
+			= tick [] xs ys
+with
+  tick us (x:xs) (y:ys)	= tack (f x y:us) (zipwith f xs ys&)
+			    if thunkp xs || thunkp ys;
+			= tick (f x y:us) xs ys;
+  tick us [] _		|
+  tick us _ []		= tack us [];
+  tick us xs ys		= tack us (zipwith f xs ys);
+  tack (u:us) vs	= tack us (u:vs);
+  tack [] vs		= vs;
+end;
+
+zipwith3 f [] _ _		|
+zipwith3 f _ [] _		|
+zipwith3 f _ _ []		= [];
+zipwith3 f xs@(_:_) ys@(_:_) zs@(_:_)
+			= tick [] xs ys zs
+with
+  tick us (x:xs) (y:ys) (z:zs)
+			= tack (f x y z:us) (zipwith3 f xs ys zs&)
+			    if thunkp xs || thunkp ys || thunkp zs;
+			= tick (f x y z:us) xs ys zs;
+  tick us [] _ _	|
+  tick us _ [] _	|
+  tick us _ _ []	= tack us [];
+  tick us xs ys zs	= tack us (zipwith3 f xs ys zs);
+  tack (u:us) vs	= tack us (u:vs);
+  tack [] vs		= vs;
+end;
+
+dowith f (x:xs) (y:ys)	= f x y $$ dowith f xs ys;
+dowith f _ _		= () otherwise;
+
+dowith3 f (x:xs) (y:ys) (z:zs)
+			= f x y z $$ dowith3 f xs ys zs;
+dowith3 f _ _ _		= () otherwise;
+
+unzip []		= [],[];
+unzip us@(_:_)		= foldr accum ([],[]) us
+with
+  accum u@(x,y) us	= x:(xs when xs,_ = check us end)&,
+			  y:(ys when _,ys = check us end)& if thunkp us;
+			= x:xs,y:ys when xs,ys = check us end;
+  accum u _		= throw (bad_tuple_value u);
+  check us@(_,_)	= us;
+  check (foldr _ _ us)	= throw (bad_list_value us);
+  check us		= throw (bad_tuple_value us);
+end;
+
+unzip3 []		= [],[],[];
+unzip3 us@(_:_)		= foldr accum ([],[],[]) us
+with
+  accum u@(x,y,z) us	= x:(xs when xs,_,_ = check us end)&,
+			  y:(ys when _,ys,_ = check us end)&,
+			  z:(zs when _,_,zs = check us end)& if thunkp us;
+			= x:xs,y:ys,z:zs when xs,ys,zs = check us end;
+  accum u _		= throw (bad_tuple_value u);
+  check us@(_,_,_)	= us;
+  check (foldr _ _ us)	= throw (bad_list_value us);
+  check us		= throw (bad_tuple_value us);
+end;

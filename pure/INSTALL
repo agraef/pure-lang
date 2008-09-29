@@ -1,0 +1,476 @@
+
+INSTALLING PURE (AND LLVM)
+========== ==== ==== =====
+
+These instructions (mostly by courtesy of Eddie Rucker, thanks Eddie!) explain
+how to compile and install LLVM (which is the compiler backend required by
+Pure) and the Pure interpreter itself. The instructions are somewhat biased
+towards Linux and other Unix-like systems; the SYSTEM NOTES section at the end
+of this file details the tweaks necessary to make Pure compile and run on
+various other platforms. More information about installing LLVM and the
+required LLVM source packages can be found at http://llvm.org.
+
+Pure is known to work on Linux, Mac OSX and MS Windows, and should compile
+(with the usual amount of tweaking) on all recent UNIX/POSIX-based platforms.
+We recommend using version 4.x of the GNU C++ compiler; it should be available
+almost everywhere (in fact, since you'll need LLVM anyway, you can also use
+the gcc frontend available for LLVM). You'll also need a Bourne-compatible
+shell and GNU make, which are also readily available on most platforms.
+
+A binary package in msi format is provided for Windows users in the download
+area of the pure-lang.sf.net project page. Ports and packages for other
+systems are also available; see the SYSTEM NOTES section below for details.
+
+
+BASIC INSTALLATION
+===== ============
+
+The basic installation process is as follows. Note that steps 1-3 are only
+required once. Steps 2-3 can be avoided if binary LLVM packages are available
+for your system. Additional instructions for compiling Pure from SVN sources
+can be found in the INSTALLING FROM SVN SOURCES section below. Moreover, you
+can refer to the OTHER BUILD AND INSTALLATION OPTIONS section below for
+details about various options available when building and installing Pure.
+
+STEP 1. Make sure you have all the necessary dependencies installed (-dev
+denotes corresponding development packages):
+
+- GNU make, GNU C/C++ and the corresponding libraries;
+
+- flex and bison (these are only required when compiling the Pure SVN sources,
+  see the INSTALLING FROM SVN SOURCES section below);
+
+- the GNU multiprecision library (libgmp, -dev);
+
+- the GNU scientific library (libgsl, -dev; this isn't a strict requirement,
+but you certainly want to have this library in order to make GSL matrices work
+in Pure);
+
+- the GNU readline library (libreadline, -dev);
+
+- the GNU ltdl library (libltdl, -dev; only required for building LLVM);
+
+- subversion (this is only needed to fetch the SVN sources, see below).
+
+E.g., the required packages for Ubuntu are: make, g++, g++ 4.0 multilib, flex,
+bison, libgmp3c2, libgmp3-dev, libgsl0, libgsl0-dev, readline5-dev, libltdl3,
+libldtl3-dev, subversion.
+
+All dependencies are available as free software. Here are some links if you
+need or want to install the dependencies from source:
+
+- GNU C/C++: http://gcc.gnu.org
+
+- GNU make: http://www.gnu.org/software/make
+
+- Flex: http://flex.sourceforge.net
+
+- Bison: http://www.gnu.org/software/bison
+
+- GMP: http://www.gnu.org/software/gmp
+
+- GSL: http://www.gnu.org/software/gsl
+
+- GNU readline: http://cnswww.cns.cwru.edu/php/chet/readline/rltop.html
+
+- GNU ltdl (part of the libtool software): http://www.gnu.org/software/libtool
+
+Subversion is available from http://subversion.tigris.org. There's also a very
+nice Windows frontend, TortoiseSVN, see http://tortoisesvn.tigris.org.
+
+STEP 2. Get and unpack the LLVM 2.3 sources at:
+http://llvm.org/releases/download.html#2.3
+
+STEP 3. Configure, build and install LLVM as follows:
+
+$ cd llvm-2.3
+$ ./configure --enable-optimized --disable-assertions --disable-expensive-checks --enable-targets=host-only
+$ make
+$ sudo make install
+
+IMPORTANT: On x86-64 systems you also have to add --enable-pic. See the
+comments on 64 bit support in the SYSTEM NOTES section below.
+
+Note that the configure flags are for an optimized (non-debug) build and
+disable all compilation targets but the one for your system. You might wish to
+omit --enable-targets=host-only if you want to enable cross-compilation (this
+isn't supported by Pure right now, but other LLVM applications offer such
+capabilities). To do a debug build of LLVM, simply leave away all the extra
+configure parameters (except possibly --enable-targets=host-only). Note,
+however, that this will have an impact on the speed of the Pure compiler.
+
+STEP 4. Get and unpack the Pure sources at: http://pure-lang.sf.net/
+
+The latest release tarballs can always be found on the SourceForge project
+page. See "Downloads" on the Pure website for a quick link to the download
+section.
+
+STEP 5. Configure, build and install Pure as follows (x.y denotes the current
+Pure version number, 0.7 at the time of this writing):
+
+$ cd pure-x.y
+$ ./configure
+$ make
+$ sudo make install
+
+The last command installs the pure program, the runtime.h header file, the
+runtime library libpure.so and the library scripts under /usr/local; the
+installation prefix can be changed with the --prefix configure option, see
+OTHER BUILD AND INSTALLATION OPTIONS for details.
+
+(The runtime.h header file is not needed for normal operation, but can be used
+to write C/C++ extensions modules, if you need to access and manipulate Pure
+expressions from C/C++.)
+
+On some systems you have to tell the dynamic linker to update its cache so
+that it finds the Pure runtime library. E.g., on Linux this is done as
+follows:
+
+$ sudo /sbin/ldconfig
+
+After the build is complete, you can also run a few tests to check that Pure
+is working correctly on your computer:
+
+$ make check
+
+If all is well, all tests should pass. If not, email the author or the Pure
+mailing list for help. (Note that under MS Windows this step is expected to
+fail on some math-related tests such as test020.pure which stress-test the
+system's math routines, because some of these are broken in Microsoft's C
+library.)
+
+STEP 6. The Pure interpreter should be ready to go now.
+
+Run Pure interactively as:
+
+$ pure
+Pure 0.7 (i686-pc-linux-gnu) Copyright (c) 2008 by Albert Graef
+This program is free software distributed under the GNU Public License
+(GPL V3 or later). Please see the COPYING file for details.
+Loaded prelude from /usr/local/lib/pure-0.7/prelude.pure.
+
+Check that it works:
+
+> 6*7;
+42
+
+Check that GSL support is available:
+
+> show gsl_version
+let gsl_version = "1.9";
+
+(If this doesn't display anything then please review your installation process
+and make sure that you have GSL installed. The configure program should show
+that GSL support is available in the summary. You can run Pure without this,
+but then the numeric GSL matrices won't be available.)
+
+Read the online documentation (this invokes the Pure manual page):
+
+> help
+
+Exit the interpreter (you can also just type the end-of-file character at the
+beginning of a line, i.e., Ctrl-D on Unix):
+
+> quit
+
+
+INSTALLING FROM SVN SOURCES
+========== ==== === =======
+
+The latest development version of Pure is available in its subversion (SVN)
+source code repository. You can browse the repository at:
+
+http://pure-lang.svn.sourceforge.net/viewvc/pure-lang/
+
+(See the pure/trunk subdirectory for the latest sources.)
+
+Note that if you're going with the development sources, you'll also need
+fairly recent versions of the flex and bison utilities (flex 2.5.31 and bison
+2.3 should be ok).
+
+To compile from the development sources, replace steps 4 and 5 above with:
+
+STEP 4': Fetch the SVN sources.
+
+$ svn co http://pure-lang.svn.sourceforge.net/svnroot/pure-lang/pure/trunk pure
+
+This will only fetch the latest development sources (the "trunk") from svn and
+put it into the 'pure' subdirectory in the current directory. To check out the
+entire tree, including past releases and other branches, into a subdirectory
+named 'pure-lang', use the following command instead:
+
+$ svn co http://pure-lang.svn.sourceforge.net/svnroot/pure-lang pure-lang
+
+This step needs to be done only once; once you've checked out your working
+copy, you can update it to the latest revision at any time by running
+'svn up'.
+
+STEP 5': Configure, build and install Pure:
+
+$ cd pure (or 'cd pure-lang/pure/trunk', if you checked out the entire tree)
+$ ./configure
+$ make
+$ sudo make install
+
+
+OTHER BUILD AND INSTALLATION OPTIONS
+===== ===== === ============ =======
+
+The Pure configure script takes a few options which enable you to change the
+installation path and control a number of other build options. Moreover, there
+are some environment variables which also affect compilation and installation.
+
+Use './configure --help' to print a summary of the provided options.
+
+INSTALLATION PATH
+------------ ----
+
+By default, the pure program, the runtime.h header file, the runtime library
+and the library scripts are installed in /usr/local/bin, /usr/local/include,
+/usr/local/lib and /usr/local/lib/pure, respectively. This can be changed by
+specifying the desired installation prefix with the --prefix option, e.g.:
+
+$ ./configure --prefix=/usr
+
+(Note that if you install Pure into a non-standard location, you may have to
+set LD_LIBRARY_PATH or a similar variable so that the dynamic linker finds the
+Pure runtime library, libpure.so.)
+
+In addition, the DESTDIR variable enables package maintainers to install Pure
+into a special "staging" directory, so that installed files can be packaged
+more easily. If set at installation time, DESTDIR will be used as an
+additional prefix to all installation paths. For instance, the following
+command will put all installed files into the tmp-root subdirectory of the
+current directory:
+
+$ make install DESTDIR=tmp-root
+
+Beginning with version 0.4, Pure fully supports parallel installations of
+different versions of the interpreter without any further ado. To these ends,
+bin/pure, include/pure, lib/libpure.so, lib/pure and man/man1/pure.1 are
+actually symbolic links to the current version (bin/pure-x.y,
+include/pure-x.y, lib/libpure-x.y.so etc., where x.y is the version
+number). If you install a new version of the interpreter, the old version
+remains available as pure-x.y.
+
+SEPARATE BUILD DIRECTORY
+-------- ----- ---------
+
+It is possible to build Pure in a separate directory, in order to keep your
+source tree tidy and clean, or to build multiple versions of the interpreter
+with different compilation flags from the same source tree.
+
+To these ends, just cd to the build directory and run configure and make
+there, e.g. (this assumes that you start from the source directory):
+
+$ mkdir BUILD
+$ cd BUILD
+$ ../configure
+$ make
+
+COMPILER AND LINKER OPTIONS
+-------- --- ------ -------
+
+There are a number of environment variables you can set on the 'configure'
+command line if you need special compiler or linker options:
+
+- CPPFLAGS: preprocessor options (-I, -D, etc.)
+- CXXFLAGS: compilation options (-g, -O, etc.)
+- LDFLAGS:  linker flags (-s, -L, etc.)
+- LIBS:     additional objects and libraries (-lfoo, bar.o, etc.)
+
+For instance, the following 'configure' command changes the default
+compilation options to '-g' and adds '/opt/include' and '/opt/lib' to the
+include and library search paths, respectively:
+
+$ ./configure CPPFLAGS=-I/opt/include CXXFLAGS=-g LDFLAGS=-L/opt/lib
+
+More details on the build and installation process and other available targets
+and options can be found in the Makefile.
+
+PREDEFINED BUILD TYPES
+---------- ----- -----
+
+For convenience, 'configure' provides some options to set up CPPFLAGS and
+CXXFLAGS for various build types.
+
+Note that, as of Pure 0.3, the default build already includes most
+optimizations (-O2). This build should be ok for most purposes, and has the
+advantage that it does additional runtime checks which provide diagnostics
+useful for maintainers if anything is wrong with the interpreter. However, you
+can also build a "release" version of the interpreter by running configure as
+follows:
+
+$ ./configure --enable-release
+
+This disables all runtime checks and debugging information in the interpreter,
+and uses a higher optimization level (-O3). The release build will usually
+give you faster execution times, but the differences to the default build
+aren't really that big anymore (less than 5% compared to the default flags on
+my Linux system running gcc 4.1, YMMV), so you are encouraged to use the
+default build unless performance is really critical.
+
+To get smaller executables with either the default or the release build, add
+'LDFLAGS=-s' to the 'configure' command (gcc only, other compilers may provide
+a similar flag or a separate command to strip compiled executables and
+libraries).
+
+You can also do a "debug" build as follows:
+
+$ ./configure --enable-debug
+
+This is like the default build, but disables all optimizations, so compilation
+is faster but the compiled interpreter is *much* slower (a factor of about 2
+on my Linux box). Hence this build is only recommended for debugging purposes.
+
+You can combine all build types with the following option to enable compiler
+warnings (-Wall):
+
+$ ./configure --enable-warnings
+
+This option is useful to check the interpreter sources for questionable
+constructs which might actually be bugs. However, for some older gcc versions
+it spits out lots of bogus warnings, so it is not enabled by default.
+
+In addition, there is an option to build a "monolithic" interpreter which is
+linked statically against the LLVM libraries, instead of producing a separate
+runtime library:
+
+$ ./configure --disable-shared
+
+We strongly discourage from using this option, since it drastically increases
+the size of the executable and thereby the memory footprint of the interpreter
+if several interpreter processes are running simultaneously. We only provide
+this as a workaround for systems on which LLVM refuses to be linked into
+shared libraries.
+
+GSL support should be enabled automatically, if the GSL libraries and headers
+are available on your system. If configure fails to find these then you may
+have to set CPPFLAGS and LDFLAGS accordingly and/or use --enable-gsl to
+forcibly enable GSL support. You can also specify --disable-gsl if you don't
+want/need the GSL matrices, but this isn't recommended.
+
+RUNNING PURE FROM THE SOURCE DIRECTORY
+------- ---- ---- --- ------ ---------
+
+After your build is done, you can (and should) also run 'make check' to verify
+that your Pure interpreter works correctly. This can be done without
+installing the software. In fact, there's no need to install the interpreter
+at all if you just want to take it for a test drive, you can simply run it
+from the source directory, if you set up the following environment variables
+(this assumes that you built Pure in the source directory; when using a
+separate build directory, you'll have to change the paths accordingly):
+
+- LD_LIBRARY_PATH=. This is required on Linux systems so that libpure.so
+  is found. Other systems may require an analogous setting, or none at all.
+
+- PURELIB=./lib This is required on all systems so that the interpreter finds
+  the prelude and other library scripts.
+
+After that you should be able to run the Pure interpreter from the source
+directory, by typing './pure'.
+
+OTHER TARGETS
+----- -------
+
+The Makefile supports the usual 'clean' and 'distclean' targets, and
+'realclean' will remove all files created by the maintainer, including test
+logs and C++ source files generated from Flex and Bison grammars. (Only use
+the latter if you know what you are doing, since it will remove files which
+require special tools to be regenerated.)
+
+There also are a number of targets like 'html' (this requires rman) and 'pdf'
+(this requires groff) which generate the documentation in a variety of
+formats; see the Makefile for details.
+
+Maintainers can roll distribution tarballs with 'make dist' and 'make
+distcheck' (the latter is like 'make dist', but also does a test build and
+installation to verify that your tarball contains all needed bits and pieces).
+
+Last but not least, if you modify configure.ac for some reason then you can
+regenerate the configure script and config.h.in with 'make config'. This needs
+autoconf, of course. (The distribution was prepared using autoconf 2.61.)
+
+
+SYSTEM NOTES
+====== =====
+
+Pure is known to work on recent Linux and Mac OSX versions under x86, x86-64
+and ppc, as well as on MS Windows, but there are a few system-specific quirks
+which are discussed below. (Please also see the CAVEATS AND NOTES section of
+the manual page for information on other known limitations of the current
+implementation.)
+
+ALL PLATFORMS
+--- ---------
+
+Compiling the default and release versions using gcc with all warnings turned
+on (-Wall) will give you the warning "dereferencing type-punned pointer will
+break strict-aliasing rules" at some point in util.cc. This is harmless and
+can be ignored.
+
+If your Pure program runs out of stack space, the interpreter will segfault.
+This is *not* a bug, it happens because runtime stack checks are disabled by
+default for performance reasons. You can enable stack checks by setting the
+PURE_STACK environment variable accordingly; see the pure(1) manual page for
+details. The interpreter will then generate orderly "stack fault" exceptions
+in case of a stack overflow.
+
+64 BIT SYSTEMS
+-- --- -------
+
+64 bit systems are fully supported by Pure. However, you'll need to patch up
+LLVM 2.3 so that it can be linked into the Pure runtime library on x86-64
+systems. You also have to configure LLVM with --enable-pic. The patch by
+Cyrille Berger, which is to be applied in the llvm-2.3 source directory, is
+available at http://pure-lang.sf.net/X86JITInfo.cpp.pic.2.3.patch.
+
+LINUX
+-----
+
+Linux is the primary development platform for this software, and the sources
+should build out of the box on all recent Linux distributions.
+
+Binary packages for openSUSE are maintained by Toni Graffy as part of the
+Packman project: http://packman.links2linux.de/package/pure
+
+Alvaro Castro Castilla has contributed a Gentoo ebuild, which is currently
+available at http://bugs.gentoo.org/show_bug.cgi?id=231966.
+
+We're still looking for people who can maintain Debian and Fedora packages,
+please let us know if you want to help with that.
+
+MAC OSX
+--- ---
+
+Pure works fine on OSX, and a port by Ryan Schmidt exists in the MacPorts
+collection, see http://www.macports.org/.
+
+Note that with at least some versions of the Apple gcc compiler, with all
+warnings turned on you'll get the (bogus) warning "control reaches end of
+non-void function" a couple of times in interpreter.cc. These are due to a bug
+in older gcc versions (see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=16558),
+but they are harmless and can be ignored. These warnings should also go away
+once Apple upgrades its SDK to a newer gcc version.
+
+MS WINDOWS
+-- -------
+
+Thanks to Jiri Spitz' perseverance, tireless testing and bug reports, the
+sources compile and run fine on Windows now, using the Mingw port of the GNU
+C++ compiler and the MSYS environment from http://www.mingw.org/. Just do the
+usual './configure && make && make install'. You'll need LLVM, of course
+(which builds with Mingw just fine), and a few additional libraries for which
+headers and precompiled binaries are available from the Pure website
+(http://pure-lang.sf.net/).
+
+A binary package in msi format is available as well (see "Downloads" on the
+Pure website), which includes all required libraries and some shortcuts to run
+the Pure interpreter and read online documentation in html help format, as
+well as "PurePad", an alternative GUI frontend for editing and running Pure
+scripts on Windows.
+
+
+September 2008
+Albert Graef <Dr.Graef at t-online.de>
+Eddie Rucker <erucker at bmc.edu>

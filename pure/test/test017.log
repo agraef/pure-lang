@@ -1,0 +1,45 @@
+timex f/*0:1*/ = clock-t0/*1:*/,res/*0:*/ when t0/*0:*/ = clock; res/*0:*/ = f/*1:1*/ () {
+  rule #0: res = f ()
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: t0 = clock
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+foo n/*0:1*/ = if n/*0:1*/<=0 then n/*0:1*/ else foo (n/*0:1*/-1);
+bar x/*0:1*/ = catch id (throw x/*1:1*/);
+{
+  rule #0: timex f = clock-t0,res when t0 = clock; res = f () end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+{
+  rule #0: foo n = if n<=0 then n else foo (n-1)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+{
+  rule #0: bar x = catch id (throw x)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+timex (\_/*0:*/ -> foo 100000 {
+  rule #0: _ = foo 100000
+  state 0: #0
+	<var> state 1
+  state 1: #0
+})!1;
+0
+timex (\_/*0:*/ -> bar 99 {
+  rule #0: _ = bar 99
+  state 0: #0
+	<var> state 1
+  state 1: #0
+})!1;
+99

@@ -1,0 +1,46 @@
+
+/* The Pure interpreter can perform symbolic computations with arbitrary term
+   rewriting rules. E.g., the following equations implement the arithmetic
+   rules of distributivity, associativity and the neutral elements. This isn't
+   really enough to get good simplifications, but you get the idea. */
+
+(x+y)*z	= x*z+y*z;	x*(y+z)	= x*y+x*z;
+x+(y+z)	= (x+y)+z;	x*(y*z)	= (x*y)*z;
+
+x*0	= 0;		0*x	= 0;
+x*1	= x;		1*x	= x;
+x+0	= x;		0+x	= x;
+
+// Examples:
+square x = x*x;
+square (a+b); square (a+1); square (a+0);
+
+/* Poor man's CAS: symbolic differentiation. */
+
+diff x (u+v)	= diff x u + diff x v;
+diff x (u*v)	= u*diff x v + v*diff x u;
+diff x y	= 1 if x===y;
+		= 0 otherwise;
+
+// Example:
+diff x (5*x*x+2*x+10); diff x (5*square (x+y));
+
+/* Disjunctive normal form. */
+
+// eliminate double negations:
+~~a		= a;
+
+// push negations inward (de Morgan's laws):
+~(a or b)	= ~a and ~b;
+~(a and b)	= ~a or ~b;
+
+// distributivity laws:
+a and (b or c)	= a and b or a and c;
+(a or b) and c	= a and c or b and c;
+
+// associativity laws:
+a and (b and c)	= (a and b) and c;
+a or (b or c)	= (a or b) or c;
+
+// Example:
+a or ~(b or (c and ~d));

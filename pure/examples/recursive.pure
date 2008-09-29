@@ -1,0 +1,53 @@
+
+/* This is the 'recursive' benchmark from "The Computer Language Shootout"
+   (http://shootout.alioth.debian.org/). It can be used to measure aspects of
+   the performance of the Pure interpreter and compiler. 2008-22-04 AG */
+
+/* Pure 0.3 (release build using gcc 4.1 on Linux) does the benchmark with an
+   input value of n=11 in 1m23s on my Athlon 2500+. (This is the user cpu time
+   as reported by 'time', which includes startup and compilation times.) That
+   corresponds to a factor of 31 against the C benchmark on the same machine,
+   which isn't bad considering that Pure is a fully dynamic language. Most of
+   the credit goes to LLVM, of course. ;-) */
+
+ack x::int y::int
+		= y+1 if x == 0;
+		= ack (x-1) 1 if y == 0;
+		= ack (x-1) (ack x (y-1)) otherwise;
+
+ack x::double y::double
+		= y+1.0 if x == 0.0;
+		= ack (x-1.0) 1.0 if y == 0.0;
+		= ack (x-1.0) (ack x (y-1.0)) otherwise;
+
+fib n::int	= 1 if n < 2;
+		= fib (n-2) + fib (n-1) otherwise;
+
+fib n::double	= 1.0 if n < 2.0;
+		= fib (n-2.0) + fib (n-1.0) otherwise;
+
+tak x::int y::int z::int
+		= tak (tak (x-1) y z) (tak (y-1) z x) (tak (z-1) x y)
+		    if y < x;
+		= z otherwise;
+
+tak x::double y::double z::double
+		= tak (tak (x-1.0) y z) (tak (y-1.0) z x) (tak (z-1.0) x y)
+		    if y < x;
+		= z otherwise;
+
+using system;
+
+main n::int
+= printf "Ack(3,%d): %d\n" (n, ack 3 n) $$
+  printf "Fib(%.1f): %.1f\n" (27.0+n, fib (27.0+n)) $$
+  printf "Tak(%d,%d,%d): %d\n" (m*3, m*2, m, tak (m*3) (m*2) m) $$
+  printf "Fib(3): %d\n" (fib 3) $$
+  printf "Tak(3.0,2.0,1.0): %.1f\n" (tak 3.0 2.0 1.0)
+when m = n-1 end;
+
+main _ = usage otherwise;
+
+usage = puts "Usage: time pure -x recursive.pure N";
+
+if argc!=2 then usage else main $ eval $ argv!1;

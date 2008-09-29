@@ -1,0 +1,831 @@
+
+/* Pure system interface. Or at least its beginnings. */
+
+/* NOTE: This module isn't loaded by the standard prelude right now, so you'll
+   have to add the clause 'using system;' to your programs in which you want
+   to use this interface. */
+
+/* Copyright (c) 2008 by Albert Graef <Dr.Graef@t-online.de>.
+
+   This file is part of the Pure programming language and system.
+
+   Pure is free software: you can redistribute it and/or modify it under the
+   terms of the GNU General Public License as published by the Free Software
+   Foundation, either version 3 of the License, or (at your option) any later
+   version.
+
+   Pure is distributed in the hope that it will be useful, but WITHOUT ANY
+   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+   FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+   details.
+
+   You should have received a copy of the GNU General Public License along
+   with this program.  If not, see <http://www.gnu.org/licenses/>. */
+
+/* This module offers some useful system routines, straight from the C
+   library, as well as some convenience functions for wrapping these up in
+   Pure. Even the "purest" program needs to do some basic I/O every once in a
+   while, and this module provides the necessary stuff to do just that. The
+   interface is rather minimalistic and preliminary right now, but will
+   probably grow over time. */
+
+/* Provide some useful values as global variables. These also include the
+   standard I/O streams and various constants related to the I/O, glob and
+   regex functions. After loading this module, see list -v for a list of
+   these. */
+
+private pure_sys_vars;
+extern void pure_sys_vars(); pure_sys_vars;
+
+/* errno and friends. This value and the related routines are indispensable to
+   give proper diagnostics when system calls fail for some reason. Note that,
+   by its very nature, errno is a fairly volatile value, don't expect it to
+   survive a return to the command line in interactive sessions. */
+
+extern int pure_errno() = errno, void pure_set_errno(int) = set_errno;
+extern void perror(char*), char* strerror(int);
+
+/* POSIX locale handling. Details are platform-specific, but you can expect
+   that at least the categories LC_ALL, LC_COLLATE, LC_CTYPE, LC_MONETARY,
+   LC_NUMERIC and LC_TIME are defined, as well as the following values for the
+   locale parameter: "C" or "POSIX" (the default POSIX locale), "" (the system
+   default locale), and NULL, to just query the current locale.
+
+   Other string values which can be passed as the locale argument depend on
+   the implementation, please check your local setlocale(3) documentation for
+   details. If locale is not NULL, the current locale is changed accordingly.
+   The return value is the new locale, or the current locale when passing NULL
+   for the locale parameter. In either case, the string returned by setlocale
+   is such that it can be passed to setlocale to restore the same locale
+   again. In case of an error, setlocale returns a null pointer.
+
+   Please note that calling this function alters the Pure interpreter's idea
+   of what the current locale is, which will affect the expected encoding of
+   subsequently loaded scripts, among other things. When the interpreter
+   starts up, it always sets the default system locale. Unless your scripts
+   rely on a specific encoding, setting the locale to either "C" or "" should
+   always be safe. */
+
+private c_setlocale;
+extern void* setlocale(int category, void* locale) = c_setlocale;
+
+setlocale category::int locale =
+return (check (c_setlocale category buf)) with
+  check res	= cstring_dup res if not null res;
+  		= res otherwise;
+  return res	= free buf $$ res if not null buf;
+		= res otherwise;
+end when
+  buf		= if stringp locale then byte_cstring locale else locale;
+end if stringp locale || pointerp locale && null locale;
+
+/* Signal handling. The action parameter of 'trap' can be one of the
+   predefined integer values SIG_TRAP, SIG_IGN and SIG_DFL. SIG_TRAP causes
+   the given signal to be handled by mapping it to a Pure exception of the
+   form 'signal SIG'. SIG_IGN ignores the signal, SIG_DFL reverts to the
+   system's default handling. See 'show -g SIG*' for a list of known signal
+   values on your system. NOTE: Most standard termination signals (SIGINT,
+   SIGTERM, etc.) are already set up at the start of the interpreter to report
+   corresponding Pure exceptions; if this is not desired, you can use 'trap'
+   to either ignore these or revert to the default handlers instead. */
+
+extern void pure_trap(int action, int sig) = trap;
+
+/* Time functions. 'time' reports the current time in seconds since the
+   "epoch" a.k.a. 00:00:00 UTC, Jan 1 1970. The result is always a bigint (in
+   fact, the time value is already 64 bit on many OSes nowadays). */
+
+extern long pure_time() = time;
+
+/* Functions to format a time value as a string. The ctime and gmtime
+   functions convert a time value to a string in either local time or UTC.
+   The strftime function also formats a time value as local time, using a
+   format specification supplied by the user. See ctime(3), gmtime(3) and
+   strftime(3) for details. */
+
+extern char* pure_ctime(long) = ctime;
+extern char* pure_gmtime(long) = gmtime;
+extern char* pure_strftime(char* format, long t) = strftime;
+
+/* The gettimeofday function also returns wallclock time as seconds since the
+   epoch, but theoretically offers resolutions in the microsec range (actual
+   resolutions vary, but are usually in the msec range for contemporary
+   systems). The result is returned as a double value (which also limits
+   precision). This function may actually be implemented through different
+   system calls, depending on what's available on the host OS. */
+
+extern double pure_gettimeofday() = gettimeofday;
+
+/* The clock function returns the current CPU (not wallclock) time since an
+   arbitrary point in the past, as a machine int. The number of "ticks" per
+   second is given by the CLOCKS_PER_SEC constant. Note that this value will
+   wrap around approximately every 72 minutes.  */
+
+extern int clock();
+
+/* The sleep and nanosleep functions suspend execution for a given time
+   interval in seconds. 'sleep' takes integer (int/bigint) arguments only and
+   uses the sleep() system function. 'nanosleep' also accepts double arguments
+   and theoretically supports resolutions down to 1 nanosecond (again, actual
+   resolutions vary). This function may actually be implemented through
+   different system calls, depending on what's available on the host OS. Both
+   functions usually return zero, unless the sleep was interrupted by a
+   signal, in which case the time remaining to be slept is returned. */
+
+extern int sleep(int);
+extern double pure_nanosleep(double) = nanosleep;
+
+nanosleep t::int | nanosleep t::bigint = nanosleep (double t);
+
+/* Basic process operations: system executes a shell command, exit terminates
+   the program with the given status code. */
+
+extern int system(char* cmd), void exit(int status);
+
+/* Interface to malloc, free and friends. These let you allocate dynamic
+   buffers (represented as Pure pointer values) for various nasty purposes.
+   The usual caveats apply, so *only* use these directly if you know what
+   you're doing! */
+
+extern void* calloc(int nmembers, int size);
+extern void* malloc(int size), void* realloc(void* ptr, int size);
+extern void free(void* ptr);
+
+/* Basic I/O interface. Note that this module also defines the standard I/O
+   streams stdin, stderr and stdout as variables on startup. These are ready
+   to be used with the operations defined below. Also note that some of these
+   routines are actually overridden with more convenient Pure wrappers
+   below. */
+
+private c_fopen c_popen c_fclose c_pclose;
+extern FILE* fopen(char* name, char* mode) = c_fopen;
+extern FILE* popen(char* cmd, char* mode) = c_popen;
+extern int fclose(FILE* fp) = c_fclose, int pclose(FILE* fp) = c_pclose;
+extern int fflush(FILE* fp);
+private c_fgets c_gets;
+extern char* fgets(void* buf, int size, FILE* fp) = c_fgets;
+extern char* gets(void* buf) = c_gets;
+extern int fputs(char* s, FILE* fp), int puts(char* s);
+extern int fread(void* ptr, int size, int nmemb, FILE* fp);
+extern int fwrite(void* ptr, int size, int nmemb, FILE* fp);
+extern void clearerr(FILE* fp);
+extern int feof(FILE* fp), int ferror(FILE* fp);
+
+/* Pure wrappers for fopen/popen and fclose/pclose which take care of closing
+   a file object automagically when it's garbage-collected. */
+
+fopen name::string mode::string = if null fp then fp else sentry c_fclose fp
+when fp = c_fopen name mode end;
+
+popen name::string mode::string = if null fp then fp else sentry c_pclose fp
+when fp = c_popen name mode end;
+
+fclose fp::pointer = clear_sentry fp $$ c_fclose fp;
+pclose fp::pointer = clear_sentry fp $$ c_pclose fp;
+
+/* Pure wrappers for fgets and gets which handle the necessary buffering
+   automatically. */
+
+fgets f::pointer = read_a_line f buf "" when buf = malloc 1024 end
+with read_a_line f buf t = check s when s = c_fgets buf 1024 f end
+  with check s::string = return (t+s) if done s;
+		       = read_a_line f buf (t+s) otherwise;
+       check s         = return s if null t;
+                       = return t otherwise;
+       done s::string  = feof f || ferror f || not null s && last s == "\n";
+       return x        = free buf $$ x;
+  end;
+end;
+
+gets = if null s then s else if last s == "\n" then init s else s
+when s = fgets stdin end;
+
+/* A variation of fgets which slurps in an entire text file at once. */
+
+fget f::pointer = read_a_file f buf "" when buf = malloc 0x10000 end
+with read_a_file f buf t = check s when s = c_fgets buf 0x10000 f end
+  with check s::string = return (t+s) if feof f || ferror f;
+		       = read_a_file f buf (t+s) otherwise;
+       check s         = return s if null t;
+                       = return t otherwise;
+       return x        = free buf $$ x;
+  end;
+end;
+
+/* printf, scanf and friends. Since Pure cannot call C varargs functions
+   directly, the runtime provides us with some functions which only process a
+   single argument at a time. Our wrapper functions take or return a tuple of
+   values, and check these against the format specifiers. Only simple formats
+   derived from %cdioux, %efg, %s and %p are supported right now. */
+
+/* printf/fprintf: Normally, these return the result of the underlying C
+   routines (number of characters written, or negative on error). However, in
+   case of an abnormal condition in the wrapper function (error in format
+   string, argument mismatch), they will throw an exception. */
+
+private pure_fprintf pure_fprintf_int pure_fprintf_double
+  pure_fprintf_string pure_fprintf_pointer;
+extern int pure_fprintf(FILE *fp, char *format);
+extern int pure_fprintf_int(FILE *fp, char *format, int x);
+extern int pure_fprintf_double(FILE *fp, char *format, double x);
+extern int pure_fprintf_string(FILE *fp, char *format, char *x);
+extern int pure_fprintf_pointer(FILE *fp, char *format, void *x);
+
+private printf_split_format printf_format_spec printf_format_str;
+
+printf format::string args = fprintf stdout format args;
+
+fprintf fp::pointer format::string args = count when
+  args = if tuplep args then list args else [args];
+  count, _ = catch error_handler
+    (foldl (do_fprintf fp) (0,args) $ printf_split_format format);
+end with
+  error_handler (printf_error res::int) = res, [];
+  error_handler x = throw x otherwise;
+  do_fprintf fp (count,arg:args) (printf_format_spec t s) = count, args
+  when
+    res = case t, arg of
+      "c", x::int | "c", x::bigint |
+      "d", x::int | "d", x::bigint = pure_fprintf_int fp s x;
+      "g", x::double = pure_fprintf_double fp s x;
+      "s", x::string = pure_fprintf_string fp s x;
+      "p", x::string | "p", x::pointer = pure_fprintf_pointer fp s x;
+      _ = throw (printf_value_error s arg);
+    end;
+    count = if res>=0 then count+res else throw (printf_error res);
+  end;
+  do_fprintf fp (count,args) (printf_format_str s) = count, args
+  when
+    res = pure_fprintf fp s;
+    count = if res>=0 then count+res else throw (printf_error res);
+  end;
+  do_fprintf fp (count,[]) (printf_format_spec t s) =
+    throw (printf_value_error s ());
+  do_fprintf fp (count,_) _ = throw (this_cant_happen count);
+end;
+
+printf_split_format format = regexg analyze
+  "(%[-#0 ]?[0-9]*([.][0-9]*)?[cdiouxXeEfgGsp])|(%)|([^%]|%%)+"
+  REG_EXTENDED format 0
+with
+  analyze info =
+    if p>=0 then // format specifier
+      printf_format_spec (format_type (last u)) u
+    else if q>=0 then // error
+      throw (printf_format_error q)
+    else printf_format_str u // literal
+  when
+    _, u = reg 0 info; // matched portion of the format string
+    p, _ = reg 1 info; // p>=0 indicates valid format specifier
+    q, _ = reg 3 info; // q>=0 indicates unrecognized format specifier
+  end;
+  format_type x = 
+    if index "diouxX" x >= 0 then "d"
+    else if index "eEfgG" x >= 0 then "g"
+    else x;
+end;
+
+/* sprintf: Unlike the C routines, these just return the string result, or a
+   null pointer in case of an error; otherwise, the error handling is the same
+   as with printf/fprintf. The implementation actually uses snprintf for
+   safety, a suitable output buffer is provided automatically. */
+
+private pure_snprintf pure_snprintf_int pure_snprintf_double
+  pure_snprintf_string pure_snprintf_pointer;
+extern int pure_snprintf(void *buf, int, char *format);
+extern int pure_snprintf_int(void *buf, int, char *format, int x);
+extern int pure_snprintf_double(void *buf, int, char *format, double x);
+extern int pure_snprintf_string(void *buf, int, char *format, char *x);
+extern int pure_snprintf_pointer(void *buf, int, char *format, void *x);
+
+sprintf format::string args = s when
+  args = if tuplep args then list args else [args];
+  s, _ = catch error_handler
+    (foldl do_sprintf ("",args) $ printf_split_format format);
+end with
+  error_handler (printf_error res::int) = pointer 0, [];
+  error_handler x = throw x otherwise;
+  do_sprintf (u,arg:args) (printf_format_spec t s) = u, args
+  when
+    size = case t, arg of
+      "s", x::string = #s+#x+1000; // guestimate
+      _ = 64; // should be enough for number formats in any case
+    end;
+    buf = check_buf (malloc size);
+    res = case t, arg of
+      "c", x::int | "c", x::bigint |
+      "d", x::int | "d", x::bigint = pure_snprintf_int buf size s x;
+      "g", x::double = pure_snprintf_double buf size s x;
+      "s", x::string = pure_snprintf_string buf size s x;
+      "p", x::string | "p", x::pointer = pure_snprintf_pointer buf size s x;
+      _ = free buf $$ throw (printf_value_error s arg);
+    end;
+    u = if res>=0 then u + cstring buf
+        else free buf $$ throw (printf_error res);
+  end;
+  do_sprintf (u,args) (printf_format_str s) = u, args
+  when
+    size = #s+1000; buf = check_buf (malloc size);
+    res = pure_snprintf buf size s;
+    u = if res>=0 then u + cstring buf
+        else free buf $$ throw (printf_error res);
+  end;
+  do_sprintf (u,[]) (printf_format_spec t s) =
+    throw (printf_value_error s ());
+  do_sprintf (u,_) _ = throw (this_cant_happen u);
+  check_buf buf = throw malloc_error if null buf;
+                = buf otherwise;
+end;
+
+/* scanf, fscanf: These normally return a tuple (or singleton) with the
+   converted values. An exception of the form 'scanf_error ret', where ret is
+   the tuple of successfully converted values (which may be less than the
+   number of requested input items), is thrown if eof was met or another error
+   occurred while still reading. The handling of other abnormal conditions
+   (e.g., error in format string) is analogous to printf et al. Also note that
+   our implementation here doesn't accept any of the length modifiers used by
+   the C routines. Floating point values will *always* be read in double
+   precision, so you just specify "e", "g" etc. for these. OTOH, the
+   "assignment suppression" flag "*" is understood; the corresponding items
+   will not be returned. */
+
+private pure_fscanf pure_fscanf_int pure_fscanf_double
+  pure_fscanf_string pure_fscanf_pointer;
+extern int pure_fscanf(FILE *fp, char *format);
+extern int pure_fscanf_int(FILE *fp, char *format, int *x);
+extern int pure_fscanf_double(FILE *fp, char *format, double *x);
+extern int pure_fscanf_string(FILE *fp, char *format, void *x);
+extern int pure_fscanf_pointer(FILE *fp, char *format, void **x);
+
+private scanf_split_format scanf_format_spec scanf_format_str;
+
+scanf format::string = fscanf stdin format;
+
+fscanf fp::pointer format::string = tuple $ reverse ret when
+  _, ret = catch error_handler
+    (foldl (do_fscanf fp) (0,[]) $ scanf_split_format format);
+end with
+  error_handler (scanf_error ret) = throw (scanf_error (tuple $ reverse ret));
+  error_handler x = throw x otherwise;
+  do_fscanf fp (nread,ret) (scanf_format_spec t s) = nread+res, ret
+  when
+    // 16 bytes should be more than enough to hold any elementary type;
+    // for the string case, see guestimate below.
+    size, s = if t=="s" then guestimate s else 16, s;
+    // Make sure to zero the buffer here, since %c doesn't store a terminal
+    // null byte.
+    buf = check_buf (calloc size 1);
+    res = case t of
+      "n" = pure_fscanf_int fp s buf;
+      "d" = pure_fscanf_int fp s buf;
+      "g" = pure_fscanf_double fp s buf;
+      "s" = pure_fscanf_string fp s buf;
+      "p" = pure_fscanf_pointer fp s buf;
+      _ = throw (this_cant_happen ret);
+    end;
+    // Note: In difference to C scanf, the return value is the number of read
+    // characters here, with -1 denoting an error condition.
+    res = if res>=0 then res
+          else free buf $$ throw (scanf_error ret);
+    val = case t of
+      "n" = nread+get_int buf;
+      "d" = get_int buf;
+      "g" = get_double buf;
+      "s" = cstring buf;
+      "p" = get_pointer buf;
+      _ = throw (this_cant_happen ret);
+    end;
+    _ = if t=="s" then () else free buf;
+    ret = val:ret;
+  end;
+  do_fscanf fp (nread,ret) (scanf_format_str s) = nread+res, ret
+  when
+    res = pure_fscanf fp s;
+    ret = if res>=0 then ret else throw (scanf_error ret);
+  end;
+  do_fscanf _ (_,ret) _ = throw (this_cant_happen ret);
+  check_buf buf = throw malloc_error if null buf;
+                = buf otherwise;
+  // Compute a reasonable size for a string buffer; if necessary, modify the
+  // field width of the format accordingly.
+  guestimate "%c" = 2, "%c";
+  guestimate format = n, format
+  when
+    1,0,_,1,s = regex "^%([0-9]*)" REG_EXTENDED format 0;
+    // Leave one extra byte for the null terminator.
+    n, format = if null s then 1025, "%1024"+tail format else eval s+1, format;
+  end;
+end;
+
+scanf_split_format format = regexg analyze
+  "(%[*]?[0-9]*([cdiouxXneEfgsp]|\\[\\^?\\]?[^]]+\\]))|(%)|([^%]|%%)+"
+  REG_EXTENDED format 0
+with
+  analyze info =
+    if p>=0 && u!1!="*" then // format specifier
+      (scanf_format_spec t (kludge t u) when t = format_type (last u) end)
+    else if q>=0 then // error
+      throw (scanf_format_error q)
+    else scanf_format_str u // literal
+  when
+    _, u = reg 0 info; // matched portion of the format string
+    p, _ = reg 1 info; // p>=0 indicates valid format specifier
+    q, _ = reg 3 info; // q>=0 indicates unrecognized format specifier
+  end;
+  format_type x = 
+    if x == "n" then "n"
+    else if index "diouxX" x >= 0 then "d"
+    else if index "eEfg" x >= 0 then "g"
+    else if x=="]" || x=="c" then "s"
+    else x;
+  // fix up the format specifier for double values (needs 'l' modifier)
+  kludge "g" u = init u + "l" + last u;
+  kludge _ u = u otherwise;
+end;
+
+/* sscanf: This works exactly like fscanf, but input comes from a string
+   (first argument) rather than a file. */
+
+private pure_sscanf pure_sscanf_int pure_sscanf_double
+  pure_sscanf_string pure_sscanf_pointer;
+extern int pure_sscanf(char *buf, char *format);
+extern int pure_sscanf_int(char *buf, char *format, int *x);
+extern int pure_sscanf_double(char *buf, char *format, double *x);
+extern int pure_sscanf_string(char *buf, char *format, void *x);
+extern int pure_sscanf_pointer(char *buf, char *format, void **x);
+
+sscanf s::string format::string = tuple $ reverse ret when
+  _, _, ret = catch error_handler
+    (foldl do_sscanf (s,0,[]) $ scanf_split_format format);
+end with
+  error_handler (scanf_error ret) = throw (scanf_error (tuple $ reverse ret));
+  error_handler x = throw x otherwise;
+  do_sscanf (u,nread,ret) (scanf_format_spec t s) = u, nread+res, ret
+  when
+    // 16 bytes should be more than enough to hold any elementary type;
+    // for the string case, see guestimate below.
+    size, s = if t=="s" then guestimate s else 16, s;
+    // Make sure to zero the buffer here, since %c doesn't store a terminal
+    // null byte.
+    buf = check_buf (calloc size 1);
+    res = case t of
+      "n" = pure_sscanf_int u s buf;
+      "d" = pure_sscanf_int u s buf;
+      "g" = pure_sscanf_double u s buf;
+      "s" = pure_sscanf_string u s buf;
+      "p" = pure_sscanf_pointer u s buf;
+      _ = throw (this_cant_happen ret);
+    end;
+    // Note: In difference to C scanf, the return value is the number of read
+    // characters here, with -1 denoting an error condition.
+    res = if res>=0 then res
+          else free buf $$ throw (scanf_error ret);
+    val = case t of
+      "n" = nread+get_int buf;
+      "d" = get_int buf;
+      "g" = get_double buf;
+      "s" = cstring buf;
+      "p" = get_pointer buf;
+      _ = throw (this_cant_happen ret);
+    end;
+    _ = if t=="s" then () else free buf;
+    ret = val:ret;
+    u = drop res u;
+  end;
+  do_sscanf (u,nread,ret) (scanf_format_str s) = u, nread+res, ret
+  when
+    res = pure_sscanf u s;
+    ret = if res>=0 then ret else throw (scanf_error ret);
+    u = drop res u;
+  end;
+  do_sscanf (_,_,ret) _ = throw (this_cant_happen ret);
+  check_buf buf = throw malloc_error if null buf;
+                = buf otherwise;
+  // Compute a reasonable size for a string buffer; if necessary, modify the
+  // field width of the format accordingly.
+  guestimate "%c" = 2, "%c";
+  guestimate format = n, format
+  when
+    1,0,_,1,s = regex "^%([0-9]*)" REG_EXTENDED format 0;
+    // Leave one extra byte for the null terminator.
+    n, format = if null s then 1025, "%1024"+tail format else eval s+1, format;
+  end;
+end;
+
+/* readline: A simple wrapper around GNU readline which reads a line from
+   stdin with prompt and command line editing. (Note that we cannot simply use
+   the C readline function directly in Pure since it would leak memory on the
+   return value.) We also provide readline's companion, the add_history
+   function, which you need to add strings to readline's history. */
+
+private c_readline;
+extern void* readline(char* prompt) = c_readline;
+extern void add_history(char* s);
+
+readline prompt::string = cstring $ c_readline prompt;
+
+/* Shell globbing (fnmatch and glob). For fnmatch we provide a wrapper which
+   returns a simple truth value (1 = match, 0 = no match) instead of an error
+   code. For glob we provide a wrapper which only takes the pattern and the
+   flags as arguments and returns a Pure list with the matches (unless there
+   is an error in which case the integer result code is returned).
+
+   The available flag values and glob error codes are available as symbolic
+   FNM_* and GLOB_* constants defined as variables in the global environment.
+   See the fnmatch(3) and glob(3) manpages for the meaning of these. In
+   extension to POSIX, Pure also provides the constant GLOB_SIZE which
+   indicates the buffer size required for glob's globptr argument. */
+
+private c_fnmatch c_glob globfree globlist;
+extern int fnmatch(char* pat, char* s, int flags) = c_fnmatch;
+extern int glob(char* pat, int flags, void* errfunc, void* globptr) = c_glob;
+extern void globfree(void* globptr);
+// runtime function to decode a globptr into a Pure string list
+extern expr* globlist(void* globptr);
+
+fnmatch pat::string s::string flags::int = c_fnmatch pat s flags == 0;
+
+glob pat::string flags::int = result
+when
+  globptr = calloc 1 GLOB_SIZE; result = c_glob pat flags (pointer 0) globptr;
+  result = if result==0 then globlist globptr else result;
+  _ = globfree globptr $$ free globptr;
+end;
+
+/* POSIX regex matching (regcomp and regexec). The C functions have a somewhat
+   difficult calling sequence, hence we provide a couple of high-level wrapper
+   functions for use in Pure programs below. */
+
+private regcomp regexec regerror regfree regmatches reglist;
+extern int regcomp(void* regptr, char* pat, int cflags);
+extern int regexec(void* regptr, char* s, int n, void* matches, int eflags);
+extern int regerror(int errcode, void* regptr, void* buf, int size);
+extern void regfree(void* regptr);
+// runtime: return the number of subpatterns and storage for the match result
+extern expr* regmatches(void* regptr, int cflags);
+// runtime: decode the regexec result into a Pure tuple of (pos,substr) pairs
+extern expr* reglist(void* regptr, void* s, void* matches);
+
+/* regex: A convenience function which compiles and matches a regex in one go,
+   and returns the list of submatches (if any). The arguments are:
+
+   - pat::string, the regular expression pattern;
+
+   - cflags::int, the compilation flags (bitwise or of any of the flags
+     accepted by regcomp(3));
+
+   - s::string, the subject string to be matched;
+
+   - eflags::int, the matching execution flags (bitwise or of any of the flags
+     accepted by regexec(3)).
+
+   Symbolic REG_* constants are provided for the different flag values, see
+   the regcomp(3) manpage for an explanation of these. In extension to POSIX,
+   Pure also provides the REG_SIZE constant which indicates the size needed
+   for the compiled regex buffer (regptr argument).
+
+   Depending on the flags and the outcome of the operation, the result of this
+   function can take one of the following forms:
+
+   - regerr code msg: This indicates an error during compilation of the
+     pattern (e.g., if there was a syntax error in the pattern). code is the
+     nonzero integer code returned by regcomp, and msg is the corresponding
+     error message string, as returned by regerror. You can redefine the
+     regerr function as appropriate for your application (e.g., if you'd like
+     to print an error message or throw an exception).
+
+   - 0 or 1: Just a truth value indicates whether the pattern matched or not.
+     This will be the form of the result if the REG_NOSUB flag was specified
+     for compilation, indicating that no submatch information is to be
+     computed.
+
+   - 0 (indicating no match), or 1 (indicating a successful match), where the
+     latter value is followed by a tuple of (pos,substr) pairs for each
+     submatch. This will be the form of the result only if the REG_NOSUB flag
+     was *not* specified for compilation, so that submatch information is
+     available.
+
+   Note that, according to POSIX semantics, a return value of 1 does *not*
+   generally mean that the entire subject string was matched, unless you
+   explicitly tie the pattern to the beginning (^) and end ($) of the string.
+
+   If the result takes the latter form, each (pos,substr) pair indicates a
+   portion of the subject string which was matched; pos is the position at
+   which the match starts, and substr is the substring (starting at position
+   pos) which was matched. The first (pos,substr) pair always indicates which
+   portion of the string was matched by the entire pattern, the remaining
+   pairs represent submatches for the parenthesized subpatterns of the
+   pattern, as described on the regcomp(3) manual page. Note that some
+   submatches may be empty (if they matched the empty string), in which case a
+   pair (pos,"") indicates the (nonnegative) position pos where the subpattern
+   matched the empty string. Other submatches may not participate in the match
+   at all, in which case the pair (-1,"") is returned. */
+
+regex pat::string cflags::int s::string eflags::int = result
+when
+  result = regcomp regptr pat cflags;
+  result = if result==0 then match else regerr result (decode result);
+  _ = regfree regptr $$ free regptr;
+end with
+  match = result when
+    n, matches = regmatches regptr cflags;
+    result = regexec regptr s n matches eflags;
+    result = if result==0 then (1, reglist regptr s matches) else 0;
+  end;
+  decode n::int = cstring buf when
+    size = regerror n regptr (pointer 0) 0; 
+    buf = malloc size; _ = regerror n regptr buf size;
+  end;
+end when
+  regptr = calloc 1 REG_SIZE;
+end;
+
+/* The following helper functions are provided to analyze the result returned
+   by regex. */
+
+/* reg_result returns the result of a regex call, i.e., a regerr term if
+   compilation failed, and a flag indicating whether the match was successful
+   otherwise. */
+
+reg_result (regerr code msg) = regerr code msg;
+reg_result b::int = b;
+reg_result (b::int,_) = b;
+
+/* reg_info returns the submatch info if any, otherwise it returns (). */
+
+reg_info (_::int,info) = info;
+reg_info _ = () otherwise;
+
+/* reg n info returns the nth submatch of the given submatch info, where info
+   is the result of a reg_info call. */
+
+reg 0 (p,s,_) = p,s;
+reg 0 (p,s) = p,s;
+reg n::int (_,_,infos) = reg (n-1) infos if n>0;
+
+/* regs info returns all valid submatches, i.e., the list of all triples
+   (n,p,s) for which reg n == (p,s) with p>=0. */
+
+regs info = myregs 0 info with
+  myregs n (p,s,infos)	= (n,p,s):myregs (n+1) infos if p>=0;
+			= myregs (n+1) infos otherwise;
+  myregs n (p,s)	= [(n,p,s)] if p>=0;
+			= [] otherwise;
+end;
+
+/* regexg: Perform a global regular expression search. This routine will scan
+   the entire string for (non-overlapping) instances of the pattern, applies
+   the given function f to the reg_info (see above) for each match, and
+   collects all results in a list. NOTE: Never specify the REG_NOSUB flag with
+   this function, it needs the submatch info. Also, this function will never
+   match the empty string, to prevent looping on pathological patterns. */
+
+regexg f pat::string cflags::int s::string eflags::int = result
+when
+  result = regcomp regptr pat cflags;
+  result = if result==0 then
+             (match 0 s with
+                match offs "" = [];
+                match offs s = result when
+                  result = regexec regptr s n matches eflags;
+                  result = if result==0 then
+	                     (if null u then
+                                match (offs+q) (drop p s)
+                              else
+                                f info : match (offs+q) (drop q s)
+                              when
+                                info = reglist regptr s matches;
+                                p, u = reg 0 info; q = p+#u+null u;
+			        info = xlat_pos offs info;
+                              end with
+			        xlat_pos offs (p, u, info)
+			          = offs+p, u, xlat_pos offs info if p>=0;
+			          = p, u, xlat_pos offs info otherwise;
+			        xlat_pos offs (p, u) = offs+p, u if p>=0;
+				  = p, u otherwise;
+			      end)
+                           else [];
+                end;
+              end when n, matches = regmatches regptr cflags end)
+           else
+             regerr result (decode result);
+  _ = regfree regptr $$ free regptr;
+end with
+  decode n::int = cstring buf when
+    size = regerror n regptr (pointer 0) 0; 
+    buf = malloc size; _ = regerror n regptr buf size;
+  end;
+end when
+  regptr = calloc 1 REG_SIZE;
+end;
+
+/* regexgg works like regexg, but allows overlapping matches. */
+
+regexgg f pat::string cflags::int s::string eflags::int = result
+when
+  result = regcomp regptr pat cflags;
+  result = if result==0 then
+             (match s with
+                match offs "" = [];
+                match offs s = result when
+                  result = regexec regptr s n matches eflags;
+                  result = if result==0 then
+	                     (if null u then
+                                match (offs+q) (drop q s)
+                              else
+                                f info : match (offs+q) (drop q s)
+                              when
+                                info = reglist regptr s matches;
+                                p, u = reg 0 info; q = p+1;
+			        info = xlat_pos offs info;
+                              end with
+			        xlat_pos offs (p, u, info)
+			          = offs+p, u, xlat_pos offs info if p>=0;
+			          = p, u, xlat_pos offs info otherwise;
+			        xlat_pos offs (p, u) = offs+p, u if p>=0;
+				  = p, u otherwise;
+			      end)
+                           else [];
+                end;
+              end when n, matches = regmatches regptr cflags end)
+           else
+             regerr result (decode result);
+  _ = regfree regptr $$ free regptr;
+end with
+  decode n::int = cstring buf when
+    size = regerror n regptr (pointer 0) 0; 
+    buf = malloc size; _ = regerror n regptr buf size;
+  end;
+end when
+  regptr = calloc 1 REG_SIZE;
+end;
+
+/* regsub replaces all non-overlapping instances of a pattern with a computed
+   substitution string. To these ends, the given function f is applied to the
+   reg_info (see above) for each match; it should return a string value. The
+   result string is then obtained by concatenating f info for all matches,
+   with the unmatched portions of the string in between. */
+
+regsub f pat::string cflags::int s::string eflags::int = result
+when
+  result = regcomp regptr pat cflags;
+  result = if result==0 then
+             (match s with
+                match "" = "";
+                match s = result when
+                  result = regexec regptr s n matches eflags;
+                  result = if result==0 then
+	                     (if null u then
+                                take q s + match (drop q s)
+                              else
+                                take p s + f info + match (drop q s)
+                              when
+                                info = reglist regptr s matches;
+                                p, u = reg 0 info; q = p+#u+null u;
+                              end)
+                           else s;
+                end;
+              end when n, matches = regmatches regptr cflags end)
+           else
+             regerr result (decode result);
+  _ = regfree regptr $$ free regptr;
+end with
+  decode n::int = cstring buf when
+    size = regerror n regptr (pointer 0) 0; 
+    buf = malloc size; _ = regerror n regptr buf size;
+  end;
+end when
+  regptr = calloc 1 REG_SIZE;
+end;
+
+/* regsplit splits a string into constituents delimited by substrings matching
+   the given pattern. */
+
+regsplit pat::string cflags::int s::string eflags::int = result
+when
+  result = regcomp regptr pat cflags;
+  result = if result==0 then
+             (match s with
+                match "" = [""];
+                match s = result when
+                  result = regexec regptr s n matches eflags;
+                  result = if result==0 then
+	                     (take p s : match (drop q s)
+                              when
+                                info = reglist regptr s matches;
+                                p, u = reg 0 info; q = p+#u+null u;
+                              end)
+                           else [s];
+                end;
+              end when n, matches = regmatches regptr cflags end)
+           else
+             regerr result (decode result);
+  _ = regfree regptr $$ free regptr;
+end with
+  decode n::int = cstring buf when
+    size = regerror n regptr (pointer 0) 0; 
+    buf = malloc size; _ = regerror n regptr buf size;
+  end;
+end when
+  regptr = calloc 1 REG_SIZE;
+end;

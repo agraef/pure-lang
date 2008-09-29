@@ -1,0 +1,57 @@
+
+// Local function with environment test.
+
+foo x		= bar with bar = x end;
+foo2 x		= bar x with bar 99 = bar (x+1) end;
+foo3 x		= bar with bar y = bar (y+1) if y==x end;
+
+foo 99;
+foo2 99; foo2 98;
+foo3 99; foo3 99 98; foo3 99 99;
+
+// Tail recursion.
+
+loop = loop;
+
+// If LLVM supports proper tail calls on your platform, the following should
+// loop forever.
+//loop;
+
+// Tail recursion in a local function.
+
+count n		= ct n with
+		    ct n::int = n if n<=0;
+		              = ct (n-1) otherwise;
+		  end;
+
+// This should always work.
+count 100;
+// If proper tail calls are supported, this should work, too, no matter what
+// your stack size is.
+//count 10000000;
+
+// Tail recursion in a global function.
+
+count2 n::int	= n if n<=0;
+		= count2 (n-1) otherwise;
+
+count2 100;
+//count2 10000000;
+
+// Definitions involving toplevel if-then-else are properly tail-recursive as
+// well.
+
+count3 n::int	= if n<=0 then n else count3 (n-1);
+
+count3 100;
+//count3 10000000;
+
+// Trivial tail-recursive local function which passes an environment to
+// another local function. Note that the callee can never be tail-called in
+// such a situation because it needs the extra environment parameter which is
+// allocated on the caller's stack in the current implementation.
+
+test x::int	= t x
+with t n::int = t (-n) if n<0; = u (n+2) with u _ = n+1 end end;
+
+test 98; test (-97);

@@ -1,0 +1,183 @@
+/* Pure's priority queue data structure implemented as binary trees */
+
+/* Copyright (c) 2008 by Albert Graef <Dr.Graef@t-online.de>.
+
+   This file is part of the Pure programming language and system.
+
+   Pure is free software: you can redistribute it and/or modify it under the
+   terms of the GNU General Public License as published by the Free Software
+   Foundation, either version 3 of the License, or (at your option) any later
+   version.
+
+   Pure is distributed in the hope that it will be useful, but WITHOUT ANY
+   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+   FOR a PARTICULAR PURPOSE.  See the GNU General Public License for more
+   details.
+
+   You should have received a copy of the GNU General Public License along
+   with this program.  If not, see <http://www.gnu.org/licenses/>. */
+
+
+/* Heaps allow quick (constant time) access to the smallest member, and to
+   remove the smallest nember and insert new elements in logarithmic time.
+   This implementation does not allow quick update of heap members; if
+   such functionality is required, bags should be used instead
+   (see bag in set.pure).
+
+   Heap members must be ordered by the <= predicate. Multiple instances
+   of the same element may be stored in a heap; however, the order in
+   which equal elements are retrieved is not specified. */
+
+/* Public operations: ******************************************************
+
+// #h				// size of a heap
+
+// null h			// tests whether h is the empty heap
+// list h, members h		// lists members of h in ascending order
+
+// first h			// first (i.e. smallest) member of h
+// rmfirst h			// remove smallest member from h
+// insert h x			// insert h into x
+
+   *************************************************************************/
+
+/* Tree constructors. */
+private nullary nil;
+private bin;
+
+// create an empty heap
+emptyheap			= Heap nil;
+
+// create a heap from a list
+heap xs				= foldl insert emptyheap xs if listp xs;
+
+// check whether h is a heap
+heapp (Heap _)			= 1;
+heapp _				= 0 otherwise;
+
+// get size of a heap
+#(Heap h)			= #h
+with
+  #nil				= 0;
+  #bin 0 _ h1 _			= #h1 * 2 + 1;
+  #bin 1 _ h1 _			= #h1 * 2
+end;
+
+// test for an empty heap
+null (Heap nil)			= 1;
+null (Heap _)			= 0 otherwise;
+
+// get members of a heap as an ordered list
+members h@(Heap _)		= [] if null h;
+				= accum [first h] (rmfirst h)
+with
+  accum ys h			= reverse ys if null h;
+				= accum ((first h):ys) (rmfirst h)
+end;
+
+list h@(Heap _)			= members h;
+
+// get the first (smallest) member of a heap
+first (Heap (bin _ x _ _))	= x;
+
+// remove the first (smallest) member of a heap
+rmfirst (Heap h)		= Heap (rmfirst h)
+with
+  rmfirst (bin 0 _ nil nil)	= nil;
+  rmfirst (bin 0 _ h1  h2 )	= update (bin 1 (last h2) h1 (rmlast h2));
+  rmfirst (bin 1 _ h1  h2 )	= update (bin 0 (last h1) (rmlast h1) h2);
+
+  last (bin 0 x::int    nil nil) |
+  last (bin 0 x::string nil nil) |
+  last (bin 0 x         nil nil)
+				= x;
+  last (bin 0 _ _ h2)		= last h2;
+  last (bin 1 _ h1 _)		= last h1;
+
+  update (bin 0 x::int    nil nil) |
+  update (bin 0 x::string nil nil) |
+  update (bin 0 x         nil nil)
+				= bin 0 x nil nil;
+  update (bin 1 x::int    (bin b1::int x1::int    h1 h2) nil) |
+  update (bin 1 x::string (bin b1::int x1::string h1 h2) nil) |
+  update (bin 1 x         (bin b1::int x1         h1 h2) nil)
+				= bin 1 x (bin b1 x1 h1 h2) nil
+				      if x <= x1;
+				= bin 1 x1 (update (bin b1 x h1 h2))
+				  nil otherwise;
+  update (bin b::int x::int    (bin b1::int x1::int    h1 h2)
+					(bin b2::int x2::int    h3 h4)) |
+  update (bin b::int x::string (bin b1::int x1::string h1 h2)
+					(bin b2::int x2::string h3 h4)) |
+  update (bin b::int x         (bin b1::int x1         h1 h2)
+					(bin b2::int x2         h3 h4))
+				= bin b x (bin b1 x1 h1 h2) (bin b2 x2 h3 h4)
+				      if (x <= x1) && (x <= x2);
+				= bin b x1 (update (bin b1 x h1 h2))
+				  (bin b2 x2 h3 h4)
+				      if x1 <= x2;
+				= bin b x2 (bin b1 x1 h1 h2)
+				  (update (bin b2 x h3 h4))
+				      otherwise;
+
+  rmlast (bin 0 _ nil nil)	= nil;
+  rmlast (bin 0 x h1  h2 )	= bin 1 x h1 (rmlast h2);
+  rmlast (bin 1 x h1  h2 )	= bin 0 x (rmlast h1) h2;
+end;
+
+// insert a new member into a heap
+insert (Heap h) y::int    |
+insert (Heap h) y::string |
+insert (Heap h) y		= Heap (insert h y)
+with
+  insert nil y::int    |
+  insert nil y::string |
+  insert nil y			= bin 0 y nil nil;
+
+  insert (bin 0 x::int    h1 h2) y::int    |
+  insert (bin 0 x::string h1 h2) y::string |
+  insert (bin 0 x         h1 h2) y
+				= bin 1 x (insert h1 y) h2 if x <= y;
+				= bin 1 y (insert h1 x) h2 otherwise;
+  insert (bin 1 x::int    h1 h2) y::int    |
+  insert (bin 1 x::string h1 h2) y::string |
+  insert (bin 1 x         h1 h2) y
+				= bin 0 x h1 (insert h2 y) if x <= y;
+				= bin 0 y h1 (insert h2 x) otherwise
+end;
+
+// equality test
+(Heap h1) == (Heap h2)		=  eq h1 h2
+with
+  eq nil nil			= 1;
+  eq nil (bin _ _ _ _)		= 0;
+  eq (bin _ _ _ _) nil		= 0;
+  eq (bin b1::int x1::int    h1 h2) (bin b2::int x2::int    h3 h4) |
+  eq (bin b1::int x1::string h1 h2) (bin b2::int x2::string h3 h4) |
+  eq (bin b1::int x1         h1 h2) (bin b2::int x2         h3 h4)
+				= if (b1 == b2)
+				  then if (x1 == x2)
+				       then if eq h1 h3
+					    then eq h2 h4
+					    else 0
+				       else 0
+				  else 0
+end;;
+
+// inequaliy test
+(Heap h1) != (Heap h2)		= neq h1 h2
+with
+  neq nil nil			= 0;
+  neq nil (bin _ _ _ _)		= 1;
+  neq (bin _ _ _ _) nil		= 1;
+  neq (bin b1::int x1::int    h1 h2) (bin b2::int x2::int    h3 h4) |
+  neq (bin b1::int x1::string h1 h2) (bin b2::int x2::string h3 h4) |
+  neq (bin b1::int x1         h1 h2) (bin b2::int x2         h3 h4)
+				= if (b1 != b2)
+				  then 1
+				  else if (x1 != x2)
+				       then 1
+				       else if neq h1 h3
+					    then 1
+					    else neq h2 h4
+end;

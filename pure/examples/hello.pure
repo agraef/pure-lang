@@ -1,0 +1,289 @@
+
+/* This is a quick tour of Pure, starting from simple numeric calculations,
+   continuing with list processing, and finishing off with the recursive
+   manipulation of tree structures. Along the way you can see all major Pure
+   features at work: equational definitions, conditional expressions,
+   anonymous functions (lambdas), global and local variable bindings, local
+   function definitions, list comprehensions, access to external C functions,
+   and even doing some I/O with the system module. We also sketch out various
+   important programming techniques and tricks of the trade. So working
+   through these examples you should get a pretty good idea how Pure programs
+   look like. */
+
+/* USAGE: You can run this script as 'pure hello.pure' to have it print a
+   friendly greeting. Or you can pipe it into the Pure interpreter with the
+   command 'pure < hello.pure' to print all computed results on stdout. But
+   usually you'll just want to run the script interactively in the Pure
+   interpreter, which can be done with 'pure -i hello.pure'. Or start up the
+   interpreter with the 'pure' command and at its command prompt enter:
+
+   run hello.pure
+
+   Note that the interactive input language of the interpreter is the full
+   Pure language, so you can also enter any of the definitions here directly
+   at the interpreter's prompt. In an interactive session, the interpreter
+   also understands some additional commands useful for interactive usage;
+   type 'help' in the interpreter to learn more about this. */
+
+/* Let's start with the traditional hello world program. In Pure we need the
+   system module to do I/O, so we import that first. */
+
+using system;
+puts "Hello, world!";
+
+/* Ok, with that out of the way, let's get on to more serious things. Most of
+   the time you'll be defining functions to do some calculations. As you'd
+   rightfully expect from a functional language, Pure makes that quite easy: */
+
+// Just a simple function which squares its argument x.
+square x = x*x;
+
+// You can evaluate things by just typing the expression, terminated with ';'.
+square 5; square (a+b);
+
+// You can also bind a global ("free") variable symbol to a value.
+let x = square 5; x;
+
+// Pattern matching definition with 'let'.
+let x, y = square x, square (x+2); x; y;
+
+// We also have constant definitions using 'const' in lieu of 'let'. These
+// symbols cannot be redefined and are substituted directly into other
+// definitions. Try something like 'foo x = pi*x;' and then 'show foo' to see
+// the difference.
+const pi = 3.14159265358979;
+
+/* Variations on a theme: The factorial. This illustrates various different
+   ways to define a simple recursive function. */
+
+// Guarded rules.
+
+fact1 n = n*fact1 (n-1) if n>0;
+        = 1 otherwise;
+
+// Using pattern matching (note the constant pattern on the lhs of eqn. #1).
+
+fact2 0 = 1;
+fact2 n = n*fact2 (n-1) if n>0;
+
+// This is essentially the same, but uses a 'case' expression.
+
+fact3 n = case n of
+            0 = 1;
+            n = n*fact3 (n-1) if n>0;
+          end;
+
+// Using 'if-then-else'.
+
+fact4 n = if n>0 then n*fact4 (n-1) else 1;
+
+// Using lambda ("pointless style").
+
+fact5 = \n -> if n>0 then n*fact5 (n-1) else 1;
+
+// Using fixed points. This technique allows you to define a recursive
+// function without referring to the name of the function in its body. See
+// http://en.wikipedia.org/wiki/Fixed_point_combinator for an explanation.
+// The (normal order) fixed point combinator 'fix' is defined in the prelude.
+
+fact6 = fix (\f n -> if n<=0 then 1 else n*f (n-1));
+
+// These should all evaluate to the same list of the first 10 factorials.
+
+map fact1 (1..10);
+map fact2 (1..10);
+map fact3 (1..10);
+map fact4 (1..10);
+map fact5 (1..10);
+map fact6 (1..10);
+
+/* Various different implementations of the Fibonacci function. Shows the use
+   of 'when' to perform local variable bindings and 'with' to define local
+   functions, and how to make a definition tail-recursive so that it runs in
+   constant stack space. */
+
+// Naive O(fib n) implementation. Try fib1 35 to see how slow it is.
+
+fib1 0 = 0;
+fib1 1 = 1;
+fib1 n = fib1 (n-2) + fib1 (n-1) if n>1;
+
+// O(n) implementation, using a local function which generates the Fibonacci
+// numbers in pairs. Much faster (try fib2 35 to see the change).
+
+fib2 n = a when a, b = fibs n end
+           with fibs n = 0, 1 if n<=0;
+                       = b, a+b when a, b = fibs (n-1) end
+                         otherwise;
+           end;
+
+// Tail-recursive version, with an "accumulating parameter". This one runs in
+// constant stack space. It also uses bigints so that the arithmetically
+// correct values are computed for large n.
+
+fib3 n = a when a, b = fibs (0L, 1L) n end
+           with fibs (a, b) n = a, b if n<=0;
+                              = fibs (b, a+b) (n-1) otherwise;
+           end;
+
+map fib1 (1..10);
+map fib2 (1..10);
+map fib3 (1..50);
+
+/* Ok, enough numbers already. Let's play around with lists! First, the
+   obligatory quicksort function. This isn't really the fastest version of the
+   algorithm, but it shows off the elegance of Pure and teaches us several
+   important lessons: How to perform pattern-matching on structured data; how
+   to deal with function arguments (the order predicate p in this case); how
+   to define local "convenience operators" to make definitions more readable
+   ('<' and '>=' in this example, which we redefine in terms of the order
+   predicate p); and how to generate lists using list comprehensions. All in
+   the same little 2.5-liner. ;-) */
+
+qsort p []	= [];
+qsort p (x:xs)	= qsort p [l | l = xs; l<x] + (x : qsort p [r | r = xs; r>=x])
+		  with x<y = p x y; x>=y = not p x y end;
+
+qsort (<) (1..20); // ascending sort, no-op in this case
+qsort (>) (1..20); // descending sort, reverses the list in this case
+
+/* Let's now test our quicksort with random inputs. This shows how quickly and
+   painlessly you can access functions from the C library in Pure (the random
+   number generator 'rand' in this example). */
+
+extern int rand();
+
+qsort (<) [rand|i = 1..20]; // sort 20 random numbers in ascending order
+qsort (>) [rand|i = 1..20]; // sort 20 random numbers in descending order
+
+/* Erathosthenes' classical prime sieve. Another example showing the beauty
+   and usefulness of list comprehensions. */
+
+primes n	= sieve (2..n) with
+  sieve []	= [];
+  sieve (p:qs)	= p : sieve [q | q = qs; q mod p];
+end;
+
+primes 100;
+
+/* Using streams (lazy lists), we can also compute the infinite list of *all*
+   prime numbers. */
+
+all_primes	= sieve (2..inf) with
+  sieve (p:qs)	= p : sieve [q | q = qs; q mod p] &;
+end;
+
+// Assign this to a variable, so we can take advantage of memoization.
+let P = all_primes;
+
+// The primes <=100, this is the same as primes 100.
+let P1 = list $ takewhile (\x->x<=100) P; P1;
+
+// The first 30 primes.
+let P2 = list $ take 30 P; P2;
+
+// The 299th prime.
+P!299;
+
+/* The classical n queens problem: Compute all placements of n queens on an
+   n x n board so that no two queens hold each other in check. This algorithm
+   demonstrates how you can use list comprehensions to organize backtracking
+   searches. */
+
+queens n	= search n 1 []
+with
+  search n i p	= [reverse p] if i>n;
+		= cat [search n (i+1) ((i,j):p) | j = 1..n; safe (i,j) p];
+  safe (i,j) p	= not any (check (i,j)) p;
+  check (i1,j1) (i2,j2)
+		= i1==i2 || j1==j2 || i1+j1==i2+j2 || i1-j1==i2-j2;
+end;
+
+/* The following version uses catch/throw for non-local value returns, in
+   order to compute only the first solution. If no solution is found, () is
+   returned. */
+
+queens1 n	= catch reverse (search n 1 [])
+with
+  search n i p	= throw p if i>n;
+		= void [search n (i+1) ((i,j):p) | j = 1..n; safe (i,j) p];
+  safe (i,j) p	= not any (check (i,j)) p;
+  check (i1,j1) (i2,j2)
+		= i1==i2 || j1==j2 || i1+j1==i2+j2 || i1-j1==i2-j2;
+end;
+
+/* Our final version makes best use of tail recursion to avoid the
+   construction of intermediate list values and thereby makes the algorithm
+   run a little faster and in less space. It's also slightly more tricky. In
+   particular, have a look at the guard in eqn. #2 of the search function
+   which first recurses on solutions which place the ith queen into column j
+   (after checking that it's safe there) and then backs out (makes the guard
+   fail) to pursue alternative solution paths in eqn. #3. */
+
+queens2 n	= catch reverse (search n 1 1 [])
+with
+  search n i j p
+		= throw p if i>n;
+		= () if safe (i,j) p &&
+			(0 when _ = search n (i+1) 1 ((i,j):p) end);
+		= search n i (j+1) p if j<n;
+		= () otherwise;
+  safe (i,j) p	= not any (check (i,j)) p;
+  check (i1,j1) (i2,j2)
+		= i1==i2 || j1==j2 || i1+j1==i2+j2 || i1-j1==i2-j2;
+end;
+
+// The first expression here evaluates to the number of solutions for the 8
+// queens problem. The other two expressions should both yield the same first
+// solution.
+#queens 8;
+queens1 8;
+queens2 8;
+
+/* Here's how you can print all solutions in a nice format, using some of the
+   I/O functions from the system module. */
+
+print_queens ps	= do (puts.join " ".map (sprintf "%d,%d")) ps;
+
+// Try this when running interactively:
+//print_queens (queens 8);
+
+/* Lists are all good and fine, but what about other, more complicated kinds
+   of data? Luckily, as a term rewriting language Pure is well-suited to
+   process any kind of tree-structured data. We only discuss a simple example
+   here, but using similar, more elaborate techniques like AVL trees (see
+   avltree.pure for an example), it is possible to implement almost any kind
+   of container data structure in an efficient way.
+
+   So let's see how we can implement simple binary search trees in Pure. These
+   are represented using the constant symbol 'nil' (which denotes the empty
+   tree) and the constructor application 'bin x L R', where x denotes the
+   value at the top of the tree, and L and R are the left and right subtrees,
+   respectively. In Pure, constructor symbols like 'bin' don't have to be
+   declared, since they are just ordinary function symbols without any
+   defining equations, but we do need to declare the 'nil' symbol so that the
+   compiler knows that this symbol denotes a constant and doesn't mistake it
+   for a variable when it occurs on the left-hand side of an equation. */
+
+nullary nil;
+
+/* The tree insertion operation. This assumes that the tree elements can be
+   compared using '<'. */
+
+insert nil y		= bin y nil nil;
+insert (bin x L R) y	= bin x (insert L y) R if y<x;
+			= bin x L (insert R y) otherwise;
+
+/* Create a tree from a list of elements. */
+
+bintree xs		= foldl insert nil xs;
+
+/* Do an inorder traversal of the tree to obtain the (now sorted) list of
+   elements. */
+
+members nil		= [];
+members (bin x L R)	= members L + (x:members R);
+
+// A random example:
+
+let xs = [rand|i = 1..20]; let T = bintree xs; xs; T; members T;

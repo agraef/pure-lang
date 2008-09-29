@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+ Pure syntax highlighting for gedit. Usage:
+
+ - Rename this file to 'pure.lang' and copy it to the
+   /usr/share/gtksourceview-2.0/language-specs directory.
+
+ - You may also want to add a text/x-pure or text/x-puresrc mime type for
+   *.pure files so that your file manager can recognize them.
+
+ - Fire up gedit on your Pure script and enjoy the syntax highlighting.
+
+ Author: Eddie Rucker (mostly pilfered from Marco Barision and
+ Emanuela Aina's Ada and C packages)
+
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Library General Public
+ License as published by the Free Software Foundation; either
+ version 2 of the License, or (at your option) any later version.
+
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Library General Public License for more details.
+
+ You should have received a copy of the GNU Library General Public
+ License along with this library; if not, write to the
+ Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ Boston, MA 02111-1307, USA.
+
+-->
+<language id="pure" _name="Pure" version="2.0" _section="Sources">
+  <metadata>
+    <property name="mimetypes">text/x-pure;text/x-puresrc</property>
+    <property name="globs">*.pure</property>
+    <property name="line-comment-start">//</property>
+    <property name="block-comment-start">/*</property>
+    <property name="block-comment-end">*/</property>
+  </metadata>
+  
+  <styles>
+    <style id="comment" _name="Comment" map-to="def:comment"/>
+    <style id="string" _name="String" map-to="def:string"/>
+    <style id="keyword" _name="Keyword" map-to="def:keyword"/>
+    <style id="storage-class" _name="Storage Class" map-to="def:type"/>
+    <style id="type" _name="Data Type" map-to="def:type"/>
+    <style id="preprocessor" _name="Preprocessor" map-to="def:preprocessor"/>
+    <style id="double" _name="Double" map-to="def:floating-point"/>
+    <style id="hexadecimal" _name="Hexadecimal number" map-to="def:base-n-integer"/>
+    <style id="octal" _name="Octal" map-to="def:base-n-integer"/>
+    <style id="int" _name="Integer" map-to="def:decimal"/>
+    <style id="escaped-character" _name="Escaped Character" map-to="def:special-char"/>
+  </styles>
+  
+  <default-regex-options case-sensitive="true"/>
+  
+  <definitions>
+    
+    <context id="line-comment" style-ref="comment" end-at-line-end="true">
+      <start>//</start>
+      <include>
+        <context ref="def:in-line-comment"/>
+      </include>
+    </context>
+    
+    <context id="comment-multiline" style-ref="comment">
+      <start>/\*</start>
+      <end>\*/</end>
+      <include>
+      	<context ref="def:in-comment"/>
+      </include>
+    </context>
+
+    <context id="string" style-ref="string" end-at-line-end="true">
+      <start>"</start>
+      <end>"</end>
+      <include>
+         <context id="string-esc" style-ref="escaped-character" extend-parent="true">
+            <match>""</match>
+         </context>
+       </include>
+    </context>
+
+    <context id="preprocessor-keyword" style-ref="preprocessor">
+      <keyword>def</keyword>
+    </context>
+
+    <context id="keyword" style-ref="keyword">
+      <keyword>case</keyword>
+      <keyword>when</keyword>
+      <keyword>with</keyword>
+      <keyword>end</keyword>
+      <keyword>else</keyword>
+      <keyword>if</keyword>
+      <keyword>infix</keyword>
+      <keyword>infixl</keyword>
+      <keyword>infixr</keyword>
+      <keyword>let</keyword>
+      <keyword>nullary</keyword>
+      <keyword>of</keyword>
+      <keyword>otherwise</keyword>
+      <keyword>prefix</keyword>
+      <keyword>postfix</keyword>
+      <keyword>then</keyword>
+      <keyword>catch</keyword>
+      <keyword>throw</keyword>
+    </context>
+
+    <context id="storage-class" style-ref="storage-class">
+      <keyword>const</keyword>
+      <keyword>private</keyword>
+      <keyword>extern</keyword>
+      <keyword>using</keyword>
+    </context>
+
+    <context id="type" style-ref="type">
+      <keyword>char</keyword>
+      <keyword>bool</keyword>
+      <keyword>float</keyword>
+      <keyword>int</keyword>
+      <keyword>double</keyword>
+      <keyword>expr</keyword>
+      <keyword>short</keyword>
+      <keyword>long</keyword>
+      <keyword>void</keyword>
+      <keyword>string</keyword>
+      <keyword>pointer</keyword>
+      <keyword>matrix</keyword>
+      <keyword>dmatrix</keyword>
+      <keyword>cmatrix</keyword>
+      <keyword>imatrix</keyword>
+    </context>
+    
+    <!-- http://www.lysator.liu.se/c/ANSI-C-grammar-l.html -->
+    <context id="double" style-ref="double">
+      <match extended="true">
+        (?&lt;![\w\.])
+        ((\.[0-9]+ | [0-9]+\.[0-9]*) ([Ee][+-]?[0-9]*)?)
+        (?![\w\.])
+      </match>
+    </context>
+    
+    <context id="hexadecimal" style-ref="hexadecimal">
+      <match extended="true">
+        (?&lt;![\w\.])
+        0[xX][a-fA-F0-9]+L?
+        (?![\w\.])
+      </match>
+    </context>
+    
+    <context id="octal" style-ref="octal">
+      <match extended="true">
+        (?&lt;![\w\.])
+        0[0-7]+L?
+        (?![\w\.])
+      </match>
+    </context>
+    
+    <context id="int" style-ref="int">
+      <match extended="true">
+        (?&lt;![\w\.])
+        [0-9]+L?
+        (?![\w\.])
+      </match>
+    </context>
+
+    <context id="pure">
+      <include>
+        <context ref="line-comment"/>
+	<context ref="comment-multiline"/>
+        <context ref="string"/>
+        <context ref="preprocessor-keyword"/>
+        <context ref="keyword"/>
+        <context ref="storage-class"/>
+        <context ref="type"/>
+	<context ref="double"/>
+        <context ref="hexadecimal"/>
+	<context ref="octal"/>
+        <context ref="int"/>
+      </include>
+    </context>
+
+  </definitions>
+</language>

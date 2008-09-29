@@ -1,0 +1,2206 @@
+const false,true = 0,1;
+f/*0:01*/$x/*0:1*/ = f/*0:01*/ x/*0:1*/;
+(f/*0:001*/.g/*0:01*/) x/*0:1*/ = f/*0:001*/ (g/*0:01*/ x/*0:1*/);
+void _/*0:1*/ = ();
+id x/*0:1*/ = x/*0:1*/;
+cst x/*0:01*/ y/*0:1*/ = x/*0:01*/;
+flip f/*0:001*/ x/*0:01*/ y/*0:1*/ = f/*0:001*/ y/*0:1*/ x/*0:01*/;
+curry f/*0:001*/ x/*0:01*/ y/*0:1*/ = f/*0:001*/ (x/*0:01*/,y/*0:1*/);
+curry3 f/*0:0001*/ x/*0:001*/ y/*0:01*/ z/*0:1*/ = f/*0:0001*/ (x/*0:001*/,y/*0:01*/,z/*0:1*/);
+uncurry f/*0:01*/ (x/*0:101*/,y/*0:11*/) = f/*0:01*/ x/*0:101*/ y/*0:11*/;
+uncurry3 f/*0:01*/ (x/*0:101*/,y/*0:1101*/,z/*0:111*/) = f/*0:01*/ x/*0:101*/ y/*0:1101*/ z/*0:111*/;
+fix f/*0:1*/ = y/*0*/ y/*0*/ with y x/*0:1*/ = f/*1:1*/ (x/*1:1*/ x/*1:1*/&) {
+  rule #0: y x = f (x x&)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+def f/*0:01*/$x/*0:1*/ = f/*0:01*/ x/*0:1*/;
+def (f/*0:001*/.g/*0:01*/) x/*0:1*/ = f/*0:001*/ (g/*0:01*/ x/*0:1*/);
+def void (catmap f/*0:101*/ x/*0:11*/) = do f/*0:101*/ x/*0:11*/;
+(x/*0:0101*/=>v/*0:011*/)==(y/*0:101*/=>w/*0:11*/) = if x/*0:0101*/==y/*0:101*/ then v/*0:011*/==w/*0:11*/ else 0;
+(x/*0:0101*/=>v/*0:011*/)!=(y/*0:101*/=>w/*0:11*/) = if x/*0:0101*/!=y/*0:101*/ then 1 else v/*0:011*/!=w/*0:11*/;
+x/*0:01*/,() = x/*0:01*/;
+(),y/*0:1*/ = y/*0:1*/;
+(x/*0:0101*/,y/*0:011*/),z/*0:1*/ = x/*0:0101*/,y/*0:011*/,z/*0:1*/;
+()==() = 1;
+(x/*0:0101*/,xs/*0:011*/)==() = 0;
+()==(x/*0:101*/,xs/*0:11*/) = 0;
+(x/*0:0101*/,xs/*0:011*/)==(y/*0:101*/,ys/*0:11*/) = if x/*0:0101*/==y/*0:101*/ then xs/*0:011*/==ys/*0:11*/ else 0;
+()!=() = 0;
+(x/*0:0101*/,xs/*0:011*/)!=() = 1;
+()!=(x/*0:101*/,xs/*0:11*/) = 1;
+(x/*0:0101*/,xs/*0:011*/)!=(y/*0:101*/,ys/*0:11*/) = if x/*0:0101*/!=y/*0:101*/ then 1 else xs/*0:011*/!=ys/*0:11*/;
+null () = 1;
+null (x/*0:101*/,xs/*0:11*/) = 0;
+#() = 0;
+#(x/*0:101*/,xs/*0:11*/) = accum/*0*/ 1 xs/*0:11*/ with accum n/*0:01*/::int (x/*0:101*/,xs/*0:11*/) = accum/*1*/ (n/*0:01*/+1) xs/*0:11*/; accum n/*0:01*/::int x/*0:1*/ = n/*0:01*/+1 {
+  rule #0: accum n::int (x,xs) = accum (n+1) xs
+  rule #1: accum n::int x = n+1
+  state 0: #0 #1
+	<var>::int state 1
+  state 1: #0 #1
+	<var> state 2
+	<app> state 3
+  state 2: #1
+  state 3: #0 #1
+	<var> state 4
+	<app> state 6
+  state 4: #1
+	<var> state 5
+  state 5: #1
+  state 6: #0 #1
+	<var> state 7
+	, state 10
+  state 7: #1
+	<var> state 8
+  state 8: #1
+	<var> state 9
+  state 9: #1
+  state 10: #0 #1
+	<var> state 11
+  state 11: #0 #1
+	<var> state 12
+  state 12: #0 #1
+} end;
+(x/*0:0101*/,xs/*0:011*/)!n/*0:1*/::int = throw out_of_bounds if n/*0:1*/<0;
+(x/*0:0101*/,xs/*0:011*/)!0 = x/*0:0101*/;
+(x/*0:0101*/,y/*0:01101*/,xs/*0:0111*/)!n/*0:1*/::int = (y/*0:01101*/,xs/*0:0111*/)!(n/*0:1*/-1);
+(x/*0:0101*/,y/*0:011*/)!1 = y/*0:011*/;
+reverse () = ();
+reverse (x/*0:101*/,xs/*0:11*/) = accum/*0*/ x/*0:101*/ xs/*0:11*/ with accum ys/*0:01*/ (x/*0:101*/,xs/*0:11*/) = accum/*1*/ (x/*0:101*/,ys/*0:01*/) xs/*0:11*/; accum ys/*0:01*/ x/*0:1*/ = x/*0:1*/,ys/*0:01*/ {
+  rule #0: accum ys (x,xs) = accum (x,ys) xs
+  rule #1: accum ys x = x,ys
+  state 0: #0 #1
+	<var> state 1
+  state 1: #0 #1
+	<var> state 2
+	<app> state 3
+  state 2: #1
+  state 3: #0 #1
+	<var> state 4
+	<app> state 6
+  state 4: #1
+	<var> state 5
+  state 5: #1
+  state 6: #0 #1
+	<var> state 7
+	, state 10
+  state 7: #1
+	<var> state 8
+  state 8: #1
+	<var> state 9
+  state 9: #1
+  state 10: #0 #1
+	<var> state 11
+  state 11: #0 #1
+	<var> state 12
+  state 12: #0 #1
+} end;
+[]==[] = 1;
+x/*0:0101*/:xs/*0:011*/==[] = 0;
+[]==x/*0:101*/:xs/*0:11*/ = 0;
+x/*0:0101*/:xs/*0:011*/==y/*0:101*/:ys/*0:11*/ = if x/*0:0101*/==y/*0:101*/ then xs/*0:011*/==ys/*0:11*/ else 0;
+[]!=[] = 0;
+x/*0:0101*/:xs/*0:011*/!=[] = 1;
+[]!=x/*0:101*/:xs/*0:11*/ = 1;
+x/*0:0101*/:xs/*0:011*/!=y/*0:101*/:ys/*0:11*/ = if x/*0:0101*/!=y/*0:101*/ then 1 else xs/*0:011*/!=ys/*0:11*/;
+null [] = 1;
+null (x/*0:101*/:xs/*0:11*/) = 0;
+#[] = 0;
+#(x/*0:101*/:xs/*0:11*/) = accum/*0*/ 1 xs/*0:11*/ with accum n/*0:01*/::int (x/*0:101*/:xs/*0:11*/) = accum/*1*/ (n/*0:01*/+1) xs/*0:11*/; accum n/*0:01*/::int [] = n/*0:01*/; accum n/*0:01*/::int xs/*0:1*/ = n/*0:01*/+#xs/*0:1*/ {
+  rule #0: accum n::int (x:xs) = accum (n+1) xs
+  rule #1: accum n::int [] = n
+  rule #2: accum n::int xs = n+#xs
+  state 0: #0 #1 #2
+	<var>::int state 1
+  state 1: #0 #1 #2
+	<var> state 2
+	<app> state 3
+	[] state 13
+  state 2: #2
+  state 3: #0 #2
+	<var> state 4
+	<app> state 6
+  state 4: #2
+	<var> state 5
+  state 5: #2
+  state 6: #0 #2
+	<var> state 7
+	: state 10
+  state 7: #2
+	<var> state 8
+  state 8: #2
+	<var> state 9
+  state 9: #2
+  state 10: #0 #2
+	<var> state 11
+  state 11: #0 #2
+	<var> state 12
+  state 12: #0 #2
+  state 13: #1 #2
+} end;
+[]!n/*0:1*/::int = throw out_of_bounds;
+(x/*0:0101*/:xs/*0:011*/)!0 = x/*0:0101*/;
+(x/*0:0101*/:xs/*0:011*/)!n/*0:1*/::int = xs/*0:011*/!(n/*0:1*/-1) if n/*0:1*/>0;
+(x/*0:0101*/:xs/*0:011*/)!n/*0:1*/::int = throw out_of_bounds;
+[]+ys/*0:1*/ = ys/*0:1*/;
+xs@(_/*0:0101*/:_/*0:011*/)+ys/*0:1*/ = tick/*0*/ [] xs/*0:01*/ ys/*0:1*/ with tick zs/*0:001*/ (x/*0:0101*/:xs/*0:011*/) ys/*0:1*/ = tack/*1*/ (x/*0:0101*/:zs/*0:001*/) ((xs/*1:011*/+ys/*1:1*/)&) if thunkp xs/*0:011*/; tick zs/*0:001*/ (x/*0:0101*/:xs/*0:011*/) ys/*0:1*/ = tick/*1*/ (x/*0:0101*/:zs/*0:001*/) xs/*0:011*/ ys/*0:1*/; tick zs/*0:001*/ [] ys/*0:1*/ = tack/*1*/ zs/*0:001*/ ys/*0:1*/; tick zs/*0:001*/ xs/*0:01*/ ys/*0:1*/ = tack/*1*/ zs/*0:001*/ (xs/*0:01*/+ys/*0:1*/) {
+  rule #0: tick zs (x:xs) ys = tack (x:zs) ((xs+ys)&) if thunkp xs
+  rule #1: tick zs (x:xs) ys = tick (x:zs) xs ys
+  rule #2: tick zs [] ys = tack zs ys
+  rule #3: tick zs xs ys = tack zs (xs+ys)
+  state 0: #0 #1 #2 #3
+	<var> state 1
+  state 1: #0 #1 #2 #3
+	<var> state 2
+	<app> state 4
+	[] state 17
+  state 2: #3
+	<var> state 3
+  state 3: #3
+  state 4: #0 #1 #3
+	<var> state 5
+	<app> state 8
+  state 5: #3
+	<var> state 6
+  state 6: #3
+	<var> state 7
+  state 7: #3
+  state 8: #0 #1 #3
+	<var> state 9
+	: state 13
+  state 9: #3
+	<var> state 10
+  state 10: #3
+	<var> state 11
+  state 11: #3
+	<var> state 12
+  state 12: #3
+  state 13: #0 #1 #3
+	<var> state 14
+  state 14: #0 #1 #3
+	<var> state 15
+  state 15: #0 #1 #3
+	<var> state 16
+  state 16: #0 #1 #3
+  state 17: #2 #3
+	<var> state 18
+  state 18: #2 #3
+}; tack (x/*0:0101*/:xs/*0:011*/) ys/*0:1*/ = tack/*1*/ xs/*0:011*/ (x/*0:0101*/:ys/*0:1*/); tack [] ys/*0:1*/ = ys/*0:1*/ {
+  rule #0: tack (x:xs) ys = tack xs (x:ys)
+  rule #1: tack [] ys = ys
+  state 0: #0 #1
+	<app> state 1
+	[] state 7
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+	<var> state 6
+  state 6: #0
+  state 7: #1
+	<var> state 8
+  state 8: #1
+} end;
+reverse [] = [];
+reverse (x/*0:101*/:xs/*0:11*/) = accum/*0*/ [x/*0:101*/] xs/*0:11*/ with accum ys/*0:01*/ (x/*0:101*/:xs/*0:11*/) = accum/*1*/ (x/*0:101*/:ys/*0:01*/) xs/*0:11*/; accum ys/*0:01*/ [] = ys/*0:01*/; accum ys/*0:01*/ xs/*0:1*/ = throw (bad_list_value xs/*0:1*/) {
+  rule #0: accum ys (x:xs) = accum (x:ys) xs
+  rule #1: accum ys [] = ys
+  rule #2: accum ys xs = throw (bad_list_value xs)
+  state 0: #0 #1 #2
+	<var> state 1
+  state 1: #0 #1 #2
+	<var> state 2
+	<app> state 3
+	[] state 13
+  state 2: #2
+  state 3: #0 #2
+	<var> state 4
+	<app> state 6
+  state 4: #2
+	<var> state 5
+  state 5: #2
+  state 6: #0 #2
+	<var> state 7
+	: state 10
+  state 7: #2
+	<var> state 8
+  state 8: #2
+	<var> state 9
+  state 9: #2
+  state 10: #0 #2
+	<var> state 11
+  state 11: #0 #2
+	<var> state 12
+  state 12: #0 #2
+  state 13: #1 #2
+} end;
+list () = [];
+list (x/*0:101*/,xs/*0:11*/) = accum/*0*/ [x/*0:101*/] xs/*0:11*/ with accum ys/*0:01*/ (x/*0:101*/,xs/*0:11*/) = accum/*1*/ (x/*0:101*/:ys/*0:01*/) xs/*0:11*/; accum ys/*0:01*/ x/*0:1*/ = reverse (x/*0:1*/:ys/*0:01*/) {
+  rule #0: accum ys (x,xs) = accum (x:ys) xs
+  rule #1: accum ys x = reverse (x:ys)
+  state 0: #0 #1
+	<var> state 1
+  state 1: #0 #1
+	<var> state 2
+	<app> state 3
+  state 2: #1
+  state 3: #0 #1
+	<var> state 4
+	<app> state 6
+  state 4: #1
+	<var> state 5
+  state 5: #1
+  state 6: #0 #1
+	<var> state 7
+	, state 10
+  state 7: #1
+	<var> state 8
+  state 8: #1
+	<var> state 9
+  state 9: #1
+  state 10: #0 #1
+	<var> state 11
+  state 11: #0 #1
+	<var> state 12
+  state 12: #0 #1
+} end;
+tuple [] = ();
+tuple (x/*0:101*/:xs/*0:11*/) = accum/*0*/ x/*0:101*/ xs/*0:11*/ with accum ys/*0:01*/ (x/*0:101*/:xs/*0:11*/) = accum/*1*/ (x/*0:101*/,ys/*0:01*/) xs/*0:11*/; accum ys/*0:01*/ [] = if tuplep ys/*0:01*/ then reverse ys/*0:01*/ else ys/*0:01*/; accum ys/*0:01*/ xs/*0:1*/ = ys/*0:01*/,xs/*0:1*/ {
+  rule #0: accum ys (x:xs) = accum (x,ys) xs
+  rule #1: accum ys [] = if tuplep ys then reverse ys else ys
+  rule #2: accum ys xs = ys,xs
+  state 0: #0 #1 #2
+	<var> state 1
+  state 1: #0 #1 #2
+	<var> state 2
+	<app> state 3
+	[] state 13
+  state 2: #2
+  state 3: #0 #2
+	<var> state 4
+	<app> state 6
+  state 4: #2
+	<var> state 5
+  state 5: #2
+  state 6: #0 #2
+	<var> state 7
+	: state 10
+  state 7: #2
+	<var> state 8
+  state 8: #2
+	<var> state 9
+  state 9: #2
+  state 10: #0 #2
+	<var> state 11
+  state 11: #0 #2
+	<var> state 12
+  state 12: #0 #2
+  state 13: #1 #2
+} end;
+list [] = [];
+list (x/*0:101*/:xs/*0:11*/) = x/*0:101*/:list xs/*0:11*/;
+stream [] = [];
+stream (x/*0:101*/:xs/*0:11*/) = x/*0:101*/:xs/*0:11*/ if thunkp xs/*0:11*/;
+stream (x/*0:101*/:xs/*0:11*/) = x/*0:101*/:stream xs/*1:11*/&;
+stream () = [];
+stream xs@(_/*0:101*/,_/*0:11*/) = stream (list xs/*0:1*/);
+xs/*0:01*/!!ns/*0:1*/ = if tuplep xs/*1:01*/ then tuple ys/*0:*/ else ys/*0:*/ when ys/*0:*/ = catmap (nth/*0*/ xs/*0:01*/) ns/*0:1*/ {
+  rule #0: ys = catmap (nth xs) ns
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end with nth xs/*0:01*/ n/*0:1*/ = catch (cst []) [xs/*1:01*/!n/*1:1*/] {
+  rule #0: nth xs n = catch (cst []) [xs!n]
+  state 0: #0
+	<var> state 1
+  state 1: #0
+	<var> state 2
+  state 2: #0
+} end;
+n1/*0:0101*/:n2/*0:011*/..m/*0:1*/ = if m/*2:1*/===s/*0:*/*inf then iterate (\x/*0:*/ -> x/*0:*/+k/*2:*/ {
+  rule #0: x = x+k
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) n1/*2:0101*/ else while (\i/*0:*/ -> s/*1:*/*i/*0:*/<=s/*1:*/*m/*3:1*/ {
+  rule #0: i = s*i<=s*m
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) (\x/*0:*/ -> x/*0:*/+k/*2:*/ {
+  rule #0: x = x+k
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) n1/*2:0101*/ when k/*0:*/ = n2/*0:011*/-n1/*0:0101*/; s/*0:*/ = if k/*0:*/>0 then 1 else -1 {
+  rule #0: s = if k>0 then 1 else -1
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: k = n2-n1
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end if n1/*0:0101*/!=n2/*0:011*/;
+n/*0:01*/..m/*0:1*/ = if m/*0:1*/===inf then iterate (\x/*0:*/ -> x/*0:*/+1 {
+  rule #0: x = x+1
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) n/*0:01*/ else while (\i/*0:*/ -> i/*0:*/<=m/*1:1*/ {
+  rule #0: i = i<=m
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) (\x/*0:*/ -> x/*0:*/+1 {
+  rule #0: x = x+1
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) n/*0:01*/;
+all p/*0:01*/ [] = 1;
+all p/*0:01*/ (x/*0:101*/:xs/*0:11*/) = if p/*0:01*/ x/*0:101*/ then all p/*0:01*/ xs/*0:11*/ else 0;
+any p/*0:01*/ [] = 0;
+any p/*0:01*/ (x/*0:101*/:xs/*0:11*/) = if p/*0:01*/ x/*0:101*/ then 1 else any p/*0:01*/ xs/*0:11*/;
+do f/*0:01*/ [] = ();
+do f/*0:01*/ (x/*0:101*/:xs/*0:11*/) = f/*0:01*/ x/*0:101*/$$do f/*0:01*/ xs/*0:11*/;
+drop n/*0:01*/::int [] = [];
+drop n/*0:01*/::int ys@(x/*0:101*/:xs/*0:11*/) = drop (n/*0:01*/-1) xs/*0:11*/ if n/*0:01*/>1;
+drop n/*0:01*/::int ys@(x/*0:101*/:xs/*0:11*/) = xs/*0:11*/ if n/*0:01*/==1;
+drop n/*0:01*/::int ys@(x/*0:101*/:xs/*0:11*/) = ys/*0:1*/;
+dropwhile p/*0:01*/ [] = [];
+dropwhile p/*0:01*/ ys@(x/*0:101*/:xs/*0:11*/) = dropwhile p/*0:01*/ xs/*0:11*/ if p/*0:01*/ x/*0:101*/;
+dropwhile p/*0:01*/ ys@(x/*0:101*/:xs/*0:11*/) = ys/*0:1*/;
+filter p/*0:01*/ [] = [];
+filter p/*0:01*/ xs@(_/*0:101*/:_/*0:11*/) = tick/*0*/ [] xs/*0:1*/ with tick zs/*0:01*/ (x/*0:101*/:xs/*0:11*/) = tack/*1*/ (add/*1*/ p/*1:01*/ x/*0:101*/ zs/*0:01*/) (filter p/*2:01*/ xs/*1:11*/&) if thunkp xs/*0:11*/; tick zs/*0:01*/ (x/*0:101*/:xs/*0:11*/) = tick/*1*/ (add/*1*/ p/*1:01*/ x/*0:101*/ zs/*0:01*/) xs/*0:11*/; tick zs/*0:01*/ [] = tack/*1*/ zs/*0:01*/ []; tick _/*0:01*/ xs/*0:1*/ = throw (bad_list_value xs/*0:1*/) {
+  rule #0: tick zs (x:xs) = tack (add p x zs) (filter p xs&) if thunkp xs
+  rule #1: tick zs (x:xs) = tick (add p x zs) xs
+  rule #2: tick zs [] = tack zs []
+  rule #3: tick _ xs = throw (bad_list_value xs)
+  state 0: #0 #1 #2 #3
+	<var> state 1
+  state 1: #0 #1 #2 #3
+	<var> state 2
+	<app> state 3
+	[] state 13
+  state 2: #3
+  state 3: #0 #1 #3
+	<var> state 4
+	<app> state 6
+  state 4: #3
+	<var> state 5
+  state 5: #3
+  state 6: #0 #1 #3
+	<var> state 7
+	: state 10
+  state 7: #3
+	<var> state 8
+  state 8: #3
+	<var> state 9
+  state 9: #3
+  state 10: #0 #1 #3
+	<var> state 11
+  state 11: #0 #1 #3
+	<var> state 12
+  state 12: #0 #1 #3
+  state 13: #2 #3
+}; tack (x/*0:0101*/:xs/*0:011*/) ys/*0:1*/ = tack/*1*/ xs/*0:011*/ (x/*0:0101*/:ys/*0:1*/); tack [] ys/*0:1*/ = ys/*0:1*/ {
+  rule #0: tack (x:xs) ys = tack xs (x:ys)
+  rule #1: tack [] ys = ys
+  state 0: #0 #1
+	<app> state 1
+	[] state 7
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+	<var> state 6
+  state 6: #0
+  state 7: #1
+	<var> state 8
+  state 8: #1
+}; add p/*0:001*/ x/*0:01*/ xs/*0:1*/ = if p/*0:001*/ x/*0:01*/ then x/*0:01*/:xs/*0:1*/ else xs/*0:1*/ {
+  rule #0: add p x xs = if p x then x:xs else xs
+  state 0: #0
+	<var> state 1
+  state 1: #0
+	<var> state 2
+  state 2: #0
+	<var> state 3
+  state 3: #0
+} end;
+foldl f/*0:001*/ a/*0:01*/ [] = a/*0:01*/;
+foldl f/*0:001*/ a/*0:01*/ (x/*0:101*/:xs/*0:11*/) = foldl f/*0:001*/ (f/*0:001*/ a/*0:01*/ x/*0:101*/) xs/*0:11*/;
+foldl1 f/*0:01*/ (x/*0:101*/:xs/*0:11*/) = foldl f/*0:01*/ x/*0:101*/ xs/*0:11*/;
+foldr f/*0:001*/ a/*0:01*/ [] = a/*0:01*/;
+foldr f/*0:001*/ a/*0:01*/ xs@(_/*0:101*/:_/*0:11*/) = tick/*0*/ [] xs/*0:1*/ with tick zs/*0:01*/ (x/*0:101*/:xs/*0:11*/) = tack/*1*/ (x/*0:101*/:zs/*0:01*/) (foldr f/*2:001*/ a/*2:01*/ xs/*1:11*/&) if thunkp xs/*0:11*/; tick zs/*0:01*/ (x/*0:101*/:xs/*0:11*/) = tick/*1*/ (x/*0:101*/:zs/*0:01*/) xs/*0:11*/; tick zs/*0:01*/ [] = tack/*1*/ zs/*0:01*/ a/*1:01*/; tick zs/*0:01*/ xs/*0:1*/ = tack/*1*/ zs/*0:01*/ (foldr f/*1:001*/ a/*1:01*/ xs/*0:1*/) {
+  rule #0: tick zs (x:xs) = tack (x:zs) (foldr f a xs&) if thunkp xs
+  rule #1: tick zs (x:xs) = tick (x:zs) xs
+  rule #2: tick zs [] = tack zs a
+  rule #3: tick zs xs = tack zs (foldr f a xs)
+  state 0: #0 #1 #2 #3
+	<var> state 1
+  state 1: #0 #1 #2 #3
+	<var> state 2
+	<app> state 3
+	[] state 13
+  state 2: #3
+  state 3: #0 #1 #3
+	<var> state 4
+	<app> state 6
+  state 4: #3
+	<var> state 5
+  state 5: #3
+  state 6: #0 #1 #3
+	<var> state 7
+	: state 10
+  state 7: #3
+	<var> state 8
+  state 8: #3
+	<var> state 9
+  state 9: #3
+  state 10: #0 #1 #3
+	<var> state 11
+  state 11: #0 #1 #3
+	<var> state 12
+  state 12: #0 #1 #3
+  state 13: #2 #3
+}; tack (x/*0:0101*/:xs/*0:011*/) y/*0:1*/ = tack/*1*/ xs/*0:011*/ (f/*1:001*/ x/*0:0101*/ y/*0:1*/); tack [] y/*0:1*/ = y/*0:1*/ {
+  rule #0: tack (x:xs) y = tack xs (f x y)
+  rule #1: tack [] y = y
+  state 0: #0 #1
+	<app> state 1
+	[] state 7
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+	<var> state 6
+  state 6: #0
+  state 7: #1
+	<var> state 8
+  state 8: #1
+} end;
+foldr1 f/*0:01*/ [x/*0:101*/] = x/*0:101*/;
+foldr1 f/*0:01*/ xs@(_/*0:101*/:_/*0:11*/) = tick/*0*/ [] xs/*0:1*/ with tick zs/*0:01*/ ys@(_/*0:101*/:xs/*0:11*/) = tack/*1*/ zs/*0:01*/ (foldr1 f/*2:01*/ ys/*1:1*/&) if thunkp xs/*0:11*/; tick zs/*0:01*/ xs/*0:1*/ = case xs/*0:1*/ of [x/*0:01*/] = tack/*2*/ zs/*1:01*/ x/*0:01*/; x/*0:01*/:xs/*0:1*/ = tick/*2*/ (x/*0:01*/:zs/*1:01*/) xs/*0:1*/; _/*0:*/ = tack/*2*/ zs/*1:01*/ (foldr1 f/*2:01*/ xs/*1:1*/) {
+  rule #0: [x] = tack zs x
+  rule #1: x:xs = tick (x:zs) xs
+  rule #2: _ = tack zs (foldr1 f xs)
+  state 0: #0 #1 #2
+	<var> state 1
+	<app> state 2
+  state 1: #2
+  state 2: #0 #1 #2
+	<var> state 3
+	<app> state 5
+  state 3: #2
+	<var> state 4
+  state 4: #2
+  state 5: #0 #1 #2
+	<var> state 6
+	: state 9
+  state 6: #2
+	<var> state 7
+  state 7: #2
+	<var> state 8
+  state 8: #2
+  state 9: #0 #1 #2
+	<var> state 10
+  state 10: #0 #1 #2
+	<var> state 11
+	[] state 12
+  state 11: #1 #2
+  state 12: #0 #1 #2
+} end {
+  rule #0: tick zs ys@(_:xs) = tack zs (foldr1 f ys&) if thunkp xs
+  rule #1: tick zs xs = case xs of [x] = tack zs x; x:xs = tick (x:zs) xs; _ = tack zs (foldr1 f xs) end
+  state 0: #0 #1
+	<var> state 1
+  state 1: #0 #1
+	<var> state 2
+	<app> state 3
+  state 2: #1
+  state 3: #0 #1
+	<var> state 4
+	<app> state 6
+  state 4: #1
+	<var> state 5
+  state 5: #1
+  state 6: #0 #1
+	<var> state 7
+	: state 10
+  state 7: #1
+	<var> state 8
+  state 8: #1
+	<var> state 9
+  state 9: #1
+  state 10: #0 #1
+	<var> state 11
+  state 11: #0 #1
+	<var> state 12
+  state 12: #0 #1
+}; tack (x/*0:0101*/:xs/*0:011*/) y/*0:1*/ = tack/*1*/ xs/*0:011*/ (f/*1:01*/ x/*0:0101*/ y/*0:1*/); tack [] y/*0:1*/ = y/*0:1*/ {
+  rule #0: tack (x:xs) y = tack xs (f x y)
+  rule #1: tack [] y = y
+  state 0: #0 #1
+	<app> state 1
+	[] state 7
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+	<var> state 6
+  state 6: #0
+  state 7: #1
+	<var> state 8
+  state 8: #1
+} end;
+head (x/*0:101*/:xs/*0:11*/) = x/*0:101*/;
+init [x/*0:101*/] = [];
+init xs@(_/*0:101*/:_/*0:11*/) = tick/*0*/ [] xs/*0:1*/ with tick zs/*0:01*/ ys@(_/*0:101*/:xs/*0:11*/) = tack/*1*/ zs/*0:01*/ (init ys/*1:1*/&) if thunkp xs/*0:11*/; tick zs/*0:01*/ xs/*0:1*/ = case xs/*0:1*/ of [x/*0:01*/] = tack/*2*/ zs/*1:01*/ []; x/*0:01*/:xs/*0:1*/ = tick/*2*/ (x/*0:01*/:zs/*1:01*/) xs/*0:1*/; _/*0:*/ = tack/*2*/ zs/*1:01*/ (init xs/*1:1*/) {
+  rule #0: [x] = tack zs []
+  rule #1: x:xs = tick (x:zs) xs
+  rule #2: _ = tack zs (init xs)
+  state 0: #0 #1 #2
+	<var> state 1
+	<app> state 2
+  state 1: #2
+  state 2: #0 #1 #2
+	<var> state 3
+	<app> state 5
+  state 3: #2
+	<var> state 4
+  state 4: #2
+  state 5: #0 #1 #2
+	<var> state 6
+	: state 9
+  state 6: #2
+	<var> state 7
+  state 7: #2
+	<var> state 8
+  state 8: #2
+  state 9: #0 #1 #2
+	<var> state 10
+  state 10: #0 #1 #2
+	<var> state 11
+	[] state 12
+  state 11: #1 #2
+  state 12: #0 #1 #2
+} end {
+  rule #0: tick zs ys@(_:xs) = tack zs (init ys&) if thunkp xs
+  rule #1: tick zs xs = case xs of [x] = tack zs []; x:xs = tick (x:zs) xs; _ = tack zs (init xs) end
+  state 0: #0 #1
+	<var> state 1
+  state 1: #0 #1
+	<var> state 2
+	<app> state 3
+  state 2: #1
+  state 3: #0 #1
+	<var> state 4
+	<app> state 6
+  state 4: #1
+	<var> state 5
+  state 5: #1
+  state 6: #0 #1
+	<var> state 7
+	: state 10
+  state 7: #1
+	<var> state 8
+  state 8: #1
+	<var> state 9
+  state 9: #1
+  state 10: #0 #1
+	<var> state 11
+  state 11: #0 #1
+	<var> state 12
+  state 12: #0 #1
+}; tack (x/*0:0101*/:xs/*0:011*/) ys/*0:1*/ = tack/*1*/ xs/*0:011*/ (x/*0:0101*/:ys/*0:1*/); tack [] ys/*0:1*/ = ys/*0:1*/ {
+  rule #0: tack (x:xs) ys = tack xs (x:ys)
+  rule #1: tack [] ys = ys
+  state 0: #0 #1
+	<app> state 1
+	[] state 7
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+	<var> state 6
+  state 6: #0
+  state 7: #1
+	<var> state 8
+  state 8: #1
+} end;
+last [x/*0:101*/] = x/*0:101*/;
+last (x/*0:101*/:xs/*0:11*/) = last xs/*0:11*/;
+map f/*0:01*/ [] = [];
+map f/*0:01*/ xs@(_/*0:101*/:_/*0:11*/) = tick/*0*/ [] xs/*0:1*/ with tick zs/*0:01*/ (x/*0:101*/:xs/*0:11*/) = tack/*1*/ (f/*1:01*/ x/*0:101*/:zs/*0:01*/) (map f/*2:01*/ xs/*1:11*/&) if thunkp xs/*0:11*/; tick zs/*0:01*/ (x/*0:101*/:xs/*0:11*/) = tick/*1*/ (f/*1:01*/ x/*0:101*/:zs/*0:01*/) xs/*0:11*/; tick zs/*0:01*/ [] = tack/*1*/ zs/*0:01*/ []; tick zs/*0:01*/ xs/*0:1*/ = tack/*1*/ zs/*0:01*/ (map f/*1:01*/ xs/*0:1*/) {
+  rule #0: tick zs (x:xs) = tack (f x:zs) (map f xs&) if thunkp xs
+  rule #1: tick zs (x:xs) = tick (f x:zs) xs
+  rule #2: tick zs [] = tack zs []
+  rule #3: tick zs xs = tack zs (map f xs)
+  state 0: #0 #1 #2 #3
+	<var> state 1
+  state 1: #0 #1 #2 #3
+	<var> state 2
+	<app> state 3
+	[] state 13
+  state 2: #3
+  state 3: #0 #1 #3
+	<var> state 4
+	<app> state 6
+  state 4: #3
+	<var> state 5
+  state 5: #3
+  state 6: #0 #1 #3
+	<var> state 7
+	: state 10
+  state 7: #3
+	<var> state 8
+  state 8: #3
+	<var> state 9
+  state 9: #3
+  state 10: #0 #1 #3
+	<var> state 11
+  state 11: #0 #1 #3
+	<var> state 12
+  state 12: #0 #1 #3
+  state 13: #2 #3
+}; tack (x/*0:0101*/:xs/*0:011*/) ys/*0:1*/ = tack/*1*/ xs/*0:011*/ (x/*0:0101*/:ys/*0:1*/); tack [] ys/*0:1*/ = ys/*0:1*/ {
+  rule #0: tack (x:xs) ys = tack xs (x:ys)
+  rule #1: tack [] ys = ys
+  state 0: #0 #1
+	<app> state 1
+	[] state 7
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+	<var> state 6
+  state 6: #0
+  state 7: #1
+	<var> state 8
+  state 8: #1
+} end;
+scanl f/*0:001*/ a/*0:01*/ [] = [a/*0:01*/];
+scanl f/*0:001*/ a/*0:01*/ xs@(_/*0:101*/:_/*0:11*/) = tick/*0*/ a/*0:01*/ [] xs/*0:1*/ with tick a/*0:001*/ zs/*0:01*/ (x/*0:101*/:xs/*0:11*/) = tack/*1*/ (a/*0:001*/:zs/*0:01*/) (scanl f/*2:001*/ (f/*2:001*/ a/*1:001*/ x/*1:101*/) xs/*1:11*/&) if thunkp xs/*0:11*/; tick a/*0:001*/ zs/*0:01*/ (x/*0:101*/:xs/*0:11*/) = tick/*1*/ (f/*1:001*/ a/*0:001*/ x/*0:101*/) (a/*0:001*/:zs/*0:01*/) xs/*0:11*/; tick a/*0:001*/ zs/*0:01*/ [] = tack/*1*/ zs/*0:01*/ [a/*0:001*/]; tick a/*0:001*/ zs/*0:01*/ xs/*0:1*/ = tack/*1*/ zs/*0:01*/ (scanl f/*1:001*/ a/*0:001*/ xs/*0:1*/) {
+  rule #0: tick a zs (x:xs) = tack (a:zs) (scanl f (f a x) xs&) if thunkp xs
+  rule #1: tick a zs (x:xs) = tick (f a x) (a:zs) xs
+  rule #2: tick a zs [] = tack zs [a]
+  rule #3: tick a zs xs = tack zs (scanl f a xs)
+  state 0: #0 #1 #2 #3
+	<var> state 1
+  state 1: #0 #1 #2 #3
+	<var> state 2
+  state 2: #0 #1 #2 #3
+	<var> state 3
+	<app> state 4
+	[] state 14
+  state 3: #3
+  state 4: #0 #1 #3
+	<var> state 5
+	<app> state 7
+  state 5: #3
+	<var> state 6
+  state 6: #3
+  state 7: #0 #1 #3
+	<var> state 8
+	: state 11
+  state 8: #3
+	<var> state 9
+  state 9: #3
+	<var> state 10
+  state 10: #3
+  state 11: #0 #1 #3
+	<var> state 12
+  state 12: #0 #1 #3
+	<var> state 13
+  state 13: #0 #1 #3
+  state 14: #2 #3
+}; tack (x/*0:0101*/:xs/*0:011*/) ys/*0:1*/ = tack/*1*/ xs/*0:011*/ (x/*0:0101*/:ys/*0:1*/); tack [] ys/*0:1*/ = ys/*0:1*/ {
+  rule #0: tack (x:xs) ys = tack xs (x:ys)
+  rule #1: tack [] ys = ys
+  state 0: #0 #1
+	<app> state 1
+	[] state 7
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+	<var> state 6
+  state 6: #0
+  state 7: #1
+	<var> state 8
+  state 8: #1
+} end;
+scanl1 f/*0:01*/ [] = [];
+scanl1 f/*0:01*/ (x/*0:101*/:xs/*0:11*/) = scanl f/*0:01*/ x/*0:101*/ xs/*0:11*/;
+scanr f/*0:001*/ a/*0:01*/ [] = [a/*0:01*/];
+scanr f/*0:001*/ a/*0:01*/ xs@(_/*0:101*/:_/*0:11*/) = tick/*0*/ [] xs/*0:1*/ with tick zs/*0:01*/ (x/*0:101*/:xs/*0:11*/) = tack/*4*/ zs/*3:01*/ us/*0:*/ when ys/*0:*/ = scanr f/*2:001*/ a/*2:01*/ xs/*1:11*/&; y/*0:*/ = (case ys/*1:*/ of y/*0:01*/:_/*0:1*/ = y/*0:01*/; scanr _/*0:001*/ _/*0:01*/ ys/*0:1*/ = throw (bad_list_value ys/*0:1*/); _/*0:*/ = throw (bad_list_value ys/*2:*/) {
+  rule #0: y:_ = y
+  rule #1: scanr _ _ ys = throw (bad_list_value ys)
+  rule #2: _ = throw (bad_list_value ys)
+  state 0: #0 #1 #2
+	<var> state 1
+	<app> state 2
+  state 1: #2
+  state 2: #0 #1 #2
+	<var> state 3
+	<app> state 5
+  state 3: #2
+	<var> state 4
+  state 4: #2
+  state 5: #0 #1 #2
+	<var> state 6
+	: state 9
+	<app> state 12
+  state 6: #2
+	<var> state 7
+  state 7: #2
+	<var> state 8
+  state 8: #2
+  state 9: #0 #2
+	<var> state 10
+  state 10: #0 #2
+	<var> state 11
+  state 11: #0 #2
+  state 12: #1 #2
+	<var> state 13
+	scanr state 17
+  state 13: #2
+	<var> state 14
+  state 14: #2
+	<var> state 15
+  state 15: #2
+	<var> state 16
+  state 16: #2
+  state 17: #1 #2
+	<var> state 18
+  state 18: #1 #2
+	<var> state 19
+  state 19: #1 #2
+	<var> state 20
+  state 20: #1 #2
+} end)&; us/*0:*/ = f/*3:001*/ x/*2:101*/ y/*0:*/:ys/*1:*/ {
+  rule #0: us = f x y:ys
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: y = (case ys of y:_ = y; scanr _ _ ys = throw (bad_list_value ys); _ = throw (bad_list_value ys) end)&
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: ys = scanr f a xs&
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end if thunkp xs/*0:11*/; tick zs/*0:01*/ (x/*0:101*/:xs/*0:11*/) = tack/*1*/ zs/*0:01*/ (f/*3:001*/ x/*2:101*/ (y/*0:01*/ when y/*0:01*/:_/*0:1*/ = ys/*1:*/ {
+  rule #0: y:_ = ys
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+} end)&:ys/*0:*/ when ys/*0:*/ = scanr f/*2:001*/ a/*2:01*/ xs/*1:11*/& {
+  rule #0: ys = scanr f a xs&
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end) if thunkp xs/*0:11*/; tick zs/*0:01*/ (x/*0:101*/:xs/*0:11*/) = tick/*1*/ (x/*0:101*/:zs/*0:01*/) xs/*0:11*/; tick zs/*0:01*/ [] = tack/*1*/ zs/*0:01*/ [a/*1:01*/]; tick zs/*0:01*/ xs/*0:1*/ = throw (bad_list_value xs/*0:1*/) {
+  rule #0: tick zs (x:xs) = tack zs us when ys = scanr f a xs&; y = (case ys of y:_ = y; scanr _ _ ys = throw (bad_list_value ys); _ = throw (bad_list_value ys) end)&; us = f x y:ys end if thunkp xs
+  rule #1: tick zs (x:xs) = tack zs (f x (y when y:_ = ys end)&:ys when ys = scanr f a xs& end) if thunkp xs
+  rule #2: tick zs (x:xs) = tick (x:zs) xs
+  rule #3: tick zs [] = tack zs [a]
+  rule #4: tick zs xs = throw (bad_list_value xs)
+  state 0: #0 #1 #2 #3 #4
+	<var> state 1
+  state 1: #0 #1 #2 #3 #4
+	<var> state 2
+	<app> state 3
+	[] state 13
+  state 2: #4
+  state 3: #0 #1 #2 #4
+	<var> state 4
+	<app> state 6
+  state 4: #4
+	<var> state 5
+  state 5: #4
+  state 6: #0 #1 #2 #4
+	<var> state 7
+	: state 10
+  state 7: #4
+	<var> state 8
+  state 8: #4
+	<var> state 9
+  state 9: #4
+  state 10: #0 #1 #2 #4
+	<var> state 11
+  state 11: #0 #1 #2 #4
+	<var> state 12
+  state 12: #0 #1 #2 #4
+  state 13: #3 #4
+}; tack (x/*0:0101*/:xs/*0:011*/) ys/*0:1*/ = tack/*2*/ xs/*1:011*/ (f/*2:001*/ x/*1:0101*/ y/*0:01*/:ys/*1:1*/) when y/*0:01*/:_/*0:1*/ = ys/*0:1*/ {
+  rule #0: y:_ = ys
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+} end; tack [] ys/*0:1*/ = ys/*0:1*/ {
+  rule #0: tack (x:xs) ys = tack xs (f x y:ys) when y:_ = ys end
+  rule #1: tack [] ys = ys
+  state 0: #0 #1
+	<app> state 1
+	[] state 7
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+	<var> state 6
+  state 6: #0
+  state 7: #1
+	<var> state 8
+  state 8: #1
+} end;
+scanr1 f/*0:01*/ [] = [];
+scanr1 f/*0:01*/ [x/*0:101*/] = [x/*0:101*/];
+scanr1 f/*0:01*/ xs@(_/*0:101*/:_/*0:11*/) = tick/*0*/ [] xs/*0:1*/ with tick zs/*0:01*/ (x/*0:101*/:xs/*0:11*/) = tack/*4*/ zs/*3:01*/ us/*0:*/ when ys/*0:*/ = scanr1 f/*2:01*/ xs/*1:11*/&; y/*0:*/ = (case ys/*1:*/ of y/*0:01*/:_/*0:1*/ = y/*0:01*/; scanr1 _/*0:01*/ ys/*0:1*/ = throw (bad_list_value ys/*0:1*/); _/*0:*/ = throw (bad_list_value ys/*2:*/) {
+  rule #0: y:_ = y
+  rule #1: scanr1 _ ys = throw (bad_list_value ys)
+  rule #2: _ = throw (bad_list_value ys)
+  state 0: #0 #1 #2
+	<var> state 1
+	<app> state 2
+  state 1: #2
+  state 2: #0 #1 #2
+	<var> state 3
+	<app> state 5
+  state 3: #2
+	<var> state 4
+  state 4: #2
+  state 5: #0 #1 #2
+	<var> state 6
+	: state 9
+	scanr1 state 12
+  state 6: #2
+	<var> state 7
+  state 7: #2
+	<var> state 8
+  state 8: #2
+  state 9: #0 #2
+	<var> state 10
+  state 10: #0 #2
+	<var> state 11
+  state 11: #0 #2
+  state 12: #1 #2
+	<var> state 13
+  state 13: #1 #2
+	<var> state 14
+  state 14: #1 #2
+} end)&; us/*0:*/ = f/*3:01*/ x/*2:101*/ y/*0:*/:ys/*1:*/ {
+  rule #0: us = f x y:ys
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: y = (case ys of y:_ = y; scanr1 _ ys = throw (bad_list_value ys); _ = throw (bad_list_value ys) end)&
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: ys = scanr1 f xs&
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end if thunkp xs/*0:11*/; tick zs/*0:01*/ xs/*0:1*/ = case xs/*0:1*/ of [x/*0:01*/] = tack/*2*/ zs/*1:01*/ [x/*0:01*/]; x/*0:01*/:xs/*0:1*/ = tick/*2*/ (x/*0:01*/:zs/*1:01*/) xs/*0:1*/; _/*0:*/ = throw (bad_list_value xs/*1:1*/) {
+  rule #0: [x] = tack zs [x]
+  rule #1: x:xs = tick (x:zs) xs
+  rule #2: _ = throw (bad_list_value xs)
+  state 0: #0 #1 #2
+	<var> state 1
+	<app> state 2
+  state 1: #2
+  state 2: #0 #1 #2
+	<var> state 3
+	<app> state 5
+  state 3: #2
+	<var> state 4
+  state 4: #2
+  state 5: #0 #1 #2
+	<var> state 6
+	: state 9
+  state 6: #2
+	<var> state 7
+  state 7: #2
+	<var> state 8
+  state 8: #2
+  state 9: #0 #1 #2
+	<var> state 10
+  state 10: #0 #1 #2
+	<var> state 11
+	[] state 12
+  state 11: #1 #2
+  state 12: #0 #1 #2
+} end {
+  rule #0: tick zs (x:xs) = tack zs us when ys = scanr1 f xs&; y = (case ys of y:_ = y; scanr1 _ ys = throw (bad_list_value ys); _ = throw (bad_list_value ys) end)&; us = f x y:ys end if thunkp xs
+  rule #1: tick zs xs = case xs of [x] = tack zs [x]; x:xs = tick (x:zs) xs; _ = throw (bad_list_value xs) end
+  state 0: #0 #1
+	<var> state 1
+  state 1: #0 #1
+	<var> state 2
+	<app> state 3
+  state 2: #1
+  state 3: #0 #1
+	<var> state 4
+	<app> state 6
+  state 4: #1
+	<var> state 5
+  state 5: #1
+  state 6: #0 #1
+	<var> state 7
+	: state 10
+  state 7: #1
+	<var> state 8
+  state 8: #1
+	<var> state 9
+  state 9: #1
+  state 10: #0 #1
+	<var> state 11
+  state 11: #0 #1
+	<var> state 12
+  state 12: #0 #1
+}; tack (x/*0:0101*/:xs/*0:011*/) ys/*0:1*/ = tack/*2*/ xs/*1:011*/ (f/*2:01*/ x/*1:0101*/ y/*0:01*/:ys/*1:1*/) when y/*0:01*/:_/*0:1*/ = ys/*0:1*/ {
+  rule #0: y:_ = ys
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+} end; tack [] ys/*0:1*/ = ys/*0:1*/ {
+  rule #0: tack (x:xs) ys = tack xs (f x y:ys) when y:_ = ys end
+  rule #1: tack [] ys = ys
+  state 0: #0 #1
+	<app> state 1
+	[] state 7
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+	<var> state 6
+  state 6: #0
+  state 7: #1
+	<var> state 8
+  state 8: #1
+} end;
+tail (x/*0:101*/:xs/*0:11*/) = xs/*0:11*/;
+take n/*0:01*/::int [] = [];
+take n/*0:01*/::int xs@(_/*0:101*/:_/*0:11*/) = tick/*0*/ n/*0:01*/ [] xs/*0:1*/ with tick n/*0:001*/::int zs/*0:01*/ xs/*0:1*/ = tack/*1*/ zs/*0:01*/ [] if n/*0:001*/<=0; tick n/*0:001*/::int zs/*0:01*/ xs/*0:1*/ = tack/*1*/ zs/*0:01*/ (take n/*1:001*/ xs/*1:1*/&) if thunkp xs/*0:1*/; tick n/*0:001*/::int zs/*0:01*/ xs/*0:1*/ = case xs/*0:1*/ of [] = tack/*2*/ zs/*1:01*/ []; x/*0:01*/:xs/*0:1*/ = tick/*2*/ (n/*1:001*/-1) (x/*0:01*/:zs/*1:01*/) xs/*0:1*/; _/*0:*/ = tack/*2*/ zs/*1:01*/ (take n/*1:001*/ xs/*1:1*/) {
+  rule #0: [] = tack zs []
+  rule #1: x:xs = tick (n-1) (x:zs) xs
+  rule #2: _ = tack zs (take n xs)
+  state 0: #0 #1 #2
+	<var> state 1
+	[] state 2
+	<app> state 3
+  state 1: #2
+  state 2: #0 #2
+  state 3: #1 #2
+	<var> state 4
+	<app> state 6
+  state 4: #2
+	<var> state 5
+  state 5: #2
+  state 6: #1 #2
+	<var> state 7
+	: state 10
+  state 7: #2
+	<var> state 8
+  state 8: #2
+	<var> state 9
+  state 9: #2
+  state 10: #1 #2
+	<var> state 11
+  state 11: #1 #2
+	<var> state 12
+  state 12: #1 #2
+} end {
+  rule #0: tick n::int zs xs = tack zs [] if n<=0
+  rule #1: tick n::int zs xs = tack zs (take n xs&) if thunkp xs
+  rule #2: tick n::int zs xs = case xs of [] = tack zs []; x:xs = tick (n-1) (x:zs) xs; _ = tack zs (take n xs) end
+  state 0: #0 #1 #2
+	<var>::int state 1
+  state 1: #0 #1 #2
+	<var> state 2
+  state 2: #0 #1 #2
+	<var> state 3
+  state 3: #0 #1 #2
+}; tack (x/*0:0101*/:xs/*0:011*/) ys/*0:1*/ = tack/*1*/ xs/*0:011*/ (x/*0:0101*/:ys/*0:1*/); tack [] ys/*0:1*/ = ys/*0:1*/ {
+  rule #0: tack (x:xs) ys = tack xs (x:ys)
+  rule #1: tack [] ys = ys
+  state 0: #0 #1
+	<app> state 1
+	[] state 7
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+	<var> state 6
+  state 6: #0
+  state 7: #1
+	<var> state 8
+  state 8: #1
+} end;
+takewhile p/*0:01*/ [] = [];
+takewhile p/*0:01*/ xs@(_/*0:101*/:_/*0:11*/) = tick/*0*/ [] xs/*0:1*/ with tick zs/*0:01*/ xs/*0:1*/ = tack/*1*/ zs/*0:01*/ (takewhile p/*2:01*/ xs/*1:1*/&) if thunkp xs/*0:1*/; tick zs/*0:01*/ xs/*0:1*/ = case xs/*0:1*/ of [] = tack/*2*/ zs/*1:01*/ []; x/*0:01*/:xs/*0:1*/ = tick/*2*/ (x/*0:01*/:zs/*1:01*/) xs/*0:1*/ if p/*2:01*/ x/*0:01*/; x/*0:01*/:xs/*0:1*/ = tack/*2*/ zs/*1:01*/ []; _/*0:*/ = tack/*2*/ zs/*1:01*/ (takewhile p/*2:01*/ xs/*1:1*/) {
+  rule #0: [] = tack zs []
+  rule #1: x:xs = tick (x:zs) xs if p x
+  rule #2: x:xs = tack zs []
+  rule #3: _ = tack zs (takewhile p xs)
+  state 0: #0 #1 #2 #3
+	<var> state 1
+	[] state 2
+	<app> state 3
+  state 1: #3
+  state 2: #0 #3
+  state 3: #1 #2 #3
+	<var> state 4
+	<app> state 6
+  state 4: #3
+	<var> state 5
+  state 5: #3
+  state 6: #1 #2 #3
+	<var> state 7
+	: state 10
+  state 7: #3
+	<var> state 8
+  state 8: #3
+	<var> state 9
+  state 9: #3
+  state 10: #1 #2 #3
+	<var> state 11
+  state 11: #1 #2 #3
+	<var> state 12
+  state 12: #1 #2 #3
+} end {
+  rule #0: tick zs xs = tack zs (takewhile p xs&) if thunkp xs
+  rule #1: tick zs xs = case xs of [] = tack zs []; x:xs = tick (x:zs) xs if p x; x:xs = tack zs []; _ = tack zs (takewhile p xs) end
+  state 0: #0 #1
+	<var> state 1
+  state 1: #0 #1
+	<var> state 2
+  state 2: #0 #1
+}; tack (x/*0:0101*/:xs/*0:011*/) ys/*0:1*/ = tack/*1*/ xs/*0:011*/ (x/*0:0101*/:ys/*0:1*/); tack [] ys/*0:1*/ = ys/*0:1*/ {
+  rule #0: tack (x:xs) ys = tack xs (x:ys)
+  rule #1: tack [] ys = ys
+  state 0: #0 #1
+	<app> state 1
+	[] state 7
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+	<var> state 6
+  state 6: #0
+  state 7: #1
+	<var> state 8
+  state 8: #1
+} end;
+cat [] = [];
+cat xs@(_/*0:101*/:_/*0:11*/) = foldr (tick/*0*/ []) [] xs/*0:1*/ with tick zs/*0:001*/ (x/*0:0101*/:xs/*0:011*/) ys/*0:1*/ = tack/*1*/ (x/*0:0101*/:zs/*0:001*/) (tick/*2*/ [] xs/*1:011*/ ys/*1:1*/&) if thunkp xs/*0:011*/; tick zs/*0:001*/ (x/*0:0101*/:xs/*0:011*/) ys/*0:1*/ = tick/*1*/ (x/*0:0101*/:zs/*0:001*/) xs/*0:011*/ ys/*0:1*/; tick zs/*0:001*/ [] ys/*0:1*/ = tack/*1*/ zs/*0:001*/ ys/*0:1*/; tick zs/*0:001*/ xs/*0:01*/ ys/*0:1*/ = tack/*1*/ zs/*0:001*/ (xs/*0:01*/+ys/*0:1*/) {
+  rule #0: tick zs (x:xs) ys = tack (x:zs) (tick [] xs ys&) if thunkp xs
+  rule #1: tick zs (x:xs) ys = tick (x:zs) xs ys
+  rule #2: tick zs [] ys = tack zs ys
+  rule #3: tick zs xs ys = tack zs (xs+ys)
+  state 0: #0 #1 #2 #3
+	<var> state 1
+  state 1: #0 #1 #2 #3
+	<var> state 2
+	<app> state 4
+	[] state 17
+  state 2: #3
+	<var> state 3
+  state 3: #3
+  state 4: #0 #1 #3
+	<var> state 5
+	<app> state 8
+  state 5: #3
+	<var> state 6
+  state 6: #3
+	<var> state 7
+  state 7: #3
+  state 8: #0 #1 #3
+	<var> state 9
+	: state 13
+  state 9: #3
+	<var> state 10
+  state 10: #3
+	<var> state 11
+  state 11: #3
+	<var> state 12
+  state 12: #3
+  state 13: #0 #1 #3
+	<var> state 14
+  state 14: #0 #1 #3
+	<var> state 15
+  state 15: #0 #1 #3
+	<var> state 16
+  state 16: #0 #1 #3
+  state 17: #2 #3
+	<var> state 18
+  state 18: #2 #3
+}; tack (x/*0:0101*/:xs/*0:011*/) ys/*0:1*/ = tack/*1*/ xs/*0:011*/ (x/*0:0101*/:ys/*0:1*/); tack [] ys/*0:1*/ = ys/*0:1*/ {
+  rule #0: tack (x:xs) ys = tack xs (x:ys)
+  rule #1: tack [] ys = ys
+  state 0: #0 #1
+	<app> state 1
+	[] state 7
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+	<var> state 6
+  state 6: #0
+  state 7: #1
+	<var> state 8
+  state 8: #1
+} end;
+catmap f/*0:01*/ [] = [];
+catmap f/*0:01*/ xs@(_/*0:101*/:_/*0:11*/) = cat (map f/*0:01*/ xs/*0:1*/);
+index [] _/*0:1*/ = -1;
+index (x/*0:0101*/:xs/*0:011*/) y/*0:1*/ = search/*0*/ 0 (x/*0:0101*/:xs/*0:011*/) with search _/*0:01*/ [] = -1; search n/*0:01*/::int (x/*0:101*/:xs/*0:11*/) = n/*0:01*/ if x/*0:101*/==y/*1:1*/; search n/*0:01*/::int (x/*0:101*/:xs/*0:11*/) = search/*1*/ (n/*0:01*/+1) xs/*0:11*/; search _/*0:01*/ xs/*0:1*/ = index xs/*0:1*/ y/*1:1*/ {
+  rule #0: search _ [] = -1
+  rule #1: search n::int (x:xs) = n if x==y
+  rule #2: search n::int (x:xs) = search (n+1) xs
+  rule #3: search _ xs = index xs y
+  state 0: #0 #1 #2 #3
+	<var> state 1
+	<var>::int state 4
+  state 1: #0 #3
+	<var> state 2
+	[] state 3
+  state 2: #3
+  state 3: #0 #3
+  state 4: #0 #1 #2 #3
+	<var> state 5
+	[] state 6
+	<app> state 7
+  state 5: #3
+  state 6: #0 #3
+  state 7: #1 #2 #3
+	<var> state 8
+	<app> state 10
+  state 8: #3
+	<var> state 9
+  state 9: #3
+  state 10: #1 #2 #3
+	<var> state 11
+	: state 14
+  state 11: #3
+	<var> state 12
+  state 12: #3
+	<var> state 13
+  state 13: #3
+  state 14: #1 #2 #3
+	<var> state 15
+  state 15: #1 #2 #3
+	<var> state 16
+  state 16: #1 #2 #3
+} end;
+iterate f/*0:01*/ x/*0:1*/ = x/*0:1*/:iterate f/*1:01*/ (f/*1:01*/ x/*1:1*/)&;
+repeat x/*0:1*/ = x/*0:1*/:repeat x/*1:1*/&;
+cycle ys@(x/*0:101*/:xs/*0:11*/) = x/*0:101*/:(xs/*1:11*/+cycle ys/*1:1*/)&;
+while p/*0:001*/ f/*0:01*/ x/*0:1*/ = accum/*0*/ [] p/*0:001*/ f/*0:01*/ x/*0:1*/ with accum xs/*0:0001*/ p/*0:001*/ f/*0:01*/ x/*0:1*/ = accum/*1*/ (x/*0:1*/:xs/*0:0001*/) p/*0:001*/ f/*0:01*/ (f/*0:01*/ x/*0:1*/) if p/*0:001*/ x/*0:1*/; accum xs/*0:0001*/ p/*0:001*/ f/*0:01*/ x/*0:1*/ = reverse xs/*0:0001*/ {
+  rule #0: accum xs p f x = accum (x:xs) p f (f x) if p x
+  rule #1: accum xs p f x = reverse xs
+  state 0: #0 #1
+	<var> state 1
+  state 1: #0 #1
+	<var> state 2
+  state 2: #0 #1
+	<var> state 3
+  state 3: #0 #1
+	<var> state 4
+  state 4: #0 #1
+} end;
+repeatn n/*0:01*/::int x/*0:1*/ = accum/*0*/ [] n/*0:01*/ x/*0:1*/ with accum xs/*0:001*/ n/*0:01*/::int x/*0:1*/ = xs/*0:001*/ if n/*0:01*/<=0; accum xs/*0:001*/ n/*0:01*/::int x/*0:1*/ = accum/*1*/ (x/*0:1*/:xs/*0:001*/) (n/*0:01*/-1) x/*0:1*/ {
+  rule #0: accum xs n::int x = xs if n<=0
+  rule #1: accum xs n::int x = accum (x:xs) (n-1) x
+  state 0: #0 #1
+	<var> state 1
+  state 1: #0 #1
+	<var>::int state 2
+  state 2: #0 #1
+	<var> state 3
+  state 3: #0 #1
+} end;
+cyclen n/*0:01*/::int (x/*0:101*/:xs/*0:11*/) = [] if n/*0:01*/<=0;
+cyclen n/*0:01*/::int (x/*0:101*/:xs/*0:11*/) = accum/*0*/ [] n/*2:01*/ with accum ys/*0:01*/ n/*0:1*/::int = cat ys/*0:01*/+take n/*0:1*/ xs/*2:*/ if n/*0:1*/<=m/*1:*/; accum ys/*0:01*/ n/*0:1*/::int = accum/*1*/ (xs/*2:*/:ys/*0:01*/) (n/*0:1*/-m/*1:*/) {
+  rule #0: accum ys n::int = cat ys+take n xs if n<=m
+  rule #1: accum ys n::int = accum (xs:ys) (n-m)
+  state 0: #0 #1
+	<var> state 1
+  state 1: #0 #1
+	<var>::int state 2
+  state 2: #0 #1
+} end when xs/*0:*/ = x/*0:101*/:xs/*0:11*/; m/*0:*/::int = #xs/*0:*/ {
+  rule #0: m::int = #xs
+  state 0: #0
+	<var>::int state 1
+  state 1: #0
+} {
+  rule #0: xs = x:xs
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end if listp xs/*0:11*/;
+zip [] _/*0:1*/ = [];
+zip _/*0:01*/ [] = [];
+zip xs@(_/*0:0101*/:_/*0:011*/) ys@(_/*0:101*/:_/*0:11*/) = tick/*0*/ [] xs/*0:01*/ ys/*0:1*/ with tick us/*0:001*/ (x/*0:0101*/:xs/*0:011*/) (y/*0:101*/:ys/*0:11*/) = tack/*1*/ ((x/*0:0101*/,y/*0:101*/):us/*0:001*/) (zip xs/*1:011*/ ys/*1:11*/&) if thunkp xs/*0:011*/||thunkp ys/*0:11*/; tick us/*0:001*/ (x/*0:0101*/:xs/*0:011*/) (y/*0:101*/:ys/*0:11*/) = tick/*1*/ ((x/*0:0101*/,y/*0:101*/):us/*0:001*/) xs/*0:011*/ ys/*0:11*/; tick us/*0:001*/ [] _/*0:1*/ = tack/*1*/ us/*0:001*/ []; tick us/*0:001*/ _/*0:01*/ [] = tack/*1*/ us/*0:001*/ []; tick us/*0:001*/ xs/*0:01*/ ys/*0:1*/ = tack/*1*/ us/*0:001*/ (zip xs/*0:01*/ ys/*0:1*/) {
+  rule #0: tick us (x:xs) (y:ys) = tack ((x,y):us) (zip xs ys&) if thunkp xs||thunkp ys
+  rule #1: tick us (x:xs) (y:ys) = tick ((x,y):us) xs ys
+  rule #2: tick us [] _ = tack us []
+  rule #3: tick us _ [] = tack us []
+  rule #4: tick us xs ys = tack us (zip xs ys)
+  state 0: #0 #1 #2 #3 #4
+	<var> state 1
+  state 1: #0 #1 #2 #3 #4
+	<var> state 2
+	<app> state 5
+	[] state 31
+  state 2: #3 #4
+	<var> state 3
+	[] state 4
+  state 3: #4
+  state 4: #3 #4
+  state 5: #0 #1 #3 #4
+	<var> state 6
+	<app> state 10
+  state 6: #3 #4
+	<var> state 7
+  state 7: #3 #4
+	<var> state 8
+	[] state 9
+  state 8: #4
+  state 9: #3 #4
+  state 10: #0 #1 #3 #4
+	<var> state 11
+	: state 16
+  state 11: #3 #4
+	<var> state 12
+  state 12: #3 #4
+	<var> state 13
+  state 13: #3 #4
+	<var> state 14
+	[] state 15
+  state 14: #4
+  state 15: #3 #4
+  state 16: #0 #1 #3 #4
+	<var> state 17
+  state 17: #0 #1 #3 #4
+	<var> state 18
+  state 18: #0 #1 #3 #4
+	<var> state 19
+	<app> state 20
+	[] state 30
+  state 19: #4
+  state 20: #0 #1 #4
+	<var> state 21
+	<app> state 23
+  state 21: #4
+	<var> state 22
+  state 22: #4
+  state 23: #0 #1 #4
+	<var> state 24
+	: state 27
+  state 24: #4
+	<var> state 25
+  state 25: #4
+	<var> state 26
+  state 26: #4
+  state 27: #0 #1 #4
+	<var> state 28
+  state 28: #0 #1 #4
+	<var> state 29
+  state 29: #0 #1 #4
+  state 30: #3 #4
+  state 31: #2 #3 #4
+	<var> state 32
+	[] state 33
+  state 32: #2 #4
+  state 33: #2 #3 #4
+}; tack (u/*0:0101*/:us/*0:011*/) vs/*0:1*/ = tack/*1*/ us/*0:011*/ (u/*0:0101*/:vs/*0:1*/); tack [] vs/*0:1*/ = vs/*0:1*/ {
+  rule #0: tack (u:us) vs = tack us (u:vs)
+  rule #1: tack [] vs = vs
+  state 0: #0 #1
+	<app> state 1
+	[] state 7
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+	<var> state 6
+  state 6: #0
+  state 7: #1
+	<var> state 8
+  state 8: #1
+} end;
+zip3 [] _/*0:01*/ _/*0:1*/ = [];
+zip3 _/*0:001*/ [] _/*0:1*/ = [];
+zip3 _/*0:001*/ _/*0:01*/ [] = [];
+zip3 xs@(_/*0:00101*/:_/*0:0011*/) ys@(_/*0:0101*/:_/*0:011*/) zs@(_/*0:101*/:_/*0:11*/) = tick/*0*/ [] xs/*0:001*/ ys/*0:01*/ zs/*0:1*/ with tick us/*0:0001*/ (x/*0:00101*/:xs/*0:0011*/) (y/*0:0101*/:ys/*0:011*/) (z/*0:101*/:zs/*0:11*/) = tack/*1*/ ((x/*0:00101*/,y/*0:0101*/,z/*0:101*/):us/*0:0001*/) (zip3 xs/*1:0011*/ ys/*1:011*/ zs/*1:11*/&) if thunkp xs/*0:0011*/||thunkp ys/*0:011*/||thunkp zs/*0:11*/; tick us/*0:0001*/ (x/*0:00101*/:xs/*0:0011*/) (y/*0:0101*/:ys/*0:011*/) (z/*0:101*/:zs/*0:11*/) = tick/*1*/ ((x/*0:00101*/,y/*0:0101*/,z/*0:101*/):us/*0:0001*/) xs/*0:0011*/ ys/*0:011*/ zs/*0:11*/; tick us/*0:0001*/ [] _/*0:01*/ _/*0:1*/ = tack/*1*/ us/*0:0001*/ []; tick us/*0:0001*/ _/*0:001*/ [] _/*0:1*/ = tack/*1*/ us/*0:0001*/ []; tick us/*0:0001*/ _/*0:001*/ _/*0:01*/ [] = tack/*1*/ us/*0:0001*/ []; tick us/*0:0001*/ xs/*0:001*/ ys/*0:01*/ zs/*0:1*/ = tack/*1*/ us/*0:0001*/ (zip3 xs/*0:001*/ ys/*0:01*/ zs/*0:1*/) {
+  rule #0: tick us (x:xs) (y:ys) (z:zs) = tack ((x,y,z):us) (zip3 xs ys zs&) if thunkp xs||thunkp ys||thunkp zs
+  rule #1: tick us (x:xs) (y:ys) (z:zs) = tick ((x,y,z):us) xs ys zs
+  rule #2: tick us [] _ _ = tack us []
+  rule #3: tick us _ [] _ = tack us []
+  rule #4: tick us _ _ [] = tack us []
+  rule #5: tick us xs ys zs = tack us (zip3 xs ys zs)
+  state 0: #0 #1 #2 #3 #4 #5
+	<var> state 1
+  state 1: #0 #1 #2 #3 #4 #5
+	<var> state 2
+	<app> state 9
+	[] state 63
+  state 2: #3 #4 #5
+	<var> state 3
+	[] state 6
+  state 3: #4 #5
+	<var> state 4
+	[] state 5
+  state 4: #5
+  state 5: #4 #5
+  state 6: #3 #4 #5
+	<var> state 7
+	[] state 8
+  state 7: #3 #5
+  state 8: #3 #4 #5
+  state 9: #0 #1 #3 #4 #5
+	<var> state 10
+	<app> state 18
+  state 10: #3 #4 #5
+	<var> state 11
+  state 11: #3 #4 #5
+	<var> state 12
+	[] state 15
+  state 12: #4 #5
+	<var> state 13
+	[] state 14
+  state 13: #5
+  state 14: #4 #5
+  state 15: #3 #4 #5
+	<var> state 16
+	[] state 17
+  state 16: #3 #5
+  state 17: #3 #4 #5
+  state 18: #0 #1 #3 #4 #5
+	<var> state 19
+	: state 28
+  state 19: #3 #4 #5
+	<var> state 20
+  state 20: #3 #4 #5
+	<var> state 21
+  state 21: #3 #4 #5
+	<var> state 22
+	[] state 25
+  state 22: #4 #5
+	<var> state 23
+	[] state 24
+  state 23: #5
+  state 24: #4 #5
+  state 25: #3 #4 #5
+	<var> state 26
+	[] state 27
+  state 26: #3 #5
+  state 27: #3 #4 #5
+  state 28: #0 #1 #3 #4 #5
+	<var> state 29
+  state 29: #0 #1 #3 #4 #5
+	<var> state 30
+  state 30: #0 #1 #3 #4 #5
+	<var> state 31
+	<app> state 34
+	[] state 60
+  state 31: #4 #5
+	<var> state 32
+	[] state 33
+  state 32: #5
+  state 33: #4 #5
+  state 34: #0 #1 #4 #5
+	<var> state 35
+	<app> state 39
+  state 35: #4 #5
+	<var> state 36
+  state 36: #4 #5
+	<var> state 37
+	[] state 38
+  state 37: #5
+  state 38: #4 #5
+  state 39: #0 #1 #4 #5
+	<var> state 40
+	: state 45
+  state 40: #4 #5
+	<var> state 41
+  state 41: #4 #5
+	<var> state 42
+  state 42: #4 #5
+	<var> state 43
+	[] state 44
+  state 43: #5
+  state 44: #4 #5
+  state 45: #0 #1 #4 #5
+	<var> state 46
+  state 46: #0 #1 #4 #5
+	<var> state 47
+  state 47: #0 #1 #4 #5
+	<var> state 48
+	<app> state 49
+	[] state 59
+  state 48: #5
+  state 49: #0 #1 #5
+	<var> state 50
+	<app> state 52
+  state 50: #5
+	<var> state 51
+  state 51: #5
+  state 52: #0 #1 #5
+	<var> state 53
+	: state 56
+  state 53: #5
+	<var> state 54
+  state 54: #5
+	<var> state 55
+  state 55: #5
+  state 56: #0 #1 #5
+	<var> state 57
+  state 57: #0 #1 #5
+	<var> state 58
+  state 58: #0 #1 #5
+  state 59: #4 #5
+  state 60: #3 #4 #5
+	<var> state 61
+	[] state 62
+  state 61: #3 #5
+  state 62: #3 #4 #5
+  state 63: #2 #3 #4 #5
+	<var> state 64
+	[] state 67
+  state 64: #2 #4 #5
+	<var> state 65
+	[] state 66
+  state 65: #2 #5
+  state 66: #2 #4 #5
+  state 67: #2 #3 #4 #5
+	<var> state 68
+	[] state 69
+  state 68: #2 #3 #5
+  state 69: #2 #3 #4 #5
+}; tack (u/*0:0101*/:us/*0:011*/) vs/*0:1*/ = tack/*1*/ us/*0:011*/ (u/*0:0101*/:vs/*0:1*/); tack [] vs/*0:1*/ = vs/*0:1*/ {
+  rule #0: tack (u:us) vs = tack us (u:vs)
+  rule #1: tack [] vs = vs
+  state 0: #0 #1
+	<app> state 1
+	[] state 7
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+	<var> state 6
+  state 6: #0
+  state 7: #1
+	<var> state 8
+  state 8: #1
+} end;
+zipwith f/*0:001*/ [] _/*0:1*/ = [];
+zipwith f/*0:001*/ _/*0:01*/ [] = [];
+zipwith f/*0:001*/ xs@(_/*0:0101*/:_/*0:011*/) ys@(_/*0:101*/:_/*0:11*/) = tick/*0*/ [] xs/*0:01*/ ys/*0:1*/ with tick us/*0:001*/ (x/*0:0101*/:xs/*0:011*/) (y/*0:101*/:ys/*0:11*/) = tack/*1*/ (f/*1:001*/ x/*0:0101*/ y/*0:101*/:us/*0:001*/) (zipwith f/*2:001*/ xs/*1:011*/ ys/*1:11*/&) if thunkp xs/*0:011*/||thunkp ys/*0:11*/; tick us/*0:001*/ (x/*0:0101*/:xs/*0:011*/) (y/*0:101*/:ys/*0:11*/) = tick/*1*/ (f/*1:001*/ x/*0:0101*/ y/*0:101*/:us/*0:001*/) xs/*0:011*/ ys/*0:11*/; tick us/*0:001*/ [] _/*0:1*/ = tack/*1*/ us/*0:001*/ []; tick us/*0:001*/ _/*0:01*/ [] = tack/*1*/ us/*0:001*/ []; tick us/*0:001*/ xs/*0:01*/ ys/*0:1*/ = tack/*1*/ us/*0:001*/ (zipwith f/*1:001*/ xs/*0:01*/ ys/*0:1*/) {
+  rule #0: tick us (x:xs) (y:ys) = tack (f x y:us) (zipwith f xs ys&) if thunkp xs||thunkp ys
+  rule #1: tick us (x:xs) (y:ys) = tick (f x y:us) xs ys
+  rule #2: tick us [] _ = tack us []
+  rule #3: tick us _ [] = tack us []
+  rule #4: tick us xs ys = tack us (zipwith f xs ys)
+  state 0: #0 #1 #2 #3 #4
+	<var> state 1
+  state 1: #0 #1 #2 #3 #4
+	<var> state 2
+	<app> state 5
+	[] state 31
+  state 2: #3 #4
+	<var> state 3
+	[] state 4
+  state 3: #4
+  state 4: #3 #4
+  state 5: #0 #1 #3 #4
+	<var> state 6
+	<app> state 10
+  state 6: #3 #4
+	<var> state 7
+  state 7: #3 #4
+	<var> state 8
+	[] state 9
+  state 8: #4
+  state 9: #3 #4
+  state 10: #0 #1 #3 #4
+	<var> state 11
+	: state 16
+  state 11: #3 #4
+	<var> state 12
+  state 12: #3 #4
+	<var> state 13
+  state 13: #3 #4
+	<var> state 14
+	[] state 15
+  state 14: #4
+  state 15: #3 #4
+  state 16: #0 #1 #3 #4
+	<var> state 17
+  state 17: #0 #1 #3 #4
+	<var> state 18
+  state 18: #0 #1 #3 #4
+	<var> state 19
+	<app> state 20
+	[] state 30
+  state 19: #4
+  state 20: #0 #1 #4
+	<var> state 21
+	<app> state 23
+  state 21: #4
+	<var> state 22
+  state 22: #4
+  state 23: #0 #1 #4
+	<var> state 24
+	: state 27
+  state 24: #4
+	<var> state 25
+  state 25: #4
+	<var> state 26
+  state 26: #4
+  state 27: #0 #1 #4
+	<var> state 28
+  state 28: #0 #1 #4
+	<var> state 29
+  state 29: #0 #1 #4
+  state 30: #3 #4
+  state 31: #2 #3 #4
+	<var> state 32
+	[] state 33
+  state 32: #2 #4
+  state 33: #2 #3 #4
+}; tack (u/*0:0101*/:us/*0:011*/) vs/*0:1*/ = tack/*1*/ us/*0:011*/ (u/*0:0101*/:vs/*0:1*/); tack [] vs/*0:1*/ = vs/*0:1*/ {
+  rule #0: tack (u:us) vs = tack us (u:vs)
+  rule #1: tack [] vs = vs
+  state 0: #0 #1
+	<app> state 1
+	[] state 7
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+	<var> state 6
+  state 6: #0
+  state 7: #1
+	<var> state 8
+  state 8: #1
+} end;
+zipwith3 f/*0:0001*/ [] _/*0:01*/ _/*0:1*/ = [];
+zipwith3 f/*0:0001*/ _/*0:001*/ [] _/*0:1*/ = [];
+zipwith3 f/*0:0001*/ _/*0:001*/ _/*0:01*/ [] = [];
+zipwith3 f/*0:0001*/ xs@(_/*0:00101*/:_/*0:0011*/) ys@(_/*0:0101*/:_/*0:011*/) zs@(_/*0:101*/:_/*0:11*/) = tick/*0*/ [] xs/*0:001*/ ys/*0:01*/ zs/*0:1*/ with tick us/*0:0001*/ (x/*0:00101*/:xs/*0:0011*/) (y/*0:0101*/:ys/*0:011*/) (z/*0:101*/:zs/*0:11*/) = tack/*1*/ (f/*1:0001*/ x/*0:00101*/ y/*0:0101*/ z/*0:101*/:us/*0:0001*/) (zipwith3 f/*2:0001*/ xs/*1:0011*/ ys/*1:011*/ zs/*1:11*/&) if thunkp xs/*0:0011*/||thunkp ys/*0:011*/||thunkp zs/*0:11*/; tick us/*0:0001*/ (x/*0:00101*/:xs/*0:0011*/) (y/*0:0101*/:ys/*0:011*/) (z/*0:101*/:zs/*0:11*/) = tick/*1*/ (f/*1:0001*/ x/*0:00101*/ y/*0:0101*/ z/*0:101*/:us/*0:0001*/) xs/*0:0011*/ ys/*0:011*/ zs/*0:11*/; tick us/*0:0001*/ [] _/*0:01*/ _/*0:1*/ = tack/*1*/ us/*0:0001*/ []; tick us/*0:0001*/ _/*0:001*/ [] _/*0:1*/ = tack/*1*/ us/*0:0001*/ []; tick us/*0:0001*/ _/*0:001*/ _/*0:01*/ [] = tack/*1*/ us/*0:0001*/ []; tick us/*0:0001*/ xs/*0:001*/ ys/*0:01*/ zs/*0:1*/ = tack/*1*/ us/*0:0001*/ (zipwith3 f/*1:0001*/ xs/*0:001*/ ys/*0:01*/ zs/*0:1*/) {
+  rule #0: tick us (x:xs) (y:ys) (z:zs) = tack (f x y z:us) (zipwith3 f xs ys zs&) if thunkp xs||thunkp ys||thunkp zs
+  rule #1: tick us (x:xs) (y:ys) (z:zs) = tick (f x y z:us) xs ys zs
+  rule #2: tick us [] _ _ = tack us []
+  rule #3: tick us _ [] _ = tack us []
+  rule #4: tick us _ _ [] = tack us []
+  rule #5: tick us xs ys zs = tack us (zipwith3 f xs ys zs)
+  state 0: #0 #1 #2 #3 #4 #5
+	<var> state 1
+  state 1: #0 #1 #2 #3 #4 #5
+	<var> state 2
+	<app> state 9
+	[] state 63
+  state 2: #3 #4 #5
+	<var> state 3
+	[] state 6
+  state 3: #4 #5
+	<var> state 4
+	[] state 5
+  state 4: #5
+  state 5: #4 #5
+  state 6: #3 #4 #5
+	<var> state 7
+	[] state 8
+  state 7: #3 #5
+  state 8: #3 #4 #5
+  state 9: #0 #1 #3 #4 #5
+	<var> state 10
+	<app> state 18
+  state 10: #3 #4 #5
+	<var> state 11
+  state 11: #3 #4 #5
+	<var> state 12
+	[] state 15
+  state 12: #4 #5
+	<var> state 13
+	[] state 14
+  state 13: #5
+  state 14: #4 #5
+  state 15: #3 #4 #5
+	<var> state 16
+	[] state 17
+  state 16: #3 #5
+  state 17: #3 #4 #5
+  state 18: #0 #1 #3 #4 #5
+	<var> state 19
+	: state 28
+  state 19: #3 #4 #5
+	<var> state 20
+  state 20: #3 #4 #5
+	<var> state 21
+  state 21: #3 #4 #5
+	<var> state 22
+	[] state 25
+  state 22: #4 #5
+	<var> state 23
+	[] state 24
+  state 23: #5
+  state 24: #4 #5
+  state 25: #3 #4 #5
+	<var> state 26
+	[] state 27
+  state 26: #3 #5
+  state 27: #3 #4 #5
+  state 28: #0 #1 #3 #4 #5
+	<var> state 29
+  state 29: #0 #1 #3 #4 #5
+	<var> state 30
+  state 30: #0 #1 #3 #4 #5
+	<var> state 31
+	<app> state 34
+	[] state 60
+  state 31: #4 #5
+	<var> state 32
+	[] state 33
+  state 32: #5
+  state 33: #4 #5
+  state 34: #0 #1 #4 #5
+	<var> state 35
+	<app> state 39
+  state 35: #4 #5
+	<var> state 36
+  state 36: #4 #5
+	<var> state 37
+	[] state 38
+  state 37: #5
+  state 38: #4 #5
+  state 39: #0 #1 #4 #5
+	<var> state 40
+	: state 45
+  state 40: #4 #5
+	<var> state 41
+  state 41: #4 #5
+	<var> state 42
+  state 42: #4 #5
+	<var> state 43
+	[] state 44
+  state 43: #5
+  state 44: #4 #5
+  state 45: #0 #1 #4 #5
+	<var> state 46
+  state 46: #0 #1 #4 #5
+	<var> state 47
+  state 47: #0 #1 #4 #5
+	<var> state 48
+	<app> state 49
+	[] state 59
+  state 48: #5
+  state 49: #0 #1 #5
+	<var> state 50
+	<app> state 52
+  state 50: #5
+	<var> state 51
+  state 51: #5
+  state 52: #0 #1 #5
+	<var> state 53
+	: state 56
+  state 53: #5
+	<var> state 54
+  state 54: #5
+	<var> state 55
+  state 55: #5
+  state 56: #0 #1 #5
+	<var> state 57
+  state 57: #0 #1 #5
+	<var> state 58
+  state 58: #0 #1 #5
+  state 59: #4 #5
+  state 60: #3 #4 #5
+	<var> state 61
+	[] state 62
+  state 61: #3 #5
+  state 62: #3 #4 #5
+  state 63: #2 #3 #4 #5
+	<var> state 64
+	[] state 67
+  state 64: #2 #4 #5
+	<var> state 65
+	[] state 66
+  state 65: #2 #5
+  state 66: #2 #4 #5
+  state 67: #2 #3 #4 #5
+	<var> state 68
+	[] state 69
+  state 68: #2 #3 #5
+  state 69: #2 #3 #4 #5
+}; tack (u/*0:0101*/:us/*0:011*/) vs/*0:1*/ = tack/*1*/ us/*0:011*/ (u/*0:0101*/:vs/*0:1*/); tack [] vs/*0:1*/ = vs/*0:1*/ {
+  rule #0: tack (u:us) vs = tack us (u:vs)
+  rule #1: tack [] vs = vs
+  state 0: #0 #1
+	<app> state 1
+	[] state 7
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+	<var> state 6
+  state 6: #0
+  state 7: #1
+	<var> state 8
+  state 8: #1
+} end;
+dowith f/*0:001*/ (x/*0:0101*/:xs/*0:011*/) (y/*0:101*/:ys/*0:11*/) = f/*0:001*/ x/*0:0101*/ y/*0:101*/$$dowith f/*0:001*/ xs/*0:011*/ ys/*0:11*/;
+dowith f/*0:001*/ _/*0:01*/ _/*0:1*/ = ();
+dowith3 f/*0:0001*/ (x/*0:00101*/:xs/*0:0011*/) (y/*0:0101*/:ys/*0:011*/) (z/*0:101*/:zs/*0:11*/) = f/*0:0001*/ x/*0:00101*/ y/*0:0101*/ z/*0:101*/$$dowith3 f/*0:0001*/ xs/*0:0011*/ ys/*0:011*/ zs/*0:11*/;
+dowith3 f/*0:0001*/ _/*0:001*/ _/*0:01*/ _/*0:1*/ = ();
+unzip [] = [],[];
+unzip us@(_/*0:101*/:_/*0:11*/) = foldr accum/*0*/ ([],[]) us/*0:1*/ with accum u@(x/*0:0101*/,y/*0:011*/) us/*0:1*/ = x/*0:0101*/:(xs/*0:01*/ when xs/*0:01*/,_/*0:1*/ = check/*2*/ us/*1:1*/ {
+  rule #0: xs,_ = check us
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+} end)&,y/*0:011*/:(ys/*0:1*/ when _/*0:01*/,ys/*0:1*/ = check/*2*/ us/*1:1*/ {
+  rule #0: _,ys = check us
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+} end)& if thunkp us/*0:1*/; accum u@(x/*0:0101*/,y/*0:011*/) us/*0:1*/ = x/*1:0101*/:xs/*0:01*/,y/*1:011*/:ys/*0:1*/ when xs/*0:01*/,ys/*0:1*/ = check/*1*/ us/*0:1*/ {
+  rule #0: xs,ys = check us
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+} end; accum u/*0:01*/ _/*0:1*/ = throw (bad_tuple_value u/*0:01*/) {
+  rule #0: accum u@(x,y) us = x:(xs when xs,_ = check us end)&,y:(ys when _,ys = check us end)& if thunkp us
+  rule #1: accum u@(x,y) us = x:xs,y:ys when xs,ys = check us end
+  rule #2: accum u _ = throw (bad_tuple_value u)
+  state 0: #0 #1 #2
+	<var> state 1
+	<app> state 3
+  state 1: #2
+	<var> state 2
+  state 2: #2
+  state 3: #0 #1 #2
+	<var> state 4
+	<app> state 7
+  state 4: #2
+	<var> state 5
+  state 5: #2
+	<var> state 6
+  state 6: #2
+  state 7: #0 #1 #2
+	<var> state 8
+	, state 12
+  state 8: #2
+	<var> state 9
+  state 9: #2
+	<var> state 10
+  state 10: #2
+	<var> state 11
+  state 11: #2
+  state 12: #0 #1 #2
+	<var> state 13
+  state 13: #0 #1 #2
+	<var> state 14
+  state 14: #0 #1 #2
+	<var> state 15
+  state 15: #0 #1 #2
+}; check us@(_/*0:101*/,_/*0:11*/) = us/*0:1*/; check (foldr _/*0:1001*/ _/*0:101*/ us/*0:11*/) = throw (bad_list_value us/*0:11*/); check us/*0:1*/ = throw (bad_tuple_value us/*0:1*/) {
+  rule #0: check us@(_,_) = us
+  rule #1: check (foldr _ _ us) = throw (bad_list_value us)
+  rule #2: check us = throw (bad_tuple_value us)
+  state 0: #0 #1 #2
+	<var> state 1
+	<app> state 2
+  state 1: #2
+  state 2: #0 #1 #2
+	<var> state 3
+	<app> state 5
+  state 3: #2
+	<var> state 4
+  state 4: #2
+  state 5: #0 #1 #2
+	<var> state 6
+	, state 9
+	<app> state 12
+  state 6: #2
+	<var> state 7
+  state 7: #2
+	<var> state 8
+  state 8: #2
+  state 9: #0 #2
+	<var> state 10
+  state 10: #0 #2
+	<var> state 11
+  state 11: #0 #2
+  state 12: #1 #2
+	<var> state 13
+	foldr state 17
+  state 13: #2
+	<var> state 14
+  state 14: #2
+	<var> state 15
+  state 15: #2
+	<var> state 16
+  state 16: #2
+  state 17: #1 #2
+	<var> state 18
+  state 18: #1 #2
+	<var> state 19
+  state 19: #1 #2
+	<var> state 20
+  state 20: #1 #2
+} end;
+unzip3 [] = [],[],[];
+unzip3 us@(_/*0:101*/:_/*0:11*/) = foldr accum/*0*/ ([],[],[]) us/*0:1*/ with accum u@(x/*0:0101*/,y/*0:01101*/,z/*0:0111*/) us/*0:1*/ = x/*0:0101*/:(xs/*0:01*/ when xs/*0:01*/,_/*0:101*/,_/*0:11*/ = check/*2*/ us/*1:1*/ {
+  rule #0: xs,_,_ = check us
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<app> state 5
+  state 5: #0
+	<app> state 6
+  state 6: #0
+	, state 7
+  state 7: #0
+	<var> state 8
+  state 8: #0
+	<var> state 9
+  state 9: #0
+} end)&,y/*0:01101*/:(ys/*0:101*/ when _/*0:01*/,ys/*0:101*/,_/*0:11*/ = check/*2*/ us/*1:1*/ {
+  rule #0: _,ys,_ = check us
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<app> state 5
+  state 5: #0
+	<app> state 6
+  state 6: #0
+	, state 7
+  state 7: #0
+	<var> state 8
+  state 8: #0
+	<var> state 9
+  state 9: #0
+} end)&,z/*0:0111*/:(zs/*0:11*/ when _/*0:01*/,_/*0:101*/,zs/*0:11*/ = check/*2*/ us/*1:1*/ {
+  rule #0: _,_,zs = check us
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<app> state 5
+  state 5: #0
+	<app> state 6
+  state 6: #0
+	, state 7
+  state 7: #0
+	<var> state 8
+  state 8: #0
+	<var> state 9
+  state 9: #0
+} end)& if thunkp us/*0:1*/; accum u@(x/*0:0101*/,y/*0:01101*/,z/*0:0111*/) us/*0:1*/ = x/*1:0101*/:xs/*0:01*/,y/*1:01101*/:ys/*0:101*/,z/*1:0111*/:zs/*0:11*/ when xs/*0:01*/,ys/*0:101*/,zs/*0:11*/ = check/*1*/ us/*0:1*/ {
+  rule #0: xs,ys,zs = check us
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<app> state 5
+  state 5: #0
+	<app> state 6
+  state 6: #0
+	, state 7
+  state 7: #0
+	<var> state 8
+  state 8: #0
+	<var> state 9
+  state 9: #0
+} end; accum u/*0:01*/ _/*0:1*/ = throw (bad_tuple_value u/*0:01*/) {
+  rule #0: accum u@(x,y,z) us = x:(xs when xs,_,_ = check us end)&,y:(ys when _,ys,_ = check us end)&,z:(zs when _,_,zs = check us end)& if thunkp us
+  rule #1: accum u@(x,y,z) us = x:xs,y:ys,z:zs when xs,ys,zs = check us end
+  rule #2: accum u _ = throw (bad_tuple_value u)
+  state 0: #0 #1 #2
+	<var> state 1
+	<app> state 3
+  state 1: #2
+	<var> state 2
+  state 2: #2
+  state 3: #0 #1 #2
+	<var> state 4
+	<app> state 7
+  state 4: #2
+	<var> state 5
+  state 5: #2
+	<var> state 6
+  state 6: #2
+  state 7: #0 #1 #2
+	<var> state 8
+	, state 12
+  state 8: #2
+	<var> state 9
+  state 9: #2
+	<var> state 10
+  state 10: #2
+	<var> state 11
+  state 11: #2
+  state 12: #0 #1 #2
+	<var> state 13
+  state 13: #0 #1 #2
+	<var> state 14
+	<app> state 16
+  state 14: #2
+	<var> state 15
+  state 15: #2
+  state 16: #0 #1 #2
+	<var> state 17
+	<app> state 20
+  state 17: #2
+	<var> state 18
+  state 18: #2
+	<var> state 19
+  state 19: #2
+  state 20: #0 #1 #2
+	<var> state 21
+	, state 25
+  state 21: #2
+	<var> state 22
+  state 22: #2
+	<var> state 23
+  state 23: #2
+	<var> state 24
+  state 24: #2
+  state 25: #0 #1 #2
+	<var> state 26
+  state 26: #0 #1 #2
+	<var> state 27
+  state 27: #0 #1 #2
+	<var> state 28
+  state 28: #0 #1 #2
+}; check us@(_/*0:101*/,_/*0:1101*/,_/*0:111*/) = us/*0:1*/; check (foldr _/*0:1001*/ _/*0:101*/ us/*0:11*/) = throw (bad_list_value us/*0:11*/); check us/*0:1*/ = throw (bad_tuple_value us/*0:1*/) {
+  rule #0: check us@(_,_,_) = us
+  rule #1: check (foldr _ _ us) = throw (bad_list_value us)
+  rule #2: check us = throw (bad_tuple_value us)
+  state 0: #0 #1 #2
+	<var> state 1
+	<app> state 2
+  state 1: #2
+  state 2: #0 #1 #2
+	<var> state 3
+	<app> state 5
+  state 3: #2
+	<var> state 4
+  state 4: #2
+  state 5: #0 #1 #2
+	<var> state 6
+	, state 9
+	<app> state 22
+  state 6: #2
+	<var> state 7
+  state 7: #2
+	<var> state 8
+  state 8: #2
+  state 9: #0 #2
+	<var> state 10
+  state 10: #0 #2
+	<var> state 11
+	<app> state 12
+  state 11: #2
+  state 12: #0 #2
+	<var> state 13
+	<app> state 15
+  state 13: #2
+	<var> state 14
+  state 14: #2
+  state 15: #0 #2
+	<var> state 16
+	, state 19
+  state 16: #2
+	<var> state 17
+  state 17: #2
+	<var> state 18
+  state 18: #2
+  state 19: #0 #2
+	<var> state 20
+  state 20: #0 #2
+	<var> state 21
+  state 21: #0 #2
+  state 22: #1 #2
+	<var> state 23
+	foldr state 27
+  state 23: #2
+	<var> state 24
+  state 24: #2
+	<var> state 25
+  state 25: #2
+	<var> state 26
+  state 26: #2
+  state 27: #1 #2
+	<var> state 28
+  state 28: #1 #2
+	<var> state 29
+  state 29: #1 #2
+	<var> state 30
+  state 30: #1 #2
+} end;

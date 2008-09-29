@@ -1,0 +1,577 @@
+
+/* Pure math routines. Also defines complex and rational numbers. */
+
+/* Copyright (c) 2008 by Albert Graef <Dr.Graef@t-online.de>.
+
+   This file is part of the Pure programming language and system.
+
+   Pure is free software: you can redistribute it and/or modify it under the
+   terms of the GNU General Public License as published by the Free Software
+   Foundation, either version 3 of the License, or (at your option) any later
+   version.
+
+   Pure is distributed in the hope that it will be useful, but WITHOUT ANY
+   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+   FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+   details.
+
+   You should have received a copy of the GNU General Public License along
+   with this program.  If not, see <http://www.gnu.org/licenses/>. */
+
+/* Random number generator. This uses the Mersenne twister, in order to avoid
+   bad generators present in some C libraries. Returns pseudo random ints in
+   the range -0x80000000..0x7fffffff. */
+
+extern int pure_random() = random, void pure_srandom(int) = srandom;
+
+/* The sqrt function. */
+
+extern double sqrt(double);
+
+sqrt x::int | sqrt x::bigint = sqrt (double x);
+
+/* Exponential function and logarithms. */
+
+private c_log;
+extern double exp(double), double log(double) = c_log;
+
+ln x::double = c_log x;
+log x::double = c_log x/c_log 10.0;
+
+exp x::int | exp x::bigint = exp (double x);
+ln x::int | ln x::bigint = ln (double x);
+log x::int | log x::bigint = log (double x);
+
+/* Euler's number. */
+
+const e = exp 1.0;
+
+/* Trigonometric functions. */
+
+extern double sin(double), double cos(double), double tan(double);
+extern double asin(double), double acos(double), double atan(double);
+extern double atan2(double,double);
+
+sin x::int | sin x::bigint = sin (double x);
+cos x::int | cos x::bigint = cos (double x);
+tan x::int | tan x::bigint = tan (double x);
+
+asin x::int | asin x::bigint = asin (double x);
+acos x::int | acos x::bigint = acos (double x);
+atan x::int | atan x::bigint = atan (double x);
+
+atan2 x::int y::int | atan2 x::bigint y::bigint |
+atan2 x::bigint y::int | atan2 x::int y::bigint = atan2 (double x) (double y);
+atan2 x::int y::double | atan2 x::bigint y::double = atan2 (double x) y;
+atan2 x::double y::int | atan2 x::double y::bigint = atan2 x (double y);
+
+/* Ludolph's number. */
+
+const pi = 4.0*atan 1.0;
+
+/* Hyperbolic functions. */
+
+extern double sinh(double), double cosh(double), double tanh(double);
+extern double __asinh(double) = asinh, double __acosh(double) = acosh,
+  double __atanh(double) = atanh;
+
+sinh x::int | sinh x::bigint = sinh (double x);
+cosh x::int | cosh x::bigint = cosh (double x);
+tanh x::int | tanh x::bigint = tanh (double x);
+asinh x::int | asinh x::bigint = asinh (double x);
+acosh x::int | acosh x::bigint = acosh (double x);
+atanh x::int | atanh x::bigint = atanh (double x);
+
+/* Complex numbers. We provide both rectangular (x+:y) and polar (r<:a)
+   representations, where (x,y) are the Cartesian coordinates and (r,t) the
+   radius (absolute value) and angle (in radians) of a complex number,
+   respectively. The +: and <: constructors bind weaker than all other
+   arithmetic operators and are non-associative. */
+
+infix 5 +: <: ;
+
+/* Constructor equations to normalize the polar representation r<:t so that r
+   is always nonnegative and t falls in the range -pi<t<=pi. */
+
+r::int<:t	|
+r::bigint<:t	|
+r::double<:t	= -r <: t+pi if r<0;
+
+r<:t::int	|
+r<:t::bigint	|
+r<:t::double	= r <: atan2 (sin t) (cos t) if t<-pi || t>pi;
+		= r <: pi if t==-pi;
+
+/* The imaginary unit. */
+
+const i = 0+:1;
+
+/* The following operations all work with both the rectangular and the polar
+   representation, promoting real inputs to complex where appropriate. When
+   the result of an operation is again a complex number, it generally uses the
+   same representation as the input (except for explicit conversions). */
+
+/* We mostly follow Bronstein/Semendjajew here. Please mail me if you know
+   better formulas for any of these. */
+
+/* Convert any kind of number to a complex value. */
+
+complex z@(x+:y) | complex z@(r<:t) = z;
+complex x::int | complex x::bigint = x+:0;
+complex x::double = x+:0.0;
+
+/* Convert between polar and rectangular representations. */
+
+polar (x+:y)	= sqrt (x*x+y*y) <: atan2 y x;
+rect  (r<:t)	= r*cos t +: r*sin t;
+
+polar z@(_<:_)	= z;
+rect z@(_+:_)	= z;
+
+/* For convenience, make these work with real values, too. */
+
+polar x::int | polar x::bigint = x<:0;
+polar x::double = x<:0.0;
+
+rect x::int | rect x::bigint = x+:0;
+rect x::double = x+:0.0;
+
+/* Create complex values on the unit circle. Note: To quickly compute
+   exp (x+:y) in polar form, use exp x <: y. */
+
+cis t::int | cis t::bigint | cis t::double = rect (1<:t);
+
+/* Modulus (absolute value) and argument (angle). Note that you can also find
+   both of these in one go by converting to polar form. */
+
+abs (x+:y)	= sqrt (x*x+y*y);
+abs (r<:t)	= r;
+
+arg (x+:y)	= atan2 y x;
+arg (r<:t)	= t;
+
+arg x::int	|
+arg x::bigint	|
+arg x::double	= atan2 0 x;
+
+/* Real and imaginary part. */
+
+re (x+:y)	= x;
+re (r<:t)	= r*sin t;
+
+re x::int	|
+re x::bigint	|
+re x::double	= x;
+
+im (x+:y)	= y;
+im (r<:t)	= r*cos t;
+
+im x::int	= 0;
+im x::bigint	= 0L;
+im x::double	= 0.0;
+
+/* Complex conjugate. */
+
+conj (x+:y)	= x +: -y;
+conj (r<:t)	= r <: -t;
+
+conj x::int	|
+conj x::bigint	|
+conj x::double	= x;
+
+/* Complex sqrt. */
+
+sqrt (x+:y)	= sqrt r*(cos t +: sin t)
+		  when r = sqrt (x*x+y*y); t = atan2 y x/2 end;
+sqrt (r<:t)	= sqrt r <: t/2;
+
+/* Complex exponential and logarithms. */
+
+exp (x+:y)	= exp x * (cos y +: sin y);
+exp (r<:t)	= exp (r*cos t) <: r*sin t;
+
+ln z@(x+:y)	= ln (abs z) +: arg z;
+ln (r<:t)	= polar (ln r +: t);
+
+log z@(x+:y)	|
+log z@(r<:t)	= ln z / ln 10;
+
+/* Complex trig functions. */
+
+sin (x+:y)	= sin x*cosh y +: cos x*sinh y;
+cos (x+:y)	= cos x*cosh y +: -sin x*sinh y;
+tan (x+:y)	= (sin (2*x) +: sinh (2*y)) / (cos (2*x)+cosh (2*y));
+
+// These are best computed in rect and then converted back to polar.
+sin z@(r<:t)	= polar (sin (rect z));
+cos z@(r<:t)	= polar (cos (rect z));
+tan z@(r<:t)	= polar (tan (rect z));
+
+// Use complex logarithms for the inverses.
+asin z@(x+:y)	|
+asin z@(r<:t)	= -i*ln (i*z+sqrt (1-z*z));
+acos z@(x+:y)	|
+acos z@(r<:t)	= -i*ln (z+i*sqrt (1-z*z));
+atan z@(x+:y)	|
+atan z@(r<:t)	= (ln (1+i*z)-ln (1-i*z))/(2*i);
+
+/* Complex hyperbolic functions. */
+
+sinh (x+:y)	= sinh x*cos y +: cosh x*sin y;
+cosh (x+:y)	= cosh x*cos y +: sinh x*sin y;
+tanh (x+:y)	= (sinh (2*x) +: sin (2*y)) / (cosh (2*x)+cos (2*y));
+
+sinh z@(r<:t)	= polar (sinh (rect z));
+cosh z@(r<:t)	= polar (cosh (rect z));
+tanh z@(r<:t)	= polar (tanh (rect z));
+
+asinh z@(x+:y)	|
+asinh z@(r<:t)	= ln (z+sqrt (z*z+1));
+acosh z@(x+:y)	|
+acosh z@(r<:t)	= ln (z+sqrt (z-1)*sqrt (z+1));
+// Alternative definition by Kahan. Any reason to prefer that one?
+// acosh z@(x+:y)	|
+// acosh z@(r<:t)	= 2*ln (sqrt ((z+1)/2)+sqrt ((z-1)/2));
+atanh z@(x+:y)	|
+atanh z@(r<:t)	= (ln (1+z)-ln (1-z))/2;
+
+/* Complex arithmetic. */
+
+-(x+:y)		= -x +: -y;
+-(r<:t)		= r <: t+pi;
+
+(x1+:y1) + (x2+:y2)	= x1+x2 +: y1+y2;
+z1@(r1<:t1)+z2@(r2<:t2)	= polar (rect z1 + rect z2);
+
+(x1+:y1) - (x2+:y2)	= x1-x2 +: y1-y2;
+z1@(r1<:t1)-z2@(r2<:t2)	= polar (rect z1 - rect z2);
+
+// TODO: Review ISO/IEC9899 Annex G recommendations for * and / to fix up
+// nan+:nan results in rectangular representation.
+
+(x1+:y1) * (x2+:y2)	= x1*x2-y1*y2 +: x1*y2+y1*x2;
+(r1<:t1) * (r2<:t2)	= r1*r2 <: t1+t2;
+
+(x1+:y1) / (x2+:y2)	= (x1*x2+y1*y2)/d +: (y1*x2-x1*y2)/d
+			  when d = x2*x2+y2*y2 end;
+(r1<:t1) / (r2<:t2)	= r1/r2 <: t1-t2;
+
+/* Mixed rect/polar and polar/rect forms always return a rect result. */
+
+z1@(x1+:y1)+z2@(r2<:t2)	= z1 + rect z2;
+z1@(r1<:t1)+z2@(x2+:y2)	= rect z1 + z2;
+
+z1@(x1+:y1)-z2@(r2<:t2)	= z1 - rect z2;
+z1@(r1<:t1)-z2@(x2+:y2)	= rect z1 - z2;
+
+z1@(x1+:y1)*z2@(r2<:t2)	= z1 * rect z2;
+z1@(r1<:t1)*z2@(x2+:y2)	= rect z1 * z2;
+
+z1@(x1+:y1)/z2@(r2<:t2)	= z1 / rect z2;
+z1@(r1<:t1)/z2@(x2+:y2)	= rect z1 / z2;
+
+/* Mixed complex/real and real/complex forms yield a rect or polar result,
+   depending on what the complex input was. */
+
+(x1+:y1)+x2	= x1+x2 +: y1 if realp x2;
+x1+(x2+:y2)	= x1+x2 +: y2 if realp x1;
+z1@(r1<:t1)+x2	= z1 + polar x2 if realp x2;
+x1+z2@(r2<:t2)	= polar x1 + z2 if realp x1;
+
+(x1+:y1)-x2	= x1-x2 +: y1 if realp x2;
+x1-(x2+:y2)	= x1-x2 +: -y2 if realp x1;
+z1@(r1<:t1)-x2	= z1 - polar x2 if realp x2;
+x1-z2@(r2<:t2)	= polar x1 - z2 if realp x1;
+
+z1@(x1+:y1)*x2	= z1 * rect x2 if realp x2;
+x1*z2@(x2+:y2)	= rect x1 * z2 if realp x1;
+(r1<:t1)*x2	= r1*x2 <: t1 if realp x2;
+x1*(r2<:t2)	= x1*r2 <: t2 if realp x1;
+
+z1@(x1+:y1)/x2	= z1 / rect x2 if realp x2;
+x1/z2@(x2+:y2)	= rect x1 / z2 if realp x1;
+(r1<:t1)/x2	= r1/x2 <: t1 if realp x2;
+x1/(r2<:t2)	= x1/r2 <: -t2 if realp x1;
+
+/* Complex powers. */
+
+z1@(_+:_)^x2	|
+z1@(_<:_)^x2	= exp (ln z1*x2) if numberp x2;
+x1^z2@(_+:_)	= exp (ln (rect x1)*z2) if realp x1;
+x1^z2@(_<:_)	= exp (ln (polar x1)*z2) if realp x1;
+
+/* Equality. */
+
+(x1+:y1) == (x2+:y2)	= x1==x2 && y1==y2;
+(r1<:t1) == (r2<:t2)	= r1==r2 && t1==t2;
+
+(x1+:y1) != (x2+:y2)	= x1!=x2 || y1!=y2;
+(r1<:t1) != (r2<:t2)	= r1!=r2 || t1!=t2;
+
+z1@(_+:_)==z2@(_<:_)	= z1 == rect z2;
+z1@(_<:_)==z2@(_+:_)	= rect z1 == z2;
+
+z1@(_+:_)!=z2@(_<:_)	= z1 != rect z2;
+z1@(_<:_)!=z2@(_+:_)	= rect z1 != z2;
+
+(x1+:y1)==x2		= x1==x2 && y1==0 if realp x2;
+x1==(x2+:y2)		= x1==x2 && y2==0 if realp x1;
+z1@(r1<:t1)==x2		= z1 == (x2<:0) if realp x2;
+x1==z2@(r2<:t2)		= (x1<:0) == z2 if realp x1;
+
+(x1+:y1)!=x2		= x1!=x2 || y1!=0 if realp x2;
+x1!=(x2+:y2)		= x1!=x2 || y2!=0 if realp x1;
+z1@(r1<:t1)!=x2		= z1 != (x2<:0) if realp x2;
+x1!=z2@(r2<:t2)		= (x1<:0) != z2 if realp x1;
+
+/* Rational numbers. These are constructed with the exact division operator
+   '%' which has the same precedence and fixity as the other division
+   operators declared in the prelude. */
+
+infixl 7 % ;
+
+/* The '%' operator returns a rational or complex rational for any combination
+   of integer, rational and complex integer/rational arguments, provided that
+   the denominator is nonzero (otherwise it behaves like x div 0, which will
+   raise an exception). Machine int operands are always promoted to bigints.
+   For other numeric operands '%' works just like '/'.  Rational results are
+   normalized so that the sign is always in the numerator and numerator and
+   denominator are relatively prime. Hence a rational zero is always
+   represented as 0L%1L. */
+
+x::bigint % 0L		= x div 0L;
+x::bigint % y::bigint	= (-x)%(-y) if y<0;
+			= (x div d) % (y div d) when d = gcd x y end
+			    if gcd x y > 1;
+
+// int/bigint operands
+x::int % y::bigint	= bigint x % y;
+x::bigint % y::int	= x % bigint y;
+x::int % y::int		= bigint x % bigint y;
+
+// rational operands
+(x1%y1)%(x2%y2)		= (x1*y2)%(y1*x2);
+(x1%y1)%x2::int		|
+(x1%y1)%x2::bigint	= x1%(y1*x2);
+x1::int%(x2%y2)		|
+x1::bigint%(x2%y2)	= (x1*y2)%x2;
+
+// complex operands (these must both use the same representation, otherwise
+// the result won't be exact)
+z1@(_+:_)%z2@(_<:_)	|
+z1@(_<:_)%z2@(_+:_)	= z1/z2;
+(x1+:y1)%(x2+:y2)	= (x1*x2+y1*y2)%d +: (y1*x2-x1*y2)%d
+			    when d = x2*x2+y2*y2 end;
+(r1<:t1)%(r2<:t2)	= r1%r2 <: t1-t2;
+
+// mixed complex/real cases
+(x1+:y1)%x2		= (x1*x2)%d +: (y1*x2)%d
+			    when d = x2*x2 end if realp x2;
+x1%(x2+:y2)		= (x1*x2)%d +: (-x1*y2)%d
+			    when d = x2*x2+y2*y2 end if realp x1;
+(r1<:t1)%x2		= r1%x2 <: t1 if realp x2;
+x1%(r2<:t2)		= x1%r2 <: -t2 if realp x1;
+
+// fall back to ordinary inexact division in all other cases
+x::double%y		= x/y if numberp y;
+x%y::double		= x/y if numberp x;
+
+/* Conversions. */
+
+rational x@(_%_)	= x;
+rational x::int		|
+rational x::bigint	= x%1;
+
+/* The conversion from double doesn't do any rounding, so it is guaranteed
+   that converting the resulting rational back to double reconstructs the
+   original value. */
+private pure_rational;
+extern expr* pure_rational(double);
+rational x::double	= n%d when n,d = pure_rational x end;
+
+rational (x+:y)	= rational x +: rational y;
+rational (x<:y)	= rational x <: rational y;
+
+int x@(_%_)	= int (bigint x);
+bigint x@(_%_)	= trunc x;
+double (x%y)	= x/y;
+
+complex (x%y)	= x%y +: 0L%1L;
+rect (x%y)	= x%y +: 0L%1L;
+polar (x%y)	= x%y <: 0L%1L;
+
+/* Note that these normalization rules will yield inexact results when
+   triggered. Thus you have to take care that your polar representations stay
+   normalized if you want to do computations with exact complex rationals in
+   polar notation. */
+r@(_%_)<:t	= -r <: t+pi if r<0;
+r<:t@(_%_)	= r <: atan2 (sin t) (cos t) if t<-pi || t>pi;
+		= r <: pi if t==-pi;
+
+cis (x%y)	 = rect (1<:x/y);
+
+/* Numerator and denominator. */
+
+num (x%y)	= x;
+den (x%y)	= y;
+
+num x::int	|
+num x::bigint	= bigint x;
+num x::double	= if frac x==0.0 then bigint x else num (rational x);
+
+den x::int	|
+den x::bigint	= 1L;
+den x::double	= if frac x==0.0 then 1L else den (rational x);
+
+/* Absolute value and sign. */
+
+abs (x%y)	= abs x % y;
+sgn (x%y)	= sgn x;
+
+/* Complex functions. */
+
+arg (x%y)	= atan2 0 (x/y);
+re x@(_%_)	= x;
+im (_%_)	= 0L%1L;
+conj x@(_%_)	= x;
+
+/* Rounding functions. These return exact results here. */
+
+floor x@(_%_)	= if n<=x then n else n-1 when n::bigint = trunc x end;
+ceil x@(_%_)	= -floor (-x);
+round (x%y)	= -round ((-x)%y) if x<0;
+		= x div 2 + 1 if y==2;
+		= (2*x+y) div (2*y) otherwise;
+trunc (x%y)	= x div y;
+frac x@(_%_)	= x-trunc x;
+
+/* The pow function. Returns exact powers of integers and rationals for all
+   integer exponents. */
+
+pow (x%y) n::int	|
+pow (x%y) n::bigint	= pow x n % pow y n if n>0;
+			= pow y (-n) % pow x (-n) if n<0;
+			= 1L%1L otherwise;
+
+// Negative powers of integers.
+pow x::int n::int	|
+pow x::int n::bigint	|
+pow x::bigint n::int	|
+pow x::bigint n::bigint	= 1 % pow x (-n) if n<0;
+
+/* Fallback rules for other functions (inexact results). */
+
+sqrt (x%y)	= sqrt (x/y);
+
+exp (x%y)	= exp (x/y);
+ln (x%y)	= ln (x/y);
+log (x%y)	= log (x/y);
+
+sin (x%y)	= sin (x/y);
+cos (x%y)	= cos (x/y);
+tan (x%y)	= tan (x/y);
+asin (x%y)	= asin (x/y);
+acos (x%y)	= acos (x/y);
+atan (x%y)	= atan (x/y);
+
+atan2 (x%y) z	= atan2 (x/y) z if realp z;
+atan2 x (y%z)	= atan2 x (y/z) if realp x;
+
+sinh (x%y)	= sinh (x/y);
+cosh (x%y)	= cosh (x/y);
+tanh (x%y)	= tanh (x/y);
+asinh (x%y)	= asinh (x/y);
+acosh (x%y)	= acosh (x/y);
+atanh (x%y)	= atanh (x/y);
+
+/* Rational arithmetic. */
+
+-(x%y)		= (-x)%y;
+
+(x1%y1)+(x2%y2)	= (x1*y2+x2*y1) % (y1*y2);
+(x1%y1)-(x2%y2)	= (x1*y2-x2*y1) % (y1*y2);
+(x1%y1)*(x2%y2)	= (x1*x2) % (y1*y2);
+
+(x1%y1)+x2::int		|
+(x1%y1)+x2::bigint	= (x1+x2*y1) % y1;
+(x1%y1)-x2::int		|
+(x1%y1)-x2::bigint	= (x1-x2*y1) % y1;
+(x1%y1)*x2::int		|
+(x1%y1)*x2::bigint	= (x1*x2) % y1;
+
+x1::int+(x2%y2)		|
+x1::bigint+(x2%y2)	= (x1*y2+x2) % y2;
+x1::int-(x2%y2)		|
+x1::bigint-(x2%y2)	= (x1*y2-x2) % y2;
+x1::int*(x2%y2)		|
+x1::bigint*(x2%y2)	= (x1*x2) % y2;
+
+/* Fallback rules. */
+
+// / and ^ always yield inexact results.
+(x1%y1)/(x2%y2)	= (x1/y1) / (x2/y2);
+(x1%y1)^(x2%y2)	= (x1/y1) ^ (x2/y2);
+
+(x1%y1)+x2	= (x1/y1)+x2 if numberp x2;
+(x1%y1)-x2	= (x1/y1)-x2 if numberp x2;
+(x1%y1)*x2	= (x1/y1)*x2 if numberp x2;
+(x1%y1)/x2	= (x1/y1)/x2 if numberp x2;
+(x1%y1)^x2	= (x1/y1)^x2 if numberp x2;
+
+x1+(x2%y2)	= x1+(x2/y2) if numberp x1;
+x1-(x2%y2)	= x1-(x2/y2) if numberp x1;
+x1*(x2%y2)	= x1*(x2/y2) if numberp x1;
+x1/(x2%y2)	= x1/(x2/y2) if numberp x1;
+x1^(x2%y2)	= x1^(x2/y2) if numberp x1;
+
+/* Comparisons. */
+
+x1%y1 == x2%y2	= x1*y2 == x2*y1;
+x1%y1 != x2%y2	= x1*y2 != x2*y1;
+x1%y1 <  x2%y2	= x1*y2 <  x2*y1;
+x1%y1 <= x2%y2	= x1*y2 <= x2*y1;
+x1%y1 >  x2%y2	= x1*y2 >  x2*y1;
+x1%y1 >= x2%y2	= x1*y2 >= x2*y1;
+
+x1%y1 == x2	= x1 == x2*y1 if numberp x2;
+x1%y1 != x2	= x1 != x2*y1 if numberp x2;
+x1%y1 <  x2	= x1 <  x2*y1 if realp x2;
+x1%y1 <= x2	= x1 <= x2*y1 if realp x2;
+x1%y1 >  x2	= x1 >  x2*y1 if realp x2;
+x1%y1 >= x2	= x1 >= x2*y1 if realp x2;
+
+x1 == x2%y2	= x1*y2 == x2 if numberp x2;
+x1 != x2%y2	= x1*y2 != x2 if numberp x2;
+x1 <  x2%y2	= x1*y2 <  x2 if realp x2;
+x1 <= x2%y2	= x1*y2 <= x2 if realp x2;
+x1 >  x2%y2	= x1*y2 >  x2 if realp x2;
+x1 >= x2%y2	= x1*y2 >= x2 if realp x2;
+
+/* Additional number predicates. */
+
+complexp x	= case x of x+:y | x<:y = realp x && realp y; _ = 0 end;
+realp x		= case x of _::int | _::bigint | _::double |
+		            _::bigint%_::bigint = 1; _ = 0 end;
+rationalp x	= case x of _::bigint%_::bigint = 1; _ = 0 end;
+numberp x	= realp x || complexp x;
+
+/* Semantic number predicates. In difference to the syntactic predicates in
+   primitives.pure and above, these check whether the given value can be
+   represented as an object of the given target type (up to rounding
+   errors). Note that if x is of syntactic type X, then it is also of semantic
+   type X. Moreover, intvalp x => bigintvalp x => ratvalp x => realvalp x =>
+   compvalp x <=> numberp x. */
+
+compvalp x	= numberp x;
+realvalp x	= compvalp x && im x==0;
+ratvalp x	= realvalp x && re (x-x)!==nan;
+bigintvalp x	= ratvalp x && den (re x)==1;
+intvalp x	= bigintvalp x && int (re x)==x;
+
+/* Check whether a number is exact (i.e., doesn't contain any double
+   components. */
+
+exactp x	= numberp x &&
+		  not (doublep x || doublep (re x) || doublep (im x));
+inexactp x      = numberp x &&
+		  (doublep x || doublep (re x) || doublep (im x));

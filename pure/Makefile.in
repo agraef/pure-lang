@@ -1,0 +1,312 @@
+
+# This Makefile requires GNU make. Really.
+
+SHELL = /bin/sh
+
+# Package and host information.
+
+name    = @PACKAGE_NAME@
+version = @PACKAGE_VERSION@
+dist    = $(name)-$(version)
+
+host    = @host@
+
+# Source and installation paths.
+
+srcdir      = @srcdir@
+VPATH       = @srcdir@
+
+prefix      = @prefix@
+exec_prefix = @exec_prefix@
+datarootdir = @datarootdir@
+
+bindir      = @bindir@
+includedir  = @includedir@
+libdir      = @libdir@
+datadir     = @datadir@
+mandir      = @mandir@
+man1dir     = $(mandir)/man1
+
+# Staging directory for 'make install'.
+
+DESTDIR=
+
+# OS-specific special filename extensions. configure tries to guess this, but
+# if it guesses wrong, you can set these as needed.
+
+EXE=@EXEEXT@
+DLL=@DLLEXT@
+
+# Programs.
+
+CXX = @CXX@
+INSTALL = @INSTALL@
+
+ECHO_C = @ECHO_C@
+ECHO_N = @ECHO_N@
+ECHO_T = @ECHO_T@
+
+# Linker flags and required libraries. These are determined automatically by
+# configure, but if necessary you can also change these on the command line.
+
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@
+
+# Compilation flags.
+
+LLVM_FLAGS = `llvm-config --cppflags`
+LLVM_LIBS = `llvm-config --ldflags --libs core jit native`
+
+CPPFLAGS = @CPPFLAGS@
+CXXFLAGS = @CXXFLAGS@
+
+# Pure library name. Currently we use a simple versioning scheme, which
+# requires that the library version matches that of the interpreter. This
+# enables you to install different versions of the Pure interpreter on the
+# same system.
+
+libpure_base = $(name)
+libpure_vers = $(libpure_base)-$(version)
+
+libpure      = lib$(libpure_vers)$(DLL)
+libpurelnk   = lib$(libpure_base)$(DLL)
+
+# Whether to build the Pure runtime library. If this is set to anything but
+# "yes", the interpreter is linked statically and no separate library is
+# produced. This is necessary on some systems where LLVM cannot be linked in
+# dynamically.
+
+sharedlib = @sharedlib@
+
+# Flag needed to create shared libraries. On most systems this is just -shared.
+
+shared = @shared@
+
+# On some systems -fPIC is needed for code linked as a shared library.
+
+ifeq ($(sharedlib), yes)
+PIC = @PIC@
+else
+PIC =
+endif
+
+# Auxiliary libraries to be loaded at runtime. Usually this is just libpure
+# (when built), but on some systems we have to load additional dlls to resolve
+# some library functions.
+
+ifeq ($(sharedlib), yes)
+AUXLIBS = -DLIBPURE='"$(libpure)"' @AUXLIBS@
+else
+AUXLIBS = @AUXLIBS@
+endif
+
+# No need to edit below this line. Unless you really have to. :) ############
+
+SOURCE = expr.cc expr.hh funcall.h interpreter.cc interpreter.hh lexer.ll \
+matcher.cc matcher.hh parser.yy printer.cc printer.hh \
+runtime.cc runtime.h symtable.cc symtable.hh util.cc util.hh
+EXTRA_SOURCE = lexer.cc parser.cc parser.hh location.hh position.hh stack.hh
+OBJECT = $(subst .cc,.o,$(filter %.cc,$(SOURCE) $(EXTRA_SOURCE)))
+
+DISTFILES = COPYING ChangeLog INSTALL NEWS README TODO \
+Makefile.in configure.ac configure config.h.in \
+config/aclocal.m4 config/config.guess config/config.sub config/install-sh \
+$(SOURCE) $(EXTRA_SOURCE) w3centities.c \
+pure.cc pure.1 pure.1.in etc/pure-mode.el.in etc/pure.* etc/gpure.lang \
+examples/*.pure examples/*.c examples/libor/*.pure lib/*.pure \
+test/*.pure test/*.log
+
+.PHONY: all html dvi ps pdf clean realclean depend install uninstall strip \
+dist distcheck cleanlogs logs check config
+
+# compilation
+
+all: pure$(EXE) etc/pure-mode.el pure.1
+
+ifeq ($(sharedlib), yes)
+pure$(EXE): pure.o $(libpure)
+	$(CXX) -o $@ $(LDFLAGS) pure.o -L. -l$(libpure_vers) $(LIBS)
+else
+pure$(EXE): pure.o $(OBJECT)
+	$(CXX) -o $@ $(LDFLAGS) pure.o $(OBJECT) $(LLVM_LIBS) $(LIBS)
+endif
+
+$(libpure): $(OBJECT)
+	$(CXX) $(shared) -o $@ $(LDFLAGS) $(OBJECT) $(LLVM_LIBS) $(LIBS)
+	ln -sf $(libpure) $(libpurelnk)
+
+pure.o: pure.cc
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(LLVM_FLAGS) -DPURELIB='"$(libdir)/pure-$(version)"' -c -o $@ $<
+
+runtime.o: runtime.cc
+	$(CXX) $(CXXFLAGS) $(PIC) $(CPPFLAGS) $(LLVM_FLAGS) -DPURELIB='"$(libdir)/pure-$(version)"' -c -o $@ $<
+
+interpreter.o: interpreter.cc
+	$(CXX) $(CXXFLAGS) $(PIC) $(CPPFLAGS) $(LLVM_FLAGS) $(AUXLIBS) -c -o $@ $<
+
+%.o: %.cc
+	$(CXX) $(CXXFLAGS) $(PIC) $(CPPFLAGS) $(LLVM_FLAGS) -c -o $@ $<
+
+lexer.cc: lexer.ll
+	flex -o lexer.cc $<
+
+parser.cc: parser.yy
+	bison -v -o parser.cc $<
+
+parser.hh location.hh position.hh stack.hh: parser.cc
+
+# create pure-mode.el from pure-mode.el.in
+
+etc/pure-mode.el: Makefile etc/pure-mode.el.in
+	rm -f etc/pure-mode.el etc/pure-mode.el.tmp
+	sed -e 's,@bindir\@,$(bindir),g' -e 's,@libdir\@,$(libdir),g' etc/pure-mode.el.in >etc/pure-mode.el.tmp
+	mv etc/pure-mode.el.tmp etc/pure-mode.el
+
+# create the manpage from pure.1.in
+
+pure.1: configure.ac pure.1.in
+	rm -f pure.1 pure.1.tmp
+	sed -e 's,@version\@,$(version),g' pure.1.in >pure.1.tmp
+	mv pure.1.tmp pure.1
+
+# documentation in various formats (requires groff)
+
+html: pure.html
+dvi: pure.dvi
+ps: pure.ps
+pdf: pure.pdf
+
+# We do the html format using rman, because it produces nicer output. If you
+# don't have rman, uncomment the rule below instead.
+
+%.html: %.1
+	rman -f HTML $< | sed -e 's/dq/\"/g' -e '/^<br>$$/d' > $@
+
+#%.html: %.1
+#	groff -man -Thtml $< > $@
+
+%.dvi: %.1
+	groff -man -Tdvi $< > $@
+
+%.ps: %.1
+	groff -man -Tps $< > $@
+
+%.pdf: %.1
+	groff -man -Tps $< | ps2pdf - $@
+
+# cleaning
+
+clean:
+	rm -f *~ *.bak *.html *.dvi *.ps *.pdf pure$(EXE) $(OBJECT) pure.o $(libpurelnk) $(libpure) parser.output
+
+distclean: clean
+	rm -f Makefile config.h config.log config.status etc/pure-mode.el $(dist).tar.gz
+
+realclean: distclean
+	rm -f $(addprefix $(srcdir)/, test/*.log $(EXTRA_SOURCE) pure.1)
+
+# dependencies (rerun configure after this)
+
+depend: $(SOURCE) $(EXTRA_SOURCE)
+	(cd $(srcdir) && makedepend -f Makefile.in -Y pure.cc $(SOURCE) $(EXTRA_SOURCE) 2> /dev/null)
+
+# regenerate configure et al
+
+config:
+	autoconf -I config && autoheader -I config
+
+# installation
+
+install: pure$(EXE) etc/pure-mode.el pure.1
+	rm -rf $(addprefix $(DESTDIR), $(includedir)/pure $(includedir)/pure-$(version) $(libdir)/pure $(libdir)/pure-$(version))
+	for x in $(addprefix $(DESTDIR), $(bindir) $(includedir)/pure-$(version) $(libdir)/pure-$(version) $(man1dir)); do $(INSTALL) -d $$x; done
+	$(INSTALL) pure$(EXE) $(DESTDIR)$(bindir)/pure-$(version)$(EXE)
+	ln -sf $(bindir)/pure-$(version)$(EXE) $(DESTDIR)$(bindir)/pure$(EXE)
+ifeq ($(sharedlib), yes)
+	$(INSTALL) $(libpure) $(DESTDIR)$(libdir)/$(libpure)
+	ln -sf $(libdir)/$(libpure) $(DESTDIR)$(libdir)/$(libpurelnk)
+endif
+	$(INSTALL) runtime.h $(DESTDIR)$(includedir)/pure-$(version)
+	ln -sf $(includedir)/pure-$(version) $(DESTDIR)$(includedir)/pure
+	for x in $(srcdir)/lib/*.pure; do $(INSTALL) -m 644 $$x $(DESTDIR)$(libdir)/pure-$(version); done
+	ln -sf $(libdir)/pure-$(version) $(DESTDIR)$(libdir)/pure
+	$(INSTALL) -m 644 pure.1 $(DESTDIR)$(man1dir)/pure-$(version).1
+	ln -sf $(man1dir)/pure-$(version).1 $(DESTDIR)$(man1dir)/pure.1
+
+uninstall:
+	rm -rf $(addprefix $(DESTDIR), $(bindir)/pure$(EXE) $(bindir)/pure-$(version)$(EXE) $(libdir)/$(libpurelnk) $(libdir)/$(libpure) $(includedir)/pure $(includedir)/pure-$(version) $(libdir)/pure $(libdir)/pure-$(version) $(man1dir)/pure.1 $(man1dir)/pure-$(version).1)
+
+# roll a distribution tarball
+
+dist: pure.1
+	rm -rf $(dist)
+	mkdir $(dist) && mkdir $(dist)/config && mkdir $(dist)/etc && mkdir $(dist)/examples && mkdir $(dist)/examples/libor && mkdir $(dist)/lib && mkdir $(dist)/test
+	(builddir=$$PWD; cd $(srcdir); for x in $(DISTFILES); do ln -sf $$PWD/$$x $$builddir/$(dist)/$$x; done)
+	rm -f $(dist).tar.gz
+	tar cfzh $(dist).tar.gz $(dist)
+	rm -rf $(dist)
+
+distcheck: dist
+	tar xfz $(dist).tar.gz
+	cd $(dist) && ./configure && make && make check && make install DESTDIR=./BUILD
+	rm -rf $(dist)
+
+# test logs, make check
+
+level=7
+
+tests = $(wildcard $(srcdir)/test/*.pure)
+logs  = $(srcdir)/test/prelude.log $(tests:.pure=.log)
+
+logs: $(logs)
+
+cleanlogs:
+	rm -f $(srcdir)/test/*.log
+
+# Note: Unfortunately, a few tests may produce varying results with different
+# locales, so we have to make sure that we set up a neutral environment
+# here. We therefore set LC_ALL=C below, which should do the job on Linux and
+# other glibc-based systems. Other systems might require some work.
+
+$(srcdir)/test/prelude.log: lib/prelude.pure lib/primitives.pure lib/strings.pure
+	LC_ALL=C @LD_LIB_PATH@=. PURELIB=$(srcdir)/lib ./pure --norc -n -v$(level) $< > $@ 2>&1
+
+%.log: %.pure
+	LC_ALL=C @LD_LIB_PATH@=. PURELIB=$(srcdir)/lib ./pure --norc -v$(level) < $< > $@ 2>&1
+
+check: pure
+	@ echo Running tests.
+	@ (export LC_ALL=C; export @LD_LIB_PATH@=.; export PURELIB=$(srcdir)/lib; echo $(ECHO_N) "prelude.pure: $(ECHO_C)"; if ./pure --norc -n -v$(level) $(srcdir)/lib/prelude.pure 2>&1 | diff -q - $(srcdir)/test/prelude.log > /dev/null; then echo "$(ECHO_T)passed"; else echo "$(ECHO_T)FAILED"; fi)
+	@ (export LC_ALL=C; export @LD_LIB_PATH@=.; export PURELIB=$(srcdir)/lib; for x in $(notdir $(tests)); do echo $(ECHO_N) "$$x: $(ECHO_C)"; if ./pure --norc -v$(level) < $(srcdir)/test/$$x 2>&1 | diff -q - $(srcdir)/test/"`basename $$x .pure`.log" > /dev/null; then echo "$(ECHO_T)passed"; else echo "$(ECHO_T)FAILED"; fi; done)
+
+# DO NOT DELETE
+
+pure.o: interpreter.hh expr.hh matcher.hh symtable.hh printer.hh runtime.h
+pure.o: parser.hh stack.hh util.hh location.hh position.hh config.h
+expr.o: expr.hh interpreter.hh matcher.hh symtable.hh printer.hh runtime.h
+expr.o: parser.hh stack.hh util.hh location.hh position.hh
+interpreter.o: interpreter.hh expr.hh matcher.hh symtable.hh printer.hh
+interpreter.o: runtime.h parser.hh stack.hh util.hh location.hh position.hh
+interpreter.o: expr.hh matcher.hh symtable.hh printer.hh runtime.h parser.hh
+interpreter.o: stack.hh util.hh location.hh position.hh
+lexer.o: interpreter.hh expr.hh matcher.hh symtable.hh printer.hh runtime.h
+lexer.o: parser.hh stack.hh util.hh location.hh position.hh
+matcher.o: matcher.hh expr.hh
+matcher.o: expr.hh
+parser.o: expr.hh printer.hh matcher.hh runtime.h util.hh interpreter.hh
+parser.o: symtable.hh parser.hh stack.hh location.hh position.hh
+printer.o: printer.hh expr.hh matcher.hh runtime.h interpreter.hh symtable.hh
+printer.o: parser.hh stack.hh util.hh location.hh position.hh
+printer.o: expr.hh matcher.hh runtime.h
+runtime.o: runtime.h expr.hh interpreter.hh matcher.hh symtable.hh printer.hh
+runtime.o: parser.hh stack.hh util.hh location.hh position.hh funcall.h
+symtable.o: symtable.hh expr.hh printer.hh matcher.hh runtime.h
+symtable.o: expr.hh printer.hh matcher.hh runtime.h
+util.o: util.hh config.h w3centities.c
+lexer.o: interpreter.hh expr.hh matcher.hh symtable.hh printer.hh runtime.h
+lexer.o: parser.hh stack.hh util.hh location.hh position.hh
+parser.o: parser.hh stack.hh expr.hh printer.hh matcher.hh runtime.h util.hh
+parser.o: location.hh position.hh interpreter.hh symtable.hh
+parser.o: stack.hh expr.hh printer.hh matcher.hh runtime.h util.hh
+parser.o: location.hh position.hh
+location.o: position.hh

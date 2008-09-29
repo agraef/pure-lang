@@ -1,0 +1,41 @@
+
+TODO
+====
+
+While the interpreter is already useful as it is, there's still a lot of
+things that remain to be done. Most important items, in no particular order:
+
+- Symbolic (Pure-level) debugger, profiler. The necessary hooks are mostly
+  there, we just need to add a few runtime calls in the generated code.
+
+- Better error recovery in the parser (Schreiner/Friedman?). Currently uses
+  panic mode (looking for ';') which is awful for syncing after an error
+  because the ';' token can occur inside nested blocks ('with', 'when') etc.
+
+- Add support for externals from languages with other calling conventions
+  already fully supported by LLVM (Fortran, Ada?). A Q module adapter would
+  also be useful, so that we can take advantage of the extensive set of
+  system, GUI and multimedia libraries offered by Q. For well-behaved Q
+  modules, the latter should work even without a resident Q interpreter, by
+  just emulating the libq interface on the "Pure metal".
+
+- Interactive 'dump' command to export the current program as an LLVM bitcode
+  module which can then be compiled and linked (statically or dynamically)
+  with other (C or Pure) modules. Likewise, offer a -c option which does the
+  same from the command line. We should also provide special support for
+  compiled Pure modules in the interpreter, so that these can be loaded and
+  have their symbols automagically declared as externals.
+
+- Multithreading support. This requires thread-local data instead of globals
+  in a few places, and synchronization where interpreter globals are used
+  (most notably, runtime compilation, symbol table, exception stack and
+  expression memory management). We also need to add the necessary support
+  functions to the runtime.
+
+- Better support for proper tail calls. Currently this only works for direct
+  calls. See the manpage for details.
+
+- More aggressive optimizations (common subexpression elimination for "pure"
+  a.k.a. side-effect-free function calls, etc.).
+
+- Support for Wadler views (or similar).
