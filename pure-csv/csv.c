@@ -88,7 +88,7 @@ pure_expr *c_csv_fgets(FILE *fp, char *quote) {
      Pure int, Pure double, or Pure string depending on cvt_flag=1 and
      s obeys strtol and strtod specs.
 */
-pure_expr *convert_string(char *s, int cvt_flag) {
+static pure_expr *convert_string(char *s, int cvt_flag) {
   long i;
   double d;
   char *p;
