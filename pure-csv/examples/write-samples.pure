@@ -1,0 +1,44 @@
+#!/usr/local/bin/pure -x
+
+/* To run:
+   At the command line> pure -i writesamples.pure
+   At the prompt ==> main;
+   Using your favorite editor open the write samples to see what was wrought.
+*/
+
+using csv;
+using system;
+
+/* Define a few dialects */
+const QUOTE_ALL = csv_dialect [CSV_QUOTING_STYLE=>CSV_QUOTE_ALL];
+const TAB_DELIM = csv_dialect [CSV_DELIMITER=>"\t"];
+const TAB_DELIM_SINGLE_QUOTE = csv_dialect [CSV_DELIMITER=>"\t", CSV_QUOTE=>"'"];
+const ESC_QUOTES = csv_dialect [CSV_ESCAPE=>"%"];
+
+/* Define a few sample data lists */
+let sample1 = [["this", " that ", 23, -3.0, ""],
+               ["a \"b\"", "c c", 10, 3.2, " "],
+               ["a, b", "", 0, 0.0, "00"]];
+
+let sample2 = [["this\ty", " that ", 23, -3.0, ""],
+               ["a \"b\"", "c c", 10, 3.2, " "],
+               ["a, b", "", 0, 0.0, "00"]];
+
+let sample3 = [["this\ty", " that ", 23, -3.0, ""],
+               ["a 'b'", "c c", 10, 3.2, " "],
+               ["a, b", "", 0, 0.0, "00"]];
+               
+main
+  = puts "Writing 'write-sample1.csv' (standard CSV)" $$
+    puts (str $ csv_fput ("write-sample1.csv", sample1)) $$
+    puts "\nWriting 'write-sample1.csv' (standard CSV, no conversions)" $$
+    puts (str $ csv_fput ("write-sample1.csv", sample1, QUOTE_ALL)) $$
+    puts "\nWriting 'write-sample2.csv' (tab delimitied)" $$
+    puts (str $ csv_fput ("write-sample2.csv", sample2, TAB_DELIM)) $$
+    puts "\nWriting 'write-sample3.csv' (tab delimited, single quoted)" $$
+    puts (str $ csv_fput ("write-sample3.csv", sample3, TAB_DELIM_SINGLE_QUOTE)) $$
+    puts "\nWriting 'write-sample4.csv' (escaped quotes)" $$
+    puts (str $ csv_fput ("write-sample4.csv", sample1, ESC_QUOTES)) $$
+    puts "\ndone." $$ ();
+    
+main;

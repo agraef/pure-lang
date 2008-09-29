@@ -1,0 +1,27 @@
+#!/usr/local/bin/pure -x
+
+using csv;
+using system;
+
+/* Define a few dialects */
+const QUOTE_ALL = csv_dialect [CSV_QUOTING_STYLE=>CSV_QUOTE_ALL];
+const TAB_DELIM = csv_dialect [CSV_DELIMITER=>"\t"];
+const TAB_DELIM_SINGLE_QUOTE = csv_dialect [CSV_DELIMITER=>"\t", CSV_QUOTE=>"'"];
+const ESC_QUOTES = csv_dialect [CSV_ESCAPE=>"%"];
+
+main
+	=	puts "Reading 'read-sample1.csv' (standard CSV)" $$
+    puts (str $ csv_fget "read-sample1.csv") $$
+    puts "\nReading 'read-sample1.csv' (standard CSV, no conversions)" $$
+    puts (str $ csv_fget ("read-sample1.csv", QUOTE_ALL)) $$
+    puts "\nReading 'read-sample2.csv' (tab delimitied)" $$
+    puts (str $ csv_fget ("read-sample2.csv", TAB_DELIM)) $$
+    puts "\nReading 'read-sample3.csv' (tab delimited, single quoted)" $$
+    puts (str $ csv_fget ("read-sample3.csv", TAB_DELIM_SINGLE_QUOTE)) $$
+    puts "\nReading 'read-sample4.csv' (escaped quotes)" $$
+    puts (str $ csv_fget ("read-sample4.csv", ESC_QUOTES)) $$
+    puts "\nReading 'read-sample5.csv' (Malformed)" $$
+    puts (str $ csv_fget ("read-sample5.csv", CSV_DEFAULTS)) $$
+    puts "\ndone." $$ ();
+    
+main;

@@ -1,0 +1,89 @@
+
+PURE-CSV - Comma Separated Value interface for the Pure programming language
+======== = ===== ========= ===== ========= === === ==== =========== ========
+
+The CSV library provides an interface to read and write comma separated value
+files. The reading and writing functions are loosely based on Python's CSV
+module (http://docs.python.org/lib/module-csv.html)
+
+INSTALLATION
+
+Run 'make' to compile the module and 'make install' (as root) to install it in
+the Pure library directory. This requires GNU make.
+
+The 'make install' step is only necessary for system-wide installation. 'make'
+will try to guess your Pure installation directory, if it gets it wrong, you
+can specify the installation prefix as follows: 'make install prefix=/usr'.
+Make sure that you get this right, otherwise the Pure interpreter won't be
+able to find the installed module.
+
+USAGE
+
+Data records are represented as lists of strings and numeric data. Dialects
+are created using csv_dialect with a list of specifications outlined in 
+csv.pure.
+
+- csv_list (s::string, dialect)
+  csv_list s::string
+  
+  Converts a CSV formatted string s to a list of fields according to the 
+  dialect specified. If no dialect is specified, conversion is performed using
+  RFC 4180 rules (http://www.ietf.org/rfc/rfc4180.txt). Invalidly formatted
+  CSV causes return of a 'csv_error msg' term (see NOTES below).
+  
+- csv_str (x:xs)
+  csv_str ((x:xs), dialect)
+  
+  Converts a list of fields, which includes only strings, integers, and
+  doubles to a CSV formatted string according to the dialect specified. If
+  no dialect is specified, conversion is performed using RFC 4180 rules
+  (http://www.ietf.org/rfc/rfc4180.txt). Lists that are not strings, integers,
+  or floats invoke a 'csv_error msg' term (see NOTES below).
+
+- csv_fgets (f::pointer, dialect)
+  csv_fgets f::pointer
+
+  Is equivalent to csv_list except that reading is from file f.
+
+- csv_fputs ((x:xs), dialect, f)
+  csv_fputs ((x:xs), f)
+
+  Is equivalent to csv_str except that writing is to file f.
+  
+- csv_fget (name::string, dialect)
+  csv_fget name::string
+  
+  Reads a named file and returns a list of records. These procedures should 
+  only be used on data files that are small enough to fit in the computers 
+  RAM.
+  
+- csv_fput (name::string, recs, dialect)
+  csv_fput (name::string, recs)
+  
+  Writes list of records to a named file. Each record is converted according
+  to the rules stated in the csv_str procedure.
+
+NOTES
+
+- Errors in the conversion routines (input that does not abide by the
+  dialect rules; records containing field types other than strings, integers
+  and floats) cause a special 'csv_error msg' term to be returned, where msg
+  is a string describing the particular error. To handle error conditions,
+  your application should either check for these, or define csv_error to
+  directly handle the error in some way (e.g., provide a default value, or
+  raise an exception). For instance:
+
+  csv_error msg = throw msg;
+
+- MS Excel files should be written using "=""0004""" if leading 0s are 
+  significant. Use the same technique if leading space is significant. Use this
+  quirk only if written files are going to be imported to MS Excel.
+
+EXAMPLES
+
+Examples are provided in the examples subdirectory. See "readsamples.pure" for
+reading csv files and "writesamples.pure" for writing.
+
+September 24, 2008
+Eddie Rucker
+erucker@bmc.edu

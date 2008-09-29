@@ -1,0 +1,178 @@
+/* This file is part of the Pure programming system.
+
+   The Pure programming system is free software; you can redistribute it and/or
+   modify it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2, or (at your option) any
+   later version.
+
+   The Pure programming system is distributed in the hope that it will be
+   useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+/* The CSV library provides an interface to read and write comma separated
+   value files. The reading and writing functions are loosely based on
+   Python's csv module (http://docs.python.org/lib/module-csv.html)
+
+   Author: Robert E. Rucker
+   Email: erucker@bmc.edu
+   Date: July 15, 2008
+*/
+
+using "lib:csv";
+using system;
+
+/* User may define csv_error for custom error handling. */
+csv_error msg;
+
+private c_csv_fgets c_csvstr_to_list c_list_to_csvstr;
+
+/* Read a string with embedded '\n's within quotes. No error checking! */
+extern expr *c_csv_fgets(FILE *fp, char *quote);
+
+/* Convert a CSV string to a list (record).
+   s:       CSV formated string to be converted to a list of fields.
+   Dialect: CSV format specification. If none is given, defaults to
+            RFC4180 for Windows and UNIX for all other OSs.
+   NOTE: Rec must contain ONLY strings, integers, and floating point numbers.
+         If a field is some other type, the 'csv_error MSG' rule is invoked.
+*/
+extern expr *c_csvstr_to_list(char *str, expr *dialect);
+
+/* Convert a list (record) to a CSV string.
+   Rec:     list of fields to be converted to CSV format.
+   Dialect: CSV format specification. If none is given, defaults to
+            RFC4180 for Windows and UNIX for all other OSs.
+   NOTE: Rec must contain ONLY strings, integers, and floating point numbers.
+         If a field is some other type, the 'csv_error MSG' rule is invoked.
+*/
+extern expr *c_list_to_csvstr(expr *list, expr *dialect);
+
+/* Public dialect Options
+CSV_DELIMITER:      Field delimiter. Defaults to ",".
+
+CSV_ESCAPE:         Embedded escape character. Defaults to "\"".
+                    Reading: The escape character is dropped and
+                             the next char is inserted into the field.
+                    Writing: The escape character is written into the
+                             output stream.
+
+CSV_QUOTE:          Quote character. Defaults to "\"".
+                    Note: If embedded quotes are doubled, csv_escape must equal
+                          csv_quote. The csv_dialect function will
+                          automatically set the csv_escape character to
+                          csv_quote if csv_escape is not specified.
+
+CSV_QUOTING_STYLE:  Quoting options: Defaults to csv_quote_strings.
+                    See QuoteStyle constants below.
+
+CSV_LINETERMINATOR: Record terminator. Defaults to "\r\n".
+
+CSV_SKIPSPACE:      Skip white space flag. Defaults to true.
+                    Reading/Writing: If true, white spaces before fields are
+                                     removed. Quoted fields always retain
+                                     white space.
+*/
+const CSV_QUOTE_ALL = 0;
+const CSV_QUOTE_STRINGS = 1;
+const CSV_QUOTE_EMBEDDED = 2;
+
+const CSV_DELIMITER = 0;
+const CSV_ESCAPE = 1;
+const CSV_QUOTE = 2;
+const CSV_QUOTING_STYLE = 3;
+const CSV_LINETERMINATOR = 4;
+const CSV_SKIPSPACE = 5;
+
+/* Defaults are set to RFC 4180 (http://www.ietf.org/rfc/rfc4180.txt) except
+   for the \r\n pair */
+let csv_defaults = [",", "\"", "\"", 1, "\n", 1];
+
+/* Create a dialect base on the list of dialect options given above.
+   See RFC4180 and EXCEL constants below for example usage.
+*/
+csv_dialect opts
+  = zipwith ((lookup) opts2) (0..5) csv_defaults
+    when
+      opts2 = if any (\(x=>y) -> x==CSV_ESCAPE) opts then
+                opts
+              else
+                opts + [CSV_ESCAPE=>(lookup opts CSV_QUOTE "\"")];
+    end
+    with
+      lookup [] k::int v = v;
+      lookup ((x=>y):xs) k::int _ = y if k == x;
+      lookup ((x=>y):xs) k::int v = lookup xs k v;
+    end;
+
+const CSV_RFC4180 = csv_dialect [CSV_LINETERMINATOR => "\r\n"];
+const CSV_UNIX = csv_defaults;
+const CSV_EXCEL = csv_dialect [CSV_QUOTING_STYLE => CSV_QUOTE_EMBEDDED];
+const CSV_DEFAULTS 
+	=	if (substr sysinfo 0 5) == "mingw" then
+			CSV_RFC4180
+		else
+			CSV_UNIX;
+
+/* List to CSV string conversion functions */
+	csv_str rec@[]
+| csv_str rec@(_:_)
+	=	c_list_to_csvstr rec CSV_DEFAULTS;
+	
+	csv_str (rec@[], dialect@(_:_))
+| csv_str (rec@(_:_), dialect @(_:_))
+	= c_list_to_csvstr rec dialect;
+	
+/* File writing functions */
+  csv_fputs (rec@[], f::pointer)
+| csv_fputs (rec@(_:_), f::pointer)
+  = fputs (c_list_to_csvstr rec CSV_DEFAULTS) f;
+
+  csv_fputs (rec@[], dialect@(_:_), f::pointer)
+| csv_fputs (rec@(_:_), dialect@(_:_), f::pointer)
+  = fputs (c_list_to_csvstr rec dialect) f;
+
+/* CSV string to list converstion functions */
+csv_list s::string
+	=	c_csvstr_to_list s CSV_DEFAULTS;
+csv_list (s::string, dialect@(_:_))
+	= c_csvstr_to_list s dialect;
+
+/* File reading functions */
+csv_fgets f::pointer
+  = c_csvstr_to_list (c_csv_fgets f (CSV_DEFAULTS!CSV_QUOTE)) CSV_DEFAULTS;
+csv_fgets (f::pointer, dialect@(_:_))
+  = c_csvstr_to_list (c_csv_fgets f (dialect!CSV_QUOTE)) dialect;
+
+/* Read a whole file at one time */
+csv_fget (name::string, dialect@(_:_))
+	=	read (csv_fgets (f, dialect)) []
+		with
+			read s acc = fclose f $$ reverse acc if feof f;
+			read s acc = read (csv_fgets (f, dialect)) (s:acc);
+		end
+		when
+			f = fopen name "r";
+		end;
+		
+csv_fget name::string
+	=	csv_fget (name, CSV_DEFAULTS);
+	
+/* Write a whole file at one time */
+csv_fput (name::string, recs, dialect@(_:_))
+	=	write recs f
+		with
+			write [] f = fclose f $$ ();
+			write (x:xs) f = csv_fputs (x, dialect, f) $$ write xs f;
+		end
+		when
+			f = fopen name "w";
+		end;
+		
+csv_fput (name::string, recs)
+	= csv_fput (name, recs, CSV_DEFAULTS);
