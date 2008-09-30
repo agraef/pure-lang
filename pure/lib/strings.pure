@@ -127,6 +127,18 @@ substr s::string pos::int size::int
 index s::string u::string
 			= string_index s u;
 
+/* String slices. The case of contiguous and monotonous ranges is optimized by
+   making good use of the 'substr' operation above. */
+
+s::string!!ns		= case ns of
+			    ns@(n:_) = substr s n (#ns) if cont ns;
+			    _ = string (chars s!!ns);
+			  end with
+			    cont [n] = 1;
+			    cont (n::int:ns@(m::int:_)) = cont ns if m==n+1;
+			    cont _ = 0 otherwise;
+			  end;
+
 /* Concatenate a list of strings. */
 
 private string_concat_list;
