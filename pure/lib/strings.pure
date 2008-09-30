@@ -131,12 +131,13 @@ index s::string u::string
    making good use of the 'substr' operation above. */
 
 s::string!!ns		= case ns of
-			    ns@(n:_) = substr s n (#ns) if cont ns;
+			    ns@(n:_) = substr s n (count ns) if cont ns;
 			    _ = string (chars s!!ns);
 			  end with
 			    cont [n::int] = 1;
 			    cont (n::int:ns@(m::int:_)) = cont ns if m==n+1;
 			    cont _ = 0 otherwise;
+			    count ns = #dropwhile (\n::int->n<0) ns;
 			  end;
 
 /* Concatenate a list of strings. */

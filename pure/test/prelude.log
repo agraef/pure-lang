@@ -146,8 +146,8 @@ null (x/*0:101*/:xs/*0:11*/) = 0;
 (x/*0:0101*/:xs/*0:011*/)!0 = x/*0:0101*/;
 (x/*0:0101*/:xs/*0:011*/)!n/*0:1*/::int = xs/*0:011*/!(n/*0:1*/-1) if n/*0:1*/>0;
 (x/*0:0101*/:xs/*0:011*/)!n/*0:1*/::int = throw out_of_bounds;
-xs/*0:01*/!!ns/*0:1*/ = case ns/*0:1*/ of ns@(n/*0:01*/:_/*0:1*/) = take (#ns/*0:*/) (drop n/*0:01*/ xs/*1:01*/) if listp xs/*1:01*/&&cont/*1*/ ns/*0:*/; _/*0:*/ = catmap (nth/*1*/ xs/*1:01*/) ns/*1:1*/ {
-  rule #0: ns@(n:_) = take (#ns) (drop n xs) if listp xs&&cont ns
+xs/*0:01*/!!ns/*0:1*/ = case ns/*0:1*/ of ns@(n/*0:01*/:_/*0:1*/) = take (count/*1*/ ns/*0:*/) (drop n/*0:01*/ xs/*1:01*/) if listp xs/*1:01*/&&cont/*1*/ ns/*0:*/; _/*0:*/ = catmap (nth/*1*/ xs/*1:01*/) ns/*1:1*/ {
+  rule #0: ns@(n:_) = take (count ns) (drop n xs) if listp xs&&cont ns
   rule #1: _ = catmap (nth xs) ns
   state 0: #0 #1
 	<var> state 1
@@ -236,6 +236,16 @@ xs/*0:01*/!!ns/*0:1*/ = case ns/*0:1*/ of ns@(n/*0:01*/:_/*0:1*/) = take (#ns/*0
   state 1: #0
 	<var> state 2
   state 2: #0
+}; count ns/*0:1*/ = #dropwhile (\n/*0:*/::int -> n/*0:*/<0 {
+  rule #0: n::int = n<0
+  state 0: #0
+	<var>::int state 1
+  state 1: #0
+}) ns/*0:1*/ {
+  rule #0: count ns = #dropwhile (\n::int -> n<0) ns
+  state 0: #0
+	<var> state 1
+  state 1: #0
 } end;
 []+ys/*0:1*/ = ys/*0:1*/;
 xs@(_/*0:0101*/:_/*0:011*/)+ys/*0:1*/ = tick/*0*/ [] xs/*0:01*/ ys/*0:1*/ with tick zs/*0:001*/ (x/*0:0101*/:xs/*0:011*/) ys/*0:1*/ = tack/*1*/ (x/*0:0101*/:zs/*0:001*/) ((xs/*1:011*/+ys/*1:1*/)&) if thunkp xs/*0:011*/; tick zs/*0:001*/ (x/*0:0101*/:xs/*0:011*/) ys/*0:1*/ = tick/*1*/ (x/*0:0101*/:zs/*0:001*/) xs/*0:011*/ ys/*0:1*/; tick zs/*0:001*/ [] ys/*0:1*/ = tack/*1*/ zs/*0:001*/ ys/*0:1*/; tick zs/*0:001*/ xs/*0:01*/ ys/*0:1*/ = tack/*1*/ zs/*0:001*/ (xs/*0:01*/+ys/*0:1*/) {

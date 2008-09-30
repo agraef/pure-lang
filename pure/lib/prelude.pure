@@ -201,12 +201,14 @@ end;
    works in linear time. */
 
 xs!!ns		= case ns of
-		    ns@(n:_) = take (#ns) (drop n xs) if listp xs && cont ns;
+		    ns@(n:_) = take (count ns) (drop n xs)
+		      if listp xs && cont ns;
 		    _ = catmap (nth xs) ns;
 		  end with
 		    cont [n::int] = 1;
 		    cont (n::int:ns@(m::int:_)) = cont ns if m==n+1;
 		    cont _ = 0 otherwise;
+		    count ns = #dropwhile (\n::int->n<0) ns;
 		    nth xs n = catch (cst []) [xs!n];
 		  end;
 
