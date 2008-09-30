@@ -67,6 +67,8 @@ null (x/*0:101*/,xs/*0:11*/) = 0;
 (x/*0:0101*/,xs/*0:011*/)!0 = x/*0:0101*/;
 (x/*0:0101*/,y/*0:01101*/,xs/*0:0111*/)!n/*0:1*/::int = (y/*0:01101*/,xs/*0:0111*/)!(n/*0:1*/-1);
 (x/*0:0101*/,y/*0:011*/)!1 = y/*0:011*/;
+xs@()!!ns/*0:1*/ = tuple (list xs/*0:01*/!!ns/*0:1*/);
+xs@(_/*0:0101*/,_/*0:011*/)!!ns/*0:1*/ = tuple (list xs/*0:01*/!!ns/*0:1*/);
 reverse () = ();
 reverse (x/*0:101*/,xs/*0:11*/) = accum/*0*/ x/*0:101*/ xs/*0:11*/ with accum ys/*0:01*/ (x/*0:101*/,xs/*0:11*/) = accum/*1*/ (x/*0:101*/,ys/*0:01*/) xs/*0:11*/; accum ys/*0:01*/ x/*0:1*/ = x/*0:1*/,ys/*0:01*/ {
   rule #0: accum ys (x,xs) = accum (x,ys) xs
@@ -144,6 +146,14 @@ null (x/*0:101*/:xs/*0:11*/) = 0;
 (x/*0:0101*/:xs/*0:011*/)!0 = x/*0:0101*/;
 (x/*0:0101*/:xs/*0:011*/)!n/*0:1*/::int = xs/*0:011*/!(n/*0:1*/-1) if n/*0:1*/>0;
 (x/*0:0101*/:xs/*0:011*/)!n/*0:1*/::int = throw out_of_bounds;
+xs/*0:01*/!!ns/*0:1*/ = catmap (nth/*0*/ xs/*0:01*/) ns/*0:1*/ with nth xs/*0:01*/ n/*0:1*/ = catch (cst []) [xs/*1:01*/!n/*1:1*/] {
+  rule #0: nth xs n = catch (cst []) [xs!n]
+  state 0: #0
+	<var> state 1
+  state 1: #0
+	<var> state 2
+  state 2: #0
+} end;
 []+ys/*0:1*/ = ys/*0:1*/;
 xs@(_/*0:0101*/:_/*0:011*/)+ys/*0:1*/ = tick/*0*/ [] xs/*0:01*/ ys/*0:1*/ with tick zs/*0:001*/ (x/*0:0101*/:xs/*0:011*/) ys/*0:1*/ = tack/*1*/ (x/*0:0101*/:zs/*0:001*/) ((xs/*1:011*/+ys/*1:1*/)&) if thunkp xs/*0:011*/; tick zs/*0:001*/ (x/*0:0101*/:xs/*0:011*/) ys/*0:1*/ = tick/*1*/ (x/*0:0101*/:zs/*0:001*/) xs/*0:011*/ ys/*0:1*/; tick zs/*0:001*/ [] ys/*0:1*/ = tack/*1*/ zs/*0:001*/ ys/*0:1*/; tick zs/*0:001*/ xs/*0:01*/ ys/*0:1*/ = tack/*1*/ zs/*0:001*/ (xs/*0:01*/+ys/*0:1*/) {
   rule #0: tick zs (x:xs) ys = tack (x:zs) ((xs+ys)&) if thunkp xs
@@ -311,19 +321,6 @@ stream (x/*0:101*/:xs/*0:11*/) = x/*0:101*/:xs/*0:11*/ if thunkp xs/*0:11*/;
 stream (x/*0:101*/:xs/*0:11*/) = x/*0:101*/:stream xs/*1:11*/&;
 stream () = [];
 stream xs@(_/*0:101*/,_/*0:11*/) = stream (list xs/*0:1*/);
-xs/*0:01*/!!ns/*0:1*/ = if tuplep xs/*1:01*/ then tuple ys/*0:*/ else ys/*0:*/ when ys/*0:*/ = catmap (nth/*0*/ xs/*0:01*/) ns/*0:1*/ {
-  rule #0: ys = catmap (nth xs) ns
-  state 0: #0
-	<var> state 1
-  state 1: #0
-} end with nth xs/*0:01*/ n/*0:1*/ = catch (cst []) [xs/*1:01*/!n/*1:1*/] {
-  rule #0: nth xs n = catch (cst []) [xs!n]
-  state 0: #0
-	<var> state 1
-  state 1: #0
-	<var> state 2
-  state 2: #0
-} end;
 n1/*0:0101*/:n2/*0:011*/..m/*0:1*/ = if m/*2:1*/===s/*0:*/*inf then iterate (\x/*0:*/ -> x/*0:*/+k/*2:*/ {
   rule #0: x = x+k
   state 0: #0

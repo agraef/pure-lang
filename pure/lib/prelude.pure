@@ -119,7 +119,7 @@ def void (catmap f x) = do f x;
    are always flat and associate to the right. The empty tuple, denoted (), is
    neutral with respect to ','. Operations are provided to test for equality/
    inequality and emptiness, to determine the size of a tuple, for zero-based
-   indexing, and to reverse a tuple. */
+   indexing and slicing, and to reverse a tuple. */
 
 x,()		= x;
 (),y		= y;
@@ -149,6 +149,9 @@ end;
 (x,y,xs)!n::int	= (y,xs)!(n-1);
 (x,y)!1		= y;
 
+xs@()!!ns	|
+xs@(_,_)!!ns	= tuple (list xs!!ns);
+
 reverse ()	= ();
 reverse (x,xs)	= accum x xs with
   accum ys (x,xs)	= accum (x,ys) xs;
@@ -160,8 +163,8 @@ end;
    for proper list values [x] where x is any singleton or tuple (in the latter
    case you'll get a list made from all the elements of x). The usual basic
    operations are provided to test for equality/inequality and emptiness, to
-   compute the size of a list, for indexing and concatenation, and for
-   reversing a list. */
+   compute the size of a list, for indexing, slicing and concatenation, and
+   for reversing a list. */
 
 []==[]		= 1;
 (x:xs)==[]	= 0;
@@ -187,6 +190,16 @@ end;
 (x:xs)!0	= x;
 (x:xs)!n::int	= xs!(n-1) if n>0;
 		= throw out_of_bounds otherwise;
+
+/* Slicing. xs!!ns returns the list of xs!n for all members n of the index
+   list ns which are in the valid index range. This is a generic fallback
+   definition which works with any kind of container data structure which
+   defines (!) in such a manner that it throws an exception when the index is
+   out of bounds, and with any kind of index container that implements the
+   catmap operation. */
+
+xs!!ns		= catmap (nth xs) ns
+		  with nth xs n = catch (cst []) [xs!n] end;
 
 /* List concatenation. For a robust implementation which works with both
    ordinary lists and streams, we want this to be tail-recursive *and*
@@ -242,16 +255,6 @@ stream (x:xs)	= x:xs if thunkp xs;
 
 stream ()	= [];
 stream xs@(_,_)	= stream (list xs);
-
-/* Slicing. xs!!ns returns the list (or tuple) of xs!n for all members n of
-   the index list ns which are in the valid index range. This is a generic
-   definition which will work with any kind of container data structure which
-   defines (!) in such a manner that it throws an exception when the index is
-   out of bounds. */
-
-xs!!ns		= if tuplep xs then tuple ys else ys
-		  when ys = catmap (nth xs) ns end
-		  with nth xs n = catch (cst []) [xs!n] end;
 
 /* Arithmetic sequences. */
 
