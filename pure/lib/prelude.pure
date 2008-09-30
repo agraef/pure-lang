@@ -195,11 +195,20 @@ end;
    list ns which are in the valid index range. This is a generic fallback
    definition which works with any kind of container data structure which
    defines (!) in such a manner that it throws an exception when the index is
-   out of bounds, and with any kind of index container that implements the
-   catmap operation. */
+   out of bounds. It also works with any kind of index container that
+   implements the catmap operation. Moreover, the special case of contiguous
+   and monotonous list slices is optimized using 'take' and 'drop' so that it
+   works in linear time. */
 
-xs!!ns		= catmap (nth xs) ns
-		  with nth xs n = catch (cst []) [xs!n] end;
+xs!!ns		= case ns of
+		    ns@(n:_) = take (#ns) (drop n xs) if listp xs && cont ns;
+		    _ = catmap (nth xs) ns;
+		  end with
+		    cont [n::int] = 1;
+		    cont (n::int:ns@(m::int:_)) = cont ns if m==n+1;
+		    cont _ = 0 otherwise;
+		    nth xs n = catch (cst []) [xs!n];
+		  end;
 
 /* List concatenation. For a robust implementation which works with both
    ordinary lists and streams, we want this to be tail-recursive *and*
