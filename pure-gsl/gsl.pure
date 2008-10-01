@@ -1,0 +1,49 @@
+
+/* gsl.pure: GSL wrapper for the Pure programming language. */
+
+/* Copyright (c) 2008 by Albert Graef <Dr.Graef@t-online.de>.
+   Copyright (c) 2008 by Robert E. Rucker <erucker@bmc.edu>.
+
+   This file is part of the Pure programming language and system.
+
+   Pure is free software: you can redistribute it and/or modify it under the
+   terms of the GNU General Public License as published by the Free Software
+   Foundation, either version 3 of the License, or (at your option) any later
+   version.
+
+   Pure is distributed in the hope that it will be useful, but WITHOUT ANY
+   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+   FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+   details.
+
+   You should have received a copy of the GNU General Public License along
+   with this program.  If not, see <http://www.gnu.org/licenses/>. */
+
+using "lib:gsl";
+
+/* Complex functions. */
+
+extern expr* wrap_complex_sqrt(expr*) = gsl_complex_sqrt;
+
+/* Matrix-matrix operations. */
+
+extern int gsl_matrix_add(dmatrix*, dmatrix*);
+extern int gsl_matrix_complex_add(cmatrix*, cmatrix*);
+extern int gsl_matrix_int_add(imatrix*, imatrix*);
+
+x::matrix + y::matrix	= throw (bad_matrix_value y) if dim x!=dim y;
+			= x when
+			    x = pack x;
+			    _ = case matrix_type x of
+			      1 = gsl_matrix_add x y;
+			      2 = gsl_matrix_complex_add x y;
+			      3 = gsl_matrix_int_add x y;
+			    end;
+			  end if nmatrixp x && matrix_type x == matrix_type y;
+// mixed numeric cases
+			= cmatrix x + y if nmatrixp x && cmatrixp y;
+			= x + cmatrix y if cmatrixp x && nmatrixp y;
+			= dmatrix x + y if imatrixp x && dmatrixp y;
+			= x + dmatrix y if dmatrixp x && imatrixp y;
+// symbolic matrix operations
+			= zipwith (+) x y;
