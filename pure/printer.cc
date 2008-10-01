@@ -390,7 +390,8 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
   }
   case EXPR::COND: {
     expr u = x.xval1(), v = x.xval2(), w = x.xval3();
-    return os << "if " << paren(0, u) << " then " << v << " else " << w;
+    return os << "if " << paren(0, u) << " then " << paren(-10, v)
+	      << " else " << paren(-10, w);
   }
   case EXPR::CASE: {
     expr u = x.xval();
