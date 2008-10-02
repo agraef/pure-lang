@@ -340,8 +340,8 @@ pure_expr *pure_get_sentry(pure_expr *x);
 pure_expr *pure_clear_sentry(pure_expr *x);
 
 /* Variable and constant definitions. These allow you to directly bind
-   variable and constant symbols to pure_expr* values, as the 'let' and 'def'
-   constructs do in the Pure language. The functions return true if
+   variable and constant symbols to pure_expr* values, as the 'let' and
+   'const' constructs do in the Pure language. The functions return true if
    successful, false otherwise. */
 
 bool pure_let(int32_t sym, pure_expr *x);
