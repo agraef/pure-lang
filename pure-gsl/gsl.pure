@@ -47,3 +47,37 @@ x::matrix + y::matrix	= throw (bad_matrix_value y) if dim x!=dim y;
 			= x + dmatrix y if dmatrixp x && imatrixp y;
 // symbolic matrix operations
 			= zipwith (+) x y;
+
+/* Matrix multiplication is implemented via the BLAS interface (actually a
+   thin wrapper around the BLAS routines, as these seem unnecessarily
+   complicated). This API doesn't support integer matrices, so we emulate
+   these by converting to double matrices and then back to integer. Also note
+   that these routines take an extra third argument for the result matrix. */
+
+extern int gsl_matrix_multiply(dmatrix*, dmatrix*, dmatrix*);
+extern int gsl_matrix_complex_multiply(cmatrix*, cmatrix*, cmatrix*);
+
+x::matrix * y::matrix	= throw (bad_matrix_value y) if dim x!1!=dim y!0;
+			= z when
+			    mat = [dmatrix,cmatrix,dmatrix]!(matrix_type x-1);
+			    z = mat (dim x!0,dim y!1);
+			    _ = if null z then () else
+			    (case matrix_type x of
+			       1 = gsl_matrix_multiply x y z;
+			       2 = gsl_matrix_complex_multiply x y z;
+			       3 = gsl_matrix_multiply
+			           (dmatrix x) (dmatrix y) z;
+			     end);
+			    z = if imatrixp x then imatrix z else z;
+			  end if nmatrixp x && matrix_type x == matrix_type y;
+// mixed numeric cases
+			= cmatrix x * y if nmatrixp x && cmatrixp y;
+			= x * cmatrix y if cmatrixp x && nmatrixp y;
+			= dmatrix x * y if imatrixp x && dmatrixp y;
+			= x * dmatrix y if dmatrixp x && imatrixp y;
+// symbolic matrix multiplication
+			= redim (dim x!0,dim y!1)
+			  {dot u v | u = rows x; v = cols y}
+			  with dot x::matrix y::matrix =
+			    foldl (+) 0 [x!i*y!i | i=0..#x-1];
+			  end;

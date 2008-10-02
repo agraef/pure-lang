@@ -3,6 +3,7 @@
 #include <gsl/gsl_version.h>
 #include <gsl/gsl_complex_math.h>
 #include <gsl/gsl_matrix.h>
+#include <gsl/gsl_blas.h>
 
 #include <pure/runtime.h>
 
@@ -35,4 +36,20 @@ pure_expr *wrap_complex_sqrt(pure_expr *x)
     return pure_complex(ret.dat);
   } else
     return 0;
+}
+
+/* Matrix multiplication. */
+
+int gsl_matrix_multiply(gsl_matrix* A, gsl_matrix* B, gsl_matrix* C)
+{
+  return gsl_blas_dgemm(CblasNoTrans, CblasNoTrans,
+			1.0, A, B, 0.0, C);
+}
+
+int gsl_matrix_complex_multiply(gsl_matrix_complex* A, gsl_matrix_complex* B,
+				gsl_matrix_complex* C)
+{
+  gsl_complex a = {1.0, 0.0}, b = {0.0, 0.0};
+  return gsl_blas_zgemm(CblasNoTrans, CblasNoTrans,
+			a, A, B, b, C);
 }
