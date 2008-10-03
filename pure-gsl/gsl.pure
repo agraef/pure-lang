@@ -82,16 +82,14 @@ x::matrix * y::matrix	= throw (bad_matrix_value y) if dim x!1!=dim y!0;
 			    foldl (+) 0 [x!i*y!i | i=0..#x-1];
 			  end;
 
-/* Singular value decompositions. Unfortunately, GSL implements this only for
+/* Singular value decompositions. For a given nxm matrix x, these yield a
+   singular-value decomposition u,s,v of the matrix such that x==u*s*v', where
+   u and v are orthogonal matrices of dimensions nxm and nxn, respectively,
+   and s is a nxn diagonal matrix which has the singular values in its
+   diagonal, in descending order. Note that GSL implements this only for
    double matrices right now. Also, GSL only handles the case of square or
    overdetermined systems, but we work around that in our wrapper functions by
-   just adding a suitable number of zero rows in the underdetermined case.
-   Our wrapper routines set up everything as needed by the corresponding GSL
-   routine and return the computed decomposition as a triple u,s,v, where u is
-   an orthogonal nxm matrix (assuming that x is an nxm matrix), s an 1xm row
-   vector containing the singular values, and v is the transpose of an
-   orthogonal mxm matrix, such that x = u*S*v' where S is the mxm diagonal
-   matrix with diagonal s. */
+   just adding a suitable number of zero rows in the underdetermined case.  */
 
 /* This uses the Golub-Reinsch algorithm. */
 
