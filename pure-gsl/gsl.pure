@@ -106,7 +106,7 @@ svd x::matrix		= throw (bad_matrix_value x)
 			  end if dim x!0<dim x!1;
 			= u,s,v when n,m = dim x;
 			    u = pack (dmatrix x); v = dmatrix (m,m);
-			    s = dmatrix m; w = dmatrix m;
+			    s = dmatrix (m,m); w = dmatrix m;
 			    _ = gsl_linalg_SV_decomp u v s w;
 			  end;
 
@@ -125,7 +125,7 @@ svd_mod x::matrix	= throw (bad_matrix_value x)
 			  end if dim x!0<dim x!1;
 			= u,s,v when n,m = dim x;
 			    u = pack (dmatrix x); v = dmatrix (m,m);
-			    s = dmatrix m; w = dmatrix m;
+			    s = dmatrix (m,m); w = dmatrix m;
 			    y = dmatrix (m,m);
 			    _ = gsl_linalg_SV_decomp_mod u y v s w;
 			  end;
@@ -144,7 +144,7 @@ svd_jacobi x::matrix	= throw (bad_matrix_value x)
 			  end if dim x!0<dim x!1;
 			= u,s,v when n,m = dim x;
 			    u = pack (dmatrix x); v = dmatrix (m,m);
-			    s = dmatrix m;
+			    s = dmatrix (m,m);
 			    _ = gsl_linalg_SV_decomp_jacobi u v s;
 			  end;
 
@@ -161,15 +161,15 @@ svd_solve (u::matrix,s::matrix,v::matrix) b::matrix
 			= throw (bad_matrix_value u)
 			    if not dmatrixp u;
 			= throw (bad_matrix_value s)
-			    if not dmatrixp s || not rowvectorp s ||
-			      dim s!1 != dim u!1;
+			    if not dmatrixp s ||
+			      dim s!0 != dim u!1 || dim s!1 != dim u!1;
 			= throw (bad_matrix_value v)
 			    if not dmatrixp v ||
 			      dim v!0 != dim u!1 || dim v!1 != dim u!1;
 			= throw (bad_matrix_value b)
 			    if cmatrixp b || smatrixp b ||
 			      not colvectorp b || dim b!0 != dim u!0;
-			= x when x = dmatrix (dim x!1,1);
+			= x when x = dmatrix (dim u!1,1);
 			    _ = gsl_linalg_SV_solve u v s b x;
 			  end if dmatrixp b;
 			= svd_solve (u,s,v) (dmatrix b) if imatrixp b;
