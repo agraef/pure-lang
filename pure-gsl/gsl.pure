@@ -176,3 +176,11 @@ svd_solve (u::matrix,s::matrix,v::matrix) b::matrix
 
 pinv x::matrix		= v*map pinv s*u' when u,s,v = svd x end
 			  with pinv x = if x==0 then x else 1/x end;
+
+/* Left and right matrix division. Note that left division is denoted '\\',
+   since the backslash is already used for lambdas in Pure. */
+
+infixl 7 \\ ;
+
+x::matrix / y::matrix	= x*pinv y;
+x::matrix \\ y::matrix	= pinv x*y;
