@@ -171,3 +171,11 @@ svd_solve (u::matrix,s::matrix,v::matrix) b::matrix
 			    _ = gsl_linalg_SV_solve u v s b x;
 			  end if dmatrixp b;
 			= svd_solve (u,s,v) (dmatrix b) if imatrixp b;
+
+/* Pseudo inverse of a matrix. Works only with int and double matrices right
+   now. */
+
+pinv x::matrix		= throw (bad_matrix_value x)
+			    if cmatrixp x || smatrixp x;
+			= v*map pinv s*u' when u,s,v = svd x end
+			  with pinv x = if x==0 then x else 1/x end;
