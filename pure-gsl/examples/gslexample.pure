@@ -36,3 +36,15 @@ diag s;
 let b = {2;3;0;0}; let a = svd_solve (u,s,v) b; a;
 // This should yield the original vector b:
 x*a;
+
+// Pseudo inverses and left and right matrix division.
+
+let x = {1,0,0,0,2;0,0,3,0,0;0,0,0,0,0;0,4,0,0,0};
+x; pinv x;
+// This solves the same system as above, using the pseudo inverse of x.
+let b = {2;3;0;0}; pinv x*b;
+// This does exactly the same (left matrix division).
+x\\b;
+// This solves the transposed system using right division, yielding the same
+// result but as a row vector.
+b'/x';
