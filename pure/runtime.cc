@@ -5045,6 +5045,34 @@ pure_expr *matrix_im(pure_expr *x)
 }
 
 extern "C"
+pure_expr *matrix_conj(pure_expr *x)
+{
+#ifdef HAVE_GSL
+  switch (x->tag) {
+  case EXPR::CMATRIX: {
+    gsl_matrix_complex *m1 = (gsl_matrix_complex*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2;
+    gsl_matrix_complex *m2 = create_complex_matrix(n, m);
+    for (size_t i = 0; i < n; i++)
+      for (size_t j = 0; j < m; j++) {
+	size_t k = 2*(i*m1->tda+j), l = 2*(i*m2->tda+j);
+	m2->data[l] = m1->data[k];
+	m2->data[l+1] = -m1->data[k+1];
+      }
+    return pure_complex_matrix(m2);
+  }
+  case EXPR::DMATRIX:
+  case EXPR::IMATRIX:
+    return x;
+  default:
+    return 0;
+  }
+#else
+  return 0;
+#endif
+}
+
+extern "C"
 pure_expr *matrix_from_double_array_nodup(uint32_t n1, uint32_t n2, void *p)
 {
 #ifdef HAVE_GSL

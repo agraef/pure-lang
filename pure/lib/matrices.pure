@@ -226,8 +226,8 @@ cmatrix n::int		= cmatrix (1,n);
 imatrix n::int		= imatrix (1,n);
 
 /* Matrix conversions. These convert between different types of numeric
-   matrices. You can also extract the real and imaginary parts of a (complex)
-   matrix. */
+   matrices. You can also extract the real and imaginary parts and compute the
+   conjugate of a (complex) matrix. */
 
 private matrix_double matrix_complex matrix_int;
 extern expr* matrix_double(expr *x), expr* matrix_complex(expr *x),
@@ -237,11 +237,13 @@ dmatrix x::matrix	= matrix_double x if nmatrixp x;
 imatrix x::matrix	= matrix_int x if nmatrixp x;
 cmatrix x::matrix	= matrix_complex x if nmatrixp x;
 
-private matrix_re matrix_im;
+private matrix_re matrix_im matrix_conj;
 extern expr* matrix_re(expr *x), expr* matrix_im(expr *x);
+extern expr* matrix_conj(expr *x);
 
 re x::matrix		= matrix_re x if nmatrixp x;
 im x::matrix		= matrix_im x if nmatrixp x;
+conj x::matrix		= matrix_conj x if nmatrixp x;
 
 /* Pack a matrix. This creates a copy of the matrix which has the data in
    contiguous storage. It also frees up extra memory if the matrix was created

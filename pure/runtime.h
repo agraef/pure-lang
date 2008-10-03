@@ -730,6 +730,11 @@ pure_expr *matrix_int(pure_expr *x);
 pure_expr *matrix_re(pure_expr *x);
 pure_expr *matrix_im(pure_expr *x);
 
+/* Complex conjugate of a numeric matrix. In the case of int and double
+   matrices, this returns just the matrix itself. */
+
+pure_expr *matrix_conj(pure_expr *x);
+
 /* Create a matrix object of the given dimensions which uses the given pointer
    p as its underlying storage. There are no checks whatsoever and the data is
    *not* copied, so the caller is responsible for making sure that the memory
