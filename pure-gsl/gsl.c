@@ -4,6 +4,7 @@
 #include <gsl/gsl_complex_math.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_blas.h>
+#include <gsl/gsl_linalg.h>
 
 #include <pure/runtime.h>
 
@@ -52,4 +53,40 @@ int gsl_matrix_complex_multiply(gsl_matrix_complex* A, gsl_matrix_complex* B,
   gsl_complex a = {1.0, 0.0}, b = {0.0, 0.0};
   return gsl_blas_zgemm(CblasNoTrans, CblasNoTrans,
 			a, A, B, b, C);
+}
+
+/* Singular value decomposition. XXXTODO: Provide complex matrix versions of
+   these, which are missing in GSL. */
+
+int wrap_gsl_linalg_SV_decomp(gsl_matrix* A, gsl_matrix* V, gsl_matrix* S,
+			      gsl_matrix* work)
+{
+  gsl_vector_view _S = gsl_matrix_row(S, 0);
+  gsl_vector_view _work = gsl_matrix_row(work, 0);
+  return gsl_linalg_SV_decomp(A, V, &_S.vector, &_work.vector);
+}
+
+int wrap_gsl_linalg_SV_decomp_mod(gsl_matrix* A, gsl_matrix* X,
+				  gsl_matrix* V, gsl_matrix* S,
+				  gsl_matrix* work)
+{
+  gsl_vector_view _S = gsl_matrix_row(S, 0);
+  gsl_vector_view _work = gsl_matrix_row(work, 0);
+  return gsl_linalg_SV_decomp_mod(A, X, V, &_S.vector, &_work.vector);
+}
+
+int wrap_gsl_linalg_SV_decomp_jacobi(gsl_matrix* A, gsl_matrix* V,
+				     gsl_matrix* S)
+{
+  gsl_vector_view _S = gsl_matrix_row(S, 0);
+  return gsl_linalg_SV_decomp_jacobi(A, V, &_S.vector);
+}
+
+int wrap_gsl_linalg_SV_solve(gsl_matrix* U, gsl_matrix* V, gsl_matrix* S,
+			     const gsl_matrix* b, gsl_matrix* x)
+{
+  gsl_vector_view _S = gsl_matrix_row(S, 0);
+  gsl_vector_const_view _b = gsl_matrix_const_column(b, 0);
+  gsl_vector_view _x = gsl_matrix_column(x, 0);
+  return gsl_linalg_SV_solve(U, V, &_S.vector, &_b.vector, &_x.vector);
 }

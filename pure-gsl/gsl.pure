@@ -81,3 +81,95 @@ x::matrix * y::matrix	= throw (bad_matrix_value y) if dim x!1!=dim y!0;
 			  with dot x::matrix y::matrix =
 			    foldl (+) 0 [x!i*y!i | i=0..#x-1];
 			  end;
+
+/* Singular value decompositions. Unfortunately, GSL implements this only for
+   double matrices right now. Also, GSL only handles the case of square or
+   overdetermined systems, but we work around that in our wrapper functions by
+   just adding a suitable number of zero rows in the underdetermined case.
+   Our wrapper routines set up everything as needed by the corresponding GSL
+   routine and return the computed decomposition as a triple u,s,v, where u is
+   an orthogonal nxm matrix (assuming that x is an nxm matrix), s an 1xm row
+   vector containing the singular values, and v is the transpose of an
+   orthogonal mxm matrix, such that x = u*S*v' where S is the mxm diagonal
+   matrix with diagonal s. */
+
+/* This uses the Golub-Reinsch algorithm. */
+
+extern int wrap_gsl_linalg_SV_decomp
+(dmatrix* A, dmatrix* V, dmatrix* S, dmatrix* work) = gsl_linalg_SV_decomp;
+
+svd x::matrix		= throw (bad_matrix_value x)
+			    if cmatrixp x || smatrixp x;
+			= u!!(0..n-1,0..m-1),s,v when
+			    n,m = dim x;
+			    u,s,v = svd {dmatrix x;dmatrix (m-n,m)};
+			  end if dim x!0<dim x!1;
+			= u,s,v when n,m = dim x;
+			    u = pack (dmatrix x); v = dmatrix (m,m);
+			    s = dmatrix m; w = dmatrix m;
+			    _ = gsl_linalg_SV_decomp u v s w;
+			  end;
+
+/* This uses the modified Golub-Reinsch algorithm, which is faster if n>>m but
+   needs O(m^2) extra memory as internal workspace. */
+
+extern int wrap_gsl_linalg_SV_decomp_mod
+(dmatrix* A, dmatrix* X, dmatrix* V, dmatrix* S, dmatrix* work)
+ = gsl_linalg_SV_decomp_mod;
+
+svd_mod x::matrix	= throw (bad_matrix_value x)
+			    if cmatrixp x || smatrixp x;
+			= u!!(0..n-1,0..m-1),s,v when
+			    n,m = dim x;
+			    u,s,v = svd_mod {dmatrix x;dmatrix (m-n,m)};
+			  end if dim x!0<dim x!1;
+			= u,s,v when n,m = dim x;
+			    u = pack (dmatrix x); v = dmatrix (m,m);
+			    s = dmatrix m; w = dmatrix m;
+			    y = dmatrix (m,m);
+			    _ = gsl_linalg_SV_decomp_mod u y v s w;
+			  end;
+
+/* This uses one-sided Jacobi orthogonalization which provides better relative
+   accuracy but is slower. */
+
+extern int wrap_gsl_linalg_SV_decomp_jacobi
+(dmatrix* A, dmatrix* V, dmatrix* S) = gsl_linalg_SV_decomp_jacobi;
+
+svd_jacobi x::matrix	= throw (bad_matrix_value x)
+			    if cmatrixp x || smatrixp x;
+			= u!!(0..n-1,0..m-1),s,v when
+			    n,m = dim x;
+			    u,s,v = svd_jacobi {dmatrix x;dmatrix (m-n,m)};
+			  end if dim x!0<dim x!1;
+			= u,s,v when n,m = dim x;
+			    u = pack (dmatrix x); v = dmatrix (m,m);
+			    s = dmatrix m;
+			    _ = gsl_linalg_SV_decomp_jacobi u v s;
+			  end;
+
+/* Solve the system Ax=b, using the SVD of A. Our wrapper svd_solve takes the
+   result (u,s,v) of a svd call, and a column vector b of the appropriate
+   dimension. The result is another column vector solving the system (possibly
+   in the least-squares sense). */
+
+extern int wrap_gsl_linalg_SV_solve
+(dmatrix* U, dmatrix* V, dmatrix* S, dmatrix* b, dmatrix* x)
+ = gsl_linalg_SV_solve;
+
+svd_solve (u::matrix,s::matrix,v::matrix) b::matrix
+			= throw (bad_matrix_value u)
+			    if not dmatrixp u;
+			= throw (bad_matrix_value s)
+			    if not dmatrixp s || not rowvectorp s ||
+			      dim s!1 != dim u!1;
+			= throw (bad_matrix_value v)
+			    if not dmatrixp v ||
+			      dim v!0 != dim u!1 || dim v!1 != dim u!1;
+			= throw (bad_matrix_value b)
+			    if cmatrixp b || smatrixp b ||
+			      not colvectorp b || dim b!0 != dim u!0;
+			= x when x = dmatrix (dim x!1,1);
+			    _ = gsl_linalg_SV_solve u v s b x;
+			  end if dmatrixp b;
+			= svd_solve (u,s,v) (dmatrix b) if imatrixp b;
