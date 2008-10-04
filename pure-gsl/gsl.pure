@@ -22,11 +22,13 @@
 using "lib:gsl";
 
 /* Additional number predicates. gsl_complexp checks if a Pure expression
-   denotes a GSL complex value (which is a Pure complex value whose real and
-   imaginary components are either double or machine int values). */
+   represents a valid GSL complex value (which is a Pure complex value whose
+   real and imaginary components are either double or machine int values).
+   gsl_scalarp checks for any kind of Pure number which passes muster as a
+   scalar in GSL land (i.e., int, double, GSL complex value). */
 
 extern bool gsl_complexp(expr*);
-gsl_numberp x = intp x || doublep x || gsl_complexp x;
+gsl_scalarp x = intp x || doublep x || gsl_complexp x;
 
 /* Complex functions. */
 
@@ -85,7 +87,7 @@ x::matrix + a		= if gsl_complexp a then
 			             3 = gsl_matrix_add_constant x a;
 			           end
 			     end)
-			  if nmatrixp x && gsl_numberp a;
+			  if nmatrixp x && gsl_scalarp a;
 // symbolic cases
 a + x::matrix		= map (\x->a+x) x if not matrixp a;
 x::matrix + a		= map (\x->x+a) x if not matrixp a;
@@ -116,7 +118,7 @@ x::matrix * a		= if gsl_complexp a then
 			             3 = gsl_matrix_scale x a;
 			           end
 			     end)
-			  if nmatrixp x && gsl_numberp a;
+			  if nmatrixp x && gsl_scalarp a;
 // symbolic cases
 a * x::matrix		= map (\x->a*x) x if not matrixp a;
 x::matrix * a		= map (\x->x*a) x if not matrixp a;
