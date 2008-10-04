@@ -38,3 +38,8 @@ dist:
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
 	rm -rf $(dist)
+
+distcheck: dist
+	tar xfz $(dist).tar.gz
+	cd $(dist) && make && make install DESTDIR=./BUILD
+	rm -rf $(dist)
