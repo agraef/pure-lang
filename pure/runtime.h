@@ -703,6 +703,13 @@ pure_expr *matrix_diag(pure_expr *x);
 pure_expr *matrix_subdiag(pure_expr *x, int32_t k);
 pure_expr *matrix_supdiag(pure_expr *x, int32_t k);
 
+/* Create a (sub-,super-)diagonal matrix from a vector. The result is of the
+   same type (double, complex, int, symbolic) as the vector. */
+
+pure_expr *matrix_diagm(pure_expr *x);
+pure_expr *matrix_subdiagm(pure_expr *x, int32_t k);
+pure_expr *matrix_supdiagm(pure_expr *x, int32_t k);
+
 /* Matrix construction. These work like the corresponding functions in the
    public API, but take their input from a Pure list and raise the appropriate
    exception in case of dimension mismatch. */

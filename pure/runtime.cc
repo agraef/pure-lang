@@ -4461,6 +4461,190 @@ pure_expr *matrix_supdiag(pure_expr *x, int32_t k)
 }
 
 extern "C"
+pure_expr *matrix_diagm(pure_expr *x)
+{
+  switch (x->tag) {
+  case EXPR::MATRIX: {
+    gsl_matrix_symbolic *m = (gsl_matrix_symbolic*)x->data.mat.p;
+    const size_t n1 = m->size1, n = m->size2;
+    if (n1 != 1) return 0;
+    gsl_matrix_symbolic *m1 = create_symbolic_matrix(n, n);
+    pure_expr *zero = pure_int(0);
+    assert(zero);
+    for (size_t i = 0; i < n; i++)
+      for (size_t j = 0; j < n; j++)
+	m1->data[i*m1->tda+j] = zero;
+    for (size_t i = 0; i < n; i++)
+      m1->data[i*(m1->tda+1)] = m->data[i];
+    return pure_symbolic_matrix(m1);
+  }
+#ifdef HAVE_GSL
+  case EXPR::DMATRIX: {
+    gsl_matrix *m = (gsl_matrix*)x->data.mat.p;
+    const size_t n1 = m->size1, n = m->size2;
+    if (n1 != 1) return 0;
+    gsl_matrix *m1 = create_double_matrix(n, n);
+    memset(m1->data, 0, m1->block->size*sizeof(double));
+    for (size_t i = 0; i < n; i++)
+      m1->data[i*(m1->tda+1)] = m->data[i];
+    return pure_double_matrix(m1);
+  }
+  case EXPR::CMATRIX: {
+    gsl_matrix_complex *m = (gsl_matrix_complex*)x->data.mat.p;
+    const size_t n1 = m->size1, n = m->size2;
+    if (n1 != 1) return 0;
+    gsl_matrix_complex *m1 = create_complex_matrix(n, n);
+    memset(m1->data, 0, m1->block->size*2*sizeof(double));
+    for (size_t i = 0; i < n; i++) {
+      const size_t k = 2*i*(m1->tda+1);
+      m1->data[k] = m->data[2*i];
+      m1->data[k+1] = m->data[2*i+1];
+    }
+    return pure_complex_matrix(m1);
+  }
+  case EXPR::IMATRIX: {
+    gsl_matrix_int *m = (gsl_matrix_int*)x->data.mat.p;
+    const size_t n1 = m->size1, n = m->size2;
+    if (n1 != 1) return 0;
+    gsl_matrix_int *m1 = create_int_matrix(n, n);
+    memset(m1->data, 0, m1->block->size*sizeof(int));
+    for (size_t i = 0; i < n; i++)
+      m1->data[i*(m1->tda+1)] = m->data[i];
+    return pure_int_matrix(m1);
+  }
+#endif
+  default:
+    return 0;
+  }
+}
+
+extern "C"
+pure_expr *matrix_subdiagm(pure_expr *x, int32_t k)
+{
+  if (k<0) return matrix_supdiagm(x, -k);
+  switch (x->tag) {
+  case EXPR::MATRIX: {
+    gsl_matrix_symbolic *m = (gsl_matrix_symbolic*)x->data.mat.p;
+    const size_t n1 = m->size1, n = m->size2;
+    if (n1 != 1) return 0;
+    gsl_matrix_symbolic *m1 = create_symbolic_matrix(n+k, n+k);
+    const size_t k0 = k*m1->tda;
+    pure_expr *zero = pure_int(0);
+    assert(zero);
+    for (size_t i = 0; i < n+k; i++)
+      for (size_t j = 0; j < n+k; j++)
+	m1->data[i*m1->tda+j] = zero;
+    for (size_t i = 0; i < n; i++)
+      m1->data[k0+i*(m1->tda+1)] = m->data[i];
+    return pure_symbolic_matrix(m1);
+  }
+#ifdef HAVE_GSL
+  case EXPR::DMATRIX: {
+    gsl_matrix *m = (gsl_matrix*)x->data.mat.p;
+    const size_t n1 = m->size1, n = m->size2;
+    if (n1 != 1) return 0;
+    gsl_matrix *m1 = create_double_matrix(n+k, n+k);
+    const size_t k0 = k*m1->tda;
+    memset(m1->data, 0, m1->block->size*sizeof(double));
+    for (size_t i = 0; i < n; i++)
+      m1->data[k0+i*(m1->tda+1)] = m->data[i];
+    return pure_double_matrix(m1);
+  }
+  case EXPR::CMATRIX: {
+    gsl_matrix_complex *m = (gsl_matrix_complex*)x->data.mat.p;
+    const size_t n1 = m->size1, n = m->size2;
+    if (n1 != 1) return 0;
+    gsl_matrix_complex *m1 = create_complex_matrix(n+k, n+k);
+    const size_t k0 = k*m1->tda;
+    memset(m1->data, 0, m1->block->size*2*sizeof(double));
+    for (size_t i = 0; i < n; i++) {
+      const size_t k = 2*k0+2*i*(m1->tda+1);
+      m1->data[k] = m->data[2*i];
+      m1->data[k+1] = m->data[2*i+1];
+    }
+    return pure_complex_matrix(m1);
+  }
+  case EXPR::IMATRIX: {
+    gsl_matrix_int *m = (gsl_matrix_int*)x->data.mat.p;
+    const size_t n1 = m->size1, n = m->size2;
+    if (n1 != 1) return 0;
+    gsl_matrix_int *m1 = create_int_matrix(n+k, n+k);
+    const size_t k0 = k*m1->tda;
+    memset(m1->data, 0, m1->block->size*sizeof(int));
+    for (size_t i = 0; i < n; i++)
+      m1->data[k0+i*(m1->tda+1)] = m->data[i];
+    return pure_int_matrix(m1);
+  }
+#endif
+  default:
+    return 0;
+  }
+}
+
+extern "C"
+pure_expr *matrix_supdiagm(pure_expr *x, int32_t k)
+{
+  if (k<0) return matrix_subdiagm(x, -k);
+  switch (x->tag) {
+  case EXPR::MATRIX: {
+    gsl_matrix_symbolic *m = (gsl_matrix_symbolic*)x->data.mat.p;
+    const size_t n1 = m->size1, n = m->size2;
+    if (n1 != 1) return 0;
+    gsl_matrix_symbolic *m1 = create_symbolic_matrix(n+k, n+k);
+    const size_t k0 = k;
+    pure_expr *zero = pure_int(0);
+    assert(zero);
+    for (size_t i = 0; i < n+k; i++)
+      for (size_t j = 0; j < n+k; j++)
+	m1->data[i*m1->tda+j] = zero;
+    for (size_t i = 0; i < n; i++)
+      m1->data[k0+i*(m1->tda+1)] = m->data[i];
+    return pure_symbolic_matrix(m1);
+  }
+#ifdef HAVE_GSL
+  case EXPR::DMATRIX: {
+    gsl_matrix *m = (gsl_matrix*)x->data.mat.p;
+    const size_t n1 = m->size1, n = m->size2;
+    if (n1 != 1) return 0;
+    gsl_matrix *m1 = create_double_matrix(n+k, n+k);
+    const size_t k0 = k;
+    memset(m1->data, 0, m1->block->size*sizeof(double));
+    for (size_t i = 0; i < n; i++)
+      m1->data[k0+i*(m1->tda+1)] = m->data[i];
+    return pure_double_matrix(m1);
+  }
+  case EXPR::CMATRIX: {
+    gsl_matrix_complex *m = (gsl_matrix_complex*)x->data.mat.p;
+    const size_t n1 = m->size1, n = m->size2;
+    if (n1 != 1) return 0;
+    gsl_matrix_complex *m1 = create_complex_matrix(n+k, n+k);
+    const size_t k0 = k;
+    memset(m1->data, 0, m1->block->size*2*sizeof(double));
+    for (size_t i = 0; i < n; i++) {
+      const size_t k = 2*k0+2*i*(m1->tda+1);
+      m1->data[k] = m->data[2*i];
+      m1->data[k+1] = m->data[2*i+1];
+    }
+    return pure_complex_matrix(m1);
+  }
+  case EXPR::IMATRIX: {
+    gsl_matrix_int *m = (gsl_matrix_int*)x->data.mat.p;
+    const size_t n1 = m->size1, n = m->size2;
+    if (n1 != 1) return 0;
+    gsl_matrix_int *m1 = create_int_matrix(n+k, n+k);
+    const size_t k0 = k;
+    memset(m1->data, 0, m1->block->size*sizeof(int));
+    for (size_t i = 0; i < n; i++)
+      m1->data[k0+i*(m1->tda+1)] = m->data[i];
+    return pure_int_matrix(m1);
+  }
+#endif
+  default:
+    return 0;
+  }
+}
+
+extern "C"
 pure_expr *matrix_redim(pure_expr *x, int32_t n, int32_t m)
 {
   void *p = 0;

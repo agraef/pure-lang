@@ -225,6 +225,18 @@ dmatrix n::int		= dmatrix (1,n);
 cmatrix n::int		= cmatrix (1,n);
 imatrix n::int		= imatrix (1,n);
 
+/* Create a (sub-,super-) diagonal matrix from a row vector. The result is
+   always a square matrix with dimension (n+k,n+k), which is of the same
+   matrix type (double, complex, int, symbolic) as the input and has the
+   elements of the vector on its kth sub- or super-diagonal, with all other
+   elements zero. A negative value for k turns a sub- into a super-diagonal
+   matrix and vice versa. */
+
+private matrix_diagm matrix_subdiagm matrix_supdiagm;
+extern expr* matrix_diagm(expr* x) = diagmat;
+extern expr* matrix_subdiagm(expr* x, int k) = subdiagmat;
+extern expr* matrix_supdiagm(expr* x, int k) = supdiagmat;
+
 /* Matrix conversions. These convert between different types of numeric
    matrices. You can also extract the real and imaginary parts and compute the
    conjugate of a (complex) matrix. */
