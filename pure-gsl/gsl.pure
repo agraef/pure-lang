@@ -21,6 +21,13 @@
 
 using "lib:gsl";
 
+/* Additional matrix operators: element-wise multiplication, division,
+   exponentiation, and left division. Note that left division is denoted '\\',
+   since the backslash is already used for lambdas in Pure. */
+
+infixl 7 .* ./ \\;
+infixr 8 .^ ;
+
 /* Additional number predicates. gsl_complexp checks if a Pure expression
    represents a valid GSL complex value (which is a Pure complex value whose
    real and imaginary components are either double or machine int values).
@@ -166,12 +173,6 @@ x::matrix - y::matrix	= throw (bad_matrix_value y) if dim x!=dim y;
 			= x - dmatrix y if dmatrixp x && imatrixp y;
 // symbolic matrix operations
 			= zipwith (-) x y;
-
-/* Element-wise multiplication, division and exponentiation are denoted .*,
-   ./ and .^, respectively. */
-
-infixl 7 .* ./ ;
-infixr 8 .^ ;
 
 extern int gsl_matrix_mul_elements(dmatrix*, dmatrix*);
 extern int gsl_matrix_complex_mul_elements(cmatrix*, cmatrix*);
@@ -432,10 +433,7 @@ pinv x::matrix		= v*s*u' when
 			    s = diagmat s;
 			  end;
 
-/* Left and right matrix division. Note that left division is denoted '\\',
-   since the backslash is already used for lambdas in Pure. */
-
-infixl 7 \\ ;
+/* Right and left matrix division. */
 
 x::matrix / y::matrix	= x*pinv y;
 x::matrix \\ y::matrix	= pinv x*y;
