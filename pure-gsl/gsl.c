@@ -40,7 +40,7 @@ bool gsl_complexp(pure_expr *x)
 /* Complex functions. These need to be wrapped, as there's no direct way to
    pass gsl_complex values between Pure and C. */
 
-pure_expr *wrap_complex_sqrt(pure_expr *x)
+pure_expr *wrap_gsl_complex_sqrt(pure_expr *x)
 {
   gsl_complex z;
   if (pure_is_complex(x, z.dat)) {
