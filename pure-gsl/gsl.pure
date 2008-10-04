@@ -21,6 +21,13 @@
 
 using "lib:gsl";
 
+/* Additional number predicates. gsl_complexp checks if a Pure expression
+   denotes a GSL complex value (which is a Pure complex value whose real and
+   imaginary components are either double or machine int values). */
+
+extern bool gsl_complexp(expr*);
+gsl_numberp x = intp x || doublep x || gsl_complexp x;
+
 /* Complex functions. */
 
 extern expr* wrap_complex_sqrt(expr*) = gsl_complex_sqrt;
@@ -48,6 +55,71 @@ eye (n::int,m::int)	= x when
 			    _ = gsl_matrix_set_identity x;
 			  end;
 eye n::int		= eye (n,n);
+
+/* Matrix-scalar operations. */
+
+extern int gsl_matrix_add_constant(dmatrix*, double);
+extern int wrap_gsl_matrix_complex_add_constant(cmatrix*, expr*)
+ = gsl_matrix_complex_add_constant;
+extern int gsl_matrix_int_add_constant(imatrix*, double);
+
+a + x::matrix		|
+x::matrix + a		= if gsl_complexp a then
+			    // complex matrix result
+			    (x when x = pack (cmatrix x);
+			       _ = gsl_matrix_complex_add_constant x a end)
+			  else if imatrixp x && intp a then
+			    // int matrix result
+			    (x when x = pack x;
+			       _ = gsl_matrix_int_add_constant x (double a)
+			     end)
+			  else
+			    // other numeric matrices; ints get promoted to
+			    // double here
+			    (x when
+			       x = pack (if imatrixp x then dmatrix x else x);
+			       a = double a;
+			       _ = case matrix_type x of
+			             1 = gsl_matrix_add_constant x a;
+			             2 = gsl_matrix_complex_add_constant x a;
+			             3 = gsl_matrix_add_constant x a;
+			           end
+			     end)
+			  if nmatrixp x && gsl_numberp a;
+// symbolic cases
+a + x::matrix		= map (\x->a+x) x if not matrixp a;
+x::matrix + a		= map (\x->x+a) x if not matrixp a;
+
+extern int gsl_matrix_scale(dmatrix*, double);
+extern int wrap_gsl_matrix_complex_scale(cmatrix*, expr*)
+ = gsl_matrix_complex_scale;
+extern int gsl_matrix_int_scale(imatrix*, double);
+
+a * x::matrix		|
+x::matrix * a		= if gsl_complexp a then
+			    // complex matrix result
+			    (x when x = pack (cmatrix x);
+			       _ = gsl_matrix_complex_scale x a end)
+			  else if imatrixp x && intp a then
+			    // int matrix result
+			    (x when x = pack x;
+			       _ = gsl_matrix_int_scale x (double a) end)
+			  else
+			    // other numeric matrices; ints get promoted to
+			    // double here
+			    (x when
+			       x = pack (if imatrixp x then dmatrix x else x);
+			       a = double a;
+			       _ = case matrix_type x of
+			             1 = gsl_matrix_scale x a;
+			             2 = gsl_matrix_complex_scale x a;
+			             3 = gsl_matrix_scale x a;
+			           end
+			     end)
+			  if nmatrixp x && gsl_numberp a;
+// symbolic cases
+a * x::matrix		= map (\x->a*x) x if not matrixp a;
+x::matrix * a		= map (\x->x*a) x if not matrixp a;
 
 /* Matrix-matrix operations. */
 

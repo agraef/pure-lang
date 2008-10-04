@@ -1,5 +1,6 @@
 
 #include <math.h>
+#include <stdbool.h>
 
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_version.h>
@@ -28,6 +29,14 @@
    You should have received a copy of the GNU General Public License along
    with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
+/* GSL number predicates. */
+
+bool gsl_complexp(pure_expr *x)
+{
+  gsl_complex z;
+  return pure_is_complex(x, z.dat);
+}
+
 /* Complex functions. These need to be wrapped, as there's no direct way to
    pass gsl_complex values between Pure and C. */
 
@@ -38,6 +47,36 @@ pure_expr *wrap_complex_sqrt(pure_expr *x)
     gsl_complex ret = gsl_complex_sqrt(z);
     return pure_complex(ret.dat);
   } else
+    return 0;
+}
+
+/* Wrappers for complex matrix-scalar operations. */
+
+int wrap_gsl_matrix_complex_scale(gsl_matrix_complex *a, pure_expr *x)
+{
+  /* For convenience, we also allow double values. */
+  double d;
+  gsl_complex z;
+  if (pure_is_double(x, &d)) {
+    z.dat[0] = d; z.dat[1] = 0.0;
+    return gsl_matrix_complex_scale(a, z);
+  } else if (pure_is_complex(x, z.dat))
+    return gsl_matrix_complex_scale(a, z);
+  else
+    return 0;
+}
+
+int wrap_gsl_matrix_complex_add_constant(gsl_matrix_complex *a, pure_expr *x)
+{
+  /* For convenience, we also allow double values. */
+  double d;
+  gsl_complex z;
+  if (pure_is_double(x, &d)) {
+    z.dat[0] = d; z.dat[1] = 0.0;
+    return gsl_matrix_complex_add_constant(a, z);
+  } else if (pure_is_complex(x, z.dat))
+    return gsl_matrix_complex_add_constant(a, z);
+  else
     return 0;
 }
 
