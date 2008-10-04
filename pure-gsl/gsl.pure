@@ -99,6 +99,11 @@ x::matrix + a		= if gsl_complexp a then
 a + x::matrix		= map (\x->a+x) x if not matrixp a;
 x::matrix + a		= map (\x->x+a) x if not matrixp a;
 
+a - x::matrix		= (-x)+a if nmatrixp x && gsl_scalarp a;
+x::matrix - a		= x+(-a) if nmatrixp x && gsl_scalarp a;
+a - x::matrix		= map (\x->a-x) x if not matrixp a;
+x::matrix - a		= map (\x->x-a) x if not matrixp a;
+
 extern int gsl_matrix_scale(dmatrix*, double);
 extern int wrap_gsl_matrix_complex_scale(cmatrix*, expr*)
  = gsl_matrix_complex_scale;
@@ -129,6 +134,11 @@ x::matrix * a		= if gsl_complexp a then
 // symbolic cases
 a * x::matrix		= map (\x->a*x) x if not matrixp a;
 x::matrix * a		= map (\x->x*a) x if not matrixp a;
+
+a / x::matrix		= a*ones(dim x)./x if nmatrixp x && gsl_scalarp a;
+x::matrix / a		= x*(1/a) if nmatrixp x && gsl_scalarp a;
+a / x::matrix		= map (\x->a/x) x if not matrixp a;
+x::matrix / a		= map (\x->x/a) x if not matrixp a;
 
 /* Matrix-matrix operations. */
 
