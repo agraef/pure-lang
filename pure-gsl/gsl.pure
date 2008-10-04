@@ -140,6 +140,14 @@ x::matrix / a		= x*(1/a) if nmatrixp x && gsl_scalarp a;
 a / x::matrix		= map (\x->a/x) x if not matrixp a;
 x::matrix / a		= map (\x->x/a) x if not matrixp a;
 
+/* Some additional matrix-scalar operations which aren't in GSL, but are
+   provided as matrix-matrix operations below. */
+
+a ^ x::matrix		= (a*ones(dim x)).^x if nmatrixp x && gsl_scalarp a;
+x::matrix - a		= x.^(a*ones(dim x)) if nmatrixp x && gsl_scalarp a;
+a ^ x::matrix		= map (\x->a^x) x if not matrixp a;
+x::matrix ^ a		= map (\x->x^a) x if not matrixp a;
+
 /* Matrix-matrix operations. */
 
 extern int gsl_matrix_add(dmatrix*, dmatrix*);
@@ -225,7 +233,7 @@ x::matrix ./ y::matrix	= throw (bad_matrix_value y) if dim x!=dim y;
 // symbolic matrix operations
 			= zipwith (/) x y;
 
-/* Element-wise exponentiation. These aren't in GSL so we provide them in
+/* Element-wise exponentiation. This isn't in GSL so we provide it in
    gsl.c. */
 
 extern int gsl_matrix_pow_elements(dmatrix*, dmatrix*);
