@@ -52,9 +52,20 @@ pure_expr *wrap_gsl_complex_sqrt(pure_expr *x)
 
 /* Wrappers for complex matrix-scalar operations. */
 
+void wrap_gsl_matrix_complex_set_all(gsl_matrix_complex *m, pure_expr *x)
+{
+  /* For convenience, we also allow double values here. */
+  double d;
+  gsl_complex z;
+  if (pure_is_double(x, &d)) {
+    z.dat[0] = d; z.dat[1] = 0.0;
+    gsl_matrix_complex_set_all(m, z);
+  } else if (pure_is_complex(x, z.dat))
+    gsl_matrix_complex_set_all(m, z);
+}
+
 int wrap_gsl_matrix_complex_scale(gsl_matrix_complex *a, pure_expr *x)
 {
-  /* For convenience, we also allow double values. */
   double d;
   gsl_complex z;
   if (pure_is_double(x, &d)) {
@@ -68,7 +79,6 @@ int wrap_gsl_matrix_complex_scale(gsl_matrix_complex *a, pure_expr *x)
 
 int wrap_gsl_matrix_complex_add_constant(gsl_matrix_complex *a, pure_expr *x)
 {
-  /* For convenience, we also allow double values. */
   double d;
   gsl_complex z;
   if (pure_is_double(x, &d)) {

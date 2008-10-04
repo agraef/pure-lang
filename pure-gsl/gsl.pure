@@ -45,8 +45,7 @@ extern expr* wrap_gsl_complex_sqrt(expr*) = gsl_complex_sqrt;
    one, respectively, and eye creates identity matrices. These functions can
    be invoked either with a pair (n,m) denoting the desired number of rows or
    columns, or an integer n in which case a square nxn matrix is created. The
-   result is always a double matrix (use imatrix or cmatrix to convert these
-   to an int or complex matrix if desired). */
+   result is always a double matrix. */
 
 zeros (n::int,m::int)	= dmatrix (n,m);
 zeros n::int		= zeros (n,n);
@@ -64,6 +63,43 @@ eye (n::int,m::int)	= x when
 			    _ = gsl_matrix_set_identity x;
 			  end;
 eye n::int		= eye (n,n);
+
+/* Complex and integer matrix variations of the above. */
+
+czeros (n::int,m::int)	= cmatrix (n,m);
+czeros n::int		= czeros (n,n);
+
+extern void wrap_gsl_matrix_complex_set_all(cmatrix*, expr*)
+ = gsl_matrix_complex_set_all;
+cones (n::int,m::int)	= x when
+			    x = cmatrix (n,m);
+			    _ = gsl_matrix_complex_set_all x 1.0;
+			  end;
+cones n::int		= cones (n,n);
+
+extern void gsl_matrix_complex_set_identity(cmatrix*);
+ceye (n::int,m::int)	= x when
+			    x = cmatrix (n,m);
+			    _ = gsl_matrix_complex_set_identity x;
+			  end;
+ceye n::int		= ceye (n,n);
+
+izeros (n::int,m::int)	= imatrix (n,m);
+izeros n::int		= izeros (n,n);
+
+extern void gsl_matrix_int_set_all(imatrix*, int);
+iones (n::int,m::int)	= x when
+			    x = imatrix (n,m);
+			    _ = gsl_matrix_int_set_all x 1;
+			  end;
+iones n::int		= iones (n,n);
+
+extern void gsl_matrix_int_set_identity(imatrix*);
+ieye (n::int,m::int)	= x when
+			    x = imatrix (n,m);
+			    _ = gsl_matrix_int_set_identity x;
+			  end;
+ieye n::int		= ieye (n,n);
 
 /* Matrix-scalar operations. */
 
