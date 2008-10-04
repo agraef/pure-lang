@@ -72,6 +72,161 @@ x::matrix + y::matrix	= throw (bad_matrix_value y) if dim x!=dim y;
 // symbolic matrix operations
 			= zipwith (+) x y;
 
+extern int gsl_matrix_sub(dmatrix*, dmatrix*);
+extern int gsl_matrix_complex_sub(cmatrix*, cmatrix*);
+extern int gsl_matrix_int_sub(imatrix*, imatrix*);
+
+x::matrix - y::matrix	= throw (bad_matrix_value y) if dim x!=dim y;
+			= x when
+			    x = pack x;
+			    _ = case matrix_type x of
+			      1 = gsl_matrix_sub x y;
+			      2 = gsl_matrix_complex_sub x y;
+			      3 = gsl_matrix_int_sub x y;
+			    end;
+			  end if nmatrixp x && matrix_type x == matrix_type y;
+// mixed numeric cases
+			= cmatrix x - y if nmatrixp x && cmatrixp y;
+			= x - cmatrix y if cmatrixp x && nmatrixp y;
+			= dmatrix x - y if imatrixp x && dmatrixp y;
+			= x - dmatrix y if dmatrixp x && imatrixp y;
+// symbolic matrix operations
+			= zipwith (-) x y;
+
+/* Element-wise multiplication, division and exponentiation are denoted .*,
+   ./ and .^, respectively. */
+
+infixl 7 .* ./ ;
+infixr 8 .^ ;
+
+extern int gsl_matrix_mul_elements(dmatrix*, dmatrix*);
+extern int gsl_matrix_complex_mul_elements(cmatrix*, cmatrix*);
+extern int gsl_matrix_int_mul_elements(imatrix*, imatrix*);
+
+x::matrix .* y::matrix	= throw (bad_matrix_value y) if dim x!=dim y;
+			= x when
+			    x = pack x;
+			    _ = case matrix_type x of
+			      1 = gsl_matrix_mul_elements x y;
+			      2 = gsl_matrix_complex_mul_elements x y;
+			      3 = gsl_matrix_int_mul_elements x y;
+			    end;
+			  end if nmatrixp x && matrix_type x == matrix_type y;
+// mixed numeric cases
+			= cmatrix x .* y if nmatrixp x && cmatrixp y;
+			= x .* cmatrix y if cmatrixp x && nmatrixp y;
+			= dmatrix x .* y if imatrixp x && dmatrixp y;
+			= x .* dmatrix y if dmatrixp x && imatrixp y;
+// symbolic matrix operations
+			= zipwith (*) x y;
+
+extern int gsl_matrix_div_elements(dmatrix*, dmatrix*);
+extern int gsl_matrix_complex_div_elements(cmatrix*, cmatrix*);
+
+x::matrix ./ y::matrix	= throw (bad_matrix_value y) if dim x!=dim y;
+			= dmatrix x ./ dmatrix y if imatrixp x && imatrixp y;
+			= x when
+			    x = pack x;
+			    _ = case matrix_type x of
+			      1 = gsl_matrix_div_elements x y;
+			      2 = gsl_matrix_complex_div_elements x y;
+			    end;
+			  end if nmatrixp x && matrix_type x == matrix_type y;
+// mixed numeric cases
+			= cmatrix x ./ y if nmatrixp x && cmatrixp y;
+			= x ./ cmatrix y if cmatrixp x && nmatrixp y;
+			= dmatrix x ./ y if imatrixp x && dmatrixp y;
+			= x ./ dmatrix y if dmatrixp x && imatrixp y;
+// symbolic matrix operations
+			= zipwith (/) x y;
+
+/* Element-wise exponentiation. These aren't in GSL so we provide them in
+   gsl.c. */
+
+extern int gsl_matrix_pow_elements(dmatrix*, dmatrix*);
+extern int gsl_matrix_complex_pow_elements(cmatrix*, cmatrix*);
+
+x::matrix .^ y::matrix	= throw (bad_matrix_value y) if dim x!=dim y;
+			= dmatrix x .^ dmatrix y if imatrixp x && imatrixp y;
+			= x when
+			    x = pack x;
+			    _ = case matrix_type x of
+			      1 = gsl_matrix_pow_elements x y;
+			      2 = gsl_matrix_complex_pow_elements x y;
+			    end;
+			  end if nmatrixp x && matrix_type x == matrix_type y;
+// mixed numeric cases
+			= cmatrix x .^ y if nmatrixp x && cmatrixp y;
+			= x .^ cmatrix y if cmatrixp x && nmatrixp y;
+			= dmatrix x .^ y if imatrixp x && dmatrixp y;
+			= x .^ dmatrix y if dmatrixp x && imatrixp y;
+// symbolic matrix operations
+			= zipwith (^) x y;
+
+/* Element-wise operations on int matrices. These aren't in GSL so we provide
+   them in gsl.c. */
+
+extern int gsl_matrix_int_div(imatrix*, imatrix*);
+extern int gsl_matrix_int_mod(imatrix*, imatrix*);
+extern int gsl_matrix_int_shl(imatrix*, imatrix*);
+extern int gsl_matrix_int_shr(imatrix*, imatrix*);
+extern int gsl_matrix_int_or(imatrix*, imatrix*);
+extern int gsl_matrix_int_and(imatrix*, imatrix*);
+extern int gsl_matrix_int_not(imatrix*);
+
+x::matrix div y::matrix	= throw (bad_matrix_value y) if dim x!=dim y;
+			= if r==0 then x else 1 div 0 when
+			    x = pack x;
+			    r = gsl_matrix_int_div x y;
+			  end if imatrixp x && imatrixp y;
+			= zipwith (div) x y;
+
+x::matrix mod y::matrix	= throw (bad_matrix_value y) if dim x!=dim y;
+			= if r==0 then x else 1 mod 0 when
+			    x = pack x;
+			    r = gsl_matrix_int_mod x y;
+			  end if imatrixp x && imatrixp y;
+			= zipwith (mod) x y;
+
+x::matrix << y::matrix	= throw (bad_matrix_value y) if dim x!=dim y;
+			= x when
+			    x = pack x;
+			    _ = gsl_matrix_int_shl x y;
+			  end if imatrixp x && imatrixp y;
+			= zipwith (<<) x y;
+
+x::matrix >> y::matrix	= throw (bad_matrix_value y) if dim x!=dim y;
+			= x when
+			    x = pack x;
+			    _ = gsl_matrix_int_shr x y;
+			  end if imatrixp x && imatrixp y;
+			= zipwith (>>) x y;
+
+x::matrix and y::matrix	= throw (bad_matrix_value y) if dim x!=dim y;
+			= x when
+			    x = pack x;
+			    _ = gsl_matrix_int_and x y;
+			  end if imatrixp x && imatrixp y;
+			= zipwith (and) x y;
+
+x::matrix or y::matrix	= throw (bad_matrix_value y) if dim x!=dim y;
+			= x when
+			    x = pack x;
+			    _ = gsl_matrix_int_or x y;
+			  end if imatrixp x && imatrixp y;
+			= zipwith (or) x y;
+
+not x::matrix		= x when
+			    x = pack x;
+			    _ = gsl_matrix_int_not x;
+			  end if imatrixp x;
+			= map (not) x;
+
+/* Unary minus. */
+
+-x::matrix		= (-1)*x if nmatrixp x;
+			= map neg x;
+
 /* Matrix multiplication is implemented via the BLAS interface (actually a
    thin wrapper around the BLAS routines, as these are somewhat complicated).
    BLAS doesn't support integer matrices, currently we emulate these by

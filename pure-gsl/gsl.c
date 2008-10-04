@@ -1,4 +1,6 @@
 
+#include <math.h>
+
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_version.h>
 #include <gsl/gsl_complex_math.h>
@@ -37,6 +39,124 @@ pure_expr *wrap_complex_sqrt(pure_expr *x)
     return pure_complex(ret.dat);
   } else
     return 0;
+}
+
+/* Additional element-wise matrix operations missing in GSL. */
+
+int gsl_matrix_pow_elements(gsl_matrix* a, const gsl_matrix* b)
+{
+  size_t i, j;
+  const size_t n = a->size1, m = a->size2;
+  if (n != b->size1 || m != b->size2)
+    return GSL_EBADLEN;
+  for (i = 0; i < n; i++)
+    for (j = 0; j < m; j++)
+      a->data[i*a->tda+j] = pow(a->data[i*a->tda+j], b->data[i*b->tda+j]);
+  return GSL_SUCCESS;
+}
+
+int gsl_matrix_complex_pow_elements(gsl_matrix_complex* a,
+				    const gsl_matrix_complex* b)
+{
+  size_t i, j;
+  const size_t n = a->size1, m = a->size2;
+  if (n != b->size1 || m != b->size2)
+    return GSL_EBADLEN;
+  for (i = 0; i < n; i++)
+    for (j = 0; j < m; j++) {
+      gsl_complex *x = (gsl_complex*)(a->data+2*(i*a->tda+j));
+      gsl_complex *y = (gsl_complex*)(b->data+2*(i*b->tda+j));
+      *x = gsl_complex_pow(*x, *y);
+    }
+  return GSL_SUCCESS;
+}
+
+int gsl_matrix_int_div(gsl_matrix_int* a, const gsl_matrix_int* b)
+{
+  size_t i, j;
+  const size_t n = a->size1, m = a->size2;
+  if (n != b->size1 || m != b->size2)
+    return GSL_EBADLEN;
+  for (i = 0; i < n; i++)
+    for (j = 0; j < m; j++)
+      if (b->data[i*b->tda+j] == 0)
+	return GSL_EZERODIV;
+      else
+	a->data[i*a->tda+j] /= b->data[i*b->tda+j];
+  return GSL_SUCCESS;
+}
+
+int gsl_matrix_int_mod(gsl_matrix_int* a, const gsl_matrix_int* b)
+{
+  size_t i, j;
+  const size_t n = a->size1, m = a->size2;
+  if (n != b->size1 || m != b->size2)
+    return GSL_EBADLEN;
+  for (i = 0; i < n; i++)
+    for (j = 0; j < m; j++)
+      if (b->data[i*b->tda+j] == 0)
+	return GSL_EZERODIV;
+      else
+	a->data[i*a->tda+j] %= b->data[i*b->tda+j];
+  return GSL_SUCCESS;
+}
+
+int gsl_matrix_int_shl(gsl_matrix_int* a, const gsl_matrix_int* b)
+{
+  size_t i, j;
+  const size_t n = a->size1, m = a->size2;
+  if (n != b->size1 || m != b->size2)
+    return GSL_EBADLEN;
+  for (i = 0; i < n; i++)
+    for (j = 0; j < m; j++)
+      a->data[i*a->tda+j] <<= b->data[i*b->tda+j];
+  return GSL_SUCCESS;
+}
+
+int gsl_matrix_int_shr(gsl_matrix_int* a, const gsl_matrix_int* b)
+{
+  size_t i, j;
+  const size_t n = a->size1, m = a->size2;
+  if (n != b->size1 || m != b->size2)
+    return GSL_EBADLEN;
+  for (i = 0; i < n; i++)
+    for (j = 0; j < m; j++)
+      a->data[i*a->tda+j] >>= b->data[i*b->tda+j];
+  return GSL_SUCCESS;
+}
+
+int gsl_matrix_int_and(gsl_matrix_int* a, const gsl_matrix_int* b)
+{
+  size_t i, j;
+  const size_t n = a->size1, m = a->size2;
+  if (n != b->size1 || m != b->size2)
+    return GSL_EBADLEN;
+  for (i = 0; i < n; i++)
+    for (j = 0; j < m; j++)
+      a->data[i*a->tda+j] &= b->data[i*b->tda+j];
+  return GSL_SUCCESS;
+}
+
+int gsl_matrix_int_or(gsl_matrix_int* a, const gsl_matrix_int* b)
+{
+  size_t i, j;
+  const size_t n = a->size1, m = a->size2;
+  if (n != b->size1 || m != b->size2)
+    return GSL_EBADLEN;
+  for (i = 0; i < n; i++)
+    for (j = 0; j < m; j++)
+      a->data[i*a->tda+j] |= b->data[i*b->tda+j];
+  return GSL_SUCCESS;
+}
+
+int gsl_matrix_int_not(gsl_matrix_int* a)
+{
+  size_t i, j;
+  const size_t n = a->size1, m = a->size2;
+  for (i = 0; i < n; i++)
+    for (j = 0; j < m; j++)
+      a->data[i*a->tda+j] = ~a->data[i*a->tda+j];
+  return GSL_SUCCESS;
 }
 
 /* Matrix multiplication. */
