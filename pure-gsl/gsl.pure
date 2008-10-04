@@ -25,6 +25,30 @@ using "lib:gsl";
 
 extern expr* wrap_complex_sqrt(expr*) = gsl_complex_sqrt;
 
+/* Utility matrices. zeros and ones create matrices with all elements zero or
+   one, respectively, and eye creates identity matrices. These functions can
+   be invoked either with a pair (n,m) denoting the desired number of rows or
+   columns, or an integer n in which case a square nxn matrix is created. The
+   result is always a double matrix (use imatrix or cmatrix to convert these
+   to an int or complex matrix if desired). */
+
+zeros (n::int,m::int)	= dmatrix (n,m);
+zeros n::int		= zeros (n,n);
+
+extern void gsl_matrix_set_all(dmatrix*, double);
+ones (n::int,m::int)	= x when
+			    x = dmatrix (n,m);
+			    _ = gsl_matrix_set_all x 1.0;
+			  end;
+ones n::int		= ones (n,n);
+
+extern void gsl_matrix_set_identity(dmatrix*);
+eye (n::int,m::int)	= x when
+			    x = dmatrix (n,m);
+			    _ = gsl_matrix_set_identity x;
+			  end;
+eye n::int		= eye (n,n);
+
 /* Matrix-matrix operations. */
 
 extern int gsl_matrix_add(dmatrix*, dmatrix*);
