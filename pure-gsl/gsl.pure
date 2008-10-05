@@ -421,6 +421,19 @@ x::matrix * y::matrix	= throw (bad_matrix_value y) if dim x!1!=dim y!0;
 			    foldl (+) 0 [x!i*y!i | i=0..#x-1];
 			  end;
 
+/* Powers of matrices. x must be a square matrix, k a nonnegative integer. */
+
+pow x::matrix k::int	= throw (bad_matrix_value x) if dim x!0!=dim x!1;
+			= case matrix_type x of
+			    1 = eye (dim x!0);
+			    2 = ceye (dim x!0);
+			    _ = ieye (dim x!0);
+			  end if k==0;
+			= x if k==1;
+			= if k mod 2 then y*y*x else y*y
+			  when y = pow x (k>>1) end if k>1;
+pow x::matrix k::bigint	= pow x (int k);
+
 /* Singular value decompositions. For a given nxm matrix x, these yield a
    singular-value decomposition u,s,v of the matrix such that x==u*s*v', where
    u and v are orthogonal matrices of dimensions nxm and nxn, respectively,
