@@ -530,9 +530,9 @@ pinv x::matrix		= v*s*u' when
 			    u,s,v = svd x;
 			    s = map (\x->if x==0 then x else 1/x) (diag s);
 			    s = diagmat s;
-			  end;
+			  end if nmatrixp x;
 
 /* Right and left matrix division. */
 
-x::matrix / y::matrix	= x*pinv y;
-x::matrix \\ y::matrix	= pinv x*y;
+x::matrix / y::matrix	= x*pinv y if nmatrixp x && nmatrixp y;
+x::matrix \\ y::matrix	= pinv x*y if nmatrixp x && nmatrixp y;
