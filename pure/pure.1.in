@@ -609,15 +609,24 @@ are used to define functions and macros), constant and variable definitions,
 and expressions to be evaluated:
 .TP
 \fBRules:\fP \fIlhs\fP = \fIrhs\fP;
-These rules always combine a left-hand side
+Rewriting rules always combine a left-hand side
 .I pattern
 (which must be a simple expression) and a right-hand side (which can be any
-kind of Pure expression described above). In some cases, this basic form can
-also be augmented with a condition \fBif\fP\ \fIguard\fP tacked on to the end
-of the rule (which restricts the applicability of the rule to the case that
-the guard evaluates to a nonzero integer), or the keyword
+kind of Pure expression described above). The same format is also used in
+.BR with ,
+.B when
+and
+.B case
+expressions. In toplevel rules,
+.B with
+and
+.B case
+expressions, this basic form can also be augmented with a condition
+.B if\ \fIguard\fP
+tacked on to the end of the rule, where \fIguard\fP is an integer expression
+which determines whether the rule is applicable. Moreover, the keyword
 .B otherwise
-denoting an empty guard which is always true (this is nothing but syntactic
+may be used to denote an empty guard which is always true (this is syntactic
 sugar to point out the ``default'' case of a definition; the interpreter just
 treats this as a comment). Pure also provides some abbreviations for factoring
 out common left-hand or right-hand sides in collections of rules; see section
@@ -684,7 +693,7 @@ This works the same no matter what other bindings of `x' may be in effect when
 the closure is invoked:
 .sp
 .nf
-> \fBlet\fP x = 77; f 10, f 20 \fBwhen\fP x = 88 \fBend\fP;
+> \fBlet\fP x = 77; f 10, (f 20 \fBwhen\fP x = 88 \fBend\fP);
 109,119
 .fi
 .PP
@@ -1065,7 +1074,7 @@ of the normal order fixed point combinator, decorated with `&' in the right
 place to make it work with eager evaluation. Aspiring novices may go read
 Wikipedia or a good book on the lambda calculus now.)
 .PP
-So here's how we can define a ``linear-time'' version of the Fibonacci
+So here's how we can define a linear-time version of the Fibonacci
 stream. (Note that we also define the stream as a variable now, to take full
 advantage of memoization.)
 .sp
@@ -1181,8 +1190,8 @@ it does
 .I not
 supply built-in support for matrix arithmetic and other linear algebra
 algorithms. The idea is that these can and should be provided through separate
-libraries, such as a GSL interface (which will hopefully be available in the
-near future).
+libraries (please check the Pure website for the pure-gsl module which is an
+ongoing project to provide a full GSL interface for the Pure language).
 .PP
 But Pure's facilities for matrix and list processing also make it easy to roll
 your own, if desired. First, the prelude provides matrix versions of the
@@ -1716,9 +1725,8 @@ a symbolic link placed on the system
 In this case the script search performed in
 .B using
 clauses will use the real script directory and thus other required scripts can
-be located in the script directory. This is the recommended practice for
-installing standalone Pure applications in source form which are to be run
-directly from the shell.
+be located there. This is the recommended practice for installing standalone
+Pure applications in source form which are to be run directly from the shell.
 .SH EXCEPTION HANDLING
 Pure also offers a useful exception handling facility. To raise an exception,
 you just invoke the built-in function
@@ -1934,7 +1942,7 @@ that preserves value semantics:
 .PP
 Most GSL matrix routines can be wrapped in this fashion quite easily. A
 ready-made GSL interface providing access to all of GSL's numeric functions
-will be provided in the future.
+is in the works; please check the Pure website for details.
 .PP
 As already mentioned, it is possible to augment an external C function with
 ordinary Pure equations, but in this case you have to make sure that the
@@ -1975,9 +1983,9 @@ External C functions are resolved by the LLVM runtime, which first looks for
 the symbol in the C library and Pure's runtime library (or the interpreter
 executable, if the interpreter was linked statically). Thus all C library and
 Pure runtime functions are readily available in Pure programs. Other functions
-can be provided by adding them to the runtime, or by linking them statically
-into the runtime or the interpreter executable. Better yet, you can just
-``dlopen'' shared libraries at runtime with a special form of the
+can be provided by adding them to the runtime, or by linking them into the
+runtime or the interpreter executable. Better yet, you can just ``dlopen''
+shared libraries at runtime with a special form of the
 .B using
 clause:
 .sp
@@ -1985,14 +1993,15 @@ clause:
 \fBusing\fP "lib:\fIlibname\fR[.\fIext\fP]";
 .fi
 .sp
-For instance, if you want to call the GMP functions directly from Pure:
+For instance, if you want to call the functions from library `libxyz' directly
+from Pure:
 .sp
 .nf
-\fBusing\fP "lib:libgmp";
+\fBusing\fP "lib:libxyz";
 .fi
 .sp
-After this declaration the GMP functions will be ready to be imported into
-your Pure program by means of corresponding
+After this declaration the functions from the given library will be ready to
+be imported into your Pure program by means of corresponding
 .B extern
 declarations.
 .PP
@@ -2037,10 +2046,12 @@ of the prelude operations which, besides the usual arithmetic and logical
 operators, are probably used most frequently:
 .TP
 x+y
-This is also used to denote list concatenation.
+This is also used to denote list and string concatenation.
 .TP
 x:y
-This is the list-consing operation. x becomes the head of the list, y its tail.
+This is the list-consing operation. x becomes the head of the list, y its
+tail.  As `:' is a constructor symbol, you can use it in patterns on the left
+hand side of rewriting rules.
 .TP
 x..y
 Constructs arithmetic sequences. x:y..z can be used to denote sequences with
@@ -2048,31 +2059,37 @@ arbitrary stepsize y-x. Infinite sequences can be constructed using an
 infinite bound (i.e., inf or -inf). E.g., 1:3..inf denotes the stream of all
 positive odd (machine) integers.
 .TP
+x,y
+This is the pair constructor, used to create tuples of arbitrary sizes. Tuples
+provide an alternative way to represent aggregate values in Pure. In
+difference to lists, tuples are always ``flat'', so that (x,y),z and x,(y,z)
+denote the same triple x,y,z.
+.TP
 #x
-The size (number of elements) of the list, tuple or matrix x. In addition, dim
-x yields the dimensions (number of rows and columns) of a matrix.
+The size (number of elements) of the list, tuple, matrix or string x. In
+addition, dim x yields the dimensions (number of rows and columns) of a
+matrix.
 .TP
 x'
 The transpose of a matrix.
 .TP
 x!y
-This is the list, tuple and matrix indexing operation. Note that all indices
-in Pure are zero-based, thus x!0 and x!(#x-1) are the first and last element
-of a list, tuple or matrix, respectively. In the case of matrices, the
+This is Pure's indexing operation, which applies to lists, tuples, matrices
+and strings. Note that all indices in Pure are zero-based, thus x!0 and
+x!(#x-1) are the first and last element of x. In the case of matrices, the
 subscript may also be a pair of row and column indices, such as x!(1,2).
 .TP
 x!!ys
-This is Pure's list, tuple and matrix ``slicing'' operation, which returns the
-list, tuple or matrix of all x!y while y runs through the (list or matrix) ys.
-Thus, e.g., x!!(i..j) returns all the elements between i and j (inclusive).
-Indices which fall outside the valid index range are quietly discarded. In
-fact, the index range ys may contain any number of indices (also duplicates),
-in any order. Thus x![0|i=1..n] returns the first element of x n times, and,
-if ys is a permutation of the range 0..#x-1, then x!!ys yields the
-corresponding permutation of the elements of x. In the case of matrices the
-index range may also contain two-dimensional subscripts, or the index range
-itself may be specified as a pair of row/column index lists such as
-x!!(i..j,k..l).
+This is the ``slicing'' operation, which returns the list, tuple, matrix or
+string of all x!y while y runs through the (list or matrix) ys.  Thus, e.g.,
+x!!(i..j) returns all the elements between i and j (inclusive). Indices which
+fall outside the valid index range are quietly discarded. The index range ys
+may contain any number of indices (also duplicates), in any order. Thus
+x![0|i=1..n] returns the first element of x n times, and, if ys is a
+permutation of the range 0..#x-1, then x!!ys yields the corresponding
+permutation of the elements of x. In the case of matrices the index range may
+also contain two-dimensional subscripts, or the index range itself may be
+specified as a pair of row/column index lists such as x!!(i..j,k..l).
 .PP
 The prelude also offers support operations for the implementation of list and
 matrix comprehensions, as well as the customary list operations like head,
@@ -2817,7 +2834,7 @@ construct does the former,
 .B when
 the latter.
 .PP
-Another pitfall is that
+Another speciality is that
 .B with
 and
 .B when
@@ -2832,11 +2849,20 @@ Also note that since
 .B with
 and
 .B when
-are part of the expression, not the rule syntax, these clauses cannot span
-both the right-hand side and the guard of a rule. Usually it's easy to work
-around this with conditional and
+are part of the expression, not the rule syntax, local function and variable
+definitions cannot span both the right-hand side and the guard of a rule. It's
+often possible to work around this with conditional and
 .B case
-expressions, though.
+expressions, but there are some cases where you'll just have to duplicate
+values, as in the following definition of a quadratic equation solver:
+.sp
+.nf
+\fBusing\fP math;
+solve p q = -p/2+sqrt d,-p/2-sqrt d \fBwhen\fP d = p^2/4-q \fBend\fP \fBif\fP p^2/4-q>=0;
+.fi
+.sp
+It would be nice if we could just use the same `d' value for the discriminant
+in the guard of the equation, but this isn't possible.
 .SS Numeric Calculations
 If possible, you should decorate numeric variables on the left-hand sides of
 function definitions with the appropriate type tags, like
