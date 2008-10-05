@@ -615,7 +615,7 @@ lhs
 qual
 : /* empty */		{ $$ = new expr(); }
 | OTHERWISE		{ $$ = new expr(); }
-| IF simple		{ $$ = $2; }
+| IF expr		{ $$ = $2; }
 ;
 
 rules
