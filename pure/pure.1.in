@@ -2850,19 +2850,51 @@ Also note that since
 and
 .B when
 are part of the expression, not the rule syntax, local function and variable
-definitions cannot span both the right-hand side and the guard of a rule. It's
-often possible to work around this with conditional and
+definitions cannot span both the right-hand side and the guard of a
+rule. (There are also some technical reasons for this limitation, so don't
+expect this to change anytime soon.) This isn't a problem for complete
+function definitions, since then it's always possible to just employ a
+conditional or a
 .B case
-expressions, but there are some cases where you'll just have to duplicate
-values, as in the following definition of a quadratic equation solver:
+expression instead. But there are other cases where this becomes a serious
+impediment, as in the following example of a quadratic equation solver:
 .sp
 .nf
 \fBusing\fP math;
 solve p q = -p/2+sqrt d,-p/2-sqrt d \fBwhen\fP d = p^2/4-q \fBend\fP \fBif\fP p^2/4-q>=0;
 .fi
+.PP
+The `solve' function returns the (real) solutions of the equation x^2+p*x+q=0,
+but only if the discriminant d = p^2/4-q is nonnegative. The rationale behind
+using such a partial definition is that it allows you to deal with the case of
+a negative discriminant later. Example:
 .sp
-It would be nice if we could just use the same `d' value for the discriminant
-in the guard of the equation, but this isn't possible.
+.nf
+> solve 4 2; solve 2 4;
+-0.585786437626905,-3.41421356237309
+solve 2 4
+.fi
+.PP
+Of course it would be nice if we could just use the same `d' value for the
+discriminant in the guard of the equation, but for the reasons mentioned above
+this isn't possible. One way to cope with this is to change the definition so
+that it uses a conditional expression. However, then we also have to supply a
+value for the ``unsolvable'' case, which essentially completes the definition
+and changes the normal form returned in the unsolvable case:
+.sp
+.nf
+> solve p q = \fBif\fP d>=0 \fBthen\fP -p/2+sqrt d,-p/2-sqrt d \fBelse\fP unsolvable p q
+> \fBwhen\fP d = p^2/4-q \fBend\fP;
+> solve 4 2; solve 2 4;
+-0.585786437626905,-3.41421356237309
+unsolvable 2 4
+.fi
+.PP
+Another way to deal with the situation would be to throw an exception in the
+unsolvable case, but this makes it basically impossible to extend the
+definition, unless you want to resort to macro hackery. With the above
+definition, you can at least handle the unsolvable case by giving an
+appropriate definition for the `unsolvable' function later.
 .SS Numeric Calculations
 If possible, you should decorate numeric variables on the left-hand sides of
 function definitions with the appropriate type tags, like
