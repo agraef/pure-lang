@@ -529,6 +529,7 @@ prim
 | '{' expr '|' comp_clauses '}'
 			{ $$ = interp.mkmatcomp_expr($2, $4); }
 | '[' expr ']'		{ $$ = interp.mklist_expr($2); }
+| '[' ']'		{ $$ = new expr(interp.symtab.nil_sym().f); }
 /*
 | '[' expr ';' comp_clauses ']'
 			{ interp.warning(yyloc,
@@ -539,6 +540,7 @@ prim
 			{ $$ = interp.mklistcomp_expr($2, $4); }
 | '(' expr ')'		{ $$ = $2;
 			  if ($$->is_pair()) $$->flags() |= EXPR::PAREN; }
+| '(' ')'		{ $$ = new expr(interp.symtab.void_sym().f); }
 | '(' op ')'		{ $$ = $2; }
 ;
 
