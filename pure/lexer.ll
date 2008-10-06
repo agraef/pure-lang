@@ -753,7 +753,7 @@ Options may be combined, e.g., show -tvl is the same as show -t -v -l.\n\
   if (!interp.interactive) REJECT;
   uint8_t tflag = 1; int pflag = -1;
   bool cflag = false, fflag = false, mflag = false, vflag = false;
-  bool gflag = false, Fflag = false;
+  bool gflag = false, nflag = false;
   string fname = ".pure";
   const char *s = yytext+4;
   if (*s && !isspace(*s)) REJECT;
@@ -763,16 +763,16 @@ Options may be combined, e.g., show -tvl is the same as show -t -v -l.\n\
   if (!args.ok) goto out2;
   // process option arguments
   for (arg = args.l.begin(); arg != args.l.end(); arg++) {
-    if (Fflag) { fname = *arg; Fflag = false; continue; }
+    if (nflag) { fname = *arg; nflag = false; continue; }
     const char *s = arg->c_str();
-    if (s[0] != '-' || !s[1] || !strchr("Fcfghmptv", s[1])) break;
+    if (s[0] != '-' || !s[1] || !strchr("cfghmnptv", s[1])) break;
     while (*++s) {
       switch (*s) {
-      case 'F': Fflag = true; break;
       case 'c': cflag = true; break;
       case 'f': fflag = true; break;
       case 'g': gflag = true; break;
       case 'm': mflag = true; break;
+      case 'n': nflag = true; break;
       case 'p':
 	if (isdigit(s[1])) {
 	  pflag = strtoul(s+1, 0, 10)>0;
@@ -790,15 +790,15 @@ Options may be combined, e.g., show -tvl is the same as show -t -v -l.\n\
 	break;
       case 'h':
 	cout <<
-"dump command help: dump [-F filename] [options ...] [symbol ...]\n\
+"dump command help: dump [-n filename] [options ...] [symbol ...]\n\
 Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
--F  Write the dump to the given file (default is .pure).\n\
 -c  Dump defined constants.\n\
 -f  Dump defined functions.\n\
 -g  Indicates that the following symbols are actually shell glob patterns\n\
     and that all matching symbols should be dumped.\n\
 -h  Print this list.\n\
 -m  Dump defined macros.\n\
+-n  Write the dump to the given file (default is .pure).\n\
 -p[flag] Dump only private symbols in the current module if flag is\n\
     nonzero (the default), otherwise dump only public symbols of all\n\
     modules. Dump both private and public symbols if -p is omitted.\n\
