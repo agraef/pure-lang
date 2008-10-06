@@ -4,6 +4,26 @@
 
 	* configure.ac: Bump version number.
 
+	* interpreter.cc (declare_extern): Warn about external symbols
+	which have already been used (but not defined).
+
+	This would previously go unnoticed (unlike defining a function and
+	then later redeclaring it as an external, which is treated as an
+	error). Which was bad because it could cause surprising behaviour
+	when a function was used (but not defined) before declaring it as
+	an external. Now we at least warn the user about such situations,
+	using a message like "warning: symbol 'xyz' shadows previous
+	undefined use". We could also make this an error, but this seems a
+	bit harsh, considering that the user might simply fix up the
+	offending definition, without having to exit the interpreter. The
+	proper way would be to just patch up all old uses of the symbol to
+	refer to the new external function instead, but there's currently
+	no way to do that. NB: Due to lazy compilation, it's actually
+	possible to refer to an external before it is declared and get the
+	correct behaviour, but only if the corresponding definition isn't
+	used (and compiled) before the extern declaration. This might be
+	considered a bug. ;-)
+
 	* lexer.ll: Rename the -F option of the 'dump' command to -n. The
 	former was too easily confused with the -f option.
 
