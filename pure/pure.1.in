@@ -2610,9 +2610,7 @@ one now. :)
 Pure 0.7 introduced built-in matrix structures, which called for some minor
 changes in the syntax of comprehensions and arithmetic
 sequences. Specifically, the template expression and generator/filter clauses
-of a comprehension are now separated with '|'. (For the time being, the old
-[x; ...] list comprehension syntax is still supported, but the compiler will
-warn you about such constructs and flag them as deprecated.) Moreover,
+of a comprehension are now separated with `|' instead of `;'. Moreover,
 arithmetic sequences with arbitrary stepsize are now written x:y..z instead of
 x,y..z, and the `..' operator now has a higher precedence than the `,'
 operator. This makes writing matrix slices like x!!(i..j,k..l) much more
@@ -3025,12 +3023,13 @@ will probably segfault calling the function.
 .PP
 You also have to be careful when passing generic pointer values to external C
 routines, since currently there is no type checking for these; any pointer
-type other than char* and expr* is effectively treated as void*. This
-considerably simplifies lowlevel programming and interfacing to C libraries,
-but also makes it very easy to have your program segfault all over the place. 
-Therefore it is highly recommended that you wrap your lowlevel code in Pure
-routines and data structures which do all the checks necessary to ensure that
-only the right kind of data is passed to C routines.
+type other than char*, expr* and the matrix pointer types is effectively
+treated as void*. This considerably simplifies lowlevel programming and
+interfacing to C libraries, but also makes it very easy to have your program
+segfault all over the place. Therefore it is highly recommended that you wrap
+your lowlevel code in Pure routines and data structures which do all the
+checks necessary to ensure that only the right kind of data is passed to C
+routines.
 .SS Special Forms
 Special forms are recognized at compile time only. Thus the catch function as
 well as the logical connectives && and ||, the sequencing operator $$ and the
@@ -3044,19 +3043,24 @@ operation (&) to defer evaluation and create a ``future'' which is called by
 need. However, note that like any language with a basically eager evaluation
 strategy, Pure cannot really support lazy evaluation in a fully automatic
 way. That is, coding an operation so that it works with infinite data
-structures always requires additional effort to recognize futures in the input
-and handle them accordingly. This can be hard, but of course in the case of
-the prelude operations this work has already been done for you, so as long as
-you stick to these, you'll never have to think about these issues.
+structures usually requires additional thought, and sometimes special code
+will be needed to recognize futures in the input and handle them
+accordingly. This can be hard, but of course in the case of the prelude
+operations this work has already been done for you, so as long as you stick to
+these, you'll never have to think about these issues. (It should be noted here
+that lazy evaluation has its pitfalls even in fully lazy FPLs, such as hidden
+memory leaks and other kinds of subtle inefficiencies or non-termination
+issues resulting from definitions being too lazy or not lazy enough. You can
+read about that in any good textbook on Haskell.)
 .PP
-Specifically, the prelude goes to great lengths to implement all standard list
-operations in a way that properly deals with streams (a.k.a. list futures).
-What this all boils down to is that all list operations which can reasonably
-be expected to operate in a lazy way on streams, will do so. (Exceptions are
-inherently eager operations such as `#', reverse and foldl.) Only those
-portions of an input stream will be traversed which are strictly required to
-produce the result. For most purposes, this works just like in fully lazy FPLs
-such as Haskell. However, there are some notable differences:
+The prelude goes to great lengths to implement all standard list operations in
+a way that properly deals with streams (a.k.a. list futures).  What this all
+boils down to is that all list operations which can reasonably be expected to
+operate in a lazy way on streams, will do so. (Exceptions are inherently eager
+operations such as `#', reverse and foldl.) Only those portions of an input
+stream will be traversed which are strictly required to produce the
+result. For most purposes, this works just like in fully lazy FPLs such as
+Haskell. However, there are some notable differences:
 .IP *
 Since Pure uses dynamic typing, some of the list functions may have to peek
 ahead one element in input streams to check their arguments for validity,
