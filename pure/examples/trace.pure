@@ -1,0 +1,41 @@
+
+/* trace.pure: The poor man's symbolic Pure debugger. 2008-10-06 AG */
+
+using system;
+
+/* The trace macro. Takes the function to be invoked, the list of arguments
+   (or whatever you want to be printed as additional debugging information)
+   and the actual function call as parameters. This version just prints a
+   prompt on function entry and the final reduction after the call. */
+
+def trace f x y = printf "** exit: %s -> %s\n" (s,str y) $$ y
+when
+  // A neat little hack to get a nice print representation of the call:
+  s = str f + drop 2 (str (foldl ($) () x));
+  y = printf "** call: %s\n: " s $$ gets $$ y;
+end;
+
+/* This little helper function lets us patch up a call to trace a given
+   function, as shown below, without having to change the definition of the
+   function at all. The parameters f and x are the function to be traced and
+   the list of parameters it is to be invoked with. Alas, this trick only
+   works with global functions; for local functions you'll have to use an
+   explicit call of the 'trace' macro. */
+
+trace f x = trace f x (curry f x)
+with curry f (x:xs) = curry (f x) xs; curry f [] = f end;
+
+/* A simple example: the factorial. Just uncomment the first line below to
+   trace calls to the 'fact' function. By commenting out this definition the
+   function runs untraced as usual again. */
+
+def fact n = trace fact [n];
+fact n = if n>0 then n*fact(n-1) else 1;
+// Try this: fact 2;
+
+/* A multi-argument example, which traces the library function 'map'. Note
+   that in such a case only the calls in your program will be traced
+   (recursive calls of 'map' in the library will go untraced). */
+
+def map f xs = trace map [f,xs];
+// Try this: map succ (1..3);
