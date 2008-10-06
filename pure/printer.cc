@@ -945,8 +945,10 @@ ostream& operator << (ostream& os, const pure_expr *x)
       return os << "#<" << s << " " << (void*)x << ">";
     }
     const symbol& sym = interpreter::g_interp->symtab.sym(x->tag);
+#if 0
     if (x->data.clos && x->data.clos->local)
       return os << "#<closure " << sym.s << ">";
+#endif
     if (sym.prec < 10)
       return os << '(' << sym.s << ')';
     else
