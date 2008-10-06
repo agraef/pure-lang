@@ -1395,21 +1395,8 @@ void interpreter::declare(bool priv, prec_t prec, fix_t fix, list<string> *ids)
 	delete ids;
 	throw err("conflicting fixity declaration for symbol '"+id+"'");
       }
-    } else {
-      int32_t tag = symtab.xsym(*it, prec, fix, priv?modno:-1).f;
-      /* KLUDGE: Already create a globalvars entry here, so that the symbol is
-	 properly recognized by the completion routines. */
-      pure_expr *cv = pure_const(tag);
-      assert(JIT);
-      GlobalVar& v = globalvars[tag];
-      if (!v.v) {
-	v.v = new llvm::GlobalVariable
-	  (ExprPtrTy, false, llvm::GlobalVariable::InternalLinkage, 0,
-	   mkvarlabel(tag), module);
-	JIT->addGlobalMapping(v.v, &v.x);
-      }
-      if (v.x) pure_free(v.x); v.x = pure_new(cv);
-    }
+    } else
+      symtab.xsym(*it, prec, fix, priv?modno:-1).f;
   }
   delete ids;
 }
@@ -3818,6 +3805,14 @@ Function *interpreter::declare_extern(string name, string restype,
 	       (globenv[sym.f].t == env_info::fvar) ? "variable" :
 	       (globenv[sym.f].t == env_info::cvar) ? "constant" :
 	       "gizmo" /* this can't happen, or at least it shouldn't ;-) */));
+  else if (globalvars.find(sym.f) != globalvars.end() &&
+	   externals.find(sym.f) == externals.end())
+    // The symbol isn't defined as a Pure function, global variable or
+    // external, but an unbound symbol of this name already exists. This may
+    // be an error, but we can't be sure. Since there's currently no way to
+    // patch up old uses of the symbol, let's at least warn the user about
+    // these.
+    warning("warning: external '"+asname+"' shadows previous undefined use of this symbol");
   // Create the function type and check for an existing declaration of the
   // external.
   FunctionType *ft = FunctionType::get(type, argt, false);
