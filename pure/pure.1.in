@@ -1524,6 +1524,70 @@ computed result:
 function definition, since by virtue of Pure's basic eager evaluation strategy
 the x parameter would have been evaluated already before it is passed to
 `timex', making `timex' always return a zero time value. Try it.)
+.SS Debugging
+Here's another useful convenience macro which helps in tracing function calls:
+.sp
+.nf
+\fBusing\fP system;
+\fBdef\fP trace f x y = printf "** exit  %s: %s -> %s\n" (str f,str x,str y) $$ y
+\fBwhen\fP y = printf "** enter %s: %s\n: " (str f,str x) $$ gets $$ y \fBend\fP;
+.fi
+.PP
+The macro is invoked with the function to be traced, the tuple of arguments
+(or whatever you want to be printed as additional debugging information) and
+the actual function call as parameters. (This is a rather simplistic version,
+which just prints a prompt on function entry and the final reduction after the
+call. You can easily make this as elaborate as you like. E.g., you might want
+to keep track of recursive levels and profiling information, add various
+interactive commands to selectively enable and disable tracing during the
+evaluation, etc.)
+.PP
+We can still make this a bit more convenient by introducing the following
+ordinary function definition:
+.sp
+.nf
+trace f x = trace f x (f x);
+.fi
+.PP
+This lets us patch up a call to trace a given function, as shown below,
+without having to change the definition of the function itself. (The
+definition above only works with functions taking a single parameter, see the
+trace.pure example in the distribution for the full version which can deal
+with any number of arguments specified as a tuple.)
+.sp
+.nf
+// Uncomment this line to trace calls to the 'fact' function.
+def fact n = trace fact n;
+// Sample function to be traced.
+fact n = if n>0 then n*fact(n-1) else 1;
+.fi
+.PP
+Here's a trace of the `fact' function obtained in this fashion (hit carriage
+return after each `:' prompt to proceed with the computation):
+.sp
+.nf
+> fact 2;
+** enter fact: 2
+: 
+** enter fact: 1
+: 
+** enter fact: 0
+: 
+** exit fact: 0 -> 1
+** exit fact: 1 -> 1
+** exit fact: 2 -> 2
+2
+.fi
+.PP
+Note that by just removing the macro definition for `fact' above, you can make
+the function run untraced as usual again. (Unfortunately, this trick only
+works with global functions; for local functions you'll have to add an
+explicit call of the `trace' macro to the local definition yourself.) This
+scheme is quite flexible, the only real drawback is that you have to
+explicitly add some code for each function you want to trace. A future version
+of the interpreter might provide some built-in support to make this more
+convenient, but for the time being our little `trace' macro does the job quite
+well for most purposes.
 .SS Macro Hygiene
 Pure macros are lexically scoped, i.e., symbols on the right-hand-side of a
 macro definition can never refer to anything outside the macro definition, and
@@ -2620,7 +2684,9 @@ There's no symbolic debugger yet. So
 .BR printf (3)
 (available in the
 .B system
-standard library module) should be your friend. ;-)
+standard library module) should be your friend. ;-) Also, have a look at the
+MACROS section which discusses a little helper macro to trace global function
+calls in a semi-automatic fashion.
 .SS The __show__ Function
 As of Pure 0.6, the interpreter provides a ``hook'' to override the print
 representations of expressions at runtime by means of the
