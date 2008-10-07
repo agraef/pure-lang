@@ -1727,7 +1727,7 @@ pure_expr *pure_appv(pure_expr *fun, size_t argc, pure_expr **args)
 static inline pure_expr *mk_nil()
 {
   interpreter& interp = *interpreter::g_interp;
-  return pure_const(interp.symtab.nil_sym().f);
+  return pure_symbol(interp.symtab.nil_sym().f);
 }
 
 static inline pure_expr *mk_cons(pure_expr *x, pure_expr *y)
@@ -1740,7 +1740,7 @@ static inline pure_expr *mk_cons(pure_expr *x, pure_expr *y)
 static inline pure_expr *mk_void()
 {
   interpreter& interp = *interpreter::g_interp;
-  return pure_const(interp.symtab.void_sym().f);
+  return pure_symbol(interp.symtab.void_sym().f);
 }
 
 static inline pure_expr *mk_pair(pure_expr *x, pure_expr *y)
@@ -3151,7 +3151,7 @@ pure_expr *pure_catch(pure_expr *h, pure_expr *x)
 	  pure_free_internal(interp.sstk[i]);
       interp.sstk_sz = sz;
       if (!e)
-	e = pure_new_internal(pure_const(interp.symtab.void_sym().f));
+	e = pure_new_internal(mk_void());
       assert(e && e->refc > 0);
 #if DEBUG>1
       cerr << "pure_catch: exception " << (void*)e << " (refc = " << e->refc
@@ -3921,10 +3921,9 @@ extern "C"
 pure_expr *string_chars(const char *s)
 {
   assert(s);
-  interpreter& interp = *interpreter::g_interp;
   pure_expr *x, **y = &x, ***z = &y;
   u8dostr(s, (void(*)(void*,unsigned long))add_char, z);
-  **z = pure_new_internal(pure_const(interp.symtab.nil_sym().f));
+  **z = pure_new_internal(mk_nil());
   pure_unref_internal(x);
   return x;
 }
@@ -6636,7 +6635,7 @@ extern "C"
 pure_expr *globlist(const glob_t *pglob)
 {
   interpreter& interp = *interpreter::g_interp;
-  pure_expr *x = pure_const(interp.symtab.nil_sym().f);
+  pure_expr *x = mk_nil();
   int i = pglob->gl_pathc;
   while (--i >= 0) {
     pure_expr *f = pure_const(interp.symtab.cons_sym().f);
@@ -6677,7 +6676,7 @@ pure_expr *reglist(const regex_t *preg, const char *s,
 		   const regmatch_t *matches)
 {
   interpreter& interp = *interpreter::g_interp;
-  if (!matches) return pure_const(interp.symtab.void_sym().f);
+  if (!matches) return mk_void();
   int n = preg->re_nsub+1;
   pure_expr *x = 0;
   int i = n;
