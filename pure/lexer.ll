@@ -387,7 +387,7 @@ mattag  ::{blank}*matrix
   // show command is only permitted in interactive mode
   if (!interp.interactive) REJECT;
   uint8_t s_verbose = interpreter::g_verbose;
-  uint8_t tflag = 0; int pflag = -1;
+  bool tflag = false; uint8_t tlevel = 0; int pflag = -1;
   bool aflag = false, dflag = false, eflag = false;
   bool cflag = false, fflag = false, mflag = false, vflag = false;
   bool gflag = false, lflag = false, sflag = false;
@@ -422,10 +422,11 @@ mattag  ::{blank}*matrix
       case 'v': vflag = true; break;
       case 't':
 	if (isdigit(s[1])) {
-	  tflag = strtoul(s+1, 0, 10);
+	  tlevel = strtoul(s+1, 0, 10);
 	  while (isdigit(s[1])) ++s;
 	} else
-	  tflag = interp.temp;
+	  tlevel = interp.temp;
+	tflag = true;
 	break;
       case 'h':
 	cout <<
@@ -450,7 +451,8 @@ Options may be combined, e.g., show -tvl is the same as show -t -v -l.\n\
 -s  Summary format, print just summary information about listed symbols.\n\
 -t[level] List only symbols and definitions at the given temporary level\n\
     (the current level by default) or above. Level 1 denotes all temporary\n\
-    definitions, level 0 *all* definitions (the default if -t is omitted).\n\
+    definitions, level 0 *all* definitions. If no symbols are specified,\n\
+    -t1 is the default, -t0 otherwise.\n\
 -v  Print information about defined variables.\n";
 	goto out;
       default:
@@ -466,6 +468,7 @@ Options may be combined, e.g., show -tvl is the same as show -t -v -l.\n\
   if (!cflag && !fflag && !mflag && !vflag)
     cflag = fflag = mflag = vflag = true;
   if (lflag) sflag = true;
+  if (!tflag && args.l.empty()) tlevel = 1;
   {
     size_t maxsize = 0, nfuns = 0, nmacs = 0, nvars = 0, ncsts = 0,
       nrules = 0, mrules = 0;
@@ -481,14 +484,14 @@ Options may be combined, e.g., show -tvl is the same as show -t -v -l.\n\
 	    (e.t == env_info::cvar)?cflag:
 	    (e.t == env_info::fvar)?vflag:0))
 	continue;
-      bool matches = e.temp >= tflag;
+      bool matches = e.temp >= tlevel;
       if (!matches && !sflag && args.l.empty() &&
 	  e.t == env_info::fun && fflag) {
 	// if not in summary mode, also list temporary rules for a
 	// non-temporary symbol
 	rulel::const_iterator r;
 	for (r = e.rules->begin(); r != e.rules->end(); r++)
-	  if (r->temp >= tflag) {
+	  if (r->temp >= tlevel) {
 	    matches = true;
 	    break;
 	  }
@@ -511,7 +514,7 @@ Options may be combined, e.g., show -tvl is the same as show -t -v -l.\n\
 			  interp.externals.find(f)));
       if (sym.s.size() > maxsize) maxsize = sym.s.size();
     }
-    if (fflag && tflag == 0) {
+    if (fflag && tlevel == 0) {
       // also process the declared externals which don't have any rules yet
       for (extmap::const_iterator it = interp.externals.begin();
 	   it != interp.externals.end(); ++it) {
@@ -551,13 +554,13 @@ Options may be combined, e.g., show -tvl is the same as show -t -v -l.\n\
 	  if (sym.modno >= 0 && sym.modno != interp.modno ||
 	      pflag >= 0 && (pflag > 0) != (sym.modno >= 0))
 	    continue;
-	  bool matches = e.temp >= tflag;
+	  bool matches = e.temp >= tlevel;
 	  if (!matches && !sflag && args.l.empty()) {
 	    // if not in summary mode, also list temporary rules for a
 	    // non-temporary symbol
 	    rulel::const_iterator r;
 	    for (r = e.rules->begin(); r != e.rules->end(); r++)
-	      if (r->temp >= tflag) {
+	      if (r->temp >= tlevel) {
 		matches = true;
 		break;
 	      }
@@ -675,7 +678,7 @@ Options may be combined, e.g., show -tvl is the same as show -t -v -l.\n\
 	    size_t n = 0;
 	    for (rulel::const_iterator it = rules.begin();
 		 it != rules.end(); ++it) {
-	      if (it->temp >= tflag) {
+	      if (it->temp >= tlevel) {
 		sout << "def " << *it << ";\n";
 		++n;
 	      }
@@ -707,7 +710,7 @@ Options may be combined, e.g., show -tvl is the same as show -t -v -l.\n\
 	    size_t n = 0;
 	    for (rulel::const_iterator it = rules.begin();
 		 it != rules.end(); ++it) {
-	      if (it->temp >= tflag) {
+	      if (it->temp >= tlevel) {
 		sout << *it << ";\n";
 		++n;
 	      }
@@ -752,7 +755,7 @@ Options may be combined, e.g., show -tvl is the same as show -t -v -l.\n\
 ^dump.* {
   // dump command is only permitted in interactive mode
   if (!interp.interactive) REJECT;
-  uint8_t tflag = 1; int pflag = -1;
+  bool tflag = false; uint8_t tlevel = 0; int pflag = -1;
   bool cflag = false, fflag = false, mflag = false, vflag = false;
   bool gflag = false, nflag = false;
   string fname = ".pure";
@@ -784,10 +787,11 @@ Options may be combined, e.g., show -tvl is the same as show -t -v -l.\n\
       case 'v': vflag = true; break;
       case 't':
 	if (isdigit(s[1])) {
-	  tflag = strtoul(s+1, 0, 10);
+	  tlevel = strtoul(s+1, 0, 10);
 	  while (isdigit(s[1])) ++s;
 	} else
-	  tflag = interp.temp;
+	  tlevel = interp.temp;
+	tflag = true;
 	break;
       case 'h':
 	cout <<
@@ -805,7 +809,8 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
     modules. Dump both private and public symbols if -p is omitted.\n\
 -t[level] Dump only symbols and definitions at the given temporary level\n\
     (the current level by default) or above. Level 1 denotes all temporary\n\
-    definitions (the default if -t is omitted), level 0 *all* definitions.\n\
+    definitions, level 0 *all* definitions. If no symbols are specified,\n\
+    -t1 is the default, -t0 otherwise.\n\
 -v  Dump defined variables.\n";
 	goto out2;
       default:
@@ -817,6 +822,7 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
   args.l.erase(args.l.begin(), arg);
   if (!cflag && !fflag && !mflag && !vflag)
     cflag = fflag = mflag = vflag = true;
+  if (!tflag && args.l.empty()) tlevel = 1;
   {
     list<env_sym> l; set<int32_t> syms;
     for (env::const_iterator it = interp.globenv.begin();
@@ -830,13 +836,13 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	    (e.t == env_info::cvar)?cflag:
 	    (e.t == env_info::fvar)?vflag:0))
 	continue;
-      bool matches = e.temp >= tflag;
+      bool matches = e.temp >= tlevel;
       if (!matches && args.l.empty() &&
 	  e.t == env_info::fun && fflag) {
 	// dump temporary rules for a non-temporary symbol
 	rulel::const_iterator r;
 	for (r = e.rules->begin(); r != e.rules->end(); r++)
-	  if (r->temp >= tflag) {
+	  if (r->temp >= tlevel) {
 	    matches = true;
 	    break;
 	  }
@@ -858,7 +864,7 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
       l.push_back(env_sym(sym, it, interp.macenv.find(f),
 			  interp.externals.find(f)));
     }
-    if (fflag && tflag == 0) {
+    if (fflag && tlevel == 0) {
       // also process the declared externals which don't have any rules yet
       for (extmap::const_iterator it = interp.externals.begin();
 	   it != interp.externals.end(); ++it) {
@@ -897,12 +903,12 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	  if (sym.modno >= 0 && sym.modno != interp.modno ||
 	      pflag >= 0 && (pflag > 0) != (sym.modno >= 0))
 	    continue;
-	  bool matches = e.temp >= tflag;
+	  bool matches = e.temp >= tlevel;
 	  if (!matches && args.l.empty()) {
 	    // also dump temporary rules for a non-temporary symbol
 	    rulel::const_iterator r;
 	    for (r = e.rules->begin(); r != e.rules->end(); r++)
-	      if (r->temp >= tflag) {
+	      if (r->temp >= tlevel) {
 		matches = true;
 		break;
 	      }
@@ -982,7 +988,7 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	  const rulel& rules = *kt->second.rules;
 	  for (rulel::const_iterator it = rules.begin();
 	       it != rules.end(); ++it) {
-	    if (it->temp >= tflag) {
+	    if (it->temp >= tlevel) {
 	      fout << "def " << *it << ";\n";
 	    }
 	  }
@@ -991,7 +997,7 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	  const rulel& rules = *jt->second.rules;
 	  for (rulel::const_iterator it = rules.begin();
 	       it != rules.end(); ++it) {
-	    if (it->temp >= tflag) {
+	    if (it->temp >= tlevel) {
 	      fout << *it << ";\n";
 	    }
 	  }
