@@ -44,8 +44,8 @@ denotes corresponding development packages):
 - the GNU multiprecision library (libgmp, -dev);
 
 - the GNU scientific library (libgsl, -dev; this isn't a strict requirement,
-but you certainly want to have this library in order to make GSL matrices work
-in Pure);
+but strongly recommended; you need this library in order to make GSL matrices
+work in Pure);
 
 - the GNU readline library (libreadline, -dev);
 
@@ -53,9 +53,9 @@ in Pure);
 
 - subversion (this is only needed to fetch the SVN sources, see below).
 
-E.g., the required packages for Ubuntu are: make, g++, g++ 4.0 multilib, flex,
-bison, libgmp3c2, libgmp3-dev, libgsl0, libgsl0-dev, readline5-dev, libltdl3,
-libldtl3-dev, subversion.
+E.g., at the time of this writing the required packages for Ubuntu are: make,
+g++, g++ 4.0 multilib, flex, bison, libgmp3c2, libgmp3-dev, libgsl0,
+libgsl0-dev, readline5-dev, libltdl3, libldtl3-dev, subversion.
 
 All dependencies are available as free software. Here are some links if you
 need or want to install the dependencies from source:
@@ -128,16 +128,18 @@ follows:
 
 $ sudo /sbin/ldconfig
 
-After the build is complete, you can also run a few tests to check that Pure
-is working correctly on your computer:
+After the build is complete, you can (and should) also run a few tests to
+check that Pure is working correctly on your computer:
 
 $ make check
 
 If all is well, all tests should pass. If not, email the author or the Pure
-mailing list for help. (Note that under MS Windows this step is expected to
+mailing list for help. Note that under MS Windows this step is expected to
 fail on some math-related tests such as test020.pure which stress-test the
 system's math routines, because some of these are broken in Microsoft's C
-library.)
+library. Also, test025.pure will always fail if you built Pure without GSL
+support; take this as a reminder that you need GSL to enjoy full matrix
+support in Pure.
 
 STEP 6. The Pure interpreter should be ready to go now.
 
@@ -164,14 +166,24 @@ and make sure that you have GSL installed. The configure program should show
 that GSL support is available in the summary. You can run Pure without this,
 but then the numeric GSL matrices won't be available.)
 
-Read the online documentation (this invokes the Pure manual page):
+Read the online documentation:
 
 > help
+
+This invokes the Pure manual page; you need to have a Unix-like 'man' program
+installed to make this work. The manual is also available in a number of other
+formats (you can find these at the Pure website), and the Windows package
+includes a html help version of the manual which can be read with the Windows
+help reader.
 
 Exit the interpreter (you can also just type the end-of-file character at the
 beginning of a line, i.e., Ctrl-D on Unix):
 
 > quit
+
+You can also run the interpreter from GNU Emacs (check the etc subdirectory in
+the sources for pure-mode.el), and for Windows there is a nice GUI application
+named "PurePad" which makes it easy to edit and run your Pure scripts.
 
 
 INSTALLING FROM SVN SOURCES
@@ -350,13 +362,13 @@ want/need the GSL matrices, but this isn't recommended.
 RUNNING PURE FROM THE SOURCE DIRECTORY
 ------- ---- ---- --- ------ ---------
 
-After your build is done, you can (and should) also run 'make check' to verify
-that your Pure interpreter works correctly. This can be done without
-installing the software. In fact, there's no need to install the interpreter
-at all if you just want to take it for a test drive, you can simply run it
-from the source directory, if you set up the following environment variables
-(this assumes that you built Pure in the source directory; when using a
-separate build directory, you'll have to change the paths accordingly):
+After your build is done, you should also run 'make check' to verify that your
+Pure interpreter works correctly. This can be done without installing the
+software. In fact, there's no need to install the interpreter at all if you
+just want to take it for a test drive, you can simply run it from the source
+directory, if you set up the following environment variables (this assumes
+that you built Pure in the source directory; when using a separate build
+directory, you'll have to change the paths accordingly):
 
 - LD_LIBRARY_PATH=. This is required on Linux systems so that libpure.so
   is found. Other systems may require an analogous setting, or none at all.
@@ -468,6 +480,6 @@ well as "PurePad", an alternative GUI frontend for editing and running Pure
 scripts on Windows.
 
 
-September 2008
+October 2008
 Albert Graef <Dr.Graef at t-online.de>
 Eddie Rucker <erucker at bmc.edu>
