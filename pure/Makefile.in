@@ -136,38 +136,38 @@ $(libpure): $(OBJECT)
 	ln -sf $(libpure) $(libpurelnk)
 
 pure.o: pure.cc
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(LLVM_FLAGS) -DPURELIB='"$(libdir)/pure-$(version)"' -c -o $@ $<
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(LLVM_FLAGS) -I. -I$(srcdir) -DPURELIB='"$(libdir)/pure-$(version)"' -c -o $@ $<
 
 runtime.o: runtime.cc
-	$(CXX) $(CXXFLAGS) $(PIC) $(CPPFLAGS) $(LLVM_FLAGS) -DPURELIB='"$(libdir)/pure-$(version)"' -c -o $@ $<
+	$(CXX) $(CXXFLAGS) $(PIC) $(CPPFLAGS) $(LLVM_FLAGS) -I. -I$(srcdir) -DPURELIB='"$(libdir)/pure-$(version)"' -c -o $@ $<
 
 interpreter.o: interpreter.cc
-	$(CXX) $(CXXFLAGS) $(PIC) $(CPPFLAGS) $(LLVM_FLAGS) $(AUXLIBS) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) $(PIC) $(CPPFLAGS) $(LLVM_FLAGS) -I. -I$(srcdir) $(AUXLIBS) -c -o $@ $<
 
 %.o: %.cc
-	$(CXX) $(CXXFLAGS) $(PIC) $(CPPFLAGS) $(LLVM_FLAGS) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) $(PIC) $(CPPFLAGS) $(LLVM_FLAGS) -I. -I$(srcdir) -c -o $@ $<
 
 lexer.cc: lexer.ll
-	flex -o lexer.cc $<
+	flex -o $(srcdir)/lexer.cc $<
 
 parser.cc: parser.yy
-	bison -v -o parser.cc $<
+	bison -v -o $(srcdir)/parser.cc $<
 
 parser.hh location.hh position.hh stack.hh: parser.cc
 
 # create pure-mode.el from pure-mode.el.in
 
 etc/pure-mode.el: Makefile etc/pure-mode.el.in
-	rm -f etc/pure-mode.el etc/pure-mode.el.tmp
-	sed -e 's,@bindir\@,$(bindir),g' -e 's,@libdir\@,$(libdir),g' etc/pure-mode.el.in >etc/pure-mode.el.tmp
-	mv etc/pure-mode.el.tmp etc/pure-mode.el
+	rm -f $(srcdir)/etc/pure-mode.el $(srcdir)/etc/pure-mode.el.tmp
+	sed -e 's,@bindir\@,$(bindir),g' -e 's,@libdir\@,$(libdir),g' $(srcdir)/etc/pure-mode.el.in >$(srcdir)/etc/pure-mode.el.tmp
+	mv $(srcdir)/etc/pure-mode.el.tmp $(srcdir)/etc/pure-mode.el
 
 # create the manpage from pure.1.in
 
 pure.1: configure.ac pure.1.in
-	rm -f pure.1 pure.1.tmp
-	sed -e 's,@version\@,$(version),g' pure.1.in >pure.1.tmp
-	mv pure.1.tmp pure.1
+	rm -f $(srcdir)/pure.1 $(srcdir)/pure.1.tmp
+	sed -e 's,@version\@,$(version),g' $(srcdir)/pure.1.in >$(srcdir)/pure.1.tmp
+	mv $(srcdir)/pure.1.tmp $(srcdir)/pure.1
 
 # documentation in various formats (requires groff)
 
@@ -226,11 +226,11 @@ ifeq ($(sharedlib), yes)
 	$(INSTALL) $(libpure) $(DESTDIR)$(libdir)/$(libpure)
 	ln -sf $(libdir)/$(libpure) $(DESTDIR)$(libdir)/$(libpurelnk)
 endif
-	$(INSTALL) runtime.h $(DESTDIR)$(includedir)/pure-$(version)
+	$(INSTALL) $(srcdir)/runtime.h $(DESTDIR)$(includedir)/pure-$(version)
 	ln -sf $(includedir)/pure-$(version) $(DESTDIR)$(includedir)/pure
 	for x in $(srcdir)/lib/*.pure; do $(INSTALL) -m 644 $$x $(DESTDIR)$(libdir)/pure-$(version); done
 	ln -sf $(libdir)/pure-$(version) $(DESTDIR)$(libdir)/pure
-	$(INSTALL) -m 644 pure.1 $(DESTDIR)$(man1dir)/pure-$(version).1
+	$(INSTALL) -m 644 $(srcdir)/pure.1 $(DESTDIR)$(man1dir)/pure-$(version).1
 	ln -sf $(man1dir)/pure-$(version).1 $(DESTDIR)$(man1dir)/pure.1
 
 uninstall:
