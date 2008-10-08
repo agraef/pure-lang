@@ -199,19 +199,19 @@ pure_completion(const char *text, int start, int end)
   return rl_completion_matches(text, command_generator);
 }
 
-static void list_completions(const char *s)
+static void list_completions(ostream& os, const char *s)
 {
   char **matches = pure_completion(s, 0, strlen(s));
   if (matches) {
     if (matches[0])
       if (!matches[1]) {
-	printf("%s\n", matches[0]);
+	os << matches[0] << endl;
 	free(matches[0]);
       } else {
 	int i;
 	free(matches[0]);
 	for (i = 1; matches[i]; i++) {
-	  printf("%s\n", matches[i]);
+	  os << matches[i] << endl;
 	  free(matches[i]);
 	}
       }
@@ -332,7 +332,7 @@ mattag  ::{blank}*matrix
 
 ^!{blank}*.* {
   // shell escape is only permitted in interactive mode
-  if (!interp.interactive) REJECT;
+  if (!interp.interactive && !interp.output) REJECT;
   const char *s = yytext;
   ++s;
   while (isspace(*s)) ++s;
@@ -341,7 +341,7 @@ mattag  ::{blank}*matrix
 }
 ^help.* {
   // help command is only permitted in interactive mode
-  if (!interp.interactive) REJECT;
+  if (!interp.interactive && !interp.output) REJECT;
   const char *s = yytext+4;
   if (*s && !isspace(*s)) REJECT;
   while (isspace(*s)) ++s;
@@ -351,7 +351,7 @@ mattag  ::{blank}*matrix
 }
 ^ls.* {
   // ls command is only permitted in interactive mode
-  if (!interp.interactive) REJECT;
+  if (!interp.interactive && !interp.output) REJECT;
   const char *s = yytext;
   if (s[2] && !isspace(s[2])) REJECT;
   yylloc->step();
@@ -359,7 +359,7 @@ mattag  ::{blank}*matrix
 }
 ^pwd.* {
   // pwd command is only permitted in interactive mode
-  if (!interp.interactive) REJECT;
+  if (!interp.interactive && !interp.output) REJECT;
   const char *s = yytext;
   if (s[3] && !isspace(s[3])) REJECT;
   yylloc->step();
@@ -368,7 +368,7 @@ mattag  ::{blank}*matrix
 ^cd.* {
   static const char *home = getenv("HOME");
   // cd command is only permitted in interactive mode
-  if (!interp.interactive) REJECT;
+  if (!interp.interactive && !interp.output) REJECT;
   const char *s = yytext+2;
   if (*s && !isspace(*s)) REJECT;
   yylloc->step();
@@ -385,7 +385,7 @@ mattag  ::{blank}*matrix
 }
 ^show.* {
   // show command is only permitted in interactive mode
-  if (!interp.interactive) REJECT;
+  if (!interp.interactive && !interp.output) REJECT;
   uint8_t s_verbose = interpreter::g_verbose;
   bool tflag = false; uint32_t tlevel = 0; int pflag = -1;
   bool aflag = false, dflag = false, eflag = false;
@@ -740,21 +740,25 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
       if (!s.empty())
 	sout << s.substr(0, s.size()-2) << endl;
     }
-    FILE *fp;
-    const char *more = getenv("PURE_MORE");
-    // FIXME: We should check that 'more' actually exists here.
-    if (more && *more && isatty(fileno(stdin)) && (fp = popen(more, "w"))) {
-      fputs(sout.str().c_str(), fp);
-      pclose(fp);
-    } else
-      cout << sout.str();
+    if (interp.output)
+      (*interp.output) << sout.str();
+    else {
+      FILE *fp;
+      const char *more = getenv("PURE_MORE");
+      // FIXME: We should check that 'more' actually exists here.
+      if (more && *more && isatty(fileno(stdin)) && (fp = popen(more, "w"))) {
+	fputs(sout.str().c_str(), fp);
+	pclose(fp);
+      } else
+	cout << sout.str();
+    }
   }
  out:
   interpreter::g_verbose = s_verbose;
 }
 ^dump.* {
   // dump command is only permitted in interactive mode
-  if (!interp.interactive) REJECT;
+  if (!interp.interactive && !interp.output) REJECT;
   bool tflag = false; uint32_t tlevel = 0; int pflag = -1;
   bool cflag = false, fflag = false, mflag = false, vflag = false;
   bool gflag = false, nflag = false;
@@ -1010,7 +1014,7 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 }
 ^clear.* {
   // clear command is only permitted in interactive mode
-  if (!interp.interactive) REJECT;
+  if (!interp.interactive && !interp.output) REJECT;
   bool tflag = false; uint32_t tlevel = 0; int pflag = -1;
   bool cflag = false, fflag = false, mflag = false, vflag = false;
   bool gflag = false;
@@ -1083,22 +1087,29 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
     if (!tflag) tlevel = old;
     // we never scrap any permanent definitions here
     if (tlevel == 0) tlevel = 1;
-    cout << "This will clear all temporary definitions at level #"
-	 << tlevel << (tlevel<interp.temp?" and above":"")
-	 << ".\nContinue (y/n)? ";
-    cin >> noskipws >> ans;
-    bool chk = ans == 'y';
-    if (cin.good() && chk) {
+    bool chk = true;
+    if (!interp.output) {
+      cout << "This will clear all temporary definitions at level #"
+	   << tlevel << (tlevel<interp.temp?" and above":"")
+	   << ".\nContinue (y/n)? ";
+      cin >> noskipws >> ans;
+      bool chk = ans == 'y';
+      if (cin.good() && chk) {
+	for (size_t i = tlevel; i <= old; i++)
+	  interp.clear();
+      }
+      while (cin.good() && ans != '\n') cin >> noskipws >> ans;
+      cin.clear();
+    } else {
       for (size_t i = tlevel; i <= old; i++)
 	interp.clear();
     }
-    while (cin.good() && ans != '\n') cin >> noskipws >> ans;
-    cin.clear();
+    ostream& os = interp.output?*interp.output:cout;
     if (chk && old > 1)
-      cout << "clear: now at temporary definitions level #"
-	   << interp.temp << endl;
+      os << "clear: now at temporary definitions level #"
+	 << interp.temp << endl;
     if (chk && interp.override)
-      cout << "clear: override mode is on\n";
+      os << "clear: override mode is on\n";
     goto out3;
   }
   {
@@ -1216,7 +1227,7 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
 }
 ^save.* {
   // save command is only permitted in interactive mode
-  if (!interp.interactive) REJECT;
+  if (!interp.interactive && !interp.output) REJECT;
   const char *s = yytext+4;
   if (*s && !isspace(*s)) REJECT;
   yylloc->step();
@@ -1228,14 +1239,15 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
   else if (interp.temp == 0xffffffffU)
     cerr << "save: already at maximum level\n";
   else {
-    cout << "save: now at temporary definitions level #"
-	 << ++interp.temp << endl;
-    if (interp.override) cout << "save: override mode is on\n";
+    ostream& os = interp.output?*interp.output:cout;
+    os << "save: now at temporary definitions level #"
+       << ++interp.temp << endl;
+    if (interp.override) os << "save: override mode is on\n";
   }
 }
 ^run.* {
   // run command is only permitted in interactive mode
-  if (!interp.interactive) REJECT;
+  if (!interp.interactive && !interp.output) REJECT;
   const char *s = yytext+3;
   if (*s && !isspace(*s)) REJECT;
   yylloc->step();
@@ -1251,7 +1263,7 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
 }
 ^override.* {
   // override command is only permitted in interactive mode
-  if (!interp.interactive) REJECT;
+  if (!interp.interactive && !interp.output) REJECT;
   const char *s = yytext+8;
   if (*s && !isspace(*s)) REJECT;
   yylloc->step();
@@ -1265,7 +1277,7 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
 }
 ^underride.* {
   // underride command is only permitted in interactive mode
-  if (!interp.interactive) REJECT;
+  if (!interp.interactive && !interp.output) REJECT;
   const char *s = yytext+9;
   if (*s && !isspace(*s)) REJECT;
   yylloc->step();
@@ -1279,7 +1291,7 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
 }
 ^stats.* {
   // stats command is only permitted in interactive mode
-  if (!interp.interactive) REJECT;
+  if (!interp.interactive && !interp.output) REJECT;
   const char *s = yytext+5;
   if (*s && !isspace(*s)) REJECT;
   yylloc->step();
@@ -1301,7 +1313,7 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
 }
 ^quit.* {
   // quit command is only permitted in interactive mode
-  if (!interp.interactive) REJECT;
+  if (!interp.interactive && !interp.output) REJECT;
   const char *s = yytext+4;
   if (*s && !isspace(*s)) REJECT;
   yylloc->step();
@@ -1315,12 +1327,12 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
 }
 ^completion_matches.* {
   // completion_matches command is only permitted in interactive mode
-  if (!interp.interactive) REJECT;
+  if (!interp.interactive && !interp.output) REJECT;
   const char *s = yytext+18;
   if (*s && !isspace(*s)) REJECT;
   while (isspace(*s)) ++s;
   yylloc->step();
-  list_completions(s);
+  list_completions(interp.output?*interp.output:cout, s);
 }
 
 {int}      {

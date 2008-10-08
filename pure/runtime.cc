@@ -4037,18 +4037,24 @@ extern "C"
 pure_expr *eval(const pure_expr *x)
 {
   assert(x);
-  if (x->tag == EXPR::STR) {
-    const char *s = x->data.s;
+  char *s;
+  if (pure_is_cstring_dup(x, &s)) {
     interpreter& interp = *interpreter::g_interp;
     interp.errmsg.clear();
     pure_expr *res = interp.runstr(string(s)+";");
+    free(s);
     interp.result = 0;
-    if (res) pure_unref_internal(res);
-    return res;
+    if (res) {
+      pure_unref_internal(res);
+      return res;
+    } else if (interp.errmsg.empty())
+      return mk_void();
+    else
+      return 0;
   } else {
     pure_expr *res = 0, *e = 0;
     interpreter& interp = *interpreter::g_interp;
-    interp.errmsg = "";
+    interp.errmsg.clear();
     try {
       expr y = interp.pure_expr_to_expr(x);
       res = interp.eval(y, e);
@@ -4066,6 +4072,27 @@ pure_expr *eval(const pure_expr *x)
     } else
       return 0;
   }
+}
+
+extern "C"
+pure_expr *evalcmd(const pure_expr *x)
+{
+  assert(x);
+  char *s;
+  if (pure_is_cstring_dup(x, &s)) {
+    interpreter& interp = *interpreter::g_interp;
+    ostream *l_output = interp.output;
+    ostringstream sout;
+    interp.errmsg.clear();
+    interp.output = &sout;
+    pure_expr *res = interp.runstr(string(s));
+    free(s);
+    interp.result = 0;
+    interp.output = l_output;
+    if (res) pure_free_internal(res);
+    return pure_cstring_dup(sout.str().c_str());
+  } else
+    return 0;
 }
 
 extern "C"

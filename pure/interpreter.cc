@@ -64,8 +64,8 @@ interpreter::interpreter()
   : verbose(0), interactive(false), ttymode(false), override(false),
     stats(false), temp(0),
     ps("> "), libdir(""), histfile("/.pure_history"), modname("pure"),
-    nerrs(0), modno(-1), modctr(0), source_s(0), result(0), mem(0), exps(0),
-    tmps(0), module(0), JIT(0), FPM(0), fptr(0)
+    nerrs(0), modno(-1), modctr(0), source_s(0), output(0), result(0),
+    mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0), fptr(0)
 {
   if (!g_interp) {
     g_interp = this;
@@ -738,6 +738,7 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
   int l_nerrs = nerrs;
   uint32_t l_temp = temp;
   const char *l_source_s = source_s;
+  ostream *l_output = output;
   string l_srcdir = srcdir;
   int32_t l_modno = modno;
   // save global data
@@ -751,6 +752,7 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
   nerrs = 0;
   source = s; declare_op = false;
   source_s = 0;
+  output = 0;
   srcdir = dirname(fname);
   if (sticky)
     ; // keep the current module
@@ -781,6 +783,7 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
   nerrs = l_nerrs;
   temp = l_temp;
   source_s = l_source_s;
+  output = l_output;
   srcdir = l_srcdir;
   modno = l_modno;
   // return last computed result, if any

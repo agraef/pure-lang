@@ -33,10 +33,19 @@ private pure_str;
 extern void* str(expr*) = pure_str;
 extern expr* eval(expr*); // IMPURE!
 
-/* Errors in eval are reported with the lasterr routine. This string value
-   will be nonempty iff a compilation or execution error was encountered
-   during the most recent invokation of eval(). In that case each reported
-   error message is terminated with a newline character. */
+/* evalcmd is like eval, but allows execution of interactive commands and
+   returns their captured output as a string. No other results are returned,
+   so this operation is most useful for executing Pure definitions and
+   interactive commands for their side-effects. (At this time, only the
+   regular output of a few commands can be captured, most notably 'clear',
+   'save' and 'show'; otherwise the result string will be empty.) */
+
+extern expr* evalcmd(expr*); // IMPURE!
+
+/* Errors in eval and evalcmd are reported with the lasterr routine. This
+   string value will be nonempty iff a compilation or execution error was
+   encountered during the most recent invokation of eval(). In that case each
+   reported error message is terminated with a newline character. */
 
 extern char* lasterr();
 

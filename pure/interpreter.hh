@@ -329,6 +329,7 @@ public:
   string source;     // the source being parsed
   const char *source_s; // source pointer if input comes from a string
   set<string> sources; // the list of all scripts which have been loaded
+  ostream *output;   // redirected output stream for interactive commands
   symtable symtab;   // the symbol table
   pure_expr *result; // last computed result
   clock_t clocks;    // last evaluation time, if stats is set
