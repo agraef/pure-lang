@@ -1502,9 +1502,6 @@ void interpreter::clear(int32_t f)
       globenv.erase(it);
       clearsym(f);
     }
-    it = macenv.find(f);
-    if (it != macenv.end())
-      macenv.erase(it);
   } else if (f == 0 && temp > 0) {
     // purge all temporary symbols
     for (env::iterator it = globenv.begin(); it != globenv.end(); ) {
@@ -1555,6 +1552,59 @@ void interpreter::clear(int32_t f)
       }
     }
     if (temp > 1) --temp;
+  }
+}
+
+void interpreter::clear_mac(int32_t f)
+{
+  assert(f > 0);
+  env::iterator it = macenv.find(f);
+  if (it != macenv.end())
+    macenv.erase(it);
+}
+
+void interpreter::clear_rules(int32_t f, uint8_t level)
+{
+  assert(f > 0);
+  env::iterator it = globenv.find(f);
+  if (it != globenv.end()) {
+    env_info& e = it->second;
+    rulel& r = *e.rules;
+    bool d = false;
+    for (rulel::iterator it = r.begin(); it != r.end(); )
+      if (it->temp >= level) {
+	d = true;
+	it = r.erase(it);
+      } else
+	++it;
+    if (d) {
+      assert(!r.empty());
+      mark_dirty(f);
+    }
+  }
+}
+
+void interpreter::clear_mac_rules(int32_t f, uint8_t level)
+{
+  assert(f > 0);
+  env::iterator it = macenv.find(f);
+  if (it != macenv.end()) {
+    env_info& e = it->second;
+    rulel& r = *e.rules;
+    bool d = false;
+    for (rulel::iterator it = r.begin(); it != r.end(); )
+      if (it->temp >= temp) {
+	d = true;
+	it = r.erase(it);
+      } else
+	++it;
+    if (d) {
+      assert(!r.empty());
+      if (e.m) {
+	delete e.m;
+	e.m = 0;
+      }
+    }
   }
 }
 

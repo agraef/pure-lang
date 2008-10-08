@@ -419,6 +419,12 @@ public:
      symbol. If the given symbol is zero, pops the most most recent temporary
      definitions level, removing all definitions in that level. */
   void clear(int32_t tag = 0);
+  /* Purge the given macro symbol. */
+  void clear_mac(int32_t tag);
+  /* Purge the rules of the given function or macro symbol at or above the
+     given level. */
+  void clear_rules(int32_t tag, uint8_t level);
+  void clear_mac_rules(int32_t tag, uint8_t level);
 
   /* Process pending compilations of function definitions. This is also done
      automatically when eval() or defn()/const_defn() is invoked. */

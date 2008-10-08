@@ -431,7 +431,7 @@ mattag  ::{blank}*matrix
       case 'h':
 	cout <<
 "show command help: show [options ...] [symbol ...]\n\
-Options may be combined, e.g., show -tvl is the same as show -t -v -l.\n\
+Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 -a  Disassembles pattern matching automata. Useful for debugging purposes.\n\
 -c  Print information about defined constants.\n\
 -d  Disassembles LLVM IR, showing the generated LLVM assembler code of a\n\
@@ -451,8 +451,8 @@ Options may be combined, e.g., show -tvl is the same as show -t -v -l.\n\
 -s  Summary format, print just summary information about listed symbols.\n\
 -t[level] List only symbols and definitions at the given temporary level\n\
     (the current level by default) or above. Level 1 denotes all temporary\n\
-    definitions, level 0 *all* definitions. If no symbols are specified,\n\
-    -t1 is the default, -t0 otherwise.\n\
+    definitions, level 0 *all* definitions. If this option is omitted,\n\
+    it defaults to -t0 if any symbols are specified, -t1 otherwise.\n\
 -v  Print information about defined variables.\n";
 	goto out;
       default:
@@ -809,8 +809,8 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
     modules. Dump both private and public symbols if -p is omitted.\n\
 -t[level] Dump only symbols and definitions at the given temporary level\n\
     (the current level by default) or above. Level 1 denotes all temporary\n\
-    definitions, level 0 *all* definitions. If no symbols are specified,\n\
-    -t1 is the default, -t0 otherwise.\n\
+    definitions, level 0 *all* definitions. If this option is omitted,\n\
+    it defaults to -t0 if any symbols are specified, -t1 otherwise.\n\
 -v  Dump defined variables.\n";
 	goto out2;
       default:
@@ -1008,6 +1008,213 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
  out2:
   ;
 }
+^clear.* {
+  // clear command is only permitted in interactive mode
+  if (!interp.interactive) REJECT;
+  bool tflag = false; uint8_t tlevel = 0; int pflag = -1;
+  bool cflag = false, fflag = false, mflag = false, vflag = false;
+  bool gflag = false;
+  const char *s = yytext+5;
+  if (*s && !isspace(*s)) REJECT;
+  yylloc->step();
+  argl args(s, "clear");
+  list<string>::iterator arg;
+  if (!args.ok) goto out3;
+  // process option arguments
+  for (arg = args.l.begin(); arg != args.l.end(); arg++) {
+    const char *s = arg->c_str();
+    if (s[0] != '-' || !s[1] || !strchr("cfghmptv", s[1])) break;
+    while (*++s) {
+      switch (*s) {
+      case 'c': cflag = true; break;
+      case 'f': fflag = true; break;
+      case 'g': gflag = true; break;
+      case 'm': mflag = true; break;
+      case 'p':
+	if (isdigit(s[1])) {
+	  pflag = strtoul(s+1, 0, 10)>0;
+	  while (isdigit(s[1])) ++s;
+	} else
+	  pflag = 1;
+	break;
+      case 'v': vflag = true; break;
+      case 't':
+	if (isdigit(s[1])) {
+	  tlevel = strtoul(s+1, 0, 10);
+	  while (isdigit(s[1])) ++s;
+	} else
+	  tlevel = interp.temp;
+	tflag = true;
+	break;
+      case 'h':
+	cout <<
+"clear command help: clear [options ...] [symbol ...]\n\
+Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
+-c  Clear defined constants.\n\
+-f  Clear defined functions.\n\
+-g  Indicates that the following symbols are actually shell glob patterns\n\
+    and that all matching symbols should be cleared.\n\
+-h  Print this list.\n\
+-m  Clear defined macros.\n\
+-p[flag] Clear only private symbols in the current module if flag is\n\
+    nonzero (the default), otherwise clear only public symbols of all\n\
+    modules. Clear both private and public symbols if -p is omitted.\n\
+-t[level] Clear only symbols and definitions at the given temporary level\n\
+    (the current level by default) or above. Level 1 denotes all temporary\n\
+    definitions, level 0 *all* definitions. If this option is omitted,\n\
+    it defaults to -t0 if any symbols are specified, -t1 otherwise.\n\
+    NOTE: Just 'clear' without any arguments implies -t instead.\n\
+-v  Clear defined variables.\n";
+	goto out3;
+      default:
+	cerr << "show: invalid option character '" << *s << "'\n";
+	goto out3;
+      }
+    }
+  }
+  args.l.erase(args.l.begin(), arg);
+  if (!cflag && !fflag && !mflag && !vflag)
+    cflag = fflag = mflag = vflag = true;
+  if (!tflag && args.l.empty()) tlevel = 1;
+  if (args.l.empty() && cflag && fflag && mflag && vflag && pflag == -1) {
+    uint8_t old = interp.temp;
+    char ans;
+    // back out to the previous level by default
+    if (!tflag) tlevel = old;
+    // we never scrap any permanent definitions here
+    if (tlevel == 0) tlevel = 1;
+    cout << "This will clear all temporary definitions at level #"
+	 << (unsigned)tlevel
+	 << (tlevel<interp.temp?" and above":"")
+	 << ".\nContinue (y/n)? ";
+    cin >> noskipws >> ans;
+    bool chk = ans == 'y';
+    if (cin.good() && chk) {
+      for (size_t i = tlevel; i <= old; i++)
+	interp.clear();
+    }
+    while (cin.good() && ans != '\n') cin >> noskipws >> ans;
+    cin.clear();
+    if (chk && old > 1)
+      cout << "clear: now at temporary definitions level #"
+	   << (unsigned)interp.temp << endl;
+    if (chk && interp.override)
+      cout << "clear: override mode is on\n";
+    goto out3;
+  }
+  {
+    list<env_sym> l; set<int32_t> syms;
+    for (env::const_iterator it = interp.globenv.begin();
+	 it != interp.globenv.end(); ++it) {
+      int32_t f = it->first;
+      const env_info& e = it->second;
+      const symbol& sym = interp.symtab.sym(f);
+      if (sym.modno >= 0 && sym.modno != interp.modno ||
+	  pflag >= 0 && (pflag > 0) != (sym.modno >= 0) ||
+	  !((e.t == env_info::fun)?fflag:
+	    (e.t == env_info::cvar)?cflag:
+	    (e.t == env_info::fvar)?vflag:0))
+	continue;
+      bool matches = e.temp >= tlevel;
+      if (!matches && args.l.empty() &&
+	  e.t == env_info::fun && fflag) {
+	// clear temporary rules for a non-temporary symbol
+	rulel::const_iterator r;
+	for (r = e.rules->begin(); r != e.rules->end(); r++)
+	  if (r->temp >= tlevel) {
+	    matches = true;
+	    break;
+	  }
+      }
+      if (!matches) continue;
+      if (!args.l.empty()) {
+	// see whether we actually want the defined symbol to be cleared
+	matches = false;
+	for (arg = args.l.begin(); arg != args.l.end(); ++arg) {
+	  if (gflag ? (!fnmatch(arg->c_str(), sym.s.c_str(), 0)) :
+	      (*arg == sym.s)) {
+	    matches = true;
+	    break;
+	  }
+	}
+      }
+      if (!matches) continue;
+      syms.insert(f);
+      l.push_back(env_sym(sym, it, interp.macenv.find(f),
+			  interp.externals.find(f)));
+    }
+    if (mflag) {
+      // also clear any symbols defined as macros, unless they've already been
+      // considered
+      for (env::const_iterator it = interp.macenv.begin();
+	   it != interp.macenv.end(); ++it) {
+	int32_t f = it->first;
+	if (syms.find(f) == syms.end()) {
+	  const env_info& e = it->second;
+	  const symbol& sym = interp.symtab.sym(f);
+	  if (sym.modno >= 0 && sym.modno != interp.modno ||
+	      pflag >= 0 && (pflag > 0) != (sym.modno >= 0))
+	    continue;
+	  bool matches = e.temp >= tlevel;
+	  if (!matches && args.l.empty()) {
+	    // also clear temporary rules for a non-temporary symbol
+	    rulel::const_iterator r;
+	    for (r = e.rules->begin(); r != e.rules->end(); r++)
+	      if (r->temp >= tlevel) {
+		matches = true;
+		break;
+	      }
+	  }
+	  if (!matches) continue;
+	  if (!args.l.empty()) {
+	    // see whether we actually want the defined symbol to be cleared
+	    matches = false;
+	    for (arg = args.l.begin(); arg != args.l.end(); ++arg) {
+	      if (gflag ? (!fnmatch(arg->c_str(), sym.s.c_str(), 0)) :
+		  (*arg == sym.s)) {
+		matches = true;
+		break;
+	      }
+	    }
+	  }
+	  if (!matches) continue;
+	  syms.insert(f);
+	  l.push_back(env_sym(sym, interp.globenv.end(), it,
+			      interp.externals.end()));
+	}
+      }
+    }
+    if (l.empty()) goto out3;
+    for (list<env_sym>::const_iterator it = l.begin();
+	 it != l.end(); ++it) {
+      const symbol& sym = *it->sym;
+      int32_t ftag = sym.f;
+      map<int32_t,Env>::iterator fenv = interp.globalfuns.find(ftag);
+      const env::const_iterator jt = it->it, kt = it->jt;
+      if (jt != interp.globenv.end() &&
+	  (jt->second.t == env_info::fvar||jt->second.t == env_info::cvar)) {
+	interp.clear(sym.f);
+      } else {
+	if (mflag && kt != interp.macenv.end()) {
+	  const env_info& e = kt->second;
+	  if (e.temp >= tlevel)
+	    interp.clear_mac(sym.f);
+	  else
+	    interp.clear_mac_rules(sym.f, tlevel);
+	}
+	if (fflag && jt != interp.globenv.end()) {
+	  const env_info& e = jt->second;
+	  if (e.temp >= tlevel)
+	    interp.clear(sym.f);
+	  else
+	    interp.clear_rules(sym.f, tlevel);
+	}
+      }
+    }
+  }
+ out3:
+  ;
+}
 ^save.* {
   // save command is only permitted in interactive mode
   if (!interp.interactive) REJECT;
@@ -1025,39 +1232,6 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
     cout << "save: now at temporary definitions level #"
 	 << (unsigned)++interp.temp << endl;
     if (interp.override) cout << "save: override mode is on\n";
-  }
-}
-^clear.* {
-  // clear command is only permitted in interactive mode
-  if (!interp.interactive) REJECT;
-  const char *s = yytext+5;
-  if (*s && !isspace(*s)) REJECT;
-  yylloc->step();
-  argl args(s, "clear");
-  if (!args.ok)
-    ;
-  else if (args.c > 0) {
-    list<string>::iterator s;
-    for (s = args.l.begin(); s != args.l.end(); s++) {
-      const symbol *sym = interp.symtab.lookup(*s, interp.modno);
-      if (sym && sym->f > 0)
-	interp.clear(sym->f);
-      else
-	cerr << "clear: symbol '" << *s << "' not defined\n";
-    }
-  } else {
-    uint8_t old = interp.temp;
-    char ans;
-    cout << "This will clear all temporary definitions at level #"
-	 << (unsigned)interp.temp << ". Continue (y/n)? ";
-    cin >> noskipws >> ans;
-    if (cin.good() && ans == 'y') interp.clear();
-    while (cin.good() && ans != '\n') cin >> noskipws >> ans;
-    cin.clear();
-    if (old > 1)
-      cout << "clear: now at temporary definitions level #"
-	   << (unsigned)interp.temp << endl;
-    if (interp.override) cout << "clear: override mode is on\n";
   }
 }
 ^run.* {

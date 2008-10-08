@@ -2223,8 +2223,8 @@ is also possible to override the print representation of any kind of
 expression by means of the
 .B __show__
 function, see the CAVEATS AND NOTES section for details.
-.PP
-When running interactively, the interpreter also accepts a number of special
+.SS Interactive Commands
+When running interactively, the interpreter accepts a number of special
 commands useful for interactive purposes. Here is a quick rundown of the
 currently supported operations:
 .TP
@@ -2234,82 +2234,57 @@ Shell escape.
 \fBcd\fP \fIdir\fP
 Change the current working dir.
 .TP
-\fBclear\fP [\fIsymbol\fP ...]
+\fBclear\fP [\fIoption\fP ...] [\fIsymbol\fP ...]
 Purge the definitions of the given symbols (functions, macros, constants or
-global variables). If no symbols are given, purge \fIall\fP definitions (after
-confirmation) made after the most recent
+global variables). When invoked without any arguments,
+.B clear
+purges
+.I all
+definitions at the current interactive ``level'' (after confirmation) and
+returns you to the previous one, if any. (It might be a good idea to first
+check your current definitions with \fBshow\fP or back them up with \fBdump\fP
+before you do that.) The desired level can be specified with the
+.B -t
+option. See the description of the
 .B save
-command, or the beginning of the interactive session. (It might be a good idea
-to first check your current definitions with \fBshow -t\fP or save them with
-\fBdump\fP before you do this, though.) See the DEFINITION LEVELS section
-below for details.
+command and ``Definition Levels'' below for further details. A description of
+the common options accepted by the
+.BR clear ,
+.B dump
+and
+.B show
+commands can be found in ``Specifying Symbol Selections'' below.
 .TP
-\fBdump\fP [\fIoption\fP ...] [\fIsymbol\fP ...]
+\fBdump\fP [-n \fIfilename\fP] [\fIoption\fP ...] [\fIsymbol\fP ...]
 Dump a snapshot of the current function, macro, constant and variable
 definitions in Pure syntax to a text file. This works similar to the
 .B show
-command (see below and the SHOW COMMAND section), but writes the definitions
-to a file.
-.sp
-This command only supports a subset of the
-.B show
-options, type
-.B dump -h
-for a description of these. Also note that by default the
-.B dump
-command only writes interactive definitions to the output file, which is
-equivalent to the
-.B -t1
-option of the
-.B show
-command. Presumably this is the most common usage, but using the
-.B -t
-option, you can select any definitions level just as with
-.BR show .
-In particular,
-.B dump -t
-saves only the definitions made after the most recent
-.B save
-command, and
-.B dump -t0
-can be used to dump the
-.I entire
-program (including the definitions of the prelude), which can be useful for
-debugging purposes.
-.sp
-The default output file is
+command (see below), but writes the definitions to a file. The default output
+file is
 .B .pure
 in the current directory, which is then reloaded automatically the next time
 the interpreter starts up in interactive mode in the same directory. This
 provides a quick-and-dirty means to save an interactive session and have it
-restored later. Please note that this isn't perfect; in order to properly
-handle
+restored later. Please note that this isn't perfect. In particular,
+declarations of
 .B extern
-and
-.B using
-declarations and other special cases such as thunks and pointers stored in
-variables, you'll probably have to prepare a corresponding
+symbols won't be saved unless they're specified explicitly, and some objects
+like closures, thunks and pointers don't have a textual representation from
+which they could be reconstructed. To handle these, you'll probably have to
+prepare a corresponding
 .B .purerc
 file yourself, see ``Startup Files'' below.
 .sp
 A different filename can be specified with the
 .B -n
-option. You can then edit that file and use it as a starting point for an
-ordinary script or a
+option, which expects the name of the script to be written in the next
+argument, e.g: \fBdump -n myscript.pure\fP. You can then edit that file and
+use it as a starting point for an ordinary script or a
 .B .purerc
 file, or you can just run the file with the
 .B run
 command (see below) to restore the definitions in a subsequent interpreter
 session.
-.sp
-You can also specify a subset of symbols to be saved. Shell glob patterns can
-be used if the
-.B -g
-option is given. Options may be combined; e.g.,
-.B "dump -nfg foo.pure foo*"
-is just the same as
-.BR "dump -n foo.pure -f -g foo*" ,
-and dumps all functions whose names start with `foo' to the file `foo.pure'.
 .TP
 \fBhelp\fP [\fIargs\fP]
 Display the
@@ -2324,7 +2299,7 @@ List files (shell \fBls\fP(1) command).
 .B override
 Enter ``override'' mode. This allows you to add equations ``above'' existing
 definitions in the source script, possibly overriding existing equations. See
-the DEFINITION LEVELS section below for details.
+``Definition Levels'' below for details.
 .TP
 .B pwd
 Print the current working dir (shell \fBpwd\fP(1) command).
@@ -2354,14 +2329,18 @@ loaded on the command line.)
 .B save
 Begin a new level of temporary definitions. A subsequent
 .B clear
-command (see above) will purge all definitions made after the most recent
+command (see above) will purge the definitions made since the most recent
 .B save
-(or the beginning of the interactive session). See the DEFINITION LEVELS
-section below for details.
+command. See ``Definition Levels'' below for details.
 .TP
 \fBshow\fP [\fIoption\fP ...] [\fIsymbol\fP ...]
-Show the definitions of symbols in various formats. See the SHOW COMMAND
-section below for details.
+Show the definitions of symbols in various formats. See ``The show Command''
+below for details. A description of the common options accepted by the
+.BR clear ,
+.B dump
+and
+.B show
+commands can be found in ``Specifying Symbol Selections'' below.
 .TP
 \fBstats\fP [on|off]
 Enables (default) or disables ``stats'' mode, in which various statistics are
@@ -2372,21 +2351,373 @@ profiling information may be provided.
 .B underride
 Exits ``override'' mode. This returns you to the normal mode of operation,
 where new equations are added `below'' previous rules of an existing function.
-See the DEFINITION LEVELS section below for details.
+See ``Definition Levels'' below for details.
 .PP
 Note that these special commands are only recognized at the beginning of the
 interactive command line (they are not reserved keywords of the Pure
 language). Thus it's possible to ``escape'' identifiers looking like commands
 by entering a space at the beginning of the line. However, the compiler also
 warns you about identifiers which might be mistaken as command names, so that
-you can avoid this kind of problem.
+you can easily avoid this kind of problem.
 .PP
-Some commands which are especially important for effective operation of the
-interpreter are discussed in more detail in the following sections.
+Some of the more advanced commands and options for power users are discussed
+in more detail in the following subsections.
+.SS Specifying Symbol Selections
+The
+.BR clear ,
+.B dump
+and
+.B show
+commands all accept the following options for specifying a subset of symbols
+and definitions on which to operate. Options may be combined, thus, e.g.,
+\fBshow -mft\fP is the same as \fBshow -m -f -t\fP. Some options specify
+optional numeric parameters; these must follow immediately behind the option
+character if present, as in
+.BR -t0 .
+.TP
+.B -c
+Selects defined constants.
+.TP
+.B -f
+Selects defined functions.
+.TP
+.B -g
+Indicates that the following symbols are actually shell glob patterns and that
+all matching symbols should be selected.
+.TP
+.B -m
+Select defined macros.
+.TP
+\fB-p\fP[\fIflag\fP]
+Select private symbols in the ``current'' module if \fIflag\fP is nonzero (the
+default), otherwise (\fIflag\fP is zero) select public symbols of all
+modules. If this option is omitted then both private and public symbols are
+selected. (Note: The ``current'' module is the main script specified when the
+interpreter was invoked on the command line, if any. This is either the first
+script file, or the script specified with \fB-x\fP if this option was given.)
+.TP
+\fB-t\fP[\fIlevel\fP]
+Select symbols and definitions at the given ``level'' of definitions and
+above. This is described in more detail below. Briefly, the executing program
+and all imported modules (including the prelude) are at level 0, while
+``temporary'' definitions made interactively in the interpreter are at level 1
+and above. Thus a \fIlevel\fP of 1 restricts the selection to all temporary
+definitions, whereas 0 indicates \fIall\fP definitions (i.e., everything,
+including the prelude). If \fIlevel\fP is omitted, it defaults to the current
+definitions level.
+.TP
+.B -v
+Select defined variables.
+.PP
+In addition, the
+.B -h
+option prints a short help message describing all available options of the
+command at hand.
+.PP
+If none of the
+.BR -c ,
+.BR -f ,
+.B -m
+and
+.B -v
+options are specified, then all kinds of symbols (constants, functions, macros
+and variables) are selected, otherwise only the specified categories will be
+considered.
+.PP
+A reasonable default is used if the \fB-t\fP option is completely absent. By
+default, if no symbols are specified, only temporary definitions are
+considered, which corresponds to
+.BR -t1 .
+Otherwise the command applies to
+.I all
+corresponding definitions, no matter whether they belong to the executing
+program, the prelude, or some temporary level, which has the same effect as
+.BR -t0 .
+This default choice can be overridden by specifying the desired level
+explicitly.
+.PP
+As a special case, just
+.B clear
+(without any other options or symbol arguments) always backs out to the
+.I previous
+definitions level (instead of level #1). This is inconsistent with the rules
+set out above, but is implemented this way for convenience and backward
+compatibility. Thus, if you really want to delete
+.I all
+your temporary definitions, use
+.B clear -t1
+instead. (See also ``Definition Levels'' below.)
+.PP
+Note that
+.B clear -g *
+will have pretty much the same disastrous consequences as the Unix command
+\fBrm -rf *\fP, so don't do that. Also note that a macro or function symbol
+may well have defining equations at different levels, in which case a command
+like \fBclear -t\fP\fIn\fP \fBfoo\fP might only affect some part of foo's
+definition. The
+.B dump
+and
+.B show
+commands work analogously (albeit less destructively). See ``Definition
+Levels'' below for some practical examples.
+.SS The show Command
+The
+.B show
+command can be used to obtain information about defined symbols in various
+formats. Besides the common selection options discussed above, this command
+recognizes the following additional options for specifying the content to be
+listed and the format to use.
+.TP
+.B -a
+Disassembles pattern matching automata. Works like the
+.B -v4
+option of the interpreter.
+.TP
+.B -d
+Disassembles LLVM IR, showing the generated LLVM assembler code of a
+function. Works like the
+.B -v8
+option of the interpreter.
+.TP
+.B -e
+Annotate printed definitions with lexical environment information (de Bruijn
+indices, subterm paths). Works like the
+.B -v2
+option of the interpreter.
+.TP
+.B -l
+Long format, prints definitions along with the summary symbol information.
+This implies \fB-s\fP.
+.TP
+.B -s
+Summary format, print just summary information about listed symbols.
+.PP
+Symbols are always listed in lexicographic order. Note that some of the
+options (in particular,
+.B -a
+and
+.BR -d )
+may produce excessive amounts of information. By setting the
+.B PURE_MORE
+environment variable accordingly, you can specify a shell command to be used
+for paging, usually
+.BR more (1)
+or
+.BR less (1).
+.PP
+For instance, to list all temporary definitions made in an interactive
+session, simply say:
+.sp
+.nf
+> \fBshow\fP
+.fi
+.PP
+You can also list a specific symbol, no matter whether it comes from the
+interactive command line, the executing script or the prelude:
+.sp
+.nf
+> \fBshow\fP foldl
+foldl f a x::matrix = foldl f a (list x);
+foldl f a s::string = foldl f a (chars s);
+foldl f a [] = a;
+foldl f a (x:xs) = foldl f (f a x) xs;
+.fi
+.PP
+Wildcards can be used with the
+.B -g
+option, which is useful if you want to print an entire family of related
+functions, e.g.:
+.sp
+.nf
+> \fBshow\fP -g foldl*
+foldl f a x::matrix = foldl f a (list x);
+foldl f a s::string = foldl f a (chars s);
+foldl f a [] = a;
+foldl f a (x:xs) = foldl f (f a x) xs;
+foldl1 f x::matrix = foldl1 f (list x);
+foldl1 f s::string = foldl1 f (chars s);
+foldl1 f (x:xs) = foldl f x xs;
+.fi
+.PP
+Multiple symbols can be specified, too:
+.sp
+.nf
+> \fBshow\fP min max
+max x y = if x>=y then x else y;
+min x y = if x<=y then x else y;
+.fi
+.PP
+You can also select symbols by category. E.g., the following command shows
+summary information about all the variable symbols along with their current
+values (using the ``long format''):
+.sp
+.nf
+> \fBshow\fP -lvg *
+argc         var  argc = 0;
+argv         var  argv = [];
+gsl_version  var  gsl_version = "1.9";
+sysinfo      var  sysinfo = "i686-pc-linux-gnu";
+version      var  version = "0.11";
+5 variables
+.fi
+.PP
+Or you can list just the private symbols of the current module, as follows:
+.sp
+.nf
+> \fBshow\fP -pg *
+.fi
+.PP
+Finally, the following command will list each and every symbol that's
+currently defined (instead of \fB-g *\fP you can also use the \fB-t0\fP
+option):
+.sp
+.nf
+> \fBshow\fP -g *
+.fi
+.PP
+This usually produces a lot of output and is rarely needed, unless you'd like
+to browse through an entire program including all library imports. (In that
+case you might consider to use the
+.B dump
+command instead, which writes the definitions to a file which can then be
+loaded into a text editor for easier viewing. This may occasionally be useful
+for debugging purposes.)
+.SS Definition Levels
+To help with incremental development, the interpreter offers some facilities
+to manipulate the current set of definitions interactively. To these ends,
+definitions are organized into different subsets called \fIlevels\fP. As
+already mentioned, the prelude, as well as other source programs specified
+when invoking the interpreter, are always at level 0, while the interactive
+environment starts at level 1.
+.PP
+Each \fBsave\fP command introduces a new temporary level, and each subsequent
+\fBclear\fP command (without any arguments) ``pops'' the definitions on the
+current level and returns you to the previous one (if any). This gives you a
+``stack'' of up to 255 temporary environments which enables you to ``plug and
+play'' in a (more or less) safe fashion, without affecting the rest of your
+program. Example:
+.sp
+.nf
+> foo (x:xs) = x+foo xs;
+> foo [] = 0;
+> \fBshow\fP
+foo (x:xs) = x+foo xs;
+foo [] = 0;
+> foo (1..10);
+55
+> \fBclear\fP
+This will clear all temporary definitions at level #1.
+Continue (y/n)? \fBy\fP
+> \fBshow\fP
+> foo (1..10);
+foo [1,2,3,4,5,6,7,8,9,10]
+.fi
+.PP
+We've seen already that normally, if you enter a sequence of equations, they
+will be recorded in the order in which they were written. However, it is also
+possible to override definitions in lower levels with the
+.B override
+command:
+.sp
+.nf
+> foo (x:xs) = x+foo xs;
+> foo [] = 0;
+> \fBshow\fP
+foo (x:xs) = x+foo xs;
+foo [] = 0;
+> foo (1..10);
+55
+> \fBsave\fP
+save: now at temporary definitions level #2
+> \fBoverride\fP
+> foo (x:xs) = x*foo xs;
+> \fBshow\fP
+foo (x:xs) = x*foo xs;
+foo (x:xs) = x+foo xs;
+foo [] = 0;
+> foo (1..10);
+0
+.fi
+.PP
+Note that the equation `foo (x:xs) = x*foo xs;' was inserted before the
+previous `foo (x:xs) = x+foo xs;' rule, which is at level #1.
+.PP
+Even in override mode, new definitions will be added \fIafter\fP other
+definitions at the \fIcurrent\fP level. This allows us to just continue adding
+more high-priority definitions overriding lower-priority ones:
+.sp
+.nf
+> foo [] = 1;
+> \fBshow\fP
+foo (x:xs) = x*foo xs;
+foo [] = 1;
+foo (x:xs) = x+foo xs;
+foo [] = 0;
+> foo (1..10);
+warning: rule never reduced: foo (x:xs) = x+foo xs;
+warning: rule never reduced: foo [] = 0;
+3628800
+.fi
+.PP
+Again, the new equation was inserted \fIabove\fP the existing lower-priority
+rules, but \fIbelow\fP our previous `foo (x:xs) = x*foo xs;' equation entered
+at the same level. As you can see, we have now effectively replaced our
+original definition of `foo' with a version that calculates list products
+instead of sums, but of course we can easily go back one level to restore the
+previous definition:
+.sp
+.nf
+> \fBclear\fP
+This will clear all temporary definitions at level #2.
+Continue (y/n)? \fBy\fP
+clear: now at temporary definitions level #1
+clear: override mode is on
+> \fBshow\fP
+foo (x:xs) = x+foo xs;
+foo [] = 0;
+> foo (1..10);
+55
+.fi
+.PP
+Note that
+.B clear
+reminded us that override mode is still enabled (\fBsave\fP will do the same
+if override mode is on while pushing a new definitions level). To turn it off
+again, use the
+.B underride
+command. This will revert to the normal behaviour of adding new equations
+below existing ones:
+.sp
+.nf
+> \fBunderride\fP
+.fi
+.PP
+Finally, it's also possible to use
+.B clear
+to back out multiple levels at once, if you specify the target level to be
+cleared with the
+.B -t
+option. For instance:
+.sp
+.nf
+> \fBsave\fP
+save: now at temporary definitions level #2
+> \fBlet\fP bar = 99;
+> \fBshow\fP
+let bar = 99;
+foo (x:xs) = x+foo xs;
+foo [] = 0;
+> \fBclear\fP -t1 // this scraps \fIall\fP our scribblings!
+This will clear all temporary definitions at level #1 and above.
+Continue (y/n)? \fBy\fP
+clear: now at temporary definitions level #1
+> \fBshow\fP
+>
+.fi
 .SS Startup Files
 In interactive mode, the interpreter also runs some additional scripts at
 startup, after loading the prelude and the scripts specified on the command
-line.
+line. This lets you tailor the interactive environment to your liking.
 .PP
 The interpreter first looks for a
 .B .purerc
@@ -2416,241 +2747,6 @@ The interpreter processes all these files in the same way as with the
 command (see above). When invoking the interpreter, you can specify the
 .B --norc
 option on the command line if you wish to skip these initializations.
-.SH SHOW COMMAND
-In interactive mode, the
-.B show
-command can be used to obtain information about defined symbols in various
-formats. This command recognizes the following options. Options may be
-combined, thus, e.g., \fBshow\fP -tvl is the same as \fBshow\fP -t -v -l.
-.TP
-.B -a
-Disassembles pattern matching automata. Works like the
-.B -v4
-option of the interpreter.
-.TP
-.B -c
-Print information about defined constants.
-.TP
-.B -d
-Disassembles LLVM IR, showing the generated LLVM assembler code of a
-function. Works like the
-.B -v8
-option of the interpreter.
-.TP
-.B -e
-Annotate printed definitions with lexical environment information (de Bruijn
-indices, subterm paths). Works like the
-.B -v2
-option of the interpreter.
-.TP
-.B -f
-Print information about defined functions.
-.TP
-.B -g
-Indicates that the following symbols are actually shell glob patterns and that
-all matching symbols should be listed.
-.TP
-.B -h
-Print a short help message.
-.TP
-.B -l
-Long format, prints definitions along with the summary symbol information.
-This implies \fB-s\fP.
-.TP
-.B -m
-Print information about defined macros.
-.TP
-\fB-p\fP[\fIflag\fP]
-List only private symbols in the current module if \fIflag\fP is nonzero (the
-default), otherwise (\fIflag\fP is zero) list only public symbols of all
-modules. List both private and public symbols if -p is omitted. The
-\fIflag\fP parameter, if given, must immediately follow the option character.
-.TP
-.B -s
-Summary format, print just summary information about listed symbols.
-.TP
-\fB-t\fP[\fIlevel\fP]
-List only ``temporary'' symbols and definitions at the given \fIlevel\fP (the
-current level by default) or above. The \fIlevel\fP parameter, if given, must
-immediately follow the option character. A \fIlevel\fP of 1 denotes all
-temporary definitions, whereas 0 indicates \fIall\fP definitions (which is the
-default if \fB-t\fP is not specified). See the DEFINITION LEVELS section below
-for information about the notion of temporary definition levels.
-.TP
-.B -v
-Print information about defined variables.
-.PP
-If none of the
-.BR -c ,
-.BR -f ,
-.B -m
-and
-.B -v
-options are specified, then all kinds of symbols (constants, functions, macros
-and variables) are printed, otherwise only the specified categories will be
-listed.
-.PP
-Note that some of the options (in particular,
-.B -a
-and
-.BR -d )
-may produce excessive amounts of information. By setting the
-.B PURE_MORE
-environment variable accordingly, you can specify a shell command to be used
-for paging, usually
-.BR more (1)
-or
-.BR less (1).
-.PP
-For instance, to list all definitions in all loaded scripts (including the
-prelude), simply say:
-.sp
-.nf
-> \fBshow\fP
-.fi
-.PP
-This may produce quite a lot of output, depending on which scripts are
-loaded. The following command will only show summary information about the
-variable symbols along with their current values (using the ``long format''):
-.sp
-.nf
-> \fBshow\fP -lv
-argc     var  argc = 0;
-argv     var  argv = [];
-sysinfo  var  sysinfo = "i686-pc-linux-gnu";
-version  var  version = "@version@";
-4 variables
-.fi
-.PP
-If you're like me then you'll frequently have to look up how some operations
-are defined. No sweat, with the Pure interpreter there's no need to dive into
-the sources, the
-.B show
-command can easily do it for you. For instance, here's how you can list the
-definitions of all ``fold-left'' operations from the prelude in one go:
-.sp
-.nf
-> \fBshow\fP -g foldl*
-foldl f a x::matrix = foldl f a (list x);
-foldl f a s::string = foldl f a (chars s);
-foldl f a [] = a;
-foldl f a (x:xs) = foldl f (f a x) xs;
-foldl1 f x::matrix = foldl1 f (list x);
-foldl1 f s::string = foldl1 f (chars s);
-foldl1 f (x:xs) = foldl f x xs;
-.fi
-.SH DEFINITION LEVELS
-To help with incremental development, the interpreter also offers some
-facilities to manipulate the current set of definitions interactively. To
-these ends, definitions are organized into different subsets called
-\fIlevels\fP. The prelude, as well as other source programs specified when
-invoking the interpreter, are always at level 0, while the interactive
-environment starts at level 1.
-.PP
-Each \fBsave\fP command introduces a new temporary level, and each subsequent
-\fBclear\fP command ``pops'' the definitions on the current level (including
-any definitions read using the
-.B run
-command) and returns you to the previous one (if any). This gives you a
-``stack'' of up to 255 temporary environments which enables you to ``plug and
-play'' in a (more or less) safe fashion, without affecting the rest of your
-program. Example:
-.sp
-.nf
-> foo (x:xs) = x+foo xs;
-> foo [] = 0;
-> \fBshow\fP -t
-foo (x:xs) = x+foo xs;
-foo [] = 0;
-> foo (1..10);
-55
-> \fBclear\fP
-This will clear all temporary definitions at level #1. Continue (y/n)? y
-> \fBshow\fP foo
-> foo (1..10);
-foo [1,2,3,4,5,6,7,8,9,10]
-.fi
-.PP
-(Please note that the
-.B clear
-command only works in this way when invoked without arguments. Otherwise the
-symbols given as arguments will be purged unconditionally, at all levels.)
-.PP
-We've seen already that normally, if you enter a sequence of equations, they
-will be recorded in the order in which they were written. However, it is also
-possible to override definitions in lower levels with the
-.B override
-command:
-.sp
-.nf
-> foo (x:xs) = x+foo xs;
-> foo [] = 0;
-> \fBshow\fP foo
-foo (x:xs) = x+foo xs;
-foo [] = 0;
-> foo (1..10);
-55
-> \fBsave\fP
-save: now at temporary definitions level #2
-> \fBoverride\fP
-> foo (x:xs) = x*foo xs;
-> \fBshow\fP foo
-foo (x:xs) = x*foo xs;
-foo (x:xs) = x+foo xs;
-foo [] = 0;
-> foo (1..10);
-0
-.fi
-.PP
-Note that the equation `foo (x:xs) = x*foo xs;' was inserted before the
-previous `foo (x:xs) = x+foo xs;' rule, which is at level #1.
-.PP
-Even in override mode, new definitions will be added \fIafter\fP other
-definitions at the \fIcurrent\fP level. This allows us to just continue adding
-more high-priority definitions overriding lower-priority ones:
-.sp
-.nf
-> foo [] = 1;
-> \fBshow\fP foo
-foo (x:xs) = x*foo xs;
-foo [] = 1;
-foo (x:xs) = x+foo xs;
-foo [] = 0;
-> foo (1..10);
-3628800
-.fi
-.PP
-Again, the new equation was inserted \fIabove\fP the existing lower-priority
-rules, but \fIbelow\fP our previous `foo (x:xs) = x*foo xs;' equation entered
-at the same level. As you can see, we have now effectively replaced our
-original definition of `foo' with a version that calculates list products
-instead of sums, but of course we can easily go back one level to restore the
-previous definition:
-.sp
-.nf
-> \fBclear\fP
-This will clear all temporary definitions at level #2. Continue (y/n)? y
-clear: now at temporary definitions level #1
-clear: override mode is on
-> \fBshow\fP foo
-foo (x:xs) = x+foo xs;
-foo [] = 0;
-> foo (1..10);
-55
-.fi
-.PP
-Note that
-.B clear
-reminded us that override mode is still enabled (\fBsave\fP will do the same
-if override mode is on while pushing a new definitions level). To turn it off
-again, use the
-.B underride
-command. This will revert to the normal behaviour of adding new equations
-below existing ones:
-.sp
-.nf
-> \fBunderride\fP
-.fi
 .SH CAVEATS AND NOTES
 This section is a grab bag of casual remarks, useful tips and tricks, and
 information on common pitfalls, quirks and limitations of the current
