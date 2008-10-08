@@ -2774,6 +2774,15 @@ arithmetic sequences with arbitrary stepsize are now written x:y..z instead of
 x,y..z, and the `..' operator now has a higher precedence than the `,'
 operator. This makes writing matrix slices like x!!(i..j,k..l) much more
 convenient.
+.SS Error Recovery
+The parser uses a fairly simplistic panic mode error recovery which tries to
+catch syntax errors at the toplevel only. This seems to work reasonably well,
+but might catch some errors much too late. Unfortunately, Pure's terseness
+makes it rather difficult to design a better scheme. As a remedy, the parser
+accepts an empty definition (just `;' by itself) at the toplevel only. Thus,
+in interactive usage, if the parser seems to eat away your input without doing
+anything, entering an extra semicolon or two should break the spell, putting
+you back at the toplevel where you can start typing the definition again.
 .SS Debugging
 There's no symbolic debugger yet. So
 .BR printf (3)
