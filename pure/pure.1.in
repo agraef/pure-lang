@@ -48,7 +48,7 @@ variable.
 Pure is a modern-style functional programming language based on term
 rewriting. Pure programs are basically collections of equational rules used to
 evaluate expressions in a symbolic fashion by reducing them to normal form. A
-brief overview of the language can be found in the PURE OVERVIEW section
+brief overview of the language can be found in the \fIPURE OVERVIEW\fP section
 below. (In case you're wondering, the name ``Pure'' actually refers to the
 adjective. But you can also write it as ``PURE'' and take this as a recursive
 acronym for the ``Pure Universal Rewriting Engine''.)
@@ -67,7 +67,8 @@ highlighting files and programming modes for various popular text editors are
 included in the Pure sources. There's no difference between the Pure
 programming language and the input language accepted by the interpreter,
 except that the interpreter also understands some special commands when
-running in interactive mode; see the INTERACTIVE USAGE section for details.
+running in interactive mode; see the \fIINTERACTIVE USAGE\fP section for
+details.
 .PP
 If any source scripts are specified on the command line, they are loaded and
 executed, after which the interpreter exits. Otherwise the interpreter enters
@@ -138,7 +139,8 @@ including the directories named with the
 .B -I
 and
 .B -L
-options; see the sections DECLARATIONS and C INTERFACE below for details.
+options; see the sections \fIDECLARATIONS\fP and \fIC INTERFACE\fP below for
+details.
 .PP
 If the interpreter runs in interactive mode, it may source a few additional
 interactive startup files immediately before entering the interactive loop,
@@ -152,16 +154,16 @@ in the current working directory. These are ordinary Pure scripts which can be
 used to provide additional definitions for interactive usage. Finally, a
 .B .pure
 file in the current directory (containing a dump from a previous interactive
-session) is loaded if it is present. See the INTERACTIVE USAGE section for
-details.
+session) is loaded if it is present. See the \fIINTERACTIVE USAGE\fP section
+for details.
 .PP
 When the interpreter is in interactive mode and reads from a tty, unless the
 .B --noediting
 option is specified, commands are read using
 .BR readline (3)
-(providing completion for all commands listed under INTERACTIVE USAGE, as well
-as for symbols defined in the running program). When exiting the interpreter,
-the command history is stored in
+(providing completion for all commands listed under \fIINTERACTIVE USAGE\fP,
+as well as for symbols defined in the running program). When exiting the
+interpreter, the command history is stored in
 .BR ~/.pure_history ,
 from where it is restored the next time you run the interpreter.
 .PP
@@ -220,8 +222,8 @@ modules imported through a
 .B using
 clause. As a remedy, you can use the interactive
 .B show
-command (see the INTERACTIVE USAGE section below) to list definitions along
-with additional debugging information.
+command (see the \fIINTERACTIVE USAGE\fP section below) to list definitions
+along with additional debugging information.
 .SH PURE OVERVIEW
 .PP
 Pure is a fairly simple yet powerful language. Programs are basically
@@ -399,7 +401,7 @@ Unicode.
 .sp
 Operator and constant symbols must always be declared before they can be used,
 using corresponding \fBprefix\fP, \fBpostfix\fP, \fBinfix\fP and \fBnullary\fP
-declarations, which are discussed in section DECLARATIONS.
+declarations, which are discussed in section \fIDECLARATIONS\fP.
 .sp
 Note that enclosing an operator in parentheses, such as (+) or (\fBnot\fP),
 turns it into an ordinary function symbol. Symbols declared as \fBnullary\fP
@@ -458,7 +460,7 @@ GSL support then symbolic matrices are the only kind of matrices supported by
 the interpreter.
 .sp
 More information about matrices and corresponding examples can be found in the
-EXAMPLES section below.
+\fIEXAMPLES\fP section below.
 .TP
 \fBComprehensions:\fP [x,y | x=1..n; y=1..m; x<y], {i!=j | i=1..n; j=1..m}
 Pure provides the usual comprehension syntax as a convenient means to
@@ -476,7 +478,7 @@ Matrix comprehensions work pretty much like list comprehensions, but produce
 matrices instead of lists. Generator clauses in matrix comprehensions
 alternate between row and column generation so that most common mathematical
 abbreviations carry over quite easily. Examples of both kinds of
-comprehensions can be found in the EXAMPLES section below.
+comprehensions can be found in the \fIEXAMPLES\fP section below.
 .TP
 \fBFunction applications:\fP foo x y z
 As in other modern FPLs, these are written simply as juxtaposition (i.e., in
@@ -602,7 +604,7 @@ structures in Pure, in particular: lazy lists a.k.a.
 A stream is simply a list with a thunked tail, which allows it to be
 infinite. The Pure prelude defines many functions for creating and
 manipulating these kinds of objects; further details and examples can be found
-in the EXAMPLES section below.
+in the \fIEXAMPLES\fP section below.
 .SS Toplevel
 At the toplevel, a Pure program basically consists of rewriting rules (which
 are used to define functions and macros), constant and variable definitions,
@@ -630,7 +632,7 @@ may be used to denote an empty guard which is always true (this is syntactic
 sugar to point out the ``default'' case of a definition; the interpreter just
 treats this as a comment). Pure also provides some abbreviations for factoring
 out common left-hand or right-hand sides in collections of rules; see section
-RULE SYNTAX below for details.
+\fIRULE SYNTAX\fP below for details.
 .TP
 \fBMacro rules:\fP \fBdef\fP \fIlhs\fP = \fIrhs\fP;
 A rule starting with the keyword
@@ -641,7 +643,7 @@ function. No guards or multiple left-hand and right-hand sides are permitted
 here. Macro rules are used to preprocess expressions on the right-hand side of
 other definitions at compile time, and are typically employed to implement
 user-defined special forms and simple kinds of optimization rules. See the
-MACROS section below for details and examples.
+\fIMACROS\fP section below for details and examples.
 .TP
 \fBGlobal variable bindings:\fP \fBlet\fP \fIlhs\fP = \fIrhs\fP;
 Binds every variable in the left-hand side pattern to the corresponding
@@ -747,7 +749,7 @@ fact 10.0
 .fi
 .PP
 (In interactive mode, it is even possible to completely erase a definition,
-see section INTERACTIVE USAGE for details.)
+see section \fIINTERACTIVE USAGE\fP for details.)
 .PP
 So, while the meaning of a local symbol never changes once its definition has
 been processed, toplevel definitions may well evolve while the program is
@@ -890,8 +892,8 @@ fib n   = a  \fBwhen\fP a, b   = fibs n \fBend\fP
 .PP
 It is worth noting here that in most cases Pure performs tail call
 optimization so that tail-recursive definitions like the following will be
-executed in constant stack space (see the CAVEATS AND NOTES section for more
-details on this).
+executed in constant stack space (see the \fICAVEATS AND NOTES\fP section for
+more details on this).
 .sp
 .nf
 // tail-recursive factorial using an "accumulating parameter"
@@ -1185,8 +1187,8 @@ cell after having printed the corresponding stream element.)
 .SS Matrix Computations
 Pure offers a number of basic matrix operations, such as matrix construction,
 indexing, slicing, as well as getting the size and dimensions of a matrix
-(these are briefly described in the STANDARD LIBRARY section below). However,
-it does
+(these are briefly described in the \fISTANDARD LIBRARY\fP section
+below). However, it does
 .I not
 supply built-in support for matrix arithmetic and other linear algebra
 algorithms. The idea is that these can and should be provided through separate
@@ -1321,8 +1323,8 @@ transp i j p = [p!tr k | k=0..#p-1]
 .fi
 .PP
 Finally, let us define a convenient print representation of double matrices a
-la Octave (the meaning of the __show__ function is explained in the CAVEATS
-and NOTES section):
+la Octave (the meaning of the __show__ function is explained in the \fICAVEATS
+AND NOTES\fP section):
 .sp
 .nf
 \fBusing\fP system;
@@ -1492,9 +1494,9 @@ baz = x+1+1+1;
 Note that, technically, Pure macros are just as powerful as (unconditional)
 term rewriting systems and thus they are Turing-complete. This implies that a
 badly written macro may well send the Pure compiler into an infinite
-recursion, which results in a stack overflow at compile time. See the CAVEATS
-AND NOTES section at the end of this manual for information on how to deal
-with these by setting the
+recursion, which results in a stack overflow at compile time. See the
+\fICAVEATS AND NOTES\fP section at the end of this manual for information on
+how to deal with these by setting the
 .B PURE_STACK
 environment variable.
 .SS Convenience Macros
@@ -1617,8 +1619,8 @@ fixity (operator) and
 .B nullary
 (constant symbol) declarations,
 .B extern
-declarations for external C functions (described in the C INTERFACE section),
-and
+declarations for external C functions (described in the \fIC INTERFACE\fP
+section), and
 .B using
 clauses which let you include other scripts in a Pure script.
 .TP
@@ -1684,7 +1686,7 @@ prefix may be used to denote private constant symbols), e.g.:
 \fBprivate\fP \fBnullary\fP nil;
 .fi
 .sp
-As explained in the PURE OVERVIEW section,
+As explained in the \fIPURE OVERVIEW\fP section,
 .B nullary
 symbols are like ordinary identifiers, but are treated as constants rather
 than variables when they occur on the left-hand side of an equation.
@@ -1706,7 +1708,7 @@ further detail below.
 Note that the
 .B using
 clause also has an alternative form which allows dynamic libraries to be
-loaded, this will be discussed in the C INTERFACE section.
+loaded, this will be discussed in the \fIC INTERFACE\fP section.
 .SS The `using' Declaration
 The
 .B using
@@ -1831,7 +1833,7 @@ error stack_fault
 (You'll only get the latter kind of exception if the interpreter does stack
 checks, see the discussion of the
 .B PURE_STACK
-environment variable in the CAVEATS AND NOTES section.)
+environment variable in the \fICAVEATS AND NOTES\fP section.)
 .PP
 Note that unhandled exceptions are reported by the interpreter with a
 corresponding error message:
@@ -2069,7 +2071,7 @@ be imported into your Pure program by means of corresponding
 declarations.
 .PP
 Shared libraries opened with \fBusing\fP clauses are searched for in the same
-way as source scripts (see section DECLARATIONS above), using the
+way as source scripts (see section \fIDECLARATIONS\fP above), using the
 .B -L
 option and the
 .B PURE_LIBRARY
@@ -2222,7 +2224,7 @@ printed in the format \fB#<\fP\fIobject description\fP\fB>\fP by default. It
 is also possible to override the print representation of any kind of
 expression by means of the
 .B __show__
-function, see the CAVEATS AND NOTES section for details.
+function, see the \fICAVEATS AND NOTES\fP section for details.
 .SS Interactive Commands
 When running interactively, the interpreter accepts a number of special
 commands useful for interactive purposes. Here is a quick rundown of the
@@ -2241,19 +2243,19 @@ global variables). When invoked without any arguments,
 purges
 .I all
 definitions at the current interactive ``level'' (after confirmation) and
-returns you to the previous one, if any. (It might be a good idea to first
+returns you to the previous level, if any. (It might be a good idea to first
 check your current definitions with \fBshow\fP or back them up with \fBdump\fP
 before you do that.) The desired level can be specified with the
 .B -t
 option. See the description of the
 .B save
-command and ``Definition Levels'' below for further details. A description of
-the common options accepted by the
+command and \fIDefinition Levels\fP below for further details. A description
+of the common options accepted by the
 .BR clear ,
 .B dump
 and
 .B show
-commands can be found in ``Specifying Symbol Selections'' below.
+commands can be found in \fISpecifying Symbol Selections\fP below.
 .TP
 \fBdump\fP [-n \fIfilename\fP] [\fIoption\fP ...] [\fIsymbol\fP ...]
 Dump a snapshot of the current function, macro, constant and variable
@@ -2264,8 +2266,8 @@ file is
 .B .pure
 in the current directory, which is then reloaded automatically the next time
 the interpreter starts up in interactive mode in the same directory. This
-provides a quick-and-dirty means to save an interactive session and have it
-restored later. Please note that this isn't perfect. In particular,
+provides a quick-and-dirty way to save an interactive session and have it
+restored later, but note that this isn't perfect yet. In particular,
 declarations of
 .B extern
 symbols won't be saved unless they're specified explicitly, and some objects
@@ -2273,7 +2275,7 @@ like closures, thunks and pointers don't have a textual representation from
 which they could be reconstructed. To handle these, you'll probably have to
 prepare a corresponding
 .B .purerc
-file yourself, see ``Startup Files'' below.
+file yourself, see \fIStartup Files\fP below.
 .sp
 A different filename can be specified with the
 .B -n
@@ -2299,7 +2301,7 @@ List files (shell \fBls\fP(1) command).
 .B override
 Enter ``override'' mode. This allows you to add equations ``above'' existing
 definitions in the source script, possibly overriding existing equations. See
-``Definition Levels'' below for details.
+\fIDefinition Levels\fP below for details.
 .TP
 .B pwd
 Print the current working dir (shell \fBpwd\fP(1) command).
@@ -2331,16 +2333,16 @@ Begin a new level of temporary definitions. A subsequent
 .B clear
 command (see above) will purge the definitions made since the most recent
 .B save
-command. See ``Definition Levels'' below for details.
+command. See \fIDefinition Levels\fP below for details.
 .TP
 \fBshow\fP [\fIoption\fP ...] [\fIsymbol\fP ...]
-Show the definitions of symbols in various formats. See ``The show Command''
+Show the definitions of symbols in various formats. See \fIThe show Command\fP
 below for details. A description of the common options accepted by the
 .BR clear ,
 .B dump
 and
 .B show
-commands can be found in ``Specifying Symbol Selections'' below.
+commands can be found in \fISpecifying Symbol Selections\fP below.
 .TP
 \fBstats\fP [on|off]
 Enables (default) or disables ``stats'' mode, in which various statistics are
@@ -2351,7 +2353,7 @@ profiling information may be provided.
 .B underride
 Exits ``override'' mode. This returns you to the normal mode of operation,
 where new equations are added `below'' previous rules of an existing function.
-See ``Definition Levels'' below for details.
+See \fIDefinition Levels\fP below for details.
 .PP
 Note that these special commands are only recognized at the beginning of the
 interactive command line (they are not reserved keywords of the Pure
@@ -2424,9 +2426,9 @@ options are specified, then all kinds of symbols (constants, functions, macros
 and variables) are selected, otherwise only the specified categories will be
 considered.
 .PP
-A reasonable default is used if the \fB-t\fP option is completely absent. By
-default, if no symbols are specified, only temporary definitions are
-considered, which corresponds to
+A reasonable default is used if the \fB-t\fP option is omitted. By default, if
+no symbols are specified, only temporary definitions are considered, which
+corresponds to
 .BR -t1 .
 Otherwise the command applies to
 .I all
@@ -2446,7 +2448,7 @@ compatibility. Thus, if you really want to delete
 .I all
 your temporary definitions, use
 .B clear -t1
-instead. (See also ``Definition Levels'' below.)
+instead. (See also \fIDefinition Levels\fP below.)
 .PP
 Note that
 .B clear -g *
@@ -2458,8 +2460,8 @@ definition. The
 .B dump
 and
 .B show
-commands work analogously (albeit less destructively). See ``Definition
-Levels'' below for some practical examples.
+commands work analogously (albeit less destructively). See \fIDefinition
+Levels\fP below for some examples.
 .SS The show Command
 The
 .B show
@@ -2539,7 +2541,10 @@ foldl1 f s::string = foldl1 f (chars s);
 foldl1 f (x:xs) = foldl f x xs;
 .fi
 .PP
-Multiple symbols can be specified, too:
+Or you can just specify multiple symbols as follows (this also works with
+multiple glob patterns when you add the
+.B -g
+option):
 .sp
 .nf
 > \fBshow\fP min max
@@ -2789,8 +2794,8 @@ There's no symbolic debugger yet. So
 (available in the
 .B system
 standard library module) should be your friend. ;-) Also, have a look at the
-MACROS section which discusses a little helper macro to trace global function
-calls in a semi-automatic fashion.
+\fIMACROS\fP section which discusses a little helper macro to trace global
+function calls in a semi-automatic fashion.
 .SS The __show__ Function
 As of Pure 0.6, the interpreter provides a ``hook'' to override the print
 representations of expressions at runtime by means of the
@@ -2899,7 +2904,7 @@ easily go back to the standard print syntax:
 .PP
 Note that if you have a set of definitions for the __show__ function which
 should always be loaded at startup, you can put them into the interpreter's
-interactive startup files, see INTERACTIVE USAGE.
+interactive startup files, see \fIINTERACTIVE USAGE\fP.
 .SS ``As'' Patterns
 In the current implementation, ``as'' patterns cannot be placed on the
 ``spine'' of a function definition. Thus rules like the following, which have
@@ -3300,11 +3305,11 @@ can be changed at any time during an interactive session, without having to
 recompile the entire program.) However, mutual tail recursion does work with
 \fIlocal\fP functions, so it's easy to work around this limitation.
 .SS Handling of Asynchronous Signals
-As described in section EXCEPTION HANDLING, signals delivered to the process
-can be caught and handled with Pure's exception handling facilities. Like
-stack checks, checks for pending signals are only performed at certain places,
-such as entry into a global function. This doesn't include tail calls,
-however, so a busy loop like `loop = loop;' will \fInever\fP be
+As described in section \fIEXCEPTION HANDLING\fP, signals delivered to the
+process can be caught and handled with Pure's exception handling
+facilities. Like stack checks, checks for pending signals are only performed
+at certain places, such as entry into a global function. This doesn't include
+tail calls, however, so a busy loop like `loop = loop;' will \fInever\fP be
 interrupted. To work around this, just add a call to another global function
 to your loop to make it interruptible. For instance:
 .sp
