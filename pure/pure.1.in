@@ -559,7 +559,7 @@ and
 .B or
 instead of `&' and `|', which are used for other purposes in Pure.
 .SS Special Forms
-As already mentioned, some operators are actually implemented as special
+As already mentioned, some operations are actually implemented as special
 forms. In particular, the conditional expression \fBif\fP x \fBthen\fP y
 \fBelse\fP z is a special form with call-by-name arguments y and z; only one
 of the branches is actually evaluated, depending on the value of x. Similarly,
@@ -605,6 +605,25 @@ A stream is simply a list with a thunked tail, which allows it to be
 infinite. The Pure prelude defines many functions for creating and
 manipulating these kinds of objects; further details and examples can be found
 in the \fIEXAMPLES\fP section below.
+.PP
+Last but not least, the special form
+.B quote
+quotes a (simple) expression, i.e., `quote x' returns just x itself
+\fIwithout\fP evaluating it. The runtime provides a function
+.B eval
+which can then be used to evaluate the quoted expression at a later time. For
+instance:
+.sp
+.nf
+> let x = quote (2*42+2^12); x;
+2*42+2^12
+> eval x;
+4180.0
+.fi
+.PP
+This facility should be well familiar to Lisp programmers. There's no built-in
+support for Lisp's quasiquote in Pure, but you can easily define that as a
+macro yourself, see the \fIMACROS\fP section for details.
 .SS Toplevel
 At the toplevel, a Pure program basically consists of rewriting rules (which
 are used to define functions and macros), constant and variable definitions,
@@ -1352,13 +1371,8 @@ Example:
 .SH MACROS
 Macros are a special type of functions to be executed as a kind of
 ``preprocessing stage'' at compile time. In Pure these are typically used to
-define custom special forms, and to perform inlining of function calls and
-other simple kinds of source-level optimizations. In the following, these are
-also referred to as
-.I convenience
-and
-.IR "optimization macros" ,
-respectively.
+define custom special forms and to perform inlining of function calls and
+other simple kinds of source-level optimizations.
 .PP
 Whereas the macro facilities of most programming languages simply provide a
 kind of textual substitution mechanism, Pure macros operate on symbolic
@@ -1380,7 +1394,7 @@ but they are processed in a different way. Macros are substituted into the
 right-hand sides of function, constant and variable definitions. All macro
 substitution happens before constant substitutions and the actual compilation
 step. Macros can be defined in terms of other macros (also recursively), and
-will be expanded using the leftmost-innermost reduction strategy (i.e., macro
+are expanded using the leftmost-innermost reduction strategy (i.e., macro
 calls in macro arguments are expanded before the macro gets applied to its
 parameters).
 .SS Optimization Rules
@@ -1480,15 +1494,69 @@ to write a macro which descends recursively into the lambda argument of
 `catmap'.)
 .SS Recursive Macros
 Macros can also be recursive, in which case they usually consist of multiple
-rules and make use of pattern-matching like ordinary function
-definitions. Example:
+rules and make use of pattern-matching like ordinary function definitions. As
+a simple example, let's implement Lisp's quasiquote in Pure. First, we define
+the usual
+.B unquote
+macro as follows:
 .sp
 .nf
-> \fBdef\fP foo (bar x) = foo x+1;
-> \fBdef\fP foo x = x;
-> baz = foo (bar (bar (bar x)));
-> \fBshow\fP baz
-baz = x+1+1+1;
+\fBdef\fP unquote x = y \fBwhen\fP y = x \fBend\fP;
+.fi
+.PP
+This works just like in Lisp, e.g.:
+.sp
+.nf
+> quote (2*42+unquote (2^12));
+2*42+4096.0
+.fi
+.PP
+(This neat little trick works because only simple expressions can be quoted,
+other constructs such as conditionals and local definitions embedded in the
+target expression will be evaluated as usual. See \fISpecial Forms\fP in the
+\fIPURE OVERVIEW\fP section for more information on
+.B quote
+and
+.BR eval ).
+.PP
+Now
+.B quasiquote
+can be defined in just three macro rules, as follows:
+.sp
+.nf
+\fBdef\fP quasiquote (f@_ (splice x)) = foldl ($) (quote f) (quote x);
+\fBdef\fP quasiquote (f@_ x)          = quote ((unquote (quasiquote f))
+                                         (unquote (quasiquote x)));
+\fBdef\fP quasiquote x                = quote x;
+.fi
+.PP
+The first rule above takes care of splicing an argument list into the
+enclosing function application. Note that
+.B splice
+itself is just a passive constructor symbol here, the preprocessing work is
+done by
+.BR quasiquote ,
+using
+.B foldl
+at runtime to really perform the splicing. (We defer the actual splicing until
+runtime since this allows us to splice arguments lists computed at runtime.)
+The second rule recurses into subterms of the function application, and the
+third and last rule takes care of quoting the ``atomic'' subterms.
+.PP
+We can even have some syntactic sugar for Lisp weenies:
+.sp
+.nf
+\fBprefix\fP 9 ` ,@ ;
+\fBdef\fP `x = quasiquote x; \fBdef\fP ,@x = splice x;
+.fi
+.PP
+Examples:
+.sp
+.nf
+> `(foo 1 2 (,@[2/3,3/4]) (5/6));
+foo 1 2 (2/3) (3/4) (5/6)
+> `(foo 1 2 (,@args) (5/6)) \fBwhen\fP args = quote [2/3,3/4] \fBend\fP;
+foo 1 2 (2/3) (3/4) (5/6)
 .fi
 .PP
 Note that, technically, Pure macros are just as powerful as (unconditional)
@@ -1499,20 +1567,23 @@ recursion, which results in a stack overflow at compile time. See the
 how to deal with these by setting the
 .B PURE_STACK
 environment variable.
-.SS Convenience Macros
-The following `timex' macro provides an example of how you can use macros to
-define your own special forms. This is made possible by the fact that the
-macro arguments will only be evaluated at runtime and can thus be passed to
-built-in special forms and other constructs which defer their evaluation. In
-fact, the right-hand side of a macro rule may be an arbitrary Pure expression
-involving conditional expressions, lambdas, binding clauses, etc. These are
+.SS User-Defined Special Forms
+The
+.B quasiquote
+macro in the preceding subsection also provides an example of how you can use
+macros to define your own special forms. This is made possible by the fact
+that the macro arguments will only be evaluated at runtime and can thus be
+passed to built-in special forms and other constructs which defer their
+evaluation. In fact, the right-hand side of a macro rule may be an arbitrary
+Pure expression involving conditional expressions, lambdas, binding clauses,
+etc. These are
 .I not
 evaluated during macro substitution, they just become part of the macro
 expansion (after substituting the macro parameters).
 .PP
-Our definition of `timex' employs the system function `clock' to report the
-cpu time in seconds needed to evaluate a given expression, along with the
-computed result:
+Here is another useful example of a user-defined special form, the macro
+`timex' which employs the system function `clock' to report the cpu time in
+seconds needed to evaluate a given expression, along with the computed result:
 .sp
 .nf
 > \fBusing\fP system;
@@ -1526,8 +1597,9 @@ computed result:
 function definition, since by virtue of Pure's basic eager evaluation strategy
 the x parameter would have been evaluated already before it is passed to
 `timex', making `timex' always return a zero time value. Try it.)
-.SS Debugging
-Here's another useful convenience macro which helps in tracing function calls:
+.PP
+And here's yet another one, which is handy if you need to trace function calls
+for debugging purposes:
 .sp
 .nf
 \fBusing\fP system;
@@ -1535,7 +1607,7 @@ Here's another useful convenience macro which helps in tracing function calls:
 \fBwhen\fP y = printf "** call %s: %s\n: " (str f,str x) $$ gets $$ y \fBend\fP;
 .fi
 .PP
-The macro is invoked with the function to be traced, the arguments (or
+This macro is invoked with the function to be traced, the arguments (or
 whatever you want to be printed as additional debugging information) and the
 actual function call as parameters. (This is a rather simplistic version,
 which just prints a prompt on function entry and the final reduction after the
