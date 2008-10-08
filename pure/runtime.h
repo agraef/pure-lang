@@ -362,8 +362,8 @@ bool pure_clear(int32_t sym);
    below) start at level 0. Hence in the latter case you first need to invoke
    pure_save before you can define temporaries. */
 
-uint8_t pure_save();
-uint8_t pure_restore();
+uint32_t pure_save();
+uint32_t pure_restore();
 
 /* The following routines provide standalone C/C++ applications with fully
    initialized interpreter instances which can be used together with the

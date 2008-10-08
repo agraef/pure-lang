@@ -736,7 +736,7 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
   bool l_interactive = interactive;
   string l_source = source;
   int l_nerrs = nerrs;
-  uint8_t l_temp = temp;
+  uint32_t l_temp = temp;
   const char *l_source_s = source_s;
   string l_srcdir = srcdir;
   int32_t l_modno = modno;
@@ -1563,7 +1563,7 @@ void interpreter::clear_mac(int32_t f)
     macenv.erase(it);
 }
 
-void interpreter::clear_rules(int32_t f, uint8_t level)
+void interpreter::clear_rules(int32_t f, uint32_t level)
 {
   assert(f > 0);
   env::iterator it = globenv.find(f);
@@ -1584,7 +1584,7 @@ void interpreter::clear_rules(int32_t f, uint8_t level)
   }
 }
 
-void interpreter::clear_mac_rules(int32_t f, uint8_t level)
+void interpreter::clear_mac_rules(int32_t f, uint32_t level)
 {
   assert(f > 0);
   env::iterator it = macenv.find(f);
@@ -1593,7 +1593,7 @@ void interpreter::clear_mac_rules(int32_t f, uint8_t level)
     rulel& r = *e.rules;
     bool d = false;
     for (rulel::iterator it = r.begin(); it != r.end(); )
-      if (it->temp >= temp) {
+      if (it->temp >= level) {
 	d = true;
 	it = r.erase(it);
       } else

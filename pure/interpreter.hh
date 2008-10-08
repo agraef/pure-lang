@@ -312,7 +312,7 @@ public:
   bool ttymode;      // connected to a tty
   bool override;     // override mode
   bool stats;        // stats mode (print execution times)
-  uint8_t temp;      // temporary level (purgable definitions)
+  uint32_t temp;     // temporary level (purgable definitions)
   string ps;         // prompt string
   string libdir;     // library dir to search for source files
   string histfile;   // command history file
@@ -416,15 +416,15 @@ public:
   { const_defn(symtab.sym(varname).f, x); }
 
   /* Purge the definition of a (global constant, variable or function)
-     symbol. If the given symbol is zero, pops the most most recent temporary
+     symbol. If the given symbol is zero, pops the most recent temporary
      definitions level, removing all definitions in that level. */
   void clear(int32_t tag = 0);
   /* Purge the given macro symbol. */
   void clear_mac(int32_t tag);
   /* Purge the rules of the given function or macro symbol at or above the
      given level. */
-  void clear_rules(int32_t tag, uint8_t level);
-  void clear_mac_rules(int32_t tag, uint8_t level);
+  void clear_rules(int32_t tag, uint32_t level);
+  void clear_mac_rules(int32_t tag, uint32_t level);
 
   /* Process pending compilations of function definitions. This is also done
      automatically when eval() or defn()/const_defn() is invoked. */

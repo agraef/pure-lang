@@ -2170,20 +2170,20 @@ bool pure_clear(int32_t sym)
 }
 
 extern "C"
-uint8_t pure_save()
+uint32_t pure_save()
 {
   interpreter& interp = *interpreter::g_interp;
-  if (interp.temp < 0xff)
+  if (interp.temp < 0xffffffffU)
     return ++interp.temp;
   else
     return 0;
 }
 
 extern "C"
-uint8_t pure_restore()
+uint32_t pure_restore()
 {
   interpreter& interp = *interpreter::g_interp;
-  uint8_t level = interp.temp;
+  uint32_t level = interp.temp;
   interp.clear();
   if (level > 0 && interp.temp > level-1) --interp.temp;
   return interp.temp;

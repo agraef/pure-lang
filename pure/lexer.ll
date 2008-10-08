@@ -387,7 +387,7 @@ mattag  ::{blank}*matrix
   // show command is only permitted in interactive mode
   if (!interp.interactive) REJECT;
   uint8_t s_verbose = interpreter::g_verbose;
-  bool tflag = false; uint8_t tlevel = 0; int pflag = -1;
+  bool tflag = false; uint32_t tlevel = 0; int pflag = -1;
   bool aflag = false, dflag = false, eflag = false;
   bool cflag = false, fflag = false, mflag = false, vflag = false;
   bool gflag = false, lflag = false, sflag = false;
@@ -755,7 +755,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 ^dump.* {
   // dump command is only permitted in interactive mode
   if (!interp.interactive) REJECT;
-  bool tflag = false; uint8_t tlevel = 0; int pflag = -1;
+  bool tflag = false; uint32_t tlevel = 0; int pflag = -1;
   bool cflag = false, fflag = false, mflag = false, vflag = false;
   bool gflag = false, nflag = false;
   string fname = ".pure";
@@ -1011,7 +1011,7 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 ^clear.* {
   // clear command is only permitted in interactive mode
   if (!interp.interactive) REJECT;
-  bool tflag = false; uint8_t tlevel = 0; int pflag = -1;
+  bool tflag = false; uint32_t tlevel = 0; int pflag = -1;
   bool cflag = false, fflag = false, mflag = false, vflag = false;
   bool gflag = false;
   const char *s = yytext+5;
@@ -1077,15 +1077,14 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
     cflag = fflag = mflag = vflag = true;
   if (!tflag && args.l.empty()) tlevel = 1;
   if (args.l.empty() && cflag && fflag && mflag && vflag && pflag == -1) {
-    uint8_t old = interp.temp;
+    uint32_t old = interp.temp;
     char ans;
     // back out to the previous level by default
     if (!tflag) tlevel = old;
     // we never scrap any permanent definitions here
     if (tlevel == 0) tlevel = 1;
     cout << "This will clear all temporary definitions at level #"
-	 << (unsigned)tlevel
-	 << (tlevel<interp.temp?" and above":"")
+	 << tlevel << (tlevel<interp.temp?" and above":"")
 	 << ".\nContinue (y/n)? ";
     cin >> noskipws >> ans;
     bool chk = ans == 'y';
@@ -1097,7 +1096,7 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
     cin.clear();
     if (chk && old > 1)
       cout << "clear: now at temporary definitions level #"
-	   << (unsigned)interp.temp << endl;
+	   << interp.temp << endl;
     if (chk && interp.override)
       cout << "clear: override mode is on\n";
     goto out3;
@@ -1226,11 +1225,11 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
     ;
   else if (args.c > 0)
     cerr << "save: extra parameter\n";
-  else if (interp.temp == 0xff)
+  else if (interp.temp == 0xffffffffU)
     cerr << "save: already at maximum level\n";
   else {
     cout << "save: now at temporary definitions level #"
-	 << (unsigned)++interp.temp << endl;
+	 << ++interp.temp << endl;
     if (interp.override) cout << "save: override mode is on\n";
   }
 }

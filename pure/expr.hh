@@ -524,8 +524,8 @@ public:
 
 struct rule {
   expr lhs, rhs, qual;
-  uint8_t temp;
-  rule(expr l, expr r, expr q = expr(), uint8_t t = 0)
+  uint32_t temp;
+  rule(expr l, expr r, expr q = expr(), uint32_t t = 0)
     : lhs(l), rhs(r), qual(q), temp(t) { }
 };
 
@@ -533,7 +533,7 @@ struct rule {
 
 struct env_info {
   enum { none, lvar, cvar, fvar, fun } t;
-  uint8_t temp;
+  uint32_t temp;
   union {
     // local variable binding (lvar):
     struct {
@@ -552,13 +552,13 @@ struct env_info {
     };
   };
   env_info() : t(none) { }
-  env_info(int8_t _ttag, path _p, uint8_t _temp = 0)
+  env_info(int8_t _ttag, path _p, uint32_t _temp = 0)
     : t(lvar), temp(_temp), ttag(_ttag), p(new path(_p)) { }
-  env_info(expr x, uint8_t _temp = 0)
+  env_info(expr x, uint32_t _temp = 0)
     : t(cvar), temp(_temp), cval(new expr) { *cval = x; }
-  env_info(void *v, uint8_t _temp = 0)
+  env_info(void *v, uint32_t _temp = 0)
     : t(fvar), temp(_temp), val(v) { }
-  env_info(uint32_t c, rulel r, uint8_t _temp = 0)
+  env_info(uint32_t c, rulel r, uint32_t _temp = 0)
     : t(fun), temp(_temp), argc(c), rules(new rulel(r)), m(0) { }
   env_info(const env_info& e);
   env_info& operator= (const env_info& e);
