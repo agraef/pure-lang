@@ -933,7 +933,7 @@ pure_expr *interpreter::defn(expr pat, expr& x, pure_expr*& e)
   return res;
 }
 
-// Define global constants (macro definitions).
+// Define global constants.
 
 pure_expr *interpreter::const_defn(expr pat, expr& x)
 {
@@ -945,7 +945,7 @@ pure_expr *interpreter::const_defn(expr pat, expr& x)
   return res;
 }
 
-expr interpreter::pure_expr_to_expr(pure_expr *x)
+expr interpreter::pure_expr_to_expr(const pure_expr *x)
 {
   char test;
   if (stackmax > 0 && stackdir*(&test - baseptr) >= stackmax)

@@ -21,16 +21,23 @@
 /* Convert between Pure expressions and strings. The str function gives you
    the print representation of an expression in Pure syntax, as a string. The
    eval function does the opposite, by parsing and returning the value of an
-   expression specified as a string in Pure syntax. (In fact, eval goes well
+   expression specified as a string in Pure syntax. In fact, eval goes well
    beyond this, as it can parse and execute arbitrary Pure code. In that case
-   it will return the last computed expression, if any.) Errors are reported
-   with the lasterr routine. This string value will be nonempty iff an error
-   was encountered during the most recent invokation of eval(). In that case
-   each reported error message is terminated with a newline character. */
+   it will return the last computed expression, if any. eval can also be
+   invoked on an arbitrary quoted Pure expression to be evaluated, which is
+   subject to the same constraints as constant values. (In this case
+   exceptions during evaluation get thrown to the caller, whereas they are
+   reported as execution errors in the string case, see lasterr below.) */
 
 private pure_str;
 extern void* str(expr*) = pure_str;
-extern expr* eval(char*); // IMPURE!
+extern expr* eval(expr*); // IMPURE!
+
+/* Errors in eval are reported with the lasterr routine. This string value
+   will be nonempty iff a compilation or execution error was encountered
+   during the most recent invokation of eval(). In that case each reported
+   error message is terminated with a newline character. */
+
 extern char* lasterr();
 
 str x			= cstring (pure_str x);

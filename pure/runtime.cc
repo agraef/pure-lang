@@ -4034,15 +4034,38 @@ char *str(const pure_expr *x)
 }
 
 extern "C"
-pure_expr *eval(const char *s)
+pure_expr *eval(const pure_expr *x)
 {
-  assert(s);
-  interpreter& interp = *interpreter::g_interp;
-  interp.errmsg.clear();
-  pure_expr *res = interp.runstr(string(s)+";");
-  interp.result = 0;
-  if (res) pure_unref_internal(res);
-  return res;
+  assert(x);
+  if (x->tag == EXPR::STR) {
+    const char *s = x->data.s;
+    interpreter& interp = *interpreter::g_interp;
+    interp.errmsg.clear();
+    pure_expr *res = interp.runstr(string(s)+";");
+    interp.result = 0;
+    if (res) pure_unref_internal(res);
+    return res;
+  } else {
+    pure_expr *res = 0, *e = 0;
+    interpreter& interp = *interpreter::g_interp;
+    interp.errmsg = "";
+    try {
+      expr y = interp.pure_expr_to_expr(x);
+      res = interp.eval(y, e);
+    } catch (err &e) {
+      interp.errmsg = e.what()+"\n";
+      return 0;
+    }
+    if (res) {
+      assert(!e);
+      return res;
+    } else if (e) {
+      pure_unref_internal(e);
+      pure_throw(e);
+      return 0;
+    } else
+      return 0;
+  }
 }
 
 extern "C"

@@ -642,16 +642,19 @@ int32_t string_index(const char* s, const char *t);
 pure_expr *string_chr(uint32_t n);
 pure_expr *string_ord(const char *c);
 
-/* Convert a Pure expression to a string and vice versa. Note that eval() will
-   actually parse and execute any Pure source, so it can be used, e.g., to add
-   new rules to the executing program at runtime. The result of eval() is the
-   last computed expression, NULL if none; in the latter case you can inspect
-   the result of lasterr() below to determine whether there were any errors.
-   The result of str() is a malloc'ed string in the system encoding which must
-   be freed by the caller. */
+/* Convert a Pure expression to a string and vice versa. The result of str()
+   is a malloc'ed string in the system encoding which must be freed by the
+   caller. Note that eval() can be invoked on either a string or any other
+   Pure expression (subject to the same constraints as constant values). In
+   the former case, it parses and executes any Pure source, which can be
+   employed, e.g., to add new rules to the executing program at runtime. In
+   the latter case the given expression is compiled and reevaluated. The
+   result of eval() is the (last) computed expression if any, NULL otherwise;
+   in the latter case you can inspect the result of lasterr() below to
+   determine whether there were any compilation errors. */
 
 char *str(const pure_expr *x);
-pure_expr *eval(const char *s);
+pure_expr *eval(const pure_expr *x);
 
 /* After an invokation of eval(), this returns error messages from the
    interpreter (an empty string if none). */

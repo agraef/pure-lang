@@ -430,6 +430,9 @@ public:
      automatically when eval() or defn()/const_defn() is invoked. */
   void compile();
 
+  /* Convert a runtime to a compile time expression. */
+  expr pure_expr_to_expr(const pure_expr *x);
+
   /* Errors and warnings. These are for various types of messages from the
      compiler. Default is to write error messages to stdout. You might wish to
      derive from this class and override these to implement custom error
@@ -536,7 +539,6 @@ private:
   pure_expr *const_value(expr x);
   pure_expr *const_matrix_value(expr x);
   pure_expr *const_app_value(expr x);
-  expr pure_expr_to_expr(pure_expr *x);
   pure_expr *doeval(expr x, pure_expr*& e);
   pure_expr *dodefn(env vars, expr lhs, expr rhs, pure_expr*& e);
   llvm::Value *codegen(expr x, bool quote = false);
