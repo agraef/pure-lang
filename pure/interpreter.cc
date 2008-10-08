@@ -5452,7 +5452,9 @@ Value *interpreter::codegen(expr x, bool quote)
   default: {
     assert(x.tag() > 0);
     // quoted symbols
-    if (quote) return call(cbox(x.tag()));
+    if (quote)
+      return act_builder().CreateCall
+	(module->getFunction("pure_const"), SInt(x.tag()));
     // check for a parameterless global (or external) function call
     Value *u; Env *e;
     if ((u = external_funcall(x.tag(), 0, x)))
