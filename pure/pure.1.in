@@ -608,14 +608,14 @@ in the \fIEXAMPLES\fP section below.
 .PP
 Last but not least, the special form
 .B quote
-quotes a (simple) expression, i.e., `quote x' returns just x itself
-\fIwithout\fP evaluating it. The runtime provides a function
+quotes an expression, i.e., `quote x' returns just x itself \fIwithout\fP
+evaluating it. The runtime provides a function
 .B eval
-which can then be used to evaluate the quoted expression at a later time. For
+which can be used to evaluate the quoted expression at a later time. For
 instance:
 .sp
 .nf
-> let x = quote (2*42+2^12); x;
+> \fBlet\fP x = quote (2*42+2^12); x;
 2*42+2^12
 > eval x;
 4180.0
@@ -624,6 +624,16 @@ instance:
 This facility should be well familiar to Lisp programmers. There's no built-in
 support for Lisp's quasiquote in Pure, but you can easily define that as a
 macro yourself, see the \fIMACROS\fP section for details.
+.PP
+Note that only simple expressions can be quoted in Pure, special constructs
+such as conditionals and local bindings will be evaluated as usual. This
+allows you to forcibly evaluate parts of a quoted expression, as in the
+following example:
+.sp
+.nf
+> quote (2*42+(2^n \fBwhen\fP n = 2*6 \fBend\fP));
+2*42+4096.0
+.fi
 .SS Toplevel
 At the toplevel, a Pure program basically consists of rewriting rules (which
 are used to define functions and macros), constant and variable definitions,
@@ -1394,9 +1404,8 @@ but they are processed in a different way. Macros are substituted into the
 right-hand sides of function, constant and variable definitions. All macro
 substitution happens before constant substitutions and the actual compilation
 step. Macros can be defined in terms of other macros (also recursively), and
-are expanded using the leftmost-innermost reduction strategy (i.e., macro
-calls in macro arguments are expanded before the macro gets applied to its
-parameters).
+are evaluated using call by value (i.e., macro calls in macro arguments are
+expanded before the macro gets applied to its parameters).
 .SS Optimization Rules
 Here is a simple example, showing a rule which expands saturated calls of the
 .B succ
@@ -1412,7 +1421,9 @@ foo x::int = x+1+1;
 Rules like these can be useful to help the compiler generate better code. Note
 that a macro may have the same name as an ordinary Pure function, which is
 essential if you want to optimize calls to an existing function, as in the
-previous example.
+previous example. (Just like ordinary functions, the number of parameters in
+each rule for a given macro must be the same, but a macro may have a different
+arity than the corresponding function.)
 .PP
 A somewhat more practical example is the following rule from the prelude,
 which eliminates saturated instances of the right-associative function
@@ -1504,20 +1515,25 @@ macro as follows:
 \fBdef\fP unquote x = y \fBwhen\fP y = x \fBend\fP;
 .fi
 .PP
-This works just like in Lisp, e.g.:
+This works just like in Lisp; in fact, our Pure implementation doesn't even
+need
+.BR quasiquote ,
+just a normal
+.B quote
+will do, e.g.:
 .sp
 .nf
 > quote (2*42+unquote (2^12));
 2*42+4096.0
 .fi
 .PP
-(This neat little trick works because only simple expressions can be quoted,
-other constructs such as conditionals and local definitions embedded in the
-target expression will be evaluated as usual. See \fISpecial Forms\fP in the
-\fIPURE OVERVIEW\fP section for more information on
+(This neat little trick works because only simple expressions can be quoted in
+Pure, special constructs such as conditionals and local definitions embedded
+in the target expression will be evaluated as usual. See \fISpecial Forms\fP
+in the \fIPURE OVERVIEW\fP section for more information on
 .B quote
 and
-.BR eval ).
+.BR eval .)
 .PP
 Now
 .B quasiquote
@@ -1529,6 +1545,11 @@ can be defined in just three macro rules, as follows:
                                          (unquote (quasiquote x)));
 \fBdef\fP quasiquote x                = quote x;
 .fi
+.PP
+(Note the `f@_', which is an anonymous ``as'' pattern forcing the compiler to
+recognize `f' as a function variable, rather than a literal function
+symbol. See \fIHead = Function\fP in the \fICAVEATS AND NOTES\fP section for
+an explanation of this trick.)
 .PP
 The first rule above takes care of splicing an argument list into the
 enclosing function application. Note that
@@ -1543,7 +1564,7 @@ runtime since this allows us to splice argument lists computed at runtime.)
 The second rule recurses into subterms of the function application, and the
 third and last rule takes care of quoting the ``atomic'' subterms.
 .PP
-We can even have some syntactic sugar for Lisp weenies:
+We can even add some syntactic sugar for Lisp weenies:
 .sp
 .nf
 \fBprefix\fP 9 ` ,@ ;
@@ -1571,13 +1592,13 @@ environment variable.
 The
 .B quasiquote
 macro in the preceding subsection also provides an example of how you can use
-macros to define your own special forms. This is made possible by the fact
-that the macro arguments will only be evaluated at runtime and can thus be
-passed to built-in special forms and other constructs which defer their
-evaluation. In fact, the right-hand side of a macro rule may be an arbitrary
-Pure expression involving conditional expressions, lambdas, binding clauses,
-etc. These are
-.I not
+macros to define your own special forms. This works because the actual
+evaluation of macro arguments is put off until runtime, and thus we can safely
+pass them to built-in special forms and other constructs which defer their
+evaluation \fIat runtime\fP. In fact, the right-hand side of a macro rule may
+be an arbitrary Pure expression involving conditional expressions, lambdas,
+binding clauses, etc. These are
+.I never
 evaluated during macro substitution, they just become part of the macro
 expansion (after substituting the macro parameters).
 .PP
@@ -1593,12 +1614,12 @@ seconds needed to evaluate a given expression, along with the computed result:
 0.43,5000050000L
 .fi
 .PP
-(Note that the above definition of `timex' wouldn't work as an ordinary
+Note that the above definition of `timex' wouldn't work as an ordinary
 function definition, since by virtue of Pure's basic eager evaluation strategy
 the x parameter would have been evaluated already before it is passed to
-`timex', making `timex' always return a zero time value. Try it.)
+`timex', making `timex' always return a zero time value. Try it!
 .PP
-And here's yet another one, which is handy if you need to trace function calls
+Here's yet another example, which is handy if you need to trace function calls
 for debugging purposes:
 .sp
 .nf
@@ -1633,9 +1654,9 @@ which can deal with any number of arguments.
 .sp
 .nf
 // Uncomment this line to trace calls to the 'fact' function.
-def fact n = trace fact n;
+\fBdef\fP fact n = trace fact n;
 // Sample function to be traced.
-fact n = if n>0 then n*fact(n-1) else 1;
+fact n = \fBif\fP n>0 \fBthen\fP n*fact(n-1) \fBelse\fP 1;
 .fi
 .PP
 Here's a trace of the `fact' function obtained in this fashion (hit carriage
@@ -2200,7 +2221,8 @@ x,y
 This is the pair constructor, used to create tuples of arbitrary sizes. Tuples
 provide an alternative way to represent aggregate values in Pure. In
 difference to lists, tuples are always ``flat'', so that (x,y),z and x,(y,z)
-denote the same triple x,y,z.
+denote the same triple x,y,z. (This is explained in more detail in the \fIPURE
+OVERVIEW\fP section.)
 .TP
 #x
 The size (number of elements) of the list, tuple, matrix or string x. In
@@ -2466,9 +2488,10 @@ Select defined macros.
 Select private symbols in the ``current'' module if \fIflag\fP is nonzero (the
 default), otherwise (\fIflag\fP is zero) select public symbols of all
 modules. If this option is omitted then both private and public symbols are
-selected. (Note: The ``current'' module is the main script specified when the
-interpreter was invoked on the command line, if any. This is either the first
-script file, or the script specified with \fB-x\fP if this option was given.)
+selected. (Note: The ``current'' module is the main script, i.e., the last
+script specified when the interpreter was invoked on the command line, if
+any. As already mentioned, this script determines the namespace visible in the
+interpreter.)
 .TP
 \fB-t\fP[\fIlevel\fP]
 Select symbols and definitions at the given ``level'' of definitions and
@@ -2520,7 +2543,10 @@ compatibility. Thus, if you really want to delete
 .I all
 your temporary definitions, use
 .B clear -t1
-instead. (See also \fIDefinition Levels\fP below.)
+instead. When used in this way, the
+.B clear
+command will only remove temporary definitions; if you need to remove
+definitions at level #0, you must specify those symbols explicitly.
 .PP
 Note that
 .B clear -g *
@@ -2671,8 +2697,9 @@ Each \fBsave\fP command introduces a new temporary level, and each subsequent
 \fBclear\fP command (without any arguments) ``pops'' the definitions on the
 current level and returns you to the previous one (if any). This gives you a
 ``stack'' of temporary environments which enables you to ``plug and play'' in
-a (more or less) safe fashion, without affecting the rest of your
-program. Example:
+a (more or less) safe fashion, without affecting the rest of your program. For
+all practical purposes, this stack is unlimited, so that you can create as
+many levels as you like. Example:
 .sp
 .nf
 > foo (x:xs) = x+foo xs;
@@ -2713,11 +2740,14 @@ foo (x:xs) = x*foo xs;
 foo (x:xs) = x+foo xs;
 foo [] = 0;
 > foo (1..10);
+warning: rule never reduced: foo (x:xs) = x+foo xs;
 0
 .fi
 .PP
 Note that the equation `foo (x:xs) = x*foo xs;' was inserted before the
-previous `foo (x:xs) = x+foo xs;' rule, which is at level #1.
+previous `foo (x:xs) = x+foo xs;' rule, which is at level #1. (The latter
+equation is now ``shadowed'' by the rule we just entered, hence the compiler
+warns us that this rule can't be reduced any more.)
 .PP
 Even in override mode, new definitions will be added \fIafter\fP other
 definitions at the \fIcurrent\fP level. This allows us to just continue adding
@@ -3278,12 +3308,11 @@ your lowlevel code in Pure routines and data structures which do all the
 checks necessary to ensure that only the right kind of data is passed to C
 routines.
 .SS Special Forms
-Special forms are recognized at compile time only. Thus the catch function as
-well as the logical connectives && and ||, the sequencing operator $$ and the
-lazy evaluation operator & are only treated as special forms in direct
-(saturated) calls. They can still be used if you pass them around as function
-values or partial applications, but in this case they lose all their special
-call-by-name argument processing.
+Special forms are recognized at compile time only. Thus the `catch' function,
+as well as `quote' and the operators `&&', `||', `$$' and `&', are only
+treated as special forms in direct (saturated) calls. They can still be used
+if you pass them around as function values or in partial applications, but in
+this case they lose all their special call-by-name argument processing.
 .SS Laziness
 Pure does lazy evaluation in the same way as Alice ML, providing an explicit
 operation (&) to defer evaluation and create a ``future'' which is called by
@@ -3327,8 +3356,8 @@ explicitly using futures. See the definition of the `unzip' function in the
 prelude for an example showing how to do this.
 .SS Stack Size and Tail Recursion
 Pure programs may need a considerable amount of stack space to handle
-recursive function calls, and the interpreter itself also takes its toll. So
-you may have to configure your system accordingly (8 MB of stack space is
+recursive function and macro calls, and the interpreter itself also takes its
+toll. So you should configure your system accordingly (8 MB of stack space is
 recommended for 32 bit systems, systems with 64 bit pointers probably need
 more). If the
 .B PURE_STACK
