@@ -90,6 +90,7 @@ public:
   symbol& fdiv_sym();
   symbol& div_sym();
   symbol& mod_sym();
+  symbol& quote_sym() { return sym("quote"); }
   symbol& catch_sym() { return sym("catch"); }
   symbol& catmap_sym() { return sym("catmap"); }
   symbol& rowcatmap_sym() { return sym("rowcatmap"); }

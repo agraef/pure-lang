@@ -34,6 +34,7 @@ void symtable::init_builtins()
   fdiv_sym();
   div_sym();
   mod_sym();
+  quote_sym();
   catch_sym();
   catmap_sym();
   rowcatmap_sym();

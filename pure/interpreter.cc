@@ -5238,7 +5238,7 @@ void interpreter::toplevel_codegen(expr x)
 #endif
 }
 
-Value *interpreter::codegen(expr x)
+Value *interpreter::codegen(expr x, bool quote)
 {
   assert(!x.is_null());
   switch (x.tag()) {
@@ -5273,7 +5273,7 @@ Value *interpreter::codegen(expr x)
       vs[0] = UInt(m);
       for (exprl::iterator ys = xs->begin(), end = xs->end();
 	   ys != end; ys++, j++) {
-	vs[j] = codegen(*ys);
+	vs[j] = codegen(*ys, quote);
       }
       us[i] =
 	act_env().CreateCall(module->getFunction("pure_matrix_columns"), vs);
@@ -5282,7 +5282,11 @@ Value *interpreter::codegen(expr x)
   }
   // application:
   case EXPR::APP:
-    if (x.ttag() != 0) {
+    if (quote) {
+      // quoted function application
+      Value *u = codegen(x.xval1(), true), *v = codegen(x.xval2(), true);
+      return apply(u, v);
+    } else if (x.ttag() != 0) {
       // inlined unboxed builtin int/float operations
       assert(x.ttag() == EXPR::INT || x.ttag() == EXPR::DBL);
       if (x.ttag() == EXPR::INT)
@@ -5315,6 +5319,9 @@ Value *interpreter::codegen(expr x)
 	Value *u = codegen(x.xval1().xval2());
 	act_builder().CreateCall(module->getFunction("pure_freenew"), u);
 	return codegen(x.xval2());
+      } else if (n == 1 && f.tag() == symtab.quote_sym().f) {
+	// quoted subterm
+	return codegen(x.xval2(), true);
       } else if (n == 1 && f.tag() == symtab.amp_sym().f) {
 	// create a thunk (parameterless anonymous closure)
 	expr y = x.xval2();
@@ -5444,6 +5451,8 @@ Value *interpreter::codegen(expr x)
   }
   default: {
     assert(x.tag() > 0);
+    // quoted symbols
+    if (quote) return call(cbox(x.tag()));
     // check for a parameterless global (or external) function call
     Value *u; Env *e;
     if ((u = external_funcall(x.tag(), 0, x)))
