@@ -1,0 +1,28 @@
+
+/* Lisp's quasiquote in Pure. 2008-10-08 AG. */
+
+def unquote x = y when y = x end;
+
+/* 'splice' splices a list of arguments into a function application. */
+
+// Process embedded splices (note that 'splice' is just a constructor here).
+def quasiquote (f@_ (splice x))	= foldl ($) (quote f) (quote x);
+// Recurse into subterms.
+def quasiquote (f@_ x)		= quote ((unquote (quasiquote f))
+					 (unquote (quasiquote x)));
+// Non-applications are considered atomic here, just quote them.
+def quasiquote x		= quote x;
+
+/* Add some syntactic sugar for Lisp weenies. */
+
+prefix 9 ` ,@ ;
+def `x = quasiquote x; def ,@x = splice x;
+
+/* A simple example. This yields foo 1 2 (2/3) (3/4) (5/6). */
+
+`(foo 1 2 (,@[2/3,3/4]) (5/6));
+
+/* Note that we delegate the actual splicing to 'foldl' at runtime, hence
+   splicing argument lists computed at runtime works, too: */
+
+`(foo 1 2 (,@x) (5/6)) when x = quote [2/3,3/4] end;
