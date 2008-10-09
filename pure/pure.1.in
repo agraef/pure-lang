@@ -1506,43 +1506,12 @@ to write a macro which descends recursively into the lambda argument of
 .SS Recursive Macros
 Macros can also be recursive, in which case they usually consist of multiple
 rules and make use of pattern-matching like ordinary function definitions. As
-a simple example, let's implement Lisp's quasiquote in Pure. First, we define
-the usual
-.B unquote
-macro as follows:
+a simple example, let's implement Lisp's quasiquote in Pure:
 .sp
 .nf
-\fBdef\fP unquote x = y \fBwhen\fP y = x \fBend\fP;
-.fi
-.PP
-This works just like in Lisp; in fact, our Pure implementation doesn't even
-need
-.BR quasiquote ,
-just a normal
-.B quote
-will do, e.g.:
-.sp
-.nf
-> quote (2*42+unquote (2^12));
-2*42+4096.0
-.fi
-.PP
-(This neat little trick works because only simple expressions can be quoted in
-Pure, special constructs such as conditionals and local definitions embedded
-in the target expression will be evaluated as usual. See \fISpecial Forms\fP
-in the \fIPURE OVERVIEW\fP section for more information on
-.B quote
-and
-.BR eval .)
-.PP
-Now
-.B quasiquote
-can be defined in just three macro rules, as follows:
-.sp
-.nf
-\fBdef\fP quasiquote (f@_ (splice x)) = foldl ($) (quote f) (quote x);
-\fBdef\fP quasiquote (f@_ x)          = quote ((unquote (quasiquote f))
-                                         (unquote (quasiquote x)));
+\fBdef\fP quasiquote (unquote x)      = x;
+\fBdef\fP quasiquote (f@_ (splice x)) = foldl ($) (quasiquote f) (quasiquote x);
+\fBdef\fP quasiquote (f@_ x)          = quasiquote f (quasiquote x);
 \fBdef\fP quasiquote x                = quote x;
 .fi
 .PP
@@ -1551,32 +1520,38 @@ recognize `f' as a function variable, rather than a literal function
 symbol. See \fIHead = Function\fP in the \fICAVEATS AND NOTES\fP section for
 an explanation of this trick.)
 .PP
-The first rule above takes care of splicing an argument list into the
-enclosing function application. Note that
+The first rule above takes care of ``unquoting'' embedded subterms. The second
+rule ``splices'' an argument list into an enclosing function application. The
+third rule recurses into subterms of a function application, and the fourth
+and last rule takes care of quoting the ``atomic'' subterms. Note that
+.B unquote
+and
 .B splice
-itself is just a passive constructor symbol here, the preprocessing work is
-done by
+themselves are just passive constructor symbols, the real work is done by
 .BR quasiquote ,
 using
 .B foldl
-at runtime to really perform the splicing. (We defer the actual splicing until
-runtime since this allows us to splice argument lists computed at runtime.)
-The second rule recurses into subterms of the function application, and the
-third and last rule takes care of quoting the ``atomic'' subterms.
+at runtime to actually perform the splicing. (Putting off the splicing until
+runtime makes it possible to splice argument lists computed at runtime.)
 .PP
-We can even add some syntactic sugar for Lisp weenies:
+We can also add some syntactic sugar for Lisp weenies. (Note that we cannot
+have `,' for unquoting, so we use `,,' instead.)
 .sp
 .nf
-\fBprefix\fP 9 ` ,@ ;
-\fBdef\fP `x = quasiquote x; \fBdef\fP ,@x = splice x;
+\fBprefix\fP 9 ` ,, ,@ ;
+\fBdef\fP `x = quasiquote x; \fBdef\fP ,,x = unquote x; \fBdef\fP ,@x = splice x;
 .fi
 .PP
 Examples:
 .sp
 .nf
-> `(foo 1 2 (,@[2/3,3/4]) (5/6));
+> `(2*42+2^12);
+2*42+2^12
+> `(2*42+,,(2^12));
+2*42+4096.0
+> `foo 1 2 (,@[2/3,3/4]) (5/6);
 foo 1 2 (2/3) (3/4) (5/6)
-> `(foo 1 2 (,@args) (5/6)) \fBwhen\fP args = quote [2/3,3/4] \fBend\fP;
+> `foo 1 2 (,@args) (5/6) \fBwhen\fP args = quote [2/3,3/4] \fBend\fP;
 foo 1 2 (2/3) (3/4) (5/6)
 .fi
 .PP
