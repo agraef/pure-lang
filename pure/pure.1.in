@@ -894,6 +894,31 @@ same value, e.g.:
 .nf
 \fBcase\fP ans \fBof\fP "y" | "Y" = 1; _ = 0; \fBend\fP;
 .fi
+.PP
+As already mentioned, \fBwhen\fP, \fBlet\fP, \fBconst\fP and \fBdef\fP use a
+simplified kind of rule syntax which just consists of a left-hand and a
+right-hand side separated by `='. Guards or multiple left-hand or right-hand
+sides are not permitted in these rules. However, it is possible to omit the
+left-hand side if it is just the anonymous variable `_' by itself, indicating
+that you don't care about the result. (Note that this doesn't make sense for
+\fBdef\fP, you'll get an error in this case.) The right-hand side is still
+evaluated, if only for its side-effects, which is handy, e.g., for adding
+``debugging statements'' to your code. For instance, consider the following
+example of a quadratic equation solver, which computes the discriminant in a
+\fBwhen\fP clause, prints that value, and then proceeds to compute the (real)
+roots of the equation x^2+px+q=0:
+.sp
+.nf
+> \fBusing\fP math, system;
+> solve p q = -p/2+sqrt d,-p/2-sqrt d
+> \fBwhen\fP d = p^2/4-q; printf "The discriminant is: %g\n" d; \fBend\fP;
+> solve 4 2;
+The discriminant is: 2
+-0.585786437626905,-3.41421356237309
+> solve 2 4;
+The discriminant is: -3
+nan,nan
+.fi
 .SH EXAMPLES
 Here are a few examples of simple Pure programs.
 .PP
@@ -3107,17 +3132,18 @@ function definitions, since then it's always possible to just employ a
 conditional or a
 .B case
 expression instead. But there are other cases where this becomes a serious
-impediment, as in the following example of a quadratic equation solver:
+impediment. For instance, let's consider our good old friend, the quadratic
+equation solver:
 .sp
 .nf
 \fBusing\fP math;
 solve p q = -p/2+sqrt d,-p/2-sqrt d \fBwhen\fP d = p^2/4-q \fBend\fP \fBif\fP p^2/4-q>=0;
 .fi
 .PP
-The `solve' function returns the (real) solutions of the equation x^2+p*x+q=0,
-but only if the discriminant d = p^2/4-q is nonnegative. The rationale behind
-using such a partial definition is that it allows you to deal with the case of
-a negative discriminant later. Example:
+Our version of `solve' here returns the (real) solutions of the equation
+x^2+p*x+q=0, but \fIonly\fP if the discriminant d = p^2/4-q is
+nonnegative. The rationale behind using such a partial definition is that it
+allows you to deal with the case of a negative discriminant later. Example:
 .sp
 .nf
 > solve 4 2; solve 2 4;
