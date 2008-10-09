@@ -654,14 +654,14 @@ pure_expr *string_ord(const char *c);
    determine whether there were any compilation errors. */
 
 char *str(const pure_expr *x);
-pure_expr *eval(const pure_expr *x);
+pure_expr *eval(pure_expr *x);
 
 /* evalcmd() is like eval(), but executes interactive commands and returns
    their output as a string. Only the regular output of a few commands can be
    captured right now, most notably 'show' and 'completion_matches'; otherwise
    the result string will be empty. No other results are returned. */
 
-pure_expr *evalcmd(const pure_expr *x);
+pure_expr *evalcmd(pure_expr *x);
 
 /* After an invokation of eval() or evalcmd(), this returns error messages
    from the interpreter (an empty string if none). */
