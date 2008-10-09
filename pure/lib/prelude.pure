@@ -104,6 +104,13 @@ def (f . g) x	= f (g x);
 
 def void (catmap f x) = do f x;
 
+/* Lisp-like quasiquote. */
+
+def quasiquote (unquote x)	= x;
+def quasiquote (f@_ (splice x))	= foldl ($) (quasiquote f) (quasiquote x);
+def quasiquote (f@_ x)		= quasiquote f (quasiquote x);
+def quasiquote x		= quote x;
+
 /* "Mapsto" operator. This constructor is declared here so that it can be used
    in other standard library modules to denote special kinds of pairs which
    map keys to values. Here we only define equality of such pairs. */

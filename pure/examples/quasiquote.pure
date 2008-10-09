@@ -1,12 +1,7 @@
 
-/* Lisp's quasiquote in Pure. 2008-10-08 AG. */
+/* Quasiquote example. 2008-10-08 AG. */
 
-def quasiquote (unquote x)	= x;
-def quasiquote (f@_ (splice x))	= foldl ($) (quasiquote f) (quasiquote x);
-def quasiquote (f@_ x)		= quasiquote f (quasiquote x);
-def quasiquote x		= quote x;
-
-/* Add some syntactic sugar for Lisp weenies. Note that we cannot have ',' for
+/* Some syntactic sugar for Lisp weenies. Note that we cannot have ',' for
    unquoting, so we use ',,' instead. */
 
 prefix 9 ` ,, ,@ ;
@@ -20,7 +15,7 @@ def `x = quasiquote x; def ,,x = unquote x; def ,@x = splice x;
 
 `foo 1 2 (,@[2/3,3/4]) (5/6);
 
-/* Note that we delegate the actual splicing to 'foldl' at runtime, hence
-   splicing argument lists computed at runtime works, too: */
+/* Note that the actual splicing is done at runtime, hence splicing argument
+   lists computed at runtime works ok, too. */
 
 `foo 1 2 (,@x) (5/6) when x = quote [2/3,3/4] end;
