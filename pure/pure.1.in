@@ -3356,7 +3356,7 @@ need something like Haskell's irrefutable matches, you'll have to code them
 explicitly using futures. See the definition of the `unzip' function in the
 prelude for an example showing how to do this.
 .SS Reflection
-Pure 0.12 and later offer some basic reflection capabilities via the
+Pure versions since 0.12 offer some basic reflection capabilities via the
 .B evalcmd
 primitive. This function provides access to interactive commands like
 .BR clear ,
@@ -3380,13 +3380,13 @@ combination of the letters "c", "v", "f" and "m" denoting the categories of
 constants, variables, functions and macros, respectively. (You can also just
 leave this empty if you don't care about the type of symbol.) The `pat'
 argument is a shell-like glob pattern for the name of symbols which should be
-listed (just "*" matches all symbols). The result is a list of triples (name,
-value, descr) with the name of the symbol, its value and its description as
-provided by \fBshow -s\fP.
+listed (just "*" matches all symbols). The result is a list of tuples (name,
+value, cat, descr) with the name of the symbol and its value, as well as the
+category and description of the symbol, as provided by \fBshow -s\fP.
 .sp
 .nf
 sym_info cat::string pat::string
-= [name, eval ("("+name+")"), descr | name, descr = info]
+= [name,eval ("("+name+")"),descr | name,descr = info]
 \fBwhen\fP
   // Get the info about matching symbols from the 'show' command.
   info = evalcmd $ sprintf "show -sg%s %s" (cat,pat);
@@ -3402,8 +3402,8 @@ sym_info cat::string pat::string
   // Regex call to split the summary information about one symbol, as
   // returned by 'show -s', into the name and description parts.
   fields s::string = tuple $
-                     [info!2 | info = tail $ regs $ reg_info $
-                      regex "([^ ]+)[ ]+(.*)" REG_EXTENDED s 0];
+		     [info!2 | info = tail $ regs $ reg_info $
+		      regex "([^ ]+)[ ]+([a-z]*)[ ]*(.*)" REG_EXTENDED s 0];
 \fBend\fP;
 .fi
 .PP
@@ -3411,8 +3411,8 @@ E.g., this call retrieves information about all defined macros:
 .sp
 .nf
 > sym_info "m" "*";
-[("$",($),"mac 2 args, 1 rules"),(".",(.),"mac 3 args, 1 rules"),
-("void",void,"mac 1 args, 3 rules")]
+[("$",($),"mac","2 args, 1 rules"),(".",(.),"mac","3 args, 1 rules"),
+("void",void,"mac","1 args, 3 rules")]
 .fi
 .SS Stack Size and Tail Recursion
 Pure programs may need a considerable amount of stack space to handle
