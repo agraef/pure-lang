@@ -323,8 +323,8 @@ first, i.e., using
 .I "call by value"
 semantics. Pure also has a few built-in special forms (most notably,
 conditional expressions, the short-circuit logical connectives && and ||, the
-sequencing operator $$, and the lazy evaluation operator &) which take some or
-all of their arguments unevaluated, using
+sequencing operator $$, the lazy evaluation operator &, and the `quote') which
+take some or all of their arguments unevaluated, using
 .IR "call by name" .
 (User-defined special forms can be created with macros. More about that
 later.)
@@ -583,6 +583,18 @@ Enter a number:
 21.0
 .fi
 .PP
+We mention in passing here that the same effect can be achieved with a
+.B when
+clause, which also allows you to execute a function solely for its
+side-effects and just ignore the return value:
+.sp
+.nf
+> scanf "%g" \fBwhen\fP puts "Enter a number:" \fBend\fP;
+Enter a number:
+21
+21.0
+.fi
+.PP
 The & operator does
 .IR "lazy evaluation" .
 This is the only postfix operator defined in the standard prelude, written as
@@ -621,19 +633,18 @@ instance:
 4180.0
 .fi
 .PP
-This facility should be well familiar to Lisp programmers. There's no built-in
-support for Lisp's quasiquote in Pure, but you can easily define that as a
-macro yourself, see the \fIMACROS\fP section for details.
-.PP
-Note that only simple expressions can be quoted in Pure, special constructs
-such as conditionals and local bindings will be evaluated as usual. This
-allows you to forcibly evaluate parts of a quoted expression, as in the
-following example:
+This facility should be well familiar to Lisp programmers. Note that only
+simple expressions can be quoted in Pure, special constructs such as
+conditionals and local bindings will be evaluated as usual. This allows you to
+forcibly evaluate parts of a quoted expression, as in the following example:
 .sp
 .nf
 > quote (2*42+(2^n \fBwhen\fP n = 2*6 \fBend\fP));
 2*42+4096.0
 .fi
+.PP
+In addition, a Lisp-like ``quasiquote'' is provided in the prelude; see the
+\fIMACROS\fP section for details.
 .SS Toplevel
 At the toplevel, a Pure program basically consists of rewriting rules (which
 are used to define functions and macros), constant and variable definitions,
@@ -1536,7 +1547,8 @@ from the prelude:
 .sp
 .nf
 \fBdef\fP quasiquote (unquote x)      = x;
-\fBdef\fP quasiquote (f@_ (splice x)) = foldl ($) (quasiquote f) (quasiquote x);
+\fBdef\fP quasiquote (f@_ (splice x)) = foldl ($) (quasiquote f)
+                                  (quasiquote x);
 \fBdef\fP quasiquote (f@_ x)          = quasiquote f (quasiquote x);
 \fBdef\fP quasiquote x                = quote x;
 .fi
