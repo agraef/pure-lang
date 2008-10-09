@@ -1671,7 +1671,7 @@ void interpreter::add_rule(env &e, rule &r, bool toplevel)
   }
   int32_t f; uint32_t argc = count_args(r.lhs, f);
   if (f <= 0)
-    throw err("error in function definition (invalid head symbol)");
+    throw err("error in function definition (missing head symbol)");
   env::iterator it = e.find(f);
   const symbol& sym = symtab.sym(f);
   if (it != e.end()) {
@@ -1728,7 +1728,7 @@ void interpreter::add_macro_rule(rule *r)
   closure(*r, false);
   int32_t f; uint32_t argc = count_args(r->lhs, f);
   if (f <= 0)
-    throw err("error in macro definition (invalid head symbol)");
+    throw err("error in macro definition (missing head symbol)");
   env::iterator it = macenv.find(f), jt = globenv.find(f);
   const symbol& sym = symtab.sym(f);
   if (jt != globenv.end()) {

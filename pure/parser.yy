@@ -678,6 +678,9 @@ pat_rulel
 simple_rule
 : expr '=' expr
 { $$ = new rule(*$1, *$3); delete $1; delete $3; }
+| expr
+{ expr *x = interp.mksym_expr(new string("_"));
+  $$ = new rule(*x, *$1); delete x; delete $1; }
 ;
 
 simple_rules
