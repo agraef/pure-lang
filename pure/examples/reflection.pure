@@ -20,11 +20,11 @@ using system;
    just leave this empty if you don't care about the type of symbol.) The
    'pat' argument is a shell-like glob pattern for the name of symbols which
    should be listed (just "*" matches all symbols). The result is a list of
-   triples in the format (name, value, descr) with the name of the symbol, its
-   current value and the description of the symbol as provided by 'show'. */
+   tuples (name, value, cat, descr) with the name of the symbol, its value and
+   the category and description of the symbol as provided by 'show -s'. */
 
 sym_info cat::string pat::string
-= [name, eval ("("+name+")"), descr | name, descr = info]
+= [name,eval ("("+name+")"),descr | name,descr = info]
 when
   // Get the info about matching symbols from the 'show' command.
   info = evalcmd $ sprintf "show -sg%s %s" (cat,pat);
@@ -41,7 +41,7 @@ end with
   // by 'show -s', into the name and description parts.
   fields s::string = tuple $
 		     [info!2 | info = tail $ regs $ reg_info $
-		      regex "([^ ]+)[ ]+(.*)" REG_EXTENDED s 0];
+		      regex "([^ ]+)[ ]+([a-z]*)[ ]*(.*)" REG_EXTENDED s 0];
 end;
 
 // Example: Retrieve information about all defined macros.
