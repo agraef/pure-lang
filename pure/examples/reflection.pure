@@ -1,0 +1,48 @@
+
+/* Example showing Pure's reflection capabilities. 2008-10-09 AG */
+
+using system;
+
+/* Pure 0.12 and later offer some basic reflection capabilities via the
+   'evalcmd' primitive. This function provides access to arbitrary interactive
+   commands such as 'clear', 'save' and 'show', which enable you to inspect
+   and modify the running program. The only canonical way to represent entire
+   Pure programs in Pure itself is the program text, hence 'evalcmd' only
+   provides a textual interface right now. But of course custom higher-level
+   representations can be built on top of that. */
+
+/* Here's an example showing what can be done using the 'show' command and a
+   little bit of trivial text processing. The following 'sym_info' function
+   retrieves information about a given collection of global symbols in a way
+   which can be processed in a Pure program. The 'cat' argument can be any
+   combination of the letters "c", "v", "f" and "m" denoting the categories of
+   constants, variables, functions and macros, respectively. (You can also
+   just leave this empty if you don't care about the type of symbol.) The
+   'pat' argument is a shell-like glob pattern for the name of symbols which
+   should be listed (just "*" matches all symbols). The result is a list of
+   triples in the format (name, value, descr) with the name of the symbol, its
+   current value and the description of the symbol as provided by 'show'. */
+
+sym_info cat::string pat::string
+= [name, eval ("("+name+")"), descr | name, descr = info]
+when
+  // Get the info about matching symbols from the 'show' command.
+  info = evalcmd $ sprintf "show -sg%s %s" (cat,pat);
+  // Split into lines.
+  info = if null info then [""] else split "\n" $ init info;
+  // Get rid of the last line with the summary information.
+  info = init info;
+  // Retrieve the information that we need.
+  info = [x | x@(s,_) = map fields info;
+	  // Get rid of extra lines containing extern and fixity declarations.
+	  s != "extern" && s != "nullary" && not fnmatch "infix*" s 0];
+end with
+  // Regex call to split the summary information about one symbol, as returned
+  // by 'show -s', into the name and description parts.
+  fields s::string = tuple $
+		     [info!2 | info = tail $ regs $ reg_info $
+		      regex "([^ ]+)[ ]+(.*)" REG_EXTENDED s 0];
+end;
+
+// Example: Retrieve information about all defined macros.
+sym_info "m" "*";
