@@ -732,6 +732,15 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
   if (check && sources.find(fname) != sources.end())
     // already loaded, skip
     return 0;
+  /* Check that the file exists. We already do that here so that errors are
+     properly reported to eval/evalcmd. */
+  if (!s.empty()) {
+    FILE *fp;
+    if ((fp = fopen(fname.c_str(), "r")))
+      fclose(fp);
+    else
+      throw err(s+": "+strerror(errno));
+  }
   // save local data
   bool l_interactive = interactive;
   string l_source = source;

@@ -4087,7 +4087,10 @@ pure_expr *evalcmd(pure_expr *x)
     free(s);
     interp.result = 0;
     interp.output = l_output;
-    if (res) pure_free_internal(res);
+    if (res)
+      pure_free_internal(res);
+    else if (!interp.errmsg.empty())
+      return 0;
     return pure_cstring_dup(sout.str().c_str());
   } else
     return 0;
