@@ -275,6 +275,8 @@ static string unixize(const string& s)
   return t;
 }
 
+#define BUFSIZE 1024
+
 int
 main(int argc, char *argv[])
 {
@@ -501,11 +503,22 @@ main(int argc, char *argv[])
   // source the initialization files, if any
   bool sticky = force_interactive;
   if (want_rcfile) {
+    // Avoid reading .purerc twice, if we happen to be invoked from the user's
+    // homedir.
+    bool want_both = true;
+    char cwd[BUFSIZE];
+    if (getcwd(cwd, BUFSIZE) && (env = getenv("HOME"))) {
+      char home[BUFSIZE];
+      chdir(env);
+      if (getcwd(home, BUFSIZE) && strcmp(home, cwd) == 0)
+	want_both = false;
+      chdir(cwd);
+    }
     if (!rcfile.empty() && chkfile(rcfile)) {
       interp.run(rcfile, false, sticky);
       sticky = true;
     }
-    if (chkfile(".purerc")) {
+    if (want_both && chkfile(".purerc")) {
       interp.run(".purerc", false, sticky);
       sticky = true;
     }
