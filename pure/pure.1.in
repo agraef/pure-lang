@@ -1500,8 +1500,8 @@ Let's see how this rule transforms a list comprehension if we ``voidify'' it:
 > f = [printf "%g\en" (2^x+1) | x=1..5; x mod 2];
 > g = void [printf "%g\en" (2^x+1) | x=1..5; x mod 2];
 > \fBshow\fP f g
-f = catmap (\ex -> if x mod 2 then [printf "%g\n" (2^x+1)] else []) (1..5);
-g = do (\ex -> if x mod 2 then [printf "%g\n" (2^x+1)] else []) (1..5);
+f = catmap (\ex -> if x mod 2 then [printf "%g\en" (2^x+1)] else []) (1..5);
+g = do (\ex -> if x mod 2 then [printf "%g\en" (2^x+1)] else []) (1..5);
 .fi
 .PP
 Ok, so the `catmap' got replaced with a `do' which is just what we need to
@@ -1638,8 +1638,8 @@ for debugging purposes:
 .sp
 .nf
 \fBusing\fP system;
-\fBdef\fP trace f x y = printf "** exit %s: %s -> %s\n" (str f,str x,str y) $$ y
-\fBwhen\fP y = printf "** call %s: %s\n: " (str f,str x) $$ gets $$ y \fBend\fP;
+\fBdef\fP trace f x y = printf "** exit %s: %s -> %s\en" (str f,str x,str y) $$ y
+\fBwhen\fP y = printf "** call %s: %s\en: " (str f,str x) $$ gets $$ y \fBend\fP;
 .fi
 .PP
 This macro is invoked with the function to be traced, the arguments (or
@@ -3405,7 +3405,7 @@ sym_info cat::string pat::string
   // Get the info about matching symbols from the 'show' command.
   info = evalcmd $ sprintf "show -sg%s %s" (cat,pat);
   // Split into lines.
-  info = \fBif\fP null info \fBthen\fP [""] \fBelse\fP split "\n" $ init info;
+  info = \fBif\fP null info \fBthen\fP [""] \fBelse\fP split "\en" $ init info;
   // Get rid of the last line with the summary information.
   info = init info;
   // Retrieve the information that we need.
