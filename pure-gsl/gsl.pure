@@ -20,6 +20,7 @@
    with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
 using "lib:gsl";
+using math;
 
 /* Additional matrix operators: element-wise multiplication, division,
    exponentiation, and left division. Note that left division is denoted '\\',
@@ -536,3 +537,176 @@ pinv x::matrix		= v*s*u' when
 
 x::matrix / y::matrix	= x*pinv y if nmatrixp x && nmatrixp y;
 x::matrix \\ y::matrix	= pinv x*y if nmatrixp x && nmatrixp y;
+
+
+/* Gaussian (aka Normal) distribution density functions */
+
+extern double gsl_cdf_ugaussian_P(double x)
+			= c_gsl_cdf_ugaussian_P;
+extern double gsl_cdf_gaussian_P(double x, double sigma) 
+			= c_gsl_cdf_gaussian_P;
+
+extern double gsl_cdf_ugaussian_Q(double x)
+			= c_gsl_cdf_ugaussian_Q;
+extern double gsl_cdf_gaussian_Q(double x, double sigma) 
+			= c_gsl_cdf_gaussian_Q;
+
+extern double gsl_cdf_ugaussian_Pinv(double p)
+			= c_gsl_cdf_ugaussian_Pinv;
+extern double gsl_cdf_gaussian_Pinv(double p, double sigma)
+			= c_gsl_cdf_gaussian_Pinv;
+
+extern double gsl_cdf_ugaussian_Qinv(double q)
+			= c_gsl_cdf_ugaussian_Qinv;
+extern double gsl_cdf_gaussian_Qinv(double q, double sigma)
+			= c_gsl_cdf_gaussian_Qinv;
+
+gsl_cdf_ugaussian_P x = c_gsl_cdf_ugaussian_P (double x) if realp x; 
+gsl_cdf_gaussian_P x sigma = c_gsl_cdf_gaussian_P (double x) (double sigma)
+			       if realp x && realp sigma;
+
+gsl_cdf_ugaussian_Q x = c_gsl_cdf_ugaussian_Q (double x) if realp x;
+gsl_cdf_gaussian_Q x sigma
+		      = c_gsl_cdf_gaussian_Q (double x) (double sigma)
+			  if realp x && realp sigma;
+
+gsl_cdf_ugaussian_Pinv p = c_gsl_cdf_ugaussian_Pinv (double p) if realp p;
+gsl_cdf_gaussian_Pinv p sigma 
+			 = c_gsl_cdf_gaussian_Pinv (double p) (double sigma)
+			     if realp p && realp sigma;
+
+gsl_cdf_ugaussian_Qinv q = c_gsl_cdf_ugaussian_Qinv (double q) if realp q;
+gsl_cdf_gaussian_Qinv q sigma
+			 = c_gsl_cdf_gaussian_Qinv (double q) (double sigma)
+			   if realp q && realp sigma;
+
+/* Chi-squared distribution density functions */
+
+extern double gsl_cdf_chisq_P(double x, double nu)
+			= c_gsl_cdf_chisq_P;
+extern double gsl_cdf_chisq_Q(double x, double nu)
+			= c_gsl_cdf_chisq_Q;
+
+extern double gsl_cdf_chisq_Pinv(double p, double nu)
+			= c_gsl_cdf_chisq_Pinv;
+extern double gsl_cdf_chisq_Qinv(double q, double nu)
+			= c_gsl_cdf_chisq_Qinv;
+
+gsl_cdf_chisq_P x nu = c_gsl_cdf_chisq_P (double x) (double nu)
+			 if realp x && realp nu;
+gsl_cdf_chisq_Q x nu = c_gsl_cdf_chisq_Q (double x) (double nu)
+			 if realp x && realp nu;
+
+gsl_cdf_chisq_Pinv p nu = c_gsl_cdf_chisq_P (double p) (double nu)
+			    if realp p && realp nu;
+gsl_cdf_chisq_Qinv q nu	= c_gsl_cdf_chisq_Qinv (double q) (double nu)
+			    if realp q && realp nu;
+
+/* F-distribution density functions */
+
+extern double gsl_cdf_fdist_P(double x, double nu1, double nu2)
+			= c_gsl_cdf_fdist_P;
+extern double gsl_cdf_fdist_Q(double x, double nu1, double nu2)
+			= c_gsl_cdf_fdist_Q;
+
+extern double gsl_cdf_fdist_Pinv(double p, double nu1, double nu2)
+			= c_gsl_cdf_fdist_Pinv;
+extern double gsl_cdf_fdist_Qinv(double q, double nu1, double nu2)
+			= c_gsl_cdf_fdist_Qinv;
+
+gsl_cdf_fdist_P x nu1 nu2 
+		= c_gsl_cdf_fdist_P (double x) (double nu1) (double nu2)
+		    if realp x && realp nu1 && realp nu2;
+gsl_cdf_fdist_Q x nu1 nu2
+		= c_gsl_cdf_fdist_Q (double x) (double nu1) (double nu2)
+		    if realp x && realp nu1 && realp nu2;
+
+gsl_cdf_fdist_Pinv
+		= c_gsl_cdf_fdist_Pinv (double p) (double nu1) (double nu2)
+		    if realp p && realp nu1 && realp nu2;
+gsl_cdf_fdist_Qinv
+		= c_gsl_cdf_fdist_Qinv (double q) (double nu1) (double nu2)
+		    if realp q && realp nu1 && realp nu2;
+
+/* Student t-distribution denisity functions */
+
+extern double gsl_cdf_tdist_P(double x, double nu)
+		= c_gsl_cdf_tdist_P;
+extern double gsl_cdf_tdist_Q(double x, double nu)
+		= c_gsl_cdf_tdist_Q;
+extern double gsl_cdf_tdist_Pinv(double p, double nu)
+		= c_gsl_cdf_tdist_Pinv;
+extern double gsl_cdf_tdist_Qinv(double q, double nu)
+		= c_gsl_cdf_tdist_Qinv;
+
+gsl_cdf_tdist_P x nu = c_gsl_cdf_tdist_P (double x) (double nu)
+			 if realp x && realp nu;
+gsl_cdf_tdist_Q x nu = c_gsl_cdf_tdist_Q (double x) (double nu)
+			 if realp x && realp nu;
+gsl_cdf_tdist_Pinv p nu = gsl_cdf_tdist_Qinv (double p) (double nu)
+			    if realp p && realp nu;
+gsl_cdf_tdist_Qinv p nu = gsl_cdf_tdist_Qinv (double q) (double nu)
+			    if realp q && realp nu;
+
+/* Poisson distribution probability and density functions */
+extern double gsl_ran_poisson_pdf(int k, double mu)
+			= c_gsl_ran_poisson_pdf;
+extern double gsl_cdf_poisson_P(int k, double mu)
+			= c_gsl_cdf_poisson_P;
+extern double gsl_cdf_poisson_Q(int k, double mu)
+			= c_gsl_cdf_poisson_Q;
+
+gsl_ran_poisson_pdf k mu = c_gsl_ran_poisson_pdf k (double mu)
+			     if exactp k && realp mu;
+gsl_cdf_poisson_P k mu = c_gsl_cdf_poisson_P k (double mu)
+			   if exactp k && realp mu;
+gsl_cdf_poisson_Q k mu = c_gsl_cdf_poisson_Q k (double mu)
+			   if exactp k && realp mu;
+
+/* Bernoulli distribution probability and density functions */
+
+extern double gsl_ran_bernoulli_pdf(int k, double p)
+		       = c_gsl_ran_bernoulli_pdf;
+gsl_ran_bernoulli_pdf k p = c_gsl_ran_bernoulli_pdf k (double p)
+			      if exactp k && realp p;
+
+/* Binomial distribution probability and density functions */
+
+extern double gsl_ran_binomial_pdf(int k, double p, int n)
+			  = c_gsl_ran_binomial_pdf;
+extern double gsl_cdf_binomial_P(int k, double p, int n)
+			  = c_gsl_cdf_binomial_P;
+extern double gsl_cdf_binomial_Q(int k, double p, int n)
+			  = c_gsl_cdf_binomial_Q;
+
+gsl_ran_binomial_pdf k p n = c_gsl_ran_binomial_pdf k p n
+			       if exactp k && realp p && exactp n;
+gsl_cdf_binomial_P k p n = c_gsl_cdf_binomial_P k p n
+			     if exactp k && realp p && exactp n;
+gsl_cdf_binomial_Q k p n = c_gsl_cdf_binomial_Q k p n
+			     if exactp k && realp p && exactp n;
+
+/* The multinomial distribution probability functions */
+
+extern double wrap_gsl_ran_multinomial_pdf(dmatrix* p, imatrix* n);
+
+
+gsl_ran_multinomial_pdf p@(_:_) n@(_:_)
+			 = gsl_ran_multinomial_pdf p_ n_
+			   when
+			     p_ = matrix (map double p);
+                             n_ = matrix (map int n);
+                           end;
+gsl_ran_multinomial_pdf p@(_:_) n::matrix
+			 = gsl_ran_multinomial_pdf p_ n
+			   when
+			     p_ = matrix (map double p);
+                           end;
+gsl_ran_multinomial_pdf p::matrix n@(_:_)
+			 = gsl_ran_multinomial_pdf p n_
+			   when
+			     n_ = matrix (map int n);
+                           end;
+gsl_ran_multinomial_pdf p::matrix n::matrix
+			 = wrap_gsl_ran_multinomial_pdf p n
+			   if dmatrixp p && imatrixp n;
