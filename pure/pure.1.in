@@ -1358,7 +1358,7 @@ step (p,i,x) j
 \fBend\fP;
 .fi
 .PP
-The real meat is in the pivoting and elimination step ('step' function) which
+The real meat is in the pivoting and elimination step (`step' function) which
 is iterated over all columns of the input matrix. In each step, x is the
 current matrix, i the current row index, j the current column index, and p
 keeps track of the current permutation of the row indices performed during
@@ -1789,8 +1789,8 @@ declaration (again, a
 prefix may be used to denote private constant symbols), e.g.:
 .sp
 .nf
-\fBnullary\fP [] ();
-\fBprivate\fP \fBnullary\fP nil;
+\fBnullary\fP foo;
+\fBprivate\fP \fBnullary\fP bar;
 .fi
 .sp
 As explained in the \fIPURE OVERVIEW\fP section,
@@ -1800,8 +1800,7 @@ than variables when they occur on the left-hand side of an equation.
 .sp
 Examples for all types of symbol declarations can be found in the prelude
 which declares a bunch of standard (arithmetic, relational, logical) operator
-symbols as well as the list and pair constructors `:' and `,' and the empty
-list and tuple constants `[]' and `()'.
+symbols as well as the list and pair constructors `:' and `,'.
 .TP
 \fBUsing clause:\fP \fBusing\fP \fIname\fP, ...;
 Causes each given script to be included in the Pure program. Each included
@@ -3109,6 +3108,13 @@ comes to the rescue here. Just define `foop' as follows:
 > foop foo, foop 99;
 1,0
 .fi
+.PP
+Another way to deal with the situation would be to just declare `foo' as a
+.B nullary
+symbol. However, this makes the `foo' symbol ``precious'', i.e., after such a
+declaration it cannot be used as a local variable anymore. It's usually a good
+idea to avoid that kind of thing, at least for generic symbols, so the above
+solution is preferred in this case.
 .SS With or when?
 A common source of confusion for Haskellers is that Pure provides two
 different constructs to bind local function and variable symbols,
@@ -3239,8 +3245,8 @@ that the value 2*3.14159265358979 = 6.28318530717959 has actually been
 computed at compile time.)
 .PP
 Note that constant definitions differ from parameterless macros in that the
-right-hand side of the definition is in fact evaluated at compile time. E.g.,
-compare the above with the following macro definition:
+right-hand side of the definition is in fact evaluated at definition
+time. E.g., compare the above with the following macro definition:
 .sp
 .nf
 > \fBclear\fP pi foo
@@ -3305,6 +3311,46 @@ bar x = 3*x;
 to redefine it as a constant, or vice versa, since Pure won't let you redefine
 an existing constant or variable as a different kind of symbol. The same also
 holds if a symbol is currently defined as a function or a macro.)
+.PP
+Finally, note that in difference to
+.B nullary
+symbols, by default
+.B const
+symbols can
+.I not
+be used on the left-hand side of a rule. E.g., the following will not work as
+expected:
+.sp
+.nf
+> const zero = 0; const one = 1;
+> foo x = case x of one = "one"; zero = "zero"; _ = "???" end;
+> show foo
+foo x = case x of one = "one"; zero = "zero"; _ = "???" end;
+> foo zero, foo one, foo 99;
+warning: rule never reduced: zero = "zero";
+warning: rule never reduced: _ = "???";
+"one","one","one"
+.fi
+.PP
+This is the same kind of pitfall as discussed in the context of the `foop'
+predicate in \fIHead = Function\fP above. However, it
+.I is
+possible to also declare a
+.B const
+symbol as
+.B nullary
+(with the usual caveats, see the \fIHead = Function\fP section) and have it
+behave like a nullary symbol on the left-hand side of a rule. In that case the
+value of the symbol will be substituted for its occurrences in a pattern:
+.sp
+.nf
+> nullary zero one;
+> bar x = case x of one = "one"; zero = "zero"; _ = "???" end;
+> show bar
+bar x = case x of 1 = "one"; 0 = "zero"; _ = "???" end;
+> bar zero, bar one, bar 99;
+"zero","one","???"
+.fi
 .SS External C Functions
 The interpreter always takes your
 .B extern
