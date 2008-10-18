@@ -472,6 +472,7 @@ public:
   expr subst(const env& vars, expr x, uint8_t idx = 0);
   expr fsubst(const env& funs, expr x, uint8_t idx = 0);
   expr csubst(expr x);
+  expr lcsubst(expr x);
   expr macsubst(expr x);
   expr varsubst(expr x, uint8_t offs);
   expr macred(expr x, expr y, uint8_t idx = 0);

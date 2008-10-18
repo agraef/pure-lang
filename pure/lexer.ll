@@ -600,6 +600,8 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
       if (jt == interp.globenv.end() && kt == interp.macenv.end()) {
 	assert(xt != interp.externals.end());
 	const ExternInfo& info = xt->second;
+	if (sym.fix == nullary)
+	  sout << "nullary " << sym.s << ";\n";
 	sout << info << ";";
 	if ((!sflag||lflag) && dflag) {
 	  if (!sflag) sout << endl;
@@ -609,6 +611,8 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	++nfuns;
       } else if (jt != interp.globenv.end() &&
 		 jt->second.t == env_info::fvar) {
+	if (sym.fix == nullary)
+	  sout << "nullary " << sym.s << ";\n";
 	nvars++;
 	if (sflag) {
 	  sout << sym.s << string(maxsize-sym.s.size(), ' ')
@@ -621,6 +625,8 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	       << ";\n";
       } else if (jt != interp.globenv.end() &&
 		 jt->second.t == env_info::cvar) {
+	if (sym.fix == nullary)
+	  sout << "nullary " << sym.s << ";\n";
 	ncsts++;
 	if (sflag) {
 	  sout << sym.s << string(maxsize-sym.s.size(), ' ')
@@ -953,15 +959,21 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
       const env::const_iterator jt = it->it, kt = it->jt;
       const extmap::const_iterator xt = it->xt;
       if (jt == interp.globenv.end() && kt == interp.macenv.end()) {
+	if (sym.fix == nullary)
+	  fout << "nullary " << sym.s << ";\n";
 	assert(xt != interp.externals.end());
 	const ExternInfo& info = xt->second;
 	fout << info << ";\n";
       } else if (jt != interp.globenv.end() &&
 		 jt->second.t == env_info::fvar) {
+	if (sym.fix == nullary)
+	  fout << "nullary " << sym.s << ";\n";
 	fout << "let " << sym.s << " = " << *(pure_expr**)jt->second.val
 	     << ";\n";
       } else if (jt != interp.globenv.end() &&
 		 jt->second.t == env_info::cvar) {
+	if (sym.fix == nullary)
+	  fout << "nullary " << sym.s << ";\n";
 	fout << "const " << sym.s << " = " << *jt->second.cval
 	     << ";\n";
       } else {

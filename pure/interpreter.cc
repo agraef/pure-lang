@@ -910,7 +910,7 @@ pure_expr *interpreter::defn(expr pat, expr& x, pure_expr*& e)
   env vars;
   // promote type tags and substitute macros and constants:
   expr rhs = csubst(macsubst(subst(vars, x)));
-  expr lhs = bind(vars, pat);
+  expr lhs = bind(vars, lcsubst(pat));
   build_env(vars, lhs);
   for (env::const_iterator it = vars.begin(); it != vars.end(); ++it) {
     int32_t f = it->first;
@@ -1089,7 +1089,7 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
   env vars;
   // promote type tags and substitute macros and constants:
   expr rhs = csubst(macsubst(subst(vars, x)));
-  expr lhs = bind(vars, pat);
+  expr lhs = bind(vars, lcsubst(pat));
   build_env(vars, lhs);
   for (env::const_iterator it = vars.begin(); it != vars.end(); ++it) {
     int32_t f = it->first;
@@ -1402,11 +1402,19 @@ void interpreter::declare(bool priv, prec_t prec, fix_t fix, list<string> *ids)
     symbol* sym = symtab.xlookup(*it, priv?modno:-1);
     if (sym) {
       // crosscheck declarations
-      if (sym->prec != prec || sym->fix != fix) {
-	string id = *it;
-	delete ids;
-	throw err("conflicting fixity declaration for symbol '"+id+"'");
-      }
+      if (sym->prec != prec || sym->fix != fix)
+	/* We explicitly permit 'nullary' redeclarations here, to support
+	   'const nullary' symbols on the lhs of rules. Note that this
+	   actually permits a 'nullary' redeclaration of *any* symbol unless
+	   it's already been declared as an operator, but this is actually
+	   only useful with 'const' symbols. */
+	if (fix == nullary && sym->prec == 10)
+	  sym->fix = nullary;
+	else {
+	  string id = *it;
+	  delete ids;
+	  throw err("conflicting fixity declaration for symbol '"+id+"'");
+	}
     } else
       symtab.xsym(*it, prec, fix, priv?modno:-1).f;
   }
@@ -1511,6 +1519,12 @@ void interpreter::clear(int32_t f)
   if (f > 0) {
     env::iterator it = globenv.find(f);
     if (it != globenv.end()) {
+      symbol& sym = symtab.sym(f);
+      // get rid of temporary 'nullary' designation of variable and constant
+      // symbols
+      if ((it->second.t == env_info::cvar || it->second.t == env_info::fvar) &&
+	  sym.prec == 10 && sym.fix == nullary)
+	sym.fix = infix;
       globenv.erase(it);
       clearsym(f);
     }
@@ -1521,6 +1535,10 @@ void interpreter::clear(int32_t f)
       int32_t f = jt->first;
       env_info& info = jt->second;
       if (info.temp >= temp) {
+	symbol& sym = symtab.sym(f);
+	if ((info.t == env_info::cvar || info.t == env_info::fvar) &&
+	    sym.prec == 10 && sym.fix == nullary)
+	  sym.fix = infix;
 	globenv.erase(jt);
 	clearsym(f);
       } else if (info.t == env_info::fun) {
@@ -1776,14 +1794,14 @@ void interpreter::add_macro_rule(rule *r)
 void interpreter::closure(expr& l, expr& r, bool b)
 {
   env vars;
-  expr u = bind(vars, l, b), v = subst(vars, r);
+  expr u = bind(vars, lcsubst(l), b), v = subst(vars, r);
   l = u; r = v;
 }
 
 void interpreter::closure(rule& r, bool b)
 {
   env vars;
-  expr u = expr(bind(vars, r.lhs, b)),
+  expr u = expr(bind(vars, lcsubst(r.lhs), b)),
     v = expr(subst(vars, r.rhs)),
     w = expr(subst(vars, r.qual));
   r = rule(u, v, w);
@@ -2300,6 +2318,50 @@ expr interpreter::csubst(expr x)
       // substitute constant value
       return *it->second.cval;
     else
+      return x;
+  }
+}
+
+/* This is a trimmed-down version of csubst() for performing replacements of
+   nullary const symbols in patterns. */
+
+expr interpreter::lcsubst(expr x)
+{
+  if (x.is_null()) return x;
+  switch (x.tag()) {
+  // constants:
+  case EXPR::VAR:
+  case EXPR::FVAR:
+  case EXPR::INT:
+  case EXPR::BIGINT:
+  case EXPR::DBL:
+  case EXPR::STR:
+  case EXPR::PTR:
+    return x;
+  // application:
+  case EXPR::APP: {
+    expr u = lcsubst(x.xval1()),
+      v = lcsubst(x.xval2());
+    expr w = expr(u, v);
+    w.set_astag(x.astag());
+    return w;
+  }
+  default:
+    assert(x.tag() > 0);
+    const symbol& sym = symtab.sym(x.tag());
+    if (sym.fix == nullary) {
+      env::const_iterator it = globenv.find(sym.f);
+      if (it != globenv.end() && it->second.t == env_info::cvar) {
+	/* FIXME: This breaks when the same constant is used with different
+	   "as" patterns in the same pattern. This is hard to fix right now,
+	   and it doesn't really seem to be worth the effort. Oh well,
+	   hopefully noone will ever notice. */
+	it->second.cval->set_astag(x.astag());
+	// substitute constant value
+	return *it->second.cval;
+      } else
+	return x;
+    } else
       return x;
   }
 }
@@ -2824,7 +2886,7 @@ expr *interpreter::mkwhen_expr(expr *x, rulel *r)
   for (rulel::reverse_iterator it = r->rbegin();
        it != r->rend(); ++it, ++idx) {
     env vars;
-    expr v = bind(vars, it->lhs), w = it->rhs;
+    expr v = bind(vars, lcsubst(it->lhs)), w = it->rhs;
     u = subst(vars, u, idx);
     uint8_t jdx = 0;
     for (rulel::iterator jt = s->begin(); jt != s->end(); ++jdx, ++jt) {
