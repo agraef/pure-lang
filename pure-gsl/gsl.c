@@ -262,15 +262,7 @@ int wrap_gsl_linalg_SV_solve(gsl_matrix* U, gsl_matrix* V, gsl_matrix* S,
   return gsl_linalg_SV_solve(U, V, &_S.vector, &_b.vector, &_x.vector);
 }
 
-double wrap_gsl_ran_multinomial_pdf(gsl_matrix* P, gsl_matrix_int* N)
+double wrap_gsl_ran_multinomial_pdf(int k, gsl_matrix* P, gsl_matrix_int* N)
 {
-  size_t n1 = P->size2;
-  gsl_vector* p = gsl_vector_alloc(n1);
-  gsl_vector_int* n = gsl_vector_int_alloc(n1);
-  gsl_matrix_get_row(p, P, 0);
-  gsl_matrix_int_get_row(n, N, 0);
-  double res = gsl_ran_multinomial_pdf(n1, p->data, n->data);
-  gsl_vector_free(p);
-  gsl_vector_int_free(n);
-  return res;
+  return gsl_ran_multinomial_pdf(k, P->data, N->data);
 }

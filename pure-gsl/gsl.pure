@@ -688,25 +688,25 @@ gsl_cdf_binomial_Q k p n = c_gsl_cdf_binomial_Q k p n
 
 /* The multinomial distribution probability functions */
 
-extern double wrap_gsl_ran_multinomial_pdf(dmatrix* p, imatrix* n);
+extern double wrap_gsl_ran_multinomial_pdf(int k, dmatrix* p, imatrix* n);
 
 
-gsl_ran_multinomial_pdf p@(_:_) n@(_:_)
-			 = gsl_ran_multinomial_pdf p_ n_
+gsl_ran_multinomial_pdf k::int p@(_:_) n@(_:_)
+			 = gsl_ran_multinomial_pdf k p_ n_
 			   when
 			     p_ = matrix (map double p);
                              n_ = matrix (map int n);
                            end;
-gsl_ran_multinomial_pdf p@(_:_) n::matrix
-			 = gsl_ran_multinomial_pdf p_ n
+gsl_ran_multinomial_pdf k::int p@(_:_) n::matrix
+			 = gsl_ran_multinomial_pdf k p_ n
 			   when
 			     p_ = matrix (map double p);
                            end;
-gsl_ran_multinomial_pdf p::matrix n@(_:_)
-			 = gsl_ran_multinomial_pdf p n_
+gsl_ran_multinomial_pdf k::int p::matrix n@(_:_)
+			 = gsl_ran_multinomial_pdf k p n_
 			   when
 			     n_ = matrix (map int n);
                            end;
-gsl_ran_multinomial_pdf p::matrix n::matrix
-			 = wrap_gsl_ran_multinomial_pdf p n
+gsl_ran_multinomial_pdf k::int p::matrix n::matrix
+			 = wrap_gsl_ran_multinomial_pdf k p n
 			   if dmatrixp p && imatrixp n;
