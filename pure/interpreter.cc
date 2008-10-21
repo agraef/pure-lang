@@ -2338,6 +2338,25 @@ expr interpreter::lcsubst(expr x)
   case EXPR::STR:
   case EXPR::PTR:
     return x;
+  // these must not occur on the lhs:
+  case EXPR::MATRIX:
+    throw err("matrix expression not permitted in pattern");
+    break;
+  case EXPR::LAMBDA:
+    throw err("lambda expression not permitted in pattern");
+    break;
+  case EXPR::COND:
+    throw err("conditional expression not permitted in pattern");
+    break;
+  case EXPR::CASE:
+    throw err("case expression not permitted in pattern");
+    break;
+  case EXPR::WHEN:
+    throw err("when expression not permitted in pattern");
+    break;
+  case EXPR::WITH:
+    throw err("with expression not permitted in pattern");
+    break;
   // application:
   case EXPR::APP: {
     expr u = lcsubst(x.xval1()),
