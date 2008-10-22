@@ -485,7 +485,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	    (e.t == env_info::fvar)?vflag:0))
 	continue;
       bool matches = e.temp >= tlevel;
-      if (!matches && !sflag && args.l.empty() &&
+      if (!matches && !sflag &&
 	  e.t == env_info::fun && fflag) {
 	// if not in summary mode, also list temporary rules for a
 	// non-temporary symbol
@@ -555,7 +555,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	      pflag >= 0 && (pflag > 0) != (sym.modno >= 0))
 	    continue;
 	  bool matches = e.temp >= tlevel;
-	  if (!matches && !sflag && args.l.empty()) {
+	  if (!matches && !sflag) {
 	    // if not in summary mode, also list temporary rules for a
 	    // non-temporary symbol
 	    rulel::const_iterator r;
@@ -847,7 +847,7 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	    (e.t == env_info::fvar)?vflag:0))
 	continue;
       bool matches = e.temp >= tlevel;
-      if (!matches && args.l.empty() &&
+      if (!matches &&
 	  e.t == env_info::fun && fflag) {
 	// dump temporary rules for a non-temporary symbol
 	rulel::const_iterator r;
@@ -914,7 +914,7 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	      pflag >= 0 && (pflag > 0) != (sym.modno >= 0))
 	    continue;
 	  bool matches = e.temp >= tlevel;
-	  if (!matches && args.l.empty()) {
+	  if (!matches) {
 	    // also dump temporary rules for a non-temporary symbol
 	    rulel::const_iterator r;
 	    for (r = e.rules->begin(); r != e.rules->end(); r++)
@@ -1138,7 +1138,7 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
 	    (e.t == env_info::fvar)?vflag:0))
 	continue;
       bool matches = e.temp >= tlevel;
-      if (!matches && args.l.empty() &&
+      if (!matches &&
 	  e.t == env_info::fun && fflag) {
 	// clear temporary rules for a non-temporary symbol
 	rulel::const_iterator r;
@@ -1178,7 +1178,7 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
 	      pflag >= 0 && (pflag > 0) != (sym.modno >= 0))
 	    continue;
 	  bool matches = e.temp >= tlevel;
-	  if (!matches && args.l.empty()) {
+	  if (!matches) {
 	    // also clear temporary rules for a non-temporary symbol
 	    rulel::const_iterator r;
 	    for (r = e.rules->begin(); r != e.rules->end(); r++)
