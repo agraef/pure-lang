@@ -2925,6 +2925,15 @@ pure_expr *pure_force(pure_expr *x)
     pure_new_internal(ret);
     // memoize the result
     assert(x!=ret);
+    if (x->data.clos->ep)
+      /* XXXKLUDGE: This thunk was created inside a global variable
+	 definition. Unlink the thunk from its parent environment (effectively
+	 making the environment permanent), so that we don't leave dangling
+	 pointers to the thunk procedure, which are bound to cause segfaults
+	 later. (This leaks memory on the parent environment if the variable
+	 is cleared later, but since this can only happen on the interactive
+	 command line, that's a minor issue.) */
+      x->data.clos->ep = 0;
     pure_free_clos(x);
     x->tag = ret->tag;
     x->data = ret->data;
