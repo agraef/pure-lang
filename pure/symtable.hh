@@ -101,11 +101,8 @@ public:
   symbol& segfault_sym() { return sym("stack_fault"); }
   symbol& bad_matrix_sym() { return sym("bad_matrix_value"); }
   symbol& amp_sym();
-  // These aren't predefined and aren't in the prelude either, so they may be
-  // undefined in which case a null pointer is returned. Pass force=true to
-  // forcibly create these symbols.
-  symbol* complex_rect_sym(bool force = false);
-  symbol* complex_polar_sym(bool force = false);
+  symbol& complex_rect_sym();
+  symbol& complex_polar_sym();
 };
 
 #endif // ! SYMTABLE_HH

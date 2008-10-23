@@ -897,10 +897,9 @@ static inline bool is_complex(pure_expr *x)
   if (u->tag == EXPR::APP) {
     interpreter& interp = *interpreter::g_interp;
     pure_expr *f = u->data.x[0];
-    symbol *rect = interp.symtab.complex_rect_sym(),
-      *polar = interp.symtab.complex_polar_sym();
-    if ((!rect || f->tag != rect->f) &&
-	(!polar || f->tag != polar->f))
+    symbol &rect = interp.symtab.complex_rect_sym(),
+      &polar = interp.symtab.complex_polar_sym();
+    if (f->tag != rect.f && f->tag != polar.f)
       return false;
     u = u->data.x[1];
     if (u->tag != EXPR::INT && u->tag != EXPR::DBL ||
@@ -919,10 +918,9 @@ static inline bool get_complex(pure_expr *x, double& a, double& b)
   if (u->tag == EXPR::APP) {
     interpreter& interp = *interpreter::g_interp;
     pure_expr *f = u->data.x[0];
-    symbol *rect = interp.symtab.complex_rect_sym(),
-      *polar = interp.symtab.complex_polar_sym();
-    if ((!rect || f->tag != rect->f) &&
-	(!polar || f->tag != polar->f))
+    symbol &rect = interp.symtab.complex_rect_sym(),
+      &polar = interp.symtab.complex_polar_sym();
+    if (f->tag != rect.f && f->tag != polar.f)
       return false;
     u = u->data.x[1];
     switch (u->tag) {
@@ -945,7 +943,7 @@ static inline bool get_complex(pure_expr *x, double& a, double& b)
     default:
       return false;
     }
-    if (polar && f->tag == polar->f) {
+    if (f->tag == polar.f) {
       double r = a, t = b;
       a = r*cos(t); b = r*sin(t);
     }
@@ -954,18 +952,15 @@ static inline bool get_complex(pure_expr *x, double& a, double& b)
     return false;
 }
 
-static inline pure_expr *make_complex2(symbol *rect, double a, double b)
+static inline pure_expr *make_complex2(symbol& rect, double a, double b)
 {
-  if (rect)
-    return pure_appl(pure_symbol(rect->f), 2, pure_double(a), pure_double(b));
-  else
-    return 0;
+  return pure_appl(pure_symbol(rect.f), 2, pure_double(a), pure_double(b));
 }
 
 static inline pure_expr *make_complex(double a, double b)
 {
   interpreter& interp = *interpreter::g_interp;
-  symbol *rect = interp.symtab.complex_rect_sym(true);
+  symbol &rect = interp.symtab.complex_rect_sym();
   return make_complex2(rect, a, b);
 }
 
@@ -1371,7 +1366,7 @@ symbolic_matrix_rows(size_t nrows, size_t ncols, size_t n, pure_expr **xs)
       gsl_matrix_complex *mat1 = (gsl_matrix_complex*)x->data.mat.p;
       if (mat1) {
 	interpreter& interp = *interpreter::g_interp;
-	symbol *rect = interp.symtab.complex_rect_sym(true);
+	symbol& rect = interp.symtab.complex_rect_sym();
 	for (size_t j = 0; j < mat1->size1; i++, j++)
 	  for (size_t k = 0; k < mat1->size2; k++) {
 	    size_t l = 2*(j*mat1->tda+k);
@@ -1436,7 +1431,7 @@ symbolic_matrix_columns(size_t nrows, size_t ncols, size_t n, pure_expr **xs)
       gsl_matrix_complex *mat1 = (gsl_matrix_complex*)x->data.mat.p;
       if (mat1) {
 	interpreter& interp = *interpreter::g_interp;
-	symbol *rect = interp.symtab.complex_rect_sym(true);
+	symbol& rect = interp.symtab.complex_rect_sym();
 	for (size_t j = 0; j < mat1->size1; j++)
 	  for (size_t k = 0; k < mat1->size2; k++) {
 	    size_t l = 2*(j*mat1->tda+k);

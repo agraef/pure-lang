@@ -819,13 +819,12 @@ ostream& operator << (ostream& os, const pure_expr *x)
     return os << "}";
   case EXPR::CMATRIX:
     /* Print complex values in rectangular format using the infix notation
-       defined in math.pure. FIXME: We require the +: symbol to be predefined
-       no matter whether math.pure has actually been loaded. */
+       defined in prelude.pure. */
     os << "{";
     if (x->data.mat.p) {
       interpreter& interp = *interpreter::g_interp;
-      symbol *rect = interp.symtab.complex_rect_sym(true);
-      string& rectsym = rect->s;
+      symbol& rect = interp.symtab.complex_rect_sym();
+      string& rectsym = rect.s;
       gsl_matrix_complex *m = (gsl_matrix_complex*)x->data.mat.p;
       if (m->size1>0 && m->size2>0) {
 	for (size_t i = 0; i < m->size1; i++) {

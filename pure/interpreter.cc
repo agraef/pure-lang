@@ -1043,8 +1043,8 @@ expr interpreter::pure_expr_to_expr(const pure_expr *x)
     if (x->data.mat.p) {
       gsl_matrix_complex *m = (gsl_matrix_complex*)x->data.mat.p;
       exprll *xs = new exprll;
-      symbol *rect = symtab.complex_rect_sym(true);
-      expr f = rect->x;
+      symbol &rect = symtab.complex_rect_sym();
+      expr f = rect.x;
       for (size_t i = 0; i < m->size1; i++) {
 	xs->push_back(exprl());
 	exprl& ys = xs->back();

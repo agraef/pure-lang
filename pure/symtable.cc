@@ -4,7 +4,7 @@
 
 symtable::symtable() : fno(0), rtab(1024), __show__sym(0)
 {
-  // enter any predefined symbols here, e.g.:
+  // enter any additional predefined symbols here, e.g.:
   //sym("-", 6, infixl);
 }
 
@@ -45,6 +45,8 @@ void symtable::init_builtins()
   segfault_sym();
   bad_matrix_sym();
   amp_sym();
+  complex_rect_sym();
+  complex_polar_sym();
 }
 
 symbol* symtable::lookup(const string& s, int32_t modno)
@@ -376,20 +378,20 @@ symbol& symtable::amp_sym()
     return sym("&", 9, postfix);
 }
 
-symbol* symtable::complex_rect_sym(bool force)
+symbol& symtable::complex_rect_sym()
 {
   symbol *_sym = lookup("+:");
-  if (!force || _sym)
-    return _sym;
+  if (_sym)
+    return *_sym;
   else
-    return &sym("+:", 5, infix);
+    return sym("+:", 5, infix);
 }
 
-symbol* symtable::complex_polar_sym(bool force)
+symbol& symtable::complex_polar_sym()
 {
   symbol *_sym = lookup("<:");
-  if (!force || _sym)
-    return _sym;
+  if (_sym)
+    return *_sym;
   else
-    return &sym("<:", 5, infix);
+    return sym("<:", 5, infix);
 }
