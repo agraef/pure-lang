@@ -43,6 +43,14 @@ stringp x	= case x of _::string  = 1; _ = 0 end;
 pointerp x	= case x of _::pointer = 1; _ = 0 end;
 matrixp x	= case x of _::matrix = 1; _ = 0 end;
 
+/* Additional number predicates. */
+
+complexp x	= case x of x+:y | x<:y = realp x && realp y; _ = 0 end;
+realp x		= case x of _::int | _::bigint | _::double |
+		            _::bigint%_::bigint = 1; _ = 0 end;
+rationalp x	= case x of _::bigint%_::bigint = 1; _ = 0 end;
+numberp x	= realp x || complexp x;
+
 /* Predicates to check for function objects, global (unbound) variables,
    function applications, proper lists, list nodes and tuples. */
 

@@ -543,20 +543,12 @@ x1 <= x2%y2	= x1*y2 <= x2 if realp x2;
 x1 >  x2%y2	= x1*y2 >  x2 if realp x2;
 x1 >= x2%y2	= x1*y2 >= x2 if realp x2;
 
-/* Additional number predicates. */
-
-complexp x	= case x of x+:y | x<:y = realp x && realp y; _ = 0 end;
-realp x		= case x of _::int | _::bigint | _::double |
-		            _::bigint%_::bigint = 1; _ = 0 end;
-rationalp x	= case x of _::bigint%_::bigint = 1; _ = 0 end;
-numberp x	= realp x || complexp x;
-
 /* Semantic number predicates. In difference to the syntactic predicates in
-   primitives.pure and above, these check whether the given value can be
-   represented as an object of the given target type (up to rounding
-   errors). Note that if x is of syntactic type X, then it is also of semantic
-   type X. Moreover, intvalp x => bigintvalp x => ratvalp x => realvalp x =>
-   compvalp x <=> numberp x. */
+   primitives.pure, these check whether the given value can be represented as
+   an object of the given target type (up to rounding errors). Note that if x
+   is of syntactic type X, then it is also of semantic type X. Moreover,
+   intvalp x => bigintvalp x => ratvalp x => realvalp x => compvalp x <=>
+   numberp x. */
 
 compvalp x	= numberp x;
 realvalp x	= compvalp x && im x==0;
