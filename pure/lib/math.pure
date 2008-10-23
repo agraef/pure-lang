@@ -560,6 +560,14 @@ intvalp x	= bigintvalp x && int (re x)==x;
    components. */
 
 exactp x	= numberp x &&
-		  not (doublep x || doublep (re x) || doublep (im x));
+		  (case x of
+		     x+:y = not doublep x && not doublep y;
+		     x<:y = not doublep x && not doublep y;
+		     _ = not doublep x;
+		   end);
 inexactp x      = numberp x &&
-		  (doublep x || doublep (re x) || doublep (im x));
+		  (case x of
+		     x+:y = doublep x || doublep y;
+		     x<:y = doublep x || doublep y;
+		     _ = doublep x;
+		   end);
