@@ -555,19 +555,3 @@ realvalp x	= compvalp x && im x==0;
 ratvalp x	= realvalp x && re (x-x)!==nan;
 bigintvalp x	= ratvalp x && den (re x)==1;
 intvalp x	= bigintvalp x && int (re x)==x;
-
-/* Check whether a number is exact (i.e., doesn't contain any double
-   components. */
-
-exactp x	= numberp x &&
-		  (case x of
-		     x+:y = not doublep x && not doublep y;
-		     x<:y = not doublep x && not doublep y;
-		     _ = not doublep x;
-		   end);
-inexactp x      = numberp x &&
-		  (case x of
-		     x+:y = doublep x || doublep y;
-		     x<:y = doublep x || doublep y;
-		     _ = doublep x;
-		   end);
