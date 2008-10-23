@@ -994,7 +994,7 @@ expr interpreter::pure_expr_to_expr(const pure_expr *x)
 	  ys.push_back(pure_expr_to_expr(m->data[i * m->tda + j]));
 	}
       }
-      return expr(EXPR::MATRIX, m);
+      return expr(EXPR::MATRIX, xs);
     } else
       return expr(EXPR::MATRIX, new exprll);
   }
@@ -1010,7 +1010,7 @@ expr interpreter::pure_expr_to_expr(const pure_expr *x)
 	  ys.push_back(expr(EXPR::DBL, m->data[i * m->tda + j]));
 	}
       }
-      return expr(EXPR::MATRIX, m);
+      return expr(EXPR::MATRIX, xs);
     } else
       return expr(EXPR::MATRIX, new exprll);
 #else
@@ -1030,7 +1030,7 @@ expr interpreter::pure_expr_to_expr(const pure_expr *x)
 	  ys.push_back(expr(EXPR::INT, m->data[i * m->tda + j]));
 	}
       }
-      return expr(EXPR::MATRIX, m);
+      return expr(EXPR::MATRIX, xs);
     } else
       return expr(EXPR::MATRIX, new exprll);
 #else
@@ -1054,7 +1054,7 @@ expr interpreter::pure_expr_to_expr(const pure_expr *x)
 	  ys.push_back(expr(f, u, v));
 	}
       }
-      return expr(EXPR::MATRIX, m);
+      return expr(EXPR::MATRIX, xs);
     } else
       return expr(EXPR::MATRIX, new exprll);
 #else
