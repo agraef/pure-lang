@@ -45,11 +45,12 @@ matrixp x	= case x of _::matrix = 1; _ = 0 end;
 
 /* Additional number predicates. */
 
-complexp x	= case x of x+:y | x<:y = realp x && realp y; _ = 0 end;
-realp x		= case x of _::int | _::bigint | _::double |
-		            _::bigint%_::bigint = 1; _ = 0 end;
-rationalp x	= case x of _::bigint%_::bigint = 1; _ = 0 end;
 numberp x	= realp x || complexp x;
+complexp x	= case x of x+:y | x<:y = realp x && realp y; _ = 0 end;
+realp x		= case x of _::int | _::bigint | _::double = 1;
+		            x%y = realp x && realp y; _ = 0 end;
+rationalp x	= case x of x%y = integerp x && integerp y; _ = 0 end;
+integerp x	= case x of _::int | _::bigint = 1; _ = 0 end;
 
 /* Check whether a number is exact (i.e., doesn't contain any double
    components. */
@@ -58,12 +59,14 @@ exactp x	= numberp x &&
 		  (case x of
 		     x+:y = not doublep x && not doublep y;
 		     x<:y = not doublep x && not doublep y;
+		     x%y  = not doublep x && not doublep y;
 		     _ = not doublep x;
 		   end);
 inexactp x      = numberp x &&
 		  (case x of
 		     x+:y = doublep x || doublep y;
 		     x<:y = doublep x || doublep y;
+		     x%y  = doublep x || doublep y;
 		     _ = doublep x;
 		   end);
 
