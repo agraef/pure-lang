@@ -36,7 +36,7 @@
 
    > run hello.pure
    Hello, world!
-   > let xs = [rand; i = 1..100000];
+   > let xs = [rand | i = 1..100000];
    > stats
    > #sort (<) xs;
    100000
