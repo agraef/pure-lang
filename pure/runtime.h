@@ -365,6 +365,20 @@ bool pure_clear(int32_t sym);
 uint32_t pure_save();
 uint32_t pure_restore();
 
+/* Like eval() and evalcmd() in the library API, the following routines
+   evaluate Pure expressions and other Pure code, but, for convenience, the
+   input is specified as a string. pure_eval() only executes ordinary Pure
+   code, while pure_evalcmd() also executes interactive commands and captures
+   their output; see the description of the library API routines for details.
+   pure_eval() returns the (last) evaluated expression (if any), while
+   pure_evalcmd only returns the output from interactive commands like 'show'
+   as a string (0 if none). Both routines also return 0 in case of an error;
+   in that case you can use lasterr() in the library API to check for error
+   messages from the interpreter. */
+
+pure_expr *pure_eval(const char *s);
+char *pure_evalcmd(const char *s);
+
 /* The following routines provide standalone C/C++ applications with fully
    initialized interpreter instances which can be used together with the
    operations listed above. This is only needed for modules which are not to

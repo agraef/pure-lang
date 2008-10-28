@@ -2184,6 +2184,43 @@ uint32_t pure_restore()
   return interp.temp;
 }
 
+extern "C"
+pure_expr *pure_eval(const char *s)
+{
+  assert(s);
+  interpreter& interp = *interpreter::g_interp;
+  interp.errmsg.clear();
+  pure_expr *res = interp.runstr(string(s)+";");
+  interp.result = 0;
+  if (res) {
+    pure_unref_internal(res);
+    return res;
+  } else if (interp.errmsg.empty())
+    return mk_void();
+  else
+    return 0;
+}
+
+extern "C"
+char *pure_evalcmd(const char *s)
+{
+  assert(s);
+  interpreter& interp = *interpreter::g_interp;
+  ostream *l_output = interp.output;
+  ostringstream sout;
+  interp.errmsg.clear();
+  interp.output = &sout;
+  pure_expr *res = interp.runstr(string(s));
+  interp.result = 0;
+  interp.output = l_output;
+  if (res)
+    pure_free_internal(res);
+  if (!interp.errmsg.empty() || sout.str().empty())
+    return 0;
+  else
+    return strdup(sout.str().c_str());
+}
+
 #ifndef HOST
 #define HOST "unknown"
 #endif

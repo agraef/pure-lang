@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
   if (!interp) return 1;
   fputs("? ", stdout); fflush(stdout);
   while (fgets(buf, sizeof(buf), stdin)) {
-    pure_expr *x = eval(buf);
+    pure_expr *x = pure_eval(buf);
     if (x) {
       char *s = str(x);
       printf("%s\n", s);
