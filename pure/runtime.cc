@@ -2317,7 +2317,7 @@ pure_interp *pure_create_interp(int argc, char *argv[])
 #endif
   // scan the command line options
   list<string> myargs;
-  for (char **args = ++argv; *args; ++args)
+  if (argv && *argv) for (char **args = ++argv; *args; ++args)
     if (*args == string("-h") || *args == string("--help"))
       /* ignored */;
     else if (*args == string("--version"))
@@ -2397,7 +2397,7 @@ pure_interp *pure_create_interp(int argc, char *argv[])
     }
   }
   // load scripts specified on the command line
-  for (; *argv; ++argv)
+  if (argv) for (; *argv; ++argv)
     if (string(*argv).substr(0,2) == "-v") {
       uint8_t level = 1;
       string s = string(*argv).substr(2);

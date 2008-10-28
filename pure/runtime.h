@@ -399,7 +399,9 @@ typedef struct _pure_interp pure_interp;
    interpreter. (Options like -i and -q won't have any effect, though, and the
    interpreter will always be in non-interactive mode.) The argv vector must
    be NULL-terminated, and argv[0] should be set to the name of the hosting
-   application (usually the main program of the application).
+   application (usually the main program of the application). For convenience,
+   you can also just pass in a NULL vector (and argc=0) to denote an empty
+   parameter list.
 
    An application may use multiple interpreter instances, but only a single
    instance can be active at any one time. By default, the first created
@@ -415,9 +417,9 @@ typedef struct _pure_interp pure_interp;
 
    Note that when using different interpreter instances in concert, it is
    *not* possible to pass pure_expr* values created with one interpreter
-   instance to another. Instead, you can use the str and eval functions from
-   the library API (see below) to first unparse the expression in the source
-   interpreter and then reparse it in the target interpreter. */
+   instance to another. Instead, you can use str (from the library API, see
+   below) and pure_eval (see above) to first unparse the expression in the
+   source interpreter and then reparse it in the target interpreter. */
 
 pure_interp *pure_create_interp(int argc, char *argv[]);
 void pure_delete_interp(pure_interp *interp);
