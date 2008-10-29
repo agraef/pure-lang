@@ -270,7 +270,11 @@ tuple (x:xs)	= accum x xs with
 end;
 
 list []		= [];
-list (x:xs)	= x:list xs;
+list (x:xs)	= accum [x] xs with
+  accum ys (x:xs)	= accum (x:ys) xs;
+  accum ys []		= reverse ys;
+  accum	ys xs		= throw (bad_list_value xs);
+end;
 
 stream []	= [];
 stream (x:xs)	= x:xs if thunkp xs;

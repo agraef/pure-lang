@@ -409,7 +409,38 @@ tuple (x/*0:101*/:xs/*0:11*/) = accum/*0*/ x/*0:101*/ xs/*0:11*/ with accum ys/*
   state 13: #1 #2
 } end;
 list [] = [];
-list (x/*0:101*/:xs/*0:11*/) = x/*0:101*/:list xs/*0:11*/;
+list (x/*0:101*/:xs/*0:11*/) = accum/*0*/ [x/*0:101*/] xs/*0:11*/ with accum ys/*0:01*/ (x/*0:101*/:xs/*0:11*/) = accum/*1*/ (x/*0:101*/:ys/*0:01*/) xs/*0:11*/; accum ys/*0:01*/ [] = reverse ys/*0:01*/; accum ys/*0:01*/ xs/*0:1*/ = throw (bad_list_value xs/*0:1*/) {
+  rule #0: accum ys (x:xs) = accum (x:ys) xs
+  rule #1: accum ys [] = reverse ys
+  rule #2: accum ys xs = throw (bad_list_value xs)
+  state 0: #0 #1 #2
+	<var> state 1
+  state 1: #0 #1 #2
+	<var> state 2
+	<app> state 3
+	[] state 13
+  state 2: #2
+  state 3: #0 #2
+	<var> state 4
+	<app> state 6
+  state 4: #2
+	<var> state 5
+  state 5: #2
+  state 6: #0 #2
+	<var> state 7
+	: state 10
+  state 7: #2
+	<var> state 8
+  state 8: #2
+	<var> state 9
+  state 9: #2
+  state 10: #0 #2
+	<var> state 11
+  state 11: #0 #2
+	<var> state 12
+  state 12: #0 #2
+  state 13: #1 #2
+} end;
 stream [] = [];
 stream (x/*0:101*/:xs/*0:11*/) = x/*0:101*/:xs/*0:11*/ if thunkp xs/*0:11*/;
 stream (x/*0:101*/:xs/*0:11*/) = x/*0:101*/:stream xs/*1:11*/&;
