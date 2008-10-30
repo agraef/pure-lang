@@ -2452,6 +2452,20 @@ pure_interp *pure_current_interp()
   return (pure_interp*)interpreter::g_interp;
 }
 
+extern "C"
+void pure_interp_compile(pure_interp *interp)
+{
+  assert(interp);
+  interpreter *_interp = (interpreter*)interp;
+  _interp->compile();
+  llvm::Module *module = _interp->module;
+  for (llvm::Module::iterator it = module->begin(), end = module->end();
+       it != end; ++it) {
+    llvm::Function *fn = &*it;
+    if (!fn->isDeclaration()) _interp->JIT->getPointerToFunction(fn);
+  }
+}
+
 /* END OF PUBLIC API. *******************************************************/
 
 extern "C"

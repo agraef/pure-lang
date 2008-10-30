@@ -501,6 +501,7 @@ public:
   // LLVM code generation and execution.
 
   llvm::Module *module;
+  llvm::ModuleProvider *MP;
   llvm::ExecutionEngine *JIT;
   llvm::FunctionPassManager *FPM;
   llvm::StructType  *ExprTy, *IntExprTy, *DblExprTy, *StrExprTy, *PtrExprTy;

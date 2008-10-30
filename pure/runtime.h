@@ -426,6 +426,14 @@ void pure_delete_interp(pure_interp *interp);
 void pure_switch_interp(pure_interp *interp);
 pure_interp *pure_current_interp();
 
+/* Eager compilation. Compiles all loaded definitions and runs the JIT. This
+   may be useful for applications where incremental compilation is not
+   appropriate, but it also increases startup times since it compiles all
+   definitions no matter whether they are actually used by the running program
+   or not. */
+
+void pure_interp_compile(pure_interp *interp);
+
 /* END OF PUBLIC API. *******************************************************/
 
 /* Stuff below this line is for internal use by the Pure interpreter. Don't

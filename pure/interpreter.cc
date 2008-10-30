@@ -93,9 +93,9 @@ interpreter::interpreter()
   using namespace llvm;
 
   module = new Module("pure");
-  ModuleProvider *PM = new ExistingModuleProvider(module);
-  JIT = ExecutionEngine::create(PM);
-  FPM = new FunctionPassManager(PM);
+  MP = new ExistingModuleProvider(module);
+  JIT = ExecutionEngine::create(MP);
+  FPM = new FunctionPassManager(MP);
 
   // Set up the optimizer pipeline. Start with registering info about how the
   // target lays out data structures.
