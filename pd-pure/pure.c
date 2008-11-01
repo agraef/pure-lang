@@ -23,28 +23,43 @@
 #include <pure/runtime.h>
 #include <m_pd.h>
 
+/* Ticks per millisecond of the internal clock. FIXME: Currently this is a
+   fixed value (32.*441000./1000., cf. m_sched.c), will have to be rewritten
+   if this changes. */
+#define TICKS 14112.0
+
+/* Provide access to the current logical Pd time in milliseconds. This is to
+   be used in Pure scripts as follows: extern double pd_time(); */
+
+extern double pd_time(void)
+{
+  return clock_getlogicaltime()/TICKS;
+}
+
 /* We maintain a single Pure interpreter instance for all Pure objects. */
 
 static pure_interp *interp = 0;
-static int void_sym = 0;
+static int void_sym = 0, delay_sym = 0;
 
 /* The Pure object class. */
 
 typedef struct _pure {
   t_object x_obj;
-  int n_in, n_out;        /* number of extra inlets and outlets */
-  struct _px **in;	  /* extra inlet proxies, see t_px below */
-  t_outlet **out;	  /* outlets */
-  pure_expr *foo;	  /* the object function */
-  char *args;		  /* creation arguments */
+  int n_in, n_out;	/* number of extra inlets and outlets */
+  struct _px **in;	/* extra inlet proxies, see t_px below */
+  t_outlet **out;	/* outlets */
+  pure_expr *foo;	/* the object function */
+  char *args;		/* creation arguments */
+  t_clock *clock;	/* wakeup for asynchronous processing */
+  pure_expr *msg;	/* pending asynchronous message */
 } t_pure;
 
 /* Proxy objects for extra inlets (pilfered from flext by Thomas Grill). */
 
 typedef struct _px {
   t_object obj;
-  t_pure *x;		  /* parent */
-  int ix;		  /* inlet index */
+  t_pure *x;		/* parent */
+  int ix;		/* inlet index */
 } t_px;
 
 /* We keep track of the different classes in a linked list for now. */
@@ -126,6 +141,25 @@ static inline bool is_double(pure_expr *x, double *d)
     return true;
   else if (pure_is_int(x, &i)) {
     *d = (double)i;
+    return true;
+  } else
+    return false;
+}
+
+static inline bool is_delay(pure_expr *x, double *t, pure_expr **msg)
+{
+  int sym;
+  pure_expr *y, *z, *u, *v;
+  if (pure_is_app(x, &y, &z) && pure_is_app(y, &u, &v) &&
+      pure_is_symbol(u, &sym) && sym == delay_sym) {
+    int i;
+    if (pure_is_double(v, t))
+      ;
+    else if (pure_is_int(v, &i))
+      *t = (double)i;
+    else
+      return false;
+    *msg = z;
     return true;
   } else
     return false;
@@ -232,16 +266,30 @@ static void send_message(t_pure *x, int k, pure_expr *y)
   if (argv) free(argv);
 }
 
+/* Schedule a message to be delivered to the object after the given time
+   interval (see timeout below). */
+
+static inline void delay_message(t_pure *x, double t, pure_expr *msg)
+{
+  if (x->msg) pure_free(x->msg);
+  x->msg = pure_new(msg);
+  clock_delay(x->clock, t);
+}
+
 /* Handle a message to the given inlet. The message is first converted to a
    corresponding Pure expression to which the object function is applied. The
    returned value is processed, converting results back to corresponding Pd
-   messages and sending these messages through the appropriate outlets. */
+   messages and sending these messages through the appropriate outlets.
+   Messages of the form 'delay t' (where t is an int or double time value in
+   milliseconds) do not cause any output, but are scheduled to be delivered to
+   the object after the given time interval (see timeout below). */
 
 static void receive_message(t_pure *x, t_symbol *s, int k,
 			    int argc, t_atom *argv)
 {
   size_t i, n, m;
-  pure_expr *f = x->foo, *y, *z;
+  double t;
+  pure_expr *f = x->foo, *y, *z, *msg;
   pure_expr **xv = 0, **yv = 0;
   int ix;
 
@@ -272,11 +320,54 @@ static void receive_message(t_pure *x, t_symbol *s, int k,
       if (yv) free(yv); yv = 0;
       if (pure_is_tuplev(xv[i], &m, &yv) && m == 2 && pure_is_int(yv[0], &ix))
 	send_message(x, ix, yv[1]);
+      else if (is_delay(xv[i], &t, &msg))
+	delay_message(x, t, msg);
       else
 	send_message(x, 0, xv[i]);
     }
   } else if (pure_is_tuplev(y, &m, &yv) && m == 2 && pure_is_int(yv[0], &ix))
     send_message(x, ix, yv[1]);
+  else if (is_delay(y, &t, &msg))
+    delay_message(x, t, msg);
+  else
+    send_message(x, 0, y);
+  if (xv) free(xv);
+  if (yv) free(yv);
+  pure_free(y);
+}
+
+/* Timer callback. This works similar to receive_message above, but is called
+   when a scheduled clock event arrives. Here, the object function is applied
+   to the pending message, and the results are then processed as usual. */
+
+static void timeout(t_pure *x)
+{
+  size_t i, n, m;
+  double t;
+  pure_expr *f = x->foo, *y = x->msg, *msg;
+  pure_expr **xv = 0, **yv = 0;
+  int ix;
+
+  /* check whether we have something to evaluate */
+  if (!f || !y) return;
+  /* apply the object function */
+  y = pure_new(pure_app(f, y));
+  pure_free(x->msg); x->msg = 0;
+  /* process the results and route them through the appropriate outlets */
+  if (pure_is_listv(y, &n, &xv)) {
+    for (i = 0; i < n; i++) {
+      if (yv) free(yv); yv = 0;
+      if (pure_is_tuplev(xv[i], &m, &yv) && m == 2 && pure_is_int(yv[0], &ix))
+	send_message(x, ix, yv[1]);
+      else if (is_delay(xv[i], &t, &msg))
+	delay_message(x, t, msg);
+      else
+	send_message(x, 0, xv[i]);
+    }
+  } else if (pure_is_tuplev(y, &m, &yv) && m == 2 && pure_is_int(yv[0], &ix))
+    send_message(x, ix, yv[1]);
+  else if (is_delay(y, &t, &msg))
+    delay_message(x, t, msg);
   else
     send_message(x, 0, y);
   if (xv) free(xv);
@@ -319,6 +410,8 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
     pd_error(x, "pure: memory allocation failed");
     return (void *)x;
   }
+  x->clock = clock_new(x, (t_method)timeout);
+  x->msg = 0;
   /* initialize the object function and determine the number of inlets and
      outlets (these cannot be changed later) */
   if (x->args != 0) {
@@ -448,9 +541,9 @@ extern void pure_setup(void)
 			 sizeof(t_px), CLASS_PD|CLASS_NOINLET,
 			 A_NULL);
     class_addanything(px_class, px_any);
-    /* We need to know what the void symbol () is. */
+    /* Look up a few symbols that we need. */
     void_sym = pure_sym("()");
+    delay_sym = pure_sym("delay");
   } else
     error("pure: error initializing interpreter; loader not registered");
 }
-
