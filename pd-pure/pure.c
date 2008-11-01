@@ -267,13 +267,21 @@ static void send_message(t_pure *x, int k, pure_expr *y)
 }
 
 /* Schedule a message to be delivered to the object after the given time
-   interval (see timeout below). */
+   interval (see timeout below). Notes: Negative or zero time values mean that
+   the event is scheduled to be delivered immediately. There is only one timer
+   per object. If another event has already been scheduled, it is cancelled
+   and the new one is scheduled instead. Also, if the time value is inf or
+   nan, any existing timer event is cancelled. */
 
 static inline void delay_message(t_pure *x, double t, pure_expr *msg)
 {
+  const double inf = 1.0e307 * 1.0e307;
   if (x->msg) pure_free(x->msg);
-  x->msg = pure_new(msg);
-  clock_delay(x->clock, t);
+  if (t != inf && /* this is false only for nan: */t == t) {
+    x->msg = pure_new(msg);
+    clock_delay(x->clock, t);
+  } else
+    clock_unset(x->clock);
 }
 
 /* Handle a message to the given inlet. The message is first converted to a
