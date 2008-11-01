@@ -17,26 +17,19 @@ pdextradir = $(prefix)/lib/pd/extra/pure
 #PIC = -fPIC # uncomment for x86-64 compilation
 DLL = .pd_linux # .dll on Windows
 
-distfiles = COPYING Makefile README pure.c examples/examples.pure examples/pure-help.pd
-examples = add.pure counter.pure echo.pure fan.pure cross.pure
+distfiles = COPYING Makefile README pure.c examples/*.pure examples/*.pd
 
-.PHONY: examples
-
-all: pure$(DLL) examples
-
-examples:
-	(cd examples; for x in $(examples); do ln -sf examples.pure $$x; done)
+all: pure$(DLL)
 
 pure$(DLL): pure.c
 	gcc -shared -o $@ $< $(PIC) -lpure
 
 clean:
-	rm -f pure$(DLL) *~ *.a *.o $(addprefix examples/, $(examples))
+	rm -f pure$(DLL) *~ *.a *.o
 
 install:
 	test -d "$(DESTDIR)$(pdextradir)" || mkdir -p "$(DESTDIR)$(pdextradir)"
-	cp COPYING README Makefile pure.c pure$(DLL) examples/examples.pure examples/pure-help.pd "$(DESTDIR)$(pdextradir)"
-	(cd "$(DESTDIR)$(pdextradir)"; for x in $(examples); do ln -sf examples.pure $$x; done)
+	cp COPYING README Makefile pure.c pure$(DLL) examples/*.pure examples/*.pd "$(DESTDIR)$(pdextradir)"
 
 uninstall:
 	rm -rf "$(DESTDIR)$(pdextradir)"
