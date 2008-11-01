@@ -1,0 +1,35 @@
+
+/* Basic pd-pure examples. These are all demonstrated in the pure-help.pd
+   patch. */
+
+/* A simple object with a creation argument. */
+
+add x (float y) = x+y;
+
+/* This object just echoes its input as a Pure string on the outlet and
+   simultaneously on standard output, so that you can see how exactly a Pd
+   message is represented on the Pure side. This is useful for debugging
+   purposes. */
+
+using system;
+echo x = puts s $$ s when s = str x end;
+
+/* Pure objects can have multiple inlets and outlets. To these ends, the
+   object creation function returns a triple specifying the number of inlets
+   and outlets along with the function to be invoked at runtime. The following
+   examples implement an n-fan which routes its input to n outlets, and a
+   crossing which routes its left inlet to the right outlet and vice versa.  */
+
+fan n = 1,n,fan n with fan n x = reverse [k,x | k = 0..n-1] end;
+
+cross = 2,2,cross with cross (k,x) = (1-k,x) end;
+
+/* A simple counter object. Responds to a 'bang' message with the next counter
+   value. The current counter value is stored in a Pure reference. */
+
+nullary bang;
+
+counter = next (ref 0) with
+  next r bang = put r (get r+1);
+  next _ _    = () otherwise;
+end;

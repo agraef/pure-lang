@@ -1,0 +1,456 @@
+
+/* Copyright (c) 2008 by Albert Graef <Dr.Graef@t-online.de>.
+
+   This file is part of the Pure programming language and system.
+
+   Pure is free software: you can redistribute it and/or modify it under the
+   terms of the GNU General Public License as published by the Free Software
+   Foundation, either version 3 of the License, or (at your option) any later
+   version.
+
+   Pure is distributed in the hope that it will be useful, but WITHOUT ANY
+   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+   FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+   details.
+
+   You should have received a copy of the GNU General Public License along
+   with this program.  If not, see <http://www.gnu.org/licenses/>. */
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+#include <pure/runtime.h>
+#include <m_pd.h>
+
+/* We maintain a single Pure interpreter instance for all Pure objects. */
+
+static pure_interp *interp = 0;
+static int void_sym = 0;
+
+/* The Pure object class. */
+
+typedef struct _pure {
+  t_object x_obj;
+  int n_in, n_out;        /* number of extra inlets and outlets */
+  struct _px **in;	  /* extra inlet proxies, see t_px below */
+  t_outlet **out;	  /* outlets */
+  pure_expr *foo;	  /* the object function */
+  char *args;		  /* creation arguments */
+} t_pure;
+
+/* Proxy objects for extra inlets (pilfered from flext by Thomas Grill). */
+
+typedef struct _px {
+  t_object obj;
+  t_pure *x;		  /* parent */
+  int ix;		  /* inlet index */
+} t_px;
+
+/* We keep track of the different classes in a linked list for now. */
+
+typedef struct _classes {
+  t_symbol *sym;
+  t_class *class;
+  struct _classes *next;
+} t_classes;
+
+static t_classes *pure_classes = 0;
+static t_class *px_class = 0;
+
+static void add_class(t_symbol *sym, t_class *class)
+{
+  t_classes *new = malloc(sizeof(t_classes));
+  if (!new) return;
+  new->sym = sym;
+  new->class = class;
+  new->next = pure_classes;
+  pure_classes = new;
+}
+
+static t_class *lookup(t_symbol *sym)
+{
+  t_classes *act = pure_classes;
+  while (act && act->sym != sym) act = act->next;
+  if (act)
+    return act->class;
+  else
+    return 0;
+}
+
+/* Helper functions to convert between Pd atoms and Pure expressions. */
+
+static char *get_expr(t_symbol *sym, int argc, t_atom *argv)
+{
+  t_binbuf *b;
+  char *exp_string, *s, *t;
+  int exp_strlen, i, l = strlen(sym->s_name);
+
+  b = binbuf_new();
+  binbuf_add(b, argc, argv);
+  binbuf_gettext(b, &exp_string, &exp_strlen);
+  exp_string = (char *)t_resizebytes(exp_string, exp_strlen, exp_strlen+1);
+  exp_string[exp_strlen] = 0;
+  if (!(s = malloc(l+exp_strlen+2)))
+    return 0;
+  strcpy(s, sym->s_name); s[l] = ' ';
+  for (t = s+l+1, i = 0; i < exp_strlen; i++)
+    if (exp_string[i] != '\\')
+      *(t++) = exp_string[i];
+  *t = 0;
+  binbuf_free(b);
+  freebytes(exp_string, exp_strlen+1);
+  if ((t = realloc(s, strlen(s)+1)))
+    s = t;
+  return s;
+}
+
+static inline pure_expr *parse_expr(t_pure *x, const char *s)
+{
+  pure_expr *y = pure_eval(s);
+  if (y == 0)
+#if CHECK_SYNTAX
+    /* complain about bad Pure syntax */
+    pd_error(x, "pure: invalid argument '%s'", s);
+#else
+    /* cast to a Pure string */
+    y = pure_cstring_dup(s);
+#endif
+  return y;
+}
+
+static inline bool is_double(pure_expr *x, double *d)
+{
+  int i;
+  if (pure_is_double(x, d))
+    return true;
+  else if (pure_is_int(x, &i)) {
+    *d = (double)i;
+    return true;
+  } else
+    return false;
+}
+
+static inline void create_atom(t_atom *a, pure_expr *x)
+{
+  char *s;
+  double d;
+  if (is_double(x, &d))
+    SETFLOAT(a, d);
+  else {
+    t_symbol *sym;
+    if (!pure_is_cstring_dup(x, &s)) s = str(x);
+    sym = gensym(s?s:"");
+    SETSYMBOL(a, sym);
+    if (s) free(s);
+  }
+}
+
+/* Process an output message and route it through the given outlet. */
+
+static inline bool check_outlet(t_pure *x, int k)
+{
+  /* check outlet index */
+#if CHECK_OUTLET
+  /* complain about bad outlets */
+  if (k < 0) {
+    pd_error(x, "pure: bad outlet index %d, must be >= 0", k);
+    return 0;
+  } else if (x->n_out <= 0) {
+    pd_error(x, "pure: bad outlet index %d, object has no outlets", k);
+    return 0;
+  } else if (k >= x->n_out) {
+    pd_error(x, "pure: bad outlet index %d, must be < %d", k, x->n_out);
+    return 0;
+  } else
+    return 1;
+#else
+  return (k >= 0) && (k < x->n_out);
+#endif
+}
+
+static void send_message(t_pure *x, int k, pure_expr *y)
+{
+  char *sval = 0;
+  double dval;
+  int sym;
+  pure_expr *f, **args;
+  size_t argc;
+  t_atom *argv = 0;
+  int i;
+  /* get arguments */
+  pure_is_appv(y, &f, &argc, &args);
+  /* pd message generation */
+  if (pure_is_cstring_dup(f, &sval)) {
+    if (!check_outlet(x, k)) goto errexit;
+    if (argc == 0)
+      /* single symbol value */
+      outlet_anything(x->out[k], gensym(sval), 0, NULL);
+    else {
+      t_symbol *t = gensym(sval);
+      if (argc > 0) {
+	argv = malloc(argc*sizeof(t_atom));
+	if (!argv) goto errexit;
+      }
+      for (i = 0; i < argc; i++)
+	create_atom(&argv[i], args[i]);
+      outlet_anything(x->out[k], t, argc, argv);
+    }
+  } else if (is_double(f, &dval)) {
+    if (!check_outlet(x, k)) goto errexit;
+    if (argc == 0)
+      /* single double value */
+      outlet_float(x->out[k], dval);
+    else {
+      /* create a list message with the double value in front */
+      argv = malloc((argc+1)*sizeof(t_atom));
+      if (!argv) goto errexit;
+      create_atom(&argv[0], f);
+      for (i = 0; i < argc; i++)
+	create_atom(&argv[i+1], args[i]);
+      outlet_list(x->out[k], &s_list, argc+1, argv);
+    }
+  } else if (pure_is_symbol(f, &sym) && sym > 0 && sym != void_sym) {
+    /* manufacture a message with the given symbol as selector */
+    const char *pname;
+    if (!check_outlet(x, k)) goto errexit;
+    if ((pname = pure_sym_pname(sym))) {
+       /* FIXME: This should be converted to the system encoding. */
+      t_symbol *t = gensym(pname);
+      if (argc > 0) {
+	argv = malloc(argc*sizeof(t_atom));
+	if (!argv) goto errexit;
+      }
+      for (i = 0; i < argc; i++)
+	create_atom(&argv[i], args[i]);
+      outlet_anything(x->out[k], t, argc, argv);
+    }
+  }
+ errexit:
+  if (sval) free(sval);
+  if (args) free(args);
+  if (argv) free(argv);
+}
+
+/* Handle a message to the given inlet. The message is first converted to a
+   corresponding Pure expression to which the object function is applied. The
+   returned value is processed, converting results back to corresponding Pd
+   messages and sending these messages through the appropriate outlets. */
+
+static void receive_message(t_pure *x, t_symbol *s, int k,
+			    int argc, t_atom *argv)
+{
+  size_t i, n, m;
+  pure_expr *f = x->foo, *y, *z;
+  pure_expr **xv = 0, **yv = 0;
+  int ix;
+
+  /* check whether we have something to evaluate */
+  if (!f) return;
+
+  /* build the parameter expression from the message */
+  y = parse_expr(x, s->s_name);
+  for (i = 0; i < argc; i++) {
+    char buf[MAXPDSTRING];
+    atom_string(argv+i, buf, MAXPDSTRING);
+    z = parse_expr(x, buf);
+    if (z)
+      y = pure_app(y, z);
+    else {
+      pure_freenew(y);
+      return;
+    }
+  }
+  /* add the inlet index if needed */
+  if (x->n_in > 0)
+    y = pure_tuplel(2, pure_int(k), y);
+  /* apply the object function */
+  y = pure_new(pure_app(f, y));
+  /* process the results and route them through the appropriate outlets */
+  if (pure_is_listv(y, &n, &xv)) {
+    for (i = 0; i < n; i++) {
+      if (yv) free(yv); yv = 0;
+      if (pure_is_tuplev(xv[i], &m, &yv) && m == 2 && pure_is_int(yv[0], &ix))
+	send_message(x, ix, yv[1]);
+      else
+	send_message(x, 0, xv[i]);
+    }
+  } else if (pure_is_tuplev(y, &m, &yv) && m == 2 && pure_is_int(yv[0], &ix))
+    send_message(x, ix, yv[1]);
+  else
+    send_message(x, 0, y);
+  if (xv) free(xv);
+  if (yv) free(yv);
+  pure_free(y);
+}
+
+/* Handle a message to the leftmost inlet. */
+
+static void pure_any(t_pure *x, t_symbol *s, int argc, t_atom *argv)
+{
+  receive_message(x, s, 0, argc, argv);
+}
+
+/* Handle messages to secondary inlets (these are routed through proxies,
+   since only the first inlet of a Pd object can actually process arbitrary
+   input messages). */
+
+static void px_any(t_px *px, t_symbol *s, int argc, t_atom *argv)
+{
+  receive_message(px->x, s, px->ix, argc, argv);
+}
+
+/* Create a new Pure object. */
+
+static void *pure_init(t_symbol *s, int argc, t_atom *argv)
+{
+  int i;
+  t_pure *x;
+  t_class *c = lookup(s);
+
+  if (!c) return 0; /* this shouldn't happen unless we're out of memory */
+  x = (t_pure*)pd_new(c);
+  x->foo = 0;
+  x->n_in = 0; x->n_out = 1;
+  x->in = 0;
+  x->out = 0;
+  x->args = get_expr(s, argc, argv);
+  if (!x->args) {
+    pd_error(x, "pure: memory allocation failed");
+    return (void *)x;
+  }
+  /* initialize the object function and determine the number of inlets and
+     outlets (these cannot be changed later) */
+  if (x->args != 0) {
+    int n_in = 1, n_out = 1;
+    pure_expr *f = parse_expr(x, x->args);
+    x->foo = f;
+    if (f) {
+      size_t n;
+      pure_expr **xv = 0;
+      pure_new(f);
+      /* handle custom inlet/outlet configurations (n_in,n_out,foo) */
+      if (pure_is_tuplev(f, &n, &xv) && n == 3 &&
+	  pure_is_int(xv[0], &n_in) && pure_is_int(xv[1], &n_out)) {
+	x->foo = pure_new(xv[2]); pure_free(f);
+	if (n_in < 1) {
+	  pd_error(x, "pure: bad number %d of inlets, must be >= 1", n_in);
+	  n_in = 1;
+	}
+	if (n_out < 0) {
+	  pd_error(x, "pure bad number %d of outlets, must be >= 0", n_out);
+	  n_out = 0;
+	}
+	x->n_in = n_in-1;
+	x->n_out = n_out;
+      }
+      if (xv) free(xv);
+    } else {
+      const char *err = lasterr();
+      pd_error(x, "pure: error in '%s' creation function", s->s_name);
+      if (err && *err) pd_error(x, "pure: %s", err);
+    }
+  }
+  if (x->foo != 0) {
+    /* allocate memory for inlets and outlets */
+    if (x->n_in > 0)
+      x->in = malloc(x->n_in*sizeof(t_px*));
+    if (x->n_out > 0)
+      x->out = malloc(x->n_out*sizeof(t_outlet*));
+    if (x->n_in > 0 && x->in == 0 ||
+	x->n_out > 0 && x->out == 0)
+      pd_error(x, "pure: memory allocation failed");
+    if (!x->in) x->n_in = 0;
+    if (!x->out) x->n_out = 0;
+    /* initialize the proxies for the extra inlets */
+    for (i = 0; i < x->n_in; i++) {
+      x->in[i] = (t_px*)pd_new(px_class);
+      x->in[i]->x = x;
+      x->in[i]->ix = i+1;
+      inlet_new(&x->x_obj, &x->in[i]->obj.ob_pd, 0, 0);
+    }
+    /* initialize the outlets */
+    for (i = 0; i < x->n_out; i++)
+      x->out[i] = outlet_new(&x->x_obj, 0);
+  } else {
+    x->n_in = x->n_out = 0;
+  }
+  return (void *)x;
+}
+
+/* Finalize a Pure object. */
+
+static void pure_fini(t_pure *x)
+{
+  int i;
+  free(x->args);
+  pure_free(x->foo);
+  x->foo = 0;
+  for (i = 0; i < x->n_in; i++)
+    pd_free((t_pd*)x->in[i]);
+  if (x->in) free(x->in);
+  if (x->out) free(x->out);
+}
+
+/* Setup for a Pure object class with the given name. */
+
+static void class_setup(char *name)
+{
+  t_symbol *class_s = gensym(name);
+  t_class *pure_class =
+    class_new(class_s, (t_newmethod)pure_init, (t_method)pure_fini,
+	      sizeof(t_pure), CLASS_DEFAULT, A_GIMME, A_NULL);
+  class_addanything(pure_class, pure_any);
+  class_sethelpsymbol(pure_class, gensym("pure-help"));
+  add_class(class_s, pure_class);
+}
+
+/* Loader setup, pilfered from pd-lua (claudiusmaximus@goto10.org). */
+
+static int pure_loader(t_canvas *canvas, char *name)
+{
+  char dirbuf[MAXPDSTRING], cmdbuf[1000];
+  char *ptr;
+  int fd = canvas_open(canvas, name, ".pure", dirbuf, &ptr, MAXPDSTRING, 1);
+  if (fd >= 0) {
+    close(fd);
+    class_set_extern_dir(gensym(dirbuf));
+    /* Load the Pure script. */
+    sprintf(cmdbuf, "using \"%s/%s.pure\";\n", dirbuf, name);
+    pure_evalcmd(cmdbuf);
+    /* Create the object class. */
+    class_setup(name);
+    class_set_extern_dir(&s_);
+    return lookup(gensym(name)) != 0;
+  } else
+    return 0;
+}
+
+extern void pure_setup(void)
+{
+  char buf[MAXPDSTRING];
+  char *ptr;
+  int fd;
+  post("pure 0.1 (GPL) 2008 Albert Graef <Dr.Graef@t-online.de>");
+  post("pure: compiled for pd-%d.%d on %s %s", PD_MAJOR_VERSION, PD_MINOR_VERSION, __DATE__, __TIME__);
+  interp = pure_create_interp(0, 0);
+#if EAGER
+  /* Force eager compilation *now*, so that the JIT doesn't start compiling
+     stuff from the library on demand later. Unfortunately, with the current
+     version of the LLVM JIT this is dead slow, so it's disabled for now. */
+  pure_interp_compile(interp);
+#endif
+  if (interp) {
+    /* Register the loader for Pure externals. */
+    sys_register_loader(pure_loader);
+    /* Create the proxy class for extra inlets. */
+    px_class = class_new(gensym("pure proxy"), 0, 0,
+			 sizeof(t_px), CLASS_PD|CLASS_NOINLET,
+			 A_NULL);
+    class_addanything(px_class, px_any);
+    /* We need to know what the void symbol () is. */
+    void_sym = pure_sym("()");
+  } else
+    error("pure: error initializing interpreter; loader not registered");
+}
+

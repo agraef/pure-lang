@@ -1,0 +1,139 @@
+
+pd-pure: Pd loader for Pure scripts
+======== == ====== === ==== =======
+
+Copyright (c) 2008 by Albert Graef <Dr.Graef@t-online.de>
+Distributed under the GNU Public License V3, see COPYING for details.
+
+This plugin lets you write external Pd control objects in Pure. Pure is a
+functional programming language based on the term rewriting calculus, see
+http://pure-lang.googlecode.com.
+
+Installation
+============
+
+Usually, 'make && sudo make install' should do the trick. This will compile
+the external (you need to have both Pd and Pure installed to do that) and
+install it in the lib/pd/extra/pure directory.
+
+The Makefile tries to guess the installation prefix under which Pd is
+installed. If it guesses wrong, you can tell it the right prefix with 'make
+prefix=/some/path'. Or you can specify the exact path of the lib/pd/extra
+directory with 'make pdextradir=/some/path' (by default the Makefile assumes
+$(prefix)/lib/pd/extra).
+
+After installation, you still have to tell Pd to load the Pure external at
+startup, either with the -lib option (pd -lib pure), or by specifying 'pure'
+in the File/Startup options. (The latter setting can be saved so that the Pure
+loader is always available when you run Pd.)
+
+Usage
+=====
+
+See the pure-help.pd patch for a few examples. Basically, to implement a Pd
+object named 'foo', you have to supply a Pure script named 'foo.pure' which
+defines the 'foo' function and anything else that it might need. Put that
+script in the same directory as the Pd patch in which you want to use the
+'foo' object. The 'foo' function gets evaluated at object creation time,
+receiving any additional parameters the object is created with. The resulting
+Pure expression (which can also just be 'foo' itself) becomes the object
+executed at runtime, by passing Pd messages from the inlets as parameters, and
+routing the function results to the outlets of the object.
+
+Note that you can also define multiple objects in a single script file, say
+'master.pure'. To these ends, simply create a symbolic link of the form
+'foo.pure' to 'master.pure' for each object 'foo' in the script that you want
+to use. (This only works on Unix systems. On Windows you'll have to copy the
+master script instead.)
+
+Pd messages are translated to corresponding Pure expressions and vice versa in
+a straighforward fashion. E.g., the Pd message 'foo a 2 3' becomes the Pure
+expression 'foo a 2 3'. Pd symbols which are no valid Pure symbols become
+strings in Pure. Conversely, Pure integers and floating point values become
+'float' messages in Pd. Pure symbols and strings are mapped to Pd symbols.
+
+By default, a Pure object has just one inlet and one outlet. For instance, the
+following object [add5] accepts Pd 'float' messages and adds 5 to each
+received value:
+
+add5 (float x) = x+5;
+
+You can also parameterize an object with creation arguments:
+
+add x (float y) = x+y;
+
+This object can then be invoked, e.g., as [add 5] in the Pd patch to supply
+the needed creation argument x.
+
+To create an object with multiple inlets and outlets, the object creation
+function must return the desired numbers of inlets and outlets, along with a
+second function to be applied at runtime, as a tuple n,m,foo. The input
+arguments to the runtime function as well as the corresponding function
+results are then encoded as pairs k,val where k denotes the inlet or outlet
+index. (Note that the k index is necessary only if there actually is more than
+one inlet or outlet, respectively. If the number of inlets is 1, the messages
+will always be passed without an index, and the outlet index is assumed to be
+zero if none is specified.) For instance:
+
+cross = 2,2,cross with cross (k,x) = (1-k,x) end;
+
+This object, invoked as [cross] in the Pd patch, has two inlets and two
+outlets and routes messages from the left inlet to the right outlet and vice
+versa.
+
+You can also emit multiple messages, possibly to different outlets, in one
+go. These must be encoded as lists of values or index,value pairs, which are
+emitted in the order in which they are written. E.g., the following [fan]
+object implements an "n-fan" which routes its input to n outlets
+simultaneously:
+
+fan n = 1,n,fan n with fan n x = reverse [k,x | k = 0..n-1] end;
+
+(Note that the n outlets are served in right-to-left order here. This is not
+strictly necessary, but matches the Pd convention.)
+
+Another example is the following [dup] object with a single inlet and outlet,
+which just sends out each received message twice:
+
+dup x = [x,x];
+
+An object can also just "swallow" messages and generate no output at all. To
+these ends, make the object return either an empty list [] or the empty tuple
+(). For instance, the following object [echo] implements a sink which just
+prints received messages on standard output, which is useful for debugging
+purposes:
+
+using system;
+echo x = () when puts (str x) end;
+
+You could also implement this object as follows, by just removing the
+superflous outlet:
+
+using system;
+echo = 1,0,puts.str;
+
+Local state can be kept in Pure reference values. For instance, the following
+[counter] object produces the next counter value when receiving a 'bang'
+message:
+
+nullary bang;
+counter = next (ref 0) with
+  next r bang = put r (get r+1);
+  next _ _    = () otherwise;
+end;
+
+Notes
+=====
+
+This is still an experimental version, please report bugs to the author.
+
+In particular, note that the embedded Pure interpreter uses the same kind of
+JIT compiler as the command line version of the interpreter, which may cause
+delays during startup, since the Pure functions are compiled on demand. With
+the current version of the LLVM JIT used by the Pure interpreter there's no
+easy way around this, but we hope to fix this issue in a future release. Once
+all Pure objects have been compiled to native code, they are executed very
+efficiently.
+
+Enjoy. :)
+Albert Graef <Dr.Graef@t-online.de>
