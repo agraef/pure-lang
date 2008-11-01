@@ -1,0 +1,20 @@
+
+/* pd-pure only allows you to schedule a single asynchronous event per call of
+   the object function (cf. mydelay.pure), but more elaborate facilities can
+   be built on top of this. The following example shows how to maintain a
+   timed message queue in a Pure list, in order to implement a simple delay
+   line similar to Pd's builtin 'pipe' object. */
+
+extern double pd_time();
+
+mypipe t = mypipe t (ref []) with
+  mypipe t q () = dequeue q;
+  mypipe t q x  = enqueue q x;
+  addqueue q x  = put q $ get q+[(pd_time+t,x)];
+  enqueue q x   = addqueue q x $$ delay t () if null (get q);
+                = addqueue q x $$ () otherwise;
+  dequeue q     = case get q of
+                    (_,x):xs@((t,_):_) = put q xs $$ [x,delay (t-pd_time) ()];
+                    [(_,x)] = put q [] $$ x;
+                  end;
+end;
