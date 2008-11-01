@@ -99,17 +99,19 @@ static char *get_expr(t_symbol *sym, int argc, t_atom *argv)
 {
   t_binbuf *b;
   char *exp_string, *s, *t;
-  int exp_strlen, i, l = strlen(sym->s_name);
+  int exp_strlen, i, l = strcmp(sym->s_name, "pure")?strlen(sym->s_name)+1:0;
 
   b = binbuf_new();
   binbuf_add(b, argc, argv);
   binbuf_gettext(b, &exp_string, &exp_strlen);
   exp_string = (char *)t_resizebytes(exp_string, exp_strlen, exp_strlen+1);
   exp_string[exp_strlen] = 0;
-  if (!(s = malloc(l+exp_strlen+2)))
+  if (!(s = malloc(l+exp_strlen+1)))
     return 0;
-  strcpy(s, sym->s_name); s[l] = ' ';
-  for (t = s+l+1, i = 0; i < exp_strlen; i++)
+  if (l > 0) {
+    strcpy(s, sym->s_name); s[l-1] = ' ';
+  }
+  for (t = s+l, i = 0; i < exp_strlen; i++)
     if (exp_string[i] != '\\')
       *(t++) = exp_string[i];
   *t = 0;
@@ -549,6 +551,9 @@ extern void pure_setup(void)
 			 sizeof(t_px), CLASS_PD|CLASS_NOINLET,
 			 A_NULL);
     class_addanything(px_class, px_any);
+    /* Create a class for 'pure' objects which allows you to access any
+       predefined Pure function without loading a script. */
+    class_setup("pure");
     /* Look up a few symbols that we need. */
     void_sym = pure_sym("()");
     delay_sym = pure_sym("delay");
