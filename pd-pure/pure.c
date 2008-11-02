@@ -281,6 +281,7 @@ static inline void delay_message(t_pure *x, double t, pure_expr *msg)
   if (x->msg) pure_free(x->msg);
   if (t != inf && /* this is false only for nan: */t == t) {
     x->msg = pure_new(msg);
+    if (t < 0.0) t = 0.0;
     clock_delay(x->clock, t);
   } else
     clock_unset(x->clock);
