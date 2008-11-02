@@ -8,6 +8,8 @@
 extern double pd_time();
 
 mypipe t = mypipe t (ref []) with
+  /* () indicates an asynchronous event which tells us that the next
+     message in the queue is to be delivered now. */
   mypipe t q () = dequeue q;
   mypipe t q x  = enqueue q x;
   addqueue q x  = put q $ get q+[(pd_time+t,x)];
