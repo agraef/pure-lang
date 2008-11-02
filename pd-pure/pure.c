@@ -128,7 +128,7 @@ static inline pure_expr *parse_symbol(t_pure *x, const char *s)
   size_t i, n = strlen(s);
   if (!isalpha(s[0])) goto err;
   for (i = 1; i < n; i++)
-    if (!isalnum(s[0])) goto err;
+    if (!isalnum(s[i])) goto err;
   return pure_symbol(pure_sym(s));
  err:
   /* treat as a Pure string */
