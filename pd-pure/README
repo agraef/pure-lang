@@ -55,7 +55,7 @@ a straightforward fashion. Special support is provided for converting between
 the natural Pd and Pure representations of floating point numbers, symbols and
 lists. The following table summarizes the available conversions.
 
-message type	Pd		Pure
+Message Type	Pd		Pure
 ------------	------------	--------------
 symbol		foo		foo
 		a&b		"a&b"
@@ -63,11 +63,12 @@ float		float 1.23	1.23
 list		list 1 2 3	[1.0,2.0,3.0]
 other		foo a 2 3	foo a 2.0 3.0
 
-Pd symbols which are no valid Pure symbols become strings in Pure. Conversely,
-both symbols and strings in Pure are mapped to corresponding Pd symbols. Pure
-(machine) integers and floating point values both become 'float' messages in
-Pd. Pd list message are translated to Pure list values, while other aggregate
-messages are mapped to Pure applications (and vice versa).
+Note that Pd symbols which are no valid Pure symbols become strings in
+Pure. Conversely, both symbols and strings in Pure are mapped to corresponding
+Pd symbols. Pure (machine) integers and floating point values both become
+'float' messages in Pd. Pd list message are translated to Pure list values,
+while other aggregate messages are mapped to Pure applications (and vice
+versa).
 
 Simple Objects
 ====== =======
@@ -101,13 +102,13 @@ preparing a script file. The creation parameter of [pure] is the object
 function. This can be a predefined Pure function, or you can define it on the
 fly in a 'with' clause.
 
-For instance, [pure succ] adds 1 to its input, while the object
-[pure add 5 with add x y = x+y end] produces the same results as the [add 5]
-object defined using a separate add.pure script in the previous section. You
-can also generate constant values that way. E.g., the object [pure cst 1.618]
-responds to any message (such as 'bang') by producing the constant value
-1.618, while the object [pure cst [1..10]] yields the constant list containing
-the numbers 1..10.
+For instance, [pure succ] uses the predefined Pure function 'succ' which adds
+1 to its input, while the object [pure add 5 with add x y = x+y end] produces
+the same results as the [add 5] object defined using a separate add.pure
+script in the previous section. You can also generate constant values that
+way. E.g., the object [pure cst 1.618] responds to any message (such as
+'bang') by producing the constant value 1.618, while the object [pure cst
+[1..10]] yields the constant list containing the numbers 1..10.
 
 Configuring Inlets and Outlets
 =========== ====== === =======
@@ -144,11 +145,11 @@ which just sends out each received message twice:
 
 dup x = [x,x];
 
-Note that if you want to output a list value to an outlet, you'll either have
-to specify the outlet index explicitly, or enclose the list in an extra pair
-of brackets, since otherwise the list elements will be sent as separate
-messages instead. Thus, if you really want to output the list [x,x] rather
-than sending x twice, you can do that as follows:
+Note that if you want to output a *real* list value to an outlet, you'll
+either have to specify the outlet index explicitly, or enclose the list in an
+extra pair of brackets, since otherwise the list elements will be sent as
+separate messages instead (like in the 'dup' example). Thus, to output the
+list [x,x] literally, rather than sending x twice, use the following code:
 
 dup2 x = [[x,x]]; // or: 0,[x,x]
 
