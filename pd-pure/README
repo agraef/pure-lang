@@ -42,33 +42,38 @@ Usage
 
 See the pure-help.pd patch for a few examples. Basically, to implement a Pd
 object named 'foo', you have to supply a Pure script named 'foo.pure' which
-defines the 'foo' function and anything else that it might need. Put that
-script in the same directory as the Pd patch in which you want to use the
-'foo' object. The 'foo' function gets evaluated at object creation time,
-receiving any additional parameters the object is created with. The resulting
-Pure expression (which can also just be 'foo' itself) becomes the object
-executed at runtime, by passing Pd messages from the inlets as parameters, and
-routing the function results to the outlets of the object.
-
-Note that you can also define multiple objects in a single script file, say
-'master.pure'. To these ends, simply create a symbolic link of the form
-'foo.pure' to 'master.pure' for each object 'foo' in the script that you want
-to use. (This only works on Unix systems. On Windows you'll have to use
-separate scripts instead.)
+defines a function 'foo' and anything else that it might need. Put that script
+in the same directory as the Pd patch in which you want to use the 'foo'
+object. The 'foo' function gets evaluated at object creation time, receiving
+any additional parameters the object is created with. The resulting Pure
+expression (which can also just be 'foo' itself) becomes the object executed
+at runtime, by passing Pd messages from the inlets as parameters, and routing
+the function results to the outlets of the object.
 
 Pd messages are translated to corresponding Pure expressions and vice versa in
 a straighforward fashion. E.g., the Pd message 'foo a 2 3' becomes the Pure
 expression 'foo a 2 3'. Pd symbols which are no valid Pure symbols become
 strings in Pure. Conversely, Pure integers and floating point values become
-'float' messages in Pd. Pure symbols and strings are mapped to Pd symbols.
+'float' messages in Pd, while symbols and strings are mapped to corresponding
+Pd symbols.
 
-By default, a Pure object has just one inlet and one outlet. For instance, the
-following object [add5] accepts Pd 'float' messages and adds 5 to each
-received value:
+Simple Objects
+====== =======
+
+By default, a Pure object has just one inlet and one outlet and thus acts just
+like a simple function with no internal state. For instance, the following
+object accepts Pd 'float' messages and adds 5 to each received value:
 
 add5 (float x) = x+5;
 
-You can also parameterize an object with creation arguments:
+In the Pd patch each [add5] object then has a single inlet supplying
+parameters and a single outlet for results of the add5 function.
+
+Creation Arguments
+======== =========
+
+You can parameterize an object with creation arguments, which are passed to
+the Pure function at object creation time. E.g.:
 
 add x (float y) = x+y;
 
