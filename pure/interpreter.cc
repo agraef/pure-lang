@@ -430,7 +430,13 @@ interpreter::~interpreter()
   }
   // get rid of global environments and the LLVM data
   globalfuns.clear(); globalvars.clear();
+  // free the shadow stack
+  free(sstk);
+  // free the execution engine and the pass manager
+#if 0
+  // XXXFIXME: This segfaults right now. LLVM bug?
   if (JIT) delete JIT;
+#endif
   if (FPM) delete FPM;
   // if this was the global interpreter, reset it now
   if (g_interp == this) g_interp = 0;
@@ -440,6 +446,8 @@ void interpreter::init_sys_vars(const string& version,
 				const string& host,
 				const list<string>& argv)
 {
+  interpreter* s_interp = g_interp;
+  g_interp = this;
   // command line arguments, system and version information
   pure_expr *args = pure_const(symtab.nil_sym().f);
   for (list<string>::const_reverse_iterator it = argv.rbegin();
@@ -456,6 +464,7 @@ void interpreter::init_sys_vars(const string& version,
 #ifdef HAVE_GSL
   defn("gsl_version",	pure_cstring_dup(gsl_version));
 #endif
+  g_interp = s_interp;
 }
 
 // Errors and warnings.

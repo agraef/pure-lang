@@ -2286,6 +2286,10 @@ pure_interp *pure_create_interp(int argc, char *argv[])
   interpreter *_interp = new interpreter, &interp = *_interp;
   int count = 0;
   bool want_prelude = true, have_prelude = false;
+  // We use some stuff which is not safe to call while another interpreter is
+  // active, so we temporarily switch to the new interpreter now.
+  interpreter *s_interp = interpreter::g_interp;
+  interpreter::g_interp = _interp;
   // This is used in advisory stack checks.
   if (!interpreter::baseptr) interpreter::baseptr = &base;
   // get some settings from the environment
@@ -2426,6 +2430,7 @@ pure_interp *pure_create_interp(int argc, char *argv[])
       interp.run(*argv, false);
     }
   interp.symtab.init_builtins();
+  if (s_interp) interpreter::g_interp = s_interp;
   return (pure_interp*)_interp;
 }
 
@@ -2434,8 +2439,6 @@ void pure_delete_interp(pure_interp *interp)
 {
   assert(interp);
   interpreter *_interp = (interpreter*)interp;
-  if (interpreter::g_interp == _interp)
-    interpreter::g_interp = 0;
   delete _interp;
 }
 
