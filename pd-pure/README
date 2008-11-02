@@ -60,11 +60,11 @@ Pd symbols.
 Simple Objects
 ====== =======
 
-By default, a Pure object has just one inlet and one outlet and thus acts just
-like a simple function with no internal state. For instance, the following
-object accepts Pd 'float' messages and adds 5 to each received value:
+By default, a Pure object has just one inlet and one outlet and thus acts like
+a simple function with no internal state. For instance, the following object
+accepts Pd 'float' messages and adds 5 to each received value:
 
-add5 (float x) = x+5;
+add5 x = x+5;
 
 In the Pd patch each [add5] object then has a single inlet supplying
 parameters and a single outlet for results of the add5 function.
@@ -73,12 +73,22 @@ Creation Arguments
 ======== =========
 
 You can parameterize an object with creation arguments, which are passed to
-the Pure function at object creation time. E.g.:
+the Pure function at object creation time. For instance:
 
-add x (float y) = x+y;
+add x y = x+y;
 
 This object can then be invoked, e.g., as [add 5] in the Pd patch to supply
 the needed creation argument x.
+
+The [pure] Object
+=== ====== ======
+
+For simple objects like these, which take a single argument and produce a
+single result, the Pure loader also provides a generic [pure] object as a
+shortcut to access predefined Pure functions without actually loading a script
+file. For instance, [pure succ] adds 1 to its input. You can also generate
+constant values that way; e.g., the object [pure cst 1.618] responds to any
+message (such as 'bang') by producing the constant value 1.618.
 
 Configuring Inlets and Outlets
 =========== ====== === =======
@@ -210,24 +220,6 @@ mypipe t = process (ref []) with
   enqueue q x  = put q $ get q+[(pd_time+t,x)];
   dequeue q    = x,put q xs when (_,x):xs = get q end;
 end;
-
-The [pure] Object
-=== ====== ======
-
-The Pure loader also provides a generic 'pure' object as a quick and dirty
-means to create a Pure object from a predefined function without loading a
-script file. However, since most functions in the Pure prelude are not
-prepared to deal with raw Pd messages, this is most useful for special
-purposes such as debugging.
-
-For instance, [pure str] creates an object with a single inlet and outlet
-which applies the prelude function 'str' to its inputs. Connecting this to
-Pd's [print] object provides a quick way to print the Pure representation of
-messages passed to the inlet of the [pure str] object.
-
-The [pure] object can also be used to generate constant numbers or string
-values. For instance, [pure cst (1/7)] responds to any message (such as
-'bang') by producing the value 1/7 = 0.142857...
 
 
 Enjoy. :)
