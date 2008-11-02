@@ -65,6 +65,9 @@ add x (float y) = x+y;
 This object can then be invoked, e.g., as [add 5] in the Pd patch to supply
 the needed creation argument x.
 
+Configuring Inlets and Outlets
+=========== ====== === =======
+
 To create an object with multiple inlets and outlets, the object creation
 function must return the desired numbers of inlets and outlets, along with a
 second function to be applied at runtime, as a tuple n,m,foo. The input
@@ -113,6 +116,9 @@ ignored anyway):
 using system;
 echo = 1,0,puts.str;
 
+Local State
+===== =====
+
 Local state can be kept in Pure reference values. For instance, the following
 [counter] object produces the next counter value when receiving a 'bang'
 message:
@@ -122,6 +128,95 @@ counter = next (ref 0) with
   next r bang = put r (get r+1);
   next _ _    = () otherwise;
 end;
+
+Asynchronous Messages
+============ ========
+
+pd-pure provides a simple asynchronous messaging facility which allows a Pure
+object to schedule a message to be delivered to itself later. This is useful
+for implementing all kinds of delays and, more generally, any kind of object
+which, once triggered, does its own sequencing of output messages.
+
+To these ends, the object function may return a special message of the form
+'delay t msg' (either by itself or as an element of a result list) to indicate
+that the message 'msg' should be delivered to the object function after t
+milliseconds (where t is either a machine int or a double value). After the
+prescribed delay the object function will then be invoked on the given
+message, and the results of this call are processed as usual (routing messages
+to outlets and/or scheduling new timer events in response to further 'delay'
+messages). Note that if the delay is zero or negative, the message is
+scheduled to be delivered immediately.
+
+For instance, a simple kind of delay object can be implemented in Pure as
+follows:
+
+mydelay _ (alarm msg) = msg;
+mydelay t msg = delay t (alarm msg) otherwise;
+
+The desired delay time is specified as a creation argument. The first equation
+handles messages of the form 'alarm msg'; the action is to just output the
+delayed message given by the 'msg' argument. All other input messages are
+scheduled by the second equation, which wraps the message in an 'alarm' term
+so that it gets processed by the first equation when it is delivered.
+
+Note that pd-pure only allows you to schedule a single asynchronous event per
+call of the object function. Thus, if the 'mydelay' object above receives
+another message while it is still waiting for the previous one to be
+delivered, the old timer is cancelled and the new one is scheduled instead;
+this works like Pd's builtin 'delay' object.
+
+Moreover, scheduling a new event at an infinite (or nan) time value cancels
+any existing timer. (Note that you still have to specify the 'msg' parameter,
+but it will be ignored in this case.) We can use this to equip our 'mydelay'
+object with a 'stop' message as follows:
+
+nullary stop;
+mydelay _ (alarm msg) = msg;
+mydelay _ stop = delay inf ();
+mydelay t msg = delay t (alarm msg) otherwise;
+
+More elaborate functionality can be built on top of the basic timer
+facility. The following example shows how to maintain a timed message queue in
+a Pure list, in order to implement a simple delay line similar to Pd's builtin
+'pipe' object. Here we also employ the 'pd_time' function, which is provided
+by the Pure loader so that Pure scripts can access the current logical Pd time
+in milliseconds. This is convenient if we need to deal with absolute time
+values, which we use in this example to keep track of the the times at which
+messages in the queue are to be delivered.
+
+extern double pd_time();
+
+mypipe t = mypipe t (ref []) with
+  /* () indicates an asynchronous event which tells us that the next
+     message in the queue is to be delivered now. */
+  mypipe t q () = dequeue q;
+  mypipe t q x  = enqueue q x;
+  addqueue q x  = put q $ get q+[(pd_time+t,x)];
+  enqueue q x   = addqueue q x $$ delay t () if null (get q);
+                = addqueue q x $$ () otherwise;
+  dequeue q     = case get q of
+                    (_,x):xs@((t,_):_) = put q xs $$ [x,delay (t-pd_time) ()];
+                    [(_,x)] = put q [] $$ x;
+                  end;
+end;
+
+The [pure] Object
+=== ====== ======
+
+Finally, the Pure loader also provides a generic 'pure' object as a quick and
+dirty means to create a Pure object from a predefined function without loading
+a script file. However, since most functions in the Pure prelude are not
+prepared to deal with Pd messages without some kind of preprocessing, this is
+mostly useful for special purposes such as debugging.
+
+For instance, [pure str] creates an object with a single inlet and outlet
+which applies the prelude function 'str' to its inputs. Connecting this to
+Pd's [print] object provides a quick way to print the Pure representation of
+messages passed to the inlet of the [pure str] object.
+
+The [pure] object can also be used to generate constant numbers or string
+values. For instance, [pure cst (1/7)] responds to any message (such as
+'bang') by producing the value 1/7 = 0.142857...
 
 Notes
 =====
