@@ -17,7 +17,7 @@ pdextradir = $(prefix)/lib/pd/extra/pure
 #PIC = -fPIC # uncomment for x86-64 compilation
 DLL = .pd_linux # .dll on Windows
 
-distfiles = COPYING Makefile README pure.c examples/*.pure examples/*.pd
+DISTFILES = COPYING Makefile README pure.c examples/*.pure examples/*.pd examples/*.el
 
 all: pure$(DLL)
 
@@ -37,7 +37,7 @@ uninstall:
 dist:
 	rm -rf $(dist)
 	mkdir $(dist) && mkdir $(dist)/examples
-	for x in $(distfiles); do ln -sf $$PWD/$$x $(dist)/$$x; done
+	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
 	rm -rf $(dist)
