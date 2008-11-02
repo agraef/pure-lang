@@ -29,7 +29,7 @@ clean:
 
 install:
 	test -d "$(DESTDIR)$(pdextradir)" || mkdir -p "$(DESTDIR)$(pdextradir)"
-	cp COPYING README Makefile pure.c pure$(DLL) examples/*.pure examples/*.pd "$(DESTDIR)$(pdextradir)"
+	cp COPYING README Makefile pure.c pure$(DLL) examples/*.pure examples/*.pd examples/*.el "$(DESTDIR)$(pdextradir)"
 
 uninstall:
 	rm -rf "$(DESTDIR)$(pdextradir)"
