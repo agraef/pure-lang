@@ -191,23 +191,19 @@ a Pure list, in order to implement a simple delay line similar to Pd's builtin
 'pipe' object. Here we also employ the 'pd_time' function, which is provided
 by the Pure loader so that Pure scripts can access the current logical Pd time
 in milliseconds. This is convenient if we need to deal with absolute time
-values, which we use in this example to keep track of the the times at which
+values, which we use in this example to keep track of the times at which
 messages in the queue are to be delivered.
 
 extern double pd_time();
-
-mypipe t = mypipe t (ref []) with
-  /* () indicates an asynchronous event which tells us that the next
-     message in the queue is to be delivered now. */
-  mypipe t q () = dequeue q;
-  mypipe t q x  = enqueue q x;
-  addqueue q x  = put q $ get q+[(pd_time+t,x)];
-  enqueue q x   = addqueue q x $$ delay t () if null (get q);
-                = addqueue q x $$ () otherwise;
-  dequeue q     = case get q of
-                    (_,x):xs@((t,_):_) = put q xs $$ [x,delay (t-pd_time) ()];
-                    [(_,x)] = put q [] $$ x;
-                  end;
+mypipe t = process (ref []) with
+  process q () = case dequeue q of
+                   x,(t,_):_ = [x,delay (t-pd_time) ()];
+                   x,_ = x;
+                 end;
+  process q x  = enqueue q x $$ delay t () if null (get q);
+               = enqueue q x $$ () otherwise;
+  enqueue q x  = put q $ get q+[(pd_time+t,x)];
+  dequeue q    = x,put q xs when (_,x):xs = get q end;
 end;
 
 The [pure] Object
@@ -216,7 +212,7 @@ The [pure] Object
 The Pure loader also provides a generic 'pure' object as a quick and dirty
 means to create a Pure object from a predefined function without loading a
 script file. However, since most functions in the Pure prelude are not
-prepared to deal with raw Pd messages, this is mostly useful for special
+prepared to deal with raw Pd messages, this is most useful for special
 purposes such as debugging.
 
 For instance, [pure str] creates an object with a single inlet and outlet
