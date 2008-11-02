@@ -12,12 +12,12 @@ http://pure-lang.googlecode.com.
 This is still an experimental version, please report bugs to the author.
 
 In particular, note that the embedded Pure interpreter uses the same kind of
-JIT compiler as the command line version of the interpreter, which may cause
-delays during startup, since the Pure functions are compiled on demand. With
-the current version of the LLVM JIT used by the Pure interpreter there's no
-easy way around this, but we hope to fix this issue in a future release. Once
-all Pure objects have been compiled to native code, they are executed very
-efficiently.
+JIT compiler as the command line version, which may cause annoying delays
+during startup, since the Pure functions are compiled by the JIT when they are
+first used. (However, once all Pure objects have been compiled to native code,
+they are executed very efficiently.) With the current version of the LLVM JIT
+used by the Pure interpreter there's no easy way around this, but we hope to
+fix this issue in a future release.
 
 Installation
 ============
@@ -248,6 +248,36 @@ mypipe t = process (ref []) with
   enqueue q x  = put q $ get q+[(pd_time+t,x)];
   dequeue q    = x,put q xs when (_,x):xs = get q end;
 end;
+
+Livecoding Support
+========== =======
+
+Livecoding means that you can quickly reload your Pure scripts after changes
+while the Pd patch keeps running. The Pure loader provides some experimental
+support for this by means of a special 'pure' receiver object. Sending the
+message 'reload' to this object tells the plugin to reload all loaded scripts
+and update the Pure objects in your patch accordingly.
+
+You can find a sample patch pure-remote.pd, which you can include in your
+patches to send the 'reload' message remotely (e.g., using the pdsend
+program), in the pd-pure sources. (You can also trigger a reload by just
+clicking the bang control of the abstraction.) There's also an accompanying
+elisp program (pure-remote.el) which contains some convenient keybindings for
+the necessary pdsend invocations, so that you can operate the pure-remote
+patch with simple keystrokes directly from Emacs. Please see the patch and
+elisp file for more details.
+
+Also please note the following limitations in the current implementation:
+
+- The 'reload' message just starts up a new interpreter instance, which, due
+to the hiccups with interpreter startup mentioned at the beginning of this
+file, is not as smooth as we'd like it to be. But it's currently as close to
+livecoding with Pure as it gets. We hope to improve this in the future.
+
+- The number of inlets and outlets of Pure objects never changes after a
+'reload' message. (Pd doesn't support this through its API right now.) Thus by
+editing and reloading the Pure scripts you can change the functionality of
+existing objects at runtime, but not their interfaces.
 
 
 Enjoy. :)
