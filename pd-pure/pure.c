@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 #include <pure/runtime.h>
 #include <m_pd.h>
@@ -120,6 +121,18 @@ static char *get_expr(t_symbol *sym, int argc, t_atom *argv)
   if ((t = realloc(s, strlen(s)+1)))
     s = t;
   return s;
+}
+
+static inline pure_expr *parse_symbol(t_pure *x, const char *s)
+{
+  size_t i, n = strlen(s);
+  if (!isalpha(s[0])) goto err;
+  for (i = 1; i < n; i++)
+    if (!isalnum(s[0])) goto err;
+  return pure_symbol(pure_sym(s));
+ err:
+  /* treat as a Pure string */
+  return pure_cstring_dup(s);
 }
 
 static inline pure_expr *parse_expr(t_pure *x, const char *s)
@@ -307,17 +320,29 @@ static void receive_message(t_pure *x, t_symbol *s, int k,
   /* check whether we have something to evaluate */
   if (!f) return;
 
-  /* build the parameter expression from the message */
-  y = parse_expr(x, s->s_name);
-  for (i = 0; i < argc; i++) {
-    char buf[MAXPDSTRING];
-    atom_string(argv+i, buf, MAXPDSTRING);
-    z = parse_expr(x, buf);
-    if (z)
-      y = pure_app(y, z);
-    else {
-      pure_freenew(y);
-      return;
+  /* Build the parameter expression from the message. Floats and symbols get
+     special treatment, other kinds of objects are passed using their string
+     representation. */
+  if (argc == 1 && argv[0].a_type == A_FLOAT)
+    y = pure_double(argv[0].a_w.w_float);
+  else {
+    y = parse_symbol(x, s->s_name);
+    for (i = 0; i < argc; i++) {
+      if (argv[i].a_type == A_FLOAT)
+	z = pure_double(argv[i].a_w.w_float);
+      else if (argv[i].a_type == A_SYMBOL)
+	z = parse_symbol(x, argv[i].a_w.w_symbol->s_name);
+      else {
+	char buf[MAXPDSTRING];
+	atom_string(argv+i, buf, MAXPDSTRING);
+	z = pure_cstring_dup(buf);
+      }
+      if (z)
+	y = pure_app(y, z);
+      else {
+	pure_freenew(y);
+	return;
+      }
     }
   }
   /* add the inlet index if needed */
