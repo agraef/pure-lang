@@ -227,6 +227,17 @@ static void send_message(t_pure *x, int k, pure_expr *y)
   size_t argc;
   t_atom *argv = 0;
   int i;
+  /* Translate Pure lists to corresponding Pd list messages. */
+  if (pure_is_listv(y, &argc, &args)) {
+    if (argc > 0) {
+      argv = malloc(argc*sizeof(t_atom));
+      if (!argv) goto errexit;
+      for (i = 0; i < argc; i++)
+	create_atom(&argv[i], args[i]);
+    }
+    outlet_list(x->out[k], &s_list, argc, argv);
+    goto errexit;
+  }
   /* get arguments */
   pure_is_appv(y, &f, &argc, &args);
   /* pd message generation */
@@ -311,7 +322,7 @@ static inline void delay_message(t_pure *x, double t, pure_expr *msg)
 static void receive_message(t_pure *x, t_symbol *s, int k,
 			    int argc, t_atom *argv)
 {
-  size_t i, n, m;
+  size_t i, j, n, m;
   double t;
   pure_expr *f = x->foo, *y, *z, *msg;
   pure_expr **xv = 0, **yv = 0;
@@ -320,12 +331,35 @@ static void receive_message(t_pure *x, t_symbol *s, int k,
   /* check whether we have something to evaluate */
   if (!f) return;
 
-  /* Build the parameter expression from the message. Floats and symbols get
-     special treatment, other kinds of objects are passed using their string
-     representation. */
+  /* Build the parameter expression from the message. Floats, lists and
+     symbols get special treatment, other kinds of objects are passed using
+     their string representation. */
   if (argc == 1 && argv[0].a_type == A_FLOAT)
     y = pure_double(argv[0].a_w.w_float);
-  else {
+  else if (s == &s_list) {
+    xv = (argc>0)?malloc(argc*sizeof(pure_expr*)):0;
+    for (i = 0; i < argc; i++) {
+      if (argv[i].a_type == A_FLOAT)
+	z = pure_double(argv[i].a_w.w_float);
+      else if (argv[i].a_type == A_SYMBOL)
+	z = parse_symbol(x, argv[i].a_w.w_symbol->s_name);
+      else {
+	char buf[MAXPDSTRING];
+	atom_string(argv+i, buf, MAXPDSTRING);
+	z = pure_cstring_dup(buf);
+      }
+      if (z)
+	xv[i] = z;
+      else {
+	for (j = 0; j < i; j++)
+	  pure_free(xv[j]);
+	free(xv);
+	return;
+      }
+    }
+    y = pure_listv(argc, xv);
+    if (xv) free(xv); xv = 0;
+  } else {
     y = parse_symbol(x, s->s_name);
     for (i = 0; i < argc; i++) {
       if (argv[i].a_type == A_FLOAT)
