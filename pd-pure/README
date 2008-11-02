@@ -9,6 +9,16 @@ This plugin lets you write external Pd control objects in Pure. Pure is a
 functional programming language based on the term rewriting calculus, see
 http://pure-lang.googlecode.com.
 
+This is still an experimental version, please report bugs to the author.
+
+In particular, note that the embedded Pure interpreter uses the same kind of
+JIT compiler as the command line version of the interpreter, which may cause
+delays during startup, since the Pure functions are compiled on demand. With
+the current version of the LLVM JIT used by the Pure interpreter there's no
+easy way around this, but we hope to fix this issue in a future release. Once
+all Pure objects have been compiled to native code, they are executed very
+efficiently.
+
 Installation
 ============
 
@@ -73,16 +83,15 @@ function must return the desired numbers of inlets and outlets, along with a
 second function to be applied at runtime, as a tuple n,m,foo. The input
 arguments to the runtime function as well as the corresponding function
 results are then encoded as pairs k,val where k denotes the inlet or outlet
-index. (Note that the k index is necessary only if there actually is more than
-one inlet or outlet, respectively. If the number of inlets is 1, the messages
-will always be passed without an index, and the outlet index is assumed to be
-zero if none is specified.) For instance:
+index. (Note that the k index is provided only if there actually is more than
+one inlet. Also, the outlet index is assumed to be zero if none is specified,
+so that it can be omitted if there's only one outlet.)
+
+For instance, the following object, invoked as [cross] in the Pd patch, has
+two inlets and two outlets and routes messages from the left inlet to the
+right outlet and vice versa.
 
 cross = 2,2,cross with cross (k,x) = (1-k,x) end;
-
-This object, invoked as [cross] in the Pd patch, has two inlets and two
-outlets and routes messages from the left inlet to the right outlet and vice
-versa.
 
 You can also emit multiple messages, possibly to different outlets, in one
 go. These must be encoded as lists of values or index,value pairs, which are
@@ -92,8 +101,9 @@ simultaneously:
 
 fan n = 1,n,fan n with fan n x = reverse [k,x | k = 0..n-1] end;
 
-(Note that the n outlets are served in right-to-left order here. This is not
-strictly necessary, but matches the Pd convention.)
+(Note that, because of the use of the 'reserve', the n outlets are served in
+right-to-left order here. This is not strictly necessary, but matches the Pd
+convention.)
 
 Another example is the following [dup] object with a single inlet and outlet,
 which just sends out each received message twice:
@@ -203,11 +213,11 @@ end;
 The [pure] Object
 === ====== ======
 
-Finally, the Pure loader also provides a generic 'pure' object as a quick and
-dirty means to create a Pure object from a predefined function without loading
-a script file. However, since most functions in the Pure prelude are not
-prepared to deal with Pd messages without some kind of preprocessing, this is
-mostly useful for special purposes such as debugging.
+The Pure loader also provides a generic 'pure' object as a quick and dirty
+means to create a Pure object from a predefined function without loading a
+script file. However, since most functions in the Pure prelude are not
+prepared to deal with raw Pd messages, this is mostly useful for special
+purposes such as debugging.
 
 For instance, [pure str] creates an object with a single inlet and outlet
 which applies the prelude function 'str' to its inputs. Connecting this to
@@ -218,18 +228,6 @@ The [pure] object can also be used to generate constant numbers or string
 values. For instance, [pure cst (1/7)] responds to any message (such as
 'bang') by producing the value 1/7 = 0.142857...
 
-Notes
-=====
-
-This is still an experimental version, please report bugs to the author.
-
-In particular, note that the embedded Pure interpreter uses the same kind of
-JIT compiler as the command line version of the interpreter, which may cause
-delays during startup, since the Pure functions are compiled on demand. With
-the current version of the LLVM JIT used by the Pure interpreter there's no
-easy way around this, but we hope to fix this issue in a future release. Once
-all Pure objects have been compiled to native code, they are executed very
-efficiently.
 
 Enjoy. :)
 Albert Graef <Dr.Graef@t-online.de>
