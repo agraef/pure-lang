@@ -46,40 +46,59 @@ static int void_sym = 0, delay_sym = 0;
 
 typedef struct _pure {
   t_object x_obj;
-  int n_in, n_out;	/* number of extra inlets and outlets */
-  struct _px **in;	/* extra inlet proxies, see t_px below */
-  t_outlet **out;	/* outlets */
-  pure_expr *foo;	/* the object function */
-  char *args;		/* creation arguments */
-  t_clock *clock;	/* wakeup for asynchronous processing */
-  pure_expr *msg;	/* pending asynchronous message */
+  int n_in, n_out;		/* number of extra inlets and outlets */
+  struct _px **in;		/* extra inlet proxies, see t_px below */
+  t_outlet **out;		/* outlets */
+  pure_expr *foo;		/* the object function */
+  char *args;			/* creation arguments */
+  char *tmp;			/* temporary storage */
+  struct _pure *next, *prev;	/* double-linked list of all Pure objects */
+  t_clock *clock;		/* wakeup for asynchronous processing */
+  pure_expr *msg;		/* pending asynchronous message */
 } t_pure;
 
 /* Proxy objects for extra inlets (pilfered from flext by Thomas Grill). */
 
 typedef struct _px {
   t_object obj;
-  t_pure *x;		/* parent */
-  int ix;		/* inlet index */
+  t_pure *x;			/* parent */
+  int ix;			/* inlet index */
 } t_px;
+
+/* The runtime class. This is used to instantiate a single 'pure' receiver
+   object which processes messages to the Pure runtime. Currently the only
+   available message is 'reload' which reloads all scripts and reinitializes
+   all Pure objects accordingly. */
+
+typedef struct _runtime {
+  t_object obj;
+} t_runtime;
+
+static t_runtime *xpure = 0;
+
+/* Head and tail of the list of Pure objects. */
+
+static t_pure *xhead = 0, *xtail = 0;
 
 /* We keep track of the different classes in a linked list for now. */
 
 typedef struct _classes {
   t_symbol *sym;
   t_class *class;
+  char *dir;
   struct _classes *next;
 } t_classes;
 
 static t_classes *pure_classes = 0;
-static t_class *px_class = 0;
+static t_class *px_class = 0, *runtime_class = 0;
 
-static void add_class(t_symbol *sym, t_class *class)
+static void add_class(t_symbol *sym, t_class *class, char *dir)
 {
   t_classes *new = malloc(sizeof(t_classes));
   if (!new) return;
   new->sym = sym;
   new->class = class;
+  new->dir = strdup(dir);
   new->next = pure_classes;
   pure_classes = new;
 }
@@ -141,7 +160,7 @@ static inline pure_expr *parse_expr(t_pure *x, const char *s)
   if (y == 0)
 #if CHECK_SYNTAX
     /* complain about bad Pure syntax */
-    pd_error(x, "pure: invalid argument '%s'", s);
+    pd_error(x, "pure: invalid expression '%s'", s);
 #else
     /* cast to a Pure string */
     y = pure_cstring_dup(s);
@@ -461,6 +480,27 @@ static void px_any(t_px *px, t_symbol *s, int argc, t_atom *argv)
   receive_message(px->x, s, px->ix, argc, argv);
 }
 
+/* Manage the object list. */
+
+static void xappend(t_pure *x)
+{
+  x->prev = xtail; x->next = 0;
+  if (xtail) xtail->next = x; xtail = x;
+  if (!xhead) xhead = x;
+}
+
+static void xunlink(t_pure *x)
+{
+  if (x->prev)
+    x->prev->next = x->next;
+  else
+    xhead = x->next;
+  if (x->next)
+    x->next->prev = x->prev;
+  else
+    xtail = x->prev;
+}
+
 /* Create a new Pure object. */
 
 static void *pure_init(t_symbol *s, int argc, t_atom *argv)
@@ -471,11 +511,14 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
 
   if (!c) return 0; /* this shouldn't happen unless we're out of memory */
   x = (t_pure*)pd_new(c);
+  xappend(x);
+
   x->foo = 0;
   x->n_in = 0; x->n_out = 1;
   x->in = 0;
   x->out = 0;
   x->args = get_expr(s, argc, argv);
+  x->tmp = 0;
   if (!x->args) {
     pd_error(x, "pure: memory allocation failed");
     return (void *)x;
@@ -501,7 +544,7 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
 	  n_in = 1;
 	}
 	if (n_out < 0) {
-	  pd_error(x, "pure bad number %d of outlets, must be >= 0", n_out);
+	  pd_error(x, "pure: bad number %d of outlets, must be >= 0", n_out);
 	  n_out = 0;
 	}
 	x->n_in = n_in-1;
@@ -547,32 +590,72 @@ static void pure_fini(t_pure *x)
 {
   int i;
   free(x->args);
-  pure_free(x->foo);
+  if (x->foo) pure_free(x->foo);
   x->foo = 0;
   for (i = 0; i < x->n_in; i++)
     pd_free((t_pd*)x->in[i]);
   if (x->in) free(x->in);
   if (x->out) free(x->out);
+  xunlink(x);
+}
+
+/* Reinitialize Pure objects in a new interpreter context. */
+
+static void pure_refini(t_pure *x)
+{
+  pure_free(x->foo);
+  if (x->foo) x->foo = 0;
+  if (x->msg) {
+    x->tmp = str(x->msg);
+    pure_free(x->msg);
+    x->msg = 0;
+  }
+}
+
+static void pure_reinit(t_pure *x)
+{
+  if (x->args != 0) {
+    int n_in = 1, n_out = 1;
+    pure_expr *f = parse_expr(x, x->args);
+    x->foo = f;
+    if (f) {
+      size_t n;
+      pure_expr **xv = 0;
+      pure_new(f);
+      if (pure_is_tuplev(f, &n, &xv) && n == 3 &&
+	  pure_is_int(xv[0], &n_in) && pure_is_int(xv[1], &n_out)) {
+	x->foo = pure_new(xv[2]); pure_free(f);
+	/* FIXME: Number of inlets and outlets are initialized at object
+	   creation time, can't change them here. */
+      }
+      if (xv) free(xv);
+    }
+  }
+  if (x->tmp) {
+    x->msg = parse_expr(x, x->tmp);
+    free(x->tmp); x->tmp = 0;
+  }
 }
 
 /* Setup for a Pure object class with the given name. */
 
-static void class_setup(char *name)
+static void class_setup(char *name, char *dir)
 {
   t_symbol *class_s = gensym(name);
-  t_class *pure_class =
+  t_class *class =
     class_new(class_s, (t_newmethod)pure_init, (t_method)pure_fini,
 	      sizeof(t_pure), CLASS_DEFAULT, A_GIMME, A_NULL);
-  class_addanything(pure_class, pure_any);
-  class_sethelpsymbol(pure_class, gensym("pure-help"));
-  add_class(class_s, pure_class);
+  class_addanything(class, pure_any);
+  class_sethelpsymbol(class, gensym("pure-help"));
+  add_class(class_s, class, dir);
 }
 
 /* Loader setup, pilfered from pd-lua (claudiusmaximus@goto10.org). */
 
+static char dirbuf[MAXPDSTRING], cmdbuf[1000];
+
 static int pure_loader(t_canvas *canvas, char *name)
 {
-  char dirbuf[MAXPDSTRING], cmdbuf[1000];
   char *ptr;
   int fd = canvas_open(canvas, name, ".pure", dirbuf, &ptr, MAXPDSTRING, 1);
   if (fd >= 0) {
@@ -582,11 +665,52 @@ static int pure_loader(t_canvas *canvas, char *name)
     sprintf(cmdbuf, "using \"%s/%s.pure\";\n", dirbuf, name);
     pure_evalcmd(cmdbuf);
     /* Create the object class. */
-    class_setup(name);
+    class_setup(name, dirbuf);
     class_set_extern_dir(&s_);
     return lookup(gensym(name)) != 0;
   } else
     return 0;
+}
+
+/* Reload all loaded Pure scripts in a new interpreter instance. */
+
+static void reload(t_classes *c)
+{
+  /* Walk the list of classes recursively, in postorder, which is the order in
+     which the classes were originally created. */
+  if (c) {
+    reload(c->next);
+    if (strcmp(c->sym->s_name, "pure")) {
+      class_set_extern_dir(c->dir);
+      sprintf(cmdbuf, "using \"%s/%s.pure\";\n", c->dir, c->sym->s_name);
+      pure_evalcmd(cmdbuf);
+      class_set_extern_dir(&s_);
+    }
+  }
+}
+
+/* Create a new interpreter instance and reinitialize all objects. This must
+   be invoked in a safe context, where no evaluations are in progress. */
+
+static void pure_restart(void)
+{
+  t_pure *x;
+  for (x = xhead; x; x = x->next)
+    pure_refini(x);
+  pure_delete_interp(interp);
+  interp = pure_create_interp(0, 0);
+  pure_switch_interp(interp);
+  reload(pure_classes);
+  for (x = xhead; x; x = x->next)
+    pure_reinit(x);
+  void_sym = pure_sym("()");
+  delay_sym = pure_sym("delay");
+}
+
+static void runtime_any(t_runtime *x, t_symbol *s, int argc, t_atom *argv)
+{
+  if (strcmp(s->s_name, "reload") == 0 && argc == 0)
+    pure_restart();
 }
 
 extern void pure_setup(void)
@@ -611,9 +735,17 @@ extern void pure_setup(void)
 			 sizeof(t_px), CLASS_PD|CLASS_NOINLET,
 			 A_NULL);
     class_addanything(px_class, px_any);
+    /* Create the runtime class and the 'pure' receiver. */
+    runtime_class = class_new(gensym("pure runtime"), 0, 0,
+			      sizeof(t_runtime), CLASS_DEFAULT,
+			      A_GIMME, A_NULL);
+    class_addanything(runtime_class, runtime_any);
+    class_sethelpsymbol(runtime_class, gensym("pure-help"));
+    xpure = (t_runtime*)pd_new(runtime_class);
+    pd_bind(&xpure->obj.ob_pd, gensym("pure"));
     /* Create a class for 'pure' objects which allows you to access any
        predefined Pure function without loading a script. */
-    class_setup("pure");
+    class_setup("pure", "");
     /* Look up a few symbols that we need. */
     void_sym = pure_sym("()");
     delay_sym = pure_sym("delay");
