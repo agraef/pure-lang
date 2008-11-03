@@ -462,7 +462,7 @@ the interpreter.
 More information about matrices and corresponding examples can be found in the
 \fIEXAMPLES\fP section below.
 .TP
-\fBComprehensions:\fP [x,y | x=1..n; y=1..m; x<y], {i!=j | i=1..n; j=1..m}
+\fBComprehensions:\fP [x,y | x=1..n; y=1..m; x<y], {i~=j | i=1..n; j=1..m}
 Pure provides the usual comprehension syntax as a convenient means to
 construct both list and matrix values from a ``template'' expression and one
 or more ``generator'' and ``filter'' clauses (the former bind a pattern to
@@ -547,8 +547,8 @@ beginning of the prelude, see the
 .B prelude.pure
 script for a list of these. Arithmetic and relational operators mostly follow
 C conventions. However, out of necessity (\fB!\fP, \fB&\fP and \fB|\fP are
-used for other purposes in Pure) the logical and bitwise operations are named
-differently:
+used for other purposes in Pure) the logical and bitwise operations, as well
+as the negated equality predicates are named a bit differently:
 .BR ~ ,
 .B &&
 and
@@ -558,7 +558,9 @@ bitwise operations are named
 .BR not ,
 .B and
 and
-.BR or .
+.BR or ,
+and, following these conventions, inequality is denoted
+.BR ~= .
 Also note that && and || are special forms which are evaluated in
 short-circuit mode like in C (see below), whereas the bitwise connectives
 receive their arguments using call-by-value, just like the other arithmetic
@@ -2833,7 +2835,8 @@ Moreover, in Pure 0.13 the naming of the logical and bitwise operations was
 changed, so that these are now called ~, &&, || and not/and/or,
 respectively. (Previously, ~ was used for bitwise, `not' for logical negation,
 which was rather inconsistent, albeit compatible with the naming of the `not'
-operation in Haskell and ML.)
+operation in Haskell and ML.) Also, to stay in line with this naming scheme,
+inequality was renamed to ~= (previously !=).
 .SS Error Recovery
 The parser uses a fairly simplistic panic mode error recovery which tries to
 catch syntax errors at the toplevel only. This seems to work reasonably well,
@@ -3398,8 +3401,8 @@ sym_info cat::string pat::string
   // Retrieve the information that we need.
   info = [x | x@(s,_) = map fields info;
   // Get rid of extra lines containing extern and fixity declarations.
-          s != "extern" && s != "nullary" &&
-          s != "prefix" && s != "postfix" && ~fnmatch "infix*" s 0];
+          s ~= "extern" && s ~= "nullary" &&
+          s ~= "prefix" && s ~= "postfix" && ~fnmatch "infix*" s 0];
 \fBend\fP \fBwith\fP
   // Regex call to split the summary information about one symbol, as
   // returned by 'show -s', into the name and description parts.

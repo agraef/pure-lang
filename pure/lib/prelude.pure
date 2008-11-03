@@ -47,8 +47,8 @@ infix   2   => ;		// mapsto constructor
 infixr  2   || ;		// logical or (short-circuit)
 infixr  3   && ;		// logical and (short-circuit)
 prefix  3   ~ ;			// logical negation
-infix   4   < > <= >= == != ;	// relations
-infix   4   === !== ;		// syntactic equality
+infix   4   < > <= >= == ~= ;	// relations
+infix   4   === ~== ;		// syntactic equality
 infixr  4   : ;			// list cons
 infix   5   +: <: ;		// complex numbers (cf. math.pure)
 infixl  5   << >> ;		// bit shifts
@@ -118,7 +118,7 @@ def quasiquote x		= quote x;
    map keys to values. Here we only define equality of such pairs. */
 
 (x=>v)==(y=>w)	= if x==y then v==w else 0;
-(x=>v)!=(y=>w)	= if x!=y then 1 else v!=w;
+(x=>v)~=(y=>w)	= if x~=y then 1 else v~=w;
 
 /* Poor man's tuples(TM). These are constructed with the pairing operator ',',
    are always flat and associate to the right. The empty tuple, denoted (), is
@@ -137,12 +137,12 @@ x,()		= x;
 _==(x,xs)	|
 _==()		= 0;
 
-()!=()		= 0;
-(x,xs)!=(y,ys)	= if x!=y then 1 else xs!=ys;
-(x,xs)!=_	|
-()!=_		|
-_!=(x,xs)	|
-_!=()		= 1;
+()~=()		= 0;
+(x,xs)~=(y,ys)	= if x~=y then 1 else xs~=ys;
+(x,xs)~=_	|
+()~=_		|
+_~=(x,xs)	|
+_~=()		= 1;
 
 null ()		= 1;
 null (x,xs)	= 0;
@@ -180,10 +180,10 @@ end;
 []==(x:xs)	= 0;
 (x:xs)==(y:ys)	= if x==y then xs==ys else 0;
 
-[]!=[]		= 0;
-(x:xs)!=[]	= 1;
-[]!=(x:xs)	= 1;
-(x:xs)!=(y:ys)	= if x!=y then 1 else xs!=ys;
+[]~=[]		= 0;
+(x:xs)~=[]	= 1;
+[]~=(x:xs)	= 1;
+(x:xs)~=(y:ys)	= if x~=y then 1 else xs~=ys;
 
 null []		= 1;
 null (x:xs)	= 0;
@@ -287,7 +287,7 @@ stream xs@(_,_)	= stream (list xs);
 
 n1:n2..m	= if m===s*inf then iterate (\x->x+k) n1
 		  else while (\i->s*i<=s*m) (\x->x+k) n1
-		  when k = n2-n1; s = if k>0 then 1 else -1 end if n1!=n2;
+		  when k = n2-n1; s = if k>0 then 1 else -1 end if n1~=n2;
 n..m		= if m===inf then iterate (\x->x+1) n
 		  else while (\i->i<=m) (\x->x+1) n;
 

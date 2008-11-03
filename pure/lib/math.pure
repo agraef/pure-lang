@@ -303,24 +303,24 @@ x1^z2@(_<:_)	= exp (ln (polar x1)*z2) if realp x1;
 (x1+:y1) == (x2+:y2)	= x1==x2 && y1==y2;
 (r1<:t1) == (r2<:t2)	= r1==r2 && t1==t2;
 
-(x1+:y1) != (x2+:y2)	= x1!=x2 || y1!=y2;
-(r1<:t1) != (r2<:t2)	= r1!=r2 || t1!=t2;
+(x1+:y1) ~= (x2+:y2)	= x1~=x2 || y1~=y2;
+(r1<:t1) ~= (r2<:t2)	= r1~=r2 || t1~=t2;
 
 z1@(_+:_)==z2@(_<:_)	= z1 == rect z2;
 z1@(_<:_)==z2@(_+:_)	= rect z1 == z2;
 
-z1@(_+:_)!=z2@(_<:_)	= z1 != rect z2;
-z1@(_<:_)!=z2@(_+:_)	= rect z1 != z2;
+z1@(_+:_)~=z2@(_<:_)	= z1 ~= rect z2;
+z1@(_<:_)~=z2@(_+:_)	= rect z1 ~= z2;
 
 (x1+:y1)==x2		= x1==x2 && y1==0 if realp x2;
 x1==(x2+:y2)		= x1==x2 && y2==0 if realp x1;
 z1@(r1<:t1)==x2		= z1 == (x2<:0) if realp x2;
 x1==z2@(r2<:t2)		= (x1<:0) == z2 if realp x1;
 
-(x1+:y1)!=x2		= x1!=x2 || y1!=0 if realp x2;
-x1!=(x2+:y2)		= x1!=x2 || y2!=0 if realp x1;
-z1@(r1<:t1)!=x2		= z1 != (x2<:0) if realp x2;
-x1!=z2@(r2<:t2)		= (x1<:0) != z2 if realp x1;
+(x1+:y1)~=x2		= x1~=x2 || y1~=0 if realp x2;
+x1~=(x2+:y2)		= x1~=x2 || y2~=0 if realp x1;
+z1@(r1<:t1)~=x2		= z1 ~= (x2<:0) if realp x2;
+x1~=z2@(r2<:t2)		= (x1<:0) ~= z2 if realp x1;
 
 /* Rational numbers. These are constructed with the exact division operator
    '%' (declared in the prelude) which has the same precedence and fixity as
@@ -523,21 +523,21 @@ x1^(x2%y2)	= x1^(x2/y2) if numberp x1;
 /* Comparisons. */
 
 x1%y1 == x2%y2	= x1*y2 == x2*y1;
-x1%y1 != x2%y2	= x1*y2 != x2*y1;
+x1%y1 ~= x2%y2	= x1*y2 ~= x2*y1;
 x1%y1 <  x2%y2	= x1*y2 <  x2*y1;
 x1%y1 <= x2%y2	= x1*y2 <= x2*y1;
 x1%y1 >  x2%y2	= x1*y2 >  x2*y1;
 x1%y1 >= x2%y2	= x1*y2 >= x2*y1;
 
 x1%y1 == x2	= x1 == x2*y1 if numberp x2;
-x1%y1 != x2	= x1 != x2*y1 if numberp x2;
+x1%y1 ~= x2	= x1 ~= x2*y1 if numberp x2;
 x1%y1 <  x2	= x1 <  x2*y1 if realp x2;
 x1%y1 <= x2	= x1 <= x2*y1 if realp x2;
 x1%y1 >  x2	= x1 >  x2*y1 if realp x2;
 x1%y1 >= x2	= x1 >= x2*y1 if realp x2;
 
 x1 == x2%y2	= x1*y2 == x2 if numberp x2;
-x1 != x2%y2	= x1*y2 != x2 if numberp x2;
+x1 ~= x2%y2	= x1*y2 ~= x2 if numberp x2;
 x1 <  x2%y2	= x1*y2 <  x2 if realp x2;
 x1 <= x2%y2	= x1*y2 <= x2 if realp x2;
 x1 >  x2%y2	= x1*y2 >  x2 if realp x2;
@@ -552,6 +552,6 @@ x1 >= x2%y2	= x1*y2 >= x2 if realp x2;
 
 compvalp x	= numberp x;
 realvalp x	= compvalp x && im x==0;
-ratvalp x	= realvalp x && re (x-x)!==nan;
+ratvalp x	= realvalp x && re (x-x)~==nan;
 bigintvalp x	= ratvalp x && den (re x)==1;
 intvalp x	= bigintvalp x && int (re x)==x;

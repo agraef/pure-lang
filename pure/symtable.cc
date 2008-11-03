@@ -308,11 +308,11 @@ symbol& symtable::equal_sym()
 
 symbol& symtable::notequal_sym()
 {
-  symbol *_sym = lookup("!=");
+  symbol *_sym = lookup("~=");
   if (_sym)
     return *_sym;
   else
-    return sym("!=", 4, infix);
+    return sym("~=", 4, infix);
 }
 
 symbol& symtable::plus_sym()

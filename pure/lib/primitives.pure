@@ -32,7 +32,7 @@ extern expr* pure_force(expr*) = force;
 
 extern bool same(expr* x, expr* y);
 x === y		= same x y;
-x !== y		= ~same x y;
+x ~== y		= ~same x y;
 
 /* Predicates to check for the built-in types. */
 
@@ -192,7 +192,7 @@ x::int>y::int		= x>y;
 x::int<=y::int		= x<=y;
 x::int>=y::int		= x>=y;
 x::int==y::int		= x==y;
-x::int!=y::int		= x!=y;
+x::int~=y::int		= x~=y;
 
 -x::double		= -x;
 
@@ -206,7 +206,7 @@ x::double>y::double	= x>y;
 x::double<=y::double	= x<=y;
 x::double>=y::double	= x>=y;
 x::double==y::double	= x==y;
-x::double!=y::double	= x!=y;
+x::double~=y::double	= x~=y;
 
 // mixed operands
 
@@ -220,7 +220,7 @@ x::int>y::double	= x>y;
 x::int<=y::double	= x<=y;
 x::int>=y::double	= x>=y;
 x::int==y::double	= x==y;
-x::int!=y::double	= x!=y;
+x::int~=y::double	= x~=y;
 
 x::double+y::int	= x+y;
 x::double-y::int	= x-y;
@@ -232,7 +232,7 @@ x::double>y::int	= x>y;
 x::double<=y::int	= x<=y;
 x::double>=y::int	= x>=y;
 x::double==y::int	= x==y;
-x::double!=y::int	= x!=y;
+x::double~=y::int	= x~=y;
 
 /* Logical connectives, sequences and quotes. Please note that these enjoy
    call-by-name and short-circuit evaluation only as explicit calls! But we
@@ -283,7 +283,7 @@ x::bigint>y::bigint	= bigint_cmp x y > 0;
 x::bigint<=y::bigint	= bigint_cmp x y <= 0;
 x::bigint>=y::bigint	= bigint_cmp x y >= 0;
 x::bigint==y::bigint	= bigint_cmp x y == 0;
-x::bigint!=y::bigint	= bigint_cmp x y != 0;
+x::bigint~=y::bigint	= bigint_cmp x y ~= 0;
 
 // mixed int/bigint (promote int to bigint)
 
@@ -301,7 +301,7 @@ x::int>y::bigint	= bigint x>y;
 x::int<=y::bigint	= bigint x<=y;
 x::int>=y::bigint	= bigint x>=y;
 x::int==y::bigint	= bigint x==y;
-x::int!=y::bigint	= bigint x!=y;
+x::int~=y::bigint	= bigint x~=y;
 
 x::bigint+y::int	= x+bigint y;
 x::bigint-y::int	= x-bigint y;
@@ -317,7 +317,7 @@ x::bigint>y::int	= x>bigint y;
 x::bigint<=y::int	= x<=bigint y;
 x::bigint>=y::int	= x>=bigint y;
 x::bigint==y::int	= x==bigint y;
-x::bigint!=y::int	= x!=bigint y;
+x::bigint~=y::int	= x~=bigint y;
 
 // mixed double/bigint (promote bigint to double)
 
@@ -331,7 +331,7 @@ x::bigint>y::double	= double x>y;
 x::bigint<=y::double	= double x<=y;
 x::bigint>=y::double	= double x>=y;
 x::bigint==y::double	= double x==y;
-x::bigint!=y::double	= double x!=y;
+x::bigint~=y::double	= double x~=y;
 
 x::double+y::bigint	= x+double y;
 x::double-y::bigint	= x-double y;
@@ -343,7 +343,7 @@ x::double>y::bigint	= x>double y;
 x::double<=y::bigint	= x<=double y;
 x::double>=y::bigint	= x>=double y;
 x::double==y::bigint	= x==double y;
-x::double!=y::bigint	= x!=double y;
+x::double~=y::bigint	= x~=double y;
 
 /* The gcd and lcm functions from the GMP library. These return a bigint if at
    least one of the arguments is a bigint, a machine int otherwise. */
@@ -409,7 +409,7 @@ x::pointer>y::pointer	= bigint x >  bigint y;
 x::pointer<=y::pointer	= bigint x <= bigint y;
 x::pointer>=y::pointer	= bigint x >= bigint y;
 x::pointer==y::pointer	= bigint x == bigint y;
-x::pointer!=y::pointer	= bigint x != bigint y;
+x::pointer~=y::pointer	= bigint x ~= bigint y;
 
 /* IEEE floating point infinities and NaNs. Place these after the definitions
    of the built-in operators so that the double arithmetic works. */

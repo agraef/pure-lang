@@ -201,18 +201,18 @@ with
 end;
 
 // compare two arrays for inequality
-Array a != Array b		= neq a b
+Array a ~= Array b		= neq a b
 with
   neq nil nil			= 0;
   neq nil (tip _)		= 1;
   neq nil (bin _ _ _)		= 1;
   neq (tip _) nil		= 1;
-  neq (tip x) (tip y)		= x != y;
+  neq (tip x) (tip y)		= x ~= y;
   neq (tip _) (bin _ _ _)	= 1;
   neq (bin _ _ _) nil		= 1;
   neq (bin _ _ _) (tip _)	= 1;
   neq (bin b1::int a1 a2) (bin b2::int a3 a4)
-				= b1 != b2 || neq a1 a3 || neq a2 a4;
+				= b1 ~= b2 || neq a1 a3 || neq a2 a4;
 end;
 
 /* Private functions. */
