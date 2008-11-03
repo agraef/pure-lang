@@ -133,13 +133,13 @@ x::matrix + a		= if gsl_complexp a then
 			     end)
 			  if nmatrixp x && gsl_scalarp a;
 // symbolic cases
-a + x::matrix		= map (\x->a+x) x if not matrixp a;
-x::matrix + a		= map (\x->x+a) x if not matrixp a;
+a + x::matrix		= map (\x->a+x) x if ~matrixp a;
+x::matrix + a		= map (\x->x+a) x if ~matrixp a;
 
 a - x::matrix		= (-x)+a if nmatrixp x && gsl_scalarp a;
 x::matrix - a		= x+(-a) if nmatrixp x && gsl_scalarp a;
-a - x::matrix		= map (\x->a-x) x if not matrixp a;
-x::matrix - a		= map (\x->x-a) x if not matrixp a;
+a - x::matrix		= map (\x->a-x) x if ~matrixp a;
+x::matrix - a		= map (\x->x-a) x if ~matrixp a;
 
 extern int gsl_matrix_scale(dmatrix*, double);
 extern int wrap_gsl_matrix_complex_scale(cmatrix*, expr*)
@@ -169,53 +169,53 @@ x::matrix * a		= if gsl_complexp a then
 			     end)
 			  if nmatrixp x && gsl_scalarp a;
 // symbolic cases
-a * x::matrix		= map (\x->a*x) x if not matrixp a;
-x::matrix * a		= map (\x->x*a) x if not matrixp a;
+a * x::matrix		= map (\x->a*x) x if ~matrixp a;
+x::matrix * a		= map (\x->x*a) x if ~matrixp a;
 
 a / x::matrix		= a*ones(dim x)./x if nmatrixp x && gsl_scalarp a;
 x::matrix / a		= x*(1/a) if nmatrixp x && gsl_scalarp a;
-a / x::matrix		= map (\x->a/x) x if not matrixp a;
-x::matrix / a		= map (\x->x/a) x if not matrixp a;
+a / x::matrix		= map (\x->a/x) x if ~matrixp a;
+x::matrix / a		= map (\x->x/a) x if ~matrixp a;
 
 /* Some additional matrix-scalar operations which aren't in GSL, but are
    provided as matrix-matrix operations below. */
 
 a ^ x::matrix		= (a*ones(dim x)).^x if nmatrixp x && gsl_scalarp a;
 x::matrix ^ a		= x.^(a*ones(dim x)) if nmatrixp x && gsl_scalarp a;
-a ^ x::matrix		= map (\x->a^x) x if not matrixp a;
-x::matrix ^ a		= map (\x->x^a) x if not matrixp a;
+a ^ x::matrix		= map (\x->a^x) x if ~matrixp a;
+x::matrix ^ a		= map (\x->x^a) x if ~matrixp a;
 
 /* Integer matrix-scalar operations. */
 
 a div x::matrix		= (a*iones(dim x)) div x if imatrixp x && intp a;
 x::matrix div a		= x div (a*iones(dim x)) if imatrixp x && intp a;
-a div x::matrix		= map (\x->a div x) x if not matrixp a;
-x::matrix div a		= map (\x->x div a) x if not matrixp a;
+a div x::matrix		= map (\x->a div x) x if ~matrixp a;
+x::matrix div a		= map (\x->x div a) x if ~matrixp a;
 
 a mod x::matrix		= (a*iones(dim x)) mod x if imatrixp x && intp a;
 x::matrix mod a		= x mod (a*iones(dim x)) if imatrixp x && intp a;
-a mod x::matrix		= map (\x->a mod x) x if not matrixp a;
-x::matrix mod a		= map (\x->x mod a) x if not matrixp a;
+a mod x::matrix		= map (\x->a mod x) x if ~matrixp a;
+x::matrix mod a		= map (\x->x mod a) x if ~matrixp a;
 
 a << x::matrix		= (a*iones(dim x)) << x if imatrixp x && intp a;
 x::matrix << a		= x << (a*iones(dim x)) if imatrixp x && intp a;
-a << x::matrix		= map (\x->a << x) x if not matrixp a;
-x::matrix << a		= map (\x->x << a) x if not matrixp a;
+a << x::matrix		= map (\x->a << x) x if ~matrixp a;
+x::matrix << a		= map (\x->x << a) x if ~matrixp a;
 
 a >> x::matrix		= (a*iones(dim x)) >> x if imatrixp x && intp a;
 x::matrix >> a		= x >> (a*iones(dim x)) if imatrixp x && intp a;
-a >> x::matrix		= map (\x->a >> x) x if not matrixp a;
-x::matrix >> a		= map (\x->x >> a) x if not matrixp a;
+a >> x::matrix		= map (\x->a >> x) x if ~matrixp a;
+x::matrix >> a		= map (\x->x >> a) x if ~matrixp a;
 
 a and x::matrix		= (a*iones(dim x)) and x if imatrixp x && intp a;
 x::matrix and a		= x and (a*iones(dim x)) if imatrixp x && intp a;
-a and x::matrix		= map (\x->a and x) x if not matrixp a;
-x::matrix and a		= map (\x->x and a) x if not matrixp a;
+a and x::matrix		= map (\x->a and x) x if ~matrixp a;
+x::matrix and a		= map (\x->x and a) x if ~matrixp a;
 
 a or x::matrix		= (a*iones(dim x)) or x if imatrixp x && intp a;
 x::matrix or a		= x or (a*iones(dim x)) if imatrixp x && intp a;
-a or x::matrix		= map (\x->a or x) x if not matrixp a;
-x::matrix or a		= map (\x->x or a) x if not matrixp a;
+a or x::matrix		= map (\x->a or x) x if ~matrixp a;
+x::matrix or a		= map (\x->x or a) x if ~matrixp a;
 
 /* Matrix-matrix operations. */
 
@@ -223,7 +223,7 @@ extern int gsl_matrix_add(dmatrix*, dmatrix*);
 extern int gsl_matrix_complex_add(cmatrix*, cmatrix*);
 extern int gsl_matrix_int_add(imatrix*, imatrix*);
 
-x::matrix + y::matrix	= throw (bad_matrix_value y) if dim x!=dim y;
+x::matrix + y::matrix	= throw (bad_matrix_value y) if dim x~=dim y;
 			= x when
 			    x = pack x;
 			    _ = case matrix_type x of
@@ -244,7 +244,7 @@ extern int gsl_matrix_sub(dmatrix*, dmatrix*);
 extern int gsl_matrix_complex_sub(cmatrix*, cmatrix*);
 extern int gsl_matrix_int_sub(imatrix*, imatrix*);
 
-x::matrix - y::matrix	= throw (bad_matrix_value y) if dim x!=dim y;
+x::matrix - y::matrix	= throw (bad_matrix_value y) if dim x~=dim y;
 			= x when
 			    x = pack x;
 			    _ = case matrix_type x of
@@ -265,7 +265,7 @@ extern int gsl_matrix_mul_elements(dmatrix*, dmatrix*);
 extern int gsl_matrix_complex_mul_elements(cmatrix*, cmatrix*);
 extern int gsl_matrix_int_mul_elements(imatrix*, imatrix*);
 
-x::matrix .* y::matrix	= throw (bad_matrix_value y) if dim x!=dim y;
+x::matrix .* y::matrix	= throw (bad_matrix_value y) if dim x~=dim y;
 			= x when
 			    x = pack x;
 			    _ = case matrix_type x of
@@ -285,7 +285,7 @@ x::matrix .* y::matrix	= throw (bad_matrix_value y) if dim x!=dim y;
 extern int gsl_matrix_div_elements(dmatrix*, dmatrix*);
 extern int gsl_matrix_complex_div_elements(cmatrix*, cmatrix*);
 
-x::matrix ./ y::matrix	= throw (bad_matrix_value y) if dim x!=dim y;
+x::matrix ./ y::matrix	= throw (bad_matrix_value y) if dim x~=dim y;
 			= dmatrix x ./ dmatrix y if imatrixp x && imatrixp y;
 			= x when
 			    x = pack x;
@@ -308,7 +308,7 @@ x::matrix ./ y::matrix	= throw (bad_matrix_value y) if dim x!=dim y;
 extern int gsl_matrix_pow_elements(dmatrix*, dmatrix*);
 extern int gsl_matrix_complex_pow_elements(cmatrix*, cmatrix*);
 
-x::matrix .^ y::matrix	= throw (bad_matrix_value y) if dim x!=dim y;
+x::matrix .^ y::matrix	= throw (bad_matrix_value y) if dim x~=dim y;
 			= dmatrix x .^ dmatrix y if imatrixp x && imatrixp y;
 			= x when
 			    x = pack x;
@@ -336,42 +336,42 @@ extern int gsl_matrix_int_or(imatrix*, imatrix*);
 extern int gsl_matrix_int_and(imatrix*, imatrix*);
 extern int gsl_matrix_int_not(imatrix*);
 
-x::matrix div y::matrix	= throw (bad_matrix_value y) if dim x!=dim y;
+x::matrix div y::matrix	= throw (bad_matrix_value y) if dim x~=dim y;
 			= if r==0 then x else 1 div 0 when
 			    x = pack x;
 			    r = gsl_matrix_int_div x y;
 			  end if imatrixp x && imatrixp y;
 			= zipwith (div) x y;
 
-x::matrix mod y::matrix	= throw (bad_matrix_value y) if dim x!=dim y;
+x::matrix mod y::matrix	= throw (bad_matrix_value y) if dim x~=dim y;
 			= if r==0 then x else 1 mod 0 when
 			    x = pack x;
 			    r = gsl_matrix_int_mod x y;
 			  end if imatrixp x && imatrixp y;
 			= zipwith (mod) x y;
 
-x::matrix << y::matrix	= throw (bad_matrix_value y) if dim x!=dim y;
+x::matrix << y::matrix	= throw (bad_matrix_value y) if dim x~=dim y;
 			= x when
 			    x = pack x;
 			    _ = gsl_matrix_int_shl x y;
 			  end if imatrixp x && imatrixp y;
 			= zipwith (<<) x y;
 
-x::matrix >> y::matrix	= throw (bad_matrix_value y) if dim x!=dim y;
+x::matrix >> y::matrix	= throw (bad_matrix_value y) if dim x~=dim y;
 			= x when
 			    x = pack x;
 			    _ = gsl_matrix_int_shr x y;
 			  end if imatrixp x && imatrixp y;
 			= zipwith (>>) x y;
 
-x::matrix and y::matrix	= throw (bad_matrix_value y) if dim x!=dim y;
+x::matrix and y::matrix	= throw (bad_matrix_value y) if dim x~=dim y;
 			= x when
 			    x = pack x;
 			    _ = gsl_matrix_int_and x y;
 			  end if imatrixp x && imatrixp y;
 			= zipwith (and) x y;
 
-x::matrix or y::matrix	= throw (bad_matrix_value y) if dim x!=dim y;
+x::matrix or y::matrix	= throw (bad_matrix_value y) if dim x~=dim y;
 			= x when
 			    x = pack x;
 			    _ = gsl_matrix_int_or x y;
@@ -397,7 +397,7 @@ not x::matrix		= x when
 extern int gsl_matrix_multiply(dmatrix*, dmatrix*, dmatrix*);
 extern int gsl_matrix_complex_multiply(cmatrix*, cmatrix*, cmatrix*);
 
-x::matrix * y::matrix	= throw (bad_matrix_value y) if dim x!1!=dim y!0;
+x::matrix * y::matrix	= throw (bad_matrix_value y) if dim x!1~=dim y!0;
 			= z when
 			    mat = [dmatrix,cmatrix,dmatrix]!(matrix_type x-1);
 			    z = mat (dim x!0,dim y!1);
@@ -424,7 +424,7 @@ x::matrix * y::matrix	= throw (bad_matrix_value y) if dim x!1!=dim y!0;
 
 /* Powers of matrices. x must be a square matrix, k a nonnegative integer. */
 
-pow x::matrix k::int	= throw (bad_matrix_value x) if dim x!0!=dim x!1;
+pow x::matrix k::int	= throw (bad_matrix_value x) if dim x!0~=dim x!1;
 			= case matrix_type x of
 			    1 = eye (dim x!0);
 			    2 = ceye (dim x!0);
@@ -510,16 +510,16 @@ extern int wrap_gsl_linalg_SV_solve
 
 svd_solve (u::matrix,s::matrix,v::matrix) b::matrix
 			= throw (bad_matrix_value u)
-			    if not dmatrixp u;
+			    if ~dmatrixp u;
 			= throw (bad_matrix_value s)
-			    if not dmatrixp s ||
-			      dim s!0 != dim u!1 || dim s!1 != dim u!1;
+			    if ~dmatrixp s ||
+			      dim s!0 ~= dim u!1 || dim s!1 ~= dim u!1;
 			= throw (bad_matrix_value v)
-			    if not dmatrixp v ||
-			      dim v!0 != dim u!1 || dim v!1 != dim u!1;
+			    if ~dmatrixp v ||
+			      dim v!0 ~= dim u!1 || dim v!1 ~= dim u!1;
 			= throw (bad_matrix_value b)
 			    if cmatrixp b || smatrixp b ||
-			      not colvectorp b || dim b!0 != dim u!0;
+			      ~colvectorp b || dim b!0 ~= dim u!0;
 			= x when x = dmatrix (dim u!1,1);
 			    _ = gsl_linalg_SV_solve u v s b x;
 			  end if dmatrixp b;
