@@ -60,7 +60,7 @@ x::matrix == y::matrix	= x === y
 					   = compare (i+1);
 			  end when n::int = #x end;
 
-x::matrix != y::matrix	= not x == y;
+x::matrix != y::matrix	= ~(x == y);
 
 /* Size of a matrix (#x) and its dimensions (dim x=n,m where n is the number
    of rows, m the number of columns). Note that Pure supports empty matrices,
@@ -116,9 +116,9 @@ x::matrix!(i::int,j::int)
    ranges (ns,ms) where either ns or ms is a singleton. */
 
 x!!ns::matrix		= x!!list ns;
-x!!(ns::matrix,ms)	= x!!(list ns,ms) if not tuplep ms;
+x!!(ns::matrix,ms)	= x!!(list ns,ms) if ~tuplep ms;
 x!!(ns,ms::matrix)	= x!!(ns,list ms);
-x!!(ns::int,ms)		= x!!([ns],ms) if not tuplep ms;
+x!!(ns::int,ms)		= x!!([ns],ms) if ~tuplep ms;
 x!!(ns,ms::int)		= x!!(ns,[ms]);
 
 x::matrix!!(ns,ms)	= case ns,ms of
@@ -322,7 +322,7 @@ colcatmap f x::matrix	= colcat (map f (list x));
    require that the row sizes of all arguments match.) */
 
 cycle x::matrix		= cycle (list x);
-cyclen n::int x::matrix	= cyclen n (list x) if not null x;
+cyclen n::int x::matrix	= cyclen n (list x) if ~null x;
 
 all p x::matrix		= all p (list x);
 any p x::matrix		= any p (list x);
@@ -334,9 +334,9 @@ foldl f a x::matrix	= foldl f a (list x);
 foldl1 f x::matrix	= foldl1 f (list x);
 foldr f a x::matrix	= foldr f a (list x);
 foldr1 f x::matrix	= foldr1 f (list x);
-head x::matrix		= x!0 if not null x;
-init x::matrix		= x!!(0..#x-2) if not null x;
-last x::matrix		= x!(#x-1) if not null x;
+head x::matrix		= x!0 if ~null x;
+init x::matrix		= x!!(0..#x-2) if ~null x;
+last x::matrix		= x!(#x-1) if ~null x;
 map f x::matrix		= redim (dim x) $ colcat (map f (list x));
 scanl f a x::matrix	= colcat (scanl f a (list x));
 scanl1 f x::matrix	= colcat (scanl1 f (list x));
@@ -344,7 +344,7 @@ scanr f a x::matrix	= colcat (scanr f a (list x));
 scanr1 f x::matrix	= colcat (scanr1 f (list x));
 take k::int x::matrix	= x!!(0..k-1);
 takewhile p x::matrix	= colcat (takewhile p (list x));
-tail x::matrix		= x!!(1..#x-1) if not null x;
+tail x::matrix		= x!!(1..#x-1) if ~null x;
 
 private zipdim zip3dim;
 zipdim x::matrix y::matrix

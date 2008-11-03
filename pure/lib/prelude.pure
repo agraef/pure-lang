@@ -46,7 +46,7 @@ infix   2   .. ;		// arithmetic sequences
 infix   2   => ;		// mapsto constructor
 infixr  2   || ;		// logical or (short-circuit)
 infixr  3   && ;		// logical and (short-circuit)
-prefix  3   not ;		// logical negation
+prefix  3   ~ ;			// logical negation
 infix   4   < > <= >= == != ;	// relations
 infix   4   === !== ;		// syntactic equality
 infixr  4   : ;			// list cons
@@ -55,7 +55,7 @@ infixl  5   << >> ;		// bit shifts
 infixl  6   + - or ;		// addition, bitwise or
 infixl  7   * / div mod and ;	// multiplication, bitwise and
 infixl  7   % ;			// exact division (cf. math.pure)
-prefix  7   ~ ;			// bitwise not
+prefix  7   not ;		// bitwise not
 postfix 7   ' ;			// matrix transposition
 infixr  8   ^ ;			// exponentiation
 prefix  8   # ;			// size operator
@@ -216,7 +216,7 @@ xs!!ns		= case ns of
 		  end with
 		    nth xs n = catch (cst []) [xs!n];
 		    count ns = #dropwhile (\n::int->n<0) ns;
-		    cont (n::int:ns) = not thunkp ns &&
+		    cont (n::int:ns) = ~thunkp ns &&
 		    (case ns of
 		       [] = 1;
 		       m::int:_ = cont ns if m==n+1;

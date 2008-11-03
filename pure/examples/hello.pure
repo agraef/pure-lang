@@ -142,7 +142,7 @@ map fib3 (1..50);
 
 qsort p []	= [];
 qsort p (x:xs)	= qsort p [l | l = xs; l<x] + (x : qsort p [r | r = xs; r>=x])
-		  with x<y = p x y; x>=y = not p x y end;
+		  with x<y = p x y; x>=y = ~p x y end;
 
 qsort (<) (1..20); // ascending sort, no-op in this case
 qsort (>) (1..20); // descending sort, reverses the list in this case
@@ -194,7 +194,7 @@ queens n	= search n 1 []
 with
   search n i p	= [reverse p] if i>n;
 		= cat [search n (i+1) ((i,j):p) | j = 1..n; safe (i,j) p];
-  safe (i,j) p	= not any (check (i,j)) p;
+  safe (i,j) p	= ~any (check (i,j)) p;
   check (i1,j1) (i2,j2)
 		= i1==i2 || j1==j2 || i1+j1==i2+j2 || i1-j1==i2-j2;
 end;
@@ -207,7 +207,7 @@ queens1 n	= catch reverse (search n 1 [])
 with
   search n i p	= throw p if i>n;
 		= void [search n (i+1) ((i,j):p) | j = 1..n; safe (i,j) p];
-  safe (i,j) p	= not any (check (i,j)) p;
+  safe (i,j) p	= ~any (check (i,j)) p;
   check (i1,j1) (i2,j2)
 		= i1==i2 || j1==j2 || i1+j1==i2+j2 || i1-j1==i2-j2;
 end;
@@ -228,7 +228,7 @@ with
 			(0 when _ = search n (i+1) 1 ((i,j):p) end);
 		= search n i (j+1) p if j<n;
 		= () otherwise;
-  safe (i,j) p	= not any (check (i,j)) p;
+  safe (i,j) p	= ~any (check (i,j)) p;
   check (i1,j1) (i2,j2)
 		= i1==i2 || j1==j2 || i1+j1==i2+j2 || i1-j1==i2-j2;
 end;

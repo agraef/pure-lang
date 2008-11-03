@@ -32,7 +32,7 @@ extern expr* pure_force(expr*) = force;
 
 extern bool same(expr* x, expr* y);
 x === y		= same x y;
-x !== y		= not same x y;
+x !== y		= ~same x y;
 
 /* Predicates to check for the built-in types. */
 
@@ -57,10 +57,10 @@ integerp x	= case x of _::int | _::bigint = 1; _ = 0 end;
 
 exactp x	= numberp x &&
 		  (case x of
-		     x+:y = not doublep x && not doublep y;
-		     x<:y = not doublep x && not doublep y;
-		     x%y  = not doublep x && not doublep y;
-		     _ = not doublep x;
+		     x+:y = ~doublep x && ~doublep y;
+		     x<:y = ~doublep x && ~doublep y;
+		     x%y  = ~doublep x && ~doublep y;
+		     _ = ~doublep x;
 		   end);
 inexactp x      = numberp x &&
 		  (case x of
@@ -262,8 +262,7 @@ extern expr* bigint_or(void*, void*);
 extern int bigint_cmp(void*, void*);
 
 -x::bigint		= bigint_neg x;
-~x::bigint		= bigint_not x;
-not x::bigint		= not int x;
+not x::bigint		= bigint_not x;
 
 x::bigint<<y::int	= bigint_shl x y if y>=0;
 			= bigint_shr x (-y);
@@ -420,7 +419,7 @@ const inf = 1.0e307 * 1.0e307; const nan = inf-inf;
 /* Predicates to check for inf and nan values. */
 
 infp x		= case x of x::double = x==inf || x==-inf; _ = 0 end;
-nanp x		= case x of x::double = not (x==x); _ = 0 end;
+nanp x		= case x of x::double = ~(x==x); _ = 0 end;
 
 /* Direct memory accesses. Use with care ... or else! */
 

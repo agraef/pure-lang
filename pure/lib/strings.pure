@@ -183,7 +183,7 @@ with
 			    n = take n s : split1 delim (drop (n+m) s) if n>=0;
 			      = [s] otherwise;
 			  end;
-end when m = #delim end if not null delim;
+end when m = #delim end if ~null delim;
 
 /* Conversions between between strings and lists, streams and tuples. */
 
@@ -213,7 +213,7 @@ rowcatmap f s::string	= rowcatmap f (chars s);
 colcatmap f s::string	= colcatmap f (chars s);
 
 cycle s::string		= cycle (chars s);
-cyclen n::int s::string	= cyclen n (chars s) if not null s;
+cyclen n::int s::string	= cyclen n (chars s) if ~null s;
 
 all p s::string		= all p (chars s);
 any p s::string		= any p (chars s);
@@ -225,9 +225,9 @@ foldl f a s::string	= foldl f a (chars s);
 foldl1 f s::string	= foldl1 f (chars s);
 foldr f a s::string	= foldr f a (chars s);
 foldr1 f s::string	= foldr1 f (chars s);
-head s::string		= s!0 if not null s;
-init s::string		= substr s 0 (#s-1) if not null s;
-last s::string		= s!(#s-1) if not null s;
+head s::string		= s!0 if ~null s;
+init s::string		= substr s 0 (#s-1) if ~null s;
+last s::string		= s!(#s-1) if ~null s;
 map f s::string		= map f (chars s);
 scanl f a s::string	= scanl f a (chars s);
 scanl1 f s::string	= scanl1 f (chars s);
@@ -235,7 +235,7 @@ scanr f a s::string	= scanr f a (chars s);
 scanr1 f s::string	= scanr1 f (chars s);
 take n::int s::string	= substr s 0 n;
 takewhile p s::string	= strcat (takewhile p (chars s));
-tail s::string		= substr s 1 (#s-1) if not null s;
+tail s::string		= substr s 1 (#s-1) if ~null s;
 zip s::string t::string	= zip (chars s) (chars t);
 zip3 s::string t::string u::string
 			= zip3 (chars s) (chars t) (chars u);

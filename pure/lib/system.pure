@@ -71,9 +71,9 @@ extern void* setlocale(int category, void* locale) = c_setlocale;
 
 setlocale category::int locale =
 return (check (c_setlocale category buf)) with
-  check res	= cstring_dup res if not null res;
+  check res	= cstring_dup res if ~null res;
   		= res otherwise;
-  return res	= free buf $$ res if not null buf;
+  return res	= free buf $$ res if ~null buf;
 		= res otherwise;
 end when
   buf		= if stringp locale then byte_cstring locale else locale;
@@ -192,7 +192,7 @@ with read_a_line f buf t = check s when s = c_fgets buf 1024 f end
 		       = read_a_line f buf (t+s) otherwise;
        check s         = return s if null t;
                        = return t otherwise;
-       done s::string  = feof f || ferror f || not null s && last s == "\n";
+       done s::string  = feof f || ferror f || ~null s && last s == "\n";
        return x        = free buf $$ x;
   end;
 end;

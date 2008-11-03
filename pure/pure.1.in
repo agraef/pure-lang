@@ -545,19 +545,24 @@ associativities as usual.
 The common operator symbols like +, -, *, / etc. are all declared at the
 beginning of the prelude, see the
 .B prelude.pure
-script for a list of these. Arithmetic, relational and logical operators
-usually follow C conventions. However, out of necessity some of Pure's
-operator symbols deviate from C. Most notably, the `!' symbol is Pure's
-indexing operator, hence logical negation is denoted
-.B not
-instead (named for Haskell compatibility, but Pure's
-.B not
-is a real prefix operator instead of an ordinary function symbol). Moreover,
-the bitwise operators are named
+script for a list of these. Arithmetic and relational operators mostly follow
+C conventions. However, out of necessity (\fB!\fP, \fB&\fP and \fB|\fP are
+used for other purposes in Pure) the logical and bitwise operations are named
+differently:
+.BR ~ ,
+.B &&
+and
+.B ||
+denote logical negation, conjunction and disjunction, while the corresponding
+bitwise operations are named
+.BR not ,
 .B and
 and
-.B or
-instead of `&' and `|', which are used for other purposes in Pure.
+.BR or .
+Also note that && and || are special forms which are evaluated in
+short-circuit mode like in C (see below), whereas the bitwise connectives
+receive their arguments using call-by-value, just like the other arithmetic
+operations.
 .SS Special Forms
 As already mentioned, some operations are actually implemented as special
 forms. In particular, the conditional expression \fBif\fP x \fBthen\fP y
@@ -566,7 +571,16 @@ of the branches is actually evaluated, depending on the value of x. Similarly,
 the logical connectives && and || evaluate their operands in
 .I short-circuit
 mode just like in C. Thus, e.g., x&&y immediately becomes false if x evaluates
-to false, without ever evaluating y.
+to false, without ever evaluating y. Also note that && and ||
+.I only
+work with machine int arguments and always raise an exception in case of
+argument mismatch, so they cannot be used for symbolic evaluations unless you
+explicitly ``quote'' them using the
+.B quote
+primitive discussed below. In contrast, the bitwise connectives (not, and, or)
+use the standard call-by-value argument passing, and the prelude defines these
+operations only for machine int and bigint operands, so that they can be used
+in symbolic expressions like `a and b or c'.
 .PP
 The
 .I sequencing
@@ -1022,7 +1036,7 @@ in check.
 queens n       = search n 1 [] \fBwith\fP
   search n i p = [reverse p] \fBif\fP i>n;
                = cat [search n (i+1) ((i,j):p) | j = 1..n; safe (i,j) p];
-  safe (i,j) p = not any (check (i,j)) p;
+  safe (i,j) p = ~any (check (i,j)) p;
   check (i1,j1) (i2,j2)
                = i1==i2 || j1==j2 || i1+j1==i2+j2 || i1-j1==i2-j2;
 \fBend\fP;
@@ -1187,7 +1201,7 @@ implement common matrix operations. E.g., multiplying a matrix x with a scalar
 a amounts to mapping the function \ex->a*x to x, which can be done as follows:
 .sp
 .nf
-> a * x::matrix = map (\ex->a*x) x \fBif\fP not matrixp a;
+> a * x::matrix = map (\ex->a*x) x \fBif\fP ~matrixp a;
 > 2*{1,2,3;4,5,6};
 {2,4,6;8,10,12}
 .fi
@@ -1914,7 +1928,7 @@ regularly returns with () to indicate that there is no solution.
 queens1 n      = catch reverse (search n 1 []) \fBwith\fP
   search n i p = throw p \fBif\fP i>n;
                = void [search n (i+1) ((i,j):p) | j = 1..n; safe (i,j) p];
-  safe (i,j) p = not any (check (i,j)) p;
+  safe (i,j) p = ~any (check (i,j)) p;
   check (i1,j1) (i2,j2)
                = i1==i2 || j1==j2 || i1+j1==i2+j2 || i1-j1==i2-j2;
 \fBend\fP;
@@ -2814,6 +2828,12 @@ arithmetic sequences with arbitrary stepsize are now written x:y..z instead of
 x,y..z, and the `..' operator now has a higher precedence than the `,'
 operator. This makes writing matrix slices like x!!(i..j,k..l) much more
 convenient.
+.PP
+Moreover, in Pure 0.13 the naming of the logical and bitwise operations was
+changed, so that these are now called ~, &&, || and not/and/or,
+respectively. (Previously, ~ was used for bitwise, `not' for logical negation,
+which was rather inconsistent, albeit compatible with the naming of the `not'
+operation in Haskell and ML.)
 .SS Error Recovery
 The parser uses a fairly simplistic panic mode error recovery which tries to
 catch syntax errors at the toplevel only. This seems to work reasonably well,
@@ -3379,7 +3399,7 @@ sym_info cat::string pat::string
   info = [x | x@(s,_) = map fields info;
   // Get rid of extra lines containing extern and fixity declarations.
           s != "extern" && s != "nullary" &&
-          s != "prefix" && s != "postfix" && not fnmatch "infix*" s 0];
+          s != "prefix" && s != "postfix" && ~fnmatch "infix*" s 0];
 \fBend\fP \fBwith\fP
   // Regex call to split the summary information about one symbol, as
   // returned by 'show -s', into the name and description parts.

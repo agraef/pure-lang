@@ -191,20 +191,20 @@ symbol& symtable::seq_sym()
 
 symbol& symtable::not_sym()
 {
-  symbol *_sym = lookup("not");
-  if (_sym)
-    return *_sym;
-  else
-    return sym("not", 3, prefix);
-}
-
-symbol& symtable::bitnot_sym()
-{
   symbol *_sym = lookup("~");
   if (_sym)
     return *_sym;
   else
-    return sym("~", 7, prefix);
+    return sym("~", 3, prefix);
+}
+
+symbol& symtable::bitnot_sym()
+{
+  symbol *_sym = lookup("not");
+  if (_sym)
+    return *_sym;
+  else
+    return sym("not", 7, prefix);
 }
 
 symbol& symtable::or_sym()
