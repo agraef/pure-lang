@@ -1270,8 +1270,12 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
     cerr << "run: no script name specified\n";
   else if (args.c > 1)
     cerr << "run: extra parameter\n";
-  else
-    interp.run(*args.l.begin(), false, true);
+  else {
+    try { interp.run(*args.l.begin(), false, true); } catch (err &e) {
+      interp.error(*yylloc, e.what());
+      interp.nerrs = 0;
+    }
+  }
 }
 ^override.* {
   // override command is only permitted in interactive mode

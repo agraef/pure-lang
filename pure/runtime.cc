@@ -2396,7 +2396,11 @@ pure_interp *pure_create_interp(int argc, char *argv[])
     // load the prelude if we can find it
     if (chkfile(prelude)) {
       have_prelude = true;
-      interp.run(prelude, false);
+      try { interp.run(prelude, false); } catch (err &e) {
+	cerr << "pure_create_interp: " << e.what() << endl;
+	delete _interp;
+	return 0;
+      }
       interp.compile();
     }
   }
@@ -2410,7 +2414,11 @@ pure_interp *pure_create_interp(int argc, char *argv[])
     } else if (*argv == string("-x")) {
       if (*++argv) {
 	count++; interp.modname = *argv;
-	interp.run(*argv, false);
+	try { interp.run(*argv, false); } catch (err &e) {
+	  cerr << "pure_create_interp: " << e.what() << endl;
+	  delete _interp;
+	  return 0;
+	}
       } else {
 	cerr << "pure_create_interp: missing script name\n";
 	delete _interp;
@@ -2427,7 +2435,11 @@ pure_interp *pure_create_interp(int argc, char *argv[])
       ;
     else if (**argv) {
       if (count++ == 0) interp.modname = *argv;
-      interp.run(*argv, false);
+      try { interp.run(*argv, false); } catch (err &e) {
+	cerr << "pure_create_interp: " << e.what() << endl;
+	delete _interp;
+	return 0;
+      }
     }
   interp.symtab.init_builtins();
   if (s_interp) interpreter::g_interp = s_interp;

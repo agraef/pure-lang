@@ -429,7 +429,10 @@ main(int argc, char *argv[])
     // load the prelude if we can find it
     if (chkfile(prelude)) {
       have_prelude = true;
-      interp.run(prelude, false);
+      try { interp.run(prelude, false); } catch (err &e) {
+	interp.error(prog + ": " + e.what());
+	return 1;
+      }
       interp.compile();
     }
   }
@@ -445,7 +448,10 @@ main(int argc, char *argv[])
       if (*++argv) {
 	count++; interp.modname = *argv;
 	last_modno = interp.modctr;
-	interp.run(*argv, false);
+	try { interp.run(*argv, false); } catch (err &e) {
+	  interp.error(prog + ": " + e.what());
+	  return 1;
+	}
       } else {
 	interp.error(prog + ": missing script name");
 	return 1;
@@ -462,7 +468,10 @@ main(int argc, char *argv[])
     else if (**argv) {
       if (count++ == 0) interp.modname = *argv;
       last_modno = interp.modctr;
-      interp.run(*argv, false);
+      try { interp.run(*argv, false); } catch (err &e) {
+	interp.error(prog + ": " + e.what());
+	return 1;
+      }
     }
   if (count > 0 && !force_interactive) {
     if (interp.verbose&verbosity::dump) interp.compile();
