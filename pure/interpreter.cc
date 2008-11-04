@@ -478,11 +478,13 @@ interpreter::error(const yy::location& l, const string& m)
   nerrs++;
   if (source_s) {
     ostringstream msg;
-    msg << l << ": " << m1 << endl;
+    msg << *l.begin.filename << ", line " << l.begin.line
+	<< ": " << m1 << endl;
     errmsg += msg.str();
   } else {
     cout.flush();
-    cerr << l << ": " << m1 << endl;
+    cerr << *l.begin.filename << ", line " << l.begin.line
+	 << ": " << m1 << endl;
   }
 }
 
@@ -505,7 +507,8 @@ interpreter::warning(const yy::location& l, const string& m)
 {
   if (!source_s) {
     cout.flush();
-    cerr << l << ": " << m << endl;
+    cerr << *l.begin.filename << ", line " << l.begin.line
+	 << ": " << m << endl;
   }
 }
 
