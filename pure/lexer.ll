@@ -3,6 +3,8 @@
 #include <errno.h>
 #include <limits.h>
 #include <string.h>
+#include <ctype.h>
+#include <stdio.h>
 #include <fnmatch.h>
 #include <time.h>
 #include <readline/readline.h>
@@ -52,6 +54,17 @@ static void my_readline(const char *prompt, char *buf, int &result, int max_size
       clearerr(yyin);							\
     }									\
   }
+
+static string pstring(const char *s)
+{
+  if (s[0] && s[1] || isprint(s[0]))
+    return string(s);
+  else {
+    char buf[10];
+    sprintf(buf, "\\%u", (unsigned)(unsigned char)s[0]);
+    return string(buf);
+  }
+}
 
 typedef yy::parser::token token;
 
@@ -243,12 +256,32 @@ static void check(const yy::location& l, const char* s)
 
 %option noyywrap nounput debug
 
-id    [a-zA-Z_][a-zA-Z_0-9]*
-int   [0-9]+|0[0-7]+|0[xX][0-9a-fA-F]+
-exp   ([Ee][+-]?[0-9]+)
-float [0-9]+{exp}|[0-9]+\.{exp}|[0-9]*\.[0-9]+{exp}?
-str   ([^\"\\\n]|\\(.|\n))*
-blank [ \t\f\v\r]
+ /* Special extended Unicode symbols. Contributed by John Cowan. */
+
+punct  (\xC2[\xA1-\xBF]|\xC3[\xD7\xF7]|\xE2[\x84-\xAF][\x80-\xBF])
+
+ /* We take any other valid utf-8, excluding the above, plus the ASCII
+    alphabetic symbols and the underscore, as a "letter":
+      [a-zA-Z_]                                 # ASCII
+    | [\xC4-\xDF][\x80-\xBF]                    # non-overlong 2-byte
+    | \xC2[^\x01-\x7F\xA1-\xFF]
+    | \xC3[^\x01-\x7F\xD7\xF7\xC0-\xFF]
+    | \xE0[\xA0-\xBF][\x80-\xBF]                # excluding overlongs
+    | [\xE1\xE3-\xEC\xEE\xEF][\x80-\xBF]{2}     # straight 3-byte
+    | \xE2[^\x01-\x7F\x84-\xAF\xC0-\xFF][\x80-\xBF]
+    | \xED[\x80-\x9F][\x80-\xBF]                # excluding surrogates
+    | \xF0[\x90-\xBF][\x80-\xBF]{2}             # planes 1-3
+    | [\xF1-\xF3][\x80-\xBF]{3}                 # planes 4-15
+    | \xF4[\x80-\x8F][\x80-\xBF]{2}             # plane 16             */
+
+letter ([a-zA-Z_]|[\xC4-\xDF][\x80-\xBF]|\xC2[^\x01-\x7F\xA1-\xFF]|\xC3[^\x01-\x7F\xD7\xF7\xC0-\xFF]|\xE0[\xA0-\xBF][\x80-\xBF]|[\xE1\xE3-\xEC\xEE\xEF][\x80-\xBF]{2}|\xE2[^\x01-\x7F\x84-\xAF\xC0-\xFF][\x80-\xBF]|\xED[\x80-\x9F][\x80-\xBF]|\xF0[\x90-\xBF][\x80-\xBF]{2}|[\xF1-\xF3][\x80-\xBF]{3}|\xF4[\x80-\x8F][\x80-\xBF]{2})
+
+id     {letter}({letter}|[0-9])*
+int    [0-9]+|0[0-7]+|0[xX][0-9a-fA-F]+
+exp    ([Ee][+-]?[0-9]+)
+float  [0-9]+{exp}|[0-9]+\.{exp}|[0-9]*\.[0-9]+{exp}?
+str    ([^\"\\\n]|\\(.|\n))*
+blank  [ \t\f\v\r]
 
 inttag  ::{blank}*int
 binttag ::{blank}*bigint
@@ -1434,7 +1467,7 @@ using      BEGIN(xusing); return token::USING;
 [@=|;()\[\]{}\\] return yy::parser::token_type(yytext[0]);
 "->"       return token::MAPSTO;
 "#<"{id}(" "{int})?">" return token::BADTOK;
-([[:punct:]]|[\200-\377])+  {
+([[:punct:]]|{punct})+  {
   if (yytext[0] == '/' && yytext[1] == '*') REJECT; // comment starter
   while (yyleng > 1 && yytext[yyleng-1] == ';') yyless(yyleng-1);
   if (interp.declare_op) {
@@ -1459,8 +1492,8 @@ using      BEGIN(xusing); return token::USING;
   } else
     REJECT;
 }
-.          {
-  string msg = "invalid character '"+string(yytext)+"'";
+.|{punct}|{letter} {
+  string msg = "invalid character '"+pstring(yytext)+"'";
   interp.error(*yylloc, msg);
   return token::ERRTOK;
 }
@@ -1506,9 +1539,16 @@ void my_readline(const char *prompt, char *buf, int &result, int max_size)
   if (!my_buf) {
     if (using_readline) {
       // read a new line using readline()
-      my_bufptr = my_buf = readline(prompt);
-      if (!my_buf) {
+      char *s = readline(prompt);
+      if (!s) {
 	// EOF, bail out
+	result = 0;
+	return;
+      }
+      my_bufptr = my_buf = toutf8(s);
+      free(s);
+      if (!my_buf) {
+	// memory allocation error, bail out
 	result = 0;
 	return;
       }
@@ -1526,7 +1566,7 @@ void my_readline(const char *prompt, char *buf, int &result, int max_size)
       size_t l = strlen(s);
       if (l>0 && s[l-1] == '\n')
 	s[l-1] = 0;
-      my_bufptr = my_buf = strdup(s);
+      my_bufptr = my_buf = toutf8(s);
       if (!my_buf) {
 	// memory allocation error, bail out
 	result = 0;
