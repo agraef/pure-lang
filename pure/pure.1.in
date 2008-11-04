@@ -62,13 +62,15 @@ evaluating expressions.
 .PP
 Pure programs (a.k.a.
 .IR scripts )
-are just ordinary text files containing Pure code. A bunch of syntax
-highlighting files and programming modes for various popular text editors are
-included in the Pure sources. There's no difference between the Pure
-programming language and the input language accepted by the interpreter,
-except that the interpreter also understands some special commands when
-running in interactive mode; see the \fIINTERACTIVE USAGE\fP section for
-details.
+are just ordinary text files containing Pure code. They must be encoded in
+UTF-8 (which subsumes 7 bit ASCII), other encodings such as Latin-1 are
+.I not
+supported. A bunch of syntax highlighting files and programming modes for
+various popular text editors are included in the Pure sources. There's no
+difference between the Pure programming language and the input language
+accepted by the interpreter, except that the interpreter also understands some
+special commands when running in interactive mode; see the \fIINTERACTIVE
+USAGE\fP section for details.
 .PP
 If any source scripts are specified on the command line, they are loaded and
 executed, after which the interpreter exits. Otherwise the interpreter enters
@@ -378,8 +380,14 @@ Thus, e.g., \(dq\e&copy;\(dq denotes the copyright character (code point
 .TP
 \fBFunction and variable symbols:\fP foo, foo_bar, BAR, bar2
 These consist of the usual sequence of letters (including the underscore) and
-digits, starting with a letter. The `_' symbol, when occurring on the
-left-hand side of an equation, is special; it denotes the
+digits, starting with a letter. As of Pure 0.13, any extended Unicode
+character, except the special operator symbols listed under \fIOperator and
+constant symbols\fP below, counts as a ``letter'', so that you can write Pure
+programs in almost any language, provided you have a text editor which
+supports the UTF-8 encoding.
+.sp
+The `_' symbol, when occurring on the left-hand side of an equation, is
+special; it denotes the
 .IR "anonymous variable" .
 The case of identifiers is significant, but it doesn't carry any meaning
 (that's in contrast to languages like Prolog and Q, where variables must be
@@ -394,10 +402,22 @@ symbols, see below).
 .TP
 \fBOperator and constant symbols:\fP x+y, x==y, \fBnot\fP\ x, []
 As indicated, these take the form of an identifier or a sequence of
-punctuation symbols. Operator and constant symbols must always be declared
-before they can be used, using corresponding \fBprefix\fP, \fBpostfix\fP,
-\fBinfix\fP and \fBnullary\fP declarations, which are discussed in section
-\fIDECLARATIONS\fP.
+punctuation symbols. Operator and constant symbols must
+.I always
+be declared before they can be used, using corresponding \fBprefix\fP,
+\fBpostfix\fP, \fBinfix\fP and \fBnullary\fP declarations, which are discussed
+in section \fIDECLARATIONS\fP.
+.sp
+As of Pure 0.13, ``punctuation'' also includes the following extended Unicode
+characters: U+00A1 through U+00BF, U+00D7, U+00F7 and U+2100 through
+U+2BFF. This comprises the special symbols in the Latin-1 repertoire, as well
+as the Letterlike Symbols, Number Forms, Arrows, Mathematical Symbols,
+Miscellaneous Technical Symbols, Control Pictures, OCR, Enclosed
+Alphanumerics, Box Drawing, Blocks, Geometric Shapes, Miscellaneous Symbols,
+Dingbats, Miscellaneous Mathematical Symbols A, Supplemental Arrows A,
+Supplemental Arrows B, Miscellaneous Mathematical Symbols B, Supplemental
+Mathematical Operators, and Miscellaneous Symbols and Arrows blocks, covering
+almost everything you'd ever want to use in an operator symbol.
 .sp
 Note that enclosing an operator in parentheses, such as (+) or (\fBnot\fP),
 turns it into an ordinary function symbol. Symbols declared as \fBnullary\fP
