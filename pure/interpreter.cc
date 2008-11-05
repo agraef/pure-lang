@@ -3804,6 +3804,11 @@ const Type *interpreter::named_type(string name)
     return Type::Int32Ty;
   else if (name == "long")
     return Type::Int64Ty;
+  else if (name == "size_t")
+    if (sizeof(size_t) == 4)
+      return Type::Int32Ty;
+    else
+      return Type::Int64Ty;
   else if (name == "float")
     return Type::FloatTy;
   else if (name == "double")

@@ -6896,6 +6896,7 @@ void pure_sys_vars(void)
   cdf(interp, "SIZEOF_INT",	pure_int(sizeof(int)));
   cdf(interp, "SIZEOF_LONG",	pure_int(sizeof(long)));
   cdf(interp, "SIZEOF_LONG_LONG",	pure_int(sizeof(long long)));
+  cdf(interp, "SIZEOF_SIZE_T",	pure_int(sizeof(size_t)));
   cdf(interp, "SIZEOF_FLOAT",	pure_int(sizeof(float)));
   cdf(interp, "SIZEOF_DOUBLE",	pure_int(sizeof(double)));
 #ifdef HAVE__COMPLEX_FLOAT
