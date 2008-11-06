@@ -538,174 +538,257 @@ x::matrix / y::matrix	= x*pinv y if nmatrixp x && nmatrixp y;
 x::matrix \\ y::matrix	= pinv x*y if nmatrixp x && nmatrixp y;
 
 
-/* Gaussian (aka Normal) distribution density functions */
+/* Gaussian (aka Normal) distribution p.d.f. and c.d.f functions */
 
+extern double gsl_ran_gaussian_pdf(double x, double sigma)
+  = c_gsl_ran_gaussian_pdf;
+  
+extern double gsl_ran_ugaussian_pdf(double x)
+  = c_gsl_ran_ugaussian_pdf;
+  
 extern double gsl_cdf_ugaussian_P(double x)
-			= c_gsl_cdf_ugaussian_P;
+  = c_gsl_cdf_ugaussian_P;
 extern double gsl_cdf_gaussian_P(double x, double sigma) 
-			= c_gsl_cdf_gaussian_P;
+  = c_gsl_cdf_gaussian_P;
 
 extern double gsl_cdf_ugaussian_Q(double x)
-			= c_gsl_cdf_ugaussian_Q;
+  = c_gsl_cdf_ugaussian_Q;
 extern double gsl_cdf_gaussian_Q(double x, double sigma) 
-			= c_gsl_cdf_gaussian_Q;
+  = c_gsl_cdf_gaussian_Q;
 
 extern double gsl_cdf_ugaussian_Pinv(double p)
-			= c_gsl_cdf_ugaussian_Pinv;
+  = c_gsl_cdf_ugaussian_Pinv;
 extern double gsl_cdf_gaussian_Pinv(double p, double sigma)
-			= c_gsl_cdf_gaussian_Pinv;
+  = c_gsl_cdf_gaussian_Pinv;
 
 extern double gsl_cdf_ugaussian_Qinv(double q)
-			= c_gsl_cdf_ugaussian_Qinv;
+  = c_gsl_cdf_ugaussian_Qinv;
 extern double gsl_cdf_gaussian_Qinv(double q, double sigma)
-			= c_gsl_cdf_gaussian_Qinv;
+  = c_gsl_cdf_gaussian_Qinv;
+  
+gsl_ran_ugaussian_pdf x
+  = c_gsl_ran_ugaussian_pdf (double x)
+    if realp x;
+    
+gsl_ran_gaussian_pdf x sigma
+  = c_gsl_ran_gaussian_pdf (double x) (double sigma)
+    if realp x && realp sigma;
 
-gsl_cdf_ugaussian_P x = c_gsl_cdf_ugaussian_P (double x) if realp x; 
-gsl_cdf_gaussian_P x sigma = c_gsl_cdf_gaussian_P (double x) (double sigma)
-			       if realp x && realp sigma;
+gsl_cdf_ugaussian_P x
+  = c_gsl_cdf_ugaussian_P (double x) if realp x; 
+gsl_cdf_gaussian_P x sigma
+  = c_gsl_cdf_gaussian_P (double x) (double sigma)
+    if realp x && realp sigma;
 
-gsl_cdf_ugaussian_Q x = c_gsl_cdf_ugaussian_Q (double x) if realp x;
+gsl_cdf_ugaussian_Q x
+  = c_gsl_cdf_ugaussian_Q (double x) if realp x;
 gsl_cdf_gaussian_Q x sigma
-		      = c_gsl_cdf_gaussian_Q (double x) (double sigma)
-			  if realp x && realp sigma;
+  = c_gsl_cdf_gaussian_Q (double x) (double sigma)
+    if realp x && realp sigma;
 
-gsl_cdf_ugaussian_Pinv p = c_gsl_cdf_ugaussian_Pinv (double p) if realp p;
+gsl_cdf_ugaussian_Pinv p
+  = c_gsl_cdf_ugaussian_Pinv (double p) if realp p;
 gsl_cdf_gaussian_Pinv p sigma 
-			 = c_gsl_cdf_gaussian_Pinv (double p) (double sigma)
-			     if realp p && realp sigma;
+  = c_gsl_cdf_gaussian_Pinv (double p) (double sigma)
+    if realp p && realp sigma;
 
-gsl_cdf_ugaussian_Qinv q = c_gsl_cdf_ugaussian_Qinv (double q) if realp q;
+gsl_cdf_ugaussian_Qinv q
+  = c_gsl_cdf_ugaussian_Qinv (double q) if realp q;
 gsl_cdf_gaussian_Qinv q sigma
-			 = c_gsl_cdf_gaussian_Qinv (double q) (double sigma)
-			   if realp q && realp sigma;
+  = c_gsl_cdf_gaussian_Qinv (double q) (double sigma)
+    if realp q && realp sigma;
+
+/* Gaussian Tail Distribution */
+
+extern double gsl_ran_gaussian_tail_pdf(double x, double a, double sigma)
+  = c_gsl_ran_gaussian_tail_pdf;
+  
+extern double gsl_ran_ugaussian_tail_pdf(double x, double a)
+  = c_gsl_ran_ugaussian_tail_pdf;
+  
+gsl_ran_gaussian_tail_pdf x a sigma
+  = c_gsl_ran_gaussian_tail_pdf (double x) (double a) (double sigma)
+    if realp x && realp a && realp sigma;
+
+gsl_ran_ugaussian_tail_pdf x a
+  = c_gsl_ran_ugaussian_tail_pdf (double x) (double a)
+    if realp x && realp a;
+ 
+/* Bivariate Gaussian Distribution */
+
+extern double gsl_ran_bivariate_gaussian_pdf
+  (double x, double y, double sigma_x, double sigma_y, double rho)
+  = c_gsl_ran_bivariate_gaussian_pdf;
+
+gsl_ran_bivariate_gaussian_pdf x y sigma_x sigma_y rho
+  = c_gsl_ran_bivariate_gaussian_pdf (double x) (double y)
+      (double sigma_x) (double sigma_y) (double rho)
+    if realp x && realp y && realp sigma_x && realp sigma_y && realp rho;
+    
+/* Exponential Distribution */
+
+extern double gsl_ran_exponential_pdf(double x, double mu)
+  = c_gsl_ran_exponential_pdf;
+
+extern double gsl_cdf_exponential_P(double x, double mu)
+  = c_gsl_cdf_exponential_P;
+extern double gsl_cdf_exponential_Q(double x, double mu)
+  = c_gsl_cdf_exponential_Q;
+extern double gsl_cdf_exponential_Pinv(double p, double mu)
+  = c_gsl_cdf_exponential_Pinv;
+extern double gsl_cdf_exponential_Qinv(double q, double mu)
+  = c_gsl_cdf_exponential_Qinv;
+
+gsl_ran_exponential_pdf x mu
+  = c_gsl_ran_exponential_pdf (double x) (double mu)
+    if realp x && realp mu;
+
+gsl_cdf_exponential_P x mu
+  = c_gsl_cdf_exponential_P (double x) (double mu)
+    if realp x && realp mu;
+
+gsl_cdf_exponential_Q x mu
+  = c_gsl_cdf_exponential_Q (double x) (double mu)
+    if realp x && realp mu;
+
+gsl_cdf_exponential_Pinv p mu
+  = c_gsl_cdf_exponential_Pinv (double p) (double mu)
+    if realp p && realp mu;
+
+gsl_cdf_exponential_Qinv q mu
+  =  c_gsl_cdf_exponential_Qinv (double q) (double mu)
+    if realp q && realp mu;
 
 /* Chi-squared distribution density functions */
 
 extern double gsl_cdf_chisq_P(double x, double nu)
-			= c_gsl_cdf_chisq_P;
+  = c_gsl_cdf_chisq_P;
 extern double gsl_cdf_chisq_Q(double x, double nu)
-			= c_gsl_cdf_chisq_Q;
+  = c_gsl_cdf_chisq_Q;
 
 extern double gsl_cdf_chisq_Pinv(double p, double nu)
-			= c_gsl_cdf_chisq_Pinv;
+  = c_gsl_cdf_chisq_Pinv;
 extern double gsl_cdf_chisq_Qinv(double q, double nu)
-			= c_gsl_cdf_chisq_Qinv;
+  = c_gsl_cdf_chisq_Qinv;
 
-gsl_cdf_chisq_P x nu = c_gsl_cdf_chisq_P (double x) (double nu)
-			 if realp x && realp nu;
-gsl_cdf_chisq_Q x nu = c_gsl_cdf_chisq_Q (double x) (double nu)
-			 if realp x && realp nu;
+gsl_cdf_chisq_P x nu
+  = c_gsl_cdf_chisq_P (double x) (double nu)
+    if realp x && realp nu;
+gsl_cdf_chisq_Q x nu
+  = c_gsl_cdf_chisq_Q (double x) (double nu)
+    if realp x && realp nu;
 
-gsl_cdf_chisq_Pinv p nu = c_gsl_cdf_chisq_P (double p) (double nu)
-			    if realp p && realp nu;
-gsl_cdf_chisq_Qinv q nu	= c_gsl_cdf_chisq_Qinv (double q) (double nu)
-			    if realp q && realp nu;
+gsl_cdf_chisq_Pinv p nu
+  = c_gsl_cdf_chisq_P (double p) (double nu)
+    if realp p && realp nu;
+gsl_cdf_chisq_Qinv q nu
+  = c_gsl_cdf_chisq_Qinv (double q) (double nu)
+    if realp q && realp nu;
 
 /* F-distribution density functions */
 
 extern double gsl_cdf_fdist_P(double x, double nu1, double nu2)
-			= c_gsl_cdf_fdist_P;
+  = c_gsl_cdf_fdist_P;
 extern double gsl_cdf_fdist_Q(double x, double nu1, double nu2)
-			= c_gsl_cdf_fdist_Q;
+  = c_gsl_cdf_fdist_Q;
 
 extern double gsl_cdf_fdist_Pinv(double p, double nu1, double nu2)
-			= c_gsl_cdf_fdist_Pinv;
+  = c_gsl_cdf_fdist_Pinv;
 extern double gsl_cdf_fdist_Qinv(double q, double nu1, double nu2)
-			= c_gsl_cdf_fdist_Qinv;
+  = c_gsl_cdf_fdist_Qinv;
 
 gsl_cdf_fdist_P x nu1 nu2 
-		= c_gsl_cdf_fdist_P (double x) (double nu1) (double nu2)
-		    if realp x && realp nu1 && realp nu2;
+  = c_gsl_cdf_fdist_P (double x) (double nu1) (double nu2)
+    if realp x && realp nu1 && realp nu2;
 gsl_cdf_fdist_Q x nu1 nu2
-		= c_gsl_cdf_fdist_Q (double x) (double nu1) (double nu2)
-		    if realp x && realp nu1 && realp nu2;
+  = c_gsl_cdf_fdist_Q (double x) (double nu1) (double nu2)
+    if realp x && realp nu1 && realp nu2;
 
-gsl_cdf_fdist_Pinv
-		= c_gsl_cdf_fdist_Pinv (double p) (double nu1) (double nu2)
-		    if realp p && realp nu1 && realp nu2;
-gsl_cdf_fdist_Qinv
-		= c_gsl_cdf_fdist_Qinv (double q) (double nu1) (double nu2)
-		    if realp q && realp nu1 && realp nu2;
+gsl_cdf_fdist_Pinv p nu1 nu2
+  = c_gsl_cdf_fdist_Pinv (double p) (double nu1) (double nu2)
+	  if realp p && realp nu1 && realp nu2;
+gsl_cdf_fdist_Qinv q nu1 nu2
+  = c_gsl_cdf_fdist_Qinv (double q) (double nu1) (double nu2)
+	  if realp q && realp nu1 && realp nu2;
 
 /* Student t-distribution denisity functions */
 
 extern double gsl_cdf_tdist_P(double x, double nu)
-		= c_gsl_cdf_tdist_P;
+  = c_gsl_cdf_tdist_P;
 extern double gsl_cdf_tdist_Q(double x, double nu)
-		= c_gsl_cdf_tdist_Q;
+  = c_gsl_cdf_tdist_Q;
 extern double gsl_cdf_tdist_Pinv(double p, double nu)
-		= c_gsl_cdf_tdist_Pinv;
+  = c_gsl_cdf_tdist_Pinv;
 extern double gsl_cdf_tdist_Qinv(double q, double nu)
-		= c_gsl_cdf_tdist_Qinv;
+  = c_gsl_cdf_tdist_Qinv;
 
-gsl_cdf_tdist_P x nu = c_gsl_cdf_tdist_P (double x) (double nu)
-			 if realp x && realp nu;
-gsl_cdf_tdist_Q x nu = c_gsl_cdf_tdist_Q (double x) (double nu)
-			 if realp x && realp nu;
-gsl_cdf_tdist_Pinv p nu = gsl_cdf_tdist_Qinv (double p) (double nu)
-			    if realp p && realp nu;
-gsl_cdf_tdist_Qinv p nu = gsl_cdf_tdist_Qinv (double q) (double nu)
-			    if realp q && realp nu;
+gsl_cdf_tdist_P x nu
+  = c_gsl_cdf_tdist_P (double x) (double nu)
+    if realp x && realp nu;
+gsl_cdf_tdist_Q x nu
+  = c_gsl_cdf_tdist_Q (double x) (double nu)
+    if realp x && realp nu;
+gsl_cdf_tdist_Pinv p nu
+  = c_gsl_cdf_tdist_Pinv (double p) (double nu)
+    if realp p && realp nu;
+gsl_cdf_tdist_Qinv q nu
+  = c_gsl_cdf_tdist_Qinv (double q) (double nu)
+    if realp q && realp nu;
 
 /* Poisson distribution probability and density functions */
 extern double gsl_ran_poisson_pdf(int k, double mu)
-			= c_gsl_ran_poisson_pdf;
+  = c_gsl_ran_poisson_pdf;
 extern double gsl_cdf_poisson_P(int k, double mu)
-			= c_gsl_cdf_poisson_P;
+  = c_gsl_cdf_poisson_P;
 extern double gsl_cdf_poisson_Q(int k, double mu)
-			= c_gsl_cdf_poisson_Q;
+  = c_gsl_cdf_poisson_Q;
 
-gsl_ran_poisson_pdf k mu = c_gsl_ran_poisson_pdf k (double mu)
-			     if exactp k && realp mu;
-gsl_cdf_poisson_P k mu = c_gsl_cdf_poisson_P k (double mu)
-			   if exactp k && realp mu;
-gsl_cdf_poisson_Q k mu = c_gsl_cdf_poisson_Q k (double mu)
-			   if exactp k && realp mu;
+gsl_ran_poisson_pdf k mu
+  = c_gsl_ran_poisson_pdf k (double mu)
+    if intp k && realp mu;
+gsl_cdf_poisson_P k mu
+  = c_gsl_cdf_poisson_P k (double mu)
+    if intp k && realp mu;
+gsl_cdf_poisson_Q k mu
+  = c_gsl_cdf_poisson_Q k (double mu)
+    if intp k && realp mu;
 
-/* Bernoulli distribution probability and density functions */
+/* Bernoulli distribution probability density functions */
 
 extern double gsl_ran_bernoulli_pdf(int k, double p)
-		       = c_gsl_ran_bernoulli_pdf;
-gsl_ran_bernoulli_pdf k p = c_gsl_ran_bernoulli_pdf k (double p)
-			      if exactp k && realp p;
+  = c_gsl_ran_bernoulli_pdf;
+  
+gsl_ran_bernoulli_pdf k p
+  = c_gsl_ran_bernoulli_pdf k (double p)
+    if intp k && realp p;
 
 /* Binomial distribution probability and density functions */
 
 extern double gsl_ran_binomial_pdf(int k, double p, int n)
-			  = c_gsl_ran_binomial_pdf;
+  = c_gsl_ran_binomial_pdf;
 extern double gsl_cdf_binomial_P(int k, double p, int n)
-			  = c_gsl_cdf_binomial_P;
+  = c_gsl_cdf_binomial_P;
 extern double gsl_cdf_binomial_Q(int k, double p, int n)
-			  = c_gsl_cdf_binomial_Q;
+  = c_gsl_cdf_binomial_Q;
 
-gsl_ran_binomial_pdf k p n = c_gsl_ran_binomial_pdf k p n
-			       if exactp k && realp p && exactp n;
-gsl_cdf_binomial_P k p n = c_gsl_cdf_binomial_P k p n
-			     if exactp k && realp p && exactp n;
-gsl_cdf_binomial_Q k p n = c_gsl_cdf_binomial_Q k p n
-			     if exactp k && realp p && exactp n;
+gsl_ran_binomial_pdf k p n
+  = c_gsl_ran_binomial_pdf k p n
+    if intp k && realp p && intp n;
+gsl_cdf_binomial_P k p n
+  = c_gsl_cdf_binomial_P k p n
+    if intp k && realp p && intp n;
+gsl_cdf_binomial_Q k p n
+  = c_gsl_cdf_binomial_Q k p n
+    if intp k && realp p && intp n;
 
 /* The multinomial distribution probability functions */
 
-extern double wrap_gsl_ran_multinomial_pdf(int k, dmatrix* p, imatrix* n);
+extern double gsl_ran_multinomial_pdf(size_t k, double* p, int* n)
+  = c_gsl_ran_multinomial_pdf;
 
-
-gsl_ran_multinomial_pdf k::int p@(_:_) n@(_:_)
-			 = gsl_ran_multinomial_pdf k p_ n_
-			   when
-			     p_ = matrix (map double p);
-                             n_ = matrix (map int n);
-                           end;
-gsl_ran_multinomial_pdf k::int p@(_:_) n::matrix
-			 = gsl_ran_multinomial_pdf k p_ n
-			   when
-			     p_ = matrix (map double p);
-                           end;
-gsl_ran_multinomial_pdf k::int p::matrix n@(_:_)
-			 = gsl_ran_multinomial_pdf k p n_
-			   when
-			     n_ = matrix (map int n);
-                           end;
-gsl_ran_multinomial_pdf k::int p::matrix n::matrix
-			 = wrap_gsl_ran_multinomial_pdf k p n
-			   if dmatrixp p && imatrixp n;
+gsl_ran_multinomial_pdf p n
+  = x
+    when
+      x = c_gsl_ran_multinomial_pdf (#n) (pointer p) (pointer n)
+    end
+    if #p == #n && dmatrixp p && imatrixp n;

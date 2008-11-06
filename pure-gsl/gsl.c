@@ -261,8 +261,3 @@ int wrap_gsl_linalg_SV_solve(gsl_matrix* U, gsl_matrix* V, gsl_matrix* S,
   gsl_vector_view _x = gsl_matrix_column(x, 0);
   return gsl_linalg_SV_solve(U, V, &_S.vector, &_b.vector, &_x.vector);
 }
-
-double wrap_gsl_ran_multinomial_pdf(int k, gsl_matrix* P, gsl_matrix_int* N)
-{
-  return gsl_ran_multinomial_pdf(k, P->data, N->data);
-}
