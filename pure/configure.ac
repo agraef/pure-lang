@@ -116,11 +116,32 @@ if test $gsllib = yes; then
     fi
   fi
 fi
+dnl Check for the new-style template arguments of the IRBuilder class.
+AC_LANG_PUSH([C++])
+save_CXXFLAGS=$CXXFLAGS
+CXXFLAGS="`llvm-config --cppflags` $CXXFLAGS"
+AC_CACHE_CHECK([for new LLVM IRBuilder class], [new_builder],
+  [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
+       #include <llvm/Support/IRBuilder.h>
+      ], [
+        llvm::IRBuilder<> b;
+      ])
+    ], [new_builder=yes], [new_builder=no])
+  ])
+CXXFLAGS=$save_CXXFLAGS
+if test "$new_builder" = yes; then
+  # do whatever adjusting you need to do for presence of the library:
+  AC_DEFINE(NEW_BUILDER, 1, [Define when building with new-style LLVM IRBuilder template class.])
+fi
+AC_LANG_POP([C++])
+dnl Output files.
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
 
+llvm_version=`llvm-config --version`
+
 AC_MSG_RESULT([
-Pure is now configured for ${host}.
+Pure is now configured for LLVM ${llvm_version} on ${host}.
 
   Source directory:     ${srcdir}
   Installation prefix:  ${prefix}
