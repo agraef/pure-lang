@@ -79,26 +79,33 @@ need or want to install the dependencies from source:
 Subversion is available from http://subversion.tigris.org. There's also a very
 nice Windows frontend, TortoiseSVN, see http://tortoisesvn.tigris.org.
 
-STEP 2. Get and unpack the LLVM 2.3 sources at:
-http://llvm.org/releases/download.html#2.3
+STEP 2. Get and unpack the LLVM 2.4 sources at:
+http://llvm.org/releases/download.html#2.4
+
+NB: LLVM 2.3 should still work, too, but there are some x86-64-specific quirks
+with this version, see the notes on 64 bit support in the SYSTEM NOTES section
+for details.
 
 STEP 3. Configure, build and install LLVM as follows:
 
-$ cd llvm-2.3
+$ cd llvm-2.4
 $ ./configure --enable-optimized --disable-assertions --disable-expensive-checks --enable-targets=host-only
 $ make
 $ sudo make install
 
-IMPORTANT: On x86-64 systems you also have to add --enable-pic. See the
-comments on 64 bit support in the SYSTEM NOTES section below.
+***IMPORTANT:*** On x86-64 systems you also have to add --enable-pic to the
+configure command, so that the static LLVM libraries can be linked into the
+Pure runtime library. See the comments on 64 bit support in the SYSTEM NOTES
+section below.
 
 Note that the configure flags are for an optimized (non-debug) build and
 disable all compilation targets but the one for your system. You might wish to
 omit --enable-targets=host-only if you want to enable cross-compilation (this
 isn't supported by Pure right now, but other LLVM applications offer such
 capabilities). To do a debug build of LLVM, simply leave away all the extra
-configure parameters (except possibly --enable-targets=host-only). Note,
-however, that this will have an impact on the speed of the Pure compiler.
+configure parameters (except possibly --enable-targets=host-only, and
+--enable-pic if it is needed). Note, however, that this will have an impact on
+the speed of the Pure compiler.
 
 STEP 4. Get and unpack the Pure sources at: http://pure-lang.googlecode.com
 
@@ -428,11 +435,19 @@ in case of a stack overflow.
 64 BIT SYSTEMS
 -- --- -------
 
-64 bit systems are fully supported by Pure. However, you'll need to patch up
-LLVM 2.3 so that it can be linked into the Pure runtime library on x86-64
-systems. You also have to configure LLVM with --enable-pic. The patch by
-Cyrille Berger, to be applied in the llvm-2.3 source directory, is available
-at http://pure-lang.googlecode.com/svn/wiki/X86JITInfo.cpp.pic.2.3.patch.
+64 bit systems are fully supported by Pure (as far as LLVM supports them).
+
+As of LLVM 2.4, building the Pure runtime library (libpure) should work out of
+the box on x86-64 systems, too. To make this work, you have to configure LLVM
+with --enable-pic so that the static LLVM libraries can be linked into the
+runtime library. (This option is required on 64 bit systems *only*, on x86-32
+this usually does more harm than good and thus should not be used there.)
+
+If you still use LLVM 2.3 on x86-64, there is a patch by Cyrille Berger which
+you need to apply in the llvm-2.3 source directory to make that version link
+properly with the Pure runtime library. The patch is available at:
+http://pure-lang.googlecode.com/svn/wiki/X86JITInfo.cpp.pic.2.3.patch. After
+applying the patch, configure LLVM with --enable-pic and build it as usual.
 
 LINUX
 -----
@@ -480,6 +495,6 @@ well as "PurePad", an alternative GUI frontend for editing and running Pure
 scripts on Windows.
 
 
-October 2008
+November 2008
 Albert Graef <Dr.Graef at t-online.de>
 Eddie Rucker <erucker at bmc.edu>
