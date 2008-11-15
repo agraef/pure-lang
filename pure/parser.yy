@@ -54,10 +54,11 @@ class interpreter;
 
 %{
 struct sym_info {
-  bool priv;
+  bool special, priv;
   prec_t prec;
   fix_t fix;
-  sym_info(bool v, prec_t p, fix_t f) : priv(v), prec(p), fix(f) { }
+  sym_info(bool s, bool v, prec_t p, fix_t f) :
+    special(s), priv(v), prec(p), fix(f) { }
 };
 struct rule_info {
   exprl l;
@@ -98,6 +99,7 @@ typedef list<comp_clause> comp_clause_list;
 %}
 
 %token		PRIVATE	"private"
+%token		PUBLIC	"public"
 %token		NULLARY	"nullary"
 %token <fix>	FIX	"fixity"
 
@@ -294,8 +296,7 @@ item
 /* Lexical tie-in: We need to tell the lexer that we're defining new operator
    symbols (interp.declare_op = true) instead of searching for existing ones
    in the symbol table. */
-{ if ($1->priv && $1->prec > 10 ||
-      !$1->priv && $1->fix != nullary && $1->prec > 9) {
+{ if ($1->special && $1->fix != nullary && $1->prec > 9) {
     error(yylloc, "invalid fixity declaration"); YYERROR;
   } else if ($1->fix == nullary || $1->prec < 10)
     interp.declare_op = true; }
@@ -309,11 +310,14 @@ item
 ;
 
 fixity
-: FIX INT		{ $$ = new sym_info(false,$2,$1); }
-| NULLARY		{ $$ = new sym_info(false,10,nullary); }
-| PRIVATE FIX INT	{ $$ = new sym_info(true,$3,$2); }
-| PRIVATE NULLARY	{ $$ = new sym_info(true,10,nullary); }
-| PRIVATE		{ $$ = new sym_info(true,10,infix); }
+: FIX INT		{ $$ = new sym_info(true, false,$2,$1); }
+| NULLARY		{ $$ = new sym_info(true, false,10,nullary); }
+| PUBLIC FIX INT	{ $$ = new sym_info(true, false,$3,$2); }
+| PUBLIC NULLARY	{ $$ = new sym_info(true, false,10,nullary); }
+| PUBLIC		{ $$ = new sym_info(false, false,10,infix); }
+| PRIVATE FIX INT	{ $$ = new sym_info(true, true,$3,$2); }
+| PRIVATE NULLARY	{ $$ = new sym_info(true, true,10,nullary); }
+| PRIVATE		{ $$ = new sym_info(false, true,10,infix); }
 ;
 
 ids
