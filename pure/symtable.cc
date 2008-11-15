@@ -51,6 +51,9 @@ void symtable::init_builtins()
 
 symbol* symtable::lookup(const string& s, int32_t modno)
 {
+  // normalize symbols in the default namespace
+  if (s.substr(0, 2) == "::")
+    return lookup(s.substr(2), modno);
   sym_map& m = tab[modno];
   sym_map::iterator it = m.find(s);
   if (it == m.end() && modno >= 0) {
@@ -69,6 +72,9 @@ symbol* symtable::lookup(const string& s, int32_t modno)
 
 symbol& symtable::sym(const string& s, int32_t modno)
 {
+  // normalize symbols in the default namespace
+  if (s.substr(0, 2) == "::")
+    return sym(s.substr(2), modno);
   symbol* _symp = lookup(s, modno);
   modno = _symp?_symp->modno:-1;
   symbol& _sym = tab[modno][s];
@@ -85,6 +91,9 @@ symbol& symtable::sym(const string& s, int32_t modno)
 
 symbol& symtable::sym(const string& s, prec_t prec, fix_t fix, int32_t modno)
 {
+  // normalize symbols in the default namespace
+  if (s.substr(0, 2) == "::")
+    return sym(s.substr(2), prec, fix, modno);
   assert(prec <= 10);
   symbol* _symp = lookup(s, modno);
   modno = _symp?_symp->modno:-1;
@@ -102,6 +111,9 @@ symbol& symtable::sym(const string& s, prec_t prec, fix_t fix, int32_t modno)
 
 symbol* symtable::xlookup(const string& s, int32_t modno)
 {
+  // normalize symbols in the default namespace
+  if (s.substr(0, 2) == "::")
+    return xlookup(s.substr(2), modno);
   sym_map& m = tab[modno];
   sym_map::iterator it = m.find(s);
   if (it == m.end())
@@ -112,6 +124,9 @@ symbol* symtable::xlookup(const string& s, int32_t modno)
 
 symbol& symtable::xsym(const string& s, int32_t modno)
 {
+  // normalize symbols in the default namespace
+  if (s.substr(0, 2) == "::")
+    return xsym(s.substr(2), modno);
   symbol& _sym = tab[modno][s];
   if (_sym.f == 0) {
     if ((uint32_t)++fno > rtab.capacity())
@@ -125,6 +140,9 @@ symbol& symtable::xsym(const string& s, int32_t modno)
 
 symbol& symtable::xsym(const string& s, prec_t prec, fix_t fix, int32_t modno)
 {
+  // normalize symbols in the default namespace
+  if (s.substr(0, 2) == "::")
+    return xsym(s.substr(2), prec, fix, modno);
   assert(prec <= 10);
   symbol& _sym = tab[modno][s];
   if (_sym.f == 0) {

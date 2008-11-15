@@ -116,6 +116,7 @@ typedef list<comp_clause> comp_clause_list;
 %token		WHEN	"when"
 %token		WITH	"with"
 %token		USING	"using"
+%token		NAMESPACE "namespace"
 %token		EXTERN	"extern"
 
 %token <xval>	NA0	"infix 0 operator"
@@ -306,6 +307,8 @@ item
   delete $1; }
 | USING names
 { action(interp.run(*$2), {}); delete $2; }
+| NAMESPACE ID
+{ interp.namespaces.insert(*$2); delete $2; }
 | EXTERN prototypes
 ;
 

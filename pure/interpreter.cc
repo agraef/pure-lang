@@ -1875,7 +1875,7 @@ expr interpreter::bind(env& vars, expr x, bool b, path p)
   default:
     assert(x.tag() > 0);
     const symbol& sym = symtab.sym(x.tag());
-    if (sym.s != "_" &&
+    if (x.flags()&EXPR::QUAL || sym.s != "_" &&
 	(sym.prec < 10 || sym.fix == nullary || p.len() == 0 && !b ||
 	 p.len() > 0 && p.last() == 0)) {
       // constant or constructor
@@ -2823,9 +2823,15 @@ expr *interpreter::mksym_expr(string *s, int8_t tag)
       // Return a new instance here, since the anonymous variable may have
       // multiple occurrences on the lhs.
       x = new expr(sym.f);
-    else
+    else if (s->find("::") != string::npos) {
+      // Return a new qualified instance here, so that we don't mistake this
+      // for a lhs variable.
+      x = new expr(sym.f);
+      x->flags() |= EXPR::QUAL;
+    } else
       x = new expr(sym.x);
-  else if (sym.f <= 0 || sym.prec < 10 || sym.fix == nullary)
+  else if (s->find("::") != string::npos ||
+	   sym.f <= 0 || sym.prec < 10 || sym.fix == nullary)
     throw err("error in expression (misplaced type tag)");
   else {
     x = new expr(sym.f);
@@ -2839,7 +2845,8 @@ expr *interpreter::mksym_expr(string *s, int8_t tag)
 expr *interpreter::mkas_expr(string *s, expr *x)
 {
   const symbol &sym = symtab.sym(*s, modno);
-  if (sym.f <= 0 || sym.prec < 10 || sym.fix == nullary)
+  if (s->find("::") != string::npos ||
+      sym.f <= 0 || sym.prec < 10 || sym.fix == nullary)
     throw err("error in pattern (bad variable symbol '"+sym.s+"')");
   if (x->tag() > 0) {
     // Avoid globbering cached function symbols.

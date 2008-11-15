@@ -145,6 +145,7 @@ struct EXPR {
   enum {
     OVF		= 1,	// overflowed int constant -> bigint
     PAREN	= 1<<1,	// parenthesized expression
+    QUAL	= 1<<2,	// qualified id
   };
 
   uint32_t refc;  // reference counter

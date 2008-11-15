@@ -252,6 +252,24 @@ static void check(const yy::location& l, const char* s)
       return;
     }
 }
+
+static int32_t checktag(const char *s)
+{
+  if (strcmp(s, "int") == 0)
+    return EXPR::INT;
+  else if (strcmp(s, "bigint") == 0)
+    return EXPR::BIGINT;
+  else if (strcmp(s, "double") == 0)
+    return EXPR::DBL;
+  else if (strcmp(s, "string") == 0)
+    return EXPR::STR;
+  else if (strcmp(s, "pointer") == 0)
+    return EXPR::PTR;
+  else if (strcmp(s, "matrix") == 0)
+    return EXPR::MATRIX;
+  else
+    return 0;
+}
 %}
 
 %option noyywrap nounput debug
@@ -277,19 +295,12 @@ punct  (\xC2[\xA1-\xBF]|\xC3[\xD7\xF7]|\xE2[\x84-\xAF][\x80-\xBF]|\xE2\x83[\x90-
 
 letter ([a-zA-Z_]|[\xC4-\xDF][\x80-\xBF]|\xC2[^\x01-\x7F\xA1-\xFF]|\xC3[^\x01-\x7F\xD7\xF7\xC0-\xFF]|\xE0[\xA0-\xBF][\x80-\xBF]|[\xE1\xE3-\xEC\xEE\xEF][\x80-\xBF]{2}|\xE2[^\x01-\x7F\x83-\xAF\xC0-\xFF][\x80-\xBF]|\xE2\x83[\x80-\x8F]|\xED[\x80-\x9F][\x80-\xBF]|\xF0[\x90-\xBF][\x80-\xBF]{2}|[\xF1-\xF3][\x80-\xBF]{3}|\xF4[\x80-\x8F][\x80-\xBF]{2})
 
-id     {letter}({letter}|[0-9])*
+id     ({letter}({letter}|[0-9])*)
 int    [0-9]+|0[0-7]+|0[xX][0-9a-fA-F]+
 exp    ([Ee][+-]?[0-9]+)
 float  [0-9]+{exp}|[0-9]+\.{exp}|[0-9]*\.[0-9]+{exp}?
 str    ([^\"\\\n]|\\(.|\n))*
 blank  [ \t\f\v\r]
-
-inttag  ::{blank}*int
-binttag ::{blank}*bigint
-dbltag  ::{blank}*double
-strtag  ::{blank}*string
-ptrtag  ::{blank}*pointer
-mattag  ::{blank}*matrix
 
 %x comment xdecl xdecl_comment xusing xusing_comment
 
@@ -316,6 +327,29 @@ mattag  ::{blank}*matrix
 <comment>[\n]+          yylloc->lines(yyleng); yylloc->step();
 <comment>"*"+"/"        yylloc->step(); BEGIN(INITIAL);
 
+<xdecl>extern     return token::EXTERN;
+<xdecl>infix      yylval->fix = infix; return token::FIX;
+<xdecl>infixl     yylval->fix = infixl; return token::FIX;
+<xdecl>infixr     yylval->fix = infixr; return token::FIX;
+<xdecl>prefix     yylval->fix = prefix; return token::FIX;
+<xdecl>postfix    yylval->fix = postfix; return token::FIX;
+<xdecl>nullary    return token::NULLARY;
+<xdecl>private    return token::PRIVATE;
+<xdecl>public     return token::PUBLIC;
+<xdecl>const      return token::CONST;
+<xdecl>def        return token::DEF;
+<xdecl>let        return token::LET;
+<xdecl>case	  return token::CASE;
+<xdecl>of	  return token::OF;
+<xdecl>end	  return token::END;
+<xdecl>if	  return token::IF;
+<xdecl>then	  return token::THEN;
+<xdecl>else	  return token::ELSE;
+<xdecl>otherwise  return token::OTHERWISE;
+<xdecl>when	  return token::WHEN;
+<xdecl>with	  return token::WITH;
+<xdecl>using      return token::USING;
+<xdecl>namespace  return token::NAMESPACE;
 <xdecl>{id}	check(*yylloc, yytext); yylval->sval = new string(yytext); return token::ID;
 <xdecl>[()*,=]	return yy::parser::token_type(yytext[0]);
 <xdecl>"//".*	yylloc->step();
@@ -323,7 +357,7 @@ mattag  ::{blank}*matrix
 <xdecl>;	BEGIN(INITIAL); return yy::parser::token_type(yytext[0]);
 <xdecl>{blank}+	yylloc->step();
 <xdecl>[\n]+	yylloc->lines(yyleng); yylloc->step();
-<xdecl>.	{
+<xdecl>(.|{punct}|{letter})	{
   string msg = "invalid character '"+string(yytext)+"'";
   interp.error(*yylloc, msg);
   BEGIN(INITIAL); return token::ERRTOK;
@@ -334,6 +368,29 @@ mattag  ::{blank}*matrix
 <xdecl_comment>[\n]+          yylloc->lines(yyleng); yylloc->step();
 <xdecl_comment>"*"+"/"        yylloc->step(); BEGIN(xdecl);
 
+<xusing>extern     return token::EXTERN;
+<xusing>infix      yylval->fix = infix; return token::FIX;
+<xusing>infixl     yylval->fix = infixl; return token::FIX;
+<xusing>infixr     yylval->fix = infixr; return token::FIX;
+<xusing>prefix     yylval->fix = prefix; return token::FIX;
+<xusing>postfix    yylval->fix = postfix; return token::FIX;
+<xusing>nullary    return token::NULLARY;
+<xusing>private    return token::PRIVATE;
+<xusing>public     return token::PUBLIC;
+<xusing>const      return token::CONST;
+<xusing>def        return token::DEF;
+<xusing>let        return token::LET;
+<xusing>case	   return token::CASE;
+<xusing>of	   return token::OF;
+<xusing>end	   return token::END;
+<xusing>if	   return token::IF;
+<xusing>then	   return token::THEN;
+<xusing>else	   return token::ELSE;
+<xusing>otherwise  return token::OTHERWISE;
+<xusing>when	   return token::WHEN;
+<xusing>with	   return token::WITH;
+<xusing>using      return token::USING;
+<xusing>namespace  return token::NAMESPACE;
 <xusing>{id}	check(*yylloc, yytext); yylval->sval = new string(yytext); return token::ID;
 <xusing>,	return yy::parser::token_type(yytext[0]);
 <xusing>"//".*	yylloc->step();
@@ -353,7 +410,7 @@ mattag  ::{blank}*matrix
   interp.error(*yylloc, "unterminated string constant");
   BEGIN(INITIAL); return token::ERRTOK;
 }
-<xusing>.	{
+<xusing>(.|{punct}|{letter})	{
   string msg = "invalid character '"+string(yytext)+"'";
   interp.error(*yylloc, msg);
   BEGIN(INITIAL); return token::ERRTOK;
@@ -1423,12 +1480,6 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
   yylval->csval = parsestr(yytext+1, msg);
   return token::STR;
 }
-{inttag}/[^a-zA-Z_0-9]   yylval->ival = EXPR::INT; return token::TAG;
-{binttag}/[^a-zA-Z_0-9]  yylval->ival = EXPR::BIGINT; return token::TAG;
-{dbltag}/[^a-zA-Z_0-9]   yylval->ival = EXPR::DBL; return token::TAG;
-{strtag}/[^a-zA-Z_0-9]   yylval->ival = EXPR::STR; return token::TAG;
-{ptrtag}/[^a-zA-Z_0-9]   yylval->ival = EXPR::PTR; return token::TAG;
-{mattag}/[^a-zA-Z_0-9]   yylval->ival = EXPR::MATRIX; return token::TAG;
 extern     BEGIN(xdecl); return token::EXTERN;
 infix      yylval->fix = infix; return token::FIX;
 infixl     yylval->fix = infixl; return token::FIX;
@@ -1451,6 +1502,40 @@ otherwise  return token::OTHERWISE;
 when	   return token::WHEN;
 with	   return token::WITH;
 using      BEGIN(xusing); return token::USING;
+namespace  BEGIN(xusing); return token::NAMESPACE;
+{id}?::{id} {
+  string qualid = yytext;
+  size_t k = qualid.find("::");
+  string qual = qualid.substr(0, k), id = qualid.substr(k+2);
+  int32_t tag = checktag(id.c_str());
+  if (qual.empty() && tag) {
+    // This is actually a type tag.
+    REJECT;
+  } else if (!qual.empty() &&
+	   interp.namespaces.find(qual) == interp.namespaces.end()) {
+    // not a valid namespace prefix
+    if (tag) {
+      // we can still parse this as an identifier with a type tag
+      yyless(k);
+      check(*yylloc, yytext);
+    } else {
+      string msg = "unknown namespace '"+qual+"'";
+      interp.error(*yylloc, msg);
+    }
+  }
+  if (interp.declare_op) {
+    yylval->sval = new string(yytext);
+    return token::ID;
+  }
+  symbol* sym = interp.symtab.lookup(yytext, interp.modno);
+  if (sym && sym->prec >= 0 && sym->prec < 10) {
+    yylval->xval = new expr(sym->x);
+    return optoken[sym->prec][sym->fix];
+  } else {
+    yylval->sval = new string(yytext);
+    return token::ID;
+  }
+}
 {id}       {
   check(*yylloc, yytext);
   if (interp.declare_op) {
@@ -1464,6 +1549,17 @@ using      BEGIN(xusing); return token::USING;
   } else {
     yylval->sval = new string(yytext);
     return token::ID;
+  }
+}
+::{blank}*{id} {
+  char *s = yytext+2;
+  while (isspace(*s)) s++;
+  yylval->ival = checktag(s);
+  if (yylval->ival)
+    return token::TAG;
+  else {
+    string msg = "invalid type tag '"+string(s)+"'";
+    interp.error(*yylloc, msg);
   }
 }
 [@=|;()\[\]{}\\] return yy::parser::token_type(yytext[0]);

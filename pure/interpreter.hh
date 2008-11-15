@@ -335,7 +335,8 @@ public:
   int32_t modctr;    // next available module key
   string source;     // the source being parsed
   const char *source_s; // source pointer if input comes from a string
-  set<string> sources; // the list of all scripts which have been loaded
+  set<string> sources; // the set of all scripts which have been loaded
+  set<string> namespaces; // the set of all declared namespaces
   ostream *output;   // redirected output stream for interactive commands
   symtable symtab;   // the symbol table
   pure_expr *result; // last computed result
