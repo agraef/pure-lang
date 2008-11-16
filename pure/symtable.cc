@@ -123,6 +123,7 @@ symbol* symtable::sym(const char *s, bool priv)
     *_sym = symbol(id, fno, priv);
     //cout << "new symbol " << _sym->f << ": " << _sym->s << endl;
     rtab[fno] = _sym;
+    if (__show__sym == 0 && strcmp(s, "__show__") == 0) __show__sym = fno;
     count = 1;
     return _sym;
   } else
