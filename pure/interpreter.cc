@@ -1436,14 +1436,10 @@ void interpreter::using_namespaces(list<string> *ids)
   symtab.search_namespaces->clear();
   if (ids) {
     for (list<string>::iterator it = ids->begin(), end = ids->end();
-	 it != end; it++)
-      if (namespaces.find(*it) != namespaces.end())
-	symtab.search_namespaces->insert(*it);
-      else {
-	string id = *it;
-	delete ids;
-	throw err("unknown namespace '"+id+"'");
-      }
+	 it != end; it++) {
+      namespaces.insert(*it);
+      symtab.search_namespaces->insert(*it);
+    }
     delete ids;
   }
 }
@@ -1452,7 +1448,7 @@ void interpreter::declare(const yy::location& l,
 			  bool priv, prec_t prec, fix_t fix, list<string> *ids)
 {
   if (symtab.current_namespace->empty() && priv) {
-    //warning(l, "warning: 'private' attribute is ignored in default namespace");
+    warning(l, "warning: 'private' attribute is ignored in default namespace");
     priv = false;
   }
   for (list<string>::const_iterator it = ids->begin();

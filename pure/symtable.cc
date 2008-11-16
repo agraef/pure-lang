@@ -93,8 +93,9 @@ symbol* symtable::lookup(const char *s)
   for (set<string>::iterator it = search_namespaces->begin(),
 	 end = search_namespaces->end(); it != end; it++) {
     string id = (*it)+"::"+s;
-    search_sym = lookup_p(id.c_str());
-    if (search_sym && ++count > 1) return 0;
+    symbol *sym = lookup_p(id.c_str());
+    if (sym && ++count > 1) return 0;
+    if (!search_sym) search_sym = sym;
   }
   if (current_sym)
     return current_sym;

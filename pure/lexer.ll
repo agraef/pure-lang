@@ -569,8 +569,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
       int32_t f = it->first;
       const env_info& e = it->second;
       const symbol& sym = interp.symtab.sym(f);
-      if (!interp.symtab.visible(f) ||
-	  pflag >= 0 && (pflag > 0) != sym.priv ||
+      if (pflag >= 0 && (pflag > 0) != sym.priv ||
 	  !((e.t == env_info::fun)?fflag:
 	    (e.t == env_info::cvar)?cflag:
 	    (e.t == env_info::fvar)?vflag:0))
@@ -612,8 +611,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	int32_t f = it->first;
 	if (syms.find(f) == syms.end()) {
 	  const symbol& sym = interp.symtab.sym(f);
-	  if (!interp.symtab.visible(f) ||
-	      pflag >= 0 && (pflag > 0) != sym.priv)
+	  if (pflag >= 0 && (pflag > 0) != sym.priv)
 	    continue;
 	  bool matches = true;
 	  if (!args.l.empty()) {
@@ -642,8 +640,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	if (syms.find(f) == syms.end()) {
 	  const env_info& e = it->second;
 	  const symbol& sym = interp.symtab.sym(f);
-	  if (!interp.symtab.visible(f) ||
-	      pflag >= 0 && (pflag > 0) != sym.priv)
+	  if (pflag >= 0 && (pflag > 0) != sym.priv)
 	    continue;
 	  bool matches = e.temp >= tlevel;
 	  if (!matches && !sflag) {
@@ -931,8 +928,7 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
       int32_t f = it->first;
       const env_info& e = it->second;
       const symbol& sym = interp.symtab.sym(f);
-      if (!interp.symtab.visible(f) ||
-	  pflag >= 0 && (pflag > 0) != sym.priv ||
+      if (pflag >= 0 && (pflag > 0) != sym.priv ||
 	  !((e.t == env_info::fun)?fflag:
 	    (e.t == env_info::cvar)?cflag:
 	    (e.t == env_info::fvar)?vflag:0))
@@ -972,8 +968,7 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	int32_t f = it->first;
 	if (syms.find(f) == syms.end()) {
 	  const symbol& sym = interp.symtab.sym(f);
-	  if (!interp.symtab.visible(f) ||
-	      pflag >= 0 && (pflag > 0) != sym.priv)
+	  if (pflag >= 0 && (pflag > 0) != sym.priv)
 	    continue;
 	  bool matches = true;
 	  if (!args.l.empty()) {
@@ -1001,8 +996,7 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	if (syms.find(f) == syms.end()) {
 	  const env_info& e = it->second;
 	  const symbol& sym = interp.symtab.sym(f);
-	  if (!interp.symtab.visible(f) ||
-	      pflag >= 0 && (pflag > 0) != sym.priv)
+	  if (pflag >= 0 && (pflag > 0) != sym.priv)
 	    continue;
 	  bool matches = e.temp >= tlevel;
 	  if (!matches) {
@@ -1222,8 +1216,7 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
       int32_t f = it->first;
       const env_info& e = it->second;
       const symbol& sym = interp.symtab.sym(f);
-      if (!interp.symtab.visible(f) ||
-	  pflag >= 0 && (pflag > 0) != sym.priv ||
+      if (pflag >= 0 && (pflag > 0) != sym.priv ||
 	  !((e.t == env_info::fun)?fflag:
 	    (e.t == env_info::cvar)?cflag:
 	    (e.t == env_info::fvar)?vflag:0))
@@ -1265,8 +1258,7 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
 	if (syms.find(f) == syms.end()) {
 	  const env_info& e = it->second;
 	  const symbol& sym = interp.symtab.sym(f);
-	  if (!interp.symtab.visible(f) ||
-	      pflag >= 0 && (pflag > 0) != sym.priv)
+	  if (pflag >= 0 && (pflag > 0) != sym.priv)
 	    continue;
 	  bool matches = e.temp >= tlevel;
 	  if (!matches) {

@@ -315,7 +315,7 @@ item
 | NAMESPACE
 { interp.symtab.current_namespace->clear(); }
 | USING NAMESPACE names
-{ action(interp.using_namespaces($3), delete $3); }
+{ interp.using_namespaces($3); }
 | USING NAMESPACE
 { interp.using_namespaces(); }
 | EXTERN prototypes
