@@ -19,6 +19,8 @@
    You should have received a copy of the GNU General Public License along
    with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
+using namespace C;
+
 /* Throw an exception. */
 
 extern void pure_throw(expr*) = throw; // IMPURE!
@@ -97,9 +99,10 @@ extern int hash(expr*);
 
 /* Conversions between the different numeric and pointer types. */
 
-private pure_intval pure_dblval pure_bigintval pure_pointerval;
+namespace C;
 extern expr* pure_intval(expr*), expr* pure_dblval(expr*),
   expr* pure_bigintval(expr*), expr* pure_pointerval(expr*);
+namespace;
 
 int x::int		= x;
 int x::bigint		|
@@ -246,8 +249,7 @@ quote x			= x;
 
 /* Bigint arithmetic. */
 
-private bigint_neg bigint_not bigint_add bigint_sub bigint_mul bigint_div
-  bigint_mod bigint_shl bigint_shr bigint_and bigint_or bigint_cmp;
+namespace C;
 extern expr* bigint_neg(void*);
 extern expr* bigint_not(void*);
 extern expr* bigint_add(void*, void*);
@@ -260,6 +262,7 @@ extern expr* bigint_shr(void*, int);
 extern expr* bigint_and(void*, void*);
 extern expr* bigint_or(void*, void*);
 extern int bigint_cmp(void*, void*);
+namespace;
 
 -x::bigint		= bigint_neg x;
 not x::bigint		= bigint_not x;
@@ -348,9 +351,10 @@ x::double~=y::bigint	= x~=double y;
 /* The gcd and lcm functions from the GMP library. These return a bigint if at
    least one of the arguments is a bigint, a machine int otherwise. */
 
-private bigint_gcd bigint_lcm;
+namespace C;
 extern expr* bigint_gcd(void*, void*);
 extern expr* bigint_lcm(void*, void*);
+namespace;
 
 gcd x::bigint y::bigint	= bigint_gcd x y;
 lcm x::bigint y::bigint	= bigint_lcm x y;
@@ -367,8 +371,9 @@ lcm x::int y::int	= int (bigint_lcm (bigint x) (bigint y));
    always a bigint. Note that y must always be nonnegative here, but see
    math.pure which deals with the case y<0 using rational numbers. */
 
-private bigint_pow;
+namespace C;
 extern expr* bigint_pow(void*, int);
+namespace;
 
 pow x::int y::int	= bigint_pow (bigint x) y if y>=0;
 pow x::bigint y::bigint	= bigint_pow x y if y>=0;
@@ -380,18 +385,19 @@ pow x::bigint y::int	= bigint_pow x y if y>=0;
 /* The ^ operator. Computes inexact powers for any combination of int, bigint
    and double operands. The result is always a double. */
 
-private c_pow;
-extern double pow(double, double) = c_pow;
+namespace C;
+extern double pow(double, double);
+namespace;
 
-x::double^y::double	= c_pow x y;
+x::double^y::double	= C::pow x y;
 x::int^y::int		|
 x::bigint^y::bigint	|
 x::int^y::bigint	|
-x::bigint^y::int	= c_pow (double x) (double y);
+x::bigint^y::int	= C::pow (double x) (double y);
 x::double^y::int	|
-x::double^y::bigint	= c_pow x (double y);
+x::double^y::bigint	= C::pow x (double y);
 x::int^y::double	|
-x::bigint^y::double	= c_pow (double x) y;
+x::bigint^y::double	= C::pow (double x) y;
 
 /* Pointer arithmetic. We do this using bigints, so that the code is portable
    to 64 bit systems. */
@@ -423,9 +429,7 @@ nanp x		= case x of x::double = ~(x==x); _ = 0 end;
 
 /* Direct memory accesses. Use with care ... or else! */
 
-private pointer_get_byte pointer_get_short pointer_get_int
-  pointer_get_float pointer_get_double
-  pointer_get_string pointer_get_pointer;
+namespace C;
 extern int pointer_get_byte(void *ptr);
 extern int pointer_get_short(void *ptr);
 extern int pointer_get_int(void *ptr);
@@ -433,6 +437,7 @@ extern double pointer_get_float(void *ptr);
 extern double pointer_get_double(void *ptr);
 extern char *pointer_get_string(void *ptr);
 extern void *pointer_get_pointer(void *ptr);
+namespace;
 
 get_byte x::pointer = pointer_get_byte x;
 get_short x::pointer = pointer_get_short x;
@@ -442,9 +447,7 @@ get_double x::pointer = pointer_get_double x;
 get_string x::pointer = pointer_get_string x;
 get_pointer x::pointer = pointer_get_pointer x;
 
-private pointer_put_byte pointer_put_short pointer_put_int
-  pointer_put_float pointer_put_double
-  pointer_put_string pointer_put_pointer;
+namespace C;
 extern void pointer_put_byte(void *ptr, int x); // IMPURE!
 extern void pointer_put_short(void *ptr, int x); // IMPURE!
 extern void pointer_put_int(void *ptr, int x); // IMPURE!
@@ -452,6 +455,7 @@ extern void pointer_put_float(void *ptr, double x); // IMPURE!
 extern void pointer_put_double(void *ptr, double x); // IMPURE!
 extern void pointer_put_string(void *ptr, char *x); // IMPURE!
 extern void pointer_put_pointer(void *ptr, void *x); // IMPURE!
+namespace;
 
 put_byte x::pointer y::int = pointer_put_byte x y;
 put_short x::pointer y::int = pointer_put_short x y;
@@ -489,11 +493,11 @@ extern expr* pure_get_sentry(expr*) = get_sentry;
    reference into just a normal pointer object and renders it unusable as a
    reference. Doing this will also leak memory, so don't! */
 
-private pure_new pure_free pure_expr_pointer;
-private pointer_get_expr pointer_put_expr;
+namespace C;
 extern expr* pure_new(expr*), expr* pure_expr_pointer();
 extern void pure_free(expr*);
 extern expr* pointer_get_expr(void*), void pointer_put_expr(void*, expr*);
+namespace;
 
 ref x = pointer_put_expr r (pure_new x) $$
 	sentry unref r when r::pointer = pure_expr_pointer end;

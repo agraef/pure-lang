@@ -18,6 +18,8 @@
    You should have received a copy of the GNU General Public License along
    with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
+using namespace C;
+
 /* Convert between Pure expressions and strings. The str function gives you
    the print representation of an expression in Pure syntax, as a string. The
    eval function does the opposite, by parsing and returning the value of an
@@ -29,8 +31,10 @@
    just returns it as is. Also, exceptions during evaluation are reported back
    to the caller.) */
 
-private pure_str;
+namespace C;
 extern void* str(expr*) = pure_str;
+namespace;
+
 extern expr* eval(expr*); // IMPURE!
 
 str x			= cstring (pure_str x);
@@ -53,9 +57,10 @@ extern char* lasterr();
 
 /* Convert between Unicode character codes and single character strings. */
 
-private string_chr string_ord;
+namespace C;
 extern expr* string_chr(int);
 extern expr* string_ord(void*);
+namespace;
 
 chr n::int		= string_chr n if n>0;
 ord s::string		= string_ord s if #s==1;
@@ -69,11 +74,12 @@ ord s::string		= string_ord s if #s==1;
    to be malloc'ed). The _cstring routines also convert from the system
    encoding. */
 
-private pure_string pure_cstring pure_string_dup pure_cstring_dup;
+namespace C;
 extern expr* pure_string(void* s);
 extern expr* pure_cstring(void* s);
 extern expr* pure_string_dup(void* s);
 extern expr* pure_cstring_dup(void* s);
+namespace;
 
 string s::pointer	= pure_string s;
 cstring s::pointer	= pure_cstring s;
@@ -87,9 +93,10 @@ cstring_dup s::pointer	= pure_cstring_dup s;
    char* (employing pointer arithmetic etc.; the usual caveats apply), and has
    to be freed explicitly by the caller when no longer needed. */
 
-private pure_byte_string pure_byte_cstring;
+namespace C;
 extern expr* pure_byte_string(void *s);
 extern expr* pure_byte_cstring(void *s);
+namespace;
 
 byte_string s::string	= pure_byte_string s;
 byte_cstring s::string	= pure_byte_cstring s;
@@ -106,12 +113,13 @@ c::string-d::string	= ord c-ord d if #c==1 && #d==1;
    string takes quadratic time; as a remedy, we also offer a linear-time
    operation to determine the list of all characters of a string in one go. */
 
-private string_null string_size string_concat string_char_at string_chars;
+namespace C;
 extern bool string_null(void*);
 extern int string_size(void*);
 extern expr* string_concat(void*, void*);
 extern expr* string_char_at(void*, int);
 extern expr* string_chars(void*);
+namespace;
 
 null s::string		= string_null s;
 #s::string		= string_size s;
@@ -126,8 +134,9 @@ chars s::string		= string_chars s if varp (:);
 
 /* Lexicographic string comparison. */
 
-private strcmp;
+namespace C;
 extern int strcmp(void*, void*);
+namespace;
 
 x::string<y::string	= strcmp x y < 0;
 x::string>y::string	= strcmp x y > 0;
@@ -138,9 +147,10 @@ x::string~=y::string	= strcmp x y ~= 0;
 
 /* Compute and find substrings of a string. */
 
-private string_substr string_index;
+namespace C;
 extern expr* string_substr(void*, int, int);
 extern int string_index(void*, void*);
+namespace;
 
 substr s::string pos::int size::int
 			= string_substr s (max 0 pos) (max 0 size)
@@ -163,8 +173,9 @@ s::string!!ns		= case ns of
 
 /* Concatenate a list of strings. */
 
-private string_concat_list;
+namespace C;
 extern expr* string_concat_list(expr*);
+namespace;
 strcat xs		= string_concat_list xs if listp xs && all stringp xs;
 
 /* Concatenate a list of strings, interpolating a given delimiter. */

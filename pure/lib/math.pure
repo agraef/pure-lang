@@ -32,11 +32,13 @@ sqrt x::int | sqrt x::bigint = sqrt (double x);
 
 /* Exponential function and logarithms. */
 
-private c_log;
-extern double exp(double), double log(double) = c_log;
+extern double exp(double);
+namespace C;
+extern double log(double);
+namespace;
 
-ln x::double = c_log x;
-log x::double = c_log x/c_log 10.0;
+ln x::double = C::log x;
+log x::double = C::log x/C::log 10.0;
 
 exp x::int | exp x::bigint = exp (double x);
 ln x::int | ln x::bigint = ln (double x);
@@ -381,9 +383,10 @@ rational x::bigint	= x%1;
 /* The conversion from double doesn't do any rounding, so it is guaranteed
    that converting the resulting rational back to double reconstructs the
    original value. */
-private pure_rational;
+namespace C;
 extern expr* pure_rational(double);
-rational x::double	= n%d when n,d = pure_rational x end;
+namespace;
+rational x::double	= n%d when n,d = C::pure_rational x end;
 
 rational (x+:y)	= rational x +: rational y;
 rational (x<:y)	= rational x <: rational y;

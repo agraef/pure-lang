@@ -18,6 +18,8 @@
    You should have received a copy of the GNU General Public License along
    with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
+using namespace C;
+
 /* Additional matrix predicates. The numeric matrix types will only be
    available if the interpreter was built with support for the GNU Scientific
    Library (GSL). This is the case iff the global gsl_version variable is
@@ -68,8 +70,9 @@ x::matrix ~= y::matrix	= ~(x == y);
    rows or the number of columns is zero, or both. The null predicate checks
    for empty matrices. */
 
-private matrix_size matrix_dim;
+namespace C;
 extern int matrix_size(expr *x), expr* matrix_dim(expr *x);
+namespace;
 
 #x::matrix		= matrix_size x;
 dim x::matrix		= matrix_dim x;
@@ -80,8 +83,9 @@ null x::matrix		= #x==0;
    There's little use for this value in Pure, but it may be needed when
    interfacing to C. */
 
-private matrix_stride;
+namespace C;
 extern int matrix_stride(expr *x);
+namespace;
 
 stride x::matrix	= matrix_stride x;
 
@@ -93,9 +97,10 @@ stride x::matrix	= matrix_stride x;
    take only constant time, and an 'out_of_bounds' exception is thrown if an
    index falls outside the valid range. */
 
-private matrix_elem_at matrix_elem_at2;
+namespace C;
 extern expr* matrix_elem_at(expr* x, int i);
 extern expr* matrix_elem_at2(expr* x, int i, int j);
+namespace;
 
 x::matrix!i::int	= matrix_elem_at x i if i>=0 && i<#x;
 			= throw out_of_bounds otherwise;
@@ -140,8 +145,9 @@ x::matrix!!ns		= if all intp ns && packed x
 
 /* Extract rows and columns from a matrix. */
 
-private matrix_slice;
+namespace C;
 extern expr* matrix_slice(expr* x, int i1, int j1, int i2, int j2);
+namespace;
 
 row x::matrix i::int	= if i>=0 && i<n then matrix_slice x i 0 i (m-1)
 			  else throw out_of_bounds
@@ -176,7 +182,6 @@ matrix xs@(x:_)		= rowcatmap colcat xs if all listp xs;
    be negative, in which case the corresponding super- or sub-diagonal is
    returned instead. In each case the result is a row vector. */
 
-private matrix_diag matrix_subdiag matrix_supdiag;
 extern expr* matrix_diag(expr* x) = diag;
 extern expr* matrix_subdiag(expr* x, int k) = subdiag;
 extern expr* matrix_supdiag(expr* x, int k) = supdiag;
@@ -232,7 +237,6 @@ imatrix n::int		= imatrix (1,n);
    elements zero. A negative value for k turns a sub- into a super-diagonal
    matrix and vice versa. */
 
-private matrix_diagm matrix_subdiagm matrix_supdiagm;
 extern expr* matrix_diagm(expr* x) = diagmat;
 extern expr* matrix_subdiagm(expr* x, int k) = subdiagmat;
 extern expr* matrix_supdiagm(expr* x, int k) = supdiagmat;
@@ -241,17 +245,19 @@ extern expr* matrix_supdiagm(expr* x, int k) = supdiagmat;
    matrices. You can also extract the real and imaginary parts and compute the
    conjugate of a (complex) matrix. */
 
-private matrix_double matrix_complex matrix_int;
+namespace C;
 extern expr* matrix_double(expr *x), expr* matrix_complex(expr *x),
   expr* matrix_int(expr *x);
+namespace;
 
 dmatrix x::matrix	= matrix_double x if nmatrixp x;
 imatrix x::matrix	= matrix_int x if nmatrixp x;
 cmatrix x::matrix	= matrix_complex x if nmatrixp x;
 
-private matrix_re matrix_im matrix_conj;
+namespace C;
 extern expr* matrix_re(expr *x), expr* matrix_im(expr *x);
 extern expr* matrix_conj(expr *x);
+namespace;
 
 re x::matrix		= matrix_re x if nmatrixp x;
 im x::matrix		= matrix_im x if nmatrixp x;
@@ -273,8 +279,9 @@ packed x::matrix	= stride x==dim x!1;
    underlying storage of the input matrix if possible (i.e., if the matrix is
    packed). */
 
-private matrix_redim;
+namespace C;
 extern expr* matrix_redim(expr* x, int n, int m);
+namespace;
 
 redim (n::int,m::int) x::matrix
 			= matrix_redim x n m if n>=0 && m>=0 && n*m==#x;
@@ -292,8 +299,9 @@ colvector x::matrix	= redim (#x,1) x;
 
 /* Transpose a matrix. */
 
-private matrix_transpose;
+namespace C;
 extern expr* matrix_transpose(expr *x);
+namespace;
 
 x::matrix'		= matrix_transpose x;
 
@@ -346,7 +354,9 @@ take k::int x::matrix	= x!!(0..k-1);
 takewhile p x::matrix	= colcat (takewhile p (list x));
 tail x::matrix		= x!!(1..#x-1) if ~null x;
 
+namespace matrix;
 private zipdim zip3dim;
+
 zipdim x::matrix y::matrix
 			= min (dim x!0) (dim y!0),dim x!1;
 zip3dim x::matrix y::matrix z::matrix
@@ -367,6 +377,9 @@ zipwith3 f x::matrix y::matrix z::matrix
 			= redim (zip3dim x y z) $
 			  colcat (zipwith3 f (list x) (list y) (list z))
 			    if dim x!1==dim y!1 && dim x!1==dim z!1;
+
+namespace;
+
 dowith f x::matrix y::matrix
 			= dowith f (list x) (list y)
 			    if dim x!1==dim y!1;
@@ -394,8 +407,9 @@ unzip3 x::matrix	= redim (dim x) (colcat u),
    use the 'pack' function from above to place the data in contiguous storage,
    or use one of the matrix-pointer conversion routines below. */
 
-private pure_pointerval;
+namespace C;
 extern expr* pure_pointerval(expr*);
+namespace;
 
 pointer x::matrix	= pure_pointerval x;
 
@@ -405,13 +419,7 @@ pointer x::matrix	= pure_pointerval x;
    returned; otherwise the caller must ensure that the memory pointed to by p
    is big enough for the contents of the given matrix. */
 
-private matrix_to_double_array;
-private matrix_to_float_array;
-private matrix_to_complex_array;
-private matrix_to_complex_float_array;
-private matrix_to_int_array;
-private matrix_to_short_array;
-private matrix_to_byte_array;
+namespace C;
 extern void* matrix_to_double_array(void* p, expr* x);
 extern void* matrix_to_float_array(void* p, expr* x);
 extern void* matrix_to_complex_array(void* p, expr* x);
@@ -419,6 +427,7 @@ extern void* matrix_to_complex_float_array(void* p, expr* x);
 extern void* matrix_to_int_array(void* p, expr* x);
 extern void* matrix_to_short_array(void* p, expr* x);
 extern void* matrix_to_byte_array(void* p, expr* x);
+namespace;
 
 double_pointer p::pointer x::matrix
 			= matrix_to_double_array p x if nmatrixp x;
@@ -441,13 +450,7 @@ byte_pointer p::pointer x::matrix
    Otherwise the caller must ensure that the pointer points to properly
    initialized memory big enough for the requested dimensions. */
 
-private matrix_from_double_array;
-private matrix_from_float_array;
-private matrix_from_complex_array;
-private matrix_from_complex_float_array;
-private matrix_from_int_array;
-private matrix_from_short_array;
-private matrix_from_byte_array;
+namespace C;
 extern expr* matrix_from_double_array(int n, int m, void* p);
 extern expr* matrix_from_float_array(int n, int m, void* p);
 extern expr* matrix_from_complex_array(int n, int m, void* p);
@@ -455,6 +458,7 @@ extern expr* matrix_from_complex_float_array(int n, int m, void* p);
 extern expr* matrix_from_int_array(int n, int m, void* p);
 extern expr* matrix_from_short_array(int n, int m, void* p);
 extern expr* matrix_from_byte_array(int n, int m, void* p);
+namespace;
 
 double_matrix (n::int,m::int) p::pointer
 			= matrix_from_double_array n m p;
@@ -491,12 +495,11 @@ byte_matrix n::int p::pointer
    the caller must also ensure that the memory persists for the entire
    lifetime of the matrix object. */
 
-private matrix_from_double_array_nodup;
-private matrix_from_complex_array_nodup;
-private matrix_from_int_array_nodup;
+namespace C;
 extern expr* matrix_from_double_array_nodup(int n, int m, void* p);
 extern expr* matrix_from_complex_array_nodup(int n, int m, void* p);
 extern expr* matrix_from_int_array_nodup(int n, int m, void* p);
+namespace;
 
 double_matrix_view (n::int,m::int) p::pointer
 			= matrix_from_double_array_nodup n m p;

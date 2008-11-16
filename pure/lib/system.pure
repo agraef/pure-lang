@@ -34,8 +34,9 @@
    regex functions. After loading this module, see list -v for a list of
    these. */
 
-private pure_sys_vars;
+namespace C;
 extern void pure_sys_vars(); pure_sys_vars;
+namespace;
 
 /* errno and friends. This value and the related routines are indispensable to
    give proper diagnostics when system calls fail for some reason. Note that,
@@ -66,11 +67,12 @@ extern void perror(char*), char* strerror(int);
    rely on a specific encoding, setting the locale to either "C" or "" should
    always be safe. */
 
-private c_setlocale;
-extern void* setlocale(int category, void* locale) = c_setlocale;
+namespace C;
+extern void* setlocale(int category, void* locale);
+namespace;
 
 setlocale category::int locale =
-return (check (c_setlocale category buf)) with
+return (check (C::setlocale category buf)) with
   check res	= cstring_dup res if ~null res;
   		= res otherwise;
   return res	= free buf $$ res if ~null buf;
@@ -157,14 +159,14 @@ extern void free(void* ptr);
    routines are actually overridden with more convenient Pure wrappers
    below. */
 
-private c_fopen c_popen c_fclose c_pclose;
-extern FILE* fopen(char* name, char* mode) = c_fopen;
-extern FILE* popen(char* cmd, char* mode) = c_popen;
-extern int fclose(FILE* fp) = c_fclose, int pclose(FILE* fp) = c_pclose;
+namespace C;
+extern FILE* fopen(char* name, char* mode);
+extern FILE* popen(char* cmd, char* mode);
+extern int fclose(FILE* fp), int pclose(FILE* fp);
+extern char* fgets(void* buf, int size, FILE* fp);
+extern char* gets(void* buf);
+namespace;
 extern int fflush(FILE* fp);
-private c_fgets c_gets;
-extern char* fgets(void* buf, int size, FILE* fp) = c_fgets;
-extern char* gets(void* buf) = c_gets;
 extern int fputs(char* s, FILE* fp), int puts(char* s);
 extern int fread(void* ptr, int size, int nmemb, FILE* fp);
 extern int fwrite(void* ptr, int size, int nmemb, FILE* fp);
@@ -174,20 +176,20 @@ extern int feof(FILE* fp), int ferror(FILE* fp);
 /* Pure wrappers for fopen/popen and fclose/pclose which take care of closing
    a file object automagically when it's garbage-collected. */
 
-fopen name::string mode::string = if null fp then fp else sentry c_fclose fp
-when fp = c_fopen name mode end;
+fopen name::string mode::string = if null fp then fp else sentry C::fclose fp
+when fp = C::fopen name mode end;
 
-popen name::string mode::string = if null fp then fp else sentry c_pclose fp
-when fp = c_popen name mode end;
+popen name::string mode::string = if null fp then fp else sentry C::pclose fp
+when fp = C::popen name mode end;
 
-fclose fp::pointer = clear_sentry fp $$ c_fclose fp;
-pclose fp::pointer = clear_sentry fp $$ c_pclose fp;
+fclose fp::pointer = clear_sentry fp $$ C::fclose fp;
+pclose fp::pointer = clear_sentry fp $$ C::pclose fp;
 
 /* Pure wrappers for fgets and gets which handle the necessary buffering
    automatically. */
 
 fgets f::pointer = read_a_line f buf "" when buf = malloc 1024 end
-with read_a_line f buf t = check s when s = c_fgets buf 1024 f end
+with read_a_line f buf t = check s when s = C::fgets buf 1024 f end
   with check s::string = return (t+s) if done s;
 		       = read_a_line f buf (t+s) otherwise;
        check s         = return s if null t;
@@ -203,7 +205,7 @@ when s = fgets stdin end;
 /* A variation of fgets which slurps in an entire text file at once. */
 
 fget f::pointer = read_a_file f buf "" when buf = malloc 0x10000 end
-with read_a_file f buf t = check s when s = c_fgets buf 0x10000 f end
+with read_a_file f buf t = check s when s = C::fgets buf 0x10000 f end
   with check s::string = return (t+s) if feof f || ferror f;
 		       = read_a_file f buf (t+s) otherwise;
        check s         = return s if null t;
@@ -218,20 +220,24 @@ end;
    values, and check these against the format specifiers. Only simple formats
    derived from %cdioux, %efg, %s and %p are supported right now. */
 
+using namespace C, system;
+
 /* printf/fprintf: Normally, these return the result of the underlying C
    routines (number of characters written, or negative on error). However, in
    case of an abnormal condition in the wrapper function (error in format
    string, argument mismatch), they will throw an exception. */
 
-private pure_fprintf pure_fprintf_int pure_fprintf_double
-  pure_fprintf_string pure_fprintf_pointer;
+namespace C;
 extern int pure_fprintf(FILE *fp, char *format);
 extern int pure_fprintf_int(FILE *fp, char *format, int x);
 extern int pure_fprintf_double(FILE *fp, char *format, double x);
 extern int pure_fprintf_string(FILE *fp, char *format, char *x);
 extern int pure_fprintf_pointer(FILE *fp, char *format, void *x);
+namespace;
 
+namespace system;
 private printf_split_format printf_format_spec printf_format_str;
+namespace;
 
 printf format::string args = fprintf stdout format args;
 
@@ -290,13 +296,13 @@ end;
    as with printf/fprintf. The implementation actually uses snprintf for
    safety, a suitable output buffer is provided automatically. */
 
-private pure_snprintf pure_snprintf_int pure_snprintf_double
-  pure_snprintf_string pure_snprintf_pointer;
+namespace C;
 extern int pure_snprintf(void *buf, int, char *format);
 extern int pure_snprintf_int(void *buf, int, char *format, int x);
 extern int pure_snprintf_double(void *buf, int, char *format, double x);
 extern int pure_snprintf_string(void *buf, int, char *format, char *x);
 extern int pure_snprintf_pointer(void *buf, int, char *format, void *x);
+namespace;
 
 sprintf format::string args = s when
   args = if tuplep args then list args else [args];
@@ -349,15 +355,17 @@ end;
    "assignment suppression" flag "*" is understood; the corresponding items
    will not be returned. */
 
-private pure_fscanf pure_fscanf_int pure_fscanf_double
-  pure_fscanf_string pure_fscanf_pointer;
+namespace C;
 extern int pure_fscanf(FILE *fp, char *format);
 extern int pure_fscanf_int(FILE *fp, char *format, int *x);
 extern int pure_fscanf_double(FILE *fp, char *format, double *x);
 extern int pure_fscanf_string(FILE *fp, char *format, void *x);
 extern int pure_fscanf_pointer(FILE *fp, char *format, void **x);
+namespace;
 
+namespace system;
 private scanf_split_format scanf_format_spec scanf_format_str;
+namespace;
 
 scanf format::string = fscanf stdin format;
 
@@ -446,13 +454,13 @@ end;
 /* sscanf: This works exactly like fscanf, but input comes from a string
    (first argument) rather than a file. */
 
-private pure_sscanf pure_sscanf_int pure_sscanf_double
-  pure_sscanf_string pure_sscanf_pointer;
+namespace C;
 extern int pure_sscanf(char *buf, char *format);
 extern int pure_sscanf_int(char *buf, char *format, int *x);
 extern int pure_sscanf_double(char *buf, char *format, double *x);
 extern int pure_sscanf_string(char *buf, char *format, void *x);
 extern int pure_sscanf_pointer(char *buf, char *format, void **x);
+namespace;
 
 sscanf s::string format::string = tuple $ reverse ret when
   _, _, ret = catch error_handler
@@ -512,17 +520,20 @@ end with
   end;
 end;
 
+using namespace;
+
 /* readline: A simple wrapper around GNU readline which reads a line from
    stdin with prompt and command line editing. (Note that we cannot simply use
    the C readline function directly in Pure since it would leak memory on the
    return value.) We also provide readline's companion, the add_history
    function, which you need to add strings to readline's history. */
 
-private c_readline;
-extern void* readline(char* prompt) = c_readline;
+namespace C;
+extern void* readline(char* prompt);
+namespace;
 extern void add_history(char* s);
 
-readline prompt::string = cstring $ c_readline prompt;
+readline prompt::string = cstring $ C::readline prompt;
 
 /* Shell globbing (fnmatch and glob). For fnmatch we provide a wrapper which
    returns a simple truth value (1 = match, 0 = no match) instead of an error
@@ -536,27 +547,30 @@ readline prompt::string = cstring $ c_readline prompt;
    extension to POSIX, Pure also provides the constant GLOB_SIZE which
    indicates the buffer size required for glob's globptr argument. */
 
-private c_fnmatch c_glob globfree globlist;
-extern int fnmatch(char* pat, char* s, int flags) = c_fnmatch;
-extern int glob(char* pat, int flags, void* errfunc, void* globptr) = c_glob;
+namespace C;
+extern int fnmatch(char* pat, char* s, int flags);
+extern int glob(char* pat, int flags, void* errfunc, void* globptr);
 extern void globfree(void* globptr);
 // runtime function to decode a globptr into a Pure string list
 extern expr* globlist(void* globptr);
+namespace;
 
-fnmatch pat::string s::string flags::int = c_fnmatch pat s flags == 0;
+fnmatch pat::string s::string flags::int = C::fnmatch pat s flags == 0;
 
 glob pat::string flags::int = result
 when
-  globptr = calloc 1 GLOB_SIZE; result = c_glob pat flags (pointer 0) globptr;
-  result = if result==0 then globlist globptr else result;
-  _ = globfree globptr $$ free globptr;
+  globptr = calloc 1 GLOB_SIZE; result = C::glob pat flags (pointer 0) globptr;
+  result = if result==0 then C::globlist globptr else result;
+  _ = C::globfree globptr $$ free globptr;
 end;
 
 /* POSIX regex matching (regcomp and regexec). The C functions have a somewhat
    difficult calling sequence, hence we provide a couple of high-level wrapper
    functions for use in Pure programs below. */
 
-private regcomp regexec regerror regfree regmatches reglist;
+using namespace C;
+
+namespace C;
 extern int regcomp(void* regptr, char* pat, int cflags);
 extern int regexec(void* regptr, char* s, int n, void* matches, int eflags);
 extern int regerror(int errcode, void* regptr, void* buf, int size);
@@ -565,6 +579,7 @@ extern void regfree(void* regptr);
 extern expr* regmatches(void* regptr, int cflags);
 // runtime: decode the regexec result into a Pure tuple of (pos,substr) pairs
 extern expr* reglist(void* regptr, void* s, void* matches);
+namespace;
 
 /* regex: A convenience function which compiles and matches a regex in one go,
    and returns the list of submatches (if any). The arguments are:
