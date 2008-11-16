@@ -1,0 +1,39 @@
+foo::foo x/*0:1*/ = x/*0:1*/+1;
+bar::foo x/*0:1*/ = x/*0:1*/-1;
+bar::bar x/*0:1*/ = x/*0:1*/+2;
+{
+  rule #0: foo::foo x = x+1
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+{
+  rule #0: bar::bar x = x+2
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+{
+  rule #0: bar::foo x = x-1
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+bar::bar 99;
+101
+bar 99;
+bar 99
+foo 99;
+foo 99
+foo::foo 99;
+100
+bar::foo 99;
+98
+<stdin>, line 21: symbol 'foo' is ambiguous here
+bar 99;
+bar 99
+<stdin>, line 23: symbol 'bar::bar' is private here
+foo::foo 99;
+100
+bar::foo 99;
+98
