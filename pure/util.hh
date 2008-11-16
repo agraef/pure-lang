@@ -2,6 +2,17 @@
 #define UTIL_HH
 
 #include <string.h>
+#include <string>
+
+/* Exception handling utility class. */
+
+class err {
+public:
+  err(const std::string& what) : m_what(what) { };
+  const std::string& what() const { return m_what; };
+private:
+  std::string m_what;
+};
 
 /* Quick and dirty checks for IEEE floating point infinities and NaNs. Thanks
    to John Cowan. */

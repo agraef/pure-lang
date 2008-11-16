@@ -50,7 +50,7 @@ static prec_t sym_nprec(int32_t f)
 {
   assert(f > 0);
   if (f == interpreter::g_interp->symtab.neg_sym().f) {
-    prec_t p = interpreter::g_interp->symtab.sym("-").prec*10;
+    prec_t p = interpreter::g_interp->symtab.sym("-")->prec*10;
     if (p < 100) p += 3; // precedence of unary minus
     return p;
   } else {

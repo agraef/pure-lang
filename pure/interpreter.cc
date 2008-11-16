@@ -66,7 +66,8 @@ interpreter::interpreter()
     stats(false), temp(0),
     ps("> "), libdir(""), histfile("/.pure_history"), modname("pure"),
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0), result(0),
-    mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0), fptr(0)
+    gvardef(false), mem(0), exps(0), tmps(0), module(0),
+    JIT(0), FPM(0), fptr(0)
 {
   if (!g_interp) {
     g_interp = this;
@@ -763,6 +764,8 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
   ostream *l_output = output;
   string l_srcdir = srcdir;
   int32_t l_modno = modno;
+  string *l_current_namespace = symtab.current_namespace;
+  set<string> *l_search_namespaces = symtab.search_namespaces;
   // save global data
   uint8_t s_verbose = g_verbose;
   bool s_interactive = g_interactive;
@@ -780,6 +783,8 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
     ; // keep the current module
   else
     modno = modctr++;
+  symtab.current_namespace = new string;
+  symtab.search_namespaces = new set<string>;
   errmsg.clear();
   if (check && !interactive) temp = 0;
   bool ok = lex_begin(fname);
@@ -808,6 +813,10 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
   output = l_output;
   srcdir = l_srcdir;
   modno = l_modno;
+  delete symtab.current_namespace;
+  delete symtab.search_namespaces;
+  symtab.current_namespace = l_current_namespace;
+  symtab.search_namespaces = l_search_namespaces;
   // return last computed result, if any
   return result;
 }
@@ -838,6 +847,8 @@ pure_expr *interpreter::runstr(const string& s)
   const char *l_source_s = source_s;
   string l_srcdir = srcdir;
   int32_t l_modno = modno;
+  string *l_current_namespace = symtab.current_namespace;
+  set<string> *l_search_namespaces = symtab.search_namespaces;
   // save global data
   uint8_t s_verbose = g_verbose;
   bool s_interactive = g_interactive;
@@ -851,6 +862,8 @@ pure_expr *interpreter::runstr(const string& s)
   source_s = s.c_str();
   srcdir = "";
   modno = modctr++;
+  symtab.current_namespace = new string;
+  symtab.search_namespaces = new set<string>;
   errmsg.clear();
   bool ok = lex_begin();
   if (ok) {
@@ -873,6 +886,10 @@ pure_expr *interpreter::runstr(const string& s)
   source_s = l_source_s;
   srcdir = l_srcdir;
   modno = l_modno;
+  delete symtab.current_namespace;
+  delete symtab.search_namespaces;
+  symtab.current_namespace = l_current_namespace;
+  symtab.search_namespaces = l_search_namespaces;
   // return last computed result, if any
   return result;
 }
@@ -1150,6 +1167,12 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
   return res;
 }
 
+void interpreter::const_defn(const char *varname, pure_expr *x)
+{
+  symbol& sym = symtab.checksym(varname);
+  const_defn(sym.f, x);
+}
+
 void interpreter::const_defn(int32_t tag, pure_expr *x)
 {
   assert(tag > 0 && x);
@@ -1408,14 +1431,46 @@ void interpreter::compile(expr x)
   }
 }
 
-void interpreter::declare(bool priv, prec_t prec, fix_t fix, list<string> *ids)
+void interpreter::using_namespaces(list<string> *ids)
 {
+  symtab.search_namespaces->clear();
+  if (ids) {
+    for (list<string>::iterator it = ids->begin(), end = ids->end();
+	 it != end; it++)
+      if (namespaces.find(*it) != namespaces.end())
+	symtab.search_namespaces->insert(*it);
+      else {
+	string id = *it;
+	delete ids;
+	throw err("unknown namespace '"+id+"'");
+      }
+    delete ids;
+  }
+}
+
+void interpreter::declare(const yy::location& l,
+			  bool priv, prec_t prec, fix_t fix, list<string> *ids)
+{
+  if (symtab.current_namespace->empty() && priv) {
+    //warning(l, "warning: 'private' attribute is ignored in default namespace");
+    priv = false;
+  }
   for (list<string>::const_iterator it = ids->begin();
        it != ids->end(); ++it) {
-    symbol* sym = symtab.xlookup(*it, priv?modno:-1);
+    if (it->find("::") != string::npos) {
+      string id = *it;
+      delete ids;
+      throw err("qualified symbol '"+id+"' not permitted in declaration");
+    }
+    string id = (*symtab.current_namespace)+"::"+(*it);
+    symbol* sym = symtab.lookup(id);
     if (sym) {
       // crosscheck declarations
-      if (sym->prec != prec || sym->fix != fix)
+      if (sym->priv != priv) {
+	delete ids;
+	throw err("symbol '"+id+"' already declared "+
+		  (sym->priv?"'private'":"'public'"));
+      } else if (sym->prec != prec || sym->fix != fix)
 	/* We explicitly permit 'nullary' redeclarations here, to support
 	   'const nullary' symbols on the lhs of rules. Note that this
 	   actually permits a 'nullary' redeclaration of *any* symbol unless
@@ -1424,12 +1479,11 @@ void interpreter::declare(bool priv, prec_t prec, fix_t fix, list<string> *ids)
 	if (fix == nullary && sym->prec == 10)
 	  sym->fix = nullary;
 	else {
-	  string id = *it;
 	  delete ids;
-	  throw err("conflicting fixity declaration for symbol '"+id+"'");
+	  throw err("symbol '"+id+"' already declared with different fixity");
 	}
     } else
-      symtab.xsym(*it, prec, fix, priv?modno:-1).f;
+      symtab.sym(id, prec, fix, priv);
   }
   delete ids;
 }
@@ -2777,7 +2831,7 @@ expr interpreter::macval(expr x)
 
 expr* interpreter::uminop(expr *op, expr *x)
 {
-  if (op->tag() != symtab.sym("-").f) {
+  if (op->tag() != symtab.sym("-")->f) {
     int32_t f = op->tag();
     delete op; delete x;
     throw err("syntax error, '" + symtab.sym(f).s +
@@ -2817,13 +2871,13 @@ expr *interpreter::mkexpr(expr *x, expr *y, expr *z)
 expr *interpreter::mksym_expr(string *s, int8_t tag)
 {
   expr *x;
-  const symbol &sym = symtab.sym(*s, modno);
+  const symbol &sym = symtab.checksym(*s);
   if (tag == 0)
     if (*s == "_")
       // Return a new instance here, since the anonymous variable may have
       // multiple occurrences on the lhs.
       x = new expr(sym.f);
-    else if (s->find("::") != string::npos) {
+    else if (!gvardef && s->find("::") != string::npos) {
       // Return a new qualified instance here, so that we don't mistake this
       // for a lhs variable.
       x = new expr(sym.f);
@@ -2844,10 +2898,10 @@ expr *interpreter::mksym_expr(string *s, int8_t tag)
 
 expr *interpreter::mkas_expr(string *s, expr *x)
 {
-  const symbol &sym = symtab.sym(*s, modno);
-  if (s->find("::") != string::npos ||
+  const symbol &sym = symtab.checksym(*s);
+  if (!gvardef && s->find("::") != string::npos ||
       sym.f <= 0 || sym.prec < 10 || sym.fix == nullary)
-    throw err("error in pattern (bad variable symbol '"+sym.s+"')");
+    throw err("error in pattern (bad variable symbol '"+(*s)+"')");
   if (x->tag() > 0) {
     // Avoid globbering cached function symbols.
     expr *y = new expr(x->tag());
@@ -3106,6 +3160,12 @@ void interpreter::clear_cache()
 
 using namespace llvm;
 
+void interpreter::defn(const char *varname, pure_expr *x)
+{
+  symbol& sym = symtab.checksym(varname);
+  defn(sym.f, x);
+}
+
 void interpreter::defn(int32_t tag, pure_expr *x)
 {
   assert(tag > 0);
@@ -3129,7 +3189,7 @@ void interpreter::defn(int32_t tag, pure_expr *x)
   }
   GlobalVar& v = globalvars[tag];
   if (!v.v) {
-    if (sym.modno >= 0)
+    if (sym.priv)
       v.v = new GlobalVariable
 	(ExprPtrTy, false, GlobalVariable::InternalLinkage, 0,
 	 "$$private."+sym.s, module);
@@ -3963,7 +4023,7 @@ Function *interpreter::declare_extern(string name, string restype,
     else if (argt[i] == Type::Int32Ty && sizeof(int) > 4)
       argt[i] = Type::Int64Ty;
   if (asname.empty()) asname = name;
-  symbol& sym = symtab.sym(asname, modno);
+  symbol& sym = *symtab.sym((*symtab.current_namespace)+"::"+asname);
   if (globenv.find(sym.f) != globenv.end() &&
       externals.find(sym.f) == externals.end())
     // There already is a Pure function or global variable for this symbol.
@@ -4667,7 +4727,7 @@ pure_expr *interpreter::dodefn(env vars, expr lhs, expr rhs, pure_expr*& e)
 	const symbol& sym = symtab.sym(tag);
 	GlobalVar& v = globalvars[tag];
 	if (!v.v) {
-	  if (sym.modno >= 0)
+	  if (sym.priv)
 	    v.v = new GlobalVariable
 	      (ExprPtrTy, false, GlobalVariable::InternalLinkage, 0,
 	       "$$private."+sym.s, module);
@@ -4727,7 +4787,7 @@ pure_expr *interpreter::dodefn(env vars, expr lhs, expr rhs, pure_expr*& e)
     const symbol& sym = symtab.sym(tag);
     GlobalVar& v = globalvars[tag];
     if (!v.v) {
-      if (sym.modno >= 0)
+      if (sym.priv)
 	v.v = new GlobalVariable
 	  (ExprPtrTy, false, GlobalVariable::InternalLinkage, 0,
 	   "$$private."+sym.s, module);
@@ -6232,7 +6292,7 @@ Function *interpreter::fun_prolog(string name)
 	have_c_func ||
 	// anonymous and private functions and operators use internal linkage,
 	// too:
-	f.tag == 0 || symtab.sym(f.tag).modno >= 0 ||
+	f.tag == 0 || symtab.sym(f.tag).priv ||
 	symtab.sym(f.tag).prec < 10)
       scope = Function::InternalLinkage;
 #if USE_FASTCC
@@ -6241,7 +6301,7 @@ Function *interpreter::fun_prolog(string name)
     /* Mangle the name of the C-callable wrapper if it's private, or would
        shadow another C function. */
     string pure_name = name;
-    if (f.tag > 0 && symtab.sym(f.tag).modno >= 0)
+    if (f.tag > 0 && symtab.sym(f.tag).priv)
       pure_name = "$$private."+name;
     else if (have_c_func)
       pure_name = "$$pure."+name;

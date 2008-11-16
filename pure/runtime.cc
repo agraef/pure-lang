@@ -535,8 +535,12 @@ int32_t pure_sym(const char *s)
 {
   assert(s);
   interpreter& interp = *interpreter::g_interp;
-  const symbol& sym = interp.symtab.sym(s);
-  return sym.f;
+  string id = strstr(s, "::")?s:"::"+string(s);
+  const symbol* sym = interp.symtab.sym(id);
+  if (sym)
+    return sym->f;
+  else
+    return 0;
 }
 
 extern "C"
@@ -544,7 +548,8 @@ int32_t pure_getsym(const char *s)
 {
   assert(s);
   interpreter& interp = *interpreter::g_interp;
-  const symbol* sym = interp.symtab.lookup(s);
+  string id = strstr(s, "::")?s:"::"+string(s);
+  const symbol* sym = interp.symtab.lookup(id);
   if (sym)
     return sym->f;
   else

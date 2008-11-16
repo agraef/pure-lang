@@ -64,16 +64,6 @@ namespace verbosity {
 	 parser = 0x10, lexer = 0x20 };
 };
 
-/* Handle exceptions in the interpreter. */
-
-class err {
-public:
-  err(const string& what) : m_what(what) { };
-  const string& what() const { return m_what; };
-private:
-  string m_what;
-};
-
 /* Data structures used in code generation. */
 
 struct Env;
@@ -345,6 +335,7 @@ public:
   env globenv;       // global function and variable environment
   env macenv;        // global macro environment
   funset dirty;      // "dirty" function entries which need a recompile
+  bool gvardef;      // special mode to enable qualified vars in definitions
   pure_mem *mem;     // runtime expression memory
   pure_expr *exps;   // head of the free list (available expression nodes)
   pure_expr *tmps;   // temporaries list (to be collected after exceptions)
@@ -406,8 +397,7 @@ public:
      bound to a different kind of symbol, otherwise an err exception is
      thrown. */
   void defn(int32_t tag, pure_expr *x);
-  void defn(const char *varname, pure_expr *x)
-  { defn(symtab.sym(varname).f, x); }
+  void defn(const char *varname, pure_expr *x);
 
   /* Constant definitions. These work like the variable definition methods
      above, but define constant symbols which are directly substituted into
@@ -421,8 +411,7 @@ public:
 
   /* Directly bind a given constant symbol to a given value. */
   void const_defn(int32_t tag, pure_expr *x);
-  void const_defn(const char *varname, pure_expr *x)
-  { const_defn(symtab.sym(varname).f, x); }
+  void const_defn(const char *varname, pure_expr *x);
 
   /* Purge the definition of a (global constant, variable or function)
      symbol. If the given symbol is zero, pops the most recent temporary
@@ -462,7 +451,9 @@ public:
   void build_env(env& vars, expr x);
   void mark_dirty(int32_t f);
   void compile(expr x);
-  void declare(bool priv, prec_t prec, fix_t fix, list<string> *ids);
+  void using_namespaces(list<string> *ids = 0);
+  void declare(const yy::location& l,
+	       bool priv, prec_t prec, fix_t fix, list<string> *ids);
   void define(rule *r);
   void define_const(rule *r);
   void exec(expr *x);

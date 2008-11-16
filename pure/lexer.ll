@@ -187,7 +187,7 @@ command_generator(const char *text, int state)
   while (f <= n) {
     /* Skip non-toplevel symbols. */
     const symbol& sym = interp.symtab.sym(f);
-    if (sym.modno >= 0 && sym.modno != interp.modno ||
+    if (!interp.symtab.visible(f) ||
 	sym.prec == 10 && sym.fix != nullary &&
 	interp.globenv.find(f) == interp.globenv.end() &&
 	interp.macenv.find(f) == interp.macenv.end() &&
@@ -569,8 +569,8 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
       int32_t f = it->first;
       const env_info& e = it->second;
       const symbol& sym = interp.symtab.sym(f);
-      if (sym.modno >= 0 && sym.modno != interp.modno ||
-	  pflag >= 0 && (pflag > 0) != (sym.modno >= 0) ||
+      if (!interp.symtab.visible(f) ||
+	  pflag >= 0 && (pflag > 0) != sym.priv ||
 	  !((e.t == env_info::fun)?fflag:
 	    (e.t == env_info::cvar)?cflag:
 	    (e.t == env_info::fvar)?vflag:0))
@@ -612,8 +612,8 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	int32_t f = it->first;
 	if (syms.find(f) == syms.end()) {
 	  const symbol& sym = interp.symtab.sym(f);
-	  if (sym.modno >= 0 && sym.modno != interp.modno ||
-	      pflag >= 0 && (pflag > 0) != (sym.modno >= 0))
+	  if (!interp.symtab.visible(f) ||
+	      pflag >= 0 && (pflag > 0) != sym.priv)
 	    continue;
 	  bool matches = true;
 	  if (!args.l.empty()) {
@@ -642,8 +642,8 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	if (syms.find(f) == syms.end()) {
 	  const env_info& e = it->second;
 	  const symbol& sym = interp.symtab.sym(f);
-	  if (sym.modno >= 0 && sym.modno != interp.modno ||
-	      pflag >= 0 && (pflag > 0) != (sym.modno >= 0))
+	  if (!interp.symtab.visible(f) ||
+	      pflag >= 0 && (pflag > 0) != sym.priv)
 	    continue;
 	  bool matches = e.temp >= tlevel;
 	  if (!matches && !sflag) {
@@ -931,8 +931,8 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
       int32_t f = it->first;
       const env_info& e = it->second;
       const symbol& sym = interp.symtab.sym(f);
-      if (sym.modno >= 0 && sym.modno != interp.modno ||
-	  pflag >= 0 && (pflag > 0) != (sym.modno >= 0) ||
+      if (!interp.symtab.visible(f) ||
+	  pflag >= 0 && (pflag > 0) != sym.priv ||
 	  !((e.t == env_info::fun)?fflag:
 	    (e.t == env_info::cvar)?cflag:
 	    (e.t == env_info::fvar)?vflag:0))
@@ -972,8 +972,8 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	int32_t f = it->first;
 	if (syms.find(f) == syms.end()) {
 	  const symbol& sym = interp.symtab.sym(f);
-	  if (sym.modno >= 0 && sym.modno != interp.modno ||
-	      pflag >= 0 && (pflag > 0) != (sym.modno >= 0))
+	  if (!interp.symtab.visible(f) ||
+	      pflag >= 0 && (pflag > 0) != sym.priv)
 	    continue;
 	  bool matches = true;
 	  if (!args.l.empty()) {
@@ -1001,8 +1001,8 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	if (syms.find(f) == syms.end()) {
 	  const env_info& e = it->second;
 	  const symbol& sym = interp.symtab.sym(f);
-	  if (sym.modno >= 0 && sym.modno != interp.modno ||
-	      pflag >= 0 && (pflag > 0) != (sym.modno >= 0))
+	  if (!interp.symtab.visible(f) ||
+	      pflag >= 0 && (pflag > 0) != sym.priv)
 	    continue;
 	  bool matches = e.temp >= tlevel;
 	  if (!matches) {
@@ -1222,8 +1222,8 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
       int32_t f = it->first;
       const env_info& e = it->second;
       const symbol& sym = interp.symtab.sym(f);
-      if (sym.modno >= 0 && sym.modno != interp.modno ||
-	  pflag >= 0 && (pflag > 0) != (sym.modno >= 0) ||
+      if (!interp.symtab.visible(f) ||
+	  pflag >= 0 && (pflag > 0) != sym.priv ||
 	  !((e.t == env_info::fun)?fflag:
 	    (e.t == env_info::cvar)?cflag:
 	    (e.t == env_info::fvar)?vflag:0))
@@ -1265,8 +1265,8 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
 	if (syms.find(f) == syms.end()) {
 	  const env_info& e = it->second;
 	  const symbol& sym = interp.symtab.sym(f);
-	  if (sym.modno >= 0 && sym.modno != interp.modno ||
-	      pflag >= 0 && (pflag > 0) != (sym.modno >= 0))
+	  if (!interp.symtab.visible(f) ||
+	      pflag >= 0 && (pflag > 0) != sym.priv)
 	    continue;
 	  bool matches = e.temp >= tlevel;
 	  if (!matches) {
@@ -1527,7 +1527,7 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     yylval->sval = new string(yytext);
     return token::ID;
   }
-  symbol* sym = interp.symtab.lookup(yytext, interp.modno);
+  symbol* sym = interp.symtab.lookup(yytext);
   if (sym && sym->prec >= 0 && sym->prec < 10) {
     yylval->xval = new expr(sym->x);
     return optoken[sym->prec][sym->fix];
@@ -1542,7 +1542,7 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     yylval->sval = new string(yytext);
     return token::ID;
   }
-  symbol* sym = interp.symtab.lookup(yytext, interp.modno);
+  symbol* sym = interp.symtab.lookup(yytext);
   if (sym && sym->prec >= 0 && sym->prec < 10) {
     yylval->xval = new expr(sym->x);
     return optoken[sym->prec][sym->fix];
@@ -1572,12 +1572,12 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     yylval->sval = new string(yytext);
     return token::ID;
   }
-  symbol* sym = interp.symtab.lookup(yytext, interp.modno);
+  symbol* sym = interp.symtab.lookup(yytext);
   while (!sym && yyleng > 1) {
     if (yyleng == 2 && yytext[0] == '-' && yytext[1] == '>')
       return token::MAPSTO;
     yyless(yyleng-1);
-    sym = interp.symtab.lookup(yytext, interp.modno);
+    sym = interp.symtab.lookup(yytext);
   }
   if (sym) {
     if (sym->prec < 10) {

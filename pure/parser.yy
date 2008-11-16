@@ -235,8 +235,8 @@ typedef list<comp_clause> comp_clause_list;
 %token <zval>	CBIGINT	"converted bigint"
 %token <dval>	DBL	"floating point number"
 %token <ival>	TAG	"type tag"
-%type  <sval>	name optalias ctype
-%type  <slval>	ids names ctypes opt_ctypes
+%type  <sval>	name fname optalias ctype
+%type  <slval>	ids names fnames ctypes opt_ctypes
 %type  <info>	fixity
 %type  <xval>	expr cond simple app prim op qual
 %type  <xlval>	args lhs row
@@ -251,11 +251,11 @@ typedef list<comp_clause> comp_clause_list;
 %destructor { delete $$; } ID fixity expr cond simple app prim op
   comp_clauses comp_clause_list rows row_list row args lhs qual
   rules rulel rule pat_rules pat_rulel simple_rules simple_rulel simple_rule
-  ids names name optalias opt_ctypes ctypes ctype
+  ids fnames fname names name optalias opt_ctypes ctypes ctype
 %destructor { mpz_clear(*$$); free($$); } BIGINT CBIGINT
 %destructor { free($$); } STR
-%printer { debug_stream() << *$$; } ID name optalias ctype expr cond simple app
-  prim op args lhs qual rule simple_rules simple_rulel simple_rule
+%printer { debug_stream() << *$$; } ID name fname optalias ctype expr cond
+  simple app prim op args lhs qual rule simple_rules simple_rulel simple_rule
 %printer { debug_stream() << $$->e; } rules rulel
 %printer { debug_stream() << $$->rl; } pat_rules pat_rulel
 %printer { debug_stream() << $$; }  INT DBL STR
@@ -277,16 +277,17 @@ source
 : /* empty */
 | source ';'
 | source item ';'
-| error ';'		{ interp.nerrs = yyerrstatus_ = 0; }
+| error ';'		{ interp.nerrs = yyerrstatus_ = 0;
+			  interp.gvardef = false; }
 ;
 
 item
 : expr
 { action(interp.exec($1), delete $1); }
-| LET simple_rule
-{ action(interp.define($2), delete $2); }
-| CONST simple_rule
-{ action(interp.define_const($2), delete $2); }
+| LET { interp.gvardef = true; } simple_rule
+{ interp.gvardef = false; action(interp.define($3), delete $3); }
+| CONST { interp.gvardef = true; } simple_rule
+{ interp.gvardef = false; action(interp.define_const($3), delete $3); }
 | DEF simple_rule
 { action(interp.add_macro_rule($2), delete $2); }
 | rule
@@ -303,12 +304,20 @@ item
     interp.declare_op = true; }
   ids
 { interp.declare_op = false;
-  action(interp.declare($1->priv, $1->prec, $1->fix, $3), delete $3);
+  action(interp.declare(yyloc, $1->priv, $1->prec, $1->fix, $3), delete $3);
   delete $1; }
-| USING names
+| USING fnames
 { action(interp.run(*$2), {}); delete $2; }
-| NAMESPACE ID
-{ interp.namespaces.insert(*$2); delete $2; }
+| NAMESPACE name
+{ interp.namespaces.insert(*$2);
+  delete interp.symtab.current_namespace;
+  interp.symtab.current_namespace = $2; }
+| NAMESPACE
+{ interp.symtab.current_namespace->clear(); }
+| USING NAMESPACE names
+{ action(interp.using_namespaces($3), delete $3); }
+| USING NAMESPACE
+{ interp.using_namespaces(); }
 | EXTERN prototypes
 ;
 
@@ -330,6 +339,19 @@ ids
 { $$ = $1; $$->push_back(*$2); delete $2; }
 ;
 
+fnames
+: fname
+{ $$ = new list<string>; $$->push_back(*$1); delete $1; }
+| fnames ',' fname
+{ $$ = $1; $$->push_back(*$3); delete $3; }
+;
+
+fname
+: ID			{ $$ = $1; *$$ += ".pure"; }
+| STR			{ char *s = fromutf8($1); free($1);
+			  $$ = new string(s); free(s); }
+;
+
 names
 : name
 { $$ = new list<string>; $$->push_back(*$1); delete $1; }
@@ -338,9 +360,8 @@ names
 ;
 
 name
-: ID			{ $$ = $1; *$$ += ".pure"; }
-| STR			{ char *s = fromutf8($1); free($1);
-			  $$ = new string(s); free(s); }
+: ID
+| STR			{ $$ = new string($1); free($1); }
 ;
 
 prototypes
@@ -516,11 +537,15 @@ app
 ;
 
 prim
-: ID			{ $$ = interp.mksym_expr($1); }
+: ID			{ try { $$ = interp.mksym_expr($1); }
+			  catch (err &e) {
+			    interp.error(yyloc, e.what());
+			    $$ = interp.mksym_expr(new string("_"));
+			  } }
 | ID TAG		{ try { $$ = interp.mksym_expr($1, $2); }
 			  catch (err &e) {
 			    interp.error(yyloc, e.what());
-			    $$ = interp.mksym_expr($1);
+			    $$ = interp.mksym_expr(new string("_"));
 			  } }
 | ID '@' prim		{ try { $$ = interp.mkas_expr($1, $3); }
 			  catch (err &e) {
