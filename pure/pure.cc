@@ -55,8 +55,8 @@ Type 'help' in the interpreter for more help.\n"
 
 static const char *commands[] = {
   "cd", "clear", "const", "def", "dump", "extern", "help", "infix", "infixl",
-  "infixr", "let", "ls", "nullary", "override", "postfix", "prefix",
-  "private", "public", "pwd", "quit", "run", "save", "show", "stats",
+  "infixr", "let", "ls", "namespace", "nullary", "override", "postfix",
+  "prefix", "private", "public", "pwd", "quit", "run", "save", "show", "stats",
   "underride", "using", 0
 };
 
