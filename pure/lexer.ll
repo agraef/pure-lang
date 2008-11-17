@@ -1504,7 +1504,7 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     // This is actually a type tag.
     REJECT;
   } else if (!qual.empty() &&
-	   interp.namespaces.find(qual) == interp.namespaces.end()) {
+	     interp.namespaces.find(qual) == interp.namespaces.end()) {
     // not a valid namespace prefix
     if (tag) {
       // we can still parse this as an identifier with a type tag
@@ -1557,6 +1557,42 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
 [@=|;()\[\]{}\\] return yy::parser::token_type(yytext[0]);
 "->"       return token::MAPSTO;
 "#<"{id}(" "{int})?">" return token::BADTOK;
+{id}?::([[:punct:]]|{punct})+  {
+  const char *t = strstr(yytext, "::");
+  int k = t-yytext;
+  string qualid = yytext;
+  string qual = qualid.substr(0, k), id = qualid.substr(k+2);
+  if (!qual.empty() &&
+      interp.namespaces.find(qual) == interp.namespaces.end()) {
+    // not a valid namespace prefix
+    string msg = "unknown namespace '"+qual+"'";
+    interp.error(*yylloc, msg);
+  }
+  k+=2;
+  if (yytext[k] == '/' && yytext[k+1] == '*') REJECT; // comment starter
+  while (yyleng > k+1 && yytext[yyleng-1] == ';') yyless(yyleng-1);
+  if (interp.declare_op) {
+    yylval->sval = new string(yytext);
+    return token::ID;
+  }
+  symbol* sym = interp.symtab.lookup(yytext);
+  while (!sym && yyleng > k+1) {
+    if (yyleng == 2 && yytext[0] == '-' && yytext[1] == '>')
+      return token::MAPSTO;
+    yyless(yyleng-1);
+    sym = interp.symtab.lookup(yytext);
+  }
+  if (sym) {
+    if (sym->prec < 10) {
+      yylval->xval = new expr(sym->x);
+      return optoken[sym->prec][sym->fix];
+    } else {
+      yylval->sval = new string(yytext);
+      return token::ID;
+    }
+  } else
+    REJECT;
+}
 ([[:punct:]]|{punct})+  {
   if (yytext[0] == '/' && yytext[1] == '*') REJECT; // comment starter
   while (yyleng > 1 && yytext[yyleng-1] == ';') yyless(yyleng-1);
