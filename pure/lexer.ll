@@ -536,9 +536,9 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 -l  Long format, prints definitions along with the summary symbol\n\
     information. This implies -s.\n\
 -m  Print information about defined macros.\n\
--p[flag] List only private symbols in the current module if flag is\n\
-    nonzero (the default), otherwise list only public symbols of all\n\
-    modules. List both private and public symbols if -p is omitted.\n\
+-p[flag] List only private symbols if flag is nonzero (the default),\n\
+    otherwise list only public symbols. List both private and public\n\
+    symbols if -p is omitted.\n\
 -s  Summary format, print just summary information about listed symbols.\n\
 -t[level] List only symbols and definitions at the given temporary level\n\
     (the current level by default) or above. Level 1 denotes all temporary\n\
@@ -902,9 +902,9 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 -h  Print this list.\n\
 -m  Dump defined macros.\n\
 -n  Write the dump to the given file (default is .pure).\n\
--p[flag] Dump only private symbols in the current module if flag is\n\
-    nonzero (the default), otherwise dump only public symbols of all\n\
-    modules. Dump both private and public symbols if -p is omitted.\n\
+-p[flag] Dump only private symbols if flag is nonzero (the default),\n\
+    otherwise dump only public symbols. Dump both private and public\n\
+    symbols if -p is omitted.\n\
 -t[level] Dump only symbols and definitions at the given temporary level\n\
     (the current level by default) or above. Level 1 denotes all temporary\n\
     definitions, level 0 *all* definitions. If this option is omitted,\n\
@@ -1157,9 +1157,9 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
     and that all matching symbols should be cleared.\n\
 -h  Print this list.\n\
 -m  Clear defined macros.\n\
--p[flag] Clear only private symbols in the current module if flag is\n\
-    nonzero (the default), otherwise clear only public symbols of all\n\
-    modules. Clear both private and public symbols if -p is omitted.\n\
+-p[flag] Clear only private symbols if flag is nonzero (the default),\n\
+    otherwise clear only public symbols. Clear both private and public\n\
+    symbols if -p is omitted.\n\
 -t[level] Clear only symbols and definitions at the given temporary level\n\
     (the current level by default) or above. Level 1 denotes all temporary\n\
     definitions, level 0 *all* definitions. If this option is omitted,\n\
