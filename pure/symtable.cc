@@ -78,18 +78,24 @@ symbol* symtable::lookup(const char *s)
     count = sym!=0;
     return sym;
   }
-  symbol *default_sym = lookup_p(s), *current_sym = 0, *search_sym = 0;
+  symbol *default_sym = lookup_p(s), *search_sym = 0;
   count = 0;
-  if (strcmp(s, "_") == 0)
+  if (strcmp(s, "_") == 0) {
     // anonymous variable is always taken as is
+    count = default_sym!=0;
     return default_sym;
-  if (!current_namespace->empty() &&
-      search_namespaces->find(*current_namespace) ==
-      search_namespaces->end()) {
-    string id = (*current_namespace)+"::"+s;
-    current_sym = lookup_p(id.c_str());
-    if (current_sym && ++count > 1) return 0;
   }
+  // first look for a symbol in the current namespace
+  if (!current_namespace->empty()) {
+    string id = (*current_namespace)+"::"+s;
+    symbol *sym = lookup_p(id.c_str());
+    if (sym) {
+      count = 1;
+      return sym;
+    }
+  }
+  // next scan the search namespaces; if the symbol is ambiguous, bail out
+  // with an error here
   for (set<string>::iterator it = search_namespaces->begin(),
 	 end = search_namespaces->end(); it != end; it++) {
     string id = (*it)+"::"+s;
@@ -97,14 +103,10 @@ symbol* symtable::lookup(const char *s)
     if (sym && ++count > 1) return 0;
     if (!search_sym) search_sym = sym;
   }
-  if (current_sym)
-    return current_sym;
-  else if (search_sym)
-    return search_sym;
-  else {
-    count = default_sym!=0;
-    return default_sym;
-  }
+  if (search_sym) return search_sym;
+  // fall back to a symbol in the default namespace, if any
+  count = default_sym!=0;
+  return default_sym;
 }
 
 symbol* symtable::sym(const char *s, bool priv)
