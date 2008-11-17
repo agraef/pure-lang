@@ -832,7 +832,7 @@ window."
 		     (goto-char (match-end 0)))
 		(buffer-substring-no-properties (point) end))))
 	(pure-send-list-and-digest
-	 (list (concat "completion_matches " command "\n")))
+	 (list (concat "completion_matches " command "\n")) t)
 	;; Sort the list
 	(setq pure-output-list
 	      (sort pure-output-list 'string-lessp))
@@ -860,7 +860,7 @@ window."
       (setq pure-receive-in-progress nil))
   (setq pure-output-string string))
 
-(defun pure-send-list-and-digest (list)
+(defun pure-send-list-and-digest (list &optional skip)
   (let* ((pure-eval-buffer (get-buffer "*pure-eval*"))
 	 (proc (get-buffer-process pure-eval-buffer))
 	 (filter (process-filter proc))
@@ -871,7 +871,9 @@ window."
 	(while (setq string (car list))
 	  (setq pure-output-string nil
 		pure-receive-in-progress t)
-	  (comint-send-string proc string)
+	  (if skip
+	      (process-send-string proc string)
+	    (comint-send-string proc string))
 	  (while pure-receive-in-progress
 	    (accept-process-output proc))
 	  (setq list (cdr list)))
