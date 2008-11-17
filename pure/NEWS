@@ -3,7 +3,66 @@
 
 This release features support for the recently released LLVM 2.4, as well as
 some minor changes in the Unicode support and the C interface, see the
-ChangeLog for details.
+ChangeLog for details. The biggest change in this release is the new support
+for namespaces, which is based on John Cowan's proposal on the mailing
+list. This encompasses the following language changes:
+
+- New 'public' keyword to explicitly declare public symbols. (This is still
+  the default for all special symbol declarations, such as 'nullary' or
+  'infix'.)
+
+- New 'namespace' keyword which serves to declare and use namespaces. Please
+  refer to the manual for details. Briefly, you create a new namespace with
+  a namespace declaration of the form 'namespace <identifier>;' and then
+  declare the symbols which should belong to the namespace. For instance:
+
+  namespace foo;
+  public foo bar; // 'foo' and 'bar' are public symbols in namespace 'foo'
+  foo x = x-1;
+  bar x = x+1;
+  // ...
+  namespace; // switches back to the default namespace
+
+  The 'namespace' declaration affects *all* symbols in subsequent symbol
+  declarations, including 'extern' declarations. For instance:
+
+  namespace foo;
+  extern double sin(double);
+  foo::sin(0.1);
+
+- New qualified symbol syntax: foo::bar. This gives you access to the (public)
+  symbols in a namespace, and works with both ordinary identifiers and special
+  (nullary and operator) symbols. The namespace must first be introduced with
+  a 'namespace' or 'using namespace' declaration (see above for the former,
+  and below for the latter).
+
+- New 'using namespace' declaration. This gives you access to the (public)
+  symbols in the given namespace(s) without proper qualification. For
+  instance:
+
+  using namespace foo; // opens the namespace 'foo' for searching
+  foo (bar x); // 'foo' and 'bar' resolve to 'foo::foo' and 'foo::bar' here
+  using namespace; // closes the search namespace(s)
+
+  The interpreter first searches the current namespace (as specified with the
+  'namespace' declaration), then the search namespaces specified in the most
+  recent 'using namespace' clause, and finally the default namespace. Note
+  that 'private' symbols are only visible in the *current* namespace (see
+  below).
+
+- Private symbols are now limited in scope to a namespace, not a source file.
+  To create and use private symbols, a namespace declaration has to be in
+  effect. You'll have to adapt existing scripts accordingly. For instance:
+
+  namespace foo;
+  private baz; // 'baz' is a private symbol in namespace 'foo'
+  baz x = 2*x;
+  // ...
+  namespace;   // 'baz' is now invisible
+
+  Note that symbols in the default namespace are now always visible
+  everywhere, so 'private' declarations in the default namespace don't have
+  any effect any more; the compiler warns you about these.
 
 ** Pure 0.13 2008-11-04
 
