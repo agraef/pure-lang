@@ -13,8 +13,8 @@ list. This encompasses the following language changes:
 
 - New 'namespace' keyword which serves to declare and use namespaces. Please
   refer to the manual for details. Briefly, you create a new namespace with
-  a namespace declaration of the form 'namespace <identifier>;' and then
-  declare the symbols which should belong to the namespace. For instance:
+  a declaration of the form 'namespace <identifier>;' and then declare the
+  symbols which should belong to the namespace. For instance:
 
   namespace foo;
   public foo bar; // 'foo' and 'bar' are public symbols in namespace 'foo'
@@ -43,12 +43,13 @@ list. This encompasses the following language changes:
   using namespace foo; // opens the namespace 'foo' for searching
   foo (bar x); // 'foo' and 'bar' resolve to 'foo::foo' and 'foo::bar' here
   using namespace; // closes the search namespace(s)
+  foo (bar x); // 'foo' and 'bar' are symbols in the default namespace here
 
   The interpreter first searches the current namespace (as specified with the
   'namespace' declaration), then the search namespaces specified in the most
   recent 'using namespace' clause, and finally the default namespace. Note
-  that 'private' symbols are only visible in the *current* namespace (see
-  below).
+  that 'private' symbols are only visible in the *current* namespace, see
+  below for more details on this.
 
 - Private symbols are now limited in scope to a namespace, not a source file.
   To create and use private symbols, a namespace declaration has to be in
@@ -62,7 +63,7 @@ list. This encompasses the following language changes:
 
   Note that symbols in the default namespace are now always visible
   everywhere, so 'private' declarations in the default namespace don't have
-  any effect any more; the compiler warns you about these.
+  any effect any more. The compiler warns you about these.
 
 ** Pure 0.13 2008-11-04
 
