@@ -59,13 +59,20 @@ void symtable::init_builtins()
   complex_polar_sym();
 }
 
-inline symbol* symtable::lookup_p(const char *s)
+inline symbol* symtable::lookup_p(const char *s, int& count)
 {
   map<string, symbol>::iterator it = tab.find(s);
-  if (it == tab.end() || !visible(it->second))
+  count = it != tab.end();
+  if (!count || !visible(it->second))
     return 0;
   else
     return &it->second;
+}
+
+inline symbol* symtable::lookup_p(const char *s)
+{
+  int count;
+  return lookup_p(s, count);
 }
 
 symbol* symtable::lookup(const char *s)
@@ -74,8 +81,7 @@ symbol* symtable::lookup(const char *s)
   if (t) {
     // normalize symbols in the default namespace
     if (t == s) s+=2;
-    symbol *sym = lookup_p(s);
-    count = sym!=0;
+    symbol *sym = lookup_p(s, count);
     return sym;
   }
   symbol *default_sym = lookup_p(s), *search_sym = 0;

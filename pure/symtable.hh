@@ -38,6 +38,7 @@ class symtable {
   map<string, symbol> tab;
   vector<symbol*> rtab;
   symbol* lookup_p(const char *s);
+  symbol* lookup_p(const char *s, int& count);
 public:
   symtable();
   ~symtable();
