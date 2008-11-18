@@ -1859,12 +1859,12 @@ symbols you define in your programs live by default.
 .PP
 Additional namespaces can be created with the
 .B namespace
-declaration, which also switches to a given namespace (makes it the
+declaration, which also switches to the given namespace (makes it the
 .I current
-namespace), so that subsequent symbol declarations create symbols in the
-current namespace rather than the default one. Thus, in order to create two
-symbols with the same print name 'foo' in two different namespaces 'foo'
-and 'bar', you can write:
+namespace), so that subsequent symbol declarations create symbols in that
+namespace rather than the default one. Thus, in order to create two symbols
+with the same print name 'foo' in two different namespaces 'foo' and 'bar',
+you can write:
 .sp
 .nf
 \fBnamespace\fP foo;
@@ -1879,9 +1879,9 @@ foo x = x-1;
 Note that just the
 .B namespace
 keyword by itself in the last line switches back to the default namespace.
-We can now refer to the symbols we just defined using a
+We can now refer to the symbols we just defined using
 .I qualified
-symbol of the form \fInamespace-id\fP::\fIsymbol\fP:
+symbols of the form \fInamespace-id\fP::\fIsymbol\fP:
 .sp
 .nf
 > foo::foo 99;
@@ -1939,7 +1939,7 @@ the name clash:
 .PP
 A
 .B using namespace
-declaration without any namespace arguments gets you back to the default,
+declaration without any namespace arguments gets you back to the default
 empty list of search namespaces:
 .sp
 .nf
@@ -1988,8 +1988,8 @@ operator and nullary symbols. This works just like in the default namespace,
 except that you add the appropriate
 .B namespace
 declaration before declaring the symbols. For instance, here is how you can
-override the predefined '+' operation so that it multiplies integers rather
-than adding them:
+override the predefined '+' operation so that it multiplies its operands
+rather than adding them:
 .sp
 .nf
 > \fBnamespace\fP my;
@@ -2004,15 +2004,13 @@ outside this namespace the '+' operation still works normally, and in fact you
 can use qualified symbols to select the two different versions as needed:
 .sp
 .nf
+> \fBnamespace\fP;
 > 5+7;
-35
+12
 > 5 ::+ 7;
 12
 > 5 my::+ 7;
 35
-> \fBnamespace\fP;
-> 5+7;
-12
 .fi
 .PP
 Pure also allows you to have
@@ -2021,9 +2019,8 @@ symbols, as a means to hide away internal operations which shouldn't be
 accessed directly by client programs. Note that this only works in specific
 namespaces; since symbols in the default namespace are always visible
 everywhere, they cannot be private. Thus, to declare a private symbol you
-first have to create a namespace in which the symbol can live.
-.PP
-Symbols are declared private by using the
+first have to create a namespace in which the symbol can live. Symbols are
+declared private by using the
 .B private
 keyword in the symbol declaration:
 .sp
