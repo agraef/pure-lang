@@ -256,8 +256,8 @@ Unix-like systems this allows you to add a ``shebang'' to your main script in
 order to turn it into an executable program.
 .PP
 There are a few reserved keywords which cannot be used as identifiers:
-case const def else end extern if infix infixl infixr let nullary of
-otherwise postfix prefix private then using when with.
+case const def else end extern if infix infixl infixr let namespace nullary of
+otherwise postfix prefix private public then using when with.
 .PP
 Pure is a terse language. You won't see many declarations, and often your
 programs will read more like a collection of algebraic specifications (which
@@ -400,7 +400,7 @@ variables (except symbols explicitly declared as ``constant'' a.k.a.
 .B nullary
 symbols, see below).
 .TP
-\fBOperator and constant symbols:\fP x+y, x==y, \fBnot\fP\ x, []
+\fBOperator and constant symbols:\fP x+y, x==y, \fBnot\fP\ x
 As indicated, these take the form of an identifier or a sequence of
 punctuation symbols. Operator and constant symbols must
 .I always
@@ -423,7 +423,8 @@ an operator symbol.
 Note that enclosing an operator in parentheses, such as (+) or (\fBnot\fP),
 turns it into an ordinary function symbol. Symbols declared as \fBnullary\fP
 denote special constant symbols which simply stand for themselves.
-Technically, these are just ordinary identifiers; however, the
+Technically, these are just ordinary identifiers (although they may also
+consist of punctuations); however, the
 .B nullary
 attribute tells the compiler that when such an identifier occurs on the
 left-hand side of an equation, it is to be interpreted as a constant rather
@@ -1669,47 +1670,50 @@ definitions. This restricts the kinds of expressions which can be rewritten by
 a macro. But Pure macros are certainly powerful enough for most common
 preprocessing purposes, while still being robust and easy to use.
 .SH DECLARATIONS
-Pure is a very terse language by design; you don't declare much stuff, you
-just define it and be done with it. Usually, all necessary information about
-the defined symbols is inferred automatically. However, there are a few
-toplevel constructs which let you declare special symbol attributes and manage
-programs consisting of several source modules. These are:
-.BR private ,
-fixity (operator) and
-.B nullary
-(constant symbol) declarations,
+Pure is a very terse language by design. Usually you don't declare much stuff,
+you just define it and be done with it. However, there are a few toplevel
+constructs which let you declare special symbol attributes and manage programs
+consisting of several source modules. These are: explicit symbol declarations
+which determine ``scope'' and ``fixity'' of a symbol,
 .B extern
 declarations for external C functions (described in the \fIC INTERFACE\fP
-section), and
+section),
 .B using
-clauses which let you include other scripts in a Pure script.
+clauses which let you include other scripts in a Pure script, and
+.B namespace
+declarations which make it easier to manage large programs consisting of many
+separate modules.
 .TP
-\fBPrivate symbol declarations:\fP \fBprivate\fP \fIsymbol\fP ...;
+\fBScope declarations:\fP \fBpublic\fP \fIsymbol\fP ...; \fBprivate\fP \fIsymbol\fP ...;
 Declares the listed symbols as
-.IR private .
-Pure programs usually consist of several source scripts (see the description
-of the
-.B using
-clauses below). By default, all global symbols are
 .I public
-symbols which are visible throughout the entire Pure program. Symbols
-explicitly declared as private are only visible in the script which declares
-them. This must be done before using these symbols. Example:
+or
+.IR private ,
+respectively. All identifiers without an explicit prior declaration default to
+public scope, which means that they are visible everywhere in a program. An
+explicit
+.B public
+declaration of ordinary identifiers is thus rarely needed, unless you want to
+declare symbols as members of a specific
+.IR namespace .
+Symbols in specific namespaces can also be declared
+.BR private ,
+meaning that the symbol is visible only in the namespace it belongs to. This
+is explained in more detail below, see \fIModules\fP and \fINamespaces\fP.
 .sp
-.nf
-\fBprivate\fP foo bar;
-foo (bar x) = x+1; // foo and bar symbols are private here
-.fi
-.sp
-Note that to declare multiple symbols in a single declaration, you just list
-them all with whitespace in between. The same applies to the other types of
-symbol declarations discussed below.
+The
+.B public
+and
+.B private
+keywords can also be used as a prefix in any of the special symbol
+declarations discussed below, to specify the scope of the declared symbols (if
+the scope prefix is omitted, it defaults to
+.BR public ).
+Also note that to declare multiple symbols in a single declaration, you just
+list them all with whitespace in between. The same applies to the other types
+of symbol declarations discussed below.
 .TP
 \fBOperator declarations:\fP \fBinfix\fP \fIlevel op\fP ...;
-These may also be prefixed with the keyword
-.B private
-to indicate a private operator symbol (see above).
-.sp
 Ten different precedence levels are available for user-defined operators,
 numbered 0 (lowest) thru 9 (highest). On each precedence level, you can
 declare (in order of increasing precedence)
@@ -1737,23 +1741,16 @@ minus operator; the unary minus operation can be denoted using the built-in
 \fBConstant symbol declarations:\fP \fBnullary\fP \fIsymbol\fP ...;
 Constant symbols are introduced using a
 .B nullary
-declaration (again, a
-.B private
-prefix may be used to denote private constant symbols), e.g.:
+declaration, e.g.:
 .sp
 .nf
 \fBnullary\fP foo;
-\fBprivate\fP \fBnullary\fP bar;
 .fi
 .sp
 As explained in the \fIPURE OVERVIEW\fP section,
 .B nullary
 symbols are like ordinary identifiers, but are treated as constants rather
 than variables when they occur on the left-hand side of an equation.
-.sp
-Examples for all types of symbol declarations can be found in the prelude
-which declares a bunch of standard (arithmetic, relational, logical) operator
-symbols as well as the list and pair constructors `:' and `,'.
 .TP
 \fBUsing clause:\fP \fBusing\fP \fIname\fP, ...;
 Causes each given script to be included in the Pure program. Each included
@@ -1761,49 +1758,41 @@ script is loaded only
 .IR once ,
 when the first
 .B using
-clause for the script is encountered. This kind of clause is discussed in
-further detail below.
-.sp
-Note that the
+clause for the script is encountered. Note that the
 .B using
 clause also has an alternative form which allows dynamic libraries to be
 loaded, this will be discussed in the \fIC INTERFACE\fP section.
-.SS The `using' Declaration
+.TP
+\fBNamespace declarations:\fP \fBnamespace\fP \fIname\fP; \fBusing\fP \fBnamespace\fP \fIname\fP, ...;
+These declarations allow you to create new namespaces and then later use them
+in your program. Pure's namespaces work pretty much like those of the C++
+programming language, providing a means to avoid name collisions and hide away
+internal operations, which makes it easier to manage programs and libraries
+consisting of a large number of different modules.
+.PP
+Examples for all types of symbol declarations can be found in the prelude
+which declares a bunch of standard (arithmetic, relational, logical) operator
+symbols as well as the list and pair constructors `:' and `,', and a few
+nullary symbols (mostly for denoting different kinds of exceptions).
+.PP
 The
 .B using
+and
+.B namespace
+declarations are discussed in further detail below.
+.SS Modules
+While Pure doesn't offer separate compilation right now, the
+.B using
 declaration provides a simple but effective way to assemble a Pure program
-from several source modules. The Pure program is just the concatenation of all
-the source modules listed as command line arguments and included through
+from several source modules. The Pure program is basically the concatenation
+of all the source modules listed as command line arguments. A
 .B using
-clauses. Public constants, variables, functions and macros defined anywhere in
-the program share one big happy namespace and are available throughout the
-entire program (not just the module that contains a
+clause instructs the compiler to include the corresponding source script at
+this point, which makes available all the definitions in the included script
+in your program. Each script only gets included once, at the point where the
+first
 .B using
-clause for the script containing a given symbol). This approach has its
-drawbacks, but it makes it easy to define polymorphic functions and macros
-across separate modules.
-.PP
-To facilitate modular development, each script also has a separate namespace
-for private symbols which are only visible in the script which declares them
-(see the explanation of the
-.B private
-declaration above). This makes it possible to hide away internal operations,
-prevent name clashes between symbols of different modules, and keep the public
-namespace tidy and clean. A
-.B private
-declaration shadows a public symbol with the same print name, but this takes
-effect only
-.I after
-the
-.B private
-declaration of the symbol, so you can easily define yourself an alias for the
-public symbol before that, e.g.:
-.sp
-.nf
-public_foo = foo;
-\fBprivate\fP foo;
-foo x = public_foo (bar x);
-.fi
+clause for the script is encountered.
 .PP
 The script name in a
 .B using
@@ -1851,6 +1840,188 @@ In this case the script search performed in
 clauses will use the real script directory and thus other required scripts can
 be located there. This is the recommended practice for installing standalone
 Pure applications in source form which are to be run directly from the shell.
+.SS Namespaces
+To facilitate modular development, Pure also provides
+.I namespaces
+as a means to avoid name clashes between symbols of different modules, and
+to keep the global namespace tidy and clean. The global a.k.a.
+.I default
+namespace is always available; it provides the symbols of the public
+operations provided by the standard library, and is also the place where the
+symbols you define in your programs live by default.
+.PP
+Additional namespaces can be created with the
+.B namespace
+declaration, which switches to a given namespace (makes it the
+.I current
+namespace), so that subsequent symbol declarations create symbols in the
+current namespace rather than the default one. Thus, in order to create two
+symbols with the same print name in two different namespaces, you can write:
+.sp
+.nf
+\fBnamespace\fP foo;
+\fBpublic\fP foo;
+foo x = x+1;
+\fBnamespace\fP bar;
+\fBpublic\fP foo;
+foo x = x-1;
+\fBnamespace\fP;
+.fi
+.PP
+Note that just the
+.B namespace
+keyword by itself in the last line switches back to the default namespace.
+We can now refer to the symbols we just defined using a
+.I qualified
+symbol of the form \fInamespace-id\fP::\fIsymbol\fP:
+.sp
+.nf
+> foo::foo 99;
+100
+> bar::foo 99;
+98
+.fi
+.PP
+It is also possible to specify a list of
+.I search
+namespaces which are to be searched for unqualified symbols. This is done with
+the
+.B using namespace
+declaration:
+.sp
+.nf
+> \fBusing\fP \fBnamespace\fP foo;
+> foo 99;
+100
+> \fBusing\fP \fBnamespace\fP bar;
+> foo 99;
+98
+.fi
+.PP
+The
+.B using namespace
+declaration also lets you search multiple namespaces simultaneously:
+.sp
+.nf
+\fBusing\fP \fBnamespace\fP foo, bar;
+.fi
+.PP
+A
+.B using namespace
+declaration with an empty list of namespaces resets the search namespaces:
+.sp
+.nf
+\fBusing\fP \fBnamespace\fP;
+.fi
+.PP
+Note that the compiler complains if a given unqualified symbol exists in
+several search namespaces:
+.sp
+.nf
+> \fBusing\fP \fBnamespace\fP foo, bar;
+> foo 99;
+<stdin>, line 15: symbol 'foo' is ambiguous here
+.fi
+.PP
+In such a case you'll have to use qualified symbols as described above to
+resolved the name clash.
+.PP
+The compiler searches for unqualified symbols first in the current namespace
+(if any), then in the currently active search namespaces (if any), and finally
+in the default (i.e., the global) namespace, in that order. New unqualified
+symbols are always created in the default namespace, unless you explicitly
+declare them (in which case they become members of the current namespace, as
+explained above). New qualified symbols are created in the given namespace,
+provided that the namespace has already been introduced in an earlier
+.B namespace
+or
+.B using namespace
+declaration. This makes it possible to avoid explicit symbol declarations in
+the case of ordinary, public identifiers with default attributes. Thus we
+could have written the above example simply as follows:
+.sp
+.nf
+\fBnamespace\fP foo;
+foo::foo x = x+1;
+\fBnamespace\fP bar;
+bar::foo x = x-1;
+\fBnamespace\fP;
+.fi
+.PP
+Symbols can also be declared
+.BR private ,
+in which case they are only visible if the namespace in which they were
+created is current. For instance:
+.sp
+.nf
+> \fBnamespace\fP secret;
+> \fBprivate\fP baz;
+> // 'baz' is a private symbol in namespace 'secret' here
+> baz x = 2*x;
+> // you can use 'baz' just like any other symbol here
+> baz 99;
+198
+> \fBnamespace\fP;
+.fi
+.PP
+At this point, secret::baz is now invisible, even if you have 'secret' in the
+search namespace list:
+.sp
+.nf
+> \fBusing\fP \fBnamespace\fP secret;
+> baz 99;
+baz 99
+> secret::baz 99;
+<stdin>, line 27: symbol 'secret::baz' is private here
+.fi
+.PP
+The only way to bring the symbol into scope again is to make the 'secret'
+namespace current:
+.sp
+.nf
+> \fBnamespace\fP secret;
+> baz 99;
+198
+> secret::baz 99;
+198
+.fi
+.PP
+Private symbols are useful to hide away internal operations which shouldn't be
+accessed directly by client programs. Note that this only works in specific
+namespaces; since symbols in the default namespace are always visible
+everywhere, they cannot be private. Thus, to declare a private symbol you
+first have to create a namespace in which the symbol can live.
+.PP
+Finally, note that, similar to the
+.B using
+declaration, a
+.B namespace
+or
+.B using namespace
+declaration accepts either identifiers or double-quoted strings as namespace
+names. E.g., the following two declarations are in fact equivalent:
+.sp
+.nf
+\fBnamespace\fP foo;
+\fBnamespace\fP "foo";
+.fi
+.PP
+The latter form also allows more descriptive labels which aren't identifiers,
+e.g.:
+.sp
+.nf
+\fBnamespace\fP "Private stuff, keep out!";
+.fi
+.PP
+Note that the namespace prefix in a qualified identifier
+.I must
+be a legal identifier, so it isn't possible to access symbols in namespaces
+with such descriptive labels in a direct fashion; the only way to get at the
+symbols in this case is to use a
+.B namespace
+or
+.B using namespace
+declaration.
 .SH EXCEPTION HANDLING
 Pure also offers a useful exception handling facility. To raise an exception,
 you just invoke the built-in function
@@ -2245,13 +2416,10 @@ C-style I/O, including printf and scanf. More stuff will likely be provided in
 future releases.
 .SH INTERACTIVE USAGE
 In interactive mode, the interpreter reads definitions and expressions and
-processes them as usual. If the
+processes them as usual. You can use the 
 .B -i
-option was used to force interactive mode when invoking the interpreter, the
-last script specified on the command line determines the visible namespace,
-i.e., the private symbols of that script are available in addition to the
-public symbols defined in the prelude and the other scripts specified on the
-command line. Additional scripts can be loaded interactively using either a
+option to force interactive mode when invoking the interpreter with some
+script files. Additional scripts can be loaded interactively using either a
 .B using
 declaration or the interactive
 .B run
@@ -2376,12 +2544,8 @@ Exits the interpreter.
 Loads the given script file and adds its definitions to the current
 environment. This works more or less like a
 .B using
-clause, but only searches for the script in the current directory and loads
-the script ``anonymously.'' That is,
-.B run
-puts the definitions into the current namespace, giving you access to all
-private symbols of the script. Also, the definitions are placed at the current
-temporary level, so that
+clause, but only searches for the script in the current directory and places
+the definitions in the script at the current temporary level, so that
 .B clear
 can be used to remove them again. In particular, this makes it possible to
 quickly reload a script without exiting the interpreter, by issuing the
@@ -2453,14 +2617,9 @@ all matching symbols should be selected.
 .B -m
 Select defined macros.
 .TP
-\fB-p\fP[\fIflag\fP]
-Select private symbols in the ``current'' module if \fIflag\fP is nonzero (the
-default), otherwise (\fIflag\fP is zero) select public symbols of all
-modules. If this option is omitted then both private and public symbols are
-selected. (Note: The ``current'' module is the main script, i.e., the last
-script specified when the interpreter was invoked on the command line, if
-any. As already mentioned, this script determines the namespace visible in the
-interpreter.)
+\fB-p\fP[\fIflag\fP] Select only private symbols if \fIflag\fP is nonzero (the
+default), otherwise (\fIflag\fP is zero) select only public symbols. If this
+option is omitted then both private and public symbols are selected.
 .TP
 \fB-t\fP[\fIlevel\fP]
 Select symbols and definitions at the given ``level'' of definitions and
@@ -2633,10 +2792,10 @@ version      var  version = "@version@";
 5 variables
 .fi
 .PP
-Or you can list just the private symbols of the current module, as follows:
+Or you can list just private symbols of the namespace 'foo', as follows:
 .sp
 .nf
-> \fBshow\fP -pg *
+> \fBshow\fP -pg foo::*
 .fi
 .PP
 Finally, the following command will list each and every symbol that's
