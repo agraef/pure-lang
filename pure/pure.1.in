@@ -246,29 +246,49 @@ command prompt):
 > \fBlet\fP x = fact 10; x;
 3628800
 .fi
+.SS Lexical Matters
+Pure is a free-format language; whitespace is insignificant, except if it
+serves to delimit other symbols. Hence, as shown above, definitions and
+expressions at the toplevel have to be terminated with a semicolon, even in
+interactive mode.
 .PP
-The language is free-format (whitespace is insignificant). As indicated,
-definitions and expressions at the toplevel have to be terminated with a
-semicolon. Comments have the same syntax as in C++ (using // for line-oriented
-and /* ... */ for multiline comments; the latter may not be nested). Lines
+Comments have the same syntax as in C++ (using // for line-oriented and
+/*\ ...\ */ for multiline comments; the latter may not be nested). Lines
 beginning with #! are treated as comments, too; as already discussed above, on
 Unix-like systems this allows you to add a ``shebang'' to your main script in
 order to turn it into an executable program.
 .PP
 There are a few reserved keywords which cannot be used as identifiers:
-case const def else end extern if infix infixl infixr let namespace nullary of
-otherwise postfix prefix private public then using when with.
+.nf
+case const def else end extern if infix infixl infixr let namespace
+nullary of otherwise postfix prefix private public then using when with
+.fi
 .PP
-Pure is a terse language. You won't see many declarations, and often your
-programs will read more like a collection of algebraic specifications (which
-in fact they are, only that the specifications are executable). This is
-intended and keeps the code tidy and clean.
-.PP
+The customary notations for identifiers, numbers and strings are all
+provided. In addition, Pure also allows you to define your own operator
+symbols. Pure fully supports Unicode, so that you can write your programs in
+almost any language and make good use of the special symbols in the Unicode
+character set, provided that you encode your scripts in UTF-8. To keep this
+simple, besides the ASCII punctuation characters, Pure also considers the
+following code points in the Unicode repertoire as punctuation: U+00A1 through
+U+00BF, U+00D7, U+00F7, and U+20D0 through through U+2BFF. This comprises the
+special symbols in the Latin-1 repertoire, as well as the Combining
+Diacritical Marks for Symbols, Letterlike Symbols, Number Forms, Arrows,
+Mathematical Symbols, Miscellaneous Technical Symbols, Control Pictures, OCR,
+Enclosed Alphanumerics, Box Drawing, Blocks, Geometric Shapes, Miscellaneous
+Symbols, Dingbats, Miscellaneous Mathematical Symbols A, Supplemental Arrows
+A, Supplemental Arrows B, Miscellaneous Mathematical Symbols B, Supplemental
+Mathematical Operators, and Miscellaneous Symbols and Arrows. This should
+cover almost everything you'd ever want to use in an operator symbol. All
+other extended Unicode characters are effectively treated as ``letters'' which
+can be used as identifier constituents.
+.SS Definitions and Expression Evaluation
 On the surface, Pure is quite similar to other modern functional languages
 like Haskell and ML. But under the hood it is a much more dynamic language,
 more akin to Lisp. In particular, Pure is dynamically typed, so functions can
 be fully polymorphic and you can add to the definition of an existing function
-at any time:
+at any time. For instance, we can extend the example above to make the fact
+function work with floating point numbers, too:
 .sp
 .nf
 > fact 1.0 = 1.0;
@@ -279,7 +299,7 @@ at any time:
 3628800
 .fi
 .PP
-Like in Haskell and ML, functions and variables are often defined by
+Like in Haskell and ML, functions are often defined by
 .IR pattern-matching ,
 i.e., the left-hand side of a definition is compared to the target expression,
 binding the variables in the pattern to their actual values accordingly:
@@ -290,9 +310,18 @@ binding the variables in the pattern to their actual values accordingly:
 98
 .fi
 .PP
-In fact, due to its term rewriting semantics, Pure goes beyond most other
-functional languages in that it can do symbolic evaluations just as well as
-``normal'' computations:
+There are no declarations or lexical conventions to distinguish the variables
+in an equation. Instead, Pure parses the left-hand side of an equation using
+the following syntactic convention, which is also called the
+.I head = function
+rule: A symbol is a literal function (or constructor) symbol if it is the head
+symbol of a function application (like 'foo' and 'bar' in the above
+example). Other identifiers on the left-hand side are the variables of the
+equation (like 'x' in this example).
+.PP
+Due to its term rewriting semantics, Pure goes beyond most other functional
+languages in that it can do symbolic evaluations just as well as ``normal''
+computations:
 .sp
 .nf
 > square x = x*x;
@@ -330,7 +359,7 @@ take some or all of their arguments unevaluated, using
 .IR "call by name" .
 (User-defined special forms can be created with macros. More about that
 later.)
-.PP
+.SS Expression Syntax
 The Pure language provides built-in support for machine integers (32 bit),
 bigints (implemented using GMP), floating point values (double precision
 IEEE), character strings (UTF-8 encoded) and generic C pointers (these don't
@@ -342,19 +371,19 @@ and any non-zero value
 .BR true ).
 Pure also provides some built-in support for lists and matrices, although most
 of the corresponding operations are actually defined in the prelude.
-.SS Expression Syntax
+.PP
 Expressions consist of the following elements:
 .TP
 \fBConstants:\fP 4711, 4711L, 1.2e-3, \(dqHello,\ world!\en\(dq
-The usual C'ish notations for integers (decimal, hexadecimal, octal), floating
-point values and double-quoted strings are all provided, although the Pure
-syntax differs in some minor ways, as discussed in the following. First, there
-is a special notation for denoting bigints. Integer constants that are too
-large to fit into machine integers will be interpreted as bigints
-automatically. Moreover, integer literals immediately followed by the
-uppercase letter ``L'' will always be interpreted as bigint constants, even if
-they fit into machine integers. This notation is also used when printing
-bigint constants.
+The usual C'ish notations for integers (decimal: 1000, hexadecimal: 0x3e8,
+octal: 01750), floating point values and double-quoted strings are all
+provided, although the Pure syntax differs in some minor ways, as discussed in
+the following. First, there is a special notation for denoting
+bigints. Integer constants that are too large to fit into machine integers are
+promoted to bigints automatically. Moreover, integer literals immediately
+followed by the uppercase letter ``L'' are always interpreted as bigint
+constants, even if they fit into machine integers. This notation is also used
+when printing bigint constants.
 .sp
 Second, character escapes in Pure strings have a more flexible syntax borrowed
 from the author's Q language, which provides notations to specify any Unicode
@@ -378,57 +407,36 @@ the ``XML Entity definitions for Characters'', see
 Thus, e.g., \(dq\e&copy;\(dq denotes the copyright character (code point
 0x000A9).
 .TP
-\fBFunction and variable symbols:\fP foo, foo_bar, BAR, bar2
+\fBFunction and variable symbols:\fP foo, foo_bar, BAR, foo::bar
 These consist of the usual sequence of letters (including the underscore) and
-digits, starting with a letter. As of Pure 0.13, any extended Unicode
-character, except the special operator symbols listed under \fIOperator and
-constant symbols\fP below, counts as a ``letter'', so that you can write Pure
-programs in almost any language, provided you have a text editor which
-supports the UTF-8 encoding.
-.sp
-The `_' symbol, when occurring on the left-hand side of an equation, is
-special; it denotes the
-.IR "anonymous variable" .
-The case of identifiers is significant, but it doesn't carry any meaning
-(that's in contrast to languages like Prolog and Q, where variables must be
-capitalized). Instead, Pure distinguishes function and variable symbols by
-their position on the left-hand side of an equation, using the following
-.I head = function
-rule: Any symbol (except the anonymous variable) which occurs as the head
-symbol of a function application is a function symbol, all other symbols are
-variables (except symbols explicitly declared as ``constant'' a.k.a.
-.B nullary
-symbols, see below).
+digits, starting with a letter. Case is significant, thus foo, Foo and FOO are
+distinct identifiers. The `_' symbol, when occurring on the left-hand side of
+an equation, is special; it denotes the
+.I anonymous variable
+which matches any value without actually binding a variable. Identifiers can also be prefixed with a
+.I namespace
+identifier, like in foo::bar. (This requires that the given namespace has
+already been created, as explained under \fINamespaces\fP in the
+\fIDECLARATIONS\fP section.)
 .TP
-\fBOperator and constant symbols:\fP x+y, x==y, \fBnot\fP\ x
-As indicated, these take the form of an identifier or a sequence of
-punctuation symbols. Operator and constant symbols must
-.I always
-be declared before they can be used, using corresponding \fBprefix\fP,
-\fBpostfix\fP, \fBinfix\fP and \fBnullary\fP declarations, which are discussed
-in section \fIDECLARATIONS\fP.
+\fBOperator and nullary symbols:\fP x+y, x==y, \fBnot\fP\ x
+For convenience, Pure also provides you with a limited means to extend the
+syntax of the language with your own operators and ``nullary'' (constant)
+symbols. These special symbols may take the form of an identifier or a
+sequence of punctuation characters. Operators are declared using the
+corresponding \fBprefix\fP, \fBpostfix\fP and \fBinfix\fP declarations, which
+are discussed in section \fIDECLARATIONS\fP. Operators are just syntax;
+enclosing an operator in parentheses, such as (+) or (\fBnot\fP), turns it
+into an ordinary function symbol.
 .sp
-As of Pure 0.13, ``punctuation'' also includes the following extended Unicode
-characters: U+00A1 through U+00BF, U+00D7, U+00F7, and U+20D0 through through
-U+2BFF. This comprises the special symbols in the Latin-1 repertoire, as well
-as the Combining Diacritical Marks for Symbols, Letterlike Symbols, Number
-Forms, Arrows, Mathematical Symbols, Miscellaneous Technical Symbols, Control
-Pictures, OCR, Enclosed Alphanumerics, Box Drawing, Blocks, Geometric Shapes,
-Miscellaneous Symbols, Dingbats, Miscellaneous Mathematical Symbols A,
-Supplemental Arrows A, Supplemental Arrows B, Miscellaneous Mathematical
-Symbols B, Supplemental Mathematical Operators, and Miscellaneous Symbols and
-Arrows blocks. This should cover almost everything you'd ever want to use in
-an operator symbol.
-.sp
-Note that enclosing an operator in parentheses, such as (+) or (\fBnot\fP),
-turns it into an ordinary function symbol. Symbols declared as \fBnullary\fP
-denote special constant symbols which simply stand for themselves.
-Technically, these are just ordinary identifiers (although they may also
-consist of punctuations); however, the
+In addition, a symbol declared as \fBnullary\fP denotes an ``operator without
+operands'', i.e., a constant symbol. In difference to operators, these are
+actually treated more or less like ordinary identifiers, but the
 .B nullary
-attribute tells the compiler that when such an identifier occurs on the
-left-hand side of an equation, it is to be interpreted as a constant rather
-than a variable (see above).
+attribute tells the compiler that, when such a symbol occurs on the left-hand
+side of an equation, it is to be interpreted as a constant rather than a
+variable (cf. the ``head = function'' rule described under \fIDefinitions and
+Expression Evaluation\fP above).
 .TP
 \fBLists and tuples:\fP [x,y,z], x..y, x:xs, x,y,z
 The necessary constructors to build lists and tuples are actually defined in
@@ -1699,7 +1707,7 @@ declare symbols as members of a specific
 Symbols in specific namespaces can also be declared
 .BR private ,
 meaning that the symbol is visible only in the namespace it belongs to. This
-is explained in more detail below, see \fIModules\fP and \fINamespaces\fP.
+is explained in more detail under \fINamespaces\fP below.
 .sp
 The
 .B public
@@ -1765,8 +1773,7 @@ loaded, this will be discussed in the \fIC INTERFACE\fP section.
 .TP
 \fBNamespace declarations:\fP \fBnamespace\fP \fIname\fP; \fBusing\fP \fBnamespace\fP \fIname\fP, ...;
 These declarations allow you to create new namespaces and then later use them
-in your program. Pure's namespaces work pretty much like those of the C++
-programming language, providing a means to avoid name collisions and hide away
+in your program. This provides a means to avoid name collisions and hide away
 internal operations, which makes it easier to manage programs and libraries
 consisting of a large number of different modules.
 .PP
@@ -1852,7 +1859,7 @@ symbols you define in your programs live by default.
 .PP
 Additional namespaces can be created with the
 .B namespace
-declaration, which switches to a given namespace (makes it the
+declaration, which also switches to a given namespace (makes it the
 .I current
 namespace), so that subsequent symbol declarations create symbols in the
 current namespace rather than the default one. Thus, in order to create two
@@ -1928,17 +1935,17 @@ resolved the name clash.
 .PP
 The compiler searches for unqualified symbols first in the current namespace
 (if any), then in the currently active search namespaces (if any), and finally
-in the default (i.e., the global) namespace, in that order. New unqualified
+in the default (i.e., the global) namespace, in that order. If no existing
+symbol is found, a new public symbol is created. New
+.I unqualified
 symbols are always created in the default namespace, unless you explicitly
 declare them (in which case they become members of the current namespace, as
-explained above). New qualified symbols are created in the given namespace,
-provided that the namespace has already been introduced in an earlier
-.B namespace
-or
-.B using namespace
-declaration. This makes it possible to avoid explicit symbol declarations in
-the case of ordinary, public identifiers with default attributes. Thus we
-could have written the above example simply as follows:
+explained above). New
+.I qualified
+symbols are created in the given namespace (which must already exist). This
+makes it possible to avoid explicit symbol declarations in the most common
+case of ordinary, public identifiers. E.g., we could have written the above
+example simply as follows:
 .sp
 .nf
 \fBnamespace\fP foo;
