@@ -38,9 +38,51 @@ class symtable {
   map<string, symbol> tab;
   vector<symbol*> rtab;
   symbol* lookup_p(const char *s);
+  symbol* lookup_p(const char *s, symbol*& cache);
   symbol* lookup_p(const char *s, int& count);
-  symbol* sym_p(const char *s, bool priv = false);
-  symbol* sym_p(const char *s, prec_t prec, fix_t fix, bool priv = false);
+  symbol* sym_p(const char *s, symbol*& cache, bool priv = false);
+  symbol* sym_p(const char *s, symbol*& cache,
+		prec_t prec, fix_t fix, bool priv = false);
+  // these are cached here to speed up predefined symbol lookups
+  symbol* __nil_sym;
+  symbol* __cons_sym;
+  symbol* __void_sym;
+  symbol* __pair_sym;
+  symbol* __seq_sym;
+  symbol* __neg_sym;
+  symbol* __not_sym;
+  symbol* __bitnot_sym;
+  symbol* __or_sym;
+  symbol* __and_sym;
+  symbol* __bitor_sym;
+  symbol* __bitand_sym;
+  symbol* __shl_sym;
+  symbol* __shr_sym;
+  symbol* __less_sym;
+  symbol* __greater_sym;
+  symbol* __lesseq_sym;
+  symbol* __greatereq_sym;
+  symbol* __equal_sym;
+  symbol* __notequal_sym;
+  symbol* __plus_sym;
+  symbol* __minus_sym;
+  symbol* __mult_sym;
+  symbol* __fdiv_sym;
+  symbol* __div_sym;
+  symbol* __mod_sym;
+  symbol* __quote_sym;
+  symbol* __catch_sym;
+  symbol* __catmap_sym;
+  symbol* __rowcatmap_sym;
+  symbol* __colcatmap_sym;
+  symbol* __failed_match_sym;
+  symbol* __failed_cond_sym;
+  symbol* __signal_sym;
+  symbol* __segfault_sym;
+  symbol* __bad_matrix_sym;
+  symbol* __amp_sym;
+  symbol* __complex_rect_sym;
+  symbol* __complex_polar_sym;
 public:
   symtable();
   ~symtable();
@@ -96,7 +138,8 @@ public:
   symbol& void_sym();
   symbol& pair_sym();
   symbol& seq_sym();
-  symbol& neg_sym() { return *sym_p("neg"); }
+  symbol& neg_sym()
+  { return *sym_p("neg", __neg_sym); }
   symbol& not_sym();
   symbol& bitnot_sym();
   symbol& or_sym();
@@ -117,16 +160,26 @@ public:
   symbol& fdiv_sym();
   symbol& div_sym();
   symbol& mod_sym();
-  symbol& quote_sym() { return *sym_p("quote"); }
-  symbol& catch_sym() { return *sym_p("catch"); }
-  symbol& catmap_sym() { return *sym_p("catmap"); }
-  symbol& rowcatmap_sym() { return *sym_p("rowcatmap"); }
-  symbol& colcatmap_sym() { return *sym_p("colcatmap"); }
-  symbol& failed_match_sym() { return *sym_p("failed_match"); }
-  symbol& failed_cond_sym() { return *sym_p("failed_cond"); }
-  symbol& signal_sym() { return *sym_p("signal"); }
-  symbol& segfault_sym() { return *sym_p("stack_fault"); }
-  symbol& bad_matrix_sym() { return *sym_p("bad_matrix_value"); }
+  symbol& quote_sym()
+  { return *sym_p("quote", __quote_sym); }
+  symbol& catch_sym()
+  { return *sym_p("catch", __catch_sym); }
+  symbol& catmap_sym()
+  { return *sym_p("catmap", __catmap_sym); }
+  symbol& rowcatmap_sym()
+  { return *sym_p("rowcatmap", __rowcatmap_sym); }
+  symbol& colcatmap_sym()
+  { return *sym_p("colcatmap", __colcatmap_sym); }
+  symbol& failed_match_sym()
+  { return *sym_p("failed_match", __failed_match_sym); }
+  symbol& failed_cond_sym()
+  { return *sym_p("failed_cond", __failed_cond_sym); }
+  symbol& signal_sym()
+  { return *sym_p("signal", __signal_sym); }
+  symbol& segfault_sym()
+  { return *sym_p("stack_fault", __segfault_sym); }
+  symbol& bad_matrix_sym()
+  { return *sym_p("bad_matrix_value", __bad_matrix_sym); }
   symbol& amp_sym();
   symbol& complex_rect_sym();
   symbol& complex_polar_sym();

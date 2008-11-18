@@ -4,12 +4,53 @@
 #include <assert.h>
 
 symtable::symtable()
-  : fno(0), rtab(1024),	current_namespace(new string),
-    search_namespaces(new set<string>), __show__sym(0)
+  : fno(0), rtab(1024),
+    __nil_sym(0),
+    __cons_sym(0),
+    __void_sym(0),
+    __pair_sym(0),
+    __seq_sym(0),
+    __neg_sym(0),
+    __not_sym(0),
+    __bitnot_sym(0),
+    __or_sym(0),
+    __and_sym(0),
+    __bitor_sym(0),
+    __bitand_sym(0),
+    __shl_sym(0),
+    __shr_sym(0),
+    __less_sym(0),
+    __greater_sym(0),
+    __lesseq_sym(0),
+    __greatereq_sym(0),
+    __equal_sym(0),
+    __notequal_sym(0),
+    __plus_sym(0),
+    __minus_sym(0),
+    __mult_sym(0),
+    __fdiv_sym(0),
+    __div_sym(0),
+    __mod_sym(0),
+    __quote_sym(0),
+    __catch_sym(0),
+    __catmap_sym(0),
+    __rowcatmap_sym(0),
+    __colcatmap_sym(0),
+    __failed_match_sym(0),
+    __failed_cond_sym(0),
+    __signal_sym(0),
+    __segfault_sym(0),
+    __bad_matrix_sym(0),
+    __amp_sym(0),
+    __complex_rect_sym(0),
+    __complex_polar_sym(0),
+    current_namespace(new string),
+    search_namespaces(new set<string>),
+    __show__sym(0)
 {
   // enter any additional predefined symbols here, e.g.:
-  //sym_p("-", 6, infixl);
-  sym_p("_"); // anonymous variable
+  //sym("-", 6, infixl);
+  sym("_"); // anonymous variable
 }
 
 symtable::~symtable()
@@ -78,9 +119,17 @@ inline symbol* symtable::lookup_p(const char *s)
   return lookup_p(s, count);
 }
 
-symbol* symtable::sym_p(const char *s, bool priv)
+inline symbol* symtable::lookup_p(const char *s, symbol*& cache)
 {
-  symbol *_sym = lookup_p(s);
+  if (!cache)
+    cache = lookup_p(s);
+  return cache;
+}
+
+symbol* symtable::sym_p(const char *s, symbol*& cache, bool priv)
+{
+  if (cache) return cache;
+  symbol *_sym = lookup_p(s, cache);
   if (_sym)
     return _sym;
   string id = s;
@@ -92,15 +141,18 @@ symbol* symtable::sym_p(const char *s, bool priv)
     //cout << "new symbol " << _sym->f << ": " << _sym->s << endl;
     rtab[fno] = _sym;
     if (__show__sym == 0 && strcmp(s, "__show__") == 0) __show__sym = fno;
+    cache = _sym;
     return _sym;
   } else
     return 0;
 }
 
-symbol* symtable::sym_p(const char *s, prec_t prec, fix_t fix, bool priv)
+symbol* symtable::sym_p(const char *s, symbol*& cache,
+			prec_t prec, fix_t fix, bool priv)
 {
+  if (cache) return cache;
   assert(prec <= 10);
-  symbol *_sym = lookup_p(s);
+  symbol *_sym = lookup_p(s, cache);
   if (_sym)
     return _sym;
   string id = s;
@@ -112,6 +164,7 @@ symbol* symtable::sym_p(const char *s, prec_t prec, fix_t fix, bool priv)
     //cout << "new symbol " << _sym->f << ": " << _sym->s << endl;
     rtab[fno] = _sym;
     if (__show__sym == 0 && strcmp(s, "__show__") == 0) __show__sym = fno;
+    cache = _sym;
     return _sym;
   } else
     return 0;
@@ -236,252 +289,252 @@ bool symtable::visible(const symbol& sym)
 
 symbol& symtable::nil_sym()
 {
-  symbol *_sym = lookup_p("[]");
-  if (_sym)
-    return *_sym;
+  lookup_p("[]", __nil_sym);
+  if (__nil_sym)
+    return *__nil_sym;
   else
-    return *sym_p("[]", 10, nullary);
+    return *sym_p("[]", __nil_sym, 10, nullary);
 }
 
 symbol& symtable::cons_sym()
 {
-  symbol *_sym = lookup_p(":");
-  if (_sym)
-    return *_sym;
+  lookup_p(":", __cons_sym);
+  if (__cons_sym)
+    return *__cons_sym;
   else
-    return *sym_p(":", 4, infixr);
+    return *sym_p(":", __cons_sym, 4, infixr);
 }
 
 symbol& symtable::void_sym()
 {
-  symbol *_sym = lookup_p("()");
-  if (_sym)
-    return *_sym;
+  lookup_p("()", __void_sym);
+  if (__void_sym)
+    return *__void_sym;
   else
-    return *sym_p("()", 10, nullary);
+    return *sym_p("()", __void_sym, 10, nullary);
 }
 
 symbol& symtable::pair_sym()
 {
-  symbol *_sym = lookup_p(",");
-  if (_sym)
-    return *_sym;
+  lookup_p(",", __pair_sym);
+  if (__pair_sym)
+    return *__pair_sym;
   else
-    return *sym_p(",", 1, infixr);
+    return *sym_p(",", __pair_sym, 1, infixr);
 }
 
 symbol& symtable::seq_sym()
 {
-  symbol *_sym = lookup_p("$$");
-  if (_sym)
-    return *_sym;
+  lookup_p("$$", __seq_sym);
+  if (__seq_sym)
+    return *__seq_sym;
   else
-    return *sym_p("$$", 0, infixl);
+    return *sym_p("$$", __seq_sym, 0, infixl);
 }
 
 symbol& symtable::not_sym()
 {
-  symbol *_sym = lookup_p("~");
-  if (_sym)
-    return *_sym;
+  lookup_p("~", __not_sym);
+  if (__not_sym)
+    return *__not_sym;
   else
-    return *sym_p("~", 3, prefix);
+    return *sym_p("~", __not_sym, 3, prefix);
 }
 
 symbol& symtable::bitnot_sym()
 {
-  symbol *_sym = lookup_p("not");
-  if (_sym)
-    return *_sym;
+  lookup_p("not", __bitnot_sym);
+  if (__bitnot_sym)
+    return *__bitnot_sym;
   else
-    return *sym_p("not", 7, prefix);
+    return *sym_p("not", __bitnot_sym, 7, prefix);
 }
 
 symbol& symtable::or_sym()
 {
-  symbol *_sym = lookup_p("||");
-  if (_sym)
-    return *_sym;
+  lookup_p("||", __or_sym);
+  if (__or_sym)
+    return *__or_sym;
   else
-    return *sym_p("||", 2, infixr);
+    return *sym_p("||", __or_sym, 2, infixr);
 }
 
 symbol& symtable::and_sym()
 {
-  symbol *_sym = lookup_p("&&");
-  if (_sym)
-    return *_sym;
+  lookup_p("&&", __and_sym);
+  if (__and_sym)
+    return *__and_sym;
   else
-    return *sym_p("&&", 3, infixr);
+    return *sym_p("&&", __and_sym, 3, infixr);
 }
 
 symbol& symtable::bitor_sym()
 {
-  symbol *_sym = lookup_p("or");
-  if (_sym)
-    return *_sym;
+  lookup_p("or", __bitor_sym);
+  if (__bitor_sym)
+    return *__bitor_sym;
   else
-    return *sym_p("or", 6, infixl);
+    return *sym_p("or", __bitor_sym, 6, infixl);
 }
 
 symbol& symtable::bitand_sym()
 {
-  symbol *_sym = lookup_p("and");
-  if (_sym)
-    return *_sym;
+  lookup_p("and", __bitand_sym);
+  if (__bitand_sym)
+    return *__bitand_sym;
   else
-    return *sym_p("and", 7, infixl);
+    return *sym_p("and", __bitand_sym, 7, infixl);
 }
 
 symbol& symtable::shl_sym()
 {
-  symbol *_sym = lookup_p("<<");
-  if (_sym)
-    return *_sym;
+  lookup_p("<<", __shl_sym);
+  if (__shl_sym)
+    return *__shl_sym;
   else
-    return *sym_p("<<", 5, infixl);
+    return *sym_p("<<", __shl_sym, 5, infixl);
 }
 
 symbol& symtable::shr_sym()
 {
-  symbol *_sym = lookup_p(">>");
-  if (_sym)
-    return *_sym;
+  lookup_p(">>", __shr_sym);
+  if (__shr_sym)
+    return *__shr_sym;
   else
-    return *sym_p(">>", 5, infixl);
+    return *sym_p(">>", __shr_sym, 5, infixl);
 }
 
 symbol& symtable::less_sym()
 {
-  symbol *_sym = lookup_p("<");
-  if (_sym)
-    return *_sym;
+  lookup_p("<", __less_sym);
+  if (__less_sym)
+    return *__less_sym;
   else
-    return *sym_p("<", 4, infix);
+    return *sym_p("<", __less_sym, 4, infix);
 }
 
 symbol& symtable::greater_sym()
 {
-  symbol *_sym = lookup_p(">");
-  if (_sym)
-    return *_sym;
+  lookup_p(">", __greater_sym);
+  if (__greater_sym)
+    return *__greater_sym;
   else
-    return *sym_p(">", 4, infix);
+    return *sym_p(">", __greater_sym, 4, infix);
 }
 
 symbol& symtable::lesseq_sym()
 {
-  symbol *_sym = lookup_p("<=");
-  if (_sym)
-    return *_sym;
+  lookup_p("<=", __lesseq_sym);
+  if (__lesseq_sym)
+    return *__lesseq_sym;
   else
-    return *sym_p("<=", 4, infix);
+    return *sym_p("<=", __lesseq_sym, 4, infix);
 }
 
 symbol& symtable::greatereq_sym()
 {
-  symbol *_sym = lookup_p(">=");
-  if (_sym)
-    return *_sym;
+  lookup_p(">=", __greatereq_sym);
+  if (__greatereq_sym)
+    return *__greatereq_sym;
   else
-    return *sym_p(">=", 4, infix);
+    return *sym_p(">=", __greatereq_sym, 4, infix);
 }
 
 symbol& symtable::equal_sym()
 {
-  symbol *_sym = lookup_p("==");
-  if (_sym)
-    return *_sym;
+  lookup_p("==", __equal_sym);
+  if (__equal_sym)
+    return *__equal_sym;
   else
-    return *sym_p("==", 4, infix);
+    return *sym_p("==", __equal_sym, 4, infix);
 }
 
 symbol& symtable::notequal_sym()
 {
-  symbol *_sym = lookup_p("~=");
-  if (_sym)
-    return *_sym;
+  lookup_p("~=", __notequal_sym);
+  if (__notequal_sym)
+    return *__notequal_sym;
   else
-    return *sym_p("~=", 4, infix);
+    return *sym_p("~=", __notequal_sym, 4, infix);
 }
 
 symbol& symtable::plus_sym()
 {
-  symbol *_sym = lookup_p("+");
-  if (_sym)
-    return *_sym;
+  lookup_p("+", __plus_sym);
+  if (__plus_sym)
+    return *__plus_sym;
   else
-    return *sym_p("+", 6, infixl);
+    return *sym_p("+", __plus_sym, 6, infixl);
 }
 
 symbol& symtable::minus_sym()
 {
-  symbol *_sym = lookup_p("-");
-  if (_sym)
-    return *_sym;
+  lookup_p("-", __minus_sym);
+  if (__minus_sym)
+    return *__minus_sym;
   else
-    return *sym_p("-", 6, infixl);
+    return *sym_p("-", __minus_sym, 6, infixl);
 }
 
 symbol& symtable::mult_sym()
 {
-  symbol *_sym = lookup_p("*");
-  if (_sym)
-    return *_sym;
+  lookup_p("*", __mult_sym);
+  if (__mult_sym)
+    return *__mult_sym;
   else
-    return *sym_p("*", 7, infixl);
+    return *sym_p("*", __mult_sym, 7, infixl);
 }
 
 symbol& symtable::fdiv_sym()
 {
-  symbol *_sym = lookup_p("/");
-  if (_sym)
-    return *_sym;
+  lookup_p("/", __fdiv_sym);
+  if (__fdiv_sym)
+    return *__fdiv_sym;
   else
-    return *sym_p("/", 7, infixl);
+    return *sym_p("/", __fdiv_sym, 7, infixl);
 }
 
 symbol& symtable::div_sym()
 {
-  symbol *_sym = lookup_p("div");
-  if (_sym)
-    return *_sym;
+  lookup_p("div", __div_sym);
+  if (__div_sym)
+    return *__div_sym;
   else
-    return *sym_p("div", 7, infixl);
+    return *sym_p("div", __div_sym, 7, infixl);
 }
 
 symbol& symtable::mod_sym()
 {
-  symbol *_sym = lookup_p("mod");
-  if (_sym)
-    return *_sym;
+  lookup_p("mod", __mod_sym);
+  if (__mod_sym)
+    return *__mod_sym;
   else
-    return *sym_p("mod", 7, infixl);
+    return *sym_p("mod", __mod_sym, 7, infixl);
 }
 
 symbol& symtable::amp_sym()
 {
-  symbol *_sym = lookup_p("&");
-  if (_sym)
-    return *_sym;
+  lookup_p("&", __amp_sym);
+  if (__amp_sym)
+    return *__amp_sym;
   else
-    return *sym_p("&", 9, postfix);
+    return *sym_p("&", __amp_sym, 9, postfix);
 }
 
 symbol& symtable::complex_rect_sym()
 {
-  symbol *_sym = lookup_p("+:");
-  if (_sym)
-    return *_sym;
+  lookup_p("+:", __complex_rect_sym);
+  if (__complex_rect_sym)
+    return *__complex_rect_sym;
   else
-    return *sym_p("+:", 5, infix);
+    return *sym_p("+:", __complex_rect_sym, 5, infix);
 }
 
 symbol& symtable::complex_polar_sym()
 {
-  symbol *_sym = lookup_p("<:");
-  if (_sym)
-    return *_sym;
+  lookup_p("<:", __complex_polar_sym);
+  if (__complex_polar_sym)
+    return *__complex_polar_sym;
   else
-    return *sym_p("<:", 5, infix);
+    return *sym_p("<:", __complex_polar_sym, 5, infix);
 }
