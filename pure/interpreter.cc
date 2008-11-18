@@ -66,8 +66,7 @@ interpreter::interpreter()
     stats(false), temp(0),
     ps("> "), libdir(""), histfile("/.pure_history"), modname("pure"),
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0), result(0),
-    gvardef(false), mem(0), exps(0), tmps(0), module(0),
-    JIT(0), FPM(0), fptr(0)
+    mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0), fptr(0)
 {
   if (!g_interp) {
     g_interp = this;
@@ -940,7 +939,7 @@ pure_expr *interpreter::defn(expr pat, expr& x, pure_expr*& e)
   env vars;
   // promote type tags and substitute macros and constants:
   expr rhs = csubst(macsubst(subst(vars, x)));
-  expr lhs = bind(vars, lcsubst(pat));
+  expr lhs = bind(true, vars, lcsubst(pat));
   build_env(vars, lhs);
   for (env::const_iterator it = vars.begin(); it != vars.end(); ++it) {
     int32_t f = it->first;
@@ -1119,7 +1118,7 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
   env vars;
   // promote type tags and substitute macros and constants:
   expr rhs = csubst(macsubst(subst(vars, x)));
-  expr lhs = bind(vars, lcsubst(pat));
+  expr lhs = bind(true, vars, lcsubst(pat));
   build_env(vars, lhs);
   for (env::const_iterator it = vars.begin(); it != vars.end(); ++it) {
     int32_t f = it->first;
@@ -1857,20 +1856,20 @@ void interpreter::add_macro_rule(rule *r)
 void interpreter::closure(expr& l, expr& r, bool b)
 {
   env vars;
-  expr u = bind(vars, lcsubst(l), b), v = subst(vars, r);
+  expr u = bind(false, vars, lcsubst(l), b), v = subst(vars, r);
   l = u; r = v;
 }
 
 void interpreter::closure(rule& r, bool b)
 {
   env vars;
-  expr u = expr(bind(vars, lcsubst(r.lhs), b)),
+  expr u = expr(bind(false, vars, lcsubst(r.lhs), b)),
     v = expr(subst(vars, r.rhs)),
     w = expr(subst(vars, r.qual));
   r = rule(u, v, w);
 }
 
-expr interpreter::bind(env& vars, expr x, bool b, path p)
+expr interpreter::bind(bool qual, env& vars, expr x, bool b, path p)
 {
   assert(!x.is_null());
   expr y;
@@ -1898,8 +1897,8 @@ expr interpreter::bind(env& vars, expr x, bool b, path p)
   case EXPR::APP: {
     if (p.len() >= MAXDEPTH)
       throw err("error in pattern (nesting too deep)");
-    expr u = bind(vars, x.xval1(), b, path(p, 0)),
-      v = bind(vars, x.xval2(), 1, path(p, 1));
+    expr u = bind(qual, vars, x.xval1(), b, path(p, 0)),
+      v = bind(qual, vars, x.xval2(), 1, path(p, 1));
     y = expr(u, v);
     break;
   }
@@ -1925,7 +1924,7 @@ expr interpreter::bind(env& vars, expr x, bool b, path p)
   default:
     assert(x.tag() > 0);
     const symbol& sym = symtab.sym(x.tag());
-    if (x.flags()&EXPR::QUAL || sym.s != "_" &&
+    if (!qual && (x.flags()&EXPR::QUAL) || sym.s != "_" &&
 	(sym.prec < 10 || sym.fix == nullary || p.len() == 0 && !b ||
 	 p.len() > 0 && p.last() == 0)) {
       // constant or constructor
@@ -1947,8 +1946,9 @@ expr interpreter::bind(env& vars, expr x, bool b, path p)
   if (x.astag() > 0) {
     const symbol& sym = symtab.sym(x.astag());
     if (sym.s != "_") {
-      if (sym.prec < 10 || sym.fix == nullary)
-	throw err("error in pattern (bad variable symbol '"+sym.s+"')");
+      if (!qual && (x.flags()&EXPR::ASQUAL) ||
+	  sym.prec < 10 || sym.fix == nullary)
+	throw err("error in  \"as\" pattern (bad variable symbol)");
       // Unless we're doing a pattern binding, subterms at the spine of a
       // function application won't be available at runtime, so we forbid
       // placing an "as" pattern there.
@@ -2873,18 +2873,18 @@ expr *interpreter::mksym_expr(string *s, int8_t tag)
       // Return a new instance here, since the anonymous variable may have
       // multiple occurrences on the lhs.
       x = new expr(sym.f);
-    else if (!gvardef && s->find("::") != string::npos) {
+    else if (s->find("::") != string::npos) {
       // Return a new qualified instance here, so that we don't mistake this
       // for a lhs variable.
       x = new expr(sym.f);
       x->flags() |= EXPR::QUAL;
     } else
       x = new expr(sym.x);
-  else if (s->find("::") != string::npos ||
-	   sym.f <= 0 || sym.prec < 10 || sym.fix == nullary)
+  else if (sym.f <= 0 || sym.prec < 10 || sym.fix == nullary)
     throw err("error in expression (misplaced type tag)");
   else {
     x = new expr(sym.f);
+    if (s->find("::") != string::npos) x->flags() |= EXPR::QUAL;
     // record type tag:
     x->set_ttag(tag);
   }
@@ -2895,9 +2895,8 @@ expr *interpreter::mksym_expr(string *s, int8_t tag)
 expr *interpreter::mkas_expr(string *s, expr *x)
 {
   const symbol &sym = symtab.checksym(*s);
-  if (!gvardef && s->find("::") != string::npos ||
-      sym.f <= 0 || sym.prec < 10 || sym.fix == nullary)
-    throw err("error in pattern (bad variable symbol '"+(*s)+"')");
+  if (sym.f <= 0 || sym.prec < 10 || sym.fix == nullary)
+    throw err("error in  \"as\" pattern (bad variable symbol)");
   if (x->tag() > 0) {
     // Avoid globbering cached function symbols.
     expr *y = new expr(x->tag());
@@ -2905,6 +2904,7 @@ expr *interpreter::mkas_expr(string *s, expr *x)
     x = y;
   }
   x->set_astag(sym.f);
+  if (s->find("::") != string::npos) x->flags() |= EXPR::ASQUAL;
   delete s;
   return x;
 }
@@ -2975,7 +2975,7 @@ expr *interpreter::mkwhen_expr(expr *x, rulel *r)
   for (rulel::reverse_iterator it = r->rbegin();
        it != r->rend(); ++it, ++idx) {
     env vars;
-    expr v = bind(vars, lcsubst(it->lhs)), w = it->rhs;
+    expr v = bind(false, vars, lcsubst(it->lhs)), w = it->rhs;
     u = subst(vars, u, idx);
     uint8_t jdx = 0;
     for (rulel::iterator jt = s->begin(); jt != s->end(); ++jdx, ++jt) {

@@ -335,7 +335,6 @@ public:
   env globenv;       // global function and variable environment
   env macenv;        // global macro environment
   funset dirty;      // "dirty" function entries which need a recompile
-  bool gvardef;      // special mode to enable qualified vars in definitions
   pure_mem *mem;     // runtime expression memory
   pure_expr *exps;   // head of the free list (available expression nodes)
   pure_expr *tmps;   // temporaries list (to be collected after exceptions)
@@ -467,7 +466,7 @@ public:
   void add_macro_rule(rule *r);
   void promote_ttags(expr f, expr x, expr u);
   void promote_ttags(expr f, expr x, expr u, expr v);
-  expr bind(env& vars, expr x, bool b = true, path p = path());
+  expr bind(bool qual, env& vars, expr x, bool b = true, path p = path());
   expr subst(const env& vars, expr x, uint8_t idx = 0);
   expr fsubst(const env& funs, expr x, uint8_t idx = 0);
   expr csubst(expr x);

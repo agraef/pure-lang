@@ -277,17 +277,16 @@ source
 : /* empty */
 | source ';'
 | source item ';'
-| error ';'		{ interp.nerrs = yyerrstatus_ = 0;
-			  interp.gvardef = false; }
+| error ';'		{ interp.nerrs = yyerrstatus_ = 0; }
 ;
 
 item
 : expr
 { action(interp.exec($1), delete $1); }
-| LET { interp.gvardef = true; } simple_rule
-{ interp.gvardef = false; action(interp.define($3), delete $3); }
-| CONST { interp.gvardef = true; } simple_rule
-{ interp.gvardef = false; action(interp.define_const($3), delete $3); }
+| LET simple_rule
+{ action(interp.define($2), delete $2); }
+| CONST simple_rule
+{ action(interp.define_const($2), delete $2); }
 | DEF simple_rule
 { action(interp.add_macro_rule($2), delete $2); }
 | rule

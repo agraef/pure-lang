@@ -146,6 +146,7 @@ struct EXPR {
     OVF		= 1,	// overflowed int constant -> bigint
     PAREN	= 1<<1,	// parenthesized expression
     QUAL	= 1<<2,	// qualified id
+    ASQUAL	= 1<<3,	// qualified id in "as" pattern
   };
 
   uint32_t refc;  // reference counter
