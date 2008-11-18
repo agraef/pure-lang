@@ -1680,9 +1680,9 @@ preprocessing purposes, while still being robust and easy to use.
 .SH DECLARATIONS
 Pure is a very terse language by design. Usually you don't declare much stuff,
 you just define it and be done with it. However, there are a few toplevel
-constructs which let you declare special symbol attributes and manage programs
-consisting of several source modules. These are: explicit symbol declarations
-which determine ``scope'' and ``fixity'' of a symbol,
+constructs which let you declare symbols with special attributes and manage
+programs consisting of several source modules. These are: explicit symbol
+declarations which determine ``scope'' and ``fixity'' of a symbol,
 .B extern
 declarations for external C functions (described in the \fIC INTERFACE\fP
 section),
@@ -1780,9 +1780,7 @@ consisting of a large number of different modules.
 Examples for all types of symbol declarations can be found in the prelude
 which declares a bunch of standard (arithmetic, relational, logical) operator
 symbols as well as the list and pair constructors `:' and `,', and a few
-nullary symbols (mostly for denoting different kinds of exceptions).
-.PP
-The
+nullary symbols (mostly for denoting different kinds of exceptions). The
 .B using
 and
 .B namespace
@@ -1862,9 +1860,14 @@ Additional namespaces can be created with the
 declaration, which also switches to the given namespace (makes it the
 .I current
 namespace), so that subsequent symbol declarations create symbols in that
-namespace rather than the default one. Thus, in order to create two symbols
-with the same print name 'foo' in two different namespaces 'foo' and 'bar',
-you can write:
+namespace rather than the default one. The current namespace applies to all
+kinds of symbol declarations, including operator and nullary symbol
+declarations, as well as
+.B extern
+declarations (the latter are described in the \fIC INTERFACE\fP section).
+.PP
+For instance, in order to create two symbols with the same print name 'foo' in
+two different namespaces 'foo' and 'bar', you can write:
 .sp
 .nf
 \fBnamespace\fP foo;
@@ -2341,6 +2344,32 @@ declaration with a clause of the form ``= \fIalias\fP''. For instance:
 0.0
 .fi
 .PP
+As an alternative, you can also declare the C function in a special namespace
+(cf. \fINamespaces\fP in the \fIDECLARATIONS\fP section):
+.sp
+.nf
+> \fBnamespace\fP c;
+> \fBextern\fP double sin(double);
+> c::sin 0.3;
+0.29552020666134
+.fi
+.PP
+Note that the namespace qualification only affects the Pure side; the
+underlying C function is still called under the unqualified name as usual.
+The way in which such qualified externs are accessed is the same as for
+ordinary qualified symbols. In particular, the
+.B using namespace
+declaration applies as usual, and you can declare such symbols as
+.B private
+if needed. It is also possible to combine a namespace qualifier with an alias:
+.sp
+.nf
+> \fBnamespace\fP c;
+> \fBextern\fP double sin(double) = mysin;
+> c::mysin 0.3;
+0.29552020666134
+.fi
+.PP
 External C functions are resolved by the LLVM runtime, which first looks for
 the symbol in the C library and Pure's runtime library (or the interpreter
 executable, if the interpreter was linked statically). Thus all C library and
@@ -2681,9 +2710,10 @@ all matching symbols should be selected.
 .B -m
 Select defined macros.
 .TP
-\fB-p\fP[\fIflag\fP] Select only private symbols if \fIflag\fP is nonzero (the
-default), otherwise (\fIflag\fP is zero) select only public symbols. If this
-option is omitted then both private and public symbols are selected.
+\fB-p\fP[\fIflag\fP]
+Select only private symbols if \fIflag\fP is nonzero (the default), otherwise
+(\fIflag\fP is zero) select only public symbols. If this option is omitted
+then both private and public symbols are selected.
 .TP
 \fB-t\fP[\fIlevel\fP]
 Select symbols and definitions at the given ``level'' of definitions and
@@ -3286,8 +3316,19 @@ since otherwise a rule like `f g = g+1' would suddenly change meaning if you
 happen to add a definition like `g x = x-1' somewhere else in your program,
 which certainly isn't desirable.)
 .PP
-Fortunately, the syntactic equality operator `===' defined in the prelude
-comes to the rescue here. Just define `foop' as follows:
+A possible workaround is to ``escape'' the function symbol using an empty
+namespace qualifier:
+.sp
+.nf
+foop f = \fBcase\fP f \fBof\fP ::foo = 1; _ = 0 \fBend\fP;
+.fi
+.PP
+This trick works in \fBcase\fP expressions and function definitions, but fails
+in circumstances in which qualified variable symbols are permitted (i.e., in
+variable and constant definitions). A better solution is to employ the
+syntactic equality operator `===' defined in the prelude to match the target
+value against the function symbol. This allows you to define the `foop'
+predicate as follows:
 .sp
 .nf
 > foop f = f===foo;
