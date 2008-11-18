@@ -315,9 +315,9 @@ in an equation. Instead, Pure parses the left-hand side of an equation using
 the following syntactic convention, which is also called the
 .I head = function
 rule: A symbol is a literal function (or constructor) symbol if it is the head
-symbol of a function application (like 'foo' and 'bar' in the above
+symbol of a function application (like `foo' and `bar' in the above
 example). Other identifiers on the left-hand side are the variables of the
-equation (like 'x' in this example).
+equation (like `x' in this example).
 .PP
 Due to its term rewriting semantics, Pure goes beyond most other functional
 languages in that it can do symbolic evaluations just as well as ``normal''
@@ -1866,8 +1866,8 @@ declarations, as well as
 .B extern
 declarations (the latter are described in the \fIC INTERFACE\fP section).
 .PP
-For instance, in order to create two symbols with the same print name 'foo' in
-two different namespaces 'foo' and 'bar', you can write:
+For instance, in order to create two symbols with the same print name `foo' in
+two different namespaces `foo' and `bar', you can write:
 .sp
 .nf
 \fBnamespace\fP foo;
@@ -2038,7 +2038,7 @@ keyword in the symbol declaration:
 .fi
 .PP
 Note that, at this point, secret::baz is now invisible, even if you
-have 'secret' in the search namespace list:
+have `secret' in the search namespace list:
 .sp
 .nf
 > \fBusing\fP \fBnamespace\fP secret;
@@ -2048,7 +2048,7 @@ baz 99
 <stdin>, line 27: symbol 'secret::baz' is private here
 .fi
 .PP
-The only way to bring the symbol back into scope is to make the 'secret'
+The only way to bring the symbol back into scope is to make the `secret'
 namespace current again:
 .sp
 .nf
@@ -2886,7 +2886,7 @@ version      var  version = "@version@";
 5 variables
 .fi
 .PP
-Or you can list just private symbols of the namespace 'foo', as follows:
+Or you can list just private symbols of the namespace `foo', as follows:
 .sp
 .nf
 > \fBshow\fP -pg foo::*
@@ -3104,12 +3104,25 @@ x,y..z, and the `..' operator now has a higher precedence than the `,'
 operator. This makes writing matrix slices like x!!(i..j,k..l) much more
 convenient.
 .PP
-Moreover, in Pure 0.13 the naming of the logical and bitwise operations was
-changed, so that these are now called ~, &&, || and not/and/or,
-respectively. (Previously, ~ was used for bitwise, `not' for logical negation,
-which was rather inconsistent, albeit compatible with the naming of the `not'
-operation in Haskell and ML.) Also, to stay in line with this naming scheme,
-inequality was renamed to ~= (previously !=).
+In Pure 0.13 the naming of the logical and bitwise operations was changed, so
+that these are now called ~, &&, || and not/and/or, respectively. (Previously,
+~ was used for bitwise, `not' for logical negation, which was rather
+inconsistent, albeit compatible with the naming of the `not' operation in
+Haskell and ML.) Also, to stay in line with this naming scheme, inequality was
+renamed to ~= (previously !=).
+.PP
+Pure 0.14 introduced the namespaces feature. Consequently, the scope of
+private symbols is now confined to a namespace rather than a source module.
+Symbols in the default namespace are always public, and the compiler warns
+about attempts to declare such a symbol
+.BR private .
+Pre-0.14 scripts making use of private symbols need to be adapted
+accordingly. Also note that syntax like `foo::int' may now also denote a
+qualified symbol rather than a tagged variable, if `foo' has been declared as
+a namespace. You can work around such ambiguities by renaming the variable, or
+by placing spaces around the `::' delimiter (these aren't permitted in a
+qualified symbol, so the construct `foo :: int' is always interpreted as a
+tagged variable, no matter whether `foo' is also a valid namespace).
 .SS Error Recovery
 The parser uses a fairly simplistic panic mode error recovery which tries to
 catch syntax errors at the toplevel only. This seems to work reasonably well,
