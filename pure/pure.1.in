@@ -1863,7 +1863,8 @@ declaration, which also switches to a given namespace (makes it the
 .I current
 namespace), so that subsequent symbol declarations create symbols in the
 current namespace rather than the default one. Thus, in order to create two
-symbols with the same print name in two different namespaces, you can write:
+symbols with the same print name 'foo' in two different namespaces 'foo'
+and 'bar', you can write:
 .sp
 .nf
 \fBnamespace\fP foo;
@@ -1889,12 +1890,18 @@ symbol of the form \fInamespace-id\fP::\fIsymbol\fP:
 98
 .fi
 .PP
-It is also possible to specify a list of
+This avoids any potential name clashes, since the qualified identifier
+notation always makes it clear which namespace the given identifier belongs
+to.
+.PP
+If there are no name clashes, it is rather inconvenient if you always have to
+write identifiers in their fully qualified form. As a remedy, Pure allows you
+to specify a list of
 .I search
 namespaces which are to be searched for unqualified symbols. This is done with
 the
 .B using namespace
-declaration:
+declaration, as follows:
 .sp
 .nf
 > \fBusing\fP \fBnamespace\fP foo;
@@ -1913,16 +1920,8 @@ declaration also lets you search multiple namespaces simultaneously:
 \fBusing\fP \fBnamespace\fP foo, bar;
 .fi
 .PP
-A
-.B using namespace
-declaration with an empty list of namespaces resets the search namespaces:
-.sp
-.nf
-\fBusing\fP \fBnamespace\fP;
-.fi
-.PP
-Note that the compiler complains if a given unqualified symbol exists in
-several search namespaces:
+However, this requires that an unqualified identifier exists in at most one of
+the listed namespaces, otherwise you get an error message:
 .sp
 .nf
 > \fBusing\fP \fBnamespace\fP foo, bar;
@@ -1930,13 +1929,29 @@ several search namespaces:
 <stdin>, line 15: symbol 'foo' is ambiguous here
 .fi
 .PP
-In such a case you'll have to use qualified symbols as described above to
-resolved the name clash.
+In such a case you have to use the appropriate namespace qualifier to resolve
+the name clash:
+.sp
+.nf
+> foo::foo 99;
+100
+.fi
 .PP
-The compiler searches for unqualified symbols first in the current namespace
-(if any), then in the currently active search namespaces (if any), and finally
-in the default (i.e., the global) namespace, in that order. If no existing
-symbol is found, a new public symbol is created. New
+A
+.B using namespace
+declaration without any namespace arguments gets you back to the default,
+empty list of search namespaces:
+.sp
+.nf
+\fBusing\fP \fBnamespace\fP;
+.fi
+.PP
+The precise rules for looking up unqualified identifiers are as follows. The
+compiler searches for unqualified symbols first in the current namespace (if
+any), then in the currently active search namespaces (if any), and finally in
+the default (i.e., the global) namespace, in that order. If no existing symbol
+is found, a new symbol is created, implicitly declaring the identifier as a
+public symbol with default attributes. New
 .I unqualified
 symbols are always created in the default namespace, unless you explicitly
 declare them (in which case they become members of the current namespace, as
@@ -1955,10 +1970,62 @@ bar::foo x = x-1;
 \fBnamespace\fP;
 .fi
 .PP
-Symbols can also be declared
-.BR private ,
-in which case they are only visible if the namespace in which they were
-created is current. For instance:
+As a little safety measure against silly typos, the compiler warns you about
+implicit declarations of new qualified symbols which are created out of their
+``home'' namespace:
+.sp
+.nf
+> \fBnamespace\fP;
+> foo::bar x = 1/x;
+<stdin>, line 6: warning: implicit declaration of symbol 'foo::bar'
+.fi
+.PP
+To avoid these warnings, you either have to use an explicit declaration or
+make sure that the right namespace is current when introducing the symbol.
+.PP
+Explicit declarations are also needed if you want to introduce special
+operator and nullary symbols. This works just like in the default namespace,
+except that you add the appropriate
+.B namespace
+declaration before declaring the symbols. For instance, here is how you can
+override the predefined '+' operation so that it multiplies integers rather
+than adding them:
+.sp
+.nf
+> \fBnamespace\fP my;
+> \fBinfixl\fP 6 +;
+> x+y = x*y;
+> 5+7;
+35
+.fi
+.PP
+Note that the new definition is only active inside the namespace we created,
+outside this namespace the '+' operation still works normally, and in fact you
+can use qualified symbols to select the two different versions as needed:
+.sp
+.nf
+> 5+7;
+35
+> 5 ::+ 7;
+12
+> 5 my::+ 7;
+35
+> \fBnamespace\fP;
+> 5+7;
+12
+.fi
+.PP
+Pure also allows you to have
+.I private
+symbols, as a means to hide away internal operations which shouldn't be
+accessed directly by client programs. Note that this only works in specific
+namespaces; since symbols in the default namespace are always visible
+everywhere, they cannot be private. Thus, to declare a private symbol you
+first have to create a namespace in which the symbol can live.
+.PP
+Symbols are declared private by using the
+.B private
+keyword in the symbol declaration:
 .sp
 .nf
 > \fBnamespace\fP secret;
@@ -1971,8 +2038,8 @@ created is current. For instance:
 > \fBnamespace\fP;
 .fi
 .PP
-At this point, secret::baz is now invisible, even if you have 'secret' in the
-search namespace list:
+Note that, at this point, secret::baz is now invisible, even if you
+have 'secret' in the search namespace list:
 .sp
 .nf
 > \fBusing\fP \fBnamespace\fP secret;
@@ -1982,8 +2049,8 @@ baz 99
 <stdin>, line 27: symbol 'secret::baz' is private here
 .fi
 .PP
-The only way to bring the symbol into scope again is to make the 'secret'
-namespace current:
+The only way to bring the symbol back into scope is to make the 'secret'
+namespace current again:
 .sp
 .nf
 > \fBnamespace\fP secret;
@@ -1992,12 +2059,6 @@ namespace current:
 > secret::baz 99;
 198
 .fi
-.PP
-Private symbols are useful to hide away internal operations which shouldn't be
-accessed directly by client programs. Note that this only works in specific
-namespaces; since symbols in the default namespace are always visible
-everywhere, they cannot be private. Thus, to declare a private symbol you
-first have to create a namespace in which the symbol can live.
 .PP
 Finally, note that, similar to the
 .B using
