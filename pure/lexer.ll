@@ -1524,7 +1524,8 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     yylval->xval = new expr(sym->x);
     return optoken[sym->prec][sym->fix];
   } else {
-    if (!sym && !qual.empty() && qual != *interp.symtab.current_namespace) {
+    if (!interp.nerrs && !sym && !qual.empty() &&
+	qual != *interp.symtab.current_namespace) {
       string msg = "warning: implicit declaration of symbol '"+
 	string(yytext)+"'";
       interp.warning(*yylloc, msg);
