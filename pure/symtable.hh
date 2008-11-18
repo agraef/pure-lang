@@ -39,6 +39,8 @@ class symtable {
   vector<symbol*> rtab;
   symbol* lookup_p(const char *s);
   symbol* lookup_p(const char *s, int& count);
+  symbol* sym_p(const char *s, bool priv = false);
+  symbol* sym_p(const char *s, prec_t prec, fix_t fix, bool priv = false);
 public:
   symtable();
   ~symtable();
@@ -94,7 +96,7 @@ public:
   symbol& void_sym();
   symbol& pair_sym();
   symbol& seq_sym();
-  symbol& neg_sym() { return *sym("neg"); }
+  symbol& neg_sym() { return *sym_p("neg"); }
   symbol& not_sym();
   symbol& bitnot_sym();
   symbol& or_sym();
@@ -115,16 +117,16 @@ public:
   symbol& fdiv_sym();
   symbol& div_sym();
   symbol& mod_sym();
-  symbol& quote_sym() { return *sym("quote"); }
-  symbol& catch_sym() { return *sym("catch"); }
-  symbol& catmap_sym() { return *sym("catmap"); }
-  symbol& rowcatmap_sym() { return *sym("rowcatmap"); }
-  symbol& colcatmap_sym() { return *sym("colcatmap"); }
-  symbol& failed_match_sym() { return *sym("failed_match"); }
-  symbol& failed_cond_sym() { return *sym("failed_cond"); }
-  symbol& signal_sym() { return *sym("signal"); }
-  symbol& segfault_sym() { return *sym("stack_fault"); }
-  symbol& bad_matrix_sym() { return *sym("bad_matrix_value"); }
+  symbol& quote_sym() { return *sym_p("quote"); }
+  symbol& catch_sym() { return *sym_p("catch"); }
+  symbol& catmap_sym() { return *sym_p("catmap"); }
+  symbol& rowcatmap_sym() { return *sym_p("rowcatmap"); }
+  symbol& colcatmap_sym() { return *sym_p("colcatmap"); }
+  symbol& failed_match_sym() { return *sym_p("failed_match"); }
+  symbol& failed_cond_sym() { return *sym_p("failed_cond"); }
+  symbol& signal_sym() { return *sym_p("signal"); }
+  symbol& segfault_sym() { return *sym_p("stack_fault"); }
+  symbol& bad_matrix_sym() { return *sym_p("bad_matrix_value"); }
   symbol& amp_sym();
   symbol& complex_rect_sym();
   symbol& complex_polar_sym();
