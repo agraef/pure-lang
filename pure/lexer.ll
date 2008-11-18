@@ -1508,7 +1508,7 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     // not a valid namespace prefix
     if (tag) {
       // we can still parse this as an identifier with a type tag
-      yyless(k);
+      yyless(k); qual = "";
       check(*yylloc, yytext);
     } else {
       string msg = "unknown namespace '"+qual+"'";
@@ -1524,6 +1524,11 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     yylval->xval = new expr(sym->x);
     return optoken[sym->prec][sym->fix];
   } else {
+    if (!sym && !qual.empty() && qual != *interp.symtab.current_namespace) {
+      string msg = "warning: implicit declaration of symbol '"+
+	string(yytext)+"'";
+      interp.warning(*yylloc, msg);
+    }
     yylval->sval = new string(yytext);
     return token::ID;
   }
