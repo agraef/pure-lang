@@ -4019,7 +4019,10 @@ Function *interpreter::declare_extern(string name, string restype,
     else if (argt[i] == Type::Int32Ty && sizeof(int) > 4)
       argt[i] = Type::Int64Ty;
   if (asname.empty()) asname = name;
-  symbol& sym = *symtab.sym((*symtab.current_namespace)+"::"+asname);
+  string asid = (*symtab.current_namespace)+"::"+asname;
+  symbol* _sym = symtab.sym(asid);
+  assert(_sym);
+  symbol& sym = *_sym;
   if (globenv.find(sym.f) != globenv.end() &&
       externals.find(sym.f) == externals.end())
     // There already is a Pure function or global variable for this symbol.
