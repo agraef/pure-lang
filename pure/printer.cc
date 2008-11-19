@@ -156,9 +156,28 @@ ostream& operator << (ostream& os, const expr& x)
   return printx(os, x, false);
 }
 
-static inline ostream& print_ttag(ostream& os, int8_t ttag)
+static inline ostream& print_ttag(ostream& os, int8_t ttag, bool pad = false)
 {
-  switch (ttag) {
+  if (pad) switch (ttag) {
+  case EXPR::INT:
+    return os << " :: int";
+  case EXPR::BIGINT:
+    return os << " :: bigint";
+  case EXPR::DBL:
+    return os << " :: double";
+  case EXPR::STR:
+    return os << " :: string";
+  case EXPR::MATRIX:
+    return os << " :: matrix";
+  case EXPR::DMATRIX:
+    return os << " :: dmatrix";
+  case EXPR::CMATRIX:
+    return os << " :: cmatrix";
+  case EXPR::IMATRIX:
+    return os << " :: imatrix";
+  default:
+    return os;
+  } else switch (ttag) {
   case EXPR::INT:
     return os << "::int";
   case EXPR::BIGINT:
@@ -200,6 +219,8 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
   switch (x.tag()) {
   case EXPR::VAR: {
     const symbol& sym = interpreter::g_interp->symtab.sym(x.vtag());
+    bool pad = interpreter::g_interp->namespaces.find(sym.s) !=
+      interpreter::g_interp->namespaces.end();
     os << sym.s;
     if ((interpreter::g_verbose&verbosity::envs) != 0) {
       os << "/*" << (unsigned)x.vidx() << ":";
@@ -207,8 +228,9 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
       for (size_t i = 0; i < p.len(); i++)
 	os << p[i];
       os << "*/";
+      pad = false;
     }
-    if (pat) print_ttag(os, x.ttag());
+    if (pat) print_ttag(os, x.ttag(), pad);
     return os;
   }
   case EXPR::FVAR: {
@@ -462,8 +484,10 @@ ostream& operator << (ostream& os, const env& e)
     case env_info::none:
       break;
     case env_info::lvar: {
+      bool pad = interpreter::g_interp->namespaces.find(sym.s) !=
+	interpreter::g_interp->namespaces.end();
       os << sym.s;
-      print_ttag(os, info.ttag);
+      print_ttag(os, info.ttag, pad);
       if ((interpreter::g_verbose&verbosity::envs) != 0) {
 	os << " = /*";
 	const path& p = *info.p;
