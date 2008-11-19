@@ -167,14 +167,10 @@ static inline ostream& print_ttag(ostream& os, int8_t ttag, bool pad = false)
     return os << " :: double";
   case EXPR::STR:
     return os << " :: string";
+  case EXPR::PTR:
+    return os << " :: pointer";
   case EXPR::MATRIX:
     return os << " :: matrix";
-  case EXPR::DMATRIX:
-    return os << " :: dmatrix";
-  case EXPR::CMATRIX:
-    return os << " :: cmatrix";
-  case EXPR::IMATRIX:
-    return os << " :: imatrix";
   default:
     return os;
   } else switch (ttag) {
@@ -186,14 +182,10 @@ static inline ostream& print_ttag(ostream& os, int8_t ttag, bool pad = false)
     return os << "::double";
   case EXPR::STR:
     return os << "::string";
+  case EXPR::PTR:
+    return os << "::pointer";
   case EXPR::MATRIX:
     return os << "::matrix";
-  case EXPR::DMATRIX:
-    return os << "::dmatrix";
-  case EXPR::CMATRIX:
-    return os << "::cmatrix";
-  case EXPR::IMATRIX:
-    return os << "::imatrix";
   default:
     return os;
   }
