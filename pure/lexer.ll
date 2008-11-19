@@ -122,6 +122,21 @@ struct argl {
   }
 };
 
+static inline bool sym_match(bool gflag, const string& arg, const string& sym)
+{
+  bool qual = sym.find("::")!=string::npos;
+  bool match = gflag?!fnmatch(arg.c_str(), sym.c_str(), 0):(arg == sym);
+  if (match)
+    return true;
+  else if (qual)
+    return false;
+  string sym1 = "::"+sym;
+  if (gflag)
+    return !fnmatch(arg.c_str(), sym1.c_str(), 0);
+  else
+    return arg == sym1;
+}
+
 typedef map<int32_t,ExternInfo> extmap;
 
 struct env_sym {
@@ -591,8 +606,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	// see whether we actually want the defined symbol to be listed
 	matches = false;
 	for (arg = args.l.begin(); arg != args.l.end(); ++arg) {
-	  if (gflag ? (!fnmatch(arg->c_str(), sym.s.c_str(), 0)) :
-	      (*arg == sym.s)) {
+	  if (sym_match(gflag, *arg, sym.s)) {
 	    matches = true;
 	    break;
 	  }
@@ -617,8 +631,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	  if (!args.l.empty()) {
 	    matches = false;
 	    for (arg = args.l.begin(); arg != args.l.end(); ++arg) {
-	      if (gflag ? (!fnmatch(arg->c_str(), sym.s.c_str(), 0)) :
-		  (*arg == sym.s)) {
+	      if (sym_match(gflag, *arg, sym.s)) {
 		matches = true;
 		break;
 	      }
@@ -658,8 +671,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	    // see whether we actually want the defined symbol to be listed
 	    matches = false;
 	    for (arg = args.l.begin(); arg != args.l.end(); ++arg) {
-	      if (gflag ? (!fnmatch(arg->c_str(), sym.s.c_str(), 0)) :
-		  (*arg == sym.s)) {
+	      if (sym_match(gflag, *arg, sym.s)) {
 		matches = true;
 		break;
 	      }
@@ -949,8 +961,7 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	// see whether we actually want the defined symbol to be dumped
 	matches = false;
 	for (arg = args.l.begin(); arg != args.l.end(); ++arg) {
-	  if (gflag ? (!fnmatch(arg->c_str(), sym.s.c_str(), 0)) :
-	      (*arg == sym.s)) {
+	  if (sym_match(gflag, *arg, sym.s)) {
 	    matches = true;
 	    break;
 	  }
@@ -974,8 +985,7 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	  if (!args.l.empty()) {
 	    matches = false;
 	    for (arg = args.l.begin(); arg != args.l.end(); ++arg) {
-	      if (gflag ? (!fnmatch(arg->c_str(), sym.s.c_str(), 0)) :
-		  (*arg == sym.s)) {
+	      if (sym_match(gflag, *arg, sym.s)) {
 		matches = true;
 		break;
 	      }
@@ -1013,8 +1023,7 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	    // see whether we actually want the defined symbol to be dumped
 	    matches = false;
 	    for (arg = args.l.begin(); arg != args.l.end(); ++arg) {
-	      if (gflag ? (!fnmatch(arg->c_str(), sym.s.c_str(), 0)) :
-		  (*arg == sym.s)) {
+	      if (sym_match(gflag, *arg, sym.s)) {
 		matches = true;
 		break;
 	      }
@@ -1237,8 +1246,7 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
 	// see whether we actually want the defined symbol to be cleared
 	matches = false;
 	for (arg = args.l.begin(); arg != args.l.end(); ++arg) {
-	  if (gflag ? (!fnmatch(arg->c_str(), sym.s.c_str(), 0)) :
-	      (*arg == sym.s)) {
+	  if (sym_match(gflag, *arg, sym.s)) {
 	    matches = true;
 	    break;
 	  }
@@ -1275,8 +1283,7 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
 	    // see whether we actually want the defined symbol to be cleared
 	    matches = false;
 	    for (arg = args.l.begin(); arg != args.l.end(); ++arg) {
-	      if (gflag ? (!fnmatch(arg->c_str(), sym.s.c_str(), 0)) :
-		  (*arg == sym.s)) {
+	      if (sym_match(gflag, *arg, sym.s)) {
 		matches = true;
 		break;
 	      }
