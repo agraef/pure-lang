@@ -595,7 +595,7 @@ private:
   llvm::Value *debug(const char *format, llvm::Value *x, llvm::Value *y);
   llvm::Value *debug(const char *format, llvm::Value *x, llvm::Value *y,
 		     llvm::Value *z);
-  void unwind(int32_t tag = 0);
+  void unwind(int32_t tag = 0, bool terminate = true);
   llvm::Function *fun(string name, matcher *pm, bool nodefault = false);
   llvm::Function *fun_prolog(string name);
   void fun_body(matcher *pm, bool nodefault = false);

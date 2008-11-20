@@ -5742,8 +5742,8 @@ Value *interpreter::cond(expr x, expr y, expr z)
   else if (x.ttag() != 0) {
     // wrong type of constant; raise an exception
     // XXXTODO: we might want to optionally invoke the debugger here
-    unwind(symtab.failed_cond_sym().f);
-    return NullExprPtr;
+    unwind(symtab.failed_cond_sym().f, false);
+    iv = Zero;
   } else
     // typeless expression, will be checked at runtime
     iv = get_int(x);
@@ -5790,8 +5790,8 @@ void interpreter::toplevel_cond(expr x, expr y, expr z)
   else if (x.ttag() != 0) {
     // wrong type of constant; raise an exception
     // XXXTODO: we might want to optionally invoke the debugger here
-    unwind(symtab.failed_cond_sym().f);
-    return;
+    unwind(symtab.failed_cond_sym().f, false);
+    iv = Zero;
   } else
     // typeless expression, will be checked at runtime
     iv = get_int(x);
@@ -6220,7 +6220,7 @@ Value *interpreter::debug(const char *format, Value *x, Value *y, Value *z)
   return e.CreateCall(f, args);
 }
 
-void interpreter::unwind(int32_t tag)
+void interpreter::unwind(int32_t tag, bool terminate)
 {
   Function *f = module->getFunction("pure_throw");
   assert(f);
@@ -6231,8 +6231,9 @@ void interpreter::unwind(int32_t tag)
     args.push_back(NullExprPtr);
   Env& e = act_env();
   e.CreateCall(f, args);
-  // add a ret instruction to terminate the current block
-  e.builder.CreateRet(NullExprPtr);
+  if (terminate)
+    // add a ret instruction to terminate the current block
+    e.builder.CreateRet(NullExprPtr);
 }
 
 // Create a function.
