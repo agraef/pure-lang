@@ -1443,8 +1443,7 @@ void interpreter::using_namespaces(list<string> *ids)
   }
 }
 
-void interpreter::declare(const yy::location& l,
-			  bool priv, prec_t prec, fix_t fix, list<string> *ids)
+void interpreter::declare(bool priv, prec_t prec, fix_t fix, list<string> *ids)
 {
   for (list<string>::const_iterator it = ids->begin();
        it != ids->end(); ++it) {

@@ -303,7 +303,7 @@ item
     interp.declare_op = true; }
   ids
 { interp.declare_op = false;
-  action(interp.declare(yyloc, $1->priv, $1->prec, $1->fix, $3), delete $3);
+  action(interp.declare($1->priv, $1->prec, $1->fix, $3), delete $3);
   delete $1; }
 | USING fnames
 { action(interp.run(*$2), {}); delete $2; }

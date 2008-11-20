@@ -451,8 +451,7 @@ public:
   void mark_dirty(int32_t f);
   void compile(expr x);
   void using_namespaces(list<string> *ids = 0);
-  void declare(const yy::location& l,
-	       bool priv, prec_t prec, fix_t fix, list<string> *ids);
+  void declare(bool priv, prec_t prec, fix_t fix, list<string> *ids);
   void define(rule *r);
   void define_const(rule *r);
   void exec(expr *x);
