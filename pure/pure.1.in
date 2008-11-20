@@ -1704,7 +1704,7 @@ explicit
 declaration of ordinary identifiers is thus rarely needed, unless you want to
 declare symbols as members of a specific
 .IR namespace .
-Symbols in specific namespaces can also be declared
+Symbols can also be declared
 .BR private ,
 meaning that the symbol is visible only in the namespace it belongs to. This
 is explained in more detail under \fINamespaces\fP below.
@@ -1884,7 +1884,7 @@ Note that just the
 keyword by itself in the last line switches back to the default namespace.
 We can now refer to the symbols we just defined using
 .I qualified
-symbols of the form \fInamespace-id\fP::\fIsymbol\fP:
+symbols of the form \fInamespace\fP::\fIsymbol\fP:
 .sp
 .nf
 > foo::foo 99;
@@ -1895,10 +1895,11 @@ symbols of the form \fInamespace-id\fP::\fIsymbol\fP:
 .PP
 This avoids any potential name clashes, since the qualified identifier
 notation always makes it clear which namespace the given identifier belongs
-to.
+to. (The namespace prefix in a qualified symbol can also be empty in which
+case it explicitly denotes a symbol in the default namespace.)
 .PP
-It is rather inconvenient if you always have to write identifiers in their
-fully qualified form. As a remedy, Pure allows you to specify a list of
+Since it is rather inconvenient if you always have to write identifiers in
+their fully qualified form, Pure allows you to specify a list of
 .I search
 namespaces which are to be searched for unqualified symbols. This is done with
 the
@@ -1990,8 +1991,8 @@ operator and nullary symbols. This works just like in the default namespace,
 except that you add the appropriate
 .B namespace
 declaration before declaring the symbols. For instance, here is how you can
-override the predefined '+' operation so that it multiplies its operands
-rather than adding them:
+create a new `+' operation which multiplies its operands rather than adding
+them:
 .sp
 .nf
 > \fBnamespace\fP my;
@@ -2001,9 +2002,9 @@ rather than adding them:
 35
 .fi
 .PP
-Note that the new definition is only active inside the namespace we created,
-outside this namespace the '+' operation still works normally, and in fact you
-can use qualified symbols to pick the version that you need:
+Note that the new `+' operation really belongs to the namespace we
+created. The `+' operation in the default namespace works as before, and in
+fact you can use qualified symbols to pick the version that you need:
 .sp
 .nf
 > \fBnamespace\fP;
@@ -2018,11 +2019,9 @@ can use qualified symbols to pick the version that you need:
 Pure also allows you to have
 .I private
 symbols, as a means to hide away internal operations which shouldn't be
-accessed directly by client programs. Note that this only works in specific
-namespaces; since symbols in the default namespace are always visible
-everywhere, they cannot be private. Thus, to declare a private symbol you
-first have to create a namespace in which the symbol can live. Symbols are
-declared private by using the
+accessed directly by client programs. The scope of a private symbol is
+confined to its namespace, i.e., the symbol is only visible when its ``home''
+namespace is current. Symbols are declared private by using the
 .B private
 keyword in the symbol declaration:
 .sp
@@ -2042,6 +2041,7 @@ have `secret' in the search namespace list:
 .sp
 .nf
 > \fBusing\fP \fBnamespace\fP secret;
+> // this actually creates a 'baz' symbol in the default namespace:
 > baz 99;
 baz 99
 > secret::baz 99;
