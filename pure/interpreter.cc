@@ -1446,10 +1446,6 @@ void interpreter::using_namespaces(list<string> *ids)
 void interpreter::declare(const yy::location& l,
 			  bool priv, prec_t prec, fix_t fix, list<string> *ids)
 {
-  if (symtab.current_namespace->empty() && priv) {
-    warning(l, "warning: 'private' attribute is ignored in default namespace");
-    priv = false;
-  }
   for (list<string>::const_iterator it = ids->begin();
        it != ids->end(); ++it) {
     if (it->find("::") != string::npos) {
