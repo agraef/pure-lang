@@ -1,7 +1,8 @@
 /* Port of CSV module from Q to Pure
 
    Author: Eddie Rucker
-   Date:   July 3, 2008
+   Date: July 3, 2008
+   Modified: November 21, 2008 to handle namespaces
 */
 
 #include <stdlib.h>
@@ -26,13 +27,13 @@
 
    Output:
      pure_string representing a CSV record. The string may have embedded '\n's.
-       Does not check for badly formated records.
+     Does not check for badly formated records.
 
    Exceptions:
-     csv_error msg is invoked f there is a system memory allocation error,
+     csv::error msg is invoked f there is a system memory allocation  error,
      beyond end of file, or a file error is encountered.
 */
-pure_expr *c_csv_fgets(FILE *fp, char *quote) {
+pure_expr *csv_fgets(FILE *fp, char *quote) {
   char *bf, *tb, *s;
   int quote_count = 0, n_quote;
   long sz = BUFSIZE, n = 0;
@@ -47,8 +48,8 @@ pure_expr *c_csv_fgets(FILE *fp, char *quote) {
     s = bf + n;
     if (n > sz) {
       if (!(tb = realloc(bf, sz <<= 1))) {
-	free(bf);
-	error_handler("realloc error");
+        free(bf);
+        error_handler("realloc error");
       }
       s = (bf = tb) + n;
     }
@@ -59,19 +60,19 @@ pure_expr *c_csv_fgets(FILE *fp, char *quote) {
     }
     if (tb == NULL) {
       if (n == 0)
-	return NULL;
+        return NULL;
       else
-	return pure_cstring(bf);
+        return pure_cstring(bf);
     }
     n += strlen(s);
     if (*(bf+n-1) != '\n')
       continue;
     while (*s) {
       if (!strncmp(s, quote, n_quote)) {
-	++quote_count;
-	s += n_quote;
+        ++quote_count;
+        s += n_quote;
       } else 
-	++s;
+      ++s;
     }
     if (!(quote_count & 1))
       /* let pure handle freeing bf */
@@ -132,19 +133,20 @@ static pure_expr *convert_string(char *s, int cvt_flag) {
   free(elems)
 
 /* Convert a CSV string to a list of fields
-   input: 
+   input:
      dialect: (Conversion flag, field delimeter char, string delimeter char)
      s: CSV formatted string
 
    Output: record of fields
 
    Exceptions:
-     Invokes 'csv_error MSG' if the string is badly formatted, or memory error
+     Invokes 'csv::error MSG' if the string is badly formatted, or memory
+     error
 
    Notes:
-     \r char is treated as white space except inside "" 
+     \r char is treated as white space except inside ""
 */
-pure_expr *c_csvstr_to_list(char *s, pure_expr *dialect) {
+pure_expr *csvstr_to_list(char *s, pure_expr *dialect) {
   size_t n_elems;
   pure_expr **elems, **rec, **trec;
   int n, st = 0, fld_sz = 256, n_fld, rec_sz = 64, n_ws = 0, n_rec = 0,
@@ -161,14 +163,14 @@ pure_expr *c_csvstr_to_list(char *s, pure_expr *dialect) {
 	&& pure_is_cstring_dup(elems[4], &lineterm)
 	&& pure_is_int(elems[5], &skipspace_f)))
     return 0;
-  
+
   if (!(fld = (char *)malloc(fld_sz))) {
     free_params;
     error_handler("malloc error");
   }
 
   if (!(rec = (pure_expr **)malloc(rec_sz*sizeof(pure_expr)))) {
-    free(fld);  
+    free(fld);
     free_params;
     error_handler("malloc error");
   }
@@ -209,7 +211,7 @@ pure_expr *c_csvstr_to_list(char *s, pure_expr *dialect) {
 	s += n_quote;
 	st = 2;
       } else if (!*s || *s == EOF) {
-	sprintf(errmsg, "column %d: expected {%s}.", 
+	sprintf(errmsg, "column %d: expected {%s}.",
 		n_fld+1, quote);
 	st = 20;
       } else if (!strncmp(s, escape, n_escape)) {
@@ -237,7 +239,7 @@ pure_expr *c_csvstr_to_list(char *s, pure_expr *dialect) {
 	++s;
 	st = 3;
       } else {
-	sprintf(errmsg, "column %d: expected {%s}.", 
+	sprintf(errmsg, "column %d: expected {%s}.",
 		n_fld+1, delimiter);
 	st = 20;
       }
@@ -260,7 +262,7 @@ pure_expr *c_csvstr_to_list(char *s, pure_expr *dialect) {
       break;
     case 4:
       if (!strncmp(s, quote, n_quote) || !strncmp(s, escape, n_escape)) {
-	sprintf(errmsg, "column %d: expected {%s}.", 
+	sprintf(errmsg, "column %d: expected {%s}.",
 		n_fld+1, delimiter);
 	st = 20;
       } else if (!strncmp(s, delimiter, n_delimiter)) {
@@ -317,23 +319,23 @@ pure_expr *c_csvstr_to_list(char *s, pure_expr *dialect) {
   resize_str;					\
   strncpy(t, tb, len - mrk)
 
-/* Convert list to a CSV formated string 
+/* Convert list to a CSV formated string
    Input:
      dialect: (Conversion flag, field delimeter char, string delimeter char)
      list: record to be converted
-   
+
    Output: CSV formatted string
-   
+
    Exceptions:
      Invokes csv_error if no more memory is available or if field cannot be
      converted.
 
    Notes:
-     \r char is treated as white space except inside "" 
+     \r char is treated as white space except inside ""
 */
-pure_expr *c_list_to_csvstr(pure_expr *list, pure_expr *dialect) {
+pure_expr *list_to_csvstr(pure_expr *list, pure_expr *dialect) {
   size_t n_elems;
-  int i, n, k, sz = 256, mrk, quote_cnt, delim_cnt, lineterm_cnt, len = 0, 
+  int i, n, k, sz = 256, mrk, quote_cnt, delim_cnt, lineterm_cnt, len = 0,
     skipspace_f, n_escape, n_quote, n_delimiter, n_lineterm, quoting_style,
     ival;
   char *s, *ts, *p, *sval, tb[48], errmsg[80], *escape, *quote, *delimiter,
@@ -341,7 +343,7 @@ pure_expr *c_list_to_csvstr(pure_expr *list, pure_expr *dialect) {
   double dval;
   pure_expr **elems, **xs;
   register char *t;
-  
+
   if (!(pure_is_listv(dialect, &n_elems, &elems)
 	&& n_elems == 6
 	&& pure_is_string_dup(elems[0], &delimiter)
@@ -353,12 +355,12 @@ pure_expr *c_list_to_csvstr(pure_expr *list, pure_expr *dialect) {
 	&& pure_is_listv(list, &n_elems, &xs))) {
     return 0;
   }
-  
+
   if (!(s = (char *)malloc(sz))) {
     free_params;
     error_handler("malloc error");
   }
-  
+
   n_escape = strlen(escape);
   n_quote = strlen(quote);
   n_delimiter = strlen(delimiter);
@@ -437,7 +439,7 @@ pure_expr *c_list_to_csvstr(pure_expr *list, pure_expr *dialect) {
       strncpy(t, delimiter, n_delimiter);
       t += n_delimiter;
     } else {
-      sprintf(errmsg, "field %d: invalid conversion type.", 
+      sprintf(errmsg, "field %d: invalid conversion type.",
 	      i+1);
       free_params;
       error_handler(errmsg);

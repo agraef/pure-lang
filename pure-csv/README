@@ -21,60 +21,60 @@ able to find the installed module.
 USAGE
 
 Data records are represented as lists of strings and numeric data. Dialects
-are created using csv_dialect with a list of specifications outlined in 
+are created using csv::dialect with a list of specifications outlined in 
 csv.pure.
 
-- csv_list (s::string, dialect)
-  csv_list s::string
+- csv::list (s::string, dialect)
+  csv::list s::string
   
   Converts a CSV formatted string s to a list of fields according to the 
   dialect specified. If no dialect is specified, conversion is performed using
-  RFC 4180 rules (http://www.ietf.org/rfc/rfc4180.txt). Invalidly formatted
-  CSV causes return of a 'csv_error msg' term (see NOTES below).
+  RFC 4180 rules (http://www.ietf.org/rfc/rfc4180.txt). An invalidly formatted
+  CSV string causes return of a 'csv::error msg' term (see NOTES below).
   
-- csv_str (x:xs)
-  csv_str ((x:xs), dialect)
+- csv::str (x:xs)
+  csv::str ((x:xs), dialect)
   
-  Converts a list of fields, which includes only strings, integers, and
-  doubles to a CSV formatted string according to the dialect specified. If
-  no dialect is specified, conversion is performed using RFC 4180 rules
-  (http://www.ietf.org/rfc/rfc4180.txt). Lists that are not strings, integers,
-  or floats invoke a 'csv_error msg' term (see NOTES below).
+  Converts a list of fields, which includes only strings, integers, and doubles
+  to a CSV formatted string according to the dialect specified. If no dialect
+  is specified, conversion is performed using RFC 4180 rules
+  (http://www.ietf.org/rfc/rfc4180.txt). Lists that include data types other
+  than strings, integers, or floats invoke a 'csv::error msg' term (see NOTES
+  below).
 
-- csv_fgets (f::pointer, dialect)
-  csv_fgets f::pointer
+- csv::fgets (f::pointer, dialect)
+  csv::fgets f::pointer
 
-  Is equivalent to csv_list except that reading is from file f.
+  Is equivalent to csv::list except that reading is from file f.
 
-- csv_fputs ((x:xs), dialect, f)
-  csv_fputs ((x:xs), f)
+- csv::fputs (x:xs) (f::pointer, dialect)
+  csv::fputs (x:xs) f::pointer
 
-  Is equivalent to csv_str except that writing is to file f.
+  Is equivalent to csv::str except that writing is to file f.
   
-- csv_fget (name::string, dialect)
-  csv_fget name::string
+- csv::fget (f::pointer, dialect)
+  csv::fget f::pointer
   
-  Reads a named file and returns a list of records. These procedures should 
-  only be used on data files that are small enough to fit in the computers 
-  RAM.
+  Reads a file and returns a list of records. These procedures should only be 
+  used on data files that are small enough to fit in the computers RAM.
   
-- csv_fput (name::string, recs, dialect)
-  csv_fput (name::string, recs)
+- csv::fput (x:xs) (f::pointer, dialect)
+  csv::fput (x:xs) f::pointer
   
-  Writes list of records to a named file. Each record is converted according
-  to the rules stated in the csv_str procedure.
+  Writes list of records to a file. Each record is converted according to the
+  rules stated in the csv::str procedure.
 
 NOTES
 
-- Errors in the conversion routines (input that does not abide by the
-  dialect rules; records containing field types other than strings, integers
-  and floats) cause a special 'csv_error msg' term to be returned, where msg
-  is a string describing the particular error. To handle error conditions,
-  your application should either check for these, or define csv_error to
-  directly handle the error in some way (e.g., provide a default value, or
-  raise an exception). For instance:
+- Errors in the conversion routines (input that does not abide by the dialect
+  rules; records containing field types other than strings, integers and 
+  floats) cause a special 'csv::error msg' term to be returned, where msg is a
+  string describing the particular error. To handle error conditions, your
+  application should either check for these, or define csv::error to directly
+  handle the error in some way (e.g., provide a default value, or raise an
+  exception). For instance:
 
-  csv_error msg = throw msg;
+  csv::error msg = throw msg;
 
 - MS Excel files should be written using "=""0004""" if leading 0s are 
   significant. Use the same technique if leading space is significant. Use this
@@ -82,9 +82,10 @@ NOTES
 
 EXAMPLES
 
-Examples are provided in the examples subdirectory. See "readsamples.pure" for
-reading csv files and "writesamples.pure" for writing.
+Examples are provided in the examples subdirectory. See "read-samples.pure" for
+reading csv files and "write-samples.pure" for writing.
 
 September 29, 2008
+Updated November 21, 2008
 Eddie Rucker
 erucker@bmc.edu
