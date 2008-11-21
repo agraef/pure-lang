@@ -131,10 +131,10 @@ with the
 .B PURELIB
 environment variable. If the
 .B PURELIB
-variable is not set, a system-specific default is used. Other source scripts
-specified on the command line are searched for in the current directory if a
-relative pathname is given. In addition, the executed program may load other
-scripts and libraries via a
+variable is not set, a system-specific default is used. Relative pathnames of
+other source scripts specified on the command line are interpreted relative to
+the current working directory. In addition, the executed program may load
+other scripts and libraries via a
 .B using
 declaration in the source, which are searched for in a number of locations,
 including the directories named with the
@@ -3112,17 +3112,14 @@ Haskell and ML.) Also, to stay in line with this naming scheme, inequality was
 renamed to ~= (previously !=).
 .PP
 Pure 0.14 introduced the namespaces feature. Consequently, the scope of
-private symbols is now confined to a namespace rather than a source module.
-Symbols in the default namespace are always public, and the compiler warns
-about attempts to declare such a symbol
-.BR private .
-Pre-0.14 scripts making use of private symbols need to be adapted
-accordingly. Also note that syntax like `foo::int' may now also denote a
-qualified symbol rather than a tagged variable, if `foo' has been declared as
-a namespace. You can work around such ambiguities by renaming the variable, or
-by placing spaces around the `::' delimiter (these aren't permitted in a
-qualified symbol, so the construct `foo :: int' is always interpreted as a
-tagged variable, no matter whether `foo' is also a valid namespace).
+private symbols is now confined to a namespace rather than a source module;
+scripts making use of private symbols need to be adapted accordingly. Also
+note that syntax like `foo::int' may now also denote a qualified symbol rather
+than a tagged variable, if `foo' has been declared as a namespace. You can
+work around such ambiguities by renaming the variable, or by placing spaces
+around the `::' delimiter (these aren't permitted in a qualified symbol, so
+the construct `foo :: int' is always interpreted as a tagged variable, no
+matter whether `foo' is also a valid namespace).
 .SS Error Recovery
 The parser uses a fairly simplistic panic mode error recovery which tries to
 catch syntax errors at the toplevel only. This seems to work reasonably well,
