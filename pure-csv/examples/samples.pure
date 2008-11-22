@@ -1,12 +1,16 @@
+/* to run this program, type 'pure -x samples.pure' at the command
+   prompt
+*/
+
 using system;
 using csv;
 
 using namespace csv;
-::TABBED = dialect [DELIMITER=>"\t"];
+const TABBED = dialect [DELIMITER=>"\t"];
 using namespace;
 
 let f = fopen "test1.csv" "w";
-puts "Writing a whole dataset to 'test1.csv' using standard CSV format.";
+puts "Writing to 'test1.csv' using fput and standard CSV format.";
 csv::fput [["this", " that ", 23, -3.0, ""],
            ["a \"b\"", "c c", 10, 3.2, " "],
            ["a, b", "", 0, 0.0, "00"]] f;
@@ -14,13 +18,13 @@ fclose f;
 puts "Done.";
 
 let f = fopen "test1.csv" "r";
-puts "Reading a whole dataset from 'test1.csv' using standard CSV format.";
+puts "Reading from 'test1.csv' using fget and standard CSV format.";
 puts (str $ csv::fget f);
 fclose f;
 puts "Done.";
 
 let f = fopen "test2.csv" "w";
-puts "Writing to 'test2.csv' using tab delimited format record at a time.";
+puts "Writing to 'test2.csv' using fputs and tab delimited format.";
 csv::fputs ["this\ty", " that ", 23, -3.0, ""] (f, TABBED);
 csv::fputs ["a \"b\"", "c c", 10, 3.2, " "] (f, TABBED);
 csv::fputs ["a, b", "", 0, 0.0, "00"] (f, TABBED);
@@ -28,7 +32,7 @@ fclose f;
 puts "Done.";
 
 let f = fopen "test2.csv" "r";
-puts "Writing to 'test2.csv' using tab delimited format record at a time.";
+puts "Reading from 'test2.csv' using fgets and tab delimited format.";
 puts (str $ csv::fgets (f, TABBED));
 puts (str $ csv::fgets (f, TABBED));
 puts (str $ csv::fgets (f, TABBED));

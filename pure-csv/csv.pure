@@ -22,7 +22,7 @@
    Author: Robert E. Rucker
    Email: erucker@bmc.edu
    Date: July 15, 2008
-   Updated: November 21, 2008 to use namespaces.
+   Updated: November 21,22, 2008 to use namespaces.
 */
 
 namespace C;
@@ -49,8 +49,6 @@ extern expr *csvstr_to_list(char *str, expr *dialect);
 extern expr *list_to_csvstr(expr *list, expr *dialect);
 
 extern int fputs(char *s, FILE *fp);
-
-namespace;
 
 namespace csv;
 
@@ -111,7 +109,6 @@ public
   DEFAULTS
 
 /* Public equations */
-  error
   dialect
   str
   list
@@ -119,9 +116,6 @@ public
   fputs
   fget
   fput;
-
-/* User may define error for custom error handling. */
-error msg;
 
 const DELIMITER = 0;
 const ESCAPE = 1;
@@ -140,7 +134,7 @@ private defaults;
 let defaults = [",", "\"", "\"", 1, "\n", 1];
 
 /* Creates a dialect base on the list of dialect options given above.
-   For examples, see RFC4180, UNIX and EXCEL constants below.
+   For examples, see RFC4180, UNIX, and EXCEL constants below.
 */
 dialect opts
   = zipwith ((lookup) opts2) (0..5) defaults
@@ -167,13 +161,13 @@ const DEFAULTS
       UNIX;
 
 /* List to CSV string conversion */
-  str rec@[] 
-| str rec@(_:_)
-  = C::list_to_csvstr rec DEFAULTS;
+  str record@[]
+| str record@(_:_)
+  = C::list_to_csvstr record DEFAULTS;
 
-  str (rec@[], dialect@(_:_))
-| str (rec@(_:_), dialect@(_:_))
-  = C::list_to_csvstr rec dialect;
+  str (recordc@[], dialect@(_:_))
+| str (record@(_:_), dialect@(_:_))
+  = C::list_to_csvstr record dialect;
 
 /* Write a record to a file */
   fputs record@[] f::pointer
@@ -189,7 +183,7 @@ list s::string
   = C::csvstr_to_list s DEFAULTS;
 list (s::string, dialect@(_:_))
   = C::csvstr_to_list s dialect;
-list (C::csv_fgets s _,_)
+list (csv_fgets s _,_)
   = s;
 
 /* Read a record from a file */
@@ -218,5 +212,3 @@ fput records@(_:_) (f::pointer, dialect@(_:_))
 
 fput records@(_:_) f::pointer
   = fput records (f, DEFAULTS);
-
-namespace;
