@@ -18,7 +18,7 @@
 #define QUOTE_EMBEDDED 2
 
 #define error_handler(msg) \
-  return pure_app(pure_symbol(pure_sym("error")), pure_cstring_dup(msg))
+  return pure_app(pure_symbol(pure_sym("csv::error")), pure_cstring_dup(msg))
 
 /* Return a CSV record as a Pure string.
    Input:
