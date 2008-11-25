@@ -197,6 +197,7 @@ puts (str $ gsl::ran_discrete_pdf 0 px
   + gsl::ran_discrete_pdf 2 px);
 gsl::ran_discrete_free px;
 
+let data = gsl::sort {4,4,3,5,2,2,7,5,1,1,0,2,3};
 puts (str [
 /* Mean */
 gsl::stats_mean {1,2,3,4,5},
@@ -230,5 +231,9 @@ gsl::stats_covariance {1,2,3,4,5} {3.0,4.5,6.0,7.5,9.0},
 gsl::stats_covariance_m {1,2,3,4,5} {3.0,4.5,6.0,7.5,9.0} 3 6,
 
 /* Correlation */
-gsl::stats_correlation {1,2,3,4,5} {3.0,4.5,6.0,7.5,9.0}
+gsl::stats_correlation {1,2,3,4,5} {3.0,4.5,6.0,7.5,9.0},
+
+/* Median and Percentiles -- DATA MUST BE SORTED */
+gsl::stats_median_from_sorted_data data,
+gsl::stats_quantile_from_sorted_data data 0.25 // lower quartile
 ]);

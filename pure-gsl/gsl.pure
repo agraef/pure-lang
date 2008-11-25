@@ -702,6 +702,11 @@ extern double gsl_stats_covariance_m
    double mean1, double mean2);
 extern double gsl_stats_correlation
   (double *data1, size_t stride1, double *data2, size_t stride2, size_t n);
+extern void gsl_sort(double *data, size_t stride, size_t n);
+extern double gsl_stats_median_from_sorted_data
+  (double *sorted_data, size_t stride, size_t n);
+extern double gsl_stats_quantile_from_sorted_data
+  (double *sorted_data, size_t stride, size_t n, double f);
 
 namespace gsl;
 
@@ -850,7 +855,10 @@ public
   stats_lag1_autocorrelation_m
   stats_covariance
   stats_covariance_m
-  stats_correlation;
+  stats_correlation
+  sort
+  stats_median_from_sorted_data
+  stats_quantile_from_sorted_data;
 
 using namespace C;
 /* Gaussian (Normal) Distribution */
@@ -1513,8 +1521,35 @@ stats_correlation m1::matrix m2::matrix
     when
       mm1 = dmatrix m1;
       mm2 = dmatrix m2;
-      v = gsl_stats_correlation 
-        (pointer mm1) 1 (pointer mm2) 1 (#m1);
+      v = gsl_stats_correlation (pointer mm1) 1 (pointer mm2) 1 (#m1);
     end
     if rowvectorp m1 && rowvectorp m2;
 
+/* Sort for median and quatile functions
+   The manual recomends using a better stable sort. */
+
+sort m::matrix
+  = mm
+    when
+      mm = dmatrix m;
+      gsl_sort (pointer mm) 1 (#m);
+    end
+    if rowvectorp m;
+
+/* Median and Percentiles */
+
+stats_median_from_sorted_data m::matrix
+  = v
+    when
+      mm = dmatrix m;
+      v = gsl_stats_median_from_sorted_data (pointer mm) 1 (#m);
+    end
+    if rowvectorp m;
+
+stats_quantile_from_sorted_data m::matrix f::double
+  = v
+    when
+      mm = dmatrix m;
+      v = gsl_stats_quantile_from_sorted_data (pointer mm) 1 (#m) f;
+    end
+    if rowvectorp m && f >= 0.0 && f <= 1.0;
