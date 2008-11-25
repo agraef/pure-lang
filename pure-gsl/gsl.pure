@@ -539,6 +539,7 @@ x::matrix \\ y::matrix	= pinv x*y if nmatrixp x && nmatrixp y;
 
 
 /* gsl C random distribution functions */
+namespace C;
 
 extern double gsl_ran_gaussian_pdf(double x, double sigma);
 extern double gsl_ran_ugaussian_pdf(double x);
@@ -822,6 +823,7 @@ public
   stats_variance_with_fixed_mean
   stats_sd_with_fixed_mean;
 
+using namespace C;
 /* Gaussian (Normal) Distribution */
 
 ran_ugaussian_pdf x
@@ -831,7 +833,7 @@ ran_gaussian_pdf x sigma
   = gsl_ran_gaussian_pdf (double x) (double sigma)
     if realp x && realp sigma;
 cdf_ugaussian_P x
-  = gsl_cdf_ugaussian_P (double x) if realp x; 
+  = gsl_cdf_ugaussian_P (double x) if realp x;
 cdf_gaussian_P x sigma
   = gsl_cdf_gaussian_P (double x) (double sigma)
     if realp x && realp sigma;
@@ -842,7 +844,7 @@ cdf_gaussian_Q x sigma
     if realp x && realp sigma;
 cdf_ugaussian_Pinv p
   = gsl_cdf_ugaussian_Pinv (double p) if realp p;
-cdf_gaussian_Pinv p sigma 
+cdf_gaussian_Pinv p sigma
   = gsl_cdf_gaussian_Pinv (double p) (double sigma)
     if realp p && realp sigma;
 cdf_ugaussian_Qinv q
@@ -859,14 +861,14 @@ ran_gaussian_tail_pdf x a sigma
 ran_ugaussian_tail_pdf x a
   = gsl_ran_ugaussian_tail_pdf (double x) (double a)
     if realp x && realp a;
- 
+
 /* Bivariate Gaussian Distribution */
 
 ran_bivariate_gaussian_pdf x y sigma_x sigma_y rho
   = gsl_ran_bivariate_gaussian_pdf (double x) (double y)
       (double sigma_x) (double sigma_y) (double rho)
     if realp x && realp y && realp sigma_x && realp sigma_y && realp rho;
-    
+
 /* Exponential Distribution */
 
 ran_exponential_pdf x mu
@@ -884,7 +886,7 @@ cdf_exponential_Pinv p mu
 cdf_exponential_Qinv q mu
   = gsl_cdf_exponential_Qinv (double q) (double mu)
     if realp q && realp mu;
-    
+
 /* The Laplace Distribution */
 
 ran_laplace_pdf x a
@@ -1039,7 +1041,7 @@ cdf_chisq_Qinv q nu
 ran_fdist_pdf x nu1 nu2
   = gsl_ran_fdist_pdf (double x) (double nu1) (double nu2)
     if realp x && realp nu1 && realp nu2;
-cdf_fdist_P x nu1 nu2 
+cdf_fdist_P x nu1 nu2
   = gsl_cdf_fdist_P (double x) (double nu1) (double nu2)
     if realp x && realp nu1 && realp nu2;
 cdf_fdist_Q x nu1 nu2
@@ -1178,7 +1180,7 @@ cdf_gumbel2_Qinv q a b
   = gsl_cdf_gumbel2_Qinv (double q) (double a) (double b)
     if realp q && realp a && realp b;
 
-/* Dirichlet Distribution 
+/* Dirichlet Distribution
    Notice the 'k' parameter is not used in the Pure wrapper. */
 
 ran_dirichlet_pdf alpha theta
@@ -1198,7 +1200,7 @@ ran_dirichlet_lnpdf alpha theta
 
 ran_discrete_preproc p
   = x
-    when 
+    when
       x = gsl_ran_discrete_preproc (#p) (pointer p);
     end
     if dmatrixp p;
@@ -1357,23 +1359,25 @@ stats_sd_m (m, stride::int, mean)
 stats_sd_m (m::matrix, mean)
   = stats_sd_m (dmatrix m, 1, mean);
 
-stats_tss (m, stride::int)
-  = v
-    when
-      v = gsl_stats_tss (pointer m) stride (#m);
-    end
-    if dmatrixp m && stride > 0;
-stats_tss m::matrix
-  = stats_tss (dmatrix m, 1);
-
-stats_tss_m (m, stride::int, mean)
-  = v
-    when
-      v = gsl_stats_tss_m (pointer m) stride (#m) (double mean);
-    end
-    if dmatrixp m && stride > 0;
-stats_tss_m (m::matrix, mean)
-  = stats_tss_m (dmatrix m, 1, mean);
+if gsl_version >= "1.11" then
+  eval ("gsl::stats_tss (m, stride::int) " +
+    "= v " +
+    "when " +
+    "v = C::gsl_stats_tss (pointer m) stride (#m); " +
+    "end " +
+    "if dmatrixp m && stride > 0;" +
+    "gsl::stats_tss m::matrix " +
+    "= gsl::stats_tss (dmatrix m, 1);" +
+    "gsl::stats_tss_m (m, stride::int, mean) " +
+    "= v " +
+    "when " +
+    "v = gsl_stats_tss_m (pointer m) stride (#m) (double mean); " +
+    "end " +
+    "if dmatrixp m && stride > 0; " + 
+    "stats_tss_m (m::matrix, mean) " +
+    "= stats_tss_m (dmatrix m, 1, mean); ")
+else
+  eval ";";
 
 stats_variance_with_fixed_mean (m, stride::int, mean)
   = v
