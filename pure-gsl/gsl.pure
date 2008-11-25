@@ -667,10 +667,7 @@ extern double gsl_ran_hypergeometric_pdf(int k, int n1, int n2, int t);
 extern double gsl_cdf_hypergeometric_P(int k, int n1, int n2, int t);
 extern double gsl_cdf_hypergeometric_Q(int k, int n1, int n2, int t);
 extern double gsl_ran_logarithmic_pdf(int k, double p);
-
-/* Mean, Standard Deviation, and Variance */
-
-extern double gsl_stats_mean(double *d, size_t stride, size_t n);
+extern double gsl_stats_mean(double *data, size_t stride, size_t n);
 extern double gsl_stats_variance(double *data, size_t stride, size_t n);
 extern double gsl_stats_variance_m
   (double *data, size_t stride, size_t n, double mean);
@@ -684,6 +681,27 @@ extern double gsl_stats_variance_with_fixed_mean
   (double *data, size_t stride, size_t n, double mean);
 extern double gsl_stats_sd_with_fixed_mean
   (double *data, size_t stride, size_t n, double mean);
+extern double gsl_stats_absdev(double *data, size_t stride, size_t n);
+extern double gsl_stats_absdev_m
+  (double *data, size_t stride, size_t n, double mean);
+extern double gsl_stats_skew(double *data, size_t stride, size_t n);
+extern double gsl_stats_skew_m_sd
+  (double *data, size_t stride, size_t n, double mean, double sd);
+extern double gsl_stats_kurtosis
+  (double *data, size_t stride, size_t n);
+extern double gsl_stats_kurtosis_m_sd
+  (double *data, size_t stride, size_t n, double mean, double sd);
+extern double gsl_stats_lag1_autocorrelation
+  (double *data, size_t stride, size_t n);
+extern double gsl_stats_lag1_autocorrelation_m
+  (double *data, size_t stride, size_t n, double mean);
+extern double gsl_stats_covariance
+  (double *data1, size_t stride1, double *data2, size_t stride2, size_t n);
+extern double gsl_stats_covariance_m
+  (double *data1, size_t stride1, double *data2, size_t stride2, size_t n,
+   double mean1, double mean2);
+extern double gsl_stats_correlation
+  (double *data1, size_t stride1, double *data2, size_t stride2, size_t n);
 
 namespace gsl;
 
@@ -821,7 +839,18 @@ public
   stats_tss
   stats_tss_m
   stats_variance_with_fixed_mean
-  stats_sd_with_fixed_mean;
+  stats_sd_with_fixed_mean
+  stats_absdev
+  stats_absdev_m
+  stats_skew
+  stats_skew_m_sd
+  stats_kurtosis
+  stats_kurtosis_m_sd
+  stats_lag1_autocorrelation
+  stats_lag1_autocorrelation_m
+  stats_covariance
+  stats_covariance_m
+  stats_correlation;
 
 using namespace C;
 /* Gaussian (Normal) Distribution */
@@ -960,8 +989,8 @@ ran_rayleigh_tail_pdf x a sigma
     if realp x && realp a && realp sigma;
 
 /* Landau Distribution */
-ran_landau x
-  = gsl_ran_landau x
+ran_landau_pdf x
+  = gsl_ran_landau_pdf x
     if realp x;
 
 /* Gamma Distribution */
@@ -1314,85 +1343,178 @@ ran_logarithmic_pdf k::int p
 
 /* Mean, Standard Deviation, and Variance */
 
-stats_mean (m, stride::int)
-  = v
-    when
-      v = gsl_stats_mean (pointer m) stride (#m);
-    end
-    if dmatrixp m && stride > 0;
 stats_mean m::matrix
-  = stats_mean (dmatrix m, 1);
-
-stats_variance (m, stride::int)
   = v
     when
-      v = gsl_stats_variance (pointer m) stride (#m);
+      mm = dmatrix m;
+      v = gsl_stats_mean (pointer mm) 1 (#m);
     end
-    if dmatrixp m && stride > 0;
+    if rowvectorp m;
+
 stats_variance m::matrix
-  = stats_variance (dmatrix m, 1);
-
-stats_variance_m (m, stride::int, mean)
   = v
     when
-      v = gsl_stats_variance_m (pointer m) stride (#m) (double mean);
+      mm = dmatrix m;
+      v = gsl_stats_variance (pointer mm) 1 (#m);
     end
-    if dmatrixp m && stride > 0;
-stats_variance_m (m::matrix, mean)
-  = stats_variance_m (dmatrix m, 1, mean);
+    if rowvectorp m;
 
-stats_sd (m, stride::int)
+stats_variance_m m::matrix mean
   = v
     when
-      v = gsl_stats_sd (pointer m) stride (#m);
+      mm = dmatrix m;
+      v = gsl_stats_variance_m (pointer mm) 1 (#m) (double mean);
     end
-    if dmatrixp m && stride > 0;
+    if rowvectorp m;
+
 stats_sd m::matrix
-  = stats_sd (dmatrix m, 1);
-
-stats_sd_m (m, stride::int, mean)
   = v
     when
-      v = gsl_stats_sd_m (pointer m) stride (#m) (double mean);
+      mm = dmatrix m;
+      v = gsl_stats_sd (pointer mm) 1 (#m);
     end
-    if dmatrixp m && stride > 0;
-stats_sd_m (m::matrix, mean)
-  = stats_sd_m (dmatrix m, 1, mean);
+    if rowvectorp m;
 
-if gsl_version >= "1.11" then
-  eval ("gsl::stats_tss (m, stride::int) " +
-    "= v " +
-    "when " +
-    "v = C::gsl_stats_tss (pointer m) stride (#m); " +
-    "end " +
-    "if dmatrixp m && stride > 0;" +
-    "gsl::stats_tss m::matrix " +
-    "= gsl::stats_tss (dmatrix m, 1);" +
-    "gsl::stats_tss_m (m, stride::int, mean) " +
-    "= v " +
-    "when " +
-    "v = gsl_stats_tss_m (pointer m) stride (#m) (double mean); " +
-    "end " +
-    "if dmatrixp m && stride > 0; " + 
-    "stats_tss_m (m::matrix, mean) " +
-    "= stats_tss_m (dmatrix m, 1, mean); ")
-else
-  eval ";";
-
-stats_variance_with_fixed_mean (m, stride::int, mean)
+stats_sd_m m::matrix mean
   = v
     when
-      v = gsl_stats_variance_with_fixed_mean (pointer m) stride (double mean);
+      mm = dmatrix m;
+      v = gsl_stats_sd_m (pointer mm) 1 (#m) (double mean);
     end
-    if dmatrixp m && stride > 0;
-stats_variance_with_fixed_mean (m::matrix, mean)
-  = stats_tss_m (dmatrix m, 1, mean);
+    if rowvectorp m;
 
-stats_sd_with_fixed_mean (m, stride::int, mean)
+stats_tss m::matrix
+  = v
+  when
+    mm = dmatrix m;
+    v = gsl_stats_tss (pointer mm) 1 (#m);
+  end
+  if rowvectorp m;
+
+stats_tss_m m::matrix mean
   = v
     when
-      v = gsl_stats_sd_with_fixed_mean (pointer m) stride (double mean);
+      mm = dmatrix m;
+      v = gsl_stats_tss_m (pointer mm) 1 (#m) (double mean);
     end
-    if dmatrixp m && stride > 0;
-stats_sd_with_fixed_mean (m::matrix, mean)
-  = stats_sd_with_fixed_mean (dmatrix m, 1, mean);
+    if rowvectorp m;
+
+stats_variance_with_fixed_mean m::matrix mean
+  = v
+    when
+      mm = dmatrix m;
+      v = gsl_stats_variance_with_fixed_mean (pointer mm) 1 (#m) (double mean);
+    end
+    if rowvectorp m;
+
+stats_sd_with_fixed_mean m::matrix mean
+  = v
+    when
+      mm = dmatrix m;
+      v = gsl_stats_sd_with_fixed_mean (pointer mm) 1 (#m) (double mean);
+    end
+    if rowvectorp m;
+
+/* Absolute deviation */
+
+stats_absdev m::matrix
+  = v
+    when
+      mm = dmatrix m;
+      v = gsl_stats_absdev (pointer mm) 1 (#m);
+    end
+    if rowvectorp m;
+
+stats_absdev_m m::matrix mean
+  = v
+    when
+      mm = dmatrix m;
+      v = gsl_stats_absdev_m (pointer mm) 1 (#m) (double mean);
+    end
+    if rowvectorp m;
+
+/* Higher moments (skewness and kurtosis) */
+
+stats_skew m::matrix
+  = v
+    when
+      mm = dmatrix m;
+      v = gsl_stats_skew (pointer mm) 1 (#m);
+    end
+    if rowvectorp m;
+
+stats_skew_m_sd m::matrix mean sd
+  = v
+    when
+      mm = dmatrix m;
+      v = gsl_stats_skew_m_sd (pointer mm) 1 (#m) (double mean) (double sd);
+    end
+    if rowvectorp m && sd >= 0.0;
+
+stats_kurtosis m::matrix
+  = v
+    when
+      mm = dmatrix m;
+      v = gsl_stats_kurtosis (pointer mm) 1 (#m);
+    end
+    if rowvectorp m;
+
+stats_kurtosis_m_sd m::matrix mean sd
+  = v
+    when
+      mm = dmatrix m;
+      v = gsl_stats_kurtosis_m_sd (pointer mm) 1 (#m) (double mean) (double sd);
+    end
+    if rowvectorp m && sd >= 0.0;
+ 
+/* Autocorrelation */
+
+stats_lag1_autocorrelation m::matrix
+  = v
+    when
+      mm = dmatrix m;
+      v = gsl_stats_lag1_autocorrelation (pointer mm) 1 (#m);
+    end
+    if rowvectorp m;
+
+stats_lag1_autocorrelation_m m::matrix mean
+  = v
+    when
+      mm = dmatrix m;
+      v = gsl_stats_lag1_autocorrelation_m (pointer mm) 1 (#m) (double mean);
+    end
+    if rowvectorp m;
+
+/* Covariance */
+
+stats_covariance m1::matrix m2::matrix
+  = v
+    when
+      mm1 = dmatrix m1;
+      mm2 = dmatrix m2;
+      v = gsl_stats_covariance (pointer mm1) 1 (pointer mm2) 1 (#m1);
+    end
+    if rowvectorp m1 && rowvectorp m2;
+
+stats_covariance_m m1::matrix m2::matrix mean1 mean2
+  = v
+    when
+      mm1 = dmatrix m1;
+      mm2 = dmatrix m2;
+      v = gsl_stats_covariance_m 
+        (pointer mm1) 1 (pointer mm2) 1 (#m1) (double mean1) (double mean2);
+    end
+    if rowvectorp m1 && rowvectorp m2;
+
+/* Correlation */
+
+stats_correlation m1::matrix m2::matrix
+  = v
+    when
+      mm1 = dmatrix m1;
+      mm2 = dmatrix m2;
+      v = gsl_stats_correlation 
+        (pointer mm1) 1 (pointer mm2) 1 (#m1);
+    end
+    if rowvectorp m1 && rowvectorp m2;
+
