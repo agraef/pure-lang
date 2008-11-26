@@ -353,7 +353,7 @@ static void receive_message(t_pure *x, t_symbol *s, int k,
   /* Build the parameter expression from the message. Floats, lists and
      symbols get special treatment, other kinds of objects are passed using
      their string representation. */
-  if (argc == 1 && argv[0].a_type == A_FLOAT)
+  if (argc == 1 && s == &s_float && argv[0].a_type == A_FLOAT)
     y = pure_double(argv[0].a_w.w_float);
   else if (s == &s_list) {
     xv = (argc>0)?malloc(argc*sizeof(pure_expr*)):0;
