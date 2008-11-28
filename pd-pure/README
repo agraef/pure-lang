@@ -191,20 +191,20 @@ for implementing all kinds of delays and, more generally, any kind of object
 which, once triggered, does its own sequencing of output messages.
 
 To these ends, the object function may return a special message of the form
-'delay t msg' (either by itself or as an element of a result list) to indicate
-that the message 'msg' should be delivered to the object function after t
-milliseconds (where t is either a machine int or a double value). After the
-prescribed delay the object function will then be invoked on the given
-message, and the results of this call are processed as usual (routing messages
-to outlets and/or scheduling new timer events in response to further 'delay'
-messages). Note that if the delay is zero or negative, the message is
-scheduled to be delivered immediately.
+'pd_delay t msg' (either by itself or as an element of a result list) to
+indicate that the message 'msg' should be delivered to the object function
+after t milliseconds (where t is either a machine int or a double
+value). After the prescribed delay the object function will then be invoked on
+the given message, and the results of this call are processed as usual
+(routing messages to outlets and/or scheduling new timer events in response to
+further 'pd_delay' messages). Note that if the delay is zero or negative, the
+message is scheduled to be delivered immediately.
 
 For instance, a simple kind of delay object can be implemented in Pure as
 follows:
 
 mydelay _ (alarm msg) = msg;
-mydelay t msg = delay t (alarm msg) otherwise;
+mydelay t msg = pd_delay t (alarm msg) otherwise;
 
 The desired delay time is specified as a creation argument. The first equation
 handles messages of the form 'alarm msg'; the action is to just output the
@@ -225,8 +225,8 @@ object with a 'stop' message as follows:
 
 nullary stop;
 mydelay _ (alarm msg) = msg;
-mydelay _ stop = delay inf ();
-mydelay t msg = delay t (alarm msg) otherwise;
+mydelay _ stop = pd_delay inf ();
+mydelay t msg = pd_delay t (alarm msg) otherwise;
 
 More elaborate functionality can be built on top of the basic timer
 facility. The following example shows how to maintain a timed message queue in
@@ -240,10 +240,10 @@ messages in the queue are to be delivered.
 extern double pd_time();
 mypipe t = process (ref []) with
   process q () = case dequeue q of
-                   x,(t,_):_ = [x,delay (t-pd_time) ()];
+                   x,(t,_):_ = [x,pd_delay (t-pd_time) ()];
                    x,_ = x;
                  end;
-  process q x  = enqueue q x $$ delay t () if null (get q);
+  process q x  = enqueue q x $$ pd_delay t () if null (get q);
                = enqueue q x $$ () otherwise;
   enqueue q x  = put q $ get q+[(pd_time+t,x)];
   dequeue q    = x,put q xs when (_,x):xs = get q end;

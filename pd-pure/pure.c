@@ -704,7 +704,7 @@ static void pure_restart(void)
   for (x = xhead; x; x = x->next)
     pure_reinit(x);
   void_sym = pure_sym("()");
-  delay_sym = pure_sym("delay");
+  delay_sym = pure_sym("pd_delay");
 }
 
 static void runtime_any(t_runtime *x, t_symbol *s, int argc, t_atom *argv)
@@ -748,7 +748,7 @@ extern void pure_setup(void)
     class_setup("pure", "");
     /* Look up a few symbols that we need. */
     void_sym = pure_sym("()");
-    delay_sym = pure_sym("delay");
+    delay_sym = pure_sym("pd_delay");
   } else
     error("pure: error initializing interpreter; loader not registered");
 }
