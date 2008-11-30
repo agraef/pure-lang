@@ -29,8 +29,16 @@
    if this changes. */
 #define TICKS 14112.0
 
-/* Provide access to the current logical Pd time in milliseconds. This is to
-   be used in Pure scripts as follows: extern double pd_time(); */
+/* Return the hosting Pd version as a string in the format "major.minor". */
+
+extern const char *pd_version_s(void)
+{
+  static char buf[MAXPDSTRING];
+  sprintf(buf, "%d.%d", PD_MAJOR_VERSION, PD_MINOR_VERSION);
+  return buf;
+}
+
+/* Provide access to the current logical Pd time in milliseconds. */
 
 extern double pd_time(void)
 {

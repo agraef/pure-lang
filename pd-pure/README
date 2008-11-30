@@ -70,6 +70,20 @@ Pd symbols. Pure (machine) integers and floating point values both become
 while other aggregate messages are mapped to Pure applications (and vice
 versa).
 
+The Pure loader also provides two routines which can be called by Pure scripts
+running in the Pd environment:
+
+- extern char *pd_version_s(); This function returns the Pd version number as
+  a string. Note that this routine will only be available when a script is
+  running inside Pd, so you can quickly check if that's the case as follows:
+  let ok = stringp $ eval "extern char *pd_version_s(); pd_version_s;";
+  The 'ok' variable will then be true iff the script is running inside Pd.
+
+- extern double pd_time(); This function can be used to retrieve the current
+  Pd time as a double value in milliseconds, which is useful, in particular,
+  when used in conjunction with the asynchronous message facility described
+  further down below (see "Asynchronous Messages").
+
 Simple Objects
 ====== =======
 
