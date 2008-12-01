@@ -710,6 +710,64 @@ extern double gsl_stats_quantile_from_sorted_data
 
 namespace gsl;
 
+/* Convenience functions */
+
+private
+  apply1
+  apply1_m
+  apply1_m_sd
+  apply2
+  apply2_m
+  apply2_ran;
+
+apply1 f m::matrix
+  = v
+    when
+      x = dmatrix m;
+      v = f (pointer x) 1 (#m);
+    end
+    if rowvectorp m;
+    
+apply1_m f m::matrix mean
+  = v
+    when
+      x = dmatrix m;
+      v = f (pointer x) 1 (#m) (double mean);
+    end
+    if rowvectorp m;
+    
+apply1_m_sd f m::matrix mean sd
+  = v
+    when
+      x = dmatrix m;
+      v = f (pointer x) 1 (#m) (double mean) (double sd);
+    end
+    if rowvectorp m && sd >= 0.0;
+    
+apply2 f m1::matrix m2::matrix
+ = v
+    when
+      x1, x2 = dmatrix m1, dmatrix m2;
+      v = f (pointer x1) 1 (pointer x2) 1 (#m1);
+    end
+    if rowvectorp m1 && rowvectorp m2;
+
+apply2_m f m1::matrix m2::matrix mean1 mean2
+  = v
+    when
+      x1, x2 = dmatrix m1, dmatrix m2;
+      v = f (pointer x1) 1 (pointer x2) 1 (#m1) (double mean1) (double mean2);
+    end
+    if rowvectorp m1 && rowvectorp m2;
+
+apply2_ran f m1::matrix m2::matrix
+  = v
+    when
+      x1, x2 = dmatrix m1, dmatrix m2;
+      v = f (#m1) (pointer x1) (pointer x2);
+    end
+    if #m1 == #m2 && rowvectorp m1 && rowvectorp m2;
+
 public
   ran_ugaussian_pdf
   ran_gaussian_pdf
@@ -1220,27 +1278,20 @@ cdf_gumbel2_Qinv q a b
 /* Dirichlet Distribution
    Notice the 'k' parameter is not used in the Pure wrapper. */
 
-ran_dirichlet_pdf alpha theta
-  = x
-    when
-      x = gsl_ran_dirichlet_pdf (#alpha) (pointer alpha) (pointer theta)
-    end
-    if #alpha == #theta && dmatrixp alpha && dmatrixp theta;
-ran_dirichlet_lnpdf alpha theta
-  = x
-    when
-      x = gsl_ran_dirichlet_lnpdf (#alpha) (pointer alpha) (pointer theta)
-    end
-    if #alpha == #theta && dmatrixp alpha && dmatrixp theta;
+ran_dirichlet_pdf alpha::matrix theta::matrix
+  = apply2_ran gsl_ran_dirichlet_pdf alpha theta;
+ran_dirichlet_lnpdf alpha::matrix theta::matrix
+  = apply2_ran gsl_ran_dirichlet_lnpdf alpha theta;
 
 /* General Discrete Distributions */
 
-ran_discrete_preproc p
-  = x
+ran_discrete_preproc p::matrix
+  = v
     when
-      x = gsl_ran_discrete_preproc (#p) (pointer p);
+      x = dmatrix p;
+      v = gsl_ran_discrete_preproc (#p) (pointer x);
     end
-    if dmatrixp p;
+    if rowvectorp p;
 
 ran_discrete_pdf k::int p::pointer
   = gsl_ran_discrete_pdf k p if k >= 0;
@@ -1281,19 +1332,10 @@ cdf_binomial_Q k::int q n::int
 /* Multinomial Distribution
    Notice the 'k' parameter is not used in the Pure wrapper. */
 
-ran_multinomial_pdf p n
-  = x
-    when
-      x = gsl_ran_multinomial_pdf (#n) (pointer p) (pointer n)
-    end
-    if #p == #n && dmatrixp p && imatrixp n;
-
-ran_multinomial_lnpdf p n
-  = x
-    when
-      x = gsl_ran_multinomial_lnpdf (#n) (pointer p) (pointer n)
-    end
-    if #p == #n && dmatrixp p && imatrixp n;
+ran_multinomial_pdf p::matrix n::matrix
+  = apply2_ran gsl_ran_multinomial_pdf p n;
+ran_multinomial_lnpdf p::matrix n::matrix
+  = apply2_ran gsl_ran_multinomial_lnpdf p n;
 
 /* Negative Binomial Distribution */
 
@@ -1349,181 +1391,67 @@ ran_logarithmic_pdf k::int p
   = gsl_ran_logarithmic_pdf k (double p)
     if k >= 1 && realp p;
 
-/* Mean, Standard Deviation, and Variance */
+/* Mean, Standard Deviation, and Variance
+   Notice that stride and matrix sizes are not needed in the Pure versions of
+   these functions */
 
 stats_mean m::matrix
-  = v
-    when
-      mm = dmatrix m;
-      v = gsl_stats_mean (pointer mm) 1 (#m);
-    end
-    if rowvectorp m;
-
+  = apply1 gsl_stats_mean m;
 stats_variance m::matrix
-  = v
-    when
-      mm = dmatrix m;
-      v = gsl_stats_variance (pointer mm) 1 (#m);
-    end
-    if rowvectorp m;
-
+  = apply1 gsl_stats_variance m;
 stats_variance_m m::matrix mean
-  = v
-    when
-      mm = dmatrix m;
-      v = gsl_stats_variance_m (pointer mm) 1 (#m) (double mean);
-    end
-    if rowvectorp m;
-
+  = apply1_m gsl_stats_variance_m m mean;
 stats_sd m::matrix
-  = v
-    when
-      mm = dmatrix m;
-      v = gsl_stats_sd (pointer mm) 1 (#m);
-    end
-    if rowvectorp m;
+  = apply1 gsl_stats_sd m;
 
 stats_sd_m m::matrix mean
-  = v
-    when
-      mm = dmatrix m;
-      v = gsl_stats_sd_m (pointer mm) 1 (#m) (double mean);
-    end
-    if rowvectorp m;
+  = apply1_m gsl_stats_sd_m m mean;
 
 stats_tss m::matrix
-  = v
-  when
-    mm = dmatrix m;
-    v = gsl_stats_tss (pointer mm) 1 (#m);
-  end
-  if rowvectorp m;
-
+  = apply1 gsl_stats_tss m;
 stats_tss_m m::matrix mean
-  = v
-    when
-      mm = dmatrix m;
-      v = gsl_stats_tss_m (pointer mm) 1 (#m) (double mean);
-    end
-    if rowvectorp m;
-
+  = apply1_m gsl_stats_tss_m m mean;
 stats_variance_with_fixed_mean m::matrix mean
-  = v
-    when
-      mm = dmatrix m;
-      v = gsl_stats_variance_with_fixed_mean (pointer mm) 1 (#m) (double mean);
-    end
-    if rowvectorp m;
-
+  = apply1_m gsl_stats_variance_with_fixed_mean m mean;
 stats_sd_with_fixed_mean m::matrix mean
-  = v
-    when
-      mm = dmatrix m;
-      v = gsl_stats_sd_with_fixed_mean (pointer mm) 1 (#m) (double mean);
-    end
-    if rowvectorp m;
+  = apply1_m gsl_stats_sd_with_fixed_mean m mean;
 
 /* Absolute deviation */
 
 stats_absdev m::matrix
-  = v
-    when
-      mm = dmatrix m;
-      v = gsl_stats_absdev (pointer mm) 1 (#m);
-    end
-    if rowvectorp m;
-
+  = apply1 gsl_stats_absdev m;
 stats_absdev_m m::matrix mean
-  = v
-    when
-      mm = dmatrix m;
-      v = gsl_stats_absdev_m (pointer mm) 1 (#m) (double mean);
-    end
-    if rowvectorp m;
+  = apply1_m gsl_stats_absdev_m m mean;
 
 /* Higher moments (skewness and kurtosis) */
 
 stats_skew m::matrix
-  = v
-    when
-      mm = dmatrix m;
-      v = gsl_stats_skew (pointer mm) 1 (#m);
-    end
-    if rowvectorp m;
-
+  = apply1 gsl_stats_skew m;
 stats_skew_m_sd m::matrix mean sd
-  = v
-    when
-      mm = dmatrix m;
-      v = gsl_stats_skew_m_sd (pointer mm) 1 (#m) (double mean) (double sd);
-    end
-    if rowvectorp m && sd >= 0.0;
-
+  = apply1_m_sd gsl_stats_skew_m_sd m mean sd;
 stats_kurtosis m::matrix
-  = v
-    when
-      mm = dmatrix m;
-      v = gsl_stats_kurtosis (pointer mm) 1 (#m);
-    end
-    if rowvectorp m;
-
+  = apply1 gsl_stats_kurtosis m;
 stats_kurtosis_m_sd m::matrix mean sd
-  = v
-    when
-      mm = dmatrix m;
-      v = gsl_stats_kurtosis_m_sd (pointer mm) 1 (#m) (double mean) (double sd);
-    end
-    if rowvectorp m && sd >= 0.0;
+  = apply1_m_sd gsl_stats_kurtosis_m_sd m mean sd;
  
 /* Autocorrelation */
 
 stats_lag1_autocorrelation m::matrix
-  = v
-    when
-      mm = dmatrix m;
-      v = gsl_stats_lag1_autocorrelation (pointer mm) 1 (#m);
-    end
-    if rowvectorp m;
-
+  = apply1 gsl_stats_lag1_autocorrelation m;
 stats_lag1_autocorrelation_m m::matrix mean
-  = v
-    when
-      mm = dmatrix m;
-      v = gsl_stats_lag1_autocorrelation_m (pointer mm) 1 (#m) (double mean);
-    end
-    if rowvectorp m;
+  = apply1_m gsl_stats_lag1_autocorrelation_m m mean;
 
 /* Covariance */
 
 stats_covariance m1::matrix m2::matrix
-  = v
-    when
-      mm1 = dmatrix m1;
-      mm2 = dmatrix m2;
-      v = gsl_stats_covariance (pointer mm1) 1 (pointer mm2) 1 (#m1);
-    end
-    if rowvectorp m1 && rowvectorp m2;
-
+  = apply2 gsl_stats_covariance m1 m2;
 stats_covariance_m m1::matrix m2::matrix mean1 mean2
-  = v
-    when
-      mm1 = dmatrix m1;
-      mm2 = dmatrix m2;
-      v = gsl_stats_covariance_m 
-        (pointer mm1) 1 (pointer mm2) 1 (#m1) (double mean1) (double mean2);
-    end
-    if rowvectorp m1 && rowvectorp m2;
+  = apply2_m gsl_stats_covariance_m m1 m2 mean1 mean2;
 
 /* Correlation */
 
 stats_correlation m1::matrix m2::matrix
-  = v
-    when
-      mm1 = dmatrix m1;
-      mm2 = dmatrix m2;
-      v = gsl_stats_correlation (pointer mm1) 1 (pointer mm2) 1 (#m1);
-    end
-    if rowvectorp m1 && rowvectorp m2;
+  = apply2 gsl_stats_correlation m1 m2;
 
 /* Sort for median and quatile functions
    The manual recomends using a better stable sort. */
@@ -1539,17 +1467,7 @@ sort m::matrix
 /* Median and Percentiles */
 
 stats_median_from_sorted_data m::matrix
-  = v
-    when
-      mm = dmatrix m;
-      v = gsl_stats_median_from_sorted_data (pointer mm) 1 (#m);
-    end
-    if rowvectorp m;
-
+  = apply1 gsl_stats_median_from_sorted_data m;
 stats_quantile_from_sorted_data m::matrix f::double
-  = v
-    when
-      mm = dmatrix m;
-      v = gsl_stats_quantile_from_sorted_data (pointer mm) 1 (#m) f;
-    end
-    if rowvectorp m && f >= 0.0 && f <= 1.0;
+  = apply1_m gsl_stats_quantile_from_sorted_data m f
+    if f >= 0.0 && f <= 1.0;
