@@ -1,7 +1,7 @@
 
 # Package name and version number:
 dist = pd-pure-$(version)
-version = 0.1
+version = 0.2
 
 # Try to guess the installation prefix (this needs GNU make):
 prefix = $(patsubst %/bin/pd,%,$(shell which pd 2>/dev/null))
@@ -22,7 +22,7 @@ DISTFILES = COPYING Makefile README pure.c examples/*.pure examples/*.pd example
 all: pure$(DLL)
 
 pure$(DLL): pure.c
-	gcc -shared -o $@ $< $(PIC) -lpure
+	gcc -shared -o $@ -DVERSION="\"$(version)\"" $< $(PIC) -lpure
 
 clean:
 	rm -f pure$(DLL) *~ *.a *.o

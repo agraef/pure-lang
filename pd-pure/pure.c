@@ -24,6 +24,10 @@
 #include <pure/runtime.h>
 #include <m_pd.h>
 
+#ifndef VERSION
+#define VERSION "0.0"
+#endif
+
 /* Ticks per millisecond of the internal clock. FIXME: Currently this is a
    fixed value (32.*441000./1000., cf. m_sched.c), will have to be rewritten
    if this changes. */
@@ -168,7 +172,7 @@ static inline pure_expr *parse_expr(t_pure *x, const char *s)
   if (y == 0)
 #if CHECK_SYNTAX
     /* complain about bad Pure syntax */
-    pd_error(x, "pure: invalid expression '%s'", s);
+    pd_error(x, "pd-pure: invalid expression '%s'", s);
 #else
     /* cast to a Pure string */
     y = pure_cstring_dup(s);
@@ -230,13 +234,13 @@ static inline bool check_outlet(t_pure *x, int k)
 #if CHECK_OUTLET
   /* complain about bad outlets */
   if (k < 0) {
-    pd_error(x, "pure: bad outlet index %d, must be >= 0", k);
+    pd_error(x, "pd-pure: bad outlet index %d, must be >= 0", k);
     return 0;
   } else if (x->n_out <= 0) {
-    pd_error(x, "pure: bad outlet index %d, object has no outlets", k);
+    pd_error(x, "pd-pure: bad outlet index %d, object has no outlets", k);
     return 0;
   } else if (k >= x->n_out) {
-    pd_error(x, "pure: bad outlet index %d, must be < %d", k, x->n_out);
+    pd_error(x, "pd-pure: bad outlet index %d, must be < %d", k, x->n_out);
     return 0;
   } else
     return 1;
@@ -528,7 +532,7 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
   x->args = get_expr(s, argc, argv);
   x->tmp = 0;
   if (!x->args) {
-    pd_error(x, "pure: memory allocation failed");
+    pd_error(x, "pd-pure: memory allocation failed");
     return (void *)x;
   }
   x->clock = clock_new(x, (t_method)timeout);
@@ -548,11 +552,11 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
 	  pure_is_int(xv[0], &n_in) && pure_is_int(xv[1], &n_out)) {
 	x->foo = pure_new(xv[2]); pure_free(f);
 	if (n_in < 1) {
-	  pd_error(x, "pure: bad number %d of inlets, must be >= 1", n_in);
+	  pd_error(x, "pd-pure: bad number %d of inlets, must be >= 1", n_in);
 	  n_in = 1;
 	}
 	if (n_out < 0) {
-	  pd_error(x, "pure: bad number %d of outlets, must be >= 0", n_out);
+	  pd_error(x, "pd-pure: bad number %d of outlets, must be >= 0", n_out);
 	  n_out = 0;
 	}
 	x->n_in = n_in-1;
@@ -561,8 +565,8 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
       if (xv) free(xv);
     } else {
       const char *err = lasterr();
-      pd_error(x, "pure: error in '%s' creation function", s->s_name);
-      if (err && *err) pd_error(x, "pure: %s", err);
+      pd_error(x, "pd-pure: error in '%s' creation function", s->s_name);
+      if (err && *err) pd_error(x, "pd-pure: %s", err);
     }
   }
   if (x->foo != 0) {
@@ -573,7 +577,7 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
       x->out = malloc(x->n_out*sizeof(t_outlet*));
     if (x->n_in > 0 && x->in == 0 ||
 	x->n_out > 0 && x->out == 0)
-      pd_error(x, "pure: memory allocation failed");
+      pd_error(x, "pd-pure: memory allocation failed");
     if (!x->in) x->n_in = 0;
     if (!x->out) x->n_out = 0;
     /* initialize the proxies for the extra inlets */
@@ -726,8 +730,8 @@ extern void pure_setup(void)
   char buf[MAXPDSTRING];
   char *ptr;
   int fd;
-  post("pure 0.1 (GPL) 2008 Albert Graef <Dr.Graef@t-online.de>");
-  post("pure: compiled for pd-%d.%d on %s %s", PD_MAJOR_VERSION, PD_MINOR_VERSION, __DATE__, __TIME__);
+  post("pd-pure %s (GPL) 2008 Albert Graef <Dr.Graef@t-online.de>", VERSION);
+  post("pd-pure: compiled for pd-%d.%d on %s %s", PD_MAJOR_VERSION, PD_MINOR_VERSION, __DATE__, __TIME__);
   interp = pure_create_interp(0, 0);
 #if EAGER
   /* Force eager compilation *now*, so that the JIT doesn't start compiling
@@ -758,5 +762,5 @@ extern void pure_setup(void)
     void_sym = pure_sym("()");
     delay_sym = pure_sym("pd_delay");
   } else
-    error("pure: error initializing interpreter; loader not registered");
+    error("pd-pure: error initializing interpreter; loader not registered");
 }
