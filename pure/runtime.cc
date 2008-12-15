@@ -3110,8 +3110,17 @@ pure_expr *pure_apply(pure_expr *x, pure_expr *y)
 #if DEBUG>1
 	cerr << "pure_apply: result " << f0 << " = " << ret << " -> " << (void*)ret << ", refc = " << ret->refc << endl;
 #endif
-    // pop the function object from the shadow stack
-    pure_free_internal(interp.sstk[--interp.sstk_sz]);
+    /* Temporarily increase the reference count on the result in case it comes
+       from the environment, so that we don't gc it with the function object.
+       We only need to do this if the result isn't a temporary and we actually
+       have an environment. */
+    {
+      bool keep = m>0 && ret->refc>0;
+      if (keep) ret->refc++;
+      // pop the function object from the shadow stack
+      pure_free_internal(interp.sstk[--interp.sstk_sz]);
+      if (keep) pure_unref_internal(ret);
+    }
     return ret;
   } else {
     // construct a literal application node
