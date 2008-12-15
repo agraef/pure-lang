@@ -94,7 +94,11 @@ interpreter::interpreter()
 
   module = new Module("pure");
   MP = new ExistingModuleProvider(module);
+#if FAST_JIT
+  JIT = ExecutionEngine::create(MP, false, 0, true);
+#else
   JIT = ExecutionEngine::create(MP);
+#endif
   FPM = new FunctionPassManager(MP);
 
   // Set up the optimizer pipeline. Start with registering info about how the

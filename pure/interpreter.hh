@@ -34,6 +34,11 @@
    get tail call elimination. */
 #define USE_FASTCC 1
 
+/* Experimental support for fast code generation, at the expense of code
+   quality. As of LLVM 2.4, this doesn't seem to have much effect. We
+   recommend to leave this disabled. */
+#define FAST_JIT 0
+
 /* Alternative code generation for the case of proper lists and tuples. This
    is a kludge to work around performance issues with the JIT which (as of
    LLVM 2.3) gets very slow with deeply nested call graphs. The code enabled
