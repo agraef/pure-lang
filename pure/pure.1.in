@@ -948,6 +948,47 @@ same value, e.g.:
 \fBcase\fP ans \fBof\fP "y" | "Y" = 1; _ = 0; \fBend\fP;
 .fi
 .PP
+Sometimes it is useful if local definitions (\fBwhen\fP and \fBwith\fP) can be
+shared by the right-hand side and the guard of a rule in a function definition
+or a \fBcase\fP expression. This can be done by placing the local definitions
+behind the guard, as follows (we only show the case of a single \fBwhen\fP
+clause here, but of course there may be any number of \fBwhen\fP and
+\fBwith\fP clauses behind the guard):
+.sp
+.nf
+\fIlhs\fP = \fIrhs\fP \fBif\fP \fIguard\fP \fBwhen\fP \fIdefns\fP \fBend\fP;
+.fi
+.PP
+Note that this is different from the following, which indicates that the
+definitions only apply to the guard but not the right-hand side of the rule:
+.sp
+.nf
+\fIlhs\fP = \fIrhs\fP \fBif\fP (\fIguard\fP \fBwhen\fP \fIdefns\fP \fBend\fP);
+.fi
+.PP
+Conversely, definitions placed \fIbefore\fP the guard only apply to the
+right-hand side but not the guard (no parentheses are required in this case):
+.sp
+.nf
+\fIlhs\fP = \fIrhs\fP \fBwhen\fP \fIdefns\fP \fBend\fP \fBif\fP \fIguard\fP;
+.fi
+.PP
+An example showing the use of a local variable binding spanning both the
+right-hand side and the guard of a rule is the following quadratic equation
+solver, which returns the (real) solutions of the equation x^2+p*x+q=0 if the
+discriminant d = p^2/4-q is nonnegative:
+.sp
+.nf
+> \fBusing\fP math;
+> solve p q = -p/2+sqrt d,-p/2-sqrt d \fBif\fP d>=0 \fBwhen\fP d = p^2/4-q \fBend\fP;
+> solve 4 2; solve 2 4;
+-0.585786437626905,-3.41421356237309
+solve 2 4
+.fi
+.PP
+Note that the above definition leaves the case of a negative discriminant
+undefined.
+.PP
 As already mentioned, \fBwhen\fP, \fBlet\fP, \fBconst\fP and \fBdef\fP use a
 simplified kind of rule syntax which just consists of a left-hand and a
 right-hand side separated by `='. Guards or multiple left-hand or right-hand
@@ -956,21 +997,20 @@ left-hand side if it is just the anonymous variable `_' by itself, indicating
 that you don't care about the result. (Note that this doesn't make sense for
 \fBdef\fP, you'll get an error in this case.) The right-hand side is still
 evaluated, if only for its side-effects, which is handy, e.g., for adding
-``debugging statements'' to your code. For instance, consider the following
-example of a quadratic equation solver, which computes the discriminant in a
-\fBwhen\fP clause, prints that value, and then proceeds to compute the (real)
-roots of the equation x^2+px+q=0:
+debugging statements to your code. For instance, here is a variation of the
+quadratic equation solver which also prints the discriminant after it has been
+computed:
 .sp
 .nf
 > \fBusing\fP math, system;
-> solve p q = -p/2+sqrt d,-p/2-sqrt d
+> solve p q = -p/2+sqrt d,-p/2-sqrt d \fBif\fP d>=0
 > \fBwhen\fP d = p^2/4-q; printf "The discriminant is: %g\en" d; \fBend\fP;
 > solve 4 2;
 The discriminant is: 2
 -0.585786437626905,-3.41421356237309
 > solve 2 4;
 The discriminant is: -3
-nan,nan
+solve 2 4
 .fi
 .SH EXAMPLES
 Here are a few examples of simple Pure programs.
@@ -3376,58 +3416,6 @@ programming languages from the Algol/Pascal/C family. If you want to figure
 out what is actually going on there, it's usually best to read nested scopes
 ``in reverse'' (proceeding from the rightmost/outermost to the
 leftmost/innermost clause).
-.PP
-Also note that since
-.B with
-and
-.B when
-are part of the expression, not the rule syntax, local function and variable
-definitions cannot span both the right-hand side and the guard of a
-rule. (There are also some technical reasons for this limitation, so don't
-expect this to change anytime soon.) This isn't a problem for complete
-function definitions, since then it's always possible to just employ a
-conditional or a
-.B case
-expression instead. But there are other cases where this becomes a serious
-impediment. For instance, let's consider our good old friend, the quadratic
-equation solver:
-.sp
-.nf
-\fBusing\fP math;
-solve p q = -p/2+sqrt d,-p/2-sqrt d \fBwhen\fP d = p^2/4-q \fBend\fP \fBif\fP p^2/4-q>=0;
-.fi
-.PP
-Our version of `solve' here returns the (real) solutions of the equation
-x^2+p*x+q=0, but \fIonly\fP if the discriminant d = p^2/4-q is
-nonnegative. The rationale behind using such a partial definition is that it
-allows you to deal with the case of a negative discriminant later. Example:
-.sp
-.nf
-> solve 4 2; solve 2 4;
--0.585786437626905,-3.41421356237309
-solve 2 4
-.fi
-.PP
-Of course it would be nice if we could just use the same `d' value for the
-discriminant in the guard of the equation, but for the reasons mentioned above
-this isn't possible. One way to cope with this is to change the definition so
-that it uses a conditional expression. However, then we also have to supply a
-value for the ``unsolvable'' case, which essentially completes the definition
-and changes the normal form returned in the unsolvable case:
-.sp
-.nf
-> solve p q = \fBif\fP d>=0 \fBthen\fP -p/2+sqrt d,-p/2-sqrt d \fBelse\fP unsolvable p q
-> \fBwhen\fP d = p^2/4-q \fBend\fP;
-> solve 4 2; solve 2 4;
--0.585786437626905,-3.41421356237309
-unsolvable 2 4
-.fi
-.PP
-Another way to deal with the situation would be to throw an exception in the
-unsolvable case, but this makes it basically impossible to extend the
-definition, unless you want to resort to macro hackery. With the above
-definition, you can at least handle the unsolvable case by giving an
-appropriate definition for the `unsolvable' function later.
 .SS Numeric Calculations
 If possible, you should decorate numeric variables on the left-hand sides of
 function definitions with the appropriate type tags, like
