@@ -2,7 +2,7 @@
 dnl To regenerate the configury after changes:
 dnl autoconf -I config && autoheader -I config
 
-AC_INIT(pure, 0.14)
+AC_INIT(pure, 0.15)
 AC_CONFIG_AUX_DIR(config)
 dnl AC_CONFIG_MACRO_DIR(config)
 AC_CONFIG_HEADERS(config.h)
