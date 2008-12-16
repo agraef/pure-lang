@@ -1,0 +1,137 @@
+foo x/*0:1*/ = y/*0:*/ if y/*0:*/>0 when y/*0:*/ = 2*x/*0:1*/ {
+  rule #0: y = 2*x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+goo x/*0:1*/ = bar/*0*/ x/*0:1*/ if bar/*0*/ x/*0:1*/>0 with bar x/*0:1*/ = 2*x/*0:1*/ {
+  rule #0: bar x = 2*x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+goo x/*0:1*/ = x/*0:1*/;
+{
+  rule #0: foo x = y if y>0 when y = 2*x end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+{
+  rule #0: goo x = bar x if bar x>0 with bar x = 2*x end
+  rule #1: goo x = x
+  state 0: #0 #1
+	<var> state 1
+  state 1: #0 #1
+}
+foo 99,foo (-99);
+198,foo (-99)
+goo 99,goo (-99);
+198,-99
+foo/*0*/ 99,foo/*0*/ (-99) with foo x/*0:1*/ = y/*0:*/ if y/*0:*/>0 when y/*0:*/ = 2*x/*0:1*/ {
+  rule #0: y = 2*x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end; foo x/*0:1*/ = x/*0:1*/ {
+  rule #0: foo x = y if y>0 when y = 2*x end
+  rule #1: foo x = x
+  state 0: #0 #1
+	<var> state 1
+  state 1: #0 #1
+} end;
+198,-99
+foo/*0*/ 99,foo/*0*/ (-99) with foo x/*0:1*/ = bar/*0*/ x/*0:1*/ if bar/*0*/ x/*0:1*/>0 with bar x/*0:1*/ = 2*x/*0:1*/ {
+  rule #0: bar x = 2*x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end {
+  rule #0: foo x = bar x if bar x>0 with bar x = 2*x end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+198,foo (-99)
+foo/*0*/ 99,foo/*0*/ (-99) with foo x/*0:1*/ = case x/*0:1*/ of _/*0:*/::int = y/*1:*/ if z/*0:*/ when y/*0:*/ = bar/*0*/ x/*1:1*/; z/*0:*/ = y/*0:*/>0 {
+  rule #0: z = y>0
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: y = bar x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end with bar x/*0:1*/ = 2*x/*0:1*/ {
+  rule #0: bar x = 2*x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end; _/*0:*/ = x/*1:1*/ {
+  rule #0: _::int = y if z when y = bar x; z = y>0 end with bar x = 2*x end
+  rule #1: _ = x
+  state 0: #0 #1
+	<var> state 1
+	<var>::int state 2
+  state 1: #1
+  state 2: #0 #1
+} end {
+  rule #0: foo x = case x of _::int = y if z when y = bar x; z = y>0 end with bar x = 2*x end; _ = x end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+198,-99
+case 99 of x/*0:*/ = y/*0:*/ if y/*0:*/>0 when y/*0:*/ = 2*x/*0:*/ {
+  rule #0: y = 2*x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end {
+  rule #0: x = y if y>0 when y = 2*x end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+198
+case -99 of x/*0:*/ = y/*0:*/ if y/*0:*/>0 when y/*0:*/ = 2*x/*0:*/ {
+  rule #0: y = 2*x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end {
+  rule #0: x = y if y>0 when y = 2*x end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+<stdin>, line 33: unhandled exception 'failed_match' while evaluating 'case -99 of x/*0:*/ = y/*0:*/ if y/*0:*/>0 when y/*0:*/ = 2*x/*0:*/ {
+  rule #0: y = 2*x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end {
+  rule #0: x = y if y>0 when y = 2*x end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end'
+solve p/*0:01*/ q/*0:1*/ = -p/*1:01*//2+sqrt d/*0:*/,-p/*1:01*//2-sqrt d/*0:*/ if d/*0:*/>=0 when d/*0:*/ = p/*0:01*/^2/4-q/*0:1*/ {
+  rule #0: d = p^2/4-q
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+{
+  rule #0: solve p q = -p/2+sqrt d,-p/2-sqrt d if d>=0 when d = p^2/4-q end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+	<var> state 2
+  state 2: #0
+}
+solve 4 2;
+-0.585786437626905,-3.41421356237309
+solve 2 4;
+solve 2 4

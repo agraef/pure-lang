@@ -1,0 +1,41 @@
+
+/* Tests for local definitions spanning rhs and guard. */
+
+foo x = y if y>0 when y = 2*x end;
+goo x = bar x if bar x>0 with bar x = 2*x end;
+      = x otherwise;
+
+foo 99, foo (-99);
+goo 99, goo (-99);
+
+foo 99, foo (-99)
+with
+foo x = y if y>0 when y = 2*x end;
+      = x otherwise;
+end;
+
+foo 99, foo (-99)
+with
+foo x = bar x if bar x>0 with bar x = 2*x end;
+end;
+
+foo 99, foo (-99)
+with
+foo x = case x of
+          _::int = y if z when y = bar x; z = y>0 end with bar x = 2*x end;
+          _ = x;
+        end;
+end;
+
+case 99 of
+  x = y if y>0 when y = 2*x end;
+end;
+case -99 of
+  x = y if y>0 when y = 2*x end;
+end;
+
+using math;
+solve p q = -p/2+sqrt d,-p/2-sqrt d if d>=0 when d = p^2/4-q end;
+
+solve 4 2;
+solve 2 4;
