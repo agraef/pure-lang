@@ -87,6 +87,11 @@ expr expr::cond(expr x, expr y, expr z)
   return expr(EXPR::COND, x, y, z);
 }
 
+expr expr::cond1(expr x, expr y)
+{
+  return expr(EXPR::COND1, x, y);
+}
+
 expr expr::cases(expr x, rulel *rules)
 {
   assert(!rules->empty());
@@ -103,6 +108,14 @@ expr expr::with(expr x, env *e)
 {
   assert(!e->empty());
   return expr(EXPR::WITH, x, e);
+}
+
+bool expr::is_guarded() const
+{
+  EXPR *x = p;
+  while (x->tag == EXPR::WITH || x->tag == EXPR::WHEN)
+    x = x->data.c.x;
+  return x->tag == EXPR::COND1;
 }
 
 expr expr::nil()

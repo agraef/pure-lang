@@ -124,10 +124,11 @@ struct EXPR {
     PTR		= -7,	// generic pointer (void*)
     // conditionals and binding expressions:
     COND	= -8,	// conditional expression (if-then-else)
-    LAMBDA	= -9,	// lambda expression
-    CASE	= -10,	// case expression
-    WHEN	= -11,	// when expression
-    WITH	= -12,	// with expression
+    COND1	= -9,	// one-way conditional (guarded expression)
+    LAMBDA	= -10,	// lambda expression
+    CASE	= -11,	// case expression
+    WHEN	= -12,	// when expression
+    WITH	= -13,	// with expression
     // GSL matrix types:
     MATRIX	= -32,  // generic GSL matrix, symbolic matrices
     DMATRIX	= -31,	// double matrix
@@ -164,7 +165,7 @@ struct EXPR {
       path   *p;    // subterm path (VAR)
       uint8_t idx;  // de Bruin index
     } v;
-    EXPR   *x[3]; // APP, LAMBDA, COND
+    EXPR   *x[3]; // APP, LAMBDA, COND, COND1
     exprll *xs;   // MATRIX
     struct {	  // CASE, WHEN, WITH
       EXPR  *x;   // expression
@@ -221,10 +222,10 @@ struct EXPR {
   { assert(_tag == COND);
     data.x[0] = newref(_arg1); data.x[1] = newref(_arg2);
     data.x[2] = newref(_arg3); }
-  EXPR(int32_t _tag, EXPR *_arg, EXPR *_body) :
+  EXPR(int32_t _tag, EXPR *_arg1, EXPR *_arg2) :
     refc(0), tag(_tag), m(0), flags(0), ttag(0), astag(0), aspath(0)
-  { assert(_tag == LAMBDA);
-    data.x[0] = newref(_arg); data.x[1] = newref(_body); }
+  { assert(_tag == LAMBDA || _tag == COND1);
+    data.x[0] = newref(_arg1); data.x[1] = newref(_arg2); }
   EXPR(int32_t _tag, EXPR *_arg, rulel *_rules) :
     refc(0), tag(_tag), m(0), flags(0), ttag(0), astag(0), aspath(0)
   { assert(_tag == CASE || _tag == WHEN);
@@ -299,8 +300,8 @@ public:
     p(new EXPR(tag, s)) { p->incref(); }
   explicit expr(int32_t tag, void *_p) :
     p(new EXPR(tag, _p)) { p->incref(); }
-  expr(int32_t tag, expr arg, expr body) :
-    p(new EXPR(tag, &*arg, &*body)) { p->incref(); }
+  expr(int32_t tag, expr arg1, expr arg2) :
+    p(new EXPR(tag, &*arg1, &*arg2)) { p->incref(); }
   expr(int32_t tag, expr arg1, expr arg2, expr arg3) :
     p(new EXPR(tag, &*arg1, &*arg2, &*arg3)) { p->incref(); }
   expr(int32_t tag, expr arg, rulel *rules) :
@@ -319,6 +320,7 @@ public:
   // static methods to generate special types of expressions
   static expr lambda(expr x, expr y);
   static expr cond(expr x, expr y, expr z);
+  static expr cond1(expr x, expr y);
   static expr cases(expr x, rulel *rules);
   static expr when(expr x, rulel *rules);
   static expr with(expr x, env *e);
@@ -356,10 +358,12 @@ public:
                            return p->data.p; }
   expr     xval1() const { assert(p->tag == EXPR::APP ||
 				  p->tag == EXPR::COND ||
+				  p->tag == EXPR::COND1 ||
 				  p->tag == EXPR::LAMBDA);
                            return expr(p->data.x[0]); }
   expr     xval2() const { assert(p->tag == EXPR::APP ||
 				  p->tag == EXPR::COND ||
+				  p->tag == EXPR::COND1 ||
 				  p->tag == EXPR::LAMBDA);
                            return expr(p->data.x[1]); }
   expr     xval3() const { assert(p->tag == EXPR::COND);
@@ -388,6 +392,8 @@ public:
   void set_aspath(const path& _p)
   { if (p->aspath) delete p->aspath; p->aspath = new path(_p); }
 
+  bool is_guarded() const;
+
   bool is_null()   const { return p==0; }
   bool is_fun()    const { return p->tag > 0; }
   bool is_var()    const { return p->tag == EXPR::VAR; }
@@ -398,6 +404,7 @@ public:
   bool is_app()    const { return p->tag == EXPR::APP; }
   bool is_lambda() const { return p->tag == EXPR::LAMBDA; }
   bool is_cond()   const { return p->tag == EXPR::COND; }
+  bool is_cond1()  const { return p->tag == EXPR::COND1; }
   bool is_case()   const { return p->tag == EXPR::CASE; }
   bool is_when()   const { return p->tag == EXPR::WHEN; }
   bool is_with()   const { return p->tag == EXPR::WITH; }
@@ -470,6 +477,14 @@ public:
       x = expr(p->data.x[0]);
       y = expr(p->data.x[1]);
       z = expr(p->data.x[2]);
+      return true;
+    } else
+      return false;
+  }
+  bool is_cond1(expr &x, expr &y) const
+  { if (p->tag == EXPR::COND1) {
+      x = expr(p->data.x[0]);
+      y = expr(p->data.x[1]);
       return true;
     } else
       return false;

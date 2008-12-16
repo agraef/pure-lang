@@ -109,6 +109,7 @@ static prec_t expr_nprec(expr x, bool aspat = true)
       return 95;
   }
   case EXPR::LAMBDA:
+  case EXPR::COND1:
     return -30;
   case EXPR::COND:
     return -10;
@@ -407,6 +408,10 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
     return os << "if " << paren(0, u) << " then " << paren(-10, v)
 	      << " else " << paren(-10, w);
   }
+  case EXPR::COND1: {
+    expr u = x.xval1(), v = x.xval2();
+    return os << v << " if " << paren(0, u);
+  }
   case EXPR::CASE: {
     expr u = x.xval();
     os << "case " << paren(-10, u) << " of " << *x.rules();
@@ -452,7 +457,7 @@ ostream& operator << (ostream& os, const exprl& xl)
 ostream& operator << (ostream& os, const rule& r)
 {
   printx(os, r.lhs, true); os << " = " << r.rhs;
-  if (!r.qual.is_null()) os << " if " << r.qual;
+  if (!r.qual.is_null()) os << " if " << paren(0, r.qual);
   return os;
 }
 

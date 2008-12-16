@@ -60,6 +60,14 @@ struct sym_info {
   sym_info(bool s, bool v, prec_t p, fix_t f) :
     special(s), priv(v), prec(p), fix(f) { }
 };
+struct rhs_info {
+  expr *r, *q;
+  rhs_info(expr *x) { assert(x); r = x; q = 0; }
+  rhs_info(expr *x, expr *y) { assert(x); assert(y); r = x; q = y; }
+  ~rhs_info() { assert(r); delete r; if (q) delete q; }
+  expr rhs() { assert(r); return *r; }
+  expr qual() { return q?*q:expr(); }
+};
 struct rule_info {
   exprl l;
   env e;
@@ -85,6 +93,7 @@ typedef list<comp_clause> comp_clause_list;
   exprll *xllval;
   rule   *rval;
   rulel  *rlval;
+  rhs_info *rhsval;
   rule_info *rinfo;
   pat_rule_info *prinfo;
   list<string> *slval;
@@ -238,7 +247,8 @@ typedef list<comp_clause> comp_clause_list;
 %type  <sval>	name fname optalias ctype
 %type  <slval>	ids names fnames ctypes opt_ctypes
 %type  <info>	fixity
-%type  <xval>	expr cond simple app prim op qual
+%type  <xval>	expr cond simple app prim op
+%type  <rhsval> rhs qual_rhs
 %type  <xlval>	args lhs row
 %type  <xllval>	rows row_list
 %type  <clauselval>  comp_clauses comp_clause_list
@@ -249,13 +259,14 @@ typedef list<comp_clause> comp_clause_list;
 %type  <rlval>	rule simple_rules simple_rulel
 
 %destructor { delete $$; } ID fixity expr cond simple app prim op
-  comp_clauses comp_clause_list rows row_list row args lhs qual
+  comp_clauses comp_clause_list rows row_list row args lhs rhs qual_rhs
   rules rulel rule pat_rules pat_rulel simple_rules simple_rulel simple_rule
   ids fnames fname names name optalias opt_ctypes ctypes ctype
 %destructor { mpz_clear(*$$); free($$); } BIGINT CBIGINT
 %destructor { free($$); } STR
 %printer { debug_stream() << *$$; } ID name fname optalias ctype expr cond
-  simple app prim op args lhs qual rule simple_rules simple_rulel simple_rule
+  simple app prim op args lhs rule simple_rules simple_rulel simple_rule
+%printer { debug_stream() << $$->r; } rhs qual_rhs
 %printer { debug_stream() << $$->e; } rules rulel
 %printer { debug_stream() << $$->rl; } pat_rules pat_rulel
 %printer { debug_stream() << $$; }  INT DBL STR
@@ -631,13 +642,13 @@ op
    which case the left-hand sides of the previous rule are repeated. */
 
 rule
-: lhs '=' expr qual
+: lhs '=' rhs
 { $$ = new rulel;
   for (exprl::iterator l = $1->begin(), end = $1->end(); l != end; l++)
-    $$->push_back(rule(*l, *$3, *$4));
-  delete $1; delete $3; delete $4; }
-| '=' expr qual
-{ $$ = new rulel(1, rule(expr(), *$2, *$3)); delete $2; delete $3; }
+    $$->push_back(rule(*l, $3->rhs(), $3->qual()));
+  delete $1; delete $3; }
+| '=' rhs
+{ $$ = new rulel(1, rule(expr(), $2->rhs(), $2->qual())); delete $2; }
 ;
 
 lhs
@@ -647,10 +658,34 @@ lhs
 { $$ = $1; $$->push_back(*$3); delete $3; }
 ;
 
-qual
-: /* empty */		{ $$ = new expr(); }
-| OTHERWISE		{ $$ = new expr(); }
-| IF expr		{ $$ = $2; }
+rhs
+: expr			{ $$ = new rhs_info($1); }
+| qual_rhs
+;
+
+qual_rhs
+: expr OTHERWISE	{ $$ = new rhs_info($1); }
+| expr IF simple	{ $$ = new rhs_info($1, $3); }
+| qual_rhs WHEN simple_rules END
+{ $$ = $1;
+  if ($$->q) {
+    $$->r = interp.mkcond1_expr($$->q, $$->r); $$->q = 0;
+  }
+  try {
+    expr *x = interp.mkwhen_expr($$->r, $3);
+    $$->r = x;
+  } catch (err &e) {
+    interp.error(yyloc, e.what());
+  }
+}
+| qual_rhs WITH rules END
+{ $$ = $1;
+  if ($$->q) {
+    $$->r = interp.mkcond1_expr($$->q, $$->r); $$->q = 0;
+  }
+  expr *x = interp.mkwith_expr($$->r, new env($3->e)); delete $3;
+  $$->r = x;
+}
 ;
 
 rules

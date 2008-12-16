@@ -1382,6 +1382,10 @@ void interpreter::compile(expr x)
     compile(x.xval2());
     compile(x.xval3());
     break;
+  case EXPR::COND1:
+    compile(x.xval1());
+    compile(x.xval2());
+    break;
   case EXPR::LAMBDA: {
     matcher *&m = x.pm();
     assert(m == 0);
@@ -1812,7 +1816,7 @@ void interpreter::add_simple_rule(rulel &rl, rule *r)
 
 void interpreter::add_macro_rule(rule *r)
 {
-  assert(!r->lhs.is_null() && r->qual.is_null());
+  assert(!r->lhs.is_null() && r->qual.is_null() && !r->rhs.is_guarded());
   closure(*r, false);
   int32_t f; uint32_t argc = count_args(r->lhs, f);
   if (f <= 0)
@@ -2085,6 +2089,11 @@ expr interpreter::subst(const env& vars, expr x, uint8_t idx)
       w = subst(vars, x.xval3(), idx);
     return expr::cond(u, v, w);
   }
+  case EXPR::COND1: {
+    expr u = subst(vars, x.xval1(), idx),
+      v = subst(vars, x.xval2(), idx);
+    return expr::cond1(u, v);
+  }
   // nested closures:
   case EXPR::LAMBDA: {
     if (++idx == 0)
@@ -2209,6 +2218,11 @@ expr interpreter::fsubst(const env& funs, expr x, uint8_t idx)
       w = fsubst(funs, x.xval3(), idx);
     return expr::cond(u, v, w);
   }
+  case EXPR::COND1: {
+    expr u = fsubst(funs, x.xval1(), idx),
+      v = fsubst(funs, x.xval2(), idx);
+    return expr::cond1(u, v);
+  }
   // nested closures:
   case EXPR::LAMBDA: {
     if (++idx == 0)
@@ -2327,6 +2341,11 @@ expr interpreter::csubst(expr x)
       v = csubst(x.xval2()),
       w = csubst(x.xval3());
     return expr::cond(u, v, w);
+  }
+  case EXPR::COND1: {
+    expr u = csubst(x.xval1()),
+      v = csubst(x.xval2());
+    return expr::cond1(u, v);
   }
   // nested closures:
   case EXPR::LAMBDA: {
@@ -2505,6 +2524,11 @@ expr interpreter::macsubst(expr x)
       w = macsubst(x.xval3());
     return expr::cond(u, v, w);
   }
+  case EXPR::COND1: {
+    expr u = macsubst(x.xval1()),
+      v = macsubst(x.xval2());
+    return expr::cond1(u, v);
+  }
   // nested closures:
   case EXPR::LAMBDA: {
     expr u = x.xval1(), v = macsubst(x.xval2());
@@ -2606,6 +2630,11 @@ expr interpreter::varsubst(expr x, uint8_t offs)
       v = varsubst(x.xval2(), offs),
       w = varsubst(x.xval3(), offs);
     return expr::cond(u, v, w);
+  }
+  case EXPR::COND1: {
+    expr u = varsubst(x.xval1(), offs),
+      v = varsubst(x.xval2(), offs);
+    return expr::cond1(u, v);
   }
   // nested closures:
   case EXPR::LAMBDA: {
@@ -2726,6 +2755,11 @@ expr interpreter::macred(expr x, expr y, uint8_t idx)
       v = macred(x, y.xval2(), idx),
       w = macred(x, y.xval3(), idx);
     return expr::cond(u, v, w);
+  }
+  case EXPR::COND1: {
+    expr u = macred(x, y.xval1(), idx),
+      v = macred(x, y.xval2(), idx);
+    return expr::cond1(u, v);
   }
   // nested closures:
   case EXPR::LAMBDA: {
@@ -2912,6 +2946,13 @@ expr *interpreter::mkcond_expr(expr *x, expr *y, expr *z)
 {
   expr *u = new expr(expr::cond(*x, *y, *z));
   delete x; delete y; delete z;
+  return u;
+}
+
+expr *interpreter::mkcond1_expr(expr *x, expr *y)
+{
+  expr *u = new expr(expr::cond1(*x, *y));
+  delete x; delete y;
   return u;
 }
 
@@ -3458,7 +3499,7 @@ ReturnInst *Env::CreateRet(Value *v)
     myargs.push_back(UInt(n));
     myargs.push_back(UInt(m));
     CallInst::Create(free_fun, myargs.begin(), myargs.end(), "", pi);
-    if (pi == ret) {
+    if (pi == ret && v != ConstantPointerNull::get(interp.ExprPtrTy)) {
       Value *x[1] = { v };
       CallInst::Create(interp.module->getFunction("pure_unref"), x, x+1, "", ret);
     }
@@ -3603,6 +3644,10 @@ void Env::build_map(expr x)
     build_map(x.xval1());
     build_map(x.xval2());
     build_map(x.xval3());
+    break;
+  case EXPR::COND1:
+    build_map(x.xval1());
+    build_map(x.xval2());
     break;
   case EXPR::LAMBDA: {
     push("lambda");
@@ -5367,10 +5412,18 @@ Value *interpreter::funcall(int32_t tag, uint8_t idx, uint32_t n, expr x)
 
 void interpreter::toplevel_codegen(expr x)
 {
+  if (x.is_null()) {
+    /* Result of failed guard. This can only occur at the toplevel. */
+    act_env().CreateRet(NullExprPtr);
+    return;
+  }
 #if USE_FASTCC
-  assert(!x.is_null());
   if (x.tag() == EXPR::COND) {
     toplevel_cond(x.xval1(), x.xval2(), x.xval3());
+    return;
+  }
+  if (x.tag() == EXPR::COND1) {
+    toplevel_cond(x.xval1(), x.xval2(), expr());
     return;
   }
   Env& e = act_env();
@@ -5416,7 +5469,7 @@ void interpreter::toplevel_codegen(expr x)
 
 Value *interpreter::codegen(expr x, bool quote)
 {
-  assert(!x.is_null());
+  if (x.is_null()) return NullExprPtr;
   switch (x.tag()) {
   // local variable:
   case EXPR::VAR:
@@ -5564,6 +5617,8 @@ Value *interpreter::codegen(expr x, bool quote)
   // conditional:
   case EXPR::COND:
     return cond(x.xval1(), x.xval2(), x.xval3());
+  case EXPR::COND1:
+    return cond(x.xval1(), x.xval2(), expr());
   // anonymous closure:
   case EXPR::LAMBDA: {
     Env& act = act_env();
@@ -6652,7 +6707,8 @@ void interpreter::complex_match(matcher *pm, BasicBlock *failedbb)
   assert(f.f!=0);
   // Check to see if this is just a trie for a single unguarded
   // pattern-binding rule, then we can employ the simple matcher instead.
-  if (f.n == 1 && f.b && pm->r.size() == 1 && pm->r[0].qual.is_null()) {
+  if (f.n == 1 && f.b && pm->r.size() == 1 && pm->r[0].qual.is_null() &&
+      !pm->r[0].rhs.is_guarded()) {
     Value *arg = f.args[0];
     // emit the matching code
     BasicBlock *matchedbb = BasicBlock::Create("matched");
@@ -6969,7 +7025,7 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
       msg << "complex match " << f.name << ", trying rule #" << *r;
       debug(msg.str().c_str()); }
 #endif
-    if (rr.qual.is_null()) {
+    if (rr.qual.is_null() && !rr.rhs.is_guarded()) {
       // rule always matches, generate code for the reduct and bail out
 #if DEBUG>1
       if (!f.name.empty()) { ostringstream msg;
@@ -6979,26 +7035,37 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
       toplevel_codegen(rr.rhs);
       break;
     }
-    // check the guard
-    Value *iv = 0;
-    if (rr.qual.ttag() == EXPR::INT)
-      // optimize the case that the guard is an ::int (constant or application)
-      iv = get_int(rr.qual);
-    else if (rr.qual.ttag() != 0) {
-      // wrong type of constant; raise an exception
-      // XXXTODO: we might want to optionally invoke the debugger here
-      unwind(symtab.failed_cond_sym().f);
+    Value *retv = 0, *condv = 0;
+    if (!rr.qual.is_null()) {
+      // check the guard
+      Value *iv = 0;
+      if (rr.qual.ttag() == EXPR::INT)
+	// optimize the case that the guard is an ::int (constant or
+	// application)
+	iv = get_int(rr.qual);
+      else if (rr.qual.ttag() != 0) {
+	// wrong type of constant; raise an exception
+	// XXXTODO: we might want to optionally invoke the debugger here
+	unwind(symtab.failed_cond_sym().f);
 #if DEBUG>1
-      if (!f.name.empty()) { ostringstream msg;
-	msg << "exit " << f.name << ", bad guard (exception)";
-	debug(msg.str().c_str()); }
+	if (!f.name.empty()) { ostringstream msg;
+	  msg << "exit " << f.name << ", bad guard (exception)";
+	  debug(msg.str().c_str()); }
 #endif
-      break;
-    } else
-      // typeless expression, will be checked at runtime
-      iv = get_int(rr.qual);
-    // emit the condition (turn the previous result into a flag)
-    Value *condv = f.builder.CreateICmpNE(iv, Zero, "cond");
+	break;
+      } else
+	// typeless expression, will be checked at runtime
+	iv = get_int(rr.qual);
+      // emit the condition (turn the previous result into a flag)
+      condv = f.builder.CreateICmpNE(iv, Zero, "cond");
+    } else {
+      assert(rr.rhs.is_guarded());
+      // guard wrapped in a closure; generate code for the rhs and to check
+      // for null results
+      retv = codegen(rr.rhs);
+      condv = f.builder.CreateICmpNE(retv, NullExprPtr, "cond");
+    }
+    assert(condv != 0);
     BasicBlock *okbb = BasicBlock::Create("ok");
     // determine the next rule block ('failed' if none)
     BasicBlock *nextbb;
@@ -7016,7 +7083,17 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
       msg << "exit " << f.name << ", result: " << rr.rhs;
       debug(msg.str().c_str()); }
 #endif
-    toplevel_codegen(rr.rhs);
+    if (retv) {
+      if (f.n+f.m != 0) {
+	// do cleanup
+	Function *free_fun = module->getFunction("pure_pop_args");
+	Function *unref_fun = module->getFunction("pure_unref");
+	f.builder.CreateCall3(free_fun, retv, UInt(f.n), UInt(f.m));
+	f.builder.CreateCall(unref_fun, retv);
+      }
+      f.builder.CreateRet(retv);
+    } else
+      toplevel_codegen(rr.rhs);
     rulebb = nextbb;
   }
   f.fmap.first();
