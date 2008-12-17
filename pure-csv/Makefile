@@ -1,7 +1,7 @@
 
 # Package name and version number:
 dist = pure-csv-$(version)
-version = 0.22
+version = 0.2.2
 
 # Try to guess the installation prefix (this needs GNU make):
 prefix = $(patsubst %/bin/pure,%,$(shell which pure 2>/dev/null))
@@ -14,8 +14,7 @@ endif
 #PIC = -fPIC # uncomment for x86-64 compilation
 DLL = .so # .dll on Windows
 
-DISTFILES = COPYING Makefile README examples/*.pure examples/*.csv \
-csv.c csv.pure
+DISTFILES = COPYING Makefile README examples/*.pure csv.c csv.pure
 
 all: csv$(DLL)
 
