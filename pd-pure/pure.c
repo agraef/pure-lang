@@ -69,6 +69,21 @@ typedef struct
   int owner;
 } gsl_matrix;
 
+extern int pd_getbuffersize(const char *name)
+{
+  t_symbol *sym = gensym((char*)name);
+  t_garray *a = (t_garray*)pd_findbyclass(sym, garray_class);
+  if (a) {
+    int sz;
+    t_word *buf;
+    if (garray_getfloatwords(a, &sz, &buf))
+      return sz;
+    else
+      return 0;
+  } else
+    return 0;
+}
+
 extern pure_expr *pd_getbuffer(const char *name)
 {
   t_symbol *sym = gensym((char*)name);
