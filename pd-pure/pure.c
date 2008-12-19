@@ -68,7 +68,16 @@ extern pure_expr *pd_getbuffer(const char *name)
 
 extern void pd_setbuffer(const char *name, pure_expr *x)
 {
-  uint32_t n = matrix_size(x);
+  uint32_t n;
+  size_t m;
+  int ix;
+  pure_expr **xv = 0;
+  if (pure_is_tuplev(x, &m, &xv) && m == 2 && pure_is_int(xv[0], &ix))
+    x = xv[1];
+  else
+    ix = 0;
+  if (xv) free(xv);
+  n = matrix_size(x);
   if (n > 0) {
     float *p = matrix_to_float_array(0, x);
     t_symbol *sym = gensym((char*)name);
@@ -77,8 +86,10 @@ extern void pd_setbuffer(const char *name, pure_expr *x)
       int sz;
       float *buf;
       if (garray_getfloatarray(a, &sz, &buf) && buf) {
-	if (n > (uint32_t)sz) n = (uint32_t)sz;
-	memcpy(buf, p, n*sizeof(float));
+	if (ix < 0) ix = 0;
+	if (ix > sz) ix = sz;
+	if (n > (uint32_t)(sz-ix)) n = (uint32_t)(sz-ix);
+	memcpy(buf+ix, p, n*sizeof(float));
 	garray_redraw(a);
       }
     }
