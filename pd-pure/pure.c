@@ -51,16 +51,42 @@ extern double pd_time(void)
 
 /* Provide access to Pd arrays (sample buffers). */
 
+#if PD_MAJOR_VERSION == 0 && PD_MINOR_VERSION < 41
+/* Work around broken 64 bit support in older Pd versions. NOTE: This just
+   makes the stuff below compile, but won't fix the bugs in Pd itself; you'll
+   have to upgrade your Pd version anyway. */
+#define garray_getfloatwords(x, size, vec) garray_getfloatarray(x, size, (t_float**)vec)
+#endif
+
+/* Declare this here so that we don't depend on GSL being installed. */
+typedef struct 
+{
+  size_t size1;
+  size_t size2;
+  size_t tda;
+  double* data;
+  void* block;
+  int owner;
+} gsl_matrix;
+
 extern pure_expr *pd_getbuffer(const char *name)
 {
   t_symbol *sym = gensym((char*)name);
   t_garray *a = (t_garray*)pd_findbyclass(sym, garray_class);
   if (a) {
     int sz;
-    float *buf;
-    if (garray_getfloatarray(a, &sz, &buf) && buf)
-      return matrix_from_float_array(1, sz, buf);
-    else
+    t_word *buf;
+    if (garray_getfloatwords(a, &sz, &buf) && buf) {
+      pure_expr *res = matrix_from_double_array(1, sz, 0);
+      if (res) {
+	gsl_matrix *m = (gsl_matrix*)res->data.mat.p;
+	double *p = m->data;
+	int i;
+	for (i = 0; i < sz; i++)
+	  p[i] = (double)buf[i].w_float;
+      }
+      return res;
+    } else
       return 0;
   } else
     return 0;
@@ -68,7 +94,7 @@ extern pure_expr *pd_getbuffer(const char *name)
 
 extern void pd_setbuffer(const char *name, pure_expr *x)
 {
-  uint32_t n;
+  uint32_t i, n;
   size_t m;
   int ix;
   pure_expr **xv = 0;
@@ -77,23 +103,23 @@ extern void pd_setbuffer(const char *name, pure_expr *x)
   else
     ix = 0;
   if (xv) free(xv);
-  n = matrix_size(x);
-  if (n > 0) {
-    float *p = matrix_to_float_array(0, x);
+  if (matrix_type(x) == 1 && (n = matrix_size(x)) > 0) {
+    gsl_matrix *m = (gsl_matrix*)x->data.mat.p;
+    double *p = m->data;
     t_symbol *sym = gensym((char*)name);
     t_garray *a = (t_garray*)pd_findbyclass(sym, garray_class);
     if (a) {
       int sz;
-      float *buf;
-      if (garray_getfloatarray(a, &sz, &buf) && buf) {
+      t_word *buf;
+      if (garray_getfloatwords(a, &sz, &buf) && buf) {
 	if (ix < 0) ix = 0;
 	if (ix > sz) ix = sz;
 	if (n > (uint32_t)(sz-ix)) n = (uint32_t)(sz-ix);
-	memcpy(buf+ix, p, n*sizeof(float));
+	for (i = 0; i < n; i++)
+	  buf[ix+i].w_float = (float)p[i];
 	garray_redraw(a);
       }
     }
-    free(p);
   }
 }
 
