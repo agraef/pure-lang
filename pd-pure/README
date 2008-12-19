@@ -88,6 +88,9 @@ called by Pure scripts running in the Pd environment:
   array) with the given name, as a Pure vector. (Fails if the array with the
   given name doesn't exist.)
 
+- extern int pd_getbuffersize(char *name); Gets the size of the given Pd
+  array. (Returns zero if the array doesn't exist.)
+
 - extern void pd_setbuffer(char *name, expr* x); Sets the contents of a Pd
   array from the given Pure vector x. If the size of the vector exceeds the
   size of the Pd array, the former is truncated. Conversely, if the size of
@@ -288,15 +291,14 @@ values in response to a 'bang' message:
 extern int pure_random() = random;
 randf = random/0x7fffffff;
 
-extern expr* pd_getbuffer(char *name);
+extern int pd_getbuffersize(char *name);
 extern void pd_setbuffer(char *name, expr* x);
 
 nullary bang;
 
 randomwave name = 1,0,process with
-  process bang = pd_setbuffer name {randf | i = 1..nsamples};
-end when
-  nsamples = #pd_getbuffer name;
+  process bang  = pd_setbuffer name {randf | i = 1..nsamples};
+  nsamples      = pd_getbuffersize name;
 end;
 
 Livecoding Support
