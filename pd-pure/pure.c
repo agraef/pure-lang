@@ -49,6 +49,43 @@ extern double pd_time(void)
   return clock_getlogicaltime()/TICKS;
 }
 
+/* Provide access to Pd arrays (sample buffers). */
+
+extern pure_expr *pd_getbuffer(const char *name)
+{
+  t_symbol *sym = gensym(name);
+  t_garray *a = (t_garray*)pd_findbyclass(sym, garray_class);
+  if (a) {
+    int sz;
+    float *buf;
+    if (garray_getfloatarray(a, &sz, &buf) && buf)
+      return matrix_from_float_array(1, sz, buf);
+    else
+      return 0;
+  } else
+    return 0;
+}
+
+extern void pd_setbuffer(const char *name, pure_expr *x)
+{
+  uint32_t n = matrix_size(x);
+  if (n > 0) {
+    float *p = matrix_to_float_array(0, x);
+    t_symbol *sym = gensym(name);
+    t_garray *a = (t_garray*)pd_findbyclass(sym, garray_class);
+    if (a) {
+      int sz;
+      float *buf;
+      if (garray_getfloatarray(a, &sz, &buf) && buf) {
+	if (n > (uint32_t)sz) n = (uint32_t)sz;
+	memcpy(buf, p, n*sizeof(float));
+	garray_redraw(a);
+      }
+    }
+    free(p);
+  }
+}
+
 /* We maintain a single Pure interpreter instance for all Pure objects. */
 
 static pure_interp *interp = 0;
