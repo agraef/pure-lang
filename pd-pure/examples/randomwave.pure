@@ -5,7 +5,7 @@
 extern int pure_random() = random;
 randf = random/0x7fffffff;
 
-extern expr* pd_getbuffer(char *name);
+extern int pd_getbuffersize(char *name);
 extern void pd_setbuffer(char *name, expr* x);
 
 nullary bang reset;
@@ -13,6 +13,5 @@ nullary bang reset;
 randomwave name = 1,0,process with
   process reset = pd_setbuffer name (dmatrix nsamples);
   process bang  = pd_setbuffer name {randf | i = 1..nsamples};
-end when
-  nsamples = #pd_getbuffer name;
+  nsamples      = pd_getbuffersize name;
 end;
