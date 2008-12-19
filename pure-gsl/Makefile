@@ -33,7 +33,7 @@ ifneq "$(findstring x86_64-,$(host))" ""
 PIC = -fPIC
 endif
 
-DISTFILES = COPYING Makefile README examples/*.pure gsl.c gsl.pure
+DISTFILES = COPYING Makefile README config.guess examples/*.pure gsl.c gsl.pure
 
 all: gsl$(DLL)
 
