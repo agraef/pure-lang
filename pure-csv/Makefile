@@ -10,16 +10,35 @@ ifeq ($(strip $(prefix)),)
 prefix = /usr/local
 endif
 
-# Platform-specific stuff, edit this as needed.
-#PIC = -fPIC # uncomment for x86-64 compilation
-DLL = .so # .dll on Windows
+# Try to guess the host system type.
+host = $(shell ./config.guess)
 
-DISTFILES = COPYING Makefile README examples/*.pure csv.c csv.pure
+# Platform-specific defaults, edit this as needed.
+#PIC = -fPIC # uncomment for x86-64 compilation
+DLL = .so
+shared = -shared
+
+# Take care of some common systems.
+ifneq "$(findstring -mingw,$(host))" ""
+# Windows
+DLL = .dll
+endif
+ifneq "$(findstring -darwin,$(host))" ""
+# OSX (untested)
+DLL = .dylib
+shared = -dynamiclib
+endif
+ifneq "$(findstring x86_64-,$(host))" ""
+# 64 bit, needs -fPIC flag
+PIC = -fPIC
+endif
+
+DISTFILES = COPYING Makefile README config.guess examples/*.pure csv.c csv.pure
 
 all: csv$(DLL)
 
 csv$(DLL): csv.c
-	gcc -shared -o $@ $< $(PIC) -lpure
+	gcc $(shared) -o $@ $< $(PIC) -lpure
 
 clean:
 	rm -f *$(DLL) *~ *.a *.o
