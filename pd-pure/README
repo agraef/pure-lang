@@ -70,8 +70,8 @@ Pd symbols. Pure (machine) integers and floating point values both become
 while other aggregate messages are mapped to Pure applications (and vice
 versa).
 
-The Pure loader also provides two routines which can be called by Pure scripts
-running in the Pd environment:
+The Pure loader also provides a number of interface routines which can be
+called by Pure scripts running in the Pd environment:
 
 - extern char *pd_version_s(); This function returns the Pd version number as
   a string. Note that this routine will only be available when a script is
@@ -83,6 +83,16 @@ running in the Pd environment:
   Pd time as a double value in milliseconds, which is useful, in particular,
   when used in conjunction with the asynchronous message facility described
   further down below (see "Asynchronous Messages").
+
+- extern expr* pd_getbuffer(char *name); Retrieves the sample buffer (Pd
+  array) with the given name, as a Pure vector. (Fails if the array with the
+  given name doesn't exist.)
+
+- extern void pd_setbuffer(char *name, expr* x); Sets the contents of a Pd
+  array from the given Pure vector. If the size of the vector exceeds the size
+  of the Pd array, the former is truncated. Conversely, if the size of the Pd
+  array exceeds the size of the Pure vector, the trailing samples are
+  unaffected.
 
 Simple Objects
 ====== =======
@@ -261,6 +271,30 @@ mypipe t = process (ref []) with
                = enqueue q x $$ () otherwise;
   enqueue q x  = put q $ get q+[(pd_time+t,x)];
   dequeue q    = x,put q xs when (_,x):xs = get q end;
+end;
+
+Reading and Writing Audio Data
+======= === ======= ===== ====
+
+At present, pd-pure doesn't support audio objects. However, it is possible to
+transfer audio data between Pd and Pure by means of the pd_getbuffer and
+pd_setbuffer routines. In Pure land, the audio data is represented as a vector
+of floating point values. For instance, here is a 'randomwave' object which
+fills a Pd array (whose name is given as the creation argument) with random
+values in response to a 'bang' message:
+
+extern int pure_random() = random;
+randf = random/0x7fffffff;
+
+extern expr* pd_getbuffer(char *name);
+extern void pd_setbuffer(char *name, expr* x);
+
+nullary bang;
+
+randomwave name = 1,0,process with
+  process bang = pd_setbuffer name {randf | i = 1..nsamples};
+end when
+  nsamples = #pd_getbuffer name;
 end;
 
 Livecoding Support
