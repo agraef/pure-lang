@@ -695,7 +695,7 @@ static void class_setup(char *name, char *dir)
     class_new(class_s, (t_newmethod)pure_init, (t_method)pure_fini,
 	      sizeof(t_pure), CLASS_DEFAULT, A_GIMME, A_NULL);
   class_addanything(class, pure_any);
-  class_sethelpsymbol(class, gensym("pure-help"));
+  class_sethelpsymbol(class, gensym("../../extra/pure/pure-help"));
   add_class(class_s, class, dir);
 }
 
