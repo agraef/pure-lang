@@ -6331,6 +6331,13 @@ int32_t pointer_get_int(void *ptr)
 }
 
 extern "C"
+int64_t pointer_get_long(void *ptr)
+{
+  int64_t *p = (int64_t*)ptr;
+  return *p;
+}
+
+extern "C"
 double pointer_get_float(void *ptr)
 {
   float *p = (float*)ptr;
@@ -6383,6 +6390,13 @@ extern "C"
 void pointer_put_int(void *ptr, int32_t x)
 {
   int32_t *p = (int32_t*)ptr;
+  *p = x;
+}
+
+extern "C"
+void pointer_put_long(void *ptr, int64_t x)
+{
+  int64_t *p = (int64_t*)ptr;
   *p = x;
 }
 
