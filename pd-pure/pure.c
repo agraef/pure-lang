@@ -730,7 +730,7 @@ static void reload(t_classes *c)
   if (c) {
     reload(c->next);
     if (strcmp(c->sym->s_name, "pure")) {
-      class_set_extern_dir(c->dir);
+      class_set_extern_dir(gensym(c->dir));
       sprintf(cmdbuf, "using \"%s/%s.pure\";\n", c->dir, c->sym->s_name);
       pure_evalcmd(cmdbuf);
       class_set_extern_dir(&s_);
