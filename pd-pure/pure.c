@@ -53,7 +53,7 @@ extern double pd_time(void)
 
 extern pure_expr *pd_getbuffer(const char *name)
 {
-  t_symbol *sym = gensym(name);
+  t_symbol *sym = gensym((char*)name);
   t_garray *a = (t_garray*)pd_findbyclass(sym, garray_class);
   if (a) {
     int sz;
@@ -71,7 +71,7 @@ extern void pd_setbuffer(const char *name, pure_expr *x)
   uint32_t n = matrix_size(x);
   if (n > 0) {
     float *p = matrix_to_float_array(0, x);
-    t_symbol *sym = gensym(name);
+    t_symbol *sym = gensym((char*)name);
     t_garray *a = (t_garray*)pd_findbyclass(sym, garray_class);
     if (a) {
       int sz;
@@ -344,7 +344,7 @@ static void send_message(t_pure *x, int k, pure_expr *y)
     if (!check_outlet(x, k)) goto errexit;
     if ((pname = pure_sym_pname(sym))) {
        /* FIXME: This should be converted to the system encoding. */
-      t_symbol *t = gensym(pname);
+      t_symbol *t = gensym((char*)pname);
       if (argc > 0) {
 	argv = malloc(argc*sizeof(t_atom));
 	if (!argv) goto errexit;
@@ -700,6 +700,8 @@ static void class_setup(char *name, char *dir)
 }
 
 /* Loader setup, pilfered from pd-lua (claudiusmaximus@goto10.org). */
+
+void class_set_extern_dir(t_symbol *s);
 
 static char dirbuf[MAXPDSTRING], cmdbuf[1000];
 
