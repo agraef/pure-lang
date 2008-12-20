@@ -537,757 +537,345 @@ pinv x::matrix		= v*s*u' when
 x::matrix / y::matrix	= x*pinv y if nmatrixp x && nmatrixp y;
 x::matrix \\ y::matrix	= pinv x*y if nmatrixp x && nmatrixp y;
 
-
-/* Random distributions and statistics. */
+/* General and elementary functions */
 
 namespace C;
-
-extern double gsl_ran_gaussian_pdf(double x, double sigma);
-extern double gsl_ran_ugaussian_pdf(double x);
-extern double gsl_cdf_ugaussian_P(double x);
-extern double gsl_cdf_gaussian_P(double x, double sigma);
-extern double gsl_cdf_ugaussian_Q(double x);
-extern double gsl_cdf_gaussian_Q(double x, double sigma);
-extern double gsl_cdf_ugaussian_Pinv(double p);
-extern double gsl_cdf_gaussian_Pinv(double p, double sigma);
-extern double gsl_cdf_ugaussian_Qinv(double q);
-extern double gsl_cdf_gaussian_Qinv(double q, double sigma);
-extern double gsl_ran_gaussian_tail_pdf(double x, double a, double sigma);
-extern double gsl_ran_ugaussian_tail_pdf(double x, double a);
-extern double gsl_ran_bivariate_gaussian_pdf
-  (double x, double y, double sigma_x, double sigma_y, double rho);
-extern double gsl_ran_exponential_pdf(double x, double mu);
-extern double gsl_cdf_exponential_P(double x, double mu);
-extern double gsl_cdf_exponential_Q(double x, double mu);
-extern double gsl_cdf_exponential_Pinv(double p, double mu);
-extern double gsl_cdf_exponential_Qinv(double q, double mu);
-extern double gsl_ran_laplace_pdf(double x, double a);
-extern double gsl_cdf_laplace_P(double x, double a);
-extern double gsl_cdf_laplace_Q(double x, double a);
-extern double gsl_cdf_laplace_Pinv(double p, double a);
-extern double gsl_cdf_laplace_Qinv(double q, double a);
-extern double gsl_ran_exppow_pdf(double x, double a, double b);
-extern double gsl_cdf_exppow_P(double x, double a, double b);
-extern double gsl_cdf_exppow_Q(double x, double a, double b);
-extern double gsl_ran_cauchy_pdf(double x, double a);
-extern double gsl_cdf_cauchy_P(double x, double a);
-extern double gsl_cdf_cauchy_Q(double x, double a);
-extern double gsl_cdf_cauchy_Pinv(double p, double a);
-extern double gsl_cdf_cauchy_Qinv(double q, double a);
-extern double gsl_ran_rayleigh_pdf(double x, double sigma);
-extern double gsl_cdf_rayleigh_P(double x, double sigma);
-extern double gsl_cdf_rayleigh_Q(double x, double sigma);
-extern double gsl_cdf_rayleigh_Pinv(double p, double sigma);
-extern double gsl_cdf_rayleigh_Qinv(double q, double sigma);
-extern double gsl_ran_rayleigh_tail_pdf(double x, double a, double sigma);
-extern double gsl_ran_landau_pdf(double x);
-extern double gsl_ran_gamma_pdf(double x, double a, double b);
-extern double gsl_cdf_gamma_P(double x, double a, double b);
-extern double gsl_cdf_gamma_Q(double x, double a, double b);
-extern double gsl_cdf_gamma_Pinv(double p, double a, double b);
-extern double gsl_cdf_gamma_Qinv(double q, double a, double b);
-extern double gsl_ran_flat_pdf(double x, double a, double b);
-extern double gsl_cdf_flat_P(double x, double a, double b);
-extern double gsl_cdf_flat_Q(double x, double a, double b);
-extern double gsl_cdf_flat_Pinv(double p, double a, double b);
-extern double gsl_cdf_flat_Qinv(double q, double a, double b);
-extern double gsl_ran_lognormal_pdf(double x, double zeta, double sigma);
-extern double gsl_cdf_lognormal_P(double x, double zeta, double sigma);
-extern double gsl_cdf_lognormal_Q(double x, double zeta, double sigma);
-extern double gsl_cdf_lognormal_Pinv(double p, double zeta, double sigma);
-extern double gsl_cdf_lognormal_Qinv(double q, double zeta, double sigma);
-extern double gsl_ran_chisq_pdf(double x, double nu);
-extern double gsl_cdf_chisq_P(double x, double nu);
-extern double gsl_cdf_chisq_Q(double x, double nu);
-extern double gsl_cdf_chisq_Pinv(double p, double nu);
-extern double gsl_cdf_chisq_Qinv(double q, double nu);
-extern double gsl_ran_fdist_pdf(double x, double nu1, double nu2);
-extern double gsl_cdf_fdist_P(double x, double nu1, double nu2);
-extern double gsl_cdf_fdist_Q(double x, double nu1, double nu2);
-extern double gsl_cdf_fdist_Pinv(double p, double nu1, double nu2);
-extern double gsl_cdf_fdist_Qinv(double q, double nu1, double nu2);
-extern double gsl_ran_tdist_pdf(double x, double nu);
-extern double gsl_cdf_tdist_P(double x, double nu);
-extern double gsl_cdf_tdist_Q(double x, double nu);
-extern double gsl_cdf_tdist_Pinv(double p, double nu);
-extern double gsl_cdf_tdist_Qinv(double q, double nu);
-extern double gsl_ran_beta_pdf(double x, double a, double b);
-extern double gsl_cdf_beta_P(double x, double a, double b);
-extern double gsl_cdf_beta_Q(double x, double a, double b);
-extern double gsl_cdf_beta_Pinv(double p, double a, double b);
-extern double gsl_cdf_beta_Qinv(double q, double a, double b);
-extern double gsl_ran_logistic_pdf(double x, double a);
-extern double gsl_cdf_logistic_P(double x, double a);
-extern double gsl_cdf_logistic_Q(double x, double a);
-extern double gsl_cdf_logistic_Pinv(double p, double a);
-extern double gsl_cdf_logistic_Qinv(double q, double a);
-extern double gsl_ran_pareto_pdf(double x, double a, double b);
-extern double gsl_cdf_pareto_P(double x, double a, double b);
-extern double gsl_cdf_pareto_Q(double x, double a, double b);
-extern double gsl_cdf_pareto_Pinv(double p, double a, double b);
-extern double gsl_cdf_pareto_Qinv(double q, double a, double b);
-extern double gsl_ran_weibull_pdf(double x, double a, double b);
-extern double gsl_cdf_weibull_P(double x, double a, double b);
-extern double gsl_cdf_weibull_Q(double x, double a, double b);
-extern double gsl_cdf_weibull_Pinv(double p, double a, double b);
-extern double gsl_cdf_weibull_Qinv(double q, double a, double b);
-extern double gsl_ran_gumbel1_pdf(double x, double a, double b);
-extern double gsl_cdf_gumbel1_P(double x, double a, double b);
-extern double gsl_cdf_gumbel1_Q(double x, double a, double b);
-extern double gsl_cdf_gumbel1_Pinv(double p, double a, double b);
-extern double gsl_cdf_gumbel1_Qinv(double q, double a, double b);
-extern double gsl_ran_gumbel2_pdf(double x, double a, double b);
-extern double gsl_cdf_gumbel2_P(double x, double a, double b);
-extern double gsl_cdf_gumbel2_Q(double x, double a, double b);
-extern double gsl_cdf_gumbel2_Pinv(double p, double a, double b);
-extern double gsl_cdf_gumbel2_Qinv(double q, double a, double b);
-extern double gsl_ran_dirichlet_pdf(size_t k, double* alpha, double *theta);
-extern double gsl_ran_dirichlet_lnpdf(size_t k, double* alpha, double *theta);
-extern gsl_ran_discrete_t *gsl_ran_discrete_preproc(size_t k, double *p);
-extern double gsl_ran_discrete_pdf(size_t k, gsl_ran_discrete_t *g);
-extern void gsl_ran_discrete_free(gsl_ran_discrete_t *g);
-extern double gsl_ran_poisson_pdf(int k, double mu);
-extern double gsl_cdf_poisson_P(int k, double mu);
-extern double gsl_cdf_poisson_Q(int k, double mu);
-extern double gsl_ran_bernoulli_pdf(int k, double p);
-extern double gsl_ran_binomial_pdf(int k, double p, int n);
-extern double gsl_cdf_binomial_P(int k, double p, int n);
-extern double gsl_cdf_binomial_Q(int k, double p, int n);
-extern double gsl_ran_multinomial_pdf(size_t k, double* p, int* n);
-extern double gsl_ran_multinomial_lnpdf(size_t k, double* p, int* n);
-extern double gsl_ran_negative_binomial_pdf(int k, double p, double n);
-extern double gsl_cdf_negative_binomial_P(int k, double p, double n);
-extern double gsl_cdf_negative_binomial_Q(int k, double p, double n);
-extern double gsl_ran_pascal_pdf(int k, double p, int n);
-extern double gsl_cdf_pascal_P(int k, double p, int n);
-extern double gsl_cdf_pascal_Q(int k, double p, int n);
-extern double gsl_ran_geometric_pdf(int k, double p);
-extern double gsl_cdf_geometric_P(int k, double p);
-extern double gsl_cdf_geometric_Q(int k, double p);
-extern double gsl_ran_hypergeometric_pdf(int k, int n1, int n2, int t);
-extern double gsl_cdf_hypergeometric_P(int k, int n1, int n2, int t);
-extern double gsl_cdf_hypergeometric_Q(int k, int n1, int n2, int t);
-extern double gsl_ran_logarithmic_pdf(int k, double p);
-extern double gsl_stats_mean(double *data, size_t stride, size_t n);
-extern double gsl_stats_variance(double *data, size_t stride, size_t n);
-extern double gsl_stats_variance_m
-  (double *data, size_t stride, size_t n, double mean);
-extern double gsl_stats_sd(double *data, size_t stride, size_t n);
-extern double gsl_stats_sd_m
-  (double *data, size_t stride, size_t n, double mean);
-extern double gsl_stats_tss(double *data, size_t stride, size_t n);
-extern double gsl_stats_tss_m
-  (double *data, size_t stride, size_t n, double mean);
-extern double gsl_stats_variance_with_fixed_mean
-  (double *data, size_t stride, size_t n, double mean);
-extern double gsl_stats_sd_with_fixed_mean
-  (double *data, size_t stride, size_t n, double mean);
-extern double gsl_stats_absdev(double *data, size_t stride, size_t n);
-extern double gsl_stats_absdev_m
-  (double *data, size_t stride, size_t n, double mean);
-extern double gsl_stats_skew(double *data, size_t stride, size_t n);
-extern double gsl_stats_skew_m_sd
-  (double *data, size_t stride, size_t n, double mean, double sd);
-extern double gsl_stats_kurtosis
-  (double *data, size_t stride, size_t n);
-extern double gsl_stats_kurtosis_m_sd
-  (double *data, size_t stride, size_t n, double mean, double sd);
-extern double gsl_stats_lag1_autocorrelation
-  (double *data, size_t stride, size_t n);
-extern double gsl_stats_lag1_autocorrelation_m
-  (double *data, size_t stride, size_t n, double mean);
-extern double gsl_stats_covariance
-  (double *data1, size_t stride1, double *data2, size_t stride2, size_t n);
-extern double gsl_stats_covariance_m
-  (double *data1, size_t stride1, double *data2, size_t stride2, size_t n,
-   double mean1, double mean2);
-extern double gsl_stats_correlation
-  (double *data1, size_t stride1, double *data2, size_t stride2, size_t n);
-extern void gsl_sort(double *data, size_t stride, size_t n);
-extern double gsl_stats_median_from_sorted_data
-  (double *sorted_data, size_t stride, size_t n);
-extern double gsl_stats_quantile_from_sorted_data
-  (double *sorted_data, size_t stride, size_t n, double f);
-
-namespace gsl;
-
-/* Convenience functions */
-
-private
-  apply1
-  apply1_m
-  apply1_m_sd
-  apply2
-  apply2_m
-  apply2_ran;
-
-apply1 f m::matrix
-  = v
-    when
-      x = dmatrix m;
-      v = f (pointer x) 1 (#m);
-    end
-    if rowvectorp m;
-    
-apply1_m f m::matrix mean
-  = v
-    when
-      x = dmatrix m;
-      v = f (pointer x) 1 (#m) (double mean);
-    end
-    if rowvectorp m;
-    
-apply1_m_sd f m::matrix mean sd
-  = v
-    when
-      x = dmatrix m;
-      v = f (pointer x) 1 (#m) (double mean) (double sd);
-    end
-    if rowvectorp m && sd >= 0.0;
-    
-apply2 f m1::matrix m2::matrix
- = v
-    when
-      x1, x2 = dmatrix m1, dmatrix m2;
-      v = f (pointer x1) 1 (pointer x2) 1 (#m1);
-    end
-    if rowvectorp m1 && rowvectorp m2;
-
-apply2_m f m1::matrix m2::matrix mean1 mean2
-  = v
-    when
-      x1, x2 = dmatrix m1, dmatrix m2;
-      v = f (pointer x1) 1 (pointer x2) 1 (#m1) (double mean1) (double mean2);
-    end
-    if rowvectorp m1 && rowvectorp m2;
-
-apply2_ran f m1::matrix m2::matrix
-  = v
-    when
-      x1, x2 = dmatrix m1, dmatrix m2;
-      v = f (#m1) (pointer x1) (pointer x2);
-    end
-    if #m1 == #m2 && rowvectorp m1 && rowvectorp m2;
-
-public
-  ran_ugaussian_pdf
-  ran_gaussian_pdf
-  cdf_ugaussian_P
-  cdf_gaussian_P
-  cdf_ugaussian_Q
-  cdf_gaussian_Q
-  cdf_ugaussian_Pinv
-  cdf_gaussian_Pinv
-  cdf_ugaussian_Qinv
-  cdf_gaussian_Qinv
-  ran_gaussian_tail_pdf
-  ran_ugaussian_tail_pdf
-  ran_bivariate_gaussian_pdf
-  ran_exponential_pdf
-  cdf_exponential_P
-  cdf_exponential_Q
-  cdf_exponential_Pinv
-  cdf_exponential_Qinv
-  ran_laplace_pdf
-  cdf_laplace_P
-  cdf_laplace_Q
-  cdf_laplace_Pinv
-  cdf_laplace_Qinv
-  ran_exppow_pdf
-  cdf_exppow_P
-  cdf_exppow_Q
-  ran_cauchy_pdf
-  cdf_cauchy_P
-  cdf_cauchy_Q
-  cdf_cauchy_Pinv
-  cdf_cauchy_Qinv
-  ran_rayleigh_pdf
-  cdf_rayleigh_P
-  cdf_rayleigh_Q
-  cdf_rayleigh_Pinv
-  cdf_rayleigh_Qinv
-  ran_rayleigh_tail_pdf
-  ran_landau_pdf
-  ran_gamma_pdf
-  cdf_gamma_P
-  cdf_gamma_Q
-  cdf_gamma_Pinv
-  cdf_gamma_Qinv
-  ran_flat_pdf
-  cdf_flat_P
-  cdf_flat_Q
-  cdf_flat_Pinv
-  cdf_flat_Qinv
-  ran_lognormal_pdf
-  cdf_lognormal_P
-  cdf_lognormal_Q
-  cdf_lognormal_Pinv
-  cdf_lognormal_Qinv
-  ran_chisq_pdf
-  cdf_chisq_P
-  cdf_chisq_Q
-  cdf_chisq_Pinv
-  cdf_chisq_Qinv
-  ran_fdist_pdf
-  cdf_fdist_P
-  cdf_fdist_Q
-  cdf_fdist_Pinv
-  cdf_fdist_Qinv
-  ran_tdist_pdf
-  cdf_tdist_P
-  cdf_tdist_Q
-  cdf_tdist_Pinv
-  cdf_tdist_Qinv
-  ran_beta_pdf
-  cdf_beta_P
-  cdf_beta_Q
-  cdf_beta_Pinv
-  cdf_beta_Qinv
-  ran_logistic_pdf
-  cdf_logistic_P
-  cdf_logistic_Q
-  cdf_logistic_Pinv
-  cdf_logistic_Qinv
-  ran_pareto_pdf
-  cdf_pareto_P
-  cdf_pareto_Q
-  cdf_pareto_Pinv
-  cdf_pareto_Qinv
-  ran_weibull_pdf
-  cdf_weibull_P
-  cdf_weibull_Q
-  cdf_weibull_Pinv
-  cdf_weibull_Qinv
-  ran_gumbel1_pdf
-  cdf_gumbel1_P
-  cdf_gumbel1_Q
-  cdf_gumbel1_Pinv
-  cdf_gumbel1_Qinv
-  ran_gumbel2_pdf
-  cdf_gumbel2_P
-  cdf_gumbel2_Q
-  cdf_gumbel2_Pinv
-  cdf_gumbel2_Qinv
-  ran_dirichlet_pdf
-  ran_dirichlet_lnpdf
-  ran_discrete_preproc
-  ran_discrete_pdf
-  ran_discrete_free
-  ran_poisson_pdf
-  cdf_poisson_P
-  cdf_poisson_Q
-  ran_bernoulli_pdf
-  ran_binomial_pdf
-  cdf_binomial_P
-  cdf_binomial_Q
-  ran_multinomial_pdf
-  ran_multinomial_lnpdf
-  ran_negative_binomial_pdf
-  cdf_negative_binomial_P
-  cdf_negative_binomial_Q
-  ran_pascal_pdf
-  cdf_pascal_P
-  cdf_pascal_Q
-  ran_geometric_pdf
-  cdf_geometric_P
-  cdf_geometric_Q
-  ran_hypergeometric_pdf
-  cdf_hypergeometric_P
-  cdf_hypergeometric_Q
-  ran_logarithmic_pdf
-  stats_mean
-  stats_variance
-  stats_variance_m
-  stats_sd
-  stats_sd_m
-  stats_tss
-  stats_tss_m
-  stats_variance_with_fixed_mean
-  stats_sd_with_fixed_mean
-  stats_absdev
-  stats_absdev_m
-  stats_skew
-  stats_skew_m_sd
-  stats_kurtosis
-  stats_kurtosis_m_sd
-  stats_lag1_autocorrelation
-  stats_lag1_autocorrelation_m
-  stats_covariance
-  stats_covariance_m
-  stats_correlation
-  sort
-  stats_median_from_sorted_data
-  stats_quantile_from_sorted_data;
+extern void gsl_sort(double*, size_t, size_t);
+extern void gsl_sort_int(int*, size_t, size_t);
+namespace;
 
 using namespace C;
+namespace gsl;
 
-/* Gaussian (Normal) Distribution */
+public
+  sort;
 
-ran_ugaussian_pdf x
-  = gsl_ran_ugaussian_pdf (double x)
-    if realp x;
-ran_gaussian_pdf x sigma
-  = gsl_ran_gaussian_pdf (double x) (double sigma)
-    if realp x && realp sigma;
-cdf_ugaussian_P x
-  = gsl_cdf_ugaussian_P (double x) if realp x;
-cdf_gaussian_P x sigma
-  = gsl_cdf_gaussian_P (double x) (double sigma)
-    if realp x && realp sigma;
-cdf_ugaussian_Q x
-  = gsl_cdf_ugaussian_Q (double x) if realp x;
-cdf_gaussian_Q x sigma
-  = gsl_cdf_gaussian_Q (double x) (double sigma)
-    if realp x && realp sigma;
-cdf_ugaussian_Pinv p
-  = gsl_cdf_ugaussian_Pinv (double p) if realp p;
-cdf_gaussian_Pinv p sigma
-  = gsl_cdf_gaussian_Pinv (double p) (double sigma)
-    if realp p && realp sigma;
-cdf_ugaussian_Qinv q
-  = gsl_cdf_ugaussian_Qinv (double q) if realp q;
-cdf_gaussian_Qinv q sigma
-  = gsl_cdf_gaussian_Qinv (double q) (double sigma)
-    if realp q && realp sigma;
+/* Sort for median and quatile functions
+   The manual recomends using a better stable sort. */
 
-/* Gaussian Tail Distribution */
 
-ran_gaussian_tail_pdf x a sigma
+sort  m::matrix
+  = case matrix_type m of
+      1 = gsl_sort (pointer mm) 1 (#mm)  $$  mm  when mm = dmatrix m; end;
+      3 = gsl_sort_int (pointer mm) 1 (#mm)  $$  mm  when mm = imatrix m; end;
+      _ = quote (gsl::sort m);
+    end
+    if rowvectorp m;
+
+/* gsl C random distribution functions */
+namespace C;
+
+extern double gsl_ran_gaussian_pdf(double, double);
+extern double gsl_ran_ugaussian_pdf(double);
+extern double gsl_cdf_ugaussian_P(double);
+extern double gsl_cdf_gaussian_P(double, double);
+extern double gsl_cdf_ugaussian_Q(double);
+extern double gsl_cdf_gaussian_Q(double, double);
+extern double gsl_cdf_ugaussian_Pinv(double);
+extern double gsl_cdf_gaussian_Pinv(double, double);
+extern double gsl_cdf_ugaussian_Qinv(double);
+extern double gsl_cdf_gaussian_Qinv(double, double);
+
+extern double gsl_ran_gaussian_tail_pdf(double, double, double);
+extern double gsl_ran_ugaussian_tail_pdf(double, double);
+
+extern double gsl_ran_bivariate_gaussian_pdf
+  (double, double, double, double, double);
+
+extern double gsl_ran_exponential_pdf(double, double);
+extern double gsl_cdf_exponential_P(double, double);
+extern double gsl_cdf_exponential_Q(double, double);
+extern double gsl_cdf_exponential_Pinv(double, double);
+extern double gsl_cdf_exponential_Qinv(double, double);
+
+extern double gsl_ran_laplace_pdf(double, double);
+extern double gsl_cdf_laplace_P(double, double);
+extern double gsl_cdf_laplace_Q(double, double);
+extern double gsl_cdf_laplace_Pinv(double, double);
+extern double gsl_cdf_laplace_Qinv(double, double);
+
+extern double gsl_ran_exppow_pdf(double, double, double);
+extern double gsl_cdf_exppow_P(double, double, double);
+extern double gsl_cdf_exppow_Q(double, double, double);
+
+extern double gsl_ran_cauchy_pdf(double, double);
+extern double gsl_cdf_cauchy_P(double, double);
+extern double gsl_cdf_cauchy_Q(double, double);
+extern double gsl_cdf_cauchy_Pinv(double, double);
+extern double gsl_cdf_cauchy_Qinv(double, double);
+
+extern double gsl_ran_rayleigh_pdf(double, double);
+extern double gsl_cdf_rayleigh_P(double, double);
+extern double gsl_cdf_rayleigh_Q(double, double);
+extern double gsl_cdf_rayleigh_Pinv(double, double);
+extern double gsl_cdf_rayleigh_Qinv(double, double);
+
+extern double gsl_ran_rayleigh_tail_pdf(double, double, double);
+
+extern double gsl_ran_landau_pdf(double);
+
+extern double gsl_ran_gamma_pdf(double, double, double);
+extern double gsl_cdf_gamma_P(double, double, double);
+extern double gsl_cdf_gamma_Q(double, double, double);
+extern double gsl_cdf_gamma_Pinv(double, double, double);
+extern double gsl_cdf_gamma_Qinv(double, double, double);
+
+extern double gsl_ran_flat_pdf(double, double, double);
+extern double gsl_cdf_flat_P(double, double, double);
+extern double gsl_cdf_flat_Q(double, double, double);
+extern double gsl_cdf_flat_Pinv(double, double, double);
+extern double gsl_cdf_flat_Qinv(double, double, double);
+
+extern double gsl_ran_lognormal_pdf(double, double, double);
+extern double gsl_cdf_lognormal_P(double, double, double);
+extern double gsl_cdf_lognormal_Q(double, double, double);
+extern double gsl_cdf_lognormal_Pinv(double, double, double);
+extern double gsl_cdf_lognormal_Qinv(double, double, double);
+
+extern double gsl_ran_chisq_pdf(double, double);
+extern double gsl_cdf_chisq_P(double, double);
+extern double gsl_cdf_chisq_Q(double, double);
+extern double gsl_cdf_chisq_Pinv(double, double);
+extern double gsl_cdf_chisq_Qinv(double, double);
+
+extern double gsl_ran_fdist_pdf(double, double, double);
+extern double gsl_cdf_fdist_P(double, double, double);
+extern double gsl_cdf_fdist_Q(double, double, double);
+extern double gsl_cdf_fdist_Pinv(double, double, double);
+extern double gsl_cdf_fdist_Qinv(double, double, double);
+
+extern double gsl_ran_tdist_pdf(double, double);
+extern double gsl_cdf_tdist_P(double, double);
+extern double gsl_cdf_tdist_Q(double, double);
+extern double gsl_cdf_tdist_Pinv(double, double);
+extern double gsl_cdf_tdist_Qinv(double, double);
+
+extern double gsl_ran_beta_pdf(double, double, double);
+extern double gsl_cdf_beta_P(double, double, double);
+extern double gsl_cdf_beta_Q(double, double, double);
+extern double gsl_cdf_beta_Pinv(double, double, double);
+extern double gsl_cdf_beta_Qinv(double, double, double);
+
+extern double gsl_ran_logistic_pdf(double, double);
+extern double gsl_cdf_logistic_P(double, double);
+extern double gsl_cdf_logistic_Q(double, double);
+extern double gsl_cdf_logistic_Pinv(double, double);
+extern double gsl_cdf_logistic_Qinv(double, double);
+
+extern double gsl_ran_pareto_pdf(double, double, double);
+extern double gsl_cdf_pareto_P(double, double, double);
+extern double gsl_cdf_pareto_Q(double, double, double);
+extern double gsl_cdf_pareto_Pinv(double, double, double);
+extern double gsl_cdf_pareto_Qinv(double, double, double);
+
+extern double gsl_ran_weibull_pdf(double, double, double);
+extern double gsl_cdf_weibull_P(double, double, double);
+extern double gsl_cdf_weibull_Q(double, double, double);
+extern double gsl_cdf_weibull_Pinv(double, double, double);
+extern double gsl_cdf_weibull_Qinv(double, double, double);
+
+extern double gsl_ran_gumbel1_pdf(double, double, double);
+extern double gsl_cdf_gumbel1_P(double, double, double);
+extern double gsl_cdf_gumbel1_Q(double, double, double);
+extern double gsl_cdf_gumbel1_Pinv(double, double, double);
+extern double gsl_cdf_gumbel1_Qinv(double, double, double);
+
+extern double gsl_ran_gumbel2_pdf(double, double, double);
+extern double gsl_cdf_gumbel2_P(double, double, double);
+extern double gsl_cdf_gumbel2_Q(double, double, double);
+extern double gsl_cdf_gumbel2_Pinv(double, double, double);
+extern double gsl_cdf_gumbel2_Qinv(double, double, double);
+
+extern double gsl_ran_dirichlet_pdf(size_t, double*, double*);
+extern double gsl_ran_dirichlet_lnpdf(size_t, double*, double*);
+
+extern gsl_ran_discrete_t *gsl_ran_discrete_preproc(size_t, double*);
+extern double gsl_ran_discrete_pdf(size_t, gsl_ran_discrete_t*);
+extern void gsl_ran_discrete_free(gsl_ran_discrete_t *);
+
+extern double gsl_ran_poisson_pdf(int, double);
+extern double gsl_cdf_poisson_P(int, double);
+extern double gsl_cdf_poisson_Q(int, double);
+
+extern double gsl_ran_bernoulli_pdf(int, double);
+
+extern double gsl_ran_binomial_pdf(int, double, int);
+extern double gsl_cdf_binomial_P(int, double, int);
+extern double gsl_cdf_binomial_Q(int, double, int);
+
+extern double gsl_ran_multinomial_pdf(size_t, double*, int*);
+extern double gsl_ran_multinomial_lnpdf(size_t, double*, int*);
+
+extern double gsl_ran_negative_binomial_pdf(int, double, double);
+extern double gsl_cdf_negative_binomial_P(int, double, double);
+extern double gsl_cdf_negative_binomial_Q(int, double, double);
+
+extern double gsl_ran_pascal_pdf(int, double, int);
+extern double gsl_cdf_pascal_P(int, double, int);
+extern double gsl_cdf_pascal_Q(int, double, int);
+
+extern double gsl_ran_geometric_pdf(int, double);
+extern double gsl_cdf_geometric_P(int, double);
+extern double gsl_cdf_geometric_Q(int, double);
+
+extern double gsl_ran_hypergeometric_pdf(int, int, int, int);
+extern double gsl_cdf_hypergeometric_P(int, int, int, int);
+extern double gsl_cdf_hypergeometric_Q(int, int, int, int);
+
+extern double gsl_ran_logarithmic_pdf(int, double);
+namespace;
+
+/* Convenience macro for use with probability density functions */
+
+private
+  apply2_ran;
+
+def apply2_ran  f  m1  m2  =
+  if rowvectorp m1 && rowvectorp m2 && #m1 == #m2 then
+    v
+  else
+    f m1 m2
+  when
+    x1, x2 = dmatrix m1, dmatrix m2;
+    v = f (#m1) (pointer x1) (pointer x2);
+  end;
+
+namespace gsl_pdf;
+
+public
+  ugaussian
+  gaussian
+  gaussian_tail
+  ugaussian_tail
+  bivariate_gaussian
+  exponential
+  laplace
+  exppow
+  cauchy
+  rayleigh
+  rayleigh_tail
+  landau
+  gamma
+  flat
+  lognormal
+  chisq
+  fdist
+  tdist
+  beta
+  logistic
+  pareto
+  weibull
+  gumbel1
+  gumbel2
+  dirichlet
+  dirichlet_ln
+  discrete_preproc
+  discrete
+  discrete_free
+  poisson
+  bernoulli
+  binomial
+  multinomial
+  multinomial_ln
+  negative_binomial
+  pascal
+  geometric
+  hypergeometric
+  logarithmic;
+
+ugaussian  x
+  = gsl_ran_ugaussian_pdf (double x) if realp x;
+
+gaussian  x  sigma
+  = gsl_ran_gaussian_pdf (double x) (double sigma) if realp x && realp sigma;
+
+gaussian_tail  x  a  sigma
   = gsl_ran_gaussian_tail_pdf (double x) (double a) (double sigma)
     if realp x && realp a && realp sigma;
-ran_ugaussian_tail_pdf x a
-  = gsl_ran_ugaussian_tail_pdf (double x) (double a)
-    if realp x && realp a;
 
-/* Bivariate Gaussian Distribution */
+ugaussian_tail  x  a
+  = gsl_ran_ugaussian_tail_pdf (double x) (double a) if realp x && realp a;
 
-ran_bivariate_gaussian_pdf x y sigma_x sigma_y rho
-  = gsl_ran_bivariate_gaussian_pdf (double x) (double y)
-      (double sigma_x) (double sigma_y) (double rho)
+bivariate_gaussian  x  y  sigma_x  sigma_y  rho
+  = gsl_ran_bivariate_gaussian_pdf
+      (double x) (double y) (double sigma_x) (double sigma_y) (double rho)
     if realp x && realp y && realp sigma_x && realp sigma_y && realp rho;
 
-/* Exponential Distribution */
+exponential  x  mu
+  = gsl_ran_exponential_pdf (double x) (double mu) if realp x && realp mu;
 
-ran_exponential_pdf x mu
-  = gsl_ran_exponential_pdf (double x) (double mu)
-    if realp x && realp mu;
-cdf_exponential_P x mu
-  = gsl_cdf_exponential_P (double x) (double mu)
-    if realp x && realp mu;
-cdf_exponential_Q x mu
-  = gsl_cdf_exponential_Q (double x) (double mu)
-    if realp x && realp mu;
-cdf_exponential_Pinv p mu
-  = gsl_cdf_exponential_Pinv (double p) (double mu)
-    if realp p && realp mu;
-cdf_exponential_Qinv q mu
-  = gsl_cdf_exponential_Qinv (double q) (double mu)
-    if realp q && realp mu;
+laplace  x  a
+  = gsl_ran_laplace_pdf (double x) (double a) if realp x && realp a;
 
-/* The Laplace Distribution */
-
-ran_laplace_pdf x a
-  = gsl_ran_laplace_pdf (double x) (double a)
-    if realp x && realp a;
-cdf_laplace_P x a
-  = gsl_cdf_laplace_P (double x) (double a)
-    if realp x && realp a;
-cdf_laplace_Q x a
-  = gsl_cdf_laplace_Q (double x) (double a)
-    if realp x && realp a;
-cdf_laplace_Pinv p a
-  = gsl_cdf_laplace_Pinv (double p) (double a)
-    if realp p && realp a;
-cdf_laplace_Qinv q a
-  = gsl_cdf_laplace_Qinv (double q) (double a)
-    if realp q && realp a;
-
-/* Exponential Power Distribution */
-
-ran_exppow_pdf x a b
+exppow  x  a  b
   = gsl_ran_exppow_pdf (double x) (double a) (double b)
     if realp x && realp a && realp b;
-cdf_exppow_P x a b
-  = gsl_cdf_exppow_P (double x) (double a) (double b)
-    if realp x && realp a && realp b;
-cdf_exppow_Q x a b
-  = gsl_cdf_exppow_P (double x) (double a) (double b)
-    if realp x && realp a && realp b;
 
-/* Cauchy Distribution */
+cauchy  x  a
+  = gsl_ran_cauchy_pdf (double x) (double a) if realp x && realp a;
 
-ran_cauchy_pdf x a
-  = gsl_ran_cauchy_pdf (double x) (double a)
-    if realp x && realp a;
-cdf_cauchy_P x a
-  = gsl_cdf_cauchy_P (double x) (double a)
-    if realp x && realp a;
-cdf_cauchy_Q x a
-  = gsl_cdf_cauchy_Q (double x) (double a)
-    if realp x && realp a;
-cdf_cauchy_Pinv p a
-  = gsl_cdf_cauchy_Pinv (double p) (double a)
-    if realp p && realp a;
-cdf_cauchy_Qinv q a
-  = gsl_cdf_cauchy_Qinv (double q) (double a)
-    if realp q && realp a;
+rayleigh  x  sigma
+  = gsl_ran_rayleigh_pdf (double x) (double sigma) if realp x && realp sigma;
 
-/* Rayleigh Distribution */
-
-ran_rayleigh_pdf x sigma
-  = gsl_ran_rayleigh_pdf (double x) (double sigma)
-    if realp x && realp sigma;
-cdf_rayleigh_P x sigma
-  = gsl_cdf_rayleigh_P  (double x) (double sigma)
-    if realp x && realp sigma;
-cdf_rayleigh_Q x sigma
-  = gsl_cdf_rayleigh_Q  (double x) (double sigma)
-    if realp x && realp sigma;
-cdf_rayleigh_Pinv p sigma
-  = gsl_cdf_rayleigh_Pinv  (double p) (double sigma)
-    if realp p && realp sigma;
-cdf_rayleigh_Qinv q sigma
-  = gsl_cdf_rayleigh_Qinv  (double q) (double sigma)
-    if realp q && realp sigma;
-
-/* Rayleigh Tail Distribution */
-
-ran_rayleigh_tail_pdf x a sigma
+rayleigh_tail  x  a  sigma
   = gsl_ran_rayleigh_tail_pdf (double x) (double a) (double sigma)
     if realp x && realp a && realp sigma;
 
-/* Landau Distribution */
-ran_landau_pdf x
-  = gsl_ran_landau_pdf x
-    if realp x;
+landau  x
+  = gsl_ran_landau_pdf x if realp x;
 
-/* Gamma Distribution */
-
-ran_gamma_pdf x a b
+gamma  x  a  b
   = gsl_ran_gamma_pdf (double x) (double a) (double b)
     if realp x && realp a && realp b;
-cdf_gamma_P x a b
-  = gsl_cdf_gamma_P (double x) (double a) (double b)
-    if realp x && realp a && realp b;
-cdf_gamma_Q x a b
-  = gsl_cdf_gamma_Q (double x) (double a) (double b)
-    if realp x && realp a && realp b;
-cdf_gamma_Pinv p a b
-  = gsl_cdf_gamma_Pinv (double p) (double a) (double b)
-    if realp p && realp a && realp b;
-cdf_gamma_Qinv q a b
-  = gsl_cdf_gamma_Qinv (double q) (double a) (double b)
-    if realp q && realp a && realp b;
 
-/* Flat (Uniform) Distribution */
-
-ran_flat_pdf x a b
+flat  x  a  b
   = gsl_ran_flat_pdf (double x) (double a) (double b)
     if realp x && realp a && realp b;
-cdf_flat_P x a b
-  = gsl_cdf_flat_P (double x) (double a) (double b)
-    if realp x && realp a && realp b;
-cdf_flat_Q x a b
-  = gsl_cdf_flat_Q (double x) (double a) (double b)
-    if realp x && realp a && realp b;
-cdf_flat_Pinv p a b
-  = gsl_cdf_flat_Pinv (double p) (double a) (double b)
-    if realp p && realp a && realp b;
-cdf_flat_Qinv q a b
-  = gsl_cdf_flat_Qinv (double q) (double a) (double b)
-    if realp q && realp a && realp b;
 
-/* Lognormal Distribution */
-
-ran_lognormal_pdf x zeta sigma
+lognormal  x  zeta  sigma
   = gsl_ran_lognormal_pdf (double x) (double zeta) (double sigma)
     if realp x && realp zeta && realp sigma;
-cdf_lognormal_P x zeta sigma
-  = gsl_cdf_lognormal_P (double x) (double zeta) (double sigma)
-    if realp x && realp zeta && realp sigma;
-cdf_lognormal_Q x zeta sigma
-  = gsl_cdf_lognormal_Q (double x) (double zeta) (double sigma)
-    if realp x && realp zeta && realp sigma;
-cdf_lognormal_Pinv p zeta sigma
-  = gsl_cdf_lognormal_Pinv (double p) (double zeta) (double sigma)
-    if realp p && realp zeta && realp sigma;
-cdf_lognormal_Qinv q zeta sigma
-  = gsl_cdf_lognormal_Qinv (double q) (double zeta) (double sigma)
-    if realp q && realp zeta && realp sigma;
 
-/* Chi-squared Distribution */
+chisq  x  nu
+  = gsl_ran_chisq_pdf (double x) (double nu) if realp x && realp nu;
 
-ran_chisq_pdf x nu
-  = gsl_ran_chisq_pdf (double x) (double nu)
-    if realp x && realp nu;
-cdf_chisq_P x nu
-  = gsl_cdf_chisq_P (double x) (double nu)
-    if realp x && realp nu;
-cdf_chisq_Q x nu
-  = gsl_cdf_chisq_Q (double x) (double nu)
-    if realp x && realp nu;
-cdf_chisq_Pinv p nu
-  = gsl_cdf_chisq_P (double p) (double nu)
-    if realp p && realp nu;
-cdf_chisq_Qinv q nu
-  = gsl_cdf_chisq_Qinv (double q) (double nu)
-    if realp q && realp nu;
-
-/* F-distribution */
-
-ran_fdist_pdf x nu1 nu2
+fdist  x  nu1  nu2
   = gsl_ran_fdist_pdf (double x) (double nu1) (double nu2)
     if realp x && realp nu1 && realp nu2;
-cdf_fdist_P x nu1 nu2
-  = gsl_cdf_fdist_P (double x) (double nu1) (double nu2)
-    if realp x && realp nu1 && realp nu2;
-cdf_fdist_Q x nu1 nu2
-  = gsl_cdf_fdist_Q (double x) (double nu1) (double nu2)
-    if realp x && realp nu1 && realp nu2;
-cdf_fdist_Pinv p nu1 nu2
-  = gsl_cdf_fdist_Pinv (double p) (double nu1) (double nu2)
-	  if realp p && realp nu1 && realp nu2;
-cdf_fdist_Qinv q nu1 nu2
-  = gsl_cdf_fdist_Qinv (double q) (double nu1) (double nu2)
-	  if realp q && realp nu1 && realp nu2;
 
-/* Student t-distribution */
+tdist  x  nu
+  = gsl_ran_tdist_pdf (double x) (double nu) if realp x && realp nu;
 
-ran_tdist_pdf x nu
-  = gsl_ran_tdist_pdf (double x) (double nu)
-    if realp x && realp nu;
-cdf_tdist_P x nu
-  = gsl_cdf_tdist_P (double x) (double nu)
-    if realp x && realp nu;
-cdf_tdist_Q x nu
-  = gsl_cdf_tdist_Q (double x) (double nu)
-    if realp x && realp nu;
-cdf_tdist_Pinv p nu
-  = gsl_cdf_tdist_Pinv (double p) (double nu)
-    if realp p && realp nu;
-cdf_tdist_Qinv q nu
-  = gsl_cdf_tdist_Qinv (double q) (double nu)
-    if realp q && realp nu;
-
-/* Beta Distribution */
-
-ran_beta_pdf x a b
+beta  x  a  b
   = gsl_ran_beta_pdf (double x) (double a) (double b)
     if realp x && realp a && realp b;
-cdf_beta_P x a b
-  = gsl_cdf_beta_P (double x) (double a) (double b)
-    if realp x && realp a && realp b;
-cdf_beta_Q x a b
-  = gsl_cdf_beta_Q (double x) (double a) (double b)
-    if realp x && realp a && realp b;
-cdf_beta_Pinv p a b
-  = gsl_cdf_beta_Pinv (double p) (double a) (double b)
-    if realp p && realp a && realp b;
-cdf_beta_Qinv q a b
-  = gsl_cdf_beta_Qinv (double q) (double a) (double b)
-    if realp q && realp a && realp b;
 
-/* Logistic Distribution */
+logistic  x  a
+  = gsl_ran_logistic_pdf (double x) (double a) if realp x && realp a;
 
-ran_logistic_pdf x a
-  = gsl_ran_logistic_pdf (double x) (double a)
-    if realp x && realp a;
-cdf_logistic_P x a
-  = gsl_cdf_logistic_P (double x) (double a)
-    if realp x && realp a;
-cdf_logistic_Q x a
-  = gsl_cdf_logistic_Q (double x) (double a)
-    if realp x && realp a;
-cdf_logistic_Pinv p a
-  = gsl_cdf_logistic_Pinv (double p) (double a)
-    if realp p && realp a;
-cdf_logistic_Qinv q a
-  = gsl_cdf_logistic_Qinv (double q) (double a)
-    if realp q && realp a;
-
-/* Pareto Distribution */
-
-ran_pareto_pdf x a b
+pareto  x  a  b
   = gsl_ran_pareto_pdf (double x) (double a) (double b)
     if realp x && realp a && realp b;
-cdf_pareto_P x a b
-  = gsl_cdf_pareto_P (double x) (double a) (double b)
-    if realp x && realp a && realp b;
-cdf_pareto_Q x a b
-  = gsl_cdf_pareto_Q (double x) (double a) (double b)
-    if realp x && realp a && realp b;
-cdf_pareto_Pinv p a b
-  = gsl_cdf_pareto_Pinv (double p) (double a) (double b)
-    if realp p && realp a && realp b;
-cdf_pareto_Qinv q a b
-  = gsl_cdf_pareto_Qinv (double q) (double a) (double b)
-    if realp q && realp a && realp b;
 
-/* Weibull Distribution */
-
-ran_weibull_pdf x a b
+weibull  x  a  b
   = gsl_ran_weibull_pdf (double x) (double a) (double b)
     if realp x && realp a && realp b;
-cdf_weibull_P x a b
-  = gsl_cdf_weibull_P (double x) (double a) (double b)
-    if realp x && realp a && realp b;
-cdf_weibull_Q x a b
-  = gsl_cdf_weibull_Q (double x) (double a) (double b)
-    if realp x && realp a && realp b;
-cdf_weibull_Pinv p a b
-  = gsl_cdf_weibull_Pinv (double p) (double a) (double b)
-    if realp p && realp a && realp b;
-cdf_weibull_Qinv q a b
-  = gsl_cdf_weibull_Qinv (double q) (double a) (double b)
-    if realp q && realp a && realp b;
 
-/* Type-1 Gumbel Distribution */
-
-ran_gumbel1_pdf x a b
+gumbel1  x  a  b
   = gsl_ran_gumbel1_pdf (double x) (double a) (double b)
     if realp x && realp a && realp b;
-cdf_gumbel1_P x a b
-  = gsl_cdf_gumbel1_P (double x) (double a) (double b)
-    if realp x && realp a && realp b;
-cdf_gumbel1_Q x a b
-  = gsl_cdf_gumbel1_Q (double x) (double a) (double b)
-    if realp x && realp a && realp b;
-cdf_gumbel1_Pinv p a b
-  = gsl_cdf_gumbel1_Pinv (double p) (double a) (double b)
-    if realp p && realp a && realp b;
-cdf_gumbel1_Qinv q a b
-  = gsl_cdf_gumbel1_Qinv (double q) (double a) (double b)
-    if realp q && realp a && realp b;
 
-/* Type-2 Gumbel Distribution */
-
-ran_gumbel2_pdf x a b
+gumbel2  x  a  b
   = gsl_ran_gumbel2_pdf (double x) (double a) (double b)
     if realp x && realp a && realp b;
-cdf_gumbel2_P x a b
-  = gsl_cdf_gumbel2_P (double x) (double a) (double b)
-    if realp x && realp a && realp b;
-cdf_gumbel2_Q x a b
-  = gsl_cdf_gumbel2_Q (double x) (double a) (double b)
-    if realp x && realp a && realp b;
-cdf_gumbel2_Pinv p a b
-  = gsl_cdf_gumbel2_Pinv (double p) (double a) (double b)
-    if realp p && realp a && realp b;
-cdf_gumbel2_Qinv q a b
-  = gsl_cdf_gumbel2_Qinv (double q) (double a) (double b)
-    if realp q && realp a && realp b;
 
-/* Dirichlet Distribution
-   Notice the 'k' parameter is not used in the Pure wrapper. */
+dirichlet  alpha::matrix  theta::matrix
+  = apply2_ran  gsl_ran_dirichlet_pdf  alpha  theta;
 
-ran_dirichlet_pdf alpha::matrix theta::matrix
-  = apply2_ran gsl_ran_dirichlet_pdf alpha theta;
-ran_dirichlet_lnpdf alpha::matrix theta::matrix
-  = apply2_ran gsl_ran_dirichlet_lnpdf alpha theta;
+dirichlet_ln  alpha::matrix  theta::matrix
+  = apply2_ran  gsl_ran_dirichlet_lnpdf  alpha  theta;
 
-/* General Discrete Distributions */
-
-ran_discrete_preproc p::matrix
+discrete_preproc  p::matrix
   = v
     when
       x = dmatrix p;
@@ -1295,181 +883,770 @@ ran_discrete_preproc p::matrix
     end
     if rowvectorp p;
 
-ran_discrete_pdf k::int p::pointer
-  = gsl_ran_discrete_pdf k p if k >= 0;
+discrete  k::int  p::pointer
+  = gsl_ran_discrete_pdf  k  p if k >= 0;
 
-ran_discrete_free p::pointer
-  = gsl_ran_discrete_free p;
+discrete_free  p::pointer
+  = gsl_ran_discrete_free  p;
 
-/* Poisson Distribution */
+poisson  k::int  mu
+  = gsl_ran_poisson_pdf  k (double mu) if realp mu && k >= 0;
 
-ran_poisson_pdf k::int mu
-  = gsl_ran_poisson_pdf k (double mu)
-    if realp mu && k >= 0;
-cdf_poisson_P k::int mu
-  = gsl_cdf_poisson_P k (double mu)
-    if realp mu && k >= 0;
-cdf_poisson_Q k::int mu
-  = gsl_cdf_poisson_Q k (double mu)
-    if realp mu && k >= 0;
+bernoulli  k::int  p
+  = gsl_ran_bernoulli_pdf  k (double p) if realp p && k >= 0;
 
-/* Bernoulli Distribution */
+binomial  k::int  p  n::int
+  = gsl_ran_binomial_pdf  k (double p) n if realp p && k >= 0 && n > 0;
 
-ran_bernoulli_pdf k::int p
-  = gsl_ran_bernoulli_pdf k (double p)
-    if realp p && k >= 0;
-
-/* Binomial Distribution */
-
-ran_binomial_pdf k::int p n::int
-  = gsl_ran_binomial_pdf k (double p) n
-    if realp p && k >= 0 && n > 0;
-cdf_binomial_P k::int p n::int
-  = gsl_cdf_binomial_P k (double p) n
-    if realp p && k >= 0 && n > 0;
-cdf_binomial_Q k::int q n::int
-  = gsl_cdf_binomial_Q k (double q) n
-    if realp q && k >= 0 && n > 0;
-
-/* Multinomial Distribution
-   Notice the 'k' parameter is not used in the Pure wrapper. */
-
-ran_multinomial_pdf p::matrix n::matrix
-  = apply2_ran gsl_ran_multinomial_pdf p n;
-ran_multinomial_lnpdf p::matrix n::matrix
-  = apply2_ran gsl_ran_multinomial_lnpdf p n;
-
-/* Negative Binomial Distribution */
-
-ran_negative_binomial_pdf k::int p n
-  = gsl_ran_negative_binomial_pdf k (double p) (double n)
-    if realp p && realp n && k >= 0;
-cdf_negative_binomial_P k::int p n
-  = gsl_cdf_negative_binomial_P k (double p) (double n)
-    if realp p && realp n && k >= 0;
-cdf_negative_binomial_Q k::int p n
-  = gsl_cdf_negative_binomial_Q k::int (double p) (double n)
+negative_binomial  k::int  p  n
+  = gsl_ran_negative_binomial_pdf  k  (double p) (double n)
     if realp p && realp n && k >= 0;
 
-/* Pascal Distribution */
+multinomial  p::matrix  n::matrix
+  = apply2_ran  gsl_ran_multinomial_pdf  p  n;
 
-ran_pascal_pdf k::int p n::int
-  = gsl_ran_pascal_pdf k (double p) n
-    if realp p && k >= 0;
-cdf_pascal_P k::int p n::int
-  = gsl_cdf_pascal_P k (double p) n
-    if realp p && k >= 0;
-cdf_pascal_Q k::int p n::int
-  = gsl_cdf_pascal_Q k (double p) n
-    if realp p && k >= 0;
+multinomial_ln  p::matrix  n::matrix
+  = apply2_ran  gsl_ran_multinomial_lnpdf  p  n;
 
-/* Geometric Distribution */
+pascal  k::int  p  n::int
+  = gsl_ran_pascal_pdf k (double p) n if realp p && k >= 0;
 
-ran_geometric_pdf k::int p
-  = gsl_ran_geometric_pdf k (double p)
-    if realp p && k >= 1;
-cdf_geometric_P k::int p
-  = gsl_cdf_geometric_P k (double p)
-    if realp p && k >= 1;
-cdf_geometric_Q k::int p
-  = gsl_cdf_geometric_Q k (double p)
-    if realp p && k >= 1;
+geometric  k::int  p
+  = gsl_ran_geometric_pdf k (double p) if realp p && k >= 1;
 
-/* Hypergeometric Distribution */
-
-ran_hypergeometric_pdf k::int n1::int n2::int t::int
+hypergeometric  k::int  n1::int  n2::int  t::int
   = gsl_ran_hypergeometric_pdf k n1 n2 t
     if k >= 0 && n1 >= 0 && n2 >= 0 && t >= 0;
-cdf_hypergeometric_P k::int n1::int n2::int t::int
+
+logarithmic  k::int  p
+  = gsl_ran_logarithmic_pdf k (double p) if k >= 1 && realp p;
+
+/* Continuous distribution functions */
+
+namespace gsl_cdf;
+
+public
+  ugaussian_P
+  gaussian_P
+  ugaussian_Q
+  gaussian_Q
+  ugaussian_Pinv
+  gaussian_Pinv
+  ugaussian_Qinv
+  gaussian_Qinv
+  exponential_P
+  exponential_Q
+  exponential_Pinv
+  exponential_Qinv
+  laplace_P
+  laplace_Q
+  laplace_Pinv
+  laplace_Qinv
+  exppow_P
+  exppow_Q
+  cauchy_P
+  cauchy_Q
+  cauchy_Pinv
+  cauchy_Qinv
+  rayleigh_P
+  rayleigh_Q
+  rayleigh_Pinv
+  rayleigh_Qinv
+  gamma_P
+  gamma_Q
+  gamma_Pinv
+  gamma_Qinv
+  flat_P
+  flat_Q
+  flat_Pinv
+  flat_Qinv
+  lognormal_P
+  lognormal_Q
+  lognormal_Pinv
+  lognormal_Qinv
+  chisq_P
+  chisq_Q
+  chisq_Pinv
+  chisq_Qinv
+  fdist_P
+  fdist_Q
+  fdist_Pinv
+  fdist_Qinv
+  tdist_P
+  tdist_Q
+  tdist_Pinv
+  tdist_Qinv
+  beta_P
+  beta_Q
+  beta_Pinv
+  beta_Qinv
+  logistic_P
+  logistic_Q
+  logistic_Pinv
+  logistic_Qinv
+  pareto_P
+  pareto_Q
+  pareto_Pinv
+  pareto_Qinv
+  weibull_P
+  weibull_Q
+  weibull_Pinv
+  weibull_Qinv
+  gumbel1_P
+  gumbel1_Q
+  gumbel1_Pinv
+  gumbel1_Qinv
+  gumbel2_P
+  gumbel2_Q
+  gumbel2_Pinv
+  gumbel2_Qinv
+  poisson_P
+  poisson_Q
+  binomial_P
+  binomial_Q
+  negative_binomial_P
+  negative_binomial_Q
+  pascal_P
+  pascal_Q
+  geometric_P
+  geometric_Q
+  hypergeometric_P
+  hypergeometric_Q;
+
+ugaussian_P  x
+  = gsl_cdf_ugaussian_P (double x) if realp x;
+
+gaussian_P  x  sigma
+  = gsl_cdf_gaussian_P (double x) (double sigma) if realp x && realp sigma;
+
+ugaussian_Q  x
+  = gsl_cdf_ugaussian_Q (double x) if realp x;
+
+gaussian_Q  x  sigma
+  = gsl_cdf_gaussian_Q (double x) (double sigma) if realp x && realp sigma;
+
+ugaussian_Pinv  p
+  = gsl_cdf_ugaussian_Pinv (double p) if realp p;
+
+gaussian_Pinv  p  sigma
+  = gsl_cdf_gaussian_Pinv (double p) (double sigma) if realp p && realp sigma;
+
+ugaussian_Qinv  q
+  = gsl_cdf_ugaussian_Qinv (double q) if realp q;
+
+gaussian_Qinv  q  sigma
+  = gsl_cdf_gaussian_Qinv (double q) (double sigma) if realp q && realp sigma;
+
+exponential_P  x  mu
+  = gsl_cdf_exponential_P (double x) (double mu) if realp x && realp mu;
+
+exponential_Q  x  mu
+  = gsl_cdf_exponential_Q (double x) (double mu) if realp x && realp mu;
+
+exponential_Pinv  p  mu
+  = gsl_cdf_exponential_Pinv (double p) (double mu) if realp p && realp mu;
+
+exponential_Qinv  q  mu
+  = gsl_cdf_exponential_Qinv (double q) (double mu) if realp q && realp mu;
+
+laplace_P  x  a
+  = gsl_cdf_laplace_P (double x) (double a) if realp x && realp a;
+
+laplace_Q  x  a
+  = gsl_cdf_laplace_Q (double x) (double a) if realp x && realp a;
+
+laplace_Pinv  p  a
+  = gsl_cdf_laplace_Pinv (double p) (double a) if realp p && realp a;
+
+laplace_Qinv  q  a
+  = gsl_cdf_laplace_Qinv (double q) (double a)
+    if realp q && realp a;
+
+exppow_P  x  a  b
+  = gsl_cdf_exppow_P (double x) (double a) (double b)
+    if realp x && realp a && realp b;
+
+exppow_Q  x  a  b
+  = gsl_cdf_exppow_P (double x) (double a) (double b)
+    if realp x && realp a && realp b;
+
+cauchy_P  x  a
+  = gsl_cdf_cauchy_P (double x) (double a) if realp x && realp a;
+
+cauchy_Q  x  a
+  = gsl_cdf_cauchy_Q (double x) (double a) if realp x && realp a;
+
+cauchy_Pinv  p  a
+  = gsl_cdf_cauchy_Pinv (double p) (double a) if realp p && realp a;
+
+cauchy_Qinv  q  a
+  = gsl_cdf_cauchy_Qinv (double q) (double a) if realp q && realp a;
+
+rayleigh_P  x  sigma
+  = gsl_cdf_rayleigh_P (double x) (double sigma) if realp x && realp sigma;
+
+rayleigh_Q  x  sigma
+  = gsl_cdf_rayleigh_Q (double x) (double sigma) if realp x && realp sigma;
+
+rayleigh_Pinv  p  sigma
+  = gsl_cdf_rayleigh_Pinv (double p) (double sigma) if realp p && realp sigma;
+
+rayleigh_Qinv  q  sigma
+  = gsl_cdf_rayleigh_Qinv  (double q) (double sigma) if realp q && realp sigma;
+
+gamma_P  x  a  b
+  = gsl_cdf_gamma_P (double x) (double a) (double b)
+    if realp x && realp a && realp b;
+
+gamma_Q  x  a  b
+  = gsl_cdf_gamma_Q (double x) (double a) (double b)
+    if realp x && realp a && realp b;
+
+gamma_Pinv  p  a  b
+  = gsl_cdf_gamma_Pinv (double p) (double a) (double b)
+    if realp p && realp a && realp b;
+
+gamma_Qinv  q  a  b
+  = gsl_cdf_gamma_Qinv (double q) (double a) (double b)
+    if realp q && realp a && realp b;
+
+flat_P  x  a  b
+  = gsl_cdf_flat_P (double x) (double a) (double b)
+    if realp x && realp a && realp b;
+
+flat_Q  x  a  b
+  = gsl_cdf_flat_Q (double x) (double a) (double b)
+    if realp x && realp a && realp b;
+
+flat_Pinv  p  a  b
+  = gsl_cdf_flat_Pinv (double p) (double a) (double b)
+    if realp p && realp a && realp b;
+
+flat_Qinv  q  a  b
+  = gsl_cdf_flat_Qinv (double q) (double a) (double b)
+    if realp q && realp a && realp b;
+
+lognormal_P  x  zeta  sigma
+  = gsl_cdf_lognormal_P (double x) (double zeta) (double sigma)
+    if realp x && realp zeta && realp sigma;
+
+lognormal_Q  x  zeta  sigma
+  = gsl_cdf_lognormal_Q (double x) (double zeta) (double sigma)
+    if realp x && realp zeta && realp sigma;
+
+lognormal_Pinv  p  zeta  sigma
+  = gsl_cdf_lognormal_Pinv (double p) (double zeta) (double sigma)
+    if realp p && realp zeta && realp sigma;
+
+lognormal_Qinv  q  zeta  sigma
+  = gsl_cdf_lognormal_Qinv (double q) (double zeta) (double sigma)
+    if realp q && realp zeta && realp sigma;
+
+chisq_P  x  nu
+  = gsl_cdf_chisq_P (double x) (double nu) if realp x && realp nu;
+
+chisq_Q  x  nu
+  = gsl_cdf_chisq_Q (double x) (double nu) if realp x && realp nu;
+
+chisq_Pinv  p  nu
+  = gsl_cdf_chisq_P (double p) (double nu) if realp p && realp nu;
+
+chisq_Qinv  q  nu
+  = gsl_cdf_chisq_Qinv (double q) (double nu) if realp q && realp nu;
+
+fdist_P  x  nu1  nu2
+  = gsl_cdf_fdist_P (double x) (double nu1) (double nu2)
+    if realp x && realp nu1 && realp nu2;
+
+fdist_Q  x  nu1  nu2
+  = gsl_cdf_fdist_Q (double x) (double nu1) (double nu2)
+    if realp x && realp nu1 && realp nu2;
+
+fdist_Pinv  p  nu1  nu2
+  = gsl_cdf_fdist_Pinv (double p) (double nu1) (double nu2)
+	  if realp p && realp nu1 && realp nu2;
+
+fdist_Qinv  q  nu1  nu2
+  = gsl_cdf_fdist_Qinv (double q) (double nu1) (double nu2)
+	  if realp q && realp nu1 && realp nu2;
+
+tdist_P  x  nu
+  = gsl_cdf_tdist_P (double x) (double nu) if realp x && realp nu;
+
+tdist_Q  x  nu
+  = gsl_cdf_tdist_Q (double x) (double nu) if realp x && realp nu;
+
+tdist_Pinv  p  nu
+  = gsl_cdf_tdist_Pinv (double p) (double nu) if realp p && realp nu;
+
+tdist_Qinv  q  nu
+  = gsl_cdf_tdist_Qinv (double q) (double nu) if realp q && realp nu;
+
+beta_P  x  a  b
+  = gsl_cdf_beta_P (double x) (double a) (double b)
+    if realp x && realp a && realp b;
+
+beta_Q  x  a  b
+  = gsl_cdf_beta_Q (double x) (double a) (double b)
+    if realp x && realp a && realp b;
+
+beta_Pinv  p  a  b
+  = gsl_cdf_beta_Pinv (double p) (double a) (double b)
+    if realp p && realp a && realp b;
+
+beta_Qinv  q  a  b
+  = gsl_cdf_beta_Qinv (double q) (double a) (double b)
+    if realp q && realp a && realp b;
+
+logistic_P  x  a
+  = gsl_cdf_logistic_P (double x) (double a) if realp x && realp a;
+
+logistic_Q  x  a
+  = gsl_cdf_logistic_Q (double x) (double a) if realp x && realp a;
+
+logistic_Pinv  p  a
+  = gsl_cdf_logistic_Pinv (double p) (double a) if realp p && realp a;
+
+logistic_Qinv  q  a
+  = gsl_cdf_logistic_Qinv (double q) (double a) if realp q && realp a;
+
+pareto_P  x  a  b
+  = gsl_cdf_pareto_P (double x) (double a) (double b)
+    if realp x && realp a && realp b;
+
+pareto_Q  x  a  b
+  = gsl_cdf_pareto_Q (double x) (double a) (double b)
+    if realp x && realp a && realp b;
+
+pareto_Pinv  p  a  b
+  = gsl_cdf_pareto_Pinv (double p) (double a) (double b)
+    if realp p && realp a && realp b;
+
+pareto_Qinv  q  a  b
+  = gsl_cdf_pareto_Qinv (double q) (double a) (double b)
+    if realp q && realp a && realp b;
+
+weibull_P  x  a  b
+  = gsl_cdf_weibull_P (double x) (double a) (double b)
+    if realp x && realp a && realp b;
+
+weibull_Q  x  a  b
+  = gsl_cdf_weibull_Q (double x) (double a) (double b)
+    if realp x && realp a && realp b;
+
+weibull_Pinv  p  a  b
+  = gsl_cdf_weibull_Pinv (double p) (double a) (double b)
+    if realp p && realp a && realp b;
+
+weibull_Qinv  q  a  b
+  = gsl_cdf_weibull_Qinv (double q) (double a) (double b)
+    if realp q && realp a && realp b;
+
+gumbel1_P  x  a  b
+  = gsl_cdf_gumbel1_P (double x) (double a) (double b)
+    if realp x && realp a && realp b;
+
+gumbel1_Q  x  a  b
+  = gsl_cdf_gumbel1_Q (double x) (double a) (double b)
+    if realp x && realp a && realp b;
+
+gumbel1_Pinv  p  a  b
+  = gsl_cdf_gumbel1_Pinv (double p) (double a) (double b)
+    if realp p && realp a && realp b;
+
+gumbel1_Qinv  q  a  b
+  = gsl_cdf_gumbel1_Qinv (double q) (double a) (double b)
+    if realp q && realp a && realp b;
+
+gumbel2_P  x  a  b
+  = gsl_cdf_gumbel2_P (double x) (double a) (double b)
+    if realp x && realp a && realp b;
+
+gumbel2_Q  x  a  b
+  = gsl_cdf_gumbel2_Q (double x) (double a) (double b)
+    if realp x && realp a && realp b;
+
+gumbel2_Pinv  p  a  b
+  = gsl_cdf_gumbel2_Pinv (double p) (double a) (double b)
+    if realp p && realp a && realp b;
+
+gumbel2_Qinv  q  a  b
+  = gsl_cdf_gumbel2_Qinv (double q) (double a) (double b)
+    if realp q && realp a && realp b;
+
+poisson_P  k::int  mu
+  = gsl_cdf_poisson_P  k (double mu) if realp mu && k >= 0;
+
+poisson_Q  k::int  mu
+  = gsl_cdf_poisson_Q  k (double mu) if realp mu && k >= 0;
+
+binomial_P  k::int  p  n::int
+  = gsl_cdf_binomial_P  k (double p) n if realp p && k >= 0 && n > 0;
+
+binomial_Q  k::int  q  n::int
+  = gsl_cdf_binomial_Q  k (double q) n if realp q && k >= 0 && n > 0;
+
+negative_binomial_P  k::int  p  n
+  = gsl_cdf_negative_binomial_P  k  (double p) (double n)
+    if realp p && realp n && k >= 0;
+
+negative_binomial_Q  k::int  p  n
+  = gsl_cdf_negative_binomial_Q  k  (double p) (double n)
+    if realp p && realp n && k >= 0;
+
+pascal_P  k::int  p  n::int
+  = gsl_cdf_pascal_P k (double p) n if realp p && k >= 0;
+
+pascal_Q  k::int  p  n::int
+  = gsl_cdf_pascal_Q k (double p) n if realp p && k >= 0;
+
+geometric_P  k::int  p
+  = gsl_cdf_geometric_P k (double p) if realp p && k >= 1;
+
+geometric_Q  k::int  p
+  = gsl_cdf_geometric_Q k (double p) if realp p && k >= 1;
+
+hypergeometric_P  k::int  n1::int  n2::int  t::int
   = gsl_cdf_hypergeometric_P k n1 n2 t
     if k >= 0 && n1 >= 0 && n2 >= 0 && t >= 0;
-cdf_hypergeometric_Q k::int n1::int n2::int t::int
+
+hypergeometric_Q  k::int  n1::int  n2::int  t::int
   = gsl_cdf_hypergeometric_Q k n1 n2 t
     if k >= 0 && n1 >= 0 && n2 >= 0 && t >= 0;
 
-/* Logarithmic Distribution */
+namespace C;
 
-ran_logarithmic_pdf k::int p
-  = gsl_ran_logarithmic_pdf k (double p)
-    if k >= 1 && realp p;
+extern double gsl_stats_mean(double*, size_t, size_t);
 
-/* Mean, Standard Deviation, and Variance
-   Notice that stride and matrix sizes are not needed in the Pure versions of
-   these functions. */
+extern double gsl_stats_variance(double*, size_t, size_t);
+extern double gsl_stats_variance_m(double*, size_t, size_t, double);
 
-stats_mean m::matrix
-  = apply1 gsl_stats_mean m;
-stats_variance m::matrix
-  = apply1 gsl_stats_variance m;
-stats_variance_m m::matrix mean
-  = apply1_m gsl_stats_variance_m m mean;
-stats_sd m::matrix
-  = apply1 gsl_stats_sd m;
+extern double gsl_stats_sd(double*, size_t, size_t);
+extern double gsl_stats_sd_m(double*, size_t, size_t, double);
 
-stats_sd_m m::matrix mean
-  = apply1_m gsl_stats_sd_m m mean;
+extern double gsl_stats_tss(double*, size_t, size_t);
+extern double gsl_stats_tss_m(double*, size_t, size_t, double);
 
-stats_tss m::matrix
-  = apply1 gsl_stats_tss m;
-stats_tss_m m::matrix mean
-  = apply1_m gsl_stats_tss_m m mean;
-stats_variance_with_fixed_mean m::matrix mean
-  = apply1_m gsl_stats_variance_with_fixed_mean m mean;
-stats_sd_with_fixed_mean m::matrix mean
-  = apply1_m gsl_stats_sd_with_fixed_mean m mean;
+extern double gsl_stats_variance_with_fixed_mean
+  (double*, size_t, size_t, double);
+extern double gsl_stats_sd_with_fixed_mean(double*, size_t, size_t, double);
 
-/* Absolute deviation */
+extern double gsl_stats_absdev(double*, size_t, size_t);
+extern double gsl_stats_absdev_m(double*, size_t, size_t, double);
 
-stats_absdev m::matrix
-  = apply1 gsl_stats_absdev m;
-stats_absdev_m m::matrix mean
-  = apply1_m gsl_stats_absdev_m m mean;
+extern double gsl_stats_skew(double*, size_t, size_t);
+extern double gsl_stats_skew_m_sd(double*, size_t, size_t, double, double);
 
-/* Higher moments (skewness and kurtosis) */
+extern double gsl_stats_kurtosis(double*, size_t, size_t);
+extern double gsl_stats_kurtosis_m_sd(double*, size_t, size_t, double, double);
 
-stats_skew m::matrix
-  = apply1 gsl_stats_skew m;
-stats_skew_m_sd m::matrix mean sd
-  = apply1_m_sd gsl_stats_skew_m_sd m mean sd;
-stats_kurtosis m::matrix
-  = apply1 gsl_stats_kurtosis m;
-stats_kurtosis_m_sd m::matrix mean sd
-  = apply1_m_sd gsl_stats_kurtosis_m_sd m mean sd;
- 
-/* Autocorrelation */
+extern double gsl_stats_lag1_autocorrelation(double*, size_t, size_t);
+extern double gsl_stats_lag1_autocorrelation_m(double*, size_t, size_t, double);
 
-stats_lag1_autocorrelation m::matrix
-  = apply1 gsl_stats_lag1_autocorrelation m;
-stats_lag1_autocorrelation_m m::matrix mean
-  = apply1_m gsl_stats_lag1_autocorrelation_m m mean;
+extern double gsl_stats_covariance(double*, size_t, double*, size_t, size_t);
+extern double gsl_stats_covariance_m
+  (double*, size_t, double*, size_t, size_t, double, double);
 
-/* Covariance */
+extern double gsl_stats_wmean(double*, size_t, double*, size_t, size_t);
+extern double gsl_stats_wvariance(double*, size_t, double*, size_t, size_t);
+extern double gsl_stats_wvariance_m
+  (double*, size_t, double*, size_t, size_t, double);
+extern double gsl_stats_wsd(double*, size_t, double*, size_t, size_t);
+extern double gsl_stats_wsd_m(double*, size_t, double*, size_t, size_t, double);
+extern double gsl_stats_wvariance_with_fixed_mean
+  (double*, size_t, double*, size_t, size_t, double);
+extern double gsl_stats_wsd_with_fixed_mean
+  (double*, size_t, double*, size_t, size_t, double);
+extern double gsl_stats_wabsdev(double*, size_t, double*, size_t, size_t);
+extern double gsl_stats_wabsdev_m
+  (double*, size_t, double*, size_t, size_t, double);
+extern double gsl_stats_wskew(double*, size_t, double*, size_t, size_t);
+extern double gsl_stats_wskew_m_sd
+  (double*, size_t, double*, size_t, size_t, double, double);
+extern double gsl_stats_wkurtosis(double*, size_t, double*, size_t, size_t);
+extern double gsl_stats_wkurtosis_m_sd
+  (double*, size_t, double*, size_t, size_t, double, double);
 
-stats_covariance m1::matrix m2::matrix
-  = apply2 gsl_stats_covariance m1 m2;
-stats_covariance_m m1::matrix m2::matrix mean1 mean2
-  = apply2_m gsl_stats_covariance_m m1 m2 mean1 mean2;
+extern double gsl_stats_correlation(double*, size_t, double*, size_t, size_t);
 
-/* Correlation */
+extern double gsl_stats_median_from_sorted_data(double*, size_t, size_t);
+extern double gsl_stats_quantile_from_sorted_data
+  (double*, size_t, size_t, double);
 
-stats_correlation m1::matrix m2::matrix
-  = apply2 gsl_stats_correlation m1 m2;
+extern double gsl_stats_max(double*, size_t, size_t);
+extern double gsl_stats_min(double*, size_t, size_t);
 
-/* Sort for median and quantile functions
-   The manual recommends using a better stable sort. */
+extern int gsl_stats_int_max(int*, size_t, size_t);
+extern int gsl_stats_int_min(int*, size_t, size_t);
+extern void gsl_stats_int_minmax(int*, int*, int*, size_t, size_t);
+extern void gsl_stats_minmax(double*, double*, double*, size_t, size_t);
+extern int gsl_stats_int_max_index(int*, size_t, size_t);
+extern int gsl_stats_max_index(double*, size_t, size_t);
+extern int gsl_stats_int_min_index(int*, size_t, size_t);
+extern int gsl_stats_min_index(double*, size_t, size_t);
+extern void gsl_stats_int_minmax_index
+  (size_t*, size_t*, int*, size_t, size_t);
+extern void gsl_stats_minmax_index(size_t*, size_t*, double*, size_t, size_t);
 
-sort m::matrix
-  = mm
-    when
-      mm = dmatrix m;
-      gsl_sort (pointer mm) 1 (#m);
+namespace;
+
+/* Convenience macros for stats functions */
+
+private
+  apply1
+  apply1_d
+  apply1_dd
+  apply2
+  apply2_d
+  apply2_dd;
+
+def apply1  f  m  mtype  =
+  if rowvectorp m then
+    v
+  else
+    f m
+  when 
+    x = mtype m;
+    v = f (pointer x) 1 (#m);
+  end;
+  
+def apply1_d  f  m  d  =
+  if rowvectorp m then
+    v
+  else
+    f m d
+  when
+    x = dmatrix m;
+    v = f (pointer x) 1 (#m) (double d);
+  end;
+
+def apply1_dd  f  m  d1  d2  =
+  if rowvectorp m then
+    v
+  else
+    f m d1 d2
+  when
+    x = dmatrix m;
+    v = f (pointer x) 1 (#m) (double d1) (double d2);
+  end;
+
+def apply2  f  m1  m2  =
+  if rowvectorp m1 && rowvectorp m2 && #m1 == #m2 then
+    v
+  else
+    f m1 m2
+  when
+    x1, x2 = dmatrix m1, dmatrix m2;
+    v = f (pointer x1) 1 (pointer x2) 1 (#m1);
+  end;
+
+def apply2_d  f  m1  m2  d  =
+  if rowvectorp m1 && rowvectorp m2 && #m1 == #m2 then
+    v
+  else
+    f m1 m2 d
+  when
+    x1, x2 = dmatrix m1, dmatrix m2;
+    v = f (pointer x1) 1 (pointer x2) 1 (#m1) (double d);
+  end;
+
+def apply2_dd  f  m1  m2  d1  d2  =
+  if rowvectorp m1 && rowvectorp m2 && #m1 == #m2 then
+    v
+  else
+    f m1 m2 d1 d2
+  when
+    x1, x2 = dmatrix m1, dmatrix m2;
+    v = f (pointer x1) 1 (pointer x2) 1 (#m1) (double d1) (double d2);
+  end;
+
+namespace gsl_stats;
+
+public
+  mean
+  variance
+  variance_m
+  sd
+  sd_m
+  tss
+  tss_m
+  variance_with_fixed_mean
+  sd_with_fixed_mean
+  absdev
+  absdev_m
+  skew
+  skew_m_sd
+  kurtosis
+  kurtosis_m_sd
+  lag1_autocorrelation
+  lag1_autocorrelation_m
+  covariance
+  covariance_m
+  wmean
+  wvariance
+  wvariance_m
+  wsd
+  wsd_m
+  wvariance_with_fixed_mean
+  wsd_with_fixed_mean
+  wabsdev
+  wabsdev_m
+  wskew
+  wskew_m_sd
+  wkurtosis
+  wkurtosis_m_sd
+  max
+  min
+  minmax
+  max_index
+  min_index
+  minmax_index
+  median_from_sorted_data
+  quantile_from_sorted_data
+  correlation;
+
+mean  m::matrix
+  = apply1  gsl_stats_mean  m  dmatrix;
+
+variance  m::matrix
+  = apply1  gsl_stats_variance  m  dmatrix;
+
+variance_m  m::matrix  mean
+  = apply1_d  gsl_stats_variance_m  m  mean;
+
+sd  m::matrix
+  = apply1  gsl_stats_sd  m  dmatrix;
+
+sd_m m::matrix mean
+  = apply1_d  gsl_stats_sd_m  m  mean;
+
+tss  m::matrix
+  = apply1  gsl_stats_tss  m  dmatrix;
+
+tss_m  m::matrix  mean
+  = apply1_d  gsl_stats_tss_m  m  mean;
+
+variance_with_fixed_mean  m::matrix  mean
+  = apply1_d  gsl_stats_variance_with_fixed_mean  m  mean;
+
+sd_with_fixed_mean  m::matrix  mean
+  = apply1_d  gsl_stats_sd_with_fixed_mean  m  mean;
+
+absdev  m::matrix
+  = apply1  gsl_stats_absdev  m  dmatrix;
+
+absdev_m  m::matrix  mean
+  = apply1_d  gsl_stats_absdev_m  m  mean;
+
+skew  m::matrix
+  = apply1  gsl_stats_skew  m  dmatrix;
+
+skew_m_sd  m::matrix  mean  sd
+  = apply1_dd  gsl_stats_skew_m_sd  m  mean  sd  if sd >= 0.0;
+
+kurtosis  m::matrix
+  = apply1  gsl_stats_kurtosis  m  dmatrix;
+
+kurtosis_m_sd  m::matrix  mean  sd
+  = apply1_dd  gsl_stats_kurtosis_m_sd  m  mean  sd  if sd >= 0.0;
+
+lag1_autocorrelation  m::matrix
+  = apply1  gsl_stats_lag1_autocorrelation  m  dmatrix;
+
+lag1_autocorrelation_m  m::matrix  mean
+  = apply1_d  gsl_stats_lag1_autocorrelation_m  m  mean;
+
+covariance  m1::matrix  m2::matrix
+  = apply2  gsl_stats_covariance  m1  m2;
+
+covariance_m  m1::matrix  m2::matrix  mean1  mean2
+  = apply2_dd  gsl_stats_covariance_m  m1  m2  mean1  mean2;
+
+wmean  w::matrix  m::matrix
+  = apply2  gsl_stats_wmean  w  m;
+
+wvariance  w::matrix  m::matrix
+  = apply2  gsl_stats_wvariance  w  m;
+
+wvariance_m  w::matrix  m::matrix  mean
+  = apply2_d  gsl_stats_wvariance_m  w  m  mean;
+
+wsd  weights::matrix  m::matrix
+  = apply2  gsl_stats_wsd  weights  m;
+
+wsd_m  weights::matrix  m::matrix  weighted_mean
+  = apply2_d  gsl_stats_wsd_m weights  m  weighted_mean;
+
+wvariance_with_fixed_mean  weights::matrix  m::matrix  mean
+  = apply2_d  gsl_stats_wvariance_with_fixed_mean  weights  m  mean;
+
+wsd_with_fixed_mean  weights::matrix  m::matrix  mean
+  = apply2_d  gsl_stats_wsd_with_fixed_mean  weights  m  mean;
+
+wabsdev  weights::matrix  m::matrix
+  = apply2  gsl_stats_wabsdev  weights  m;
+
+wskew  weights::matrix  m::matrix
+  = apply2  gsl_stats_wskew  weights  m;
+
+wskew_m_sd  weights::matrix  m::matrix  mean  sd
+  = apply2_dd  gsl_stats_wskew_m_sd  weights  m  mean  sd if sd >= 0.0;
+
+wkurtosis  weights::matrix  m::matrix
+  = apply2  gsl_stats_wkurtosis  weights  m;
+
+wkurtosis_m_sd  weights::matrix  m::matrix mean sd
+  = apply2_dd  gsl_stats_wkurtosis_m_sd  weights  m  mean  sd  if sd >= 0.0;
+
+max  m::matrix
+  = apply1  gsl_stats_int_max  m  imatrix  if imatrixp m;
+  = apply1  gsl_stats_max  m  dmatrix  if dmatrixp m;
+
+min  m::matrix
+  = apply1  gsl_stats_int_min  m  imatrix  if imatrixp m;
+  = apply1  gsl_stats_min  m  dmatrix  if dmatrixp m;
+
+minmax  m::matrix
+  = case matrix_type m of
+      1 = gsl_stats_minmax (pointer x) (pointer y) (pointer m)  1  (#m)
+          $$ (x!0, y!0)
+          when
+            x, y = {0.0}, {0.0};
+          end;
+      3 = gsl_stats_int_minmax (pointer x) (pointer y)  pointer m)  1  (#m)
+          $$ (x!0, y!0)
+          when
+            x, y = {0}, {0};
+          end;
+      _ = quote (gsl_stats::minmax  m);
+    end;
+
+min_index  m::matrix
+  = apply1  gsl_stats_int_min_index  m  imatrix  if imatrixp m;
+  = apply1  gsl_stats_min_index  m  dmatrix  if dmatrixp m;
+  
+max_index  m::matrix
+  = apply1  gsl_stats_int_max_index  m  imatrix  if imatrixp m;
+  = apply1  gsl_stats_max_index  m  dmatrix  if dmatrixp m;
+
+minmax_index  m::matrix
+  = case matrix_type m of
+      1 = gsl_stats_minmax_index (pointer x) (pointer y) (pointer m)  1  (#m)
+          $$ (x!0, y!0);
+      3 = gsl_stats_int_minmax_index (pointer x) (pointer y) (pointer m)  1 (#m)
+          $$ (x!0, y!0);
+      _ = quote (gsl_stats::minmax_index  m);
     end
-    if rowvectorp m;
+    when
+      x, y = {0}, {0};
+    end;
 
-/* Median and Percentiles */
+correlation  m1::matrix  m2::matrix
+  = apply2  gsl_stats_correlation  m1  m2;
 
-stats_median_from_sorted_data m::matrix
-  = apply1 gsl_stats_median_from_sorted_data m;
-stats_quantile_from_sorted_data m::matrix f::double
-  = apply1_m gsl_stats_quantile_from_sorted_data m f
+median_from_sorted_data  m::matrix
+  = apply1  gsl_stats_median_from_sorted_data  m  dmatrix;
+
+quantile_from_sorted_data  m::matrix  f::double
+  = apply1_d  gsl_stats_quantile_from_sorted_data  m  f
     if f >= 0.0 && f <= 1.0;
