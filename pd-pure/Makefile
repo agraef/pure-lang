@@ -10,8 +10,11 @@ ifeq ($(strip $(prefix)),)
 prefix = /usr/local
 endif
 
+# Pd library path.
+pdlibdir = $(prefix)/lib/pd
+
 # Install dir for the external and accompanying stuff.
-pdextradir = $(prefix)/lib/pd/extra/pure
+pdextradir = $(pdlibdir)/extra/pure
 
 # Try to guess the host system type.
 host = $(shell ./config.guess)
@@ -45,7 +48,7 @@ DISTFILES = COPYING Makefile README pure.c examples/*.pure examples/*.pd example
 all: pure$(DLL)
 
 pure$(DLL): pure.c
-	gcc $(shared) -o $@ -DVERSION="\"$(version)\"" $< $(PIC) -lpure
+	gcc $(shared) -o $@ -DVERSION="\"$(version)\"" -DLIBDIR="\"$(pdlibdir)\"" $< $(PIC) -lpure
 
 clean:
 	rm -f pure$(DLL) *~ *.a *.o

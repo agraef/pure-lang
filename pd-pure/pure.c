@@ -28,6 +28,10 @@
 #define VERSION "0.0"
 #endif
 
+#ifndef LIBDIR
+#define LIBDIR "/usr/local/lib/pd"
+#endif
+
 /* Ticks per millisecond of the internal clock. FIXME: Currently this is a
    fixed value (32.*441000./1000., cf. m_sched.c), will have to be rewritten
    if this changes. */
@@ -40,6 +44,13 @@ extern const char *pd_version_s(void)
   static char buf[MAXPDSTRING];
   sprintf(buf, "%d.%d", PD_MAJOR_VERSION, PD_MINOR_VERSION);
   return buf;
+}
+
+/* Return the Pd library directory. */
+
+extern const char *pd_libdir_s(void)
+{
+  return LIBDIR;
 }
 
 /* Provide access to the current logical Pd time in milliseconds. */
