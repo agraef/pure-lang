@@ -95,6 +95,13 @@ extern int pd_getbuffersize(const char *name)
     return 0;
 }
 
+extern void pd_setbuffersize(const char *name, uint32_t sz)
+{
+  t_symbol *sym = gensym((char*)name);
+  t_garray *a = (t_garray*)pd_findbyclass(sym, garray_class);
+  if (a) garray_resize(a, (t_floatarg)sz);
+}
+
 extern pure_expr *pd_getbuffer(const char *name)
 {
   t_symbol *sym = gensym((char*)name);
