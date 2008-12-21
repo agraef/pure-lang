@@ -53,6 +53,15 @@ extern const char *pd_libdir_s(void)
   return LIBDIR;
 }
 
+/* Alternate interface to Pd's post() routine. The Pd routine can't be used
+   directly in Pure since it's a printf-style varargs routine. Our version
+   here just provides the capability to post a message string. */
+
+extern void pd_post(const char *s)
+{
+  post("%s", s);
+}
+
 /* Provide access to the current logical Pd time in milliseconds. */
 
 extern double pd_time(void)
