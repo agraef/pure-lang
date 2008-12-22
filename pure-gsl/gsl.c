@@ -10,6 +10,8 @@
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
+#include <gsl/gsl_statistics.h>
+#include <gsl/gsl_statistics_int.h>
 
 #include <pure/runtime.h>
 
@@ -260,4 +262,33 @@ int wrap_gsl_linalg_SV_solve(gsl_matrix* U, gsl_matrix* V, gsl_matrix* S,
   gsl_vector_const_view _b = gsl_matrix_const_column(b, 0);
   gsl_vector_view _x = gsl_matrix_column(x, 0);
   return gsl_linalg_SV_solve(U, V, &_S.vector, &_b.vector, &_x.vector);
+}
+
+pure_expr* wrap_gsl_stats_int_minmax(int* data, size_t stride, size_t n)
+{
+  int x, y;
+  gsl_stats_int_minmax(&x, &y, data, 1, n);
+  return pure_tuplel(2, pure_int(x), pure_int(y));
+}
+
+pure_expr* wrap_gsl_stats_minmax(double* data, size_t stride, size_t n)
+{
+  double x, y;
+  gsl_stats_minmax(&x, &y, data, 1, n);
+  return pure_tuplel(2, pure_double(x), pure_double(y));
+}
+
+
+pure_expr* wrap_gsl_stats_int_minmax_index(int* data, size_t stride, size_t n)
+{
+  size_t x, y;
+  gsl_stats_int_minmax_index(&x, &y, data, 1, n);
+  return pure_tuplel(2, pure_int(x), pure_int(y));
+}
+
+pure_expr* wrap_gsl_stats_minmax_index(double* data, size_t stride, size_t n)
+{
+  size_t x, y;
+  gsl_stats_minmax_index(&x, &y, data, 1, n);
+  return pure_tuplel(2, pure_int(x), pure_int(y));
 }
