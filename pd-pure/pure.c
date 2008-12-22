@@ -193,16 +193,14 @@ typedef struct _px {
   int ix;			/* inlet index */
 } t_px;
 
-/* The runtime class. This is used to instantiate a single 'pure' receiver
-   object which processes messages to the Pure runtime. Currently the only
-   available message is 'reload' which reloads all scripts and reinitializes
-   all Pure objects accordingly. */
+/* The runtime class, which is used to control the Pure runtime environment.
+   Responds to 'bang' messages by reloading all scripts and reinitializing all
+   Pure objects accordingly. */
 
 typedef struct _runtime {
   t_object obj;
+  t_outlet *out1, *out2;
 } t_runtime;
-
-static t_runtime *xpure = 0;
 
 /* Head and tail of the list of Pure objects. */
 
@@ -837,11 +835,30 @@ static void pure_restart(void)
   delay_sym = pure_sym("pd_delay");
 }
 
+/* Methods of the runtime class. */
+
+static void *runtime_init(t_symbol *s, int argc, t_atom *argv)
+{
+  t_runtime *x = (t_runtime*)pd_new(runtime_class);
+  x->out1 = outlet_new(&x->obj, 0);
+  x->out2 = outlet_new(&x->obj, 0);
+  return (void *)x;
+}
+
 static void runtime_any(t_runtime *x, t_symbol *s, int argc, t_atom *argv)
 {
-  if (strcmp(s->s_name, "reload") == 0 && argc == 0)
+  if (s == &s_bang && argc == 0) {
+    outlet_bang(x->out2);
     pure_restart();
+    outlet_bang(x->out1);
+  } else if (s->s_thing)
+    if (argc > 0 && argv[0].a_type == A_SYMBOL)
+      pd_typedmess(s->s_thing, argv[0].a_w.w_symbol, argc-1, argv+1);
+    else
+      pd_list(s->s_thing, &s_list, argc, argv);
 }
+
+/* Loader setup. */
 
 extern void pure_setup(void)
 {
@@ -865,14 +882,13 @@ extern void pure_setup(void)
 			 sizeof(t_px), CLASS_PD|CLASS_NOINLET,
 			 A_NULL);
     class_addanything(px_class, px_any);
-    /* Create the runtime class and the 'pure' receiver. */
-    runtime_class = class_new(gensym("pure runtime"), 0, 0,
+    /* Create the runtime class. */
+    runtime_class = class_new(gensym("pure-runtime"),
+			      (t_newmethod)runtime_init, 0,
 			      sizeof(t_runtime), CLASS_DEFAULT,
 			      A_GIMME, A_NULL);
     class_addanything(runtime_class, runtime_any);
     class_sethelpsymbol(runtime_class, gensym("pure-help"));
-    xpure = (t_runtime*)pd_new(runtime_class);
-    pd_bind(&xpure->obj.ob_pd, gensym("pure"));
     /* Create a class for 'pure' objects which allows you to access any
        predefined Pure function without loading a script. */
     class_setup("pure", "");
