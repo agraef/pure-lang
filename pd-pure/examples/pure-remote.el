@@ -55,5 +55,5 @@
 (global-set-key "\C-c\C-s" 'pd-send-start)
 (global-set-key "\C-c\C-t" 'pd-send-stop)
 (global-set-key "\C-c\C-g" 'pd-send-restart)
-(global-set-key "\C-c1" 'pd-send-dsp-on)
-(global-set-key "\C-c0" 'pd-send-dsp-off)
+(global-set-key "\C-c\C-i" 'pd-send-dsp-on)
+(global-set-key "\C-c\C-o" 'pd-send-dsp-off)
