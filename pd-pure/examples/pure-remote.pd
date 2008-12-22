@@ -1,29 +1,53 @@
-#N canvas 668 411 450 317 10;
-#X obj 33 187 netreceive 4711 1;
+#N canvas 635 184 450 458 10;
+#X obj 33 193 netreceive 4711 1;
 #X msg 320 232 reload;
 #X obj 320 257 s pure;
 #X obj 278 232 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
 -1 -1;
 #X obj 320 206 del 10;
 #X obj 33 215 route reload;
-#X msg 114 268 \; \$1 \$2;
-#X text 30 122 - Any other message should be of the form 'receiver
-value' \, indicating that the given value should be sent to the given
-receiver. This is intended to provide some kind of remote control over
-the patch \, see the pd-pure README for details.;
+#X msg 114 411 \; \$1 \$2;
 #X text 29 12 Control the Pure runtime remotely. You can use pdsend
 to send messages to UDP port 4711 (modify the port number below as
 needed).;
 #X obj 114 242 list;
-#X text 28 62 - The 'reload' message restarts the Pure runtime environment.
+#X text 28 58 - The 'reload' message restarts the Pure runtime environment.
 Use this after modifying the definition of Pure objects in script files
 to quickly reload all scripts and reconfigure the Pure objects accordingly.
 ;
+#X obj 114 269 t l l;
+#X obj 195 297 list length;
+#X obj 114 325 list prepend;
+#X obj 114 354 route 2 3 4 5;
+#X msg 160 411 \; \$1 \$2 \$3;
+#X msg 229 411 \; \$1 \$2 \$3 \$4;
+#X msg 320 411 \; \$1 \$2 \$3 \$4 \$5;
+#X obj 114 384 list;
+#X obj 160 384 list;
+#X obj 229 384 list;
+#X obj 320 385 list;
+#X text 30 116 - Any other message should be of the form 'receiver
+values' \, indicating that the given values should be sent to the given
+receiver. This is intended to provide some kind of remote control over
+the patch \, see the pd-pure README for details.;
+#X text 224 356 We support up to four values.;
 #X connect 0 0 5 0;
 #X connect 1 0 2 0;
 #X connect 3 0 4 0;
 #X connect 4 0 1 0;
 #X connect 5 0 3 0;
-#X connect 5 1 9 0;
-#X connect 9 0 6 0;
+#X connect 5 1 8 0;
+#X connect 8 0 10 0;
+#X connect 10 0 12 0;
+#X connect 10 1 11 0;
+#X connect 11 0 12 1;
+#X connect 12 0 13 0;
+#X connect 13 0 17 0;
+#X connect 13 1 18 0;
+#X connect 13 2 19 0;
+#X connect 13 3 20 0;
+#X connect 17 0 6 0;
+#X connect 18 0 14 0;
+#X connect 19 0 15 0;
+#X connect 20 0 16 0;
 #X coords 0 -1 1 1 115 20 1 180 230;
