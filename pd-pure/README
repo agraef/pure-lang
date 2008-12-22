@@ -341,30 +341,67 @@ Livecoding Support
 
 Livecoding means that you can quickly reload your Pure scripts after changes
 while the Pd patch keeps running. The Pure loader provides some experimental
-support for this by means of a special 'pure' receiver object. Sending the
-message 'reload' to this object tells the plugin to reload all loaded scripts
-and update the Pure objects in your patch accordingly.
+support for this by means of the special 'pure-runtime' object.
 
-You can find a sample patch pure-remote.pd, which you can include in your
-patches to send the 'reload' message remotely (e.g., using the pdsend
-program), in the pd-pure sources. (You can also trigger a reload by just
-clicking the bang control of the abstraction.) There's also an accompanying
-elisp program (pure-remote.el) which contains some convenient keybindings for
-the necessary pdsend invocations, so that you can operate the pure-remote
-patch with simple keystrokes directly from Emacs. Please see the patch and
-elisp file for more details.
+Sending a 'bang' to this object tells the plugin to reload all loaded scripts
+and update the Pure objects in your patch accordingly. The object also
+provides two outlets to deal with the inevitable latencies caused by the
+compilation process. The right outlet is banged when the compilation starts
+and the left outlet gets a bang when the compilation is finished, so that a
+patch using this facility can respond to these events in the appropriate way
+(e.g., disabling output during compilation).
 
-Also please note the following limitations in the current implementation:
+Note that there can be any number of 'pure-runtime' objects in a patch, which
+will all refer to the same instance of the Pure interpreter.
 
-- The 'reload' message just starts up a new interpreter instance, which, due
-to the hiccups with interpreter startup mentioned at the beginning of this
-file, is not as smooth as we'd like it to be. But it's currently as close to
-livecoding with Pure as it gets. We hope to improve this in the future.
+Also please note that the number of inlets and outlets of Pure objects never
+changes after reloading scripts. (Pd does not support this through its API
+right now.) Thus by editing and reloading the Pure scripts you can change the
+functionality of existing Pure objects in a running patch, but not their
+interfaces.
 
-- The number of inlets and outlets of Pure objects never changes after a
-'reload' message. (Pd doesn't support this through its API right now.) Thus by
-editing and reloading the Pure scripts you can change the functionality of
-existing objects at runtime, but not their interfaces.
+Remote Control
+====== =======
+
+The distribution also includes an abstraction pure-remote.pd which you can
+include in your patch to enable live coding, as well as remote control of the
+patch through the pdsend program. Sending a 'bang' causes a reload of all
+scripts, which can also be triggered directly by clicking the bang control of
+the abstraction. The bang control also provides visual feedback indicating
+whether the compilation is still in progress. Messages are also routed through
+the embedded pure-runtime object using the single inlet and the two outlets of
+the abstraction, so that pure-remote can also be controlled from within the
+patch itself.
+
+For added convenience, the pure-runtime and pure-remote objects also accept
+any other message of the form 'receiver message' and will route the given
+message to the given receiver. This is intended to provide remote control of
+various parameters in patches. For instance, by having pdsend send a 'play 0'
+or 'play 1' message, one might implement a single playback control, provided
+that your patch includes an appropriate receiver (often a GUI object). See the
+pure-help.pd patch for an example.
+
+To make these features available in Emacs, there's an accompanying elisp
+program (pure-remote.el) which contains some convenient keybindings for the
+necessary pdsend invocations, so that you can operate the pure-remote patch
+with simple keystrokes directly from the text editor. Please see the
+pure-remote.el file for more details. Currently pure-remote.el implements the
+following "standard" keybindings:
+
+C-C C-X: Reload:  Sends a bang message, causing scripts to be reloaded.
+C-C C-M: Message: Prompts for a message and sends it to pure-remote.
+C-C C-S: Play:    Sends a 'play 1' message.
+C-C C-T: Stop:    Sends a 'play 0' message.
+C-C C-G: Restart: Sends a 'play 0' message followed by 'play 1'.
+C-C C-I: Dsp On:  Sends a 'pd dsp 1', which enables audio processing.
+C-C C-O: Dsp Off: Sends 'pd dsp 0', which disables audio processing.
+
+Of course you can easily add more like these, just have a look at how the
+keybindings are implemented in pure-remote.el and create your own in an
+analogous fashion.
+
+Combining pure-remote.el with the Emacs Pure programming mode gives you a nice
+interactive environment for developing pd-pure applications.
 
 
 Enjoy. :)
