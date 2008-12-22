@@ -1,7 +1,7 @@
 
 # Package name and version number:
 dist = pd-pure-$(version)
-version = 0.2
+version = 0.3
 
 # Try to guess the installation prefix (this needs GNU make):
 prefix = $(patsubst %/bin/pd,%,$(shell which pd 2>/dev/null))
@@ -43,7 +43,7 @@ ifneq "$(findstring x86_64-,$(host))" ""
 PIC = -fPIC
 endif
 
-DISTFILES = COPYING Makefile README pure.c examples/*.pure examples/*.pd examples/*.el
+DISTFILES = COPYING Makefile README config.guess pure.c examples/*.pure examples/*.pd examples/*.el
 
 all: pure$(DLL)
 
