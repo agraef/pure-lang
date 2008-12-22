@@ -14,24 +14,30 @@
   (interactive)
   (process-send-string "pdsend" "reload\n"))
 
+(defun pd-send-message (message)
+  "Send a given message to Pd."
+  (interactive "sMessage: ")
+  (process-send-string "pdsend" (concat message "\n")))
+
 (defun pd-send-start ()
-  "Send a play 1 message to Pd."
+  "Send a 'play 1' message to Pd."
   (interactive)
-  (process-send-string "pdsend" "play 1\n"))
+  (pd-send-message "play 1"))
 
 (defun pd-send-stop ()
-  "Send a play 0 message to Pd."
+  "Send a 'play 0' message to Pd."
   (interactive)
-  (process-send-string "pdsend" "play 0\n"))
+  (pd-send-message "play 0"))
 
 (defun pd-send-restart ()
-  "Send play 0, play 1 messages to Pd."
+  "Send 'play 0, play 1' messages to Pd."
   (interactive)
-  (process-send-string "pdsend" "play 0\n")
-  (process-send-string "pdsend" "play 1\n"))
+  (pd-send-message "play 0")
+  (pd-send-message "play 1"))
 
 (pd-send-start-process)
 (global-set-key "\C-c\C-x" 'pd-send-reload)
+(global-set-key "\C-c\C-m" 'pd-send-message)
 (global-set-key "\C-c\C-s" 'pd-send-start)
 (global-set-key "\C-c\C-t" 'pd-send-stop)
 (global-set-key "\C-c\C-g" 'pd-send-restart)
