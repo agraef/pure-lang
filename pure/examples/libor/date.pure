@@ -1,19 +1,32 @@
 /* New Calendar and Clock 
    Copyright (c) 2008 by Libor Spacek
-   
-   Acknowledgement: thanks to Dr Albert Graef for his "Q" code for the 
-   Julian day and Gregorian dates 
 
-   time; returns Posix time based on UTC (Universal Temps Coordinat) or 
-   TAI (Temps Atomique International) rather than local daylight saving time */
+   Note: time; returns Posix time based on UTC (Universal Temps Coordinat) or 
+   TAI (Temps Atomique International) rather than the daylight saving time */
 
 using system;   // imports printf, time, ctime, gmtime, gettimeofday, strftime  
-// extern long time(long*) = c_time; // diy time, no longer needed
+
+// extern long time(long*) = c_time; // diy time, now in system
 // diytime = c_time (pointer 0);
 
+namespace date;
+
+private mdayposix jdayposix cycledays secsinday trueyear myyear gregyear 
+   lunarmonth fullmoon venussyn venusinf;
+   
+private infixl 7 dmod;
+
+public mjday mday2jday mday2pday jday2mday jday2pday pday2jday pday2mday 
+   secs2days days2secs days2hours hours2days dhms2secs secs2dhms opdhms 
+   hms2secs secs2hms htds2secs secs2htds days2mayan mayan2days addmayan greg2jdays greg2pdays greg2psecs jdays2greg pdays2greg 
+   gmparse phase completion;
+   
+public nullary wday mon day utc year;
+   
+   
 // some constants in whole days
 const mdayposix  = 1856305;// Mayan day for the posix epoch 1 Jan 1970
-const jdayposix  = 2440588;// Julian day (since 1 Jan 4713 BC) for the posix epoch
+const jdayposix  = 2440588;// Julian day (since 1 Jan 4713 BC),posix epoch
 const cycledays  = 1872000;// end of cycle: total days in 13 Baktuns
 // some constants in whole seconds
 const secsinday  = 86400;  // number of seconds in a day
@@ -25,24 +38,21 @@ const fullmoon   = 1213810200;// 18th June 2008, 17:30, full moon in posix secon
 const venussyn   = 50450688;// duration of the Venus synodic cycle
 const venusinf   = 1187409600;// 18th August 2007, 4am Venus inferior conjunction
 
-/******************************************************************************/   
-// first some functions generally useful in Pure:
-round n::double = int (n+0.5);
-mstime = 1000.0*gettimeofday; 
-mscpu  = 1000.0*clock/CLOCKS_PER_SEC;
+/* timex macro: prints cputime and realtime in miliseconds 
+   (however, cputime on many machines only counts in 10 milisecond units).
+   timex can be used safely as a wrapper anywhere in the code */
+   
+def timex f = f , (void (printf "%s: %dms cpu %8.1fms realtime\n" 
+  ((str (quote (f))), (int (1000*(clock-c0)/CLOCKS_PER_SEC)) ,
+   (1000.0*(gettimeofday-d0))))) when d0 = gettimeofday; c0 = clock end;
 
-/* timex returns a list: [ evaluated closure, cputime, realtime ]
-   call with closure argument: (timex (\_ -> sumefunction some arguments)) */
-timex f = (f ()), (round (mscpu-c0)), (round (mstime-d0)) 
-   when d0::double = mstime; c0::double = mscpu end;
-      
-/* extended mod operator to work on doubles, so that int, bigint and double 
+/* dmod operator to work on doubles, so that int, bigint and double 
    times can be conveniently used */
-x::double mod y::int = 
+x::double dmod y::int = 
    (x - intx) + (intx mod y) when intx = (int x) end; // mod of a double
-/******************************************************************************/
-secsnow = time mod secsinday; // int seconds since midnight
+x dmod y::int = x mod y; // polymorphic catchall for ints and bigints
 
+/******************************************************************************/
 // either mayan or julian posix epoch (plus posix seconds), gives a double mjday
 // to get current pday, use simple: (secs2days time) or (secs2days gettimeofday)
 mjday epoch::int secs::int| mjday epoch::int secs::bigint |
@@ -70,7 +80,7 @@ dhms2secs (d::int:h::int:m::int:s::bigint) |
 dhms2secs (d::int:h::int:m::int:s::double) = 60*(60*(24*d+h)+m)+s;
    
 secs2dhms secs::int | secs2dhms secs::bigint | secs2dhms secs::double = 
-   d:(h mod 24):(m mod 60):(secs mod 60)
+   d:(h mod 24):(m mod 60):(secs dmod 60)
    when m::int = int (secs / 60); h::int = m div 60; d::int = h div 24 end;
 
 // an arbitrary binary operator applied to two (days:hours:minutes:seconds)
@@ -84,7 +94,7 @@ hms2secs (h::int:m::int:s::bigint) |
 hms2secs (h::int:m::int:s::double) = 60*(60*h+m)+s;
 
 secs2hms secs::int | secs2hms secs::bigint | secs2hms secs::double = 
-   h:(m mod 60):(secs mod 60)
+   h:(m mod 60):(secs dmod 60)
    when m::int = int (secs / 60); h::int = m div 60 end;  
    
 /* New Time Format: hours:3mins:10secs:secs = hours:tres:dicis:secs = h:t:d:s
@@ -97,7 +107,7 @@ htds2secs (h::int:t::int:d::int:s::bigint)|
 htds2secs (h::int:t::int:d::int:s::double) = 10*(18*(20*h+t)+d)+s;
    
 secs2htds secs::int | secs2htds secs::bigint | secs2htds secs::double =
-   h:(t mod 20):(d mod 18):(secs mod 10)
+   h:(t mod 20):(d mod 18):(secs dmod 10)
    when d::int = int (secs / 10); t::int = d div 18; h::int = t div 20 end;
 
 // Mayan 'long count' calendar presentation format   
@@ -129,7 +139,7 @@ addmayan (baktun1::int:katun1::int:tun1::int:vinal1::int:kin1::int)
    2100! On top of that, an uncorrected drift still remains, estimated as the
    minimum of 8 days by the year 12000. 
    These reasons make the Gregorian calendar dates useless for astronomical
-   purposes. Julian days (acknowledgement to Julius Caesar) are still used
+   purposes. Julian days (Hail to Julius Caesar) are still used
    and conversions to either Julian days or Mayan days are necessary. */
 greg2jdays (D::int,M::int,Y::int) = 
    D+(153*M+2) div 5+365*Y+Y div 4-Y div 100+Y div 400-32045
@@ -151,7 +161,6 @@ jdays2greg N::int  =
 pdays2greg N::int = jdays2greg (pday2jday N);
 
 //parse gmtime string and extract the components
-nullary wday mon day utc year;
 gmparse wday psecs::int| gmparse wday psecs::bigint= (gmtime psecs)!!(0..2);
 gmparse mon psecs::int | gmparse mon psecs::bigint = (gmtime psecs)!!(4..6);
 gmparse day psecs::int | gmparse day psecs::bigint = (gmtime psecs)!!(8..9);
@@ -162,57 +171,56 @@ gmparse year psecs::int| gmparse year psecs::bigint =(gmtime psecs)!!(20..24);
    this is surprisingly accurate without computing the full orbital elements */
 phase init::int length::int now::int | 
 phase init::int length::int now::bigint |
-phase init::int length::int now::double = ((now-init) mod length)/length;
+phase init::int length::int now::double = ((now-init) dmod length)/length;
 
 // same as above but returns dhms till the completion   
 completion init::int length::int now::int |
 completion init::int length::int now::bigint |
-completion init::int length::int now::double = length - ((now-init) mod length);   
+completion init::int length::int now::double = length - ((now-init) dmod length);   
    
-/******************************************************************************/   
-// now let's do some simple calculations
-nextfmoon = secs2days (completion fullmoon lunarmonth time); // in seconds
-nextvenus = secs2days (completion venusinf venussyn time);
-jdaytoday = mjday jdayposix time; // double julian day - could use gettimeofday
-daytoday  = mjday mdayposix time; // double mayan day - could use gettimeofday
-longtoday = str (days2mayan (int daytoday));
-nextcycle = completion 0 cycledays daytoday; // now in days
-mayanleft = str (days2mayan (int nextcycle));
-complete = 100.0*(phase 0 cycledays daytoday);
+/******************************************************************************/
 
-// usage = puts "Usage:  pure -x date.pure [anyarg]" $$
-//        puts "\tanyarg for help\n";
+puts "Type cal; to obtain a fairly complete calendar printout";
+puts "(timex f) prints time of evaluating f and can be used in code";
+puts "Other functions are available in namespace date";
 
-// usage with pure -x commented out to enable interactive and "using" modes
-// case argc of 
-//  1 =
+cal = do puts [
+    "****************************************************************",
+    "*    New Calendar/Clock, Copyright (c) 2008 by Libor Spacek    *",
+    "****************************************************************",
+    ((strftime "%X" time) + "\t local time"),
+    ((gmparse utc time) + "\t UTC time")],
+    ((strftime "%x" time) + "\t Gregorian date") $$
+//   printf "%s   \t UTC Time in h:t:d:s\n"  
+// (str (secs2htds (int (time mod secsinday)))) $$ // seconds since midnight
 
-puts "****************************************************************";
-puts "*    New Calendar/Clock, Copyright (c) 2008 by Libor Spacek    *";
-puts "****************************************************************";
-   
-   puts ((strftime "%x" time) + "\t Gregorian date") $$
-   puts ((strftime "%X" time) + "\t local time") $$
-   puts ((gmparse utc time) + "\t UTC time") $$ 
-//   printf "%s   \t UTC Time in h:t:d:s\n"  (str (secs2htds (int secsnow))) $$ 
    printf "%12.4f   \t Julian day\n" jdaytoday $$
-   printf "%12.4f   \t Mayan  day\n" daytoday $$
+   printf "%12.4f   \t Mayan day\n" daytoday $$
    printf "%s\t Mayan long count date\n" longtoday $$
+   printf "%s\t long countdown to the end of the Mayan Cycle\n" mayanleft $$
+   printf "%9.4f   \t days countdown to the end of the Mayan Cycle\n" nextcycle $$
+   printf "%11.8f%%\t completion of the Mayan Cycle\n" complete $$   
    printf "%6.4f   \t days till the next full Moon\n" nextfmoon $$
    printf "%7.4f   \t days till the next inf. conjunction of Venus\n" nextvenus $$
-   printf "%9.4f   \t days till the end of the Mayan cycle\n" nextcycle $$
-   printf "%s\t long countdown to the end of the cycle\n" mayanleft $$
-   printf "%11.8f %%\t completion of this cycle of >5125 years\n" complete $$
-   puts "****************************************************************";
-//  2 = // another argument was presented -> print help and usage
-   puts "Mayan long count digits and their ranges of values:" $$
-   puts "Baktun(0-12) : Katun(0-19) : Tun(0-19) : Vinal(0-17) : Kin(0-19)" $$
-   puts "Baktun=144000days Katun=7200days Tun=360days Vinal=20days Kin=day" $$
-   puts "****************************************************************";
-//   puts "\nNew clock digits and their ranges of values:" $$
-//   puts "hour(0-23) : tre(0-19) : dici(0-17) : second(0-9)" $$
-//   puts "hour=3600s : tre=180s  : dici=10s   : s=second\n" $$
-//   puts "Full time spec: Baktun:Katun:Tun:Vinal:Kin hour:tre:dici:second\n" ;
-//   usage;
-//  n = usage // any other number of arguments -> just print usage
-//end;
+
+   do puts [
+   "****************************************************************",
+   "Mayan long count digits (and their maximum values) are:",
+   "Baktun(12) : Katun(19) : Tun(19) : Vinal(17) : Kin(19)",
+   "Baktun=20Katuns,Katun=20Tuns,Tun=18Vinals,Vinal=20Kins,Kin=1day",
+   "Thus the Mayan Cycle of 13 Baktuns = 1 872 000 days",
+   "****************************************************************" ]
+   when
+   // let's do some calendric calculations
+   nextfmoon = secs2days (completion fullmoon lunarmonth time); // in seconds
+   nextvenus = secs2days (completion venusinf venussyn time);
+   jdaytoday = mjday jdayposix time; // double julian day - could use gettimeofday
+   daytoday  = mjday mdayposix time; // double mayan day - could use gettimeofday
+   longtoday = str (days2mayan (int daytoday));
+   nextcycle = completion 0 cycledays daytoday; // now in days
+   mayanleft = str (days2mayan (int nextcycle));
+   complete = 100.0*(phase 0 cycledays daytoday)
+   end;
+
+namespace;
+using namespace;
