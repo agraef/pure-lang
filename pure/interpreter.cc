@@ -6855,7 +6855,7 @@ void interpreter::complex_match(matcher *pm, const list<Value*>& xs, state *s,
        where each entry points to a list of transitions. */
     trans_map tmap;
     transl::iterator t;
-    for (t = t0, i = 0; t != s->tr.end(); t++, i++) {
+    for (t = t0; t != s->tr.end(); t++) {
       // first create the block for this specific transition
       BasicBlock *bb = BasicBlock::Create(mklabel("trans.state", s->s, t->st->s));
       if (t->tag == EXPR::APP || t->tag > 0) {
