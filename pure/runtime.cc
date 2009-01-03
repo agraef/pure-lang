@@ -6191,6 +6191,7 @@ extern "C"
 bool same(pure_expr *x, pure_expr *y)
 {
   char test;
+ tail:
   if (x == y)
     return 1;
   if (is_thunk(x)) pure_force(x);
@@ -6212,8 +6213,12 @@ bool same(pure_expr *x, pure_expr *y)
     switch (x->tag) {
     case EXPR::APP: {
       checkstk(test);
-      return same(x->data.x[0], y->data.x[0]) &&
-	same(x->data.x[1], y->data.x[1]);
+      if (!same(x->data.x[0], y->data.x[0]))
+	return 0;
+      /* Fake a tail call here, so that we do not run out of stack space when
+	 comparing large lists or similar right-recursive structures. */
+      x = x->data.x[1]; y = y->data.x[1];
+      goto tail;
     }
     case EXPR::INT:
       return x->data.i == y->data.i;
