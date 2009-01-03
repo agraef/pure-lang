@@ -190,33 +190,33 @@ xs/*0:01*/!!ns/*0:1*/ = case ns/*0:1*/ of ns@(n/*0:01*/::int:_/*0:1*/) = list (t
   rule #2: _ = 0
   state 0: #0 #1 #2
 	<var> state 1
-	[] state 2
-	<app> state 3
+	<app> state 2
+	[] state 14
   state 1: #2
-  state 2: #0 #2
-  state 3: #1 #2
+  state 2: #1 #2
+	<var> state 3
+	<app> state 5
+  state 3: #2
 	<var> state 4
-	<app> state 6
   state 4: #2
-	<var> state 5
-  state 5: #2
-  state 6: #1 #2
+  state 5: #1 #2
+	<var> state 6
+	: state 9
+  state 6: #2
 	<var> state 7
-	: state 10
   state 7: #2
 	<var> state 8
   state 8: #2
-	<var> state 9
-  state 9: #2
-  state 10: #1 #2
+  state 9: #1 #2
+	<var> state 10
+	<var>::int state 12
+  state 10: #2
 	<var> state 11
-	<var>::int state 13
   state 11: #2
-	<var> state 12
-  state 12: #2
+  state 12: #1 #2
+	<var> state 13
   state 13: #1 #2
-	<var> state 14
-  state 14: #1 #2
+  state 14: #0 #2
 } end) {
   rule #0: cont (n::int:ns) = ~thunkp ns&&(case ns of [] = 1; m::int:_ = cont ns if m==n+1; _ = 0 end)
   state 0: #0
@@ -911,35 +911,35 @@ scanr f/*0:001*/ a/*0:01*/ xs@(_/*0:101*/:_/*0:11*/) = tick/*0*/ [] xs/*0:1*/ wi
   state 4: #2
   state 5: #0 #1 #2
 	<var> state 6
-	: state 9
-	<app> state 12
+	<app> state 9
+	: state 18
   state 6: #2
 	<var> state 7
   state 7: #2
 	<var> state 8
   state 8: #2
-  state 9: #0 #2
+  state 9: #1 #2
 	<var> state 10
-  state 10: #0 #2
+	scanr state 14
+  state 10: #2
 	<var> state 11
-  state 11: #0 #2
-  state 12: #1 #2
+  state 11: #2
+	<var> state 12
+  state 12: #2
 	<var> state 13
-	scanr state 17
   state 13: #2
-	<var> state 14
-  state 14: #2
+  state 14: #1 #2
 	<var> state 15
-  state 15: #2
+  state 15: #1 #2
 	<var> state 16
-  state 16: #2
+  state 16: #1 #2
+	<var> state 17
   state 17: #1 #2
-	<var> state 18
-  state 18: #1 #2
+  state 18: #0 #2
 	<var> state 19
-  state 19: #1 #2
+  state 19: #0 #2
 	<var> state 20
-  state 20: #1 #2
+  state 20: #0 #2
 } end)&; us/*0:*/ = f/*3:001*/ x/*2:101*/ y/*0:*/:ys/*1:*/ {
   rule #0: us = f x y:ys
   state 0: #0
@@ -1189,29 +1189,29 @@ take n/*0:01*/::int xs@(_/*0:101*/:_/*0:11*/) = tick/*0*/ n/*0:01*/ [] xs/*0:1*/
   rule #2: _ = tack zs (take n xs)
   state 0: #0 #1 #2
 	<var> state 1
-	[] state 2
-	<app> state 3
+	<app> state 2
+	[] state 12
   state 1: #2
-  state 2: #0 #2
-  state 3: #1 #2
+  state 2: #1 #2
+	<var> state 3
+	<app> state 5
+  state 3: #2
 	<var> state 4
-	<app> state 6
   state 4: #2
-	<var> state 5
-  state 5: #2
-  state 6: #1 #2
+  state 5: #1 #2
+	<var> state 6
+	: state 9
+  state 6: #2
 	<var> state 7
-	: state 10
   state 7: #2
 	<var> state 8
   state 8: #2
-	<var> state 9
-  state 9: #2
+  state 9: #1 #2
+	<var> state 10
   state 10: #1 #2
 	<var> state 11
   state 11: #1 #2
-	<var> state 12
-  state 12: #1 #2
+  state 12: #0 #2
 } end {
   rule #0: tick n::int zs xs = tack zs [] if n<=0
   rule #1: tick n::int zs xs = tack zs (take n xs&) if thunkp xs
@@ -1252,29 +1252,29 @@ takewhile p/*0:01*/ xs@(_/*0:101*/:_/*0:11*/) = tick/*0*/ [] xs/*0:1*/ with tick
   rule #3: _ = tack zs (takewhile p xs)
   state 0: #0 #1 #2 #3
 	<var> state 1
-	[] state 2
-	<app> state 3
+	<app> state 2
+	[] state 12
   state 1: #3
-  state 2: #0 #3
-  state 3: #1 #2 #3
+  state 2: #1 #2 #3
+	<var> state 3
+	<app> state 5
+  state 3: #3
 	<var> state 4
-	<app> state 6
   state 4: #3
-	<var> state 5
-  state 5: #3
-  state 6: #1 #2 #3
+  state 5: #1 #2 #3
+	<var> state 6
+	: state 9
+  state 6: #3
 	<var> state 7
-	: state 10
   state 7: #3
 	<var> state 8
   state 8: #3
-	<var> state 9
-  state 9: #3
+  state 9: #1 #2 #3
+	<var> state 10
   state 10: #1 #2 #3
 	<var> state 11
   state 11: #1 #2 #3
-	<var> state 12
-  state 12: #1 #2 #3
+  state 12: #0 #3
 } end {
   rule #0: tick zs xs = tack zs (takewhile p xs&) if thunkp xs
   rule #1: tick zs xs = case xs of [] = tack zs []; x:xs = tick (x:zs) xs if p x; x:xs = tack zs []; _ = tack zs (takewhile p xs) end
@@ -1386,29 +1386,29 @@ index (x/*0:0101*/:xs/*0:011*/) y/*0:1*/ = search/*0*/ 0 (x/*0:0101*/:xs/*0:011*
   state 3: #0 #3
   state 4: #0 #1 #2 #3
 	<var> state 5
-	[] state 6
-	<app> state 7
+	<app> state 6
+	[] state 16
   state 5: #3
-  state 6: #0 #3
-  state 7: #1 #2 #3
+  state 6: #1 #2 #3
+	<var> state 7
+	<app> state 9
+  state 7: #3
 	<var> state 8
-	<app> state 10
   state 8: #3
-	<var> state 9
-  state 9: #3
-  state 10: #1 #2 #3
+  state 9: #1 #2 #3
+	<var> state 10
+	: state 13
+  state 10: #3
 	<var> state 11
-	: state 14
   state 11: #3
 	<var> state 12
   state 12: #3
-	<var> state 13
-  state 13: #3
+  state 13: #1 #2 #3
+	<var> state 14
   state 14: #1 #2 #3
 	<var> state 15
   state 15: #1 #2 #3
-	<var> state 16
-  state 16: #1 #2 #3
+  state 16: #0 #3
 } end;
 iterate f/*0:01*/ x/*0:1*/ = x/*0:1*/:iterate f/*1:01*/ (f/*1:01*/ x/*1:1*/)&;
 repeat x/*0:1*/ = x/*0:1*/:repeat x/*1:1*/&;
@@ -2084,35 +2084,35 @@ unzip us@(_/*0:101*/:_/*0:11*/) = foldr accum/*0*/ ([],[]) us/*0:1*/ with accum 
   state 4: #2
   state 5: #0 #1 #2
 	<var> state 6
-	, state 9
-	<app> state 12
+	<app> state 9
+	, state 18
   state 6: #2
 	<var> state 7
   state 7: #2
 	<var> state 8
   state 8: #2
-  state 9: #0 #2
+  state 9: #1 #2
 	<var> state 10
-  state 10: #0 #2
+	foldr state 14
+  state 10: #2
 	<var> state 11
-  state 11: #0 #2
-  state 12: #1 #2
+  state 11: #2
+	<var> state 12
+  state 12: #2
 	<var> state 13
-	foldr state 17
   state 13: #2
-	<var> state 14
-  state 14: #2
+  state 14: #1 #2
 	<var> state 15
-  state 15: #2
+  state 15: #1 #2
 	<var> state 16
-  state 16: #2
+  state 16: #1 #2
+	<var> state 17
   state 17: #1 #2
-	<var> state 18
-  state 18: #1 #2
+  state 18: #0 #2
 	<var> state 19
-  state 19: #1 #2
+  state 19: #0 #2
 	<var> state 20
-  state 20: #1 #2
+  state 20: #0 #2
 } end;
 unzip3 [] = [],[],[];
 unzip3 us@(_/*0:101*/:_/*0:11*/) = foldr accum/*0*/ ([],[],[]) us/*0:1*/ with accum u@(x/*0:0101*/,y/*0:01101*/,z/*0:0111*/) us/*0:1*/ = x/*0:0101*/:(xs/*0:01*/ when xs/*0:01*/,_/*0:101*/,_/*0:11*/ = check/*2*/ us/*1:1*/ {
@@ -2276,53 +2276,53 @@ unzip3 us@(_/*0:101*/:_/*0:11*/) = foldr accum/*0*/ ([],[],[]) us/*0:1*/ with ac
   state 4: #2
   state 5: #0 #1 #2
 	<var> state 6
-	, state 9
-	<app> state 22
+	<app> state 9
+	, state 18
   state 6: #2
 	<var> state 7
   state 7: #2
 	<var> state 8
   state 8: #2
-  state 9: #0 #2
+  state 9: #1 #2
 	<var> state 10
-  state 10: #0 #2
+	foldr state 14
+  state 10: #2
 	<var> state 11
-	<app> state 12
   state 11: #2
-  state 12: #0 #2
+	<var> state 12
+  state 12: #2
 	<var> state 13
-	<app> state 15
   state 13: #2
-	<var> state 14
-  state 14: #2
-  state 15: #0 #2
+  state 14: #1 #2
+	<var> state 15
+  state 15: #1 #2
 	<var> state 16
-	, state 19
-  state 16: #2
+  state 16: #1 #2
 	<var> state 17
-  state 17: #2
-	<var> state 18
-  state 18: #2
+  state 17: #1 #2
+  state 18: #0 #2
+	<var> state 19
   state 19: #0 #2
 	<var> state 20
-  state 20: #0 #2
-	<var> state 21
+	<app> state 21
+  state 20: #2
   state 21: #0 #2
-  state 22: #1 #2
+	<var> state 22
+	<app> state 24
+  state 22: #2
 	<var> state 23
-	foldr state 27
   state 23: #2
-	<var> state 24
-  state 24: #2
+  state 24: #0 #2
 	<var> state 25
+	, state 28
   state 25: #2
 	<var> state 26
   state 26: #2
-  state 27: #1 #2
-	<var> state 28
-  state 28: #1 #2
+	<var> state 27
+  state 27: #2
+  state 28: #0 #2
 	<var> state 29
-  state 29: #1 #2
+  state 29: #0 #2
 	<var> state 30
-  state 30: #1 #2
+  state 30: #0 #2
 } end;

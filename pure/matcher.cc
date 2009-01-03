@@ -278,7 +278,8 @@ void matcher::merge_ftrans(transl& tr, int32_t tag, state *st)
     if (t->tag == tag) {
       merge_state(t->st, st);
       return;
-    } else if ((tag == EXPR::APP) ? (t->tag < EXPR::APP) : (t->tag > tag))
+    } else if ((tag == EXPR::APP)
+	       ? (t->tag < EXPR::APP || t->tag > 0) : (t->tag > tag))
       break;
   }
   // none found, create a new one
