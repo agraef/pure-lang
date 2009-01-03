@@ -1,0 +1,34 @@
+
+/* Binary trees benchmark from "The Computer Language Shootout"
+   (http://shootout.alioth.debian.org/). */
+
+make item 0 = leaf item;
+make item d::int = node item (make (item2-1) d2) (make item2 d2)
+		   when item2::int = 2*item; d2::int = d-1; end;
+
+check (leaf item::int) = item;
+check (node item::int l r) = item+check l-check r;
+
+using system;
+
+main n::int = ()
+when
+  minDepth = 4; maxDepth = max n (minDepth+2); stretchDepth = maxDepth+1;
+  printf "stretch tree of depth %u\t check: %d\n"
+  (stretchDepth,check stretchTree) when stretchTree = make 0 stretchDepth end;
+  longLivedTree = make 0 maxDepth;
+  do (\depth -> printf "%d\t trees of depth %u\t check: %d\n"
+      (iterations*2, depth, foldl test 0 (1..iterations))
+      when iterations = int $ 2^(maxDepth-depth+minDepth) end
+      with test c i = c+check (make i depth)+check (make (-i) depth) end)
+  (minDepth:minDepth+2..maxDepth);
+  printf "long lived tree of depth %u\t check: %d\n"
+  (maxDepth,check longLivedTree);
+end;
+
+main _ = usage otherwise;
+
+usage = puts "Usage: time pure -x binarytrees.pure N";
+
+extern int atoi(char*);
+if argc~=2 then usage else main $ atoi $ argv!1;
