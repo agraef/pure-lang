@@ -18,8 +18,9 @@ private infixl 7 dmod;
 
 public mjday mday2jday mday2pday jday2mday jday2pday pday2jday pday2mday 
    secs2days days2secs days2hours hours2days dhms2secs secs2dhms opdhms 
-   hms2secs secs2hms htds2secs secs2htds days2mayan mayan2days addmayan greg2jdays greg2pdays greg2psecs jdays2greg pdays2greg 
-   gmparse phase completion;
+   hms2secs secs2hms htds2secs secs2htds days2mayan mayan2days addmayan 
+   greg2jdays greg2pdays greg2psecs jdays2greg pdays2greg gmparse phase 
+   completion;
    
 public nullary wday mon day utc year;
    
@@ -43,7 +44,7 @@ const venusinf   = 1187409600;// 18th August 2007, 4am Venus inferior conjunctio
    timex can be used safely as a wrapper anywhere in the code */
    
 def timex f = f , (void (printf "%s: %dms cpu %8.1fms realtime\n" 
-  ((str (quote (f))), (int (1000*(clock-c0)/CLOCKS_PER_SEC)) ,
+  ((str (quote (f))), (int ((clock-c0)/CLOCKS_PER_SEC*1000+0.5)),
    (1000.0*(gettimeofday-d0))))) when d0 = gettimeofday; c0 = clock end;
 
 /* dmod operator to work on doubles, so that int, bigint and double 
@@ -193,7 +194,6 @@ cal = do puts [
     ((strftime "%x" time) + "\t Gregorian date") $$
 //   printf "%s   \t UTC Time in h:t:d:s\n"  
 // (str (secs2htds (int (time mod secsinday)))) $$ // seconds since midnight
-
    printf "%12.4f   \t Julian day\n" jdaytoday $$
    printf "%12.4f   \t Mayan day\n" daytoday $$
    printf "%s\t Mayan long count date\n" longtoday $$
@@ -202,7 +202,6 @@ cal = do puts [
    printf "%11.8f%%\t completion of the Mayan Cycle\n" complete $$   
    printf "%6.4f   \t days till the next full Moon\n" nextfmoon $$
    printf "%7.4f   \t days till the next inf. conjunction of Venus\n" nextvenus $$
-
    do puts [
    "****************************************************************",
    "Mayan long count digits (and their maximum values) are:",

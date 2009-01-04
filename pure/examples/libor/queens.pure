@@ -1,20 +1,31 @@
 /* Several Solutions to the Queens Problem  Dr Libor Spacek, 21th May 2008
+
+queens.pure example usage: 
+>using namespace queens;
+>fullboard (thequeens 50);
    
    (allqueens n) returns all solutions but is slow
    (queens n) and (tailqueens n) return one different solution each
    (thequeens n) does no search and is very fast even for large boards
    
-Examples:
- 
+Examples: 
     >allqueens 8; // returns all 92 solutions, as a list of lists
     >queens 8;    // gives solution number 52 in the allqueens' list,
     >tailqueens 8; // gives solution no. 89, which is a reflection of no. 52
     >map succ (thequeens 8); // gives solution no. 56 */
 
 // row j in current column not attacked by any queens in preceding columns? 
+// id is the column positions difference
+
+namespace queens;
+public allqueens queens tailqueens fullboard thequeens checkqs queenstest;
+private safe;
+private nullary failed nosolution; 
+// nosolution is returned by thequeens for n=2 and n=3 
+
 safe _ _ [] = 1;
-safe id::int j::int (j2::int:l) =  // id is the column positions difference
-	if (j==j2) || (id==j2-j) || (id==j-j2) then 0 else safe (1+id) j l;
+safe id::int j::int (j2::int:l) = 
+   if (j==j2) || (id==j2-j) || (id==j-j2) then 0 else safe (1+id) j l;
 
 allqueens n::int = list (searchall n n []) // returns all possible solutions
   with
@@ -25,7 +36,7 @@ allqueens n::int = list (searchall n n []) // returns all possible solutions
   
 // the solution is only the rows permutation, without the ordered columns (1..n) 
 // full 2D board coordinates can be reconstructed with zip (1..n) (queens n); 
-nullary failed;
+
 queens n::int = list (search n n n [])
   with
    search _ 0 _ p = ();  			// last i, solved
@@ -35,7 +46,10 @@ queens n::int = list (search n n n [])
      when solution = search n (i-1) n (j:p); end if safe 1 j p;   	          
      = search n i (j-1) p	       // also try another j when unsafe
   end;
-// this concise backtracking tailrecursive version throws a single solution
+
+// this concise backtracking tailrecursive version throws a single solution - 
+// a reverse of "queens"
+
 tailqueens n::int = catch id (srch n n n []) 
   with srch _ 0 _ p = throw p; 
 		 srch _ _ 0 _ = failed;
@@ -59,8 +73,6 @@ with: (fullboard (thequeens n)).
 */
 
 fullboard simple = zip (1..(#simple)) (map succ simple);
-
-nullary nosolution; // returned for n=2 and n=3 when there are no solutions
 
 thequeens n::int = case n of
 	1 = [0];  // trivial solution to one square board
@@ -89,5 +101,7 @@ checkqs (nosolution) = 1;
 
 // conducts an exhaustive test of solutions for boards of all listed sizes. 
 // examples of use: >queenstest (1..1000); >queenstest (5000,4999..4990);
+// > queenstest ([5,6,7]);
+
 queenstest [] = 1;
 queenstest (h:l) = if checkqs (thequeens h) then queenstest l else 0;

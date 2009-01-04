@@ -1,6 +1,11 @@
 /* General Utilities Copyright (c) 2008 by Libor Spacek */
 
 //General mathematical iterators over one and two indices
+
+namespace myutils;
+public MathIter1 MathIter2 Sigma Pi Factorial Binomial Gcf 
+       rotate protate nrotate;
+
 MathIter1 op i1 i2 f = foldl1 op (map f (i1..i2));
 
 MathIter2 op i1 i2 j1 j2 f = 
@@ -31,6 +36,5 @@ protate n::int l = cat [(drop n l),(take n l)];
 // example applied to clocks: >head (nrotate (-33) (0..23)); 
 // what time is 33 hrs before midnight? Answer: 15 hrs.
 nrotate  n::int l 
-   = protate nm l when ll = #l; nm = ll + (n mod ll) end if n<0;
-	= protate nm l when nm = n mod #l end;
-   
+   = if n<0  then (protate (ll + (n mod ll)) l)
+             else	(protate (n mod ll) l) when ll=#l end;
