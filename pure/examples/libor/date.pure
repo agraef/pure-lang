@@ -24,20 +24,19 @@ public mjday mday2jday mday2pday jday2mday jday2pday pday2jday pday2mday
    
 public nullary wday mon day utc year;
    
-   
-// some constants in whole days
+// constants in whole day units
 const mdayposix  = 1856305;// Mayan day for the posix epoch 1 Jan 1970
 const jdayposix  = 2440588;// Julian day (since 1 Jan 4713 BC),posix epoch
 const cycledays  = 1872000;// end of cycle: total days in 13 Baktuns
-// some constants in whole seconds
+// constants in whole seconds units
 const secsinday  = 86400;  // number of seconds in a day
 const trueyear   = 31556941;// current true year (divisible by 13) 
-const myyear     = 31556943;// div by 2277, secsinday compatible, 365.2424 days
-const gregyear   = 31556952;// div by 40824, mean gregorian year, 365.2425 days
+const myyear     = 31556943;// div by 2277, secsinday compatible = 365.2424 days
+const gregyear   = 31556952;// div by 40824, mean gregorian year = 365.2425 days
 const lunarmonth = 2551443; // duration of the lunar synodic month
-const fullmoon   = 1213810200;// 18th June 2008, 17:30, full moon in posix seconds
-const venussyn   = 50450688;// duration of the Venus synodic cycle
-const venusinf   = 1187409600;// 18th August 2007, 4am Venus inferior conjunction
+const fullmoon   = 1213810200;//18th June 2008,17:30 full moon in posix seconds
+const venussyn   = 50450688; //duration of the Venus synodic cycle
+const venusinf   = 1187409600;//18th August 2007,4am Venus inferior conjunction
 
 /* timex macro: prints cputime and realtime in miliseconds 
    (however, cputime on many machines only counts in 10 milisecond units).
@@ -131,7 +130,9 @@ addmayan (baktun1::int:katun1::int:tun1::int:vinal1::int:kin1::int)
    baktun = baktun1+baktun2+(katun div 20) 
    end;
    
-/* Gregorian calendar presentation format: (D,M,Y)  
+/* Gregorian calendar presentation format: (D,M,Y) 
+   adapted from Dr Albert Graef's Q lib and others
+   
    unlike the Mayan long count, these dates are historically correct only after
    the introduction of Gregorian calendar in 1582 (much later in non-catholic
    countries). Ten days had been 'deleted' by pope Gregory. However, due to
@@ -142,15 +143,15 @@ addmayan (baktun1::int:katun1::int:tun1::int:vinal1::int:kin1::int)
    These reasons make the Gregorian calendar dates useless for astronomical
    purposes. Julian days (Hail to Julius Caesar) are still used
    and conversions to either Julian days or Mayan days are necessary. */
+   
 greg2jdays (D::int,M::int,Y::int) = 
    D+(153*M+2) div 5+365*Y+Y div 4-Y div 100+Y div 400-32045
    when A = (14-M) div 12; Y = Y+4800-A; M = M+12*A-3 end; 
 
-greg2pdays date@(D::int,M::int,Y::int) = jday2pday (greg2jdays date);
+greg2pdays date = jday2pday (greg2jdays date);
 
 // gregorian date time -> psecs
-greg2psecs g@(D::int,M::int,Y::int) hms = 
-   (days2secs (greg2pdays g)) + (hms2secs hms); 
+greg2psecs g hms = (days2secs (greg2pdays g)) + (hms2secs hms); 
 
 jdays2greg N::int  = 
    (E-(153*M+2) div 5+1, M+3-12*(M div 10), 100*B+D-4800+M div 10)
@@ -166,7 +167,7 @@ gmparse wday psecs::int| gmparse wday psecs::bigint= (gmtime psecs)!!(0..2);
 gmparse mon psecs::int | gmparse mon psecs::bigint = (gmtime psecs)!!(4..6);
 gmparse day psecs::int | gmparse day psecs::bigint = (gmtime psecs)!!(8..9);
 gmparse utc psecs::int | gmparse utc psecs::bigint = (gmtime psecs)!!(11..18);
-gmparse year psecs::int| gmparse year psecs::bigint =(gmtime psecs)!!(20..24);   
+gmparse year psecs::int| gmparse year psecs::bigint =(gmtime psecs)!!(20..24);
 
 /* phase of any cycle of 'length' from 'init' at time 'now' (must be same units)
    this is surprisingly accurate without computing the full orbital elements */
@@ -177,8 +178,7 @@ phase init::int length::int now::double = ((now-init) dmod length)/length;
 // same as above but returns dhms till the completion   
 completion init::int length::int now::int |
 completion init::int length::int now::bigint |
-completion init::int length::int now::double = length - ((now-init) dmod length);   
-   
+completion init::int length::int now::double = length-((now-init) dmod length);
 /******************************************************************************/
 
 puts "Type cal; to obtain a fairly complete calendar printout";
@@ -198,11 +198,11 @@ cal = do puts [
    printf "%12.4f   \t Mayan day\n" daytoday $$
    printf "%s\t Mayan long count date\n" longtoday $$
    printf "%s\t long countdown to the end of the Mayan Cycle\n" mayanleft $$
-   printf "%9.4f   \t days countdown to the end of the Mayan Cycle\n" nextcycle $$
-   printf "%11.8f%%\t completion of the Mayan Cycle\n" complete $$   
+   printf "%9.4f   \t days countdown to the end of the Mayan Cycle\n" nextcycle 
+   $$ printf "%11.8f%%\t completion of the Mayan Cycle\n" complete $$
    printf "%6.4f   \t days till the next full Moon\n" nextfmoon $$
-   printf "%7.4f   \t days till the next inf. conjunction of Venus\n" nextvenus $$
-   do puts [
+   printf "%7.4f   \t days till the next inf. conjunction of Venus\n" nextvenus 
+   $$ do puts [
    "****************************************************************",
    "Mayan long count digits (and their maximum values) are:",
    "Baktun(12) : Katun(19) : Tun(19) : Vinal(17) : Kin(19)",
@@ -213,13 +213,10 @@ cal = do puts [
    // let's do some calendric calculations
    nextfmoon = secs2days (completion fullmoon lunarmonth time); // in seconds
    nextvenus = secs2days (completion venusinf venussyn time);
-   jdaytoday = mjday jdayposix time; // double julian day - could use gettimeofday
-   daytoday  = mjday mdayposix time; // double mayan day - could use gettimeofday
+   jdaytoday = mjday jdayposix time; // double julian day-could use gettimeofday
+   daytoday  = mjday mdayposix time; // double mayan day-could use gettimeofday
    longtoday = str (days2mayan (int daytoday));
    nextcycle = completion 0 cycledays daytoday; // now in days
    mayanleft = str (days2mayan (int nextcycle));
    complete = 100.0*(phase 0 cycledays daytoday)
    end;
-
-namespace;
-using namespace;
