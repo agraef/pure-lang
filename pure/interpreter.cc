@@ -3478,7 +3478,7 @@ ReturnInst *Env::CreateRet(Value *v)
 	  /* Patch up this call to correct the offset of the environment. */
 	  CallInst *c2 = c1->clone();
 	  c1->getParent()->getInstList().insert(c1, c2);
-	  Value *v = BinaryOperator::createSub(c2, UInt(n+m+1), "", c1);
+	  Value *v = BinaryOperator::CreateSub(c2, UInt(n+m+1), "", c1);
 	  BasicBlock::iterator ii(c1);
 	  ReplaceInstWithValue(c1->getParent()->getInstList(), ii, v);
 	}
