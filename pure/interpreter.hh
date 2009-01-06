@@ -20,6 +20,9 @@
 #include "symtable.hh"
 #include "runtime.h"
 
+#include "parserdefs.hh"
+#include "parser.hh"
+
 /* Add some debugging output (disable in release version!). */
 #ifndef DEBUG
 #define DEBUG 1 // extra sanity checks
@@ -52,16 +55,6 @@ using namespace std;
 /* The Pure interpreter. */
 
 class interpreter;
-
-#include "parser.hh"
-
-// Announce to Flex the prototype we want for lexing function, ...
-#define YY_DECL \
-  yy::parser::token_type						\
-  yylex (yy::parser::semantic_type* yylval,				\
-	 yy::parser::location_type* yylloc, interpreter& interp)
-// ... and declare it for the parser's sake.
-YY_DECL;
 
 // verbosity levels, these can be ORed together
 namespace verbosity {

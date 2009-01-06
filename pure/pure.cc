@@ -14,6 +14,7 @@
 #include <readline/history.h>
 #include "interpreter.hh"
 #include "runtime.h"
+#include "util.hh"
 #include <llvm/Target/TargetOptions.h>
 
 #include "config.h"

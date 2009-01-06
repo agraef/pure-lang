@@ -13,7 +13,7 @@
 #include <sstream>
 #include <fstream>
 #include "interpreter.hh"
-#include "parser.hh"
+#include "lexerdefs.hh"
 #include "util.hh"
 
 #include "config.h"
