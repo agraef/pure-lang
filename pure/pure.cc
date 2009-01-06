@@ -35,7 +35,7 @@ using namespace std;
 #define PURELIB "/usr/local/lib/pure-" PACKAGE_VERSION
 #endif
 
-#define COPYRIGHT "Copyright (c) 2008 by Albert Graef"
+#define COPYRIGHT "Copyright (c) 2009 by Albert Graef"
 #define USAGE \
 "Usage:           pure [options ...] [script ...] [-- args ...]\n\
                  pure [options ...] -x script [args ...]\n\
