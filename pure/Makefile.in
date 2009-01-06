@@ -102,9 +102,10 @@ endif
 
 # No need to edit below this line. Unless you really have to. :) ############
 
-SOURCE = expr.cc expr.hh funcall.h interpreter.cc interpreter.hh lexer.ll \
-matcher.cc matcher.hh parser.yy printer.cc printer.hh \
-runtime.cc runtime.h symtable.cc symtable.hh util.cc util.hh
+SOURCE = expr.cc expr.hh funcall.h interpreter.cc interpreter.hh \
+lexer.ll lexerdefs.hh matcher.cc matcher.hh parser.yy parserdefs.hh \
+printer.cc printer.hh runtime.cc runtime.h symtable.cc symtable.hh \
+util.cc util.hh
 EXTRA_SOURCE = lexer.cc parser.cc parser.hh location.hh position.hh stack.hh
 OBJECT = $(subst .cc,.o,$(filter %.cc,$(SOURCE) $(EXTRA_SOURCE)))
 
@@ -269,15 +270,15 @@ cleanlogs:
 # other glibc-based systems. Other systems might require some work.
 
 $(srcdir)/test/prelude.log: lib/prelude.pure lib/primitives.pure lib/strings.pure
-	LC_ALL=C @LD_LIB_PATH@=. PURELIB=$(srcdir)/lib ./pure --norc -n -v$(level) $< > $@ 2>&1
+	LC_ALL=C @LD_LIB_PATH@=".:$(@LD_LIB_PATH@)" PURELIB=$(srcdir)/lib ./pure --norc -n -v$(level) $< > $@ 2>&1
 
 %.log: %.pure
-	LC_ALL=C @LD_LIB_PATH@=. PURELIB=$(srcdir)/lib ./pure --norc -v$(level) < $< > $@ 2>&1
+	LC_ALL=C @LD_LIB_PATH@=".:$(@LD_LIB_PATH@)" PURELIB=$(srcdir)/lib ./pure --norc -v$(level) < $< > $@ 2>&1
 
 check: pure
 	@ echo Running tests.
-	@ (export LC_ALL=C; export @LD_LIB_PATH@=.; export PURELIB=$(srcdir)/lib; echo $(ECHO_N) "prelude.pure: $(ECHO_C)"; if ./pure --norc -n -v$(level) $(srcdir)/lib/prelude.pure 2>&1 | diff -q - $(srcdir)/test/prelude.log > /dev/null; then echo "$(ECHO_T)passed"; else echo "$(ECHO_T)FAILED"; fi)
-	@ (export LC_ALL=C; export @LD_LIB_PATH@=.; export PURELIB=$(srcdir)/lib; for x in $(notdir $(tests)); do echo $(ECHO_N) "$$x: $(ECHO_C)"; if ./pure --norc -v$(level) < $(srcdir)/test/$$x 2>&1 | diff -q - $(srcdir)/test/"`basename $$x .pure`.log" > /dev/null; then echo "$(ECHO_T)passed"; else echo "$(ECHO_T)FAILED"; fi; done)
+	@ (export LC_ALL=C; export @LD_LIB_PATH@=".:$(@LD_LIB_PATH@)"; export PURELIB=$(srcdir)/lib; echo $(ECHO_N) "prelude.pure: $(ECHO_C)"; if ./pure --norc -n -v$(level) $(srcdir)/lib/prelude.pure 2>&1 | diff -q - $(srcdir)/test/prelude.log > /dev/null; then echo "$(ECHO_T)passed"; else echo "$(ECHO_T)FAILED"; fi)
+	@ (export LC_ALL=C; export @LD_LIB_PATH@=".:$(@LD_LIB_PATH@)"; export PURELIB=$(srcdir)/lib; for x in $(notdir $(tests)); do echo $(ECHO_N) "$$x: $(ECHO_C)"; if ./pure --norc -v$(level) < $(srcdir)/test/$$x 2>&1 | diff -q - $(srcdir)/test/"`basename $$x .pure`.log" > /dev/null; then echo "$(ECHO_T)passed"; else echo "$(ECHO_T)FAILED"; fi; done)
 
 # DO NOT DELETE
 
