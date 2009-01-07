@@ -135,8 +135,8 @@ symbol* symtable::sym_p(const char *s, symbol*& cache, bool priv)
   string id = s;
   _sym = &tab[id];
   if (_sym->f == 0) {
-    if ((uint32_t)++fno >= rtab.capacity())
-      rtab.reserve(rtab.capacity()+1024);
+    if ((uint32_t)++fno >= rtab.size())
+      rtab.resize(rtab.size()+1024);
     *_sym = symbol(id, fno, priv);
     //cout << "new symbol " << _sym->f << ": " << _sym->s << endl;
     rtab[fno] = _sym;
@@ -158,8 +158,8 @@ symbol* symtable::sym_p(const char *s, symbol*& cache,
   string id = s;
   _sym = &tab[id];
   if (_sym->f == 0) {
-    if ((uint32_t)++fno >= rtab.capacity())
-      rtab.reserve(rtab.capacity()+1024);
+    if ((uint32_t)++fno >= rtab.size())
+      rtab.resize(rtab.size()+1024);
     *_sym = symbol(id, fno, prec, fix, priv);
     //cout << "new symbol " << _sym->f << ": " << _sym->s << endl;
     rtab[fno] = _sym;
@@ -221,8 +221,8 @@ symbol* symtable::sym(const char *s, bool priv)
   string id = s;
   _sym = &tab[id];
   if (_sym->f == 0) {
-    if ((uint32_t)++fno >= rtab.capacity())
-      rtab.reserve(rtab.capacity()+1024);
+    if ((uint32_t)++fno >= rtab.size())
+      rtab.resize(rtab.size()+1024);
     *_sym = symbol(id, fno, priv);
     //cout << "new symbol " << _sym->f << ": " << _sym->s << endl;
     rtab[fno] = _sym;
@@ -246,8 +246,8 @@ symbol* symtable::sym(const char *s, prec_t prec, fix_t fix, bool priv)
   string id = s;
   _sym = &tab[id];
   if (_sym->f == 0) {
-    if ((uint32_t)++fno >= rtab.capacity())
-      rtab.reserve(rtab.capacity()+1024);
+    if ((uint32_t)++fno >= rtab.size())
+      rtab.resize(rtab.size()+1024);
     *_sym = symbol(id, fno, prec, fix, priv);
     //cout << "new symbol " << _sym->f << ": " << _sym->s << endl;
     rtab[fno] = _sym;
@@ -272,7 +272,7 @@ symbol& symtable::checksym(const char *s, bool priv)
 
 symbol& symtable::sym(int32_t f)
 {
-  assert(f > 0 && (uint32_t)f < rtab.size());
+  assert(f > 0 && (uint32_t)f <= fno);
   return *rtab[f];
 }
 
