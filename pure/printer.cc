@@ -61,7 +61,7 @@ static prec_t sym_nprec(int32_t f)
 
 static prec_t expr_nprec(expr x, bool aspat = true)
 {
-  if (x.is_null() || aspat && x.astag()>0) return 100;
+  if (x.is_null() || (aspat && x.astag()>0)) return 100;
   switch (x.tag()) {
   case EXPR::VAR:
   case EXPR::STR:
@@ -85,7 +85,7 @@ static prec_t expr_nprec(expr x, bool aspat = true)
   case EXPR::DBL:
     /* NOTE: The check for negative zero really needs IEEE 754 floating point
        numbers, otherwise we'll divide by zero here. */
-    if (x.dval() < 0.0 || x.dval() == 0.0 && 1.0/x.dval() < 0.0)
+    if (x.dval() < 0.0 || (x.dval() == 0.0 && 1.0/x.dval() < 0.0))
       // precedence of unary minus:
       return sym_nprec(interpreter::g_interp->symtab.neg_sym().f);
     else
@@ -281,7 +281,7 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
     for (exprll::const_iterator xs = x.xvals()->begin(),
 	   end = x.xvals()->end(); xs != end; ) {
       size_t n = xs->size();
-      if (n>1 || n==1 && xs->front().is_pair()) {
+      if (n>1 || (n==1 && xs->front().is_pair())) {
 	// matrix elements at a precedence not larger than ',' have to be
 	// parenthesized
 	prec_t p = sym_nprec(interpreter::g_interp->symtab.pair_sym().f) + 1;
@@ -308,7 +308,7 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
       // proper list value
       size_t n = xs.size();
       os << "[";
-      if (n>1 || n==1 && xs.front().is_pair()) {
+      if (n>1 || (n==1 && xs.front().is_pair())) {
 	// list elements at a precedence not larger than ',' have to be
 	// parenthesized
 	p = sym_nprec(interpreter::g_interp->symtab.pair_sym().f) + 1;
@@ -329,10 +329,10 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
 	prec_t q = expr_nprec(v);
 	if (// both prefix/postfix => add parens for clarity if we don't do
 	    // padding anyway:
-	    q%10 == p%10 && blank.empty() ||
+	    (q%10 == p%10 && blank.empty()) ||
 	    // mixed operators where subexpr has lower precedence => parens
 	    // required:
-	    q%10 != p%10 && q < p)
+	    (q%10 != p%10 && q < p))
 	  if (p%10 == 3)
 	    // prefix
 	    return os << pnamex(u) << blank << "(" << pattern(v, pat)
@@ -646,7 +646,7 @@ static prec_t pure_expr_nprec(const pure_expr *x)
   case EXPR::DBL:
     /* NOTE: The check for negative zero really needs IEEE 754 floating point
        numbers, otherwise we'll divide by zero here. */
-    if (x->data.d < 0.0 || x->data.d == 0.0 && 1.0/x->data.d < 0.0)
+    if (x->data.d < 0.0 || (x->data.d == 0.0 && 1.0/x->data.d < 0.0))
       // precedence of unary minus:
       return sym_nprec(interpreter::g_interp->symtab.neg_sym().f);
     else
@@ -698,7 +698,7 @@ static inline bool pstr(ostream& os, pure_expr *x)
       // We don't want to force a thunk here. Unfortunately, this means that
       // currently you can't define a print representation for a thunk, at
       // least not directly. :(
-      x->tag == 0 && x->data.clos && x->data.clos->n == 0)
+      (x->tag == 0 && x->data.clos && x->data.clos->n == 0))
     return false;
   interpreter& interp = *interpreter::g_interp;
   int32_t f = interp.symtab.__show__sym;
@@ -875,7 +875,7 @@ ostream& operator << (ostream& os, const pure_expr *x)
       // proper list value
       size_t n = xs.size();
       os << "[";
-      if (n>1 || n==1 && pure_is_pair(xs.front())) {
+      if (n>1 || (n==1 && pure_is_pair(xs.front()))) {
 	// list elements at a precedence not larger than ',' have to be
 	// parenthesized
 	p = sym_nprec(interpreter::g_interp->symtab.pair_sym().f) + 1;
@@ -899,10 +899,10 @@ ostream& operator << (ostream& os, const pure_expr *x)
       prec_t q = pure_expr_nprec(v);
       if (// both prefix/postfix => add parens for clarity if we don't do
 	  // padding anyway:
-	  q%10 == p%10 && blank.empty() ||
+	  (q%10 == p%10 && blank.empty()) ||
 	  // mixed operators where subexpr has lower precedence => parens
 	  // required:
-	  q%10 != p%10 && q < p)
+	  (q%10 != p%10 && q < p))
 	if (p%10 == 3)
 	  // prefix
 	  return os << pname(u->tag) << blank << "(" << v << ")";

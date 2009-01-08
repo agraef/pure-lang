@@ -1468,7 +1468,7 @@ void interpreter::declare(bool priv, prec_t prec, fix_t fix, list<string> *ids)
 	delete ids;
 	throw err("symbol '"+id+"' already declared "+
 		  (sym->priv?"'private'":"'public'"));
-      } else if (sym->prec != prec || sym->fix != fix)
+      } else if (sym->prec != prec || sym->fix != fix) {
 	/* We explicitly permit 'nullary' redeclarations here, to support
 	   'const nullary' symbols on the lhs of rules. Note that this
 	   actually permits a 'nullary' redeclaration of *any* symbol unless
@@ -1480,6 +1480,7 @@ void interpreter::declare(bool priv, prec_t prec, fix_t fix, list<string> *ids)
 	  delete ids;
 	  throw err("symbol '"+id+"' already declared with different fixity");
 	}
+      }
     } else
       symtab.sym(id, prec, fix, priv);
   }
@@ -1927,9 +1928,10 @@ expr interpreter::bind(bool qual, env& vars, expr x, bool b, path p)
   default:
     assert(x.tag() > 0);
     const symbol& sym = symtab.sym(x.tag());
-    if (!qual && (x.flags()&EXPR::QUAL) || sym.s != "_" &&
-	(sym.prec < 10 || sym.fix == nullary || p.len() == 0 && !b ||
-	 p.len() > 0 && p.last() == 0)) {
+    if ((!qual && (x.flags()&EXPR::QUAL)) ||
+	(sym.s != "_" &&
+	 (sym.prec < 10 || sym.fix == nullary || (p.len() == 0 && !b) ||
+	  (p.len() > 0 && p.last() == 0)))) {
       // constant or constructor
       if (x.ttag() != 0)
 	throw err("error in pattern (misplaced type tag)");
@@ -1949,7 +1951,7 @@ expr interpreter::bind(bool qual, env& vars, expr x, bool b, path p)
   if (x.astag() > 0) {
     const symbol& sym = symtab.sym(x.astag());
     if (sym.s != "_") {
-      if (!qual && (x.flags()&EXPR::ASQUAL) ||
+      if ((!qual && (x.flags()&EXPR::ASQUAL)) ||
 	  sym.prec < 10 || sym.fix == nullary)
 	throw err("error in  \"as\" pattern (bad variable symbol)");
       // Unless we're doing a pattern binding, subterms at the spine of a
@@ -4106,8 +4108,8 @@ Function *interpreter::declare_extern(string name, string restype,
 	// In Pure, we allow void* to be passed for a char*, to bypass the
 	// automatic marshalling from Pure to C strings. Oh well.
 	ok = gt->getParamType(i)==argt[i] ||
-	  gt->getParamType(i)==CharPtrTy &&
-	  argt[i] == VoidPtrTy;
+	  (gt->getParamType(i)==CharPtrTy &&
+	   argt[i] == VoidPtrTy);
       }
       if (!ok) {
 	// Give some reasonable diagnostic. gt itself shows as LLVM assembler
@@ -4587,7 +4589,7 @@ pure_expr *interpreter::const_value(expr x)
 	return v->second.x;
       else
 	return 0;
-    } else if (x.is_list(xs) || x.is_pair() && x.is_tuplex(xs)) {
+    } else if (x.is_list(xs) || (x.is_pair() && x.is_tuplex(xs))) {
       // proper lists and tuples
       size_t i, n = xs.size();
       pure_expr **xv = (pure_expr**)malloc(n*sizeof(pure_expr*));
@@ -5589,7 +5591,7 @@ Value *interpreter::codegen(expr x, bool quote)
 	   speeds up compilation for larger sequences. See the comments at the
 	   beginning of interpreter.hh for details. */
 	exprl xs;
-	if ((x.is_list(xs) || x.is_pair() && x.is_tuple(xs)) &&
+	if ((x.is_list(xs) || (x.is_pair() && x.is_tuple(xs))) &&
 	    xs.size() >= LIST_KLUDGE) {
 	  size_t i = 0, n = xs.size();
 	  vector<Value*> argv(n+1);

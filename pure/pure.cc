@@ -98,11 +98,11 @@ command_generator(const char *text, int state)
     /* Skip non-toplevel symbols. */
     const symbol& sym = interp.symtab.sym(f);
     if (!interp.symtab.visible(f) ||
-	sym.prec == 10 && sym.fix != nullary &&
-	interp.globenv.find(f) == interp.globenv.end() &&
-	interp.macenv.find(f) == interp.macenv.end() &&
-	interp.globalvars.find(f) == interp.globalvars.end() &&
-	interp.externals.find(f) == interp.externals.end()) {
+	(sym.prec == 10 && sym.fix != nullary &&
+	 interp.globenv.find(f) == interp.globenv.end() &&
+	 interp.macenv.find(f) == interp.macenv.end() &&
+	 interp.globalvars.find(f) == interp.globalvars.end() &&
+	 interp.externals.find(f) == interp.externals.end())) {
       f++;
       continue;
     }
@@ -139,11 +139,11 @@ symbol_generator(const char *text, int state)
     /* Skip non-toplevel symbols. */
     const symbol& sym = interp.symtab.sym(f);
     if (!interp.symtab.visible(f) ||
-	sym.prec == 10 && sym.fix != nullary &&
-	interp.globenv.find(f) == interp.globenv.end() &&
-	interp.macenv.find(f) == interp.macenv.end() &&
-	interp.globalvars.find(f) == interp.globalvars.end() &&
-	interp.externals.find(f) == interp.externals.end()) {
+	(sym.prec == 10 && sym.fix != nullary &&
+	 interp.globenv.find(f) == interp.globenv.end() &&
+	 interp.macenv.find(f) == interp.macenv.end() &&
+	 interp.globalvars.find(f) == interp.globalvars.end() &&
+	 interp.externals.find(f) == interp.externals.end())) {
       f++;
       continue;
     }

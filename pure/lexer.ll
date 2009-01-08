@@ -57,7 +57,7 @@ static void my_readline(const char *prompt, char *buf, int &result, int max_size
 
 static string pstring(const char *s)
 {
-  if (s[0] && s[1] || isprint(s[0]))
+  if ((s[0] && s[1]) || isprint(s[0]))
     return string(s);
   else {
     char buf[10];
@@ -203,11 +203,11 @@ command_generator(const char *text, int state)
     /* Skip non-toplevel symbols. */
     const symbol& sym = interp.symtab.sym(f);
     if (!interp.symtab.visible(f) ||
-	sym.prec == 10 && sym.fix != nullary &&
-	interp.globenv.find(f) == interp.globenv.end() &&
-	interp.macenv.find(f) == interp.macenv.end() &&
-	interp.globalvars.find(f) == interp.globalvars.end() &&
-	interp.externals.find(f) == interp.externals.end()) {
+	(sym.prec == 10 && sym.fix != nullary &&
+	 interp.globenv.find(f) == interp.globenv.end() &&
+	 interp.macenv.find(f) == interp.macenv.end() &&
+	 interp.globalvars.find(f) == interp.globalvars.end() &&
+	 interp.externals.find(f) == interp.externals.end())) {
       f++;
       continue;
     }
@@ -231,7 +231,7 @@ static void list_completions(ostream& os, const char *s)
 {
   char **matches = pure_completion(s, 0, strlen(s));
   if (matches) {
-    if (matches[0])
+    if (matches[0]) {
       if (!matches[1]) {
 	os << matches[0] << endl;
 	free(matches[0]);
@@ -243,6 +243,7 @@ static void list_completions(ostream& os, const char *s)
 	  free(matches[i]);
 	}
       }
+    }
     free(matches);
   }
 }
@@ -584,7 +585,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
       int32_t f = it->first;
       const env_info& e = it->second;
       const symbol& sym = interp.symtab.sym(f);
-      if (pflag >= 0 && (pflag > 0) != sym.priv ||
+      if ((pflag >= 0 && (pflag > 0) != sym.priv) ||
 	  !((e.t == env_info::fun)?fflag:
 	    (e.t == env_info::cvar)?cflag:
 	    (e.t == env_info::fvar)?vflag:0))
@@ -940,7 +941,7 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
       int32_t f = it->first;
       const env_info& e = it->second;
       const symbol& sym = interp.symtab.sym(f);
-      if (pflag >= 0 && (pflag > 0) != sym.priv ||
+      if ((pflag >= 0 && (pflag > 0) != sym.priv) ||
 	  !((e.t == env_info::fun)?fflag:
 	    (e.t == env_info::cvar)?cflag:
 	    (e.t == env_info::fvar)?vflag:0))
@@ -1225,7 +1226,7 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
       int32_t f = it->first;
       const env_info& e = it->second;
       const symbol& sym = interp.symtab.sym(f);
-      if (pflag >= 0 && (pflag > 0) != sym.priv ||
+      if ((pflag >= 0 && (pflag > 0) != sym.priv) ||
 	  !((e.t == env_info::fun)?fflag:
 	    (e.t == env_info::cvar)?cflag:
 	    (e.t == env_info::fvar)?vflag:0))
@@ -1356,7 +1357,7 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
   argl args(s, "run");
   if (!args.ok)
     ;
-  else if (args.c == 0 || args.c == 1 && args.l.begin()->empty())
+  else if (args.c == 0 || (args.c == 1 && args.l.begin()->empty()))
     cerr << "run: no script name specified\n";
   else if (args.c > 1)
     cerr << "run: extra parameter\n";

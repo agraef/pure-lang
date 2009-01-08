@@ -262,23 +262,23 @@ u8encode(char *t, unsigned long c)
     uc[0] = c;
   } else if (c < 0x800) {
     uc[2] = 0;
-    uc[1] = 0x80 | c&0x3f;
+    uc[1] = 0x80 | (c&0x3f);
     c = c >> 6;
     uc[0] = 0xc0 | c;
   } else if (c < 0x10000) {
     uc[3] = 0;
-    uc[2] = 0x80 | c&0x3f;
+    uc[2] = 0x80 | (c&0x3f);
     c = c >> 6;
-    uc[1] = 0x80 | c&0x3f;
+    uc[1] = 0x80 | (c&0x3f);
     c = c >> 6;
     uc[0] = 0xe0 | c;
   } else {
     uc[4] = 0;
-    uc[3] = 0x80 | c&0x3f;
+    uc[3] = 0x80 | (c&0x3f);
     c = c >> 6;
-    uc[2] = 0x80 | c&0x3f;
+    uc[2] = 0x80 | (c&0x3f);
     c = c >> 6;
-    uc[1] = 0x80 | c&0x3f;
+    uc[1] = 0x80 | (c&0x3f);
     c = c >> 6;
     uc[0] = 0xf0 | c;
   }

@@ -907,8 +907,8 @@ static inline bool is_complex(pure_expr *x)
     if (f->tag != rect.f && f->tag != polar.f)
       return false;
     u = u->data.x[1];
-    if (u->tag != EXPR::INT && u->tag != EXPR::DBL ||
-	v->tag != EXPR::INT && v->tag != EXPR::DBL)
+    if ((u->tag != EXPR::INT && u->tag != EXPR::DBL) ||
+	(v->tag != EXPR::INT && v->tag != EXPR::DBL))
       return false;
     else
       return true;
@@ -1946,7 +1946,7 @@ bool pure_is_appv(pure_expr *x, pure_expr **_fun,
   }
   if (_fun) *_fun = u;
   if (_argc) *_argc = argc;
-  if (_args)
+  if (_args) {
     if (argc > 0) {
       pure_expr **args = (pure_expr**)malloc(argc*sizeof(pure_expr*));
       assert(args);
@@ -1959,6 +1959,7 @@ bool pure_is_appv(pure_expr *x, pure_expr **_fun,
       *_args = args;
     } else
       *_args = 0;
+  }
   return true;
 }
 
@@ -2010,7 +2011,7 @@ bool pure_is_listv(pure_expr *x, size_t *_size, pure_expr ***_elems)
   }
   if (!is_nil(u)) return false;
   if (_size) *_size = size;
-  if (_elems)
+  if (_elems) {
     if (size > 0) {
       pure_expr **elems = (pure_expr**)malloc(size*sizeof(pure_expr*));
       assert(elems);
@@ -2023,6 +2024,7 @@ bool pure_is_listv(pure_expr *x, size_t *_size, pure_expr ***_elems)
       *_elems = elems;
     } else
       *_elems = 0;
+  }
   return true;
 }
 
@@ -6205,8 +6207,8 @@ bool same(pure_expr *x, pure_expr *y)
 	 to a Pure definition of the same global). However, in that case we
 	 may safely assume that the functions are the same anyway, since they
 	 are referred to by the same global symbol. */
-      return !x->data.clos->local && !y->data.clos->local ||
-	x->data.clos->fp == y->data.clos->fp;
+      return (!x->data.clos->local && !y->data.clos->local) ||
+	(x->data.clos->fp == y->data.clos->fp);
     else
       return x->data.clos == y->data.clos;
   else {
@@ -6225,7 +6227,7 @@ bool same(pure_expr *x, pure_expr *y)
     case EXPR::BIGINT:
       return mpz_cmp(x->data.z, y->data.z) == 0;
     case EXPR::DBL:
-      return x->data.d == y->data.d || is_nan(x->data.d) && is_nan(y->data.d);
+      return x->data.d == y->data.d || (is_nan(x->data.d) && is_nan(y->data.d));
     case EXPR::STR:
       return strcmp(x->data.s, y->data.s) == 0;
     case EXPR::PTR:
