@@ -4571,25 +4571,9 @@ pure_expr *interpreter::const_value(expr x)
     return pure_pointer(x.pval());
   case EXPR::MATRIX:
     return const_matrix_value(x);
-  case EXPR::APP:
-    return const_app_value(x);
-  default: {
+  case EXPR::APP: {
     exprl xs;
-    if (x.tag() > 0) {
-      env::const_iterator it = globenv.find(x.tag());
-      map<int32_t,GlobalVar>::iterator v;
-      if (externals.find(x.tag()) != externals.end())
-	return 0;
-      else if (it == globenv.end())
-	// unbound symbol
-	return pure_const(x.tag());
-      else if (it->second.t == env_info::fvar &&
-	       (v = globalvars.find(x.tag())) != globalvars.end())
-	// variable
-	return v->second.x;
-      else
-	return 0;
-    } else if (x.is_list(xs) || (x.is_pair() && x.is_tuplex(xs))) {
+    if (x.is_list(xs) || (x.is_pair() && x.is_tuplex(xs))) {
       // proper lists and tuples
       size_t i, n = xs.size();
       pure_expr **xv = (pure_expr**)malloc(n*sizeof(pure_expr*));
@@ -4605,6 +4589,24 @@ pure_expr *interpreter::const_value(expr x)
       pure_expr *res = (x.is_pair()?pure_tuplev:pure_listv)(n, xv);
       free(xv);
       return res;
+    } else
+      return const_app_value(x);
+  }
+  default: {
+    if (x.tag() > 0) {
+      env::const_iterator it = globenv.find(x.tag());
+      map<int32_t,GlobalVar>::iterator v;
+      if (externals.find(x.tag()) != externals.end())
+	return 0;
+      else if (it == globenv.end())
+	// unbound symbol
+	return pure_const(x.tag());
+      else if (it->second.t == env_info::fvar &&
+	       (v = globalvars.find(x.tag())) != globalvars.end())
+	// variable
+	return v->second.x;
+      else
+	return 0;
     } else
       return 0;
   }
