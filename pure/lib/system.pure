@@ -58,7 +58,8 @@ extern void perror(char*), char* strerror(int);
    The return value is the new locale, or the current locale when passing NULL
    for the locale parameter. In either case, the string returned by setlocale
    is such that it can be passed to setlocale to restore the same locale
-   again. In case of an error, setlocale returns a null pointer.
+   again. In case of an error, setlocale fails (rather than returning a null
+   pointer).
 
    Please note that calling this function alters the Pure interpreter's idea
    of what the current locale is. When the interpreter starts up, it always
@@ -69,15 +70,14 @@ namespace C;
 extern void* setlocale(int category, void* locale);
 namespace;
 
-setlocale category::int locale =
-return (check (C::setlocale category buf)) with
-  check res	= cstring_dup res if ~null res;
-  		= res otherwise;
-  return res	= free buf $$ res if ~null buf;
-		= res otherwise;
-end when
-  buf		= if stringp locale then byte_cstring locale else locale;
-end if stringp locale || pointerp locale && null locale;
+setlocale category::int locale = cstring_dup res if ~null res when
+  res = case locale of
+          _::string  = C::setlocale category $ sentry free $
+                       byte_cstring locale;
+          _::pointer = C::setlocale category locale if null locale;
+          _          = pointer 0 otherwise;
+        end;
+end;
 
 /* Signal handling. The action parameter of 'trap' can be one of the
    predefined integer values SIG_TRAP, SIG_IGN and SIG_DFL. SIG_TRAP causes
@@ -172,7 +172,10 @@ extern void clearerr(FILE* fp);
 extern int feof(FILE* fp), int ferror(FILE* fp);
 
 /* Pure wrappers for fopen/popen and fclose/pclose which take care of closing
-   a file object automagically when it's garbage-collected. */
+   a file object automagically when it's garbage-collected. Please note that
+   these fail (instead of returning a null pointer) in case of error, so that
+   you can provide any desired error handling simply by adding suitable
+   equations. */
 
 fopen name::string mode::string = sentry C::fclose fp if ~null fp
 when fp = C::fopen name mode end;
