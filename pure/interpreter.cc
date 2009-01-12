@@ -437,8 +437,9 @@ interpreter::~interpreter()
   // free the shadow stack
   free(sstk);
   // free the execution engine and the pass manager
-#if 0
-  // XXXFIXME: This segfaults right now. LLVM bug?
+#if 1
+  // If this segfaults then you're probably running an older LLVM version. Get
+  // LLVM 2.4 or later, or disable this line.
   if (JIT) delete JIT;
 #endif
   if (FPM) delete FPM;
