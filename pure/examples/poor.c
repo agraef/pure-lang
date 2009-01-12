@@ -23,6 +23,7 @@
    what gets printed in the read-eval-print loop). */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <pure/runtime.h>
 
 int main(int argc, char *argv[])
