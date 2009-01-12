@@ -6954,8 +6954,11 @@ void pure_sys_vars(void)
   cdf(interp, "GLOB_NOSORT",	pure_int(GLOB_NOSORT));
   cdf(interp, "GLOB_NOCHECK",	pure_int(GLOB_NOCHECK));
   cdf(interp, "GLOB_NOESCAPE",	pure_int(GLOB_NOESCAPE));
-#ifndef __APPLE__
+  /* These seem to be GNU-specific. */
+#ifdef GLOB_PERIOD
   cdf(interp, "GLOB_PERIOD",	pure_int(GLOB_PERIOD));
+#endif
+#ifdef GLOB_ONLYDIR
   cdf(interp, "GLOB_ONLYDIR",	pure_int(GLOB_ONLYDIR));
 #endif
   cdf(interp, "GLOB_BRACE",	pure_int(GLOB_BRACE));
