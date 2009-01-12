@@ -19,8 +19,8 @@ private infixl 7 dmod;
 public mjday mday2jday mday2pday jday2mday jday2pday pday2jday pday2mday 
    secs2days days2secs days2hours hours2days dhms2secs secs2dhms opdhms 
    hms2secs secs2hms htds2secs secs2htds days2mayan mayan2days addmayan 
-   greg2jdays greg2pdays greg2psecs jdays2greg pdays2greg gmparse phase 
-   completion;
+   greg2jdays greg2pdays greg2mdays greg2psecs jdays2greg pdays2greg mdays2greg
+   gmparse phase completion;
    
 public nullary wday mon day utc year;
    
@@ -46,15 +46,15 @@ def timex f = f , (void (printf "%s: %dms cpu %8.1fms realtime\n"
   ((str (quote (f))), (int ((clock-c0)/CLOCKS_PER_SEC*1000+0.5)),
    (1000.0*(gettimeofday-d0))))) when d0 = gettimeofday; c0 = clock end;
 
-/* dmod operator to work on doubles, so that int, bigint and double 
-   times can be conveniently used */
+/* dmod operator to work on double first argument, 
+   so that int, bigint and double times can be conveniently used */
 x::double dmod y::int = 
    (x - intx) + (intx mod y) when intx = (int x) end; // mod of a double
 x dmod y::int = x mod y; // polymorphic catchall for ints and bigints
 
 /******************************************************************************/
 // either mayan or julian posix epoch (plus posix seconds), gives a double mjday
-// to get current pday, use simple: (secs2days time) or (secs2days gettimeofday)
+// to get current pday, use simply: (secs2days time) or (secs2days gettimeofday)
 mjday epoch::int secs::int| mjday epoch::int secs::bigint |
 mjday epoch::int secs::double = epoch+secs/secsinday;// use time or gettimeofday
 
@@ -78,34 +78,31 @@ hours2days h::int = h / 24;
 dhms2secs (d::int:h::int:m::int:s::int) |
 dhms2secs (d::int:h::int:m::int:s::bigint) |
 dhms2secs (d::int:h::int:m::int:s::double) = 60*(60*(24*d+h)+m)+s;
-   
 secs2dhms secs::int | secs2dhms secs::bigint | secs2dhms secs::double = 
    d:(h mod 24):(m mod 60):(secs dmod 60)
    when m::int = int (secs / 60); h::int = m div 60; d::int = h div 24 end;
 
-// an arbitrary binary operator applied to two (days:hours:minutes:seconds)
-opdhms op (d1::int:h1::int:m1::int:s1)(d2::int:h2::int:m2::int:s2) =
-   secs2dhms (op (dhms2secs (d1:h1:m1:s1)) (dhms2secs (d2:h2:m2:s2)));
-      
-/* conversions from/to hours:minutes:seconds format for displaying time of day
-   hours may be more than 24 but use d:h:m:s for longer periods of time */
+/* conversions from/to hours:minutes:seconds format for displaying time of day.
+   hours may be more than 24 but use d:h:m:s above for longer periods of time */
 hms2secs (h::int:m::int:s::int) |
 hms2secs (h::int:m::int:s::bigint) |
 hms2secs (h::int:m::int:s::double) = 60*(60*h+m)+s;
-
 secs2hms secs::int | secs2hms secs::bigint | secs2hms secs::double = 
    h:(m mod 60):(secs dmod 60)
-   when m::int = int (secs / 60); h::int = m div 60 end;  
-   
+   when m::int = int (secs / 60); h::int = m div 60 end;
+
+// any binary operator op applied to two args in (days:hours:minutes:seconds)
+opdhms op (d1::int:h1::int:m1::int:s1)(d2::int:h2::int:m2::int:s2) =
+   secs2dhms (op (dhms2secs (d1:h1:m1:s1)) (dhms2secs (d2:h2:m2:s2)));
+
 /* New Time Format: hours:3mins:10secs:secs = hours:tres:dicis:secs = h:t:d:s
    the normal seconds are now just a single digit 0-9
    dicis:secs are easy to read: 6:0 means 60 seconds, 12:5 125 seconds etc.
-   tres - multiply by three to get traditional babylonian minutes
-   hours as usual (24 hour clock) */
+   tres - multiply by three to get traditional babylonian minutes.
+   hours remain as usual (24 hour clock) */
 htds2secs (h::int:t::int:d::int:s::int)| 
 htds2secs (h::int:t::int:d::int:s::bigint)| 
 htds2secs (h::int:t::int:d::int:s::double) = 10*(18*(20*h+t)+d)+s;
-   
 secs2htds secs::int | secs2htds secs::bigint | secs2htds secs::double =
    h:(t mod 20):(d mod 18):(secs dmod 10)
    when d::int = int (secs / 10); t::int = d div 18; h::int = t div 20 end;
@@ -115,10 +112,9 @@ days2mayan d::int = baktun:(katun mod 20):(tun mod 20):(vinal mod 18):(d mod 20)
    when 
       vinal=d div 20; tun=vinal div 18; katun=tun div 20; baktun=katun div 20
    end;
-
 mayan2days (baktun::int:katun::int:tun::int:vinal::int:kin::int) = 
    20*(18*(20*(20*baktun+katun)+tun)+vinal)+kin;
-   
+
 /* Calculations in Mayan long count format, e.g. addmayan day1 day2
    probably not needed, as it is the same as: days2mayan day1+day2; */
 addmayan (baktun1::int:katun1::int:tun1::int:vinal1::int:kin1::int)
@@ -130,37 +126,40 @@ addmayan (baktun1::int:katun1::int:tun1::int:vinal1::int:kin1::int)
    baktun = baktun1+baktun2+(katun div 20) 
    end;
  
-/* Gregorian calendar presentation format: (D,M,Y) 
-   adapted from Dr Albert Graef's Q lib and others
-   
+/* Gregorian calendar presentation format: (d,m,y) 
+   from Dr Albert Graef's Q lib and others before.
    unlike the Mayan long count, these dates are historically correct only after
    the introduction of Gregorian calendar in 1582 (much later in non-catholic
-   countries). Ten days had been 'deleted' by pope Gregory. However, due to
+   countries). Ten days had been deleted by pope Gregory. However, due to
    ignoring 'pagan' advice, the corrected drift now builds up over the periods 
    of 4,100,200,400 years. This buildup is currently 2.15 days between 1900 and
    2100! On top of that, an uncorrected drift still remains, estimated as the
-   minimum of 8 days by the year 12000. 
-   These reasons make the Gregorian calendar dates useless for astronomical
-   purposes. Julian days (Hail to Julius Caesar) are still used
-   and conversions to either Julian days or Mayan days are necessary. */
+   minimum of 8 days by the year 12000. These reasons make the Gregorian 
+   calendar dates useless for astronomical purposes. 
+   Julian days (Salve Julius Caesar!) are still used. Conversions to either 
+   Julian days or Mayan days are necessary for any astronomical calculations. 
    
-greg2jdays D::int M::int Y::int = 
-   D+(153*M+2) div 5+365*Y+Y div 4-Y div 100+Y div 400-32045
-   when A = (14-M) div 12; Y = Y+4800-A; M = M+12*A-3 end; 
+   The Gregorian dates must be represented here as day,month,year tuples */
+
+greg2jdays (d::int, m::int, y::int) = 
+   d+(153*m+2) div 5+365*y+y div 4-y div 100+y div 400-32045
+   when a = (14-m) div 12; y = y+4800-a; m = m+12*a-3 end;
 
 greg2pdays date = jday2pday (greg2jdays date);
+greg2mdays date = jday2mday (greg2jdays date);
 
 // gregorian date time -> psecs
 greg2psecs g hms = (days2secs (greg2pdays g)) + (hms2secs hms); 
 
-jdays2greg N::int  = 
-   (E-(153*M+2) div 5+1, M+3-12*(M div 10), 100*B+D-4800+M div 10)
-   when A = N+32044; B = (4*A+3) div 146097;
-      C = A-146097*B div 4; D = (4*C+3) div 1461;
-      E = C-1461*D div 4; M = (5*E+2) div 153 
+jdays2greg jd::int  = 
+   (e-(153*m+2) div 5+1, m+3-12*(m div 10), 100*b+d-4800+m div 10)
+   when a = jd+32044; b = (4*a+3) div 146097;
+      c = a-146097*b div 4; d = (4*c+3) div 1461;
+      e = c-1461*d div 4; m = (5*e+2) div 153 
    end;
-   
-pdays2greg N::int = jdays2greg (pday2jday N);
+
+pdays2greg pd::int = jdays2greg (pday2jday pd);
+mdays2greg md::int = jdays2greg (mday2jday md);
 
 //parse gmtime string and extract the components
 gmparse wday psecs::int| gmparse wday psecs::bigint= (gmtime psecs)!!(0..2);
