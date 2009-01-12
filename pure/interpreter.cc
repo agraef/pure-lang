@@ -731,7 +731,8 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
     if (p+1 >= s.size()) throw err("empty lib name");
     string msg, name = s.substr(p+1), dllname = name;
     // See whether we need to add the DLLEXT suffix.
-    if (name.substr(name.size()-strlen(DLLEXT)) != DLLEXT)
+    if (name.size() <= strlen(DLLEXT) ||
+	name.substr(name.size()-strlen(DLLEXT)) != DLLEXT)
       dllname += DLLEXT;
     // First try to open the library under the given name.
     string aname = searchlib(srcdir, libdir, librarydirs, name);
