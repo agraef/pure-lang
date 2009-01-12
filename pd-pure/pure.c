@@ -35,7 +35,19 @@
 /* Ticks per millisecond of the internal clock. FIXME: Currently this is a
    fixed value (32.*441000./1000., cf. m_sched.c), will have to be rewritten
    if this changes. */
+
 #define TICKS 14112.0
+
+/* These aren't in the official API, but have been around at least since Pd
+   0.39, so are hopefully stable. */
+
+typedef struct _namelist
+{
+    struct _namelist *nl_next;
+    char *nl_string;
+} t_namelist;
+
+extern t_namelist *sys_searchpath;
 
 /* Return the hosting Pd version as a string in the format "major.minor". */
 
@@ -51,6 +63,23 @@ extern const char *pd_version_s(void)
 extern const char *pd_libdir_s(void)
 {
   return LIBDIR;
+}
+
+/* Return the Pd search path, as a list of directory names. */
+
+extern pure_expr *pd_path_sl(void)
+{
+  size_t n;
+  pure_expr *xs[1024];
+  t_namelist *p = sys_searchpath;
+  for (n = 0; p && n < 1024; ) {
+    if (p->nl_string) {
+      pure_expr *x = pure_cstring_dup(p->nl_string);
+      if (x) xs[n++] = x;
+    }
+    p = p->nl_next;
+  }
+  return pure_listv(n, xs);
 }
 
 /* Alternate interface to Pd's post() routine. The Pd routine can't be used
