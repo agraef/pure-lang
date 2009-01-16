@@ -3392,15 +3392,53 @@ symbol. However, this makes the `foo' symbol ``precious'', i.e., after such a
 declaration it cannot be used as a local variable anymore. It's usually a good
 idea to avoid that kind of thing, at least for generic symbols, so the above
 solution is preferred in this case.
+.SS Namespaces and Implicit Declarations
+A common pitfall is the implicit declaration of unqualified symbols in
+conjunction with the
+.B namespace
+declaration. For instance, it is tempting to write
+.sp
+.nf
+\fBnamespace\fP bar;
+foo x = x+1;
+.fi
+.sp
+and expect `foo' to become a member of the `bar' namespace. But, assuming that
+`foo' is not already declared or defined elsewhere, it will actually become a
+member of the
+.I default
+namespace instead. This is necessary because in Pure it is impossible to
+distinguish local variables from unqualified function symbols at the lexical
+level, and thus
+.I all
+undeclared and unqualified identifiers are implicitly declared in the default
+namespace. Thus, if you really want the `foo' symbol to become a member of the
+`bar' namespace, you
+.I must
+either declare it explicitly or use a qualfified identifier. That is, either
+.sp
+.nf
+\fBnamespace\fP bar;
+bar::foo x = x+1;
+.fi
+.sp
+or
+.sp
+.nf
+\fBnamespace\fP bar;
+\fBpublic\fP foo;
+foo x = x+1;
+.fi
+.sp
+will tell the compiler about the desired namespace of the symbol.
 .SS With or when?
-A common source of confusion for Haskellers is that Pure provides two
-different constructs to bind local function and variable symbols,
-respectively. This distinction is necessary because Pure does not segregate
-defined functions and constructors, and thus there is no magic to figure out
-whether an equation like `foo x = y' by itself is meant as a definition of a
-function foo with formal parameter x and return value y, or a definition
-binding the local variable x by matching the constructor pattern foo x against
-the value y. The
+Another common source of confusion is that Pure provides two different
+constructs to bind local function and variable symbols, respectively. This
+distinction is necessary because Pure does not segregate defined functions and
+constructors, and thus there is no magic to figure out whether an equation
+like `foo x = y' by itself is meant as a definition of a function foo with
+formal parameter x and return value y, or a definition binding the local
+variable x by matching the constructor pattern foo x against the value y. The
 .B with
 construct does the former,
 .B when
