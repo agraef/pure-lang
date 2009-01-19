@@ -45,33 +45,6 @@ check (f/*0:0101*/,x/*0:011*/) (g@_/*0:10*/ u/*0:11*/) = __failed__ if f/*0:0101
 check _/*0:01*/ z/*0:1*/ = z/*0:1*/;
 format (f/*0:101*/,x/*0:1101*/,y/*0:11101*/,z/*0:1111*/) = str f/*0:101*/+","+print x/*0:1101*/+","+print y/*0:11101*/+","+print z/*0:1111*/;
 format (f/*0:101*/,x/*0:1101*/,z/*0:111*/) = str f/*0:101*/+","+print x/*0:1101*/+","+print z/*0:111*/;
-print x/*0:1*/::double = str x/*0:1*/ if infp x/*0:1*/||nanp x/*0:1*/;
-print x/*0:1*/::double = sprintf double_format 0.0 if x/*0:1*/==0.0;
-print x/*0:1*/::double = sprintf double_format x/*0:1*/;
-print (x/*0:101*/+:y/*0:11*/) = print x/*0:101*/+"+:"+print y/*0:11*/;
-print (x/*0:101*/<:y/*0:11*/) = print x/*0:101*/+"<:"+print y/*0:11*/;
-print x/*0:1*/ = str x/*0:1*/;
-tests = puts "*** UNARY ***"$$do (\f/*0:*/ -> catmap (\x/*0:*/ -> [test (f/*1:*/,x/*0:*/)] {
-  rule #0: x = [test (f,x)]
-  state 0: #0
-	<var> state 1
-  state 1: #0
-}) x {
-  rule #0: f = catmap (\x -> [test (f,x)]) x
-  state 0: #0
-	<var> state 1
-  state 1: #0
-}) f$$puts "*** BINARY ***"$$do (\f/*0:*/ -> catmap (\x/*0:*/ -> [test (f/*1:*/,x/*0:*/)] {
-  rule #0: x = [test (f,x)]
-  state 0: #0
-	<var> state 1
-  state 1: #0
-}) x2 {
-  rule #0: f = catmap (\x -> [test (f,x)]) x2
-  state 0: #0
-	<var> state 1
-  state 1: #0
-}) f2;
 {
   rule #0: check _ z = z if numberp z
   rule #1: check (f,x,y) (g@_ u v) = __failed__ if f===g&&x===u&&y===v
@@ -245,11 +218,40 @@ tests = puts "*** UNARY ***"$$do (\f/*0:*/ -> catmap (\x/*0:*/ -> [test (f/*1:*/
 	<var> state 15
   state 15: #0 #1
 }
+const eps = 1e-08;
+roundz x/*0:1*/::double = if abs x/*0:1*/<1e-08 then 0.0 else x/*0:1*/;
+print x/*0:1*/::double = str x/*0:1*/ if infp x/*0:1*/||nanp x/*0:1*/;
+print x/*0:1*/::double = sprintf double_format (roundz x/*0:1*/);
+print (x/*0:101*/+:y/*0:11*/) = print x/*0:101*/+"+:"+print y/*0:11*/;
+print (x/*0:101*/::double<:y/*0:11*/::double) = print x/*0:101*/+"<:"+print 0.0 if abs x/*0:101*/~==0.0&&roundz x/*0:101*/==0.0&&~infp y/*0:11*/&&~nanp y/*0:11*/;
+print (x/*0:101*/<:y/*0:11*/) = print x/*0:101*/+"<:"+print y/*0:11*/;
+print x/*0:1*/ = str x/*0:1*/;
+tests = puts "*** UNARY ***"$$do (\f/*0:*/ -> catmap (\x/*0:*/ -> [test (f/*1:*/,x/*0:*/)] {
+  rule #0: x = [test (f,x)]
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) x {
+  rule #0: f = catmap (\x -> [test (f,x)]) x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) f$$puts "*** BINARY ***"$$do (\f/*0:*/ -> catmap (\x/*0:*/ -> [test (f/*1:*/,x/*0:*/)] {
+  rule #0: x = [test (f,x)]
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) x2 {
+  rule #0: f = catmap (\x -> [test (f,x)]) x2
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) f2;
 {
   rule #0: print x::double = str x if infp x||nanp x
-  rule #1: print x::double = sprintf double_format 0.0 if x==0.0
-  rule #2: print x::double = sprintf double_format x
-  rule #3: print (x+:y) = print x+"+:"+print y
+  rule #1: print x::double = sprintf double_format (roundz x)
+  rule #2: print (x+:y) = print x+"+:"+print y
+  rule #3: print (x::double<:y::double) = print x+"<:"+print 0.0 if abs x~==0.0&&roundz x==0.0&&~infp y&&~nanp y
   rule #4: print (x<:y) = print x+"<:"+print y
   rule #5: print x = str x
   state 0: #0 #1 #2 #3 #4 #5
@@ -257,14 +259,14 @@ tests = puts "*** UNARY ***"$$do (\f/*0:*/ -> catmap (\x/*0:*/ -> [test (f/*1:*/
 	<var>::double state 2
 	<app> state 3
   state 1: #5
-  state 2: #0 #1 #2 #5
-  state 3: #3 #4 #5
+  state 2: #0 #1 #5
+  state 3: #2 #3 #4 #5
 	<var> state 4
 	<app> state 6
   state 4: #5
 	<var> state 5
   state 5: #5
-  state 6: #3 #4 #5
+  state 6: #2 #3 #4 #5
 	<var> state 7
 	+: state 10
 	<: state 13
@@ -273,16 +275,28 @@ tests = puts "*** UNARY ***"$$do (\f/*0:*/ -> catmap (\x/*0:*/ -> [test (f/*1:*/
   state 8: #5
 	<var> state 9
   state 9: #5
-  state 10: #3 #5
+  state 10: #2 #5
 	<var> state 11
-  state 11: #3 #5
+  state 11: #2 #5
 	<var> state 12
-  state 12: #3 #5
-  state 13: #4 #5
+  state 12: #2 #5
+  state 13: #3 #4 #5
 	<var> state 14
+	<var>::double state 16
   state 14: #4 #5
 	<var> state 15
   state 15: #4 #5
+  state 16: #3 #4 #5
+	<var> state 17
+	<var>::double state 18
+  state 17: #4 #5
+  state 18: #3 #4 #5
+}
+{
+  rule #0: roundz x::double = if abs x<1e-08 then 0.0 else x
+  state 0: #0
+	<var>::double state 1
+  state 1: #0
 }
 {
   rule #0: tests = puts "*** UNARY ***"$$do (\f -> catmap (\x -> [test (f,x)]) x) f$$puts "*** BINARY ***"$$do (\f -> catmap (\x -> [test (f,x)]) x2) f2
@@ -1530,7 +1544,7 @@ nanp,x,0
 (+),3<:1,1L%2L+:1,2.12+:3.52
 (+),3<:1,1L%2L+:3L%4L,2.12+:3.27
 (+),3<:1,3<:1,6.00<:1.00
-(+),3<:1,3<:-2.14,8.01e-16<:2.55
+(+),3<:1,3<:-2.14,0.00<:0.00
 (+),3<:1,3.00<:-3,2.50<:2.14
 (+),3<:1,3.10<:2.50,4.46<:1.77
 (+),3<:1,2L%3L<:2,3.41<:1.17
@@ -1553,7 +1567,7 @@ nanp,x,0
 (+),3<:-2.14,1.20+:-4.30,-0.421+:-6.82
 (+),3<:-2.14,1L%2L+:1,-1.12+:-1.52
 (+),3<:-2.14,1L%2L+:3L%4L,-1.12+:-1.77
-(+),3<:-2.14,3<:1,8.01e-16<:2.55
+(+),3<:-2.14,3<:1,0.00<:0.00
 (+),3<:-2.14,3<:-2.14,6.00<:-2.14
 (+),3<:-2.14,3.00<:-3,5.46<:-2.57
 (+),3<:-2.14,3.10<:2.50,4.16<:-2.98
@@ -3490,13 +3504,13 @@ nanp,x,0
 (^),-1,-1.20,nan
 (^),-1,1L%3L,nan
 (^),-1,(-1L)%4L,nan
-(^),-1,1+:2,-0.00187+:2.29e-19
-(^),-1,-1+:2,-0.00187+:-2.29e-19
-(^),-1,1+:-2,-535.+:6.56e-14
+(^),-1,1+:2,-0.00187+:0.00
+(^),-1,-1+:2,-0.00187+:0.00
+(^),-1,1+:-2,-535.+:0.00
 (^),-1,-1.20+:4.30,-1.10e-06+:7.99e-07
 (^),-1,1.20+:-4.30,-5.95e+05+:-4.33e+05
-(^),-1,1L%2L+:1,2.65e-18+:0.0432
-(^),-1,1L%2L+:3L%4L,5.80e-18+:0.0948
+(^),-1,1L%2L+:1,0.00+:0.0432
+(^),-1,1L%2L+:3L%4L,0.00+:0.0948
 (^),-1,3<:1,0.000360<:-1.19
 (^),-1,3<:-2.14,2.78e+03<:1.19
 (^),-1,3.00<:-3,3.78<:-3.05

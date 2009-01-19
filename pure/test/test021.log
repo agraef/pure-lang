@@ -7,53 +7,6 @@ check (f/*0:0101*/,x/*0:011*/) (g@_/*0:10*/ u/*0:11*/) = __failed__ if f/*0:0101
 check _/*0:01*/ z/*0:1*/ = z/*0:1*/;
 format (f/*0:101*/,x/*0:1101*/,y/*0:11101*/,z/*0:1111*/) = str f/*0:101*/+","+print x/*0:1101*/+","+print y/*0:11101*/+","+print z/*0:1111*/;
 format (f/*0:101*/,x/*0:1101*/,z/*0:111*/) = str f/*0:101*/+","+print x/*0:1101*/+","+print z/*0:111*/;
-print x/*0:1*/::double = str x/*0:1*/ if infp x/*0:1*/||nanp x/*0:1*/;
-print x/*0:1*/::double = sprintf double_format 0.0 if x/*0:1*/==0.0;
-print x/*0:1*/::double = sprintf double_format x/*0:1*/;
-print (x/*0:101*/+:y/*0:11*/) = print x/*0:101*/+"+:"+print y/*0:11*/;
-print (x/*0:101*/<:y/*0:11*/) = print x/*0:101*/+"<:"+print y/*0:11*/;
-print x/*0:1*/ = str x/*0:1*/;
-tests = puts "*** EXACT/INEXACT ***"$$do test (catmap (\op/*0:*/ -> catmap (\a/*0:*/ -> [(op/*1:*/,2,a/*0:*/)] {
-  rule #0: a = [(op,2,a)]
-  state 0: #0
-	<var> state 1
-  state 1: #0
-}) [2+:3,2<:3,2%3] {
-  rule #0: op = catmap (\a -> [(op,2,a)]) [2+:3,2<:3,2%3]
-  state 0: #0
-	<var> state 1
-  state 1: #0
-}) [(+),(-),(*),(%),(/),(^)])$$do test (catmap (\op/*0:*/ -> catmap (\a/*0:*/ -> [(op/*1:*/,a/*0:*/,2)] {
-  rule #0: a = [(op,a,2)]
-  state 0: #0
-	<var> state 1
-  state 1: #0
-}) [2+:3,2<:3,2%3] {
-  rule #0: op = catmap (\a -> [(op,a,2)]) [2+:3,2<:3,2%3]
-  state 0: #0
-	<var> state 1
-  state 1: #0
-}) [(+),(-),(*),(%),(/),(^)])$$puts "*** SYMBOLIC ***"$$do test (catmap (\op/*0:*/ -> catmap (\a/*0:*/ -> [(op/*1:*/,x,a/*0:*/)] {
-  rule #0: a = [(op,x,a)]
-  state 0: #0
-	<var> state 1
-  state 1: #0
-}) [2+:3,2<:3,2%3] {
-  rule #0: op = catmap (\a -> [(op,x,a)]) [2+:3,2<:3,2%3]
-  state 0: #0
-	<var> state 1
-  state 1: #0
-}) [(+),(-),(*),(%),(/),(^)])$$do test (catmap (\op/*0:*/ -> catmap (\a/*0:*/ -> [(op/*1:*/,a/*0:*/,x)] {
-  rule #0: a = [(op,a,x)]
-  state 0: #0
-	<var> state 1
-  state 1: #0
-}) [2+:3,2<:3,2%3] {
-  rule #0: op = catmap (\a -> [(op,a,x)]) [2+:3,2<:3,2%3]
-  state 0: #0
-	<var> state 1
-  state 1: #0
-}) [(+),(-),(*),(%),(/),(^)]);
 {
   rule #0: check _ z = z if numberp z
   rule #1: check (f,x,y) (g@_ u v) = __failed__ if f===g&&x===u&&y===v
@@ -227,11 +180,60 @@ tests = puts "*** EXACT/INEXACT ***"$$do test (catmap (\op/*0:*/ -> catmap (\a/*
 	<var> state 15
   state 15: #0 #1
 }
+const eps = 1e-08;
+roundz x/*0:1*/::double = if abs x/*0:1*/<1e-08 then 0.0 else x/*0:1*/;
+print x/*0:1*/::double = str x/*0:1*/ if infp x/*0:1*/||nanp x/*0:1*/;
+print x/*0:1*/::double = sprintf double_format (roundz x/*0:1*/);
+print (x/*0:101*/+:y/*0:11*/) = print x/*0:101*/+"+:"+print y/*0:11*/;
+print (x/*0:101*/::double<:y/*0:11*/::double) = print x/*0:101*/+"<:"+print 0.0 if abs x/*0:101*/~==0.0&&roundz x/*0:101*/==0.0&&~infp y/*0:11*/&&~nanp y/*0:11*/;
+print (x/*0:101*/<:y/*0:11*/) = print x/*0:101*/+"<:"+print y/*0:11*/;
+print x/*0:1*/ = str x/*0:1*/;
+tests = puts "*** EXACT/INEXACT ***"$$do test (catmap (\op/*0:*/ -> catmap (\a/*0:*/ -> [(op/*1:*/,2,a/*0:*/)] {
+  rule #0: a = [(op,2,a)]
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) [2+:3,2<:3,2%3] {
+  rule #0: op = catmap (\a -> [(op,2,a)]) [2+:3,2<:3,2%3]
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) [(+),(-),(*),(%),(/),(^)])$$do test (catmap (\op/*0:*/ -> catmap (\a/*0:*/ -> [(op/*1:*/,a/*0:*/,2)] {
+  rule #0: a = [(op,a,2)]
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) [2+:3,2<:3,2%3] {
+  rule #0: op = catmap (\a -> [(op,a,2)]) [2+:3,2<:3,2%3]
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) [(+),(-),(*),(%),(/),(^)])$$puts "*** SYMBOLIC ***"$$do test (catmap (\op/*0:*/ -> catmap (\a/*0:*/ -> [(op/*1:*/,x,a/*0:*/)] {
+  rule #0: a = [(op,x,a)]
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) [2+:3,2<:3,2%3] {
+  rule #0: op = catmap (\a -> [(op,x,a)]) [2+:3,2<:3,2%3]
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) [(+),(-),(*),(%),(/),(^)])$$do test (catmap (\op/*0:*/ -> catmap (\a/*0:*/ -> [(op/*1:*/,a/*0:*/,x)] {
+  rule #0: a = [(op,a,x)]
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) [2+:3,2<:3,2%3] {
+  rule #0: op = catmap (\a -> [(op,a,x)]) [2+:3,2<:3,2%3]
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) [(+),(-),(*),(%),(/),(^)]);
 {
   rule #0: print x::double = str x if infp x||nanp x
-  rule #1: print x::double = sprintf double_format 0.0 if x==0.0
-  rule #2: print x::double = sprintf double_format x
-  rule #3: print (x+:y) = print x+"+:"+print y
+  rule #1: print x::double = sprintf double_format (roundz x)
+  rule #2: print (x+:y) = print x+"+:"+print y
+  rule #3: print (x::double<:y::double) = print x+"<:"+print 0.0 if abs x~==0.0&&roundz x==0.0&&~infp y&&~nanp y
   rule #4: print (x<:y) = print x+"<:"+print y
   rule #5: print x = str x
   state 0: #0 #1 #2 #3 #4 #5
@@ -239,14 +241,14 @@ tests = puts "*** EXACT/INEXACT ***"$$do test (catmap (\op/*0:*/ -> catmap (\a/*
 	<var>::double state 2
 	<app> state 3
   state 1: #5
-  state 2: #0 #1 #2 #5
-  state 3: #3 #4 #5
+  state 2: #0 #1 #5
+  state 3: #2 #3 #4 #5
 	<var> state 4
 	<app> state 6
   state 4: #5
 	<var> state 5
   state 5: #5
-  state 6: #3 #4 #5
+  state 6: #2 #3 #4 #5
 	<var> state 7
 	+: state 10
 	<: state 13
@@ -255,16 +257,28 @@ tests = puts "*** EXACT/INEXACT ***"$$do test (catmap (\op/*0:*/ -> catmap (\a/*
   state 8: #5
 	<var> state 9
   state 9: #5
-  state 10: #3 #5
+  state 10: #2 #5
 	<var> state 11
-  state 11: #3 #5
+  state 11: #2 #5
 	<var> state 12
-  state 12: #3 #5
-  state 13: #4 #5
+  state 12: #2 #5
+  state 13: #3 #4 #5
 	<var> state 14
+	<var>::double state 16
   state 14: #4 #5
 	<var> state 15
   state 15: #4 #5
+  state 16: #3 #4 #5
+	<var> state 17
+	<var>::double state 18
+  state 17: #4 #5
+  state 18: #3 #4 #5
+}
+{
+  rule #0: roundz x::double = if abs x<1e-08 then 0.0 else x
+  state 0: #0
+	<var>::double state 1
+  state 1: #0
 }
 {
   rule #0: tests = puts "*** EXACT/INEXACT ***"$$do test (catmap (\op -> catmap (\a -> [(op,2,a)]) [2+:3,2<:3,2%3]) [(+),(-),(*),(%),(/),(^)])$$do test (catmap (\op -> catmap (\a -> [(op,a,2)]) [2+:3,2<:3,2%3]) [(+),(-),(*),(%),(/),(^)])$$puts "*** SYMBOLIC ***"$$do test (catmap (\op -> catmap (\a -> [(op,x,a)]) [2+:3,2<:3,2%3]) [(+),(-),(*),(%),(/),(^)])$$do test (catmap (\op -> catmap (\a -> [(op,a,x)]) [2+:3,2<:3,2%3]) [(+),(-),(*),(%),(/),(^)])
