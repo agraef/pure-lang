@@ -6895,6 +6895,18 @@ pure_expr *reglist(const regex_t *preg, const char *s,
   return x;
 }
 
+#include <llvm/System/DynamicLibrary.h>
+
+extern "C"
+pure_expr *pure_addr(const char *s)
+{
+  void *p = llvm::sys::DynamicLibrary::SearchForAddressOfSymbol(s);
+  if (p)
+    return pure_pointer(p);
+  else
+    return 0;
+}
+
 static inline void
 df(interpreter& interp, const char* s, pure_expr *x)
 {

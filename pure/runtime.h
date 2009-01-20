@@ -860,6 +860,14 @@ void pointer_put_string(void *ptr, const char *x);
 void pointer_put_pointer(void *ptr, void *x);
 void pointer_put_expr(void *ptr, pure_expr *x);
 
+/* Get the address of a C symbol at runtime. The library containing the symbol
+   must already be loaded. Note that this can in fact be any kind of
+   externally visible C symbol, so it's also possible to get the addresses of
+   global variables. The result is returned as a pointer. The function fails
+   if the symbol was not found. */
+
+pure_expr *pure_addr(const char *s);
+
 /* Initialize a bunch of variables with useful system constants. */
 
 void pure_sys_vars(void);

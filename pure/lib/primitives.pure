@@ -427,6 +427,14 @@ const inf = 1.0e307 * 1.0e307; const nan = inf-inf;
 infp x		= case x of x::double = x==inf || x==-inf; _ = 0 end;
 nanp x		= case x of x::double = ~(x==x); _ = 0 end;
 
+/* Get the address of a C symbol at runtime. The library containing the symbol
+   must already be loaded. Note that this can in fact be any kind of
+   externally visible C symbol, so it's also possible to get the addresses of
+   global variables. The result is returned as a pointer. The function fails
+   if the symbol was not found. */
+
+extern expr *pure_addr(char *s) = addr;
+
 /* Direct memory accesses. Use with care ... or else! */
 
 namespace C;
