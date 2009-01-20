@@ -3551,15 +3551,15 @@ void pure_debug(int32_t tag, const char *format, ...)
   va_end(ap);
   static bool init = false;
   if (!init) {
-    cout << "\n(Press 'x' to exit the interpreter, <cr> to continue.)";
+    cout << "\n(Press 'x' to exit the interpreter, <cr> to continue, <eof> to run unattended.)";
     init = true;
   }
   cout << "\n: ";
   char ans;
   cin >> noskipws >> ans;
-  bool bail_out = !cin.good() || ans=='x';
+  bool bail_out = ans=='x';
   while (cin.good() && ans != '\n') cin >> noskipws >> ans;
-  if (!bail_out && !cin.good()) bail_out = true;
+  if (!cin.good()) cout << "\n";
   if (bail_out) exit(0);
 }
 

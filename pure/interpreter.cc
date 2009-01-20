@@ -1242,12 +1242,12 @@ void print_map(ostream& os, const Env *e)
     for (size_t i = 0; i < p.len(); i++) os << p[i];
     os << endl;
   }
-  for (size_t i = 0, n = e->fmap.size(); i < n; i++) {
+  for (size_t i = 0, n = e->fmap.m.size(); i < n; i++) {
     os << blanks << "FMAP #" << i << ":\n";
     indent += 2;
-    map<int32_t,Env>::const_iterator fi;
-    for (fi = e->fmap[i].begin(); fi != e->fmap[i].end(); fi++) {
-      const Env& e = fi->second;
+    EnvMap::const_iterator fi;
+    for (fi = e->fmap.m[i]->begin(); fi != e->fmap.m[i]->end(); fi++) {
+      const Env& e = *fi->second;
       print_map(os, &e);
     }
     indent -= 2;
