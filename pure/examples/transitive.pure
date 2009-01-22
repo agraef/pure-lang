@@ -1,0 +1,88 @@
+// Transitive closure of an infinite graph
+// by Vili Aapro, 2009
+// This file is in the public domain.
+
+// Accessors
+
+key   (k => _)		= k;
+value (_ => x)		= x;
+
+// This could be in the prelude
+
+sum			= foldl (+) 0;
+
+// Some vital equations
+
+x + 0			= x;
+0 + x			= x;
+
+0 * x			= 0;
+
+// Tensor product
+
+vec ps * a		= vec [k => x*a | k=>x = ps];
+a * vec ps		= vec [k => a*x | k=>x = ps];
+
+// Addition
+
+vec ps + vec qs		= vec $ add ps qs with
+  add ps []		= ps;
+  add [] qs		= qs;
+  add (p:ps) (q:qs)	= p : add ps (q:qs) if key p < key q;
+			= q : add (p:ps) qs if key p > key q;
+			= (key p => value p + value q) : rs with
+			    rs = add ps qs& if thunkp ps or thunkp qs;
+			       = add ps qs  otherwise;
+			  end                       if key p == key q;
+end;
+
+// Matrix product
+
+(vec ps) (vec qs)	= mul ps qs with
+  mul _ []		= 0;
+  mul [] _		= 0;
+  mul (p:ps) (q:qs)	= mul ps (q:qs) if key p < key q;
+			= mul (p:ps) qs if key p > key q;
+			= value p * value q + mul ps qs
+			                if key p == key q;
+end;
+
+// Indexing
+
+vec ps ! k		= lookup ps with
+  lookup []		= 0;
+  lookup ((l=>x):ps)	= 0         if k < l;
+			= lookup ps if k > l;
+			= x         if k == l;
+end;
+
+// Flattening of indices (monadic join)
+// Assumes indices to be a free (+)-semigroup, alphabetically ordered.
+// Does not work on an infinite number of rows (row-major).
+
+mjoin (vec ps)		= sum $ map f ps with
+  f (k => vec qs)	= vec $ map (\(l=>x)->k+l=>x) qs;
+end;
+
+// Transitive closure on 2D matrices
+// Assumes scalars to be a "closed semiring"; in particular, addition is to be idempotent.
+// See The Design and Analysis of Computer Algorithms by Aho, Hopcroft, Ullman.
+
+cl 0			= 0;
+cl (vec ps)		= vec $ foldl update [] ps;
+
+update ps (k=>x)	= foldr f [k=>y] ps with
+  f (l=>z) qs		= (l => z + (z!k)*y) : qs;
+end when
+  y			= x + x (vec ps);
+  y			= y + cl (y!k) * y;
+end;
+
+/* Hint for usage:
+  x + (y + z)		= x + y + z;
+  x * (y * z)		= x * y * z;
+  x * (y + z)		= x*y + x*z;
+
+  e x y a = vec [str x => vec [str y => a]];
+  mjoin $ cl $ e 1 2 a + e 2 3 b + e 3 1 c;
+*/
