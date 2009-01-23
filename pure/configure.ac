@@ -22,10 +22,12 @@ PIC=
 DLLEXT=".so"
 AUXLIBS=
 LD_LIB_PATH="LD_LIBRARY_PATH"
+DIFF="diff"
 case "$host" in
     *-*-mingw*)       AUXLIBS="-DLIBGLOB='\"libglob.dll\"' -DLIBREGEX='\"libgnurx-0.dll\"'";
                       LIBS="$LIBS -limagehlp -lpsapi -lmingwex";
-                      LDFLAGS="-Wl,--enable-auto-import"; DLLEXT=".dll";;
+                      LDFLAGS="-Wl,--enable-auto-import"; DLLEXT=".dll";
+                      DIFF="diff --strip-trailing-cr";;
     x86_64-*-linux*)  PIC="-fPIC";;
     *-*-darwin*)      LD_LIB_PATH="DYLD_LIBRARY_PATH";
                       rdynamic=""; shared="-dynamiclib -install_name \$(libdir)/\$(libpure)"; DLLEXT=".dylib";;
@@ -37,6 +39,7 @@ AC_SUBST(PIC)
 AC_SUBST(DLLEXT)
 AC_SUBST(AUXLIBS)
 AC_SUBST(LD_LIB_PATH)
+AC_SUBST(DIFF)
 AC_DEFINE_UNQUOTED(DLLEXT, "${DLLEXT}", [Define to the filename extension for shared libraries.])
 dnl Check for programs.
 AC_PROG_INSTALL
