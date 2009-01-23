@@ -58,12 +58,12 @@ AC_ARG_ENABLE(debug,
 AC_ARG_ENABLE(debug2,
   [  --enable-debug2         enable the maintenance build],
   [case "${enableval}" in
-    yes)  CPPFLAGS="-DDEBUG=2"; CXXFLAGS="-g" ;;
+    yes)  CPPFLAGS="$CPPFLAGS -DDEBUG=2"; CXXFLAGS="-g" ;;
   esac])
 AC_ARG_ENABLE(release,
   [  --enable-release        enable the release build],
   [case "${enableval}" in
-    yes)  CPPFLAGS="-DNDEBUG -DDEBUG=0"; CXXFLAGS="-O3" ;;
+    yes)  CPPFLAGS="$CPPFLAGS -DNDEBUG -DDEBUG=0"; CXXFLAGS="-O3" ;;
   esac])
 sharedlib=yes
 AC_ARG_ENABLE(shared,
@@ -120,16 +120,16 @@ dnl Check for the new-style template arguments of the IRBuilder class.
 AC_LANG_PUSH([C++])
 save_CXXFLAGS=$CXXFLAGS
 CXXFLAGS="`llvm-config --cppflags` $CXXFLAGS"
-AC_CACHE_CHECK([for new LLVM IRBuilder class], [new_builder],
+AC_CACHE_CHECK([for new LLVM IRBuilder class], [pure_cv_new_builder],
   [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
        #include <llvm/Support/IRBuilder.h>
       ], [
         llvm::IRBuilder<> b;
       ])
-    ], [new_builder=yes], [new_builder=no])
+    ], [pure_cv_new_builder=yes], [pure_cv_new_builder=no])
   ])
 CXXFLAGS=$save_CXXFLAGS
-if test "$new_builder" = yes; then
+if test "$pure_cv_new_builder" = yes; then
   # do whatever adjusting you need to do for presence of the library:
   AC_DEFINE(NEW_BUILDER, 1, [Define when building with new-style LLVM IRBuilder template class.])
 fi
