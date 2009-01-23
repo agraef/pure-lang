@@ -312,7 +312,10 @@ PREDEFINED BUILD TYPES
 ---------- ----- -----
 
 For convenience, 'configure' provides some options to set up CPPFLAGS and
-CXXFLAGS for various build types.
+CXXFLAGS for various build types. Please note that most of these options
+assume gcc right now, so if you use another compiler you'll probably have to
+set up compilation flags manually by using the variables described in the
+previous section instead.
 
 Note that, as of Pure 0.3, the default build already includes most
 optimizations (-O2). This build should be ok for most purposes, and has the
@@ -369,6 +372,12 @@ are available on your system. If configure fails to find these then you may
 have to set CPPFLAGS and LDFLAGS accordingly and/or use --enable-gsl to
 forcibly enable GSL support. You can also specify --disable-gsl if you don't
 want/need the GSL matrices, but this isn't recommended.
+
+In general, the build options can be combined freely with the variables
+described in the previous section, but note that --enable-release and
+--enable-debug will always overwrite the value of CXXFLAGS. If this is a
+problem then it is best to just set up the required flags manually using the
+variables described in the previous section.
 
 RUNNING PURE FROM THE SOURCE DIRECTORY
 ------- ---- ---- --- ------ ---------
@@ -471,8 +480,9 @@ please let us know if you want to help with that.
 MAC OSX
 --- ---
 
-Pure works fine on OSX, and a port by Ryan Schmidt exists in the MacPorts
-collection, see http://www.macports.org/.
+Pure works fine on OSX/Intel, and a port by Ryan Schmidt exists in the
+MacPorts collection, see http://www.macports.org/. The current version of the
+interpreter does not appear to work with OSX/PPC; this is being worked on.
 
 Note that with at least some versions of the Apple gcc compiler, with all
 warnings turned on you'll get the (bogus) warning "control reaches end of
@@ -480,6 +490,14 @@ non-void function" a couple of times in interpreter.cc. These are due to a bug
 in older gcc versions (see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=16558),
 but they are harmless and can be ignored. These warnings should also go away
 once Apple upgrades its SDK to a newer gcc version.
+
+FREEBSD
+-------
+
+Currently only the statically compiled version of the interpreter
+(--disabled-shared) is known to work. Linking LLVM into the shared runtime
+library on FreeBSD 7.0 seems to cause undefined behaviour (failed assertions
+in LLVM). If anyone can help resolving this issue, please let us know.
 
 MS WINDOWS
 -- -------
