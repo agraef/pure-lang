@@ -115,8 +115,8 @@ days2mayan d::int = baktun:(katun mod 20):(tun mod 20):(vinal mod 18):(d mod 20)
 mayan2days (baktun::int:katun::int:tun::int:vinal::int:kin::int) = 
    20*(18*(20*(20*baktun+katun)+tun)+vinal)+kin;
 
-/* Calculations in Mayan long count format, e.g. addmayan day1 day2
-   probably not needed, as it is the same as: days2mayan day1+day2; */
+/* Calculations in Mayan long count format, 
+	e.g. addmayan day1 day2 probably not needed, as it is the same as: days2mayan day1+day2; */
 addmayan (baktun1::int:katun1::int:tun1::int:vinal1::int:kin1::int)
    	   (baktun2::int:katun2::int:tun2::int:vinal2::int:kin2::int) =
    baktun:(katun mod 20):(tun mod 20):(vinal mod 18):(kin mod 20) 
@@ -188,25 +188,28 @@ cal = do puts [
     "****************************************************************",
     "*    New Calendar/Clock, Copyright (c) 2008 by Libor Spacek    *",
     "****************************************************************",
-    ((strftime "%X" time) + "\t local time"),
-    ((gmparse utc time) + "\t UTC time")],
-    ((strftime "%x" time) + "\t Gregorian date") $$
+    ((strftime "%X" time) + "\t Local time"),
+    ((gmparse utc time) + "\t UTC time"),
+    ((strftime "%x" time) + "\t Gregorian date today") ] $$
 //   printf "%s   \t UTC Time in h:t:d:s\n"  
 // (str (secs2htds (int (time mod secsinday)))) $$ // seconds since midnight
    printf "%12.4f   \t Julian day\n" jdaytoday $$
    printf "%12.4f   \t Mayan day\n" daytoday $$
-   printf "%s\t Mayan long count date\n" longtoday $$
-   printf "%s\t long countdown to the end of the Mayan Cycle\n" mayanleft $$
-   printf "%9.4f   \t days countdown to the end of the Mayan Cycle\n" nextcycle 
-   $$ printf "%11.8f%%\t completion of the Mayan Cycle\n" complete $$
-   printf "%6.4f   \t days till the next full Moon\n" nextfmoon $$
-   printf "%7.4f   \t days till the next inf. conjunction of Venus\n" nextvenus 
-   $$ do puts [
+   printf "%s\t Mayan long count date today\n" longtoday $$
+   printf "%s\t Long countdown of the Mayan Cycle (MC)\n" mayanleft $$
+   printf "%9.4f   \t MC days remaining till the end on %s\n" 
+	(nextcycle,(str (jdays2greg (int (jdaytoday+nextcycle))))) $$
+   printf "%11.8f%%\t Percentage completion of MC\n" complete $$
+   printf "%6.4f   \t Days till the next full Moon on %s\n" 
+	(nextfmoon,(str (jdays2greg (int (jdaytoday+nextfmoon))))) $$
+   printf "%7.4f   \t Days to inf. conjunction of Venus on %s\n" 
+	(nextvenus,(str (jdays2greg (int (jdaytoday+nextvenus))))) $$ 
+	do puts [
    "****************************************************************",
    "Mayan long count digits (and their maximum values) are:",
    "Baktun(12) : Katun(19) : Tun(19) : Vinal(17) : Kin(19)",
    "Baktun=20Katuns,Katun=20Tuns,Tun=18Vinals,Vinal=20Kins,Kin=1day",
-   "Thus the Mayan Cycle of 13 Baktuns = 1 872 000 days",
+   "Thus the Mayan Cycle (MC) of 13 Baktuns = 1 872 000 days",
    "****************************************************************" ]
    when
    // let's do some calendric calculations
