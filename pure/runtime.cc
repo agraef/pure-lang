@@ -2037,6 +2037,11 @@ bool pure_is_tuplev(pure_expr *x, size_t *_size, pure_expr ***_elems)
      adapted accordingly. */
   pure_expr *u = x, *y, *z;
   size_t size = 1;
+  if (is_void(x)) {
+    if (_size) *_size = 0;
+    if (_elems) *_elems = 0;
+    return true;
+  }
   while (is_pair(u, y, z)) {
     size++;
     u = z;
