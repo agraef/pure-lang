@@ -1,0 +1,40 @@
+
+/* Calling C functions from Pure using libffi. */
+
+using ffi;
+
+/* We don't want to import system.pure, so we declare these here. */
+
+extern void* malloc(size_t size), void free(void* ptr);
+
+/* Convenience function to convert a Pure string to a C char pointer, with
+   conversion to the system encoding and automatic garbage collection. */
+
+bytestr s::string = sentry free p if ~null p when p = byte_cstring s end;
+
+/* Examples: Create call interfaces to the puts and gets functions from the C
+   library and invoke the resulting functions. This works similar to Pure's
+   built-in C interface, but allows you to create the functions at runtime.
+   Also note that there's no automatic marshalling of string values, since
+   libffi only supports generic pointers. Thus you have to do the necessary
+   conversions explicitly. E.g., in the following example, we convert a Pure
+   string to a C pointer using the bytestr function defined above. */
+
+let puts = fcall "puts" FFI_DEFAULT_ABI uint_t pointer_t;
+
+puts (bytestr "Hello, world!");
+
+let gets = fcall "gets" FFI_DEFAULT_ABI pointer_t pointer_t;
+
+puts $ bytestr "Enter a line:";
+puts $ bytestr $ "You typed: " + cstring (gets buf) when buf = malloc 1024 end;
+
+/* Another difference to extern functions is that the functions created with
+   libffi are always invoked in uncurried form, i.e., arguments have to be
+   supplied as a tuple. Here is an example of a function taking zero
+   arguments. */
+
+let rand = fcall "rand" FFI_DEFAULT_ABI uint_t ();
+
+puts $ bytestr "Random numbers:";
+do (puts . bytestr . str) [rand() | i=1..10 ];

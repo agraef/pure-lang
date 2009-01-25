@@ -1,0 +1,41 @@
+
+/* Calling Pure functions from C using libffi. */
+
+/* This is basically the same example as sort.c in the Pure distribution, but
+   redone using libffi closures. It shows how you can create a C callback in
+   Pure without writing a single line of C code. */
+
+using ffi;
+
+// The qsort function from the C library.
+extern void qsort(void *base, size_t nmemb, size_t size, void *cmp);
+// This is provided in the runtime.
+extern expr* pointer_get_expr(void*) = get_expr;
+
+sort p xs = ys
+when
+  /* Convert the input list to a symbolic matrix. */
+  m::matrix = smatrix (matrix xs);
+  /* Convert the Pure comparison callback function to a libffi closure, which
+     is a pointer to a function directly callable from C. */
+  ccmp = fclos cmp FFI_DEFAULT_ABI sint_t (pointer_t,pointer_t);
+  /* Call qsort to do the hard work. Note that we simply pass a pointer to the
+     data (a C vector of Pure expressions) here. The qsort routine sorts this
+     vector in place. */
+  qsort (pointer m) (#m) SIZEOF_POINTER ccmp;
+  /* Convert the result back to a list. */
+  ys = list m;
+end
+with
+  /* qsort calls the cmp function with a pair of pointers, which are actually
+     expression references, so we need to dereference them first. */
+  cmp (u,v) = if p x y then -1 else if p y x then 1 else 0
+  when x = get_expr u; y = get_expr v end;
+end;
+
+// Examples:
+
+sort (>) (0..10);
+
+extern int rand();
+sort (<) [rand|i = 1..10];

@@ -1,0 +1,77 @@
+
+/* ffi.pure: A libffi interface. */
+
+using "lib:ffi";
+
+/* This API enables you to call C functions from Pure and vice versa. It goes
+   beyond Pure's built-in C interface in that it also handles C structs and
+   makes Pure functions callable from C. Moreover, depending on the libffi
+   implementation, it may also be possible to create wrappers for other call
+   interfaces. TODO: Struct support needs to be implemented. */
+
+/* Define the ABIs known to this libffi implementation. The constant
+   FFI_DEFAULT_ABI is always defined and should be appropriate for most
+   purposes. Use 'show -g FFI_*' to get a full list of these. */
+
+namespace C;
+extern void ffi_defs(); ffi_defs;
+namespace;
+
+/* Atomic types. */
+
+extern ffi_type *ffi_type_void_ptr() = void_t;
+extern ffi_type *ffi_type_uint8_ptr() = uint8_t;
+extern ffi_type *ffi_type_sint8_ptr() = sint8_t;
+extern ffi_type *ffi_type_uint16_ptr() = uint16_t;
+extern ffi_type *ffi_type_sint16_ptr() = sint16_t;
+extern ffi_type *ffi_type_uint32_ptr() = uint32_t;
+extern ffi_type *ffi_type_sint32_ptr() = sint32_t;
+extern ffi_type *ffi_type_uint64_ptr() = uint64_t;
+extern ffi_type *ffi_type_sint64_ptr() = sint64_t;
+extern ffi_type *ffi_type_float_ptr() = float_t;
+extern ffi_type *ffi_type_double_ptr() = double_t;
+extern ffi_type *ffi_type_pointer_ptr() = pointer_t;
+extern ffi_type *ffi_type_uchar_ptr() = uchar_t;
+extern ffi_type *ffi_type_schar_ptr() = schar_t;
+extern ffi_type *ffi_type_ushort_ptr() = ushort_t;
+extern ffi_type *ffi_type_sshort_ptr() = sshort_t;
+extern ffi_type *ffi_type_uint_ptr() = uint_t;
+extern ffi_type *ffi_type_sint_ptr() = sint_t;
+extern ffi_type *ffi_type_ulong_ptr() = ulong_t;
+extern ffi_type *ffi_type_slong_ptr() = slong_t;
+
+/* Internal operations. */
+
+namespace C;
+extern ffi_cif *ffi_new_cif(int abi, ffi_type *rtype, ffi_type **atypes);
+extern expr *ffi_c_call(ffi_cif *cif, void *fn, expr *x);
+extern void ffi_free_cif(ffi_cif *cif);
+extern void *ffi_typevect(expr *types);
+extern ffi_closure *ffi_new_closure(ffi_cif *cif, expr *fn);
+extern void ffi_free_closure(ffi_closure *clos, void *code);
+extern void *ffi_closure_addr(ffi_closure *clos);
+namespace;
+
+using namespace C;
+
+/* Interface functions. These take the desired ABI (FFI_DEFAULT_ABI etc.),
+   return type (void_t etc.) and tuple of argument types as arguments. Note
+   that arguments are always passed in uncurried form, as a Pure tuple. */
+
+/* Create a Pure wrapper for a foreign function. */
+
+fcall name::string abi::int rtype::pointer atypes = ffi_c_call cif fn
+if ~null cif && pointerp fn
+when
+  cif = sentry ffi_free_cif $ ffi_new_cif abi rtype (ffi_typevect atypes);
+  fn  = addr name;
+end;
+
+/* Create a foreign wrapper for a Pure function. */
+
+fclos fn abi::int rtype::pointer atypes = ptr if ~null ptr
+when
+  cif  = ffi_new_cif abi rtype (ffi_typevect atypes);
+  clos = ffi_new_closure cif fn;
+  ptr  = sentry (ffi_free_closure clos) $ ffi_closure_addr clos;
+end;
