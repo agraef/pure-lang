@@ -447,6 +447,17 @@ interpreter::~interpreter()
   if (g_interp == this) g_interp = 0;
 }
 
+static inline void
+cdf(interpreter& interp, const char* s, pure_expr *x)
+{
+  try {
+    interp.const_defn(s, x);
+  } catch (err &e) {
+    std::cerr << "warning: " << e.what() << endl;
+  }
+  pure_freenew(x);
+}
+
 void interpreter::init_sys_vars(const string& version,
 				const string& host,
 				const list<string>& argv)
@@ -469,6 +480,23 @@ void interpreter::init_sys_vars(const string& version,
 #ifdef HAVE_GSL
   defn("gsl_version",	pure_cstring_dup(gsl_version));
 #endif
+  // memory sizes
+  interpreter& interp = *this;
+  cdf(interp, "SIZEOF_BYTE",	pure_int(1));
+  cdf(interp, "SIZEOF_SHORT",	pure_int(sizeof(short)));
+  cdf(interp, "SIZEOF_INT",	pure_int(sizeof(int)));
+  cdf(interp, "SIZEOF_LONG",	pure_int(sizeof(long)));
+  cdf(interp, "SIZEOF_LONG_LONG",	pure_int(sizeof(long long)));
+  cdf(interp, "SIZEOF_SIZE_T",	pure_int(sizeof(size_t)));
+  cdf(interp, "SIZEOF_FLOAT",	pure_int(sizeof(float)));
+  cdf(interp, "SIZEOF_DOUBLE",	pure_int(sizeof(double)));
+#ifdef HAVE__COMPLEX_FLOAT
+  cdf(interp, "SIZEOF_COMPLEX_FLOAT",	pure_int(sizeof(_Complex float)));
+#endif
+#ifdef HAVE__COMPLEX_DOUBLE
+  cdf(interp, "SIZEOF_COMPLEX_DOUBLE",	pure_int(sizeof(_Complex double)));
+#endif
+  cdf(interp, "SIZEOF_POINTER",	pure_int(sizeof(void*)));
   g_interp = s_interp;
 }
 
