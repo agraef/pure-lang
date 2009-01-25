@@ -756,11 +756,12 @@ pure_expr *matrix_columns(pure_expr *xs);
 
 pure_expr *matrix_transpose(pure_expr *x);
 
-/* Convert between different types of numeric matrices. */
+/* Convert between different types of numeric and symbolic matrices. */
 
 pure_expr *matrix_double(pure_expr *x);
 pure_expr *matrix_complex(pure_expr *x);
 pure_expr *matrix_int(pure_expr *x);
+pure_expr *matrix_symbolic(pure_expr *x);
 
 /* Extract the real and imaginary parts of a numeric matrix. If the input is a
    complex matrix, the result is a new double matrix. Otherwise the type of

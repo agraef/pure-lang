@@ -5196,6 +5196,19 @@ pure_expr *matrix_double(pure_expr *x)
 {
 #ifdef HAVE_GSL
   switch (x->tag) {
+  case EXPR::MATRIX: {
+    gsl_matrix_symbolic *m1 = (gsl_matrix_symbolic*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2;
+    for (size_t i = 0; i < n; i++)
+      for (size_t j = 0; j < m; j++)
+	if (m1->data[i*m1->tda+j]->tag != EXPR::DBL)
+	  return 0;
+    gsl_matrix *m2 = create_double_matrix(n, m);
+    for (size_t i = 0; i < n; i++)
+      for (size_t j = 0; j < m; j++)
+	m2->data[i*m2->tda+j] = m1->data[i*m1->tda+j]->data.d;
+    return pure_double_matrix(m2);
+  }
   case EXPR::DMATRIX:
     return x;
   case EXPR::IMATRIX: {
@@ -5233,6 +5246,24 @@ pure_expr *matrix_complex(pure_expr *x)
 {
 #ifdef HAVE_GSL
   switch (x->tag) {
+  case EXPR::MATRIX: {
+    gsl_matrix_symbolic *m1 = (gsl_matrix_symbolic*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2;
+    for (size_t i = 0; i < n; i++)
+      for (size_t j = 0; j < m; j++)
+	if (!is_complex(m1->data[i*m1->tda+j]))
+	  return 0;
+    gsl_matrix_complex *m2 = create_complex_matrix(n, m);
+    double a = 0.0, b = 0.0;
+    for (size_t i = 0; i < n; i++)
+      for (size_t j = 0; j < m; j++) {
+	size_t k = 2*(i*m2->tda+j);
+	get_complex(m1->data[i*m1->tda+j], a, b);
+	m2->data[k] = a;
+	m2->data[k+1] = b;
+      }
+    return pure_complex_matrix(m2);
+  }
   case EXPR::DMATRIX: {
     gsl_matrix *m1 = (gsl_matrix*)x->data.mat.p;
     size_t n = m1->size1, m = m1->size2;
@@ -5272,6 +5303,19 @@ pure_expr *matrix_int(pure_expr *x)
 {
 #ifdef HAVE_GSL
   switch (x->tag) {
+  case EXPR::MATRIX: {
+    gsl_matrix_symbolic *m1 = (gsl_matrix_symbolic*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2;
+    for (size_t i = 0; i < n; i++)
+      for (size_t j = 0; j < m; j++)
+	if (m1->data[i*m1->tda+j]->tag != EXPR::INT)
+	  return 0;
+    gsl_matrix_int *m2 = create_int_matrix(n, m);
+    for (size_t i = 0; i < n; i++)
+      for (size_t j = 0; j < m; j++)
+	m2->data[i*m2->tda+j] = m1->data[i*m1->tda+j]->data.i;
+    return pure_int_matrix(m2);
+  }
   case EXPR::DMATRIX: {
     gsl_matrix *m1 = (gsl_matrix*)x->data.mat.p;
     size_t n = m1->size1, m = m1->size2;
@@ -5295,6 +5339,52 @@ pure_expr *matrix_int(pure_expr *x)
 	m2->data[k+1] = (int)m1->data[l+1];
       }
     return pure_int_matrix(m2);
+  }
+  default:
+    return 0;
+  }
+#else
+  return 0;
+#endif
+}
+
+extern "C"
+pure_expr *matrix_symbolic(pure_expr *x)
+{
+#ifdef HAVE_GSL
+  switch (x->tag) {
+  case EXPR::MATRIX:
+    return x;
+  case EXPR::DMATRIX: {
+    gsl_matrix *m1 = (gsl_matrix*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2;
+    gsl_matrix_symbolic *m2 = create_symbolic_matrix(n, m);
+    for (size_t i = 0; i < n; i++)
+      for (size_t j = 0; j < m; j++)
+	m2->data[i*m2->tda+j] = pure_double(m1->data[i*m1->tda+j]);
+    return pure_symbolic_matrix(m2);
+  }
+  case EXPR::IMATRIX: {
+    gsl_matrix_int *m1 = (gsl_matrix_int*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2;
+    gsl_matrix_symbolic *m2 = create_symbolic_matrix(n, m);
+    for (size_t i = 0; i < n; i++)
+      for (size_t j = 0; j < m; j++)
+	m2->data[i*m2->tda+j] = pure_int(m1->data[i*m1->tda+j]);
+    return pure_symbolic_matrix(m2);
+  }
+  case EXPR::CMATRIX: {
+    gsl_matrix_complex *m1 = (gsl_matrix_complex*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2;
+    gsl_matrix_symbolic *m2 = create_symbolic_matrix(n, m);
+    interpreter& interp = *interpreter::g_interp;
+    symbol &rect = interp.symtab.complex_rect_sym();
+    for (size_t i = 0; i < n; i++)
+      for (size_t j = 0; j < m; j++) {
+	size_t l = 2*(i*m1->tda+j);
+	m2->data[i*m2->tda+j] = make_complex2(rect, m1->data[l], m1->data[l+1]);
+      }
+    return pure_symbolic_matrix(m2);
   }
   default:
     return 0;

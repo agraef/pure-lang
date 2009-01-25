@@ -32,7 +32,7 @@ cmatrixp x	= case x of _::matrix = matrix_type x==2; _ = 0 end;
 imatrixp x	= case x of _::matrix = matrix_type x==3; _ = 0 end;
 
 /* The nmatrixp predicate checks for any kind of numeric (double, complex or
-   int) matrix, smatrix for symbolic matrices. */
+   int) matrix, smatrixp for symbolic matrices. */
 
 nmatrixp x	= case x of _::matrix = matrix_type x>=1; _ = 0 end;
 smatrixp x	= case x of _::matrix = matrix_type x==0; _ = 0 end;
@@ -248,18 +248,19 @@ extern expr* matrix_diagm(expr* x) = diagmat;
 extern expr* matrix_subdiagm(expr* x, int k) = subdiagmat;
 extern expr* matrix_supdiagm(expr* x, int k) = supdiagmat;
 
-/* Matrix conversions. These convert between different types of numeric
-   matrices. You can also extract the real and imaginary parts and compute the
-   conjugate of a (complex) matrix. */
+/* Matrix conversions. These convert between different types of numeric and
+   symbolic matrices. You can also extract the real and imaginary parts and
+   compute the conjugate of a (complex) matrix. */
 
 namespace C;
 extern expr* matrix_double(expr *x), expr* matrix_complex(expr *x),
-  expr* matrix_int(expr *x);
+  expr* matrix_int(expr *x), expr* matrix_symbolic(expr *x);
 namespace;
 
-dmatrix x::matrix	= matrix_double x if nmatrixp x;
-imatrix x::matrix	= matrix_int x if nmatrixp x;
-cmatrix x::matrix	= matrix_complex x if nmatrixp x;
+dmatrix x::matrix	= y if matrixp y when y = matrix_double x end;
+imatrix x::matrix	= y if matrixp y when y = matrix_int x end;
+cmatrix x::matrix	= y if matrixp y when y = matrix_complex x end;
+smatrix x::matrix	= matrix_symbolic x;
 
 namespace C;
 extern expr* matrix_re(expr *x), expr* matrix_im(expr *x);
