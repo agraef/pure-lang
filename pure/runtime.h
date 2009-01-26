@@ -756,7 +756,9 @@ pure_expr *matrix_columns(pure_expr *xs);
 
 pure_expr *matrix_transpose(pure_expr *x);
 
-/* Convert between different types of numeric and symbolic matrices. */
+/* Convert between different types of numeric and symbolic matrices. Also
+   convert lists to rowvectors, if the elements are already of the
+   corresponding type. */
 
 pure_expr *matrix_double(pure_expr *x);
 pure_expr *matrix_complex(pure_expr *x);

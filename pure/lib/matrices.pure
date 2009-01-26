@@ -249,18 +249,22 @@ extern expr* matrix_subdiagm(expr* x, int k) = subdiagmat;
 extern expr* matrix_supdiagm(expr* x, int k) = supdiagmat;
 
 /* Matrix conversions. These convert between different types of numeric and
-   symbolic matrices. You can also extract the real and imaginary parts and
-   compute the conjugate of a (complex) matrix. */
+   symbolic matrices. You can also convert a list directly to a rowvector;
+   this is usually much faster than the generic 'matrix' operation, but
+   requires that the elements already are of the appropriate type. */
 
 namespace C;
 extern expr* matrix_double(expr *x), expr* matrix_complex(expr *x),
   expr* matrix_int(expr *x), expr* matrix_symbolic(expr *x);
 namespace;
 
-dmatrix x::matrix	= y if matrixp y when y = matrix_double x end;
-imatrix x::matrix	= y if matrixp y when y = matrix_int x end;
-cmatrix x::matrix	= y if matrixp y when y = matrix_complex x end;
-smatrix x::matrix	= matrix_symbolic x;
+dmatrix x		= y if matrixp y when y = matrix_double x end;
+imatrix x		= y if matrixp y when y = matrix_int x end;
+cmatrix x		= y if matrixp y when y = matrix_complex x end;
+smatrix x		= y if matrixp y when y = matrix_symbolic x end;
+
+/* Extract the real and imaginary parts and compute the conjugate of a numeric
+   matrix. */
 
 namespace C;
 extern expr* matrix_re(expr *x), expr* matrix_im(expr *x);

@@ -5233,8 +5233,23 @@ pure_expr *matrix_double(pure_expr *x)
       }
     return pure_double_matrix(m2);
   }
-  default:
-    return 0;
+  default: {
+    size_t n;
+    pure_expr **xs;
+    if (pure_is_listv(x, &n, &xs)) {
+      for (size_t i = 0; i < n; i++)
+	if (xs[i]->tag != EXPR::DBL) {
+	  free(xs);
+	  return 0;
+	}
+      gsl_matrix *m2 = create_double_matrix(1, n);
+      for (size_t i = 0; i < n; i++)
+	m2->data[i] = xs[i]->data.d;
+      if (xs) free(xs);
+      return pure_double_matrix(m2);
+    } else
+      return 0;
+  }
   }
 #else
   return 0;
@@ -5290,8 +5305,28 @@ pure_expr *matrix_complex(pure_expr *x)
   }
   case EXPR::CMATRIX:
     return x;
-  default:
-    return 0;
+  default: {
+    size_t n;
+    pure_expr **xs;
+    if (pure_is_listv(x, &n, &xs)) {
+      for (size_t i = 0; i < n; i++)
+	if (!is_complex(xs[i])) {
+	  free(xs);
+	  return 0;
+	}
+      gsl_matrix_complex *m2 = create_complex_matrix(1, n);
+      double a = 0.0, b = 0.0;
+      for (size_t i = 0; i < n; i++) {
+	size_t k = 2*i;
+	get_complex(xs[i], a, b);
+	m2->data[k] = a;
+	m2->data[k+1] = b;
+      }
+      if (xs) free(xs);
+      return pure_complex_matrix(m2);
+    } else
+      return 0;
+  }
   }
 #else
   return 0;
@@ -5340,8 +5375,23 @@ pure_expr *matrix_int(pure_expr *x)
       }
     return pure_int_matrix(m2);
   }
-  default:
-    return 0;
+  default: {
+    size_t n;
+    pure_expr **xs;
+    if (pure_is_listv(x, &n, &xs)) {
+      for (size_t i = 0; i < n; i++)
+	if (xs[i]->tag != EXPR::INT) {
+	  free(xs);
+	  return 0;
+	}
+      gsl_matrix_int *m2 = create_int_matrix(1, n);
+      for (size_t i = 0; i < n; i++)
+	m2->data[i] = xs[i]->data.i;
+      if (xs) free(xs);
+      return pure_int_matrix(m2);
+    } else
+      return 0;
+  }
   }
 #else
   return 0;
@@ -5386,8 +5436,19 @@ pure_expr *matrix_symbolic(pure_expr *x)
       }
     return pure_symbolic_matrix(m2);
   }
-  default:
-    return 0;
+  default: {
+    size_t n;
+    pure_expr **xs;
+    if (pure_is_listv(x, &n, &xs)) {
+      gsl_matrix_symbolic *m2 = create_symbolic_matrix(1, n);
+      if (xs) {
+	memcpy(m2->data, xs, n*sizeof(pure_expr*));
+	free(xs);
+      }
+      return pure_symbolic_matrix(m2);
+    } else
+      return 0;
+  }
   }
 #else
   return 0;
