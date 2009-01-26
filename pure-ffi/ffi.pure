@@ -59,8 +59,10 @@ extern ffi_closure *ffi_new_closure(ffi_cif *cif, expr *fn);
 extern void ffi_free_closure(ffi_closure *clos, void *code);
 extern void *ffi_closure_addr(ffi_closure *clos);
 extern void *ffi_typevect(expr *types);
-extern ffi_type *ffi_new_struct(ffi_type **elements);
-extern void ffi_free_struct(ffi_type *type);
+extern ffi_type *ffi_new_struct_t(ffi_type **elements);
+extern void ffi_free_struct_t(ffi_type *type);
+extern void *ffi_new_struct(ffi_type *type, expr *data);
+extern void ffi_free_struct(ffi_type *type, void *data);
 namespace;
 
 using namespace C;
@@ -89,12 +91,28 @@ end;
 
 /* Create a struct type. */
 
-struct_t elements = sentry ffi_free_struct type if ~null type
-when type = ffi_new_struct (ffi_typevect elements) end;
+struct_t elements = sentry ffi_free_struct_t type if ~null type
+when type = ffi_new_struct_t (ffi_typevect elements) end;
 
 /* Retrieve information about a type. This returns a tuple
    (size,align,type,...) with information about the size, alignment and type
-   number. In the case of struct types (see above), the remaining elements are
-   the descriptors of the element types. */
+   number. In the case of struct types (type == FFI_TYPE_STRUCT), the
+   remaining elements are the descriptors of the element types. */
 
 extern expr *ffi_type_info(ffi_type *type) = type_info;
+
+/* Create a C struct from a tuple of its members, suitable to be passed as a
+   value parameter in fcall and fclos. The result is a "cooked" pointer which
+   is freed automatically when garbage-collected, so you must not free it
+   manually. */
+
+struct type::pointer data = sentry (ffi_free_struct type) p if ~null p
+when p = ffi_new_struct type data end;
+
+/* Get the member data and pointers of a struct. The result is a tuple with
+   the data elements or the (raw) pointers to the data, respectively. The
+   latter can be used to access and change the fields of the struct using the
+   appropriate pointer operations in the prelude. */
+
+extern expr *ffi_struct_data(ffi_type *type, void *data) = struct_data;
+extern expr *ffi_struct_pointers(ffi_type *type, void *data) = struct_pointers;

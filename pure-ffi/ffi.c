@@ -180,7 +180,7 @@ static void ffi_unref_type(ffi_type *type)
     free(type);
 }
 
-ffi_type *ffi_new_struct(ffi_type **elements)
+ffi_type *ffi_new_struct_t(ffi_type **elements)
 {
   ffi_type1 *type;
   ffi_type **t;
@@ -196,7 +196,7 @@ ffi_type *ffi_new_struct(ffi_type **elements)
   return (ffi_type*)type;
 }
 
-void ffi_free_struct(ffi_type *type)
+void ffi_free_struct_t(ffi_type *type)
 {
   ffi_unref_type(type);
 }
@@ -232,8 +232,117 @@ pure_expr *ffi_type_info(ffi_type *type)
   return x;
 }
 
+static void *ffi_to_c(void *v, ffi_type *type, pure_expr *x);
+static pure_expr *ffi_from_cvect(ffi_cif *cif, void **v);
+
+static void offsets(void *data, unsigned n, ffi_type **types, void **v)
+{
+  /* Compute the member offsets in a struct relative to the given base
+     pointer. */
+  size_t ofs = 0;
+  unsigned i;
+  for (i = 0; i < n; i++) {
+    unsigned short a = ofs % types[i]->alignment;
+    if (a != 0) ofs += types[i]->alignment-a;
+    v[i] = data+ofs;
+    ofs += types[i]->size;
+  }
+}
+
+void *ffi_new_struct(ffi_type *type, pure_expr *x)
+{
+  ffi_type **t;
+  unsigned nelems = 0;
+  void **v = 0, *data = 0;
+  pure_expr **xs = 0;
+  size_t i, n;
+  if (type->type != FFI_TYPE_STRUCT) return 0;
+  for (t = type->elements; *t; t++)
+    nelems++;
+  if (type->alignment == 0) {
+    /* Type information hasn't been filled in yet; do a dummy call to
+       ffi_prep_cif to do that now. */
+    ffi_cif cif;
+    if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, nelems,
+		     &ffi_type_void, type->elements) != FFI_OK)
+      return 0;
+  }
+  if (!pure_is_tuplev(x, &n, &xs) || n != nelems) goto err;
+  data = malloc(type->size);
+  assert(type->size == 0 || data);
+  v = malloc(nelems*sizeof(void*));
+  assert(nelems == 0 || v);
+  offsets(data, nelems, type->elements, v);
+  for (i = 0; i < n; i++) {
+    if (type->elements[i]->type == FFI_TYPE_VOID)
+      continue;
+    assert(type->elements[i]->size == 0 || v[i] != 0);
+    if (!ffi_to_c(v[i], type->elements[i], xs[i])) {
+      free(data);
+      data = 0;
+      goto err;
+    }
+  }
+ err:
+  if (v) free(v);
+  if (xs) free(xs);
+  return data;
+}
+
+void ffi_free_struct(ffi_type *type, void *data)
+{
+  if (type && data) free(data);
+}
+
+pure_expr *ffi_struct_data(ffi_type *type, void *data)
+{
+  ffi_cif cif;
+  ffi_type **t;
+  unsigned nelems = 0;
+  void **v;
+  pure_expr *x;
+  if (type->type != FFI_TYPE_STRUCT) return 0;
+  for (t = type->elements; *t; t++)
+    nelems++;
+  if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, nelems,
+		   &ffi_type_void, type->elements) != FFI_OK)
+    return 0;
+  v = malloc(nelems*sizeof(void*));
+  assert(nelems == 0 || v);
+  offsets(data, nelems, type->elements, v);
+  x = ffi_from_cvect(&cif, v);
+  if (v) free(v);
+  return x;
+}
+
+pure_expr *ffi_struct_pointers(ffi_type *type, void *data)
+{
+  ffi_cif cif;
+  ffi_type **t;
+  unsigned i, nelems = 0;
+  void **v;
+  pure_expr *x, **xs;
+  if (type->type != FFI_TYPE_STRUCT) return 0;
+  for (t = type->elements; *t; t++)
+    nelems++;
+  if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, nelems,
+		   &ffi_type_void, type->elements) != FFI_OK)
+    return 0;
+  v = malloc(nelems*sizeof(void*));
+  assert(nelems == 0 || v);
+  xs = malloc(nelems*sizeof(pure_expr*));
+  assert(nelems == 0 || xs);
+  offsets(data, nelems, type->elements, v);
+  for (i = 0; i < nelems; i++)
+    xs[i] = pure_pointer(v[i]);
+  x = pure_tuplev(nelems, xs);
+  if (v) free(v);
+  if (xs) free(xs);
+  return x;
+}
+
 /* Construct a 0-terminated type vector to be passed as the atypes argument of
-   ffi_new_cif and ffi_new_struct. */
+   ffi_new_cif and ffi_new_struct_t. */
 
 ffi_type **ffi_typevect(pure_expr *types)
 {
@@ -393,7 +502,13 @@ static void *ffi_to_c(void *v, ffi_type *type, pure_expr *x)
     }
     break;
   case FFI_TYPE_STRUCT:
-    /* TODO */
+    /* This is supposed to be a pointer created with ffi_new_struct, which
+       gets passed by value. */
+    if (pure_is_pointer(x, &p))
+      memcpy(v, p, type->size);
+    else
+      return 0;
+    break;
   default:
     return 0;
   }
@@ -431,7 +546,9 @@ static pure_expr *ffi_from_c(ffi_type *type, void *v)
     else
       return pure_pointer(*(void**)v);
   case FFI_TYPE_STRUCT:
-    /* TODO */
+    /* FIXME: We should set ffi_free_struct as a sentry here, to prevent
+       memory leaks. */
+    return pure_pointer(v);
   default:
     return 0;
   }
@@ -509,7 +626,7 @@ pure_expr *ffi_c_call(ffi_cif *cif, void (*fn)(), pure_expr *x)
   ffi_call(cif, fn, r, v);
   y = ffi_from_c(cif->rtype, r);
  err:
-  if (r) free(r);
+  if (r && cif->rtype->type != FFI_TYPE_STRUCT) free(r);
   if (v) {
     unsigned i;
     for (i = 0; i < cif->nargs; i++) {
