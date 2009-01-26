@@ -187,6 +187,43 @@ void ffi_free_struct(ffi_type *type)
   ffi_unref_type(type);
 }
 
+/* Construct a 0-terminated type vector to be passed as the atypes argument of
+   ffi_new_cif and ffi_new_struct. */
+
+ffi_type **ffi_typevect(pure_expr *types)
+{
+  void *p;
+  ffi_type **v = 0;
+  size_t i, j, n;
+  pure_expr **xs;
+  if (pure_is_tuplev(types, &n, &xs)) {
+    int32_t tag;
+    if (n == 0) {
+      v = malloc(sizeof(ffi_type*));
+      assert(v != 0);
+      v[0] = 0;
+      return v;
+    }
+    tag = xs[0]->tag;
+    for (i = 1; i < n; i++)
+      if (xs[i]->tag != tag) goto err;
+  } else
+    return 0;
+  if (pure_is_pointer(xs[0], &p)) {
+    v = malloc((n+1)*sizeof(ffi_type*));
+    assert(v != 0);
+    v[n] = 0;
+    v[0] = (ffi_type*)p;
+    for (i = 1; i < n; i++) {
+      pure_is_pointer(xs[i], &p);
+      v[i] = (ffi_type*)p;
+    }
+  }
+ err:
+  free(xs);
+  return v;
+}
+
 /* Construct a call interface. */
 
 void ffi_free_cif(ffi_cif *cif)
@@ -224,43 +261,6 @@ ffi_cif *ffi_new_cif(ffi_abi abi, ffi_type *rtype, ffi_type **atypes)
     ffi_free_cif(cif);
     return 0;
   }
-}
-
-/* Construct a 0-terminated type vector to be passed as the atypes argument of
-   ffi_new_cif. */
-
-ffi_type **ffi_typevect(pure_expr *types)
-{
-  void *p;
-  ffi_type **v = 0;
-  size_t i, j, n;
-  pure_expr **xs;
-  if (pure_is_tuplev(types, &n, &xs)) {
-    int32_t tag;
-    if (n == 0) {
-      v = malloc(sizeof(ffi_type*));
-      assert(v != 0);
-      v[0] = 0;
-      return v;
-    }
-    tag = xs[0]->tag;
-    for (i = 1; i < n; i++)
-      if (xs[i]->tag != tag) goto err;
-  } else
-    return 0;
-  if (pure_is_pointer(xs[0], &p)) {
-    v = malloc((n+1)*sizeof(ffi_type*));
-    assert(v != 0);
-    v[n] = 0;
-    v[0] = (ffi_type*)p;
-    for (i = 1; i < n; i++) {
-      pure_is_pointer(xs[i], &p);
-      v[i] = (ffi_type*)p;
-    }
-  }
- err:
-  free(xs);
-  return v;
 }
 
 /* Marshalling between Pure and C data. */
