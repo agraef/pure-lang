@@ -5,12 +5,11 @@
 #include <ffi.h>
 #include <pure/runtime.h>
 
-/* Platform-specific ABI constants. This is probably incomplete; the values
-   listed below were gleaned from the ffitarget.h file on a Linux system. Add
-   other values as needed. */
-
 void ffi_defs(void)
 {
+  /* Platform-specific ABI constants. This is probably incomplete; the
+     values listed below were gleaned from the ffitarget.h file on a Linux
+     system. Add other values as required. */
   pure_def(pure_sym("FFI_DEFAULT_ABI"), pure_int(FFI_DEFAULT_ABI));
 #ifdef X86_WIN32
   pure_def(pure_sym("FFI_SYSV"), pure_int(FFI_SYSV));
@@ -21,6 +20,21 @@ void ffi_defs(void)
   pure_def(pure_sym("FFI_UNIX64"), pure_int(FFI_UNIX64));
 #endif
 #endif
+  /* Type identifiers. */
+  pure_def(pure_sym("FFI_TYPE_VOID"), pure_int(FFI_TYPE_VOID));
+  pure_def(pure_sym("FFI_TYPE_INT"), pure_int(FFI_TYPE_INT));
+  pure_def(pure_sym("FFI_TYPE_FLOAT"), pure_int(FFI_TYPE_FLOAT));
+  pure_def(pure_sym("FFI_TYPE_DOUBLE"), pure_int(FFI_TYPE_DOUBLE));
+  pure_def(pure_sym("FFI_TYPE_UINT8"), pure_int(FFI_TYPE_UINT8));
+  pure_def(pure_sym("FFI_TYPE_SINT8"), pure_int(FFI_TYPE_SINT8));
+  pure_def(pure_sym("FFI_TYPE_UINT16"), pure_int(FFI_TYPE_UINT16));
+  pure_def(pure_sym("FFI_TYPE_SINT16"), pure_int(FFI_TYPE_SINT16));
+  pure_def(pure_sym("FFI_TYPE_UINT32"), pure_int(FFI_TYPE_UINT32));
+  pure_def(pure_sym("FFI_TYPE_SINT32"), pure_int(FFI_TYPE_SINT32));
+  pure_def(pure_sym("FFI_TYPE_UINT64"), pure_int(FFI_TYPE_UINT64));
+  pure_def(pure_sym("FFI_TYPE_SINT64"), pure_int(FFI_TYPE_SINT64));
+  pure_def(pure_sym("FFI_TYPE_STRUCT"), pure_int(FFI_TYPE_STRUCT));
+  pure_def(pure_sym("FFI_TYPE_POINTER"), pure_int(FFI_TYPE_POINTER));
 }
 
 /* Atomic types. We add our own string (char*) type to ease marshalling of
@@ -185,6 +199,37 @@ ffi_type *ffi_new_struct(ffi_type **elements)
 void ffi_free_struct(ffi_type *type)
 {
   ffi_unref_type(type);
+}
+
+pure_expr *ffi_type_info(ffi_type *type)
+{
+  unsigned nelems = 0, i;
+  ffi_type **t;
+  pure_expr **xs, *x;
+  if (type->type == FFI_TYPE_STRUCT) {
+    if (type->alignment == 0) {
+      /* Type information hasn't been filled in yet; do a dummy call to
+	 ffi_prep_cif to do that now. */
+      ffi_cif cif;
+      ffi_prep_cif(&cif, FFI_DEFAULT_ABI, 0, type, 0);
+    }
+    /* Count the element types. */
+    for (t = type->elements; *t; t++)
+      nelems++;
+  }
+  xs = malloc((3+nelems)*sizeof(pure_expr*));
+  assert(xs);
+  /* type->size is actually a size_t field, so we should actually use a bigint
+     here. But that seems overkill. */
+  xs[0] = pure_int(type->size);
+  xs[1] = pure_int(type->alignment);
+  xs[2] = pure_int(type->type);
+  if (type->type == FFI_TYPE_STRUCT)
+    for (i = 0; i < nelems; i++)
+      xs[3+i] = pure_pointer(ffi_ref_type(type->elements[i]));
+  x = pure_tuplev(3+nelems, xs);
+  free(xs);
+  return x;
 }
 
 /* Construct a 0-terminated type vector to be passed as the atypes argument of

@@ -9,9 +9,11 @@ using "lib:ffi";
    implementation, it may also be possible to create wrappers for other call
    interfaces. TODO: Struct support needs to be implemented. */
 
-/* Define the ABIs known to this libffi implementation. The constant
-   FFI_DEFAULT_ABI is always defined and should be appropriate for most
-   purposes. Use 'show -g FFI_*' to get a full list of these. */
+/* Define the ABIs and the type numbers known to this libffi implementation.
+   The constant FFI_DEFAULT_ABI is always defined and should be appropriate
+   for most purposes. The type numbers FFI_TYPE_VOID etc. are useful with the
+   type_info function, see below. Use 'show -g FFI_*' to get a full list of
+   these constants. */
 
 namespace C;
 extern void ffi_defs(); ffi_defs;
@@ -89,3 +91,10 @@ end;
 
 struct_t elements = sentry ffi_free_struct type if ~null type
 when type = ffi_new_struct (ffi_typevect elements) end;
+
+/* Retrieve information about a type. This returns a tuple
+   (size,align,type,...) with information about the size, alignment and type
+   number. In the case of struct types (see above), the remaining elements are
+   the descriptors of the element types. */
+
+extern expr *ffi_type_info(ffi_type *type) = type_info;
