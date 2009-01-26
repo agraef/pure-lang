@@ -3,38 +3,30 @@
 
 using ffi;
 
-/* We don't want to import system.pure, so we declare these here. */
+/* Safe malloc with automatic finalization. */
 
 extern void* malloc(size_t size), void free(void* ptr);
-
-/* Convenience function to convert a Pure string to a C char pointer, with
-   conversion to the system encoding and automatic garbage collection. */
-
-bytestr s::string = sentry free p if ~null p when p = byte_cstring s end;
+smalloc size::int = sentry free p if ~null p when p = malloc size end;
 
 /* Examples: Create call interfaces to the puts and gets functions from the C
    library and invoke the resulting functions. This works similar to Pure's
-   built-in C interface, but allows you to create the functions at runtime.
-   Also note that there's no automatic marshalling of string values, since
-   libffi only supports generic pointers. Thus you have to do the necessary
-   conversions explicitly. E.g., in the following example, we convert a Pure
-   string to a C pointer using the bytestr function defined above. */
+   built-in C interface, but allows you to create the functions at runtime. */
 
-let puts = fcall "puts" FFI_DEFAULT_ABI uint_t pointer_t;
+let puts = fcall "puts" FFI_DEFAULT_ABI uint_t string_t;
 
-puts (bytestr "Hello, world!");
+puts "Hello, world!";
 
-let gets = fcall "gets" FFI_DEFAULT_ABI pointer_t pointer_t;
+let gets = fcall "gets" FFI_DEFAULT_ABI string_t pointer_t;
 
-puts $ bytestr "Enter a line:";
-puts $ bytestr $ "You typed: " + cstring (gets buf) when buf = malloc 1024 end;
+puts "Enter a line:";
+puts $ "You typed: " + gets (smalloc 1024);
 
-/* Another difference to extern functions is that the functions created with
+/* One notable difference to extern functions is that functions created with
    libffi are always invoked in uncurried form, i.e., arguments have to be
-   supplied as a tuple. Here is an example of a function taking zero
-   arguments. */
+   supplied as a tuple. Here is an example of a function which takes two
+   double arguments. */
 
-let rand = fcall "rand" FFI_DEFAULT_ABI uint_t ();
+let fmod = fcall "fmod" FFI_DEFAULT_ABI double_t (double_t,double_t);
+let res = fmod (5.3,0.7);
 
-puts $ bytestr "Random numbers:";
-do (puts . bytestr . str) [rand() | i=1..10 ];
+puts $ "fmod (5.3,0.7) = " + str res;

@@ -17,7 +17,13 @@ namespace C;
 extern void ffi_defs(); ffi_defs;
 namespace;
 
-/* Atomic types. */
+/* Atomic types. Note that the string_t type is a special variant of pointer_t
+   which triggers automatic marshalling from/to Pure string values, including
+   automatic conversions to/from the system encoding. This should be used only
+   for const char* values which are not to be modified by the caller. Also be
+   careful when using string_t as a return value in a C callback (fclos),
+   because the returned string will be malloc'd and leak memory unless the
+   caller is prepared to free it. */
 
 extern ffi_type *ffi_type_void_ptr() = void_t;
 extern ffi_type *ffi_type_uint8_ptr() = uint8_t;
@@ -39,6 +45,7 @@ extern ffi_type *ffi_type_uint_ptr() = uint_t;
 extern ffi_type *ffi_type_sint_ptr() = sint_t;
 extern ffi_type *ffi_type_ulong_ptr() = ulong_t;
 extern ffi_type *ffi_type_slong_ptr() = slong_t;
+extern ffi_type *ffi_type_string_ptr() = string_t;
 
 /* Internal operations. */
 

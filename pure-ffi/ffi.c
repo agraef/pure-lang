@@ -4,7 +4,9 @@
 #include <ffi.h>
 #include <pure/runtime.h>
 
-/* Platform-specific constants. */
+/* Platform-specific ABI constants. This is probably incomplete; the values
+   listed below were gleaned from the ffitarget.h file on a Linux system. Add
+   other values as needed. */
 
 void ffi_defs(void)
 {
@@ -20,7 +22,11 @@ void ffi_defs(void)
 #endif
 }
 
-/* Atomic types. */
+/* Atomic types. We add our own string (char*) type to ease marshalling of
+   Pure string values. Note that this is just a copy of libffi's pointer type
+   under an alias. */
+
+ffi_type ffi_type_string;
 
 ffi_type *ffi_type_void_ptr(void)
 {
@@ -122,6 +128,13 @@ ffi_type *ffi_type_slong_ptr(void)
   return &ffi_type_slong;
 }
 
+ffi_type *ffi_type_string_ptr(void)
+{
+  if (ffi_type_string.type != FFI_TYPE_POINTER)
+    ffi_type_string = ffi_type_pointer;
+  return &ffi_type_string;
+}
+
 /* Construct a call interface. */
 
 void ffi_free_cif(ffi_cif *cif)
@@ -192,6 +205,7 @@ ffi_type **ffi_typevect(pure_expr *types)
 static void *ffi_to_c(void *v, ffi_type *type, pure_expr *x)
 {
   void *p;
+  char *s;
   double d;
   int32_t i;
   mpz_t z;
@@ -254,10 +268,21 @@ static void *ffi_to_c(void *v, ffi_type *type, pure_expr *x)
       return 0;
     break;
   case FFI_TYPE_POINTER:
-    if (pure_is_pointer(x, &p))
-      *(void**)v = p;
-    else
-      return 0;
+    if (type == &ffi_type_string) {
+      if (pure_is_cstring_dup(x, &s))
+	/* This is a malloc'd string, remember to free it later! */
+	*(void**)v = s;
+      else
+	return 0;
+    } else {
+      if (pure_is_pointer(x, &p))
+	*(void**)v = p;
+      else if (pure_is_string(x, (const char**)&s))
+	/* Passes string as is, without encoding conversion. */
+	*(void**)v = s;
+      else
+	return 0;
+    }
     break;
   case FFI_TYPE_STRUCT:
     /* TODO */
@@ -293,7 +318,10 @@ static pure_expr *ffi_from_c(ffi_type *type, void *v)
   case FFI_TYPE_SINT64:
     return pure_long(*(int64_t*)v);
   case FFI_TYPE_POINTER:
-    return pure_pointer(*(void**)v);
+    if (type == &ffi_type_string)
+      return pure_cstring_dup(*(char**)v);
+    else
+      return pure_pointer(*(void**)v);
   case FFI_TYPE_STRUCT:
     /* TODO */
   default:
@@ -316,8 +344,10 @@ static void **ffi_to_cvect(ffi_cif *cif, pure_expr *x)
 	continue;
       if (!v[i] || !ffi_to_c(v[i], cif->arg_types[i], xs[i])) {
 	if (v[i]) free(v[i]);
-	for (j = 0; j < i; j++)
+	for (j = 0; j < i; j++) {
+	  if (cif->arg_types[i] == &ffi_type_string) free(*(void**)v[j]);
 	  free(v[j]);
+	}
 	free(v);
 	v = 0;
 	goto err;
@@ -369,8 +399,12 @@ pure_expr *ffi_c_call(ffi_cif *cif, void (*fn)(), pure_expr *x)
   if (r) free(r);
   if (v) {
     unsigned i;
-    for (i = 0; i < cif->nargs; i++)
-      if (v[i]) free(v[i]);
+    for (i = 0; i < cif->nargs; i++) {
+      if (v[i]) {
+	if (cif->arg_types[i] == &ffi_type_string) free(*(void**)v[i]);
+	free(v[i]);
+      }
+    }
     free(v);
   }
   return y;
