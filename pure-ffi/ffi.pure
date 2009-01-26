@@ -51,12 +51,14 @@ extern ffi_type *ffi_type_string_ptr() = string_t;
 
 namespace C;
 extern ffi_cif *ffi_new_cif(int abi, ffi_type *rtype, ffi_type **atypes);
-extern expr *ffi_c_call(ffi_cif *cif, void *fn, expr *x);
 extern void ffi_free_cif(ffi_cif *cif);
-extern void *ffi_typevect(expr *types);
+extern expr *ffi_c_call(ffi_cif *cif, void *fn, expr *x);
 extern ffi_closure *ffi_new_closure(ffi_cif *cif, expr *fn);
 extern void ffi_free_closure(ffi_closure *clos, void *code);
 extern void *ffi_closure_addr(ffi_closure *clos);
+extern void *ffi_typevect(expr *types);
+extern ffi_type *ffi_new_struct(ffi_type **elements);
+extern void ffi_free_struct(ffi_type *type);
 namespace;
 
 using namespace C;
@@ -82,3 +84,8 @@ when
   clos = ffi_new_closure cif fn;
   ptr  = sentry (ffi_free_closure clos) $ ffi_closure_addr clos;
 end;
+
+/* Create a struct type. */
+
+struct_t elements = sentry ffi_free_struct type if ~null type
+when type = ffi_new_struct (ffi_typevect elements) end;

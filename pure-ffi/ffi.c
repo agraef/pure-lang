@@ -1,4 +1,5 @@
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ffi.h>
@@ -135,12 +136,69 @@ ffi_type *ffi_type_string_ptr(void)
   return &ffi_type_string;
 }
 
+/* Manage type descriptions. Struct descriptions have to be refcounted, as we
+   create them dynamically. */
+
+typedef struct _ffi_type1
+{
+  size_t size;
+  unsigned short alignment;
+  unsigned short type;
+  struct _ffi_type **elements;
+  size_t refc;
+} ffi_type1;
+
+static ffi_type *ffi_ref_type(ffi_type *type)
+{
+  if (type && type->type == FFI_TYPE_STRUCT)
+    ((ffi_type1*)type)->refc++;
+  return type;
+}
+
+static void ffi_unref_type(ffi_type *type)
+{
+  ffi_type **t;
+  if (!type || type->type != FFI_TYPE_STRUCT) return;
+  if (type->elements)
+    for (t = type->elements; *t; t++)
+      ffi_unref_type(*t);
+  if (--((ffi_type1*)type)->refc == 0)
+    free(type);
+}
+
+ffi_type *ffi_new_struct(ffi_type **elements)
+{
+  ffi_type1 *type;
+  ffi_type **t;
+  if (!elements) return 0;
+  type = malloc(sizeof(ffi_type1));
+  assert(type != 0);
+  type->size = type->alignment = 0;
+  type->type = FFI_TYPE_STRUCT;
+  type->elements = elements;
+  for (t = type->elements; *t; t++)
+    ffi_ref_type(*t);
+  type->refc = 1;
+  return (ffi_type*)type;
+}
+
+void ffi_free_struct(ffi_type *type)
+{
+  ffi_unref_type(type);
+}
+
 /* Construct a call interface. */
 
 void ffi_free_cif(ffi_cif *cif)
 {
   if (!cif) return;
-  if (cif->arg_types) free(cif->arg_types);
+  ffi_unref_type(cif->rtype);
+  if (cif->arg_types) {
+    unsigned i;
+    for (i = 0; i < cif->nargs; i++)
+      ffi_unref_type(cif->arg_types[i]);
+    free(cif->arg_types);
+  }
   free(cif);
 }
 
@@ -149,11 +207,16 @@ ffi_cif *ffi_new_cif(ffi_abi abi, ffi_type *rtype, ffi_type **atypes)
   ffi_status rc;
   ffi_cif *cif;
   ffi_type **a;
-  unsigned int nargs = 0;
-  if (!rtype || !atypes) return 0;
+  unsigned nargs = 0;
+  if (!rtype || !atypes)
+    return 0; /* FIXME: possible memleak on rtype or atypes */
   cif = calloc(1, sizeof(ffi_cif));
-  if (!cif) return 0;
-  for (a = atypes; *a; a++) nargs++;
+  assert(cif != 0);
+  ffi_ref_type(rtype);
+  for (a = atypes; *a; a++) {
+    ffi_ref_type(*a);
+    nargs++;
+  }
   rc = ffi_prep_cif(cif, abi, nargs, rtype, atypes);
   if (rc == FFI_OK)
     return cif;
@@ -170,13 +233,13 @@ ffi_type **ffi_typevect(pure_expr *types)
 {
   void *p;
   ffi_type **v = 0;
-  size_t i, n;
+  size_t i, j, n;
   pure_expr **xs;
   if (pure_is_tuplev(types, &n, &xs)) {
     int32_t tag;
     if (n == 0) {
       v = malloc(sizeof(ffi_type*));
-      if (!v) goto err;
+      assert(v != 0);
       v[0] = 0;
       return v;
     }
@@ -187,7 +250,7 @@ ffi_type **ffi_typevect(pure_expr *types)
     return 0;
   if (pure_is_pointer(xs[0], &p)) {
     v = malloc((n+1)*sizeof(ffi_type*));
-    if (!v) goto err;
+    assert(v != 0);
     v[n] = 0;
     v[0] = (ffi_type*)p;
     for (i = 1; i < n; i++) {
@@ -336,13 +399,16 @@ static void **ffi_to_cvect(ffi_cif *cif, pure_expr *x)
   if (pure_is_tuplev(x, &n, &xs)) {
     void **v = 0;
     if (n != cif->nargs) goto err;
-    if (n > 0 && (v = malloc(n*sizeof(void*))) == 0)
-      goto err;
+    if (n > 0) {
+      v = malloc(n*sizeof(void*));
+      assert(v!=0);
+    }
     for (i = 0; i < n; i++) {
       v[i] = malloc(cif->arg_types[i]->size);
       if (cif->arg_types[i]->type == FFI_TYPE_VOID)
 	continue;
-      if (!v[i] || !ffi_to_c(v[i], cif->arg_types[i], xs[i])) {
+      assert(cif->arg_types[i]->size == 0 || v[i] != 0);
+      if (!ffi_to_c(v[i], cif->arg_types[i], xs[i])) {
 	if (v[i]) free(v[i]);
 	for (j = 0; j < i; j++) {
 	  if (cif->arg_types[i] == &ffi_type_string) free(*(void**)v[j]);
@@ -364,8 +430,10 @@ static pure_expr *ffi_from_cvect(ffi_cif *cif, void **v)
 {
   size_t i, j, n = cif->nargs;
   pure_expr *x = 0, **xs = 0;
-  if (n > 0 && (xs = malloc(n*sizeof(pure_expr*))) == 0)
-    goto err;
+  if (n > 0) {
+    xs = malloc(n*sizeof(pure_expr*));
+    assert(xs!=0);
+  }
   for (i = 0; i < n; i++) {
     xs[i] = ffi_from_c(cif->arg_types[i], v[i]);
     if (xs[i] == 0) {
@@ -389,7 +457,7 @@ pure_expr *ffi_c_call(ffi_cif *cif, void (*fn)(), pure_expr *x)
   if (!cif) return 0;
   if (cif->rtype->type != FFI_TYPE_VOID) {
     r = malloc(cif->rtype->size);
-    if (!r) goto err;
+    assert(cif->rtype->size == 0 || r != 0);
   }
   v = ffi_to_cvect(cif, x);
   if (cif->nargs > 0 && !v) goto err;
@@ -439,10 +507,7 @@ ffi_closure *ffi_new_closure(ffi_cif *cif, pure_expr *fn)
   void *code;
   if (!cif) return 0;
   data = malloc(sizeof(ffi_closure_data));
-  if (!data) {
-    ffi_free_cif(cif);
-    return 0;
-  }
+  assert(data!=0);
   clos = ffi_closure_alloc(sizeof(ffi_closure), &code);
   if (!clos) {
     free(data);
