@@ -589,20 +589,35 @@ static void *ffi_to_c(void *v, ffi_type *type, pure_expr *x)
   case FFI_TYPE_FLOAT:
     if (pure_is_double(x, &d))
       *(float*)v = (float)d;
-    else
+    else if (pure_is_int(x, &i))
+      *(float*)v = (float)i;
+    else if (pure_is_mpz(x, &z)) {
+      *(float*)v = (float)mpz_get_d(z);
+      mpz_clear(z);
+    } else
       return 0;
     break;
   case FFI_TYPE_DOUBLE:
     if (pure_is_double(x, &d))
       *(double*)v = d;
-    else
+    else if (pure_is_int(x, &i))
+      *(double*)v = (double)i;
+    else if (pure_is_mpz(x, &z)) {
+      *(double*)v = mpz_get_d(z);
+      mpz_clear(z);
+    } else
       return 0;
     break;
 #if HAVE_LONG_DOUBLE
   case FFI_TYPE_LONGDOUBLE:
     if (pure_is_double(x, &d))
       *(long double*)v = (long double)d;
-    else
+    else if (pure_is_int(x, &i))
+      *(long double*)v = (long double)i;
+    else if (pure_is_mpz(x, &z)) {
+      *(long double*)v = (long double)mpz_get_d(z);
+      mpz_clear(z);
+    } else
       return 0;
     break;
 #endif
