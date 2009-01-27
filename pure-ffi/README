@@ -8,11 +8,11 @@ specified by a call interface description at run time. libffi should be
 present on most gcc-based systems, but it is also available as a standalone
 package at http://sourceware.org/libffi/.
 
-This module provides an interface to the libffi library which enables you to
-call C functions from Pure and vice versa. It goes beyond Pure's built-in C
-interface in that it also handles C structs and makes Pure functions callable
-from C. Moreover, depending on the libffi implementation, it may also be
-possible to call foreign languages other than C.
+This module provides an interface to libffi which enables you to call C
+functions from Pure and vice versa. It goes beyond Pure's built-in C interface
+in that it also handles C structs and makes Pure functions callable from C.
+Moreover, depending on the libffi implementation, it may also be possible to
+call foreign languages other than C.
 
 INSTALLATION
 ============
@@ -42,7 +42,10 @@ The primary interface for calling C from Pure and vice versa is as follows:
 
 - fcall name abi rtype atypes: Creates a Pure function from a C function with
 the given name, specified as a string. This makes the C function callable in
-Pure.
+Pure, no matter whether it is already declared as an 'extern' or not. But note
+that if the function resides in a shared library, you still have to import
+that library using a Pure 'using' declaration, see the pure(1) manpage for
+details.
 
 - fclos fn abi rtype atypes: Creates a pointer to a C function from the given
 Pure function fn. The resulting pointer can then be passed to other C
@@ -58,7 +61,9 @@ with libffi are always passed in uncurried form, as a Pure tuple. E.g.:
 0.4
 
 C structs are fully supported and are passed in a type-safe manner, see
-ffi.pure for details. For instance:
+ffi.pure for details. Note that these are to be used for passing structs by
+value. (When passing a pointer to a struct, you must use pointer_t instead.) 
+For instance:
 
 > let complex_t = struct_t (double_t,double_t);
 > let cexp = fcall "cexp" FFI_DEFAULT_ABI complex_t (complex_t);
@@ -66,6 +71,13 @@ ffi.pure for details. For instance:
 0.54030230586814,0.841470984807897
 
 See the 'examples' folder in the sources for more examples.
+
+TODO
+====
+
+The API isn't perfect yet. In particular, one might consider to implement type
+descriptors as structs instead of raw pointers, and support for typed pointers
+would be useful. Contributions and suggestions are welcome.
 
 Author
 ======
