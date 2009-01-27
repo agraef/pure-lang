@@ -10,12 +10,13 @@ of this file details the tweaks necessary to make Pure compile and run on
 various other platforms. More information about installing LLVM and the
 required LLVM source packages can be found at http://llvm.org.
 
-Pure is known to work on Linux, Mac OSX and MS Windows, and should compile
-(with the usual amount of tweaking) on all recent UNIX/POSIX-based platforms.
-We recommend using version 4.x of the GNU C++ compiler; it should be available
-almost everywhere (in fact, since you'll need LLVM anyway, you can also use
-the gcc frontend available for LLVM). You'll also need a Bourne-compatible
-shell and GNU make, which are also readily available on most platforms.
+Pure is known to work on Linux, NetBSD, Mac OSX, and MS Windows, and should
+compile (with the usual amount of tweaking) on all recent UNIX/POSIX-based
+platforms. We recommend using version 4.x of the GNU C++ compiler; it should
+be available almost everywhere (in fact, since you'll need LLVM anyway, you
+can also use the gcc frontend available for LLVM). You'll also need a Bourne-
+compatible shell and GNU make, which are also readily available on most
+platforms.
 
 A binary package in msi format is provided for Windows users in the download
 area of the pure-lang.googlecode.com project page. Ports and packages for
@@ -500,6 +501,19 @@ Currently only the statically compiled version of the interpreter
 (--disabled-shared) is known to work. Linking LLVM into the shared runtime
 library on FreeBSD 7.0 seems to cause undefined behaviour (failed assertions
 in LLVM). If anyone can help resolving this issue, please let us know.
+
+NETBSD
+------
+
+To install, do the usual pkg_add routine to install *updated* versions of
+subversion, gmake, perl5, flex, bison, readline, gmp, and gsl. Then, download
+llvm-2.4.tar.gz and do the usual './configure [flags]', 'gmake', and
+'gmake install' (*Notice*, use 'gmake' and not 'make' since they are different
+on *BSD systems). Pull the source files through svn, then, do the
+'./configure CPPFLAGS=-I/usr/pkg/include LDFLAGS=-L/usr/pkg/lib', 'gmake', and
+'gmake install' routine. Remember that NetBSD folks recommend not putting stuff
+in ld.so.conf, so put 'export LD_LIBARARY_PATH=/usr/pkg/lib:/usr/local/lib'
+in your shell startup script.
 
 MS WINDOWS
 -- -------
