@@ -710,11 +710,16 @@ pure_expr *ffi_fcall(ffi_cif *cif, void (*fn)(), pure_expr *x)
 
 /* Call C -> Pure. This may be unsupported on some platforms. */
 
+#if FFI_CLOSURES
 typedef struct {
   pure_expr *fn;
   void *code;
 } ffi_closure_data;
+#else
+#define ffi_closure_data void
+#endif
 
+#if FFI_CLOSURES
 static void ffi_closure_fun(ffi_cif *cif, void *ret, void **args, void *v)
 {
   ffi_closure_data *data = (ffi_closure_data*)v;
@@ -728,9 +733,11 @@ static void ffi_closure_fun(ffi_cif *cif, void *ret, void **args, void *v)
   ffi_to_c(ret, cif->rtype, y);
   pure_freenew(y);
 }
+#endif
 
 ffi_closure *ffi_new_closure(ffi_cif *cif, pure_expr *fn)
 {
+#if FFI_CLOSURES
   ffi_status rc;
   ffi_closure *clos;
   ffi_closure_data *data;
@@ -754,23 +761,31 @@ ffi_closure *ffi_new_closure(ffi_cif *cif, pure_expr *fn)
   data->fn = pure_new(fn);
   data->code = code;
   return clos;
+#else
+  ffi_free_cif(cif);
+  return 0;
+#endif
 }
 
 void ffi_free_closure(ffi_closure *clos, void *code)
 {
+#if FFI_CLOSURES
   ffi_closure_data *data;
   if (!clos) return;
   data = (ffi_closure_data*)clos->user_data;
   pure_free(data->fn);
   ffi_free_cif(clos->cif);
   ffi_closure_free(clos);
+#endif
 }
 
 void *ffi_closure_addr(ffi_closure *clos)
 {
+#if FFI_CLOSURES
   if (clos) {
     ffi_closure_data *data = (ffi_closure_data*)clos->user_data;
     return data->code;
   } else
+#endif
     return 0;
 }
