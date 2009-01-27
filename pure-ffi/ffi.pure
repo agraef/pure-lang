@@ -76,6 +76,11 @@ extern ffi_type *ffi_type_slong_ptr()	= slong_t;
 
 extern ffi_type *ffi_type_string_ptr()	= string_t;
 
+/* For convenience, define size_t to be a 32 or 64 bit integer type, as
+   appropriate for the host system. */
+
+let size_t = if SIZEOF_SIZE_T > 4 then uint64_t else uint32_t;
+
 /* Create a struct type. This takes a tuple with the member types and returns
    a corresponding type descriptor. */
 
@@ -88,6 +93,10 @@ when type = ffi_new_struct_t (ffi_typevect elements) end;
    remaining elements are the descriptors of the element types. */
 
 extern expr *ffi_type_info(ffi_type *type) = type_info;
+
+/* Convenience function to get the size of a type. */
+
+sizeof type::pointer = size when size,_ = type_info type end;
 
 /* Interface functions to create Pure functions from C functions and vice
    versa. These take the desired ABI (FFI_DEFAULT_ABI etc.), return type
