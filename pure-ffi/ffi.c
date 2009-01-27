@@ -390,6 +390,25 @@ pure_expr *ffi_struct_pointers(pure_expr *x)
     return 0;
 }
 
+/* Check types for structural equivalence. */
+
+static bool same_type(ffi_type *type1, ffi_type *type2)
+{
+  if (type1 == type2)
+    return true;
+  else if (type1->type != type2->type)
+    return false;
+  else if (type1->type == FFI_TYPE_STRUCT) {
+    /* Different struct types are considered equivalent iff their member types
+       are. */
+    ffi_type **t1 = type1->elements, **t2 = type2->elements;
+    if (t1 == t2) return true;
+    while (*t1 && *t2 && same_type(*t1, *t2)) t1++, t2++;
+    return !*t1 && !*t2;
+  } else
+    return false;
+}
+
 /* Construct a 0-terminated type vector to be passed as the atypes argument of
    ffi_new_cif and ffi_new_struct_t. */
 
@@ -467,14 +486,6 @@ ffi_cif *ffi_new_cif(ffi_abi abi, ffi_type *rtype, ffi_type **atypes)
 }
 
 /* Marshalling between Pure and C data. */
-
-static bool same_struct(ffi_type *type1, ffi_type *type2)
-{
-  if (type1 == type2)
-    return true;
-  else
-    return false;
-}
 
 static void *ffi_to_c(void *v, ffi_type *type, pure_expr *x)
 {
@@ -562,7 +573,7 @@ static void *ffi_to_c(void *v, ffi_type *type, pure_expr *x)
     /* This is supposed to be a pointer created with ffi_new_struct, which
        gets passed by value. */
     ffi_type *t;
-    if (pure_is_struct(x, &t, &p) && same_struct(type, t))
+    if (pure_is_struct(x, &t, &p) && same_type(type, t))
       memcpy(v, p, type->size);
     else
       return 0;
@@ -669,7 +680,7 @@ static pure_expr *ffi_from_cvect(ffi_cif *cif, void **v)
 
 /* Call Pure -> C. */
 
-pure_expr *ffi_c_call(ffi_cif *cif, void (*fn)(), pure_expr *x)
+pure_expr *ffi_fcall(ffi_cif *cif, void (*fn)(), pure_expr *x)
 {
   pure_expr *y = 0;
   void *r = 0, **v = 0;
