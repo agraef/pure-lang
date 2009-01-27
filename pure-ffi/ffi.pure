@@ -66,6 +66,14 @@ extern ffi_type *ffi_type_sint_ptr()	= sint_t;
 extern ffi_type *ffi_type_ulong_ptr()	= ulong_t;
 extern ffi_type *ffi_type_slong_ptr()	= slong_t;
 
+/* The long double type may not be available on some platforms, in which case
+   longdouble_t is the same as double_t. Also note that Pure has no long
+   double type, and thus long doubles will always be marshalled to Pure double
+   values. In some cases it might still be useful to work with long double
+   values because of the higher internal precision of some operations. */
+
+extern ffi_type *ffi_type_longdouble_ptr() = longdouble_t;
+
 /* The string_t type is a special variant of pointer_t which triggers
    automatic marshalling from/to Pure string values, including automatic
    conversions to/from the system encoding. This should be used only for const

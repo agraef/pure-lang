@@ -5,6 +5,10 @@
 #include <ffi.h>
 #include <pure/runtime.h>
 
+#if FFI_TYPE_LONGDOUBLE != FFI_TYPE_DOUBLE
+#define HAVE_LONG_DOUBLE 1
+#endif
+
 void ffi_defs(void)
 {
   /* Platform-specific ABI constants. This is probably incomplete; the
@@ -25,6 +29,7 @@ void ffi_defs(void)
   pure_def(pure_sym("FFI_TYPE_INT"), pure_int(FFI_TYPE_INT));
   pure_def(pure_sym("FFI_TYPE_FLOAT"), pure_int(FFI_TYPE_FLOAT));
   pure_def(pure_sym("FFI_TYPE_DOUBLE"), pure_int(FFI_TYPE_DOUBLE));
+  pure_def(pure_sym("FFI_TYPE_LONGDOUBLE"), pure_int(FFI_TYPE_LONGDOUBLE));
   pure_def(pure_sym("FFI_TYPE_UINT8"), pure_int(FFI_TYPE_UINT8));
   pure_def(pure_sym("FFI_TYPE_SINT8"), pure_int(FFI_TYPE_SINT8));
   pure_def(pure_sym("FFI_TYPE_UINT16"), pure_int(FFI_TYPE_UINT16));
@@ -96,6 +101,11 @@ ffi_type *ffi_type_float_ptr(void)
 ffi_type *ffi_type_double_ptr(void)
 {
   return &ffi_type_double;
+}
+
+ffi_type *ffi_type_longdouble_ptr(void)
+{
+  return &ffi_type_longdouble;
 }
 
 ffi_type *ffi_type_pointer_ptr(void)
@@ -510,6 +520,14 @@ static void *ffi_to_c(void *v, ffi_type *type, pure_expr *x)
     else
       return 0;
     break;
+#if HAVE_LONG_DOUBLE
+  case FFI_TYPE_LONGDOUBLE:
+    if (pure_is_double(x, &d))
+      *(long double*)v = (long double)d;
+    else
+      return 0;
+    break;
+#endif
   case FFI_TYPE_UINT8:
   case FFI_TYPE_SINT8:
     if (pure_is_int(x, &i))
@@ -596,6 +614,10 @@ static pure_expr *ffi_from_c(ffi_type *type, void *v)
     return pure_double((double)*(float*)v);
   case FFI_TYPE_DOUBLE:
     return pure_double(*(double*)v);
+#if HAVE_LONG_DOUBLE
+  case FFI_TYPE_LONGDOUBLE:
+    return pure_double(*(long double*)v);
+#endif
   case FFI_TYPE_UINT8:
   case FFI_TYPE_SINT8:
     return pure_int((int32_t)*(int8_t*)v);
