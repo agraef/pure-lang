@@ -27,6 +27,9 @@ extern void ffi_free_struct(ffi_type *type, void *data);
 extern expr *ffi_struct_type(expr *x);
 extern expr *ffi_struct_members(expr *x);
 extern expr *ffi_struct_pointers(expr *x);
+extern expr *ffi_struct_member(expr *x, int i);
+extern expr *ffi_struct_pointer(expr *x, int i);
+extern expr *ffi_put_struct_member(expr *x, int i, expr *y);
 
 /* Define the ABIs and the type numbers known to this libffi implementation.
    The constant FFI_DEFAULT_ABI is always defined and should be appropriate
@@ -151,3 +154,22 @@ structp x		= pointerp x && pointerp (ffi_struct_type x);
 typeof x::pointer	= ffi_struct_type x if structp x;
 members x::pointer	= ffi_struct_members x if structp x;
 pointers x::pointer	= ffi_struct_pointers x if structp x;
+
+/* Determine the number of members of a struct. */
+
+#x::pointer		= #ffi_struct_pointers x if structp x;
+
+/* Access and modify individual struct members. To these ends, a term like x!i
+   is used to denote the ith member of the struct. get (x!i) gets the member
+   and put (x!i) y sets it to a new value (which must match the corresponding
+   member type). Moreover, pointer (x!i) yields a raw pointer to the member. */
+
+get (x::pointer!i::int) = ffi_struct_member x i if structp x;
+put (x::pointer!i::int) y = () if structp x && ffi_put_struct_member x i y;
+pointer (x::pointer!i::int) = ffi_struct_pointer x i if structp x;
+
+/* Fallback rules (index out of bounds). */
+
+ffi_struct_member x::pointer i::int = throw out_of_bounds if structp x;
+ffi_put_struct_member x::pointer i::int y = throw out_of_bounds if structp x;
+ffi_struct_pointer x::pointer i::int = throw out_of_bounds if structp x;

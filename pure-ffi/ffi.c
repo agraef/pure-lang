@@ -284,7 +284,25 @@ static void offsets(void *data, unsigned n, ffi_type **types, void **v)
   }
 }
 
+/* Compute a single offset on the fly. */
+
+static void *offset(void *data, unsigned n, ffi_type **types)
+{
+  size_t ofs = 0;
+  unsigned i;
+  for (i = 0; i < n && types[i]; i++) {
+    unsigned short a = ofs % types[i]->alignment;
+    if (a != 0) ofs += types[i]->alignment-a;
+    ofs += types[i]->size;
+  }
+  if (i < n || !types[i])
+    return 0;
+  else
+    return data+ofs;
+}
+
 static void *ffi_to_c(void *v, ffi_type *type, pure_expr *x);
+static pure_expr *ffi_from_c(ffi_type *type, void *v);
 static pure_expr *ffi_from_cvect(ffi_cif *cif, void **v);
 
 void *ffi_new_struct(ffi_type *type, pure_expr *x)
@@ -397,6 +415,65 @@ pure_expr *ffi_struct_pointers(pure_expr *x)
     if (v) free(v);
     if (xs) free(xs);
     return x;
+  } else
+    return 0;
+}
+
+/* Access a single member or pointer. */
+
+pure_expr *ffi_struct_member(pure_expr *x, int i)
+{
+  ffi_type *type;
+  void *data;
+  if (i < 0) return 0;
+  if (pure_is_struct(x, &type, &data)) {
+    void *v;
+    pure_expr *x;
+    if (type->type != FFI_TYPE_STRUCT) return 0;
+    v = offset(data, i, type->elements);
+    if (v) {
+      x = ffi_from_c(type->elements[i], v);
+      return x;
+    } else
+      return 0;
+  } else
+    return 0;
+}
+
+pure_expr *ffi_put_struct_member(pure_expr *x, int i, pure_expr *y)
+{
+  ffi_type *type;
+  void *data;
+  if (i < 0) return 0;
+  if (pure_is_struct(x, &type, &data)) {
+    void *v;
+    pure_expr *x;
+    if (type->type != FFI_TYPE_STRUCT) return 0;
+    v = offset(data, i, type->elements);
+    if (!v)
+      return 0;
+    else if (ffi_to_c(v, type->elements[i], y))
+      return pure_int(1);
+    else
+      return pure_int(0);
+  } else
+    return 0;
+}
+
+pure_expr *ffi_struct_pointer(pure_expr *x, int i)
+{
+  ffi_type *type;
+  void *data;
+  if (i < 0) return 0;
+  if (pure_is_struct(x, &type, &data)) {
+    void *v;
+    pure_expr *x;
+    if (type->type != FFI_TYPE_STRUCT) return 0;
+    v = offset(data, i, type->elements);
+    if (v)
+      return pure_pointer(v);
+    else
+      return 0;
   } else
     return 0;
 }
