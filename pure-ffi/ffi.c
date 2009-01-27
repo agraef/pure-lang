@@ -312,15 +312,14 @@ void *ffi_new_struct(ffi_type *type, pure_expr *x)
   void **v = 0, *data = 0;
   pure_expr **xs = 0;
   size_t i, n;
-  if (type->type != FFI_TYPE_STRUCT) return 0;
+  if (!type || type->type != FFI_TYPE_STRUCT) return 0;
   for (t = type->elements; *t; t++)
     nelems++;
   if (type->alignment == 0) {
     /* Type information hasn't been filled in yet; do a dummy call to
        ffi_prep_cif to do that now. */
     ffi_cif cif;
-    if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, nelems,
-		     &ffi_type_void, type->elements) != FFI_OK)
+    if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, 0, type, 0) != FFI_OK)
       return 0;
   }
   if (!pure_is_tuplev(x, &n, &xs) || n != nelems) goto err;
@@ -348,17 +347,12 @@ void *ffi_new_struct(ffi_type *type, pure_expr *x)
 void *ffi_copy_struct(ffi_type *type, void *data)
 {
   void *data2;
-  if (!data || type->type != FFI_TYPE_STRUCT) return 0;
+  if (!data || !type || type->type != FFI_TYPE_STRUCT) return 0;
   if (type->alignment == 0) {
     /* Type information hasn't been filled in yet; do a dummy call to
        ffi_prep_cif to do that now. */
     ffi_cif cif;
-    ffi_type **t;
-    unsigned nelems = 0;
-    for (t = type->elements; *t; t++)
-      nelems++;
-    if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, nelems,
-		     &ffi_type_void, type->elements) != FFI_OK)
+    if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, 0, type, 0) != FFI_OK)
       return 0;
   }
   data2 = malloc(type->size);
