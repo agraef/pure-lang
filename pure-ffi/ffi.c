@@ -201,6 +201,8 @@ void ffi_free_struct_t(ffi_type *type)
   ffi_unref_type(type);
 }
 
+/* Retrieve information about a type in a Pure-friendly format. */
+
 pure_expr *ffi_type_info(ffi_type *type)
 {
   unsigned nelems = 0, i;
@@ -230,6 +232,31 @@ pure_expr *ffi_type_info(ffi_type *type)
   x = pure_tuplev(3+nelems, xs);
   free(xs);
   return x;
+}
+
+/* Construction of struct values. In Pure land, these are implemented as
+   cooked pointers which carry typing information in the sentry, which also
+   takes care of freeing the struct when it is garbage-collected. NOTE: To
+   make this work, the ffi_free_struct routine must be visible in ffi.pure
+   under the name "C::ffi_free_struct". */
+
+static inline pure_expr *pure_struct(ffi_type *type, void *v)
+{
+  pure_expr *x = pure_pointer(v),
+    *y = pure_app(pure_symbol(pure_sym("C::ffi_free_struct")),
+		  pure_pointer(type));
+  assert(x && y);
+  return pure_sentry(y, x);
+}
+
+static inline bool pure_is_struct(pure_expr *x, ffi_type **type, void **v)
+{
+  pure_expr *y, *z, *f;
+  return pure_is_pointer(x, v) && (y = pure_get_sentry(x)) &&
+    pure_is_app(y, &f, &z) && f->tag > 0 &&
+    strcmp(pure_sym_pname(f->tag), "C::ffi_free_struct") == 0 &&
+    pure_is_pointer(z, (void**)type) && *type &&
+    (*type)->type == FFI_TYPE_STRUCT;
 }
 
 static void *ffi_to_c(void *v, ffi_type *type, pure_expr *x);
@@ -294,51 +321,73 @@ void ffi_free_struct(ffi_type *type, void *data)
   if (type && data) free(data);
 }
 
-pure_expr *ffi_struct_data(ffi_type *type, void *data)
+/* Retrieve type information, member data and pointers of a struct. */
+
+pure_expr *ffi_struct_type(pure_expr *x)
 {
-  ffi_cif cif;
-  ffi_type **t;
-  unsigned nelems = 0;
-  void **v;
-  pure_expr *x;
-  if (type->type != FFI_TYPE_STRUCT) return 0;
-  for (t = type->elements; *t; t++)
-    nelems++;
-  if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, nelems,
-		   &ffi_type_void, type->elements) != FFI_OK)
+  ffi_type *type;
+  void *data;
+  if (pure_is_struct(x, &type, &data))
+    return pure_pointer(type);
+  else
     return 0;
-  v = malloc(nelems*sizeof(void*));
-  assert(nelems == 0 || v);
-  offsets(data, nelems, type->elements, v);
-  x = ffi_from_cvect(&cif, v);
-  if (v) free(v);
-  return x;
 }
 
-pure_expr *ffi_struct_pointers(ffi_type *type, void *data)
+pure_expr *ffi_struct_members(pure_expr *x)
 {
-  ffi_cif cif;
-  ffi_type **t;
-  unsigned i, nelems = 0;
-  void **v;
-  pure_expr *x, **xs;
-  if (type->type != FFI_TYPE_STRUCT) return 0;
-  for (t = type->elements; *t; t++)
-    nelems++;
-  if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, nelems,
-		   &ffi_type_void, type->elements) != FFI_OK)
+  ffi_type *type;
+  void *data;
+  if (pure_is_struct(x, &type, &data)) {
+    ffi_cif cif;
+    ffi_type **t;
+    unsigned nelems = 0;
+    void **v;
+    pure_expr *x;
+    if (type->type != FFI_TYPE_STRUCT) return 0;
+    for (t = type->elements; *t; t++)
+      nelems++;
+    if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, nelems,
+		     &ffi_type_void, type->elements) != FFI_OK)
+      return 0;
+    v = malloc(nelems*sizeof(void*));
+    assert(nelems == 0 || v);
+    offsets(data, nelems, type->elements, v);
+    x = ffi_from_cvect(&cif, v);
+    if (v) free(v);
+    return x;
+  } else
     return 0;
-  v = malloc(nelems*sizeof(void*));
-  assert(nelems == 0 || v);
-  xs = malloc(nelems*sizeof(pure_expr*));
-  assert(nelems == 0 || xs);
-  offsets(data, nelems, type->elements, v);
-  for (i = 0; i < nelems; i++)
-    xs[i] = pure_pointer(v[i]);
-  x = pure_tuplev(nelems, xs);
-  if (v) free(v);
-  if (xs) free(xs);
-  return x;
+}
+
+pure_expr *ffi_struct_pointers(pure_expr *x)
+{
+  ffi_type *type;
+  void *data;
+  if (pure_is_struct(x, &type, &data)) {
+    ffi_cif cif;
+    ffi_type **t;
+    unsigned i, nelems = 0;
+    void **v;
+    pure_expr *x, **xs;
+    if (type->type != FFI_TYPE_STRUCT) return 0;
+    for (t = type->elements; *t; t++)
+      nelems++;
+    if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, nelems,
+		     &ffi_type_void, type->elements) != FFI_OK)
+      return 0;
+    v = malloc(nelems*sizeof(void*));
+    assert(nelems == 0 || v);
+    xs = malloc(nelems*sizeof(pure_expr*));
+    assert(nelems == 0 || xs);
+    offsets(data, nelems, type->elements, v);
+    for (i = 0; i < nelems; i++)
+      xs[i] = pure_pointer(v[i]);
+    x = pure_tuplev(nelems, xs);
+    if (v) free(v);
+    if (xs) free(xs);
+    return x;
+  } else
+    return 0;
 }
 
 /* Construct a 0-terminated type vector to be passed as the atypes argument of
@@ -418,6 +467,14 @@ ffi_cif *ffi_new_cif(ffi_abi abi, ffi_type *rtype, ffi_type **atypes)
 }
 
 /* Marshalling between Pure and C data. */
+
+static bool same_struct(ffi_type *type1, ffi_type *type2)
+{
+  if (type1 == type2)
+    return true;
+  else
+    return false;
+}
 
 static void *ffi_to_c(void *v, ffi_type *type, pure_expr *x)
 {
@@ -501,14 +558,16 @@ static void *ffi_to_c(void *v, ffi_type *type, pure_expr *x)
 	return 0;
     }
     break;
-  case FFI_TYPE_STRUCT:
+  case FFI_TYPE_STRUCT: {
     /* This is supposed to be a pointer created with ffi_new_struct, which
        gets passed by value. */
-    if (pure_is_pointer(x, &p))
+    ffi_type *t;
+    if (pure_is_struct(x, &t, &p) && same_struct(type, t))
       memcpy(v, p, type->size);
     else
       return 0;
     break;
+  }
   default:
     return 0;
   }
@@ -546,9 +605,7 @@ static pure_expr *ffi_from_c(ffi_type *type, void *v)
     else
       return pure_pointer(*(void**)v);
   case FFI_TYPE_STRUCT:
-    /* FIXME: We should set ffi_free_struct as a sentry here, to prevent
-       memory leaks. */
-    return pure_pointer(v);
+    return pure_struct(type, v);
   default:
     return 0;
   }

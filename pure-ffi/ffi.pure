@@ -9,23 +9,41 @@ using "lib:ffi";
    implementation, it may also be possible to create wrappers for other call
    interfaces. TODO: Struct support needs to be implemented. */
 
+namespace C;
+
+/* Internal operations. */
+
+extern ffi_cif *ffi_new_cif(int abi, ffi_type *rtype, ffi_type **atypes);
+extern void ffi_free_cif(ffi_cif *cif);
+extern expr *ffi_c_call(ffi_cif *cif, void *fn, expr *x);
+extern ffi_closure *ffi_new_closure(ffi_cif *cif, expr *fn);
+extern void ffi_free_closure(ffi_closure *clos, void *code);
+extern void *ffi_closure_addr(ffi_closure *clos);
+extern void *ffi_typevect(expr *types);
+extern ffi_type *ffi_new_struct_t(ffi_type **elements);
+extern void ffi_free_struct_t(ffi_type *type);
+extern void *ffi_new_struct(ffi_type *type, expr *data);
+extern void ffi_free_struct(ffi_type *type, void *data);
+extern expr *ffi_struct_type(expr *x);
+extern expr *ffi_struct_members(expr *x);
+extern expr *ffi_struct_pointers(expr *x);
+
 /* Define the ABIs and the type numbers known to this libffi implementation.
    The constant FFI_DEFAULT_ABI is always defined and should be appropriate
    for most purposes. The type numbers FFI_TYPE_VOID etc. are useful with the
    type_info function, see below. Use 'show -g FFI_*' to get a full list of
    these constants. */
 
-namespace C;
 extern void ffi_defs(); ffi_defs;
+
 namespace;
 
-/* Atomic types. Note that the string_t type is a special variant of pointer_t
-   which triggers automatic marshalling from/to Pure string values, including
-   automatic conversions to/from the system encoding. This should be used only
-   for const char* values which are not to be modified by the caller. Also be
-   careful when using string_t as a return value in a C callback (fclos),
-   because the returned string will be malloc'd and leak memory unless the
-   caller is prepared to free it. */
+using namespace C;
+
+/* Interface operations. */
+
+/* Atomic types. These all have corresponding type descriptors implemented as
+   pointer values. */
 
 extern ffi_type *ffi_type_void_ptr() = void_t;
 extern ffi_type *ffi_type_uint8_ptr() = uint8_t;
@@ -47,29 +65,34 @@ extern ffi_type *ffi_type_uint_ptr() = uint_t;
 extern ffi_type *ffi_type_sint_ptr() = sint_t;
 extern ffi_type *ffi_type_ulong_ptr() = ulong_t;
 extern ffi_type *ffi_type_slong_ptr() = slong_t;
+
+/* The string_t type is a special variant of pointer_t which triggers
+   automatic marshalling from/to Pure string values, including automatic
+   conversions to/from the system encoding. This should be used only for const
+   char* values which are not to be modified by the caller. Also be careful
+   when using string_t as a return value in a C callback (fclos), because the
+   returned string will be malloc'd and thus leak memory unless the caller is
+   prepared to free it. */
+
 extern ffi_type *ffi_type_string_ptr() = string_t;
 
-/* Internal operations. */
+/* Create a struct type. This takes a tuple with the member types and returns
+   a corresponding type descriptor. */
 
-namespace C;
-extern ffi_cif *ffi_new_cif(int abi, ffi_type *rtype, ffi_type **atypes);
-extern void ffi_free_cif(ffi_cif *cif);
-extern expr *ffi_c_call(ffi_cif *cif, void *fn, expr *x);
-extern ffi_closure *ffi_new_closure(ffi_cif *cif, expr *fn);
-extern void ffi_free_closure(ffi_closure *clos, void *code);
-extern void *ffi_closure_addr(ffi_closure *clos);
-extern void *ffi_typevect(expr *types);
-extern ffi_type *ffi_new_struct_t(ffi_type **elements);
-extern void ffi_free_struct_t(ffi_type *type);
-extern void *ffi_new_struct(ffi_type *type, expr *data);
-extern void ffi_free_struct(ffi_type *type, void *data);
-namespace;
+struct_t elements = sentry ffi_free_struct_t type if ~null type
+when type = ffi_new_struct_t (ffi_typevect elements) end;
 
-using namespace C;
+/* Retrieve information about a type. This returns a tuple (size, align, type,
+   ...) with information about the size, alignment and type number. Struct
+   types are indicated by the type number FFI_TYPE_STRUCT. In this case the
+   remaining elements are the descriptors of the element types. */
 
-/* Interface functions. These take the desired ABI (FFI_DEFAULT_ABI etc.),
-   return type (void_t etc.) and tuple of argument types as arguments. Note
-   that arguments are always passed in uncurried form, as a Pure tuple. */
+extern expr *ffi_type_info(ffi_type *type) = type_info;
+
+/* Interface functions to create Pure from C functions and vice versa. These
+   take the desired ABI (FFI_DEFAULT_ABI etc.), return type (void_t etc.) and
+   tuple of argument types as arguments. Note that arguments are always passed
+   in uncurried form, as a Pure tuple. */
 
 /* Create a Pure wrapper for a foreign function. */
 
@@ -89,30 +112,24 @@ when
   ptr  = sentry (ffi_free_closure clos) $ ffi_closure_addr clos;
 end;
 
-/* Create a struct type. */
+/* C struct support. In Pure land, these are represented as "cooked" pointers
+   which carry type information, so that passing struct values as arguments
+   and return values can be implemented in a type-safe manner. Also note that
+   structs are freed automatically when they are garbage-collected, so you
+   must *not* free them manually. */
 
-struct_t elements = sentry ffi_free_struct_t type if ~null type
-when type = ffi_new_struct_t (ffi_typevect elements) end;
-
-/* Retrieve information about a type. This returns a tuple
-   (size,align,type,...) with information about the size, alignment and type
-   number. In the case of struct types (type == FFI_TYPE_STRUCT), the
-   remaining elements are the descriptors of the element types. */
-
-extern expr *ffi_type_info(ffi_type *type) = type_info;
-
-/* Create a C struct from a tuple of its members, suitable to be passed as a
-   value parameter in fcall and fclos. The result is a "cooked" pointer which
-   is freed automatically when garbage-collected, so you must not free it
-   manually. */
+/* Create a C struct from its type descriptor and a tuple of its members. */
 
 struct type::pointer data = sentry (ffi_free_struct type) p if ~null p
 when p = ffi_new_struct type data end;
 
-/* Get the member data and pointers of a struct. The result is a tuple with
-   the data elements or the (raw) pointers to the data, respectively. The
-   latter can be used to access and change the fields of the struct using the
-   appropriate pointer operations in the prelude. */
+/* Check for struct objects, and get the type descriptor, the member data (as
+   a tuple of Pure values) and the member pointers (a tuple of pointer values)
+   of a struct. The latter are raw pointers which can be used to access and
+   change the fields of the struct using the appropriate pointer operations in
+   the prelude. */
 
-extern expr *ffi_struct_data(ffi_type *type, void *data) = struct_data;
-extern expr *ffi_struct_pointers(ffi_type *type, void *data) = struct_pointers;
+structp x::pointer	= pointerp (ffi_struct_type x);
+typeof x::pointer	= ffi_struct_type x if structp x;
+members x::pointer	= ffi_struct_members x if structp x;
+pointers x::pointer	= ffi_struct_pointers x if structp x;
