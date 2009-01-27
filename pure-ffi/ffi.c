@@ -715,7 +715,7 @@ typedef struct {
   void *code;
 } ffi_closure_data;
 
-void ffi_closure_fun(ffi_cif *cif, void *ret, void **args, void *v)
+static void ffi_closure_fun(ffi_cif *cif, void *ret, void **args, void *v)
 {
   ffi_closure_data *data = (ffi_closure_data*)v;
   pure_expr *x, *y;
