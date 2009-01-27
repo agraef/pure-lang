@@ -23,6 +23,7 @@ extern void *ffi_typevect(expr *types);
 extern ffi_type *ffi_new_struct_t(ffi_type **elements);
 extern void ffi_free_struct_t(ffi_type *type);
 extern void *ffi_new_struct(ffi_type *type, expr *data);
+extern void *ffi_copy_struct(ffi_type *type, void *data);
 extern void ffi_free_struct(ffi_type *type, void *data);
 extern expr *ffi_struct_type(expr *x);
 extern expr *ffi_struct_members(expr *x);
@@ -143,6 +144,11 @@ end;
 
 struct type::pointer data = sentry (ffi_free_struct type) p if ~null p
 when p = ffi_new_struct type data end;
+
+/* Create a copy of a C struct given by a pointer. */
+
+copy_struct type::pointer data::pointer = sentry (ffi_free_struct type) p
+if ~null p when p = ffi_copy_struct type data end;
 
 /* Check for struct objects, and get the type descriptor, the member data (as
    a tuple of Pure values) and the member pointers (a tuple of pointer values)

@@ -345,6 +345,28 @@ void *ffi_new_struct(ffi_type *type, pure_expr *x)
   return data;
 }
 
+void *ffi_copy_struct(ffi_type *type, void *data)
+{
+  void *data2;
+  if (!data || type->type != FFI_TYPE_STRUCT) return 0;
+  if (type->alignment == 0) {
+    /* Type information hasn't been filled in yet; do a dummy call to
+       ffi_prep_cif to do that now. */
+    ffi_cif cif;
+    ffi_type **t;
+    unsigned nelems = 0;
+    for (t = type->elements; *t; t++)
+      nelems++;
+    if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, nelems,
+		     &ffi_type_void, type->elements) != FFI_OK)
+      return 0;
+  }
+  data2 = malloc(type->size);
+  assert(type->size == 0 || data);
+  memcpy(data2, data, type->size);
+  return data2;
+}
+
 void ffi_free_struct(ffi_type *type, void *data)
 {
   if (type && data) free(data);
