@@ -33,12 +33,22 @@ ifneq "$(findstring x86_64-,$(host))" ""
 PIC = -fPIC
 endif
 
+# Default CFLAGS are -g -O2, CPPFLAGS, LDFLAGS and LIBS are empty by default.
+# These can be set from the command line as usual. Use CFLAGS, CPPFLAGS and
+# LDFLAGS for compiler (-O etc.), preprocessor (-I etc.) and linker (-L etc.) 
+# options, respectively. LIBS is to be used for additional libraries to be
+# linked (-l etc.).
+
+CFLAGS = -g -O2
+
+FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
+
 DISTFILES = COPYING Makefile README config.guess examples/*.pure gsl.c gsl.pure
 
 all: gsl$(DLL)
 
 gsl$(DLL): gsl.c
-	gcc $(shared) -o $@ $< $(PIC) -lgsl -lgslcblas -lm -lpure
+	gcc $(shared) -o $@ $< $(FLAGS) -lgsl -lgslcblas -lm -lpure $(LIBS)
 
 clean:
 	rm -f *$(DLL) *~ *.a *.o
