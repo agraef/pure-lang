@@ -269,13 +269,11 @@ static inline bool pure_is_struct(pure_expr *x, ffi_type **type, void **v)
     (*type)->type == FFI_TYPE_STRUCT;
 }
 
-static void *ffi_to_c(void *v, ffi_type *type, pure_expr *x);
-static pure_expr *ffi_from_cvect(ffi_cif *cif, void **v);
+/* Compute the member offsets in a struct relative to the given base
+   pointer. */
 
 static void offsets(void *data, unsigned n, ffi_type **types, void **v)
 {
-  /* Compute the member offsets in a struct relative to the given base
-     pointer. */
   size_t ofs = 0;
   unsigned i;
   for (i = 0; i < n; i++) {
@@ -285,6 +283,9 @@ static void offsets(void *data, unsigned n, ffi_type **types, void **v)
     ofs += types[i]->size;
   }
 }
+
+static void *ffi_to_c(void *v, ffi_type *type, pure_expr *x);
+static pure_expr *ffi_from_cvect(ffi_cif *cif, void **v);
 
 void *ffi_new_struct(ffi_type *type, pure_expr *x)
 {
