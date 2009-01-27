@@ -31,14 +31,14 @@ USAGE
 =====
 
 The module exposes a simplified interface to libffi tailored to the Pure
-language. The provided functions take the desired ABI, return type and tuple
-of argument types as arguments. The ABI is specified using one of the FFI_*
-constants defined by the module; for most purposes, FFI_DEFAULT_ABI is all
-that's needed. C types are specified using certain special values void_t,
-int_t etc., see ffi.pure for details. You can also get a list of these values
-using 'show -g FFI_* *_t' after importing the ffi module.
+language. Call interfaces are described using the desired ABI, return type and
+tuple of argument types. The ABI is specified using one of the FFI_* constants
+defined by the module; for most purposes, FFI_DEFAULT_ABI is all that's
+needed. C types are specified using special descriptors void_t, uint_t etc.,
+see ffi.pure for details. You can also get a list of these values using 'show
+-g FFI_* *_t' after importing the ffi module.
 
-The following functions are provided:
+The primary interface for calling C from Pure and vice versa is as follows:
 
 - fcall name abi rtype atypes: Creates a Pure function from a C function with
 the given name, specified as a string. This makes the C function callable in
@@ -57,13 +57,15 @@ with libffi are always passed in uncurried form, as a Pure tuple. E.g.:
 > fmod (5.3,0.7);
 0.4
 
+C structs are fully supported and are passed in a type-safe manner, see
+ffi.pure for details. For instance:
+
+> let complex_t = struct_t (double_t,double_t);
+> let cexp = fcall "cexp" FFI_DEFAULT_ABI complex_t (complex_t);
+> members (cexp (struct complex_t (0.0,1.0)));
+0.54030230586814,0.841470984807897
+
 See the 'examples' folder in the sources for more examples.
-
-TODO
-====
-
-Struct support is not implemented yet, but should be ready by the time version
-0.1 of this module is released.
 
 Author
 ======
