@@ -1,0 +1,52 @@
+
+/* libffi struct example: broken down time. */
+
+using ffi, system;
+
+/* Description of the tm struct. */
+
+let tm = struct_t (sint_t,  // tm_sec	seconds
+		   sint_t,  // tm_min	minutes
+		   sint_t,  // tm_hour	hours
+		   sint_t,  // tm_mday	day of the month
+		   sint_t,  // tm_mon	month
+		   sint_t,  // tm_year	year
+		   sint_t,  // tm_wday	day of the week
+		   sint_t,  // tm_yday	day in the year
+		   sint_t); // tm_isdst	daylight saving time
+
+/* Some C library functions dealing with broken down time values. */
+
+namespace C;
+extern char *asctime(void *tm);
+extern void *localtime(void *timep);
+extern void *gmtime(void *timep);
+namespace;
+
+/* Some wrappers for the broken down time functions. These are more useful for
+   calendar applications than what's currently provided in system.pure, since
+   the numeric components of date and time are readily available. */
+
+namespace time;
+
+time::asctime ts = C::asctime ts if structp ts && typeof ts==tm;
+
+time::localtime t::bigint = ts if structp ts when
+  tp = struct (struct_t uint64_t) t;
+  ts = copy_struct tm (C::localtime tp);
+end;
+
+time::gmtime t::bigint = ts if structp ts when
+  tp = struct (struct_t uint64_t) t;
+  ts = copy_struct tm (C::gmtime tp);
+end;
+
+/* Examples: */
+
+using namespace time;
+
+puts   "Broken down time: s,m,h,d/month,month,year,d/week,d/year,daylight savings";
+printf "Broken down time: %s (local)\n" $ str $ members $ localtime time;
+printf "Broken down time: %s (UTC)\n"   $ str $ members $ gmtime time;
+printf "Local time:       %s"           $ asctime $ localtime time;
+printf "UTC time:         %s"           $ asctime $ gmtime time;
