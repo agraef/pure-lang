@@ -322,6 +322,103 @@ pure_expr *pure_new_internal(pure_expr *x)
   return x;
 }
 
+/* Mass updates of refcounts. We need to optimize this case to avoid quadratic
+   complexity due to repeated searches of the tmps list. This prevents some
+   serious performance issues, in particular in symbolic matrix primitives.
+   Thanks to Scott E. Dillard for pointing this out. */
+
+/* To make this fast, we currently employ a rather simple heuristic which only
+   optimizes the most common cases (however, these seem to hold in most
+   primitives where it matters):
+
+   - The vector elements have a nonzero reference count already (as determined
+     by looking at the first element). In this case updates don't refer to the
+     tmps list and will be fast anyway (no optimization needed).
+
+   - The *last* vector element is near the beginning of the tmps list (as
+     determined by looking at the first three elements of the tmps list).
+     This indicates that the elements have been created in order and should
+     be updated in reverse.
+
+   - The *first* vector element is near the beginning of the tmps list (as
+     determined by looking at the first three elements of the tmps list).
+     This indicates that the elements have been created in reverse and should
+     be updated in order.
+
+   If a primitive falls outside this scheme then it may still suffer from
+   quadratic complexity. In such a case it is best if you create the elements
+   with a nonzero reference count instead, and decrement them later. */
+
+static inline short peek(pure_expr *const tmps,
+			 pure_expr *const first, pure_expr *const last)
+{
+  pure_expr *t = tmps;
+  short count = 0;
+  while (t && count < 3)
+    if (t == last)
+      return -1;
+    else if (t == first)
+      return 1;
+    else {
+      t = t->xp; count++;
+    }
+  return 0;
+}
+
+static inline void pure_new_vect(const size_t n, pure_expr **xs)
+{
+  short rc;
+  if (n == 0)
+    return;
+  else if (xs[0]->refc > 0)
+    rc = 0;
+  else {
+    interpreter& interp = *interpreter::g_interp;
+    pure_expr *tmps = interp.tmps;
+    pure_expr *first = xs[0], *last = xs[n-1];
+    rc = peek(tmps, first, last);
+  }
+  if (rc <= 0)
+    for (size_t i = n; i > 0; )
+      pure_new_internal(xs[--i]);
+  else
+    for (size_t i = 0; i < n; i++)
+      pure_new_internal(xs[i]);
+}
+
+/* Also handle the case of non-contiguous expression vectors which might arise
+   in symbolic matrix operations. */
+
+static inline void pure_new_vect2(const size_t n, const size_t m,
+				  const size_t stride, pure_expr **xs)
+{
+  if (stride == m)
+    pure_new_vect(n*m, xs);
+  short rc;
+  if (n == 0 || m == 0)
+    return;
+  else if (xs[0]->refc > 0)
+    rc = 0;
+  else {
+    interpreter& interp = *interpreter::g_interp;
+    pure_expr *tmps = interp.tmps;
+    pure_expr *first = xs[0], *last = xs[(n-1)*stride+m-1];
+    rc = peek(tmps, first, last);
+  }
+  if (rc <= 0)
+    for (size_t i = n; i > 0; ) {
+      const size_t k = (--i)*stride;
+      for (size_t j = m; j > 0; )
+	pure_new_internal(xs[k+(--j)]);
+    }
+  else
+    for (size_t i = 0; i < n; i++) {
+      const size_t k = i*stride;
+      for (size_t j = 0; j < m; j++)
+	pure_new_internal(xs[k+j]);
+    }
+}
+
 static void pure_free_clos(pure_expr *x)
 {
 #if DEBUG>3
@@ -768,10 +865,8 @@ pure_expr *pure_symbolic_matrix(void *p)
   x->tag = EXPR::MATRIX;
   x->data.mat.p = p;
   // count references
-  const size_t k = m->size1, l = m->size2, tda = m->tda;;
-  for (size_t i = 0; i < k; i++)
-    for (size_t j = 0; j < l; j++)
-      pure_new_internal(m->data[i*tda+j]);
+  const size_t k = m->size1, l = m->size2, tda = m->tda;
+  pure_new_vect2(k, l, tda, m->data);
   x->data.mat.refc = new uint32_t;
   *x->data.mat.refc = 1;
   MEMDEBUG_NEW(x)
@@ -977,9 +1072,9 @@ double_matrix_rows(size_t nrows, size_t ncols, size_t n, pure_expr **xs)
   if (!mat) return 0;
   double *data = mat->data;
   size_t tda = mat->tda;
+  pure_new_vect(n, xs);
   for (size_t count = 0, i = 0; count < n; count++) {
     pure_expr *x = xs[count];
-    pure_new_internal(x);
     switch (x->tag) {
     case EXPR::INT:
       data[i++*tda] = (double)x->data.i;
@@ -1026,9 +1121,9 @@ double_matrix_columns(size_t nrows, size_t ncols, size_t n, pure_expr **xs)
   if (!mat) return 0;
   double *data = mat->data;
   size_t tda = mat->tda;
+  pure_new_vect(n, xs);
   for (size_t count = 0, i = 0; count < n; count++) {
     pure_expr *x = xs[count];
-    pure_new_internal(x);
     switch (x->tag) {
     case EXPR::INT:
       data[i++] = (double)x->data.i;
@@ -1078,9 +1173,9 @@ complex_matrix_rows(size_t nrows, size_t ncols, size_t n, pure_expr **xs)
   if (!mat) return 0;
   double *data = mat->data;
   size_t tda = mat->tda;
+  pure_new_vect(n, xs);
   for (size_t count = 0, i = 0; count < n; count++) {
     pure_expr *x = xs[count];
-    pure_new_internal(x);
     switch (x->tag) {
     case EXPR::INT:
       data[2*i*tda] = (double)x->data.i;
@@ -1156,9 +1251,9 @@ complex_matrix_columns(size_t nrows, size_t ncols, size_t n, pure_expr **xs)
   if (!mat) return 0;
   double *data = mat->data;
   size_t tda = mat->tda;
+  pure_new_vect(n, xs);
   for (size_t count = 0, i = 0; count < n; count++) {
     pure_expr *x = xs[count];
-    pure_new_internal(x);
     switch (x->tag) {
     case EXPR::INT:
       data[2*i] = (double)x->data.i;
@@ -1237,9 +1332,9 @@ int_matrix_rows(size_t nrows, size_t ncols, size_t n, pure_expr **xs)
   if (!mat) return 0;
   int *data = mat->data;
   size_t tda = mat->tda;
+  pure_new_vect(n, xs);
   for (size_t count = 0, i = 0; count < n; count++) {
     pure_expr *x = xs[count];
-    pure_new_internal(x);
     switch (x->tag) {
     case EXPR::INT:
       data[i++*tda] = x->data.i;
@@ -1286,9 +1381,9 @@ int_matrix_columns(size_t nrows, size_t ncols, size_t n, pure_expr **xs)
   if (!mat) return 0;
   int *data = mat->data;
   size_t tda = mat->tda;
+  pure_new_vect(n, xs);
   for (size_t count = 0, i = 0; count < n; count++) {
     pure_expr *x = xs[count];
-    pure_new_internal(x);
     switch (x->tag) {
     case EXPR::INT:
       data[i++] = x->data.i;
@@ -1339,9 +1434,9 @@ symbolic_matrix_rows(size_t nrows, size_t ncols, size_t n, pure_expr **xs)
   if (!mat) return 0;
   pure_expr **data = mat->data;
   size_t tda = mat->tda;
+  pure_new_vect(n, xs);
   for (size_t count = 0, i = 0; count < n; count++) {
     pure_expr *x = xs[count];
-    pure_new_internal(x);
     switch (x->tag) {
     case EXPR::MATRIX: {
       gsl_matrix_symbolic *mat1 = (gsl_matrix_symbolic*)x->data.mat.p;
@@ -1400,9 +1495,9 @@ symbolic_matrix_columns(size_t nrows, size_t ncols, size_t n, pure_expr **xs)
   if (!mat) return 0;
   pure_expr **data = mat->data;
   size_t tda = mat->tda;
+  pure_new_vect(n, xs);
   for (size_t count = 0, i = 0; count < n; count++) {
     pure_expr *x = xs[count];
-    pure_new_internal(x);
     switch (x->tag) {
     case EXPR::MATRIX: {
       gsl_matrix_symbolic *mat1 = (gsl_matrix_symbolic*)x->data.mat.p;
@@ -2765,8 +2860,7 @@ pure_expr *pure_matrix_rows(uint32_t n, ...)
   /* This is called without a shadow stack frame, so we do our own cleanup
      here to avoid having temporaries hanging around indefinitely. */
   if (x) x->refc++;
-  for (size_t i = 0; i < n; i++)
-    pure_new_internal(xs[i]);
+  pure_new_vect(n, xs);
   for (size_t i = 0; i < n; i++)
     pure_free_internal(xs[i]);
   pure_unref_internal(x);
@@ -2887,8 +2981,7 @@ pure_expr *pure_matrix_columns(uint32_t n, ...)
   /* This is called without a shadow stack frame, so we do our own cleanup
      here to avoid having temporaries hanging around indefinitely. */
   if (x) x->refc++;
-  for (size_t i = 0; i < n; i++)
-    pure_new_internal(xs[i]);
+  pure_new_vect(n, xs);
   for (size_t i = 0; i < n; i++)
     pure_free_internal(xs[i]);
   pure_unref_internal(x);
@@ -3384,16 +3477,23 @@ uint32_t pure_push_args(uint32_t n, uint32_t m, ...)
   pure_expr **sstk = interp.sstk; uint32_t env = (m>0)?sz+n+1:0;
   // mark the beginning of this frame
   sstk[sz++] = 0;
+  pure_expr **frame = sstk+sz;
+  const uint32_t k = n+m;
   va_start(ap, m);
-  for (size_t i = 0; i < n+m; i++) {
+  for (uint32_t i = 0; i < k; i++) {
     pure_expr *x = va_arg(ap, pure_expr*);
     sstk[sz++] = x;
+  };
+  va_end(ap);
+  /* The reference counts are updated in reverse which is faster in the common
+     case that temporary arguments have been generated in order. */
+  for (uint32_t i = k; i > 0; ) {
+    pure_expr *x = frame[--i];
     if (x->refc > 0)
       x->refc++;
     else
       pure_new_internal(x);
-  };
-  va_end(ap);
+  }
 #if SSTK_DEBUG
   cerr << "++ stack: (sz = " << sz << ")\n";
   for (size_t i = 0; i < sz; i++) {
