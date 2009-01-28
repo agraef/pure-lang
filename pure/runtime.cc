@@ -5151,7 +5151,7 @@ pure_expr *matrix_transpose(pure_expr *x)
     gsl_matrix_symbolic *m2 = create_symbolic_matrix(m, n);
     for (size_t i = 0; i < n; i++)
       for (size_t j = 0; j < m; j++)
-	m2->data[j*m2->tda+i] = pure_new_internal(m1->data[i*m1->tda+j]);
+	m2->data[j*m2->tda+i] = m1->data[i*m1->tda+j];
     return pure_symbolic_matrix(m2);
   }
 #ifdef HAVE_GSL
