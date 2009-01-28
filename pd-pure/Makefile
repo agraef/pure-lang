@@ -10,8 +10,12 @@ ifeq ($(strip $(prefix)),)
 prefix = /usr/local
 endif
 
+# Installation goes into $(libdir)/pd, you can also set this directly
+# instead of $(prefix).
+libdir = $(prefix)/lib
+
 # Pd library path.
-pdlibdir = $(prefix)/lib/pd
+pdlibdir = $(libdir)/pd
 
 # Install dir for the external and accompanying stuff.
 pdextradir = $(pdlibdir)/extra/pure
