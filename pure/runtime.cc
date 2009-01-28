@@ -595,7 +595,7 @@ pure_expr *pure_symbol(int32_t tag)
       (interp.ExprPtrTy, false, llvm::GlobalVariable::InternalLinkage, 0,
        lab.c_str(), interp.module);
     interp.JIT->addGlobalMapping(v.v, &v.x);
-    v.x = pure_new(pure_const(tag));
+    v.x = pure_new_internal(pure_const(tag));
     // Since we just created this variable, it doesn't have any closure bound
     // to it yet, so it's safe to just return the symbol as is.
     return v.x;
