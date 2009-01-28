@@ -10,6 +10,10 @@ ifeq ($(strip $(prefix)),)
 prefix = /usr/local
 endif
 
+# Installation goes into $(libdir)/pure, you can also set this directly
+# instead of $(prefix).
+libdir = $(prefix)/lib
+
 # Try to guess the host system type.
 host = $(shell ./config.guess)
 
@@ -54,11 +58,11 @@ clean:
 	rm -f *$(DLL) *~ *.a *.o
 
 install:
-	test -d "$(DESTDIR)$(prefix)/lib/pure" || mkdir -p "$(DESTDIR)$(prefix)/lib/pure"
-	cp ffi.pure ffi$(DLL) "$(DESTDIR)$(prefix)/lib/pure"
+	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
+	cp ffi.pure ffi$(DLL) "$(DESTDIR)$(libdir)/pure"
 
 uninstall:
-	rm -f "$(DESTDIR)$(prefix)/lib/pure/ffi.pure" "$(DESTDIR)$(prefix)/lib/pure/ffi$(DLL)"
+	rm -f "$(DESTDIR)$(libdir)/pure/ffi.pure" "$(DESTDIR)$(libdir)/pure/ffi$(DLL)"
 
 dist:
 	rm -rf $(dist)
