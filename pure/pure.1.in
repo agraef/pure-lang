@@ -1,4 +1,5 @@
 .TH Pure 1 "January 2009" "Pure Version @version@"
+.hw name-space
 .SH NAME
 pure \- the Pure interpreter
 .SH SYNOPSIS
@@ -1259,8 +1260,10 @@ below). However, it does
 .I not
 supply built-in support for matrix arithmetic and other linear algebra
 algorithms. The idea is that these can and should be provided through separate
-libraries (please check the Pure website for the pure-gsl module which is an
-ongoing project to provide a full GSL interface for the Pure language).
+libraries (please check the Pure website for the
+.B pure-gsl
+module which is an ongoing project to provide a full GSL interface for the
+Pure language).
 .PP
 But Pure's facilities for matrix and list processing also make it easy to roll
 your own, if desired. First, the prelude provides matrix versions of the
@@ -1826,7 +1829,7 @@ and
 .B namespace
 declarations are discussed in further detail below.
 .SS Modules
-While Pure doesn't offer separate compilation right now, the
+While Pure doesn't offer separate compilation, the
 .B using
 declaration provides a simple but effective way to assemble a Pure program
 from several source modules. The Pure program is basically the concatenation
@@ -3631,6 +3634,13 @@ segfault all over the place. Therefore it is highly recommended that you wrap
 your lowlevel code in Pure routines and data structures which do all the
 checks necessary to ensure that only the right kind of data is passed to C
 routines.
+.PP
+Another limitation of the C interface is that it does not offer any special
+support for C structs and C function parameters. However, an optional addon
+module is available which interfaces to the libffi library to provide that
+kind of functionality, please see the description of the
+.B pure-ffi
+module on the Pure website for details.
 .SS Special Forms
 Special forms are recognized at compile time only. Thus the `catch' function,
 as well as `quote' and the operators `&&', `||', `$$' and `&', are only
