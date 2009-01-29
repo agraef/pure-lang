@@ -26,6 +26,8 @@ shared = -shared
 ifneq "$(findstring -mingw,$(host))" ""
 # Windows
 DLL = .dll
+# This is needed to link with GMP.
+LDFLAGS = -Wl,--enable-auto-import
 endif
 ifneq "$(findstring -darwin,$(host))" ""
 # OSX (untested)
@@ -52,7 +54,7 @@ DISTFILES = COPYING Makefile README config.guess examples/*.pure ffi.c ffi.pure
 all: ffi$(DLL)
 
 ffi$(DLL): ffi.c
-	gcc $(shared) -o $@ $< $(FLAGS) -lffi -lpure $(LIBS)
+	gcc $(shared) -o $@ $< $(FLAGS) -lffi -lpure -lgmp $(LIBS)
 
 clean:
 	rm -f *$(DLL) *~ *.a *.o
