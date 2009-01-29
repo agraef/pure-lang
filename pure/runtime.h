@@ -907,6 +907,8 @@ double pure_gettimeofday(void);
 
 double pure_nanosleep(double t);
 
+#include <stdio.h>
+
 #ifdef __MINGW32__
 /* Windows compatibility. */
 FILE *popen(const char *command, const char *type);
@@ -918,8 +920,6 @@ unsigned int sleep(unsigned int secs);
    from Pure right now, these little wrappers are provided to process at most
    one value at a time. It is the responsibility of the caller that the
    provided parameters match up with the format specifiers. */
-
-#include <stdio.h>
 
 int pure_fprintf(FILE *fp, const char *format);
 int pure_fprintf_int(FILE *fp, const char *format, int32_t x);
