@@ -15,30 +15,19 @@ let tm = struct_t (sint_t,  // tm_sec	seconds
 		   sint_t,  // tm_yday	day in the year
 		   sint_t); // tm_isdst	daylight saving time
 
-/* Some C library functions dealing with broken down time values. */
-
-namespace C;
-extern char *asctime(void *tm);
-extern void *localtime(void *timep);
-extern void *gmtime(void *timep);
-namespace;
-
-/* Some wrappers for the broken down time functions. These are more useful for
-   calendar applications than what's currently provided in system.pure, since
-   the numeric components of date and time are readily available. */
+/* Some convenient wrappers for the broken down time functions from
+   system.pure. These require Pure 0.17 or later. */
 
 namespace time;
 
-time::asctime ts = C::asctime ts if structp ts && typeof ts==tm;
+time::asctime ts = ::asctime ts if structp ts && typeof ts==tm;
 
 time::localtime t::bigint = ts if structp ts when
-  tp = struct (struct_t uint64_t) t;
-  ts = copy_struct tm (C::localtime tp);
+  ts = copy_struct tm (::localtime t);
 end;
 
 time::gmtime t::bigint = ts if structp ts when
-  tp = struct (struct_t uint64_t) t;
-  ts = copy_struct tm (C::gmtime tp);
+  ts = copy_struct tm (::gmtime t);
 end;
 
 /* Examples: */
