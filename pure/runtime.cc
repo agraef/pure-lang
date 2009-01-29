@@ -6731,18 +6731,24 @@ char *pure_ctime(int64_t t)
 }
 
 extern "C"
-char *pure_gmtime(int64_t t)
+struct tm *pure_gmtime(int64_t t)
 {
   time_t time = (time_t)t;
-  return asctime(gmtime(&time));
+  return gmtime(&time);
 }
 
 extern "C"
-char *pure_strftime(const char *format, int64_t t)
+struct tm *pure_localtime(int64_t t)
 {
   time_t time = (time_t)t;
+  return localtime(&time);
+}
+
+extern "C"
+char *pure_strftime(const char *format, struct tm *tm)
+{
   static char buf[1024];
-  if (!strftime(buf, 1024, format, localtime(&time)))
+  if (!strftime(buf, 1024, format, tm))
     /* The interface to strftime is rather brain-damaged since it returns zero
        both in case of a buffer overflow and when the resulting string is
        empty. We just pretend that there cannot be any errors and return an

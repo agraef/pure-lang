@@ -888,12 +888,14 @@ void pure_set_errno(int value);
 
 int64_t pure_time(void);
 
-/* The following routines allow you to convert a time value to a string, using
-   different formats. See ctime(3), gmtime(3) and strftime(3) for details. */
+/* The following routines allow you to convert a time value to broken-down
+   time or a string, using different formats. See ctime(3), gmtime(3),
+   localtime(3) and strftime(3) for details. */
 
 char *pure_ctime(int64_t t);
-char *pure_gmtime(int64_t t);
-char *pure_strftime(const char *format, int64_t t);
+struct tm *pure_gmtime(int64_t t);
+struct tm *pure_localtime(int64_t t);
+char *pure_strftime(const char *format, struct tm *tm);
 
 /* gettimeofday() interface. This may actually be implemented using different
    system functions, depending on what's available on the host OS. */

@@ -97,15 +97,22 @@ extern void pure_trap(int action, int sig) = trap;
 
 extern long pure_time() = time;
 
-/* Functions to format a time value as a string. The ctime and gmtime
-   functions convert a time value to a string in either local time or UTC.
-   The strftime function also formats a time value as local time, using a
-   format specification supplied by the user. See ctime(3), gmtime(3) and
-   strftime(3) for details. */
+/* Functions to convert a time value to broken-down time or a string. The
+   ctime function converts a time value as returned by the time function to a
+   string in local time. The gmtime and localtime functions convert a time
+   value to UTC or local time in "broken-down" form (a pointer to a tm struct
+   containing a bunch of int fields) which can then be passed to the asctime
+   and strftime functions, or to int_matrix 9 if you want to convert the data
+   to a matrix. The asctime function formats broken-down time as a string. The
+   strftime function does the same, but uses a format string supplied by the
+   user. See ctime(3), gmtime(3), localtime(3), asctime(3) and strftime(3) for
+   details. */
 
 extern char* pure_ctime(long) = ctime;
-extern char* pure_gmtime(long) = gmtime;
-extern char* pure_strftime(char* format, long t) = strftime;
+extern void* pure_gmtime(long) = gmtime;
+extern void* pure_localtime(long) = localtime;
+extern char* asctime(void *tm);
+extern char* pure_strftime(char* format, void *tm) = strftime;
 
 /* The gettimeofday function also returns wallclock time as seconds since the
    epoch, but theoretically offers resolutions in the microsec range (actual

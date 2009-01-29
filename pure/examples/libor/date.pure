@@ -162,11 +162,11 @@ pdays2greg pd::int = jdays2greg (pday2jday pd);
 mdays2greg md::int = jdays2greg (mday2jday md);
 
 //parse gmtime string and extract the components
-gmparse wday psecs::int| gmparse wday psecs::bigint= (gmtime psecs)!!(0..2);
-gmparse mon psecs::int | gmparse mon psecs::bigint = (gmtime psecs)!!(4..6);
-gmparse day psecs::int | gmparse day psecs::bigint = (gmtime psecs)!!(8..9);
-gmparse utc psecs::int | gmparse utc psecs::bigint = (gmtime psecs)!!(11..18);
-gmparse year psecs::int| gmparse year psecs::bigint =(gmtime psecs)!!(20..24);
+gmparse wday psecs::int| gmparse wday psecs::bigint= asctime (gmtime psecs)!!(0..2);
+gmparse mon psecs::int | gmparse mon psecs::bigint = asctime (gmtime psecs)!!(4..6);
+gmparse day psecs::int | gmparse day psecs::bigint = asctime (gmtime psecs)!!(8..9);
+gmparse utc psecs::int | gmparse utc psecs::bigint = asctime (gmtime psecs)!!(11..18);
+gmparse year psecs::int| gmparse year psecs::bigint= asctime (gmtime psecs)!!(20..24);
 
 /* phase of any cycle of 'length' from 'init' at time 'now' (must be same units)
    this is surprisingly accurate without computing the full orbital elements */
@@ -188,9 +188,9 @@ cal = do puts [
     "****************************************************************",
     "*    New Calendar/Clock, Copyright (c) 2008 by Libor Spacek    *",
     "****************************************************************",
-    ((strftime "%X" time) + "\t Local time"),
+    ((strftime "%X" (localtime time)) + "\t Local time"),
     ((gmparse utc time) + "\t UTC time"),
-    ((strftime "%x" time) + "\t Gregorian date today") ] $$
+    ((strftime "%x" (localtime time)) + "\t Gregorian date today") ] $$
 //   printf "%s   \t UTC Time in h:t:d:s\n"  
 // (str (secs2htds (int (time mod secsinday)))) $$ // seconds since midnight
    printf "%12.4f   \t Julian day\n" jdaytoday $$
