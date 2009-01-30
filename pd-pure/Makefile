@@ -32,6 +32,7 @@ shared = -shared
 ifneq "$(findstring -mingw,$(host))" ""
 # Windows
 DLL = .dll
+LIBS = -lpd
 endif
 ifneq "$(findstring -linux,$(host))" ""
 # Linux
