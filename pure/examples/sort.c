@@ -13,9 +13,7 @@
 /* To compile (Linux): 'gcc -shared -o sort.so sort.c -lpure' (add -fPIC on 64
    bit systems). This will create a dynamic library ready to be loaded by the
    Pure interpreter. (On OSX and Windows, replace .so with .dylib or .dll,
-   respectively. On OSX, you also have to replace -shared with -dynamiclib.
-   On Windows you might wish to add the '-Wl,--enable-auto-import' linker
-   option.)
+   respectively. On OSX, you also have to replace -shared with -dynamiclib.)
 
    Now start the interpreter and enter the following to "dlopen" sort.so and
    declare the sort function:
