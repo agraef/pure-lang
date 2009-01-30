@@ -47,7 +47,11 @@ typedef struct _namelist
     char *nl_string;
 } t_namelist;
 
+#ifdef __MINGW32__
+/* This doesn't seem to be available on Windows, at least it's not in
+   pd.dll. */
 extern t_namelist *sys_searchpath;
+#endif
 
 /* Return the hosting Pd version as a string in the format "major.minor". */
 
@@ -69,6 +73,9 @@ extern const char *pd_libdir_s(void)
 
 extern pure_expr *pd_path_sl(void)
 {
+#ifdef __MINGW32__
+  return pure_listv(0, 0);
+#else
   size_t n;
   pure_expr *xs[1024];
   t_namelist *p = sys_searchpath;
@@ -80,6 +87,7 @@ extern pure_expr *pd_path_sl(void)
     p = p->nl_next;
   }
   return pure_listv(n, xs);
+#endif
 }
 
 /* Alternate interface to Pd's post() routine. The Pd routine can't be used
