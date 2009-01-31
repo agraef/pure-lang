@@ -29,7 +29,8 @@ syn case match
 
 syn region   pureCComment	start=+/\*+ end=+\*/+
 syn match    pureComment	+//.*+
-syn region   pureString		start=+"+ skip=+\\"+ end=+"+
+syn region   pureString	        start=+L\="+ skip=+\\\\\|\\"+ end=+"+ 
+
 
 " keywords
 syn keyword pureKeyword	infix infixl infixr prefix postfix
