@@ -47,7 +47,7 @@ typedef struct _namelist
     char *nl_string;
 } t_namelist;
 
-#ifdef __MINGW32__
+#ifndef __MINGW32__
 /* This doesn't seem to be available on Windows, at least it's not in
    pd.dll. */
 extern t_namelist *sys_searchpath;

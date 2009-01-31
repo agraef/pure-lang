@@ -38,10 +38,12 @@ ifneq "$(findstring -mingw,$(host))" ""
 # sitting in $(PUREDIR) when compiling this module.
 DLL = .dll
 LDFLAGS = -Wl,--enable-auto-import
-LIBS = $(PUREOBJ) $(PURELIB) -lpd
+PURELIB = $(PUREOBJS) $(PURELIBS) -lpd
 PUREDIR = ../pure
-PUREOBJ = $(addprefix $(PUREDIR)/, expr.o interpreter.o lexer.o matcher.o parser.o printer.o runtime.o symtable.o util.o)
-PURELIB = `llvm-config --ldflags --libs core jit native` -lgsl -lgslcblas -lregex -lglob -liconv -lm -lreadline -lgmp -limagehlp -lpsapi -lmingwex -lstdc++
+PUREOBJS = $(addprefix $(PUREDIR)/, expr.o interpreter.o lexer.o matcher.o parser.o printer.o runtime.o symtable.o util.o)
+PURELIBS = `llvm-config --ldflags --libs core jit native` -lgsl -lgslcblas -lregex -lglob -liconv -lm -lreadline -lgmp -limagehlp -lpsapi -lmingwex -lstdc++
+else
+PURELIB = -lpure
 endif
 ifneq "$(findstring -linux,$(host))" ""
 # Linux
@@ -65,14 +67,12 @@ endif
 
 CFLAGS = -g -O2
 
-FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
-
 DISTFILES = COPYING Makefile README config.guess pure.c examples/*.pure examples/*.pd examples/*.el
 
 all: pure$(DLL)
 
 pure$(DLL): pure.o
-	gcc $(shared) -o $@ $(PIC) $(LDFLAGS) $< $(LIBS)
+	gcc $(shared) -o $@ $(PIC) $(LDFLAGS) $< $(PURELIB) $(LIBS)
 
 pure.o: pure.c
 	gcc $(CPPFLAGS) $(CFLAGS) $(PIC) -o $@ -c $< -DVERSION="\"$(version)\"" -DLIBDIR="\"$(pdlibdir)\""
