@@ -28,11 +28,20 @@ host = $(shell ./config.guess)
 DLL = .so
 shared = -shared
 
-# Take care of some common systems.
+# Take care of some common (and broken-by-design) systems.
 ifneq "$(findstring -mingw,$(host))" ""
-# Windows
+# Windows: "Abandon all hope, ye who enter here." Apparently Windoze isn't
+# clever enough to resolve libpure.dll and all its dependencies correctly when
+# it's linked into another dll to be loaded with Window's horrible excuse of a
+# dynamic loader. So we have to link the interpreter *statically*. Oh well. :(
+# NOTE: You have to make sure that you have the compiled Pure source tree
+# sitting in $(PUREDIR) when compiling this module.
 DLL = .dll
-LIBS = -lpd
+LDFLAGS = -Wl,--enable-auto-import
+LIBS = $(PUREOBJ) $(PURELIB) -lpd
+PUREDIR = ../pure
+PUREOBJ = $(addprefix $(PUREDIR)/, expr.o interpreter.o lexer.o matcher.o parser.o printer.o runtime.o symtable.o util.o)
+PURELIB = `llvm-config --ldflags --libs core jit native` -lgsl -lgslcblas -lregex -lglob -liconv -lm -lreadline -lgmp -limagehlp -lpsapi -lmingwex -lstdc++
 endif
 ifneq "$(findstring -linux,$(host))" ""
 # Linux
@@ -62,8 +71,11 @@ DISTFILES = COPYING Makefile README config.guess pure.c examples/*.pure examples
 
 all: pure$(DLL)
 
-pure$(DLL): pure.c
-	gcc $(shared) -o $@ -DVERSION="\"$(version)\"" -DLIBDIR="\"$(pdlibdir)\"" $< $(FLAGS) -lpure $(LIBS)
+pure$(DLL): pure.o
+	gcc $(shared) -o $@ $(PIC) $(LDFLAGS) $< $(LIBS)
+
+pure.o: pure.c
+	gcc $(CPPFLAGS) $(CFLAGS) $(PIC) -o $@ -c $< -DVERSION="\"$(version)\"" -DLIBDIR="\"$(pdlibdir)\""
 
 clean:
 	rm -f pure$(DLL) *~ *.a *.o
