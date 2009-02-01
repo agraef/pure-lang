@@ -1,7 +1,7 @@
 
 # Package name and version number:
 dist = pd-pure-$(version)
-version = 0.3
+version = 0.4
 
 # Try to guess the installation prefix (this needs GNU make):
 prefix = $(patsubst %/bin/pd,%,$(shell which pd 2>/dev/null))
