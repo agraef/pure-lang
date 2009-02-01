@@ -54,7 +54,7 @@ DISTFILES = COPYING Makefile README config.guess examples/*.pure ffi.c ffi.pure
 all: ffi$(DLL)
 
 ffi$(DLL): ffi.c
-	gcc $(shared) -o $@ $< $(FLAGS) -lffi -lpure -lgmp $(LIBS)
+	$(CC) $(shared) -o $@ $< $(FLAGS) -lffi -lpure -lgmp $(LIBS)
 
 clean:
 	rm -f *$(DLL) *~ *.a *.o

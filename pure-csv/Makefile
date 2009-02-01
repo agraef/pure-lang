@@ -52,7 +52,7 @@ DISTFILES = COPYING Makefile README config.guess examples/*.pure csv.c csv.pure
 all: csv$(DLL)
 
 csv$(DLL): csv.c
-	gcc $(shared) -o $@ $< $(FLAGS) -lpure $(LIBS)
+	$(CC) $(shared) -o $@ $< $(FLAGS) -lpure $(LIBS)
 
 clean:
 	rm -f *$(DLL) *~ *.a *.o

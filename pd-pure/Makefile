@@ -62,10 +62,10 @@ DISTFILES = COPYING Makefile README config.guess pure.c examples/*.pure examples
 all: pure$(DLL)
 
 pure$(DLL): pure.o
-	gcc $(shared) -o $@ $(PIC) $(LDFLAGS) $< -lpure $(LIBS)
+	$(CC) $(shared) -o $@ $(PIC) $(LDFLAGS) $< -lpure $(LIBS)
 
 pure.o: pure.c
-	gcc $(CPPFLAGS) $(CFLAGS) $(PIC) -o $@ -c $< -DVERSION="\"$(version)\"" -DLIBDIR="\"$(pdlibdir)\""
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(PIC) -o $@ -c $< -DVERSION="\"$(version)\"" -DLIBDIR="\"$(pdlibdir)\""
 
 clean:
 	rm -f pure$(DLL) *~ *.a *.o

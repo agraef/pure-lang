@@ -52,7 +52,7 @@ DISTFILES = COPYING Makefile README config.guess examples/*.pure gsl.c gsl.pure
 all: gsl$(DLL)
 
 gsl$(DLL): gsl.c
-	gcc $(shared) -o $@ $< $(FLAGS) -lgsl -lgslcblas -lm -lpure $(LIBS)
+	$(CC) $(shared) -o $@ $< $(FLAGS) -lgsl -lgslcblas -lm -lpure $(LIBS)
 
 clean:
 	rm -f *$(DLL) *~ *.a *.o
