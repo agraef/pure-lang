@@ -229,8 +229,11 @@ typedef struct _pure {
 
 typedef struct _px {
   t_object obj;
-  t_pure *x;			/* parent */
+#ifdef __MINGW32__
+  int fence;
+#endif
   int ix;			/* inlet index */
+  t_pure *x;			/* parent */
 } t_px;
 
 /* The runtime class, which is used to control the Pure runtime environment.
@@ -239,6 +242,9 @@ typedef struct _px {
 
 typedef struct _runtime {
   t_object obj;
+#ifdef __MINGW32__
+  int fence;
+#endif
   t_outlet *out1, *out2;
 } t_runtime;
 
