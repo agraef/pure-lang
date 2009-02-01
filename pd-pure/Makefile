@@ -57,14 +57,15 @@ endif
 
 CFLAGS = -g -O2
 
-FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
-
 DISTFILES = COPYING Makefile README config.guess pure.c examples/*.pure examples/*.pd examples/*.el
 
 all: pure$(DLL)
 
-pure$(DLL): pure.c
-	gcc $(shared) -o $@ -DVERSION="\"$(version)\"" -DLIBDIR="\"$(pdlibdir)\"" $< $(FLAGS) -lpure $(LIBS)
+pure$(DLL): pure.o
+	gcc $(shared) -o $@ $(PIC) $(LDFLAGS) $< -lpure $(LIBS)
+
+pure.o: pure.c
+	gcc $(CPPFLAGS) $(CFLAGS) $(PIC) -o $@ -c $< -DVERSION="\"$(version)\"" -DLIBDIR="\"$(pdlibdir)\""
 
 clean:
 	rm -f pure$(DLL) *~ *.a *.o
