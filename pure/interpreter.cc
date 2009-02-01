@@ -28,6 +28,7 @@ int interpreter::stackmax = 0;
 int interpreter::stackdir = 0;
 int interpreter::brkflag = 0;
 int interpreter::brkmask = 0;
+bool interpreter::g_init = false;
 
 static void* resolve_external(const std::string& name)
 {
@@ -68,8 +69,8 @@ interpreter::interpreter()
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0), result(0),
     mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0), fptr(0)
 {
-  if (!g_interp) {
-    g_interp = this;
+  if (!g_interp) g_interp = this;
+  if (!g_init) {
     stackdir = c_stack_dir();
     // Preload some auxiliary dlls. First load the Pure library if we built it.
 #ifdef LIBPURE
@@ -82,6 +83,7 @@ interpreter::interpreter()
 #ifdef LIBREGEX
     llvm::sys::DynamicLibrary::LoadLibraryPermanently(LIBREGEX, 0);
 #endif
+    g_init = true;
   }
 
   sstk_sz = 0; sstk_cap = 0x10000; // 64K

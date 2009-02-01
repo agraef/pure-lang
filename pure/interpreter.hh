@@ -629,6 +629,8 @@ public:
 
 private:
 
+  static bool g_init;
+
   // Utility functions to quickly save and restore the global state.
   struct globals {
     uint8_t verbose;
