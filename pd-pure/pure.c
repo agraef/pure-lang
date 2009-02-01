@@ -902,8 +902,6 @@ extern void pure_setup(void)
   char buf[MAXPDSTRING];
   char *ptr;
   int fd;
-  post("pd-pure %s (GPL) 2008 Albert Graef <Dr.Graef@t-online.de>", VERSION);
-  post("pd-pure: compiled for pd-%d.%d on %s %s", PD_MAJOR_VERSION, PD_MINOR_VERSION, __DATE__, __TIME__);
   interp = pure_create_interp(0, 0);
 #if EAGER
   /* Force eager compilation *now*, so that the JIT doesn't start compiling
@@ -912,6 +910,12 @@ extern void pure_setup(void)
   pure_interp_compile(interp);
 #endif
   if (interp) {
+    pure_expr *x = pure_symbol(pure_sym("version"));
+    char *pure_version = 0;
+    pure_is_cstring_dup(x, &pure_version);
+    post("pd-pure %s (pure-%s) (c) 2008 Albert Graef <Dr.Graef@t-online.de>", VERSION, pure_version);
+    post("pd-pure: compiled for pd-%d.%d on %s %s", PD_MAJOR_VERSION, PD_MINOR_VERSION, __DATE__, __TIME__);
+    if (pure_version) free (pure_version);
     /* Register the loader for Pure externals. */
     sys_register_loader(pure_loader);
     /* Create the proxy class for extra inlets. */
