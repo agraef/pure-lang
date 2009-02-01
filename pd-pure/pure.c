@@ -47,11 +47,7 @@ typedef struct _namelist
     char *nl_string;
 } t_namelist;
 
-#ifndef __MINGW32__
-/* This doesn't seem to be available on Windows, at least it's not in
-   pd.dll. */
 extern t_namelist *sys_searchpath;
-#endif
 
 /* Return the hosting Pd version as a string in the format "major.minor". */
 
@@ -73,9 +69,9 @@ extern const char *pd_libdir_s(void)
 
 extern pure_expr *pd_path_sl(void)
 {
-#ifdef __MINGW32__
-  return pure_listv(0, 0);
-#else
+#if 1
+  /* You might have to disable this for some Windows builds of pd.dll which
+     for some reason lack sys_searchpath. */
   size_t n;
   pure_expr *xs[1024];
   t_namelist *p = sys_searchpath;
@@ -87,6 +83,8 @@ extern pure_expr *pd_path_sl(void)
     p = p->nl_next;
   }
   return pure_listv(n, xs);
+#else
+  return pure_listv(0, 0);
 #endif
 }
 
@@ -211,6 +209,11 @@ static int void_sym = 0, delay_sym = 0;
 
 typedef struct _pure {
   t_object x_obj;
+#ifdef __MINGW32__
+  /* This seems to be necessary as some as yet undetermined Pd routine seems
+     to write past the end of x_obj on Windows. */
+  int fence;			/* dummy field (not used) */
+#endif
   int n_in, n_out;		/* number of extra inlets and outlets */
   struct _px **in;		/* extra inlet proxies, see t_px below */
   t_outlet **out;		/* outlets */
