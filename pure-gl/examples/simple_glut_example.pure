@@ -1,0 +1,35 @@
+
+using GL,GLU,GLUT;
+using ffi;
+
+GLUT::Init (int_pointer NULL {0}) NULL;
+           // pointer to argc     //argv
+
+GLUT::InitDisplayMode (GLUT::DOUBLE or GLUT::RGB or GLUT::DEPTH );
+GLUT::InitWindowSize 200 200;
+GLUT::CreateWindow "Pure Glut Test";
+
+GL::ClearColor 1.0 1.0 1.0 1.0; 
+GL::MatrixMode GL::MODELVIEW;
+GL::LoadIdentity;
+GL::MatrixMode GL::PROJECTION;
+GL::LoadIdentity;
+
+display _ = ()
+when
+  GL::Clear (GL::DEPTH_BUFFER_BIT or GL::COLOR_BUFFER_BIT);
+  GL::Begin GL::TRIANGLES;
+    GL::Color3f 1.0 0.0 0.0;
+    GL::Vertex2d (-1.0) (-1.0);
+    GL::Color3f 0.0 1.0 0.0;
+    GL::Vertex2d 1.0 (-1.0);
+    GL::Color3f 0.0 0.0 1.0;
+    GL::Vertex2d 1.0 1.0;
+  GL::End;
+  GLUT::SwapBuffers;
+end;
+
+let display_cb = fclos display FFI_DEFAULT_ABI void_t void_t;
+GLUT::DisplayFunc display_cb;
+
+GLUT::MainLoop;

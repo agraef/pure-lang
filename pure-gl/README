@@ -1,0 +1,95 @@
+Pure OpenGL bindings generator, by Scott Dillard.
+
+Copyright info:
+
+The binding generator in the generator subdirectory contains significant
+portions of the Language.C Haskell library. See generator/dump-ast.hs for
+pertinent license and copyright information.
+
+
+
+
+USING THE GL BINDINGS:
+
+The main part of the bindings consist of 3 Pure files: GL.pure, GLU.pure and
+GLUT.pure.  There is no C library, so just put these files wherever the Pure
+interpreter can find them. (Probably just copy them to your program directory
+for now. This project is very much in flux.)
+
+In your Pure program, write something like
+
+  using GL,GLU,GLUT;
+
+GL.pure covers OpenGL up through version 2.1. To get access to extensions, you
+include GL_XXX.pure where XXX is the extensions suffix. Currently, there are
+GL_ARB.pure, GL_EXT.pure, GL_NV.pure and GL_ATI.pure, which should cover about
+99% of the useful extensions out there. If you need more, it is straightforward
+to tweak the generator to scrape some of the more esoteric extensions from your
+headers.
+
+As they are written now, the GL Pure bindings will look for libGL.so,
+libGLU.so and libglut.so, which is what you want for Linux. For Windows or
+Mac, change these to the appropriate dll/dylib files. This is the first line
+in each of gl.pure, glu.pure and glut.pure.
+
+The functions are in namespaces GL, GLU and GLUT respectively. Functions
+are in curried form, i.e., 
+
+  GL::Vertex3d 1.0 2.0 3.0;
+ 
+GL enumerants are in uppercase, as in C. 
+
+  GL::Begin GL::LINE_STRIP
+
+( Note: This may change. The idea is that function and enumerant names match
+those in the OpenGL spec. I haven't yet decided if this is cool or annoying.
+With the Pure libffi bindings its possible to make GL calls look exactly like
+C, i.e., glVertex3d(1.0,2.0,3.0); This may end up being easier for people to
+use. )
+
+Currently, if the bindings reference a function that your driver DLL does
+not contain, it echoes this to stdout. I'm working on a way to supress this.
+
+Some examples can be found in the examples subdirectory.
+
+
+USING THE GENERATOR:
+
+The binding generator can be found in the generator subdirectory.
+
+This uses the Language.C parser for Haskell
+
+http://hackage.haskell.org/cgi-bin/hackage-scripts/package/language-c
+
+You will need a Haskell compiler (GHC) and that library. The Haskell program
+dump-ast.hs parses a C file (its only command line argument) and writes the
+AST to stdout. It calls GCC to do the preprocessing, so on Windows you will
+probably need MinGW installed. For Linux users, I have uploaded statically
+linked binaries, both 32 and 64 bits, to the Pure-lang Google Group files
+area. (It still needs libgmp, but so does Pure so I assume you have that.)
+
+The Pure program pure-gl-gen.pure calls dump-ast, passing it the file
+all_gl.h, which includes all of gl.h, glext.h, glu.h and glut.h. Because most
+Linux distributions contain MESA headers in /usr/include/GL, the generator
+looks for these files in the current working directory instead.  You should
+create symlinks to headers from your GPU vendor. If you're like me and you use
+Ubuntu with an Nvidia GPU, then do the following:
+
+  ln -s /usr/share/doc/nvidia-glx-new-dev/include/GL/gl.h
+  ln -s /usr/share/doc/nvidia-glx-new-dev/include/GL/glext.h
+  ln -s /usr/include/GL/glu.h
+  ln -s /usr/include/GL/glut.h
+  ln -s /usr/include/GL/freeglut_std.h
+
+Note that we're also looking specifically for freeglut_std.h, because glut.h
+just includes that, and the generator also needs access to the raw
+(un-preprocessed) headers to get the #defines. If you use openglut you 
+will have to change this. (Search pure-gl-gen.pure for "freeglut".)
+
+With these headers in your current working directory, run
+
+    pure pure-gl-gen.pure
+
+It will complain about some unknown structs but that's ok: they are opaque
+pointers. It will output gl.pure, glu.pure and glut.pure. That is all you need,
+there is no C component to the bindings.

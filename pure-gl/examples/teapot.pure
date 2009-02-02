@@ -1,0 +1,104 @@
+
+/* Simple OpenGL example, demonstrates lighting and the use of various
+   callbacks. 2009-02-02 AG. */
+
+using GL, GLU, GLUT;
+using ffi, system;
+
+/* Provide command line arguments to GLUT::Init. This allows you to call the
+   script with -x and suppppply additional command line parameters. */
+
+let argcp, argvp = int_pointer NULL {argc},
+  pointerv (map byte_cstring argv)
+with
+  pointerv xs = sentry free v when
+    n = #xs; v = calloc (n+1) SIZEOF_POINTER;
+    void [put_pointer (v+i*SIZEOF_POINTER) x | i,x = zip (0..n-1) xs];
+  end;
+end;
+
+// Initialize.
+
+GLUT::Init argcp argvp;
+
+GLUT::InitDisplayMode (GLUT::DOUBLE or GLUT::RGB or GLUT::DEPTH );
+GLUT::InitWindowSize 500 500;
+GLUT::CreateWindow "Teapot - Pure OpenGL Example";
+
+GL::ClearColor 0.1 0.1 0.3 1.0; 
+GL::ShadeModel GL::SMOOTH;
+GL::Enable GL::DEPTH_TEST;
+
+// Initial projection and modelview matrices.
+
+GL::MatrixMode GL::PROJECTION;
+GL::LoadIdentity;
+GL::Rotatef 20.0 (-1.0) 0.0 0.0;
+GL::MatrixMode GL::MODELVIEW;
+GL::LoadIdentity;
+
+// Lighting.
+
+fv x = sentry free $ float_pointer NULL x;
+
+GL::Lightfv GL::LIGHT0 GL::DIFFUSE $ fv {1.0,0.0,0.0,1.0};
+GL::Lightfv GL::LIGHT0 GL::POSITION $ fv {2.0,2.0,-5.0,1.0};
+
+GL::Enable GL::LIGHTING;
+GL::Enable GL::LIGHT0;
+
+// Callbacks.
+
+let dir = ref 1.0;
+
+// The display callback. Renders a rotating object.
+
+let display_cb = fclos display FFI_DEFAULT_ABI void_t void_t
+with
+  display _ = ()
+  when
+    GL::Clear (GL::DEPTH_BUFFER_BIT or GL::COLOR_BUFFER_BIT);
+    GL::Rotatef (get dir*2.0) 0.0 1.0 0.0;
+    GLUT::SolidTeapot 0.5;
+    // If the teapot doesn't work then try this one:
+    //GLUT::WireSphere 0.4 40 32;
+    GLUT::SwapBuffers;
+  end;
+end;
+
+// This redraws the display every 40 msec, i.e., at 25 FPS.
+
+let timer_cb = fclos timer FFI_DEFAULT_ABI void_t sint_t
+with
+  timer n = ()
+  when
+    GLUT::PostRedisplay;
+    GLUT::TimerFunc 40 timer_cb n;
+  end;
+end;
+
+// Process keyboard input. Cursor left-right changes the rotation direction,
+// up-down rotates in the vertical direction, F10 quits.
+
+let input_cb = fclos input FFI_DEFAULT_ABI void_t sint_t
+with
+  input k = exit 0 if k == GLUT::KEY_F10;
+          = put dir 1.0 if k == GLUT::KEY_LEFT;
+          = put dir (-1.0) if k == GLUT::KEY_RIGHT;
+	  = rotate 2.0 if k == GLUT::KEY_DOWN;
+	  = rotate (-2.0) if k == GLUT::KEY_UP;
+  rotate angle = () when
+    GL::MatrixMode GL::PROJECTION;
+    GL::Rotatef angle 1.0 0.0 0.0;
+    GL::MatrixMode GL::MODELVIEW;
+  end;
+end;
+
+GLUT::DisplayFunc display_cb;
+GLUT::TimerFunc 40 timer_cb 0;
+GLUT::SpecialFunc input_cb 0;
+
+// Invoke the main loop.
+
+puts "Cursor keys to rotate up/down, left/right. F10 to exit.";
+GLUT::MainLoop;
