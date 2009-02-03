@@ -3,7 +3,7 @@
 //though GL uses neither of these. They are included in here for use 
 //in scraping headers for other libraries (SDL for instance)
 
-const dumper = "./dump-ast.64"; //change to dump-ast.64 if you need to
+const dumper = "./dump-ast"; 
 
 using strings;
 using system;
@@ -515,13 +515,45 @@ ffi_extern_decl pfx::string nmspace::string (name, func_type ret args) =
 
 //output a function declaration for the native pure extern interface
 pure_extern_decl pfx::string nmspace::string (name, func_type ret args) =
-  "extern "+pure_type ret+" "+name+"("+arg_str args+") = "+
+  "extern "+pure_type ret+" PureGL_"+name+"("+arg_str args+") = "+
     strip_prefix pfx name+";"
   with
   arg_str [void_t] = "";
   arg_str args = join "," $ map pure_type args;
   end;
 
+
+
+
+
+//output the C portion of a function
+//TODO: at this point the GL typedefs have been resolved. It would be better
+//if they were not.
+c_impl (name, func_type ret args) = 
+ret_str+" PureGL_"+name+"("+formal_params+") {\n"+
+"  static "+ret_str+"(*ptr)("+arg_types+") = NULL;\n"+
+"  static const char name[] = \""+name+"\";\n"+
+"  if (!ptr) {\n"+
+"    ptr = ("+ret_str+"(*)("+arg_types+"))get_proc_addr(name);\n"+
+"    if (!ptr) throw_unsupported(name);\n"+
+"  }\n"+
+"  return (*ptr)("+arg_names+");\n}\n\n"
+  when
+    ret_str = pure_type ret;
+
+    formal_params = 
+      if args === [void_t] then "" else 
+      join "," $ zipwith (\x y -> pure_type x+" arg"+str y) args (0..inf);
+
+    arg_names = 
+      if args === [void_t] then "" else 
+      join "," $ map (\y -> "arg" + str y) (take (#args) (0..inf));
+
+    arg_types = 
+      if args === [void_t] then "" else 
+      join "," $ map pure_type args;
+    
+  end;
 
 
 //shunt constant and function declarations to various output files based on a
@@ -618,6 +650,17 @@ let func_protos =
   with
     mapsnd f = map (\(a,b) -> a,f b)
   end;
+
+
+
+//Output the C part
+system("cat pure-gl.c.fragment > pure-gl.c");
+let out_c = fopen "pure-gl.c" "a";
+puts "Writing C module";
+
+do (flip fputs out_c) $
+  map c_impl $
+  filter (matches_regex "^gl[A-Z]") func_protos;
 
 
 //OpenGL proper
