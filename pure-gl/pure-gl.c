@@ -131,7 +131,8 @@ get_proc_addr(const char *name)
 
 static void throw_unsupported( const char* name )
 {
-    //pure_throw( pure_app( pure_sym("gl_unsupported"), pure_cstring_dup(name) ));
+    pure_throw( pure_app( pure_symbol(pure_sym("gl_unsupported")), 
+                          pure_cstring_dup(name) ));
 }
 
 
