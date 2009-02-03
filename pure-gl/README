@@ -4,17 +4,14 @@ Copyright info:
 
 The binding generator in the generator subdirectory contains significant
 portions of the Language.C Haskell library. See generator/dump-ast.hs for
-pertinent license and copyright information.
+pertinent license and copyright information. 
 
 
 
 
 USING THE GL BINDINGS:
 
-The main part of the bindings consist of 3 Pure files: GL.pure, GLU.pure and
-GLUT.pure.  There is no C library, so just put these files wherever the Pure
-interpreter can find them. (Probably just copy them to your program directory
-for now. This project is very much in flux.)
+The bindings consist of 3 Pure files: GL.pure, GLU.pure and GLUT.pure.  
 
 In your Pure program, write something like
 
@@ -23,14 +20,16 @@ In your Pure program, write something like
 GL.pure covers OpenGL up through version 2.1. To get access to extensions, you
 include GL_XXX.pure where XXX is the extensions suffix. Currently, there are
 GL_ARB.pure, GL_EXT.pure, GL_NV.pure and GL_ATI.pure, which should cover about
-99% of the useful extensions out there. If you need more, it is straightforward
-to tweak the generator to scrape some of the more esoteric extensions from your
-headers.
+99% of the useful extensions out there. If you need more, it is
+straightforward to tweak the generator to scrape some of the more esoteric
+extensions from your headers. All OpenGL functions are loaded on first use. If
+your OpenGL implementation does not define that function, a gl_unsupported
+extension is thrown with the name of the function as its only argument.
 
 As they are written now, the GL Pure bindings will look for libGL.so,
 libGLU.so and libglut.so, which is what you want for Linux. For Windows or
 Mac, change these to the appropriate dll/dylib files. This is the first line
-in each of gl.pure, glu.pure and glut.pure.
+in each of GL.pure, GLU.pure and GLUT.pure.
 
 The functions are in namespaces GL, GLU and GLUT respectively. Functions
 are in curried form, i.e., 
@@ -41,13 +40,7 @@ GL enumerants are in uppercase, as in C.
 
   GL::Begin GL::LINE_STRIP
 
-( Note: This may change. The idea is that function and enumerant names match
-those in the OpenGL spec. I haven't yet decided if this is cool or annoying.
-With the Pure libffi bindings its possible to make GL calls look exactly like
-C, i.e., glVertex3d(1.0,2.0,3.0); This may end up being easier for people to
-use. )
-
-Currently, if the bindings reference a function that your driver DLL does
+Currently, if the GLU or GLUT bindings reference a function that your DLL does
 not contain, it echoes this to stdout. I'm working on a way to supress this.
 
 Some examples can be found in the examples subdirectory.
@@ -91,5 +84,9 @@ With these headers in your current working directory, run
     pure pure-gl-gen.pure
 
 It will complain about some unknown structs but that's ok: they are opaque
-pointers. It will output gl.pure, glu.pure and glut.pure. That is all you need,
-there is no C component to the bindings.
+pointers. It will output some Pure files and a single C file, pure-gl.c. This
+C file contains the on-demand loading code for each GL function. The Pure
+files reference the files in this C module, rather than the OpenGL functions
+directly, to account for the fact different GL implementations will export
+different functions. (Mostly to account for Microsoft's Museum of Ancient
+OpenGL History, otherwise known as opengl32.dll.)

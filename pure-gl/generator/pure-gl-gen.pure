@@ -515,13 +515,22 @@ ffi_extern_decl pfx::string nmspace::string (name, func_type ret args) =
 
 //output a function declaration for the native pure extern interface
 pure_extern_decl pfx::string nmspace::string (name, func_type ret args) =
-  "extern "+pure_type ret+" PureGL_"+name+"("+arg_str args+") = "+
+  "extern "+pure_type ret+" "+name+"("+arg_str args+") = "+
     strip_prefix pfx name+";"
   with
   arg_str [void_t] = "";
   arg_str args = join "," $ map pure_type args;
   end;
 
+//output a function declaration for the native pure extern interface,
+//appending the prefix "PureGL_" to the function name
+PureGL_extern_decl pfx::string nmspace::string (name, func_type ret args) =
+  "extern "+pure_type ret+" PureGL_"+name+"("+arg_str args+") = "+
+    strip_prefix pfx name+";"
+  with
+  arg_str [void_t] = "";
+  arg_str args = join "," $ map pure_type args;
+  end;
 
 
 
@@ -543,7 +552,7 @@ ret_str+" PureGL_"+name+"("+formal_params+") {\n"+
 
     formal_params = 
       if args === [void_t] then "" else 
-      join "," $ zipwith (\x y -> pure_type x+" arg"+str y) args (0..inf);
+      join ", " $ zipwith (\x y -> pure_type x+" arg"+str y) args (0..inf);
 
     arg_names = 
       if args === [void_t] then "" else 
@@ -668,6 +677,7 @@ let out_gl   = fopen "GL.pure" "w";
 puts "Writing GL.pure";
 //fputs "using ffi;\n" out_gl;
 fputs "using \"lib:libGL\";\n" out_gl;
+fputs "using \"lib:pure-gl\";\n" out_gl;
 fputs "\n\nnamespace GL;\n" out_gl;
 
 do (flip fputs out_gl . const_decl "GL_" "GL") $
@@ -676,7 +686,7 @@ do (flip fputs out_gl . const_decl "GL_" "GL") $
   filter (matches_regex "^GL_") defines;
 
 do (flip fputs out_gl) $
-  map (\x -> pure_extern_decl "gl" "GL" x + "\n") $
+  map (\x -> PureGL_extern_decl "gl" "GL" x + "\n") $
   filter ((~) . is_extension) $
   filter (matches_regex "^gl[A-Z]") func_protos;
 
@@ -694,7 +704,7 @@ do (flip fputs out_gl . const_decl "GL_" "GL") $
   filter (matches_regex "^GL_") defines;
 
 do (flip fputs out_gl) $
-  map (\x -> pure_extern_decl "gl" "GL" x + "\n") $
+  map (\x -> PureGL_extern_decl "gl" "GL" x + "\n") $
   filter (matches_regex "^gl[A-Z][A-Za-z1-9]*ARB$") func_protos;
 
 
@@ -711,7 +721,7 @@ do (flip fputs out_gl . const_decl "GL_" "GL") $
   filter (matches_regex "^GL_") defines;
 
 do (flip fputs out_gl) $
-  map (\x -> pure_extern_decl "gl" "GL" x + "\n") $
+  map (\x -> PureGL_extern_decl "gl" "GL" x + "\n") $
   filter (matches_regex "^gl[A-Z][A-Za-z1-9]*EXT$") func_protos;
 
 
@@ -729,7 +739,7 @@ do (flip fputs out_gl . const_decl "GL_" "GL") $
   filter (matches_regex "^GL_") defines;
 
 do (flip fputs out_gl) $
-  map (\x -> pure_extern_decl "gl" "GL" x + "\n") $
+  map (\x -> PureGL_extern_decl "gl" "GL" x + "\n") $
   filter (matches_regex "^gl[A-Z][A-Za-z1-9]*NV$") func_protos;
 
 
@@ -747,7 +757,7 @@ do (flip fputs out_gl . const_decl "GL_" "GL") $
   filter (matches_regex "^GL_") defines;
 
 do (flip fputs out_gl) $
-  map (\x -> pure_extern_decl "gl" "GL" x + "\n") $
+  map (\x -> PureGL_extern_decl "gl" "GL" x + "\n") $
   filter (matches_regex "^gl[A-Z][A-Za-z1-9]*ATI$") func_protos;
 
 
