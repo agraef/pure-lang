@@ -38,11 +38,28 @@ POSSIBILITY OF SUCH DAMAGE.
 */
 
 
+#ifndef _WIN32
+#define APIENTRY 
+#endif
+
 #if defined(_WIN32) /* Windows */
+#include <windows.h>
 #include <GL/gl.h>
-#include <GL/wgl.h>
-#define get_proc_addr(x) wglGetProcAddress((LPCSTR)(x))
-#elif defined(USE_QUARTZ_OPENGL) /* Mac */
+
+static void*
+get_proc_addr(const char *name)
+{
+  static HINSTANCE gl32 = 0, glu32 = 0;
+  void *p;
+  if (!gl32) gl32 = LoadLibrary("opengl32.dll");
+  if (!glu32) glu32 = LoadLibrary("glu32.dll");
+  (p = wglGetProcAddress(name)) ||
+  (p = GetProcAddress(gl32, name)) ||
+  (p = GetProcAddress(glu32, name));
+  return p;
+}
+
+#elif defined(__APPLE__) /* Mac */
 #include <OpenGL/gl.h>
 #include <mach-o/dyld.h>
 
@@ -125,7 +142,27 @@ get_proc_addr(const char *name)
 #else /* Linux */
 #include <GL/gl.h>
 #include <GL/glx.h>
-#define get_proc_addr(x) glXGetProcAddress((const GLubyte*)(x))
+#include <dlfcn.h>
+
+static void*
+get_proc_addr(const char *name)
+{
+  static int firstTime = 1;
+  static void *glu = NULL, *glut = NULL;
+  void *p;
+  if (firstTime) {
+    firstTime = 0;
+    glu = dlopen("libGLU.so", RTLD_LAZY);
+    glut = dlopen("libglut.so", RTLD_LAZY);
+  }
+  /* Make sure to call these in this order. For whatever reason,
+     glXGetProcAddress appears to yield bogus addresses for GLUT routines. */
+  (glu && (p = dlsym(glu, name))) ||
+    (glut && (p = dlsym(glut, name))) ||
+    (p = glXGetProcAddress((const GLubyte*)name));
+  return p;
+}
+
 #endif
 
 

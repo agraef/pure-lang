@@ -540,10 +540,10 @@ PureGL_extern_decl pfx::string nmspace::string (name, func_type ret args) =
 //if they were not.
 c_impl (name, func_type ret args) = 
 ret_str+" PureGL_"+name+"("+formal_params+") {\n"+
-"  static "+ret_str+"(*ptr)("+arg_types+") = NULL;\n"+
+"  static "+ret_str+"(APIENTRY*ptr)("+arg_types+") = NULL;\n"+
 "  static const char name[] = \""+name+"\";\n"+
 "  if (!ptr) {\n"+
-"    ptr = ("+ret_str+"(*)("+arg_types+"))get_proc_addr(name);\n"+
+"    ptr = ("+ret_str+"(APIENTRY*)("+arg_types+"))get_proc_addr(name);\n"+
 "    if (!ptr) throw_unsupported(name);\n"+
 "  }\n"+
 "  return (*ptr)("+arg_names+");\n}\n\n"
@@ -669,7 +669,7 @@ puts "Writing C module";
 
 do (flip fputs out_c) $
   map c_impl $
-  filter (matches_regex "^gl[A-Z]") func_protos;
+  filter (matches_regex "^gl\\(u\\|ut\\)\\?[A-Z]") func_protos;
 
 
 //OpenGL proper
@@ -777,7 +777,7 @@ do (flip fputs out_glu . const_decl "GLU_" "GLU") $
   filter (matches_regex "^GLU_") defines;
 
 do (flip fputs out_glu) $
-  map (\x -> pure_extern_decl "glu" "GLU" x + "\n") $
+  map (\x -> PureGL_extern_decl "glu" "GLU" x + "\n") $
   filter (matches_regex "^glu[A-Z]") func_protos;
 
 
@@ -793,5 +793,5 @@ do (flip fputs out_glut . const_decl "GLUT_" "GLUT") $
   filter (matches_regex "^GLUT_") defines;
 
 do (flip fputs out_glut) $
-  map (\x -> pure_extern_decl "glut" "GLUT" x + "\n") $
+  map (\x -> PureGL_extern_decl "glut" "GLUT" x + "\n") $
   filter (matches_regex "^glut[A-Z]") func_protos;

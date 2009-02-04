@@ -21,13 +21,13 @@ host = $(shell ./config.guess)
 #PIC = -fPIC # uncomment for x86-64 compilation
 DLL = .so
 shared = -shared
-LinkGL = -lGL
+LinkGL = -lGL -lglut -ldl
 
 # Take care of some common systems.
 ifneq "$(findstring -mingw,$(host))" ""
 # Windows
 DLL = .dll
-LinkGL = -lopengl32
+LinkGL = -lopengl32 -lglu32
 endif
 ifneq "$(findstring -darwin,$(host))" ""
 # OSX (untested)
