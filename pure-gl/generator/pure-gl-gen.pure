@@ -621,6 +621,9 @@ let glu_h   = fgetlines $ fopen "glu.h" "r";
 let glext_h = fgetlines $ fopen "glext.h" "r";
 //let glut_h  = fgetlines $ fopen "glut.h" "r";
 let glut_h  = fgetlines $ fopen "freeglut_std.h" "r";
+// check whether we want the freeglut extensions
+let glutext_h  = if pointerp fp then fgetlines fp else []
+when fp = fopen "freeglut_ext.h" "r" end;
 
 
 
@@ -634,7 +637,9 @@ MESA\\|INTEL\\|IBM\\|GREMEDY\\|HP\\|PGI\\|INGR\\|S3TC\\|OML\\|OES\\)$" ;
 //the AST of all gl/glu/glut
 
 puts "Loading AST";
-system(dumper+" all_gl.h > all_gl.ast");
+// check whether we want the freeglut extensions
+if null glutext_h then system(dumper+" all_gl.h > all_gl.ast")
+else system(dumper+" all_gl_ext.h > all_gl.ast");
 let ast = fgetlines $ fopen "all_gl.ast" "r";
 
 puts "Parsing";
@@ -649,7 +654,7 @@ let tydefs =
 puts "Building #define dictionary";
 let defines = 
   nub $ resolve_indirects $ catmap scrape_defines $ 
-    [gl_h,glext_h,glu_h,glut_h];
+    [gl_h,glext_h,glu_h,glut_h,glutext_h];
 
 puts "Gathering function prototypes";
 //all function prototypes (gl, glu and glut)
