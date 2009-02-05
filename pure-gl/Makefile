@@ -67,7 +67,7 @@ install:
 	   pure-gl$(DLL) "$(DESTDIR)$(libdir)/pure"
 
 uninstall:
-	rm -f "$(DESTDIR)$(libdir)/pure/gsl.pure" "$(DESTDIR)$(libdir)/pure/gsl$(DLL)"
+	rm -f "$(DESTDIR)$(libdir)/pure/"GL*.pure "$(DESTDIR)$(libdir)/pure/pure-gl$(DLL)"
 
 dist:
 	rm -rf $(dist)
