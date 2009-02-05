@@ -714,7 +714,7 @@ static void *ffi_to_c(void *v, ffi_type *type, pure_expr *x)
 
 static pure_expr *ffi_from_c(ffi_type *type, void *v)
 {
-  if (type == 0 || type->type != type->type && v == 0)
+  if (type == 0 || type->type != FFI_TYPE_VOID && v == 0)
     return 0;
   switch (type->type) {
   case FFI_TYPE_VOID:
