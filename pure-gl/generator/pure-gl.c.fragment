@@ -49,13 +49,19 @@ POSSIBILITY OF SUCH DAMAGE.
 static void*
 get_proc_addr(const char *name)
 {
-  static HINSTANCE gl32 = 0, glu32 = 0;
+  static int firstTime = 1;
+  static HINSTANCE gl32 = 0, glu32 = 0, glut = 0;
   void *p;
-  if (!gl32) gl32 = LoadLibrary("opengl32.dll");
-  if (!glu32) glu32 = LoadLibrary("glu32.dll");
+  if (firstTime) {
+    gl32 = LoadLibrary("opengl32.dll");
+    glu32 = LoadLibrary("glu32.dll");
+    glut = LoadLibrary("freeglut.dll");
+    firstTime = 0;
+  }
   (p = wglGetProcAddress(name)) ||
   (p = GetProcAddress(gl32, name)) ||
-  (p = GetProcAddress(glu32, name));
+  (p = GetProcAddress(glu32, name)) ||
+  (p = GetProcAddress(glut, name));
   return p;
 }
 
