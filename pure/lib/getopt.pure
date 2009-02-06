@@ -1,0 +1,164 @@
+
+/* Poor man's getopt. This is a quick-and-dirty replacement for the GNU getopt
+   functions, ported from the Q library. */
+
+/* Copyright (c) 2006, 2009 by Albert Graef <Dr.Graef@t-online.de>.
+
+   This file is part of the Pure programming language and system.
+
+   Pure is free software: you can redistribute it and/or modify it under the
+   terms of the GNU General Public License as published by the Free Software
+   Foundation, either version 3 of the License, or (at your option) any later
+   version.
+
+   Pure is distributed in the hope that it will be useful, but WITHOUT ANY
+   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+   FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+   details.
+
+   You should have received a copy of the GNU General Public License along
+   with this program.  If not, see <http://www.gnu.org/licenses/>. */
+
+/* The getopt function takes two arguments: opts, a list of option
+   descriptions in the format described below, and args, a list of strings
+   containing the command line parameters to be parsed for options. The result
+   is a pair (opts_return,args_return) where opts_return is a list of options
+   and their values, and args_return is the list of remaining (non-option)
+   arguments. Options are parsed using the rules of GNU getopt(1). If an
+   invalid option is encountered (unrecognized option, missing or extra
+   argument, etc.), getopt throws the offending option string as an exception.
+
+   The opts_return value is a list of "hash pairs" opt=>val where opt is the
+   (long) option name (as given by the long_opt field given in the opts
+   argument, see below) and val is the corresponding value (() if none). Note
+   that this format is ready to be passed to the 'dict' or 'hdict' function
+   (cf. dict.pure) which makes it easy to retrieve option values or check for
+   the presence of options.
+
+   The opts argument of getopt must be a list of triples (long_opt, short_opt,
+   flag), where long_opt denotes the long option, short_opt the equivalent
+   short option, and flag is one of the symbolic integer values NOARG, OPTARG
+   and REQARG which specifies whether the option has no argument, an optional
+   argument or a required argument, respectively. Either long_opt or short_opt
+   should be a string value of the form "--abc" or "-x", respectively. Note
+   that since the long_opt value is always used to denote the corresponding
+   option in the returned opts list, you always have to specify a sensible
+   value for that field. If no separate long option name is needed, you can
+   specify the same value as in the short_opt field, or some other convenient
+   value (e.g., an integer) which designates the option. Conversely, to
+   indicate that an option has no short option equivalent, simply specify an
+   empty option string for the short_opt field.
+
+   Examples:
+
+   > let opts = [("--help", "-h", NOARG),	// no argument
+   >             ("--version", "", NOARG),	// no short option
+   >             ("--filename", "-f", REQARG),	// required argument
+   >             ("--count", "-n", OPTARG)];	// optional argument
+   > getopt opts ["foo", "-h", "--filename", "bar", "-n0", "baz"];
+   ["--help"=>(),"--filename"=>"bar","--count"=>"0"],["foo","baz"]
+   > catch invalid_option $ getopt opts ["-h","-v"];
+   invalid_option "-v"
+   > getopt opts [foo, "-h", bar];
+   ["--help"=>()],[foo,bar]
+
+   As the last example shows, non-option arguments (as well as option values
+   specified as separate arguments) can actually be any values which are just
+   copied to the result lists as is. */
+
+using system;
+
+const NOARG, REQARG, OPTARG = 0,1,2;
+
+/* A macro to evaluate a series of terms and return the result of the first
+   term which doesn't throw an exception. This is handy if we have to match a
+   number of different expressions against corresponding patterns. Maybe this
+   should go into the prelude. */
+namespace getopt;
+private try;
+def try [x] = x;
+def try (x:xs) = catch (\_->try xs) x;
+
+getopt opts args
+		= opt opts ([],[]) args
+
+with
+
+opt opts (o,a) []
+		= (o,a);
+opt opts (o,a) ("--":args)
+		= (o,a+args);
+opt opts (o,a) (arg:args)
+		= opt opts (o,a+[arg]) args
+		    if ~stringp arg || arg=="-" || arg!![0]~="-";
+		= opt opts (o+vals,a) args
+		  when vals,args = try
+		    [(ret
+		      when ret@(_,_) = longopt opts arg args end),
+		     (ret
+		      when ret@(_,_) = shortopt opts arg args end),
+		     throw arg]
+		  end;
+
+mkopt opt val	= opt => val;
+
+longopt opts arg args
+		= try
+		  [([mkopt opt val],args
+		    when 1,info = regex "^--([^=]+)=(.*)$" REG_EXTENDED arg 0;
+		      _,opt,_,val = reg 1 info,reg 2 info;
+		      long_opt,short_opt,flag = find_longopt opts opt;
+		      opt=>val,args = checkopt flag long_opt val args;
+		    end),
+		   ([mkopt opt val],args
+		    when 1,info = regex "^--([^=]+)$" REG_EXTENDED arg 0;
+		      _,opt = reg 1 info;
+		      long_opt,short_opt,flag = find_longopt opts opt;
+		      opt=>val,args = checkopt flag long_opt () args;
+		    end)];
+
+shortopt opts arg args
+		= [mkopt opt () | opt,_ = opt1] + [mkopt opt val], args
+		  when long_opt,short_opt,flag = opt2;
+		    opt=>val,args = checkopt flag long_opt val args;
+		  end
+		  if all ((\x->x==NOARG).(\x->x!2)) opt1
+		  when "-":chs = chars arg;
+		    opt@(_:_) = scanopt
+		      [try [find_shortopt opts ch,()] | ch = chs];
+		    opt1 = init opt; opt2 = last opt;
+		    val = arg!!(#opt+1..#arg-1);
+		    val = if null val then () else val;
+		  end;
+
+scanopt ((long_opt,short_opt,flag):opt)
+		= [(long_opt,short_opt,flag)] if flag~=NOARG;
+		= (long_opt,short_opt,flag) : scanopt opt otherwise;
+scanopt _	= [] otherwise;
+
+checkopt flag long_opt val args
+		= long_opt=>(),args if flag==NOARG && null val;
+		= long_opt=>val,args if flag~=NOARG && val~==();
+		= long_opt=>(),args if flag==OPTARG;
+checkopt flag long_opt val (arg:args)
+		= long_opt=>arg,args if flag==REQARG;
+
+prefixp x::string y::string
+		= n<=m && x==substr y 0 n when n=#x; m=#y end;
+prefixp _ _	= false otherwise;
+
+find_longopt opts opt
+		= long_opt,short_opt,flag
+		  when [(long_opt,short_opt,flag)] =
+		    [opt1 | opt1@(long_opt,short_opt,flag) = opts;
+		     prefixp ("--"+opt) long_opt];
+		  end;
+
+find_shortopt opts opt
+		= (long_opt,short_opt,flag)
+		  when (long_opt,short_opt,flag):_ =
+		    [opt1 | opt1@(long_opt,short_opt,flag) = opts;
+		     short_opt === "-"+opt];
+		  end;
+
+end;
