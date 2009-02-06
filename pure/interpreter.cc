@@ -2615,7 +2615,7 @@ expr interpreter::macsubst(expr x)
 
 /* Perform a single macro reduction step. */
 
-expr interpreter::varsubst(expr x, uint8_t offs)
+expr interpreter::varsubst(expr x, uint8_t offs, uint8_t idx)
 {
   char test;
   if (x.is_null()) return x;
@@ -2624,6 +2624,9 @@ expr interpreter::varsubst(expr x, uint8_t offs)
   switch (x.tag()) {
   case EXPR::VAR:
   case EXPR::FVAR:
+    if (x.vidx() < idx)
+      /* reference to local environment inside the substituted value; skip */
+      return x;
     if (((uint32_t)x.vidx()) + offs > 0xff)
       throw err("error in expression (too many nested closures)");
     if (x.tag() == EXPR::VAR)
@@ -2646,42 +2649,62 @@ expr interpreter::varsubst(expr x, uint8_t offs)
       exprl& vs = us->back();
       for (exprl::iterator ys = xs->begin(), end = xs->end();
 	   ys != end; ys++) {
-	vs.push_back(varsubst(*ys, offs));
+	vs.push_back(varsubst(*ys, offs, idx));
       }
     }
     return expr(EXPR::MATRIX, us);
   }
   // application:
   case EXPR::APP: {
-    expr u = varsubst(x.xval1(), offs),
-      v = varsubst(x.xval2(), offs);
-    expr w = expr(u, v);
-    return macval(w);
+    if (x.xval1().tag() == symtab.amp_sym().f) {
+      if (++idx == 0)
+	throw err("error in expression (too many nested closures)");
+      expr v = varsubst(x.xval2(), offs, idx);
+      expr w = expr(symtab.amp_sym().x, v);
+      return macval(w);
+    } else if (x.xval1().tag() == EXPR::APP &&
+	       x.xval1().xval1().tag() == symtab.catch_sym().f) {
+      expr u = varsubst(x.xval1().xval2(), offs, idx);
+      if (++idx == 0)
+	throw err("error in expression (too many nested closures)");
+      expr v = varsubst(x.xval2(), offs, idx);
+      expr w = expr(symtab.catch_sym().x, u, v);
+      return macval(w);
+    } else {
+      expr u = varsubst(x.xval1(), offs, idx),
+	v = varsubst(x.xval2(), offs, idx);
+      expr w = expr(u, v);
+      return macval(w);
+    }
   }
   // conditionals:
   case EXPR::COND: {
-    expr u = varsubst(x.xval1(), offs),
-      v = varsubst(x.xval2(), offs),
-      w = varsubst(x.xval3(), offs);
+    expr u = varsubst(x.xval1(), offs, idx),
+      v = varsubst(x.xval2(), offs, idx),
+      w = varsubst(x.xval3(), offs, idx);
     return expr::cond(u, v, w);
   }
   case EXPR::COND1: {
-    expr u = varsubst(x.xval1(), offs),
-      v = varsubst(x.xval2(), offs);
+    expr u = varsubst(x.xval1(), offs, idx),
+      v = varsubst(x.xval2(), offs, idx);
     return expr::cond1(u, v);
   }
   // nested closures:
   case EXPR::LAMBDA: {
-    expr u = x.xval1(), v = varsubst(x.xval2(), offs);
+    if (++idx == 0)
+      throw err("error in expression (too many nested closures)");
+    expr u = x.xval1(), v = varsubst(x.xval2(), offs, idx);
     return expr::lambda(u, v);
   }
   case EXPR::CASE: {
-    expr u = varsubst(x.xval(), offs);
+    expr u = varsubst(x.xval(), offs, idx);
+    if (++idx == 0)
+      throw err("error in expression (too many nested closures)");
     const rulel *r = x.rules();
     rulel *s = new rulel;
     for (rulel::const_iterator it = r->begin(); it != r->end(); ++it) {
-      expr u = it->lhs,	v = varsubst(it->rhs, offs),
-	w = varsubst(it->qual, offs);
+      expr u = it->lhs,	v = varsubst(it->rhs, offs, idx),
+	w = varsubst(it->qual, offs, idx);
       s->push_back(rule(u, v, w));
     }
     return expr::cases(u, s);
@@ -2690,14 +2713,18 @@ expr interpreter::varsubst(expr x, uint8_t offs)
     const rulel *r = x.rules();
     rulel *s = new rulel;
     for (rulel::const_iterator it = r->begin(); it != r->end(); ++it) {
-      expr u = it->lhs, v = varsubst(it->rhs, offs);
+      expr u = it->lhs, v = varsubst(it->rhs, offs, idx);
       s->push_back(rule(u, v));
+      if (++idx == 0)
+	throw err("error in expression (too many nested closures)");
     }
-    expr u = varsubst(x.xval(), offs);
+    expr u = varsubst(x.xval(), offs, idx);
     return expr::when(u, s);
   }
   case EXPR::WITH: {
-    expr u = varsubst(x.xval(), offs);
+    expr u = varsubst(x.xval(), offs, idx);
+    if (++idx == 0)
+      throw err("error in expression (too many nested closures)");
     const env *e = x.fenv();
     env *f = new env;
     for (env::const_iterator it = e->begin(); it != e->end(); ++it) {
@@ -2706,8 +2733,8 @@ expr interpreter::varsubst(expr x, uint8_t offs)
       const rulel *r = info.rules;
       rulel s;
       for (rulel::const_iterator jt = r->begin(); jt != r->end(); ++jt) {
-	expr u = jt->lhs, v = varsubst(jt->rhs, offs),
-	  w = varsubst(jt->qual, offs);
+	expr u = jt->lhs, v = varsubst(jt->rhs, offs, idx),
+	  w = varsubst(jt->qual, offs, idx);
 	s.push_back(rule(u, v, w));
       }
       (*f)[g] = env_info(info.argc, s, info.temp);
@@ -2739,9 +2766,10 @@ expr interpreter::macred(expr x, expr y, uint8_t idx)
   case EXPR::VAR:
     if (y.vidx() == idx) {
       /* Substitute the macro variables, which are the lhs values whose idx
-	 match the current idx. Note that the deBruijn indices inside the
-	 substituted value must then be shifted by idx, to accommodate for any
-	 local environments inside the macro definition. */
+	 match the current idx. We also have to translate deBruijn indices
+	 inside the substituted value which refer to bindings outside the
+	 macro parameter, to account for local environments inside the macro
+	 definition. */
       expr v = varsubst(subterm(x, y.vpath()), idx);
 #if DEBUG>1
       std::cerr << "macro var: " << y << " = " << v

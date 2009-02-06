@@ -469,7 +469,7 @@ public:
   expr csubst(expr x);
   expr lcsubst(expr x);
   expr macsubst(expr x);
-  expr varsubst(expr x, uint8_t offs);
+  expr varsubst(expr x, uint8_t offs, uint8_t idx = 0);
   expr macred(expr x, expr y, uint8_t idx = 0);
   expr macval(expr x);
   void closure(expr& l, expr& r, bool b = true);
