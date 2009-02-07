@@ -1,0 +1,577 @@
+
+/* Copyright (c) 2008 by Albert Graef <Dr.Graef@t-online.de>.
+
+   This file is part of the Pure programming language and system.
+
+   Pure is free software: you can redistribute it and/or modify it under the
+   terms of the GNU General Public License as published by the Free Software
+   Foundation, either version 3 of the License, or (at your option) any later
+   version.
+
+   Pure is distributed in the hope that it will be useful, but WITHOUT ANY
+   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+   FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+   details.
+
+   You should have received a copy of the GNU General Public License along
+   with this program.  If not, see <http://www.gnu.org/licenses/>. */
+
+/* ODBC ("Open Database Connectivity") has become the de facto standard for
+   portable and vendor independent database access. Most modern relational
+   databases provide an ODBC interface so that they can be used with this
+   module. The module provides the necessary operations to connect to an ODBC
+   data source and retrieve or modify data using SQL statements. */
+
+
+/* Externals */
+using "lib:odbc";
+
+namespace C;
+extern expr* odbc_sources();
+extern expr* odbc_drivers();
+extern expr* odbc_connect(char* conn);
+extern expr* odbc_disconnect(expr* db);
+extern expr* odbc_info(expr* db);
+extern expr* odbc_getinfo(expr* db, int info_type);
+extern expr* odbc_typeinfo(expr* db, int type_id);
+extern expr* odbc_tables(expr* db);
+extern expr* odbc_columns(expr* db, char* table_name);
+extern expr* odbc_primary_keys(expr* db, char* table_name);
+extern expr* odbc_foreign_keys(expr* db, char* table_name);
+extern expr* odbc_sql_exec(expr* db, char* query, expr* args);
+extern expr* odbc_sql_fetch(expr* db);
+extern expr* odbc_sql_more(expr* db);
+extern expr* odbc_sql_close(expr* db);
+
+
+namespace ODBC;
+
+/* The odbc_error symbol is used to return an error message and SQL state when
+   the SQL server reports an error while executing any of the following
+   functions. */
+
+public odbc_error MSG STATE;
+
+/* The following functions list the names and descriptions of the available
+   data sources and drivers. The names can be passed in the DSN and DRIVER
+   parameters of the connection string (see below). (It seems that at this
+   time the odbc_drivers function is properly supported only on Windows,
+   though.) */
+
+ODBC::sources	= C::odbc_sources;
+ODBC::drivers	= C::odbc_drivers;
+
+/* Open and close an ODBC connection. CONN is the connection string used to
+   describe the data source and various other parameters such as hostname,
+   user id and password. The precise format depends on your system, so you
+   should consult your local ODBC documentation for details, but generally the
+   string is of the form <option>=<value>;<option>=<value>;...  and one of the
+   options is DSN to name the data source name. Other commonly recognized
+   options are HOST, UID, PWD and DATABASE which specify, respectively, the
+   host to connect to (usually localhost by default), user name and password,
+   and the default database to connect to. On Windows systems the FILEDSN
+   option lets you establish a connection to a data source described by a .dsn
+   file, and the DRIVER and DBQ options let you connect to a driver such as
+   the MS Access ODBC driver, using the database given in the DBQ option as
+   the data source. */
+
+ODBC::connect conn::string =
+		sentry C::odbc_disconnect db if ~null db
+		when db = C::odbc_connect conn end;
+
+ODBC::disconnect db::pointer = clear_sentry db $$ C::odbc_disconnect db;
+
+/* Obtain general information about an ODBC connection. Returns a tuple of
+   strings with the following items (see SQLGetInfo() in the ODBC API
+   reference for more information):
+
+   - DATA_SOURCE_NAME: the data source name
+   - DATABASE_NAME: the default database
+   - DBMS_NAME: the host DBMS name
+   - DBMS_VER: the host DBMS version
+   - DRIVER_NAME: the name of the ODBC driver
+   - DRIVER_VER: the version of the ODBC driver
+   - DRIVER_ODBC_VER: the ODBC version supported by the driver
+   - ODBC_VER: the ODBC version of the driver manager */
+
+ODBC::info db::pointer =
+		C::odbc_info db;
+
+/* More information is available using the following odbc_getinfo function
+   which provides a direct interface to SQLGetInfo(). The INFO_TYPE argument
+   (a nonnegative integer) specifies the requested type of information. The
+   result is always a byte string which, depending on INFO_TYPE, may contain
+   an integer or a string which can be converted to a Pure value using bint or
+   bstr, respectively. See SQLGetInfo() in the ODBC API reference for
+   information about which information types are available and which types of
+   information they return. */
+
+ODBC::getinfo db::pointer info_type::int =
+		C::odbc_getinfo db info_type;
+
+/* Some common INFO_TYPE values which can be passed to the odbc_getinfo
+   function. This also includes some aliases defined by the ISO SQL/CLI
+   standard.  Please refer to SQLGetInfo() in the ODBC API reference for
+   details. Note that not all values may be supported by all implementations,
+   and some ODBC drivers may offer additional information types not listed
+   here. */
+
+  const ODBC::SQL_ACTIVE_CONNECTIONS =			    0;
+  const ODBC::SQL_MAXIMUM_DRIVER_CONNECTIONS =		    0;
+  const ODBC::SQL_MAX_DRIVER_CONNECTIONS =		    0;
+  const ODBC::SQL_INFO_FIRST =				    0;
+  const ODBC::SQL_ACTIVE_STATEMENTS =			    1;
+  const ODBC::SQL_MAX_CONCURRENT_ACTIVITIES =		    1;
+  const ODBC::SQL_MAXIMUM_CONCURRENT_ACTIVITIES =	    1;
+  const ODBC::SQL_DATA_SOURCE_NAME =			    2;
+  const ODBC::SQL_DRIVER_HDBC =				    3;
+  const ODBC::SQL_DRIVER_HENV =				    4;
+  const ODBC::SQL_DRIVER_HSTMT =			    5;
+  const ODBC::SQL_DRIVER_NAME =				    6;
+  const ODBC::SQL_DRIVER_VER =				    7;
+  const ODBC::SQL_FETCH_DIRECTION =			    8;
+  const ODBC::SQL_ODBC_API_CONFORMANCE =		    9;
+  const ODBC::SQL_ODBC_VER =				   10;
+  const ODBC::SQL_ROW_UPDATES =				   11;
+  const ODBC::SQL_ODBC_SAG_CLI_CONFORMANCE =		   12;
+  const ODBC::SQL_SERVER_NAME =				   13;
+  const ODBC::SQL_SEARCH_PATTERN_ESCAPE =		   14;
+  const ODBC::SQL_ODBC_SQL_CONFORMANCE =		   15;
+  const ODBC::SQL_DBMS_NAME =				   17;
+  const ODBC::SQL_DBMS_VER =				   18;
+  const ODBC::SQL_DBMS_VERSION =			   18;
+  const ODBC::SQL_ACCESSIBLE_TABLES =			   19;
+  const ODBC::SQL_ACCESSIBLE_PROCEDURES =		   20;
+  const ODBC::SQL_PROCEDURES =				   21;
+  const ODBC::SQL_CONCAT_NULL_BEHAVIOR =		   22;
+  const ODBC::SQL_CURSOR_COMMIT_BEHAVIOR =		   23;
+  const ODBC::SQL_CURSOR_ROLLBACK_BEHAVIOR =		   24;
+  const ODBC::SQL_DATA_SOURCE_READ_ONLY =		   25;
+  const ODBC::SQL_DEFAULT_TXN_ISOLATION =		   26;
+  const ODBC::SQL_DEFAULT_TRANSACTION_ISOLATION =	   26;
+  const ODBC::SQL_EXPRESSIONS_IN_ORDERBY =		   27;
+  const ODBC::SQL_IDENTIFIER_CASE =			   28;
+  const ODBC::SQL_IDENTIFIER_QUOTE_CHAR =		   29;
+  const ODBC::SQL_MAXIMUM_COLUMN_NAME_LENGTH =		   30;
+  const ODBC::SQL_MAX_COLUMN_NAME_LEN =			   30;
+  const ODBC::SQL_MAXIMUM_CURSOR_NAME_LENGTH =		   31;
+  const ODBC::SQL_MAX_CURSOR_NAME_LEN =			   31;
+  const ODBC::SQL_MAX_OWNER_NAME_LEN =			   32;
+  const ODBC::SQL_MAXIMUM_SCHEMA_NAME_LENGTH =		   32;
+  const ODBC::SQL_MAX_SCHEMA_NAME_LEN =			   32;
+  const ODBC::SQL_MAX_PROCEDURE_NAME_LEN =		   33;
+  const ODBC::SQL_MAX_CATALOG_NAME_LEN =		   34;
+  const ODBC::SQL_MAXIMUM_CATALOG_NAME_LENGTH =		   34;
+  const ODBC::SQL_MAX_QUALIFIER_NAME_LEN =		   34;
+  const ODBC::SQL_MAX_TABLE_NAME_LEN =			   35;
+  const ODBC::SQL_MAXIMUM_TABLE_NAME_LENGTH =		   35;
+  const ODBC::SQL_MULT_RESULT_SETS =			   36;
+  const ODBC::SQL_MULTIPLE_ACTIVE_TXN =			   37;
+  const ODBC::SQL_OUTER_JOINS =				   38;
+  const ODBC::SQL_OWNER_TERM =				   39;
+  const ODBC::SQL_SCHEMA_TERM =				   39;
+  const ODBC::SQL_PROCEDURE_TERM =			   40;
+  const ODBC::SQL_CATALOG_NAME_SEPARATOR =		   41;
+  const ODBC::SQL_QUALIFIER_NAME_SEPARATOR =		   41;
+  const ODBC::SQL_QUALIFIER_TERM =			   42;
+  const ODBC::SQL_CATALOG_TERM =			   42;
+  const ODBC::SQL_SCROLL_CONCURRENCY =			   43;
+  const ODBC::SQL_SCROLL_OPTIONS =			   44;
+  const ODBC::SQL_TABLE_TERM =				   45;
+  const ODBC::SQL_TXN_CAPABLE =				   46;
+  const ODBC::SQL_TRANSACTION_CAPABLE =			   46;
+  const ODBC::SQL_USER_NAME =				   47;
+  const ODBC::SQL_CONVERT_FUNCTIONS =			   48;
+  const ODBC::SQL_NUMERIC_FUNCTIONS =			   49;
+  const ODBC::SQL_STRING_FUNCTIONS =			   50;
+  const ODBC::SQL_SYSTEM_FUNCTIONS =			   51;
+  const ODBC::SQL_TIMEDATE_FUNCTIONS =			   52;
+  const ODBC::SQL_CONVERT_BIGINT =			   53;
+  const ODBC::SQL_CONVERT_BINARY =			   54;
+  const ODBC::SQL_CONVERT_BIT =				   55;
+  const ODBC::SQL_CONVERT_CHAR =			   56;
+  const ODBC::SQL_CONVERT_DATE =			   57;
+  const ODBC::SQL_CONVERT_DECIMAL =			   58;
+  const ODBC::SQL_CONVERT_DOUBLE =			   59;
+  const ODBC::SQL_CONVERT_FLOAT =			   60;
+  const ODBC::SQL_CONVERT_INTEGER =			   61;
+  const ODBC::SQL_CONVERT_LONGVARCHAR =			   62;
+  const ODBC::SQL_CONVERT_NUMERIC =			   63;
+  const ODBC::SQL_CONVERT_REAL =			   64;
+  const ODBC::SQL_CONVERT_SMALLINT =			   65;
+  const ODBC::SQL_CONVERT_TIME =			   66;
+  const ODBC::SQL_CONVERT_TIMESTAMP =			   67;
+  const ODBC::SQL_CONVERT_TINYINT =			   68;
+  const ODBC::SQL_CONVERT_VARBINARY =			   69;
+  const ODBC::SQL_CONVERT_VARCHAR =			   70;
+  const ODBC::SQL_CONVERT_LONGVARBINARY =		   71;
+  const ODBC::SQL_TXN_ISOLATION_OPTION =		   72;
+  const ODBC::SQL_TRANSACTION_ISOLATION_OPTION =	   72;
+  const ODBC::SQL_INTEGRITY =				   73;
+  const ODBC::SQL_ODBC_SQL_OPT_IEF =			   73;
+  const ODBC::SQL_CORRELATION_NAME =			   74;
+  const ODBC::SQL_NON_NULLABLE_COLUMNS =		   75;
+  const ODBC::SQL_DRIVER_HLIB =				   76;
+  const ODBC::SQL_DRIVER_ODBC_VER =			   77;
+  const ODBC::SQL_LOCK_TYPES =				   78;
+  const ODBC::SQL_POS_OPERATIONS =			   79;
+  const ODBC::SQL_POSITIONED_STATEMENTS =		   80;
+  const ODBC::SQL_GETDATA_EXTENSIONS =			   81;
+  const ODBC::SQL_BOOKMARK_PERSISTENCE =		   82;
+  const ODBC::SQL_STATIC_SENSITIVITY =			   83;
+  const ODBC::SQL_FILE_USAGE =				   84;
+  const ODBC::SQL_NULL_COLLATION =			   85;
+  const ODBC::SQL_ALTER_TABLE =				   86;
+  const ODBC::SQL_COLUMN_ALIAS =			   87;
+  const ODBC::SQL_GROUP_BY =				   88;
+  const ODBC::SQL_KEYWORDS =				   89;
+  const ODBC::SQL_ORDER_BY_COLUMNS_IN_SELECT =		   90;
+  const ODBC::SQL_OWNER_USAGE =				   91;
+  const ODBC::SQL_SCHEMA_USAGE =			   91;
+  const ODBC::SQL_QUALIFIER_USAGE =			   92;
+  const ODBC::SQL_CATALOG_USAGE =			   92;
+  const ODBC::SQL_QUOTED_IDENTIFIER_CASE =		   93;
+  const ODBC::SQL_SPECIAL_CHARACTERS =			   94;
+  const ODBC::SQL_SUBQUERIES =				   95;
+  const ODBC::SQL_UNION_STATEMENT =			   96;
+  const ODBC::SQL_UNION =				   96;
+  const ODBC::SQL_MAXIMUM_COLUMNS_IN_GROUP_BY =		   97;
+  const ODBC::SQL_MAX_COLUMNS_IN_GROUP_BY =		   97;
+  const ODBC::SQL_MAXIMUM_COLUMNS_IN_INDEX =		   98;
+  const ODBC::SQL_MAX_COLUMNS_IN_INDEX =		   98;
+  const ODBC::SQL_MAX_COLUMNS_IN_ORDER_BY =		   99;
+  const ODBC::SQL_MAXIMUM_COLUMNS_IN_ORDER_BY =		   99;
+  const ODBC::SQL_MAX_COLUMNS_IN_SELECT =		  100;
+  const ODBC::SQL_MAXIMUM_COLUMNS_IN_SELECT =		  100;
+  const ODBC::SQL_MAXIMUM_COLUMNS_IN_TABLE =		  101;
+  const ODBC::SQL_MAX_COLUMNS_IN_TABLE =		  101;
+  const ODBC::SQL_MAXIMUM_INDEX_SIZE =			  102;
+  const ODBC::SQL_MAX_INDEX_SIZE =			  102;
+  const ODBC::SQL_MAX_ROW_SIZE_INCLUDES_LONG =		  103;
+  const ODBC::SQL_MAX_ROW_SIZE =			  104;
+  const ODBC::SQL_MAXIMUM_ROW_SIZE =			  104;
+  const ODBC::SQL_MAX_STATEMENT_LEN =			  105;
+  const ODBC::SQL_MAXIMUM_STATEMENT_LENGTH =		  105;
+  const ODBC::SQL_MAXIMUM_TABLES_IN_SELECT =		  106;
+  const ODBC::SQL_MAX_TABLES_IN_SELECT =		  106;
+  const ODBC::SQL_MAX_USER_NAME_LEN =			  107;
+  const ODBC::SQL_MAXIMUM_USER_NAME_LENGTH =		  107;
+  const ODBC::SQL_MAX_CHAR_LITERAL_LEN =		  108;
+  const ODBC::SQL_TIMEDATE_ADD_INTERVALS =		  109;
+  const ODBC::SQL_TIMEDATE_DIFF_INTERVALS =		  110;
+  const ODBC::SQL_NEED_LONG_DATA_LEN =			  111;
+  const ODBC::SQL_MAX_BINARY_LITERAL_LEN =		  112;
+  const ODBC::SQL_LIKE_ESCAPE_CLAUSE =			  113;
+  const ODBC::SQL_INFO_LAST =				  114;
+  const ODBC::SQL_QUALIFIER_LOCATION =			  114;
+  const ODBC::SQL_CATALOG_LOCATION =			  114;
+  const ODBC::SQL_OUTER_JOIN_CAPABILITIES =		  115;
+  const ODBC::SQL_ACTIVE_ENVIRONMENTS =			  116;
+  const ODBC::SQL_ALTER_DOMAIN =			  117;
+  const ODBC::SQL_SQL_CONFORMANCE =			  118;
+  const ODBC::SQL_DATETIME_LITERALS =			  119;
+  const ODBC::SQL_BATCH_ROW_COUNT =			  120;
+  const ODBC::SQL_BATCH_SUPPORT =			  121;
+  const ODBC::SQL_CONVERT_WCHAR =			  122;
+  const ODBC::SQL_CONVERT_INTERVAL_DAY_TIME =		  123;
+  const ODBC::SQL_CONVERT_INTERVAL_YEAR_MONTH =		  124;
+  const ODBC::SQL_CONVERT_WLONGVARCHAR =		  125;
+  const ODBC::SQL_CONVERT_WVARCHAR =			  126;
+  const ODBC::SQL_CREATE_ASSERTION =			  127;
+  const ODBC::SQL_CREATE_CHARACTER_SET =		  128;
+  const ODBC::SQL_CREATE_COLLATION =			  129;
+  const ODBC::SQL_CREATE_DOMAIN =			  130;
+  const ODBC::SQL_CREATE_SCHEMA =			  131;
+  const ODBC::SQL_CREATE_TABLE =			  132;
+  const ODBC::SQL_CREATE_TRANSLATION =			  133;
+  const ODBC::SQL_CREATE_VIEW =				  134;
+  const ODBC::SQL_DRIVER_HDESC =			  135;
+  const ODBC::SQL_DROP_ASSERTION =			  136;
+  const ODBC::SQL_DROP_CHARACTER_SET =			  137;
+  const ODBC::SQL_DROP_COLLATION =			  138;
+  const ODBC::SQL_DROP_DOMAIN =				  139;
+  const ODBC::SQL_DROP_SCHEMA =				  140;
+  const ODBC::SQL_DROP_TABLE =				  141;
+  const ODBC::SQL_DROP_TRANSLATION =			  142;
+  const ODBC::SQL_DROP_VIEW =				  143;
+  const ODBC::SQL_DYNAMIC_CURSOR_ATTRIBUTES1 =		  144;
+  const ODBC::SQL_DYNAMIC_CURSOR_ATTRIBUTES2 =		  145;
+  const ODBC::SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES1 =	  146;
+  const ODBC::SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES2 =	  147;
+  const ODBC::SQL_INDEX_KEYWORDS =			  148;
+  const ODBC::SQL_INFO_SCHEMA_VIEWS =			  149;
+  const ODBC::SQL_KEYSET_CURSOR_ATTRIBUTES1 =		  150;
+  const ODBC::SQL_KEYSET_CURSOR_ATTRIBUTES2 =		  151;
+  const ODBC::SQL_ODBC_INTERFACE_CONFORMANCE =		  152;
+  const ODBC::SQL_PARAM_ARRAY_ROW_COUNTS =		  153;
+  const ODBC::SQL_PARAM_ARRAY_SELECTS =			  154;
+  const ODBC::SQL_SQL92_DATETIME_FUNCTIONS =		  155;
+  const ODBC::SQL_SQL92_FOREIGN_KEY_DELETE_RULE =	  156;
+  const ODBC::SQL_SQL92_FOREIGN_KEY_UPDATE_RULE =	  157;
+  const ODBC::SQL_SQL92_GRANT =				  158;
+  const ODBC::SQL_SQL92_NUMERIC_VALUE_FUNCTIONS =	  159;
+  const ODBC::SQL_SQL92_PREDICATES =			  160;
+  const ODBC::SQL_SQL92_RELATIONAL_JOIN_OPERATORS =	  161;
+  const ODBC::SQL_SQL92_REVOKE =			  162;
+  const ODBC::SQL_SQL92_ROW_VALUE_CONSTRUCTOR =		  163;
+  const ODBC::SQL_SQL92_STRING_FUNCTIONS =		  164;
+  const ODBC::SQL_SQL92_VALUE_EXPRESSIONS =		  165;
+  const ODBC::SQL_STANDARD_CLI_CONFORMANCE =		  166;
+  const ODBC::SQL_STATIC_CURSOR_ATTRIBUTES1 =		  167;
+  const ODBC::SQL_STATIC_CURSOR_ATTRIBUTES2 =		  168;
+  const ODBC::SQL_AGGREGATE_FUNCTIONS =			  169;
+  const ODBC::SQL_DDL_INDEX =				  170;
+  const ODBC::SQL_DM_VER =				  171;
+  const ODBC::SQL_INSERT_STATEMENT =			  172;
+  const ODBC::SQL_CONVERT_GUID =			  173;
+  const ODBC::SQL_INFO_DRIVER_START =			 1000;
+  const ODBC::SQL_XOPEN_CLI_YEAR =			10000;
+  const ODBC::SQL_CURSOR_SENSITIVITY =			10001;
+  const ODBC::SQL_DESCRIBE_PARAMETER =			10002;
+  const ODBC::SQL_CATALOG_NAME =			10003;
+  const ODBC::SQL_COLLATING_SEQUENCE =			10004;
+  const ODBC::SQL_COLLATION_SEQ =			10004;
+  const ODBC::SQL_MAXIMUM_IDENTIFIER_LENGTH =		10005;
+  const ODBC::SQL_MAX_IDENTIFIER_LEN =			10005;
+  const ODBC::SQL_ASYNC_MODE =				10021;
+  const ODBC::SQL_MAX_ASYNC_CONCURRENT_STATEMENTS =	10022;
+  const ODBC::SQL_OJ_CAPABILITIES =			65003;
+
+/* Retrieve information about SQL data types supported by the given data
+   source. TYPE_ID may be any of the constants listed below. This returns a
+   list of tuples with the following fields (see SQLGetTypeInfo() in the ODBC
+   API reference for more information):
+
+   - TYPE_NAME: the name of the type (string)
+   - DATA_TYPE: a small integer identifying the data type
+   - PRECISION: maximum precision/column size (integer)
+   - PREFIX, SUFFIX: characters used as prefixes and suffixes in literals of
+     the type, respectively (string)
+   - PARAMS: comma-delimited list of keywords describing the parameters of the
+     type, in the order in which they have to be specified in a declaration
+   - NULLABLE: whether the field is nullable (one of the constants
+     SQL_NO_NULLS, SQL_NULLABLE, SQL_NULLABLE_UNKNOWN defined below)
+   - CASE_SENSITIVE: whether a character data type is case-sensitive (boolean)
+   - SEARCHABLE: describes how the data type can be used in SQL where clauses
+     (one of the SQL_PRED_XXX constants defined below)
+   - UNSIGNED: whether the data type is unsigned (boolean)
+   - MONEY: whether the data type has predefined fixed precision, like the
+     money type (boolean)
+   - AUTO_INCREMENT: whether the data type is autoincrementing (boolean)
+   - LOCAL_TYPE_NAME: localized (display) name of the type, if available
+     (string)
+   - MINIMUM_SCALE, MAXIMUM_SCALE: minimum and maximum scale of the data type
+     (integer)
+   - SQL_DATA_TYPE: SQL data type id (integer); normally, this is the same as
+     DATA_TYPE, except for interval and datetime data types, where
+     SQL_DATA_TYPE is either SQL_INTERVAL or SQL_DATETIME, and the
+     SQL_DATETIME_SUB field (see below) has the datetime/interval subcode
+   - SQL_DATETIME_SUB: datetime/interval subcode (integer) when SQL_DATA_TYPE
+     is SQL_INTERVAL or SQL_DATETIME (see above)
+   - NUM_PREC_RADIX: radix for the precision of numeric types (2 or 10)
+   - INTERVAL_PRECISION: interval leading precision (integer) when
+     SQL_DATA_TYPE is SQL_INTERVAL
+
+   Note that fields which don't apply to a given type are left empty,
+   indicated by a () a.k.a. NULL value. */
+
+ODBC::typeinfo db::pointer type_id::int =
+		C::odbc_typeinfo db type_id;
+
+/* Possible values for the TYPE_ID parameter of odbc_typeinfo. Note that some
+   drivers may support additional codes. Use SQL_ALL_TYPES to retrieve
+   information for all supported types. */
+
+  const ODBC::SQL_ALL_TYPES =			    0;
+  const ODBC::SQL_CHAR =			    1;
+  const ODBC::SQL_NUMERIC =			    2;
+  const ODBC::SQL_DECIMAL =			    3;
+  const ODBC::SQL_INTEGER =			    4;
+  const ODBC::SQL_SMALLINT =			    5;
+  const ODBC::SQL_FLOAT =			    6;
+  const ODBC::SQL_REAL =			    7;
+  const ODBC::SQL_DOUBLE =			    8;
+  const ODBC::SQL_DATE =			    9;
+  const ODBC::SQL_DATETIME =			    9; // ODBC 3.x
+  const ODBC::SQL_TIME =			   10;
+  const ODBC::SQL_INTERVAL =			   10; // ODBC 3.x
+  const ODBC::SQL_TIMESTAMP =			   11;
+  const ODBC::SQL_VARCHAR =			   12;
+  const ODBC::SQL_TYPE_DATE =			   91; // ODBC 3.x
+  const ODBC::SQL_TYPE_TIME =			   92; // ODBC 3.x
+  const ODBC::SQL_TYPE_TIMESTAMP =		   93; // ODBC 3.x
+  const ODBC::SQL_LONGVARCHAR =			   -1;
+  const ODBC::SQL_BINARY =			   -2;
+  const ODBC::SQL_VARBINARY =			   -3;
+  const ODBC::SQL_LONGVARBINARY =		   -4;
+  const ODBC::SQL_BIGINT =			   -5;
+  const ODBC::SQL_TINYINT =			   -6;
+  const ODBC::SQL_BIT =				   -7;
+  const ODBC::SQL_GUID =			  -11; // ODBC 3.x
+
+/* Possible values of the NULLABLE field. */
+
+  const ODBC::SQL_NO_NULLS =			    0;
+  const ODBC::SQL_NULLABLE =			    1;
+  const ODBC::SQL_NULLABLE_UNKNOWN =		    2;
+
+/* Possible values of the SEARCHABLE field. */
+
+  const ODBC::SQL_UNSEARCHABLE =		    0;
+  const ODBC::SQL_LIKE_ONLY =			    1;
+  const ODBC::SQL_ALL_EXCEPT_LIKE =		    2;
+  const ODBC::SQL_SEARCHABLE =			    3;
+  // ODBC 3.x synonyms
+  const ODBC::SQL_PRED_NONE =			    0;
+  const ODBC::SQL_PRED_CHAR =			    1;
+  const ODBC::SQL_PRED_BASIC =			    2;
+  const ODBC::SQL_PRED_SEARCHABLE =		    3;
+
+/* Possible values of the SQL_DATETIME_SUB field (ODBC 3.x). */
+
+  // date/time types
+  const ODBC::SQL_CODE_DATE =			    1;
+  const ODBC::SQL_CODE_TIME =			    2;
+  const ODBC::SQL_CODE_TIMESTAMP =		    3;
+  // interval types
+  const ODBC::SQL_CODE_YEAR =			    1;
+  const ODBC::SQL_CODE_MONTH =			    2;
+  const ODBC::SQL_CODE_DAY =			    3;
+  const ODBC::SQL_CODE_HOUR =			    4;
+  const ODBC::SQL_CODE_MINUTE =			    5;
+  const ODBC::SQL_CODE_SECOND =			    6;
+  const ODBC::SQL_CODE_YEAR_TO_MONTH =		    7;
+  const ODBC::SQL_CODE_DAY_TO_HOUR =		    8;
+  const ODBC::SQL_CODE_DAY_TO_MINUTE =		    9;
+  const ODBC::SQL_CODE_DAY_TO_SECOND =		   10;
+  const ODBC::SQL_CODE_HOUR_TO_MINUTE =		   11;
+  const ODBC::SQL_CODE_HOUR_TO_SECOND =		   12;
+  const ODBC::SQL_CODE_MINUTE_TO_SECOND =	   13;
+
+/* Retrieve information about all tables in the current database. Returns a
+   list of (NAME,TYPE) string pairs, where NAME denotes the name and TYPE the
+   type of a table ("TABLE", "VIEW", etc.). */
+
+ODBC::tables db::pointer =
+		C::odbc_tables db;
+
+/* Retrieve information about the columns of the table with the given name.
+   Returns a list of string tuples with the following information: NAME
+   (column name), TYPE (SQL data type), NULLABLE (whether the field is
+   nullable, "YES" or "NO") and DEFAULT (default value, as a string). The
+   NULLABLE and DEFAULT values may be () if not available. */
+
+ODBC::columns db::pointer table_name::string =
+		C::odbc_columns db table_name;
+
+/* Retrieve information about the primary and foreign keys of the given table.
+   odbc_primary_keys returns the primary keys of the given table as a list of
+   strings (column names), while odbc_foreign_keys returns a list of string
+   triples (NAME,PKTAB,PKCOL) where NAME is the name of a column in the given
+   table with a foreign key which refers to the primary key colum PKCOL in
+   table PKTAB. */
+
+ODBC::primary_keys db::pointer table_name::string =
+		C::odbc_primary_keys db table_name;
+
+ODBC::foreign_keys db::pointer table_name::string =
+		C::odbc_foreign_keys db table_name;
+
+/* Execute an SQL query and fetch results. SQL queries generally come in two
+   different flavours: queries returning data (so-called result sets), and
+   statements modifying the data (which have as their result the number of
+   affected rows). Note that some databases allow special types of queries
+   which may return multiple result sets and/or row counts.
+
+   The sql_exec function returns either the list of column titles for the
+   first result set, or the number of rows affected by the first SQL
+   statement. If a list of column titles was returned, the data rows can be
+   fetched one by one with sql_fetch. If no more data is available in the
+   result set, sql_fetch fails. At any time, you can also call sql_more to
+   switch to the next result set. Just like sql_exec, sql_more will return
+   either a list of column titles (after which you can go on calling
+   sql_fetch to fetch the data from the new result set) or a row count. If no
+   more results are available, sql_more fails. When you are done with an SQL
+   query you can also call the sql_close function to terminate a query and
+   release the associated resources (this is also done automatically when a
+   new query is started).
+
+   NULL values in the results are converted to (), numeric data (including bit
+   values) to the corresponding Q type (Int or Float), binary data to ByteStr,
+   and character strings to String. All other data (e.g., time, date and
+   timestamp) is converted to its character representation and returned as a
+   string.
+
+   Marked input parameters, which are replaced for `?' markers in the query,
+   can be specified in the ARGS argument of sql_exec, which is a list of
+   parameter values. The same types are recognized as for the result values
+   (i.e., (), integers, floating point values, character and byte strings).
+   Note that ARGS=[] denotes that no parameter values are present; if you
+   really need a singleton () (i.e., NULL) parameter, you have to specify
+   it as `[()]'. */
+
+ODBC::sql_exec db::pointer query::string args =
+		C::odbc_sql_exec db query args if listp args;
+
+ODBC::sql_fetch db::pointer =
+		C::odbc_sql_fetch db;
+
+ODBC::sql_more db::pointer =
+		C::odbc_sql_more db;
+
+ODBC::sql_close db::pointer =
+		C::odbc_sql_close db;
+
+/* Convenience functions to execute an SQL query and collect results in a
+   list. The sql function only returns the first result set, with the column
+   titles in the first element, or a single row count. The msql function
+   returns multiple result sets in a list of lists (or row counts). Marked
+   parameters are passed in the same fashion as with sql_exec. */
+
+/* We implement this tail-recursively to prevent stack overflows. */
+
+using namespace ODBC;
+
+private sql_loop;
+sql_loop db::pointer xs x
+  = reverse xs if sql_done x
+    with
+      sql_done (C::odbc_sql_fetch _)	= 1;
+      sql_done _		= 0;
+    end;
+  = sql_loop db (x:xs) (sql_fetch db) if sql_check x
+    with
+      sql_check x	= ~null x if listp x;
+			= 0 otherwise;
+    end;
+  = x otherwise;
+
+ODBC::sql db::pointer query::string args =
+  sql_close db $$ res
+when
+  res = sql_loop db [] (sql_exec db query args);
+end
+if listp args;
+
+ODBC::msql db::pointer query::string args =
+  sql_close db $$ res
+when
+  res = msql_loop db [] (sql_exec db query args);
+end
+with
+  msql_loop db::pointer xs x
+    = reverse xs if msql_done x;
+    = msql_loop db (x:xs) (sql_loop db [] (sql_more db)) if msql_check x;
+    = x otherwise;
+
+  msql_done (sql_more _)	= 1;
+  msql_done _			= 0;
+  
+  msql_check x::int		= 1;
+  msql_check x			= 1 if listp x;
+  msql_check _			= 0;
+end
+if tuplep args;
+
+
+
