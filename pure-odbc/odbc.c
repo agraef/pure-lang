@@ -33,24 +33,13 @@
 /* system headers */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <ctype.h>
-
-/* check for standard C headers */
-#if STDC_HEADERS
-# include <stdlib.h>
-# include <string.h>
-#endif
-
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
-#endif
-
-//#ifdef HAVE_LIMITS_H
 #include <limits.h>
-//#endif
 
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
+#ifdef __MINGW32__
+#include <malloc.h>
 #endif
 
 #include <sql.h>
@@ -62,51 +51,6 @@
 
 #include <gmp.h>
 #include <pure/runtime.h>
-
-#ifdef DMALLOC
-#include <dmalloc.h>
-#endif
-
-#ifndef HAVE_MEMCPY
-
-#if __GNUC__ > 1
-#define memcpy(TO,FROM,COUNT)	__builtin_memcpy(TO,FROM,COUNT)
-#else
-static void *memcpy (to, from, count)
-     char *to;
-     char *from;
-     int count;
-{
-  register char *f = from;
-  register char *t = to;
-  register int i = count;
-
-  while (i-- > 0)
-    *t++ = *f++;
-  return (void*)to;
-}
-#endif
-
-#endif
-
-#ifndef HAVE_MEMSET
-
-#if __GNUC__ > 1
-#define memset(TO,C,COUNT)	__builtin_memset(TO,C,COUNT)
-#else
-static void *memset (char *to, int c, int count)
-{
-  register char f = (char)c;
-  register char *t = to;
-  register int i = count;
-
-  while (i-- > 0)
-    *t++ = f;
-  return (void*)to;
-}
-#endif
-
-#endif
 
 #define error_handler(msg) \
   pure_app(pure_symbol(pure_sym("ODBC::error")), pure_cstring_dup(msg))
@@ -123,7 +67,7 @@ typedef struct bstr {
 typedef struct {
   short type; /* SQL parameter type */
   short ctype; /* C parameter type */
-  long len; /* length or indicator */
+  SQLLEN len; /* length or indicator */
   long buflen; /* real buffer length */
   long prec; /* precision */
   void *ptr; /* buffer pointer */
@@ -593,7 +537,7 @@ pure_expr *odbc_getinfo(pure_expr *argv0, unsigned int info_type)
 /* Maximum length of string values. */
 #define SL 256
 
-#define checkstr(s,l) ((l==SQL_NULL_DATA)?pure_tuplel(0):pure_cstring_dup(s))
+#define checkstr(s,l) ((l==SQL_NULL_DATA)?pure_tuplel(0):pure_cstring_dup((char*)s))
 #define checkint(x,l) ((l==SQL_NULL_DATA)?pure_tuplel(0):pure_int(x))
 #define checkuint(x,l) ((l==SQL_NULL_DATA)?pure_tuplel(0):pure_int((long) x))
 #define checkbool(x,l) ((l==SQL_NULL_DATA)?pure_tuplel(0):pure_int(x))
@@ -645,11 +589,12 @@ pure_expr *odbc_typeinfo(pure_expr *argv0, int id)
       switch (ret) {
        case SQL_SUCCESS_WITH_INFO:
        case SQL_SUCCESS:
-	 if (n >= m)
+	 if (n >= m) {
 	   if ((xs1 = (pure_expr**)realloc(xs, (m+=NMAX)*sizeof(pure_expr))))
 	     xs = xs1;
 	   else
 	     goto fatal;
+	 }
 	 xs[n++] = pure_tuplel(19,
 			    checkstr(name, len[1]),
 			    checkint(type, len[2]),
@@ -726,11 +671,12 @@ pure_expr *odbc_tables(pure_expr *argv0)
       switch (ret) {
        case SQL_SUCCESS_WITH_INFO:
        case SQL_SUCCESS:
-	 if (n >= m)
+	 if (n >= m) {
 	   if ((xs1 = (pure_expr**)realloc(xs, (m+=NMAX)*sizeof(pure_expr))))
 	     xs = xs1;
 	   else
 	     goto fatal;
+	 }
 	 xs[n++] = pure_tuplel(2,
 			    checkstr(name, len[3]),
 			    checkstr(type, len[4]));
@@ -794,11 +740,12 @@ pure_expr *odbc_columns(pure_expr *argv0, const char *tab)
       switch (ret) {
        case SQL_SUCCESS_WITH_INFO:
        case SQL_SUCCESS:
-	 if (n >= m)
+	 if (n >= m) {
 	   if ((xs1 = (pure_expr**)realloc(xs, (m+=NMAX)*sizeof(pure_expr))))
 	     xs = xs1;
 	   else
 	     goto fatal;
+	 }
 	 xs[n++] = pure_tuplel(4,
 			    checkstr(name, len[4]),
 			    checkstr(type, len[6]),
@@ -860,11 +807,12 @@ pure_expr *odbc_primary_keys(pure_expr *argv0, const char *tab)
       switch (ret) {
        case SQL_SUCCESS_WITH_INFO:
        case SQL_SUCCESS:
-	 if (n >= m)
+	 if (n >= m) {
 	   if ((xs1 = (pure_expr**)realloc(xs, (m+=NMAX)*sizeof(pure_expr))))
 	     xs = xs1;
 	   else
 	     goto fatal;
+	 }
 	 xs[n++] = checkstr(name, len[4]);
 	 break;
        case SQL_NO_DATA_FOUND:
@@ -925,11 +873,12 @@ pure_expr *odbc_foreign_keys(pure_expr *argv0, const char *tab)
       switch (ret) {
        case SQL_SUCCESS_WITH_INFO:
        case SQL_SUCCESS:
-	 if (n >= m)
+	 if (n >= m) {
 	   if ((xs1 = (pure_expr**)realloc(xs, (m+=NMAX)*sizeof(pure_expr))))
 	     xs = xs1;
 	   else
 	     goto fatal;
+	 }
 	 xs[n++] = pure_tuplel(3,
 			    checkstr(name, len[8]),
 			    checkstr(pktabname, len[3]),
@@ -976,8 +925,8 @@ pure_expr *odbc_sql_exec(pure_expr *argv0, const char *query, pure_expr *argv2)
       db->henv) {
     long ret;
     pure_expr *res, **xs, **xv;
-    int32_t n;
-    short i, cols, *coltype = NULL;
+    size_t i, n;
+    short cols, *coltype = NULL;
     char buf[BUFSZ2];
     /* finalize previous query */
     sql_close(db);
@@ -1312,7 +1261,6 @@ pure_expr *odbc_sql_more(pure_expr *argv0)
     pure_expr *res, **xs;
     short i, cols, *coltype = NULL;
     char buf[BUFSZ2];
-    SDWORD len;
     /* get the next result set */
     if ((ret = SQLMoreResults(db->hstmt)) == SQL_NO_DATA_FOUND) {
       res = 0;

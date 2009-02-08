@@ -54,7 +54,7 @@ DISTFILES = COPYING Makefile README config.guess examples/*.pure odbc.c odbc.pur
 all: odbc$(DLL)
 
 odbc$(DLL): odbc.c
-	$(CC) $(shared) -o $@ $< $(FLAGS) -liodbc -lpure -lgmp $(LIBS)
+	$(CC) $(shared) -o $@ $< $(FLAGS) -lodbc -lpure -lgmp $(LIBS)
 
 clean:
 	rm -f *$(DLL) *~ *.a *.o
