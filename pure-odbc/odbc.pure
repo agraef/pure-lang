@@ -551,7 +551,7 @@ if listp args;
 odbc::msql db::pointer query::string args =
   sql_close db $$ res
 when
-  res = msql_loop db [] (sql_exec db query args);
+  res = msql_loop db [] (sql_loop db [] (sql_exec db query args));
 end
 with
   msql_loop db::pointer xs x
@@ -559,14 +559,14 @@ with
     = msql_loop db (x:xs) (sql_loop db [] (sql_more db)) if msql_check x;
     = x otherwise;
 
-  msql_done (sql_more _)	= 1;
-  msql_done _			= 0;
+  msql_done (C::odbc_sql_more _)	= 1;
+  msql_done _				= 0;
   
-  msql_check x::int		= 1;
-  msql_check x			= 1 if listp x;
-  msql_check _			= 0;
+  msql_check x::int			= 1;
+  msql_check x				= 1 if listp x;
+  msql_check _				= 0;
 end
-if tuplep args;
+if listp args;
 
 
 
