@@ -23,6 +23,10 @@
 #endif
 
 #ifdef _WIN32
+#define STDC_HEADERS 1
+#define HAVE_MEMCPY 1
+#define HAVE_MEMSET 1
+#define HAVE_LIMITS_H 1
 #include <windows.h>
 #endif
 
@@ -49,7 +53,8 @@
 #include <pure/runtime.h>
 
 #define error_handler(msg) \
-  pure_app(pure_symbol(pure_sym("ODBC::error")), pure_cstring_dup(msg))
+  pure_app(pure_app(pure_symbol(pure_sym("ODBC::error")), \
+  pure_cstring_dup("other error")), pure_cstring_dup(msg))
 
 /* ByteStr data structure, see clib.c */
 
