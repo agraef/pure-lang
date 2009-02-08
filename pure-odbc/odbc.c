@@ -23,10 +23,6 @@
 #endif
 
 #ifdef _WIN32
-#define STDC_HEADERS 1
-#define HAVE_MEMCPY 1
-#define HAVE_MEMSET 1
-#define HAVE_LIMITS_H 1
 #include <windows.h>
 #endif
 
