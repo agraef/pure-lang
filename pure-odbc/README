@@ -29,12 +29,12 @@ OPENING AND CLOSING A DATA SOURCE
 ======= === ======= = ==== ======
 
 To open an ODBC connection, you have to specify a "connect string" which names
-the data source to be used with the `ODBC::connect' function. A list of
-available data sources can be obtained with the `ODBC::sources' function. For
+the data source to be used with the `odbc::connect' function. A list of
+available data sources can be obtained with the `odbc::sources' function. For
 instance, on my Linux system running MySQL and PostgreSQL it shows the
 following:
 
-> ODBC::sources;
+> odbc::sources;
 [("myodbc","MySQL ODBC 2.50"),("psqlodbc","PostgreSQL ODBC")]
 
 The first component in each entry of the list is the name of the data source,
@@ -42,22 +42,22 @@ which can be used as the value of the `DSN' option in the connect string, the
 second component provides a short description of the data source.
 
 Likewise, the list of ODBC drivers available on your system can be obtained
-with the `ODBC::drivers' function which returns a list of pairs of driver names
+with the `odbc::drivers' function which returns a list of pairs of driver names
 and attributes. It seems that at this time this function is properly supported
 only on Windows, though. There it can be used to determine a legal value for
 the DRIVER attribute in the connect string, see below.
 
-The `ODBC::connect' function is invoked with a single parameter, the connect
+The `odbc::connect' function is invoked with a single parameter, the connect
 string, which is used to describe the data source and various other parameters
 such as user id and password. For instance, on my system I can connect to the
 local "myodbc" data source from above as follows:
 
-> let db = ODBC::connect "DSN=myodbc";
+> let db = odbc::connect "DSN=myodbc";
 
 Here's how to specify a username and password; note that the different options
 are separated with a semicolon:
 
-> let db = ODBC::connect "DSN=myodbc;UID=root;PWD=guess";
+> let db = odbc::connect "DSN=myodbc;UID=root;PWD=guess";
 
 The precise set of options in the connect string depends on your ODBC
 interface, but at least the following options should be available on most
@@ -78,23 +78,23 @@ The following options appear to be Windows-specific:
 Using the FILEDSN option you can establish a connection to a data source
 described in a .dsn file on Windows, as follows:
 
-> ODBC::connect "FILEDSN=test.dsn";
+> odbc::connect "FILEDSN=test.dsn";
 
 On Windows it is also possible to directly connect to a driver and name a
 database file as the data source. For instance, using the MS Access ODBC
 driver you can connect to a database file test.mdb as follows:
 
-> ODBC::connect "DRIVER=Microsoft Access Driver (*.mdb);DBQ=test.mdb";
+> odbc::connect "DRIVER=Microsoft Access Driver (*.mdb);DBQ=test.mdb";
 
-The `ODBC::connect' function returns an `ODBCHandle' object which is used to
+The `odbc::connect' function returns an `ODBCHandle' object which is used to
 refer to the database connection in the other routines provided by this
 module. An ODBCHandle object is closed automatically when it is no longer
 accessible.  You can also close it explicitly with a call to the
-`ODBC::disconnect' function:
+`odbc::disconnect' function:
 
-> ODBC::disconnect db;
+> odbc::disconnect db;
 
-After `ODBC::disconnect' has been invoked on a handle, any further operations
+After `odbc::disconnect' has been invoked on a handle, any further operations
 on it will fail.
 
 
@@ -102,7 +102,7 @@ GETTING INFORMATION ABOUT A DATA SOURCE
 ======= =========== ===== = ==== ======
 
 You can get general information about an open database connection with the
-`ODBC::info' function. This function returns a tuple of strings with the
+`odbc::info' function. This function returns a tuple of strings with the
 following items (see the description of the SQLGetInfo() function in the ODBC
 API reference for more information):
 
@@ -117,44 +117,44 @@ API reference for more information):
 
 E.g., here is what the connection to MySQL shows on my Linux system:
 
-> ODBC::info db;
+> odbc::info db;
 ("myodbc","test","MySQL","5.0.18","myodbc3.dll","03.51.12","03.51","03.52")
 
 The odbc module now provides a number of new operations to retrieve a bunch
 of additional meta information about the given database connection.
-In particular, the ODBC::getinfo function provides a direct interface to
-the SQLGetInfo() routine. The result of ODBC::getinfo is a byte string which
+In particular, the odbc::getinfo function provides a direct interface to
+the SQLGetInfo() routine. The result of odbc::getinfo is a byte string which
 can be converted to an integer or string value, depending on the type of
 information requested. For instance:
 
-> bint $ ODBC::getinfo db SQL_MAX_TABLES_IN_SELECT;
+> bint $ odbc::getinfo db SQL_MAX_TABLES_IN_SELECT;
 31
 
-> bstr $ ODBC::getinfo db SQL_IDENTIFIER_QUOTE_CHAR;
+> bstr $ odbc::getinfo db SQL_IDENTIFIER_QUOTE_CHAR;
 "`"
 
-Information about supported SQL data types is available with the ODBC::typeinfo
+Information about supported SQL data types is available with the odbc::typeinfo
 routine (this returns a lot of data, see odbc.q for an explanation):
 
-> ODBC::typeinfo db SQL_ALL_TYPES;
+> odbc::typeinfo db SQL_ALL_TYPES;
 
 Moreover, information about the tables in the current database, as well as the
 structure of the tables and their primary and foreign keys can be retrieved
-with the ODBC::tables, ODBC::columns, ODBC::primary_keys and ODBC::foreign_keys
+with the odbc::tables, odbc::columns, odbc::primary_keys and odbc::foreign_keys
 functions:
 
-> ODBC::tables db;
+> odbc::tables db;
 [("event","TABLE"),("pet","TABLE")]
 
-> ODBC::columns db "pet";
+> odbc::columns db "pet";
 [("name","varchar","NO","''"),("owner","varchar","YES",()),
 ("species","varchar","YES",()),("sex","char","YES",()),
 ("birth","date","YES",()),("death","date","YES",())]
 
-> ODBC::primary_keys db "pet";
+> odbc::primary_keys db "pet";
 ["name"]
 
-> ODBC::foreign_keys db "event";
+> odbc::foreign_keys db "event";
 [("name","pet","name")]
 
 This often provides a convenient and portable means to retrieve basic
@@ -179,10 +179,10 @@ result set) in the former, and the row count in the latter case.
 
 For instance, here is how you can select some entries from a table. (The
 following examples assume the sample "menagerie" tables from the MySQL
-documentation. The `init' function in the ODBC::example.pure script can be
+documentation. The `init' function in the odbc::example.pure script can be
 used to create these tables in your default database.)
 
-> ODBC::sql db "select name,species from pet where owner='Harold'" [];
+> odbc::sql db "select name,species from pet where owner='Harold'" [];
 [["name","species"],["Fluffy","cat"],["Buffy","dog"]]
 
 Often the third parameter of `sql', as above, is just the empty list,
@@ -190,19 +190,19 @@ indicating a parameterless query. Queries involving marked input parameters
 can be executed by specifying the parameter values in the third argument of
 the `sql' call. For instance:
 
-> ODBC::sql db "select name,species from pet where owner=?" ["Harold"];
+> odbc::sql db "select name,species from pet where owner=?" ["Harold"];
 [["name","species"],["Fluffy","cat"],["Buffy","dog"]]
 
 Multiple parameters are specified as a list:
 
-> ODBC::sql db "select name,species from pet where owner=? and species=?" \
+> odbc::sql db "select name,species from pet where owner=? and species=?" \
 ["Harold","cat"]
 [["name","species"],["Fluffy","cat"]]
 
 Parameterized queries are particularly useful for the purpose of inserting
 data into a table:
 
-> ODBC::sql db "insert into pet values (?,?,?,?,?,?)" \
+> odbc::sql db "insert into pet values (?,?,?,?,?,?)" \
 ["Puffball","Diane","hamster","f","1999-03-30",()]
 1
 
@@ -210,7 +210,7 @@ In this case we could also have hard-coded the data to be inserted right into
 the SQL statement, but a parameterized query like the one above can easily be
 applied to a whole collection of data rows, e.g., as follows:
 
-> do (ODBC::sql db "insert into pet values (?,?,?,?,?,?)") DATA;
+> do (odbc::sql db "insert into pet values (?,?,?,?,?,?)") DATA;
 
 Parameterized queries also let you insert data which cannot be specified
 easily inside an SQL query, such as long strings or binary data.
@@ -239,7 +239,7 @@ all the result sets and/or row counts of the query.
 
 Example:
 
-> ODBC::msql db "select * from pet; select * from event" [];
+> odbc::msql db "select * from pet; select * from event" [];
 
 This will return a list with two result sets, one for each query.
 
@@ -262,26 +262,26 @@ processed, `sql_more' fails.
 
 Example:
 
-> ODBC::sql_exec db "select name,species from pet where owner='Harold'" [];
+> odbc::sql_exec db "select name,species from pet where owner='Harold'" [];
 ["name","species"]
 
-> ODBC::sql_fetch db; // get the 1st row
+> odbc::sql_fetch db; // get the 1st row
 ["Fluffy","cat"]
 
-> ODBC::sql_fetch db; // get the 2nd row
+> odbc::sql_fetch db; // get the 2nd row
 ["Buffy","dog"]
 
-> ODBC::sql_fetch db; // no more results
-ODBC::sql_fetch #<pointer 0x24753e0>
+> odbc::sql_fetch db; // no more results
+odbc::sql_fetch #<pointer 0x24753e0>
 
-> ODBC::sql_more db; // no more result sets
-ODBC::sql_more #<pointer 0x24753e0>
+> odbc::sql_more db; // no more result sets
+odbc::sql_more #<pointer 0x24753e0>
 
 Moreover, the `sql_close' function can be called at any time to terminate an
 SQL query, after which subsequent calls to `sql_fetch' and `sql_more' will
 fail:
 
-> ODBC::sql_close db; // terminate query
+> odbc::sql_close db; // terminate query
 ()
 
 This is not strictly necessary (it will be done automatically as soon as the
@@ -305,28 +305,28 @@ ERROR HANDLING
 ===== ========
 
 When one of the above operations fails because the SQL server reports an
-error, an error term of the form `ODBC::error MSG STATE' will be returned,
+error, an error term of the form `odbc::error MSG STATE' will be returned,
 which specifies an error message and the corresponding SQL state (i.e., error
 code). A detailed explanation of the state codes can be found in the ODBC
 documentation. For instance, a reference to a non-existant table will cause a
 report like the following:
 
 > sql db "select * from pets" ()
-ODBC::error "[TCX][MyODBC]Table 'test.pets' doesn't exist" "S1000"
+odbc::error "[TCX][MyODBC]Table 'test.pets' doesn't exist" "S1000"
 
 You can check for such return values and take some appropriate action. By
-redefining ODBC::error accordingly, you can also have it generate exceptions or
+redefining odbc::error accordingly, you can also have it generate exceptions or
 print an error message. For instance:
 
-ODBC::error MSG STATE	= fprintf ERROR "%s (%s)\n" (MSG,STATE);
+odbc::error MSG STATE	= fprintf ERROR "%s (%s)\n" (MSG,STATE);
 
-NOTE: When redefining `ODBC::error' in this manner, you should be aware that
-the return value of `ODBC::error' is what will be returned by the other
+NOTE: When redefining `odbc::error' in this manner, you should be aware that
+the return value of `odbc::error' is what will be returned by the other
 operations of this module in case of an error condition. These return values
 are checked by other functions such as `sql'. Thus the return value should
 still indicate that an error has happened, and not be something that might be
 interpreted as a legal return value, such as an integer or a nonempty
-tuple. It is usually safe to have `ODBC::error' return an empty tuple or throw
+tuple. It is usually safe to have `odbc::error' return an empty tuple or throw
 an exception, but other types of return values should be avoided.
 
 
