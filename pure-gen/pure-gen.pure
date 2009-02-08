@@ -46,6 +46,10 @@ invalid_option x = fprintf stderr "Error: unrecognized option '%s'\nType 'pure-g
 warning n::int s::string = fprintf stderr "Warning: %s\n" s if n<=warn;
 echo s::string = puts s if verbose;
 
+let cache = ref emptydict;
+msgcache msg::string = 0 if member (get cache) msg;
+		     = put cache (insert (get cache) (msg=>())) $$ 1;
+
 basename s::string = last path if ~null path when path = split "/" s end;
 		   = s otherwise;
 dirname s::string = join "/" $ init path if ~null path when path = split "/" s end;
@@ -712,8 +716,15 @@ ret_str+" Pure_"+name+"("+formal_params+") {\n"+
 
 //select constant and function declarations based on a regex match
 const cflags = REG_NOSUB or REG_EXTENDED;
-matches pat (constant name _) = valid_name name && regex pat cflags name 0;
-matches pat (name, _) = valid_name name && regex pat cflags name 0;
+matches pat (constant name _) = valid_name name &&
+  regchk pat (regex pat cflags name 0);
+matches pat (name, _) = valid_name name &&
+  regchk pat (regex pat cflags name 0);
+// make regex just always return 1 in case of an error
+regchk pat (regerr _ _) = warning 0 msg $$ 1 if msgcache msg
+when msg = sprintf "error in regular expression '%s'" pat end;
+			= 1 otherwise;
+regchk _ x = x;
 
 // Filter out builtins and stuff commonly found in system header files.
 valid_name name = true if all_opt;
@@ -807,7 +818,6 @@ let func_protos =
 
 //Output the Pure part
 let out_pure   = fopen out_name "w";
-echo $ sprintf "Writing %s" out_name;
 
 let extern_decl = case iface_opt of
   "ffi" = fputs "using ffi;\n" out_pure $$ ffi_extern_decl;
@@ -823,6 +833,7 @@ let extern_decl = case iface_opt of
   end;
   _ = pure_extern_decl;
 end;
+echo $ sprintf "Writing %s" out_name;
 if ~null lib_name then fprintf out_pure "using \"lib:%s\";\n" lib_name else ();
 if ~null nmspace then fprintf out_pure "\nnamespace %s;\n" nmspace else ();
 
