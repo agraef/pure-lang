@@ -1,0 +1,81 @@
+
+pure-gen 
+========
+
+A Pure C bindings generator. Written by Albert Graef, based on Scott Dillard's
+OpenGL bindings generator.
+
+License
+=======
+
+Please check the COPYING file for licensing information. The generator
+contains significant portions of the Language.C Haskell library; see
+dump-ast.hs for pertinent license and copyright information.
+
+Installation
+============
+
+Normally you just run 'make && sudo make install'. This will install the
+program under $(prefix)/lib/pure-gen-x.y and create a link to the executable
+in $(prefix)/bin. (See The Makefile for further options.)
+
+The generator uses the Language.C parser for Haskell, available here:
+
+http://hackage.haskell.org/cgi-bin/hackage-scripts/package/language-c
+
+To compile the dump-ast module, you need a Haskell compiler (GHC) and this
+library. The Haskell program dump-ast.hs parses a C file (its only command
+line argument) and writes the AST to stdout. It calls GCC to do the
+preprocessing, so on Windows you will probably need MinGW installed.
+
+For Linux users, Scott has uploaded statically linked binaries of dump-ast,
+both 32 and 64 bits, to the Pure-lang Google Group files area. (These still
+need libgmp, but so does Pure so you should already have that.) Thus, if you
+can't/don't want to install GHC, you can just put the appropriate binary into
+the source directory, rename it to 'dump-ast' and then run 'sudo make install'
+without running 'make'.
+
+Usage
+=====
+
+The pure-gen script generates bindings for C functions from a C header file.
+Try 'pure-gen -h' for help. Basically,
+
+	pure-gen foo.h
+
+generates a Pure module foo.pure with 'extern' declarations for the constants
+('#define's and enums) and C routines declared in the given C header file and
+(recursively) its includes.
+
+There are some options which affect the generated output. In particular, 
+'-f c' generates a C wrapper module along with the Pure module (this may be
+necessary if the C routines declared in the header cannot be invoked directly
+as Pure 'externs'), and '-f ffi' generates a wrapper using Pure's ffi
+module. Moreover, '-l libfoo' generates a 'using "lib:libfoo"' declaration in
+the Pure source, for modules which require a shared library to be loaded.
+
+Note that pure-gen scans the given header file as well as all its includes. If
+the header file '#include's system headers you will get those declarations as
+well. This is usually undesirable. As a remedy, pure-gen excludes identifiers
+with a leading underscore and other names which are are commonly found in
+system headers from processing (you can use the -a option to disable this). In
+addition, the -s option, followed by an extended regular expression, allows
+you to explicitly select the symbols which should be included.
+
+The -s option is often used in conjuction with the -p option, which lets you
+specify a "module name prefix" which should be stripped off from C symbols.
+Case is insignificant and a trailing underscore will be removed as well, so
+'-p foo' turns 'fooBar' into 'Bar' and 'FOO_BAR' into 'BAR'. Moreover, the -n
+option allows you to specify the name of a Pure namespace in which the
+resulting constants and functions are to be declared. So, for instance, 
+'-s "^(foo|FOO)" -p foo -n foo' will select all symbols staring with the 'foo'
+or 'FOO' prefix, stripping the prefix from the selected symbols and finally
+adding a 'foo::' namespace qualifier to them instead.
+
+This usually works pretty well. Nevertheless, many headers (and/or the
+generated output) will still require manual editing to get a nice wrapper
+module.
+
+Also note that only C bindings can be generated at this time. Thus, in order
+to wrap C++ modules, you'll first have to obtain or write a corresponding C
+wrapper.
