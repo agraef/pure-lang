@@ -920,12 +920,13 @@ pure_expr *odbc_foreign_keys(pure_expr *argv0, const char *tab)
 pure_expr *odbc_sql_exec(pure_expr *argv0, const char *query, pure_expr *argv2)
 {
   ODBCHandle *db;
-  int itmp;
-  if (pure_is_pointer(argv0, (void**)&db) &&
-      db->henv) {
+  pure_expr **xv;
+  size_t n;
+  if (pure_is_pointer(argv0, (void**)&db) && db->henv &&
+      pure_is_listv(argv2, &n, &xv)) {
     long ret;
-    pure_expr *res, **xs, **xv;
-    size_t i, n;
+    pure_expr *res, **xs;
+    size_t i;
     short cols, *coltype = NULL;
     char buf[BUFSZ2];
     /* finalize previous query */
@@ -938,9 +939,7 @@ pure_expr *odbc_sql_exec(pure_expr *argv0, const char *query, pure_expr *argv2)
       return pure_err(db->henv, db->hdbc, db->hstmt);
     }
     /* bind parameters */
-    if ((itmp = pure_is_listv(argv2, &n, &xv)) && n == 0)
-      ;
-    else if (itmp && n > 0) {
+    if (n > 0) {
       if (!init_args(db, n))
 	goto fatal;
       for (i = 0; i < n; i++)
@@ -956,21 +955,6 @@ pure_expr *odbc_sql_exec(pure_expr *argv0, const char *query, pure_expr *argv2)
 	  else
 	    goto fail;
 	}
-    } else {
-      if (!init_args(db, 1))
-	goto fatal;
-      if (!set_arg(db, 0, argv2)) {
-	int alloc_error =
-	  (db->argv[0].type == SQL_BIGINT ||
-	   db->argv[0].type == SQL_CHAR ||
-	   db->argv[0].type == SQL_BINARY) &&
-	  !db->argv[0].data.buf;
-	free_args(db);
-	if (alloc_error)
-	  goto fatal;
-	else
-	  goto fail;
-      }
     }
     for (i = 0; i < db->argc; i++)
       if ((ret = SQLBindParameter(db->hstmt, i+1, SQL_PARAM_INPUT,
