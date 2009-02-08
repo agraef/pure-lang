@@ -302,7 +302,7 @@ pure_type t =
   slong_t    = "int";
   ptr_type (func_type _ _) = "void*";
   ptr_type t = pure_type t + "*";
-  _          = puts ("pure_type error : "+str t) $$ "void";
+  _          = warning 0 ("pure_type error : "+str t) $$ "void";
   end;
 
 
@@ -479,7 +479,7 @@ func_decl d@(CDecl _ _) =
 resolve_typedef d t = lookup t
   with
     lookup (basic_type (CTypeDef n)) =
-      catch ( \_ -> puts $ "could not resolve typedef: "+n+
+      catch ( \_ -> warning 0 $ "could not resolve typedef: "+n+
                            ", defaulting to int" $$ sint_t  ) 
             ( lookup (d!n) );
 
@@ -493,7 +493,7 @@ resolve_typedef d t = lookup t
     lookup t@(basic_type _) = t;
     lookup (ptr_type t) = ptr_type (lookup t);
     lookup (func_type ret args) = func_type (lookup ret) (map lookup args);
-    lookup x = puts ("resolve_typedef error: "+str x) $$ void_t;
+    lookup x = warning 0 ("resolve_typedef error: "+str x) $$ void_t;
   end;
     
 resolve_decl_typedefs tydefs decls = 
@@ -575,7 +575,7 @@ get_enum dict _ = dict;
 calc_enum_values dict prev ((name,Just e):more) = 
   case eval_expr dict e of
     val::int = calc_enum_values (insert dict (name => val)) val more;
-    x = puts $ "Couldn't evaluate enum expression for "+name+" : "+str e 
+    x = warning 0 $ "Couldn't evaluate enum expression for "+name+" : "+str e 
           $$ calc_enum_values dict prev more;
   end;
 
@@ -590,7 +590,7 @@ calc_enum_values dict _ [] = dict;
 eval_expr d (CVar n) = 
   catch 
   (\e  -> 
-    puts$"Couldn't lookup name "+n+" in enum definition. Defaulting to 0."$$0
+    warning 0$"Couldn't lookup name "+n+" in enum definition. Defaulting to 0."$$0
   ) (d!n);
 
 eval_expr d (CConst (CIntConst x)) = x;
