@@ -16,7 +16,7 @@ endif
 bindir = $(prefix)/bin
 pkgdatadir = $(prefix)/lib/pure-gen-$(version)
 
-DISTFILES = COPYING Makefile README dump-ast.hs pure-gen.pure
+DISTFILES = COPYING Makefile README dump-ast.hs pure-gen.pure examples/*.templ
 
 all: dump-ast
 
@@ -42,7 +42,7 @@ uninstall:
 
 dist:
 	rm -rf $(dist)
-	mkdir $(dist)
+	mkdir $(dist) && mkdir $(dist)/examples
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
