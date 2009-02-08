@@ -18,6 +18,26 @@ let version = "@version@";
 // for testing purposes
 //let argv = ["pure-gen.pure","-v","-fc","-nffi","-pffi_","/usr/include/ffi.h"];
 
+/* Default template for C code generation.
+
+   %r = return type, %w = wrapper function name, %p = formal params, %n =
+   real function name, %a = arguments, %% escapes a single %.
+
+   A %% on a line by itself separates the "frontmatter" (code to be inserted
+   at the beginning of the C file, right after the #include of the header
+   file) from the function template in the main part of the code. */
+
+let default_template = "%r %w(%p) {\n  return %n(%a);\n}\n\n";
+
+split_template template::string = frontmatter, template when
+  lines = split "\n" template;
+  lines1 = takewhile (\x->x~="%%") lines;
+  lines2 = dropwhile (\x->x~="%%") lines;
+  lines1,lines2 = if null lines2 then lines2,lines1 else lines1,tail lines2;
+  frontmatter = join "\n" lines1;
+  template = join "\n" lines2;
+end;
+
 // Command line options and parameters.
 
 let opts = [("--help", "-h", NOARG),
@@ -30,6 +50,8 @@ let opts = [("--help", "-h", NOARG),
             ("--namespace", "-n", REQARG),
             ("--prefix", "-p", REQARG),
             ("--select", "-s", REQARG),
+            ("--wrap", "-P", REQARG),
+            ("--template", "-t", REQARG),
             ("--warnings", "-w", OPTARG),
             ("--verbose", "-v", OPTARG)];
 
@@ -37,6 +59,7 @@ let dfls = ["--interface" => "extern",
             "--namespace" => "",
             "--prefix" => "",
             "--select" => "",
+            "--wrap" => "Pure_",
             "--all" => "0",
             "--warnings" => "1",
             "--verbose" => "0"];
@@ -81,9 +104,12 @@ puts $ "Usage: pure-gen [options] input-file\n" +
 "--lib-name, -l   Shared library module to be imported.\n" +
 "--namespace, -n  Module namespace in which symbols should be declared.\n" +
 "--prefix, -p     Module name prefix to be removed from symbols.\n" +
+"--wrap, -P       Prefix to be prepended to wrapper function symbols.\n" +
 "--select, -s     Select symbols to be included (extended regex).\n" +
+"--template, -t   Specify C template file (see README for details).\n" +
 "--warnings, -w   Display warnings (level = 0, 1 [default] or 2).\n" +
 "--verbose, -v    Progress information (level = 0 [default] or 1).\n" +
+"Default wrapper prefix (-P) is Pure_.\n" +
 "Default output filename (-o) is input filename with new extension .pure.\n" +
 "Default C filename (-c) is input filename with new extension .c.\n" +
 "Default library name (-l) is empty, or the basename of the C filename." $$
@@ -120,14 +146,29 @@ let funpfx = opts!"--prefix";
 let funpat = opts!"--select";
 let cstpfx = opts!"--prefix";
 let cstpat = opts!"--select";
+let wrap_prefix = opts!"--wrap";
 let all_opt = defnum 1 $ opts!"--all";
 let warn = defnum 1 $ opts!"--warnings";
 let verbose = defnum 1 $ opts!"--verbose";
+
+let frontmatter, template = split_template template
+when
+  template = if member opts "--template" then
+               fget (fopen (opts!"--template") "r")
+             else default_template;
+  template = if stringp template then template
+             else fprintf stderr
+               "Template file '%s' not found, using default template\n"
+               (opts!"--template") $$ default_template;
+end;
 
 echo $ sprintf "Interface type:     %s" iface_opt;
 echo $ sprintf "Library import:     %s" (if null lib_name then "none" else sprintf "using \"lib:%s\"" lib_name);
 echo $ sprintf "Module namespace:   %s" nmspace;
 echo $ sprintf "Module name prefix: %s" (opts!"--prefix");
+if member opts "--template" then
+echo $ sprintf "C template file:    %s" (opts!"--template")
+else ();
 
 /******************************************************************/
 
@@ -670,18 +711,21 @@ ffi_extern_decl pfx::string nmspace::string (name, func_type ret args) =
 
 //output a function declaration for the native pure extern interface
 pure_extern_decl pfx::string nmspace::string (name, func_type ret args) =
-  "extern "+pure_type ret+" "+name+"("+arg_str args+") = "+
-    strip_prefix pfx name+";"
+  "extern "+pure_type ret+" "+name+"("+arg_str args+")"+
+  (if alias == name then "" else " = "+alias)+";"
+  when alias = strip_prefix pfx name end
   with
   arg_str [void_t] = "";
   arg_str args = join "," $ map pure_type args;
   end;
 
 //output a function declaration for the native pure extern interface,
-//appending the prefix "Pure_" to the function name
+//prepending the prefix "Pure_" (or the prefix specified with -P) to the
+//function name
 Pure_extern_decl pfx::string nmspace::string (name, func_type ret args) =
-  "extern "+pure_type ret+" Pure_"+name+"("+arg_str args+") = "+
-    strip_prefix pfx name+";"
+  "extern "+pure_type ret+" "+wrap_prefix+name+"("+arg_str args+")"+
+  (if alias == wrap_prefix+name then "" else " = "+alias)+";"
+  when alias = strip_prefix pfx name end
   with
   arg_str [void_t] = "";
   arg_str args = join "," $ map pure_type args;
@@ -693,9 +737,15 @@ Pure_extern_decl pfx::string nmspace::string (name, func_type ret args) =
 //output the C portion of a function
 //TODO: at this point the typedefs have been resolved. It would be better
 //if they were not.
-c_impl (name, func_type ret args) = 
-ret_str+" Pure_"+name+"("+formal_params+") {\n"+
-"  return "+name+"("+arg_names+");\n}\n\n"
+
+replace_template template ret_type wrapper_name formal_params name arg_names
+  = regsub repl "(%%)|(%r)|(%w)|(%p)|(%n)|(%a)" REG_EXTENDED template 0
+with
+  repl info = subst!(regs info!1!0-1)
+  when subst = ["%",ret_type,wrapper_name,formal_params,name,arg_names] end;
+end;
+
+c_impl (name, func_type ret args) = code
   when
     ret_str = pure_type ret;
 
@@ -710,6 +760,9 @@ ret_str+" Pure_"+name+"("+formal_params+") {\n"+
     arg_types = 
       if args === [void_t] then "" else 
       join "," $ map pure_type args;
+
+    code = replace_template template ret_str (wrap_prefix+name)
+      formal_params name arg_names;
     
   end;
 
@@ -827,7 +880,7 @@ let extern_decl = case iface_opt of
     out_c = fopen c_name "w";
     echo $ sprintf "Writing %s" c_name;
 
-    fprintf out_c "#include \"%s\"\n\n" in_name; 
+    fprintf out_c "#include \"%s\"\n%s\n" (in_name,frontmatter); 
     do (flip fputs out_c) $
       map c_impl $ filter (matches funpat) func_protos;
   end;

@@ -47,10 +47,9 @@ generates a Pure module foo.pure with 'extern' declarations for the constants
 ('#define's and enums) and C routines declared in the given C header file and
 (recursively) its includes.
 
-There are some options which affect the generated output. In particular, 
-'-f c' generates a C wrapper module along with the Pure module (this may be
-necessary if the C routines declared in the header cannot be invoked directly
-as Pure 'externs'), and '-f ffi' generates a wrapper using Pure's ffi
+There are some options which affect the generated output. In particular,
+'-f c' generates a C wrapper module along with the Pure module (see
+"Generating C Code" below), and '-f ffi' generates a wrapper using Pure's ffi
 module. Moreover, '-l libfoo' generates a 'using "lib:libfoo"' declaration in
 the Pure source, for modules which require a shared library to be loaded.
 
@@ -77,5 +76,90 @@ generated output) will still require manual editing to get a nice wrapper
 module.
 
 Also note that only C bindings can be generated at this time. Thus, in order
-to wrap C++ modules, you'll first have to obtain or write a corresponding C
-wrapper.
+to wrap C++ modules, you'll first have to obtain a corresponding C wrapper, or
+write one yourself. If your C compiler knows how to call other languages like
+Fortran or Ada, then modules written in these languages can also be dealt
+with, by writing a fake C header for the module and generating a C wrapper
+with a custom code template (see "Generating C Code" below).
+
+Generating C Code
+========== = ====
+
+As already mentioned, pure-gen can be invoked with the '-fc' option to create
+a C wrapper module along with the Pure module it generates. This is useful to
+create boilerplate code for new modules, and to interface to existing modules
+which, for whatever reason, can't be called directly through Pure 'extern's. 
+(This might be the case, e.g., if the module uses non-standard calling
+conventions, or if some of the module's operations are actually implemented as
+macros.)
+
+You can adjust the C wrapper code generated with the '-fc' option by providing
+your own template file, which has the following format:
+
+#include <stdio.h>
+
+void bar()
+{
+  printf("Hello, bar\n");
+}
+%%
+
+%r %w(%p)
+{
+  return %n(%a);
+}
+
+Note that the code up to the symbol '%%' on a line by itself denotes
+"frontmatter" which gets inserted at the beginning of the C file, right after
+the #include of the parsed header file. (The frontmatter section can also be
+empty or missing altogether if you don't need it.)
+
+The rest of the template is the code for each wrapper function. Substitutions
+of various syntactical fragments of the function definition is performed using
+the following placeholders:
+
+%r = return type of the function
+%w = the name of the wrapper function
+%p = declaration of the formal parameters of the wrapper function
+%n = the name of the real function (i.e., the target C function to be called)
+%a = the arguments of the function call (formal parameters with types stripped)
+%% = escapes a single %
+
+A default template is provided if you don't specify one (which looks pretty
+much like the template above, minus the frontmatter).
+
+For instance, suppose that we place the sample template above into a file
+'foo.templ' and invoke pure-gen on the foo.h header file as follows:
+
+pure-gen -fc -t foo.templ foo.h
+
+Then in foo.c you'd get C output code like the following:
+
+#include "foo.h"
+#include <stdio.h>
+
+void bar()
+{
+  printf("Hello, bar\n");
+}
+
+void Pure_foo(int arg0, void* arg2)
+{
+  return foo(arg0,arg1);
+}
+
+As indicated, the wrapper function names are usually stropped with the 'Pure_'
+prefix. You can change this with the '-P' option.
+
+This also works great to create boilerplate code for new modules. For this
+purpose the following template will do the trick (you might wish to invoke
+this with '-P ""' so that the wrapper function names are just the names
+declared in the header file):
+
+/* Add #include's etc. here. */
+%%
+
+%r %w(%p)
+{
+  /* Enter code of %w here. */
+}
