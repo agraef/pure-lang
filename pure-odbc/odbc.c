@@ -16,17 +16,7 @@
    You should have received a copy of the GNU General Public License along
    with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
-
-
-#if defined (HAVE_CONFIG_H)
-#  include "config.h"
-#endif
-
 #ifdef _WIN32
-#define STDC_HEADERS 1
-#define HAVE_MEMCPY 1
-#define HAVE_MEMSET 1
-#define HAVE_LIMITS_H 1
 #include <windows.h>
 #endif
 
