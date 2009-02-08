@@ -34,7 +34,7 @@ install:
 	test -d "$(DESTDIR)$(bindir)" || mkdir -p "$(DESTDIR)$(bindir)"
 	test -d "$(DESTDIR)$(pkgdatadir)" || mkdir -p "$(DESTDIR)$(pkgdatadir)"
 	cp dump-ast "$(DESTDIR)$(pkgdatadir)"
-	sed -e 's?@version@?$(version)?' -e 's?./dump-ast?$(pkgdatadir)/dump-ast?' < pure-gen.pure > "$(DESTDIR)$(pkgdatadir)/pure-gen.pure"
+	sed -e 's?/usr/local/bin/pure?$(bindir)/pure?' -e 's?@version@?$(version)?' -e 's?./dump-ast?$(pkgdatadir)/dump-ast?' < pure-gen.pure > "$(DESTDIR)$(pkgdatadir)/pure-gen.pure"
 	ln -sf "$(pkgdatadir)/pure-gen.pure" "$(DESTDIR)$(bindir)/pure-gen"
 
 uninstall:
