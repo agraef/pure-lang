@@ -43,7 +43,7 @@
 #include <pure/runtime.h>
 
 #define error_handler(msg) \
-  pure_app(pure_app(pure_symbol(pure_sym("ODBC::error")), \
+  pure_app(pure_app(pure_symbol(pure_sym("odbc::error")), \
   pure_cstring_dup("other error")), pure_cstring_dup(msg))
 
 /* ByteStr data structure, see clib.c */
@@ -225,7 +225,7 @@ static pure_expr *pure_err(SQLHENV henv, SQLHDBC hdbc, SQLHSTMT hstmt)
     goto exit;
   return 0;
  exit:
-  return pure_app(pure_app(pure_symbol(pure_sym("ODBC::error")), pure_cstring_dup((const char*)msg)),
+  return pure_app(pure_app(pure_symbol(pure_sym("odbc::error")), pure_cstring_dup((const char*)msg)),
 	       pure_cstring_dup((const char*)stat));
 }
 
