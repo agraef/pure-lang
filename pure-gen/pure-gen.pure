@@ -53,7 +53,8 @@ let opts = [("--help", "-h", NOARG),
             ("--wrap", "-P", REQARG),
             ("--template", "-t", REQARG),
             ("--warnings", "-w", OPTARG),
-            ("--verbose", "-v", OPTARG)];
+            ("--verbose", "-v", OPTARG),
+            ("--echo", "-e", OPTARG)];
 
 let dfls = ["--interface" => "extern",
             "--namespace" => "",
@@ -62,12 +63,14 @@ let dfls = ["--interface" => "extern",
             "--wrap" => "Pure_",
             "--all" => "0",
             "--warnings" => "1",
-            "--verbose" => "0"];
+            "--verbose" => "0",
+            "--echo" => "0"];
 
 invalid_option x = fprintf stderr "Error: unrecognized option '%s'\nType 'pure-gen -h for help.\n" x $$ exit 1;
 
 warning n::int s::string = fprintf stderr "Warning: %s\n" s if n<=warn;
-echo s::string = puts s if verbose;
+echo 1 s::string = puts s if verbose;
+echo 2 s::string = puts s if echo_cpp;
 
 let cache = ref emptydict;
 msgcache msg::string = 0 if member (get cache) msg;
@@ -107,8 +110,9 @@ puts $ "Usage: pure-gen [options] input-file\n" +
 "-P, --wrap       Prefix to be prepended to C wrapper symbols.\n" +
 "-s, --select     Select C symbols to be included (extended regex).\n" +
 "-t, --template   Specify C template file (see README for details).\n" +
+"-e, --echo       Echo preprocessor lines (default: off).\n" +
+"-v, --verbose    Progress information (default: off).\n" +
 "-w, --warnings   Display warnings (level = 0, 1 [default] or 2).\n" +
-"-v, --verbose    Progress information (level = 0 [default] or 1).\n" +
 "Default wrapper prefix (-P) is 'Pure_'.\n" +
 "Default output filename (-o) is input filename with new extension .pure.\n" +
 "Default C filename (-c) is input filename with new extension .c.\n" +
@@ -150,6 +154,7 @@ let wrap_prefix = opts!"--wrap";
 let all_opt = defnum 1 $ opts!"--all";
 let warn = defnum 1 $ opts!"--warnings";
 let verbose = defnum 1 $ opts!"--verbose";
+let echo_cpp = defnum 1 $ opts!"--echo";
 
 let frontmatter, template = split_template template
 when
@@ -162,12 +167,12 @@ when
                (opts!"--template") $$ default_template;
 end;
 
-echo $ sprintf "Interface type:     %s" iface_opt;
-echo $ sprintf "Library import:     %s" (if null lib_name then "none" else sprintf "using \"lib:%s\"" lib_name);
-echo $ sprintf "Module namespace:   %s" nmspace;
-echo $ sprintf "Module name prefix: %s" (opts!"--prefix");
+echo 1 $ sprintf "Interface type:     %s" iface_opt;
+echo 1 $ sprintf "Library import:     %s" (if null lib_name then "none" else sprintf "using \"lib:%s\"" lib_name);
+echo 1 $ sprintf "Module namespace:   %s" nmspace;
+echo 1 $ sprintf "Module name prefix: %s" (opts!"--prefix");
 if member opts "--template" then
-echo $ sprintf "C template file:    %s" (opts!"--template")
+echo 1 $ sprintf "C template file:    %s" (opts!"--template")
 else ();
 
 /******************************************************************/
@@ -624,8 +629,14 @@ eval_expr d (CBinary CXorOp e1 e2) = xor (eval_expr d e1) (eval_expr d e2)
 
 
 
-
-
+// Dissect cpp lines (#define's and # lineno only).
+split_cpp_line s = regexg (process.tail.tail.regs)
+"^#( (([0-9]+) \\\"([^\"]+)\\\"( .*)?)|[ \t]*define[ \t]+([A-Za-z_0-9]+)[ \t]+([^ \t].*))$" REG_EXTENDED s 0
+with
+  process ((2,_,_):(3,_,lno):(4,_,fname):_) = cpp_line (atoi lno) fname;
+  process [(6,_,name),(7,_,val)] = cpp_define name val;
+  process _ = ();
+end;
 
 // Grab all #define'd constants. lns is a list of strings, the 
 // lines of the file. Thus, this can't deal with #defines that span
@@ -634,19 +645,16 @@ scrape_defines lns = reverse defs
 when defs = foldl scrape_define [] lns end
 with
   scrape_define out ln =
-    case catmap (split_ "\t") $ split_ " " ln of
-      [define,name,val] =
-        case define of
-          "#define" = 
-            catch 
-              (\_ -> (warning 2 $ sprintf "Can't parse %s" ln) $$ out)
-              ( check_constant name val : out );
-          _ = out;
-        end if ~null val;
+    case split_cpp_line ln of
+      [cpp_define name val] = echo 2 $ sprintf "#define %s %s" (name,val) $$ 
+        catch 
+          (\_ -> (warning 2 $ sprintf "Can't parse %s" ln) $$ out)
+          ( check_constant name val : out );
+      [cpp_line lno fname] = echo 2 $ sprintf "# %d \"%s\"" (lno,fname) $$
+        out;
       _ = out;
     end when ln = trim ln end;
   trim ln = if null ln || last ln~="\n" then ln else init ln;
-  split_ delim s = filter (\s -> s ~= "") $ split delim s;
 end;
 
 // Check for a constant value (either another #define'd constant, or a number).
@@ -829,25 +837,25 @@ let lines = fgetlines $ popen (sprintf "%s %s" (cpp,in_name)) "r";
 
 //build the AST
 
-echo "Loading AST";
+echo 1 "Loading AST";
 let ast = fgetlines $ popen (sprintf "%s %s" (dumper,in_name)) "r";
 
-echo "Parsing";
+echo 1 "Parsing";
 let declarations = filter ((~=) ()) $ map eval ast;
 
-echo "Building typedef dictionary";
+echo 1 "Building typedef dictionary";
 let tydefs = 
       foldl (\d (n,t) -> insert d (n=>t)) emptydict $
         catmap typedefs declarations;
 
 
-echo "Building #define dictionary";
+echo 1 "Building #define dictionary";
 let defines = 
   nub $ resolve_indirects $ scrape_defines lines +
         catmap enum_vals (vals tydefs);
 
 
-echo "Gathering function prototypes";
+echo 1 "Gathering function prototypes";
 //all function prototypes
 let func_protos =
       mapsnd complete_ffi_type $
@@ -867,7 +875,7 @@ let extern_decl = case iface_opt of
   when
     //Output the C part
     out_c = fopen c_name "w";
-    echo $ sprintf "Writing %s" c_name;
+    echo 1 $ sprintf "Writing %s" c_name;
 
     fprintf out_c "#include \"%s\"\n%s\n" (in_name,frontmatter); 
     do (flip fputs out_c) $
@@ -875,7 +883,7 @@ let extern_decl = case iface_opt of
   end;
   _ = pure_extern_decl;
 end;
-echo $ sprintf "Writing %s" out_name;
+echo 1 $ sprintf "Writing %s" out_name;
 if ~null lib_name then fprintf out_pure "using \"lib:%s\";\n" lib_name else ();
 if ~null nmspace then fprintf out_pure "\nnamespace %s;\n" nmspace else ();
 
