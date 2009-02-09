@@ -630,23 +630,23 @@ eval_expr d (CBinary CXorOp e1 e2) = xor (eval_expr d e1) (eval_expr d e2)
 // Grab all #define'd constants. lns is a list of strings, the 
 // lines of the file. Thus, this can't deal with #defines that span
 // multiple lines.
-scrape_defines lns = 
-  foldr 
-    (\ln out -> 
-      case catmap (split_ "\t") $ split_ " " ln of
-        [define,name,val] =
-          case define of
-            "#define" = 
-              catch 
-                (\_ -> (warning 2 $ sprintf "Can't parse %s" ln) $$ out)
-                ( check_constant name val : out );
-            _ = out;
-          end if ~null val;
-        _ = out;
-      end
-      when ln = trim ln end
-      with trim ln = if null ln || last ln~="\n" then ln else init ln end
-    ) [] lns;
+scrape_defines lns = reverse defs
+when defs = foldl scrape_define [] lns end
+with
+  scrape_define out ln =
+    case catmap (split_ "\t") $ split_ " " ln of
+      [define,name,val] =
+        case define of
+          "#define" = 
+            catch 
+              (\_ -> (warning 2 $ sprintf "Can't parse %s" ln) $$ out)
+              ( check_constant name val : out );
+          _ = out;
+        end if ~null val;
+      _ = out;
+    end when ln = trim ln end;
+  trim ln = if null ln || last ln~="\n" then ln else init ln;
+end;
 
 // Check for a constant value (either another #define'd constant, or a number).
 check_constant name val::string
