@@ -16,12 +16,12 @@ import Language.C.Data.Ident
 import System
 
 main = 
-  getArgs >>= return.head >>= parseFile >>= return.dump >>= putStrLn
+  getArgs >>= parseFile >>= return.dump >>= putStrLn
 
-parseFile :: FilePath -> IO CTranslUnit
-parseFile header =
+parseFile :: [String] -> IO CTranslUnit
+parseFile args =
   do
-  parseResult <- parseCFile (newGCC "gcc") Nothing [] header
+  parseResult <- parseCFile (newGCC "gcc") Nothing (init args) (last args)
   case parseResult of 
     Left err -> error $ show err
     Right ast -> return $ ast

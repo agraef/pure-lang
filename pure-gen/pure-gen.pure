@@ -43,6 +43,7 @@ end;
 let opts = [("--help", "-h", NOARG),
             ("--version", "-V", NOARG),
             ("--all", "-a", NOARG),
+            ("--cpp-options", "-O", REQARG),
             ("--interface", "-f", REQARG),
             ("--output", "-o", REQARG),
             ("--c-name", "-c", REQARG),
@@ -59,6 +60,7 @@ let opts = [("--help", "-h", NOARG),
             ("--echo", "-e", OPTARG)];
 
 let dfls = ["--interface" => "extern",
+            "--cpp-options" => "",
             "--namespace" => "",
             "--prefix" => "",
             "--select" => "",
@@ -102,23 +104,24 @@ else ();
 if member opts "--help" then
 printf "pure-gen version %s\n" version $$
 puts $ "Usage: pure-gen [options] <input-file>.h\n" +
-"-h, --help       Print this message and exit.\n" +
-"-V, --version    Print version number and exit.\n" +
-"-a, --all        Include \"hidden\" declarations.\n" +
-"-f, --interface  Interface type ('extern', 'c' or 'ffi').\n" +
-"-o, --output     Pure output (.pure) filename.\n" +
-"-c, --c-name     C wrapper (.c) filename for -fc.\n" +
-"-l, --lib-name   Shared library module to be imported.\n" +
-"-n, --dry-run    Only parse without generating any output.\n" +
-"-N, --noclobber  Append output to existing files.\n" +
-"-m, --namespace  Module namespace in which symbols should be declared.\n" +
-"-p, --prefix     Module name prefix to be removed from C symbols.\n" +
-"-P, --wrap       Prefix to be prepended to C wrapper symbols.\n" +
-"-s, --select     Filter of valid C symbols (see README for details).\n" +
-"-t, --template   Specify C template file (see README for details).\n" +
-"-e, --echo       Echo preprocessor lines.\n" +
-"-v, --verbose    Show parameters and progress information.\n" +
-"-w, --warnings   Display warnings (level = 0, 1 [default] or 2).\n" +
+"-h, --help        Print this message and exit.\n" +
+"-V, --version     Print version number and exit.\n" +
+"-a, --all         Include \"hidden\" declarations.\n" +
+"-f, --interface   Interface type ('extern', 'c' or 'ffi').\n" +
+"-O, --cpp-options Options to pass to the C preprocessor (-I, -D etc.).\n" +
+"-o, --output      Pure output (.pure) filename.\n" +
+"-c, --c-name      C wrapper (.c) filename for -fc.\n" +
+"-l, --lib-name    Shared library module to be imported.\n" +
+"-n, --dry-run     Only parse without generating any output.\n" +
+"-N, --noclobber   Append output to existing files.\n" +
+"-m, --namespace   Module namespace in which symbols should be declared.\n" +
+"-p, --prefix      Module name prefix to be removed from C symbols.\n" +
+"-P, --wrap        Prefix to be prepended to C wrapper symbols.\n" +
+"-s, --select      Filter of valid C symbols (see README for details).\n" +
+"-t, --template    Specify C template file (see README for details).\n" +
+"-e, --echo        Echo preprocessor lines.\n" +
+"-v, --verbose     Show parameters and progress information.\n" +
+"-w, --warnings    Display warnings (level = 0, 1 [default] or 2).\n" +
 "Defaults: -f extern, -P Pure_, -o <input-file>.pure, -c <input-file>.c.\n" +
 "Defaults: -l <c-file> (without extension) for -fc, otherwise empty." $$
 exit 0
@@ -139,6 +142,7 @@ extern int atoi(char*);
 defnum x opt::string = atoi opt if ~null opt;
 defnum x _ = x otherwise;
 
+let cpp_opts = opts!"--cpp-options";
 let iface_opt = opts!"--interface";
 let in_name = head args;
 let base = strip_ext $ basename in_name;
@@ -185,6 +189,7 @@ echo 1 $ sprintf "Library import:     %s" (if null lib_name then "(none)" else s
 echo 1 $ sprintf "Module namespace:   %s" nmspace;
 echo 1 $ sprintf "Module name prefix: %s" (opts!"--prefix");
 echo 1 $ sprintf "Symbol selection:   %s" (if null sel then "(all)" else sel when sel = opts!"--select" end);
+echo 1 $ sprintf "CPP options:        %s" (if null cpp_opts then "(none)" else cpp_opts);
 if member opts "--template" then
 echo 1 $ sprintf "C template file:    %s" (opts!"--template")
 else ();
@@ -855,12 +860,12 @@ nub xs = reverse $ go [] emptydict xs
 /******************************************************************/
 
 // read the source and its includes, this is needed to grab the #defines
-let lines = fgetlines $ popen (sprintf "%s %s" (cpp,in_name)) "r";
+let lines = fgetlines $ popen (sprintf "%s %s %s" (cpp,cpp_opts,in_name)) "r";
 
 //build the AST
 
 echo 1 "Loading AST";
-let ast = fgetlines $ popen (sprintf "%s %s" (dumper,in_name)) "r";
+let ast = fgetlines $ popen (sprintf "%s %s %s" (dumper,cpp_opts,in_name)) "r";
 
 echo 1 "Parsing";
 let declarations = filter ((~=) ()) $ map eval ast;

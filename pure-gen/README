@@ -47,14 +47,18 @@ generates a Pure module foo.pure with 'extern' declarations for the constants
 ('#define's and enums) and C routines declared in the given C header file and
 (recursively) its includes.
 
-There are some options which affect the generated output. In particular,
+When invoked with the -n option, pure-gen performs a dry run in which it only
+parses the input without actually generating any output files.
+
+The -O option allows options to be passed to the C preprocessor. This is handy
+if you need to specify flags such as -D and -I which define additional symbols
+and add directories to the include search path, see cpp(1) for details.
+
+There are some other options which affect the generated output. In particular,
 '-f c' generates a C wrapper module along with the Pure module (see
 "Generating C Code" below), and '-f ffi' generates a wrapper using Pure's ffi
 module. Moreover, '-l libfoo' generates a 'using "lib:libfoo"' declaration in
 the Pure source, for modules which require a shared library to be loaded.
-
-When invoked with the -n option, pure-gen performs a dry run in which it only
-parses the input without actually generating any output files.
 
 Note that pure-gen always parses the given header file as well as *all* its
 includes. If the header file '#include's system headers, by default you will
