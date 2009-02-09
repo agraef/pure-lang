@@ -16,7 +16,7 @@ let dumper = "./dump-ast";
 let version = "@version@";
 
 // for testing purposes
-//let argv = ["pure-gen.pure","-v","-fc","-s*/ffi.h,*/ffitarget.h::","-nffi","-pffi_","/usr/include/ffi.h"];
+//let argv = ["pure-gen.pure","-v","-fc","-s/usr/include/ffi.h,/usr/include/ffitarget.h::","-mffi","-pffi_","/usr/include/ffi.h"];
 
 /* Default template for C code generation.
 
@@ -150,8 +150,8 @@ let c_base = strip_ext $ basename c_name;
 let lib_name = if member opts "--lib-name" then opts!"--lib-name"
                else if opts!"--interface" == "c" then c_base else "";
 let glob_pat, regex_pat = case split "::" $ opts!"--select" of
-                            [] = "*", "";
-                            [x] = "*", x;
+                            [] = "", "";
+                            [x] = "", x;
                             x:xs = x, join "::" xs;
                           end;
 let nmspace = opts!"--namespace";
@@ -797,7 +797,8 @@ matches fnpat pat (constant name _ fname) = valid_name fname name &&
 matches fnpat pat (name, _, fname) = valid_name fname name &&
   fnmatches fnpat fname fnflags && regchk pat (regex pat cflags name 0);
 
-fnmatches pats name flags = any (\pat->fnmatch pat name flags) pats;
+fnmatches pats name flags = true if null pats;
+			  = any (\pat->fnmatch pat name flags) pats;
 
 // make regex just always return 1 in case of an error
 regchk pat (regerr _ _) = warning 0 msg $$ 1 if msgcache msg
@@ -806,7 +807,7 @@ when msg = sprintf "error in regular expression '%s'" pat end;
 regchk _ x = x;
 
 // Filter out builtins and stuff commonly found in system header files.
-const sys_excludes = ["","<built-in>","<command-line>"];
+const sys_excludes = ["","<built-in>"];
 valid_name fname name = true if all_opt;
 		      = false if substr name 0 1 == "_";
 		      = ~any ((==) fname) sys_excludes;
@@ -888,7 +889,7 @@ let func_protos =
 
 
 //Output the Pure part
-let w = if dry_run then none else if noclobber then "a" else "w";
+let w = if dry_run then __none__ else if noclobber then "a" else "w";
 let out_pure   = fopen out_name w;
 
 let extern_decl = case iface_opt of
