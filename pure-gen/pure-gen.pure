@@ -643,7 +643,9 @@ scrape_defines lns =
             _ = out;
           end if ~null val;
         _ = out;
-      end when ln = init ln end
+      end
+      when ln = trim ln end
+      with trim ln = if null ln || last ln~="\n" then ln else init ln end
     ) [] lns;
 
 // Check for a constant value (either another #define'd constant, or a number).
