@@ -178,7 +178,7 @@ static int set_arg(ODBCHandle *db, int i, pure_expr *x)
     db->argv[i].ptr = db->argv[i].data.buf;
     return 1;
   } else if (pure_is_tuplev(x, &size, &elems) && size == 0) {
-    pure_freenew(*elems);
+    free(elems);
     db->argv[i].type = SQL_CHAR;
     db->argv[i].ctype = SQL_C_DEFAULT;
     db->argv[i].len = SQL_NULL_DATA;
@@ -233,7 +233,7 @@ pure_expr *odbc_sources()
 {
   SQLHENV henv;
   long ret;
-  pure_expr **xv;
+  pure_expr **xv, *res;
   int n;
   SQLCHAR l_dsn[100],l_desc[100];
   short l_len1, l_len2, l_next;
@@ -268,14 +268,16 @@ pure_expr *odbc_sources()
 		 pure_cstring_dup((const char*)l_desc));
   /* free the environment handle */
   SQLFreeHandle(SQL_HANDLE_ENV, henv);
-  return pure_listv(n, xv);
+  res = pure_listv(n, xv);
+  free(xv);
+  return res;
 }
 
 pure_expr *odbc_drivers()
 {
   SQLHENV henv;
   long ret;
-  pure_expr **xv;
+  pure_expr **xv, *res;
   int n;
   SQLCHAR l_drv[100],l_attr[10000];
   short l_len1, l_len2, l_next;
@@ -326,10 +328,13 @@ pure_expr *odbc_drivers()
 	 l_attrp = l_attrp+strlen((char*)l_attrp)+1)
       yv[k++] = pure_cstring_dup((const char*)l_attrp);
     xv[n++] = pure_tuplel(2, pure_cstring_dup((const char*)l_drv), pure_listv(k, yv));
+    free(yv);
   }
   /* free the environment handle */
   SQLFreeHandle(SQL_HANDLE_ENV, henv);
-  return pure_listv(n, xv);
+  res = pure_listv(n, xv);
+  free(xv);
+  return res;
 }
 
 pure_expr *odbc_connect(char* conn)
@@ -420,7 +425,7 @@ pure_expr *odbc_info(pure_expr *dbpointer)
       db->henv) {
     long ret;
     int n = 0;
-    pure_expr **xv = malloc(8*sizeof(pure_expr));
+    pure_expr **xv = malloc(8*sizeof(pure_expr)), *res;
     char info[1024];
     short len;
     if (!xv) return error_handler("malloc error");
@@ -472,7 +477,9 @@ pure_expr *odbc_info(pure_expr *dbpointer)
       xv[n++] = pure_cstring_dup(info);
     else
       xv[n++] = pure_string_dup("");
-    return pure_tuplev(n, xv);
+    res = pure_tuplev(n, xv);
+    free(xv);
+    return res;
   } else
     return 0;
 }
@@ -618,8 +625,11 @@ pure_expr *odbc_typeinfo(pure_expr *argv0, int id)
     if (n == 0) {
       free(xs);
       return pure_listl(0);
-    } else
-      return pure_listv(n, xs);
+    } else {
+      res = pure_listv(n, xs);
+      free(xs);
+      return res;
+      }
   err:
     for (i = 0; i < n; i++) pure_freenew(xs[i]);
     free(xs);
@@ -683,8 +693,11 @@ pure_expr *odbc_tables(pure_expr *argv0)
     if (n == 0) {
       free(xs);
       return pure_listl(0);
-    } else
-      return pure_listv(n, xs);
+    } else {
+      res = pure_listv(n, xs);
+      free(xs);
+      return res;
+      }
   err:
     for (i = 0; i < n; i++) pure_freenew(xs[i]);
     free(xs);
@@ -754,8 +767,11 @@ pure_expr *odbc_columns(pure_expr *argv0, const char *tab)
     if (n == 0) {
       free(xs);
       return pure_listl(0);
-    } else
-      return pure_listv(n, xs);
+    } else {
+      res = pure_listv(n, xs);
+      free(xs);
+      return res;
+      }
   err:
     for (i = 0; i < n; i++) pure_freenew(xs[i]);
     free(xs);
@@ -817,8 +833,11 @@ pure_expr *odbc_primary_keys(pure_expr *argv0, const char *tab)
     if (n == 0) {
       free(xs);
       return pure_listl(0);
-    } else
-      return pure_listv(n, xs);
+    } else {
+      res = pure_listv(n, xs);
+      free(xs);
+      return res;
+      }
   err:
     for (i = 0; i < n; i++) pure_freenew(xs[i]);
     free(xs);
@@ -886,8 +905,11 @@ pure_expr *odbc_foreign_keys(pure_expr *argv0, const char *tab)
     if (n == 0) {
       free(xs);
       return pure_listl(0);
-    } else
-      return pure_listv(n, xs);
+    } else {
+      res = pure_listv(n, xs);
+      free(xs);
+      return res;
+      }
   err:
     for (i = 0; i < n; i++) pure_freenew(xs[i]);
     free(xs);
@@ -923,10 +945,14 @@ pure_expr *odbc_sql_exec(pure_expr *argv0, const char *query, pure_expr *argv2)
     /* finalize previous query */
     sql_close(db);
     /* prepare statement */
-    if (!query) return error_handler("invalid query string");
+    if (!query) {
+      free(xv);
+      return error_handler("invalid query string");
+    }
     if ((ret = SQLPrepare(db->hstmt, (SQLCHAR*)query, SQL_NTS))
 	!= SQL_SUCCESS &&
 	ret != SQL_SUCCESS_WITH_INFO) {
+      free(xv);
       return pure_err(db->henv, db->hdbc, db->hstmt);
     }
     /* bind parameters */
@@ -946,6 +972,7 @@ pure_expr *odbc_sql_exec(pure_expr *argv0, const char *query, pure_expr *argv2)
 	  else
 	    goto fail;
 	}
+      free(xv);
     }
     for (i = 0; i < db->argc; i++)
       if ((ret = SQLBindParameter(db->hstmt, i+1, SQL_PARAM_INPUT,
@@ -994,6 +1021,7 @@ pure_expr *odbc_sql_exec(pure_expr *argv0, const char *query, pure_expr *argv2)
       xs[i] = pure_cstring_dup(buf);
     }
     res = pure_listv(cols, xs);
+    free(xs);
     if (res) {
       db->coltype = coltype;
       db->cols = cols;
@@ -1006,6 +1034,7 @@ pure_expr *odbc_sql_exec(pure_expr *argv0, const char *query, pure_expr *argv2)
     goto exit;
   fail:
     free_args(db);
+    free(xv);
     SQLFreeStmt(db->hstmt, SQL_CLOSE);
     res = 0;
     goto exit;
@@ -1016,6 +1045,7 @@ pure_expr *odbc_sql_exec(pure_expr *argv0, const char *query, pure_expr *argv2)
     goto exit;
   fatal:
     free_args(db);
+    free(xv);
     SQLFreeStmt(db->hstmt, SQL_CLOSE);
     res = error_handler("alloc error");
   exit:
@@ -1208,6 +1238,7 @@ pure_expr *odbc_sql_fetch(pure_expr *argv0)
       }
     }
     res = pure_listv(cols, xs);
+    free(xs);
     goto exit;
   err2:
     for (j = 0; j < i; j++) pure_freenew(xs[j]);
@@ -1277,6 +1308,7 @@ pure_expr *odbc_sql_more(pure_expr *argv0)
       xs[i] = pure_cstring_dup(buf);
     }
     res = pure_listv(cols, xs);
+    free(xs);
     if (res) {
       free(db->coltype);
       if (db->coltype) db->coltype = coltype;
