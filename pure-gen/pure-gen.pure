@@ -646,6 +646,7 @@ with
       _ = out;
     end when ln = trim ln end;
   trim ln = if null ln || last ln~="\n" then ln else init ln;
+  split_ delim s = filter (\s -> s ~= "") $ split delim s;
 end;
 
 // Check for a constant value (either another #define'd constant, or a number).
@@ -664,8 +665,7 @@ check_string name val::string
 // Some constants are defined in terms of others.  Here we resolve those
 // indirections.
 resolve_indirects constants =
-  filter (\i -> case i of not_found = 0; _ = 1; end) $
-    map (lookup dict) constants 
+  filter ((~==) not_found) $ map (lookup dict) constants 
   when
     dict = foldl build emptydict constants;
   end
@@ -748,25 +748,20 @@ with
 end;
 
 c_impl (name, func_type ret args) = code
-  when
-    ret_str = pure_type ret;
+when
+  ret_str = pure_type ret;
 
-    formal_params = 
-      if args === [void_t] then "" else 
-      join ", " $ zipwith (\x y -> pure_type x+" arg"+str y) args (0..inf);
+  formal_params = 
+    if args === [void_t] then "" else 
+    join ", " $ zipwith (\x y -> pure_type x+" arg"+str y) args (0..inf);
 
-    arg_names = 
-      if args === [void_t] then "" else 
-      join "," $ map (\y -> "arg" + str y) (take (#args) (0..inf));
+  arg_names = 
+    if args === [void_t] then "" else 
+    join ", " $ map (\y -> "arg" + str y) (take (#args) (0..inf));
 
-    arg_types = 
-      if args === [void_t] then "" else 
-      join "," $ map pure_type args;
-
-    code = replace_template template ret_str (wrap_prefix+name)
-      formal_params name arg_names;
-    
-  end;
+  code = replace_template template ret_str (wrap_prefix+name)
+    formal_params name arg_names;
+end;
 
 
 //select constant and function declarations based on a regex match
@@ -799,14 +794,6 @@ fgetlines f = reverse $ get []
     _ = a; 
     end 
   end;
-
-//a better split
-split_ delim s = filter (\s -> s ~= "") $ split delim s;
-
-//inverse of split
-join sep (x:y:z) = join sep ((x+sep+y):z);
-join _ [x] = x ;
-join _ [] = "";
 
 // convert string to uppercase
 extern int toupper(int) = ctoupper;
