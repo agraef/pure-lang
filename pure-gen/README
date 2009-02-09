@@ -53,34 +53,60 @@ There are some options which affect the generated output. In particular,
 module. Moreover, '-l libfoo' generates a 'using "lib:libfoo"' declaration in
 the Pure source, for modules which require a shared library to be loaded.
 
-Note that pure-gen scans the given header file as well as all its includes. If
-the header file '#include's system headers you will get those declarations as
-well. This is usually undesirable. As a remedy, pure-gen excludes identifiers
-with a leading underscore and other names which are are commonly found in
-system headers from processing (you can use the -a option to disable this). In
-addition, the -s option, followed by an extended regular expression, allows
-you to explicitly select the symbols which should be included.
+When invoked with the -n option, pure-gen performs a dry run in which it only
+parses the input without actually generating any output files.
+
+Note that pure-gen always parses the given header file as well as *all* its
+includes. If the header file '#include's system headers, by default you will
+get those declarations as well. This is often undesirable. As a remedy,
+pure-gen normally excludes built-in #define's of the C compiler, as well as
+identifiers with a leading underscore (which are often found in system
+headers) from processing. You can use the -a option to disable this.
+
+In addition, the -s option enables you to filter C symbols using the source
+filename and the symbol as search criteria. This option takes an argument of
+the form 'glob-patterns::regex-pattern' denoting a comma-separated list of
+glob patterns to be matched against the source filename and an extended regex
+to be matched against the symbol itself. The 'glob-patterns::' part can also
+be omitted in which case it defaults to '*::' which matches any source file.
+Similarly, the regex can be empty, in which case it matches any symbol. The
+generated output will contain only the constant and function symbols matching
+the given regex from source files matching any of the the glob patterns. Thus,
+for instance, the option '-s foo.h,bar.h::^(foo|bar)_' pulls all symbols
+prefixed with either 'foo_' or 'bar_' from the files foo.h and bar.h in the
+current directory. Note that in order to match include files in the system
+directories you also have to specify the path in the glob patterns, just as
+with shell glob patterns. Thus, e.g., if the foo.h file actually lives in
+/usr/include, it can be matched with a glob pattern like '/*/*/foo.h', but not
+with just 'foo.h' or '*/foo.h'.
 
 The -s option is often used in conjuction with the -p option, which lets you
 specify a "module name prefix" which should be stripped off from C symbols.
 Case is insignificant and a trailing underscore will be removed as well, so
-'-p foo' turns 'fooBar' into 'Bar' and 'FOO_BAR' into 'BAR'. Moreover, the -n
+'-p foo' turns 'fooBar' into 'Bar' and 'FOO_BAR' into 'BAR'. Moreover, the -m
 option allows you to specify the name of a Pure namespace in which the
 resulting constants and functions are to be declared. So, for instance, 
-'-s "^(foo|FOO)" -p foo -n foo' will select all symbols staring with the 'foo'
+'-s "^(foo|FOO)" -p foo -m foo' will select all symbols staring with the 'foo'
 or 'FOO' prefix, stripping the prefix from the selected symbols and finally
 adding a 'foo::' namespace qualifier to them instead.
 
-This usually works pretty well. Nevertheless, many headers (and/or the
-generated output) will still require manual editing to get a nice wrapper
-module.
+This usually works pretty well. Nevertheless, some headers defy fully
+automatic wrapper generation and may thus require manual editing of the
+generated output to get a nice wrapper module. Also, in some cases it may be
+necessary to assemble the output of several runs of pure-gen for different
+combinations of header files, symbol selections and namespace/prefix
+settings. In such a case it is usually possible to just concatenate the
+various output files produced by pure-gen to consolidate them into a single
+wrapper module. To make this easier, pure-gen provides the -N a.k.a.
+--noclobber option which appends the output to existing files instead of
+overwriting them.
 
-Also note that only C bindings can be generated at this time. Thus, in order
-to wrap C++ modules, you'll first have to obtain a corresponding C wrapper, or
-write one yourself. If your C compiler knows how to call other languages like
-Fortran or Ada, then modules written in these languages can also be dealt
-with, by writing a fake C header for the module and generating a C wrapper
-with a custom code template (see "Generating C Code" below).
+Finally, note that only C bindings can be generated at this time. Thus, in
+order to wrap C++ modules, you'll first have to obtain a corresponding C
+wrapper, or write one yourself. If your C compiler knows how to call other
+languages like Fortran or Ada, then modules written in these languages can
+also be dealt with, by writing a fake C header for the module and generating a
+C wrapper with a custom code template (see "Generating C Code" below).
 
 Generating C Code
 ========== = ====

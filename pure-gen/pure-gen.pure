@@ -16,7 +16,7 @@ let dumper = "./dump-ast";
 let version = "@version@";
 
 // for testing purposes
-//let argv = ["pure-gen.pure","-v","-fc","-nffi","-pffi_","/usr/include/ffi.h"];
+//let argv = ["pure-gen.pure","-v","-fc","-s*/ffi.h,*/ffitarget.h::","-nffi","-pffi_","/usr/include/ffi.h"];
 
 /* Default template for C code generation.
 
@@ -47,11 +47,13 @@ let opts = [("--help", "-h", NOARG),
             ("--output", "-o", REQARG),
             ("--c-name", "-c", REQARG),
             ("--lib-name", "-l", REQARG),
-            ("--namespace", "-n", REQARG),
+            ("--noclobber", "-N", NOARG),
+            ("--namespace", "-m", REQARG),
             ("--prefix", "-p", REQARG),
             ("--select", "-s", REQARG),
             ("--wrap", "-P", REQARG),
             ("--template", "-t", REQARG),
+            ("--dry-run", "-n", OPTARG),
             ("--warnings", "-w", OPTARG),
             ("--verbose", "-v", OPTARG),
             ("--echo", "-e", OPTARG)];
@@ -62,6 +64,8 @@ let dfls = ["--interface" => "extern",
             "--select" => "",
             "--wrap" => "Pure_",
             "--all" => "0",
+            "--noclobber" => "0",
+            "--dry-run" => "0",
             "--warnings" => "1",
             "--verbose" => "0",
             "--echo" => "0"];
@@ -97,26 +101,26 @@ else ();
 
 if member opts "--help" then
 printf "pure-gen version %s\n" version $$
-puts $ "Usage: pure-gen [options] input-file\n" +
+puts $ "Usage: pure-gen [options] <input-file>.h\n" +
 "-h, --help       Print this message and exit.\n" +
 "-V, --version    Print version number and exit.\n" +
 "-a, --all        Include \"hidden\" declarations.\n" +
-"-f, --interface  Interface type (extern [default], c or ffi).\n" +
+"-f, --interface  Interface type ('extern', 'c' or 'ffi').\n" +
 "-o, --output     Pure output (.pure) filename.\n" +
 "-c, --c-name     C wrapper (.c) filename for -fc.\n" +
 "-l, --lib-name   Shared library module to be imported.\n" +
-"-n, --namespace  Module namespace in which symbols should be declared.\n" +
+"-n, --dry-run    Only parse without generating any output.\n" +
+"-N, --noclobber  Append output to existing files.\n" +
+"-m, --namespace  Module namespace in which symbols should be declared.\n" +
 "-p, --prefix     Module name prefix to be removed from C symbols.\n" +
 "-P, --wrap       Prefix to be prepended to C wrapper symbols.\n" +
-"-s, --select     Select C symbols to be included (extended regex).\n" +
+"-s, --select     Filter of valid C symbols (see README for details).\n" +
 "-t, --template   Specify C template file (see README for details).\n" +
-"-e, --echo       Echo preprocessor lines (default: off).\n" +
-"-v, --verbose    Progress information (default: off).\n" +
+"-e, --echo       Echo preprocessor lines.\n" +
+"-v, --verbose    Show parameters and progress information.\n" +
 "-w, --warnings   Display warnings (level = 0, 1 [default] or 2).\n" +
-"Default wrapper prefix (-P) is 'Pure_'.\n" +
-"Default output filename (-o) is input filename with new extension .pure.\n" +
-"Default C filename (-c) is input filename with new extension .c.\n" +
-"Default library name (-l) is empty, or the basename of the C filename." $$
+"Defaults: -f extern, -P Pure_, -o <input-file>.pure, -c <input-file>.c.\n" +
+"Defaults: -l <c-file> (without extension) for -fc, otherwise empty." $$
 exit 0
 else ();
 
@@ -145,13 +149,21 @@ let c_name = if member opts "--c-name" then opts!"--c-name"
 let c_base = strip_ext $ basename c_name;
 let lib_name = if member opts "--lib-name" then opts!"--lib-name"
                else if opts!"--interface" == "c" then c_base else "";
+let glob_pat, regex_pat = case split "::" $ opts!"--select" of
+                            [] = "*", "";
+                            [x] = "*", x;
+                            x:xs = x, join "::" xs;
+                          end;
 let nmspace = opts!"--namespace";
 let funpfx = opts!"--prefix";
-let funpat = opts!"--select";
+let funpat = regex_pat;
 let cstpfx = opts!"--prefix";
-let cstpat = opts!"--select";
+let cstpat = regex_pat;
+let fnpat = split "," glob_pat;
 let wrap_prefix = opts!"--wrap";
 let all_opt = defnum 1 $ opts!"--all";
+let noclobber = defnum 1 $ opts!"--noclobber";
+let dry_run = defnum 1 $ opts!"--dry-run";
 let warn = defnum 1 $ opts!"--warnings";
 let verbose = defnum 1 $ opts!"--verbose";
 let echo_cpp = defnum 1 $ opts!"--echo";
@@ -167,10 +179,12 @@ when
                (opts!"--template") $$ default_template;
 end;
 
+if dry_run then echo 1 "** Dry run." else ();
 echo 1 $ sprintf "Interface type:     %s" iface_opt;
-echo 1 $ sprintf "Library import:     %s" (if null lib_name then "none" else sprintf "using \"lib:%s\"" lib_name);
+echo 1 $ sprintf "Library import:     %s" (if null lib_name then "(none)" else sprintf "using \"lib:%s\"" lib_name);
 echo 1 $ sprintf "Module namespace:   %s" nmspace;
 echo 1 $ sprintf "Module name prefix: %s" (opts!"--prefix");
+echo 1 $ sprintf "Symbol selection:   %s" (if null sel then "(all)" else sel when sel = opts!"--select" end);
 if member opts "--template" then
 echo 1 $ sprintf "C template file:    %s" (opts!"--template")
 else ();
@@ -246,7 +260,7 @@ nullary slong_t;
 // short, long, signed and unsigned can also be used as modifiers, 
 // in which case the _t suffix is dropped.
 
-to_ffi_type x =
+to_ffi_type x fname =
   case x of
   //these come from Language.C
   CVoidType     = void_t;
@@ -261,9 +275,9 @@ to_ffi_type x =
   CBoolType     = sint_t; //??? char?
   CTypeDef str  = CTypeDef str; //these are resolved in a second pass
   CEnumType (CEnum (Just tag) (Just enum_defs) _)
-	        = enum_type tag (scan_enums enum_defs);
+	        = enum_type tag (scan_enums enum_defs) fname;
   CEnumType (CEnum Nothing (Just enum_defs) _)
-	        = enum_type "anonymous" (scan_enums enum_defs);
+	        = enum_type "anonymous" (scan_enums enum_defs) fname;
   CEnumType (CEnum _ _ _)
 	        = sint_t;
   CSUType (CStructUnion _ (Just tag) _ _) = struct_or_union tag;
@@ -276,7 +290,7 @@ scan_enums defs =
   [constant n v | n=>v = list $ calc_enum_values emptydict () defs];
 
 enum_vals (basic_type t) = enum_vals t;
-enum_vals (enum_type _ v) = v;
+enum_vals (enum_type _ v fname) = [x fname | x = v];
 enum_vals _ = [];
 
 // pure_type takes an ffi type and makes a string suitable for a pure
@@ -324,7 +338,7 @@ complete_ffi_type (basic_type x)  = complete_ffi_type x;
 complete_ffi_type (ptr_type t) = ptr_type ( complete_ffi_type t );
 
 complete_ffi_type (func_type r a) = func_type (complete_ffi_type r)
-                                            (map complete_ffi_type a);
+				    (map complete_ffi_type a);
 complete_ffi_type (structure n f) = 
   structure n (zip ns (map complete_ffi_type fs))
   when (ns,fs) = unzip f end;
@@ -365,7 +379,7 @@ complete_ffi_type x =
   long (unsigned (slong_t))     = uint64_t; 
   long (unsigned (long sint_t)) = uint64_t; 
 
-  enum_type _ _ = sint_t;
+  enum_type _ _ _ = sint_t;
   
   _ = warning 2 ("unknown type "+str x+", defaulting to void") 
         $$ void_t;
@@ -376,26 +390,26 @@ complete_ffi_type x =
 
 
 // The primitive type of a declaration. Returns an ffi type, with specifiers.
-type_spec ( (CTypeQual _) : more ) = type_spec more;
+type_spec ( (CTypeQual _) : more ) fname = type_spec more fname;
   //skip things like const, volatile, etc.
 
-type_spec ( (CTypeSpec CShortType) :  []  ) = sshort_t;
-type_spec ( (CTypeSpec CShortType) : more ) = short $ type_spec more;
+type_spec ( (CTypeSpec CShortType) :  []  ) _ = sshort_t;
+type_spec ( (CTypeSpec CShortType) : more ) fname = short $ type_spec more fname;
 
-type_spec ( (CTypeSpec CLongType) :  []  ) = slong_t;
-type_spec ( (CTypeSpec CLongType) : more ) = long $ type_spec more;
+type_spec ( (CTypeSpec CLongType) :  []  ) _ = slong_t;
+type_spec ( (CTypeSpec CLongType) : more ) fname = long $ type_spec more fname;
 
-type_spec ( (CTypeSpec CUnsigType) :  []  ) = uint_t;
-type_spec ( (CTypeSpec CUnsigType) : more ) = unsigned $ type_spec more;
+type_spec ( (CTypeSpec CUnsigType) :  []  ) _ = uint_t;
+type_spec ( (CTypeSpec CUnsigType) : more ) fname = unsigned $ type_spec more fname;
 
-type_spec ( (CTypeSpec CSignedType) :  []  ) = sint_t;
-type_spec ( (CTypeSpec CSignedType) : more ) = signed $ type_spec more;
+type_spec ( (CTypeSpec CSignedType) :  []  ) _ = sint_t;
+type_spec ( (CTypeSpec CSignedType) : more ) fname = signed $ type_spec more fname;
 
-type_spec ( (CTypeSpec t) : _ ) = to_ffi_type t; 
+type_spec ( (CTypeSpec t) : _ ) fname = to_ffi_type t fname; 
  //I don't really know what else could be in the list here
 
-type_spec ( _ : more ) = type_spec more;
-type_spec [] = throw unknown_decl_type;
+type_spec ( _ : more ) fname = type_spec more fname;
+type_spec [] _ = throw unknown_decl_type;
 
 
 
@@ -412,15 +426,15 @@ type_spec [] = throw unknown_decl_type;
 // declaration, e.g. "int *x, y;" yields 
 // [ ptr_type(basic_type sint_t), basic_type sint_t ]
 
-decl_types (CDeclExt d _) = decl_types d ;
+decl_types (CDeclExt d fname) = decl_types1 d fname;
 
-decl_types d@(CDecl decl_specs [] ) = [ basic_type (type_spec decl_specs) ];
-decl_types d@(CDecl decl_specs init_declr_list ) = decl_types2 d;
+decl_types1 d@(CDecl decl_specs [] ) fname = [ basic_type (type_spec decl_specs fname) ];
+decl_types1 d@(CDecl decl_specs init_declr_list ) fname = decl_types2 d fname;
 
-decl_types2 d@(CDecl decl_specs init_declr_list) = 
+decl_types2 d@(CDecl decl_specs init_declr_list) fname = 
   case init_declr_list of 
     (Just (CDeclr _ derivs _ arg_attrs), Nothing, Nothing) : more =
-        apply_derivs (type_spec decl_specs) derivs : decl_types2 (CDecl decl_specs more);
+        apply_derivs (type_spec decl_specs fname) derivs : decl_types2 (CDecl decl_specs more) fname;
     [] = [];
     _ = [];
   end
@@ -434,7 +448,7 @@ decl_types2 d@(CDecl decl_specs init_declr_list) =
     apply_derivs t ( (CFunDeclr args _) : derivs ) = 
       case args of 
         Right (arg_decls,_) = 
-          func_type (apply_derivs t derivs) (catmap decl_types arg_decls);
+          func_type (apply_derivs t derivs) (catmap (flip decl_types1 fname) arg_decls);
         Left _      = //old-style K&R declaration.
           throw unknown_decl_type;
       end;
@@ -464,24 +478,24 @@ is_typedef [] = 0;
 
 // typedef : returns a list of (name=>type) bindings, possibly empty if this
 // declaration was not a typedef
-typedefs (CDeclExt d _) = typedefs d;
-typedefs d@(CDecl decl_specs _) =
+typedefs (CDeclExt d fname) = typedefs1 d fname;
+typedefs1 d@(CDecl decl_specs _) fname =
   if is_typedef decl_specs 
-  then zip (decl_idents d) (decl_types d)
+  then zip (decl_idents d) (decl_types1 d fname)
   else [];
 
 
-// func_decl : returns a list containing a single (name,type) binding if
+// func_decl : returns a list containing a single (name,type,fname) binding if
 // this declaration declares a function, otherwise [].
-func_decl (CDeclExt d _) = func_decl d;
-func_decl d@(CDecl _ _) =
-  case decl_types d of
-    f@([func_type ret args]) = zip (decl_idents d) f;
+func_decl (CDeclExt d fname) = func_decl1 d fname;
+func_decl1 d@(CDecl _ _) fname =
+  case decl_types1 d fname of
+    f@([func_type ret args]) = [fundecls,fname | fundecls = zip (decl_idents d) f];
     _ = [];
   end;
 
 //resolve a typedef : d is a dictionary 
-resolve_typedef d t = lookup t
+resolve_typedef d t fname = lookup t
   with
     lookup (basic_type (CTypeDef n)) =
       catch ( \_ -> warning 0 $ "could not resolve typedef: "+n+
@@ -490,11 +504,11 @@ resolve_typedef d t = lookup t
 
     lookup (basic_type (CSUType _ (CStructUnion _ (Just name) _ _))) = 
       basic_type (struct_or_union name);
-    lookup t@(struct_or_union n) = t;
+    lookup t@(struct_or_union _ _) = t;
     lookup (basic_type (CEnumType (CEnum (Just tag) (Just enum_defs) _))) =
-      basic_type (enum_type tag (scan_enums enum_defs));
+      basic_type (enum_type tag (scan_enums enum_defs) fname);
     lookup (basic_type (CEnumType n)) = sint_t;
-    lookup t@(enum_type n _) = t;
+    lookup t@(enum_type n _ _) = t;
     lookup t@(basic_type _) = t;
     lookup (ptr_type t) = ptr_type (lookup t);
     lookup (func_type ret args) = func_type (lookup ret) (map lookup args);
@@ -502,7 +516,7 @@ resolve_typedef d t = lookup t
   end;
     
 resolve_decl_typedefs tydefs decls = 
-  map (\(n,t) -> (n , resolve_typedef tydefs t) ) decls;
+  map (\(n,t,fname) -> (n , resolve_typedef tydefs t fname, fname) ) decls;
 
 resolve_struct_typedefs tydefs (structure name fields) = 
   structure name $ resolve_decl_typedefs tydefs fields;
@@ -523,32 +537,32 @@ resolve_struct_typedefs tydefs (structure name fields) =
 //
 // Does not handle nested structs or unions yet.
 
-decl_struct (CDeclExt d _) = decl_struct d;
-decl_struct d@(CDecl ( (CStorageSpec CTypeDef ) : 
-                       (CTypeSpec (CSUType strct)) : _ ) 
-                     init_declr_list) 
+decl_struct (CDeclExt d fname) = decl_struct1 d fname;
+decl_struct1 d@(CDecl ( (CStorageSpec CTypeDef ) : 
+                        (CTypeSpec (CSUType strct)) : _ ) 
+		init_declr_list) fname
     =
   case strct of
     //struct name
     CStructUnion _ (Just _) (Just fields) _  | //struct has a tag
     CStructUnion _ Nothing (Just fields)  _  = //struct is anonymous. 
       [ structure name $ 
-        zip (catmap decl_idents fields) (catmap decl_types fields) ];
+        zip (catmap decl_idents fields) (catmap (flip decl_types1 fname) fields) ];
     _ = [];
   end
   when 
     name = head $ decl_idents d;
   end;
 
-decl_struct d@(CDecl ( (CTypeSpec (CSUType strct)) : _ ) [] ) =
+decl_struct1 d@(CDecl ( (CTypeSpec (CSUType strct)) : _ ) [] ) fname =
   case strct of
     CStructUnion _ (Just name) (Just fields) _  = 
       [ structure name $ 
-        zip (catmap decl_idents fields) (catmap decl_types fields) ];
+        zip (catmap decl_idents fields) (catmap (flip decl_types1 fname) fields) ];
     _ = [];
   end;
 
-decl_struct d = [];
+decl_struct1 d _ = [];
   
 
 
@@ -642,33 +656,34 @@ end;
 // lines of the file. Thus, this can't deal with #defines that span
 // multiple lines.
 scrape_defines lns = reverse defs
-when defs = foldl scrape_define [] lns end
+when defs,_ = foldl scrape_define ([],"") lns end
 with
-  scrape_define out ln =
+  scrape_define (out,fname) ln =
     case split_cpp_line ln of
       [cpp_define name val] = echo 2 $ sprintf "#define %s %s" (name,val) $$ 
         catch 
-          (\_ -> (warning 2 $ sprintf "Can't parse %s" ln) $$ out)
-          ( check_constant name val : out );
+          (\_ -> (warning 2 $ sprintf "Can't parse %s" ln) $$ (out,fname))
+          ( check_constant name val fname : out, fname );
       [cpp_line lno fname] = echo 2 $ sprintf "# %d \"%s\"" (lno,fname) $$
-        out;
-      _ = out;
+        (out,fname);
+      _ = (out,fname);
     end when ln = trim ln end;
   trim ln = if null ln || last ln~="\n" then ln else init ln;
 end;
 
 // Check for a constant value (either another #define'd constant, or a number).
-check_constant name val::string
-  = check_string name val
+check_constant name val::string fname
+  = check_string name val fname
       if regex "^\".*\"$" REG_NOSUB val 0;
-  = indirect name val if regex "^[A-Za-z_][A-Za-z_0-9]*$" REG_NOSUB val 0;
-  = check_number name val;
-check_number name val::string
-  = check_number name (substr val 1 (#val-2))
+  = indirect name val fname
+      if regex "^[A-Za-z_][A-Za-z_0-9]*$" REG_NOSUB val 0;
+  = check_number name val fname;
+check_number name val::string fname
+  = check_number name (substr val 1 (#val-2)) fname
       if regex "^(.*)$" REG_NOSUB val 0;
-  = constant name (sscanf val "%i") otherwise;
-check_string name val::string
-  = constant name str when str::string = eval val end;
+  = constant name (sscanf val "%i") fname otherwise;
+check_string name val::string fname
+  = constant name str fname when str::string = eval val end;
 
 // Some constants are defined in terms of others.  Here we resolve those
 // indirections.
@@ -678,22 +693,22 @@ resolve_indirects constants =
     dict = foldl build emptydict constants;
   end
   with
-  build d i@(indirect n _) = 
+  build d i@(indirect n _ _) = 
     /*puts ("adding ["+n+"] to dict") $$*/ 
     insert d (n=>i) ;
-  build d c@(constant n _) = 
+  build d c@(constant n _ _) = 
     /*puts ("adding ["+n+"] to dict") $$*/ 
     insert d (n=>c) ;
-  lookup _ c@(constant _ _) = c;
-  lookup d (indirect n c) = 
+  lookup _ c@(constant _ _ _) = c;
+  lookup d (indirect n c src) = 
     catch
       (\_ -> 
           warning 2 $ "Target of indirected constant not found: \""+
                       n+"\" => \""+c+"\"" $$ 
           not_found )
       ( case d!c of
-        (constant _ v) = constant n v;
-        (indirect _ i) = lookup d (indirect n i);
+        (constant _ v _) = constant n v src;
+        (indirect _ i _) = lookup d (indirect n i src);
         end );
   end;
 
@@ -705,7 +720,7 @@ nmspacepfx nmspace = if null nmspace then "" else nmspace+"::";
 // Output a constant declaration.
 // If after stripping the prefix the constant name starts with a number, then
 // add a leading underscore.
-const_decl pfx nmspace (constant name val) = 
+const_decl pfx nmspace (constant name val _) = 
   case strip_prefix pfx name of
     name =
       if regex "^[0-9]" REG_NOSUB name 0 
@@ -715,12 +730,12 @@ const_decl pfx nmspace (constant name val) =
   end;
 
 //output a function declaration for the ffi interface
-ffi_extern_decl pfx::string nmspace::string (name, func_type ret args) =
+ffi_extern_decl pfx::string nmspace::string (name, func_type ret args, _) =
   "let "+nmspacepfx nmspace+strip_prefix pfx name+" = fcall \""+
     name+"\" FFI_DEFAULT_ABI "+str ret+" ("+str(tuple args)+");";
 
 //output a function declaration for the native pure extern interface
-pure_extern_decl pfx::string nmspace::string (name, func_type ret args) =
+pure_extern_decl pfx::string nmspace::string (name, func_type ret args, _) =
   "extern "+pure_type ret+" "+name+"("+arg_str args+")"+
   (if alias == name then "" else " = "+alias)+";"
   when alias = strip_prefix pfx name end
@@ -732,7 +747,7 @@ pure_extern_decl pfx::string nmspace::string (name, func_type ret args) =
 //output a function declaration for the native pure extern interface,
 //prepending the prefix "Pure_" (or the prefix specified with -P) to the
 //function name
-Pure_extern_decl pfx::string nmspace::string (name, func_type ret args) =
+Pure_extern_decl pfx::string nmspace::string (name, func_type ret args, _) =
   "extern "+pure_type ret+" "+wrap_prefix+name+"("+arg_str args+")"+
   (if alias == wrap_prefix+name then "" else " = "+alias)+";"
   when alias = strip_prefix pfx name end
@@ -755,7 +770,7 @@ with
   when subst = ["%",ret_type,wrapper_name,formal_params,name,arg_names] end;
 end;
 
-c_impl (name, func_type ret args) = code
+c_impl (name, func_type ret args, _) = code
 when
   ret_str = pure_type ret;
 
@@ -772,12 +787,18 @@ when
 end;
 
 
-//select constant and function declarations based on a regex match
+/* Select constant and function declarations based on a regex match on the
+   symbol, as well as a glob pattern match on the filename. */
+
 const cflags = REG_NOSUB or REG_EXTENDED;
-matches pat (constant name _) = valid_name name &&
-  regchk pat (regex pat cflags name 0);
-matches pat (name, _) = valid_name name &&
-  regchk pat (regex pat cflags name 0);
+const fnflags = FNM_PATHNAME;
+matches fnpat pat (constant name _ fname) = valid_name fname name &&
+  fnmatches fnpat fname fnflags && regchk pat (regex pat cflags name 0);
+matches fnpat pat (name, _, fname) = valid_name fname name &&
+  fnmatches fnpat fname fnflags && regchk pat (regex pat cflags name 0);
+
+fnmatches pats name flags = any (\pat->fnmatch pat name flags) pats;
+
 // make regex just always return 1 in case of an error
 regchk pat (regerr _ _) = warning 0 msg $$ 1 if msgcache msg
 when msg = sprintf "error in regular expression '%s'" pat end;
@@ -785,10 +806,10 @@ when msg = sprintf "error in regular expression '%s'" pat end;
 regchk _ x = x;
 
 // Filter out builtins and stuff commonly found in system header files.
-valid_name name = true if all_opt;
-		= substr name 0 1 ~= "_" && name ~= "linux" && name ~= "unix";
-
-
+const sys_excludes = ["","<built-in>","<command-line>"];
+valid_name fname name = true if all_opt;
+		      = false if substr name 0 1 == "_";
+		      = ~any ((==) fname) sys_excludes;
 
 //misc helpful stuff
 
@@ -818,9 +839,9 @@ end;
 
 
 //need these for nub
-constant a _ < constant b _ = a < b;
-constant a _ > constant b _ = a > b;
-constant a _ == constant b _ = a == b;
+constant a _ _ < constant b _ _ = a < b;
+constant a _ _ > constant b _ _ = a > b;
+constant a _ _ == constant b _ _ = a == b;
 
 nub xs = reverse $ go [] emptydict xs
   with
@@ -862,34 +883,35 @@ let func_protos =
         resolve_decl_typedefs tydefs $
           catmap func_decl declarations
   with
-    mapsnd f = map (\(a,b) -> a,f b)
+    mapsnd f = map (\(a,b,c) -> a,f b,c)
   end;
 
 
 //Output the Pure part
-let out_pure   = fopen out_name "w";
+let w = if dry_run then none else if noclobber then "a" else "w";
+let out_pure   = fopen out_name w;
 
 let extern_decl = case iface_opt of
   "ffi" = fputs "using ffi;\n" out_pure $$ ffi_extern_decl;
   "c" = Pure_extern_decl
   when
     //Output the C part
-    out_c = fopen c_name "w";
-    echo 1 $ sprintf "Writing %s" c_name;
+    out_c = fopen c_name w;
+    if dry_run then () else echo 1 $ sprintf "Writing %s" c_name;
 
     fprintf out_c "#include \"%s\"\n%s\n" (in_name,frontmatter); 
     do (flip fputs out_c) $
-      map c_impl $ filter (matches funpat) func_protos;
+      map c_impl $ filter (matches fnpat funpat) func_protos;
   end;
   _ = pure_extern_decl;
 end;
-echo 1 $ sprintf "Writing %s" out_name;
+if dry_run then () else echo 1 $ sprintf "Writing %s" out_name;
 if ~null lib_name then fprintf out_pure "using \"lib:%s\";\n" lib_name else ();
 if ~null nmspace then fprintf out_pure "\nnamespace %s;\n" nmspace else ();
 
 do (flip fputs out_pure . const_decl cstpfx nmspace) $
-  filter (matches cstpat) defines;
+  filter (matches fnpat cstpat) defines;
 
 do (flip fputs out_pure) $
   map (\x -> extern_decl funpfx nmspace x + "\n") $
-  filter (matches funpat) func_protos;
+  filter (matches fnpat funpat) func_protos;
