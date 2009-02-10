@@ -1,0 +1,37 @@
+
+/* This example demonstrates how to use execvp() et al in order to spawn a
+   process and wait for it to finish. This is Unix-specific; Windows has a
+   different family of functions (spawnvp et al) to do this. */
+
+extern int fork();
+extern int execvp(char *prog, void *argv);
+extern int waitpid(int pid, int *status, int options);
+
+/* spawn executes the given program with the given list of arguments. Note
+   that args!0 is supposed to be the program name, the remaining elements of
+   args are the actual command line parameters. The list of arguments is
+   converted to the char** required by execvp using the byte_cstring_pointer
+   convenience function provided in strings.pure. */
+
+spawn prog args =
+case fork of
+  0 = execvp prog (byte_cstring_pointer args);
+  pid = wait_for_pid pid;
+end;
+
+/* Wait for the given child to finish, return either -1 (error) or the exit
+   code of the child. */
+
+wait_for_pid pid = res
+when
+  status = {0};
+  res = waitpid pid (pointer status) 0;
+  res = if res >= 0 then status!0 >> 8 else res;
+end;
+
+// Try this:
+//spawn "ls" ["ls", "-l"];
+
+/* Here is another way to do the same kind of thing via the shell. This has
+   the advantage that you can also use shell variables and glob patterns. */
+spawn "sh" ["sh", "-c", "ls -l *.pure"];
