@@ -196,72 +196,27 @@ else ();
 
 /******************************************************************/
 
-
+// Haskell Maybe type constructor
 nullary Nothing;
 
 // Language.C AST terminals
+// typedef storage spec, denotes typedefs
 nullary CTypedef;
-nullary CVoidType;
-nullary CCharType;
-nullary CShortType;
-nullary CIntType;
-nullary CLongType;
-nullary CFloatType;
-nullary CDoubleType;
-nullary CSignedType;
-nullary CUnsigType;
-nullary CBoolType;
-nullary CStructTag;
-nullary CUnionTag;
-nullary CPlusOp;
-nullary CMinOp ;
-nullary CNegOp ;
-nullary CAddOp ;
-nullary CSubOp ;
-nullary CMulOp ;
-nullary CDivOp ;
-nullary CRmdOp ;
-nullary CShlOp ;
-nullary CShrOp ;
-nullary CLeOp  ;
-nullary CGrOp  ;
-nullary CLeqOp ;
-nullary CGeqOp ;
-nullary CEqOp  ;
-nullary CNeqOp ;
-nullary CAndOp ;
-nullary COrOp  ;
-nullary CLndOp ;
-nullary CLorOp ;
-nullary CXorOp ;
+// basic C types
+nullary CVoidType CCharType CShortType CIntType CLongType CFloatType
+  CDoubleType CSignedType CUnsigType CBoolType;
+// struct/union types (these aren't used right now)
+nullary CStructTag CUnionTag;
+// constant expressions, we evaluate these
+nullary CPlusOp CMinOp CNegOp CAddOp CSubOp CMulOp CDivOp CRmdOp CShlOp
+  CShrOp CLeOp CGrOp CLeqOp CGeqOp CEqOp CNeqOp CAndOp COrOp CLndOp CLorOp
+  CXorOp;
 
-
-nullary unknown_decl_type;
-nullary not_found;
-
-//these mirror the ffi type values
-nullary void_t;
-nullary uint8_t;
-nullary sint8_t;
-nullary uint16_t;
-nullary sint16_t;
-nullary uint32_t;
-nullary sint32_t;
-nullary uint64_t;
-nullary sint64_t;
-nullary float_t;
-nullary double_t;
-nullary pointer_t;
-nullary string_t;
-nullary uchar_t;
-nullary schar_t;
-nullary ushort_t;
-nullary sshort_t;
-nullary uint_t;
-nullary sint_t;
-nullary ulong_t;
-nullary slong_t;
-// special pure_expr type
+// these mirror the ffi type values
+nullary void_t uint8_t sint8_t uint16_t sint16_t uint32_t sint32_t
+  uint64_t sint64_t float_t double_t pointer_t string_t uchar_t schar_t
+  ushort_t sshort_t uint_t sint_t ulong_t slong_t;
+// special pure_expr and GSL matrix types
 nullary expr_t;
 nullary dmatrix_t cmatrix_t imatrix_t;
 
@@ -427,7 +382,8 @@ complete_ffi_type x =
   end;
    
   
-
+// exception value signifying an unknown or unrecognized C type
+nullary unknown_decl_type;
 
 // The primitive type of a declaration. Returns an ffi type, with specifiers.
 type_spec ( (CTypeQual _) : more ) fname = type_spec more fname;
@@ -744,8 +700,9 @@ check_string name val::string fname
 
 // Some constants are defined in terms of others.  Here we resolve those
 // indirections.
+nullary unknown_const;
 resolve_indirects constants =
-  filter ((~==) not_found) $ map (lookup dict) constants 
+  filter ((~==) unknown_const) $ map (lookup dict) constants 
   when
     dict = foldl build emptydict constants;
   end
@@ -757,12 +714,12 @@ resolve_indirects constants =
     /*puts ("adding ["+n+"] to dict") $$*/ 
     insert d (n=>c) ;
   lookup _ c@(constant _ _ _) = c;
-  lookup d (indirect n c src) = if n==c then not_found // #define x x
+  lookup d (indirect n c src) = if n==c then unknown_const // #define x x
     else catch
       (\_ -> 
           warning 2 $ "Target of indirected constant not found: \""+
                       n+"\" => \""+c+"\"" $$ 
-          not_found )
+          unknown_const )
       ( case d!c of
         (constant _ v _) = constant n v src;
         (indirect _ i _) = lookup d (indirect n i src);
