@@ -98,8 +98,8 @@ odbc::info db::pointer =
    which provides a direct interface to SQLGetInfo(). The INFO_TYPE argument
    (a nonnegative integer) specifies the requested type of information. The
    result is always a byte string which, depending on INFO_TYPE, may contain
-   an integer or a string which can be converted to a Pure value using bint or
-   bstr, respectively. See SQLGetInfo() in the ODBC API reference for
+   an integer or a string which can be converted to a Pure value using get_int
+   or cstrin_dup, respectively. See SQLGetInfo() in the ODBC API reference for
    information about which information types are available and which types of
    information they return. */
 
@@ -494,18 +494,19 @@ odbc::foreign_keys db::pointer table_name::string =
    new query is started).
 
    NULL values in the results are converted to (), numeric data (including bit
-   values) to the corresponding Pure type (int or double), binary data to
-   ByteStr, and character strings to String. All other data (e.g., time, date
-   and timestamp) is converted to its character representation and returned as
-   a string.
+   values) to the corresponding Pure type (int, bigint or double) and character
+   strings to String. Binary data is converted to a tuple (length, pointer),
+   where length::bigint denotes number of bytes and pointer is a pointer to the
+   buffer containing the data. All other data (e.g., time, date and timestamp)
+   is converted to its character representation and returned as a string.
 
    Marked input parameters, which are replaced for `?' markers in the query,
    can be specified in the ARGS argument of sql_exec, which is a list of
    parameter values. The same types are recognized as for the result values
-   (i.e., (), integers, floating point values, character and byte strings).
-   Note that ARGS=[] denotes that no parameter values are present; if you
-   really need a singleton () (i.e., NULL) parameter, you have to specify
-   it as `[()]'. */
+   (i.e., (), integers, floating point values, character and tuples
+   (length, pointer) for binary data). Note that ARGS=[] denotes that
+   no parameter values are present; if you really need a singleton ()
+   (i.e., NULL) parameter, you have to specify it as `[()]'. */
 
 odbc::sql_exec db::pointer query::string args =
 		C::odbc_sql_exec db query args if listp args;
