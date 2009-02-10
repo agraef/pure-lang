@@ -295,8 +295,11 @@ to_ffi_type x fname =
     $$ void_t;
   end;
 
-// FIXME: This has to be initialized before invoking scan_enums. We should
-// really make this an argument to scan_enums.
+/* FIXME: This dictionary *must* be properly initialized using decl_enums
+   before scan_enums gets invoked through any of the other declaration
+   processing functions. We should really make this an argument to scan_enums,
+   but the necessary plumbing is just horrible, so we prefer to have this as a
+   global here. */
 let enumdefs = emptydict;
 scan_enums defs =
   [constant n v | n=>v = list $ calc_enum_values enumdefs () defs];
@@ -918,7 +921,7 @@ let ast = fgetlines $ popen (sprintf "%s %s %s" (dumper,cpp_opts,in_name)) "r";
 echo 1 "Parsing";
 let declarations = filter ((~=) ()) $ map eval ast;
 
-// This has to be done before doing the typedefs.
+// This has to be done before processing the other declarations.
 echo 1 "Building enum dictionary";
 let enumdefs = decl_enums declarations;
 
@@ -929,7 +932,7 @@ let tydefs =
         catmap typedefs declarations;
 
 
-echo 1 "Building #define dictionary";
+echo 1 "Building constant dictionary";
 let defines = 
   nub $ resolve_indirects $ scrape_defines lines +
         catmap enum_vals (vals tydefs);
