@@ -261,7 +261,7 @@ nullary ulong_t;
 nullary slong_t;
 // special pure_expr type
 nullary expr_t;
-// TODO: matrix types
+nullary dmatrix_t cmatrix_t imatrix_t;
 
 // to_ffi_type does a preliminary conversion from Language.C types (types
 // specified in the C spec) to ffi types (real types on the machine.)
@@ -328,7 +328,9 @@ pure_type t =
   ulong_t    = "int";
   slong_t    = "int";
   expr_t     = "expr";
-  // TODO: matrix types
+  dmatrix_t  = "dmatrix";
+  cmatrix_t  = "cmatrix";
+  imatrix_t  = "imatrix";
   ptr_type (func_type _ _) = "void*";
   ptr_type t = pure_type t + "*";
   _          = warning 0 ("pure_type error : "+str t) $$ "void";
@@ -342,7 +344,9 @@ c_type t =
   ptr_type (func_type _ _) = "void*";
   ptr_type t = c_type t + "*";
   expr_t = "pure_expr";
-  // TODO: matrix types
+  dmatrix_t = "gsl_matrix";
+  cmatrix_t = "gsl_matrix_complex";
+  imatrix_t = "gsl_matrix_int";
   _ = pure_type t;
   end;
 
@@ -362,7 +366,9 @@ complete_ffi_type (ptr_type t) = ptr_type ( complete_ffi_type t );
 complete_ffi_type (func_type r a) = func_type (complete_ffi_type r)
 				    (map complete_ffi_type a);
 complete_ffi_type (struct_or_union "_pure_expr") = expr_t;
-// TODO: matrix types
+complete_ffi_type (struct_or_union "gsl_matrix") = dmatrix_t;
+complete_ffi_type (struct_or_union "gsl_matrix_complex") = cmatrix_t;
+complete_ffi_type (struct_or_union "gsl_matrix_int") = imatrix_t;
 complete_ffi_type (structure n f) = 
   structure n (zip ns (map complete_ffi_type fs))
   when (ns,fs) = unzip f end;
@@ -405,8 +411,7 @@ complete_ffi_type x =
 
   enum_type _ _ _ = sint_t;
   
-  _ = warning 2 ("unknown type "+str x+", defaulting to void") 
-        $$ void_t;
+  _ = warning 2 ("unknown type "+str x+", defaulting to void") $$ void_t;
 
   end;
    
@@ -528,7 +533,7 @@ resolve_typedef d t fname = lookup t
     lookup (basic_type (CTypeDef n)) =
       catch ( \_ -> warning 2 $ "could not resolve typedef: "+n+
                                 ", defaulting to int" $$ sint_t  ) 
-            ( lookup (d!n) );
+            ( patch_typedef n $ lookup (d!n) );
 
     lookup (basic_type (CSUType _ (CStructUnion _ (Just name) _ _))) = 
       basic_type (struct_or_union name);
@@ -541,6 +546,13 @@ resolve_typedef d t fname = lookup t
     lookup (ptr_type t) = ptr_type (lookup t);
     lookup (func_type ret args) = func_type (lookup ret) (map lookup args);
     lookup x = warning 0 ("resolve_typedef error: "+str x) $$ void_t;
+
+    // Patch up typedefs for anonymous structs, so that we use the typedef
+    // name for the struct instead. This is needed to make the gsl matrix
+    // typemapping work.
+    patch_typedef n (basic_type (struct_or_union "anonymous")) =
+      basic_type (struct_or_union n);
+    patch_typedef n t = t otherwise;
   end;
     
 resolve_decl_typedefs tydefs decls = 
