@@ -259,6 +259,9 @@ nullary uint_t;
 nullary sint_t;
 nullary ulong_t;
 nullary slong_t;
+// special pure_expr type
+nullary expr_t;
+// TODO: matrix types
 
 // to_ffi_type does a preliminary conversion from Language.C types (types
 // specified in the C spec) to ffi types (real types on the machine.)
@@ -324,9 +327,23 @@ pure_type t =
   sint_t     = "int";
   ulong_t    = "int";
   slong_t    = "int";
+  expr_t     = "expr";
+  // TODO: matrix types
   ptr_type (func_type _ _) = "void*";
   ptr_type t = pure_type t + "*";
   _          = warning 0 ("pure_type error : "+str t) $$ "void";
+  end;
+
+// The corresponding C types are exactly the same, except in the case of
+// pure_expr and matrix pointers.
+c_type t =
+  case t of
+  // FIXME: We might need a real function pointer type for the C wrapper?
+  ptr_type (func_type _ _) = "void*";
+  ptr_type t = c_type t + "*";
+  expr_t = "pure_expr";
+  // TODO: matrix types
+  _ = pure_type t;
   end;
 
 
@@ -344,6 +361,8 @@ complete_ffi_type (ptr_type t) = ptr_type ( complete_ffi_type t );
 
 complete_ffi_type (func_type r a) = func_type (complete_ffi_type r)
 				    (map complete_ffi_type a);
+complete_ffi_type (struct_or_union "_pure_expr") = expr_t;
+// TODO: matrix types
 complete_ffi_type (structure n f) = 
   structure n (zip ns (map complete_ffi_type fs))
   when (ns,fs) = unzip f end;
@@ -784,11 +803,11 @@ end;
 
 c_impl (name, func_type ret args, _) = code
 when
-  ret_str = pure_type ret;
+  ret_str = c_type ret;
 
   formal_params = 
     if args === [void_t] then "" else 
-    join ", " $ zipwith (\x y -> pure_type x+" arg"+str y) args (0..inf);
+    join ", " $ zipwith (\x y -> c_type x+" arg"+str y) args (0..inf);
 
   arg_names = 
     if args === [void_t] then "" else 
