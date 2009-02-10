@@ -101,6 +101,61 @@ namespace;
 byte_string s::string	= pure_byte_string s;
 byte_cstring s::string	= pure_byte_cstring s;
 
+/* Convert Pure string lists to C byte string vectors and vice versa. These
+   are useful if you need to pass an argv-like string vector (i.e., a char **
+   or char *[]) to C routines. The returned C vectors are malloc'd pointers
+   which have an extra NULL pointer as the last entry, and thus should be
+   usable for almost any purpose which requires such a string vector. They
+   also take care of garbage-collecting themselves. The original string data
+   is always copied. As usual, the 'c' variants do automatic conversions to
+   the system encoding. */
+
+byte_string_pointer xs	= if null p then throw malloc_error
+			  else make_pointer (map byte_string xs)
+with
+  make_pointer xs = sentry free_pointer p when
+    dowith (\i x -> put_pointer (p+i*SIZEOF_POINTER) x) (0..n-1) xs;
+  end;
+  free_pointer p = free p when
+    do (\i -> free (get_pointer (p+i*SIZEOF_POINTER))) (0..n-1);
+  end;
+end
+when
+  n = #xs; p = calloc (n+1) SIZEOF_POINTER;
+end if listp xs && all stringp xs;
+
+byte_cstring_pointer xs	= if null p then throw malloc_error
+			  else make_pointer (map byte_cstring xs)
+with
+  make_pointer xs = sentry free_pointer p when
+    dowith (\i x -> put_pointer (p+i*SIZEOF_POINTER) x) (0..n-1) xs;
+  end;
+  free_pointer p = free p when
+    do (\i -> free (get_pointer (p+i*SIZEOF_POINTER))) (0..n-1);
+  end;
+end
+when
+  n = #xs; p = calloc (n+1) SIZEOF_POINTER;
+end if listp xs && all stringp xs;
+
+/* Note that the back conversions take an additional first argument which
+   denotes the number of strings to retrieve. If you know that the vector is
+   NULL-terminated then this can also be inf in which case the the number of
+   elements will be figured out automatically. Processing always stops at the
+   first NULL pointer encountered. */
+
+string_list n p::pointer = list $ takewhile stringp [p!i | i = 0..n-1]
+with
+  p!i = if null q then q else string_dup q
+	when q = get_pointer (p+i*SIZEOF_POINTER) end;
+end if ~null p && (intp n || infp n);
+
+cstring_list n p::pointer = list $ takewhile stringp [p!i | i = 0..n-1]
+with
+  p!i = if null q then q else cstring_dup q
+	when q = get_pointer (p+i*SIZEOF_POINTER) end;
+end if ~null p && (intp n || infp n);
+
 /* Character arithmetic. This allows single-character strings to be used,
    e.g., in arithmetic sequences like "a".."z". */
 
