@@ -731,8 +731,8 @@ resolve_indirects constants =
     /*puts ("adding ["+n+"] to dict") $$*/ 
     insert d (n=>c) ;
   lookup _ c@(constant _ _ _) = c;
-  lookup d (indirect n c src) = 
-    catch
+  lookup d (indirect n c src) = if n==c then not_found // #define x x
+    else catch
       (\_ -> 
           warning 2 $ "Target of indirected constant not found: \""+
                       n+"\" => \""+c+"\"" $$ 
