@@ -526,8 +526,8 @@ func_decl1 d@(CDecl _ _) fname =
 resolve_typedef d t fname = lookup t
   with
     lookup (basic_type (CTypeDef n)) =
-      catch ( \_ -> warning 0 $ "could not resolve typedef: "+n+
-                           ", defaulting to int" $$ sint_t  ) 
+      catch ( \_ -> warning 2 $ "could not resolve typedef: "+n+
+                                ", defaulting to int" $$ sint_t  ) 
             ( lookup (d!n) );
 
     lookup (basic_type (CSUType _ (CStructUnion _ (Just name) _ _))) = 
