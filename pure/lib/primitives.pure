@@ -501,10 +501,18 @@ extern expr* pure_get_sentry(expr*) = get_sentry;
 
 /* Convenience function to create a "cooked" pointer which disposes itself
    after use. The pointer must be malloc'd to make this work. There's also a
-   predicate to decide whether a given pointer is cooked already. */
+   predicate to decide whether a given pointer is cooked already (we actually
+   assume any pointer to be cooked which has a sentry set on it). */
 
 cooked p::pointer = sentry free p;
-cookedp p = case p of _::pointer = get_sentry p===free; _ = 0 end;
+cookedp p = case p of
+	      _::pointer =
+	       case get_sentry p of
+	         get_sentry _ = 0;
+	         _ = 1;
+	       end;
+	      _ = 0;
+	    end;
 
 /* Expression references. If you need these, then you're doomed. ;-) However,
    they can be useful as a last resort when you need to keep track of some
