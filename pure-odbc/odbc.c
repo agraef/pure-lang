@@ -118,7 +118,6 @@ static int set_arg(ODBCHandle *db, int i, pure_expr *x)
   char *s;
   bstr_t *m;
   mpz_t z;
-  pure_expr **elems;
   size_t size;
   if (pure_is_int(x, &iv)) {
     db->argv[i].type = SQL_INTEGER;
@@ -178,8 +177,7 @@ static int set_arg(ODBCHandle *db, int i, pure_expr *x)
       db->argv[i].data.buf = NULL;
     db->argv[i].ptr = db->argv[i].data.buf;
     return 1;
-  } else if (pure_is_tuplev(x, &size, &elems) && size == 0) {
-    free(elems);
+  } else if (pure_is_tuplev(x, &size, 0) && size == 0) {
     db->argv[i].type = SQL_CHAR;
     db->argv[i].ctype = SQL_C_DEFAULT;
     db->argv[i].len = SQL_NULL_DATA;
