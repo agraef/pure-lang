@@ -295,8 +295,11 @@ to_ffi_type x fname =
     $$ void_t;
   end;
 
+// FIXME: This has to be initialized before invoking scan_enums. We should
+// really make this an argument to scan_enums.
+let enumdefs = emptydict;
 scan_enums defs =
-  [constant n v | n=>v = list $ calc_enum_values emptydict () defs];
+  [constant n v | n=>v = list $ calc_enum_values enumdefs () defs];
 
 enum_vals (basic_type t) = enum_vals t;
 enum_vals (enum_type _ v fname) = [x fname | x = v];
@@ -659,7 +662,8 @@ eval_expr d (CConst (CIntConst x)) = x;
 
 eval_expr d (CUnary  CPlusOp x) =     eval_expr d x;
 eval_expr d (CUnary  CMinOp x) = neg (eval_expr d x);
-eval_expr d (CUnary  CNegOp x) = not (eval_expr d x);
+eval_expr d (CUnary  CNegOp x) = ~ (eval_expr d x);
+eval_expr d (CUnary  CCompOp x) = not (eval_expr d x);
 
 eval_expr d (CBinary CAddOp e1 e2) = (eval_expr d e1) +   (eval_expr d e2);
 eval_expr d (CBinary CSubOp e1 e2) = (eval_expr d e1) -   (eval_expr d e2);
@@ -682,8 +686,7 @@ eval_expr d (CBinary CXorOp e1 e2) = xor (eval_expr d e1) (eval_expr d e2)
   with 
   xor a b = (a and not b) or (not a and b); // why exclude poor xor?
   end;
-                  
-
+eval_expr d x = warning 0$"Unknown expression type "+str x+" in enum definition. Defaulting to 0." $$ 0;
 
 
 // Dissect cpp lines (#define's and # lineno only).
@@ -914,6 +917,11 @@ let ast = fgetlines $ popen (sprintf "%s %s %s" (dumper,cpp_opts,in_name)) "r";
 
 echo 1 "Parsing";
 let declarations = filter ((~=) ()) $ map eval ast;
+
+// This has to be done before doing the typedefs.
+echo 1 "Building enum dictionary";
+let enumdefs = decl_enums declarations;
+
 
 echo 1 "Building typedef dictionary";
 let tydefs = 
