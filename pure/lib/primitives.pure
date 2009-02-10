@@ -435,6 +435,15 @@ nanp x		= case x of x::double = ~(x==x); _ = 0 end;
 
 extern expr *pure_addr(char *s) = addr;
 
+/* Interface to malloc, free and friends. These let you allocate dynamic
+   buffers (represented as Pure pointer values) for various nasty purposes.
+   The usual caveats apply, so *only* use these directly if you know what
+   you're doing! */
+
+extern void* calloc(size_t nmembers, size_t size);
+extern void* malloc(size_t size), void* realloc(void* ptr, size_t size);
+extern void free(void* ptr);
+
 /* Direct memory accesses. Use with care ... or else! */
 
 namespace C;
@@ -489,6 +498,13 @@ put_pointer x::pointer y::pointer = pointer_put_pointer x y;
 extern expr* pure_sentry(expr*,expr*) = sentry; // IMPURE!
 extern expr* pure_clear_sentry(expr*) = clear_sentry; // IMPURE!
 extern expr* pure_get_sentry(expr*) = get_sentry;
+
+/* Convenience function to create a "cooked" pointer which disposes itself
+   after use. The pointer must be malloc'd to make this work. There's also a
+   predicate to decide whether a given pointer is cooked already. */
+
+cooked p::pointer = sentry free p;
+cookedp p = case p of _::pointer = get_sentry p===free; _ = 0 end;
 
 /* Expression references. If you need these, then you're doomed. ;-) However,
    they can be useful as a last resort when you need to keep track of some
