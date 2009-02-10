@@ -46,13 +46,6 @@
   pure_app(pure_app(pure_symbol(pure_sym("odbc::error")), \
   pure_cstring_dup("other error")), pure_cstring_dup(msg))
 
-/* ByteStr data structure, see clib.c */
-
-typedef struct bstr {
-  long size;
-  unsigned char *v;
-} bstr_t;
-
 /* Query parameter structure */
 
 typedef struct {
@@ -113,12 +106,14 @@ static void free_args(ODBCHandle *db)
 
 static int set_arg(ODBCHandle *db, int i, pure_expr *x)
 {
-  int32_t iv;
+  int32_t iv, numelem;
   double fv;
   char *s;
-  bstr_t *m;
   mpz_t z;
   size_t size;
+  pure_expr **elems;
+  unsigned char *buf;
+  int64_t buflen;
   if (pure_is_int(x, &iv)) {
     db->argv[i].type = SQL_INTEGER;
     db->argv[i].ctype = SQL_C_SLONG;
@@ -163,21 +158,37 @@ static int set_arg(ODBCHandle *db, int i, pure_expr *x)
     db->argv[i].data.buf = s;
     db->argv[i].ptr = s;
     return 1;
-  } else if (pure_is_pointer(x, (void**)&m)) {
-    db->argv[i].type = SQL_BINARY;
-    db->argv[i].ctype = SQL_C_BINARY;
-    db->argv[i].len = m->size;
-    db->argv[i].buflen = m->size;
-    db->argv[i].prec = m->size;
-    if (m->size > 0) {
-      if (!(db->argv[i].data.buf = malloc(m->size)))
+  } else if (pure_is_tuplev(x, &numelem, &elems))
+      if (numelem != 2) {
+        free(elems);
+        return 0;
+      } else if (!pure_is_mpz(elems[0], &z)) {
+	mpz_clear(z);
+	free(elems);
 	return 0;
-      memcpy(db->argv[i].data.buf, m->v, m->size);
-    } else
-      db->argv[i].data.buf = NULL;
-    db->argv[i].ptr = db->argv[i].data.buf;
-    return 1;
-  } else if (pure_is_tuplev(x, &size, 0) && size == 0) {
+      } else if (!pure_is_pointer(elems[1], (void**)&buf)) {
+	mpz_clear(z);
+        free(elems);
+	return 0;
+      } else {
+	mpz_clear(z);
+        buflen = pure_get_long(elems[0]);
+	free(elems);
+        db->argv[i].type = SQL_BINARY;
+        db->argv[i].ctype = SQL_C_BINARY;
+        db->argv[i].len = (SQLLEN) buflen;
+        db->argv[i].buflen = (SQLLEN) buflen;
+        db->argv[i].prec = (SQLLEN) buflen;
+        if (buflen > 0) {
+          if (!(db->argv[i].data.buf = malloc(buflen)))
+            return 0;
+          memcpy(db->argv[i].data.buf, buf, (size_t) buflen);
+        } else
+          db->argv[i].data.buf = NULL;
+        db->argv[i].ptr = db->argv[i].data.buf;
+        return 1;
+       }
+   else if (pure_is_tuplev(x, &size, 0) && size == 0) {
     db->argv[i].type = SQL_CHAR;
     db->argv[i].ctype = SQL_C_DEFAULT;
     db->argv[i].len = SQL_NULL_DATA;
@@ -481,28 +492,6 @@ pure_expr *odbc_info(pure_expr *dbpointer)
     return 0;
 }
 
-static pure_expr *pure_bstr(long size, void *v)
-{
-  bstr_t *m;
-  if ((m = malloc(sizeof(bstr_t)))) {
-    if (size > 0 && v) {
-      m->size = size;
-      m->v = (unsigned char*)malloc(size);
-      if (!m->v) {
-	free(m);
-	return error_handler("malloc error");
-      }
-      memcpy(m->v, v, size);
-    } else {
-      m->size = 0;
-      m->v = NULL;
-    }
-    return pure_pointer(m);
-  } else {
-    return error_handler("malloc error");
-  }
-}
-
 pure_expr *odbc_getinfo(pure_expr *argv0, unsigned int info_type)
 {
   ODBCHandle *db;
@@ -511,15 +500,19 @@ pure_expr *odbc_getinfo(pure_expr *argv0, unsigned int info_type)
     long ret;
     char info[1024];
     short len;
+    unsigned char *buf;
     /* A few queries (which are not supported by this interface right now)
        take pointer arguments, therefore we initialize the beginning of the
        buffer to prevent segfaults. */
     memset(info, 0, 32);
     if ((ret  = SQLGetInfo(db->hdbc, info_type,
 			   info, sizeof(info), &len)) == SQL_SUCCESS ||
-	ret == SQL_SUCCESS_WITH_INFO)
-      return pure_bstr(len, info);
-    else
+	ret == SQL_SUCCESS_WITH_INFO) {
+      if (!(buf = (unsigned char*) malloc(len)))
+	      return error_handler("malloc error");
+      memcpy(buf, info, len);
+      return pure_pointer(buf);
+    } else
       return pure_err(db->henv, db->hdbc, 0);
   } else
     return 0;
@@ -1063,7 +1056,7 @@ pure_expr *odbc_sql_fetch(pure_expr *argv0)
     long iv, sz = BUFSZ;
     double fv;
     char *buf = malloc(sz);
-    SDWORD len;
+    SQLLEN len;
     if (!buf) goto fatal;
     /* fetch the next record */
     if ((ret = SQLFetch(db->hstmt)) == SQL_NO_DATA_FOUND) {
@@ -1125,7 +1118,7 @@ pure_expr *odbc_sql_fetch(pure_expr *argv0)
       case SQL_VARBINARY:
       case SQL_LONGVARBINARY: {
 	char *bufp = buf;
-	long total = 0, actsz = sz;
+	SQLLEN total = 0, actsz = sz;
 	*buf = 0;
 	while (1) {
 	  if ((ret = SQLGetData(db->hstmt, i+1, SQL_BINARY, bufp,
@@ -1161,21 +1154,12 @@ pure_expr *odbc_sql_fetch(pure_expr *argv0)
 	if (len == SQL_NULL_DATA)
 	  xs[i] = pure_tuplel(0);
 	else if (total == 0) {
-	  bstr_t *m;
-	  if (!(m = malloc(sizeof(bstr_t))))
-	    goto fatal2;
-	  m->size = 0;
-	  m->v = NULL;
-	  xs[i] = pure_pointer(m);
+	  xs[i] = pure_tuplel(2, pure_bigintval(pure_long(0)), pure_pointer(NULL));
 	} else {
 	  char *buf1 = realloc(buf, total);
-	  bstr_t *m;
 	  if (buf1) buf = buf1;
-	  if (!(m = malloc(sizeof(bstr_t))))
-	    goto fatal2;
-	  m->size = total;
-	  m->v = (unsigned char*)buf;
-	  xs[i] = pure_pointer(m);
+	  xs[i] = pure_tuplel(2, pure_bigintval(pure_long((int64_t) total)),
+			      pure_pointer((unsigned char* ) buf));
 	  /* make a new buffer */
 	  if (!(buf = malloc(BUFSZ)))
 	    goto fatal2;
