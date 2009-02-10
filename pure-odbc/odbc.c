@@ -140,6 +140,7 @@ static int set_arg(ODBCHandle *db, int i, pure_expr *x)
     db->argv[i].buflen = strlen(db->argv[i].data.buf)+1;
     db->argv[i].prec = db->argv[i].buflen-1;
     db->argv[i].ptr = db->argv[i].data.buf;
+    mpz_clear(z);
     return 1;
   } else if (pure_is_double(x, &fv)) {
     db->argv[i].type = SQL_DOUBLE;
@@ -1107,6 +1108,7 @@ pure_expr *odbc_sql_fetch(pure_expr *argv0)
 	  mpz_init(z);
 	  mpz_set_str(z, buf, 0);
 	  xs[i] = pure_mpz(z);
+	  mpz_clear(z);
 	}
 	break;
       case SQL_DOUBLE:
