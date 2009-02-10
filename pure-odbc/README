@@ -25,6 +25,23 @@ the available graphical setup tools. More information about the setup process
 can be found on the iODBC and unixODBC websites.
 
 
+INSTALLATION
+============
+
+Run 'make' to compile the module and 'make install' (as root) to install it in
+the Pure library directory. This requires GNU make, and of course you need to
+have Pure installed. The only dependency is the GNU Multiprecission Library
+(GMP).
+
+'make' tries to guess your Pure installation directory and platform-specific
+setup. If it gets this wrong, you can set some variables manually. In
+particular, 'make install prefix=/usr' sets the installation prefix, and 'make
+PIC=-fPIC' or some similar flag might be needed for compilation on 64 bit
+systems. The variable `ODBCLIB' serves for the ODBC library name to be linked
+with. The default value is `ODBCLIB=-lodbc'. Please see the Makefile for
+details.
+
+
 OPENING AND CLOSING A DATA SOURCE
 ======= === ======= = ==== ======
 
@@ -86,11 +103,11 @@ driver you can connect to a database file test.mdb as follows:
 
 > odbc::connect "DRIVER=Microsoft Access Driver (*.mdb);DBQ=test.mdb";
 
-The `odbc::connect' function returns an `ODBCHandle' object which is used to
-refer to the database connection in the other routines provided by this
-module. An ODBCHandle object is closed automatically when it is no longer
-accessible.  You can also close it explicitly with a call to the
-`odbc::disconnect' function:
+The `odbc::connect' function returns a pointer to an `ODBCHandle' object
+which is used to refer to the database connection in the other routines
+provided by this module. An ODBCHandle object is closed automatically
+when it is no longer accessible. You can also close it explicitly with
+a call to the `odbc::disconnect' function:
 
 > odbc::disconnect db;
 
@@ -123,20 +140,20 @@ E.g., here is what the connection to MySQL shows on my Linux system:
 The odbc module now provides a number of new operations to retrieve a bunch
 of additional meta information about the given database connection.
 In particular, the odbc::getinfo function provides a direct interface to
-the SQLGetInfo() routine. The result of odbc::getinfo is a byte string which
-can be converted to an integer or string value, depending on the type of
-information requested. For instance:
+the SQLGetInfo() routine. The result of odbc::getinfo is a pointer to either
+an integer or string, which can be converted to an integer or string value,
+depending on the type of information requested. For instance:
 
-> bint $ odbc::getinfo db SQL_MAX_TABLES_IN_SELECT;
+> get_int $ odbc::getinfo db odbc::SQL_MAX_TABLES_IN_SELECT;
 31
 
-> bstr $ odbc::getinfo db SQL_IDENTIFIER_QUOTE_CHAR;
+> cstring_dup $ odbc::getinfo db odbc::SQL_IDENTIFIER_QUOTE_CHAR;
 "`"
 
 Information about supported SQL data types is available with the odbc::typeinfo
-routine (this returns a lot of data, see odbc.q for an explanation):
+routine (this returns a lot of data, see odbc.pure for an explanation):
 
-> odbc::typeinfo db SQL_ALL_TYPES;
+> odbc::typeinfo db odbc::SQL_ALL_TYPES;
 
 Moreover, information about the tables in the current database, as well as the
 structure of the tables and their primary and foreign keys can be retrieved
@@ -219,11 +236,12 @@ The following types of result and parameter values are recognized and
 converted to/from the corresponding Pure types:
 
 SQL value/type						Pure value/type
----------------------------------------------		------------
+---------------------------------------------		-----------------
 NULL (no value)						()
 integer types (INTEGER and friends)			int
+64-bit integers						bigint
 floating point types (REAL, FLOAT and friends)		double
-binary data (BINARY, BLOB, etc.)			bytestr
+binary data (BINARY, BLOB, etc.)			(length, pointer)
 character strings (CHAR, VARCHAR, TEXT, etc.)		string
 
 All other SQL data (including, e.g., TIME, DATE and TIMESTAMP) is represented
