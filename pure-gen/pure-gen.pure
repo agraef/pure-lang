@@ -302,7 +302,11 @@ to_ffi_type x fname =
    global here. */
 let enumdefs = emptydict;
 scan_enums defs =
-  [constant n v | n=>v = list $ calc_enum_values enumdefs () defs];
+  /* We need to take care of the case of an unresolved enum symbol here.
+     Assume that it's a #defined symbol which will hopefully be resolved in
+     resolve_indirects. */
+  [(if stringp v then indirect else constant) n v |
+   n=>v = list $ calc_enum_values enumdefs () defs];
 
 enum_vals (basic_type t) = enum_vals t;
 enum_vals (enum_type _ v fname) = [x fname | x = v];
@@ -658,7 +662,9 @@ calc_enum_values dict _ [] = dict;
 eval_expr d (CVar n) = 
   catch 
   (\e  -> 
-    warning 0$"Couldn't lookup name "+n+" in enum definition. Defaulting to 0."$$0
+   // If we can't resolve this enum then it's probably a #defined symbol which
+   // will hopefully be resolved in resolve_indirects later.
+   warning 2$"Couldn't lookup name "+n+" in enum definition."$$n
   ) (d!n);
 
 eval_expr d (CConst (CIntConst x)) = x;
@@ -932,7 +938,7 @@ let tydefs =
         catmap typedefs declarations;
 
 
-echo 1 "Building constant dictionary";
+echo 1 "Gathering constant definitions";
 let defines = 
   nub $ resolve_indirects $ scrape_defines lines +
         catmap enum_vals (vals tydefs);
