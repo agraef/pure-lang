@@ -8,14 +8,7 @@ using ffi, system;
 /* Provide command line arguments to GLUT::Init. This allows you to call the
    script with -x and supply additional command line parameters. */
 
-let argcp, argvp = int_pointer NULL {argc},
-  pointerv (map byte_cstring argv)
-with
-  pointerv xs = sentry free v when
-    n = #xs; v = calloc (n+1) SIZEOF_POINTER;
-    void [put_pointer (v+i*SIZEOF_POINTER) x | i,x = zip (0..n-1) xs];
-  end;
-end;
+let argcp, argvp = int_pointer NULL {argc}, byte_cstring_pointer argv;
 
 // Initialize.
 
