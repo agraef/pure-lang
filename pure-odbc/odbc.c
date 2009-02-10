@@ -426,10 +426,9 @@ pure_expr *odbc_info(pure_expr *dbpointer)
       db->henv) {
     long ret;
     int n = 0;
-    pure_expr **xv = malloc(8*sizeof(pure_expr)), *res;
+    pure_expr *xv[8], *res;
     char info[1024];
     short len;
-    if (!xv) return error_handler("malloc error");
     if ((ret  = SQLGetInfo(db->hdbc, SQL_DATA_SOURCE_NAME,
 			   info, sizeof(info), &len)) == SQL_SUCCESS ||
 	ret == SQL_SUCCESS_WITH_INFO)
@@ -479,7 +478,6 @@ pure_expr *odbc_info(pure_expr *dbpointer)
     else
       xv[n++] = pure_string_dup("");
     res = pure_tuplev(n, xv);
-    free(xv);
     return res;
   } else
     return 0;
