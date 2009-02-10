@@ -431,6 +431,7 @@ type_spec [] _ = throw unknown_decl_type;
 // declaration, e.g. "int *x, y;" yields 
 // [ ptr_type(basic_type sint_t), basic_type sint_t ]
 
+decl_types (CFDefExt _) = [];
 decl_types (CDeclExt d fname) = decl_types1 d fname;
 
 decl_types1 d@(CDecl decl_specs [] ) fname = [ basic_type (type_spec decl_specs fname) ];
@@ -466,6 +467,7 @@ decl_types2 d@(CDecl decl_specs init_declr_list) fname =
 // anonymous (i.e., a function parameter) or may contain multiple identifiers
 // if the declaration declares multiple things, e.g. "int x,y,z;"
 
+decl_idents (CFDefExt _) = [];
 decl_idents (CDeclExt d _) = decl_idents d;
 decl_idents d@(CDecl _ init_declr_list) = 
   case init_declr_list of 
@@ -483,6 +485,7 @@ is_typedef [] = 0;
 
 // typedef : returns a list of (name=>type) bindings, possibly empty if this
 // declaration was not a typedef
+typedefs (CFDefExt _) = [];
 typedefs (CDeclExt d fname) = typedefs1 d fname;
 typedefs1 d@(CDecl decl_specs _) fname =
   if is_typedef decl_specs 
@@ -492,6 +495,7 @@ typedefs1 d@(CDecl decl_specs _) fname =
 
 // func_decl : returns a list containing a single (name,type,fname) binding if
 // this declaration declares a function, otherwise [].
+func_decl (CFDefExt _) = [];
 func_decl (CDeclExt d fname) = func_decl1 d fname;
 func_decl1 d@(CDecl _ _) fname =
   case decl_types1 d fname of
@@ -542,6 +546,7 @@ resolve_struct_typedefs tydefs (structure name fields) =
 //
 // Does not handle nested structs or unions yet.
 
+decl_struct (CFDefExt _) = [];
 decl_struct (CDeclExt d fname) = decl_struct1 d fname;
 decl_struct1 d@(CDecl ( (CStorageSpec CTypeDef ) : 
                         (CTypeSpec (CSUType strct)) : _ ) 
@@ -577,6 +582,8 @@ decl_struct1 d _ = [];
 // whole list because some constants will be defined in terms of others. 
 decl_enums = 
   foldl get_enum emptydict;
+
+get_enum dict (CFDefExt _) = dict;
 
 get_enum dict (CDeclExt d _) = get_enum dict d;
 
