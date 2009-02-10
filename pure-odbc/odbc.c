@@ -499,18 +499,20 @@ pure_expr *odbc_getinfo(pure_expr *argv0, unsigned int info_type)
       db->henv) {
     long ret;
     char info[1024];
-    short len;
+    short len, i;
     unsigned char *buf;
     /* A few queries (which are not supported by this interface right now)
        take pointer arguments, therefore we initialize the beginning of the
        buffer to prevent segfaults. */
-    memset(info, 0, 32);
+    memset(info, 0, 1024);
     if ((ret  = SQLGetInfo(db->hdbc, info_type,
 			   info, sizeof(info), &len)) == SQL_SUCCESS ||
 	ret == SQL_SUCCESS_WITH_INFO) {
-      if (!(buf = (unsigned char*) malloc(len)))
+      if (!(buf = (unsigned char*) malloc(len + 1)))
 	      return error_handler("malloc error");
       memcpy(buf, info, len);
+      buf[len] = 0;
+      printf("%d  %d  %s  %s\n", info_type, len, info, buf);
       return pure_pointer(buf);
     } else
       return pure_err(db->henv, db->hdbc, 0);
