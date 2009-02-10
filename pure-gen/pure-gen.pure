@@ -251,6 +251,7 @@ nullary sint64_t;
 nullary float_t;
 nullary double_t;
 nullary pointer_t;
+nullary string_t;
 nullary uchar_t;
 nullary schar_t;
 nullary ushort_t;
@@ -774,7 +775,14 @@ const_decl pfx nmspace (constant name val _) =
 //output a function declaration for the ffi interface
 ffi_extern_decl pfx::string nmspace::string (name, func_type ret args, _) =
   "let "+nmspacepfx nmspace+strip_prefix pfx name+" = fcall \""+
-    name+"\" FFI_DEFAULT_ABI "+str ret+" ("+str(tuple args)+");";
+    name+"\" FFI_DEFAULT_ABI "+
+    str (fix ret)+" ("+str(tuple (map fix args))+");"
+with
+  fix (ptr_type schar_t) = string_t;
+  fix (ptr_type uchar_t) = string_t;
+  fix (ptr_type _) = pointer_t;
+  fix t = t otherwise;
+end;
 
 //output a function declaration for the native pure extern interface
 pure_extern_decl pfx::string nmspace::string (name, func_type ret args, _) =
