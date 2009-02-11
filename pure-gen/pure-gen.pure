@@ -31,12 +31,11 @@ let copyright = sprintf
    at the beginning of the C file, right after the #include of the header
    file) from the function template in the main part of the code. */
 
-let default_template = "%r %w(%p) {\n  return %n(%a);\n}\n\n";
+let default_template = "%r %w(%p)\n{\n  return %n(%a);\n}\n\n";
 
-/* An alternative template for wrapper functions returning struct values.
-   FIXME: This is currently hard-wired. */
+/* An alternative template for wrapper functions returning struct values. */
 
-let alt_template = "%r* %w(%p) {\n  static %r ret;\n  ret = %n(%a); return &ret;\n}\n\n";
+let default_alt_template = "%r* %w(%p)\n{\n  static %r ret;\n  ret = %n(%a); return &ret;\n}\n\n";
 
 split_template template::string = frontmatter, template when
   lines = split "\n" template;
@@ -65,6 +64,7 @@ let opts = [("--help", "-h", NOARG),
             ("--select", "-s", REQARG),
             ("--wrap", "-P", REQARG),
             ("--template", "-t", REQARG),
+            ("--alt-template", "-T", REQARG),
             ("--dry-run", "-n", OPTARG),
             ("--warnings", "-w", OPTARG),
             ("--verbose", "-v", OPTARG),
@@ -135,29 +135,30 @@ if member opts "--help" then
 puts copyright $$
 puts $ "Usage: pure-gen [options] <input-file>.h\n" +
 "General options:\n" +
-"-h, --help        Print this message and exit.\n" +
-"-V, --version     Print version number and exit.\n" +
-"-e, --echo        Echo preprocessor lines.\n" +
-"-v, --verbose     Show parameters and progress information.\n" +
-"-w, --warnings    Display warnings (level = 0, 1 [default] or 2).\n" +
+"-h, --help         Print this message and exit.\n" +
+"-V, --version      Print version number and exit.\n" +
+"-e, --echo         Echo preprocessor lines.\n" +
+"-v, --verbose      Show parameters and progress information.\n" +
+"-w, --warnings     Display warnings (level = 0, 1 [default] or 2).\n" +
 "Preprocessor options:\n" +
-"-I, --include     Add include path.\n" +
-"-D, --define      Define symbol.\n" +
-"-U, --undefine    Undefine symbol.\n" +
+"-I, --include      Add include path.\n" +
+"-D, --define       Define symbol.\n" +
+"-U, --undefine     Undefine symbol.\n" +
 "Generator options:\n" +
-"-f, --interface   Interface type ('extern', 'c' or 'ffi').\n" +
-"-l, --lib-name    Add library module to be imported.\n" +
-"-m, --namespace   Module namespace in which symbols should be declared.\n" +
-"-p, --prefix      Module name prefix to be removed from C symbols.\n" +
-"-P, --wrap        Prefix to be prepended to C wrapper symbols.\n" +
-"-a, --all         Include \"hidden\" symbols.\n" +
-"-s, --select      Filter of valid C symbols (see README for details).\n" +
-"-t, --template    Specify C template file (see README for details).\n" +
+"-f, --interface    Interface type ('extern', 'c' or 'ffi').\n" +
+"-l, --lib-name     Add library module to be imported.\n" +
+"-m, --namespace    Module namespace in which symbols should be declared.\n" +
+"-p, --prefix       Module name prefix to be removed from C symbols.\n" +
+"-P, --wrap         Prefix to be prepended to C wrapper symbols.\n" +
+"-a, --all          Include \"hidden\" symbols.\n" +
+"-s, --select       Filter of valid C symbols (see README for details).\n" +
+"-t, --template     Specify C template file (see README for details).\n" +
+"-T, --alt-template Alternate C template file (see README for details).\n" +
 "Output options:\n" +
-"-n, --dry-run     Only parse without generating any output.\n" +
-"-N, --noclobber   Append output to existing files.\n" +
-"-o, --output      Pure output (.pure) filename.\n" +
-"-c, --c-name      C wrapper (.c) filename (-fc).\n" +
+"-n, --dry-run      Only parse without generating any output.\n" +
+"-N, --noclobber    Append output to existing files.\n" +
+"-o, --output       Pure output (.pure) filename.\n" +
+"-c, --c-name       C wrapper (.c) filename (-fc).\n" +
 "Defaults:\n" +
 "-f extern, -P Pure_, -o <input-file>.pure, -c <input-file>.c.\n" +
 "-l <c-file> (without extension) for -fc, otherwise empty." $$
@@ -219,6 +220,17 @@ when
                (opts!"--template") $$ default_template;
 end;
 
+let alt_frontmatter, alt_template = split_template template
+when
+  template = if member opts "--alt-template" then
+               fget (fopen (opts!"--alt-template") "r")
+             else default_alt_template;
+  template = if stringp template then template
+             else fprintf stderr
+               "Template file '%s' not found, using default template\n"
+               (opts!"--alt-template") $$ default_alt_template;
+end;
+
 if dry_run then echo 1 "** Dry run." else ();
 echo 1 $ sprintf "Input file:         %s" in_name;
 echo 1 $ sprintf "Interface type:     %s" iface_opt;
@@ -229,6 +241,9 @@ echo 1 $ sprintf "Symbol selection:   %s" (if null sel then "(all)" else sel whe
 echo 1 $ sprintf "CPP options:        %s" (if null cpp_opts then "(none)" else cpp_opts);
 if member opts "--template" then
 echo 1 $ sprintf "C template file:    %s" (opts!"--template")
+else ();
+if member opts "--alt-template" then
+echo 1 $ sprintf "Alt template file:  %s" (opts!"--alt-template")
 else ();
 
 /******************************************************************/
@@ -1003,7 +1018,8 @@ let extern_decl = case iface_opt of
     out_c = fopen c_name w;
     if dry_run then () else echo 1 $ sprintf "Writing %s" c_name;
 
-    fprintf out_c "#include \"%s\"\n%s\n" (in_name,frontmatter); 
+    fprintf out_c "#include \"%s\"\n%s\n" (in_name,frontmatter);
+    if ~null alt_frontmatter then fprintf out_c "%s\n" alt_frontmatter else ();
     do (flip fputs out_c) $
       map c_impl $ filter (matches fnpat funpat) func_protos;
   end;
