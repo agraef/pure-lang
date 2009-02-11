@@ -118,15 +118,48 @@ Generating C Code
 ========== = ====
 
 As already mentioned, pure-gen can be invoked with the '-fc' option to create
-a C wrapper module along with the Pure module it generates. This is useful to
-create boilerplate code for new modules, and to interface to existing modules
-which, for whatever reason, can't be called directly through Pure 'extern's. 
-(This might be the case, e.g., if the module uses non-standard calling
-conventions, or if some of the module's operations are actually implemented as
-macros.)
+a C wrapper module along with the Pure module it generates. There are various
+situations in which this is preferable, e.g.:
 
-You can adjust the C wrapper code generated with the '-fc' option by providing
-your own template file, which has the following format:
+- You are about to create a new module for which you want to generate some
+boilerplate code.
+
+- The C routines to be wrapped aren't available in a shared library, but in
+some other form (e.g., object file or static library).
+
+- You need to inject some custom code into the wrapper functions (e.g., to
+handle dynamic loading).
+
+- The C routines can't be called directly through Pure 'extern's.
+
+The latter case might arise, e.g., if the module uses non-C linkage or calling
+conventions, or if some of the operations to be wrapped are actually
+implemented as macros. Another important case is if some of the C routines
+pass C structs by value or return them as results. This is discussed in more
+detail in the following section.
+
+For instance, let's say that we want to generate a wrapper foo.c from the
+foo.h header file whose operations are implemented in some library libfoo.a or
+libfoo.so. A command like the following generates both the C wrapper and the
+corresponding Pure module:
+
+	pure-gen -fc foo.h
+
+This creates foo.pure and foo.c, with an import clause for "lib:foo" at the
+beginning of the Pure module. The generated wrapper is just an ordinary C file
+which should be compiled to a shared object (dll on Windows) as usual. E.g.,
+using gcc on Linux:
+
+	gcc -shared -o foo.so foo.c -lfoo
+
+That's all. You should now be able to use the foo module by just putting
+'using foo;' in your programs.
+
+The same approach also works with the ffi interface if you replace the -fc
+option with -fc-ffi.
+
+You can also adjust the C wrapper code to some extent by providing your own
+template file, which has the following format:
 
 #include <stdio.h>
 
@@ -175,9 +208,9 @@ void bar()
   printf("Hello, bar\n");
 }
 
-void Pure_foo(int arg0, void* arg2)
+void Pure_foo(int arg0, void* arg1)
 {
-  return foo(arg0,arg1);
+  return foo(arg0, arg1);
 }
 
 As indicated, the wrapper function names are usually stropped with the 'Pure_'
@@ -195,3 +228,87 @@ declared in the header file):
 {
   /* Enter code of %w here. */
 }
+
+Dealing with C Structs
+======= ==== = =======
+
+Modern C compilers allow you to pass C structs by value or return them as
+results from a C function. This represents a problem, because Pure doesn't
+provide any support for that in its 'extern' declarations. Even Pure's libffi
+interface only has limited support for C structs (no unions, no bit fields),
+and at present pure-gen itself does not keep track of the internal structure
+of C structs either.
+
+Hence pure-gen will bark if you try to wrap an operation which passes or
+returns a C struct, printing a warning message like the following which
+indicates that the given function could not be wrapped:
+
+Warning: foo: struct argument or return type, try -fc
+
+What Pure *does* know is how to pass and return *pointers* to C structs in its
+C interface. This makes it possible to deal with struct arguments and return
+values in the C wrapper. To these ends, you need to invoke pure-gen with the
+-fc or -fc-ffi option as described in the previous section. Struct arguments
+in the original C function then become struct pointers in the wrapper
+function. E.g., if the function is declared in the header as follows:
+
+typedef struct { double x, y; } point;
+extern double foo(point p);
+
+Then the generated wrapper code becomes:
+
+double Pure_foo(point* arg0)
+{
+  return foo(*arg0);
+}
+
+Which is declared in the Pure interface as:
+
+extern double Pure_foo(point*) = foo;
+
+Struct return values are handled by returning a pointer to a static variable
+holding the return value. E.g.,
+
+extern point bar(double x, double y);
+
+becomes:
+
+point* Pure_bar(double arg0, double arg1)
+{
+  static point ret;
+  ret = bar(arg0, arg1); return &ret;
+}
+
+Which is declared in the Pure interface as:
+
+extern point* Pure_bar(double, double) = bar;
+
+(Note that the generated code in this case comes from an alternate template.
+It's possible to configure the laternate template using the -T option instead
+of -t.)
+
+In a Pure script you can now call foo and bar as:
+
+> foo (bar 0.0 1.0);
+
+Note, however, that the pointer returned by bar points to static storage which
+will be overwritten each time you invoke the bar function. Thus in the
+following example *both* u and v will point to the same 'point' struct:
+
+> let u = bar 1.0 0.0; let v = bar 0.0 1.0;
+
+Which most likely is *not* what you want. To avoid this, you'll have to take
+dynamic copies of returned structs. It's possible to do this manually by
+fiddling around with malloc and memcpy, but the most convenient way is to
+employ the struct functions provided by Pure's ffi module:
+
+> using ffi;
+> let point_t = struct_t (double_t, double_t);
+> let u = copy_struct point_t (bar 1.0 0.0);
+> let v = copy_struct point_t (bar 0.0 1.0);
+
+Now u and v point to different, dynamically allocated structs which even take
+care of garbage-collecting themselves when they are no longer needed.
+Moreover, the ffi module also allows you to access the members of the structs
+in a direct fashion. Please refer to the pure-ffi documentation for further
+details.
