@@ -20,7 +20,7 @@ let copyright = sprintf
   version;
 
 // for testing purposes
-//let argv = ["pure-gen.pure", "-v", "-s", "/usr/include/gsl/*::", "-llibgsl", "-llibgslcblas", "/usr/include/gsl/gsl_matrix_double.h", "-fc"];
+//let argv = ["pure-gen.pure", "-v", "-s", "/usr/include/gsl/*::", "/usr/include/gsl/gsl_complex_math.h", "-fc"];
 
 /* Default template for C code generation.
 
@@ -32,6 +32,11 @@ let copyright = sprintf
    file) from the function template in the main part of the code. */
 
 let default_template = "%r %w(%p) {\n  return %n(%a);\n}\n\n";
+
+/* An alternative template for wrapper functions returning struct values.
+   FIXME: This is currently hard-wired. */
+
+let alt_template = "%r* %w(%p) {\n  static %r ret;\n  ret = %n(%a); return &ret;\n}\n\n";
 
 split_template template::string = frontmatter, template when
   lines = split "\n" template;
@@ -305,7 +310,7 @@ enum_vals _ = [];
 
 //these mirror the ffi type values
 pure_type t =
-  case t of
+case t of
   void_t     = "void";
   uint8_t    = "char";
   sint8_t    = "char";
@@ -332,16 +337,33 @@ pure_type t =
   imatrix_t  = "imatrix";
   ptr_type (func_type _ _) = "void*";
   ptr_type (struct_or_union n) = n+"*" if index n " " < 0;
+	     = sprintf "void/*%s*/*" n otherwise;
   ptr_type t = pure_type t + "*";
-  struct_or_union n = sprintf "void/*%s*/" n;
+  // struct values get mapped to pointers in the C wrapper
+  t@(struct_or_union n) = pure_type (ptr_type t);
   _          = warning 0 ("pure_type error : "+str t) $$ "void";
-  end;
+end;
 
 // The corresponding C types are exactly the same, except in the case of
 // pure_expr and matrix pointers, as well as the struct types.
 c_type t =
-  case t of
+case t of
   ptr_type (func_type _ _) = "void*";
+  ptr_type (struct_or_union n) = n+"*";
+  ptr_type t = c_type t + "*";
+  t@(struct_or_union n) = c_type (ptr_type t);
+  expr_t = "pure_expr";
+  dmatrix_t = "gsl_matrix";
+  cmatrix_t = "gsl_matrix_complex";
+  imatrix_t = "gsl_matrix_int";
+  _ = pure_type t;
+end;
+
+// Special version of c_type for return values.
+c_rettype t =
+case t of
+  ptr_type (func_type _ _) = "void*";
+  ptr_type (struct_or_union n) = n+"*";
   ptr_type t = c_type t + "*";
   struct_or_union n = n;
   expr_t = "pure_expr";
@@ -349,8 +371,7 @@ c_type t =
   cmatrix_t = "gsl_matrix_complex";
   imatrix_t = "gsl_matrix_int";
   _ = pure_type t;
-  end;
-
+end;
 
 // complete_ffi_type finishes the conversion by collecting typespecifiers such
 // as long, unsigned, etc. This also strips away the "basic_type" specifier,
@@ -847,7 +868,7 @@ c_impl (name, func_type ret args, _)
 = () if args~==[void_t] && any ((===) void_t) args;
 = code
 when
-  ret_str = c_type ret;
+  ret_str = c_rettype ret;
 
   formal_params = 
     if args === [void_t] then "" else 
@@ -855,10 +876,12 @@ when
 
   arg_names = 
     if args === [void_t] then "" else 
-    join ", " $ map (\y -> "arg" + str y) (take (#args) (0..inf));
+    join ", " $
+    zipwith (\k t -> (if is_struct t then "*" else "") + "arg" + str k)
+    (0..#args-1) args;
 
-  code = replace_template template ret_str (wrap_prefix+name)
-    formal_params name arg_names;
+  code = replace_template (if is_struct ret then alt_template else template)
+         ret_str (wrap_prefix+name) formal_params name arg_names;
 end;
 
 
