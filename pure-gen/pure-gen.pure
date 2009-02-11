@@ -15,6 +15,10 @@ let dumper = "./dump-ast";
 // This is also set at installation time.
 let version = "@version@";
 
+let copyright = sprintf
+  "pure-gen version %s Copyright (c) 2009 Scott E. Dillard, Albert Graef"
+  version;
+
 // for testing purposes
 //let argv = ["pure-gen.pure","-v","-fc","-s/usr/include/ffi.h,/usr/include/ffitarget.h::","-mffi","-pffi_","/usr/include/ffi.h"];
 
@@ -43,7 +47,9 @@ end;
 let opts = [("--help", "-h", NOARG),
             ("--version", "-V", NOARG),
             ("--all", "-a", NOARG),
-            ("--cpp-options", "-O", REQARG),
+            ("--include", "-I", REQARG),
+            ("--define", "-D", REQARG),
+            ("--undefine", "-U", REQARG),
             ("--interface", "-f", REQARG),
             ("--output", "-o", REQARG),
             ("--c-name", "-c", REQARG),
@@ -60,7 +66,6 @@ let opts = [("--help", "-h", NOARG),
             ("--echo", "-e", OPTARG)];
 
 let dfls = ["--interface" => "extern",
-            "--cpp-options" => "",
             "--namespace" => "",
             "--prefix" => "",
             "--select" => "",
@@ -95,35 +100,62 @@ let prog, args = case argv of
                  end;
 let opts, args = catch invalid_option $ getopt opts args;
 
-let opts = foldl insert (dict dfls) opts;
+// Filter out -l and the cpp options, these must be treated separately
+
+let libnames0 = [x | opt@(k=>x) = opts; k=="--lib-name"];
+
+is_cpp_opt ("--include"=>x) = true;
+is_cpp_opt ("--define"=>x) = true;
+is_cpp_opt ("--undefine"=>x) = true;
+is_cpp_opt _ = false otherwise;
+
+let cpp_opts = join " " [format_cpp_opt opt | opt = opts; is_cpp_opt opt]
+with
+  format_cpp_opt ("--include"=>x) = sprintf "-I %s" (str x);
+  format_cpp_opt ("--define"=>x) = sprintf "-D %s" (str x);
+  format_cpp_opt ("--undefine"=>x) = sprintf "-U %s" (str x);
+end;
+
+is_normal_opt ("--lib-name"=>x) = 0;
+is_normal_opt opt = ~is_cpp_opt opt otherwise;
+
+// Create a dictionary of the remaining options, for easier processing.
+let opts = foldl insert (dict dfls) (filter is_normal_opt opts);
 
 if member opts "--version" then
-printf "pure-gen version %s\n" version $$ exit 0
+puts copyright $$ exit 0
 else ();
 
 if member opts "--help" then
-printf "pure-gen version %s\n" version $$
+puts copyright $$
 puts $ "Usage: pure-gen [options] <input-file>.h\n" +
+"General options:\n" +
 "-h, --help        Print this message and exit.\n" +
 "-V, --version     Print version number and exit.\n" +
-"-a, --all         Include \"hidden\" declarations.\n" +
-"-f, --interface   Interface type ('extern', 'c' or 'ffi').\n" +
-"-O, --cpp-options Options to pass to the C preprocessor (-I, -D etc.).\n" +
-"-o, --output      Pure output (.pure) filename.\n" +
-"-c, --c-name      C wrapper (.c) filename for -fc.\n" +
-"-l, --lib-name    Shared library module to be imported.\n" +
-"-n, --dry-run     Only parse without generating any output.\n" +
-"-N, --noclobber   Append output to existing files.\n" +
-"-m, --namespace   Module namespace in which symbols should be declared.\n" +
-"-p, --prefix      Module name prefix to be removed from C symbols.\n" +
-"-P, --wrap        Prefix to be prepended to C wrapper symbols.\n" +
-"-s, --select      Filter of valid C symbols (see README for details).\n" +
-"-t, --template    Specify C template file (see README for details).\n" +
 "-e, --echo        Echo preprocessor lines.\n" +
 "-v, --verbose     Show parameters and progress information.\n" +
 "-w, --warnings    Display warnings (level = 0, 1 [default] or 2).\n" +
-"Defaults: -f extern, -P Pure_, -o <input-file>.pure, -c <input-file>.c.\n" +
-"Defaults: -l <c-file> (without extension) for -fc, otherwise empty." $$
+"Preprocessor options:\n" +
+"-I, --include     Add include path.\n" +
+"-D, --define      Define symbol.\n" +
+"-U, --undefine    Undefine symbol.\n" +
+"Generator options:\n" +
+"-f, --interface   Interface type ('extern', 'c' or 'ffi').\n" +
+"-l, --lib-name    Add library module to be imported.\n" +
+"-m, --namespace   Module namespace in which symbols should be declared.\n" +
+"-p, --prefix      Module name prefix to be removed from C symbols.\n" +
+"-P, --wrap        Prefix to be prepended to C wrapper symbols.\n" +
+"-a, --all         Include \"hidden\" symbols.\n" +
+"-s, --select      Filter of valid C symbols (see README for details).\n" +
+"-t, --template    Specify C template file (see README for details).\n" +
+"Output options:\n" +
+"-n, --dry-run     Only parse without generating any output.\n" +
+"-N, --noclobber   Append output to existing files.\n" +
+"-o, --output      Pure output (.pure) filename.\n" +
+"-c, --c-name      C wrapper (.c) filename (-fc).\n" +
+"Defaults:\n" +
+"-f extern, -P Pure_, -o <input-file>.pure, -c <input-file>.c.\n" +
+"-l <c-file> (without extension) for -fc, otherwise empty." $$
 exit 0
 else ();
 
@@ -142,7 +174,6 @@ extern int atoi(char*);
 defnum x opt::string = atoi opt if ~null opt;
 defnum x _ = x otherwise;
 
-let cpp_opts = opts!"--cpp-options";
 let iface_opt = opts!"--interface";
 let in_name = head args;
 let base = strip_ext $ basename in_name;
@@ -151,8 +182,8 @@ let out_name = if member opts "--output" then opts!"--output"
 let c_name = if member opts "--c-name" then opts!"--c-name"
              else base + ".c";
 let c_base = strip_ext $ basename c_name;
-let lib_name = if member opts "--lib-name" then opts!"--lib-name"
-               else if opts!"--interface" == "c" then c_base else "";
+let libnames = if ~null libnames0 then libnames0
+               else if opts!"--interface" == "c" then [c_base] else [];
 let glob_pat, regex_pat = case split "::" $ opts!"--select" of
                             [] = "", "";
                             [x] = "", x;
@@ -185,7 +216,7 @@ end;
 
 if dry_run then echo 1 "** Dry run." else ();
 echo 1 $ sprintf "Interface type:     %s" iface_opt;
-echo 1 $ sprintf "Library import:     %s" (if null lib_name then "(none)" else sprintf "using \"lib:%s\"" lib_name);
+echo 1 $ sprintf "Library import:     %s" (if null libnames then "(none)" else "using "+join ", " [sprintf "\"lib:%s\"" ln | ln = libnames]);
 echo 1 $ sprintf "Module namespace:   %s" nmspace;
 echo 1 $ sprintf "Module name prefix: %s" (opts!"--prefix");
 echo 1 $ sprintf "Symbol selection:   %s" (if null sel then "(all)" else sel when sel = opts!"--select" end);
@@ -933,7 +964,7 @@ let extern_decl = case iface_opt of
   _ = pure_extern_decl;
 end;
 if dry_run then () else echo 1 $ sprintf "Writing %s" out_name;
-if ~null lib_name then fprintf out_pure "using \"lib:%s\";\n" lib_name else ();
+if ~null libnames then fprintf out_pure "using %s;\n" (join ", " [sprintf "\"lib:%s\"" ln | ln = libnames]) else ();
 if ~null nmspace then fprintf out_pure "\nnamespace %s;\n" nmspace else ();
 
 do (flip fputs out_pure . const_decl cstpfx nmspace) $
