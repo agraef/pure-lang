@@ -20,7 +20,7 @@ let copyright = sprintf
   version;
 
 // for testing purposes
-//let argv = ["pure-gen.pure","-v","-fc","-s/usr/include/ffi.h,/usr/include/ffitarget.h::","-mffi","-pffi_","/usr/include/ffi.h"];
+//let argv = ["pure-gen.pure", "-v", "-s", "/usr/include/gsl/*::", "-llibgsl", "-llibgslcblas", "/usr/include/gsl/gsl_matrix_double.h"];
 
 /* Default template for C code generation.
 
@@ -215,10 +215,11 @@ when
 end;
 
 if dry_run then echo 1 "** Dry run." else ();
+echo 1 $ sprintf "Input file:         %s" in_name;
 echo 1 $ sprintf "Interface type:     %s" iface_opt;
 echo 1 $ sprintf "Library import:     %s" (if null libnames then "(none)" else "using "+join ", " [sprintf "\"lib:%s\"" ln | ln = libnames]);
-echo 1 $ sprintf "Module namespace:   %s" nmspace;
-echo 1 $ sprintf "Module name prefix: %s" (opts!"--prefix");
+echo 1 $ sprintf "Module namespace:   %s" (if null nmspace then "(none)" else nmspace);
+echo 1 $ sprintf "Module name prefix: %s" (if null modprefix then "(none)" else modprefix when modprefix = opts!"--prefix" end);
 echo 1 $ sprintf "Symbol selection:   %s" (if null sel then "(all)" else sel when sel = opts!"--select" end);
 echo 1 $ sprintf "CPP options:        %s" (if null cpp_opts then "(none)" else cpp_opts);
 if member opts "--template" then
@@ -273,11 +274,11 @@ to_ffi_type x fname =
   CEnumType (CEnum (Just tag) (Just enum_defs) _)
 	        = enum_type tag (scan_enums enum_defs) fname;
   CEnumType (CEnum Nothing (Just enum_defs) _)
-	        = enum_type "anonymous" (scan_enums enum_defs) fname;
+	        = enum_type "<anonymous>" (scan_enums enum_defs) fname;
   CEnumType (CEnum _ _ _)
 	        = sint_t;
-  CSUType (CStructUnion _ (Just tag) _ _) = struct_or_union tag;
-  CSUType (CStructUnion _ Nothing _ _) = struct_or_union "anonymous";
+  CSUType (CStructUnion _ (Just tag) _ _) = struct_or_union $ "struct "+tag;
+  CSUType (CStructUnion _ Nothing _ _) = struct_or_union "<anonymous>";
   _             = (warning 1 $ "unknown type "+str x+", defaulting to void")
     $$ void_t;
   end;
@@ -330,16 +331,19 @@ pure_type t =
   cmatrix_t  = "cmatrix";
   imatrix_t  = "imatrix";
   ptr_type (func_type _ _) = "void*";
+  ptr_type (struct_or_union n) = n+"*" if index n " " < 0;
   ptr_type t = pure_type t + "*";
+  struct_or_union n = sprintf "void/*%s*/" n;
   _          = warning 0 ("pure_type error : "+str t) $$ "void";
   end;
 
 // The corresponding C types are exactly the same, except in the case of
-// pure_expr and matrix pointers.
+// pure_expr and matrix pointers, as well as the struct types.
 c_type t =
   case t of
   ptr_type (func_type _ _) = "void*";
   ptr_type t = c_type t + "*";
+  struct_or_union n = n;
   expr_t = "pure_expr";
   dmatrix_t = "gsl_matrix";
   cmatrix_t = "gsl_matrix_complex";
@@ -362,10 +366,11 @@ complete_ffi_type (ptr_type t) = ptr_type ( complete_ffi_type t );
 
 complete_ffi_type (func_type r a) = func_type (complete_ffi_type r)
 				    (map complete_ffi_type a);
-complete_ffi_type (struct_or_union "_pure_expr") = expr_t;
+complete_ffi_type (struct_or_union "pure_expr") = expr_t;
 complete_ffi_type (struct_or_union "gsl_matrix") = dmatrix_t;
 complete_ffi_type (struct_or_union "gsl_matrix_complex") = cmatrix_t;
 complete_ffi_type (struct_or_union "gsl_matrix_int") = imatrix_t;
+complete_ffi_type t@(struct_or_union n) = t if n~="<anonymous>";
 complete_ffi_type (structure n f) = 
   structure n (zip ns (map complete_ffi_type fs))
   when (ns,fs) = unzip f end;
@@ -535,7 +540,7 @@ resolve_typedef d t fname = lookup t
             ( patch_typedef n $ lookup (d!n) );
 
     lookup (basic_type (CSUType _ (CStructUnion _ (Just name) _ _))) = 
-      basic_type (struct_or_union name);
+      basic_type (struct_or_union $ "struct "+name);
     lookup t@(struct_or_union _ _) = t;
     lookup (basic_type (CEnumType (CEnum (Just tag) (Just enum_defs) _))) =
       basic_type (enum_type tag (scan_enums enum_defs) fname);
@@ -549,7 +554,7 @@ resolve_typedef d t fname = lookup t
     // Patch up typedefs for anonymous structs, so that we use the typedef
     // name for the struct instead. This is needed to make the gsl matrix
     // typemapping work.
-    patch_typedef n (basic_type (struct_or_union "anonymous")) =
+    patch_typedef n (basic_type (struct_or_union _)) =
       basic_type (struct_or_union n);
     patch_typedef n t = t otherwise;
   end;
@@ -774,48 +779,55 @@ const_decl pfx nmspace (constant name val _) =
       ;
   end;
 
+is_struct (struct_or_union _) = true;
+is_struct _ = false;
+
 //output a function declaration for the ffi interface
 ffi_extern_decl pfx::string nmspace::string (name, func_type ret args, _)
+= warning 0 $ sprintf "%s: unknown argument type" name $$ ()
+    if args~==[void_t] && any ((===) void_t) args;
 = warning 0 $
-  sprintf "%s: struct arguments not supported in current implementation" name
-  $$ () if any ((===) void_t) args;
+  sprintf "%s: struct argument or return type, try -fc" name $$ ()
+    if any is_struct (ret:args);
 = "let "+nmspacepfx nmspace+strip_prefix pfx name+" = fcall \""+
-    name+"\" FFI_DEFAULT_ABI "+
-    str (fix ret)+" ("+str(tuple (map fix args))+");"
+   name+"\" FFI_DEFAULT_ABI "+str (ffi_type ret)+" ("+arg_str args+");"
 with
-  fix (ptr_type schar_t) = string_t;
-  fix (ptr_type uchar_t) = string_t;
-  fix (ptr_type _) = pointer_t;
-  fix t = t otherwise;
+  arg_str [void_t] = "";
+  arg_str args = join "," $ map (str.ffi_type) args;
+  ffi_type (ptr_type schar_t) = string_t;
+  ffi_type (ptr_type uchar_t) = string_t;
+  ffi_type (ptr_type _) = pointer_t;
+  ffi_type t = t otherwise;
 end;
 
 //output a function declaration for the native pure extern interface
 pure_extern_decl pfx::string nmspace::string (name, func_type ret args, _)
+= warning 0 $ sprintf "%s: unknown argument type" name $$ ()
+    if args~==[void_t] && any ((===) void_t) args;
 = warning 0 $
-  sprintf "%s: struct arguments not supported in current implementation" name
-  $$ () if any ((===) void_t) args;
+  sprintf "%s: struct argument or return type, try -fc" name $$ ()
+    if any is_struct (ret:args);
 = "extern "+pure_type ret+" "+name+"("+arg_str args+")"+
   (if alias == name then "" else " = "+alias)+";"
-  when alias = strip_prefix pfx name end
-  with
+when alias = strip_prefix pfx name end
+with
   arg_str [void_t] = "";
   arg_str args = join "," $ map pure_type args;
-  end;
+end;
 
 //output a function declaration for the native pure extern interface,
 //prepending the prefix "Pure_" (or the prefix specified with -P) to the
 //function name
 Pure_extern_decl pfx::string nmspace::string (name, func_type ret args, _)
-= warning 0 $
-  sprintf "%s: struct arguments not supported in current implementation" name
-  $$ () if any ((===) void_t) args;
+= warning 0 $ sprintf "%s: unknown argument type" name $$ ()
+    if any ((===) void_t) args;
 = "extern "+pure_type ret+" "+wrap_prefix+name+"("+arg_str args+")"+
   (if alias == wrap_prefix+name then "" else " = "+alias)+";"
-  when alias = strip_prefix pfx name end
-  with
+when alias = strip_prefix pfx name end
+with
   arg_str [void_t] = "";
   arg_str args = join "," $ map pure_type args;
-  end;
+end;
 
 
 
