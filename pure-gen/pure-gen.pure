@@ -20,7 +20,7 @@ let copyright = sprintf
   version;
 
 // for testing purposes
-//let argv = ["pure-gen.pure", "-v", "-s", "/usr/include/gsl/*::", "-llibgsl", "-llibgslcblas", "/usr/include/gsl/gsl_matrix_double.h"];
+//let argv = ["pure-gen.pure", "-v", "-s", "/usr/include/gsl/*::", "-llibgsl", "-llibgslcblas", "/usr/include/gsl/gsl_matrix_double.h", "-fc"];
 
 /* Default template for C code generation.
 
@@ -820,7 +820,7 @@ end;
 //function name
 Pure_extern_decl pfx::string nmspace::string (name, func_type ret args, _)
 = warning 0 $ sprintf "%s: unknown argument type" name $$ ()
-    if any ((===) void_t) args;
+    if args~==[void_t] && any ((===) void_t) args;
 = "extern "+pure_type ret+" "+wrap_prefix+name+"("+arg_str args+")"+
   (if alias == wrap_prefix+name then "" else " = "+alias)+";"
 when alias = strip_prefix pfx name end
@@ -844,7 +844,7 @@ with
 end;
 
 c_impl (name, func_type ret args, _)
-= () if any ((===) void_t) args;
+= () if args~==[void_t] && any ((===) void_t) args;
 = code
 when
   ret_str = c_type ret;
