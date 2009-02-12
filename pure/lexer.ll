@@ -173,6 +173,7 @@ typedef map<string, symbol> symbol_map;
 static char *
 command_generator(const char *text, int state)
 {
+  static bool def_ns, ns;
   static int list_index, len;
   static int32_t f, n;
   const char *name;
@@ -187,6 +188,10 @@ command_generator(const char *text, int state)
     interp.compile();
     f = 1; n = interp.symtab.nsyms();
     len = strlen(text);
+    /* See whether we're looking for a symbol in the (default) namespace. */
+    char *p = strstr(text, "::");
+    ns = p!=0;
+    def_ns = ns && p==text && len>2;
   }
 
   /* Return the next name which partially matches from the
@@ -213,8 +218,32 @@ command_generator(const char *text, int state)
     }
     const string& s = sym.s;
     f++;
-    if (strncmp(s.c_str(), text, len) == 0)
-      return strdup(s.c_str());
+    if (def_ns) {
+      /* Default namespace symbol, normalize the name. */
+      if (strncmp(s.c_str(), text+2, len-2) == 0)
+	return strdup(("::"+s).c_str());
+    } else {
+      if (strncmp(s.c_str(), text, len) == 0)
+	return strdup(s.c_str());
+      else if (!ns) {
+	/* No namespace prefix, look for a symbol in the current namespace and
+	   the search namespaces. */
+	size_t p = s.find("::");
+	if (p != string::npos) {
+	  string prefix = s.substr(0, p), name = s.substr(p+2, string::npos);
+	  if (strncmp(name.c_str(), text, len) == 0) {
+	    bool found = prefix==*interp.symtab.current_namespace;
+	    for (set<string>::iterator
+		   it = interp.symtab.search_namespaces->begin(),
+		   end = interp.symtab.search_namespaces->end();
+		 !found && it != end; it++)
+	      found = prefix==*it;
+	    if (found)
+	      return strdup(name.c_str());
+	  }
+	}
+      }
+    }
   }
 
   /* If no names matched, then return NULL. */
