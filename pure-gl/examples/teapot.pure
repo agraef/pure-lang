@@ -8,7 +8,7 @@ using ffi, system;
 /* Provide command line arguments to GLUT::Init. This allows you to call the
    script with -x and supply additional command line parameters. */
 
-let argcp, argvp = int_pointer NULL {argc}, byte_cstring_pointer argv;
+let argcp, argvp = {argc}, byte_cstring_pointer argv;
 
 // Initialize.
 
@@ -32,10 +32,8 @@ GL::LoadIdentity;
 
 // Lighting.
 
-fv x = sentry free $ float_pointer NULL x;
-
-GL::Lightfv GL::LIGHT0 GL::DIFFUSE $ fv {1.0,0.0,0.0,1.0};
-GL::Lightfv GL::LIGHT0 GL::POSITION $ fv {2.0,2.0,-5.0,1.0};
+GL::Lightfv GL::LIGHT0 GL::DIFFUSE {1.0,0.0,0.0,1.0};
+GL::Lightfv GL::LIGHT0 GL::POSITION {2.0,2.0,-5.0,1.0};
 
 GL::Enable GL::LIGHTING;
 GL::Enable GL::LIGHT0;
