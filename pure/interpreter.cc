@@ -4245,7 +4245,7 @@ Function *interpreter::declare_extern(string name, string restype,
   vector<const Type*> argt2(n, ExprPtrTy);
   FunctionType *ft2 = FunctionType::get(ExprPtrTy, argt2, false);
   Function *f = Function::Create(ft2, Function::InternalLinkage,
-				 "$$wrap."+asname, module);
+				 "$$wrap."+asid, module);
   vector<Value*> args(n), unboxed(n);
   Function::arg_iterator a = f->arg_begin();
   for (size_t i = 0; a != f->arg_end(); ++a, ++i) {
