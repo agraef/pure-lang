@@ -2748,6 +2748,80 @@ void *pure_get_matrix(pure_expr *x)
 }
 
 extern "C"
+void *pure_get_matrix_data(pure_expr *x)
+{
+  switch (x->tag) {
+  case EXPR::MATRIX: {
+    gsl_matrix_symbolic *m = (gsl_matrix_symbolic*)x->data.mat.p;
+    return m->data;
+  }
+#ifdef HAVE_GSL
+  case EXPR::DMATRIX: {
+    gsl_matrix *m = (gsl_matrix*)x->data.mat.p;
+    return m->data;
+  }
+  case EXPR::CMATRIX: {
+    gsl_matrix_complex *m = (gsl_matrix_complex*)x->data.mat.p;
+    return m->data;
+  }
+  case EXPR::IMATRIX:{
+    gsl_matrix_int *m = (gsl_matrix_int*)x->data.mat.p;
+    return m->data;
+  }
+#endif
+  default:
+    assert(0 && "not a matrix");
+    return 0;
+  }
+}
+
+list<void*> cvector_temps; // XXXFIXME: This should be TLD.
+
+void *pure_get_matrix_data_byte(pure_expr *x)
+{
+  void *v = matrix_to_byte_array(0, x);
+  cvector_temps.push_back(v);
+  return v;
+}
+
+void *pure_get_matrix_data_short(pure_expr *x)
+{
+  void *v = matrix_to_short_array(0, x);
+  cvector_temps.push_back(v);
+  return v;
+}
+
+void *pure_get_matrix_data_int(pure_expr *x)
+{
+  void *v = matrix_to_int_array(0, x);
+  cvector_temps.push_back(v);
+  return v;
+}
+
+void *pure_get_matrix_data_float(pure_expr *x)
+{
+  void *v = matrix_to_float_array(0, x);
+  cvector_temps.push_back(v);
+  return v;
+}
+
+void *pure_get_matrix_data_double(pure_expr *x)
+{
+  void *v = matrix_to_double_array(0, x);
+  cvector_temps.push_back(v);
+  return v;
+}
+
+extern "C"
+void pure_free_cvectors()
+{
+  for (list<void*>::iterator t = cvector_temps.begin();
+       t != cvector_temps.end(); t++)
+    if (*t) free(*t);
+  cvector_temps.clear();
+}
+
+extern "C"
 pure_expr *pure_matrix_rows(uint32_t n, ...)
 {
   va_list ap;

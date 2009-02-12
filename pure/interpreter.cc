@@ -383,6 +383,20 @@ interpreter::interpreter()
 		 "pure_get_int",     "int",   1, "expr*");
   declare_extern((void*)pure_get_matrix,
 		 "pure_get_matrix",  "void*", 1, "expr*");
+  declare_extern((void*)pure_get_matrix_data,
+		 "pure_get_matrix_data", "void*", 1, "expr*");
+  declare_extern((void*)pure_get_matrix_data_byte,
+		 "pure_get_matrix_data_byte", "void*", 1, "expr*");
+  declare_extern((void*)pure_get_matrix_data_short,
+		 "pure_get_matrix_data_short", "void*", 1, "expr*");
+  declare_extern((void*)pure_get_matrix_data_int,
+		 "pure_get_matrix_data_int", "void*", 1, "expr*");
+  declare_extern((void*)pure_get_matrix_data_float,
+		 "pure_get_matrix_data_float", "void*", 1, "expr*");
+  declare_extern((void*)pure_get_matrix_data_double,
+		 "pure_get_matrix_data_double", "void*", 1, "expr*");
+  declare_extern((void*)pure_free_cvectors,
+		 "pure_free_cvectors","void", 0);
 
   declare_extern((void*)pure_catch,
 		 "pure_catch",      "expr*",  2, "expr*", "expr*");
@@ -3994,6 +4008,8 @@ const Type *interpreter::named_type(string name)
     return PointerType::get(Type::Int32Ty, 0);
   else if (name == "long*")
     return PointerType::get(Type::Int64Ty, 0);
+  else if (name == "float*")
+    return PointerType::get(Type::FloatTy, 0);
   else if (name == "double*")
     return PointerType::get(Type::DoubleTy, 0);
   else if (name == "expr*")
@@ -4240,7 +4256,7 @@ Function *interpreter::declare_extern(string name, string restype,
     *failedbb = BasicBlock::Create("failed");
   b.SetInsertPoint(bb);
   // unbox arguments
-  bool temps = false;
+  bool temps = false, vtemps = false;
   for (size_t i = 0; i < n; i++) {
     Value *x = args[i];
     // check for thunks which must be forced
@@ -4411,11 +4427,7 @@ Function *interpreter::declare_extern(string name, string restype,
       b.SetInsertPoint(okbb);
       Value *sv = b.CreateCall(module->getFunction("pure_get_cstring"), x);
       unboxed[i] = sv; temps = true;
-    } else if (argt[i] == PointerType::get(Type::Int16Ty, 0) ||
-	       argt[i] == PointerType::get(Type::Int32Ty, 0) ||
-	       argt[i] == PointerType::get(Type::Int64Ty, 0) ||
-	       argt[i] == PointerType::get(Type::FloatTy, 0) ||
-	       argt[i] == PointerType::get(Type::DoubleTy, 0)) {
+    } else if (argt[i] == PointerType::get(Type::Int64Ty, 0)) {
       BasicBlock *okbb = BasicBlock::Create("ok");
       Value *idx[2] = { Zero, Zero };
       Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
@@ -4427,6 +4439,46 @@ Function *interpreter::declare_extern(string name, string restype,
       idx[1] = ValFldIndex;
       Value *ptrv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "ptrval");
       unboxed[i] = b.CreateBitCast(ptrv, argt[i]);
+    } else if (argt[i] == PointerType::get(Type::Int16Ty, 0) ||
+	       argt[i] == PointerType::get(Type::Int32Ty, 0) ||
+	       argt[i] == PointerType::get(Type::DoubleTy, 0) ||
+	       argt[i] == PointerType::get(Type::FloatTy, 0)) {
+      /* These get special treatment, because we also allow numeric matrices
+	 to be passed as an integer or floating point vector here. */
+      BasicBlock *ptrbb = BasicBlock::Create("ptr");
+      BasicBlock *matrixbb = BasicBlock::Create("matrix");
+      BasicBlock *okbb = BasicBlock::Create("ok");
+      Value *idx[2] = { Zero, Zero };
+      Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
+      SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 4);
+      Function *get_fun = module->getFunction
+	((argt[i] == PointerType::get(Type::Int16Ty, 0)) ?
+	 "pure_get_matrix_data_short" :
+	 (argt[i] == PointerType::get(Type::Int32Ty, 0)) ?
+	 "pure_get_matrix_data_int" :
+	 (argt[i] == PointerType::get(Type::FloatTy, 0)) ?
+	 "pure_get_matrix_data_float" :
+	 "pure_get_matrix_data_double");
+      sw->addCase(SInt(EXPR::PTR), ptrbb);
+      sw->addCase(SInt(EXPR::DMATRIX), matrixbb);
+      sw->addCase(SInt(EXPR::CMATRIX), matrixbb);
+      sw->addCase(SInt(EXPR::IMATRIX), matrixbb);
+      f->getBasicBlockList().push_back(ptrbb);
+      b.SetInsertPoint(ptrbb);
+      Value *pv = b.CreateBitCast(x, PtrExprPtrTy, "ptrexpr");
+      idx[1] = ValFldIndex;
+      Value *ptrv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "ptrval");
+      b.CreateBr(okbb);
+      f->getBasicBlockList().push_back(matrixbb);
+      b.SetInsertPoint(matrixbb);
+      Value *matrixv = b.CreateCall(get_fun, x);
+      b.CreateBr(okbb);
+      f->getBasicBlockList().push_back(okbb);
+      b.SetInsertPoint(okbb);
+      PHINode *phi = b.CreatePHI(VoidPtrTy);
+      phi->addIncoming(ptrv, ptrbb);
+      phi->addIncoming(matrixv, matrixbb);
+      unboxed[i] = b.CreateBitCast(phi, argt[i]); vtemps = true;
     } else if (argt[i] == GSLMatrixPtrTy ||
 	       argt[i] == GSLDoubleMatrixPtrTy ||
 	       argt[i] == GSLComplexMatrixPtrTy ||
@@ -4455,20 +4507,26 @@ Function *interpreter::declare_extern(string name, string restype,
     } else if (argt[i] == VoidPtrTy) {
       BasicBlock *ptrbb = BasicBlock::Create("ptr");
       BasicBlock *mpzbb = BasicBlock::Create("mpz");
+      BasicBlock *matrixbb = BasicBlock::Create("matrix");
       BasicBlock *okbb = BasicBlock::Create("ok");
       Value *idx[2] = { Zero, Zero };
       Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
-      SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 3);
-      /* We also allow bigints and strings to be passed as a void* here. The
-	 former lets you use GMP routines directly in Pure if you declare the
-	 mpz_t params as void*. The latter allows a string to be passed
-	 without implicitly converting it to the system encoding first. Note
-	 that in both cases a direct pointer to the data will be passed, which
-	 enables mutation of the data; if this isn't desired then you should
-	 copy the data first. */
+      SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 7);
+      /* We also allow bigints, strings and matrices to be passed as a void*
+	 here. The first case lets you use GMP routines directly in Pure if
+	 you declare the mpz_t params as void*. The second case allows a
+	 string to be passed without implicitly converting it to the system
+	 encoding first. The third case allows the raw data of a matrix to be
+	 passed. Note that in all cases a direct pointer to the data will be
+	 passed, which enables mutation of the data; if this isn't desired
+	 then you should copy the data first. */
       sw->addCase(SInt(EXPR::PTR), ptrbb);
       sw->addCase(SInt(EXPR::STR), ptrbb);
       sw->addCase(SInt(EXPR::BIGINT), mpzbb);
+      sw->addCase(SInt(EXPR::MATRIX), matrixbb);
+      sw->addCase(SInt(EXPR::DMATRIX), matrixbb);
+      sw->addCase(SInt(EXPR::CMATRIX), matrixbb);
+      sw->addCase(SInt(EXPR::IMATRIX), matrixbb);
       f->getBasicBlockList().push_back(ptrbb);
       b.SetInsertPoint(ptrbb);
       // The following will work with both pointer and string expressions.
@@ -4481,11 +4539,18 @@ Function *interpreter::declare_extern(string name, string restype,
       // Handle the case of a bigint (mpz_t -> void*).
       Value *mpzv = b.CreateCall(module->getFunction("pure_get_bigint"), x);
       b.CreateBr(okbb);
+      // Handle the case of a matrix (gsl_matrix_xyz* -> void*).
+      f->getBasicBlockList().push_back(matrixbb);
+      b.SetInsertPoint(matrixbb);
+      Value *matrixv =
+	b.CreateCall(module->getFunction("pure_get_matrix_data"), x);
+      b.CreateBr(okbb);
       f->getBasicBlockList().push_back(okbb);
       b.SetInsertPoint(okbb);
       PHINode *phi = b.CreatePHI(VoidPtrTy);
       phi->addIncoming(ptrv, ptrbb);
       phi->addIncoming(mpzv, mpzbb);
+      phi->addIncoming(matrixv, matrixbb);
       unboxed[i] = phi;
       if (gt->getParamType(i)==CharPtrTy)
 	// An external builtin already has this parameter declared as char*.
@@ -4499,6 +4564,7 @@ Function *interpreter::declare_extern(string name, string restype,
   Value* u = b.CreateCall(g, unboxed.begin(), unboxed.end());
   // free temporaries
   if (temps) b.CreateCall(module->getFunction("pure_free_cstrings"));
+  if (vtemps) b.CreateCall(module->getFunction("pure_free_cvectors"));
   // box the result
   if (type == Type::VoidTy)
     u = b.CreateCall(module->getFunction("pure_const"),
@@ -4571,6 +4637,7 @@ Function *interpreter::declare_extern(string name, string restype,
   b.SetInsertPoint(failedbb);
   // free temporaries
   if (temps) b.CreateCall(module->getFunction("pure_free_cstrings"));
+  if (vtemps) b.CreateCall(module->getFunction("pure_free_cvectors"));
   // As default, create a cbox for the function symbol and apply that to our
   // parameters. The cbox may be patched up later to become a Pure function.
   // In effect, this allows an external function to be augmented with Pure

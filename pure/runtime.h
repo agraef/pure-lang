@@ -472,9 +472,23 @@ int64_t pure_get_long(pure_expr *x);
 int32_t pure_get_int(pure_expr *x);
 
 /* Convert a matrix expression to a pointer to the corresponding GSL matrix
-   struct. This is used to marshall matrix arguments in the C interface. */
+   struct or a pointer to the data itself. This is used to marshall matrix
+   arguments in the C interface. */
 
 void *pure_get_matrix(pure_expr *x);
+void *pure_get_matrix_data(pure_expr *x);
+
+/* These work like pure_get_matrix_data above, but do conversions to the
+   corresponding target data type on the fly, copying the data to newly
+   allocated storage. pure_free_cvectors is to be called afterwards to free
+   the temporary storage. */
+
+void *pure_get_matrix_data_byte(pure_expr *x);
+void *pure_get_matrix_data_short(pure_expr *x);
+void *pure_get_matrix_data_int(pure_expr *x);
+void *pure_get_matrix_data_float(pure_expr *x);
+void *pure_get_matrix_data_double(pure_expr *x);
+void pure_free_cvectors();
 
 /* Additional matrix constructors. These work like pure_matrix_rowsl and
    pure_matrix_columnsl in the public API, but are intended to be called
