@@ -1,0 +1,171 @@
+
+/* example.pure: examples for the ODBC interface */
+
+/* This program allows you to create some sample tables in your default
+   database (`initdb' function) and invoke a simple SQL interpreter (`mysql').
+   After editing the config information below, try something like `initdb;
+   mysql' and then type some SQL queries. The sample database consists of the
+   two tables `pet' and `event' from the MySQL documentation, Chapter 3. */
+
+using odbc, primitives, system;
+using namespace odbc;
+
+/* CONFIG SECTION -- Customize this for your local setup. *******************/
+
+/* Here you have to specify the connect string which lets you connect to the
+   database you want to use. The details are system-specific; on some systems
+   it is sufficient to fill in the DSN field, on others you may have to also
+   specify HOST, DATABASE, UID and PWD. See odbc.q for the available options.
+   Some examples are provided below. */
+
+let connection = "DSN=efom"; // default MySQL database and user
+// def connection = "DSN=myodbc;UID=root;PWD="; // specify user and password
+// def connection = "DSN=myodbc;DATABASE=test"; // specify the default database
+// def connection = "FILEDSN=test.dsn"; // use a .dsn file (Windows)
+// def connection = "DRIVER=Microsoft Access Driver (*.mdb);DBQ=test.mdb";
+		    // connect to an existing MS access database (Windows)
+
+/****************************************************************************/
+
+/* Handle ODBC errors. */
+error msg state		= throw (msg, state);
+
+report err		= fprintf stderr "Error: %s (%s).\n" err $$
+			  fflush stderr;
+
+/* The database connection. */
+
+let db = catch report (connect connection);
+
+/* Determine the identifier quote char. */
+let qch = cstring_dup $ odbc::getinfo db SQL_IDENTIFIER_QUOTE_CHAR;
+
+/****************************************************************************/
+
+/* Structure and data for the sample "menagerie" tables. This has been
+   pilfered from the MySQL documentation. */
+
+let pet_desc =
+  [("name",	"VARCHAR(20)"),
+   ("owner",	"VARCHAR(20)"),
+   ("species",	"VARCHAR(20)"),
+   ("sex",	"CHAR(1)"),
+   ("birth",	"DATE"),
+   ("death",	"DATE")];
+let event_desc =
+  [("name",	"VARCHAR(20)"),
+   ("date",	"DATE"),
+   ("type",	"VARCHAR(15)"),
+   ("remark",	"VARCHAR(255)")];
+
+let pet_data =
+  [["Fluffy",	"Harold",	"cat",	 "f",	"1993-02-04",	()],
+   ["Claws",	"Gwen",		"cat",	 "m",	"1994-03-17",	()],
+   ["Buffy",	"Harold",	"dog",	 "f",	"1989-05-13",	()],
+   ["Fang",	"Benny",	"dog",	 "m",	"1990-08-27",	()],
+   ["Bowser",	"Diane",	"dog",	 "m",	"1979-08-31",	"1995-07-29"],
+   ["Chirpy",	"Gwen",		"bird",	 "f",	"1998-09-11",	()],
+   ["Whistler",	"Gwen",		"bird",	 (),	"1997-12-09",	()],
+   ["Slim",	"Benny",	"snake", "m",	"1996-04-29",	()]];
+let event_data =
+  [["Fluffy",	"1995-05-15",	"litter",	"4 kittens, 3 female, 1 male"],
+   ["Buffy",	"1993-06-23",	"litter",	"5 puppies, 2 female, 3 male"],
+   ["Buffy",	"1994-06-19",	"litter",	"3 puppies, 3 female"],
+   ["Chirpy",	"1999-03-21",	"vet",		"needed beak straightened"],
+   ["Slim",	"1997-08-03",	"vet",		"broken rib"],
+   ["Bowser",	"1991-10-12",	"kennel",	()],
+   ["Fang",	"1991-10-12",	"kennel",	()],
+   ["Fang",	"1998-08-28",	"birthday",	"Gave him a new chew toy"],
+   ["Claws",	"1998-03-17",	"birthday",	"Gave him a new flea collar"],
+   ["Whistler",	"1998-12-09",	"birthday",	"First birthday"]];
+
+/* Initialize the tables. Run this once to create the tables and populate them
+   with data. */
+
+initdb			= catch report
+			  (init_table "pet" pet_desc pet_data $$
+			   init_table "event" event_desc event_data);
+
+init_table name desc data
+			= sql db (sprintf "create table %s (%s)"
+				  (name, fields desc)) [] $$
+			  do (sql db query) data
+			    when query =
+			      sprintf "insert into %s values (%s)"
+			      (name, params desc)
+			    end;
+
+fields desc		= join "," (map (sprintf format) desc)
+			    when
+			      format = sprintf "%s%%s%s %%s" (qch, qch)
+			    end;
+
+params desc		= join "," (map (cst "?") desc);
+
+/****************************************************************************/
+
+/* Poor man's SQL interpreter. Prompts you for SQL queries, executes them and
+   displays the results. Enter an empty line or end-of-file to quit the
+   interpreter. */
+
+mysql			= exec prompt;
+
+prompt			= puts "\nSQL> " $$ flush $$ gets;
+
+exec query::string	= catch report (display (msql db query [])) $$ mysql
+			    if ~ null query;
+exec _			= () otherwise;
+
+/* Display results. */
+
+display sets		= do display_set sets if listp sets;
+
+/* Display a result set. */
+
+display_set rows::int	= printf "%d rows affected.\n" rows;
+display_set results
+			= puts "\n" $$
+			  // header
+			  display_row wds header $$
+			  display_row wds rules $$
+			  // data
+			  do (display_row wds) data $$
+			  // footer
+			  display_row wds rules $$
+			  printf "%d rows in set.\n" (#data)
+			  if listp results && ~ null data 
+			    when wds = widths results;
+			      (header:data) = results;
+			      rules = (tuple (map rule wds))
+			    end;
+			= puts "Empty set.\n" otherwise;
+
+/* Determine column widths. */
+
+widths results		= foldl maxwidths init results
+			    when init = map (cst 0) (head results) end;
+
+maxwidths xs ys		= zipwith max xs (map ((#).value_str) (list ys));
+
+/* Display a data row. */
+
+display_row widths row	= printf "%s\n"
+			  (join "   " (zipwith column widths (list row)));
+
+/* Rule of given width. */
+
+rule width		= strcat (map (cst "-") (1..width));
+
+/* Format a data value. */
+
+column width value	= format width (value_str value);
+
+format width s		= sprintf (sprintf "%%-%ds" width) s;
+
+/* Convert data values to strings. */
+
+value_str ()		= "NULL";
+value_str value::double	= str value;
+value_str value::int	= str value;
+value_str value::string	= value;
+value_str _		= "***" otherwise;
