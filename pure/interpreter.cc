@@ -4951,6 +4951,7 @@ pure_expr *interpreter::dodefn(env vars, expr lhs, expr rhs, pure_expr*& e)
   // matched => emit code for binding the variables
   f.f->getBasicBlockList().push_back(matchedbb);
   f.builder.SetInsertPoint(matchedbb);
+  list<pure_expr*> cache;
   for (env::const_iterator it = vars.begin(); it != vars.end(); ++it) {
     int32_t tag = it->first;
     const env_info& info = it->second;
@@ -4975,7 +4976,10 @@ pure_expr *interpreter::dodefn(env vars, expr lhs, expr rhs, pure_expr*& e)
 	   sym.s, module);
       JIT->addGlobalMapping(v.v, &v.x);
     }
-    if (v.x) call("pure_free", f.builder.CreateLoad(v.v));
+    /* Cache any old value so that we can free it later. Note that it is not
+       safe to do so right away, because the value may be reused in one of the
+       current assignments. */
+    if (v.x) cache.push_back(v.x);
     call("pure_new", x);
 #if DEBUG>2
     ostringstream msg;
@@ -5007,7 +5011,12 @@ pure_expr *interpreter::dodefn(env vars, expr lhs, expr rhs, pure_expr*& e)
   else
     fptr->refc--;
   fptr = save_fptr;
-  if (!res) {
+  if (res) {
+    // Get rid of any old values now.
+    for (list<pure_expr*>::iterator it = cache.begin(), end = cache.end();
+	 it != end; ++it)
+      pure_free(*it);
+  } else {
     // We caught an exception, clean up the mess.
     for (env::const_iterator it = vars.begin(); it != vars.end(); ++it) {
       int32_t tag = it->first;
