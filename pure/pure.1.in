@@ -1,5 +1,6 @@
 .TH Pure 1 "January 2009" "Pure Version @version@"
 .hw name-space
+.hw name-spaces
 .SH NAME
 pure \- the Pure interpreter
 .SH SYNOPSIS
@@ -2945,9 +2946,8 @@ Or you can list just private symbols of the namespace `foo', as follows:
 > \fBshow\fP -pg foo::*
 .fi
 .PP
-Finally, the following command will list each and every symbol that's
-currently defined (instead of \fB-g *\fP you can also use the \fB-t0\fP
-option):
+The following command will list each and every symbol that's currently defined
+(instead of \fB-g *\fP you can also use the \fB-t0\fP option):
 .sp
 .nf
 > \fBshow\fP -g *
@@ -2960,6 +2960,25 @@ case you might consider to use the
 command instead, which writes the definitions to a file which can then be
 loaded into a text editor for easier viewing. This may occasionally be useful
 for debugging purposes.)
+.PP
+Finally, there are two alternate forms of the
+.B show
+command: `\fBshow\fP namespace' which lists the current and search namespaces,
+and `\fBshow\fP namespaces' which lists all declared namespaces. These come in
+handy if you have forgotten what namespaces are currently active and which
+other namespaces are available in your program. For instance:
+.sp
+.nf
+> \fBshow\fP namespace
+> \fBshow\fP namespaces
+\fBnamespace\fP C;
+\fBnamespace\fP matrix;
+> \fBusing\fP \fBnamespace\fP C;
+> \fBnamespace\fP my;
+> \fBshow\fP namespace
+\fBnamespace\fP my;
+\fBusing\fP \fBnamespace\fP C;
+.fi
 .SS Definition Levels
 To help with incremental development, the interpreter offers some facilities
 to manipulate the current set of definitions interactively. To these ends,
