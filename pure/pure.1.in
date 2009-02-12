@@ -2352,6 +2352,16 @@ Most GSL matrix routines can be wrapped in this fashion quite easily. A
 ready-made GSL interface providing access to all of GSL's numeric functions
 is in the works; please check the Pure website for details.
 .PP
+For convenience, it is also possible to pass a numeric matrix for a short*,
+int*, float* or double* parameter. The required conversions are done
+automatically, on the fly, and the matrix data is copied to temporary storage
+in order to preserve value sematics.
+.PP
+In addition, any kind of matrix (including symbolic matrices) can also be
+passed for a generic void* pointer. In this case no conversions are done and a
+pointer to the raw matrix data is passed, which allows the matrix to be
+modified in-place.
+.PP
 As already mentioned, it is possible to augment an external C function with
 ordinary Pure equations, but in this case you have to make sure that the
 .B extern
@@ -3641,6 +3651,17 @@ module is available which interfaces to the libffi library to provide that
 kind of functionality, please see the description of the
 .B pure-ffi
 module on the Pure website for details.
+.PP
+Last but not least, to make it easier to create Pure interfaces to large C
+libraries, there's a separate
+.B pure-gen
+program available at the Pure website. This program takes a C header (.h) file
+and creates a corresponding Pure module with definitions and
+.B extern
+declarations for the constants and functions declared in the header. Please
+refer to the
+.BR pure-gen (1)
+manual page for details.
 .SS Special Forms
 Special forms are recognized at compile time only. Thus the `catch' function,
 as well as `quote' and the operators `&&', `||', `$$' and `&', are only
