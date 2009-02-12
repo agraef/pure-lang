@@ -145,7 +145,8 @@ instance Dump CExtDecl where
   -- NOTE : The output deviates from the Language.C format here.  We add an
   -- extra argument to the CDeclExt constructor, which is the filename.
   dump (CFDefExt cFunDef)  = parens $ "CFDefExt "++ dump cFunDef
-  -- This needs language.c from svn.
+  -- The version of CAsmExt in the repository has an additional second
+  -- argument. Uncomment this if needed.
   --dump (CAsmExt cStrLit _) = parens $ "CAsmExt " ++ dump cStrLit
   dump (CAsmExt cStrLit) = parens $ "CAsmExt " ++ dump cStrLit
 
