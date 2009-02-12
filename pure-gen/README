@@ -3,7 +3,7 @@ pure-gen
 ========
 
 A Pure C bindings generator. Written by Albert Graef, based on Scott Dillard's
-OpenGL bindings generator.
+original OpenGL bindings generator.
 
 License
 =======
@@ -17,24 +17,47 @@ Installation
 
 Normally you just run 'make && sudo make install'. This will install the
 program under $(prefix)/lib/pure-gen-x.y and create a link to the executable
-in $(prefix)/bin. (See The Makefile for further options.)
+in $(prefix)/bin. (See The Makefile for further options.) To run the pure-gen
+script, you'll need the Pure interpreter, of course.
 
-The generator uses the Language.C parser for Haskell, available here:
+Alas, since pure-gen's C parser is written in Haskell, there are some notable
+additional requirements to make this work, explained in further detail below.
 
-http://hackage.haskell.org/cgi-bin/hackage-scripts/package/language-c
+Installing the Required Haskell Bits
+---------- --- -------- ------- ----
 
-To compile the dump-ast module, you need a Haskell compiler (GHC) and this
-library. The Haskell program dump-ast.hs parses a C file given on the command
-line and writes the AST to stdout. It calls GCC to do the preprocessing, so on
-Windows you will probably need MinGW installed. C preprocessor options can be
-passed to dump-ast as well, but the C file must always be the last argument.
+To build the C parser utility dump-ast, which is written in Haskell, you'll
+need a Haskell compiler (ghc has been tested), as well as the Language.C
+Haskell library (version 0.3.1 or 0.3.1.1).
 
-For Linux users, Scott has uploaded statically linked binaries of dump-ast,
-both 32 and 64 bits, to the Pure-lang Google Group files area. (These still
-need libgmp, but so does Pure so you should already have that.) Thus, if you
-can't/don't want to install GHC, you can just put the appropriate binary into
-the source directory, rename it to 'dump-ast' and then run 'sudo make install'
-without running 'make'.
+ghc can be found at http://www.haskell.org/ghc/.
+
+The Language.C library is most conveniently available through cabal
+(http://www.haskell.org/cabal/), see http://www.sivity.net/projects/language.c
+for more information. Once cabal is set up on your system, you can install
+Language.C by running 'cabal install language-c' (make sure to do 'cabal
+update' first so that you get the latest version).
+
+To make this a little easier for people not familiar with Haskell, Scott has
+uploaded statically linked binaries of dump-ast for Linux, both 32 and 64
+bits, to the Pure-lang Google Group files area. (These still need libgmp, but
+so does Pure so you should already have that.) Thus, if you can't/don't want
+to install ghc, you can just put the appropriate binary into the source
+directory, rename it to 'dump-ast' and then run 'sudo make install' without
+running 'make'. This is currently available for Linux only, but we can
+hopefully provide binaries for Windows if enough people ask for them, so
+please let us know.
+
+NOTE: The sources of the dump-ast program can be found in dump-ast.hs. This is
+a Haskell program which parses a C file given on the command line and writes
+the abstract syntax tree (AST) as a collection of terms in Pure-readable
+format to stdout. Normally you won't have to invoke dump-ast yourself since
+this is handled by pure-gen automatically, but the program may also be useful
+for other utilities which have to parse C header files. dump-ast takes the
+name of the file to be parsed as the *last* command line parameter, all other
+command line arguments are just passed on to the C preprocessor without any
+checking. Also note that dump-ast calls gcc to do the preprocessing, so on
+Windows you will probably need MinGW installed when running this program.
 
 Usage
 =====
@@ -47,6 +70,11 @@ Try 'pure-gen -h' for help. Basically,
 generates a Pure module foo.pure with 'extern' declarations for the constants
 ('#define's and enums) and C routines declared in the given C header file and
 (recursively) its includes.
+
+Note: pure-gen only accepts a single header file on the command line. If you
+need to parse more than one header in a single run, you can just create a
+dummy header with all the necessary '#include's in it and pass that to
+pure-gen instead.
 
 When invoked with the -n option, pure-gen performs a dry run in which it only
 parses the input without actually generating any output files.
@@ -67,24 +95,30 @@ includes. If the header file '#include's system headers, by default you will
 get those declarations as well. This is often undesirable. As a remedy,
 pure-gen normally excludes built-in '#define's of the C compiler, as well as
 identifiers with a leading underscore (which are often found in system
-headers) from processing. You can use the -a option to disable this.
+headers) from processing. You can use the -a option to disable this, so that
+all these symbols are included as well.
 
 In addition, the -s option enables you to filter C symbols using the source
-filename and the symbol as search criteria. This option takes an argument of
-the form 'glob-patterns::regex-pattern' denoting a comma-separated list of
-glob patterns to be matched against the source filename and an extended regex
-to be matched against the symbol itself. The 'glob-patterns::' part can also
-be omitted in which case it defaults to '::' which matches any source file.
-Similarly, the regex can be empty, in which case it matches any symbol. The
-generated output will contain only the constant and function symbols matching
-the given regex from source files matching any of the the glob patterns. Thus,
-for instance, the option '-s foo.h,bar.h::^(foo|bar)_' pulls all symbols
-prefixed with either 'foo_' or 'bar_' from the files foo.h and bar.h in the
-current directory. Note that in order to match include files in the system
-directories you also have to specify the path in the glob patterns, just as
-with shell glob patterns. Thus, e.g., if the foo.h file actually lives in
-/usr/include, it can be matched with a glob pattern like '/*/*/foo.h', but not
-with just 'foo.h' or '*/foo.h'.
+filename and the symbol as search criteria. For instance, to just generate
+code for a single header foo.h and none of the other headers included in
+foo.h, you can invoke pure-gen as follows:
+
+	pure-gen -s foo.h:: foo.h
+
+In general, the -s option takes an argument 'glob-patterns::regex-pattern'
+denoting a comma-separated list of glob patterns to be matched against the
+source filename, and an extended regex to be matched against the symbol
+itself. The 'glob-patterns::' part can also be omitted in which case it
+defaults to '::' which matches any source file.  Similarly, the regex can be
+empty, in which case it matches any symbol. The generated output will contain
+only the constant and function symbols matching the given regex, from source
+files matching any of the the glob patterns. Thus, for instance, the option
+'-s foo.h,bar.h::^(foo|bar)_' pulls all symbols prefixed with either 'foo_' or
+'bar_' from the files foo.h and bar.h in the current directory. Note that in
+order to match include files in the system directories you also have to
+specify the path in the glob patterns, just as with shell glob patterns. Thus,
+e.g., if the foo.h file actually lives in /usr/include, it can be matched with
+a glob pattern like '/*/*/foo.h', but not with just 'foo.h' or '*/foo.h'.
 
 The -s option is often used in conjuction with the -p option, which lets you
 specify a "module name prefix" which should be stripped off from C symbols.
@@ -128,13 +162,13 @@ boilerplate code.
 some other form (e.g., object file or static library).
 
 - You need to inject some custom code into the wrapper functions (e.g., to
-handle dynamic loading).
+implement lazy dynamic loading).
 
 - The C routines can't be called directly through Pure 'extern's.
 
 The latter case might arise, e.g., if the module uses non-C linkage or calling
 conventions, or if some of the operations to be wrapped are actually
-implemented as macros. Another important case is if some of the C routines
+implemented as C macros. Another important case is if some of the C routines
 pass C structs by value or return them as results. This is discussed in more
 detail in the following section.
 
@@ -146,9 +180,11 @@ corresponding Pure module:
 	pure-gen -fc foo.h
 
 This creates foo.pure and foo.c, with an import clause for "lib:foo" at the
-beginning of the Pure module. The generated wrapper is just an ordinary C file
-which should be compiled to a shared object (dll on Windows) as usual. E.g.,
-using gcc on Linux:
+beginning of the Pure module. (You can also change the name of the Pure and C
+output files using the -o and -c options, respectively.)
+
+The generated wrapper is just an ordinary C file which should be compiled to a
+shared object (dll on Windows) as usual. E.g., using gcc on Linux:
 
 	gcc -shared -o foo.so foo.c -lfoo
 
@@ -284,8 +320,9 @@ Which is declared in the Pure interface as:
 extern point* Pure_bar(double, double) = bar;
 
 (Note that the generated code in this case comes from an alternate template.
-It's possible to configure the laternate template using the -T option instead
-of -t.)
+It's possible to configure the alternate template just like the normal one,
+using the -T option instead of -t. See the "Generating C Code" section above
+for details about code templates.)
 
 In a Pure script you can now call foo and bar as:
 
@@ -307,8 +344,7 @@ employ the struct functions provided by Pure's ffi module:
 > let u = copy_struct point_t (bar 1.0 0.0);
 > let v = copy_struct point_t (bar 0.0 1.0);
 
-Now u and v point to different, dynamically allocated structs which even take
-care of garbage-collecting themselves when they are no longer needed.
-Moreover, the ffi module also allows you to access the members of the structs
-in a direct fashion. Please refer to the pure-ffi documentation for further
-details.
+Now u and v point to different, malloc'd structs which even take care of
+freeing themselves when they are no longer needed. Moreover, the ffi module
+also allows you to access the members of the structs in a direct
+fashion. Please refer to the pure-ffi documentation for further details.
