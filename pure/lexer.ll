@@ -315,6 +315,15 @@ static int32_t checktag(const char *s)
   else
     return 0;
 }
+
+static string format_namespace(const string& name)
+{
+  size_t p = name.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0-9");
+  if (p != string::npos || (name[0] >= '0' && name[0] <= '9'))
+    return "\""+name+"\"";
+  else
+    return name;
+}
 %}
 
 %option noyywrap nounput debug
@@ -518,6 +527,43 @@ blank  [ \t\f\v\r]
     cerr << "cd: extra parameter\n";
   else if (chdir(args.l.begin()->c_str()))
     perror("cd");
+}
+^show[ \t]+namespace[ \t]*$ {
+  ostringstream sout;
+  if (!interp.symtab.current_namespace->empty())
+    sout << "namespace "
+	 << format_namespace(*interp.symtab.current_namespace) << ";\n";
+  if (!interp.symtab.search_namespaces->empty()) {
+    sout << "using namespace ";
+    int count = 0;
+    for (set<string>::iterator
+	   it = interp.symtab.search_namespaces->begin(),
+	   end = interp.symtab.search_namespaces->end();
+	 it != end; it++) {
+      if (count++ > 0) sout << ", ";
+      sout << format_namespace(*it);
+    }
+    sout << ";\n";
+  }
+  if (interp.output)
+    (*interp.output) << sout.str();
+  else
+    cout << sout.str();
+}
+^show[ \t]+namespaces[ \t]*$ {
+  ostringstream sout;
+  if (!interp.namespaces.empty()) {
+    for (set<string>::iterator
+	   it = interp.namespaces.begin(),
+	   end = interp.namespaces.end();
+	 it != end; it++) {
+      sout << "namespace " << format_namespace(*it) << ";\n";
+    }
+  }
+  if (interp.output)
+    (*interp.output) << sout.str();
+  else
+    cout << sout.str();
 }
 ^show.* {
   // show command is only permitted in interactive mode
