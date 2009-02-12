@@ -19,9 +19,6 @@ let copyright = sprintf
   "pure-gen version %s Copyright (c) 2009 Scott E. Dillard, Albert Graef"
   version;
 
-// for testing purposes
-//let argv = ["pure-gen.pure", "-v", "-s", "/usr/include/gsl/*::", "/usr/include/gsl/gsl_complex_math.h", "-fc"];
-
 /* Default template for C code generation.
 
    %r = return type, %w = wrapper function name, %p = formal params, %n =
@@ -145,7 +142,7 @@ puts $ "Usage: pure-gen [options] <input-file>.h\n" +
 "-D, --define       Define symbol.\n" +
 "-U, --undefine     Undefine symbol.\n" +
 "Generator options:\n" +
-"-f, --interface    Interface type ('extern', 'c' or 'ffi').\n" +
+"-f, --interface    Interface type ('extern', 'c', 'ffi' or 'c-ffi').\n" +
 "-l, --lib-name     Add library module to be imported.\n" +
 "-m, --namespace    Module namespace in which symbols should be declared.\n" +
 "-p, --prefix       Module name prefix to be removed from C symbols.\n" +
@@ -170,7 +167,7 @@ fprintf stderr "Error: %s source file specified\nType 'pure-gen -h for help.\n" 
 else ();
 
 if member opts "--interface" &&
-  all ((~=) (opts!"--interface")) ["extern","c","ffi"] then
+  all ((~=) (opts!"--interface")) ["extern","c","ffi","c-ffi"] then
 fprintf stderr "Error: invalid interface type (-f) '%s'\nType 'pure-gen -h for help.\n" (opts!"--interface") $$ exit 1
 else ();
 
@@ -188,8 +185,10 @@ let out_name = if member opts "--output" then opts!"--output"
 let c_name = if member opts "--c-name" then opts!"--c-name"
              else base + ".c";
 let c_base = strip_ext $ basename c_name;
-let libnames = if ~null libnames0 then libnames0
-               else if opts!"--interface" == "c" then [c_base] else [];
+let libnames =
+  if ~null libnames0 then libnames0
+  else if any ((==) (opts!"--interface")) ["c","c-ffi"] then [c_base]
+  else [];
 let glob_pat, regex_pat = case split "::" $ opts!"--select" of
                             [] = "", "";
                             [x] = "", x;
@@ -818,24 +817,6 @@ const_decl pfx nmspace (constant name val _) =
 is_struct (struct_or_union _) = true;
 is_struct _ = false;
 
-//output a function declaration for the ffi interface
-ffi_extern_decl pfx::string nmspace::string (name, func_type ret args, _)
-= warning 0 $ sprintf "%s: unknown argument type" name $$ ()
-    if args~==[void_t] && any ((===) void_t) args;
-= warning 0 $
-  sprintf "%s: struct argument or return type, try -fc" name $$ ()
-    if any is_struct (ret:args);
-= "let "+nmspacepfx nmspace+strip_prefix pfx name+" = fcall \""+
-   name+"\" FFI_DEFAULT_ABI "+str (ffi_type ret)+" ("+arg_str args+");"
-with
-  arg_str [void_t] = "";
-  arg_str args = join ", " $ map (str.ffi_type) args;
-  ffi_type (ptr_type schar_t) = string_t;
-  ffi_type (ptr_type uchar_t) = string_t;
-  ffi_type (ptr_type _) = pointer_t;
-  ffi_type t = t otherwise;
-end;
-
 //output a function declaration for the native pure extern interface
 pure_extern_decl pfx::string nmspace::string (name, func_type ret args, _)
 = warning 0 $ sprintf "%s: unknown argument type" name $$ ()
@@ -865,7 +846,40 @@ with
   arg_str args = join ", " $ map pure_type args;
 end;
 
+ffi_type (ptr_type schar_t) = string_t;
+ffi_type (ptr_type uchar_t) = string_t;
+ffi_type (ptr_type _) = pointer_t;
+// struct values get mapped to pointers in the C wrapper
+ffi_type t@(struct_or_union n) = pointer_t;
+ffi_type t = t otherwise;
 
+//output a function declaration for the ffi interface
+ffi_extern_decl pfx::string nmspace::string (name, func_type ret args, _)
+= warning 0 $ sprintf "%s: unknown argument type" name $$ ()
+    if args~==[void_t] && any ((===) void_t) args;
+= warning 0 $
+  sprintf "%s: struct argument or return type, try -fc" name $$ ()
+    if any is_struct (ret:args);
+= "let "+nmspacepfx nmspace+strip_prefix pfx name+" = fcall \""+
+  name+"\" FFI_DEFAULT_ABI "+str (ffi_type ret)+" ("+arg_str args+");"
+with
+  arg_str [void_t] = "";
+  arg_str args = join ", " $ map (str.ffi_type) args;
+end;
+
+//output a function declaration for the ffi interface,
+//prepending the prefix "Pure_" (or the prefix specified with -P) to the
+//function name
+Pure_ffi_extern_decl pfx::string nmspace::string (name, func_type ret args, _)
+= warning 0 $ sprintf "%s: unknown argument type" name $$ ()
+    if args~==[void_t] && any ((===) void_t) args;
+= "let "+nmspacepfx nmspace+strip_prefix pfx name+" = fcall \""+
+  wrap_prefix+name+"\" FFI_DEFAULT_ABI "+str (ffi_type ret)+
+  " ("+arg_str args+");"
+with
+  arg_str [void_t] = "";
+  arg_str args = join ", " $ map (str.ffi_type) args;
+end;
 
 
 //output the C portion of a function
@@ -975,7 +989,7 @@ let lines = fgetlines $ popen (sprintf "%s %s %s" (cpp,cpp_opts,in_name)) "r";
 echo 1 "Loading AST";
 let ast = fgetlines $ popen (sprintf "%s %s %s" (dumper,cpp_opts,in_name)) "r";
 
-echo 1 "Parsing";
+echo 1 "Parsing AST";
 let declarations = filter ((~=) ()) $ map eval ast;
 
 // This has to be done before processing the other declarations.
@@ -1011,8 +1025,10 @@ let w = if dry_run then __none__ else if noclobber then "a" else "w";
 let out_pure   = fopen out_name w;
 
 let extern_decl = case iface_opt of
+  "extern" = pure_extern_decl;
   "ffi" = fputs "using ffi;\n" out_pure $$ ffi_extern_decl;
-  "c" = Pure_extern_decl
+  _ = if iface_opt=="c" then Pure_extern_decl
+      else fputs "using ffi;\n" out_pure $$ Pure_ffi_extern_decl
   when
     //Output the C part
     out_c = fopen c_name w;
@@ -1023,7 +1039,6 @@ let extern_decl = case iface_opt of
     do (flip fputs out_c) $
       map c_impl $ filter (matches fnpat funpat) func_protos;
   end;
-  _ = pure_extern_decl;
 end;
 if dry_run then () else echo 1 $ sprintf "Writing %s" out_name;
 if ~null libnames then fprintf out_pure "using %s;\n" (join ", " [sprintf "\"lib:%s\"" ln | ln = libnames]) else ();
