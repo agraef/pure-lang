@@ -62,10 +62,10 @@ let opts = [("--help", "-h", NOARG),
             ("--wrap", "-P", REQARG),
             ("--template", "-t", REQARG),
             ("--alt-template", "-T", REQARG),
-            ("--dry-run", "-n", OPTARG),
+            ("--dry-run", "-n", NOARG),
             ("--warnings", "-w", OPTARG),
-            ("--verbose", "-v", OPTARG),
-            ("--echo", "-e", OPTARG)];
+            ("--verbose", "-v", NOARG),
+            ("--echo", "-e", NOARG)];
 
 let dfls = ["--interface" => "extern",
             "--namespace" => "",
@@ -174,7 +174,9 @@ else ();
 // Get options, provide reasonable defaults.
 
 extern int atoi(char*);
-defnum x opt::string = atoi opt if ~null opt;
+checknum name opt = x if str x==opt when x = atoi opt end;
+		  = fprintf stderr "Error: bad %s option value '%s'\nType 'pure-gen -h for help.\n" (name,opt) $$ exit 1;
+defnum x name::string = checknum name opt if ~null opt when opt = opts!name end;
 defnum x _ = x otherwise;
 
 let iface_opt = opts!"--interface";
@@ -201,12 +203,12 @@ let cstpfx = opts!"--prefix";
 let cstpat = regex_pat;
 let fnpat = split "," glob_pat;
 let wrap_prefix = opts!"--wrap";
-let all_opt = defnum 1 $ opts!"--all";
-let noclobber = defnum 1 $ opts!"--noclobber";
-let dry_run = defnum 1 $ opts!"--dry-run";
-let warn = defnum 1 $ opts!"--warnings";
-let verbose = defnum 1 $ opts!"--verbose";
-let echo_cpp = defnum 1 $ opts!"--echo";
+let all_opt = defnum 1 "--all";
+let noclobber = defnum 1 "--noclobber";
+let dry_run = defnum 1 "--dry-run";
+let warn = defnum 1 "--warnings";
+let verbose = defnum 1 "--verbose";
+let echo_cpp = defnum 1 "--echo";
 
 let frontmatter, template = split_template template
 when
