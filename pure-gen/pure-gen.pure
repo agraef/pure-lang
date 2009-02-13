@@ -981,6 +981,12 @@ nub xs = reverse $ go [] emptydict xs
 
 /******************************************************************/
 
+// first check that the source file exists
+if pointerp (fopen in_name "r") then ()
+else
+  fprintf stderr "Error: source file '%s' not found (%s)\n"
+  (in_name,strerror errno) $$ exit 1;
+
 // read the source and its includes, this is needed to grab the #defines
 let lines = fgetlines $ popen (sprintf "%s %s %s" (cpp,cpp_opts,in_name)) "r";
 
@@ -1024,6 +1030,9 @@ let func_protos =
 let w = if dry_run then __none__ else if noclobber then "a" else "w";
 let out_pure   = fopen out_name w;
 
+let all_defines = filter (matches fnpat cstpat) defines;
+let all_protos = filter (matches fnpat funpat) func_protos;
+
 let extern_decl = case iface_opt of
   "extern" = pure_extern_decl;
   "ffi" = fputs "using ffi;\n" out_pure $$ ffi_extern_decl;
@@ -1036,17 +1045,22 @@ let extern_decl = case iface_opt of
 
     fprintf out_c "#include \"%s\"\n%s\n" (in_name,frontmatter);
     if ~null alt_frontmatter then fprintf out_c "%s\n" alt_frontmatter else ();
-    do (flip fputs out_c) $
-      map c_impl $ filter (matches fnpat funpat) func_protos;
+    do (flip fputs out_c) $ map c_impl all_protos;
   end;
 end;
 if dry_run then () else echo 1 $ sprintf "Writing %s" out_name;
 if ~null libnames then fprintf out_pure "using %s;\n" (join ", " [sprintf "\"lib:%s\"" ln | ln = libnames]) else ();
 if ~null nmspace then fprintf out_pure "\nnamespace %s;\n" nmspace else ();
 
-do (flip fputs out_pure . const_decl cstpfx nmspace) $
-  filter (matches fnpat cstpat) defines;
+do (flip fputs out_pure . const_decl cstpfx nmspace) all_defines;
 
 do (flip fputs out_pure) $
-  map (\x -> extern_decl funpfx nmspace x + "\n") $
-  filter (matches fnpat funpat) func_protos;
+  map (\x -> extern_decl funpfx nmspace x + "\n") all_protos;
+
+let n_const = #all_defines;
+let n_func = #all_protos;
+echo 1 $ sprintf "%d constants, %d externs" (n_const,n_func);
+
+if n_const+n_func == 0 then
+  warning 1 "empty output, check your filter (-s)"
+else ();
