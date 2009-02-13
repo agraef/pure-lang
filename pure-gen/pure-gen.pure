@@ -53,7 +53,7 @@ let opts = [("--help", "-h", NOARG),
             ("--undefine", "-U", REQARG),
             ("--interface", "-f", REQARG),
             ("--output", "-o", REQARG),
-            ("--c-name", "-c", REQARG),
+            ("--c-output", "-c", REQARG),
             ("--lib-name", "-l", REQARG),
             ("--noclobber", "-N", NOARG),
             ("--namespace", "-m", REQARG),
@@ -104,7 +104,7 @@ let opts, args = catch invalid_option $ getopt opts args;
 
 // Filter out -l and the cpp options, these must be treated separately
 
-let libnames0 = [x | opt@(k=>x) = opts; k=="--lib-name"];
+let libnames = [x | opt@(k=>x) = opts; k=="--lib-name"];
 
 is_cpp_opt ("--include"=>x) = true;
 is_cpp_opt ("--define"=>x) = true;
@@ -155,7 +155,7 @@ puts $ "Usage: pure-gen [options] <input-file>.h\n" +
 "-n, --dry-run      Only parse without generating any output.\n" +
 "-N, --noclobber    Append output to existing files.\n" +
 "-o, --output       Pure output (.pure) filename.\n" +
-"-c, --c-name       C wrapper (.c) filename (-fc).\n" +
+"-c, --c-output     C wrapper (.c) filename (-fc).\n" +
 "Defaults:\n" +
 "-f extern, -P Pure_, -o <input-file>.pure, -c <input-file>.c.\n" +
 "-l <c-file> (without extension) for -fc, otherwise empty." $$
@@ -182,11 +182,11 @@ let in_name = head args;
 let base = strip_ext $ basename in_name;
 let out_name = if member opts "--output" then opts!"--output"
                else base + ".pure";
-let c_name = if member opts "--c-name" then opts!"--c-name"
+let c_name = if member opts "--c-output" then opts!"--c-output"
              else base + ".c";
 let c_base = strip_ext $ basename c_name;
 let libnames =
-  if ~null libnames0 then libnames0
+  if ~null libnames then libnames
   else if any ((==) (opts!"--interface")) ["c","c-ffi"] then [c_base]
   else [];
 let glob_pat, regex_pat = case split "::" $ opts!"--select" of
