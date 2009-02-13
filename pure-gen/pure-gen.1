@@ -15,53 +15,67 @@ Print a brief help message and exit.
 Print version number and exit.
 .TP
 \fB-e\fP, \fB--echo\fP
-Echo preprocessor lines.
+Echo preprocessor lines. Prints all processed \fB#define\fPs, useful for
+debugging purposes.
 .TP
 \fB-v\fP, \fB--verbose\fP
-Show parameters and progress information.
+Show parameters and progress information. Gives useful information about the
+conversion process.
 .TP
-\fB-w\fP, \fB--warnings\fP
-Display warnings, \fIlevel\fP = 0, 1 (default) or 2.
+\fB-w\fP[\fIlevel\fP], \fB--warnings\fP[=\fIlevel\fP]
+Display warnings, \fIlevel\fP = 0 (disable most warnings), 1 (default, shows
+important warnings only) or 2 (lots of additional warnings useful for
+debugging purposes).
 .SS Preprocessor Options
 .TP
-\fB-I\fP, \fB--include\fP
-Add include path.
+\fB-I\fP\fIpath\fP, \fB--include\fP \fIpath\fP
+Add include path. Passed to the C preprocessor.
 .TP
-\fB-D\fP, \fB--define\fP
-Define symbol.
+\fB-D\fP\fIname\fP=\fIvalue\fP, \fB--define\fP \fIname\fP=\fIvalue\fP
+Define symbol. Passed to the C preprocessor.
 .TP
-\fB-U\fP, \fB--undefine\fP
-Undefine symbol.
+\fB-U\fP\fIname\fP, \fB--undefine\fP \fIname\fP
+Undefine symbol. Passed to the C preprocessor.
 .SS Generator Options
 .TP
-\fB-f\fP, \fB--interface\fP
+\fB-f\fP\fIiface\fP, \fB--interface\fP \fIiface\fP
 Interface type (`extern', `c', `ffi' or `c-ffi'). Default is `extern'.
 .TP
-\fB-l\fP, \fB--lib-name\fP
-Add library module to be imported. Default is \fB-l\fP \fIc-file\fP (the
-filename specified with \fB-c\fP, see below, without filename extension) for
-\fB-fc\fP, otherwise empty.
+\fB-l\fP\fIlib\fP, \fB--lib-name\fP \fIlib\fP
+Add dynamic library module to be imported in the Pure output file. Default is
+\fB-l\fP \fIc-file\fP (the filename specified with \fB-c\fP, see below,
+without filename extension) for \fB-fc\fP, otherwise empty.
 .TP
-\fB-m\fP, \fB--namespace\fP
+\fB-m\fP\fIname\fP, \fB--namespace\fP \fIname\fP
 Module namespace in which symbols should be declared.
 .TP
-\fB-p\fP, \fB--prefix\fP
+\fB-p\fP\fIprefix\fP, \fB--prefix\fP \fIprefix\fP
 Module name prefix to be removed from C symbols.
 .TP
-\fB-P\fP, \fB--wrap\fP
-Prefix to be prepended to C wrapper symbols. Default is `Pure_'.
+\fB-P\fP\fIprefix\fP, \fB--wrap\fP \fIprefix\fP
+Prefix to be prepended to C wrapper symbols (\fB-fc\fP,
+\fB-fc-ffi\fP). Default is `Pure_'.
 .TP
 \fB-a\fP, \fB--all\fP
-Include ``hidden'' symbols.
+Include ``hidden'' symbols in the output. Built-in preprocessor symbols and
+symbols starting with an underscore are excluded unless this option is
+specified.
 .TP
-\fB-s\fP, \fB--select\fP
-Filter of valid C symbols.
+\fB-s\fP\fIpattern\fP, \fB--select\fP \fIpattern\fP
+Filter of C symbols to be included in the output. \fIpattern\fP takes the form
+[\fIglob-patterns\fP::][\fIregex-pattern\fP], designating a comma separated
+list of glob patterns matching the source filenames, and an extended regular
+expression matching the symbols to be processed. See \fBglob\fP(7) and
+\fBregex\fP(7). The default \fIpattern\fP is empty which matches all symbols
+in all source modules.
 .TP
-\fB-t\fP, \fB--template\fP
-Specify C template file.
+\fB-t\fP\fIfile\fP, \fB--template\fP \fIfile\fP
+Specify a C template file to be used with C wrapper generation (\fB-fc\fP,
+\fB-fc-ffi\fP). See \fIGENERATING C CODE\fP for details.
 .TP
-\fB-T\fP, \fB--alt-template\fP
-Specify alternate C template file.
+\fB-T\fP\fIfile\fP, \fB--alt-template\fP \fIfile\fP
+Specify an alternate C template file to be used with C wrapper generation
+(\fB-fc\fP, \fB-fc-ffi\fP). See \fIGENERATING C CODE\fP for details.
 .SS Output Options
 .TP
 \fB-n\fP, \fB--dry-run\fP
@@ -70,28 +84,30 @@ Only parse without generating any output.
 \fB-N\fP, \fB--noclobber\fP
 Append output to existing files.
 .TP
-\fB-o\fP, \fB--output\fP
-Pure output (.pure) filename. Default is \fIinput-file\fP with new extension .pure.
+\fB-o\fP\fIfile\fP, \fB--output\fP \fIfile\fP
+Pure output (.pure) filename. Default is \fIinput-file\fP with new
+extension .pure.
 .TP
-\fB-c\fP, \fB--c-name\fP
-C wrapper (.c) filename (-fc). Default is \fIinput-file\fP with new extension .c.
+\fB-c\fP\fIfile\fP, \fB--c-output\fP \fIfile\fP
+C wrapper (.c) filename (\fB-fc\fP, \fB-fc-ffi\fP). Default is
+\fIinput-file\fP with new extension .c.
 .SH DESCRIPTION
 .B pure-gen
-generates Pure bindings for C functions from a C header file. Basically,
+generates Pure bindings for C functions from a C header file. The command
 .sp
 .nf
 pure-gen foo.h
 .fi
 .sp
-generates a Pure module foo.pure with
+creates a Pure module foo.pure with
 .B extern
-declarations for the constants (#defines and enums) and C routines declared in
-the given C header file and (recursively) its includes.
+declarations for the constants (\fB#define\fPs and enums) and C routines
+declared in the given C header file and (recursively) its includes.
 .PP
 .B pure-gen
 only accepts a single header file on the command line. If you need to parse
 more than one header in a single run, you can just create a dummy header with
-all the necessary #includes in it and pass that to
+all the necessary \fB#include\fPs in it and pass that to
 .B pure-gen
 instead.
 .PP
@@ -100,7 +116,9 @@ When invoked with the
 option,
 .B pure-gen
 performs a dry run in which it only parses the input without actually
-generating any output files.
+generating any output files. This is useful for checking the input (possibly
+using the \fB-v\fP, \fB-w\fP and/or \fB-e\fP options) before generating
+output.
 .PP
 The \fB-I\fP, \fB-D\fP and \fB-U\fP options are passed to the C
 preprocessor. This is handy if you need to define additional preprocessor
@@ -118,13 +136,13 @@ be loaded. Any number of \fB-l\fP options can be specified.
 Note that
 .B pure-gen
 always parses the given header file as well as \fIall\fP its includes. If the
-header file #includes system headers, by default you will get those
+header file includes system headers, by default you will get those
 declarations as well. This is often undesirable. As a remedy,
 .B pure-gen
-normally excludes built-in #defines of the C compiler, as well as identifiers
-with a leading underscore (which are often found in system headers) from
-processing. You can use the \fB-a\fP option to disable this, so that all these
-symbols are included as well.
+normally excludes built-in \fB#define\fPs of the C compiler, as well as
+identifiers with a leading underscore (which are often found in system
+headers) from processing. You can use the \fB-a\fP option to disable this, so
+that all these symbols are included as well.
 .PP
 In addition, the \fB-s\fP option enables you to filter C symbols using the
 source filename and the symbol as search criteria. For instance, to just
@@ -137,19 +155,19 @@ pure-gen -s foo.h:: foo.h
 .sp
 In general, the \fB-s\fP option takes an argument of the form
 \fIglob-patterns\fP::\fIregex-pattern\fP denoting a comma-separated list of
-glob patterns to be matched against the source filename, and an extended regex
-to be matched against the symbol itself. The \fIglob-patterns\fP:: part can
-also be omitted in which case it defaults to `::' which matches any source
-file. The regex can also be empty, in which case it matches any symbol. The
-generated output will contain only the constant and function symbols matching
-the given regex, from source files matching any of the the glob
-patterns. Thus, for instance, the option `-s foo.h,bar.h::^(foo|bar)_' pulls
-all symbols prefixed with either `foo_' or `bar_' from the files foo.h and
-bar.h in the current directory. Note that in order to match include files in
-the system directories you also have to specify the path in the glob patterns,
-just as with shell glob patterns. Thus, e.g., if the foo.h file actually lives
-in /usr/include, it can be matched with a glob pattern like `/*/*/foo.h', but
-not with just `foo.h' or `*/foo.h'.
+glob patterns to be matched against the source filename in which the symbol
+resides, and an extended regex to be matched against the symbol itself. The
+\fIglob-patterns\fP:: part can also be omitted in which case it defaults to
+`::' which matches any source file. The regex can also be empty, in which case
+it matches any symbol. The generated output will contain only the constant and
+function symbols matching the given regex, from source files matching any of
+the the glob patterns. Thus, for instance, the option `-s
+foo.h,bar.h::^(foo|bar)_' pulls all symbols prefixed with either `foo_' or
+`bar_' from the files foo.h and bar.h in the current directory. Note that in
+order to match include files in the system directories you also have to
+specify the path in the glob patterns, just as with shell glob patterns. Thus,
+e.g., if the foo.h file actually lives in /usr/include, it can be matched with
+a glob pattern like `/*/*/foo.h', but not with just `foo.h' or `*/foo.h'.
 .PP
 The \fB-s\fP option is often used in conjuction with the \fB-p\fP option,
 which lets you specify a ``module name prefix'' which should be stripped off
@@ -249,8 +267,8 @@ void bar()
 .sp
 Note that the code up to the symbol `%%' on a line by itself denotes
 ``frontmatter'' which gets inserted at the beginning of the C file, right
-after the #include of the parsed header file. (The frontmatter section can
-also be empty or missing altogether if you don't need it.)
+after the \fB#include\fP of the parsed header file. (The frontmatter section
+can also be empty or missing altogether if you don't need it.)
 .PP
 The rest of the template is the code for each wrapper function. Substitutions
 of various syntactical fragments of the function definition is performed using
