@@ -10,13 +10,15 @@ ifeq ($(strip $(prefix)),)
 prefix = /usr/local
 endif
 
-# Installation goes into $(prefix)/bin and $(prefix)/lib/pure-gen-$(version),
-# you can also set this directly instead of $(prefix). In addition, packagers
-# may want to set the DESTDIR variable for a staged install.
+# Installation goes into the folloiwing directories. You can also set these
+# directly instead of $(prefix). In addition, packagers may want to set the
+# DESTDIR variable for a staged install.
 bindir = $(prefix)/bin
 pkgdatadir = $(prefix)/lib/pure-gen-$(version)
+mandir = ${prefix}/share/man
+man1dir = $(mandir)/man1
 
-DISTFILES = COPYING Makefile README dump-ast.hs pure-gen.pure examples/*.templ
+DISTFILES = COPYING Makefile README dump-ast.hs pure-gen.pure pure-gen.1 examples/*.templ
 
 all: dump-ast
 
@@ -27,8 +29,30 @@ all: dump-ast
 dump-ast: dump-ast.hs
 	ghc --make $< -o $@
 
+# Documentation in various formats (this requires additional tools).
+
+html: pure-gen.html
+dvi: pure-gen.dvi
+ps: pure-gen.ps
+pdf: pure-gen.pdf
+
+%.html: %.1
+	rman -f HTML $< | sed -e 's/dq/\"/g' -e '/^<br>$$/d' > $@
+
+#%.html: %.1
+#	groff -man -Thtml $< > $@
+
+%.dvi: %.1
+	groff -man -Tdvi $< > $@
+
+%.ps: %.1
+	groff -man -Tps $< > $@
+
+%.pdf: %.1
+	groff -man -Tps $< | ps2pdf - $@
+
 clean:
-	rm -f dump-ast *~ *.hi *.o
+	rm -f dump-ast *~ *.hi *.o *.dvi *.pdf *.ps *.html
 
 install:
 	test -d "$(DESTDIR)$(bindir)" || mkdir -p "$(DESTDIR)$(bindir)"
@@ -37,9 +61,10 @@ install:
 	sed -e 's?/usr/local/bin/pure?$(bindir)/pure?' -e 's?@version@?$(version)?' -e 's?./dump-ast?$(pkgdatadir)/dump-ast?' < pure-gen.pure > "$(DESTDIR)$(pkgdatadir)/pure-gen.pure"
 	chmod a+x "$(DESTDIR)$(pkgdatadir)/dump-ast" "$(DESTDIR)$(pkgdatadir)/pure-gen.pure"
 	ln -sf "$(pkgdatadir)/pure-gen.pure" "$(DESTDIR)$(bindir)/pure-gen"
+	cp pure-gen.1 "$(DESTDIR)$(man1dir)"
 
 uninstall:
-	rm -rf "$(DESTDIR)$(bindir)/pure-gen" "$(DESTDIR)$(pkgdatadir)"
+	rm -rf "$(DESTDIR)$(bindir)/pure-gen" "$(DESTDIR)$(pkgdatadir)" "$(DESTDIR)$(man1dir)/pure-gen.1"
 
 dist:
 	rm -rf $(dist)
