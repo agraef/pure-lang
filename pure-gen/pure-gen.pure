@@ -106,8 +106,8 @@ scan_enums defs =
   /* We need to take care of the case of an unresolved enum symbol here.
      Assume that it's a #defined symbol which will hopefully be resolved in
      resolve_indirects. */
-  [(if stringp v then indirect else constant) n v |
-   n=>v = list $ calc_enum_values enumdefs () defs];
+  [(if stringp v then indirect else constant) n v when v = enumdefs!n end |
+   n,_ = defs; member enumdefs n /* == true, but who knows */];
 
 enum_vals (basic_type t) = enum_vals t;
 enum_vals (enum_type _ v fname) = [x fname | x = v];
