@@ -152,8 +152,7 @@ Pure's ffi module. Moreover, \fB-l\ libfoo\fP generates a \(aq\fBusing\fP
 require a shared library to be loaded. Any number of \fB-l\fP options can be
 specified.
 .PP
-These and other options for advanced uses are explained in further detail
-below.
+Other options for more advanced uses are explained in the following sections.
 .SH FILTERING
 Note that
 .B pure-gen
@@ -220,34 +219,6 @@ functions are to be declared. So, for instance, \(aq-s\ "^(foo|FOO)" -p\ foo
 -m\ foo\(aq will select all symbols starting with the \(aqfoo\(aq or
 \(aqFOO\(aq prefix, stripping the prefix from the selected symbols and finally
 adding a \(aqfoo::\(aq namespace qualifier to them instead.
-.PP
-This usually works pretty well. Nevertheless, some headers defy fully
-automatic wrapper generation and may thus require manual editing of the
-generated output to get a nice wrapper module.
-.SH COLLECTING OUTPUT
-In some cases it may be necessary to assemble the output of several runs of
-.B pure-gen
-for different combinations of header files, symbol selections and/or
-namespace/prefix settings. In such a case it is usually possible to just
-concatenate the various output files produced by
-.B pure-gen
-to consolidate them into a single wrapper module. To make this easier,
-.B pure-gen
-provides the \fB-N\fP a.k.a. \fB--noclobber\fP option which appends the output
-to existing files instead of overwriting them. For instance, here is how you
-can process all headers of the GNU Scientific library in one go and output
-them as a single Pure module mygsl.pure:
-.sp
-.nf
-rm -f mygsl.pure
-for x in /usr/include/gsl/gsl_*.h; do
-  pure-gen -N -s "$x::" $x -o mygsl.pure
-done
-.fi
-.sp
-(This will generate quite a few warnings about struct parameters and return
-values in some operations; in order to deal with these you'll have to generate
-a C wrapper, as described in section \fIDEALING WITH C STRUCTS\fP.)
 .SH GENERATING C CODE
 As already mentioned, pure-gen can be invoked with the \fB-fc\fP or
 \fB-fc-ffi\fP option to create a C wrapper module along with the Pure module
@@ -501,13 +472,71 @@ can only generate C bindings at this time. Other languages may have their own
 calling conventions which make it hard or even impossible to call them
 directly through Pure's extern interface. However, if your C compiler knows
 how to call the other language, then it may be possible to interface to
-modules written in that language by writing a fake C header for the module and
+modules written in that language by faking a C header for the module and
 generating a C wrapper with a custom code template, as described in
-\fIGENERATING C CODE\fP. This approach won't work very well with behemoths
-like C++, though. In such cases it will be necessary to first obtain a C
-wrapper of the module (possibly through the use of third-party tools such as
-SWIG) or write one yourself.
+\fIGENERATING C CODE\fP. In principle, this approach should even work with
+behemoths like C++, although it might be easier to use third-party tools like
+SWIG for that purpose.
+.PP
+On the positive side,
+.B pure-gen
+doesn't require you to write any special ``interface files'', is controlled
+entirely by command line options, and the amount of marshalling overhead in C
+wrappers is negligible. This is possible since it targets only the Pure-C
+interface and Pure has good support for interfacing to C built into the
+language already.
+.PP
+.B pure-gen
+usually works pretty well if the processed header files are written in a
+fairly clean fashion. Nevertheless, some libraries defy fully automatic
+wrapper generation and may thus require staged headers and/or manual editing
+of the generated output to get a nice wrapper module.
+.PP
+In complex cases it may also be necessary to assemble the output of several
+runs of
+.B pure-gen
+for different combinations of header files, symbol selections and/or
+namespace/prefix settings. In such a situation it is usually possible to just
+concatenate the various output files produced by
+.B pure-gen
+to consolidate them into a single wrapper module. To make this easier,
+.B pure-gen
+provides the \fB-N\fP a.k.a. \fB--noclobber\fP option which appends the output
+to existing files instead of overwriting them. See the example below.
+.SH EXAMPLE
+For the sake of a substantial, real-world example, here is how you can wrap
+the entire GNU Scientific Library in a single Pure module mygsl.pure, with the
+accompanying C module in mygsl.c:
+.sp
+.nf
+rm -f mygsl.pure mygsl.c
+DEFS=-DGSL_DISABLE_DEPRECATED
+for x in /usr/include/gsl/gsl_*.h; do
+  pure-gen $DEFS -N -fc -s "$x::" $x -o mygsl.pure -c mygsl.c
+done
+.fi
+.sp
+The C module can then be compiled with:
+.sp
+.nf
+gcc -w $DEFS -shared -o mygsl.so mygsl.c
+.fi
+.sp
+Note that the GSL_DISABLE_DEPRECATED symbol must be defined here to avoid some
+botches with constants being defined in incompatible ways in different GSL
+headers. Also, some GSL versions have broken headers lacking some system
+includes which causes hiccups in
+.BR pure-gen 's
+C parser. Fixing those errors or working around them through some appropriate
+cpp options should be a piece of cake, though. ;-)
+.SH LICENSE
+BSD-like. See the accompanying COPYING file for details.
 .SH AUTHORS
-Scott E. Dillard and Albert Graef.
+Scott E. Dillard (University of California at Davis), Albert Graef (Johannes
+Gutenberg University at Mainz, Germany).
 .SH SEE ALSO
+.TP
 .BR pure (1)
+.TP
+.B SWIG
+The Simplified Wrapper and Interface Generator, \fIhttp://www.swig.org\fP.
