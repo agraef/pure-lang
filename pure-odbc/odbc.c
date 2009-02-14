@@ -106,12 +106,13 @@ static void free_args(ODBCHandle *db)
 
 static int set_arg(ODBCHandle *db, int i, pure_expr *x)
 {
-  int32_t iv, numelem;
+  int32_t iv;
   double fv;
   char *s;
   mpz_t z;
   size_t size;
   pure_expr **elems;
+  size_t numelem;
   unsigned char *buf;
   int64_t buflen;
   if (pure_is_int(x, &iv)) {
