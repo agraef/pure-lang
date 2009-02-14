@@ -39,7 +39,8 @@ Undefine symbol. Passed to the C preprocessor.
 .SS Generator Options
 .TP
 \fB-f\fP\fIiface\fP, \fB--interface\fP \fIiface\fP
-Interface type (`extern', `c', `ffi' or `c-ffi'). Default is `extern'.
+Interface type (\(aqextern\(aq, \(aqc\(aq, \(aqffi\(aq or
+\(aqc-ffi\(aq). Default is \(aqextern\(aq.
 .TP
 \fB-l\fP\fIlib\fP, \fB--lib-name\fP \fIlib\fP
 Add dynamic library module to be imported in the Pure output file. Default is
@@ -54,7 +55,7 @@ Module name prefix to be removed from C symbols.
 .TP
 \fB-P\fP\fIprefix\fP, \fB--wrap\fP \fIprefix\fP
 Prefix to be prepended to C wrapper symbols (\fB-fc\fP,
-\fB-fc-ffi\fP). Default is `Pure_'.
+\fB-fc-ffi\fP). Default is \(aqPure_\(aq.
 .TP
 \fB-a\fP, \fB--all\fP
 Include ``hidden'' symbols in the output. Built-in preprocessor symbols and
@@ -117,8 +118,16 @@ option,
 .B pure-gen
 performs a dry run in which it only parses the input without actually
 generating any output files. This is useful for checking the input (possibly
-using the \fB-v\fP, \fB-w\fP and/or \fB-e\fP options) before generating
-output.
+in combination with the \fB-e\fP, \fB-v\fP and/or \fB-w\fP options) before
+generating output. A particularly useful example is
+.sp
+.nf
+pure-gen -ne foo.h | grep "# "
+.fi
+.sp
+which prints on standard output all headers which are included in the source,
+indicating which include filename patterns you might use as a filter with the
+\fB-s\fP option (see below).
 .PP
 The \fB-I\fP, \fB-D\fP and \fB-U\fP options are passed to the C
 preprocessor. This is handy if you need to define additional preprocessor
@@ -129,9 +138,10 @@ for details.
 There are some other options which affect the generated output. In particular,
 \fB-f c\fP generates a C wrapper module along with the Pure module (see
 \fIGENERATING C CODE\fP below), and \fB-f ffi\fP generates a wrapper using
-Pure's ffi module. Moreover, \fB-l libfoo\fP generates a `using "lib:libfoo"'
-declaration in the Pure source, for modules which require a shared library to
-be loaded. Any number of \fB-l\fP options can be specified.
+Pure's ffi module. Moreover, \fB-l libfoo\fP generates a \(aq\fBusing\fP
+\(dqlib:libfoo\(dq\(aq declaration in the Pure source, for modules which
+require a shared library to be loaded. Any number of \fB-l\fP options can be
+specified.
 .PP
 Note that
 .B pure-gen
@@ -139,7 +149,7 @@ always parses the given header file as well as \fIall\fP its includes. If the
 header file includes system headers, by default you will get those
 declarations as well. This is often undesirable. As a remedy,
 .B pure-gen
-normally excludes built-in \fB#define\fPs of the C compiler, as well as
+normally excludes built-in \fB#define\fPs of the C preprocessor, as well as
 identifiers with a leading underscore (which are often found in system
 headers) from processing. You can use the \fB-a\fP option to disable this, so
 that all these symbols are included as well.
@@ -153,32 +163,46 @@ in foo.h, you can invoke pure-gen as follows:
 pure-gen -s foo.h:: foo.h
 .fi
 .sp
+Note that even in this case all included headers will be parsed so that
+\fB#define\fPd constants and enum values can be resolved, but the generated
+output will only contain definitions and declarations from the given header
+file.
+.PP
 In general, the \fB-s\fP option takes an argument of the form
 \fIglob-patterns\fP::\fIregex-pattern\fP denoting a comma-separated list of
 glob patterns to be matched against the source filename in which the symbol
 resides, and an extended regex to be matched against the symbol itself. The
 \fIglob-patterns\fP:: part can also be omitted in which case it defaults to
-`::' which matches any source file. The regex can also be empty, in which case
-it matches any symbol. The generated output will contain only the constant and
-function symbols matching the given regex, from source files matching any of
-the the glob patterns. Thus, for instance, the option `-s
-foo.h,bar.h::^(foo|bar)_' pulls all symbols prefixed with either `foo_' or
-`bar_' from the files foo.h and bar.h in the current directory. Note that in
-order to match include files in the system directories you also have to
-specify the path in the glob patterns, just as with shell glob patterns. Thus,
-e.g., if the foo.h file actually lives in /usr/include, it can be matched with
-a glob pattern like `/*/*/foo.h', but not with just `foo.h' or `*/foo.h'.
+\(aq::\(aq which matches any source file. The regex can also be empty, in
+which case it matches any symbol. The generated output will contain only the
+constant and function symbols matching the given regex, from source files
+matching any of the the glob patterns. Thus, for instance, the option \(aq-s
+foo.h,bar.h::^(foo|bar)_\(aq pulls all symbols prefixed with either
+\(aqfoo_\(aq or \(aqbar_\(aq from the files foo.h and bar.h in the current
+directory.
+.PP
+Processing of glob patterns is performed using the customary rules for
+filename matching, see \fBglob\fP(7) for details. Some include files may be
+specified using a full pathname. This is the case, in particular, for system
+includes such as \(aq#include <stdio.h>\(aq, which are resolved by the C
+preprocessor employing a search of the system include directories (as well as
+any directories named with the \fB-I\fP option). Note that since the \fB*\fP
+and \fB?\fP wildcards never match the pathname separator \(aq/\(aq, you have
+to specify the path in the glob patterns in such cases. Thus, e.g., if the
+foo.h file actually lives in either /usr/include or /usr/local/include, then
+it can be matched with a pattern like \(aq/*/*/foo.h,/*/*/*/foo.h::\(aq, but
+not with just \(aqfoo.h::\(aq or \(aq*/foo.h::\(aq.
 .PP
 The \fB-s\fP option is often used in conjuction with the \fB-p\fP option,
 which lets you specify a ``module name prefix'' which should be stripped off
 from C symbols. Case is insignificant and a trailing underscore will be
-removed as well, so `-p foo' turns `fooBar' into `Bar' and `FOO_BAR' into
-`BAR'. Moreover, the \fB-m\fP option allows you to specify the name of a Pure
-namespace in which the resulting constants and functions are to be
-declared. So, for instance, `-s "^(foo|FOO)" -p foo -m foo' will select all
-symbols starting with the `foo' or `FOO' prefix, stripping the prefix from the
-selected symbols and finally adding a `foo::' namespace qualifier to them
-instead.
+removed as well, so \(aq-p foo\(aq turns \(aqfooBar\(aq into \(aqBar\(aq and
+\(aqFOO_BAR\(aq into \(aqBAR\(aq. Moreover, the \fB-m\fP option allows you to
+specify the name of a Pure namespace in which the resulting constants and
+functions are to be declared. So, for instance, \(aq-s "^(foo|FOO)" -p foo -m
+foo\(aq will select all symbols starting with the \(aqfoo\(aq or \(aqFOO\(aq
+prefix, stripping the prefix from the selected symbols and finally adding a
+\(aqfoo::\(aq namespace qualifier to them instead.
 .PP
 This usually works pretty well. Nevertheless, some headers defy fully
 automatic wrapper generation and may thus require manual editing of the
@@ -192,14 +216,27 @@ concatenate the various output files produced by
 to consolidate them into a single wrapper module. To make this easier,
 .B pure-gen
 provides the \fB-N\fP a.k.a. \fB--noclobber\fP option which appends the output
-to existing files instead of overwriting them.
+to existing files instead of overwriting them. For instance, here is how you
+can process all headers of the GNU Scientific library in one go and output
+them as a single Pure module mygsl.pure (make sure to remove any existing
+mygsl.pure file first):
+.sp
+.nf
+for x in /usr/include/gsl/gsl_*.h; do
+  pure-gen -N -s "$x::" $x -o mygsl.pure
+done
+.fi
+.sp
+(This will generate quite a few warnings about struct parameters and return
+values in some operations; in order to deal with these you'll have to generate
+a C wrapper, as described in the following section.)
 .PP
 Also note that only C bindings can be generated at this time. Thus, in order
 to wrap C++ modules, you'll first have to obtain a corresponding C wrapper, or
 write one yourself. If your C compiler knows how to call other languages like
-Fortran or Ada, then modules written in these languages can also be dealt
-with, by writing a fake C header for the module and generating a C wrapper
-with a custom code template (see \fIGENERATING C CODE\fP below).
+Ada, Fortran or Pascal, then modules written in these languages can also be
+dealt with, by writing a fake C header for the module and generating a C
+wrapper with a custom code template (see \fIGENERATING C CODE\fP below).
 .SH GENERATING C CODE
 As already mentioned, pure-gen can be invoked with the \fB-fc\fP option to
 create a C wrapper module along with the Pure module it generates. There are
@@ -218,7 +255,7 @@ The C routines can't be called directly through Pure externs.
 .PP
 The latter case might arise, e.g., if the module uses non-C linkage or calling
 conventions, or if some of the operations to be wrapped are actually
-implemented as C macros. Another important case is if some of the C routines
+implemented as C macros. Another important case is that some of the C routines
 pass C structs by value or return them as results. This is discussed in more
 detail in the following section.
 .PP
@@ -243,29 +280,25 @@ gcc -shared -o foo.so foo.c -lfoo
 .fi
 .sp
 That's all. You should now be able to use the foo module by just putting the
-declaration `\fBusing\fP foo;' into your programs. The same approach also
-works with the ffi interface if you replace the \fB-fc\fP option with
+declaration \(aq\fBusing\fP foo;\(aq into your programs. The same approach
+also works with the ffi interface if you replace the \fB-fc\fP option with
 \fB-fc-ffi\fP.
 .PP
 You can also adjust the C wrapper code to some extent by providing your own
 template file, which has the following format:
 .sp
 .nf
-#include <stdio.h>
-
-void bar()
-{
-  printf("Hello, bar\en");
-}
+/* frontmatter here */
 %%
 
+/* wrapper here */
 %r %w(%p)
 {
   return %n(%a);
 }
 .fi
 .sp
-Note that the code up to the symbol `%%' on a line by itself denotes
+Note that the code up to the symbol \(aq%%\(aq on a line by itself denotes
 ``frontmatter'' which gets inserted at the beginning of the C file, right
 after the \fB#include\fP of the parsed header file. (The frontmatter section
 can also be empty or missing altogether if you don't need it.)
@@ -284,7 +317,7 @@ the name of the wrapper function
 declaration of the formal parameters of the wrapper function
 .TP
 %n
-the name of the real function (i.e., the target C function to be called)
+the real function name (i.e., the name of the target C function to be called)
 .TP
 %a
 the arguments of the function call (formal parameters with types stripped off)
@@ -293,7 +326,7 @@ the arguments of the function call (formal parameters with types stripped off)
 escapes a literal %
 .PP
 A default template is provided if you don't specify one (which looks pretty
-much like the template above, minus the frontmatter).
+much like the template above, minus the comments).
 .PP
 For instance, suppose that we place the sample template above into a file
 foo.templ and invoke
@@ -308,21 +341,23 @@ Then in foo.c you'd get C output code like the following:
 .sp
 .nf
 #include "foo.h"
-#include <stdio.h>
+/* frontmatter here */
 
-void bar()
-{
-  printf("Hello, bar\en");
-}
-
+/* wrapper here */
 void Pure_foo(int arg0, void* arg1)
 {
   return foo(arg0, arg1);
 }
+
+/* wrapper here */
+int Pure_bar(int arg0)
+{
+  return foo(arg0);
+}
 .fi
 .sp
-As indicated, the wrapper function names are usually stropped with the `Pure_'
-prefix. You can change this with the \fB-P\fP option.
+As indicated, the wrapper function names are usually stropped with the
+\(aqPure_\(aq prefix. You can change this with the \fB-P\fP option.
 .PP
 This also works great to create boilerplate code for new modules. For this
 purpose the following template will do the trick (you might wish to invoke
@@ -330,7 +365,7 @@ this with \fB-P\fP "" so that the wrapper function names are just the names
 declared in the header file):
 .sp
 .nf
-/* Add #include's etc. here. */
+/* Add #includes etc. here. */
 %%
 
 %r %w(%p)
@@ -421,9 +456,10 @@ In a Pure script you can now call foo and bar as:
 > foo (bar 0.0 1.0);
 .fi
 .sp
-Note, however, that the pointer returned by `bar' points to static storage
-which will be overwritten each time you invoke the `bar' function. Thus in the
-following example \fIboth\fP u and v will point to the same `point' struct:
+Note, however, that the pointer returned by \(aqbar\(aq points to static
+storage which will be overwritten each time you invoke the \(aqbar\(aq
+function. Thus in the following example \fIboth\fP u and v will point to the
+same \(aqpoint\(aq struct:
 .sp
 .nf
 > let u = bar 1.0 0.0; let v = bar 0.0 1.0;
