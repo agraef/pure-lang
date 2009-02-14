@@ -813,6 +813,7 @@ let opts = [("--help", "-h", NOARG),
             ("--include", "-I", REQARG),
             ("--define", "-D", REQARG),
             ("--undefine", "-U", REQARG),
+            ("--cpp", "-C", REQARG),
             ("--interface", "-f", REQARG),
             ("--output", "-o", REQARG),
             ("--c-output", "-c", REQARG),
@@ -863,6 +864,7 @@ let libnames = [x | opt@(k=>x) = opts; k=="--lib-name"];
 is_cpp_opt ("--include"=>x) = true;
 is_cpp_opt ("--define"=>x) = true;
 is_cpp_opt ("--undefine"=>x) = true;
+is_cpp_opt ("--cpp"=>x) = true;
 is_cpp_opt _ = false otherwise;
 
 let cpp_opts = join " " [format_cpp_opt opt | opt = opts; is_cpp_opt opt]
@@ -870,6 +872,7 @@ with
   format_cpp_opt ("--include"=>x) = sprintf "-I %s" (str x);
   format_cpp_opt ("--define"=>x) = sprintf "-D %s" (str x);
   format_cpp_opt ("--undefine"=>x) = sprintf "-U %s" (str x);
+  format_cpp_opt ("--cpp"=>x) = x;
 end;
 
 is_normal_opt ("--lib-name"=>x) = 0;
@@ -895,6 +898,7 @@ puts $ "Usage: pure-gen [options] <input-file>.h\n" +
 "-I, --include      Add include path.\n" +
 "-D, --define       Define symbol.\n" +
 "-U, --undefine     Undefine symbol.\n" +
+"-C, --cpp          Other cpp options passed through unchanged." +
 "Generator options:\n" +
 "-f, --interface    Interface type ('extern', 'c', 'ffi' or 'c-ffi').\n" +
 "-l, --lib-name     Add library module to be imported.\n" +
