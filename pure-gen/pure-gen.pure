@@ -664,12 +664,14 @@ get_enum dict d@(CDecl ( (CStorageSpec CTypedef ) :
                        init_declr_list) 
     =
   case enum of
-    CEnum _ (Just vals) _ = calc_enum_values dict () vals
+    CEnum _ (Just vals) _ = calc_enum_values dict () vals;
+    _ = dict; // nothing to see here, move along
   end ;
   
 get_enum dict d@(CDecl ( (CTypeSpec (CEnumType enum)) : _ ) []) =
   case enum of
-    CEnum _ (Just vals) _ = calc_enum_values dict () vals
+    CEnum _ (Just vals) _ = calc_enum_values dict () vals;
+    _ = dict; // nothing to see here, move along
   end;
 
 get_enum dict _ = dict;
