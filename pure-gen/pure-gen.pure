@@ -34,218 +34,10 @@ let default_template = "%r %w(%p)\n{\n  return %n(%a);\n}\n\n";
 
 let default_alt_template = "%r* %w(%p)\n{\n  static %r ret;\n  ret = %n(%a); return &ret;\n}\n\n";
 
-split_template template::string = frontmatter, template when
-  lines = split "\n" template;
-  lines1 = takewhile (\x->x~="%%") lines;
-  lines2 = dropwhile (\x->x~="%%") lines;
-  lines1,lines2 = if null lines2 then lines2,lines1 else lines1,tail lines2;
-  frontmatter = join "\n" lines1;
-  template = join "\n" lines2;
-end;
-
-// Command line options and parameters.
-
-let opts = [("--help", "-h", NOARG),
-            ("--version", "-V", NOARG),
-            ("--all", "-a", NOARG),
-            ("--include", "-I", REQARG),
-            ("--define", "-D", REQARG),
-            ("--undefine", "-U", REQARG),
-            ("--interface", "-f", REQARG),
-            ("--output", "-o", REQARG),
-            ("--c-output", "-c", REQARG),
-            ("--lib-name", "-l", REQARG),
-            ("--noclobber", "-N", NOARG),
-            ("--namespace", "-m", REQARG),
-            ("--prefix", "-p", REQARG),
-            ("--select", "-s", REQARG),
-            ("--wrap", "-P", REQARG),
-            ("--template", "-t", REQARG),
-            ("--alt-template", "-T", REQARG),
-            ("--dry-run", "-n", NOARG),
-            ("--warnings", "-w", OPTARG),
-            ("--verbose", "-v", NOARG),
-            ("--echo", "-e", NOARG)];
-
-let dfls = ["--interface" => "extern",
-            "--namespace" => "",
-            "--prefix" => "",
-            "--select" => "",
-            "--wrap" => "Pure_",
-            "--all" => "0",
-            "--noclobber" => "0",
-            "--dry-run" => "0",
-            "--warnings" => "1",
-            "--verbose" => "0",
-            "--echo" => "0"];
-
-invalid_option x = fprintf stderr "Error: unrecognized option '%s'\nType 'pure-gen -h for help.\n" x $$ exit 1;
-
+let warn, verbose, echo_cpp = false, false, false;
 warning n::int s::string = fprintf stderr "Warning: %s\n" s if n<=warn;
 echo 1 s::string = puts s if verbose;
 echo 2 s::string = puts s if echo_cpp;
-
-let cache = ref emptydict;
-msgcache msg::string = 0 if member (get cache) msg;
-		     = put cache (insert (get cache) (msg=>())) $$ 1;
-
-basename s::string = last path if ~null path when path = split "/" s end;
-		   = s otherwise;
-dirname s::string = join "/" $ init path if ~null path when path = split "/" s end;
-		  = "" otherwise;
-strip_ext s::string = head name if ~null name when name = split "." s end;
-		    = s otherwise;
-
-let prog, args = case argv of
-                   prog:args = prog, args;
-                   _ = "pure-gen.pure", []
-                 end;
-let opts, args = catch invalid_option $ getopt opts args;
-
-// Filter out -l and the cpp options, these must be treated separately
-
-let libnames = [x | opt@(k=>x) = opts; k=="--lib-name"];
-
-is_cpp_opt ("--include"=>x) = true;
-is_cpp_opt ("--define"=>x) = true;
-is_cpp_opt ("--undefine"=>x) = true;
-is_cpp_opt _ = false otherwise;
-
-let cpp_opts = join " " [format_cpp_opt opt | opt = opts; is_cpp_opt opt]
-with
-  format_cpp_opt ("--include"=>x) = sprintf "-I %s" (str x);
-  format_cpp_opt ("--define"=>x) = sprintf "-D %s" (str x);
-  format_cpp_opt ("--undefine"=>x) = sprintf "-U %s" (str x);
-end;
-
-is_normal_opt ("--lib-name"=>x) = 0;
-is_normal_opt opt = ~is_cpp_opt opt otherwise;
-
-// Create a dictionary of the remaining options, for easier processing.
-let opts = foldl insert (dict dfls) (filter is_normal_opt opts);
-
-if member opts "--version" then
-puts copyright $$ exit 0
-else ();
-
-if member opts "--help" then
-puts copyright $$
-puts $ "Usage: pure-gen [options] <input-file>.h\n" +
-"General options:\n" +
-"-h, --help         Print this message and exit.\n" +
-"-V, --version      Print version number and exit.\n" +
-"-e, --echo         Echo preprocessor lines.\n" +
-"-v, --verbose      Show parameters and progress information.\n" +
-"-w, --warnings     Display warnings (level = 0, 1 [default] or 2).\n" +
-"Preprocessor options:\n" +
-"-I, --include      Add include path.\n" +
-"-D, --define       Define symbol.\n" +
-"-U, --undefine     Undefine symbol.\n" +
-"Generator options:\n" +
-"-f, --interface    Interface type ('extern', 'c', 'ffi' or 'c-ffi').\n" +
-"-l, --lib-name     Add library module to be imported.\n" +
-"-m, --namespace    Module namespace in which symbols should be declared.\n" +
-"-p, --prefix       Module name prefix to be removed from C symbols.\n" +
-"-P, --wrap         Prefix to be prepended to C wrapper symbols.\n" +
-"-a, --all          Include \"hidden\" symbols.\n" +
-"-s, --select       Filter of valid C symbols (see manpage for details).\n" +
-"-t, --template     Specify C template file (see manpage for details).\n" +
-"-T, --alt-template Alternate C template file (see manpage for details).\n" +
-"Output options:\n" +
-"-n, --dry-run      Only parse without generating any output.\n" +
-"-N, --noclobber    Append output to existing files.\n" +
-"-o, --output       Pure output (.pure) filename.\n" +
-"-c, --c-output     C wrapper (.c) filename (-fc).\n" +
-"Defaults:\n" +
-"-f extern, -P Pure_, -o <input-file>.pure, -c <input-file>.c.\n" +
-"-l <c-file> (without extension) for -fc, otherwise empty." $$
-exit 0
-else ();
-
-if #args~=1 then
-fprintf stderr "Error: %s source file specified\nType 'pure-gen -h for help.\n" (if null args then "no" else "more than one") $$ exit 1
-else ();
-
-if member opts "--interface" &&
-  all ((~=) (opts!"--interface")) ["extern","c","ffi","c-ffi"] then
-fprintf stderr "Error: invalid interface type (-f) '%s'\nType 'pure-gen -h for help.\n" (opts!"--interface") $$ exit 1
-else ();
-
-// Get options, provide reasonable defaults.
-
-extern int atoi(char*);
-checknum name opt = x if str x==opt when x = atoi opt end;
-		  = fprintf stderr "Error: bad %s option value '%s'\nType 'pure-gen -h for help.\n" (name,opt) $$ exit 1;
-defnum x name::string = checknum name opt if ~null opt when opt = opts!name end;
-defnum x _ = x otherwise;
-
-let iface_opt = opts!"--interface";
-let in_name = head args;
-let base = strip_ext $ basename in_name;
-let out_name = if member opts "--output" then opts!"--output"
-               else base + ".pure";
-let c_name = if member opts "--c-output" then opts!"--c-output"
-             else base + ".c";
-let c_base = strip_ext $ basename c_name;
-let libnames =
-  if ~null libnames then libnames
-  else if any ((==) (opts!"--interface")) ["c","c-ffi"] then [c_base]
-  else [];
-let glob_pat, regex_pat = case split "::" $ opts!"--select" of
-                            [] = "", "";
-                            [x] = "", x;
-                            x:xs = x, join "::" xs;
-                          end;
-let nmspace = opts!"--namespace";
-let funpfx = opts!"--prefix";
-let funpat = regex_pat;
-let cstpfx = opts!"--prefix";
-let cstpat = regex_pat;
-let fnpat = split "," glob_pat;
-let wrap_prefix = opts!"--wrap";
-let all_opt = defnum 1 "--all";
-let noclobber = defnum 1 "--noclobber";
-let dry_run = defnum 1 "--dry-run";
-let warn = defnum 1 "--warnings";
-let verbose = defnum 1 "--verbose";
-let echo_cpp = defnum 1 "--echo";
-
-let frontmatter, template = split_template template
-when
-  template = if member opts "--template" then
-               fget (fopen (opts!"--template") "r")
-             else default_template;
-  template = if stringp template then template
-             else fprintf stderr
-               "Template file '%s' not found, using default template\n"
-               (opts!"--template") $$ default_template;
-end;
-
-let alt_frontmatter, alt_template = split_template template
-when
-  template = if member opts "--alt-template" then
-               fget (fopen (opts!"--alt-template") "r")
-             else default_alt_template;
-  template = if stringp template then template
-             else fprintf stderr
-               "Template file '%s' not found, using default template\n"
-               (opts!"--alt-template") $$ default_alt_template;
-end;
-
-if dry_run then echo 1 "** Dry run." else ();
-echo 1 $ sprintf "Input file:         %s" in_name;
-echo 1 $ sprintf "Interface type:     %s" iface_opt;
-echo 1 $ sprintf "Library import:     %s" (if null libnames then "(none)" else "using "+join ", " [sprintf "\"lib:%s\"" ln | ln = libnames]);
-echo 1 $ sprintf "Module namespace:   %s" (if null nmspace then "(none)" else nmspace);
-echo 1 $ sprintf "Module name prefix: %s" (if null modprefix then "(none)" else modprefix when modprefix = opts!"--prefix" end);
-echo 1 $ sprintf "Symbol selection:   %s" (if null sel then "(all)" else sel when sel = opts!"--select" end);
-echo 1 $ sprintf "CPP options:        %s" (if null cpp_opts then "(none)" else cpp_opts);
-if member opts "--template" then
-echo 1 $ sprintf "C template file:    %s" (opts!"--template")
-else ();
-if member opts "--alt-template" then
-echo 1 $ sprintf "Alt template file:  %s" (opts!"--alt-template")
-else ();
 
 /******************************************************************/
 
@@ -732,6 +524,7 @@ eval_expr d x = warning 0$"Unknown expression type "+str x+" in enum definition.
 
 
 // Dissect cpp lines (#define's and # lineno only).
+extern int atoi(char*);
 split_cpp_line s = regexg (process.tail.tail.regs)
 "^#( (([0-9]+) \\\"([^\"]+)\\\"( .*)?)|[ \t]*define[ \t]+([A-Za-z_0-9]+)[ \t]+([^ \t].*))$" REG_EXTENDED s 0
 with
@@ -932,6 +725,9 @@ fnmatches pats name flags = true if null pats;
 			  = any (\pat->fnmatch pat name flags) pats;
 
 // make regex just always return 1 in case of an error
+let cache = ref emptydict;
+msgcache msg::string = 0 if member (get cache) msg;
+		     = put cache (insert (get cache) (msg=>())) $$ 1;
 regchk pat (regerr _ _) = warning 0 msg $$ 1 if msgcache msg
 when msg = sprintf "error in regular expression '%s'" pat end;
 			= 1 otherwise;
@@ -985,7 +781,215 @@ nub xs = reverse $ go [] emptydict xs
 
 /******************************************************************/
 
-// first check that the source file exists
+// Command line options and parameters.
+
+let opts = [("--help", "-h", NOARG),
+            ("--version", "-V", NOARG),
+            ("--all", "-a", NOARG),
+            ("--include", "-I", REQARG),
+            ("--define", "-D", REQARG),
+            ("--undefine", "-U", REQARG),
+            ("--interface", "-f", REQARG),
+            ("--output", "-o", REQARG),
+            ("--c-output", "-c", REQARG),
+            ("--lib-name", "-l", REQARG),
+            ("--noclobber", "-N", NOARG),
+            ("--namespace", "-m", REQARG),
+            ("--prefix", "-p", REQARG),
+            ("--select", "-s", REQARG),
+            ("--wrap", "-P", REQARG),
+            ("--template", "-t", REQARG),
+            ("--alt-template", "-T", REQARG),
+            ("--dry-run", "-n", NOARG),
+            ("--warnings", "-w", OPTARG),
+            ("--verbose", "-v", NOARG),
+            ("--echo", "-e", NOARG)];
+
+let dfls = ["--interface" => "extern",
+            "--namespace" => "",
+            "--prefix" => "",
+            "--select" => "",
+            "--wrap" => "Pure_",
+            "--all" => "0",
+            "--noclobber" => "0",
+            "--dry-run" => "0",
+            "--warnings" => "1",
+            "--verbose" => "0",
+            "--echo" => "0"];
+
+invalid_option x = fprintf stderr "Error: unrecognized option '%s'\nType 'pure-gen -h for help.\n" x $$ exit 1;
+
+basename s::string = last path if ~null path when path = split "/" s end;
+		   = s otherwise;
+dirname s::string = join "/" $ init path if ~null path when path = split "/" s end;
+		  = "" otherwise;
+strip_ext s::string = head name if ~null name when name = split "." s end;
+		    = s otherwise;
+
+let prog, args = case argv of
+                   prog:args = prog, args;
+                   _ = "pure-gen.pure", []
+                 end;
+let opts, args = catch invalid_option $ getopt opts args;
+
+// Filter out -l and the cpp options, these must be treated separately
+
+let libnames = [x | opt@(k=>x) = opts; k=="--lib-name"];
+
+is_cpp_opt ("--include"=>x) = true;
+is_cpp_opt ("--define"=>x) = true;
+is_cpp_opt ("--undefine"=>x) = true;
+is_cpp_opt _ = false otherwise;
+
+let cpp_opts = join " " [format_cpp_opt opt | opt = opts; is_cpp_opt opt]
+with
+  format_cpp_opt ("--include"=>x) = sprintf "-I %s" (str x);
+  format_cpp_opt ("--define"=>x) = sprintf "-D %s" (str x);
+  format_cpp_opt ("--undefine"=>x) = sprintf "-U %s" (str x);
+end;
+
+is_normal_opt ("--lib-name"=>x) = 0;
+is_normal_opt opt = ~is_cpp_opt opt otherwise;
+
+// Create a dictionary of the remaining options, for easier processing.
+let opts = foldl insert (dict dfls) (filter is_normal_opt opts);
+
+if member opts "--version" then
+puts copyright $$ exit 0
+else ();
+
+if member opts "--help" then
+puts copyright $$
+puts $ "Usage: pure-gen [options] <input-file>.h\n" +
+"General options:\n" +
+"-h, --help         Print this message and exit.\n" +
+"-V, --version      Print version number and exit.\n" +
+"-e, --echo         Echo preprocessor lines.\n" +
+"-v, --verbose      Show parameters and progress information.\n" +
+"-w, --warnings     Display warnings (level = 0, 1 [default] or 2).\n" +
+"Preprocessor options:\n" +
+"-I, --include      Add include path.\n" +
+"-D, --define       Define symbol.\n" +
+"-U, --undefine     Undefine symbol.\n" +
+"Generator options:\n" +
+"-f, --interface    Interface type ('extern', 'c', 'ffi' or 'c-ffi').\n" +
+"-l, --lib-name     Add library module to be imported.\n" +
+"-m, --namespace    Module namespace in which symbols should be declared.\n" +
+"-p, --prefix       Module name prefix to be removed from C symbols.\n" +
+"-P, --wrap         Prefix to be prepended to C wrapper symbols.\n" +
+"-a, --all          Include \"hidden\" symbols.\n" +
+"-s, --select       Filter of valid C symbols (see manpage for details).\n" +
+"-t, --template     Specify C template file (see manpage for details).\n" +
+"-T, --alt-template Alternate C template file (see manpage for details).\n" +
+"Output options:\n" +
+"-n, --dry-run      Only parse without generating any output.\n" +
+"-N, --noclobber    Append output to existing files.\n" +
+"-o, --output       Pure output (.pure) filename.\n" +
+"-c, --c-output     C wrapper (.c) filename (-fc).\n" +
+"Defaults:\n" +
+"-f extern, -P Pure_, -o <input-file>.pure, -c <input-file>.c.\n" +
+"-l <c-file> (without extension) for -fc, otherwise empty." $$
+exit 0
+else ();
+
+if #args~=1 then
+fprintf stderr "Error: %s source file specified\nType 'pure-gen -h for help.\n" (if null args then "no" else "more than one") $$ exit 1
+else ();
+
+if member opts "--interface" &&
+  all ((~=) (opts!"--interface")) ["extern","c","ffi","c-ffi"] then
+fprintf stderr "Error: invalid interface type (-f) '%s'\nType 'pure-gen -h for help.\n" (opts!"--interface") $$ exit 1
+else ();
+
+// Get options, provide reasonable defaults.
+
+extern int atoi(char*);
+checknum name opt = x if str x==opt when x = atoi opt end;
+		  = fprintf stderr "Error: bad %s option value '%s'\nType 'pure-gen -h for help.\n" (name,opt) $$ exit 1;
+defnum x name::string = checknum name opt if ~null opt
+when opt = opts!name end;
+defnum x _ = x otherwise;
+
+let iface_opt = opts!"--interface";
+let in_name = head args;
+let base = strip_ext $ basename in_name;
+let out_name = if member opts "--output" then opts!"--output"
+               else base + ".pure";
+let c_name = if member opts "--c-output" then opts!"--c-output"
+             else base + ".c";
+let c_base = strip_ext $ basename c_name;
+let libnames =
+  if ~null libnames then libnames
+  else if any ((==) (opts!"--interface")) ["c","c-ffi"] then [c_base]
+  else [];
+let glob_pat, regex_pat = case split "::" $ opts!"--select" of
+                            [] = "", "";
+                            [x] = "", x;
+                            x:xs = x, join "::" xs;
+                          end;
+let nmspace = opts!"--namespace";
+let funpfx = opts!"--prefix";
+let funpat = regex_pat;
+let cstpfx = opts!"--prefix";
+let cstpat = regex_pat;
+let fnpat = split "," glob_pat;
+let wrap_prefix = opts!"--wrap";
+let all_opt = defnum 1 "--all";
+let noclobber = defnum 1 "--noclobber";
+let dry_run = defnum 1 "--dry-run";
+let warn = defnum 1 "--warnings";
+let verbose = defnum 1 "--verbose";
+let echo_cpp = defnum 1 "--echo";
+
+split_template template::string = frontmatter, template when
+  lines = split "\n" template;
+  lines1 = takewhile (\x->x~="%%") lines;
+  lines2 = dropwhile (\x->x~="%%") lines;
+  lines1,lines2 = if null lines2 then lines2,lines1 else lines1,tail lines2;
+  frontmatter = join "\n" lines1;
+  template = join "\n" lines2;
+end;
+
+let frontmatter, template = split_template template
+when
+  template = if member opts "--template" then
+               fget (fopen (opts!"--template") "r")
+             else default_template;
+  template = if stringp template then template
+             else fprintf stderr
+               "Template file '%s' not found, using default template\n"
+               (opts!"--template") $$ default_template;
+end;
+
+let alt_frontmatter, alt_template = split_template template
+when
+  template = if member opts "--alt-template" then
+               fget (fopen (opts!"--alt-template") "r")
+             else default_alt_template;
+  template = if stringp template then template
+             else fprintf stderr
+               "Template file '%s' not found, using default template\n"
+               (opts!"--alt-template") $$ default_alt_template;
+end;
+
+if dry_run then echo 1 "** Dry run." else ();
+echo 1 $ sprintf "Input file:         %s" in_name;
+echo 1 $ sprintf "Interface type:     %s" iface_opt;
+echo 1 $ sprintf "Library import:     %s" (if null libnames then "(none)" else "using "+join ", " [sprintf "\"lib:%s\"" ln | ln = libnames]);
+echo 1 $ sprintf "Module namespace:   %s" (if null nmspace then "(none)" else nmspace);
+echo 1 $ sprintf "Module name prefix: %s" (if null modprefix then "(none)" else modprefix when modprefix = opts!"--prefix" end);
+echo 1 $ sprintf "Symbol selection:   %s" (if null sel then "(all)" else sel when sel = opts!"--select" end);
+echo 1 $ sprintf "CPP options:        %s" (if null cpp_opts then "(none)" else cpp_opts);
+if member opts "--template" then
+echo 1 $ sprintf "C template file:    %s" (opts!"--template")
+else ();
+if member opts "--alt-template" then
+echo 1 $ sprintf "Alt template file:  %s" (opts!"--alt-template")
+else ();
+
+/******************************************************************/
+
+// check that the source file exists
 if pointerp (fopen in_name "r") then ()
 else
   fprintf stderr "Error: source file '%s' not found (%s)\n"
