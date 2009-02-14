@@ -36,11 +36,11 @@ dvi: pure-gen.dvi
 ps: pure-gen.ps
 pdf: pure-gen.pdf
 
-%.html: %.1
-	rman -f HTML $< | sed -e 's/dq/\"/g' -e '/^<br>$$/d' > $@
-
 #%.html: %.1
-#	groff -man -Thtml $< > $@
+#	rman -f HTML $< | sed -e 's/dq/\"/g' -e '/^<br>$$/d' > $@
+
+%.html: %.1
+	groff -man -Thtml $< > $@
 
 %.dvi: %.1
 	groff -man -Tdvi $< > $@
