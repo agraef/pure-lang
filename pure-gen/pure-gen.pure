@@ -34,10 +34,19 @@ let default_template = "%r %w(%p)\n{\n  return %n(%a);\n}\n\n";
 
 let default_alt_template = "%r* %w(%p)\n{\n  static %r ret;\n  ret = %n(%a); return &ret;\n}\n\n";
 
+/* Messaging. */
+
 let warn, verbose, echo_cpp = false, false, false;
 warning n::int s::string = fprintf stderr "Warning: %s\n" s if n<=warn;
 echo 1 s::string = puts s if verbose;
 echo 2 s::string = puts s if echo_cpp;
+
+let cache = ref emptydict;
+warn_once n msg::string = warning n msg if msgcache msg
+with
+  msgcache msg::string  = 0 if member (get cache) msg;
+			= put cache (insert (get cache) (msg=>())) $$ 1;
+end;
 
 /******************************************************************/
 
@@ -58,9 +67,10 @@ nullary CPlusOp CMinOp CNegOp CAddOp CSubOp CMulOp CDivOp CRmdOp CShlOp
   CXorOp;
 
 // these mirror the ffi type values
-nullary void_t uint8_t sint8_t uint16_t sint16_t uint32_t sint32_t
-  uint64_t sint64_t float_t double_t pointer_t string_t uchar_t schar_t
-  ushort_t sshort_t uint_t sint_t ulong_t slong_t;
+nullary unsupported_t void_t uint8_t sint8_t uint16_t sint16_t
+  uint32_t sint32_t uint64_t sint64_t
+  uchar_t schar_t ushort_t sshort_t uint_t sint_t ulong_t slong_t
+  float_t double_t longdouble_t pointer_t string_t;
 // special pure_expr and GSL matrix types
 nullary expr_t;
 nullary dmatrix_t cmatrix_t imatrix_t;
@@ -92,8 +102,7 @@ to_ffi_type x fname =
 	        = sint_t;
   CSUType (CStructUnion _ (Just tag) _ _) = struct_or_union $ "struct "+tag;
   CSUType (CStructUnion _ Nothing _ _) = struct_or_union "<anonymous>";
-  _             = (warning 1 $ "unknown type "+str x+", defaulting to void")
-    $$ void_t;
+  _             = warn_once 1 $ "unsupported type "+str x $$ unsupported_t;
   end;
 
 /* FIXME: This dictionary *must* be properly initialized using decl_enums
@@ -129,6 +138,9 @@ case t of
   uint64_t   = "long";
   sint64_t   = "long";
   float_t    = "float";
+  // Pure doesn't support long double, just map it to double. This works fine
+  // with -fc, otherwise we catch this elsewhere.
+  longdouble_t |
   double_t   = "double";
   pointer_t  = "void*";
   uchar_t    = "char";
@@ -143,6 +155,7 @@ case t of
   dmatrix_t  = "dmatrix";
   cmatrix_t  = "cmatrix";
   imatrix_t  = "imatrix";
+  ptr_type longdouble_t = "void/*long double*/*";
   ptr_type (func_type _ _) = "void*";
   ptr_type (struct_or_union n) = n+"*" if index n " " < 0;
 	     = sprintf "void/*%s*/*" n otherwise;
@@ -152,7 +165,7 @@ case t of
   _          = warning 0 ("pure_type error : "+str t) $$ "void";
 end;
 
-// The corresponding C types are exactly the same, except in the case of
+// The corresponding C types are mostly the same, except in the case of
 // pure_expr and matrix pointers, as well as the struct types.
 c_type t =
 case t of
@@ -208,12 +221,14 @@ complete_ffi_type x =
   case x of
   //this is kind of a mess, due to all the different ways one might 
   //specify an int: int, long int, long, singed long, signed long int...
+  unsupported_t   = unsupported_t;
   void_t   = void_t;
   schar_t  = schar_t;
   sshort_t = sshort_t;
   slong_t  = slong_t;
   sint_t   = sint_t;
   uint_t   = uint_t;
+  long double_t        = longdouble_t; 
   (long (sint_t))      = slong_t; 
   (long (slong_t))     = sint64_t; 
   (long (long sint_t)) = sint64_t; 
@@ -242,7 +257,7 @@ complete_ffi_type x =
 
   enum_type _ _ _ = sint_t;
   
-  _ = warning 2 ("unknown type "+str x+", defaulting to void") $$ void_t;
+  _ = warn_once 1 ("unsupported type "+str x) $$ unsupported_t;
 
   end;
    
@@ -562,7 +577,13 @@ check_constant name val::string fname
 check_number name val::string fname
   = check_number name (substr val 1 (#val-2)) fname
       if regex "^(.*)$" REG_NOSUB val 0;
-  = constant name (sscanf val "%i") fname otherwise;
+  = constant name (sscanf val "%i") fname
+      if regex "^[+-]?([1-9][0-9]*|0[0-7]*|0[xX][0-9a-fA-F]+)([ \t].*)?$"
+	(REG_EXTENDED or REG_NOSUB) val 0;
+  = constant name (sscanf val "%g") fname
+      if regex "^[+-]?([0-9]*\\.?[0-9]*([Ee][+-]?[0-9]+)?)([ \t].*)?$"
+	(REG_EXTENDED or REG_NOSUB) val 0;
+  = throw (bad_number val);
 check_string name val::string fname
   = constant name str fname when str::string = eval val end;
 
@@ -616,11 +637,14 @@ is_struct _ = false;
 
 //output a function declaration for the native pure extern interface
 pure_extern_decl pfx::string nmspace::string (name, func_type ret args, _)
-= warning 0 $ sprintf "%s: unknown argument type" name $$ ()
-    if args~==[void_t] && any ((===) void_t) args;
+= warning 0 $ sprintf "%s: unsupported argument type" name $$ ()
+    if any ((===) unsupported_t) (ret:args);
 = warning 0 $
   sprintf "%s: struct argument or return type, try -fc" name $$ ()
     if any is_struct (ret:args);
+= warning 0 $
+  sprintf "%s: long double argument or return type, try -fc" name $$ ()
+    if any ((===) longdouble_t) (ret:args);
 = "extern "+pure_type ret+" "+name+"("+arg_str args+")"+
   (if alias == name then "" else " = "+alias)+";"
 when alias = strip_prefix pfx name end
@@ -633,8 +657,8 @@ end;
 //prepending the prefix "Pure_" (or the prefix specified with -P) to the
 //function name
 Pure_extern_decl pfx::string nmspace::string (name, func_type ret args, _)
-= warning 0 $ sprintf "%s: unknown argument type" name $$ ()
-    if args~==[void_t] && any ((===) void_t) args;
+= warning 0 $ sprintf "%s: unsupported argument type" name $$ ()
+    if any ((===) unsupported_t) (ret:args);
 = "extern "+pure_type ret+" "+wrap_prefix+name+"("+arg_str args+")"+
   (if alias == wrap_prefix+name then "" else " = "+alias)+";"
 when alias = strip_prefix pfx name end
@@ -652,11 +676,14 @@ ffi_type t = t otherwise;
 
 //output a function declaration for the ffi interface
 ffi_extern_decl pfx::string nmspace::string (name, func_type ret args, _)
-= warning 0 $ sprintf "%s: unknown argument type" name $$ ()
-    if args~==[void_t] && any ((===) void_t) args;
+= warning 0 $ sprintf "%s: unsupported argument type" name $$ ()
+    if any ((===) unsupported_t) (ret:args);
 = warning 0 $
   sprintf "%s: struct argument or return type, try -fc" name $$ ()
     if any is_struct (ret:args);
+= warning 0 $
+  sprintf "%s: long double argument or return type, try -fc" name $$ ()
+    if any ((===) longdouble_t) (ret:args);
 = "let "+nmspacepfx nmspace+strip_prefix pfx name+" = fcall \""+
   name+"\" FFI_DEFAULT_ABI "+str (ffi_type ret)+" ("+arg_str args+");"
 with
@@ -668,8 +695,8 @@ end;
 //prepending the prefix "Pure_" (or the prefix specified with -P) to the
 //function name
 Pure_ffi_extern_decl pfx::string nmspace::string (name, func_type ret args, _)
-= warning 0 $ sprintf "%s: unknown argument type" name $$ ()
-    if args~==[void_t] && any ((===) void_t) args;
+= warning 0 $ sprintf "%s: unsupported argument type" name $$ ()
+    if any ((===) unsupported_t) (ret:args);
 = "let "+nmspacepfx nmspace+strip_prefix pfx name+" = fcall \""+
   wrap_prefix+name+"\" FFI_DEFAULT_ABI "+str (ffi_type ret)+
   " ("+arg_str args+");"
@@ -691,7 +718,7 @@ with
 end;
 
 c_impl (name, func_type ret args, _)
-= () if args~==[void_t] && any ((===) void_t) args;
+= () if any ((===) unsupported_t) (ret:args);
 = code
 when
   ret_str = c_rettype ret;
@@ -725,12 +752,9 @@ fnmatches pats name flags = true if null pats;
 			  = any (\pat->fnmatch pat name flags) pats;
 
 // make regex just always return 1 in case of an error
-let cache = ref emptydict;
-msgcache msg::string = 0 if member (get cache) msg;
-		     = put cache (insert (get cache) (msg=>())) $$ 1;
-regchk pat (regerr _ _) = warning 0 msg $$ 1 if msgcache msg
-when msg = sprintf "error in regular expression '%s'" pat end;
-			= 1 otherwise;
+regchk pat (regerr _ _) = 1 when
+  warn_once 0 (sprintf "error in regular expression '%s'" pat);
+end;
 regchk _ x = x;
 
 // Filter out builtins and stuff commonly found in system header files.
@@ -1071,5 +1095,5 @@ let n_func = #all_protos;
 echo 1 $ sprintf "%d constants, %d externs" (n_const,n_func);
 
 if n_const+n_func == 0 then
-  warning 1 "empty output, check your filter (-s)"
+  warning 1 "empty output"
 else ();
