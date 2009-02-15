@@ -56,6 +56,8 @@ nullary Nothing;
 // Language.C AST terminals
 // typedef storage spec, denotes typedefs
 nullary CTypedef;
+// const qualifier
+nullary CConstQual;
 // basic C types
 nullary CVoidType CCharType CShortType CIntType CLongType CFloatType
   CDoubleType CSignedType CUnsigType CBoolType;
@@ -119,6 +121,7 @@ scan_enums defs =
    n,_ = defs; member enumdefs n /* == true, but who knows */];
 
 enum_vals (basic_type t) = enum_vals t;
+enum_vals (const_type t) = enum_vals t;
 enum_vals (enum_type _ v fname) = [x fname | x = v];
 enum_vals _ = [];
 
@@ -155,6 +158,8 @@ case t of
   dmatrix_t  = "dmatrix";
   cmatrix_t  = "cmatrix";
   imatrix_t  = "imatrix";
+  // Pure doesn't care about const.
+  const_type t = pure_type t;
   ptr_type longdouble_t = "void/*long double*/*";
   ptr_type (func_type _ _) = "void*";
   ptr_type (struct_or_union n) = n+"*" if index n " " < 0;
@@ -165,12 +170,32 @@ case t of
   _          = warning 0 ("pure_type error : "+str t) $$ "void";
 end;
 
-// The corresponding C types are mostly the same, except in the case of
-// pure_expr and matrix pointers, as well as the struct types.
+// The corresponding C types:
 c_type t =
 case t of
+  uint8_t    = "unsigned char";
+  sint8_t    = "char";
+  uint16_t   = "unsigned short";
+  sint16_t   = "short";
+  uint32_t   = "unsigned int";
+  sint32_t   = "int";
+  uint64_t   = "unsigned long long";
+  sint64_t   = "long long";
+  uchar_t    = "unsigned char";
+  schar_t    = "char";
+  ushort_t   = "unsigned short";
+  sshort_t   = "short";
+  uint_t     = "unsigned int";
+  sint_t     = "int";
+  ulong_t    = "unsigned long";
+  slong_t    = "long";
+  const_type (ptr_type t) = c_type (ptr_type t)+" const";
+  const_type t@(struct_or_union n) = c_type (ptr_type t)+" const";
+  const_type t = "const "+c_type t;
+  ptr_type longdouble_t = "long double*";
   ptr_type (func_type _ _) = "void*";
   ptr_type (struct_or_union n) = n+"*";
+  ptr_type (const_type t) = "const "+c_type (ptr_type t);
   ptr_type t = c_type t + "*";
   t@(struct_or_union n) = c_type (ptr_type t);
   expr_t = "pure_expr";
@@ -183,8 +208,29 @@ end;
 // Special version of c_type for return values.
 c_rettype t =
 case t of
+  uint8_t    = "unsigned char";
+  sint8_t    = "char";
+  uint16_t   = "unsigned short";
+  sint16_t   = "short";
+  uint32_t   = "unsigned int";
+  sint32_t   = "int";
+  uint64_t   = "unsigned long long";
+  sint64_t   = "long long";
+  uchar_t    = "unsigned char";
+  schar_t    = "char";
+  ushort_t   = "unsigned short";
+  sshort_t   = "short";
+  uint_t     = "unsigned int";
+  sint_t     = "int";
+  ulong_t    = "unsigned long";
+  slong_t    = "long";
+  // Get rid of extra const in non-pointer return types, just in case.
+  const_type (ptr_type t) = c_rettype (ptr_type t);
+  const_type t = c_rettype t;
+  ptr_type longdouble_t = "long double*";
   ptr_type (func_type _ _) = "void*";
   ptr_type (struct_or_union n) = n+"*";
+  ptr_type (const_type t) = "const "+c_rettype (ptr_type t);
   ptr_type t = c_type t + "*";
   struct_or_union n = n;
   expr_t = "pure_expr";
@@ -204,7 +250,8 @@ complete_ffi_type (basic_type x)  = complete_ffi_type x;
 
 // ffi only knows "pointer_t" but pure's extern decls can take typed pointers
 //complete_ffi_type (ptr_type _)    = pointer_t; 
-complete_ffi_type (ptr_type t) = ptr_type ( complete_ffi_type t );
+complete_ffi_type (const_type t) = const_type (complete_ffi_type t);
+complete_ffi_type (ptr_type t) = ptr_type (complete_ffi_type t);
 
 complete_ffi_type (func_type r a) = func_type (complete_ffi_type r)
 				    (map complete_ffi_type a);
@@ -249,7 +296,7 @@ complete_ffi_type x =
   unsigned schar_t  = uchar_t;  
   unsigned sshort_t = ushort_t; 
   unsigned sint_t   = uint_t; 
-  unsigned slong_t  = uint_t; 
+  unsigned slong_t  = ulong_t; 
   unsigned (short (sint_t))     = ushort_t; 
   unsigned (long (sint_t))      = ulong_t; 
   unsigned (long (slong_t))     = uint64_t; 
@@ -270,8 +317,11 @@ complete_ffi_type x =
 nullary unknown_decl_type;
 
 // The primitive type of a declaration. Returns an ffi type, with specifiers.
+// We do need to keep track of the const qualifier, to make the C compiler
+// happy.
+type_spec ( (CTypeQual CConstQual) : more ) fname = const_type $ type_spec more fname;
+// Skip all other qualifiers like volatile etc.
 type_spec ( (CTypeQual _) : more ) fname = type_spec more fname;
-  //skip things like const, volatile, etc.
 
 type_spec ( (CTypeSpec CShortType) :  []  ) _ = sshort_t;
 type_spec ( (CTypeSpec CShortType) : more ) fname = short $ type_spec more fname;
@@ -305,6 +355,9 @@ type_spec [] _ = throw unknown_decl_type;
 // The returned list contains one type for each object declared in this
 // declaration, e.g. "int *x, y;" yields 
 // [ ptr_type(basic_type sint_t), basic_type sint_t ]
+
+// Move the const qualifier out of the typespec, some code depends on this.
+basic_type (const_type t) = const_type (basic_type t);
 
 decl_types (CFDefExt _) = [];
 decl_types (CDeclExt d fname) = decl_types1 d fname;
@@ -395,6 +448,7 @@ resolve_typedef d t fname = lookup t
     lookup (basic_type (CEnumType n)) = sint_t;
     lookup t@(enum_type n _ _) = t;
     lookup t@(basic_type _) = t;
+    lookup (const_type t) = const_type (lookup t);
     lookup (ptr_type t) = ptr_type (lookup t);
     lookup (func_type ret args) = func_type (lookup ret) (map lookup args);
     lookup x = warning 0 ("resolve_typedef error: "+str x) $$ void_t;
@@ -636,6 +690,7 @@ const_decl pfx nmspace (constant name val _) =
       ;
   end;
 
+is_struct (const_type t) = is_struct t;
 is_struct (struct_or_union _) = true;
 is_struct _ = false;
 
@@ -671,6 +726,8 @@ with
   arg_str args = join ", " $ map pure_type args;
 end;
 
+ffi_type (const_type t) = ffi_type t;
+ffi_type (ptr_type (const_type t)) = ffi_type (ptr_type t);
 ffi_type (ptr_type schar_t) = string_t;
 ffi_type (ptr_type uchar_t) = string_t;
 ffi_type (ptr_type _) = pointer_t;
