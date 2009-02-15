@@ -42,14 +42,20 @@ Pass through other preprocessor options and arguments.
 .SS Generator Options
 .TP
 \fB-f\fP \fIiface\fP, \fB--interface\fP \fIiface\fP
-Interface type (\(aqextern\(aq, \(aqc\(aq, \(aqffi\(aq or
-\(aqc-ffi\(aq). Default is \(aqextern\(aq.
+Interface type (\(aqextern\(aq, \(aqc\(aq, \(aqffi\(aq or \(aqc-ffi\(aq).
+Default is \(aqextern\(aq. The \(aqextern\(aq and \(aqc\(aq types generate
+Pure \fBextern\fP declarations, which is what you want in most cases.
+\(aqffi\(aq and \(aqc-ffi\(aq employ Pure's libffi interface instead. The
+\(aqc\(aq and \(aqc-ffi\(aq types cause an additional C wrapper module to be
+created (see \fIGENERATING C CODE\fP). These can also be combined with the
+\(aq-auto\(aq suffix which creates C wrappers only when needed to get C struct
+arguments and returns working, see \fIDEALING WITH C STRUCTS\fP for details.
 .TP
 \fB-l\fP \fIlib\fP, \fB--lib-name\fP \fIlib\fP
 Add dynamic library module to be imported in the Pure output file. Default is
 \fB-l\fP \fIc-file\fP (the filename specified with \fB-c\fP, see below,
-without filename extension) if \fB-fc\fP or \fB-fc-ffi\fP was specified, none
-otherwise.
+without filename extension) if one of the \fB-fc\fP options was specified,
+none otherwise.
 .TP
 \fB-m\fP \fIname\fP, \fB--namespace\fP \fIname\fP
 Module namespace in which symbols should be declared.
@@ -58,8 +64,8 @@ Module namespace in which symbols should be declared.
 Module name prefix to be removed from C symbols.
 .TP
 \fB-P\fP \fIprefix\fP, \fB--wrap\fP \fIprefix\fP
-Prefix to be prepended to C wrapper symbols (\fB-fc\fP,
-\fB-fc-ffi\fP). Default is \(aqPure_\(aq.
+Prefix to be prepended to C wrapper symbols (\fB-fc\fP and friends). Default
+is \(aqPure_\(aq.
 .TP
 \fB-a\fP, \fB--all\fP
 Include ``hidden'' symbols in the output. Built-in preprocessor symbols and
@@ -75,12 +81,12 @@ expression matching the symbols to be processed. See \fBglob\fP(7) and
 in all source modules.
 .TP
 \fB-t\fP \fIfile\fP, \fB--template\fP \fIfile\fP
-Specify a C template file to be used with C wrapper generation (\fB-fc\fP,
-\fB-fc-ffi\fP). See \fIGENERATING C CODE\fP for details.
+Specify a C template file to be used with C wrapper generation
+(\fB-fc\fP). See \fIGENERATING C CODE\fP for details.
 .TP
 \fB-T\fP \fIfile\fP, \fB--alt-template\fP \fIfile\fP
 Specify an alternate C template file to be used with C wrapper generation
-(\fB-fc\fP, \fB-fc-ffi\fP). See \fIGENERATING C CODE\fP for details.
+(\fB-fc\fP). See \fIGENERATING C CODE\fP for details.
 .SS Output Options
 .TP
 \fB-n\fP, \fB--dry-run\fP
@@ -94,8 +100,8 @@ Pure output (.pure) filename. Default is \fIinput-file\fP with new
 extension .pure.
 .TP
 \fB-c\fP \fIfile\fP, \fB--c-output\fP \fIfile\fP
-C wrapper (.c) filename (\fB-fc\fP, \fB-fc-ffi\fP). Default is
-\fIinput-file\fP with new extension .c.
+C wrapper (.c) filename (\fB-fc\fP). Default is \fIinput-file\fP with new
+extension .c.
 .SH DESCRIPTION
 .B pure-gen
 generates Pure bindings for C functions from a C header file. For instance,
@@ -231,7 +237,8 @@ The C routines to be wrapped aren't available in a shared library, but in some
 other form (e.g., object file or static library).
 .IP \- 3
 You need to inject some custom code into the wrapper functions (e.g., to
-implement lazy dynamic loading).
+implement custom argument preprocessing or lazy dynamic loading of functions
+from a shared library).
 .IP \- 3
 The C routines can't be called directly through Pure externs.
 .PP
@@ -372,18 +379,21 @@ printing a warning message like the following which indicates that the given
 function could not be wrapped:
 .sp
 .nf
-Warning: foo: struct argument or return type, try -fc
+Warning: foo: struct argument or return type, try -fc-auto
 .fi
 .sp
 What Pure \fIdoes\fP know is how to pass and return \fIpointers\fP to C
 structs in its C interface. This makes it possible to deal with struct
-arguments and return values in the C wrapper. To these ends, you need to
-invoke
-.B pure-gen
-with the \fB-fc\fP or \fB-fc-ffi\fP option as described in the previous
-section. Struct arguments in the original C function then become struct
-pointers in the wrapper function. E.g., if the function is declared in the
-header as follows:
+arguments and return values in the C wrapper. To make this work, you need to
+create a C wrapper module as explained in the previous section. However, as C
+wrappers are only needed for functions which actually have struct arguments or
+return values, you can also use the \fB-fc-auto\fP option (or
+\fB-fc-ffi-auto\fP if you prefer the ffi interface) to only generate the C
+wrapper when required. This saves the overhead of an extra function call if
+it's not actually needed.
+.PP
+Struct arguments in the original C function then become struct pointers in the
+wrapper function. E.g., if the function is declared in the header as follows:
 .sp
 .nf
 typedef struct { double x, y; } point;
@@ -517,7 +527,7 @@ accompanying C module in mygsl.c:
 rm -f mygsl.pure mygsl.c
 DEFS=-DGSL_DISABLE_DEPRECATED
 for x in /usr/include/gsl/gsl_*.h; do
-  pure-gen $DEFS -N -fc -s "$x::" $x -o mygsl.pure -c mygsl.c
+  pure-gen $DEFS -N -fc-auto -s "$x::" $x -o mygsl.pure -c mygsl.c
 done
 .fi
 .sp
