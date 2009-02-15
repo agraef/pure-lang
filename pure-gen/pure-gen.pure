@@ -700,10 +700,10 @@ pure_extern_decl pfx::string nmspace::string (name, func_type ret args, _)
 = warning 0 $ sprintf "%s: unsupported argument type" name $$ ()
     if any ((===) unsupported_t) (ret:args);
 = warning 0 $
-  sprintf "%s: struct argument or return type, try -fc" name $$ ()
+  sprintf "%s: struct argument or return type, try -fc-auto" name $$ ()
     if any is_struct (ret:args);
 = warning 0 $
-  sprintf "%s: long double argument or return type, try -fc" name $$ ()
+  sprintf "%s: long double argument or return type, try -fc-auto" name $$ ()
     if any ((===) longdouble_t) (ret:args);
 = "extern "+pure_type ret+" "+name+"("+arg_str args+")"+
   (if alias == name then "" else " = "+alias)+";"
@@ -727,6 +727,10 @@ with
   arg_str args = join ", " $ map pure_type args;
 end;
 
+Pure_extern_decl_auto pfx nmspace x@(name, func_type ret args, _)
+= Pure_extern_decl pfx nmspace x if any is_struct (ret:args);
+= pure_extern_decl pfx nmspace x otherwise;
+
 ffi_type (const_type t) = ffi_type t;
 ffi_type (ptr_type (const_type t)) = ffi_type (ptr_type t);
 ffi_type (ptr_type schar_t) = string_t;
@@ -741,10 +745,10 @@ ffi_extern_decl pfx::string nmspace::string (name, func_type ret args, _)
 = warning 0 $ sprintf "%s: unsupported argument type" name $$ ()
     if any ((===) unsupported_t) (ret:args);
 = warning 0 $
-  sprintf "%s: struct argument or return type, try -fc" name $$ ()
+  sprintf "%s: struct argument or return type, try -fc-auto" name $$ ()
     if any is_struct (ret:args);
 = warning 0 $
-  sprintf "%s: long double argument or return type, try -fc" name $$ ()
+  sprintf "%s: long double argument or return type, try -fc-auto" name $$ ()
     if any ((===) longdouble_t) (ret:args);
 = "let "+nmspacepfx nmspace+strip_prefix pfx name+" = fcall \""+
   name+"\" FFI_DEFAULT_ABI "+str (ffi_type ret)+" ("+arg_str args+");"
@@ -766,6 +770,10 @@ with
   arg_str [void_t] = "";
   arg_str args = join ", " $ map (str.ffi_type) args;
 end;
+
+Pure_ffi_extern_decl_auto pfx nmspace x@(name, func_type ret args, _)
+= Pure_ffi_extern_decl pfx nmspace x if any is_struct (ret:args);
+= ffi_extern_decl pfx nmspace x otherwise;
 
 
 //output the C portion of a function
@@ -799,6 +807,9 @@ when
          ret_str (wrap_prefix+name) formal_params name arg_names;
 end;
 
+c_impl_auto x@(name, func_type ret args, _)
+= c_impl x if any is_struct (ret:args);
+= () otherwise;
 
 /* Select constant and function declarations based on a regex match on the
    symbol, as well as a glob pattern match on the filename. */
@@ -979,6 +990,7 @@ Output options:\n\
 Defaults:\n\
 -f extern, -P Pure_, -o <input-file>.pure, -c <input-file>.c.\n\
 -l <c-file> (without extension) for -fc, none otherwise.\n\
+Hint: Use -fc-auto or -fc-ffi-auto to only generate C wrappers if needed.\n\
 Type 'man pure-gen' for more help." $$
 exit 0
 else ();
@@ -988,7 +1000,8 @@ fprintf stderr "Error: %s source file specified\nType 'pure-gen -h for help.\n" 
 else ();
 
 if member opts "--interface" &&
-  all ((~=) (opts!"--interface")) ["extern","c","ffi","c-ffi"] then
+  all ((~=) (opts!"--interface"))
+  ["extern","ffi","c","c-ffi","c-auto","c-ffi-auto"] then
 fprintf stderr "Error: invalid interface type (-f) '%s'\nType 'pure-gen -h for help.\n" (opts!"--interface") $$ exit 1
 else ();
 
@@ -1011,7 +1024,8 @@ let c_name = if member opts "--c-output" then opts!"--c-output"
 let c_base = strip_ext $ basename c_name;
 let libnames =
   if ~null libnames then libnames
-  else if any ((==) (opts!"--interface")) ["c","c-ffi"] then [c_base]
+  else if any ((==) (opts!"--interface"))
+    ["c","c-ffi","c-auto","c-ffi-auto"] then [c_base]
   else [];
 let glob_pat, regex_pat = case split "::" $ opts!"--select" of
                             [] = "", "";
@@ -1135,8 +1149,12 @@ let all_protos = filter (matches fnpat funpat) func_protos;
 let extern_decl = case iface_opt of
   "extern" = pure_extern_decl;
   "ffi" = fputs "using ffi;\n" out_pure $$ ffi_extern_decl;
-  _ = if iface_opt=="c" then Pure_extern_decl
-      else fputs "using ffi;\n" out_pure $$ Pure_ffi_extern_decl
+  _ = if iface_opt=="c" || iface_opt=="c-auto" then
+        (if iface_opt=="c" then Pure_extern_decl
+	 else Pure_extern_decl_auto)
+      else fputs "using ffi;\n" out_pure $$
+        (if iface_opt=="c-ffi" then Pure_ffi_extern_decl
+	 else Pure_ffi_extern_decl_auto)
   when
     //Output the C part
     out_c = fopen c_name w;
@@ -1144,6 +1162,8 @@ let extern_decl = case iface_opt of
 
     fprintf out_c "#include \"%s\"\n%s\n" (in_name,frontmatter);
     if ~null alt_frontmatter then fprintf out_c "%s\n" alt_frontmatter else ();
+    c_impl = if iface_opt=="c" || iface_opt=="c-ffi" then c_impl
+             else c_impl_auto;
     do (flip fputs out_c) $ map c_impl all_protos;
   end;
 end;
