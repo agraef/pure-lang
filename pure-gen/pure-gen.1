@@ -73,12 +73,15 @@ symbols starting with an underscore are excluded unless this option is
 specified.
 .TP
 \fB-s\fP \fIpattern\fP, \fB--select\fP \fIpattern\fP
-Filter of C symbols to be included in the output. \fIpattern\fP takes the form
-[\fIglob-patterns\fP::][\fIregex-pattern\fP], designating a comma separated
-list of glob patterns matching the source filenames, and an extended regular
-expression matching the symbols to be processed. See \fBglob\fP(7) and
+Selection of C symbols to be included in the output. \fIpattern\fP takes the
+form [\fIglob-patterns\fP::][\fIregex-pattern\fP], designating a comma
+separated list of glob patterns matching the source filenames, and an extended
+regular expression matching the symbols to be processed. See \fBglob\fP(7) and
 \fBregex\fP(7). The default \fIpattern\fP is empty which matches all symbols
 in all source modules.
+.TP
+\fB-x\fP \fIpattern\fP, \fB--exclude\fP \fIpattern\fP
+Like \fB-s\fP, but \fIexcludes\fP all matching C symbols from the selection.
 .TP
 \fB-t\fP \fIfile\fP, \fB--template\fP \fIfile\fP
 Specify a C template file to be used with C wrapper generation
@@ -140,8 +143,8 @@ pure-gen -ne foo.h \e
 .sp
 which prints on standard output all headers which are included in the source.
 This helps to decide which headers you want to be included in the output, so
-that you can set up a corresponding filter pattern (\fB-s\fP option, see
-below).
+that you can set up a corresponding filter patterns (\fB-s\fP and \fB-x\fP
+options, see below).
 .PP
 The \fB-I\fP, \fB-D\fP and \fB-U\fP options are simply passed to the C
 preprocessor, as well as any other option or argument escaped with the
@@ -171,10 +174,10 @@ identifiers with a leading underscore (which are often found in system
 headers) from processing. You can use the \fB-a\fP option to disable this, so
 that all these symbols are included as well.
 .PP
-In addition, the \fB-s\fP option enables you to filter C symbols using the
-source filename and the symbol as search criteria. For instance, to just
-generate code for a single header foo.h and none of the other headers included
-in foo.h, you can invoke
+In addition, the \fB-s\fP and \fB-x\fP options enable you to filter C symbols
+using the source filename and the symbol as search criteria. For instance, to
+just generate code for a single header foo.h and none of the other headers
+included in foo.h, you can invoke
 .B pure-gen
 as follows:
 .sp
@@ -195,10 +198,15 @@ resides, and an extended regex to be matched against the symbol itself. The
 \(aq::\(aq which matches any source file. The regex can also be empty, in
 which case it matches any symbol. The generated output will contain only the
 constant and function symbols matching the given regex, from source files
-matching any of the the glob patterns. Thus, for instance, the option \(aq-s
-foo.h,bar.h::^(foo|bar)_\(aq pulls all symbols prefixed with either
+matching any of the the glob patterns. Thus, for instance, the option
+\(aq-s\ foo.h,bar.h::^(foo|bar)_\(aq pulls all symbols prefixed with either
 \(aqfoo_\(aq or \(aqbar_\(aq from the files foo.h and bar.h in the current
 directory.
+.PP
+The \fB-x\fP option works exactly the same, but \fIexcludes\fP all matching
+symbols from the selection. Thus, e.g., the option \(aq-x\ ^bar_\(aq causes
+all symbols with the prefix \(aqbar_\(aq to \fInot\fP be included in the
+output module.
 .PP
 Processing of glob patterns is performed using the customary rules for
 filename matching, see \fBglob\fP(7) for details. Note that some include files
