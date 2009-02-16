@@ -252,9 +252,15 @@ The C routines can't be called directly through Pure externs.
 .PP
 The latter case might arise, e.g., if the module uses non-C linkage or calling
 conventions, or if some of the operations to be wrapped are actually
-implemented as C macros. Another important case is that some of the C routines
-pass C structs by value or return them as results. This is discussed in more
-detail in the following section.
+implemented as C macros. (Note that in order to wrap macros as functions
+you'll have to create a staged header which declares the macros as C
+functions, so that they are wrapped in the C module.
+.B pure-gen
+doesn't do this automatically.)
+.PP
+Another important case is that some of the C routines pass C structs by value
+or return them as results. This is discussed in more detail in the following
+section.
 .PP
 For instance, let's say that we want to generate a wrapper foo.c from the
 foo.h header file whose operations are implemented in some library libfoo.a or
@@ -286,6 +292,7 @@ template file, which has the following format:
 .sp
 .nf
 /* frontmatter here */
+#include %h
 %%
 
 /* wrapper here */
@@ -296,13 +303,17 @@ template file, which has the following format:
 .fi
 .sp
 Note that the code up to the symbol \(aq%%\(aq on a line by itself denotes
-``frontmatter'' which gets inserted at the beginning of the C file, right
-after the \fB#include\fP of the parsed header file. (The frontmatter section
-can also be empty or missing altogether if you don't need it.)
+``frontmatter'' which gets inserted at the beginning of the C file. (The
+frontmatter section can also be empty or missing altogether if you don't need
+it, but usually it will contain at least an \fB#include\fP for the input
+header file.)
 .PP
 The rest of the template is the code for each wrapper function. Substitutions
 of various syntactical fragments of the function definition is performed using
 the following placeholders:
+.TP
+%h
+input header file
 .TP
 %r
 return type of the function
@@ -340,8 +351,8 @@ pure-gen -fc -t foo.templ foo.h
 Then in foo.c you'd get C output code like the following:
 .sp
 .nf
-#include "foo.h"
 /* frontmatter here */
+#include "foo.h"
 
 /* wrapper here */
 void Pure_foo(int arg0, void* arg1)
@@ -460,7 +471,8 @@ In a Pure script you can now call foo and bar as:
 Note, however, that the pointer returned by \(aqbar\(aq points to static
 storage which will be overwritten each time you invoke the \(aqbar\(aq
 function. Thus in the following example \fIboth\fP u and v will point to the
-same \(aqpoint\(aq struct:
+same \(aqpoint\(aq struct, namely that defined by the latter call to
+\(aqbar\(aq:
 .sp
 .nf
 > let u = bar 1.0 0.0; let v = bar 0.0 1.0;
