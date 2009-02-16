@@ -21,18 +21,20 @@ let copyright = sprintf
 
 /* Default template for C code generation.
 
-   %r = return type, %w = wrapper function name, %p = formal params, %n =
-   real function name, %a = arguments, %% escapes a single %.
+   %h = header name, %r = return type, %w = wrapper function name, %p = formal
+   params, %n = real function name, %a = arguments, %% escapes a single %.
 
    A %% on a line by itself separates the "frontmatter" (code to be inserted
    at the beginning of the C file, right after the #include of the header
    file) from the function template in the main part of the code. */
 
-let default_template = "%r %w(%p)\n{\n  return %n(%a);\n}\n\n";
+let default_template =
+  "#include %h\n%%\n\n%r %w(%p)\n{\n  return %n(%a);\n}\n";
 
 /* An alternative template for wrapper functions returning struct values. */
 
-let default_alt_template = "%r* %w(%p)\n{\n  static %r ret;\n  ret = %n(%a); return &ret;\n}\n\n";
+let default_alt_template =
+  "\n%r* %w(%p)\n{\n  static %r ret;\n  ret = %n(%a); return &ret;\n}\n";
 
 /* Messaging. */
 
@@ -781,11 +783,14 @@ Pure_ffi_extern_decl_auto pfx nmspace x@(name, func_type ret args, _)
 //TODO: at this point the typedefs have been resolved. It would be better
 //if they were not.
 
-replace_template template ret_type wrapper_name formal_params name arg_names
-  = regsub repl "(%%)|(%r)|(%w)|(%p)|(%n)|(%a)" REG_EXTENDED template 0
+replace_template template header_name ret_type wrapper_name formal_params name arg_names
+  = regsub repl "(%%)|(%h)|(%r)|(%w)|(%p)|(%n)|(%a)" REG_EXTENDED template 0
 with
   repl info = subst!(regs info!1!0-1)
-  when subst = ["%",ret_type,wrapper_name,formal_params,name,arg_names] end;
+  when
+    subst = ["%",header_name,ret_type,wrapper_name,formal_params,name,
+	     arg_names];
+  end;
 end;
 
 c_impl (name, func_type ret args, _)
@@ -805,7 +810,7 @@ when
     (0..#args-1) args;
 
   code = replace_template (if is_struct ret then alt_template else template)
-         ret_str (wrap_prefix+name) formal_params name arg_names;
+         (str in_name) ret_str (wrap_prefix+name) formal_params name arg_names;
 end;
 
 c_impl_auto x@(name, func_type ret args, _)
@@ -1175,8 +1180,12 @@ let extern_decl = case iface_opt of
     out_c = fopen c_name w;
     if dry_run then () else echo 1 $ sprintf "Writing %s" c_name;
 
-    fprintf out_c "#include \"%s\"\n%s\n" (in_name,frontmatter);
-    if ~null alt_frontmatter then fprintf out_c "%s\n" alt_frontmatter else ();
+    fprintf out_c "%s\n" $
+      replace_template frontmatter (str in_name) "" "" "" "" "";
+    if ~null alt_frontmatter then
+      fprintf out_c "\n%s\n" $
+        replace_template alt_frontmatter (str in_name) "" "" "" "" ""
+    else ();
     c_impl = if iface_opt=="c" || iface_opt=="c-ffi" then c_impl
              else c_impl_auto;
     do (flip fputs out_c) $ map c_impl all_protos;
