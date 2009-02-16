@@ -78,6 +78,7 @@ class interpreter;
 %{
 #include "lexerdefs.hh"
 #include "interpreter.hh"
+static int extern_priv;
 %}
 
 %token		PRIVATE	"private"
@@ -301,7 +302,9 @@ item
 { interp.using_namespaces($3); }
 | USING NAMESPACE
 { interp.using_namespaces(); }
-| EXTERN prototypes
+| PUBLIC EXTERN { extern_priv = 0; } prototypes
+| PRIVATE EXTERN { extern_priv = 1; } prototypes
+| EXTERN { extern_priv = -1; } prototypes
 ;
 
 fixity
@@ -354,7 +357,7 @@ prototypes
 
 prototype
 : ctype ID '(' opt_ctypes ')' optalias
-{ action(interp.declare_extern(*$2, *$1, *$4, false, 0, *$6), {});
+{ action(interp.declare_extern(extern_priv, *$2, *$1, *$4, false, 0, *$6), {});
   delete $1; delete $2; delete $4; delete $6; }
 ;
 

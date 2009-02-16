@@ -4094,10 +4094,10 @@ Function *interpreter::declare_extern(void *fp, string name, string restype,
     argtypes.push_back(s);
   }
   va_end(ap);
-  return declare_extern(name, restype, argtypes, varargs, fp);
+  return declare_extern(-1, name, restype, argtypes, varargs, fp);
 }
 
-Function *interpreter::declare_extern(string name, string restype,
+Function *interpreter::declare_extern(int priv, string name, string restype,
 				      const list<string>& argtypes,
 				      bool varargs, void *fp,
 				      string asname)
@@ -4146,7 +4146,18 @@ Function *interpreter::declare_extern(string name, string restype,
       argt[i] = Type::Int64Ty;
   if (asname.empty()) asname = name;
   string asid = (*symtab.current_namespace)+"::"+asname;
-  symbol* _sym = symtab.sym(asid);
+  symbol* _sym = symtab.lookup(asid);
+  /* If the symbol is already declared and we have a public/private specifier,
+     make sure that they match up. */
+  if (_sym) {
+    if (priv >= 0 && _sym->priv != priv)
+      throw err("symbol '"+asid+"' already declared "+
+		(_sym->priv?"'private'":"'public'"));
+  } else {
+    _sym = symtab.sym(asid);
+    if (priv >= 0)
+      _sym->priv = priv;
+  }
   assert(_sym);
   symbol& sym = *_sym;
   if (globenv.find(sym.f) != globenv.end() &&

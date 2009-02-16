@@ -521,7 +521,7 @@ public:
   map<int32_t,ExternInfo> externals;
   llvm::Function *declare_extern(void *fp, string name, string restype,
 				 int n, ...);
-  llvm::Function *declare_extern(string name, string restype,
+  llvm::Function *declare_extern(int priv, string name, string restype,
 				 const list<string>& argtypes,
 				 bool varargs = false, void *fp = 0,
 				 string asname = "");
