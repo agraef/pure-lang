@@ -816,6 +816,8 @@ c_impl_auto x@(name, func_type ret args, _)
 
 const cflags = REG_NOSUB or REG_EXTENDED;
 const fnflags = FNM_PATHNAME;
+matches (fnpat,fnpatx) (pat,patx) x = matches fnpat pat x &&
+				      ~matches fnpatx patx x;
 matches fnpat pat (constant name _ fname) = valid_name fname name &&
   fnmatches fnpat fname fnflags && regchk pat (regex pat cflags name 0);
 matches fnpat pat (name, _, fname) = valid_name fname name &&
@@ -895,6 +897,7 @@ let opts = [("--help", "-h", NOARG),
             ("--namespace", "-m", REQARG),
             ("--prefix", "-p", REQARG),
             ("--select", "-s", REQARG),
+            ("--exclude", "-x", REQARG),
             ("--wrap", "-P", REQARG),
             ("--template", "-t", REQARG),
             ("--alt-template", "-T", REQARG),
@@ -979,9 +982,10 @@ Generator options:\n\
 -p, --prefix       Module name prefix to be removed from C symbols.\n\
 -P, --wrap         Prefix to be prepended to C wrapper symbols.\n\
 -a, --all          Include \"hidden\" symbols.\n\
--s, --select       Filter of valid C symbols (see manpage for details).\n\
+-s, --select       Filename/regex pattern of C symbols to be included.\n\
+-x, --exclude      Filename/regex pattern of C symbols to be excluded.\n\
 -t, --template     Specify C template file (see manpage for details).\n\
--T, --alt-template Alternate C template file (see manpage for details).\n\
+-T, --alt-template Specify alternate C template file.\n\
 Output options:\n\
 -n, --dry-run      Only parse without generating any output.\n\
 -N, --noclobber    Append output to existing files.\n\
@@ -1027,17 +1031,26 @@ let libnames =
   else if any ((==) (opts!"--interface"))
     ["c","c-ffi","c-auto","c-ffi-auto"] then [c_base]
   else [];
-let glob_pat, regex_pat = case split "::" $ opts!"--select" of
-                            [] = "", "";
-                            [x] = "", x;
-                            x:xs = x, join "::" xs;
-                          end;
+let [glob_pat, regex_pat] =
+  case split "::" $ opts!"--select" of
+    [] = ["", ""];
+    [x] = ["", x];
+    x:xs = [x, join "::" xs];
+  end;
+let [glob_patx, regex_patx] = if member opts "--exclude" then
+  (case split "::" $ opts!"--exclude" of
+     [] = ["", ""];
+     [x] = ["", x];
+     x:xs = [x, join "::" xs];
+   end)
+  else [(),()];
 let nmspace = opts!"--namespace";
 let funpfx = opts!"--prefix";
-let funpat = regex_pat;
+let funpat = regex_pat, regex_patx;
 let cstpfx = opts!"--prefix";
-let cstpat = regex_pat;
-let fnpat = split "," glob_pat;
+let cstpat = regex_pat, regex_patx;
+let fnpatx = if glob_patx ~== () then split "," glob_patx else ();
+let fnpat = split "," glob_pat, fnpatx;
 let wrap_prefix = opts!"--wrap";
 let all_opt = defnum 1 "--all";
 let noclobber = defnum 1 "--noclobber";
@@ -1084,6 +1097,7 @@ echo 1 $ sprintf "Library import:     %s" (if null libnames then "(none)" else "
 echo 1 $ sprintf "Module namespace:   %s" (if null nmspace then "(none)" else nmspace);
 echo 1 $ sprintf "Module name prefix: %s" (if null modprefix then "(none)" else modprefix when modprefix = opts!"--prefix" end);
 echo 1 $ sprintf "Symbol selection:   %s" (if null sel then "(all)" else sel when sel = opts!"--select" end);
+echo 1 $ sprintf "Symbol excludes:    %s" (if member opts "--exclude" then opts!"--exclude" else "(none)");
 echo 1 $ sprintf "CPP options:        %s" (if null cpp_opts then "(none)" else cpp_opts);
 if member opts "--template" then
 echo 1 $ sprintf "C template file:    %s" (opts!"--template")
