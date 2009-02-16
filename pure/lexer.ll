@@ -279,6 +279,10 @@ blank  [ \t\f\v\r]
 \"{str}\"   {
   char *msg;
   yytext[yyleng-1] = 0;
+  int count = 0;
+  for (int i = 1; i < yyleng-1; i++)
+    if (yytext[i] == '\n') count++;
+  yylloc->lines(count);
   yylval->csval = parsestr(yytext+1, msg);
   yytext[yyleng-1] = '"';
   if (msg) interp.error(*yylloc, msg);
@@ -288,6 +292,10 @@ blank  [ \t\f\v\r]
 <rescan>\"{str} |
 \"{str}      {
   char *msg;
+  int count = 0;
+  for (int i = 1; i < yyleng; i++)
+    if (yytext[i] == '\n') count++;
+  yylloc->lines(count);
   interp.error(*yylloc, "unterminated string constant");
   yylval->csval = parsestr(yytext+1, msg);
   BEGIN(INITIAL);
