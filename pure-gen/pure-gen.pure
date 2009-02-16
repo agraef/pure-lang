@@ -670,7 +670,8 @@ resolve_indirects constants =
           unknown_const )
       ( case d!c of
         (constant _ v _) = constant n v src;
-        (indirect _ i _) = lookup d (indirect n i src);
+        (indirect _ i _) = if c==i then unknown_const // #define x x
+                           else lookup d (indirect n i src);
         end );
   end;
 
