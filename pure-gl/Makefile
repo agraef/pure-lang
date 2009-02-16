@@ -51,6 +51,7 @@ CFLAGS = -g -O2
 FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 
 DISTFILES = COPYING Makefile README config.guess examples/*.pure \
+examples/*.jpg \
 generator/all_gl.h generator/all_gl_ext.h generator/dump-ast.hs \
 generator/pure-gl.c.fragment generator/pure-gl-gen.pure pure-gl.c \
 GL.pure GLU.pure GLUT.pure GL_ARB.pure GL_EXT.pure GL_NV.pure GL_ATI.pure

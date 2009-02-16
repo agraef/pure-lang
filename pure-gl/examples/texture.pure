@@ -1,0 +1,109 @@
+
+/* Render a texture on a rotating square. 2009-02-16 AG. */
+
+/* This requires Rasterman's imlib2 library (see Imlib2.pure). Make sure you
+   have libImlib2.so installed somewhere where Pure can find it. */
+
+using GL, GLU, GLUT;
+using ffi, system, Imlib2;
+
+// Initialize.
+
+let argcp, argvp = {argc}, byte_cstring_pointer argv;
+GLUT::Init argcp argvp;
+
+GLUT::InitDisplayMode (GLUT::DOUBLE or GLUT::RGB or GLUT::DEPTH );
+GLUT::InitWindowSize 500 500;
+GLUT::CreateWindow "Texture - Pure OpenGL Example";
+
+GL::ClearColor 0.0 0.0 0.0 1.0; 
+GL::Enable GL::DEPTH_TEST;
+
+// Load the image.
+let image = imlib_load_image "fractal.jpg";
+imlib_context_set_image image;
+// Note: w, h must be powers of 2. We also assume w/h==1.
+let w, h = imlib_image_get_width, imlib_image_get_height;
+let pix = imlib_image_get_data_for_reading_only;
+
+// Initialize the texture.
+GL::PixelStorei GL::UNPACK_ALIGNMENT 1;
+GL::TexImage2D GL::TEXTURE_2D 0 GL::RGB w h 0 GL::BGRA GL::UNSIGNED_BYTE pix;
+GL::TexParameteri GL::TEXTURE_2D GL::TEXTURE_WRAP_S GL::CLAMP;
+GL::TexParameteri GL::TEXTURE_2D GL::TEXTURE_WRAP_T GL::CLAMP;
+GL::TexParameteri GL::TEXTURE_2D GL::TEXTURE_MAG_FILTER GL::NEAREST;
+GL::TexParameteri GL::TEXTURE_2D GL::TEXTURE_MIN_FILTER GL::NEAREST;
+GL::TexEnvi GL::TEXTURE_ENV GL::TEXTURE_ENV_MODE GL::DECAL;
+GL::Enable GL::TEXTURE_2D;
+GL::ShadeModel GL::FLAT;
+
+// Initial projection and modelview matrices.
+
+GL::MatrixMode GL::PROJECTION;
+GL::LoadIdentity;
+GL::Rotatef 20.0 (-1.0) 0.0 0.0;
+GL::MatrixMode GL::MODELVIEW;
+GL::LoadIdentity;
+
+// Callbacks.
+
+let dir = ref 1.0;
+
+// The display callback. Renders the rotating texture.
+
+let display_cb = fclos display FFI_DEFAULT_ABI void_t void_t
+with
+  display _ = ()
+  when
+    GL::Clear (GL::DEPTH_BUFFER_BIT or GL::COLOR_BUFFER_BIT);
+    GL::Rotatef (get dir*2.0) 0.0 1.0 0.0;
+    GL::Color3f 0.0 0.0 0.0;
+    /* Draw a quad with the texture on it. Note: OpenGL starts rendering in
+       the bottom left corner, but the pixels are stored in memory with the
+       top row first, so the texture coordinates are "upside-down". */
+    GL::Begin GL::QUADS;
+    GL::TexCoord2f 0.0 1.0; GL::Vertex3f (-0.7) (-0.7) 0.0;
+    GL::TexCoord2f 0.0 0.0; GL::Vertex3f (-0.7)   0.7  0.0;
+    GL::TexCoord2f 1.0 0.0; GL::Vertex3f   0.7    0.7  0.0;
+    GL::TexCoord2f 1.0 1.0; GL::Vertex3f   0.7  (-0.7) 0.0;
+    GL::End;
+    GLUT::SwapBuffers;
+  end;
+end;
+
+// This redraws the display every 40 msec, i.e., at 25 FPS.
+
+let timer_cb = fclos timer FFI_DEFAULT_ABI void_t sint_t
+with
+  timer n = ()
+  when
+    GLUT::PostRedisplay;
+    GLUT::TimerFunc 40 timer_cb n;
+  end;
+end;
+
+// Process keyboard input. Cursor left-right changes the rotation direction,
+// up-down rotates in the vertical direction, F10 quits.
+
+let input_cb = fclos input FFI_DEFAULT_ABI void_t sint_t
+with
+  input k = exit 0 if k == GLUT::KEY_F10;
+          = put dir 1.0 if k == GLUT::KEY_LEFT;
+          = put dir (-1.0) if k == GLUT::KEY_RIGHT;
+	  = rotate 2.0 if k == GLUT::KEY_DOWN;
+	  = rotate (-2.0) if k == GLUT::KEY_UP;
+  rotate angle = () when
+    GL::MatrixMode GL::PROJECTION;
+    GL::Rotatef angle 1.0 0.0 0.0;
+    GL::MatrixMode GL::MODELVIEW;
+  end;
+end;
+
+GLUT::DisplayFunc display_cb;
+GLUT::TimerFunc 40 timer_cb 0;
+GLUT::SpecialFunc input_cb 0;
+
+// Invoke the main loop.
+
+puts "Cursor keys to rotate up/down, left/right. F10 to exit.";
+GLUT::MainLoop;
