@@ -207,7 +207,7 @@ bool expr::is_tuplex() const
 {
   expr x, y;
   if (is_pair(x, y))
-    return !x.is_voidx() && !x.is_pair() && !y.is_voidx() && y.is_tuplex();
+    return !x.is_pair() && y.is_tuplex();
   else
     return true;
 }
@@ -255,7 +255,7 @@ bool expr::is_tuplex(exprl &xs) const
 {
   expr x, y;
   if (is_pair(x, y))
-    if (x.is_pair() || x.is_voidx() || y.is_voidx()) {
+    if (x.is_pair()) {
       xs.clear();
       return false;
     } else {
