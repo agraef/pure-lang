@@ -1841,7 +1841,7 @@ static inline pure_expr *mk_void()
 static inline pure_expr *mk_pair(pure_expr *x, pure_expr *y)
 {
   interpreter& interp = *interpreter::g_interp;
-  pure_expr *f = pure_const(interp.symtab.pair_sym().f);
+  pure_expr *f = pure_symbol(interp.symtab.pair_sym().f);
   return pure_apply2(pure_apply2(f, x), y);
 }
 
