@@ -5733,7 +5733,7 @@ Value *interpreter::codegen(expr x, bool quote)
 	   speeds up compilation for larger sequences. See the comments at the
 	   beginning of interpreter.hh for details. */
 	exprl xs;
-	if ((x.is_list(xs) || (x.is_pair() && x.is_tuple(xs))) &&
+	if ((x.is_list(xs) || (x.is_pair() && x.is_tuplex(xs))) &&
 	    xs.size() >= LIST_KLUDGE) {
 	  size_t i = 0, n = xs.size();
 	  vector<Value*> argv(n+1);
