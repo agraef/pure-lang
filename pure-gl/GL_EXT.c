@@ -2245,10 +2245,241 @@ void Pure_glGenerateMipmapEXT(unsigned int arg0)
   return (*ptr)(arg0);
 }
 
-void Pure_glStencilClearTagEXT(int arg0, unsigned int arg1)
+void Pure_glGetQueryObjecti64vEXT(unsigned int arg0, unsigned int arg1, long long* arg2)
+{
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, long long* arg2) = NULL;
+  static const char name[] = "glGetQueryObjecti64vEXT";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, long long* arg2))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1, arg2);
+}
+
+void Pure_glGetQueryObjectui64vEXT(unsigned int arg0, unsigned int arg1, unsigned long long* arg2)
+{
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, unsigned long long* arg2) = NULL;
+  static const char name[] = "glGetQueryObjectui64vEXT";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, unsigned long long* arg2))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1, arg2);
+}
+
+void Pure_glTexBufferEXT(unsigned int arg0, unsigned int arg1, unsigned int arg2)
+{
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, unsigned int arg2) = NULL;
+  static const char name[] = "glTexBufferEXT";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, unsigned int arg2))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1, arg2);
+}
+
+void Pure_glColorMaskIndexedEXT(unsigned int arg0, unsigned char arg1, unsigned char arg2, unsigned char arg3, unsigned char arg4)
+{
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned char arg1, unsigned char arg2, unsigned char arg3, unsigned char arg4) = NULL;
+  static const char name[] = "glColorMaskIndexedEXT";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned char arg1, unsigned char arg2, unsigned char arg3, unsigned char arg4))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1, arg2, arg3, arg4);
+}
+
+void Pure_glGetBooleanIndexedvEXT(unsigned int arg0, unsigned int arg1, unsigned char* arg2)
+{
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, unsigned char* arg2) = NULL;
+  static const char name[] = "glGetBooleanIndexedvEXT";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, unsigned char* arg2))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1, arg2);
+}
+
+void Pure_glGetIntegerIndexedvEXT(unsigned int arg0, unsigned int arg1, int* arg2)
+{
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, int* arg2) = NULL;
+  static const char name[] = "glGetIntegerIndexedvEXT";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, int* arg2))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1, arg2);
+}
+
+void Pure_glEnableIndexedEXT(unsigned int arg0, unsigned int arg1)
+{
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1) = NULL;
+  static const char name[] = "glEnableIndexedEXT";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1);
+}
+
+void Pure_glDisableIndexedEXT(unsigned int arg0, unsigned int arg1)
+{
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1) = NULL;
+  static const char name[] = "glDisableIndexedEXT";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1);
+}
+
+unsigned char Pure_glIsEnabledIndexedEXT(unsigned int arg0, unsigned int arg1)
+{
+  static unsigned char(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1) = NULL;
+  static const char name[] = "glIsEnabledIndexedEXT";
+  if (!ptr) {
+    ptr = (unsigned char(APIENTRY*)(unsigned int arg0, unsigned int arg1))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1);
+}
+
+void Pure_glTexParameterIivEXT(unsigned int arg0, unsigned int arg1, const int* arg2)
+{
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, const int* arg2) = NULL;
+  static const char name[] = "glTexParameterIivEXT";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, const int* arg2))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1, arg2);
+}
+
+void Pure_glTexParameterIuivEXT(unsigned int arg0, unsigned int arg1, const unsigned int* arg2)
+{
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, const unsigned int* arg2) = NULL;
+  static const char name[] = "glTexParameterIuivEXT";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, const unsigned int* arg2))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1, arg2);
+}
+
+void Pure_glGetTexParameterIivEXT(unsigned int arg0, unsigned int arg1, int* arg2)
+{
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, int* arg2) = NULL;
+  static const char name[] = "glGetTexParameterIivEXT";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, int* arg2))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1, arg2);
+}
+
+void Pure_glGetTexParameterIuivEXT(unsigned int arg0, unsigned int arg1, unsigned int* arg2)
+{
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, unsigned int* arg2) = NULL;
+  static const char name[] = "glGetTexParameterIuivEXT";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, unsigned int* arg2))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1, arg2);
+}
+
+void Pure_glClearColorIiEXT(int arg0, int arg1, int arg2, int arg3)
+{
+  static void(APIENTRY*ptr)(int arg0, int arg1, int arg2, int arg3) = NULL;
+  static const char name[] = "glClearColorIiEXT";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(int arg0, int arg1, int arg2, int arg3))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1, arg2, arg3);
+}
+
+void Pure_glClearColorIuiEXT(unsigned int arg0, unsigned int arg1, unsigned int arg2, unsigned int arg3)
+{
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, unsigned int arg2, unsigned int arg3) = NULL;
+  static const char name[] = "glClearColorIuiEXT";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, unsigned int arg2, unsigned int arg3))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1, arg2, arg3);
+}
+
+void Pure_glUniformBufferEXT(unsigned int arg0, int arg1, unsigned int arg2)
+{
+  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, unsigned int arg2) = NULL;
+  static const char name[] = "glUniformBufferEXT";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, unsigned int arg2))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1, arg2);
+}
+
+int Pure_glGetUniformBufferSizeEXT(unsigned int arg0, int arg1)
+{
+  static int(APIENTRY*ptr)(unsigned int arg0, int arg1) = NULL;
+  static const char name[] = "glGetUniformBufferSizeEXT";
+  if (!ptr) {
+    ptr = (int(APIENTRY*)(unsigned int arg0, int arg1))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1);
+}
+
+long Pure_glGetUniformOffsetEXT(unsigned int arg0, int arg1)
+{
+  static long(APIENTRY*ptr)(unsigned int arg0, int arg1) = NULL;
+  static const char name[] = "glGetUniformOffsetEXT";
+  if (!ptr) {
+    ptr = (long(APIENTRY*)(unsigned int arg0, int arg1))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1);
+}
+
+void Pure_glGetUniformuivEXT(unsigned int arg0, int arg1, unsigned int* arg2)
+{
+  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, unsigned int* arg2) = NULL;
+  static const char name[] = "glGetUniformuivEXT";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, unsigned int* arg2))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1, arg2);
+}
+
+void Pure_glBindFragDataLocationEXT(unsigned int arg0, unsigned int arg1, const char* arg2)
+{
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, const char* arg2) = NULL;
+  static const char name[] = "glBindFragDataLocationEXT";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, const char* arg2))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1, arg2);
+}
+
+int Pure_glGetFragDataLocationEXT(unsigned int arg0, const char* arg1)
+{
+  static int(APIENTRY*ptr)(unsigned int arg0, const char* arg1) = NULL;
+  static const char name[] = "glGetFragDataLocationEXT";
+  if (!ptr) {
+    ptr = (int(APIENTRY*)(unsigned int arg0, const char* arg1))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1);
+}
+
+void Pure_glUniform1uiEXT(int arg0, unsigned int arg1)
 {
   static void(APIENTRY*ptr)(int arg0, unsigned int arg1) = NULL;
-  static const char name[] = "glStencilClearTagEXT";
+  static const char name[] = "glUniform1uiEXT";
   if (!ptr) {
     ptr = (void(APIENTRY*)(int arg0, unsigned int arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
@@ -2256,111 +2487,78 @@ void Pure_glStencilClearTagEXT(int arg0, unsigned int arg1)
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glBlitFramebufferEXT(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, unsigned int arg8, unsigned int arg9)
+void Pure_glUniform2uiEXT(int arg0, unsigned int arg1, unsigned int arg2)
 {
-  static void(APIENTRY*ptr)(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, unsigned int arg8, unsigned int arg9) = NULL;
-  static const char name[] = "glBlitFramebufferEXT";
+  static void(APIENTRY*ptr)(int arg0, unsigned int arg1, unsigned int arg2) = NULL;
+  static const char name[] = "glUniform2uiEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, unsigned int arg8, unsigned int arg9))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
-}
-
-void Pure_glRenderbufferStorageMultisampleEXT(unsigned int arg0, int arg1, unsigned int arg2, int arg3, int arg4)
-{
-  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, unsigned int arg2, int arg3, int arg4) = NULL;
-  static const char name[] = "glRenderbufferStorageMultisampleEXT";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, unsigned int arg2, int arg3, int arg4))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1, arg2, arg3, arg4);
-}
-
-void Pure_glGetQueryObjecti64vEXT(unsigned int arg0, unsigned int arg1, long* arg2)
-{
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, long* arg2) = NULL;
-  static const char name[] = "glGetQueryObjecti64vEXT";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, long* arg2))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(int arg0, unsigned int arg1, unsigned int arg2))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glGetQueryObjectui64vEXT(unsigned int arg0, unsigned int arg1, unsigned long* arg2)
+void Pure_glUniform3uiEXT(int arg0, unsigned int arg1, unsigned int arg2, unsigned int arg3)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, unsigned long* arg2) = NULL;
-  static const char name[] = "glGetQueryObjectui64vEXT";
+  static void(APIENTRY*ptr)(int arg0, unsigned int arg1, unsigned int arg2, unsigned int arg3) = NULL;
+  static const char name[] = "glUniform3uiEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, unsigned long* arg2))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(int arg0, unsigned int arg1, unsigned int arg2, unsigned int arg3))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1, arg2, arg3);
+}
+
+void Pure_glUniform4uiEXT(int arg0, unsigned int arg1, unsigned int arg2, unsigned int arg3, unsigned int arg4)
+{
+  static void(APIENTRY*ptr)(int arg0, unsigned int arg1, unsigned int arg2, unsigned int arg3, unsigned int arg4) = NULL;
+  static const char name[] = "glUniform4uiEXT";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(int arg0, unsigned int arg1, unsigned int arg2, unsigned int arg3, unsigned int arg4))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1, arg2, arg3, arg4);
+}
+
+void Pure_glUniform1uivEXT(int arg0, int arg1, const unsigned int* arg2)
+{
+  static void(APIENTRY*ptr)(int arg0, int arg1, const unsigned int* arg2) = NULL;
+  static const char name[] = "glUniform1uivEXT";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(int arg0, int arg1, const unsigned int* arg2))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glProgramEnvParameters4fvEXT(unsigned int arg0, unsigned int arg1, int arg2, const float* arg3)
+void Pure_glUniform2uivEXT(int arg0, int arg1, const unsigned int* arg2)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, int arg2, const float* arg3) = NULL;
-  static const char name[] = "glProgramEnvParameters4fvEXT";
+  static void(APIENTRY*ptr)(int arg0, int arg1, const unsigned int* arg2) = NULL;
+  static const char name[] = "glUniform2uivEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, int arg2, const float* arg3))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(int arg0, int arg1, const unsigned int* arg2))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
-  return (*ptr)(arg0, arg1, arg2, arg3);
+  return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glProgramLocalParameters4fvEXT(unsigned int arg0, unsigned int arg1, int arg2, const float* arg3)
+void Pure_glUniform3uivEXT(int arg0, int arg1, const unsigned int* arg2)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, int arg2, const float* arg3) = NULL;
-  static const char name[] = "glProgramLocalParameters4fvEXT";
+  static void(APIENTRY*ptr)(int arg0, int arg1, const unsigned int* arg2) = NULL;
+  static const char name[] = "glUniform3uivEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, int arg2, const float* arg3))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(int arg0, int arg1, const unsigned int* arg2))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
-  return (*ptr)(arg0, arg1, arg2, arg3);
+  return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glFramebufferTextureEXT(unsigned int arg0, unsigned int arg1, unsigned int arg2, int arg3)
+void Pure_glUniform4uivEXT(int arg0, int arg1, const unsigned int* arg2)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, unsigned int arg2, int arg3) = NULL;
-  static const char name[] = "glFramebufferTextureEXT";
+  static void(APIENTRY*ptr)(int arg0, int arg1, const unsigned int* arg2) = NULL;
+  static const char name[] = "glUniform4uivEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, unsigned int arg2, int arg3))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1, arg2, arg3);
-}
-
-void Pure_glFramebufferTextureLayerEXT(unsigned int arg0, unsigned int arg1, unsigned int arg2, int arg3, int arg4)
-{
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, unsigned int arg2, int arg3, int arg4) = NULL;
-  static const char name[] = "glFramebufferTextureLayerEXT";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, unsigned int arg2, int arg3, int arg4))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1, arg2, arg3, arg4);
-}
-
-void Pure_glFramebufferTextureFaceEXT(unsigned int arg0, unsigned int arg1, unsigned int arg2, int arg3, unsigned int arg4)
-{
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, unsigned int arg2, int arg3, unsigned int arg4) = NULL;
-  static const char name[] = "glFramebufferTextureFaceEXT";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, unsigned int arg2, int arg3, unsigned int arg4))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1, arg2, arg3, arg4);
-}
-
-void Pure_glProgramParameteriEXT(unsigned int arg0, unsigned int arg1, int arg2)
-{
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, int arg2) = NULL;
-  static const char name[] = "glProgramParameteriEXT";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, int arg2))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(int arg0, int arg1, const unsigned int* arg2))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2);
@@ -2619,125 +2817,70 @@ void Pure_glGetVertexAttribIuivEXT(unsigned int arg0, unsigned int arg1, unsigne
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glGetUniformuivEXT(unsigned int arg0, int arg1, unsigned int* arg2)
+void Pure_glProgramParameteriEXT(unsigned int arg0, unsigned int arg1, int arg2)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, unsigned int* arg2) = NULL;
-  static const char name[] = "glGetUniformuivEXT";
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, int arg2) = NULL;
+  static const char name[] = "glProgramParameteriEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, unsigned int* arg2))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, int arg2))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glBindFragDataLocationEXT(unsigned int arg0, unsigned int arg1, const char* arg2)
+void Pure_glFramebufferTextureEXT(unsigned int arg0, unsigned int arg1, unsigned int arg2, int arg3)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, const char* arg2) = NULL;
-  static const char name[] = "glBindFragDataLocationEXT";
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, unsigned int arg2, int arg3) = NULL;
+  static const char name[] = "glFramebufferTextureEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, const char* arg2))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1, arg2);
-}
-
-int Pure_glGetFragDataLocationEXT(unsigned int arg0, const char* arg1)
-{
-  static int(APIENTRY*ptr)(unsigned int arg0, const char* arg1) = NULL;
-  static const char name[] = "glGetFragDataLocationEXT";
-  if (!ptr) {
-    ptr = (int(APIENTRY*)(unsigned int arg0, const char* arg1))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1);
-}
-
-void Pure_glUniform1uiEXT(int arg0, unsigned int arg1)
-{
-  static void(APIENTRY*ptr)(int arg0, unsigned int arg1) = NULL;
-  static const char name[] = "glUniform1uiEXT";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(int arg0, unsigned int arg1))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1);
-}
-
-void Pure_glUniform2uiEXT(int arg0, unsigned int arg1, unsigned int arg2)
-{
-  static void(APIENTRY*ptr)(int arg0, unsigned int arg1, unsigned int arg2) = NULL;
-  static const char name[] = "glUniform2uiEXT";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(int arg0, unsigned int arg1, unsigned int arg2))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1, arg2);
-}
-
-void Pure_glUniform3uiEXT(int arg0, unsigned int arg1, unsigned int arg2, unsigned int arg3)
-{
-  static void(APIENTRY*ptr)(int arg0, unsigned int arg1, unsigned int arg2, unsigned int arg3) = NULL;
-  static const char name[] = "glUniform3uiEXT";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(int arg0, unsigned int arg1, unsigned int arg2, unsigned int arg3))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, unsigned int arg2, int arg3))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3);
 }
 
-void Pure_glUniform4uiEXT(int arg0, unsigned int arg1, unsigned int arg2, unsigned int arg3, unsigned int arg4)
+void Pure_glFramebufferTextureLayerEXT(unsigned int arg0, unsigned int arg1, unsigned int arg2, int arg3, int arg4)
 {
-  static void(APIENTRY*ptr)(int arg0, unsigned int arg1, unsigned int arg2, unsigned int arg3, unsigned int arg4) = NULL;
-  static const char name[] = "glUniform4uiEXT";
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, unsigned int arg2, int arg3, int arg4) = NULL;
+  static const char name[] = "glFramebufferTextureLayerEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(int arg0, unsigned int arg1, unsigned int arg2, unsigned int arg3, unsigned int arg4))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, unsigned int arg2, int arg3, int arg4))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3, arg4);
 }
 
-void Pure_glUniform1uivEXT(int arg0, int arg1, const unsigned int* arg2)
+void Pure_glFramebufferTextureFaceEXT(unsigned int arg0, unsigned int arg1, unsigned int arg2, int arg3, unsigned int arg4)
 {
-  static void(APIENTRY*ptr)(int arg0, int arg1, const unsigned int* arg2) = NULL;
-  static const char name[] = "glUniform1uivEXT";
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, unsigned int arg2, int arg3, unsigned int arg4) = NULL;
+  static const char name[] = "glFramebufferTextureFaceEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(int arg0, int arg1, const unsigned int* arg2))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, unsigned int arg2, int arg3, unsigned int arg4))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
-  return (*ptr)(arg0, arg1, arg2);
+  return (*ptr)(arg0, arg1, arg2, arg3, arg4);
 }
 
-void Pure_glUniform2uivEXT(int arg0, int arg1, const unsigned int* arg2)
+void Pure_glRenderbufferStorageMultisampleEXT(unsigned int arg0, int arg1, unsigned int arg2, int arg3, int arg4)
 {
-  static void(APIENTRY*ptr)(int arg0, int arg1, const unsigned int* arg2) = NULL;
-  static const char name[] = "glUniform2uivEXT";
+  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, unsigned int arg2, int arg3, int arg4) = NULL;
+  static const char name[] = "glRenderbufferStorageMultisampleEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(int arg0, int arg1, const unsigned int* arg2))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, unsigned int arg2, int arg3, int arg4))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
-  return (*ptr)(arg0, arg1, arg2);
+  return (*ptr)(arg0, arg1, arg2, arg3, arg4);
 }
 
-void Pure_glUniform3uivEXT(int arg0, int arg1, const unsigned int* arg2)
+void Pure_glBlitFramebufferEXT(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, unsigned int arg8, unsigned int arg9)
 {
-  static void(APIENTRY*ptr)(int arg0, int arg1, const unsigned int* arg2) = NULL;
-  static const char name[] = "glUniform3uivEXT";
+  static void(APIENTRY*ptr)(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, unsigned int arg8, unsigned int arg9) = NULL;
+  static const char name[] = "glBlitFramebufferEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(int arg0, int arg1, const unsigned int* arg2))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, unsigned int arg8, unsigned int arg9))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
-  return (*ptr)(arg0, arg1, arg2);
-}
-
-void Pure_glUniform4uivEXT(int arg0, int arg1, const unsigned int* arg2)
-{
-  static void(APIENTRY*ptr)(int arg0, int arg1, const unsigned int* arg2) = NULL;
-  static const char name[] = "glUniform4uivEXT";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(int arg0, int arg1, const unsigned int* arg2))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1, arg2);
+  return (*ptr)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
 }
 
 void Pure_glDrawArraysInstancedEXT(unsigned int arg0, int arg1, int arg2, int arg3)
@@ -2760,180 +2903,4 @@ void Pure_glDrawElementsInstancedEXT(unsigned int arg0, int arg1, unsigned int a
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3, arg4);
-}
-
-void Pure_glTexBufferEXT(unsigned int arg0, unsigned int arg1, unsigned int arg2)
-{
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, unsigned int arg2) = NULL;
-  static const char name[] = "glTexBufferEXT";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, unsigned int arg2))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1, arg2);
-}
-
-void Pure_glColorMaskIndexedEXT(unsigned int arg0, unsigned char arg1, unsigned char arg2, unsigned char arg3, unsigned char arg4)
-{
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned char arg1, unsigned char arg2, unsigned char arg3, unsigned char arg4) = NULL;
-  static const char name[] = "glColorMaskIndexedEXT";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned char arg1, unsigned char arg2, unsigned char arg3, unsigned char arg4))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1, arg2, arg3, arg4);
-}
-
-void Pure_glGetBooleanIndexedvEXT(unsigned int arg0, unsigned int arg1, unsigned char* arg2)
-{
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, unsigned char* arg2) = NULL;
-  static const char name[] = "glGetBooleanIndexedvEXT";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, unsigned char* arg2))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1, arg2);
-}
-
-void Pure_glGetIntegerIndexedvEXT(unsigned int arg0, unsigned int arg1, int* arg2)
-{
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, int* arg2) = NULL;
-  static const char name[] = "glGetIntegerIndexedvEXT";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, int* arg2))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1, arg2);
-}
-
-void Pure_glEnableIndexedEXT(unsigned int arg0, unsigned int arg1)
-{
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1) = NULL;
-  static const char name[] = "glEnableIndexedEXT";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1);
-}
-
-void Pure_glDisableIndexedEXT(unsigned int arg0, unsigned int arg1)
-{
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1) = NULL;
-  static const char name[] = "glDisableIndexedEXT";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1);
-}
-
-unsigned char Pure_glIsEnabledIndexedEXT(unsigned int arg0, unsigned int arg1)
-{
-  static unsigned char(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1) = NULL;
-  static const char name[] = "glIsEnabledIndexedEXT";
-  if (!ptr) {
-    ptr = (unsigned char(APIENTRY*)(unsigned int arg0, unsigned int arg1))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1);
-}
-
-void Pure_glUniformBufferEXT(unsigned int arg0, int arg1, unsigned int arg2)
-{
-  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, unsigned int arg2) = NULL;
-  static const char name[] = "glUniformBufferEXT";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, unsigned int arg2))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1, arg2);
-}
-
-int Pure_glGetUniformBufferSizeEXT(unsigned int arg0, int arg1)
-{
-  static int(APIENTRY*ptr)(unsigned int arg0, int arg1) = NULL;
-  static const char name[] = "glGetUniformBufferSizeEXT";
-  if (!ptr) {
-    ptr = (int(APIENTRY*)(unsigned int arg0, int arg1))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1);
-}
-
-long Pure_glGetUniformOffsetEXT(unsigned int arg0, int arg1)
-{
-  static long(APIENTRY*ptr)(unsigned int arg0, int arg1) = NULL;
-  static const char name[] = "glGetUniformOffsetEXT";
-  if (!ptr) {
-    ptr = (long(APIENTRY*)(unsigned int arg0, int arg1))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1);
-}
-
-void Pure_glTexParameterIivEXT(unsigned int arg0, unsigned int arg1, const int* arg2)
-{
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, const int* arg2) = NULL;
-  static const char name[] = "glTexParameterIivEXT";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, const int* arg2))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1, arg2);
-}
-
-void Pure_glTexParameterIuivEXT(unsigned int arg0, unsigned int arg1, const unsigned int* arg2)
-{
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, const unsigned int* arg2) = NULL;
-  static const char name[] = "glTexParameterIuivEXT";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, const unsigned int* arg2))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1, arg2);
-}
-
-void Pure_glGetTexParameterIivEXT(unsigned int arg0, unsigned int arg1, int* arg2)
-{
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, int* arg2) = NULL;
-  static const char name[] = "glGetTexParameterIivEXT";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, int* arg2))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1, arg2);
-}
-
-void Pure_glGetTexParameterIuivEXT(unsigned int arg0, unsigned int arg1, unsigned int* arg2)
-{
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, unsigned int* arg2) = NULL;
-  static const char name[] = "glGetTexParameterIuivEXT";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, unsigned int* arg2))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1, arg2);
-}
-
-void Pure_glClearColorIiEXT(int arg0, int arg1, int arg2, int arg3)
-{
-  static void(APIENTRY*ptr)(int arg0, int arg1, int arg2, int arg3) = NULL;
-  static const char name[] = "glClearColorIiEXT";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(int arg0, int arg1, int arg2, int arg3))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1, arg2, arg3);
-}
-
-void Pure_glClearColorIuiEXT(unsigned int arg0, unsigned int arg1, unsigned int arg2, unsigned int arg3)
-{
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, unsigned int arg2, unsigned int arg3) = NULL;
-  static const char name[] = "glClearColorIuiEXT";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, unsigned int arg2, unsigned int arg3))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1, arg2, arg3);
 }

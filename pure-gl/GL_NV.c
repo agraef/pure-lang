@@ -1970,6 +1970,171 @@ void Pure_glPrimitiveRestartIndexNV(unsigned int arg0)
   return (*ptr)(arg0);
 }
 
+void Pure_glBeginTransformFeedbackNV(unsigned int arg0)
+{
+  static void(APIENTRY*ptr)(unsigned int arg0) = NULL;
+  static const char name[] = "glBeginTransformFeedbackNV";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(unsigned int arg0))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0);
+}
+
+void Pure_glEndTransformFeedbackNV()
+{
+  static void(APIENTRY*ptr)() = NULL;
+  static const char name[] = "glEndTransformFeedbackNV";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)())get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)();
+}
+
+void Pure_glTransformFeedbackAttribsNV(unsigned int arg0, const int* arg1, unsigned int arg2)
+{
+  static void(APIENTRY*ptr)(unsigned int arg0, const int* arg1, unsigned int arg2) = NULL;
+  static const char name[] = "glTransformFeedbackAttribsNV";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(unsigned int arg0, const int* arg1, unsigned int arg2))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1, arg2);
+}
+
+void Pure_glBindBufferRangeNV(unsigned int arg0, unsigned int arg1, unsigned int arg2, long arg3, long arg4)
+{
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, unsigned int arg2, long arg3, long arg4) = NULL;
+  static const char name[] = "glBindBufferRangeNV";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, unsigned int arg2, long arg3, long arg4))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1, arg2, arg3, arg4);
+}
+
+void Pure_glBindBufferOffsetNV(unsigned int arg0, unsigned int arg1, unsigned int arg2, long arg3)
+{
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, unsigned int arg2, long arg3) = NULL;
+  static const char name[] = "glBindBufferOffsetNV";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, unsigned int arg2, long arg3))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1, arg2, arg3);
+}
+
+void Pure_glBindBufferBaseNV(unsigned int arg0, unsigned int arg1, unsigned int arg2)
+{
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, unsigned int arg2) = NULL;
+  static const char name[] = "glBindBufferBaseNV";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, unsigned int arg2))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1, arg2);
+}
+
+void Pure_glTransformFeedbackVaryingsNV(unsigned int arg0, int arg1, const int* arg2, unsigned int arg3)
+{
+  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, const int* arg2, unsigned int arg3) = NULL;
+  static const char name[] = "glTransformFeedbackVaryingsNV";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, const int* arg2, unsigned int arg3))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1, arg2, arg3);
+}
+
+void Pure_glActiveVaryingNV(unsigned int arg0, const char* arg1)
+{
+  static void(APIENTRY*ptr)(unsigned int arg0, const char* arg1) = NULL;
+  static const char name[] = "glActiveVaryingNV";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(unsigned int arg0, const char* arg1))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1);
+}
+
+int Pure_glGetVaryingLocationNV(unsigned int arg0, const char* arg1)
+{
+  static int(APIENTRY*ptr)(unsigned int arg0, const char* arg1) = NULL;
+  static const char name[] = "glGetVaryingLocationNV";
+  if (!ptr) {
+    ptr = (int(APIENTRY*)(unsigned int arg0, const char* arg1))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1);
+}
+
+void Pure_glGetActiveVaryingNV(unsigned int arg0, unsigned int arg1, int arg2, int* arg3, int* arg4, unsigned int* arg5, char* arg6)
+{
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, int arg2, int* arg3, int* arg4, unsigned int* arg5, char* arg6) = NULL;
+  static const char name[] = "glGetActiveVaryingNV";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, int arg2, int* arg3, int* arg4, unsigned int* arg5, char* arg6))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+}
+
+void Pure_glGetTransformFeedbackVaryingNV(unsigned int arg0, unsigned int arg1, int* arg2)
+{
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, int* arg2) = NULL;
+  static const char name[] = "glGetTransformFeedbackVaryingNV";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, int* arg2))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1, arg2);
+}
+
+void Pure_glDepthRangedNV(double arg0, double arg1)
+{
+  static void(APIENTRY*ptr)(double arg0, double arg1) = NULL;
+  static const char name[] = "glDepthRangedNV";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(double arg0, double arg1))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1);
+}
+
+void Pure_glClearDepthdNV(double arg0)
+{
+  static void(APIENTRY*ptr)(double arg0) = NULL;
+  static const char name[] = "glClearDepthdNV";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(double arg0))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0);
+}
+
+void Pure_glDepthBoundsdNV(double arg0, double arg1)
+{
+  static void(APIENTRY*ptr)(double arg0, double arg1) = NULL;
+  static const char name[] = "glDepthBoundsdNV";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(double arg0, double arg1))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1);
+}
+
+void Pure_glProgramVertexLimitNV(unsigned int arg0, int arg1)
+{
+  static void(APIENTRY*ptr)(unsigned int arg0, int arg1) = NULL;
+  static const char name[] = "glProgramVertexLimitNV";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1);
+}
+
 void Pure_glProgramLocalParameterI4iNV(unsigned int arg0, unsigned int arg1, int arg2, int arg3, int arg4, int arg5)
 {
   static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, int arg2, int arg3, int arg4, int arg5) = NULL;
@@ -2146,61 +2311,6 @@ void Pure_glGetProgramEnvParameterIuivNV(unsigned int arg0, unsigned int arg1, u
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glProgramVertexLimitNV(unsigned int arg0, int arg1)
-{
-  static void(APIENTRY*ptr)(unsigned int arg0, int arg1) = NULL;
-  static const char name[] = "glProgramVertexLimitNV";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1);
-}
-
-void Pure_glDepthRangedNV(double arg0, double arg1)
-{
-  static void(APIENTRY*ptr)(double arg0, double arg1) = NULL;
-  static const char name[] = "glDepthRangedNV";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(double arg0, double arg1))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1);
-}
-
-void Pure_glClearDepthdNV(double arg0)
-{
-  static void(APIENTRY*ptr)(double arg0) = NULL;
-  static const char name[] = "glClearDepthdNV";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(double arg0))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0);
-}
-
-void Pure_glDepthBoundsdNV(double arg0, double arg1)
-{
-  static void(APIENTRY*ptr)(double arg0, double arg1) = NULL;
-  static const char name[] = "glDepthBoundsdNV";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(double arg0, double arg1))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1);
-}
-
-void Pure_glRenderbufferStorageMultisampleCoverageNV(unsigned int arg0, int arg1, int arg2, unsigned int arg3, int arg4, int arg5)
-{
-  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, int arg2, unsigned int arg3, int arg4, int arg5) = NULL;
-  static const char name[] = "glRenderbufferStorageMultisampleCoverageNV";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, int arg2, unsigned int arg3, int arg4, int arg5))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1, arg2, arg3, arg4, arg5);
-}
-
 void Pure_glProgramBufferParametersfvNV(unsigned int arg0, unsigned int arg1, unsigned int arg2, int arg3, const float* arg4)
 {
   static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, unsigned int arg2, int arg3, const float* arg4) = NULL;
@@ -2234,122 +2344,78 @@ void Pure_glProgramBufferParametersIuivNV(unsigned int arg0, unsigned int arg1, 
   return (*ptr)(arg0, arg1, arg2, arg3, arg4);
 }
 
-void Pure_glBeginTransformFeedbackNV(unsigned int arg0)
+void Pure_glRenderbufferStorageMultisampleCoverageNV(unsigned int arg0, int arg1, int arg2, unsigned int arg3, int arg4, int arg5)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0) = NULL;
-  static const char name[] = "glBeginTransformFeedbackNV";
+  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, int arg2, unsigned int arg3, int arg4, int arg5) = NULL;
+  static const char name[] = "glRenderbufferStorageMultisampleCoverageNV";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, int arg2, unsigned int arg3, int arg4, int arg5))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
-  return (*ptr)(arg0);
+  return (*ptr)(arg0, arg1, arg2, arg3, arg4, arg5);
 }
 
-void Pure_glEndTransformFeedbackNV()
+void Pure_glPresentFrameKeyedNV(unsigned int arg0, unsigned long long arg1, unsigned int arg2, unsigned int arg3, unsigned int arg4, unsigned int arg5, unsigned int arg6, unsigned int arg7, unsigned int arg8, unsigned int arg9, unsigned int arg10)
 {
-  static void(APIENTRY*ptr)() = NULL;
-  static const char name[] = "glEndTransformFeedbackNV";
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned long long arg1, unsigned int arg2, unsigned int arg3, unsigned int arg4, unsigned int arg5, unsigned int arg6, unsigned int arg7, unsigned int arg8, unsigned int arg9, unsigned int arg10) = NULL;
+  static const char name[] = "glPresentFrameKeyedNV";
   if (!ptr) {
-    ptr = (void(APIENTRY*)())get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned long long arg1, unsigned int arg2, unsigned int arg3, unsigned int arg4, unsigned int arg5, unsigned int arg6, unsigned int arg7, unsigned int arg8, unsigned int arg9, unsigned int arg10))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
-  return (*ptr)();
+  return (*ptr)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
 }
 
-void Pure_glTransformFeedbackAttribsNV(unsigned int arg0, const int* arg1, unsigned int arg2)
+void Pure_glPresentFrameDualFillNV(unsigned int arg0, unsigned long long arg1, unsigned int arg2, unsigned int arg3, unsigned int arg4, unsigned int arg5, unsigned int arg6, unsigned int arg7, unsigned int arg8, unsigned int arg9, unsigned int arg10, unsigned int arg11, unsigned int arg12)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, const int* arg1, unsigned int arg2) = NULL;
-  static const char name[] = "glTransformFeedbackAttribsNV";
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned long long arg1, unsigned int arg2, unsigned int arg3, unsigned int arg4, unsigned int arg5, unsigned int arg6, unsigned int arg7, unsigned int arg8, unsigned int arg9, unsigned int arg10, unsigned int arg11, unsigned int arg12) = NULL;
+  static const char name[] = "glPresentFrameDualFillNV";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, const int* arg1, unsigned int arg2))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned long long arg1, unsigned int arg2, unsigned int arg3, unsigned int arg4, unsigned int arg5, unsigned int arg6, unsigned int arg7, unsigned int arg8, unsigned int arg9, unsigned int arg10, unsigned int arg11, unsigned int arg12))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
-  return (*ptr)(arg0, arg1, arg2);
+  return (*ptr)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12);
 }
 
-void Pure_glBindBufferRangeNV(unsigned int arg0, unsigned int arg1, unsigned int arg2, long arg3, long arg4)
-{
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, unsigned int arg2, long arg3, long arg4) = NULL;
-  static const char name[] = "glBindBufferRangeNV";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, unsigned int arg2, long arg3, long arg4))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1, arg2, arg3, arg4);
-}
-
-void Pure_glBindBufferOffsetNV(unsigned int arg0, unsigned int arg1, unsigned int arg2, long arg3)
-{
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, unsigned int arg2, long arg3) = NULL;
-  static const char name[] = "glBindBufferOffsetNV";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, unsigned int arg2, long arg3))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1, arg2, arg3);
-}
-
-void Pure_glBindBufferBaseNV(unsigned int arg0, unsigned int arg1, unsigned int arg2)
-{
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, unsigned int arg2) = NULL;
-  static const char name[] = "glBindBufferBaseNV";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, unsigned int arg2))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1, arg2);
-}
-
-void Pure_glTransformFeedbackVaryingsNV(unsigned int arg0, int arg1, const int* arg2, unsigned int arg3)
-{
-  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, const int* arg2, unsigned int arg3) = NULL;
-  static const char name[] = "glTransformFeedbackVaryingsNV";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, const int* arg2, unsigned int arg3))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1, arg2, arg3);
-}
-
-void Pure_glActiveVaryingNV(unsigned int arg0, const char* arg1)
-{
-  static void(APIENTRY*ptr)(unsigned int arg0, const char* arg1) = NULL;
-  static const char name[] = "glActiveVaryingNV";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, const char* arg1))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1);
-}
-
-int Pure_glGetVaryingLocationNV(unsigned int arg0, const char* arg1)
-{
-  static int(APIENTRY*ptr)(unsigned int arg0, const char* arg1) = NULL;
-  static const char name[] = "glGetVaryingLocationNV";
-  if (!ptr) {
-    ptr = (int(APIENTRY*)(unsigned int arg0, const char* arg1))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1);
-}
-
-void Pure_glGetActiveVaryingNV(unsigned int arg0, unsigned int arg1, int arg2, int* arg3, int* arg4, unsigned int* arg5, char* arg6)
-{
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, int arg2, int* arg3, int* arg4, unsigned int* arg5, char* arg6) = NULL;
-  static const char name[] = "glGetActiveVaryingNV";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, int arg2, int* arg3, int* arg4, unsigned int* arg5, char* arg6))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
-}
-
-void Pure_glGetTransformFeedbackVaryingNV(unsigned int arg0, unsigned int arg1, int* arg2)
+void Pure_glGetVideoivNV(unsigned int arg0, unsigned int arg1, int* arg2)
 {
   static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, int* arg2) = NULL;
-  static const char name[] = "glGetTransformFeedbackVaryingNV";
+  static const char name[] = "glGetVideoivNV";
   if (!ptr) {
     ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, int* arg2))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1, arg2);
+}
+
+void Pure_glGetVideouivNV(unsigned int arg0, unsigned int arg1, unsigned int* arg2)
+{
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, unsigned int* arg2) = NULL;
+  static const char name[] = "glGetVideouivNV";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, unsigned int* arg2))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1, arg2);
+}
+
+void Pure_glGetVideoi64vNV(unsigned int arg0, unsigned int arg1, long long* arg2)
+{
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, long long* arg2) = NULL;
+  static const char name[] = "glGetVideoi64vNV";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, long long* arg2))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(arg0, arg1, arg2);
+}
+
+void Pure_glGetVideoui64vNV(unsigned int arg0, unsigned int arg1, unsigned long long* arg2)
+{
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, unsigned long long* arg2) = NULL;
+  static const char name[] = "glGetVideoui64vNV";
+  if (!ptr) {
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, unsigned long long* arg2))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2);

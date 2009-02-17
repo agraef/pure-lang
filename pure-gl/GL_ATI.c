@@ -188,17 +188,6 @@ static void throw_unsupported(const char* name)
 		      pure_cstring_dup(name) ));
 }
 
-void Pure_glBlendEquationSeparateATI(unsigned int arg0, unsigned int arg1)
-{
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1) = NULL;
-  static const char name[] = "glBlendEquationSeparateATI";
-  if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1))get_proc_addr(name);
-    if (!ptr) throw_unsupported(name);
-  }
-  return (*ptr)(arg0, arg1);
-}
-
 void Pure_glTexBumpParameterivATI(unsigned int arg0, const int* arg1)
 {
   static void(APIENTRY*ptr)(unsigned int arg0, const int* arg1) = NULL;
