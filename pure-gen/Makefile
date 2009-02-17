@@ -57,6 +57,7 @@ clean:
 install:
 	test -d "$(DESTDIR)$(bindir)" || mkdir -p "$(DESTDIR)$(bindir)"
 	test -d "$(DESTDIR)$(pkgdatadir)" || mkdir -p "$(DESTDIR)$(pkgdatadir)"
+	test -d "$(DESTDIR)$(man1dir)" || mkdir -p "$(DESTDIR)$(man1dir)"
 	cp dump-ast "$(DESTDIR)$(pkgdatadir)"
 	sed -e 's?/usr/local/bin/pure?$(bindir)/pure?' -e 's?@version@?$(version)?' -e 's?./dump-ast?$(pkgdatadir)/dump-ast?' < pure-gen.pure > "$(DESTDIR)$(pkgdatadir)/pure-gen.pure"
 	chmod a+x "$(DESTDIR)$(pkgdatadir)/dump-ast" "$(DESTDIR)$(pkgdatadir)/pure-gen.pure"
