@@ -59,7 +59,7 @@ modules = GL.pure GL_ARB.pure GL_EXT.pure GL_NV.pure GL_ATI.pure \
 GLU.pure GLUT.pure
 c-modules = $(patsubst %.pure,%.c,$(modules))
 
-DISTFILES = COPYING Makefile README config.guess examples/*.pure \
+DISTFILES = COPYING Makefile README config.guess gl.templ examples/*.pure \
 examples/*.jpg GL/all_gl.h GL/all_gl_freeglut.h $(modules) $(c-modules)
 
 .PHONY: all clean realclean generate install uninstall dist distcheck
