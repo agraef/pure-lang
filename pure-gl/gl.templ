@@ -3,7 +3,8 @@
 
 #include <pure/runtime.h>
 
-/* Some of this is cribbed from Sven Panne's excellent Haskel OpenGL bindings */
+/* Some of this is cribbed from Sven Panne's excellent Haskell OpenGL
+   bindings. */
 
 /*
 Copyright (c) 2009, Scott E Dillard
@@ -37,7 +38,6 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 */
 
-
 #ifndef _WIN32
 #define APIENTRY 
 #endif
@@ -45,6 +45,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #if defined(_WIN32) /* Windows */
 #include <windows.h>
 #include <GL/gl.h>
+#include <GL/glu.h>
+#include <GL/glut.h>
 
 static void*
 get_proc_addr(const char *name)
@@ -58,15 +60,18 @@ get_proc_addr(const char *name)
     glut = LoadLibrary("freeglut.dll");
     firstTime = 0;
   }
-  (p = wglGetProcAddress(name)) ||
-  (p = GetProcAddress(gl32, name)) ||
-  (p = GetProcAddress(glu32, name)) ||
-  (p = GetProcAddress(glut, name));
+  (void)
+    ((p = wglGetProcAddress(name)) ||
+     (p = GetProcAddress(gl32, name)) ||
+     (p = GetProcAddress(glu32, name)) ||
+     (p = GetProcAddress(glut, name)));
   return p;
 }
 
 #elif defined(__APPLE__) /* Mac */
 #include <OpenGL/gl.h>
+#include <OpenGL/glu.h>
+#include <OpenGL/glut.h>
 #include <mach-o/dyld.h>
 
 static void*
@@ -99,6 +104,9 @@ get_proc_addr(const char *name)
 
 /* ToDo: This should really be based on a feature test. */
 #elif defined(__sgi) || defined (__sun)
+#include <GL/gl.h>
+#include <GL/glu.h>
+#include <GL/glut.h>
 #include <dlfcn.h>
 
 static const char* gpaNames[] = {
@@ -147,6 +155,8 @@ get_proc_addr(const char *name)
 
 #else /* Linux */
 #include <GL/gl.h>
+#include <GL/glu.h>
+#include <GL/glut.h>
 #include <GL/glx.h>
 #include <dlfcn.h>
 
@@ -163,19 +173,29 @@ get_proc_addr(const char *name)
   }
   /* Make sure to call these in this order. For whatever reason,
      glXGetProcAddress appears to yield bogus addresses for GLUT routines. */
-  (glu && (p = dlsym(glu, name))) ||
-    (glut && (p = dlsym(glut, name))) ||
-    (p = glXGetProcAddress((const GLubyte*)name));
+  (void)
+    ((glu && (p = dlsym(glu, name))) ||
+     (glut && (p = dlsym(glut, name))) ||
+     (p = glXGetProcAddress((const GLubyte*)name)));
   return p;
 }
 
 #endif
 
-
-static void throw_unsupported( const char* name )
+static void throw_unsupported(const char* name)
 {
-    pure_throw( pure_app( pure_symbol(pure_sym("gl_unsupported")), 
-                          pure_cstring_dup(name) ));
+  pure_throw(pure_app(pure_symbol(pure_sym("gl_unsupported")), 
+		      pure_cstring_dup(name) ));
 }
+%%
 
-
+%r %w(%p)
+{
+  static %r(APIENTRY*ptr)(%p) = NULL;
+  static const char name[] = "%n";
+  if (!ptr) {
+    ptr = (%r(APIENTRY*)(%p))get_proc_addr(name);
+    if (!ptr) throw_unsupported(name);
+  }
+  return (*ptr)(%a);
+}

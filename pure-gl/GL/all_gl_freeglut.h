@@ -2,11 +2,11 @@
 // this version includes the freeglut extensions (if you have freeglut_ext.h)
 
 #define GL_GLEXT_LEGACY //don't want <GL/glext.h>
-#include "./gl.h"
+#include <GL/gl.h>
 
 #undef GL_GLEXT_LEGACY
 #define GL_GLEXT_PROTOTYPES  
-#include "./glext.h"
-#include "./glu.h"
-#include "./freeglut_std.h"
-#include "./freeglut_ext.h"
+#include <GL/glext.h>
+#include <GL/glu.h>
+#include <GL/freeglut_std.h>
+#include <GL/freeglut_ext.h>
