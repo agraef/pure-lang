@@ -776,7 +776,7 @@ instance Dump CBuiltin where
 
 instance Dump CConst where
   dump (CIntConst i _)   = parens $ "CIntConst "++show i
-  dump (CCharConst c _)  = parens $ "CCharConst "++show c
+  dump (CCharConst c _)  = parens $ "CCharConst "++show (getCChar c)
   dump (CFloatConst f _) = parens $ "CFloatConst "++show f
   dump (CStrConst s _)   = parens $ "CStrConst "++show s 
 

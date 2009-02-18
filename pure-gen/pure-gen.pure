@@ -625,7 +625,6 @@ with
         (out,fname);
       _ = (out,fname);
     end when ln = trim ln end;
-  trim ln = if null ln || last ln~="\n" then ln else init ln;
 end;
 
 // Check for a constant value (either another #define'd constant, or a number).
@@ -870,6 +869,8 @@ with
                  else tail str;
 end;
 
+// remove trailing newline
+trim ln = if null ln || last ln~="\n" then ln else init ln;
 
 //need these for nub
 constant a _ _ < constant b _ _ = a < b;
@@ -1129,7 +1130,11 @@ echo 1 "Loading syntax tree";
 let ast = fgetlines $ popen (sprintf "%s %s %s" (dumper,cpp_opts,in_name)) "r";
 
 echo 1 "Parsing syntax tree";
-let declarations = filter ((~=) ()) $ map eval ast;
+let declarations = filter ((~==) ()) $ map check_eval ast
+with
+  check_eval s = res if null lasterr when res = eval s end;
+               = warning 0 (sprintf "Parse error: '%s'." (trim s)) $$ ();
+end;
 
 // This has to be done before processing the other declarations.
 echo 1 "Building enum dictionary";
