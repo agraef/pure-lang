@@ -34,7 +34,7 @@ static void my_readline(const char *prompt, char *buf, int &result, int max_size
 static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const char *cmd, const char *cmdline);
 static string pstring(const char *s);
 static string format_namespace(const string& name);
-static void check(const yy::location& l, const char* s);
+static void check(const yy::location& l, const char* s, bool decl);
 static int32_t checktag(const char *s);
 
 #define YY_INPUT(buf,result,max_size)					\
@@ -155,7 +155,7 @@ blank  [ \t\f\v\r]
 <xdecl>with	  return token::WITH;
 <xdecl>using      return token::USING;
 <xdecl>namespace  return token::NAMESPACE;
-<xdecl>{id}	  check(*yylloc, yytext); yylval->sval = new string(yytext); return token::ID;
+<xdecl>{id}	  check(*yylloc, yytext, true); yylval->sval = new string(yytext); return token::ID;
 <xdecl>[()*,=]	  return yy::parser::token_type(yytext[0]);
 <xdecl>"//".*	  yylloc->step();
 <xdecl>"/*"	  BEGIN(xdecl_comment);
@@ -195,7 +195,7 @@ blank  [ \t\f\v\r]
 <xusing>with	   return token::WITH;
 <xusing>using      return token::USING;
 <xusing>namespace  return token::NAMESPACE;
-<xusing>{id}	   check(*yylloc, yytext); yylval->sval = new string(yytext); return token::ID;
+<xusing>{id}	   yylval->sval = new string(yytext); return token::ID;
 <xusing>,	   return yy::parser::token_type(yytext[0]);
 <xusing>"//".*	   yylloc->step();
 <xusing>"/*"	   BEGIN(xusing_comment);
@@ -246,7 +246,7 @@ blank  [ \t\f\v\r]
   } else if (yytext[0] == '!')
     goto parse_op;
   else {
-    check(*yylloc, yytext);
+    check(*yylloc, yytext, false);
     goto parse_id;
   }
 }
@@ -338,7 +338,7 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     if (tag) {
       // we can still parse this as an identifier with a type tag
       yyless(k); qual = "";
-      check(*yylloc, yytext);
+      //check(*yylloc, yytext, false);
     } else {
       string msg = "unknown namespace '"+qual+"'";
       interp.error(*yylloc, msg);
@@ -732,8 +732,13 @@ static void list_completions(ostream& os, const char *s)
   }
 }
 
-static void check(const yy::location& l, const char* s)
+static void check(const yy::location& l, const char* s, bool decl)
 {
+  if (decl) {
+    assert(interpreter::g_interp);
+    interpreter& interp = *interpreter::g_interp;
+    if (!interp.symtab.current_namespace->empty()) return;
+  }
   static set<string> done;
   const char *name;
   size_t i = 0;
