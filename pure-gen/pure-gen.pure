@@ -309,7 +309,8 @@ complete_ffi_type x =
   long (unsigned (slong_t))     = uint64_t; 
   long (unsigned (long sint_t)) = uint64_t; 
 
-  enum_type _ _ _ = sint_t;
+  enum_type _ v _ = if any negative v then sint_t else uint_t
+  with negative (constant _ x) = x<0; negative _ = false end;
   
   _ = warn_once 1 ("unsupported type "+str x) $$ unsupported_t;
 
