@@ -210,45 +210,45 @@ void Pure_glPolygonOffsetEXT(float arg0, float arg1)
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glTexImage3DEXT(unsigned int arg0, int arg1, unsigned int arg2, int arg3, int arg4, int arg5, int arg6, unsigned int arg7, unsigned int arg8, const void* arg9)
+void Pure_glTexImage3DEXT(unsigned int arg0, int arg1, unsigned int arg2, int arg3, int arg4, int arg5, int arg6, unsigned int arg7, unsigned int arg8, void const* arg9)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, unsigned int arg2, int arg3, int arg4, int arg5, int arg6, unsigned int arg7, unsigned int arg8, const void* arg9) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, unsigned int arg2, int arg3, int arg4, int arg5, int arg6, unsigned int arg7, unsigned int arg8, void const* arg9) = NULL;
   static const char name[] = "glTexImage3DEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, unsigned int arg2, int arg3, int arg4, int arg5, int arg6, unsigned int arg7, unsigned int arg8, const void* arg9))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, unsigned int arg2, int arg3, int arg4, int arg5, int arg6, unsigned int arg7, unsigned int arg8, void const* arg9))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
 }
 
-void Pure_glTexSubImage3DEXT(unsigned int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, unsigned int arg8, unsigned int arg9, const void* arg10)
+void Pure_glTexSubImage3DEXT(unsigned int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, unsigned int arg8, unsigned int arg9, void const* arg10)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, unsigned int arg8, unsigned int arg9, const void* arg10) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, unsigned int arg8, unsigned int arg9, void const* arg10) = NULL;
   static const char name[] = "glTexSubImage3DEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, unsigned int arg8, unsigned int arg9, const void* arg10))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, unsigned int arg8, unsigned int arg9, void const* arg10))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
 }
 
-void Pure_glTexSubImage1DEXT(unsigned int arg0, int arg1, int arg2, int arg3, unsigned int arg4, unsigned int arg5, const void* arg6)
+void Pure_glTexSubImage1DEXT(unsigned int arg0, int arg1, int arg2, int arg3, unsigned int arg4, unsigned int arg5, void const* arg6)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, int arg2, int arg3, unsigned int arg4, unsigned int arg5, const void* arg6) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, int arg2, int arg3, unsigned int arg4, unsigned int arg5, void const* arg6) = NULL;
   static const char name[] = "glTexSubImage1DEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, int arg2, int arg3, unsigned int arg4, unsigned int arg5, const void* arg6))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, int arg2, int arg3, unsigned int arg4, unsigned int arg5, void const* arg6))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
 }
 
-void Pure_glTexSubImage2DEXT(unsigned int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, unsigned int arg6, unsigned int arg7, const void* arg8)
+void Pure_glTexSubImage2DEXT(unsigned int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, unsigned int arg6, unsigned int arg7, void const* arg8)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, unsigned int arg6, unsigned int arg7, const void* arg8) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, unsigned int arg6, unsigned int arg7, void const* arg8) = NULL;
   static const char name[] = "glTexSubImage2DEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, unsigned int arg6, unsigned int arg7, const void* arg8))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, unsigned int arg6, unsigned int arg7, void const* arg8))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
@@ -419,23 +419,23 @@ void Pure_glResetMinmaxEXT(unsigned int arg0)
   return (*ptr)(arg0);
 }
 
-void Pure_glConvolutionFilter1DEXT(unsigned int arg0, unsigned int arg1, int arg2, unsigned int arg3, unsigned int arg4, const void* arg5)
+void Pure_glConvolutionFilter1DEXT(unsigned int arg0, unsigned int arg1, int arg2, unsigned int arg3, unsigned int arg4, void const* arg5)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, int arg2, unsigned int arg3, unsigned int arg4, const void* arg5) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, int arg2, unsigned int arg3, unsigned int arg4, void const* arg5) = NULL;
   static const char name[] = "glConvolutionFilter1DEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, int arg2, unsigned int arg3, unsigned int arg4, const void* arg5))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, int arg2, unsigned int arg3, unsigned int arg4, void const* arg5))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3, arg4, arg5);
 }
 
-void Pure_glConvolutionFilter2DEXT(unsigned int arg0, unsigned int arg1, int arg2, int arg3, unsigned int arg4, unsigned int arg5, const void* arg6)
+void Pure_glConvolutionFilter2DEXT(unsigned int arg0, unsigned int arg1, int arg2, int arg3, unsigned int arg4, unsigned int arg5, void const* arg6)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, int arg2, int arg3, unsigned int arg4, unsigned int arg5, const void* arg6) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, int arg2, int arg3, unsigned int arg4, unsigned int arg5, void const* arg6) = NULL;
   static const char name[] = "glConvolutionFilter2DEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, int arg2, int arg3, unsigned int arg4, unsigned int arg5, const void* arg6))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, int arg2, int arg3, unsigned int arg4, unsigned int arg5, void const* arg6))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
@@ -452,12 +452,12 @@ void Pure_glConvolutionParameterfEXT(unsigned int arg0, unsigned int arg1, float
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glConvolutionParameterfvEXT(unsigned int arg0, unsigned int arg1, const float* arg2)
+void Pure_glConvolutionParameterfvEXT(unsigned int arg0, unsigned int arg1, float const* arg2)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, const float* arg2) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, float const* arg2) = NULL;
   static const char name[] = "glConvolutionParameterfvEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, const float* arg2))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, float const* arg2))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2);
@@ -474,12 +474,12 @@ void Pure_glConvolutionParameteriEXT(unsigned int arg0, unsigned int arg1, int a
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glConvolutionParameterivEXT(unsigned int arg0, unsigned int arg1, const int* arg2)
+void Pure_glConvolutionParameterivEXT(unsigned int arg0, unsigned int arg1, int const* arg2)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, const int* arg2) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, int const* arg2) = NULL;
   static const char name[] = "glConvolutionParameterivEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, const int* arg2))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, int const* arg2))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2);
@@ -551,23 +551,23 @@ void Pure_glGetSeparableFilterEXT(unsigned int arg0, unsigned int arg1, unsigned
   return (*ptr)(arg0, arg1, arg2, arg3, arg4, arg5);
 }
 
-void Pure_glSeparableFilter2DEXT(unsigned int arg0, unsigned int arg1, int arg2, int arg3, unsigned int arg4, unsigned int arg5, const void* arg6, const void* arg7)
+void Pure_glSeparableFilter2DEXT(unsigned int arg0, unsigned int arg1, int arg2, int arg3, unsigned int arg4, unsigned int arg5, void const* arg6, void const* arg7)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, int arg2, int arg3, unsigned int arg4, unsigned int arg5, const void* arg6, const void* arg7) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, int arg2, int arg3, unsigned int arg4, unsigned int arg5, void const* arg6, void const* arg7) = NULL;
   static const char name[] = "glSeparableFilter2DEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, int arg2, int arg3, unsigned int arg4, unsigned int arg5, const void* arg6, const void* arg7))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, int arg2, int arg3, unsigned int arg4, unsigned int arg5, void const* arg6, void const* arg7))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
 }
 
-unsigned char Pure_glAreTexturesResidentEXT(int arg0, const unsigned int* arg1, unsigned char* arg2)
+unsigned char Pure_glAreTexturesResidentEXT(int arg0, unsigned int const* arg1, unsigned char* arg2)
 {
-  static unsigned char(APIENTRY*ptr)(int arg0, const unsigned int* arg1, unsigned char* arg2) = NULL;
+  static unsigned char(APIENTRY*ptr)(int arg0, unsigned int const* arg1, unsigned char* arg2) = NULL;
   static const char name[] = "glAreTexturesResidentEXT";
   if (!ptr) {
-    ptr = (unsigned char(APIENTRY*)(int arg0, const unsigned int* arg1, unsigned char* arg2))get_proc_addr(name);
+    ptr = (unsigned char(APIENTRY*)(int arg0, unsigned int const* arg1, unsigned char* arg2))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2);
@@ -584,12 +584,12 @@ void Pure_glBindTextureEXT(unsigned int arg0, unsigned int arg1)
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glDeleteTexturesEXT(int arg0, const unsigned int* arg1)
+void Pure_glDeleteTexturesEXT(int arg0, unsigned int const* arg1)
 {
-  static void(APIENTRY*ptr)(int arg0, const unsigned int* arg1) = NULL;
+  static void(APIENTRY*ptr)(int arg0, unsigned int const* arg1) = NULL;
   static const char name[] = "glDeleteTexturesEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(int arg0, const unsigned int* arg1))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(int arg0, unsigned int const* arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
@@ -617,12 +617,12 @@ unsigned char Pure_glIsTextureEXT(unsigned int arg0)
   return (*ptr)(arg0);
 }
 
-void Pure_glPrioritizeTexturesEXT(int arg0, const unsigned int* arg1, const float* arg2)
+void Pure_glPrioritizeTexturesEXT(int arg0, unsigned int const* arg1, float const* arg2)
 {
-  static void(APIENTRY*ptr)(int arg0, const unsigned int* arg1, const float* arg2) = NULL;
+  static void(APIENTRY*ptr)(int arg0, unsigned int const* arg1, float const* arg2) = NULL;
   static const char name[] = "glPrioritizeTexturesEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(int arg0, const unsigned int* arg1, const float* arg2))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(int arg0, unsigned int const* arg1, float const* arg2))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2);
@@ -639,12 +639,12 @@ void Pure_glArrayElementEXT(int arg0)
   return (*ptr)(arg0);
 }
 
-void Pure_glColorPointerEXT(int arg0, unsigned int arg1, int arg2, int arg3, const void* arg4)
+void Pure_glColorPointerEXT(int arg0, unsigned int arg1, int arg2, int arg3, void const* arg4)
 {
-  static void(APIENTRY*ptr)(int arg0, unsigned int arg1, int arg2, int arg3, const void* arg4) = NULL;
+  static void(APIENTRY*ptr)(int arg0, unsigned int arg1, int arg2, int arg3, void const* arg4) = NULL;
   static const char name[] = "glColorPointerEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(int arg0, unsigned int arg1, int arg2, int arg3, const void* arg4))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(int arg0, unsigned int arg1, int arg2, int arg3, void const* arg4))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3, arg4);
@@ -661,12 +661,12 @@ void Pure_glDrawArraysEXT(unsigned int arg0, int arg1, int arg2)
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glEdgeFlagPointerEXT(int arg0, int arg1, const unsigned char* arg2)
+void Pure_glEdgeFlagPointerEXT(int arg0, int arg1, unsigned char const* arg2)
 {
-  static void(APIENTRY*ptr)(int arg0, int arg1, const unsigned char* arg2) = NULL;
+  static void(APIENTRY*ptr)(int arg0, int arg1, unsigned char const* arg2) = NULL;
   static const char name[] = "glEdgeFlagPointerEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(int arg0, int arg1, const unsigned char* arg2))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(int arg0, int arg1, unsigned char const* arg2))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2);
@@ -683,45 +683,45 @@ void Pure_glGetPointervEXT(unsigned int arg0, void** arg1)
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glIndexPointerEXT(unsigned int arg0, int arg1, int arg2, const void* arg3)
+void Pure_glIndexPointerEXT(unsigned int arg0, int arg1, int arg2, void const* arg3)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, int arg2, const void* arg3) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, int arg2, void const* arg3) = NULL;
   static const char name[] = "glIndexPointerEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, int arg2, const void* arg3))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, int arg2, void const* arg3))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3);
 }
 
-void Pure_glNormalPointerEXT(unsigned int arg0, int arg1, int arg2, const void* arg3)
+void Pure_glNormalPointerEXT(unsigned int arg0, int arg1, int arg2, void const* arg3)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, int arg2, const void* arg3) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, int arg2, void const* arg3) = NULL;
   static const char name[] = "glNormalPointerEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, int arg2, const void* arg3))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, int arg2, void const* arg3))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3);
 }
 
-void Pure_glTexCoordPointerEXT(int arg0, unsigned int arg1, int arg2, int arg3, const void* arg4)
+void Pure_glTexCoordPointerEXT(int arg0, unsigned int arg1, int arg2, int arg3, void const* arg4)
 {
-  static void(APIENTRY*ptr)(int arg0, unsigned int arg1, int arg2, int arg3, const void* arg4) = NULL;
+  static void(APIENTRY*ptr)(int arg0, unsigned int arg1, int arg2, int arg3, void const* arg4) = NULL;
   static const char name[] = "glTexCoordPointerEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(int arg0, unsigned int arg1, int arg2, int arg3, const void* arg4))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(int arg0, unsigned int arg1, int arg2, int arg3, void const* arg4))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3, arg4);
 }
 
-void Pure_glVertexPointerEXT(int arg0, unsigned int arg1, int arg2, int arg3, const void* arg4)
+void Pure_glVertexPointerEXT(int arg0, unsigned int arg1, int arg2, int arg3, void const* arg4)
 {
-  static void(APIENTRY*ptr)(int arg0, unsigned int arg1, int arg2, int arg3, const void* arg4) = NULL;
+  static void(APIENTRY*ptr)(int arg0, unsigned int arg1, int arg2, int arg3, void const* arg4) = NULL;
   static const char name[] = "glVertexPointerEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(int arg0, unsigned int arg1, int arg2, int arg3, const void* arg4))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(int arg0, unsigned int arg1, int arg2, int arg3, void const* arg4))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3, arg4);
@@ -749,23 +749,23 @@ void Pure_glPointParameterfEXT(unsigned int arg0, float arg1)
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glPointParameterfvEXT(unsigned int arg0, const float* arg1)
+void Pure_glPointParameterfvEXT(unsigned int arg0, float const* arg1)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, const float* arg1) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, float const* arg1) = NULL;
   static const char name[] = "glPointParameterfvEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, const float* arg1))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, float const* arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glColorSubTableEXT(unsigned int arg0, int arg1, int arg2, unsigned int arg3, unsigned int arg4, const void* arg5)
+void Pure_glColorSubTableEXT(unsigned int arg0, int arg1, int arg2, unsigned int arg3, unsigned int arg4, void const* arg5)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, int arg2, unsigned int arg3, unsigned int arg4, const void* arg5) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, int arg2, unsigned int arg3, unsigned int arg4, void const* arg5) = NULL;
   static const char name[] = "glColorSubTableEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, int arg2, unsigned int arg3, unsigned int arg4, const void* arg5))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, int arg2, unsigned int arg3, unsigned int arg4, void const* arg5))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3, arg4, arg5);
@@ -782,12 +782,12 @@ void Pure_glCopyColorSubTableEXT(unsigned int arg0, int arg1, int arg2, int arg3
   return (*ptr)(arg0, arg1, arg2, arg3, arg4);
 }
 
-void Pure_glColorTableEXT(unsigned int arg0, unsigned int arg1, int arg2, unsigned int arg3, unsigned int arg4, const void* arg5)
+void Pure_glColorTableEXT(unsigned int arg0, unsigned int arg1, int arg2, unsigned int arg3, unsigned int arg4, void const* arg5)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, int arg2, unsigned int arg3, unsigned int arg4, const void* arg5) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, int arg2, unsigned int arg3, unsigned int arg4, void const* arg5) = NULL;
   static const char name[] = "glColorTableEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, int arg2, unsigned int arg3, unsigned int arg4, const void* arg5))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, int arg2, unsigned int arg3, unsigned int arg4, void const* arg5))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3, arg4, arg5);
@@ -892,12 +892,12 @@ void Pure_glCullParameterfvEXT(unsigned int arg0, float* arg1)
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glDrawRangeElementsEXT(unsigned int arg0, unsigned int arg1, unsigned int arg2, int arg3, unsigned int arg4, const void* arg5)
+void Pure_glDrawRangeElementsEXT(unsigned int arg0, unsigned int arg1, unsigned int arg2, int arg3, unsigned int arg4, void const* arg5)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, unsigned int arg2, int arg3, unsigned int arg4, const void* arg5) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, unsigned int arg2, int arg3, unsigned int arg4, void const* arg5) = NULL;
   static const char name[] = "glDrawRangeElementsEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, unsigned int arg2, int arg3, unsigned int arg4, const void* arg5))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, unsigned int arg2, int arg3, unsigned int arg4, void const* arg5))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3, arg4, arg5);
@@ -958,23 +958,23 @@ void Pure_glPixelTransformParameterfEXT(unsigned int arg0, unsigned int arg1, fl
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glPixelTransformParameterivEXT(unsigned int arg0, unsigned int arg1, const int* arg2)
+void Pure_glPixelTransformParameterivEXT(unsigned int arg0, unsigned int arg1, int const* arg2)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, const int* arg2) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, int const* arg2) = NULL;
   static const char name[] = "glPixelTransformParameterivEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, const int* arg2))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, int const* arg2))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glPixelTransformParameterfvEXT(unsigned int arg0, unsigned int arg1, const float* arg2)
+void Pure_glPixelTransformParameterfvEXT(unsigned int arg0, unsigned int arg1, float const* arg2)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, const float* arg2) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, float const* arg2) = NULL;
   static const char name[] = "glPixelTransformParameterfvEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, const float* arg2))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, float const* arg2))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2);
@@ -991,12 +991,12 @@ void Pure_glSecondaryColor3bEXT(char arg0, char arg1, char arg2)
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glSecondaryColor3bvEXT(const char* arg0)
+void Pure_glSecondaryColor3bvEXT(char const* arg0)
 {
-  static void(APIENTRY*ptr)(const char* arg0) = NULL;
+  static void(APIENTRY*ptr)(char const* arg0) = NULL;
   static const char name[] = "glSecondaryColor3bvEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(const char* arg0))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(char const* arg0))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0);
@@ -1013,12 +1013,12 @@ void Pure_glSecondaryColor3dEXT(double arg0, double arg1, double arg2)
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glSecondaryColor3dvEXT(const double* arg0)
+void Pure_glSecondaryColor3dvEXT(double const* arg0)
 {
-  static void(APIENTRY*ptr)(const double* arg0) = NULL;
+  static void(APIENTRY*ptr)(double const* arg0) = NULL;
   static const char name[] = "glSecondaryColor3dvEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(const double* arg0))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(double const* arg0))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0);
@@ -1035,12 +1035,12 @@ void Pure_glSecondaryColor3fEXT(float arg0, float arg1, float arg2)
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glSecondaryColor3fvEXT(const float* arg0)
+void Pure_glSecondaryColor3fvEXT(float const* arg0)
 {
-  static void(APIENTRY*ptr)(const float* arg0) = NULL;
+  static void(APIENTRY*ptr)(float const* arg0) = NULL;
   static const char name[] = "glSecondaryColor3fvEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(const float* arg0))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(float const* arg0))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0);
@@ -1057,12 +1057,12 @@ void Pure_glSecondaryColor3iEXT(int arg0, int arg1, int arg2)
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glSecondaryColor3ivEXT(const int* arg0)
+void Pure_glSecondaryColor3ivEXT(int const* arg0)
 {
-  static void(APIENTRY*ptr)(const int* arg0) = NULL;
+  static void(APIENTRY*ptr)(int const* arg0) = NULL;
   static const char name[] = "glSecondaryColor3ivEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(const int* arg0))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(int const* arg0))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0);
@@ -1079,12 +1079,12 @@ void Pure_glSecondaryColor3sEXT(short arg0, short arg1, short arg2)
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glSecondaryColor3svEXT(const short* arg0)
+void Pure_glSecondaryColor3svEXT(short const* arg0)
 {
-  static void(APIENTRY*ptr)(const short* arg0) = NULL;
+  static void(APIENTRY*ptr)(short const* arg0) = NULL;
   static const char name[] = "glSecondaryColor3svEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(const short* arg0))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(short const* arg0))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0);
@@ -1101,12 +1101,12 @@ void Pure_glSecondaryColor3ubEXT(unsigned char arg0, unsigned char arg1, unsigne
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glSecondaryColor3ubvEXT(const unsigned char* arg0)
+void Pure_glSecondaryColor3ubvEXT(unsigned char const* arg0)
 {
-  static void(APIENTRY*ptr)(const unsigned char* arg0) = NULL;
+  static void(APIENTRY*ptr)(unsigned char const* arg0) = NULL;
   static const char name[] = "glSecondaryColor3ubvEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(const unsigned char* arg0))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned char const* arg0))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0);
@@ -1123,12 +1123,12 @@ void Pure_glSecondaryColor3uiEXT(unsigned int arg0, unsigned int arg1, unsigned 
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glSecondaryColor3uivEXT(const unsigned int* arg0)
+void Pure_glSecondaryColor3uivEXT(unsigned int const* arg0)
 {
-  static void(APIENTRY*ptr)(const unsigned int* arg0) = NULL;
+  static void(APIENTRY*ptr)(unsigned int const* arg0) = NULL;
   static const char name[] = "glSecondaryColor3uivEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(const unsigned int* arg0))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int const* arg0))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0);
@@ -1145,23 +1145,23 @@ void Pure_glSecondaryColor3usEXT(unsigned short arg0, unsigned short arg1, unsig
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glSecondaryColor3usvEXT(const unsigned short* arg0)
+void Pure_glSecondaryColor3usvEXT(unsigned short const* arg0)
 {
-  static void(APIENTRY*ptr)(const unsigned short* arg0) = NULL;
+  static void(APIENTRY*ptr)(unsigned short const* arg0) = NULL;
   static const char name[] = "glSecondaryColor3usvEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(const unsigned short* arg0))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned short const* arg0))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0);
 }
 
-void Pure_glSecondaryColorPointerEXT(int arg0, unsigned int arg1, int arg2, const void* arg3)
+void Pure_glSecondaryColorPointerEXT(int arg0, unsigned int arg1, int arg2, void const* arg3)
 {
-  static void(APIENTRY*ptr)(int arg0, unsigned int arg1, int arg2, const void* arg3) = NULL;
+  static void(APIENTRY*ptr)(int arg0, unsigned int arg1, int arg2, void const* arg3) = NULL;
   static const char name[] = "glSecondaryColorPointerEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(int arg0, unsigned int arg1, int arg2, const void* arg3))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(int arg0, unsigned int arg1, int arg2, void const* arg3))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3);
@@ -1189,12 +1189,12 @@ void Pure_glMultiDrawArraysEXT(unsigned int arg0, int* arg1, int* arg2, int arg3
   return (*ptr)(arg0, arg1, arg2, arg3);
 }
 
-void Pure_glMultiDrawElementsEXT(unsigned int arg0, const int* arg1, unsigned int arg2, const void** arg3, int arg4)
+void Pure_glMultiDrawElementsEXT(unsigned int arg0, int const* arg1, unsigned int arg2, void const** arg3, int arg4)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, const int* arg1, unsigned int arg2, const void** arg3, int arg4) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, int const* arg1, unsigned int arg2, void const** arg3, int arg4) = NULL;
   static const char name[] = "glMultiDrawElementsEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, const int* arg1, unsigned int arg2, const void** arg3, int arg4))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, int const* arg1, unsigned int arg2, void const** arg3, int arg4))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3, arg4);
@@ -1211,12 +1211,12 @@ void Pure_glFogCoordfEXT(float arg0)
   return (*ptr)(arg0);
 }
 
-void Pure_glFogCoordfvEXT(const float* arg0)
+void Pure_glFogCoordfvEXT(float const* arg0)
 {
-  static void(APIENTRY*ptr)(const float* arg0) = NULL;
+  static void(APIENTRY*ptr)(float const* arg0) = NULL;
   static const char name[] = "glFogCoordfvEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(const float* arg0))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(float const* arg0))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0);
@@ -1233,23 +1233,23 @@ void Pure_glFogCoorddEXT(double arg0)
   return (*ptr)(arg0);
 }
 
-void Pure_glFogCoorddvEXT(const double* arg0)
+void Pure_glFogCoorddvEXT(double const* arg0)
 {
-  static void(APIENTRY*ptr)(const double* arg0) = NULL;
+  static void(APIENTRY*ptr)(double const* arg0) = NULL;
   static const char name[] = "glFogCoorddvEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(const double* arg0))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(double const* arg0))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0);
 }
 
-void Pure_glFogCoordPointerEXT(unsigned int arg0, int arg1, const void* arg2)
+void Pure_glFogCoordPointerEXT(unsigned int arg0, int arg1, void const* arg2)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, const void* arg2) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, void const* arg2) = NULL;
   static const char name[] = "glFogCoordPointerEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, const void* arg2))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, void const* arg2))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2);
@@ -1266,12 +1266,12 @@ void Pure_glTangent3bEXT(char arg0, char arg1, char arg2)
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glTangent3bvEXT(const char* arg0)
+void Pure_glTangent3bvEXT(char const* arg0)
 {
-  static void(APIENTRY*ptr)(const char* arg0) = NULL;
+  static void(APIENTRY*ptr)(char const* arg0) = NULL;
   static const char name[] = "glTangent3bvEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(const char* arg0))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(char const* arg0))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0);
@@ -1288,12 +1288,12 @@ void Pure_glTangent3dEXT(double arg0, double arg1, double arg2)
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glTangent3dvEXT(const double* arg0)
+void Pure_glTangent3dvEXT(double const* arg0)
 {
-  static void(APIENTRY*ptr)(const double* arg0) = NULL;
+  static void(APIENTRY*ptr)(double const* arg0) = NULL;
   static const char name[] = "glTangent3dvEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(const double* arg0))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(double const* arg0))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0);
@@ -1310,12 +1310,12 @@ void Pure_glTangent3fEXT(float arg0, float arg1, float arg2)
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glTangent3fvEXT(const float* arg0)
+void Pure_glTangent3fvEXT(float const* arg0)
 {
-  static void(APIENTRY*ptr)(const float* arg0) = NULL;
+  static void(APIENTRY*ptr)(float const* arg0) = NULL;
   static const char name[] = "glTangent3fvEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(const float* arg0))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(float const* arg0))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0);
@@ -1332,12 +1332,12 @@ void Pure_glTangent3iEXT(int arg0, int arg1, int arg2)
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glTangent3ivEXT(const int* arg0)
+void Pure_glTangent3ivEXT(int const* arg0)
 {
-  static void(APIENTRY*ptr)(const int* arg0) = NULL;
+  static void(APIENTRY*ptr)(int const* arg0) = NULL;
   static const char name[] = "glTangent3ivEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(const int* arg0))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(int const* arg0))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0);
@@ -1354,12 +1354,12 @@ void Pure_glTangent3sEXT(short arg0, short arg1, short arg2)
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glTangent3svEXT(const short* arg0)
+void Pure_glTangent3svEXT(short const* arg0)
 {
-  static void(APIENTRY*ptr)(const short* arg0) = NULL;
+  static void(APIENTRY*ptr)(short const* arg0) = NULL;
   static const char name[] = "glTangent3svEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(const short* arg0))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(short const* arg0))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0);
@@ -1376,12 +1376,12 @@ void Pure_glBinormal3bEXT(char arg0, char arg1, char arg2)
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glBinormal3bvEXT(const char* arg0)
+void Pure_glBinormal3bvEXT(char const* arg0)
 {
-  static void(APIENTRY*ptr)(const char* arg0) = NULL;
+  static void(APIENTRY*ptr)(char const* arg0) = NULL;
   static const char name[] = "glBinormal3bvEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(const char* arg0))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(char const* arg0))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0);
@@ -1398,12 +1398,12 @@ void Pure_glBinormal3dEXT(double arg0, double arg1, double arg2)
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glBinormal3dvEXT(const double* arg0)
+void Pure_glBinormal3dvEXT(double const* arg0)
 {
-  static void(APIENTRY*ptr)(const double* arg0) = NULL;
+  static void(APIENTRY*ptr)(double const* arg0) = NULL;
   static const char name[] = "glBinormal3dvEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(const double* arg0))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(double const* arg0))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0);
@@ -1420,12 +1420,12 @@ void Pure_glBinormal3fEXT(float arg0, float arg1, float arg2)
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glBinormal3fvEXT(const float* arg0)
+void Pure_glBinormal3fvEXT(float const* arg0)
 {
-  static void(APIENTRY*ptr)(const float* arg0) = NULL;
+  static void(APIENTRY*ptr)(float const* arg0) = NULL;
   static const char name[] = "glBinormal3fvEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(const float* arg0))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(float const* arg0))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0);
@@ -1442,12 +1442,12 @@ void Pure_glBinormal3iEXT(int arg0, int arg1, int arg2)
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glBinormal3ivEXT(const int* arg0)
+void Pure_glBinormal3ivEXT(int const* arg0)
 {
-  static void(APIENTRY*ptr)(const int* arg0) = NULL;
+  static void(APIENTRY*ptr)(int const* arg0) = NULL;
   static const char name[] = "glBinormal3ivEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(const int* arg0))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(int const* arg0))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0);
@@ -1464,34 +1464,34 @@ void Pure_glBinormal3sEXT(short arg0, short arg1, short arg2)
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glBinormal3svEXT(const short* arg0)
+void Pure_glBinormal3svEXT(short const* arg0)
 {
-  static void(APIENTRY*ptr)(const short* arg0) = NULL;
+  static void(APIENTRY*ptr)(short const* arg0) = NULL;
   static const char name[] = "glBinormal3svEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(const short* arg0))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(short const* arg0))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0);
 }
 
-void Pure_glTangentPointerEXT(unsigned int arg0, int arg1, const void* arg2)
+void Pure_glTangentPointerEXT(unsigned int arg0, int arg1, void const* arg2)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, const void* arg2) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, void const* arg2) = NULL;
   static const char name[] = "glTangentPointerEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, const void* arg2))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, void const* arg2))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glBinormalPointerEXT(unsigned int arg0, int arg1, const void* arg2)
+void Pure_glBinormalPointerEXT(unsigned int arg0, int arg1, void const* arg2)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, const void* arg2) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, void const* arg2) = NULL;
   static const char name[] = "glBinormalPointerEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, const void* arg2))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, void const* arg2))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2);
@@ -1519,23 +1519,23 @@ void Pure_glVertexWeightfEXT(float arg0)
   return (*ptr)(arg0);
 }
 
-void Pure_glVertexWeightfvEXT(const float* arg0)
+void Pure_glVertexWeightfvEXT(float const* arg0)
 {
-  static void(APIENTRY*ptr)(const float* arg0) = NULL;
+  static void(APIENTRY*ptr)(float const* arg0) = NULL;
   static const char name[] = "glVertexWeightfvEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(const float* arg0))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(float const* arg0))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0);
 }
 
-void Pure_glVertexWeightPointerEXT(int arg0, unsigned int arg1, int arg2, const void* arg3)
+void Pure_glVertexWeightPointerEXT(int arg0, unsigned int arg1, int arg2, void const* arg3)
 {
-  static void(APIENTRY*ptr)(int arg0, unsigned int arg1, int arg2, const void* arg3) = NULL;
+  static void(APIENTRY*ptr)(int arg0, unsigned int arg1, int arg2, void const* arg3) = NULL;
   static const char name[] = "glVertexWeightPointerEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(int arg0, unsigned int arg1, int arg2, const void* arg3))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(int arg0, unsigned int arg1, int arg2, void const* arg3))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3);
@@ -1706,122 +1706,122 @@ unsigned int Pure_glGenSymbolsEXT(unsigned int arg0, unsigned int arg1, unsigned
   return (*ptr)(arg0, arg1, arg2, arg3);
 }
 
-void Pure_glSetInvariantEXT(unsigned int arg0, unsigned int arg1, const void* arg2)
+void Pure_glSetInvariantEXT(unsigned int arg0, unsigned int arg1, void const* arg2)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, const void* arg2) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, void const* arg2) = NULL;
   static const char name[] = "glSetInvariantEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, const void* arg2))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, void const* arg2))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glSetLocalConstantEXT(unsigned int arg0, unsigned int arg1, const void* arg2)
+void Pure_glSetLocalConstantEXT(unsigned int arg0, unsigned int arg1, void const* arg2)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, const void* arg2) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, void const* arg2) = NULL;
   static const char name[] = "glSetLocalConstantEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, const void* arg2))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, void const* arg2))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glVariantbvEXT(unsigned int arg0, const char* arg1)
+void Pure_glVariantbvEXT(unsigned int arg0, char const* arg1)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, const char* arg1) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, char const* arg1) = NULL;
   static const char name[] = "glVariantbvEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, const char* arg1))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, char const* arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glVariantsvEXT(unsigned int arg0, const short* arg1)
+void Pure_glVariantsvEXT(unsigned int arg0, short const* arg1)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, const short* arg1) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, short const* arg1) = NULL;
   static const char name[] = "glVariantsvEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, const short* arg1))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, short const* arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glVariantivEXT(unsigned int arg0, const int* arg1)
+void Pure_glVariantivEXT(unsigned int arg0, int const* arg1)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, const int* arg1) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, int const* arg1) = NULL;
   static const char name[] = "glVariantivEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, const int* arg1))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, int const* arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glVariantfvEXT(unsigned int arg0, const float* arg1)
+void Pure_glVariantfvEXT(unsigned int arg0, float const* arg1)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, const float* arg1) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, float const* arg1) = NULL;
   static const char name[] = "glVariantfvEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, const float* arg1))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, float const* arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glVariantdvEXT(unsigned int arg0, const double* arg1)
+void Pure_glVariantdvEXT(unsigned int arg0, double const* arg1)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, const double* arg1) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, double const* arg1) = NULL;
   static const char name[] = "glVariantdvEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, const double* arg1))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, double const* arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glVariantubvEXT(unsigned int arg0, const unsigned char* arg1)
+void Pure_glVariantubvEXT(unsigned int arg0, unsigned char const* arg1)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, const unsigned char* arg1) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned char const* arg1) = NULL;
   static const char name[] = "glVariantubvEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, const unsigned char* arg1))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned char const* arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glVariantusvEXT(unsigned int arg0, const unsigned short* arg1)
+void Pure_glVariantusvEXT(unsigned int arg0, unsigned short const* arg1)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, const unsigned short* arg1) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned short const* arg1) = NULL;
   static const char name[] = "glVariantusvEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, const unsigned short* arg1))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned short const* arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glVariantuivEXT(unsigned int arg0, const unsigned int* arg1)
+void Pure_glVariantuivEXT(unsigned int arg0, unsigned int const* arg1)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, const unsigned int* arg1) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int const* arg1) = NULL;
   static const char name[] = "glVariantuivEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, const unsigned int* arg1))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int const* arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glVariantPointerEXT(unsigned int arg0, unsigned int arg1, unsigned int arg2, const void* arg3)
+void Pure_glVariantPointerEXT(unsigned int arg0, unsigned int arg1, unsigned int arg2, void const* arg3)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, unsigned int arg2, const void* arg3) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, unsigned int arg2, void const* arg3) = NULL;
   static const char name[] = "glVariantPointerEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, unsigned int arg2, const void* arg3))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, unsigned int arg2, void const* arg3))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3);
@@ -2080,12 +2080,12 @@ void Pure_glBindRenderbufferEXT(unsigned int arg0, unsigned int arg1)
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glDeleteRenderbuffersEXT(int arg0, const unsigned int* arg1)
+void Pure_glDeleteRenderbuffersEXT(int arg0, unsigned int const* arg1)
 {
-  static void(APIENTRY*ptr)(int arg0, const unsigned int* arg1) = NULL;
+  static void(APIENTRY*ptr)(int arg0, unsigned int const* arg1) = NULL;
   static const char name[] = "glDeleteRenderbuffersEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(int arg0, const unsigned int* arg1))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(int arg0, unsigned int const* arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
@@ -2146,12 +2146,12 @@ void Pure_glBindFramebufferEXT(unsigned int arg0, unsigned int arg1)
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glDeleteFramebuffersEXT(int arg0, const unsigned int* arg1)
+void Pure_glDeleteFramebuffersEXT(int arg0, unsigned int const* arg1)
 {
-  static void(APIENTRY*ptr)(int arg0, const unsigned int* arg1) = NULL;
+  static void(APIENTRY*ptr)(int arg0, unsigned int const* arg1) = NULL;
   static const char name[] = "glDeleteFramebuffersEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(int arg0, const unsigned int* arg1))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(int arg0, unsigned int const* arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
@@ -2344,23 +2344,23 @@ unsigned char Pure_glIsEnabledIndexedEXT(unsigned int arg0, unsigned int arg1)
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glTexParameterIivEXT(unsigned int arg0, unsigned int arg1, const int* arg2)
+void Pure_glTexParameterIivEXT(unsigned int arg0, unsigned int arg1, int const* arg2)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, const int* arg2) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, int const* arg2) = NULL;
   static const char name[] = "glTexParameterIivEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, const int* arg2))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, int const* arg2))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glTexParameterIuivEXT(unsigned int arg0, unsigned int arg1, const unsigned int* arg2)
+void Pure_glTexParameterIuivEXT(unsigned int arg0, unsigned int arg1, unsigned int const* arg2)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, const unsigned int* arg2) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, unsigned int const* arg2) = NULL;
   static const char name[] = "glTexParameterIuivEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, const unsigned int* arg2))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, unsigned int const* arg2))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2);
@@ -2454,23 +2454,23 @@ void Pure_glGetUniformuivEXT(unsigned int arg0, int arg1, unsigned int* arg2)
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glBindFragDataLocationEXT(unsigned int arg0, unsigned int arg1, const char* arg2)
+void Pure_glBindFragDataLocationEXT(unsigned int arg0, unsigned int arg1, char const* arg2)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, const char* arg2) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int arg1, char const* arg2) = NULL;
   static const char name[] = "glBindFragDataLocationEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, const char* arg2))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int arg1, char const* arg2))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2);
 }
 
-int Pure_glGetFragDataLocationEXT(unsigned int arg0, const char* arg1)
+int Pure_glGetFragDataLocationEXT(unsigned int arg0, char const* arg1)
 {
-  static int(APIENTRY*ptr)(unsigned int arg0, const char* arg1) = NULL;
+  static int(APIENTRY*ptr)(unsigned int arg0, char const* arg1) = NULL;
   static const char name[] = "glGetFragDataLocationEXT";
   if (!ptr) {
-    ptr = (int(APIENTRY*)(unsigned int arg0, const char* arg1))get_proc_addr(name);
+    ptr = (int(APIENTRY*)(unsigned int arg0, char const* arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
@@ -2520,45 +2520,45 @@ void Pure_glUniform4uiEXT(int arg0, unsigned int arg1, unsigned int arg2, unsign
   return (*ptr)(arg0, arg1, arg2, arg3, arg4);
 }
 
-void Pure_glUniform1uivEXT(int arg0, int arg1, const unsigned int* arg2)
+void Pure_glUniform1uivEXT(int arg0, int arg1, unsigned int const* arg2)
 {
-  static void(APIENTRY*ptr)(int arg0, int arg1, const unsigned int* arg2) = NULL;
+  static void(APIENTRY*ptr)(int arg0, int arg1, unsigned int const* arg2) = NULL;
   static const char name[] = "glUniform1uivEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(int arg0, int arg1, const unsigned int* arg2))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(int arg0, int arg1, unsigned int const* arg2))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glUniform2uivEXT(int arg0, int arg1, const unsigned int* arg2)
+void Pure_glUniform2uivEXT(int arg0, int arg1, unsigned int const* arg2)
 {
-  static void(APIENTRY*ptr)(int arg0, int arg1, const unsigned int* arg2) = NULL;
+  static void(APIENTRY*ptr)(int arg0, int arg1, unsigned int const* arg2) = NULL;
   static const char name[] = "glUniform2uivEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(int arg0, int arg1, const unsigned int* arg2))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(int arg0, int arg1, unsigned int const* arg2))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glUniform3uivEXT(int arg0, int arg1, const unsigned int* arg2)
+void Pure_glUniform3uivEXT(int arg0, int arg1, unsigned int const* arg2)
 {
-  static void(APIENTRY*ptr)(int arg0, int arg1, const unsigned int* arg2) = NULL;
+  static void(APIENTRY*ptr)(int arg0, int arg1, unsigned int const* arg2) = NULL;
   static const char name[] = "glUniform3uivEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(int arg0, int arg1, const unsigned int* arg2))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(int arg0, int arg1, unsigned int const* arg2))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glUniform4uivEXT(int arg0, int arg1, const unsigned int* arg2)
+void Pure_glUniform4uivEXT(int arg0, int arg1, unsigned int const* arg2)
 {
-  static void(APIENTRY*ptr)(int arg0, int arg1, const unsigned int* arg2) = NULL;
+  static void(APIENTRY*ptr)(int arg0, int arg1, unsigned int const* arg2) = NULL;
   static const char name[] = "glUniform4uivEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(int arg0, int arg1, const unsigned int* arg2))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(int arg0, int arg1, unsigned int const* arg2))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2);
@@ -2652,144 +2652,144 @@ void Pure_glVertexAttribI4uiEXT(unsigned int arg0, unsigned int arg1, unsigned i
   return (*ptr)(arg0, arg1, arg2, arg3, arg4);
 }
 
-void Pure_glVertexAttribI1ivEXT(unsigned int arg0, const int* arg1)
+void Pure_glVertexAttribI1ivEXT(unsigned int arg0, int const* arg1)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, const int* arg1) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, int const* arg1) = NULL;
   static const char name[] = "glVertexAttribI1ivEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, const int* arg1))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, int const* arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glVertexAttribI2ivEXT(unsigned int arg0, const int* arg1)
+void Pure_glVertexAttribI2ivEXT(unsigned int arg0, int const* arg1)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, const int* arg1) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, int const* arg1) = NULL;
   static const char name[] = "glVertexAttribI2ivEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, const int* arg1))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, int const* arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glVertexAttribI3ivEXT(unsigned int arg0, const int* arg1)
+void Pure_glVertexAttribI3ivEXT(unsigned int arg0, int const* arg1)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, const int* arg1) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, int const* arg1) = NULL;
   static const char name[] = "glVertexAttribI3ivEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, const int* arg1))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, int const* arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glVertexAttribI4ivEXT(unsigned int arg0, const int* arg1)
+void Pure_glVertexAttribI4ivEXT(unsigned int arg0, int const* arg1)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, const int* arg1) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, int const* arg1) = NULL;
   static const char name[] = "glVertexAttribI4ivEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, const int* arg1))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, int const* arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glVertexAttribI1uivEXT(unsigned int arg0, const unsigned int* arg1)
+void Pure_glVertexAttribI1uivEXT(unsigned int arg0, unsigned int const* arg1)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, const unsigned int* arg1) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int const* arg1) = NULL;
   static const char name[] = "glVertexAttribI1uivEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, const unsigned int* arg1))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int const* arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glVertexAttribI2uivEXT(unsigned int arg0, const unsigned int* arg1)
+void Pure_glVertexAttribI2uivEXT(unsigned int arg0, unsigned int const* arg1)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, const unsigned int* arg1) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int const* arg1) = NULL;
   static const char name[] = "glVertexAttribI2uivEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, const unsigned int* arg1))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int const* arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glVertexAttribI3uivEXT(unsigned int arg0, const unsigned int* arg1)
+void Pure_glVertexAttribI3uivEXT(unsigned int arg0, unsigned int const* arg1)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, const unsigned int* arg1) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int const* arg1) = NULL;
   static const char name[] = "glVertexAttribI3uivEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, const unsigned int* arg1))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int const* arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glVertexAttribI4uivEXT(unsigned int arg0, const unsigned int* arg1)
+void Pure_glVertexAttribI4uivEXT(unsigned int arg0, unsigned int const* arg1)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, const unsigned int* arg1) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned int const* arg1) = NULL;
   static const char name[] = "glVertexAttribI4uivEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, const unsigned int* arg1))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned int const* arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glVertexAttribI4bvEXT(unsigned int arg0, const char* arg1)
+void Pure_glVertexAttribI4bvEXT(unsigned int arg0, char const* arg1)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, const char* arg1) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, char const* arg1) = NULL;
   static const char name[] = "glVertexAttribI4bvEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, const char* arg1))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, char const* arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glVertexAttribI4svEXT(unsigned int arg0, const short* arg1)
+void Pure_glVertexAttribI4svEXT(unsigned int arg0, short const* arg1)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, const short* arg1) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, short const* arg1) = NULL;
   static const char name[] = "glVertexAttribI4svEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, const short* arg1))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, short const* arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glVertexAttribI4ubvEXT(unsigned int arg0, const unsigned char* arg1)
+void Pure_glVertexAttribI4ubvEXT(unsigned int arg0, unsigned char const* arg1)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, const unsigned char* arg1) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned char const* arg1) = NULL;
   static const char name[] = "glVertexAttribI4ubvEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, const unsigned char* arg1))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned char const* arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glVertexAttribI4usvEXT(unsigned int arg0, const unsigned short* arg1)
+void Pure_glVertexAttribI4usvEXT(unsigned int arg0, unsigned short const* arg1)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, const unsigned short* arg1) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, unsigned short const* arg1) = NULL;
   static const char name[] = "glVertexAttribI4usvEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, const unsigned short* arg1))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, unsigned short const* arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glVertexAttribIPointerEXT(unsigned int arg0, int arg1, unsigned int arg2, int arg3, const void* arg4)
+void Pure_glVertexAttribIPointerEXT(unsigned int arg0, int arg1, unsigned int arg2, int arg3, void const* arg4)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, unsigned int arg2, int arg3, const void* arg4) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, unsigned int arg2, int arg3, void const* arg4) = NULL;
   static const char name[] = "glVertexAttribIPointerEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, unsigned int arg2, int arg3, const void* arg4))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, unsigned int arg2, int arg3, void const* arg4))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3, arg4);
@@ -2894,12 +2894,12 @@ void Pure_glDrawArraysInstancedEXT(unsigned int arg0, int arg1, int arg2, int ar
   return (*ptr)(arg0, arg1, arg2, arg3);
 }
 
-void Pure_glDrawElementsInstancedEXT(unsigned int arg0, int arg1, unsigned int arg2, const void* arg3, int arg4)
+void Pure_glDrawElementsInstancedEXT(unsigned int arg0, int arg1, unsigned int arg2, void const* arg3, int arg4)
 {
-  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, unsigned int arg2, const void* arg3, int arg4) = NULL;
+  static void(APIENTRY*ptr)(unsigned int arg0, int arg1, unsigned int arg2, void const* arg3, int arg4) = NULL;
   static const char name[] = "glDrawElementsInstancedEXT";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, unsigned int arg2, const void* arg3, int arg4))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(unsigned int arg0, int arg1, unsigned int arg2, void const* arg3, int arg4))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3, arg4);

@@ -232,12 +232,12 @@ void Pure_glutInitDisplayMode(unsigned int arg0)
   return (*ptr)(arg0);
 }
 
-void Pure_glutInitDisplayString(const char* arg0)
+void Pure_glutInitDisplayString(char const* arg0)
 {
-  static void(APIENTRY*ptr)(const char* arg0) = NULL;
+  static void(APIENTRY*ptr)(char const* arg0) = NULL;
   static const char name[] = "glutInitDisplayString";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(const char* arg0))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(char const* arg0))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0);
@@ -254,12 +254,12 @@ void Pure_glutMainLoop()
   return (*ptr)();
 }
 
-int Pure_glutCreateWindow(const char* arg0)
+int Pure_glutCreateWindow(char const* arg0)
 {
-  static int(APIENTRY*ptr)(const char* arg0) = NULL;
+  static int(APIENTRY*ptr)(char const* arg0) = NULL;
   static const char name[] = "glutCreateWindow";
   if (!ptr) {
-    ptr = (int(APIENTRY*)(const char* arg0))get_proc_addr(name);
+    ptr = (int(APIENTRY*)(char const* arg0))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0);
@@ -309,23 +309,23 @@ int Pure_glutGetWindow()
   return (*ptr)();
 }
 
-void Pure_glutSetWindowTitle(const char* arg0)
+void Pure_glutSetWindowTitle(char const* arg0)
 {
-  static void(APIENTRY*ptr)(const char* arg0) = NULL;
+  static void(APIENTRY*ptr)(char const* arg0) = NULL;
   static const char name[] = "glutSetWindowTitle";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(const char* arg0))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(char const* arg0))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0);
 }
 
-void Pure_glutSetIconTitle(const char* arg0)
+void Pure_glutSetIconTitle(char const* arg0)
 {
-  static void(APIENTRY*ptr)(const char* arg0) = NULL;
+  static void(APIENTRY*ptr)(char const* arg0) = NULL;
   static const char name[] = "glutSetIconTitle";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(const char* arg0))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(char const* arg0))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0);
@@ -595,45 +595,45 @@ void Pure_glutSetMenu(int arg0)
   return (*ptr)(arg0);
 }
 
-void Pure_glutAddMenuEntry(const char* arg0, int arg1)
+void Pure_glutAddMenuEntry(char const* arg0, int arg1)
 {
-  static void(APIENTRY*ptr)(const char* arg0, int arg1) = NULL;
+  static void(APIENTRY*ptr)(char const* arg0, int arg1) = NULL;
   static const char name[] = "glutAddMenuEntry";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(const char* arg0, int arg1))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(char const* arg0, int arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glutAddSubMenu(const char* arg0, int arg1)
+void Pure_glutAddSubMenu(char const* arg0, int arg1)
 {
-  static void(APIENTRY*ptr)(const char* arg0, int arg1) = NULL;
+  static void(APIENTRY*ptr)(char const* arg0, int arg1) = NULL;
   static const char name[] = "glutAddSubMenu";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(const char* arg0, int arg1))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(char const* arg0, int arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glutChangeToMenuEntry(int arg0, const char* arg1, int arg2)
+void Pure_glutChangeToMenuEntry(int arg0, char const* arg1, int arg2)
 {
-  static void(APIENTRY*ptr)(int arg0, const char* arg1, int arg2) = NULL;
+  static void(APIENTRY*ptr)(int arg0, char const* arg1, int arg2) = NULL;
   static const char name[] = "glutChangeToMenuEntry";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(int arg0, const char* arg1, int arg2))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(int arg0, char const* arg1, int arg2))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_glutChangeToSubMenu(int arg0, const char* arg1, int arg2)
+void Pure_glutChangeToSubMenu(int arg0, char const* arg1, int arg2)
 {
-  static void(APIENTRY*ptr)(int arg0, const char* arg1, int arg2) = NULL;
+  static void(APIENTRY*ptr)(int arg0, char const* arg1, int arg2) = NULL;
   static const char name[] = "glutChangeToSubMenu";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(int arg0, const char* arg1, int arg2))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(int arg0, char const* arg1, int arg2))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2);
@@ -1035,23 +1035,23 @@ int Pure_glutStrokeWidth(void* arg0, int arg1)
   return (*ptr)(arg0, arg1);
 }
 
-int Pure_glutBitmapLength(void* arg0, const unsigned char* arg1)
+int Pure_glutBitmapLength(void* arg0, unsigned char const* arg1)
 {
-  static int(APIENTRY*ptr)(void* arg0, const unsigned char* arg1) = NULL;
+  static int(APIENTRY*ptr)(void* arg0, unsigned char const* arg1) = NULL;
   static const char name[] = "glutBitmapLength";
   if (!ptr) {
-    ptr = (int(APIENTRY*)(void* arg0, const unsigned char* arg1))get_proc_addr(name);
+    ptr = (int(APIENTRY*)(void* arg0, unsigned char const* arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
 }
 
-int Pure_glutStrokeLength(void* arg0, const unsigned char* arg1)
+int Pure_glutStrokeLength(void* arg0, unsigned char const* arg1)
 {
-  static int(APIENTRY*ptr)(void* arg0, const unsigned char* arg1) = NULL;
+  static int(APIENTRY*ptr)(void* arg0, unsigned char const* arg1) = NULL;
   static const char name[] = "glutStrokeLength";
   if (!ptr) {
-    ptr = (int(APIENTRY*)(void* arg0, const unsigned char* arg1))get_proc_addr(name);
+    ptr = (int(APIENTRY*)(void* arg0, unsigned char const* arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
@@ -1255,12 +1255,12 @@ void Pure_glutSolidTeapot(double arg0)
   return (*ptr)(arg0);
 }
 
-void Pure_glutGameModeString(const char* arg0)
+void Pure_glutGameModeString(char const* arg0)
 {
-  static void(APIENTRY*ptr)(const char* arg0) = NULL;
+  static void(APIENTRY*ptr)(char const* arg0) = NULL;
   static const char name[] = "glutGameModeString";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(const char* arg0))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(char const* arg0))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0);
@@ -1420,12 +1420,12 @@ void Pure_glutForceJoystickFunc()
   return (*ptr)();
 }
 
-int Pure_glutExtensionSupported(const char* arg0)
+int Pure_glutExtensionSupported(char const* arg0)
 {
-  static int(APIENTRY*ptr)(const char* arg0) = NULL;
+  static int(APIENTRY*ptr)(char const* arg0) = NULL;
   static const char name[] = "glutExtensionSupported";
   if (!ptr) {
-    ptr = (int(APIENTRY*)(const char* arg0))get_proc_addr(name);
+    ptr = (int(APIENTRY*)(char const* arg0))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0);
@@ -1618,23 +1618,23 @@ float Pure_glutStrokeHeight(void* arg0)
   return (*ptr)(arg0);
 }
 
-void Pure_glutBitmapString(void* arg0, const unsigned char* arg1)
+void Pure_glutBitmapString(void* arg0, unsigned char const* arg1)
 {
-  static void(APIENTRY*ptr)(void* arg0, const unsigned char* arg1) = NULL;
+  static void(APIENTRY*ptr)(void* arg0, unsigned char const* arg1) = NULL;
   static const char name[] = "glutBitmapString";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(void* arg0, const unsigned char* arg1))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(void* arg0, unsigned char const* arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
 }
 
-void Pure_glutStrokeString(void* arg0, const unsigned char* arg1)
+void Pure_glutStrokeString(void* arg0, unsigned char const* arg1)
 {
-  static void(APIENTRY*ptr)(void* arg0, const unsigned char* arg1) = NULL;
+  static void(APIENTRY*ptr)(void* arg0, unsigned char const* arg1) = NULL;
   static const char name[] = "glutStrokeString";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(void* arg0, const unsigned char* arg1))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(void* arg0, unsigned char const* arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
@@ -1706,12 +1706,12 @@ void Pure_glutSolidCylinder(double arg0, double arg1, int arg2, int arg3)
   return (*ptr)(arg0, arg1, arg2, arg3);
 }
 
-void* Pure_glutGetProcAddress(const char* arg0)
+void* Pure_glutGetProcAddress(char const* arg0)
 {
-  static void*(APIENTRY*ptr)(const char* arg0) = NULL;
+  static void*(APIENTRY*ptr)(char const* arg0) = NULL;
   static const char name[] = "glutGetProcAddress";
   if (!ptr) {
-    ptr = (void*(APIENTRY*)(const char* arg0))get_proc_addr(name);
+    ptr = (void*(APIENTRY*)(char const* arg0))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0);

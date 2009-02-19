@@ -232,78 +232,78 @@ void Pure_gluBeginTrim(GLUnurbs* arg0)
   return (*ptr)(arg0);
 }
 
-int Pure_gluBuild1DMipmapLevels(unsigned int arg0, int arg1, int arg2, unsigned int arg3, unsigned int arg4, int arg5, int arg6, int arg7, const void* arg8)
+int Pure_gluBuild1DMipmapLevels(unsigned int arg0, int arg1, int arg2, unsigned int arg3, unsigned int arg4, int arg5, int arg6, int arg7, void const* arg8)
 {
-  static int(APIENTRY*ptr)(unsigned int arg0, int arg1, int arg2, unsigned int arg3, unsigned int arg4, int arg5, int arg6, int arg7, const void* arg8) = NULL;
+  static int(APIENTRY*ptr)(unsigned int arg0, int arg1, int arg2, unsigned int arg3, unsigned int arg4, int arg5, int arg6, int arg7, void const* arg8) = NULL;
   static const char name[] = "gluBuild1DMipmapLevels";
   if (!ptr) {
-    ptr = (int(APIENTRY*)(unsigned int arg0, int arg1, int arg2, unsigned int arg3, unsigned int arg4, int arg5, int arg6, int arg7, const void* arg8))get_proc_addr(name);
+    ptr = (int(APIENTRY*)(unsigned int arg0, int arg1, int arg2, unsigned int arg3, unsigned int arg4, int arg5, int arg6, int arg7, void const* arg8))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
 }
 
-int Pure_gluBuild1DMipmaps(unsigned int arg0, int arg1, int arg2, unsigned int arg3, unsigned int arg4, const void* arg5)
+int Pure_gluBuild1DMipmaps(unsigned int arg0, int arg1, int arg2, unsigned int arg3, unsigned int arg4, void const* arg5)
 {
-  static int(APIENTRY*ptr)(unsigned int arg0, int arg1, int arg2, unsigned int arg3, unsigned int arg4, const void* arg5) = NULL;
+  static int(APIENTRY*ptr)(unsigned int arg0, int arg1, int arg2, unsigned int arg3, unsigned int arg4, void const* arg5) = NULL;
   static const char name[] = "gluBuild1DMipmaps";
   if (!ptr) {
-    ptr = (int(APIENTRY*)(unsigned int arg0, int arg1, int arg2, unsigned int arg3, unsigned int arg4, const void* arg5))get_proc_addr(name);
+    ptr = (int(APIENTRY*)(unsigned int arg0, int arg1, int arg2, unsigned int arg3, unsigned int arg4, void const* arg5))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3, arg4, arg5);
 }
 
-int Pure_gluBuild2DMipmapLevels(unsigned int arg0, int arg1, int arg2, int arg3, unsigned int arg4, unsigned int arg5, int arg6, int arg7, int arg8, const void* arg9)
+int Pure_gluBuild2DMipmapLevels(unsigned int arg0, int arg1, int arg2, int arg3, unsigned int arg4, unsigned int arg5, int arg6, int arg7, int arg8, void const* arg9)
 {
-  static int(APIENTRY*ptr)(unsigned int arg0, int arg1, int arg2, int arg3, unsigned int arg4, unsigned int arg5, int arg6, int arg7, int arg8, const void* arg9) = NULL;
+  static int(APIENTRY*ptr)(unsigned int arg0, int arg1, int arg2, int arg3, unsigned int arg4, unsigned int arg5, int arg6, int arg7, int arg8, void const* arg9) = NULL;
   static const char name[] = "gluBuild2DMipmapLevels";
   if (!ptr) {
-    ptr = (int(APIENTRY*)(unsigned int arg0, int arg1, int arg2, int arg3, unsigned int arg4, unsigned int arg5, int arg6, int arg7, int arg8, const void* arg9))get_proc_addr(name);
+    ptr = (int(APIENTRY*)(unsigned int arg0, int arg1, int arg2, int arg3, unsigned int arg4, unsigned int arg5, int arg6, int arg7, int arg8, void const* arg9))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
 }
 
-int Pure_gluBuild2DMipmaps(unsigned int arg0, int arg1, int arg2, int arg3, unsigned int arg4, unsigned int arg5, const void* arg6)
+int Pure_gluBuild2DMipmaps(unsigned int arg0, int arg1, int arg2, int arg3, unsigned int arg4, unsigned int arg5, void const* arg6)
 {
-  static int(APIENTRY*ptr)(unsigned int arg0, int arg1, int arg2, int arg3, unsigned int arg4, unsigned int arg5, const void* arg6) = NULL;
+  static int(APIENTRY*ptr)(unsigned int arg0, int arg1, int arg2, int arg3, unsigned int arg4, unsigned int arg5, void const* arg6) = NULL;
   static const char name[] = "gluBuild2DMipmaps";
   if (!ptr) {
-    ptr = (int(APIENTRY*)(unsigned int arg0, int arg1, int arg2, int arg3, unsigned int arg4, unsigned int arg5, const void* arg6))get_proc_addr(name);
+    ptr = (int(APIENTRY*)(unsigned int arg0, int arg1, int arg2, int arg3, unsigned int arg4, unsigned int arg5, void const* arg6))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
 }
 
-int Pure_gluBuild3DMipmapLevels(unsigned int arg0, int arg1, int arg2, int arg3, int arg4, unsigned int arg5, unsigned int arg6, int arg7, int arg8, int arg9, const void* arg10)
+int Pure_gluBuild3DMipmapLevels(unsigned int arg0, int arg1, int arg2, int arg3, int arg4, unsigned int arg5, unsigned int arg6, int arg7, int arg8, int arg9, void const* arg10)
 {
-  static int(APIENTRY*ptr)(unsigned int arg0, int arg1, int arg2, int arg3, int arg4, unsigned int arg5, unsigned int arg6, int arg7, int arg8, int arg9, const void* arg10) = NULL;
+  static int(APIENTRY*ptr)(unsigned int arg0, int arg1, int arg2, int arg3, int arg4, unsigned int arg5, unsigned int arg6, int arg7, int arg8, int arg9, void const* arg10) = NULL;
   static const char name[] = "gluBuild3DMipmapLevels";
   if (!ptr) {
-    ptr = (int(APIENTRY*)(unsigned int arg0, int arg1, int arg2, int arg3, int arg4, unsigned int arg5, unsigned int arg6, int arg7, int arg8, int arg9, const void* arg10))get_proc_addr(name);
+    ptr = (int(APIENTRY*)(unsigned int arg0, int arg1, int arg2, int arg3, int arg4, unsigned int arg5, unsigned int arg6, int arg7, int arg8, int arg9, void const* arg10))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
 }
 
-int Pure_gluBuild3DMipmaps(unsigned int arg0, int arg1, int arg2, int arg3, int arg4, unsigned int arg5, unsigned int arg6, const void* arg7)
+int Pure_gluBuild3DMipmaps(unsigned int arg0, int arg1, int arg2, int arg3, int arg4, unsigned int arg5, unsigned int arg6, void const* arg7)
 {
-  static int(APIENTRY*ptr)(unsigned int arg0, int arg1, int arg2, int arg3, int arg4, unsigned int arg5, unsigned int arg6, const void* arg7) = NULL;
+  static int(APIENTRY*ptr)(unsigned int arg0, int arg1, int arg2, int arg3, int arg4, unsigned int arg5, unsigned int arg6, void const* arg7) = NULL;
   static const char name[] = "gluBuild3DMipmaps";
   if (!ptr) {
-    ptr = (int(APIENTRY*)(unsigned int arg0, int arg1, int arg2, int arg3, int arg4, unsigned int arg5, unsigned int arg6, const void* arg7))get_proc_addr(name);
+    ptr = (int(APIENTRY*)(unsigned int arg0, int arg1, int arg2, int arg3, int arg4, unsigned int arg5, unsigned int arg6, void const* arg7))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
 }
 
-unsigned char Pure_gluCheckExtension(const unsigned char* arg0, const unsigned char* arg1)
+unsigned char Pure_gluCheckExtension(unsigned char const* arg0, unsigned char const* arg1)
 {
-  static unsigned char(APIENTRY*ptr)(const unsigned char* arg0, const unsigned char* arg1) = NULL;
+  static unsigned char(APIENTRY*ptr)(unsigned char const* arg0, unsigned char const* arg1) = NULL;
   static const char name[] = "gluCheckExtension";
   if (!ptr) {
-    ptr = (unsigned char(APIENTRY*)(const unsigned char* arg0, const unsigned char* arg1))get_proc_addr(name);
+    ptr = (unsigned char(APIENTRY*)(unsigned char const* arg0, unsigned char const* arg1))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1);
@@ -408,12 +408,12 @@ void Pure_gluEndTrim(GLUnurbs* arg0)
   return (*ptr)(arg0);
 }
 
-const unsigned char* Pure_gluErrorString(unsigned int arg0)
+unsigned char const* Pure_gluErrorString(unsigned int arg0)
 {
-  static const unsigned char*(APIENTRY*ptr)(unsigned int arg0) = NULL;
+  static unsigned char const*(APIENTRY*ptr)(unsigned int arg0) = NULL;
   static const char name[] = "gluErrorString";
   if (!ptr) {
-    ptr = (const unsigned char*(APIENTRY*)(unsigned int arg0))get_proc_addr(name);
+    ptr = (unsigned char const*(APIENTRY*)(unsigned int arg0))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0);
@@ -430,12 +430,12 @@ void Pure_gluGetNurbsProperty(GLUnurbs* arg0, unsigned int arg1, float* arg2)
   return (*ptr)(arg0, arg1, arg2);
 }
 
-const unsigned char* Pure_gluGetString(unsigned int arg0)
+unsigned char const* Pure_gluGetString(unsigned int arg0)
 {
-  static const unsigned char*(APIENTRY*ptr)(unsigned int arg0) = NULL;
+  static unsigned char const*(APIENTRY*ptr)(unsigned int arg0) = NULL;
   static const char name[] = "gluGetString";
   if (!ptr) {
-    ptr = (const unsigned char*(APIENTRY*)(unsigned int arg0))get_proc_addr(name);
+    ptr = (unsigned char const*(APIENTRY*)(unsigned int arg0))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0);
@@ -452,12 +452,12 @@ void Pure_gluGetTessProperty(GLUtesselator* arg0, unsigned int arg1, double* arg
   return (*ptr)(arg0, arg1, arg2);
 }
 
-void Pure_gluLoadSamplingMatrices(GLUnurbs* arg0, const float* arg1, const float* arg2, const int* arg3)
+void Pure_gluLoadSamplingMatrices(GLUnurbs* arg0, float const* arg1, float const* arg2, int const* arg3)
 {
-  static void(APIENTRY*ptr)(GLUnurbs* arg0, const float* arg1, const float* arg2, const int* arg3) = NULL;
+  static void(APIENTRY*ptr)(GLUnurbs* arg0, float const* arg1, float const* arg2, int const* arg3) = NULL;
   static const char name[] = "gluLoadSamplingMatrices";
   if (!ptr) {
-    ptr = (void(APIENTRY*)(GLUnurbs* arg0, const float* arg1, const float* arg2, const int* arg3))get_proc_addr(name);
+    ptr = (void(APIENTRY*)(GLUnurbs* arg0, float const* arg1, float const* arg2, int const* arg3))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3);
@@ -628,12 +628,12 @@ void Pure_gluPickMatrix(double arg0, double arg1, double arg2, double arg3, int*
   return (*ptr)(arg0, arg1, arg2, arg3, arg4);
 }
 
-int Pure_gluProject(double arg0, double arg1, double arg2, const double* arg3, const double* arg4, const int* arg5, double* arg6, double* arg7, double* arg8)
+int Pure_gluProject(double arg0, double arg1, double arg2, double const* arg3, double const* arg4, int const* arg5, double* arg6, double* arg7, double* arg8)
 {
-  static int(APIENTRY*ptr)(double arg0, double arg1, double arg2, const double* arg3, const double* arg4, const int* arg5, double* arg6, double* arg7, double* arg8) = NULL;
+  static int(APIENTRY*ptr)(double arg0, double arg1, double arg2, double const* arg3, double const* arg4, int const* arg5, double* arg6, double* arg7, double* arg8) = NULL;
   static const char name[] = "gluProject";
   if (!ptr) {
-    ptr = (int(APIENTRY*)(double arg0, double arg1, double arg2, const double* arg3, const double* arg4, const int* arg5, double* arg6, double* arg7, double* arg8))get_proc_addr(name);
+    ptr = (int(APIENTRY*)(double arg0, double arg1, double arg2, double const* arg3, double const* arg4, int const* arg5, double* arg6, double* arg7, double* arg8))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
@@ -705,12 +705,12 @@ void Pure_gluQuadricTexture(GLUquadric* arg0, unsigned char arg1)
   return (*ptr)(arg0, arg1);
 }
 
-int Pure_gluScaleImage(unsigned int arg0, int arg1, int arg2, unsigned int arg3, const void* arg4, int arg5, int arg6, unsigned int arg7, void* arg8)
+int Pure_gluScaleImage(unsigned int arg0, int arg1, int arg2, unsigned int arg3, void const* arg4, int arg5, int arg6, unsigned int arg7, void* arg8)
 {
-  static int(APIENTRY*ptr)(unsigned int arg0, int arg1, int arg2, unsigned int arg3, const void* arg4, int arg5, int arg6, unsigned int arg7, void* arg8) = NULL;
+  static int(APIENTRY*ptr)(unsigned int arg0, int arg1, int arg2, unsigned int arg3, void const* arg4, int arg5, int arg6, unsigned int arg7, void* arg8) = NULL;
   static const char name[] = "gluScaleImage";
   if (!ptr) {
-    ptr = (int(APIENTRY*)(unsigned int arg0, int arg1, int arg2, unsigned int arg3, const void* arg4, int arg5, int arg6, unsigned int arg7, void* arg8))get_proc_addr(name);
+    ptr = (int(APIENTRY*)(unsigned int arg0, int arg1, int arg2, unsigned int arg3, void const* arg4, int arg5, int arg6, unsigned int arg7, void* arg8))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
@@ -815,23 +815,23 @@ void Pure_gluTessVertex(GLUtesselator* arg0, double* arg1, void* arg2)
   return (*ptr)(arg0, arg1, arg2);
 }
 
-int Pure_gluUnProject(double arg0, double arg1, double arg2, const double* arg3, const double* arg4, const int* arg5, double* arg6, double* arg7, double* arg8)
+int Pure_gluUnProject(double arg0, double arg1, double arg2, double const* arg3, double const* arg4, int const* arg5, double* arg6, double* arg7, double* arg8)
 {
-  static int(APIENTRY*ptr)(double arg0, double arg1, double arg2, const double* arg3, const double* arg4, const int* arg5, double* arg6, double* arg7, double* arg8) = NULL;
+  static int(APIENTRY*ptr)(double arg0, double arg1, double arg2, double const* arg3, double const* arg4, int const* arg5, double* arg6, double* arg7, double* arg8) = NULL;
   static const char name[] = "gluUnProject";
   if (!ptr) {
-    ptr = (int(APIENTRY*)(double arg0, double arg1, double arg2, const double* arg3, const double* arg4, const int* arg5, double* arg6, double* arg7, double* arg8))get_proc_addr(name);
+    ptr = (int(APIENTRY*)(double arg0, double arg1, double arg2, double const* arg3, double const* arg4, int const* arg5, double* arg6, double* arg7, double* arg8))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
 }
 
-int Pure_gluUnProject4(double arg0, double arg1, double arg2, double arg3, const double* arg4, const double* arg5, const int* arg6, double arg7, double arg8, double* arg9, double* arg10, double* arg11, double* arg12)
+int Pure_gluUnProject4(double arg0, double arg1, double arg2, double arg3, double const* arg4, double const* arg5, int const* arg6, double arg7, double arg8, double* arg9, double* arg10, double* arg11, double* arg12)
 {
-  static int(APIENTRY*ptr)(double arg0, double arg1, double arg2, double arg3, const double* arg4, const double* arg5, const int* arg6, double arg7, double arg8, double* arg9, double* arg10, double* arg11, double* arg12) = NULL;
+  static int(APIENTRY*ptr)(double arg0, double arg1, double arg2, double arg3, double const* arg4, double const* arg5, int const* arg6, double arg7, double arg8, double* arg9, double* arg10, double* arg11, double* arg12) = NULL;
   static const char name[] = "gluUnProject4";
   if (!ptr) {
-    ptr = (int(APIENTRY*)(double arg0, double arg1, double arg2, double arg3, const double* arg4, const double* arg5, const int* arg6, double arg7, double arg8, double* arg9, double* arg10, double* arg11, double* arg12))get_proc_addr(name);
+    ptr = (int(APIENTRY*)(double arg0, double arg1, double arg2, double arg3, double const* arg4, double const* arg5, int const* arg6, double arg7, double arg8, double* arg9, double* arg10, double* arg11, double* arg12))get_proc_addr(name);
     if (!ptr) throw_unsupported(name);
   }
   return (*ptr)(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12);
