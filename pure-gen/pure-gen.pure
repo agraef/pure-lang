@@ -174,7 +174,7 @@ case t of
 end;
 
 // The corresponding C types:
-c_type t =
+c_basetype t =
 case t of
   uint8_t    = "unsigned char";
   sint8_t    = "char";
@@ -192,48 +192,10 @@ case t of
   sint_t     = "int";
   ulong_t    = "unsigned long";
   slong_t    = "long";
-  const_type (ptr_type t) = c_type (ptr_type t)+" const";
-  const_type t@(struct_or_union n) = n+" const *";
-  const_type t = "const "+c_type t;
+  const_type t = c_basetype t+" const";
   ptr_type longdouble_t = "long double*";
   ptr_type (func_type _ _) = "void*";
-  ptr_type (struct_or_union n) = n+"*";
-  ptr_type (const_type (struct_or_union n)) = n+" const *";
-  ptr_type t = c_type t + "*";
-  t@(struct_or_union n) = c_type (ptr_type t);
-  expr_t = "pure_expr";
-  dmatrix_t = "gsl_matrix";
-  cmatrix_t = "gsl_matrix_complex";
-  imatrix_t = "gsl_matrix_int";
-  _ = pure_type t;
-end;
-
-// Special version of c_type for return values.
-c_rettype t =
-case t of
-  uint8_t    = "unsigned char";
-  sint8_t    = "char";
-  uint16_t   = "unsigned short";
-  sint16_t   = "short";
-  uint32_t   = "unsigned int";
-  sint32_t   = "int";
-  uint64_t   = "unsigned long long";
-  sint64_t   = "long long";
-  uchar_t    = "unsigned char";
-  schar_t    = "char";
-  ushort_t   = "unsigned short";
-  sshort_t   = "short";
-  uint_t     = "unsigned int";
-  sint_t     = "int";
-  ulong_t    = "unsigned long";
-  slong_t    = "long";
-  // Get rid of extra const in types, just in case.
-  const_type t = c_rettype t;
-  ptr_type longdouble_t = "long double*";
-  ptr_type (func_type _ _) = "void*";
-  ptr_type (struct_or_union n) = n+"*";
-  ptr_type (const_type t) = "const "+c_rettype (ptr_type t);
-  ptr_type t = c_type t + "*";
+  ptr_type t = c_basetype t + "*";
   struct_or_union n = n;
   expr_t = "pure_expr";
   dmatrix_t = "gsl_matrix";
@@ -241,6 +203,17 @@ case t of
   imatrix_t = "gsl_matrix_int";
   _ = pure_type t;
 end;
+
+c_type t =
+case t of
+  // translate struct value parameters to pointers
+  const_type (struct_or_union n) = n+" const *";
+  struct_or_union n = n+"*";
+  _ = c_basetype t;
+end;
+
+// Special version for return values. This is just c_basetype for now.
+c_rettype t = c_basetype t;
 
 // complete_ffi_type finishes the conversion by collecting typespecifiers such
 // as long, unsigned, etc. This also strips away the "basic_type" specifier,
@@ -378,11 +351,14 @@ decl_types2 d@(CDecl decl_specs init_declr_list) fname =
   end
   with 
     //basic_type : get the type of a declaration, ignoring storage and access
-    //modifiers
+    //modifiers (except const)
     apply_derivs t [] = basic_type t;
-    apply_derivs t ( (CPtrDeclr _  ) : derivs ) |
-    apply_derivs t ( (CArrDeclr _ _) : derivs ) = //treat arrays as pointers, 
-      ptr_type $ apply_derivs t derivs;           //even if they are proper array objects
+    apply_derivs t ( (CPtrDeclr m  ) : derivs ) |
+    apply_derivs t ( (CArrDeclr m _) : derivs )
+    //treat arrays as pointers,even if they are proper array objects
+    = const_type (ptr_type $ apply_derivs t derivs)
+        if any ((===) CConstQual) m;
+    = ptr_type $ apply_derivs t derivs;
     apply_derivs t ( (CFunDeclr args _) : derivs ) = 
       case args of 
         Right (arg_decls,_) = 
