@@ -193,12 +193,11 @@ case t of
   ulong_t    = "unsigned long";
   slong_t    = "long";
   const_type (ptr_type t) = c_type (ptr_type t)+" const";
-  const_type t@(struct_or_union n) = c_type (ptr_type t)+" const";
+  const_type t@(struct_or_union n) = n+" const *";
   const_type t = "const "+c_type t;
   ptr_type longdouble_t = "long double*";
   ptr_type (func_type _ _) = "void*";
   ptr_type (struct_or_union n) = n+"*";
-  ptr_type (const_type t) = "const "+c_type (ptr_type t);
   ptr_type t = c_type t + "*";
   t@(struct_or_union n) = c_type (ptr_type t);
   expr_t = "pure_expr";
@@ -227,8 +226,7 @@ case t of
   sint_t     = "int";
   ulong_t    = "unsigned long";
   slong_t    = "long";
-  // Get rid of extra const in non-pointer return types, just in case.
-  const_type (ptr_type t) = c_rettype (ptr_type t);
+  // Get rid of extra const in types, just in case.
   const_type t = c_rettype t;
   ptr_type longdouble_t = "long double*";
   ptr_type (func_type _ _) = "void*";
