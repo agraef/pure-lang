@@ -271,6 +271,7 @@ complete_ffi_type x =
   //this is kind of a mess, due to all the different ways one might 
   //specify an int: int, long int, long, singed long, signed long int...
   unsupported_t   = unsupported_t;
+  pointer_t   = pointer_t;
   void_t   = void_t;
   schar_t  = schar_t;
   sshort_t = sshort_t;
@@ -439,8 +440,8 @@ func_decl1 d@(CDecl decl_specs _) fname
 resolve_typedef d t fname = lookup t
   with
     lookup (basic_type (CTypeDef n)) =
-      catch ( \_ -> warning 2 $ "could not resolve typedef: "+n+
-                                ", defaulting to int" $$ sint_t  ) 
+      catch ( \_ -> warning 1 $ "could not resolve typedef: "+n+
+                                ", defaulting to void*" $$ pointer_t  ) 
             ( patch_typedef n $ lookup (d!n) );
 
     lookup (basic_type (CSUType _ (CStructUnion _ (Just name) _ _))) = 
