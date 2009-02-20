@@ -1,0 +1,60 @@
+
+/* Basic Pure GTK example. Shows a button in a main window and defines some
+   callbacks. Please see the GTK+ 2.0 Tutorial for a closer explanation of
+   this example. */
+
+using ffi, gtk, glib;
+
+// Convenience function to create a reference to a pointer value.
+ptr p::pointer = sentry free q when
+  q = malloc SIZEOF_POINTER; put_pointer q p;
+end;
+
+// Initialize. This also passes arguments to GTK.
+let argcp, argvp = {argc}, byte_cstring_pointer argv;
+gtk::init argcp (ptr argvp);
+
+// Convenience macro to connect a signal to a callback.
+def signal_connect instance signal c_handler data =
+  glib::signal_connect_data instance signal c_handler data NULL 0;
+
+// Convenience macros to create C callbacks via ffi.
+def callback cb = fclos cb FFI_DEFAULT_ABI void_t (pointer_t, pointer_t);
+def event_callback cb = fclos cb FFI_DEFAULT_ABI sint_t
+			(pointer_t, pointer_t, pointer_t);
+
+// Callback definitions.
+delete_event (widget, event, data) =
+  glib::print "Exiting.\n" $$ false;
+destroy (widget, data) = gtk::main_quit;
+hello (widget, data) = glib::print "Hello, world!\n";
+
+// We turn these into C callbacks so that we can pass them to GTK.
+let delete_cb = event_callback delete_event;
+let destroy_cb = callback destroy;
+let hello_cb = callback hello;
+
+// The main routine.
+main = gtk::main // enter the main loop
+when
+  // Create the main window and define some window properties.
+  window = gtk::window_new gtk::WINDOW_TOPLEVEL;
+  gtk::window_set_title window "Hello - Pure GTK Example";
+  gtk::window_set_default_size window 300 100;
+  gtk::container_set_border_width window 10;
+
+  // Create a button and add it to the main window.
+  button = gtk::button_new_with_mnemonic "_Hello World";
+  gtk::container_add window button;
+
+  // Connect the callbacks to the corresponding signals.
+  signal_connect window "delete_event" delete_cb NULL;
+  signal_connect window "destroy" destroy_cb NULL;
+  signal_connect button "clicked" hello_cb NULL;
+
+  // Show the button and the main window.
+  gtk::widget_show button;
+  gtk::widget_show window;
+end;
+
+main;
