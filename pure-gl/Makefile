@@ -35,7 +35,7 @@ ifneq "$(findstring -darwin,$(host))" ""
 # OSX (untested)
 DLL = .dylib
 shared = -dynamiclib
-LinkGL = -framework OpenGL
+LinkGL = -framework GLUT -framework OpenGL
 endif
 ifneq "$(findstring x86_64-,$(host))" ""
 # 64 bit, needs -fPIC flag
