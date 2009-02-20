@@ -54,7 +54,9 @@ CFLAGS = -g -O2
 
 # These are the core APIs related to gtk+.
 core = gtk.pure glib.pure
-# Uncomment this to build various auxiliary interfaces.
+
+# Uncomment this to build various auxiliary interfaces. You might also wish to
+# add glade.pure to get the libglade interface which isn't built by default.
 addons = atk.pure cairo.pure pango.pure
 
 modules = $(core) $(addons)
@@ -174,3 +176,14 @@ pango$(DLL): pango.c
 
 pango.pure pango.c:
 	pure-gen $(PGFLAGS) $(PANGO_CFLAGS) -s '$(gtkpath)/pango-1.0/pango/*.h::' $(gtkpath)/pango-1.0/pango/pango.h -p pango -m pango -fc
+
+# libglade
+
+GLADE_CFLAGS = $(shell pkg-config --cflags libglade-2.0)
+GLADE_LIBS = $(shell pkg-config --libs libglade-2.0)
+
+glade$(DLL): glade.c
+	$(CC) $(shared) $(FLAGS) $(GLADE_CFLAGS) -o $@ $< $(GLADE_LIBS)
+
+glade.pure glade.c:
+	pure-gen $(PGFLAGS) $(GLADE_CFLAGS) -s '$(gtkpath)/libglade-2.0/glade/*.h::' $(gtkpath)/libglade-2.0/glade/glade.h -p glade -m glade -fc
