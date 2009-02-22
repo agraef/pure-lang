@@ -115,22 +115,35 @@ distcheck: dist
 
 # Path to the installed GTK, Glib, Cairo and Pango headers. The headers are
 # assumed to live in the gtk-2.0, glib-2.0 etc. subdirectories under this
-# directory.
-gtkpath = /usr/include
+# directory. If your system uses a different layout then you can also adjust
+# the individual include directories below.
+
+includedir = /usr/include
+
+gtkdir   = $(includedir)/gtk-2.0
+glibdir  = $(includedir)/glib-2.0
+atkdir   = $(includedir)/atk-1.0
+cairodir = $(includedir)
+pangodir = $(includedir)/pango-1.0
+gladedir = $(includedir)/libglade-2.0
 
 # gtk and gdk
 
 GTK_CFLAGS = $(shell pkg-config --cflags gtk+-2.0)
+GTK_INCLUDES = $(shell pkg-config --cflags-only-I gtk+-2.0)
 GTK_LIBS = $(shell pkg-config --libs gtk+-2.0)
 
 gtk$(DLL): gtk.c
 	$(CC) $(shared) $(FLAGS) $(GTK_CFLAGS) -o $@ $< $(GTK_LIBS)
 
 gtk.pure gtk.c:
-	pure-gen $(PGFLAGS) $(GTK_CFLAGS) -s '$(gtkpath)/gtk-2.0/gdk*/*.h::' $(gtkpath)/gtk-2.0/gdk/gdk.h -p gdk -m gdk -o gtk.pure -c gtk.c -fc
-	pure-gen $(PGFLAGS) -N $(GTK_CFLAGS) -s '$(gtkpath)/gtk-2.0/gtk/*.h::' $(gtkpath)/gtk-2.0/gtk/gtk.h -p gtk -m gtk -fc
+	pure-gen $(PGFLAGS) $(GTK_INCLUDES) -s '$(gtkdir)/gdk*/*.h::' -p gdk -m gdk -o gtk.pure -c gtk.c -fc $(gtkdir)/gdk/gdk.h
+	pure-gen $(PGFLAGS) -N $(GTK_INCLUDES) -s '$(gtkdir)/gtk/*.h::' -p gtk -m gtk -fc $(gtkdir)/gtk/gtk.h
 
 # glib et al
+
+# This isn't available in all glib versions.
+HAVE_GIO = $(shell pkg-config --exists gio-2.0 && echo yes || echo no)
 
 glib$(DLL): glib.c
 	$(CC) $(shared) $(FLAGS) $(GTK_CFLAGS) -o $@ $< $(GTK_LIBS)
@@ -139,53 +152,57 @@ glib$(DLL): glib.c
 # for Pure-GTK applications. Also note that the glib headers declare some junk
 # which isn't actually available in the libraries, we get rid of this with -x.
 glib.pure glib.c:
-	pure-gen $(PGFLAGS) $(GTK_CFLAGS) -s '$(gtkpath)/glib-2.0/glib/*.h::' -x '^(G_GNUC_[A-Z_]*|glib_dummy_decl|g_thread_init(_with_errorcheck_mutexes)?)$$' $(gtkpath)/glib-2.0/glib.h -p g -m glib -fc
-	pure-gen $(PGFLAGS) -N $(GTK_CFLAGS) -s '$(gtkpath)/glib-2.0/gobject/*.h::' -x '^(g_value_c_init|g_value_types_init|g_enum_types_init|g_param_type_init|g_boxed_type_init|g_object_type_init|g_param_spec_types_init|g_value_transforms_init|g_signal_init)$$' $(gtkpath)/glib-2.0/glib-object.h -p g -m glib -o glib.pure -c glib.c -fc
-ifeq ($(shell pkg-config --exists gio-2.0 && echo ok || echo nok),ok)
-	pure-gen $(PGFLAGS) -N $(GTK_CFLAGS) -s '$(gtkpath)/glib-2.0/gio/*.h::' -x '^g_io_module_(un)?load$$' $(gtkpath)/glib-2.0/gio/gio.h -p g -m glib -o glib.pure -c glib.c -fc
+	pure-gen $(PGFLAGS) $(GTK_INCLUDES) -s '$(glibdir)/glib/*.h::' -x '^(G_GNUC_[A-Z_]*|glib_dummy_decl|g_thread_init(_with_errorcheck_mutexes)?)$$' -p g -m glib -fc $(glibdir)/glib.h
+	pure-gen $(PGFLAGS) -N $(GTK_INCLUDES) -s '$(glibdir)/gobject/*.h::' -x '^(g_value_c_init|g_value_types_init|g_enum_types_init|g_param_type_init|g_boxed_type_init|g_object_type_init|g_param_spec_types_init|g_value_transforms_init|g_signal_init)$$' -p g -m glib -o glib.pure -c glib.c -fc $(glibdir)/glib-object.h
+ifeq ($(HAVE_GIO),yes)
+	pure-gen $(PGFLAGS) -N $(GTK_INCLUDES) -s '$(glibdir)/gio/*.h::' -x '^g_io_module_(un)?load$$' -p g -m glib -o glib.pure -c glib.c -fc $(glibdir)/gio/gio.h
 endif
-	pure-gen $(PGFLAGS) -N $(GTK_CFLAGS) -s '$(gtkpath)/glib-2.0/gmodule.h::' $(gtkpath)/glib-2.0/gmodule.h -p g -m glib -o glib.pure -c glib.c -fc
+	pure-gen $(PGFLAGS) -N $(GTK_INCLUDES) -s '$(glibdir)/gmodule.h::' -p g -m glib -o glib.pure -c glib.c -fc $(glibdir)/gmodule.h
 
 # atk
 
 ATK_CFLAGS = $(shell pkg-config --cflags atk)
+ATK_INCLUDES = $(shell pkg-config --cflags-only-I atk)
 ATK_LIBS = $(shell pkg-config --libs atk)
 
 atk$(DLL): atk.c
 	$(CC) $(shared) $(FLAGS) $(ATK_CFLAGS) -o $@ $< $(ATK_LIBS)
 
 atk.pure atk.c:
-	pure-gen $(PGFLAGS) $(ATK_CFLAGS) -s '$(gtkpath)/atk-1.0/atk/*.h::' $(gtkpath)/atk-1.0/atk/atk.h -p atk -m atk -fc
+	pure-gen $(PGFLAGS) $(ATK_INCLUDES) -s '$(atkdir)/atk/*.h::' -p atk -m atk -fc $(atkdir)/atk/atk.h
 
 # cairo
 
 CAIRO_CFLAGS = $(shell pkg-config --cflags cairo)
+CAIRO_INCLUDES = $(shell pkg-config --cflags-only-I cairo)
 CAIRO_LIBS = $(shell pkg-config --libs cairo)
 
 cairo$(DLL): cairo.c
 	$(CC) $(shared) $(FLAGS) $(CAIRO_CFLAGS) -o $@ $< $(CAIRO_LIBS)
 
 cairo.pure cairo.c:
-	pure-gen $(PGFLAGS) $(CAIRO_CFLAGS) -s '$(gtkpath)/cairo/*.h::' $(gtkpath)/cairo/cairo.h -p cairo -m cairo -fc
+	pure-gen $(PGFLAGS) $(CAIRO_INCLUDES) -s '$(cairodir)/cairo/*.h::' -p cairo -m cairo -fc $(cairodir)/cairo/cairo.h
 
 # pango
 
 PANGO_CFLAGS = $(shell pkg-config --cflags pango)
+PANGO_INCLUDES = $(shell pkg-config --cflags-only-I pango)
 PANGO_LIBS = $(shell pkg-config --libs pango)
 
 pango$(DLL): pango.c
 	$(CC) $(shared) $(FLAGS) $(PANGO_CFLAGS) -o $@ $< $(PANGO_LIBS)
 
 pango.pure pango.c:
-	pure-gen $(PGFLAGS) $(PANGO_CFLAGS) -s '$(gtkpath)/pango-1.0/pango/*.h::' $(gtkpath)/pango-1.0/pango/pango.h -p pango -m pango -fc
+	pure-gen $(PGFLAGS) $(PANGO_INCLUDES) -s '$(pangodir)/pango/*.h::' -p pango -m pango -fc $(pangodir)/pango/pango.h
 
 # libglade
 
 GLADE_CFLAGS = $(shell pkg-config --cflags libglade-2.0)
+GLADE_INCLUDES = $(shell pkg-config --cflags-only-I libglade-2.0)
 GLADE_LIBS = $(shell pkg-config --libs libglade-2.0)
 
 glade$(DLL): glade.c
 	$(CC) $(shared) $(FLAGS) $(GLADE_CFLAGS) -o $@ $< $(GLADE_LIBS)
 
 glade.pure glade.c:
-	pure-gen $(PGFLAGS) $(GLADE_CFLAGS) -s '$(gtkpath)/libglade-2.0/glade/*.h::' $(gtkpath)/libglade-2.0/glade/glade.h -p glade -m glade -fc
+	pure-gen $(PGFLAGS) $(GLADE_INCLUDES) -s '$(gladedir)/glade/*.h::' -p glade -m glade -fc $(gladedir)/glade/glade.h
