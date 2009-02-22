@@ -141,7 +141,9 @@ glib$(DLL): glib.c
 glib.pure glib.c:
 	pure-gen $(PGFLAGS) $(GTK_CFLAGS) -s '$(gtkpath)/glib-2.0/glib/*.h::' -x '^(G_GNUC_[A-Z_]*|glib_dummy_decl|g_thread_init(_with_errorcheck_mutexes)?)$$' $(gtkpath)/glib-2.0/glib.h -p g -m glib -fc
 	pure-gen $(PGFLAGS) -N $(GTK_CFLAGS) -s '$(gtkpath)/glib-2.0/gobject/*.h::' -x '^(g_value_c_init|g_value_types_init|g_enum_types_init|g_param_type_init|g_boxed_type_init|g_object_type_init|g_param_spec_types_init|g_value_transforms_init|g_signal_init)$$' $(gtkpath)/glib-2.0/glib-object.h -p g -m glib -o glib.pure -c glib.c -fc
+ifeq ($(shell pkg-config --exists gio-2.0 && echo ok || echo nok),ok)
 	pure-gen $(PGFLAGS) -N $(GTK_CFLAGS) -s '$(gtkpath)/glib-2.0/gio/*.h::' -x '^g_io_module_(un)?load$$' $(gtkpath)/glib-2.0/gio/gio.h -p g -m glib -o glib.pure -c glib.c -fc
+endif
 	pure-gen $(PGFLAGS) -N $(GTK_CFLAGS) -s '$(gtkpath)/glib-2.0/gmodule.h::' $(gtkpath)/glib-2.0/gmodule.h -p g -m glib -o glib.pure -c glib.c -fc
 
 # atk
