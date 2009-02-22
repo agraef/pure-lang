@@ -10,11 +10,12 @@ ifeq ($(strip $(prefix)),)
 prefix = /usr/local
 endif
 
-# Installation goes into the folloiwing directories. You can also set these
+# Installation goes into the following directories. You can also set these
 # directly instead of $(prefix). In addition, packagers may want to set the
 # DESTDIR variable for a staged install.
 bindir = $(prefix)/bin
-pkgdatadir = $(prefix)/lib/pure-gen-$(version)
+libdir = $(prefix)/lib
+pkgdatadir = $(libdir)/pure-gen-$(version)
 mandir = ${prefix}/share/man
 man1dir = $(mandir)/man1
 
