@@ -1,0 +1,31 @@
+
+// This test case is from pure-gen, it exposes a subtle regression in macro
+// expansion, where deBruijn indices in thunked parameters are not correct if
+// the thunk (body of & or catch) isn't explicit but gets introduced during
+// macro substitution (e.g., through the $ macro, which is what gets used
+// here). In r938 and later the two versions of the routine should always
+// yield exactly the same code.
+
+scrape_define1 (out,fname) ln
+= catch (\_->puts "here"$$(out,fname)) $
+  (case split_cpp_line ln of
+     [cpp_define name val] = echo 2 $ sprintf "#define %s %s" (name,val) $$ 
+       catch (\_ -> (warning 2 $ sprintf "Can't parse %s" ln) $$ (out,fname))
+       ( check_constant name val fname : out, fname );
+     [cpp_line lno fname] = echo 2 $ sprintf "# %d \"%s\"" (lno,fname) $$
+       (out,fname);
+     _ = (out,fname);
+   end
+   when ln = trim ln end);
+
+scrape_define2 (out,fname) ln
+= catch (\_->puts "here"$$(out,fname))
+  (case split_cpp_line ln of
+     [cpp_define name val] = echo 2 $ sprintf "#define %s %s" (name,val) $$ 
+       catch (\_ -> (warning 2 $ sprintf "Can't parse %s" ln) $$ (out,fname))
+       ( check_constant name val fname : out, fname );
+     [cpp_line lno fname] = echo 2 $ sprintf "# %d \"%s\"" (lno,fname) $$
+       (out,fname);
+     _ = (out,fname);
+   end
+   when ln = trim ln end);

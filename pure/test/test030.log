@@ -1,0 +1,162 @@
+scrape_define1 (out/*0:0101*/,fname/*0:011*/) ln/*0:1*/ = catch (\_/*0:*/ -> puts "here"$$out/*1:0101*/,fname/*1:011*/ {
+  rule #0: _ = puts "here"$$out,fname
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) (case split_cpp_line ln/*0:*/ of [cpp_define name/*0:0101*/ val/*0:011*/] = echo 2 (sprintf "#define %s %s" (name/*0:0101*/,val/*0:011*/))$$catch (\_/*0:*/ -> warning 2 (sprintf "Can't parse %s" ln/*2:*/)$$out/*4:0101*/,fname/*4:011*/ {
+  rule #0: _ = warning 2 (sprintf "Can't parse %s" ln)$$out,fname
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) (check_constant name/*1:0101*/ val/*1:011*/ fname/*4:011*/:out/*4:0101*/,fname/*4:011*/); [cpp_line lno/*0:0101*/ fname/*0:011*/] = echo 2 (sprintf "# %d \"%s\"" (lno/*0:0101*/,fname/*0:011*/))$$out/*3:0101*/,fname/*0:011*/; _/*0:*/ = out/*3:0101*/,fname/*3:011*/ {
+  rule #0: [cpp_define name val] = echo 2 (sprintf "#define %s %s" (name,val))$$catch (\_ -> warning 2 (sprintf "Can't parse %s" ln)$$out,fname) (check_constant name val fname:out,fname)
+  rule #1: [cpp_line lno fname] = echo 2 (sprintf "# %d \"%s\"" (lno,fname))$$out,fname
+  rule #2: _ = out,fname
+  state 0: #0 #1 #2
+	<var> state 1
+	<app> state 2
+  state 1: #2
+  state 2: #0 #1 #2
+	<var> state 3
+	<app> state 5
+  state 3: #2
+	<var> state 4
+  state 4: #2
+  state 5: #0 #1 #2
+	<var> state 6
+	: state 9
+  state 6: #2
+	<var> state 7
+  state 7: #2
+	<var> state 8
+  state 8: #2
+  state 9: #0 #1 #2
+	<var> state 10
+	<app> state 12
+  state 10: #2
+	<var> state 11
+  state 11: #2
+  state 12: #0 #1 #2
+	<var> state 13
+	<app> state 16
+  state 13: #2
+	<var> state 14
+  state 14: #2
+	<var> state 15
+  state 15: #2
+  state 16: #0 #1 #2
+	<var> state 17
+	cpp_define state 21
+	cpp_line state 26
+  state 17: #2
+	<var> state 18
+  state 18: #2
+	<var> state 19
+  state 19: #2
+	<var> state 20
+  state 20: #2
+  state 21: #0 #2
+	<var> state 22
+  state 22: #0 #2
+	<var> state 23
+  state 23: #0 #2
+	<var> state 24
+	[] state 25
+  state 24: #2
+  state 25: #0 #2
+  state 26: #1 #2
+	<var> state 27
+  state 27: #1 #2
+	<var> state 28
+  state 28: #1 #2
+	<var> state 29
+	[] state 30
+  state 29: #2
+  state 30: #1 #2
+} end when ln/*0:*/ = trim ln/*1:1*/ {
+  rule #0: ln = trim ln
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end);
+scrape_define2 (out/*0:0101*/,fname/*0:011*/) ln/*0:1*/ = catch (\_/*0:*/ -> puts "here"$$out/*1:0101*/,fname/*1:011*/ {
+  rule #0: _ = puts "here"$$out,fname
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) (case split_cpp_line ln/*0:*/ of [cpp_define name/*0:0101*/ val/*0:011*/] = echo 2 (sprintf "#define %s %s" (name/*0:0101*/,val/*0:011*/))$$catch (\_/*0:*/ -> warning 2 (sprintf "Can't parse %s" ln/*2:*/)$$out/*4:0101*/,fname/*4:011*/ {
+  rule #0: _ = warning 2 (sprintf "Can't parse %s" ln)$$out,fname
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) (check_constant name/*1:0101*/ val/*1:011*/ fname/*4:011*/:out/*4:0101*/,fname/*4:011*/); [cpp_line lno/*0:0101*/ fname/*0:011*/] = echo 2 (sprintf "# %d \"%s\"" (lno/*0:0101*/,fname/*0:011*/))$$out/*3:0101*/,fname/*0:011*/; _/*0:*/ = out/*3:0101*/,fname/*3:011*/ {
+  rule #0: [cpp_define name val] = echo 2 (sprintf "#define %s %s" (name,val))$$catch (\_ -> warning 2 (sprintf "Can't parse %s" ln)$$out,fname) (check_constant name val fname:out,fname)
+  rule #1: [cpp_line lno fname] = echo 2 (sprintf "# %d \"%s\"" (lno,fname))$$out,fname
+  rule #2: _ = out,fname
+  state 0: #0 #1 #2
+	<var> state 1
+	<app> state 2
+  state 1: #2
+  state 2: #0 #1 #2
+	<var> state 3
+	<app> state 5
+  state 3: #2
+	<var> state 4
+  state 4: #2
+  state 5: #0 #1 #2
+	<var> state 6
+	: state 9
+  state 6: #2
+	<var> state 7
+  state 7: #2
+	<var> state 8
+  state 8: #2
+  state 9: #0 #1 #2
+	<var> state 10
+	<app> state 12
+  state 10: #2
+	<var> state 11
+  state 11: #2
+  state 12: #0 #1 #2
+	<var> state 13
+	<app> state 16
+  state 13: #2
+	<var> state 14
+  state 14: #2
+	<var> state 15
+  state 15: #2
+  state 16: #0 #1 #2
+	<var> state 17
+	cpp_define state 21
+	cpp_line state 26
+  state 17: #2
+	<var> state 18
+  state 18: #2
+	<var> state 19
+  state 19: #2
+	<var> state 20
+  state 20: #2
+  state 21: #0 #2
+	<var> state 22
+  state 22: #0 #2
+	<var> state 23
+  state 23: #0 #2
+	<var> state 24
+	[] state 25
+  state 24: #2
+  state 25: #0 #2
+  state 26: #1 #2
+	<var> state 27
+  state 27: #1 #2
+	<var> state 28
+  state 28: #1 #2
+	<var> state 29
+	[] state 30
+  state 29: #2
+  state 30: #1 #2
+} end when ln/*0:*/ = trim ln/*1:1*/ {
+  rule #0: ln = trim ln
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end);

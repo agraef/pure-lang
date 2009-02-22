@@ -2674,21 +2674,18 @@ expr interpreter::varsubst(expr x, uint8_t offs, uint8_t idx)
       if (++idx == 0)
 	throw err("error in expression (too many nested closures)");
       expr v = varsubst(x.xval2(), offs, idx);
-      expr w = expr(symtab.amp_sym().x, v);
-      return macval(w);
+      return expr(symtab.amp_sym().x, v);
     } else if (x.xval1().tag() == EXPR::APP &&
 	       x.xval1().xval1().tag() == symtab.catch_sym().f) {
       expr u = varsubst(x.xval1().xval2(), offs, idx);
       if (++idx == 0)
 	throw err("error in expression (too many nested closures)");
       expr v = varsubst(x.xval2(), offs, idx);
-      expr w = expr(symtab.catch_sym().x, u, v);
-      return macval(w);
+      return expr(symtab.catch_sym().x, u, v);
     } else {
       expr u = varsubst(x.xval1(), offs, idx),
 	v = varsubst(x.xval2(), offs, idx);
-      expr w = expr(u, v);
-      return macval(w);
+      return expr(u, v);
     }
   }
   // conditionals:
@@ -2823,7 +2820,16 @@ expr interpreter::macred(expr x, expr y, uint8_t idx)
     } else {
       expr u = macred(x, y.xval1(), idx),
 	v = macred(x, y.xval2(), idx);
-      return expr(u, v);
+      if (u.tag() == symtab.amp_sym().f ||
+	  (u.tag() == EXPR::APP &&
+	   u.xval1().tag() == symtab.catch_sym().f)) {
+	/* A catch clause or thunk was created through macro
+	   substitution. Translate the deBruijn indices in the body
+	   accordingly. */
+	expr w = varsubst(v, 1);
+	return expr(u, w);
+      } else
+	return expr(u, v);
     }
   // conditionals:
   case EXPR::COND: {
