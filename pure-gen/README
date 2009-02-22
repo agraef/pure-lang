@@ -38,15 +38,16 @@ for more information. Once cabal is set up on your system, you can install
 Language.C by running 'cabal install language-c' (make sure to do 'cabal
 update' first so that you get the latest version).
 
-To make this a little easier for people not familiar with Haskell, Scott has
+To make this a little easier for people not familiar with Haskell, we have
 uploaded statically linked binaries of dump-ast for Linux, both 32 and 64
-bits, to the Pure-lang Google Group files area. (These still need libgmp, but
-so does Pure so you should already have that.) Thus, if you can't/don't want
-to install ghc, you can just put the appropriate binary into the source
-directory, rename it to 'dump-ast' and then run 'sudo make install' without
-running 'make'. This is currently available for Linux only, but we can
-hopefully provide binaries for Windows if enough people ask for them, so
-please let us know.
+bits, to the pure-lang Google Group files area. Thus, if you're on a recent
+x86/64 Linux system and can't/don't want to install ghc, you can try to put
+the appropriate binary into the source directory, rename it to 'dump-ast' and
+then run 'sudo make install' without running 'make'. If you're lucky this
+might even work. (The binaries are still linked dynamically against libgmp and
+libc, there seems no way to avoid that. So if the binaries don't work on your
+system because the requisite libraries don't match, then you'll just have to
+bite the bullet and compile dump-ast yourself.)
 
 NOTE: The sources of the dump-ast program can be found in dump-ast.hs. This is
 a Haskell program which parses a C file given on the command line and writes
@@ -69,7 +70,15 @@ Try 'pure-gen -h' for help. Basically,
 
 generates a Pure module foo.pure with 'extern' declarations for the constants
 ('#define's and enums) and C routines declared in the given C header file and
-(recursively) its includes.
+(recursively) its includes. pure-gen also understands a bunch of options which
+control the contents of the generated modules in different ways.
 
-pure-gen understands a bunch of options which control the contents of the
-generated modules in different ways. These are all described in the manpage.
+Complete documentation is available in the manual page. You can also read the
+manual online at:
+http://pure-lang.googlecode.com/svn/docs/pure-gen.html (html version)
+http://pure-lang.googlecode.com/svn/docs/pure-gen.pdf  (pdf version)
+
+
+Enjoy!
+Albert Graef <Dr.Graef at t-online.de>
+Scott Dillard
