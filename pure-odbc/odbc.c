@@ -1163,7 +1163,7 @@ pure_expr *odbc_sql_fetch(pure_expr *argv0)
 	  char *buf1 = realloc(buf, total);
 	  if (buf1) buf = buf1;
 	  xs[i] = pure_tuplel(2, pure_bigintval(pure_long((int64_t) total)),
-			      pure_pointer((unsigned char* ) buf));
+			      pure_pointer(buf));
 	  /* make a new buffer */
 	  if (!(buf = malloc(BUFSZ)))
 	    goto fatal2;
