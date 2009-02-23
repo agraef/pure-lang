@@ -118,6 +118,10 @@ distcheck: dist
 # directory. If your system uses a different layout then you can also adjust
 # the individual include directories below.
 
+# NOTE: The paths need to be valid at generation time only. The generated C
+# source uses relative paths which should work on most systems which have GTK+
+# installed.
+
 includedir = /usr/include
 
 gtkdir   = $(includedir)/gtk-2.0
@@ -139,6 +143,7 @@ gtk$(DLL): gtk.c
 gtk.pure gtk.c:
 	pure-gen $(PGFLAGS) $(GTK_INCLUDES) -s '$(gtkdir)/gdk*/*.h::' -p gdk -m gdk -o gtk.pure -c gtk.c -fc $(gtkdir)/gdk/gdk.h
 	pure-gen $(PGFLAGS) -N $(GTK_INCLUDES) -s '$(gtkdir)/gtk/*.h::' -p gtk -m gtk -fc $(gtkdir)/gtk/gtk.h
+	sed -e 's:#include \"$(gtkdir)/\(\([A-Za-z-]\+/\)\?[A-Za-z-]\+\.h\)\":#include <\1>:g' < gtk.c > gtk.c.new && rm gtk.c && mv gtk.c.new gtk.c
 
 # glib et al
 
@@ -158,6 +163,7 @@ ifeq ($(HAVE_GIO),yes)
 	pure-gen $(PGFLAGS) -N $(GTK_INCLUDES) -s '$(glibdir)/gio/*.h::' -x '^g_io_module_(un)?load$$' -p g -m glib -o glib.pure -c glib.c -fc $(glibdir)/gio/gio.h
 endif
 	pure-gen $(PGFLAGS) -N $(GTK_INCLUDES) -s '$(glibdir)/gmodule.h::' -p g -m glib -o glib.pure -c glib.c -fc $(glibdir)/gmodule.h
+	sed -e 's:#include \"$(glibdir)/\(\([A-Za-z-]\+/\)\?[A-Za-z-]\+\.h\)\":#include <\1>:g' < glib.c > glib.c.new && rm glib.c && mv glib.c.new glib.c
 
 # atk
 
@@ -170,6 +176,7 @@ atk$(DLL): atk.c
 
 atk.pure atk.c:
 	pure-gen $(PGFLAGS) $(ATK_INCLUDES) -s '$(atkdir)/atk/*.h::' -p atk -m atk -fc $(atkdir)/atk/atk.h
+	sed -e 's:#include \"$(atkdir)/\(\([A-Za-z-]\+/\)\?[A-Za-z-]\+\.h\)\":#include <\1>:g' < atk.c > atk.c.new && rm atk.c && mv atk.c.new atk.c
 
 # cairo
 
@@ -182,6 +189,7 @@ cairo$(DLL): cairo.c
 
 cairo.pure cairo.c:
 	pure-gen $(PGFLAGS) $(CAIRO_INCLUDES) -s '$(cairodir)/cairo/*.h::' -p cairo -m cairo -fc $(cairodir)/cairo/cairo.h
+	sed -e 's:#include \"$(cairodir)/\(\([A-Za-z-]\+/\)\?[A-Za-z-]\+\.h\)\":#include <\1>:g' < cairo.c > cairo.c.new && rm cairo.c && mv cairo.c.new cairo.c
 
 # pango
 
@@ -194,6 +202,7 @@ pango$(DLL): pango.c
 
 pango.pure pango.c:
 	pure-gen $(PGFLAGS) $(PANGO_INCLUDES) -s '$(pangodir)/pango/*.h::' -p pango -m pango -fc $(pangodir)/pango/pango.h
+	sed -e 's:#include \"$(pangodir)/\(\([A-Za-z-]\+/\)\?[A-Za-z-]\+\.h\)\":#include <\1>:g' < pango.c > pango.c.new && rm pango.c && mv pango.c.new pango.c
 
 # libglade
 
@@ -206,3 +215,4 @@ glade$(DLL): glade.c
 
 glade.pure glade.c:
 	pure-gen $(PGFLAGS) $(GLADE_INCLUDES) -s '$(gladedir)/glade/*.h::' -p glade -m glade -fc $(gladedir)/glade/glade.h
+	sed -e 's:#include \"$(gladedir)/\(\([A-Za-z-]\+/\)\?[A-Za-z-]\+\.h\)\":#include <\1>:g' < glade.c > glade.c.new && rm glade.c && mv glade.c.new glade.c
