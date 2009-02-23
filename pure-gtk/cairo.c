@@ -1,4 +1,4 @@
-#include "/usr/include/cairo/cairo.h"
+#include <cairo/cairo.h>
 
 int Pure_cairo_version()
 {

@@ -1,4 +1,4 @@
-#include "/usr/include/glib-2.0/glib.h"
+#include <glib.h>
 
 GArray* Pure_g_array_new(int arg0, int arg1, unsigned int arg2)
 {
@@ -5565,7 +5565,7 @@ char* Pure_g_uri_escape_string(char const* arg0, char const* arg1, int arg2)
 {
   return g_uri_escape_string(arg0, arg1, arg2);
 }
-#include "/usr/include/glib-2.0/glib-object.h"
+#include <glib-object.h>
 
 void Pure_g_type_init()
 {
@@ -7256,7 +7256,7 @@ void Pure_g_value_set_string_take_ownership(GValue* arg0, char* arg1)
 {
   return g_value_set_string_take_ownership(arg0, arg1);
 }
-#include "/usr/include/glib-2.0/gio/gio.h"
+#include <gio/gio.h>
 
 unsigned long Pure_g_app_info_get_type()
 {
@@ -9827,7 +9827,7 @@ GFile* Pure_g_volume_get_activation_root(GVolume* arg0)
 {
   return g_volume_get_activation_root(arg0);
 }
-#include "/usr/include/glib-2.0/gmodule.h"
+#include <gmodule.h>
 
 int Pure_g_module_supported()
 {

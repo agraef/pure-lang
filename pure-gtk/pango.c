@@ -1,4 +1,4 @@
-#include "/usr/include/pango-1.0/pango/pango.h"
+#include <pango/pango.h>
 
 PangoCoverage* Pure_pango_coverage_new()
 {

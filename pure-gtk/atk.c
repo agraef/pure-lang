@@ -1,4 +1,4 @@
-#include "/usr/include/atk-1.0/atk/atk.h"
+#include <atk/atk.h>
 
 unsigned int Pure_atk_state_type_register(char const* arg0)
 {

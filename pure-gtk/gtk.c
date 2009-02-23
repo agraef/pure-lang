@@ -1,4 +1,4 @@
-#include "/usr/include/gtk-2.0/gdk/gdk.h"
+#include <gdk/gdk.h>
 
 unsigned long Pure_gdk_colormap_get_type()
 {
@@ -3619,7 +3619,7 @@ unsigned int Pure_gdk_threads_add_timeout_seconds(unsigned int arg0, void* arg1,
 {
   return gdk_threads_add_timeout_seconds(arg0, arg1, arg2);
 }
-#include "/usr/include/gtk-2.0/gtk/gtk.h"
+#include <gtk/gtk.h>
 
 unsigned long Pure_gtk_accel_group_get_type()
 {
