@@ -110,7 +110,7 @@ params desc		= join "," (map (cst "?") desc);
 
 mysql			= exec prompt;
 
-prompt			= puts "\nSQL> " $$ flush $$ gets;
+prompt			= fputs "\nSQL> " stdout $$ flush $$ gets;
 
 exec query::string	= catch report (display (msql db query [])) $$ mysql
 			    if ~ null query;
@@ -124,7 +124,7 @@ display sets		= do display_set sets if listp sets;
 
 display_set rows::int	= printf "%d rows affected.\n" rows;
 display_set results
-			= puts "\n" $$
+			= puts "" $$
 			  // header
 			  display_row wds header $$
 			  display_row wds rules $$
@@ -138,7 +138,7 @@ display_set results
 			      (header:data) = results;
 			      rules = (tuple (map rule wds))
 			    end;
-			= puts "Empty set.\n" otherwise;
+			= puts "Empty set." otherwise;
 
 /* Determine column widths. */
 
