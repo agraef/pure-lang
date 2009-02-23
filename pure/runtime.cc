@@ -696,10 +696,33 @@ pure_expr *pure_symbol(int32_t tag)
     // Since we just created this variable, it doesn't have any closure bound
     // to it yet, so it's safe to just return the symbol as is.
     return v.x;
-  } else
-    // The symbol already exists, so there might be a parameterless closure
-    // bound to it and thus we need to evaluate it.
+  } else {
+    // The symbol already has a definition, so we might have to evaluate it on
+    // the fly.
+    map<int32_t,ExternInfo>::const_iterator it = interp.externals.find(tag);
+    if (it != interp.externals.end()) {
+      // We have an external. This case must be treated separately, since v
+      // just points to a box for the Pure function symbol rather than the
+      // external wrapper function itself.
+      const ExternInfo& info = it->second;
+      size_t n = info.argtypes.size();
+      void *f = interp.JIT->getPointerToFunction(info.f);
+      if (f) {
+	if (n == 0)
+	  // Parameterless external, do a direct call.
+	  return ((pure_expr *(*)(void))f) ();
+	else
+	  // External with parameters. Build an fbox for the external, return
+	  // this as the value of the symbol.
+	  return pure_clos(false, false, tag, n, f, 0, 0);
+      }
+      // If we come here, the external wrapper failed to compile for some
+      // reason, just proceed as if it was an ordinary Pure function.
+    }
+    // We have an ordinary Pure symbol. There might be a parameterless closure
+    // bound to it, pure_call takes care of that case.
     return pure_call(v.x);
+  }
 }
 
 extern "C"
