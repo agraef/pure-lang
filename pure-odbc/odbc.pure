@@ -532,3 +532,24 @@ with
   msql_check x			= listp x;
 end
 if listp args;
+
+/* Lazy SQL queries (experimental). These work like odbc::sql and odbc::msql
+   above, but return lazy lists (streams) instead. */
+
+odbc::lsql db::pointer query::string args =
+  case sql_exec db query args of
+    x = x : takewhile ok [sql_fetch db | i = 0..inf]&
+        with ok (sql_fetch _) = 0; ok _ = 1 end
+        if listp x && ~null x;
+    x = x otherwise;
+  end
+if listp args;
+
+odbc::lmsql db::pointer query::string args =
+  case lsql db query args of
+    x = x : takewhile ok [sql_more db | i = 0..inf]&
+        with ok (sql_more _) = sql_close db $$ 0; ok _ = 1 end
+        if intp x || listnp x;
+    x = x otherwise;
+  end
+if listp args;
