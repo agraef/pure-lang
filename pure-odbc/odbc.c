@@ -163,7 +163,6 @@ static int set_arg(ODBCHandle *db, int i, pure_expr *x)
       switch (numelem) {
 	case 2:
           if (!pure_is_mpz(elems[0], &z)) {
-            mpz_clear(z);
             free(elems);
             return 0;
           } else if (!pure_is_pointer(elems[1], (void**)&buf)) {
