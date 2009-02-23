@@ -515,10 +515,10 @@ pure_expr *odbc_getinfo(pure_expr *argv0, unsigned int info_type)
 			   info, sizeof(info), &len)) == SQL_SUCCESS ||
 	ret == SQL_SUCCESS_WITH_INFO) {
       if (!(buf = (unsigned char*) malloc(len + 1)))
-	      return error_handler("malloc error");
+	return error_handler("malloc error");
       memcpy(buf, info, len);
       buf[len] = 0;
-      return pure_pointer(buf);
+      return pure_sentry(pure_symbol(pure_sym("free")), pure_pointer(buf));
     } else
       return pure_err(db->henv, db->hdbc, 0);
   } else
@@ -1161,12 +1161,14 @@ pure_expr *odbc_sql_fetch(pure_expr *argv0)
 	if (len == SQL_NULL_DATA)
 	  xs[i] = pure_tuplel(0);
 	else if (total == 0) {
-	  xs[i] = pure_tuplel(2, pure_bigintval(pure_long(0)), pure_pointer(NULL));
+	  xs[i] = pure_tuplel(2, pure_bigintval(pure_long(0)),
+			      pure_pointer(NULL));
 	} else {
 	  char *buf1 = realloc(buf, total);
 	  if (buf1) buf = buf1;
 	  xs[i] = pure_tuplel(2, pure_bigintval(pure_long((int64_t) total)),
-			      pure_pointer(buf));
+			      pure_sentry(pure_symbol(pure_sym("free")),
+					  pure_pointer(buf)));
 	  /* make a new buffer */
 	  if (!(buf = malloc(BUFSZ)))
 	    goto fatal2;

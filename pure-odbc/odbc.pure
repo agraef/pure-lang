@@ -99,7 +99,8 @@ odbc::info db::pointer =
    (a nonnegative integer) specifies the requested type of information. The
    result is always a pointer which, depending on INFO_TYPE, may point to
    either an integer or a string, and can be converted to a Pure value using
-   get_int or cstring_dup, respectively. See SQLGetInfo() in the ODBC API
+   get_int or cstring_dup, respectively. The pointer frees itself after use,
+   so you must not free it manually. See SQLGetInfo() in the ODBC API
    reference for information about which information types are available and
    which types of information they return. */
 
@@ -497,9 +498,10 @@ odbc::foreign_keys db::pointer table_name::string =
    values) to the corresponding Pure type (int, bigint or double) and
    character strings to Pure strings. Binary data is converted to a tuple
    (length, pointer), where length::bigint denotes the number of bytes and
-   pointer is a pointer to the buffer containing the data. All other data
-   (e.g., time, date and timestamp) is converted to its character
-   representation and returned as a string.
+   pointer is a malloced buffer containing the data. The pointer frees itself
+   after use, so you must not free it manually. All other data (e.g., time,
+   date and timestamp) is converted to its character representation and
+   returned as a string.
 
    Marked input parameters, which are replaced for `?' markers in the query,
    can be specified in the ARGS argument of sql_exec, which is a list of
