@@ -98,11 +98,12 @@ odbc::info db::pointer =
    which provides a direct interface to SQLGetInfo(). The INFO_TYPE argument
    (a nonnegative integer) specifies the requested type of information. The
    result is always a pointer which, depending on INFO_TYPE, may point to
-   either an integer or a string, and can be converted to a Pure value using
-   get_int or cstring_dup, respectively. The pointer frees itself after use,
-   so you must not free it manually. See SQLGetInfo() in the ODBC API
-   reference for information about which information types are available and
-   which types of information they return. */
+   either an integer (unsigned short or int) or a string, and can be converted
+   to a Pure value using get_short, get_int or cstring_dup, respectively. The
+   pointer frees itself after use, so you must not free it manually. See
+   SQLGetInfo() in the ODBC API reference for information about which
+   information types are available and which types of information they
+   return. */
 
 odbc::getinfo db::pointer info_type::int =
 		C::odbc_getinfo db info_type;
@@ -569,6 +570,3 @@ with
   msql_check _				= 0;
 end
 if listp args;
-
-
-
