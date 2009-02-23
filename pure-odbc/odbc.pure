@@ -26,21 +26,8 @@
 using "lib:odbc";
 
 namespace C;
-extern expr* odbc_sources();
-extern expr* odbc_drivers();
 extern expr* odbc_connect(char* conn);
 extern expr* odbc_disconnect(expr* db);
-extern expr* odbc_info(expr* db);
-extern expr* odbc_getinfo(expr* db, int info_type);
-extern expr* odbc_typeinfo(expr* db, int type_id);
-extern expr* odbc_tables(expr* db);
-extern expr* odbc_columns(expr* db, char* table_name);
-extern expr* odbc_primary_keys(expr* db, char* table_name);
-extern expr* odbc_foreign_keys(expr* db, char* table_name);
-extern expr* odbc_sql_exec(expr* db, char* query, expr* args);
-extern expr* odbc_sql_fetch(expr* db);
-extern expr* odbc_sql_more(expr* db);
-extern expr* odbc_sql_close(expr* db);
 
 namespace odbc;
 
@@ -54,8 +41,8 @@ public error;
    data sources and drivers. The names can be passed in the DSN and DRIVER
    parameters of the connection string (see below). */
 
-odbc::sources	= C::odbc_sources;
-odbc::drivers	= C::odbc_drivers;
+extern expr* odbc_sources() = sources;
+extern expr* odbc_drivers() = drivers;
 
 /* Open and close an ODBC connection. CONN is the connection string used to
    describe the data source and various other parameters such as hostname,
@@ -90,8 +77,7 @@ odbc::disconnect db::pointer = clear_sentry db $$ C::odbc_disconnect db;
    - DRIVER_ODBC_VER: the ODBC version supported by the driver
    - ODBC_VER: the ODBC version of the driver manager */
 
-odbc::info db::pointer =
-		C::odbc_info db;
+extern expr* odbc_info(expr* db) = info;
 
 /* More information is available using the following odbc::getinfo function
    which provides a direct interface to SQLGetInfo(). The INFO_TYPE argument
@@ -104,8 +90,7 @@ odbc::info db::pointer =
    information types are available and which types of information they
    return. */
 
-odbc::getinfo db::pointer info_type::int =
-		C::odbc_getinfo db info_type;
+extern expr* odbc_getinfo(expr* db, int info_type) = getinfo;
 
 /* Some common INFO_TYPE values which can be passed to the odbc::getinfo
    function. This also includes some aliases defined by the ISO SQL/CLI
@@ -373,8 +358,7 @@ odbc::getinfo db::pointer info_type::int =
    Note that fields which don't apply to a given type are left empty,
    indicated by a () a.k.a. NULL value. */
 
-odbc::typeinfo db::pointer type_id::int =
-		C::odbc_typeinfo db type_id;
+extern expr* odbc_typeinfo(expr* db, int type_id) = typeinfo;
 
 /* Possible values for the TYPE_ID parameter of odbc::typeinfo. Note that some
    drivers may support additional codes. Use SQL_ALL_TYPES to retrieve
@@ -450,8 +434,7 @@ odbc::typeinfo db::pointer type_id::int =
    list of (NAME,TYPE) string pairs, where NAME denotes the name and TYPE the
    type of a table ("TABLE", "VIEW", etc.). */
 
-odbc::tables db::pointer =
-		C::odbc_tables db;
+extern expr* odbc_tables(expr* db) = tables;
 
 /* Retrieve information about the columns of the table with the given name.
    Returns a list of string tuples with the following information: NAME
@@ -459,8 +442,7 @@ odbc::tables db::pointer =
    nullable, "YES" or "NO") and DEFAULT (default value, as a string). The
    NULLABLE and DEFAULT values may be () if not available. */
 
-odbc::columns db::pointer table_name::string =
-		C::odbc_columns db table_name;
+extern expr* odbc_columns(expr* db, char* table_name) = columns;
 
 /* Retrieve information about the primary and foreign keys of the given table.
    odbc::primary_keys returns the primary keys of the given table as a list of
@@ -469,11 +451,8 @@ odbc::columns db::pointer table_name::string =
    table with a foreign key which refers to the primary key colum PKCOL in
    table PKTAB. */
 
-odbc::primary_keys db::pointer table_name::string =
-		C::odbc_primary_keys db table_name;
-
-odbc::foreign_keys db::pointer table_name::string =
-		C::odbc_foreign_keys db table_name;
+extern expr* odbc_primary_keys(expr* db, char* table_name) = primary_keys;
+extern expr* odbc_foreign_keys(expr* db, char* table_name) = foreign_keys;
 
 /* Execute an SQL query and fetch results. SQL queries generally come in two
    different flavours: queries returning data (so-called result sets), and
@@ -509,17 +488,10 @@ odbc::foreign_keys db::pointer table_name::string =
    (i.e., (), integers, floating point values, character and tuples
    (length, pointer) for binary data). */
 
-odbc::sql_exec db::pointer query::string args =
-		C::odbc_sql_exec db query args if listp args;
-
-odbc::sql_fetch db::pointer =
-		C::odbc_sql_fetch db;
-
-odbc::sql_more db::pointer =
-		C::odbc_sql_more db;
-
-odbc::sql_close db::pointer =
-		C::odbc_sql_close db;
+extern expr* odbc_sql_exec(expr* db, char* query, expr* args) = sql_exec;
+extern expr* odbc_sql_fetch(expr* db) = sql_fetch;
+extern expr* odbc_sql_more(expr* db) = sql_more;
+extern expr* odbc_sql_close(expr* db) = sql_close;
 
 /* Convenience functions to execute an SQL query and collect results in a
    list. The sql function only returns the first result set, with the column
@@ -533,13 +505,12 @@ private sql_loop;
 sql_loop db::pointer xs x
   = reverse xs if sql_done x
     with
-      sql_done (C::odbc_sql_fetch _)	= 1;
+      sql_done (sql_fetch _)	= 1;
       sql_done _		= 0;
     end;
   = sql_loop db (x:xs) (sql_fetch db) if sql_check x
     with
-      sql_check x	= ~null x if listp x;
-			= 0 otherwise;
+      sql_check x	= listp x && ~null x;
     end;
   = x otherwise;
 
@@ -561,11 +532,10 @@ with
     = msql_loop db (x:xs) (sql_loop db [] (sql_more db)) if msql_check x;
     = x otherwise;
 
-  msql_done (C::odbc_sql_more _)	= 1;
-  msql_done _				= 0;
+  msql_done (sql_more _)	= 1;
+  msql_done _			= 0;
   
-  msql_check x::int			= 1;
-  msql_check x				= 1 if listp x;
-  msql_check _				= 0;
+  msql_check x::int		= 1;
+  msql_check x			= listp x;
 end
 if listp args;
