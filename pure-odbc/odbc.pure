@@ -52,7 +52,7 @@ public error;
 /* The following functions list the names and descriptions of the available
    data sources and drivers. The names can be passed in the DSN and DRIVER
    parameters of the connection string (see below). (It seems that at this
-   time the odbc_drivers function is properly supported only on Windows,
+   time the odbc::drivers function is properly supported only on Windows,
    though.) */
 
 odbc::sources	= C::odbc_sources;
@@ -94,7 +94,7 @@ odbc::disconnect db::pointer = clear_sentry db $$ C::odbc_disconnect db;
 odbc::info db::pointer =
 		C::odbc_info db;
 
-/* More information is available using the following odbc_getinfo function
+/* More information is available using the following odbc::getinfo function
    which provides a direct interface to SQLGetInfo(). The INFO_TYPE argument
    (a nonnegative integer) specifies the requested type of information. The
    result is always a pointer which, depending on INFO_TYPE, may point to
@@ -106,9 +106,9 @@ odbc::info db::pointer =
 odbc::getinfo db::pointer info_type::int =
 		C::odbc_getinfo db info_type;
 
-/* Some common INFO_TYPE values which can be passed to the odbc_getinfo
+/* Some common INFO_TYPE values which can be passed to the odbc::getinfo
    function. This also includes some aliases defined by the ISO SQL/CLI
-   standard.  Please refer to SQLGetInfo() in the ODBC API reference for
+   standard. Please refer to SQLGetInfo() in the ODBC API reference for
    details. Note that not all values may be supported by all implementations,
    and some ODBC drivers may offer additional information types not listed
    here. */
@@ -375,7 +375,7 @@ odbc::getinfo db::pointer info_type::int =
 odbc::typeinfo db::pointer type_id::int =
 		C::odbc_typeinfo db type_id;
 
-/* Possible values for the TYPE_ID parameter of odbc_typeinfo. Note that some
+/* Possible values for the TYPE_ID parameter of odbc::typeinfo. Note that some
    drivers may support additional codes. Use SQL_ALL_TYPES to retrieve
    information for all supported types. */
 
@@ -462,8 +462,8 @@ odbc::columns db::pointer table_name::string =
 		C::odbc_columns db table_name;
 
 /* Retrieve information about the primary and foreign keys of the given table.
-   odbc_primary_keys returns the primary keys of the given table as a list of
-   strings (column names), while odbc_foreign_keys returns a list of string
+   odbc::primary_keys returns the primary keys of the given table as a list of
+   strings (column names), while odbc::foreign_keys returns a list of string
    triples (NAME,PKTAB,PKCOL) where NAME is the name of a column in the given
    table with a foreign key which refers to the primary key colum PKCOL in
    table PKTAB. */
