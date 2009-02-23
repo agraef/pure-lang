@@ -315,10 +315,56 @@ are finished with a query. This is also done automatically by the `sql' and
 The low-level operations are useful when you have to deal with large result
 sets where you want to avoid to build the complete list of results in main
 memory. Instead, these functions allow you to process the individual elements
-immediately as they are delivered with the `sql_fetch' function. Using the
-low-level operations you can also build your own specialized query engines;
-take the definitions of `sql' or `msql' as a start and change them according
-to your needs.
+immediately as they are delivered by the `sql_fetch' function. (An alternative
+method which combines the space efficiency of immediate processing with the
+convenience of the list representation is discussed in the following section.) 
+Using the low-level operations you can also build your own specialized query
+engines; take the definitions of `sql' or `msql' as a start and change them
+according to your needs.
+
+
+LAZY PROCESSING
+==== ==========
+
+As an experimental feature, we also provide two operations odbc::lsql and
+odbc::lmsql which work like odbc::sql and odbc::msql (see EXECUTING SQL
+QUERIES above), but return lazy lists (streams) instead. This offers the
+convenience of a list-based representation without the overhead of keeping
+entire result sets in memory, which can be prohibitive when working with large
+amounts of data.
+
+These functions are invoked just like odbc::sql and odbc::msql, but they
+return a lazy list of rows (or a lazy list of lazy lists of rows in the case
+of lmsql). For instance:
+
+> odbc::lsql db "select * from pet" [];
+["name","owner","species","sex","birth","death"]:#<thunk 0x7ffbb9aa2eb8>
+
+Note that the tail of the result list is "thunked" and will only be produced
+on demand, as you traverse the list. As a simple example, suppose that we just
+want to print the 'name' field of each data row:
+
+> using system;
+> do (\(name:_)->puts name) $ tail $ odbc::lsql db "select * from pet" [];
+Fluffy
+Claws
+Buffy
+Fang
+Bowser
+Chirpy
+Whistler
+Slim
+()
+
+Only one row is in memory at any time while the `do' function is in progress.
+This keeps memory requirements much lower than when using the odbc::sql
+function which first loads the entire result set into memory.
+
+Note that in this case the query remains in progress as long as the result
+list is still being processed. Only one query can be processed for each
+database connection, thus only one lazy result set can be used at any time.
+However, it is possible to do several lazy queries at once if you assign them
+to different database connections.
 
 
 ERROR HANDLING
