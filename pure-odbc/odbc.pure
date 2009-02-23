@@ -25,10 +25,6 @@
 
 using "lib:odbc";
 
-namespace C;
-extern expr* odbc_connect(char* conn);
-extern expr* odbc_disconnect(expr* db);
-
 namespace odbc;
 
 /* The odbc::error symbol is used to return an error message and SQL state
@@ -58,11 +54,8 @@ extern expr* odbc_drivers() = drivers;
    the MS Access ODBC driver, using the database given in the DBQ option as
    the data source. */
 
-odbc::connect conn::string =
-		sentry C::odbc_disconnect db if ~null db
-		when db = C::odbc_connect conn end;
-
-odbc::disconnect db::pointer = clear_sentry db $$ C::odbc_disconnect db;
+extern expr* odbc_connect(char* conn) = connect;
+extern expr* odbc_disconnect(expr* db) = disconnect;
 
 /* Obtain general information about an ODBC connection. Returns a tuple of
    strings with the following items (see SQLGetInfo() in the ODBC API

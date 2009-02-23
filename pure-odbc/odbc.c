@@ -410,7 +410,8 @@ pure_expr *odbc_connect(char* conn)
     db->cols = 0;
     db->exec = 0;
     /* return the result */
-    return pure_pointer(db);
+    return pure_sentry(pure_symbol(pure_sym("odbc::disconnect")),
+		       pure_pointer(db));
   } else
     return 0;
 }
@@ -429,6 +430,7 @@ pure_expr *odbc_disconnect(pure_expr *dbpointer)
     db->hdbc = 0;
     SQLFreeHandle(SQL_HANDLE_ENV, db->henv);
     db->henv = 0;
+    /* FIXME: This leaks memory on the handle itself. */
     return pure_tuplel(0);
   } else
     return 0;
