@@ -162,31 +162,34 @@ static int set_arg(ODBCHandle *db, int i, pure_expr *x)
   } else if (pure_is_tuplev(x, &numelem, &elems)) {
       switch (numelem) {
 	case 2:
-          if (!pure_is_mpz(elems[0], &z)) {
+	  if (!pure_is_pointer(elems[1], (void**)&buf)) {
             free(elems);
             return 0;
-          } else if (!pure_is_pointer(elems[1], (void**)&buf)) {
-            mpz_clear(z);
-            free(elems);
-            return 0;
-          } else {
+          }
+	  if (pure_is_int(elems[0], &iv))
+	    buflen = (int64_t)iv;
+          else if (pure_is_mpz(elems[0], &z)) {
             mpz_clear(z);
             buflen = pure_get_long(elems[0]);
+	  } else {
             free(elems);
-            db->argv[i].type = SQL_BINARY;
-            db->argv[i].ctype = SQL_C_BINARY;
-            db->argv[i].len = (SQLLEN) buflen;
-            db->argv[i].buflen = (SQLLEN) buflen;
-            db->argv[i].prec = (SQLLEN) buflen;
-            if (buflen > 0) {
-              if (!(db->argv[i].data.buf = malloc(buflen)))
-                return 0;
-              memcpy(db->argv[i].data.buf, buf, (size_t) buflen);
-            } else
-              db->argv[i].data.buf = NULL;
-            db->argv[i].ptr = db->argv[i].data.buf;
-            return 1;
+            return 0;
           }
+	  free(elems);
+	  if (buflen<0) buflen = 0;
+	  db->argv[i].type = SQL_BINARY;
+	  db->argv[i].ctype = SQL_C_BINARY;
+	  db->argv[i].len = (SQLLEN) buflen;
+	  db->argv[i].buflen = (SQLLEN) buflen;
+	  db->argv[i].prec = (SQLLEN) buflen;
+	  if (buflen > 0) {
+	    if (!(db->argv[i].data.buf = malloc(buflen)))
+	      return 0;
+	    memcpy(db->argv[i].data.buf, buf, (size_t) buflen);
+	  } else
+	    db->argv[i].data.buf = NULL;
+	  db->argv[i].ptr = db->argv[i].data.buf;
+	  return 1;
 	case 0:
           db->argv[i].type = SQL_CHAR;
           db->argv[i].ctype = SQL_C_DEFAULT;
