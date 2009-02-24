@@ -623,7 +623,7 @@ pure_expr *odbc_typeinfo(pure_expr *dbx, int id)
 	goto err;
       }
     } while (ret != SQL_NO_DATA_FOUND);
-    SQLFreeStmt(db->hstmt, SQL_RESET_PARAMS);
+    SQLFreeStmt(db->hstmt, SQL_UNBIND);
     SQLFreeStmt(db->hstmt, SQL_CLOSE);
     if (n == 0) {
       free(xs);
@@ -637,13 +637,13 @@ pure_expr *odbc_typeinfo(pure_expr *dbx, int id)
     for (i = 0; i < n; i++) pure_freenew(xs[i]);
     free(xs);
     res = pure_err(db->henv, db->hdbc, db->hstmt);
-    SQLFreeStmt(db->hstmt, SQL_RESET_PARAMS);
+    SQLFreeStmt(db->hstmt, SQL_UNBIND);
     SQLFreeStmt(db->hstmt, SQL_CLOSE);
     return res;
   fatal:
     for (i = 0; i < n; i++) pure_freenew(xs[i]);
     free(xs);
-    SQLFreeStmt(db->hstmt, SQL_RESET_PARAMS);
+    SQLFreeStmt(db->hstmt, SQL_UNBIND);
     SQLFreeStmt(db->hstmt, SQL_CLOSE);
     return error_handler("realloc error");
   } else
@@ -690,7 +690,7 @@ pure_expr *odbc_tables(pure_expr *dbx)
 	goto err;
       }
     } while (ret != SQL_NO_DATA_FOUND);
-    SQLFreeStmt(db->hstmt, SQL_RESET_PARAMS);
+    SQLFreeStmt(db->hstmt, SQL_UNBIND);
     SQLFreeStmt(db->hstmt, SQL_CLOSE);
     if (n == 0) {
       free(xs);
@@ -704,13 +704,13 @@ pure_expr *odbc_tables(pure_expr *dbx)
     for (i = 0; i < n; i++) pure_freenew(xs[i]);
     free(xs);
     res = pure_err(db->henv, db->hdbc, db->hstmt);
-    SQLFreeStmt(db->hstmt, SQL_RESET_PARAMS);
+    SQLFreeStmt(db->hstmt, SQL_UNBIND);
     SQLFreeStmt(db->hstmt, SQL_CLOSE);
     return res;
   fatal:
     for (i = 0; i < n; i++) pure_freenew(xs[i]);
     free(xs);
-    SQLFreeStmt(db->hstmt, SQL_RESET_PARAMS);
+    SQLFreeStmt(db->hstmt, SQL_UNBIND);
     SQLFreeStmt(db->hstmt, SQL_CLOSE);
     return error_handler("realloc error");
   } else
@@ -763,7 +763,7 @@ pure_expr *odbc_columns(pure_expr *dbx, const char *tab)
 	goto err;
       }
     } while (ret != SQL_NO_DATA_FOUND);
-    SQLFreeStmt(db->hstmt, SQL_RESET_PARAMS);
+    SQLFreeStmt(db->hstmt, SQL_UNBIND);
     SQLFreeStmt(db->hstmt, SQL_CLOSE);
     if (n == 0) {
       free(xs);
@@ -777,13 +777,13 @@ pure_expr *odbc_columns(pure_expr *dbx, const char *tab)
     for (i = 0; i < n; i++) pure_freenew(xs[i]);
     free(xs);
     res = pure_err(db->henv, db->hdbc, db->hstmt);
-    SQLFreeStmt(db->hstmt, SQL_RESET_PARAMS);
+    SQLFreeStmt(db->hstmt, SQL_UNBIND);
     SQLFreeStmt(db->hstmt, SQL_CLOSE);
     return res;
   fatal:
     for (i = 0; i < n; i++) pure_freenew(xs[i]);
     free(xs);
-    SQLFreeStmt(db->hstmt, SQL_RESET_PARAMS);
+    SQLFreeStmt(db->hstmt, SQL_UNBIND);
     SQLFreeStmt(db->hstmt, SQL_CLOSE);
     return error_handler("realloc error");
   } else
@@ -828,7 +828,7 @@ pure_expr *odbc_primary_keys(pure_expr *dbx, const char *tab)
 	goto err;
       }
     } while (ret != SQL_NO_DATA_FOUND);
-    SQLFreeStmt(db->hstmt, SQL_RESET_PARAMS);
+    SQLFreeStmt(db->hstmt, SQL_UNBIND);
     SQLFreeStmt(db->hstmt, SQL_CLOSE);
     if (n == 0) {
       free(xs);
@@ -842,13 +842,13 @@ pure_expr *odbc_primary_keys(pure_expr *dbx, const char *tab)
     for (i = 0; i < n; i++) pure_freenew(xs[i]);
     free(xs);
     res = pure_err(db->henv, db->hdbc, db->hstmt);
-    SQLFreeStmt(db->hstmt, SQL_RESET_PARAMS);
+    SQLFreeStmt(db->hstmt, SQL_UNBIND);
     SQLFreeStmt(db->hstmt, SQL_CLOSE);
     return res;
   fatal:
     for (i = 0; i < n; i++) pure_freenew(xs[i]);
     free(xs);
-    SQLFreeStmt(db->hstmt, SQL_RESET_PARAMS);
+    SQLFreeStmt(db->hstmt, SQL_UNBIND);
     SQLFreeStmt(db->hstmt, SQL_CLOSE);
     return error_handler("realloc error");
   } else
@@ -899,7 +899,7 @@ pure_expr *odbc_foreign_keys(pure_expr *dbx, const char *tab)
 	goto err;
       }
     } while (ret != SQL_NO_DATA_FOUND);
-    SQLFreeStmt(db->hstmt, SQL_RESET_PARAMS);
+    SQLFreeStmt(db->hstmt, SQL_UNBIND);
     SQLFreeStmt(db->hstmt, SQL_CLOSE);
     if (n == 0) {
       free(xs);
@@ -913,13 +913,13 @@ pure_expr *odbc_foreign_keys(pure_expr *dbx, const char *tab)
     for (i = 0; i < n; i++) pure_freenew(xs[i]);
     free(xs);
     res = pure_err(db->henv, db->hdbc, db->hstmt);
-    SQLFreeStmt(db->hstmt, SQL_RESET_PARAMS);
+    SQLFreeStmt(db->hstmt, SQL_UNBIND);
     SQLFreeStmt(db->hstmt, SQL_CLOSE);
     return res;
   fatal:
     for (i = 0; i < n; i++) pure_freenew(xs[i]);
     free(xs);
-    SQLFreeStmt(db->hstmt, SQL_RESET_PARAMS);
+    SQLFreeStmt(db->hstmt, SQL_UNBIND);
     SQLFreeStmt(db->hstmt, SQL_CLOSE);
     return error_handler("realloc error");
   } else
