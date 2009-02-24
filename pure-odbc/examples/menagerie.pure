@@ -125,8 +125,7 @@ display sets		= do display_set sets if listp sets;
 /* Display a result set. */
 
 display_set rows::int	= printf "%d rows affected.\n" rows;
-display_set results
-			= puts "" $$
+display_set results	= puts "" $$
 			  // header
 			  display_row wds header $$
 			  display_row wds rules $$
@@ -135,28 +134,27 @@ display_set results
 			  // footer
 			  display_row wds rules $$
 			  printf "%d rows in set.\n" (#data)
-			  if listp results && ~ null data 
+			    if listp results && ~ null data 
 			    when wds = widths results;
-			      (header:data) = results;
-			      rules = (tuple (map rule wds))
+			      header:data = results;
+			      rules = map rule wds;
 			    end;
 			= puts "Empty set." otherwise;
 
 /* Determine column widths. */
 
-widths results		= foldl maxwidths init results
-			    when init = map (cst 0) (head results) end;
+widths results@(hd:_)	= foldl maxwidths [0 | _ = hd] results;
 
-maxwidths xs ys		= zipwith max xs (map ((#).value_str) (list ys));
+maxwidths xs ys		= zipwith max xs [#value_str y | y = ys];
 
 /* Display a data row. */
 
-display_row widths row	= printf "%s\n"
-			  (join "   " (zipwith column widths (list row)));
+display_row widths row	= printf "%s\n" $ join "   " $
+			  zipwith column widths row;
 
 /* Rule of given width. */
 
-rule width		= strcat (map (cst "-") (1..width));
+rule width		= strcat ["-" | i = 1..width];
 
 /* Format a data value. */
 
@@ -167,7 +165,8 @@ format width s		= sprintf (sprintf "%%-%ds" width) s;
 /* Convert data values to strings. */
 
 value_str SQLNULL	= "NULL";
-value_str value::double	= str value;
-value_str value::int	= str value;
+value_str value::double	|
+value_str value::int	|
+value_str value::bigint	= str value;
 value_str value::string	= value;
 value_str _		= "***" otherwise;
