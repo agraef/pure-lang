@@ -198,7 +198,7 @@ result set) in the former, and the row count in the latter case.
 
 For instance, here is how you can select some entries from a table. (The
 following examples assume the sample "menagerie" tables from the MySQL
-documentation. The `init' function in the examples/menagerie.pure script can
+documentation. The `initdb' function in the examples/menagerie.pure script can
 be used to create these tables in your default database.)
 
 > odbc::sql db "select name,species from pet where owner='Harold'" [];
@@ -214,15 +214,15 @@ the `sql' call. For instance:
 
 Multiple parameters are specified as a list:
 
-> odbc::sql db "select name,species from pet where owner=? and species=?" \
-["Harold","cat"]
+> odbc::sql db "select name,species from pet where owner=? and species=?"
+> ["Harold","cat"];
 [["name","species"],["Fluffy","cat"]]
 
 Parameterized queries are particularly useful for the purpose of inserting
 data into a table:
 
-> odbc::sql db "insert into pet values (?,?,?,?,?,?)" \
-["Puffball","Diane","hamster","f","1999-03-30",()]
+> odbc::sql db "insert into pet values (?,?,?,?,?,?)"
+> ["Puffball","Diane","hamster","f","1999-03-30",()];
 1
 
 In this case we could also have hard-coded the data to be inserted right into
@@ -243,8 +243,13 @@ NULL (no value)						()
 integer types (INTEGER and friends)			int
 64-bit integers						bigint
 floating point types (REAL, FLOAT and friends)		double
-binary data (BINARY, BLOB, etc.)			(length, pointer)
+binary data (BINARY, BLOB, etc.)			(size, data)
 character strings (CHAR, VARCHAR, TEXT, etc.)		string
+
+Note that binary data is specified as a pair (size, data) consisting of an int
+or bigint `size' which denotes the size of the data in bytes, and a pointer
+`data' (which must not be a null pointer unless `size' is 0 as well) pointing
+to the binary data itself.
 
 All other SQL data (including, e.g., TIME, DATE and TIMESTAMP) is represented
 in Pure using its character representation, encoded as a Pure string.
@@ -312,6 +317,12 @@ cases may use a lot of memory it is better to call `sql_close' as soon as you
 are finished with a query. This is also done automatically by the `sql' and
 `msql' functions.
 
+Also note that only a single query can be in progress per database connection
+at any one time. That is, if you invoke sql_exec to initiate a new query, a
+previous query will be terminated automatically. (However, it is possible to
+execute multiple queries on the same database simultaneously, if you process
+them through different connections to that database.)
+
 The low-level operations are useful when you have to deal with large result
 sets where you want to avoid to build the complete list of results in main
 memory. Instead, these functions allow you to process the individual elements
@@ -326,12 +337,12 @@ according to your needs.
 LAZY PROCESSING
 ==== ==========
 
-As an experimental feature, we also provide two operations odbc::lsql and
-odbc::lmsql which work like odbc::sql and odbc::msql (see EXECUTING SQL
-QUERIES above), but return lazy lists (streams) instead. This offers the
-convenience of a list-based representation without the overhead of keeping
-entire result sets in memory, which can be prohibitive when working with large
-amounts of data.
+As an experimental feature, the odbc module also provides two operations
+odbc::lsql and odbc::lmsql which work like odbc::sql and odbc::msql (see
+EXECUTING SQL QUERIES above), but return lazy lists (streams) instead. This
+offers the convenience of a list-based representation without the overhead of
+keeping entire result sets in memory, which can be prohibitive when working
+with large amounts of data.
 
 These functions are invoked just like odbc::sql and odbc::msql, but they
 return a lazy list of rows (or a lazy list of lazy lists of rows in the case
@@ -358,13 +369,31 @@ Slim
 
 Only one row is in memory at any time while the `do' function is in progress.
 This keeps memory requirements much lower than when using the odbc::sql
-function which first loads the entire result set into memory.
+function which first loads the entire result set into memory. Another
+advantage is that only those data rows are fetched from the database which are
+actually needed in the course of the computation, which can speed up the
+processing significantly if only a part of the result set is processed. For
+instance, in the following example we only look at the first two data rows
+until the desired row is found, so the remaining rows are never fetched from
+the database.
 
-Note that in this case the query remains in progress as long as the result
-list is still being processed. Only one query can be processed for each
-database connection, thus only one lazy result set can be used at any time.
-However, it is possible to do several lazy queries at once if you assign them
-to different database connections.
+> head [row | row@(name:_) = tail $ odbc::lsql db "select * from pet" [];
+>             name == "Claws"];
+["Claws","Gwen","cat","m","1994-03-17",()]
+
+On the other hand, lsql/lmsql will usually be somewhat slower than sql/msql if
+the entire result set is being processed. So you should always consider the
+time/space tradeoffs when deciding which functions to use in a given
+situation.
+
+Also note that when using lsql/lmsql, the query remains in progress as long as
+the result list is still being processed. This is different from sql/msql
+which load the complete result set(s) at once after which the query is
+terminated immediately. Since only one query can be executed per database
+connection, this means that only one lazy result set can be processed per
+database connection at any time. However, as with the lowlevel operations it
+is possible to do several lazy queries at once if you assign them to different
+database connections.
 
 
 ERROR HANDLING
@@ -408,8 +437,8 @@ using a sequence of single queries instead.
 Note that since the exact numeric SQL data types (NUMERIC, DECIMAL) are mapped
 to Pure double values (which are double precision floating point numbers),
 there might be a loss of precision in extreme cases. If this is a problem you
-should explicitly convert these values to strings in your query (which can be
-done using the SQL CAST function, as in "select cast(1234.56 as char)").
+should explicitly convert these values to strings in your query, which can be
+done using the SQL CAST function, as in "select cast(1234.56 as char)".
 
 
 FURTHER INFORMATION AND EXAMPLES
@@ -422,6 +451,6 @@ found in the examples directory.
 
 Enjoy! :)
 
-Feb 23 2009
+Feb 24 2009
 Albert Graef <Dr.Graef@t-online.de>
 Jiri Spitz <jiri.spitz@bluetone.cz>
