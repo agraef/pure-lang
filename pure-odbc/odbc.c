@@ -280,7 +280,7 @@ pure_expr *odbc_sources()
 		       l_desc, sizeof(l_desc), &l_len2) == SQL_SUCCESS;
 	l_next = SQL_FETCH_NEXT)
     n++;
-  if (!(xv = (pure_expr**)malloc(n*sizeof(pure_expr)))) {
+  if (!(xv = (pure_expr**)malloc(n*sizeof(pure_expr*)))) {
     SQLFreeHandle(SQL_HANDLE_ENV, henv);
     return 0;
   }
@@ -324,7 +324,7 @@ pure_expr *odbc_drivers()
 		  l_attr, sizeof(l_attr), &l_len2) == SQL_SUCCESS;
        l_next = SQL_FETCH_NEXT)
     n++;
-  if (!(xv = (pure_expr **) malloc(n*sizeof(pure_expr)))) {
+  if (!(xv = (pure_expr **) malloc(n*sizeof(pure_expr*)))) {
     SQLFreeHandle(SQL_HANDLE_ENV, henv);
     return error_handler("malloc error");
   }
@@ -340,7 +340,7 @@ pure_expr *odbc_drivers()
     for (k = 0, l_attrp = l_attr; *l_attrp;
 	 l_attrp = l_attrp+strlen((char*)l_attrp)+1)
       k++;
-    if (!(yv = malloc(k*sizeof(pure_expr)))) {
+    if (!(yv = malloc(k*sizeof(pure_expr*)))) {
       int i;
       for (i = 0; i < n; i++)
 	pure_freenew(xv[i]);
@@ -548,7 +548,7 @@ pure_expr *odbc_typeinfo(pure_expr *dbx, int id)
 {
   ODBCHandle *db;
   if (is_db_pointer(dbx, &db)) {
-    pure_expr *res, **xs = (pure_expr**)malloc(NMAX*sizeof(pure_expr)), **xs1;
+    pure_expr *res, **xs = (pure_expr**)malloc(NMAX*sizeof(pure_expr*)), **xs1;
     int i, n = 0, m = NMAX;
 
     UCHAR  name[SL], prefix[SL], suffix[SL], params[SL], local_name[SL];
@@ -591,7 +591,7 @@ pure_expr *odbc_typeinfo(pure_expr *dbx, int id)
        case SQL_SUCCESS_WITH_INFO:
        case SQL_SUCCESS:
 	 if (n >= m) {
-	   if ((xs1 = (pure_expr**)realloc(xs, (m+=NMAX)*sizeof(pure_expr))))
+	   if ((xs1 = (pure_expr**)realloc(xs, (m+=NMAX)*sizeof(pure_expr*))))
 	     xs = xs1;
 	   else
 	     goto fatal;
@@ -654,7 +654,7 @@ pure_expr *odbc_tables(pure_expr *dbx)
 {
   ODBCHandle *db;
   if (is_db_pointer(dbx, &db)) {
-    pure_expr *res, **xs = (pure_expr**)malloc(NMAX*sizeof(pure_expr)), **xs1;
+    pure_expr *res, **xs = (pure_expr**)malloc(NMAX*sizeof(pure_expr*)), **xs1;
     int i, n = 0, m = NMAX;
 
     UCHAR  name[SL], type[SL];
@@ -675,7 +675,7 @@ pure_expr *odbc_tables(pure_expr *dbx)
        case SQL_SUCCESS_WITH_INFO:
        case SQL_SUCCESS:
 	 if (n >= m) {
-	   if ((xs1 = (pure_expr**)realloc(xs, (m+=NMAX)*sizeof(pure_expr))))
+	   if ((xs1 = (pure_expr**)realloc(xs, (m+=NMAX)*sizeof(pure_expr*))))
 	     xs = xs1;
 	   else
 	     goto fatal;
@@ -721,7 +721,7 @@ pure_expr *odbc_columns(pure_expr *dbx, const char *tab)
 {
   ODBCHandle *db;
   if (is_db_pointer(dbx, &db)) {
-    pure_expr *res, **xs = (pure_expr**)malloc(NMAX*sizeof(pure_expr)), **xs1;
+    pure_expr *res, **xs = (pure_expr**)malloc(NMAX*sizeof(pure_expr*)), **xs1;
     int i, n = 0, m = NMAX;
 
     UCHAR  name[SL], type[SL], nullable[SL], deflt[SL];
@@ -746,7 +746,7 @@ pure_expr *odbc_columns(pure_expr *dbx, const char *tab)
        case SQL_SUCCESS_WITH_INFO:
        case SQL_SUCCESS:
 	 if (n >= m) {
-	   if ((xs1 = (pure_expr**)realloc(xs, (m+=NMAX)*sizeof(pure_expr))))
+	   if ((xs1 = (pure_expr**)realloc(xs, (m+=NMAX)*sizeof(pure_expr*))))
 	     xs = xs1;
 	   else
 	     goto fatal;
@@ -794,7 +794,7 @@ pure_expr *odbc_primary_keys(pure_expr *dbx, const char *tab)
 {
   ODBCHandle *db;
   if (is_db_pointer(dbx, &db)) {
-    pure_expr *res, **xs = (pure_expr**)malloc(NMAX*sizeof(pure_expr)), **xs1;
+    pure_expr *res, **xs = (pure_expr**)malloc(NMAX*sizeof(pure_expr*)), **xs1;
     int i, n = 0, m = NMAX;
 
     UCHAR  name[SL];
@@ -815,7 +815,7 @@ pure_expr *odbc_primary_keys(pure_expr *dbx, const char *tab)
        case SQL_SUCCESS_WITH_INFO:
        case SQL_SUCCESS:
 	 if (n >= m) {
-	   if ((xs1 = (pure_expr**)realloc(xs, (m+=NMAX)*sizeof(pure_expr))))
+	   if ((xs1 = (pure_expr**)realloc(xs, (m+=NMAX)*sizeof(pure_expr*))))
 	     xs = xs1;
 	   else
 	     goto fatal;
@@ -859,7 +859,7 @@ pure_expr *odbc_foreign_keys(pure_expr *dbx, const char *tab)
 {
   ODBCHandle *db;
   if (is_db_pointer(dbx, &db)) {
-    pure_expr *res, **xs = (pure_expr**)malloc(NMAX*sizeof(pure_expr)), **xs1;
+    pure_expr *res, **xs = (pure_expr**)malloc(NMAX*sizeof(pure_expr*)), **xs1;
     int i, n = 0, m = NMAX;
 
     UCHAR  name[SL], pktabname[SL], pkname[SL];
@@ -883,7 +883,7 @@ pure_expr *odbc_foreign_keys(pure_expr *dbx, const char *tab)
        case SQL_SUCCESS_WITH_INFO:
        case SQL_SUCCESS:
 	 if (n >= m) {
-	   if ((xs1 = (pure_expr**)realloc(xs, (m+=NMAX)*sizeof(pure_expr))))
+	   if ((xs1 = (pure_expr**)realloc(xs, (m+=NMAX)*sizeof(pure_expr*))))
 	     xs = xs1;
 	   else
 	     goto fatal;
@@ -1003,7 +1003,7 @@ pure_expr *odbc_sql_exec(pure_expr *dbx, const char *query, pure_expr *args)
     /* get the column names and types */
     if (!(coltype = malloc(cols*sizeof(short))))
       goto fatal;
-    if (!(xs = malloc(cols*sizeof(pure_expr))))
+    if (!(xs = malloc(cols*sizeof(pure_expr*))))
       goto fatal;
     for (i = 0; i < cols; i++) {
       buf[0] = 0;
@@ -1071,7 +1071,7 @@ pure_expr *odbc_sql_fetch(pure_expr *dbx)
       goto exit;
     } else if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO)
       goto err;
-    if (!(xs = malloc(cols*sizeof(pure_expr))))
+    if (!(xs = malloc(cols*sizeof(pure_expr*))))
       goto fatal;
     /* get the columns */
     for (i = 0; i < cols; i++) {
@@ -1282,7 +1282,7 @@ pure_expr *odbc_sql_more(pure_expr *dbx)
     /* get the column names and types */
     if (!(coltype = malloc(cols*sizeof(short))))
       goto fatal;
-    if (!(xs = malloc(cols*sizeof(pure_expr))))
+    if (!(xs = malloc(cols*sizeof(pure_expr*))))
       goto fatal;
     for (i = 0; i < cols; i++) {
       buf[0] = 0;
