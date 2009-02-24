@@ -37,8 +37,8 @@ Library (GMP).
 setup. If it gets this wrong, you can set some variables manually. In
 particular, 'make install prefix=/usr' sets the installation prefix, and 'make
 PIC=-fPIC' or some similar flag might be needed for compilation on 64 bit
-systems. The variable `ODBCLIB' serves for the ODBC library name to be linked
-with. The default value is `ODBCLIB=-lodbc'. Please see the Makefile for
+systems. The variable 'ODBCLIB' serves for the ODBC library name to be linked
+with. The default value is 'ODBCLIB=-lodbc'. Please see the Makefile for
 details.
 
 
@@ -46,8 +46,8 @@ OPENING AND CLOSING A DATA SOURCE
 ======= === ======= = ==== ======
 
 To open an ODBC connection, you have to specify a "connect string" which names
-the data source to be used with the `odbc::connect' function. A list of
-available data sources can be obtained with the `odbc::sources' function. For
+the data source to be used with the 'odbc::connect' function. A list of
+available data sources can be obtained with the 'odbc::sources' function. For
 instance, on my Linux system running MySQL and PostgreSQL it shows the
 following:
 
@@ -55,17 +55,17 @@ following:
 [("myodbc","MySQL ODBC 2.50"),("psqlodbc","PostgreSQL ODBC")]
 
 The first component in each entry of the list is the name of the data source,
-which can be used as the value of the `DSN' option in the connect string, the
+which can be used as the value of the 'DSN' option in the connect string, the
 second component provides a short description of the data source.
 
 Likewise, the list of ODBC drivers available on your system can be obtained
-with the `odbc::drivers' function which returns a list of pairs of driver
+with the 'odbc::drivers' function which returns a list of pairs of driver
 names and attributes. (Older ODBC implementations on Unix lacked this feature,
 but it seems to be properly supported in recent unixODBC implementations at
 least.) On Windows this function can be used to determine a legal value for
 the DRIVER attribute in the connect string, see below.
 
-The `odbc::connect' function is invoked with a single parameter, the connect
+The 'odbc::connect' function is invoked with a single parameter, the connect
 string, which is used to describe the data source and various other parameters
 such as user id and password. For instance, on my system I can connect to the
 local "myodbc" data source from above as follows:
@@ -104,15 +104,15 @@ driver you can connect to a database file test.mdb as follows:
 
 > odbc::connect "DRIVER=Microsoft Access Driver (*.mdb);DBQ=test.mdb";
 
-The `odbc::connect' function returns a pointer to an `ODBCHandle' object
+The 'odbc::connect' function returns a pointer to an 'ODBCHandle' object
 which is used to refer to the database connection in the other routines
 provided by this module. An ODBCHandle object is closed automatically
 when it is no longer accessible. You can also close it explicitly with
-a call to the `odbc::disconnect' function:
+a call to the 'odbc::disconnect' function:
 
 > odbc::disconnect db;
 
-After `odbc::disconnect' has been invoked on a handle, any further operations
+After 'odbc::disconnect' has been invoked on a handle, any further operations
 on it will fail.
 
 
@@ -120,7 +120,7 @@ GETTING INFORMATION ABOUT A DATA SOURCE
 ======= =========== ===== = ==== ======
 
 You can get general information about an open database connection with the
-`odbc::info' function. This function returns a tuple of strings with the
+'odbc::info' function. This function returns a tuple of strings with the
 following items (see the description of the SQLGetInfo() function in the ODBC
 API reference for more information):
 
@@ -188,26 +188,26 @@ EXECUTING SQL QUERIES
 ========= === =======
 
 As soon as a database connection has been opened, you can execute SQL queries
-on it using the `sql' function which executes a query and collects the results
+on it using the 'sql' function which executes a query and collects the results
 in a list. Note that SQL queries generally come in two different flavours:
 queries returning data (so-called result sets), and statements modifying the
-data (which have as their result the number of affected rows). The `sql'
+data (which have as their result the number of affected rows). The 'sql'
 function returns a nonempty list of lists (where the first list denotes the
 column titles, and each subsequent list corresponds to a single row of the
 result set) in the former, and the row count in the latter case.
 
 For instance, here is how you can select some entries from a table. (The
 following examples assume the sample "menagerie" tables from the MySQL
-documentation. The `initdb' function in the examples/menagerie.pure script can
+documentation. The 'initdb' function in the examples/menagerie.pure script can
 be used to create these tables in your default database.)
 
 > odbc::sql db "select name,species from pet where owner='Harold'" [];
 [["name","species"],["Fluffy","cat"],["Buffy","dog"]]
 
-Often the third parameter of `sql', as above, is just the empty list,
+Often the third parameter of 'sql', as above, is just the empty list,
 indicating a parameterless query. Queries involving marked input parameters
 can be executed by specifying the parameter values in the third argument of
-the `sql' call. For instance:
+the 'sql' call. For instance:
 
 > odbc::sql db "select name,species from pet where owner=?" ["Harold"];
 [["name","species"],["Fluffy","cat"],["Buffy","dog"]]
@@ -247,8 +247,8 @@ binary data (BINARY, BLOB, etc.)			(size, data)
 character strings (CHAR, VARCHAR, TEXT, etc.)		string
 
 Note that binary data is specified as a pair (size, data) consisting of an int
-or bigint `size' which denotes the size of the data in bytes, and a pointer
-`data' (which must not be a null pointer unless `size' is 0 as well) pointing
+or bigint 'size' which denotes the size of the data in bytes, and a pointer
+'data' (which must not be a null pointer unless 'size' is 0 as well) pointing
 to the binary data itself.
 
 All other SQL data (including, e.g., TIME, DATE and TIMESTAMP) is represented
@@ -256,10 +256,10 @@ in Pure using its character representation, encoded as a Pure string.
 
 Some databases also allow special types of queries (e.g., "batch" queries
 consisting of multiple SQL statements) which may return multiple result sets
-and/or row counts. The `sql' function only returns the first result set, which
+and/or row counts. The 'sql' function only returns the first result set, which
 is appropriate in most cases. If you need to determine all result sets
-returned by a query, the `msql' function must be used. This function is
-invoked in exactly the same way as the `sql' function, but returns a list with
+returned by a query, the 'msql' function must be used. This function is
+invoked in exactly the same way as the 'sql' function, but returns a list with
 all the result sets and/or row counts of the query.
 
 Example:
@@ -272,18 +272,18 @@ This will return a list with two result sets, one for each query.
 LOW-LEVEL OPERATIONS
 ========= ==========
 
-The `sql' and `msql' operations are in fact just ordinary Pure functions which
-are implemented in terms of the low-level operations `sql_exec', `sql_fetch',
-`sql_more' and `sql_close'. You can also invoke these functions directly if
-necessary. The `sql_exec' function starts executing a query and returns either
+The 'sql' and 'msql' operations are in fact just ordinary Pure functions which
+are implemented in terms of the low-level operations 'sql_exec', 'sql_fetch',
+'sql_more' and 'sql_close'. You can also invoke these functions directly if
+necessary. The 'sql_exec' function starts executing a query and returns either
 a row count or the column names of the first result set as a tuple of
-strings. After that you can use `sql_fetch' to obtain the results in the set
-one by one. When all rows have been delivered, `sql_fetch' fails. The
-`sql_more' function can then be used to check for additional result sets. If
-there are further results, `sql_more' returns either the next row count, or a
-tuple of column names, after which you can invoke `sql_fetch' again to obtain
+strings. After that you can use 'sql_fetch' to obtain the results in the set
+one by one. When all rows have been delivered, 'sql_fetch' fails. The
+'sql_more' function can then be used to check for additional result sets. If
+there are further results, 'sql_more' returns either the next row count, or a
+tuple of column names, after which you can invoke 'sql_fetch' again to obtain
 the data rows in the second set, etc. When the last result set has been
-processed, `sql_more' fails.
+processed, 'sql_more' fails.
 
 Example:
 
@@ -302,8 +302,8 @@ odbc::sql_fetch #<pointer 0x24753e0>
 > odbc::sql_more db; // no more result sets
 odbc::sql_more #<pointer 0x24753e0>
 
-Moreover, the `sql_close' function can be called at any time to terminate an
-SQL query, after which subsequent calls to `sql_fetch' and `sql_more' will
+Moreover, the 'sql_close' function can be called at any time to terminate an
+SQL query, after which subsequent calls to 'sql_fetch' and 'sql_more' will
 fail:
 
 > odbc::sql_close db; // terminate query
@@ -313,9 +313,9 @@ This is not strictly necessary (it will be done automatically as soon as the
 next SQL query is invoked), but it is useful in order to release all resources
 associated with the query, such as parameter values which have to be cached so
 that they remain accessible to the SQL server. Since these parameters in some
-cases may use a lot of memory it is better to call `sql_close' as soon as you
-are finished with a query. This is also done automatically by the `sql' and
-`msql' functions.
+cases may use a lot of memory it is better to call 'sql_close' as soon as you
+are finished with a query. This is also done automatically by the 'sql' and
+'msql' functions.
 
 Also note that only a single query can be in progress per database connection
 at any one time. That is, if you invoke sql_exec to initiate a new query, a
@@ -326,11 +326,11 @@ them through different connections to that database.)
 The low-level operations are useful when you have to deal with large result
 sets where you want to avoid to build the complete list of results in main
 memory. Instead, these functions allow you to process the individual elements
-immediately as they are delivered by the `sql_fetch' function. (An alternative
+immediately as they are delivered by the 'sql_fetch' function. (An alternative
 method which combines the space efficiency of immediate processing with the
 convenience of the list representation is discussed in the following section.) 
 Using the low-level operations you can also build your own specialized query
-engines; take the definitions of `sql' or `msql' as a start and change them
+engines; take the definitions of 'sql' or 'msql' as a start and change them
 according to your needs.
 
 
@@ -367,7 +367,7 @@ Whistler
 Slim
 ()
 
-Only one row is in memory at any time while the `do' function is in progress.
+Only one row is in memory at any time while the 'do' function is in progress.
 This keeps memory requirements much lower than when using the odbc::sql
 function which first loads the entire result set into memory. Another
 advantage is that only those data rows are fetched from the database which are
@@ -400,7 +400,7 @@ ERROR HANDLING
 ===== ========
 
 When one of the above operations fails because the SQL server reports an
-error, an error term of the form `odbc::error MSG STATE' will be returned,
+error, an error term of the form 'odbc::error MSG STATE' will be returned,
 which specifies an error message and the corresponding SQL state (i.e., error
 code). A detailed explanation of the state codes can be found in the ODBC
 documentation. For instance, a reference to a non-existant table will cause a
@@ -415,13 +415,13 @@ print an error message. For instance:
 
 odbc::error MSG STATE	= fprintf ERROR "%s (%s)\n" (MSG,STATE) $$ ();
 
-NOTE: When redefining `odbc::error' in this manner, you should be aware that
-the return value of `odbc::error' is what will be returned by the other
+NOTE: When redefining 'odbc::error' in this manner, you should be aware that
+the return value of 'odbc::error' is what will be returned by the other
 operations of this module in case of an error condition. These return values
-are checked by other functions such as `sql'. Thus the return value should
+are checked by other functions such as 'sql'. Thus the return value should
 still indicate that an error has happened, and not be something that might be
 interpreted as a legal return value, such as an integer or a nonempty
-tuple. It is usually safe to have `odbc::error' return an empty tuple or throw
+tuple. It is usually safe to have 'odbc::error' return an empty tuple or throw
 an exception, but other types of return values should be avoided.
 
 
