@@ -73,14 +73,28 @@ local "myodbc" data source from above as follows:
 
 > let db = odbc::connect "DSN=myodbc";
 
-Here's how to specify a username and password; note that the different options
-are separated with a semicolon:
+The 'odbc::connect' function returns a pointer to an 'ODBCHandle' object which
+is used to refer to the database connection in the other routines provided by
+this module. An ODBCHandle object is closed automatically when it is no longer
+accessible. You can also close it explicitly with a call to the
+'odbc::disconnect' function:
+
+> odbc::disconnect db;
+
+After 'odbc::disconnect' has been invoked on a handle, any further operations
+on it will fail.
+
+'odbc::connect' allows a number of attributes to be passed to the ODBC driver
+when opening the database connection. E.g., here's how to specify a username
+and password; note that the different attributes are separated with a
+semicolon:
 
 > let db = odbc::connect "DSN=myodbc;UID=root;PWD=guess";
 
-The precise set of options in the connect string depends on your ODBC
-interface, but at least the following options should be available on most
-systems:
+The precise set of attributes in the connect string depends on your ODBC
+driver, but at least the following options should be available on most
+systems. (Case is insignificant in the attribute names, so e.g. the DATABASE
+attribute may be specified as either 'DATABASE', 'Database' or 'database'.)
 
 - DSN=<data source name>
 - HOST=<server host name>
@@ -88,7 +102,7 @@ systems:
 - UID=<user name>
 - PWD=<password>
 
-The following options appear to be Windows-specific:
+The following attributes appear to be Windows-specific:
 
 - FILEDSN=<DSN file name>
 - DRIVER=<driver name>
@@ -105,16 +119,21 @@ driver you can connect to a database file test.mdb as follows:
 
 > odbc::connect "DRIVER=Microsoft Access Driver (*.mdb);DBQ=test.mdb";
 
-The 'odbc::connect' function returns a pointer to an 'ODBCHandle' object which
-is used to refer to the database connection in the other routines provided by
-this module. An ODBCHandle object is closed automatically when it is no longer
-accessible. You can also close it explicitly with a call to the
-'odbc::disconnect' function:
+SQLite (http://www.sqlite.org) provides another way to get a database up and
+running quickly. For that you need the SQLite library and the SQLite ODBC
+driver available at http://www.ch-werner.de/sqliteodbc. Then you can open an
+SQLite database as follows (the database file is named with the DATABASE
+attribute and is created automatically if it doesn't exist):
 
-> odbc::disconnect db;
+> odbc::connect "DSN=SQLite3 Datasource;Database=test.db";
 
-After 'odbc::disconnect' has been invoked on a handle, any further operations
-on it will fail.
+SQLite generally performs very well if you avoid some pitfalls (in particular,
+big batches of updates/inserts should be done within a transaction, otherwise
+they will take forever). It is certainly good enough for smaller databases and
+very easy to set up. Basically, after installing SQLite and its ODBC driver
+you're ready to go immediately. This makes it a very convenient alternative if
+you don't want to go through the tedium of setting up one of the big hulking
+DBMS.
 
 
 GETTING INFORMATION ABOUT A DATA SOURCE
