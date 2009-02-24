@@ -75,6 +75,11 @@ typedef struct {
   int argc; /* number of marked parameters */
 } ODBCHandle;
 
+static inline bool is_db_pointer(pure_expr *x, ODBCHandle **db)
+{
+  return pure_is_pointer(x, (void**)db) && *db && (*db)->henv;
+}
+
 static int init_args(ODBCHandle *db, int argc)
 {
   int i;
@@ -416,11 +421,10 @@ pure_expr *odbc_connect(char* conn)
     return 0;
 }
 
-pure_expr *odbc_disconnect(pure_expr *dbpointer)
+pure_expr *odbc_disconnect(pure_expr *dbx)
 {
   ODBCHandle *db;
-  if (pure_is_pointer(dbpointer, (void**)&db) &&
-      db->henv) {
+  if (is_db_pointer(dbx, &db)) {
     sql_close(db);
     SQLCloseCursor(db->hstmt);
     SQLFreeHandle(SQL_HANDLE_STMT, db->hstmt);
@@ -436,11 +440,10 @@ pure_expr *odbc_disconnect(pure_expr *dbpointer)
     return 0;
 }
 
-pure_expr *odbc_info(pure_expr *dbpointer)
+pure_expr *odbc_info(pure_expr *dbx)
 {
   ODBCHandle *db;
-  if (pure_is_pointer(dbpointer, (void**)&db) &&
-      db->henv) {
+  if (is_db_pointer(dbx, &db)) {
     long ret;
     int n = 0;
     pure_expr *xv[8], *res;
@@ -500,11 +503,10 @@ pure_expr *odbc_info(pure_expr *dbpointer)
     return 0;
 }
 
-pure_expr *odbc_getinfo(pure_expr *argv0, unsigned int info_type)
+pure_expr *odbc_getinfo(pure_expr *dbx, unsigned int info_type)
 {
   ODBCHandle *db;
-  if (pure_is_pointer(argv0, (void**)&db) &&
-      db->henv) {
+  if (is_db_pointer(dbx, &db)) {
     long ret;
     char info[1024];
     short len;
@@ -539,11 +541,10 @@ pure_expr *odbc_getinfo(pure_expr *argv0, unsigned int info_type)
 #define checkuint(x,l) ((l==SQL_NULL_DATA)?pure_tuplel(0):pure_int((long) x))
 #define checkbool(x,l) ((l==SQL_NULL_DATA)?pure_tuplel(0):pure_int(x))
 
-pure_expr *odbc_typeinfo(pure_expr *argv0, int id)
+pure_expr *odbc_typeinfo(pure_expr *dbx, int id)
 {
   ODBCHandle *db;
-  if (pure_is_pointer(argv0, (void**)&db) &&
-      db->henv) {
+  if (is_db_pointer(dbx, &db)) {
     pure_expr *res, **xs = (pure_expr**)malloc(NMAX*sizeof(pure_expr)), **xs1;
     int i, n = 0, m = NMAX;
 
@@ -646,11 +647,10 @@ pure_expr *odbc_typeinfo(pure_expr *argv0, int id)
     return 0;
 }
 
-pure_expr *odbc_tables(pure_expr *argv0)
+pure_expr *odbc_tables(pure_expr *dbx)
 {
   ODBCHandle *db;
-  if (pure_is_pointer(argv0, (void**)&db) &&
-      db->henv) {
+  if (is_db_pointer(dbx, &db)) {
     pure_expr *res, **xs = (pure_expr**)malloc(NMAX*sizeof(pure_expr)), **xs1;
     int i, n = 0, m = NMAX;
 
@@ -714,11 +714,10 @@ pure_expr *odbc_tables(pure_expr *argv0)
     return 0;
 }
 
-pure_expr *odbc_columns(pure_expr *argv0, const char *tab)
+pure_expr *odbc_columns(pure_expr *dbx, const char *tab)
 {
   ODBCHandle *db;
-  if (pure_is_pointer(argv0, (void**)&db) &&
-      db->henv) {
+  if (is_db_pointer(dbx, &db)) {
     pure_expr *res, **xs = (pure_expr**)malloc(NMAX*sizeof(pure_expr)), **xs1;
     int i, n = 0, m = NMAX;
 
@@ -788,11 +787,10 @@ pure_expr *odbc_columns(pure_expr *argv0, const char *tab)
     return 0;
 }
 
-pure_expr *odbc_primary_keys(pure_expr *argv0, const char *tab)
+pure_expr *odbc_primary_keys(pure_expr *dbx, const char *tab)
 {
   ODBCHandle *db;
-  if (pure_is_pointer(argv0, (void**)&db) &&
-      db->henv) {
+  if (is_db_pointer(dbx, &db)) {
     pure_expr *res, **xs = (pure_expr**)malloc(NMAX*sizeof(pure_expr)), **xs1;
     int i, n = 0, m = NMAX;
 
@@ -854,11 +852,10 @@ pure_expr *odbc_primary_keys(pure_expr *argv0, const char *tab)
     return 0;
 }
 
-pure_expr *odbc_foreign_keys(pure_expr *argv0, const char *tab)
+pure_expr *odbc_foreign_keys(pure_expr *dbx, const char *tab)
 {
   ODBCHandle *db;
-  if (pure_is_pointer(argv0, (void**)&db) &&
-      db->henv) {
+  if (is_db_pointer(dbx, &db)) {
     pure_expr *res, **xs = (pure_expr**)malloc(NMAX*sizeof(pure_expr)), **xs1;
     int i, n = 0, m = NMAX;
 
@@ -929,13 +926,12 @@ pure_expr *odbc_foreign_keys(pure_expr *argv0, const char *tab)
 #define BUFSZ 65536
 #define BUFSZ2 5000
 
-pure_expr *odbc_sql_exec(pure_expr *argv0, const char *query, pure_expr *argv2)
+pure_expr *odbc_sql_exec(pure_expr *dbx, const char *query, pure_expr *args)
 {
   ODBCHandle *db;
   pure_expr **xv;
   size_t n;
-  if (pure_is_pointer(argv0, (void**)&db) && db->henv &&
-      pure_is_listv(argv2, &n, &xv)) {
+  if (is_db_pointer(dbx, &db) && pure_is_listv(args, &n, &xv)) {
     long ret;
     pure_expr *res, **xs;
     size_t i;
@@ -1054,11 +1050,10 @@ pure_expr *odbc_sql_exec(pure_expr *argv0, const char *query, pure_expr *argv2)
     return 0;
 }
 
-pure_expr *odbc_sql_fetch(pure_expr *argv0)
+pure_expr *odbc_sql_fetch(pure_expr *dbx)
 {
   ODBCHandle *db;
-  if (pure_is_pointer(argv0, (void**)&db) &&
-      db->henv && db->coltype) {
+  if (is_db_pointer(dbx, &db) && db->coltype) {
     long ret;
     pure_expr *res, **xs;
     short i, j, cols = db->cols, *coltype = db->coltype;
@@ -1251,11 +1246,10 @@ pure_expr *odbc_sql_fetch(pure_expr *argv0)
     return 0;
 }
 
-pure_expr *odbc_sql_more(pure_expr *argv0)
+pure_expr *odbc_sql_more(pure_expr *dbx)
 {
   ODBCHandle *db;
-  if (pure_is_pointer(argv0, (void**)&db) &&
-      db->henv && db->exec) {
+  if (is_db_pointer(dbx, &db) && db->exec) {
     long ret;
     pure_expr *res, **xs;
     short i, cols, *coltype = NULL;
@@ -1321,11 +1315,10 @@ pure_expr *odbc_sql_more(pure_expr *argv0)
     return 0;
 }
 
-pure_expr *odbc_sql_close(pure_expr *argv0)
+pure_expr *odbc_sql_close(pure_expr *dbx)
 {
   ODBCHandle *db;
-  if (pure_is_pointer(argv0, (void**)&db) &&
-      db->henv && db->exec) {
+  if (is_db_pointer(dbx, &db) && db->exec) {
     sql_close(db);
     return pure_tuplel(0);
   } else
