@@ -433,13 +433,11 @@ pure_expr *odbc_disconnect(pure_expr *dbx)
     sql_close(db);
     SQLCloseCursor(db->hstmt);
     SQLFreeHandle(SQL_HANDLE_STMT, db->hstmt);
-    db->hstmt = 0;
     SQLDisconnect(db->hdbc);
     SQLFreeHandle(SQL_HANDLE_DBC, db->hdbc);
-    db->hdbc = 0;
     SQLFreeHandle(SQL_HANDLE_ENV, db->henv);
-    db->henv = 0;
-    /* FIXME: This leaks memory on the handle itself. */
+    free(db);
+    dbx->data.p = NULL;
     return pure_tuplel(0);
   } else
     return 0;
