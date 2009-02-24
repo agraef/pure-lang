@@ -541,7 +541,7 @@ pure_expr *odbc_getinfo(pure_expr *dbx, unsigned int info_type)
 
 #define checkstr(s,l) ((l==SQL_NULL_DATA)?pure_tuplel(0):pure_cstring_dup((char*)s))
 #define checkint(x,l) ((l==SQL_NULL_DATA)?pure_tuplel(0):pure_int(x))
-#define checkuint(x,l) ((l==SQL_NULL_DATA)?pure_tuplel(0):pure_int((long) x))
+#define checkuint(x,l) ((l==SQL_NULL_DATA)?pure_tuplel(0):pure_int(x))
 #define checkbool(x,l) ((l==SQL_NULL_DATA)?pure_tuplel(0):pure_int(x))
 
 pure_expr *odbc_typeinfo(pure_expr *dbx, int id)
@@ -666,7 +666,7 @@ pure_expr *odbc_tables(pure_expr *dbx)
     ret = SQLBindCol(db->hstmt,  3, SQL_C_CHAR,  name,       SL, &len[3]);
     ret = SQLBindCol(db->hstmt,  4, SQL_C_CHAR,  type,       SL, &len[4]);
 
-    ret = SQLTables(db->hstmt, NULL, 0, NULL, 0, NULL, 0, NULL,0);
+    ret = SQLTables(db->hstmt, NULL, 0, NULL, 0, NULL, 0, NULL, 0);
     if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO) goto err;
 
     do {
