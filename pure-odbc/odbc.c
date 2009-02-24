@@ -64,7 +64,10 @@ typedef struct {
 
 /* ODBC handle structure */
 
+#define ODBC_MAGIC 9029 /* the 1122th prime */
+
 typedef struct {
+  short magic; /* this provides for some type safety */
   SQLHENV henv; /* environment handle */
   SQLHDBC hdbc; /* connection handle */
   SQLHSTMT hstmt; /* statement handle */
@@ -77,7 +80,8 @@ typedef struct {
 
 static inline bool is_db_pointer(pure_expr *x, ODBCHandle **db)
 {
-  return pure_is_pointer(x, (void**)db) && *db && (*db)->henv;
+  return pure_is_pointer(x, (void**)db) && *db &&
+    (*db)->magic == ODBC_MAGIC && (*db)->henv;
 }
 
 static int init_args(ODBCHandle *db, int argc)
@@ -366,6 +370,7 @@ pure_expr *odbc_connect(char* conn)
     short buflen;
     char buf[1024];
     if (!db) return error_handler("malloc error");
+    db->magic = ODBC_MAGIC;
     /* create the environment handle */
     if ((ret = SQLAllocHandle(SQL_HANDLE_ENV, NULL, &db->henv)) !=
 	SQL_SUCCESS &&
