@@ -33,6 +33,10 @@ namespace odbc;
 
 public error;
 
+/* The odbc::SQLNULL symbol is used to represent SQL NULL values. */
+
+nullary SQLNULL;
+
 /* The following functions list the names and descriptions of the available
    data sources and drivers. The names can be passed in the DSN and DRIVER
    parameters of the connection string (see below). */
@@ -349,7 +353,7 @@ extern expr* odbc_getinfo(expr* db, int info_type) = getinfo;
      SQL_DATA_TYPE is SQL_INTERVAL
 
    Note that fields which don't apply to a given type are left empty,
-   indicated by a () a.k.a. NULL value. */
+   indicated by a SQLNULL value. */
 
 extern expr* odbc_typeinfo(expr* db, int type_id) = typeinfo;
 
@@ -432,8 +436,9 @@ extern expr* odbc_tables(expr* db) = tables;
 /* Retrieve information about the columns of the table with the given name.
    Returns a list of string tuples with the following information: NAME
    (column name), TYPE (SQL data type), NULLABLE (whether the field is
-   nullable, "YES" or "NO") and DEFAULT (default value, as a string). The
-   NULLABLE and DEFAULT values may be () if not available. */
+   nullable, "YES", "NO" or "" if unknown) and DEFAULT (default value, as a
+   string). The DEFAULT value may also be SQLNULL if no default value has been
+   set. */
 
 extern expr* odbc_columns(expr* db, char* table_name) = columns;
 
@@ -466,19 +471,19 @@ extern expr* odbc_foreign_keys(expr* db, char* table_name) = foreign_keys;
    release the associated resources (this is also done automatically when a
    new query is started).
 
-   NULL values in the results are converted to (), numeric data (including bit
-   values) to the corresponding Pure type (int, bigint or double) and
-   character strings to Pure strings. Binary data is converted to a tuple
-   (SIZE, DATA), where SIZE (a bigint) denotes the number of bytes and DATA is
-   a pointer to a malloced buffer containing the data. The DATA pointer frees
-   itself after use, so you must not free it manually. All other data (e.g.,
-   time, date and timestamp) is converted to its character representation and
-   returned as a string.
+   SQL NULL values in the results are converted to odbc::SQLNULL, numeric data
+   (including bit values) to the corresponding Pure type (int, bigint or
+   double) and character strings to Pure strings. Binary data is converted to
+   a pair (SIZE, DATA), where SIZE (a bigint) denotes the number of bytes and
+   DATA is a pointer to a malloced buffer containing the data. The DATA
+   pointer frees itself after use, so you must not free it manually. All other
+   data (e.g., time, date and timestamp) is converted to its character
+   representation and returned as a string.
 
    Marked input parameters, which are replaced for `?' markers in the query,
    can be specified in the ARGS argument of sql_exec, which is a list of
    parameter values. The same types are recognized as for the result values
-   (i.e., (), integers, floating point values, character and tuples
+   (i.e., SQLNULL, integers, floating point values, character and pairs
    (length, pointer) for binary data). */
 
 extern expr* odbc_sql_exec(expr* db, char* query, expr* args) = sql_exec;

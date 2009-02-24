@@ -46,7 +46,22 @@
   pure_app(pure_app(pure_symbol(pure_sym("odbc::error")), \
   pure_cstring_dup("other error")), pure_cstring_dup(msg))
 
-#define pure_sqlnull() pure_tuplel(0)
+/* SQL NULL representation. */
+
+static int32_t sqlnull_sym = 0; /* FIXME: TLD */
+
+static inline pure_expr *pure_sqlnull(void)
+{
+  if (sqlnull_sym == 0) sqlnull_sym = pure_sym("odbc::SQLNULL");
+  return pure_symbol(sqlnull_sym);
+}
+
+static inline bool pure_is_sqlnull(pure_expr *x)
+{
+  int32_t sym;
+  if (sqlnull_sym == 0) sqlnull_sym = pure_sym("odbc::SQLNULL");
+  return pure_is_symbol(x, &sym) && sym == sqlnull_sym;
+}
 
 /* Query parameter structure */
 
@@ -122,8 +137,7 @@ static int set_arg(ODBCHandle *db, int i, pure_expr *x)
   char *s;
   mpz_t z;
   size_t size;
-  pure_expr **elems;
-  size_t numelem;
+  size_t nelems;
   unsigned char *buf;
   int64_t buflen;
   if (pure_is_int(x, &iv)) {
@@ -170,53 +184,49 @@ static int set_arg(ODBCHandle *db, int i, pure_expr *x)
     db->argv[i].data.buf = s;
     db->argv[i].ptr = s;
     return 1;
-  } else if (pure_is_tuplev(x, &numelem, &elems)) {
-      switch (numelem) {
-	case 2:
-	  if (!pure_is_pointer(elems[1], (void**)&buf)) {
-            free(elems);
-            return 0;
-          }
-	  if (pure_is_int(elems[0], &iv))
-	    buflen = (int64_t)iv;
-          else if (pure_is_mpz(elems[0], &z)) {
-            mpz_clear(z);
-            buflen = pure_get_long(elems[0]);
-	  } else {
-            free(elems);
-            return 0;
-          }
-	  free(elems);
-	  if (buflen<0 || !buf) buflen = 0;
-	  db->argv[i].type = SQL_BINARY;
-	  db->argv[i].ctype = SQL_C_BINARY;
-	  db->argv[i].len = (SQLLEN) buflen;
-	  db->argv[i].buflen = (SQLLEN) buflen;
-	  db->argv[i].prec = (SQLLEN) buflen;
-	  if (buflen > 0) {
-	    if (!(db->argv[i].data.buf = malloc(buflen)))
-	      return 0;
-	    memcpy(db->argv[i].data.buf, buf, (size_t) buflen);
-	  } else
-	    db->argv[i].data.buf = NULL;
-	  db->argv[i].ptr = db->argv[i].data.buf;
-	  return 1;
-	case 0:
-          db->argv[i].type = SQL_CHAR;
-          db->argv[i].ctype = SQL_C_DEFAULT;
-          db->argv[i].len = SQL_NULL_DATA;
-          db->argv[i].buflen = 0;
-          /* FIXME: The prec value should actually be zero, but again MS Access
-             doesn't seem to like zero values here. Hopefully this doesn't mess
-             things up with other ODBC drivers. */
-          db->argv[i].prec = 1;
-          db->argv[i].data.buf = NULL;
-          db->argv[i].ptr = NULL;
-          return 1;
-	default: 
-	  free(elems);
-	  return 0;
+  } else if (pure_is_tuplev(x, &nelems, NULL) && nelems==2) {
+    pure_expr **elems;
+    pure_is_tuplev(x, &nelems, &elems);
+    if (!pure_is_pointer(elems[1], (void**)&buf)) {
+      free(elems);
+      return 0;
     }
+    if (pure_is_int(elems[0], &iv))
+      buflen = (int64_t)iv;
+    else if (pure_is_mpz(elems[0], &z)) {
+      mpz_clear(z);
+      buflen = pure_get_long(elems[0]);
+    } else {
+      free(elems);
+      return 0;
+    }
+    free(elems);
+    if (buflen<0 || !buf) buflen = 0;
+    db->argv[i].type = SQL_BINARY;
+    db->argv[i].ctype = SQL_C_BINARY;
+    db->argv[i].len = (SQLLEN) buflen;
+    db->argv[i].buflen = (SQLLEN) buflen;
+    db->argv[i].prec = (SQLLEN) buflen;
+    if (buflen > 0) {
+      if (!(db->argv[i].data.buf = malloc(buflen)))
+	return 0;
+      memcpy(db->argv[i].data.buf, buf, (size_t) buflen);
+    } else
+      db->argv[i].data.buf = NULL;
+    db->argv[i].ptr = db->argv[i].data.buf;
+    return 1;
+  } else if (pure_is_sqlnull(x)) {
+    db->argv[i].type = SQL_CHAR;
+    db->argv[i].ctype = SQL_C_DEFAULT;
+    db->argv[i].len = SQL_NULL_DATA;
+    db->argv[i].buflen = 0;
+    /* FIXME: The prec value should actually be zero, but again MS Access
+       doesn't seem to like zero values here. Hopefully this doesn't mess
+       things up with other ODBC drivers. */
+    db->argv[i].prec = 1;
+    db->argv[i].data.buf = NULL;
+    db->argv[i].ptr = NULL;
+    return 1;
   } else
     return 0;
 }
