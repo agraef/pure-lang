@@ -27,6 +27,7 @@ ODBCLIB = -lodbc
 ifneq "$(findstring -mingw,$(host))" ""
 # Windows
 DLL = .dll
+ODBCLIB = -lodbc32
 # This is needed to link with GMP.
 LDFLAGS = -Wl,--enable-auto-import
 endif
