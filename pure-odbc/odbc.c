@@ -46,6 +46,8 @@
   pure_app(pure_app(pure_symbol(pure_sym("odbc::error")), \
   pure_cstring_dup("other error")), pure_cstring_dup(msg))
 
+#define pure_sqlnull() pure_tuplel(0)
+
 /* Query parameter structure */
 
 typedef struct {
@@ -250,8 +252,9 @@ static pure_expr *pure_err(SQLHENV henv, SQLHDBC hdbc, SQLHSTMT hstmt)
     goto exit;
   return 0;
  exit:
-  return pure_app(pure_app(pure_symbol(pure_sym("odbc::error")), pure_cstring_dup((const char*)msg)),
-	       pure_cstring_dup((const char*)stat));
+  return pure_app(pure_app(pure_symbol(pure_sym("odbc::error")),
+			   pure_cstring_dup((const char*)msg)),
+		  pure_cstring_dup((const char*)stat));
 }
 
 pure_expr *odbc_sources()
@@ -290,7 +293,7 @@ pure_expr *odbc_sources()
 		l_desc, sizeof(l_desc), &l_len2) == SQL_SUCCESS;
     l_next = SQL_FETCH_NEXT)
     xv[n++] = pure_tuplel(2, pure_cstring_dup((const char*)l_dsn),
-		 pure_cstring_dup((const char*)l_desc));
+			  pure_cstring_dup((const char*)l_desc));
   /* free the environment handle */
   SQLFreeHandle(SQL_HANDLE_ENV, henv);
   res = pure_listv(n, xv);
@@ -352,7 +355,8 @@ pure_expr *odbc_drivers()
     for (k = 0, l_attrp = l_attr; *l_attrp;
 	 l_attrp = l_attrp+strlen((char*)l_attrp)+1)
       yv[k++] = pure_cstring_dup((const char*)l_attrp);
-    xv[n++] = pure_tuplel(2, pure_cstring_dup((const char*)l_drv), pure_listv(k, yv));
+    xv[n++] = pure_tuplel(2, pure_cstring_dup((const char*)l_drv),
+			  pure_listv(k, yv));
     free(yv);
   }
   /* free the environment handle */
@@ -539,10 +543,10 @@ pure_expr *odbc_getinfo(pure_expr *dbx, unsigned int info_type)
 /* Maximum length of string values. */
 #define SL 256
 
-#define checkstr(s,l) ((l==SQL_NULL_DATA)?pure_tuplel(0):pure_cstring_dup((char*)s))
-#define checkint(x,l) ((l==SQL_NULL_DATA)?pure_tuplel(0):pure_int(x))
-#define checkuint(x,l) ((l==SQL_NULL_DATA)?pure_tuplel(0):pure_int(x))
-#define checkbool(x,l) ((l==SQL_NULL_DATA)?pure_tuplel(0):pure_int(x))
+#define checkstr(s,l) ((l==SQL_NULL_DATA)?pure_sqlnull():pure_cstring_dup((char*)s))
+#define checkint(x,l) ((l==SQL_NULL_DATA)?pure_sqlnull():pure_int(x))
+#define checkuint(x,l) ((l==SQL_NULL_DATA)?pure_sqlnull():pure_int(x))
+#define checkbool(x,l) ((l==SQL_NULL_DATA)?pure_sqlnull():pure_int(x))
 
 pure_expr *odbc_typeinfo(pure_expr *dbx, int id)
 {
@@ -597,25 +601,25 @@ pure_expr *odbc_typeinfo(pure_expr *dbx, int id)
 	     goto fatal;
 	 }
 	 xs[n++] = pure_tuplel(19,
-			    checkstr(name, len[1]),
-			    checkint(type, len[2]),
-			    checkuint(prec, len[3]),
-			    checkstr(prefix, len[4]),
-			    checkstr(suffix, len[5]),
-			    checkstr(params, len[6]),
-			    checkint(nullable, len[7]),
-			    checkbool(case_sen, len[8]),
-			    checkint(searchable, len[9]),
-			    checkbool(unsign, len[10]),
-			    checkbool(money, len[11]),
-			    checkbool(auto_inc, len[12]),
-			    checkstr(local_name, len[13]),
-			    checkint(min_scale, len[14]),
-			    checkint(max_scale, len[15]),
-			    checkint(sql_type, len[16]),
-			    checkint(subcode, len[17]),
-			    checkuint(prec_radix, len[18]),
-			    checkint(intv_prec, len[19]));
+			       checkstr(name, len[1]),
+			       checkint(type, len[2]),
+			       checkuint(prec, len[3]),
+			       checkstr(prefix, len[4]),
+			       checkstr(suffix, len[5]),
+			       checkstr(params, len[6]),
+			       checkint(nullable, len[7]),
+			       checkbool(case_sen, len[8]),
+			       checkint(searchable, len[9]),
+			       checkbool(unsign, len[10]),
+			       checkbool(money, len[11]),
+			       checkbool(auto_inc, len[12]),
+			       checkstr(local_name, len[13]),
+			       checkint(min_scale, len[14]),
+			       checkint(max_scale, len[15]),
+			       checkint(sql_type, len[16]),
+			       checkint(subcode, len[17]),
+			       checkuint(prec_radix, len[18]),
+			       checkint(intv_prec, len[19]));
 	 break;
        case SQL_NO_DATA_FOUND:
 	 break;
@@ -681,8 +685,8 @@ pure_expr *odbc_tables(pure_expr *dbx)
 	     goto fatal;
 	 }
 	 xs[n++] = pure_tuplel(2,
-			    checkstr(name, len[3]),
-			    checkstr(type, len[4]));
+			       checkstr(name, len[3]),
+			       checkstr(type, len[4]));
 	 break;
        case SQL_NO_DATA_FOUND:
 	 break;
@@ -752,10 +756,10 @@ pure_expr *odbc_columns(pure_expr *dbx, const char *tab)
 	     goto fatal;
 	 }
 	 xs[n++] = pure_tuplel(4,
-			    checkstr(name, len[4]),
-			    checkstr(type, len[6]),
-			    checkstr(nullable, len[18]),
-			    checkstr(deflt, len[13]));
+			       checkstr(name, len[4]),
+			       checkstr(type, len[6]),
+			       checkstr(nullable, len[18]),
+			       checkstr(deflt, len[13]));
 	 break;
        case SQL_NO_DATA_FOUND:
 	 break;
@@ -889,9 +893,9 @@ pure_expr *odbc_foreign_keys(pure_expr *dbx, const char *tab)
 	     goto fatal;
 	 }
 	 xs[n++] = pure_tuplel(3,
-			    checkstr(name, len[8]),
-			    checkstr(pktabname, len[3]),
-			    checkstr(pkname, len[4]));
+			       checkstr(name, len[8]),
+			       checkstr(pktabname, len[3]),
+			       checkstr(pkname, len[4]));
 	 break;
        case SQL_NO_DATA_FOUND:
 	 break;
@@ -1006,8 +1010,8 @@ pure_expr *odbc_sql_exec(pure_expr *dbx, const char *query, pure_expr *args)
       goto fatal;
     for (i = 0; i < cols; i++) {
       buf[0] = 0;
-      if ((ret = SQLDescribeCol(db->hstmt, i+1, (SQLCHAR*)buf, sizeof(buf), NULL,
-				&coltype[i], NULL, NULL, NULL))
+      if ((ret = SQLDescribeCol(db->hstmt, i+1, (SQLCHAR*)buf, sizeof(buf),
+				NULL, &coltype[i], NULL, NULL, NULL))
 	  != SQL_SUCCESS &&
 	  ret != SQL_SUCCESS_WITH_INFO) {
 	int j;
@@ -1084,7 +1088,7 @@ pure_expr *odbc_sql_fetch(pure_expr *dbx)
 	    ret != SQL_SUCCESS_WITH_INFO)
 	  goto err2;
 	if (len == SQL_NULL_DATA)
-	  xs[i] = pure_tuplel(0);
+	  xs[i] = pure_sqlnull();
 	else
 	  xs[i] = pure_int(iv);
 	break;
@@ -1097,7 +1101,7 @@ pure_expr *odbc_sql_fetch(pure_expr *dbx)
 	    ret != SQL_SUCCESS_WITH_INFO)
 	  goto err2;
 	if (len == SQL_NULL_DATA)
-	  xs[i] = pure_tuplel(0);
+	  xs[i] = pure_sqlnull();
 	else {
 	  mpz_t z;
 	  mpz_init(z);
@@ -1116,7 +1120,7 @@ pure_expr *odbc_sql_fetch(pure_expr *dbx)
 	    ret != SQL_SUCCESS_WITH_INFO)
 	  goto err2;
 	if (len == SQL_NULL_DATA)
-	  xs[i] = pure_tuplel(0);
+	  xs[i] = pure_sqlnull();
 	else
 	  xs[i] = pure_double(fv);
 	break;
@@ -1158,7 +1162,7 @@ pure_expr *odbc_sql_fetch(pure_expr *dbx)
 	  }
 	}
 	if (len == SQL_NULL_DATA)
-	  xs[i] = pure_tuplel(0);
+	  xs[i] = pure_sqlnull();
 	else if (total == 0) {
 	  xs[i] = pure_tuplel(2, pure_bigintval(pure_long(0)),
 			      pure_pointer(NULL));
@@ -1212,7 +1216,7 @@ pure_expr *odbc_sql_fetch(pure_expr *dbx)
 	  }
 	}
 	if (len == SQL_NULL_DATA)
-	  xs[i] = pure_tuplel(0);
+	  xs[i] = pure_sqlnull();
 	else {
 	  xs[i] = pure_cstring_dup(buf);
 	  if (sz > BUFSZ) {
@@ -1285,8 +1289,8 @@ pure_expr *odbc_sql_more(pure_expr *dbx)
       goto fatal;
     for (i = 0; i < cols; i++) {
       buf[0] = 0;
-      if ((ret = SQLDescribeCol(db->hstmt, i+1, (SQLCHAR*)buf, sizeof(buf), NULL,
-				&coltype[i], NULL, NULL, NULL))
+      if ((ret = SQLDescribeCol(db->hstmt, i+1, (SQLCHAR*)buf, sizeof(buf),
+				NULL, &coltype[i], NULL, NULL, NULL))
 	  != SQL_SUCCESS &&
 	  ret != SQL_SUCCESS_WITH_INFO) {
 	int j;
