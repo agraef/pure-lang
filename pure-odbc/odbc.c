@@ -964,7 +964,6 @@ pure_expr *odbc_sql_exec(pure_expr *dbx, const char *query, pure_expr *args)
 	     db->argv[i].type == SQL_CHAR ||
 	     db->argv[i].type == SQL_BINARY) &&
 	    !db->argv[i].data.buf;
-	  free_args(db);
 	  if (alloc_error)
 	    goto fatal;
 	  else
