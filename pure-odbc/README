@@ -2,18 +2,19 @@
 PURE-ODBC - ODBC interface for the Pure programming language
 ========= = ==== ========= === === ==== =========== ========
 
-This module provides a simple ODBC interface for the Pure programming language,
-which lets you access a large variety of open source and commercial database
-systems from Pure. ODBC ("Open Database Connectivity") was originally developed
-by Microsoft for Windows, but is now available on many different platforms,
-and (at least) two open source implementations exist for Unix-like systems
-(iODBC [http://www.iodbc.org/] and unixODBC [http://www.unixodbc.org/]). ODBC
-has become the industry standard for portable and vendor independent database
-access. Most modern relational databases provide an ODBC interface so that
-they can be used with this module. This includes the popular open source DBMSs
-MySQL [http://www.mysql.com/] and PostgreSQL [http://www.postgresql.org/]. The
-module provides the necessary operations to connect to an ODBC data source and
-retrieve or modify data using SQL statements.
+This module provides a simple ODBC interface for the Pure programming
+language, which lets you access a large variety of open source and commercial
+database systems from Pure. ODBC a.k.a. "Open Database Connectivity" was
+originally developed by Microsoft for Windows, but is now available on many
+different platforms, and two open source implementations exist for Unix-like
+systems: iODBC (http://www.iodbc.org) and unixODBC (http://www.unixodbc.org).
+
+ODBC has become the industry standard for portable and vendor independent
+database access. Most modern relational databases provide an ODBC interface so
+that they can be used with this module. This includes the popular open source
+DBMSs MySQL (http://www.mysql.com) and PostgreSQL (http://www.postgresql.org).
+The module provides the necessary operations to connect to an ODBC data source
+and retrieve or modify data using SQL statements.
 
 To make this module work, you must have an ODBC installation on your system,
 as well as the driver backend for the DBMS you want to use (and, of course,
@@ -104,11 +105,11 @@ driver you can connect to a database file test.mdb as follows:
 
 > odbc::connect "DRIVER=Microsoft Access Driver (*.mdb);DBQ=test.mdb";
 
-The 'odbc::connect' function returns a pointer to an 'ODBCHandle' object
-which is used to refer to the database connection in the other routines
-provided by this module. An ODBCHandle object is closed automatically
-when it is no longer accessible. You can also close it explicitly with
-a call to the 'odbc::disconnect' function:
+The 'odbc::connect' function returns a pointer to an 'ODBCHandle' object which
+is used to refer to the database connection in the other routines provided by
+this module. An ODBCHandle object is closed automatically when it is no longer
+accessible. You can also close it explicitly with a call to the
+'odbc::disconnect' function:
 
 > odbc::disconnect db;
 
@@ -159,8 +160,8 @@ explanation):
 
 Moreover, information about the tables in the current database, as well as the
 structure of the tables and their primary and foreign keys can be retrieved
-with the odbc::tables, odbc::columns, odbc::primary_keys and odbc::foreign_keys
-functions:
+with the odbc::tables, odbc::columns, odbc::primary_keys and
+odbc::foreign_keys functions:
 
 > odbc::tables db;
 [("event","TABLE"),("pet","TABLE")]
@@ -367,15 +368,15 @@ Whistler
 Slim
 ()
 
-Only one row is in memory at any time while the 'do' function is in progress.
-This keeps memory requirements much lower than when using the odbc::sql
-function which first loads the entire result set into memory. Another
-advantage is that only those data rows are fetched from the database which are
-actually needed in the course of the computation, which can speed up the
-processing significantly if only a part of the result set is processed. For
+Here only one row is in memory at any time while the 'do' function is in
+progress. This keeps memory requirements much lower than when using the
+odbc::sql function which first loads the entire result set into memory.
+Another advantage is that only those data rows are fetched from the database
+which are actually needed in the course of the computation. This can speed up
+the processing significantly if only a part of the result set is needed. For
 instance, in the following example we only look at the first two data rows
 until the desired row is found, so the remaining rows are never fetched from
-the database.
+the database:
 
 > head [row | row@(name:_) = tail $ odbc::lsql db "select * from pet" [];
 >             name == "Claws"];
@@ -387,13 +388,13 @@ time/space tradeoffs when deciding which functions to use in a given
 situation.
 
 Also note that when using lsql/lmsql, the query remains in progress as long as
-the result list is still being processed. This is different from sql/msql
+the result list is still being processed. (This is different from sql/msql
 which load the complete result set(s) at once after which the query is
-terminated immediately. Since only one query can be executed per database
+terminated immediately.) Since only one query can be executed per database
 connection, this means that only one lazy result set can be processed per
 database connection at any time. However, as with the lowlevel operations it
-is possible to do several lazy queries at once if you assign them to different
-database connections.
+is possible to do several lazy queries simultaneously if you assign them to
+different database connections.
 
 
 ERROR HANDLING
@@ -410,8 +411,8 @@ report like the following:
 odbc::error "[TCX][MyODBC]Table 'test.pets' doesn't exist" "S1000"
 
 You can check for such return values and take some appropriate action. By
-redefining odbc::error accordingly, you can also have it generate exceptions or
-print an error message. For instance:
+redefining odbc::error accordingly, you can also have it generate exceptions
+or print an error message. For instance:
 
 odbc::error MSG STATE	= fprintf ERROR "%s (%s)\n" (MSG,STATE) $$ ();
 
@@ -445,8 +446,8 @@ FURTHER INFORMATION AND EXAMPLES
 ======= =========== === ========
 
 For further details about the operations provided by this module please see
-the odbc.pure file. A sample script illustrating the usage of the module can be
-found in the examples directory.
+the odbc.pure file. A sample script illustrating the usage of the module can
+be found in the examples directory.
 
 
 Enjoy! :)
