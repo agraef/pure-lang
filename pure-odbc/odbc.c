@@ -176,7 +176,7 @@ static int set_arg(ODBCHandle *db, int i, pure_expr *x)
             return 0;
           }
 	  free(elems);
-	  if (buflen<0) buflen = 0;
+	  if (buflen<0 || !buf) buflen = 0;
 	  db->argv[i].type = SQL_BINARY;
 	  db->argv[i].ctype = SQL_C_BINARY;
 	  db->argv[i].len = (SQLLEN) buflen;
