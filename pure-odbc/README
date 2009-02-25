@@ -186,9 +186,9 @@ odbc::foreign_keys functions:
 [("event","TABLE"),("pet","TABLE")]
 
 > odbc::columns db "pet";
-[("name","varchar","NO","''"),("owner","varchar","YES",()),
-("species","varchar","YES",()),("sex","char","YES",()),
-("birth","date","YES",()),("death","date","YES",())]
+[("name","varchar","NO","''"),("owner","varchar","YES",odbc::SQLNULL),
+("species","varchar","YES",odbc::SQLNULL),("sex","char","YES",odbc::SQLNULL),
+("birth","date","YES",odbc::SQLNULL),("death","date","YES",odbc::SQLNULL)]
 
 > odbc::primary_keys db "pet";
 ["name"]
@@ -198,10 +198,9 @@ odbc::foreign_keys functions:
 
 This often provides a convenient and portable means to retrieve basic
 information about table structures, at least on RDBMS which properly implement
-the corresponding ODBC calls (which unfortunately isn't the case for all ODBC
-drivers yet). Also note that while this information is also available through
-special system catalogs in most databases, the details of accessing these vary
-a lot among implementations.
+the corresponding ODBC calls. Also note that while this information is also
+available through special system catalogs in most databases, the details of
+accessing these vary a lot among implementations.
 
 
 EXECUTING SQL QUERIES
@@ -242,7 +241,7 @@ Parameterized queries are particularly useful for the purpose of inserting
 data into a table:
 
 > odbc::sql db "insert into pet values (?,?,?,?,?,?)"
-> ["Puffball","Diane","hamster","f","1999-03-30",()];
+> ["Puffball","Diane","hamster","f","1999-03-30",odbc::SQLNULL];
 1
 
 In this case we could also have hard-coded the data to be inserted right into
@@ -254,22 +253,25 @@ applied to a whole collection of data rows, e.g., as follows:
 Parameterized queries also let you insert data which cannot be specified
 easily inside an SQL query, such as long strings or binary data.
 
-The following types of result and parameter values are recognized and
+The following SQL types of result and parameter values are recognized and
 converted to/from the corresponding Pure types:
 
 SQL value/type						Pure value/type
 ---------------------------------------------		-----------------
-NULL (no value)						()
+SQL NULL (no value)					odbc::SQLNULL
 integer types (INTEGER and friends)			int
 64-bit integers						bigint
 floating point types (REAL, FLOAT and friends)		double
 binary data (BINARY, BLOB, etc.)			(size, data)
 character strings (CHAR, VARCHAR, TEXT, etc.)		string
 
-Note that binary data is specified as a pair (size, data) consisting of an int
-or bigint 'size' which denotes the size of the data in bytes, and a pointer
-'data' (which must not be a null pointer unless 'size' is 0 as well) pointing
-to the binary data itself.
+Note the special constant (nullary symbol) odbc::SQLNULL which is used to
+represent SQL NULL values.
+
+Also note that binary data is specified as a pair (size, data) consisting of
+an int or bigint 'size' which denotes the size of the data in bytes, and a
+pointer 'data' (which must not be a null pointer unless 'size' is 0 as well)
+pointing to the binary data itself.
 
 All other SQL data (including, e.g., TIME, DATE and TIMESTAMP) is represented
 in Pure using its character representation, encoded as a Pure string.
@@ -399,7 +401,7 @@ the database:
 
 > head [row | row@(name:_) = tail $ odbc::lsql db "select * from pet" [];
 >             name == "Claws"];
-["Claws","Gwen","cat","m","1994-03-17",()]
+["Claws","Gwen","cat","m","1994-03-17",odbc::SQLNULL]
 
 On the other hand, lsql/lmsql will usually be somewhat slower than sql/msql if
 the entire result set is being processed. So you should always consider the
