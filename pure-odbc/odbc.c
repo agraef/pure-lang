@@ -42,10 +42,6 @@
 #include <gmp.h>
 #include <pure/runtime.h>
 
-#define error_handler(msg) \
-  pure_app(pure_app(pure_symbol(pure_sym("odbc::error")), \
-  pure_cstring_dup("other error")), pure_cstring_dup(msg))
-
 /* SQL NULL representation. */
 
 static int32_t sqlnull_sym = 0; /* FIXME: TLD */
@@ -267,6 +263,13 @@ static pure_expr *pure_err(SQLHENV henv, SQLHDBC hdbc, SQLHSTMT hstmt)
 		  pure_cstring_dup((const char*)stat));
 }
 
+static inline pure_expr* pure_err_internal(const char *msg)
+{
+  return pure_app(pure_app(pure_symbol(pure_sym("odbc::error")),
+			   pure_cstring_dup("[Pure ODBC]internal error")),
+		  pure_cstring_dup(msg));
+}
+
 pure_expr *odbc_sources()
 {
   SQLHENV henv;
@@ -339,7 +342,7 @@ pure_expr *odbc_drivers()
     n++;
   if (!(xv = (pure_expr **) malloc(n*sizeof(pure_expr*)))) {
     SQLFreeHandle(SQL_HANDLE_ENV, henv);
-    return error_handler("malloc error");
+    return pure_err_internal("insufficient memory");
   }
   /* retrieve the driver and descriptions */
   for (n = 0, l_next = SQL_FETCH_FIRST;
@@ -359,7 +362,7 @@ pure_expr *odbc_drivers()
 	pure_freenew(xv[i]);
       free(xv);
       SQLFreeHandle(SQL_HANDLE_ENV, henv);
-      return error_handler("malloc error");
+      return pure_err_internal("insufficient memory");
     }
     /* get the attribute strings */
     for (k = 0, l_attrp = l_attr; *l_attrp;
@@ -383,7 +386,7 @@ pure_expr *odbc_connect(char* conn)
     long ret;
     short buflen;
     char buf[1024];
-    if (!db) return error_handler("malloc error");
+    if (!db) return pure_err_internal("insufficient memory");
     db->magic = ODBC_MAGIC;
     /* create the environment handle */
     if ((ret = SQLAllocHandle(SQL_HANDLE_ENV, NULL, &db->henv)) !=
@@ -536,7 +539,7 @@ pure_expr *odbc_getinfo(pure_expr *dbx, unsigned int info_type)
 			   info, sizeof(info), &len)) == SQL_SUCCESS ||
 	ret == SQL_SUCCESS_WITH_INFO) {
       if (!(buf = (unsigned char*) malloc(len + 1)))
-	return error_handler("malloc error");
+	return pure_err_internal("insufficient memory");
       memcpy(buf, info, len);
       buf[len] = 0;
       return pure_sentry(pure_symbol(pure_sym("free")), pure_pointer(buf));
@@ -573,7 +576,7 @@ pure_expr *odbc_typeinfo(pure_expr *dbx, int id)
     SWORD  sql_type, subcode, intv_prec;
     UDWORD prec_radix;
 
-    if (!xs) return error_handler("malloc error");
+    if (!xs) return pure_err_internal("insufficient memory");
     sql_close(db);
 
     ret = SQLBindCol(db->hstmt,  1, SQL_C_CHAR,  name,       SL, &len[1]);
@@ -659,7 +662,7 @@ pure_expr *odbc_typeinfo(pure_expr *dbx, int id)
     free(xs);
     SQLFreeStmt(db->hstmt, SQL_UNBIND);
     SQLFreeStmt(db->hstmt, SQL_CLOSE);
-    return error_handler("realloc error");
+    return pure_err_internal("insufficient memory");
   } else
     return 0;
 }
@@ -674,7 +677,7 @@ pure_expr *odbc_tables(pure_expr *dbx)
     UCHAR  name[SL], type[SL];
     SDWORD len[6], ret;
 
-    if (!xs) return error_handler("malloc error");
+    if (!xs) return pure_err_internal("insufficient memory");
     sql_close(db);
 
     ret = SQLBindCol(db->hstmt,  3, SQL_C_CHAR,  name,       SL, &len[3]);
@@ -726,7 +729,7 @@ pure_expr *odbc_tables(pure_expr *dbx)
     free(xs);
     SQLFreeStmt(db->hstmt, SQL_UNBIND);
     SQLFreeStmt(db->hstmt, SQL_CLOSE);
-    return error_handler("realloc error");
+    return pure_err_internal("insufficient memory");
   } else
     return 0;
 }
@@ -741,8 +744,11 @@ pure_expr *odbc_columns(pure_expr *dbx, const char *tab)
     UCHAR  name[SL], type[SL], nullable[SL], deflt[SL];
     SDWORD len[19], ret;
 
-    if (!xs) return error_handler("malloc error");
-    if (!tab) { free(xs); return error_handler("invalid table name string"); }
+    if (!xs) return pure_err_internal("insufficient memory");
+    if (!tab) {
+      free(xs);
+      return pure_err_internal("invalid table name string");
+    }
     sql_close(db);
 
     ret = SQLBindCol(db->hstmt,  4, SQL_C_CHAR,  name,       SL, &len[4]);
@@ -799,7 +805,7 @@ pure_expr *odbc_columns(pure_expr *dbx, const char *tab)
     free(xs);
     SQLFreeStmt(db->hstmt, SQL_UNBIND);
     SQLFreeStmt(db->hstmt, SQL_CLOSE);
-    return error_handler("realloc error");
+    return pure_err_internal("insufficient memory");
   } else
     return 0;
 }
@@ -814,8 +820,11 @@ pure_expr *odbc_primary_keys(pure_expr *dbx, const char *tab)
     UCHAR  name[SL];
     SDWORD len[5], ret;
 
-    if (!xs) return error_handler("malloc error");
-    if (!tab) { free(xs); return error_handler("invalid table name string"); }
+    if (!xs) return pure_err_internal("insufficient memory");
+    if (!tab) {
+      free(xs);
+      return pure_err_internal("invalid table name string");
+    }
     sql_close(db);
 
     ret = SQLBindCol(db->hstmt,  4, SQL_C_CHAR,  name,       SL, &len[4]);
@@ -864,7 +873,7 @@ pure_expr *odbc_primary_keys(pure_expr *dbx, const char *tab)
     free(xs);
     SQLFreeStmt(db->hstmt, SQL_UNBIND);
     SQLFreeStmt(db->hstmt, SQL_CLOSE);
-    return error_handler("realloc error");
+    return pure_err_internal("insufficient memory");
   } else
     return 0;
 }
@@ -879,8 +888,11 @@ pure_expr *odbc_foreign_keys(pure_expr *dbx, const char *tab)
     UCHAR  name[SL], pktabname[SL], pkname[SL];
     SDWORD len[9], ret;
 
-    if (!xs) return error_handler("malloc error");
-    if (!tab) { free(xs); return error_handler("invalid table name string"); }
+    if (!xs) return pure_err_internal("insufficient memory");
+    if (!tab) {
+      free(xs);
+      return pure_err_internal("invalid table name string");
+    }
     sql_close(db);
 
     ret = SQLBindCol(db->hstmt,  3, SQL_C_CHAR,  pktabname,  SL, &len[3]);
@@ -935,7 +947,7 @@ pure_expr *odbc_foreign_keys(pure_expr *dbx, const char *tab)
     free(xs);
     SQLFreeStmt(db->hstmt, SQL_UNBIND);
     SQLFreeStmt(db->hstmt, SQL_CLOSE);
-    return error_handler("realloc error");
+    return pure_err_internal("insufficient memory");
   } else
     return 0;
 }
@@ -959,7 +971,7 @@ pure_expr *odbc_sql_exec(pure_expr *dbx, const char *query, pure_expr *args)
     /* prepare statement */
     if (!query) {
       free(xv);
-      return error_handler("invalid query string");
+      return pure_err_internal("invalid query string");
     }
     if ((ret = SQLPrepare(db->hstmt, (SQLCHAR*)query, SQL_NTS))
 	!= SQL_SUCCESS &&
@@ -1058,7 +1070,7 @@ pure_expr *odbc_sql_exec(pure_expr *dbx, const char *query, pure_expr *args)
     free_args(db);
     free(xv);
     SQLFreeStmt(db->hstmt, SQL_CLOSE);
-    res = error_handler("alloc error");
+    res = pure_err_internal("insufficient memory");
   exit:
     if (coltype) free(coltype);
     return res;
@@ -1146,7 +1158,7 @@ pure_expr *odbc_sql_fetch(pure_expr *dbx)
 	      ret == SQL_NO_DATA) {
 	    if (len == SQL_NULL_DATA)
 	      break;
-	    if (INT_MAX - len <= total)
+	    if (total+len < total)
 	      goto fatal2;
 	    else
 	      total += len;
@@ -1156,7 +1168,7 @@ pure_expr *odbc_sql_fetch(pure_expr *dbx)
 	    char *buf1;
 	    if (len == SQL_NULL_DATA)
 	      break;
-	    if (INT_MAX - BUFSZ <= total)
+	    if (total+BUFSZ < total)
 	      goto fatal2;
 	    else
 	      total += actsz;
@@ -1200,7 +1212,7 @@ pure_expr *odbc_sql_fetch(pure_expr *dbx)
 	      ret == SQL_NO_DATA) {
 	    if (len == SQL_NULL_DATA)
 	      break;
-	    if (INT_MAX - len <= total)
+	    if (total+len < total)
 	      goto fatal2;
 	    else
 	      total += len;
@@ -1210,7 +1222,7 @@ pure_expr *odbc_sql_fetch(pure_expr *dbx)
 	    char *buf1;
 	    if (len == SQL_NULL_DATA)
 	      break;
-	    if (INT_MAX - BUFSZ <= total)
+	    if (total+BUFSZ < total)
 	      goto fatal2;
 	    else
 	      total += actsz-1;
@@ -1254,7 +1266,7 @@ pure_expr *odbc_sql_fetch(pure_expr *dbx)
     for (j = 0; j < i; j++) pure_freenew(xs[j]);
     free(xs);
   fatal:
-    res = error_handler("alloc or other error");
+    res = pure_err_internal("insufficient memory");
   exit:
     if (buf) free(buf);
     return res;
@@ -1323,7 +1335,7 @@ pure_expr *odbc_sql_more(pure_expr *dbx)
     res = pure_err(db->henv, db->hdbc, db->hstmt);
     goto exit;
   fatal:
-    res = error_handler("malloc error");
+    res = pure_err_internal("insufficient memory");
   exit:
     if (coltype) free(coltype);
     return res;
