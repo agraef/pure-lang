@@ -132,7 +132,6 @@ static int set_arg(ODBCHandle *db, int i, pure_expr *x)
   double fv;
   char *s;
   mpz_t z;
-  size_t size;
   size_t nelems;
   unsigned char *buf;
   int64_t buflen;
@@ -1168,9 +1167,11 @@ pure_expr *odbc_sql_fetch(pure_expr *dbx)
 	    char *buf1;
 	    if (len == SQL_NULL_DATA)
 	      break;
+#if 0
 	    if (total+BUFSZ < total)
 	      goto fatal2;
 	    else
+#endif
 	      total += actsz;
 	    if (!(buf1 = realloc(buf, sz+BUFSZ)))
 	      goto fatal2;
@@ -1222,9 +1223,11 @@ pure_expr *odbc_sql_fetch(pure_expr *dbx)
 	    char *buf1;
 	    if (len == SQL_NULL_DATA)
 	      break;
+#if 0
 	    if (total+BUFSZ < total)
 	      goto fatal2;
 	    else
+#endif
 	      total += actsz-1;
 	    if (!(buf1 = realloc(buf, sz+BUFSZ)))
 	      goto fatal2;
