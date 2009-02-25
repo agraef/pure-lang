@@ -12,17 +12,20 @@ using namespace odbc;
 
 /* CONFIG SECTION -- Customize this for your local setup. *******************/
 
-/* Here you have to specify the connect string which lets you connect to the
-   database you want to use. The details are system-specific; on some systems
-   it is sufficient to fill in the DSN field, on others you may have to also
-   specify HOST, DATABASE, UID and PWD. See odbc.q for the available options.
-   Some examples are provided below. */
+/* The connect string specifies the database you want to use. See the README
+   file for details. By default this is set up for the SQLite ODBC driver,
+   also described in the README. You can find this driver at
+   http://www.ch-werner.de/sqliteodbc. There's also a Windows installer
+   available there, which is all that's needed to make this example work. */
 
-let connection = "DSN=myodbc"; // default MySQL database and user
+let connection = "DSN=SQLite3 Datasource;Database=test.db";
+
+/* Other examples. If you don't want to use SQLite, uncomment one and edit as
+   needed. */
+
+// let connection = "DSN=myodbc"; // default MySQL database and user
 // let connection = "DSN=myodbc;UID=root;PWD="; // specify user and password
 // let connection = "DSN=myodbc;DATABASE=test"; // specify the default database
-// let connection = "DSN=SQLite3 Datasource;Database=test.db";
-       // connect to an SQLite database (requires the sqliteodbc driver)
 // let connection = "FILEDSN=test.dsn"; // use a .dsn file (Windows)
 // let connection = "DRIVER=Microsoft Access Driver (*.mdb);DBQ=test.mdb";
        // connect to an existing MS access database (Windows)
@@ -112,7 +115,7 @@ params desc		= join "," (map (cst "?") desc);
 
 mysql			= exec prompt;
 
-prompt			= fputs "\nSQL> " stdout $$ flush $$ gets;
+prompt			= fputs "\nSQL> " stdout $$ fflush stdout $$ gets;
 
 exec query::string	= catch report (display (msql db query [])) $$ mysql
 			    if ~ null query;
