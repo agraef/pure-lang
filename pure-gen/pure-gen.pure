@@ -339,8 +339,12 @@ basic_type (const_type t) = const_type (basic_type t);
 decl_types (CFDefExt _) = [];
 decl_types (CDeclExt d fname) = decl_types1 d fname;
 
-decl_types1 d@(CDecl decl_specs [] ) fname = [ basic_type (type_spec decl_specs fname) ];
-decl_types1 d@(CDecl decl_specs init_declr_list ) fname = decl_types2 d fname;
+decl_types1 d@(CDecl decl_specs [] ) fname =
+  catch (\_->warning 2 $ sprintf "Unknown declaration type: %s" (str d) $$ [])
+  [ basic_type (type_spec decl_specs fname) ];
+decl_types1 d@(CDecl decl_specs init_declr_list ) fname =
+  catch (\_->warning 2 $ sprintf "Unknown declaration type: %s" (str d) $$ [])
+  (decl_types2 d fname);
 
 decl_types2 d@(CDecl decl_specs init_declr_list) fname = 
   case init_declr_list of 
