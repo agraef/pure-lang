@@ -1009,6 +1009,11 @@ defnum x name::string = checknum name opt if ~null opt
 when opt = opts!name end;
 defnum x _ = x otherwise;
 
+split_pat x::string
+= x!!(0..i-1), x!!(i+2..#x-1) if i>=0 when i = index x "::" end;
+= x!!(0..i-1), x!!(i+1..#x-1) if i>=0 when i = index x ";" end;
+= "", x;
+
 let iface_opt = opts!"--interface";
 let in_name = head args;
 let base = strip_ext $ basename in_name;
@@ -1022,19 +1027,9 @@ let libnames =
   else if any ((==) (opts!"--interface"))
     ["c","c-ffi","c-auto","c-ffi-auto"] then [c_base]
   else [];
-let [glob_pat, regex_pat] =
-  case split "::" $ opts!"--select" of
-    [] = ["", ""];
-    [x] = ["", x];
-    x:xs = [x, join "::" xs];
-  end;
+let [glob_pat, regex_pat] = list $ split_pat $ opts!"--select";
 let [glob_patx, regex_patx] = if member opts "--exclude" then
-  (case split "::" $ opts!"--exclude" of
-     [] = ["", ""];
-     [x] = ["", x];
-     x:xs = [x, join "::" xs];
-   end)
-  else [(),()];
+  list $ split_pat $ opts!"--exclude" else [(),()];
 let nmspace = opts!"--namespace";
 let funpfx = opts!"--prefix";
 let funpat = regex_pat, regex_patx;
