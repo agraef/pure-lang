@@ -1,5 +1,6 @@
 
-/* Copyright (c) 2008 by Albert Graef <Dr.Graef@t-online.de>.
+/* Copyright (c) 2009 by Albert Graef <Dr.Graef@t-online.de>.
+   Copyright (c) 2009 by Jiri Spitz <jiri.spitz@bluetone.cz>.
 
    This file is part of the Pure programming language and system.
 
