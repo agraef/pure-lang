@@ -15,12 +15,12 @@ dump-ast.hs for pertinent license and copyright information.
 Requirements
 ============
 
-pure-gen currently requires gcc (-E) as the C preprocessor. It also needs a
-version of gcc which understands the -fdirectives-only option, which means gcc
->= 4.3. It will run with older versions of gcc, but then you'll get an error
-message from gcc indicating that it doesn't understand the -fdirectives-only
-option. pure-gen then won't be able to extract any '#define'd constants from
-the header files.
+pure-gen currently requires gcc (-E) as the C preprocessor *at runtime*. It
+also needs a version of gcc which understands the -fdirectives-only option,
+which means gcc >= 4.3. It will run with older versions of gcc, but then
+you'll get an error message from gcc indicating that it doesn't understand the
+-fdirectives-only option. pure-gen then won't be able to extract any
+'#define'd constants from the header files.
 
 Installation
 ============
@@ -49,29 +49,8 @@ Language.C by running 'cabal install language-c' (make sure to do 'cabal
 update' first so that you get the latest version).
 
 To make this a little easier for people not familiar with Haskell, we have
-uploaded statically linked binaries of dump-ast for Linux, both 32 and 64
-bits, to the pure-lang Google Group files area:
-http://groups.google.com/group/pure-lang/files
-
-Thus, if you're on a recent x86/64 Linux system and can't/don't want to
-install ghc, you can try to put the appropriate binary into the source
-directory, rename it to 'dump-ast' and then run 'sudo make install' without
-running 'make'. If you're lucky this might even work. (The binaries are still
-linked dynamically against libgmp and libc, there seems no way to avoid
-that. So if the binaries don't work on your system because the requisite
-libraries don't match, then you'll just have to bite the bullet and compile
-dump-ast yourself.)
-
-NOTE: The sources of the dump-ast program can be found in dump-ast.hs. This is
-a Haskell program which parses a C file given on the command line and writes
-the abstract syntax tree (AST) as a collection of terms in Pure-readable
-format to stdout. Normally you won't have to invoke dump-ast yourself since
-this is handled by pure-gen automatically, but the program may also be useful
-for other utilities which have to parse C header files. dump-ast takes the
-name of the file to be parsed as the *last* command line parameter, all other
-command line arguments are just passed on to the C preprocessor without any
-checking. Also note that dump-ast calls gcc to do the preprocessing, so on
-Windows you will probably need MinGW installed when running this program.
+uploaded binaries of dump-ast for Linux and Windows to the pure-lang Google
+Group files area, see README.dump-ast for details.
 
 Usage
 =====

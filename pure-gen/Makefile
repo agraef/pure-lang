@@ -19,7 +19,7 @@ pkgdatadir = $(libdir)/pure-gen-$(version)
 mandir = ${prefix}/share/man
 man1dir = $(mandir)/man1
 
-DISTFILES = COPYING Makefile README dump-ast.hs pure-gen.pure pure-gen.1 examples/*.templ
+DISTFILES = COPYING Makefile README README.dump-ast dump-ast.hs pure-gen.pure pure-gen.1 examples/*.templ
 
 all: dump-ast
 

@@ -1,0 +1,50 @@
+
+dump-ast
+========
+
+dump-ast is a Haskell program written by Scott E. Dillard which uses the
+Language.C library (http://www.sivity.net/projects/language.c) to parse a C
+file given on the command line and write the abstract syntax tree (AST) as a
+collection of terms in Pure-readable format to stdout. Note that dump-ast
+doesn't support all of Language.C's AST data right now, so at present it is
+most useful to parse C header files, which is what pure-gen needs.
+
+Normally you won't have to invoke dump-ast yourself since this is handled by
+pure-gen automatically, but the program may also be useful for other utilities
+which have to parse C header files. dump-ast takes the name of the file to be
+parsed as the *last* command line parameter, all other command line arguments
+are just passed on to the C preprocessor without any checking. Also note that
+dump-ast calls gcc to do the preprocessing, so on Windows you will need MinGW
+installed when running this program.
+
+The sources of the dump-ast program can be found in dump-ast.hs. Compilation
+is simple, just run 'ghc --make dump-ast.hs -o dump-ast'. The pure-gen
+Makefile does this for you. This needs ghc and Language.C, see the pure-gen
+README for information on how to get these.
+
+To make the installation a bit easier for people not familiar with Haskell, we
+have uploaded statically linked binaries of dump-ast for x86 Linux, both 32
+and 64 bits, to the pure-lang Google Group files area. You can find them at:
+
+http://groups.google.com/group/pure-lang/files
+
+Specifically, the following gzipped executables are available:
+
+http://pure-lang.googlegroups.com/web/dump-ast.32.gz (x86-32)
+http://pure-lang.googlegroups.com/web/dump-ast.64.gz (x86-64)
+
+These don't require any Haskell-specific libraries and so should work without
+having ghc and Language.C installed.
+
+Thus, if you're on a recent x86/64 Linux system and can't/don't want to
+install ghc, you can try to put the appropriate binary into the pure-gen
+source directory, rename it to 'dump-ast' and then run 'sudo make install'
+without running 'make'. If you're lucky this might even work. (The binaries
+are still linked dynamically against libgmp and libc, there seems no way to
+avoid that. So if the binaries don't work on your system because the requisite
+libraries don't match, then you'll just have to bite the bullet and compile
+dump-ast yourself.)
+
+Windows binaries are provided at the above location as well; these should work
+on any recent 32 bit Windows flavour. Note, however, that the latest Windows
+packages of Pure already include pure-gen and the dump-ast program.
