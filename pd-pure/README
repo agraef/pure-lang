@@ -1,204 +1,223 @@
 
+===================================
 pd-pure: Pd loader for Pure scripts
-======== == ====== === ==== =======
+===================================
 
-Copyright (c) 2009 by Albert Graef <Dr.Graef@t-online.de>
-Distributed under the GNU Public License V3, see COPYING for details.
+:Author: Albert Graef
+:Contact: Dr.Graef@t-online.de
+:Copyright: Copyright (c) 2009 by Albert Graef. Distributed under the GNU
+  Public License V3, see COPYING for details.
 
-This plugin lets you write external Pd control objects in Pure. Pure is a
-functional programming language based on the term rewriting calculus, see
-http://pure-lang.googlecode.com.
+This plugin lets you write external Pd_ control objects in Pure. Pure_ is a
+functional programming language based on the term rewriting calculus.
 
-This is still an experimental version, please report bugs to the author.
+.. _Pd: http://puredata.info/
+.. _Pure: http://pure-lang.googlecode.com/
 
-In particular, note that the embedded Pure interpreter uses the same kind of
-JIT compiler as the command line version, which may cause annoying delays
-during startup, since the Pure functions are compiled by the JIT when they are
-first used. (However, once all Pure objects have been compiled to native code,
-they are executed very efficiently.) With the current version of the LLVM JIT
-used by the Pure interpreter there's no easy way around this, but we hope to
-fix this issue in a future release.
+This is still an experimental version, please report bugs to the author. In
+particular, note that the embedded Pure interpreter uses the same kind of JIT
+compiler as the command line version, which may cause annoying delays during
+startup, since the Pure functions are compiled by the JIT when they are first
+used. (However, once all Pure objects have been compiled to native code, they
+are executed very efficiently.) With the current version of the LLVM JIT used
+by the Pure interpreter there's no easy way around this, but we hope to fix
+this issue in a future release.
+
+.. contents::
+.. sectnum::
+
+.. Note: If you're wondering about the funny formatting, this README
+   simultaneously serves to generate the documentation for this module
+   in a variety of formats, using the docutils text formatting system
+   (http://docutils.sourceforge.net/).
 
 Installation
 ============
 
 Windows users please see below.
 
-Usually, 'make && sudo make install' should do the trick. This will compile
+Usually, ``make && sudo make install`` should do the trick. This will compile
 the external (you need to have GNU make, Pd and Pure installed to do that) and
 install it in the lib/pd/extra/pure directory.
 
 The Makefile tries to guess the installation prefix under which Pd is
-installed. If it guesses wrong, you can tell it the right prefix with 'make
-prefix=/some/path'. Or you can specify the exact path of the lib/pd directory
-with 'make pdlibdir=/some/path'; by default the Makefile assumes
-$(prefix)/lib/pd.
+installed. If it guesses wrong, you can tell it the right prefix with ``make
+prefix=/some/path``. Or you can specify the exact path of the lib/pd directory
+with ``make pdlibdir=/some/path``; by default the Makefile assumes
+``$(prefix)/lib/pd``.
 
 The Makefile also tries to guess the host system type and set up some
 platform-specific things accordingly. If this doesn't work for your system
 then you'll have to edit the Makefile accordingly.
 
 After installation, you still have to tell Pd to load the Pure external at
-startup, either with the -lib option (pd -lib pure), or by specifying 'pure'
-in the File/Startup options. (The latter setting can be saved so that the Pure
-loader is always available when you run Pd.)
+startup, either with the ``-lib`` option (``pd -lib pure``), or by specifying
+``pure`` in the File/Startup options. (This setting can be saved so that the
+Pure loader is always available when you run Pd.)
 
 pd-pure on Windows
-------- -- -------
+------------------
 
 Loading the plugin dll on Windows doesn't work right now, so it's necessary to
 statically link the plugin into Pd. A suitably modified Pd version is
 available; see the Downloads page at http://pure-lang.googlecode.com and watch
-out for the latest pd-pure-x.y.zip package. Install this along with the Pure
-msi package and you should be set.
+out for the latest pd-pure msi package. Install this along with the Pure msi
+package and you should be set.
 
 Usage
 =====
 
 See the pure-help.pd patch for a few examples. Basically, to implement a Pd
-object named 'foo', you have to supply a Pure script named 'foo.pure' which
-defines a function 'foo' and anything else that it might need. Put that script
-in the same directory as the Pd patch in which you want to use the 'foo'
-object. The 'foo' function gets evaluated at object creation time, receiving
-any additional parameters the object is created with. The resulting Pure
-expression (which can also just be 'foo' itself) becomes the object executed
-at runtime, by passing Pd messages from the inlets as parameters, and routing
-the function results to the outlets of the object.
+object named ``foo``, you have to supply a Pure script named foo.pure which
+defines a function ``foo`` and anything else that it might need. Put that
+script in the same directory as the Pd patch in which you want to use the
+``foo`` object (or anywhere on Pd's search path). The ``foo`` function gets
+evaluated at object creation time, receiving any additional parameters the
+object is created with. The resulting Pure expression (which can also just be
+``foo`` itself) becomes the object executed at runtime, by passing Pd messages
+from the inlets as parameters, and routing the function results to the outlets
+of the object.
 
 Pd messages are translated to corresponding Pure expressions and vice versa in
 a straightforward fashion. Special support is provided for converting between
 the natural Pd and Pure representations of floating point numbers, symbols and
 lists. The following table summarizes the available conversions.
 
-Message Type	Pd		Pure
-------------	------------	--------------
-symbol		foo		foo
-		a&b		"a&b"
-float		float 1.23	1.23
-list		list 1 2 3	[1.0,2.0,3.0]
-other		foo a 2 3	foo a 2.0 3.0
+=============    ===============    ==================
+Message Type     Pd                 Pure
+=============    ===============    ==================
+symbol           ``foo``            ``foo``
+string           ``a&b``            ``"a&b"``
+float            ``float 1.23``     ``1.23``
+list             ``list 1 2 3``     ``[1.0,2.0,3.0]``
+other            ``foo a 2 3``      ``foo a 2.0 3.0``
+=============    ===============    ==================
 
 Note that Pd symbols which are no valid Pure symbols become strings in
 Pure. Conversely, both symbols and strings in Pure are mapped to corresponding
 Pd symbols. Pure (machine) integers and floating point values both become
-'float' messages in Pd. Pd list messages are translated to Pure list values,
+``float`` messages in Pd. Pd list messages are translated to Pure list values,
 while other aggregate messages are mapped to Pure applications (and vice
 versa).
 
 Simple Objects
-====== =======
+--------------
 
 By default, a Pure object has just one inlet and one outlet and thus acts like
 a simple function with no internal state. For instance, the following object
-accepts Pd 'float' messages and adds 5 to each received value:
+accepts Pd ``float`` messages and adds 5 to each received value::
 
-add5 x = x+5;
+  add5 x = x+5;
 
-In the Pd patch each [add5] object then has a single inlet supplying
+In the Pd patch each ``[add5]`` object then has a single inlet supplying
 parameters and a single outlet for results of the add5 function.
 
 Creation Arguments
-======== =========
+------------------
 
 You can parameterize an object with creation arguments, which are passed to
-the Pure function at object creation time. For instance:
+the Pure function at object creation time. For instance::
 
-add x y = x+y;
+  add x y = x+y;
 
-This object can then be invoked, e.g., as [add 5] in the Pd patch to supply
-the needed creation argument x.
+This object can then be invoked, e.g., as ``[add 5]`` in the Pd patch to
+supply the needed creation argument x.
 
 The [pure] Object
-=== ====== ======
+-----------------
 
 For simple kinds of objects like these, the Pure loader also provides the
-generic [pure] object as a quick means to create Pure objects without actually
-preparing a script file. The creation parameter of [pure] is the object
-function. This can be a predefined Pure function, or you can define it on the
-fly in a 'with' clause.
+generic ``[pure]`` object as a quick means to create Pure objects without
+actually preparing a script file. The creation parameter of ``[pure]`` is the
+object function. This can be a predefined Pure function, or you can define it
+on the fly in a ``with`` clause.
 
-For instance, [pure succ] uses the predefined Pure function 'succ' which adds
-1 to its input, while the object [pure add 5 with add x y = x+y end] produces
-the same results as the [add 5] object defined using a separate add.pure
-script in the previous section. You can also generate constant values that
-way. E.g., the object [pure cst 1.618] responds to any message (such as
-'bang') by producing the constant value 1.618, while the object [pure cst
-[1..10]] yields the constant list containing the numbers 1..10.
+For instance, ``[pure succ]`` uses the predefined Pure function ``succ`` which
+adds 1 to its input, while the object ``[pure add 5 with add x y = x+y end]``
+produces the same results as the ``[add 5]`` object defined using a separate
+add.pure script in the previous section. You can also generate constant values
+that way. E.g., the object ``[pure cst 1.618]`` responds to any message (such
+as ``bang``) by producing the constant value 1.618, while the object ``[pure
+cst [1..10]]`` yields the constant list containing the numbers 1..10.
 
 Configuring Inlets and Outlets
-=========== ====== === =======
+------------------------------
 
 To create an object with multiple inlets and outlets, the object creation
 function must return the desired numbers of inlets and outlets, along with a
-second function to be applied at runtime, as a tuple n,m,foo. The input
+second function to be applied at runtime, as a tuple ``n,m,foo``. The input
 arguments to the runtime function as well as the corresponding function
-results are then encoded as pairs k,val where k denotes the inlet or outlet
-index. (Note that the k index is provided only if there actually is more than
-one inlet. Also, the outlet index is assumed to be zero if none is specified,
-so that it can be omitted if there's only one outlet.)
+results are then encoded as pairs ``k,val`` where ``k`` denotes the inlet or
+outlet index. (Note that the ``k`` index is provided only if there actually is
+more than one inlet. Also, the outlet index is assumed to be zero if none is
+specified, so that it can be omitted if there's only one outlet.)
 
-For instance, the following object, invoked as [cross] in the Pd patch, has
-two inlets and two outlets and routes messages from the left inlet to the
-right outlet and vice versa.
+For instance, the following object, invoked as ``[cross]`` in the Pd patch,
+has two inlets and two outlets and routes messages from the left inlet to the
+right outlet and vice versa::
 
-cross = 2,2,cross with cross (k,x) = (1-k,x) end;
+  cross = 2,2,cross with cross (k,x) = (1-k,x) end;
 
 You can also emit multiple messages, possibly to different outlets, in one
-go. These must be encoded as lists of values or index,value pairs, which are
-emitted in the order in which they are written. E.g., the following [fan]
-object implements an "n-fan" which routes its input to n outlets
-simultaneously:
+go. These must be encoded as lists of values or ``index,value`` pairs, which
+are emitted in the order in which they are written. E.g., the following
+``[fan]`` object implements an "n-fan" which routes its input to ``n`` outlets
+simultaneously::
 
-fan n = 1,n,fan n with fan n x = reverse [k,x | k = 0..n-1] end;
+  fan n = 1,n,fan n with fan n x = reverse [k,x | k = 0..n-1] end;
 
-(Note that, because of the use of the 'reverse', the n outlets are served in
-right-to-left order here. This is not strictly necessary, but matches the Pd
-convention.)
+(Note that, because of the use of the ``reverse``, the ``n`` outlets are
+served in right-to-left order here. This is not strictly necessary, but
+matches the Pd convention.)
 
-Another example is the following [dup] object with a single inlet and outlet,
-which just sends out each received message twice:
+Another example is the following ``[dup]`` object with a single inlet and
+outlet, which just sends out each received message twice::
 
-dup x = [x,x];
+  dup x = [x,x];
 
 Note that if you want to output a *real* list value to an outlet, you'll
 either have to specify the outlet index explicitly, or enclose the list in an
 extra pair of brackets, since otherwise the list elements will be sent as
-separate messages instead (like in the 'dup' example). Thus, to output the
-list [x,x] literally, rather than sending x twice, use the following code:
+separate messages instead (like in the ``dup`` example). Thus, to output the
+list ``[x,x]`` literally, rather than sending ``x`` twice, use the following
+code::
 
-dup2 x = [[x,x]]; // or: 0,[x,x]
+  dup2 x = [[x,x]]; // or: 0,[x,x]
 
 An object can also just "swallow" messages and generate no output at all. To
-these ends, make the object return either an empty list [] or the empty tuple
-(). For instance, the following object [echo] implements a sink which just
-prints received messages on standard output, which is useful for debugging
-purposes:
+these ends, make the object return either an empty list ``[]`` or the empty
+tuple ``()``. For instance, the following object ``[echo]`` implements a sink
+which just prints received messages on standard output, which is useful for
+debugging purposes::
 
-using system;
-echo x = () when puts (str x) end;
+  using system;
+  echo x = () when puts (str x) end;
 
 You could also implement this object as follows, by just removing the
 superflous outlet (in this case all return values from the function will be
-ignored anyway):
+ignored anyway)::
 
-using system;
-echo = 1,0,puts.str;
+  using system;
+  echo = 1,0,puts.str;
 
 Local State
-===== =====
+-----------
 
 Local state can be kept in Pure reference values. For instance, the following
-[counter] object produces the next counter value when receiving a 'bang'
-message:
+``[counter]`` object produces the next counter value when receiving a ``bang``
+message::
 
-nullary bang;
-counter = next (ref 0) with
-  next r bang = put r (get r+1);
-  next _ _    = () otherwise;
-end;
+  nullary bang;
+  counter = next (ref 0) with
+    next r bang = put r (get r+1);
+    next _ _    = () otherwise;
+  end;
+
+Advanced Features
+=================
 
 Asynchronous Messages
-============ ========
+---------------------
 
 pd-pure provides a simple asynchronous messaging facility which allows a Pure
 object to schedule a message to be delivered to itself later. This is useful
@@ -206,170 +225,177 @@ for implementing all kinds of delays and, more generally, any kind of object
 which, once triggered, does its own sequencing of output messages.
 
 To these ends, the object function may return a special message of the form
-'pd_delay t msg' (either by itself or as an element of a result list) to
-indicate that the message 'msg' should be delivered to the object function
-after t milliseconds (where t is either a machine int or a double
+``pd_delay t msg`` (either by itself or as an element of a result list) to
+indicate that the message ``msg`` should be delivered to the object function
+after ``t`` milliseconds (where ``t`` is either a machine int or a double
 value). After the prescribed delay the object function will then be invoked on
 the given message, and the results of this call are processed as usual
 (routing messages to outlets and/or scheduling new timer events in response to
-further 'pd_delay' messages). Note that if the delay is zero or negative, the
-message is scheduled to be delivered immediately.
+further ``pd_delay`` messages). Note that if the delay is zero or negative,
+the message is scheduled to be delivered immediately.
 
 For instance, a simple kind of delay object can be implemented in Pure as
-follows:
+follows::
 
-mydelay _ (alarm msg) = msg;
-mydelay t msg = pd_delay t (alarm msg) otherwise;
+  mydelay _ (alarm msg) = msg;
+  mydelay t msg = pd_delay t (alarm msg) otherwise;
 
 The desired delay time is specified as a creation argument. The first equation
-handles messages of the form 'alarm msg'; the action is to just output the
-delayed message given by the 'msg' argument. All other input messages are
-scheduled by the second equation, which wraps the message in an 'alarm' term
+handles messages of the form ``alarm msg``; the action is to just output the
+delayed message given by the ``msg`` argument. All other input messages are
+scheduled by the second equation, which wraps the message in an ``alarm`` term
 so that it gets processed by the first equation when it is delivered.
 
 Note that pd-pure only allows you to schedule a single asynchronous event per
-call of the object function. Thus, if the 'mydelay' object above receives
+call of the object function. Thus, if the ``mydelay`` object above receives
 another message while it is still waiting for the previous one to be
 delivered, the old timer is cancelled and the new one is scheduled instead;
-this works like Pd's builtin 'delay' object.
+this works like Pd's builtin ``delay`` object.
 
-Moreover, scheduling a new event at an infinite (or nan) time value cancels
-any existing timer. (Note that you still have to specify the 'msg' parameter,
-but it will be ignored in this case.) We can use this to equip our 'mydelay'
-object with a 'stop' message as follows:
+Moreover, scheduling a new event at an infinite (or ``nan``) time value
+cancels any existing timer. (Note that you still have to specify the ``msg``
+parameter, but it will be ignored in this case.) We can use this to equip our
+``mydelay`` object with a ``stop`` message as follows::
 
-nullary stop;
-mydelay _ (alarm msg) = msg;
-mydelay _ stop = pd_delay inf ();
-mydelay t msg = pd_delay t (alarm msg) otherwise;
+  nullary stop;
+  mydelay _ (alarm msg) = msg;
+  mydelay _ stop = pd_delay inf ();
+  mydelay t msg = pd_delay t (alarm msg) otherwise;
 
 More elaborate functionality can be built on top of the basic timer facility.
 The following example shows how to maintain a timed message queue in a Pure
-list, in order to implement a simple delay line similar to Pd's builtin 'pipe'
-object. Here we also employ the 'pd_time' function, which is provided by the
-Pure loader so that Pure scripts can access the current logical Pd time in
-milliseconds (see "Programming Interface" below). This is convenient if we
-need to deal with absolute time values, which we use in this example to keep
-track of the times at which messages in the queue are to be delivered.
+list, in order to implement a simple delay line similar to Pd's builtin
+``pipe`` object. Here we also employ the ``pd_time`` function, which is
+provided by the Pure loader so that Pure scripts can access the current
+logical Pd time in milliseconds (see `Programming Interface`_ below). This is
+convenient if we need to deal with absolute time values, which we use in this
+example to keep track of the times at which messages in the queue are to be
+delivered::
 
-extern double pd_time();
-mypipe t = process (ref []) with
-  process q () = case dequeue q of
-                   x,(t,_):_ = [x,pd_delay (t-pd_time) ()];
-                   x,_ = x;
-                 end;
-  process q x  = enqueue q x $$ pd_delay t () if null (get q);
-               = enqueue q x $$ () otherwise;
-  enqueue q x  = put q $ get q+[(pd_time+t,x)];
-  dequeue q    = x,put q xs when (_,x):xs = get q end;
-end;
+  extern double pd_time();
+  mypipe t = process (ref []) with
+    process q () = case dequeue q of
+                     x,(t,_):_ = [x,pd_delay (t-pd_time) ()];
+                     x,_ = x;
+                   end;
+    process q x  = enqueue q x $$ pd_delay t () if null (get q);
+                 = enqueue q x $$ () otherwise;
+    enqueue q x  = put q $ get q+[(pd_time+t,x)];
+    dequeue q    = x,put q xs when (_,x):xs = get q end;
+  end;
 
 Reading and Writing Audio Data
-======= === ======= ===== ====
+------------------------------
 
 At present, pd-pure doesn't support audio objects. However, it is possible to
-transfer audio data between Pd and Pure by means of the pd_getbuffer and
-pd_setbuffer routines. In Pure land, the audio data is represented as a vector
-of floating point values. Please see "Programming Interface" below for a
-closer description of the provided routines.
+transfer audio data between Pd and Pure by means of the ``pd_getbuffer`` and
+``pd_setbuffer`` routines. In Pure land, the audio data is represented as a
+vector of floating point values. Please see `Programming Interface`_ below for
+a closer description of the provided routines.
 
-For instance, here is a 'randomwave' object which fills a Pd array (whose name
-is given as the creation argument) with random values in response to a 'bang'
-message:
+For instance, here is a ``randomwave`` object which fills a Pd array (whose
+name is given as the creation argument) with random values in response to a
+``bang`` message::
 
-extern int pure_random() = random;
-randf = random/0x7fffffff;
+  extern int pure_random() = random;
+  randf = random/0x7fffffff;
 
-extern int pd_getbuffersize(char *name);
-extern void pd_setbuffer(char *name, expr* x);
+  extern int pd_getbuffersize(char *name);
+  extern void pd_setbuffer(char *name, expr* x);
 
-nullary bang;
+  nullary bang;
 
-randomwave name = 1,0,process with
-  process bang  = pd_setbuffer name {randf | i = 1..nsamples};
-  nsamples      = pd_getbuffersize name;
-end;
+  randomwave name = 1,0,process with
+    process bang  = pd_setbuffer name {randf | i = 1..nsamples};
+    nsamples      = pd_getbuffersize name;
+  end;
 
 Programming Interface
-=========== =========
+=====================
 
 The Pure loader also provides a number of interface routines which can be
 called by Pure scripts running in the Pd environment.
 
-extern char *pd_version_s();
+``extern char *pd_version_s();``
 
-Returns the Pd version number as a string. Note that this routine will only be
-available when a script is running inside Pd, so you can quickly check if
-that's the case as follows:
+  Returns the Pd version number as a string. Note that this routine will only
+  be available when a script is running inside Pd, so you can quickly check if
+  that's the case as follows::
 
-let ok = stringp $ eval "extern char *pd_version_s(); pd_version_s;";
+    let ok = stringp $ eval "extern char *pd_version_s(); pd_version_s;";
 
-The 'ok' variable will then be true iff the script is running inside Pd.
+  The ``ok`` variable will then be true iff the script is running inside Pd.
 
-extern char *pd_libdir_s();
+``extern char *pd_libdir_s();``
 
-Returns the Pd library dir (as determined at compile time). This is useful if
-your Pure scripts need to access files in that directory.
+  Returns the Pd library dir (as determined at compile time). This is useful
+  if your Pure scripts need to access files in that directory.
 
-extern char *pd_path_sl();
+``extern char *pd_path_sl();``
 
-Returns the Pd path (set in the File/Path dialog or via the -path command line
-option) as a list of directory names. This is useful if your Pure scripts need
-to locate files on the Pd search path.
+  Returns the Pd path (set in the File/Path dialog or via the ``-path``
+  command line option) as a list of directory names. This is useful if your
+  Pure scripts need to locate files on the Pd search path.
 
-extern void pd_post(char *s);
+``extern void pd_post(char *s);``
 
-Posts a message in the Pd main window. A trailing newline is added
-automatically. This provides an alternative interface to Pd's post() function
-which cannot be used in Pure because it is a printf-style routine expecting a
-variable number of arguments.
+  Posts a message in the Pd main window. A trailing newline is added
+  automatically. This provides an alternative interface to Pd's ``post()``
+  function which cannot be used in Pure because it is a ``printf``-style
+  routine expecting a variable number of arguments.
 
-extern double pd_time();
+``extern double pd_time();``
 
-Retrieves the current Pd time as a double value in milliseconds, which is
-useful, in particular, when used in conjunction with the asynchronous message
-facility described under "Asynchronous Messages".
+  Retrieves the current Pd time as a double value in milliseconds, which is
+  useful, in particular, when used in conjunction with the asynchronous
+  message facility described under `Asynchronous Messages`_.
 
-extern expr* pd_getbuffer(char *name);
-extern void pd_setbuffer(char *name, expr* x);
-extern int pd_getbuffersize(char *name);
-extern void pd_setbuffersize(char *name, uint32_t sz);
+``extern expr* pd_getbuffer(char *name);``
 
-Routines to access the Pd array (sample buffer) with the given name. These
-functions can be used to transfer audio data between Pd and Pure scripts; see
-"Reading and Writing Audio Data" above for an example.
+``extern void pd_setbuffer(char *name, expr* x);``
 
-pd_getbuffersize and pd_setbuffersize gets or sets the size of the given
-buffer, respectively.
+``extern int pd_getbuffersize(char *name);``
 
-pd_getbuffer reads the contents of the buffer and returns it as a Pure vector
-(or fails if the array with the given name doesn't exist).
+``extern void pd_setbuffersize(char *name, uint32_t sz);``
 
-pd_setbuffer sets the contents of the buffer from the given Pure vector x. If
-the size of the vector exceeds the size of the buffer, the former is
-truncated. Conversely, if the size of the buffer exceeds the size of the Pure
-vector, the trailing samples are unaffected. NOTE: The second argument of
-pd_setbuffer can also be a pair (i,x) denoting an offset i into the array at
-which the sample data is to be written, so that this routine allows you to
-overwrite any part of the array.
+  Routines to access the Pd array (sample buffer) with the given name. These
+  functions can be used to transfer audio data between Pd and Pure scripts;
+  see `Reading and Writing Audio Data`_ above for an example.
+
+  ``pd_getbuffersize`` and ``pd_setbuffersize`` gets or sets the size of the
+  given buffer, respectively.
+
+  ``pd_getbuffer`` reads the contents of the buffer and returns it as a Pure
+  vector (or fails if the array with the given name doesn't exist).
+
+  ``pd_setbuffer`` sets the contents of the buffer from the given Pure vector
+  ``x``. If the size of the vector exceeds the size of the buffer, the former
+  is truncated. Conversely, if the size of the buffer exceeds the size of the
+  Pure vector, the trailing samples are unaffected. **NOTE:** The second
+  argument of ``pd_setbuffer`` can also be a pair ``(i,x)`` denoting an offset
+  ``i`` into the array at which the sample data is to be written, so that this
+  routine allows you to overwrite any part of the array.
+
+Interactive Facilities
+======================
 
 Livecoding Support
-========== =======
+------------------
 
 Livecoding means that you can quickly reload your Pure scripts after changes
 while the Pd patch keeps running. The Pure loader provides some experimental
-support for this by means of the special 'pure-runtime' object.
+support for this by means of the special ``pure-runtime`` object.
 
-Sending a 'bang' to this object tells the plugin to reload all loaded scripts
-and update the Pure objects in your patch accordingly. The object also
+Sending a ``bang`` to this object tells the plugin to reload all loaded
+scripts and update the Pure objects in your patch accordingly. The object also
 provides two outlets to deal with the inevitable latencies caused by the
 compilation process. The right outlet is banged when the compilation starts
 and the left outlet gets a bang when the compilation is finished, so that a
 patch using this facility can respond to these events in the appropriate way
 (e.g., disabling output during compilation).
 
-Note that there can be any number of 'pure-runtime' objects in a patch, which
-will all refer to the same instance of the Pure interpreter.
+Note that there can be any number of ``pure-runtime`` objects in a patch,
+which will all refer to the same instance of the Pure interpreter.
 
 Also please note that the number of inlets and outlets of Pure objects never
 changes after reloading scripts. (Pd does not support this through its API
@@ -378,25 +404,25 @@ functionality of existing Pure objects in a running patch, but not their
 interfaces.
 
 Remote Control
-====== =======
+--------------
 
 The distribution also includes an abstraction pure-remote.pd which you can
 include in your patch to enable live coding, as well as remote control of the
-patch through the pdsend program. Sending a 'bang' causes a reload of all
+patch through the pdsend program. Sending a ``bang`` causes a reload of all
 scripts, which can also be triggered directly by clicking the bang control of
 the abstraction. The bang control also provides visual feedback indicating
 whether the compilation is still in progress. Messages are also routed through
-the embedded pure-runtime object using the single inlet and the two outlets of
-the abstraction, so that pure-remote can also be controlled from within the
-patch itself.
+the embedded ``pure-runtime`` object using the single inlet and the two
+outlets of the abstraction, so that ``pure-remote`` can also be controlled
+from within the patch itself.
 
-For added convenience, the pure-runtime and pure-remote objects also accept
-any other message of the form 'receiver message' and will route the given
-message to the given receiver. This is intended to provide remote control of
-various parameters in patches. For instance, by having pdsend send a 'play 0'
-or 'play 1' message, one might implement a single playback control, provided
-that your patch includes an appropriate receiver (often a GUI object). See the
-pure-help.pd patch for an example.
+For added convenience, the ``pure-runtime`` and ``pure-remote`` objects also
+accept any other message of the form ``receiver message`` and will route the
+given message to the given receiver. This is intended to provide remote
+control of various parameters in patches. For instance, by having pdsend send
+a ``play 0`` or ``play 1`` message, one might implement a single playback
+control, provided that your patch includes an appropriate receiver (often a
+GUI object). See the pure-help.pd patch for an example.
 
 To make these features available in Emacs, there's an accompanying elisp
 program (pure-remote.el) which contains some convenient keybindings for the
@@ -405,21 +431,22 @@ with simple keystrokes directly from the text editor. Please see the
 pure-remote.el file for more details. Currently pure-remote.el implements the
 following "standard" keybindings:
 
-C-C C-X: Reload:  Sends a bang message, causing scripts to be reloaded.
-C-C C-M: Message: Prompts for a message and sends it to pure-remote.
-C-C C-S: Play:    Sends a 'play 1' message.
-C-C C-T: Stop:    Sends a 'play 0' message.
-C-C C-G: Restart: Sends a 'play 0' message followed by 'play 1'.
-C-C C-I: Dsp On:  Sends a 'pd dsp 1', which enables audio processing.
-C-C C-O: Dsp Off: Sends 'pd dsp 0', which disables audio processing.
+===========  =======  =====================================================
+``C-C C-X``  Reload   Sends a bang message, causing scripts to be reloaded.
+``C-C C-M``  Message  Prompts for a message and sends it to pure-remote.
+``C-C C-S``  Play     Sends a ``play 1`` message.
+``C-C C-T``  Stop     Sends a ``play 0`` message.
+``C-C C-G``  Restart  Sends a ``play 0`` message followed by ``play 1``.
+``C-C C-I``  Dsp On   Sends a ``pd dsp 1``, which enables audio processing.
+``C-C C-O``  Dsp Off  Sends ``pd dsp 0``, which disables audio processing.
+===========  =======  =====================================================
 
 Of course you can easily add more like these, just have a look at how the
 keybindings are implemented in pure-remote.el and create your own in an
-analogous fashion.
+analogous fashion. Combining pure-remote.el with the Emacs Pure programming
+mode gives you a nice interactive environment for developing pd-pure
+applications.
 
-Combining pure-remote.el with the Emacs Pure programming mode gives you a nice
-interactive environment for developing pd-pure applications.
 
-
-Enjoy. :)
-Albert Graef <Dr.Graef@t-online.de>
+.. Enjoy. :)
+.. Albert Graef <Dr.Graef@t-online.de>
