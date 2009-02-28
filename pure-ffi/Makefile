@@ -59,6 +59,22 @@ ffi$(DLL): ffi.c
 clean:
 	rm -f *$(DLL) *~ *.a *.o
 
+# documentation (this needs docutils)
+
+html: pure-ffi.html
+latex: pure-ffi.tex
+pdf: pure-ffi.pdf
+
+pure-ffi.html: README
+	rst2html.py $< $@
+
+pure-ffi.tex: README
+	rst2latex.py $< $@
+
+pure-ffi.pdf: pure-ffi.tex
+	pdflatex $<
+	rm -f *.aux *.log *.out
+
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
 	cp ffi.pure ffi$(DLL) "$(DESTDIR)$(libdir)/pure"
