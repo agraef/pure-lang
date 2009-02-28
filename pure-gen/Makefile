@@ -19,7 +19,7 @@ pkgdatadir = $(libdir)/pure-gen-$(version)
 mandir = ${prefix}/share/man
 man1dir = $(mandir)/man1
 
-DISTFILES = COPYING Makefile README README.dump-ast dump-ast.hs pure-gen.pure pure-gen.1 examples/*.templ
+DISTFILES = COPYING Makefile README README.dump-ast dump-ast.hs pure-gen.pure pure-gen.1 run-tests examples/*.templ
 
 all: dump-ast
 
@@ -29,6 +29,11 @@ all: dump-ast
 
 dump-ast: dump-ast.hs
 	ghc --make $< -o $@
+
+# Minimal test suite:
+
+check:
+	./run-tests
 
 # Documentation in various formats (this requires additional tools).
 
@@ -78,5 +83,5 @@ dist:
 
 distcheck: dist
 	tar xfz $(dist).tar.gz
-	cd $(dist) && make && make install DESTDIR=./BUILD
+	cd $(dist) && make && make check && make install DESTDIR=./BUILD
 	rm -rf $(dist)

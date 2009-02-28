@@ -1,0 +1,40 @@
+#! /bin/sh
+
+echo "#define DUMMY 99" > dummy.h
+echo "extern int rand(void);" >> dummy.h
+
+# Check that dump-ast works:
+
+./dump-ast dummy.h > dummy.ast
+diff dummy.ast - > /dev/null <<EOF
+(CDeclExt (CDecl [(CStorageSpec CExtern),(CTypeSpec CIntType)] [((Just (CDeclr (Just "rand") [(CFunDeclr (Right ([(CDecl [(CTypeSpec CVoidType)] [])],0)) [])] Nothing [])),Nothing,Nothing)]) "dummy.h")
+
+EOF
+
+if [ $? == 0 ]; then
+  echo "dump-ast: ok"
+else
+  echo "dump-ast: FAILED"
+  rm -f dummy.*
+  exit 1
+fi
+
+# Check that pure-gen works:
+
+pure -x pure-gen.pure dummy.h
+diff dummy.pure - > /dev/null <<EOF
+/* dummy.h: */
+const DUMMY = 99;
+extern int rand();
+EOF
+
+if [ $? == 0 ]; then
+  echo "pure-gen: ok"
+else
+  echo "pure-gen: FAILED"
+  rm -f dummy.*
+  exit 1
+fi
+
+rm -f dummy.*
+exit 0
