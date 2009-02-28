@@ -61,6 +61,22 @@ odbc$(DLL): odbc.c
 clean:
 	rm -f *$(DLL) *~ *.a *.o
 
+# documentation (this needs docutils)
+
+html: pure-odbc.html
+latex: pure-odbc.tex
+pdf: pure-odbc.pdf
+
+pure-odbc.html: README
+	rst2html.py $< $@
+
+pure-odbc.tex: README
+	rst2latex.py $< $@
+
+pure-odbc.pdf: pure-odbc.tex
+	pdflatex $<
+	rm -f *.aux *.log *.out
+
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
 	cp odbc.pure odbc$(DLL) "$(DESTDIR)$(libdir)/pure"
