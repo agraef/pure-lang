@@ -112,8 +112,8 @@ OBJECT = $(subst .cc,.o,$(filter %.cc,$(SOURCE) $(EXTRA_SOURCE)))
 DISTFILES = COPYING ChangeLog INSTALL NEWS README TODO \
 Makefile.in configure.ac configure config.h.in \
 config/aclocal.m4 config/config.guess config/config.sub config/install-sh \
-$(SOURCE) $(EXTRA_SOURCE) w3centities.c \
-pure.cc pure.1 etc/pure-mode.el.in etc/pure.* etc/gpure.lang \
+$(SOURCE) $(EXTRA_SOURCE) w3centities.c pure.cc \
+pure.1 pure.txt pure.html etc/pure-mode.el.in etc/pure.* etc/gpure.lang \
 examples/*.pure examples/*.purerc examples/*.c examples/libor/*.pure \
 lib/*.pure test/*.pure test/*.log
 
@@ -163,35 +163,26 @@ etc/pure-mode.el: Makefile etc/pure-mode.el.in
 	sed -e 's,@bindir\@,$(bindir),g' -e 's,@libdir\@,$(libdir),g' $(srcdir)/etc/pure-mode.el.in >$(srcdir)/etc/pure-mode.el.tmp
 	mv $(srcdir)/etc/pure-mode.el.tmp $(srcdir)/etc/pure-mode.el
 
-# documentation in various formats (requires groff)
+# documentation in various formats (this requires docutils)
 
 html: pure.html
-dvi: pure.dvi
-ps: pure.ps
+tex: pure.tex
 pdf: pure.pdf
 
-# We do the html format using rman, because it produces nicer output. If you
-# don't have rman, uncomment the rule below instead.
+%.html: %.txt
+	rst2html.py $< $@
 
-%.html: %.1
-	rman -f HTML $< | sed -e 's/dq/\"/g' -e '/^<br>$$/d' > $@
+%.tex: %.txt
+	rst2latex.py $< $@
 
-#%.html: %.1
-#	groff -man -Thtml $< > $@
-
-%.dvi: %.1
-	groff -man -Tdvi $< > $@
-
-%.ps: %.1
-	groff -man -Tps $< > $@
-
-%.pdf: %.1
-	groff -man -Tps $< | ps2pdf - $@
+%.pdf: %.tex
+	pdflatex $<
+	rm -f *.aux *.log *.out
 
 # cleaning
 
 clean:
-	rm -f *~ *.bak *.html *.dvi *.ps *.pdf pure$(EXE) $(OBJECT) pure.o $(libpurelnk) $(libpure) parser.output
+	rm -f *~ *.bak *.html *.tex *.pdf pure$(EXE) $(OBJECT) pure.o $(libpurelnk) $(libpure) parser.output
 
 distclean: clean
 	rm -f Makefile config.h config.log config.status etc/pure-mode.el $(dist).tar.gz
@@ -223,6 +214,7 @@ endif
 	$(INSTALL) $(srcdir)/runtime.h $(DESTDIR)$(includedir)/pure-$(version)
 	ln -sf $(includedir)/pure-$(version) $(DESTDIR)$(includedir)/pure
 	for x in $(srcdir)/lib/*.pure; do $(INSTALL) -m 644 $$x $(DESTDIR)$(libdir)/pure-$(version); done
+	$(INSTALL) -m 644 pure.html $(DESTDIR)$(libdir)/pure-$(version)
 	ln -sf $(libdir)/pure-$(version) $(DESTDIR)$(libdir)/pure
 	$(INSTALL) -m 644 $(srcdir)/pure.1 $(DESTDIR)$(man1dir)/pure-$(version).1
 	ln -sf $(man1dir)/pure-$(version).1 $(DESTDIR)$(man1dir)/pure.1
