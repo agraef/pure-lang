@@ -873,10 +873,34 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
     while (isspace(*s)) ++s;
     system(s);
   } else if (strcmp(cmd, "help") == 0)  {
-    const char *s = cmdline+4;
+    const char *s = cmdline+4, *p, *q;
     while (isspace(*s)) ++s;
-    string mancmd = string("man ") + ((*s)?s:("pure-" PACKAGE_VERSION));
-    system(mancmd.c_str());
+    string docname = s;
+    if (!*s)
+      // default is to load the Pure manual
+      docname = interp.libdir+"pure.html";
+    else if (strncmp(s, "file:", 5) == 0 || strncmp(s, "http:", 5) == 0)
+      // other URL, take as is
+      ;
+    else if ((p = strchr(s, '#'))) {
+      // alternative library documentation, add path if necessary
+      if (p == s)
+	// no filename, use the default library documentation
+	docname.insert(0, interp.libdir+"purelib.html");
+      else if (!(q = strchr(s, '/')) || q>=p) {
+	if (!(q = strchr(s, '.')) || q>=p)
+	  // no filename extension, assume .html
+	  docname.insert(p-s, ".html");
+	docname.insert(0, interp.libdir);
+      }
+      docname.insert(0, "file:");
+    } else
+      // look up the default library documentation
+      docname.insert(0, "file:"+interp.libdir+"purelib.html#");
+    const char *browser = getenv("PURE_HELP");
+    if (!browser) browser = "w3m"; // default
+    string helpcmd = string(browser) + " " + docname;
+    system(helpcmd.c_str());
   } else if (strcmp(cmd, "ls") == 0)  {
     system(cmdline);
   } else if (strcmp(cmd, "pwd") == 0)  {
