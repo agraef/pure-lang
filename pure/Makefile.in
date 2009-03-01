@@ -113,7 +113,8 @@ DISTFILES = COPYING ChangeLog INSTALL NEWS README TODO \
 Makefile.in configure.ac configure config.h.in \
 config/aclocal.m4 config/config.guess config/config.sub config/install-sh \
 $(SOURCE) $(EXTRA_SOURCE) w3centities.c pure.cc \
-pure.1 pure.txt pure.html etc/pure-mode.el.in etc/pure.* etc/gpure.lang \
+pure.1 pure.txt pure.html purelib.txt purelib.html \
+etc/pure-mode.el.in etc/pure.* etc/gpure.lang \
 examples/*.pure examples/*.purerc examples/*.c examples/libor/*.pure \
 lib/*.pure test/*.pure test/*.log
 
@@ -165,9 +166,9 @@ etc/pure-mode.el: Makefile etc/pure-mode.el.in
 
 # documentation in various formats (this requires docutils)
 
-html: pure.html
-tex: pure.tex
-pdf: pure.pdf
+html: pure.html purelib.html
+tex: pure.tex purelib.tex
+pdf: pure.pdf purelib.pdf
 
 %.html: %.txt
 	rst2html.py $< $@
@@ -214,7 +215,7 @@ endif
 	$(INSTALL) $(srcdir)/runtime.h $(DESTDIR)$(includedir)/pure-$(version)
 	ln -sf $(includedir)/pure-$(version) $(DESTDIR)$(includedir)/pure
 	for x in $(srcdir)/lib/*.pure; do $(INSTALL) -m 644 $$x $(DESTDIR)$(libdir)/pure-$(version); done
-	$(INSTALL) -m 644 pure.html $(DESTDIR)$(libdir)/pure-$(version)
+	$(INSTALL) -m 644 pure.html purelib.html $(DESTDIR)$(libdir)/pure-$(version)
 	ln -sf $(libdir)/pure-$(version) $(DESTDIR)$(libdir)/pure
 	$(INSTALL) -m 644 $(srcdir)/pure.1 $(DESTDIR)$(man1dir)/pure-$(version).1
 	ln -sf $(man1dir)/pure-$(version).1 $(DESTDIR)$(man1dir)/pure.1
