@@ -841,7 +841,9 @@ void *matrix_to_byte_array(void *p, pure_expr *x);
 pure_expr* matrix_map(pure_expr *f, pure_expr *x);
 pure_expr* matrix_filter(pure_expr *p, pure_expr *x);
 pure_expr* matrix_foldl(pure_expr *f, pure_expr *z, pure_expr *x);
+pure_expr* matrix_foldl1(pure_expr *f, pure_expr *x);
 pure_expr* matrix_foldr(pure_expr *f, pure_expr *z, pure_expr *x);
+pure_expr* matrix_foldr1(pure_expr *f, pure_expr *x);
 pure_expr* matrix_scanl(pure_expr *f, pure_expr *z, pure_expr *x);
 pure_expr* matrix_scanr(pure_expr *f, pure_expr *z, pure_expr *x);
 

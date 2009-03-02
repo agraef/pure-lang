@@ -346,7 +346,9 @@ namespace C;
    converting from/to lists and using the list functions. */
 extern expr* matrix_filter(expr*,expr*);
 extern expr* matrix_foldl(expr*,expr*,expr*);
+extern expr* matrix_foldl1(expr*,expr*);
 extern expr* matrix_foldr(expr*,expr*,expr*);
+extern expr* matrix_foldr1(expr*,expr*);
 extern expr* matrix_map(expr*,expr*);
 extern expr* matrix_scanl(expr*,expr*,expr*);
 extern expr* matrix_scanr(expr*,expr*,expr*);
@@ -363,12 +365,11 @@ do f x::matrix		= foldl (\_ x -> f x $$ ()) () x;
 
 drop k::int x::matrix	= x!!(k..#x-1);
 dropwhile p x::matrix	= colcat (dropwhile p (list x));
-
 filter p x::matrix      = matrix_filter p x;
 foldl f a x::matrix     = matrix_foldl f a x;
-foldl1 f x::matrix      = foldl1 f (list x);
+foldl1 f x::matrix      = matrix_foldl1 f x if ~null x;
 foldr f a x::matrix     = matrix_foldr f a x;
-foldr1 f x::matrix	= foldr1 f (list x);
+foldr1 f x::matrix	= matrix_foldr1 f x if ~null x;
 head x::matrix		= x!0 if ~null x;
 init x::matrix		= x!!(0..#x-2) if ~null x;
 last x::matrix		= x!(#x-1) if ~null x;

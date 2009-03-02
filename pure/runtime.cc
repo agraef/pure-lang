@@ -8084,6 +8084,33 @@ pure_expr* matrix_foldl( pure_expr *f, pure_expr *z, pure_expr *x )
 }
 
 
+//generic matrix foldl1
+template <typename matrix_type>
+pure_expr* matrix_foldl1( pure_expr *f, pure_expr *x )
+{
+  matrix_type *xm = static_cast<matrix_type*>(x->data.mat.p);
+  if (xm->size1 == 0 || xm->size2 == 0) return 0;
+  pure_ref(f);
+  pure_ref(x);
+  typedef typename element_of<matrix_type>::type elem_type;
+
+  pure_expr *z = 0;
+  for (size_t i=0; i<xm->size1; ++i) {
+    elem_type *p = reinterpret_cast<elem_type*>(xm->data)+i*xm->tda;
+    for (size_t j=0; j<xm->size2; ++j,++p)
+      if (z) {
+	pure_expr *zz = pure_new(z);
+	z = pure_appl( f, 2, z, to_expr(*p)  );
+	pure_free(zz);
+      } else
+	z = to_expr(*p);
+  }
+  pure_unref(f);
+  pure_unref(x);
+  return z;
+}
+
+
 //generic matrix foldr
 template <typename matrix_type>
 pure_expr* matrix_foldr( pure_expr *f, pure_expr *z, pure_expr *x )
@@ -8101,6 +8128,34 @@ pure_expr* matrix_foldr( pure_expr *f, pure_expr *z, pure_expr *x )
       z = pure_appl( f, 2, to_expr(*p), z  );
       pure_free(zz);
     }
+  }
+  pure_unref(f);
+  pure_unref(x);
+  return z;
+}
+
+
+//generic matrix foldr1
+template <typename matrix_type>
+pure_expr* matrix_foldr1( pure_expr *f, pure_expr *x )
+{
+  matrix_type *xm = static_cast<matrix_type*>(x->data.mat.p);
+  if (xm->size1 == 0 || xm->size2 == 0) return 0;
+  pure_ref(f);
+  pure_ref(x);
+  typedef typename element_of<matrix_type>::type elem_type;
+
+  pure_expr *z = 0;
+  for (ptrdiff_t i=xm->size1-1; i>=0; --i) {
+    elem_type *p =
+      reinterpret_cast<elem_type*>(xm->data)+i*xm->tda+xm->size2-1;
+    for (ptrdiff_t j=xm->size2-1; j>=0; --j,--p)
+      if (z) {
+	pure_expr *zz = pure_new(z);
+	z = pure_appl( f, 2, to_expr(*p), z  );
+	pure_free(zz);
+      } else
+	z = to_expr(*p);
   }
   pure_unref(f);
   pure_unref(x);
@@ -8216,6 +8271,22 @@ pure_expr* matrix_foldl ( pure_expr *f, pure_expr *z, pure_expr *x )
 }
 
 extern "C" 
+pure_expr* matrix_foldl1 ( pure_expr *f, pure_expr *x )
+{
+  switch (x->tag) {
+    case EXPR::DMATRIX :
+      return matrix::matrix_foldl1<gsl_matrix>(f,x);
+    case EXPR::IMATRIX :
+      return matrix::matrix_foldl1<gsl_matrix_int>(f,x);
+    case EXPR::CMATRIX :
+      return matrix::matrix_foldl1<gsl_matrix_complex>(f,x);
+    case EXPR::MATRIX  :
+      return matrix::matrix_foldl1<gsl_matrix_symbolic>(f,x);
+    default : return 0;
+  }
+}
+
+extern "C" 
 pure_expr* matrix_foldr ( pure_expr *f, pure_expr *z, pure_expr *x )
 {
   switch (x->tag) {
@@ -8227,6 +8298,22 @@ pure_expr* matrix_foldr ( pure_expr *f, pure_expr *z, pure_expr *x )
       return matrix::matrix_foldr<gsl_matrix_complex>(f,z,x);
     case EXPR::MATRIX  :
       return matrix::matrix_foldr<gsl_matrix_symbolic>(f,z,x);
+    default : return 0;
+  }
+}
+
+extern "C" 
+pure_expr* matrix_foldr1 ( pure_expr *f, pure_expr *x )
+{
+  switch (x->tag) {
+    case EXPR::DMATRIX :
+      return matrix::matrix_foldr1<gsl_matrix>(f,x);
+    case EXPR::IMATRIX :
+      return matrix::matrix_foldr1<gsl_matrix_int>(f,x);
+    case EXPR::CMATRIX :
+      return matrix::matrix_foldr1<gsl_matrix_complex>(f,x);
+    case EXPR::MATRIX  :
+      return matrix::matrix_foldr1<gsl_matrix_symbolic>(f,x);
     default : return 0;
   }
 }
