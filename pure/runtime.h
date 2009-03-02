@@ -841,6 +841,7 @@ void *matrix_to_byte_array(void *p, pure_expr *x);
 pure_expr* matrix_all(pure_expr *p, pure_expr *x);
 pure_expr* matrix_any(pure_expr *p, pure_expr *x);
 pure_expr* matrix_map(pure_expr *f, pure_expr *x);
+pure_expr* matrix_zipwith(pure_expr *f, pure_expr *x, pure_expr *y);
 pure_expr* matrix_filter(pure_expr *p, pure_expr *x);
 pure_expr* matrix_dropwhile(pure_expr *p, pure_expr *x);
 pure_expr* matrix_takewhile(pure_expr *p, pure_expr *x);

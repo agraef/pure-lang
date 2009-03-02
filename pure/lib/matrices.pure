@@ -354,6 +354,7 @@ extern expr* matrix_foldl1(expr*,expr*);
 extern expr* matrix_foldr(expr*,expr*,expr*);
 extern expr* matrix_foldr1(expr*,expr*);
 extern expr* matrix_map(expr*,expr*);
+extern expr* matrix_zipwith(expr*,expr*,expr*);
 extern expr* matrix_scanl(expr*,expr*,expr*);
 extern expr* matrix_scanl1(expr*,expr*);
 extern expr* matrix_scanr(expr*,expr*,expr*);
@@ -385,31 +386,36 @@ take k::int x::matrix	= x!!(0..k-1);
 takewhile p x::matrix	= matrix_takewhile p x;
 tail x::matrix		= x!!(1..#x-1) if ~null x;
 
-namespace matrix;
-private zipdim zip3dim;
-
-zipdim x::matrix y::matrix
-			= min (dim x!0) (dim y!0),dim x!1;
-zip3dim x::matrix y::matrix z::matrix
-			= min (dim x!0) (min (dim y!0) (dim z!0)),dim x!1;
-
-zip x::matrix y::matrix	= redim (zipdim x y) $
-			  colcat (zip (list x) (list y))
-			    if dim x!1==dim y!1;
-zip3 x::matrix y::matrix z::matrix
-			= redim (zip3dim x y z) $
-			  colcat (zip3 (list x) (list y) (list z))
-			    if dim x!1==dim y!1 && dim x!1==dim z!1;
 zipwith f x::matrix y::matrix
-			= redim (zipdim x y) $
-			  colcat (zipwith f (list x) (list y))
-			    if dim x!1==dim y!1;
+			= zipwith f x y
+with
+  zipwith f x y		= matrix_zipwith f x y
+			    if matrix_type x == matrix_type y;
+// mixed numeric cases
+			= matrix_zipwith f (cmatrix x) y
+			    if nmatrixp x && cmatrixp y;
+			= matrix_zipwith f x (cmatrix y)
+			    if cmatrixp x && nmatrixp y;
+			= matrix_zipwith f (dmatrix x) y
+			    if imatrixp x && dmatrixp y;
+			= matrix_zipwith f x (dmatrix y)
+			    if dmatrixp x && imatrixp y;
+// mixed symbolic cases
+			= matrix_zipwith f (smatrix x) y
+			    if nmatrixp x;
+			= matrix_zipwith f x (smatrix y);
+end if dim x!1==dim y!1;
+
 zipwith3 f x::matrix y::matrix z::matrix
-			= redim (zip3dim x y z) $
-			  colcat (zipwith3 f (list x) (list y) (list z))
+			= zipwith ($) (zipwith f x y) z
 			    if dim x!1==dim y!1 && dim x!1==dim z!1;
 
-namespace;
+zip x::matrix y::matrix	= zipwith (,) x y
+			    if dim x!1==dim y!1;
+
+zip3 x::matrix y::matrix z::matrix
+			= zipwith3 (\x y z->x,y,z) x y z
+			    if dim x!1==dim y!1 && dim x!1==dim z!1;
 
 dowith f x::matrix y::matrix
 			= dowith f (list x) (list y)

@@ -7506,7 +7506,7 @@ numeric_map_loop
   pure_expr *r; //result expression
   out_elem_type v; //result value
 
-  //we alredy performed the first map, so now we apply f to all but the first
+  //we already performed the first map, so now we apply f to all but the first
   //column in the first row..
   *lasti=0;
   for (size_t j=1; j<in->size2; ++j,++inp,++outp) {
@@ -7675,6 +7675,231 @@ pure_expr* matrix_map( pure_expr *f, pure_expr *x )
   { //for anything else, default to symbolic. 
     gsl_matrix_symbolic *sm = create_symbolic_matrix(xm->size1,xm->size2);
     symbolic_map_loop(f,xm,static_cast<matrix_type*>(0),sm,0,0,first);
+    out = pure_symbolic_matrix(sm);
+  }
+
+  if (first->refc==0) pure_freenew(first);
+  pure_unref(f);
+  pure_unref(x);
+  return out;
+}
+
+
+//numeric zipwith loop : optmize common case that the output of the zipped
+//function is all of the same numerical type. If not, fall back to symbolic
+//zipwith loop
+
+template < typename in_mat_type,  
+           typename out_mat_type >
+pure_expr* 
+numeric_zipwith_loop
+( pure_expr *f,       //the function being zipped
+  in_mat_type *in1,   //the 1st operand matrix
+  in_mat_type *in2,   //the 2nd operand matrix
+  out_mat_type *out,  //the result matrix
+  size_t *lasti,      //last row and column written to 
+  size_t *lastj )     //  before bailing out in the event that
+                      //  the output of f is not the right type
+{
+  typedef typename element_of< in_mat_type>::type  in_elem_type;
+  typedef typename element_of<out_mat_type>::type out_elem_type;
+  
+  //need casts for complex case, when data pointer is double*, but
+  //we really want complex*
+  in_elem_type  *inp1 = (reinterpret_cast<in_elem_type* >(in1->data ))+1;
+  in_elem_type  *inp2 = (reinterpret_cast<in_elem_type* >(in2->data ))+1;
+  out_elem_type *outp = (reinterpret_cast<out_elem_type*>(out->data))+1;
+  pure_expr *r; //result expression
+  out_elem_type v; //result value
+
+  //we already performed the first zipwith, so now we apply f to all but the
+  //first column in the first row..
+  *lasti=0;
+  for (size_t j=1; j<in1->size2 && j<in2->size2; ++j,++inp1,++inp2,++outp) {
+    *lastj=j;
+    r = pure_appl( f, 2, to_expr(*inp1), to_expr(*inp2) );
+    if (!from_expr(r,v)) return r;
+    *outp = v;
+    pure_freenew(r);
+  }
+
+  //..then the rest of the rows
+  for (size_t i=1; i<in1->size1 && i<in2->size1; ++i) {
+    *lasti=i;
+    inp1 = (reinterpret_cast< in_elem_type*>(in1->data))+i*in1->tda; 
+    inp2 = (reinterpret_cast< in_elem_type*>(in2->data))+i*in2->tda; 
+    outp = (reinterpret_cast<out_elem_type*>(out->data))+i*out->tda;
+    for (size_t j=0; j<in1->size2 && j<in2->size2; ++j,++inp1,++inp2,++outp) {
+      *lastj=j;
+      r = pure_appl( f, 2, to_expr(*inp1), to_expr(*inp2) );
+      if (!from_expr(r,v)) return r;
+      *outp = v;
+      pure_freenew(r);
+    }
+  }
+  return 0;
+}
+
+
+//symbolic zipwith loop : zipped function results in heterogenous /
+//non-numerical types. This function may pick up where numerical_zipwith_loop
+//left off, in that case copying out the already-evaluated numbers from the
+//matrix 'num'
+
+template < typename in_mat_type,  //the operand matrix type
+           typename num_mat_type >
+void 
+symbolic_zipwith_loop
+( pure_expr *f,            //the function being zipped
+  in_mat_type *in1,        //the 1st operand matrix
+  in_mat_type *in2,        //the 2nd operand matrix
+
+  num_mat_type *num,       //the numerical matrix that _would_ have been 
+                           //  the output if the results of f had all been of
+                           //  the same numerical type
+                           
+  gsl_matrix_symbolic *out,//the symbolic matrix that will be the end result
+
+  size_t lasti ,           //some of the zipwith may already be evaluated. 
+  size_t lastj ,           //  lasti,lastj was the last element zipped
+  pure_expr *last )        //  and last is the result
+{
+  typedef typename element_of< in_mat_type>::type  in_elem_type;
+  typedef typename element_of<num_mat_type>::type num_elem_type;
+
+  in_elem_type *inp1 = 0, *inp2 = 0;
+  pure_expr **outp = 0;
+  num_elem_type *nump = 0;
+
+  //copy the already-evaluated stuff out of num
+  if (lasti>0 || lastj>0) {
+    if (lasti>0) {
+      for (size_t i=0; i<lasti; ++i) {
+        outp = out->data + i*out->tda;
+        nump = (reinterpret_cast<num_elem_type*>(num->data)) + i*num->tda;
+        for (size_t j=0; j<in1->size2 && j<in2->size2; ++j,++outp,++nump) {
+          *outp = to_expr(*nump);
+        }
+      }
+    }
+    if (lastj>0) {
+      outp = out->data + lasti*out->tda;
+      nump = (reinterpret_cast<num_elem_type*>(num->data)) + lasti*num->tda;
+      for (size_t j=0; j<lastj; ++j,++outp,++nump) {
+        *outp = to_expr(*nump);
+      }
+    }
+  } 
+
+  out->data[lasti*out->tda+lastj] = last;
+  lastj++;
+  if (lastj>=out->size2) {
+    lasti++;
+    lastj=0;
+    if (lasti>=out->size1) 
+      return;
+  }
+
+  inp1 = (reinterpret_cast<in_elem_type*>(in1->data))+lasti*in1->tda+lastj;
+  inp2 = (reinterpret_cast<in_elem_type*>(in2->data))+lasti*in2->tda+lastj;
+  outp = out->data+lasti*out->tda+lastj;
+  //finish the zipwith
+  for (size_t j=lastj; j<in1->size2 && j<in2->size2; ++j,++inp1,++inp2,++outp)
+  {
+    *outp = pure_appl(f,2,to_expr(*inp1),to_expr(*inp2));
+  }
+
+  for (size_t i=lasti+1; i<in1->size1 && i<in2->size1; ++i) {
+    inp1 =  (reinterpret_cast<in_elem_type*>(in1->data))+i*in1->tda; 
+    inp2 =  (reinterpret_cast<in_elem_type*>(in2->data))+i*in2->tda; 
+    outp = out->data+i*out->tda;
+    for (size_t j=0; j<in1->size2 && j<in2->size2; ++j,++inp1,++inp2,++outp) {
+      *outp = pure_appl(f,2,to_expr(*inp1),to_expr(*inp2));
+    }
+  }
+}
+
+
+//generic matrix zipwith, dispatches on input matrix type (the template
+//parameter) and output matrix type, which is guessed from the result type of
+//f (x!0) (y!0). The function speculates that all f (x!i) (y!i) will be of the
+//same type for all i. If not, numeric_zipwith_loop bails out and
+//symbolic_zipwith_loop takes over.
+
+template <typename matrix_type>
+pure_expr* matrix_zipwith( pure_expr *f, pure_expr *x, pure_expr *y )
+{
+  pure_ref(f);
+  pure_ref(x);
+  pure_ref(y);
+  typedef typename element_of<matrix_type>::type elem_type;
+  matrix_type *xm = static_cast<matrix_type*>(x->data.mat.p);
+  matrix_type *ym = static_cast<matrix_type*>(y->data.mat.p);
+
+  size_t size1 = xm->size1, size2 = xm->size2;
+  if (size1 > ym->size1) size1 = ym->size1;
+  if (size2 > ym->size2) size2 = ym->size2;
+
+  if (size1 == 0 || size2 == 0) {
+    // empty output matrix
+    gsl_matrix_symbolic *sm = create_symbolic_matrix(size1,size2);
+    return pure_symbolic_matrix(sm);
+  }
+
+  //make a guess at what the result type is by the first element
+  pure_expr *first = pure_appl(f,2,to_expr(xm->data[0]),to_expr(ym->data[0]));
+  int32_t firsti;
+  double firstd;
+  Complex firstc;
+  
+  size_t lasti=0,lastj=0;
+  pure_expr *out=0; //final result
+
+#if HAVE_GSL
+  if (from_expr(first,firstd)) { 
+    //DOUBLE
+    gsl_matrix *dm = create_double_matrix(size1,size2);
+    dm->data[0] = firstd;
+    pure_expr *last = numeric_zipwith_loop(f,xm,ym,dm,&lasti,&lastj);
+    if (!last) {
+      out = pure_double_matrix(dm);
+    } else {
+      gsl_matrix_symbolic *sm = create_symbolic_matrix(size1,size2);
+      symbolic_zipwith_loop(f,xm,ym,dm,sm,lasti,lastj,last);
+      gsl_matrix_free(dm);
+      out = pure_symbolic_matrix(sm);
+    }
+  } else if (from_expr(first,firsti)) { 
+    //INT
+    gsl_matrix_int *im = create_int_matrix(size1,size2);
+    im->data[0] = firsti; 
+    pure_expr *last = numeric_zipwith_loop(f,xm,ym,im,&lasti,&lastj);
+    if (!last) { 
+      out = pure_int_matrix(im);
+    } else {
+      gsl_matrix_symbolic *sm = create_symbolic_matrix(size1,size2);
+      symbolic_zipwith_loop(f,xm,ym,im,sm,lasti,lastj,last);
+      gsl_matrix_int_free(im);
+      out = pure_symbolic_matrix(sm);
+    }
+  } else if (from_expr(first,firstc)) { 
+    //COMPLEX
+    gsl_matrix_complex *cm = create_complex_matrix(size1,size2);  
+    reinterpret_cast<Complex*>(cm->data)[0] = firstc;
+    pure_expr *last = numeric_zipwith_loop(f,xm,ym,cm,&lasti,&lastj);
+    if (!last) { 
+      out = pure_complex_matrix(cm);
+    } else {
+      gsl_matrix_symbolic *sm = create_symbolic_matrix(size1,size2);
+      symbolic_zipwith_loop(f,xm,ym,cm,sm,lasti,lastj,last);
+      gsl_matrix_complex_free(cm);
+      out = pure_symbolic_matrix(sm);
+    }
+  } else 
+#endif //HAVE_GSL
+  { //for anything else, default to symbolic. 
+    gsl_matrix_symbolic *sm = create_symbolic_matrix(size1,size2);
+    symbolic_zipwith_loop(f,xm,ym,static_cast<matrix_type*>(0),sm,0,0,first);
     out = pure_symbolic_matrix(sm);
   }
 
@@ -8535,6 +8760,25 @@ pure_expr* matrix_map ( pure_expr *f, pure_expr *x )
     case EXPR::IMATRIX : return matrix::matrix_map<gsl_matrix_int>(f,x);
     case EXPR::CMATRIX : return matrix::matrix_map<gsl_matrix_complex>(f,x);
     case EXPR::MATRIX  : return matrix::matrix_map<gsl_matrix_symbolic>(f,x);
+    default : return 0;
+  }
+}
+
+// Note: This assumes that matrices x and y are already of the same type and
+// that the dimensions match up.
+extern "C" 
+pure_expr* matrix_zipwith ( pure_expr *f, pure_expr *x, pure_expr *y )
+{
+  if (x->tag != y->tag) return 0;
+  switch (x->tag) {
+    case EXPR::DMATRIX :
+      return matrix::matrix_zipwith<gsl_matrix>(f,x,y);
+    case EXPR::IMATRIX :
+      return matrix::matrix_zipwith<gsl_matrix_int>(f,x,y);
+    case EXPR::CMATRIX :
+      return matrix::matrix_zipwith<gsl_matrix_complex>(f,x,y);
+    case EXPR::MATRIX  :
+      return matrix::matrix_zipwith<gsl_matrix_symbolic>(f,x,y);
     default : return 0;
   }
 }
