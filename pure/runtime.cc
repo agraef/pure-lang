@@ -7760,10 +7760,10 @@ symbolic_scanl_loop
 
   *(outp++) = z;
   lastj++;
-  if (lastj>=in->size2) {
+  if ((size_t)lastj>=in->size2) {
     lasti++;
     lastj=0;
-    if (lasti>=in->size1) 
+    if ((size_t)lasti>=in->size1) 
       return;
   }
 
@@ -7942,7 +7942,7 @@ symbolic_scanr_loop
        
                          //        here we start at -2 because -1 was
                          //vvvvvvv already set before calling
-    for ( ptrdiff_t j=num->size2-2; j>lasti*in->size2+lastj; --j )
+    for ( size_t j=num->size2-2; j>lasti*in->size2+lastj; --j )
         *(outp--) = to_expr(*(nump--));
   } 
 
