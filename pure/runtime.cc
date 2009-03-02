@@ -7432,6 +7432,9 @@ void pure_sys_vars(void)
 #endif
 }
 
+
+/* Optimized matrix functions, by Scott E. Dillard. */
+
 namespace matrix { 
 //some templates to ease specialization of matrix functions
 
