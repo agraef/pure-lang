@@ -8372,6 +8372,103 @@ matrix_type* matrix_filter( pure_expr *p, pure_expr *x ) {
 }
 
 
+//generic matrix_takewhile/dropwhile. Throws failed_cond.
+
+template <typename matrix_type>
+matrix_type* matrix_takewhile( pure_expr *p, pure_expr *x ) {
+  matrix_type *xm = static_cast<matrix_type*>(x->data.mat.p);
+  typedef typename element_of<matrix_type>::type elem_type;
+
+  size_t count = 0;
+  for (size_t i=0; i<xm->size1; ++i) {
+    //pi is input read head
+    elem_type *pi = reinterpret_cast<elem_type*>(xm->data)+i*xm->tda; 
+    for (size_t j=0; j<xm->size2; ++j,++pi) {
+      pure_expr *b = pure_app( p, to_expr(*pi) );
+      int32_t bi;
+      bool res = pure_is_int(b,&bi);
+      pure_freenew(b);
+      if (!res) goto exception;
+      if (!bi) goto done;
+      count++;
+    }
+  }
+  goto done;
+
+ exception:
+    pure_unref(p);
+    pure_throw( pure_symbol( 
+      interpreter::g_interp->symtab.failed_cond_sym().f ) );
+    return 0; 
+
+ done:
+  //the output matrix
+  matrix_type *o = create_matrix<matrix_type>(1,count);
+  size_t n = count; //the size of the output matrix
+  elem_type *po = reinterpret_cast<elem_type*>(o->data);
+                  //po is output write head
+  count = 0;
+  for (size_t i=0; i<xm->size1; ++i) {
+    //pi is input read head
+    elem_type *pi = reinterpret_cast<elem_type*>(xm->data)+i*xm->tda; 
+    for (size_t j=0; j<xm->size2; ++j,++pi,++po) {
+      if (count >= n) goto really_done;
+      *po = *pi;
+      count++;
+    }
+  }
+ really_done:
+  return o;
+}
+
+template <typename matrix_type>
+matrix_type* matrix_dropwhile( pure_expr *p, pure_expr *x ) {
+  matrix_type *xm = static_cast<matrix_type*>(x->data.mat.p);
+  typedef typename element_of<matrix_type>::type elem_type;
+
+  size_t count = 0, lasti = xm->size1, lastj = xm->size2;
+  for (size_t i=0; i<xm->size1; ++i) {
+    //pi is input read head
+    elem_type *pi = reinterpret_cast<elem_type*>(xm->data)+i*xm->tda; 
+    for (size_t j=0; j<xm->size2; ++j,++pi) {
+      pure_expr *b = pure_app( p, to_expr(*pi) );
+      int32_t bi;
+      bool res = pure_is_int(b,&bi);
+      pure_freenew(b);
+      if (!res) goto exception;
+      if (!bi) {
+	lasti = i; lastj = j;
+	goto done;
+      }
+      count++;
+    }
+  }
+  goto done;
+
+ exception:
+    pure_unref(p);
+    pure_throw( pure_symbol( 
+      interpreter::g_interp->symtab.failed_cond_sym().f ) );
+    return 0; 
+
+ done:
+  //the output matrix
+  size_t n = xm->size1*xm->size2-count; //the size of the output matrix
+  matrix_type *o = create_matrix<matrix_type>(1,n);
+  elem_type *po = reinterpret_cast<elem_type*>(o->data);
+                  //po is output write head
+  for (size_t i=lasti; i<xm->size1; ++i) {
+    //pi is input read head
+    elem_type *pi = reinterpret_cast<elem_type*>(xm->data)+i*xm->tda+lastj;
+    for (size_t j=lastj; j<xm->size2; ++j,++pi,++po) {
+      *po = *pi;
+    }
+    lastj = 0;
+  }
+  return o;
+}
+
+
 //generic matrix checkers. Throw failed_cond if p(x!i) is not int for all i.
 
 template <typename matrix_type>
@@ -8584,6 +8681,42 @@ pure_expr* matrix_filter ( pure_expr *p, pure_expr *x )
     case EXPR::MATRIX : 
       return pure_symbolic_matrix
 	( matrix::matrix_filter<gsl_matrix_symbolic>(p,x) ); 
+    default : return 0;
+  }
+}
+
+extern "C"
+pure_expr* matrix_dropwhile ( pure_expr *p, pure_expr *x )
+{
+  switch ( x->tag ) {
+    case EXPR::DMATRIX : 
+      return pure_double_matrix( matrix::matrix_dropwhile<gsl_matrix>(p,x) ); 
+    case EXPR::IMATRIX : 
+      return pure_int_matrix( matrix::matrix_dropwhile<gsl_matrix_int>(p,x) ); 
+    case EXPR::CMATRIX : 
+      return pure_complex_matrix
+	( matrix::matrix_dropwhile<gsl_matrix_complex>(p,x) ); 
+    case EXPR::MATRIX : 
+      return pure_symbolic_matrix
+	( matrix::matrix_dropwhile<gsl_matrix_symbolic>(p,x) ); 
+    default : return 0;
+  }
+}
+
+extern "C"
+pure_expr* matrix_takewhile ( pure_expr *p, pure_expr *x )
+{
+  switch ( x->tag ) {
+    case EXPR::DMATRIX : 
+      return pure_double_matrix( matrix::matrix_takewhile<gsl_matrix>(p,x) ); 
+    case EXPR::IMATRIX : 
+      return pure_int_matrix( matrix::matrix_takewhile<gsl_matrix_int>(p,x) ); 
+    case EXPR::CMATRIX : 
+      return pure_complex_matrix
+	( matrix::matrix_takewhile<gsl_matrix_complex>(p,x) ); 
+    case EXPR::MATRIX : 
+      return pure_symbolic_matrix
+	( matrix::matrix_takewhile<gsl_matrix_symbolic>(p,x) ); 
     default : return 0;
   }
 }
