@@ -7481,6 +7481,23 @@ inline bool from_expr( pure_expr* e, int & i ) { return pure_is_int(e,&i); }
 inline bool from_expr( pure_expr* e, Complex & c ) { return pure_is_complex(e,&c.real()); }
 
 
+// generix matrix do
+template <typename matrix_type>
+void matrix_do( pure_expr *f, pure_expr *x ) {
+  matrix_type *xm = static_cast<matrix_type*>(x->data.mat.p);
+  typedef typename element_of<matrix_type>::type elem_type;
+
+  for (size_t i=0; i<xm->size1; ++i) {
+    //pi is input read head
+    elem_type *pi = reinterpret_cast<elem_type*>(xm->data)+i*xm->tda; 
+    for (size_t j=0; j<xm->size2; ++j,++pi) {
+      pure_expr *y = pure_app( f, to_expr(*pi) );
+      pure_freenew(y);
+    }
+  }
+}
+
+
 //numeric map loop : optmize common case that the output of the mapped
 //function is all of the same numerical type. If not, fall back to symbolic
 //map loop
@@ -8757,6 +8774,17 @@ bool matrix_any( pure_expr *p, pure_expr *x ) {
 
 } // namespace matrix
 
+
+extern "C" 
+void matrix_do ( pure_expr *f, pure_expr *x )
+{
+  switch (x->tag) {
+    case EXPR::DMATRIX : return matrix::matrix_do<gsl_matrix>(f,x);
+    case EXPR::IMATRIX : return matrix::matrix_do<gsl_matrix_int>(f,x);
+    case EXPR::CMATRIX : return matrix::matrix_do<gsl_matrix_complex>(f,x);
+    case EXPR::MATRIX  : return matrix::matrix_do<gsl_matrix_symbolic>(f,x);
+  }
+}
 
 extern "C" 
 pure_expr* matrix_map ( pure_expr *f, pure_expr *x )

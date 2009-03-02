@@ -342,10 +342,14 @@ colcatmap f x::matrix	= colcat (map f (list x));
    require that the row sizes of all arguments match.) */
 
 namespace C;
-/* Optimized matrix functions, by Scott E. Dillard. These are much faster than
-   converting from/to lists and using the list functions. */
+/* Optimized matrix functions, by Scott E. Dillard. These are *much* faster
+   (usually 10 times or more) than doing conversions from/to lists and using
+   the corresponding list functions. */
 extern expr* matrix_all(expr*,expr*);
 extern expr* matrix_any(expr*,expr*);
+extern void  matrix_do(expr*,expr*);
+extern expr* matrix_map(expr*,expr*);
+extern expr* matrix_zipwith(expr*,expr*,expr*);
 extern expr* matrix_filter(expr*,expr*);
 extern expr* matrix_dropwhile(expr*,expr*);
 extern expr* matrix_takewhile(expr*,expr*);
@@ -353,8 +357,6 @@ extern expr* matrix_foldl(expr*,expr*,expr*);
 extern expr* matrix_foldl1(expr*,expr*);
 extern expr* matrix_foldr(expr*,expr*,expr*);
 extern expr* matrix_foldr1(expr*,expr*);
-extern expr* matrix_map(expr*,expr*);
-extern expr* matrix_zipwith(expr*,expr*,expr*);
 extern expr* matrix_scanl(expr*,expr*,expr*);
 extern expr* matrix_scanl1(expr*,expr*);
 extern expr* matrix_scanr(expr*,expr*,expr*);
@@ -366,7 +368,7 @@ cyclen n::int x::matrix	= cyclen n (list x) if ~null x;
 
 all p x::matrix		= matrix_all p x;
 any p x::matrix		= matrix_any p x;
-do f x::matrix		= foldl (\_ x -> f x $$ ()) () x;
+do f x::matrix		= matrix_do f x;
 drop k::int x::matrix	= x!!(k..#x-1);
 dropwhile p x::matrix	= matrix_dropwhile p x;
 filter p x::matrix      = matrix_filter p x;
@@ -418,10 +420,10 @@ zip3 x::matrix y::matrix z::matrix
 			    if dim x!1==dim y!1 && dim x!1==dim z!1;
 
 dowith f x::matrix y::matrix
-			= dowith f (list x) (list y)
+			= do (uncurry f) (zip x y)
 			    if dim x!1==dim y!1;
 dowith3 f x::matrix y::matrix z::matrix
-			= dowith3 f (list x) (list y) (list z)
+			= do (uncurry3 f) (zip3 x y z)
 			    if dim x!1==dim y!1 && dim x!1==dim z!1;
 
 unzip x::matrix		= redim (dim x) (colcat u),
