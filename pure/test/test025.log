@@ -827,6 +827,66 @@ let f = \i/*0:*/ -> \j/*0:*/ -> i/*1:*/+j/*0:*/+1.0 {
   state 1: #0
 };
 {
+  rule #0: y = scanl1 f x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let y = scanl1 f x;
+x;
+{1.0,2.0,3.0;4.0,5.0,6.0}
+y;
+{1.0,4.0,8.0,13.0,19.0,26.0}
+list y==scanl1 f (list x);
+1
+{
+  rule #0: f = \i -> \j -> if doublep i then str (i+j) else 1.0
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let f = \i/*0:*/ -> \j/*0:*/ -> if doublep i/*1:*/ then str (i/*1:*/+j/*0:*/) else 1.0 {
+  rule #0: j = if doublep i then str (i+j) else 1.0
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: i = \j -> if doublep i then str (i+j) else 1.0
+  state 0: #0
+	<var> state 1
+  state 1: #0
+};
+{
+  rule #0: y = scanl1 f x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let y = scanl1 f x;
+x;
+{1.0,2.0,3.0;4.0,5.0,6.0}
+y;
+{1.0,"3.0",1.0,"5.0",1.0,"7.0"}
+list y==scanl1 f (list x);
+1
+{
+  rule #0: f = \i -> \j -> i+j+1.0
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let f = \i/*0:*/ -> \j/*0:*/ -> i/*1:*/+j/*0:*/+1.0 {
+  rule #0: j = i+j+1.0
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: i = \j -> i+j+1.0
+  state 0: #0
+	<var> state 1
+  state 1: #0
+};
+{
   rule #0: y = scanr f 0.0 x
   state 0: #0
 	<var> state 1
@@ -868,6 +928,66 @@ x;
 y;
 {1.0,"3.0",1.0,"5.0",1.0,"6.0",0.0}
 list y==scanr f 0.0 (list x);
+1
+{
+  rule #0: f = \i -> \j -> i+j+1.0
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let f = \i/*0:*/ -> \j/*0:*/ -> i/*1:*/+j/*0:*/+1.0 {
+  rule #0: j = i+j+1.0
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: i = \j -> i+j+1.0
+  state 0: #0
+	<var> state 1
+  state 1: #0
+};
+{
+  rule #0: y = scanr1 f x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let y = scanr1 f x;
+x;
+{1.0,2.0,3.0;4.0,5.0,6.0}
+y;
+{26.0,24.0,21.0,17.0,12.0,6.0}
+list y==scanr1 f (list x);
+1
+{
+  rule #0: f = \i -> \j -> if doublep j then str (i+j) else 1.0
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let f = \i/*0:*/ -> \j/*0:*/ -> if doublep j/*0:*/ then str (i/*1:*/+j/*0:*/) else 1.0 {
+  rule #0: j = if doublep j then str (i+j) else 1.0
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: i = \j -> if doublep j then str (i+j) else 1.0
+  state 0: #0
+	<var> state 1
+  state 1: #0
+};
+{
+  rule #0: y = scanr1 f x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let y = scanr1 f x;
+x;
+{1.0,2.0,3.0;4.0,5.0,6.0}
+y;
+{"2.0",1.0,"4.0",1.0,"11.0",6.0}
+list y==scanr1 f (list x);
 1
 {
   rule #0: x = imatrix {1,2,3;4,5,6}

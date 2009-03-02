@@ -845,7 +845,9 @@ pure_expr* matrix_foldl1(pure_expr *f, pure_expr *x);
 pure_expr* matrix_foldr(pure_expr *f, pure_expr *z, pure_expr *x);
 pure_expr* matrix_foldr1(pure_expr *f, pure_expr *x);
 pure_expr* matrix_scanl(pure_expr *f, pure_expr *z, pure_expr *x);
+pure_expr* matrix_scanl1(pure_expr *f, pure_expr *x);
 pure_expr* matrix_scanr(pure_expr *f, pure_expr *z, pure_expr *x);
+pure_expr* matrix_scanr1(pure_expr *f, pure_expr *x);
 
 /* Compute a 32 bit hash code of a Pure expression. This makes it possible to
    use arbitary Pure values as keys in a hash table. */
