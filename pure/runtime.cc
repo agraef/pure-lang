@@ -1,3 +1,4 @@
+// vim: set shiftwidth=2 softtabstop=2:
 
 /* AIX requires this to be the first thing in the file.  */
 #ifndef __GNUC__
@@ -39,6 +40,9 @@ char *alloca ();
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_matrix.h>
 #endif
+
+#include <complex> //only the type is used, not any methods
+typedef std::complex<double> Complex;
 
 /* Implement the GSL-like operations on symbolic matrices that we need. */
 
@@ -7427,3 +7431,810 @@ void pure_sys_vars(void)
   cdf(interp, "LC_TIME",	pure_int(LC_TIME));
 #endif
 }
+
+
+
+
+namespace matrix { 
+//some templates to ease specialization of matrix functions
+
+
+//the element type of a matrix
+template <typename t> struct element_of {};
+template <> struct element_of<gsl_matrix> { typedef double type; };
+template <> struct element_of<gsl_matrix_int> { typedef int type; };
+template <> struct element_of<gsl_matrix_complex> { typedef Complex type; };
+template <> struct element_of<gsl_matrix_symbolic> { typedef pure_expr* type; };
+
+//create a matrix
+template <typename t> t* create_matrix(size_t n,size_t m);
+template <> gsl_matrix* create_matrix<gsl_matrix>(size_t n, size_t m) { return create_double_matrix(n,m); }
+template <> gsl_matrix_int* create_matrix<gsl_matrix_int>(size_t n, size_t m) { return create_int_matrix(n,m); }
+template <> gsl_matrix_complex* create_matrix<gsl_matrix_complex>(size_t n, size_t m) { return create_complex_matrix(n,m); }
+template <> gsl_matrix_symbolic* create_matrix<gsl_matrix_symbolic>(size_t n, size_t m) { return create_symbolic_matrix(n,m); }
+
+//free a matrix
+void matrix_free(gsl_matrix *m) { gsl_matrix_free(m); }
+void matrix_free(gsl_matrix_int *m) { gsl_matrix_int_free(m); }
+void matrix_free(gsl_matrix_complex *m) { gsl_matrix_complex_free(m); }
+void matrix_free(gsl_matrix_symbolic *m) { gsl_matrix_symbolic_free(m); }
+
+//convert a matrix element into an expression
+static inline pure_expr* to_expr(double & d) { return pure_double(d); }
+static inline pure_expr* to_expr(int32_t i) { return pure_int(i); }
+static inline pure_expr* to_expr(Complex & c) 
+{ 
+  return pure_complex(&c.real()); 
+  //ASSUMPTION: real, imag fields are contiguous, in order. 
+  //This is the case for GNU C++.
+}
+static inline pure_expr* to_expr(pure_expr* e) { return e; }
+
+
+//convert an expression into a matrix element
+inline bool from_expr( pure_expr* e, double & d ) { return pure_is_double(e,&d); }
+inline bool from_expr( pure_expr* e, int & i ) { return pure_is_int(e,&i); }
+inline bool from_expr( pure_expr* e, Complex & c ) { return pure_is_complex(e,&c.real()); }
+
+
+//numeric map loop : optmize common case that the output of the mapped function
+//is all of the same numerical type. If not, fall back to symbolic map loop
+
+template < typename in_mat_type,  
+           typename out_mat_type >
+pure_expr* 
+numeric_map_loop
+( pure_expr *f,       //the function being mapped
+  in_mat_type *in,    //the operand matrix
+  out_mat_type *out,  //the result matrix
+  size_t *lasti,      //last row and column written to 
+  size_t *lastj )     //  before bailing out in the event that
+                      //  the output of f is not the right type
+{
+  typedef typename element_of< in_mat_type>::type  in_elem_type;
+  typedef typename element_of<out_mat_type>::type out_elem_type;
+  
+  //need casts for complex case, when data pointer is double*, but
+  //we really want complex*
+  in_elem_type  *inp  = (reinterpret_cast<in_elem_type* >(in->data ))+1;
+  out_elem_type *outp = (reinterpret_cast<out_elem_type*>(out->data))+1;
+  pure_expr *r; //result expression
+  out_elem_type v; //result value
+
+  //we alredy performed the first map, so now we apply f to all but the first
+  //column in the first row..
+  *lasti=0;
+  for (size_t j=1; j<in->size2; ++j,++inp,++outp) {
+    *lastj=j;
+    r = pure_app( f, to_expr(*inp) );
+    if (!from_expr(r,v)) return r;
+    *outp = v;
+    pure_freenew(r);
+  }
+
+  //..then the rest of the rows
+  for (size_t i=1; i<in->size1; ++i) {
+    *lasti=i;
+    inp  = (reinterpret_cast< in_elem_type*>( in->data))+i*in->tda; 
+    outp = (reinterpret_cast<out_elem_type*>(out->data))+i*out->tda;
+    for (size_t j=0; j<in->size2; ++j,++inp,++outp) {
+      *lastj=j;
+      r = pure_app( f, to_expr(*inp) );
+      if (!from_expr(r,v)) return r;
+      *outp = v;
+      pure_freenew(r);
+    }
+  }
+  return 0;
+}
+
+
+//symbolic map loop : mapped function results in heterogenous / non-numerical
+//types. This function may pick up where numerical_map_loop left off, in that
+//case copying out the already-evaluated numbers from the matrix 'num'
+
+template < typename in_mat_type,  //the operand matrix type
+           typename num_mat_type >
+void 
+symbolic_map_loop
+( pure_expr *f,            //the function being mapped
+  in_mat_type *in,         //the operand matrix
+
+  num_mat_type *num,       //the numerical matrix that _would_ have been 
+                           //  the output if the results of f had all been of
+                           //  the same numerical type
+                           
+  gsl_matrix_symbolic *out,//the symbolic matrix that will be the end result
+
+  size_t lasti ,           //some of the map may already be evaluated. 
+  size_t lastj ,           //  lasti,lastj was the last element mapped
+  pure_expr *last )        //  and last is the result
+{
+  typedef typename element_of< in_mat_type>::type  in_elem_type;
+  typedef typename element_of<num_mat_type>::type num_elem_type;
+
+  in_elem_type *inp = 0;
+  pure_expr **outp = 0;
+  num_elem_type *nump = 0;
+
+  //copy the already-evaluated stuff out of num
+  if (lasti>0 || lastj>0) {
+    if (lasti>0) {
+      for (size_t i=0; i<lasti; ++i) {
+        outp = out->data + i*out->tda;
+        nump = (reinterpret_cast<num_elem_type*>(num->data)) + i*num->tda;
+        for (size_t j=0; j<in->size2; ++j,++outp,++nump) {
+          *outp = to_expr(*nump);
+        }
+      }
+    }
+    if (lastj>0) {
+      outp = out->data + lasti*out->tda;
+      nump = (reinterpret_cast<num_elem_type*>(num->data)) + lasti*num->tda;
+      for (size_t j=0; j<lastj; ++j,++outp,++nump) {
+        *outp = to_expr(*nump);
+      }
+    }
+  } 
+
+  out->data[lasti*out->tda+lastj] = last;
+  lastj++;
+  if (lastj>=out->size2) {
+    lasti++;
+    lastj=0;
+    if (lasti>=out->size1) 
+      return;
+  }
+
+  inp  = (reinterpret_cast<in_elem_type*>(in->data))+lasti*in->tda+lastj;
+  outp = out->data+lasti*out->tda+lastj;
+  //finish the map
+  for (size_t j=lastj; j<in->size2; ++j,++inp,++outp) {
+    *outp = pure_app(f,to_expr(*inp));
+  }
+
+  for (size_t i=lasti+1; i<in->size1; ++i) {
+    inp =  (reinterpret_cast<in_elem_type*>(in->data))+i*in->tda; 
+    outp = out->data+i*out->tda;
+    for (size_t j=0; j<in->size2; ++j,++inp,++outp) {
+      *outp = pure_app(f,to_expr(*inp));
+    }
+  }
+}
+
+
+//generic matrix map, dispatches on input matrix type (the template parameter)
+//and output matrix type, which is guessed from the result type of f (x!0).
+//The function speculates that all f(x!i) will be of the same type for all i.
+//If not, numeric_map_loop bails out and symbolic_map_loop takes over.
+
+template <typename matrix_type>
+pure_expr* matrix_map( pure_expr *f, pure_expr *x )
+{
+  pure_ref(f);
+  pure_ref(x);
+  typedef typename element_of<matrix_type>::type elem_type;
+  matrix_type *xm = static_cast<matrix_type*>(x->data.mat.p);
+
+  //make a guess at what the result type is by the first element
+  pure_expr *first = pure_app(f,to_expr(xm->data[0]));
+  int32_t firsti;
+  double firstd;
+  Complex firstc;
+  
+  size_t lasti=0,lastj=0;
+  pure_expr *out=0; //final result
+
+#if HAVE_GSL
+  if (from_expr(first,firstd)) { 
+    //DOUBLE
+    gsl_matrix *dm = create_double_matrix(xm->size1,xm->size2);
+    dm->data[0] = firstd;
+    pure_expr *last = numeric_map_loop(f,xm,dm,&lasti,&lastj);
+    if (!last) {
+      out = pure_double_matrix(dm);
+    } else {
+      gsl_matrix_symbolic *sm = create_symbolic_matrix(xm->size1,xm->size2);
+      symbolic_map_loop(f,xm,dm,sm,lasti,lastj,last);
+      gsl_matrix_free(dm);
+      out = pure_symbolic_matrix(sm);
+    }
+  } else if (from_expr(first,firsti)) { 
+    //INT
+    gsl_matrix_int *im = create_int_matrix(xm->size1,xm->size2);
+    im->data[0] = firsti; 
+    pure_expr *last = numeric_map_loop(f,xm,im,&lasti,&lastj);
+    if (!last) { 
+      out = pure_int_matrix(im);
+    } else {
+      gsl_matrix_symbolic *sm = create_symbolic_matrix(xm->size1,xm->size2);
+      symbolic_map_loop(f,xm,im,sm,lasti,lastj,last);
+      gsl_matrix_int_free(im);
+      out = pure_symbolic_matrix(sm);
+    }
+  } else if (from_expr(first,firstc)) { 
+    //COMPLEX
+    gsl_matrix_complex *cm = create_complex_matrix(xm->size1,xm->size2);  
+    reinterpret_cast<Complex*>(cm->data)[0] = firstc;
+    pure_expr *last = numeric_map_loop(f,xm,cm,&lasti,&lastj);
+    if (!last) { 
+      out = pure_complex_matrix(cm);
+    } else {
+      gsl_matrix_symbolic *sm = create_symbolic_matrix(xm->size1,xm->size2);
+      symbolic_map_loop(f,xm,cm,sm,lasti,lastj,last);
+      gsl_matrix_complex_free(cm);
+      out = pure_symbolic_matrix(sm);
+    }
+  } else 
+#endif //HAVE_GSL
+  { //for anything else, default to symbolic. 
+    gsl_matrix_symbolic *sm = create_symbolic_matrix(xm->size1,xm->size2);
+    symbolic_map_loop(f,xm,static_cast<matrix_type*>(0),sm,0,0,first);
+    out = pure_symbolic_matrix(sm);
+  }
+
+  if (first->refc==0) pure_freenew(first);
+  pure_unref(f);
+  pure_unref(x);
+  return out;
+}
+
+
+
+
+
+
+
+
+//numeric scanl loop : optmize common case that the output of the function
+//is all of the same numerical type. If not, fall back to symbolic scanl loop
+
+template < typename in_mat_type,  
+           typename out_mat_type >
+pure_expr* 
+numeric_scanl_loop
+( pure_expr *f,       //the function being mapped
+  pure_expr *z,       //seed value
+  in_mat_type *in,    //the operand matrix
+  out_mat_type *out,  //the result matrix
+  size_t *lasti,      //last row and column written to 
+  size_t *lastj )     //  before bailing out in the event that
+                      //  the output of f is not the right type
+{
+  typedef typename element_of< in_mat_type>::type  in_elem_type;
+  typedef typename element_of<out_mat_type>::type out_elem_type;
+  
+  out_elem_type v;
+  
+  if (in->size1 == 0 || in->size2 == 0) return 0;
+
+  out_elem_type *outp = (reinterpret_cast<out_elem_type*>(out->data))+1;
+  for (size_t i=0; i<in->size1; ++i) {
+    *lasti=i;
+    in_elem_type *inp = (reinterpret_cast<in_elem_type*>(in->data))+i*in->tda; 
+    for (size_t j=0; j<in->size2; ++j,++inp,++outp) {
+      *lastj=j;
+      pure_expr *zz = pure_new(z);
+      z = pure_appl( f, 2, z, to_expr(*inp) );
+      if (!from_expr(z,v)) return z;
+      *outp = v;
+      pure_free(zz);
+    }
+  }
+  return 0;
+}
+
+
+//symbolic scanl loop : function results in heterogenous / non-numerical
+//types. This function may pick up where numerical_scanl_loop left off, in that
+//case copying out the already-evaluated numbers from the matrix 'num'
+
+template < typename in_mat_type,  //the operand matrix type
+           typename num_mat_type >
+void 
+symbolic_scanl_loop
+( pure_expr *f,            //The function being mapped
+  pure_expr *z,            //The seed value OR last value produced in
+                           //  numerical loop
+  in_mat_type *in,         //The operand matrix
+  num_mat_type *num,       //The numerical matrix that _would_ have been 
+                           //  the output if the results of f had all been of
+                           //  the same numerical type. Possibly null.
+  gsl_matrix_symbolic *out,//The symbolic matrix that will be the end result
+  ptrdiff_t lasti ,        //Some of the scan may already be evaluated. 
+  ptrdiff_t lastj )        //lasti,lastj was the last argument given to f
+                              //and z was the result.
+{
+  typedef typename element_of< in_mat_type>::type  in_elem_type;
+  typedef typename element_of<num_mat_type>::type num_elem_type;
+
+  in_elem_type *inp = 0;
+  pure_expr **outp = out->data + (!num?0:1); 
+    // num==0 indicates that z is the initial seed value
+
+  //copy the already-evaluated stuff out of num
+  if (num) {
+    assert(num->size1 == 1);
+    assert(num->size1 == out->size1);
+    num_elem_type *nump = reinterpret_cast<num_elem_type*>(num->data);
+    for (size_t j=0; j<lasti*in->size2+lastj; ++j) {
+        *(outp++) = to_expr(*(nump++)) ;
+    }
+  }
+
+  *(outp++) = z;
+  lastj++;
+  if (lastj>=in->size2) {
+    lasti++;
+    lastj=0;
+    if (lasti>=in->size1) 
+      return;
+  }
+
+  inp = reinterpret_cast<in_elem_type*>(in->data)+lasti*in->tda+lastj;
+  //finish the scan
+  for (size_t j=lastj; j<in->size2; ++j) {
+    pure_expr *zz = pure_new(z);
+    *(outp++) = z = pure_appl(f,2,z,to_expr(*(inp++)));
+    pure_unref(zz);
+  }
+
+  for (size_t i=lasti+1; i<in->size1; ++i) {
+    inp = reinterpret_cast<in_elem_type*>(in->data)+i*in->tda; 
+    for (size_t j=0; j<in->size2; ++j) {
+      pure_expr *zz = pure_new(z);
+      *(outp++) = z = pure_appl(f,2,z,to_expr(*(inp++)));
+      pure_unref(zz);
+    }
+  }
+
+  assert(out->size1==1);
+  for (size_t i=0; i<out->size2; ++i) assert(out->data[i]);
+}
+
+
+
+
+
+//Generic matrix scanl, dispatches on input matrix type (the template
+//parameter) and output matrix type, which is guessed from the seed value (z).
+//The function speculates that all results will be of the same type.  If not,
+//numeric_scanl_loop bails out and symbolic_scanl_loop takes over.
+
+template <typename matrix_type>
+pure_expr* matrix_scanl( pure_expr *f, pure_expr *z, pure_expr *x )
+{
+  pure_ref(f);
+  pure_ref(x);
+
+  typedef typename element_of<matrix_type>::type elem_type;
+  matrix_type *xm = static_cast<matrix_type*>(x->data.mat.p);
+  size_t lasti,lastj;
+  pure_expr *out; //result matrix
+
+  double zd;
+  int zi;
+  Complex zc;
+
+#if HAVE_GSL
+  if (from_expr(z,zd)) {
+    gsl_matrix *dm = create_double_matrix(1,1+xm->size1*xm->size2);
+    dm->data[0] = zd;
+    pure_expr *last = numeric_scanl_loop(f,z,xm,dm,&lasti,&lastj);
+    if (!last) {
+      out = pure_double_matrix(dm); 
+    } else {
+      gsl_matrix_symbolic *sm = create_symbolic_matrix(1,1+xm->size1*xm->size2);
+      sm->data[0] = z;
+      symbolic_scanl_loop(f,last,xm,dm,sm,lasti,lastj);
+      gsl_matrix_free(dm);
+      out = pure_symbolic_matrix(sm);
+    }
+  } else if (from_expr(z,zi)) {
+    gsl_matrix_int *im = create_int_matrix(1,1+xm->size1*xm->size2);
+    im->data[0] = zi; 
+    pure_expr *last = numeric_scanl_loop(f,z,xm,im,&lasti,&lastj);
+    if (!last) { 
+      out = pure_int_matrix(im);
+    } else {
+      gsl_matrix_symbolic *sm = create_symbolic_matrix(1,1+xm->size1*xm->size2);
+      sm->data[0] = z;
+      symbolic_scanl_loop(f,last,xm,im,sm,lasti,lastj);
+      gsl_matrix_int_free(im);
+      out = pure_symbolic_matrix(sm);
+    }
+  } else if (from_expr(z,zc)) {
+    gsl_matrix_complex *cm = create_complex_matrix(1,1+xm->size1*xm->size2);
+    reinterpret_cast<Complex*>(cm->data)[0] = zc; 
+    pure_expr *last = numeric_scanl_loop(f,z,xm,cm,&lasti,&lastj);
+    if (!last) { 
+      out = pure_complex_matrix(cm);
+    } else {
+      gsl_matrix_symbolic *sm = create_symbolic_matrix(1,1+xm->size1*xm->size2);
+      sm->data[0] = z;
+      symbolic_scanl_loop(f,last,xm,cm,sm,lasti,lastj);
+      gsl_matrix_complex_free(cm);
+      out = pure_symbolic_matrix(sm);
+    }
+  } else
+#endif //HAVE_GSL
+  { //for anything else, default to symbolic. 
+      gsl_matrix_symbolic *sm = create_symbolic_matrix(1,1+xm->size1*xm->size2);
+      symbolic_scanl_loop(f,z,xm,static_cast<matrix_type*>(0),sm,0,-1);
+      out = pure_symbolic_matrix(sm);
+  }
+  pure_unref(f);
+  pure_unref(x);
+  return out;
+}
+
+
+
+
+
+//Numeric scanr loop : optmize common case that the output of the function
+//is all of the same numerical type. If not, fall back to symbolic scanl loop
+
+template < typename in_mat_type,  
+           typename out_mat_type >
+pure_expr* 
+numeric_scanr_loop
+( pure_expr *f,       //the function being mapped
+  pure_expr *z,       //seed value
+  in_mat_type *in,    //the operand matrix
+  out_mat_type *out,  //the result matrix
+  ptrdiff_t *lasti,   //last row and column written to 
+  ptrdiff_t *lastj )  //  before bailing out in the event that
+                      //  the output of f is not the right type
+{
+  typedef typename element_of< in_mat_type>::type  in_elem_type;
+  typedef typename element_of<out_mat_type>::type out_elem_type;
+  
+  if (in->size1 == 0 || in->size2 == 0) return 0;
+  
+  out_elem_type v;
+  out_elem_type *outp = reinterpret_cast<out_elem_type*>(out->data)+
+                         in->size1*in->size2-1;
+  for (ptrdiff_t i=in->size1-1; i>=0; --i) {
+    *lasti=i;
+    in_elem_type *inp = reinterpret_cast<in_elem_type*>(in->data)+
+                         i*in->tda+in->size2-1; 
+    for (ptrdiff_t j=in->size2-1; j>=0; --j,--inp,--outp) {
+      *lastj=j;
+      pure_expr *zz = pure_new(z);
+      z = pure_appl( f, 2, to_expr(*inp), z );
+      if (!from_expr(z,v)) return z;
+      *outp = v;
+      pure_free(zz);
+    }
+  }
+  return 0;
+}
+
+
+//Symbolic scanr loop : function results in heterogenous / non-numerical
+//types. This function may pick up where numerical_scanl_loop left off, in that
+//case copying out the already-evaluated numbers from the matrix 'num'
+
+template < typename in_mat_type,  //the operand matrix type
+           typename num_mat_type >
+void 
+symbolic_scanr_loop
+( pure_expr *f,            //The function being mapped
+  pure_expr *z,            //The seed value OR the last result of the
+                           //  numerical loop.
+  in_mat_type *in,         //The operand matrix
+  num_mat_type *num,       //The numerical matrix that would have been 
+                           //  the output if the results of f had all been of
+                           //  the same numerical type. Possibly null.
+  gsl_matrix_symbolic *out,//The symbolic matrix that will be the end result
+  ptrdiff_t lasti ,        //Some of the scan may already be evaluated. 
+  ptrdiff_t lastj )        //lasti,lastj was the last argument given to f
+                              //and z was the result.
+{
+  typedef typename element_of< in_mat_type>::type  in_elem_type;
+  typedef typename element_of<num_mat_type>::type num_elem_type;
+
+  in_elem_type *inp = 0;
+  pure_expr **outp = out->data+in->size1*in->size2 - (!num?0:1);
+    //num==0 indicates that z is the initial seed value
+
+  //copy the already-evaluated stuff out of num
+  if (num) {
+    assert(num->size1 == 1);
+    assert(num->size1 == out->size1);
+    num_elem_type *nump = 
+      reinterpret_cast<num_elem_type*>(num->data)+num->size2-1;
+       
+                         //        here we start at -2 because -1 was
+                         //vvvvvvv already set before calling
+    for ( ptrdiff_t j=num->size2-2; j>lasti*in->size2+lastj; --j )
+        *(outp--) = to_expr(*(nump--));
+  } 
+
+  *(outp--) = z;
+  lastj--;
+  if (lastj == -1) {
+    lasti--;
+    lastj=in->size2-1;
+    if (lasti == -1) 
+      return;
+  }
+
+  inp = reinterpret_cast<in_elem_type*>(in->data)+lasti*in->tda+lastj;
+  //finish the scan
+  for (ptrdiff_t j=lastj; j>=0; --j) {
+    pure_expr *zz = pure_new(z);
+    *(outp--) = z = pure_appl(f,2,to_expr(*(inp--)),z);
+    pure_unref(zz);
+  }
+
+  for (ptrdiff_t i=lasti-1; i>=0; --i) {
+    inp = reinterpret_cast<in_elem_type*>(in->data)+i*in->tda+in->size2-1; 
+    for (ptrdiff_t j=in->size2-1; j>=0; --j) {
+      pure_expr *zz = pure_new(z);
+      *(outp--) = z = pure_appl(f,2,to_expr(*(inp--)),z);
+      pure_unref(zz);
+    }
+  }
+
+  assert(out->size1==1);
+  for (size_t i=0; i<out->size2; ++i) assert(out->data[i]);
+}
+
+
+//Generic matrix scanr, dispatches on input matrix type (the template
+//parameter) and output matrix type, which is guessed from the seed value (z).
+//The function speculates that all values will be of the same type for all i.
+//If not, numeric_scanr_loop bails out and symbolic_scanr_loop takes over.
+
+template <typename matrix_type>
+pure_expr* matrix_scanr( pure_expr *f, pure_expr *z, pure_expr *x )
+{
+  pure_ref(f);
+  pure_ref(x);
+
+  typedef typename element_of<matrix_type>::type elem_type;
+  matrix_type *xm = static_cast<matrix_type*>(x->data.mat.p);
+  ptrdiff_t lasti,lastj;
+  pure_expr *out; //result matrix
+  double zd;
+  int32_t zi;
+  Complex zc;
+
+#if HAVE_GSL
+  if (from_expr(z,zd)) {
+    //DOUBLE
+    gsl_matrix *dm = create_double_matrix(1,1+xm->size1*xm->size2);
+    dm->data[xm->size1*xm->size2] = zd;
+    pure_expr *last = numeric_scanr_loop(f,z,xm,dm,&lasti,&lastj);
+    if (!last) {
+      out = pure_double_matrix(dm); 
+    } else {
+      gsl_matrix_symbolic *sm = 
+          create_symbolic_matrix(1,1+xm->size1*xm->size2);
+      sm->data[xm->size1*xm->size2] = z;
+      symbolic_scanr_loop(f,last,xm,dm,sm,lasti,lastj);
+      gsl_matrix_free(dm);
+      out = pure_symbolic_matrix(sm);
+    }
+  } else if (from_expr(z,zi)) {
+    //INT
+    gsl_matrix_int *im = create_int_matrix(1,1+xm->size1*xm->size2);
+    im->data[xm->size1*xm->size2] = zi; 
+    pure_expr *last = numeric_scanr_loop(f,z,xm,im,&lasti,&lastj);
+    if (!last) { 
+      out = pure_int_matrix(im);
+    } else {
+      gsl_matrix_symbolic *sm = 
+          create_symbolic_matrix(1,1+xm->size1*xm->size2);
+      sm->data[xm->size1*xm->size2] = z;
+      symbolic_scanr_loop(f,last,xm,im,sm,lasti,lastj);
+      gsl_matrix_int_free(im);
+      out = pure_symbolic_matrix(sm);
+    }
+  } else if (from_expr(z,zc)) {
+    //COMPLEX
+    gsl_matrix_complex *cm = create_complex_matrix(1,1+xm->size1*xm->size2);
+    reinterpret_cast<Complex*>(cm->data)[xm->size1*xm->size2] = zc; 
+    pure_expr *last = numeric_scanr_loop(f,z,xm,cm,&lasti,&lastj);
+    if (!last) { 
+      out = pure_complex_matrix(cm);
+    } else {
+      gsl_matrix_symbolic *sm = 
+          create_symbolic_matrix(1,1+xm->size1*xm->size2);
+      sm->data[xm->size1*xm->size2] = z;
+      symbolic_scanr_loop(f,last,xm,cm,sm,lasti,lastj);
+      gsl_matrix_complex_free(cm);
+      out = pure_symbolic_matrix(sm);
+    }
+  } else 
+#endif //HAVE_GSL
+  { 
+    //for anything else, default to symbolic. 
+    gsl_matrix_symbolic *sm = 
+      create_symbolic_matrix(1,1+xm->size1*xm->size2);
+    symbolic_scanr_loop(f,z,xm,static_cast<matrix_type*>(0),sm,
+                        xm->size1-1,xm->size2);
+    out = pure_symbolic_matrix(sm);
+  }
+  pure_unref(f);
+  pure_unref(x);
+  return out;
+}
+
+
+
+//generic matrix foldl
+template <typename matrix_type>
+pure_expr* matrix_foldl( pure_expr *f, pure_expr *z, pure_expr *x )
+{
+  pure_ref(f);
+  pure_ref(x);
+  matrix_type *xm = static_cast<matrix_type*>(x->data.mat.p);
+  typedef typename element_of<matrix_type>::type elem_type;
+
+  for (size_t i=0; i<xm->size1; ++i) {
+    elem_type *p = reinterpret_cast<elem_type*>(xm->data)+i*xm->tda;
+    for (size_t j=0; j<xm->size2; ++j,++p) {
+      pure_expr *zz = pure_new(z);
+      z = pure_appl( f, 2, z, to_expr(*p)  );
+      pure_free(zz);
+    }
+  }
+  pure_unref(f);
+  pure_unref(x);
+  return z;
+}
+
+
+//generic matrix foldr
+template <typename matrix_type>
+pure_expr* matrix_foldr( pure_expr *f, pure_expr *z, pure_expr *x )
+{
+  pure_ref(f);
+  pure_ref(x);
+  matrix_type *xm = static_cast<matrix_type*>(x->data.mat.p);
+  typedef typename element_of<matrix_type>::type elem_type;
+
+  for (ptrdiff_t i=xm->size1-1; i>=0; --i) {
+    elem_type *p = reinterpret_cast<elem_type*>(xm->data)+i*xm->tda+xm->size2-1;
+    for (ptrdiff_t j=xm->size2-1; j>=0; --j,--p) {
+      pure_expr *zz = pure_new(z);
+      z = pure_appl( f, 2, to_expr(*p), z  );
+      pure_free(zz);
+    }
+  }
+  pure_unref(f);
+  pure_unref(x);
+  return z;
+}
+
+
+//generic matrix filter. Throws failed_cond if p(x!i) is not int for all i.
+template <typename matrix_type>
+matrix_type* matrix_filter( pure_expr *p, pure_expr *x ) {
+  pure_ref(p);
+  matrix_type *xm = static_cast<matrix_type*>(x->data.mat.p);
+  typedef typename element_of<matrix_type>::type elem_type;
+
+  //the output matrix
+  matrix_type *o = create_matrix<matrix_type>(1,xm->size1*xm->size2);
+  size_t n; //the size of the output matrix
+  elem_type *po = reinterpret_cast<elem_type*>(o->data); //po is output write head
+  for (size_t i=0; i<xm->size1; ++i) {
+    //pi is input read head
+    elem_type *pi = reinterpret_cast<elem_type*>(xm->data)+i*xm->tda; 
+    for (size_t j=0; j<xm->size2; ++j,++pi) {
+      pure_expr *b = pure_app( p, to_expr(*pi) );
+      int32_t bi;
+      if (!pure_is_int(b,&bi)) goto exception;
+      if (bi) *(po++) = *pi;
+      pure_freenew(b);
+    }
+  }
+  n = po - reinterpret_cast<elem_type*>(o->data);
+
+  //compact the output matrix
+  if (n != xm->size1*xm->size2) {
+    matrix_type *o2 = create_matrix<matrix_type>(1,n);
+    memcpy(o2->data,o->data,n*sizeof(elem_type));
+    matrix_free(o);
+    o = o2;
+  }
+  pure_unref(p);
+  return o;
+
+  exception:
+    pure_unref(p);
+    matrix_free(o);
+    pure_throw( pure_symbol( 
+      interpreter::g_interp->symtab.failed_cond_sym().f ) );
+    return 0; 
+}
+
+
+} // namespace matrix
+
+
+extern "C" 
+pure_expr* matrix_map ( pure_expr *f, pure_expr *x )
+{
+  switch (x->tag) {
+    case EXPR::DMATRIX : return matrix::matrix_map<gsl_matrix>(f,x);
+    case EXPR::IMATRIX : return matrix::matrix_map<gsl_matrix_int>(f,x);
+    case EXPR::CMATRIX : return matrix::matrix_map<gsl_matrix_complex>(f,x);
+    case EXPR::MATRIX  : return matrix::matrix_map<gsl_matrix_symbolic>(f,x);
+    default : return 0;
+  }
+}
+
+
+extern "C" 
+pure_expr* matrix_scanl ( pure_expr *f, pure_expr *z, pure_expr *x )
+{
+  switch (x->tag) {
+    case EXPR::DMATRIX : return matrix::matrix_scanl<gsl_matrix>(f,z,x);
+    case EXPR::IMATRIX : return matrix::matrix_scanl<gsl_matrix_int>(f,z,x);
+    case EXPR::CMATRIX : return matrix::matrix_scanl<gsl_matrix_complex>(f,z,x);
+    case EXPR::MATRIX  : return matrix::matrix_scanl<gsl_matrix_symbolic>(f,z,x);
+    default : return 0;
+  }
+}
+
+
+extern "C" 
+pure_expr* matrix_scanr ( pure_expr *f, pure_expr *z, pure_expr *x )
+{
+  switch (x->tag) {
+    case EXPR::DMATRIX : return matrix::matrix_scanr<gsl_matrix>(f,z,x);
+    case EXPR::IMATRIX : return matrix::matrix_scanr<gsl_matrix_int>(f,z,x);
+    case EXPR::CMATRIX : return matrix::matrix_scanr<gsl_matrix_complex>(f,z,x);
+    case EXPR::MATRIX  : return matrix::matrix_scanr<gsl_matrix_symbolic>(f,z,x);
+    default : return 0;
+  }
+}
+
+
+extern "C" 
+pure_expr* matrix_foldl ( pure_expr *f, pure_expr *z, pure_expr *x )
+{
+  switch (x->tag) {
+    case EXPR::DMATRIX : return matrix::matrix_foldl<gsl_matrix>(f,z,x);
+    case EXPR::IMATRIX : return matrix::matrix_foldl<gsl_matrix_int>(f,z,x);
+    case EXPR::CMATRIX : return matrix::matrix_foldl<gsl_matrix_complex>(f,z,x);
+    case EXPR::MATRIX  : return matrix::matrix_foldl<gsl_matrix_symbolic>(f,z,x);
+    default : return 0;
+  }
+}
+
+
+extern "C" 
+pure_expr* matrix_foldr ( pure_expr *f, pure_expr *z, pure_expr *x )
+{
+  switch (x->tag) {
+    case EXPR::DMATRIX : return matrix::matrix_foldr<gsl_matrix>(f,z,x);
+    case EXPR::IMATRIX : return matrix::matrix_foldr<gsl_matrix_int>(f,z,x);
+    case EXPR::CMATRIX : return matrix::matrix_foldr<gsl_matrix_complex>(f,z,x);
+    case EXPR::MATRIX  : return matrix::matrix_foldr<gsl_matrix_symbolic>(f,z,x);
+    default : return 0;
+  }
+}
+
+
+extern "C"
+pure_expr* matrix_filter ( pure_expr *p, pure_expr *x )
+{
+  switch ( x->tag ) {
+    case EXPR::DMATRIX : 
+      return pure_double_matrix( matrix::matrix_filter<gsl_matrix>(p,x) ); 
+    case EXPR::IMATRIX : 
+      return pure_int_matrix( matrix::matrix_filter<gsl_matrix_int>(p,x) ); 
+    case EXPR::CMATRIX : 
+      return pure_complex_matrix( matrix::matrix_filter<gsl_matrix_complex>(p,x) ); 
+    case EXPR::MATRIX : 
+      return pure_symbolic_matrix( matrix::matrix_filter<gsl_matrix_symbolic>(p,x) ); 
+    default : return 0;
+  }
+}
+

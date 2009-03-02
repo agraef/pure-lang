@@ -341,26 +341,37 @@ colcatmap f x::matrix	= colcat (map f (list x));
    always return a flat row vector. Also note that the zip-style operations
    require that the row sizes of all arguments match.) */
 
+extern expr* matrix_filter(expr*,expr*);
+extern expr* matrix_foldl(expr*,expr*,expr*);
+extern expr* matrix_foldr(expr*,expr*,expr*);
+extern expr* matrix_map(expr*,expr*);
+extern expr* matrix_scanl(expr*,expr*,expr*);
+extern expr* matrix_scanr(expr*,expr*,expr*);
+
 cycle x::matrix		= cycle (list x);
 cyclen n::int x::matrix	= cyclen n (list x) if ~null x;
 
-all p x::matrix		= all p (list x);
-any p x::matrix		= any p (list x);
-do f x::matrix		= do f (list x);
+all p x::matrix		= foldl (\b x -> b && p x) 1 x; //probably not worth
+any p x::matrix		= foldl (\b x -> b || p x) 0 x; //the effort to short-
+                                                        //circuit here
+
+do f x::matrix		= foldl (\_ x -> f x $$ ()) () x;
+
 drop k::int x::matrix	= x!!(k..#x-1);
 dropwhile p x::matrix	= colcat (dropwhile p (list x));
-filter p x::matrix	= colcat (filter p (list x));
-foldl f a x::matrix	= foldl f a (list x);
-foldl1 f x::matrix	= foldl1 f (list x);
-foldr f a x::matrix	= foldr f a (list x);
+
+filter p x::matrix      = matrix_filter p x;
+foldl f a x::matrix     = matrix_foldl f a x;
+foldl1 f x::matrix      = foldl1 f (list x);
+foldr f a x::matrix     = matrix_foldr f a x;
 foldr1 f x::matrix	= foldr1 f (list x);
 head x::matrix		= x!0 if ~null x;
 init x::matrix		= x!!(0..#x-2) if ~null x;
 last x::matrix		= x!(#x-1) if ~null x;
-map f x::matrix		= redim (dim x) $ colcat (map f (list x));
-scanl f a x::matrix	= colcat (scanl f a (list x));
+map f x::matrix	        = matrix_map f x;
+scanl f a x::matrix	= matrix_scanl f a x;
 scanl1 f x::matrix	= colcat (scanl1 f (list x));
-scanr f a x::matrix	= colcat (scanr f a (list x));
+scanr f a x::matrix	= matrix_scanr f a x;
 scanr1 f x::matrix	= colcat (scanr1 f (list x));
 take k::int x::matrix	= x!!(0..k-1);
 takewhile p x::matrix	= colcat (takewhile p (list x));

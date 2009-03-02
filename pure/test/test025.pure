@@ -176,3 +176,123 @@ x; y; y==z;
 
 let y = byte_matrix (2,6) (byte_pointer NULL x);
 x; y; y==z;
+
+
+
+//list-like functions
+let x = dmatrix {1,2,3;4,5,6};
+
+let f = \a -> a;
+let y = map f x;
+x; y; list y == map f (list x) && dmatrixp y;
+
+let f = \a -> int a;
+let y = map f x;
+x; y; list y == map f (list x) && imatrixp y;
+
+//these may seem redundant but they exercise distinct code paths
+let f = \a -> if a < 2 then a else "a";
+let y = map f x ;
+x; y; list y == map f (list x) && smatrixp y;
+
+let f = \a -> if a > 2 then a else "a";
+let y = map f x ;
+x; y; list y == map f (list x) && smatrixp y;
+
+let y = foldl (+) 0 x;
+x; y; y == foldl (+) 0 (list x);
+
+let y = foldr (+) 0 x;
+x; y; y == foldr (+) 0 (list x);
+
+let f = \a -> a < 4;
+let y = filter f x;
+x; y; list y == filter f (list x);
+
+let f = \i j -> i+j+1.0;
+let y = scanl f 0.0 x;
+x; y; list y == scanl f 0.0 (list x);
+
+let f = \i j -> if doublep i then str (i+j) else 1.0;
+let y = scanl f 0.0 x;
+x; y; list y == scanl f 0.0 (list x);
+
+let f = \i j -> i+j+1.0;
+let y = scanr f 0.0 x;
+x; y; list y == scanr f 0.0 (list x);
+
+let f = \i j -> if doublep j then str (i+j) else 1.0;
+let y = scanr f 0.0 x;
+x; y; list y == scanr f 0.0 (list x);
+
+let x = imatrix {1,2,3;4,5,6};
+
+let f = \a -> a;
+let y = map f x;
+x; y; list y == map f (list x) && imatrixp y;
+
+let f = \a -> double a;
+let y = map f x;
+x; y; list y == map f (list x) && dmatrixp y;
+
+let f = \a -> if a < 2 then a else "a";
+let y = map f x ;
+x; y; list y == map f (list x) && smatrixp y;
+
+let f = \a -> if a > 2 then a else "a";
+let y = map f x ;
+x; y; list y == map f (list x) && smatrixp y;
+
+let y = foldl (:) [] x;
+x; y; y == foldl (:) [] (list x);
+
+let y = foldr (:) [] x;
+x; y; y == foldr (:) [] (list x);
+
+let f = \a -> a < 4;
+let y = filter f x;
+x; y; list y == filter f (list x);
+
+let f = \i j -> i+j+1;
+let y = scanl f 0 x;
+x; y; list y == scanl f 0 (list x);
+
+let f = \i j -> i+j+1;
+let y = scanl f 0 x;
+x; y; list y == scanl f 0 (list x);
+
+let f = \i j -> i+j+1;
+let y = scanr f 0 x;
+x; y; list y == scanr f 0 (list x);
+
+
+
+let x = {"1","2","3";"aa","bb","cc"};
+
+let f = \_ -> 1.0;
+let y = map f x;
+x; y; list y == map f (list x) && dmatrixp y;
+
+let f = \_ -> 1;
+let y = map f x;
+x; y; list y == map f (list x) && imatrixp y;
+
+let f = \a -> a;
+let y = map f x ;
+x; y; list y == map f (list x) && smatrixp y;
+
+let y = foldl (+) "0" x;
+x; y; y == foldl (+) "0" (list x);
+
+let y = foldr (+) "0" x;
+x; y; y == foldr (+) "0" (list x);
+
+let f = \a -> #a == 1;
+let y = filter f x;
+x; y; list y == filter f (list x);
+
+let y = scanl (+) "" x;
+x; y; list y == scanl (+) "" (list x);
+
+let y = scanr (+) "" x;
+x; y; list y == scanr (+) "" (list x);
