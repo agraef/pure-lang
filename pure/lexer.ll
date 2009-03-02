@@ -879,8 +879,8 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
     if (!*s)
       // default is to load the Pure manual
       docname = interp.libdir+"pure.html";
-    else if (strncmp(s, "file:", 5) == 0 || strncmp(s, "http:", 5) == 0)
-      // other URL, take as is
+    else if ((p = strchr(s, ':')) && (!(q = strchr(s, '#')) || q>p))
+      // proper URL, take as is
       ;
     else if ((p = strchr(s, '#'))) {
       // alternative library documentation, add path if necessary
@@ -897,6 +897,11 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
     } else
       // look up the default library documentation
       docname.insert(0, "file:"+interp.libdir+"purelib.html#");
+    // remove a lone trailing '#'
+    assert(!docname.empty());
+    if (docname[docname.length()-1] == '#')
+      docname.erase(docname.length()-1);
+    // invoke the browser
     const char *browser = getenv("PURE_HELP");
     if (!browser) browser = "w3m"; // default
     string helpcmd = string(browser) + " " + docname;
