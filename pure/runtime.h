@@ -836,6 +836,15 @@ void *matrix_to_complex_float_array(void *p, pure_expr *x);
 void *matrix_to_short_array(void *p, pure_expr *x);
 void *matrix_to_byte_array(void *p, pure_expr *x);
 
+/* Optimized list-like matrix functions, by Scott E. Dillard. */
+
+pure_expr* matrix_map(pure_expr *f, pure_expr *x);
+pure_expr* matrix_filter(pure_expr *p, pure_expr *x);
+pure_expr* matrix_foldl(pure_expr *f, pure_expr *z, pure_expr *x);
+pure_expr* matrix_foldr(pure_expr *f, pure_expr *z, pure_expr *x);
+pure_expr* matrix_scanl(pure_expr *f, pure_expr *z, pure_expr *x);
+pure_expr* matrix_scanr(pure_expr *f, pure_expr *z, pure_expr *x);
+
 /* Compute a 32 bit hash code of a Pure expression. This makes it possible to
    use arbitary Pure values as keys in a hash table. */
 
