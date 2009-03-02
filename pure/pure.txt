@@ -7,11 +7,9 @@ The Pure Manual
 
 This manual describes the Pure programming language and how to invoke the Pure
 interpreter program. It takes the form of a Unix manual page but is actually
-provided as html for easier browsing.
-
-**NOTE:** To read the manual inside the interpreter, just type ``help`` at the
-command prompt. You need to have w3m(1) installed for that. You can also set
-the name of the html browser to use with the PURE_HELP environment variable.
+provided as html for easier browsing. To read the manual inside the
+interpreter, just type ``help`` at the command prompt. See `Online Help`_ for
+details.
 
 .. contents::
 
@@ -2181,6 +2179,60 @@ is also possible to override the print representation of any kind of
 expression by means of the ``__show__`` function, see the `Caveats and Notes`_
 section for details.
 
+Online Help
+-----------
+
+Online help is available in the interpreter with the interactive ``help``
+command, see `Interactive Commands`_ below. You need to have a html browser
+installed for that. By default, the ``help`` command uses w3m(1), but you can
+change this by setting the PURE_HELP environment variable accordingly.
+
+When invoked without arguments, the ``help`` command displays this manual::
+
+  > help
+
+The ``help`` command also accepts a parameter which lets you specify an index
+entry to show in the accompanying Pure Library manual, e.g.::
+
+  > help foldl
+
+The help files distributed with the Pure interpreter are located in the Pure
+library directory (/usr/local/lib/pure by default). You can install additional
+documentation in html format in this directory, and look up entries in those
+help files with a command like the following::
+
+  > help mydoc#foo
+
+Here ``mydoc`` is the basename of your help file (library path and .html
+suffix are supplied automatically), and ``foo`` can be any link target in the
+document (as specified with a ``<a name=...>`` tag or an ``id`` attribute in
+the html source). To just read the mydoc.html file without specifying a target
+entry, type the following::
+
+  > help mydoc#
+
+Note that just ``help mydoc`` won't work, since it will look for an entry
+``mydoc`` in the standard library documentation. We also mention in passing
+that the above syntax also works for looking up sections in the Pure manual::
+
+  > help pure#declarations
+
+Note that the docutils_ tools used to generate the html source of the Pure
+manual mangle the section titles so that they are in lowercase and blanks are
+replaced with hyphens. So to look up the present section in this manual you'd
+have to type::
+
+  > help pure#online-help
+
+.. _docutils: http://docutils.sourceforge.net/
+
+You can also point the help browser to a proper URL, either a local file or
+some website (provided that your browser program can handle these). For
+instance::
+
+  > help file:mydoc.html
+  > help http://pure-lang.googlecode.com
+
 Interactive Commands
 --------------------
 
@@ -2228,24 +2280,10 @@ currently supported operations:
     file with the ``run`` command (see below) to restore the definitions in a
     subsequent interpreter session.
 
-``help [symbol]``
-    Display the Pure manual, or show documentation about the given
-    symbol. This requires a html browser (w3m by default, you can change this
-    with the PURE_HELP environment variable).
-
-    **NOTE:** Documentation about a given symbol is looked up in the
-    purelib.html file included in the distribution (which is generated from
-    the standard library sources using pure-doc_ and docutils_). You can add
-    entries to that file, or create your own documentation files and install
-    them in the Pure library directory so that the interpreter finds them. In
-    the latter case, to look up keywords in your documentation use a command
-    like ``help mydoc#symbol`` where ``mydoc`` is the basename of your help
-    file (path and .html suffix are supplied automatically). You can also
-    point the help browser to a URL, either a local file (``help
-    file:mydoc.html``) or some website (``help http://some.website``).
-
-.. _pure-doc: http://code.google.com/p/pure-lang/wiki/Addons#pure-doc
-.. _docutils: http://docutils.sourceforge.net/
+``help [target]``
+    Display the Pure manual or some other bit of documentation. In particular,
+    ``help foo`` looks up the symbol ``foo`` in the Pure Library manual. See
+    `Online Help`_ above for details.
 
 ``ls [args]``
     List files (shell ls(1) command). 
