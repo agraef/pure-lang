@@ -8345,9 +8345,10 @@ matrix_type* matrix_filter( pure_expr *p, pure_expr *x ) {
     for (size_t j=0; j<xm->size2; ++j,++pi) {
       pure_expr *b = pure_app( p, to_expr(*pi) );
       int32_t bi;
-      if (!pure_is_int(b,&bi)) goto exception;
-      if (bi) *(po++) = *pi;
+      bool res = pure_is_int(b,&bi);
       pure_freenew(b);
+      if (!res) goto exception;
+      if (bi) *(po++) = *pi;
     }
   }
   n = po - reinterpret_cast<elem_type*>(o->data);
@@ -8371,7 +8372,7 @@ matrix_type* matrix_filter( pure_expr *p, pure_expr *x ) {
 }
 
 
-//generic matrix checkers. Throws failed_cond if p(x!i) is not int for all i.
+//generic matrix checkers. Throw failed_cond if p(x!i) is not int for all i.
 
 template <typename matrix_type>
 bool matrix_all( pure_expr *p, pure_expr *x ) {
