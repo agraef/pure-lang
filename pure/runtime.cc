@@ -7621,6 +7621,12 @@ pure_expr* matrix_map( pure_expr *f, pure_expr *x )
   typedef typename element_of<matrix_type>::type elem_type;
   matrix_type *xm = static_cast<matrix_type*>(x->data.mat.p);
 
+  if (xm->size1 == 0 || xm->size2 == 0) {
+    // empty output matrix
+    gsl_matrix_symbolic *sm = create_symbolic_matrix(xm->size1,xm->size2);
+    return pure_symbolic_matrix(sm);
+  }
+
   //make a guess at what the result type is by the first element
   pure_expr *first = pure_app(f,to_expr(xm->data[0]));
   int32_t firsti;
