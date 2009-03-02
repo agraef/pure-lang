@@ -838,6 +838,8 @@ void *matrix_to_byte_array(void *p, pure_expr *x);
 
 /* Optimized list-like matrix functions, by Scott E. Dillard. */
 
+pure_expr* matrix_all(pure_expr *p, pure_expr *x);
+pure_expr* matrix_any(pure_expr *p, pure_expr *x);
 pure_expr* matrix_map(pure_expr *f, pure_expr *x);
 pure_expr* matrix_filter(pure_expr *p, pure_expr *x);
 pure_expr* matrix_foldl(pure_expr *f, pure_expr *z, pure_expr *x);

@@ -8371,6 +8371,61 @@ matrix_type* matrix_filter( pure_expr *p, pure_expr *x ) {
 }
 
 
+//generic matrix checkers. Throws failed_cond if p(x!i) is not int for all i.
+
+template <typename matrix_type>
+bool matrix_all( pure_expr *p, pure_expr *x ) {
+  matrix_type *xm = static_cast<matrix_type*>(x->data.mat.p);
+  typedef typename element_of<matrix_type>::type elem_type;
+
+  for (size_t i=0; i<xm->size1; ++i) {
+    //pi is input read head
+    elem_type *pi = reinterpret_cast<elem_type*>(xm->data)+i*xm->tda; 
+    for (size_t j=0; j<xm->size2; ++j,++pi) {
+      pure_expr *b = pure_app( p, to_expr(*pi) );
+      int32_t bi;
+      bool res = pure_is_int(b,&bi);
+      pure_freenew(b);
+      if (!res) goto exception;
+      if (!bi) return false;
+    }
+  }
+  return true;
+
+  exception:
+    pure_unref(p);
+    pure_throw( pure_symbol( 
+      interpreter::g_interp->symtab.failed_cond_sym().f ) );
+    return false; 
+}
+
+template <typename matrix_type>
+bool matrix_any( pure_expr *p, pure_expr *x ) {
+  matrix_type *xm = static_cast<matrix_type*>(x->data.mat.p);
+  typedef typename element_of<matrix_type>::type elem_type;
+
+  for (size_t i=0; i<xm->size1; ++i) {
+    //pi is input read head
+    elem_type *pi = reinterpret_cast<elem_type*>(xm->data)+i*xm->tda; 
+    for (size_t j=0; j<xm->size2; ++j,++pi) {
+      pure_expr *b = pure_app( p, to_expr(*pi) );
+      int32_t bi;
+      bool res = pure_is_int(b,&bi);
+      pure_freenew(b);
+      if (!res) goto exception;
+      if (bi) return true;
+    }
+  }
+  return false;
+
+  exception:
+    pure_unref(p);
+    pure_throw( pure_symbol( 
+      interpreter::g_interp->symtab.failed_cond_sym().f ) );
+    return false; 
+}
+
+
 } // namespace matrix
 
 
@@ -8528,6 +8583,38 @@ pure_expr* matrix_filter ( pure_expr *p, pure_expr *x )
     case EXPR::MATRIX : 
       return pure_symbolic_matrix
 	( matrix::matrix_filter<gsl_matrix_symbolic>(p,x) ); 
+    default : return 0;
+  }
+}
+
+extern "C"
+pure_expr* matrix_all ( pure_expr *p, pure_expr *x )
+{
+  switch ( x->tag ) {
+    case EXPR::DMATRIX : 
+      return pure_int( matrix::matrix_all<gsl_matrix>(p,x) ); 
+    case EXPR::IMATRIX : 
+      return pure_int( matrix::matrix_all<gsl_matrix_int>(p,x) ); 
+    case EXPR::CMATRIX : 
+      return pure_int( matrix::matrix_all<gsl_matrix_complex>(p,x) ); 
+    case EXPR::MATRIX : 
+      return pure_int( matrix::matrix_all<gsl_matrix_symbolic>(p,x) ); 
+    default : return 0;
+  }
+}
+
+extern "C"
+pure_expr* matrix_any ( pure_expr *p, pure_expr *x )
+{
+  switch ( x->tag ) {
+    case EXPR::DMATRIX : 
+      return pure_int( matrix::matrix_any<gsl_matrix>(p,x) ); 
+    case EXPR::IMATRIX : 
+      return pure_int( matrix::matrix_any<gsl_matrix_int>(p,x) ); 
+    case EXPR::CMATRIX : 
+      return pure_int( matrix::matrix_any<gsl_matrix_complex>(p,x) ); 
+    case EXPR::MATRIX : 
+      return pure_int( matrix::matrix_any<gsl_matrix_symbolic>(p,x) ); 
     default : return 0;
   }
 }
