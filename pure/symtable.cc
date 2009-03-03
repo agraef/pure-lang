@@ -36,6 +36,9 @@ symtable::symtable()
     __catmap_sym(0),
     __rowcatmap_sym(0),
     __colcatmap_sym(0),
+    __listmap_sym(0),
+    __rowmap_sym(0),
+    __colmap_sym(0),
     __failed_match_sym(0),
     __failed_cond_sym(0),
     __signal_sym(0),
@@ -90,6 +93,9 @@ void symtable::init_builtins()
   catmap_sym();
   rowcatmap_sym();
   colcatmap_sym();
+  listmap_sym();
+  rowmap_sym();
+  colmap_sym();
   failed_match_sym();
   failed_cond_sym();
   signal_sym();

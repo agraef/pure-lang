@@ -18,22 +18,22 @@ single x/*0:1*/ = [x/*0:1*/];
 }
 catmap (single.succ) (1..10);
 [2,3,4,5,6,7,8,9,10,11]
-catmap (\c/*0:*/ -> [upcase c/*0:*/] {
-  rule #0: c = [upcase c]
+listmap (\c/*0:*/ -> upcase c/*0:*/ {
+  rule #0: c = upcase c
   state 0: #0
 	<var> state 1
   state 1: #0
 }) "ainsworth";
 ["A","I","N","S","W","O","R","T","H"]
-catmap (\x/*0:*/ -> [succ x/*0:*/] {
-  rule #0: x = [succ x]
+listmap (\x/*0:*/ -> succ x/*0:*/ {
+  rule #0: x = succ x
   state 0: #0
 	<var> state 1
   state 1: #0
 }) (1..10);
 [2,3,4,5,6,7,8,9,10,11]
-list (take 20 (catmap (\x/*0:*/ -> [succ x/*0:*/] {
-  rule #0: x = [succ x]
+list (take 20 (listmap (\x/*0:*/ -> succ x/*0:*/ {
+  rule #0: x = succ x
   state 0: #0
 	<var> state 1
   state 1: #0
@@ -70,13 +70,13 @@ let rats = catmap (\n/*0:*/ -> catmap (\m/*0:*/ -> if gcd m/*0:*/ (n/*1:*/-m/*0:
 }) (2..inf);
 list (take 20 rats);
 [(1,1),(1,2),(2,1),(1,3),(3,1),(1,4),(2,3),(3,2),(4,1),(1,5),(5,1),(1,6),(2,5),(3,4),(4,3),(5,2),(6,1),(1,7),(3,5),(5,3)]
-list (take 20 (catmap (\i/*0:*/ -> catmap (\j/*0:*/ -> [(i/*1:*/,j/*0:*/)] {
-  rule #0: j = [(i,j)]
+list (take 20 (catmap (\i/*0:*/ -> listmap (\j/*0:*/ -> i/*1:*/,j/*0:*/ {
+  rule #0: j = i,j
   state 0: #0
 	<var> state 1
   state 1: #0
 }) (i/*0:*/..inf) {
-  rule #0: i = catmap (\j -> [(i,j)]) (i..inf)
+  rule #0: i = listmap (\j -> i,j) (i..inf)
   state 0: #0
 	<var> state 1
   state 1: #0

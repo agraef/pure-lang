@@ -3159,12 +3159,18 @@ expr interpreter::mklistcomp_expr(expr x, comp_clause_list::iterator cs,
   if (cs == end)
     return expr::cons(x, expr::nil());
   else {
+    comp_clause_list::iterator next_cs = cs;
+    ++next_cs;
     comp_clause& c = *cs;
     if (c.second.is_null()) {
       expr p = c.first;
-      return expr::cond(p, mklistcomp_expr(x, ++cs, end), expr::nil());
+      return expr::cond(p, mklistcomp_expr(x, next_cs, end), expr::nil());
+    } else if (next_cs == end) {
+      expr pat = c.first, arg = c.second;
+      closure(pat, x);
+      return expr(symtab.listmap_sym().x, expr::lambda(pat, x), arg);
     } else {
-      expr pat = c.first, body = mklistcomp_expr(x, ++cs, end),
+      expr pat = c.first, body = mklistcomp_expr(x, next_cs, end),
 	arg = c.second;
       closure(pat, body);
       return expr(symtab.catmap_sym().x, expr::lambda(pat, body), arg);
@@ -3187,13 +3193,20 @@ expr interpreter::mkmatcomp_expr(expr x, size_t n,
     exprll *xs = new exprll(1, exprl(1, x));
     return expr(EXPR::MATRIX, xs);
   } else {
+    comp_clause_list::iterator next_cs = cs;
+    ++next_cs;
     comp_clause& c = *cs;
     if (c.second.is_null()) {
       expr p = c.first;
-      return expr::cond(p, mkmatcomp_expr(x, n, ++cs, end),
+      return expr::cond(p, mkmatcomp_expr(x, n, next_cs, end),
 			expr(EXPR::MATRIX, new exprll));
+    } else if (next_cs == end) {
+      expr pat = c.first, arg = c.second;
+      closure(pat, x);
+      expr f = (n&1)?symtab.colmap_sym().x:symtab.rowmap_sym().x;
+      return expr(f, expr::lambda(pat, x), arg);
     } else {
-      expr pat = c.first, body = mkmatcomp_expr(x, n-1, ++cs, end),
+      expr pat = c.first, body = mkmatcomp_expr(x, n-1, next_cs, end),
 	arg = c.second;
       closure(pat, body);
       expr f = (n&1)?symtab.colcatmap_sym().x:symtab.rowcatmap_sym().x;

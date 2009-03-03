@@ -224,6 +224,8 @@ colcatmap f xs@(_:_)	= colcat (map f xs);
 
 def void (rowcatmap f x) = do f x;
 def void (colcatmap f x) = do f x;
+def void (rowmap f x) = do f x;
+def void (colmap f x) = do f x;
 
 /* Convenience functions to create zero matrices with the given dimensions
    (either a pair denoting the number of rows and columns, or just the row
@@ -331,6 +333,19 @@ reverse x::matrix	= rowrev (colrev x);
 catmap f x::matrix	= catmap f (list x);
 rowcatmap f x::matrix	= rowcat (map f (list x));
 colcatmap f x::matrix	= colcat (map f (list x));
+
+/* These are optimized so that we can take advantage of the specialized
+   implementation of map on matrices. */
+
+listmap f x::matrix	= list (map f x);
+rowmap f x::matrix	= if null x then x else colvector (map f x);
+colmap f x::matrix	= if null x then x else rowvector (map f x);
+
+rowmap f x@[]		|
+rowmap f x@(_:_)	= map f (colcat x);
+
+colmap f x@[]		|
+colmap f x@(_:_)	= map f (rowcat x);
 
 /* Implementations of the other customary list operations, so that these can
    be used on matrices, too. These operations treat the matrix essentially as

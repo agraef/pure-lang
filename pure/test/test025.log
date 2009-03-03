@@ -170,8 +170,8 @@ dmatrix (0.0..10.0);
 {0.0,1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0}
 imatrix (0..10);
 {0,1,2,3,4,5,6,7,8,9,10}
-cmatrix (catmap (\x/*0:*/ -> [x/*0:*/+:0] {
-  rule #0: x = [x+:0]
+cmatrix (listmap (\x/*0:*/ -> x/*0:*/+:0 {
+  rule #0: x = x+:0
   state 0: #0
 	<var> state 1
   state 1: #0
@@ -183,8 +183,8 @@ dmatrixp (dmatrix (0.0..10.0));
 1
 imatrixp (imatrix (0..10));
 1
-cmatrixp (cmatrix (catmap (\x/*0:*/ -> [x/*0:*/+:0] {
-  rule #0: x = [x+:0]
+cmatrixp (cmatrix (listmap (\x/*0:*/ -> x/*0:*/+:0 {
+  rule #0: x = x+:0
   state 0: #0
 	<var> state 1
   state 1: #0
@@ -459,8 +459,8 @@ dim x==reverse (dim y);
 let z = double_matrix_view (2,6) (pointer x);
 z;
 {1.0,0.0,2.0,0.0,3.0,0.0;4.0,0.0,5.0,0.0,6.0,0.0}
-cat (catmap (\(a/*0:01*/+:b/*0:1*/) -> [[a/*0:01*/,b/*0:1*/]] {
-  rule #0: a+:b = [[a,b]]
+cat (listmap (\(a/*0:01*/+:b/*0:1*/) -> [a/*0:01*/,b/*0:1*/] {
+  rule #0: a+:b = [a,b]
   state 0: #0
 	<app> state 1
   state 1: #0
@@ -473,7 +473,20 @@ cat (catmap (\(a/*0:01*/+:b/*0:1*/) -> [[a/*0:01*/,b/*0:1*/]] {
 	<var> state 5
   state 5: #0
 }) x)==list z;
-1
+<stdin>, line 157: unhandled exception 'failed_match' while evaluating 'cat (listmap (\(a/*0:01*/+:b/*0:1*/) -> [a/*0:01*/,b/*0:1*/] {
+  rule #0: a+:b = [a,b]
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	+: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+}) x)==list z'
 {
   rule #0: y = double_matrix (2,6) (double_pointer #<pointer 0> x)
   state 0: #0

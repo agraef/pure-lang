@@ -100,11 +100,12 @@ fix f = y y with y x = f (x x&) end;
 def f $ x	= f x;
 def (f . g) x	= f (g x);
 
-/* The following rule is always valid and optimizes the case of "throwaway"
+/* The following rules are always valid and optimize the case of "throwaway"
    list comprehensions (useful if a list comprehension is evaluated solely for
    its side effects). */
 
 def void (catmap f x) = do f x;
+def void (listmap f x) = do f x;
 
 /* Lisp-like quasiquote. */
 
@@ -508,6 +509,12 @@ catmap f xs@(_:_)	= cat (map f xs);
 /* NOTE: This definition (from the Haskell prelude) is better, but doesn't
    preserve left-to-right execution order. */
 //catmap f xs@(_:_)	= foldr ((+).f) [] xs;
+
+/* Map a function to a list, like map, but first promote the argument to a
+   list if possible. This is used by list comprehensions. */
+
+listmap f []		= [];
+listmap f xs@(_:_)	= map f xs;
 
 /* Search an element in a list. Returns -1 if not found, index of first
    occurrence otherwise. */

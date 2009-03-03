@@ -75,6 +75,9 @@ class symtable {
   symbol* __catmap_sym;
   symbol* __rowcatmap_sym;
   symbol* __colcatmap_sym;
+  symbol* __listmap_sym;
+  symbol* __rowmap_sym;
+  symbol* __colmap_sym;
   symbol* __failed_match_sym;
   symbol* __failed_cond_sym;
   symbol* __signal_sym;
@@ -170,6 +173,12 @@ public:
   { return *sym_p("rowcatmap", __rowcatmap_sym); }
   symbol& colcatmap_sym()
   { return *sym_p("colcatmap", __colcatmap_sym); }
+  symbol& listmap_sym()
+  { return *sym_p("listmap", __listmap_sym); }
+  symbol& rowmap_sym()
+  { return *sym_p("rowmap", __rowmap_sym); }
+  symbol& colmap_sym()
+  { return *sym_p("colmap", __colmap_sym); }
   symbol& failed_match_sym()
   { return *sym_p("failed_match", __failed_match_sym); }
   symbol& failed_cond_sym()
