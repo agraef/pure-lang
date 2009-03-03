@@ -210,6 +210,15 @@ submat x::matrix (i::int,j::int) (n::int,m::int)
 extern expr* matrix_rows(expr *x) = rowcat;
 extern expr* matrix_columns(expr *x) = colcat;
 
+/* Construct a matrix from a (symbolic) matrix of other matrices and/or
+   scalars. This works like a combination of rowcat and colcat, but draws its
+   input from a matrix instead of a list of matrices, and preserves the
+   overall layout of the "host" matrix. The net effect is that the host matrix
+   is flattened out. If all elements of the host matrix are scalars already,
+   the result is equal (but not identical) to the original matrix. */
+
+matcat x::matrix	= rowcat $ map (colcat.list) $ rows x;
+
 /* Combinations of rowcat/colcat and map. These are used, in particular, for
    implementing matrix comprehensions. */
 
@@ -327,25 +336,24 @@ colrev x::matrix	= colcat (reverse (cols x));
 reverse x::matrix	= rowrev (colrev x);
 
 /* catmap et al on matrices. This allows list and matrix comprehensions to
-   draw values from matrices as well as from lists, treating the matrix as a
-   flat list of its elements. */
-
-catmap f x::matrix	= catmap f (list x);
-rowcatmap f x::matrix	= rowcat (map f (list x));
-colcatmap f x::matrix	= colcat (map f (list x));
-
-/* These are optimized so that we can take advantage of the specialized
+   draw values from matrices as well as from lists, and to preserve the block
+   layout of component matrices in matrix comprehensions. Also, these
+   operations are optimized so that we can take advantage of the specialized
    implementation of map on matrices. */
 
+catmap f x::matrix	= cat (list (map f x));
+rowcatmap f x::matrix	= matcat (map f x);
+colcatmap f x::matrix	= matcat (map f x);
+
 listmap f x::matrix	= list (map f x);
-rowmap f x::matrix	= if null x then x else colvector (map f x);
-colmap f x::matrix	= if null x then x else rowvector (map f x);
+rowmap f x::matrix	= map f x;
+colmap f x::matrix	= map f x;
 
 rowmap f x@[]		|
-rowmap f x@(_:_)	= map f (colcat x);
+rowmap f x@(_:_)	= map f (rowcat x);
 
 colmap f x@[]		|
-colmap f x@(_:_)	= map f (rowcat x);
+colmap f x@(_:_)	= map f (colcat x);
 
 /* Implementations of the other customary list operations, so that these can
    be used on matrices, too. These operations treat the matrix essentially as

@@ -1,5 +1,35 @@
 2009-03-03  Albert Graef  <Dr.Graef@t-online.de>
 
+	* lib/matrices.pure: Overhaul matrix comprehensions so that the
+	block layout of component matrices is preserved.
+
+	Previously a matrix comprehension would lay out elements using
+	alternating row and column generation in the same fashion as with
+	list generators, ignoring the layout of the component matrices and
+	essentially treating them like flat lists. This was rather
+	counter-intuitive. With the new implementation, the block layout
+	of the component matrices is preserved, so that an expression like
+	{x,y|x={1,2;3,4};y={a,b;c,d}} now yields the expected layout:
+
+	{(1,a),(1,b),(2,a),(2,b);
+	 (1,c),(1,d),(2,c),(2,d);
+	 (3,a),(3,b),(4,a),(4,b);
+	 (3,c),(3,d),(4,c),(4,d)}
+
+	Note that this implies that you *must* specify the layout through
+	the component matrices; an expression like {x,y|x={1,2};y={a,b}}
+	will produce just a flat rowvector now. For list generators, the
+	alternating row and column generation is still in effect, so that
+	{x,y|x=[1,2];y=[a,b]} still produces a square matrix, as does
+	{x,y|x={1;2};y={a,b}}.
+
+	Also note that it is now possible that a matrix comprehension
+	involving filters produces a 'bad_matrix_value' exception because
+	the filtered result isn't a rectangular matrix any more. E.g.,
+	{2*x|x={1,2,3,-4};x>0} still works, as does {2*x|x={-1,2;3,-4};x>0},
+	but {2*x|x={1,2;3,-4};x>0} looses because the rows of the result
+	matrix have different lengths.
+
 	* interpreter.cc, prelude: Optimizations in list and matrix
 	comprehensions to take advantage of efficient matrix operations
 	where possible (experimental).
