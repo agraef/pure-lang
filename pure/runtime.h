@@ -765,6 +765,15 @@ pure_expr *matrix_supdiagm(pure_expr *x, int32_t k);
 pure_expr *matrix_rows(pure_expr *xs);
 pure_expr *matrix_columns(pure_expr *xs);
 
+/* Construct a matrix from a (symbolic) matrix of other matrices and/or
+   scalars. This works like a combination of matrix_rows and matrix_columns,
+   but draws its input from a matrix instead of a list of matrices, and
+   preserves the overall layout of the "host" matrix. The net effect is that
+   the host matrix is flattened out. If all elements of the input matrix are
+   scalars already, the input matrix is returned unchanged. */
+
+pure_expr *matrix_matcat(pure_expr *x);
+
 /* Transpose a matrix. The resulting matrix has the rows of the original
    matrix as its columns, and vice versa. */
 

@@ -5317,6 +5317,44 @@ static pure_expr *matrix_columnsv(uint32_t n, pure_expr **xs)
 }
 
 extern "C"
+pure_expr *matrix_matcat(pure_expr *x)
+{
+  switch (x->tag) {
+  case EXPR::MATRIX: {
+    gsl_matrix_symbolic *mp = (gsl_matrix_symbolic*)x->data.mat.p;
+    if (mp->size1 == 0 || mp->size2 == 0) {
+      // empty output matrix
+      gsl_matrix_symbolic *sm = create_symbolic_matrix(0, 0);
+      return pure_symbolic_matrix(sm);
+    }
+    pure_expr **ys = (pure_expr**)malloc(mp->size1*sizeof(pure_expr*));
+    if (!ys)
+      return 0; // FIXME: should maybe throw an exception here
+    for (size_t i = 0; i < mp->size1; i++) {
+      pure_expr **xs = mp->data+i*mp->tda;
+      if (!(ys[i] = pure_matrix_columnsv(mp->size2, xs))) {
+	for (size_t j = 0; j < i; j++)
+	  pure_freenew(ys[j]);
+	free(ys);
+	return 0;
+      }
+    }
+    pure_expr *y = pure_matrix_rowsv(mp->size1, ys);
+    free(ys);
+    return y;
+  }
+#ifdef HAVE_GSL
+  case EXPR::DMATRIX:
+  case EXPR::CMATRIX:
+  case EXPR::IMATRIX:
+    return x;
+  default:
+    return 0;
+#endif
+  }
+}
+
+extern "C"
 pure_expr *matrix_rows(pure_expr *xs)
 {
   size_t n;

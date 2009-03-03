@@ -24,21 +24,30 @@
 	{x,y|x={1;2};y={a,b}}.
 
 	Also note that it is now possible that a matrix comprehension
-	involving filters produces a 'bad_matrix_value' exception because
-	the filtered result isn't a rectangular matrix any more. E.g.,
-	{2*x|x={1,2,3,-4};x>0} still works, as does {2*x|x={-1,2;3,-4};x>0},
-	but {2*x|x={1,2;3,-4};x>0} looses because the rows of the result
-	matrix have different lengths.
+	involving filters fails because the filtered result isn't a
+	rectangular matrix any more. E.g., {2*x|x={1,2,3,-4};x>0} still
+	works, as does {2*x|x={-1,2;3,-4};x>0}, but {2*x|x={1,2;3,-4};x>0}
+	looses because the rows of the result matrix have different lengths.
 
 	* interpreter.cc, prelude: Optimizations in list and matrix
 	comprehensions to take advantage of efficient matrix operations
 	where possible (experimental).
 
+	Simple matrix comprehensions like {2*x|x={1,2;3,4}} now translate
+	to just a plain 'map' so that they fully benefit from the speedups
+	in the matrix map operation. Matrix comps involving multiple
+	generators and/or filters still require intermediate (symbolic
+	matrix) results, but avoid conversions from/to lists where
+	possible and thus run considerably faster, too. The same kinds of
+	optimizations are also applied to list comps, but there the
+	effects on performance will not be quite as prominent.
+
 2009-03-02  Albert Graef  <Dr.Graef@t-online.de>
 
 	* lib/matrices.pure, runtime.cc/h: Merged (and completed) Scott
-	Dillard's optimized matrix operations from the matrix_opt branch
-	back into the trunk.
+	Dillard's optimized matrix operations from the matrix_opt branch,
+	resulting in major speedups in these operations (usually 10x or
+	more).
 
 	* configure.ac: Bump version number. (Needs reconfigure.)
 
