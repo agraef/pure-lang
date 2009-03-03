@@ -1434,3 +1434,61 @@ dim (zipwith (+) {a,b} (redim (0,2) {}));
 0,2
 dim (zipwith (+) (redim (0,2) {}) {a,b});
 0,2
+rowcatmap (\x/*0:*/ -> colmap (\y/*0:*/ -> x/*1:*/,y/*0:*/ {
+  rule #0: y = x,y
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) [a,b] {
+  rule #0: x = colmap (\y -> x,y) [a,b]
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) [1,2];
+{(1,a),(1,b);(2,a),(2,b)}
+rowcatmap (\x/*0:*/ -> colmap (\y/*0:*/ -> x/*1:*/,y/*0:*/ {
+  rule #0: y = x,y
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) {a,b} {
+  rule #0: x = colmap (\y -> x,y) {a,b}
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) {1;2};
+{(1,a),(1,b);(2,a),(2,b)}
+rowcatmap (\x/*0:*/ -> colmap (\y/*0:*/ -> x/*1:*/,y/*0:*/ {
+  rule #0: y = x,y
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) {a,b} {
+  rule #0: x = colmap (\y -> x,y) {a,b}
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) {1;2}===rowcatmap (\x/*0:*/ -> colmap (\y/*0:*/ -> x/*1:*/,y/*0:*/ {
+  rule #0: y = x,y
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) [a,b] {
+  rule #0: x = colmap (\y -> x,y) [a,b]
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) [1,2];
+1
+rowcatmap (\x/*0:*/ -> colmap (\y/*0:*/ -> x/*1:*/,y/*0:*/ {
+  rule #0: y = x,y
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) {a,b;c,d} {
+  rule #0: x = colmap (\y -> x,y) {a,b;c,d}
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) {1,2;3,4};
+{(1,a),(1,b),(2,a),(2,b);(1,c),(1,d),(2,c),(2,d);(3,a),(3,b),(4,a),(4,b);(3,c),(3,d),(4,c),(4,d)}
