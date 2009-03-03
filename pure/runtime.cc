@@ -7476,9 +7476,12 @@ static inline pure_expr* to_expr(pure_expr* e) { return e; }
 
 
 //convert an expression into a matrix element
-inline bool from_expr( pure_expr* e, double & d ) { return pure_is_double(e,&d); }
-inline bool from_expr( pure_expr* e, int & i ) { return pure_is_int(e,&i); }
-inline bool from_expr( pure_expr* e, Complex & c ) { return pure_is_complex(e,&c.real()); }
+inline bool from_expr( pure_expr* e, double & d )
+{ return pure_is_double(e,&d); }
+inline bool from_expr( pure_expr* e, int & i )
+{ return pure_is_int(e,&i); }
+inline bool from_expr( pure_expr* e, Complex & c )
+{ return pure_is_complex(e,&c.real()); }
 
 
 // generix matrix do
@@ -7644,8 +7647,11 @@ pure_expr* matrix_map( pure_expr *f, pure_expr *x )
     return pure_symbolic_matrix(sm);
   }
 
+  //need casts for complex case, when data pointer is double*, but
+  //we really want complex*
+  elem_type *inp = reinterpret_cast<elem_type* >(xm->data);
   //make a guess at what the result type is by the first element
-  pure_expr *first = pure_app(f,to_expr(xm->data[0]));
+  pure_expr *first = pure_app(f,to_expr(*inp));
   int32_t firsti;
   double firstd;
   Complex firstc;
@@ -7869,8 +7875,12 @@ pure_expr* matrix_zipwith( pure_expr *f, pure_expr *x, pure_expr *y )
     return pure_symbolic_matrix(sm);
   }
 
+  //need casts for complex case, when data pointer is double*, but
+  //we really want complex*
+  elem_type *inp1 = reinterpret_cast<elem_type* >(xm->data);
+  elem_type *inp2 = reinterpret_cast<elem_type* >(ym->data);
   //make a guess at what the result type is by the first element
-  pure_expr *first = pure_appl(f,2,to_expr(xm->data[0]),to_expr(ym->data[0]));
+  pure_expr *first = pure_appl(f,2,to_expr(*inp1),to_expr(*inp2));
   int32_t firsti;
   double firstd;
   Complex firstc;
