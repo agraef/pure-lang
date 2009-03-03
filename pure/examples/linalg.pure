@@ -42,8 +42,9 @@ x::matrix - y::matrix	= zipwith (-) x y if dim x==dim y;
 
 /* Dot product. */
 
-dot x::matrix y::matrix	= foldl (+) 0 [x!i*y!i | i=0..#x-1]
+dot x::matrix y::matrix	= sum $ zipwith (*) (rowvector x) (rowvector y)
 			    if vectorp x && vectorp y && #x==#y;
+sum = foldl (+) 0;
 
 /* Matrix multiplication. (The redim is needed to properly handle all empty
    matrix cases. See the Octave manual for an explanation of this issue.) */
