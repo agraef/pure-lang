@@ -442,7 +442,7 @@ Comprehensions: ``[x,y | x=1..n; y=1..m; x<y]``, ``{i~=j | i=1..n; j=1..m}``
     prelude), but they are often much easier to write.
 
     Matrix comprehensions work pretty much like list comprehensions, but
-    produce matrices instead of lists. Generator clauses in matrix
+    produce matrices instead of lists. List generators in matrix
     comprehensions alternate between row and column generation so that most
     common mathematical abbreviations carry over quite easily. Examples of
     both kinds of comprehensions can be found in the Examples_ section below.
@@ -1114,22 +1114,32 @@ dimension::
 Note that the ``i==j`` term is just a Pure idiom for the Kronecker
 symbol. Another point worth mentioning here is that the generator clauses of
 matrix comprehensions alternate between row and column generation
-automatically. (More precisely, the last generator, which varies most quickly,
-always yields a row, the next-to-last one a column of these row vectors, and
-so on.) This makes matrix comprehensions resemble customary mathematical
-notation very closely.
+automatically, if values are drawn from lists as in the example above. (More
+precisely, the last generator, which varies most quickly, yields a row, the
+next-to-last one a column of these row vectors, and so on.) This makes matrix
+comprehensions resemble customary mathematical notation very closely.
+
+Of course, matrix comprehensions can also draw values from other matrices
+instead of lists. In this case the block layout of the component matrices is
+preserved. For instance::
+
+  > {x,y|x={1,2};y={a,b;c,d}};
+  {(1,a),(1,b),(2,a),(2,b);(1,c),(1,d),(2,c),(2,d)}
+
+Note that a matrix comprehension involving filters may raise a
+``bad_matrix_value`` exception because the filtered result isn't a rectangular
+matrix any more. E.g., ``{2*x|x={1,2,3,-4};x>0}`` works, as does
+``{2*x|x={-1,2;3,-4};x>0}``, but ``{2*x|x={1,2;3,-4};x>0}`` looses because the
+rows of the result matrix have different lengths.
 
 As a slightly more comprehensive example (no pun intended!), here is a
 definition of matrix multiplication in Pure. The building block here is the
 "dot" product of two vectors which can be defined as follows::
 
-  > dot x::matrix y::matrix = foldl (+) 0 [x!i*y!i | i=0..#x-1];
+  > sum = foldl (+) 0;
+  > dot x::matrix y::matrix = sum $ zipwith (*) (rowvector x) (rowvector y);
   > dot {1,2,3} {1,0,1};
   4
-
-(For the sake of simplicity, this doesn't do much error checking; if the two
-vectors aren't the same size then you'll get an ``out_of_bounds`` exception
-with the definition above.)
 
 The general matrix product now boils down to a simple matrix comprehension
 which just computes the dot product of all rows of ``x`` with all columns of
@@ -1139,6 +1149,10 @@ matrices.pure)::
   > x::matrix * y::matrix = {dot u v | u = rows x; v = cols y};
   > {0,1;1,0;1,1}*{1,2,3;4,5,6};
   {4,5,6;1,2,3;5,7,9}
+
+(For the sake of simplicity, this doesn't do much error checking. In
+production code you'd check at least the conformance of matrix dimensions, of
+course.)
 
 Well, that was easy. So let's take a look at a more challenging example,
 Gaussian elimination, which can be used to solve systems of linear

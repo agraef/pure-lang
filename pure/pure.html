@@ -794,7 +794,7 @@ sugar for a combination of nested lambdas, conditional expressions and
 construction and mapping a function over a list or matrix, defined in the
 prelude), but they are often much easier to write.</p>
 <p class="last">Matrix comprehensions work pretty much like list comprehensions, but
-produce matrices instead of lists. Generator clauses in matrix
+produce matrices instead of lists. List generators in matrix
 comprehensions alternate between row and column generation so that most
 common mathematical abbreviations carry over quite easily. Examples of
 both kinds of comprehensions can be found in the <a class="reference" href="#examples">Examples</a> section below.</p>
@@ -1438,21 +1438,31 @@ dimension:</p>
 <p>Note that the <tt class="docutils literal"><span class="pre">i==j</span></tt> term is just a Pure idiom for the Kronecker
 symbol. Another point worth mentioning here is that the generator clauses of
 matrix comprehensions alternate between row and column generation
-automatically. (More precisely, the last generator, which varies most quickly,
-always yields a row, the next-to-last one a column of these row vectors, and
-so on.) This makes matrix comprehensions resemble customary mathematical
-notation very closely.</p>
+automatically, if values are drawn from lists as in the example above. (More
+precisely, the last generator, which varies most quickly, yields a row, the
+next-to-last one a column of these row vectors, and so on.) This makes matrix
+comprehensions resemble customary mathematical notation very closely.</p>
+<p>Of course, matrix comprehensions can also draw values from other matrices
+instead of lists. In this case the block layout of the component matrices is
+preserved. For instance:</p>
+<pre class="literal-block">
+&gt; {x,y|x={1,2};y={a,b;c,d}};
+{(1,a),(1,b),(2,a),(2,b);(1,c),(1,d),(2,c),(2,d)}
+</pre>
+<p>Note that a matrix comprehension involving filters may raise a
+<tt class="docutils literal"><span class="pre">bad_matrix_value</span></tt> exception because the filtered result isn't a rectangular
+matrix any more. E.g., <tt class="docutils literal"><span class="pre">{2*x|x={1,2,3,-4};x&gt;0}</span></tt> works, as does
+<tt class="docutils literal"><span class="pre">{2*x|x={-1,2;3,-4};x&gt;0}</span></tt>, but <tt class="docutils literal"><span class="pre">{2*x|x={1,2;3,-4};x&gt;0}</span></tt> looses because the
+rows of the result matrix have different lengths.</p>
 <p>As a slightly more comprehensive example (no pun intended!), here is a
 definition of matrix multiplication in Pure. The building block here is the
 &quot;dot&quot; product of two vectors which can be defined as follows:</p>
 <pre class="literal-block">
-&gt; dot x::matrix y::matrix = foldl (+) 0 [x!i*y!i | i=0..#x-1];
+&gt; sum = foldl (+) 0;
+&gt; dot x::matrix y::matrix = sum $ zipwith (*) (rowvector x) (rowvector y);
 &gt; dot {1,2,3} {1,0,1};
 4
 </pre>
-<p>(For the sake of simplicity, this doesn't do much error checking; if the two
-vectors aren't the same size then you'll get an <tt class="docutils literal"><span class="pre">out_of_bounds</span></tt> exception
-with the definition above.)</p>
 <p>The general matrix product now boils down to a simple matrix comprehension
 which just computes the dot product of all rows of <tt class="docutils literal"><span class="pre">x</span></tt> with all columns of
 <tt class="docutils literal"><span class="pre">y</span></tt> (the <tt class="docutils literal"><span class="pre">rows</span></tt> and <tt class="docutils literal"><span class="pre">cols</span></tt> functions are prelude operations found in
@@ -1462,6 +1472,9 @@ matrices.pure):</p>
 &gt; {0,1;1,0;1,1}*{1,2,3;4,5,6};
 {4,5,6;1,2,3;5,7,9}
 </pre>
+<p>(For the sake of simplicity, this doesn't do much error checking. In
+production code you'd check at least the conformance of matrix dimensions, of
+course.)</p>
 <p>Well, that was easy. So let's take a look at a more challenging example,
 Gaussian elimination, which can be used to solve systems of linear
 equations. The algorithm brings a matrix into &quot;row echelon&quot; form, a
