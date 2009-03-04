@@ -19,15 +19,23 @@
    with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
 
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   The used algorithm of AVL trees has its origin in the SWI-Prolog
-   implementation of association lists. The original file was created by
-   R. A. O'Keefe and updated for the SWI-Prolog by Jan Wielemaker. For the
-   original file see http://www.swi-prolog.org.
+/* ..
+
+   Dictionaries
+   ============
+
+   The dict.pure module provides Pure's ``dict`` and ``hdict`` data types
+   based on AVL trees. ``dict`` is an ordered dictionary (assuming an ordered
+   key type), ``hdict`` a hashed dictionary which works with any (mixture of)
+   key types but stores members in an apparently random order.
+
+   The used AVL tree algorithm has its origin in the SWI-Prolog implementation
+   of association lists. The original file was created by R. A. O'Keefe and
+   updated for the SWI-Prolog by Jan Wielemaker. For the original file see
+   http://www.swi-prolog.org.
 
    The port from SWI-Prolog and the deletion stuff (rmfirst, rmlast, delete)
-   missing in the original file was provided by Jiri Spitz
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+   missing in the original file was provided by Jiri Spitz. */
 
 namespace dict;
 
@@ -35,38 +43,108 @@ namespace dict;
 private nullary nil;
 private bin;
 
-/*****
-Tree for dict and hdict is either:
--  nil  (empty tree) or
--  bin Key value Balance Left Right  (Left, Right: trees)
+/* ..
 
-Balance: ( 1), ( 0), or (-1) denoting |L|-|R| = 1, 0, or -1, respectively
-*****/
+   Imports
+   -------
 
-/* Public operations: ******************************************************
+   To use the operations of this module, add the following import declaration
+   to your program::
 
-emptydict, emptyhdict:		return the empty dict or bag
-dict xs, hdict xs;		create a dict or hdict from list xs
-dictp d, hdictp d;		check whether x is a dict or hdict
-mkdict y xs, mkhdict y xs:	create dict or hdict from a list of keys and
-				a constant value
+     using dict;
 
-#d				size of dict or hdict d
-d!x:				get value from d by key x
+   Data Structure
+   --------------
 
-null d				tests whether d is the empty dict or hdict
-member d x			tests whether d contains member with key x
-members d, list d		list members of d (in ascending order fo dict)
-keys d:				lists keys of d (in ascending order fo dict)
-values d:			list values of d
+   A tree for ``dict`` and ``hdict`` takes the form ``Dict T`` or ``HDict T``
+   where ``T`` is either:
 
-first d, last d			return first and last member of dict
-rmfirst d, rmlast d		remove first and last member from dict
-insert d xy			insert x into d (replace existing element)
-update d x y			fully curried version of insert
-delete d x			remove x from d
+   ``nil``
+     the empty tree; or
 
-   *************************************************************************/
+   ``bin key value balance left right``
+     a nonempty tree with given ``key`` and ``value`` in the root node, where
+     ``left`` and ``right`` are the left and right subtree, and ``balance``
+     is either 1, 0 or -1, denoting ``|left|-|right|`` = 1, 0, or -1,
+     respectively.
+
+   The tree constructors are private.
+
+   Operations
+   ----------
+
+   .. _hdict:
+   .. _dict:
+
+   ``emptydict``, ``emptyhdict``
+     return the empty dict or hdict
+
+   ``dict xs``, ``hdict xs``
+     create a dict or hdict from list ``xs`` of key-value pairs in the form
+     ``key=>value``
+
+   ``dictp d``, ``hdictp d``
+     check whether ``x`` is a dict or hdict
+
+   ``mkdict y xs``, ``mkhdict y xs``
+     create dict or hdict from a list of keys and a constant value
+
+   ``#d``
+     size of dict or hdict ``d``
+
+   ``d!x``
+     get value from ``d`` by key ``x``
+
+   ``null d``
+     test whether ``d`` is the empty dict or hdict
+
+   ``member d x``
+     test whether ``d`` contains a member with key ``x``
+
+   ``members d``, ``list d``
+     list members of ``d`` (in ascending order for dict)
+
+   ``keys d``
+     list keys of ``d`` (in ascending order for dict)
+
+   ``values d``
+     list values of ``d``
+
+   ``first d``, ``last d``
+     return first and last member of ``d``
+
+   ``rmfirst d``, ``rmlast d``
+     remove first and last member from ``d``
+
+   ``insert d (x=>y)``, ``update d x y``
+     insert ``x=>y`` into ``d`` (replace any existing element); ``update`` is
+     a fully curried version of ``insert``
+
+   ``delete d x``
+     remove ``x`` from ``d``
+
+   Examples
+   --------
+
+   A normal (ordered) dictionary::
+
+     > using dict;
+     > let d = dict ["foo"=>77,"bar"=>99.1];
+     > keys d; vals d; members d;
+     ["bar","foo"]
+     [99.1,77]
+     ["bar"=>99.1,"foo"=>77]
+
+   A hashed dictionary can be used with any key values, which are stored in a
+   seemingly random order::
+
+     > let h = hdict [foo=>77,42=>99.1];
+     > keys h; vals h; members h;
+     [42,foo]
+     [99.1,77]
+     [42=>99.1,foo=>77]
+
+*/
 
 private adjustd avl_geq;
 

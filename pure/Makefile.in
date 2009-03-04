@@ -164,11 +164,19 @@ etc/pure-mode.el: Makefile etc/pure-mode.el.in
 	sed -e 's,@bindir\@,$(bindir),g' -e 's,@libdir\@,$(libdir),g' $(srcdir)/etc/pure-mode.el.in >$(srcdir)/etc/pure-mode.el.tmp
 	mv $(srcdir)/etc/pure-mode.el.tmp $(srcdir)/etc/pure-mode.el
 
-# documentation in various formats (this requires docutils)
+# documentation in various formats (this requires docutils and pure-doc)
+
+# make sure to get these into the right order
+libsources = prelude.pure primitives.pure strings.pure matrices.pure \
+math.pure array.pure dict.pure heap.pure set.pure getopt.pure system.pure
+libfiles = $(addprefix $(srcdir)/lib/, $(libsources))
 
 html: pure.html purelib.html
 tex: pure.tex purelib.tex
 pdf: pure.pdf purelib.pdf
+
+purelib.txt: $(libfiles)
+	pure-doc $(libfiles) > $@
 
 %.html: %.txt
 	rst2html.py $< $@
