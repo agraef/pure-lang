@@ -1,0 +1,538 @@
+
+/* gsl.pure: GSL wrapper for the Pure programming language. */
+
+/* Copyright (c) 2008 by Albert Graef <Dr.Graef@t-online.de>.
+   Copyright (c) 2008 by Robert E. Rucker <erucker@bmc.edu>.
+
+   This file is part of the Pure programming language and system.
+
+   Pure is free software: you can redistribute it and/or modify it under the
+   terms of the GNU General Public License as published by the Free Software
+   Foundation, either version 3 of the License, or (at your option) any later
+   version.
+
+   Pure is distributed in the hope that it will be useful, but WITHOUT ANY
+   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+   FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+   details.
+
+   You should have received a copy of the GNU General Public License along
+   with this program.  If not, see <http://www.gnu.org/licenses/>. */
+
+using "lib:gsl";
+
+/* Additional matrix operators: element-wise multiplication, division,
+   exponentiation, and left division. Note that left division is denoted '\\',
+   since the backslash is already used for lambdas in Pure. */
+
+infixl 7 .* ./ \\;
+infixr 8 .^ ;
+
+/* Additional number predicates. gsl_complexp checks if a Pure expression
+   represents a valid GSL complex value (which is a Pure complex value whose
+   real and imaginary components are either double or machine int values).
+   gsl_scalarp checks for any kind of Pure number which passes muster as a
+   scalar in GSL land (i.e., int, double, GSL complex value). */
+
+extern bool gsl_complexp(expr*);
+gsl_scalarp x = intp x || doublep x || gsl_complexp x;
+
+/* Complex functions. */
+
+extern expr* wrap_gsl_complex_sqrt(expr*) = gsl_complex_sqrt;
+
+/* Utility matrices. zeros and ones create matrices with all elements zero or
+   one, respectively, and eye creates identity matrices. These functions can
+   be invoked either with a pair (n,m) denoting the desired number of rows or
+   columns, or an integer n in which case a square nxn matrix is created. The
+   result is always a double matrix. */
+
+zeros (n::int,m::int)	= dmatrix (n,m);
+zeros n::int		= zeros (n,n);
+
+extern void gsl_matrix_set_all(dmatrix*, double);
+ones (n::int,m::int)	= x when
+			    x = dmatrix (n,m);
+			    _ = gsl_matrix_set_all x 1.0;
+			  end;
+ones n::int		= ones (n,n);
+
+extern void gsl_matrix_set_identity(dmatrix*);
+eye (n::int,m::int)	= x when
+			    x = dmatrix (n,m);
+			    _ = gsl_matrix_set_identity x;
+			  end;
+eye n::int		= eye (n,n);
+
+/* Complex and integer matrix variations of the above. */
+
+czeros (n::int,m::int)	= cmatrix (n,m);
+czeros n::int		= czeros (n,n);
+
+extern void wrap_gsl_matrix_complex_set_all(cmatrix*, expr*)
+ = gsl_matrix_complex_set_all;
+cones (n::int,m::int)	= x when
+			    x = cmatrix (n,m);
+			    _ = gsl_matrix_complex_set_all x 1.0;
+			  end;
+cones n::int		= cones (n,n);
+
+extern void gsl_matrix_complex_set_identity(cmatrix*);
+ceye (n::int,m::int)	= x when
+			    x = cmatrix (n,m);
+			    _ = gsl_matrix_complex_set_identity x;
+			  end;
+ceye n::int		= ceye (n,n);
+
+izeros (n::int,m::int)	= imatrix (n,m);
+izeros n::int		= izeros (n,n);
+
+extern void gsl_matrix_int_set_all(imatrix*, int);
+iones (n::int,m::int)	= x when
+			    x = imatrix (n,m);
+			    _ = gsl_matrix_int_set_all x 1;
+			  end;
+iones n::int		= iones (n,n);
+
+extern void gsl_matrix_int_set_identity(imatrix*);
+ieye (n::int,m::int)	= x when
+			    x = imatrix (n,m);
+			    _ = gsl_matrix_int_set_identity x;
+			  end;
+ieye n::int		= ieye (n,n);
+
+/* Matrix-scalar operations. */
+
+extern int gsl_matrix_add_constant(dmatrix*, double);
+extern int wrap_gsl_matrix_complex_add_constant(cmatrix*, expr*)
+ = gsl_matrix_complex_add_constant;
+extern int gsl_matrix_int_add_constant(imatrix*, double);
+
+a + x::matrix		|
+x::matrix + a		= if gsl_complexp a then
+			    // complex matrix result
+			    (x when x = pack (cmatrix x);
+			       _ = gsl_matrix_complex_add_constant x a end)
+			  else if imatrixp x && intp a then
+			    // int matrix result
+			    (x when x = pack x;
+			       _ = gsl_matrix_int_add_constant x (double a)
+			     end)
+			  else
+			    // other numeric matrices; ints get promoted to
+			    // double here
+			    (x when
+			       x = pack (if imatrixp x then dmatrix x else x);
+			       a = double a;
+			       _ = case matrix_type x of
+			             1 = gsl_matrix_add_constant x a;
+			             2 = gsl_matrix_complex_add_constant x a;
+			             3 = gsl_matrix_add_constant x a;
+			           end
+			     end)
+			  if nmatrixp x && gsl_scalarp a;
+// symbolic cases
+a + x::matrix		= map (\x->a+x) x if ~matrixp a;
+x::matrix + a		= map (\x->x+a) x if ~matrixp a;
+
+a - x::matrix		= (-x)+a if nmatrixp x && gsl_scalarp a;
+x::matrix - a		= x+(-a) if nmatrixp x && gsl_scalarp a;
+a - x::matrix		= map (\x->a-x) x if ~matrixp a;
+x::matrix - a		= map (\x->x-a) x if ~matrixp a;
+
+extern int gsl_matrix_scale(dmatrix*, double);
+extern int wrap_gsl_matrix_complex_scale(cmatrix*, expr*)
+ = gsl_matrix_complex_scale;
+extern int gsl_matrix_int_scale(imatrix*, double);
+
+a * x::matrix		|
+x::matrix * a		= if gsl_complexp a then
+			    // complex matrix result
+			    (x when x = pack (cmatrix x);
+			       _ = gsl_matrix_complex_scale x a end)
+			  else if imatrixp x && intp a then
+			    // int matrix result
+			    (x when x = pack x;
+			       _ = gsl_matrix_int_scale x (double a) end)
+			  else
+			    // other numeric matrices; ints get promoted to
+			    // double here
+			    (x when
+			       x = pack (if imatrixp x then dmatrix x else x);
+			       a = double a;
+			       _ = case matrix_type x of
+			             1 = gsl_matrix_scale x a;
+			             2 = gsl_matrix_complex_scale x a;
+			             3 = gsl_matrix_scale x a;
+			           end
+			     end)
+			  if nmatrixp x && gsl_scalarp a;
+// symbolic cases
+a * x::matrix		= map (\x->a*x) x if ~matrixp a;
+x::matrix * a		= map (\x->x*a) x if ~matrixp a;
+
+a / x::matrix		= a*ones(dim x)./x if nmatrixp x && gsl_scalarp a;
+x::matrix / a		= x*(1/a) if nmatrixp x && gsl_scalarp a;
+a / x::matrix		= map (\x->a/x) x if ~matrixp a;
+x::matrix / a		= map (\x->x/a) x if ~matrixp a;
+
+/* Some additional matrix-scalar operations which aren't in GSL, but are
+   provided as matrix-matrix operations below. */
+
+a ^ x::matrix		= (a*ones(dim x)).^x if nmatrixp x && gsl_scalarp a;
+x::matrix ^ a		= x.^(a*ones(dim x)) if nmatrixp x && gsl_scalarp a;
+a ^ x::matrix		= map (\x->a^x) x if ~matrixp a;
+x::matrix ^ a		= map (\x->x^a) x if ~matrixp a;
+
+/* Integer matrix-scalar operations. */
+
+a div x::matrix		= (a*iones(dim x)) div x if imatrixp x && intp a;
+x::matrix div a		= x div (a*iones(dim x)) if imatrixp x && intp a;
+a div x::matrix		= map (\x->a div x) x if ~matrixp a;
+x::matrix div a		= map (\x->x div a) x if ~matrixp a;
+
+a mod x::matrix		= (a*iones(dim x)) mod x if imatrixp x && intp a;
+x::matrix mod a		= x mod (a*iones(dim x)) if imatrixp x && intp a;
+a mod x::matrix		= map (\x->a mod x) x if ~matrixp a;
+x::matrix mod a		= map (\x->x mod a) x if ~matrixp a;
+
+a << x::matrix		= (a*iones(dim x)) << x if imatrixp x && intp a;
+x::matrix << a		= x << (a*iones(dim x)) if imatrixp x && intp a;
+a << x::matrix		= map (\x->a << x) x if ~matrixp a;
+x::matrix << a		= map (\x->x << a) x if ~matrixp a;
+
+a >> x::matrix		= (a*iones(dim x)) >> x if imatrixp x && intp a;
+x::matrix >> a		= x >> (a*iones(dim x)) if imatrixp x && intp a;
+a >> x::matrix		= map (\x->a >> x) x if ~matrixp a;
+x::matrix >> a		= map (\x->x >> a) x if ~matrixp a;
+
+a and x::matrix		= (a*iones(dim x)) and x if imatrixp x && intp a;
+x::matrix and a		= x and (a*iones(dim x)) if imatrixp x && intp a;
+a and x::matrix		= map (\x->a and x) x if ~matrixp a;
+x::matrix and a		= map (\x->x and a) x if ~matrixp a;
+
+a or x::matrix		= (a*iones(dim x)) or x if imatrixp x && intp a;
+x::matrix or a		= x or (a*iones(dim x)) if imatrixp x && intp a;
+a or x::matrix		= map (\x->a or x) x if ~matrixp a;
+x::matrix or a		= map (\x->x or a) x if ~matrixp a;
+
+/* Matrix-matrix operations. */
+
+extern int gsl_matrix_add(dmatrix*, dmatrix*);
+extern int gsl_matrix_complex_add(cmatrix*, cmatrix*);
+extern int gsl_matrix_int_add(imatrix*, imatrix*);
+
+x::matrix + y::matrix	= throw (bad_matrix_value y) if dim x~=dim y;
+			= x when
+			    x = pack x;
+			    _ = case matrix_type x of
+			      1 = gsl_matrix_add x y;
+			      2 = gsl_matrix_complex_add x y;
+			      3 = gsl_matrix_int_add x y;
+			    end;
+			  end if nmatrixp x && matrix_type x == matrix_type y;
+// mixed numeric cases
+			= cmatrix x + y if nmatrixp x && cmatrixp y;
+			= x + cmatrix y if cmatrixp x && nmatrixp y;
+			= dmatrix x + y if imatrixp x && dmatrixp y;
+			= x + dmatrix y if dmatrixp x && imatrixp y;
+// symbolic matrix operations
+			= zipwith (+) x y;
+
+extern int gsl_matrix_sub(dmatrix*, dmatrix*);
+extern int gsl_matrix_complex_sub(cmatrix*, cmatrix*);
+extern int gsl_matrix_int_sub(imatrix*, imatrix*);
+
+x::matrix - y::matrix	= throw (bad_matrix_value y) if dim x~=dim y;
+			= x when
+			    x = pack x;
+			    _ = case matrix_type x of
+			      1 = gsl_matrix_sub x y;
+			      2 = gsl_matrix_complex_sub x y;
+			      3 = gsl_matrix_int_sub x y;
+			    end;
+			  end if nmatrixp x && matrix_type x == matrix_type y;
+// mixed numeric cases
+			= cmatrix x - y if nmatrixp x && cmatrixp y;
+			= x - cmatrix y if cmatrixp x && nmatrixp y;
+			= dmatrix x - y if imatrixp x && dmatrixp y;
+			= x - dmatrix y if dmatrixp x && imatrixp y;
+// symbolic matrix operations
+			= zipwith (-) x y;
+
+extern int gsl_matrix_mul_elements(dmatrix*, dmatrix*);
+extern int gsl_matrix_complex_mul_elements(cmatrix*, cmatrix*);
+extern int gsl_matrix_int_mul_elements(imatrix*, imatrix*);
+
+x::matrix .* y::matrix	= throw (bad_matrix_value y) if dim x~=dim y;
+			= x when
+			    x = pack x;
+			    _ = case matrix_type x of
+			      1 = gsl_matrix_mul_elements x y;
+			      2 = gsl_matrix_complex_mul_elements x y;
+			      3 = gsl_matrix_int_mul_elements x y;
+			    end;
+			  end if nmatrixp x && matrix_type x == matrix_type y;
+// mixed numeric cases
+			= cmatrix x .* y if nmatrixp x && cmatrixp y;
+			= x .* cmatrix y if cmatrixp x && nmatrixp y;
+			= dmatrix x .* y if imatrixp x && dmatrixp y;
+			= x .* dmatrix y if dmatrixp x && imatrixp y;
+// symbolic matrix operations
+			= zipwith (*) x y;
+
+extern int gsl_matrix_div_elements(dmatrix*, dmatrix*);
+extern int gsl_matrix_complex_div_elements(cmatrix*, cmatrix*);
+
+x::matrix ./ y::matrix	= throw (bad_matrix_value y) if dim x~=dim y;
+			= dmatrix x ./ dmatrix y if imatrixp x && imatrixp y;
+			= x when
+			    x = pack x;
+			    _ = case matrix_type x of
+			      1 = gsl_matrix_div_elements x y;
+			      2 = gsl_matrix_complex_div_elements x y;
+			    end;
+			  end if nmatrixp x && matrix_type x == matrix_type y;
+// mixed numeric cases
+			= cmatrix x ./ y if nmatrixp x && cmatrixp y;
+			= x ./ cmatrix y if cmatrixp x && nmatrixp y;
+			= dmatrix x ./ y if imatrixp x && dmatrixp y;
+			= x ./ dmatrix y if dmatrixp x && imatrixp y;
+// symbolic matrix operations
+			= zipwith (/) x y;
+
+/* Element-wise exponentiation. This isn't in GSL so we provide it in
+   gsl.c. */
+
+extern int gsl_matrix_pow_elements(dmatrix*, dmatrix*);
+extern int gsl_matrix_complex_pow_elements(cmatrix*, cmatrix*);
+
+x::matrix .^ y::matrix	= throw (bad_matrix_value y) if dim x~=dim y;
+			= dmatrix x .^ dmatrix y if imatrixp x && imatrixp y;
+			= x when
+			    x = pack x;
+			    _ = case matrix_type x of
+			      1 = gsl_matrix_pow_elements x y;
+			      2 = gsl_matrix_complex_pow_elements x y;
+			    end;
+			  end if nmatrixp x && matrix_type x == matrix_type y;
+// mixed numeric cases
+			= cmatrix x .^ y if nmatrixp x && cmatrixp y;
+			= x .^ cmatrix y if cmatrixp x && nmatrixp y;
+			= dmatrix x .^ y if imatrixp x && dmatrixp y;
+			= x .^ dmatrix y if dmatrixp x && imatrixp y;
+// symbolic matrix operations
+			= zipwith (^) x y;
+
+/* Element-wise operations on int matrices. These aren't in GSL so we provide
+   them in gsl.c. */
+
+extern int gsl_matrix_int_div(imatrix*, imatrix*);
+extern int gsl_matrix_int_mod(imatrix*, imatrix*);
+extern int gsl_matrix_int_shl(imatrix*, imatrix*);
+extern int gsl_matrix_int_shr(imatrix*, imatrix*);
+extern int gsl_matrix_int_or(imatrix*, imatrix*);
+extern int gsl_matrix_int_and(imatrix*, imatrix*);
+extern int gsl_matrix_int_not(imatrix*);
+
+x::matrix div y::matrix	= throw (bad_matrix_value y) if dim x~=dim y;
+			= if r==0 then x else 1 div 0 when
+			    x = pack x;
+			    r = gsl_matrix_int_div x y;
+			  end if imatrixp x && imatrixp y;
+			= zipwith (div) x y;
+
+x::matrix mod y::matrix	= throw (bad_matrix_value y) if dim x~=dim y;
+			= if r==0 then x else 1 mod 0 when
+			    x = pack x;
+			    r = gsl_matrix_int_mod x y;
+			  end if imatrixp x && imatrixp y;
+			= zipwith (mod) x y;
+
+x::matrix << y::matrix	= throw (bad_matrix_value y) if dim x~=dim y;
+			= x when
+			    x = pack x;
+			    _ = gsl_matrix_int_shl x y;
+			  end if imatrixp x && imatrixp y;
+			= zipwith (<<) x y;
+
+x::matrix >> y::matrix	= throw (bad_matrix_value y) if dim x~=dim y;
+			= x when
+			    x = pack x;
+			    _ = gsl_matrix_int_shr x y;
+			  end if imatrixp x && imatrixp y;
+			= zipwith (>>) x y;
+
+x::matrix and y::matrix	= throw (bad_matrix_value y) if dim x~=dim y;
+			= x when
+			    x = pack x;
+			    _ = gsl_matrix_int_and x y;
+			  end if imatrixp x && imatrixp y;
+			= zipwith (and) x y;
+
+x::matrix or y::matrix	= throw (bad_matrix_value y) if dim x~=dim y;
+			= x when
+			    x = pack x;
+			    _ = gsl_matrix_int_or x y;
+			  end if imatrixp x && imatrixp y;
+			= zipwith (or) x y;
+
+not x::matrix		= x when
+			    x = pack x;
+			    _ = gsl_matrix_int_not x;
+			  end if imatrixp x;
+			= map (not) x;
+
+/* Unary minus. */
+
+-x::matrix		= (-1)*x if nmatrixp x;
+			= map neg x;
+
+/* Matrix multiplication is implemented via the BLAS interface (actually a
+   thin wrapper around the BLAS routines, as we don't need all the arguments).
+   BLAS doesn't support integer matrices, currently we emulate these by
+   converting to double matrices and then back to integer. */
+
+extern int gsl_matrix_multiply(dmatrix*, dmatrix*, dmatrix*);
+extern int gsl_matrix_complex_multiply(cmatrix*, cmatrix*, cmatrix*);
+
+x::matrix * y::matrix	= throw (bad_matrix_value y) if dim x!1~=dim y!0;
+			= z when
+			    mat = [dmatrix,cmatrix,dmatrix]!(matrix_type x-1);
+			    z = mat (dim x!0,dim y!1);
+			    _ = if null z then () else
+			    (case matrix_type x of
+			       1 = gsl_matrix_multiply x y z;
+			       2 = gsl_matrix_complex_multiply x y z;
+			       3 = gsl_matrix_multiply
+			           (dmatrix x) (dmatrix y) z;
+			     end);
+			    z = if imatrixp x then imatrix z else z;
+			  end if nmatrixp x && matrix_type x == matrix_type y;
+// mixed numeric cases
+			= cmatrix x * y if nmatrixp x && cmatrixp y;
+			= x * cmatrix y if cmatrixp x && nmatrixp y;
+			= dmatrix x * y if imatrixp x && dmatrixp y;
+			= x * dmatrix y if dmatrixp x && imatrixp y;
+// symbolic matrix multiplication
+			= redim (dim x!0,dim y!1)
+			  {dot u v | u = rows x; v = cols y}
+			  with dot x::matrix y::matrix =
+			    foldl (+) 0 [x!i*y!i | i=0..#x-1];
+			  end;
+
+/* Powers of matrices. x must be a square matrix, k a nonnegative integer. */
+
+pow x::matrix k::int	= throw (bad_matrix_value x) if dim x!0~=dim x!1;
+			= case matrix_type x of
+			    1 = eye (dim x!0);
+			    2 = ceye (dim x!0);
+			    _ = ieye (dim x!0);
+			  end if k==0;
+			= x if k==1;
+			= if k mod 2 then y*y*x else y*y
+			  when y = pow x (k>>1) end if k>1;
+pow x::matrix k::bigint	= pow x (int k);
+
+/* Singular value decompositions. For a given nxm matrix x, these yield a
+   singular-value decomposition u,s,v of the matrix such that x==u*s*v', where
+   u and v are orthogonal matrices of dimensions nxm and nxn, respectively,
+   and s is a nxn diagonal matrix which has the singular values in its
+   diagonal, in descending order. Note that GSL implements this only for
+   double matrices right now. Also, GSL only handles the case of square or
+   overdetermined systems, but we work around that in our wrapper functions by
+   just adding a suitable number of zero rows in the underdetermined case.  */
+
+/* This uses the Golub-Reinsch algorithm. */
+
+extern int wrap_gsl_linalg_SV_decomp
+(dmatrix* A, dmatrix* V, dmatrix* S, dmatrix* work) = gsl_linalg_SV_decomp;
+
+svd x::matrix		= throw (bad_matrix_value x)
+			    if cmatrixp x || smatrixp x;
+			= u!!(0..n-1,0..m-1),s,v when
+			    n,m = dim x;
+			    u,s,v = svd {dmatrix x;dmatrix (m-n,m)};
+			  end if dim x!0<dim x!1;
+			= u,s,v when n,m = dim x;
+			    u = pack (dmatrix x); v = dmatrix (m,m);
+			    s = dmatrix (m,m); w = dmatrix m;
+			    _ = gsl_linalg_SV_decomp u v s w;
+			  end;
+
+/* This uses the modified Golub-Reinsch algorithm, which is faster if n>>m but
+   needs O(m^2) extra memory as internal workspace. */
+
+extern int wrap_gsl_linalg_SV_decomp_mod
+(dmatrix* A, dmatrix* X, dmatrix* V, dmatrix* S, dmatrix* work)
+ = gsl_linalg_SV_decomp_mod;
+
+svd_mod x::matrix	= throw (bad_matrix_value x)
+			    if cmatrixp x || smatrixp x;
+			= u!!(0..n-1,0..m-1),s,v when
+			    n,m = dim x;
+			    u,s,v = svd_mod {dmatrix x;dmatrix (m-n,m)};
+			  end if dim x!0<dim x!1;
+			= u,s,v when n,m = dim x;
+			    u = pack (dmatrix x); v = dmatrix (m,m);
+			    s = dmatrix (m,m); w = dmatrix m;
+			    y = dmatrix (m,m);
+			    _ = gsl_linalg_SV_decomp_mod u y v s w;
+			  end;
+
+/* This uses one-sided Jacobi orthogonalization which provides better relative
+   accuracy but is slower. */
+
+extern int wrap_gsl_linalg_SV_decomp_jacobi
+(dmatrix* A, dmatrix* V, dmatrix* S) = gsl_linalg_SV_decomp_jacobi;
+
+svd_jacobi x::matrix	= throw (bad_matrix_value x)
+			    if cmatrixp x || smatrixp x;
+			= u!!(0..n-1,0..m-1),s,v when
+			    n,m = dim x;
+			    u,s,v = svd_jacobi {dmatrix x;dmatrix (m-n,m)};
+			  end if dim x!0<dim x!1;
+			= u,s,v when n,m = dim x;
+			    u = pack (dmatrix x); v = dmatrix (m,m);
+			    s = dmatrix (m,m);
+			    _ = gsl_linalg_SV_decomp_jacobi u v s;
+			  end;
+
+/* Solve the system Ax=b, using the SVD of A. Our wrapper svd_solve takes the
+   result (u,s,v) of a svd call, and a column vector b of the appropriate
+   dimension. The result is another column vector solving the system (possibly
+   in the least-squares sense). */
+
+extern int wrap_gsl_linalg_SV_solve
+(dmatrix* U, dmatrix* V, dmatrix* S, dmatrix* b, dmatrix* x)
+ = gsl_linalg_SV_solve;
+
+svd_solve (u::matrix,s::matrix,v::matrix) b::matrix
+			= throw (bad_matrix_value u)
+			    if ~dmatrixp u;
+			= throw (bad_matrix_value s)
+			    if ~dmatrixp s ||
+			      dim s!0 ~= dim u!1 || dim s!1 ~= dim u!1;
+			= throw (bad_matrix_value v)
+			    if ~dmatrixp v ||
+			      dim v!0 ~= dim u!1 || dim v!1 ~= dim u!1;
+			= throw (bad_matrix_value b)
+			    if cmatrixp b || smatrixp b ||
+			      ~colvectorp b || dim b!0 ~= dim u!0;
+			= x when x = dmatrix (dim u!1,1);
+			    _ = gsl_linalg_SV_solve u v s b x;
+			  end if dmatrixp b;
+			= svd_solve (u,s,v) (dmatrix b) if imatrixp b;
+
+/* Pseudo inverse of a matrix. */
+
+pinv x::matrix		= v*s*u' when
+			    u,s,v = svd x;
+			    s = map (\x->if x==0 then x else 1/x) (diag s);
+			    s = diagmat s;
+			  end if nmatrixp x;
+
+/* Right and left matrix division. */
+
+x::matrix / y::matrix	= x*pinv y if nmatrixp x && nmatrixp y;
+x::matrix \\ y::matrix	= pinv x*y if nmatrixp x && nmatrixp y;

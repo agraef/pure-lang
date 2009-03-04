@@ -1,0 +1,42 @@
+
+/* gsl_sort.pure: GSL wrapper for the Pure programming language. */
+
+/* Copyright (c) 2008 by Albert Graef <Dr.Graef@t-online.de>.
+   Copyright (c) 2008 by Robert E. Rucker <erucker@bmc.edu>.
+
+   This file is part of the Pure programming language and system.
+
+   Pure is free software: you can redistribute it and/or modify it under the
+   terms of the GNU General Public License as published by the Free Software
+   Foundation, either version 3 of the License, or (at your option) any later
+   version.
+
+   Pure is distributed in the hope that it will be useful, but WITHOUT ANY
+   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+   FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+   details.
+
+   You should have received a copy of the GNU General Public License along
+   with this program.  If not, see <http://www.gnu.org/licenses/>. */
+
+using "lib:libgsl";
+
+namespace C;
+
+extern void gsl_sort(double*, size_t, size_t);
+extern void gsl_sort_int(int*, size_t, size_t);
+
+using namespace C;
+
+namespace gsl;
+
+public
+  sort;
+
+sort m::matrix
+  = v $$ m
+    with
+      v = gsl_sort_int (pointer m) 1 (#m) if imatrixp m;
+      v = gsl_sort (pointer m) 1 (#m) if dmatrixp m;
+    end
+    if rowvectorp m;
