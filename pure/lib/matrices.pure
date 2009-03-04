@@ -377,6 +377,7 @@ extern expr* matrix_any(expr*,expr*);
 extern void  matrix_do(expr*,expr*);
 extern expr* matrix_map(expr*,expr*);
 extern expr* matrix_zipwith(expr*,expr*,expr*);
+extern expr* matrix_zipwith3(expr*,expr*,expr*,expr*);
 extern expr* matrix_filter(expr*,expr*);
 extern expr* matrix_dropwhile(expr*,expr*);
 extern expr* matrix_takewhile(expr*,expr*);
@@ -419,7 +420,7 @@ zipwith f x::matrix y::matrix
 			= matrix_zipwith f x y if dim x!1==dim y!1;
 
 zipwith3 f x::matrix y::matrix z::matrix
-			= zipwith ($) (zipwith f x y) z
+			= matrix_zipwith3 f x y z
 			    if dim x!1==dim y!1 && dim x!1==dim z!1;
 
 zip x::matrix y::matrix	= zipwith (,) x y

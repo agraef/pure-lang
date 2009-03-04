@@ -7988,6 +7988,268 @@ pure_expr* matrix_zipwith( pure_expr *f, pure_expr *x, pure_expr *y )
 }
 
 
+//numeric zipwith3 loop : optmize common case that the output of the zipped
+//function is all of the same numerical type. If not, fall back to symbolic
+//zipwith3 loop
+
+template < typename in1_mat_type,  
+           typename in2_mat_type,
+           typename in3_mat_type,
+           typename out_mat_type >
+pure_expr* 
+numeric_zipwith3_loop
+( pure_expr *f,       //the function being zipped
+  in1_mat_type *in1,   //the 1st operand matrix
+  in2_mat_type *in2,   //the 2nd operand matrix
+  in3_mat_type *in3,   //the 3rd operand matrix
+  out_mat_type *out,  //the result matrix
+  size_t *lasti,      //last row and column written to 
+  size_t *lastj )     //  before bailing out in the event that
+                      //  the output of f is not the right type
+{
+  typedef typename element_of<in1_mat_type>::type in1_elem_type;
+  typedef typename element_of<in2_mat_type>::type in2_elem_type;
+  typedef typename element_of<in3_mat_type>::type in3_elem_type;
+  typedef typename element_of<out_mat_type>::type out_elem_type;
+  
+  //need casts for complex case, when data pointer is double*, but
+  //we really want complex*
+  in1_elem_type *inp1 = (reinterpret_cast<in1_elem_type*>(in1->data ))+1;
+  in2_elem_type *inp2 = (reinterpret_cast<in2_elem_type*>(in2->data ))+1;
+  in3_elem_type *inp3 = (reinterpret_cast<in3_elem_type*>(in3->data ))+1;
+  out_elem_type *outp = (reinterpret_cast<out_elem_type*>(out->data))+1;
+  pure_expr *r; //result expression
+  out_elem_type v; //result value
+
+  //we already performed the first zipwith3, so now we apply f to all but the
+  //first column in the first row..
+  *lasti=0;
+  for (size_t j=1; j<in1->size2 && j<in2->size2 && j<in3->size2;
+       ++j,++inp1,++inp2,++inp3,++outp) {
+    *lastj=j;
+    r = pure_appl( f, 3, to_expr(*inp1), to_expr(*inp2), to_expr(*inp3) );
+    if (!from_expr(r,v)) return r;
+    *outp = v;
+    pure_freenew(r);
+  }
+
+  //..then the rest of the rows
+  for (size_t i=1; i<in1->size1 && i<in2->size1 && i<in3->size1; ++i) {
+    *lasti=i;
+    inp1 = (reinterpret_cast<in1_elem_type*>(in1->data))+i*in1->tda; 
+    inp2 = (reinterpret_cast<in2_elem_type*>(in2->data))+i*in2->tda; 
+    inp3 = (reinterpret_cast<in3_elem_type*>(in3->data))+i*in3->tda; 
+    outp = (reinterpret_cast<out_elem_type*>(out->data))+i*out->tda;
+    for (size_t j=0; j<in1->size2 && j<in2->size2 && j<in3->size2;
+	 ++j,++inp1,++inp2,++inp3,++outp) {
+      *lastj=j;
+      r = pure_appl( f, 3, to_expr(*inp1), to_expr(*inp2), to_expr(*inp3) );
+      if (!from_expr(r,v)) return r;
+      *outp = v;
+      pure_freenew(r);
+    }
+  }
+  return 0;
+}
+
+
+//symbolic zipwith3 loop : zipped function results in heterogenous /
+//non-numerical types. This function may pick up where numerical_zipwith3_loop
+//left off, in that case copying out the already-evaluated numbers from the
+//matrix 'num'
+
+template < typename in1_mat_type,  //the operand matrix type
+           typename in2_mat_type,
+           typename in3_mat_type,
+           typename num_mat_type >
+void 
+symbolic_zipwith3_loop
+( pure_expr *f,            //the function being zipped
+  in1_mat_type *in1,        //the 1st operand matrix
+  in2_mat_type *in2,        //the 2nd operand matrix
+  in3_mat_type *in3,        //the 3rd operand matrix
+
+  num_mat_type *num,       //the numerical matrix that _would_ have been 
+                           //  the output if the results of f had all been of
+                           //  the same numerical type
+                           
+  gsl_matrix_symbolic *out,//the symbolic matrix that will be the end result
+
+  size_t lasti ,           //some of the zipwith3 may already be evaluated. 
+  size_t lastj ,           //  lasti,lastj was the last element zipped
+  pure_expr *last )        //  and last is the result
+{
+  typedef typename element_of<in1_mat_type>::type in1_elem_type;
+  typedef typename element_of<in2_mat_type>::type in2_elem_type;
+  typedef typename element_of<in3_mat_type>::type in3_elem_type;
+  typedef typename element_of<num_mat_type>::type num_elem_type;
+
+  in1_elem_type *inp1 = 0; 
+  in2_elem_type *inp2 = 0;
+  in3_elem_type *inp3 = 0;
+  pure_expr **outp = 0;
+  num_elem_type *nump = 0;
+
+  //copy the already-evaluated stuff out of num
+  if (lasti>0 || lastj>0) {
+    if (lasti>0) {
+      for (size_t i=0; i<lasti; ++i) {
+        outp = out->data + i*out->tda;
+        nump = (reinterpret_cast<num_elem_type*>(num->data)) + i*num->tda;
+        for (size_t j=0; j<in1->size2 && j<in2->size2 && j<in3->size2;
+	     ++j,++outp,++nump) {
+          *outp = to_expr(*nump);
+        }
+      }
+    }
+    if (lastj>0) {
+      outp = out->data + lasti*out->tda;
+      nump = (reinterpret_cast<num_elem_type*>(num->data)) + lasti*num->tda;
+      for (size_t j=0; j<lastj; ++j,++outp,++nump) {
+        *outp = to_expr(*nump);
+      }
+    }
+  } 
+
+  out->data[lasti*out->tda+lastj] = last;
+  lastj++;
+  if (lastj>=out->size2) {
+    lasti++;
+    lastj=0;
+    if (lasti>=out->size1) 
+      return;
+  }
+
+  inp1 = (reinterpret_cast<in1_elem_type*>(in1->data))+lasti*in1->tda+lastj;
+  inp2 = (reinterpret_cast<in2_elem_type*>(in2->data))+lasti*in2->tda+lastj;
+  inp3 = (reinterpret_cast<in3_elem_type*>(in3->data))+lasti*in3->tda+lastj;
+  outp = out->data+lasti*out->tda+lastj;
+  //finish the zipwith3
+  for (size_t j=lastj; j<in1->size2 && j<in2->size2 && j<in3->size2;
+       ++j,++inp1,++inp2,++inp3,++outp)
+  {
+    *outp = pure_appl(f,3,to_expr(*inp1),to_expr(*inp2),to_expr(*inp3));
+  }
+
+  for (size_t i=lasti+1; i<in1->size1 && i<in2->size1 && i<in3->size1; ++i) {
+    inp1 =  (reinterpret_cast<in1_elem_type*>(in1->data))+i*in1->tda; 
+    inp2 =  (reinterpret_cast<in2_elem_type*>(in2->data))+i*in2->tda; 
+    inp3 =  (reinterpret_cast<in3_elem_type*>(in3->data))+i*in3->tda; 
+    outp = out->data+i*out->tda;
+    for (size_t j=0; j<in1->size2 && j<in2->size2 && j<in3->size2;
+	 ++j,++inp1,++inp2,++inp3,++outp) {
+      *outp = pure_appl(f,3,to_expr(*inp1),to_expr(*inp2),to_expr(*inp3));
+    }
+  }
+}
+
+
+//generic matrix zipwith3, dispatches on input matrix type (the template
+//parameters) and output matrix type, which is guessed from the result type of
+//f (x!0) (y!0). The function speculates that all f (x!i) (y!i) will be of the
+//same type for all i. If not, numeric_zipwith3_loop bails out and
+//symbolic_zipwith3_loop takes over.
+
+template <typename matrix1_type, typename matrix2_type, typename matrix3_type>
+pure_expr* matrix_zipwith3( pure_expr *f, pure_expr *x, pure_expr *y,
+			    pure_expr *z )
+{
+  pure_ref(f);
+  pure_ref(x);
+  pure_ref(y);
+  pure_ref(z);
+  typedef typename element_of<matrix1_type>::type elem1_type;
+  typedef typename element_of<matrix2_type>::type elem2_type;
+  typedef typename element_of<matrix3_type>::type elem3_type;
+  matrix1_type *xm = static_cast<matrix1_type*>(x->data.mat.p);
+  matrix2_type *ym = static_cast<matrix2_type*>(y->data.mat.p);
+  matrix3_type *zm = static_cast<matrix3_type*>(z->data.mat.p);
+
+  size_t size1 = xm->size1, size2 = xm->size2;
+  if (size1 > ym->size1) size1 = ym->size1;
+  if (size2 > ym->size2) size2 = ym->size2;
+  if (size1 > zm->size1) size1 = zm->size1;
+  if (size2 > zm->size2) size2 = zm->size2;
+
+  if (size1 == 0 || size2 == 0) {
+    // empty output matrix
+    gsl_matrix_symbolic *sm = create_symbolic_matrix(size1,size2);
+    return pure_symbolic_matrix(sm);
+  }
+
+  //need casts for complex case, when data pointer is double*, but
+  //we really want complex*
+  elem1_type *inp1 = reinterpret_cast<elem1_type* >(xm->data);
+  elem2_type *inp2 = reinterpret_cast<elem2_type* >(ym->data);
+  elem3_type *inp3 = reinterpret_cast<elem3_type* >(zm->data);
+  //make a guess at what the result type is by the first element
+  pure_expr *first = pure_appl(f,3,to_expr(*inp1),to_expr(*inp2),
+			       to_expr(*inp3));
+  int32_t firsti;
+  double firstd;
+  Complex firstc;
+  
+  size_t lasti=0,lastj=0;
+  pure_expr *out=0; //final result
+
+#if HAVE_GSL
+  if (from_expr(first,firstd)) { 
+    //DOUBLE
+    gsl_matrix *dm = create_double_matrix(size1,size2);
+    dm->data[0] = firstd;
+    pure_expr *last = numeric_zipwith3_loop(f,xm,ym,zm,dm,&lasti,&lastj);
+    if (!last) {
+      out = pure_double_matrix(dm);
+    } else {
+      gsl_matrix_symbolic *sm = create_symbolic_matrix(size1,size2);
+      symbolic_zipwith3_loop(f,xm,ym,zm,dm,sm,lasti,lastj,last);
+      gsl_matrix_free(dm);
+      out = pure_symbolic_matrix(sm);
+    }
+  } else if (from_expr(first,firsti)) { 
+    //INT
+    gsl_matrix_int *im = create_int_matrix(size1,size2);
+    im->data[0] = firsti; 
+    pure_expr *last = numeric_zipwith3_loop(f,xm,ym,zm,im,&lasti,&lastj);
+    if (!last) { 
+      out = pure_int_matrix(im);
+    } else {
+      gsl_matrix_symbolic *sm = create_symbolic_matrix(size1,size2);
+      symbolic_zipwith3_loop(f,xm,ym,zm,im,sm,lasti,lastj,last);
+      gsl_matrix_int_free(im);
+      out = pure_symbolic_matrix(sm);
+    }
+  } else if (from_expr(first,firstc)) { 
+    //COMPLEX
+    gsl_matrix_complex *cm = create_complex_matrix(size1,size2);  
+    reinterpret_cast<Complex*>(cm->data)[0] = firstc;
+    pure_expr *last = numeric_zipwith3_loop(f,xm,ym,zm,cm,&lasti,&lastj);
+    if (!last) { 
+      out = pure_complex_matrix(cm);
+    } else {
+      gsl_matrix_symbolic *sm = create_symbolic_matrix(size1,size2);
+      symbolic_zipwith3_loop(f,xm,ym,zm,cm,sm,lasti,lastj,last);
+      gsl_matrix_complex_free(cm);
+      out = pure_symbolic_matrix(sm);
+    }
+  } else 
+#endif //HAVE_GSL
+  { //for anything else, default to symbolic. 
+    gsl_matrix_symbolic *sm = create_symbolic_matrix(size1,size2);
+    symbolic_zipwith3_loop(f,xm,ym,zm,static_cast<matrix1_type*>(0),sm,0,0,
+			   first);
+    out = pure_symbolic_matrix(sm);
+  }
+
+  if (first->refc==0) pure_freenew(first);
+  pure_unref(f);
+  pure_unref(x);
+  pure_unref(y);
+  pure_unref(z);
+  return out;
+}
+
+
 //numeric scanl loop : optmize common case that the output of the function
 //is all of the same numerical type. If not, fall back to symbolic scanl loop
 
@@ -8900,6 +9162,203 @@ pure_expr* matrix_zipwith ( pure_expr *f, pure_expr *x, pure_expr *y )
       return matrix::matrix_zipwith<gsl_matrix_symbolic,gsl_matrix_complex>(f,x,y);
     case EXPR::MATRIX :
       return matrix::matrix_zipwith<gsl_matrix_symbolic,gsl_matrix_symbolic>(f,x,y);
+    }
+  default : return 0;
+  }
+}
+
+extern "C" 
+pure_expr* matrix_zipwith3 ( pure_expr *f, pure_expr *x, pure_expr *y,
+			     pure_expr *z )
+{
+  switch (x->tag) {
+  case EXPR::DMATRIX :
+    switch (y->tag) {
+    case EXPR::DMATRIX : 
+      switch (z->tag) {
+      case EXPR::DMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix,gsl_matrix,gsl_matrix>(f,x,y,z);
+      case EXPR::IMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix,gsl_matrix,gsl_matrix_int>(f,x,y,z);
+      case EXPR::CMATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix,gsl_matrix,gsl_matrix_complex>(f,x,y,z);
+      case EXPR::MATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix,gsl_matrix,gsl_matrix_symbolic>(f,x,y,z);
+      }
+    case EXPR::IMATRIX : 
+      switch (z->tag) {
+      case EXPR::DMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix,gsl_matrix_int,gsl_matrix>(f,x,y,z);
+      case EXPR::IMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix,gsl_matrix_int,gsl_matrix_int>(f,x,y,z);
+      case EXPR::CMATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix,gsl_matrix_int,gsl_matrix_complex>(f,x,y,z);
+      case EXPR::MATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix,gsl_matrix_int,gsl_matrix_symbolic>(f,x,y,z);
+      }
+    case EXPR::CMATRIX :
+      switch (z->tag) {
+      case EXPR::DMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix,gsl_matrix_complex,gsl_matrix>(f,x,y,z);
+      case EXPR::IMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix,gsl_matrix_complex,gsl_matrix_int>(f,x,y,z);
+      case EXPR::CMATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix,gsl_matrix_complex,gsl_matrix_complex>(f,x,y,z);
+      case EXPR::MATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix,gsl_matrix_complex,gsl_matrix_symbolic>(f,x,y,z);
+      }
+    case EXPR::MATRIX :
+      switch (z->tag) {
+      case EXPR::DMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix,gsl_matrix_symbolic,gsl_matrix>(f,x,y,z);
+      case EXPR::IMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix,gsl_matrix_symbolic,gsl_matrix_int>(f,x,y,z);
+      case EXPR::CMATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix,gsl_matrix_symbolic,gsl_matrix_complex>(f,x,y,z);
+      case EXPR::MATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix,gsl_matrix_symbolic,gsl_matrix_symbolic>(f,x,y,z);
+      }
+    }
+  case EXPR::IMATRIX :
+    switch (y->tag) {
+    case EXPR::DMATRIX : 
+      switch (z->tag) {
+      case EXPR::DMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix_int,gsl_matrix,gsl_matrix>(f,x,y,z);
+      case EXPR::IMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix_int,gsl_matrix,gsl_matrix_int>(f,x,y,z);
+      case EXPR::CMATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix_int,gsl_matrix,gsl_matrix_complex>(f,x,y,z);
+      case EXPR::MATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix_int,gsl_matrix,gsl_matrix_symbolic>(f,x,y,z);
+      }
+    case EXPR::IMATRIX : 
+      switch (z->tag) {
+      case EXPR::DMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix_int,gsl_matrix_int,gsl_matrix>(f,x,y,z);
+      case EXPR::IMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix_int,gsl_matrix_int,gsl_matrix_int>(f,x,y,z);
+      case EXPR::CMATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix_int,gsl_matrix_int,gsl_matrix_complex>(f,x,y,z);
+      case EXPR::MATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix_int,gsl_matrix_int,gsl_matrix_symbolic>(f,x,y,z);
+      }
+    case EXPR::CMATRIX :
+      switch (z->tag) {
+      case EXPR::DMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix_int,gsl_matrix_complex,gsl_matrix>(f,x,y,z);
+      case EXPR::IMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix_int,gsl_matrix_complex,gsl_matrix_int>(f,x,y,z);
+      case EXPR::CMATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix_int,gsl_matrix_complex,gsl_matrix_complex>(f,x,y,z);
+      case EXPR::MATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix_int,gsl_matrix_complex,gsl_matrix_symbolic>(f,x,y,z);
+      }
+    case EXPR::MATRIX :
+      switch (z->tag) {
+      case EXPR::DMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix_int,gsl_matrix_symbolic,gsl_matrix>(f,x,y,z);
+      case EXPR::IMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix_int,gsl_matrix_symbolic,gsl_matrix_int>(f,x,y,z);
+      case EXPR::CMATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix_int,gsl_matrix_symbolic,gsl_matrix_complex>(f,x,y,z);
+      case EXPR::MATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix_int,gsl_matrix_symbolic,gsl_matrix_symbolic>(f,x,y,z);
+      }
+    }
+  case EXPR::CMATRIX :
+    switch (y->tag) {
+    case EXPR::DMATRIX : 
+      switch (z->tag) {
+      case EXPR::DMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix_complex,gsl_matrix,gsl_matrix>(f,x,y,z);
+      case EXPR::IMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix_complex,gsl_matrix,gsl_matrix_int>(f,x,y,z);
+      case EXPR::CMATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix_complex,gsl_matrix,gsl_matrix_complex>(f,x,y,z);
+      case EXPR::MATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix_complex,gsl_matrix,gsl_matrix_symbolic>(f,x,y,z);
+      }
+    case EXPR::IMATRIX : 
+      switch (z->tag) {
+      case EXPR::DMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix_complex,gsl_matrix_int,gsl_matrix>(f,x,y,z);
+      case EXPR::IMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix_complex,gsl_matrix_int,gsl_matrix_int>(f,x,y,z);
+      case EXPR::CMATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix_complex,gsl_matrix_int,gsl_matrix_complex>(f,x,y,z);
+      case EXPR::MATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix_complex,gsl_matrix_int,gsl_matrix_symbolic>(f,x,y,z);
+      }
+    case EXPR::CMATRIX :
+      switch (z->tag) {
+      case EXPR::DMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix_complex,gsl_matrix_complex,gsl_matrix>(f,x,y,z);
+      case EXPR::IMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix_complex,gsl_matrix_complex,gsl_matrix_int>(f,x,y,z);
+      case EXPR::CMATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix_complex,gsl_matrix_complex,gsl_matrix_complex>(f,x,y,z);
+      case EXPR::MATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix_complex,gsl_matrix_complex,gsl_matrix_symbolic>(f,x,y,z);
+      }
+    case EXPR::MATRIX :
+      switch (z->tag) {
+      case EXPR::DMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix_complex,gsl_matrix_symbolic,gsl_matrix>(f,x,y,z);
+      case EXPR::IMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix_complex,gsl_matrix_symbolic,gsl_matrix_int>(f,x,y,z);
+      case EXPR::CMATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix_complex,gsl_matrix_symbolic,gsl_matrix_complex>(f,x,y,z);
+      case EXPR::MATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix_complex,gsl_matrix_symbolic,gsl_matrix_symbolic>(f,x,y,z);
+      }
+    }
+  case EXPR::MATRIX  :
+    switch (y->tag) {
+    case EXPR::DMATRIX : 
+      switch (z->tag) {
+      case EXPR::DMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix_symbolic,gsl_matrix,gsl_matrix>(f,x,y,z);
+      case EXPR::IMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix_symbolic,gsl_matrix,gsl_matrix_int>(f,x,y,z);
+      case EXPR::CMATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix_symbolic,gsl_matrix,gsl_matrix_complex>(f,x,y,z);
+      case EXPR::MATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix_symbolic,gsl_matrix,gsl_matrix_symbolic>(f,x,y,z);
+      }
+    case EXPR::IMATRIX : 
+      switch (z->tag) {
+      case EXPR::DMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix_symbolic,gsl_matrix_int,gsl_matrix>(f,x,y,z);
+      case EXPR::IMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix_symbolic,gsl_matrix_int,gsl_matrix_int>(f,x,y,z);
+      case EXPR::CMATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix_symbolic,gsl_matrix_int,gsl_matrix_complex>(f,x,y,z);
+      case EXPR::MATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix_symbolic,gsl_matrix_int,gsl_matrix_symbolic>(f,x,y,z);
+      }
+    case EXPR::CMATRIX :
+      switch (z->tag) {
+      case EXPR::DMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix_symbolic,gsl_matrix_complex,gsl_matrix>(f,x,y,z);
+      case EXPR::IMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix_symbolic,gsl_matrix_complex,gsl_matrix_int>(f,x,y,z);
+      case EXPR::CMATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix_symbolic,gsl_matrix_complex,gsl_matrix_complex>(f,x,y,z);
+      case EXPR::MATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix_symbolic,gsl_matrix_complex,gsl_matrix_symbolic>(f,x,y,z);
+      }
+    case EXPR::MATRIX :
+      switch (z->tag) {
+      case EXPR::DMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix_symbolic,gsl_matrix_symbolic,gsl_matrix>(f,x,y,z);
+      case EXPR::IMATRIX : 
+	return matrix::matrix_zipwith3<gsl_matrix_symbolic,gsl_matrix_symbolic,gsl_matrix_int>(f,x,y,z);
+      case EXPR::CMATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix_symbolic,gsl_matrix_symbolic,gsl_matrix_complex>(f,x,y,z);
+      case EXPR::MATRIX :
+	return matrix::matrix_zipwith3<gsl_matrix_symbolic,gsl_matrix_symbolic,gsl_matrix_symbolic>(f,x,y,z);
+      }
     }
   default : return 0;
   }

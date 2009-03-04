@@ -852,6 +852,8 @@ pure_expr* matrix_any(pure_expr *p, pure_expr *x);
 void matrix_do(pure_expr *f, pure_expr *x);
 pure_expr* matrix_map(pure_expr *f, pure_expr *x);
 pure_expr* matrix_zipwith(pure_expr *f, pure_expr *x, pure_expr *y);
+pure_expr* matrix_zipwith3(pure_expr *f, pure_expr *x, pure_expr *y,
+			   pure_expr *z);
 pure_expr* matrix_filter(pure_expr *p, pure_expr *x);
 pure_expr* matrix_dropwhile(pure_expr *p, pure_expr *x);
 pure_expr* matrix_takewhile(pure_expr *p, pure_expr *x);
