@@ -413,13 +413,7 @@ take k::int x::matrix	= x!!(0..k-1);
 takewhile p x::matrix	= matrix_takewhile p x;
 tail x::matrix		= x!!(1..#x-1) if ~null x;
 
-zipwith f x::matrix y::matrix
-			= zipwith f x y
-with
-  zipwith f x y		= matrix_zipwith f x y
-			    if matrix_type x == matrix_type y;
-			= matrix_zipwith f (smatrix x) (smatrix y);
-end if dim x!1==dim y!1;
+zipwith f x::matrix y::matrix = matrix_zipwith f x y if dim x!1==dim y!1;
 
 zipwith3 f x::matrix y::matrix z::matrix
 			= zipwith ($) (zipwith f x y) z
