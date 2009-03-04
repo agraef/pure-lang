@@ -91,12 +91,12 @@ static void print(unsigned col, string& text)
   // We assume that any comment starting with ':', '..' or '__' at the
   // beginning of the first non-empty line is rst source we want.
 
-  p = text.find_first_not_of("\n\f\v\r");
+  p = text.find_first_not_of("\n\f\v\r\t ");
   if (p != string::npos) {
     string start = text.substr(p, 2);
     if (start[0] != ':' &&
 	((start != ".." && start != "__") ||
-	 (text.length() > 2 && !strchr("\n\f\v\r", text[2]))))
+	 (text.length() > 2 && !strchr("\n\f\v\r\t ", text[2]))))
       return;
     if (p > 0) col = 0;
   } else
