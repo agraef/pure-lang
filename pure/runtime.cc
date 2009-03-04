@@ -7983,6 +7983,7 @@ pure_expr* matrix_zipwith( pure_expr *f, pure_expr *x, pure_expr *y )
   if (first->refc==0) pure_freenew(first);
   pure_unref(f);
   pure_unref(x);
+  pure_unref(y);
   return out;
 }
 
