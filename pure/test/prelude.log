@@ -1999,7 +1999,52 @@ dowith f/*0:001*/ _/*0:01*/ _/*0:1*/ = ();
 dowith3 f/*0:0001*/ (x/*0:00101*/:xs/*0:0011*/) (y/*0:0101*/:ys/*0:011*/) (z/*0:101*/:zs/*0:11*/) = f/*0:0001*/ x/*0:00101*/ y/*0:0101*/ z/*0:101*/$$dowith3 f/*0:0001*/ xs/*0:0011*/ ys/*0:011*/ zs/*0:11*/;
 dowith3 f/*0:0001*/ _/*0:001*/ _/*0:01*/ _/*0:1*/ = ();
 unzip [] = [],[];
-unzip us@(_/*0:101*/:_/*0:11*/) = foldr accum/*0*/ ([],[]) us/*0:1*/ with accum u@(x/*0:0101*/,y/*0:011*/) us/*0:1*/ = x/*0:0101*/:(xs/*0:01*/ when xs/*0:01*/,_/*0:1*/ = check/*2*/ us/*1:1*/ {
+unzip us@(_/*0:101*/:_/*0:11*/) = foldr accum/*0*/ ([],[]) us/*0:1*/ with check us@(_/*0:101*/,_/*0:11*/) = us/*0:1*/; check (foldr _/*0:1001*/ _/*0:101*/ us/*0:11*/) = throw (bad_list_value us/*0:11*/); check us/*0:1*/ = throw (bad_tuple_value us/*0:1*/) {
+  rule #0: check us@(_,_) = us
+  rule #1: check (foldr _ _ us) = throw (bad_list_value us)
+  rule #2: check us = throw (bad_tuple_value us)
+  state 0: #0 #1 #2
+	<var> state 1
+	<app> state 2
+  state 1: #2
+  state 2: #0 #1 #2
+	<var> state 3
+	<app> state 5
+  state 3: #2
+	<var> state 4
+  state 4: #2
+  state 5: #0 #1 #2
+	<var> state 6
+	<app> state 9
+	, state 18
+  state 6: #2
+	<var> state 7
+  state 7: #2
+	<var> state 8
+  state 8: #2
+  state 9: #1 #2
+	<var> state 10
+	foldr state 14
+  state 10: #2
+	<var> state 11
+  state 11: #2
+	<var> state 12
+  state 12: #2
+	<var> state 13
+  state 13: #2
+  state 14: #1 #2
+	<var> state 15
+  state 15: #1 #2
+	<var> state 16
+  state 16: #1 #2
+	<var> state 17
+  state 17: #1 #2
+  state 18: #0 #2
+	<var> state 19
+  state 19: #0 #2
+	<var> state 20
+  state 20: #0 #2
+}; accum u@(x/*0:0101*/,y/*0:011*/) us/*0:1*/ = x/*0:0101*/:(xs/*0:01*/ when xs/*0:01*/,_/*0:1*/ = check/*2*/ us/*1:1*/ {
   rule #0: xs,_ = check us
   state 0: #0
 	<app> state 1
@@ -2073,8 +2118,10 @@ unzip us@(_/*0:101*/:_/*0:11*/) = foldr accum/*0*/ ([],[]) us/*0:1*/ with accum 
   state 14: #0 #1 #2
 	<var> state 15
   state 15: #0 #1 #2
-}; check us@(_/*0:101*/,_/*0:11*/) = us/*0:1*/; check (foldr _/*0:1001*/ _/*0:101*/ us/*0:11*/) = throw (bad_list_value us/*0:11*/); check us/*0:1*/ = throw (bad_tuple_value us/*0:1*/) {
-  rule #0: check us@(_,_) = us
+} end;
+unzip3 [] = [],[],[];
+unzip3 us@(_/*0:101*/:_/*0:11*/) = foldr accum/*0*/ ([],[],[]) us/*0:1*/ with check us@(_/*0:101*/,_/*0:1101*/,_/*0:111*/) = us/*0:1*/; check (foldr _/*0:1001*/ _/*0:101*/ us/*0:11*/) = throw (bad_list_value us/*0:11*/); check us/*0:1*/ = throw (bad_tuple_value us/*0:1*/) {
+  rule #0: check us@(_,_,_) = us
   rule #1: check (foldr _ _ us) = throw (bad_list_value us)
   rule #2: check us = throw (bad_tuple_value us)
   state 0: #0 #1 #2
@@ -2117,10 +2164,28 @@ unzip us@(_/*0:101*/:_/*0:11*/) = foldr accum/*0*/ ([],[]) us/*0:1*/ with accum 
 	<var> state 19
   state 19: #0 #2
 	<var> state 20
-  state 20: #0 #2
-} end;
-unzip3 [] = [],[],[];
-unzip3 us@(_/*0:101*/:_/*0:11*/) = foldr accum/*0*/ ([],[],[]) us/*0:1*/ with accum u@(x/*0:0101*/,y/*0:01101*/,z/*0:0111*/) us/*0:1*/ = x/*0:0101*/:(xs/*0:01*/ when xs/*0:01*/,_/*0:101*/,_/*0:11*/ = check/*2*/ us/*1:1*/ {
+	<app> state 21
+  state 20: #2
+  state 21: #0 #2
+	<var> state 22
+	<app> state 24
+  state 22: #2
+	<var> state 23
+  state 23: #2
+  state 24: #0 #2
+	<var> state 25
+	, state 28
+  state 25: #2
+	<var> state 26
+  state 26: #2
+	<var> state 27
+  state 27: #2
+  state 28: #0 #2
+	<var> state 29
+  state 29: #0 #2
+	<var> state 30
+  state 30: #0 #2
+}; accum u@(x/*0:0101*/,y/*0:01101*/,z/*0:0111*/) us/*0:1*/ = x/*0:0101*/:(xs/*0:01*/ when xs/*0:01*/,_/*0:101*/,_/*0:11*/ = check/*2*/ us/*1:1*/ {
   rule #0: xs,_,_ = check us
   state 0: #0
 	<app> state 1
@@ -2265,69 +2330,4 @@ unzip3 us@(_/*0:101*/:_/*0:11*/) = foldr accum/*0*/ ([],[],[]) us/*0:1*/ with ac
   state 27: #0 #1 #2
 	<var> state 28
   state 28: #0 #1 #2
-}; check us@(_/*0:101*/,_/*0:1101*/,_/*0:111*/) = us/*0:1*/; check (foldr _/*0:1001*/ _/*0:101*/ us/*0:11*/) = throw (bad_list_value us/*0:11*/); check us/*0:1*/ = throw (bad_tuple_value us/*0:1*/) {
-  rule #0: check us@(_,_,_) = us
-  rule #1: check (foldr _ _ us) = throw (bad_list_value us)
-  rule #2: check us = throw (bad_tuple_value us)
-  state 0: #0 #1 #2
-	<var> state 1
-	<app> state 2
-  state 1: #2
-  state 2: #0 #1 #2
-	<var> state 3
-	<app> state 5
-  state 3: #2
-	<var> state 4
-  state 4: #2
-  state 5: #0 #1 #2
-	<var> state 6
-	<app> state 9
-	, state 18
-  state 6: #2
-	<var> state 7
-  state 7: #2
-	<var> state 8
-  state 8: #2
-  state 9: #1 #2
-	<var> state 10
-	foldr state 14
-  state 10: #2
-	<var> state 11
-  state 11: #2
-	<var> state 12
-  state 12: #2
-	<var> state 13
-  state 13: #2
-  state 14: #1 #2
-	<var> state 15
-  state 15: #1 #2
-	<var> state 16
-  state 16: #1 #2
-	<var> state 17
-  state 17: #1 #2
-  state 18: #0 #2
-	<var> state 19
-  state 19: #0 #2
-	<var> state 20
-	<app> state 21
-  state 20: #2
-  state 21: #0 #2
-	<var> state 22
-	<app> state 24
-  state 22: #2
-	<var> state 23
-  state 23: #2
-  state 24: #0 #2
-	<var> state 25
-	, state 28
-  state 25: #2
-	<var> state 26
-  state 26: #2
-	<var> state 27
-  state 27: #2
-  state 28: #0 #2
-	<var> state 29
-  state 29: #0 #2
-	<var> state 30
-  state 30: #0 #2
 } end;
