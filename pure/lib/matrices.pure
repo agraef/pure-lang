@@ -356,15 +356,17 @@ colmap f x@[]		|
 colmap f x@(_:_)	= colcat (map f x);
 
 /* Implementations of the other customary list operations, so that these can
-   be used on matrices, too. These operations treat the matrix essentially as
-   if it was a flat list of its elements. Aggregate results are then converted
-   back to matrices with the appropriate dimensions. (This depends on the
-   particular operation; functions like map and zip keep the dimensions of the
-   input matrix intact, while other functions like filter, take or scanl
-   always return a flat row vector. Also note that the zip-style operations
-   require that the row sizes of all arguments match, and that these
-   operations are heavily optimized for the case that all arguments are of the
-   same numeric matrix type.) */
+   be used on matrices, too. Most of these operations treat the matrix
+   essentially as if it was a flat list of its elements, but return a matrix
+   result instead of a list. Also, all operations are heavily optimized for
+   the case that all arguments are of the same numeric matrix type.
+
+   The dimension of the result matrix depends on the particular operation;
+   functions like map and zip keep the dimensions of the input matrix intact,
+   while other functions like filter, take or scanl always return a flat row
+   vector. Also note that the zip-style operations require that the row sizes
+   of all arguments match (the number of rows may be different, however; the
+   result then has the same number of rows as the smaller input matrix). */
 
 namespace C;
 /* Optimized matrix functions, by Scott E. Dillard. These are *much* faster

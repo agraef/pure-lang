@@ -8833,10 +8833,10 @@ extern "C"
 void matrix_do ( pure_expr *f, pure_expr *x )
 {
   switch (x->tag) {
-    case EXPR::DMATRIX : return matrix::matrix_do<gsl_matrix>(f,x);
-    case EXPR::IMATRIX : return matrix::matrix_do<gsl_matrix_int>(f,x);
-    case EXPR::CMATRIX : return matrix::matrix_do<gsl_matrix_complex>(f,x);
-    case EXPR::MATRIX  : return matrix::matrix_do<gsl_matrix_symbolic>(f,x);
+  case EXPR::DMATRIX : return matrix::matrix_do<gsl_matrix>(f,x);
+  case EXPR::IMATRIX : return matrix::matrix_do<gsl_matrix_int>(f,x);
+  case EXPR::CMATRIX : return matrix::matrix_do<gsl_matrix_complex>(f,x);
+  case EXPR::MATRIX  : return matrix::matrix_do<gsl_matrix_symbolic>(f,x);
   }
 }
 
@@ -8844,65 +8844,63 @@ extern "C"
 pure_expr* matrix_map ( pure_expr *f, pure_expr *x )
 {
   switch (x->tag) {
-    case EXPR::DMATRIX : return matrix::matrix_map<gsl_matrix>(f,x);
-    case EXPR::IMATRIX : return matrix::matrix_map<gsl_matrix_int>(f,x);
-    case EXPR::CMATRIX : return matrix::matrix_map<gsl_matrix_complex>(f,x);
-    case EXPR::MATRIX  : return matrix::matrix_map<gsl_matrix_symbolic>(f,x);
-    default : return 0;
+  case EXPR::DMATRIX : return matrix::matrix_map<gsl_matrix>(f,x);
+  case EXPR::IMATRIX : return matrix::matrix_map<gsl_matrix_int>(f,x);
+  case EXPR::CMATRIX : return matrix::matrix_map<gsl_matrix_complex>(f,x);
+  case EXPR::MATRIX  : return matrix::matrix_map<gsl_matrix_symbolic>(f,x);
+  default : return 0;
   }
 }
 
-// Note: This assumes that matrices x and y are already of the same type and
-// that the dimensions match up.
 extern "C" 
 pure_expr* matrix_zipwith ( pure_expr *f, pure_expr *x, pure_expr *y )
 {
   switch (x->tag) {
-    case EXPR::DMATRIX :
-      switch (y->tag) {
-        case EXPR::DMATRIX : 
-          return matrix::matrix_zipwith<gsl_matrix,gsl_matrix>(f,x,y);
-        case EXPR::IMATRIX : 
-          return matrix::matrix_zipwith<gsl_matrix,gsl_matrix_int>(f,x,y);
-        case EXPR::CMATRIX :
-          return matrix::matrix_zipwith<gsl_matrix,gsl_matrix_complex>(f,x,y);
-        case EXPR::MATRIX :
-          return matrix::matrix_zipwith<gsl_matrix,gsl_matrix_symbolic>(f,x,y);
-      }
-    case EXPR::IMATRIX :
-      switch (y->tag) {
-        case EXPR::DMATRIX : 
-          return matrix::matrix_zipwith<gsl_matrix_int,gsl_matrix>(f,x,y);
-        case EXPR::IMATRIX : 
-          return matrix::matrix_zipwith<gsl_matrix_int,gsl_matrix_int>(f,x,y);
-        case EXPR::CMATRIX :
-          return matrix::matrix_zipwith<gsl_matrix_int,gsl_matrix_complex>(f,x,y);
-        case EXPR::MATRIX :
-          return matrix::matrix_zipwith<gsl_matrix_int,gsl_matrix_symbolic>(f,x,y);
-      }
+  case EXPR::DMATRIX :
+    switch (y->tag) {
+    case EXPR::DMATRIX : 
+      return matrix::matrix_zipwith<gsl_matrix,gsl_matrix>(f,x,y);
+    case EXPR::IMATRIX : 
+      return matrix::matrix_zipwith<gsl_matrix,gsl_matrix_int>(f,x,y);
     case EXPR::CMATRIX :
-      switch (y->tag) {
-        case EXPR::DMATRIX : 
-          return matrix::matrix_zipwith<gsl_matrix_complex,gsl_matrix>(f,x,y);
-        case EXPR::IMATRIX : 
-          return matrix::matrix_zipwith<gsl_matrix_complex,gsl_matrix_int>(f,x,y);
-        case EXPR::CMATRIX :
-          return matrix::matrix_zipwith<gsl_matrix_complex,gsl_matrix_complex>(f,x,y);
-        case EXPR::MATRIX :
-          return matrix::matrix_zipwith<gsl_matrix_complex,gsl_matrix_symbolic>(f,x,y);
-      }
-    case EXPR::MATRIX  :
-      switch (y->tag) {
-        case EXPR::DMATRIX : 
-          return matrix::matrix_zipwith<gsl_matrix_symbolic,gsl_matrix>(f,x,y);
-        case EXPR::IMATRIX : 
-          return matrix::matrix_zipwith<gsl_matrix_symbolic,gsl_matrix_int>(f,x,y);
-        case EXPR::CMATRIX :
-          return matrix::matrix_zipwith<gsl_matrix_symbolic,gsl_matrix_complex>(f,x,y);
-        case EXPR::MATRIX :
-          return matrix::matrix_zipwith<gsl_matrix_symbolic,gsl_matrix_symbolic>(f,x,y);
-      }
-    default : return 0;
+      return matrix::matrix_zipwith<gsl_matrix,gsl_matrix_complex>(f,x,y);
+    case EXPR::MATRIX :
+      return matrix::matrix_zipwith<gsl_matrix,gsl_matrix_symbolic>(f,x,y);
+    }
+  case EXPR::IMATRIX :
+    switch (y->tag) {
+    case EXPR::DMATRIX : 
+      return matrix::matrix_zipwith<gsl_matrix_int,gsl_matrix>(f,x,y);
+    case EXPR::IMATRIX : 
+      return matrix::matrix_zipwith<gsl_matrix_int,gsl_matrix_int>(f,x,y);
+    case EXPR::CMATRIX :
+      return matrix::matrix_zipwith<gsl_matrix_int,gsl_matrix_complex>(f,x,y);
+    case EXPR::MATRIX :
+      return matrix::matrix_zipwith<gsl_matrix_int,gsl_matrix_symbolic>(f,x,y);
+    }
+  case EXPR::CMATRIX :
+    switch (y->tag) {
+    case EXPR::DMATRIX : 
+      return matrix::matrix_zipwith<gsl_matrix_complex,gsl_matrix>(f,x,y);
+    case EXPR::IMATRIX : 
+      return matrix::matrix_zipwith<gsl_matrix_complex,gsl_matrix_int>(f,x,y);
+    case EXPR::CMATRIX :
+      return matrix::matrix_zipwith<gsl_matrix_complex,gsl_matrix_complex>(f,x,y);
+    case EXPR::MATRIX :
+      return matrix::matrix_zipwith<gsl_matrix_complex,gsl_matrix_symbolic>(f,x,y);
+    }
+  case EXPR::MATRIX  :
+    switch (y->tag) {
+    case EXPR::DMATRIX : 
+      return matrix::matrix_zipwith<gsl_matrix_symbolic,gsl_matrix>(f,x,y);
+    case EXPR::IMATRIX : 
+      return matrix::matrix_zipwith<gsl_matrix_symbolic,gsl_matrix_int>(f,x,y);
+    case EXPR::CMATRIX :
+      return matrix::matrix_zipwith<gsl_matrix_symbolic,gsl_matrix_complex>(f,x,y);
+    case EXPR::MATRIX :
+      return matrix::matrix_zipwith<gsl_matrix_symbolic,gsl_matrix_symbolic>(f,x,y);
+    }
+  default : return 0;
   }
 }
 
@@ -8910,15 +8908,15 @@ extern "C"
 pure_expr* matrix_scanl ( pure_expr *f, pure_expr *z, pure_expr *x )
 {
   switch (x->tag) {
-    case EXPR::DMATRIX :
-      return matrix::matrix_scanl<gsl_matrix>(f,z,x);
-    case EXPR::IMATRIX :
-      return matrix::matrix_scanl<gsl_matrix_int>(f,z,x);
-    case EXPR::CMATRIX :
-      return matrix::matrix_scanl<gsl_matrix_complex>(f,z,x);
-    case EXPR::MATRIX  :
-      return matrix::matrix_scanl<gsl_matrix_symbolic>(f,z,x);
-    default : return 0;
+  case EXPR::DMATRIX :
+    return matrix::matrix_scanl<gsl_matrix>(f,z,x);
+  case EXPR::IMATRIX :
+    return matrix::matrix_scanl<gsl_matrix_int>(f,z,x);
+  case EXPR::CMATRIX :
+    return matrix::matrix_scanl<gsl_matrix_complex>(f,z,x);
+  case EXPR::MATRIX  :
+    return matrix::matrix_scanl<gsl_matrix_symbolic>(f,z,x);
+  default : return 0;
   }
 }
 
@@ -8926,15 +8924,15 @@ extern "C"
 pure_expr* matrix_scanl1 ( pure_expr *f, pure_expr *x )
 {
   switch (x->tag) {
-    case EXPR::DMATRIX :
-      return matrix::matrix_scanl1<gsl_matrix>(f,x);
-    case EXPR::IMATRIX :
-      return matrix::matrix_scanl1<gsl_matrix_int>(f,x);
-    case EXPR::CMATRIX :
-      return matrix::matrix_scanl1<gsl_matrix_complex>(f,x);
-    case EXPR::MATRIX  :
-      return matrix::matrix_scanl1<gsl_matrix_symbolic>(f,x);
-    default : return 0;
+  case EXPR::DMATRIX :
+    return matrix::matrix_scanl1<gsl_matrix>(f,x);
+  case EXPR::IMATRIX :
+    return matrix::matrix_scanl1<gsl_matrix_int>(f,x);
+  case EXPR::CMATRIX :
+    return matrix::matrix_scanl1<gsl_matrix_complex>(f,x);
+  case EXPR::MATRIX  :
+    return matrix::matrix_scanl1<gsl_matrix_symbolic>(f,x);
+  default : return 0;
   }
 }
 
@@ -8942,15 +8940,15 @@ extern "C"
 pure_expr* matrix_scanr ( pure_expr *f, pure_expr *z, pure_expr *x )
 {
   switch (x->tag) {
-    case EXPR::DMATRIX :
-      return matrix::matrix_scanr<gsl_matrix>(f,z,x);
-    case EXPR::IMATRIX :
-      return matrix::matrix_scanr<gsl_matrix_int>(f,z,x);
-    case EXPR::CMATRIX :
-      return matrix::matrix_scanr<gsl_matrix_complex>(f,z,x);
-    case EXPR::MATRIX  :
-      return matrix::matrix_scanr<gsl_matrix_symbolic>(f,z,x);
-    default : return 0;
+  case EXPR::DMATRIX :
+    return matrix::matrix_scanr<gsl_matrix>(f,z,x);
+  case EXPR::IMATRIX :
+    return matrix::matrix_scanr<gsl_matrix_int>(f,z,x);
+  case EXPR::CMATRIX :
+    return matrix::matrix_scanr<gsl_matrix_complex>(f,z,x);
+  case EXPR::MATRIX  :
+    return matrix::matrix_scanr<gsl_matrix_symbolic>(f,z,x);
+  default : return 0;
   }
 }
 
@@ -8958,15 +8956,15 @@ extern "C"
 pure_expr* matrix_scanr1 ( pure_expr *f, pure_expr *x )
 {
   switch (x->tag) {
-    case EXPR::DMATRIX :
-      return matrix::matrix_scanr1<gsl_matrix>(f,x);
-    case EXPR::IMATRIX :
-      return matrix::matrix_scanr1<gsl_matrix_int>(f,x);
-    case EXPR::CMATRIX :
-      return matrix::matrix_scanr1<gsl_matrix_complex>(f,x);
-    case EXPR::MATRIX  :
-      return matrix::matrix_scanr1<gsl_matrix_symbolic>(f,x);
-    default : return 0;
+  case EXPR::DMATRIX :
+    return matrix::matrix_scanr1<gsl_matrix>(f,x);
+  case EXPR::IMATRIX :
+    return matrix::matrix_scanr1<gsl_matrix_int>(f,x);
+  case EXPR::CMATRIX :
+    return matrix::matrix_scanr1<gsl_matrix_complex>(f,x);
+  case EXPR::MATRIX  :
+    return matrix::matrix_scanr1<gsl_matrix_symbolic>(f,x);
+  default : return 0;
   }
 }
 
@@ -8974,15 +8972,15 @@ extern "C"
 pure_expr* matrix_foldl ( pure_expr *f, pure_expr *z, pure_expr *x )
 {
   switch (x->tag) {
-    case EXPR::DMATRIX :
-      return matrix::matrix_foldl<gsl_matrix>(f,z,x);
-    case EXPR::IMATRIX :
-      return matrix::matrix_foldl<gsl_matrix_int>(f,z,x);
-    case EXPR::CMATRIX :
-      return matrix::matrix_foldl<gsl_matrix_complex>(f,z,x);
-    case EXPR::MATRIX  :
-      return matrix::matrix_foldl<gsl_matrix_symbolic>(f,z,x);
-    default : return 0;
+  case EXPR::DMATRIX :
+    return matrix::matrix_foldl<gsl_matrix>(f,z,x);
+  case EXPR::IMATRIX :
+    return matrix::matrix_foldl<gsl_matrix_int>(f,z,x);
+  case EXPR::CMATRIX :
+    return matrix::matrix_foldl<gsl_matrix_complex>(f,z,x);
+  case EXPR::MATRIX  :
+    return matrix::matrix_foldl<gsl_matrix_symbolic>(f,z,x);
+  default : return 0;
   }
 }
 
@@ -8990,15 +8988,15 @@ extern "C"
 pure_expr* matrix_foldl1 ( pure_expr *f, pure_expr *x )
 {
   switch (x->tag) {
-    case EXPR::DMATRIX :
-      return matrix::matrix_foldl1<gsl_matrix>(f,x);
-    case EXPR::IMATRIX :
-      return matrix::matrix_foldl1<gsl_matrix_int>(f,x);
-    case EXPR::CMATRIX :
-      return matrix::matrix_foldl1<gsl_matrix_complex>(f,x);
-    case EXPR::MATRIX  :
-      return matrix::matrix_foldl1<gsl_matrix_symbolic>(f,x);
-    default : return 0;
+  case EXPR::DMATRIX :
+    return matrix::matrix_foldl1<gsl_matrix>(f,x);
+  case EXPR::IMATRIX :
+    return matrix::matrix_foldl1<gsl_matrix_int>(f,x);
+  case EXPR::CMATRIX :
+    return matrix::matrix_foldl1<gsl_matrix_complex>(f,x);
+  case EXPR::MATRIX  :
+    return matrix::matrix_foldl1<gsl_matrix_symbolic>(f,x);
+  default : return 0;
   }
 }
 
@@ -9006,15 +9004,15 @@ extern "C"
 pure_expr* matrix_foldr ( pure_expr *f, pure_expr *z, pure_expr *x )
 {
   switch (x->tag) {
-    case EXPR::DMATRIX :
-      return matrix::matrix_foldr<gsl_matrix>(f,z,x);
-    case EXPR::IMATRIX :
-      return matrix::matrix_foldr<gsl_matrix_int>(f,z,x);
-    case EXPR::CMATRIX :
-      return matrix::matrix_foldr<gsl_matrix_complex>(f,z,x);
-    case EXPR::MATRIX  :
-      return matrix::matrix_foldr<gsl_matrix_symbolic>(f,z,x);
-    default : return 0;
+  case EXPR::DMATRIX :
+    return matrix::matrix_foldr<gsl_matrix>(f,z,x);
+  case EXPR::IMATRIX :
+    return matrix::matrix_foldr<gsl_matrix_int>(f,z,x);
+  case EXPR::CMATRIX :
+    return matrix::matrix_foldr<gsl_matrix_complex>(f,z,x);
+  case EXPR::MATRIX  :
+    return matrix::matrix_foldr<gsl_matrix_symbolic>(f,z,x);
+  default : return 0;
   }
 }
 
@@ -9022,15 +9020,15 @@ extern "C"
 pure_expr* matrix_foldr1 ( pure_expr *f, pure_expr *x )
 {
   switch (x->tag) {
-    case EXPR::DMATRIX :
-      return matrix::matrix_foldr1<gsl_matrix>(f,x);
-    case EXPR::IMATRIX :
-      return matrix::matrix_foldr1<gsl_matrix_int>(f,x);
-    case EXPR::CMATRIX :
-      return matrix::matrix_foldr1<gsl_matrix_complex>(f,x);
-    case EXPR::MATRIX  :
-      return matrix::matrix_foldr1<gsl_matrix_symbolic>(f,x);
-    default : return 0;
+  case EXPR::DMATRIX :
+    return matrix::matrix_foldr1<gsl_matrix>(f,x);
+  case EXPR::IMATRIX :
+    return matrix::matrix_foldr1<gsl_matrix_int>(f,x);
+  case EXPR::CMATRIX :
+    return matrix::matrix_foldr1<gsl_matrix_complex>(f,x);
+  case EXPR::MATRIX  :
+    return matrix::matrix_foldr1<gsl_matrix_symbolic>(f,x);
+  default : return 0;
   }
 }
 
@@ -9038,17 +9036,17 @@ extern "C"
 pure_expr* matrix_filter ( pure_expr *p, pure_expr *x )
 {
   switch ( x->tag ) {
-    case EXPR::DMATRIX : 
-      return pure_double_matrix( matrix::matrix_filter<gsl_matrix>(p,x) ); 
-    case EXPR::IMATRIX : 
-      return pure_int_matrix( matrix::matrix_filter<gsl_matrix_int>(p,x) ); 
-    case EXPR::CMATRIX : 
-      return pure_complex_matrix
-	( matrix::matrix_filter<gsl_matrix_complex>(p,x) ); 
-    case EXPR::MATRIX : 
-      return pure_symbolic_matrix
-	( matrix::matrix_filter<gsl_matrix_symbolic>(p,x) ); 
-    default : return 0;
+  case EXPR::DMATRIX : 
+    return pure_double_matrix( matrix::matrix_filter<gsl_matrix>(p,x) ); 
+  case EXPR::IMATRIX : 
+    return pure_int_matrix( matrix::matrix_filter<gsl_matrix_int>(p,x) ); 
+  case EXPR::CMATRIX : 
+    return pure_complex_matrix
+      ( matrix::matrix_filter<gsl_matrix_complex>(p,x) ); 
+  case EXPR::MATRIX : 
+    return pure_symbolic_matrix
+      ( matrix::matrix_filter<gsl_matrix_symbolic>(p,x) ); 
+  default : return 0;
   }
 }
 
@@ -9056,17 +9054,17 @@ extern "C"
 pure_expr* matrix_dropwhile ( pure_expr *p, pure_expr *x )
 {
   switch ( x->tag ) {
-    case EXPR::DMATRIX : 
-      return pure_double_matrix( matrix::matrix_dropwhile<gsl_matrix>(p,x) ); 
-    case EXPR::IMATRIX : 
-      return pure_int_matrix( matrix::matrix_dropwhile<gsl_matrix_int>(p,x) ); 
-    case EXPR::CMATRIX : 
-      return pure_complex_matrix
-	( matrix::matrix_dropwhile<gsl_matrix_complex>(p,x) ); 
-    case EXPR::MATRIX : 
-      return pure_symbolic_matrix
-	( matrix::matrix_dropwhile<gsl_matrix_symbolic>(p,x) ); 
-    default : return 0;
+  case EXPR::DMATRIX : 
+    return pure_double_matrix( matrix::matrix_dropwhile<gsl_matrix>(p,x) ); 
+  case EXPR::IMATRIX : 
+    return pure_int_matrix( matrix::matrix_dropwhile<gsl_matrix_int>(p,x) ); 
+  case EXPR::CMATRIX : 
+    return pure_complex_matrix
+      ( matrix::matrix_dropwhile<gsl_matrix_complex>(p,x) ); 
+  case EXPR::MATRIX : 
+    return pure_symbolic_matrix
+      ( matrix::matrix_dropwhile<gsl_matrix_symbolic>(p,x) ); 
+  default : return 0;
   }
 }
 
@@ -9074,17 +9072,17 @@ extern "C"
 pure_expr* matrix_takewhile ( pure_expr *p, pure_expr *x )
 {
   switch ( x->tag ) {
-    case EXPR::DMATRIX : 
-      return pure_double_matrix( matrix::matrix_takewhile<gsl_matrix>(p,x) ); 
-    case EXPR::IMATRIX : 
-      return pure_int_matrix( matrix::matrix_takewhile<gsl_matrix_int>(p,x) ); 
-    case EXPR::CMATRIX : 
-      return pure_complex_matrix
-	( matrix::matrix_takewhile<gsl_matrix_complex>(p,x) ); 
-    case EXPR::MATRIX : 
-      return pure_symbolic_matrix
-	( matrix::matrix_takewhile<gsl_matrix_symbolic>(p,x) ); 
-    default : return 0;
+  case EXPR::DMATRIX : 
+    return pure_double_matrix( matrix::matrix_takewhile<gsl_matrix>(p,x) ); 
+  case EXPR::IMATRIX : 
+    return pure_int_matrix( matrix::matrix_takewhile<gsl_matrix_int>(p,x) ); 
+  case EXPR::CMATRIX : 
+    return pure_complex_matrix
+      ( matrix::matrix_takewhile<gsl_matrix_complex>(p,x) ); 
+  case EXPR::MATRIX : 
+    return pure_symbolic_matrix
+      ( matrix::matrix_takewhile<gsl_matrix_symbolic>(p,x) ); 
+  default : return 0;
   }
 }
 
@@ -9092,15 +9090,15 @@ extern "C"
 pure_expr* matrix_all ( pure_expr *p, pure_expr *x )
 {
   switch ( x->tag ) {
-    case EXPR::DMATRIX : 
-      return pure_int( matrix::matrix_all<gsl_matrix>(p,x) ); 
-    case EXPR::IMATRIX : 
-      return pure_int( matrix::matrix_all<gsl_matrix_int>(p,x) ); 
-    case EXPR::CMATRIX : 
-      return pure_int( matrix::matrix_all<gsl_matrix_complex>(p,x) ); 
-    case EXPR::MATRIX : 
-      return pure_int( matrix::matrix_all<gsl_matrix_symbolic>(p,x) ); 
-    default : return 0;
+  case EXPR::DMATRIX : 
+    return pure_int( matrix::matrix_all<gsl_matrix>(p,x) ); 
+  case EXPR::IMATRIX : 
+    return pure_int( matrix::matrix_all<gsl_matrix_int>(p,x) ); 
+  case EXPR::CMATRIX : 
+    return pure_int( matrix::matrix_all<gsl_matrix_complex>(p,x) ); 
+  case EXPR::MATRIX : 
+    return pure_int( matrix::matrix_all<gsl_matrix_symbolic>(p,x) ); 
+  default : return 0;
   }
 }
 
@@ -9108,14 +9106,14 @@ extern "C"
 pure_expr* matrix_any ( pure_expr *p, pure_expr *x )
 {
   switch ( x->tag ) {
-    case EXPR::DMATRIX : 
-      return pure_int( matrix::matrix_any<gsl_matrix>(p,x) ); 
-    case EXPR::IMATRIX : 
-      return pure_int( matrix::matrix_any<gsl_matrix_int>(p,x) ); 
-    case EXPR::CMATRIX : 
-      return pure_int( matrix::matrix_any<gsl_matrix_complex>(p,x) ); 
-    case EXPR::MATRIX : 
-      return pure_int( matrix::matrix_any<gsl_matrix_symbolic>(p,x) ); 
-    default : return 0;
+  case EXPR::DMATRIX : 
+    return pure_int( matrix::matrix_any<gsl_matrix>(p,x) ); 
+  case EXPR::IMATRIX : 
+    return pure_int( matrix::matrix_any<gsl_matrix_int>(p,x) ); 
+  case EXPR::CMATRIX : 
+    return pure_int( matrix::matrix_any<gsl_matrix_complex>(p,x) ); 
+  case EXPR::MATRIX : 
+    return pure_int( matrix::matrix_any<gsl_matrix_symbolic>(p,x) ); 
+  default : return 0;
   }
 }
