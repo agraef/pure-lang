@@ -7682,7 +7682,10 @@ pure_expr* matrix_map( pure_expr *f, pure_expr *x )
   if (xm->size1 == 0 || xm->size2 == 0) {
     // empty output matrix
     gsl_matrix_symbolic *sm = create_symbolic_matrix(xm->size1,xm->size2);
-    return pure_symbolic_matrix(sm);
+    pure_expr *out = pure_symbolic_matrix(sm);
+    pure_unref(f);
+    pure_unref(x);
+    return out;
   }
 
   //need casts for complex case, when data pointer is double*, but
