@@ -358,15 +358,13 @@ colmap f x@(_:_)	= colcat (map f x);
 /* Implementations of the other customary list operations, so that these can
    be used on matrices, too. Most of these operations treat the matrix
    essentially as if it was a flat list of its elements, but return a matrix
-   result instead of a list. Also, all operations are heavily optimized for
-   the case that all arguments are of the same numeric matrix type.
-
-   The dimension of the result matrix depends on the particular operation;
-   functions like map and zip keep the dimensions of the input matrix intact,
-   while other functions like filter, take or scanl always return a flat row
-   vector. Also note that the zip-style operations require that the row sizes
-   of all arguments match (the number of rows may be different, however; the
-   result then has the same number of rows as the smaller input matrix). */
+   result instead of a list. The dimension of the result matrix depends on the
+   particular operation; functions like map and zip keep the dimensions of the
+   input matrices intact, while other functions like filter, take or scanl
+   always return a flat row vector. Also note that the zip-style operations
+   truncate the dimensions of the result to the minimum numbers of rows and
+   columns of the input matrices (this is analogous to the truncation that
+   happens when zip is applied to lists of different lengths). */
 
 namespace C;
 /* Optimized matrix functions, by Scott E. Dillard. These are *much* faster
@@ -417,25 +415,20 @@ takewhile p x::matrix	= matrix_takewhile p x;
 tail x::matrix		= x!!(1..#x-1) if ~null x;
 
 zipwith f x::matrix y::matrix
-			= matrix_zipwith f x y if dim x!1==dim y!1;
+			= matrix_zipwith f x y;
 
 zipwith3 f x::matrix y::matrix z::matrix
-			= matrix_zipwith3 f x y z
-			    if dim x!1==dim y!1 && dim x!1==dim z!1;
+			= matrix_zipwith3 f x y z;
 
-zip x::matrix y::matrix	= zipwith (,) x y
-			    if dim x!1==dim y!1;
+zip x::matrix y::matrix	= zipwith (,) x y;
 
 zip3 x::matrix y::matrix z::matrix
-			= zipwith3 (\x y z->x,y,z) x y z
-			    if dim x!1==dim y!1 && dim x!1==dim z!1;
+			= zipwith3 (\x y z->x,y,z) x y z;
 
 dowith f x::matrix y::matrix
-			= do (uncurry f) (zip x y)
-			    if dim x!1==dim y!1;
+			= do (uncurry f) (zip x y);
 dowith3 f x::matrix y::matrix z::matrix
-			= do (uncurry3 f) (zip3 x y z)
-			    if dim x!1==dim y!1 && dim x!1==dim z!1;
+			= do (uncurry3 f) (zip3 x y z);
 
 unzip x::matrix		= {u | u,_ = x},{v | _,v = x}
 			    if all check x
