@@ -19,36 +19,123 @@
    You should have received a copy of the GNU General Public License along
    with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
-/* This script implements an efficient variable-sized array data structure
-   which allows to access and update individual array members, as well as
-   to add and remove elements at the beginning and end of an array. All these
-   operations are carried out in logarithmic time. */
+/* ..
 
-/* Public operations: ******************************************************
+   Container Types
+   ===============
 
-   emptyarray		return the empty array
-   array xs		create an array from a list xs
-   array2 xs		create a two-dimensional array from a list of lists
-   mkarray x n		create an array consisting of n x's
-   mkarray2 x (n,m)	create a 2D array of n*m x's
-   arrayp x		check whether x is an array
+   The standard library provides a variety of efficient container data
+   structures for different purposes. Note that these are all purely
+   functional, i.e., immutable data structures implemented using different
+   flavours of binary trees. Nevertheless operations are performed
+   efficiently, in logarithmic time where possible.
 
-   #a			size of a
-   a!i			return ith member of a
-   a!(i,j)		two-dimensional subscript
+   Arrays
+   ------
 
-   null a		tests whether a is the empty array
-   members a		list of values stored in a
-   members2 a		list of members in a two-dimensional array
+   The array.pure module implements an efficient functional array data
+   structure which allows to access and update individual array members, as
+   well as to add and remove elements at the beginning and end of an
+   array. All these operations are carried out in logarithmic time.
 
-   first a, last a	first and last member of A
-   rmfirst a, rmlast a	remove first and last member from a
-   insert a x		insert x at the beginning of a
-   append a x		append x to the end of a
-   update a i x		replace the ith member of a by x
-   update2 a (i,j) x	update two-dimensional array
+   Imports
+   ~~~~~~~
 
-   *************************************************************************/
+   To use the operations of this module, add the following import declaration
+   to your program::
+
+     using array;
+
+   Operations
+   ~~~~~~~~~~
+
+   .. _array:
+
+   ``emptyarray``
+     return the empty array
+   ``array xs``
+     create an array from a list ``xs``
+   ``array2 xs``
+     create a two-dimensional array from a list of lists
+   ``mkarray x n``
+     create an array consisting of ``n`` ``x``'s
+   ``mkarray2 x (n,m)``
+     create a 2D array of ``n*m`` ``x``'s
+   ``arrayp x``
+     check whether ``x`` is an array
+
+   ``#a``
+     size of ``a``
+   ``a!i``
+     return the ``i``\ th member of ``a``
+   ``a!(i,j)``
+     two-dimensional subscript
+
+   ``null a``
+     test whether ``a`` is the empty array
+   ``members a``
+     list of values stored in ``a``
+   ``members2 a``
+     list of members in a two-dimensional array
+
+   ``first a``, ``last a``
+     first and last member of ``a``
+   ``rmfirst a``, ``rmlast a``
+     remove first and last member from ``a``
+   ``insert a x``
+     insert ``x`` at the beginning of ``a``
+   ``append a x``
+     append ``x`` to the end of ``a``
+   ``update a i x``
+     replace the ``i``\ th member of ``a`` by ``x``
+   ``update2 a (i,j) x``
+     update two-dimensional array
+
+   Examples
+   ~~~~~~~~
+
+   Import the module::
+
+     > using array;
+
+   A one-dimensional array::
+
+     > let a = array (0.0:0.1..1.0);
+     > #a; members a;
+     11
+     [0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
+     > a!5;
+     0.5
+
+   Updating a member of an array produces a new array::
+
+     > let b = update a 1 2.0;
+     > members b;
+     [0.0,2.0,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
+
+   Two-dimensional arrays can be created with ``array2`` from a list of
+   lists::
+
+     > let a2 = array2 [[i,x | x = [a,b,c]] | i = 1..2];
+     > members2 a2;
+     [[(1,a),(1,b),(1,c)],[(2,a),(2,b),(2,c)]]
+     > a2!(1,2);
+     2,c
+
+   Here's how to convert an array to a Pure matrix::
+
+     > matrix $ members a;
+     {0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0}
+     > matrix $ members2 a2;
+     {(1,a),(1,b),(1,c);(2,a),(2,b),(2,c)}
+
+   Converting back from a matrix to an array::
+
+     > let b2 = array2 $ list2 {(1,a),(1,b),(1,c);(2,a),(2,b),(2,c)};
+     > members2 b2;
+     [[(1,a),(1,b),(1,c)],[(2,a),(2,b),(2,c)]]
+
+*/
 
 namespace array;
 

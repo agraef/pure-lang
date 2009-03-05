@@ -313,32 +313,231 @@ ul.auto-toc {
 <p>This document is available under the <a class="reference" href="http://www.gnu.org/copyleft/fdl.html">GNU Free Documentation License</a>.</p>
 <p>This manual describes the operations in the standard Pure library,
 including the prelude and the other library modules which come bundled with
-the interpreter. It is woefully incomplete right now, constributions are
-welcome.</p>
+the interpreter. It is woefully incomplete right now, but this is being
+worked on.</p>
 <p>There is a companion to this manual, the <a class="reference" href="file:pure.html">Pure Manual</a> which describes the
 Pure language and the operation of the Pure interpreter.</p>
 <!-- Table of contents, switch on section numbering. -->
 <div class="contents topic">
 <p class="topic-title first"><a id="contents" name="contents">Contents</a></p>
 <ul class="auto-toc simple">
-<li><a class="reference" href="#dictionaries" id="id4" name="id4">1&nbsp;&nbsp;&nbsp;Dictionaries</a><ul class="auto-toc">
-<li><a class="reference" href="#imports" id="id5" name="id5">1.1&nbsp;&nbsp;&nbsp;Imports</a></li>
-<li><a class="reference" href="#data-structure" id="id6" name="id6">1.2&nbsp;&nbsp;&nbsp;Data Structure</a></li>
-<li><a class="reference" href="#operations" id="id7" name="id7">1.3&nbsp;&nbsp;&nbsp;Operations</a></li>
-<li><a class="reference" href="#examples" id="id8" name="id8">1.4&nbsp;&nbsp;&nbsp;Examples</a></li>
+<li><a class="reference" href="#prelude" id="id14" name="id14">1&nbsp;&nbsp;&nbsp;Prelude</a></li>
+<li><a class="reference" href="#mathematical-functions" id="id15" name="id15">2&nbsp;&nbsp;&nbsp;Mathematical Functions</a></li>
+<li><a class="reference" href="#container-types" id="id16" name="id16">3&nbsp;&nbsp;&nbsp;Container Types</a><ul class="auto-toc">
+<li><a class="reference" href="#arrays" id="id17" name="id17">3.1&nbsp;&nbsp;&nbsp;Arrays</a><ul class="auto-toc">
+<li><a class="reference" href="#imports" id="id18" name="id18">3.1.1&nbsp;&nbsp;&nbsp;Imports</a></li>
+<li><a class="reference" href="#operations" id="id19" name="id19">3.1.2&nbsp;&nbsp;&nbsp;Operations</a></li>
+<li><a class="reference" href="#examples" id="id20" name="id20">3.1.3&nbsp;&nbsp;&nbsp;Examples</a></li>
 </ul>
 </li>
-<li><a class="reference" href="#getopt" id="id9" name="id9">2&nbsp;&nbsp;&nbsp;Getopt</a><ul class="auto-toc">
-<li><a class="reference" href="#id1" id="id10" name="id10">2.1&nbsp;&nbsp;&nbsp;Imports</a></li>
-<li><a class="reference" href="#id2" id="id11" name="id11">2.2&nbsp;&nbsp;&nbsp;Operations</a></li>
-<li><a class="reference" href="#id3" id="id12" name="id12">2.3&nbsp;&nbsp;&nbsp;Examples</a></li>
+<li><a class="reference" href="#heaps" id="id21" name="id21">3.2&nbsp;&nbsp;&nbsp;Heaps</a><ul class="auto-toc">
+<li><a class="reference" href="#id1" id="id22" name="id22">3.2.1&nbsp;&nbsp;&nbsp;Imports</a></li>
+<li><a class="reference" href="#id2" id="id23" name="id23">3.2.2&nbsp;&nbsp;&nbsp;Operations</a></li>
+<li><a class="reference" href="#id3" id="id24" name="id24">3.2.3&nbsp;&nbsp;&nbsp;Examples</a></li>
+</ul>
+</li>
+<li><a class="reference" href="#dictionaries" id="id25" name="id25">3.3&nbsp;&nbsp;&nbsp;Dictionaries</a><ul class="auto-toc">
+<li><a class="reference" href="#id4" id="id26" name="id26">3.3.1&nbsp;&nbsp;&nbsp;Imports</a></li>
+<li><a class="reference" href="#data-structure" id="id27" name="id27">3.3.2&nbsp;&nbsp;&nbsp;Data Structure</a></li>
+<li><a class="reference" href="#id5" id="id28" name="id28">3.3.3&nbsp;&nbsp;&nbsp;Operations</a></li>
+<li><a class="reference" href="#id6" id="id29" name="id29">3.3.4&nbsp;&nbsp;&nbsp;Examples</a></li>
+</ul>
+</li>
+<li><a class="reference" href="#sets-and-bags" id="id30" name="id30">3.4&nbsp;&nbsp;&nbsp;Sets and Bags</a><ul class="auto-toc">
+<li><a class="reference" href="#id7" id="id31" name="id31">3.4.1&nbsp;&nbsp;&nbsp;Imports</a></li>
+<li><a class="reference" href="#id8" id="id32" name="id32">3.4.2&nbsp;&nbsp;&nbsp;Data Structure</a></li>
+<li><a class="reference" href="#id9" id="id33" name="id33">3.4.3&nbsp;&nbsp;&nbsp;Operations</a></li>
+<li><a class="reference" href="#id10" id="id34" name="id34">3.4.4&nbsp;&nbsp;&nbsp;Examples</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference" href="#system-interface" id="id35" name="id35">4&nbsp;&nbsp;&nbsp;System Interface</a></li>
+<li><a class="reference" href="#getopt" id="id36" name="id36">5&nbsp;&nbsp;&nbsp;Getopt</a><ul class="auto-toc">
+<li><a class="reference" href="#id11" id="id37" name="id37">5.1&nbsp;&nbsp;&nbsp;Imports</a></li>
+<li><a class="reference" href="#id12" id="id38" name="id38">5.2&nbsp;&nbsp;&nbsp;Operations</a></li>
+<li><a class="reference" href="#id13" id="id39" name="id39">5.3&nbsp;&nbsp;&nbsp;Examples</a></li>
 </ul>
 </li>
 </ul>
 </div>
-<!--  -->
 <div class="section">
-<h1><a class="toc-backref" href="#id4" id="dictionaries" name="dictionaries">1&nbsp;&nbsp;&nbsp;Dictionaries</a></h1>
+<h1><a class="toc-backref" href="#id14" id="prelude" name="prelude">1&nbsp;&nbsp;&nbsp;Prelude</a></h1>
+<p>TODO</p>
+<!--  -->
+</div>
+<div class="section">
+<h1><a class="toc-backref" href="#id15" id="mathematical-functions" name="mathematical-functions">2&nbsp;&nbsp;&nbsp;Mathematical Functions</a></h1>
+<p>The math.pure module provides Pure's basic math routines. It also defines
+complex and rational numbers.</p>
+<p>TODO</p>
+<!--  -->
+</div>
+<div class="section">
+<h1><a class="toc-backref" href="#id16" id="container-types" name="container-types">3&nbsp;&nbsp;&nbsp;Container Types</a></h1>
+<p>The standard library provides a variety of efficient container data
+structures for different purposes. Note that these are all purely
+functional, i.e., immutable data structures implemented using different
+flavours of binary trees. Nevertheless operations are performed
+efficiently, in logarithmic time where possible.</p>
+<div class="section">
+<h2><a class="toc-backref" href="#id17" id="arrays" name="arrays">3.1&nbsp;&nbsp;&nbsp;Arrays</a></h2>
+<p>The array.pure module implements an efficient functional array data
+structure which allows to access and update individual array members, as
+well as to add and remove elements at the beginning and end of an
+array. All these operations are carried out in logarithmic time.</p>
+<div class="section">
+<h3><a class="toc-backref" href="#id18" id="imports" name="imports">3.1.1&nbsp;&nbsp;&nbsp;Imports</a></h3>
+<p>To use the operations of this module, add the following import declaration
+to your program:</p>
+<pre class="literal-block">
+using array;
+</pre>
+</div>
+<div class="section">
+<h3><a class="toc-backref" href="#id19" id="operations" name="operations">3.1.2&nbsp;&nbsp;&nbsp;Operations</a></h3>
+<dl class="docutils" id="array">
+<dt><tt class="docutils literal"><span class="pre">emptyarray</span></tt></dt>
+<dd>return the empty array</dd>
+<dt><tt class="docutils literal"><span class="pre">array</span> <span class="pre">xs</span></tt></dt>
+<dd>create an array from a list <tt class="docutils literal"><span class="pre">xs</span></tt></dd>
+<dt><tt class="docutils literal"><span class="pre">array2</span> <span class="pre">xs</span></tt></dt>
+<dd>create a two-dimensional array from a list of lists</dd>
+<dt><tt class="docutils literal"><span class="pre">mkarray</span> <span class="pre">x</span> <span class="pre">n</span></tt></dt>
+<dd>create an array consisting of <tt class="docutils literal"><span class="pre">n</span></tt> <tt class="docutils literal"><span class="pre">x</span></tt>'s</dd>
+<dt><tt class="docutils literal"><span class="pre">mkarray2</span> <span class="pre">x</span> <span class="pre">(n,m)</span></tt></dt>
+<dd>create a 2D array of <tt class="docutils literal"><span class="pre">n*m</span></tt> <tt class="docutils literal"><span class="pre">x</span></tt>'s</dd>
+<dt><tt class="docutils literal"><span class="pre">arrayp</span> <span class="pre">x</span></tt></dt>
+<dd>check whether <tt class="docutils literal"><span class="pre">x</span></tt> is an array</dd>
+<dt><tt class="docutils literal"><span class="pre">#a</span></tt></dt>
+<dd>size of <tt class="docutils literal"><span class="pre">a</span></tt></dd>
+<dt><tt class="docutils literal"><span class="pre">a!i</span></tt></dt>
+<dd>return the <tt class="docutils literal"><span class="pre">i</span></tt>th member of <tt class="docutils literal"><span class="pre">a</span></tt></dd>
+<dt><tt class="docutils literal"><span class="pre">a!(i,j)</span></tt></dt>
+<dd>two-dimensional subscript</dd>
+<dt><tt class="docutils literal"><span class="pre">null</span> <span class="pre">a</span></tt></dt>
+<dd>test whether <tt class="docutils literal"><span class="pre">a</span></tt> is the empty array</dd>
+<dt><tt class="docutils literal"><span class="pre">members</span> <span class="pre">a</span></tt></dt>
+<dd>list of values stored in <tt class="docutils literal"><span class="pre">a</span></tt></dd>
+<dt><tt class="docutils literal"><span class="pre">members2</span> <span class="pre">a</span></tt></dt>
+<dd>list of members in a two-dimensional array</dd>
+<dt><tt class="docutils literal"><span class="pre">first</span> <span class="pre">a</span></tt>, <tt class="docutils literal"><span class="pre">last</span> <span class="pre">a</span></tt></dt>
+<dd>first and last member of <tt class="docutils literal"><span class="pre">a</span></tt></dd>
+<dt><tt class="docutils literal"><span class="pre">rmfirst</span> <span class="pre">a</span></tt>, <tt class="docutils literal"><span class="pre">rmlast</span> <span class="pre">a</span></tt></dt>
+<dd>remove first and last member from <tt class="docutils literal"><span class="pre">a</span></tt></dd>
+<dt><tt class="docutils literal"><span class="pre">insert</span> <span class="pre">a</span> <span class="pre">x</span></tt></dt>
+<dd>insert <tt class="docutils literal"><span class="pre">x</span></tt> at the beginning of <tt class="docutils literal"><span class="pre">a</span></tt></dd>
+<dt><tt class="docutils literal"><span class="pre">append</span> <span class="pre">a</span> <span class="pre">x</span></tt></dt>
+<dd>append <tt class="docutils literal"><span class="pre">x</span></tt> to the end of <tt class="docutils literal"><span class="pre">a</span></tt></dd>
+<dt><tt class="docutils literal"><span class="pre">update</span> <span class="pre">a</span> <span class="pre">i</span> <span class="pre">x</span></tt></dt>
+<dd>replace the <tt class="docutils literal"><span class="pre">i</span></tt>th member of <tt class="docutils literal"><span class="pre">a</span></tt> by <tt class="docutils literal"><span class="pre">x</span></tt></dd>
+<dt><tt class="docutils literal"><span class="pre">update2</span> <span class="pre">a</span> <span class="pre">(i,j)</span> <span class="pre">x</span></tt></dt>
+<dd>update two-dimensional array</dd>
+</dl>
+</div>
+<div class="section">
+<h3><a class="toc-backref" href="#id20" id="examples" name="examples">3.1.3&nbsp;&nbsp;&nbsp;Examples</a></h3>
+<p>Import the module:</p>
+<pre class="literal-block">
+&gt; using array;
+</pre>
+<p>A one-dimensional array:</p>
+<pre class="literal-block">
+&gt; let a = array (0.0:0.1..1.0);
+&gt; #a; members a;
+11
+[0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
+&gt; a!5;
+0.5
+</pre>
+<p>Updating a member of an array produces a new array:</p>
+<pre class="literal-block">
+&gt; let b = update a 1 2.0;
+&gt; members b;
+[0.0,2.0,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
+</pre>
+<p>Two-dimensional arrays can be created with <tt class="docutils literal"><span class="pre">array2</span></tt> from a list of
+lists:</p>
+<pre class="literal-block">
+&gt; let a2 = array2 [[i,x | x = [a,b,c]] | i = 1..2];
+&gt; members2 a2;
+[[(1,a),(1,b),(1,c)],[(2,a),(2,b),(2,c)]]
+&gt; a2!(1,2);
+2,c
+</pre>
+<p>Here's how to convert an array to a Pure matrix:</p>
+<pre class="literal-block">
+&gt; matrix $ members a;
+{0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0}
+&gt; matrix $ members2 a2;
+{(1,a),(1,b),(1,c);(2,a),(2,b),(2,c)}
+</pre>
+<p>Converting back from a matrix to an array:</p>
+<pre class="literal-block">
+&gt; let b2 = array2 $ list2 {(1,a),(1,b),(1,c);(2,a),(2,b),(2,c)};
+&gt; members2 b2;
+[[(1,a),(1,b),(1,c)],[(2,a),(2,b),(2,c)]]
+</pre>
+<!--  -->
+</div>
+</div>
+<div class="section">
+<h2><a class="toc-backref" href="#id21" id="heaps" name="heaps">3.2&nbsp;&nbsp;&nbsp;Heaps</a></h2>
+<p>Heaps allow quick (constant time) access to the smallest member, and to
+remove the smallest nember and insert new elements in logarithmic time.
+This implementation does not allow quick update of heap members; if
+such functionality is required, bags should be used instead
+(see <a class="reference" href="#bag">bag</a> in <a class="reference" href="#sets-and-bags">Sets and Bags</a>).</p>
+<p>Heap members <em>must</em> be ordered by the <tt class="docutils literal"><span class="pre">&lt;=</span></tt> predicate. Multiple instances
+of the same element may be stored in a heap; however, the order in which
+equal elements are retrieved is not specified.</p>
+<div class="section">
+<h3><a class="toc-backref" href="#id22" id="id1" name="id1">3.2.1&nbsp;&nbsp;&nbsp;Imports</a></h3>
+<p>To use the operations of this module, add the following import declaration
+to your program:</p>
+<pre class="literal-block">
+using heap;
+</pre>
+</div>
+<div class="section">
+<h3><a class="toc-backref" href="#id23" id="id2" name="id2">3.2.2&nbsp;&nbsp;&nbsp;Operations</a></h3>
+<dl class="docutils" id="heap">
+<dt><tt class="docutils literal"><span class="pre">emptyheap</span></tt></dt>
+<dd>return the empty heap</dd>
+<dt><tt class="docutils literal"><span class="pre">heap</span> <span class="pre">xs</span></tt></dt>
+<dd>create a heap from a list <tt class="docutils literal"><span class="pre">xs</span></tt></dd>
+<dt><tt class="docutils literal"><span class="pre">heapp</span> <span class="pre">x</span></tt></dt>
+<dd>check whether <tt class="docutils literal"><span class="pre">x</span></tt> is a heap</dd>
+<dt><tt class="docutils literal"><span class="pre">#h</span></tt></dt>
+<dd>size of a heap</dd>
+<dt><tt class="docutils literal"><span class="pre">null</span> <span class="pre">h</span></tt></dt>
+<dd>test whether <tt class="docutils literal"><span class="pre">h</span></tt> is the empty heap</dd>
+<dt><tt class="docutils literal"><span class="pre">members</span> <span class="pre">h</span></tt>, <tt class="docutils literal"><span class="pre">list</span> <span class="pre">h</span></tt></dt>
+<dd>list the members of <tt class="docutils literal"><span class="pre">h</span></tt> in ascending order</dd>
+<dt><tt class="docutils literal"><span class="pre">first</span> <span class="pre">h</span></tt></dt>
+<dd>the first (i.e., smallest) member of <tt class="docutils literal"><span class="pre">h</span></tt></dd>
+<dt><tt class="docutils literal"><span class="pre">rmfirst</span> <span class="pre">h</span></tt></dt>
+<dd>remove the first (i.e., smallest) member from <tt class="docutils literal"><span class="pre">h</span></tt></dd>
+<dt><tt class="docutils literal"><span class="pre">insert</span> <span class="pre">h</span> <span class="pre">x</span></tt></dt>
+<dd>insert <tt class="docutils literal"><span class="pre">x</span></tt> into <tt class="docutils literal"><span class="pre">h</span></tt></dd>
+</dl>
+</div>
+<div class="section">
+<h3><a class="toc-backref" href="#id24" id="id3" name="id3">3.2.3&nbsp;&nbsp;&nbsp;Examples</a></h3>
+<pre class="literal-block">
+&gt; let h = heap [5,1,3,11,3];
+&gt; members h;
+[1,3,3,5,11]
+&gt; first h;
+1
+&gt; members $ rmfirst h;
+[3,3,5,11]
+</pre>
+<!--  -->
+</div>
+</div>
+<div class="section">
+<h2><a class="toc-backref" href="#id25" id="dictionaries" name="dictionaries">3.3&nbsp;&nbsp;&nbsp;Dictionaries</a></h2>
 <p>The dict.pure module provides Pure's <tt class="docutils literal"><span class="pre">dict</span></tt> and <tt class="docutils literal"><span class="pre">hdict</span></tt> data types
 based on AVL trees. <tt class="docutils literal"><span class="pre">dict</span></tt> is an ordered dictionary (assuming an ordered
 key type), <tt class="docutils literal"><span class="pre">hdict</span></tt> a hashed dictionary which works with any (mixture of)
@@ -347,11 +546,11 @@ key types but stores members in an apparently random order.</p>
 of association lists. The original file was created by R. A. O'Keefe and
 updated for the SWI-Prolog by Jan Wielemaker. For the original file see
 <a class="reference" href="http://www.swi-prolog.org">http://www.swi-prolog.org</a>.</p>
-<p>The port from SWI-Prolog and the deletion stuff (rmfirst, rmlast, delete)
-missing in the original file was provided by Jiri Spitz.</p>
+<p>The port from SWI-Prolog and the deletion stuff (<tt class="docutils literal"><span class="pre">rmfirst</span></tt>, <tt class="docutils literal"><span class="pre">rmlast</span></tt>,
+<tt class="docutils literal"><span class="pre">delete</span></tt>) missing in the original file was provided by Jiri Spitz.</p>
 <!--  -->
 <div class="section">
-<h2><a class="toc-backref" href="#id5" id="imports" name="imports">1.1&nbsp;&nbsp;&nbsp;Imports</a></h2>
+<h3><a class="toc-backref" href="#id26" id="id4" name="id4">3.3.1&nbsp;&nbsp;&nbsp;Imports</a></h3>
 <p>To use the operations of this module, add the following import declaration
 to your program:</p>
 <pre class="literal-block">
@@ -359,7 +558,7 @@ using dict;
 </pre>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id6" id="data-structure" name="data-structure">1.2&nbsp;&nbsp;&nbsp;Data Structure</a></h2>
+<h3><a class="toc-backref" href="#id27" id="data-structure" name="data-structure">3.3.2&nbsp;&nbsp;&nbsp;Data Structure</a></h3>
 <p>A tree for <tt class="docutils literal"><span class="pre">dict</span></tt> and <tt class="docutils literal"><span class="pre">hdict</span></tt> takes the form <tt class="docutils literal"><span class="pre">Dict</span> <span class="pre">T</span></tt> or <tt class="docutils literal"><span class="pre">HDict</span> <span class="pre">T</span></tt>
 where <tt class="docutils literal"><span class="pre">T</span></tt> is either:</p>
 <dl class="docutils">
@@ -374,7 +573,7 @@ respectively.</dd>
 <p>The tree constructors are private.</p>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id7" id="operations" name="operations">1.3&nbsp;&nbsp;&nbsp;Operations</a></h2>
+<h3><a class="toc-backref" href="#id28" id="id5" name="id5">3.3.3&nbsp;&nbsp;&nbsp;Operations</a></h3>
 <dl class="docutils" id="dict">
 <span id="hdict"></span><dt><tt class="docutils literal"><span class="pre">emptydict</span></tt>, <tt class="docutils literal"><span class="pre">emptyhdict</span></tt></dt>
 <dd>return the empty dict or hdict</dd>
@@ -411,7 +610,7 @@ a fully curried version of <tt class="docutils literal"><span class="pre">insert
 </dl>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id8" id="examples" name="examples">1.4&nbsp;&nbsp;&nbsp;Examples</a></h2>
+<h3><a class="toc-backref" href="#id29" id="id6" name="id6">3.3.4&nbsp;&nbsp;&nbsp;Examples</a></h3>
 <p>A normal (ordered) dictionary:</p>
 <pre class="literal-block">
 &gt; using dict;
@@ -420,6 +619,8 @@ a fully curried version of <tt class="docutils literal"><span class="pre">insert
 [&quot;bar&quot;,&quot;foo&quot;]
 [99.1,77]
 [&quot;bar&quot;=&gt;99.1,&quot;foo&quot;=&gt;77]
+&gt; d!&quot;foo&quot;;
+77
 </pre>
 <p>A hashed dictionary can be used with any key values, which are stored in a
 seemingly random order:</p>
@@ -429,16 +630,108 @@ seemingly random order:</p>
 [42,foo]
 [99.1,77]
 [42=&gt;99.1,foo=&gt;77]
+&gt; h!foo;
+77
 </pre>
 <!--  -->
 </div>
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id9" id="getopt" name="getopt">2&nbsp;&nbsp;&nbsp;Getopt</a></h1>
+<h2><a class="toc-backref" href="#id30" id="sets-and-bags" name="sets-and-bags">3.4&nbsp;&nbsp;&nbsp;Sets and Bags</a></h2>
+<p>The set.pure module implements Pure's set and bag (multiset) data types
+based on AVL trees. Set and bag elements must be ordered, i.e., the
+predicates <tt class="docutils literal"><span class="pre">==</span></tt>, <tt class="docutils literal"><span class="pre">&lt;</span></tt> and <tt class="docutils literal"><span class="pre">&gt;</span></tt> must be defined on them. The used AVL
+tree algorithm has its origin in the SWI-Prolog implementation of
+association lists, see <a class="reference" href="#dictionaries">Dictionaries</a> for details.</p>
+<!--  -->
+<div class="section">
+<h3><a class="toc-backref" href="#id31" id="id7" name="id7">3.4.1&nbsp;&nbsp;&nbsp;Imports</a></h3>
+<p>To use the operations of this module, add the following import declaration
+to your program:</p>
+<pre class="literal-block">
+using set;
+</pre>
+</div>
+<div class="section">
+<h3><a class="toc-backref" href="#id32" id="id8" name="id8">3.4.2&nbsp;&nbsp;&nbsp;Data Structure</a></h3>
+<p>A tree for <tt class="docutils literal"><span class="pre">set</span></tt> and <tt class="docutils literal"><span class="pre">bag</span></tt> takes the form <tt class="docutils literal"><span class="pre">Set</span> <span class="pre">T</span></tt> or <tt class="docutils literal"><span class="pre">Bag</span> <span class="pre">T</span></tt> where
+<tt class="docutils literal"><span class="pre">T</span></tt> is either:</p>
+<dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">nil</span></tt></dt>
+<dd>the empty tree; or</dd>
+<dt><tt class="docutils literal"><span class="pre">bin</span> <span class="pre">key</span> <span class="pre">balance</span> <span class="pre">left</span> <span class="pre">right</span></tt></dt>
+<dd>a nonempty tree with given <tt class="docutils literal"><span class="pre">key</span></tt> (set element) in the root node, where
+<tt class="docutils literal"><span class="pre">left</span></tt> and <tt class="docutils literal"><span class="pre">right</span></tt> are the left and right subtree, and <tt class="docutils literal"><span class="pre">balance</span></tt> is
+either 1, 0 or -1, denoting <tt class="docutils literal"><span class="pre">|left|-|right|</span></tt> = 1, 0, or -1,
+respectively.</dd>
+</dl>
+<p>The tree constructors are private.</p>
+</div>
+<div class="section">
+<h3><a class="toc-backref" href="#id33" id="id9" name="id9">3.4.3&nbsp;&nbsp;&nbsp;Operations</a></h3>
+<dl class="docutils" id="bag">
+<span id="set"></span><dt><tt class="docutils literal"><span class="pre">emptyset</span></tt>, <tt class="docutils literal"><span class="pre">emptybag</span></tt></dt>
+<dd>return the empty set or bag</dd>
+<dt><tt class="docutils literal"><span class="pre">set</span> <span class="pre">xs</span></tt>, <tt class="docutils literal"><span class="pre">bag</span> <span class="pre">xs</span></tt></dt>
+<dd>create a set or bag from a list <tt class="docutils literal"><span class="pre">xs</span></tt></dd>
+<dt><tt class="docutils literal"><span class="pre">setp</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">bagp</span> <span class="pre">x</span></tt></dt>
+<dd>check whether <tt class="docutils literal"><span class="pre">x</span></tt> is a set or bag</dd>
+<dt><tt class="docutils literal"><span class="pre">#m</span></tt></dt>
+<dd>size of set or bag <tt class="docutils literal"><span class="pre">m</span></tt></dd>
+<dt><tt class="docutils literal"><span class="pre">null</span> <span class="pre">m</span></tt></dt>
+<dd>test whether <tt class="docutils literal"><span class="pre">m</span></tt> is the empty set or bag</dd>
+<dt><tt class="docutils literal"><span class="pre">member</span> <span class="pre">m</span> <span class="pre">x</span></tt></dt>
+<dd>test whether <tt class="docutils literal"><span class="pre">m</span></tt> contains <tt class="docutils literal"><span class="pre">x</span></tt></dd>
+<dt><tt class="docutils literal"><span class="pre">members</span> <span class="pre">m</span></tt>, <tt class="docutils literal"><span class="pre">list</span> <span class="pre">m</span></tt></dt>
+<dd>list members of <tt class="docutils literal"><span class="pre">m</span></tt> in ascending order</dd>
+<dt><tt class="docutils literal"><span class="pre">first</span> <span class="pre">m</span></tt>, <tt class="docutils literal"><span class="pre">last</span> <span class="pre">m</span></tt></dt>
+<dd>return first and last member of <tt class="docutils literal"><span class="pre">m</span></tt></dd>
+<dt><tt class="docutils literal"><span class="pre">rmfirst</span> <span class="pre">m</span></tt>, <tt class="docutils literal"><span class="pre">rmlast</span> <span class="pre">m</span></tt></dt>
+<dd>remove first and last member from <tt class="docutils literal"><span class="pre">m</span></tt></dd>
+<dt><tt class="docutils literal"><span class="pre">insert</span> <span class="pre">m</span> <span class="pre">x</span></tt></dt>
+<dd>insert <tt class="docutils literal"><span class="pre">x</span></tt> into <tt class="docutils literal"><span class="pre">m</span></tt> (replaces an existing element in the <tt class="docutils literal"><span class="pre">set</span></tt> case)</dd>
+<dt><tt class="docutils literal"><span class="pre">delete</span> <span class="pre">m</span> <span class="pre">x</span></tt></dt>
+<dd>remove <tt class="docutils literal"><span class="pre">x</span></tt> from <tt class="docutils literal"><span class="pre">m</span></tt> (in the <tt class="docutils literal"><span class="pre">bag</span></tt> case, only a single instance of
+<tt class="docutils literal"><span class="pre">x</span></tt> is removed)</dd>
+</dl>
+</div>
+<div class="section">
+<h3><a class="toc-backref" href="#id34" id="id10" name="id10">3.4.4&nbsp;&nbsp;&nbsp;Examples</a></h3>
+<pre class="literal-block">
+&gt; let m = set [5,1,3,11,3];
+&gt; members m;
+[1,3,5,11]
+&gt; map (member m) (1..5);
+[1,0,1,0,1]
+&gt; let m = bag [5,1,3,11,3];
+&gt; members m;
+[1,3,3,5,11]
+&gt; members $ delete m 3;
+[1,3,5,11]
+&gt; members $ insert m 1;
+[1,1,3,3,5,11]
+</pre>
+<!--  -->
+</div>
+</div>
+</div>
+<div class="section">
+<h1><a class="toc-backref" href="#id35" id="system-interface" name="system-interface">4&nbsp;&nbsp;&nbsp;System Interface</a></h1>
+<p>This module offers some useful system routines, straight from the C
+library, as well as some convenience functions for wrapping these up in
+Pure. Even the &quot;purest&quot; program needs to do some basic I/O every once in a
+while, and this module provides the necessary stuff to do just that. The
+interface is rather minimalistic and preliminary right now, but will
+probably grow over time.</p>
+<p>TODO</p>
+<!--  -->
+</div>
+<div class="section">
+<h1><a class="toc-backref" href="#id36" id="getopt" name="getopt">5&nbsp;&nbsp;&nbsp;Getopt</a></h1>
 <p>This is a quick-and-dirty replacement for the GNU getopt functions, ported
 from the Q library.</p>
 <div class="section">
-<h2><a class="toc-backref" href="#id10" id="id1" name="id1">2.1&nbsp;&nbsp;&nbsp;Imports</a></h2>
+<h2><a class="toc-backref" href="#id37" id="id11" name="id11">5.1&nbsp;&nbsp;&nbsp;Imports</a></h2>
 <p>To use the operations of this module, add the following import declaration
 to your program:</p>
 <pre class="literal-block">
@@ -446,7 +739,7 @@ using getopt;
 </pre>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id11" id="id2" name="id2">2.2&nbsp;&nbsp;&nbsp;Operations</a></h2>
+<h2><a class="toc-backref" href="#id38" id="id12" name="id12">5.2&nbsp;&nbsp;&nbsp;Operations</a></h2>
 <dl class="docutils">
 <dt><tt class="docutils literal"><span class="pre">getopt</span> <span class="pre">opts</span> <span class="pre">args</span></tt></dt>
 <dd>get program options from the <tt class="docutils literal"><span class="pre">args</span></tt> variable</dd>
@@ -483,7 +776,7 @@ equivalent, simply specify an empty option string for the <tt class="docutils li
 field.</p>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id12" id="id3" name="id3">2.3&nbsp;&nbsp;&nbsp;Examples</a></h2>
+<h2><a class="toc-backref" href="#id39" id="id13" name="id13">5.3&nbsp;&nbsp;&nbsp;Examples</a></h2>
 <pre class="literal-block">
 &gt; let opts = [(&quot;--help&quot;, &quot;-h&quot;, NOARG),       // no argument
 &gt;             (&quot;--version&quot;, &quot;&quot;, NOARG),      // no short option

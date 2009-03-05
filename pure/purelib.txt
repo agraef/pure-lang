@@ -29,8 +29,8 @@ This document is available under the |FDL|_.
 
 This manual describes the operations in the standard Pure library,
 including the prelude and the other library modules which come bundled with
-the interpreter. It is woefully incomplete right now, constributions are
-welcome.
+the interpreter. It is woefully incomplete right now, but this is being
+worked on.
 
 There is a companion to this manual, the `Pure Manual`_ which describes the
 Pure language and the operation of the Pure interpreter.
@@ -38,12 +38,206 @@ Pure language and the operation of the Pure interpreter.
 .. Table of contents, switch on section numbering.
 
 .. contents::
-.. sectnum:: 
+.. sectnum::
+
+Prelude
+=======
+
+TODO
+
+..
+
+Mathematical Functions
+======================
+
+The math.pure module provides Pure's basic math routines. It also defines
+complex and rational numbers.
+
+TODO
+
+..
+
+Container Types
+===============
+
+The standard library provides a variety of efficient container data
+structures for different purposes. Note that these are all purely
+functional, i.e., immutable data structures implemented using different
+flavours of binary trees. Nevertheless operations are performed
+efficiently, in logarithmic time where possible.
+
+Arrays
+------
+
+The array.pure module implements an efficient functional array data
+structure which allows to access and update individual array members, as
+well as to add and remove elements at the beginning and end of an
+array. All these operations are carried out in logarithmic time.
+
+Imports
+~~~~~~~
+
+To use the operations of this module, add the following import declaration
+to your program::
+
+  using array;
+
+Operations
+~~~~~~~~~~
+
+.. _array:
+
+``emptyarray``
+  return the empty array
+``array xs``
+  create an array from a list ``xs``
+``array2 xs``
+  create a two-dimensional array from a list of lists
+``mkarray x n``
+  create an array consisting of ``n`` ``x``'s
+``mkarray2 x (n,m)``
+  create a 2D array of ``n*m`` ``x``'s
+``arrayp x``
+  check whether ``x`` is an array
+
+``#a``
+  size of ``a``
+``a!i``
+  return the ``i``\ th member of ``a``
+``a!(i,j)``
+  two-dimensional subscript
+
+``null a``
+  test whether ``a`` is the empty array
+``members a``
+  list of values stored in ``a``
+``members2 a``
+  list of members in a two-dimensional array
+
+``first a``, ``last a``
+  first and last member of ``a``
+``rmfirst a``, ``rmlast a``
+  remove first and last member from ``a``
+``insert a x``
+  insert ``x`` at the beginning of ``a``
+``append a x``
+  append ``x`` to the end of ``a``
+``update a i x``
+  replace the ``i``\ th member of ``a`` by ``x``
+``update2 a (i,j) x``
+  update two-dimensional array
+
+Examples
+~~~~~~~~
+
+Import the module::
+
+  > using array;
+
+A one-dimensional array::
+
+  > let a = array (0.0:0.1..1.0);
+  > #a; members a;
+  11
+  [0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
+  > a!5;
+  0.5
+
+Updating a member of an array produces a new array::
+
+  > let b = update a 1 2.0;
+  > members b;
+  [0.0,2.0,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
+
+Two-dimensional arrays can be created with ``array2`` from a list of
+lists::
+
+  > let a2 = array2 [[i,x | x = [a,b,c]] | i = 1..2];
+  > members2 a2;
+  [[(1,a),(1,b),(1,c)],[(2,a),(2,b),(2,c)]]
+  > a2!(1,2);
+  2,c
+
+Here's how to convert an array to a Pure matrix::
+
+  > matrix $ members a;
+  {0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0}
+  > matrix $ members2 a2;
+  {(1,a),(1,b),(1,c);(2,a),(2,b),(2,c)}
+
+Converting back from a matrix to an array::
+
+  > let b2 = array2 $ list2 {(1,a),(1,b),(1,c);(2,a),(2,b),(2,c)};
+  > members2 b2;
+  [[(1,a),(1,b),(1,c)],[(2,a),(2,b),(2,c)]]
+
+..
+
+Heaps
+-----
+
+Heaps allow quick (constant time) access to the smallest member, and to
+remove the smallest nember and insert new elements in logarithmic time.
+This implementation does not allow quick update of heap members; if
+such functionality is required, bags should be used instead
+(see bag_ in `Sets and Bags`_).
+
+Heap members *must* be ordered by the ``<=`` predicate. Multiple instances
+of the same element may be stored in a heap; however, the order in which
+equal elements are retrieved is not specified.
+
+Imports
+~~~~~~~
+
+To use the operations of this module, add the following import declaration
+to your program::
+
+  using heap;
+
+Operations
+~~~~~~~~~~
+
+.. _heap:
+
+``emptyheap``
+  return the empty heap
+``heap xs``
+  create a heap from a list ``xs``
+``heapp x``
+  check whether ``x`` is a heap
+
+``#h``
+  size of a heap
+
+``null h``
+  test whether ``h`` is the empty heap
+``members h``, ``list h``
+  list the members of ``h`` in ascending order
+
+``first h``
+  the first (i.e., smallest) member of ``h``
+``rmfirst h``
+  remove the first (i.e., smallest) member from ``h``
+``insert h x``
+  insert ``x`` into ``h``
+
+Examples
+~~~~~~~~
+
+::
+
+  > let h = heap [5,1,3,11,3];
+  > members h;
+  [1,3,3,5,11]
+  > first h;
+  1
+  > members $ rmfirst h;
+  [3,3,5,11]
 
 ..
 
 Dictionaries
-============
+------------
 
 The dict.pure module provides Pure's ``dict`` and ``hdict`` data types
 based on AVL trees. ``dict`` is an ordered dictionary (assuming an ordered
@@ -55,13 +249,13 @@ of association lists. The original file was created by R. A. O'Keefe and
 updated for the SWI-Prolog by Jan Wielemaker. For the original file see
 http://www.swi-prolog.org.
 
-The port from SWI-Prolog and the deletion stuff (rmfirst, rmlast, delete)
-missing in the original file was provided by Jiri Spitz. 
+The port from SWI-Prolog and the deletion stuff (``rmfirst``, ``rmlast``,
+``delete``) missing in the original file was provided by Jiri Spitz.
 
 ..
 
 Imports
--------
+~~~~~~~
 
 To use the operations of this module, add the following import declaration
 to your program::
@@ -69,7 +263,7 @@ to your program::
   using dict;
 
 Data Structure
---------------
+~~~~~~~~~~~~~~
 
 A tree for ``dict`` and ``hdict`` takes the form ``Dict T`` or ``HDict T``
 where ``T`` is either:
@@ -86,7 +280,7 @@ where ``T`` is either:
 The tree constructors are private.
 
 Operations
-----------
+~~~~~~~~~~
 
 .. _hdict:
 .. _dict:
@@ -139,7 +333,7 @@ Operations
   remove ``x`` from ``d``
 
 Examples
---------
+~~~~~~~~
 
 A normal (ordered) dictionary::
 
@@ -149,6 +343,8 @@ A normal (ordered) dictionary::
   ["bar","foo"]
   [99.1,77]
   ["bar"=>99.1,"foo"=>77]
+  > d!"foo";
+  77
 
 A hashed dictionary can be used with any key values, which are stored in a
 seemingly random order::
@@ -158,6 +354,111 @@ seemingly random order::
   [42,foo]
   [99.1,77]
   [42=>99.1,foo=>77]
+  > h!foo;
+  77
+
+..
+
+Sets and Bags
+-------------
+
+The set.pure module implements Pure's set and bag (multiset) data types
+based on AVL trees. Set and bag elements must be ordered, i.e., the
+predicates ``==``, ``<`` and ``>`` must be defined on them. The used AVL
+tree algorithm has its origin in the SWI-Prolog implementation of
+association lists, see Dictionaries_ for details.
+
+..
+
+Imports
+~~~~~~~
+
+To use the operations of this module, add the following import declaration
+to your program::
+
+  using set;
+
+Data Structure
+~~~~~~~~~~~~~~
+
+A tree for ``set`` and ``bag`` takes the form ``Set T`` or ``Bag T`` where
+``T`` is either:
+
+``nil``
+  the empty tree; or
+
+``bin key balance left right``
+  a nonempty tree with given ``key`` (set element) in the root node, where
+  ``left`` and ``right`` are the left and right subtree, and ``balance`` is
+  either 1, 0 or -1, denoting ``|left|-|right|`` = 1, 0, or -1,
+  respectively.
+
+The tree constructors are private.
+
+Operations
+~~~~~~~~~~
+
+.. _set:
+.. _bag:
+
+``emptyset``, ``emptybag``
+  return the empty set or bag
+``set xs``, ``bag xs``
+  create a set or bag from a list ``xs``
+``setp x``, ``bagp x``
+  check whether ``x`` is a set or bag
+
+``#m``
+  size of set or bag ``m``
+
+``null m``
+  test whether ``m`` is the empty set or bag
+``member m x``
+  test whether ``m`` contains ``x``
+``members m``, ``list m``
+  list members of ``m`` in ascending order
+
+``first m``, ``last m``
+  return first and last member of ``m``
+``rmfirst m``, ``rmlast m``
+  remove first and last member from ``m``
+``insert m x``
+  insert ``x`` into ``m`` (replaces an existing element in the ``set`` case)
+``delete m x``
+  remove ``x`` from ``m`` (in the ``bag`` case, only a single instance of
+  ``x`` is removed)
+
+Examples
+~~~~~~~~
+
+::
+
+  > let m = set [5,1,3,11,3];
+  > members m;
+  [1,3,5,11]
+  > map (member m) (1..5);
+  [1,0,1,0,1]
+  > let m = bag [5,1,3,11,3];
+  > members m;
+  [1,3,3,5,11]
+  > members $ delete m 3;
+  [1,3,5,11]
+  > members $ insert m 1;
+  [1,1,3,3,5,11]
+
+..
+
+System Interface
+================
+
+This module offers some useful system routines, straight from the C
+library, as well as some convenience functions for wrapping these up in
+Pure. Even the "purest" program needs to do some basic I/O every once in a
+while, and this module provides the necessary stuff to do just that. The
+interface is rather minimalistic and preliminary right now, but will
+probably grow over time.
+
+TODO
 
 .. 
 
@@ -232,5 +533,5 @@ Examples
 
 As the last example shows, non-option arguments (as well as option values
 specified as separate arguments) can actually be any values which are just
-copied to the result lists as is. 
+copied to the result lists as is.
 

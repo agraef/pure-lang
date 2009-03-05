@@ -18,28 +18,70 @@
    with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
 
-/* Heaps allow quick (constant time) access to the smallest member, and to
+/* ..
+
+   Heaps
+   -----
+
+   Heaps allow quick (constant time) access to the smallest member, and to
    remove the smallest nember and insert new elements in logarithmic time.
    This implementation does not allow quick update of heap members; if
    such functionality is required, bags should be used instead
-   (see bag in set.pure).
+   (see bag_ in `Sets and Bags`_).
 
-   Heap members must be ordered by the <= predicate. Multiple instances
-   of the same element may be stored in a heap; however, the order in
-   which equal elements are retrieved is not specified. */
+   Heap members *must* be ordered by the ``<=`` predicate. Multiple instances
+   of the same element may be stored in a heap; however, the order in which
+   equal elements are retrieved is not specified.
 
-/* Public operations: ******************************************************
+   Imports
+   ~~~~~~~
 
-// #h				// size of a heap
+   To use the operations of this module, add the following import declaration
+   to your program::
 
-// null h			// tests whether h is the empty heap
-// list h, members h		// lists members of h in ascending order
+     using heap;
 
-// first h			// first (i.e. smallest) member of h
-// rmfirst h			// remove smallest member from h
-// insert h x			// insert h into x
+   Operations
+   ~~~~~~~~~~
 
-   *************************************************************************/
+   .. _heap:
+
+   ``emptyheap``
+     return the empty heap
+   ``heap xs``
+     create a heap from a list ``xs``
+   ``heapp x``
+     check whether ``x`` is a heap
+
+   ``#h``
+     size of a heap
+
+   ``null h``
+     test whether ``h`` is the empty heap
+   ``members h``, ``list h``
+     list the members of ``h`` in ascending order
+
+   ``first h``
+     the first (i.e., smallest) member of ``h``
+   ``rmfirst h``
+     remove the first (i.e., smallest) member from ``h``
+   ``insert h x``
+     insert ``x`` into ``h``
+
+   Examples
+   ~~~~~~~~
+
+   ::
+
+     > let h = heap [5,1,3,11,3];
+     > members h;
+     [1,3,3,5,11]
+     > first h;
+     1
+     > members $ rmfirst h;
+     [3,3,5,11]
+
+*/
 
 namespace heap;
 

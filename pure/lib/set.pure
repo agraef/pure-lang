@@ -19,35 +19,16 @@
    with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
 
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   The used algorithm of AVL trees has its origin in the SWI-Prolog
-   implementation of association lists. The original file was created by
-   R. A. O'Keefe and updated for the SWI-Prolog by Jan Wielemaker. For the
-   original file see http://www.swi-prolog.org.
+/* ..
 
-   The port from SWI-Prolog and the deletion stuff (rmfirst, rmlast, delete)
-   missing in the original file was provided by Jiri Spitz
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+   Sets and Bags
+   -------------
 
-
-/* Public operations: ******************************************************
-
-emptyset, emptybag:		return the empty set or bag
-set xs, bag xs;			create a set or bag from list xs
-setp x, bagp x;			check whether x is a set or bag
-
-#m				size of set or bag m
-
-null m				tests whether m is the empty set or bag
-member m x			tests whether m contains x
-members m, list m		list members of m in ascending order
-
-first m, last m			return first and last member of m
-rmfirst m, rmlast m		remove first and last member from m
-insert m x			insert x into m (replace existing element)
-delete m x			remove x from m
-
-   *************************************************************************/
+   The set.pure module implements Pure's set and bag (multiset) data types
+   based on AVL trees. Set and bag elements must be ordered, i.e., the
+   predicates ``==``, ``<`` and ``>`` must be defined on them. The used AVL
+   tree algorithm has its origin in the SWI-Prolog implementation of
+   association lists, see Dictionaries_ for details. */
 
 namespace set;
 
@@ -55,14 +36,85 @@ namespace set;
 private nullary nil;
 private bin;
 
-/*****
-Tree for set and bag is either:
--  nil  (empty tree) or
--  bin key Balance Left Right  (Left, Right: trees)
+/* ..
 
+   Imports
+   ~~~~~~~
 
-Balance: ( 1), ( 0), or (-1) denoting |L|-|R| = 1, 0, or -1, respectively
-*****/
+   To use the operations of this module, add the following import declaration
+   to your program::
+
+     using set;
+
+   Data Structure
+   ~~~~~~~~~~~~~~
+
+   A tree for ``set`` and ``bag`` takes the form ``Set T`` or ``Bag T`` where
+   ``T`` is either:
+
+   ``nil``
+     the empty tree; or
+
+   ``bin key balance left right``
+     a nonempty tree with given ``key`` (set element) in the root node, where
+     ``left`` and ``right`` are the left and right subtree, and ``balance`` is
+     either 1, 0 or -1, denoting ``|left|-|right|`` = 1, 0, or -1,
+     respectively.
+
+   The tree constructors are private.
+
+   Operations
+   ~~~~~~~~~~
+
+   .. _set:
+   .. _bag:
+
+   ``emptyset``, ``emptybag``
+     return the empty set or bag
+   ``set xs``, ``bag xs``
+     create a set or bag from a list ``xs``
+   ``setp x``, ``bagp x``
+     check whether ``x`` is a set or bag
+
+   ``#m``
+     size of set or bag ``m``
+
+   ``null m``
+     test whether ``m`` is the empty set or bag
+   ``member m x``
+     test whether ``m`` contains ``x``
+   ``members m``, ``list m``
+     list members of ``m`` in ascending order
+
+   ``first m``, ``last m``
+     return first and last member of ``m``
+   ``rmfirst m``, ``rmlast m``
+     remove first and last member from ``m``
+   ``insert m x``
+     insert ``x`` into ``m`` (replaces an existing element in the ``set`` case)
+   ``delete m x``
+     remove ``x`` from ``m`` (in the ``bag`` case, only a single instance of
+     ``x`` is removed)
+
+   Examples
+   ~~~~~~~~
+
+   ::
+
+     > let m = set [5,1,3,11,3];
+     > members m;
+     [1,3,5,11]
+     > map (member m) (1..5);
+     [1,0,1,0,1]
+     > let m = bag [5,1,3,11,3];
+     > members m;
+     [1,3,3,5,11]
+     > members $ delete m 3;
+     [1,3,5,11]
+     > members $ insert m 1;
+     [1,1,3,3,5,11]
+
+*/
 
 private adjustd avl_geq;
 
