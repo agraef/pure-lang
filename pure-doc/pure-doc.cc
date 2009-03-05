@@ -478,6 +478,7 @@ char *yytext;
 #line 1 "pure-doc.ll"
 #line 2 "pure-doc.ll"
 #include <cstdlib>
+#include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string>
@@ -509,7 +510,7 @@ static inline void echo(const char *s)
   }
 }
 
-#line 513 "pure-doc.cc"
+#line 514 "pure-doc.cc"
 
 #define INITIAL 0
 #define comment 1
@@ -694,10 +695,10 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 42 "pure-doc.ll"
+#line 43 "pure-doc.ll"
 
 
-#line 701 "pure-doc.cc"
+#line 702 "pure-doc.cc"
 
 	if ( !(yy_init) )
 		{
@@ -783,16 +784,16 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 /* rule 1 can match eol */
-#line 45 "pure-doc.ll"
+#line 46 "pure-doc.ll"
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 45 "pure-doc.ll"
+#line 46 "pure-doc.ll"
 echo(yytext); tabs(col, yytext, yyleng);
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 47 "pure-doc.ll"
+#line 48 "pure-doc.ll"
 {
   start = 0; buf = yytext+2;
   comment_text = yytext;
@@ -802,7 +803,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 53 "pure-doc.ll"
+#line 54 "pure-doc.ll"
 {
   col += yyleng; start = col; buf.clear();
   comment_text = yytext;
@@ -812,12 +813,12 @@ YY_RULE_SETUP
 case 5:
 /* rule 5 can match eol */
 YY_RULE_SETUP
-#line 59 "pure-doc.ll"
+#line 60 "pure-doc.ll"
 comment_text += yytext; tabs(col, yytext, yyleng);
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 60 "pure-doc.ll"
+#line 61 "pure-doc.ll"
 {
   buf += string("\n")+(yytext+2);
   comment_text += yytext;
@@ -826,13 +827,13 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 65 "pure-doc.ll"
+#line 66 "pure-doc.ll"
 print(start, buf); yyless(0); BEGIN(INITIAL);
 	YY_BREAK
 case 8:
 /* rule 8 can match eol */
 YY_RULE_SETUP
-#line 67 "pure-doc.ll"
+#line 68 "pure-doc.ll"
 {
   tabs(col, yytext, yyleng);
   buf += yytext; comment_text += yytext;
@@ -841,7 +842,7 @@ YY_RULE_SETUP
 case 9:
 /* rule 9 can match eol */
 YY_RULE_SETUP
-#line 71 "pure-doc.ll"
+#line 72 "pure-doc.ll"
 {
   tabs(col, yytext, yyleng);
   buf += yytext; comment_text += yytext;
@@ -849,7 +850,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 75 "pure-doc.ll"
+#line 76 "pure-doc.ll"
 {
   col += yyleng;
   comment_text += yytext;
@@ -859,22 +860,22 @@ YY_RULE_SETUP
 	YY_BREAK
 case 11:
 /* rule 11 can match eol */
-#line 83 "pure-doc.ll"
+#line 84 "pure-doc.ll"
 case 12:
 /* rule 12 can match eol */
 YY_RULE_SETUP
-#line 83 "pure-doc.ll"
+#line 84 "pure-doc.ll"
 echo(yytext); tabs(col, yytext, yyleng);
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 84 "pure-doc.ll"
+#line 85 "pure-doc.ll"
 echo(yytext); col++;
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(comment):
 case YY_STATE_EOF(lcomment):
-#line 86 "pure-doc.ll"
+#line 87 "pure-doc.ll"
 {
   if (YY_START != INITIAL)
     print(start, buf); BEGIN(INITIAL);
@@ -892,10 +893,10 @@ case YY_STATE_EOF(lcomment):
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 101 "pure-doc.ll"
+#line 102 "pure-doc.ll"
 ECHO;
 	YY_BREAK
-#line 899 "pure-doc.cc"
+#line 900 "pure-doc.cc"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -1857,7 +1858,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 101 "pure-doc.ll"
+#line 102 "pure-doc.ll"
 
 
 
@@ -1872,9 +1873,26 @@ static unsigned tabs(unsigned& col, const char *text, unsigned len)
       col++;
 }
 
+static unsigned trim(string& text, unsigned col)
+{
+  size_t p = text.find_first_not_of(" \t");
+  if (p != string::npos) {
+    unsigned col1 = 0;
+    tabs(col1, text.c_str(), p);
+    text.erase(0, p);
+    if (col1 > col) {
+      unsigned indent = col1-col;
+      text = string(indent, ' ') + text;
+      return indent;
+    } else
+      return 0;
+  } else
+    return 0;
+}
+
 static void print(unsigned col, string& text)
 {
-  static unsigned last_indent = 0;
+  static unsigned last_offs = 0, last_indent = 0;
 
   // trim whitespace from the front
   size_t p = text.find_first_not_of(" \t");
@@ -1885,12 +1903,20 @@ static void print(unsigned col, string& text)
 
   // trim whitespace from the back
   p = text.find_last_not_of(" \t");
-  text.erase(p+1);
+  if (p != string::npos) text.erase(p+1);
 
   // Look for literate program designations (>>>, <<< just by itself).
 
   if (text == ">>>") {
     literate = true;
+    last_offs = col-2;
+    if (comment_text.substr(0, 2) == "//") {
+      // Scrape trailing whitespace from the comment, to get the proper
+      // indentation for the first literate code line.
+      p = comment_text.find_last_not_of(" \t");
+      assert(p != string::npos);
+      literate_text = comment_text.substr(p+1);
+    }
     return;
   } else if (text == "<<<") {
     literate = false;
@@ -1903,14 +1929,18 @@ static void print(unsigned col, string& text)
     t = strtok(s, "\n");
     if (t) {
       last_t = t+strlen(t);
-      cout << indent << t << endl;
+      string text = t;
+      trim(text, last_offs);
+      cout << indent << text << endl;
       t = strtok(NULL, "\n");
       while (t) {
 	size_t n = t-(last_t+1);
 	// handle empty lines (strtok merges adjacent delims into one)
 	for (size_t i = 0; i < n; i++)
 	  cout << endl;
-	cout << indent << t << endl;
+	text = t;
+	trim(text, last_offs);
+	cout << indent << text << endl;
 	last_t = t+strlen(t);
 	t = strtok(NULL, "\n");
       }
@@ -1955,14 +1985,7 @@ static void print(unsigned col, string& text)
       string text = t;
       size_t p = text.find_first_not_of(" \t");
       if (p != string::npos) {
-	unsigned col1 = 0;
-	tabs(col1, text.c_str(), p);
-	text.erase(0, p);
-	if (col1 > col) {
-	  last_indent = col1-col;
-	  text = string(last_indent, ' ') + text;
-	} else
-	  last_indent = 0;
+	last_indent = trim(text, col);
 	cout << text << endl;
       } else
 	cout << endl;

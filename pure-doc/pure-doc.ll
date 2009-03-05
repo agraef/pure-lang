@@ -1,5 +1,6 @@
 %{                                            /* -*- C++ -*- */
 #include <cstdlib>
+#include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string>
@@ -111,9 +112,26 @@ static unsigned tabs(unsigned& col, const char *text, unsigned len)
       col++;
 }
 
+static unsigned trim(string& text, unsigned col)
+{
+  size_t p = text.find_first_not_of(" \t");
+  if (p != string::npos) {
+    unsigned col1 = 0;
+    tabs(col1, text.c_str(), p);
+    text.erase(0, p);
+    if (col1 > col) {
+      unsigned indent = col1-col;
+      text = string(indent, ' ') + text;
+      return indent;
+    } else
+      return 0;
+  } else
+    return 0;
+}
+
 static void print(unsigned col, string& text)
 {
-  static unsigned last_indent = 0;
+  static unsigned last_offs = 0, last_indent = 0;
 
   // trim whitespace from the front
   size_t p = text.find_first_not_of(" \t");
@@ -124,12 +142,20 @@ static void print(unsigned col, string& text)
 
   // trim whitespace from the back
   p = text.find_last_not_of(" \t");
-  text.erase(p+1);
+  if (p != string::npos) text.erase(p+1);
 
   // Look for literate program designations (>>>, <<< just by itself).
 
   if (text == ">>>") {
     literate = true;
+    last_offs = col-2;
+    if (comment_text.substr(0, 2) == "//") {
+      // Scrape trailing whitespace from the comment, to get the proper
+      // indentation for the first literate code line.
+      p = comment_text.find_last_not_of(" \t");
+      assert(p != string::npos);
+      literate_text = comment_text.substr(p+1);
+    }
     return;
   } else if (text == "<<<") {
     literate = false;
@@ -142,14 +168,18 @@ static void print(unsigned col, string& text)
     t = strtok(s, "\n");
     if (t) {
       last_t = t+strlen(t);
-      cout << indent << t << endl;
+      string text = t;
+      trim(text, last_offs);
+      cout << indent << text << endl;
       t = strtok(NULL, "\n");
       while (t) {
 	size_t n = t-(last_t+1);
 	// handle empty lines (strtok merges adjacent delims into one)
 	for (size_t i = 0; i < n; i++)
 	  cout << endl;
-	cout << indent << t << endl;
+	text = t;
+	trim(text, last_offs);
+	cout << indent << text << endl;
 	last_t = t+strlen(t);
 	t = strtok(NULL, "\n");
       }
@@ -194,14 +224,7 @@ static void print(unsigned col, string& text)
       string text = t;
       size_t p = text.find_first_not_of(" \t");
       if (p != string::npos) {
-	unsigned col1 = 0;
-	tabs(col1, text.c_str(), p);
-	text.erase(0, p);
-	if (col1 > col) {
-	  last_indent = col1-col;
-	  text = string(last_indent, ' ') + text;
-	} else
-	  last_indent = 0;
+	last_indent = trim(text, col);
 	cout << text << endl;
       } else
 	cout << endl;
