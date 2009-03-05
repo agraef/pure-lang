@@ -439,14 +439,14 @@ sources = foo.pure bar.pure
 # The basename of the documentation files to be generated.
 target = foo
 
-$(target).txt: $(sources)
-        pure-doc $(sources) &gt; $&#64;
-
 .PHONY: html tex pdf
 
 html: $(target).html
 tex: $(target).tex
 pdf: $(target).pdf
+
+$(target).txt: $(sources)
+        pure-doc $(sources) &gt; $&#64;
 
 # This requires that you have docutils installed.
 
@@ -467,7 +467,7 @@ clean:
 </pre>
 <p>(This assumes GNU make. If you use some other make utility then you will have
 to adapt the pattern rules accordingly.)</p>
-<p>Now you can just type <tt class="docutils literal"><span class="pre">make</span></tt> or <tt class="docutils literal"><span class="pre">make</span> <span class="pre">html</span></tt> to generate the documenation
+<p>Now you can just type <tt class="docutils literal"><span class="pre">make</span></tt> or <tt class="docutils literal"><span class="pre">make</span> <span class="pre">html</span></tt> to generate the documentation
 in html format, and <tt class="docutils literal"><span class="pre">make</span> <span class="pre">tex</span></tt> or <tt class="docutils literal"><span class="pre">make</span> <span class="pre">pdf</span></tt> to generate the other
 formats. The <tt class="docutils literal"><span class="pre">clean</span></tt> target removes the generated files.</p>
 </div>
@@ -477,7 +477,8 @@ formats. The <tt class="docutils literal"><span class="pre">clean</span></tt> ta
 to make the Pure interpreter know about it, so that you can read your
 documentation with the <tt class="docutils literal"><span class="pre">help</span></tt> command of the interpreter. This isn't
 difficult either. You just install the html files on the Pure library
-path. The following Makefile rule automatizes this process:</p>
+path. The following Makefile rule automatizes this process. Add this to the
+Makefile in the previous section:</p>
 <pre class="literal-block">
 # Try to guess the installation prefix (this needs GNU make):
 prefix = $(patsubst %/bin/pure,%,$(shell which pure 2&gt;/dev/null))

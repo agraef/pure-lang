@@ -149,14 +149,14 @@ similar to the following to your Makefile::
   # The basename of the documentation files to be generated.
   target = foo
 
-  $(target).txt: $(sources)
-          pure-doc $(sources) > $@
-
   .PHONY: html tex pdf
 
   html: $(target).html
   tex: $(target).tex
   pdf: $(target).pdf
+
+  $(target).txt: $(sources)
+          pure-doc $(sources) > $@
 
   # This requires that you have docutils installed.
 
@@ -178,7 +178,7 @@ similar to the following to your Makefile::
 (This assumes GNU make. If you use some other make utility then you will have
 to adapt the pattern rules accordingly.)
 
-Now you can just type ``make`` or ``make html`` to generate the documenation
+Now you can just type ``make`` or ``make html`` to generate the documentation
 in html format, and ``make tex`` or ``make pdf`` to generate the other
 formats. The ``clean`` target removes the generated files.
 
@@ -189,7 +189,8 @@ Now that you generated the documentation for your Pure library, you might want
 to make the Pure interpreter know about it, so that you can read your
 documentation with the ``help`` command of the interpreter. This isn't
 difficult either. You just install the html files on the Pure library
-path. The following Makefile rule automatizes this process::
+path. The following Makefile rule automatizes this process. Add this to the
+Makefile in the previous section::
 
   # Try to guess the installation prefix (this needs GNU make):
   prefix = $(patsubst %/bin/pure,%,$(shell which pure 2>/dev/null))
