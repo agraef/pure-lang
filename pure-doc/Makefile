@@ -10,11 +10,13 @@ ifeq ($(strip $(prefix)),)
 prefix = /usr/local
 endif
 
-# Installation goes into $(bindir), you can also set this directly instead of
-# $(prefix).
+# Installation goes into $(bindir) and $(datadir), you can also set this
+# directly instead of $(prefix).
 bindir = $(prefix)/bin
+libdir = $(prefix)/lib
+datadir = $(libdir)/pure
 
-DISTFILES = COPYING Makefile README pure-doc.ll pure-doc.cc
+DISTFILES = COPYING Makefile README pure-doc.html pure-doc.ll pure-doc.cc
 
 all: pure-doc
 
@@ -24,11 +26,16 @@ pure-doc.cc: pure-doc.ll
 	flex -o $@ $<
 
 clean:
-	rm -f pure-doc *.html *.pdf *.tex
+	rm -f pure-doc *.pdf *.tex *.aux *.log *.out
+
+realclean: clean
+	rm -f *.html
 
 install:
 	test -d "$(DESTDIR)$(bindir)" || mkdir -p "$(DESTDIR)$(bindir)"
+	test -d "$(DESTDIR)$(datadir)" || mkdir -p "$(DESTDIR)$(datadir)"
 	cp pure-doc "$(DESTDIR)$(bindir)"
+	cp pure-doc.html "$(DESTDIR)$(datadir)"
 
 uninstall:
 	rm -f "$(DESTDIR)$(bindir)/pure-doc"
@@ -46,15 +53,27 @@ distcheck: dist
 	cd $(dist) && make && make install DESTDIR=./BUILD
 	rm -rf $(dist)
 
-html: pure-doc.html
-latex: pure-doc.tex
-pdf: pure-doc.pdf
+# Generate the documentation. This needs docutils.
+
+sources = README
+target = pure-doc
+
+$(target).txt: $(sources)
+	./pure-doc $(sources) > $@
+
+.PHONY: html tex pdf
+
+html: $(target).html
+tex: $(target).tex
+pdf: $(target).pdf
 
 pure-doc.html: README
 	rst2html.py $< $@
 
 pure-doc.tex: README
 	rst2latex.py $< $@
+
+# This also requires that you have TeX installed.
 
 pure-doc.pdf: pure-doc.tex
 	pdflatex $<
