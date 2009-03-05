@@ -5,31 +5,63 @@ pure-doc
 :Author: Albert Graef <Dr.Graef@t-online.de>
 :License: GPL V3, see the accompanying COPYING file
 
-This is a very simple program to scrape docstrings in docutils RST format from
-Pure scripts.
+.. |RST| replace:: reStructuredText
+.. _RST: http://docutils.sourceforge.net/rst.html
+.. _docutils: http://docutils.sourceforge.net
 
-To install: ``make && sudo make install``
+pure-doc is a simple utility for literate programming and documenting source
+code written in the Pure programming language. It is supposed to be used with
+the excellent docutils_ tools and the gentle markup format supported by these,
+called RST_ a.k.a. "|RST|", usually pronounced "rest".
 
-To run: ``pure-doc filename ...``
+The basic idea is that you just comment your code as usual, but using RST
+markup instead of plain text. In addition, you can also designate literate
+programming fragments in your code, which will be translated to RST literal
+blocks automatically. You then run pure-doc on your source files to extract
+all marked up comments and the literate code blocks. The resulting RST source
+can then be processed with the docutils utilities like rst2html.py and
+rst2latex.py to create the documentation in a variety of formats.
 
-You can specify any number of filenames; they will all be processed in the
-specified order. If no filename is specified, input is read from stdin. Output
-is written to stdout. There are no other options right now. A comment (either
-``/* ... */`` or a contiguous sequence of ``//`` line comments) is assumed to
-contain a RST-formatted docstring if the first non-empty line starts with
-``:``, ``..`` or ``__``. Indentation is preserved (assuming tabs = 8 spaces,
-you can change this in pure-doc.ll).
+Installation
+============
 
-pure-doc makes no other assumption about the docstring contents, so you can
-include whatever you want: titles, section headers, fields, plain text,
-whatever. Just make sure that the docstring starts with one of the special
-tokens listed above. (You can always put just ``..`` at the beginning of the
-comment to force it to be treated as a docstring, this will be treated as a
-comment by the docutils tools.) Also, pure-doc makes very few assumptions
-about the source; in fact, any source files with a C/C++-like comment and
-string syntax should work.
+Just do the customary ``make && sudo make install``. This only needs flex and
+a standards-compliant C++ compiler.
 
-Here is a sample entry::
+Usage
+=====
+
+First, see the description of the RST_ format. RST is a very simple markup
+format, almost like plain text (in fact, you're looking at RST right now, this
+README is written in it!). You can learn enough of it to start marking up your
+source in about five minutes.
+
+Second, you'll have to mark up your source comments. pure-doc recognizes
+comments in RST format by looking at the first non-empty line of the
+comment. A comment (either ``/* ... */`` or a contiguous sequence of ``//``
+line comments) is assumed to contain RST format if the first non-empty line
+starts with ``:``, ``..`` or ``__``. Other comments are taken to be plain text
+and are ignored by pure-doc.
+
+Notes:
+
+* pure-doc makes no other assumption about the contents of marked up comments,
+  so you can include whatever you want: titles, section headers, fields, plain
+  text, whatever. Just make sure that the comment starts with one of the
+  special tokens listed above. (You can always put just ``..`` at the
+  beginning of the comment to force it to be recognized, this will be treated
+  as a comment by the docutils tools.)
+
+* Also, pure-doc makes very few assumptions about the source; in fact, any
+  source files with a C/C++-like comment and string syntax should work. So you
+  could also use it to document your C/C++ programs, or even plain text files
+  like this one, as long as they adhere to these standards.
+
+* Indentation in extracted comments is preserved (assuming tabs = 8 spaces,
+  you can change this in pure-doc.ll).  This is important because indentation
+  conveys document structure in RST.
+
+For instance, here is a sample RST-formatted comment::
 
   /* :Name: ``rand`` - compute random numbers
      :Synopsis: ``rand``
@@ -43,15 +75,51 @@ Here is a sample entry::
 
      :See Also: rand(3) */
 
-See http://docutils.sourceforge.net/ for a description of the docutils tools
-and the markup that can be used.
+Finally, you run pure-doc on your source files as follows::
 
-E.g., to scrape the above comment from this file and format it as html::
+  pure-doc source-files ...
+
+The output is written to stdout, so that you can directly pipe it into one of
+the docutils programs::
+
+  pure-doc source-files ... | rst2html.py
+
+If you prefer to write the output to a file, you can do that as follows::
+
+  pure-doc source-files ... > rst-file
+
+Literate Programming
+====================
+
+pure-doc also recognizes literate code delimited by comments which, besides
+the comment delimiters and whitespace, contain nothing but the special start
+and end "tags" ``>>>`` and ``<<<``. Code between these delimiters (including
+all comments) is extracted from the source and output as a RST literal code
+block.
+
+For instance::
+
+  /* ..
+
+     pure-doc supports literate programming, too: */
+
+  // >>>
+
+  /* This is a literate comment. */
+  // .. This too!
+
+  extern int rand();
+  rand;
+
+  // <<<
+
+Try it now! You can scrape all the documentation from this file and format it
+as html, as follows::
 
   pure-doc README | rst2html.py --no-doc-title --no-doc-info > test.html
 
-Note that this README itself is also in RST format, so you can also do the
-following to get nicely formatted documentation::
+As already mentioned, this README itself is also in RST format, so you can
+also do the following to get nicely formatted documentation::
 
   rst2html.py README pure-doc.html
 
