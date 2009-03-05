@@ -57,12 +57,13 @@ space  [ \t\f\v\r\n]
   BEGIN(comment);
 }
 
-<lcomment>{space}+	comment_text += yytext; tabs(col, yytext, yyleng);
+<lcomment>{space}/"//"	comment_text += yytext; tabs(col, yytext, yyleng);
 <lcomment>"//".*	{
   buf += string("\n")+(yytext+2);
   comment_text += yytext;
   tabs(col, yytext, yyleng);
 }
+<lcomment>{space}+	|
 <lcomment>.		print(start, buf); yyless(0); BEGIN(INITIAL);
 
 <comment>[^*]+		{
@@ -149,13 +150,6 @@ static void print(unsigned col, string& text)
   if (text == ">>>") {
     literate = true;
     last_offs = col-2;
-    if (comment_text.substr(0, 2) == "//") {
-      // Scrape trailing whitespace from the comment, to get the proper
-      // indentation for the first literate code line.
-      p = comment_text.find_last_not_of(" \t");
-      assert(p != string::npos);
-      literate_text = comment_text.substr(p+1);
-    }
     return;
   } else if (text == "<<<") {
     literate = false;
