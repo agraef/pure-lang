@@ -9129,6 +9129,7 @@ pure_expr* matrix_zipwith ( pure_expr *f, pure_expr *x, pure_expr *y )
       return matrix::matrix_zipwith<gsl_matrix,gsl_matrix_complex>(f,x,y);
     case EXPR::MATRIX :
       return matrix::matrix_zipwith<gsl_matrix,gsl_matrix_symbolic>(f,x,y);
+    default : return 0;
     }
   case EXPR::IMATRIX :
     switch (y->tag) {
@@ -9140,6 +9141,7 @@ pure_expr* matrix_zipwith ( pure_expr *f, pure_expr *x, pure_expr *y )
       return matrix::matrix_zipwith<gsl_matrix_int,gsl_matrix_complex>(f,x,y);
     case EXPR::MATRIX :
       return matrix::matrix_zipwith<gsl_matrix_int,gsl_matrix_symbolic>(f,x,y);
+    default : return 0;
     }
   case EXPR::CMATRIX :
     switch (y->tag) {
@@ -9151,6 +9153,7 @@ pure_expr* matrix_zipwith ( pure_expr *f, pure_expr *x, pure_expr *y )
       return matrix::matrix_zipwith<gsl_matrix_complex,gsl_matrix_complex>(f,x,y);
     case EXPR::MATRIX :
       return matrix::matrix_zipwith<gsl_matrix_complex,gsl_matrix_symbolic>(f,x,y);
+    default : return 0;
     }
   case EXPR::MATRIX  :
     switch (y->tag) {
@@ -9162,6 +9165,7 @@ pure_expr* matrix_zipwith ( pure_expr *f, pure_expr *x, pure_expr *y )
       return matrix::matrix_zipwith<gsl_matrix_symbolic,gsl_matrix_complex>(f,x,y);
     case EXPR::MATRIX :
       return matrix::matrix_zipwith<gsl_matrix_symbolic,gsl_matrix_symbolic>(f,x,y);
+    default : return 0;
     }
   default : return 0;
   }
@@ -9184,6 +9188,7 @@ pure_expr* matrix_zipwith3 ( pure_expr *f, pure_expr *x, pure_expr *y,
 	return matrix::matrix_zipwith3<gsl_matrix,gsl_matrix,gsl_matrix_complex>(f,x,y,z);
       case EXPR::MATRIX :
 	return matrix::matrix_zipwith3<gsl_matrix,gsl_matrix,gsl_matrix_symbolic>(f,x,y,z);
+      default : return 0;
       }
     case EXPR::IMATRIX : 
       switch (z->tag) {
@@ -9195,6 +9200,7 @@ pure_expr* matrix_zipwith3 ( pure_expr *f, pure_expr *x, pure_expr *y,
 	return matrix::matrix_zipwith3<gsl_matrix,gsl_matrix_int,gsl_matrix_complex>(f,x,y,z);
       case EXPR::MATRIX :
 	return matrix::matrix_zipwith3<gsl_matrix,gsl_matrix_int,gsl_matrix_symbolic>(f,x,y,z);
+      default : return 0;
       }
     case EXPR::CMATRIX :
       switch (z->tag) {
@@ -9206,6 +9212,7 @@ pure_expr* matrix_zipwith3 ( pure_expr *f, pure_expr *x, pure_expr *y,
 	return matrix::matrix_zipwith3<gsl_matrix,gsl_matrix_complex,gsl_matrix_complex>(f,x,y,z);
       case EXPR::MATRIX :
 	return matrix::matrix_zipwith3<gsl_matrix,gsl_matrix_complex,gsl_matrix_symbolic>(f,x,y,z);
+      default : return 0;
       }
     case EXPR::MATRIX :
       switch (z->tag) {
@@ -9217,7 +9224,9 @@ pure_expr* matrix_zipwith3 ( pure_expr *f, pure_expr *x, pure_expr *y,
 	return matrix::matrix_zipwith3<gsl_matrix,gsl_matrix_symbolic,gsl_matrix_complex>(f,x,y,z);
       case EXPR::MATRIX :
 	return matrix::matrix_zipwith3<gsl_matrix,gsl_matrix_symbolic,gsl_matrix_symbolic>(f,x,y,z);
+      default : return 0;
       }
+    default : return 0;
     }
   case EXPR::IMATRIX :
     switch (y->tag) {
@@ -9231,6 +9240,7 @@ pure_expr* matrix_zipwith3 ( pure_expr *f, pure_expr *x, pure_expr *y,
 	return matrix::matrix_zipwith3<gsl_matrix_int,gsl_matrix,gsl_matrix_complex>(f,x,y,z);
       case EXPR::MATRIX :
 	return matrix::matrix_zipwith3<gsl_matrix_int,gsl_matrix,gsl_matrix_symbolic>(f,x,y,z);
+      default : return 0;
       }
     case EXPR::IMATRIX : 
       switch (z->tag) {
@@ -9242,6 +9252,7 @@ pure_expr* matrix_zipwith3 ( pure_expr *f, pure_expr *x, pure_expr *y,
 	return matrix::matrix_zipwith3<gsl_matrix_int,gsl_matrix_int,gsl_matrix_complex>(f,x,y,z);
       case EXPR::MATRIX :
 	return matrix::matrix_zipwith3<gsl_matrix_int,gsl_matrix_int,gsl_matrix_symbolic>(f,x,y,z);
+      default : return 0;
       }
     case EXPR::CMATRIX :
       switch (z->tag) {
@@ -9253,6 +9264,7 @@ pure_expr* matrix_zipwith3 ( pure_expr *f, pure_expr *x, pure_expr *y,
 	return matrix::matrix_zipwith3<gsl_matrix_int,gsl_matrix_complex,gsl_matrix_complex>(f,x,y,z);
       case EXPR::MATRIX :
 	return matrix::matrix_zipwith3<gsl_matrix_int,gsl_matrix_complex,gsl_matrix_symbolic>(f,x,y,z);
+      default : return 0;
       }
     case EXPR::MATRIX :
       switch (z->tag) {
@@ -9264,7 +9276,9 @@ pure_expr* matrix_zipwith3 ( pure_expr *f, pure_expr *x, pure_expr *y,
 	return matrix::matrix_zipwith3<gsl_matrix_int,gsl_matrix_symbolic,gsl_matrix_complex>(f,x,y,z);
       case EXPR::MATRIX :
 	return matrix::matrix_zipwith3<gsl_matrix_int,gsl_matrix_symbolic,gsl_matrix_symbolic>(f,x,y,z);
+      default : return 0;
       }
+    default : return 0;
     }
   case EXPR::CMATRIX :
     switch (y->tag) {
@@ -9278,6 +9292,7 @@ pure_expr* matrix_zipwith3 ( pure_expr *f, pure_expr *x, pure_expr *y,
 	return matrix::matrix_zipwith3<gsl_matrix_complex,gsl_matrix,gsl_matrix_complex>(f,x,y,z);
       case EXPR::MATRIX :
 	return matrix::matrix_zipwith3<gsl_matrix_complex,gsl_matrix,gsl_matrix_symbolic>(f,x,y,z);
+      default : return 0;
       }
     case EXPR::IMATRIX : 
       switch (z->tag) {
@@ -9289,6 +9304,7 @@ pure_expr* matrix_zipwith3 ( pure_expr *f, pure_expr *x, pure_expr *y,
 	return matrix::matrix_zipwith3<gsl_matrix_complex,gsl_matrix_int,gsl_matrix_complex>(f,x,y,z);
       case EXPR::MATRIX :
 	return matrix::matrix_zipwith3<gsl_matrix_complex,gsl_matrix_int,gsl_matrix_symbolic>(f,x,y,z);
+      default : return 0;
       }
     case EXPR::CMATRIX :
       switch (z->tag) {
@@ -9300,6 +9316,7 @@ pure_expr* matrix_zipwith3 ( pure_expr *f, pure_expr *x, pure_expr *y,
 	return matrix::matrix_zipwith3<gsl_matrix_complex,gsl_matrix_complex,gsl_matrix_complex>(f,x,y,z);
       case EXPR::MATRIX :
 	return matrix::matrix_zipwith3<gsl_matrix_complex,gsl_matrix_complex,gsl_matrix_symbolic>(f,x,y,z);
+      default : return 0;
       }
     case EXPR::MATRIX :
       switch (z->tag) {
@@ -9311,7 +9328,9 @@ pure_expr* matrix_zipwith3 ( pure_expr *f, pure_expr *x, pure_expr *y,
 	return matrix::matrix_zipwith3<gsl_matrix_complex,gsl_matrix_symbolic,gsl_matrix_complex>(f,x,y,z);
       case EXPR::MATRIX :
 	return matrix::matrix_zipwith3<gsl_matrix_complex,gsl_matrix_symbolic,gsl_matrix_symbolic>(f,x,y,z);
+      default : return 0;
       }
+    default : return 0;
     }
   case EXPR::MATRIX  :
     switch (y->tag) {
@@ -9325,6 +9344,7 @@ pure_expr* matrix_zipwith3 ( pure_expr *f, pure_expr *x, pure_expr *y,
 	return matrix::matrix_zipwith3<gsl_matrix_symbolic,gsl_matrix,gsl_matrix_complex>(f,x,y,z);
       case EXPR::MATRIX :
 	return matrix::matrix_zipwith3<gsl_matrix_symbolic,gsl_matrix,gsl_matrix_symbolic>(f,x,y,z);
+      default : return 0;
       }
     case EXPR::IMATRIX : 
       switch (z->tag) {
@@ -9336,6 +9356,7 @@ pure_expr* matrix_zipwith3 ( pure_expr *f, pure_expr *x, pure_expr *y,
 	return matrix::matrix_zipwith3<gsl_matrix_symbolic,gsl_matrix_int,gsl_matrix_complex>(f,x,y,z);
       case EXPR::MATRIX :
 	return matrix::matrix_zipwith3<gsl_matrix_symbolic,gsl_matrix_int,gsl_matrix_symbolic>(f,x,y,z);
+      default : return 0;
       }
     case EXPR::CMATRIX :
       switch (z->tag) {
@@ -9347,6 +9368,7 @@ pure_expr* matrix_zipwith3 ( pure_expr *f, pure_expr *x, pure_expr *y,
 	return matrix::matrix_zipwith3<gsl_matrix_symbolic,gsl_matrix_complex,gsl_matrix_complex>(f,x,y,z);
       case EXPR::MATRIX :
 	return matrix::matrix_zipwith3<gsl_matrix_symbolic,gsl_matrix_complex,gsl_matrix_symbolic>(f,x,y,z);
+      default : return 0;
       }
     case EXPR::MATRIX :
       switch (z->tag) {
@@ -9358,7 +9380,9 @@ pure_expr* matrix_zipwith3 ( pure_expr *f, pure_expr *x, pure_expr *y,
 	return matrix::matrix_zipwith3<gsl_matrix_symbolic,gsl_matrix_symbolic,gsl_matrix_complex>(f,x,y,z);
       case EXPR::MATRIX :
 	return matrix::matrix_zipwith3<gsl_matrix_symbolic,gsl_matrix_symbolic,gsl_matrix_symbolic>(f,x,y,z);
+      default : return 0;
       }
+    default : return 0;
     }
   default : return 0;
   }
