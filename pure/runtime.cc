@@ -7916,7 +7916,11 @@ pure_expr* matrix_zipwith( pure_expr *f, pure_expr *x, pure_expr *y )
   if (size1 == 0 || size2 == 0) {
     // empty output matrix
     gsl_matrix_symbolic *sm = create_symbolic_matrix(size1,size2);
-    return pure_symbolic_matrix(sm);
+    pure_expr *out = pure_symbolic_matrix(sm);
+    pure_unref(f);
+    pure_unref(x);
+    pure_unref(y);
+    return out;
   }
 
   //need casts for complex case, when data pointer is double*, but
@@ -8174,7 +8178,12 @@ pure_expr* matrix_zipwith3( pure_expr *f, pure_expr *x, pure_expr *y,
   if (size1 == 0 || size2 == 0) {
     // empty output matrix
     gsl_matrix_symbolic *sm = create_symbolic_matrix(size1,size2);
-    return pure_symbolic_matrix(sm);
+    pure_expr *out = pure_symbolic_matrix(sm);
+    pure_unref(f);
+    pure_unref(x);
+    pure_unref(y);
+    pure_unref(z);
+    return out;
   }
 
   //need casts for complex case, when data pointer is double*, but
