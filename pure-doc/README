@@ -105,8 +105,8 @@ For instance::
 
   // >>>
 
-  /* This is a literate comment. */
-  // .. This too!
+  // This is a literate comment.
+  /* .. This too! */
 
   extern int rand();
   rand;
@@ -125,4 +125,80 @@ also do the following to get nicely formatted documentation::
 
 (You can also just type ``make html`` to get this.)
 
-Enjoy! :)
+Generating Documentation
+========================
+
+If you're generating some library documentation for which you have to process
+a bigger collection of source files, then it is often convenient to have a few
+Makefile rules to automatize the process. To these ends, simply add rules
+similar to the following to your Makefile::
+
+  # The sources. Order matters here. The generated documentation will have the
+  # comments from each source file in the indicated order.
+  sources = foo.pure bar.pure
+
+  # The basename of the documentation files to be generated.
+  target = foo
+
+  $(target).txt: $(sources)
+          pure-doc $(sources) > $@
+
+  .PHONY: html tex pdf
+
+  html: $(target).html
+  tex: $(target).tex
+  pdf: $(target).pdf
+
+  # This requires that you have docutils installed.
+
+  %.html: %.txt
+          rst2html.py $< $@
+
+  %.tex: %.txt
+          rst2latex.py $< $@
+
+  # This also requires that you have TeX installed.
+
+  %.pdf: %.tex
+          pdflatex $<
+          rm -f *.aux *.log *.out
+
+  clean:
+          rm -f *.html *.tex *.pdf
+
+(This assumes GNU make. If you use some other make utility then you will have
+to adapt the pattern rules accordingly.)
+
+Now you can just type ``make`` or ``make html`` to generate the documenation
+in html format, and ``make tex`` or ``make pdf`` to generate the other
+formats. The ``clean`` target removes the generated files.
+
+Installing Documentation
+========================
+
+Now that you generated the documentation for your Pure library, you might want
+to make the Pure interpreter know about it, so that you can read your
+documentation with the ``help`` command of the interpreter. This isn't
+difficult either. You just install the html files on the Pure library
+path. The following Makefile rule automatizes this process::
+
+  # Try to guess the installation prefix (this needs GNU make):
+  prefix = $(patsubst %/bin/pure,%,$(shell which pure 2>/dev/null))
+  ifeq ($(strip $(prefix)),)
+  # Fall back to /usr/local.
+  prefix = /usr/local
+  endif
+
+  libdir = $(prefix)/lib
+  datadir = $(libdir)/pure
+
+  install:
+          test -d "$(DESTDIR)$(datadir)" || mkdir -p "$(DESTDIR)$(datadir)"
+          cp $(target).html "$(DESTDIR)$(datadir)"
+
+After a ``make install`` your documentation should now end up in the Pure
+library directory, and you can read it in the Pure interpreter using a
+command like the following::
+
+  > help foo#
+
