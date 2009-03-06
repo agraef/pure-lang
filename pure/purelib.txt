@@ -43,6 +43,599 @@ Pure language and the operation of the Pure interpreter.
 Prelude
 =======
 
+The prelude defines the basic operations of the Pure language. This
+includes the basic arithmetic and logical operations, string, list and
+matrix functions, as well as the support operations required to implement
+list and matrix comprehensions.
+
+It also declares a signature of commonly used constant and operator
+symbols. This comprises:
+
+.. _failed_cond:
+.. _failed_match:
+.. _stack_fault:
+.. _bad_matrix_value:
+
+* The built-in exception values ``failed_cond`` (failed conditional in
+  guard or if-then-else), ``failed_match`` (failed pattern match in lambda,
+  case, etc.), ``stack_fault`` (not enough stack space, ``PURE_STACK``
+  limit exceeded) and ``bad_matrix_value x`` (error in matrix
+  construction).
+
+.. _bad_list_value:
+.. _bad_tuple_value:
+.. _out_of_bounds:
+.. _malloc_error:
+
+* Other predefined exceptions: ``bad_list_value x``, ``bad_tuple_value x``
+  (which are thrown by some list and tuple operations when they fail to
+  find an expected list or tuple value), ``out_of_bounds`` (which is thrown
+  by the index operator ``!`` if a list, tuple or matrix index is out of
+  bounds), and ``malloc_error`` which indicates a memory allocation error.
+
+.. _true:
+.. _false:
+
+* The truth values ``true`` and ``false``. These are actually just integers
+  in Pure, but sometimes it's convenient to refer to them using these
+  symbolic constants. Note that if you also want to use these on the
+  left-hand side of equations, you still have to declare them as
+  ``nullary`` symbols yourself, using a declaration like: ``nullary false
+  true;``
+
+.. _operators:
+
+Here's the list of predefined operator symbols. Note that the parser will
+automagically give unary minus the same precedence level as the
+corresponding binary operator. Also note that the "mapsto" operator
+a.k.a. "hash rocket" ``=>`` doesn't have a predefined meaning in Pure; the
+prelude only implements the relations ``==`` and ``~=`` to check such "hash
+pairs" ``x=>y`` for equality and inequality. The hash rocket is used in
+several libraries, however, which usually employ it to denote some kind of
+key-value associations. See, e.g., Dictionaries_ for an example.
+
+::
+
+  infixl  0   $$ ;                // sequence operator
+  infixr  0   $ ;                 // right-associative application
+  infixr  1   , ;                 // pair (tuple)
+  infix   2   .. ;                // arithmetic sequences
+  infix   2   => ;                // mapsto constructor
+  infixr  2   || ;                // logical or (short-circuit)
+  infixr  3   && ;                // logical and (short-circuit)
+  prefix  3   ~ ;                 // logical negation
+  infix   4   < > <= >= == ~= ;   // relations
+  infix   4   === ~== ;           // syntactic equality
+  infixr  4   : ;                 // list cons
+  infix   5   +: <: ;             // complex numbers (cf. math.pure)
+  infixl  5   << >> ;             // bit shifts
+  infixl  6   + - or ;            // addition, bitwise or
+  infixl  7   * / div mod and ;   // multiplication, bitwise and
+  infixl  7   % ;                 // exact division (cf. math.pure)
+  prefix  7   not ;               // bitwise not
+  postfix 7   ' ;                 // matrix transposition
+  infixr  8   ^ ;                 // exponentiation
+  prefix  8   # ;                 // size operator
+  infixl  9   ! !! ;              // indexing, slicing
+  infixr  9   . ;                 // function composition
+  postfix 9   & ;                 // thunk
+
+..
+
+Basic Combinators
+-----------------
+
+.. _combinators:
+
+The most important function combinators are ``$`` (right-associative
+application) and ``.`` (function composition), which are also defined as
+macros so that saturated calls of these are eliminated automatically.
+Examples::
+
+  > foo $ bar 99;
+  foo (bar 99)
+  > (foo.bar) 99;
+  foo (bar 99)
+
+.. _id:
+.. _cst:
+
+The customary identity and constant combinators from the combinatorial
+calculus are also available, in Pure these are named ``id`` and ``cst``,
+respectively::
+
+  > map id (1..5);
+  [1,2,3,4,5]
+  > map (cst 0) (1..5);
+  [0,0,0,0,0]
+
+.. _void:
+
+There's also a combinator ``void`` which is basically equivalent to ``cst
+()``, but with the special twist that it is also defined as a macro
+optimizing the case of "throwaway" list and matrix comprehensions. This is
+useful if a comprehension is evaluated solely for its side effects. E.g.::
+
+  > using system;
+  > extern int rand();
+  > foo = void [printf "%d\n" rand | _ = 1..3];
+  > show foo
+  foo = do (\_ -> printf "%d\n" rand) (1..3);
+  > foo;
+  1714636915
+  1957747793
+  424238335
+  ()
+
+Note that the above list comprehension is actually implemented using do_
+(instead of map_, which would normally be the case), so that the
+intermediate list value of the comprehension is never constructed. This is
+described in more detail in section `Optimization Rules`_ of the Pure
+Manual.
+
+.. _Optimization Rules: file:pure.html#optimization-rules
+
+..
+
+In addition, Pure also provides the following combinators adopted from
+Haskell:
+
+.. _flip:
+
+* ``flip`` swaps arguments of a binary function, e.g.::
+
+    > map (flip (/) 2) (1..3);
+    [0.5,1.0,1.5]
+
+  This idiom is used much more frequently in Pure than in Haskell because
+  Pure doesn't have Haskell's operator sections. Note, however, that the
+  same effect can also be achieved with a lambda::
+
+    > map (\x -> x/2) (1..3);
+    [0.5,1.0,1.5]
+
+.. _curry:
+
+* ``curry`` turns a function expecting a pair of values into a curried
+  function of two arguments::
+
+    > using system;
+    > dowith (curry (printf "%d: %g\n")) (0..2) [0.0,2.718,3.14];
+    0: 0
+    1: 2.718
+    2: 3.14
+    ()
+
+.. _uncurry:
+
+* Conversely, ``uncurry`` turns a curried function expecting two arguments
+  into a function processing a single pair argument::
+
+    > map (uncurry (*)) [(2,3),(4,5),(6,7)];
+    [6,20,42]
+
+.. _curry3:
+.. _uncurry3:
+
+* ``curry3`` and ``uncurry3`` work analogously, but are used to work with
+  ternary functions.
+
+..
+
+Finally, the (normal order) fixed point combinator ``fix`` allows you to
+create recursive anonymous functions. It takes a "one step" function ``f``
+as its argument and returns another function which in turn applies ``f`` to
+itself and an argument value, see `Fixed point combinator`_ for a more
+lucid explanation. For instance::
+
+  > let fact = fix (\f n -> if n<=0 then 1 else n*f (n-1));
+  > map fact (1..5);
+  [1,2,6,24,120]
+
+.. _Fixed point combinator:
+   http://en.wikipedia.org/wiki/Fixed_point_combinator
+
+..
+
+Lists and Tuples
+----------------
+
+.. _lists:
+.. _tuples:
+
+The prelude defines the list and tuple constructors (``x:y``, ``x,y``), as
+well as equality (``==``) and inequality (``~=``) on these structures. It
+also provides the predicate ``null x`` which tests whether ``x`` is the
+empty list or tuple, the function ``reverse x`` which reverses a list or
+tuple, and the operators ``#x`` (size of a list or tuple), ``x!i``
+(indexing), ``x!!is`` (slicing) and ``x+y`` (list concatenation).
+
+Note that list and tuple equality use the equality of their members to
+decide equality of lists and tuples, so ``==`` must be defined on the list
+or tuple members.
+
+Also note that there isn't a separate operation for concatenating tuples,
+since the pairing operator already does this::
+
+  > (1,2,3),(10,9,8);
+  1,2,3,10,9,8
+
+This works because the ``(,)`` constructor is associative in Pure and will
+always produce right-recursive pairs. This also implies that tuples are
+always flat in Pure and can't be nested; if you need this, you should use
+lists instead. Also note that the empty tuple ``()`` acts as a neutral
+element with respect to ``(,)``::
+
+  > (),(a,b,c);
+  a,b,c
+  > (a,b,c),();
+  a,b,c
+
+Lists are the usual right-recursive aggregates, pretty much the same as in
+Lisp or Prolog except that they use a Haskell-like syntax. In difference to
+Haskell, list concatenation is denoted ``+``, and lists may contain an
+arbitrary mixture of arguments, i.e., they are fully polymorphic::
+
+  > 1:2:3:[];
+  [1,2,3]
+  > [1,2,3]+[u,v,w]+[3.14];
+  [1,2,3,u,v,w,3.14]
+
+Lists are `eager` in Pure by default, but they can also be made `lazy`, see
+section `Lazy Evaluation and Streams`_ in the Pure Manual.
+
+.. _Lazy Evaluation and Streams: file:pure.html#lazy-evaluation-and-streams
+
+.. _arithmetic sequences:
+
+Arithmetic sequences can be constructed with the infix ``..`` operator::
+
+  > 1..5;
+  [1,2,3,4,5]
+  > 1:3..11;
+  [1,3,5,7,9,11]
+
+Note that the Pure syntax differs slightly from Haskell in that a step
+width is indicated by specifying the first two elements as ``x:y`` instead
+of ``x,y``. Also, to specify infinite sequences you have to use an infinite
+upper bound (``inf`` or ``-inf``)::
+
+  > 1:3..inf;
+  1:#<thunk 0x7f696cd2dbd8>
+  > -1:-3..-inf;
+  -1:#<thunk 0x7f696cd2fde8>
+
+.. _list:
+.. _tuple:
+
+You can convert between (finite) lists and tuples using the ``list`` and
+``tuple`` operations::
+
+  > tuple (1..5);
+  1,2,3,4,5
+  > list (a,b,c);
+  [a,b,c]
+
+The ``list`` function can also be used to turn a finite lazy list into an
+eager one::
+
+  > list $ take 10 (-1:-3..-inf);
+  [-1,-3,-5,-7,-9,-11,-13,-15,-17,-19]
+
+You can also achieve the same effect by slicing a finite part from a
+stream (see below)::
+
+  > (-1:-3..-inf)!!(0..9);
+  [-1,-3,-5,-7,-9,-11,-13,-15,-17,-19]
+
+.. _indexing:
+
+Indexing of lists and tuples is always zero-based (i.e., indices run from
+``0`` to ``#x-1``), and an exception will be raised if the index is out of
+bounds::
+
+  > [1,2,3]!2;
+  3
+  > [1,2,3]!4;
+  <stdin>, line 34: unhandled exception 'out_of_bounds' while evaluating
+  '[1,2,3]!4'
+
+.. _slicing:
+
+The slicing operator ``!!`` takes a list or tuple and a list of indices and
+returns the list or tuple of the corresponding elements, respectively.
+Indices which are out of the valid range are silently ignored::
+
+  > (1..5)!!(3..10);
+  [4,5]
+  > (1,2,3,4,5)!!(3..10);
+  4,5
+
+Indices can actually be specified in any order, so that you can retrieve
+any permutation of the members, also with duplicates. E.g.::
+
+  > (1..5)!![2,4,4,1];
+  [3,5,5,2]
+
+This is less efficient than the case of contiguous index ranges (which is
+optimized so that it always works in linear time), because it requires
+repeated traversals of the list for each index. For larger lists you should
+hence use vectors or matrices instead, to avoid the quadratic complexity.
+
+..
+
+List Functions
+--------------
+
+This mostly comes straight from the Q prelude which in turn was based on
+the first edition of the Bird/Wadler book, and is very similar to what you
+can find in the Haskell prelude. Some functions have slightly different
+names, though, and of course everything is typed dynamically.
+
+Common List Functions
+~~~~~~~~~~~~~~~~~~~~~
+
+.. _any:
+
+``any p xs``
+  tests whether the predicate ``p`` holds for any of the members of ``xs``
+
+.. _all:
+
+``all p xs``
+  tests whether the predicate ``p`` holds for all of the members of ``xs``
+
+.. _cat:
+
+``cat xs``
+  concatenate a list of lists
+
+.. _catmap:
+
+``catmap f xs``
+  convenience function which combines cat_ and map_
+
+.. _do:
+
+``do f xs``
+  apply ``f`` to all members of ``xs``, like map_, but throw away all
+  intermediate results and return ``()``
+
+.. _drop:
+
+``drop n xs``
+  remove ``n`` elements from the front of ``xs``
+
+.. _dropwhile:
+
+``dropwhile p xs``
+  remove elements from the front of ``xs`` while the predicate ``p`` is
+  satisfied
+
+.. _filter:
+
+``filter p xs``
+  return the list of all members of ``xs`` satisfying the predicate ``p``
+
+.. _foldl:
+
+``foldl f a xs``
+  accumulate the binary function ``f`` over all members of ``xs``,
+  starting from the initial value ``a`` and working from the front of the
+  list towards its end
+
+.. _foldl1:
+
+``foldl1 f xs``
+  accumulate the binary function ``f`` over all members of ``xs``,
+  starting from the value ``head xs`` and working from the front of the
+  list towards its end; ``xs`` must be nonempty
+
+.. _foldr:
+
+``foldr f a xs``
+  accumulate the binary function ``f`` over all members of ``xs``,
+  starting from the initial value ``a`` and working from the end of the
+  list towards its front
+
+.. _foldr1:
+
+``foldr1 f xs``
+  accumulate the binary function ``f`` over all members of ``xs``,
+  starting from the value ``last xs`` and working from the end of the
+  list towards its front; ``xs`` must be nonempty
+
+.. _head:
+
+``head xs``
+  return the first element of ``xs``; ``xs`` must be nonempty
+
+.. _index:
+
+``index xs x``
+  search for an occurrence of ``x`` in ``xs`` and return the index of the
+  first occurrence, if any, ``-1`` otherwise
+
+  Note: This uses equality (``==``) to decide whether a member of ``xs`` is
+  an occurrence of ``x``, so ``==`` must have an appropriate definition on
+  the list members.
+
+.. _init:
+
+``init xs``
+  return all but the last element of ``xs``; ``xs`` must be nonempty
+
+.. _last:
+
+``last xs``
+  return the last element of ``xs``; ``xs`` must be nonempty
+
+.. _map:
+
+``map f xs``
+  apply ``f`` to each member of ``xs``
+
+.. _scanl:
+
+``scanl f a xs``
+  accumulate the binary function ``f`` over all members of ``xs``,
+  as with ``foldl``, but return all intermediate results as a list
+
+.. _scanl1:
+
+``scanl1 f xs``
+  accumulate the binary function ``f`` over all members of ``xs``,
+  as with ``foldl1``, but return all intermediate results as a list
+
+.. _scanr:
+
+``scanr f a xs``
+  accumulate the binary function ``f`` over all members of ``xs``,
+  as with ``foldr``, but return all intermediate results as a list
+
+.. _scanr1:
+
+``scanr1 f xs``
+  accumulate the binary function ``f`` over all members of ``xs``,
+  as with ``foldr1``, but return all intermediate results as a list
+
+.. _tail:
+
+``tail xs``
+  return all but the first element of ``xs``; ``xs`` must be nonempty
+
+.. _take:
+
+``take n xs``
+  take ``n`` elements from the front of ``xs``
+
+.. _takewhile:
+
+``takewhile p xs``
+  take elements from the front of ``xs`` while the predicate ``p`` is
+  satisfied
+
+..
+
+List Generators
+~~~~~~~~~~~~~~~
+
+.. _cycle:
+
+``cycle xs``
+  cycles through the elements of the nonempty list ``xs``, ad infinitum
+
+.. _cyclen:
+
+``cyclen n xs``
+  eager version of ``cycle``, returns the first ``n`` elements of
+  ``cycle xs``
+
+.. _iterate:
+
+``iterate f x``
+  returns the stream containing ``x``, ``f x``, ``f (f x)``, etc.,
+  ad infinitum
+
+.. _repeat:
+
+``repeat x``
+  returns an infinite stream of ``x``\ s
+
+.. _repeatn:
+
+``repeatn n x``
+  eager version of ``repeat``, returns a list with ``n`` ``x``\ s
+
+.. _while:
+
+``while p f x``
+  eager version of ``iterate``, returns the list of all elements from
+  the front of ``iterate f xs`` for which the predicate ``p`` holds
+
+..
+
+Zip and Friends
+~~~~~~~~~~~~~~~
+
+.. _unzip:
+
+``unzip xys``
+  takes a list of pairs to a pair of lists of corresponding elements
+
+.. _unzip3:
+
+``unzip3 xyzs``
+  ``unzip`` with triples
+
+.. _zip:
+
+``zip xs ys``
+  return the list of corresponding pairs ``(x,y)`` where ``x`` runs
+  through the elements of ``xs`` and ``y`` runs through the elements
+  of ``y``
+
+.. _zip3:
+
+``zip3 xs ys zs``
+  ``zip`` with three lists, returns a list of triples
+
+.. _zipwith:
+
+``zipwith f xs ys``
+  apply the binary function ``f`` to corresponding elements of ``xs``
+  and ``ys``
+
+.. _zipwith3:
+
+``zipwith3 f xs ys zs``
+  apply the ternary function ``f`` to corresponding elements of ``xs``,
+  ``ys`` and ``zs``
+
+Pure also has the following variations of ``zipwith``/``zipwith3`` which
+throw away all intermediate results and return ``()``. That is, these work
+like do_ but pull arguments from two or three lists, respectively:
+
+.. _dowith:
+
+``dowith f xs ys``
+  apply the binary function ``f`` to corresponding elements of ``xs``
+  and ``ys``, return ``()``
+
+.. _dowith3:
+
+``dowith3 f xs ys zs``
+  apply the ternary function ``f`` to corresponding elements of ``xs``,
+  ``ys`` and ``zs``, return ``()``
+
+..
+
+String Functions
+----------------
+
+TODO
+
+..
+
+Matrix Functions
+----------------
+
+TODO
+
+..
+
+Primitives
+----------
+
+This prelude module is a collection of various lowlevel operations, which
+are implemented either directly by machine instructions or by C functions
+provided in the runtime. In particular, this module defines the basic
+arithmetic operations on machine integers, bigints and floating point
+numbers, as well as various type checking predicates and conversions
+between different types. Some low-level pointer operations are also
+provided, as well as "sentries" (Pure's flavour of object finalizers) and
+"references" (mutable expression pointers).
+
 TODO
 
 ..
