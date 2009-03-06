@@ -526,11 +526,9 @@ ternary functions.</li>
 </ul>
 <!--  -->
 <ul>
-<li><p class="first">Finally, the (normal order) fixed point combinator <tt class="docutils literal"><span class="pre">fix</span></tt> allows you to
-create recursive anonymous functions. It takes a &quot;one step&quot; function
-<tt class="docutils literal"><span class="pre">f</span></tt> as its argument and returns another function which in turn applies
-<tt class="docutils literal"><span class="pre">f</span></tt> to itself and an argument value, see <a class="reference" href="http://en.wikipedia.org/wiki/Fixed_point_combinator">Fixed point combinator</a> for
-a more lucid explanation. For instance:</p>
+<li><p class="first">The (normal order) fixed point combinator <tt class="docutils literal"><span class="pre">fix</span></tt> allows you to create
+recursive anonymous functions. It takes another function <tt class="docutils literal"><span class="pre">f</span></tt> as its
+argument and applies <tt class="docutils literal"><span class="pre">f</span></tt> to <tt class="docutils literal"><span class="pre">fix</span> <span class="pre">f</span></tt> itself:</p>
 <pre class="literal-block">
 &gt; let fact = fix (\f n -&gt; if n&lt;=0 then 1 else n*f (n-1));
 &gt; map fact (1..5);
@@ -538,6 +536,23 @@ a more lucid explanation. For instance:</p>
 </pre>
 </li>
 </ul>
+<blockquote>
+<p>See <a class="reference" href="http://en.wikipedia.org/wiki/Fixed_point_combinator">Fixed point combinator</a> for an explanation of how this magic
+works. Just like in Haskell, <tt class="docutils literal"><span class="pre">fix</span></tt> can be used to produce least fixed
+points of arbitrary functions. For instance:</p>
+<pre class="literal-block">
+&gt; fix (cst bar);
+bar
+&gt; let xs = fix (\x -&gt; 1:x&amp;);
+&gt; xs;
+1:#&lt;thunk 0x7fe537fe2f90&gt;
+&gt; xs!!(0..10);
+[1,1,1,1,1,1,1,1,1,1,1]
+</pre>
+<p>Note that in the latter example the <tt class="docutils literal"><span class="pre">&amp;</span></tt> is required to enforce lazy
+evaluation. Unlike in Haskell, just <tt class="docutils literal"><span class="pre">fix</span> <span class="pre">((:)</span> <span class="pre">1)</span></tt> will fail to
+terminate because lists are by default eager in Pure.</p>
+</blockquote>
 <!--  -->
 </div>
 <div class="section">

@@ -275,11 +275,9 @@ uncurry3 f (x,y,z)
 
 /* ..
 
-   * Finally, the (normal order) fixed point combinator ``fix`` allows you to
-     create recursive anonymous functions. It takes a "one step" function
-     ``f`` as its argument and returns another function which in turn applies
-     ``f`` to itself and an argument value, see `Fixed point combinator`_ for
-     a more lucid explanation. For instance::
+   * The (normal order) fixed point combinator ``fix`` allows you to create
+     recursive anonymous functions. It takes another function ``f`` as its
+     argument and applies ``f`` to ``fix f`` itself::
 
        > let fact = fix (\f n -> if n<=0 then 1 else n*f (n-1));
        > map fact (1..5);
@@ -287,6 +285,22 @@ uncurry3 f (x,y,z)
 
    .. _Fixed point combinator:
       http://en.wikipedia.org/wiki/Fixed_point_combinator
+
+     See `Fixed point combinator`_ for an explanation of how this magic
+     works. Just like in Haskell, ``fix`` can be used to produce least fixed
+     points of arbitrary functions. For instance::
+
+       > fix (cst bar);
+       bar
+       > let xs = fix (\x -> 1:x&);
+       > xs;
+       1:#<thunk 0x7fe537fe2f90>
+       > xs!!(0..10);
+       [1,1,1,1,1,1,1,1,1,1,1]
+
+     Note that in the latter example the ``&`` is required to enforce lazy
+     evaluation. Unlike in Haskell, just ``fix ((:) 1)`` will fail to
+     terminate because lists are by default eager in Pure.
 
 */
 
