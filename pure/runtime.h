@@ -883,6 +883,11 @@ bool lambdap(const pure_expr *x);
 bool thunkp(const pure_expr *x);
 bool varp(const pure_expr *x);
 
+/* Get the arity of a closure (named, anonymous or thunk), i.e., the number of
+   arguments it expects. */
+
+pure_expr *arity(const pure_expr *x);
+
 /* Direct memory accesses. Use these with care. In particular, note that the
    pointer_put_expr() routine doesn't do any reference counting by itself, so
    you'll have to use the memory management routines above to do that. */

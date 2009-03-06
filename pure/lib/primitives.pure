@@ -90,11 +90,20 @@ inexactp x      = numberp x &&
 		     _ = doublep x;
 		   end);
 
-/* Predicates to check for function objects, global (unbound) variables,
-   function applications, proper lists, list nodes and tuples. */
+/* Predicates to check for function objects (named, anonymous or thunk) and
+   global (unbound) variables. */
 
 extern bool funp(expr*), bool lambdap(expr*), bool thunkp(expr*);
 extern bool varp(expr*);
+
+/* Get the arity of a closure (named, anonymous or thunk) or a function
+   application, i.e., the number of arguments it expects. */
+
+extern expr *arity(expr *x);
+arity (x@_ y)	= n-1 if intp n when n = arity x end;
+
+/* Predicates to check for function applications, proper lists, list nodes and
+   proper tuples. */
 
 applp (_ _)	= 1;
 applp _		= 0 otherwise;

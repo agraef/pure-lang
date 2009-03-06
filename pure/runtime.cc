@@ -6712,6 +6712,15 @@ bool varp(const pure_expr *x)
 }
 
 extern "C"
+pure_expr *arity(const pure_expr *x)
+{
+  if (x->tag >= 0 && x->data.clos)
+    return pure_int(x->data.clos->n);
+  else
+    return 0;
+}
+
+extern "C"
 int32_t pointer_get_byte(void *ptr)
 {
   int8_t *p = (int8_t*)ptr;
