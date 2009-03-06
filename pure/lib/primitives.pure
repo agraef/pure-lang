@@ -100,7 +100,11 @@ extern bool varp(expr*);
    application, i.e., the number of arguments it expects. */
 
 extern expr *arity(expr *x);
-arity (x@_ y)	= n-1 if intp n when n = arity x end;
+arity x@(_ _)	= n if intp n when n = count 0 x end
+with
+  count n::int (x@_ y)	= count (n+1) x;
+  count n::int x	= arity x-n;
+end;
 
 /* Predicates to check for function applications, proper lists, list nodes and
    proper tuples. */
