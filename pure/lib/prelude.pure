@@ -66,10 +66,12 @@
    The prelude defines the basic operations of the Pure language. This
    includes the basic arithmetic and logical operations, string, list and
    matrix functions, as well as the support operations required to implement
-   list and matrix comprehensions.
+   list and matrix comprehensions. (The string and matrix operations are in
+   separate modules string.pure and matrix.pure, the primitive arithmetic and
+   logical operations can be found in primitives.pure.)
 
-   It also declares a signature of commonly used constant and operator
-   symbols. This comprises:
+   The prelude also declares a signature of commonly used constant and
+   operator symbols. This comprises:
 
    .. _failed_cond:
    .. _failed_match:
@@ -78,9 +80,9 @@
 
    * The built-in exception values ``failed_cond`` (failed conditional in
      guard or if-then-else), ``failed_match`` (failed pattern match in lambda,
-     case, etc.), ``stack_fault`` (not enough stack space, ``PURE_STACK``
-     limit exceeded) and ``bad_matrix_value x`` (error in matrix
-     construction).
+     ``case`` expression, etc.), ``stack_fault`` (not enough stack space,
+     ``PURE_STACK`` limit exceeded) and ``bad_matrix_value x`` (error in
+     matrix construction).
 
    .. _bad_list_value:
    .. _bad_tuple_value:
@@ -226,7 +228,7 @@ cst x y		= x;
 
    .. _flip:
 
-   * ``flip`` swaps arguments of a binary function, e.g.::
+   * ``flip f`` swaps arguments of a binary function ``f``, e.g.::
 
        > map (flip (/) 2) (1..3);
        [0.5,1.0,1.5]
@@ -240,8 +242,8 @@ cst x y		= x;
 
    .. _curry:
 
-   * ``curry`` turns a function expecting a pair of values into a curried
-     function of two arguments::
+   * ``curry f`` turns a function ``f`` expecting a pair of values into a
+     curried function of two arguments::
 
        > using system;
        > dowith (curry (printf "%d: %g\n")) (0..2) [0.0,2.718,3.14];
@@ -252,8 +254,8 @@ cst x y		= x;
 
    .. _uncurry:
 
-   * Conversely, ``uncurry`` turns a curried function expecting two arguments
-     into a function processing a single pair argument::
+   * Conversely, ``uncurry f`` turns a curried function ``f`` expecting two
+     arguments into a function processing a single pair argument::
 
        > map (uncurry (*)) [(2,3),(4,5),(6,7)];
        [6,20,42]
@@ -315,7 +317,44 @@ def (f . g) x	= f (g x);
 def void (catmap f x) = do f x;
 def void (listmap f x) = do f x;
 
-/* Lisp-like quasiquote. */
+/* ..
+
+   Quasiquote
+   ----------
+
+   The prelude also defines a general Lisp-like ``quasiquote`` macro which is
+   used to construct quoted expressions by unquoting and splicing subterms
+   indicated with the ``unquote`` and ``splice`` constructors. For instance::
+
+     > quasiquote (2*42+unquote (2^12));
+     2*42+4096.0
+     > quasiquote (foo 1 2 (splice [2/3,3/4]) (5/6));
+     foo 1 2 (2/3) (3/4) (5/6)
+
+   Lisp weenies might want to add some syntactic sugar for convenience. This
+   isn't in the prelude, so you'll have to define it yourself. Also note that
+   we cannot have ``,`` for unquoting, so we use ``,,`` instead::
+
+     prefix 9 ` ,, ,@ ;
+     def ‘x = quasiquote x; def ,,x = unquote x; def ,@x = splice x;
+
+   Examples::
+
+     > `(2*42+2^12);
+     2*42+2^12
+     > `(2*42+,,(2^12));
+     2*42+4096.0
+     > `foo 1 2 (,@[2/3,3/4]) (5/6);
+     foo 1 2 (2/3) (3/4) (5/6)
+     > `foo 1 2 (,@args) (5/6) when args = quote [2/3,3/4] end;
+     foo 1 2 (2/3) (3/4) (5/6)
+
+   This is discussed in more detail in section `Recursive Macros`_ of the Pure
+   Manual.
+
+   .. _Recursive Macros: file:pure.html#recursive-macros
+
+*/
 
 def quasiquote (unquote x)	= x;
 def quasiquote (f@_ (splice x))	= foldl ($) (quasiquote f) (quasiquote x);
