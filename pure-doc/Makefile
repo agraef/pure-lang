@@ -55,11 +55,7 @@ distcheck: dist
 
 # Generate the documentation. This needs docutils.
 
-sources = README
 target = pure-doc
-
-$(target).txt: $(sources)
-	./pure-doc $(sources) > $@
 
 .PHONY: html tex pdf
 
@@ -67,14 +63,14 @@ html: $(target).html
 tex: $(target).tex
 pdf: $(target).pdf
 
-pure-doc.html: README
+$(target).html: README
 	rst2html.py $< $@
 
-pure-doc.tex: README
+$(target).tex: README
 	rst2latex.py $< $@
 
 # This also requires that you have TeX installed.
 
-pure-doc.pdf: pure-doc.tex
+$(target).pdf: $(target).tex
 	pdflatex $<
 	rm -f *.aux *.log *.out
