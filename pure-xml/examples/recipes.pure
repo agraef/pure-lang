@@ -1,0 +1,26 @@
+
+/* recipes.pure: Demonstration of the xslt interface. */
+
+/* This program illustrates how to format existing XML data using an XSLT
+   stylesheet. Both the XML data and the stylesheet are contained in text
+   files on disk. (Sample data pilfered from Jay Greenspan's xml/xslt tutorial
+   on http://webmonkey.wired.com.) */
+
+using xml;
+
+/* Parse the data in the XML document. Note that we use the included DTD to
+   validate the document. */
+
+let recipes = xml::load_file "recipes.xml" xml::DTDVALID;
+
+/* Parse the stylesheet. */
+
+let style = xslt::load_stylesheet "recipes.xsl";
+
+/* Apply the stylesheet to the data and save the resulting html in a file.
+   Just invoke the html function and open recipes.html in your favourite
+   browser to view the result. That's all. Note that libxml/libxslt does all
+   the hard work. */
+
+html = xslt::save_result_file "recipes.html" res style 0 if xml::docp res
+	 when res = xslt::apply_stylesheet style recipes [] end;

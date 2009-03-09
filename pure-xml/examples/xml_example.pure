@@ -1,0 +1,221 @@
+
+/* xml_example.pure: Demonstration of the xml interface. */
+
+using xml;
+using namespace xml;
+
+/* Load two sample xml documents. */
+
+let sample = load_file "sample.xml" 0;
+let recipes = load_file "recipes.xml" DTDVALID;
+
+/* We do our own tree representation of XML documents here. Nodes are encoded
+   with the node constructor which takes two arguments: info is the node_info
+   of the node, and children is the list of its child nodes. */
+
+public node;
+
+/* Translate an XML doc or node to the corresponding tree.
+   Example: tree sample; */
+
+tree d		= tree (root d) if docp d;
+tree n		= node (node_info n) [tree x | x = children n] if nodep n;
+
+/* A variation which constructs a tidy tree, leaving away all blank nodes.
+   Example: tidy sample; */
+
+tidy d		= tidy (root d) if docp d;
+tidy n		= node (node_info n)
+		  [tidy x | x = children n; ~is_blank_node x] if nodep n;
+
+/* Translate a tree back to an XML doc. Example: xmldoc (tidy sample); */
+
+xmldoc (node info children) = d when
+  d = new_doc "1.0" () info;
+  r = root d;
+  do (add_node r) children with
+    add_node parent (node info children) = do (add_node n) children when
+      n = add_last parent info;
+    end;
+  end;
+end;
+
+/* Print a tree, or a list of tree nodes. The contents of each node is printed
+   on a single line with proper indentation to indicate the nested structure.
+
+   Example:
+
+   > print (tidy sample);
+   story:
+     CDATA "<greeting>Hello, world!</greeting>"
+     COMMENT "This is a sample document for testing the xml interface."
+     PI foobar: "Process me!"
+     storyinfo:
+       author:
+         TEXT "John Fleck"
+       datewritten:
+         TEXT "June 2, 2002"
+       keyword:
+         TEXT "example keyword"
+     body:
+       headline:
+         TEXT "This is the headline"
+       para:
+         TEXT "This is the body text."
+   ()
+
+   You can also use this to print the DTD of a document. Example:
+
+   > print (tree (xml::int_subset recipes));
+   DOCTYPE list: ()
+     ELEMENT list: (recipe*)
+     ELEMENT recipe: (author,recipe_name,meal,course,ingredients,directions)
+     ELEMENT ingredients: (item+)
+     ELEMENT meal: (#PCDATA)
+     ELEMENT course: (#PCDATA)
+     ELEMENT item: (#PCDATA|sub_item)*
+     COMMENT "These are the remaining elements of the recipe tag "
+     ELEMENT recipe_name: (#PCDATA)
+     ELEMENT author: (#PCDATA)
+     ELEMENT directions: (#PCDATA)
+     COMMENT "The remaining element of the item tag "
+     ELEMENT sub_item: (#PCDATA)
+   ()
+*/
+
+using system;
+
+print x		= indent "" x with
+
+  indent space nodes
+		= do (indent space) nodes if listnp nodes;
+  indent space (node (element name ns as) children)
+		= printf "%s%s%s:%s\n" (space,name,attrs as,attrs ns) $$
+		  indent (space+"  ") children;
+  indent space (node (attr key val) _)
+		= printf "%sATTR %s: %s\n" (space,key,str val);
+  indent space (node (text content) _)
+		= printf "%sTEXT %s\n" (space,str content);
+  indent space (node (cdata content) _)
+		= printf "%sCDATA %s\n" (space,str content);
+  indent space (node (comment content) _)
+		= printf "%sCOMMENT %s\n" (space,str content);
+  indent space (node (entity_ref name) _)
+		= printf "%sREF %s\n" (space,name);
+  indent space (node (pi name content) _)
+		= printf "%sPI %s: %s\n" (space,name,str content);
+
+  indent space (node (doctype name extid) children)
+		= printf "%sDOCTYPE %s: %s\n" (space,name,str extid) $$
+		  indent (space+"  ") children;
+  indent space (node (undefined_element name) children)
+		= printf "%sELEMENT %s: UNDEFINED\n" (space,name) $$
+		  indent (space+"  ") children;
+  indent space (node (empty_element name) children)
+		= printf "%sELEMENT %s: EMPTY\n" (space,name) $$
+		  indent (space+"  ") children;
+  indent space (node (any_element name) children)
+		= printf "%sELEMENT %s: ANY\n" (space,name) $$
+		  indent (space+"  ") children;
+  indent space (node (mixed_element name content) children)
+		= printf "%sELEMENT %s: %s\n"
+		  (space,name,content_decl content) $$
+		  indent (space+"  ") children;
+  indent space (node (std_element name content) children)
+		= printf "%sELEMENT %s: %s\n"
+		  (space,name,content_decl content) $$
+		  indent (space+"  ") children;
+  indent space (node (cdata_attr elem_name name default) children)
+		= printf "%sATTR %s: %s CDATA %s\n"
+		  (space,elem_name,name,dflt default) $$
+		  indent (space+"  ") children;
+  indent space (node (id_attr elem_name name default) children)
+		= printf "%sATTR %s: %s ID %s\n"
+		  (space,elem_name,name,dflt default) $$
+		  indent (space+"  ") children;
+  indent space (node (idref_attr elem_name name default) children)
+		= printf "%sATTR %s: %s IDREF %s\n"
+		  (space,elem_name,name,dflt default) $$
+		  indent (space+"  ") children;
+  indent space (node (idrefs_attr elem_name name default) children)
+		= printf "%sATTR %s: %s IDREFS %s\n"
+		  (space,elem_name,name,dflt default) $$
+		  indent (space+"  ") children;
+  indent space (node (entity_attr elem_name name default) children)
+		= printf "%sATTR %s: %s ENTITY %s\n"
+		  (space,elem_name,name,dflt default) $$
+		  indent (space+"  ") children;
+  indent space (node (entities_attr elem_name name default) children)
+		= printf "%sATTR %s: %s ENTITIES %s\n"
+		  (space,elem_name,name,dflt default) $$
+		  indent (space+"  ") children;
+  indent space (node (nmtoken_attr elem_name name default) children)
+		= printf "%sATTR %s: %s NMTOKEN %s\n"
+		  (space,elem_name,name,dflt default) $$
+		  indent (space+"  ") children;
+  indent space (node (nmtokens_attr elem_name name default) children)
+		= printf "%sATTR %s: %s NMTOKENS %s\n"
+		  (space,elem_name,name,dflt default) $$
+		  indent (space+"  ") children;
+  indent space (node (enum_attr elem_name name vals default) children)
+		= printf "%sATTR %s: %s %s %s\n"
+		  (space,elem_name,name,"("+join "|" vals+")",dflt default) $$
+		  indent (space+"  ") children;
+  indent space (node (notation_attr elem_name name vals default) children)
+		= printf "%sATTR %s: %s NOTATION %s %s\n"
+		  (space,elem_name,name,"("+join "|" vals+")",dflt default) $$
+		  indent (space+"  ") children;
+  indent space (node (int_entity name content) children)
+		= printf "%sENTITY %s: %s\n"
+		  (space,name,str content) $$
+		  indent (space+"  ") children;
+  indent space (node (int_param_entity name content) children)
+		= printf "%sENTITY %% %s: %s\n"
+		  (space,name,str content) $$
+		  indent (space+"  ") children;
+  indent space (node (ext_entity name extid content) children)
+		= printf "%sENTITY %s: %s %s\n"
+		  (space,name,str extid,str content) $$
+		  indent (space+"  ") children;
+  indent space (node (ext_param_entity name extid content) children)
+		= printf "%sENTITY %% %s: %s %s\n"
+		  (space,name,str extid,str content) $$
+		  indent (space+"  ") children;
+
+  indent space (node _ children)
+		= printf "%sOTHER\n" space $$
+		  indent (space+"  ") children;
+
+  /* Format attributes (key=>val pairs) using XML syntax. */
+
+  attrs []		= "";
+  attrs as		= sprintf " (%s)" (join "," (map attr1 as));
+
+  attr1 (""=>val)	= str val;
+  attr1 (key=>val)	= sprintf "%s=%s" (key,str val);
+
+  /* Create a content declaration in legal XML syntax from an element content
+     type term. */
+
+  content_decl x	= wrap (contents x);
+  wrap s		= s if s!0 == "(";
+			= "("+s+")" otherwise;
+
+  contents name::string	= name;
+  contents pcdata	= "#PCDATA";
+  contents (sequence xs)
+			= "("+join "," (map contents xs)+")";
+  contents (union xs)	= "("+join "|" (map contents xs)+")";
+  contents (opt x)	= contents x+"?";
+  contents (mult x)	= contents x+"*";
+  contents (plus x)	= contents x+"+";
+  contents _		= "???" otherwise;
+
+  /* Unparse an attribute default. */
+
+  dflt required		= "#REQUIRED";
+  dflt implied		= "#IMPLIED";
+  dflt (default val)	= str val;
+  dflt (fixed val)	= "#FIXED "+str val;
+
+end;
