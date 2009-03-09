@@ -636,8 +636,18 @@ int32_t pure_sym(const char *s)
 {
   assert(s);
   interpreter& interp = *interpreter::g_interp;
-  string id = strstr(s, "::")?s:"::"+string(s);
-  const symbol* sym = interp.symtab.sym(id);
+  const char *t = strstr(s, "::");
+  string id = t?s:"::"+string(s), qual = t?id.substr(0, t-s):"";
+  const symbol* sym;
+  if (qual != *interp.symtab.current_namespace) {
+    /* Switch to the desired namespace so that we also get the private
+       symbols. */
+    string *save_namespace = interp.symtab.current_namespace;
+    interp.symtab.current_namespace = &qual;
+    sym = interp.symtab.sym(id);
+    interp.symtab.current_namespace = save_namespace;
+  } else
+    sym = interp.symtab.sym(id);
   if (sym)
     return sym->f;
   else
