@@ -38,7 +38,7 @@ install:
 	cp pure-doc.html "$(DESTDIR)$(datadir)"
 
 uninstall:
-	rm -f "$(DESTDIR)$(bindir)/pure-doc"
+	rm -f "$(DESTDIR)$(bindir)/pure-doc" "$(DESTDIR)$(datadir)/pure-doc.html"
 
 dist:
 	rm -rf $(dist)
