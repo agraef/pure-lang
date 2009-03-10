@@ -66,10 +66,10 @@ clean:
 
 install:
 	test -d "$(DESTDIR)$(datadir)" || mkdir -p "$(DESTDIR)$(datadir)"
-	cp xml.pure xml$(DLL) pure-doc.html "$(DESTDIR)$(datadir)"
+	cp xml.pure xml$(DLL) pure-xml.html "$(DESTDIR)$(datadir)"
 
 uninstall:
-	rm -f "$(DESTDIR)$(datadir)/xml.pure" "$(DESTDIR)$(datadir)/xml$(DLL)"
+	rm -f "$(DESTDIR)$(datadir)/xml.pure" "$(DESTDIR)$(datadir)/xml$(DLL)" "$(DESTDIR)$(datadir)/pure-xml.html"
 
 dist:
 	rm -rf $(dist)
