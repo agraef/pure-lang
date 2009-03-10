@@ -320,7 +320,7 @@ package.</p>
 <ul class="auto-toc simple">
 <li><a class="reference" href="#installation" id="id2" name="id2">1&nbsp;&nbsp;&nbsp;Installation</a></li>
 <li><a class="reference" href="#usage" id="id3" name="id3">2&nbsp;&nbsp;&nbsp;Usage</a></li>
-<li><a class="reference" href="#data-structures" id="id4" name="id4">3&nbsp;&nbsp;&nbsp;Data Structures</a><ul class="auto-toc">
+<li><a class="reference" href="#data-structure" id="id4" name="id4">3&nbsp;&nbsp;&nbsp;Data Structure</a><ul class="auto-toc">
 <li><a class="reference" href="#the-document-tree" id="id5" name="id5">3.1&nbsp;&nbsp;&nbsp;The Document Tree</a></li>
 <li><a class="reference" href="#document-types" id="id6" name="id6">3.2&nbsp;&nbsp;&nbsp;Document Types</a></li>
 </ul>
@@ -358,7 +358,7 @@ in the examples directory in the source distribution.</p>
 <!--  -->
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id4" id="data-structures" name="data-structures">3&nbsp;&nbsp;&nbsp;Data Structures</a></h1>
+<h1><a class="toc-backref" href="#id4" id="data-structure" name="data-structure">3&nbsp;&nbsp;&nbsp;Data Structure</a></h1>
 <p>This module represents XML documents using pointers to the <tt class="docutils literal"><span class="pre">xmlDoc</span></tt> and
 <tt class="docutils literal"><span class="pre">xmlNode</span></tt> structures provides by the libxml2 library. Similarly,
 stylesheets are simply pointers to the xmlStylesheet structure from libxslt
@@ -386,18 +386,18 @@ pointer.</li>
 <p>An XML document is a rooted tree which can be created, traversed and
 manipulated using the operations of this module. There are different types
 of nodes in the tree, each carrying their own type of data. In Pure land,
-the node data is described using the &quot;node info&quot; constructors described
-below. The following document node types are currently recognized:</p>
+the node data is described using the following &quot;node info&quot; constructors.</p>
 <ul id="node-info">
 <li><p class="first"><tt class="docutils literal"><span class="pre">xml::element</span> <span class="pre">tag</span> <span class="pre">ns</span> <span class="pre">attrs</span></tt></p>
 <p>An XML element with given (possibly qualified) name <tt class="docutils literal"><span class="pre">tag</span></tt>, a (possibly
 empty) list of namespace declarations <tt class="docutils literal"><span class="pre">ns</span></tt> and a (possibly empty) list
-of attributes (<tt class="docutils literal"><span class="pre">key=&gt;value</span></tt> pairs of strings) <tt class="docutils literal"><span class="pre">attrs</span></tt>. Namespace
-declarations normally take the form of a pair of strings
-<tt class="docutils literal"><span class="pre">(prefix,href)</span></tt>, where <tt class="docutils literal"><span class="pre">prefix</span></tt> is the prefix associated with the
-namespace and <tt class="docutils literal"><span class="pre">href</span></tt> the corresponding URI (the name of the
-namespace). They can also be just a string <tt class="docutils literal"><span class="pre">href</span></tt> if the namespace
-prefix is missing.</p>
+of attributes <tt class="docutils literal"><span class="pre">attrs</span></tt>. Namespace declarations normally take the form of
+a pair of strings <tt class="docutils literal"><span class="pre">(prefix,href)</span></tt>, where <tt class="docutils literal"><span class="pre">prefix</span></tt> is the prefix
+associated with the namespace and <tt class="docutils literal"><span class="pre">href</span></tt> the corresponding URI (the
+name of the namespace), but they can also be just a string <tt class="docutils literal"><span class="pre">href</span></tt> if
+the namespace prefix is missing. Attributes are encoded as <tt class="docutils literal"><span class="pre">key=&gt;value</span></tt>
+pairs, where <tt class="docutils literal"><span class="pre">key</span></tt> is the attribute name and <tt class="docutils literal"><span class="pre">value</span></tt> the associated
+value; both <tt class="docutils literal"><span class="pre">key</span></tt> and <tt class="docutils literal"><span class="pre">value</span></tt> are strings.</p>
 </li>
 <li><p class="first"><tt class="docutils literal"><span class="pre">xml::element_text</span> <span class="pre">tag</span> <span class="pre">ns</span> <span class="pre">attrs</span> <span class="pre">content</span></tt></p>
 <p>A convenience function which denotes a combination of an element node
@@ -410,7 +410,7 @@ automatically.</p>
 functions, and cannot be inserted directly into a document.</p>
 </li>
 <li><p class="first"><tt class="docutils literal"><span class="pre">xml::text</span> <span class="pre">content</span></tt></p>
-<p>A text node with given content (a string).</p>
+<p>A text node with the given content (a string).</p>
 </li>
 <li><p class="first"><tt class="docutils literal"><span class="pre">xml::cdata</span> <span class="pre">content</span></tt></p>
 <p>Like <tt class="docutils literal"><span class="pre">xml::text</span></tt>, but contains unparsed character data.</p>
@@ -430,11 +430,11 @@ the text of the processing instructions.</p>
 <div class="section">
 <h2><a class="toc-backref" href="#id6" id="document-types" name="document-types">3.2&nbsp;&nbsp;&nbsp;Document Types</a></h2>
 <p id="dtd">Besides the node types described above, there are some additional node
-types only used in the <a class="reference" href="http://www.w3.org/TR/REC-xml/#dt-doctype">document type definition</a> (DTD), which can be
-extracted from a document using the <a class="reference" href="#int-subset">int_subset</a> and <a class="reference" href="#ext-subset">ext_subset</a>
-functions. These are for inspection purposes only; it is not possible to
-change the DTD of a document in-place. (However, you can create a new
-document, and attach a DTD to it, using the <a class="reference" href="#new-doc">new_doc</a> function.)</p>
+types used in the <a class="reference" href="http://www.w3.org/TR/REC-xml/#dt-doctype">document type definition</a> (DTD), which can be extracted
+from a document using the <a class="reference" href="#int-subset">int_subset</a> and <a class="reference" href="#ext-subset">ext_subset</a> functions. These are
+for inspection purposes only; it is not possible to change the DTD of a
+document in-place. (However, you can create a new document and attach a DTD
+to it, using the <a class="reference" href="#new-doc">new_doc</a> function.)</p>
 <ul>
 <li><p class="first"><tt class="docutils literal"><span class="pre">xml::doctype</span> <span class="pre">name</span> <span class="pre">extid</span></tt></p>
 <p>DTDs are represented using this special type of node, where <tt class="docutils literal"><span class="pre">name</span></tt> is
@@ -443,19 +443,41 @@ external identifier and the URI of the DTD (or just the URI if there is
 no external identifier). The <tt class="docutils literal"><span class="pre">xml::doctype</span></tt> node has as its children
 zero or more of the following kinds of DTD declaration nodes (these are
 just straightforward abstract syntax for the !ELEMENT, !ATTLIST and
-!ENTITY declarations inside a DTD declaration; see the <a class="reference" href="http://www.w3.org/TR/xml">XML</a> specification
+!ENTITY declarations inside a DTD declaration; see the XML specification
 for details).</p>
 </li>
 </ul>
-<p id="element-declaration">Element declarations:</p>
-<ul class="simple">
-<li><tt class="docutils literal"><span class="pre">xml::undefined_element</span> <span class="pre">name</span></tt></li>
-<li><tt class="docutils literal"><span class="pre">xml::empty_element</span> <span class="pre">name</span></tt></li>
-<li><tt class="docutils literal"><span class="pre">xml::any_element</span> <span class="pre">name</span></tt></li>
-<li><tt class="docutils literal"><span class="pre">xml::mixed_element</span> <span class="pre">name</span> <span class="pre">content</span></tt></li>
-<li><tt class="docutils literal"><span class="pre">xml::std_element</span> <span class="pre">name</span> <span class="pre">content</span></tt></li>
+<p id="element-declaration"><em>Element declarations:</em> Here, <tt class="docutils literal"><span class="pre">name</span></tt> is the element tag and <tt class="docutils literal"><span class="pre">content</span></tt>
+the definition of the element structure, see <a class="reference" href="#element-content">element content</a> below. XML
+supports various kinds of element types, please refer to <a class="reference" href="http://www.w3.org/TR/REC-xml/#dt-doctype">document type
+definition</a> in the XML specification for details.</p>
+<ul>
+<li><p class="first"><tt class="docutils literal"><span class="pre">xml::undefined_element</span> <span class="pre">name</span></tt></p>
+<p>An undefined element. This is in libxml2, but not in the XML
+specification, you shouldn't see this in normal operation.</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">xml::empty_element</span> <span class="pre">name</span></tt></p>
+<p>An element without any content.</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">xml::any_element</span> <span class="pre">name</span></tt></p>
+<p>An element with unrestricted content.</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">xml::mixed_element</span> <span class="pre">name</span> <span class="pre">content</span></tt></p>
+<p>A &quot;mixed&quot; element which can contain character data, optionally
+interspersed with child elements, as given in the <tt class="docutils literal"><span class="pre">content</span></tt>
+specification.</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">xml::std_element</span> <span class="pre">name</span> <span class="pre">content</span></tt></p>
+<p>A standard element consisting <em>only</em> of child elements, as given in the
+<tt class="docutils literal"><span class="pre">content</span></tt> specification.</p>
+</li>
 </ul>
-<p id="attribute-declaration">Attribute declarations:</p>
+<p id="attribute-declaration"><em>Attribute declarations:</em> These are used to declare the attributes of an
+element. <tt class="docutils literal"><span class="pre">elem_name</span></tt> is the name of an element which describes the
+attribute type, <tt class="docutils literal"><span class="pre">name</span></tt> is the name of the attribute itself, and
+<tt class="docutils literal"><span class="pre">default</span></tt> specifies the default value of the attribute, see <a class="reference" href="#attribute-defaults">attribute
+defaults</a> below. XML supports a bunch of different attribute types, please
+refer to <a class="reference" href="http://www.w3.org/TR/REC-xml/#dt-doctype">document type definition</a> in the XML specification for details.</p>
 <ul class="simple">
 <li><tt class="docutils literal"><span class="pre">xml::cdata_attr</span> <span class="pre">elem_name</span> <span class="pre">name</span> <span class="pre">default</span></tt></li>
 <li><tt class="docutils literal"><span class="pre">xml::id_attr</span> <span class="pre">elem_name</span> <span class="pre">name</span> <span class="pre">default</span></tt></li>
@@ -468,15 +490,17 @@ for details).</p>
 <li><tt class="docutils literal"><span class="pre">xml::enum_attr</span> <span class="pre">elem_name</span> <span class="pre">name</span> <span class="pre">vals</span> <span class="pre">default</span></tt></li>
 <li><tt class="docutils literal"><span class="pre">xml::notation_attr</span> <span class="pre">elem_name</span> <span class="pre">name</span> <span class="pre">vals</span> <span class="pre">default</span></tt></li>
 </ul>
-<p id="entity-declaration">Entity declarations:</p>
+<p id="entity-declaration"><em>Entity declarations:</em> These are used for internal and external entity
+declarations. <tt class="docutils literal"><span class="pre">name</span></tt> is the entity name and <tt class="docutils literal"><span class="pre">content</span></tt> its
+definition. External entities also have an <tt class="docutils literal"><span class="pre">extid</span></tt> (external
+identifier/URI pair) identifying the entity.</p>
 <ul class="simple">
 <li><tt class="docutils literal"><span class="pre">xml::int_entity</span> <span class="pre">name</span> <span class="pre">content</span></tt></li>
 <li><tt class="docutils literal"><span class="pre">xml::int_param_entity</span> <span class="pre">name</span> <span class="pre">content</span></tt></li>
 <li><tt class="docutils literal"><span class="pre">xml::ext_entity</span> <span class="pre">name</span> <span class="pre">extid</span> <span class="pre">content</span></tt></li>
 <li><tt class="docutils literal"><span class="pre">xml::ext_param_entity</span> <span class="pre">name</span> <span class="pre">extid</span> <span class="pre">content</span></tt></li>
 </ul>
-<!--  -->
-<p>The element content type (<tt class="docutils literal"><span class="pre">content</span></tt> argument of the <a class="reference" href="#element-declaration">element
+<p id="element-content">The element content type (<tt class="docutils literal"><span class="pre">content</span></tt> argument of the <a class="reference" href="#element-declaration">element
 declaration</a> nodes) is a kind of regular expression formed with tags
 (specified as strings) and the following constructors:</p>
 <ul class="simple">
@@ -487,8 +511,7 @@ declaration</a> nodes) is a kind of regular expression formed with tags
 <li><tt class="docutils literal"><span class="pre">xml::mult</span> <span class="pre">x</span></tt>: repeated element (<tt class="docutils literal"><span class="pre">x*</span></tt>)</li>
 <li><tt class="docutils literal"><span class="pre">xml::plus</span> <span class="pre">x</span></tt>: non-optional repeated element (<tt class="docutils literal"><span class="pre">x+</span></tt>)</li>
 </ul>
-<!--  -->
-<p>Attribute defaults (the <tt class="docutils literal"><span class="pre">default</span></tt> argument of <a class="reference" href="#attribute-declaration">attribute declaration</a>
+<p id="attribute-defaults">Attribute defaults (the <tt class="docutils literal"><span class="pre">default</span></tt> argument of <a class="reference" href="#attribute-declaration">attribute declaration</a>
 nodes) are represented using the following constructor symbols:</p>
 <ul class="simple">
 <li><tt class="docutils literal"><span class="pre">xml::required</span></tt>: a required attribute, i.e., the user must specify this</li>
@@ -504,7 +527,7 @@ specify this</li>
 <h1><a class="toc-backref" href="#id7" id="operations" name="operations">4&nbsp;&nbsp;&nbsp;Operations</a></h1>
 <p>This module provides all operations necessary to create, inspect and
 manipulate XML documents residing either in memory or on disk. Operations
-for formatting XML documents using XSLT stylesheets are also included.</p>
+for formatting XML documents using XSLT stylesheets are also available.</p>
 <div class="section">
 <h2><a class="toc-backref" href="#id8" id="document-operations" name="document-operations">4.1&nbsp;&nbsp;&nbsp;Document Operations</a></h2>
 <p>The following functions allow you to create new XML documents, load them
@@ -526,9 +549,9 @@ create a skeleton document if a more elaborate prolog is required.</p>
 </ul>
 <ul id="load-string">
 <span id="load-file"></span><li><p class="first"><tt class="docutils literal"><span class="pre">xml::load_file</span> <span class="pre">name</span> <span class="pre">flags</span></tt>, <tt class="docutils literal"><span class="pre">xml::load_string</span> <span class="pre">s</span> <span class="pre">flags</span></tt></p>
-<p>Load an XML document from a file or a string. <tt class="docutils literal"><span class="pre">flags</span></tt> denotes the
-parser flags (a bitwise disjunction of any of the following constants,
-or 0 for the default):</p>
+<p>Load an XML document from a file <tt class="docutils literal"><span class="pre">name</span></tt> or a string <tt class="docutils literal"><span class="pre">s</span></tt>. <tt class="docutils literal"><span class="pre">flags</span></tt>
+denotes the parser flags, a bitwise disjunction of any of the following
+constants, or 0 for the default:</p>
 <ul class="simple">
 <li><tt class="docutils literal"><span class="pre">xml::DTDLOAD</span></tt>: load DTD</li>
 <li><tt class="docutils literal"><span class="pre">xml::DTDVALID</span></tt>: validate</li>
@@ -557,8 +580,13 @@ none, 9 is maximum, -1 indicates the default). Note that with
 the XML version of the document, <tt class="docutils literal"><span class="pre">encoding</span></tt> the external encoding (if
 any), <tt class="docutils literal"><span class="pre">url</span></tt> the name/location of the document (if any), <tt class="docutils literal"><span class="pre">compression</span></tt>
 the level of zlib compression, and <tt class="docutils literal"><span class="pre">standalone</span></tt> is a flag indicating
-whether the document contains any external references (see the libxml2
-documentation for details).</p>
+whether the document contains any external markup declarations &quot;which
+affect the information passed from the XML processor to the application&quot;,
+see the section on the <a class="reference" href="http://www.w3.org/TR/REC-xml/#sec-rmd">standalone document declaration</a> in the XML spec
+for details. (Apparently, in libxml2 <tt class="docutils literal"><span class="pre">standalone</span></tt> is either a truth
+value or one of the special values -1, indicating that there's no XML
+declaration in the prolog, or -2, indicating that there's an XML
+declaration but no <tt class="docutils literal"><span class="pre">standalone</span></tt> attribute.)</p>
 </li>
 </ul>
 <ul id="ext-subset">
@@ -644,9 +672,9 @@ given document <tt class="docutils literal"><span class="pre">doc</span></tt>.</
 </ul>
 <ul id="id1">
 <li><p class="first"><tt class="docutils literal"><span class="pre">xml::node_info</span> <span class="pre">node</span></tt></p>
-<p>Retrieve the node data from <tt class="docutils literal"><span class="pre">node</span></tt>. Returns a <a class="reference" href="#node-info">node info</a> value as
-described in <a class="reference" href="#data-structures">Data Structures</a>. Fails if the node does not belong to one
-of the supported node types.</p>
+<p>Retrieve the node data from <tt class="docutils literal"><span class="pre">node</span></tt>. Returns a <a class="reference" href="#node-info">node info</a> value, as
+described in <a class="reference" href="#data-structure">Data Structure</a> above. Fails if the node does not belong
+to one of the supported node types.</p>
 </li>
 </ul>
 <!--  -->

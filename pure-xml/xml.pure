@@ -36,8 +36,8 @@ const xml::NOBLANKS = 0x10; // suppress blank nodes
 
 /* ..
 
-   Data Structures
-   ===============
+   Data Structure
+   ==============
 
    This module represents XML documents using pointers to the ``xmlDoc`` and
    ``xmlNode`` structures provides by the libxml2 library. Similarly,
@@ -76,8 +76,7 @@ extern int xml_nodep(expr *x) = nodep;
    An XML document is a rooted tree which can be created, traversed and
    manipulated using the operations of this module. There are different types
    of nodes in the tree, each carrying their own type of data. In Pure land,
-   the node data is described using the "node info" constructors described
-   below. The following document node types are currently recognized:
+   the node data is described using the following "node info" constructors.
 
    .. _node info:
 
@@ -85,12 +84,13 @@ extern int xml_nodep(expr *x) = nodep;
 
      An XML element with given (possibly qualified) name ``tag``, a (possibly
      empty) list of namespace declarations ``ns`` and a (possibly empty) list
-     of attributes (``key=>value`` pairs of strings) ``attrs``. Namespace
-     declarations normally take the form of a pair of strings
-     ``(prefix,href)``, where ``prefix`` is the prefix associated with the
-     namespace and ``href`` the corresponding URI (the name of the
-     namespace). They can also be just a string ``href`` if the namespace
-     prefix is missing.
+     of attributes ``attrs``. Namespace declarations normally take the form of
+     a pair of strings ``(prefix,href)``, where ``prefix`` is the prefix
+     associated with the namespace and ``href`` the corresponding URI (the
+     name of the namespace), but they can also be just a string ``href`` if
+     the namespace prefix is missing. Attributes are encoded as ``key=>value``
+     pairs, where ``key`` is the attribute name and ``value`` the associated
+     value; both ``key`` and ``value`` are strings.
 
    * ``xml::element_text tag ns attrs content``
 
@@ -106,7 +106,7 @@ extern int xml_nodep(expr *x) = nodep;
 
    * ``xml::text content``
 
-     A text node with given content (a string).
+     A text node with the given content (a string).
 
    * ``xml::cdata content``
 
@@ -131,11 +131,11 @@ extern int xml_nodep(expr *x) = nodep;
    .. _dtd:
 
    Besides the node types described above, there are some additional node
-   types only used in the `document type definition`_ (DTD), which can be
-   extracted from a document using the int_subset_ and ext_subset_
-   functions. These are for inspection purposes only; it is not possible to
-   change the DTD of a document in-place. (However, you can create a new
-   document, and attach a DTD to it, using the new_doc_ function.)
+   types used in the `document type definition`_ (DTD), which can be extracted
+   from a document using the int_subset_ and ext_subset_ functions. These are
+   for inspection purposes only; it is not possible to change the DTD of a
+   document in-place. (However, you can create a new document and attach a DTD
+   to it, using the new_doc_ function.)
 
    .. _document type definition: http://www.w3.org/TR/REC-xml/#dt-doctype
 
@@ -147,22 +147,48 @@ extern int xml_nodep(expr *x) = nodep;
      no external identifier). The ``xml::doctype`` node has as its children
      zero or more of the following kinds of DTD declaration nodes (these are
      just straightforward abstract syntax for the !ELEMENT, !ATTLIST and
-     !ENTITY declarations inside a DTD declaration; see the XML_ specification
+     !ENTITY declarations inside a DTD declaration; see the XML specification
      for details).
 
    .. _element declaration:
 
-   Element declarations:
+   *Element declarations:* Here, ``name`` is the element tag and ``content``
+   the definition of the element structure, see `element content`_ below. XML
+   supports various kinds of element types, please refer to `document type
+   definition`_ in the XML specification for details.
 
    * ``xml::undefined_element name``
+
+     An undefined element. This is in libxml2, but not in the XML
+     specification, you shouldn't see this in normal operation.
+
    * ``xml::empty_element name``
+
+     An element without any content.
+
    * ``xml::any_element name``
+
+     An element with unrestricted content.
+
    * ``xml::mixed_element name content``
+
+     A "mixed" element which can contain character data, optionally
+     interspersed with child elements, as given in the ``content``
+     specification.
+
    * ``xml::std_element name content``
+
+     A standard element consisting *only* of child elements, as given in the
+     ``content`` specification.
 
    .. _attribute declaration:
 
-   Attribute declarations:
+   *Attribute declarations:* These are used to declare the attributes of an
+   element. ``elem_name`` is the name of an element which describes the
+   attribute type, ``name`` is the name of the attribute itself, and
+   ``default`` specifies the default value of the attribute, see `attribute
+   defaults`_ below. XML supports a bunch of different attribute types, please
+   refer to `document type definition`_ in the XML specification for details.
 
    * ``xml::cdata_attr elem_name name default``
    * ``xml::id_attr elem_name name default``
@@ -177,7 +203,10 @@ extern int xml_nodep(expr *x) = nodep;
 
    .. _entity declaration:
 
-   Entity declarations:
+   *Entity declarations:* These are used for internal and external entity
+   declarations. ``name`` is the entity name and ``content`` its
+   definition. External entities also have an ``extid`` (external
+   identifier/URI pair) identifying the entity.
 
    * ``xml::int_entity name content``
    * ``xml::int_param_entity name content``
@@ -203,7 +232,7 @@ public
   // entity declarations
   int_entity int_param_entity ext_entity ext_param_entity;
 
-/* ..
+/* .. _element content:
 
    The element content type (``content`` argument of the `element
    declaration`_ nodes) is a kind of regular expression formed with tags
@@ -221,7 +250,7 @@ public
 nullary pcdata;
 public sequence union opt mult plus;
 
-/* ..
+/* .. _attribute defaults:
 
    Attribute defaults (the ``default`` argument of `attribute declaration`_
    nodes) are represented using the following constructor symbols:
@@ -258,7 +287,7 @@ mkunion x y				= union [x,y] otherwise;
 
    This module provides all operations necessary to create, inspect and
    manipulate XML documents residing either in memory or on disk. Operations
-   for formatting XML documents using XSLT stylesheets are also included.
+   for formatting XML documents using XSLT stylesheets are also available.
 
    Document Operations
    -------------------
@@ -290,9 +319,9 @@ extern expr *xml_new_doc(char *version, expr *dtd, expr *info) = new_doc;
 
    * ``xml::load_file name flags``, ``xml::load_string s flags``
 
-     Load an XML document from a file or a string. ``flags`` denotes the
-     parser flags (a bitwise disjunction of any of the following constants,
-     or 0 for the default):
+     Load an XML document from a file ``name`` or a string ``s``. ``flags``
+     denotes the parser flags, a bitwise disjunction of any of the following
+     constants, or 0 for the default:
 
      - ``xml::DTDLOAD``: load DTD
      - ``xml::DTDVALID``: validate
@@ -331,8 +360,17 @@ extern expr *xml_save_string(expr *doc) = save_string;
      the XML version of the document, ``encoding`` the external encoding (if
      any), ``url`` the name/location of the document (if any), ``compression``
      the level of zlib compression, and ``standalone`` is a flag indicating
-     whether the document contains any external references (see the libxml2
-     documentation for details). */
+     whether the document contains any external markup declarations "which
+     affect the information passed from the XML processor to the application",
+     see the section on the `standalone document declaration`_ in the XML spec
+     for details. (Apparently, in libxml2 ``standalone`` is either a truth
+     value or one of the special values -1, indicating that there's no XML
+     declaration in the prolog, or -2, indicating that there's an XML
+     declaration but no ``standalone`` attribute.)
+
+   .. _standalone document declaration: http://www.w3.org/TR/REC-xml/#sec-rmd
+
+*/
 
 extern expr *xml_doc_info(expr *doc) = doc_info;
 
@@ -473,9 +511,9 @@ extern expr *xml_select(expr *doc, expr *xpath) = select;
 
    * ``xml::node_info node``
 
-     Retrieve the node data from ``node``. Returns a `node info`_ value as
-     described in `Data Structures`_. Fails if the node does not belong to one
-     of the supported node types. */
+     Retrieve the node data from ``node``. Returns a `node info`_ value, as
+     described in `Data Structure`_ above. Fails if the node does not belong
+     to one of the supported node types. */
 
 extern expr *xml_node_info(expr *node) = node_info;
 
