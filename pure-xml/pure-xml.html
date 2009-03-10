@@ -318,30 +318,30 @@ package.</p>
 <div class="contents topic">
 <p class="topic-title first"><a id="contents" name="contents">Contents</a></p>
 <ul class="auto-toc simple">
-<li><a class="reference" href="#installation" id="id1" name="id1">1&nbsp;&nbsp;&nbsp;Installation</a></li>
-<li><a class="reference" href="#usage" id="id2" name="id2">2&nbsp;&nbsp;&nbsp;Usage</a></li>
-<li><a class="reference" href="#data-structures" id="id3" name="id3">3&nbsp;&nbsp;&nbsp;Data Structures</a><ul class="auto-toc">
-<li><a class="reference" href="#the-document-tree" id="id4" name="id4">3.1&nbsp;&nbsp;&nbsp;The Document Tree</a></li>
-<li><a class="reference" href="#document-types" id="id5" name="id5">3.2&nbsp;&nbsp;&nbsp;Document Types</a></li>
+<li><a class="reference" href="#installation" id="id2" name="id2">1&nbsp;&nbsp;&nbsp;Installation</a></li>
+<li><a class="reference" href="#usage" id="id3" name="id3">2&nbsp;&nbsp;&nbsp;Usage</a></li>
+<li><a class="reference" href="#data-structures" id="id4" name="id4">3&nbsp;&nbsp;&nbsp;Data Structures</a><ul class="auto-toc">
+<li><a class="reference" href="#the-document-tree" id="id5" name="id5">3.1&nbsp;&nbsp;&nbsp;The Document Tree</a></li>
+<li><a class="reference" href="#document-types" id="id6" name="id6">3.2&nbsp;&nbsp;&nbsp;Document Types</a></li>
 </ul>
 </li>
-<li><a class="reference" href="#operations" id="id6" name="id6">4&nbsp;&nbsp;&nbsp;Operations</a><ul class="auto-toc">
-<li><a class="reference" href="#document-operations" id="id7" name="id7">4.1&nbsp;&nbsp;&nbsp;Document Operations</a></li>
-<li><a class="reference" href="#traversing-documents" id="id8" name="id8">4.2&nbsp;&nbsp;&nbsp;Traversing Documents</a></li>
-<li><a class="reference" href="#node-information" id="id9" name="id9">4.3&nbsp;&nbsp;&nbsp;Node Information</a></li>
-<li><a class="reference" href="#node-manipulation" id="id10" name="id10">4.4&nbsp;&nbsp;&nbsp;Node Manipulation</a></li>
-<li><a class="reference" href="#transformations" id="id11" name="id11">4.5&nbsp;&nbsp;&nbsp;Transformations</a></li>
+<li><a class="reference" href="#operations" id="id7" name="id7">4&nbsp;&nbsp;&nbsp;Operations</a><ul class="auto-toc">
+<li><a class="reference" href="#document-operations" id="id8" name="id8">4.1&nbsp;&nbsp;&nbsp;Document Operations</a></li>
+<li><a class="reference" href="#traversing-documents" id="id9" name="id9">4.2&nbsp;&nbsp;&nbsp;Traversing Documents</a></li>
+<li><a class="reference" href="#node-information" id="id10" name="id10">4.3&nbsp;&nbsp;&nbsp;Node Information</a></li>
+<li><a class="reference" href="#node-manipulation" id="id11" name="id11">4.4&nbsp;&nbsp;&nbsp;Node Manipulation</a></li>
+<li><a class="reference" href="#transformations" id="id12" name="id12">4.5&nbsp;&nbsp;&nbsp;Transformations</a></li>
 </ul>
 </li>
 </ul>
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id1" id="installation" name="installation">1&nbsp;&nbsp;&nbsp;Installation</a></h1>
+<h1><a class="toc-backref" href="#id2" id="installation" name="installation">1&nbsp;&nbsp;&nbsp;Installation</a></h1>
 <p>Run <tt class="docutils literal"><span class="pre">make</span></tt> and then <tt class="docutils literal"><span class="pre">sudo</span> <span class="pre">make</span> <span class="pre">install</span></tt> to compile and install this module
 from source. This requires libxml2, libxslt and Pure.</p>
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id2" id="usage" name="usage">2&nbsp;&nbsp;&nbsp;Usage</a></h1>
+<h1><a class="toc-backref" href="#id3" id="usage" name="usage">2&nbsp;&nbsp;&nbsp;Usage</a></h1>
 <p>Use the following declaration to make the operations of this module available
 in your programs:</p>
 <pre class="literal-block">
@@ -358,31 +358,37 @@ in the examples directory in the source distribution.</p>
 <!--  -->
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id3" id="data-structures" name="data-structures">3&nbsp;&nbsp;&nbsp;Data Structures</a></h1>
-<p>XML documents are represented using pointers to the <tt class="docutils literal"><span class="pre">xmlDoc</span></tt> and
+<h1><a class="toc-backref" href="#id4" id="data-structures" name="data-structures">3&nbsp;&nbsp;&nbsp;Data Structures</a></h1>
+<p>This module represents XML documents using pointers to the <tt class="docutils literal"><span class="pre">xmlDoc</span></tt> and
 <tt class="docutils literal"><span class="pre">xmlNode</span></tt> structures provides by the libxml2 library. Similarly,
-stylesheets are pointers to the xmlStylesheet structure from libxslt
-(cf. <a class="reference" href="#transformations">Transformations</a>). These are all &quot;cooked&quot; pointers which take care of
-freeing themselves automatically when they are no longer needed. You can
-also check for these types of pointers using the following predicates:</p>
+stylesheets are simply pointers to the xmlStylesheet structure from libxslt
+(cf. <a class="reference" href="#transformations">Transformations</a>). This makes it possible to use these objects
+directly with the operations of the libxml2 and libsxslt libraries (via
+Pure's C interface) if necessary. Note, however, that these are all
+&quot;cooked&quot; pointers which take care of freeing themselves automatically when
+they are no longer needed, therefore you shouldn't free them manually.</p>
+<p>You can also check for these types of pointers using the following
+predicates:</p>
 <ul class="simple" id="docp">
-<li><tt class="docutils literal"><span class="pre">xml::docp</span> <span class="pre">x</span></tt> checks whether <tt class="docutils literal"><span class="pre">x</span></tt> is an XML document.</li>
+<li><tt class="docutils literal"><span class="pre">xml::docp</span> <span class="pre">x</span></tt> checks whether <tt class="docutils literal"><span class="pre">x</span></tt> is an XML document pointer.</li>
 </ul>
 <ul class="simple" id="nodep">
-<li><tt class="docutils literal"><span class="pre">xml::nodep</span> <span class="pre">x</span></tt> checks whether <tt class="docutils literal"><span class="pre">x</span></tt> is a node in an XML document.</li>
+<li><tt class="docutils literal"><span class="pre">xml::nodep</span> <span class="pre">x</span></tt> checks whether <tt class="docutils literal"><span class="pre">x</span></tt> is a pointer to a node in an XML
+document.</li>
 </ul>
 <ul class="simple" id="stylesheetp">
-<li><tt class="docutils literal"><span class="pre">xslt::stylesheetp</span> <span class="pre">x</span></tt> checks whether <tt class="docutils literal"><span class="pre">x</span></tt> is a stylesheet pointer.</li>
+<li><tt class="docutils literal"><span class="pre">xslt::stylesheetp</span> <span class="pre">x</span></tt> checks whether <tt class="docutils literal"><span class="pre">x</span></tt> is an XSLT stylesheet
+pointer.</li>
 </ul>
 <!--  -->
 <div class="section">
-<h2><a class="toc-backref" href="#id4" id="the-document-tree" name="the-document-tree">3.1&nbsp;&nbsp;&nbsp;The Document Tree</a></h2>
+<h2><a class="toc-backref" href="#id5" id="the-document-tree" name="the-document-tree">3.1&nbsp;&nbsp;&nbsp;The Document Tree</a></h2>
 <p>An XML document is a rooted tree which can be created, traversed and
 manipulated using the operations of this module. There are different types
 of nodes in the tree, each carrying their own type of data. In Pure land,
-the node data is described using the <cite>node info</cite> constructors described
+the node data is described using the &quot;node info&quot; constructors described
 below. The following document node types are currently recognized:</p>
-<ul id="nodes">
+<ul id="node-info">
 <li><p class="first"><tt class="docutils literal"><span class="pre">xml::element</span> <span class="pre">tag</span> <span class="pre">ns</span> <span class="pre">attrs</span></tt></p>
 <p>An XML element with given (possibly qualified) name <tt class="docutils literal"><span class="pre">tag</span></tt>, a (possibly
 empty) list of namespace declarations <tt class="docutils literal"><span class="pre">ns</span></tt> and a (possibly empty) list
@@ -395,7 +401,7 @@ prefix is missing.</p>
 </li>
 <li><p class="first"><tt class="docutils literal"><span class="pre">xml::element_text</span> <span class="pre">tag</span> <span class="pre">ns</span> <span class="pre">attrs</span> <span class="pre">content</span></tt></p>
 <p>A convenience function which denotes a combination of an element node
-with a text child; this is only used when creating a new node, and
+with a text child. This is only used when creating a new node, and
 indicates that a text node child is to be added to the node
 automatically.</p>
 </li>
@@ -422,7 +428,7 @@ the text of the processing instructions.</p>
 </ul>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id5" id="document-types" name="document-types">3.2&nbsp;&nbsp;&nbsp;Document Types</a></h2>
+<h2><a class="toc-backref" href="#id6" id="document-types" name="document-types">3.2&nbsp;&nbsp;&nbsp;Document Types</a></h2>
 <p id="dtd">Besides the node types described above, there are some additional node
 types only used in the <a class="reference" href="http://www.w3.org/TR/REC-xml/#dt-doctype">document type definition</a> (DTD), which can be
 extracted from a document using the <a class="reference" href="#int-subset">int_subset</a> and <a class="reference" href="#ext-subset">ext_subset</a>
@@ -495,20 +501,23 @@ specify this</li>
 </div>
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id6" id="operations" name="operations">4&nbsp;&nbsp;&nbsp;Operations</a></h1>
+<h1><a class="toc-backref" href="#id7" id="operations" name="operations">4&nbsp;&nbsp;&nbsp;Operations</a></h1>
+<p>This module provides all operations necessary to create, inspect and
+manipulate XML documents residing either in memory or on disk. Operations
+for formatting XML documents using XSLT stylesheets are also included.</p>
 <div class="section">
-<h2><a class="toc-backref" href="#id7" id="document-operations" name="document-operations">4.1&nbsp;&nbsp;&nbsp;Document Operations</a></h2>
+<h2><a class="toc-backref" href="#id8" id="document-operations" name="document-operations">4.1&nbsp;&nbsp;&nbsp;Document Operations</a></h2>
 <p>The following functions allow you to create new XML documents, load them
 from or save them to a file or a string, and provide general information
 about a document.</p>
 <ul id="new-doc">
 <li><p class="first"><tt class="docutils literal"><span class="pre">xml::new_doc</span> <span class="pre">version</span> <span class="pre">dtd</span> <span class="pre">info</span></tt></p>
-<p>This function creates a new XML document. It returns a pointer to the new
+<p>This function creates an XML document. It returns a pointer to the new
 document. <tt class="docutils literal"><span class="pre">version</span></tt> is a string denoting the XML version (or <tt class="docutils literal"><span class="pre">&quot;&quot;</span></tt> to
-indicate the default). <tt class="docutils literal"><span class="pre">info</span></tt> is the data of the root node (which
-should denote an element node). <tt class="docutils literal"><span class="pre">dtd</span></tt> denotes the document type which
-can be <tt class="docutils literal"><span class="pre">()</span></tt> to denote an empty DTD, a string (the URI/filename of the
-DTD), or a pair <tt class="docutils literal"><span class="pre">(pubid,sysid)</span></tt> where <tt class="docutils literal"><span class="pre">pubid</span></tt> denotes the public
+indicate the default). <tt class="docutils literal"><span class="pre">info</span></tt> is the <a class="reference" href="#node-info">node info</a> of the root node
+(which should denote an element node). <tt class="docutils literal"><span class="pre">dtd</span></tt> denotes the document type
+which can be <tt class="docutils literal"><span class="pre">()</span></tt> to denote an empty DTD, a string (the URI/filename of
+the DTD), or a pair <tt class="docutils literal"><span class="pre">(pubid,sysid)</span></tt> where <tt class="docutils literal"><span class="pre">pubid</span></tt> denotes the public
 identifier of the DTD and <tt class="docutils literal"><span class="pre">sysid</span></tt> its system identifier (URI).</p>
 <p>Note that only simple kinds of documents with an internal DTD can be
 created this way. Use the <a class="reference" href="#load-file">load_file</a> or <a class="reference" href="#load-string">load_string</a> function below to
@@ -518,7 +527,7 @@ create a skeleton document if a more elaborate prolog is required.</p>
 <ul id="load-string">
 <span id="load-file"></span><li><p class="first"><tt class="docutils literal"><span class="pre">xml::load_file</span> <span class="pre">name</span> <span class="pre">flags</span></tt>, <tt class="docutils literal"><span class="pre">xml::load_string</span> <span class="pre">s</span> <span class="pre">flags</span></tt></p>
 <p>Load an XML document from a file or a string. <tt class="docutils literal"><span class="pre">flags</span></tt> denotes the
-parser flags (a bitwise disjunction of any of the following: constants,
+parser flags (a bitwise disjunction of any of the following constants,
 or 0 for the default):</p>
 <ul class="simple">
 <li><tt class="docutils literal"><span class="pre">xml::DTDLOAD</span></tt>: load DTD</li>
@@ -570,7 +579,7 @@ nodes) and retrieve the document info:</p>
 <!--  -->
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id8" id="traversing-documents" name="traversing-documents">4.2&nbsp;&nbsp;&nbsp;Traversing Documents</a></h2>
+<h2><a class="toc-backref" href="#id9" id="traversing-documents" name="traversing-documents">4.2&nbsp;&nbsp;&nbsp;Traversing Documents</a></h2>
 <p>These operations are used to traverse the document tree, i.e., the nodes of
 the document. They take either a document pointer <tt class="docutils literal"><span class="pre">doc</span></tt> or a node pointer
 <tt class="docutils literal"><span class="pre">node</span></tt> as argument, and yield a corresponding node pointer (or a document
@@ -624,7 +633,7 @@ xml::cdata &quot;&lt;greeting&gt;Hello, world!&lt;/greeting&gt;&quot;
 <!--  -->
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id9" id="node-information" name="node-information">4.3&nbsp;&nbsp;&nbsp;Node Information</a></h2>
+<h2><a class="toc-backref" href="#id10" id="node-information" name="node-information">4.3&nbsp;&nbsp;&nbsp;Node Information</a></h2>
 <p>These operations retrieve information about the nodes of an XML document.</p>
 <ul id="select">
 <li><p class="first"><tt class="docutils literal"><span class="pre">xml::select</span> <span class="pre">doc</span> <span class="pre">xpath</span></tt></p>
@@ -633,9 +642,9 @@ xml::cdata &quot;&lt;greeting&gt;Hello, world!&lt;/greeting&gt;&quot;
 given document <tt class="docutils literal"><span class="pre">doc</span></tt>.</p>
 </li>
 </ul>
-<ul id="node-info">
+<ul id="id1">
 <li><p class="first"><tt class="docutils literal"><span class="pre">xml::node_info</span> <span class="pre">node</span></tt></p>
-<p>Retrieve the node data from <tt class="docutils literal"><span class="pre">node</span></tt>. Returns a <cite>node info</cite> value as
+<p>Retrieve the node data from <tt class="docutils literal"><span class="pre">node</span></tt>. Returns a <a class="reference" href="#node-info">node info</a> value as
 described in <a class="reference" href="#data-structures">Data Structures</a>. Fails if the node does not belong to one
 of the supported node types.</p>
 </li>
@@ -695,16 +704,16 @@ important operation of this module if you want to extract information from
 an existing XML document without traversing the entire structure. Here is a
 very simple example of its use:</p>
 <pre class="literal-block">
-&gt; map xml::node_content (xml::select sample &quot;//author&quot;);
-[&quot;John Fleck&quot;]
+&gt; [xml::node_content n, xml::node_path n | n = xml::select sample &quot;//author&quot;];
+[(&quot;John Fleck&quot;,&quot;/story/storyinfo/author&quot;)]
 </pre>
 <!--  -->
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id10" id="node-manipulation" name="node-manipulation">4.4&nbsp;&nbsp;&nbsp;Node Manipulation</a></h2>
+<h2><a class="toc-backref" href="#id11" id="node-manipulation" name="node-manipulation">4.4&nbsp;&nbsp;&nbsp;Node Manipulation</a></h2>
 <p>These operations enable you to manipulate the document structure by adding
-a new node to the document tree, and by removing (unlinking) existing nodes
-from the tree.</p>
+a new node to the document tree (specified through its <a class="reference" href="#node-info">node info</a>), and
+by removing (unlinking) existing nodes from the tree.</p>
 <ul id="replace">
 <li><p class="first"><tt class="docutils literal"><span class="pre">xml::replace</span> <span class="pre">node</span> <span class="pre">info</span></tt></p>
 <p>Add the new node specified by <tt class="docutils literal"><span class="pre">info</span></tt> in place of the given node
@@ -725,7 +734,7 @@ respectively.</p>
 <p>The operations above all return a pointer to the new XML node object.</p>
 <ul id="unlink">
 <li><p class="first"><tt class="docutils literal"><span class="pre">xml::unlink</span> <span class="pre">node</span></tt></p>
-<p>Deletes an existing node from the document tree.</p>
+<p>Deletes an existing node from the document tree. Returns <tt class="docutils literal"><span class="pre">()</span></tt>.</p>
 </li>
 </ul>
 <p><strong>Examples</strong></p>
@@ -748,7 +757,7 @@ xml::comment &quot;This is a sample document for testing the xml interface.&quot
 <!--  -->
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id11" id="transformations" name="transformations">4.5&nbsp;&nbsp;&nbsp;Transformations</a></h2>
+<h2><a class="toc-backref" href="#id12" id="transformations" name="transformations">4.5&nbsp;&nbsp;&nbsp;Transformations</a></h2>
 <p>The following operations provide basic XSLT support. As already mentioned,
 stylesheets are represented as pointers to the xsltStylesheet structure
 provided by libxslt. Note that, in difference to XML document pointers,
@@ -766,18 +775,16 @@ steps:</p>
 corresponding document pointer. The function returns a pointer to the
 stylesheet object which is used in the subsequent processing.</li>
 <li>Invoke <a class="reference" href="#apply-stylesheet">apply_stylesheet</a> on the stylesheet and the target document.
-This returns a new document pointer containing the transformed XML
-document.</li>
+This returns a new document containing the transformed XML document.</li>
 <li>Run <a class="reference" href="#save-result-file">save_result_file</a> or <a class="reference" href="#save-result-string">save_result_string</a> on the result and the
 stylesheet to save the transformed document in a file or a string.</li>
 </ol>
-<p>Here is a brief summary of the XSLT operations provided by this module.
-Please check the <a class="reference" href="http://www.w3.org/TR/xslt">XSLT</a> documentation for details of the transformation
-process.</p>
+<p>Here is a brief summary of the XSLT operations. Please check the <a class="reference" href="http://www.w3.org/TR/xslt">XSLT</a>
+documentation for details of the transformation process.</p>
 <ul id="load-stylesheet">
 <li><p class="first"><tt class="docutils literal"><span class="pre">xslt::load_stylesheet</span> <span class="pre">x</span></tt></p>
-<p>Load a stylesheet. <tt class="docutils literal"><span class="pre">x`</span> <span class="pre">can</span> <span class="pre">be</span> <span class="pre">either</span> <span class="pre">an</span> <span class="pre">XML</span> <span class="pre">document</span> <span class="pre">pointer,</span> <span class="pre">or</span> <span class="pre">a</span>
-<span class="pre">string</span> <span class="pre">denoting</span> <span class="pre">the</span> <span class="pre">desired</span> <span class="pre">``.xsl</span></tt> file.</p>
+<p>Load a stylesheet. <tt class="docutils literal"><span class="pre">x</span></tt> can be either an XML document pointer, or a
+string denoting the desired <tt class="docutils literal"><span class="pre">.xsl</span></tt> file.</p>
 </li>
 </ul>
 <ul id="apply-stylesheet">

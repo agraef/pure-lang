@@ -39,24 +39,31 @@ const xml::NOBLANKS = 0x10; // suppress blank nodes
    Data Structures
    ===============
 
-   XML documents are represented using pointers to the ``xmlDoc`` and
+   This module represents XML documents using pointers to the ``xmlDoc`` and
    ``xmlNode`` structures provides by the libxml2 library. Similarly,
-   stylesheets are pointers to the xmlStylesheet structure from libxslt
-   (cf. Transformations_). These are all "cooked" pointers which take care of
-   freeing themselves automatically when they are no longer needed. You can
-   also check for these types of pointers using the following predicates:
+   stylesheets are simply pointers to the xmlStylesheet structure from libxslt
+   (cf. Transformations_). This makes it possible to use these objects
+   directly with the operations of the libxml2 and libsxslt libraries (via
+   Pure's C interface) if necessary. Note, however, that these are all
+   "cooked" pointers which take care of freeing themselves automatically when
+   they are no longer needed, therefore you shouldn't free them manually.
+
+   You can also check for these types of pointers using the following
+   predicates:
 
    .. _docp:
 
-   * ``xml::docp x`` checks whether ``x`` is an XML document.
+   * ``xml::docp x`` checks whether ``x`` is an XML document pointer.
 
    .. _nodep:
 
-   * ``xml::nodep x`` checks whether ``x`` is a node in an XML document.
+   * ``xml::nodep x`` checks whether ``x`` is a pointer to a node in an XML
+     document.
 
    .. _stylesheetp:
 
-   * ``xslt::stylesheetp x`` checks whether ``x`` is a stylesheet pointer. */
+   * ``xslt::stylesheetp x`` checks whether ``x`` is an XSLT stylesheet
+     pointer. */
 
 extern int xml_docp(expr *x) = docp;
 extern int xml_nodep(expr *x) = nodep;
@@ -69,10 +76,10 @@ extern int xml_nodep(expr *x) = nodep;
    An XML document is a rooted tree which can be created, traversed and
    manipulated using the operations of this module. There are different types
    of nodes in the tree, each carrying their own type of data. In Pure land,
-   the node data is described using the `node info` constructors described
+   the node data is described using the "node info" constructors described
    below. The following document node types are currently recognized:
 
-   .. _nodes:
+   .. _node info:
 
    * ``xml::element tag ns attrs``
 
@@ -88,7 +95,7 @@ extern int xml_nodep(expr *x) = nodep;
    * ``xml::element_text tag ns attrs content``
 
      A convenience function which denotes a combination of an element node
-     with a text child; this is only used when creating a new node, and
+     with a text child. This is only used when creating a new node, and
      indicates that a text node child is to be added to the node
      automatically.
 
@@ -249,6 +256,10 @@ mkunion x y				= union [x,y] otherwise;
    Operations
    ==========
 
+   This module provides all operations necessary to create, inspect and
+   manipulate XML documents residing either in memory or on disk. Operations
+   for formatting XML documents using XSLT stylesheets are also included.
+
    Document Operations
    -------------------
 
@@ -260,12 +271,12 @@ mkunion x y				= union [x,y] otherwise;
 
    * ``xml::new_doc version dtd info``
 
-     This function creates a new XML document. It returns a pointer to the new
+     This function creates an XML document. It returns a pointer to the new
      document. ``version`` is a string denoting the XML version (or ``""`` to
-     indicate the default). ``info`` is the data of the root node (which
-     should denote an element node). ``dtd`` denotes the document type which
-     can be ``()`` to denote an empty DTD, a string (the URI/filename of the
-     DTD), or a pair ``(pubid,sysid)`` where ``pubid`` denotes the public
+     indicate the default). ``info`` is the `node info`_ of the root node
+     (which should denote an element node). ``dtd`` denotes the document type
+     which can be ``()`` to denote an empty DTD, a string (the URI/filename of
+     the DTD), or a pair ``(pubid,sysid)`` where ``pubid`` denotes the public
      identifier of the DTD and ``sysid`` its system identifier (URI).
 
      Note that only simple kinds of documents with an internal DTD can be
@@ -280,7 +291,7 @@ extern expr *xml_new_doc(char *version, expr *dtd, expr *info) = new_doc;
    * ``xml::load_file name flags``, ``xml::load_string s flags``
 
      Load an XML document from a file or a string. ``flags`` denotes the
-     parser flags (a bitwise disjunction of any of the following: constants,
+     parser flags (a bitwise disjunction of any of the following constants,
      or 0 for the default):
 
      - ``xml::DTDLOAD``: load DTD
@@ -462,7 +473,7 @@ extern expr *xml_select(expr *doc, expr *xpath) = select;
 
    * ``xml::node_info node``
 
-     Retrieve the node data from ``node``. Returns a `node info` value as
+     Retrieve the node data from ``node``. Returns a `node info`_ value as
      described in `Data Structures`_. Fails if the node does not belong to one
      of the supported node types. */
 
@@ -533,8 +544,8 @@ extern expr *xml_node_info(expr *node) = node_info;
    an existing XML document without traversing the entire structure. Here is a
    very simple example of its use::
 
-     > map xml::node_content (xml::select sample "//author");
-     ["John Fleck"]
+     > [xml::node_content n, xml::node_path n | n = xml::select sample "//author"];
+     [("John Fleck","/story/storyinfo/author")]
 
 */
 
@@ -554,8 +565,8 @@ extern expr *xml_unset_node_attr(expr *node, expr *name) = unset_node_attr;
    -----------------
 
    These operations enable you to manipulate the document structure by adding
-   a new node to the document tree, and by removing (unlinking) existing nodes
-   from the tree.
+   a new node to the document tree (specified through its `node info`_), and
+   by removing (unlinking) existing nodes from the tree.
 
    .. _replace:
 
@@ -591,7 +602,7 @@ extern expr *xml_add_prev(expr *node, expr *info) = add_prev;
 
    * ``xml::unlink node``
 
-     Deletes an existing node from the document tree.
+     Deletes an existing node from the document tree. Returns ``()``.
 
    **Examples**
 
@@ -639,21 +650,19 @@ extern expr *xml_unlink(expr *node) = unlink;
       stylesheet object which is used in the subsequent processing.
 
    2. Invoke apply_stylesheet_ on the stylesheet and the target document.
-      This returns a new document pointer containing the transformed XML
-      document.
+      This returns a new document containing the transformed XML document.
 
    3. Run save_result_file_ or save_result_string_ on the result and the
       stylesheet to save the transformed document in a file or a string.
 
-   Here is a brief summary of the XSLT operations provided by this module.
-   Please check the XSLT_ documentation for details of the transformation
-   process.
+   Here is a brief summary of the XSLT operations. Please check the XSLT_
+   documentation for details of the transformation process.
 
    .. _load_stylesheet:
 
    * ``xslt::load_stylesheet x``
 
-     Load a stylesheet. ``x` can be either an XML document pointer, or a
+     Load a stylesheet. ``x`` can be either an XML document pointer, or a
      string denoting the desired ``.xsl`` file.
 
    .. _apply_stylesheet:
