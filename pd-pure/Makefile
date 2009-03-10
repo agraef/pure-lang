@@ -3,11 +3,19 @@
 dist = pd-pure-$(version)
 version = 0.4
 
-# Try to guess the installation prefix (this needs GNU make):
+# Try to guess the Pd installation prefix (this needs GNU make):
 prefix = $(patsubst %/bin/pd,%,$(shell which pd 2>/dev/null))
 ifeq ($(strip $(prefix)),)
 # Fall back to /usr/local.
 prefix = /usr/local
+endif
+
+# Try to guess the Pure installation prefix (this is needed to install the
+# documentation):
+pureprefix = $(patsubst %/bin/pure,%,$(shell which pure 2>/dev/null))
+ifeq ($(strip $(pureprefix)),)
+# Fall back to /usr/local.
+pureprefix = /usr/local
 endif
 
 # Installation goes into $(libdir)/pd, you can also set this directly
@@ -19,6 +27,10 @@ pdlibdir = $(libdir)/pd
 
 # Install dir for the external and accompanying stuff.
 pdextradir = $(pdlibdir)/extra/pure
+
+# Install dir for the documentation.
+purelibdir = $(pureprefix)/lib
+puredatadir = $(purelibdir)/pure
 
 # Try to guess the host system type.
 host = $(shell ./config.guess)
@@ -57,7 +69,8 @@ endif
 
 CFLAGS = -g -O2
 
-DISTFILES = COPYING Makefile README config.guess pure.c examples/*.pure examples/*.pd examples/*.el
+DISTFILES = COPYING Makefile README pd-pure.html config.guess pure.c \
+examples/*.pure examples/*.pd examples/*.el
 
 all: pure$(DLL)
 
@@ -88,10 +101,12 @@ pd-pure.pdf: pd-pure.tex
 
 install:
 	test -d "$(DESTDIR)$(pdextradir)" || mkdir -p "$(DESTDIR)$(pdextradir)"
-	cp COPYING README Makefile pure.c pure$(DLL) examples/*.pure examples/*.pd examples/*.el "$(DESTDIR)$(pdextradir)"
+	cp COPYING README pd-pure.html Makefile pure.c pure$(DLL) examples/*.pure examples/*.pd examples/*.el "$(DESTDIR)$(pdextradir)"
+	test -d "$(DESTDIR)$(puredatadir)" || mkdir -p "$(DESTDIR)$(puredatadir)"
+	ln -sf "$(pdextradir)"/pd-pure.html "$(DESTDIR)$(puredatadir)"
 
 uninstall:
-	rm -rf "$(DESTDIR)$(pdextradir)"
+	rm -rf "$(DESTDIR)$(pdextradir)" "$(DESTDIR)$(puredatadir)"/pd-pure.html
 
 dist:
 	rm -rf $(dist)
@@ -99,4 +114,9 @@ dist:
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
+	rm -rf $(dist)
+
+distcheck: dist
+	tar xfz $(dist).tar.gz
+	cd $(dist) && make && make install DESTDIR=./BUILD
 	rm -rf $(dist)
