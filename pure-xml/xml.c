@@ -277,9 +277,9 @@ static const char *attrname(xmlAttrPtr attr)
 static xmlNsPtr mkns(xmlDocPtr doc, xmlNodePtr parent, xmlNodePtr node,
 		     const char *prefix)
 {
-  xmlNsPtr ns = xmlSearchNs(doc, node, (xmlChar*)prefix);
+  xmlNsPtr ns = xmlSearchNs(doc, node, (const xmlChar*)prefix);
   if (!ns && parent && node->parent != parent)
-    ns = xmlSearchNs(doc, parent, (xmlChar*)prefix);
+    ns = xmlSearchNs(doc, parent, (const xmlChar*)prefix);
   return ns;
 }
 
@@ -458,6 +458,16 @@ static pure_expr *pure_string_null(const char *s)
     return pure_string_dup(s);
   else
     return pure_string_dup("");
+}
+
+static pure_expr *pure_string_ret(xmlChar *s)
+{
+  if (s) {
+    pure_expr *ret = pure_string_dup((const char*)s);
+    xmlFree(s);
+    return ret;
+  } else
+    return NULL;
 }
 
 static int doc_token;
@@ -722,10 +732,7 @@ pure_expr *xml_save_string(pure_expr *docptr)
     xmlIndentTreeOutput = 1;
     xmlDocDumpFormatMemoryEnc(doc, &s, &len, "UTF-8", 1);
     xmlIndentTreeOutput = save_indent;
-    if (s)
-      return pure_string((char*)s);
-    else
-      return NULL;
+    return pure_string_ret(s);
   } else
     return NULL;
 }
@@ -1144,11 +1151,8 @@ pure_expr *xml_node_base(pure_expr *nodeptr)
 {
   xmlNodePtr node;
   if (pure_is_node(nodeptr, &node) && node->doc) {
-    char *s = (char*)xmlNodeGetBase(node->doc, node);
-    if (s)
-      return pure_string(s);
-    else
-      return NULL;
+    xmlChar *s = xmlNodeGetBase(node->doc, node);
+    return pure_string_ret(s);
   } else
     return NULL;
 }
@@ -1157,11 +1161,8 @@ pure_expr *xml_node_path(pure_expr *nodeptr)
 {
   xmlNodePtr node;
   if (pure_is_node(nodeptr, &node)) {
-    char *s = (char*)xmlGetNodePath(node);
-    if (s)
-      return pure_string(s);
-    else
-      return NULL;
+    xmlChar *s = xmlGetNodePath(node);
+    return pure_string_ret(s);
   } else
     return NULL;
 }
@@ -1170,11 +1171,8 @@ pure_expr *xml_node_content(pure_expr *nodeptr)
 {
   xmlNodePtr node;
   if (pure_is_node(nodeptr, &node)) {
-    char *s = (char*)xmlNodeGetContent(node);
-    if (s)
-      return pure_string(s);
-    else
-      return NULL;
+    xmlChar *s = xmlNodeGetContent(node);
+    return pure_string_ret(s);
   } else
     return NULL;
 }
@@ -1187,13 +1185,10 @@ pure_expr *xml_node_attr(pure_expr *nodeptr, pure_expr *x)
       pure_is_string(x, &s)) {
     const char *prefix, *name = splitname(s, &prefix);
     xmlNsPtr ns = mkns(node->doc, node->parent, node, prefix);
-    char *t;
+    xmlChar *t;
     if (prefix && !ns) return NULL;
-    t = (char*)xmlGetNsProp(node, (xmlChar*)name, ns?ns->href:NULL);
-    if (t)
-      return pure_string(t);
-    else
-      return NULL;
+    t = xmlGetNsProp(node, (const xmlChar*)name, ns?ns->href:NULL);
+    return pure_string_ret(t);
   } else
     return NULL;
 }
@@ -1437,7 +1432,7 @@ pure_expr *xslt_load_stylesheet(pure_expr *x)
       /* FIXME: Is the filename parameter of xsltParseStylesheetFile really an
 	 UTF-8 string? As all other filename parameters in libxml/libxslt are
 	 ordinary char*, we assume that here too. */
-      style = xsltParseStylesheetFile((xmlChar*)s);
+      style = xsltParseStylesheetFile((const xmlChar*)s);
       free(s);
     } else {
       doc = xmlCopyDoc(doc, 1);
@@ -1526,10 +1521,7 @@ pure_expr *xslt_save_result_string(pure_expr *docptr, pure_expr *styleptr)
     xmlChar *s = NULL;
     int len;
     xsltSaveResultToString(&s, &len, doc, style);
-    if (s)
-      return pure_string((char*)s);
-    else
-      return NULL;
+    return pure_string_ret(s);
   } else
     return NULL;
 }
