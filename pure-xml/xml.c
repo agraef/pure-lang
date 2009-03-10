@@ -457,7 +457,7 @@ static pure_expr *pure_string_null(const char *s)
   if (s)
     return pure_string_dup(s);
   else
-    return pure_string("");
+    return pure_string_dup("");
 }
 
 static int doc_token;
