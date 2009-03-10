@@ -51,7 +51,8 @@ CFLAGS = -g -O2
 
 FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 
-DISTFILES = COPYING Makefile README config.guess examples/*.pure odbc.c odbc.pure
+DISTFILES = COPYING Makefile README pure-odbc.html config.guess \
+examples/*.pure odbc.c odbc.pure
 
 all: odbc$(DLL)
 
@@ -79,10 +80,10 @@ pure-odbc.pdf: pure-odbc.tex
 
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
-	cp odbc.pure odbc$(DLL) "$(DESTDIR)$(libdir)/pure"
+	cp odbc.pure odbc$(DLL) pure-odbc.html "$(DESTDIR)$(libdir)/pure"
 
 uninstall:
-	rm -f "$(DESTDIR)$(libdir)/pure/odbc.pure" "$(DESTDIR)$(libdir)/pure/odbc$(DLL)"
+	rm -f "$(DESTDIR)$(libdir)/pure/odbc.pure" "$(DESTDIR)$(libdir)/pure/odbc$(DLL)" "$(DESTDIR)$(libdir)/pure/pure-odbc.html"
 
 dist:
 	rm -rf $(dist)
