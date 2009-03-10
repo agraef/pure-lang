@@ -13,6 +13,7 @@ endif
 # Installation goes into $(libdir)/pure, you can also set this directly
 # instead of $(prefix).
 libdir = $(prefix)/lib
+datadir = $(libdir)/pure
 
 # Try to guess the host system type.
 host = $(shell ./config.guess)
@@ -52,7 +53,7 @@ CFLAGS = -g -O2
 
 FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 
-DISTFILES = COPYING Makefile README config.guess xml.c xml.pure \
+DISTFILES = COPYING Makefile README pure-xml.html config.guess xml.c xml.pure \
 examples/*.pure examples/*.xml examples/*.xsl
 
 all: xml$(DLL)
@@ -64,11 +65,11 @@ clean:
 	rm -f *$(DLL) *~ *.a *.o
 
 install:
-	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
-	cp xml.pure xml$(DLL) "$(DESTDIR)$(libdir)/pure"
+	test -d "$(DESTDIR)$(datadir)" || mkdir -p "$(DESTDIR)$(datadir)"
+	cp xml.pure xml$(DLL) pure-doc.html "$(DESTDIR)$(datadir)"
 
 uninstall:
-	rm -f "$(DESTDIR)$(libdir)/pure/xml.pure" "$(DESTDIR)$(libdir)/pure/xml$(DLL)"
+	rm -f "$(DESTDIR)$(datadir)/xml.pure" "$(DESTDIR)$(datadir)/xml$(DLL)"
 
 dist:
 	rm -rf $(dist)
@@ -88,8 +89,8 @@ distcheck: dist
 sources = xml.pure
 target = pure-xml
 
-$(target).txt: $(sources)
-	pure-doc $(sources) > $@
+$(target).txt: README $(sources)
+	pure-doc $(sources) | cat README - > $@
 
 .PHONY: html tex pdf
 
