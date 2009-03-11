@@ -1,0 +1,780 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Docutils 0.4: http://docutils.sourceforge.net/" />
+<title>Pure-ODBC - ODBC interface for the Pure programming language</title>
+<meta name="author" content="Albert Graef &lt;Dr.Graef&#64;t-online.de&gt;" />
+<meta name="author" content="Jiri Spitz &lt;jiri.spitz&#64;bluetone.cz&gt;" />
+<meta name="date" content="Feb 24 2009" />
+<style type="text/css">
+
+/*
+:Author: David Goodger
+:Contact: goodger@users.sourceforge.net
+:Date: $Date: 2005-12-18 01:56:14 +0100 (Sun, 18 Dec 2005) $
+:Revision: $Revision: 4224 $
+:Copyright: This stylesheet has been placed in the public domain.
+
+Default cascading style sheet for the HTML output of Docutils.
+
+See http://docutils.sf.net/docs/howto/html-stylesheets.html for how to
+customize this style sheet.
+*/
+
+/* used to remove borders from tables and images */
+.borderless, table.borderless td, table.borderless th {
+  border: 0 }
+
+table.borderless td, table.borderless th {
+  /* Override padding for "table.docutils td" with "! important".
+     The right padding separates the table cells. */
+  padding: 0 0.5em 0 0 ! important }
+
+.first {
+  /* Override more specific margin styles with "! important". */
+  margin-top: 0 ! important }
+
+.last, .with-subtitle {
+  margin-bottom: 0 ! important }
+
+.hidden {
+  display: none }
+
+a.toc-backref {
+  text-decoration: none ;
+  color: black }
+
+blockquote.epigraph {
+  margin: 2em 5em ; }
+
+dl.docutils dd {
+  margin-bottom: 0.5em }
+
+/* Uncomment (and remove this text!) to get bold-faced definition list terms
+dl.docutils dt {
+  font-weight: bold }
+*/
+
+div.abstract {
+  margin: 2em 5em }
+
+div.abstract p.topic-title {
+  font-weight: bold ;
+  text-align: center }
+
+div.admonition, div.attention, div.caution, div.danger, div.error,
+div.hint, div.important, div.note, div.tip, div.warning {
+  margin: 2em ;
+  border: medium outset ;
+  padding: 1em }
+
+div.admonition p.admonition-title, div.hint p.admonition-title,
+div.important p.admonition-title, div.note p.admonition-title,
+div.tip p.admonition-title {
+  font-weight: bold ;
+  font-family: sans-serif }
+
+div.attention p.admonition-title, div.caution p.admonition-title,
+div.danger p.admonition-title, div.error p.admonition-title,
+div.warning p.admonition-title {
+  color: red ;
+  font-weight: bold ;
+  font-family: sans-serif }
+
+/* Uncomment (and remove this text!) to get reduced vertical space in
+   compound paragraphs.
+div.compound .compound-first, div.compound .compound-middle {
+  margin-bottom: 0.5em }
+
+div.compound .compound-last, div.compound .compound-middle {
+  margin-top: 0.5em }
+*/
+
+div.dedication {
+  margin: 2em 5em ;
+  text-align: center ;
+  font-style: italic }
+
+div.dedication p.topic-title {
+  font-weight: bold ;
+  font-style: normal }
+
+div.figure {
+  margin-left: 2em ;
+  margin-right: 2em }
+
+div.footer, div.header {
+  clear: both;
+  font-size: smaller }
+
+div.line-block {
+  display: block ;
+  margin-top: 1em ;
+  margin-bottom: 1em }
+
+div.line-block div.line-block {
+  margin-top: 0 ;
+  margin-bottom: 0 ;
+  margin-left: 1.5em }
+
+div.sidebar {
+  margin-left: 1em ;
+  border: medium outset ;
+  padding: 1em ;
+  background-color: #ffffee ;
+  width: 40% ;
+  float: right ;
+  clear: right }
+
+div.sidebar p.rubric {
+  font-family: sans-serif ;
+  font-size: medium }
+
+div.system-messages {
+  margin: 5em }
+
+div.system-messages h1 {
+  color: red }
+
+div.system-message {
+  border: medium outset ;
+  padding: 1em }
+
+div.system-message p.system-message-title {
+  color: red ;
+  font-weight: bold }
+
+div.topic {
+  margin: 2em }
+
+h1.section-subtitle, h2.section-subtitle, h3.section-subtitle,
+h4.section-subtitle, h5.section-subtitle, h6.section-subtitle {
+  margin-top: 0.4em }
+
+h1.title {
+  text-align: center }
+
+h2.subtitle {
+  text-align: center }
+
+hr.docutils {
+  width: 75% }
+
+img.align-left {
+  clear: left }
+
+img.align-right {
+  clear: right }
+
+ol.simple, ul.simple {
+  margin-bottom: 1em }
+
+ol.arabic {
+  list-style: decimal }
+
+ol.loweralpha {
+  list-style: lower-alpha }
+
+ol.upperalpha {
+  list-style: upper-alpha }
+
+ol.lowerroman {
+  list-style: lower-roman }
+
+ol.upperroman {
+  list-style: upper-roman }
+
+p.attribution {
+  text-align: right ;
+  margin-left: 50% }
+
+p.caption {
+  font-style: italic }
+
+p.credits {
+  font-style: italic ;
+  font-size: smaller }
+
+p.label {
+  white-space: nowrap }
+
+p.rubric {
+  font-weight: bold ;
+  font-size: larger ;
+  color: maroon ;
+  text-align: center }
+
+p.sidebar-title {
+  font-family: sans-serif ;
+  font-weight: bold ;
+  font-size: larger }
+
+p.sidebar-subtitle {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+p.topic-title {
+  font-weight: bold }
+
+pre.address {
+  margin-bottom: 0 ;
+  margin-top: 0 ;
+  font-family: serif ;
+  font-size: 100% }
+
+pre.literal-block, pre.doctest-block {
+  margin-left: 2em ;
+  margin-right: 2em ;
+  background-color: #eeeeee }
+
+span.classifier {
+  font-family: sans-serif ;
+  font-style: oblique }
+
+span.classifier-delimiter {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+span.interpreted {
+  font-family: sans-serif }
+
+span.option {
+  white-space: nowrap }
+
+span.pre {
+  white-space: pre }
+
+span.problematic {
+  color: red }
+
+span.section-subtitle {
+  /* font-size relative to parent (h1..h6 element) */
+  font-size: 80% }
+
+table.citation {
+  border-left: solid 1px gray;
+  margin-left: 1px }
+
+table.docinfo {
+  margin: 2em 4em }
+
+table.docutils {
+  margin-top: 0.5em ;
+  margin-bottom: 0.5em }
+
+table.footnote {
+  border-left: solid 1px black;
+  margin-left: 1px }
+
+table.docutils td, table.docutils th,
+table.docinfo td, table.docinfo th {
+  padding-left: 0.5em ;
+  padding-right: 0.5em ;
+  vertical-align: top }
+
+table.docutils th.field-name, table.docinfo th.docinfo-name {
+  font-weight: bold ;
+  text-align: left ;
+  white-space: nowrap ;
+  padding-left: 0 }
+
+h1 tt.docutils, h2 tt.docutils, h3 tt.docutils,
+h4 tt.docutils, h5 tt.docutils, h6 tt.docutils {
+  font-size: 100% }
+
+tt.docutils {
+  background-color: #eeeeee }
+
+ul.auto-toc {
+  list-style-type: none }
+
+</style>
+</head>
+<body>
+<div class="document" id="pure-odbc-odbc-interface-for-the-pure-programming-language">
+<h1 class="title">Pure-ODBC - ODBC interface for the Pure programming language</h1>
+<table class="docinfo" frame="void" rules="none">
+<col class="docinfo-name" />
+<col class="docinfo-content" />
+<tbody valign="top">
+<tr><th class="docinfo-name">Author:</th>
+<td>Albert Graef &lt;<a class="reference" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
+<tr><th class="docinfo-name">Author:</th>
+<td>Jiri Spitz &lt;<a class="reference" href="mailto:jiri.spitz&#64;bluetone.cz">jiri.spitz&#64;bluetone.cz</a>&gt;</td></tr>
+<tr><th class="docinfo-name">Date:</th>
+<td>Feb 24 2009</td></tr>
+</tbody>
+</table>
+<p>This module provides a simple ODBC interface for the Pure programming
+language, which lets you access a large variety of open source and commercial
+database systems from Pure. ODBC a.k.a. &quot;Open Database Connectivity&quot; was
+originally developed by Microsoft for Windows, but is now available on many
+different platforms, and two open source implementations exist for Unix-like
+systems: iODBC (<a class="reference" href="http://www.iodbc.org">http://www.iodbc.org</a>) and unixODBC (<a class="reference" href="http://www.unixodbc.org">http://www.unixodbc.org</a>).</p>
+<p>ODBC has become the industry standard for portable and vendor independent
+database access. Most modern relational databases provide an ODBC interface so
+that they can be used with this module. This includes the popular open source
+DBMSs MySQL (<a class="reference" href="http://www.mysql.com">http://www.mysql.com</a>) and PostgreSQL (<a class="reference" href="http://www.postgresql.org">http://www.postgresql.org</a>).
+The module provides the necessary operations to connect to an ODBC data source
+and retrieve or modify data using SQL statements.</p>
+<p>To make this module work, you must have an ODBC installation on your system,
+as well as the driver backend for the DBMS you want to use (and, of course,
+the DBMS itself). You also have to configure the DBMS as a data source for the
+ODBC system. On Windows this is done with the ODBC applet in the system
+control panel. For iODBC and unixODBC you can either edit the corresponding
+configuration files (/etc/odbc.ini and/or ~/.odbc.ini) by hand, or use one of
+the available graphical setup tools. More information about the setup process
+can be found on the iODBC and unixODBC websites.</p>
+<div class="contents topic">
+<p class="topic-title first"><a id="contents" name="contents">Contents</a></p>
+<ul class="auto-toc simple">
+<li><a class="reference" href="#installation" id="id1" name="id1">1&nbsp;&nbsp;&nbsp;Installation</a></li>
+<li><a class="reference" href="#opening-and-closing-a-data-source" id="id2" name="id2">2&nbsp;&nbsp;&nbsp;Opening and Closing a Data Source</a></li>
+<li><a class="reference" href="#getting-information-about-a-data-source" id="id3" name="id3">3&nbsp;&nbsp;&nbsp;Getting Information about a Data Source</a></li>
+<li><a class="reference" href="#executing-sql-queries" id="id4" name="id4">4&nbsp;&nbsp;&nbsp;Executing SQL Queries</a></li>
+<li><a class="reference" href="#low-level-operations" id="id5" name="id5">5&nbsp;&nbsp;&nbsp;Low-Level Operations</a></li>
+<li><a class="reference" href="#lazy-processing" id="id6" name="id6">6&nbsp;&nbsp;&nbsp;Lazy Processing</a></li>
+<li><a class="reference" href="#error-handling" id="id7" name="id7">7&nbsp;&nbsp;&nbsp;Error Handling</a></li>
+<li><a class="reference" href="#caveats-and-bugs" id="id8" name="id8">8&nbsp;&nbsp;&nbsp;Caveats and Bugs</a></li>
+<li><a class="reference" href="#further-information-and-examples" id="id9" name="id9">9&nbsp;&nbsp;&nbsp;Further Information and Examples</a></li>
+</ul>
+</div>
+<!-- Note: If you're wondering about the funny formatting, this README
+simultaneously serves to generate the documentation for this module
+in a variety of formats, using the docutils text formatting system
+(http://docutils.sourceforge.net/). -->
+<div class="section">
+<h1><a class="toc-backref" href="#id1" id="installation" name="installation">1&nbsp;&nbsp;&nbsp;Installation</a></h1>
+<p>Run <tt class="docutils literal"><span class="pre">make</span></tt> to compile the module and <tt class="docutils literal"><span class="pre">make</span> <span class="pre">install</span></tt> (as root) to install
+it in the Pure library directory. This requires GNU make, and of course you
+need to have Pure installed. The only other dependency is the GNU
+Multiprecision Library (GMP).</p>
+<p><tt class="docutils literal"><span class="pre">make</span></tt> tries to guess your Pure installation directory and platform-specific
+setup. If it gets this wrong, you can set some variables manually. In
+particular, <tt class="docutils literal"><span class="pre">make</span> <span class="pre">install</span> <span class="pre">prefix=/usr</span></tt> sets the installation prefix, and
+<tt class="docutils literal"><span class="pre">make</span> <span class="pre">PIC=-fPIC</span></tt> or some similar flag might be needed for compilation on 64
+bit systems. The variable <tt class="docutils literal"><span class="pre">ODBCLIB</span></tt> specifies the ODBC library to be linked
+with. The default value is <tt class="docutils literal"><span class="pre">ODBCLIB=-lodbc</span></tt>. Please see the Makefile for
+details.</p>
+</div>
+<div class="section">
+<h1><a class="toc-backref" href="#id2" id="opening-and-closing-a-data-source" name="opening-and-closing-a-data-source">2&nbsp;&nbsp;&nbsp;Opening and Closing a Data Source</a></h1>
+<p>To open an ODBC connection, you have to specify a &quot;connect string&quot; which names
+the data source to be used with the <tt class="docutils literal"><span class="pre">odbc::connect</span></tt> function. A list of
+available data sources can be obtained with the <tt class="docutils literal"><span class="pre">odbc::sources</span></tt>
+function. For instance, on my Linux system running MySQL and PostgreSQL it
+shows the following:</p>
+<pre class="literal-block">
+&gt; odbc::sources;
+[(&quot;myodbc&quot;,&quot;MySQL ODBC 2.50&quot;),(&quot;psqlodbc&quot;,&quot;PostgreSQL ODBC&quot;)]
+</pre>
+<p>The first component in each entry of the list is the name of the data source,
+which can be used as the value of the <tt class="docutils literal"><span class="pre">DSN</span></tt> option in the connect string,
+the second component provides a short description of the data source.</p>
+<p>Likewise, the list of ODBC drivers available on your system can be obtained
+with the <tt class="docutils literal"><span class="pre">odbc::drivers</span></tt> function which returns a list of pairs of driver
+names and attributes. (Older ODBC implementations on Unix lacked this feature,
+but it seems to be properly supported in recent unixODBC implementations at
+least.) On Windows this function can be used to determine a legal value for
+the DRIVER attribute in the connect string, see below.</p>
+<p>The <tt class="docutils literal"><span class="pre">odbc::connect</span></tt> function is invoked with a single parameter, the connect
+string, which is used to describe the data source and various other parameters
+such as user id and password. For instance, on my system I can connect to the
+local <tt class="docutils literal"><span class="pre">myodbc</span></tt> data source from above as follows:</p>
+<pre class="literal-block">
+&gt; let db = odbc::connect &quot;DSN=myodbc&quot;;
+</pre>
+<p>The <tt class="docutils literal"><span class="pre">odbc::connect</span></tt> function returns a pointer to an <tt class="docutils literal"><span class="pre">ODBCHandle</span></tt> object
+which is used to refer to the database connection in the other routines
+provided by this module. An <tt class="docutils literal"><span class="pre">ODBCHandle</span></tt> object is closed automatically when
+it is no longer accessible. You can also close it explicitly with a call to
+the <tt class="docutils literal"><span class="pre">odbc::disconnect</span></tt> function:</p>
+<pre class="literal-block">
+&gt; odbc::disconnect db;
+</pre>
+<p>After <tt class="docutils literal"><span class="pre">odbc::disconnect</span></tt> has been invoked on a handle, any further
+operations on it will fail.</p>
+<p><tt class="docutils literal"><span class="pre">odbc::connect</span></tt> allows a number of attributes to be passed to the ODBC
+driver when opening the database connection. E.g., here's how to specify a
+username and password; note that the different attributes are separated with a
+semicolon:</p>
+<pre class="literal-block">
+&gt; let db = odbc::connect &quot;DSN=myodbc;UID=root;PWD=guess&quot;;
+</pre>
+<p>The precise set of attributes in the connect string depends on your ODBC
+driver, but at least the following options should be available on most
+systems. (Case is insignificant in the attribute names, so e.g. the
+<tt class="docutils literal"><span class="pre">DATABASE</span></tt> attribute may be specified as either <tt class="docutils literal"><span class="pre">DATABASE</span></tt>, <tt class="docutils literal"><span class="pre">Database</span></tt>
+or <tt class="docutils literal"><span class="pre">database</span></tt>.)</p>
+<ul class="simple">
+<li>DSN=&lt;data source name&gt;</li>
+<li>HOST=&lt;server host name&gt;</li>
+<li>DATABASE=&lt;database path&gt;</li>
+<li>UID=&lt;user name&gt;</li>
+<li>PWD=&lt;password&gt;</li>
+</ul>
+<p>The following attributes appear to be Windows-specific:</p>
+<ul class="simple">
+<li>FILEDSN=&lt;DSN file name&gt;</li>
+<li>DRIVER=&lt;driver name&gt;</li>
+<li>DBQ=&lt;database file name&gt;</li>
+</ul>
+<p>Using the <tt class="docutils literal"><span class="pre">FILEDSN</span></tt> option you can establish a connection to a data source
+described in a .dsn file on Windows, as follows:</p>
+<pre class="literal-block">
+&gt; odbc::connect &quot;FILEDSN=test.dsn&quot;;
+</pre>
+<p>On Windows it is also possible to directly connect to a driver and name a
+database file as the data source. For instance, using the MS Access ODBC
+driver you can connect to a database file test.mdb as follows:</p>
+<pre class="literal-block">
+&gt; odbc::connect &quot;DRIVER=Microsoft Access Driver (*.mdb);DBQ=test.mdb&quot;;
+</pre>
+<p>SQLite (<a class="reference" href="http://www.sqlite.org">http://www.sqlite.org</a>) provides another way to get a database up and
+running quickly. For that you need the SQLite library and the SQLite ODBC
+driver available at <a class="reference" href="http://www.ch-werner.de/sqliteodbc">http://www.ch-werner.de/sqliteodbc</a>. Then you can open an
+SQLite database as follows (the database file is named with the <tt class="docutils literal"><span class="pre">DATABASE</span></tt>
+attribute and is created automatically if it doesn't exist):</p>
+<pre class="literal-block">
+&gt; odbc::connect &quot;DSN=SQLite3 Datasource;Database=test.db&quot;;
+</pre>
+<p>SQLite generally performs very well if you avoid some pitfalls (in particular,
+big batches of updates/inserts should be done within a transaction, otherwise
+they will take forever). It is certainly good enough for smaller databases and
+very easy to set up. Basically, after installing SQLite and its ODBC driver
+you're ready to go immediately. This makes it a very convenient alternative if
+you don't want to go through the tedium of setting up one of the big hulking
+DBMS.</p>
+</div>
+<div class="section">
+<h1><a class="toc-backref" href="#id3" id="getting-information-about-a-data-source" name="getting-information-about-a-data-source">3&nbsp;&nbsp;&nbsp;Getting Information about a Data Source</a></h1>
+<p>You can get general information about an open database connection with the
+<tt class="docutils literal"><span class="pre">odbc::info</span></tt> function. This function returns a tuple of strings with the
+following items (see the description of the SQLGetInfo() function in the ODBC
+API reference for more information):</p>
+<ul class="simple">
+<li>DATA_SOURCE_NAME: the data source name</li>
+<li>DATABASE_NAME: the default database</li>
+<li>DBMS_NAME: the host DBMS name</li>
+<li>DBMS_VER: the host DBMS version</li>
+<li>DRIVER_NAME: the name of the ODBC driver</li>
+<li>DRIVER_VER: the version of the ODBC driver</li>
+<li>DRIVER_ODBC_VER: the ODBC version supported by the driver</li>
+<li>ODBC_VER: the ODBC version of the driver manager</li>
+</ul>
+<p>E.g., here is what the connection to MySQL shows on my Linux system:</p>
+<pre class="literal-block">
+&gt; odbc::info db;
+&quot;myodbc&quot;,&quot;test&quot;,&quot;MySQL&quot;,&quot;5.0.18&quot;,&quot;myodbc3.dll&quot;,&quot;03.51.12&quot;,&quot;03.51&quot;,&quot;03.52&quot;
+</pre>
+<p>The odbc module also provides a number of operations to retrieve a bunch of
+additional meta information about the given database connection. In
+particular, the <tt class="docutils literal"><span class="pre">odbc::getinfo</span></tt> function provides a direct interface to the
+SQLGetInfo() routine. The result of <tt class="docutils literal"><span class="pre">odbc::getinfo</span></tt> is a pointer which can
+be converted to an integer or string value, depending on the type of
+information requested. For instance:</p>
+<pre class="literal-block">
+&gt; get_short $ odbc::getinfo db odbc::SQL_MAX_TABLES_IN_SELECT;
+31
+
+&gt; cstring_dup $ odbc::getinfo db odbc::SQL_IDENTIFIER_QUOTE_CHAR;
+&quot;`&quot;
+</pre>
+<p>Information about supported SQL data types is available with the
+<tt class="docutils literal"><span class="pre">odbc::typeinfo</span></tt> routine (this returns a lot of data, see odbc.pure for an
+explanation):</p>
+<pre class="literal-block">
+&gt; odbc::typeinfo db odbc::SQL_ALL_TYPES;
+</pre>
+<p>Moreover, information about the tables in the current database, as well as the
+structure of the tables and their primary and foreign keys can be retrieved
+with the <tt class="docutils literal"><span class="pre">odbc::tables</span></tt>, <tt class="docutils literal"><span class="pre">odbc::columns</span></tt>, <tt class="docutils literal"><span class="pre">odbc::primary_keys</span></tt> and
+<tt class="docutils literal"><span class="pre">odbc::foreign_keys</span></tt> functions:</p>
+<pre class="literal-block">
+&gt; odbc::tables db;
+[(&quot;event&quot;,&quot;TABLE&quot;),(&quot;pet&quot;,&quot;TABLE&quot;)]
+
+&gt; odbc::columns db &quot;pet&quot;;
+[(&quot;name&quot;,&quot;varchar&quot;,&quot;NO&quot;,&quot;''&quot;),(&quot;owner&quot;,&quot;varchar&quot;,&quot;YES&quot;,odbc::SQLNULL),
+(&quot;species&quot;,&quot;varchar&quot;,&quot;YES&quot;,odbc::SQLNULL),(&quot;sex&quot;,&quot;char&quot;,&quot;YES&quot;,odbc::SQLNULL),
+(&quot;birth&quot;,&quot;date&quot;,&quot;YES&quot;,odbc::SQLNULL),(&quot;death&quot;,&quot;date&quot;,&quot;YES&quot;,odbc::SQLNULL)]
+
+&gt; odbc::primary_keys db &quot;pet&quot;;
+[&quot;name&quot;]
+
+&gt; odbc::foreign_keys db &quot;event&quot;;
+[(&quot;name&quot;,&quot;pet&quot;,&quot;name&quot;)]
+</pre>
+<p>This often provides a convenient and portable means to retrieve basic
+information about table structures, at least on RDBMS which properly implement
+the corresponding ODBC calls. Also note that while this information is also
+available through special system catalogs in most databases, the details of
+accessing these vary a lot among implementations.</p>
+</div>
+<div class="section">
+<h1><a class="toc-backref" href="#id4" id="executing-sql-queries" name="executing-sql-queries">4&nbsp;&nbsp;&nbsp;Executing SQL Queries</a></h1>
+<p>As soon as a database connection has been opened, you can execute SQL queries
+on it using the <tt class="docutils literal"><span class="pre">sql</span></tt> function which executes a query and collects the
+results in a list. Note that SQL queries generally come in two different
+flavours: queries returning data (so-called <em>result sets</em>), and statements
+modifying the data (which have as their result the number of affected
+rows). The <tt class="docutils literal"><span class="pre">sql</span></tt> function returns a nonempty list of lists (where the first
+list denotes the column titles, and each subsequent list corresponds to a
+single row of the result set) in the former, and the row count in the latter
+case.</p>
+<p>For instance, here is how you can select some entries from a table. (The
+following examples assume the sample &quot;menagerie&quot; tables from the MySQL
+documentation. The <tt class="docutils literal"><span class="pre">initdb</span></tt> function in the examples/menagerie.pure script
+can be used to create these tables in your default database.)</p>
+<pre class="literal-block">
+&gt; odbc::sql db &quot;select name,species from pet where owner='Harold'&quot; [];
+[[&quot;name&quot;,&quot;species&quot;],[&quot;Fluffy&quot;,&quot;cat&quot;],[&quot;Buffy&quot;,&quot;dog&quot;]]
+</pre>
+<p>Often the third parameter of <tt class="docutils literal"><span class="pre">sql</span></tt>, as above, is just the empty list,
+indicating a parameterless query. Queries involving marked input parameters
+can be executed by specifying the parameter values in the third argument of
+the <tt class="docutils literal"><span class="pre">sql</span></tt> call. For instance:</p>
+<pre class="literal-block">
+&gt; odbc::sql db &quot;select name,species from pet where owner=?&quot; [&quot;Harold&quot;];
+[[&quot;name&quot;,&quot;species&quot;],[&quot;Fluffy&quot;,&quot;cat&quot;],[&quot;Buffy&quot;,&quot;dog&quot;]]
+</pre>
+<p>Multiple parameters are specified as a list:</p>
+<pre class="literal-block">
+&gt; odbc::sql db &quot;select name,species from pet where owner=? and species=?&quot;
+&gt; [&quot;Harold&quot;,&quot;cat&quot;];
+[[&quot;name&quot;,&quot;species&quot;],[&quot;Fluffy&quot;,&quot;cat&quot;]]
+</pre>
+<p>Parameterized queries are particularly useful for the purpose of inserting
+data into a table:</p>
+<pre class="literal-block">
+&gt; odbc::sql db &quot;insert into pet values (?,?,?,?,?,?)&quot;
+&gt; [&quot;Puffball&quot;,&quot;Diane&quot;,&quot;hamster&quot;,&quot;f&quot;,&quot;1999-03-30&quot;,odbc::SQLNULL];
+1
+</pre>
+<p>In this case we could also have hard-coded the data to be inserted right into
+the SQL statement, but a parameterized query like the one above can easily be
+applied to a whole collection of data rows, e.g., as follows:</p>
+<pre class="literal-block">
+&gt; do (odbc::sql db &quot;insert into pet values (?,?,?,?,?,?)&quot;) data;
+</pre>
+<p>Parameterized queries also let you insert data which cannot be specified
+easily inside an SQL query, such as long strings or binary data.</p>
+<p>The following SQL types of result and parameter values are recognized and
+converted to/from the corresponding Pure types:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="73%" />
+<col width="27%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">SQL value/type</th>
+<th class="head">Pure value/type</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>SQL NULL (no value)</td>
+<td><tt class="docutils literal"><span class="pre">odbc::SQLNULL</span></tt></td>
+</tr>
+<tr><td>integer types (INTEGER and friends)</td>
+<td><tt class="docutils literal"><span class="pre">int</span></tt></td>
+</tr>
+<tr><td>64-bit integers</td>
+<td><tt class="docutils literal"><span class="pre">bigint</span></tt></td>
+</tr>
+<tr><td>floating point types (REAL, FLOAT and friends)</td>
+<td><tt class="docutils literal"><span class="pre">double</span></tt></td>
+</tr>
+<tr><td>binary data (BINARY, BLOB, etc.)</td>
+<td><tt class="docutils literal"><span class="pre">(size,</span> <span class="pre">data)</span></tt></td>
+</tr>
+<tr><td>character strings (CHAR, VARCHAR, TEXT, etc.)</td>
+<td><tt class="docutils literal"><span class="pre">string</span></tt></td>
+</tr>
+</tbody>
+</table>
+<p>Note the special constant (nullary symbol) <tt class="docutils literal"><span class="pre">odbc::SQLNULL</span></tt> which is used to
+represent SQL NULL values.</p>
+<p>Also note that binary data is specified as a pair <tt class="docutils literal"><span class="pre">(size,</span> <span class="pre">data)</span></tt> consisting
+of an int or bigint <tt class="docutils literal"><span class="pre">size</span></tt> which denotes the size of the data in bytes, and
+a pointer <tt class="docutils literal"><span class="pre">data</span></tt> (which must not be a null pointer unless <tt class="docutils literal"><span class="pre">size</span></tt> is 0 as
+well) pointing to the binary data itself.</p>
+<p>All other SQL data (including, e.g., TIME, DATE and TIMESTAMP) is represented
+in Pure using its character representation, encoded as a Pure string.</p>
+<p>Some databases also allow special types of queries (e.g., &quot;batch&quot; queries
+consisting of multiple SQL statements) which may return multiple result sets
+and/or row counts. The <tt class="docutils literal"><span class="pre">sql</span></tt> function only returns the first result set,
+which is appropriate in most cases. If you need to determine all result sets
+returned by a query, the <tt class="docutils literal"><span class="pre">msql</span></tt> function must be used. This function is
+invoked in exactly the same way as the <tt class="docutils literal"><span class="pre">sql</span></tt> function, but returns a list
+with all the result sets and/or row counts of the query.</p>
+<p>Example:</p>
+<pre class="literal-block">
+&gt; odbc::msql db &quot;select * from pet; select * from event&quot; [];
+</pre>
+<p>This will return a list with two result sets, one for each query.</p>
+</div>
+<div class="section">
+<h1><a class="toc-backref" href="#id5" id="low-level-operations" name="low-level-operations">5&nbsp;&nbsp;&nbsp;Low-Level Operations</a></h1>
+<p>The <tt class="docutils literal"><span class="pre">sql</span></tt> and <tt class="docutils literal"><span class="pre">msql</span></tt> operations are in fact just ordinary Pure functions
+which are implemented in terms of the low-level operations <tt class="docutils literal"><span class="pre">sql_exec</span></tt>,
+<tt class="docutils literal"><span class="pre">sql_fetch</span></tt>, <tt class="docutils literal"><span class="pre">sql_more</span></tt> and <tt class="docutils literal"><span class="pre">sql_close</span></tt>. You can also invoke these
+functions directly if necessary. The <tt class="docutils literal"><span class="pre">sql_exec</span></tt> function starts executing a
+query and returns either a row count or the column names of the first result
+set as a tuple of strings. After that you can use <tt class="docutils literal"><span class="pre">sql_fetch</span></tt> to obtain the
+results in the set one by one. When all rows have been delivered,
+<tt class="docutils literal"><span class="pre">sql_fetch</span></tt> fails. The <tt class="docutils literal"><span class="pre">sql_more</span></tt> function can then be used to check for
+additional result sets. If there are further results, <tt class="docutils literal"><span class="pre">sql_more</span></tt> returns
+either the next row count, or a tuple of column names, after which you can
+invoke <tt class="docutils literal"><span class="pre">sql_fetch</span></tt> again to obtain the data rows in the second set,
+etc. When the last result set has been processed, <tt class="docutils literal"><span class="pre">sql_more</span></tt> fails.</p>
+<p>Example:</p>
+<pre class="literal-block">
+&gt; odbc::sql_exec db &quot;select name,species from pet where owner='Harold'&quot; [];
+[&quot;name&quot;,&quot;species&quot;]
+&gt; odbc::sql_fetch db; // get the 1st row
+[&quot;Fluffy&quot;,&quot;cat&quot;]
+&gt; odbc::sql_fetch db; // get the 2nd row
+[&quot;Buffy&quot;,&quot;dog&quot;]
+&gt; odbc::sql_fetch db; // no more results
+odbc::sql_fetch #&lt;pointer 0x24753e0&gt;
+&gt; odbc::sql_more db; // no more result sets
+odbc::sql_more #&lt;pointer 0x24753e0&gt;
+</pre>
+<p>Moreover, the <tt class="docutils literal"><span class="pre">sql_close</span></tt> function can be called at any time to terminate an
+SQL query, after which subsequent calls to <tt class="docutils literal"><span class="pre">sql_fetch</span></tt> and <tt class="docutils literal"><span class="pre">sql_more</span></tt> will
+fail:</p>
+<pre class="literal-block">
+&gt; odbc::sql_close db; // terminate query
+()
+</pre>
+<p>This is not strictly necessary (it will be done automatically as soon as the
+next SQL query is invoked), but it is useful in order to release all resources
+associated with the query, such as parameter values which have to be cached so
+that they remain accessible to the SQL server. Since these parameters in some
+cases may use a lot of memory it is better to call <tt class="docutils literal"><span class="pre">sql_close</span></tt> as soon as
+you are finished with a query. This is also done automatically by the <tt class="docutils literal"><span class="pre">sql</span></tt>
+and <tt class="docutils literal"><span class="pre">msql</span></tt> functions.</p>
+<p>Also note that only a single query can be in progress per database connection
+at any one time. That is, if you invoke <tt class="docutils literal"><span class="pre">sql_exec</span></tt> to initiate a new query,
+a previous query will be terminated automatically. (However, it is possible to
+execute multiple queries on the same database simultaneously, if you process
+them through different connections to that database.)</p>
+<p>The low-level operations are useful when you have to deal with large result
+sets where you want to avoid to build the complete list of results in main
+memory. Instead, these functions allow you to process the individual elements
+immediately as they are delivered by the <tt class="docutils literal"><span class="pre">sql_fetch</span></tt> function. (An
+alternative method which combines the space efficiency of immediate processing
+with the convenience of the list representation is discussed in the following
+section.) Using the low-level operations you can also build your own
+specialized query engines; take the definitions of <tt class="docutils literal"><span class="pre">sql</span></tt> or <tt class="docutils literal"><span class="pre">msql</span></tt> as a
+start and change them according to your needs.</p>
+</div>
+<div class="section">
+<h1><a class="toc-backref" href="#id6" id="lazy-processing" name="lazy-processing">6&nbsp;&nbsp;&nbsp;Lazy Processing</a></h1>
+<p>As an experimental feature, the odbc module also provides two operations
+<tt class="docutils literal"><span class="pre">odbc::lsql</span></tt> and <tt class="docutils literal"><span class="pre">odbc::lmsql</span></tt> which work like <tt class="docutils literal"><span class="pre">odbc::sql</span></tt> and
+<tt class="docutils literal"><span class="pre">odbc::msql</span></tt> (see <a class="reference" href="#executing-sql-queries">Executing SQL Queries</a> above), but return lazy lists
+(streams) instead. This offers the convenience of a list-based representation
+without the overhead of keeping entire result sets in memory, which can be
+prohibitive when working with large amounts of data.</p>
+<p>These functions are invoked just like <tt class="docutils literal"><span class="pre">odbc::sql</span></tt> and <tt class="docutils literal"><span class="pre">odbc::msql</span></tt>, but
+they return a lazy list of rows (or a lazy list of lazy lists of rows in the
+case of <tt class="docutils literal"><span class="pre">lmsql</span></tt>). For instance:</p>
+<pre class="literal-block">
+&gt; odbc::lsql db &quot;select * from pet&quot; [];
+[&quot;name&quot;,&quot;owner&quot;,&quot;species&quot;,&quot;sex&quot;,&quot;birth&quot;,&quot;death&quot;]:#&lt;thunk 0x7ffbb9aa2eb8&gt;
+</pre>
+<p>Note that the tail of the result list is &quot;thunked&quot; and will only be produced
+on demand, as you traverse the list. As a simple example, suppose that we just
+want to print the <tt class="docutils literal"><span class="pre">name</span></tt> field of each data row:</p>
+<pre class="literal-block">
+&gt; using system;
+&gt; do (\(name:_)-&gt;puts name) $ tail $ odbc::lsql db &quot;select * from pet&quot; [];
+Fluffy
+Claws
+Buffy
+Fang
+Bowser
+Chirpy
+Whistler
+Slim
+()
+</pre>
+<p>Here only one row is in memory at any time while the <tt class="docutils literal"><span class="pre">do</span></tt> function is in
+progress. This keeps memory requirements much lower than when using the
+<tt class="docutils literal"><span class="pre">odbc::sql</span></tt> function which first loads the entire result set into memory.
+Another advantage is that only those data rows are fetched from the database
+which are actually needed in the course of the computation. This can speed up
+the processing significantly if only a part of the result set is needed. For
+instance, in the following example we only look at the first two data rows
+until the desired row is found, so the remaining rows are never fetched from
+the database:</p>
+<pre class="literal-block">
+&gt; head [row | row&#64;(name:_) = tail $ odbc::lsql db &quot;select * from pet&quot; [];
+&gt;             name == &quot;Claws&quot;];
+[&quot;Claws&quot;,&quot;Gwen&quot;,&quot;cat&quot;,&quot;m&quot;,&quot;1994-03-17&quot;,odbc::SQLNULL]
+</pre>
+<p>On the other hand, <tt class="docutils literal"><span class="pre">lsql</span></tt>/<tt class="docutils literal"><span class="pre">lmsql</span></tt> will usually be somewhat slower than
+<tt class="docutils literal"><span class="pre">sql</span></tt>/<tt class="docutils literal"><span class="pre">msql</span></tt> if the entire result set is being processed. So you should
+always consider the time/space tradeoffs when deciding which functions to use
+in a given situation.</p>
+<p>Also note that when using <tt class="docutils literal"><span class="pre">lsql</span></tt>/<tt class="docutils literal"><span class="pre">lmsql</span></tt>, the query remains in progress as
+long as the result list is still being processed. (This is different from
+<tt class="docutils literal"><span class="pre">sql</span></tt>/<tt class="docutils literal"><span class="pre">msql</span></tt> which load the complete result set(s) at once after which the
+query is terminated immediately.) Since only one query can be executed per
+database connection, this means that only one lazy result set can be processed
+per database connection at any time. However, as with the lowlevel operations
+it is possible to do several lazy queries simultaneously if you assign them to
+different database connections.</p>
+</div>
+<div class="section">
+<h1><a class="toc-backref" href="#id7" id="error-handling" name="error-handling">7&nbsp;&nbsp;&nbsp;Error Handling</a></h1>
+<p>When one of the above operations fails because the SQL server reports an
+error, an error term of the form <tt class="docutils literal"><span class="pre">odbc::error</span> <span class="pre">msg</span> <span class="pre">state</span></tt> will be returned,
+which specifies an error message and the corresponding SQL state (i.e., error
+code). A detailed explanation of the state codes can be found in the ODBC
+documentation. For instance, a reference to a non-existent table will cause a
+report like the following:</p>
+<pre class="literal-block">
+&gt; odbc::sql db &quot;select * from pets&quot; [];
+odbc::error &quot;[TCX][MyODBC]Table 'test.pets' doesn't exist&quot; &quot;S1000&quot;
+</pre>
+<p>You can check for such return values and take some appropriate action. By
+redefining odbc::error accordingly, you can also have it generate exceptions
+or print an error message. For instance:</p>
+<pre class="literal-block">
+odbc::error msg state = fprintf stderr &quot;%s (%s)\n&quot; (msg,state) $$ ();
+</pre>
+<p><strong>NOTE:</strong> When redefining <tt class="docutils literal"><span class="pre">odbc::error</span></tt> in this manner, you should be aware
+that the return value of <tt class="docutils literal"><span class="pre">odbc::error</span></tt> is what will be returned by the other
+operations of this module in case of an error condition. These return values
+are checked by other functions such as <tt class="docutils literal"><span class="pre">sql</span></tt>. Thus the return value should
+still indicate that an error has happened, and not be something that might be
+interpreted as a legal return value, such as an integer or a nonempty
+tuple. It is usually safe to have <tt class="docutils literal"><span class="pre">odbc::error</span></tt> return an empty tuple or
+throw an exception, but other types of return values should be avoided.</p>
+</div>
+<div class="section">
+<h1><a class="toc-backref" href="#id8" id="caveats-and-bugs" name="caveats-and-bugs">8&nbsp;&nbsp;&nbsp;Caveats and Bugs</a></h1>
+<p>Be warned that multiple result sets are not supported by all databases. I also
+found that some ODBC drivers do not properly implement this feature, even
+though the database supports it. So you better stay away from this if you want
+your application to be portable. You can easily implement batched queries
+using a sequence of single queries instead.</p>
+<p>Note that since the exact numeric SQL data types (NUMERIC, DECIMAL) are mapped
+to Pure double values (which are double precision floating point numbers),
+there might be a loss of precision in extreme cases. If this is a problem you
+should explicitly convert these values to strings in your query, which can be
+done using the SQL CAST function, as in <tt class="docutils literal"><span class="pre">select</span> <span class="pre">cast(1234.56</span> <span class="pre">as</span> <span class="pre">char)</span></tt>.</p>
+</div>
+<div class="section">
+<h1><a class="toc-backref" href="#id9" id="further-information-and-examples" name="further-information-and-examples">9&nbsp;&nbsp;&nbsp;Further Information and Examples</a></h1>
+<p>For further details about the operations provided by this module please see
+the odbc.pure file. A sample script illustrating the usage of the module can
+be found in the examples directory.</p>
+</div>
+</div>
+</body>
+</html>
