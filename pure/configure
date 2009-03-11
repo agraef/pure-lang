@@ -638,6 +638,7 @@ ac_subst_vars='LTLIBOBJS
 LIBOBJS
 ALLOCA
 LIBICONV
+versioned
 sharedlib
 EGREP
 GREP
@@ -715,6 +716,7 @@ enable_debug
 enable_debug2
 enable_release
 enable_shared
+enable_versioned
 enable_warnings
 with_libiconv_prefix
 '
@@ -1360,6 +1362,7 @@ Optional Features:
   --enable-debug2         enable the maintenance build
   --enable-release        enable the release build
   --enable-shared         build the shared runtime library (default)
+  --enable-versioned      versioned install (default)
   --enable-warnings       enable compiler warnings (-Wall)
 
 Optional Packages:
@@ -4394,6 +4397,15 @@ sharedlib=yes
 if test "${enable_shared+set}" = set; then
   enableval=$enable_shared; case "${enableval}" in
     no)   LDFLAGS="$LDFLAGS $rdynamic"; sharedlib=no ;;
+  esac
+fi
+
+
+versioned=yes
+# Check whether --enable-versioned was given.
+if test "${enable_versioned+set}" = set; then
+  enableval=$enable_versioned; case "${enableval}" in
+    no)   versioned=no ;;
   esac
 fi
 
@@ -7912,6 +7924,7 @@ Pure is now configured for LLVM ${llvm_version} on ${host}.
   Compiler:             $CXX $CXXFLAGS $CPPFLAGS
   Linker:               $CXX $LDFLAGS $LIBS
   Build libpure:        $sharedlib
+  Versioned install:    $versioned
   GSL support:          $gsllib
 
 Now run 'make' to build everything, and 'make install' to install this
@@ -7926,6 +7939,7 @@ Pure is now configured for LLVM ${llvm_version} on ${host}.
   Compiler:             $CXX $CXXFLAGS $CPPFLAGS
   Linker:               $CXX $LDFLAGS $LIBS
   Build libpure:        $sharedlib
+  Versioned install:    $versioned
   GSL support:          $gsllib
 
 Now run 'make' to build everything, and 'make install' to install this
