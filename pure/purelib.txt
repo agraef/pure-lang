@@ -676,6 +676,52 @@ String Functions
 
 TODO
 
+Pure strings are null-terminated character strings encoded in UTF-8, see
+the `Pure Manual`_ for details. The prelude provides various operations on
+strings, including a complete set of list-like operations, so that strings
+can be used mostly as if they were lists, although they are really
+implemented as C character arrays for reasons of efficiency.
+
+Conversions
+~~~~~~~~~~~
+
+The following functions convert between Pure expressions and strings.
+
+.. _str:
+
+``str x``
+  Yields the print representation of an expression in Pure syntax, as a
+  string.
+
+.. _eval:
+
+``eval x``
+  Parses an expression, specified as a string in Pure syntax, and returns
+  its value. Note that ``eval`` can also parse and execute arbitrary Pure
+  code. In that case it will return the last computed expression, if
+  any. ``eval`` can also be invoked on a (quoted) Pure expression, which is
+  recompiled and then evaluated. (If the expression cannot be compiled for
+  some reason then ``eval`` just returns it as is. Also, exceptions during
+  evaluation are reported back to the caller.)
+
+.. _evalcmd:
+
+``evalcmd x``
+  Like eval_, but allows execution of interactive commands and returns
+  their captured output as a string. No other results are returned, so this
+  operation is most useful for executing Pure definitions and interactive
+  commands for their side-effects. (At this time, only the regular output
+  of a few commands can be captured, most notably ``clear``, ``save`` and
+  ``show``; otherwise the result string will be empty.)
+
+.. _lasterr:
+
+``lasterr``
+  Reports errors in eval_ and evalcmd_. This string value will be nonempty
+  iff a compilation or execution error was encountered during the most
+  recent invokation of ``eval`` and ``evalcmd``. In that case each reported
+  error message is terminated with a newline character.
+
 ..
 
 Matrix Functions
@@ -1133,8 +1179,7 @@ to your program::
 Operations
 ----------
 
-``getopt opts args``
-   get program options from the ``args`` variable
+This module provides one operation: ``getopt opts args``
 
 The ``getopt`` function takes two arguments: ``opts``, a list of option
 descriptions in the format described below, and ``args``, a list of strings
