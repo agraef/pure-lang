@@ -4234,7 +4234,11 @@ extern "C"
 pure_expr *string_chr(uint32_t n)
 {
   char buf[5];
-  return pure_string_dup(u8char(buf, n));
+  u8char(buf, n);
+  if (u8charcode(buf) > 0)
+    return pure_string_dup(buf);
+  else
+    return 0;
 }
 
 extern "C"
