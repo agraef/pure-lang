@@ -81,7 +81,7 @@ pure.o: pure.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(PIC) -o $@ -c $< -DVERSION="\"$(version)\"" -DLIBDIR="\"$(pdlibdir)\""
 
 clean:
-	rm -f pure$(DLL) *~ *.a *.o *.html *.tex *.dvi *.pdf *.aux *.log *.out
+	rm -f pure$(DLL) *~ *.a *.o *.tex *.dvi *.pdf *.aux *.log *.out
 
 # documentation (this needs docutils)
 
