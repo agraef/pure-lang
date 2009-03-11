@@ -231,18 +231,18 @@ blank  [ \t\f\v\r]
      (operator or identifier) symbols otherwise. */
   if (interp.interactive || interp.output) {
     /* Read the rest of the command line. */
-    string cmd = yytext;
+    string cmd = yytext, cmdline = yytext;
     register int c;
     int count = 0;
-    while ((c = yyinput()) != EOF && c != '\n') {
-      cmd.append(1, c);
+    while ((c = yyinput()) != EOF && c != 0 && c != '\n') {
+      cmdline.append(1, c);
       count++;
     }
     if (c == '\n')
       yylloc->lines(1);
     else
       yylloc->columns(count);
-    docmd(interp, yylloc, yytext, cmd.c_str());
+    docmd(interp, yylloc, cmd.c_str(), cmdline.c_str());
   } else if (yytext[0] == '!')
     goto parse_op;
   else {
