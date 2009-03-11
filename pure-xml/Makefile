@@ -22,16 +22,15 @@ host = $(shell ./config.guess)
 #PIC = -fPIC # uncomment for x86-64 compilation
 DLL = .so
 shared = -shared
-XMLLIBS = $(shell xml2-config --libs) $(shell xslt-config --libs)
-XMLFLAGS = $(shell xml2-config --cflags)
 
 # Take care of some common systems.
 ifneq "$(findstring -mingw,$(host))" ""
 # Windows
 DLL = .dll
-ODBCLIB = -lodbc32
+XMLLIBS = -lxslt -lxml2
+XMLFLAGS = 
 # This is needed to link with GMP.
-LDFLAGS = -Wl,--enable-auto-import
+#LDFLAGS = -Wl,--enable-auto-import
 endif
 ifneq "$(findstring -darwin,$(host))" ""
 # OSX (untested)
@@ -41,6 +40,10 @@ endif
 ifneq "$(findstring x86_64-,$(host))" ""
 # 64 bit, needs -fPIC flag
 PIC = -fPIC
+endif
+ifeq "$(findstring -mingw,$(host))" ""
+XMLLIBS = $(shell xml2-config --libs) $(shell xslt-config --libs)
+XMLFLAGS = $(shell xml2-config --cflags)
 endif
 
 # Default CFLAGS are -g -O2, CPPFLAGS, LDFLAGS and LIBS are empty by default.
