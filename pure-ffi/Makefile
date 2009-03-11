@@ -58,7 +58,7 @@ ffi$(DLL): ffi.c
 	$(CC) $(shared) -o $@ $< $(FLAGS) -lffi -lpure -lgmp $(LIBS)
 
 clean:
-	rm -f *$(DLL) *~ *.a *.o
+	rm -f *$(DLL) *~ *.a *.o *.tex *.pdf *.aux *.log *.out
 
 # documentation (this needs docutils)
 
