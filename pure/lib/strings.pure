@@ -25,18 +25,181 @@ using namespace C;
    String Functions
    ----------------
 
-   TODO
-
    Pure strings are null-terminated character strings encoded in UTF-8, see
    the `Pure Manual`_ for details. The prelude provides various operations on
    strings, including a complete set of list-like operations, so that strings
    can be used mostly as if they were lists, although they are really
    implemented as C character arrays for reasons of efficiency.
 
-   Conversions
-   ~~~~~~~~~~~
+   Basic String Functions
+   ~~~~~~~~~~~~~~~~~~~~~~
 
-   The following functions convert between Pure expressions and strings.
+   .. _string concatenation:
+   .. _string indexing:
+   .. _string slicing:
+
+   Concatenation, indexing and slicing works just like with lists::
+
+     > "abc"+"xyz";
+     "abcxyz"
+     > let s = "The quick brown fox jumps over the lazy dog.";
+     > s!5;
+     "u"
+     > s!!(20..24);
+     "jumps"
+
+   .. _string length:
+   .. _null:
+
+   Checking for empty strings and determining the size of a string also works
+   as expected::
+
+     > null "";
+     1
+     > null s;
+     0
+     > #s;
+     44
+
+   You can search for the location of a substring in a string, and extract a
+   substring of a given length:
+
+   .. _string index:
+
+   ``index s u``
+     Returns the (zero-based) index of the first occurrence of the substring
+     ``u`` in ``s``, or -1 if ``u`` is not found in ``s``.
+
+   .. _substr:
+
+   ``substr s i n``
+     Extracts a substring of (at most) ``n`` characters at position ``i`` in
+     ``s``. This takes care of all corner cases, adjusting index and number of
+     characters so that the index range stays confined to the source string.
+
+   Example::
+
+     > index s "jumps";
+     20
+     > substr s 20 10;
+     "jumps over"
+
+   Note that individual (UTF-8) characters are represented as single character
+   strings (``#c==1``). It is possible to convert between these and integers:
+
+   .. _ord:
+
+   ``ord c``
+     Ordinal number of a single character string ``c``. This is the
+     character's code point in the Unicode character set.
+
+   .. _chr:
+
+   ``chr n``
+     Converts an integer back to the character with the corresponding code
+     point.
+
+   .. _character arithmetic:
+
+   In addition, the usual character arithmetic works, including arithmetic
+   sequences of characters, so that you can write stuff like the following::
+
+     > "a"-"A";
+     32
+     > "u"-32;
+     "U"
+     > "a".."k";
+     ["a","b","c","d","e","f","g","h","i","j","k"]
+
+   Strings are ordered lexicographically based on their character codes::
+
+     > "John"<"Johnson";
+     1
+
+   For convenience, the prelude also provides the following functions to
+   convert between strings and lists (or other aggregates) of characters.
+
+   .. _chars:
+   .. _string list:
+
+   ``chars s``, ``list s``
+     Convert a string ``s`` to a list of characters.
+
+   .. _string tuple:
+   .. _string matrix:
+
+   ``tuple s``, ``matrix s``
+     Convert a string ``s`` to a tuple or (symbolic) matrix of characters,
+     respectively.
+
+   .. _strcat:
+
+   ``strcat xs``
+     Concatenate a list ``xs`` of strings (in particular, this converts a
+     list of characters back to a string).
+
+   .. _string:
+
+   ``string xs``
+     Convert a list, tuple or (symbolic) matrix of strings to a string.
+     In the case of a list, this is synonymous with strcat_, but it also
+     works with the other types of aggregates.
+
+   For instance::
+
+     > list "abc";
+     ["a","b","c"]
+     > string ("a".."z");
+     "abcdefghijklmnopqrstuvwxyz"
+
+   The following functions are provided to deal with strings of "tokens"
+   separated by a given delimiter string.
+
+   .. _split:
+
+   ``split delim s``
+     Splits ``s`` into a list of substrings delimited by ``delim``.
+
+   .. _join:
+
+   ``join delim xs``
+     Joins the list of strings ``xs`` to a single string, interpolating the
+     given ``delim`` string.
+
+   Example::
+
+     > let xs = split " " s; xs;
+     ["The","quick","brown","fox","jumps","over","the","lazy","dog."]
+     > join ":" xs;
+     "The:quick:brown:fox:jumps:over:the:lazy:dog."
+
+   We mention in passing here that more elaborate string matching operations
+   are provided by the system module, see `System Interface`_.
+
+   If that isn't enough already, most generic list operations carry over to
+   strings in the obvious way, treating the string like a list of
+   characters. For instance::
+
+     > filter (\x->x>="k") s;
+     "qukrownoxumpsovrtlzyo"
+     > map pred ["i","b","m"];
+     ["h","a","l"]
+
+   This also provides for list comprehensions drawing values from strings::
+
+     > string [x+1 | x="HAL"];
+     "IBM"
+
+   Eval and Friends
+   ~~~~~~~~~~~~~~~~
+
+   Pure provides some rather powerful operations to convert between Pure
+   expressions and their string representation. This is useful for
+   metaprogramming purposes. It also provides a convenient means to serialize
+   Pure expressions, e.g., when they are transferred from/to persistant
+   storage or transmitted over a socket. (Note, however, that this has its
+   limitations. Specifically, some objects like pointers and local or
+   anonymous functions do not have a parseable string representation.)
 
    .. _str:
 
@@ -48,12 +211,14 @@ using namespace C;
 
    ``eval x``
      Parses an expression, specified as a string in Pure syntax, and returns
-     its value. Note that ``eval`` can also parse and execute arbitrary Pure
-     code. In that case it will return the last computed expression, if
-     any. ``eval`` can also be invoked on a (quoted) Pure expression, which is
-     recompiled and then evaluated. (If the expression cannot be compiled for
-     some reason then ``eval`` just returns it as is. Also, exceptions during
-     evaluation are reported back to the caller.) */
+     its value. In fact, ``eval`` can also parse and execute arbitrary Pure
+     code. In that case it will return the last computed expression, if any.
+
+     Alternatively, ``eval`` can also be invoked on a (quoted) Pure
+     expression, which is recompiled and then evaluated. (If the expression
+     cannot be compiled for some reason then ``eval`` just returns it as
+     is. Also, exceptions during evaluation are reported back to the
+     caller.) */
 
 namespace C;
 extern void* str(expr*) = pure_str;
@@ -81,7 +246,22 @@ extern expr* evalcmd(expr*); // IMPURE!
      Reports errors in eval_ and evalcmd_. This string value will be nonempty
      iff a compilation or execution error was encountered during the most
      recent invokation of ``eval`` and ``evalcmd``. In that case each reported
-     error message is terminated with a newline character. */
+     error message is terminated with a newline character.
+
+   Examples::
+
+     > str (1/3);
+     "0.333333333333333"
+     > eval "1/3";
+     0.333333333333333
+     > eval (quote (1/3));
+     0.333333333333333
+     > eval "1/3)";
+     eval "1/3)"
+     > lasterr;
+     "<stdin>, line 1: syntax error, unexpected ')', expecting '=' or '|'\n"
+
+*/
 
 extern char* lasterr();
 
@@ -95,14 +275,36 @@ namespace;
 chr n::int		= string_chr n if n>0;
 ord s::string		= string_ord s if #s==1;
 
-/* Low-level conversions. The following routines are provided by the runtime
-   to turn a C char* pointer into a Pure string. (Normally you don't have to
-   worry about this, because the C interface already takes care of the
-   necessary conversions, but in some low-level code these operations are
-   useful.) The routines with a _dup suffix take a copy of the original
-   string, the ones without take ownership of the string pointer (assuming it
-   to be malloc'ed). The _cstring routines also convert from the system
-   encoding. */
+/* ..
+
+   Low-Level Operations
+   ~~~~~~~~~~~~~~~~~~~~
+
+   The following routines are provided by the runtime to turn raw C ``char*``
+   pointers (also called `byte strings` in Pure parlance, to distinguish them
+   from Pure's "cooked" UTF-8 string values) into corresponding Pure
+   strings. Normally you don't have to worry about this, because the C
+   interface already takes care of the necessary marshalling, but in some
+   low-level code these operations are useful. Also note that here and in the
+   following, the ``cstring`` routines also convert the string between the
+   system encoding and Pure's internal UTF-8 representation.
+
+   .. _string-pointer:
+   .. _cstring:
+
+   ``string s``, ``cstring s``
+     Convert a pointer ``s`` to a Pure string. ``s`` must point to a
+     null-terminated C string. These routines take ownership of the original
+     string value, assuming it to be ``malloc``\ ed, so you should only use
+     these for C strings which are specifically intended to be freed by the
+     user.
+
+   .. _string_dup:
+   .. _cstring_dup:
+
+   ``string_dup s``, ``cstring_dup s``
+     Convert a pointer ``s`` to a Pure string. Like above, but these functions
+     take a copy of the string, leaving the original C string untouched. */
 
 namespace C;
 extern expr* pure_string(void* s);
@@ -116,12 +318,21 @@ cstring s::pointer	= pure_cstring s;
 string_dup s::pointer	= pure_string_dup s;
 cstring_dup s::pointer	= pure_cstring_dup s;
 
-/* Construct a "byte string" from a string. The result is a raw pointer object
-   pointing to the converted string. The original string is copied (and, in
-   the case of pure_byte_cstring, converted to the system encoding). The
-   resulting byte string is a malloc'ed pointer which can be used like a C
-   char* (employing pointer arithmetic etc.; the usual caveats apply), and has
-   to be freed explicitly by the caller when no longer needed. */
+/* ..
+
+   The reverse transformations are also provided. These take a Pure string to
+   a byte string (raw ``char*``).
+
+   .. _byte_string:
+   .. _byte_cstring:
+
+   ``byte_string s``, ``byte_cstring s``
+     Construct a byte string from a Pure string ``s``. The result is a raw
+     pointer object pointing to the converted string. The original Pure string
+     is always copied (and, in the case of ``byte_cstring``, converted to the
+     system encoding). The resulting byte string is a ``malloc``\ ed pointer
+     which can be used like a C ``char*``, and has to be freed explicitly by
+     the caller when no longer needed. */
 
 namespace C;
 extern expr* pure_byte_string(void *s);
@@ -131,14 +342,23 @@ namespace;
 byte_string s::string	= pure_byte_string s;
 byte_cstring s::string	= pure_byte_cstring s;
 
-/* Convert Pure string lists to C byte string vectors and vice versa. These
-   are useful if you need to pass an argv-like string vector (i.e., a char **
-   or char *[]) to C routines. The returned C vectors are malloc'd pointers
-   which have an extra NULL pointer as the last entry, and thus should be
-   usable for almost any purpose which requires such a string vector. They
-   also take care of garbage-collecting themselves. The original string data
-   is always copied. As usual, the 'c' variants do automatic conversions to
-   the system encoding. */
+/* ..
+
+   Finally, it is also possible to convert Pure string lists to byte string
+   vectors and vice versa. These are useful if you need to pass an
+   ``argv``-like string vector (i.e., a ``char**`` or ``char*[]``) to C
+   routines. The computed C vectors are ``malloc``\ ed pointers which have an
+   extra ``NULL`` pointer as the last entry, and should thus be usable for
+   almost any purpose which requires such a string vector in C. They also take
+   care of garbage-collecting themselves. The original string data is always
+   copied. As usual, the ``cstring`` variants do automatic conversions to the
+   system encoding.
+
+   .. _byte_string_pointer:
+   .. _byte_cstring_pointer:
+
+   ``byte_string_pointer xs``, ``byte_cstring_pointer xs``
+     Convert a list of Pure strings to a C ``char**``. */
 
 byte_string_pointer xs	= if null p then throw malloc_error
 			  else make_pointer (map byte_string xs)
@@ -168,11 +388,17 @@ when
   n = #xs; p = calloc (n+1) SIZEOF_POINTER;
 end if listp xs && all stringp xs;
 
-/* Note that the back conversions take an additional first argument which
+/* .. _string_list:
+   .. _cstring_list:
+
+   ``string_list n p``, ``cstring_list n p``
+     Convert a C ``char**`` to a list of Pure strings.
+
+   Note that the back conversions take an additional first argument which
    denotes the number of strings to retrieve. If you know that the vector is
-   NULL-terminated then this can also be inf in which case the the number of
-   elements will be figured out automatically. Processing always stops at the
-   first NULL pointer encountered. */
+   ``NULL``-terminated then this can also be an infinite value (``inf``) in
+   which case the number of elements will be figured out automatically.
+   Processing always stops at the first ``NULL`` pointer encountered. */
 
 string_list n p::pointer = list $ takewhile stringp [p!i | i = 0..n-1]
 with
