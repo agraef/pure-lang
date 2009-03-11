@@ -63,6 +63,12 @@ stringp x	= case x of _::string  = 1; _ = 0 end;
 pointerp x	= case x of _::pointer = 1; _ = 0 end;
 matrixp x	= case x of _::matrix  = 1; _ = 0 end;
 
+/* Additional single character predicate. Note that this implementation is in
+   general *much* faster than the naive solution 'stringp x && #x==1', because
+   it's guaranteed to run in constant time. */
+
+charp x		= case x of _::string  = intp (ord x); _ = 0 end;
+
 /* Additional number predicates. */
 
 numberp x	= realp x || complexp x;
