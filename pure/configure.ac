@@ -75,6 +75,13 @@ AC_ARG_ENABLE(shared,
     no)   LDFLAGS="$LDFLAGS $rdynamic"; sharedlib=no ;;
   esac])
 AC_SUBST(sharedlib)
+versioned=yes
+AC_ARG_ENABLE(versioned,
+  [  --enable-versioned      versioned install (default)],
+  [case "${enableval}" in
+    no)   versioned=no ;;
+  esac])
+AC_SUBST(versioned)
 AC_ARG_ENABLE(warnings,
   [  --enable-warnings       enable compiler warnings (-Wall)],
   [case "${enableval}" in
@@ -151,6 +158,7 @@ Pure is now configured for LLVM ${llvm_version} on ${host}.
   Compiler:             $CXX $CXXFLAGS $CPPFLAGS
   Linker:               $CXX $LDFLAGS $LIBS
   Build libpure:        $sharedlib
+  Versioned install:    $versioned
   GSL support:          $gsllib
 
 Now run 'make' to build everything, and 'make install' to install this

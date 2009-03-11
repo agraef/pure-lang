@@ -63,10 +63,16 @@ CXXFLAGS = @CXXFLAGS@
 # Pure library name. Currently we use a simple versioning scheme, which
 # requires that the library version matches that of the interpreter. This
 # enables you to install different versions of the Pure interpreter on the
-# same system.
+# same system. You can also disable this by setting 'versioned' to 'no'.
+
+versioned = @versioned@
 
 libpure_base = $(name)
+ifeq ($(versioned), yes)
 libpure_vers = $(libpure_base)-$(version)
+else
+libpure_vers = $(libpure_base)
+endif
 
 libpure      = lib$(libpure_vers)$(DLL)
 libpurelnk   = lib$(libpure_base)$(DLL)
@@ -98,6 +104,15 @@ ifeq ($(sharedlib), yes)
 AUXLIBS = -DLIBPURE='"$(libpure)"' @AUXLIBS@
 else
 AUXLIBS = @AUXLIBS@
+endif
+
+# Location of the Pure library directory. This depends on whether we're doing
+# a versioned install.
+
+ifeq ($(versioned), yes)
+AUXDEFS = -DPURELIB='"$(libdir)/pure-$(version)"'
+else
+AUXDEFS = -DPURELIB='"$(libdir)/pure"'
 endif
 
 # No need to edit below this line. Unless you really have to. :) ############
@@ -135,13 +150,15 @@ endif
 
 $(libpure): $(OBJECT)
 	$(CXX) $(shared) -o $@ $(LDFLAGS) $(OBJECT) $(LLVM_LIBS) $(LIBS)
+ifneq ($(libpure), $(libpurelnk))
 	ln -sf $(libpure) $(libpurelnk)
+endif
 
 pure.o: pure.cc
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(LLVM_FLAGS) -I. -I$(srcdir) -DPURELIB='"$(libdir)/pure-$(version)"' -c -o $@ $<
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(LLVM_FLAGS) -I. -I$(srcdir) $(AUXDEFS) -c -o $@ $<
 
 runtime.o: runtime.cc
-	$(CXX) $(CXXFLAGS) $(PIC) $(CPPFLAGS) $(LLVM_FLAGS) -I. -I$(srcdir) -DPURELIB='"$(libdir)/pure-$(version)"' -c -o $@ $<
+	$(CXX) $(CXXFLAGS) $(PIC) $(CPPFLAGS) $(LLVM_FLAGS) -I. -I$(srcdir) $(AUXDEFS) -c -o $@ $<
 
 interpreter.o: interpreter.cc
 	$(CXX) $(CXXFLAGS) $(PIC) $(CPPFLAGS) $(LLVM_FLAGS) -I. -I$(srcdir) $(AUXLIBS) -c -o $@ $<
@@ -212,14 +229,22 @@ config:
 # installation
 
 install: pure$(EXE) etc/pure-mode.el pure.1
+ifeq ($(versioned), yes)
 	rm -rf $(addprefix $(DESTDIR), $(includedir)/pure $(libdir)/pure)
 	for x in $(addprefix $(DESTDIR), $(bindir) $(includedir)/pure-$(version) $(libdir)/pure-$(version) $(man1dir)); do $(INSTALL) -d $$x; done
 	$(INSTALL) pure$(EXE) $(DESTDIR)$(bindir)/pure-$(version)$(EXE)
 	ln -sf $(bindir)/pure-$(version)$(EXE) $(DESTDIR)$(bindir)/pure$(EXE)
+else
+	for x in $(addprefix $(DESTDIR), $(bindir) $(includedir)/pure $(libdir)/pure $(man1dir)); do $(INSTALL) -d $$x; done
+	$(INSTALL) pure$(EXE) $(DESTDIR)$(bindir)/pure$(EXE)
+endif
 ifeq ($(sharedlib), yes)
 	$(INSTALL) $(libpure) $(DESTDIR)$(libdir)/$(libpure)
+ifneq ($(libpure), $(libpurelnk))
 	ln -sf $(libdir)/$(libpure) $(DESTDIR)$(libdir)/$(libpurelnk)
 endif
+endif
+ifeq ($(versioned), yes)
 	$(INSTALL) $(srcdir)/runtime.h $(DESTDIR)$(includedir)/pure-$(version)
 	ln -sf $(includedir)/pure-$(version) $(DESTDIR)$(includedir)/pure
 	for x in $(srcdir)/lib/*.pure; do $(INSTALL) -m 644 $$x $(DESTDIR)$(libdir)/pure-$(version); done
@@ -227,6 +252,12 @@ endif
 	ln -sf $(libdir)/pure-$(version) $(DESTDIR)$(libdir)/pure
 	$(INSTALL) -m 644 $(srcdir)/pure.1 $(DESTDIR)$(man1dir)/pure-$(version).1
 	ln -sf $(man1dir)/pure-$(version).1 $(DESTDIR)$(man1dir)/pure.1
+else
+	$(INSTALL) $(srcdir)/runtime.h $(DESTDIR)$(includedir)/pure
+	for x in $(srcdir)/lib/*.pure; do $(INSTALL) -m 644 $$x $(DESTDIR)$(libdir)/pure; done
+	$(INSTALL) -m 644 pure.html purelib.html $(DESTDIR)$(libdir)/pure
+	$(INSTALL) -m 644 $(srcdir)/pure.1 $(DESTDIR)$(man1dir)/pure.1
+endif
 
 uninstall:
 	rm -rf $(addprefix $(DESTDIR), $(bindir)/pure$(EXE) $(bindir)/pure-$(version)$(EXE) $(libdir)/$(libpurelnk) $(libdir)/$(libpure) $(includedir)/pure $(includedir)/pure-$(version) $(libdir)/pure $(libdir)/pure-$(version) $(man1dir)/pure.1 $(man1dir)/pure-$(version).1)
