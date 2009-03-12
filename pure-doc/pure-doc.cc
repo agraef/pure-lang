@@ -500,7 +500,7 @@ using namespace std;
 static char *prog, **files;
 static bool literate = false;
 static unsigned col = 0, start;
-static const unsigned tabsize = 8;
+static unsigned tabsize = 8;
 static string buf, comment_text, literate_text;
 static unsigned tabs(unsigned& col, const char *text, unsigned len);
 static void print(unsigned col, string& text);
@@ -2072,9 +2072,24 @@ static void print(unsigned col, string& text)
 extern "C"
 int main(int argc, char *argv[])
 {
-  prog = *argv;
+  prog = *argv++;
+  if (*argv && **argv == '-') {
+    char *s = *argv, *end = s;
+    if (s[1] == 'h' && !s[2]) {
+      cerr << "Usage: " << prog << " [-h|-tn] [source-files ...]" << endl
+	   << "-h: print this message, -tn: tabs are n spaces wide" << endl;
+      exit(0);
+    } else if (s[1] == 't' && s[2])
+      tabsize = strtoul(s+2, &end, 10);
+    if (*end) {
+      cerr << prog << ": invalid option " << s
+	   << ", try '" << prog << " -h' for help" << endl;
+      exit(1);
+    }
+    argv++;
+  }
   files = argv;
-  if (*++files) {
+  if (*files) {
     yyin = fopen(*files, "r");
     if (!yyin) {
       perror(*files);
