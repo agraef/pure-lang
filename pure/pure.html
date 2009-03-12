@@ -310,10 +310,8 @@ ul.auto-toc {
 <p>This document is available under the <a class="reference" href="http://www.gnu.org/copyleft/fdl.html">GNU Free Documentation License</a>. Also see <a class="reference" href="#license">License</a> for licensing
 information of the software.</p>
 <p>This manual describes the Pure programming language and how to invoke the Pure
-interpreter program. It takes the form of a Unix manual page but is actually
-provided as html for easier browsing. To read the manual inside the
-interpreter, just type <tt class="docutils literal"><span class="pre">help</span></tt> at the command prompt. See <a class="reference" href="#online-help">Online Help</a> for
-details.</p>
+interpreter program. To read the manual inside the interpreter, just type
+<tt class="docutils literal"><span class="pre">help</span></tt> at the command prompt. See <a class="reference" href="#online-help">Online Help</a> for details.</p>
 <p>There is a companion to this manual, the <a class="reference" href="purelib.html">Pure Library Manual</a> which contains
 the description of the standard library operations.</p>
 <p>Here are some useful links for your bookmarks:</p>
@@ -324,91 +322,107 @@ the description of the standard library operations.</p>
 <div class="contents topic">
 <p class="topic-title first"><a id="contents" name="contents">Contents</a></p>
 <ul class="auto-toc simple">
-<li><a class="reference" href="#name" id="id3" name="id3">1&nbsp;&nbsp;&nbsp;Name</a></li>
-<li><a class="reference" href="#synopsis" id="id4" name="id4">2&nbsp;&nbsp;&nbsp;Synopsis</a></li>
-<li><a class="reference" href="#options" id="id5" name="id5">3&nbsp;&nbsp;&nbsp;Options</a></li>
-<li><a class="reference" href="#description" id="id6" name="id6">4&nbsp;&nbsp;&nbsp;Description</a></li>
-<li><a class="reference" href="#pure-overview" id="id7" name="id7">5&nbsp;&nbsp;&nbsp;Pure Overview</a><ul class="auto-toc">
-<li><a class="reference" href="#lexical-matters" id="id8" name="id8">5.1&nbsp;&nbsp;&nbsp;Lexical Matters</a></li>
-<li><a class="reference" href="#definitions-and-expression-evaluation" id="id9" name="id9">5.2&nbsp;&nbsp;&nbsp;Definitions and Expression Evaluation</a></li>
-<li><a class="reference" href="#expression-syntax" id="id10" name="id10">5.3&nbsp;&nbsp;&nbsp;Expression Syntax</a></li>
-<li><a class="reference" href="#operators-and-precedence" id="id11" name="id11">5.4&nbsp;&nbsp;&nbsp;Operators and Precedence</a></li>
-<li><a class="reference" href="#special-forms" id="id12" name="id12">5.5&nbsp;&nbsp;&nbsp;Special Forms</a></li>
-<li><a class="reference" href="#toplevel" id="id13" name="id13">5.6&nbsp;&nbsp;&nbsp;Toplevel</a></li>
-<li><a class="reference" href="#scoping-rules" id="id14" name="id14">5.7&nbsp;&nbsp;&nbsp;Scoping Rules</a></li>
+<li><a class="reference" href="#introduction" id="id3" name="id3">1&nbsp;&nbsp;&nbsp;Introduction</a></li>
+<li><a class="reference" href="#invoking-the-pure-interpreter" id="id4" name="id4">2&nbsp;&nbsp;&nbsp;Invoking the Pure Interpreter</a></li>
+<li><a class="reference" href="#pure-overview" id="id5" name="id5">3&nbsp;&nbsp;&nbsp;Pure Overview</a><ul class="auto-toc">
+<li><a class="reference" href="#lexical-matters" id="id6" name="id6">3.1&nbsp;&nbsp;&nbsp;Lexical Matters</a></li>
+<li><a class="reference" href="#definitions-and-expression-evaluation" id="id7" name="id7">3.2&nbsp;&nbsp;&nbsp;Definitions and Expression Evaluation</a></li>
+<li><a class="reference" href="#expression-syntax" id="id8" name="id8">3.3&nbsp;&nbsp;&nbsp;Expression Syntax</a></li>
+<li><a class="reference" href="#operators-and-precedence" id="id9" name="id9">3.4&nbsp;&nbsp;&nbsp;Operators and Precedence</a></li>
+<li><a class="reference" href="#special-forms" id="id10" name="id10">3.5&nbsp;&nbsp;&nbsp;Special Forms</a></li>
+<li><a class="reference" href="#toplevel" id="id11" name="id11">3.6&nbsp;&nbsp;&nbsp;Toplevel</a></li>
+<li><a class="reference" href="#scoping-rules" id="id12" name="id12">3.7&nbsp;&nbsp;&nbsp;Scoping Rules</a></li>
 </ul>
 </li>
-<li><a class="reference" href="#rule-syntax" id="id15" name="id15">6&nbsp;&nbsp;&nbsp;Rule Syntax</a></li>
-<li><a class="reference" href="#examples" id="id16" name="id16">7&nbsp;&nbsp;&nbsp;Examples</a><ul class="auto-toc">
-<li><a class="reference" href="#list-comprehensions" id="id17" name="id17">7.1&nbsp;&nbsp;&nbsp;List Comprehensions</a></li>
-<li><a class="reference" href="#lazy-evaluation-and-streams" id="id18" name="id18">7.2&nbsp;&nbsp;&nbsp;Lazy Evaluation and Streams</a></li>
-<li><a class="reference" href="#matrix-computations" id="id19" name="id19">7.3&nbsp;&nbsp;&nbsp;Matrix Computations</a></li>
+<li><a class="reference" href="#rule-syntax" id="id13" name="id13">4&nbsp;&nbsp;&nbsp;Rule Syntax</a></li>
+<li><a class="reference" href="#examples" id="id14" name="id14">5&nbsp;&nbsp;&nbsp;Examples</a><ul class="auto-toc">
+<li><a class="reference" href="#list-comprehensions" id="id15" name="id15">5.1&nbsp;&nbsp;&nbsp;List Comprehensions</a></li>
+<li><a class="reference" href="#lazy-evaluation-and-streams" id="id16" name="id16">5.2&nbsp;&nbsp;&nbsp;Lazy Evaluation and Streams</a></li>
+<li><a class="reference" href="#matrix-computations" id="id17" name="id17">5.3&nbsp;&nbsp;&nbsp;Matrix Computations</a></li>
 </ul>
 </li>
-<li><a class="reference" href="#macros" id="id20" name="id20">8&nbsp;&nbsp;&nbsp;Macros</a><ul class="auto-toc">
-<li><a class="reference" href="#optimization-rules" id="id21" name="id21">8.1&nbsp;&nbsp;&nbsp;Optimization Rules</a></li>
-<li><a class="reference" href="#recursive-macros" id="id22" name="id22">8.2&nbsp;&nbsp;&nbsp;Recursive Macros</a></li>
-<li><a class="reference" href="#user-defined-special-forms" id="id23" name="id23">8.3&nbsp;&nbsp;&nbsp;User-Defined Special Forms</a></li>
-<li><a class="reference" href="#macro-hygiene" id="id24" name="id24">8.4&nbsp;&nbsp;&nbsp;Macro Hygiene</a></li>
+<li><a class="reference" href="#macros" id="id18" name="id18">6&nbsp;&nbsp;&nbsp;Macros</a><ul class="auto-toc">
+<li><a class="reference" href="#optimization-rules" id="id19" name="id19">6.1&nbsp;&nbsp;&nbsp;Optimization Rules</a></li>
+<li><a class="reference" href="#recursive-macros" id="id20" name="id20">6.2&nbsp;&nbsp;&nbsp;Recursive Macros</a></li>
+<li><a class="reference" href="#user-defined-special-forms" id="id21" name="id21">6.3&nbsp;&nbsp;&nbsp;User-Defined Special Forms</a></li>
+<li><a class="reference" href="#macro-hygiene" id="id22" name="id22">6.4&nbsp;&nbsp;&nbsp;Macro Hygiene</a></li>
 </ul>
 </li>
-<li><a class="reference" href="#declarations" id="id25" name="id25">9&nbsp;&nbsp;&nbsp;Declarations</a></li>
-<li><a class="reference" href="#modules" id="id26" name="id26">10&nbsp;&nbsp;&nbsp;Modules</a><ul class="auto-toc">
-<li><a class="reference" href="#namespaces" id="id27" name="id27">10.1&nbsp;&nbsp;&nbsp;Namespaces</a></li>
+<li><a class="reference" href="#declarations" id="id23" name="id23">7&nbsp;&nbsp;&nbsp;Declarations</a></li>
+<li><a class="reference" href="#modules" id="id24" name="id24">8&nbsp;&nbsp;&nbsp;Modules</a><ul class="auto-toc">
+<li><a class="reference" href="#namespaces" id="id25" name="id25">8.1&nbsp;&nbsp;&nbsp;Namespaces</a></li>
 </ul>
 </li>
-<li><a class="reference" href="#exception-handling" id="id28" name="id28">11&nbsp;&nbsp;&nbsp;Exception Handling</a></li>
-<li><a class="reference" href="#c-interface" id="id29" name="id29">12&nbsp;&nbsp;&nbsp;C Interface</a></li>
-<li><a class="reference" href="#standard-library" id="id30" name="id30">13&nbsp;&nbsp;&nbsp;Standard Library</a></li>
-<li><a class="reference" href="#interactive-usage" id="id31" name="id31">14&nbsp;&nbsp;&nbsp;Interactive Usage</a><ul class="auto-toc">
-<li><a class="reference" href="#online-help" id="id32" name="id32">14.1&nbsp;&nbsp;&nbsp;Online Help</a></li>
-<li><a class="reference" href="#interactive-commands" id="id33" name="id33">14.2&nbsp;&nbsp;&nbsp;Interactive Commands</a></li>
-<li><a class="reference" href="#specifying-symbol-selections" id="id34" name="id34">14.3&nbsp;&nbsp;&nbsp;Specifying Symbol Selections</a></li>
-<li><a class="reference" href="#the-show-command" id="id35" name="id35">14.4&nbsp;&nbsp;&nbsp;The show Command</a></li>
-<li><a class="reference" href="#definition-levels" id="id36" name="id36">14.5&nbsp;&nbsp;&nbsp;Definition Levels</a></li>
-<li><a class="reference" href="#startup-files" id="id37" name="id37">14.6&nbsp;&nbsp;&nbsp;Startup Files</a></li>
+<li><a class="reference" href="#exception-handling" id="id26" name="id26">9&nbsp;&nbsp;&nbsp;Exception Handling</a></li>
+<li><a class="reference" href="#c-interface" id="id27" name="id27">10&nbsp;&nbsp;&nbsp;C Interface</a></li>
+<li><a class="reference" href="#standard-library" id="id28" name="id28">11&nbsp;&nbsp;&nbsp;Standard Library</a></li>
+<li><a class="reference" href="#interactive-usage" id="id29" name="id29">12&nbsp;&nbsp;&nbsp;Interactive Usage</a><ul class="auto-toc">
+<li><a class="reference" href="#online-help" id="id30" name="id30">12.1&nbsp;&nbsp;&nbsp;Online Help</a></li>
+<li><a class="reference" href="#interactive-commands" id="id31" name="id31">12.2&nbsp;&nbsp;&nbsp;Interactive Commands</a></li>
+<li><a class="reference" href="#specifying-symbol-selections" id="id32" name="id32">12.3&nbsp;&nbsp;&nbsp;Specifying Symbol Selections</a></li>
+<li><a class="reference" href="#the-show-command" id="id33" name="id33">12.4&nbsp;&nbsp;&nbsp;The show Command</a></li>
+<li><a class="reference" href="#definition-levels" id="id34" name="id34">12.5&nbsp;&nbsp;&nbsp;Definition Levels</a></li>
+<li><a class="reference" href="#interactive-startup" id="id35" name="id35">12.6&nbsp;&nbsp;&nbsp;Interactive Startup</a></li>
 </ul>
 </li>
-<li><a class="reference" href="#caveats-and-notes" id="id38" name="id38">15&nbsp;&nbsp;&nbsp;Caveats and Notes</a><ul class="auto-toc">
-<li><a class="reference" href="#purity" id="id39" name="id39">15.1&nbsp;&nbsp;&nbsp;Purity</a></li>
-<li><a class="reference" href="#backward-compatibility" id="id40" name="id40">15.2&nbsp;&nbsp;&nbsp;Backward Compatibility</a></li>
-<li><a class="reference" href="#error-recovery" id="id41" name="id41">15.3&nbsp;&nbsp;&nbsp;Error Recovery</a></li>
-<li><a class="reference" href="#debugging" id="id42" name="id42">15.4&nbsp;&nbsp;&nbsp;Debugging</a></li>
-<li><a class="reference" href="#the-show-function" id="id43" name="id43">15.5&nbsp;&nbsp;&nbsp;The __show__ Function</a></li>
-<li><a class="reference" href="#as-patterns" id="id44" name="id44">15.6&nbsp;&nbsp;&nbsp;&quot;As&quot; Patterns</a></li>
-<li><a class="reference" href="#head-function" id="id45" name="id45">15.7&nbsp;&nbsp;&nbsp;Head = Function</a></li>
-<li><a class="reference" href="#namespaces-and-implicit-declarations" id="id46" name="id46">15.8&nbsp;&nbsp;&nbsp;Namespaces and Implicit Declarations</a></li>
-<li><a class="reference" href="#with-or-when" id="id47" name="id47">15.9&nbsp;&nbsp;&nbsp;With or when?</a></li>
-<li><a class="reference" href="#numeric-calculations" id="id48" name="id48">15.10&nbsp;&nbsp;&nbsp;Numeric Calculations</a></li>
-<li><a class="reference" href="#constant-definitions" id="id49" name="id49">15.11&nbsp;&nbsp;&nbsp;Constant Definitions</a></li>
-<li><a class="reference" href="#external-c-functions" id="id50" name="id50">15.12&nbsp;&nbsp;&nbsp;External C Functions</a></li>
-<li><a class="reference" href="#id2" id="id51" name="id51">15.13&nbsp;&nbsp;&nbsp;Special Forms</a></li>
-<li><a class="reference" href="#laziness" id="id52" name="id52">15.14&nbsp;&nbsp;&nbsp;Laziness</a></li>
-<li><a class="reference" href="#reflection" id="id53" name="id53">15.15&nbsp;&nbsp;&nbsp;Reflection</a></li>
-<li><a class="reference" href="#stack-size-and-tail-recursion" id="id54" name="id54">15.16&nbsp;&nbsp;&nbsp;Stack Size and Tail Recursion</a></li>
-<li><a class="reference" href="#handling-of-asynchronous-signals" id="id55" name="id55">15.17&nbsp;&nbsp;&nbsp;Handling of Asynchronous Signals</a></li>
+<li><a class="reference" href="#caveats-and-notes" id="id36" name="id36">13&nbsp;&nbsp;&nbsp;Caveats and Notes</a><ul class="auto-toc">
+<li><a class="reference" href="#purity" id="id37" name="id37">13.1&nbsp;&nbsp;&nbsp;Purity</a></li>
+<li><a class="reference" href="#backward-compatibility" id="id38" name="id38">13.2&nbsp;&nbsp;&nbsp;Backward Compatibility</a></li>
+<li><a class="reference" href="#error-recovery" id="id39" name="id39">13.3&nbsp;&nbsp;&nbsp;Error Recovery</a></li>
+<li><a class="reference" href="#debugging" id="id40" name="id40">13.4&nbsp;&nbsp;&nbsp;Debugging</a></li>
+<li><a class="reference" href="#the-show-function" id="id41" name="id41">13.5&nbsp;&nbsp;&nbsp;The __show__ Function</a></li>
+<li><a class="reference" href="#as-patterns" id="id42" name="id42">13.6&nbsp;&nbsp;&nbsp;&quot;As&quot; Patterns</a></li>
+<li><a class="reference" href="#head-function" id="id43" name="id43">13.7&nbsp;&nbsp;&nbsp;Head = Function</a></li>
+<li><a class="reference" href="#namespaces-and-implicit-declarations" id="id44" name="id44">13.8&nbsp;&nbsp;&nbsp;Namespaces and Implicit Declarations</a></li>
+<li><a class="reference" href="#with-or-when" id="id45" name="id45">13.9&nbsp;&nbsp;&nbsp;With or when?</a></li>
+<li><a class="reference" href="#numeric-calculations" id="id46" name="id46">13.10&nbsp;&nbsp;&nbsp;Numeric Calculations</a></li>
+<li><a class="reference" href="#constant-definitions" id="id47" name="id47">13.11&nbsp;&nbsp;&nbsp;Constant Definitions</a></li>
+<li><a class="reference" href="#external-c-functions" id="id48" name="id48">13.12&nbsp;&nbsp;&nbsp;External C Functions</a></li>
+<li><a class="reference" href="#id2" id="id49" name="id49">13.13&nbsp;&nbsp;&nbsp;Special Forms</a></li>
+<li><a class="reference" href="#laziness" id="id50" name="id50">13.14&nbsp;&nbsp;&nbsp;Laziness</a></li>
+<li><a class="reference" href="#reflection" id="id51" name="id51">13.15&nbsp;&nbsp;&nbsp;Reflection</a></li>
+<li><a class="reference" href="#stack-size-and-tail-recursion" id="id52" name="id52">13.16&nbsp;&nbsp;&nbsp;Stack Size and Tail Recursion</a></li>
+<li><a class="reference" href="#handling-of-asynchronous-signals" id="id53" name="id53">13.17&nbsp;&nbsp;&nbsp;Handling of Asynchronous Signals</a></li>
 </ul>
 </li>
-<li><a class="reference" href="#files" id="id56" name="id56">16&nbsp;&nbsp;&nbsp;Files</a></li>
-<li><a class="reference" href="#environment" id="id57" name="id57">17&nbsp;&nbsp;&nbsp;Environment</a></li>
-<li><a class="reference" href="#license" id="id58" name="id58">18&nbsp;&nbsp;&nbsp;License</a></li>
-<li><a class="reference" href="#author" id="id59" name="id59">19&nbsp;&nbsp;&nbsp;Author</a></li>
-<li><a class="reference" href="#see-also" id="id60" name="id60">20&nbsp;&nbsp;&nbsp;See Also</a></li>
+<li><a class="reference" href="#license" id="id54" name="id54">14&nbsp;&nbsp;&nbsp;License</a></li>
+<li><a class="reference" href="#author" id="id55" name="id55">15&nbsp;&nbsp;&nbsp;Author</a></li>
+<li><a class="reference" href="#see-also" id="id56" name="id56">16&nbsp;&nbsp;&nbsp;See Also</a></li>
 </ul>
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id3" id="name" name="name">1&nbsp;&nbsp;&nbsp;Name</a></h1>
-<p>pure - the Pure interpreter</p>
+<h1><a class="toc-backref" href="#id3" id="introduction" name="introduction">1&nbsp;&nbsp;&nbsp;Introduction</a></h1>
+<p>Pure is a modern-style functional programming language based on term
+rewriting. Pure programs are basically collections of equational rules used to
+evaluate expressions in a symbolic fashion by reducing them to normal form. An
+overview of the language can be found in the <a class="reference" href="#pure-overview">Pure Overview</a> section below,
+and subsequent sections discuss most language features in detail.</p>
+<p>The Pure interpreter has an <a class="reference" href="#llvm">LLVM</a> backend which JIT-compiles Pure programs to
+machine code, hence programs run blazingly fast and interfacing to C modules
+is easy, while the interpreter still provides a convenient, fully interactive
+environment for running Pure scripts and evaluating expressions.</p>
+<p>Pure programs (a.k.a. scripts) are just ordinary text files containing Pure
+code. They must be encoded in UTF-8 (which subsumes 7 bit ASCII), other
+encodings such as Latin-1 are not supported. A bunch of syntax highlighting
+files and programming modes for various popular text editors are included in
+the Pure sources. There's no difference between the Pure programming language
+and the input language accepted by the interpreter, except that the
+interpreter also understands some special commands when running in interactive
+mode; see the <a class="reference" href="#interactive-usage">Interactive Usage</a> section for details.</p>
+<p>(In case you're wondering, the name &quot;Pure&quot; actually refers to the
+adjective. But you can also write it as &quot;PURE&quot; and take this as a recursive
+acronym for the &quot;Pure Universal Rewriting Engine&quot;.)</p>
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id4" id="synopsis" name="synopsis">2&nbsp;&nbsp;&nbsp;Synopsis</a></h1>
+<h1><a class="toc-backref" href="#id4" id="invoking-the-pure-interpreter" name="invoking-the-pure-interpreter">2&nbsp;&nbsp;&nbsp;Invoking the Pure Interpreter</a></h1>
+<p>pure is the Pure interpreter. It is invoked as follows:</p>
 <pre class="literal-block">
 pure [options ...] [script ...] [-- args ...]
 pure [options ...] -x script [args ...]
 </pre>
-</div>
-<div class="section">
-<h1><a class="toc-backref" href="#id5" id="options" name="options">3&nbsp;&nbsp;&nbsp;Options</a></h1>
+<p class="rubric">Options</p>
+<p>The interpreter accepts various options which are described in more detail
+below:</p>
 <table class="docutils option-list" frame="void" rules="none">
 <col class="option" />
 <col class="description" />
@@ -449,29 +463,43 @@ pure [options ...] -x script [args ...]
 <td>Execute script with given command line arguments.</td></tr>
 </tbody>
 </table>
-</div>
-<div class="section">
-<h1><a class="toc-backref" href="#id6" id="description" name="description">4&nbsp;&nbsp;&nbsp;Description</a></h1>
-<p>Pure is a modern-style functional programming language based on term
-rewriting. Pure programs are basically collections of equational rules used to
-evaluate expressions in a symbolic fashion by reducing them to normal form. A
-brief overview of the language can be found in the <a class="reference" href="#pure-overview">Pure Overview</a> section
-below. (In case you're wondering, the name &quot;Pure&quot; actually refers to the
-adjective. But you can also write it as &quot;PURE&quot; and take this as a recursive
-acronym for the &quot;Pure Universal Rewriting Engine&quot;.)</p>
-<p>pure is the Pure interpreter. The interpreter has an <a class="reference" href="#llvm">LLVM</a> backend which
-JIT-compiles Pure programs to machine code, hence programs run blazingly fast
-and interfacing to C modules is easy, while the interpreter still provides a
-convenient, fully interactive environment for running Pure scripts and
-evaluating expressions.</p>
-<p>Pure programs (a.k.a. scripts) are just ordinary text files containing Pure
-code. They must be encoded in UTF-8 (which subsumes 7 bit ASCII), other
-encodings such as Latin-1 are not supported. A bunch of syntax highlighting
-files and programming modes for various popular text editors are included in
-the Pure sources. There's no difference between the Pure programming language
-and the input language accepted by the interpreter, except that the
-interpreter also understands some special commands when running in interactive
-mode; see the <a class="reference" href="#interactive-usage">Interactive Usage</a> section for details.</p>
+<p class="rubric">Startup Files</p>
+<p>The interpreter may source various files during its startup. These are:</p>
+<dl class="docutils">
+<dt>~/.pure_history</dt>
+<dd>Interactive command history.</dd>
+<dt>~/.purerc, .purerc, .pure</dt>
+<dd>Interactive startup files. The latter is usually a dump from a previous
+interactive session.</dd>
+<dt>prelude.pure</dt>
+<dd>Standard prelude. If available, this script is loaded before any other
+definitions, unless -n was specified.</dd>
+</dl>
+<p class="rubric">Environment</p>
+<p>Various aspects of the interpreter can be configured through the following
+shell environment variables:</p>
+<dl class="docutils">
+<dt>PURELIB</dt>
+<dd>Directory to search for library scripts, including the prelude. If PURELIB
+is not set, it defaults to some default location specified at installation
+time.</dd>
+<dt>PURE_HELP</dt>
+<dd>Command used to browse the Pure manual. This must be a browser capable of
+displaying html files. Default is w3m(1).</dd>
+<dt>PURE_INCLUDE</dt>
+<dd>Additional directories (in colon-separated format) to be searched for
+included scripts.</dd>
+<dt>PURE_LIBRARY</dt>
+<dd>Additional directories (in colon-separated format) to be searched for
+dynamic libraries.</dd>
+<dt>PURE_MORE</dt>
+<dd>Shell command to be used for paging through output of the show command,
+when the interpreter runs in interactive mode.</dd>
+<dt>PURE_PS</dt>
+<dd>Command prompt used in the interactive command loop (&quot;&gt; &quot; by default).</dd>
+<dt>PURE_STACK</dt>
+<dd>Maximum stack size in kilobytes (default: 0 = unlimited).</dd>
+</dl>
 <p>If any source scripts are specified on the command line, they are loaded and
 executed, after which the interpreter exits. Otherwise the interpreter enters
 the interactive read-eval-print loop. You can also use the -i option to enter
@@ -563,7 +591,7 @@ interactive show command (see the <a class="reference" href="#interactive-usage"
 definitions along with additional debugging information.</p>
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id7" id="pure-overview" name="pure-overview">5&nbsp;&nbsp;&nbsp;Pure Overview</a></h1>
+<h1><a class="toc-backref" href="#id5" id="pure-overview" name="pure-overview">3&nbsp;&nbsp;&nbsp;Pure Overview</a></h1>
 <p>Pure is a fairly simple yet powerful language. Programs are basically
 collections of rewriting rules and expressions to be evaluated. For
 convenience, it is also possible to define global variables and constants, and
@@ -581,7 +609,7 @@ command prompt):</p>
 3628800
 </pre>
 <div class="section">
-<h2><a class="toc-backref" href="#id8" id="lexical-matters" name="lexical-matters">5.1&nbsp;&nbsp;&nbsp;Lexical Matters</a></h2>
+<h2><a class="toc-backref" href="#id6" id="lexical-matters" name="lexical-matters">3.1&nbsp;&nbsp;&nbsp;Lexical Matters</a></h2>
 <p>Pure is a free-format language; whitespace is insignificant, except if it
 serves to delimit other symbols. Hence, as shown above, definitions and
 expressions at the toplevel have to be terminated with a semicolon, even in
@@ -616,7 +644,7 @@ other extended Unicode characters are effectively treated as &quot;letters&quot;
 can be used as identifier constituents.</p>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id9" id="definitions-and-expression-evaluation" name="definitions-and-expression-evaluation">5.2&nbsp;&nbsp;&nbsp;Definitions and Expression Evaluation</a></h2>
+<h2><a class="toc-backref" href="#id7" id="definitions-and-expression-evaluation" name="definitions-and-expression-evaluation">3.2&nbsp;&nbsp;&nbsp;Definitions and Expression Evaluation</a></h2>
 <p>On the surface, Pure is quite similar to other modern functional languages
 like <a class="reference" href="#haskell">Haskell</a> and <a class="reference" href="#ml">ML</a>. But under the hood it is a much more dynamic language,
 more akin to Lisp. In particular, Pure is dynamically typed, so functions can
@@ -680,7 +708,7 @@ their arguments unevaluated, using call by name. (User-defined special forms
 can be created with macros. More about that later.)</p>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id10" id="expression-syntax" name="expression-syntax">5.3&nbsp;&nbsp;&nbsp;Expression Syntax</a></h2>
+<h2><a class="toc-backref" href="#id8" id="expression-syntax" name="expression-syntax">3.3&nbsp;&nbsp;&nbsp;Expression Syntax</a></h2>
 <p>The Pure language provides built-in support for machine integers (32 bit),
 bigints (implemented using <a class="reference" href="#gmp">GMP</a>), floating point values (double precision IEEE
 754), character strings (UTF-8 encoded) and generic C pointers (these don't
@@ -854,7 +882,7 @@ and the definitions may consist of as many equations as you want.</dd>
 </dl>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id11" id="operators-and-precedence" name="operators-and-precedence">5.4&nbsp;&nbsp;&nbsp;Operators and Precedence</a></h2>
+<h2><a class="toc-backref" href="#id9" id="operators-and-precedence" name="operators-and-precedence">3.4&nbsp;&nbsp;&nbsp;Operators and Precedence</a></h2>
 <p>Expressions are parsed according to the following precedence rules: Lambda
 binds most weakly, followed by when, with and case, followed by conditional
 expressions (<tt class="docutils literal"><span class="pre">if</span></tt>-<tt class="docutils literal"><span class="pre">then</span></tt>-<tt class="docutils literal"><span class="pre">else</span></tt>), followed by the simple expressions,
@@ -878,7 +906,7 @@ like in C (see below), whereas the bitwise connectives receive their arguments
 using call-by-value, just like the other arithmetic operations.</p>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id12" id="special-forms" name="special-forms">5.5&nbsp;&nbsp;&nbsp;Special Forms</a></h2>
+<h2><a class="toc-backref" href="#id10" id="special-forms" name="special-forms">3.5&nbsp;&nbsp;&nbsp;Special Forms</a></h2>
 <p>As already mentioned, some operations are actually implemented as special
 forms. In particular, the conditional expression <tt class="docutils literal"><span class="pre">if</span> <span class="pre">x</span> <span class="pre">then</span> <span class="pre">y</span> <span class="pre">else</span> <span class="pre">z</span></tt> is a
 special form with call-by-name arguments <tt class="docutils literal"><span class="pre">y</span></tt> and <tt class="docutils literal"><span class="pre">z</span></tt>; only one of the
@@ -950,7 +978,7 @@ forcibly evaluate parts of a quoted expression, as in the following example:</p>
 <a class="reference" href="#macros">Macros</a> section for details.</p>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id13" id="toplevel" name="toplevel">5.6&nbsp;&nbsp;&nbsp;Toplevel</a></h2>
+<h2><a class="toc-backref" href="#id11" id="toplevel" name="toplevel">3.6&nbsp;&nbsp;&nbsp;Toplevel</a></h2>
 <p>At the toplevel, a Pure program basically consists of rewriting rules (which
 are used to define functions and macros), constant and variable definitions,
 and expressions to be evaluated:</p>
@@ -997,7 +1025,7 @@ printed, when running in interactive mode).</dd>
 </dl>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id14" id="scoping-rules" name="scoping-rules">5.7&nbsp;&nbsp;&nbsp;Scoping Rules</a></h2>
+<h2><a class="toc-backref" href="#id12" id="scoping-rules" name="scoping-rules">3.7&nbsp;&nbsp;&nbsp;Scoping Rules</a></h2>
 <p>A few remarks about the scope of identifiers and other symbols are in order
 here. Like most modern functional languages, Pure uses <strong>lexical</strong> or <strong>static</strong>
 binding for local functions and variables. What this means is that the binding
@@ -1071,7 +1099,7 @@ before entering the expression to be evaluated.</p>
 </div>
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id15" id="rule-syntax" name="rule-syntax">6&nbsp;&nbsp;&nbsp;Rule Syntax</a></h1>
+<h1><a class="toc-backref" href="#id13" id="rule-syntax" name="rule-syntax">4&nbsp;&nbsp;&nbsp;Rule Syntax</a></h1>
 <p>Basically, the same rule syntax is used in all kinds of global and local
 definitions. However, some constructs (specifically, <tt class="docutils literal"><span class="pre">when</span></tt>, <tt class="docutils literal"><span class="pre">let</span></tt>,
 <tt class="docutils literal"><span class="pre">const</span></tt> and <tt class="docutils literal"><span class="pre">def</span></tt>) use a restricted rule syntax where no guards or
@@ -1209,7 +1237,7 @@ solve 2 4
 </pre>
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id16" id="examples" name="examples">7&nbsp;&nbsp;&nbsp;Examples</a></h1>
+<h1><a class="toc-backref" href="#id14" id="examples" name="examples">5&nbsp;&nbsp;&nbsp;Examples</a></h1>
 <p>Here are a few examples of simple Pure programs.</p>
 <p>The factorial:</p>
 <pre class="literal-block">
@@ -1253,7 +1281,7 @@ foo x = 2*3.14159265358979*x;
 6.28318530717958
 </pre>
 <div class="section">
-<h2><a class="toc-backref" href="#id17" id="list-comprehensions" name="list-comprehensions">7.1&nbsp;&nbsp;&nbsp;List Comprehensions</a></h2>
+<h2><a class="toc-backref" href="#id15" id="list-comprehensions" name="list-comprehensions">5.1&nbsp;&nbsp;&nbsp;List Comprehensions</a></h2>
 <p>List comprehensions are Pure's main workhorse for generating and processing
 all kinds of list values. Here's a well-known example, a variation of
 Erathosthenes' classical prime sieve:</p>
@@ -1295,7 +1323,7 @@ end;
 Pure distribution for a much better algorithm by Libor Spacek.)</p>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id18" id="lazy-evaluation-and-streams" name="lazy-evaluation-and-streams">7.2&nbsp;&nbsp;&nbsp;Lazy Evaluation and Streams</a></h2>
+<h2><a class="toc-backref" href="#id16" id="lazy-evaluation-and-streams" name="lazy-evaluation-and-streams">5.2&nbsp;&nbsp;&nbsp;Lazy Evaluation and Streams</a></h2>
 <p>As already mentioned, lists can also be evaluated in a &quot;lazy&quot; fashion, by just
 turning the tail of a list into a future. This special kind of list is also
 called a <strong>stream</strong>. Streams enable you to work with infinite lists (or finite
@@ -1409,7 +1437,7 @@ primes allows <tt class="docutils literal"><span class="pre">do</span></tt> to g
 corresponding stream element.)</p>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id19" id="matrix-computations" name="matrix-computations">7.3&nbsp;&nbsp;&nbsp;Matrix Computations</a></h2>
+<h2><a class="toc-backref" href="#id17" id="matrix-computations" name="matrix-computations">5.3&nbsp;&nbsp;&nbsp;Matrix Computations</a></h2>
 <p>Pure offers a number of basic matrix operations, such as matrix construction,
 indexing, slicing, as well as getting the size and dimensions of a matrix
 (these are briefly described in the <a class="reference" href="#standard-library">Standard Library</a> section
@@ -1567,7 +1595,7 @@ using system;
 </div>
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id20" id="macros" name="macros">8&nbsp;&nbsp;&nbsp;Macros</a></h1>
+<h1><a class="toc-backref" href="#id18" id="macros" name="macros">6&nbsp;&nbsp;&nbsp;Macros</a></h1>
 <p>Macros are a special type of functions to be executed as a kind of
 &quot;preprocessing stage&quot; at compile time. In Pure these are typically used to
 define custom special forms and to perform inlining of function calls and
@@ -1587,7 +1615,7 @@ defined in terms of other macros (also recursively), and are evaluated using
 call by value (i.e., macro calls in macro arguments are expanded before the
 macro gets applied to its parameters).</p>
 <div class="section">
-<h2><a class="toc-backref" href="#id21" id="optimization-rules" name="optimization-rules">8.1&nbsp;&nbsp;&nbsp;Optimization Rules</a></h2>
+<h2><a class="toc-backref" href="#id19" id="optimization-rules" name="optimization-rules">6.1&nbsp;&nbsp;&nbsp;Optimization Rules</a></h2>
 <p>Here is a simple example, showing a rule which expands saturated calls of the
 <tt class="docutils literal"><span class="pre">succ</span></tt> function (defined in the prelude) at compile time:</p>
 <pre class="literal-block">
@@ -1667,7 +1695,7 @@ to write a macro which descends recursively into the lambda argument of
 <tt class="docutils literal"><span class="pre">catmap</span></tt>.)</p>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id22" id="recursive-macros" name="recursive-macros">8.2&nbsp;&nbsp;&nbsp;Recursive Macros</a></h2>
+<h2><a class="toc-backref" href="#id20" id="recursive-macros" name="recursive-macros">6.2&nbsp;&nbsp;&nbsp;Recursive Macros</a></h2>
 <p>Macros can also be recursive, in which case they usually consist of multiple
 rules and make use of pattern-matching like ordinary function definitions. As
 a simple example, let's have a look at Pure's version of Lisp's quasiquote
@@ -1717,7 +1745,7 @@ and Notes</a> section at the end of this manual for information on how to deal
 with these by setting the PURE_STACK environment variable.</p>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id23" id="user-defined-special-forms" name="user-defined-special-forms">8.3&nbsp;&nbsp;&nbsp;User-Defined Special Forms</a></h2>
+<h2><a class="toc-backref" href="#id21" id="user-defined-special-forms" name="user-defined-special-forms">6.3&nbsp;&nbsp;&nbsp;User-Defined Special Forms</a></h2>
 <p>The <tt class="docutils literal"><span class="pre">quasiquote</span></tt> macro in the preceding subsection also provides an example
 of how you can use macros to define your own special forms. This works because
 the actual evaluation of macro arguments is put off until runtime, and thus we
@@ -1798,7 +1826,7 @@ some built-in support to make this more convenient, but for the time being our
 little <tt class="docutils literal"><span class="pre">trace</span></tt> macro does the job quite well for most purposes.</p>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id24" id="macro-hygiene" name="macro-hygiene">8.4&nbsp;&nbsp;&nbsp;Macro Hygiene</a></h2>
+<h2><a class="toc-backref" href="#id22" id="macro-hygiene" name="macro-hygiene">6.4&nbsp;&nbsp;&nbsp;Macro Hygiene</a></h2>
 <p>Pure macros are lexically scoped, i.e., symbols on the right-hand-side of a
 macro definition can never refer to anything outside the macro definition, and
 macro parameter substitution also takes into account binding constructs, such
@@ -1814,7 +1842,7 @@ preprocessing purposes, while still being robust and easy to use.</p>
 </div>
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id25" id="declarations" name="declarations">9&nbsp;&nbsp;&nbsp;Declarations</a></h1>
+<h1><a class="toc-backref" href="#id23" id="declarations" name="declarations">7&nbsp;&nbsp;&nbsp;Declarations</a></h1>
 <p>Pure is a very terse language by design. Usually you don't declare much stuff,
 you just define it and be done with it. However, there are a few toplevel
 constructs which let you declare symbols with special attributes and manage
@@ -1890,7 +1918,7 @@ nullary symbols (mostly for denoting different kinds of exceptions). The
 below.</p>
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id26" id="modules" name="modules">10&nbsp;&nbsp;&nbsp;Modules</a></h1>
+<h1><a class="toc-backref" href="#id24" id="modules" name="modules">8&nbsp;&nbsp;&nbsp;Modules</a></h1>
 <p>While Pure doesn't offer separate compilation, the <tt class="docutils literal"><span class="pre">using</span></tt> declaration
 provides a simple but effective way to assemble a Pure program from several
 source modules. The Pure program is basically the concatenation of all the
@@ -1926,7 +1954,7 @@ clauses will use the real script directory and thus other required scripts can
 be located there. This is the recommended practice for installing standalone
 Pure applications in source form which are to be run directly from the shell.</p>
 <div class="section">
-<h2><a class="toc-backref" href="#id27" id="namespaces" name="namespaces">10.1&nbsp;&nbsp;&nbsp;Namespaces</a></h2>
+<h2><a class="toc-backref" href="#id25" id="namespaces" name="namespaces">8.1&nbsp;&nbsp;&nbsp;Namespaces</a></h2>
 <p>To facilitate modular development, Pure also provides namespaces as a means to
 avoid name clashes between symbols of different modules, and to keep the
 global namespace tidy and clean. The global namespace is always available. By
@@ -2105,7 +2133,7 @@ this case is to use a <tt class="docutils literal"><span class="pre">namespace</
 </div>
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id28" id="exception-handling" name="exception-handling">11&nbsp;&nbsp;&nbsp;Exception Handling</a></h1>
+<h1><a class="toc-backref" href="#id26" id="exception-handling" name="exception-handling">9&nbsp;&nbsp;&nbsp;Exception Handling</a></h1>
 <p>Pure also offers a useful exception handling facility. To raise an exception,
 you just invoke the built-in function <tt class="docutils literal"><span class="pre">throw</span></tt> with the value to be thrown as
 the argument. To catch an exception, you use the built-in special form
@@ -2183,7 +2211,7 @@ end;
 </pre>
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id29" id="c-interface" name="c-interface">12&nbsp;&nbsp;&nbsp;C Interface</a></h1>
+<h1><a class="toc-backref" href="#id27" id="c-interface" name="c-interface">10&nbsp;&nbsp;&nbsp;C Interface</a></h1>
 <p>Accessing C functions from Pure programs is dead simple. You just need an
 <tt class="docutils literal"><span class="pre">extern</span></tt> declaration of the function, which is a simplified kind of C
 prototype. The function can then be called in Pure just like any other. For
@@ -2366,7 +2394,7 @@ declaration names a function symbol which cannot be resolved, an appropriate
 error message is printed.</p>
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id30" id="standard-library" name="standard-library">13&nbsp;&nbsp;&nbsp;Standard Library</a></h1>
+<h1><a class="toc-backref" href="#id28" id="standard-library" name="standard-library">11&nbsp;&nbsp;&nbsp;Standard Library</a></h1>
 <p>Pure comes with a collection of Pure library modules, which includes the
 standard prelude (loaded automatically at startup time) and some other modules
 which can be loaded explicitly with a <tt class="docutils literal"><span class="pre">using</span></tt> clause. The prelude offers the
@@ -2439,7 +2467,7 @@ also provides operations to do basic C-style I/O, including <tt class="docutils 
 Manual</a>.</p>
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id31" id="interactive-usage" name="interactive-usage">14&nbsp;&nbsp;&nbsp;Interactive Usage</a></h1>
+<h1><a class="toc-backref" href="#id29" id="interactive-usage" name="interactive-usage">12&nbsp;&nbsp;&nbsp;Interactive Usage</a></h1>
 <p>In interactive mode, the interpreter reads definitions and expressions and
 processes them as usual. You can use the -i option to force interactive mode
 when invoking the interpreter with some script files. Additional scripts can
@@ -2471,7 +2499,7 @@ is also possible to override the print representation of any kind of
 expression by means of the <tt class="docutils literal"><span class="pre">__show__</span></tt> function, see the <a class="reference" href="#caveats-and-notes">Caveats and Notes</a>
 section for details.</p>
 <div class="section">
-<h2><a class="toc-backref" href="#id32" id="online-help" name="online-help">14.1&nbsp;&nbsp;&nbsp;Online Help</a></h2>
+<h2><a class="toc-backref" href="#id30" id="online-help" name="online-help">12.1&nbsp;&nbsp;&nbsp;Online Help</a></h2>
 <p>Online help is available in the interpreter with the interactive <tt class="docutils literal"><span class="pre">help</span></tt>
 command, see <a class="reference" href="#interactive-commands">Interactive Commands</a> below. You need to have a html browser
 installed for that. By default, the <tt class="docutils literal"><span class="pre">help</span></tt> command uses w3m(1), but you can
@@ -2526,7 +2554,7 @@ instance:</p>
 </pre>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id33" id="interactive-commands" name="interactive-commands">14.2&nbsp;&nbsp;&nbsp;Interactive Commands</a></h2>
+<h2><a class="toc-backref" href="#id31" id="interactive-commands" name="interactive-commands">12.2&nbsp;&nbsp;&nbsp;Interactive Commands</a></h2>
 <p>When running interactively, the interpreter accepts a number of special
 commands useful for interactive purposes. Here is a quick rundown of the
 currently supported operations:</p>
@@ -2559,7 +2587,7 @@ symbols won't be saved unless they're specified explicitly, and some
 objects like closures, thunks and pointers don't have a textual
 representation from which they could be reconstructed. To handle these,
 you'll probably have to prepare a corresponding .purerc file yourself, see
-<a class="reference" href="#startup-files">Startup Files</a> below.</p>
+<a class="reference" href="#interactive-startup">Interactive Startup</a> below.</p>
 <p class="last">A different filename can be specified with the -n option, which expects
 the name of the script to be written in the next argument, e.g: <tt class="docutils literal"><span class="pre">dump</span> <span class="pre">-n</span>
 <span class="pre">myscript.pure</span></tt>. You can then edit that file and use it as a starting
@@ -2620,7 +2648,7 @@ you can easily avoid this kind of problem.</p>
 in more detail in the following subsections.</p>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id34" id="specifying-symbol-selections" name="specifying-symbol-selections">14.3&nbsp;&nbsp;&nbsp;Specifying Symbol Selections</a></h2>
+<h2><a class="toc-backref" href="#id32" id="specifying-symbol-selections" name="specifying-symbol-selections">12.3&nbsp;&nbsp;&nbsp;Specifying Symbol Selections</a></h2>
 <p>The <tt class="docutils literal"><span class="pre">clear</span></tt>, <tt class="docutils literal"><span class="pre">dump</span></tt> and <tt class="docutils literal"><span class="pre">show</span></tt> commands all accept the following options
 for specifying a subset of symbols and definitions on which to
 operate. Options may be combined, thus, e.g., <tt class="docutils literal"><span class="pre">show</span> <span class="pre">-mft</span></tt> is the same as
@@ -2691,7 +2719,7 @@ analogously (albeit less destructively). See <a class="reference" href="#definit
 some examples.</p>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id35" id="the-show-command" name="the-show-command">14.4&nbsp;&nbsp;&nbsp;The show Command</a></h2>
+<h2><a class="toc-backref" href="#id33" id="the-show-command" name="the-show-command">12.4&nbsp;&nbsp;&nbsp;The show Command</a></h2>
 <p>The <tt class="docutils literal"><span class="pre">show</span></tt> command can be used to obtain information about defined symbols
 in various formats. Besides the common selection options discussed above, this
 command recognizes the following additional options for specifying the content
@@ -2803,7 +2831,7 @@ using namespace C;
 </pre>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id36" id="definition-levels" name="definition-levels">14.5&nbsp;&nbsp;&nbsp;Definition Levels</a></h2>
+<h2><a class="toc-backref" href="#id34" id="definition-levels" name="definition-levels">12.5&nbsp;&nbsp;&nbsp;Definition Levels</a></h2>
 <p>To help with incremental development, the interpreter offers some facilities
 to manipulate the current set of definitions interactively. To these ends,
 definitions are organized into different subsets called <strong>levels</strong>. As already
@@ -2920,7 +2948,7 @@ clear: now at temporary definitions level #1
 </pre>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id37" id="startup-files" name="startup-files">14.6&nbsp;&nbsp;&nbsp;Startup Files</a></h2>
+<h2><a class="toc-backref" href="#id35" id="interactive-startup" name="interactive-startup">12.6&nbsp;&nbsp;&nbsp;Interactive Startup</a></h2>
 <p>In interactive mode, the interpreter also runs some additional scripts at
 startup, after loading the prelude and the scripts specified on the command
 line. This lets you tailor the interactive environment to your liking.</p>
@@ -2940,12 +2968,12 @@ option on the command line if you wish to skip these initializations.</p>
 </div>
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id38" id="caveats-and-notes" name="caveats-and-notes">15&nbsp;&nbsp;&nbsp;Caveats and Notes</a></h1>
+<h1><a class="toc-backref" href="#id36" id="caveats-and-notes" name="caveats-and-notes">13&nbsp;&nbsp;&nbsp;Caveats and Notes</a></h1>
 <p>This section is a grab bag of casual remarks, useful tips and tricks, and
 information on common pitfalls, quirks and limitations of the current
 implementation and how to deal with them.</p>
 <div class="section">
-<h2><a class="toc-backref" href="#id39" id="purity" name="purity">15.1&nbsp;&nbsp;&nbsp;Purity</a></h2>
+<h2><a class="toc-backref" href="#id37" id="purity" name="purity">13.1&nbsp;&nbsp;&nbsp;Purity</a></h2>
 <p>People keep asking me what's so &quot;pure&quot; about Pure. The long and apologetic
 answer is that at its core, Pure is in fact purely algebraic and purely
 functional. Pure doesn't get in your way if you want to call external
@@ -2960,7 +2988,7 @@ programming language named &quot;Pure&quot; yet (quite a feat nowadays), so ther
 now. :)</p>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id40" id="backward-compatibility" name="backward-compatibility">15.2&nbsp;&nbsp;&nbsp;Backward Compatibility</a></h2>
+<h2><a class="toc-backref" href="#id38" id="backward-compatibility" name="backward-compatibility">13.2&nbsp;&nbsp;&nbsp;Backward Compatibility</a></h2>
 <p>Pure 0.7 introduced built-in matrix structures, which called for some minor
 changes in the syntax of comprehensions and arithmetic
 sequences. Specifically, the template expression and generator/filter clauses
@@ -2986,7 +3014,7 @@ qualified symbol, so the construct <tt class="docutils literal"><span class="pre
 tagged variable, no matter whether <tt class="docutils literal"><span class="pre">foo</span></tt> is also a valid namespace).</p>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id41" id="error-recovery" name="error-recovery">15.3&nbsp;&nbsp;&nbsp;Error Recovery</a></h2>
+<h2><a class="toc-backref" href="#id39" id="error-recovery" name="error-recovery">13.3&nbsp;&nbsp;&nbsp;Error Recovery</a></h2>
 <p>The parser uses a fairly simplistic panic mode error recovery which tries to
 catch syntax errors at the toplevel only. This seems to work reasonably well,
 but might catch some errors much too late. Unfortunately, Pure's terseness
@@ -2997,14 +3025,14 @@ anything, entering an extra semicolon or two should break the spell, putting
 you back at the toplevel where you can start typing the definition again.</p>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id42" id="debugging" name="debugging">15.4&nbsp;&nbsp;&nbsp;Debugging</a></h2>
+<h2><a class="toc-backref" href="#id40" id="debugging" name="debugging">13.4&nbsp;&nbsp;&nbsp;Debugging</a></h2>
 <p>There's no symbolic debugger yet. So printf(3) (available in the system
 standard library module) should be your friend. ;-) Also, have a look at the
 <a class="reference" href="#macros">Macros</a> section which discusses a little helper macro to trace global function
 calls in a semi-automatic fashion.</p>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id43" id="the-show-function" name="the-show-function">15.5&nbsp;&nbsp;&nbsp;The __show__ Function</a></h2>
+<h2><a class="toc-backref" href="#id41" id="the-show-function" name="the-show-function">13.5&nbsp;&nbsp;&nbsp;The __show__ Function</a></h2>
 <p>As of Pure 0.6, the interpreter provides a &quot;hook&quot; to override the print
 representations of expressions at runtime by means of the <tt class="docutils literal"><span class="pre">__show__</span></tt>
 function, which works in a fashion similar to Haskell's <tt class="docutils literal"><span class="pre">show</span></tt>
@@ -3092,7 +3120,7 @@ should always be loaded at startup, you can put them into the interpreter's
 interactive startup files, see <a class="reference" href="#interactive-usage">Interactive Usage</a>.</p>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id44" id="as-patterns" name="as-patterns">15.6&nbsp;&nbsp;&nbsp;&quot;As&quot; Patterns</a></h2>
+<h2><a class="toc-backref" href="#id42" id="as-patterns" name="as-patterns">13.6&nbsp;&nbsp;&nbsp;&quot;As&quot; Patterns</a></h2>
 <p>In the current implementation, &quot;as&quot; patterns cannot be placed on the &quot;spine&quot;
 of a function definition. Thus rules like the following, which have the
 pattern somewhere in the head of the left-hand side, will all provoke an error
@@ -3112,7 +3140,7 @@ bar 99,100
 </pre>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id45" id="head-function" name="head-function">15.7&nbsp;&nbsp;&nbsp;Head = Function</a></h2>
+<h2><a class="toc-backref" href="#id43" id="head-function" name="head-function">13.7&nbsp;&nbsp;&nbsp;Head = Function</a></h2>
 <p>&quot;As&quot; patterns are also a useful device if you need to manipulate function
 applications in a generic way. Note that the &quot;head = function&quot; rule means that
 the head symbol <tt class="docutils literal"><span class="pre">f</span></tt> of an application <tt class="docutils literal"><span class="pre">f</span> <span class="pre">x1</span> <span class="pre">...</span> <span class="pre">xn</span></tt> occurring on (or
@@ -3182,7 +3210,7 @@ a good idea to avoid that kind of thing, at least for generic symbols, so the
 above solution is preferred in this case.</p>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id46" id="namespaces-and-implicit-declarations" name="namespaces-and-implicit-declarations">15.8&nbsp;&nbsp;&nbsp;Namespaces and Implicit Declarations</a></h2>
+<h2><a class="toc-backref" href="#id44" id="namespaces-and-implicit-declarations" name="namespaces-and-implicit-declarations">13.8&nbsp;&nbsp;&nbsp;Namespaces and Implicit Declarations</a></h2>
 <p>A common pitfall is the implicit declaration of unqualified symbols in
 conjunction with the <tt class="docutils literal"><span class="pre">namespace</span></tt> declaration. For instance, it is tempting
 to write:</p>
@@ -3212,7 +3240,7 @@ foo x = x+1;
 <p>will tell the compiler about the desired namespace of the symbol.</p>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id47" id="with-or-when" name="with-or-when">15.9&nbsp;&nbsp;&nbsp;With or when?</a></h2>
+<h2><a class="toc-backref" href="#id45" id="with-or-when" name="with-or-when">13.9&nbsp;&nbsp;&nbsp;With or when?</a></h2>
 <p>Another common source of confusion is that Pure provides two different
 constructs to bind local function and variable symbols, respectively. This
 distinction is necessary because Pure does not segregate defined functions and
@@ -3229,7 +3257,7 @@ there, it is helpful to read nested scopes &quot;in reverse&quot; (proceeding fr
 rightmost/outermost to the leftmost/innermost clause).</p>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id48" id="numeric-calculations" name="numeric-calculations">15.10&nbsp;&nbsp;&nbsp;Numeric Calculations</a></h2>
+<h2><a class="toc-backref" href="#id46" id="numeric-calculations" name="numeric-calculations">13.10&nbsp;&nbsp;&nbsp;Numeric Calculations</a></h2>
 <p>If possible, you should decorate numeric variables on the left-hand sides of
 function definitions with the appropriate type tags, like <tt class="docutils literal"><span class="pre">::int</span></tt> or
 <tt class="docutils literal"><span class="pre">::double</span></tt>. This often helps the compiler to generate better code and makes
@@ -3255,7 +3283,7 @@ matches machine integers, not bigints; for the latter you'll have to use the
 &quot;big L&quot; notation <tt class="docutils literal"><span class="pre">0L</span></tt>.</p>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id49" id="constant-definitions" name="constant-definitions">15.11&nbsp;&nbsp;&nbsp;Constant Definitions</a></h2>
+<h2><a class="toc-backref" href="#id47" id="constant-definitions" name="constant-definitions">13.11&nbsp;&nbsp;&nbsp;Constant Definitions</a></h2>
 <p>When definining a function in terms of constant values which have to be
 computed beforehand, it's usually better to use a <tt class="docutils literal"><span class="pre">const</span></tt> definition (rather
 than defining a variable or a parameterless function or macro) for that
@@ -3357,7 +3385,7 @@ bar x = case x of 1 = &quot;one&quot;; 0 = &quot;zero&quot;; _ = &quot;???&quot;
 </pre>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id50" id="external-c-functions" name="external-c-functions">15.12&nbsp;&nbsp;&nbsp;External C Functions</a></h2>
+<h2><a class="toc-backref" href="#id48" id="external-c-functions" name="external-c-functions">13.12&nbsp;&nbsp;&nbsp;External C Functions</a></h2>
 <p>The interpreter always takes your <tt class="docutils literal"><span class="pre">extern</span></tt> declarations of C routines at
 face value. It will not go and read any C header files to determine whether
 you actually declared the function correctly! So you have to be careful to
@@ -3385,7 +3413,7 @@ functions declared in the header. Please refer to the pure-gen(1) manual page
 for details.</p>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id51" id="id2" name="id2">15.13&nbsp;&nbsp;&nbsp;Special Forms</a></h2>
+<h2><a class="toc-backref" href="#id49" id="id2" name="id2">13.13&nbsp;&nbsp;&nbsp;Special Forms</a></h2>
 <p>Special forms are recognized at compile time only. Thus the <tt class="docutils literal"><span class="pre">catch</span></tt>
 function, as well as <tt class="docutils literal"><span class="pre">quote</span></tt> and the operators <tt class="docutils literal"><span class="pre">&amp;&amp;</span></tt>, <tt class="docutils literal"><span class="pre">||</span></tt>, <tt class="docutils literal"><span class="pre">$$</span></tt> and
 <tt class="docutils literal"><span class="pre">&amp;</span></tt>, are only treated as special forms in direct (saturated) calls. They can
@@ -3394,7 +3422,7 @@ applications, but in this case they lose all their special call-by-name
 argument processing.</p>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id52" id="laziness" name="laziness">15.14&nbsp;&nbsp;&nbsp;Laziness</a></h2>
+<h2><a class="toc-backref" href="#id50" id="laziness" name="laziness">13.14&nbsp;&nbsp;&nbsp;Laziness</a></h2>
 <p>Pure does lazy evaluation in the same way as <a class="reference" href="#alice-ml">Alice ML</a>, providing an
 explicit operation (<tt class="docutils literal"><span class="pre">&amp;</span></tt>) to defer evaluation and create a &quot;future&quot; which is
 called by need. However, note that like any language with a basically eager
@@ -3435,7 +3463,7 @@ the prelude for an example showing how to do this.</li>
 </ul>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id53" id="reflection" name="reflection">15.15&nbsp;&nbsp;&nbsp;Reflection</a></h2>
+<h2><a class="toc-backref" href="#id51" id="reflection" name="reflection">13.15&nbsp;&nbsp;&nbsp;Reflection</a></h2>
 <p>Pure versions since 0.12 offer some basic reflection capabilities via the
 <tt class="docutils literal"><span class="pre">evalcmd</span></tt> primitive. This function provides access to interactive commands
 like <tt class="docutils literal"><span class="pre">clear</span></tt>, <tt class="docutils literal"><span class="pre">save</span></tt> and <tt class="docutils literal"><span class="pre">show</span></tt>, which enable you to inspect and modify
@@ -3487,7 +3515,7 @@ end;
 </pre>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id54" id="stack-size-and-tail-recursion" name="stack-size-and-tail-recursion">15.16&nbsp;&nbsp;&nbsp;Stack Size and Tail Recursion</a></h2>
+<h2><a class="toc-backref" href="#id52" id="stack-size-and-tail-recursion" name="stack-size-and-tail-recursion">13.16&nbsp;&nbsp;&nbsp;Stack Size and Tail Recursion</a></h2>
 <p>Pure programs may need a considerable amount of stack space to handle
 recursive function and macro calls, and the interpreter itself also takes its
 toll. So you should configure your system accordingly (8 MB of stack space is
@@ -3530,7 +3558,7 @@ recompile the entire program.) However, mutual tail recursion <em>does</em> work
 local functions, so it's easy to work around this limitation.</p>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id55" id="handling-of-asynchronous-signals" name="handling-of-asynchronous-signals">15.17&nbsp;&nbsp;&nbsp;Handling of Asynchronous Signals</a></h2>
+<h2><a class="toc-backref" href="#id53" id="handling-of-asynchronous-signals" name="handling-of-asynchronous-signals">13.17&nbsp;&nbsp;&nbsp;Handling of Asynchronous Signals</a></h2>
 <p>As described in section <a class="reference" href="#exception-handling">Exception Handling</a>, signals delivered to the
 process can be caught and handled with Pure's exception handling
 facilities. Like stack checks, checks for pending signals are only performed
@@ -3564,54 +3592,16 @@ check x = ...;
 </div>
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id56" id="files" name="files">16&nbsp;&nbsp;&nbsp;Files</a></h1>
-<dl class="docutils">
-<dt>~/.pure_history</dt>
-<dd>Interactive command history.</dd>
-<dt>~/.purerc, .purerc, .pure</dt>
-<dd>Interactive startup files. The latter is usually a dump from a previous
-interactive session.</dd>
-<dt>prelude.pure</dt>
-<dd>Standard prelude. If available, this script is loaded before any other
-definitions, unless -n was specified.</dd>
-</dl>
-</div>
-<div class="section">
-<h1><a class="toc-backref" href="#id57" id="environment" name="environment">17&nbsp;&nbsp;&nbsp;Environment</a></h1>
-<dl class="docutils">
-<dt>PURELIB</dt>
-<dd>Directory to search for library scripts, including the prelude. If PURELIB
-is not set, it defaults to some default location specified at installation
-time.</dd>
-<dt>PURE_HELP</dt>
-<dd>Command used to browse the Pure manual. This must be a browser capable of
-displaying html files. Default is w3m(1).</dd>
-<dt>PURE_INCLUDE</dt>
-<dd>Additional directories (in colon-separated format) to be searched for
-included scripts.</dd>
-<dt>PURE_LIBRARY</dt>
-<dd>Additional directories (in colon-separated format) to be searched for
-dynamic libraries.</dd>
-<dt>PURE_MORE</dt>
-<dd>Shell command to be used for paging through output of the show command,
-when the interpreter runs in interactive mode.</dd>
-<dt>PURE_PS</dt>
-<dd>Command prompt used in the interactive command loop (&quot;&gt; &quot; by default).</dd>
-<dt>PURE_STACK</dt>
-<dd>Maximum stack size in kilobytes (default: 0 = unlimited).</dd>
-</dl>
-</div>
-<div class="section">
-<h1><a class="toc-backref" href="#id58" id="license" name="license">18&nbsp;&nbsp;&nbsp;License</a></h1>
+<h1><a class="toc-backref" href="#id54" id="license" name="license">14&nbsp;&nbsp;&nbsp;License</a></h1>
 <p><a class="reference" href="http://www.gnu.org/copyleft/gpl.html">GNU General Public License</a> V3 or later. See the accompanying COPYING file for details.</p>
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id59" id="author" name="author">19&nbsp;&nbsp;&nbsp;Author</a></h1>
+<h1><a class="toc-backref" href="#id55" id="author" name="author">15&nbsp;&nbsp;&nbsp;Author</a></h1>
 <p>Albert Graef &lt;<a class="reference" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;, Dept. of Computer Music, Johannes
 Gutenberg University of Mainz, Germany.</p>
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id60" id="see-also" name="see-also">20&nbsp;&nbsp;&nbsp;See Also</a></h1>
+<h1><a class="toc-backref" href="#id56" id="see-also" name="see-also">16&nbsp;&nbsp;&nbsp;See Also</a></h1>
 <dl class="docutils" id="aardappel">
 <dt>Aardappel</dt>
 <dd>Another functional programming language based on term rewriting,

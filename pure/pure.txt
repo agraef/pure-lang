@@ -24,10 +24,8 @@ This document is available under the |FDL|_. Also see License_ for licensing
 information of the software.
 
 This manual describes the Pure programming language and how to invoke the Pure
-interpreter program. It takes the form of a Unix manual page but is actually
-provided as html for easier browsing. To read the manual inside the
-interpreter, just type ``help`` at the command prompt. See `Online Help`_ for
-details.
+interpreter program. To read the manual inside the interpreter, just type
+``help`` at the command prompt. See `Online Help`_ for details.
 
 There is a companion to this manual, the `Pure Library Manual`_ which contains
 the description of the standard library operations.
@@ -40,21 +38,45 @@ Here are some useful links for your bookmarks:
 .. contents::
 .. sectnum::
 
-Name
-====
+Introduction
+============
 
-pure - the Pure interpreter
+Pure is a modern-style functional programming language based on term
+rewriting. Pure programs are basically collections of equational rules used to
+evaluate expressions in a symbolic fashion by reducing them to normal form. An
+overview of the language can be found in the `Pure Overview`_ section below,
+and subsequent sections discuss most language features in detail.
 
-Synopsis
-========
+The Pure interpreter has an LLVM_ backend which JIT-compiles Pure programs to
+machine code, hence programs run blazingly fast and interfacing to C modules
+is easy, while the interpreter still provides a convenient, fully interactive
+environment for running Pure scripts and evaluating expressions.
 
-::
+Pure programs (a.k.a. scripts) are just ordinary text files containing Pure
+code. They must be encoded in UTF-8 (which subsumes 7 bit ASCII), other
+encodings such as Latin-1 are not supported. A bunch of syntax highlighting
+files and programming modes for various popular text editors are included in
+the Pure sources. There's no difference between the Pure programming language
+and the input language accepted by the interpreter, except that the
+interpreter also understands some special commands when running in interactive
+mode; see the `Interactive Usage`_ section for details.
+
+(In case you're wondering, the name "Pure" actually refers to the
+adjective. But you can also write it as "PURE" and take this as a recursive
+acronym for the "Pure Universal Rewriting Engine".)
+
+Invoking the Pure Interpreter
+=============================
+
+pure is the Pure interpreter. It is invoked as follows::
 
   pure [options ...] [script ...] [-- args ...]
   pure [options ...] -x script [args ...]
 
-Options
-=======
+.. rubric:: Options
+
+The interpreter accepts various options which are described in more detail
+below:
 
 --help, -h
     Print help message and exit. 
@@ -79,31 +101,52 @@ Options
 -x
     Execute script with given command line arguments. 
 
-Description
-===========
+.. rubric:: Startup Files
 
-Pure is a modern-style functional programming language based on term
-rewriting. Pure programs are basically collections of equational rules used to
-evaluate expressions in a symbolic fashion by reducing them to normal form. A
-brief overview of the language can be found in the `Pure Overview`_ section
-below. (In case you're wondering, the name "Pure" actually refers to the
-adjective. But you can also write it as "PURE" and take this as a recursive
-acronym for the "Pure Universal Rewriting Engine".)
+The interpreter may source various files during its startup. These are:
 
-pure is the Pure interpreter. The interpreter has an LLVM_ backend which
-JIT-compiles Pure programs to machine code, hence programs run blazingly fast
-and interfacing to C modules is easy, while the interpreter still provides a
-convenient, fully interactive environment for running Pure scripts and
-evaluating expressions.
+~/.pure_history
+    Interactive command history. 
 
-Pure programs (a.k.a. scripts) are just ordinary text files containing Pure
-code. They must be encoded in UTF-8 (which subsumes 7 bit ASCII), other
-encodings such as Latin-1 are not supported. A bunch of syntax highlighting
-files and programming modes for various popular text editors are included in
-the Pure sources. There's no difference between the Pure programming language
-and the input language accepted by the interpreter, except that the
-interpreter also understands some special commands when running in interactive
-mode; see the `Interactive Usage`_ section for details.
+~/.purerc, .purerc, .pure
+    Interactive startup files. The latter is usually a dump from a previous
+    interactive session.
+
+prelude.pure
+    Standard prelude. If available, this script is loaded before any other
+    definitions, unless -n was specified.
+
+.. rubric:: Environment
+
+Various aspects of the interpreter can be configured through the following
+shell environment variables:
+
+PURELIB
+    Directory to search for library scripts, including the prelude. If PURELIB
+    is not set, it defaults to some default location specified at installation
+    time.
+
+PURE_HELP
+    Command used to browse the Pure manual. This must be a browser capable of
+    displaying html files. Default is w3m(1).
+
+PURE_INCLUDE
+    Additional directories (in colon-separated format) to be searched for
+    included scripts.
+
+PURE_LIBRARY
+    Additional directories (in colon-separated format) to be searched for
+    dynamic libraries.
+
+PURE_MORE
+    Shell command to be used for paging through output of the show command,
+    when the interpreter runs in interactive mode.
+
+PURE_PS
+    Command prompt used in the interactive command loop ("> " by default). 
+
+PURE_STACK
+    Maximum stack size in kilobytes (default: 0 = unlimited). 
 
 If any source scripts are specified on the command line, they are loaded and
 executed, after which the interpreter exits. Otherwise the interpreter enters
@@ -2317,7 +2360,7 @@ currently supported operations:
     objects like closures, thunks and pointers don't have a textual
     representation from which they could be reconstructed. To handle these,
     you'll probably have to prepare a corresponding .purerc file yourself, see
-    `Startup Files`_ below.
+    `Interactive Startup`_ below.
 
     A different filename can be specified with the -n option, which expects
     the name of the script to be written in the next argument, e.g: ``dump -n
@@ -2687,8 +2730,8 @@ instance::
   > show
   >
 
-Startup Files
--------------
+Interactive Startup
+-------------------
 
 In interactive mode, the interpreter also runs some additional scripts at
 startup, after loading the prelude and the scripts specified on the command
@@ -3377,50 +3420,6 @@ iteration. This can be implemented as follows::
   loop x = loop (catch handle (check x))
   with handle (signal k) = catch handle (...) end;
   check x = ...;
-
-Files
-=====
-
-~/.pure_history
-    Interactive command history. 
-
-~/.purerc, .purerc, .pure
-    Interactive startup files. The latter is usually a dump from a previous
-    interactive session.
-
-prelude.pure
-    Standard prelude. If available, this script is loaded before any other
-    definitions, unless -n was specified.
-
-Environment
-===========
-
-PURELIB
-    Directory to search for library scripts, including the prelude. If PURELIB
-    is not set, it defaults to some default location specified at installation
-    time.
-
-PURE_HELP
-    Command used to browse the Pure manual. This must be a browser capable of
-    displaying html files. Default is w3m(1).
-
-PURE_INCLUDE
-    Additional directories (in colon-separated format) to be searched for
-    included scripts.
-
-PURE_LIBRARY
-    Additional directories (in colon-separated format) to be searched for
-    dynamic libraries.
-
-PURE_MORE
-    Shell command to be used for paging through output of the show command,
-    when the interpreter runs in interactive mode.
-
-PURE_PS
-    Command prompt used in the interactive command loop ("> " by default). 
-
-PURE_STACK
-    Maximum stack size in kilobytes (default: 0 = unlimited). 
 
 License
 =======
