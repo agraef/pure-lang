@@ -12,11 +12,15 @@ Pure Library Manual
 
 :Author: Albert Graef <Dr.Graef@t-online.de>
 :Copyright: Copyright (c) 2009
+:Date: |date|
 
 .. Add all global docutils declarations here.
 
 .. role:: dfn(strong)
 .. default-role:: dfn
+
+.. |date| date::
+.. |time| date:: %H:%M
 
 .. |GPL| replace:: GNU General Public License
 .. |FDL| replace:: GNU Free Documentation License
@@ -291,6 +295,10 @@ Lists and Tuples
 
 .. _lists:
 .. _tuples:
+.. _list size:
+.. _tuple size:
+.. _null:
+.. _reverse:
 
 The prelude defines the list and tuple constructors (``x:y``, ``x,y``), as
 well as equality (``==``) and inequality (``~=``) on these structures. It
@@ -319,6 +327,8 @@ element with respect to ``(,)``::
   a,b,c
   > (a,b,c),();
   a,b,c
+
+.. _list concatenation:
 
 Lists are the usual right-recursive aggregates, pretty much the same as in
 Lisp or Prolog except that they use a Haskell-like syntax. In difference to
@@ -389,7 +399,8 @@ stream are in fact already known. However, this operation then allows you
 to apply other functions to the list and have them evaluated in a lazy
 fashion.
 
-.. _indexing:
+.. _list indexing:
+.. _tuple indexing:
 
 Indexing of lists and tuples is always zero-based (i.e., indices run from
 ``0`` to ``#x-1``), and an exception will be raised if the index is out of
@@ -401,7 +412,8 @@ bounds::
   <stdin>, line 34: unhandled exception 'out_of_bounds' while evaluating
   '[1,2,3]!4'
 
-.. _slicing:
+.. _list slicing:
+.. _tuple slicing:
 
 The slicing operator ``!!`` takes a list or tuple and a list of indices and
 returns the list or tuple of the corresponding elements, respectively.
@@ -697,8 +709,8 @@ Concatenation, indexing and slicing works just like with lists::
   > s!!(20..24);
   "jumps"
 
-.. _string length:
-.. _null:
+.. _string size:
+.. _string null:
 
 Checking for empty strings and determining the size of a string also works
 as expected::
@@ -895,6 +907,8 @@ Examples::
   0.333333333333333
   > eval (quote (1/3));
   0.333333333333333
+  > evalcmd "show evalcmd";
+  "extern expr* evalcmd(expr*);\n"
   > eval "1/3)";
   eval "1/3)"
   > lasterr;
@@ -914,7 +928,7 @@ low-level code these operations are useful. Also note that here and in the
 following, the ``cstring`` routines also convert the string between the
 system encoding and Pure's internal UTF-8 representation.
 
-.. _string-pointer:
+.. _string from pointer:
 .. _cstring:
 
 ``string s``, ``cstring s``
