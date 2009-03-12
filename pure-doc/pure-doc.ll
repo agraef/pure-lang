@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string>
+#include <list>
 #include <iostream>
 
 /* Work around an incompatibility in flex (at least versions 2.5.31 through
@@ -130,11 +131,15 @@ static unsigned trim(string& text, unsigned col)
     return 0;
 }
 
-/* Handle hyperlink targets. To supplement docutils own hyperlink processing,
+/* Handle hyperlink targets. To supplement docutils' own hyperlink processing,
    we also create raw html targets for these. This works around the docutils
    name mangling (which is undesirable if we're looking, e.g., for function
    names), and to resolve quirks with w3m which doesn't pick up all 'id'
-   attributes. */
+   attributes. It also allows us to output an index of all explicit targets in
+   a document. This is requested with the 'makeindex::' directive. (This
+   feature is rather simplistic right now and can't compete with a carefully
+   handmade index, but as docutils doesn't provide an index facility of its
+   own, it is certainly better than having no index at all.) */
 
 static string cache;
 
@@ -144,24 +149,38 @@ static void flush_cache()
   cache.clear();
 }
 
-static bool targets(const string& text)
+static list<string> targets;
+
+static bool targetp(const string& text)
 {
   size_t p0 = text.find_first_not_of(" \t"), p = p0;
   if (p != string::npos && text.substr(p, 2) == ".." &&
       p+2 < text.size() && (text[p+2] == ' ' || text[p+2] == '\t') &&
-      (p = text.find_first_not_of(" \t", p+2)) != string::npos &&
-      text[p] == '_') {
-    string target = text.substr(p+1);
-    // trim trailing whitespace
-    p = target.find_last_not_of(" \t");
-    if (p != string::npos && target[p] == ':') {
-      /* We found a hyperlink target. Store it away in the cache, to be
-	 emitted later, and create a raw html target for it. */
-      target.erase(p);
-      cache += text; cache += "\n";
-      string indent = text.substr(0, p0);
-      cout << indent << ".. raw:: html" << endl << endl
-	   << indent << "   <a name=\"" << target << "\">" << endl << endl;
+      (p = text.find_first_not_of(" \t", p+2)) != string::npos) {
+    if (text[p] == '_') {
+      string target = text.substr(p+1);
+      // trim trailing whitespace
+      p = target.find_last_not_of(" \t");
+      if (p != string::npos && target[p] == ':') {
+	/* We found a hyperlink target. Store it away in the cache, to be
+	   emitted later, and create a raw html target for it. */
+	target.erase(p);
+	targets.push_back(target);
+	cache += text; cache += "\n";
+	string indent = text.substr(0, p0);
+	cout << indent << ".. raw:: html" << endl << endl
+	     << indent << "   <a name=\"" << target << "\">" << endl << endl;
+	return true;
+      } else
+	goto notarget;
+    } else if (text.substr(p, 11) == "makeindex::" &&
+	       text.find_first_not_of(" \t", p+11) == string::npos) {
+      /* Emit the index. */
+      targets.sort();
+      for (list<string>::iterator it = targets.begin(), end = targets.end();
+	   it != end; it++)
+	cout << "* `" << *it << "`_" << endl;
+      cout << endl;
       return true;
     } else
       goto notarget;
@@ -250,7 +269,7 @@ static void print(unsigned col, string& text)
   if (t) {
     string text = t;
     last_t = t+text.size();
-    if (!targets(text))
+    if (!targetp(text))
       cout << text << endl;
     t = strtok(NULL, "\n");
     while (t) {
@@ -264,7 +283,7 @@ static void print(unsigned col, string& text)
       size_t p = text.find_first_not_of(" \t");
       if (p != string::npos) {
 	last_indent = trim(text, col);
-	if (!targets(text))
+	if (!targetp(text))
 	  cout << text << endl;
       } else {
 	flush_cache();

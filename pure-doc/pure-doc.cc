@@ -486,6 +486,7 @@ char *yytext;
 #include <errno.h>
 #include <stdio.h>
 #include <string>
+#include <list>
 #include <iostream>
 
 /* Work around an incompatibility in flex (at least versions 2.5.31 through
@@ -514,7 +515,7 @@ static inline void echo(const char *s)
   }
 }
 
-#line 518 "pure-doc.cc"
+#line 519 "pure-doc.cc"
 
 #define INITIAL 0
 #define comment 1
@@ -699,10 +700,10 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 43 "pure-doc.ll"
+#line 44 "pure-doc.ll"
 
 
-#line 706 "pure-doc.cc"
+#line 707 "pure-doc.cc"
 
 	if ( !(yy_init) )
 		{
@@ -788,16 +789,16 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 /* rule 1 can match eol */
-#line 46 "pure-doc.ll"
+#line 47 "pure-doc.ll"
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 46 "pure-doc.ll"
+#line 47 "pure-doc.ll"
 echo(yytext); tabs(col, yytext, yyleng);
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 48 "pure-doc.ll"
+#line 49 "pure-doc.ll"
 {
   start = 0; buf = yytext+2;
   comment_text = yytext;
@@ -807,7 +808,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 54 "pure-doc.ll"
+#line 55 "pure-doc.ll"
 {
   col += yyleng; start = col; buf.clear();
   comment_text = yytext;
@@ -820,12 +821,12 @@ case 5:
 (yy_c_buf_p) = yy_cp = yy_bp + 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 60 "pure-doc.ll"
+#line 61 "pure-doc.ll"
 comment_text += yytext; tabs(col, yytext, yyleng);
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 61 "pure-doc.ll"
+#line 62 "pure-doc.ll"
 {
   buf += string("\n")+(yytext+2);
   comment_text += yytext;
@@ -834,17 +835,17 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 /* rule 7 can match eol */
-#line 67 "pure-doc.ll"
+#line 68 "pure-doc.ll"
 case 8:
 /* rule 8 can match eol */
 YY_RULE_SETUP
-#line 67 "pure-doc.ll"
+#line 68 "pure-doc.ll"
 print(start, buf); yyless(0); BEGIN(INITIAL);
 	YY_BREAK
 case 9:
 /* rule 9 can match eol */
 YY_RULE_SETUP
-#line 69 "pure-doc.ll"
+#line 70 "pure-doc.ll"
 {
   tabs(col, yytext, yyleng);
   buf += yytext; comment_text += yytext;
@@ -853,7 +854,7 @@ YY_RULE_SETUP
 case 10:
 /* rule 10 can match eol */
 YY_RULE_SETUP
-#line 73 "pure-doc.ll"
+#line 74 "pure-doc.ll"
 {
   tabs(col, yytext, yyleng);
   buf += yytext; comment_text += yytext;
@@ -861,7 +862,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 77 "pure-doc.ll"
+#line 78 "pure-doc.ll"
 {
   col += yyleng;
   comment_text += yytext;
@@ -871,22 +872,22 @@ YY_RULE_SETUP
 	YY_BREAK
 case 12:
 /* rule 12 can match eol */
-#line 85 "pure-doc.ll"
+#line 86 "pure-doc.ll"
 case 13:
 /* rule 13 can match eol */
 YY_RULE_SETUP
-#line 85 "pure-doc.ll"
+#line 86 "pure-doc.ll"
 echo(yytext); tabs(col, yytext, yyleng);
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 86 "pure-doc.ll"
+#line 87 "pure-doc.ll"
 echo(yytext); col++;
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(comment):
 case YY_STATE_EOF(lcomment):
-#line 88 "pure-doc.ll"
+#line 89 "pure-doc.ll"
 {
   if (YY_START != INITIAL)
     print(start, buf); BEGIN(INITIAL);
@@ -904,10 +905,10 @@ case YY_STATE_EOF(lcomment):
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 103 "pure-doc.ll"
+#line 104 "pure-doc.ll"
 ECHO;
 	YY_BREAK
-#line 911 "pure-doc.cc"
+#line 912 "pure-doc.cc"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -1869,7 +1870,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 103 "pure-doc.ll"
+#line 104 "pure-doc.ll"
 
 
 
@@ -1901,11 +1902,15 @@ static unsigned trim(string& text, unsigned col)
     return 0;
 }
 
-/* Handle hyperlink targets. To supplement docutils own hyperlink processing,
+/* Handle hyperlink targets. To supplement docutils' own hyperlink processing,
    we also create raw html targets for these. This works around the docutils
    name mangling (which is undesirable if we're looking, e.g., for function
    names), and to resolve quirks with w3m which doesn't pick up all 'id'
-   attributes. */
+   attributes. It also allows us to output an index of all explicit targets in
+   a document. This is requested with the 'makeindex::' directive. (This
+   feature is rather simplistic right now and can't compete with a carefully
+   handmade index, but as docutils doesn't provide an index facility of its
+   own, it is certainly better than having no index at all.) */
 
 static string cache;
 
@@ -1915,24 +1920,38 @@ static void flush_cache()
   cache.clear();
 }
 
-static bool targets(const string& text)
+static list<string> targets;
+
+static bool targetp(const string& text)
 {
   size_t p0 = text.find_first_not_of(" \t"), p = p0;
   if (p != string::npos && text.substr(p, 2) == ".." &&
       p+2 < text.size() && (text[p+2] == ' ' || text[p+2] == '\t') &&
-      (p = text.find_first_not_of(" \t", p+2)) != string::npos &&
-      text[p] == '_') {
-    string target = text.substr(p+1);
-    // trim trailing whitespace
-    p = target.find_last_not_of(" \t");
-    if (p != string::npos && target[p] == ':') {
-      /* We found a hyperlink target. Store it away in the cache, to be
-	 emitted later, and create a raw html target for it. */
-      target.erase(p);
-      cache += text; cache += "\n";
-      string indent = text.substr(0, p0);
-      cout << indent << ".. raw:: html" << endl << endl
-	   << indent << "   <a name=\"" << target << "\">" << endl << endl;
+      (p = text.find_first_not_of(" \t", p+2)) != string::npos) {
+    if (text[p] == '_') {
+      string target = text.substr(p+1);
+      // trim trailing whitespace
+      p = target.find_last_not_of(" \t");
+      if (p != string::npos && target[p] == ':') {
+	/* We found a hyperlink target. Store it away in the cache, to be
+	   emitted later, and create a raw html target for it. */
+	target.erase(p);
+	targets.push_back(target);
+	cache += text; cache += "\n";
+	string indent = text.substr(0, p0);
+	cout << indent << ".. raw:: html" << endl << endl
+	     << indent << "   <a name=\"" << target << "\">" << endl << endl;
+	return true;
+      } else
+	goto notarget;
+    } else if (text.substr(p, 11) == "makeindex::" &&
+	       text.find_first_not_of(" \t", p+11) == string::npos) {
+      /* Emit the index. */
+      targets.sort();
+      for (list<string>::iterator it = targets.begin(), end = targets.end();
+	   it != end; it++)
+	cout << "* `" << *it << "`_" << endl;
+      cout << endl;
       return true;
     } else
       goto notarget;
@@ -2021,7 +2040,7 @@ static void print(unsigned col, string& text)
   if (t) {
     string text = t;
     last_t = t+text.size();
-    if (!targets(text))
+    if (!targetp(text))
       cout << text << endl;
     t = strtok(NULL, "\n");
     while (t) {
@@ -2035,7 +2054,7 @@ static void print(unsigned col, string& text)
       size_t p = text.find_first_not_of(" \t");
       if (p != string::npos) {
 	last_indent = trim(text, col);
-	if (!targets(text))
+	if (!targetp(text))
 	  cout << text << endl;
       } else {
 	flush_cache();
