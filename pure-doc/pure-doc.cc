@@ -1901,6 +1901,48 @@ static unsigned trim(string& text, unsigned col)
     return 0;
 }
 
+/* Handle hyperlink targets. To supplement docutils own hyperlink processing,
+   we also create raw html targets for these. This works around the docutils
+   name mangling (which is undesirable if we're looking, e.g., for function
+   names), and to resolve quirks with w3m which doesn't pick up all 'id'
+   attributes. */
+
+static string cache;
+
+static void flush_cache()
+{
+  cout << cache;
+  cache.clear();
+}
+
+static bool targets(const string& text)
+{
+  size_t p0 = text.find_first_not_of(" \t"), p = p0;
+  if (p != string::npos && text.substr(p, 2) == ".." &&
+      p+2 < text.size() && (text[p+2] == ' ' || text[p+2] == '\t') &&
+      (p = text.find_first_not_of(" \t", p+2)) != string::npos &&
+      text[p] == '_') {
+    string target = text.substr(p+1);
+    // trim trailing whitespace
+    p = target.find_last_not_of(" \t");
+    if (p != string::npos && target[p] == ':') {
+      /* We found a hyperlink target. Store it away in the cache, to be
+	 emitted later, and create a raw html target for it. */
+      target.erase(p);
+      cache += text; cache += "\n";
+      string indent = text.substr(0, p0);
+      cout << indent << ".. raw:: html" << endl << endl
+	   << indent << "   <a name=\"" << target << "\">" << endl << endl;
+      return true;
+    } else
+      goto notarget;
+  } else {
+  notarget:
+    flush_cache();
+    return false;
+  }
+}
+
 static void print(unsigned col, string& text)
 {
   static unsigned last_offs = 0, last_indent = 0;
@@ -1977,12 +2019,15 @@ static void print(unsigned col, string& text)
   strcpy(s, text.c_str());
   t = strtok(s, "\n");
   if (t) {
-    last_t = t+strlen(t);
-    cout << t << endl;
+    string text = t;
+    last_t = t+text.size();
+    if (!targets(text))
+      cout << text << endl;
     t = strtok(NULL, "\n");
     while (t) {
       size_t n = t-(last_t+1);
       // handle empty lines (strtok merges adjacent delims into one)
+      if (n > 0) flush_cache();
       for (size_t i = 0; i < n; i++)
 	cout << endl;
       // trim whitespace in subsequent lines
@@ -1990,12 +2035,16 @@ static void print(unsigned col, string& text)
       size_t p = text.find_first_not_of(" \t");
       if (p != string::npos) {
 	last_indent = trim(text, col);
-	cout << text << endl;
-      } else
+	if (!targets(text))
+	  cout << text << endl;
+      } else {
+	flush_cache();
 	cout << endl;
+      }
       last_t = t+strlen(t);
       t = strtok(NULL, "\n");
     }
+    flush_cache();
     cout << endl;
   }
   delete[] s;
