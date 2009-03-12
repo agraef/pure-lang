@@ -84,8 +84,11 @@ using namespace C;
      > substr s 20 10;
      "jumps over"
 
-   Note that individual (UTF-8) characters are represented as single character
-   strings (``#c==1``). It is possible to convert between these and integers:
+   Note that Pure doesn't have a separate type for individual characters.
+   Instead, these are represented as strings ``c`` containing exactly one
+   (UTF-8) character (i.e., ``#c==1``). It is possible to convert such single
+   character strings to the corresponding integer character codes, and vice
+   versa:
 
    .. _ord:
 
@@ -111,13 +114,15 @@ using namespace C;
      > "a".."k";
      ["a","b","c","d","e","f","g","h","i","j","k"]
 
-   Strings are ordered lexicographically based on their character codes::
+   Strings are also ordered lexicographically based on their character codes::
 
-     > "John"<"Johnson";
+     > "awe">"awesome";
+     0
+     > "foo">="bar";
      1
 
-   For convenience, the prelude also provides the following functions to
-   convert between strings and lists (or other aggregates) of characters.
+   For convenience, the prelude provides the following functions to convert
+   between strings and lists (or other aggregates) of characters.
 
    .. _chars:
    .. _string list:
@@ -173,8 +178,9 @@ using namespace C;
      > join ":" xs;
      "The:quick:brown:fox:jumps:over:the:lazy:dog."
 
-   We mention in passing here that more elaborate string matching operations
-   are provided by the system module, see `System Interface`_.
+   We mention in passing here that more elaborate string matching, splitting
+   and replacement operations based on regular expressions are provided by the
+   system module, see `System Interface`_.
 
    If that isn't enough already, most generic list operations carry over to
    strings in the obvious way, treating the string like a list of

@@ -964,8 +964,11 @@ characters so that the index range stays confined to the source string.</dd>
 &gt; substr s 20 10;
 &quot;jumps over&quot;
 </pre>
-<p>Note that individual (UTF-8) characters are represented as single character
-strings (<tt class="docutils literal"><span class="pre">#c==1</span></tt>). It is possible to convert between these and integers:</p>
+<p>Note that Pure doesn't have a separate type for individual characters.
+Instead, these are represented as strings <tt class="docutils literal"><span class="pre">c</span></tt> containing exactly one
+(UTF-8) character (i.e., <tt class="docutils literal"><span class="pre">#c==1</span></tt>). It is possible to convert such single
+character strings to the corresponding integer character codes, and vice
+versa:</p>
 <dl class="docutils" id="ord">
 <dt><tt class="docutils literal"><span class="pre">ord</span> <span class="pre">c</span></tt></dt>
 <dd>Ordinal number of a single character string <tt class="docutils literal"><span class="pre">c</span></tt>. This is the
@@ -986,13 +989,15 @@ sequences of characters, so that you can write stuff like the following:</p>
 &gt; &quot;a&quot;..&quot;k&quot;;
 [&quot;a&quot;,&quot;b&quot;,&quot;c&quot;,&quot;d&quot;,&quot;e&quot;,&quot;f&quot;,&quot;g&quot;,&quot;h&quot;,&quot;i&quot;,&quot;j&quot;,&quot;k&quot;]
 </pre>
-<p>Strings are ordered lexicographically based on their character codes:</p>
+<p>Strings are also ordered lexicographically based on their character codes:</p>
 <pre class="literal-block">
-&gt; &quot;John&quot;&lt;&quot;Johnson&quot;;
+&gt; &quot;awe&quot;&gt;&quot;awesome&quot;;
+0
+&gt; &quot;foo&quot;&gt;=&quot;bar&quot;;
 1
 </pre>
-<p>For convenience, the prelude also provides the following functions to
-convert between strings and lists (or other aggregates) of characters.</p>
+<p>For convenience, the prelude provides the following functions to convert
+between strings and lists (or other aggregates) of characters.</p>
 <dl class="docutils" id="string-list">
 <span id="chars"></span><dt><tt class="docutils literal"><span class="pre">chars</span> <span class="pre">s</span></tt>, <tt class="docutils literal"><span class="pre">list</span> <span class="pre">s</span></tt></dt>
 <dd>Convert a string <tt class="docutils literal"><span class="pre">s</span></tt> to a list of characters.</dd>
@@ -1038,8 +1043,9 @@ given <tt class="docutils literal"><span class="pre">delim</span></tt> string.</
 &gt; join &quot;:&quot; xs;
 &quot;The:quick:brown:fox:jumps:over:the:lazy:dog.&quot;
 </pre>
-<p>We mention in passing here that more elaborate string matching operations
-are provided by the system module, see <a class="reference" href="#system-interface">System Interface</a>.</p>
+<p>We mention in passing here that more elaborate string matching, splitting
+and replacement operations based on regular expressions are provided by the
+system module, see <a class="reference" href="#system-interface">System Interface</a>.</p>
 <p>If that isn't enough already, most generic list operations carry over to
 strings in the obvious way, treating the string like a list of
 characters. For instance:</p>
