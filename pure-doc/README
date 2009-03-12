@@ -5,7 +5,9 @@ pure-doc
 
 :Author: Albert Graef <Dr.Graef@t-online.de>
 :License: GPL V3, see the accompanying COPYING file
+:Date: |date|
 
+.. |date| date::
 .. |RST| replace:: reStructuredText
 .. _RST: http://docutils.sourceforge.net/rst.html
 .. _docutils: http://docutils.sourceforge.net
@@ -36,8 +38,8 @@ Usage
 
 First, see the description of the RST_ format. RST is a very simple markup
 format, almost like plain text (in fact, you're looking at RST right now, this
-README is written in it!). You can learn enough of it to start marking up your
-source in about five minutes.
+document is written in it!). You can learn enough of it to start marking up
+your source in about five minutes.
 
 Second, you'll have to mark up your source comments. pure-doc recognizes
 comments in RST format by looking at the first non-empty line of the
@@ -46,23 +48,23 @@ line comments) is assumed to contain RST format if the first non-empty line
 starts with ``:``, ``..`` or ``__``. Other comments are taken to be plain text
 and are ignored by pure-doc.
 
-.. note::
+Notes:
 
-   * pure-doc makes no other assumption about the contents of marked up
-     comments, so you can include whatever you want: titles, section headers,
-     fields, plain text, whatever. Just make sure that the comment starts with
-     one of the special tokens listed above. (You can always put just ``..``
-     at the beginning of the comment to force it to be recognized, this will
-     be treated as a comment by the docutils tools.)
+* pure-doc makes no other assumption about the contents of marked up comments,
+  so you can include whatever you want: titles, section headers, fields,
+  admonitions, plain text, whatever. Just make sure that the comment starts
+  with one of the special tokens listed above. (You can always put just ``..``
+  at the beginning of the comment to force it to be recognized, this will be
+  treated as a comment by the docutils tools.)
 
-   * Also, pure-doc makes very few assumptions about the source; in fact, any
-     source files with a C/C++-like comment and string syntax should work. So
-     you could also use it to document your C/C++ programs, or even plain text
-     files like this one, as long as they adhere to these standards.
+* Also, pure-doc makes very few assumptions about the source; in fact, any
+  source files with a C/C++-like comment and string syntax should work. So you
+  could also use it to document your C/C++ programs, or even plain text files
+  like this one, as long as they adhere to these standards.
 
-   * Indentation in extracted comments is preserved (assuming tabs = 8 spaces
-     by default, you can change this with the ``-t`` option).  This is
-     important because indentation conveys document structure in RST.
+* Indentation in extracted comments is preserved (assuming tabs = 8 spaces
+  by default, you can change this with the ``-t`` option).  This is important
+  because indentation conveys document structure in RST.
 
 For instance, here is a sample RST-formatted comment::
 
@@ -78,7 +80,22 @@ For instance, here is a sample RST-formatted comment::
 
      :See Also: rand(3) */
 
-Finally, you run pure-doc on your source files as follows::
+This will be rendered as follows:
+
+  :Name: ``rand`` - compute random numbers
+  :Synopsis: ``rand``
+  :Description: Computes a (pseudo) random number. Takes no parameters.
+  :Example: Here is how you can call ``rand`` in Pure:
+    ::
+
+      > extern int rand();
+      > rand;
+      1804289383
+
+  :See Also: rand(3)
+
+Finally, to extract the documentation you run pure-doc on your source files as
+follows::
 
   pure-doc source-files ...
 
@@ -93,14 +110,27 @@ If you prefer to write the output to a file, you can do that as follows::
 
   pure-doc source-files ... > rst-file
 
-pure-doc understands the following two options:
+pure-doc also understands the following two options. These must come before
+any file arguments.
 
 -h          Print a short help message.
--twidth     Set the width of tabs in number of spaces.
+-twidth     Set the tab width to the given number of spaces.
 
-There are no other options, but the docutils programs offer plenty of options
-to change the formatting of the output; please refer to the docutils_
-documentation for details.
+There are no other options. By its design pure-doc is just a plain simple
+"docstring scraping" utility with no formatting knowledge of its own. All
+actual formatting is handled by the docutils programs which offer plenty of
+options to change the appearance of the generated output; please refer to the
+docutils_ documentation for details.
+
+If docutils isn't enough for you, then you should consider one of the other
+available RST-based documentation frameworks, such as Sphinx_. These provide
+even more elaborate formatting options, but are usually somewhat
+Python-centric and harder to use. Also, you should take into account that many
+Pure users read documentation in a text-based browser while running the
+interpreter, so including all the latest html gizmos is not going to do them
+much good and might in fact impair readability.
+
+.. _Sphinx: http://sphinx.pocoo.org
 
 Literate Programming
 ====================
@@ -115,7 +145,7 @@ For instance::
 
   /* ..
 
-     pure-doc supports literate programming, too: */
+     pure-doc supports literate programming, too. */
 
   // >>>
 
@@ -127,12 +157,24 @@ For instance::
 
   // <<<
 
-Try it now! You can scrape all the documentation from this file and format it
-as html, as follows::
+This will be rendered as follows:
+
+  pure-doc supports literate programming, too.
+
+  ::
+
+    // This is a literate comment.
+    /* .. This too! */
+
+    extern int rand();
+    rand;
+
+Try it now! You can scrape all the sample "documentation" from this file and
+format it as html, as follows::
 
   pure-doc README | rst2html.py --no-doc-title --no-doc-info > test.html
 
-As already mentioned, this README itself is also in RST format, so you can
+As already mentioned, this document itself is also in RST format, so you can
 also do the following to get nicely formatted documentation::
 
   rst2html.py README pure-doc.html
@@ -142,38 +184,40 @@ also do the following to get nicely formatted documentation::
 Hyperlink Targets and Index Generation
 ======================================
 
-pure-gen recognizes explicit hyperlink targets of the form::
+To supplement the normal hyperlink target processing by the docutils tools,
+pure-doc recognizes explicit hyperlink targets of the form::
 
   .. _target:
 
-To supplement the normal hyperlink target processing by the docutils tools, it
-automatically creates a raw html target (``<a name=...>``) for those. This
-works around the docutils name mangling (which is undesirable if you're
-indexing, say, function names). It also resolves a quirk with w3m which
+pure-doc automatically creates raw html targets (``<a name=...>``) for
+those. This works around the docutils name mangling (which is undesirable if
+you're indexing, say, function names). It also resolves a quirk with w3m which
 doesn't pick up all ``id`` attributes in the docutils-generated html source.
 
 In addition, you can also have pure-doc generate an index from all explicit
-targets. To these ends, add the following special directive to one of your
-source comments::
+targets. To these ends, just add the following special directive at the place
+where you want the index to appear::
 
   .. makeindex::
 
+The directive will be replaced with a bullet list of references to all targets
+collected *up to that point*, sorted alphabetically. This also resets the list
+of collected targets, so that you can have multiple smaller indices in your
+document instead of one big one.
+
 .. note::
 
-   * The ``makeindex`` directive should be placed somewhere near the end of
-     the target document, as pure-doc processes all source files in a single
-     pass. The directive will be replaced with a bullet list of references to
-     all targets, sorted alphabetically.
-
-   * Also note that docutils can't handle multiple explicit targets with the
-     same name, so you should take that into consideration when devising your
-     index terms.
+   docutils doesn't allow multiple explicit targets with the same name, so you
+   should take that into consideration when devising your index terms.
 
 It goes without saying that this facility is rather simplistic, and can't
 compete with a carefully hand-made index. But we decided to toss it in because
 docutils currently doesn't provide an automatic index facility of its own, and
 the simple kind of index generated with pure-doc is certainly better than
-having no index at all.
+having no index at all. (An alternative to pure-doc's indexing facility would
+be to introduce a special RST "text role" for indexing purposes and use a
+custom utility to process this kind of markup. But at present this is beyond
+pure-doc's scope, so you're on your own if you take that route.)
 
 Generating Documentation
 ========================
@@ -254,8 +298,8 @@ command like the following::
   > help foo#
 
 For a concrete example, you can find all this and more in pure-doc's own
-Makefile. In fact, after installation this README ends up as pure-doc.html in
-the Pure library directory, so that you can read it with::
+Makefile. In fact, after installation this document ends up as pure-doc.html
+in the Pure library directory, so that you can read it with::
 
   > help pure-doc#
 
@@ -266,5 +310,7 @@ pure-doc manual as follows::
 
   > help pure-doc#literate-programming
 
-Please also refer to the Pure Manual for more information on how to use the
+Please also refer to the `Pure Manual`_ for more information on how to use the
 interpreter's online help.
+
+.. _Pure Manual: pure.html
