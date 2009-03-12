@@ -46,23 +46,23 @@ line comments) is assumed to contain RST format if the first non-empty line
 starts with ``:``, ``..`` or ``__``. Other comments are taken to be plain text
 and are ignored by pure-doc.
 
-Notes:
+.. note::
 
-* pure-doc makes no other assumption about the contents of marked up comments,
-  so you can include whatever you want: titles, section headers, fields, plain
-  text, whatever. Just make sure that the comment starts with one of the
-  special tokens listed above. (You can always put just ``..`` at the
-  beginning of the comment to force it to be recognized, this will be treated
-  as a comment by the docutils tools.)
+   * pure-doc makes no other assumption about the contents of marked up
+     comments, so you can include whatever you want: titles, section headers,
+     fields, plain text, whatever. Just make sure that the comment starts with
+     one of the special tokens listed above. (You can always put just ``..``
+     at the beginning of the comment to force it to be recognized, this will
+     be treated as a comment by the docutils tools.)
 
-* Also, pure-doc makes very few assumptions about the source; in fact, any
-  source files with a C/C++-like comment and string syntax should work. So you
-  could also use it to document your C/C++ programs, or even plain text files
-  like this one, as long as they adhere to these standards.
+   * Also, pure-doc makes very few assumptions about the source; in fact, any
+     source files with a C/C++-like comment and string syntax should work. So
+     you could also use it to document your C/C++ programs, or even plain text
+     files like this one, as long as they adhere to these standards.
 
-* Indentation in extracted comments is preserved (assuming tabs = 8 spaces,
-  you can change this in pure-doc.ll).  This is important because indentation
-  conveys document structure in RST.
+   * Indentation in extracted comments is preserved (assuming tabs = 8 spaces
+     by default, you can change this with the ``-t`` option).  This is
+     important because indentation conveys document structure in RST.
 
 For instance, here is a sample RST-formatted comment::
 
@@ -92,6 +92,11 @@ one of the docutils programs::
 If you prefer to write the output to a file, you can do that as follows::
 
   pure-doc source-files ... > rst-file
+
+pure-doc understands the following two options:
+
+-h          Print a short help message.
+-twidth     Set the width of tabs in number of spaces.
 
 There are no other options, but the docutils programs offer plenty of options
 to change the formatting of the output; please refer to the docutils_
@@ -133,6 +138,42 @@ also do the following to get nicely formatted documentation::
   rst2html.py README pure-doc.html
 
 (You can also just type ``make html`` to get this.)
+
+Hyperlink Targets and Index Generation
+======================================
+
+pure-gen recognizes explicit hyperlink targets of the form::
+
+  .. _target:
+
+To supplement the normal hyperlink target processing by the docutils tools, it
+automatically creates a raw html target (``<a name=...>``) for those. This
+works around the docutils name mangling (which is undesirable if you're
+indexing, say, function names). It also resolves a quirk with w3m which
+doesn't pick up all ``id`` attributes in the docutils-generated html source.
+
+In addition, you can also have pure-doc generate an index from all explicit
+targets. To these ends, add the following special directive to one of your
+source comments::
+
+  .. makeindex::
+
+.. note::
+
+   * The ``makeindex`` directive should be placed somewhere near the end of
+     the target document, as pure-doc processes all source files in a single
+     pass. The directive will be replaced with a bullet list of references to
+     all targets, sorted alphabetically.
+
+   * Also note that docutils can't handle multiple explicit targets with the
+     same name, so you should take that into consideration when devising your
+     index terms.
+
+It goes without saying that this facility is rather simplistic, and can't
+compete with a carefully hand-made index. But we decided to toss it in because
+docutils currently doesn't provide an automatic index facility of its own, and
+the simple kind of index generated with pure-doc is certainly better than
+having no index at all.
 
 Generating Documentation
 ========================

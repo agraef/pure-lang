@@ -320,8 +320,9 @@ rst2latex.py to create the documentation in a variety of formats.</p>
 <li><a class="reference" href="#installation" id="id1" name="id1">Installation</a></li>
 <li><a class="reference" href="#usage" id="id2" name="id2">Usage</a></li>
 <li><a class="reference" href="#literate-programming" id="id3" name="id3">Literate Programming</a></li>
-<li><a class="reference" href="#generating-documentation" id="id4" name="id4">Generating Documentation</a></li>
-<li><a class="reference" href="#installing-documentation" id="id5" name="id5">Installing Documentation</a></li>
+<li><a class="reference" href="#hyperlink-targets-and-index-generation" id="id4" name="id4">Hyperlink Targets and Index Generation</a></li>
+<li><a class="reference" href="#generating-documentation" id="id5" name="id5">Generating Documentation</a></li>
+<li><a class="reference" href="#installing-documentation" id="id6" name="id6">Installing Documentation</a></li>
 </ul>
 </div>
 <div class="section">
@@ -341,22 +342,24 @@ comment. A comment (either <tt class="docutils literal"><span class="pre">/*</sp
 line comments) is assumed to contain RST format if the first non-empty line
 starts with <tt class="docutils literal"><span class="pre">:</span></tt>, <tt class="docutils literal"><span class="pre">..</span></tt> or <tt class="docutils literal"><span class="pre">__</span></tt>. Other comments are taken to be plain text
 and are ignored by pure-doc.</p>
-<p>Notes:</p>
-<ul class="simple">
-<li>pure-doc makes no other assumption about the contents of marked up comments,
-so you can include whatever you want: titles, section headers, fields, plain
-text, whatever. Just make sure that the comment starts with one of the
-special tokens listed above. (You can always put just <tt class="docutils literal"><span class="pre">..</span></tt> at the
-beginning of the comment to force it to be recognized, this will be treated
-as a comment by the docutils tools.)</li>
+<div class="note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>pure-doc makes no other assumption about the contents of marked up
+comments, so you can include whatever you want: titles, section headers,
+fields, plain text, whatever. Just make sure that the comment starts with
+one of the special tokens listed above. (You can always put just <tt class="docutils literal"><span class="pre">..</span></tt>
+at the beginning of the comment to force it to be recognized, this will
+be treated as a comment by the docutils tools.)</li>
 <li>Also, pure-doc makes very few assumptions about the source; in fact, any
-source files with a C/C++-like comment and string syntax should work. So you
-could also use it to document your C/C++ programs, or even plain text files
-like this one, as long as they adhere to these standards.</li>
-<li>Indentation in extracted comments is preserved (assuming tabs = 8 spaces,
-you can change this in pure-doc.ll).  This is important because indentation
-conveys document structure in RST.</li>
+source files with a C/C++-like comment and string syntax should work. So
+you could also use it to document your C/C++ programs, or even plain text
+files like this one, as long as they adhere to these standards.</li>
+<li>Indentation in extracted comments is preserved (assuming tabs = 8 spaces
+by default, you can change this with the <tt class="docutils literal"><span class="pre">-t</span></tt> option).  This is
+important because indentation conveys document structure in RST.</li>
 </ul>
+</div>
 <p>For instance, here is a sample RST-formatted comment:</p>
 <pre class="literal-block">
 /* :Name: ``rand`` - compute random numbers
@@ -386,6 +389,19 @@ pure-doc source-files ... | rst2html.py
 <pre class="literal-block">
 pure-doc source-files ... &gt; rst-file
 </pre>
+<p>pure-doc understands the following two options:</p>
+<table class="docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">-h</span></kbd></td>
+<td>Print a short help message.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">-t<var>width</var></span></kbd></td>
+<td>Set the width of tabs in number of spaces.</td></tr>
+</tbody>
+</table>
 <p>There are no other options, but the docutils programs offer plenty of options
 to change the formatting of the output; please refer to the <a class="reference" href="http://docutils.sourceforge.net">docutils</a>
 documentation for details.</p>
@@ -426,7 +442,42 @@ rst2html.py README pure-doc.html
 <p>(You can also just type <tt class="docutils literal"><span class="pre">make</span> <span class="pre">html</span></tt> to get this.)</p>
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id4" id="generating-documentation" name="generating-documentation">Generating Documentation</a></h1>
+<h1><a class="toc-backref" href="#id4" id="hyperlink-targets-and-index-generation" name="hyperlink-targets-and-index-generation">Hyperlink Targets and Index Generation</a></h1>
+<p>pure-gen recognizes explicit hyperlink targets of the form:</p>
+<pre class="literal-block">
+.. _target:
+</pre>
+<p>To supplement the normal hyperlink target processing by the docutils tools, it
+automatically creates a raw html target (<tt class="docutils literal"><span class="pre">&lt;a</span> <span class="pre">name=...&gt;</span></tt>) for those. This
+works around the docutils name mangling (which is undesirable if you're
+indexing, say, function names). It also resolves a quirk with w3m which
+doesn't pick up all <tt class="docutils literal"><span class="pre">id</span></tt> attributes in the docutils-generated html source.</p>
+<p>In addition, you can also have pure-doc generate an index from all explicit
+targets. To these ends, add the following special directive to one of your
+source comments:</p>
+<pre class="literal-block">
+.. makeindex::
+</pre>
+<div class="note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>The <tt class="docutils literal"><span class="pre">makeindex</span></tt> directive should be placed somewhere near the end of
+the target document, as pure-doc processes all source files in a single
+pass. The directive will be replaced with a bullet list of references to
+all targets, sorted alphabetically.</li>
+<li>Also note that docutils can't handle multiple explicit targets with the
+same name, so you should take that into consideration when devising your
+index terms.</li>
+</ul>
+</div>
+<p>It goes without saying that this facility is rather simplistic, and can't
+compete with a carefully hand-made index. But we decided to toss it in because
+docutils currently doesn't provide an automatic index facility of its own, and
+the simple kind of index generated with pure-doc is certainly better than
+having no index at all.</p>
+</div>
+<div class="section">
+<h1><a class="toc-backref" href="#id5" id="generating-documentation" name="generating-documentation">Generating Documentation</a></h1>
 <p>If you're generating some library documentation for which you have to process
 a bigger collection of source files, then it is often convenient to have a few
 Makefile rules to automatize the process. To these ends, simply add rules
@@ -472,7 +523,7 @@ in html format, and <tt class="docutils literal"><span class="pre">make</span> <
 formats. The <tt class="docutils literal"><span class="pre">clean</span></tt> target removes the generated files.</p>
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id5" id="installing-documentation" name="installing-documentation">Installing Documentation</a></h1>
+<h1><a class="toc-backref" href="#id6" id="installing-documentation" name="installing-documentation">Installing Documentation</a></h1>
 <p>Now that you generated the documentation for your Pure library, you might want
 to make the Pure interpreter know about it, so that you can read your
 documentation with the <tt class="docutils literal"><span class="pre">help</span></tt> command of the interpreter. This isn't
