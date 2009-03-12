@@ -1947,11 +1947,13 @@ static bool targetp(const string& text)
     } else if (text.substr(p, 11) == "makeindex::" &&
 	       text.find_first_not_of(" \t", p+11) == string::npos) {
       /* Emit the index. */
+      flush_cache();
       targets.sort();
       for (list<string>::iterator it = targets.begin(), end = targets.end();
 	   it != end; it++)
 	cout << "* `" << *it << "`_" << endl;
       cout << endl;
+      targets.clear();
       return true;
     } else
       goto notarget;
