@@ -620,11 +620,15 @@ end;
    contiguous list slices is optimized using 'take' and 'drop' so that it
    works in linear time. */
 
-xs!!ns		= case ns of
-		    ns@(n::int:_) = list $ take (count ns) (drop n xs)
-		      if listnp xs && cont ns;
-		    _ = catmap (nth xs) ns;
+xs!!ns		= ys if ok ys when
+		    ys = case ns of
+		           ns@(n::int:_) = list $ take (count ns) (drop n xs)
+		                             if listnp xs && cont ns;
+		           _ = catmap (nth xs) ns;
+		         end;
 		  end with
+		    ok (catmap (nth _) _) = 0;
+		    ok _ = 1;
 		    nth xs n = catch (cst []) [xs!n];
 		    count ns = #dropwhile (\n::int->n<0) ns;
 		    cont (n::int:ns) = ~thunkp ns &&

@@ -185,6 +185,8 @@
      2,w
      > a2!![(0,1),(1,2)];
      [(1,v),(2,w)]
+     > a2!!(0..1,1..2);
+     [[(1,v),(1,w)],[(2,v),(2,w)]]
 
    Here's how to convert an array to a Pure matrix::
 
@@ -255,6 +257,11 @@ end;
 
 // get value by indices from two-dimensional array
 x@(Array _)!(i::int, j::int)	= x!i!j;
+
+// 2D slicing support
+x@(Array _)!!(is::int,js)	= x!!([is],js) if ~tuplep js;
+x@(Array _)!!(is,js::int)	= x!!(is,[js]);
+x@(Array _)!!(is, js)		= [cat [catch (cst []) [x!i!j] | j=js] | i=is];
 
 // check for an empty array
 null (Array nil)		= 1;
