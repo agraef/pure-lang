@@ -259,8 +259,9 @@ end;
 x@(Array _)!(i::int, j::int)	= x!i!j;
 
 // 2D slicing support
-x@(Array _)!!(is::int,js)	= x!!([is],js) if ~tuplep js;
-x@(Array _)!!(is,js::int)	= x!!(is,[js]);
+// NOTE: the (is::int,_) and (_,js::int) cases are handled in matrices.pure
+//x@(Array _)!!(is::int,js)	= x!!([is],js) if ~tuplep js;
+//x@(Array _)!!(is,js::int)	= x!!(is,[js]);
 x@(Array _)!!(is, js)		= [cat [catch (cst []) [x!i!j] | j=js] | i=is];
 
 // check for an empty array
