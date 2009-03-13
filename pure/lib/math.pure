@@ -26,15 +26,92 @@
    The math.pure module provides Pure's basic math routines. It also defines
    complex and rational numbers.
 
-   TODO
+   Imports
+   -------
+
+   To use the operations of this module, add the following import declaration
+   to your program::
+
+     using math;
+
+   Basic Math Functions
+   --------------------
+
+   The module defines Euler's number ``e = 2.71828...`` and Ludolph's number
+   ``pi = 3.1415...`` as constants. It also provides a reasonably
+   comprehensive (pseudo) random number generator:
+
+   .. _Mersenne twister: http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/emt.html
+
+   .. _random:
+
+   ``random``
+     Return pseudo random ints in the range ``-0x80000000..0x7fffffff``. This
+     uses the `Mersenne twister`_, in order to avoid bad generators present in
+     some C libraries.
+
+   .. _srandom:
+
+   ``srandom seed``
+     Sets the seed of the generator to the given 32 bit integer. (Note that
+     the Mersenne twister works best with odd seeds, so ``srandom`` enforces
+     that by setting the least significant bit of the seed to 1.)
 
 */
 
-/* Random number generator. This uses the Mersenne twister, in order to avoid
-   bad generators present in some C libraries. Returns pseudo random ints in
-   the range -0x80000000..0x7fffffff. */
-
 extern int pure_random() = random, void pure_srandom(int) = srandom;
+
+/* ..
+
+   The following functions work with both double and int/bigint arguments. The
+   result is always a double. For further explanations please see the
+   descriptions of the corresponding functions from the C math library.
+
+   .. _sqrt:
+
+   ``sqrt x``
+     The square root function.
+
+   .. _exp:
+   .. _ln:
+   .. _log:
+
+   ``exp x``, ``ln x``, ``log x``
+     Exponential function, natural and decadic logarithms.
+
+   .. _sin:
+   .. _cos:
+   .. _tan:
+
+   ``sin x``, ``cos x``, ``tan x``
+     Trigonometric functions.
+
+   .. _asin:
+   .. _acos:
+   .. _atan:
+
+   ``asin x``, ``acos x``, ``atan x``
+     Inverse trigonometric functions.
+
+   .. _atan2:
+
+   ``atan2 y x``
+     Computes the arcus tangent of ``y/x``, using the signs of the two
+     arguments to determine the quadrant of the result.
+
+   .. _sinh:
+   .. _cosh:
+   .. _tanh:
+
+   ``sinh x``, ``cosh x``, ``tanh x``
+     Hyperbolic trigonometric functions.
+
+   .. _asinh:
+   .. _acosh:
+   .. _atanh:
+
+   ``asinh x``, ``acosh x``, ``atanh x``
+     Inverse hyperbolic trigonometric functions. */
 
 /* The sqrt function. */
 
@@ -96,14 +173,33 @@ asinh x::int | asinh x::bigint = asinh (double x);
 acosh x::int | acosh x::bigint = acosh (double x);
 atanh x::int | atanh x::bigint = atanh (double x);
 
-/* Complex numbers. We provide both rectangular (x+:y) and polar (r<:a)
-   representations, where (x,y) are the Cartesian coordinates and (r,t) the
-   radius (absolute value) and angle (in radians) of a complex number,
-   respectively. The +: and <: constructors (declared in the prelude) bind
-   weaker than all other arithmetic operators and are non-associative. */
+/* ..
 
-/* Constructor equations to normalize the polar representation r<:t so that r
-   is always nonnegative and t falls in the range -pi<t<=pi. */
+   Complex Numbers
+   ---------------
+
+   .. _+\::
+   .. _<\::
+
+   We provide both rectangular (``x+:y``) and polar (``r<:a``)
+   representations, where ``(x,y)`` are the Cartesian coordinates and
+   ``(r,t)`` the radius (absolute value) and angle (in radians) of a complex
+   number, respectively. The ``+:`` and ``<:`` constructors (declared in the
+   prelude) bind weaker than all other arithmetic operators and are
+   non-associative.
+
+   The polar representation ``r<:t`` is normalized so that ``r`` is always
+   nonnegative and ``t`` falls in the range ``-pi<t<=pi``.
+
+   The constant ``i`` is provided to denote the imaginary unit ``0+:1``.
+
+   The arithmetic operations ``+``, ``*`` etc. and the equality relations
+   ``==`` and ``~=`` work as expected, and the square root, exponential,
+   logarithms, trigonometric and hyperbolic trigonometric functions (see
+   `Basic Math Functions`_) are extended to complex numbers accordingly. These
+   do *not* rely on complex number support in the C library, but should still
+   conform to IEEE 754 and POSIX, provided that the C library provides a
+   standards-compliant implementation of the basic math functions. */
 
 r::int<:t	|
 r::bigint<:t	|
@@ -118,21 +214,33 @@ r<:t::double	= r <: atan2 (sin t) (cos t) if t<-pi || t>pi;
 
 const i = 0+:1;
 
-/* The following operations all work with both the rectangular and the polar
-   representation, promoting real inputs to complex where appropriate. When
-   the result of an operation is again a complex number, it generally uses the
-   same representation as the input (except for explicit conversions). */
+/* ..
+
+   The following operations all work with both the rectangular and the polar
+   representation, promoting real (double, int/bigint) inputs to complex where
+   appropriate. When the result of an operation is again a complex number, it
+   generally uses the same representation as the input (except for explicit
+   conversions). Similarly, mixed rect/polar and polar/rect arithmetic always
+   return a rect result, and mixed complex/real and real/complex arithmetic
+   yields a rect or polar result, depending on what the complex input was. */
 
 /* We mostly follow Bronstein/Semendjajew here. Please mail me if you know
    better formulas for any of these. */
 
-/* Convert any kind of number to a complex value. */
+/* .. _complex:
+
+   ``complex x``
+     Convert any kind of number to a complex value. */
 
 complex z@(x+:y) | complex z@(r<:t) = z;
 complex x::int | complex x::bigint = x+:0;
 complex x::double = x+:0.0;
 
-/* Convert between polar and rectangular representations. */
+/* .. _polar:
+   .. _rect:
+
+   ``polar z``, ``rect z``
+     Convert between polar and rectangular representations. */
 
 polar (x+:y)	= sqrt (x*x+y*y) <: atan2 y x;
 rect  (r<:t)	= r*cos t +: r*sin t;
@@ -148,13 +256,20 @@ polar x::double = x<:0.0;
 rect x::int | rect x::bigint = x+:0;
 rect x::double = x+:0.0;
 
-/* Create complex values on the unit circle. Note: To quickly compute
-   exp (x+:y) in polar form, use exp x <: y. */
+/* .. _cis:
+
+   ``cis t``
+     Create complex values on the unit circle. Note: To quickly compute
+     ``exp (x+:y)`` in polar form, use ``exp x <: y``. */
 
 cis t::int | cis t::bigint | cis t::double = rect (1<:t);
 
-/* Modulus (absolute value) and argument (angle). Note that you can also find
-   both of these in one go by converting to polar form. */
+/* .. _abs (complex):
+   .. _arg:
+
+   ``abs z``, ``arg z``
+     Modulus (absolute value) and argument (angle, a.k.a. phase). Note that
+     you can also find both of these in one go by converting to polar form. */
 
 abs (x+:y)	= sqrt (x*x+y*y);
 abs (r<:t)	= r;
@@ -166,7 +281,11 @@ arg x::int	|
 arg x::bigint	|
 arg x::double	= atan2 0 x;
 
-/* Real and imaginary part. */
+/* .. _re:
+   .. _im:
+
+   ``re z``, ``im z``
+     Real and imaginary part. */
 
 re (x+:y)	= x;
 re (r<:t)	= r*sin t;
@@ -182,7 +301,10 @@ im x::int	= 0;
 im x::bigint	= 0L;
 im x::double	= 0.0;
 
-/* Complex conjugate. */
+/* .. _conj:
+
+   ``conj z``
+     Complex conjugate. */
 
 conj (x+:y)	= x +: -y;
 conj (r<:t)	= r <: -t;
@@ -336,18 +458,56 @@ x1~=(x2+:y2)		= x1~=x2 || y2~=0 if realp x1;
 z1@(r1<:t1)~=x2		= z1 ~= (x2<:0) if realp x2;
 x1~=z2@(r2<:t2)		= (x1<:0) ~= z2 if realp x1;
 
-/* Rational numbers. These are constructed with the exact division operator
-   '%' (declared in the prelude) which has the same precedence and fixity as
-   the other division operators. */
+/* ..
 
-/* The '%' operator returns a rational or complex rational for any combination
-   of integer, rational and complex integer/rational arguments, provided that
-   the denominator is nonzero (otherwise it behaves like x div 0, which will
-   raise an exception). Machine int operands are always promoted to bigints.
-   For other numeric operands '%' works just like '/'.  Rational results are
+   Examples::
+
+     > using math;
+     > let z = 2^(1/i); z;
+     0.769238901363972+:-0.638961276313635
+     > let z = ln z/ln 2; z;
+     0.0+:-1.0
+     > abs z, arg z;
+     1.0,-1.5707963267949
+     > polar z;
+     1.0<:-1.5707963267949
+
+   Please note that, as the ``+:`` and ``<:`` constructors bind weaker than
+   the other arithmetic operators, complex numbers *must* be parenthesized
+   accordingly, e.g.::
+
+     > (1+:2)*(3+:4);
+     -5+:10 */
+
+/* ..
+
+   Rational Numbers
+   ----------------
+
+   .. _%:
+
+   Pure's rational numbers are constructed with the `exact division` operator
+   ``%`` (declared in the prelude) which has the same precedence and fixity as
+   the other division operators.
+
+   The ``%`` operator returns a rational or complex rational for any
+   combination of integer, rational and complex integer/rational arguments,
+   provided that the denominator is nonzero (otherwise it behaves like ``x div
+   0``, which will raise an exception). Machine int operands are always
+   promoted to bigints, thus normalized rationals always take the form ``x%y``
+   where both the numerator ``x`` and the denominator ``y`` are bigints. For
+   other numeric operands ``%`` works just like ``/``. Rational results are
    normalized so that the sign is always in the numerator and numerator and
    denominator are relatively prime. Hence a rational zero is always
-   represented as 0L%1L. */
+   represented as ``0L%1L``.
+
+   The usual arithmetic operations and equality/order relations are extended
+   accordingly, as well as the `basic math functions`_ and the `rounding
+   functions`_, and will return exact (rational or complex rational) results
+   where appropriate. Rational operations are implemented using the GMP
+   bigint functions where possible, and thus are reasonably fast.
+
+   In addition, the module also provides following operations: */
 
 x::bigint % 0L		= x div 0L;
 x::bigint % y::bigint	= (-x)%(-y) if y<0;
@@ -388,13 +548,22 @@ x%y::double		= x/y if numberp x;
 
 /* Conversions. */
 
+/* .. _rational:
+
+   ``rational x``
+     Converts a real or complex value ``x`` to a rational or complex
+     rational. Note that the conversion from double values doesn't do any
+     rounding, so it is guaranteed that converting the resulting rational back
+     to a double reconstructs the original value.
+
+     Conversely, the int_, bigint_, double_, complex_, rect_, polar_ and cis_
+     conversion functions are overloaded so that they convert a rational to
+     one of the other number types. */
+
 rational x@(_%_)	= x;
 rational x::int		|
 rational x::bigint	= x%1;
 
-/* The conversion from double doesn't do any rounding, so it is guaranteed
-   that converting the resulting rational back to double reconstructs the
-   original value. */
 namespace C;
 extern expr* pure_rational(double);
 namespace;
@@ -421,7 +590,11 @@ r<:t@(_%_)	= r <: atan2 (sin t) (cos t) if t<-pi || t>pi;
 
 cis (x%y)	 = rect (1<:x/y);
 
-/* Numerator and denominator. */
+/* .. _num:
+   .. _den:
+
+   ``num x``, ``den x``
+     Numerator and denominator of a rational ``x``. */
 
 num (x%y)	= x;
 den (x%y)	= y;
@@ -558,12 +731,72 @@ x1 <= x2%y2	= x1*y2 <= x2 if realp x2;
 x1 >  x2%y2	= x1*y2 >  x2 if realp x2;
 x1 >= x2%y2	= x1*y2 >= x2 if realp x2;
 
-/* Semantic number predicates. In difference to the syntactic predicates in
-   primitives.pure, these check whether the given value can be represented as
-   an object of the given target type (up to rounding errors). Note that if x
-   is of syntactic type X, then it is also of semantic type X. Moreover,
-   intvalp x => bigintvalp x => ratvalp x => realvalp x => compvalp x <=>
-   numberp x. */
+/* ..
+
+   Examples::
+
+     > using math;
+     > 5%7 + 2%3;
+     29L%21L
+     > 3%8 - 1%3;
+     1L%24L
+     > pow (11%10) 3;
+     1331L%1000L
+     > let x = pow 3 (-3); x;
+     1L%27L
+     > num x, den x;
+     1L,27L
+     > rational (3/4);
+     3L%4L
+
+   Note that doubles can't represent most rationals exactly, so conversion
+   from double to rational *will* yield funny results in many cases (which are
+   still accurate up to rounding errors). For instance::
+
+     > let x = rational (1/17); x;
+     4238682002231055L%72057594037927936L
+     > num x/den x;
+     0.0588235294117647
+     > double (1%17);
+     0.0588235294117647 */
+
+/* ..
+
+   Semantic Number Predicates
+   --------------------------
+
+   In difference to the syntactic predicates in Primitives_, these check
+   whether the given value can be represented as an object of the given target
+   type (up to rounding errors). Note that if ``x`` is of syntactic type
+   ``X``, then it is also of semantic type ``X``. Moreover, ``intvalp x =>
+   bigintvalp x => ratvalp x => realvalp x => compvalp x <=> numberp x``.
+
+   .. _compvalp:
+
+   ``compvalp x``
+     Check for complex values (this is the same as numberp_).
+
+   .. _realvalp:
+
+   ``realvalp x``
+     Check for real values (``im x==0``).
+
+   .. _ratvalp:
+
+   ``ratvalp x``
+     Check for rational values (same as realvalp_, except that IEEE 754
+     infinities and NaNs are excluded).
+
+   .. _bigintvalp:
+
+   ``bigintvalp x``
+     Check for "big" integer values which can be represented as a bigint.
+
+   .. _intvalp:
+
+   ``intvalp x``
+     Check for "small" integer values which can be represented as a machine
+     int. */
 
 compvalp x	= numberp x;
 realvalp x	= compvalp x && im x==0;
