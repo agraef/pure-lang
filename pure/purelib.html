@@ -667,8 +667,8 @@ eager one:</p>
 &gt; list $ take 10 (-1:-3..-inf);
 [-1,-3,-5,-7,-9,-11,-13,-15,-17,-19]
 </pre>
-<p>You can also achieve the same effect by slicing a finite part from a
-stream (see below):</p>
+<p>You can also achieve the same effect somewhat more conveniently by slicing
+a finite part from a stream (see below):</p>
 <pre class="literal-block">
 &gt; (-1:-3..-inf)!!(0..9);
 [-1,-3,-5,-7,-9,-11,-13,-15,-17,-19]
@@ -711,6 +711,11 @@ any permutation of the members, also with duplicates. E.g.:</p>
 optimized so that it always works in linear time), because it requires
 repeated traversals of the list for each index. For larger lists you should
 hence use vectors or matrices instead, to avoid the quadratic complexity.</p>
+<p>(The prelude actually implements the slicing operation in a fairly generic
+way, so that it works with any kind of container data structure which
+defines <tt class="docutils literal"><span class="pre">!</span></tt> in such a manner that it throws an exception when the index
+is out of bounds. It also works with any kind of index container that
+implements the <a class="reference" href="#catmap">catmap</a> operation.)</p>
 <!--  -->
 </div>
 <div class="section">
@@ -735,7 +740,8 @@ names, though, and of course everything is typed dynamically.</p>
 </dl>
 <a name="catmap"><dl class="docutils" id="catmap">
 <dt><tt class="docutils literal"><span class="pre">catmap</span> <span class="pre">f</span> <span class="pre">xs</span></tt></dt>
-<dd>convenience function which combines <a class="reference" href="#cat">cat</a> and <a class="reference" href="#map">map</a></dd>
+<dd>convenience function which combines <a class="reference" href="#cat">cat</a> and <a class="reference" href="#map">map</a>; this is also used
+to implement list comprehensions</dd>
 </dl>
 <a name="do"><dl class="docutils" id="do">
 <dt><tt class="docutils literal"><span class="pre">do</span> <span class="pre">f</span> <span class="pre">xs</span></tt></dt>
@@ -799,6 +805,12 @@ the list members.</p>
 <a name="last"><dl class="docutils" id="last">
 <dt><tt class="docutils literal"><span class="pre">last</span> <span class="pre">xs</span></tt></dt>
 <dd>return the last element of <tt class="docutils literal"><span class="pre">xs</span></tt>; <tt class="docutils literal"><span class="pre">xs</span></tt> must be nonempty</dd>
+</dl>
+<a name="listmap"><dl class="docutils" id="listmap">
+<dt><tt class="docutils literal"><span class="pre">listmap</span> <span class="pre">f</span> <span class="pre">xs</span></tt></dt>
+<dd>convenience function which works like <a class="reference" href="#map">map</a>, but also deals with matrix
+and string arguments while ensuring that the result is always a list;
+this is primarily used to implement list comprehensions</dd>
 </dl>
 <a name="map"><dl class="docutils" id="map">
 <dt><tt class="docutils literal"><span class="pre">map</span> <span class="pre">f</span> <span class="pre">xs</span></tt></dt>
@@ -1915,6 +1927,7 @@ copied to the result lists as is.</p>
 <li><a class="reference" href="#list-size">list size</a></li>
 <li><a class="reference" href="#list-slicing">list slicing</a></li>
 <li><a class="reference" href="#list2">list2</a></li>
+<li><a class="reference" href="#listmap">listmap</a></li>
 <li><a class="reference" href="#lists">lists</a></li>
 <li><a class="reference" href="#malloc-error">malloc_error</a></li>
 <li><a class="reference" href="#map">map</a></li>

@@ -471,8 +471,8 @@ def quasiquote x		= quote x;
      > list $ take 10 (-1:-3..-inf);
      [-1,-3,-5,-7,-9,-11,-13,-15,-17,-19]
 
-   You can also achieve the same effect by slicing a finite part from a
-   stream (see below)::
+   You can also achieve the same effect somewhat more conveniently by slicing
+   a finite part from a stream (see below)::
 
      > (-1:-3..-inf)!!(0..9);
      [-1,-3,-5,-7,-9,-11,-13,-15,-17,-19]
@@ -527,7 +527,11 @@ def quasiquote x		= quote x;
    repeated traversals of the list for each index. For larger lists you should
    hence use vectors or matrices instead, to avoid the quadratic complexity.
 
-*/
+   (The prelude actually implements the slicing operation in a fairly generic
+   way, so that it works with any kind of container data structure which
+   defines ``!`` in such a manner that it throws an exception when the index
+   is out of bounds. It also works with any kind of index container that
+   implements the catmap_ operation.) */
 
 /* Poor man's tuples(TM). These are constructed with the pairing operator ',',
    are always flat and associate to the right. The empty tuple, denoted (), is
@@ -737,7 +741,8 @@ n..m		= if m===inf then iterate (\x->x+1) n
    .. _catmap:
 
    ``catmap f xs``
-     convenience function which combines cat_ and map_
+     convenience function which combines cat_ and map_; this is also used
+     to implement list comprehensions
 
    .. _do:
 
@@ -813,6 +818,13 @@ n..m		= if m===inf then iterate (\x->x+1) n
 
    ``last xs``
      return the last element of ``xs``; ``xs`` must be nonempty
+
+   .. _listmap:
+
+   ``listmap f xs``
+     convenience function which works like map_, but also deals with matrix
+     and string arguments while ensuring that the result is always a list;
+     this is primarily used to implement list comprehensions
 
    .. _map:
 
