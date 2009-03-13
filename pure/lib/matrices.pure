@@ -25,9 +25,94 @@ using namespace C;
    Matrix Functions
    ----------------
 
-   TODO
+   Most of the generic list operations are implemented on matrices as well,
+   see `Common List Functions`_. Hence stuff like ``map`` and ``zipwith``
+   works as expected::
 
-*/
+     > map succ {1,2,3;4,5,6};
+     {2,3,4;5,6,7}
+     > zipwith (+) {1,2,3;4,5,6} {1,0,1;0,2,0};
+     {2,2,4;4,7,6}
+
+   The matrix module also provides all the necessary operations for matrix
+   comprehensions, and to make matrices work in list comprehensions and vice
+   versa. You can find some examples of these in the `Matrix Computations`_
+   section of the Pure Manual.
+
+   .. _Matrix Computations: pure.html#matrix-computations
+
+   The predicates ``==`` and ``~=`` are defined, which allow you to check two
+   matrices for equality.
+
+   .. _matrix size:
+   .. _matrix dimensions:
+   .. _# (matrix):
+   .. _dim:
+
+   The size of a matrix (number of elements) can be obtained using ``#``, and
+   the ``dim`` function can be used to return its dimensions (number of rows
+   and columns)::
+
+     > #{1,2,3;4,5,6};
+     6
+     > dim {1,2,3;4,5,6};
+     2,3
+
+   .. _null (matrix):
+
+   ``null x`` can be used to check for empty matrices. Note that there are
+   various kinds of these, as a matrix may have zero rows or columns, or both.
+
+   .. _matrix transposition:
+   .. _':
+
+   A matrix can be transposed with the ``'`` operator::
+
+     > {1,2,3;4,5,6}';
+     {1,4;2,5;3,6}
+
+   Indexing and slicing works pretty much like in MATLAB and Octave, except
+   that you use the Pure operators ``!`` and ``!!`` for that. It is possible
+   to access elements with a one-dimensional index (in row-major oder)::
+
+     > x!3;
+     4
+
+   Or you can specify a pair of row and column index::
+
+     > x!(1,0);
+     4
+
+   Slicing works accordingly. You can either specify a list of (one- or
+   two-dimensional) indices, in which case the result is always a row vector::
+
+     > x!!(2..5);
+     {3,4,5,6}
+
+   Or you can specify a pair of row and column index lists::
+
+     > x!!(0..1,1..2);
+     {2,3;5,6}
+
+   The following abbreviations are provided to grab a slice from a row or
+   column::
+
+     > x!!(1,1..2);
+     {5,6}
+     > x!!(0..1,1);
+     {2;5}
+
+   The matrix module also implements a bunch of other specialized matrix
+   operations. The most important operations are briefly summarized below;
+   please refer to matrix.pure for all the gory details.
+
+   ``dmatrixp x``, ``cmatrixp x``, ``imatrixp x``, ``smatrixp x``, ``nmatrixp x``
+     Check for different kinds of matrices (double, complex, int, symbolic and
+     numeric, i.e., non-symbolic).
+
+   ``vectorp x``, ``rowvectorp x``, ``colvectorp x``
+     Check for different kinds of vectors (these are just matrices with one
+     row or column). */
 
 /* Additional matrix predicates. The numeric matrix types will only be
    available if the interpreter was built with support for the GNU Scientific
@@ -87,10 +172,13 @@ namespace;
 dim x::matrix		= matrix_dim x;
 null x::matrix		= #x==0;
 
-/* The stride of a matrix denotes the real row size of the underlying C array,
-   see the description of the 'pack' function below for further details.
-   There's little use for this value in Pure, but it may be needed when
-   interfacing to C. */
+/* .. _stride:
+
+   ``stride x``
+     The stride of a matrix denotes the real row size of the underlying C
+     array, see the description of the pack_ function below for further
+     details. There's little use for this value in Pure, but it may be needed
+     when interfacing to C. */
 
 namespace C;
 extern int matrix_stride(expr *x);
@@ -158,6 +246,12 @@ namespace C;
 extern expr* matrix_slice(expr* x, int i1, int j1, int i2, int j2);
 namespace;
 
+/* .. _row:
+   .. _col:
+
+   ``row x i``, ``col x i``
+     Extract the ``i``\ th row or column of a matrix. */
+
 row x::matrix i::int	= if i>=0 && i<n then matrix_slice x i 0 i (m-1)
 			  else throw out_of_bounds
 			  when n::int,m::int = dim x end;
@@ -166,16 +260,33 @@ col x::matrix j::int	= if j>=0 && j<m then matrix_slice x 0 j (n-1) j
 			  else throw out_of_bounds
 			  when n::int,m::int = dim x end;
 
+/* .. _rows:
+   .. _cols:
+
+   ``rows x``, ``cols x``
+     Return the list of all rows or columns of a matrix. */
+
 rows x::matrix		= map (row x) (0..n-1) when n::int,_ = dim x end;
 
 cols x::matrix		= map (col x) (0..m-1) when _,m::int = dim x end;
 
-/* Convert a matrix to a list and vice versa. list x converts a matrix x to a
-   flat list of its elements, while list2 converts it to a list of lists.
-   Conversely, matrix xs converts a list of lists or matrices specifying the
-   rows of the matrix to the corresponding matrix; otherwise, the result is a
-   row vector. NOTE: The matrix function may throw a 'bad_matrix_value x' in
-   case of dimension mismatch, where x denotes the offending submatrix. */
+/* .. _list (matrix):
+   .. _list2 (matrix):
+   .. _tuple (matrix):
+   .. _matrix:
+
+   ``list x``, ``list2 x``, ``tuple x``, ``matrix xs``
+     Convert a matrix to a list or tuple, and vice versa. ``list x`` converts
+     a matrix ``x`` to a flat list of its elements, while ``list2`` converts
+     it to a list of lists. Likewise, ``tuple x`` converts the matrix ``x`` to
+     a tuple. Conversely, ``matrix xs`` converts a list or tuple to a
+     corresponding matrix.
+
+     Note that ``matrix`` turns a list of lists or matrices specifying the
+     rows of the matrix to the corresponding rectangular matrix; otherwise,
+     the result is a row vector. Also note that the matrix function may throw
+     a ``bad_matrix_value x`` in case of dimension mismatch, where ``x``
+     denotes the offending submatrix. */
 
 list x::matrix		= [x!i|i=0..#x-1];
 list2 x::matrix		= [[x!(i,j)|j=0..m-1]|i=0..n-1]
@@ -193,43 +304,64 @@ tuple x::matrix		= tuple (list x);
 matrix ()		= {};
 matrix xs@(_,_)		= matrix (list xs);
 
-/* Extract (sub-,super-) diagonals from a matrix. Sub- and super-diagonals for
-   k=0 return the main diagonal. Indices for sub- and super-diagonals can also
-   be negative, in which case the corresponding super- or sub-diagonal is
-   returned instead. In each case the result is a row vector. */
+/* .. _diag:
+   .. _subdiag:
+   .. _supdiag:
+
+   ``diag x``, ``subdiag x k``, ``supdiag x k``:
+     Extract (sub-,super-) diagonals from a matrix. Sub- and super-diagonals
+     for ``k=0`` return the main diagonal. Indices for sub- and
+     super-diagonals can also be negative, in which case the corresponding
+     super- or sub-diagonal is returned instead. In each case the result is a
+     row vector. */
 
 extern expr* matrix_diag(expr* x) = diag;
 extern expr* matrix_subdiag(expr* x, int k) = subdiag;
 extern expr* matrix_supdiag(expr* x, int k) = supdiag;
 
-/* Extract a submatrix of a given size at a given offset. The result shares
-   the underlying storage with the input matrix (i.e., matrix elements are
-   *not* copied) and so this is a comparatively cheap operation. */
+/* .. _submat:
+
+   ``submat x (i,j) (n,m)``
+     Extract a submatrix of a given size at a given offset. The result shares
+     the underlying storage with the input matrix (i.e., matrix elements are
+     *not* copied) and so this is a comparatively cheap operation. */
 
 submat x::matrix (i::int,j::int) (n::int,m::int)
 			= matrix_slice x i j (i+n-1) (j+m-1);
 
-/* Construct matrices from lists of rows and columns. These take either
-   scalars or submatrices as inputs; corresponding dimensions must match.
-   rowcat combines submatrices vertically, like {x;y}; colcat combines them
-   horizontally, like {x,y}. NOTE: Like the built-in matrix constructs, these
-   operations may throw a 'bad_matrix_value x' in case of dimension mismatch,
-   where x denotes the offending submatrix. */
+/* .. _rowcat:
+   .. _colcat:
+
+   ``rowcat xs``, ``colcat xs``
+     Construct matrices from lists of rows and columns. These take either
+     scalars or submatrices as inputs; corresponding dimensions must match.
+     ``rowcat`` combines submatrices vertically, like ``{x;y}``; ``colcat``
+     combines them horizontally, like ``{x,y}``. Note: Like the built-in
+     matrix constructs, these operations may throw a ``bad_matrix_value x``
+     exception in case of dimension mismatch, where ``x`` denotes the
+     offending submatrix. */
 
 extern expr* matrix_rows(expr *x) = rowcat;
 extern expr* matrix_columns(expr *x) = colcat;
 
-/* Construct a matrix from a (symbolic) matrix of other matrices and/or
-   scalars. This works like a combination of rowcat and colcat, but draws its
-   input from a matrix instead of a list of matrices, and preserves the
-   overall layout of the "host" matrix. The net effect is that the host matrix
-   is flattened out. If all elements of the input matrix are scalars already,
-   the input matrix is returned unchanged. */
+/* .. _matcat:
+
+   ``matcat xs``
+     Construct a matrix from a (symbolic) matrix of other matrices and/or
+     scalars. This works like a combination of ``rowcat`` and colcat, but
+     draws its input from a matrix instead of a list of matrices, and
+     preserves the overall layout of the "host" matrix. The net effect is that
+     the host matrix is flattened out. If all elements of the input matrix are
+     scalars already, the input matrix is returned unchanged. */
 
 extern expr* matrix_matcat(expr *x) = matcat;
 
-/* Combinations of rowcat/colcat and map. These are used, in particular, for
-   implementing matrix comprehensions. */
+/* .. _rowcatmap:
+   .. _colcatmap:
+
+   ``rowcatmap f xs``, ``colcatmap f xs``
+     Combinations of rowcat_, colcat_ and map_. These are used, in particular,
+     for implementing matrix comprehensions. */
 
 rowcatmap f []		= {};
 rowcatmap f xs@(_:_)	= rowcat (map f xs);
@@ -245,9 +377,12 @@ def void (colcatmap f x) = do f x;
 def void (rowmap f x) = do f x;
 def void (colmap f x) = do f x;
 
-/* Convenience functions to create zero matrices with the given dimensions
-   (either a pair denoting the number of rows and columns, or just the row
-   size in order to create a row vector). */
+/* ..
+
+   ``dmatrix (n,m)``, ``cmatrix (n,m)``, ``imatrix (n,m)``
+     Convenience functions to create zero matrices with the given dimensions
+     (either a pair denoting the number of rows and columns, or just the row
+     size in order to create a row vector). */
 
 dmatrix (n::int,m::int)	= double_matrix (n,m) (pointer 0);
 cmatrix (n::int,m::int)	= complex_matrix (n,m) (pointer 0);
@@ -257,21 +392,33 @@ dmatrix n::int		= dmatrix (1,n);
 cmatrix n::int		= cmatrix (1,n);
 imatrix n::int		= imatrix (1,n);
 
-/* Create a (sub-,super-) diagonal matrix from a row vector. The result is
-   always a square matrix with dimension (n+k,n+k), which is of the same
-   matrix type (double, complex, int, symbolic) as the input and has the
-   elements of the vector on its kth sub- or super-diagonal, with all other
-   elements zero. A negative value for k turns a sub- into a super-diagonal
-   matrix and vice versa. */
+/* .. _diagmat:
+   .. _subdiagmat:
+   .. _supdiagmat:
+
+   ``diagmat x``, ``subdiagmat x k``, ``supdiagmat x k``
+     Create a (sub-,super-) diagonal matrix from a row vector ``x`` of size
+     ``n``. The result is always a square matrix with dimension ``(n+k,n+k)``,
+     which is of the same matrix type (double, complex, int, symbolic) as the
+     input and has the elements of the vector on its ``k``\ th sub- or
+     super-diagonal, with all other elements zero. A negative value for ``k``
+     turns a sub- into a super-diagonal matrix and vice versa. */
 
 extern expr* matrix_diagm(expr* x) = diagmat;
 extern expr* matrix_subdiagm(expr* x, int k) = subdiagmat;
 extern expr* matrix_supdiagm(expr* x, int k) = supdiagmat;
 
-/* Matrix conversions. These convert between different types of numeric and
-   symbolic matrices. You can also convert a list directly to a rowvector;
-   this is usually much faster than the generic 'matrix' operation, but
-   requires that the elements already are of the appropriate type. */
+/* .. _dmatrix:
+   .. _cmatrix:
+   .. _imatrix:
+   .. _smatrix:
+
+   ``dmatrix x``, ``cmatrix x``, ``imatrix x``, ``smatrix x``
+     Matrix conversions. These convert between different types of numeric and
+     symbolic matrices. The same operations also convert a list directly to a
+     row vector; this is usually much faster than the generic matrix_
+     operation, but requires that the elements already are of the appropriate
+     type. */
 
 namespace C;
 extern expr* matrix_double(expr *x), expr* matrix_complex(expr *x),
@@ -283,8 +430,13 @@ imatrix x		= y if matrixp y when y = matrix_int x end;
 cmatrix x		= y if matrixp y when y = matrix_complex x end;
 smatrix x		= y if matrixp y when y = matrix_symbolic x end;
 
-/* Extract the real and imaginary parts and compute the conjugate of a numeric
-   matrix. */
+/* .. _re (matrix):
+   .. _im (matrix):
+   .. _conj (matrix):
+
+   ``re x``, ``im x``, ``conj x``
+     Extract the real and imaginary parts and compute the conjugate of a
+     numeric matrix. */
 
 namespace C;
 extern expr* matrix_re(expr *x), expr* matrix_im(expr *x);
@@ -295,21 +447,34 @@ re x::matrix		= matrix_re x if nmatrixp x;
 im x::matrix		= matrix_im x if nmatrixp x;
 conj x::matrix		= matrix_conj x if nmatrixp x;
 
-/* Pack a matrix. This creates a copy of the matrix which has the data in
-   contiguous storage. It also frees up extra memory if the matrix was created
-   as a slice from a bigger matrix (see 'submat' above). The 'packed'
-   predicate can be used to verify whether a matrix is already packed. Note
-   that even if a matrix is already packed, 'pack' will make a copy of it
-   anyway, so this routine also provides a quick way to copy a matrix, e.g.,
-   if you want to pass it as an input/output parameter to a GSL routine. */
+/* .. _pack:
+   .. _packed:
+
+   ``pack x``, ``packed x``
+     Pack a matrix. This creates a copy of the matrix which has the data in
+     contiguous storage. It also frees up extra memory if the matrix was
+     created as a slice from a bigger matrix (see submat_ above) which has
+     since gone the way of the dodo.
+
+     The ``packed`` predicate can be used to verify whether a matrix is
+     already packed. Note that even if a matrix is already packed, ``pack``
+     will make a copy of it anyway, so this routine also provides a quick way
+     to copy a matrix, e.g., if you want to pass it as an input/output
+     parameter to a GSL routine. */
 
 pack x::matrix		= colcat [x,{}];
 packed x::matrix	= stride x==dim x!1;
 
-/* Change the dimensions of a matrix without changing its size. The total
-   number of elements must match that of the input matrix. Reuses the
-   underlying storage of the input matrix if possible (i.e., if the matrix is
-   packed). */
+/* .. _redim:
+
+   ``redim (n,m) x``, ``redim n x``
+     Change the dimensions of a matrix without changing its size. The total
+     number of elements must match that of the input matrix. Reuses the
+     underlying storage of the input matrix if possible (i.e., if the matrix
+     is packed_).
+
+     You can also redim a matrix to a given row size ``n``. In this case the
+     row size must divide the total size of the matrix. */
 
 namespace C;
 extern expr* matrix_redim(expr* x, int n, int m);
@@ -318,13 +483,14 @@ namespace;
 redim (n::int,m::int) x::matrix
 			= matrix_redim x n m if n>=0 && m>=0 && n*m==#x;
 
-/* You can also redim a matrix to a given row size. In this case the row size
-   must divide the total size of the matrix, */
-
 redim m::int x::matrix	= redim (#x div m,m) x if m>0 && #x mod m==0;
 			= x if m==0 && #x==0;
 
-/* Convert a matrix to a row or column vector. */
+/* .. _rowvector:
+   .. _colvector:
+
+   ``rowvector x``, ``colvector x``
+     Convenience functions to convert a matrix to a row or column vector. */
 
 rowvector x::matrix	= redim (1,#x) x;
 colvector x::matrix	= redim (#x,1) x;
@@ -337,8 +503,13 @@ namespace;
 
 x::matrix'		= matrix_transpose x;
 
-/* Reverse a matrix. 'rowrev' reverses the rows, 'colrev' the columns,
-   'reverse' both dimensions. */
+/* .. _rowrev:
+   .. _colrev:
+   .. _reverse (matrix):
+
+   ``rowrev x``, ``colrev x``, ``reverse x``
+     Reverse a matrix. ``rowrev`` reverses the rows, ``colrev`` the columns,
+     ``reverse`` both dimensions. */
 
 rowrev x::matrix	= rowcat (reverse (rows x));
 colrev x::matrix	= colcat (reverse (cols x));
@@ -347,7 +518,7 @@ reverse x::matrix	= rowrev (colrev x);
 /* catmap et al on matrices. This allows list and matrix comprehensions to
    draw values from matrices as well as from lists, and to preserve the block
    layout of component matrices in matrix comprehensions. Also, these
-   operations are optimized so that we can take advantage of the specialized
+   operations are optimized to take advantage of the specialized
    implementation of map on matrices. */
 
 catmap f x::matrix	= cat (list (map f x));
