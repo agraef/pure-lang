@@ -1953,7 +1953,631 @@ between different types. Some low-level pointer operations are also
 provided, as well as "sentries" (Pure's flavour of object finalizers) and
 "references" (mutable expression pointers).
 
-TODO
+Arithmetic
+~~~~~~~~~~
+
+The arithmetic operations ``+``, ``*``, ``div``, ``mod`` etc. all do what
+you expect, see the operators_ table at the beginning of this section for a
+complete list of these. The primitives module also defines pointer
+arithmetic in the usual way.
+
+The constants ``inf`` and ``nan`` are defined as the usual IEEE floating
+point infinities and NaNs, and the predicates ``infp`` and ``nanp`` are
+provided to check for these kinds of values.
+
+In addition, the following arithmetic and numeric functions are provided:
+
+.. raw:: html
+
+   <a name="abs">
+
+.. raw:: html
+
+   <a name="sgn">
+
+.. _abs:
+.. _sgn:
+
+``abs x``, ``sgn x``
+  Absolute value and sign of a number.
+
+.. raw:: html
+
+   <a name="min">
+
+.. raw:: html
+
+   <a name="max">
+
+.. _min:
+.. _max:
+
+``min x y``, ``max x y``
+  Minimum and maximum of two values. This works with any kind of values
+  which have the ordering relations defined on them.
+
+.. raw:: html
+
+   <a name="succ">
+
+.. raw:: html
+
+   <a name="pred">
+
+.. _succ:
+.. _pred:
+
+``succ x``, ``pred x``
+  Successor (``+1``) and predecessor (``-1``) functions.
+
+.. raw:: html
+
+   <a name="gcd">
+
+.. raw:: html
+
+   <a name="lcd">
+
+.. _gcd:
+.. _lcd:
+
+``gcd x y``, ``lcd x y``
+  The greatest common divisor and least common multiple functions from the
+  GMP library. These return a bigint if at least one of the arguments is a
+  bigint, a machine int otherwise.
+
+.. raw:: html
+
+   <a name="pow">
+
+.. _pow:
+
+``pow x y``
+  Computes exact powers of ints and bigints. The result is always a
+  bigint. Note that ``y`` must always be nonnegative here, but see the math
+  module (`Mathematical Functions`_) which deals with the case ``y<0``
+  using rational numbers.
+
+.. raw:: html
+
+   <a name="^">
+
+.. _^:
+
+``x^y``
+  The ``^`` operator. Computes inexact powers for any combination of int,
+  bigint and double operands. The result is always a double.
+
+Conversions
+~~~~~~~~~~~
+
+.. raw:: html
+
+   <a name="hash">
+
+.. _hash:
+
+``hash x``
+  Compute a 32 bit hash code of a Pure expression.
+
+.. raw:: html
+
+   <a name="int">
+
+.. raw:: html
+
+   <a name="bigint">
+
+.. raw:: html
+
+   <a name="double">
+
+.. raw:: html
+
+   <a name="pointer">
+
+.. _int:
+.. _bigint:
+.. _double:
+.. _pointer:
+
+``int x``, ``bigint x``, ``double x``, ``pointer x``
+  Conversions between the different numeric and pointer types.
+
+.. raw:: html
+
+   <a name="ubyte">
+
+.. raw:: html
+
+   <a name="ushort">
+
+.. raw:: html
+
+   <a name="uint">
+
+.. raw:: html
+
+   <a name="ulong">
+
+.. _ubyte:
+.. _ushort:
+.. _uint:
+.. _ulong:
+
+``ubyte x``, ``ushort x``, ``uint x``, ``ulong x``
+  Convert signed (8/16/32/64) bit integers to the corresponding unsigned
+  quantities. These functions behave as if the value was "cast" to the
+  corresponding unsigned C type, and are most useful for dealing with
+  unsigned integers returned by external C routines. The routines always
+  use the smallest Pure int type capable of holding the result: ``int`` for
+  ``ubyte`` and ``ushort``, ``bigint`` for ``uint`` and ``ulong``. (Note
+  that in the case of 64 bit values the C interface returns a bigint,
+  that's why ``ulong`` takes a bigint parameter. The other routines all
+  take an int as input.)
+
+The following rounding functions work with all kinds of numbers:
+
+.. raw:: html
+
+   <a name="floor">
+
+.. raw:: html
+
+   <a name="ceil">
+
+.. _floor:
+.. _ceil:
+
+``floor x``, ``ceil x``
+  Floor and ceil.
+
+.. raw:: html
+
+   <a name="round">
+
+.. raw:: html
+
+   <a name="trunc">
+
+.. _round:
+.. _trunc:
+
+``round x``, ``trunc x``
+  Round or truncate to an integer.
+
+.. raw:: html
+
+   <a name="frac">
+
+.. _frac:
+
+``frac x``
+  Fractional part (``x-trunc x``).
+
+Predicates
+~~~~~~~~~~
+
+.. raw:: html
+
+   <a name="same">
+
+.. raw:: html
+
+   <a name="===">
+
+.. raw:: html
+
+   <a name="~==">
+
+.. _same:
+.. _===:
+.. _~==:
+
+``x===y``, ``x~==y``, ``same x y``
+  Syntactic equality.
+
+.. raw:: html
+
+   <a name="intp">
+
+.. raw:: html
+
+   <a name="bigintp">
+
+.. raw:: html
+
+   <a name="doublep">
+
+.. raw:: html
+
+   <a name="stringp">
+
+.. raw:: html
+
+   <a name="pointerp">
+
+.. raw:: html
+
+   <a name="matrixp">
+
+.. _intp:
+.. _bigintp:
+.. _doublep:
+.. _stringp:
+.. _pointerp:
+.. _matrixp:
+
+``intp x``, ``bigintp x``, ``doublep x``, ``stringp x``, ``pointerp x``, ``matrixp x``
+  Predicates to check for the built-in types.
+
+.. raw:: html
+
+   <a name="charp">
+
+.. _charp:
+
+``charp x``
+  Single character string predicate.
+
+.. raw:: html
+
+   <a name="numberp">
+
+.. raw:: html
+
+   <a name="complexp">
+
+.. raw:: html
+
+   <a name="realp">
+
+.. raw:: html
+
+   <a name="rationalp">
+
+.. raw:: html
+
+   <a name="integerp">
+
+.. _numberp:
+.. _complexp:
+.. _realp:
+.. _rationalp:
+.. _integerp:
+
+``numberp x``, ``complexp x``, ``realp x``, ``rationalp x``, ``integerp x``
+  Additional number predicates.
+
+.. raw:: html
+
+   <a name="exactp">
+
+.. raw:: html
+
+   <a name="inexactp">
+
+.. _exactp:
+.. _inexactp:
+
+``exactp x``, ``inexactp x``
+  Check whether a number is exact (i.e., doesn't contain any double
+  components).
+
+.. raw:: html
+
+   <a name="applp">
+
+.. raw:: html
+
+   <a name="listp">
+
+.. raw:: html
+
+   <a name="listnp">
+
+.. raw:: html
+
+   <a name="tuplep">
+
+.. _applp:
+.. _listp:
+.. _listnp:
+.. _tuplep:
+
+``applp x``, ``listp x``, ``listnp x``, ``tuplep x``
+  Predicates to check for function applications, proper lists, list nodes
+  and proper tuples.
+
+.. raw:: html
+
+   <a name="funp">
+
+.. raw:: html
+
+   <a name="lambdap">
+
+.. raw:: html
+
+   <a name="thunkp">
+
+.. raw:: html
+
+   <a name="varp">
+
+.. _funp:
+.. _lambdap:
+.. _thunkp:
+.. _varp:
+
+``funp x``, ``lambdap x``, ``thunkp x``, ``varp x``
+  Predicates to check for function objects (named, anonymous or thunk) and
+  global (unbound) variables.
+
+Specials
+~~~~~~~~
+
+.. raw:: html
+
+   <a name="throw">
+
+.. _throw:
+
+``throw x``
+  Throw an exception, cf. `Exception Handling`_.
+
+.. _Exception Handling: pure.html#exception-handling
+
+``force x``
+  Force a thunk (``x&``), cf. `Special Forms`_. This usually happens
+  automagically when the value of a thunk is needed.
+
+.. _Special Forms: pure.html#special-forms
+
+.. raw:: html
+
+   <a name="arity">
+
+.. _arity:
+
+``arity f``
+  Get the arity of a closure (named, anonymous or thunk) or a function
+  application, i.e., the number of arguments it expects.
+
+Note that the arity of a function will be the actual number of arguments
+for named functions, as given in the function definition. Thunks, being
+parameterless closures, always yield a zero count. Anonymous functions
+(lambdas) *always* yield an arity of 1, because a multi-argument lambda
+like ``\x y -> x*y`` is in fact just a shorthand for several nested
+1-argument lambdas, ``\x -> \y -> x*y`` in this example. Hence::
+
+  > foo = \x y -> x*y;
+  > arity foo;
+  1
+  > arity (foo 1);
+  1
+
+In contrast::
+
+  > bar x y = x*y;
+  > arity bar;
+  2
+  > arity (bar 1);
+  1
+
+..
+
+Pointer Operations
+~~~~~~~~~~~~~~~~~~
+
+The usual caveats apply, so *only* use these directly if you know what
+you're doing!
+
+.. raw:: html
+
+   <a name="addr">
+
+.. _addr:
+
+``addr symbol``
+  Get the address of a C symbol (given as a string) at runtime. The library
+  containing the symbol must already be loaded. Note that this can in fact
+  be any kind of externally visible C symbol, so it's also possible to get
+  the addresses of global variables. The result is returned as a
+  pointer. The function fails if the symbol was not found.
+
+.. raw:: html
+
+   <a name="calloc">
+
+.. raw:: html
+
+   <a name="malloc">
+
+.. raw:: html
+
+   <a name="realloc">
+
+.. raw:: html
+
+   <a name="free">
+
+.. _calloc:
+.. _malloc:
+.. _realloc:
+.. _free:
+
+``calloc nmembers size``, ``malloc size``, ``realloc ptr size``, ``free ptr``
+  Interface to ``malloc``, ``free`` and friends. These let you allocate
+  dynamic buffers (represented as Pure pointer values) for various nasty
+  purposes.
+
+.. raw:: html
+
+   <a name="get_byte">
+
+.. raw:: html
+
+   <a name="get_short">
+
+.. raw:: html
+
+   <a name="get_int">
+
+.. raw:: html
+
+   <a name="get_long">
+
+.. raw:: html
+
+   <a name="get_float">
+
+.. raw:: html
+
+   <a name="get_double">
+
+.. raw:: html
+
+   <a name="get_string">
+
+.. raw:: html
+
+   <a name="get_pointer">
+
+.. raw:: html
+
+   <a name="put_byte">
+
+.. raw:: html
+
+   <a name="put_short">
+
+.. raw:: html
+
+   <a name="put_int">
+
+.. raw:: html
+
+   <a name="put_long">
+
+.. raw:: html
+
+   <a name="put_float">
+
+.. raw:: html
+
+   <a name="put_double">
+
+.. raw:: html
+
+   <a name="put_string">
+
+.. raw:: html
+
+   <a name="put_pointer">
+
+.. _get_byte:
+.. _get_short:
+.. _get_int:
+.. _get_long:
+.. _get_float:
+.. _get_double:
+.. _get_string:
+.. _get_pointer:
+.. _put_byte:
+.. _put_short:
+.. _put_int:
+.. _put_long:
+.. _put_float:
+.. _put_double:
+.. _put_string:
+.. _put_pointer:
+
+``get_byte ptr``, ``get_short ptr``, ``get_int ptr``, ``get_long ptr``, ``get_float ptr``, ``get_double ptr``, ``get_string ptr``, ``get_pointer ptr``
+
+``put_byte ptr x``, ``put_short ptr x``, ``put_int ptr x``, ``put_long ptr x``, ``put_float ptr x``, ``put_double ptr x``, ``put_string ptr x``, ``put_pointer ptr x``
+  Direct memory accesses. Use with care ... or else!
+
+..
+
+Sentries
+~~~~~~~~
+
+Sentries are expression "guards", also known as `finalizers`, which are
+applied to the target expression when it is garbage-collected. Note that in
+the current implementation sentries can only be placed at applications and
+pointer objects, but this presumably covers 99% of all practical uses. The
+sentry itself can be any type of object (but usually it's a function).
+
+.. sentry:
+
+``sentry f x``
+  Places a sentry ``f`` at an expression ``x`` and returns the modified
+  expression.
+
+.. clear_sentry:
+
+``clear_sentry x``
+  Removes the sentry from an expression ``x``.
+
+.. get_sentry:
+
+``get_sentry x``
+  Returns the sentry of an expression ``x`` (if any, fails otherwise).
+
+.. cooked:
+.. cookedp:
+
+``cooked ptr``, ``cookedp ptr``
+  ``cooked`` is a convenience function to create a `cooked` pointer which
+  disposes itself after use. This is just a shorthand for ``sentry
+  free``. The given pointer ``ptr`` must be malloc_\ ed to make this
+  work. There's also a predicate ``cookedp`` to decide whether a given
+  pointer is cooked already (we actually assume any pointer to be cooked
+  which has a sentry set on it).
+
+..
+
+Expression References
+~~~~~~~~~~~~~~~~~~~~~
+
+If you need these, then you're doomed. ;-) However, they can be useful as a
+last resort when you need to keep track of some local state or interface to
+the messy imperative world. Pure's references are implemented as Pure
+expression pointers so that you can readily pass them as pointers to a C
+function which expects a ``pure_expr**`` parameter.  This may even be
+useful at times.
+
+.. ref:
+
+``ref x``
+  Create a reference pointing to ``x`` initially.
+
+.. put:
+
+``put r x``
+  Set a new value ``x``, and return that value.
+
+.. get:
+
+``get r``
+  Retrieve the current value ``r`` points to.
+
+.. unref:
+
+``unref r``
+  Purge the referenced object and turn the reference into a dangling
+  pointer. (This is used as a sentry on reference objects and shouldn't
+  normally be called directly.)
+
+.. refp:
+
+``refp x``
+  Predicate to check for reference values.
+
+Note that manually removing the ``unref`` sentry of a reference turns the
+reference into just a normal pointer object and renders it unusable as a
+reference. Doing this will also leak memory, so don't!
 
 ..
 
@@ -3109,11 +3733,17 @@ Index
 * `- (set)`_
 * `.`_
 * `..`_
+* `===`_
 * `\:`_
+* `^`_
+* `abs`_
+* `addr`_
 * `all`_
 * `any`_
 * `append (array)`_
+* `applp`_
 * `arithmetic sequences`_
+* `arity`_
 * `array`_
 * `array2`_
 * `arrayp`_
@@ -3122,13 +3752,18 @@ Index
 * `bad_tuple_value`_
 * `bag`_
 * `bagp`_
+* `bigint`_
+* `bigintp`_
 * `byte_cstring`_
 * `byte_cstring_pointer`_
 * `byte_string`_
 * `byte_string_pointer`_
+* `calloc`_
 * `cat`_
 * `catmap`_
+* `ceil`_
 * `character arithmetic`_
+* `charp`_
 * `chars`_
 * `chr`_
 * `cmatrix`_
@@ -3139,6 +3774,7 @@ Index
 * `cols`_
 * `colvector`_
 * `combinators`_
+* `complexp`_
 * `conj (matrix)`_
 * `cst`_
 * `cstring`_
@@ -3159,6 +3795,8 @@ Index
 * `dim`_
 * `dmatrix`_
 * `do`_
+* `double`_
+* `doublep`_
 * `dowith`_
 * `dowith3`_
 * `drop`_
@@ -3171,6 +3809,7 @@ Index
 * `emptyset`_
 * `eval`_
 * `evalcmd`_
+* `exactp`_
 * `failed_cond`_
 * `failed_match`_
 * `false`_
@@ -3183,10 +3822,24 @@ Index
 * `first (set)`_
 * `fix`_
 * `flip`_
+* `floor`_
 * `foldl`_
 * `foldl1`_
 * `foldr`_
 * `foldr1`_
+* `frac`_
+* `free`_
+* `funp`_
+* `gcd`_
+* `get_byte`_
+* `get_double`_
+* `get_float`_
+* `get_int`_
+* `get_long`_
+* `get_pointer`_
+* `get_short`_
+* `get_string`_
+* `hash`_
 * `hdict`_
 * `hdictp`_
 * `head`_
@@ -3197,6 +3850,7 @@ Index
 * `imatrix`_
 * `index`_
 * `index (string)`_
+* `inexactp`_
 * `init`_
 * `insert (array)`_
 * `insert (bag)`_
@@ -3204,9 +3858,13 @@ Index
 * `insert (hdict)`_
 * `insert (heap)`_
 * `insert (set)`_
+* `int`_
+* `integerp`_
+* `intp`_
 * `iterate`_
 * `join`_
 * `keys`_
+* `lambdap`_
 * `last`_
 * `last (array)`_
 * `last (bag)`_
@@ -3214,6 +3872,7 @@ Index
 * `last (hdict)`_
 * `last (set)`_
 * `lasterr`_
+* `lcd`_
 * `list`_
 * `list (array)`_
 * `list (bag)`_
@@ -3230,7 +3889,10 @@ Index
 * `list2 (array)`_
 * `list2 (matrix)`_
 * `listmap`_
+* `listnp`_
+* `listp`_
 * `lists`_
+* `malloc`_
 * `malloc_error`_
 * `map`_
 * `matcat`_
@@ -3239,6 +3901,8 @@ Index
 * `matrix dimensions`_
 * `matrix size`_
 * `matrix transposition`_
+* `matrixp`_
+* `max`_
 * `member (bag)`_
 * `member (dict)`_
 * `member (hdict)`_
@@ -3250,6 +3914,7 @@ Index
 * `members (heap)`_
 * `members (set)`_
 * `members2 (array)`_
+* `min`_
 * `mkarray`_
 * `mkarray2`_
 * `mkdict`_
@@ -3263,12 +3928,28 @@ Index
 * `null (matrix)`_
 * `null (set)`_
 * `null (string)`_
+* `numberp`_
 * `operators`_
 * `ord`_
 * `out_of_bounds`_
 * `pack`_
 * `packed`_
+* `pointer`_
+* `pointerp`_
+* `pow`_
+* `pred`_
+* `put_byte`_
+* `put_double`_
+* `put_float`_
+* `put_int`_
+* `put_long`_
+* `put_pointer`_
+* `put_short`_
+* `put_string`_
+* `rationalp`_
 * `re (matrix)`_
+* `realloc`_
+* `realp`_
 * `redim`_
 * `repeat`_
 * `repeatn`_
@@ -3285,18 +3966,21 @@ Index
 * `rmlast (dict)`_
 * `rmlast (hdict)`_
 * `rmlast (set)`_
+* `round`_
 * `row`_
 * `rowcat`_
 * `rowcatmap`_
 * `rowrev`_
 * `rows`_
 * `rowvector`_
+* `same`_
 * `scanl`_
 * `scanl1`_
 * `scanr`_
 * `scanr1`_
 * `set`_
 * `setp`_
+* `sgn`_
 * `smatrix`_
 * `split`_
 * `stack_fault`_
@@ -3312,24 +3996,33 @@ Index
 * `string slicing`_
 * `string_dup`_
 * `string_list`_
+* `stringp`_
 * `strings`_
 * `subdiag`_
 * `subdiagmat`_
 * `submat`_
 * `substr`_
+* `succ`_
 * `supdiag`_
 * `supdiagmat`_
 * `tail`_
 * `take`_
 * `takewhile`_
+* `throw`_
+* `thunkp`_
 * `true`_
+* `trunc`_
 * `tuple`_
 * `tuple (matrix)`_
 * `tuple (string)`_
 * `tuple indexing`_
 * `tuple size`_
 * `tuple slicing`_
+* `tuplep`_
 * `tuples`_
+* `ubyte`_
+* `uint`_
+* `ulong`_
 * `uncurry`_
 * `uncurry3`_
 * `unzip`_
@@ -3338,12 +4031,15 @@ Index
 * `update (dict)`_
 * `update (hdict)`_
 * `update2`_
+* `ushort`_
 * `values`_
+* `varp`_
 * `void`_
 * `while`_
 * `zip`_
 * `zip3`_
 * `zipwith`_
 * `zipwith3`_
+* `~==`_
 
 
