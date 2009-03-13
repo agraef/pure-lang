@@ -32,9 +32,19 @@
    Pure. Even the "purest" program needs to do some basic I/O every once in a
    while, and this module provides the necessary stuff to do just that. The
    interface is rather minimalistic and preliminary right now, but will
-   probably grow over time.
+   probably grow over time, and it already offers many common system functions
+   that Pure programmers might want to use in their scripts.
 
-   TODO */
+   Most of the following functions are extensively documented in the C library
+   manual pages, so we concentrate on the Pure-specific aspects here.
+
+   Imports
+   -------
+
+   To use the operations of this module, add the following import declaration
+   to your program::
+
+     using system; */
 
 /* Provide some useful values as global variables. These also include the
    standard I/O streams and various constants related to the I/O, glob and
@@ -45,33 +55,56 @@ namespace C;
 extern void pure_sys_vars(); pure_sys_vars;
 namespace;
 
-/* errno and friends. This value and the related routines are indispensable to
-   give proper diagnostics when system calls fail for some reason. Note that,
-   by its very nature, errno is a fairly volatile value, don't expect it to
-   survive a return to the command line in interactive sessions. */
+/* ..
+
+   Errno and Friends
+   -----------------
+
+   .. _errno:
+   .. _set_errno:
+   .. _perror:
+   .. _strerror:
+
+   ``errno``, ``set_errno n``, ``perror msg``, ``strerror n``
+     This value and the related routines are indispensable to give proper
+     diagnostics when system calls fail for some reason. Note that, by its
+     very nature, ``errno`` is a fairly volatile value, don't expect it to
+     survive a return to the command line in interactive sessions. */
 
 extern int pure_errno() = errno, void pure_set_errno(int) = set_errno;
 extern void perror(char*), char* strerror(int);
 
-/* POSIX locale handling. Details are platform-specific, but you can expect
-   that at least the categories LC_ALL, LC_COLLATE, LC_CTYPE, LC_MONETARY,
-   LC_NUMERIC and LC_TIME are defined, as well as the following values for the
-   locale parameter: "C" or "POSIX" (the default POSIX locale), "" (the system
-   default locale), and NULL, to just query the current locale.
+/* ..
+
+   POSIX Locale
+   ------------
+
+   .. _setlocale:
+
+   ``setlocale category locale``
+     Set or retrieve the current locale.
+
+   Details are platform-specific, but you can expect that at least the
+   categories ``LC_ALL``, ``LC_COLLATE``, ``LC_CTYPE``, ``LC_MONETARY``,
+   ``LC_NUMERIC`` and ``LC_TIME`` are defined, as well as the following values
+   for the locale parameter: ``"C"`` or ``"POSIX"`` (the default POSIX
+   locale), ``""`` (the system default locale), and ``NULL``, to just query
+   the current locale.
 
    Other string values which can be passed as the locale argument depend on
    the implementation, please check your local setlocale(3) documentation for
-   details. If locale is not NULL, the current locale is changed accordingly.
-   The return value is the new locale, or the current locale when passing NULL
-   for the locale parameter. In either case, the string returned by setlocale
-   is such that it can be passed to setlocale to restore the same locale
-   again. In case of an error, setlocale fails (rather than returning a null
-   pointer).
+   details. If locale is not ``NULL``, the current locale is changed
+   accordingly. The return value is the new locale, or the current locale when
+   passing ``NULL`` for the locale parameter. In either case, the string
+   returned by ``setlocale`` is such that it can be passed to ``setlocale`` to
+   restore the same locale again. In case of an error, ``setlocale`` fails
+   (rather than returning a null pointer).
 
    Please note that calling this function alters the Pure interpreter's idea
    of what the current locale is. When the interpreter starts up, it always
    sets the default system locale. Unless your scripts rely on a specific
-   encoding, setting the locale to either "C" or "" should always be safe. */
+   encoding, setting the locale to either ``"C"`` or ``""`` should always be
+   safe. */
 
 namespace C;
 extern void* setlocale(int category, void* locale);
@@ -86,34 +119,71 @@ setlocale category::int locale = cstring_dup res if ~null res when
         end;
 end;
 
-/* Signal handling. The action parameter of 'trap' can be one of the
-   predefined integer values SIG_TRAP, SIG_IGN and SIG_DFL. SIG_TRAP causes
-   the given signal to be handled by mapping it to a Pure exception of the
-   form 'signal SIG'. SIG_IGN ignores the signal, SIG_DFL reverts to the
-   system's default handling. See 'show -g SIG*' for a list of known signal
-   values on your system. NOTE: Most standard termination signals (SIGINT,
-   SIGTERM, etc.) are already set up at the start of the interpreter to report
-   corresponding Pure exceptions; if this is not desired, you can use 'trap'
-   to either ignore these or revert to the default handlers instead. */
+/* ..
+
+   Signal Handling
+   ---------------
+
+   .. _trap:
+
+   ``trap action sig``
+     Establish or remove Pure signal handlers.
+
+   The action parameter of ``trap`` can be one of the predefined integer
+   values ``SIG_TRAP``, ``SIG_IGN`` and ``SIG_DFL``. ``SIG_TRAP`` causes the
+   given signal to be handled by mapping it to a Pure exception of the form
+   ``signal sig``. ``SIG_IGN`` ignores the signal, ``SIG_DFL`` reverts to the
+   system's default handling. See ``show -g SIG*`` for a list of known signal
+   values on your system.
+
+   Note: Most standard termination signals (``SIGINT``, ``SIGTERM``, etc.) are
+   already set up at the start of the interpreter to report corresponding Pure
+   exceptions; if this is not desired, you can use ``trap`` to either ignore
+   these or revert to the default handlers instead. */
 
 extern void pure_trap(int action, int sig) = trap;
 
-/* Time functions. 'time' reports the current time in seconds since the
-   "epoch" a.k.a. 00:00:00 UTC, Jan 1 1970. The result is always a bigint (in
-   fact, the time value is already 64 bit on many OSes nowadays). */
+/* ..
+
+   Time Functions
+   --------------
+
+   .. _time:
+
+   ``time``
+     Reports the current time in seconds since the `epoch`, 00:00:00 UTC, Jan
+     1 1970. The result is always a bigint (in fact, the ``time`` value is
+     already 64 bit on many OSes nowadays). */
 
 extern long pure_time() = time;
 
-/* Functions to convert a time value to broken-down time or a string. The
-   ctime function converts a time value as returned by the time function to a
-   string in local time. The gmtime and localtime functions convert a time
-   value to UTC or local time in "broken-down" form (a pointer to a tm struct
-   containing a bunch of int fields) which can then be passed to the asctime
-   and strftime functions, or to int_matrix 9 if you want to convert the data
-   to a matrix. The asctime function formats broken-down time as a string. The
-   strftime function does the same, but uses a format string supplied by the
-   user. See ctime(3), gmtime(3), localtime(3), asctime(3) and strftime(3) for
-   details. */
+/* ..
+
+   The following functions are provided to convert a time value to
+   "broken-down" time or a string. See the ctime(3), gmtime(3), localtime(3),
+   asctime(3) and strftime(3) manual pages for details.
+
+   .. _ctime:
+
+   ``ctime t``
+     Convert a time value as returned by the time_ function to a string in
+     local time.
+
+   .. _gmtime:
+   .. _localtime:
+
+   ``gmtime t``, ``localtime t``
+     Convert a time value to UTC or local time in "broken-down" form (a
+     pointer to a ``tm`` struct containing a bunch of ``int`` fields) which
+     can then be passed to the asctime_ and strftime_ functions, or to
+     ``int_matrix 9`` if you want to convert the data to a matrix.
+
+   .. _asctime:
+   .. _strftime:
+
+   ``asctime tm``, ``strftime format tm``
+     Format broken-down time as a string. ``strftime`` also uses a format
+     string supplied by the user. */
 
 extern char* pure_ctime(long) = ctime;
 extern void* pure_gmtime(long) = gmtime;
@@ -121,46 +191,133 @@ extern void* pure_localtime(long) = localtime;
 extern char* asctime(void *tm);
 extern char* pure_strftime(char* format, void *tm) = strftime;
 
-/* The gettimeofday function also returns wallclock time as seconds since the
-   epoch, but theoretically offers resolutions in the microsec range (actual
-   resolutions vary, but are usually in the msec range for contemporary
-   systems). The result is returned as a double value (which also limits
-   precision). This function may actually be implemented through different
-   system calls, depending on what's available on the host OS. */
+/* ..
+
+   We also provide some functions to retrieve wallclock and cpu time which
+   usually offer much better resolution than time_.
+
+   .. _gettimeofday:
+
+   ``gettimeofday``
+     Returns wallclock time as seconds since the epoch, like time_, but
+     theoretically offers resolutions in the microsec range (actual
+     resolutions vary, but are usually in the msec range for contemporary
+     systems). The result is returned as a double value (which also limits
+     precision). This function may actually be implemented through different
+     system calls, depending on what's available on the host OS. */
 
 extern double pure_gettimeofday() = gettimeofday;
 
-/* The clock function returns the current CPU (not wallclock) time since an
-   arbitrary point in the past, as a machine int. The number of "ticks" per
-   second is given by the CLOCKS_PER_SEC constant. Note that this value will
-   wrap around approximately every 72 minutes.  */
+/* .. _clock:
+
+   ``clock``
+     Returns the current CPU (not wallclock) time since an arbitrary point in
+     the past, as a machine int. The number of "ticks" per second is given by
+     the ``CLOCKS_PER_SEC`` constant. Note that this value will wrap around
+     approximately every 72 minutes. */
 
 extern int clock();
 
-/* The sleep and nanosleep functions suspend execution for a given time
-   interval in seconds. 'sleep' takes integer (int/bigint) arguments only and
-   uses the sleep() system function. 'nanosleep' also accepts double arguments
-   and theoretically supports resolutions down to 1 nanosecond (again, actual
-   resolutions vary). This function may actually be implemented through
-   different system calls, depending on what's available on the host OS. Both
-   functions usually return zero, unless the sleep was interrupted by a
-   signal, in which case the time remaining to be slept is returned. */
+/* .. _sleep:
+   .. _nanosleep:
+
+   ``sleep t``, ``nanosleep t``
+     Suspend execution for a given time interval in seconds. ``sleep`` takes
+     integer (int/bigint) arguments only and uses the ``sleep()`` system
+     function. ``nanosleep`` also accepts double arguments and theoretically
+     supports resolutions down to 1 nanosecond (again, actual resolutions
+     vary). This function may actually be implemented through different system
+     calls, depending on what's available on the host OS. Both functions
+     usually return zero, unless the sleep was interrupted by a signal, in
+     which case the time remaining to be slept is returned. */
 
 extern int sleep(int);
 extern double pure_nanosleep(double) = nanosleep;
 
 nanosleep t::int | nanosleep t::bigint = nanosleep (double t);
 
-/* Basic process operations: system executes a shell command, exit terminates
-   the program with the given status code. */
+/* ..
+
+   Basic Process Operations
+   ------------------------
+
+   Not much is provided in this category yet. Contributions are welcome.
+
+   .. _system:
+
+   ``system cmd``
+     Execute a shell command.
+
+   .. _exit:
+
+   ``exit status``
+     Terminate the program with the given status code. */
 
 extern int system(char* cmd), void exit(int status);
 
-/* Basic I/O interface. Note that this module also defines the standard I/O
-   streams stdin, stderr and stdout as variables on startup. These are ready
-   to be used with the operations defined below. Also note that some of these
-   routines are actually overridden with more convenient Pure wrappers
-   below. */
+/* ..
+
+   Basic I/O Interface
+   -------------------
+
+   Note that this module also defines the standard I/O streams ``stdin``,
+   ``stderr`` and ``stdout`` as variables on startup. These are ready to be
+   used with the operations described below. Also note that for convenience
+   some of these routines are actually Pure wrappers, rather than just
+   providing the raw C library routines.
+
+   .. _fopen:
+   .. _popen:
+
+   ``fopen name mode``, ``popen cmd mode``
+     Open a file or a pipe. These take care of closing a file object
+     automagically when it's garbage-collected, and fail (instead of returning
+     a null pointer) in case of error, so that you can provide any desired
+     error handling simply by adding suitable equations.
+
+   .. _fclose:
+   .. _pclose:
+
+   ``fclose fp``, ``pclose fp``
+     Close a file or a pipe.
+
+   .. _feof:
+   .. _ferror:
+   .. _clearerr:
+
+   ``feof fp``, ``ferror fp``, ``clearerr fp``
+     Check the end-of-file and error bits. ``clearerr`` clears the error bit.
+
+   .. _fflush:
+
+   ``fflush fp``
+     Flushes the given file (or all open files if ``fp`` is ``NULL``).
+
+   .. _fgets:
+   .. _gets:
+
+   ``fgets fp``, ``gets``
+     Pure wrappers for the C ``fgets`` and ``gets`` functions which handle the
+     necessary buffering automatically.
+
+   .. _fget:
+
+   ``fget fp``
+     A variation of fgets_ which slurps in an entire text file at once.
+
+   .. _fputs:
+   .. _puts:
+
+   ``fputs s fp``, ``puts s``
+     Output a string to the given file or ``stdout``, respectively. These
+     are just the plain C functions. Note that ``puts`` automatically adds
+     a newline, while ``fputs`` doesn't. Hmm.
+
+   .. _fread:
+   .. _fwrite:
+
+   ``fread ptr size nmemb fp``, ``fwrite ptr size nmemb fp``
+     Binary read/writes. Here you'll have to manage the buffers yourself. */
 
 namespace C;
 extern FILE* fopen(char* name, char* mode);
@@ -220,18 +377,38 @@ with read_a_file f buf t = check s when s = C::fgets buf 0x10000 f end
   end;
 end;
 
-/* printf, scanf and friends. Since Pure cannot call C varargs functions
-   directly, the runtime provides us with some functions which only process a
-   single argument at a time. Our wrapper functions take or return a tuple of
-   values, and check these against the format specifiers. Only simple formats
-   derived from %cdioux, %efg, %s and %p are supported right now. */
+/* ..
+
+   C-style formatted I/O is provided through the following wrappers for the C
+   ``printf`` and ``scanf`` functions. Our wrapper functions take or return a
+   tuple of values, and check these against the format specifiers, so they
+   shouldn't segfault. However, only simple formats derived from ``%cdioux``,
+   ``%efg``, ``%s`` and ``%p`` are supported right now.
+
+   .. _printf:
+   .. _fprintf:
+
+   ``printf format args``, ``fprintf fp format args``
+     Print a formatted string to ``stdout`` or the given file, respectively.
+     Normally, these functions return the result of the underlying C routines
+     (number of characters written, or negative on error). However, in case of
+     an abnormal condition in the wrapper function (error in format string,
+     argument mismatch), they will throw an exception.
+
+   .. _sprintf:
+
+   ``sprintf format args``
+     Print a formatted string to a buffer and return the result as a string.
+     Unlike the C routine, this wrapper just returns the string result, or a
+     null pointer in case of an error; otherwise, the error handling is the
+     same as with printf_ and fprintf_. The implementation actually uses the C
+     routine ``snprintf`` for safety, and a suitable output buffer is provided
+     automatically. */
+
+/* Since Pure cannot call C varargs functions directly, the runtime provides
+   us with some functions which only process a single argument at a time. */
 
 using namespace C, system;
-
-/* printf/fprintf: Normally, these return the result of the underlying C
-   routines (number of characters written, or negative on error). However, in
-   case of an abnormal condition in the wrapper function (error in format
-   string, argument mismatch), they will throw an exception. */
 
 namespace C;
 extern int pure_fprintf(FILE *fp, char *format);
@@ -297,11 +474,6 @@ with
     else x;
 end;
 
-/* sprintf: Unlike the C routines, these just return the string result, or a
-   null pointer in case of an error; otherwise, the error handling is the same
-   as with printf/fprintf. The implementation actually uses snprintf for
-   safety, a suitable output buffer is provided automatically. */
-
 namespace C;
 extern int pure_snprintf(void *buf, int, char *format);
 extern int pure_snprintf_int(void *buf, int, char *format, int x);
@@ -349,17 +521,22 @@ end with
                 = buf otherwise;
 end;
 
-/* scanf, fscanf: These normally return a tuple (or singleton) with the
-   converted values. An exception of the form 'scanf_error ret', where ret is
-   the tuple of successfully converted values (which may be less than the
-   number of requested input items), is thrown if eof was met or another error
-   occurred while still reading. The handling of other abnormal conditions
-   (e.g., error in format string) is analogous to printf et al. Also note that
-   our implementation here doesn't accept any of the length modifiers used by
-   the C routines. Floating point values will *always* be read in double
-   precision, so you just specify "e", "g" etc. for these. OTOH, the
-   "assignment suppression" flag "*" is understood; the corresponding items
-   will not be returned. */
+/* .. _scanf:
+   .. _fscanf:
+
+   ``scanf format``, ``fscanf fp format``
+     Read formatted input from ``stdin`` or the given file, respectively.
+     These normally return a tuple (or singleton) with the converted
+     values. An exception of the form ``scanf_error ret``, where ``ret`` is
+     the tuple of successfully converted values (which may be less than the
+     number of requested input items), is thrown if end-of-file was met or
+     another error occurred while still reading. The handling of other
+     abnormal conditions (e.g., error in format string) is analogous to
+     printf_ et al. Also note that our implementation here doesn't accept any
+     of the length modifiers used by the C routines. Floating point values
+     will *always* be read in double precision, so you just specify ``"e"``,
+     ``"g"`` etc. for these. However, the "assignment suppression" flag
+     ``"*"`` *is* understood; the corresponding items will not be returned. */
 
 namespace C;
 extern int pure_fscanf(FILE *fp, char *format);
@@ -457,8 +634,11 @@ with
   kludge _ u = u otherwise;
 end;
 
-/* sscanf: This works exactly like fscanf, but input comes from a string
-   (first argument) rather than a file. */
+/* .. _sscanf:
+
+   ``sscanf s format``
+     This works exactly like fscanf_, but input comes from a string (first
+     argument) rather than a file. */
 
 namespace C;
 extern int pure_sscanf(char *buf, char *format);
@@ -528,11 +708,25 @@ end;
 
 using namespace;
 
-/* readline: A simple wrapper around GNU readline which reads a line from
-   stdin with prompt and command line editing. (Note that we cannot simply use
-   the C readline function directly in Pure since it would leak memory on the
-   return value.) We also provide readline's companion, the add_history
-   function, which you need to add strings to readline's history. */
+/* ..
+
+   Readline
+   --------
+
+   .. _readline:
+
+   ``readline prompt``
+     A simple wrapper around GNU readline which reads a line from ``stdin``
+     with prompt and command line editing.
+
+   .. _add_history:
+
+   ``add_history s``
+     readline_\ 's companion, which you need to add strings to readline's
+     history. */
+
+/* Note that we cannot simply use the C readline function directly in Pure
+   since it would leak memory on the return value. */
 
 namespace C;
 extern void* readline(char* prompt);
@@ -541,17 +735,29 @@ extern void add_history(char* s);
 
 readline prompt::string = cstring $ C::readline prompt;
 
-/* Shell globbing (fnmatch and glob). For fnmatch we provide a wrapper which
-   returns a simple truth value (1 = match, 0 = no match) instead of an error
-   code. For glob we provide a wrapper which only takes the pattern and the
-   flags as arguments and returns a Pure list with the matches (unless there
-   is an error in which case the integer result code is returned).
+/* ..
+
+   Shell Globbing
+   --------------
+
+   .. _fnmatch:
+
+   ``fnmatch pat s flags``
+     Returns a simple truth value (1 if ``pat`` matches ``s``, 0 if it
+     doesn't), instead of an error code like the C function.
+
+   .. _glob:
+
+   ``glob pat flags``
+     Returns a Pure list with the matches (unless there is an error in which
+     case the integer result code of the underlying C routine is returned).
 
    The available flag values and glob error codes are available as symbolic
-   FNM_* and GLOB_* constants defined as variables in the global environment.
-   See the fnmatch(3) and glob(3) manpages for the meaning of these. In
-   extension to POSIX, Pure also provides the constant GLOB_SIZE which
-   indicates the buffer size required for glob's globptr argument. */
+   ``FNM_*`` and ``GLOB_*`` constants defined as variables in the global
+   environment. See the fnmatch(3) and glob(3) manpages for the meaning of
+   these. (In extension to POSIX, Pure also provides the constant
+   ``GLOB_SIZE`` which indicates the buffer size required for C ``glob``\ 's
+   ``globptr`` argument, but this is only used internally.) */
 
 namespace C;
 extern int fnmatch(char* pat, char* s, int flags);
@@ -570,9 +776,14 @@ when
   _ = C::globfree globptr $$ free globptr;
 end;
 
-/* POSIX regex matching (regcomp and regexec). The C functions have a somewhat
-   difficult calling sequence, hence we provide a couple of high-level wrapper
-   functions for use in Pure programs below. */
+/* ..
+
+   Regex Matching
+   --------------
+
+   The POSIX regex functions (``regcomp`` and ``regexec``) have a somewhat
+   difficult calling sequence, hence we provide a couple of rather elaborate
+   high-level wrapper functions for use in Pure programs. */
 
 using namespace C;
 
@@ -587,60 +798,73 @@ extern expr* regmatches(void* regptr, int cflags);
 extern expr* reglist(void* regptr, void* s, void* matches);
 namespace;
 
-/* regex: A convenience function which compiles and matches a regex in one go,
-   and returns the list of submatches (if any). The arguments are:
+/* .. _regex:
 
-   - pat::string, the regular expression pattern;
+   ``regex pat cflags s eflags``
+     Compiles and matches a regex in one go, and returns the list of
+     submatches (if any).
 
-   - cflags::int, the compilation flags (bitwise or of any of the flags
+   The arguments are:
+
+   - ``pat::string``, the regular expression pattern;
+
+   - ``cflags::int``, the compilation flags (bitwise or of any of the flags
      accepted by regcomp(3));
 
-   - s::string, the subject string to be matched;
+   - ``s::string``, the subject string to be matched;
 
-   - eflags::int, the matching execution flags (bitwise or of any of the flags
-     accepted by regexec(3)).
+   - ``eflags::int``, the matching execution flags (bitwise or of any of the
+     flags accepted by regexec(3)).
 
-   Symbolic REG_* constants are provided for the different flag values, see
-   the regcomp(3) manpage for an explanation of these. In extension to POSIX,
-   Pure also provides the REG_SIZE constant which indicates the size needed
-   for the compiled regex buffer (regptr argument).
+   Symbolic ``REG_*`` constants are provided for the different flag values,
+   see the regcomp(3) manpage for an explanation of these. (In extension to
+   POSIX, Pure also provides the ``REG_SIZE`` constant which indicates the
+   size needed for the compiled regex buffer, but this is only for internal
+   use.)
+
+   Two particularly important compilation flags (to be included in the
+   ``cflags`` argument) are ``REG_NOSUB``, which prevents submatches to be
+   computed, and ``REG_EXTENDED``, which switches ``regex`` from "basic" to
+   "extended" regular expressions so that it understands all the regular
+   expression elements of egrep(1) in the pattern argument.
 
    Depending on the flags and the outcome of the operation, the result of this
    function can take one of the following forms:
 
-   - regerr code msg: This indicates an error during compilation of the
-     pattern (e.g., if there was a syntax error in the pattern). code is the
-     nonzero integer code returned by regcomp, and msg is the corresponding
-     error message string, as returned by regerror. You can redefine the
-     regerr function as appropriate for your application (e.g., if you'd like
-     to print an error message or throw an exception).
+   - ``regerr code msg``: This indicates an error during compilation of the
+     pattern (e.g., if there was a syntax error in the pattern). ``code`` is
+     the nonzero integer code returned by ``regcomp``, and ``msg`` is the
+     corresponding error message string, as returned by ``regerror``. You can
+     redefine the ``regerr`` function as appropriate for your application
+     (e.g., if you'd like to print an error message or throw an exception).
 
-   - 0 or 1: Just a truth value indicates whether the pattern matched or not.
-     This will be the form of the result if the REG_NOSUB flag was specified
-     for compilation, indicating that no submatch information is to be
-     computed.
+   - ``0`` or ``1``: Just a truth value indicates whether the pattern matched
+     or not. This will be the form of the result if the ``REG_NOSUB`` flag was
+     specified for compilation, indicating that no submatch information is to
+     be computed.
 
-   - 0 (indicating no match), or 1 (indicating a successful match), where the
-     latter value is followed by a tuple of (pos,substr) pairs for each
-     submatch. This will be the form of the result only if the REG_NOSUB flag
-     was *not* specified for compilation, so that submatch information is
-     available.
+   - ``0`` (indicating no match), or ``1`` (indicating a successful match),
+     where the latter value is followed by a tuple of ``(pos,substr)`` pairs
+     for each submatch. This will be the form of the result only if the
+     ``REG_NOSUB`` flag was *not* specified for compilation, so that submatch
+     information is available.
 
    Note that, according to POSIX semantics, a return value of 1 does *not*
    generally mean that the entire subject string was matched, unless you
-   explicitly tie the pattern to the beginning (^) and end ($) of the string.
+   explicitly tie the pattern to the beginning (``^``) and end (``$``) of the
+   string.
 
-   If the result takes the latter form, each (pos,substr) pair indicates a
-   portion of the subject string which was matched; pos is the position at
-   which the match starts, and substr is the substring (starting at position
-   pos) which was matched. The first (pos,substr) pair always indicates which
-   portion of the string was matched by the entire pattern, the remaining
-   pairs represent submatches for the parenthesized subpatterns of the
-   pattern, as described on the regcomp(3) manual page. Note that some
+   If the result takes the latter form, each ``(pos,substr)`` pair indicates a
+   portion of the subject string which was matched; ``pos`` is the position at
+   which the match starts, and ``substr`` is the substring (starting at
+   position ``pos``) which was matched. The first ``(pos,substr)`` pair always
+   indicates which portion of the string was matched by the entire pattern,
+   the remaining pairs represent submatches for the parenthesized subpatterns
+   of the pattern, as described on the regcomp(3) manual page. Note that some
    submatches may be empty (if they matched the empty string), in which case a
-   pair (pos,"") indicates the (nonnegative) position pos where the subpattern
-   matched the empty string. Other submatches may not participate in the match
-   at all, in which case the pair (-1,"") is returned. */
+   pair ``(pos,"")`` indicates the (nonnegative) position ``pos`` where the
+   subpattern matched the empty string. Other submatches may not participate
+   in the match at all, in which case the pair ``(-1,"")`` is returned. */
 
 regex pat::string cflags::int s::string eflags::int = result
 when
@@ -661,31 +885,45 @@ end when
   regptr = calloc 1 REG_SIZE;
 end;
 
-/* The following helper functions are provided to analyze the result returned
-   by regex. */
+/* ..
 
-/* reg_result returns the result of a regex call, i.e., a regerr term if
-   compilation failed, and a flag indicating whether the match was successful
-   otherwise. */
+   The following helper functions are provided to analyze the result returned
+   by regex_.
+
+   .. _reg_result:
+
+   ``reg_result res``
+     Returns the result of a ``regex`` call, i.e., a ``regerr`` term if
+     compilation failed, and a flag indicating whether the match was
+     successful otherwise. */
 
 reg_result (regerr code msg) = regerr code msg;
 reg_result b::int = b;
 reg_result (b::int,_) = b;
 
-/* reg_info returns the submatch info if any, otherwise it returns (). */
+/* .. _reg_info:
+
+   ``reg_info res``
+     Returns the submatch info if any, otherwise it returns ``()``. */
 
 reg_info (_::int,info) = info;
 reg_info _ = () otherwise;
 
-/* reg n info returns the nth submatch of the given submatch info, where info
-   is the result of a reg_info call. */
+/* .. _reg:
+
+   ``reg n info``
+     Returns the ``n``\ th submatch of the given submatch info, where ``info``
+     is the result of a reg_info_ call. */
 
 reg 0 (p,s,_) = p,s;
 reg 0 (p,s) = p,s;
 reg n::int (_,_,infos) = reg (n-1) infos if n>0;
 
-/* regs info returns all valid submatches, i.e., the list of all triples
-   (n,p,s) for which reg n == (p,s) with p>=0. */
+/* .. _regs:
+
+   ``regs info``
+     Returns all valid submatches, i.e., the list of all triples ``(n,p,s)``
+     for which ``reg n == (p,s)`` with ``p>=0``. */
 
 regs info = myregs 0 info with
   myregs n (p,s,infos)	= (n,p,s):myregs (n+1) infos if p>=0;
@@ -694,12 +932,21 @@ regs info = myregs 0 info with
 			= [] otherwise;
 end;
 
-/* regexg: Perform a global regular expression search. This routine will scan
-   the entire string for (non-overlapping) instances of the pattern, applies
-   the given function f to the reg_info (see above) for each match, and
-   collects all results in a list. NOTE: Never specify the REG_NOSUB flag with
-   this function, it needs the submatch info. Also, this function will never
-   match the empty string, to prevent looping on pathological patterns. */
+/* ..
+
+   In addition, the following convenience functions are provided to perform
+   global regex searches, to perform substitutions, and to tokenize a string
+   according to a given delimiter regex.
+
+   .. _regexg:
+
+   ``regexg f pat cflags s eflags``
+     Perform a global regular expression search. This routine will scan the
+     entire string for (non-overlapping) instances of the pattern, applies the
+     given function ``f`` to the reg_info_ for each match, and collects all
+     results in a list. Note: Never specify the ``REG_NOSUB`` flag with this
+     function, it needs the submatch info. Also, this function will never
+     match the empty string, to prevent looping on pathological patterns. */
 
 regexg f pat::string cflags::int s::string eflags::int = result
 when
@@ -740,7 +987,10 @@ end when
   regptr = calloc 1 REG_SIZE;
 end;
 
-/* regexgg works like regexg, but allows overlapping matches. */
+/* .. _regexgg:
+
+   ``regexgg f pat cflags s eflags``
+     This works like regexg_, but allows overlapping matches. */
 
 regexgg f pat::string cflags::int s::string eflags::int = result
 when
@@ -781,11 +1031,14 @@ end when
   regptr = calloc 1 REG_SIZE;
 end;
 
-/* regsub replaces all non-overlapping instances of a pattern with a computed
-   substitution string. To these ends, the given function f is applied to the
-   reg_info (see above) for each match; it should return a string value. The
-   result string is then obtained by concatenating f info for all matches,
-   with the unmatched portions of the string in between. */
+/* .. _regsub:
+
+   ``regsub f pat cflags s eflags``
+     Replaces all non-overlapping instances of a pattern with a computed
+     substitution string. To these ends, the given function ``f`` is applied
+     to the reg_info_ for each match; it should return a string value. The
+     result string is then obtained by concatenating ``f info`` for all
+     matches, with the unmatched portions of the string in between. */
 
 regsub f pat::string cflags::int s::string eflags::int = result
 when
@@ -819,8 +1072,11 @@ end when
   regptr = calloc 1 REG_SIZE;
 end;
 
-/* regsplit splits a string into constituents delimited by substrings matching
-   the given pattern. */
+/* .. _regsplit:
+
+   ``regsplit pat cflags s eflags``
+     Splits a string into constituents delimited by substrings matching the
+     given pattern. */
 
 regsplit pat::string cflags::int s::string eflags::int = result
 when

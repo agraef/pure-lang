@@ -7,7 +7,7 @@
 <title>Pure Library Manual</title>
 <meta name="author" content="Albert Graef &lt;Dr.Graef&#64;t-online.de&gt;" />
 <meta name="copyright" content="Copyright (c) 2009" />
-<meta name="date" content="2009-03-13" />
+<meta name="date" content="2009-03-14" />
 <style type="text/css">
 
 /*
@@ -304,7 +304,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Copyright:</th>
 <td>Copyright (c) 2009</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2009-03-13</td></tr>
+<td>2009-03-14</td></tr>
 </tbody>
 </table>
 <!-- We use docutils to produce the documentation. Docstrings are extracted -->
@@ -316,92 +316,103 @@ ul.auto-toc {
 <p>This document is available under the <a class="reference" href="http://www.gnu.org/copyleft/fdl.html">GNU Free Documentation License</a>.</p>
 <p>This manual describes the operations in the standard Pure library,
 including the prelude and the other library modules which come bundled with
-the interpreter. It is woefully incomplete right now, but this is being
-worked on.</p>
+the interpreter.</p>
 <p>There is a companion to this manual, the <a class="reference" href="pure.html">Pure Manual</a> which describes the
 Pure language and the operation of the Pure interpreter.</p>
 <!-- Table of contents, switch on section numbering. -->
 <div class="contents topic">
 <p class="topic-title first"><a id="contents" name="contents">Contents</a></p>
 <ul class="auto-toc simple">
-<li><a class="reference" href="#prelude" id="id52" name="id52">1&nbsp;&nbsp;&nbsp;Prelude</a><ul class="auto-toc">
-<li><a class="reference" href="#basic-combinators" id="id53" name="id53">1.1&nbsp;&nbsp;&nbsp;Basic Combinators</a></li>
-<li><a class="reference" href="#quasiquote" id="id54" name="id54">1.2&nbsp;&nbsp;&nbsp;Quasiquote</a></li>
-<li><a class="reference" href="#lists-and-tuples" id="id55" name="id55">1.3&nbsp;&nbsp;&nbsp;Lists and Tuples</a></li>
-<li><a class="reference" href="#list-functions" id="id56" name="id56">1.4&nbsp;&nbsp;&nbsp;List Functions</a><ul class="auto-toc">
-<li><a class="reference" href="#common-list-functions" id="id57" name="id57">1.4.1&nbsp;&nbsp;&nbsp;Common List Functions</a></li>
-<li><a class="reference" href="#list-generators" id="id58" name="id58">1.4.2&nbsp;&nbsp;&nbsp;List Generators</a></li>
-<li><a class="reference" href="#zip-and-friends" id="id59" name="id59">1.4.3&nbsp;&nbsp;&nbsp;Zip and Friends</a></li>
+<li><a class="reference" href="#prelude" id="id54" name="id54">1&nbsp;&nbsp;&nbsp;Prelude</a><ul class="auto-toc">
+<li><a class="reference" href="#basic-combinators" id="id55" name="id55">1.1&nbsp;&nbsp;&nbsp;Basic Combinators</a></li>
+<li><a class="reference" href="#quasiquote" id="id56" name="id56">1.2&nbsp;&nbsp;&nbsp;Quasiquote</a></li>
+<li><a class="reference" href="#lists-and-tuples" id="id57" name="id57">1.3&nbsp;&nbsp;&nbsp;Lists and Tuples</a></li>
+<li><a class="reference" href="#list-functions" id="id58" name="id58">1.4&nbsp;&nbsp;&nbsp;List Functions</a><ul class="auto-toc">
+<li><a class="reference" href="#common-list-functions" id="id59" name="id59">1.4.1&nbsp;&nbsp;&nbsp;Common List Functions</a></li>
+<li><a class="reference" href="#list-generators" id="id60" name="id60">1.4.2&nbsp;&nbsp;&nbsp;List Generators</a></li>
+<li><a class="reference" href="#zip-and-friends" id="id61" name="id61">1.4.3&nbsp;&nbsp;&nbsp;Zip and Friends</a></li>
 </ul>
 </li>
-<li><a class="reference" href="#string-functions" id="id60" name="id60">1.5&nbsp;&nbsp;&nbsp;String Functions</a><ul class="auto-toc">
-<li><a class="reference" href="#basic-string-functions" id="id61" name="id61">1.5.1&nbsp;&nbsp;&nbsp;Basic String Functions</a></li>
-<li><a class="reference" href="#eval-and-friends" id="id62" name="id62">1.5.2&nbsp;&nbsp;&nbsp;Eval and Friends</a></li>
-<li><a class="reference" href="#low-level-operations" id="id63" name="id63">1.5.3&nbsp;&nbsp;&nbsp;Low-Level Operations</a></li>
+<li><a class="reference" href="#string-functions" id="id62" name="id62">1.5&nbsp;&nbsp;&nbsp;String Functions</a><ul class="auto-toc">
+<li><a class="reference" href="#basic-string-functions" id="id63" name="id63">1.5.1&nbsp;&nbsp;&nbsp;Basic String Functions</a></li>
+<li><a class="reference" href="#eval-and-friends" id="id64" name="id64">1.5.2&nbsp;&nbsp;&nbsp;Eval and Friends</a></li>
+<li><a class="reference" href="#low-level-operations" id="id65" name="id65">1.5.3&nbsp;&nbsp;&nbsp;Low-Level Operations</a></li>
 </ul>
 </li>
-<li><a class="reference" href="#matrix-functions" id="id64" name="id64">1.6&nbsp;&nbsp;&nbsp;Matrix Functions</a></li>
-<li><a class="reference" href="#primitives" id="id65" name="id65">1.7&nbsp;&nbsp;&nbsp;Primitives</a><ul class="auto-toc">
-<li><a class="reference" href="#arithmetic" id="id66" name="id66">1.7.1&nbsp;&nbsp;&nbsp;Arithmetic</a></li>
-<li><a class="reference" href="#conversions" id="id67" name="id67">1.7.2&nbsp;&nbsp;&nbsp;Conversions</a></li>
-<li><a class="reference" href="#predicates" id="id68" name="id68">1.7.3&nbsp;&nbsp;&nbsp;Predicates</a></li>
-<li><a class="reference" href="#specials" id="id69" name="id69">1.7.4&nbsp;&nbsp;&nbsp;Specials</a></li>
-<li><a class="reference" href="#pointer-operations" id="id70" name="id70">1.7.5&nbsp;&nbsp;&nbsp;Pointer Operations</a></li>
-<li><a class="reference" href="#sentries" id="id71" name="id71">1.7.6&nbsp;&nbsp;&nbsp;Sentries</a></li>
-<li><a class="reference" href="#expression-references" id="id72" name="id72">1.7.7&nbsp;&nbsp;&nbsp;Expression References</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li><a class="reference" href="#mathematical-functions" id="id73" name="id73">2&nbsp;&nbsp;&nbsp;Mathematical Functions</a><ul class="auto-toc">
-<li><a class="reference" href="#imports" id="id74" name="id74">2.1&nbsp;&nbsp;&nbsp;Imports</a></li>
-<li><a class="reference" href="#basic-math-functions" id="id75" name="id75">2.2&nbsp;&nbsp;&nbsp;Basic Math Functions</a></li>
-<li><a class="reference" href="#complex-numbers" id="id76" name="id76">2.3&nbsp;&nbsp;&nbsp;Complex Numbers</a></li>
-<li><a class="reference" href="#rational-numbers" id="id77" name="id77">2.4&nbsp;&nbsp;&nbsp;Rational Numbers</a></li>
-<li><a class="reference" href="#semantic-number-predicates" id="id78" name="id78">2.5&nbsp;&nbsp;&nbsp;Semantic Number Predicates</a></li>
-</ul>
-</li>
-<li><a class="reference" href="#container-types" id="id79" name="id79">3&nbsp;&nbsp;&nbsp;Container Types</a><ul class="auto-toc">
-<li><a class="reference" href="#arrays" id="id80" name="id80">3.1&nbsp;&nbsp;&nbsp;Arrays</a><ul class="auto-toc">
-<li><a class="reference" href="#id22" id="id81" name="id81">3.1.1&nbsp;&nbsp;&nbsp;Imports</a></li>
-<li><a class="reference" href="#operations" id="id82" name="id82">3.1.2&nbsp;&nbsp;&nbsp;Operations</a></li>
-<li><a class="reference" href="#examples" id="id83" name="id83">3.1.3&nbsp;&nbsp;&nbsp;Examples</a></li>
-</ul>
-</li>
-<li><a class="reference" href="#heaps" id="id84" name="id84">3.2&nbsp;&nbsp;&nbsp;Heaps</a><ul class="auto-toc">
-<li><a class="reference" href="#id25" id="id85" name="id85">3.2.1&nbsp;&nbsp;&nbsp;Imports</a></li>
-<li><a class="reference" href="#id26" id="id86" name="id86">3.2.2&nbsp;&nbsp;&nbsp;Operations</a></li>
-<li><a class="reference" href="#id28" id="id87" name="id87">3.2.3&nbsp;&nbsp;&nbsp;Examples</a></li>
-</ul>
-</li>
-<li><a class="reference" href="#dictionaries" id="id88" name="id88">3.3&nbsp;&nbsp;&nbsp;Dictionaries</a><ul class="auto-toc">
-<li><a class="reference" href="#id29" id="id89" name="id89">3.3.1&nbsp;&nbsp;&nbsp;Imports</a></li>
-<li><a class="reference" href="#data-structure" id="id90" name="id90">3.3.2&nbsp;&nbsp;&nbsp;Data Structure</a></li>
-<li><a class="reference" href="#id30" id="id91" name="id91">3.3.3&nbsp;&nbsp;&nbsp;Operations</a></li>
-<li><a class="reference" href="#id35" id="id92" name="id92">3.3.4&nbsp;&nbsp;&nbsp;Examples</a></li>
-</ul>
-</li>
-<li><a class="reference" href="#sets-and-bags" id="id93" name="id93">3.4&nbsp;&nbsp;&nbsp;Sets and Bags</a><ul class="auto-toc">
-<li><a class="reference" href="#id36" id="id94" name="id94">3.4.1&nbsp;&nbsp;&nbsp;Imports</a></li>
-<li><a class="reference" href="#id37" id="id95" name="id95">3.4.2&nbsp;&nbsp;&nbsp;Data Structure</a></li>
-<li><a class="reference" href="#id38" id="id96" name="id96">3.4.3&nbsp;&nbsp;&nbsp;Operations</a></li>
-<li><a class="reference" href="#id47" id="id97" name="id97">3.4.4&nbsp;&nbsp;&nbsp;Examples</a></li>
+<li><a class="reference" href="#matrix-functions" id="id66" name="id66">1.6&nbsp;&nbsp;&nbsp;Matrix Functions</a></li>
+<li><a class="reference" href="#primitives" id="id67" name="id67">1.7&nbsp;&nbsp;&nbsp;Primitives</a><ul class="auto-toc">
+<li><a class="reference" href="#arithmetic" id="id68" name="id68">1.7.1&nbsp;&nbsp;&nbsp;Arithmetic</a></li>
+<li><a class="reference" href="#conversions" id="id69" name="id69">1.7.2&nbsp;&nbsp;&nbsp;Conversions</a></li>
+<li><a class="reference" href="#predicates" id="id70" name="id70">1.7.3&nbsp;&nbsp;&nbsp;Predicates</a></li>
+<li><a class="reference" href="#specials" id="id71" name="id71">1.7.4&nbsp;&nbsp;&nbsp;Specials</a></li>
+<li><a class="reference" href="#pointer-operations" id="id72" name="id72">1.7.5&nbsp;&nbsp;&nbsp;Pointer Operations</a></li>
+<li><a class="reference" href="#sentries" id="id73" name="id73">1.7.6&nbsp;&nbsp;&nbsp;Sentries</a></li>
+<li><a class="reference" href="#expression-references" id="id74" name="id74">1.7.7&nbsp;&nbsp;&nbsp;Expression References</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><a class="reference" href="#system-interface" id="id98" name="id98">4&nbsp;&nbsp;&nbsp;System Interface</a></li>
-<li><a class="reference" href="#getopt" id="id99" name="id99">5&nbsp;&nbsp;&nbsp;Getopt</a><ul class="auto-toc">
-<li><a class="reference" href="#id48" id="id100" name="id100">5.1&nbsp;&nbsp;&nbsp;Imports</a></li>
-<li><a class="reference" href="#id49" id="id101" name="id101">5.2&nbsp;&nbsp;&nbsp;Operations</a></li>
-<li><a class="reference" href="#id50" id="id102" name="id102">5.3&nbsp;&nbsp;&nbsp;Examples</a></li>
+<li><a class="reference" href="#mathematical-functions" id="id75" name="id75">2&nbsp;&nbsp;&nbsp;Mathematical Functions</a><ul class="auto-toc">
+<li><a class="reference" href="#imports" id="id76" name="id76">2.1&nbsp;&nbsp;&nbsp;Imports</a></li>
+<li><a class="reference" href="#basic-math-functions" id="id77" name="id77">2.2&nbsp;&nbsp;&nbsp;Basic Math Functions</a></li>
+<li><a class="reference" href="#complex-numbers" id="id78" name="id78">2.3&nbsp;&nbsp;&nbsp;Complex Numbers</a></li>
+<li><a class="reference" href="#rational-numbers" id="id79" name="id79">2.4&nbsp;&nbsp;&nbsp;Rational Numbers</a></li>
+<li><a class="reference" href="#semantic-number-predicates" id="id80" name="id80">2.5&nbsp;&nbsp;&nbsp;Semantic Number Predicates</a></li>
 </ul>
 </li>
-<li><a class="reference" href="#id51" id="id103" name="id103">6&nbsp;&nbsp;&nbsp;Index</a></li>
+<li><a class="reference" href="#container-types" id="id81" name="id81">3&nbsp;&nbsp;&nbsp;Container Types</a><ul class="auto-toc">
+<li><a class="reference" href="#arrays" id="id82" name="id82">3.1&nbsp;&nbsp;&nbsp;Arrays</a><ul class="auto-toc">
+<li><a class="reference" href="#id22" id="id83" name="id83">3.1.1&nbsp;&nbsp;&nbsp;Imports</a></li>
+<li><a class="reference" href="#operations" id="id84" name="id84">3.1.2&nbsp;&nbsp;&nbsp;Operations</a></li>
+<li><a class="reference" href="#examples" id="id85" name="id85">3.1.3&nbsp;&nbsp;&nbsp;Examples</a></li>
+</ul>
+</li>
+<li><a class="reference" href="#heaps" id="id86" name="id86">3.2&nbsp;&nbsp;&nbsp;Heaps</a><ul class="auto-toc">
+<li><a class="reference" href="#id25" id="id87" name="id87">3.2.1&nbsp;&nbsp;&nbsp;Imports</a></li>
+<li><a class="reference" href="#id26" id="id88" name="id88">3.2.2&nbsp;&nbsp;&nbsp;Operations</a></li>
+<li><a class="reference" href="#id28" id="id89" name="id89">3.2.3&nbsp;&nbsp;&nbsp;Examples</a></li>
+</ul>
+</li>
+<li><a class="reference" href="#dictionaries" id="id90" name="id90">3.3&nbsp;&nbsp;&nbsp;Dictionaries</a><ul class="auto-toc">
+<li><a class="reference" href="#id29" id="id91" name="id91">3.3.1&nbsp;&nbsp;&nbsp;Imports</a></li>
+<li><a class="reference" href="#data-structure" id="id92" name="id92">3.3.2&nbsp;&nbsp;&nbsp;Data Structure</a></li>
+<li><a class="reference" href="#id30" id="id93" name="id93">3.3.3&nbsp;&nbsp;&nbsp;Operations</a></li>
+<li><a class="reference" href="#id35" id="id94" name="id94">3.3.4&nbsp;&nbsp;&nbsp;Examples</a></li>
+</ul>
+</li>
+<li><a class="reference" href="#sets-and-bags" id="id95" name="id95">3.4&nbsp;&nbsp;&nbsp;Sets and Bags</a><ul class="auto-toc">
+<li><a class="reference" href="#id36" id="id96" name="id96">3.4.1&nbsp;&nbsp;&nbsp;Imports</a></li>
+<li><a class="reference" href="#id37" id="id97" name="id97">3.4.2&nbsp;&nbsp;&nbsp;Data Structure</a></li>
+<li><a class="reference" href="#id38" id="id98" name="id98">3.4.3&nbsp;&nbsp;&nbsp;Operations</a></li>
+<li><a class="reference" href="#id47" id="id99" name="id99">3.4.4&nbsp;&nbsp;&nbsp;Examples</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference" href="#system-interface" id="id100" name="id100">4&nbsp;&nbsp;&nbsp;System Interface</a><ul class="auto-toc">
+<li><a class="reference" href="#id48" id="id101" name="id101">4.1&nbsp;&nbsp;&nbsp;Imports</a></li>
+<li><a class="reference" href="#errno-and-friends" id="id102" name="id102">4.2&nbsp;&nbsp;&nbsp;Errno and Friends</a></li>
+<li><a class="reference" href="#posix-locale" id="id103" name="id103">4.3&nbsp;&nbsp;&nbsp;POSIX Locale</a></li>
+<li><a class="reference" href="#signal-handling" id="id104" name="id104">4.4&nbsp;&nbsp;&nbsp;Signal Handling</a></li>
+<li><a class="reference" href="#time-functions" id="id105" name="id105">4.5&nbsp;&nbsp;&nbsp;Time Functions</a></li>
+<li><a class="reference" href="#basic-process-operations" id="id106" name="id106">4.6&nbsp;&nbsp;&nbsp;Basic Process Operations</a></li>
+<li><a class="reference" href="#basic-i-o-interface" id="id107" name="id107">4.7&nbsp;&nbsp;&nbsp;Basic I/O Interface</a></li>
+<li><a class="reference" href="#readline" id="id108" name="id108">4.8&nbsp;&nbsp;&nbsp;Readline</a></li>
+<li><a class="reference" href="#shell-globbing" id="id109" name="id109">4.9&nbsp;&nbsp;&nbsp;Shell Globbing</a></li>
+<li><a class="reference" href="#regex-matching" id="id110" name="id110">4.10&nbsp;&nbsp;&nbsp;Regex Matching</a></li>
+</ul>
+</li>
+<li><a class="reference" href="#getopt" id="id111" name="id111">5&nbsp;&nbsp;&nbsp;Getopt</a><ul class="auto-toc">
+<li><a class="reference" href="#id50" id="id112" name="id112">5.1&nbsp;&nbsp;&nbsp;Imports</a></li>
+<li><a class="reference" href="#id51" id="id113" name="id113">5.2&nbsp;&nbsp;&nbsp;Operations</a></li>
+<li><a class="reference" href="#id52" id="id114" name="id114">5.3&nbsp;&nbsp;&nbsp;Examples</a></li>
+</ul>
+</li>
+<li><a class="reference" href="#id53" id="id115" name="id115">6&nbsp;&nbsp;&nbsp;Index</a></li>
 </ul>
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id52" id="prelude" name="prelude">1&nbsp;&nbsp;&nbsp;Prelude</a></h1>
+<h1><a class="toc-backref" href="#id54" id="prelude" name="prelude">1&nbsp;&nbsp;&nbsp;Prelude</a></h1>
 <p>The prelude defines the basic operations of the Pure language. This
 includes the basic arithmetic and logical operations, string, list and
 matrix functions, as well as the support operations required to implement
@@ -467,7 +478,7 @@ postfix 9   &amp; ;                 // thunk
 </pre>
 <!--  -->
 <div class="section">
-<h2><a class="toc-backref" href="#id53" id="basic-combinators" name="basic-combinators">1.1&nbsp;&nbsp;&nbsp;Basic Combinators</a></h2>
+<h2><a class="toc-backref" href="#id55" id="basic-combinators" name="basic-combinators">1.1&nbsp;&nbsp;&nbsp;Basic Combinators</a></h2>
 <a name="combinators"><a name="$"><a name="."><p id="id2"><span id="id1"></span><span id="combinators"></span>The most important function combinators are <tt class="docutils literal"><span class="pre">$</span></tt> (right-associative
 application) and <tt class="docutils literal"><span class="pre">.</span></tt> (function composition), which are also defined as
 macros so that saturated calls of these are eliminated automatically.
@@ -580,7 +591,7 @@ bar
 <!--  -->
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id54" id="quasiquote" name="quasiquote">1.2&nbsp;&nbsp;&nbsp;Quasiquote</a></h2>
+<h2><a class="toc-backref" href="#id56" id="quasiquote" name="quasiquote">1.2&nbsp;&nbsp;&nbsp;Quasiquote</a></h2>
 <p>The prelude also defines a general Lisp-like <tt class="docutils literal"><span class="pre">quasiquote</span></tt> macro which is
 used to construct quoted expressions by unquoting and splicing subterms
 indicated with the <tt class="docutils literal"><span class="pre">unquote</span></tt> and <tt class="docutils literal"><span class="pre">splice</span></tt> constructors. For instance:</p>
@@ -613,7 +624,7 @@ Manual.</p>
 <!--  -->
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id55" id="lists-and-tuples" name="lists-and-tuples">1.3&nbsp;&nbsp;&nbsp;Lists and Tuples</a></h2>
+<h2><a class="toc-backref" href="#id57" id="lists-and-tuples" name="lists-and-tuples">1.3&nbsp;&nbsp;&nbsp;Lists and Tuples</a></h2>
 <a name="lists"><a name="tuples"><a name="list size"><a name="tuple size"><a name="null"><a name="reverse"><a name="#"><a name="\:"><a name=","><p id="id5"><span id="id4"></span><span id="id3"></span><span id="reverse"></span><span id="null"></span><span id="tuple-size"></span><span id="list-size"></span><span id="tuples"></span><span id="lists"></span>The prelude defines the list and tuple constructors (<tt class="docutils literal"><span class="pre">x:y</span></tt>, <tt class="docutils literal"><span class="pre">x,y</span></tt>), as
 well as equality (<tt class="docutils literal"><span class="pre">==</span></tt>) and inequality (<tt class="docutils literal"><span class="pre">~=</span></tt>) on these structures. It
 also provides the predicate <tt class="docutils literal"><span class="pre">null</span> <span class="pre">x</span></tt> which tests whether <tt class="docutils literal"><span class="pre">x</span></tt> is the
@@ -735,13 +746,13 @@ implements the <a class="reference" href="#catmap">catmap</a> operation.)</p>
 <!--  -->
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id56" id="list-functions" name="list-functions">1.4&nbsp;&nbsp;&nbsp;List Functions</a></h2>
+<h2><a class="toc-backref" href="#id58" id="list-functions" name="list-functions">1.4&nbsp;&nbsp;&nbsp;List Functions</a></h2>
 <p>This mostly comes straight from the Q prelude which in turn was based on
 the first edition of the Bird/Wadler book, and is very similar to what you
 can find in the Haskell prelude. Some functions have slightly different
 names, though, and of course everything is typed dynamically.</p>
 <div class="section">
-<h3><a class="toc-backref" href="#id57" id="common-list-functions" name="common-list-functions">1.4.1&nbsp;&nbsp;&nbsp;Common List Functions</a></h3>
+<h3><a class="toc-backref" href="#id59" id="common-list-functions" name="common-list-functions">1.4.1&nbsp;&nbsp;&nbsp;Common List Functions</a></h3>
 <a name="any"><dl class="docutils" id="any">
 <dt><tt class="docutils literal"><span class="pre">any</span> <span class="pre">p</span> <span class="pre">xs</span></tt></dt>
 <dd>tests whether the predicate <tt class="docutils literal"><span class="pre">p</span></tt> holds for any of the members of <tt class="docutils literal"><span class="pre">xs</span></tt></dd>
@@ -868,7 +879,7 @@ satisfied</dd>
 <!--  -->
 </div>
 <div class="section">
-<h3><a class="toc-backref" href="#id58" id="list-generators" name="list-generators">1.4.2&nbsp;&nbsp;&nbsp;List Generators</a></h3>
+<h3><a class="toc-backref" href="#id60" id="list-generators" name="list-generators">1.4.2&nbsp;&nbsp;&nbsp;List Generators</a></h3>
 <a name="cycle"><dl class="docutils" id="cycle">
 <dt><tt class="docutils literal"><span class="pre">cycle</span> <span class="pre">xs</span></tt></dt>
 <dd>cycles through the elements of the nonempty list <tt class="docutils literal"><span class="pre">xs</span></tt>, ad infinitum</dd>
@@ -899,7 +910,7 @@ the front of <tt class="docutils literal"><span class="pre">iterate</span> <span
 <!--  -->
 </div>
 <div class="section">
-<h3><a class="toc-backref" href="#id59" id="zip-and-friends" name="zip-and-friends">1.4.3&nbsp;&nbsp;&nbsp;Zip and Friends</a></h3>
+<h3><a class="toc-backref" href="#id61" id="zip-and-friends" name="zip-and-friends">1.4.3&nbsp;&nbsp;&nbsp;Zip and Friends</a></h3>
 <a name="unzip"><dl class="docutils" id="unzip">
 <dt><tt class="docutils literal"><span class="pre">unzip</span> <span class="pre">xys</span></tt></dt>
 <dd>takes a list of pairs to a pair of lists of corresponding elements</dd>
@@ -945,14 +956,14 @@ and <tt class="docutils literal"><span class="pre">ys</span></tt>, return <tt cl
 </div>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id60" id="string-functions" name="string-functions">1.5&nbsp;&nbsp;&nbsp;String Functions</a></h2>
+<h2><a class="toc-backref" href="#id62" id="string-functions" name="string-functions">1.5&nbsp;&nbsp;&nbsp;String Functions</a></h2>
 <a name="strings"><p id="strings">Pure strings are null-terminated character strings encoded in UTF-8, see
 the <a class="reference" href="pure.html">Pure Manual</a> for details. The prelude provides various operations on
 strings, including a complete set of list-like operations, so that strings
 can be used mostly as if they were lists, although they are really
 implemented as C character arrays for reasons of efficiency.</p>
 <div class="section">
-<h3><a class="toc-backref" href="#id61" id="basic-string-functions" name="basic-string-functions">1.5.1&nbsp;&nbsp;&nbsp;Basic String Functions</a></h3>
+<h3><a class="toc-backref" href="#id63" id="basic-string-functions" name="basic-string-functions">1.5.1&nbsp;&nbsp;&nbsp;Basic String Functions</a></h3>
 <a name="string concatenation"><a name="string indexing"><a name="string slicing"><a name="+ (string)"><a name="! (string)"><a name="!! (string)"><p id="id11"><span id="id10"></span><span id="string"></span><span id="string-slicing"></span><span id="string-indexing"></span><span id="string-concatenation"></span>Concatenation, indexing and slicing works just like with lists:</p>
 <pre class="literal-block">
 &gt; &quot;abc&quot;+&quot;xyz&quot;;
@@ -1091,7 +1102,7 @@ characters. For instance:</p>
 </pre>
 </div>
 <div class="section">
-<h3><a class="toc-backref" href="#id62" id="eval-and-friends" name="eval-and-friends">1.5.2&nbsp;&nbsp;&nbsp;Eval and Friends</a></h3>
+<h3><a class="toc-backref" href="#id64" id="eval-and-friends" name="eval-and-friends">1.5.2&nbsp;&nbsp;&nbsp;Eval and Friends</a></h3>
 <p>Pure provides some rather powerful operations to convert between Pure
 expressions and their string representation. This is useful for
 metaprogramming purposes. It also provides a convenient means to serialize
@@ -1150,7 +1161,7 @@ eval &quot;1/3)&quot;
 <!--  -->
 </div>
 <div class="section">
-<h3><a class="toc-backref" href="#id63" id="low-level-operations" name="low-level-operations">1.5.3&nbsp;&nbsp;&nbsp;Low-Level Operations</a></h3>
+<h3><a class="toc-backref" href="#id65" id="low-level-operations" name="low-level-operations">1.5.3&nbsp;&nbsp;&nbsp;Low-Level Operations</a></h3>
 <p>The following routines are provided by the runtime to turn raw C <tt class="docutils literal"><span class="pre">char*</span></tt>
 pointers (also called <strong>byte strings</strong> in Pure parlance, to distinguish them
 from Pure's &quot;cooked&quot; UTF-8 string values) into corresponding Pure
@@ -1211,7 +1222,7 @@ Processing always stops at the first <tt class="docutils literal"><span class="p
 </div>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id64" id="matrix-functions" name="matrix-functions">1.6&nbsp;&nbsp;&nbsp;Matrix Functions</a></h2>
+<h2><a class="toc-backref" href="#id66" id="matrix-functions" name="matrix-functions">1.6&nbsp;&nbsp;&nbsp;Matrix Functions</a></h2>
 <p>Most of the generic list operations are implemented on matrices as well,
 see <a class="reference" href="#common-list-functions">Common List Functions</a>. Hence stuff like <tt class="docutils literal"><span class="pre">map</span></tt> and <tt class="docutils literal"><span class="pre">zipwith</span></tt>
 works as expected:</p>
@@ -1416,7 +1427,7 @@ row size must divide the total size of the matrix.</p>
 <!--  -->
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id65" id="primitives" name="primitives">1.7&nbsp;&nbsp;&nbsp;Primitives</a></h2>
+<h2><a class="toc-backref" href="#id67" id="primitives" name="primitives">1.7&nbsp;&nbsp;&nbsp;Primitives</a></h2>
 <p>This prelude module is a collection of various lowlevel operations, which
 are implemented either directly by machine instructions or by C functions
 provided in the runtime. In particular, this module defines the basic
@@ -1426,7 +1437,7 @@ between different types. Some low-level pointer operations are also
 provided, as well as &quot;sentries&quot; (Pure's flavour of object finalizers) and
 &quot;references&quot; (mutable expression pointers).</p>
 <div class="section">
-<h3><a class="toc-backref" href="#id66" id="arithmetic" name="arithmetic">1.7.1&nbsp;&nbsp;&nbsp;Arithmetic</a></h3>
+<h3><a class="toc-backref" href="#id68" id="arithmetic" name="arithmetic">1.7.1&nbsp;&nbsp;&nbsp;Arithmetic</a></h3>
 <p>The arithmetic operations <tt class="docutils literal"><span class="pre">+</span></tt>, <tt class="docutils literal"><span class="pre">*</span></tt>, <tt class="docutils literal"><span class="pre">div</span></tt>, <tt class="docutils literal"><span class="pre">mod</span></tt> etc. all do what
 you expect, see the <a class="reference" href="#operators">operators</a> table at the beginning of this section for a
 complete list of these. The primitives module also defines pointer
@@ -1468,7 +1479,7 @@ bigint and double operands. The result is always a double.</dd>
 </dl>
 </div>
 <div class="section">
-<h3><a class="toc-backref" href="#id67" id="conversions" name="conversions">1.7.2&nbsp;&nbsp;&nbsp;Conversions</a></h3>
+<h3><a class="toc-backref" href="#id69" id="conversions" name="conversions">1.7.2&nbsp;&nbsp;&nbsp;Conversions</a></h3>
 <a name="hash"><dl class="docutils" id="hash">
 <dt><tt class="docutils literal"><span class="pre">hash</span> <span class="pre">x</span></tt></dt>
 <dd>Compute a 32 bit hash code of a Pure expression.</dd>
@@ -1504,7 +1515,7 @@ take an int as input.)</dd>
 </dl>
 </div>
 <div class="section">
-<h3><a class="toc-backref" href="#id68" id="predicates" name="predicates">1.7.3&nbsp;&nbsp;&nbsp;Predicates</a></h3>
+<h3><a class="toc-backref" href="#id70" id="predicates" name="predicates">1.7.3&nbsp;&nbsp;&nbsp;Predicates</a></h3>
 <a name="same"><a name="==="><a name="~=="><dl class="docutils" id="id18">
 <span id="id17"></span><span id="same"></span><dt><tt class="docutils literal"><span class="pre">x===y</span></tt>, <tt class="docutils literal"><span class="pre">x~==y</span></tt>, <tt class="docutils literal"><span class="pre">same</span> <span class="pre">x</span> <span class="pre">y</span></tt></dt>
 <dd>Syntactic equality.</dd>
@@ -1538,7 +1549,7 @@ global (unbound) variables.</dd>
 </dl>
 </div>
 <div class="section">
-<h3><a class="toc-backref" href="#id69" id="specials" name="specials">1.7.4&nbsp;&nbsp;&nbsp;Specials</a></h3>
+<h3><a class="toc-backref" href="#id71" id="specials" name="specials">1.7.4&nbsp;&nbsp;&nbsp;Specials</a></h3>
 <a name="throw"><dl class="docutils" id="throw">
 <dt><tt class="docutils literal"><span class="pre">throw</span> <span class="pre">x</span></tt></dt>
 <dd>Throw an exception, cf. <a class="reference" href="pure.html#exception-handling">Exception Handling</a>.</dd>
@@ -1577,7 +1588,7 @@ like <tt class="docutils literal"><span class="pre">\x</span> <span class="pre">
 <!--  -->
 </div>
 <div class="section">
-<h3><a class="toc-backref" href="#id70" id="pointer-operations" name="pointer-operations">1.7.5&nbsp;&nbsp;&nbsp;Pointer Operations</a></h3>
+<h3><a class="toc-backref" href="#id72" id="pointer-operations" name="pointer-operations">1.7.5&nbsp;&nbsp;&nbsp;Pointer Operations</a></h3>
 <p>The usual caveats apply, so <em>only</em> use these directly if you know what
 you're doing!</p>
 <a name="addr"><dl class="docutils" id="addr">
@@ -1602,7 +1613,7 @@ purposes.</dd>
 <!--  -->
 </div>
 <div class="section">
-<h3><a class="toc-backref" href="#id71" id="sentries" name="sentries">1.7.6&nbsp;&nbsp;&nbsp;Sentries</a></h3>
+<h3><a class="toc-backref" href="#id73" id="sentries" name="sentries">1.7.6&nbsp;&nbsp;&nbsp;Sentries</a></h3>
 <p>Sentries are expression &quot;guards&quot;, also known as <strong>finalizers</strong>, which are
 applied to the target expression when it is garbage-collected. Note that in
 the current implementation sentries can only be placed at applications and
@@ -1638,7 +1649,7 @@ which has a sentry set on it).</dd>
 <!--  -->
 </div>
 <div class="section">
-<h3><a class="toc-backref" href="#id72" id="expression-references" name="expression-references">1.7.7&nbsp;&nbsp;&nbsp;Expression References</a></h3>
+<h3><a class="toc-backref" href="#id74" id="expression-references" name="expression-references">1.7.7&nbsp;&nbsp;&nbsp;Expression References</a></h3>
 <p>If you need these, then you're doomed. ;-) However, they can be useful as a
 last resort when you need to keep track of some local state or interface to
 the messy imperative world. Pure's references are implemented as Pure
@@ -1680,11 +1691,11 @@ reference. Doing this will also leak memory, so don't!</p>
 </div>
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id73" id="mathematical-functions" name="mathematical-functions">2&nbsp;&nbsp;&nbsp;Mathematical Functions</a></h1>
+<h1><a class="toc-backref" href="#id75" id="mathematical-functions" name="mathematical-functions">2&nbsp;&nbsp;&nbsp;Mathematical Functions</a></h1>
 <p>The math.pure module provides Pure's basic math routines. It also defines
 complex and rational numbers.</p>
 <div class="section">
-<h2><a class="toc-backref" href="#id74" id="imports" name="imports">2.1&nbsp;&nbsp;&nbsp;Imports</a></h2>
+<h2><a class="toc-backref" href="#id76" id="imports" name="imports">2.1&nbsp;&nbsp;&nbsp;Imports</a></h2>
 <p>To use the operations of this module, add the following import declaration
 to your program:</p>
 <pre class="literal-block">
@@ -1692,7 +1703,7 @@ using math;
 </pre>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id75" id="basic-math-functions" name="basic-math-functions">2.2&nbsp;&nbsp;&nbsp;Basic Math Functions</a></h2>
+<h2><a class="toc-backref" href="#id77" id="basic-math-functions" name="basic-math-functions">2.2&nbsp;&nbsp;&nbsp;Basic Math Functions</a></h2>
 <p>The module defines Euler's number <tt class="docutils literal"><span class="pre">e</span> <span class="pre">=</span> <span class="pre">2.71828...</span></tt> and Ludolph's number
 <tt class="docutils literal"><span class="pre">pi</span> <span class="pre">=</span> <span class="pre">3.1415...</span></tt> as constants. It also provides a reasonably
 comprehensive (pseudo) random number generator:</p>
@@ -1744,7 +1755,7 @@ arguments to determine the quadrant of the result.</dd>
 <!--  -->
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id76" id="complex-numbers" name="complex-numbers">2.3&nbsp;&nbsp;&nbsp;Complex Numbers</a></h2>
+<h2><a class="toc-backref" href="#id78" id="complex-numbers" name="complex-numbers">2.3&nbsp;&nbsp;&nbsp;Complex Numbers</a></h2>
 <a name="+\:"><a name="<\:"><p id="id20"><span id="id19"></span>We provide both rectangular (<tt class="docutils literal"><span class="pre">x+:y</span></tt>) and polar (<tt class="docutils literal"><span class="pre">r&lt;:a</span></tt>)
 representations, where <tt class="docutils literal"><span class="pre">(x,y)</span></tt> are the Cartesian coordinates and
 <tt class="docutils literal"><span class="pre">(r,t)</span></tt> the radius (absolute value) and angle (in radians) of a complex
@@ -1818,7 +1829,7 @@ accordingly, e.g.:</p>
 <!--  -->
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id77" id="rational-numbers" name="rational-numbers">2.4&nbsp;&nbsp;&nbsp;Rational Numbers</a></h2>
+<h2><a class="toc-backref" href="#id79" id="rational-numbers" name="rational-numbers">2.4&nbsp;&nbsp;&nbsp;Rational Numbers</a></h2>
 <a name="%"><p id="id21">Pure's rational numbers are constructed with the <strong>exact division</strong> operator
 <tt class="docutils literal"><span class="pre">%</span></tt> (declared in the prelude) which has the same precedence and fixity as
 the other division operators.</p>
@@ -1884,7 +1895,7 @@ still accurate up to rounding errors). For instance:</p>
 <!--  -->
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id78" id="semantic-number-predicates" name="semantic-number-predicates">2.5&nbsp;&nbsp;&nbsp;Semantic Number Predicates</a></h2>
+<h2><a class="toc-backref" href="#id80" id="semantic-number-predicates" name="semantic-number-predicates">2.5&nbsp;&nbsp;&nbsp;Semantic Number Predicates</a></h2>
 <p>In difference to the syntactic predicates in <a class="reference" href="#primitives">Primitives</a>, these check
 whether the given value can be represented as an object of the given target
 type (up to rounding errors). Note that if <tt class="docutils literal"><span class="pre">x</span></tt> is of syntactic type
@@ -1916,7 +1927,7 @@ int.</dd>
 </div>
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id79" id="container-types" name="container-types">3&nbsp;&nbsp;&nbsp;Container Types</a></h1>
+<h1><a class="toc-backref" href="#id81" id="container-types" name="container-types">3&nbsp;&nbsp;&nbsp;Container Types</a></h1>
 <p>The standard library provides a variety of efficient container data
 structures for different purposes. Note that these are all purely
 functional, i.e., immutable data structures implemented using different
@@ -1927,13 +1938,13 @@ recursively comparing their members. In addition, the set and bag data
 structures also implement the other comparison predicates (<tt class="docutils literal"><span class="pre">&lt;</span></tt>, <tt class="docutils literal"><span class="pre">&lt;=</span></tt>
 etc.) by checking whether one set/bag is a subset/subbag of another.</p>
 <div class="section">
-<h2><a class="toc-backref" href="#id80" id="arrays" name="arrays">3.1&nbsp;&nbsp;&nbsp;Arrays</a></h2>
+<h2><a class="toc-backref" href="#id82" id="arrays" name="arrays">3.1&nbsp;&nbsp;&nbsp;Arrays</a></h2>
 <p>The array.pure module implements an efficient functional array data
 structure which allows to access and update individual array members, as
 well as to add and remove elements at the beginning and end of an
 array. All these operations are carried out in logarithmic time.</p>
 <div class="section">
-<h3><a class="toc-backref" href="#id81" id="id22" name="id22">3.1.1&nbsp;&nbsp;&nbsp;Imports</a></h3>
+<h3><a class="toc-backref" href="#id83" id="id22" name="id22">3.1.1&nbsp;&nbsp;&nbsp;Imports</a></h3>
 <p>To use the operations of this module, add the following import declaration
 to your program:</p>
 <pre class="literal-block">
@@ -1941,7 +1952,7 @@ using array;
 </pre>
 </div>
 <div class="section">
-<h3><a class="toc-backref" href="#id82" id="operations" name="operations">3.1.2&nbsp;&nbsp;&nbsp;Operations</a></h3>
+<h3><a class="toc-backref" href="#id84" id="operations" name="operations">3.1.2&nbsp;&nbsp;&nbsp;Operations</a></h3>
 <a name="emptyarray"><dl class="docutils" id="emptyarray">
 <dt><tt class="docutils literal"><span class="pre">emptyarray</span></tt></dt>
 <dd>return the empty array</dd>
@@ -2014,7 +2025,7 @@ using array;
 </dl>
 </div>
 <div class="section">
-<h3><a class="toc-backref" href="#id83" id="examples" name="examples">3.1.3&nbsp;&nbsp;&nbsp;Examples</a></h3>
+<h3><a class="toc-backref" href="#id85" id="examples" name="examples">3.1.3&nbsp;&nbsp;&nbsp;Examples</a></h3>
 <p>Import the module:</p>
 <pre class="literal-block">
 &gt; using array;
@@ -2071,7 +2082,7 @@ lists:</p>
 </div>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id84" id="heaps" name="heaps">3.2&nbsp;&nbsp;&nbsp;Heaps</a></h2>
+<h2><a class="toc-backref" href="#id86" id="heaps" name="heaps">3.2&nbsp;&nbsp;&nbsp;Heaps</a></h2>
 <p>Heaps allow quick (constant time) access to the smallest member, and to
 remove the smallest nember and insert new elements in logarithmic time.
 This implementation does not allow quick update of heap members; if
@@ -2081,7 +2092,7 @@ such functionality is required, bags should be used instead
 of the same element may be stored in a heap; however, the order in which
 equal elements are retrieved is not specified.</p>
 <div class="section">
-<h3><a class="toc-backref" href="#id85" id="id25" name="id25">3.2.1&nbsp;&nbsp;&nbsp;Imports</a></h3>
+<h3><a class="toc-backref" href="#id87" id="id25" name="id25">3.2.1&nbsp;&nbsp;&nbsp;Imports</a></h3>
 <p>To use the operations of this module, add the following import declaration
 to your program:</p>
 <pre class="literal-block">
@@ -2089,7 +2100,7 @@ using heap;
 </pre>
 </div>
 <div class="section">
-<h3><a class="toc-backref" href="#id86" id="id26" name="id26">3.2.2&nbsp;&nbsp;&nbsp;Operations</a></h3>
+<h3><a class="toc-backref" href="#id88" id="id26" name="id26">3.2.2&nbsp;&nbsp;&nbsp;Operations</a></h3>
 <a name="emptyheap"><dl class="docutils" id="emptyheap">
 <dt><tt class="docutils literal"><span class="pre">emptyheap</span></tt></dt>
 <dd>return the empty heap</dd>
@@ -2128,7 +2139,7 @@ using heap;
 </dl>
 </div>
 <div class="section">
-<h3><a class="toc-backref" href="#id87" id="id28" name="id28">3.2.3&nbsp;&nbsp;&nbsp;Examples</a></h3>
+<h3><a class="toc-backref" href="#id89" id="id28" name="id28">3.2.3&nbsp;&nbsp;&nbsp;Examples</a></h3>
 <pre class="literal-block">
 &gt; let h = heap [5,1,3,11,3];
 &gt; members h;
@@ -2142,7 +2153,7 @@ using heap;
 </div>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id88" id="dictionaries" name="dictionaries">3.3&nbsp;&nbsp;&nbsp;Dictionaries</a></h2>
+<h2><a class="toc-backref" href="#id90" id="dictionaries" name="dictionaries">3.3&nbsp;&nbsp;&nbsp;Dictionaries</a></h2>
 <p>The dict.pure module provides Pure's <tt class="docutils literal"><span class="pre">dict</span></tt> and <tt class="docutils literal"><span class="pre">hdict</span></tt> data types
 based on AVL trees. <tt class="docutils literal"><span class="pre">dict</span></tt> is an ordered dictionary (assuming an ordered
 key type), <tt class="docutils literal"><span class="pre">hdict</span></tt> a hashed dictionary which works with any (mixture of)
@@ -2156,7 +2167,7 @@ original source see <a class="reference" href="http://www.swi-prolog.org">http:/
 Spitz.</p>
 <!--  -->
 <div class="section">
-<h3><a class="toc-backref" href="#id89" id="id29" name="id29">3.3.1&nbsp;&nbsp;&nbsp;Imports</a></h3>
+<h3><a class="toc-backref" href="#id91" id="id29" name="id29">3.3.1&nbsp;&nbsp;&nbsp;Imports</a></h3>
 <p>To use the operations of this module, add the following import declaration
 to your program:</p>
 <pre class="literal-block">
@@ -2164,7 +2175,7 @@ using dict;
 </pre>
 </div>
 <div class="section">
-<h3><a class="toc-backref" href="#id90" id="data-structure" name="data-structure">3.3.2&nbsp;&nbsp;&nbsp;Data Structure</a></h3>
+<h3><a class="toc-backref" href="#id92" id="data-structure" name="data-structure">3.3.2&nbsp;&nbsp;&nbsp;Data Structure</a></h3>
 <p>A tree for <tt class="docutils literal"><span class="pre">dict</span></tt> and <tt class="docutils literal"><span class="pre">hdict</span></tt> takes the form <tt class="docutils literal"><span class="pre">Dict</span> <span class="pre">T</span></tt> or <tt class="docutils literal"><span class="pre">HDict</span> <span class="pre">T</span></tt>
 where <tt class="docutils literal"><span class="pre">T</span></tt> is either:</p>
 <dl class="docutils">
@@ -2179,7 +2190,7 @@ respectively.</dd>
 <p>The tree constructors are private.</p>
 </div>
 <div class="section">
-<h3><a class="toc-backref" href="#id91" id="id30" name="id30">3.3.3&nbsp;&nbsp;&nbsp;Operations</a></h3>
+<h3><a class="toc-backref" href="#id93" id="id30" name="id30">3.3.3&nbsp;&nbsp;&nbsp;Operations</a></h3>
 <a name="emptydict"><a name="emptyhdict"><dl class="docutils" id="emptyhdict">
 <span id="emptydict"></span><dt><tt class="docutils literal"><span class="pre">emptydict</span></tt>, <tt class="docutils literal"><span class="pre">emptyhdict</span></tt></dt>
 <dd>return the empty dict or hdict</dd>
@@ -2244,7 +2255,7 @@ a fully curried version of <tt class="docutils literal"><span class="pre">insert
 </dl>
 </div>
 <div class="section">
-<h3><a class="toc-backref" href="#id92" id="id35" name="id35">3.3.4&nbsp;&nbsp;&nbsp;Examples</a></h3>
+<h3><a class="toc-backref" href="#id94" id="id35" name="id35">3.3.4&nbsp;&nbsp;&nbsp;Examples</a></h3>
 <p>A normal (ordered) dictionary:</p>
 <pre class="literal-block">
 &gt; using dict;
@@ -2280,7 +2291,7 @@ seemingly random order:</p>
 </div>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id93" id="sets-and-bags" name="sets-and-bags">3.4&nbsp;&nbsp;&nbsp;Sets and Bags</a></h2>
+<h2><a class="toc-backref" href="#id95" id="sets-and-bags" name="sets-and-bags">3.4&nbsp;&nbsp;&nbsp;Sets and Bags</a></h2>
 <p>The set.pure module implements Pure's set and bag (multiset) data types
 based on AVL trees. Set and bag elements must be ordered, i.e., the
 predicates <tt class="docutils literal"><span class="pre">==</span></tt>, <tt class="docutils literal"><span class="pre">&lt;</span></tt> and <tt class="docutils literal"><span class="pre">&gt;</span></tt> must be defined on them. The used AVL
@@ -2289,7 +2300,7 @@ association lists and was ported to Pure by Jiri Spitz, see <a class="reference"
 for details.</p>
 <!--  -->
 <div class="section">
-<h3><a class="toc-backref" href="#id94" id="id36" name="id36">3.4.1&nbsp;&nbsp;&nbsp;Imports</a></h3>
+<h3><a class="toc-backref" href="#id96" id="id36" name="id36">3.4.1&nbsp;&nbsp;&nbsp;Imports</a></h3>
 <p>To use the operations of this module, add the following import declaration
 to your program:</p>
 <pre class="literal-block">
@@ -2297,7 +2308,7 @@ using set;
 </pre>
 </div>
 <div class="section">
-<h3><a class="toc-backref" href="#id95" id="id37" name="id37">3.4.2&nbsp;&nbsp;&nbsp;Data Structure</a></h3>
+<h3><a class="toc-backref" href="#id97" id="id37" name="id37">3.4.2&nbsp;&nbsp;&nbsp;Data Structure</a></h3>
 <p>A tree for <tt class="docutils literal"><span class="pre">set</span></tt> and <tt class="docutils literal"><span class="pre">bag</span></tt> takes the form <tt class="docutils literal"><span class="pre">Set</span> <span class="pre">T</span></tt> or <tt class="docutils literal"><span class="pre">Bag</span> <span class="pre">T</span></tt> where
 <tt class="docutils literal"><span class="pre">T</span></tt> is either:</p>
 <dl class="docutils">
@@ -2312,7 +2323,7 @@ respectively.</dd>
 <p>The tree constructors are private.</p>
 </div>
 <div class="section">
-<h3><a class="toc-backref" href="#id96" id="id38" name="id38">3.4.3&nbsp;&nbsp;&nbsp;Operations</a></h3>
+<h3><a class="toc-backref" href="#id98" id="id38" name="id38">3.4.3&nbsp;&nbsp;&nbsp;Operations</a></h3>
 <a name="emptyset"><a name="emptybag"><dl class="docutils" id="emptybag">
 <span id="emptyset"></span><dt><tt class="docutils literal"><span class="pre">emptyset</span></tt>, <tt class="docutils literal"><span class="pre">emptybag</span></tt></dt>
 <dd>return the empty set or bag</dd>
@@ -2374,7 +2385,7 @@ from <tt class="docutils literal"><span class="pre">m1</span></tt></dd>
 </dl>
 </div>
 <div class="section">
-<h3><a class="toc-backref" href="#id97" id="id47" name="id47">3.4.4&nbsp;&nbsp;&nbsp;Examples</a></h3>
+<h3><a class="toc-backref" href="#id99" id="id47" name="id47">3.4.4&nbsp;&nbsp;&nbsp;Examples</a></h3>
 <p>Some basic set operations:</p>
 <pre class="literal-block">
 &gt; let m = set [5,1,3,11,3];
@@ -2412,22 +2423,404 @@ separate member:</p>
 </div>
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id98" id="system-interface" name="system-interface">4&nbsp;&nbsp;&nbsp;System Interface</a></h1>
+<h1><a class="toc-backref" href="#id100" id="system-interface" name="system-interface">4&nbsp;&nbsp;&nbsp;System Interface</a></h1>
 <p>This module offers some useful system routines, straight from the C
 library, as well as some convenience functions for wrapping these up in
 Pure. Even the &quot;purest&quot; program needs to do some basic I/O every once in a
 while, and this module provides the necessary stuff to do just that. The
 interface is rather minimalistic and preliminary right now, but will
-probably grow over time.</p>
-<p>TODO</p>
+probably grow over time, and it already offers many common system functions
+that Pure programmers might want to use in their scripts.</p>
+<p>Most of the following functions are extensively documented in the C library
+manual pages, so we concentrate on the Pure-specific aspects here.</p>
+<div class="section">
+<h2><a class="toc-backref" href="#id101" id="id48" name="id48">4.1&nbsp;&nbsp;&nbsp;Imports</a></h2>
+<p>To use the operations of this module, add the following import declaration
+to your program:</p>
+<pre class="literal-block">
+using system;
+</pre>
 <!--  -->
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id99" id="getopt" name="getopt">5&nbsp;&nbsp;&nbsp;Getopt</a></h1>
+<h2><a class="toc-backref" href="#id102" id="errno-and-friends" name="errno-and-friends">4.2&nbsp;&nbsp;&nbsp;Errno and Friends</a></h2>
+<a name="errno"><a name="set_errno"><a name="perror"><a name="strerror"><dl class="docutils" id="strerror">
+<span id="perror"></span><span id="set-errno"></span><span id="errno"></span><dt><tt class="docutils literal"><span class="pre">errno</span></tt>, <tt class="docutils literal"><span class="pre">set_errno</span> <span class="pre">n</span></tt>, <tt class="docutils literal"><span class="pre">perror</span> <span class="pre">msg</span></tt>, <tt class="docutils literal"><span class="pre">strerror</span> <span class="pre">n</span></tt></dt>
+<dd>This value and the related routines are indispensable to give proper
+diagnostics when system calls fail for some reason. Note that, by its
+very nature, <tt class="docutils literal"><span class="pre">errno</span></tt> is a fairly volatile value, don't expect it to
+survive a return to the command line in interactive sessions.</dd>
+</dl>
+<!--  -->
+</div>
+<div class="section">
+<h2><a class="toc-backref" href="#id103" id="posix-locale" name="posix-locale">4.3&nbsp;&nbsp;&nbsp;POSIX Locale</a></h2>
+<a name="setlocale"><dl class="docutils" id="setlocale">
+<dt><tt class="docutils literal"><span class="pre">setlocale</span> <span class="pre">category</span> <span class="pre">locale</span></tt></dt>
+<dd>Set or retrieve the current locale.</dd>
+</dl>
+<p>Details are platform-specific, but you can expect that at least the
+categories <tt class="docutils literal"><span class="pre">LC_ALL</span></tt>, <tt class="docutils literal"><span class="pre">LC_COLLATE</span></tt>, <tt class="docutils literal"><span class="pre">LC_CTYPE</span></tt>, <tt class="docutils literal"><span class="pre">LC_MONETARY</span></tt>,
+<tt class="docutils literal"><span class="pre">LC_NUMERIC</span></tt> and <tt class="docutils literal"><span class="pre">LC_TIME</span></tt> are defined, as well as the following values
+for the locale parameter: <tt class="docutils literal"><span class="pre">&quot;C&quot;</span></tt> or <tt class="docutils literal"><span class="pre">&quot;POSIX&quot;</span></tt> (the default POSIX
+locale), <tt class="docutils literal"><span class="pre">&quot;&quot;</span></tt> (the system default locale), and <tt class="docutils literal"><span class="pre">NULL</span></tt>, to just query
+the current locale.</p>
+<p>Other string values which can be passed as the locale argument depend on
+the implementation, please check your local setlocale(3) documentation for
+details. If locale is not <tt class="docutils literal"><span class="pre">NULL</span></tt>, the current locale is changed
+accordingly. The return value is the new locale, or the current locale when
+passing <tt class="docutils literal"><span class="pre">NULL</span></tt> for the locale parameter. In either case, the string
+returned by <tt class="docutils literal"><span class="pre">setlocale</span></tt> is such that it can be passed to <tt class="docutils literal"><span class="pre">setlocale</span></tt> to
+restore the same locale again. In case of an error, <tt class="docutils literal"><span class="pre">setlocale</span></tt> fails
+(rather than returning a null pointer).</p>
+<p>Please note that calling this function alters the Pure interpreter's idea
+of what the current locale is. When the interpreter starts up, it always
+sets the default system locale. Unless your scripts rely on a specific
+encoding, setting the locale to either <tt class="docutils literal"><span class="pre">&quot;C&quot;</span></tt> or <tt class="docutils literal"><span class="pre">&quot;&quot;</span></tt> should always be
+safe.</p>
+<!--  -->
+</div>
+<div class="section">
+<h2><a class="toc-backref" href="#id104" id="signal-handling" name="signal-handling">4.4&nbsp;&nbsp;&nbsp;Signal Handling</a></h2>
+<a name="trap"><dl class="docutils" id="trap">
+<dt><tt class="docutils literal"><span class="pre">trap</span> <span class="pre">action</span> <span class="pre">sig</span></tt></dt>
+<dd>Establish or remove Pure signal handlers.</dd>
+</dl>
+<p>The action parameter of <tt class="docutils literal"><span class="pre">trap</span></tt> can be one of the predefined integer
+values <tt class="docutils literal"><span class="pre">SIG_TRAP</span></tt>, <tt class="docutils literal"><span class="pre">SIG_IGN</span></tt> and <tt class="docutils literal"><span class="pre">SIG_DFL</span></tt>. <tt class="docutils literal"><span class="pre">SIG_TRAP</span></tt> causes the
+given signal to be handled by mapping it to a Pure exception of the form
+<tt class="docutils literal"><span class="pre">signal</span> <span class="pre">sig</span></tt>. <tt class="docutils literal"><span class="pre">SIG_IGN</span></tt> ignores the signal, <tt class="docutils literal"><span class="pre">SIG_DFL</span></tt> reverts to the
+system's default handling. See <tt class="docutils literal"><span class="pre">show</span> <span class="pre">-g</span> <span class="pre">SIG*</span></tt> for a list of known signal
+values on your system.</p>
+<p>Note: Most standard termination signals (<tt class="docutils literal"><span class="pre">SIGINT</span></tt>, <tt class="docutils literal"><span class="pre">SIGTERM</span></tt>, etc.) are
+already set up at the start of the interpreter to report corresponding Pure
+exceptions; if this is not desired, you can use <tt class="docutils literal"><span class="pre">trap</span></tt> to either ignore
+these or revert to the default handlers instead.</p>
+<!--  -->
+</div>
+<div class="section">
+<h2><a class="toc-backref" href="#id105" id="time-functions" name="time-functions">4.5&nbsp;&nbsp;&nbsp;Time Functions</a></h2>
+<a name="time"><dl class="docutils" id="time">
+<dt><tt class="docutils literal"><span class="pre">time</span></tt></dt>
+<dd>Reports the current time in seconds since the <strong>epoch</strong>, 00:00:00 UTC, Jan
+1 1970. The result is always a bigint (in fact, the <tt class="docutils literal"><span class="pre">time</span></tt> value is
+already 64 bit on many OSes nowadays).</dd>
+</dl>
+<!--  -->
+<p>The following functions are provided to convert a time value to
+&quot;broken-down&quot; time or a string. See the ctime(3), gmtime(3), localtime(3),
+asctime(3) and strftime(3) manual pages for details.</p>
+<a name="ctime"><dl class="docutils" id="ctime">
+<dt><tt class="docutils literal"><span class="pre">ctime</span> <span class="pre">t</span></tt></dt>
+<dd>Convert a time value as returned by the <a class="reference" href="#time">time</a> function to a string in
+local time.</dd>
+</dl>
+<a name="gmtime"><a name="localtime"><dl class="docutils" id="localtime">
+<span id="gmtime"></span><dt><tt class="docutils literal"><span class="pre">gmtime</span> <span class="pre">t</span></tt>, <tt class="docutils literal"><span class="pre">localtime</span> <span class="pre">t</span></tt></dt>
+<dd>Convert a time value to UTC or local time in &quot;broken-down&quot; form (a
+pointer to a <tt class="docutils literal"><span class="pre">tm</span></tt> struct containing a bunch of <tt class="docutils literal"><span class="pre">int</span></tt> fields) which
+can then be passed to the <a class="reference" href="#asctime">asctime</a> and <a class="reference" href="#strftime">strftime</a> functions, or to
+<tt class="docutils literal"><span class="pre">int_matrix</span> <span class="pre">9</span></tt> if you want to convert the data to a matrix.</dd>
+</dl>
+<a name="asctime"><a name="strftime"><dl class="docutils" id="strftime">
+<span id="asctime"></span><dt><tt class="docutils literal"><span class="pre">asctime</span> <span class="pre">tm</span></tt>, <tt class="docutils literal"><span class="pre">strftime</span> <span class="pre">format</span> <span class="pre">tm</span></tt></dt>
+<dd>Format broken-down time as a string. <tt class="docutils literal"><span class="pre">strftime</span></tt> also uses a format
+string supplied by the user.</dd>
+</dl>
+<!--  -->
+<p>We also provide some functions to retrieve wallclock and cpu time which
+usually offer much better resolution than <a class="reference" href="#time">time</a>.</p>
+<a name="gettimeofday"><dl class="docutils" id="gettimeofday">
+<dt><tt class="docutils literal"><span class="pre">gettimeofday</span></tt></dt>
+<dd>Returns wallclock time as seconds since the epoch, like <a class="reference" href="#time">time</a>, but
+theoretically offers resolutions in the microsec range (actual
+resolutions vary, but are usually in the msec range for contemporary
+systems). The result is returned as a double value (which also limits
+precision). This function may actually be implemented through different
+system calls, depending on what's available on the host OS.</dd>
+</dl>
+<a name="clock"><dl class="docutils" id="clock">
+<dt><tt class="docutils literal"><span class="pre">clock</span></tt></dt>
+<dd>Returns the current CPU (not wallclock) time since an arbitrary point in
+the past, as a machine int. The number of &quot;ticks&quot; per second is given by
+the <tt class="docutils literal"><span class="pre">CLOCKS_PER_SEC</span></tt> constant. Note that this value will wrap around
+approximately every 72 minutes.</dd>
+</dl>
+<a name="sleep"><a name="nanosleep"><dl class="docutils" id="nanosleep">
+<span id="sleep"></span><dt><tt class="docutils literal"><span class="pre">sleep</span> <span class="pre">t</span></tt>, <tt class="docutils literal"><span class="pre">nanosleep</span> <span class="pre">t</span></tt></dt>
+<dd>Suspend execution for a given time interval in seconds. <tt class="docutils literal"><span class="pre">sleep</span></tt> takes
+integer (int/bigint) arguments only and uses the <tt class="docutils literal"><span class="pre">sleep()</span></tt> system
+function. <tt class="docutils literal"><span class="pre">nanosleep</span></tt> also accepts double arguments and theoretically
+supports resolutions down to 1 nanosecond (again, actual resolutions
+vary). This function may actually be implemented through different system
+calls, depending on what's available on the host OS. Both functions
+usually return zero, unless the sleep was interrupted by a signal, in
+which case the time remaining to be slept is returned.</dd>
+</dl>
+<!--  -->
+</div>
+<div class="section">
+<h2><a class="toc-backref" href="#id106" id="basic-process-operations" name="basic-process-operations">4.6&nbsp;&nbsp;&nbsp;Basic Process Operations</a></h2>
+<p>Not much is provided in this category yet. Contributions are welcome.</p>
+<a name="system"><dl class="docutils" id="system">
+<dt><tt class="docutils literal"><span class="pre">system</span> <span class="pre">cmd</span></tt></dt>
+<dd>Execute a shell command.</dd>
+</dl>
+<a name="exit"><dl class="docutils" id="exit">
+<dt><tt class="docutils literal"><span class="pre">exit</span> <span class="pre">status</span></tt></dt>
+<dd>Terminate the program with the given status code.</dd>
+</dl>
+<!--  -->
+</div>
+<div class="section">
+<h2><a class="toc-backref" href="#id107" id="basic-i-o-interface" name="basic-i-o-interface">4.7&nbsp;&nbsp;&nbsp;Basic I/O Interface</a></h2>
+<p>Note that this module also defines the standard I/O streams <tt class="docutils literal"><span class="pre">stdin</span></tt>,
+<tt class="docutils literal"><span class="pre">stderr</span></tt> and <tt class="docutils literal"><span class="pre">stdout</span></tt> as variables on startup. These are ready to be
+used with the operations described below. Also note that for convenience
+some of these routines are actually Pure wrappers, rather than just
+providing the raw C library routines.</p>
+<a name="fopen"><a name="popen"><dl class="docutils" id="popen">
+<span id="fopen"></span><dt><tt class="docutils literal"><span class="pre">fopen</span> <span class="pre">name</span> <span class="pre">mode</span></tt>, <tt class="docutils literal"><span class="pre">popen</span> <span class="pre">cmd</span> <span class="pre">mode</span></tt></dt>
+<dd>Open a file or a pipe. These take care of closing a file object
+automagically when it's garbage-collected, and fail (instead of returning
+a null pointer) in case of error, so that you can provide any desired
+error handling simply by adding suitable equations.</dd>
+</dl>
+<a name="fclose"><a name="pclose"><dl class="docutils" id="pclose">
+<span id="fclose"></span><dt><tt class="docutils literal"><span class="pre">fclose</span> <span class="pre">fp</span></tt>, <tt class="docutils literal"><span class="pre">pclose</span> <span class="pre">fp</span></tt></dt>
+<dd>Close a file or a pipe.</dd>
+</dl>
+<a name="feof"><a name="ferror"><a name="clearerr"><dl class="docutils" id="clearerr">
+<span id="ferror"></span><span id="feof"></span><dt><tt class="docutils literal"><span class="pre">feof</span> <span class="pre">fp</span></tt>, <tt class="docutils literal"><span class="pre">ferror</span> <span class="pre">fp</span></tt>, <tt class="docutils literal"><span class="pre">clearerr</span> <span class="pre">fp</span></tt></dt>
+<dd>Check the end-of-file and error bits. <tt class="docutils literal"><span class="pre">clearerr</span></tt> clears the error bit.</dd>
+</dl>
+<a name="fflush"><dl class="docutils" id="fflush">
+<dt><tt class="docutils literal"><span class="pre">fflush</span> <span class="pre">fp</span></tt></dt>
+<dd>Flushes the given file (or all open files if <tt class="docutils literal"><span class="pre">fp</span></tt> is <tt class="docutils literal"><span class="pre">NULL</span></tt>).</dd>
+</dl>
+<a name="fgets"><a name="gets"><dl class="docutils" id="gets">
+<span id="fgets"></span><dt><tt class="docutils literal"><span class="pre">fgets</span> <span class="pre">fp</span></tt>, <tt class="docutils literal"><span class="pre">gets</span></tt></dt>
+<dd>Pure wrappers for the C <tt class="docutils literal"><span class="pre">fgets</span></tt> and <tt class="docutils literal"><span class="pre">gets</span></tt> functions which handle the
+necessary buffering automatically.</dd>
+</dl>
+<a name="fget"><dl class="docutils" id="fget">
+<dt><tt class="docutils literal"><span class="pre">fget</span> <span class="pre">fp</span></tt></dt>
+<dd>A variation of <a class="reference" href="#fgets">fgets</a> which slurps in an entire text file at once.</dd>
+</dl>
+<a name="fputs"><a name="puts"><dl class="docutils" id="puts">
+<span id="fputs"></span><dt><tt class="docutils literal"><span class="pre">fputs</span> <span class="pre">s</span> <span class="pre">fp</span></tt>, <tt class="docutils literal"><span class="pre">puts</span> <span class="pre">s</span></tt></dt>
+<dd>Output a string to the given file or <tt class="docutils literal"><span class="pre">stdout</span></tt>, respectively. These
+are just the plain C functions. Note that <tt class="docutils literal"><span class="pre">puts</span></tt> automatically adds
+a newline, while <tt class="docutils literal"><span class="pre">fputs</span></tt> doesn't. Hmm.</dd>
+</dl>
+<a name="fread"><a name="fwrite"><dl class="docutils" id="fwrite">
+<span id="fread"></span><dt><tt class="docutils literal"><span class="pre">fread</span> <span class="pre">ptr</span> <span class="pre">size</span> <span class="pre">nmemb</span> <span class="pre">fp</span></tt>, <tt class="docutils literal"><span class="pre">fwrite</span> <span class="pre">ptr</span> <span class="pre">size</span> <span class="pre">nmemb</span> <span class="pre">fp</span></tt></dt>
+<dd>Binary read/writes. Here you'll have to manage the buffers yourself.</dd>
+</dl>
+<!--  -->
+<p>C-style formatted I/O is provided through the following wrappers for the C
+<tt class="docutils literal"><span class="pre">printf</span></tt> and <tt class="docutils literal"><span class="pre">scanf</span></tt> functions. Our wrapper functions take or return a
+tuple of values, and check these against the format specifiers, so they
+shouldn't segfault. However, only simple formats derived from <tt class="docutils literal"><span class="pre">%cdioux</span></tt>,
+<tt class="docutils literal"><span class="pre">%efg</span></tt>, <tt class="docutils literal"><span class="pre">%s</span></tt> and <tt class="docutils literal"><span class="pre">%p</span></tt> are supported right now.</p>
+<a name="printf"><a name="fprintf"><dl class="docutils" id="fprintf">
+<span id="printf"></span><dt><tt class="docutils literal"><span class="pre">printf</span> <span class="pre">format</span> <span class="pre">args</span></tt>, <tt class="docutils literal"><span class="pre">fprintf</span> <span class="pre">fp</span> <span class="pre">format</span> <span class="pre">args</span></tt></dt>
+<dd>Print a formatted string to <tt class="docutils literal"><span class="pre">stdout</span></tt> or the given file, respectively.
+Normally, these functions return the result of the underlying C routines
+(number of characters written, or negative on error). However, in case of
+an abnormal condition in the wrapper function (error in format string,
+argument mismatch), they will throw an exception.</dd>
+</dl>
+<a name="sprintf"><dl class="docutils" id="sprintf">
+<dt><tt class="docutils literal"><span class="pre">sprintf</span> <span class="pre">format</span> <span class="pre">args</span></tt></dt>
+<dd>Print a formatted string to a buffer and return the result as a string.
+Unlike the C routine, this wrapper just returns the string result, or a
+null pointer in case of an error; otherwise, the error handling is the
+same as with <a class="reference" href="#printf">printf</a> and <a class="reference" href="#fprintf">fprintf</a>. The implementation actually uses the C
+routine <tt class="docutils literal"><span class="pre">snprintf</span></tt> for safety, and a suitable output buffer is provided
+automatically.</dd>
+</dl>
+<a name="scanf"><a name="fscanf"><dl class="docutils" id="fscanf">
+<span id="scanf"></span><dt><tt class="docutils literal"><span class="pre">scanf</span> <span class="pre">format</span></tt>, <tt class="docutils literal"><span class="pre">fscanf</span> <span class="pre">fp</span> <span class="pre">format</span></tt></dt>
+<dd>Read formatted input from <tt class="docutils literal"><span class="pre">stdin</span></tt> or the given file, respectively.
+These normally return a tuple (or singleton) with the converted
+values. An exception of the form <tt class="docutils literal"><span class="pre">scanf_error</span> <span class="pre">ret</span></tt>, where <tt class="docutils literal"><span class="pre">ret</span></tt> is
+the tuple of successfully converted values (which may be less than the
+number of requested input items), is thrown if end-of-file was met or
+another error occurred while still reading. The handling of other
+abnormal conditions (e.g., error in format string) is analogous to
+<a class="reference" href="#printf">printf</a> et al. Also note that our implementation here doesn't accept any
+of the length modifiers used by the C routines. Floating point values
+will <em>always</em> be read in double precision, so you just specify <tt class="docutils literal"><span class="pre">&quot;e&quot;</span></tt>,
+<tt class="docutils literal"><span class="pre">&quot;g&quot;</span></tt> etc. for these. However, the &quot;assignment suppression&quot; flag
+<tt class="docutils literal"><span class="pre">&quot;*&quot;</span></tt> <em>is</em> understood; the corresponding items will not be returned.</dd>
+</dl>
+<a name="sscanf"><dl class="docutils" id="sscanf">
+<dt><tt class="docutils literal"><span class="pre">sscanf</span> <span class="pre">s</span> <span class="pre">format</span></tt></dt>
+<dd>This works exactly like <a class="reference" href="#fscanf">fscanf</a>, but input comes from a string (first
+argument) rather than a file.</dd>
+</dl>
+<!--  -->
+</div>
+<div class="section">
+<h2><a class="toc-backref" href="#id108" id="readline" name="readline">4.8&nbsp;&nbsp;&nbsp;Readline</a></h2>
+<a name="readline"><dl class="docutils" id="id49">
+<dt><tt class="docutils literal"><span class="pre">readline</span> <span class="pre">prompt</span></tt></dt>
+<dd>A simple wrapper around GNU readline which reads a line from <tt class="docutils literal"><span class="pre">stdin</span></tt>
+with prompt and command line editing.</dd>
+</dl>
+<a name="add_history"><dl class="docutils" id="add-history">
+<dt><tt class="docutils literal"><span class="pre">add_history</span> <span class="pre">s</span></tt></dt>
+<dd><a class="reference" href="#id49">readline</a>'s companion, which you need to add strings to readline's
+history.</dd>
+</dl>
+<!--  -->
+</div>
+<div class="section">
+<h2><a class="toc-backref" href="#id109" id="shell-globbing" name="shell-globbing">4.9&nbsp;&nbsp;&nbsp;Shell Globbing</a></h2>
+<a name="fnmatch"><dl class="docutils" id="fnmatch">
+<dt><tt class="docutils literal"><span class="pre">fnmatch</span> <span class="pre">pat</span> <span class="pre">s</span> <span class="pre">flags</span></tt></dt>
+<dd>Returns a simple truth value (1 if <tt class="docutils literal"><span class="pre">pat</span></tt> matches <tt class="docutils literal"><span class="pre">s</span></tt>, 0 if it
+doesn't), instead of an error code like the C function.</dd>
+</dl>
+<a name="glob"><dl class="docutils" id="glob">
+<dt><tt class="docutils literal"><span class="pre">glob</span> <span class="pre">pat</span> <span class="pre">flags</span></tt></dt>
+<dd>Returns a Pure list with the matches (unless there is an error in which
+case the integer result code of the underlying C routine is returned).</dd>
+</dl>
+<p>The available flag values and glob error codes are available as symbolic
+<tt class="docutils literal"><span class="pre">FNM_*</span></tt> and <tt class="docutils literal"><span class="pre">GLOB_*</span></tt> constants defined as variables in the global
+environment. See the fnmatch(3) and glob(3) manpages for the meaning of
+these. (In extension to POSIX, Pure also provides the constant
+<tt class="docutils literal"><span class="pre">GLOB_SIZE</span></tt> which indicates the buffer size required for C <tt class="docutils literal"><span class="pre">glob</span></tt>'s
+<tt class="docutils literal"><span class="pre">globptr</span></tt> argument, but this is only used internally.)</p>
+<!--  -->
+</div>
+<div class="section">
+<h2><a class="toc-backref" href="#id110" id="regex-matching" name="regex-matching">4.10&nbsp;&nbsp;&nbsp;Regex Matching</a></h2>
+<p>The POSIX regex functions (<tt class="docutils literal"><span class="pre">regcomp</span></tt> and <tt class="docutils literal"><span class="pre">regexec</span></tt>) have a somewhat
+difficult calling sequence, hence we provide a couple of rather elaborate
+high-level wrapper functions for use in Pure programs.</p>
+<a name="regex"><dl class="docutils" id="regex">
+<dt><tt class="docutils literal"><span class="pre">regex</span> <span class="pre">pat</span> <span class="pre">cflags</span> <span class="pre">s</span> <span class="pre">eflags</span></tt></dt>
+<dd>Compiles and matches a regex in one go, and returns the list of
+submatches (if any).</dd>
+</dl>
+<p>The arguments are:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">pat::string</span></tt>, the regular expression pattern;</li>
+<li><tt class="docutils literal"><span class="pre">cflags::int</span></tt>, the compilation flags (bitwise or of any of the flags
+accepted by regcomp(3));</li>
+<li><tt class="docutils literal"><span class="pre">s::string</span></tt>, the subject string to be matched;</li>
+<li><tt class="docutils literal"><span class="pre">eflags::int</span></tt>, the matching execution flags (bitwise or of any of the
+flags accepted by regexec(3)).</li>
+</ul>
+<p>Symbolic <tt class="docutils literal"><span class="pre">REG_*</span></tt> constants are provided for the different flag values,
+see the regcomp(3) manpage for an explanation of these. (In extension to
+POSIX, Pure also provides the <tt class="docutils literal"><span class="pre">REG_SIZE</span></tt> constant which indicates the
+size needed for the compiled regex buffer, but this is only for internal
+use.)</p>
+<p>Two particularly important compilation flags (to be included in the
+<tt class="docutils literal"><span class="pre">cflags</span></tt> argument) are <tt class="docutils literal"><span class="pre">REG_NOSUB</span></tt>, which prevents submatches to be
+computed, and <tt class="docutils literal"><span class="pre">REG_EXTENDED</span></tt>, which switches <tt class="docutils literal"><span class="pre">regex</span></tt> from &quot;basic&quot; to
+&quot;extended&quot; regular expressions so that it understands all the regular
+expression elements of egrep(1) in the pattern argument.</p>
+<p>Depending on the flags and the outcome of the operation, the result of this
+function can take one of the following forms:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">regerr</span> <span class="pre">code</span> <span class="pre">msg</span></tt>: This indicates an error during compilation of the
+pattern (e.g., if there was a syntax error in the pattern). <tt class="docutils literal"><span class="pre">code</span></tt> is
+the nonzero integer code returned by <tt class="docutils literal"><span class="pre">regcomp</span></tt>, and <tt class="docutils literal"><span class="pre">msg</span></tt> is the
+corresponding error message string, as returned by <tt class="docutils literal"><span class="pre">regerror</span></tt>. You can
+redefine the <tt class="docutils literal"><span class="pre">regerr</span></tt> function as appropriate for your application
+(e.g., if you'd like to print an error message or throw an exception).</li>
+<li><tt class="docutils literal"><span class="pre">0</span></tt> or <tt class="docutils literal"><span class="pre">1</span></tt>: Just a truth value indicates whether the pattern matched
+or not. This will be the form of the result if the <tt class="docutils literal"><span class="pre">REG_NOSUB</span></tt> flag was
+specified for compilation, indicating that no submatch information is to
+be computed.</li>
+<li><tt class="docutils literal"><span class="pre">0</span></tt> (indicating no match), or <tt class="docutils literal"><span class="pre">1</span></tt> (indicating a successful match),
+where the latter value is followed by a tuple of <tt class="docutils literal"><span class="pre">(pos,substr)</span></tt> pairs
+for each submatch. This will be the form of the result only if the
+<tt class="docutils literal"><span class="pre">REG_NOSUB</span></tt> flag was <em>not</em> specified for compilation, so that submatch
+information is available.</li>
+</ul>
+<p>Note that, according to POSIX semantics, a return value of 1 does <em>not</em>
+generally mean that the entire subject string was matched, unless you
+explicitly tie the pattern to the beginning (<tt class="docutils literal"><span class="pre">^</span></tt>) and end (<tt class="docutils literal"><span class="pre">$</span></tt>) of the
+string.</p>
+<p>If the result takes the latter form, each <tt class="docutils literal"><span class="pre">(pos,substr)</span></tt> pair indicates a
+portion of the subject string which was matched; <tt class="docutils literal"><span class="pre">pos</span></tt> is the position at
+which the match starts, and <tt class="docutils literal"><span class="pre">substr</span></tt> is the substring (starting at
+position <tt class="docutils literal"><span class="pre">pos</span></tt>) which was matched. The first <tt class="docutils literal"><span class="pre">(pos,substr)</span></tt> pair always
+indicates which portion of the string was matched by the entire pattern,
+the remaining pairs represent submatches for the parenthesized subpatterns
+of the pattern, as described on the regcomp(3) manual page. Note that some
+submatches may be empty (if they matched the empty string), in which case a
+pair <tt class="docutils literal"><span class="pre">(pos,&quot;&quot;)</span></tt> indicates the (nonnegative) position <tt class="docutils literal"><span class="pre">pos</span></tt> where the
+subpattern matched the empty string. Other submatches may not participate
+in the match at all, in which case the pair <tt class="docutils literal"><span class="pre">(-1,&quot;&quot;)</span></tt> is returned.</p>
+<!--  -->
+<p>The following helper functions are provided to analyze the result returned
+by <a class="reference" href="#regex">regex</a>.</p>
+<a name="reg_result"><dl class="docutils" id="reg-result">
+<dt><tt class="docutils literal"><span class="pre">reg_result</span> <span class="pre">res</span></tt></dt>
+<dd>Returns the result of a <tt class="docutils literal"><span class="pre">regex</span></tt> call, i.e., a <tt class="docutils literal"><span class="pre">regerr</span></tt> term if
+compilation failed, and a flag indicating whether the match was
+successful otherwise.</dd>
+</dl>
+<a name="reg_info"><dl class="docutils" id="reg-info">
+<dt><tt class="docutils literal"><span class="pre">reg_info</span> <span class="pre">res</span></tt></dt>
+<dd>Returns the submatch info if any, otherwise it returns <tt class="docutils literal"><span class="pre">()</span></tt>.</dd>
+</dl>
+<a name="reg"><dl class="docutils" id="reg">
+<dt><tt class="docutils literal"><span class="pre">reg</span> <span class="pre">n</span> <span class="pre">info</span></tt></dt>
+<dd>Returns the <tt class="docutils literal"><span class="pre">n</span></tt>th submatch of the given submatch info, where <tt class="docutils literal"><span class="pre">info</span></tt>
+is the result of a <a class="reference" href="#reg-info">reg_info</a> call.</dd>
+</dl>
+<a name="regs"><dl class="docutils" id="regs">
+<dt><tt class="docutils literal"><span class="pre">regs</span> <span class="pre">info</span></tt></dt>
+<dd>Returns all valid submatches, i.e., the list of all triples <tt class="docutils literal"><span class="pre">(n,p,s)</span></tt>
+for which <tt class="docutils literal"><span class="pre">reg</span> <span class="pre">n</span> <span class="pre">==</span> <span class="pre">(p,s)</span></tt> with <tt class="docutils literal"><span class="pre">p&gt;=0</span></tt>.</dd>
+</dl>
+<!--  -->
+<p>In addition, the following convenience functions are provided to perform
+global regex searches, to perform substitutions, and to tokenize a string
+according to a given delimiter regex.</p>
+<a name="regexg"><dl class="docutils" id="regexg">
+<dt><tt class="docutils literal"><span class="pre">regexg</span> <span class="pre">f</span> <span class="pre">pat</span> <span class="pre">cflags</span> <span class="pre">s</span> <span class="pre">eflags</span></tt></dt>
+<dd>Perform a global regular expression search. This routine will scan the
+entire string for (non-overlapping) instances of the pattern, applies the
+given function <tt class="docutils literal"><span class="pre">f</span></tt> to the <a class="reference" href="#reg-info">reg_info</a> for each match, and collects all
+results in a list. Note: Never specify the <tt class="docutils literal"><span class="pre">REG_NOSUB</span></tt> flag with this
+function, it needs the submatch info. Also, this function will never
+match the empty string, to prevent looping on pathological patterns.</dd>
+</dl>
+<a name="regexgg"><dl class="docutils" id="regexgg">
+<dt><tt class="docutils literal"><span class="pre">regexgg</span> <span class="pre">f</span> <span class="pre">pat</span> <span class="pre">cflags</span> <span class="pre">s</span> <span class="pre">eflags</span></tt></dt>
+<dd>This works like <a class="reference" href="#regexg">regexg</a>, but allows overlapping matches.</dd>
+</dl>
+<a name="regsub"><dl class="docutils" id="regsub">
+<dt><tt class="docutils literal"><span class="pre">regsub</span> <span class="pre">f</span> <span class="pre">pat</span> <span class="pre">cflags</span> <span class="pre">s</span> <span class="pre">eflags</span></tt></dt>
+<dd>Replaces all non-overlapping instances of a pattern with a computed
+substitution string. To these ends, the given function <tt class="docutils literal"><span class="pre">f</span></tt> is applied
+to the <a class="reference" href="#reg-info">reg_info</a> for each match; it should return a string value. The
+result string is then obtained by concatenating <tt class="docutils literal"><span class="pre">f</span> <span class="pre">info</span></tt> for all
+matches, with the unmatched portions of the string in between.</dd>
+</dl>
+<a name="regsplit"><dl class="docutils" id="regsplit">
+<dt><tt class="docutils literal"><span class="pre">regsplit</span> <span class="pre">pat</span> <span class="pre">cflags</span> <span class="pre">s</span> <span class="pre">eflags</span></tt></dt>
+<dd>Splits a string into constituents delimited by substrings matching the
+given pattern.</dd>
+</dl>
+<!--  -->
+</div>
+</div>
+<div class="section">
+<h1><a class="toc-backref" href="#id111" id="getopt" name="getopt">5&nbsp;&nbsp;&nbsp;Getopt</a></h1>
 <p>This is a quick-and-dirty replacement for the GNU getopt functions, ported
 from the Q library.</p>
 <div class="section">
-<h2><a class="toc-backref" href="#id100" id="id48" name="id48">5.1&nbsp;&nbsp;&nbsp;Imports</a></h2>
+<h2><a class="toc-backref" href="#id112" id="id50" name="id50">5.1&nbsp;&nbsp;&nbsp;Imports</a></h2>
 <p>To use the operations of this module, add the following import declaration
 to your program:</p>
 <pre class="literal-block">
@@ -2435,7 +2828,7 @@ using getopt;
 </pre>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id101" id="id49" name="id49">5.2&nbsp;&nbsp;&nbsp;Operations</a></h2>
+<h2><a class="toc-backref" href="#id113" id="id51" name="id51">5.2&nbsp;&nbsp;&nbsp;Operations</a></h2>
 <p>This module provides one operation: <tt class="docutils literal"><span class="pre">getopt</span> <span class="pre">opts</span> <span class="pre">args</span></tt></p>
 <p>The <tt class="docutils literal"><span class="pre">getopt</span></tt> function takes two arguments: <tt class="docutils literal"><span class="pre">opts</span></tt>, a list of option
 descriptions in the format described below, and <tt class="docutils literal"><span class="pre">args</span></tt>, a list of strings
@@ -2469,7 +2862,7 @@ equivalent, simply specify an empty option string for the <tt class="docutils li
 field.</p>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id102" id="id50" name="id50">5.3&nbsp;&nbsp;&nbsp;Examples</a></h2>
+<h2><a class="toc-backref" href="#id114" id="id52" name="id52">5.3&nbsp;&nbsp;&nbsp;Examples</a></h2>
 <pre class="literal-block">
 &gt; let opts = [(&quot;--help&quot;, &quot;-h&quot;, NOARG),       // no argument
 &gt;             (&quot;--version&quot;, &quot;&quot;, NOARG),      // no short option
@@ -2489,7 +2882,7 @@ copied to the result lists as is.</p>
 </div>
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id103" id="id51" name="id51">6&nbsp;&nbsp;&nbsp;Index</a></h1>
+<h1><a class="toc-backref" href="#id115" id="id53" name="id53">6&nbsp;&nbsp;&nbsp;Index</a></h1>
 <ul class="simple">
 <li><a class="reference" href="#id8">!</a></li>
 <li><a class="reference" href="#id24">! (array)</a></li>
@@ -2530,6 +2923,7 @@ copied to the result lists as is.</p>
 <li><a class="reference" href="#abs-complex">abs (complex)</a></li>
 <li><a class="reference" href="#acos">acos</a></li>
 <li><a class="reference" href="#acosh">acosh</a></li>
+<li><a class="reference" href="#add-history">add_history</a></li>
 <li><a class="reference" href="#addr">addr</a></li>
 <li><a class="reference" href="#all">all</a></li>
 <li><a class="reference" href="#any">any</a></li>
@@ -2541,6 +2935,7 @@ copied to the result lists as is.</p>
 <li><a class="reference" href="#array">array</a></li>
 <li><a class="reference" href="#array2">array2</a></li>
 <li><a class="reference" href="#arrayp">arrayp</a></li>
+<li><a class="reference" href="#asctime">asctime</a></li>
 <li><a class="reference" href="#asin">asin</a></li>
 <li><a class="reference" href="#asinh">asinh</a></li>
 <li><a class="reference" href="#atan">atan</a></li>
@@ -2567,6 +2962,8 @@ copied to the result lists as is.</p>
 <li><a class="reference" href="#chars">chars</a></li>
 <li><a class="reference" href="#chr">chr</a></li>
 <li><a class="reference" href="#cis">cis</a></li>
+<li><a class="reference" href="#clearerr">clearerr</a></li>
+<li><a class="reference" href="#clock">clock</a></li>
 <li><a class="reference" href="#cmatrix">cmatrix</a></li>
 <li><a class="reference" href="#col">col</a></li>
 <li><a class="reference" href="#colcat">colcat</a></li>
@@ -2586,6 +2983,7 @@ copied to the result lists as is.</p>
 <li><a class="reference" href="#cstring">cstring</a></li>
 <li><a class="reference" href="#cstring-dup">cstring_dup</a></li>
 <li><a class="reference" href="#cstring-list">cstring_list</a></li>
+<li><a class="reference" href="#ctime">ctime</a></li>
 <li><a class="reference" href="#curry">curry</a></li>
 <li><a class="reference" href="#curry3">curry3</a></li>
 <li><a class="reference" href="#cycle">cycle</a></li>
@@ -2614,13 +3012,21 @@ copied to the result lists as is.</p>
 <li><a class="reference" href="#emptyhdict">emptyhdict</a></li>
 <li><a class="reference" href="#emptyheap">emptyheap</a></li>
 <li><a class="reference" href="#emptyset">emptyset</a></li>
+<li><a class="reference" href="#errno">errno</a></li>
 <li><a class="reference" href="#eval">eval</a></li>
 <li><a class="reference" href="#evalcmd">evalcmd</a></li>
 <li><a class="reference" href="#exactp">exactp</a></li>
+<li><a class="reference" href="#exit">exit</a></li>
 <li><a class="reference" href="#exp">exp</a></li>
 <li><a class="reference" href="#failed-cond">failed_cond</a></li>
 <li><a class="reference" href="#failed-match">failed_match</a></li>
 <li><a class="reference" href="#false">false</a></li>
+<li><a class="reference" href="#fclose">fclose</a></li>
+<li><a class="reference" href="#feof">feof</a></li>
+<li><a class="reference" href="#ferror">ferror</a></li>
+<li><a class="reference" href="#fflush">fflush</a></li>
+<li><a class="reference" href="#fget">fget</a></li>
+<li><a class="reference" href="#fgets">fgets</a></li>
 <li><a class="reference" href="#filter">filter</a></li>
 <li><a class="reference" href="#first-array">first (array)</a></li>
 <li><a class="reference" href="#first-bag">first (bag)</a></li>
@@ -2631,13 +3037,20 @@ copied to the result lists as is.</p>
 <li><a class="reference" href="#fix">fix</a></li>
 <li><a class="reference" href="#flip">flip</a></li>
 <li><a class="reference" href="#floor">floor</a></li>
+<li><a class="reference" href="#fnmatch">fnmatch</a></li>
 <li><a class="reference" href="#foldl">foldl</a></li>
 <li><a class="reference" href="#foldl1">foldl1</a></li>
 <li><a class="reference" href="#foldr">foldr</a></li>
 <li><a class="reference" href="#foldr1">foldr1</a></li>
+<li><a class="reference" href="#fopen">fopen</a></li>
+<li><a class="reference" href="#fprintf">fprintf</a></li>
+<li><a class="reference" href="#fputs">fputs</a></li>
 <li><a class="reference" href="#frac">frac</a></li>
+<li><a class="reference" href="#fread">fread</a></li>
 <li><a class="reference" href="#free">free</a></li>
+<li><a class="reference" href="#fscanf">fscanf</a></li>
 <li><a class="reference" href="#funp">funp</a></li>
+<li><a class="reference" href="#fwrite">fwrite</a></li>
 <li><a class="reference" href="#gcd">gcd</a></li>
 <li><a class="reference" href="#get-byte">get_byte</a></li>
 <li><a class="reference" href="#get-double">get_double</a></li>
@@ -2647,6 +3060,10 @@ copied to the result lists as is.</p>
 <li><a class="reference" href="#get-pointer">get_pointer</a></li>
 <li><a class="reference" href="#get-short">get_short</a></li>
 <li><a class="reference" href="#get-string">get_string</a></li>
+<li><a class="reference" href="#gets">gets</a></li>
+<li><a class="reference" href="#gettimeofday">gettimeofday</a></li>
+<li><a class="reference" href="#glob">glob</a></li>
+<li><a class="reference" href="#gmtime">gmtime</a></li>
 <li><a class="reference" href="#hash">hash</a></li>
 <li><a class="reference" href="#hdict">hdict</a></li>
 <li><a class="reference" href="#hdictp">hdictp</a></li>
@@ -2703,6 +3120,7 @@ copied to the result lists as is.</p>
 <li><a class="reference" href="#listp">listp</a></li>
 <li><a class="reference" href="#lists">lists</a></li>
 <li><a class="reference" href="#ln">ln</a></li>
+<li><a class="reference" href="#localtime">localtime</a></li>
 <li><a class="reference" href="#log">log</a></li>
 <li><a class="reference" href="#malloc">malloc</a></li>
 <li><a class="reference" href="#malloc-error">malloc_error</a></li>
@@ -2731,6 +3149,7 @@ copied to the result lists as is.</p>
 <li><a class="reference" href="#mkarray2">mkarray2</a></li>
 <li><a class="reference" href="#mkdict">mkdict</a></li>
 <li><a class="reference" href="#mkhdict">mkhdict</a></li>
+<li><a class="reference" href="#nanosleep">nanosleep</a></li>
 <li><a class="reference" href="#null">null</a></li>
 <li><a class="reference" href="#null-array">null (array)</a></li>
 <li><a class="reference" href="#null-bag">null (bag)</a></li>
@@ -2747,11 +3166,15 @@ copied to the result lists as is.</p>
 <li><a class="reference" href="#out-of-bounds">out_of_bounds</a></li>
 <li><a class="reference" href="#pack">pack</a></li>
 <li><a class="reference" href="#packed">packed</a></li>
+<li><a class="reference" href="#pclose">pclose</a></li>
+<li><a class="reference" href="#perror">perror</a></li>
 <li><a class="reference" href="#pointer">pointer</a></li>
 <li><a class="reference" href="#pointerp">pointerp</a></li>
 <li><a class="reference" href="#polar">polar</a></li>
+<li><a class="reference" href="#popen">popen</a></li>
 <li><a class="reference" href="#pow">pow</a></li>
 <li><a class="reference" href="#pred">pred</a></li>
+<li><a class="reference" href="#printf">printf</a></li>
 <li><a class="reference" href="#put-byte">put_byte</a></li>
 <li><a class="reference" href="#put-double">put_double</a></li>
 <li><a class="reference" href="#put-float">put_float</a></li>
@@ -2760,17 +3183,28 @@ copied to the result lists as is.</p>
 <li><a class="reference" href="#put-pointer">put_pointer</a></li>
 <li><a class="reference" href="#put-short">put_short</a></li>
 <li><a class="reference" href="#put-string">put_string</a></li>
+<li><a class="reference" href="#puts">puts</a></li>
 <li><a class="reference" href="#random">random</a></li>
 <li><a class="reference" href="#rational">rational</a></li>
 <li><a class="reference" href="#rationalp">rationalp</a></li>
 <li><a class="reference" href="#ratvalp">ratvalp</a></li>
 <li><a class="reference" href="#re">re</a></li>
 <li><a class="reference" href="#re-matrix">re (matrix)</a></li>
+<li><a class="reference" href="#id49">readline</a></li>
 <li><a class="reference" href="#realloc">realloc</a></li>
 <li><a class="reference" href="#realp">realp</a></li>
 <li><a class="reference" href="#realvalp">realvalp</a></li>
 <li><a class="reference" href="#rect">rect</a></li>
 <li><a class="reference" href="#redim">redim</a></li>
+<li><a class="reference" href="#reg">reg</a></li>
+<li><a class="reference" href="#reg-info">reg_info</a></li>
+<li><a class="reference" href="#reg-result">reg_result</a></li>
+<li><a class="reference" href="#regex">regex</a></li>
+<li><a class="reference" href="#regexg">regexg</a></li>
+<li><a class="reference" href="#regexgg">regexgg</a></li>
+<li><a class="reference" href="#regs">regs</a></li>
+<li><a class="reference" href="#regsplit">regsplit</a></li>
+<li><a class="reference" href="#regsub">regsub</a></li>
 <li><a class="reference" href="#repeat">repeat</a></li>
 <li><a class="reference" href="#repeatn">repeatn</a></li>
 <li><a class="reference" href="#reverse">reverse</a></li>
@@ -2794,23 +3228,31 @@ copied to the result lists as is.</p>
 <li><a class="reference" href="#rows">rows</a></li>
 <li><a class="reference" href="#rowvector">rowvector</a></li>
 <li><a class="reference" href="#same">same</a></li>
+<li><a class="reference" href="#scanf">scanf</a></li>
 <li><a class="reference" href="#scanl">scanl</a></li>
 <li><a class="reference" href="#scanl1">scanl1</a></li>
 <li><a class="reference" href="#scanr">scanr</a></li>
 <li><a class="reference" href="#scanr1">scanr1</a></li>
 <li><a class="reference" href="#set">set</a></li>
+<li><a class="reference" href="#set-errno">set_errno</a></li>
+<li><a class="reference" href="#setlocale">setlocale</a></li>
 <li><a class="reference" href="#setp">setp</a></li>
 <li><a class="reference" href="#sgn">sgn</a></li>
 <li><a class="reference" href="#sin">sin</a></li>
 <li><a class="reference" href="#sinh">sinh</a></li>
+<li><a class="reference" href="#sleep">sleep</a></li>
 <li><a class="reference" href="#smatrix">smatrix</a></li>
 <li><a class="reference" href="#split">split</a></li>
+<li><a class="reference" href="#sprintf">sprintf</a></li>
 <li><a class="reference" href="#sqrt">sqrt</a></li>
 <li><a class="reference" href="#srandom">srandom</a></li>
+<li><a class="reference" href="#sscanf">sscanf</a></li>
 <li><a class="reference" href="#stack-fault">stack_fault</a></li>
 <li><a class="reference" href="#str">str</a></li>
 <li><a class="reference" href="#strcat">strcat</a></li>
 <li><a class="reference" href="#stream">stream</a></li>
+<li><a class="reference" href="#strerror">strerror</a></li>
+<li><a class="reference" href="#strftime">strftime</a></li>
 <li><a class="reference" href="#stride">stride</a></li>
 <li><a class="reference" href="#id13">string</a></li>
 <li><a class="reference" href="#string-pointer">string (pointer)</a></li>
@@ -2829,6 +3271,7 @@ copied to the result lists as is.</p>
 <li><a class="reference" href="#succ">succ</a></li>
 <li><a class="reference" href="#supdiag">supdiag</a></li>
 <li><a class="reference" href="#supdiagmat">supdiagmat</a></li>
+<li><a class="reference" href="#system">system</a></li>
 <li><a class="reference" href="#tail">tail</a></li>
 <li><a class="reference" href="#take">take</a></li>
 <li><a class="reference" href="#takewhile">takewhile</a></li>
@@ -2836,6 +3279,8 @@ copied to the result lists as is.</p>
 <li><a class="reference" href="#tanh">tanh</a></li>
 <li><a class="reference" href="#throw">throw</a></li>
 <li><a class="reference" href="#thunkp">thunkp</a></li>
+<li><a class="reference" href="#time">time</a></li>
+<li><a class="reference" href="#trap">trap</a></li>
 <li><a class="reference" href="#true">true</a></li>
 <li><a class="reference" href="#trunc">trunc</a></li>
 <li><a class="reference" href="#tuple">tuple</a></li>
