@@ -30,12 +30,13 @@
    key types but stores members in an apparently random order.
 
    The used AVL tree algorithm has its origin in the SWI-Prolog implementation
-   of association lists. The original file was created by R. A. O'Keefe and
-   updated for SWI-Prolog by Jan Wielemaker. For the original file see
-   http://www.swi-prolog.org.
+   of association lists. The original implementation was created by
+   R. A. O'Keefe and updated for SWI-Prolog by Jan Wielemaker. For the
+   original source see http://www.swi-prolog.org.
 
    The port from SWI-Prolog and the deletion stuff (``rmfirst``, ``rmlast``,
-   ``delete``) missing in the original file was provided by Jiri Spitz. */
+   ``delete``) missing in the Prolog implementation was provided by Jiri
+   Spitz. */
 
 namespace dict;
 
@@ -182,8 +183,15 @@ private bin;
      ["bar","foo"]
      [99.1,77]
      ["bar"=>99.1,"foo"=>77]
+
+   Indexing a dictionary works in the usual way, using Pure's ``!`` operator.
+   By virtue of the prelude, slicing a dictionary with ``!!`` also works as
+   expected::
+
      > d!"foo";
      77
+     > d!!["foo","bar"];
+     [77,99.1]
 
    A hashed dictionary can be used with any key values, which are stored in a
    seemingly random order::
@@ -195,6 +203,8 @@ private bin;
      [42=>99.1,foo=>77]
      > h!foo;
      77
+     > h!!keys h;
+     [99.1,77]
 
 */
 

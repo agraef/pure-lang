@@ -28,7 +28,8 @@
    based on AVL trees. Set and bag elements must be ordered, i.e., the
    predicates ``==``, ``<`` and ``>`` must be defined on them. The used AVL
    tree algorithm has its origin in the SWI-Prolog implementation of
-   association lists, see Dictionaries_ for details. */
+   association lists and was ported to Pure by Jiri Spitz, see Dictionaries_
+   for details. */
 
 namespace set;
 
@@ -90,6 +91,26 @@ private bin;
    ``#m``
      size of set or bag ``m``
 
+   .. _+ (set):
+   .. _+ (bag):
+
+   ``m1+m2``
+     set and bag union: ``m1+m2`` adds the members of ``m2`` to ``m1``
+
+   .. _- (set):
+   .. _- (bag):
+
+   ``m1-m2``
+     set and bag difference: ``m1-m2`` removes the members of ``m2`` from
+     ``m1``
+
+   .. _* (set):
+   .. _* (bag):
+
+   ``m1*m2``
+     set and bag intersection: ``m1*m2`` removes the members *not* in ``m2``
+     from ``m1``
+
    .. _null (set):
    .. _null (bag):
 
@@ -142,13 +163,24 @@ private bin;
    Examples
    ~~~~~~~~
 
-   ::
+   Some basic set operations::
 
      > let m = set [5,1,3,11,3];
      > members m;
      [1,3,5,11]
      > map (member m) (1..5);
      [1,0,1,0,1]
+     > members $ m+set (3..6);
+     [1,3,4,5,6,11]
+     > members $ m-set (3..6);
+     [1,11]
+     > members $ m*set (3..6);
+     [3,5]
+
+   The bag operations work in a similar fashion, but note that multiple
+   instances are permitted in this case, and each instance counts as a
+   separate member::
+
      > let m = bag [5,1,3,11,3];
      > members m;
      [1,3,3,5,11]
@@ -156,6 +188,12 @@ private bin;
      [1,3,5,11]
      > members $ insert m 1;
      [1,1,3,3,5,11]
+     > members $ m+bag (3..6);
+     [1,3,3,3,4,5,5,6,11]
+     > members $ m-bag (3..6);
+     [1,3,11]
+     > members $ m*bag (3..6);
+     [3,5]
 
 */
 

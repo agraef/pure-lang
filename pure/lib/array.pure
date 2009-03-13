@@ -30,6 +30,11 @@
    flavours of binary trees. Nevertheless operations are performed
    efficiently, in logarithmic time where possible.
 
+   All container types implement the equality predicates ``==`` and ``~=`` by
+   recursively comparing their members. In addition, the set and bag data
+   structures also implement the other comparison predicates (``<``, ``<=``
+   etc.) by checking whether one set/bag is a subset/subbag of another.
+
    Arrays
    ------
 
@@ -72,7 +77,7 @@
    .. _mkarray2:
 
    ``mkarray2 x (n,m)``
-     create a 2D array of ``n*m`` ``x``'s
+     create a two-dimensional array of ``n*m`` ``x``'s
 
    .. _arrayp:
 
@@ -154,8 +159,15 @@
      > #a; members a;
      11
      [0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
+
+   Indexing an array works in the usual way, using Pure's ``!`` operator. By
+   virtue of the prelude, slicing an array with ``!!`` also works as
+   expected::
+
      > a!5;
      0.5
+     > a!!(3..7);
+     [0.3,0.4,0.5,0.6,0.7]
 
    Updating a member of an array produces a new array::
 
@@ -171,6 +183,8 @@
      [[(1,u),(1,v),(1,w)],[(2,u),(2,v),(2,w)]]
      > a2!(1,2);
      2,w
+     > a2!![(0,1),(1,2)];
+     [(1,v),(2,w)]
 
    Here's how to convert an array to a Pure matrix::
 
