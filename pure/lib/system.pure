@@ -1214,13 +1214,26 @@ end;
      > regexg id pat 0 s 0;
      [(1,"var"),(5,"foo"),(12,"BAR")]
 
-   Perform substitutions on matches::
+   Same with overlapping matches::
 
-     > snd x = x!1;
-     > regsub (sprintf "**%s**".snd) pat 0 s 0;
-     "1**var** **foo** 99 **BAR** $%&"
+     > regexgg id pat 0 s 0;
+     [(1,"var"),(2,"ar"),(3,"r"),(5,"foo"),(6,"oo"),(7,"o"),(12,"BAR"),
+     (13,"AR"),(14,"R")]
 
-   Split with a delimiter pattern (this uses an egrep pattern)::
+   Note that ``id`` (the identity function) in the examples above can be
+   replaced with an arbitrary function which processes the matches. For
+   instance, if we only want the matched strings instead of the full match
+   info::
+
+     > regexg (\info -> info!1) pat 0 s 0;
+     ["var","foo","BAR"]
+
+   We can also perform substitutions on matches::
+
+     > regsub (sprintf "<%d:%s>") pat 0 s 0;
+     "1<1:var> <5:foo> 99 <12:BAR> $%&"
+
+   Or split a string using a delimiter pattern (this uses an egrep pattern)::
 
      > let delim = "[[:space:]]+";
      > regsplit delim REG_EXTENDED s 0;

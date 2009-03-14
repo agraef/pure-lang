@@ -3045,13 +3045,26 @@ given pattern.</dd>
 &gt; regexg id pat 0 s 0;
 [(1,&quot;var&quot;),(5,&quot;foo&quot;),(12,&quot;BAR&quot;)]
 </pre>
-<p>Perform substitutions on matches:</p>
+<p>Same with overlapping matches:</p>
 <pre class="literal-block">
-&gt; snd x = x!1;
-&gt; regsub (sprintf &quot;**%s**&quot;.snd) pat 0 s 0;
-&quot;1**var** **foo** 99 **BAR** $%&amp;&quot;
+&gt; regexgg id pat 0 s 0;
+[(1,&quot;var&quot;),(2,&quot;ar&quot;),(3,&quot;r&quot;),(5,&quot;foo&quot;),(6,&quot;oo&quot;),(7,&quot;o&quot;),(12,&quot;BAR&quot;),
+(13,&quot;AR&quot;),(14,&quot;R&quot;)]
 </pre>
-<p>Split with a delimiter pattern (this uses an egrep pattern):</p>
+<p>Note that <tt class="docutils literal"><span class="pre">id</span></tt> (the identity function) in the examples above can be
+replaced with an arbitrary function which processes the matches. For
+instance, if we only want the matched strings instead of the full match
+info:</p>
+<pre class="literal-block">
+&gt; regexg (\info -&gt; info!1) pat 0 s 0;
+[&quot;var&quot;,&quot;foo&quot;,&quot;BAR&quot;]
+</pre>
+<p>We can also perform substitutions on matches:</p>
+<pre class="literal-block">
+&gt; regsub (sprintf &quot;&lt;%d:%s&gt;&quot;) pat 0 s 0;
+&quot;1&lt;1:var&gt; &lt;5:foo&gt; 99 &lt;12:BAR&gt; $%&amp;&quot;
+</pre>
+<p>Or split a string using a delimiter pattern (this uses an egrep pattern):</p>
 <pre class="literal-block">
 &gt; let delim = &quot;[[:space:]]+&quot;;
 &gt; regsplit delim REG_EXTENDED s 0;
