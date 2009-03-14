@@ -1028,17 +1028,15 @@ end;
 
 regexg f pat::string cflags::int s::string eflags::int = result
 when
+  len    = #s;
   result = regcomp regptr pat cflags;
   result = if result==0 then
              (match 0 s with
-                match offs "" = [];
+                match offs _ = [] if offs>len;
                 match offs s = result when
                   result = regexec regptr s n matches eflags;
                   result = if result==0 then
-	                     (if null u then
-                                match (offs+q) (drop p s)
-                              else
-                                f info : match (offs+q) (drop q s)
+	                     (f info : match (offs+q) (drop q s)
                               when
                                 info = reglist regptr s matches;
                                 p, u = reg 0 info; q = p+#u+null u;
@@ -1072,17 +1070,15 @@ end;
 
 regexgg f pat::string cflags::int s::string eflags::int = result
 when
+  len    = #s;
   result = regcomp regptr pat cflags;
   result = if result==0 then
              (match 0 s with
-                match offs "" = [];
+                match offs _ = [] if offs>len;
                 match offs s = result when
                   result = regexec regptr s n matches eflags;
                   result = if result==0 then
-	                     (if null u then
-                                match (offs+q) (drop q s)
-                              else
-                                f info : match (offs+q) (drop q s)
+	                     (f info : match (offs+q) (drop q s)
                               when
                                 info = reglist regptr s matches;
                                 p, u = reg 0 info; q = p+1;
@@ -1120,15 +1116,17 @@ end;
 
 regsub f pat::string cflags::int s::string eflags::int = result
 when
+  len    = #s;
   result = regcomp regptr pat cflags;
   result = if result==0 then
              (match 0 s with
-                match offs "" = "";
+                match offs _ = "" if offs>len;
                 match offs s = result when
                   result = regexec regptr s n matches eflags;
                   result = if result==0 then
 	                     (if null u then
-                                take q s + match (offs+q) (drop q s)
+                                take p s + f info + substr s p 1 +
+			        match (offs+q) (drop q s)
                               else
                                 take p s + f info + match (offs+q) (drop q s)
                               when
@@ -1172,7 +1170,10 @@ when
                 match s = result when
                   result = regexec regptr s n matches eflags;
                   result = if result==0 then
-	                     (take p s : match (drop q s)
+	                     (if null u then
+                                take q s : match (drop q s)
+			      else
+                                take p s : match (drop q s)
                               when
                                 info = reglist regptr s matches;
                                 p, u = reg 0 info; q = p+#u+null u;
