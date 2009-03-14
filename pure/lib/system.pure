@@ -69,7 +69,16 @@ namespace;
      This value and the related routines are indispensable to give proper
      diagnostics when system calls fail for some reason. Note that, by its
      very nature, ``errno`` is a fairly volatile value, don't expect it to
-     survive a return to the command line in interactive sessions. */
+     survive a return to the command line in interactive sessions.
+
+   Example::
+
+     > using system;
+     > fopen "junk" "r", perror "junk";
+     junk: No such file or directory
+     fopen "junk" "r"
+
+*/
 
 extern int pure_errno() = errno, void pure_set_errno(int) = set_errno;
 extern void perror(char*), char* strerror(int);
@@ -104,7 +113,14 @@ extern void perror(char*), char* strerror(int);
    of what the current locale is. When the interpreter starts up, it always
    sets the default system locale. Unless your scripts rely on a specific
    encoding, setting the locale to either ``"C"`` or ``""`` should always be
-   safe. */
+   safe.
+
+   Example::
+
+     > setlocale LC_ALL NULL;
+     "en_US.UTF-8"
+
+*/
 
 namespace C;
 extern void* setlocale(int category, void* locale);
@@ -139,7 +155,9 @@ end;
    Note: Most standard termination signals (``SIGINT``, ``SIGTERM``, etc.) are
    already set up at the start of the interpreter to report corresponding Pure
    exceptions; if this is not desired, you can use ``trap`` to either ignore
-   these or revert to the default handlers instead. */
+   these or revert to the default handlers instead.
+
+   See `Exception Handling`_ in the Pure Manual for details and examples. */
 
 extern void pure_trap(int action, int sig) = trap;
 
@@ -263,7 +281,15 @@ nanosleep t::int | nanosleep t::bigint = nanosleep (double t);
    .. _exit:
 
    ``exit status``
-     Terminate the program with the given status code. */
+     Terminate the program with the given status code.
+
+   Example::
+
+     > system "pwd";
+     /home/ag/svn/pure-lang/trunk/pure/lib
+     0
+
+*/
 
 extern int system(char* cmd), void exit(int status);
 
@@ -329,7 +355,19 @@ extern int system(char* cmd), void exit(int status);
    .. _fwrite:
 
    ``fread ptr size nmemb fp``, ``fwrite ptr size nmemb fp``
-     Binary read/writes. Here you'll have to manage the buffers yourself. */
+     Binary read/writes. Here you'll have to manage the buffers yourself.
+
+   Examples::
+
+     > puts "Hello, world!";
+     Hello, world!
+     14
+     > split "\n" $ fget $ popen "ls *.pure" "r";
+     ["array.pure","dict.pure","getopt.pure","heap.pure","math.pure",
+     "matrices.pure","prelude.pure","primitives.pure","set.pure",
+     "strings.pure","system.pure",""]
+
+*/
 
 namespace C;
 extern FILE* fopen(char* name, char* mode);
@@ -650,7 +688,18 @@ end;
 
    ``sscanf s format``
      This works exactly like fscanf_, but input comes from a string (first
-     argument) rather than a file. */
+     argument) rather than a file.
+
+   Examples::
+
+     > do (printf "%s%d\n") [("foo",5),("catch",22)];
+     foo5
+     catch22
+     ()
+     > sscanf "foo 5 22" "%s %d %g";
+     "foo",5,22.0
+
+*/
 
 namespace C;
 extern int pure_sscanf(char *buf, char *format);
@@ -735,7 +784,15 @@ using namespace;
 
    ``add_history s``
      readline_\ 's companion, which you need to add strings to readline's
-     history. */
+     history.
+
+   Example::
+
+     > readline "foo> ";
+     foo> bla
+     "bla"
+
+*/
 
 /* Note that we cannot simply use the C readline function directly in Pure
    since it would leak memory on the return value. */
@@ -769,7 +826,16 @@ readline prompt::string = cstring $ C::readline prompt;
    environment. See the fnmatch(3) and glob(3) manpages for the meaning of
    these. (In extension to POSIX, Pure also provides the constant
    ``GLOB_SIZE`` which indicates the buffer size required for C ``glob``\ 's
-   ``globptr`` argument, but this is only used internally.) */
+   ``globptr`` argument, but this is only used internally.)
+
+   Example::
+
+     > glob "*.pure" 0;
+     ["array.pure","dict.pure","getopt.pure","heap.pure","math.pure",
+     "matrices.pure","prelude.pure","primitives.pure","set.pure",
+     "strings.pure","system.pure"]
+
+*/
 
 namespace C;
 extern int fnmatch(char* pat, char* s, int flags);
@@ -1118,3 +1184,41 @@ end with
 end when
   regptr = calloc 1 REG_SIZE;
 end;
+
+/* ..
+
+   Examples::
+
+     > let pat = "[[:alpha:]][[:alnum:]]*";
+     > let s = "1var foo 99 BAR $%&";
+
+   Simple match::
+
+     > regex pat 0 s 0;
+     1,1,"var"
+
+   Same without match info::
+
+     > regex pat REG_NOSUB s 0;
+     1
+
+   Global match, return the list of all matches::
+
+     > regexg id pat 0 s 0;
+     [(1,"var"),(5,"foo"),(12,"BAR")]
+
+   Perform substitutions on matches::
+
+     > snd x = x!1;
+     > regsub (sprintf "**%s**".snd) pat 0 s 0;
+     "1**var** **foo** 99 **BAR** $%&"
+
+   Split with a delimiter pattern (this uses an egrep pattern)::
+
+     > let delim = "[[:space:]]+";
+     > regsplit delim REG_EXTENDED s 0;
+     ["1var","foo","99","BAR","$%&"]
+     > regsplit delim REG_EXTENDED "The   quick brown    fox" 0;
+     ["The","quick","brown","fox"]
+
+*/

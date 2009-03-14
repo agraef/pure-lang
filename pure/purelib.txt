@@ -2102,8 +2102,8 @@ Primitives
 This prelude module is a collection of various lowlevel operations, which
 are implemented either directly by machine instructions or by C functions
 provided in the runtime. In particular, this module defines the basic
-arithmetic operations on machine integers, bigints and floating point
-numbers, as well as various type checking predicates and conversions
+arithmetic and logic operations on machine integers, bigints and floating
+point numbers, as well as various type checking predicates and conversions
 between different types. Some low-level pointer operations are also
 provided, as well as "sentries" (Pure's flavour of object finalizers) and
 "references" (mutable expression pointers).
@@ -2111,10 +2111,162 @@ provided, as well as "sentries" (Pure's flavour of object finalizers) and
 Arithmetic
 ~~~~~~~~~~
 
-The arithmetic operations ``+``, ``*``, ``div``, ``mod`` etc. all do what
-you expect, see the operators_ table at the beginning of this section for a
-complete list of these. The primitives module also defines pointer
-arithmetic in the usual way.
+The basic arithmetic and logic operations provided by this module are
+summarized in the following table:
+
+.. raw:: html
+
+   <a name="+">
+
+.. raw:: html
+
+   <a name="-">
+
+.. raw:: html
+
+   <a name="*">
+
+.. raw:: html
+
+   <a name="/">
+
+.. raw:: html
+
+   <a name="div">
+
+.. raw:: html
+
+   <a name="mod">
+
+.. raw:: html
+
+   <a name="^">
+
+.. raw:: html
+
+   <a name="==">
+
+.. raw:: html
+
+   <a name="~=">
+
+.. raw:: html
+
+   <a name="<">
+
+.. raw:: html
+
+   <a name=">">
+
+.. raw:: html
+
+   <a name="<=">
+
+.. raw:: html
+
+   <a name=">=">
+
+.. raw:: html
+
+   <a name="~">
+
+.. raw:: html
+
+   <a name="&&">
+
+.. raw:: html
+
+   <a name="||">
+
+.. raw:: html
+
+   <a name="not">
+
+.. raw:: html
+
+   <a name="and">
+
+.. raw:: html
+
+   <a name="or">
+
+.. raw:: html
+
+   <a name="<<">
+
+.. raw:: html
+
+   <a name=">>">
+
+.. _+:
+.. _-:
+.. _*:
+.. _/:
+.. _div:
+.. _mod:
+.. _^:
+.. _==:
+.. _~=:
+.. _<:
+.. _>:
+.. _<=:
+.. _>=:
+.. _~:
+.. _&&:
+.. _||:
+.. _not:
+.. _and:
+.. _or:
+.. _<<:
+.. _>>:
+
+===========  ===============  =========================================
+Kind         Operator         Meaning
+===========  ===============  =========================================
+Arithmetic   ``+`` ``-``      addition, subtraction (also unary minus),
+             ``*`` ``/``      multiplication, division (inexact),
+             ``div`` ``mod``  exact int/bigint division/modulus,
+             ``^``            exponentiation (inexact)
+Comparisons  ``==`` ``~=``    equality, inequality,
+             ``<`` ``>``      less than, greater than,
+             ``<=`` ``>=``    less than or equal, greater than or equal
+Logic        ``~``            logical not,
+             ``&&`` ``||``    and, or (short-circuit)
+Bitwise      ``not``          bitwise not,
+             ``and`` ``or``   and, or,
+             ``<<`` ``>>``    bit shifts
+===========  ===============  =========================================
+
+Precedence and and associativity of the operators can be found in the
+operators_ table at the beginning of this section.
+
+The names of some operations are at odds with C. Note, in particular, that
+logical negation is denoted ``~`` instead of ``!`` (and, consequently,
+``~=`` denotes inequality, rather than ``!=``), and the bitwise operations
+are named differently. This is necessary because Pure uses ``!``, ``&`` and
+``|`` for other purposes. Also, ``/`` always denotes inexact (double)
+division in Pure, whereas the integer division operators are called ``div``
+and ``mod``. (``%``, which is not defined by this module, also has a
+different meaning in Pure; it's the exact division operator, see `Rational
+Numbers`_.)
+
+The above operations are implemented for int, bigint and, where
+appropriate, double and pointer operands. (Pointer arithmetic comprises
+``+`` and ``-`` and works in the usual way, i.e., ``p-q`` returns the byte
+offset between two pointers ``p`` and ``q``, and ``p+n`` or ``p-n`` offsets
+a pointer ``p`` by the given integer ``n`` denoting the amount of bytes.) 
+The math module (see `Mathematical Functions`_) also provides
+implementations of the arithmetic and comparison operators for rational,
+complex and complex rational numbers.
+
+Note that the logical operations are actually implemented as special forms
+in order to provide for short-circuit evaluation. This needs special
+support from the compiler to work. The primitives module still provides
+definitions for these, as well as other special forms like ``quote`` and
+the thunking operator ``&`` so that they may be used as function values and
+in partial applications, but when used in this manner they lose all their
+special call-by-name properties; see `Special Forms`_ in the Pure Manual
+for details.
 
 The constants ``inf`` and ``nan`` are defined as the usual IEEE floating
 point infinities and NaNs, and the predicates ``infp`` and ``nanp`` are
@@ -2193,18 +2345,10 @@ In addition, the following arithmetic and numeric functions are provided:
   module (`Mathematical Functions`_) which deals with the case ``y<0``
   using rational numbers.
 
-.. raw:: html
-
-   <a name="^">
-
-.. _^:
-
-``x^y``
-  The ``^`` operator. Computes inexact powers for any combination of int,
-  bigint and double operands. The result is always a double.
-
 Conversions
 ~~~~~~~~~~~
+
+These operations convert between various types of Pure values.
 
 .. raw:: html
 
@@ -2313,6 +2457,9 @@ The following _`rounding functions` work with all kinds of numbers:
 Predicates
 ~~~~~~~~~~
 
+A syntactic equality test is provided, as well as various type checking
+predicates.
+
 .. raw:: html
 
    <a name="same">
@@ -2330,7 +2477,12 @@ Predicates
 .. _~==:
 
 ``x===y``, ``x~==y``, ``same x y``
-  Syntactic equality.
+  Syntactic equality. In difference to ``==`` and ``~=`` this is defined on
+  all Pure expressions. Basically, two expressions are syntactically equal
+  if they print out the same in the interpreter. In the special case of
+  pointer objects and closures, which do not have a syntactic
+  representation in Pure, ``x`` and ``y`` must be the same object (same
+  pointer value or function).
 
 .. raw:: html
 
@@ -2472,6 +2624,8 @@ Predicates
 Specials
 ~~~~~~~~
 
+Some special operations to deal with exceptions and function objects.
+
 .. raw:: html
 
    <a name="throw">
@@ -2525,8 +2679,8 @@ In contrast::
 Pointer Operations
 ~~~~~~~~~~~~~~~~~~
 
-The usual caveats apply, so *only* use these directly if you know what
-you're doing!
+These are lowlevel operations dealing with pointer values. The usual
+caveats apply, so *only* use these directly if you know what you're doing!
 
 .. raw:: html
 
@@ -2658,30 +2812,59 @@ you're doing!
 Sentries
 ~~~~~~~~
 
-Sentries are expression "guards", also known as `finalizers`, which are
-applied to the target expression when it is garbage-collected. Note that in
-the current implementation sentries can only be placed at applications and
-pointer objects, but this presumably covers 99% of all practical uses. The
-sentry itself can be any type of object (but usually it's a function).
+Sentries are Pure's flavour of object `finalizers`. A sentry is simply a
+function which gets applied to the target expression when it is
+garbage-collected. This is useful to perform automatic cleanup actions on
+objects with internal state, such as files. Pure's sentries are *much* more
+useful than finalizers in other garbage-collected languages, since it is
+guaranteed that they are called as soon as an object "goes out of scope",
+i.e., becomes inaccessible.
 
-.. sentry:
+Note that in the current implementation sentries can only be placed at
+applications and pointer objects, but the department of fake statistics has
+assured us that this covers 99% of all practical uses. The sentry itself
+can be any type of object (but usually it's a function). There can be only
+one sentry per expression but, building on the operations provided here,
+it's easy to design a scheme where sentries are chained.
+
+.. raw:: html
+
+   <a name="sentry">
+
+.. _sentry:
 
 ``sentry f x``
   Places a sentry ``f`` at an expression ``x`` and returns the modified
   expression.
 
-.. clear_sentry:
+.. raw:: html
+
+   <a name="clear_sentry">
+
+.. _clear_sentry:
 
 ``clear_sentry x``
   Removes the sentry from an expression ``x``.
 
-.. get_sentry:
+.. raw:: html
+
+   <a name="get_sentry">
+
+.. _get_sentry:
 
 ``get_sentry x``
   Returns the sentry of an expression ``x`` (if any, fails otherwise).
 
-.. cooked:
-.. cookedp:
+.. raw:: html
+
+   <a name="cooked">
+
+.. raw:: html
+
+   <a name="cookedp">
+
+.. _cooked:
+.. _cookedp:
 
 ``cooked ptr``, ``cookedp ptr``
   ``cooked`` is a convenience function to create a `cooked` pointer which
@@ -2691,41 +2874,71 @@ sentry itself can be any type of object (but usually it's a function).
   pointer is cooked already (we actually assume any pointer to be cooked
   which has a sentry set on it).
 
+Example::
+
+  > using system;
+  > let p = sentry (\p->puts "I'm done for!" $$ free p) (malloc 1024);
+  > cookedp p;
+  1
+  > clear p
+  I'm done for!
+
 ..
 
 Expression References
 ~~~~~~~~~~~~~~~~~~~~~
 
-If you need these, then you're doomed. ;-) However, they can be useful as a
-last resort when you need to keep track of some local state or interface to
-the messy imperative world. Pure's references are implemented as Pure
-expression pointers so that you can readily pass them as pointers to a C
-function which expects a ``pure_expr**`` parameter.  This may even be
-useful at times.
+Expression references provide a kind of mutable data cells which can hold
+any Pure expression. If you need these, then you're doomed. ;-) However,
+they can be useful as a last resort when you need to keep track of some
+local state or interface to the messy imperative world. Pure's references
+are actually implemented as expression pointers so that you can readily
+pass them as pointers to a C function which expects a ``pure_expr**``
+parameter. This may even be useful at times.
 
-.. ref:
+.. raw:: html
+
+   <a name="ref">
+
+.. _ref:
 
 ``ref x``
   Create a reference pointing to ``x`` initially.
 
-.. put:
+.. raw:: html
+
+   <a name="put">
+
+.. _put:
 
 ``put r x``
   Set a new value ``x``, and return that value.
 
-.. get:
+.. raw:: html
+
+   <a name="get">
+
+.. _get:
 
 ``get r``
   Retrieve the current value ``r`` points to.
 
-.. unref:
+.. raw:: html
+
+   <a name="unref">
+
+.. _unref:
 
 ``unref r``
   Purge the referenced object and turn the reference into a dangling
   pointer. (This is used as a sentry on reference objects and shouldn't
   normally be called directly.)
 
-.. refp:
+.. raw:: html
+
+   <a name="refp">
+
+.. _refp:
 
 ``refp x``
   Predicate to check for reference values.
@@ -4268,6 +4481,13 @@ Errno and Friends
   very nature, ``errno`` is a fairly volatile value, don't expect it to
   survive a return to the command line in interactive sessions.
 
+Example::
+
+  > using system;
+  > fopen "junk" "r", perror "junk";
+  junk: No such file or directory
+  fopen "junk" "r"
+
 ..
 
 POSIX Locale
@@ -4304,6 +4524,11 @@ sets the default system locale. Unless your scripts rely on a specific
 encoding, setting the locale to either ``"C"`` or ``""`` should always be
 safe.
 
+Example::
+
+  > setlocale LC_ALL NULL;
+  "en_US.UTF-8"
+
 ..
 
 Signal Handling
@@ -4329,6 +4554,8 @@ Note: Most standard termination signals (``SIGINT``, ``SIGTERM``, etc.) are
 already set up at the start of the interpreter to report corresponding Pure
 exceptions; if this is not desired, you can use ``trap`` to either ignore
 these or revert to the default handlers instead.
+
+See `Exception Handling`_ in the Pure Manual for details and examples.
 
 ..
 
@@ -4481,6 +4708,12 @@ Not much is provided in this category yet. Contributions are welcome.
 ``exit status``
   Terminate the program with the given status code.
 
+Example::
+
+  > system "pwd";
+  /home/ag/svn/pure-lang/trunk/pure/lib
+  0
+
 ..
 
 Basic I/O Interface
@@ -4605,6 +4838,16 @@ providing the raw C library routines.
 ``fread ptr size nmemb fp``, ``fwrite ptr size nmemb fp``
   Binary read/writes. Here you'll have to manage the buffers yourself.
 
+Examples::
+
+  > puts "Hello, world!";
+  Hello, world!
+  14
+  > split "\n" $ fget $ popen "ls *.pure" "r";
+  ["array.pure","dict.pure","getopt.pure","heap.pure","math.pure",
+  "matrices.pure","prelude.pure","primitives.pure","set.pure",
+  "strings.pure","system.pure",""]
+
 ..
 
 C-style formatted I/O is provided through the following wrappers for the C
@@ -4680,6 +4923,15 @@ shouldn't segfault. However, only simple formats derived from ``%cdioux``,
   This works exactly like fscanf_, but input comes from a string (first
   argument) rather than a file.
 
+Examples::
+
+  > do (printf "%s%d\n") [("foo",5),("catch",22)];
+  foo5
+  catch22
+  ()
+  > sscanf "foo 5 22" "%s %d %g";
+  "foo",5,22.0
+
 ..
 
 Readline
@@ -4704,6 +4956,12 @@ Readline
 ``add_history s``
   readline_\ 's companion, which you need to add strings to readline's
   history.
+
+Example::
+
+  > readline "foo> ";
+  foo> bla
+  "bla"
 
 ..
 
@@ -4736,6 +4994,13 @@ environment. See the fnmatch(3) and glob(3) manpages for the meaning of
 these. (In extension to POSIX, Pure also provides the constant
 ``GLOB_SIZE`` which indicates the buffer size required for C ``glob``\ 's
 ``globptr`` argument, but this is only used internally.)
+
+Example::
+
+  > glob "*.pure" 0;
+  ["array.pure","dict.pure","getopt.pure","heap.pure","math.pure",
+  "matrices.pure","prelude.pure","primitives.pure","set.pure",
+  "strings.pure","system.pure"]
 
 ..
 
@@ -4915,6 +5180,42 @@ according to a given delimiter regex.
   Splits a string into constituents delimited by substrings matching the
   given pattern.
 
+..
+
+Examples::
+
+  > let pat = "[[:alpha:]][[:alnum:]]*";
+  > let s = "1var foo 99 BAR $%&";
+
+Simple match::
+
+  > regex pat 0 s 0;
+  1,1,"var"
+
+Same without match info::
+
+  > regex pat REG_NOSUB s 0;
+  1
+
+Global match, return the list of all matches::
+
+  > regexg id pat 0 s 0;
+  [(1,"var"),(5,"foo"),(12,"BAR")]
+
+Perform substitutions on matches::
+
+  > snd x = x!1;
+  > regsub (sprintf "**%s**".snd) pat 0 s 0;
+  "1**var** **foo** 99 **BAR** $%&"
+
+Split with a delimiter pattern (this uses an egrep pattern)::
+
+  > let delim = "[[:space:]]+";
+  > regsplit delim REG_EXTENDED s 0;
+  ["1var","foo","99","BAR","$%&"]
+  > regsplit delim REG_EXTENDED "The   quick brown    fox" 0;
+  ["The","quick","brown","fox"]
+
 .. 
 
 Getopt
@@ -5012,23 +5313,38 @@ Index
 * `# (string)`_
 * `$`_
 * `%`_
+* `&&`_
 * `'`_
+* `*`_
 * `* (bag)`_
 * `* (set)`_
+* `+`_
 * `+ (bag)`_
 * `+ (list)`_
 * `+ (set)`_
 * `+ (string)`_
 * `+:`_
 * `,`_
+* `-`_
 * `- (bag)`_
 * `- (set)`_
 * `.`_
 * `..`_
+* `/`_
 * `:`_
+* `<`_
 * `<:`_
+* `<<`_
+* `<=`_
+* `==`_
 * `===`_
+* `>`_
+* `>=`_
+* `>>`_
 * `^`_
+* `||`_
+* `~`_
+* `~=`_
 * `~==`_
 * `abs`_
 * `abs (complex)`_
@@ -5037,6 +5353,7 @@ Index
 * `add_history`_
 * `addr`_
 * `all`_
+* `and`_
 * `any`_
 * `append (array)`_
 * `applp`_
@@ -5075,6 +5392,7 @@ Index
 * `chars`_
 * `chr`_
 * `cis`_
+* `clear_sentry`_
 * `clearerr`_
 * `clock`_
 * `cmatrix`_
@@ -5095,6 +5413,8 @@ Index
 * `compvalp`_
 * `conj`_
 * `conj (matrix)`_
+* `cooked`_
+* `cookedp`_
 * `cos`_
 * `cosh`_
 * `cst`_
@@ -5116,6 +5436,7 @@ Index
 * `dict`_
 * `dictp`_
 * `dim`_
+* `div`_
 * `dmatrix`_
 * `do`_
 * `double`_
@@ -5175,12 +5496,14 @@ Index
 * `funp`_
 * `fwrite`_
 * `gcd`_
+* `get`_
 * `get_byte`_
 * `get_double`_
 * `get_float`_
 * `get_int`_
 * `get_long`_
 * `get_pointer`_
+* `get_sentry`_
 * `get_short`_
 * `get_string`_
 * `gets`_
@@ -5275,7 +5598,9 @@ Index
 * `mkarray2`_
 * `mkdict`_
 * `mkhdict`_
+* `mod`_
 * `nanosleep`_
+* `not`_
 * `null`_
 * `null (array)`_
 * `null (bag)`_
@@ -5288,6 +5613,7 @@ Index
 * `num`_
 * `numberp`_
 * `operators`_
+* `or`_
 * `ord`_
 * `out_of_bounds`_
 * `pack`_
@@ -5302,6 +5628,7 @@ Index
 * `pow`_
 * `pred`_
 * `printf`_
+* `put`_
 * `put_byte`_
 * `put_double`_
 * `put_float`_
@@ -5323,6 +5650,8 @@ Index
 * `realvalp`_
 * `rect`_
 * `redim`_
+* `ref`_
+* `refp`_
 * `reg`_
 * `reg_info`_
 * `reg_result`_
@@ -5360,6 +5689,7 @@ Index
 * `scanl1`_
 * `scanr`_
 * `scanr1`_
+* `sentry`_
 * `set`_
 * `set_errno`_
 * `setlocale`_
@@ -5425,6 +5755,7 @@ Index
 * `ulong`_
 * `uncurry`_
 * `uncurry3`_
+* `unref`_
 * `unzip`_
 * `unzip3`_
 * `update (array)`_

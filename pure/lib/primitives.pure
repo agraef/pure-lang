@@ -29,8 +29,8 @@ using namespace C;
    This prelude module is a collection of various lowlevel operations, which
    are implemented either directly by machine instructions or by C functions
    provided in the runtime. In particular, this module defines the basic
-   arithmetic operations on machine integers, bigints and floating point
-   numbers, as well as various type checking predicates and conversions
+   arithmetic and logic operations on machine integers, bigints and floating
+   point numbers, as well as various type checking predicates and conversions
    between different types. Some low-level pointer operations are also
    provided, as well as "sentries" (Pure's flavour of object finalizers) and
    "references" (mutable expression pointers).
@@ -38,10 +38,78 @@ using namespace C;
    Arithmetic
    ~~~~~~~~~~
 
-   The arithmetic operations ``+``, ``*``, ``div``, ``mod`` etc. all do what
-   you expect, see the operators_ table at the beginning of this section for a
-   complete list of these. The primitives module also defines pointer
-   arithmetic in the usual way.
+   The basic arithmetic and logic operations provided by this module are
+   summarized in the following table:
+
+   .. _+:
+   .. _-:
+   .. _*:
+   .. _/:
+   .. _div:
+   .. _mod:
+   .. _^:
+   .. _==:
+   .. _~=:
+   .. _<:
+   .. _>:
+   .. _<=:
+   .. _>=:
+   .. _~:
+   .. _&&:
+   .. _||:
+   .. _not:
+   .. _and:
+   .. _or:
+   .. _<<:
+   .. _>>:
+
+   ===========  ===============  =========================================
+   Kind         Operator         Meaning
+   ===========  ===============  =========================================
+   Arithmetic   ``+`` ``-``      addition, subtraction (also unary minus),
+                ``*`` ``/``      multiplication, division (inexact),
+                ``div`` ``mod``  exact int/bigint division/modulus,
+                ``^``            exponentiation (inexact)
+   Comparisons  ``==`` ``~=``    equality, inequality,
+                ``<`` ``>``      less than, greater than,
+                ``<=`` ``>=``    less than or equal, greater than or equal
+   Logic        ``~``            logical not,
+                ``&&`` ``||``    and, or (short-circuit)
+   Bitwise      ``not``          bitwise not,
+                ``and`` ``or``   and, or,
+                ``<<`` ``>>``    bit shifts
+   ===========  ===============  =========================================
+
+   Precedence and and associativity of the operators can be found in the
+   operators_ table at the beginning of this section.
+
+   The names of some operations are at odds with C. Note, in particular, that
+   logical negation is denoted ``~`` instead of ``!`` (and, consequently,
+   ``~=`` denotes inequality, rather than ``!=``), and the bitwise operations
+   are named differently. This is necessary because Pure uses ``!``, ``&`` and
+   ``|`` for other purposes. Also, ``/`` always denotes inexact (double)
+   division in Pure, whereas the integer division operators are called ``div``
+   and ``mod``. (``%``, which is not defined by this module, also has a
+   different meaning in Pure; it's the exact division operator, see `Rational
+   Numbers`_.)
+
+   The above operations are implemented for int, bigint and, where
+   appropriate, double and pointer operands. (Pointer arithmetic comprises
+   ``+`` and ``-`` and works in the usual way, i.e., ``p-q`` returns the byte
+   offset between two pointers ``p`` and ``q``, and ``p+n`` or ``p-n`` offsets
+   a pointer ``p`` by the given integer ``n`` denoting the amount of bytes.) 
+   The math module (see `Mathematical Functions`_) also provides
+   implementations of the arithmetic and comparison operators for rational,
+   complex and complex rational numbers.
+
+   Note that the logical operations are actually implemented as special forms
+   in order to provide for short-circuit evaluation. This needs special
+   support from the compiler to work. The primitives module still provides
+   definitions for these, as well as other special forms like ``quote`` and
+   the thunking operator ``&`` so that they may be used as function values and
+   in partial applications, but when used in this manner they lose all their
+   special call-by-name properties; see `Special Forms`_ in the Pure Manual
+   for details.
 
    The constants ``inf`` and ``nan`` are defined as the usual IEEE floating
    point infinities and NaNs, and the predicates ``infp`` and ``nanp`` are
@@ -84,14 +152,10 @@ using namespace C;
      module (`Mathematical Functions`_) which deals with the case ``y<0``
      using rational numbers.
 
-   .. _^:
-
-   ``x^y``
-     The ``^`` operator. Computes inexact powers for any combination of int,
-     bigint and double operands. The result is always a double.
-
    Conversions
    ~~~~~~~~~~~
+
+   These operations convert between various types of Pure values.
 
    .. _hash:
 
@@ -144,12 +208,20 @@ using namespace C;
    Predicates
    ~~~~~~~~~~
 
+   A syntactic equality test is provided, as well as various type checking
+   predicates.
+
    .. _same:
    .. _===:
    .. _~==:
 
    ``x===y``, ``x~==y``, ``same x y``
-     Syntactic equality.
+     Syntactic equality. In difference to ``==`` and ``~=`` this is defined on
+     all Pure expressions. Basically, two expressions are syntactically equal
+     if they print out the same in the interpreter. In the special case of
+     pointer objects and closures, which do not have a syntactic
+     representation in Pure, ``x`` and ``y`` must be the same object (same
+     pointer value or function).
 
    .. _intp:
    .. _bigintp:
@@ -202,6 +274,8 @@ using namespace C;
 
    Specials
    ~~~~~~~~
+
+   Some special operations to deal with exceptions and function objects.
 
    .. _throw:
 
@@ -670,8 +744,8 @@ nanp x		= case x of x::double = ~(x==x); _ = 0 end;
    Pointer Operations
    ~~~~~~~~~~~~~~~~~~
 
-   The usual caveats apply, so *only* use these directly if you know what
-   you're doing!
+   These are lowlevel operations dealing with pointer values. The usual
+   caveats apply, so *only* use these directly if you know what you're doing!
 
    .. _addr:
 
@@ -767,24 +841,33 @@ put_pointer x::pointer y::pointer = pointer_put_pointer x y;
    Sentries
    ~~~~~~~~
 
-   Sentries are expression "guards", also known as `finalizers`, which are
-   applied to the target expression when it is garbage-collected. Note that in
-   the current implementation sentries can only be placed at applications and
-   pointer objects, but this presumably covers 99% of all practical uses. The
-   sentry itself can be any type of object (but usually it's a function).
+   Sentries are Pure's flavour of object `finalizers`. A sentry is simply a
+   function which gets applied to the target expression when it is
+   garbage-collected. This is useful to perform automatic cleanup actions on
+   objects with internal state, such as files. Pure's sentries are *much* more
+   useful than finalizers in other garbage-collected languages, since it is
+   guaranteed that they are called as soon as an object "goes out of scope",
+   i.e., becomes inaccessible.
 
-   .. sentry:
+   Note that in the current implementation sentries can only be placed at
+   applications and pointer objects, but the department of fake statistics has
+   assured us that this covers 99% of all practical uses. The sentry itself
+   can be any type of object (but usually it's a function). There can be only
+   one sentry per expression but, building on the operations provided here,
+   it's easy to design a scheme where sentries are chained.
+
+   .. _sentry:
 
    ``sentry f x``
      Places a sentry ``f`` at an expression ``x`` and returns the modified
      expression.
 
-   .. clear_sentry:
+   .. _clear_sentry:
 
    ``clear_sentry x``
      Removes the sentry from an expression ``x``.
 
-   .. get_sentry:
+   .. _get_sentry:
 
    ``get_sentry x``
      Returns the sentry of an expression ``x`` (if any, fails otherwise). */
@@ -793,8 +876,8 @@ extern expr* pure_sentry(expr*,expr*) = sentry; // IMPURE!
 extern expr* pure_clear_sentry(expr*) = clear_sentry; // IMPURE!
 extern expr* pure_get_sentry(expr*) = get_sentry;
 
-/* .. cooked:
-   .. cookedp:
+/* .. _cooked:
+   .. _cookedp:
 
    ``cooked ptr``, ``cookedp ptr``
      ``cooked`` is a convenience function to create a `cooked` pointer which
@@ -802,7 +885,18 @@ extern expr* pure_get_sentry(expr*) = get_sentry;
      free``. The given pointer ``ptr`` must be malloc_\ ed to make this
      work. There's also a predicate ``cookedp`` to decide whether a given
      pointer is cooked already (we actually assume any pointer to be cooked
-     which has a sentry set on it). */
+     which has a sentry set on it).
+
+   Example::
+
+     > using system;
+     > let p = sentry (\p->puts "I'm done for!" $$ free p) (malloc 1024);
+     > cookedp p;
+     1
+     > clear p
+     I'm done for!
+
+*/
 
 cooked p::pointer = sentry free p;
 cookedp p = case p of
@@ -819,36 +913,37 @@ cookedp p = case p of
    Expression References
    ~~~~~~~~~~~~~~~~~~~~~
 
-   If you need these, then you're doomed. ;-) However, they can be useful as a
-   last resort when you need to keep track of some local state or interface to
-   the messy imperative world. Pure's references are implemented as Pure
-   expression pointers so that you can readily pass them as pointers to a C
-   function which expects a ``pure_expr**`` parameter.  This may even be
-   useful at times.
+   Expression references provide a kind of mutable data cells which can hold
+   any Pure expression. If you need these, then you're doomed. ;-) However,
+   they can be useful as a last resort when you need to keep track of some
+   local state or interface to the messy imperative world. Pure's references
+   are actually implemented as expression pointers so that you can readily
+   pass them as pointers to a C function which expects a ``pure_expr**``
+   parameter. This may even be useful at times.
 
-   .. ref:
+   .. _ref:
 
    ``ref x``
      Create a reference pointing to ``x`` initially.
 
-   .. put:
+   .. _put:
 
    ``put r x``
      Set a new value ``x``, and return that value.
 
-   .. get:
+   .. _get:
 
    ``get r``
      Retrieve the current value ``r`` points to.
 
-   .. unref:
+   .. _unref:
 
    ``unref r``
      Purge the referenced object and turn the reference into a dangling
      pointer. (This is used as a sentry on reference objects and shouldn't
      normally be called directly.)
 
-   .. refp:
+   .. _refp:
 
    ``refp x``
      Predicate to check for reference values.
