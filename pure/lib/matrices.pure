@@ -34,15 +34,18 @@ using namespace C;
      > zipwith (+) {1,2,3;4,5,6} {1,0,1;0,2,0};
      {2,2,4;4,7,6}
 
-   The matrix module also provides all the necessary operations for matrix
-   comprehensions, and to make matrices work in list comprehensions and vice
-   versa. You can find some examples of these in the `Matrix Computations`_
-   section of the Pure Manual.
+   The matrix module also provides a bunch of other specialized matrix
+   operations, including all the necessary operations for matrix
+   comprehensions. We briefly summarize the most important operations below;
+   please refer to matrix.pure for all the gory details.
+
+   Also make sure you check `Matrix Computations`_ in the Pure Manual for some
+   more examples.
 
    .. _Matrix Computations: pure.html#matrix-computations
 
-   The predicates ``==`` and ``~=`` are defined, which allow you to check two
-   matrices for equality.
+   Matrix Dimension and Indexing
+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
    .. _matrix size:
    .. _matrix dimensions:
@@ -102,9 +105,8 @@ using namespace C;
      > x!!(0..1,1);
      {2;5}
 
-   The matrix module also implements a bunch of other specialized matrix
-   operations. The most important operations are briefly summarized below;
-   please refer to matrix.pure for all the gory details.
+   Matrix Inspection and Manipulation
+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
    ``dmatrixp x``, ``cmatrixp x``, ``imatrixp x``, ``smatrixp x``, ``nmatrixp x``
      Check for different kinds of matrices (double, complex, int, symbolic and
@@ -623,17 +625,25 @@ unzip3 x::matrix	= {u | u,_ = x},{v | _,v,_ = x},{w | _,_,w = x}
 			      check x = throw (bad_tuple_value x) otherwise;
 			    end;
 
-/* Low-level operations for converting between matrices and raw pointers.
-   These are typically used to shovel around massive amounts of numeric data
-   between Pure and external C routines, when performance and throughput is an
-   important consideration (e.g., graphics, video and audio applications). The
-   usual caveats apply. */
+/* ..
 
-/* Get a pointer to the underlying C array of a matrix. The data is *not*
-   copied. Hence you have to be careful when passing such a pointer to C
-   functions if the underlying data is non-contiguous; when in doubt, first
-   use the 'pack' function from above to place the data in contiguous storage,
-   or use one of the matrix-pointer conversion routines below. */
+   Pointers and Matrices
+   ~~~~~~~~~~~~~~~~~~~~~
+
+   The matrix module offers a bunch of low-level operations for converting
+   between matrices and raw pointers. These are typically used to shovel
+   around massive amounts of numeric data between Pure and external C
+   routines, when performance and throughput is an important consideration
+   (e.g., graphics, video and audio applications). The usual caveats apply.
+
+   .. _pointer (matrix):
+
+   ``pointer x``
+     Get a pointer to the underlying C array of a matrix. The data is *not*
+     copied. Hence you have to be careful when passing such a pointer to C
+     functions if the underlying data is non-contiguous; when in doubt, first
+     use the pack_ function to place the data in contiguous storage, or use
+     one of the matrix-pointer conversion routines below. */
 
 namespace C;
 extern expr* pure_pointerval(expr*);
@@ -641,11 +651,30 @@ namespace;
 
 pointer x::matrix	= pure_pointerval x;
 
-/* Copy the contents of a matrix to a given pointer and return that pointer,
-   converting to the target data type on the fly if necessary. The given
-   pointer may also be NULL, in which case suitable memory is malloc'ed and
-   returned; otherwise the caller must ensure that the memory pointed to by p
-   is big enough for the contents of the given matrix. */
+/* .. _double_pointer:
+   .. _float_pointer:
+   .. _complex_pointer:
+   .. _complex_float_pointer:
+   .. _int_pointer:
+   .. _short_pointer:
+   .. _byte_pointer:
+
+   The following operations copy the contents of a matrix to a given pointer
+   and return that pointer, converting to the target data type on the fly if
+   necessary. The given pointer may also be ``NULL``, in which case suitable
+   memory is malloced and returned; otherwise the caller must ensure that the
+   memory pointed to by ``p`` is big enough for the contents of the given
+   matrix.
+
+   * ``double_pointer p x``
+   * ``float_pointer p x``
+   * ``complex_pointer p x``
+   * ``complex_float_pointer p x``
+   * ``int_pointer p x``
+   * ``short_pointer p x``
+   * ``byte_pointer p x``
+
+*/
 
 namespace C;
 extern void* matrix_to_double_array(void* p, expr* x);
@@ -672,11 +701,31 @@ short_pointer p::pointer x::matrix
 byte_pointer p::pointer x::matrix
 			= matrix_to_byte_array p x if nmatrixp x;
 
-/* Create a numeric matrix from a pointer, copying the data and converting it
-   from the source type on the fly if necessary. The source pointer p may also
-   be NULL, in which case the new matrix is filled with zeros instead.
-   Otherwise the caller must ensure that the pointer points to properly
-   initialized memory big enough for the requested dimensions. */
+/* .. _double_matrix:
+   .. _float_matrix:
+   .. _complex_matrix:
+   .. _complex_float_matrix:
+   .. _int_matrix:
+   .. _short_matrix:
+   .. _byte_matrix:
+
+   Conversely, the following functions allow you to create a numeric matrix
+   from a pointer, copying the data and converting it from the source type on
+   the fly if necessary. The source pointer ``p`` may also be ``NULL``, in
+   which case the new matrix is filled with zeros instead.  Otherwise the
+   caller must ensure that the pointer points to properly initialized memory
+   big enough for the requested dimensions. The given dimension may also be
+   just an integer ``n`` if a row vector is to be created.
+
+   * ``double_matrix (n,m) p``
+   * ``float_matrix (n,m) p``
+   * ``complex_matrix (n,m) p``
+   * ``complex_float_matrix (n,m) p``
+   * ``int_matrix (n,m) p``
+   * ``short_matrix (n,m) p``
+   * ``byte_matrix (n,m) p``
+
+*/
 
 namespace C;
 extern expr* matrix_from_double_array(int n, int m, void* p);
@@ -718,10 +767,22 @@ short_matrix n::int p::pointer
 byte_matrix n::int p::pointer
 			= byte_matrix (1,n) p;
 
-/* Create a numeric matrix view of existing data, without copying the data.
-   The data must be double, complex or int, the pointer must not be NULL and
-   the caller must also ensure that the memory persists for the entire
-   lifetime of the matrix object. */
+/* .. _double_matrix_view:
+   .. _complex_matrix_view:
+   .. _int_matrix_view:
+
+   Finally, you can use the following operations to create a numeric matrix
+   view of existing data, without copying the data. The data must be double,
+   complex or int, the pointer must not be ``NULL`` and the caller must also
+   ensure that the memory persists for the entire lifetime of the matrix
+   object. The given dimension may also be just an integer ``n`` if a row
+   vector view is to be created.
+
+   * ``double_matrix_view (n,m) p``
+   * ``complex_matrix_view (n,m) p``
+   * ``int_matrix_view (n,m) p``
+
+*/
 
 namespace C;
 extern expr* matrix_from_double_array_nodup(int n, int m, void* p);

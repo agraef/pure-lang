@@ -173,17 +173,29 @@ extern long pure_time() = time;
    .. _localtime:
 
    ``gmtime t``, ``localtime t``
-     Convert a time value to UTC or local time in "broken-down" form (a
+     Convert a time value to UTC or local time in "broken-down" form (a static
      pointer to a ``tm`` struct containing a bunch of ``int`` fields) which
      can then be passed to the asctime_ and strftime_ functions, or to
-     ``int_matrix 9`` if you want to convert the data to a matrix.
+     int_matrix_ if you want to convert the data to a matrix; see the example
+     below.
 
    .. _asctime:
    .. _strftime:
 
    ``asctime tm``, ``strftime format tm``
      Format broken-down time as a string. ``strftime`` also uses a format
-     string supplied by the user. */
+     string supplied by the user.
+
+   For instance::
+
+     > let tm = localtime time; tm;
+     #<pointer 0x7f1292131de0>
+     > asctime tm;
+     "Sat Mar 14 01:07:18 2009\n"
+     > int_matrix 9 tm;
+     {18,7,1,14,2,109,6,72,0}
+
+*/
 
 extern char* pure_ctime(long) = ctime;
 extern void* pure_gmtime(long) = gmtime;

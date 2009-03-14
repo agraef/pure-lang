@@ -1522,15 +1522,18 @@ works as expected::
   > zipwith (+) {1,2,3;4,5,6} {1,0,1;0,2,0};
   {2,2,4;4,7,6}
 
-The matrix module also provides all the necessary operations for matrix
-comprehensions, and to make matrices work in list comprehensions and vice
-versa. You can find some examples of these in the `Matrix Computations`_
-section of the Pure Manual.
+The matrix module also provides a bunch of other specialized matrix
+operations, including all the necessary operations for matrix
+comprehensions. We briefly summarize the most important operations below;
+please refer to matrix.pure for all the gory details.
+
+Also make sure you check `Matrix Computations`_ in the Pure Manual for some
+more examples.
 
 .. _Matrix Computations: pure.html#matrix-computations
 
-The predicates ``==`` and ``~=`` are defined, which allow you to check two
-matrices for equality.
+Matrix Dimension and Indexing
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
@@ -1618,9 +1621,8 @@ column::
   > x!!(0..1,1);
   {2;5}
 
-The matrix module also implements a bunch of other specialized matrix
-operations. The most important operations are briefly summarized below;
-please refer to matrix.pure for all the gory details.
+Matrix Inspection and Manipulation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``dmatrixp x``, ``cmatrixp x``, ``imatrixp x``, ``smatrixp x``, ``nmatrixp x``
   Check for different kinds of matrices (double, complex, int, symbolic and
@@ -1937,6 +1939,160 @@ please refer to matrix.pure for all the gory details.
 ``rowrev x``, ``colrev x``, ``reverse x``
   Reverse a matrix. ``rowrev`` reverses the rows, ``colrev`` the columns,
   ``reverse`` both dimensions.
+
+..
+
+Pointers and Matrices
+~~~~~~~~~~~~~~~~~~~~~
+
+The matrix module offers a bunch of low-level operations for converting
+between matrices and raw pointers. These are typically used to shovel
+around massive amounts of numeric data between Pure and external C
+routines, when performance and throughput is an important consideration
+(e.g., graphics, video and audio applications). The usual caveats apply.
+
+.. raw:: html
+
+   <a name="pointer (matrix)">
+
+.. _pointer (matrix):
+
+``pointer x``
+  Get a pointer to the underlying C array of a matrix. The data is *not*
+  copied. Hence you have to be careful when passing such a pointer to C
+  functions if the underlying data is non-contiguous; when in doubt, first
+  use the pack_ function to place the data in contiguous storage, or use
+  one of the matrix-pointer conversion routines below.
+
+.. raw:: html
+
+   <a name="double_pointer">
+
+.. raw:: html
+
+   <a name="float_pointer">
+
+.. raw:: html
+
+   <a name="complex_pointer">
+
+.. raw:: html
+
+   <a name="complex_float_pointer">
+
+.. raw:: html
+
+   <a name="int_pointer">
+
+.. raw:: html
+
+   <a name="short_pointer">
+
+.. raw:: html
+
+   <a name="byte_pointer">
+
+.. _double_pointer:
+.. _float_pointer:
+.. _complex_pointer:
+.. _complex_float_pointer:
+.. _int_pointer:
+.. _short_pointer:
+.. _byte_pointer:
+
+The following operations copy the contents of a matrix to a given pointer
+and return that pointer, converting to the target data type on the fly if
+necessary. The given pointer may also be ``NULL``, in which case suitable
+memory is malloced and returned; otherwise the caller must ensure that the
+memory pointed to by ``p`` is big enough for the contents of the given
+matrix.
+
+* ``double_pointer p x``
+* ``float_pointer p x``
+* ``complex_pointer p x``
+* ``complex_float_pointer p x``
+* ``int_pointer p x``
+* ``short_pointer p x``
+* ``byte_pointer p x``
+
+.. raw:: html
+
+   <a name="double_matrix">
+
+.. raw:: html
+
+   <a name="float_matrix">
+
+.. raw:: html
+
+   <a name="complex_matrix">
+
+.. raw:: html
+
+   <a name="complex_float_matrix">
+
+.. raw:: html
+
+   <a name="int_matrix">
+
+.. raw:: html
+
+   <a name="short_matrix">
+
+.. raw:: html
+
+   <a name="byte_matrix">
+
+.. _double_matrix:
+.. _float_matrix:
+.. _complex_matrix:
+.. _complex_float_matrix:
+.. _int_matrix:
+.. _short_matrix:
+.. _byte_matrix:
+
+Conversely, the following functions allow you to create a numeric matrix
+from a pointer, copying the data and converting it from the source type on
+the fly if necessary. The source pointer ``p`` may also be ``NULL``, in
+which case the new matrix is filled with zeros instead.  Otherwise the
+caller must ensure that the pointer points to properly initialized memory
+big enough for the requested dimensions. The given dimension may also be
+just an integer ``n`` if a row vector is to be created.
+
+* ``double_matrix (n,m) p``
+* ``float_matrix (n,m) p``
+* ``complex_matrix (n,m) p``
+* ``complex_float_matrix (n,m) p``
+* ``int_matrix (n,m) p``
+* ``short_matrix (n,m) p``
+* ``byte_matrix (n,m) p``
+
+.. raw:: html
+
+   <a name="double_matrix_view">
+
+.. raw:: html
+
+   <a name="complex_matrix_view">
+
+.. raw:: html
+
+   <a name="int_matrix_view">
+
+.. _double_matrix_view:
+.. _complex_matrix_view:
+.. _int_matrix_view:
+
+Finally, you can use the following operations to create a numeric matrix
+view of existing data, without copying the data. The data must be double,
+complex or int, the pointer must not be ``NULL`` and the caller must also
+ensure that the memory persists for the entire lifetime of the matrix
+object. The given dimension may also be just an integer ``n`` if a row
+vector view is to be created.
+
+* ``double_matrix_view (n,m) p``
+* ``complex_matrix_view (n,m) p``
+* ``int_matrix_view (n,m) p``
 
 ..
 
@@ -4218,10 +4374,11 @@ asctime(3) and strftime(3) manual pages for details.
 .. _localtime:
 
 ``gmtime t``, ``localtime t``
-  Convert a time value to UTC or local time in "broken-down" form (a
+  Convert a time value to UTC or local time in "broken-down" form (a static
   pointer to a ``tm`` struct containing a bunch of ``int`` fields) which
   can then be passed to the asctime_ and strftime_ functions, or to
-  ``int_matrix 9`` if you want to convert the data to a matrix.
+  int_matrix_ if you want to convert the data to a matrix; see the example
+  below.
 
 .. raw:: html
 
@@ -4237,6 +4394,15 @@ asctime(3) and strftime(3) manual pages for details.
 ``asctime tm``, ``strftime format tm``
   Format broken-down time as a string. ``strftime`` also uses a format
   string supplied by the user.
+
+For instance::
+
+  > let tm = localtime time; tm;
+  #<pointer 0x7f1292131de0>
+  > asctime tm;
+  "Sat Mar 14 01:07:18 2009\n"
+  > int_matrix 9 tm;
+  {18,7,1,14,2,109,6,72,0}
 
 ..
 
@@ -4895,6 +5061,8 @@ Index
 * `bigintvalp`_
 * `byte_cstring`_
 * `byte_cstring_pointer`_
+* `byte_matrix`_
+* `byte_pointer`_
 * `byte_string`_
 * `byte_string_pointer`_
 * `calloc`_
@@ -4917,6 +5085,11 @@ Index
 * `colvector`_
 * `combinators`_
 * `complex`_
+* `complex_float_matrix`_
+* `complex_float_pointer`_
+* `complex_matrix`_
+* `complex_matrix_view`_
+* `complex_pointer`_
 * `complexp`_
 * `compvalp`_
 * `conj`_
@@ -4945,6 +5118,9 @@ Index
 * `dmatrix`_
 * `do`_
 * `double`_
+* `double_matrix`_
+* `double_matrix_view`_
+* `double_pointer`_
 * `doublep`_
 * `dowith`_
 * `dowith3`_
@@ -4980,6 +5156,8 @@ Index
 * `first (set)`_
 * `fix`_
 * `flip`_
+* `float_matrix`_
+* `float_pointer`_
 * `floor`_
 * `fnmatch`_
 * `foldl`_
@@ -5029,6 +5207,9 @@ Index
 * `insert (heap)`_
 * `insert (set)`_
 * `int`_
+* `int_matrix`_
+* `int_matrix_view`_
+* `int_pointer`_
 * `integerp`_
 * `intp`_
 * `intvalp`_
@@ -5113,6 +5294,7 @@ Index
 * `pclose`_
 * `perror`_
 * `pointer`_
+* `pointer (matrix)`_
 * `pointerp`_
 * `polar`_
 * `popen`_
@@ -5182,6 +5364,8 @@ Index
 * `setlocale`_
 * `setp`_
 * `sgn`_
+* `short_matrix`_
+* `short_pointer`_
 * `sin`_
 * `sinh`_
 * `sleep`_
