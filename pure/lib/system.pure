@@ -1023,8 +1023,7 @@ end;
      entire string for (non-overlapping) instances of the pattern, applies the
      given function ``f`` to the reg_info_ for each match, and collects all
      results in a list. Note: Never specify the ``REG_NOSUB`` flag with this
-     function, it needs the submatch info. Also, this function will never
-     match the empty string, to prevent looping on pathological patterns. */
+     function, it needs the submatch info. */
 
 regexg f pat::string cflags::int s::string eflags::int = result
 when
@@ -1195,7 +1194,10 @@ end;
 
 /* ..
 
-   Examples::
+   Basic Examples
+   ~~~~~~~~~~~~~~
+
+   Let's have a look at some simple examples::
 
      > let pat = "[[:alpha:]][[:alnum:]]*";
      > let s = "1var foo 99 BAR $%&";
@@ -1229,6 +1231,9 @@ end;
      > regexg (\info -> info!1) pat 0 s 0;
      ["var","foo","BAR"]
 
+   Regex Substitutions and Splitting
+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
    We can also perform substitutions on matches::
 
      > regsub (sprintf "<%d:%s>") pat 0 s 0;
@@ -1241,5 +1246,70 @@ end;
      ["1var","foo","99","BAR","$%&"]
      > regsplit delim REG_EXTENDED "The   quick brown    fox" 0;
      ["The","quick","brown","fox"]
+
+   Empty Matches
+   ~~~~~~~~~~~~~
+
+   Empty matches are permitted, too, subject to the constraint that at most
+   one match is reported for each position (which also prevents looping). And
+   of course an empty match will only be reported if nothing else matches. For
+   instance::
+
+     > regexg id "" REG_EXTENDED "foo" 0;
+     [(0,""),(1,""),(2,""),(3,"")]
+     > regexg id "o*" REG_EXTENDED "foo" 0;
+     [(0,""),(1,"oo"),(3,"")]
+     > regexgg id "o*" REG_EXTENDED "foo" 0;
+     [(0,""),(1,"oo"),(2,"o"),(3,"")]
+
+   This also works when substituting or splitting::
+
+     > regsub (cst " ") "" REG_EXTENDED "some text" 0;
+     " s o m e   t e x t "
+     > regsub (cst " ") " ?" REG_EXTENDED "some text" 0;
+     " s o m e  t e x t "
+     > regsplit "" REG_EXTENDED "some text" 0;
+     ["s","o","m","e"," ","t","e","x","t",""]
+     > regsplit " ?" REG_EXTENDED "some text" 0;
+     ["s","o","m","e","","t","e","x","t",""]
+
+   Submatches
+   ~~~~~~~~~~
+
+   Parenthesized subexpressions in a pattern yield corresponding submatch
+   information, which is useful if we need to retrieve the text matched by a
+   given subexpression. For instance, suppose we want to parse environment
+   lines, such as those returned by the shell's ``set`` command. These can be
+   dissected using the following regex::
+
+     > const env_pat = "^([^=]+)=(.*)$";
+     > const env_flags = REG_EXTENDED or REG_NEWLINE;
+     > regex env_pat env_flags "SHELL=/bin/sh" 0;
+     1,0,"SHELL=/bin/sh",0,"SHELL",6,"/bin/sh"
+
+   Note that we again used an extended regex here, and we also added the
+   ``REG_NEWLINE`` flag so that we properly deal with multiline input. The
+   desired information is in the 4th and 6th element of the submatch info,
+   we can retrieve that as follows::
+
+     > parse_env s = regexg (\info -> info!3 => info!5) env_pat env_flags s 0;
+     > parse_env "SHELL=/bin/sh\nHOME=/home/bar\n";
+     ["SHELL"=>"/bin/sh","HOME"=>"/home/bar"]
+
+   We can get hold of the real process environment as follows::
+
+     > let env = parse_env $ fget $ popen "set" "r";
+     > #env;
+     109
+     > head env;
+     "BASH"=>"/usr/bin/sh"
+
+   Just for the fun of it, let's employ dict_ to convert this to a dictionary,
+   providing easy random access to the environment variables::
+
+     > using dict;
+     > let env_dict = dict env;
+     > env_dict!!["SHELL","HOME"];
+     ["/bin/bash","/home/ag"]
 
 */

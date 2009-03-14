@@ -404,16 +404,22 @@ Pure language and the operation of the Pure interpreter.</p>
 <li><a class="reference" href="#basic-i-o-interface" id="id125" name="id125">4.7&nbsp;&nbsp;&nbsp;Basic I/O Interface</a></li>
 <li><a class="reference" href="#readline" id="id126" name="id126">4.8&nbsp;&nbsp;&nbsp;Readline</a></li>
 <li><a class="reference" href="#shell-globbing" id="id127" name="id127">4.9&nbsp;&nbsp;&nbsp;Shell Globbing</a></li>
-<li><a class="reference" href="#regex-matching" id="id128" name="id128">4.10&nbsp;&nbsp;&nbsp;Regex Matching</a></li>
+<li><a class="reference" href="#regex-matching" id="id128" name="id128">4.10&nbsp;&nbsp;&nbsp;Regex Matching</a><ul class="auto-toc">
+<li><a class="reference" href="#basic-examples" id="id129" name="id129">4.10.1&nbsp;&nbsp;&nbsp;Basic Examples</a></li>
+<li><a class="reference" href="#regex-substitutions-and-splitting" id="id130" name="id130">4.10.2&nbsp;&nbsp;&nbsp;Regex Substitutions and Splitting</a></li>
+<li><a class="reference" href="#empty-matches" id="id131" name="id131">4.10.3&nbsp;&nbsp;&nbsp;Empty Matches</a></li>
+<li><a class="reference" href="#submatches" id="id132" name="id132">4.10.4&nbsp;&nbsp;&nbsp;Submatches</a></li>
 </ul>
 </li>
-<li><a class="reference" href="#getopt" id="id129" name="id129">5&nbsp;&nbsp;&nbsp;Getopt</a><ul class="auto-toc">
-<li><a class="reference" href="#id65" id="id130" name="id130">5.1&nbsp;&nbsp;&nbsp;Imports</a></li>
-<li><a class="reference" href="#id66" id="id131" name="id131">5.2&nbsp;&nbsp;&nbsp;Operations</a></li>
-<li><a class="reference" href="#id67" id="id132" name="id132">5.3&nbsp;&nbsp;&nbsp;Examples</a></li>
 </ul>
 </li>
-<li><a class="reference" href="#id68" id="id133" name="id133">6&nbsp;&nbsp;&nbsp;Index</a></li>
+<li><a class="reference" href="#getopt" id="id133" name="id133">5&nbsp;&nbsp;&nbsp;Getopt</a><ul class="auto-toc">
+<li><a class="reference" href="#id65" id="id134" name="id134">5.1&nbsp;&nbsp;&nbsp;Imports</a></li>
+<li><a class="reference" href="#id66" id="id135" name="id135">5.2&nbsp;&nbsp;&nbsp;Operations</a></li>
+<li><a class="reference" href="#id67" id="id136" name="id136">5.3&nbsp;&nbsp;&nbsp;Examples</a></li>
+</ul>
+</li>
+<li><a class="reference" href="#id68" id="id137" name="id137">6&nbsp;&nbsp;&nbsp;Index</a></li>
 </ul>
 </div>
 <div class="section">
@@ -3004,8 +3010,7 @@ according to a given delimiter regex.</p>
 entire string for (non-overlapping) instances of the pattern, applies the
 given function <tt class="docutils literal"><span class="pre">f</span></tt> to the <a class="reference" href="#reg-info">reg_info</a> for each match, and collects all
 results in a list. Note: Never specify the <tt class="docutils literal"><span class="pre">REG_NOSUB</span></tt> flag with this
-function, it needs the submatch info. Also, this function will never
-match the empty string, to prevent looping on pathological patterns.</dd>
+function, it needs the submatch info.</dd>
 </dl>
 <a name="regexgg"><dl class="docutils" id="regexgg">
 <dt><tt class="docutils literal"><span class="pre">regexgg</span> <span class="pre">f</span> <span class="pre">pat</span> <span class="pre">cflags</span> <span class="pre">s</span> <span class="pre">eflags</span></tt></dt>
@@ -3025,7 +3030,9 @@ matches, with the unmatched portions of the string in between.</dd>
 given pattern.</dd>
 </dl>
 <!--  -->
-<p>Examples:</p>
+<div class="section">
+<h3><a class="toc-backref" href="#id129" id="basic-examples" name="basic-examples">4.10.1&nbsp;&nbsp;&nbsp;Basic Examples</a></h3>
+<p>Let's have a look at some simple examples:</p>
 <pre class="literal-block">
 &gt; let pat = &quot;[[:alpha:]][[:alnum:]]*&quot;;
 &gt; let s = &quot;1var foo 99 BAR $%&amp;&quot;;
@@ -3059,6 +3066,9 @@ info:</p>
 &gt; regexg (\info -&gt; info!1) pat 0 s 0;
 [&quot;var&quot;,&quot;foo&quot;,&quot;BAR&quot;]
 </pre>
+</div>
+<div class="section">
+<h3><a class="toc-backref" href="#id130" id="regex-substitutions-and-splitting" name="regex-substitutions-and-splitting">4.10.2&nbsp;&nbsp;&nbsp;Regex Substitutions and Splitting</a></h3>
 <p>We can also perform substitutions on matches:</p>
 <pre class="literal-block">
 &gt; regsub (sprintf &quot;&lt;%d:%s&gt;&quot;) pat 0 s 0;
@@ -3072,15 +3082,81 @@ info:</p>
 &gt; regsplit delim REG_EXTENDED &quot;The   quick brown    fox&quot; 0;
 [&quot;The&quot;,&quot;quick&quot;,&quot;brown&quot;,&quot;fox&quot;]
 </pre>
+</div>
+<div class="section">
+<h3><a class="toc-backref" href="#id131" id="empty-matches" name="empty-matches">4.10.3&nbsp;&nbsp;&nbsp;Empty Matches</a></h3>
+<p>Empty matches are permitted, too, subject to the constraint that at most
+one match is reported for each position (which also prevents looping). And
+of course an empty match will only be reported if nothing else matches. For
+instance:</p>
+<pre class="literal-block">
+&gt; regexg id &quot;&quot; REG_EXTENDED &quot;foo&quot; 0;
+[(0,&quot;&quot;),(1,&quot;&quot;),(2,&quot;&quot;),(3,&quot;&quot;)]
+&gt; regexg id &quot;o*&quot; REG_EXTENDED &quot;foo&quot; 0;
+[(0,&quot;&quot;),(1,&quot;oo&quot;),(3,&quot;&quot;)]
+&gt; regexgg id &quot;o*&quot; REG_EXTENDED &quot;foo&quot; 0;
+[(0,&quot;&quot;),(1,&quot;oo&quot;),(2,&quot;o&quot;),(3,&quot;&quot;)]
+</pre>
+<p>This also works when substituting or splitting:</p>
+<pre class="literal-block">
+&gt; regsub (cst &quot; &quot;) &quot;&quot; REG_EXTENDED &quot;some text&quot; 0;
+&quot; s o m e   t e x t &quot;
+&gt; regsub (cst &quot; &quot;) &quot; ?&quot; REG_EXTENDED &quot;some text&quot; 0;
+&quot; s o m e  t e x t &quot;
+&gt; regsplit &quot;&quot; REG_EXTENDED &quot;some text&quot; 0;
+[&quot;s&quot;,&quot;o&quot;,&quot;m&quot;,&quot;e&quot;,&quot; &quot;,&quot;t&quot;,&quot;e&quot;,&quot;x&quot;,&quot;t&quot;,&quot;&quot;]
+&gt; regsplit &quot; ?&quot; REG_EXTENDED &quot;some text&quot; 0;
+[&quot;s&quot;,&quot;o&quot;,&quot;m&quot;,&quot;e&quot;,&quot;&quot;,&quot;t&quot;,&quot;e&quot;,&quot;x&quot;,&quot;t&quot;,&quot;&quot;]
+</pre>
+</div>
+<div class="section">
+<h3><a class="toc-backref" href="#id132" id="submatches" name="submatches">4.10.4&nbsp;&nbsp;&nbsp;Submatches</a></h3>
+<p>Parenthesized subexpressions in a pattern yield corresponding submatch
+information, which is useful if we need to retrieve the text matched by a
+given subexpression. For instance, suppose we want to parse environment
+lines, such as those returned by the shell's <tt class="docutils literal"><span class="pre">set</span></tt> command. These can be
+dissected using the following regex:</p>
+<pre class="literal-block">
+&gt; const env_pat = &quot;^([^=]+)=(.*)$&quot;;
+&gt; const env_flags = REG_EXTENDED or REG_NEWLINE;
+&gt; regex env_pat env_flags &quot;SHELL=/bin/sh&quot; 0;
+1,0,&quot;SHELL=/bin/sh&quot;,0,&quot;SHELL&quot;,6,&quot;/bin/sh&quot;
+</pre>
+<p>Note that we again used an extended regex here, and we also added the
+<tt class="docutils literal"><span class="pre">REG_NEWLINE</span></tt> flag so that we properly deal with multiline input. The
+desired information is in the 4th and 6th element of the submatch info,
+we can retrieve that as follows:</p>
+<pre class="literal-block">
+&gt; parse_env s = regexg (\info -&gt; info!3 =&gt; info!5) env_pat env_flags s 0;
+&gt; parse_env &quot;SHELL=/bin/sh\nHOME=/home/bar\n&quot;;
+[&quot;SHELL&quot;=&gt;&quot;/bin/sh&quot;,&quot;HOME&quot;=&gt;&quot;/home/bar&quot;]
+</pre>
+<p>We can get hold of the real process environment as follows:</p>
+<pre class="literal-block">
+&gt; let env = parse_env $ fget $ popen &quot;set&quot; &quot;r&quot;;
+&gt; #env;
+109
+&gt; head env;
+&quot;BASH&quot;=&gt;&quot;/usr/bin/sh&quot;
+</pre>
+<p>Just for the fun of it, let's employ <a class="reference" href="#dict">dict</a> to convert this to a dictionary,
+providing easy random access to the environment variables:</p>
+<pre class="literal-block">
+&gt; using dict;
+&gt; let env_dict = dict env;
+&gt; env_dict!![&quot;SHELL&quot;,&quot;HOME&quot;];
+[&quot;/bin/bash&quot;,&quot;/home/ag&quot;]
+</pre>
 <!--  -->
 </div>
 </div>
+</div>
 <div class="section">
-<h1><a class="toc-backref" href="#id129" id="getopt" name="getopt">5&nbsp;&nbsp;&nbsp;Getopt</a></h1>
+<h1><a class="toc-backref" href="#id133" id="getopt" name="getopt">5&nbsp;&nbsp;&nbsp;Getopt</a></h1>
 <p>This is a quick-and-dirty replacement for the GNU getopt functions, ported
 from the Q library.</p>
 <div class="section">
-<h2><a class="toc-backref" href="#id130" id="id65" name="id65">5.1&nbsp;&nbsp;&nbsp;Imports</a></h2>
+<h2><a class="toc-backref" href="#id134" id="id65" name="id65">5.1&nbsp;&nbsp;&nbsp;Imports</a></h2>
 <p>To use the operations of this module, add the following import declaration
 to your program:</p>
 <pre class="literal-block">
@@ -3088,7 +3164,7 @@ using getopt;
 </pre>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id131" id="id66" name="id66">5.2&nbsp;&nbsp;&nbsp;Operations</a></h2>
+<h2><a class="toc-backref" href="#id135" id="id66" name="id66">5.2&nbsp;&nbsp;&nbsp;Operations</a></h2>
 <p>This module provides one operation: <tt class="docutils literal"><span class="pre">getopt</span> <span class="pre">opts</span> <span class="pre">args</span></tt></p>
 <p>The <tt class="docutils literal"><span class="pre">getopt</span></tt> function takes two arguments: <tt class="docutils literal"><span class="pre">opts</span></tt>, a list of option
 descriptions in the format described below, and <tt class="docutils literal"><span class="pre">args</span></tt>, a list of strings
@@ -3122,7 +3198,7 @@ equivalent, simply specify an empty option string for the <tt class="docutils li
 field.</p>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id132" id="id67" name="id67">5.3&nbsp;&nbsp;&nbsp;Examples</a></h2>
+<h2><a class="toc-backref" href="#id136" id="id67" name="id67">5.3&nbsp;&nbsp;&nbsp;Examples</a></h2>
 <pre class="literal-block">
 &gt; let opts = [(&quot;--help&quot;, &quot;-h&quot;, NOARG),       // no argument
 &gt;             (&quot;--version&quot;, &quot;&quot;, NOARG),      // no short option
@@ -3142,7 +3218,7 @@ copied to the result lists as is.</p>
 </div>
 </div>
 <div class="section">
-<h1><a class="toc-backref" href="#id133" id="id68" name="id68">6&nbsp;&nbsp;&nbsp;Index</a></h1>
+<h1><a class="toc-backref" href="#id137" id="id68" name="id68">6&nbsp;&nbsp;&nbsp;Index</a></h1>
 <ul class="simple">
 <li><a class="reference" href="#id8">!</a></li>
 <li><a class="reference" href="#id39">! (array)</a></li>
