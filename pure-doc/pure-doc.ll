@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
+#include <ctype.h>
 #include <string>
 #include <list>
 #include <iostream>
@@ -151,6 +152,15 @@ static void flush_cache()
 
 static list<string> targets;
 
+static bool compare(string first, string second)
+{
+  if (first.empty() || second.empty() ||
+      isalnum(first[0]) == isalnum(second[0]))
+    return first<second;
+  else
+    return isalnum(first[0]) < isalnum(second[0]);
+}
+
 static bool targetp(const string& text)
 {
   size_t p0 = text.find_first_not_of(" \t"), p = p0;
@@ -162,9 +172,17 @@ static bool targetp(const string& text)
       // trim trailing whitespace
       p = target.find_last_not_of(" \t");
       if (p != string::npos && target[p] == ':') {
+	target.erase(p);
+	// take care of escapes
+	while ((p = target.find("\\:")) != string::npos)
+	  target.erase(p, 1);
+	if (target.empty()) goto notarget;
+	size_t n = target.size();
+	if (target[0]=='`' && n>1 && target[n-1]=='`')
+	  target = target.substr(1, n-2);
+	if (target.empty()) goto notarget;
 	/* We found a hyperlink target. Store it away in the cache, to be
 	   emitted later, and create a raw html target for it. */
-	target.erase(p);
 	targets.push_back(target);
 	cache += text; cache += "\n";
 	string indent = text.substr(0, p0);
@@ -177,7 +195,7 @@ static bool targetp(const string& text)
 	       text.find_first_not_of(" \t", p+11) == string::npos) {
       /* Emit the index. */
       flush_cache();
-      targets.sort();
+      targets.sort(compare);
       for (list<string>::iterator it = targets.begin(), end = targets.end();
 	   it != end; it++)
 	cout << "* `" << *it << "`_" << endl;

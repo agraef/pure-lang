@@ -485,6 +485,7 @@ char *yytext;
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
+#include <ctype.h>
 #include <string>
 #include <list>
 #include <iostream>
@@ -515,7 +516,7 @@ static inline void echo(const char *s)
   }
 }
 
-#line 519 "pure-doc.cc"
+#line 520 "pure-doc.cc"
 
 #define INITIAL 0
 #define comment 1
@@ -700,10 +701,10 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 44 "pure-doc.ll"
+#line 45 "pure-doc.ll"
 
 
-#line 707 "pure-doc.cc"
+#line 708 "pure-doc.cc"
 
 	if ( !(yy_init) )
 		{
@@ -789,16 +790,16 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 /* rule 1 can match eol */
-#line 47 "pure-doc.ll"
+#line 48 "pure-doc.ll"
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 47 "pure-doc.ll"
+#line 48 "pure-doc.ll"
 echo(yytext); tabs(col, yytext, yyleng);
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 49 "pure-doc.ll"
+#line 50 "pure-doc.ll"
 {
   start = 0; buf = yytext+2;
   comment_text = yytext;
@@ -808,7 +809,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 55 "pure-doc.ll"
+#line 56 "pure-doc.ll"
 {
   col += yyleng; start = col; buf.clear();
   comment_text = yytext;
@@ -821,12 +822,12 @@ case 5:
 (yy_c_buf_p) = yy_cp = yy_bp + 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 61 "pure-doc.ll"
+#line 62 "pure-doc.ll"
 comment_text += yytext; tabs(col, yytext, yyleng);
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 62 "pure-doc.ll"
+#line 63 "pure-doc.ll"
 {
   buf += string("\n")+(yytext+2);
   comment_text += yytext;
@@ -835,17 +836,17 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 /* rule 7 can match eol */
-#line 68 "pure-doc.ll"
+#line 69 "pure-doc.ll"
 case 8:
 /* rule 8 can match eol */
 YY_RULE_SETUP
-#line 68 "pure-doc.ll"
+#line 69 "pure-doc.ll"
 print(start, buf); yyless(0); BEGIN(INITIAL);
 	YY_BREAK
 case 9:
 /* rule 9 can match eol */
 YY_RULE_SETUP
-#line 70 "pure-doc.ll"
+#line 71 "pure-doc.ll"
 {
   tabs(col, yytext, yyleng);
   buf += yytext; comment_text += yytext;
@@ -854,7 +855,7 @@ YY_RULE_SETUP
 case 10:
 /* rule 10 can match eol */
 YY_RULE_SETUP
-#line 74 "pure-doc.ll"
+#line 75 "pure-doc.ll"
 {
   tabs(col, yytext, yyleng);
   buf += yytext; comment_text += yytext;
@@ -862,7 +863,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 78 "pure-doc.ll"
+#line 79 "pure-doc.ll"
 {
   col += yyleng;
   comment_text += yytext;
@@ -872,22 +873,22 @@ YY_RULE_SETUP
 	YY_BREAK
 case 12:
 /* rule 12 can match eol */
-#line 86 "pure-doc.ll"
+#line 87 "pure-doc.ll"
 case 13:
 /* rule 13 can match eol */
 YY_RULE_SETUP
-#line 86 "pure-doc.ll"
+#line 87 "pure-doc.ll"
 echo(yytext); tabs(col, yytext, yyleng);
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 87 "pure-doc.ll"
+#line 88 "pure-doc.ll"
 echo(yytext); col++;
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(comment):
 case YY_STATE_EOF(lcomment):
-#line 89 "pure-doc.ll"
+#line 90 "pure-doc.ll"
 {
   if (YY_START != INITIAL)
     print(start, buf); BEGIN(INITIAL);
@@ -905,10 +906,10 @@ case YY_STATE_EOF(lcomment):
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 104 "pure-doc.ll"
+#line 105 "pure-doc.ll"
 ECHO;
 	YY_BREAK
-#line 912 "pure-doc.cc"
+#line 913 "pure-doc.cc"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -1870,7 +1871,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 104 "pure-doc.ll"
+#line 105 "pure-doc.ll"
 
 
 
@@ -1922,6 +1923,15 @@ static void flush_cache()
 
 static list<string> targets;
 
+static bool compare(string first, string second)
+{
+  if (first.empty() || second.empty() ||
+      isalnum(first[0]) == isalnum(second[0]))
+    return first<second;
+  else
+    return isalnum(first[0]) < isalnum(second[0]);
+}
+
 static bool targetp(const string& text)
 {
   size_t p0 = text.find_first_not_of(" \t"), p = p0;
@@ -1933,9 +1943,17 @@ static bool targetp(const string& text)
       // trim trailing whitespace
       p = target.find_last_not_of(" \t");
       if (p != string::npos && target[p] == ':') {
+	target.erase(p);
+	// take care of escapes
+	while ((p = target.find("\\:")) != string::npos)
+	  target.erase(p, 1);
+	if (target.empty()) goto notarget;
+	size_t n = target.size();
+	if (target[0]=='`' && n>1 && target[n-1]=='`')
+	  target = target.substr(1, n-2);
+	if (target.empty()) goto notarget;
 	/* We found a hyperlink target. Store it away in the cache, to be
 	   emitted later, and create a raw html target for it. */
-	target.erase(p);
 	targets.push_back(target);
 	cache += text; cache += "\n";
 	string indent = text.substr(0, p0);
@@ -1948,7 +1966,7 @@ static bool targetp(const string& text)
 	       text.find_first_not_of(" \t", p+11) == string::npos) {
       /* Emit the index. */
       flush_cache();
-      targets.sort();
+      targets.sort(compare);
       for (list<string>::iterator it = targets.begin(), end = targets.end();
 	   it != end; it++)
 	cout << "* `" << *it << "`_" << endl;
