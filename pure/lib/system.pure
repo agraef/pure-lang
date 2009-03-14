@@ -1074,7 +1074,7 @@ regexgg f pat::string cflags::int s::string eflags::int = result
 when
   result = regcomp regptr pat cflags;
   result = if result==0 then
-             (match s with
+             (match 0 s with
                 match offs "" = [];
                 match offs s = result when
                   result = regexec regptr s n matches eflags;
@@ -1122,19 +1122,26 @@ regsub f pat::string cflags::int s::string eflags::int = result
 when
   result = regcomp regptr pat cflags;
   result = if result==0 then
-             (match s with
-                match "" = "";
-                match s = result when
+             (match 0 s with
+                match offs "" = "";
+                match offs s = result when
                   result = regexec regptr s n matches eflags;
                   result = if result==0 then
 	                     (if null u then
-                                take q s + match (drop q s)
+                                take q s + match (offs+q) (drop q s)
                               else
-                                take p s + f info + match (drop q s)
+                                take p s + f info + match (offs+q) (drop q s)
                               when
                                 info = reglist regptr s matches;
                                 p, u = reg 0 info; q = p+#u+null u;
-                              end)
+			        info = xlat_pos offs info;
+                              end with
+			        xlat_pos offs (p, u, info)
+			          = offs+p, u, xlat_pos offs info if p>=0;
+			          = p, u, xlat_pos offs info otherwise;
+			        xlat_pos offs (p, u) = offs+p, u if p>=0;
+				  = p, u otherwise;
+			      end)
                            else s;
                 end;
               end when n, matches = regmatches regptr cflags end)
