@@ -878,7 +878,7 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
     string docname = s;
     if (!*s)
       // default is to load the Pure manual
-      docname = interp.libdir+"pure.html";
+      docname = "file:"+interp.libdir+"pure.html";
     else if ((p = strchr(s, ':')) && p>s && (!(q = strchr(s, '#')) || q>p))
       // proper URL, take as is
       ;
