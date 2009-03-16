@@ -8,6 +8,7 @@
 #include <list>
 #include <vector>
 #include "expr.hh"
+#include "runtime.h"
 
 using namespace std;
 
@@ -162,6 +163,11 @@ struct matcher {
   { assert(start!=0); return match(start, xs); }
   state *match(state *st, expr x);
   state *match(state *st, const exprl& x);
+
+  /* Match a runtime expression. */
+  state *match(pure_expr *x)
+  { assert(start!=0); return match(start, x); }
+  state *match(state *st, pure_expr *x);
 
 private: // these are used internally by the TA construction algorithm
 

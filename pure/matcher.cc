@@ -134,6 +134,47 @@ state *matcher::match(state *st, const exprl& x)
   return st;
 }
 
+state *matcher::match(state *st, pure_expr *x)
+{
+  // look for a matching transition
+  transl::const_iterator t;
+  for (t = st->tr.begin(); t != st->tr.end(); t++)
+    if (t->tag == x->tag) {
+      switch (x->tag) {
+      case EXPR::INT:
+	return (x->data.i == t->i)?t->st:0;
+      case EXPR::BIGINT:
+	return (mpz_cmp(x->data.z, t->z) == 0)?t->st:0;
+      case EXPR::DBL:
+	return (x->data.d == t->d)?t->st:0;
+      case EXPR::STR:
+	return (strcmp(x->data.s, t->s) == 0)?t->st:0;
+      case EXPR::APP: {
+	state *next = match(t->st, x->data.x[0]);
+	return next?match(next, x->data.x[1]):0;
+      }
+      default:
+	return t->st;
+      }
+    } else if ((x->tag == EXPR::APP)
+	       ? (t->tag < EXPR::APP) : (t->tag > x->tag))
+      break;
+  // no literal match, check for a matching qualified variable transition
+  if (x->tag < EXPR::APP)
+    for (t = st->tr.begin(); t != st->tr.end() && t->tag == EXPR::VAR; t++)
+      if (t->ttag == 0)
+	continue;
+      else if (t->ttag == x->tag)
+	return t->st;
+      else if (t->ttag < x->tag)
+	break;
+  // still no match, use default transition if present
+  if ((t = st->tr.begin()) != st->tr.end() &&
+      t->tag == EXPR::VAR && t->ttag == 0)
+    return t->st;
+  return 0;
+}
+
 /* TA construction algorithm. */
 
 state *matcher::make(const rule& ru, uint32_t skip)

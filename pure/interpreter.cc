@@ -4923,7 +4923,7 @@ pure_expr *interpreter::dodefn(env vars, expr lhs, expr rhs, pure_expr*& e)
   pure_expr *res = const_value(rhs);
   if (res) {
     matcher m(rule(lhs, rhs));
-    if (m.match(rhs)) {
+    if (m.match(res)) {
       // Bind the variables.
       for (env::const_iterator it = vars.begin(); it != vars.end(); ++it) {
 	int32_t tag = it->first;
