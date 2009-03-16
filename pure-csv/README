@@ -47,44 +47,47 @@ Examples of reading and writing CSV files are provided in the file
 Handling Errors
 ~~~~~~~~~~~~~~~
 
-Input that does not abide by dialect rules or records containing
-field types other than strings, integers, and doubles produce a special
-``csv::error msg`` term, where ``msg`` is a string describing the 
-particular error. Your application should either check for these 
-or have ``csv::error`` defined to directly handle errors in some way 
-(e.g., provide a default value, or raise an exception).
+.. _error:
 
-:Example:::
+``error msg`` \-
+  is an error handling term. Input that does not abide by dialect 
+  rules or records containing field types other than strings, integers, 
+  and doubles produce a special ``csv::error msg`` term, where ``msg`` 
+  is a string describing the particular error. Your application should 
+  either check for these or have ``csv::error`` defined to directly 
+  handle errors in some way (e.g., provide a default value, or raise an 
+  exception).
 
-  > using system, csv;
-  > csv::str [1%4, 1%3]; // rational numbers are not allowed
-  csv::error "field 1: invalid conversion type."
-  > /* Now, print a message and
-  >    perform an exit action on the error */
-  > csv::error msg = printf "CSV Error: %s\n" msg $$ exit 0;
-  > csv::str [1%4, 1%3];
-  CSV Error: field 1: invalid conversion type.
-  $
+.. _example_error:
+
+**Examples**
+  ::
+    
+    > using system, csv;
+    > csv::str [1%4, 1%3]; // rational numbers are not allowed
+    csv::error "field 1: invalid conversion type."
+    > /* Now, print a message and
+    >    perform an exit action on the error */
+    > csv::error msg = printf "CSV Error: %s\n" msg $$ exit 0;
+    > csv::str [1%4, 1%3];
+    CSV Error: field 1: invalid conversion type.
+    $
 
 Creating Dialects
 ~~~~~~~~~~~~~~~~~
 
 .. _dialect:
 
-``dialect list``
-  creates a dialect from a list of dialect option pairs. Option pairs 
-  are denoted ``a=>b`` where ``a`` is the option and ``b`` is the 
+``dialect list`` \-
+  creates a dialect from a list of dialect option pairs. Option 
+  pairs are denoted ``a=>b`` where ``a`` is the option and ``b`` is the 
   option's value. The list of possible options and option values are 
   presented below.
 
-  .. _DELIMETER:
-  
   - ``DELIMITER`` - Field delimiter.
 
     * Value - any string.
     * Default - ``","``.
-
-  .. _ESCAPE:
 
   - ``ESCAPE`` - Embedded escape character.
 
@@ -93,8 +96,6 @@ Creating Dialects
     * Notes - When reading, the escape character is dropped and the next 
       char is inserted into the field. When writing, the escape 
       character is written into the output stream.
-  
-  .. _QUOTE:
   
   - ``QUOTE`` - Quote character.
   
@@ -105,8 +106,6 @@ Creating Dialects
       the ``ESCAPE`` string to that of ``QUOTE`` if ``ESCAPE`` is not 
       specified in the dialect argument list.
   
-  .. _QUOTING_STYLE:
-
   - ``QUOTING_STYLE`` - Sets the quoting style of strings and/or 
     numbers.
 
@@ -114,14 +113,10 @@ Creating Dialects
       ``QUOTE_EMBEDDED``}.
     * Default - ``QUOTE_STRINGS``.
 
-  .. _LINETERMINATOR:
-
   - ``LINETERMINATOR`` - Record termination value.
 
     * Value - any string.
     * Default: ``"\r\n"``.
-
-  .. _SKIPSPACE:
 
   -  ``SKIPSPACE`` - Skip leading white space flag.
 
@@ -129,12 +124,18 @@ Creating Dialects
     * Default - 1.
     * Note - Quoted fields always retain white space.
 
-  :Example:
-  
   The following example illustrates the construction of a dialect for 
-  reading tab delimited files without quoted strings::
+  reading tab delimited files without quoted strings.
 
+.. _example_dialect:
+
+**Examples**
+  ::
+    
     > using csv;
+    > /* Use the predefined EXCEL dialect */
+    > csv::list ("\"=\"\"004\",23\r\n", csv::EXCEL);
+    ["=\"004",23]
     > const d = csv::dialect [
     >   csv::DELIMITER => "\t", 
     >   csv::QUOTING_STYLE => csv::QUOTE_EMBEDDED];
@@ -147,19 +148,19 @@ String and List Functions
 
 .. _str:
 
-``str list|(list, dialect)``
-  converts a list to a CSV formatted string. If the argument is a 
-  list, ``str`` converts the list using RFC 4180 rules 
-  (http://www.ietf.org/rfc/rfc4180.txt). If the argument is given
-  as a tuple, then ``str`` converts the list using the rules 
-  specified in the user's dialect. A ``csv::error msg`` term is invoked 
-  if a fields contains data other than a string, integer, or a double 
-  types.
-  
-  :Examples:
-  
+``str list|(list, dialect)`` \-
+  Str converts a list to a CSV formatted string. If the 
+  argument is a list, ``str`` converts the list using RFC 4180 rules 
+  (http://www.ietf.org/rfc/rfc4180.txt). If the argument is given as a 
+  tuple, then ``str`` converts the list using the rules specified in the 
+  user's dialect. A ``csv::error msg`` term is invoked if a fields 
+  contains data other than a string, integer, or a double types.
+
+.. _examples_str:
+
+**Examples**
   ::
-  
+    
     > using csv;
     > csv::str [1,"",3.00,"bob \"plays drums\""];
     "1,\"\",3,\"bob \"\"plays drums\"\"\"\n"
@@ -170,7 +171,7 @@ String and List Functions
 
 .. _list:
 
-``list string|(string, dialect)``
+``list string|(string, dialect)`` \-
   creates a list of string or numeric fields from a CSV formatted
   string. If the argument is given as a string, then the conversion 
   is performed using RFC 4180 rules 
@@ -179,10 +180,11 @@ String and List Functions
   specified by the dialect. An invalidly formatted CSV string returns
   a ``csv::error msg`` term.
   
-  :Examples:
-  
+.. _example_list:
+
+**Examples**
   ::
-  
+    
     > using csv;
     > csv::list "1,\"\",3,\"bob \"\"plays drums\"\"\"\n";
     [1,"",3,"bob \"plays drums\""]
@@ -194,20 +196,25 @@ String and List Functions
 File Reading Functions
 ~~~~~~~~~~~~~~~~~~~~~~
 
-``fgets file|(file, dialect)``
-  is equivalent to ``csv::list`` except that reading is from a file. 
-  The file must first be opened using ``fopen`` which is defined in the 
-  system library (system.pure).
+.. _fgets:
 
-``csv::fget file|(file, dialect)``
+``fgets file|(file, dialect)`` \-
+  is equivalent to ``csv::list`` except that reading is from a 
+  file. The file must first be opened using ``fopen`` which is defined 
+  in the system library (system.pure).
+
+.. _fget:
+
+``fget file|(file, dialect)`` \-
   reads a whole file and returns a list of records. This procedure 
   should only be used on data files that are small enough to fit in the 
   computer's primary memory.
-  
-  :Examples:
-  
-  ::
-  
+
+.. _examples_fget:
+
+**Examples**
+  :: 
+    
     > using system, csv;
     > /* Write a file to test */
     > let f = fopen "test.csv" "w";
@@ -229,19 +236,24 @@ When modifying CSV files that will be imported into Microsoft Excel,
 fields with significant leading 0s should be written using a 
 ``"=""0..."""`` formatting scheme. This same technique will work for
 preserving leading space too. Again, this quirk should only be
-necessary for files to be imported into MS Excel.
+necessary for files to be imported into MS Excel. 
 
-``fputs list file|(file, dialect)``
-  is equivalent to ``csv::str`` except that writing is to a file. The 
-  file must first be opened using ``fopen`` which can be found in the 
-  system library.
-  
-``fput list file|(file, dialect)``
+.. _fputs:
+
+``fputs list file|(file, dialect)`` \-
+  is equivalent to ``csv::str`` except that writing is to a file. 
+  The file must first be opened using ``fopen`` which can be found in 
+  the system library.
+
+.. _fput:
+
+``fput list file|(file, dialect)`` \-
   writes a list of records to a file. Each record is converted 
   according to the rules stated in the ``csv::str`` procedure.
 
-  :Examples:
-  
+.. _examples_fput:
+
+**Examples**
   ::
   
     > using system, csv;

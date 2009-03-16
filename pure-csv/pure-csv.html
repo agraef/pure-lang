@@ -350,14 +350,19 @@ RFC4180 standard.</p>
 &quot;samples.pure&quot; located in the examples subdirectory.</p>
 <div class="section">
 <h2><a class="toc-backref" href="#id3" id="handling-errors" name="handling-errors">2.1&nbsp;&nbsp;&nbsp;Handling Errors</a></h2>
-<p>Input that does not abide by dialect rules or records containing
-field types other than strings, integers, and doubles produce a special
-<tt class="docutils literal"><span class="pre">csv::error</span> <span class="pre">msg</span></tt> term, where <tt class="docutils literal"><span class="pre">msg</span></tt> is a string describing the
-particular error. Your application should either check for these
-or have <tt class="docutils literal"><span class="pre">csv::error</span></tt> defined to directly handle errors in some way
-(e.g., provide a default value, or raise an exception).</p>
-<p>:Example::</p>
-<pre class="literal-block">
+<dl class="docutils" id="error">
+<dt><tt class="docutils literal"><span class="pre">error</span> <span class="pre">msg</span></tt> -</dt>
+<dd>is an error handling term. Input that does not abide by dialect
+rules or records containing field types other than strings, integers,
+and doubles produce a special <tt class="docutils literal"><span class="pre">csv::error</span> <span class="pre">msg</span></tt> term, where <tt class="docutils literal"><span class="pre">msg</span></tt>
+is a string describing the particular error. Your application should
+either check for these or have <tt class="docutils literal"><span class="pre">csv::error</span></tt> defined to directly
+handle errors in some way (e.g., provide a default value, or raise an
+exception).</dd>
+</dl>
+<dl class="docutils" id="example-error">
+<dt><strong>Examples</strong></dt>
+<dd><pre class="first last literal-block">
 &gt; using system, csv;
 &gt; csv::str [1%4, 1%3]; // rational numbers are not allowed
 csv::error &quot;field 1: invalid conversion type.&quot;
@@ -368,23 +373,23 @@ csv::error &quot;field 1: invalid conversion type.&quot;
 CSV Error: field 1: invalid conversion type.
 $
 </pre>
+</dd>
+</dl>
 </div>
 <div class="section">
 <h2><a class="toc-backref" href="#id4" id="creating-dialects" name="creating-dialects">2.2&nbsp;&nbsp;&nbsp;Creating Dialects</a></h2>
 <dl class="docutils" id="dialect">
-<dt><tt class="docutils literal"><span class="pre">dialect</span> <span class="pre">list</span></tt></dt>
-<dd><p class="first">creates a dialect from a list of dialect option pairs. Option pairs
-are denoted <tt class="docutils literal"><span class="pre">a=&gt;b</span></tt> where <tt class="docutils literal"><span class="pre">a</span></tt> is the option and <tt class="docutils literal"><span class="pre">b</span></tt> is the
+<dt><tt class="docutils literal"><span class="pre">dialect</span> <span class="pre">list</span></tt> -</dt>
+<dd><p class="first">creates a dialect from a list of dialect option pairs. Option
+pairs are denoted <tt class="docutils literal"><span class="pre">a=&gt;b</span></tt> where <tt class="docutils literal"><span class="pre">a</span></tt> is the option and <tt class="docutils literal"><span class="pre">b</span></tt> is the
 option's value. The list of possible options and option values are
 presented below.</p>
-<ul class="simple" id="delimeter">
+<ul class="simple">
 <li><tt class="docutils literal"><span class="pre">DELIMITER</span></tt> - Field delimiter.<ul>
 <li>Value - any string.</li>
 <li>Default - <tt class="docutils literal"><span class="pre">&quot;,&quot;</span></tt>.</li>
 </ul>
 </li>
-</ul>
-<ul class="simple" id="escape">
 <li><tt class="docutils literal"><span class="pre">ESCAPE</span></tt> - Embedded escape character.<ul>
 <li>Value - any string.</li>
 <li>Default - <tt class="docutils literal"><span class="pre">&quot;\&quot;&quot;</span></tt>.</li>
@@ -393,8 +398,6 @@ char is inserted into the field. When writing, the escape
 character is written into the output stream.</li>
 </ul>
 </li>
-</ul>
-<ul class="simple" id="quote">
 <li><tt class="docutils literal"><span class="pre">QUOTE</span></tt> - Quote character.<ul>
 <li>Value - any string.</li>
 <li>Default - <tt class="docutils literal"><span class="pre">&quot;\&quot;&quot;</span></tt>.</li>
@@ -404,8 +407,6 @@ the <tt class="docutils literal"><span class="pre">ESCAPE</span></tt> string to 
 specified in the dialect argument list.</li>
 </ul>
 </li>
-</ul>
-<ul class="simple" id="quoting-style">
 <li><tt class="docutils literal"><span class="pre">QUOTING_STYLE</span></tt> - Sets the quoting style of strings and/or
 numbers.<ul>
 <li>Value - One of {<tt class="docutils literal"><span class="pre">QUOTE_ALL</span></tt>, <tt class="docutils literal"><span class="pre">QUOTE_STRINGS</span></tt>,
@@ -413,15 +414,11 @@ numbers.<ul>
 <li>Default - <tt class="docutils literal"><span class="pre">QUOTE_STRINGS</span></tt>.</li>
 </ul>
 </li>
-</ul>
-<ul class="simple" id="lineterminator">
 <li><tt class="docutils literal"><span class="pre">LINETERMINATOR</span></tt> - Record termination value.<ul>
 <li>Value - any string.</li>
 <li>Default: <tt class="docutils literal"><span class="pre">&quot;\r\n&quot;</span></tt>.</li>
 </ul>
 </li>
-</ul>
-<ul class="simple" id="skipspace">
 <li><tt class="docutils literal"><span class="pre">SKIPSPACE</span></tt> - Skip leading white space flag.</li>
 </ul>
 <blockquote>
@@ -431,18 +428,17 @@ numbers.<ul>
 <li>Note - Quoted fields always retain white space.</li>
 </ul>
 </blockquote>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Example:</th><td class="field-body"></td>
-</tr>
-</tbody>
-</table>
-<p>The following example illustrates the construction of a dialect for
-reading tab delimited files without quoted strings:</p>
-<pre class="last literal-block">
+<p class="last">The following example illustrates the construction of a dialect for
+reading tab delimited files without quoted strings.</p>
+</dd>
+</dl>
+<dl class="docutils" id="example-dialect">
+<dt><strong>Examples</strong></dt>
+<dd><pre class="first last literal-block">
 &gt; using csv;
+&gt; /* Use the predefined EXCEL dialect */
+&gt; csv::list (&quot;\&quot;=\&quot;\&quot;004\&quot;,23\r\n&quot;, csv::EXCEL);
+[&quot;=\&quot;004&quot;,23]
 &gt; const d = csv::dialect [
 &gt;   csv::DELIMITER =&gt; &quot;\t&quot;,
 &gt;   csv::QUOTING_STYLE =&gt; csv::QUOTE_EMBEDDED];
@@ -456,23 +452,17 @@ reading tab delimited files without quoted strings:</p>
 <div class="section">
 <h2><a class="toc-backref" href="#id5" id="string-and-list-functions" name="string-and-list-functions">2.3&nbsp;&nbsp;&nbsp;String and List Functions</a></h2>
 <dl class="docutils" id="str">
-<dt><tt class="docutils literal"><span class="pre">str</span> <span class="pre">list|(list,</span> <span class="pre">dialect)</span></tt></dt>
-<dd><p class="first">converts a list to a CSV formatted string. If the argument is a
-list, <tt class="docutils literal"><span class="pre">str</span></tt> converts the list using RFC 4180 rules
-(<a class="reference" href="http://www.ietf.org/rfc/rfc4180.txt">http://www.ietf.org/rfc/rfc4180.txt</a>). If the argument is given
-as a tuple, then <tt class="docutils literal"><span class="pre">str</span></tt> converts the list using the rules
-specified in the user's dialect. A <tt class="docutils literal"><span class="pre">csv::error</span> <span class="pre">msg</span></tt> term is invoked
-if a fields contains data other than a string, integer, or a double
-types.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Examples:</th><td class="field-body"></td>
-</tr>
-</tbody>
-</table>
-<pre class="last literal-block">
+<dt><tt class="docutils literal"><span class="pre">str</span> <span class="pre">list|(list,</span> <span class="pre">dialect)</span></tt> -</dt>
+<dd>Str converts a list to a CSV formatted string. If the
+argument is a list, <tt class="docutils literal"><span class="pre">str</span></tt> converts the list using RFC 4180 rules
+(<a class="reference" href="http://www.ietf.org/rfc/rfc4180.txt">http://www.ietf.org/rfc/rfc4180.txt</a>). If the argument is given as a
+tuple, then <tt class="docutils literal"><span class="pre">str</span></tt> converts the list using the rules specified in the
+user's dialect. A <tt class="docutils literal"><span class="pre">csv::error</span> <span class="pre">msg</span></tt> term is invoked if a fields
+contains data other than a string, integer, or a double types.</dd>
+</dl>
+<dl class="docutils" id="examples-str">
+<dt><strong>Examples</strong></dt>
+<dd><pre class="first last literal-block">
 &gt; using csv;
 &gt; csv::str [1,&quot;&quot;,3.00,&quot;bob \&quot;plays drums\&quot;&quot;];
 &quot;1,\&quot;\&quot;,3,\&quot;bob \&quot;\&quot;plays drums\&quot;\&quot;\&quot;\n&quot;
@@ -484,23 +474,18 @@ types.</p>
 </dd>
 </dl>
 <dl class="docutils" id="list">
-<dt><tt class="docutils literal"><span class="pre">list</span> <span class="pre">string|(string,</span> <span class="pre">dialect)</span></tt></dt>
-<dd><p class="first">creates a list of string or numeric fields from a CSV formatted
+<dt><tt class="docutils literal"><span class="pre">list</span> <span class="pre">string|(string,</span> <span class="pre">dialect)</span></tt> -</dt>
+<dd>creates a list of string or numeric fields from a CSV formatted
 string. If the argument is given as a string, then the conversion
 is performed using RFC 4180 rules
 (<a class="reference" href="http://www.ietf.org/rfc/rfc4180.txt">http://www.ietf.org/rfc/rfc4180.txt</a>). If the argument is given as
 a tuple, then the conversion is performed according to the rules
 specified by the dialect. An invalidly formatted CSV string returns
-a <tt class="docutils literal"><span class="pre">csv::error</span> <span class="pre">msg</span></tt> term.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Examples:</th><td class="field-body"></td>
-</tr>
-</tbody>
-</table>
-<pre class="last literal-block">
+a <tt class="docutils literal"><span class="pre">csv::error</span> <span class="pre">msg</span></tt> term.</dd>
+</dl>
+<dl class="docutils" id="example-list">
+<dt><strong>Examples</strong></dt>
+<dd><pre class="first last literal-block">
 &gt; using csv;
 &gt; csv::list &quot;1,\&quot;\&quot;,3,\&quot;bob \&quot;\&quot;plays drums\&quot;\&quot;\&quot;\n&quot;;
 [1,&quot;&quot;,3,&quot;bob \&quot;plays drums\&quot;&quot;]
@@ -514,24 +499,21 @@ a <tt class="docutils literal"><span class="pre">csv::error</span> <span class="
 </div>
 <div class="section">
 <h2><a class="toc-backref" href="#id6" id="file-reading-functions" name="file-reading-functions">2.4&nbsp;&nbsp;&nbsp;File Reading Functions</a></h2>
-<dl class="docutils">
-<dt><tt class="docutils literal"><span class="pre">fgets</span> <span class="pre">file|(file,</span> <span class="pre">dialect)</span></tt></dt>
-<dd>is equivalent to <tt class="docutils literal"><span class="pre">csv::list</span></tt> except that reading is from a file.
-The file must first be opened using <tt class="docutils literal"><span class="pre">fopen</span></tt> which is defined in the
-system library (system.pure).</dd>
-<dt><tt class="docutils literal"><span class="pre">csv::fget</span> <span class="pre">file|(file,</span> <span class="pre">dialect)</span></tt></dt>
-<dd><p class="first">reads a whole file and returns a list of records. This procedure
+<dl class="docutils" id="fgets">
+<dt><tt class="docutils literal"><span class="pre">fgets</span> <span class="pre">file|(file,</span> <span class="pre">dialect)</span></tt> -</dt>
+<dd>is equivalent to <tt class="docutils literal"><span class="pre">csv::list</span></tt> except that reading is from a
+file. The file must first be opened using <tt class="docutils literal"><span class="pre">fopen</span></tt> which is defined
+in the system library (system.pure).</dd>
+</dl>
+<dl class="docutils" id="fget">
+<dt><tt class="docutils literal"><span class="pre">fget</span> <span class="pre">file|(file,</span> <span class="pre">dialect)</span></tt> -</dt>
+<dd>reads a whole file and returns a list of records. This procedure
 should only be used on data files that are small enough to fit in the
-computer's primary memory.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Examples:</th><td class="field-body"></td>
-</tr>
-</tbody>
-</table>
-<pre class="last literal-block">
+computer's primary memory.</dd>
+</dl>
+<dl class="docutils" id="examples-fget">
+<dt><strong>Examples</strong></dt>
+<dd><pre class="first last literal-block">
 &gt; using system, csv;
 &gt; /* Write a file to test */
 &gt; let f = fopen &quot;test.csv&quot; &quot;w&quot;;
@@ -556,23 +538,20 @@ fields with significant leading 0s should be written using a
 <tt class="docutils literal"><span class="pre">&quot;=&quot;&quot;0...&quot;&quot;&quot;</span></tt> formatting scheme. This same technique will work for
 preserving leading space too. Again, this quirk should only be
 necessary for files to be imported into MS Excel.</p>
-<dl class="docutils">
-<dt><tt class="docutils literal"><span class="pre">fputs</span> <span class="pre">list</span> <span class="pre">file|(file,</span> <span class="pre">dialect)</span></tt></dt>
-<dd>is equivalent to <tt class="docutils literal"><span class="pre">csv::str</span></tt> except that writing is to a file. The
-file must first be opened using <tt class="docutils literal"><span class="pre">fopen</span></tt> which can be found in the
-system library.</dd>
-<dt><tt class="docutils literal"><span class="pre">fput</span> <span class="pre">list</span> <span class="pre">file|(file,</span> <span class="pre">dialect)</span></tt></dt>
-<dd><p class="first">writes a list of records to a file. Each record is converted
-according to the rules stated in the <tt class="docutils literal"><span class="pre">csv::str</span></tt> procedure.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Examples:</th><td class="field-body"></td>
-</tr>
-</tbody>
-</table>
-<pre class="last literal-block">
+<dl class="docutils" id="fputs">
+<dt><tt class="docutils literal"><span class="pre">fputs</span> <span class="pre">list</span> <span class="pre">file|(file,</span> <span class="pre">dialect)</span></tt> -</dt>
+<dd>is equivalent to <tt class="docutils literal"><span class="pre">csv::str</span></tt> except that writing is to a file.
+The file must first be opened using <tt class="docutils literal"><span class="pre">fopen</span></tt> which can be found in
+the system library.</dd>
+</dl>
+<dl class="docutils" id="fput">
+<dt><tt class="docutils literal"><span class="pre">fput</span> <span class="pre">list</span> <span class="pre">file|(file,</span> <span class="pre">dialect)</span></tt> -</dt>
+<dd>writes a list of records to a file. Each record is converted
+according to the rules stated in the <tt class="docutils literal"><span class="pre">csv::str</span></tt> procedure.</dd>
+</dl>
+<dl class="docutils" id="examples-fput">
+<dt><strong>Examples</strong></dt>
+<dd><pre class="first last literal-block">
 &gt; using system, csv;
 &gt; /* Write a file to test */
 &gt; let f = fopen &quot;test.csv&quot; &quot;w&quot;;
