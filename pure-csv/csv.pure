@@ -25,10 +25,12 @@
    Updated: November 21,22, 2008 to use namespaces.
 */
 
-namespace C;
+namespace csv;
+
 using "lib:csv";
 /* Read a string with embedded '\n's within quotes. No error checking! */
-extern expr *csv_fgets(FILE *fp, char *quote);
+
+private extern expr *csv_fgets(FILE *fp, char *quote);
 
 /* Convert a CSV string to a list (record).
    s: CSV formated string to be converted to a list of fields.
@@ -37,7 +39,7 @@ extern expr *csv_fgets(FILE *fp, char *quote);
    NOTE: Rec must contain strings, integers, and floating point numbers. If a
          field is some other type, the 'csv::error msg' rule is invoked.
 */
-extern expr *csvstr_to_list(char *str, expr *dialect);
+private extern expr *csvstr_to_list(char *str, expr *dialect);
 
 /* Convert a list (record) to a CSV string.
    Rec: List of fields to be converted to CSV format.
@@ -46,11 +48,10 @@ extern expr *csvstr_to_list(char *str, expr *dialect);
    NOTE: Rec must contain strings, integers, and floating point numbers. If a
          field is some other type, the 'csv::error msg' rule is invoked.
 */
-extern expr *list_to_csvstr(expr *list, expr *dialect);
 
-extern int fputs(char *s, FILE *fp);
+private extern expr *list_to_csvstr(expr *list, expr *dialect);
 
-namespace csv;
+private extern int fputs(char *s, FILE *fp) = c_fputs;
 
 public
 /* Public dialect options
@@ -167,34 +168,34 @@ const DEFAULTS
    define csv::error to implement custom error handling. */
 
 /* List to CSV string conversion */
-  str record@[]
-| str record@(_:_)
-  = C::list_to_csvstr record DEFAULTS;
+str record@[] |
+str record@(_:_)
+  = list_to_csvstr record DEFAULTS;
 
-  str (recordc@[], dialect@(_:_))
-| str (record@(_:_), dialect@(_:_))
-  = C::list_to_csvstr record dialect;
+str (recordc@[], dialect@(_:_)) |
+str (record@(_:_), dialect@(_:_))
+  = list_to_csvstr record dialect;
 
 /* Write a record to a file */
-  fputs record@[] f::pointer
-| fputs record@(_:_) f::pointer
-  = C::fputs (str (record, DEFAULTS)) f;
+fputs record@[] f::pointer |
+fputs record@(_:_) f::pointer
+  = c_fputs (str (record, DEFAULTS)) f;
 
-  fputs record@[] (f::pointer, dialect@(_:_))
-| fputs record@(_:_) (f::pointer, dialect@(_:_))
-  = C::fputs (str (record, dialect)) f;
+fputs record@[] (f::pointer, dialect@(_:_)) |
+fputs record@(_:_) (f::pointer, dialect@(_:_))
+  = c_fputs (str (record, dialect)) f;
 
 /* CSV string to list conversion */
 list s::string
-  = C::csvstr_to_list s DEFAULTS;
+  = csvstr_to_list s DEFAULTS;
 list (s::string, dialect@(_:_))
-  = C::csvstr_to_list s dialect;
-list (C::csv_fgets s _,_)
+  = csvstr_to_list s dialect;
+list (csv_fgets s _,_)
   = s;
 
 /* Read a record from a file */
 fgets (f::pointer, dialect@(_:_))
-  = list (C::csv_fgets f (dialect!QUOTE), dialect);
+  = list (csv_fgets f (dialect!QUOTE), dialect);
 fgets f::pointer
   = fgets (f, DEFAULTS);
 
