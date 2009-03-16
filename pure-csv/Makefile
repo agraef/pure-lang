@@ -1,7 +1,7 @@
 
 # Package name and version number:
 dist = pure-csv-$(version)
-version = 0.3
+version = 0.4
 
 # Try to guess the installation prefix (this needs GNU make):
 prefix = $(patsubst %/bin/pure,%,$(shell which pure 2>/dev/null))
@@ -47,7 +47,8 @@ CFLAGS = -g -O2
 
 FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 
-DISTFILES = COPYING Makefile README config.guess examples/*.pure csv.c csv.pure
+DISTFILES = COPYING Makefile README config.guess examples/*.pure csv.c \
+csv.pure pure-csv.html
 
 all: csv$(DLL)
 
@@ -57,12 +58,28 @@ csv$(DLL): csv.c
 clean:
 	rm -f *$(DLL) *~ *.a *.o
 
+# documentation (this needs docutils)
+
+html: pure-csv.html
+latex: pure-csv.tex
+pdf: pure-csv.pdf
+
+pure-csv.html: README
+	rst2html.py $< $@
+
+pure-csv.tex: README
+	rst2latex.py $< $@
+
+pure-csv.pdf: README
+	pdflatex $<
+	rm -r *.aux *.log *.out
+
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
-	cp csv.pure csv$(DLL) "$(DESTDIR)$(libdir)/pure"
+	cp csv.pure csv$(DLL) pure-csv.html "$(DESTDIR)$(libdir)/pure"
 
 uninstall:
-	rm -f "$(DESTDIR)$(libdir)/pure/csv.pure" "$(DESTDIR)$(libdir)/pure/csv$(DLL)"
+	rm -f "$(DESTDIR)$(libdir)/pure/csv.pure" "$(DESTDIR)$(libdir)/pure/csv$(DLL)" "$(DESTDIR)$(libdir)/pure/pure-csv.html"
 
 dist:
 	rm -rf $(dist)
