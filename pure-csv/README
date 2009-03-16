@@ -36,8 +36,8 @@ Usage
 
 Data records are represented as lists of strings, integers, and 
 doubles. Three predefined dialects are provided; RFC4180 (default for
-Windows), UNIX (default for Linux, \*BSD, and Unix), and EXCEL; but
-procedures and options are provided to create many CSV dialects. See
+Windows), UNIX (default for Linux, \*BSD, and Unix), and EXCEL; and
+procedures are provided to create other CSV dialects. See
 (http://www.ietf.org/rfc/rfc4180.txt) for more details about the 
 RFC4180 standard.
 
@@ -72,23 +72,23 @@ Creating Dialects
 .. _dialect:
 
 ``dialect list``
-  Creates a dialect from a list of dialect option pairs. Option 
-  pairs are denoted ``a=>b`` where ``a`` is the option and ``b`` is
-  the option's value. The list of possible options and option values
-  are presented below.
+  creates a dialect from a list of dialect option pairs. Option pairs 
+  are denoted ``a=>b`` where ``a`` is the option and ``b`` is the 
+  option's value. The list of possible options and option values are 
+  presented below.
 
   .. _DELIMETER:
   
   - ``DELIMITER`` - Field delimiter.
 
-    * Values - any string.
+    * Value - any string.
     * Default - ``","``.
 
   .. _ESCAPE:
 
   - ``ESCAPE`` - Embedded escape character.
 
-    * Values - any string.
+    * Value - any string.
     * Default - ``"\""``.
     * Notes - When reading, the escape character is dropped and the next 
       char is inserted into the field. When writing, the escape 
@@ -98,7 +98,7 @@ Creating Dialects
   
   - ``QUOTE`` - Quote character.
   
-    * Values - any string.
+    * Value - any string.
     * Default - ``"\""``.
     * Notes - If embedded quotes are doubled, ``ESCAPE`` must equal the 
       value of ``QUOTE``. The dialect function will automatically set 
@@ -110,7 +110,7 @@ Creating Dialects
   - ``QUOTING_STYLE`` - Sets the quoting style of strings and/or 
     numbers.
 
-    * Values - One of {``QUOTE_ALL``, ``QUOTE_STRINGS``, 
+    * Value - One of {``QUOTE_ALL``, ``QUOTE_STRINGS``, 
       ``QUOTE_EMBEDDED``}.
     * Default - ``QUOTE_STRINGS``.
 
@@ -118,21 +118,21 @@ Creating Dialects
 
   - ``LINETERMINATOR`` - Record termination value.
 
-    * Values - any string.
+    * Value - any string.
     * Default: ``"\r\n"``.
 
   .. _SKIPSPACE:
 
   -  ``SKIPSPACE`` - Skip leading white space flag.
 
-    * Values - boolean {1=true, 0=false}.
+    * Value - boolean {1=true, 0=false}.
     * Default - 1.
     * Note - Quoted fields always retain white space.
 
   :Example:
   
-  The following example shows how to construct a dialect to read tab 
-  delimited files without quoted strings::
+  The following example illustrates the construction of a dialect for 
+  reading tab delimited files without quoted strings::
 
     > using csv;
     > const d = csv::dialect [
@@ -148,12 +148,13 @@ String and List Functions
 .. _str:
 
 ``str list|(list, dialect)``
-  Converts a list to a CSV formatted string. If the argument is a 
-  list, conversion is performed using RFC 4180 rules 
+  converts a list to a CSV formatted string. If the argument is a 
+  list, ``str`` converts the list using RFC 4180 rules 
   (http://www.ietf.org/rfc/rfc4180.txt). If the argument is given
-  as a tuple, then the conversion is performed according to the 
-  dialect's specifications. A ``csv::error msg`` term is invoked if a 
-  fields contains data other than a string, integer, or a double types.
+  as a tuple, then ``str`` converts the list using the rules 
+  specified in the user's dialect. A ``csv::error msg`` term is invoked 
+  if a fields contains data other than a string, integer, or a double 
+  types.
   
   :Examples:
   
@@ -170,7 +171,7 @@ String and List Functions
 .. _list:
 
 ``list string|(string, dialect)``
-  Creates a list of string or numeric fields from a CSV formatted
+  creates a list of string or numeric fields from a CSV formatted
   string. If the argument is given as a string, then the conversion 
   is performed using RFC 4180 rules 
   (http://www.ietf.org/rfc/rfc4180.txt). If the argument is given as
@@ -194,14 +195,14 @@ File Reading Functions
 ~~~~~~~~~~~~~~~~~~~~~~
 
 ``fgets file|(file, dialect)``
-  The ``fgets`` function is equivalent to ``csv::list`` except that 
-  reading is from a file. The file must first be opened using ``fopen`` 
-  which is defined in the system library (system.pure).
+  is equivalent to ``csv::list`` except that reading is from a file. 
+  The file must first be opened using ``fopen`` which is defined in the 
+  system library (system.pure).
 
 ``csv::fget file|(file, dialect)``
-  This function reads a whole file and returns a list of records.
-  This procedure should only be used on data files that are small
-  enough to fit in the computer's primary memory.
+  reads a whole file and returns a list of records. This procedure 
+  should only be used on data files that are small enough to fit in the 
+  computer's primary memory.
   
   :Examples:
   
@@ -231,14 +232,13 @@ preserving leading space too. Again, this quirk should only be
 necessary for files to be imported into MS Excel.
 
 ``fputs list file|(file, dialect)``
-  The function is equivalent to ``csv::str`` except that writing is
-  to a file. The file must first be opened using ``fopen`` which can 
-  be found in the system library.
+  is equivalent to ``csv::str`` except that writing is to a file. The 
+  file must first be opened using ``fopen`` which can be found in the 
+  system library.
   
 ``fput list file|(file, dialect)``
-  This function writes a list of records to a file. Each record is
-  converted according to the rules stated in the ``csv::str``
-  procedure.
+  writes a list of records to a file. Each record is converted 
+  according to the rules stated in the ``csv::str`` procedure.
 
   :Examples:
   
