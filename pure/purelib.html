@@ -1710,29 +1710,93 @@ automagically when the value of a thunk is needed.</dd>
 </dl>
 <a name="arity"><dl class="docutils" id="arity">
 <dt><tt class="docutils literal"><span class="pre">arity</span> <span class="pre">f</span></tt></dt>
-<dd>Get the arity of a closure (named, anonymous or thunk) or a function
-application, i.e., the number of arguments it expects.</dd>
+<dd>Get the arity of a function object, i.e., the number of arguments it
+expects. Returns 0 for thunks and saturated applications, -1 for
+over-saturated applications and non-functions.</dd>
 </dl>
-<p>Note that the arity of a function will be the actual number of arguments
-for named functions, as given in the function definition. Thunks, being
-parameterless closures, always yield a zero count. Anonymous functions
-(lambdas) <em>always</em> yield an arity of 1, because a multi-argument lambda
-like <tt class="docutils literal"><span class="pre">\x</span> <span class="pre">y</span> <span class="pre">-&gt;</span> <span class="pre">x*y</span></tt> is in fact just a shorthand for several nested
-1-argument lambdas, <tt class="docutils literal"><span class="pre">\x</span> <span class="pre">-&gt;</span> <span class="pre">\y</span> <span class="pre">-&gt;</span> <span class="pre">x*y</span></tt> in this example. Hence:</p>
+<p>Note that only closures (i.e., named and anonymous functions and thunks)
+have a defined arity in Pure, otherwise <tt class="docutils literal"><span class="pre">arity</span></tt> returns -1 indicating an
+unknown argument count. Partial applications of closures return the number
+of remaining arguments, which may be zero to indicate a <strong>saturated</strong> (but
+unevaluated) application, or -1 for <strong>over-saturated</strong> and constructor
+applications. (Note that in Pure a saturated application may also remain
+unevaluated because there is no definition for the given combination of
+arguments and thus the expression is in normal form, or because the
+application was quoted. If such a normal form application is then applied
+to some &quot;extra&quot; arguments it becomes over-saturated.)</p>
+<p>The value returned by <tt class="docutils literal"><span class="pre">arity</span></tt> always denotes the <strong>semantic arity</strong> of the
+given function, not the declared <strong>syntactic arity</strong> if the function also
+happens to be an operator symbol. Usually these will coincide (as, e.g., in
+the case of <tt class="docutils literal"><span class="pre">+</span></tt> which is a binary operator and also expects two
+arguments). But this is not necessarily the case, as shown in the following
+example of a binary operator which actually takes <em>three</em> arguments:</p>
 <pre class="literal-block">
-&gt; foo = \x y -&gt; x*y;
-&gt; arity foo;
+&gt; infix 0 oops;
+&gt; (oops) x y z = x*z+y;
+&gt; arity (oops);
+3
+&gt; arity (5 oops 8);
 1
-&gt; arity (foo 1);
+&gt; map (5 oops 8) (1..5);
+[13,18,23,28,33]
+</pre>
+<p>Also note that the arity of a <em>named</em> function will be the actual number of
+arguments, as given in the function definition:</p>
+<pre class="literal-block">
+&gt; foo x y = x*y;
+&gt; arity foo;
+2
+&gt; arity (foo x);
 1
 </pre>
-<p>In contrast:</p>
+<p>In contrast, <em>anonymous</em> functions (lambdas) always yield an arity of 1,
+because a multi-argument lambda like <tt class="docutils literal"><span class="pre">\x</span> <span class="pre">y</span> <span class="pre">-&gt;</span> <span class="pre">x*y</span></tt> is in fact just a
+shorthand for several nested 1-argument lambdas, <tt class="docutils literal"><span class="pre">\x</span> <span class="pre">-&gt;</span> <span class="pre">\y</span> <span class="pre">-&gt;</span> <span class="pre">x*y</span></tt> in
+this example. Hence:</p>
 <pre class="literal-block">
-&gt; bar x y = x*y;
+&gt; bar = \x y -&gt; x*y;
 &gt; arity bar;
-2
-&gt; arity (bar 1);
 1
+&gt; arity (bar x);
+1
+</pre>
+<p>Note that in either case the arity becomes zero for an unevaluated
+saturated application:</p>
+<pre class="literal-block">
+&gt; arity (foo x y);
+0
+&gt; arity (bar x y);
+0
+</pre>
+<p>Unevaluated thunks, being parameterless closures, yield a zero arity, too:</p>
+<pre class="literal-block">
+&gt; arity (x&amp;);
+0
+</pre>
+<p>By adding extra arguments you then get an over-saturated application:</p>
+<pre class="literal-block">
+&gt; arity (foo x y z);
+-1
+&gt; arity (bar x y z);
+-1
+&gt; arity ((x&amp;) y);
+-1
+</pre>
+<p>Finally, the value -1 is also returned for non-function objects (including
+pure constructors) and their applications:</p>
+<pre class="literal-block">
+&gt; arity 99;
+-1
+&gt; arity (force (x&amp;));
+-1
+&gt; arity (foo 1 2);
+-1
+&gt; arity (baz a b);
+-1
+&gt; arity (x:y);
+-1
+&gt; arity (:);
+-1
 </pre>
 <!--  -->
 </div>

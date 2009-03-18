@@ -1,0 +1,35 @@
+
+// The arity function.
+
+// Syntactic vs. semantic arity.
+infix 0 oops;
+(oops) x y z = x*z+y;
+arity (oops);
+arity (5 oops 8);
+
+// Named functions.
+foo x y = x*y;
+arity foo;
+arity (foo x);
+arity (foo x y); // saturated
+arity (foo x y z); // over-saturated
+
+// Anonymous functions (always yield 1 when unsaturated).
+bar = \x y -> x*y;
+arity bar;
+arity (bar x);
+arity (bar x y); // saturated
+arity (bar x y z); // over-saturated
+
+// Thunks.
+arity (x&); // saturated
+arity ((x&) y); // over-saturated
+arity ((x&) y z); // over-saturated
+
+// Non-function objects and their applications (always yield -1).
+arity 99;
+arity (force (x&));
+arity (foo 1 2);
+arity (baz a b);
+arity (x:y);
+arity (:);

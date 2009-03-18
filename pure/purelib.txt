@@ -2650,29 +2650,94 @@ Some special operations to deal with exceptions and function objects.
 .. _arity:
 
 ``arity f``
-  Get the arity of a closure (named, anonymous or thunk) or a function
-  application, i.e., the number of arguments it expects.
+  Get the arity of a function object, i.e., the number of arguments it
+  expects. Returns 0 for thunks and saturated applications, -1 for
+  over-saturated applications and non-functions.
 
-Note that the arity of a function will be the actual number of arguments
-for named functions, as given in the function definition. Thunks, being
-parameterless closures, always yield a zero count. Anonymous functions
-(lambdas) *always* yield an arity of 1, because a multi-argument lambda
-like ``\x y -> x*y`` is in fact just a shorthand for several nested
-1-argument lambdas, ``\x -> \y -> x*y`` in this example. Hence::
+Note that only closures (i.e., named and anonymous functions and thunks)
+have a defined arity in Pure, otherwise ``arity`` returns -1 indicating an
+unknown argument count. Partial applications of closures return the number
+of remaining arguments, which may be zero to indicate a `saturated` (but
+unevaluated) application, or -1 for `over-saturated` and constructor
+applications. (Note that in Pure a saturated application may also remain
+unevaluated because there is no definition for the given combination of
+arguments and thus the expression is in normal form, or because the
+application was quoted. If such a normal form application is then applied
+to some "extra" arguments it becomes over-saturated.)
 
-  > foo = \x y -> x*y;
+The value returned by ``arity`` always denotes the `semantic arity` of the
+given function, not the declared `syntactic arity` if the function also
+happens to be an operator symbol. Usually these will coincide (as, e.g., in
+the case of ``+`` which is a binary operator and also expects two
+arguments). But this is not necessarily the case, as shown in the following
+example of a binary operator which actually takes *three* arguments::
+
+  > infix 0 oops;
+  > (oops) x y z = x*z+y;
+  > arity (oops);
+  3
+  > arity (5 oops 8);
+  1
+  > map (5 oops 8) (1..5);
+  [13,18,23,28,33]
+
+Also note that the arity of a *named* function will be the actual number of
+arguments, as given in the function definition::
+
+  > foo x y = x*y;
   > arity foo;
-  1
-  > arity (foo 1);
-  1
-
-In contrast::
-
-  > bar x y = x*y;
-  > arity bar;
   2
-  > arity (bar 1);
+  > arity (foo x);
   1
+
+In contrast, *anonymous* functions (lambdas) always yield an arity of 1,
+because a multi-argument lambda like ``\x y -> x*y`` is in fact just a
+shorthand for several nested 1-argument lambdas, ``\x -> \y -> x*y`` in
+this example. Hence::
+
+  > bar = \x y -> x*y;
+  > arity bar;
+  1
+  > arity (bar x);
+  1
+
+Note that in either case the arity becomes zero for an unevaluated
+saturated application::
+
+  > arity (foo x y);
+  0
+  > arity (bar x y);
+  0
+
+Unevaluated thunks, being parameterless closures, yield a zero arity, too::
+
+  > arity (x&);
+  0
+
+By adding extra arguments you then get an over-saturated application::
+
+  > arity (foo x y z);
+  -1
+  > arity (bar x y z);
+  -1
+  > arity ((x&) y);
+  -1
+
+Finally, the value -1 is also returned for non-function objects (including
+pure constructors) and their applications::
+
+  > arity 99;
+  -1
+  > arity (force (x&));
+  -1
+  > arity (foo 1 2);
+  -1
+  > arity (baz a b);
+  -1
+  > arity (x:y);
+  -1
+  > arity (:);
+  -1
 
 ..
 
