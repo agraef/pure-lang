@@ -192,10 +192,10 @@ private: // these are used internally by the TA construction algorithm
   void merge_ftrans(transl& tr, int32_t tag, state *st);
   void merge_vtrans(transl& tr, state *st) { merge_vtrans(tr, 0, st); }
   void merge_vtrans(transl& tr, int8_t ttag, state *st);
-  void merge_ctrans(transl& tr, int32_t x, state *st);
-  void merge_ctrans(transl& tr, const mpz_t& x, state *st);
-  void merge_ctrans(transl& tr, double x, state *st);
-  void merge_ctrans(transl& tr, const char *x, state *st);
+  void merge_ctrans_int(transl& tr, int32_t x, state *st);
+  void merge_ctrans_bigint(transl& tr, const mpz_t& x, state *st);
+  void merge_ctrans_double(transl& tr, double x, state *st);
+  void merge_ctrans_string(transl& tr, const char *x, state *st);
 
   /* Finalize the automaton, given the desired start state. Assigns state
      numbers and builds the state table). */

@@ -292,16 +292,16 @@ void matcher::merge_trans(transl& tr1, transl& tr2)
     merge_vtrans(tr1, tr2.begin()->ttag, tr2.begin()->st);
     break;
   case EXPR::INT:
-    merge_ctrans(tr1, tr2.begin()->i, tr2.begin()->st);
+    merge_ctrans_int(tr1, tr2.begin()->i, tr2.begin()->st);
     break;
   case EXPR::BIGINT:
-    merge_ctrans(tr1, tr2.begin()->z, tr2.begin()->st);
+    merge_ctrans_bigint(tr1, tr2.begin()->z, tr2.begin()->st);
     break;
   case EXPR::DBL:
-    merge_ctrans(tr1, tr2.begin()->d, tr2.begin()->st);
+    merge_ctrans_double(tr1, tr2.begin()->d, tr2.begin()->st);
     break;
   case EXPR::STR:
-    merge_ctrans(tr1, tr2.begin()->s, tr2.begin()->st);
+    merge_ctrans_string(tr1, tr2.begin()->s, tr2.begin()->st);
     break;
   default:
     assert(tr2.begin()->tag > 0);
@@ -393,7 +393,7 @@ void matcher::merge_vtrans(transl& tr, int8_t ttag, state *st)
   }
 }
 
-void matcher::merge_ctrans(transl& tr, int32_t x, state *st)
+void matcher::merge_ctrans_int(transl& tr, int32_t x, state *st)
 {
   transl::iterator t;
   // look for a matching transition
@@ -413,7 +413,8 @@ void matcher::merge_ctrans(transl& tr, int32_t x, state *st)
   if (t0 == tr.end() || t0->tag != EXPR::VAR)
     // no matching var transition found, use an untyped one if available
     t0 = tr.begin();
-  if (t0 != tr.end() && t0->tag == EXPR::VAR) {
+  if (t0 != tr.end() && t0->tag == EXPR::VAR &&
+      (t0->ttag == EXPR::INT || t0->ttag == 0)) {
     *t1.st = *t0->st;
     merge_state(t1.st, st);
   } else
@@ -422,7 +423,7 @@ void matcher::merge_ctrans(transl& tr, int32_t x, state *st)
   tr.insert(t, t1);
 }
 
-void matcher::merge_ctrans(transl& tr, const mpz_t& x, state *st)
+void matcher::merge_ctrans_bigint(transl& tr, const mpz_t& x, state *st)
 {
   transl::iterator t;
   // look for a matching transition
@@ -442,7 +443,8 @@ void matcher::merge_ctrans(transl& tr, const mpz_t& x, state *st)
   if (t0 == tr.end() || t0->tag != EXPR::VAR)
     // no matching var transition found, use an untyped one if available
     t0 = tr.begin();
-  if (t0 != tr.end() && t0->tag == EXPR::VAR) {
+  if (t0 != tr.end() && t0->tag == EXPR::VAR &&
+      (t0->ttag == EXPR::BIGINT || t0->ttag == 0)) {
     *t1.st = *t0->st;
     merge_state(t1.st, st);
   } else
@@ -451,7 +453,7 @@ void matcher::merge_ctrans(transl& tr, const mpz_t& x, state *st)
   tr.insert(t, t1);
 }
 
-void matcher::merge_ctrans(transl& tr, double x, state *st)
+void matcher::merge_ctrans_double(transl& tr, double x, state *st)
 {
   transl::iterator t;
   // look for a matching transition
@@ -471,7 +473,8 @@ void matcher::merge_ctrans(transl& tr, double x, state *st)
   if (t0 == tr.end() || t0->tag != EXPR::VAR)
     // no matching var transition found, use an untyped one if available
     t0 = tr.begin();
-  if (t0 != tr.end() && t0->tag == EXPR::VAR) {
+  if (t0 != tr.end() && t0->tag == EXPR::VAR &&
+      (t0->ttag == EXPR::DBL || t0->ttag == 0)) {
     *t1.st = *t0->st;
     merge_state(t1.st, st);
   } else
@@ -480,7 +483,7 @@ void matcher::merge_ctrans(transl& tr, double x, state *st)
   tr.insert(t, t1);
 }
 
-void matcher::merge_ctrans(transl& tr, const char *x, state *st)
+void matcher::merge_ctrans_string(transl& tr, const char *x, state *st)
 {
   transl::iterator t;
   // look for a matching transition
@@ -500,7 +503,8 @@ void matcher::merge_ctrans(transl& tr, const char *x, state *st)
   if (t0 == tr.end() || t0->tag != EXPR::VAR)
     // no matching var transition found, use an untyped one if available
     t0 = tr.begin();
-  if (t0 != tr.end() && t0->tag == EXPR::VAR) {
+  if (t0 != tr.end() && t0->tag == EXPR::VAR &&
+      (t0->ttag == EXPR::STR || t0->ttag == 0)) {
     *t1.st = *t0->st;
     merge_state(t1.st, st);
   } else
