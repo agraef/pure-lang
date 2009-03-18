@@ -1927,13 +1927,11 @@ corresponding error message::
   > fact foo;
   <stdin>, line 2: unhandled exception 'failed_cond' while evaluating 'fact foo'
 
-Exceptions also provide a way to handle asynchronous signals. Most standard
-termination signals (``SIGINT``, ``SIGTERM``, etc.) are set up during startup
-of the interpreter to produce corresponding Pure exceptions of the form
-``signal SIG`` where ``SIG`` is the signal number. Pure's system module
-provides symbolic constants for common POSIX signals and also defines the
-operation ``trap`` which lets you rebind any signal to a signal exception. For
-instance, the following lets you handle the ``SIGQUIT`` signal::
+Exceptions also provide a way to handle asynchronous signals. Pure's system
+module provides symbolic constants for common POSIX signals and also defines
+the operation ``trap`` which lets you rebind any signal to a signal
+exception. For instance, the following lets you handle the ``SIGQUIT``
+signal::
 
   > using system;
   > trap SIG_TRAP SIGQUIT;
@@ -1944,6 +1942,11 @@ signal, see signal(7) for details)::
 
   > trap SIG_IGN SIGQUIT; // signal is ignored
   > trap SIG_DFL SIGQUIT; // reinstalls the default signal handler
+
+Note that when the interpreter runs interactively, for convenience most
+standard termination signals (``SIGINT``, ``SIGTERM``, etc.) are already set
+up to produce corresponding Pure exceptions of the form ``signal SIG`` where
+``SIG`` is the signal number.
 
 Last but not least, exceptions can also be used to implement non-local value
 returns. For instance, here's a variation of our n queens algorithm which only

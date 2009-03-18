@@ -7,7 +7,7 @@
 <title>The Pure Manual</title>
 <meta name="author" content="Albert Graef &lt;Dr.Graef&#64;t-online.de&gt;" />
 <meta name="copyright" content="Copyright (c) 2009" />
-<meta name="date" content="2009-03-13" />
+<meta name="date" content="2009-03-18" />
 <style type="text/css">
 
 /*
@@ -304,7 +304,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Copyright:</th>
 <td>Copyright (c) 2009</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2009-03-13</td></tr>
+<td>2009-03-18</td></tr>
 </tbody>
 </table>
 <p>This document is available under the <a class="reference" href="http://www.gnu.org/copyleft/fdl.html">GNU Free Documentation License</a>. Also see <a class="reference" href="#license">License</a> for licensing
@@ -2185,13 +2185,11 @@ corresponding error message:</p>
 &gt; fact foo;
 &lt;stdin&gt;, line 2: unhandled exception 'failed_cond' while evaluating 'fact foo'
 </pre>
-<p>Exceptions also provide a way to handle asynchronous signals. Most standard
-termination signals (<tt class="docutils literal"><span class="pre">SIGINT</span></tt>, <tt class="docutils literal"><span class="pre">SIGTERM</span></tt>, etc.) are set up during startup
-of the interpreter to produce corresponding Pure exceptions of the form
-<tt class="docutils literal"><span class="pre">signal</span> <span class="pre">SIG</span></tt> where <tt class="docutils literal"><span class="pre">SIG</span></tt> is the signal number. Pure's system module
-provides symbolic constants for common POSIX signals and also defines the
-operation <tt class="docutils literal"><span class="pre">trap</span></tt> which lets you rebind any signal to a signal exception. For
-instance, the following lets you handle the <tt class="docutils literal"><span class="pre">SIGQUIT</span></tt> signal:</p>
+<p>Exceptions also provide a way to handle asynchronous signals. Pure's system
+module provides symbolic constants for common POSIX signals and also defines
+the operation <tt class="docutils literal"><span class="pre">trap</span></tt> which lets you rebind any signal to a signal
+exception. For instance, the following lets you handle the <tt class="docutils literal"><span class="pre">SIGQUIT</span></tt>
+signal:</p>
 <pre class="literal-block">
 &gt; using system;
 &gt; trap SIG_TRAP SIGQUIT;
@@ -2203,6 +2201,10 @@ signal, see signal(7) for details):</p>
 &gt; trap SIG_IGN SIGQUIT; // signal is ignored
 &gt; trap SIG_DFL SIGQUIT; // reinstalls the default signal handler
 </pre>
+<p>Note that when the interpreter runs interactively, for convenience most
+standard termination signals (<tt class="docutils literal"><span class="pre">SIGINT</span></tt>, <tt class="docutils literal"><span class="pre">SIGTERM</span></tt>, etc.) are already set
+up to produce corresponding Pure exceptions of the form <tt class="docutils literal"><span class="pre">signal</span> <span class="pre">SIG</span></tt> where
+<tt class="docutils literal"><span class="pre">SIG</span></tt> is the signal number.</p>
 <p>Last but not least, exceptions can also be used to implement non-local value
 returns. For instance, here's a variation of our n queens algorithm which only
 returns the first solution. Note the use of <tt class="docutils literal"><span class="pre">throw</span></tt> in the recursive search

@@ -348,34 +348,9 @@ main(int argc, char *argv[])
   string rcfile;
   // This is used in advisory stack checks.
   interpreter::baseptr = &base;
-  /* Set up handlers for all standard POSIX termination signals (except
-     SIGKILL which is unmaskable). SIGPIPE is ignored by default, all others
-     are mapped to Pure exceptions of the form 'signal SIG', so that they can
-     be caught with 'catch' or safely return us to the interpreter's
-     interactive command line. */
-#ifdef SIGHUP
-  signal(SIGHUP, sig_handler);
-#endif
-#ifdef SIGINT
-  signal(SIGINT, sig_handler);
-#endif
+  // We always ignore SIGPIPE by default.
 #ifdef SIGPIPE
   signal(SIGPIPE, SIG_IGN);
-#endif
-#ifdef SIGALRM
-  signal(SIGALRM, sig_handler);
-#endif
-#ifdef SIGTERM
-  signal(SIGTERM, sig_handler);
-#endif
-#ifdef SIGUSR1
-  signal(SIGUSR1, sig_handler);
-#endif
-#ifdef SIGUSR2
-  signal(SIGUSR2, sig_handler);
-#endif
-#ifdef _WIN32
-  InstallSignalHandler();
 #endif
   // set up an exit function which saves the history if needed
   atexit(exit_handler);
@@ -537,6 +512,32 @@ main(int argc, char *argv[])
     return 0;
   }
   interp.symtab.init_builtins();
+  /* Only when running interactively, set up handlers for all standard POSIX
+     termination signals (except SIGKILL which is unmaskable). These are
+     mapped to Pure exceptions of the form 'signal SIG', so that they can be
+     caught with 'catch' or safely return us to the interpreter's interactive
+     command line. */
+#ifdef SIGHUP
+  signal(SIGHUP, sig_handler);
+#endif
+#ifdef SIGINT
+  signal(SIGINT, sig_handler);
+#endif
+#ifdef SIGALRM
+  signal(SIGALRM, sig_handler);
+#endif
+#ifdef SIGTERM
+  signal(SIGTERM, sig_handler);
+#endif
+#ifdef SIGUSR1
+  signal(SIGUSR1, sig_handler);
+#endif
+#ifdef SIGUSR2
+  signal(SIGUSR2, sig_handler);
+#endif
+#ifdef _WIN32
+  InstallSignalHandler();
+#endif
   // enter the interactive command loop
   interp.interactive = true;
   if (isatty(fileno(stdin)) || force_interactive) {
