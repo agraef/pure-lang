@@ -542,6 +542,9 @@ error x		= fprintf stderr "%s: unknown error (%s)\n" (prog,str x) $$
 invalid_option opt
 		= error $ sprintf "invalid option %s, try -h for help" opt;
 
+invalid_src_option opt
+		= error $ sprintf "invalid option %s in source" opt;
+
 get_set_opt opt	= case myopts!![opt] of
 		   [val::string] = split "," val;
 		   _ = [] otherwise;
@@ -594,7 +597,7 @@ let opts        = [("--help", "-h", NOARG),
 		   ("--exclude", "-X", REQARG),
 		   ("--output-file", "-o", REQARG)];
 
-//let argv = ["faust2pd","-r","10","-s","dbmeter.dsp.xml"];
+//let argv = ["faust2pd","test/organ.dsp.xml"];
 let prog,myargs = case argv of prog:args = prog,args; _ = "faust2pd",[] end;
 
 let prog = "faust2pd";
@@ -603,11 +606,6 @@ let myopts,myargs = catch invalid_option $ getopt opts myargs;
 let myopts = dict myopts;
 let help_flag = member myopts "--help";
 let version_flag = member myopts "--version";
-let fake_buttons_flag = member myopts "--fake-buttons";
-let slider_nums_flag = member myopts "--slider-nums";
-let [radio_sliders,nvoices,height,width,fnsize] = map get_int_opt
-  ["--radio-sliders","--nvoices","--height","--width","--font-size"];
-let exclude = get_set_opt "--exclude";
 
 if version_flag then
   print_version
@@ -629,7 +627,23 @@ if outname===xmlname then
   error "output would overwrite source file, aborting"
 else ();
 
+attrs s		= regexg (\info->info!3) "\\[pd:([^]]+)\\]" REG_EXTENDED s 0;
+
 let dsp_info = catch error (faustxml::info xmlname);
+let src_opts = case dsp_info!5 of
+                 _ (label,_) = ["--"+opt | opt = attrs label];
+                 _ = [];
+               end;
+let src_opts,_ = catch invalid_src_option $ getopt opts src_opts;
+
+/* Command line options always override what's in the source. */
+let myopts = dict (src_opts+members myopts);
+
+let fake_buttons_flag = member myopts "--fake-buttons";
+let slider_nums_flag = member myopts "--slider-nums";
+let [radio_sliders,nvoices,height,width,fnsize] = map get_int_opt
+  ["--radio-sliders","--nvoices","--height","--width","--font-size"];
+let exclude = get_set_opt "--exclude";
 
 let fn1,fn2 = if fnsize>0 then fnsize,fnsize else fn1,fn2;
 
