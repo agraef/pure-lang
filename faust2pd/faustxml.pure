@@ -136,16 +136,18 @@ end if controlp x;
    ``info fname``
      Extract the description of a Faust DSP from its XML file. This is the
      main entry point. Returns a tuple with the name, description and version
-     of the DSP, as well as number of inputs and outputs and the toplevel
+     of the DSP, as well as the number of inputs and outputs and the toplevel
      group with all the control descriptions. Raises an exception if the XML
      file doesn't exist or contains invalid contents.
 
    Example::
 
+     > using faustxml;
      > let name,descr,version,in,out,group =
      >   faustxml::info "examples/basic/freeverb.dsp.xml";
      > name,descr,version,in,out;
      "freeverb","freeverb -- a Schroeder reverb","1.0",2,2
+     > using system;
      > do (puts.str) $ faustxml::pcontrols group;
      faustxml::hslider ("freeverb/damp",0.5,0.0,1.0,0.025)
      faustxml::hslider ("freeverb/roomsize",0.5,0.0,1.0,0.025)
