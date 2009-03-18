@@ -507,7 +507,10 @@ passive_control_objs dx j name s init
    front. */
 
 mangle s	= join "-" $ filter (\x->~null x) $
-		  regsplit "[^A-Za-z0-9]+" REG_EXTENDED s 0;
+		  regsplit "[^A-Za-z0-9]+" REG_EXTENDED s 0
+when
+  s = strcat $ regsplit "[ \t]*\\[[^]]+\\][ \t]*" REG_EXTENDED s 0;
+end;
 
 pdcontrols x	= filter (((~=)"/").control_label) $ controls "" x with
   controls path x
