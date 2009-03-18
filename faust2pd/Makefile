@@ -41,7 +41,7 @@ distclean:
 	for x in basic faust synth seqdemo; do make -C examples/$$x distclean; done
 
 realclean:
-	rm -f *.txt *.html *.tex *.pdf
+	rm -f *.txt *.tex *.pdf
 	for x in basic faust synth seqdemo; do make -C examples/$$x realclean; done
 
 # install the faust2pd script and accompanying files
