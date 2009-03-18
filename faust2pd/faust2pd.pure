@@ -52,10 +52,10 @@ move dx dy x	= x otherwise;
 
 /* Write dsp and synth patches to a file. */
 
-write_dsp xmlname outname
+write_dsp info outname
 		= fputs "#N canvas 0 0 450 300 10;\n" f $$
 		  do (write_obj f) objs
-		    when info = faustxml::info xmlname; name,_ = info;
+		    when name,_ = info;
 		      outname = if null outname then name+".pd" else outname;
 		      f = fopen outname "w";
 		      if pointerp f then ()
@@ -63,10 +63,10 @@ write_dsp xmlname outname
 		      objs = make_dsp info;
 		    end;
 
-write_synth n xmlname outname
+write_synth n info outname
 		= fputs "#N canvas 0 0 450 300 10;\n" f $$
 		  do (write_obj f) objs
-		    when info = faustxml::info xmlname; name,_ = info;
+		    when name,_ = info;
 		      outname = if null outname then name+".pd" else outname;
 		      f = fopen outname "w";
 		      if pointerp f then ()
@@ -534,9 +534,13 @@ join2 s t	= s+"/"+t otherwise;
 
 /* main program */
 
-invalid_option opt
-		= fprintf stderr "%s: invalid option %s\n" (prog,opt) $$
+error msg::string
+		= fprintf stderr "%s: %s\n" (prog,msg) $$ exit 1;
+error x		= fprintf stderr "%s: unknown error (%s)\n" (prog,str x) $$
 		  exit 1;
+
+invalid_option opt
+		= error $ sprintf "invalid option %s, try -h for help" opt;
 
 get_set_opt opt	= case myopts!![opt] of
 		   [val::string] = split "," val;
@@ -551,8 +555,7 @@ get_int_opt opt	= case myopts!![opt] of
 extern int atoi(char*);
 check_int_opt opt val
 		= n if n>0 when n = atoi val end;
-		= fprintf stderr "%s: invalid option value %s %s\n"
-		  (prog,opt,val) $$ exit 1;
+		= error $ sprintf "invalid option value %s %s" (opt,val);
 
 print_usage prog
 		= printf
@@ -592,7 +595,9 @@ let opts        = [("--help", "-h", NOARG),
 		   ("--output-file", "-o", REQARG)];
 
 //let argv = ["faust2pd","-r","10","-s","dbmeter.dsp.xml"];
-let prog:myargs = argv;
+let prog,myargs = case argv of prog:args = prog,args; _ = "faust2pd",[] end;
+
+let prog = "faust2pd";
 
 let myopts,myargs = catch invalid_option $ getopt opts myargs;
 let myopts = dict myopts;
@@ -604,10 +609,15 @@ let [radio_sliders,nvoices,height,width,fnsize] = map get_int_opt
   ["--radio-sliders","--nvoices","--height","--width","--font-size"];
 let exclude = get_set_opt "--exclude";
 
-if #myargs~=1 && ~version_flag || help_flag then
+if version_flag then
+  print_version
+else if help_flag then
   print_usage prog
+else if null myargs then
+  error "no source file specified, try -h for help"
+else if #myargs>1 then
+  error "more than one source file specified, try -h for help"
 else ();
-if version_flag then print_version else ();
 
 let xmlname:_ = myargs;
 
@@ -616,17 +626,15 @@ let outname = if member myopts "--output-file" then
               else ();
 
 if outname===xmlname then
-  fputs "output would overwrite source file, aborting\n" stderr $$ exit 1
+  error "output would overwrite source file, aborting"
 else ();
+
+let dsp_info = catch error (faustxml::info xmlname);
 
 let fn1,fn2 = if fnsize>0 then fnsize,fnsize else fn1,fn2;
 
-main		= setlocale LC_ALL "C" $$ catch mainerr mainprog $$ exit 0;
-mainerr msg::string
-		= fprintf stderr "%s: %s\n" (prog,msg) $$ exit 1;
-//mainerr _	= fprintf stderr "%s: unknown error\n" prog $$ exit 1;
-mainerr x	= fprintf stderr "%s: unknown error (%s)\n" (prog,str x) $$ exit 1;
-mainprog	= write_synth nvoices xmlname outname if nvoices>0;
-		= write_dsp xmlname outname otherwise;
+main		= setlocale LC_ALL "C" $$ catch error mainprog $$ exit 0;
+mainprog	= write_synth nvoices dsp_info outname if nvoices>0;
+		= write_dsp dsp_info outname otherwise;
 
 main;
