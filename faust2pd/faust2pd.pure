@@ -629,6 +629,8 @@ else ();
 
 attrs s		= regexg (\info->info!3) "\\[pd:([^]]+)\\]" REG_EXTENDED s 0;
 
+setlocale LC_ALL "C";
+
 let dsp_info = catch error (faustxml::info xmlname);
 let src_opts = case dsp_info!5 of
                  _ (label,_) = ["--"+opt | opt = attrs label];
@@ -647,7 +649,7 @@ let exclude = get_set_opt "--exclude";
 
 let fn1,fn2 = if fnsize>0 then fnsize,fnsize else fn1,fn2;
 
-main		= setlocale LC_ALL "C" $$ catch error mainprog $$ exit 0;
+main		= catch error mainprog $$ exit 0;
 mainprog	= write_synth nvoices dsp_info outname if nvoices>0;
 		= write_dsp dsp_info outname otherwise;
 
