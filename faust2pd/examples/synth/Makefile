@@ -7,8 +7,16 @@
 # make svg: make SVG diagrams
 # make clean: remove all generated stuff
 
-# Try to guess the host system type and figure out compilation flags.
+DLL = .pd_linux
+shared = -shared
+
+# Try to guess the host system type and figure out platform specifics.
 host = $(shell ../../config.guess)
+ifneq "$(findstring -mingw,$(host))" ""
+# Windows
+DLL = .dll
+PDLIB = -Wl,--enable-auto-import -lpd
+endif
 ifneq "$(findstring x86_64-,$(host))" ""
 # 64 bit, needs -fPIC flag
 PIC = -fPIC
@@ -20,7 +28,7 @@ NVOICES = 8
 dspsrc  := $(wildcard *.dsp)
 synsrc  := $(wildcard *.syn)
 cppsrc  := $(dspsrc:.dsp=.cpp) $(synsrc:.syn=.cpp)
-plugins	:= $(dspsrc:%.dsp=%~.pd_linux) $(synsrc:%.syn=%~.pd_linux)
+plugins	:= $(dspsrc:%.dsp=%~$(DLL)) $(synsrc:%.syn=%~$(DLL))
 svg 	:= $(dspsrc:.dsp=.dsp-svg) $(synsrc:.syn=.syn-svg)
 xml 	:= $(dspsrc:.dsp=.dsp.xml) $(synsrc:.syn=.syn.xml)
 pd 	:= $(dspsrc:.dsp=.pd) $(synsrc:.syn=.pd)
@@ -62,8 +70,8 @@ realclean: distclean
 %.syn.xml: %.syn
 	faust -xml $< -o /dev/null
 
-%~.pd_linux: %.cpp
-	g++ -shared $(PIC) -Dmydsp=$(@:%~.pd_linux=%) -o $@ $<
+%~$(DLL): %.cpp
+	g++ $(shared) $(PIC) -Dmydsp=$(@:%~$(DLL)=%) -o $@ $< $(PDLIB)
 
 %.pd: %.dsp.xml
 	$(faust2pd) -s $<

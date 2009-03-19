@@ -1,17 +1,25 @@
-dspsrc  := $(wildcard *.dsp)
-cppsrc  := $(dspsrc:.dsp=.cpp)
-mods	:= $(dspsrc:%.dsp=%~.pd_linux)
-svg 	:= $(dspsrc:.dsp=.svg)
-xml 	:= $(dspsrc:.dsp=.dsp.xml)
-pd 	:= $(dspsrc:.dsp=.pd)
-libs    := $(wildcard *.lib)
+DLL = .pd_linux
+shared = -shared
 
-# Try to guess the host system type and figure out compilation flags.
+# Try to guess the host system type and figure out platform specifics.
 host = $(shell ../../config.guess)
+ifneq "$(findstring -mingw,$(host))" ""
+# Windows
+DLL = .dll
+PDLIB = -Wl,--enable-auto-import -lpd
+endif
 ifneq "$(findstring x86_64-,$(host))" ""
 # 64 bit, needs -fPIC flag
 PIC = -fPIC
 endif
+
+dspsrc  := $(wildcard *.dsp)
+cppsrc  := $(dspsrc:.dsp=.cpp)
+mods	:= $(dspsrc:%.dsp=%~$(DLL))
+svg 	:= $(dspsrc:.dsp=.svg)
+xml 	:= $(dspsrc:.dsp=.dsp.xml)
+pd 	:= $(dspsrc:.dsp=.pd)
+libs    := $(wildcard *.lib)
 
 CFLAGS = $(PIC)
 
@@ -30,8 +38,8 @@ svg: $(svg)
 
 xml: $(xml)
 
-%~.pd_linux: %.cpp
-	$(CXX) $(CFLAGS) -shared -Dmydsp=$(@:%~.pd_linux=%) $< -o $@
+%~$(DLL): %.cpp
+	$(CXX) $(CFLAGS) $(shared) -Dmydsp=$(@:%~$(DLL)=%) $< -o $@ $(PDLIB)
 
 %.cpp: %.dsp
 	faust $(VEC) -a $(ARCH) $< -o $@
