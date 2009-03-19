@@ -28,7 +28,7 @@ pddatadir = $(pdlibdir)/pd/extra
 
 DESTDIR=
 
-DISTFILES = Makefile COPYING ChangeLog README faust2pd.html config.guess *.pure *.pd examples/README examples/*/Makefile examples/*/*.dsp examples/*/*.pd examples/faust/*.xml examples/seqdemo/*.pure examples/seqdemo/*.xml examples/synth/*.xml
+DISTFILES = Makefile COPYING ChangeLog README faust2pd.html config.guess *.pure *.pd examples/README examples/*/Makefile examples/*/*.dsp examples/*/*.syn examples/*/*.pd examples/*/*.pure examples/*/*.xml
 
 all:
 	for x in basic faust synth seqdemo; do make -C examples/$$x all; done
