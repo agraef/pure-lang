@@ -36,6 +36,4 @@ with {
 	d(x)	= x*(1-stereo);
 };
 
-swap(x,y)	= y, x;
-
 process		= vgroup("echo", echo(dtime,level,feedback,stereo));
