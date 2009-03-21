@@ -303,6 +303,7 @@ public:
 
   // Option data. You can modify these according to your needs.
   uint8_t verbose;   // debugging output from interpreter
+  bool compiling;    // batch compiler mode
   bool interactive;  // interactive mode
   bool ttymode;      // connected to a tty
   bool override;     // override mode
@@ -525,6 +526,7 @@ public:
 				 const list<string>& argtypes,
 				 bool varargs = false, void *fp = 0,
 				 string asname = "");
+  void compiler(const char *out = 0);
 private:
   Env *fptr;
   llvm::GlobalVariable *fptrvar;

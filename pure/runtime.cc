@@ -703,7 +703,8 @@ pure_expr *pure_symbol(int32_t tag)
       lab = "$"+sym.s;
     // Create a global variable bound to the symbol for now.
     v.v = new llvm::GlobalVariable
-      (interp.ExprPtrTy, false, llvm::GlobalVariable::InternalLinkage, 0,
+      (interp.ExprPtrTy, false, llvm::GlobalVariable::InternalLinkage,
+       llvm::ConstantPointerNull::get(interp.ExprPtrTy),
        lab.c_str(), interp.module);
     interp.JIT->addGlobalMapping(v.v, &v.x);
     v.x = pure_new_internal(pure_const(tag));
@@ -2470,6 +2471,8 @@ pure_interp *pure_create_interp(int argc, char *argv[])
       /* ignored */;
     else if (*args == string("--version"))
       /* ignored */;
+    else if (*args == string("-c"))
+      /* ignored */;
     else if (*args == string("-i"))
       /* ignored */;
     else if (*args == string("-n") || *args == string("--noprelude"))
@@ -2480,7 +2483,17 @@ pure_interp *pure_create_interp(int argc, char *argv[])
       /* ignored */;
     else if (*args == string("-q"))
       /* ignored */;
-    else if (string(*args).substr(0,2) == "-I") {
+    else if (string(*args).substr(0,2) == "-o") {
+      string s = string(*args).substr(2);
+      if (s.empty()) {
+	if (!*++args) {
+	  cerr << "pure_create_interp: -o lacks filename argument\n";
+	  delete _interp;
+	  return 0;
+	}
+      }
+      /* ignored */
+    } else if (string(*args).substr(0,2) == "-I") {
       string s = string(*args).substr(2);
       if (s.empty()) {
 	if (!*++args) {
@@ -2571,7 +2584,8 @@ pure_interp *pure_create_interp(int argc, char *argv[])
       break;
     } else if (*argv == string("--"))
       break;
-    else if (string(*argv).substr(0,2) == "-I" ||
+    else if (string(*argv).substr(0,2) == "-o" ||
+	     string(*argv).substr(0,2) == "-I" ||
 	     string(*argv).substr(0,2) == "-L") {
       string s = string(*argv).substr(2);
       if (s.empty()) ++argv;

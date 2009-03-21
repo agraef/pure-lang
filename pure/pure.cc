@@ -39,13 +39,15 @@ using namespace std;
 #define USAGE \
 "Usage:           pure [options ...] [script ...] [-- args ...]\n\
                  pure [options ...] -x script [args ...]\n\
+-c               Batch compilation.\n\
 --help, -h       Print this message and exit.\n\
 -i               Force interactive mode (read commands from stdin).\n\
--Idirectory      Add directory to search for included source files.\n\
--Ldirectory      Add directory to search for dynamic libraries.\n\
+-I directory     Add directory to search for included source files.\n\
+-L directory     Add directory to search for dynamic libraries.\n\
 --noediting      Do not use readline for command-line editing.\n\
 --noprelude, -n  Do not load the prelude.\n\
 --norc           Do not run the interactive startup files.\n\
+-o filename      LLVM assembler (.ll) output filename for batch compile.\n\
 -q               Quiet startup (suppresses sign-on message).\n\
 -v[level]        Set debugging level (default: 1).\n\
 --version        Print version information and exit.\n\
@@ -345,7 +347,7 @@ main(int argc, char *argv[])
   bool quiet = false, force_interactive = false,
     want_prelude = true, have_prelude = false,
     want_rcfile = true, want_editing = true;
-  string rcfile;
+  string rcfile, outname = "a.ll";
   // This is used in advisory stack checks.
   interpreter::baseptr = &base;
   // We always ignore SIGPIPE by default.
@@ -397,7 +399,9 @@ main(int argc, char *argv[])
       cout << "Pure " << PACKAGE_VERSION << " (" << HOST << ") "
 	   << COPYRIGHT << endl;
       return 0;
-    } else if (*args == string("-i"))
+    } else if (*args == string("-c"))
+      interp.compiling = true;
+    else if (*args == string("-i"))
       force_interactive = true;
     else if (*args == string("-n") || *args == string("--noprelude"))
       want_prelude = false;
@@ -407,7 +411,17 @@ main(int argc, char *argv[])
       want_editing = false;
     else if (*args == string("-q"))
       quiet = true;
-    else if (string(*args).substr(0,2) == "-I") {
+    else if (string(*args).substr(0,2) == "-o") {
+      string s = string(*args).substr(2);
+      if (s.empty()) {
+	if (!*++args) {
+	  interp.error(prog + ": -o lacks filename argument");
+	  return 1;
+	}
+	s = *args;
+      }
+      outname = unixize(s);
+    } else if (string(*args).substr(0,2) == "-I") {
       string s = string(*args).substr(2);
       if (s.empty()) {
 	if (!*++args) {
@@ -458,6 +472,7 @@ main(int argc, char *argv[])
     add_path(interp.includedirs, unixize(env));
   if ((env = getenv("PURE_LIBRARY")))
     add_path(interp.librarydirs, unixize(env));
+  if (force_interactive) interp.compiling = false;
   interp.init_sys_vars(PACKAGE_VERSION, HOST, myargs);
   if (want_prelude) {
     // load the prelude if we can find it
@@ -493,7 +508,8 @@ main(int argc, char *argv[])
       break;
     } else if (*argv == string("--"))
       break;
-    else if (string(*argv).substr(0,2) == "-I" ||
+    else if (string(*argv).substr(0,2) == "-o" ||
+	     string(*argv).substr(0,2) == "-I" ||
 	     string(*argv).substr(0,2) == "-L") {
       string s = string(*argv).substr(2);
       if (s.empty()) ++argv;
@@ -507,8 +523,10 @@ main(int argc, char *argv[])
 	return 1;
       }
     }
-  if (count > 0 && !force_interactive) {
-    if (interp.verbose&verbosity::dump) interp.compile();
+  if ((count > 0 || interp.compiling) && !force_interactive) {
+    if (interp.compiling || interp.verbose&verbosity::dump)
+      interp.compile();
+    if (interp.compiling) interp.compiler(outname.c_str());
     return 0;
   }
   interp.symtab.init_builtins();
