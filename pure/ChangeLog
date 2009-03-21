@@ -1,5 +1,17 @@
 2009-03-21  Albert Graef  <Dr.Graef@t-online.de>
 
+	* interpreter.cc (init_sys_vars): Add new system variable
+	'compiling' which holds a truth value indicating whether the
+	executing program is actually being batch-compiled (-c option).
+
+	Note that even when batch-compiling, the compiled program is
+	executed as usual. This is necessary because some parts of the
+	program (in particular, const values, and thereby pretty much
+	anything else) may depend on previous computations performed while
+	the program is being compiled. The 'compiling' flag gives the
+	program an indication whether it is running under the auspices of
+	the batch compiler, so that it can adjust accordingly.
+
 	* pure.cc, interpreter.cc: Add basic infrastructure for batch
 	compilation. This already generates compilable LLVM assembler code
 	but the code isn't usable yet because the runtime support is still

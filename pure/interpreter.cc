@@ -494,6 +494,7 @@ void interpreter::init_sys_vars(const string& version,
   }
   defn("argc",		pure_int(argv.size()));
   defn("argv",		args);
+  defn("compiling",	pure_int(compiling));
   defn("version",	pure_cstring_dup(version.c_str()));
   defn("sysinfo",	pure_cstring_dup(host.c_str()));
 #ifdef HAVE_GSL
