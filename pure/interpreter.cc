@@ -3301,6 +3301,11 @@ using namespace llvm;
 #include <time.h>
 #include <llvm/TypeSymbolTable.h>
 
+static inline bool is_init(const string& name)
+{
+  return name.compare(0, 6, "$$init") == 0;
+}
+
 void interpreter::compiler(const char *out)
 {
   std::ostream *codep = strcmp(out, "-")?new std::ofstream(out):&std::cout;
@@ -3336,6 +3341,25 @@ void interpreter::compiler(const char *out)
     Function &f = *it;
     f.print(code);
   }
+  // build the main function with all the initialization code
+  vector<const Type*> argt;
+  FunctionType *ft = FunctionType::get(Type::VoidTy, argt, false);
+  Function *main = Function::Create(ft, Function::ExternalLinkage,
+				    "__pure_main__", module);
+  BasicBlock *bb = BasicBlock::Create("entry", main);
+  Builder b;
+  b.SetInsertPoint(bb);
+  Function *freefun = module->getFunction("pure_freenew");
+  for (Module::iterator it = module->begin(), end = module->end();
+       it != end; ++it) {
+    Function *f = &*it;
+    if (f != main && is_init(f->getName())) {
+      CallInst* v = b.CreateCall(f);
+      b.CreateCall(freefun, v);
+    }
+  }
+  b.CreateRet(0);
+  main->print(code);
   if (code.fail()) {
     std::cerr << "Error writing " << out << endl;
     exit(1);
@@ -3541,7 +3565,7 @@ void Env::clear()
 #endif
     // The code of anonymous globals (doeval, dodefn) is taken care of
     // elsewhere, we must not collect that here.
-    if (!name.empty()) {
+    if (!is_init(name)) {
       // named global, get rid of the machine code
       if (h != f) interp.JIT->freeMachineCodeForFunction(h);
       interp.JIT->freeMachineCodeForFunction(f);
@@ -4900,14 +4924,18 @@ pure_expr *interpreter::doeval(expr x, pure_expr*& e)
     return 0;
   }
   e = 0;
-  // First check whether the value is actually a constant, then we can skip
-  // the compilation step.
   clock_t t0 = clock();
-  pure_expr *res = const_value(x);
-  if (interactive && stats) clocks = clock()-t0;
-  if (res) return res;
-  // Not a constant value. Create an anonymous function to call in order to
-  // evaluate the target expression.
+  pure_expr *res = 0;
+  if (!compiling) {
+    // First check whether the value is actually a constant, then we can skip
+    // the compilation step. (We only do this if we're not batch-compiling,
+    // since in a batch compilation we need the generated code.)
+    res = const_value(x);
+    if (interactive && stats) clocks = clock()-t0;
+    if (res) return res;
+  }
+  // Create an anonymous function to call in order to evaluate the target
+  // expression.
   /* NOTE: The environment is allocated dynamically, so that its child
      environments survive for the entire lifetime of any embedded closures,
      which might still be called at a later time. */
@@ -4915,7 +4943,7 @@ pure_expr *interpreter::doeval(expr x, pure_expr*& e)
   fptr = new Env(0, 0, x, false); fptr->refc = 1;
   Env &f = *fptr;
   push("doeval", &f);
-  fun_prolog("");
+  fun_prolog("$$init");
 #if DEBUG>1
   ostringstream msg;
   msg << "doeval: " << x;
@@ -4924,7 +4952,9 @@ pure_expr *interpreter::doeval(expr x, pure_expr*& e)
   f.CreateRet(codegen(x));
   fun_finish();
   pop(&f);
-  // JIT the function.
+  // JIT and execute the function. Note that we need to do this even in a
+  // batch compilation, since subsequent const definitions and resulting code
+  // may depend on the outcome of this computation.
   f.fp = JIT->getPointerToFunction(f.f);
   assert(f.fp);
   t0 = clock();
@@ -4932,12 +4962,14 @@ pure_expr *interpreter::doeval(expr x, pure_expr*& e)
   if (interactive && stats) clocks = clock()-t0;
   // Get rid of our anonymous function.
   JIT->freeMachineCodeForFunction(f.f);
-  f.f->eraseFromParent();
-  // If there are no more references, we can get rid of the environment now.
-  if (fptr->refc == 1)
-    delete fptr;
-  else
-    fptr->refc--;
+  if (!compiling) {
+    f.f->eraseFromParent();
+    // If there are no more references, we can get rid of the environment now.
+    if (fptr->refc == 1)
+      delete fptr;
+    else
+      fptr->refc--;
+  }
   fptr = save_fptr;
   if (estk.empty()) {
     // collect garbage
@@ -4969,53 +5001,57 @@ pure_expr *interpreter::dodefn(env vars, expr lhs, expr rhs, pure_expr*& e)
     return 0;
   }
   e = 0;
-  // First check whether the value is actually a constant, then we can skip
-  // the compilation step.
   clock_t t0 = clock();
-  pure_expr *res = const_value(rhs);
-  if (res) {
-    matcher m(rule(lhs, rhs));
-    if (m.match(res)) {
-      // Bind the variables.
-      for (env::const_iterator it = vars.begin(); it != vars.end(); ++it) {
-	int32_t tag = it->first;
-	const env_info& info = it->second;
-	assert(info.t == env_info::lvar && info.p);
-	// find the subterm at info.p
-	pure_expr *x = pure_subterm(res, *info.p);
-	// store the value in a global variable of the same name
-	const symbol& sym = symtab.sym(tag);
-	GlobalVar& v = globalvars[tag];
-	if (!v.v) {
-	  if (sym.priv)
-	    v.v = new GlobalVariable
-	      (ExprPtrTy, false, GlobalVariable::InternalLinkage, NullExprPtr,
-	       "$$private."+sym.s, module);
-	  else
-	    v.v = new GlobalVariable
-	      (ExprPtrTy, false, GlobalVariable::ExternalLinkage, NullExprPtr,
-	       sym.s, module);
-	  JIT->addGlobalMapping(v.v, &v.x);
+  pure_expr *res = 0;
+  if (!compiling) {
+    // First check whether the value is actually a constant, then we can skip
+    // the compilation step. (We only do this if we're not batch-compiling,
+    // since in a batch compilation we need the generated code.)
+    res = const_value(rhs);
+    if (res) {
+      matcher m(rule(lhs, rhs));
+      if (m.match(res)) {
+	// Bind the variables.
+	for (env::const_iterator it = vars.begin(); it != vars.end(); ++it) {
+	  int32_t tag = it->first;
+	  const env_info& info = it->second;
+	  assert(info.t == env_info::lvar && info.p);
+	  // find the subterm at info.p
+	  pure_expr *x = pure_subterm(res, *info.p);
+	  // store the value in a global variable of the same name
+	  const symbol& sym = symtab.sym(tag);
+	  GlobalVar& v = globalvars[tag];
+	  if (!v.v) {
+	    if (sym.priv)
+	      v.v = new GlobalVariable
+		(ExprPtrTy, false, GlobalVariable::InternalLinkage,
+		 NullExprPtr, "$$private."+sym.s, module);
+	    else
+	      v.v = new GlobalVariable
+		(ExprPtrTy, false, GlobalVariable::ExternalLinkage,
+		 NullExprPtr,
+		 sym.s, module);
+	    JIT->addGlobalMapping(v.v, &v.x);
+	  }
+	  if (v.x) pure_free(v.x);
+	  v.x = pure_new(x);
 	}
-	if (v.x) pure_free(v.x);
-	v.x = pure_new(x);
+      } else {
+	// Failed match, bail out.
+	pure_freenew(res);
+	res = e = 0;
       }
-    } else {
-      // Failed match, bail out.
-      pure_freenew(res);
-      res = e = 0;
+      if (interactive && stats) clocks = clock()-t0;
+      return res;
     }
-    if (interactive && stats) clocks = clock()-t0;
-    return res;
   }
-  // Not a constant value. Create an anonymous function to call in order to
-  // evaluate the rhs expression, match against the lhs and bind variables in
-  // lhs accordingly.
+  // Create an anonymous function to call in order to evaluate the rhs
+  // expression, match against the lhs and bind variables in lhs accordingly.
   Env *save_fptr = fptr;
   fptr = new Env(0, 0, rhs, false); fptr->refc = 1;
   Env &f = *fptr;
   push("dodefn", &f);
-  fun_prolog("");
+  fun_prolog("$$init");
 #if DEBUG>1
   ostringstream msg;
   msg << "dodef: " << lhs << "=" << rhs;
@@ -5078,7 +5114,9 @@ pure_expr *interpreter::dodefn(env vars, expr lhs, expr rhs, pure_expr*& e)
   unwind();
   fun_finish();
   pop(&f);
-  // JIT the function.
+  // JIT and execute the function. Note that we need to do this even in a
+  // batch compilation, since subsequent const definitions and resulting code
+  // may depend on the outcome of this computation.
   f.fp = JIT->getPointerToFunction(f.f);
   assert(f.fp);
   t0 = clock();
@@ -5086,12 +5124,14 @@ pure_expr *interpreter::dodefn(env vars, expr lhs, expr rhs, pure_expr*& e)
   if (interactive && stats) clocks = clock()-t0;
   // Get rid of our anonymous function.
   JIT->freeMachineCodeForFunction(f.f);
-  f.f->eraseFromParent();
-  // If there are no more references, we can get rid of the environment now.
-  if (fptr->refc == 1)
-    delete fptr;
-  else
-    fptr->refc--;
+  if (!compiling) {
+    f.f->eraseFromParent();
+    // If there are no more references, we can get rid of the environment now.
+    if (fptr->refc == 1)
+      delete fptr;
+    else
+      fptr->refc--;
+  }
   fptr = save_fptr;
   if (res) {
     // Get rid of any old values now.
@@ -6576,7 +6616,7 @@ Function *interpreter::fun_prolog(string name)
 	symtab.sym(f.tag).prec < 10)
       scope = Function::InternalLinkage;
 #if USE_FASTCC
-    if (!name.empty()) cc = CallingConv::Fast;
+    if (!is_init(name)) cc = CallingConv::Fast;
 #endif
     /* Mangle the name of the C-callable wrapper if it's private, or would
        shadow another C function. */
@@ -6638,7 +6678,7 @@ Function *interpreter::fun_prolog(string name)
   BasicBlock *bb = BasicBlock::Create("entry", f.f);
   f.builder.SetInsertPoint(bb);
 #if DEBUG>1
-  if (!f.name.empty()) { ostringstream msg;
+  if (!is_init(f.name)) { ostringstream msg;
     msg << "entry " << f.name;
     debug(msg.str().c_str()); }
 #endif
@@ -6658,7 +6698,7 @@ void interpreter::fun_body(matcher *pm, bool nodefault)
   f.f->getBasicBlockList().push_back(bodybb);
   f.builder.SetInsertPoint(bodybb);
 #if DEBUG>1
-  if (!f.name.empty()) { ostringstream msg;
+  if (!is_init(f.name)) { ostringstream msg;
     msg << "body " << f.name;
     debug(msg.str().c_str()); }
 #endif
@@ -6671,14 +6711,14 @@ void interpreter::fun_body(matcher *pm, bool nodefault)
   if (nodefault) {
     // failed match is fatal, throw an exception
 #if DEBUG>1
-  if (!f.name.empty()) { ostringstream msg;
+  if (!is_init(f.name)) { ostringstream msg;
     msg << "failed " << f.name << ", exception";
     debug(msg.str().c_str()); }
 #endif
     unwind(symtab.failed_match_sym().f);
   } else {
 #if DEBUG>1
-  if (!f.name.empty()) { ostringstream msg;
+  if (!is_init(f.name)) { ostringstream msg;
     msg << "failed " << f.name << ", default value";
     debug(msg.str().c_str()); }
 #endif
@@ -6792,7 +6832,7 @@ void interpreter::simple_match(Value *x, state*& s,
   Env& f = act_env();
   assert(f.f!=0);
 #if DEBUG>1
-  if (!f.name.empty()) { ostringstream msg;
+  if (!is_init(f.name)) { ostringstream msg;
     msg << "simple match " << f.name;
     debug(msg.str().c_str()); }
 #endif
@@ -6944,7 +6984,7 @@ void interpreter::complex_match(matcher *pm, BasicBlock *failedbb)
     f.f->getBasicBlockList().push_back(matchedbb);
     f.builder.SetInsertPoint(matchedbb);
 #if DEBUG>1
-    if (!f.name.empty()) { ostringstream msg;
+    if (!is_init(f.name)) { ostringstream msg;
       msg << "exit " << f.name << ", result: " << pm->r[0].rhs;
       debug(msg.str().c_str()); }
 #endif
@@ -7034,7 +7074,7 @@ void interpreter::complex_match(matcher *pm, const list<Value*>& xs, state *s,
   f.f->getBasicBlockList().push_back(statebb);
   f.builder.SetInsertPoint(statebb);
 #if DEBUG>1
-  if (!f.name.empty()) { ostringstream msg;
+  if (!is_init(f.name)) { ostringstream msg;
     msg << "complex match " << f.name << ", state " << s->s;
     debug(msg.str().c_str()); }
 #endif
@@ -7247,14 +7287,14 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
     f.f->getBasicBlockList().push_back(rulebb);
     f.builder.SetInsertPoint(rulebb);
 #if DEBUG>1
-    if (!f.name.empty()) { ostringstream msg;
+    if (!is_init(f.name)) { ostringstream msg;
       msg << "complex match " << f.name << ", trying rule #" << *r;
       debug(msg.str().c_str()); }
 #endif
     if (rr.qual.is_null() && !rr.rhs.is_guarded()) {
       // rule always matches, generate code for the reduct and bail out
 #if DEBUG>1
-      if (!f.name.empty()) { ostringstream msg;
+      if (!is_init(f.name)) { ostringstream msg;
 	msg << "exit " << f.name << ", result: " << rr.rhs;
 	debug(msg.str().c_str()); }
 #endif
@@ -7274,7 +7314,7 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
 	// XXXTODO: we might want to optionally invoke the debugger here
 	unwind(symtab.failed_cond_sym().f);
 #if DEBUG>1
-	if (!f.name.empty()) { ostringstream msg;
+	if (!is_init(f.name)) { ostringstream msg;
 	  msg << "exit " << f.name << ", bad guard (exception)";
 	  debug(msg.str().c_str()); }
 #endif
@@ -7305,7 +7345,7 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
     f.f->getBasicBlockList().push_back(okbb);
     f.builder.SetInsertPoint(okbb);
 #if DEBUG>1
-    if (!f.name.empty()) { ostringstream msg;
+    if (!is_init(f.name)) { ostringstream msg;
       msg << "exit " << f.name << ", result: " << rr.rhs;
       debug(msg.str().c_str()); }
 #endif
