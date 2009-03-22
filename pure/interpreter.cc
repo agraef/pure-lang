@@ -442,8 +442,8 @@ interpreter::interpreter()
 		 "pure_debug",      "void",  -2, "int", "char*");
 
   declare_extern((void*)pure_interp_main,
-		 "pure_interp_main","void*",  6, "int", "char*",
-		 "void*", "void*", "void*", "void*");
+		 "pure_interp_main","void*",  8, "int", "void*",
+		 "int", "char*", "void*", "void*", "void*", "void*");
 }
 
 interpreter::~interpreter()
@@ -3313,11 +3313,12 @@ static inline bool is_init(const string& name)
 
 void interpreter::compiler(const char *out)
 {
-  /* Everything is already compiled at this point, so all we have to do is to
-     emit the code. We also have to prepare a main entry point (called
-     __pure_main__) which initializes the interpreter so that a minimal
-     runtime environment is available. This function is to be called by the
-     main() or other initialzation code of the standalone module. */
+  /* Everything is already compiled at this point, so all we have to do here
+     is to emit the code. We also prepare a main entry point, void
+     __pure_main__ (int argc, char **argv), which initializes the interpreter
+     so that a minimal runtime environment is available. This function is to
+     be called by the main() or other initialization code of the standalone
+     module. It takes two arguments, the argc and argv of the interpreter. */
   std::ostream *codep = strcmp(out, "-")?new std::ofstream(out):&std::cout;
   std::ostream &code = *codep;
   if (code.fail()) {
@@ -3359,6 +3360,8 @@ void interpreter::compiler(const char *out)
   }
   // Build the main function with all the initialization code.
   vector<const Type*> argt;
+  argt.push_back(Type::Int32Ty);
+  argt.push_back(VoidPtrTy);
   FunctionType *ft = FunctionType::get(Type::VoidTy, argt, false);
   Function *main = Function::Create(ft, Function::ExternalLinkage,
 				    "__pure_main__", module);
@@ -3415,7 +3418,10 @@ void interpreter::compiler(const char *out)
   }
   // Call pure_interp_main() in the runtime to create an interpreter instance.
   vector<Value*> args;
+  Function::arg_iterator a = main->arg_begin();
   idx[1] = Zero;
+  args.push_back(a++);
+  args.push_back(a++);
   args.push_back(SInt(n));
   args.push_back(b.CreateGEP(syms, idx, idx+2));
   args.push_back(b.CreateBitCast(b.CreateGEP(vars, idx, idx+2), VoidPtrTy));

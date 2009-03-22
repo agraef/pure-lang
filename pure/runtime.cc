@@ -2642,11 +2642,30 @@ void pure_interp_compile(pure_interp *interp)
 /* END OF PUBLIC API. *******************************************************/
 
 extern "C"
-pure_interp *pure_interp_main(int32_t n, char *dump,
+pure_interp *pure_interp_main(int argc, char *argv[],
+			      int32_t nsyms, char *syms,
 			      pure_expr ***vars, void **vals,
 			      pure_expr ***sstk, void **fptr)
 {
   // XXXTODO
+#if 0
+  std::cout << "\n** argc = " << argc << endl;
+  for (int i = 0; i < argc; i++)
+    std::cout << "argv[" << i << "] = '"
+	      << (argv[i]?argv[i]:"(null)") << "'\n";
+  std::cout << "\n** " << nsyms << " symbols\n";
+  std::cout << syms;
+  std::cout << "\n** vars table " << vars << endl;
+  for (int32_t f = 1; f < nsyms; f++)
+    if (vars[f])
+      std::cout << f << " = " << vars[f] << endl;
+  std::cout << "\n** vals table " << vals << endl;
+  for (int32_t f = 1; f < nsyms; f++)
+    if (vals[f])
+      std::cout << f << " = " << vals[f] << endl;
+  std::cout << "\n** sstk = " << sstk << ", fptr = " << fptr << endl;
+#endif
+  exit(0);
   return 0;
 }
 
