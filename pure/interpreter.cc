@@ -3366,8 +3366,6 @@ void interpreter::compiler(const char *out)
   Builder b;
   b.SetInsertPoint(bb);
   Function *initfun = module->getFunction("pure_interp_main");
-  Function *closfun = module->getFunction("pure_clos");
-  Function *constfun = module->getFunction("pure_const");
   Function *freefun = module->getFunction("pure_freenew");
   // Dump the symbol table to a special $$syms$$ variable.
   /* TODO: To make eval work, we'll also have to dump the global environment
@@ -3389,14 +3387,14 @@ void interpreter::compiler(const char *out)
      GlobalVariable::InternalLinkage,
      ConstantArray::get(ArrayType::get(ExprPtrPtrTy, n), u),
      "$$vars$$", module);
-  // Special $$vals$$ global which holds all the corresponding values (runtime
-  // expression pointers), either null, a constant symbol or a closure for
-  // each variable, depending on the type of symbol.
-  vector<Constant*> u2(n, NullExprPtr);
+  // Special $$vals$$ global which holds all the corresponding values. Each
+  // value is a pointer which can either be null (indicating an unbound
+  // symbol), or a pointer to a function (indicating a global named function).
+  vector<Constant*> u2(n, NullPtr);
   GlobalVariable *vals = new GlobalVariable
-    (ArrayType::get(ExprPtrTy, n), false,
+    (ArrayType::get(VoidPtrTy, n), false,
      GlobalVariable::InternalLinkage,
-     ConstantArray::get(ArrayType::get(ExprPtrTy, n), u2),
+     ConstantArray::get(ArrayType::get(VoidPtrTy, n), u2),
      "$$vals$$", module);
   // Populate the $$vars$$ and $$vals$$ vectors.
   Value *idx[2] = { Zero, Zero };
@@ -3409,22 +3407,10 @@ void interpreter::compiler(const char *out)
       idx[1] = SInt(f);
       b.CreateStore(v.v, b.CreateGEP(vars, idx, idx+2));
       if (jt != globalfuns.end()) {
-	Env& f = jt->second;
-	assert(f.f && f.h);
-	// call: pure_clos(false, false, f.tag, f.n, &f.h, NULL, 0)
-	vector<Value*> args;
-	args.push_back(Bool(false));
-	args.push_back(Bool(false));
-	args.push_back(SInt(f.tag));
-	args.push_back(SInt(f.n));
-	args.push_back(b.CreateBitCast(f.h, VoidPtrTy));
-	args.push_back(NullPtr);
-	args.push_back(Zero);
-	b.CreateStore(b.CreateCall(closfun, args.begin(), args.end()),
+	Env& e = jt->second;
+	b.CreateStore(b.CreateBitCast(e.h, VoidPtrTy),
 		      b.CreateGEP(vals, idx, idx+2));
-      } else
-	b.CreateStore(b.CreateCall(constfun, idx[1]),
-		      b.CreateGEP(vals, idx, idx+2));
+      }
     }
   }
   // Call pure_interp_main() in the runtime to create an interpreter instance.

@@ -2643,7 +2643,7 @@ void pure_interp_compile(pure_interp *interp)
 
 extern "C"
 pure_interp *pure_interp_main(int32_t n, char *dump,
-			      pure_expr ***vars, pure_expr **vals,
+			      pure_expr ***vars, void **vals,
 			      pure_expr ***sstk, void **fptr)
 {
   // XXXTODO
