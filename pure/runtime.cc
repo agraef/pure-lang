@@ -2642,6 +2642,15 @@ void pure_interp_compile(pure_interp *interp)
 /* END OF PUBLIC API. *******************************************************/
 
 extern "C"
+pure_interp *pure_interp_main(int32_t n, char *dump,
+			      pure_expr ***vars, pure_expr **vals,
+			      pure_expr ***sstk, void **fptr)
+{
+  // XXXTODO
+  return 0;
+}
+
+extern "C"
 pure_expr *pure_const(int32_t tag)
 {
   // XXXFIXME: We should cache these on a per interpreter basis, so that only

@@ -93,6 +93,9 @@ public:
   string *current_namespace;
   // additional namespaces to be searched for unqualified symbols
   set<string> *search_namespaces;
+  // these are for internal use only
+  void dump(string& s);
+  void restore(const string& s);
   // add default declarations for the builtin constants and operators (to be
   // invoked *after* possibly reading the prelude)
   void init_builtins();

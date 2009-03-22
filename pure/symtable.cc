@@ -106,6 +106,28 @@ void symtable::init_builtins()
   complex_polar_sym();
 }
 
+/* These are used internally to dump the entire symbol table from a string,
+   and later restore it when running on the bare metal. */
+
+#include <sstream>
+
+void symtable::dump(string& s)
+{
+  ostringstream sout(s);
+  for (int32_t i = 2; i < fno; i++) {
+    symbol *sym = rtab[i];
+    if (sym)
+      sout << sym->s << " " << sym->f << " " << (int)sym->prec << " "
+	   << sym->fix << " " << sym->priv << endl;
+  }
+  s = sout.str();
+}
+
+void symtable::restore(const string& s)
+{
+  // XXXTODO
+}
+
 /* These operations are used internally to look up and create symbols exactly
    as specified (no namespace search). */
 
