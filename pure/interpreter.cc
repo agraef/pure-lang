@@ -62,12 +62,7 @@ static int c_stack_dir()
   return (dir>0)?1:(dir<0)?-1:0;
 }
 
-interpreter::interpreter()
-  : verbose(0), compiling(false), interactive(false), ttymode(false),
-    override(false), stats(false), temp(0),
-    ps("> "), libdir(""), histfile("/.pure_history"), modname("pure"),
-    nerrs(0), modno(-1), modctr(0), source_s(0), output(0), result(0),
-    mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0), fptr(0)
+void interpreter::init()
 {
   if (!g_interp) g_interp = this;
   if (!g_init) {
@@ -86,6 +81,7 @@ interpreter::interpreter()
     g_init = true;
   }
 
+  fptr = 0;
   sstk_sz = 0; sstk_cap = 0x10000; // 64K
   sstk = (pure_expr**)malloc(sstk_cap*sizeof(pure_expr*));
   assert(sstk);
@@ -442,8 +438,50 @@ interpreter::interpreter()
 		 "pure_debug",      "void",  -2, "int", "char*");
 
   declare_extern((void*)pure_interp_main,
-		 "pure_interp_main","void*",  8, "int", "void*",
-		 "int", "char*", "void*", "void*", "void*", "void*");
+		 "pure_interp_main","void*",  9, "int", "void*",
+		 "int", "char*", "void*", "void*", "int*", "void*", "void*");
+}
+
+interpreter::interpreter()
+  : verbose(0), compiling(false), interactive(false), ttymode(false),
+    override(false), stats(false), temp(0),
+    ps("> "), libdir(""), histfile("/.pure_history"), modname("pure"),
+    nerrs(0), modno(-1), modctr(0), source_s(0), output(0), result(0),
+    mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0),
+    sstk(__sstk), fptr(__fptr)
+{
+  init();
+}
+
+interpreter::interpreter(int32_t nsyms, char *syms,
+			 pure_expr ***vars, void **vals, int32_t *arities,
+			 pure_expr ***_sstk, void **_fptr)
+  : verbose(0), compiling(false), interactive(false), ttymode(false),
+    override(false), stats(false), temp(0),
+    ps("> "), libdir(""), histfile("/.pure_history"), modname("pure"),
+    nerrs(0), modno(-1), modctr(0), source_s(0), output(0), result(0),
+    mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0),
+    sstk(*_sstk), fptr(*(Env**)_fptr)
+{
+  using namespace llvm;
+  init();
+  symtab.restore(syms);
+  for (int32_t f = 1; f < nsyms; f++) {
+    pure_expr *x;
+    if (vals[f])
+      x = pure_clos(false, false, f, arities[f], vals[f], 0, 0);
+    else
+      x = pure_const(f);
+    GlobalVar& v = globalvars[f];
+    if (!v.v) {
+      v.v = new GlobalVariable
+	(ExprPtrTy, false, GlobalVariable::InternalLinkage,
+	 ConstantPointerNull::get(ExprPtrTy),
+	 mkvarlabel(f), module);
+      JIT->addGlobalMapping(v.v, &v.x);
+    }
+    if (v.x) pure_free(v.x); v.x = pure_new(x);
+  }
 }
 
 interpreter::~interpreter()
@@ -3382,25 +3420,14 @@ void interpreter::compiler(const char *out)
     (ArrayType::get(Type::Int8Ty, strlen(dump_s)+1), true,
      GlobalVariable::InternalLinkage, ConstantArray::get(dump_s),
      "$$syms$$", module);
-  // Special $$vars$$ global which holds the pointers to the global variables
-  // for each global Pure symbol.
+  // Create a number of other tables which hold the pointers to global
+  // variables, corresponding functions and arities for each global Pure
+  // symbol.
   int32_t n = symtab.nsyms();
-  vector<Constant*> u(n, NullExprPtrPtr);
-  GlobalVariable *vars = new GlobalVariable
-    (ArrayType::get(ExprPtrPtrTy, n), false,
-     GlobalVariable::InternalLinkage,
-     ConstantArray::get(ArrayType::get(ExprPtrPtrTy, n), u),
-     "$$vars$$", module);
-  // Special $$vals$$ global which holds all the corresponding values. Each
-  // value is a pointer which can either be null (indicating an unbound
-  // symbol), or a pointer to a function (indicating a global named function).
-  vector<Constant*> u2(n, NullPtr);
-  GlobalVariable *vals = new GlobalVariable
-    (ArrayType::get(VoidPtrTy, n), false,
-     GlobalVariable::InternalLinkage,
-     ConstantArray::get(ArrayType::get(VoidPtrTy, n), u2),
-     "$$vals$$", module);
-  // Populate the $$vars$$ and $$vals$$ vectors.
+  vector<Constant*> vars(n, NullExprPtrPtr);
+  vector<Constant*> vals(n, NullPtr);
+  vector<Constant*> arity(n, Zero);
+  // Populate the tables.
   Value *idx[2] = { Zero, Zero };
   for (map<int32_t,GlobalVar>::iterator it = globalvars.begin();
        it != globalvars.end(); ++it) {
@@ -3408,15 +3435,40 @@ void interpreter::compiler(const char *out)
     GlobalVar& v = it->second;
     if (v.v && v.x) {
       map<int32_t,Env>::iterator jt = globalfuns.find(f);
-      idx[1] = SInt(f);
-      b.CreateStore(v.v, b.CreateGEP(vars, idx, idx+2));
+      vars[f] = v.v;
       if (jt != globalfuns.end()) {
 	Env& e = jt->second;
-	b.CreateStore(b.CreateBitCast(e.h, VoidPtrTy),
-		      b.CreateGEP(vals, idx, idx+2));
+	vals[f] = ConstantExpr::getPointerCast(e.h, VoidPtrTy);
+	arity[f] = SInt(e.n);
       }
     }
   }
+  // This holds the pointers to the global variables
+  GlobalVariable *vvars = new GlobalVariable
+    (ArrayType::get(ExprPtrPtrTy, n), true,
+     GlobalVariable::InternalLinkage,
+     ConstantArray::get(ArrayType::get(ExprPtrPtrTy, n), vars),
+     "$$vars$$", module);
+  // This holds all the corresponding values. Each value is a pointer which
+  // can either be null (indicating an unbound symbol), or a pointer to a
+  // function (indicating a global named function).
+  GlobalVariable *vvals = new GlobalVariable
+    (ArrayType::get(VoidPtrTy, n), true,
+     GlobalVariable::InternalLinkage,
+     ConstantArray::get(ArrayType::get(VoidPtrTy, n), vals),
+     "$$vals$$", module);
+  // This holds all the arities of the functions.
+  GlobalVariable *varity = new GlobalVariable
+    (ArrayType::get(Type::Int32Ty, n), true,
+     GlobalVariable::InternalLinkage,
+     ConstantArray::get(ArrayType::get(Type::Int32Ty, n), arity),
+     "$$arity$$", module);
+  // Emit code for the special globals.
+  code << endl;
+  syms->print(code);
+  vvars->print(code);
+  vvals->print(code);
+  varity->print(code);
   // Call pure_interp_main() in the runtime to create an interpreter instance.
   vector<Value*> args;
   Function::arg_iterator a = main->arg_begin();
@@ -3425,8 +3477,9 @@ void interpreter::compiler(const char *out)
   args.push_back(a++);
   args.push_back(SInt(n));
   args.push_back(b.CreateGEP(syms, idx, idx+2));
-  args.push_back(b.CreateBitCast(b.CreateGEP(vars, idx, idx+2), VoidPtrTy));
-  args.push_back(b.CreateBitCast(b.CreateGEP(vals, idx, idx+2), VoidPtrTy));
+  args.push_back(b.CreateBitCast(b.CreateGEP(vvars, idx, idx+2), VoidPtrTy));
+  args.push_back(b.CreateBitCast(b.CreateGEP(vvals, idx, idx+2), VoidPtrTy));
+  args.push_back(b.CreateGEP(varity, idx, idx+2));
   args.push_back(b.CreateBitCast(sstkvar, VoidPtrTy));
   args.push_back(b.CreateBitCast(fptrvar, VoidPtrTy));
   b.CreateCall(initfun, args.begin(), args.end());
@@ -3441,11 +3494,7 @@ void interpreter::compiler(const char *out)
     }
   }
   b.CreateRet(0);
-  code << endl;
-  // Emit code for the special globals and the __pure_main__ function.
-  syms->print(code);
-  vars->print(code);
-  vals->print(code);
+  // Emit code for the __pure_main__ function.
   main->print(code);
   if (code.fail()) {
     std::cerr << "Error writing " << out << endl;

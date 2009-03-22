@@ -444,7 +444,7 @@ void pure_interp_compile(pure_interp *interp);
 
 pure_interp *pure_interp_main(int argc, char *argv[],
 			      int32_t nsyms, char *syms,
-			      pure_expr ***vars, void **vals,
+			      pure_expr ***vars, void **vals, int32_t *arities,
 			      pure_expr ***sstk, void **fptr);
 
 /* Construct constant symbols and closures. */

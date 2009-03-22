@@ -295,6 +295,9 @@ class interpreter
 {
 public:
   interpreter();
+  interpreter(int32_t nsyms, char *syms,
+	      pure_expr ***vars, void **vals, int32_t *arities,
+	      pure_expr ***sstk, void **fptr);
   virtual ~interpreter();
   // Populate the global environment with some useful variables.
   void init_sys_vars(const string& version = "",
@@ -514,7 +517,9 @@ public:
   map<int32_t,GlobalVar> globalvars;
   map<int32_t,Env> globalfuns;
   list<pure_exception> estk;
-  pure_expr** sstk; size_t sstk_cap, sstk_sz;
+  pure_expr **__sstk;
+  pure_expr **&sstk;
+  size_t sstk_cap, sstk_sz;
   llvm::GlobalVariable *sstkvar;
 #if DEBUG
   set<pure_expr*> mem_allocations;
@@ -528,7 +533,9 @@ public:
 				 string asname = "");
   void compiler(const char *out = 0);
 private:
-  Env *fptr;
+  void init();
+  Env *__fptr;
+  Env *&fptr;
   llvm::GlobalVariable *fptrvar;
   llvm::Value *envptr(Env *f);
   EnvStack envstk;

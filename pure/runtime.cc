@@ -2644,10 +2644,9 @@ void pure_interp_compile(pure_interp *interp)
 extern "C"
 pure_interp *pure_interp_main(int argc, char *argv[],
 			      int32_t nsyms, char *syms,
-			      pure_expr ***vars, void **vals,
+			      pure_expr ***vars, void **vals, int32_t *arities,
 			      pure_expr ***sstk, void **fptr)
 {
-  // XXXTODO
 #if 0
   std::cout << "\n** argc = " << argc << endl;
   for (int i = 0; i < argc; i++)
@@ -2662,11 +2661,48 @@ pure_interp *pure_interp_main(int argc, char *argv[],
   std::cout << "\n** vals table " << vals << endl;
   for (int32_t f = 1; f < nsyms; f++)
     if (vals[f])
-      std::cout << f << " = " << vals[f] << endl;
+      std::cout << f << " = " << vals[f] << " (" << arities[f] << ")\n";
   std::cout << "\n** sstk = " << sstk << ", fptr = " << fptr << endl;
 #endif
-  exit(0);
-  return 0;
+  char base;
+  interpreter *_interp =
+    new interpreter(nsyms, syms, vars, vals, arities, sstk, fptr),
+    &interp = *_interp;
+  interpreter::g_interp = _interp;
+  if (!interpreter::baseptr) interpreter::baseptr = &base;
+  // get some settings from the environment
+  const char *env;
+  if ((env = getenv("PURE_STACK"))) {
+    char *end;
+    size_t n = strtoul(env, &end, 0);
+    if (!*end) interpreter::stackmax = n*1024;
+  }
+  if ((env = getenv("PURELIB"))) {
+    string s = unixize(env);
+    if (!s.empty() && s[s.size()-1] != '/') s.append("/");
+    interp.libdir = s;
+  } else
+    interp.libdir = string(PURELIB)+"/";
+  if ((env = getenv("PURE_INCLUDE")))
+    add_path(interp.includedirs, unixize(env));
+  if ((env = getenv("PURE_LIBRARY")))
+    add_path(interp.librarydirs, unixize(env));
+#if USE_FASTCC
+  // This global option is needed to get tail call optimization (you'll also
+  // need to have USE_FASTCC in interpreter.hh enabled).
+  llvm::PerformTailCallOpt = true;
+#endif
+#if defined(HAVE_GSL) && DEBUG<2
+  // Turn off GSL's own error handler which aborts the program.
+  gsl_set_error_handler_off();
+#endif
+  // scan the command line options
+  list<string> myargs;
+  for (char **args = argv; *args; ++args)
+    myargs.push_back(*args);
+  interp.symtab.init_builtins();
+  interp.init_sys_vars(PACKAGE_VERSION, HOST, myargs);
+  return (pure_interp*)_interp;
 }
 
 extern "C"
