@@ -3321,6 +3321,7 @@ void interpreter::compiler(const char *out)
      module. It takes two arguments, the argc and argv of the interpreter. */
   std::ostream *codep = strcmp(out, "-")?new std::ofstream(out):&std::cout;
   std::ostream &code = *codep;
+  if (strcmp(out, "-") == 0) out = "<stdout>";
   if (code.fail()) {
     std::cerr << "Error opening " << out << endl;
     exit(1);
