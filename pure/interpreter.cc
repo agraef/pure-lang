@@ -3352,9 +3352,14 @@ using namespace llvm;
 #include <time.h>
 #include <llvm/TypeSymbolTable.h>
 
+static inline bool is_c_sym(const string& name)
+{
+  return name=="main" || sys::DynamicLibrary::SearchForAddressOfSymbol(name);
+}
+
 static inline string mkvarsym(const string& name)
 {
-  bool have_c_sym = sys::DynamicLibrary::SearchForAddressOfSymbol(name);
+  bool have_c_sym = is_c_sym(name);
   if (have_c_sym)
     return "$$pure."+name;
   else
@@ -6762,7 +6767,7 @@ Function *interpreter::fun_prolog(string name)
     } else
       /* Check that we do not accidentally override a C function of the same
 	 name. */
-      have_c_func = sys::DynamicLibrary::SearchForAddressOfSymbol(name);
+      have_c_func = is_c_sym(name);
     f.name = name;
     /* Linkage type and calling convention. For each Pure function (no matter
        whether global or local) we create a C-callable function in LLVM
