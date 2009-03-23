@@ -466,8 +466,9 @@ interpreter::interpreter(int32_t nsyms, char *syms,
   using namespace llvm;
   init();
   symtab.restore(syms);
-  for (int32_t f = 1; f < nsyms; f++) {
+  for (int32_t f = 1; f <= nsyms; f++) {
     pure_expr *x;
+    if (!vars[f]) continue;
     if (vals[f])
       x = pure_clos(false, false, f, arities[f], vals[f], 0, 0);
     else
@@ -480,7 +481,10 @@ interpreter::interpreter(int32_t nsyms, char *syms,
 	 mkvarlabel(f), module);
       JIT->addGlobalMapping(v.v, &v.x);
     }
+    // XXXFIXME: To make eval work properly, v.x should actually be turned
+    // into a reference to *vars[f] here.
     if (v.x) pure_free(v.x); v.x = pure_new(x);
+    *vars[f] = pure_new(x);
   }
 }
 
@@ -3346,7 +3350,8 @@ using namespace llvm;
 
 static inline bool is_init(const string& name)
 {
-  return name.compare(0, 6, "$$init") == 0;
+  return name.compare(0, 6, "$$init") == 0 &&
+    name.find_first_not_of("0123456789", 6) == string::npos;
 }
 
 void interpreter::compiler(const char *out)
@@ -3424,9 +3429,9 @@ void interpreter::compiler(const char *out)
   // variables, corresponding functions and arities for each global Pure
   // symbol.
   int32_t n = symtab.nsyms();
-  vector<Constant*> vars(n, NullExprPtrPtr);
-  vector<Constant*> vals(n, NullPtr);
-  vector<Constant*> arity(n, Zero);
+  vector<Constant*> vars(n+1, NullExprPtrPtr);
+  vector<Constant*> vals(n+1, NullPtr);
+  vector<Constant*> arity(n+1, Zero);
   // Populate the tables.
   Value *idx[2] = { Zero, Zero };
   for (map<int32_t,GlobalVar>::iterator it = globalvars.begin();
@@ -3445,23 +3450,23 @@ void interpreter::compiler(const char *out)
   }
   // This holds the pointers to the global variables
   GlobalVariable *vvars = new GlobalVariable
-    (ArrayType::get(ExprPtrPtrTy, n), true,
+    (ArrayType::get(ExprPtrPtrTy, n+1), true,
      GlobalVariable::InternalLinkage,
-     ConstantArray::get(ArrayType::get(ExprPtrPtrTy, n), vars),
+     ConstantArray::get(ArrayType::get(ExprPtrPtrTy, n+1), vars),
      "$$vars$$", module);
   // This holds all the corresponding values. Each value is a pointer which
   // can either be null (indicating an unbound symbol), or a pointer to a
   // function (indicating a global named function).
   GlobalVariable *vvals = new GlobalVariable
-    (ArrayType::get(VoidPtrTy, n), true,
+    (ArrayType::get(VoidPtrTy, n+1), true,
      GlobalVariable::InternalLinkage,
-     ConstantArray::get(ArrayType::get(VoidPtrTy, n), vals),
+     ConstantArray::get(ArrayType::get(VoidPtrTy, n+1), vals),
      "$$vals$$", module);
   // This holds all the arities of the functions.
   GlobalVariable *varity = new GlobalVariable
-    (ArrayType::get(Type::Int32Ty, n), true,
+    (ArrayType::get(Type::Int32Ty, n+1), true,
      GlobalVariable::InternalLinkage,
-     ConstantArray::get(ArrayType::get(Type::Int32Ty, n), arity),
+     ConstantArray::get(ArrayType::get(Type::Int32Ty, n+1), arity),
      "$$arity$$", module);
   // Emit code for the special globals.
   code << endl;

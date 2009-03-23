@@ -114,7 +114,7 @@ void symtable::init_builtins()
 void symtable::dump(string& s)
 {
   ostringstream sout(s);
-  for (int32_t i = 2; i < fno; i++) {
+  for (int32_t i = 2; i <= fno; i++) {
     symbol *sym = rtab[i];
     if (sym)
       sout << sym->s << " " << sym->f << " " << (int)sym->prec << " "
@@ -125,7 +125,24 @@ void symtable::dump(string& s)
 
 void symtable::restore(const string& s)
 {
-  // XXXTODO
+  istringstream sin(s);
+  char buf[1024];
+  int f, prec, fix;
+  bool priv;
+  sin.width(1024);
+  while (1) {
+    sin >> buf >> f >> prec >> fix >> priv;
+    if (sin.fail() || sin.eof()) break;
+    string id = buf;
+    symbol &sym = tab[id];
+    if (f > fno) fno = f;
+    if ((uint32_t)fno >= rtab.size())
+      rtab.resize(rtab.size()+1024);
+    sym = symbol(id, fno, prec, (fix_t)fix, priv);
+    //cout << "new symbol " << sym.f << ": " << sym.s << endl;
+    rtab[fno] = &sym;
+    if (__show__sym == 0 && strcmp(buf, "__show__") == 0) __show__sym = fno;
+  }
 }
 
 /* These operations are used internally to look up and create symbols exactly
