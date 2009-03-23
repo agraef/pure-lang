@@ -3354,19 +3354,32 @@ static inline bool is_init(const string& name)
     name.find_first_not_of("0123456789", 6) == string::npos;
 }
 
-void interpreter::compiler(const char *out)
+void interpreter::compiler(const char *_out)
 {
+  /* We allow either '-' or *.ll to indicate an LLVM assembler file. In the
+     former case, output is written to stdout, which is useful if the output
+     is to be processed by other LLVM utilities in a pipe. If the specified
+     output neither is '-' nor has the '.ll' extension, output is written to a
+     temporary .ll file which is then passed to 'llvmc' and linked with a
+     minimal 'main' to create an executable. */
+  string out = unixize(_out);
+  string target = out;
+  size_t p = target.find_last_of("/.");
+  string ext = (p!=string::npos && target[p]=='.')?target.substr(p):"";
+  if (target != "-" && ext != ".ll")
+    target += ".ll";
   /* Everything is already compiled at this point, so all we have to do here
      is to emit the code. We also prepare a main entry point, void
      __pure_main__ (int argc, char **argv), which initializes the interpreter
      so that a minimal runtime environment is available. This function is to
      be called by the main() or other initialization code of the standalone
      module. It takes two arguments, the argc and argv of the interpreter. */
-  std::ostream *codep = strcmp(out, "-")?new std::ofstream(out):&std::cout;
+  std::ostream *codep =
+    (target!="-")?new std::ofstream(target.c_str()):&std::cout;
   std::ostream &code = *codep;
-  if (strcmp(out, "-") == 0) out = "<stdout>";
+  if (target == "-") target = "<stdout>";
   if (code.fail()) {
-    std::cerr << "Error opening " << out << endl;
+    std::cerr << "Error opening " << target << endl;
     exit(1);
   }
   // Module header.
@@ -3502,10 +3515,16 @@ void interpreter::compiler(const char *out)
   // Emit code for the __pure_main__ function.
   main->print(code);
   if (code.fail()) {
-    std::cerr << "Error writing " << out << endl;
+    std::cerr << "Error writing " << target << endl;
     exit(1);
   }
   if (codep != &std::cout) delete codep;
+  if (target != out) {
+    string cmd = "llvmc \""+target+"\" -o \""+out+"\" "+
+      libdir+"pure_main.o -lstdc++ -lpure";
+    system(cmd.c_str());
+    unlink(target.c_str());
+  }
 }
 
 void interpreter::defn(const char *varname, pure_expr *x)

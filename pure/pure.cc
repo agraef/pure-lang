@@ -347,7 +347,7 @@ main(int argc, char *argv[])
   bool quiet = false, force_interactive = false,
     want_prelude = true, have_prelude = false,
     want_rcfile = true, want_editing = true;
-  string rcfile, outname = "a.ll";
+  string rcfile, outname = "a.out";
   // This is used in advisory stack checks.
   interpreter::baseptr = &base;
   // We always ignore SIGPIPE by default.

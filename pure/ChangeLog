@@ -1,5 +1,24 @@
 2009-03-23  Albert Graef  <Dr.Graef@t-online.de>
 
+	* Makefile.in: Add rules to build pure_main.o and install it in
+	the Pure library directory, for the sake of the batch compiler.
+
+	* pure_main.c: Added to distribution. This is a minimal main() to
+	be used with the batch compiler.
+
+	* interpreter.cc (compiler): Add a simple llvmc driver.
+
+	If the output file specified with -o is either '-' (stdout) or a
+	filename ending with the .ll extension, the generated output is a
+	plain LLVM assembler file which can be processed manually with the
+	LLVM tools. Otherwise we assume that the user wants a native
+	executable, and llvmc is invoked automagically to create one. By
+	default, if no output filename is specified, we assume the
+	customary 'a.out' for the name of the executable.
+
+	NOTE: This requires the LLVM tools (llvm-gcc, llvmc etc.) to be
+	installed.
+
 	* runtime.cc (pure_interp_main), interpreter.cc (interpreter):
 	Added the rest of the missing initialization code. Programs
 	compile and run now (no working eval, though, since this requires
@@ -42,8 +61,7 @@
 	
 	-c triggers batch compilation. This is ignored if -i is specified.
 
-	-o filename specifies the LLVM assembler (.ll) output filename
-	(default: a.ll).
+	-o filename specifies the LLVM assembler (.ll) output filename.
 
 2009-03-19  Albert Graef  <Dr.Graef@t-online.de>
 

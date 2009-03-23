@@ -39,6 +39,7 @@ DLL=@DLLEXT@
 
 # Programs.
 
+CC = @CC@
 CXX = @CXX@
 INSTALL = @INSTALL@
 
@@ -127,7 +128,7 @@ OBJECT = $(subst .cc,.o,$(filter %.cc,$(SOURCE) $(EXTRA_SOURCE)))
 DISTFILES = COPYING ChangeLog INSTALL NEWS README TODO \
 Makefile.in configure.ac configure config.h.in \
 config/aclocal.m4 config/config.guess config/config.sub config/install-sh \
-$(SOURCE) $(EXTRA_SOURCE) w3centities.c pure.cc \
+$(SOURCE) $(EXTRA_SOURCE) w3centities.c pure.cc pure_main.c \
 pure.1 pure.txt pure.html purelib.txt purelib.html \
 etc/pure-mode.el.in etc/pure.* etc/gpure.lang \
 examples/*.pure examples/*.purerc examples/*.c examples/libor/*.pure \
@@ -138,7 +139,7 @@ dist distcheck cleanlogs logs check config
 
 # compilation
 
-all: pure$(EXE) etc/pure-mode.el pure.1
+all: pure$(EXE) pure_main.o etc/pure-mode.el
 
 ifeq ($(sharedlib), yes)
 pure$(EXE): pure.o $(libpure)
@@ -208,7 +209,7 @@ purelib.txt: $(libfiles)
 # cleaning
 
 clean:
-	rm -f *~ *.bak *.tex *.pdf pure$(EXE) $(OBJECT) pure.o $(libpurelnk) $(libpure) parser.output
+	rm -f *~ *.bak *.tex *.pdf pure$(EXE) $(OBJECT) pure.o pure_main.o $(libpurelnk) $(libpure) parser.output
 
 distclean: clean
 	rm -f Makefile config.h config.log config.status etc/pure-mode.el $(dist).tar.gz
@@ -247,6 +248,7 @@ endif
 ifeq ($(versioned), yes)
 	$(INSTALL) $(srcdir)/runtime.h $(DESTDIR)$(includedir)/pure-$(version)
 	ln -sf $(includedir)/pure-$(version) $(DESTDIR)$(includedir)/pure
+	$(INSTALL) pure_main.o $(DESTDIR)$(libdir)/pure-$(version)
 	for x in $(srcdir)/lib/*.pure; do $(INSTALL) -m 644 $$x $(DESTDIR)$(libdir)/pure-$(version); done
 	$(INSTALL) -m 644 pure.html purelib.html $(DESTDIR)$(libdir)/pure-$(version)
 	ln -sf $(libdir)/pure-$(version) $(DESTDIR)$(libdir)/pure
@@ -254,6 +256,7 @@ ifeq ($(versioned), yes)
 	ln -sf $(man1dir)/pure-$(version).1 $(DESTDIR)$(man1dir)/pure.1
 else
 	$(INSTALL) $(srcdir)/runtime.h $(DESTDIR)$(includedir)/pure
+	$(INSTALL) pure_main.o $(DESTDIR)$(libdir)/pure
 	for x in $(srcdir)/lib/*.pure; do $(INSTALL) -m 644 $$x $(DESTDIR)$(libdir)/pure; done
 	$(INSTALL) -m 644 pure.html purelib.html $(DESTDIR)$(libdir)/pure
 	$(INSTALL) -m 644 $(srcdir)/pure.1 $(DESTDIR)$(man1dir)/pure.1
