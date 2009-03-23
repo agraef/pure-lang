@@ -2644,15 +2644,11 @@ void pure_interp_compile(pure_interp *interp)
 extern "C"
 pure_interp *pure_interp_main(int argc, char *argv[],
 			      int32_t nsyms, char *syms,
-			      pure_expr ***vars, void **vals, int32_t *arities,
+			      pure_expr ***vars, void **vals,
+			      int32_t *arities, void **externs,
 			      pure_expr ***sstk, void **fptr)
 {
   char base;
-  interpreter *_interp =
-    new interpreter(nsyms, syms, vars, vals, arities, sstk, fptr),
-    &interp = *_interp;
-  interpreter::g_interp = _interp;
-  if (!interpreter::baseptr) interpreter::baseptr = &base;
 #if 0
   std::cerr << "\n** argc = " << argc << endl;
   for (int i = 0; i < argc; i++)
@@ -2668,8 +2664,17 @@ pure_interp *pure_interp_main(int argc, char *argv[],
   for (int32_t f = 1; f <= nsyms; f++)
     if (vals[f])
       std::cerr << f << " = " << vals[f] << " (" << arities[f] << ")\n";
+  std::cerr << "\n** externs table " << externs << endl;
+  for (int32_t f = 1; f <= nsyms; f++)
+    if (externs[f])
+      std::cerr << f << " = " << externs[f] << endl;
   std::cerr << "\n** sstk = " << sstk << ", fptr = " << fptr << endl;
 #endif
+  interpreter *_interp =
+    new interpreter(nsyms, syms, vars, vals, arities, externs, sstk, fptr),
+    &interp = *_interp;
+  interpreter::g_interp = _interp;
+  if (!interpreter::baseptr) interpreter::baseptr = &base;
   // get some settings from the environment
   const char *env;
   if ((env = getenv("PURE_STACK"))) {

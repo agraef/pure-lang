@@ -438,8 +438,9 @@ void interpreter::init()
 		 "pure_debug",      "void",  -2, "int", "char*");
 
   declare_extern((void*)pure_interp_main,
-		 "pure_interp_main","void*",  9, "int", "void*",
-		 "int", "char*", "void*", "void*", "int*", "void*", "void*");
+		 "pure_interp_main","void*",  10, "int", "void*",
+		 "int", "char*", "void*", "void*", "int*", "void*",
+		 "void*", "void*");
 }
 
 interpreter::interpreter()
@@ -454,7 +455,8 @@ interpreter::interpreter()
 }
 
 interpreter::interpreter(int32_t nsyms, char *syms,
-			 pure_expr ***vars, void **vals, int32_t *arities,
+			 pure_expr ***vars, void **vals,
+			 int32_t *arities, void **externs,
 			 pure_expr ***_sstk, void **_fptr)
   : verbose(0), compiling(false), interactive(false), restricted(true),
     ttymode(false), override(false), stats(false), temp(0),
@@ -465,7 +467,29 @@ interpreter::interpreter(int32_t nsyms, char *syms,
 {
   using namespace llvm;
   init();
-  symtab.restore(syms);
+  string s_syms = syms, s_externs;
+  size_t p = s_syms.find("%%\n");
+  if (p != string::npos) {
+    s_externs = s_syms.substr(p+3);
+    s_syms.erase(p);
+  }
+  symtab.restore(s_syms.c_str());
+  // Populate the externs table (function pointers are filled in later).
+  istringstream sin(s_externs);
+  int f;
+  string s_name, s_type;
+  size_t n_args;
+  while (1) {
+    sin >> f >> s_name >> s_type >> n_args;
+    const Type* rettype = named_type(s_type);
+    vector<const Type*> argtypes(n_args);
+    for (size_t i = 0; i < n_args; i++) {
+      sin >> s_type;
+      argtypes[i] = named_type(s_type);
+    }
+    if (sin.fail() || sin.eof()) break;
+    externals[f] = ExternInfo(f, s_name, rettype, argtypes, 0);
+  }
   for (int32_t f = 1; f <= nsyms; f++) {
     symbol& sym = symtab.sym(f);
     size_t p = sym.s.find("::");
@@ -497,6 +521,15 @@ interpreter::interpreter(int32_t nsyms, char *syms,
       JIT->addGlobalMapping(v.v, &v.x);
     }
     if (v.x) pure_free(v.x); v.x = pure_new(x);
+    if (externs[f]) {
+      ExternInfo& info = externals[f];
+      vector<const Type*> argt(info.argtypes.size(), ExprPtrTy);
+      FunctionType *ft = FunctionType::get(ExprPtrTy, argt, false);
+      Function *fp = Function::Create(ft, Function::InternalLinkage,
+				      "$$wrap."+info.name, module);
+      sys::DynamicLibrary::AddSymbol("$$wrap."+info.name, externs[f]);
+      info.f = fp;
+    }
   }
 }
 
@@ -3453,40 +3486,56 @@ void interpreter::compiler(const char *_out)
   b.SetInsertPoint(bb);
   Function *initfun = module->getFunction("pure_interp_main");
   Function *freefun = module->getFunction("pure_freenew");
-  // Dump the symbol table to a special $$syms$$ variable.
-  /* TODO: To make eval work, we'll also have to dump the global environment
-     with all the constant, variable, function and macro definitions and
-     external declarations. */
+  /* To make at least simple evals work, we have to dump the information in
+     the symbol and external tables so that they can be reconstructed at
+     runtime. We collect this information as a string, one line per symbol and
+     external table entry. The two sections are separated by '%%' on a line by
+     itself. The string data is hard-coded into the binary module. */
   string dump;
   symtab.dump(dump);
-  const char *dump_s = dump.c_str();
-  GlobalVariable *syms = new GlobalVariable
-    (ArrayType::get(Type::Int8Ty, strlen(dump_s)+1), true,
-     GlobalVariable::InternalLinkage, ConstantArray::get(dump_s),
-     "$$syms$$", module);
   // Create a number of other tables which hold the pointers to global
-  // variables, corresponding functions and arities for each global Pure
-  // symbol.
+  // variables, corresponding Pure functions and their arities, and the
+  // pointers to Pure wrappers for externals.
   int32_t n = symtab.nsyms();
   vector<Constant*> vars(n+1, NullExprPtrPtr);
   vector<Constant*> vals(n+1, NullPtr);
   vector<Constant*> arity(n+1, Zero);
+  vector<Constant*> externs(n+1, NullPtr);
   // Populate the tables.
+  ostringstream sout;
+  sout << "%%\n";
   Value *idx[2] = { Zero, Zero };
   for (map<int32_t,GlobalVar>::iterator it = globalvars.begin();
        it != globalvars.end(); ++it) {
     int32_t f = it->first;
     GlobalVar& v = it->second;
     if (v.v && v.x) {
-      map<int32_t,Env>::iterator jt = globalfuns.find(f);
       vars[f] = v.v;
+      map<int32_t,Env>::iterator jt = globalfuns.find(f);
       if (jt != globalfuns.end()) {
 	Env& e = jt->second;
 	vals[f] = ConstantExpr::getPointerCast(e.h, VoidPtrTy);
 	arity[f] = SInt(e.n);
       }
+      map<int32_t,ExternInfo>::iterator kt = externals.find(f);
+      if (kt != externals.end()) {
+	ExternInfo& info = kt->second;
+	externs[f] = ConstantExpr::getPointerCast(info.f, VoidPtrTy);
+	sout << info.tag << " " << info.name << " " << type_name(info.type)
+	     << " " << info.argtypes.size();
+	for (size_t i = 0; i < info.argtypes.size(); i++)
+	  sout << " " << type_name(info.argtypes[i]);
+	sout << endl;
+      }
     }
   }
+  dump += sout.str();
+  // Dump the symbol and external tables.
+  const char *dump_s = dump.c_str();
+  GlobalVariable *syms = new GlobalVariable
+    (ArrayType::get(Type::Int8Ty, strlen(dump_s)+1), true,
+     GlobalVariable::InternalLinkage, ConstantArray::get(dump_s),
+     "$$syms$$", module);
   // This holds the pointers to the global variables
   GlobalVariable *vvars = new GlobalVariable
     (ArrayType::get(ExprPtrPtrTy, n+1), true,
@@ -3507,12 +3556,19 @@ void interpreter::compiler(const char *_out)
      GlobalVariable::InternalLinkage,
      ConstantArray::get(ArrayType::get(Type::Int32Ty, n+1), arity),
      "$$arity$$", module);
+  // This holds all the externals.
+  GlobalVariable *vexterns = new GlobalVariable
+    (ArrayType::get(VoidPtrTy, n+1), true,
+     GlobalVariable::InternalLinkage,
+     ConstantArray::get(ArrayType::get(VoidPtrTy, n+1), externs),
+     "$$externs$$", module);
   // Emit code for the special globals.
   code << endl;
   syms->print(code);
   vvars->print(code);
   vvals->print(code);
   varity->print(code);
+  vexterns->print(code);
   // Call pure_interp_main() in the runtime to create an interpreter instance.
   vector<Value*> args;
   Function::arg_iterator a = main->arg_begin();
@@ -3524,6 +3580,8 @@ void interpreter::compiler(const char *_out)
   args.push_back(b.CreateBitCast(b.CreateGEP(vvars, idx, idx+2), VoidPtrTy));
   args.push_back(b.CreateBitCast(b.CreateGEP(vvals, idx, idx+2), VoidPtrTy));
   args.push_back(b.CreateGEP(varity, idx, idx+2));
+  args.push_back(b.CreateBitCast(b.CreateGEP(vexterns, idx, idx+2),
+				 VoidPtrTy));
   args.push_back(b.CreateBitCast(sstkvar, VoidPtrTy));
   args.push_back(b.CreateBitCast(fptrvar, VoidPtrTy));
   b.CreateCall(initfun, args.begin(), args.end());

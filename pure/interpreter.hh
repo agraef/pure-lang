@@ -300,7 +300,8 @@ class interpreter
 public:
   interpreter();
   interpreter(int32_t nsyms, char *syms,
-	      pure_expr ***vars, void **vals, int32_t *arities,
+	      pure_expr ***vars, void **vals,
+	      int32_t *arities, void **externs,
 	      pure_expr ***sstk, void **fptr);
   virtual ~interpreter();
   // Populate the global environment with some useful variables.
