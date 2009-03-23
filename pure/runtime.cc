@@ -3427,9 +3427,13 @@ void pure_throw(pure_expr* e)
 {
   interpreter::brkflag = 0;
   interpreter& interp = *interpreter::g_interp;
-  if (interp.estk.empty())
+  if (interp.estk.empty()) {
+    if (e)
+      cerr << "throw: unhandled exception '" << e << "'\n";
+    else
+      cerr << "throw: unhandled exception\n";
     abort(); // no exception handler, bail out
-  else {
+  } else {
     interp.estk.front().e = e;
     longjmp(interp.estk.front().jmp, 1);
   }
