@@ -2647,29 +2647,29 @@ pure_interp *pure_interp_main(int argc, char *argv[],
 			      pure_expr ***vars, void **vals, int32_t *arities,
 			      pure_expr ***sstk, void **fptr)
 {
-#if 0
-  std::cout << "\n** argc = " << argc << endl;
-  for (int i = 0; i < argc; i++)
-    std::cout << "argv[" << i << "] = '"
-	      << (argv[i]?argv[i]:"(null)") << "'\n";
-  std::cout << "\n** " << nsyms << " symbols\n";
-  std::cout << syms;
-  std::cout << "\n** vars table " << vars << endl;
-  for (int32_t f = 1; f < nsyms; f++)
-    if (vars[f])
-      std::cout << f << " = " << vars[f] << endl;
-  std::cout << "\n** vals table " << vals << endl;
-  for (int32_t f = 1; f < nsyms; f++)
-    if (vals[f])
-      std::cout << f << " = " << vals[f] << " (" << arities[f] << ")\n";
-  std::cout << "\n** sstk = " << sstk << ", fptr = " << fptr << endl;
-#endif
   char base;
   interpreter *_interp =
     new interpreter(nsyms, syms, vars, vals, arities, sstk, fptr),
     &interp = *_interp;
   interpreter::g_interp = _interp;
   if (!interpreter::baseptr) interpreter::baseptr = &base;
+#if 0
+  std::cerr << "\n** argc = " << argc << endl;
+  for (int i = 0; i < argc; i++)
+    std::cerr << "argv[" << i << "] = '"
+	      << (argv[i]?argv[i]:"(null)") << "'\n";
+  std::cerr << "\n** " << nsyms << " symbols\n";
+  std::cerr << syms;
+  std::cerr << "\n** vars table " << vars << endl;
+  for (int32_t f = 1; f <= nsyms; f++)
+    if (vars[f])
+      std::cerr << f << " = " << vars[f] << endl;
+  std::cerr << "\n** vals table " << vals << endl;
+  for (int32_t f = 1; f <= nsyms; f++)
+    if (vals[f])
+      std::cerr << f << " = " << vals[f] << " (" << arities[f] << ")\n";
+  std::cerr << "\n** sstk = " << sstk << ", fptr = " << fptr << endl;
+#endif
   // get some settings from the environment
   const char *env;
   if ((env = getenv("PURE_STACK"))) {
