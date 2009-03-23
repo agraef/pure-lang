@@ -69,8 +69,12 @@ struct Env;
 struct GlobalVar {
   // global variable
   llvm::GlobalVariable* v;
-  pure_expr *x;
-  GlobalVar() { v = 0; x = 0; }
+  pure_expr *xx;
+  pure_expr *&x;
+  GlobalVar() : x(xx) { v = 0; x = 0; }
+  GlobalVar(pure_expr **xp) : x(*xp) { v = 0; x = 0; }
+  GlobalVar(const GlobalVar& var) : x((&var.x==&var.xx)?xx:var.x)
+  { v = var.v; if (&var.x==&var.xx) x = var.x; }
 };
 
 struct VarInfo {

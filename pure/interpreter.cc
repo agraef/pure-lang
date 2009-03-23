@@ -477,7 +477,18 @@ interpreter::interpreter(int32_t nsyms, char *syms,
       x = pure_clos(false, false, f, arities[f], vals[f], 0, 0);
     else
       x = pure_const(f);
-    GlobalVar& v = globalvars[f];
+    GlobalVariable *u = 0;
+    map<int32_t,GlobalVar>::iterator it = globalvars.find(f);
+    if (it != globalvars.end()) {
+      GlobalVar& v = it->second;
+      u = v.v;
+      globalvars.erase(it);
+    }
+    globalvars.insert(pair<int32_t,GlobalVar>(f, GlobalVar(vars[f])));
+    it = globalvars.find(f);
+    assert(it != globalvars.end());
+    GlobalVar& v = it->second;
+    v.v = u;
     if (!v.v) {
       v.v = new GlobalVariable
 	(ExprPtrTy, false, GlobalVariable::InternalLinkage,
@@ -485,10 +496,7 @@ interpreter::interpreter(int32_t nsyms, char *syms,
 	 mkvarlabel(f), module);
       JIT->addGlobalMapping(v.v, &v.x);
     }
-    // XXXFIXME: To make eval work properly, v.x should actually be turned
-    // into a reference to *vars[f] here.
     if (v.x) pure_free(v.x); v.x = pure_new(x);
-    *vars[f] = pure_new(x);
   }
 }
 
