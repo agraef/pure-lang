@@ -5017,19 +5017,22 @@ pure_expr *interpreter::const_value(expr x)
   }
   default: {
     if (x.tag() > 0) {
-      env::const_iterator it = globenv.find(x.tag());
-      map<int32_t,GlobalVar>::iterator v;
       if (externals.find(x.tag()) != externals.end())
 	return 0;
-      else if (it == globenv.end())
+      map<int32_t,GlobalVar>::iterator v = globalvars.find(x.tag());
+      if (v != globalvars.end()) {
+	// bound variable
+	pure_expr *y = v->second.x;
+	// check if we got a closure subject to evaluation
+	if (y->tag >= 0 && y->data.clos && y->data.clos->n == 0)
+	  return 0;
+	else
+	  return y;
+      } else {
 	// unbound symbol
+	assert(globenv.find(x.tag()) == globenv.end() && "bad global");
 	return pure_const(x.tag());
-      else if (it->second.t == env_info::fvar &&
-	       (v = globalvars.find(x.tag())) != globalvars.end())
-	// variable
-	return v->second.x;
-      else
-	return 0;
+      }
     } else
       return 0;
   }
@@ -5077,16 +5080,11 @@ pure_expr *interpreter::const_app_value(expr x)
       return 0;
     }
   } else if (x.tag() > 0) {
-    env::const_iterator it = globenv.find(x.tag());
-    map<int32_t,GlobalVar>::iterator v;
     if (externals.find(x.tag()) != externals.end())
       return 0;
-    else if (it == globenv.end())
-      // unbound symbol
-      return pure_const(x.tag());
-    else if (it->second.t == env_info::fvar &&
-	     (v = globalvars.find(x.tag())) != globalvars.end()) {
-      // variable value
+    map<int32_t,GlobalVar>::iterator v = globalvars.find(x.tag());
+    if (v != globalvars.end()) {
+      // bound variable
       pure_expr *y = v->second.x;
       // walk down the spine, if any
       while (y->tag == EXPR::APP) y = y->data.x[0];
@@ -5096,8 +5094,11 @@ pure_expr *interpreter::const_app_value(expr x)
       else
 	// not a callable closure, so it must be a constructor term
 	return v->second.x;
-    } else
-      return 0;
+    } else {
+      // unbound symbol
+      assert(globenv.find(x.tag()) == globenv.end() && "bad global");
+      return pure_const(x.tag());
+    }
   } else
     return 0;
 }
