@@ -3436,7 +3436,7 @@ void interpreter::compiler(const char *_out)
   std::ostream *codep =
     (target!="-")?new std::ofstream(target.c_str()):&std::cout;
   std::ostream &code = *codep;
-  if (target == "-") target = "<stdout>";
+  if (target == "-") out = target = "<stdout>";
   if (code.fail()) {
     std::cerr << "Error opening " << target << endl;
     exit(1);
