@@ -1,5 +1,16 @@
 2009-03-23  Albert Graef  <Dr.Graef@t-online.de>
 
+	* parser.yy: Make sure that we don't execute any parse actions
+	that aren't possible when running in restricted mode. Currently
+	this precludes pretty much everything related to 'eval', except
+	evaluation of simple toplevel expressions. In other words,
+	anything which changes the executing program is forbidden in
+	restricted mode.
+
+	* interpreter.cc: Add a 'restricted' flag which indicates whether
+	we're running on the bare metal, i.e., as a batch-compiled
+	standalone module.
+
 	* Makefile.in: Add rules to build pure_main.o and install it in
 	the Pure library directory, for the sake of the batch compiler.
 

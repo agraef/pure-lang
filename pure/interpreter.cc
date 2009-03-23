@@ -443,8 +443,8 @@ void interpreter::init()
 }
 
 interpreter::interpreter()
-  : verbose(0), compiling(false), interactive(false), ttymode(false),
-    override(false), stats(false), temp(0),
+  : verbose(0), compiling(false), interactive(false), restricted(false),
+    ttymode(false), override(false), stats(false), temp(0),
     ps("> "), libdir(""), histfile("/.pure_history"), modname("pure"),
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0), result(0),
     mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0),
@@ -456,8 +456,8 @@ interpreter::interpreter()
 interpreter::interpreter(int32_t nsyms, char *syms,
 			 pure_expr ***vars, void **vals, int32_t *arities,
 			 pure_expr ***_sstk, void **_fptr)
-  : verbose(0), compiling(false), interactive(false), ttymode(false),
-    override(false), stats(false), temp(0),
+  : verbose(0), compiling(false), interactive(false), restricted(true),
+    ttymode(false), override(false), stats(false), temp(0),
     ps("> "), libdir(""), histfile("/.pure_history"), modname("pure"),
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0), result(0),
     mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0),

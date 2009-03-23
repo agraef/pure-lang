@@ -308,6 +308,7 @@ public:
   uint8_t verbose;   // debugging output from interpreter
   bool compiling;    // batch compiler mode
   bool interactive;  // interactive mode
+  bool restricted;   // restricted mode
   bool ttymode;      // connected to a tty
   bool override;     // override mode
   bool stats;        // stats mode (print execution times)

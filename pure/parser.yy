@@ -15,8 +15,14 @@
 #include "printer.hh"
 #include "util.hh"
 
-#define action(task,cleanup) \
+#define restricted_action(task,cleanup) \
   try { if (interp.nerrs == 0) {task;} else {cleanup;} } \
+  catch (err &e) { error(yyloc, e.what()); } \
+  interp.nerrs = 0;
+
+#define action(task,cleanup) \
+  try { if (interp.restricted) throw err("operation not implemented"); \
+        else if (interp.nerrs == 0) {task;} else {cleanup;} } \
   catch (err &e) { error(yyloc, e.what()); } \
   interp.nerrs = 0;
 
@@ -267,7 +273,7 @@ source
 
 item
 : expr
-{ action(interp.exec($1), delete $1); }
+{ restricted_action(interp.exec($1), delete $1); }
 | LET simple_rule
 { action(interp.define($2), delete $2); }
 | CONST simple_rule

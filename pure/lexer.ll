@@ -868,7 +868,9 @@ static int argcmp(const char *s, const char *t)
 
 static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const char *cmd, const char *cmdline)
 {
-  if (strcmp(cmd, "!") == 0) {
+  if (interp.restricted) {
+    cerr << cmd << ": operation not implemented\n";
+  } else if (strcmp(cmd, "!") == 0) {
     const char *s = cmdline+1;
     while (isspace(*s)) ++s;
     system(s);
