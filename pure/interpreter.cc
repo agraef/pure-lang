@@ -3352,6 +3352,15 @@ using namespace llvm;
 #include <time.h>
 #include <llvm/TypeSymbolTable.h>
 
+static inline string mkvarsym(const string& name)
+{
+  bool have_c_sym = sys::DynamicLibrary::SearchForAddressOfSymbol(name);
+  if (have_c_sym)
+    return "$$pure."+name;
+  else
+    return name;
+}
+
 static inline bool is_init(const string& name)
 {
   return name.compare(0, 6, "$$init") == 0 &&
@@ -3567,7 +3576,7 @@ void interpreter::defn(int32_t tag, pure_expr *x)
     else
       v.v = new GlobalVariable
 	(ExprPtrTy, false, GlobalVariable::ExternalLinkage, NullExprPtr,
-	 sym.s, module);
+	 mkvarsym(sym.s), module);
     JIT->addGlobalMapping(v.v, &v.x);
   }
   if (v.x) pure_free(v.x); v.x = pure_new(x);
@@ -5193,8 +5202,7 @@ pure_expr *interpreter::dodefn(env vars, expr lhs, expr rhs, pure_expr*& e)
 	    else
 	      v.v = new GlobalVariable
 		(ExprPtrTy, false, GlobalVariable::ExternalLinkage,
-		 NullExprPtr,
-		 sym.s, module);
+		 NullExprPtr, mkvarsym(sym.s), module);
 	    JIT->addGlobalMapping(v.v, &v.x);
 	  }
 	  if (v.x) pure_free(v.x);
@@ -5255,7 +5263,7 @@ pure_expr *interpreter::dodefn(env vars, expr lhs, expr rhs, pure_expr*& e)
       else
 	v.v = new GlobalVariable
 	  (ExprPtrTy, false, GlobalVariable::ExternalLinkage, NullExprPtr,
-	   sym.s, module);
+	   mkvarsym(sym.s), module);
       JIT->addGlobalMapping(v.v, &v.x);
     }
     /* Cache any old value so that we can free it later. Note that it is not
