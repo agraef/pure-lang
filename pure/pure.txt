@@ -2904,15 +2904,25 @@ implies the following quirks and limitations:
   You can define local functions and variables in ``with`` and ``when``
   clauses inside an expression, but you can't use eval_ to define new global
   variables and functions. In other words, anything which changes the
-  executing program is "verboten". Also, the introspective capabilities
-  discussed under Reflection_ won't work because the interactive commands are
+  executing program is "verboten".
+
+* Constant and macro definitions, being compile time features, aren't
+  available in the compiled program. If you need to use these with eval_ at
+  run time, you have to provide them through variable and function definitions
+  instead.
+
+* The introspective capabilities provided by evalcmd_ (discussed under
+  Reflection_ below) won't work either because the interactive commands are
   all disabled.
 
 .. _eval: purelib.html#eval
+.. _evalcmd: purelib.html#evalcmd
 
-These restrictions only apply at run time, of course. At compile time the
-program *is* being executed by the interpreter (see below) so you can use
-eval_ in any way desired. See the description of the ``compiling`` variable
+What all this boils down to is that anything which requires the compile time
+or interactive facilities of the interpreter, is unavailable. These
+restrictions only apply at run time, of course. At compile time the program
+*is* being executed by the interpreter (see below) so you can use eval_ and
+evalcmd_ in any desired way. See the description of the ``compiling`` variable
 below for how to distinguish these cases in your script.
 
 For most kinds of scripts, the above restrictions aren't really that much of

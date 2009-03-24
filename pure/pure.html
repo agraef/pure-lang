@@ -3104,13 +3104,20 @@ after all the function and variable definitions, at the end of your program.</li
 You can define local functions and variables in <tt class="docutils literal"><span class="pre">with</span></tt> and <tt class="docutils literal"><span class="pre">when</span></tt>
 clauses inside an expression, but you can't use <a class="reference" href="purelib.html#eval">eval</a> to define new global
 variables and functions. In other words, anything which changes the
-executing program is &quot;verboten&quot;. Also, the introspective capabilities
-discussed under <a class="reference" href="#reflection">Reflection</a> won't work because the interactive commands are
+executing program is &quot;verboten&quot;.</li>
+<li>Constant and macro definitions, being compile time features, aren't
+available in the compiled program. If you need to use these with <a class="reference" href="purelib.html#eval">eval</a> at
+run time, you have to provide them through variable and function definitions
+instead.</li>
+<li>The introspective capabilities provided by <a class="reference" href="purelib.html#evalcmd">evalcmd</a> (discussed under
+<a class="reference" href="#reflection">Reflection</a> below) won't work either because the interactive commands are
 all disabled.</li>
 </ul>
-<p>These restrictions only apply at run time, of course. At compile time the
-program <em>is</em> being executed by the interpreter (see below) so you can use
-<a class="reference" href="purelib.html#eval">eval</a> in any way desired. See the description of the <tt class="docutils literal"><span class="pre">compiling</span></tt> variable
+<p>What all this boils down to is that anything which requires the compile time
+or interactive facilities of the interpreter, is unavailable. These
+restrictions only apply at run time, of course. At compile time the program
+<em>is</em> being executed by the interpreter (see below) so you can use <a class="reference" href="purelib.html#eval">eval</a> and
+<a class="reference" href="purelib.html#evalcmd">evalcmd</a> in any desired way. See the description of the <tt class="docutils literal"><span class="pre">compiling</span></tt> variable
 below for how to distinguish these cases in your script.</p>
 <p>For most kinds of scripts, the above restrictions aren't really that much of
 an obstacle, or can easily be worked around. For the few scripts which
