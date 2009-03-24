@@ -526,7 +526,7 @@ main(int argc, char *argv[])
   if ((count > 0 || interp.compiling) && !force_interactive) {
     if (interp.compiling || interp.verbose&verbosity::dump)
       interp.compile();
-    if (interp.compiling) interp.compiler(outname.c_str());
+    if (interp.compiling) interp.compiler(outname);
     return 0;
   }
   interp.symtab.init_builtins();

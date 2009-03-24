@@ -537,7 +537,7 @@ public:
 				 const list<string>& argtypes,
 				 bool varargs = false, void *fp = 0,
 				 string asname = "");
-  void compiler(const char *out = 0);
+  void compiler(string out);
 private:
   void init();
   Env *__fptr;

@@ -3423,7 +3423,7 @@ static string& quote(string& s)
   return s;
 }
 
-void interpreter::compiler(const char *_out)
+void interpreter::compiler(string out)
 {
   /* We allow either '-' or *.ll to indicate an LLVM assembler file. In the
      former case, output is written to stdout, which is useful if the output
@@ -3431,7 +3431,7 @@ void interpreter::compiler(const char *_out)
      output neither is '-' nor has the '.ll' extension, output is written to a
      temporary .ll file which is then passed to 'llvmc' and linked with a
      minimal 'main' to create an executable. */
-  string out = unixize(_out);
+  out = unixize(out);
   string target = out;
   size_t p = target.find_last_of("/.");
   string ext = (p!=string::npos && target[p]=='.')?target.substr(p):"";
@@ -3616,7 +3616,6 @@ void interpreter::compiler(const char *_out)
   if (target != out) {
     string cmd = "llvmc "+quote(target)+" -o "+quote(out)+" "+
       quote(libdir)+"pure_main.o -lpure -lstdc++";
-    std::cerr << cmd << endl;
     system(cmd.c_str());
     unlink(target.c_str());
   }
