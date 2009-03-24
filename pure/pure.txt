@@ -74,7 +74,8 @@ pure is the Pure interpreter. It is invoked as follows::
   pure [options ...] [script ...] [-- args ...]
   pure [options ...] -x script [args ...]
 
-.. rubric:: Options
+Options
+-------
 
 The interpreter accepts various options which are described in more detail
 below:
@@ -89,6 +90,8 @@ below:
     Add a directory to be searched for included source scripts.
 -Ldirectory
     Add a directory to be searched for dynamic libraries.
+-llibname
+    Library to be linked in batch compilation.
 --noediting
     Do not use readline for command-line editing.
 --noprelude, -n
@@ -106,59 +109,14 @@ below:
 -x
     Execute script with given command line arguments.
 
-.. rubric:: Startup Files
-
-The interpreter may source various files during its startup. These are:
-
-~/.pure_history
-    Interactive command history. 
-
-~/.purerc, .purerc, .pure
-    Interactive startup files. The latter is usually a dump from a previous
-    interactive session.
-
-prelude.pure
-    Standard prelude. If available, this script is loaded before any other
-    definitions, unless -n was specified.
-
-.. rubric:: Environment
-
-Various aspects of the interpreter can be configured through the following
-shell environment variables:
-
-PURELIB
-    Directory to search for library scripts, including the prelude. If PURELIB
-    is not set, it defaults to some default location specified at installation
-    time.
-
-PURE_HELP
-    Command used to browse the Pure manual. This must be a browser capable of
-    displaying html files. Default is w3m(1).
-
-PURE_INCLUDE
-    Additional directories (in colon-separated format) to be searched for
-    included scripts.
-
-PURE_LIBRARY
-    Additional directories (in colon-separated format) to be searched for
-    dynamic libraries.
-
-PURE_MORE
-    Shell command to be used for paging through output of the show command,
-    when the interpreter runs in interactive mode.
-
-PURE_PS
-    Command prompt used in the interactive command loop ("> " by default). 
-
-PURE_STACK
-    Maximum stack size in kilobytes (default: 0 = unlimited). 
+Overview of Operation
+---------------------
 
 If any source scripts are specified on the command line, they are loaded and
 executed, after which the interpreter exits. Otherwise the interpreter enters
-the interactive read-eval-print loop. You can also use the -i option to enter
-the interactive loop (continue reading from stdin) even after processing some
-source scripts. To exit the interpreter, just type the quit command or the
-end-of-file character (``^D`` on Unix) at the beginning of the command line.
+the interactive read-eval-print loop, see `Running Interactively`_ below. You
+can also use the -i option to enter the interactive loop (continue reading
+from stdin) even after processing some source scripts.
 
 Options and source files are processed in the order in which they are given on
 the command line. Processing of options and source files ends when either the
@@ -191,10 +149,12 @@ PURELIB environment variable. If the PURELIB variable is not set, a
 system-specific default is used. Relative pathnames of other source scripts
 specified on the command line are interpreted relative to the current working
 directory. In addition, the executed program may load other scripts and
-libraries via a using declaration in the source, which are searched for in a
-number of locations, including the directories named with the -I and -L
-options; see the sections Declarations_ and `C Interface`_ below for
-details.
+libraries via a ``using`` declaration in the source, which are searched for in
+a number of locations, including the directories named with the -I and -L
+options; see the sections Declarations_ and `C Interface`_ below for details.
+
+Compiling Scripts
+-----------------
 
 If the -c option is specified, it forces the interpreter to non-interactive
 mode (unless -i is specified as well, which overrides -c). Any scripts
@@ -207,8 +167,9 @@ toolchain (llvmc, llvm-gcc, etc.). If the output filename is just a hyphen
 ``-``, the assembler file is written to standard output, which is useful if
 you want to pass the generated code to the LLVM tools in a pipeline. In all
 other cases the interpreter automatically invokes llvmc to compile the program
-to a native executable with the given name. If the output filename is omitted,
-it defaults to ``a.out``.
+to a native executable with the given name. You can also specify additional
+libraries to be linked into the executable with the -l option. If the output
+filename is omitted, it defaults to ``a.out``.
 
 The -c option provides a convenient way to quickly turn a Pure script into a
 standalone executable which can be invoked directly from the shell. This
@@ -216,14 +177,24 @@ reduces the startup time of a program, but it also has some limitations,
 mostly concerning the use of the built-in ``eval`` function. Please see `Batch
 Compilation`_ in the `Caveats and Notes`_ section for details.
 
-If the interpreter runs in interactive mode, it may source a few additional
-interactive startup files immediately before entering the interactive loop,
-unless the --norc option is specified. First .purerc in the user's home
-directory is read, then .purerc in the current working directory. These are
-ordinary Pure scripts which can be used to provide additional definitions for
-interactive usage. Finally, a .pure file in the current directory (containing
-a dump from a previous interactive session) is loaded if it is present. See
-the `Interactive Usage`_ section for details.
+Running Interactively
+---------------------
+
+If the interpreter runs in interactive mode, it repeatedly prompts you for
+input (which may be any legal Pure code or some special interpreter commands
+provided for interactive usage), and prints computed results. This is also
+known as the `read-eval-print` loop and is described in much more detail in
+the `Interactive Usage`_ section. To exit the interpreter, just type the
+``quit`` command or the end-of-file character (``^D`` on Unix) at the
+beginning of the command line.
+
+The interpreter may also source a few additional interactive startup files
+immediately before entering the interactive loop, unless the --norc option is
+specified. First .purerc in the user's home directory is read, then .purerc in
+the current working directory. These are ordinary Pure scripts which can be
+used to provide additional definitions for interactive usage. Finally, a .pure
+file in the current directory (containing a dump from a previous interactive
+session) is loaded if it is present.
 
 When the interpreter is in interactive mode and reads from a tty, unless the
 --noediting option is specified, commands are read using readline(3)
@@ -232,10 +203,13 @@ well as for symbols defined in the running program). When exiting the
 interpreter, the command history is stored in ~/.pure_history, from where it
 is restored the next time you run the interpreter.
 
+Verbosity and Debugging Options
+-------------------------------
+
 The -v option is most useful for debugging the interpreter, or if you are
 interested in the code your program gets compiled to. The level argument is
-optional; it defaults to 1. Six different levels are implemented at this time
-(two more bits are reserved for future extensions). For most purposes, only
+optional; it defaults to 1. Seven different levels are implemented at this
+time (one more bit is reserved for future extensions). For most purposes, only
 the first two levels will be useful for the average Pure programmer; the
 remaining levels are most likely to be used by the Pure interpreter
 developers.
@@ -267,16 +241,69 @@ developers.
     adds debugging messages from the flex(1) lexer; useful for debugging the
     lexer.
 
+64 (0x40)
+    turns on verbose batch compilation; this is useful if you want to see
+    exactly which commands get executed during batch compilation (-c).
+
 These values can be or'ed together, and, for convenience, can be specified in
 either decimal or hexadecimal. Thus 0xff always gives you full debugging
-output (which isn't most likely be used by anyone but the Pure developers).
+output (which isn't likely to be used by anyone but the Pure developers).
 
 Note that the -v option is only applied after the prelude has been loaded. If
 you want to debug the prelude, use the -n option and specify the prelude.pure
 file explicitly on the command line. Verbose output is also suppressed for
-modules imported through a using clause. As a remedy, you can use the
-interactive show command (see the `Interactive Usage`_ section below) to list
-definitions along with additional debugging information.
+modules imported through a ``using`` clause. As a remedy, you can use the
+interactive ``show`` command (see the `Interactive Usage`_ section below) to
+list definitions along with additional debugging information.
+
+Startup Files
+-------------
+
+The interpreter may source various files during its startup. These are:
+
+~/.pure_history
+    Interactive command history. 
+
+~/.purerc, .purerc, .pure
+    Interactive startup files. The latter is usually a dump from a previous
+    interactive session.
+
+prelude.pure
+    Standard prelude. If available, this script is loaded before any other
+    definitions, unless -n was specified.
+
+Environment
+-----------
+
+Various aspects of the interpreter can be configured through the following
+shell environment variables:
+
+PURELIB
+    Directory to search for library scripts, including the prelude. If PURELIB
+    is not set, it defaults to some default location specified at installation
+    time.
+
+PURE_HELP
+    Command used to browse the Pure manual. This must be a browser capable of
+    displaying html files. Default is w3m(1).
+
+PURE_INCLUDE
+    Additional directories (in colon-separated format) to be searched for
+    included scripts.
+
+PURE_LIBRARY
+    Additional directories (in colon-separated format) to be searched for
+    dynamic libraries.
+
+PURE_MORE
+    Shell command to be used for paging through output of the show command,
+    when the interpreter runs in interactive mode.
+
+PURE_PS
+    Command prompt used in the interactive command loop ("> " by default).
+
+PURE_STACK
+    Maximum stack size in kilobytes (default: 0 = unlimited).
 
 Pure Overview
 =============
@@ -2962,9 +2989,9 @@ these ends, you can invoke the interpreter as follows::
 
 Note the .ll extension; this indicates that we want an LLVM assembler
 file. The resulting assembler program can then be processed with the LLVM
-toolchain to add special optimization options and/or generate different kinds
-of binary modules. For instance, we can use llvmc to create an object (.o)
-file as follows::
+toolchain to add any special optimization or linker options that you might
+need, and/or to generate different kinds of binary modules. For instance, we
+can use llvmc to create an object (.o) file as follows::
 
   llvmc -c foo.ll -o foo.o
 
@@ -2979,7 +3006,7 @@ compiled program.)
 
 Either way, the resulting object file file can then be turned into an
 executable or a shared library using either llcm-gcc or whatever C compiler
-you prefer. Note, however, that you also need to supply some initialization
+you prefer. Note, however, that you also need to supply an initialization
 routine which calls the ``__pure_main__`` function in foo.ll to initialize the
 compiled module. This routine is to be declared in C/C++ code as follows::
 
@@ -2992,7 +3019,7 @@ for both arguments if you don't need to supply command line parameters.) The
 purpose of ``__pure_main__`` is to initialize a shell instance of the Pure
 interpreter which provides the minimal runtime support necessary to execute
 the Pure program, and to invoke all "initialization code" (variable
-definitions and toplevel expressions) of the program.
+definitions and toplevel expressions) of the program itself.
 
 A minimal C ``main`` function which does the job of initializing the Pure
 module looks as follows (see also the pure_main.c file distributed with
