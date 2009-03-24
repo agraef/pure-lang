@@ -86,7 +86,7 @@ command_generator(const char *text, int state)
     f = 1; n = interp.symtab.nsyms();
     len = strlen(text);
     /* See whether we're looking for a symbol in the (default) namespace. */
-    char *p = strstr(text, "::");
+    const char *p = strstr(text, "::");
     ns = p!=0;
     def_ns = ns && p==text && len>2;
   }
@@ -164,7 +164,7 @@ symbol_generator(const char *text, int state)
     f = 1; n = interp.symtab.nsyms();
     len = strlen(text);
     /* See whether we're looking for a symbol in the (default) namespace. */
-    char *p = strstr(text, "::");
+    const char *p = strstr(text, "::");
     ns = p!=0;
     def_ns = ns && p==text && len>2;
   }
