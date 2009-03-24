@@ -1,4 +1,30 @@
 
+** Pure 0.21 (in progress)
+
+The interpreter now offers an experimental batch compilation option -c to
+translate scripts to native executables. For instance, 'pure -c foo.pure -o
+foo' creates the executable 'foo' from the script 'foo.pure', after executing
+the script as usual. This requires the LLVM toolchain (llvmc, llvm-gcc, etc.) 
+to work. You can also use a command like 'pure -c foo.pure -o foo.ll' to
+create an LLVM assembler (.ll) file instead, which can then be processed with
+the LLVM tools, e.g., to apply further optimizations and/or produce a binary
+object module which can be linked into other C/C++ programs and libraries.
+
+Note that even when batch-compiling, the compiled program is executed as
+usual. This is necessary because parts of a Pure program (in particular,
+'const' definitions, and thereby pretty much anything else) may depend on
+previous computations performed while the program is being compiled. There's a
+new system variable 'compiling' which gives the program an indication whether
+it is running under the auspices of the batch compiler, so that it can adjust
+accordingly.
+
+Also note that the compiled executable is essentially a static snapshot of
+your program which is executed on the "bare metal", without a hosting
+interpreter. Only a minimal runtime system is provided. This considerably
+reduces startup times, but also implies some limitations, mostly concerning
+the use of the built-in 'eval' function. Please see the manual and the
+ChangeLog for details.
+
 ** Pure 0.20 2009-03-19
 
 This is a bugfix release. Most notably, two unrelated bugs in pattern matching
