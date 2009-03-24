@@ -702,7 +702,9 @@ static inline bool pstr(ostream& os, pure_expr *x)
     return false;
   interpreter& interp = *interpreter::g_interp;
   int32_t f = interp.symtab.__show__sym;
-  if (f > 0 && interp.globenv.find(f) != interp.globenv.end()) {
+  map<int32_t,GlobalVar>::iterator it;
+  if (f > 0 && (it = interp.globalvars.find(f)) != interp.globalvars.end() &&
+      it->second.x && it->second.x->tag >= 0 && it->second.x->data.clos) {
     assert(x->refc > 0);
     pure_exception ex; ex.e = 0; ex.sz = interp.sstk_sz;
     interp.estk.push_front(ex);
@@ -719,7 +721,7 @@ static inline bool pstr(ostream& os, pure_expr *x)
       return false;
     } else {
       recursive = true;
-      pure_expr *y = pure_app(pure_symbol(f), x);
+      pure_expr *y = pure_app(it->second.x, x);
       interp.estk.pop_front();
       recursive = false;
       assert(y);
