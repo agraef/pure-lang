@@ -47,7 +47,7 @@ using namespace std;
 --noediting      Do not use readline for command-line editing.\n\
 --noprelude, -n  Do not load the prelude.\n\
 --norc           Do not run the interactive startup files.\n\
--o filename      Output filename for batch compile.\n\
+-o filename      Output filename for batch compilation.\n\
 -q               Quiet startup (suppresses sign-on message).\n\
 -v[level]        Set debugging level (default: 1).\n\
 --version        Print version information and exit.\n\
