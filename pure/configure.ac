@@ -2,7 +2,7 @@
 dnl To regenerate the configury after changes:
 dnl autoconf -I config && autoheader -I config
 
-AC_INIT(pure, 0.20)
+AC_INIT(pure, 0.21)
 AC_CONFIG_AUX_DIR(config)
 dnl AC_CONFIG_MACRO_DIR(config)
 AC_CONFIG_HEADERS(config.h)
@@ -151,7 +151,7 @@ AC_OUTPUT
 llvm_version=`llvm-config --version`
 
 AC_MSG_RESULT([
-Pure is now configured for LLVM ${llvm_version} on ${host}.
+Pure ${PACKAGE_VERSION} is now configured for LLVM ${llvm_version} on ${host}.
 
   Source directory:     ${srcdir}
   Installation prefix:  ${prefix}
