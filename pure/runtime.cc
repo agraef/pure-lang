@@ -2703,8 +2703,9 @@ pure_interp *pure_interp_main(int argc, char *argv[],
 #endif
   // scan the command line options
   list<string> myargs;
-  for (char **args = argv; *args; ++args)
-    myargs.push_back(*args);
+  if (argv && argc>0)
+    for (; *argv && argc>0; ++argv, --argc)
+      myargs.push_back(*argv);
   interp.symtab.init_builtins();
   interp.init_sys_vars(PACKAGE_VERSION, HOST, myargs);
   return (pure_interp*)_interp;
