@@ -2493,6 +2493,16 @@ pure_interp *pure_create_interp(int argc, char *argv[])
 	}
       }
       /* ignored */
+    } else if (string(*args).substr(0,2) == "-l") {
+      string s = string(*args).substr(2);
+      if (s.empty()) {
+	if (!*++args) {
+	  cerr << "pure_create_interp: -l lacks libname argument\n";
+	  delete _interp;
+	  return 0;
+	}
+      }
+      /* ignored */
     } else if (string(*args).substr(0,2) == "-I") {
       string s = string(*args).substr(2);
       if (s.empty()) {
@@ -2585,6 +2595,7 @@ pure_interp *pure_create_interp(int argc, char *argv[])
     } else if (*argv == string("--"))
       break;
     else if (string(*argv).substr(0,2) == "-o" ||
+	     string(*argv).substr(0,2) == "-l" ||
 	     string(*argv).substr(0,2) == "-I" ||
 	     string(*argv).substr(0,2) == "-L") {
       string s = string(*argv).substr(2);

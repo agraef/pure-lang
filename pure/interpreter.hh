@@ -59,7 +59,7 @@ class interpreter;
 // verbosity levels, these can be ORed together
 namespace verbosity {
   enum { none = 0, defs = 0x1, envs = 0x2, code = 0x4, dump = 0x8,
-	 parser = 0x10, lexer = 0x20 };
+	 parser = 0x10, lexer = 0x20, compiler = 0x40 };
 };
 
 /* Data structures used in code generation. */
@@ -537,7 +537,7 @@ public:
 				 const list<string>& argtypes,
 				 bool varargs = false, void *fp = 0,
 				 string asname = "");
-  void compiler(string out);
+  void compiler(string out, list<string> libnames);
 private:
   void init();
   Env *__fptr;

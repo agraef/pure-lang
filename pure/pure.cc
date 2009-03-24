@@ -44,6 +44,7 @@ using namespace std;
 -i               Force interactive mode (read commands from stdin).\n\
 -I directory     Add directory to search for included source files.\n\
 -L directory     Add directory to search for dynamic libraries.\n\
+-l libname       Library to be linked in batch compilation.\n\
 --noediting      Do not use readline for command-line editing.\n\
 --noprelude, -n  Do not load the prelude.\n\
 --norc           Do not run the interactive startup files.\n\
@@ -348,6 +349,7 @@ main(int argc, char *argv[])
     want_prelude = true, have_prelude = false,
     want_rcfile = true, want_editing = true;
   string rcfile, outname = "a.out";
+  list<string> libnames;
   // This is used in advisory stack checks.
   interpreter::baseptr = &base;
   // We always ignore SIGPIPE by default.
@@ -421,6 +423,16 @@ main(int argc, char *argv[])
 	s = *args;
       }
       outname = unixize(s);
+    } else if (string(*args).substr(0,2) == "-l") {
+      string s = string(*args).substr(2);
+      if (s.empty()) {
+	if (!*++args) {
+	  interp.error(prog + ": -l lacks libname argument");
+	  return 1;
+	}
+	s = *args;
+      }
+      libnames.push_back(unixize(s));
     } else if (string(*args).substr(0,2) == "-I") {
       string s = string(*args).substr(2);
       if (s.empty()) {
@@ -509,6 +521,7 @@ main(int argc, char *argv[])
     } else if (*argv == string("--"))
       break;
     else if (string(*argv).substr(0,2) == "-o" ||
+	     string(*argv).substr(0,2) == "-l" ||
 	     string(*argv).substr(0,2) == "-I" ||
 	     string(*argv).substr(0,2) == "-L") {
       string s = string(*argv).substr(2);
@@ -526,7 +539,7 @@ main(int argc, char *argv[])
   if ((count > 0 || interp.compiling) && !force_interactive) {
     if (interp.compiling || interp.verbose&verbosity::dump)
       interp.compile();
-    if (interp.compiling) interp.compiler(outname);
+    if (interp.compiling) interp.compiler(outname, libnames);
     return 0;
   }
   interp.symtab.init_builtins();

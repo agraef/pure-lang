@@ -3423,7 +3423,7 @@ static string& quote(string& s)
   return s;
 }
 
-void interpreter::compiler(string out)
+void interpreter::compiler(string out, list<string> libnames)
 {
   /* We allow either '-' or *.ll to indicate an LLVM assembler file. In the
      former case, output is written to stdout, which is useful if the output
@@ -3614,8 +3614,16 @@ void interpreter::compiler(string out)
   }
   if (codep != &std::cout) delete codep;
   if (target != out) {
-    string cmd = "llvmc "+quote(target)+" -o "+quote(out)+" "+
-      quote(libdir)+"pure_main.o -lpure -lstdc++";
+    bool vflag = (verbose&verbosity::compiler) != 0;
+    string libs;
+    for (list<string>::iterator it = libnames.begin();
+	 it != libnames.end(); ++it)
+      libs += " -l"+quote(*it);
+    string cmd = "llvmc "+string(vflag?"-v ":"")+
+      quote(target)+" -o "+quote(out)+" "+
+      quote(libdir)+"pure_main.o"+libs+" -lpure -lstdc++";
+    if (vflag)
+      std::cerr << cmd << endl;
     system(cmd.c_str());
     unlink(target.c_str());
   }
