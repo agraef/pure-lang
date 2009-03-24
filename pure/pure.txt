@@ -50,7 +50,8 @@ and subsequent sections discuss most language features in detail.
 The Pure interpreter has an LLVM_ backend which JIT-compiles Pure programs to
 machine code, hence programs run blazingly fast and interfacing to C modules
 is easy, while the interpreter still provides a convenient, fully interactive
-environment for running Pure scripts and evaluating expressions.
+environment for running Pure scripts and evaluating expressions. You can also
+compile your scripts to standalone executables if you prefer that.
 
 Pure programs (a.k.a. scripts) are just ordinary text files containing Pure
 code. They must be encoded in UTF-8 (which subsumes 7 bit ASCII), other
@@ -78,28 +79,32 @@ pure is the Pure interpreter. It is invoked as follows::
 The interpreter accepts various options which are described in more detail
 below:
 
+-c
+    Batch compilation.
 --help, -h
-    Print help message and exit. 
+    Print help message and exit.
 -i
-    Force interactive mode (read commands from stdin). 
+    Force interactive mode (read commands from stdin).
 -Idirectory
-    Add a directory to be searched for included source scripts. 
+    Add a directory to be searched for included source scripts.
 -Ldirectory
-    Add a directory to be searched for dynamic libraries. 
+    Add a directory to be searched for dynamic libraries.
 --noediting
-    Do not use readline for command-line editing. 
+    Do not use readline for command-line editing.
 --noprelude, -n
-    Do not load the prelude. 
+    Do not load the prelude.
 --norc
-    Do not run the interactive startup files. 
+    Do not run the interactive startup files.
+-ofilename
+    Output filename for batch compilation.
 -q
-    Quiet startup (suppresses sign-on message in interactive mode). 
+    Quiet startup (suppresses sign-on message in interactive mode).
 -vlevel
-    Set verbosity level. See below for details. 
+    Set verbosity level. See below for details.
 --version
-    Print version information and exit. 
+    Print version information and exit.
 -x
-    Execute script with given command line arguments. 
+    Execute script with given command line arguments.
 
 .. rubric:: Startup Files
 
@@ -188,6 +193,26 @@ libraries via a using declaration in the source, which are searched for in a
 number of locations, including the directories named with the -I and -L
 options; see the sections Declarations_ and `C Interface`_ below for
 details.
+
+If the -c option is specified, it forces the interpreter to non-interactive
+mode (unless -i is specified as well, which overrides -c). Any scripts
+specified on the command line are then executed as usual, but after execution
+the interpreter takes a snapshot of the program and compiles it to either an
+LLVM assembler (.ll) file or a native executable, depending on the output
+filename specified with -o. If the output filename ends in the .ll extension,
+an LLVM assembler file is created which can then be processed with the LLVM
+toolchain (llvmc, llvm-gcc, etc.). If the output filename is just a hyphen
+``-``, the assembler file is written to standard output, which is useful if
+you want to pass the generated code to the LLVM tools in a pipeline. In all
+other cases the interpreter automatically invokes llvmc to compile the program
+to a native executable with the given name. If the output filename is omitted,
+it defaults to ``a.out``.
+
+The -c option provides a convenient way to quickly turn a Pure script into a
+standalone executable which can be invoked directly from the shell. This
+reduces the startup time of a program, but it also has some limitations,
+mostly concerning the use of the built-in ``eval`` function, see `Batch
+Compilation`_ in the `Caveats and Notes`_ section for details.
 
 If the interpreter runs in interactive mode, it may source a few additional
 interactive startup files immediately before entering the interactive loop,
@@ -2847,6 +2872,66 @@ There's no symbolic debugger yet. So printf(3) (available in the system
 standard library module) should be your friend. ;-) Also, have a look at the
 Macros_ section which discusses a little helper macro to trace global function
 calls in a semi-automatic fashion.
+
+Batch Compilation
+-----------------
+
+As of Pure 0.21, the interpreter has a new -c option which provides a
+convenient means to turn Pure scripts into standalone executables. However,
+you should note that the compiled executable is essentially a *static
+snapshot* of your program which is executed on the "bare metal", without a
+hosting interpreter. This implies the following limitations:
+
+* All toplevel expressions and ``let`` bindings are evaluated as usual, but
+  *after* all functions have been defined. This might cause inconsistent
+  behaviour with an interpreted execution of the same program, because in that
+  case expressions and variable definitions are processed immediately, as the
+  program is being processed, to ensure a behaviour consistent with
+  interactive usage. To avoid this, always make sure that you define global
+  variables after all functions used in the variable definition have been
+  completely defined. Toplevel expressions won't be of much use in a
+  batch-compiled program, unless they are evaluated for their side-effects
+  only, in which case they can usually be placed after all the definitions, at
+  the end of your program.
+
+* The eval_ function can only be used to evaluate plain toplevel expressions.
+  You can define local functions and variables in ``with`` and ``when``
+  clauses inside an expression, but you can't use eval_ to define new global
+  variables and functions. In other words, anything which changes the
+  executing program is "verboten". Also, the introspective capabilities
+  discussed under Reflection_ won't work because the interactive commands are
+  all disabled.
+
+.. _eval: purelib.html#eval
+
+For most kinds of scripts, the above restrictions aren't really that much of
+an obstacle, or can easily be worked around. For the few scripts which
+actually need the full dynamic capabilities of Pure you'll just have to run
+the script with the interpreter. Which isn't a big deal either, only the
+startup will be somewhat slower because the script is compiled on the
+fly. Once the JIT has done its thing the "interpreted" script will run every
+bit as fast as the "compiled" one, since in fact *both* are compiled (only at
+different times) and execute exactly the same code!
+
+Also note that during a batch compilation, the compiled program is actually
+executed as usual, i.e., the script runs also *at compile time*. This might
+first seem a big annoyance, but it actually opens the door for some powerful
+programming techniques like `partial evaluation`_. It is also a necessity
+because of Pure's highly dynamic nature. For instance, Pure allows you to
+define constants by evaluating an arbitrary expression (see `Constant
+Definitions`_ below), and using eval_ a program can easily modify itself in
+even more unforeseeable ways. Therefore pretty much anything in your program
+can actually depend on previous computations performed while the program is
+being executed.
+
+.. _partial evaluation: http://en.wikipedia.org/wiki/Partial_evaluation
+
+The Pure runtime provides an additional system variable ``compiling`` which
+holds a truth value indicating whether the program is actually running under
+the auspices of the batch compiler, so that it can adjust accordingly. For
+instance::
+
+  if compiling then puts "Ok, done compiling." else main argv;
 
 The __show__ Function
 ---------------------
