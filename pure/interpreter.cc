@@ -3413,6 +3413,16 @@ static inline bool is_init(const string& name)
     name.find_first_not_of("0123456789", 6) == string::npos;
 }
 
+static string& quote(string& s)
+{
+  size_t p = 0, q;
+  while ((q = s.find_first_of(" \t", p)) != string::npos) {
+    s.insert(q, 1, '\\');
+    p = q+2;
+  }
+  return s;
+}
+
 void interpreter::compiler(const char *_out)
 {
   /* We allow either '-' or *.ll to indicate an LLVM assembler file. In the
@@ -3604,8 +3614,9 @@ void interpreter::compiler(const char *_out)
   }
   if (codep != &std::cout) delete codep;
   if (target != out) {
-    string cmd = "llvmc \""+target+"\" -o \""+out+"\" "+
-      libdir+"pure_main.o -lstdc++ -lpure";
+    string cmd = "llvmc "+quote(target)+" -o "+quote(out)+" "+
+      quote(libdir)+"pure_main.o -lpure -lstdc++";
+    std::cerr << cmd << endl;
     system(cmd.c_str());
     unlink(target.c_str());
   }
