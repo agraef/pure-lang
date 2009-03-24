@@ -180,7 +180,9 @@ On startup, the interpreter also defines the ``version`` variable, which is
 set to the version string of the Pure interpreter, and the ``sysinfo``
 variable, which provides a string identifying the host system. These are
 useful if parts of your script depend on the particular version of the
-interpreter and the system it runs on.
+interpreter and the system it runs on. (Moreover, Pure 0.21 and later also
+define the variable ``compiling`` which indicates whether the program is
+executed in a batch compilation, see below.)
 
 If available, the prelude script prelude.pure is loaded by the interpreter
 prior to any other other definitions, unless the -n or --noprelude option is
@@ -211,7 +213,7 @@ it defaults to ``a.out``.
 The -c option provides a convenient way to quickly turn a Pure script into a
 standalone executable which can be invoked directly from the shell. This
 reduces the startup time of a program, but it also has some limitations,
-mostly concerning the use of the built-in ``eval`` function, see `Batch
+mostly concerning the use of the built-in ``eval`` function. Please see `Batch
 Compilation`_ in the `Caveats and Notes`_ section for details.
 
 If the interpreter runs in interactive mode, it may source a few additional
@@ -2877,22 +2879,26 @@ Batch Compilation
 -----------------
 
 As of Pure 0.21, the interpreter has a new -c option which provides a
-convenient means to turn Pure scripts into standalone executables. However,
-you should note that the compiled executable is essentially a *static
-snapshot* of your program which is executed on the "bare metal", without a
-hosting interpreter. This implies the following limitations:
+convenient means to turn Pure scripts into standalone executables. This
+feature is still a bit experimental right now. In particular, note that the
+compiled executable is essentially a *static snapshot* of your program which
+is executed on the "bare metal", without a hosting interpreter. Only a minimal
+runtime system is provided. This considerably reduces startup times, but also
+implies the following quirks and limitations:
 
-* All toplevel expressions and ``let`` bindings are evaluated as usual, but
-  *after* all functions have been defined. This might cause inconsistent
-  behaviour with an interpreted execution of the same program, because in that
-  case expressions and variable definitions are processed immediately, as the
-  program is being processed, to ensure a behaviour consistent with
-  interactive usage. To avoid this, always make sure that you define global
-  variables after all functions used in the variable definition have been
-  completely defined. Toplevel expressions won't be of much use in a
-  batch-compiled program, unless they are evaluated for their side-effects
-  only, in which case they can usually be placed after all the definitions, at
-  the end of your program.
+* All toplevel expressions and ``let`` bindings are evaluated *after* all
+  functions have been defined. This might cause inconsistent behaviour with an
+  interpreted run of the same program, which executes expressions and variable
+  definitions immediately, as the program is being processed. To avoid these
+  semantic differences, you'll have to make sure that global variables are
+  defined after all functions used in the variable definition have been
+  defined completely.
+
+* Toplevel expressions won't be of much use in a batch-compiled program,
+  unless, of course, they are evaluated for their side-effects. Your program
+  will have to include at least one of these to play the role of the "main
+  program" in your script. In most cases these expressions are best placed
+  after all the function and variable definitions, at the end of your program.
 
 * The eval_ function can only be used to evaluate plain toplevel expressions.
   You can define local functions and variables in ``with`` and ``when``
@@ -2904,21 +2910,26 @@ hosting interpreter. This implies the following limitations:
 
 .. _eval: purelib.html#eval
 
+These restrictions only apply at run time, of course. At compile time the
+program *is* being executed by the interpreter (see below) so you can use
+eval_ in any way desired. See the description of the ``compiling`` variable
+below for how to distinguish these cases in your script.
+
 For most kinds of scripts, the above restrictions aren't really that much of
 an obstacle, or can easily be worked around. For the few scripts which
 actually need the full dynamic capabilities of Pure you'll just have to run
-the script with the interpreter. Which isn't a big deal either, only the
+the script with the interpreter. This isn't a big deal either, only the
 startup will be somewhat slower because the script is compiled on the
 fly. Once the JIT has done its thing the "interpreted" script will run every
 bit as fast as the "compiled" one, since in fact *both* are compiled (only at
-different times) and execute exactly the same code!
+different times) to exactly the same code!
 
 Also note that during a batch compilation, the compiled program is actually
-executed as usual, i.e., the script runs also *at compile time*. This might
-first seem a big annoyance, but it actually opens the door for some powerful
-programming techniques like `partial evaluation`_. It is also a necessity
-because of Pure's highly dynamic nature. For instance, Pure allows you to
-define constants by evaluating an arbitrary expression (see `Constant
+executed as usual, i.e., the script is also run *at compile time*. This might
+first seem to be a big annoyance, but it actually opens the door for some
+powerful programming techniques like `partial evaluation`_. It is also a
+necessity because of Pure's highly dynamic nature. For instance, Pure allows
+you to define constants by evaluating an arbitrary expression (see `Constant
 Definitions`_ below), and using eval_ a program can easily modify itself in
 even more unforeseeable ways. Therefore pretty much anything in your program
 can actually depend on previous computations performed while the program is
@@ -2926,12 +2937,79 @@ being executed.
 
 .. _partial evaluation: http://en.wikipedia.org/wiki/Partial_evaluation
 
-The Pure runtime provides an additional system variable ``compiling`` which
-holds a truth value indicating whether the program is actually running under
-the auspices of the batch compiler, so that it can adjust accordingly. For
+The Pure runtime provides a special system variable ``compiling`` which holds
+a truth value indicating whether the program is actually running under the
+auspices of the batch compiler, so that it can adjust accordingly. For
 instance::
 
   if compiling then puts "Ok, done compiling." else main argv;
+
+Note that while the batch compiler generates native executables by default, it
+is also possible to have it generate just the LLVM assembler code instead. To
+these ends, you can invoke the interpreter as follows::
+
+  pure -c foo.pure -o foo.ll
+
+Note the .ll extension; this indicates that we want an LLVM assembler
+file. The resulting assembler program can then be processed with the LLVM
+toolchain to add special optimization options and/or generate different kinds
+of binary modules. For instance, we can use llvmc to create an object (.o)
+file as follows::
+
+  llvmc -c foo.ll -o foo.o
+
+You can also pipe the output from ``pure -c`` directly into the LLVM tools by
+using ``-`` as the output file name, e.g.::
+
+  pure -c foo.pure -o- | llvmc -c -x llvm-assembler - -o foo.o
+
+(This will only work if the script itself doesn't produce any output during
+compilation, or produces only LLVM assembler output to be included in the
+compiled program.)
+
+Either way, the resulting object file file can then be turned into an
+executable or a shared library using either llcm-gcc or whatever C compiler
+you prefer. Note, however, that you also need to supply some initialization
+routine which calls the ``__pure_main__`` function in foo.ll to initialize the
+compiled module. This routine is to be declared in C/C++ code as follows::
+
+  extern "C" void __pure_main__(int argc, char** argv);
+
+As indicated, ``__pure_main__`` is to be invoked with two parameters, the
+argument count and NULL-terminated argument vector which become the ``argc``
+and the ``argv`` of the Pure program, respectively. (You can also just pass 0
+for both arguments if you don't need to supply command line parameters.) The
+purpose of ``__pure_main__`` is to initialize a shell instance of the Pure
+interpreter which provides the minimal runtime support necessary to execute
+the Pure program, and to invoke all "initialization code" (variable
+definitions and toplevel expressions) of the program.
+
+A minimal C ``main`` function which does the job of initializing the Pure
+module looks as follows (see also the pure_main.c file distributed with
+Pure)::
+
+  extern void __pure_main__(int argc, char** argv);
+
+  int main(int argc, char** argv)
+  {
+    __pure_main__(argc, argv);
+    return 0;
+  }
+
+If you link the ``main`` routine with the Pure module, don't forget to also
+pull in the Pure runtime and the standard C++ library. E.g.::
+
+  gcc -o foo foo.o pure_main.c -lpure -lstdc++
+
+In fact, this is pretty much what ``pure -c`` actually does for you when
+creating an executable with ``pure -c foo.pure -o foo``, except that it
+executes all of this in a single run of llvmc (and llvmc in turn uses llvm-gcc
+to do the linking instead of gcc).
+
+The process to create shared libraries is similar to the above, except that
+there's no ``main`` function in this case. You still need to call
+``__pure_main__`` somewhere in the initialization code of the library or your
+C program, though.
 
 The __show__ Function
 ---------------------

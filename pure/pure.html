@@ -532,7 +532,9 @@ line in your main script. (This trick only works with Unix shells, though.)</p>
 set to the version string of the Pure interpreter, and the <tt class="docutils literal"><span class="pre">sysinfo</span></tt>
 variable, which provides a string identifying the host system. These are
 useful if parts of your script depend on the particular version of the
-interpreter and the system it runs on.</p>
+interpreter and the system it runs on. (Moreover, Pure 0.21 and later also
+define the variable <tt class="docutils literal"><span class="pre">compiling</span></tt> which indicates whether the program is
+executed in a batch compilation, see below.)</p>
 <p>If available, the prelude script prelude.pure is loaded by the interpreter
 prior to any other other definitions, unless the -n or --noprelude option is
 specified. The prelude is searched for in the directory specified with the
@@ -560,7 +562,7 @@ it defaults to <tt class="docutils literal"><span class="pre">a.out</span></tt>.
 <p>The -c option provides a convenient way to quickly turn a Pure script into a
 standalone executable which can be invoked directly from the shell. This
 reduces the startup time of a program, but it also has some limitations,
-mostly concerning the use of the built-in <tt class="docutils literal"><span class="pre">eval</span></tt> function, see <a class="reference" href="#batch-compilation">Batch
+mostly concerning the use of the built-in <tt class="docutils literal"><span class="pre">eval</span></tt> function. Please see <a class="reference" href="#batch-compilation">Batch
 Compilation</a> in the <a class="reference" href="#caveats-and-notes">Caveats and Notes</a> section for details.</p>
 <p>If the interpreter runs in interactive mode, it may source a few additional
 interactive startup files immediately before entering the interactive loop,
@@ -3079,22 +3081,25 @@ calls in a semi-automatic fashion.</p>
 <div class="section">
 <h2><a class="toc-backref" href="#id41" id="batch-compilation" name="batch-compilation">13.5&nbsp;&nbsp;&nbsp;Batch Compilation</a></h2>
 <p>As of Pure 0.21, the interpreter has a new -c option which provides a
-convenient means to turn Pure scripts into standalone executables. However,
-you should note that the compiled executable is essentially a <em>static
-snapshot</em> of your program which is executed on the &quot;bare metal&quot;, without a
-hosting interpreter. This implies the following limitations:</p>
+convenient means to turn Pure scripts into standalone executables. This
+feature is still a bit experimental right now. In particular, note that the
+compiled executable is essentially a <em>static snapshot</em> of your program which
+is executed on the &quot;bare metal&quot;, without a hosting interpreter. Only a minimal
+runtime system is provided. This considerably reduces startup times, but also
+implies the following quirks and limitations:</p>
 <ul class="simple">
-<li>All toplevel expressions and <tt class="docutils literal"><span class="pre">let</span></tt> bindings are evaluated as usual, but
-<em>after</em> all functions have been defined. This might cause inconsistent
-behaviour with an interpreted execution of the same program, because in that
-case expressions and variable definitions are processed immediately, as the
-program is being processed, to ensure a behaviour consistent with
-interactive usage. To avoid this, always make sure that you define global
-variables after all functions used in the variable definition have been
-completely defined. Toplevel expressions won't be of much use in a
-batch-compiled program, unless they are evaluated for their side-effects
-only, in which case they can usually be placed after all the definitions, at
-the end of your program.</li>
+<li>All toplevel expressions and <tt class="docutils literal"><span class="pre">let</span></tt> bindings are evaluated <em>after</em> all
+functions have been defined. This might cause inconsistent behaviour with an
+interpreted run of the same program, which executes expressions and variable
+definitions immediately, as the program is being processed. To avoid these
+semantic differences, you'll have to make sure that global variables are
+defined after all functions used in the variable definition have been
+defined completely.</li>
+<li>Toplevel expressions won't be of much use in a batch-compiled program,
+unless, of course, they are evaluated for their side-effects. Your program
+will have to include at least one of these to play the role of the &quot;main
+program&quot; in your script. In most cases these expressions are best placed
+after all the function and variable definitions, at the end of your program.</li>
 <li>The <a class="reference" href="purelib.html#eval">eval</a> function can only be used to evaluate plain toplevel expressions.
 You can define local functions and variables in <tt class="docutils literal"><span class="pre">with</span></tt> and <tt class="docutils literal"><span class="pre">when</span></tt>
 clauses inside an expression, but you can't use <a class="reference" href="purelib.html#eval">eval</a> to define new global
@@ -3103,31 +3108,98 @@ executing program is &quot;verboten&quot;. Also, the introspective capabilities
 discussed under <a class="reference" href="#reflection">Reflection</a> won't work because the interactive commands are
 all disabled.</li>
 </ul>
+<p>These restrictions only apply at run time, of course. At compile time the
+program <em>is</em> being executed by the interpreter (see below) so you can use
+<a class="reference" href="purelib.html#eval">eval</a> in any way desired. See the description of the <tt class="docutils literal"><span class="pre">compiling</span></tt> variable
+below for how to distinguish these cases in your script.</p>
 <p>For most kinds of scripts, the above restrictions aren't really that much of
 an obstacle, or can easily be worked around. For the few scripts which
 actually need the full dynamic capabilities of Pure you'll just have to run
-the script with the interpreter. Which isn't a big deal either, only the
+the script with the interpreter. This isn't a big deal either, only the
 startup will be somewhat slower because the script is compiled on the
 fly. Once the JIT has done its thing the &quot;interpreted&quot; script will run every
 bit as fast as the &quot;compiled&quot; one, since in fact <em>both</em> are compiled (only at
-different times) and execute exactly the same code!</p>
+different times) to exactly the same code!</p>
 <p>Also note that during a batch compilation, the compiled program is actually
-executed as usual, i.e., the script runs also <em>at compile time</em>. This might
-first seem a big annoyance, but it actually opens the door for some powerful
-programming techniques like <a class="reference" href="http://en.wikipedia.org/wiki/Partial_evaluation">partial evaluation</a>. It is also a necessity
-because of Pure's highly dynamic nature. For instance, Pure allows you to
-define constants by evaluating an arbitrary expression (see <a class="reference" href="#constant-definitions">Constant
+executed as usual, i.e., the script is also run <em>at compile time</em>. This might
+first seem to be a big annoyance, but it actually opens the door for some
+powerful programming techniques like <a class="reference" href="http://en.wikipedia.org/wiki/Partial_evaluation">partial evaluation</a>. It is also a
+necessity because of Pure's highly dynamic nature. For instance, Pure allows
+you to define constants by evaluating an arbitrary expression (see <a class="reference" href="#constant-definitions">Constant
 Definitions</a> below), and using <a class="reference" href="purelib.html#eval">eval</a> a program can easily modify itself in
 even more unforeseeable ways. Therefore pretty much anything in your program
 can actually depend on previous computations performed while the program is
 being executed.</p>
-<p>The Pure runtime provides an additional system variable <tt class="docutils literal"><span class="pre">compiling</span></tt> which
-holds a truth value indicating whether the program is actually running under
-the auspices of the batch compiler, so that it can adjust accordingly. For
+<p>The Pure runtime provides a special system variable <tt class="docutils literal"><span class="pre">compiling</span></tt> which holds
+a truth value indicating whether the program is actually running under the
+auspices of the batch compiler, so that it can adjust accordingly. For
 instance:</p>
 <pre class="literal-block">
 if compiling then puts &quot;Ok, done compiling.&quot; else main argv;
 </pre>
+<p>Note that while the batch compiler generates native executables by default, it
+is also possible to have it generate just the LLVM assembler code instead. To
+these ends, you can invoke the interpreter as follows:</p>
+<pre class="literal-block">
+pure -c foo.pure -o foo.ll
+</pre>
+<p>Note the .ll extension; this indicates that we want an LLVM assembler
+file. The resulting assembler program can then be processed with the LLVM
+toolchain to add special optimization options and/or generate different kinds
+of binary modules. For instance, we can use llvmc to create an object (.o)
+file as follows:</p>
+<pre class="literal-block">
+llvmc -c foo.ll -o foo.o
+</pre>
+<p>You can also pipe the output from <tt class="docutils literal"><span class="pre">pure</span> <span class="pre">-c</span></tt> directly into the LLVM tools by
+using <tt class="docutils literal"><span class="pre">-</span></tt> as the output file name, e.g.:</p>
+<pre class="literal-block">
+pure -c foo.pure -o- | llvmc -c -x llvm-assembler - -o foo.o
+</pre>
+<p>(This will only work if the script itself doesn't produce any output during
+compilation, or produces only LLVM assembler output to be included in the
+compiled program.)</p>
+<p>Either way, the resulting object file file can then be turned into an
+executable or a shared library using either llcm-gcc or whatever C compiler
+you prefer. Note, however, that you also need to supply some initialization
+routine which calls the <tt class="docutils literal"><span class="pre">__pure_main__</span></tt> function in foo.ll to initialize the
+compiled module. This routine is to be declared in C/C++ code as follows:</p>
+<pre class="literal-block">
+extern &quot;C&quot; void __pure_main__(int argc, char** argv);
+</pre>
+<p>As indicated, <tt class="docutils literal"><span class="pre">__pure_main__</span></tt> is to be invoked with two parameters, the
+argument count and NULL-terminated argument vector which become the <tt class="docutils literal"><span class="pre">argc</span></tt>
+and the <tt class="docutils literal"><span class="pre">argv</span></tt> of the Pure program, respectively. (You can also just pass 0
+for both arguments if you don't need to supply command line parameters.) The
+purpose of <tt class="docutils literal"><span class="pre">__pure_main__</span></tt> is to initialize a shell instance of the Pure
+interpreter which provides the minimal runtime support necessary to execute
+the Pure program, and to invoke all &quot;initialization code&quot; (variable
+definitions and toplevel expressions) of the program.</p>
+<p>A minimal C <tt class="docutils literal"><span class="pre">main</span></tt> function which does the job of initializing the Pure
+module looks as follows (see also the pure_main.c file distributed with
+Pure):</p>
+<pre class="literal-block">
+extern void __pure_main__(int argc, char** argv);
+
+int main(int argc, char** argv)
+{
+  __pure_main__(argc, argv);
+  return 0;
+}
+</pre>
+<p>If you link the <tt class="docutils literal"><span class="pre">main</span></tt> routine with the Pure module, don't forget to also
+pull in the Pure runtime and the standard C++ library. E.g.:</p>
+<pre class="literal-block">
+gcc -o foo foo.o pure_main.c -lpure -lstdc++
+</pre>
+<p>In fact, this is pretty much what <tt class="docutils literal"><span class="pre">pure</span> <span class="pre">-c</span></tt> actually does for you when
+creating an executable with <tt class="docutils literal"><span class="pre">pure</span> <span class="pre">-c</span> <span class="pre">foo.pure</span> <span class="pre">-o</span> <span class="pre">foo</span></tt>, except that it
+executes all of this in a single run of llvmc (and llvmc in turn uses llvm-gcc
+to do the linking instead of gcc).</p>
+<p>The process to create shared libraries is similar to the above, except that
+there's no <tt class="docutils literal"><span class="pre">main</span></tt> function in this case. You still need to call
+<tt class="docutils literal"><span class="pre">__pure_main__</span></tt> somewhere in the initialization code of the library or your
+C program, though.</p>
 </div>
 <div class="section">
 <h2><a class="toc-backref" href="#id42" id="the-show-function" name="the-show-function">13.6&nbsp;&nbsp;&nbsp;The __show__ Function</a></h2>
