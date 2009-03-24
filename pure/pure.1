@@ -7,6 +7,9 @@ pure \- the Pure interpreter
 \fBpure\fP [\fIoptions\fP ...] -x \fIscript\fP [\fIargs\fP ...]
 .SH OPTIONS
 .TP
+.B -c
+Batch compilation.
+.TP
 \fB--help\fP, \fB-h\fP
 Print help message and exit.
 .TP
@@ -27,6 +30,9 @@ Do not load the prelude.
 .TP
 .B --norc
 Do not run the interactive startup files.
+.TP
+.BI -o filename
+Output filename for batch compile.
 .TP
 .B -q
 Quiet startup (suppresses sign-on message in interactive mode).
@@ -59,6 +65,13 @@ evaluating expressions.
 Basically, to run a Pure script with the interpreter, just specifiy the
 filename of the script on the command line. You can also invoke the
 interpreter without arguments, in which case it starts up in interactive mode.
+Or you can compile a script to either an LLVM assembler (.ll) file or a native
+executable with the
+.B -c
+option (use
+.B -o
+to specify the output filename); this requires that you have the LLVM
+toolchain (llvmc, llvm-gcc, etc.) installed.
 .PP
 The full version of this manual can be read inside the interpreter, by typing
 .B help
@@ -68,6 +81,9 @@ to work. (You can also set the name of another html browser to use with the
 .B PURE_HELP
 environment variable.)
 .SH FILES
+.TP
+.B a.out
+Default output filename for batch compilation (-c).
 .TP
 .B ~/.pure_history
 Interactive command history.
