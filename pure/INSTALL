@@ -80,21 +80,31 @@ need or want to install the dependencies from source:
 Subversion is available from http://subversion.tigris.org. There's also a very
 nice Windows frontend, TortoiseSVN, see http://tortoisesvn.tigris.org.
 
-STEP 2. Get and unpack the LLVM 2.4 sources at:
-http://llvm.org/releases/download.html#2.4
+STEP 2. Get and unpack the LLVM 2.5 sources at:
+http://llvm.org/releases/download.html#2.5
 
-NB: LLVM 2.3 should still work, too, but there are some x86-64-specific quirks
-with this version, see the notes on 64 bit support in the SYSTEM NOTES section
-for details.
+For a basic installation, you only need the llvm-2.5 tarball which contains
+the LLVM library as well as most of the LLVM toolchain.
+
+For a complete toolchain you also need llvm-gcc, the LLVM version of gcc. This
+will let you compile Pure scripts to native executables, see "Batch
+Compilation" in the manual for details. Note that you can also install
+llvm-gcc at a later time; only the LLVM library is required to build Pure.
+
+NB: LLVM 2.3 and 2.4 should still work, too, but we really recommend the
+latest LLVM version because there have been substantial improvements in the
+LLVM JIT in recent releases. Also, there are some x86-64 specific quirks with
+LLVM 2.3, see the notes on 64 bit support in the SYSTEM NOTES section for
+details.
 
 STEP 3. Configure, build and install LLVM as follows:
 
-$ cd llvm-2.4
+$ cd llvm-2.5
 $ ./configure --enable-optimized --disable-assertions --disable-expensive-checks --enable-targets=host-only
 $ make
 $ sudo make install
 
-***IMPORTANT:*** On x86-64 systems you also have to add --enable-pic to the
+*IMPORTANT:* On x86-64 systems you also have to add --enable-pic to the
 configure command, so that the static LLVM libraries can be linked into the
 Pure runtime library. See the comments on 64 bit support in the SYSTEM NOTES
 section below.
@@ -107,6 +117,30 @@ capabilities). To do a debug build of LLVM, simply leave away all the extra
 configure parameters (except possibly --enable-targets=host-only, and
 --enable-pic if it is needed). Note, however, that this will have an impact on
 the speed of the Pure compiler.
+
+OPTIONAL: You can build and install llvm-gcc as follows (this assumes that you
+have unpacked the llvm-gcc-4.2-2.5.source tarball in the same directory as the
+llvm-2.5 tarball):
+
+$ cd llvm-gcc4.2-2.5.source
+$ mkdir obj
+$ cd obj
+$ ../configure --program-prefix=llvm- --enable-llvm=$PWD/../../llvm-2.5 --enable-languages=c,c++
+$ make
+$ sudo make install
+
+Be patient, this takes a while.
+
+You might wish to add 'fortran' to --enable-languages if you also want to
+build the Fortran compiler (and, likewise, 'ada' for the Ada compiler).
+
+NOTE: On x86-64, llvm-gcc can build both 64 bit and 32 bit libraries by
+default, but compiling llvm-gcc will probably fail if you don't have some
+special development packages installed to make that work. In that case add
+--disable-multilib to the above configure command to disable this feature.
+
+Also see README-LLVM in the sources for additional instructions in case
+anything goes awry.
 
 STEP 4. Get and unpack the Pure sources at: http://pure-lang.googlecode.com
 
@@ -285,6 +319,12 @@ include/pure-x.y, lib/libpure-x.y.so etc., where x.y is the version
 number). If you install a new version of the interpreter, the old version
 remains available as pure-x.y.
 
+As of Pure 0.20, this feature can also be disabled with --disable-versioned
+when running configure. This isn't really recommended, but may be useful in
+some situations. In particular, the official Windows port (.msi package) is
+built using this option, so that binary addon packages don't have to be
+updated every time the Pure interpreter version changes.
+
 SEPARATE BUILD DIRECTORY
 -------- ----- ---------
 
@@ -307,9 +347,14 @@ There are a number of environment variables you can set on the 'configure'
 command line if you need special compiler or linker options:
 
 - CPPFLAGS: preprocessor options (-I, -D, etc.)
-- CXXFLAGS: compilation options (-g, -O, etc.)
+- CXXFLAGS: C++ compilation options (-g, -O, etc.)
+- CFLAGS:   C compilation options (-g, -O, etc.)
 - LDFLAGS:  linker flags (-s, -L, etc.)
 - LIBS:     additional objects and libraries (-lfoo, bar.o, etc.)
+
+(The CFLAGS variable is only used to build the pure_main.o module which is
+linked into batch-compiled executables, see "Batch Compilation" in the manual
+for details.)
 
 For instance, the following 'configure' command changes the default
 compilation options to '-g' and adds '/opt/include' and '/opt/lib' to the
@@ -375,9 +420,10 @@ $ ./configure --disable-shared
 
 We strongly discourage from using this option, since it drastically increases
 the size of the executable and thereby the memory footprint of the interpreter
-if several interpreter processes are running simultaneously. We only provide
-this as a workaround for systems on which LLVM refuses to be linked into
-shared libraries.
+if several interpreter processes are running simultaneously. It also makes it
+impossible to use batch compilation and addon modules which require the
+runtime library. We only provide this as a workaround for systems on which
+LLVM refuses to be linked into shared libraries.
 
 GSL support should be enabled automatically, if the GSL libraries and headers
 are available on your system. If configure fails to find these then you may
@@ -420,9 +466,9 @@ logs and C++ source files generated from Flex and Bison grammars. (Only use
 the latter if you know what you are doing, since it will remove files which
 require special tools to be regenerated.)
 
-There also are a number of targets like 'html' (this requires rman) and 'pdf'
-(this requires groff) which generate the documentation in a variety of
-formats; see the Makefile for details.
+There also are a number of targets like 'html' and 'pdf' which generate the
+documentation in a variety of formats. These require the pure-doc program and
+the docutils tools; see the Makefile for details.
 
 Maintainers can roll distribution tarballs with 'make dist' and 'make
 distcheck' (the latter is like 'make dist', but also does a test build and
@@ -438,7 +484,7 @@ SYSTEM NOTES
 
 Pure is known to work on recent Linux and Mac OSX versions under x86, x86-64
 and ppc, as well as on MS Windows, but there are a few system-specific quirks
-which are discussed below. (Please also see the CAVEATS AND NOTES section of
+which are discussed below. (Please also see the "Caveats and Notes" section of
 the manual for information on other known limitations of the current
 implementation.)
 
@@ -481,13 +527,16 @@ Linux is the primary development platform for this software, and the sources
 should build out of the box on all recent Linux distributions.
 
 Binary packages for openSUSE are maintained by Toni Graffy as part of the
-Packman project: http://packman.links2linux.de/package/pure
+Packman project, see: http://packman.links2linux.de/search?scope=name&q=pure-
+
+Michel Salim is working on Fedora packages. A source RPM is available at
+https://bugzilla.redhat.com/show_bug.cgi?id=488563
 
 Alvaro Castro Castilla has contributed a Gentoo ebuild, which is currently
 available at http://bugs.gentoo.org/show_bug.cgi?id=231966.
 
-We're still looking for people who can maintain Debian and Fedora packages,
-please let us know if you want to help with that.
+We're still looking for people who can maintain Debian packages, please let us
+know if you want to help with that.
 
 MAC OSX
 --- ---
@@ -542,6 +591,6 @@ well as "PurePad", an alternative GUI frontend for editing and running Pure
 scripts on Windows.
 
 
-January 2009
+March 2009
 Albert Graef <Dr.Graef at t-online.de>
 Eddie Rucker <erucker at bmc.edu>
