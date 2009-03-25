@@ -6886,13 +6886,16 @@ Function *interpreter::fun_prolog(string name)
 #if USE_FASTCC
     if (!is_init(name)) cc = CallingConv::Fast;
 #endif
+    string pure_name = name;
+    /* Mangle operator names. */
+    if (f.tag > 0 && symtab.sym(f.tag).prec < 10)
+      pure_name = "("+pure_name+")";
     /* Mangle the name of the C-callable wrapper if it's private, or would
        shadow another C function. */
-    string pure_name = name;
     if (f.tag > 0 && symtab.sym(f.tag).priv)
-      pure_name = "$$private."+name;
+      pure_name = "$$private."+pure_name;
     else if (have_c_func)
-      pure_name = "$$pure."+name;
+      pure_name = "$$pure."+pure_name;
     if (cc == CallingConv::Fast) {
       // create the function
       f.f = Function::Create(ft, Function::InternalLinkage,
