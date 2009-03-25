@@ -311,19 +311,28 @@ current directory:
 
 $ make install DESTDIR=tmp-root
 
-Beginning with version 0.4, Pure fully supports parallel installations of
-different versions of the interpreter without any further ado. To these ends,
-bin/pure, include/pure, lib/libpure.so, lib/pure and man/man1/pure.1 are
-actually symbolic links to the current version (bin/pure-x.y,
-include/pure-x.y, lib/libpure-x.y.so etc., where x.y is the version
-number). If you install a new version of the interpreter, the old version
-remains available as pure-x.y.
+VERSIONED INSTALLATIONS
+--------- -------------
 
-As of Pure 0.20, this feature can also be disabled with --disable-versioned
-when running configure. This isn't really recommended, but may be useful in
-some situations. In particular, the official Windows port (.msi package) is
-built using this option, so that binary addon packages don't have to be
-updated every time the Pure interpreter version changes.
+Beginning with version 0.4, Pure fully supports parallel installations of
+different versions of the interpreter. As of Pure 0.21, to enable this you
+have to specify --enable-versioned when running configure:
+
+$ ./configure --enable-versioned
+
+When this option is enabled, bin/pure, include/pure, lib/libpure.so, lib/pure
+and man/man1/pure.1 are actually symbolic links to the current version
+(bin/pure-x.y, include/pure-x.y, lib/libpure-x.y.so etc., where x.y is the
+version number). If you install a new version of the interpreter, the old
+version remains available as pure-x.y.
+
+Note that versioned and unversioned installations don't mix very well, it's
+either one or the other. If you already have an unversioned install of Pure,
+you must first remove it before switching to the versioned scheme.
+
+It *is* possible, however, to have versioned and unversioned installations
+under different installation prefixes. For instance, having an unversioned
+install under /usr and several versioned installations under /usr/local is ok.
 
 SEPARATE BUILD DIRECTORY
 -------- ----- ---------

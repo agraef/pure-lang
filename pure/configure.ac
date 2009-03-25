@@ -75,11 +75,11 @@ AC_ARG_ENABLE(shared,
     no)   LDFLAGS="$LDFLAGS $rdynamic"; sharedlib=no ;;
   esac])
 AC_SUBST(sharedlib)
-versioned=yes
+versioned=no
 AC_ARG_ENABLE(versioned,
-  [  --enable-versioned      versioned install (default)],
+  [  --enable-versioned      versioned install],
   [case "${enableval}" in
-    no)   versioned=no ;;
+    yes)  versioned=yes ;;
   esac])
 AC_SUBST(versioned)
 AC_ARG_ENABLE(warnings,
@@ -155,10 +155,10 @@ Pure ${PACKAGE_VERSION} is now configured for LLVM ${llvm_version} on ${host}.
 
   Source directory:     ${srcdir}
   Installation prefix:  ${prefix}
+  Versioned install:    $versioned
   Compiler:             $CXX $CXXFLAGS $CPPFLAGS
   Linker:               $CXX $LDFLAGS $LIBS
   Build libpure:        $sharedlib
-  Versioned install:    $versioned
   GSL support:          $gsllib
 
 Now run 'make' to build everything, and 'make install' to install this
