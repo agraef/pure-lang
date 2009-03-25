@@ -43,7 +43,9 @@ realclean:
 
 # as of pure-0.21, we can compile the script to an executable
 faust2pd: faust2pd.pure faustxml.pure
-	pure -c $< -o $@
+	sed -e 's?@version@?$(version)?' < $< > xx$<
+	pure -c xx$< -o $@
+	rm -f xx$<
 
 # install faust2pd
 install:
