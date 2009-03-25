@@ -81,6 +81,7 @@ install:
 	test -d "$(DESTDIR)$(man1dir)" || mkdir -p "$(DESTDIR)$(man1dir)"
 	cp dump-ast "$(DESTDIR)$(pkgdatadir)"
 	cp pure-gen "$(DESTDIR)$(bindir)/pure-gen"
+# The binaries are huge, so better strip them.
 	strip "$(DESTDIR)$(pkgdatadir)/dump-ast" "$(DESTDIR)$(bindir)/pure-gen"
 	chmod a+x "$(DESTDIR)$(pkgdatadir)/dump-ast" "$(DESTDIR)$(bindir)/pure-gen"
 	cp pure-gen.1 "$(DESTDIR)$(man1dir)"
