@@ -1,7 +1,7 @@
 
 # Package name and version number:
 dist = pure-gen-$(version)
-version = 0.4
+version = 0.5
 
 # Try to guess the installation prefix (this needs GNU make):
 prefix = $(patsubst %/bin/pure,%,$(shell which pure 2>/dev/null))
@@ -13,19 +13,34 @@ endif
 # Installation goes into the following directories. You can also set these
 # directly instead of $(prefix). In addition, packagers may want to set the
 # DESTDIR variable for a staged install.
+
+# Note that if you want to change the installation prefix, you'll have to set
+# set the 'prefix' variable *both* at build and installation time, because the
+# path to dump-ast gets hard-coded into the pure-gen executable.
+
+# Alternatively, you can also set the DUMP_AST shell environment variable at
+# runtime to tell pure-gen about the right path to the dump-ast executable.
+
 bindir = $(prefix)/bin
 libdir = $(prefix)/lib
-pkgdatadir = $(libdir)/pure-gen-$(version)
+pkgdatadir = $(libdir)/pure-gen
 mandir = ${prefix}/share/man
 man1dir = $(mandir)/man1
 
 DISTFILES = COPYING Makefile README README.dump-ast dump-ast.hs pure-gen.pure pure-gen.1 run-tests examples/*.templ
 
-all: dump-ast
+all: pure-gen dump-ast
 
-# NOTE: To rebuild this, you need ghc (http://www.haskell.org/ghc/) and
-# language-c version 0.3.1 or later
-# (http://hackage.haskell.org/cgi-bin/hackage-scripts/package/language-c).
+# NOTE: This requires Pure 0.21 or later.
+
+pure-gen: pure-gen.pure
+	sed -e 's?@version@?$(version)?' -e 's?./dump-ast?$(pkgdatadir)/dump-ast?' < $< > xx$<
+	pure -c xx$< -o $@
+	rm -f xx$<
+
+# NOTE: This requires ghc (http://www.haskell.org/ghc/) and language-c
+# (http://hackage.haskell.org/cgi-bin/hackage-scripts/package/language-c),
+# version 0.3.1 or later.
 
 dump-ast: dump-ast.hs
 	ghc --make $< -o $@
@@ -58,16 +73,16 @@ pdf: pure-gen.pdf
 	groff -man -Tps $< | ps2pdf - $@
 
 clean:
-	rm -f dump-ast *~ *.hi *.o *.dvi *.pdf *.ps *.html
+	rm -f pure-gen dump-ast *~ *.hi *.o *.dvi *.pdf *.ps *.html
 
 install:
 	test -d "$(DESTDIR)$(bindir)" || mkdir -p "$(DESTDIR)$(bindir)"
 	test -d "$(DESTDIR)$(pkgdatadir)" || mkdir -p "$(DESTDIR)$(pkgdatadir)"
 	test -d "$(DESTDIR)$(man1dir)" || mkdir -p "$(DESTDIR)$(man1dir)"
 	cp dump-ast "$(DESTDIR)$(pkgdatadir)"
-	sed -e 's?/usr/local/bin/pure?$(bindir)/pure?' -e 's?@version@?$(version)?' -e 's?./dump-ast?$(pkgdatadir)/dump-ast?' < pure-gen.pure > "$(DESTDIR)$(pkgdatadir)/pure-gen.pure"
-	chmod a+x "$(DESTDIR)$(pkgdatadir)/dump-ast" "$(DESTDIR)$(pkgdatadir)/pure-gen.pure"
-	ln -sf "$(pkgdatadir)/pure-gen.pure" "$(DESTDIR)$(bindir)/pure-gen"
+	cp pure-gen "$(DESTDIR)$(bindir)/pure-gen"
+	strip "$(DESTDIR)$(pkgdatadir)/dump-ast" "$(DESTDIR)$(bindir)/pure-gen"
+	chmod a+x "$(DESTDIR)$(pkgdatadir)/dump-ast" "$(DESTDIR)$(bindir)/pure-gen"
 	cp pure-gen.1 "$(DESTDIR)$(man1dir)"
 
 uninstall:

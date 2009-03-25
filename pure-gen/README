@@ -15,28 +15,44 @@ dump-ast.hs for pertinent license and copyright information.
 Requirements
 ============
 
-pure-gen currently requires gcc (-E) as the C preprocessor *at runtime*. It
-also needs a version of gcc which understands the -fdirectives-only option,
+As of version 0.5, pure-gen is now compiled to a native executable. You'll
+need Pure 0.21 or later and llvm-gcc to make this work
+
+pure-gen also requires gcc (-E) as its C preprocessor *at runtime*. Moreover,
+it needs a version of gcc which understands the -fdirectives-only option,
 which means gcc >= 4.3. It will run with older versions of gcc, but then
 you'll get an error message from gcc indicating that it doesn't understand the
 -fdirectives-only option. pure-gen then won't be able to extract any
 '#define'd constants from the header files.
 
+Thus, if you're still running an older version of gcc, you'll have to install
+gcc 4.3 or later in a location where it doesn't interfere with your system
+compiler, and temporarily set up PATH when running pure-gen so that it invokes
+the proper gcc version. E.g., if gcc 4.3 lives under /gcc-4.3, you can define
+yourself an alias for pure-gen as follows (assuming bash):
+
+alias pure-gen='PATH=/gcc-4.3/bin:$PATH pure-gen'
+
 Installation
 ============
 
 Normally you just run 'make && sudo make install'. This will install the
-program under $(prefix)/lib/pure-gen-x.y and create a link to the executable
-in $(prefix)/bin. (See The Makefile for further options.) To run the pure-gen
-script, you'll need the Pure interpreter, of course.
+program under $(prefix)/bin and the required dump-ast program under
+$(prefix)/lib/pure-gen. By default, pure-gen assumes the same installation
+prefix as the installed Pure interpreter. (See The Makefile for further
+options.)
 
-Alas, since pure-gen's C parser is written in Haskell, there are some notable
-additional requirements to make this work, explained in further detail below.
+As already mentioned, to compile pure-gen.pure you'll need Pure 0.21 or later
+and the full LLVM toolchain (including llvm-gcc); see the Pure INSTALL file
+for details on how to get these up and running.
 
-Once you've run 'make' successfully and the dump-ast program has been built,
-you can also run a minimal testsuite with 'make check'. This only tests very
-basic functionality, but should be enough to make sure that pure-gen works on
-your system.
+Since pure-gen's C parser is written in Haskell, there are some notable
+additional requirements, explained in further detail below.
+
+Once you've run 'make' successfully and the pure-gen and dump-ast programs
+have been built, you can also run a minimal testsuite with 'make check'. This
+only tests very basic functionality, but should be enough to make sure that
+pure-gen works on your system.
 
 Installing the Required Haskell Bits
 ---------- --- -------- ------- ----

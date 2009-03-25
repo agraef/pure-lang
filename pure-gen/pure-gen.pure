@@ -8,11 +8,16 @@ using system, getopt, dict;
    now, but as dump-ast also uses gcc you'll need it anyway. */
 let cpp = "gcc -E -fdirectives-only";
 
-// This path is set at installation time. For the uninstalled version we
-// assume the current directory.
+// This path is set at build time. For the uninstalled version we assume the
+// current directory.
 let dumper = "./dump-ast";
 
-// This is also set at installation time.
+// Allow override at runtime. This is used by run-tests.
+extern char *getenv(char*);
+let dumper = if stringp env then env else dumper
+  when env = getenv "DUMP_AST" end;
+
+// This is also set at build time.
 let version = "@version@";
 
 let copyright = sprintf
@@ -909,7 +914,7 @@ let dfls = ["--interface" => "extern",
             "--verbose" => "0",
             "--echo" => "0"];
 
-invalid_option x = fprintf stderr "Error: unrecognized option '%s'\nType 'pure-gen -h for help.\n" x $$ exit 1;
+invalid_option x = fprintf stderr "Error: unrecognized option '%s'\nType 'pure-gen -h' for help.\n" x $$ exit 1;
 
 basename s::string = last path if ~null path when path = split "/" s end;
 		   = s otherwise;
@@ -990,21 +995,23 @@ Type 'man pure-gen' for more help." $$
 exit 0
 else ();
 
-if #args~=1 then
-fprintf stderr "Error: %s source file specified\nType 'pure-gen -h for help.\n" (if null args then "no" else "more than one") $$ exit 1
+//let compiling = 1;
+
+if ~compiling && #args~=1 then
+fprintf stderr "Error: %s source file specified\nType 'pure-gen -h' for help.\n" (if null args then "no" else "more than one") $$ exit 1
 else ();
 
 if member opts "--interface" &&
   all ((~=) (opts!"--interface"))
   ["extern","ffi","c","c-ffi","c-auto","c-ffi-auto"] then
-fprintf stderr "Error: invalid interface type (-f) '%s'\nType 'pure-gen -h for help.\n" (opts!"--interface") $$ exit 1
+fprintf stderr "Error: invalid interface type (-f) '%s'\nType 'pure-gen -h' for help.\n" (opts!"--interface") $$ exit 1
 else ();
 
 // Get options, provide reasonable defaults.
 
 extern int atoi(char*);
 checknum name opt = x if str x==opt when x = atoi opt end;
-		  = fprintf stderr "Error: bad %s option value '%s'\nType 'pure-gen -h for help.\n" (name,opt) $$ exit 1;
+		  = fprintf stderr "Error: bad %s option value '%s'\nType 'pure-gen -h' for help.\n" (name,opt) $$ exit 1;
 defnum x name::string = checknum name opt if ~null opt
 when opt = opts!name end;
 defnum x _ = x otherwise;
@@ -1015,7 +1022,7 @@ split_pat x::string
 = "", x;
 
 let iface_opt = opts!"--interface";
-let in_name = head args;
+let in_name = if compiling then "none" else head args;
 let base = strip_ext $ basename in_name;
 let out_name = if member opts "--output" then opts!"--output"
                else base + ".pure";
@@ -1076,6 +1083,8 @@ when
                (opts!"--alt-template") $$ default_alt_template;
 end;
 
+let dry_run = dry_run || compiling;
+
 if dry_run then echo 1 "** Dry run." else ();
 echo 1 $ sprintf "Input file:         %s" in_name;
 echo 1 $ sprintf "Interface type:     %s" iface_opt;
@@ -1095,18 +1104,20 @@ else ();
 /******************************************************************/
 
 // check that the source file exists
-if pointerp (fopen in_name "r") then ()
+if compiling || pointerp (fopen in_name "r") then ()
 else
   fprintf stderr "Error: source file '%s' not found (%s)\n"
   (in_name,strerror errno) $$ exit 1;
 
 // read the source and its includes, this is needed to grab the #defines
-let lines = fgetlines $ popen (sprintf "%s %s %s" (cpp,cpp_opts,in_name)) "r";
+let lines = if compiling then []
+  else fgetlines $ popen (sprintf "%s %s %s" (cpp,cpp_opts,in_name)) "r";
 
 //build the AST
 
 echo 1 "Loading syntax tree";
-let ast = fgetlines $ popen (sprintf "%s %s %s" (dumper,cpp_opts,in_name)) "r";
+let ast = if compiling then []
+  else fgetlines $ popen (sprintf "%s %s %s" (dumper,cpp_opts,in_name)) "r";
 
 echo 1 "Parsing syntax tree";
 let declarations = filter ((~==) ()) $ map check_eval ast
@@ -1189,6 +1200,6 @@ let n_const = #all_defines;
 let n_func = #all_protos;
 echo 1 $ sprintf "%d constants, %d externs" (n_const,n_func);
 
-if n_const+n_func == 0 then
+if ~compiling && n_const+n_func == 0 then
   warning 1 "empty output"
 else ();
