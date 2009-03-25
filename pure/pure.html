@@ -7,7 +7,7 @@
 <title>The Pure Manual</title>
 <meta name="author" content="Albert Graef &lt;Dr.Graef&#64;t-online.de&gt;" />
 <meta name="copyright" content="Copyright (c) 2009" />
-<meta name="date" content="2009-03-24" />
+<meta name="date" content="2009-03-25" />
 <style type="text/css">
 
 /*
@@ -304,7 +304,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Copyright:</th>
 <td>Copyright (c) 2009</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2009-03-24</td></tr>
+<td>2009-03-25</td></tr>
 </tbody>
 </table>
 <p>This document is available under the <a class="reference" href="http://www.gnu.org/copyleft/fdl.html">GNU Free Documentation License</a>. Also see <a class="reference" href="#license">License</a> for licensing
@@ -541,10 +541,15 @@ to a native executable with the given name. You can also specify additional
 libraries to be linked into the executable with the -l option. If the output
 filename is omitted, it defaults to <tt class="docutils literal"><span class="pre">a.out</span></tt>.</p>
 <p>The -c option provides a convenient way to quickly turn a Pure script into a
-standalone executable which can be invoked directly from the shell. This
-reduces the startup time of a program, but it also has some limitations,
-mostly concerning the use of the built-in <tt class="docutils literal"><span class="pre">eval</span></tt> function. Please see <a class="reference" href="#batch-compilation">Batch
-Compilation</a> in the <a class="reference" href="#caveats-and-notes">Caveats and Notes</a> section for details.</p>
+standalone executable which can be invoked directly from the shell. One
+advantage of compiling your script is that this eliminates the JIT compilation
+time and thus considerably reduces the startup time of the program. Another
+reason to prefer a standlone executable is that it lets you deploy the program
+on systems without a full Pure installation (usually only the runtime library
+is required on the target system). On the other hand, compiled scripts also
+have some limitations, mostly concerning the use of the built-in <tt class="docutils literal"><span class="pre">eval</span></tt>
+function. Please see <a class="reference" href="#batch-compilation">Batch Compilation</a> in the <a class="reference" href="#caveats-and-notes">Caveats and Notes</a> section
+for details.</p>
 </div>
 <div class="section">
 <h2><a class="toc-backref" href="#id8" id="running-interactively" name="running-interactively">2.4&nbsp;&nbsp;&nbsp;Running Interactively</a></h2>
@@ -3180,7 +3185,7 @@ a truth value indicating whether the program is actually running under the
 auspices of the batch compiler, so that it can adjust accordingly. For
 instance:</p>
 <pre class="literal-block">
-if compiling then puts &quot;Ok, done compiling.&quot; else main argv;
+if compiling then puts &quot;Ok, compiling now.&quot; else main argv;
 </pre>
 <p>Note that while the batch compiler generates native executables by default, it
 is also possible to have it generate just the LLVM assembler code instead. To
@@ -3204,10 +3209,10 @@ pure -c foo.pure -o- | llvmc -c -x llvm-assembler - -o foo.o
 <p>(This will only work if the script itself doesn't produce any output during
 compilation, or produces only LLVM assembler output to be included in the
 compiled program.)</p>
-<p>Either way, the resulting object file file can then be turned into an
-executable or a shared library using either llcm-gcc or whatever C compiler
-you prefer. Note, however, that you also need to supply an initialization
-routine which calls the <tt class="docutils literal"><span class="pre">__pure_main__</span></tt> function in foo.ll to initialize the
+<p>Either way, the resulting object file can then be turned into an executable or
+a shared library using either llcm-gcc or whatever C compiler you
+prefer. Note, however, that you also need to supply an initialization routine
+which calls the <tt class="docutils literal"><span class="pre">__pure_main__</span></tt> function in foo.ll to initialize the
 compiled module. This routine is to be declared in C/C++ code as follows:</p>
 <pre class="literal-block">
 extern &quot;C&quot; void __pure_main__(int argc, char** argv);
@@ -3233,14 +3238,21 @@ int main(int argc, char** argv)
 }
 </pre>
 <p>If you link the <tt class="docutils literal"><span class="pre">main</span></tt> routine with the Pure module, don't forget to also
-pull in the Pure runtime and the standard C++ library. E.g.:</p>
+pull in the Pure runtime and the standard C++ library. (If your script loads
+dynamic libraries then you'll also have to link with those; <em>all</em> external
+references have to be resolved at compile time.) E.g.:</p>
 <pre class="literal-block">
 gcc -o foo foo.o pure_main.c -lpure -lstdc++
 </pre>
 <p>In fact, this is pretty much what <tt class="docutils literal"><span class="pre">pure</span> <span class="pre">-c</span></tt> actually does for you when
 creating an executable with <tt class="docutils literal"><span class="pre">pure</span> <span class="pre">-c</span> <span class="pre">foo.pure</span> <span class="pre">-o</span> <span class="pre">foo</span></tt>, except that it
 executes all of this in a single run of llvmc (and llvmc in turn uses llvm-gcc
-to do the linking instead of gcc).</p>
+to do the linking instead of gcc). It will also figure out which dynamic
+modules have to be linked in to resolve all references to libraries in <tt class="docutils literal"><span class="pre">using</span>
+<span class="pre">&quot;lib:...&quot;</span></tt> clauses. To see exactly which files get linked in and which
+commands are executed, you can add the verbose compilation option (-v64) to
+the compilation command. The output of <tt class="docutils literal"><span class="pre">pure</span> <span class="pre">-c</span> <span class="pre">-v64</span></tt> is often helpful as a
+starting point for a more elaborate manual build procedure.</p>
 <p>The process to create shared libraries is similar to the above, except that
 there's no <tt class="docutils literal"><span class="pre">main</span></tt> function in this case. You still need to call
 <tt class="docutils literal"><span class="pre">__pure_main__</span></tt> somewhere in the initialization code of the library or your
