@@ -25,7 +25,7 @@ CFLAGS = $(PIC)
 
 ARCH     = puredata.cpp
 #FAUST2PD = faust2pd
-FAUST2PD = pure -x ../../faust2pd.pure
+FAUST2PD = ../../faust2pd
 # faust2pd options (the -s forces additional number controls for each slider)
 # a number of other options are supported, run faust2pd -h for help
 F2PDFLAGS = -s

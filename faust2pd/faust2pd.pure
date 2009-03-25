@@ -15,7 +15,7 @@
    with this program; if not, write to the Free Software Foundation, Inc., 675
    Mass Ave, Cambridge, MA 02139, USA. */
 
-let version = "2.0";
+let version = "2.1";
 
 using dict, faustxml, getopt, system;
 using namespace faustxml;
@@ -597,17 +597,20 @@ let opts        = [("--help", "-h", NOARG),
 		   ("--exclude", "-X", REQARG),
 		   ("--output-file", "-o", REQARG)];
 
+//let compiling = 1;
 //let argv = ["faust2pd","test/organ.dsp.xml"];
 let prog,myargs = case argv of prog:args = prog,args; _ = "faust2pd",[] end;
 
-let prog = "faust2pd";
+//let prog = "faust2pd";
 
 let myopts,myargs = catch invalid_option $ getopt opts myargs;
 let myopts = dict myopts;
 let help_flag = member myopts "--help";
 let version_flag = member myopts "--version";
 
-if version_flag then
+if compiling then
+  ()
+else if version_flag then
   print_version
 else if help_flag then
   print_usage prog
@@ -617,7 +620,7 @@ else if #myargs>1 then
   error "more than one source file specified, try -h for help"
 else ();
 
-let xmlname:_ = myargs;
+let xmlname:_ = if compiling then [""] else myargs;
 
 let outname = if member myopts "--output-file" then
                 myopts!"--output-file"
@@ -629,14 +632,17 @@ else ();
 
 attrs s		= regexg (\info->info!3) "\\[pd:([^]]+)\\]" REG_EXTENDED s 0;
 
-setlocale LC_ALL "C";
-
-let dsp_info = catch error (faustxml::info xmlname);
-let src_opts = case dsp_info!5 of
-                 _ (label,_) = ["--"+opt | opt = attrs label];
-                 _ = [];
-               end;
-let src_opts,_ = catch invalid_src_option $ getopt opts src_opts;
+let dsp_info => (src_opts,_) =
+  if compiling then () => ([],[])
+  else
+  (dsp_info => catch invalid_src_option (getopt opts src_opts) when
+     setlocale LC_ALL "C";
+     dsp_info = catch error (faustxml::info xmlname);
+     src_opts = case dsp_info!5 of
+                  _ (label,_) = ["--"+opt | opt = attrs label];
+                  _ = [];
+                end;
+   end);
 
 /* Command line options always override what's in the source. */
 let myopts = dict (src_opts+members myopts);
@@ -653,4 +659,4 @@ main		= catch error mainprog $$ exit 0;
 mainprog	= write_synth nvoices dsp_info outname if nvoices>0;
 		= write_dsp dsp_info outname otherwise;
 
-main;
+if compiling then () else main;

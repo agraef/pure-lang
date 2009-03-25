@@ -25,7 +25,7 @@ CFLAGS = $(PIC)
 
 ARCH     = puredata.cpp
 #FAUST2PD = faust2pd
-FAUST2PD = pure -x ../../faust2pd.pure
+FAUST2PD = ../../faust2pd
 F2PDFLAGS = -s
 
 all: $(mods)

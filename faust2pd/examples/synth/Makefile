@@ -34,7 +34,7 @@ xml 	:= $(dspsrc:.dsp=.dsp.xml) $(synsrc:.syn=.syn.xml)
 pd 	:= $(dspsrc:.dsp=.pd) $(synsrc:.syn=.pd)
 
 #faust2pd = faust2pd
-faust2pd = pure -x ../../faust2pd.pure
+faust2pd = ../../faust2pd
 
 #all: $(plugins) $(svg) $(pd)
 all: $(plugins) $(pd)
