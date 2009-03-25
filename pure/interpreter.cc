@@ -875,14 +875,17 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
       dllname += DLLEXT;
     // First try to open the library under the given name.
     string aname = searchlib(srcdir, libdir, librarydirs, name);
-    if (!llvm::sys::DynamicLibrary::LoadLibraryPermanently(aname.c_str(), &msg))
+    if (!llvm::sys::DynamicLibrary::LoadLibraryPermanently(aname.c_str(), &msg)) {
+      loaded_libs.push_back(aname);
       return 0;
+    }
     else if (dllname == name)
       throw err(msg);
     aname = searchlib(srcdir, libdir, librarydirs, dllname);
     // Now try the name with DLLEXT added.
     if (llvm::sys::DynamicLibrary::LoadLibraryPermanently(aname.c_str(), &msg))
       throw err(msg);
+    loaded_libs.push_back(aname);
     return 0;
   }
   // ordinary source file
@@ -3616,11 +3619,14 @@ void interpreter::compiler(string out, list<string> libnames)
   if (target != out) {
     bool vflag = (verbose&verbosity::compiler) != 0;
     string libs;
+    for (list<string>::iterator it = loaded_libs.begin();
+	 it != loaded_libs.end(); ++it)
+      libs += " "+quote(*it);
     for (list<string>::iterator it = libnames.begin();
 	 it != libnames.end(); ++it)
       libs += " -l"+quote(*it);
-    string cmd = "llvmc "+string(vflag?"-v ":"")+
-      quote(target)+" -o "+quote(out)+" "+
+    string cmd = "llvmc "+string(vflag?"-v ":"")+"-x llvm-assembler "+
+      quote(target)+" -o "+quote(out)+" -x object-code "+
       quote(libdir)+"pure_main.o"+libs+" -lpure -lstdc++";
     if (vflag)
       std::cerr << cmd << endl;
