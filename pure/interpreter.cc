@@ -3618,6 +3618,7 @@ void interpreter::compiler(string out, list<string> libnames)
   if (codep != &std::cout) delete codep;
   if (target != out) {
     bool vflag = (verbose&verbosity::compiler) != 0;
+    char *pure_copts = getenv("PURE_COPTS");
     string libs;
     for (list<string>::iterator it = loaded_libs.begin();
 	 it != loaded_libs.end(); ++it)
@@ -3625,7 +3626,8 @@ void interpreter::compiler(string out, list<string> libnames)
     for (list<string>::iterator it = libnames.begin();
 	 it != libnames.end(); ++it)
       libs += " -l"+quote(*it);
-    string cmd = "llvmc "+string(vflag?"-v ":"")+"-x llvm-assembler "+
+    string cmd = "llvmc "+(pure_copts?string(pure_copts)+" ":string())+
+      "-x llvm-assembler "+
       quote(target)+" -o "+quote(out)+" -x object-code "+
       quote(libdir)+"pure_main.o"+libs+" -lpure -lstdc++";
     if (vflag)

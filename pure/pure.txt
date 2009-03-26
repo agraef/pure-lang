@@ -163,22 +163,23 @@ the interpreter takes a snapshot of the program and compiles it to either an
 LLVM assembler (.ll) file or a native executable, depending on the output
 filename specified with -o. If the output filename ends in the .ll extension,
 an LLVM assembler file is created which can then be processed with the LLVM
-toolchain (llvmc, llvm-gcc, etc.). If the output filename is just a hyphen
-``-``, the assembler file is written to standard output, which is useful if
-you want to pass the generated code to the LLVM tools in a pipeline. In all
-other cases the interpreter automatically invokes llvmc to compile the program
-to a native executable with the given name. You can also specify additional
-libraries to be linked into the executable with the -l option. If the output
-filename is omitted, it defaults to ``a.out``.
+toolchain (llvmc, llvm-gcc, etc.). If the output filename is just ``-``, the
+assembler file is written to standard output, which is useful if you want to
+pass the generated code to the LLVM tools in a pipeline. In all other cases
+the interpreter automatically invokes llvmc to compile the program to a native
+executable with the given name. You can also specify additional libraries to
+be linked into the executable with the -l option, and pass extra options to
+llvmc with the PURE_COPTS environment variable. If the output filename is
+omitted, it defaults to ``a.out``.
 
 The -c option provides a convenient way to quickly turn a Pure script into a
 standalone executable which can be invoked directly from the shell. One
 advantage of compiling your script is that this eliminates the JIT compilation
 time and thus considerably reduces the startup time of the program. Another
-reason to prefer a standlone executable is that it lets you deploy the program
-on systems without a full Pure installation (usually only the runtime library
-is required on the target system). On the other hand, compiled scripts also
-have some limitations, mostly concerning the use of the built-in ``eval``
+reason to prefer a standalone executable is that it lets you deploy the
+program on systems without a full Pure installation (usually only the runtime
+library is required on the target system). On the other hand, compiled scripts
+also have some limitations, mostly concerning the use of the built-in ``eval``
 function. Please see `Batch Compilation`_ in the `Caveats and Notes`_ section
 for details.
 
@@ -287,6 +288,9 @@ PURELIB
     Directory to search for library scripts, including the prelude. If PURELIB
     is not set, it defaults to some default location specified at installation
     time.
+
+PURE_COPTS
+    Extra options to be passed to llvmc in a batch compilation (-c).
 
 PURE_HELP
     Command used to browse the Pure manual. This must be a browser capable of
@@ -3051,9 +3055,11 @@ executes all of this in a single run of llvmc (and llvmc in turn uses llvm-gcc
 to do the linking instead of gcc). It will also figure out which dynamic
 modules have to be linked in to resolve all references to libraries in ``using
 "lib:..."`` clauses. To see exactly which files get linked in and which
-commands are executed, you can add the verbose compilation option (-v64) to
-the compilation command. The output of ``pure -c -v64`` is often helpful as a
-starting point for a more elaborate manual build procedure.
+command is executed, you can add the verbose compilation option (-v64) to the
+compilation command. The output of ``pure -c -v64`` is often helpful as a
+starting point for a more elaborate manual build procedure. (Use
+``PURE_COPTS=-v pure -c -v64`` if you also want to see which commands get
+executed by llvmc.)
 
 The process to create shared libraries is similar to the above, except that
 there's no ``main`` function in this case. You still need to call
