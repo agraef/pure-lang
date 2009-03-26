@@ -27,6 +27,7 @@ AC_SUBST(DLLEXT)
 AC_DEFINE_UNQUOTED(DLLEXT, "${DLLEXT}", [Define to the filename extension for shared libraries.])
 dnl Check for programs.
 AC_PROG_INSTALL
+AC_PROG_CC
 AC_PROG_CXX
 dnl Determine pointer sizes. This will be 8 on 64 bit systems.
 AC_CHECK_SIZEOF(void *)
@@ -40,17 +41,18 @@ AC_ARG_ENABLE(gsl,
 AC_ARG_ENABLE(debug,
   [  --enable-debug          enable the debug build],
   [case "${enableval}" in
-    yes)  CXXFLAGS="-g" ;;
+    yes)  CXXFLAGS="-g"; CFLAGS="-g" ;;
   esac])
 AC_ARG_ENABLE(debug2,
   [  --enable-debug2         enable the maintenance build],
   [case "${enableval}" in
-    yes)  CPPFLAGS="$CPPFLAGS -DDEBUG=2"; CXXFLAGS="-g" ;;
+    yes)  CPPFLAGS="$CPPFLAGS -DDEBUG=2"; CXXFLAGS="-g"; CFLAGS="-g" ;;
   esac])
 AC_ARG_ENABLE(release,
   [  --enable-release        enable the release build],
   [case "${enableval}" in
-    yes)  CPPFLAGS="$CPPFLAGS -DNDEBUG -DDEBUG=0"; CXXFLAGS="-O3" ;;
+    yes)  CPPFLAGS="$CPPFLAGS -DNDEBUG -DDEBUG=0"; CXXFLAGS="-O3";
+          CFLAGS="-O3" ;;
   esac])
 sharedlib=yes
 AC_ARG_ENABLE(shared,
@@ -69,7 +71,7 @@ AC_SUBST(versioned)
 AC_ARG_ENABLE(warnings,
   [  --enable-warnings       enable compiler warnings (-Wall)],
   [case "${enableval}" in
-    yes)  CXXFLAGS="$CXXFLAGS -Wall" ;;
+    yes)  CXXFLAGS="$CXXFLAGS -Wall"; CFLAGS="$CFLAGS -Wall" ;;
   esac])
 dnl Check for libraries.
 AC_CHECK_LIB(gmp, __gmpz_init)
@@ -140,7 +142,8 @@ Pure ${PACKAGE_VERSION} is now configured for LLVM ${llvm_version} on ${host}.
   Source directory:     ${srcdir}
   Installation prefix:  ${prefix}
   Versioned install:    $versioned
-  Compiler:             $CXX $CXXFLAGS $CPPFLAGS
+  C compiler:           $CC $CFLAGS $CPPFLAGS
+  C++ compiler:         $CXX $CXXFLAGS $CPPFLAGS
   Linker:               $CXX $LDFLAGS $LIBS
   Build libpure:        $sharedlib
   GSL support:          $gsllib
