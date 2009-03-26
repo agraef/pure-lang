@@ -1086,9 +1086,11 @@ pure_expr *interpreter::defn(expr pat, expr& x, pure_expr*& e)
   compile();
   env vars;
   // promote type tags and substitute macros and constants:
+  qual = true;
   expr rhs = csubst(macsubst(subst(vars, x)));
-  expr lhs = bind(true, vars, lcsubst(pat));
+  expr lhs = bind(vars, lcsubst(pat));
   build_env(vars, lhs);
+  qual = false;
   for (env::const_iterator it = vars.begin(); it != vars.end(); ++it) {
     int32_t f = it->first;
     const symbol& sym = symtab.sym(f);
@@ -1265,9 +1267,11 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
   compile();
   env vars;
   // promote type tags and substitute macros and constants:
+  qual = true;
   expr rhs = csubst(macsubst(subst(vars, x)));
-  expr lhs = bind(true, vars, lcsubst(pat));
+  expr lhs = bind(vars, lcsubst(pat));
   build_env(vars, lhs);
+  qual = false;
   for (env::const_iterator it = vars.begin(); it != vars.end(); ++it) {
     int32_t f = it->first;
     const symbol& sym = symtab.sym(f);
@@ -2005,20 +2009,20 @@ void interpreter::add_macro_rule(rule *r)
 void interpreter::closure(expr& l, expr& r, bool b)
 {
   env vars;
-  expr u = bind(false, vars, lcsubst(l), b), v = subst(vars, r);
+  expr u = bind(vars, lcsubst(l), b), v = subst(vars, r);
   l = u; r = v;
 }
 
 void interpreter::closure(rule& r, bool b)
 {
   env vars;
-  expr u = expr(bind(false, vars, lcsubst(r.lhs), b)),
+  expr u = expr(bind(vars, lcsubst(r.lhs), b)),
     v = expr(subst(vars, r.rhs)),
     w = expr(subst(vars, r.qual));
   r = rule(u, v, w);
 }
 
-expr interpreter::bind(bool qual, env& vars, expr x, bool b, path p)
+expr interpreter::bind(env& vars, expr x, bool b, path p)
 {
   assert(!x.is_null());
   expr y;
@@ -2046,8 +2050,8 @@ expr interpreter::bind(bool qual, env& vars, expr x, bool b, path p)
   case EXPR::APP: {
     if (p.len() >= MAXDEPTH)
       throw err("error in pattern (nesting too deep)");
-    expr u = bind(qual, vars, x.xval1(), b, path(p, 0)),
-      v = bind(qual, vars, x.xval2(), 1, path(p, 1));
+    expr u = bind(vars, x.xval1(), b, path(p, 0)),
+      v = bind(vars, x.xval2(), 1, path(p, 1));
     y = expr(u, v);
     break;
   }
@@ -2301,7 +2305,8 @@ expr interpreter::subst(const env& vars, expr x, uint8_t idx)
     assert(x.tag() > 0);
     const symbol& sym = symtab.sym(x.tag());
     env::const_iterator it = vars.find(sym.f);
-    if (sym.prec < 10 || sym.fix == nullary || it == vars.end()) {
+    if (sym.prec < 10 || sym.fix == nullary || it == vars.end() ||
+	(!qual && (x.flags()&EXPR::QUAL))) {
       // not a bound variable
       if (x.ttag() != 0)
 	throw err("error in expression (misplaced type tag)");
@@ -3196,7 +3201,7 @@ expr *interpreter::mkwhen_expr(expr *x, rulel *r)
   for (rulel::reverse_iterator it = r->rbegin();
        it != r->rend(); ++it, ++idx) {
     env vars;
-    expr v = bind(false, vars, lcsubst(it->lhs)), w = it->rhs;
+    expr v = bind(vars, lcsubst(it->lhs)), w = it->rhs;
     u = subst(vars, u, idx);
     uint8_t jdx = 0;
     for (rulel::iterator jt = s->begin(); jt != s->end(); ++jdx, ++jt) {

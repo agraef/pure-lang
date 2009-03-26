@@ -327,6 +327,7 @@ public:
   list<string> includedirs, librarydirs;
 
   // Interpreter state. For internal use only.
+  bool qual;	     // whether qualified vars are permitted in binding
   int nerrs;	     // current error count
   string errmsg;     // last reported error (runstr)
   int32_t modno;     // current module key
@@ -474,7 +475,7 @@ public:
   void add_macro_rule(rule *r);
   void promote_ttags(expr f, expr x, expr u);
   void promote_ttags(expr f, expr x, expr u, expr v);
-  expr bind(bool qual, env& vars, expr x, bool b = true, path p = path());
+  expr bind(env& vars, expr x, bool b = true, path p = path());
   expr subst(const env& vars, expr x, uint8_t idx = 0);
   expr fsubst(const env& funs, expr x, uint8_t idx = 0);
   expr csubst(expr x);
