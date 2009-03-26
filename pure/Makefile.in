@@ -42,6 +42,7 @@ DLL=@DLLEXT@
 CC = @CC@
 CXX = @CXX@
 INSTALL = @INSTALL@
+DIFF = @DIFF@
 
 ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
@@ -85,26 +86,12 @@ libpurelnk   = lib$(libpure_base)$(DLL)
 
 sharedlib = @sharedlib@
 
-# Flag needed to create shared libraries. On most systems this is just -shared.
-
-shared = @shared@
-
-# On some systems -fPIC is needed for code linked as a shared library.
-
-ifeq ($(sharedlib), yes)
-PIC = @PIC@
-else
-PIC =
-endif
-
 # Auxiliary libraries to be loaded at runtime. Usually this is just libpure
 # (when built), but on some systems we have to load additional dlls to resolve
 # some library functions.
 
 ifeq ($(sharedlib), yes)
-AUXLIBS = -DLIBPURE='"$(libpure)"' @AUXLIBS@
-else
-AUXLIBS = @AUXLIBS@
+AUXLIBS = -DLIBPURE='"$(libpure)"'
 endif
 
 # Location of the Pure library directory. This depends on whether we're doing
@@ -114,6 +101,35 @@ ifeq ($(versioned), yes)
 AUXDEFS = -DPURELIB='"$(libdir)/pure-$(version)"'
 else
 AUXDEFS = -DPURELIB='"$(libdir)/pure"'
+endif
+
+# Other platform-specific defaults, edit this as needed. XXXFIXME: This is a
+# big mess. Please report changes needed for systems not supported here.
+
+# Generic defaults for gcc-based systems.
+
+#PIC = -fPIC
+shared = -shared
+LD_LIB_PATH = LD_LIBRARY_PATH
+
+# Take care of some common systems.
+
+# Windows
+ifneq "$(findstring -mingw,$(host))" ""
+LDFLAGS = -Wl,--enable-auto-import
+AUXLIBS += -DLIBGLOB='\"libglob.dll\"' -DLIBREGEX='\"libgnurx-0.dll\"'
+LIBS += -limagehlp -lpsapi -lmingwex
+endif
+
+# OSX
+ifneq "$(findstring -darwin,$(host))" ""
+shared = -dynamiclib -install_name $(libdir)/$(libpure)
+LD_LIB_PATH = DYLD_LIBRARY_PATH
+endif
+
+# 64 bit, needs -fPIC flag
+ifneq "$(findstring x86_64-,$(host))" ""
+PIC = -fPIC
 endif
 
 # No need to edit below this line. Unless you really have to. :) ############
@@ -298,15 +314,15 @@ cleanlogs:
 # other glibc-based systems. Other systems might require some work.
 
 $(srcdir)/test/prelude.log: lib/prelude.pure lib/primitives.pure lib/strings.pure
-	LC_ALL=C @LD_LIB_PATH@=".:$(@LD_LIB_PATH@)" PURELIB=$(srcdir)/lib ./pure --norc -n -v$(level) $< > $@ 2>&1
+	LC_ALL=C $(LD_LIB_PATH)=".:$$$(LD_LIB_PATH)" PURELIB=$(srcdir)/lib ./pure --norc -n -v$(level) $< > $@ 2>&1
 
 %.log: %.pure
-	LC_ALL=C @LD_LIB_PATH@=".:$(@LD_LIB_PATH@)" PURELIB=$(srcdir)/lib ./pure --norc -v$(level) < $< > $@ 2>&1
+	LC_ALL=C $(LD_LIB_PATH)=".:$$$(LD_LIB_PATH)" PURELIB=$(srcdir)/lib ./pure --norc -v$(level) < $< > $@ 2>&1
 
 check: pure
 	@ echo Running tests.
-	@ (export LC_ALL=C; export @LD_LIB_PATH@=".:$(@LD_LIB_PATH@)"; export PURELIB=$(srcdir)/lib; echo $(ECHO_N) "prelude.pure: $(ECHO_C)"; if ./pure --norc -n -v$(level) $(srcdir)/lib/prelude.pure 2>&1 | @DIFF@ -u $(srcdir)/test/prelude.log - > $(srcdir)/test/prelude.diff; then rm -f $(srcdir)/test/prelude.diff; echo "$(ECHO_T)passed"; else echo "$(ECHO_T)FAILED"; fi)
-	@ (export LC_ALL=C; export @LD_LIB_PATH@=".:$(@LD_LIB_PATH@)"; export PURELIB=$(srcdir)/lib; for x in $(notdir $(tests)); do echo $(ECHO_N) "$$x: $(ECHO_C)"; if ./pure --norc -v$(level) < $(srcdir)/test/$$x 2>&1 | @DIFF@ -u $(srcdir)/test/"`basename $$x .pure`.log" - > $(srcdir)/test/"`basename $$x .pure`.diff"; then rm -f $(srcdir)/test/"`basename $$x .pure`.diff"; echo "$(ECHO_T)passed"; else echo "$(ECHO_T)FAILED"; fi; done)
+	@ (export LC_ALL=C; export $(LD_LIB_PATH)=".:$$$(LD_LIB_PATH)"; export PURELIB=$(srcdir)/lib; echo $(ECHO_N) "prelude.pure: $(ECHO_C)"; if ./pure --norc -n -v$(level) $(srcdir)/lib/prelude.pure 2>&1 | $(DIFF) -u $(srcdir)/test/prelude.log - > $(srcdir)/test/prelude.diff; then rm -f $(srcdir)/test/prelude.diff; echo "$(ECHO_T)passed"; else echo "$(ECHO_T)FAILED"; fi)
+	@ (export LC_ALL=C; export $(LD_LIB_PATH)=".:$$$(LD_LIB_PATH)"; export PURELIB=$(srcdir)/lib; for x in $(notdir $(tests)); do echo $(ECHO_N) "$$x: $(ECHO_C)"; if ./pure --norc -v$(level) < $(srcdir)/test/$$x 2>&1 | $(DIFF) -u $(srcdir)/test/"`basename $$x .pure`.log" - > $(srcdir)/test/"`basename $$x .pure`.diff"; then rm -f $(srcdir)/test/"`basename $$x .pure`.diff"; echo "$(ECHO_T)passed"; else echo "$(ECHO_T)FAILED"; fi; done)
 
 # DO NOT DELETE
 
