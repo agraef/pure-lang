@@ -439,6 +439,8 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
     const symbol& sym = interpreter::g_interp->symtab.sym(x.tag());
     if (sym.prec < 10)
       return os << '(' << sym.s << ')';
+    else if ((x.flags() & EXPR::QUAL) && sym.s.find("::") == string::npos)
+      return os << "::" << sym.s;
     else
       return os << sym.s;
   }
