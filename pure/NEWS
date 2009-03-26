@@ -1,14 +1,47 @@
 
 ** Pure 0.21 (in progress)
 
+This release sports some changes in the build system to make things easier for
+package maintainers, and the addition of a batch compiler which allows you to
+compile Pure scripts to native executables. See below for details.
+
+Build System
+------------
+
+In preparation for the 1.0 release, the Pure runtime library now uses a proper
+major.minor versioning scheme, which is independent from the interpreter
+version.
+
+Moreover, "versioned" installs (i.e., parallel installations of different Pure
+versions) are now disabled by default. We decided to do this because versioned
+installs presented a real headache to package maintainers. You can still do a
+versioned install by running configure with the --enable-versioned option. It
+is also possible to have versioned and unversioned installations coexist if
+they live under different install prefixes, please see the INSTALL file for
+details.
+
+*IMPORTANT:* Because of the different installation layout, you should
+uninstall any earlier Pure version before installing this release.
+
+Also, if you're compiling from svn sources, please make sure that you rerun
+configure before building the new version. You should do that anyway when
+installing a new version, but it's really essential this time. :)
+
+Batch Compiler
+--------------
+
 The interpreter now offers an experimental batch compilation option -c to
 translate scripts to native executables. For instance, 'pure -c foo.pure -o
 foo' creates the executable 'foo' from the script 'foo.pure', after executing
-the script as usual. This requires the LLVM toolchain (llvmc, llvm-gcc, etc.) 
-to work. You can also use a command like 'pure -c foo.pure -o foo.ll' to
-create an LLVM assembler (.ll) file instead, which can then be processed with
-the LLVM tools, e.g., to apply further optimizations and/or produce a binary
-object module which can be linked into other C/C++ programs and libraries.
+the script as usual. This requires the *full* LLVM toolchain (including llvmc,
+llvm-gcc, etc.) to work, see the INSTALL file which now also has instructions
+on how to build llvm-gcc.
+
+You can also use a command like 'pure -c foo.pure -o foo.ll' to create an LLVM
+assembler (.ll) file instead of an executable, which can then be processed
+with the LLVM tools, e.g., to apply further optimizations and/or produce a
+binary object module which can be linked into other C/C++ programs and
+libraries.
 
 Note that even when batch-compiling, the compiled program is executed as
 usual. This is necessary because parts of a Pure program (in particular,
@@ -20,17 +53,14 @@ accordingly.
 
 The compiled executable is essentially a static snapshot of your program which
 is executed on the "bare metal", without a hosting interpreter. Only a minimal
-runtime system is provided. This considerably reduces startup times, but also
-implies some limitations, mostly concerning the use of the built-in 'eval'
-function. Please see the manual and the ChangeLog for details.
+runtime system is provided. This considerably reduces startup times and makes
+it possible to deploy the executable (along with the runtime library) on
+systems without a Pure installation, but also implies some limitations, mostly
+concerning the use of the built-in 'eval' function.
 
-Finally, please note that starting with this release, parallel installations
-of different Pure versions have been disabled by default. We decided to do
-this because versioned installs presented a real problem to package
-maintainers. You can still do a versioned install by running configure with
-the --enable-versioned option. It is also possible to have versioned and
-unversioned installations coexist if they live under different install
-prefixes, please see the INSTALL file for details.
+Please see the manual for details. In particular, you should read
+pure.html#compiling-scripts and pure.html#batch-compilation to get started
+with this useful new feature.
 
 ** Pure 0.20 2009-03-19
 

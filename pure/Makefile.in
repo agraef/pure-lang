@@ -70,18 +70,29 @@ CXXFLAGS = @CXXFLAGS@
 
 versioned = @versioned@
 
-libpure_base = $(name)
+purelib_base = $(name)
 ifeq ($(versioned), yes)
-libpure_vers = $(libpure_base)-$(version)
+purelib_vers = $(purelib_base)-$(version)
 else
-libpure_vers = $(libpure_base)
+purelib_vers = $(purelib_base)
 endif
 
-# Pure library name. Currently we use a simple versioning scheme, which
-# requires that the library version matches that of the interpreter.
+AUXDEFS = -DPURELIB='"$(libdir)/$(purelib_vers)"'
 
-libpure      = lib$(libpure_vers)$(DLL)
-libpurelnk   = lib$(libpure_base)$(DLL)
+# Pure library name. As of Pure 0.21, we use the standard $(major).$(minor)
+# versioning scheme, which is independent of the Pure version number and the
+# $(versioned) flag. Following customary practices supported by most modern
+# operating systems, the $(major) version number gets incremented only when
+# the runtime ABI changes, and the $(minor) version number is used to indicate
+# bugfix releases.
+
+major = 0
+minor = 0
+
+libpure_name    = $(name)
+libpure_lnkname = lib$(libpure_name)$(DLL)
+libpure_soname  = lib$(libpure_name)$(DLL).$(major)
+libpure         = lib$(libpure_name)$(DLL).$(major).$(minor)
 
 # Whether to build the Pure runtime library. If this is set to anything but
 # "yes", the interpreter is linked statically and no separate library is
@@ -94,19 +105,19 @@ sharedlib = @sharedlib@
 # (when built), but on some systems we have to load additional dlls to resolve
 # some library functions.
 
-AUXDEFS = -DPURELIB='"$(libdir)/$(libpure_vers)"'
-
 ifeq ($(sharedlib), yes)
-AUXLIBS = -DLIBPURE='"$(libpure)"'
+AUXLIBS = -DLIBPURE='"$(libpure_soname)"'
 endif
 
 # Other platform-specific defaults, edit this as needed. XXXFIXME: This is a
-# big mess. Please report changes needed for systems not supported here.
+# big mess, mostly due to differences in the way shared libraries are
+# handled. Please report changes needed for systems not supported here.
 
 # Generic defaults for gcc/elf-based systems.
 
 #PIC = -fPIC
 shared = -shared
+soname = -Wl,-soname,$(libpure_soname)
 LD_LIB_PATH = LD_LIBRARY_PATH
 
 # Take care of some common systems.
@@ -120,7 +131,12 @@ endif
 
 # OSX
 ifneq "$(findstring -darwin,$(host))" ""
-shared = -dynamiclib -install_name $(libdir)/$(libpure)
+# OSX uses a slightly different library naming scheme, and sonames are handled
+# in a different way.
+libpure_soname = lib$(libpure_name).$(major)$(DLL)
+libpure = lib$(libpure_name).$(major).$(minor)$(DLL)
+shared = -dynamiclib
+soname = -install_name $(libdir)/$(libpure_soname) -compatibility_version $(major) -current_version $(major).$(minor)
 LD_LIB_PATH = DYLD_LIBRARY_PATH
 endif
 
@@ -156,16 +172,19 @@ all: pure$(EXE) pure_main.o etc/pure-mode.el
 
 ifeq ($(sharedlib), yes)
 pure$(EXE): pure.o $(libpure)
-	$(CXX) -o $@ $(LDFLAGS) pure.o -L. -l$(libpure_vers) $(LIBS)
+	$(CXX) -o $@ $(LDFLAGS) pure.o -L. -l$(libpure_name) $(LIBS)
 else
 pure$(EXE): pure.o $(OBJECT)
 	$(CXX) -o $@ $(LDFLAGS) pure.o $(OBJECT) $(LLVM_LIBS) $(LIBS)
 endif
 
 $(libpure): $(OBJECT)
-	$(CXX) $(shared) -o $@ $(LDFLAGS) $(OBJECT) $(LLVM_LIBS) $(LIBS)
-ifneq ($(libpure), $(libpurelnk))
-	ln -sf $(libpure) $(libpurelnk)
+	$(CXX) $(shared) $(soname) -o $@ $(LDFLAGS) $(OBJECT) $(LLVM_LIBS) $(LIBS)
+ifneq ($(libpure), $(libpure_soname))
+	ln -sf $(libpure) $(libpure_soname)
+endif
+ifneq ($(libpure), $(libpure_lnkname))
+	ln -sf $(libpure) $(libpure_lnkname)
 endif
 
 pure.o: pure.cc
@@ -222,7 +241,7 @@ purelib.txt: $(libfiles)
 # cleaning
 
 clean:
-	rm -f *~ *.bak *.tex *.pdf pure$(EXE) $(OBJECT) pure.o pure_main.o $(libpurelnk) $(libpure) parser.output
+	rm -f *~ *.bak *.tex *.pdf pure$(EXE) $(OBJECT) pure.o pure_main.o $(libpure_lnkname) $(libpure_soname) $(libpure) parser.output
 
 distclean: clean
 	rm -f Makefile config.h config.log config.status etc/pure-mode.el $(dist).tar.gz
@@ -254,12 +273,15 @@ else
 endif
 ifeq ($(sharedlib), yes)
 	$(INSTALL) $(libpure) $(DESTDIR)$(libdir)/$(libpure)
-ifneq ($(libpure), $(libpurelnk))
-	ln -sf $(libdir)/$(libpure) $(DESTDIR)$(libdir)/$(libpurelnk)
+ifneq ($(libpure), $(libpure_soname))
+	ln -sf $(libdir)/$(libpure) $(DESTDIR)$(libdir)/$(libpure_soname)
+endif
+ifneq ($(libpure), $(libpure_lnkname))
+	ln -sf $(libdir)/$(libpure) $(DESTDIR)$(libdir)/$(libpure_lnkname)
 endif
 endif
 ifeq ($(versioned), yes)
-	$(INSTALL) $(srcdir)/runtime.h $(DESTDIR)$(includedir)/pure-$(version)
+	$(INSTALL) -m 644 $(srcdir)/runtime.h $(DESTDIR)$(includedir)/pure-$(version)
 	ln -sf $(includedir)/pure-$(version) $(DESTDIR)$(includedir)/pure
 	$(INSTALL) -m 644 $(srcdir)/pure_main.c pure_main.o $(DESTDIR)$(libdir)/pure-$(version)
 	for x in $(srcdir)/lib/*.pure; do $(INSTALL) -m 644 $$x $(DESTDIR)$(libdir)/pure-$(version); done
@@ -268,7 +290,7 @@ ifeq ($(versioned), yes)
 	$(INSTALL) -m 644 $(srcdir)/pure.1 $(DESTDIR)$(man1dir)/pure-$(version).1
 	ln -sf $(man1dir)/pure-$(version).1 $(DESTDIR)$(man1dir)/pure.1
 else
-	$(INSTALL) $(srcdir)/runtime.h $(DESTDIR)$(includedir)/pure
+	$(INSTALL) -m 644 $(srcdir)/runtime.h $(DESTDIR)$(includedir)/pure
 	$(INSTALL) -m 644 $(srcdir)/pure_main.c pure_main.o $(DESTDIR)$(libdir)/pure
 	for x in $(srcdir)/lib/*.pure; do $(INSTALL) -m 644 $$x $(DESTDIR)$(libdir)/pure; done
 	$(INSTALL) -m 644 $(srcdir)/pure.html $(srcdir)/purelib.html $(DESTDIR)$(libdir)/pure
@@ -276,7 +298,10 @@ else
 endif
 
 uninstall:
-	rm -rf $(addprefix $(DESTDIR), $(bindir)/pure$(EXE) $(bindir)/pure-$(version)$(EXE) $(libdir)/$(libpurelnk) $(libdir)/$(libpure) $(includedir)/pure $(includedir)/pure-$(version) $(libdir)/pure $(libdir)/pure-$(version) $(man1dir)/pure.1 $(man1dir)/pure-$(version).1)
+	rm -rf $(addprefix $(DESTDIR), $(bindir)/pure$(EXE) $(libdir)/$(libpure_lnkname) $(libdir)/$(libpure_soname) $(libdir)/$(libpure) $(includedir)/pure $(libdir)/pure $(man1dir)/pure.1)
+ifeq ($(versioned), yes)
+	rm -rf $(addprefix $(DESTDIR), $(bindir)/pure-$(version)$(EXE) $(includedir)/pure-$(version) $(libdir)/pure-$(version) $(man1dir)/pure-$(version).1)
+endif
 
 # roll a distribution tarball
 
