@@ -62,10 +62,11 @@ LLVM_LIBS = `llvm-config --ldflags --libs core jit native`
 CPPFLAGS = @CPPFLAGS@
 CXXFLAGS = @CXXFLAGS@
 
-# Pure library name. Currently we use a simple versioning scheme, which
-# requires that the library version matches that of the interpreter. This
-# enables you to install different versions of the Pure interpreter on the
-# same system. You can also disable this by setting 'versioned' to 'no'.
+# Location of the Pure library directory. Depends on whether we're doing a
+# versioned install. This enables you to install different versions of the
+# Pure interpreter on the same system. Versioning is disabled by default, you
+# can enable it by setting 'versioned' to 'yes', or by running configure with
+# --enable-versioned.
 
 versioned = @versioned@
 
@@ -75,6 +76,9 @@ libpure_vers = $(libpure_base)-$(version)
 else
 libpure_vers = $(libpure_base)
 endif
+
+# Pure library name. Currently we use a simple versioning scheme, which
+# requires that the library version matches that of the interpreter.
 
 libpure      = lib$(libpure_vers)$(DLL)
 libpurelnk   = lib$(libpure_base)$(DLL)
@@ -90,23 +94,16 @@ sharedlib = @sharedlib@
 # (when built), but on some systems we have to load additional dlls to resolve
 # some library functions.
 
+AUXDEFS = -DPURELIB='"$(libdir)/$(libpure_vers)"'
+
 ifeq ($(sharedlib), yes)
 AUXLIBS = -DLIBPURE='"$(libpure)"'
-endif
-
-# Location of the Pure library directory. This depends on whether we're doing
-# a versioned install.
-
-ifeq ($(versioned), yes)
-AUXDEFS = -DPURELIB='"$(libdir)/pure-$(version)"'
-else
-AUXDEFS = -DPURELIB='"$(libdir)/pure"'
 endif
 
 # Other platform-specific defaults, edit this as needed. XXXFIXME: This is a
 # big mess. Please report changes needed for systems not supported here.
 
-# Generic defaults for gcc-based systems.
+# Generic defaults for gcc/elf-based systems.
 
 #PIC = -fPIC
 shared = -shared
