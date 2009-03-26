@@ -55,7 +55,7 @@ using namespace std;
 -x               Execute script with given command line arguments.\n\
 --               Stop option processing.\n\
 Type 'help' in the interpreter for more help.\n"
-#define LICENSE "This program is free software distributed under the GNU Public License\n(GPL V3 or later). Please see the COPYING file for details.\n"
+#define LICENSE "This program is free software distributed under the GNU Public License\n(GPL V3 or later). Type 'help copying' for details.\n"
 
 static const char *commands[] = {
   "cd", "clear", "const", "def", "dump", "extern", "help", "infix", "infixl",

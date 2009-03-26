@@ -896,7 +896,10 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
 	docname.insert(0, interp.libdir);
       }
       docname.insert(0, "file:");
-    } else
+    } else if (strcmp(s, "copying") == 0)
+      // look up the license information
+      docname.insert(0, "file:"+interp.libdir+"pure.html#");
+    else
       // look up the default library documentation
       docname.insert(0, "file:"+interp.libdir+"purelib.html#");
     // remove a lone trailing '#'
