@@ -118,9 +118,10 @@ configure parameters (except possibly --enable-targets=host-only, and
 --enable-pic if it is needed). Note, however, that this will have an impact on
 the speed of the Pure compiler.
 
-OPTIONAL: You can build and install llvm-gcc as follows (this assumes that you
-have unpacked the llvm-gcc-4.2-2.5.source tarball in the same directory as the
-llvm-2.5 tarball):
+*OPTIONAL, BUT RECOMMENDED:* As already mentioned, you'll also need llvm-gcc
+to make Pure's batch compiler work. You can build and install llvm-gcc as
+follows (this assumes that you have unpacked the llvm-gcc-4.2-2.5.source
+tarball in the same directory as the llvm-2.5 tarball):
 
 $ cd llvm-gcc4.2-2.5.source
 $ mkdir obj
@@ -139,8 +140,8 @@ default, but compiling llvm-gcc will probably fail if you don't have some
 special development packages installed to make that work. In that case add
 --disable-multilib to the above configure command to disable this feature.
 
-Also see README-LLVM in the sources for additional instructions in case
-anything goes awry.
+Also see README-LLVM in the llvm-gcc sources for additional instructions in
+case anything goes awry.
 
 STEP 4. Get and unpack the Pure sources at: http://pure-lang.googlecode.com
 
@@ -586,18 +587,31 @@ MS WINDOWS
 -- -------
 
 Thanks to Jiri Spitz' perseverance, tireless testing and bug reports, the
-sources compile and run fine on Windows now, using the Mingw port of the GNU
-C++ compiler and the MSYS environment from http://www.mingw.org/. Just do the
+sources compile and run fine on Windows, using the Mingw port of the GNU C++
+compiler and the MSYS environment from http://www.mingw.org/. Just do the
 usual './configure && make && make install'. You'll need LLVM, of course
 (which builds with Mingw just fine), and a few additional libraries for which
 headers and precompiled binaries are available from the Pure website
 (http://pure-lang.googlecode.com).
 
-A binary package in msi format is available as well (see "Downloads" on the
-Pure website), which includes all required libraries and some shortcuts to run
-the Pure interpreter and read online documentation in html help format, as
+However, the easiest way is to just go with the Pure MSI package available on
+the Pure website. This includes all required libraries and some shortcuts to
+run the Pure interpreter and read online documentation in html help format, as
 well as "PurePad", an alternative GUI frontend for editing and running Pure
 scripts on Windows.
+
+After installing the MSI, you might also want to go to the LLVM website and
+grab the LLVM toolchain for mingw32/x86. You'll have to install both the "LLVM
+binaries" and the "LLVM-GCC binaries" package on your system to make the Pure
+batch compiler work. Just unzip these into some convenient location on your
+harddrive and set up PATH so that it points to the llvm-x.y and
+llvm-gcc-x.y/bin directories.
+
+NOTE: As of LLVM 2.5, llvmc seems to be broken on (32 bit) Windows. If you get
+a failed assertion from llvmc when running pure -c, you'll need a version of
+llvmc which doesn't hardcode the -relocationmodel=pic option into the llc
+compile command. A patched up version of llvmc.exe from LLVM 2.5 can be found
+at http://groups.google.com/group/pure-lang/files.
 
 
 March 2009
