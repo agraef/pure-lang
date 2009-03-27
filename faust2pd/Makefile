@@ -18,6 +18,13 @@ bindir = $(prefix)/bin
 libdir = $(pdprefix)/lib
 datadir = $(libdir)/pd/extra
 
+# Try to guess the host system type and do platform-specific setup.
+host = $(shell ./config.guess)
+ifneq "$(findstring -mingw,$(host))" ""
+# Windows
+EXE = .exe
+endif
+
 DESTDIR=
 
 DISTFILES = Makefile COPYING ChangeLog README faust2pd.html config.guess *.pure *.pd examples/README examples/*/Makefile examples/*/*.dsp examples/*/*.syn examples/*/*.pd examples/*/*.pure examples/*/*.xml
@@ -30,15 +37,15 @@ examples: faust2pd
 	for x in basic faust synth seqdemo; do make -C examples/$$x all; done
 
 clean:
-	rm -f faust2pd
+	rm -f faust2pd$(EXE)
 	for x in basic faust synth seqdemo; do make -C examples/$$x clean; done
 
 distclean:
-	rm -f faust2pd *.txt *.tex *.pdf
+	rm -f faust2pd$(EXE) *.txt *.tex *.pdf
 	for x in basic faust synth seqdemo; do make -C examples/$$x distclean; done
 
 realclean:
-	rm -f faust2pd *.txt *.tex *.pdf
+	rm -f faust2pd$(EXE) *.txt *.tex *.pdf
 	for x in basic faust synth seqdemo; do make -C examples/$$x realclean; done
 
 # as of pure-0.21, we can compile the script to an executable
@@ -50,8 +57,11 @@ faust2pd: faust2pd.pure faustxml.pure
 # install faust2pd
 install:
 	test -d $(DESTDIR)$(bindir) || mkdir -p $(DESTDIR)$(bindir)
-	cp faust2pd $(DESTDIR)$(bindir)/faust2pd
-	chmod a+x $(DESTDIR)$(bindir)/faust2pd
+	cp faust2pd$(EXE) $(DESTDIR)$(bindir)
+	strip $(DESTDIR)$(bindir)/faust2pd$(EXE)
+ifeq "$(findstring -mingw,$(host))" ""
+	chmod a+x $(DESTDIR)$(bindir)/faust2pd$(EXE)
+endif
 	@echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 	@echo "Optionally, you can also run make install-pd to install the auxiliary Faust"
 	@echo "abstractions in $(DESTDIR)$(datadir)."
