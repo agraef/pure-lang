@@ -3451,6 +3451,7 @@ void interpreter::compiler(string out, list<string> libnames)
      so that a minimal runtime environment is available. This function is to
      be called by the main() or other initialization code of the standalone
      module. It takes two arguments, the argc and argv of the interpreter. */
+  setlocale(LC_ALL, "C");
   std::ostream *codep =
     (target!="-")?new std::ofstream(target.c_str()):&std::cout;
   std::ostream &code = *codep;
@@ -3631,13 +3632,31 @@ void interpreter::compiler(string out, list<string> libnames)
     for (list<string>::iterator it = libnames.begin();
 	 it != libnames.end(); ++it)
       libs += " -l"+quote(*it);
+#ifdef __MINGW32__
+    /* llvmc generates an invalid link command on Windows, and we also have to
+       add some extra libraries. Therefore we only call llvmc to create the
+       object file and do the linking manually. */
+    string obj = out+".o";
     string cmd = "llvmc "+(pure_copts?string(pure_copts)+" ":string())+
-      "-x llvm-assembler "+
-      quote(target)+" -o "+quote(out)+" -x object-code "+
+      "-c -x llvm-assembler "+
+      quote(target)+" -o "+quote(obj);
+    if (vflag)
+      std::cerr << cmd << endl;
+    system(cmd.c_str());
+    cmd = "llvm-gcc -o "+quote(out)+" "+quote(libdir)+"pure_main.o "+
+      quote(obj)+libs+" -lregex -lglob -lreadline -lpure -lstdc++";
+    if (vflag)
+      std::cerr << cmd << endl;
+    system(cmd.c_str());
+    unlink(obj.c_str());
+#else
+    string cmd = "llvmc "+(pure_copts?string(pure_copts)+" ":string())+
+      "-x llvm-assembler "+quote(target)+" -o "+quote(out)+" -x object-code "+
       quote(libdir)+"pure_main.o"+libs+" -lpure -lstdc++";
     if (vflag)
       std::cerr << cmd << endl;
     system(cmd.c_str());
+#endif
     unlink(target.c_str());
   }
 }
