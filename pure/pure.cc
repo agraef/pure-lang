@@ -348,7 +348,12 @@ main(int argc, char *argv[])
   bool quiet = false, force_interactive = false,
     want_prelude = true, have_prelude = false,
     want_rcfile = true, want_editing = true;
-  string rcfile, outname = "a.out";
+  string rcfile;
+#ifdef __MINGW32__
+  string outname = "a.exe";
+#else
+  string outname = "a.out";
+#endif
   list<string> libnames;
   // This is used in advisory stack checks.
   interpreter::baseptr = &base;
