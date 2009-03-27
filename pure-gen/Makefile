@@ -27,14 +27,23 @@ pkgdatadir = $(libdir)/pure-gen
 mandir = ${prefix}/share/man
 man1dir = $(mandir)/man1
 
-DISTFILES = COPYING Makefile README README.dump-ast dump-ast.hs pure-gen.pure pure-gen.1 run-tests examples/*.templ
+# Try to guess the host system type and do platform-specific setup.
+host = $(shell ./config.guess)
+ifneq "$(findstring -mingw,$(host))" ""
+# Windows
+EXE = .exe
+endif
+
+DISTFILES = COPYING Makefile config.guess README README.dump-ast dump-ast.hs pure-gen.pure pure-gen.1 run-tests examples/*.templ
 
 all: pure-gen dump-ast
 
 # NOTE: This requires Pure 0.21 or later.
 
+dump_ast = $(pkgdatadir)/dump-ast
+
 pure-gen: pure-gen.pure
-	sed -e 's?@version@?$(version)?' -e 's?./dump-ast?$(pkgdatadir)/dump-ast?' < $< > xx$<
+	sed -e 's?@version@?$(version)?' -e 's?./dump-ast?$(dump_ast)?' < $< > xx$<
 	pure -c xx$< -o $@
 	rm -f xx$<
 
@@ -73,17 +82,19 @@ pdf: pure-gen.pdf
 	groff -man -Tps $< | ps2pdf - $@
 
 clean:
-	rm -f pure-gen dump-ast *~ *.hi *.o *.dvi *.pdf *.ps *.html
+	rm -f pure-gen$(EXE) dump-ast$(EXE) *~ *.hi *.o *.dvi *.pdf *.ps *.html
 
 install:
 	test -d "$(DESTDIR)$(bindir)" || mkdir -p "$(DESTDIR)$(bindir)"
 	test -d "$(DESTDIR)$(pkgdatadir)" || mkdir -p "$(DESTDIR)$(pkgdatadir)"
 	test -d "$(DESTDIR)$(man1dir)" || mkdir -p "$(DESTDIR)$(man1dir)"
-	cp dump-ast "$(DESTDIR)$(pkgdatadir)"
-	cp pure-gen "$(DESTDIR)$(bindir)/pure-gen"
+	cp dump-ast$(EXE) "$(DESTDIR)$(pkgdatadir)"
+	cp pure-gen$(EXE) "$(DESTDIR)$(bindir)/pure-gen"
 # The binaries are huge, so better strip them.
-	strip "$(DESTDIR)$(pkgdatadir)/dump-ast" "$(DESTDIR)$(bindir)/pure-gen"
-	chmod a+x "$(DESTDIR)$(pkgdatadir)/dump-ast" "$(DESTDIR)$(bindir)/pure-gen"
+	strip "$(DESTDIR)$(pkgdatadir)/dump-ast$(EXE)" "$(DESTDIR)$(bindir)/pure-gen$(EXE)"
+ifeq "$(findstring -mingw,$(host))" ""
+	chmod a+x "$(DESTDIR)$(pkgdatadir)/dump-ast$(EXE)" "$(DESTDIR)$(bindir)/pure-gen$(EXE)"
+endif
 	cp pure-gen.1 "$(DESTDIR)$(man1dir)"
 
 uninstall:
