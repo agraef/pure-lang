@@ -89,7 +89,7 @@ install:
 	test -d "$(DESTDIR)$(pkgdatadir)" || mkdir -p "$(DESTDIR)$(pkgdatadir)"
 	test -d "$(DESTDIR)$(man1dir)" || mkdir -p "$(DESTDIR)$(man1dir)"
 	cp dump-ast$(EXE) "$(DESTDIR)$(pkgdatadir)"
-	cp pure-gen$(EXE) "$(DESTDIR)$(bindir)/pure-gen"
+	cp pure-gen$(EXE) "$(DESTDIR)$(bindir)"
 # The binaries are huge, so better strip them.
 	strip "$(DESTDIR)$(pkgdatadir)/dump-ast$(EXE)" "$(DESTDIR)$(bindir)/pure-gen$(EXE)"
 ifeq "$(findstring -mingw,$(host))" ""
@@ -98,7 +98,7 @@ endif
 	cp pure-gen.1 "$(DESTDIR)$(man1dir)"
 
 uninstall:
-	rm -rf "$(DESTDIR)$(bindir)/pure-gen" "$(DESTDIR)$(pkgdatadir)" "$(DESTDIR)$(man1dir)/pure-gen.1"
+	rm -rf "$(DESTDIR)$(bindir)/pure-gen$(EXE)" "$(DESTDIR)$(pkgdatadir)" "$(DESTDIR)$(man1dir)/pure-gen.1"
 
 dist:
 	rm -rf $(dist)
