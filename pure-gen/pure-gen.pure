@@ -26,15 +26,15 @@ let copyright = sprintf
 
 // Set up PATH so that we pick up the proper C preprocessor.
 if index sysinfo "mingw" >= 0 then
-  eval "extern int _putenv(char*) = putenv;"
+  eval "extern int _putenv(void*) = putenv;"
 else
-  eval "extern int putenv(char*);";
+  eval "extern int putenv(void*);";
 
 if null env then ()
 else if index sysinfo "mingw" >= 0 then
-  putenv $ sprintf "PATH=%s;%s" (env,getenv "PATH")
+  putenv $ byte_cstring $ sprintf "PATH=%s;%s" (env,getenv "PATH")
 else
-  putenv $ sprintf "PATH=%s:%s" (env,getenv "PATH")
+  putenv $ byte_cstring $ sprintf "PATH=%s:%s" (env,getenv "PATH")
 when env = getenv "PURECPP" end;
 
 /* Default template for C code generation.
