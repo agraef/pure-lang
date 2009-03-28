@@ -31,9 +31,9 @@ DISTFILES = Makefile COPYING ChangeLog README faust2pd.html config.guess *.pure 
 
 .PHONY: all examples clean distclean realclean install uninstall
 
-all: faust2pd
+all: faust2pd$(EXE)
 
-examples: faust2pd
+examples: faust2pd$(EXE)
 	for x in basic faust synth seqdemo; do make -C examples/$$x all; done
 
 clean:
@@ -49,7 +49,7 @@ realclean:
 	for x in basic faust synth seqdemo; do make -C examples/$$x realclean; done
 
 # as of pure-0.21, we can compile the script to an executable
-faust2pd: faust2pd.pure faustxml.pure
+faust2pd$(EXE): faust2pd.pure faustxml.pure
 	sed -e 's?@version@?$(version)?' < $< > xx$<
 	pure -c xx$< -o $@
 	rm -f xx$<
@@ -74,7 +74,7 @@ install-pd:
 
 #uninstall
 uninstall:
-	rm -rf $(DESTDIR)$(bindir)/faust2pd
+	rm -rf $(DESTDIR)$(bindir)/faust2pd$(EXE)
 	rm -f $(DESTDIR)$(datadir)/faust-*.pd
 
 .PHONY: dist distcheck
