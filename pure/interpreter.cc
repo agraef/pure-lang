@@ -873,16 +873,16 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
     if (name.size() <= strlen(DLLEXT) ||
 	name.substr(name.size()-strlen(DLLEXT)) != DLLEXT)
       dllname += DLLEXT;
-    // First try to open the library under the given name.
-    string aname = searchlib(srcdir, libdir, librarydirs, name);
+    // First try the name with DLLEXT added.
+    string aname = searchlib(srcdir, libdir, librarydirs, dllname);
     if (!llvm::sys::DynamicLibrary::LoadLibraryPermanently(aname.c_str(), &msg)) {
       loaded_libs.push_back(aname);
       return 0;
     }
     else if (dllname == name)
       throw err(msg);
-    aname = searchlib(srcdir, libdir, librarydirs, dllname);
-    // Now try the name with DLLEXT added.
+    // Now try whether the system can resolve the library under the given name.
+    aname = searchlib(srcdir, libdir, librarydirs, name);
     if (llvm::sys::DynamicLibrary::LoadLibraryPermanently(aname.c_str(), &msg))
       throw err(msg);
     loaded_libs.push_back(aname);
