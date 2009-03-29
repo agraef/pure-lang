@@ -3226,7 +3226,7 @@ Hello, world!
 <p>Turning the script into an executable works as follows:</p>
 <pre class="literal-block">
 $ pure -c hello.pure -o hello
-./hello 10
+$ ./hello 10
 Hello, world!
 [1,2,6,24,120,720,5040,40320,362880,3628800]
 </pre>
@@ -3257,9 +3257,9 @@ main n = do puts [&quot;Hello, world!&quot;, str (map fact (1..n))];
 const n = if argc&gt;1 then sscanf (argv!1) &quot;%d&quot; else 10;
 if compiling then () else main n;
 </pre>
-<p>This cool little script &quot;specializes&quot; <tt class="docutils literal"><span class="pre">n</span></tt> to the first (compile time)
-parameter when being batch-compiled, and it still works as before when we run
-it through the interpreter in both batch and interactive mode, too:</p>
+<p>This script &quot;specializes&quot; <tt class="docutils literal"><span class="pre">n</span></tt> to the first (compile time) parameter when
+being batch-compiled, and it still works as before when we run it through the
+interpreter in both batch and interactive mode, too:</p>
 <pre class="literal-block">
 $ pure -i -q hello.pure
 Hello, world!
@@ -3288,9 +3288,10 @@ programs and libraries:</p>
 <pre class="literal-block">
 $ pure -o hello.o -c -x hello.pure 7
 </pre>
-<p>In this case you also need to supply an initialization routine which calls the
-<tt class="docutils literal"><span class="pre">__pure_main__</span></tt> function in hello.o to initialize the compiled module. This
-routine is declared in C/C++ code as follows:</p>
+<p>The .o extension tells the compiler that you want an object file. When linking
+the object module, you also need to supply an initialization routine which
+calls the <tt class="docutils literal"><span class="pre">__pure_main__</span></tt> function in hello.o to initialize the compiled
+module. This routine is declared in C/C++ code as follows:</p>
 <pre class="literal-block">
 extern &quot;C&quot; void __pure_main__(int argc, char** argv);
 </pre>
@@ -3347,22 +3348,25 @@ llvmc -c -x llvm-assembler menagerie.o.ll -o menagerie.o
 Link with: llvm-g++ menagerie.o /usr/local/lib/pure/odbc.so -lpure
 $ llvm-g++ -shared -o menagerie.so menagerie.o /usr/local/lib/pure/odbc.so -lpure
 </pre>
-<p>Note that the listed linkage options are necessary but might not be
-sufficient; <tt class="docutils literal"><span class="pre">pure</span> <span class="pre">-c</span> <span class="pre">-v0100</span></tt> just makes a best guess based on the Pure
-source. On most systems this will be good enough. If it isn't, you can just
-add options to the linker command as needed to pull in additional required
-libraries.</p>
+<p>Note that the listed link options are necessary but might not be sufficient;
+<tt class="docutils literal"><span class="pre">pure</span> <span class="pre">-c</span></tt> just makes a best guess based on the Pure source. On most systems
+this will be good enough, but if it isn't, you can just add options to the
+linker command as needed to pull in additional required libraries.</p>
 <p>As this last example shows, you can also create shared libraries from Pure
-modules (but even then you'll have to supply an intialization routine which
-calls <tt class="docutils literal"><span class="pre">__pure_main__</span></tt> somewhere).</p>
+modules. (Even then you'll have to supply an initialization routine which
+calls <tt class="docutils literal"><span class="pre">__pure_main__</span></tt> somewhere. Once the Pure module is initialized, you
+can employ the Pure runtime API to call Pure functions in the module. See the
+runtime.h header file for details.)</p>
 <p>Last but not least, <tt class="docutils literal"><span class="pre">pure</span> <span class="pre">-c</span></tt> can also generate just plain LLVM assembler
 code:</p>
 <pre class="literal-block">
 pure -c hello.pure -o hello.ll
 </pre>
-<p>In this case you'll have to do the rest of the compilation yourself. This is
-useful, e.g., if you want to employ the LLVM toolchain to apply special source
-code optimizations. Please refer to the <a class="reference" href="http://llvm.org/docs/">LLVM documentation</a> for details.</p>
+<p>Note the .ll extension; this tells the compiler that you want an LLVM
+assembler file. In this case you'll have to have to handle the rest of the
+compilation yourself. This gives you the opportunity, e.g., to employ the LLVM
+toolchain to apply special source code optimizations. Please refer to the
+<a class="reference" href="http://llvm.org/docs/">LLVM documentation</a> for details.</p>
 </div>
 <div class="section">
 <h2><a class="toc-backref" href="#id49" id="the-show-function" name="the-show-function">13.6&nbsp;&nbsp;&nbsp;The __show__ Function</a></h2>

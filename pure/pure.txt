@@ -3027,7 +3027,7 @@ specified, so that the program can also be run interactively::
 Turning the script into an executable works as follows::
 
   $ pure -c hello.pure -o hello
-  ./hello 10
+  $ ./hello 10
   Hello, world!
   [1,2,6,24,120,720,5040,40320,362880,3628800]
 
@@ -3059,9 +3059,9 @@ Our program now looks as follows::
   const n = if argc>1 then sscanf (argv!1) "%d" else 10;
   if compiling then () else main n;
 
-This cool little script "specializes" ``n`` to the first (compile time)
-parameter when being batch-compiled, and it still works as before when we run
-it through the interpreter in both batch and interactive mode, too::
+This script "specializes" ``n`` to the first (compile time) parameter when
+being batch-compiled, and it still works as before when we run it through the
+interpreter in both batch and interactive mode, too::
 
   $ pure -i -q hello.pure
   Hello, world!                                                    
@@ -3091,9 +3091,10 @@ programs and libraries::
 
   $ pure -o hello.o -c -x hello.pure 7
 
-In this case you also need to supply an initialization routine which calls the
-``__pure_main__`` function in hello.o to initialize the compiled module. This
-routine is declared in C/C++ code as follows::
+The .o extension tells the compiler that you want an object file. When linking
+the object module, you also need to supply an initialization routine which
+calls the ``__pure_main__`` function in hello.o to initialize the compiled
+module. This routine is declared in C/C++ code as follows::
 
   extern "C" void __pure_main__(int argc, char** argv);
 
@@ -3153,24 +3154,27 @@ example from Pure's ODBC module::
   Link with: llvm-g++ menagerie.o /usr/local/lib/pure/odbc.so -lpure
   $ llvm-g++ -shared -o menagerie.so menagerie.o /usr/local/lib/pure/odbc.so -lpure
 
-Note that the listed linkage options are necessary but might not be
-sufficient; ``pure -c -v0100`` just makes a best guess based on the Pure
-source. On most systems this will be good enough. If it isn't, you can just
-add options to the linker command as needed to pull in additional required
-libraries.
+Note that the listed link options are necessary but might not be sufficient;
+``pure -c`` just makes a best guess based on the Pure source. On most systems
+this will be good enough, but if it isn't, you can just add options to the
+linker command as needed to pull in additional required libraries.
 
 As this last example shows, you can also create shared libraries from Pure
-modules (but even then you'll have to supply an initialization routine which
-calls ``__pure_main__`` somewhere).
+modules. (Even then you'll have to supply an initialization routine which
+calls ``__pure_main__`` somewhere. Once the Pure module is initialized, you
+can employ the Pure runtime API to call Pure functions in the module. See the
+runtime.h header file for details.)
 
 Last but not least, ``pure -c`` can also generate just plain LLVM assembler
 code::
 
   pure -c hello.pure -o hello.ll
 
-In this case you'll have to do the rest of the compilation yourself. This is
-useful, e.g., if you want to employ the LLVM toolchain to apply special source
-code optimizations. Please refer to the `LLVM documentation`_ for details.
+Note the .ll extension; this tells the compiler that you want an LLVM
+assembler file. In this case you'll have to have to handle the rest of the
+compilation yourself. This gives you the opportunity, e.g., to employ the LLVM
+toolchain to apply special source code optimizations. Please refer to the
+`LLVM documentation`_ for details.
 
 .. _LLVM documentation: http://llvm.org/docs/
 
