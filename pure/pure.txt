@@ -160,17 +160,18 @@ If the -c option is specified, it forces the interpreter to non-interactive
 mode (unless -i is specified as well, which overrides -c). Any scripts
 specified on the command line are then executed as usual, but after execution
 the interpreter takes a snapshot of the program and compiles it to either an
-LLVM assembler (.ll) file or a native executable, depending on the output
-filename specified with -o. If the output filename ends in the .ll extension,
-an LLVM assembler file is created which can then be processed with the LLVM
-toolchain (llvmc, llvm-gcc, etc.). If the output filename is just ``-``, the
-assembler file is written to standard output, which is useful if you want to
-pass the generated code to the LLVM tools in a pipeline. In all other cases
-the interpreter automatically invokes llvmc to compile the program to a native
-executable with the given name. You can also specify additional libraries to
-be linked into the executable with the -l option, and pass extra options to
-llvmc with the PURE_COPTS environment variable. If the output filename is
-omitted, it defaults to ``a.out``.
+LLVM assembler (.ll) file, a native object (.o) file, or a native executable,
+depending on the output filename specified with -o. If the output filename
+ends in the .ll extension, an LLVM assembler file is created which can then be
+processed with the LLVM toolchain (llvmc, llvm-gcc, etc.). If the output
+filename is just ``-``, the assembler file is written to standard output,
+which is useful if you want to pass the generated code to the LLVM tools in a
+pipeline. Otherwise the interpreter automatically invokes llvmc to compile the
+program to either a native object file (if the output filename ends in the .o
+extension) or a native executable with the given name. You can also specify
+additional libraries to be linked into the executable with the -l option, and
+pass extra options to llvmc with the PURE_COPTS environment variable. If the
+output filename is omitted, it defaults to ``a.out`` (``a.exe`` on Windows).
 
 The -c option provides a convenient way to quickly turn a Pure script into a
 standalone executable which can be invoked directly from the shell. One
@@ -182,6 +183,13 @@ library is required on the target system). On the other hand, compiled scripts
 also have some limitations, mostly concerning the use of the built-in ``eval``
 function. Please see `Batch Compilation`_ in the `Caveats and Notes`_ section
 for details.
+
+The -v64 (or -v0100) verbosity option can be used to have the interpreter
+print the commands it executes during compilation, see `Verbosity and
+Debugging Options`_ below. When creating an object file, this also prints the
+suggested linker command (including all the dynamic modules loaded by the
+script, which also have to be linked in to create a working executable), to
+which you only have to add the options describing the desired output file.
 
 Running Interactively
 ---------------------
@@ -220,40 +228,44 @@ the first two levels will be useful for the average Pure programmer; the
 remaining levels are most likely to be used by the Pure interpreter
 developers.
 
-1 (0x1)
+1 (0x1, 001)
     denotes echoing of parsed definitions and expressions.
 
-2 (0x2)
+2 (0x2, 002)
     adds special annotations concerning local bindings (de Bruijn indices,
     subterm paths; this can be helpful to debug tricky variable binding
     issues).
 
-4 (0x4)
+4 (0x4, 004)
     adds descriptions of the matching automata for the left-hand sides of
     equations (you probably want to see this only when working on the guts of
     the interpreter).
 
-8 (0x8)
+8 (0x8, 010)
     dumps the "real" output code (LLVM assembler, which is as close to the
     native machine code for your program as it gets; you definitely don't want
     to see this unless you have to inspect the generated code for bugs or
     performance issues).
 
-16 (0x10)
+16 (0x10, 020)
     adds debugging messages from the bison(1) parser; useful for debugging the
     parser.
 
-32 (0x20)
+32 (0x20, 040)
     adds debugging messages from the flex(1) lexer; useful for debugging the
     lexer.
 
-64 (0x40)
+64 (0x40, 0100)
     turns on verbose batch compilation; this is useful if you want to see
     exactly which commands get executed during batch compilation (-c).
 
 These values can be or'ed together, and, for convenience, can be specified in
-either decimal or hexadecimal. Thus 0xff always gives you full debugging
-output (which isn't likely to be used by anyone but the Pure developers).
+either decimal, hexadecimal or octal. Thus 0xff or 0777 always gives you full
+debugging output (which isn't likely to be used by anyone but the Pure
+developers). Some useful flag combinations for experts are (in octal) 007
+(echo definitions along with de Bruijn indices and matching automata), 011
+(definitions and assembler code) and 021 (parser debugging output along with
+parsed definitions).
 
 Note that the -v option is only applied after the prelude has been loaded. If
 you want to debug the prelude, use the -n option and specify the prelude.pure
@@ -2983,41 +2995,105 @@ being executed.
 
 .. _partial evaluation: http://en.wikipedia.org/wiki/Partial_evaluation
 
-The Pure runtime provides a special system variable ``compiling`` which holds
-a truth value indicating whether the program is actually running under the
-auspices of the batch compiler, so that it can adjust accordingly. For
-instance::
+For the sake of a concrete example, consider the following little script::
 
-  if compiling then puts "Ok, compiling now." else main argv;
+  using system;
+
+  fact n = if n>0 then n*fact (n-1) else 1;
+
+  main n = do puts ["Hello, world!", str (map fact (1..n))];
+
+  if argc<=1 then () else main (sscanf (argv!1) "%d");
+
+When invoked from the command line, with the number ``n`` as the first
+parameter, this program will print the string ``"Hello, world!"`` and the list
+of the first ``n`` factorials::
+
+  $ pure -x hello.pure 10
+  Hello, world!
+  [1,2,6,24,120,720,5040,40320,362880,3628800]
+
+Note the condition on ``argc`` in the last line of the script. This prevents
+the program from producing an exception if no command line parameters are
+specified, so that the program can also be run interactively::
+
+  $ pure -i -q hello.pure
+  > main 10;
+  Hello, world!
+  [1,2,6,24,120,720,5040,40320,362880,3628800]
+  ()
+  > quit
+
+Turning the script into an executable works as follows::
+
+  $ pure -c hello.pure -o hello
+  ./hello 10
+  Hello, world!
+  [1,2,6,24,120,720,5040,40320,362880,3628800]
+
+Next suppose that we'd like to supply the value ``n`` at *compile* rather than
+run time. To these ends we want to turn the value passed to the ``main``
+function into a compile time constant, which can be done as follows::
+
+  const n = if argc>1 then sscanf (argv!1) "%d" else 10;
+
+(Note that we provide ``10`` as a default if ``n`` isn't specified on the
+command line.)
+
+Moreover, we want to skip the execution of ``main`` at compile time. The Pure
+runtime provides a special system variable ``compiling`` which holds a truth
+value indicating whether the program is actually running under the auspices of
+the batch compiler, so that it can adjust accordingly. In our example, the
+evaluation of ``main`` becomes::
+
+  if compiling then () else main n;
+
+Our program now looks as follows::
+
+  using system;
+
+  fact n = if n>0 then n*fact (n-1) else 1;
+
+  main n = do puts ["Hello, world!", str (map fact (1..n))];
+
+  const n = if argc>1 then sscanf (argv!1) "%d" else 10;
+  if compiling then () else main n;
+
+This cool little script "specializes" ``n`` to the first (compile time)
+parameter when being batch-compiled, and it still works as before when we run
+it through the interpreter in both batch and interactive mode, too::
+
+  $ pure -i -q hello.pure
+  Hello, world!                                                    
+  [1,2,6,24,120,720,5040,40320,362880,3628800]                     
+  > main 5;                                                        
+  Hello, world!                                                    
+  [1,2,6,24,120]
+  ()
+  > quit
+
+  $ pure -x hello.pure 7
+  Hello, world!
+  [1,2,6,24,120,720,5040]
+
+  $ pure -o hello -c -x hello.pure 7
+  $ ./hello
+  Hello, world!
+  [1,2,6,24,120,720,5040]
+
+You'll rarely need an elaborate setup like this, most of the time something
+like our simple first example will do the trick. But, as you've seen, Pure can
+easily do it.
 
 Note that while the batch compiler generates native executables by default, it
-is also possible to have it generate just the LLVM assembler code instead. To
-these ends, you can invoke the interpreter as follows::
+can just as well create object files which can be linked into other C/C++
+programs and libraries::
 
-  pure -c foo.pure -o foo.ll
+  $ pure -o hello.o -c -x hello.pure 7
 
-Note the .ll extension; this indicates that we want an LLVM assembler
-file. The resulting assembler program can then be processed with the LLVM
-toolchain to add any special optimization or linker options that you might
-need, and/or to generate different kinds of binary modules. For instance, we
-can use llvmc to create an object (.o) file as follows::
-
-  llvmc -c foo.ll -o foo.o
-
-You can also pipe the output from ``pure -c`` directly into the LLVM tools by
-using ``-`` as the output file name, e.g.::
-
-  pure -c foo.pure -o- | llvmc -c -x llvm-assembler - -o foo.o
-
-(This will only work if the script itself doesn't produce any output during
-compilation, or produces only LLVM assembler output to be included in the
-compiled program.)
-
-Either way, the resulting object file can then be turned into an executable or
-a shared library using either llcm-gcc or whatever C compiler you
-prefer. Note, however, that you also need to supply an initialization routine
-which calls the ``__pure_main__`` function in foo.ll to initialize the
-compiled module. This routine is to be declared in C/C++ code as follows::
+In this case you also need to supply an initialization routine which calls the
+``__pure_main__`` function in hello.o to initialize the compiled module. This
+routine is declared in C/C++ code as follows::
 
   extern "C" void __pure_main__(int argc, char** argv);
 
@@ -3031,8 +3107,7 @@ the Pure program, and to invoke all "initialization code" (variable
 definitions and toplevel expressions) of the program itself.
 
 A minimal C ``main`` function which does the job of initializing the Pure
-module looks as follows (see also the pure_main.c file distributed with
-Pure)::
+module looks as follows::
 
   extern void __pure_main__(int argc, char** argv);
 
@@ -3043,28 +3118,61 @@ Pure)::
   }
 
 If you link the ``main`` routine with the Pure module, don't forget to also
-pull in the Pure runtime and the standard C++ library. (If your script loads
-dynamic libraries then you'll also have to link with those; *all* external
-references have to be resolved at compile time.) E.g.::
+pull in the Pure runtime library. Assuming that the above C code is in
+pure_main.c::
 
-  gcc -o foo foo.o pure_main.c -lpure -lstdc++
+  $ gcc -c pure_main.c -o pure_main.o
+  $ g++ -o hello hello.o pure_main.o -lpure
+  $ ./hello
+  Hello, world!
+  [1,2,6,24,120,720,5040]
+
+(The C++ compiler is used as the linker here so that the standard C++ library
+gets linked in, too. This is necessary because Pure's runtime library is
+actually written in C++.)
 
 In fact, this is pretty much what ``pure -c`` actually does for you when
-creating an executable with ``pure -c foo.pure -o foo``, except that it
-executes all of this in a single run of llvmc (and llvmc in turn uses llvm-gcc
-to do the linking instead of gcc). It will also figure out which dynamic
-modules have to be linked in to resolve all references to libraries in ``using
-"lib:..."`` clauses. To see exactly which files get linked in and which
-command is executed, you can add the verbose compilation option (-v64) to the
-compilation command. The output of ``pure -c -v64`` is often helpful as a
-starting point for a more elaborate manual build procedure. (Use
-``PURE_COPTS=-v pure -c -v64`` if you also want to see which commands get
-executed by llvmc.)
+creating an executable, except that it uses llvm-g++ to do the linking.
 
-The process to create shared libraries is similar to the above, except that
-there's no ``main`` function in this case. You still need to call
-``__pure_main__`` somewhere in the initialization code of the library or your
-C program, though.
+If your script loads dynamic libraries (``using "lib:...";``) then you'll also
+have to link with those; *all* external references have to be resolved at
+compile time. This is taken care of automagically when creating
+executables. Otherwise it is a good idea to run ``pure -c`` with the
+``-v0100`` verbosity option so that it prints the libraries to be linked (in
+addition to the command used to invoke llvmc)::
+
+  $ pure -v0100 -c hello.pure -o hello.o
+  llvmc -c -x llvm-assembler hello.o.ll -o hello.o
+  Link with: llvm-g++ hello.o -lpure
+
+Well, we already knew that, so let's consider a slightly more interesting
+example from Pure's ODBC module::
+
+  $ pure -v0100 -c pure-odbc/examples/menagerie.pure -o menagerie.o
+  llvmc -c -x llvm-assembler menagerie.o.ll -o menagerie.o
+  Link with: llvm-g++ menagerie.o /usr/local/lib/pure/odbc.so -lpure
+  $ llvm-g++ -shared -o menagerie.so menagerie.o /usr/local/lib/pure/odbc.so -lpure
+
+Note that the listed linkage options are necessary but might not be
+sufficient; ``pure -c -v0100`` just makes a best guess based on the Pure
+source. On most systems this will be good enough. If it isn't, you can just
+add options to the linker command as needed to pull in additional required
+libraries.
+
+As this last example shows, you can also create shared libraries from Pure
+modules (but even then you'll have to supply an initialization routine which
+calls ``__pure_main__`` somewhere).
+
+Last but not least, ``pure -c`` can also generate just plain LLVM assembler
+code::
+
+  pure -c hello.pure -o hello.ll
+
+In this case you'll have to do the rest of the compilation yourself. This is
+useful, e.g., if you want to employ the LLVM toolchain to apply special source
+code optimizations. Please refer to the `LLVM documentation`_ for details.
+
+.. _LLVM documentation: http://llvm.org/docs/
 
 The __show__ Function
 ---------------------
