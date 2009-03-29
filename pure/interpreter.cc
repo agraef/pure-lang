@@ -3637,31 +3637,30 @@ void interpreter::compiler(string out, list<string> libnames)
     for (list<string>::iterator it = libnames.begin();
 	 it != libnames.end(); ++it)
       libs += " -l"+quote(*it);
+    /* To deal with some platform-specific quirks (Windows, specifically), we
+       only call llvmc to create the object file and do the linking (if
+       requested) manually. */
+    string obj = (ext==".o")?out:out+".o";
+    string cmd = "llvmc "+(pure_copts?string(pure_copts)+" ":string())+
+      "-c -x llvm-assembler "+quote(target)+" -o "+quote(obj);
+    if (vflag)
+      std::cerr << cmd << endl;
+    system(cmd.c_str());
+    string linkopts = quote(obj)+libs+
 #ifdef __MINGW32__
-    /* llvmc generates an invalid link command on Windows, and we also have to
-       add some extra libraries. Therefore we only call llvmc to create the
-       object file and do the linking manually. */
-    string obj = out+".o";
-    string cmd = "llvmc "+(pure_copts?string(pure_copts)+" ":string())+
-      "-c -x llvm-assembler "+
-      quote(target)+" -o "+quote(obj);
-    if (vflag)
-      std::cerr << cmd << endl;
-    system(cmd.c_str());
-    cmd = "llvm-gcc -o "+quote(out)+" "+quote(libdir)+"pure_main.o "+
-      quote(obj)+libs+" -lregex -lglob -lreadline -lpure -lstdc++";
-    if (vflag)
-      std::cerr << cmd << endl;
-    system(cmd.c_str());
-    unlink(obj.c_str());
-#else
-    string cmd = "llvmc "+(pure_copts?string(pure_copts)+" ":string())+
-      "-x llvm-assembler "+quote(target)+" -o "+quote(out)+" -x object-code "+
-      quote(libdir)+"pure_main.o"+libs+" -lpure -lstdc++";
-    if (vflag)
-      std::cerr << cmd << endl;
-    system(cmd.c_str());
+      /* We need to link some extra libraries on Windows. */
+      " -lregex -lglob -lreadline"+
 #endif
+      " -lpure";
+    if (ext != ".o") {
+      cmd = "llvm-g++ -o "+quote(out)+" "+
+	quote(libdir)+"pure_main.o "+linkopts;
+      if (vflag)
+	std::cerr << cmd << endl;
+      system(cmd.c_str());
+      unlink(obj.c_str());
+    } else if (vflag)
+      std::cerr << "Link with: llvm-g++ " << linkopts << endl;
     unlink(target.c_str());
   }
 }
