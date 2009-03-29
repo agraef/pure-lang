@@ -4448,6 +4448,8 @@ const char *interpreter::type_name(const Type *type)
     return "int*";
   else if (type == PointerType::get(Type::Int64Ty, 0))
     return "long*";
+  else if (type == PointerType::get(Type::FloatTy, 0))
+    return "float*";
   else if (type == PointerType::get(Type::DoubleTy, 0))
     return "double*";
   else if (type == ExprPtrTy)
