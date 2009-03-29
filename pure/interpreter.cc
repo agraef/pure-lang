@@ -3626,9 +3626,14 @@ void interpreter::compiler(string out, list<string> libnames)
     bool vflag = (verbose&verbosity::compiler) != 0;
     char *pure_copts = getenv("PURE_COPTS");
     string libs;
+    set<string> libset;
     for (list<string>::iterator it = loaded_libs.begin();
-	 it != loaded_libs.end(); ++it)
-      libs += " "+quote(*it);
+	 it != loaded_libs.end(); ++it) {
+      if (libset.find(*it) == libset.end()) {
+	libs += " "+quote(*it);
+	libset.insert(*it);
+      }
+    }
     for (list<string>::iterator it = libnames.begin();
 	 it != libnames.end(); ++it)
       libs += " -l"+quote(*it);
