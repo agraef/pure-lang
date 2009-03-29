@@ -1,5 +1,5 @@
 
-** Pure 0.21 2009-03-28
+** Pure 0.21 2009-03-29
 
 This release sports some changes in the build system to make things easier for
 package maintainers, and the addition of a batch compiler which allows you to
@@ -31,34 +31,42 @@ Batch Compiler
 --------------
 
 The interpreter now offers an experimental batch compilation option -c to
-translate scripts to native executables. For instance, 'pure -c foo.pure -o
-foo' creates the executable 'foo' from the script 'foo.pure', after executing
-the script as usual. This requires the *full* LLVM toolchain (including llvmc,
+translate scripts to native executables or object files. For instance,
+
+	pure -c foo.pure -o foo
+
+creates the executable 'foo' from the script 'foo.pure', after executing the
+script as usual. This requires the *full* LLVM toolchain (including llvmc,
 llvm-gcc, etc.) to work, see the INSTALL file which now also has instructions
 on how to build llvm-gcc.
 
-You can also use a command like 'pure -c foo.pure -o foo.ll' to create an LLVM
-assembler (.ll) file instead of an executable, which can then be processed
-with the LLVM tools, e.g., to apply further optimizations and/or produce a
-binary object module which can be linked into other C/C++ programs and
-libraries.
+You can also use a command like 'pure -c foo.pure -o foo.o' to create a native
+object file which can then be linked into other C/C++ programs or libraries.
+
+For utmost flexibility, 'pure -c foo.pure -o foo.ll' allows you to create an
+LLVM assembler (.ll) file. This can then be handed over to the LLVM tools,
+e.g., to apply special kinds of program transformations and optimizations,
+before finally compiling and linking the native executable or library.
 
 Note that even when batch-compiling, the compiled program is executed as
-usual. This is necessary because parts of a Pure program (in particular,
-'const' definitions, and thereby pretty much anything else) may depend on
-previous computations performed while the program is being compiled. There's a
-new system variable 'compiling' which gives the program an indication whether
-it is running under the auspices of the batch compiler, so that it can adjust
-accordingly.
+usual. This is necessary because some parts of a Pure program (in particular,
+'eval' as well as 'const' definitions) may be used to modify the program at
+compile time, possibly depending on previous evaluations of other expressions.
+There's a new system variable 'compiling' which gives the program an
+indication whether it is running under the auspices of the batch compiler, so
+that it can adjust accordingly. This also enables you to play with advanced
+program optimization techniques such as partial evaluation
+(http://en.wikipedia.org/wiki/Partial_evaluation).
 
-The compiled executable is essentially a static snapshot of your program which
-is executed on the "bare metal", without a hosting interpreter. Only a minimal
-runtime system is provided. This considerably reduces startup times and makes
-it possible to deploy the executable (along with the runtime library) on
-systems without a Pure installation, but also implies some limitations, mostly
+Also note that the compiled executable is essentially a static snapshot of
+your program at the end of the compile time execution, which is then executed
+on the "bare metal", without a hosting interpreter. Only a minimal runtime
+system is provided. This considerably reduces startup times and makes it
+possible to deploy the executable (along with the runtime library) on systems
+without a Pure installation, but also implies some limitations, mostly
 concerning the use of the built-in 'eval' function.
 
-Please see the manual for details. In particular, you should read
+Please see the manual for details. In particular, have a look at
 pure.html#compiling-scripts and pure.html#batch-compilation to get started
 with this useful new feature.
 
