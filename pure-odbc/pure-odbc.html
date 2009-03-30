@@ -3,17 +3,15 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<meta name="generator" content="Docutils 0.4: http://docutils.sourceforge.net/" />
+<meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>Pure-ODBC - ODBC interface for the Pure programming language</title>
 <meta name="authors" content="Albert Graef &lt;Dr.Graef&#64;t-online.de&gt;  Jiri Spitz &lt;jiri.spitz&#64;bluetone.cz&gt;" />
-<meta name="date" content="2009-03-12" />
+<meta name="date" content="2009-03-30" />
 <style type="text/css">
 
 /*
-:Author: David Goodger
-:Contact: goodger@users.sourceforge.net
-:Date: $Date: 2005-12-18 01:56:14 +0100 (Sun, 18 Dec 2005) $
-:Revision: $Revision: 4224 $
+:Author: David Goodger (goodger@python.org)
+:Id: $Id: html4css1.css 5631 2008-08-24 13:01:23Z goodger $
 :Copyright: This stylesheet has been placed in the public domain.
 
 Default cascading style sheet for the HTML output of Docutils.
@@ -119,7 +117,7 @@ div.line-block div.line-block {
   margin-left: 1.5em }
 
 div.sidebar {
-  margin-left: 1em ;
+  margin: 0 0 0.5em 1em ;
   border: medium outset ;
   padding: 1em ;
   background-color: #ffffee ;
@@ -220,13 +218,11 @@ p.topic-title {
 pre.address {
   margin-bottom: 0 ;
   margin-top: 0 ;
-  font-family: serif ;
-  font-size: 100% }
+  font: inherit }
 
 pre.literal-block, pre.doctest-block {
   margin-left: 2em ;
-  margin-right: 2em ;
-  background-color: #eeeeee }
+  margin-right: 2em }
 
 span.classifier {
   font-family: sans-serif ;
@@ -283,9 +279,6 @@ h1 tt.docutils, h2 tt.docutils, h3 tt.docutils,
 h4 tt.docutils, h5 tt.docutils, h6 tt.docutils {
   font-size: 100% }
 
-tt.docutils {
-  background-color: #eeeeee }
-
 ul.auto-toc {
   list-style-type: none }
 
@@ -299,10 +292,10 @@ ul.auto-toc {
 <col class="docinfo-content" />
 <tbody valign="top">
 <tr><th class="docinfo-name">Authors:</th>
-<td>Albert Graef &lt;<a class="reference" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;
-<br />Jiri Spitz &lt;<a class="reference" href="mailto:jiri.spitz&#64;bluetone.cz">jiri.spitz&#64;bluetone.cz</a>&gt;</td></tr>
+<td>Albert Graef &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;
+<br />Jiri Spitz &lt;<a class="reference external" href="mailto:jiri.spitz&#64;bluetone.cz">jiri.spitz&#64;bluetone.cz</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2009-03-12</td></tr>
+<td>2009-03-30</td></tr>
 </tbody>
 </table>
 <p>This module provides a simple ODBC interface for the Pure programming
@@ -310,11 +303,11 @@ language, which lets you access a large variety of open source and commercial
 database systems from Pure. ODBC a.k.a. &quot;Open Database Connectivity&quot; was
 originally developed by Microsoft for Windows, but is now available on many
 different platforms, and two open source implementations exist for Unix-like
-systems: iODBC (<a class="reference" href="http://www.iodbc.org">http://www.iodbc.org</a>) and unixODBC (<a class="reference" href="http://www.unixodbc.org">http://www.unixodbc.org</a>).</p>
+systems: iODBC (<a class="reference external" href="http://www.iodbc.org">http://www.iodbc.org</a>) and unixODBC (<a class="reference external" href="http://www.unixodbc.org">http://www.unixodbc.org</a>).</p>
 <p>ODBC has become the industry standard for portable and vendor independent
 database access. Most modern relational databases provide an ODBC interface so
 that they can be used with this module. This includes the popular open source
-DBMSs MySQL (<a class="reference" href="http://www.mysql.com">http://www.mysql.com</a>) and PostgreSQL (<a class="reference" href="http://www.postgresql.org">http://www.postgresql.org</a>).
+DBMSs MySQL (<a class="reference external" href="http://www.mysql.com">http://www.mysql.com</a>) and PostgreSQL (<a class="reference external" href="http://www.postgresql.org">http://www.postgresql.org</a>).
 The module provides the necessary operations to connect to an ODBC data source
 and retrieve or modify data using SQL statements.</p>
 <p>To make this module work, you must have an ODBC installation on your system,
@@ -325,26 +318,26 @@ control panel. For iODBC and unixODBC you can either edit the corresponding
 configuration files (/etc/odbc.ini and/or ~/.odbc.ini) by hand, or use one of
 the available graphical setup tools. More information about the setup process
 can be found on the iODBC and unixODBC websites.</p>
-<div class="contents topic">
-<p class="topic-title first"><a id="contents" name="contents">Contents</a></p>
+<div class="contents topic" id="contents">
+<p class="topic-title first">Contents</p>
 <ul class="auto-toc simple">
-<li><a class="reference" href="#installation" id="id1" name="id1">1&nbsp;&nbsp;&nbsp;Installation</a></li>
-<li><a class="reference" href="#opening-and-closing-a-data-source" id="id2" name="id2">2&nbsp;&nbsp;&nbsp;Opening and Closing a Data Source</a></li>
-<li><a class="reference" href="#getting-information-about-a-data-source" id="id3" name="id3">3&nbsp;&nbsp;&nbsp;Getting Information about a Data Source</a></li>
-<li><a class="reference" href="#executing-sql-queries" id="id4" name="id4">4&nbsp;&nbsp;&nbsp;Executing SQL Queries</a></li>
-<li><a class="reference" href="#low-level-operations" id="id5" name="id5">5&nbsp;&nbsp;&nbsp;Low-Level Operations</a></li>
-<li><a class="reference" href="#lazy-processing" id="id6" name="id6">6&nbsp;&nbsp;&nbsp;Lazy Processing</a></li>
-<li><a class="reference" href="#error-handling" id="id7" name="id7">7&nbsp;&nbsp;&nbsp;Error Handling</a></li>
-<li><a class="reference" href="#caveats-and-bugs" id="id8" name="id8">8&nbsp;&nbsp;&nbsp;Caveats and Bugs</a></li>
-<li><a class="reference" href="#further-information-and-examples" id="id9" name="id9">9&nbsp;&nbsp;&nbsp;Further Information and Examples</a></li>
+<li><a class="reference internal" href="#installation" id="id1">1&nbsp;&nbsp;&nbsp;Installation</a></li>
+<li><a class="reference internal" href="#opening-and-closing-a-data-source" id="id2">2&nbsp;&nbsp;&nbsp;Opening and Closing a Data Source</a></li>
+<li><a class="reference internal" href="#getting-information-about-a-data-source" id="id3">3&nbsp;&nbsp;&nbsp;Getting Information about a Data Source</a></li>
+<li><a class="reference internal" href="#executing-sql-queries" id="id4">4&nbsp;&nbsp;&nbsp;Executing SQL Queries</a></li>
+<li><a class="reference internal" href="#low-level-operations" id="id5">5&nbsp;&nbsp;&nbsp;Low-Level Operations</a></li>
+<li><a class="reference internal" href="#lazy-processing" id="id6">6&nbsp;&nbsp;&nbsp;Lazy Processing</a></li>
+<li><a class="reference internal" href="#error-handling" id="id7">7&nbsp;&nbsp;&nbsp;Error Handling</a></li>
+<li><a class="reference internal" href="#caveats-and-bugs" id="id8">8&nbsp;&nbsp;&nbsp;Caveats and Bugs</a></li>
+<li><a class="reference internal" href="#further-information-and-examples" id="id9">9&nbsp;&nbsp;&nbsp;Further Information and Examples</a></li>
 </ul>
 </div>
 <!-- Note: If you're wondering about the funny formatting, this README
 simultaneously serves to generate the documentation for this module
 in a variety of formats, using the docutils text formatting system
 (http://docutils.sourceforge.net/). -->
-<div class="section">
-<h1><a class="toc-backref" href="#id1" id="installation" name="installation">1&nbsp;&nbsp;&nbsp;Installation</a></h1>
+<div class="section" id="installation">
+<h1><a class="toc-backref" href="#id1">1&nbsp;&nbsp;&nbsp;Installation</a></h1>
 <p>Run <tt class="docutils literal"><span class="pre">make</span></tt> to compile the module and <tt class="docutils literal"><span class="pre">make</span> <span class="pre">install</span></tt> (as root) to install
 it in the Pure library directory. This requires GNU make, and of course you
 need to have Pure installed. The only other dependency is the GNU
@@ -357,8 +350,8 @@ bit systems. The variable <tt class="docutils literal"><span class="pre">ODBCLIB
 with. The default value is <tt class="docutils literal"><span class="pre">ODBCLIB=-lodbc</span></tt>. Please see the Makefile for
 details.</p>
 </div>
-<div class="section">
-<h1><a class="toc-backref" href="#id2" id="opening-and-closing-a-data-source" name="opening-and-closing-a-data-source">2&nbsp;&nbsp;&nbsp;Opening and Closing a Data Source</a></h1>
+<div class="section" id="opening-and-closing-a-data-source">
+<h1><a class="toc-backref" href="#id2">2&nbsp;&nbsp;&nbsp;Opening and Closing a Data Source</a></h1>
 <p>To open an ODBC connection, you have to specify a &quot;connect string&quot; which names
 the data source to be used with the <tt class="docutils literal"><span class="pre">odbc::connect</span></tt> function. A list of
 available data sources can be obtained with the <tt class="docutils literal"><span class="pre">odbc::sources</span></tt>
@@ -430,9 +423,9 @@ driver you can connect to a database file test.mdb as follows:</p>
 <pre class="literal-block">
 &gt; odbc::connect &quot;DRIVER=Microsoft Access Driver (*.mdb);DBQ=test.mdb&quot;;
 </pre>
-<p>SQLite (<a class="reference" href="http://www.sqlite.org">http://www.sqlite.org</a>) provides another way to get a database up and
+<p>SQLite (<a class="reference external" href="http://www.sqlite.org">http://www.sqlite.org</a>) provides another way to get a database up and
 running quickly. For that you need the SQLite library and the SQLite ODBC
-driver available at <a class="reference" href="http://www.ch-werner.de/sqliteodbc">http://www.ch-werner.de/sqliteodbc</a>. Then you can open an
+driver available at <a class="reference external" href="http://www.ch-werner.de/sqliteodbc">http://www.ch-werner.de/sqliteodbc</a>. Then you can open an
 SQLite database as follows (the database file is named with the <tt class="docutils literal"><span class="pre">DATABASE</span></tt>
 attribute and is created automatically if it doesn't exist):</p>
 <pre class="literal-block">
@@ -446,8 +439,8 @@ you're ready to go immediately. This makes it a very convenient alternative if
 you don't want to go through the tedium of setting up one of the big hulking
 DBMS.</p>
 </div>
-<div class="section">
-<h1><a class="toc-backref" href="#id3" id="getting-information-about-a-data-source" name="getting-information-about-a-data-source">3&nbsp;&nbsp;&nbsp;Getting Information about a Data Source</a></h1>
+<div class="section" id="getting-information-about-a-data-source">
+<h1><a class="toc-backref" href="#id3">3&nbsp;&nbsp;&nbsp;Getting Information about a Data Source</a></h1>
 <p>You can get general information about an open database connection with the
 <tt class="docutils literal"><span class="pre">odbc::info</span></tt> function. This function returns a tuple of strings with the
 following items (see the description of the SQLGetInfo() function in the ODBC
@@ -511,8 +504,8 @@ the corresponding ODBC calls. Also note that while this information is also
 available through special system catalogs in most databases, the details of
 accessing these vary a lot among implementations.</p>
 </div>
-<div class="section">
-<h1><a class="toc-backref" href="#id4" id="executing-sql-queries" name="executing-sql-queries">4&nbsp;&nbsp;&nbsp;Executing SQL Queries</a></h1>
+<div class="section" id="executing-sql-queries">
+<h1><a class="toc-backref" href="#id4">4&nbsp;&nbsp;&nbsp;Executing SQL Queries</a></h1>
 <p>As soon as a database connection has been opened, you can execute SQL queries
 on it using the <tt class="docutils literal"><span class="pre">sql</span></tt> function which executes a query and collects the
 results in a list. Note that SQL queries generally come in two different
@@ -613,8 +606,8 @@ with all the result sets and/or row counts of the query.</p>
 </pre>
 <p>This will return a list with two result sets, one for each query.</p>
 </div>
-<div class="section">
-<h1><a class="toc-backref" href="#id5" id="low-level-operations" name="low-level-operations">5&nbsp;&nbsp;&nbsp;Low-Level Operations</a></h1>
+<div class="section" id="low-level-operations">
+<h1><a class="toc-backref" href="#id5">5&nbsp;&nbsp;&nbsp;Low-Level Operations</a></h1>
 <p>The <tt class="docutils literal"><span class="pre">sql</span></tt> and <tt class="docutils literal"><span class="pre">msql</span></tt> operations are in fact just ordinary Pure functions
 which are implemented in terms of the low-level operations <tt class="docutils literal"><span class="pre">sql_exec</span></tt>,
 <tt class="docutils literal"><span class="pre">sql_fetch</span></tt>, <tt class="docutils literal"><span class="pre">sql_more</span></tt> and <tt class="docutils literal"><span class="pre">sql_close</span></tt>. You can also invoke these
@@ -669,11 +662,11 @@ section.) Using the low-level operations you can also build your own
 specialized query engines; take the definitions of <tt class="docutils literal"><span class="pre">sql</span></tt> or <tt class="docutils literal"><span class="pre">msql</span></tt> as a
 start and change them according to your needs.</p>
 </div>
-<div class="section">
-<h1><a class="toc-backref" href="#id6" id="lazy-processing" name="lazy-processing">6&nbsp;&nbsp;&nbsp;Lazy Processing</a></h1>
+<div class="section" id="lazy-processing">
+<h1><a class="toc-backref" href="#id6">6&nbsp;&nbsp;&nbsp;Lazy Processing</a></h1>
 <p>As an experimental feature, the odbc module also provides two operations
 <tt class="docutils literal"><span class="pre">odbc::lsql</span></tt> and <tt class="docutils literal"><span class="pre">odbc::lmsql</span></tt> which work like <tt class="docutils literal"><span class="pre">odbc::sql</span></tt> and
-<tt class="docutils literal"><span class="pre">odbc::msql</span></tt> (see <a class="reference" href="#executing-sql-queries">Executing SQL Queries</a> above), but return lazy lists
+<tt class="docutils literal"><span class="pre">odbc::msql</span></tt> (see <a class="reference internal" href="#executing-sql-queries">Executing SQL Queries</a> above), but return lazy lists
 (streams) instead. This offers the convenience of a list-based representation
 without the overhead of keeping entire result sets in memory, which can be
 prohibitive when working with large amounts of data.</p>
@@ -727,8 +720,8 @@ per database connection at any time. However, as with the lowlevel operations
 it is possible to do several lazy queries simultaneously if you assign them to
 different database connections.</p>
 </div>
-<div class="section">
-<h1><a class="toc-backref" href="#id7" id="error-handling" name="error-handling">7&nbsp;&nbsp;&nbsp;Error Handling</a></h1>
+<div class="section" id="error-handling">
+<h1><a class="toc-backref" href="#id7">7&nbsp;&nbsp;&nbsp;Error Handling</a></h1>
 <p>When one of the above operations fails because the SQL server reports an
 error, an error term of the form <tt class="docutils literal"><span class="pre">odbc::error</span> <span class="pre">msg</span> <span class="pre">state</span></tt> will be returned,
 which specifies an error message and the corresponding SQL state (i.e., error
@@ -754,8 +747,8 @@ interpreted as a legal return value, such as an integer or a nonempty
 tuple. It is usually safe to have <tt class="docutils literal"><span class="pre">odbc::error</span></tt> return an empty tuple or
 throw an exception, but other types of return values should be avoided.</p>
 </div>
-<div class="section">
-<h1><a class="toc-backref" href="#id8" id="caveats-and-bugs" name="caveats-and-bugs">8&nbsp;&nbsp;&nbsp;Caveats and Bugs</a></h1>
+<div class="section" id="caveats-and-bugs">
+<h1><a class="toc-backref" href="#id8">8&nbsp;&nbsp;&nbsp;Caveats and Bugs</a></h1>
 <p>Be warned that multiple result sets are not supported by all databases. I also
 found that some ODBC drivers do not properly implement this feature, even
 though the database supports it. So you better stay away from this if you want
@@ -767,8 +760,8 @@ there might be a loss of precision in extreme cases. If this is a problem you
 should explicitly convert these values to strings in your query, which can be
 done using the SQL CAST function, as in <tt class="docutils literal"><span class="pre">select</span> <span class="pre">cast(1234.56</span> <span class="pre">as</span> <span class="pre">char)</span></tt>.</p>
 </div>
-<div class="section">
-<h1><a class="toc-backref" href="#id9" id="further-information-and-examples" name="further-information-and-examples">9&nbsp;&nbsp;&nbsp;Further Information and Examples</a></h1>
+<div class="section" id="further-information-and-examples">
+<h1><a class="toc-backref" href="#id9">9&nbsp;&nbsp;&nbsp;Further Information and Examples</a></h1>
 <p>For further details about the operations provided by this module please see
 the odbc.pure file. A sample script illustrating the usage of the module can
 be found in the examples directory.</p>
