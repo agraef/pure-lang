@@ -72,6 +72,7 @@ pure-csv.tex: README
 
 pure-csv.pdf: README
 	pdflatex $<
+	pdflatex $<
 	rm -r *.aux *.log *.out
 
 install:

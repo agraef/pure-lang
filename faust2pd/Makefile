@@ -118,4 +118,5 @@ $(target).txt: README $(sources)
 
 %.pdf: %.tex
 	pdflatex $<
+	pdflatex $<
 	rm -f *.aux *.log *.out

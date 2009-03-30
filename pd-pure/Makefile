@@ -97,6 +97,7 @@ pd-pure.tex: README
 
 pd-pure.pdf: pd-pure.tex
 	pdflatex $<
+	pdflatex $<
 	rm -f *.aux *.log *.out
 
 install:

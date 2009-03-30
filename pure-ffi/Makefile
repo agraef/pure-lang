@@ -74,6 +74,7 @@ pure-ffi.tex: README
 
 pure-ffi.pdf: pure-ffi.tex
 	pdflatex $<
+	pdflatex $<
 	rm -f *.aux *.log *.out
 
 install:

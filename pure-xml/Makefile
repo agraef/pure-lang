@@ -111,4 +111,5 @@ pdf: $(target).pdf
 
 %.pdf: %.tex
 	pdflatex $<
+	pdflatex $<
 	rm -f *.aux *.log *.out

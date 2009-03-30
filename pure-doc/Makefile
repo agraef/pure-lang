@@ -73,4 +73,5 @@ $(target).tex: README
 
 $(target).pdf: $(target).tex
 	pdflatex $<
+	pdflatex $<
 	rm -f *.aux *.log *.out

@@ -76,6 +76,7 @@ pure-odbc.tex: README
 
 pure-odbc.pdf: pure-odbc.tex
 	pdflatex $<
+	pdflatex $<
 	rm -f *.aux *.log *.out
 
 install:
