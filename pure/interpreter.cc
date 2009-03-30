@@ -123,7 +123,9 @@ void interpreter::init()
   // void* apart.)
   {
     std::vector<const Type*> elts;
-    VoidPtrTy = PointerType::get(StructType::get(elts), 0);
+    Type *VoidTy = StructType::get(elts);
+    module->addTypeName("void", VoidTy);
+    VoidPtrTy = PointerType::get(VoidTy, 0);
   }
 
   // Char pointer type.
