@@ -317,7 +317,7 @@ symbol& symtable::checksym(const char *s, bool priv)
 
 symbol& symtable::sym(int32_t f)
 {
-  assert(f > 0 && (uint32_t)f <= fno);
+  assert(f > 0 && f <= fno);
   return *rtab[f];
 }
 
