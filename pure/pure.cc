@@ -59,10 +59,10 @@ Type 'help' in the interpreter for more help.\n"
 #define LICENSE "This program is free software distributed under the GNU Public License\n(GPL V3 or later). Type 'help copying' for details.\n"
 
 static const char *commands[] = {
-  "cd", "clear", "const", "def", "dump", "extern", "help", "infix", "infixl",
-  "infixr", "let", "ls", "namespace", "nullary", "override", "postfix",
-  "prefix", "private", "public", "pwd", "quit", "run", "save", "show", "stats",
-  "underride", "using", 0
+  "break", "cd", "clear", "const", "def", "del", "dump", "extern", "help",
+  "infix", "infixl", "infixr", "let", "ls", "namespace", "nullary",
+  "override", "postfix", "prefix", "private", "public", "pwd", "quit", "run",
+  "save", "show", "stats", "underride", "using", 0
 };
 
 /* Generator functions for command completion. */

@@ -618,10 +618,10 @@ static string format_namespace(const string& name)
    now. */
 
 static const char *commands[] = {
-  "cd", "clear", "const", "def", "dump", "extern", "help", "infix", "infixl",
-  "infixr", "let", "ls", "namespace", "nullary", "override", "postfix",
-  "prefix", "private", "public", "pwd", "quit", "run", "save", "show", "stats",
-  "underride", "using", 0
+  "break", "cd", "clear", "const", "def", "del", "dump", "extern", "help",
+  "infix", "infixl", "infixr", "let", "ls", "namespace", "nullary",
+  "override", "postfix", "prefix", "private", "public", "pwd", "quit", "run",
+  "save", "show", "stats", "underride", "using", 0
 };
 
 typedef map<string, symbol> symbol_map;
@@ -875,6 +875,49 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
     const char *s = cmdline+1;
     while (isspace(*s)) ++s;
     system(s);
+  } else if (strcmp(cmd, "break") == 0)  {
+    const char *s = cmdline+5;
+    while (isspace(*s)) ++s;
+    if (!*s) {
+      ostringstream sout;
+      for (set<string>::iterator it = interp.breakpoints.begin();
+	   it != interp.breakpoints.end(); ++it)
+	sout << *it << endl;
+      if (interp.output)
+	(*interp.output) << sout.str();
+      else
+	cout << sout.str();
+    } else {
+      int32_t f = pure_getsym(s);
+      if (f > 0) {
+	env::const_iterator jt = interp.globenv.find(f);
+	if ((jt != interp.globenv.end() && jt->second.t == env_info::fun) ||
+	    interp.externals.find(f) != interp.externals.end())
+	  interp.breakpoints.insert(interp.symtab.sym(f).s);
+	else
+	  f = 0;
+      }
+      if (f == 0)
+	cerr << "break: unknown function symbol '" << s << "'\n";
+    }
+  } else if (strcmp(cmd, "del") == 0)  {
+    const char *s = cmdline+3;
+    while (isspace(*s)) ++s;
+    if (!*s) {
+      cerr << "del: no function name specified\n";
+    } else {
+      int32_t f = pure_getsym(s);
+      if (f > 0) {
+	env::const_iterator jt = interp.globenv.find(f);
+	if ((jt != interp.globenv.end() && jt->second.t == env_info::fun) ||
+	    interp.externals.find(f) != interp.externals.end())
+	  interp.breakpoints.erase(interp.symtab.sym(f).s);
+	else
+	  f = 0;
+      }
+      if (f == 0)
+	cerr << "del: unknown function symbol '" << s << "'\n";
+    }
   } else if (strcmp(cmd, "help") == 0)  {
     const char *s = cmdline+4, *p, *q;
     while (isspace(*s)) ++s;

@@ -553,6 +553,7 @@ public:
   void compiler(string out, list<string> libnames);
   list<DebugInfo> dbg_info;
   set<string> breakpoints;
+  int32_t stoplevel;
   llvm::Value *debug_rule(const rule *r, bool owner = false);
   llvm::Value *debug_redn(const rule *r, llvm::Value *v = 0);
 private:

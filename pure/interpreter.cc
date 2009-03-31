@@ -455,7 +455,7 @@ interpreter::interpreter()
     ps("> "), libdir(""), histfile("/.pure_history"), modname("pure"),
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0), result(0),
     mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0),
-    sstk(__sstk), fptr(__fptr)
+    sstk(__sstk), stoplevel(0), fptr(__fptr)
 {
   init();
 }
@@ -469,7 +469,7 @@ interpreter::interpreter(int32_t nsyms, char *syms,
     ps("> "), libdir(""), histfile("/.pure_history"), modname("pure"),
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0), result(0),
     mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0),
-    sstk(*_sstk), fptr(*(Env**)_fptr)
+    sstk(*_sstk), stoplevel(0), fptr(*(Env**)_fptr)
 {
   using namespace llvm;
   init();
