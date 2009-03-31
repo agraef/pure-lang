@@ -210,7 +210,7 @@ struct Env {
 			     const vector<llvm::Value*>& args);
   // interface to CreateRet() which also takes care of collecting temporaries
   // and patching up tail calls
-  llvm::ReturnInst *CreateRet(llvm::Value *v);
+  llvm::ReturnInst *CreateRet(llvm::Value *v, const rule *rp = 0);
   // print the code of all functions in an environment, recursively
   void print(ostream& os) const;
   // default constructor
@@ -288,6 +288,16 @@ struct ExternInfo {
 
 ostream &operator<< (ostream& os, const ExternInfo& info);
 
+struct DebugInfo {
+  // debugger activation record
+  Env *e;			// environment
+  const rule *r;		// executed rule
+  bool owner;			// whether we own r (must be deleted)
+  env vars;			// lhs variable bindings
+  pure_expr **args, **envs;	// pointers to args and environment
+  DebugInfo(Env *_e) : e(_e), r(0), owner(false) {}
+};
+
 /* The interpreter. */
 
 typedef set<int32_t> funset;
@@ -313,6 +323,7 @@ public:
   uint8_t verbose;   // debugging output from interpreter
   bool compiling;    // batch compiler mode
   bool interactive;  // interactive mode
+  bool debugging;    // debugging mode
   bool restricted;   // restricted mode
   bool ttymode;      // connected to a tty
   bool override;     // override mode
@@ -540,12 +551,17 @@ public:
 				 bool varargs = false, void *fp = 0,
 				 string asname = "");
   void compiler(string out, list<string> libnames);
+  list<DebugInfo> dbg_info;
+  set<string> breakpoints;
+  llvm::Value *debug_rule(const rule *r, bool owner = false);
+  llvm::Value *debug_redn(const rule *r, llvm::Value *v = 0);
 private:
   void init();
   Env *__fptr;
   Env *&fptr;
   llvm::GlobalVariable *fptrvar;
   llvm::Value *envptr(Env *f);
+  llvm::Value *constptr(const void *p);
   EnvStack envstk;
   void push(const char *msg, Env *e);
   void pop(Env *e);
@@ -558,12 +574,12 @@ private:
   pure_expr *doeval(expr x, pure_expr*& e);
   pure_expr *dodefn(env vars, expr lhs, expr rhs, pure_expr*& e);
   llvm::Value *codegen(expr x, bool quote = false);
-  void toplevel_codegen(expr x);
+  void toplevel_codegen(expr x, const rule *rp);
   llvm::Value *builtin_codegen(expr x);
   llvm::Value *get_int(expr x);
   llvm::Value *get_double(expr x);
-  llvm::Value *when_codegen
-  (expr x, matcher *m, rulel::const_iterator r, rulel::const_iterator end);
+  llvm::Value *when_codegen(expr x, matcher *m, rulel::const_iterator r,
+			    rulel::const_iterator end, rule *rp = 0);
   llvm::Value *funcall(Env *f, llvm::Value *x);
   llvm::Value *funcall(Env *f, uint32_t n, expr x);
   llvm::Value *funcall(int32_t tag, uint8_t idx, uint32_t n, expr x);
@@ -571,7 +587,7 @@ private:
   llvm::Value *call(llvm::Value *x);
   llvm::Value *apply(llvm::Value *x, llvm::Value *y);
   llvm::Value *cond(expr x, expr y, expr z);
-  void toplevel_cond(expr x, expr y, expr z);
+  void toplevel_cond(expr x, expr y, expr z, const rule *rp);
   llvm::Value *fbox(Env& f, bool thunked = false);
   llvm::Value *cbox(int32_t tag);
   llvm::Value *ibox(llvm::Value *i);

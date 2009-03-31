@@ -438,6 +438,10 @@ void interpreter::init()
 
   declare_extern((void*)pure_debug,
 		 "pure_debug",      "void",  -2, "int", "char*");
+  declare_extern((void*)pure_debug_rule,
+		 "pure_debug_rule", "void",   3, "void*", "void*", "bool");
+  declare_extern((void*)pure_debug_redn,
+		 "pure_debug_redn", "void",   3, "void*", "void*", "expr*");
 
   declare_extern((void*)pure_interp_main,
 		 "pure_interp_main","void*",  10, "int", "void*",
@@ -446,8 +450,8 @@ void interpreter::init()
 }
 
 interpreter::interpreter()
-  : verbose(0), compiling(false), interactive(false), restricted(false),
-    ttymode(false), override(false), stats(false), temp(0),
+  : verbose(0), compiling(false), interactive(false), debugging(false),
+    restricted(false), ttymode(false), override(false), stats(false), temp(0),
     ps("> "), libdir(""), histfile("/.pure_history"), modname("pure"),
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0), result(0),
     mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0),
@@ -460,8 +464,8 @@ interpreter::interpreter(int32_t nsyms, char *syms,
 			 pure_expr ***vars, void **vals,
 			 int32_t *arities, void **externs,
 			 pure_expr ***_sstk, void **_fptr)
-  : verbose(0), compiling(false), interactive(false), restricted(true),
-    ttymode(false), override(false), stats(false), temp(0),
+  : verbose(0), compiling(false), interactive(false), debugging(false),
+    restricted(true), ttymode(false), override(false), stats(false), temp(0),
     ps("> "), libdir(""), histfile("/.pure_history"), modname("pure"),
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0), result(0),
     mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0),
@@ -3919,14 +3923,15 @@ CallInst *Env::CreateCall(Function *f, const vector<Value*>& args)
   return v;
 }
 
-ReturnInst *Env::CreateRet(Value *v)
+ReturnInst *Env::CreateRet(Value *v, const rule *rp)
 {
   interpreter& interp = *interpreter::g_interp;
+  if (rp) interp.debug_redn(rp, v);
   ReturnInst *ret = builder.CreateRet(v);
   Instruction *pi = ret;
   Function *free_fun = interp.module->getFunction("pure_pop_args");
   Function *free1_fun = interp.module->getFunction("pure_pop_arg");
-  if (isa<CallInst>(v)) {
+  if (!rp && isa<CallInst>(v)) {
     CallInst* c = cast<CallInst>(v);
     // Check whether the call is actually subject to tail call elimination (as
     // determined by the calling convention).
@@ -5094,6 +5099,14 @@ Value *interpreter::envptr(Env *f)
     return act_builder().CreateLoad(fptrvar);
 }
 
+Value *interpreter::constptr(const void *p)
+{
+  if (!p)
+    return NullPtr;
+  else
+    return ConstantExpr::getIntToPtr(UInt64((uint64_t)p), VoidPtrTy);
+}
+
 pure_expr *interpreter::const_value(expr x)
 {
   switch (x.tag()) {
@@ -5465,16 +5478,28 @@ pure_expr *interpreter::dodefn(env vars, expr lhs, expr rhs, pure_expr*& e)
   return res;
 }
 
+static rulel *copy_rulel(rulel::const_iterator r,
+			 rulel::const_iterator end)
+{
+  rulel *rl = new rulel;
+  while (r != end) {
+    rl->push_back(rule(r->lhs, r->rhs, r->qual));
+    r++;
+  }
+  return rl;
+}
+
 Value *interpreter::when_codegen(expr x, matcher *m,
 				 rulel::const_iterator r,
-				 rulel::const_iterator end)
+				 rulel::const_iterator end,
+				 rule *rp)
 // x = subject expression to be evaluated in the context of the bindings
 // m = matching automaton for current rule
 // r = current pattern binding rule
 // end = end of rule list
 {
   if (r == end) {
-    toplevel_codegen(x);
+    toplevel_codegen(x, rp);
     return 0;
   } else {
     Env& act = act_env();
@@ -5493,15 +5518,24 @@ Value *interpreter::when_codegen(expr x, matcher *m,
     Value *arg = e.args[0];
     // emit the matching code
     state *start = m->start;
+    if (debugging) debug_rule(0);
     simple_match(arg, start, matchedbb, failedbb);
     // matched => emit code for the reduct
     e.f->getBasicBlockList().push_back(matchedbb);
     e.builder.SetInsertPoint(matchedbb);
-    Value *v = when_codegen(x, m+1, s, end);
-    if (v) e.CreateRet(v);
+    const rule& rr = m->r[0];
+    rule *rp = 0;
+    if (debugging) {
+      expr y = (s==end)?x:expr::when(x, copy_rulel(s, end));
+      rp = new rule(rr.lhs, y);
+      debug_rule(rp, true);
+    }
+    Value *v = when_codegen(x, m+1, s, end, rp);
+    if (v) e.CreateRet(v, rp);
     // failed => throw an exception
     e.f->getBasicBlockList().push_back(failedbb);
     e.builder.SetInsertPoint(failedbb);
+    if (debugging) debug_redn(0);
     unwind(symtab.failed_match_sym().f);
     fun_finish();
     pop(&e);
@@ -5978,20 +6012,20 @@ Value *interpreter::funcall(int32_t tag, uint8_t idx, uint32_t n, expr x)
    depending on whether the code is TCO'ed or not). Never use this. */
 #define TAILOPS 0
 
-void interpreter::toplevel_codegen(expr x)
+void interpreter::toplevel_codegen(expr x, const rule *rp)
 {
   if (x.is_null()) {
     /* Result of failed guard. This can only occur at the toplevel. */
-    act_env().CreateRet(NullExprPtr);
+    act_env().CreateRet(NullExprPtr, rp);
     return;
   }
 #if USE_FASTCC
   if (x.tag() == EXPR::COND) {
-    toplevel_cond(x.xval1(), x.xval2(), x.xval3());
+    toplevel_cond(x.xval1(), x.xval2(), x.xval3(), rp);
     return;
   }
   if (x.tag() == EXPR::COND1) {
-    toplevel_cond(x.xval1(), x.xval2(), expr());
+    toplevel_cond(x.xval1(), x.xval2(), expr(), rp);
     return;
   }
   Env& e = act_env();
@@ -6009,10 +6043,10 @@ void interpreter::toplevel_codegen(expr x)
       b.CreateCondBr(condv, iftruebb, iffalsebb);
       e.f->getBasicBlockList().push_back(iftruebb);
       b.SetInsertPoint(iftruebb);
-      e.CreateRet(ibox(One));
+      e.CreateRet(ibox(One), rp);
       e.f->getBasicBlockList().push_back(iffalsebb);
       b.SetInsertPoint(iffalsebb);
-      toplevel_codegen(x.xval2());
+      toplevel_codegen(x.xval2(), rp);
     } else if (f.ftag() == symtab.and_sym().f) {
       Value *u = get_int(x.xval1().xval2());
       Value *condv = b.CreateICmpNE(u, Zero, "cond");
@@ -6021,17 +6055,17 @@ void interpreter::toplevel_codegen(expr x)
       b.CreateCondBr(condv, iftruebb, iffalsebb);
       e.f->getBasicBlockList().push_back(iffalsebb);
       b.SetInsertPoint(iffalsebb);
-      e.CreateRet(ibox(Zero));
+      e.CreateRet(ibox(Zero), rp);
       e.f->getBasicBlockList().push_back(iftruebb);
       b.SetInsertPoint(iftruebb);
-      toplevel_codegen(x.xval2());
+      toplevel_codegen(x.xval2(), rp);
     } else
-      e.CreateRet(codegen(x));
+      e.CreateRet(codegen(x), rp);
   } else
 #endif
-    e.CreateRet(codegen(x));
+    e.CreateRet(codegen(x), rp);
 #else
-  act_env().CreateRet(codegen(x));
+  act_env().CreateRet(codegen(x), rp);
 #endif
 }
 
@@ -6404,7 +6438,7 @@ Value *interpreter::cond(expr x, expr y, expr z)
   return phi;
 }
 
-void interpreter::toplevel_cond(expr x, expr y, expr z)
+void interpreter::toplevel_cond(expr x, expr y, expr z, const rule *rp)
 {
   // emit tail-recursive code for a toplevel if-then-else
   Env& f = act_env();
@@ -6431,11 +6465,11 @@ void interpreter::toplevel_cond(expr x, expr y, expr z)
   f.builder.CreateCondBr(condv, thenbb, elsebb);
   f.f->getBasicBlockList().push_back(thenbb);
   f.builder.SetInsertPoint(thenbb);
-  toplevel_codegen(y);
+  toplevel_codegen(y, rp);
   // emit the 'else' block
   f.f->getBasicBlockList().push_back(elsebb);
   f.builder.SetInsertPoint(elsebb);
-  toplevel_codegen(z);
+  toplevel_codegen(z, rp);
 }
 
 // Other value boxes. These just call primitives in the runtime which take
@@ -6773,6 +6807,31 @@ void interpreter::make_bigint(const mpz_t& z, Value*& sz, Value*& ptr)
 
 // Debugger calls.
 
+Value *interpreter::debug_rule(const rule *r, bool owner)
+{
+  Env* e = &act_env();
+  Function *f = module->getFunction("pure_debug_rule");
+  assert(f);
+  vector<Value*> args;
+  args.push_back(constptr(e));
+  args.push_back(constptr(r));
+  args.push_back(Bool(owner));
+  return e->CreateCall(f, args);
+}
+
+Value *interpreter::debug_redn(const rule *r, Value *v)
+{
+  Env* e = &act_env();
+  Function *f = module->getFunction("pure_debug_redn");
+  assert(f);
+  if (!v) v = NullExprPtr;
+  vector<Value*> args;
+  args.push_back(constptr(e));
+  args.push_back(constptr(r));
+  args.push_back(v);
+  return e->CreateCall(f, args);
+}
+
 Value *interpreter::debug(const char *format)
 {
   Function *f = module->getFunction("pure_debug");
@@ -7009,10 +7068,12 @@ void interpreter::fun_body(matcher *pm, bool nodefault)
 #endif
   BasicBlock *failedbb = BasicBlock::Create("failed");
   // emit the matching code
+  if (debugging && !is_init(f.name)) debug_rule(0);
   complex_match(pm, failedbb);
   // emit code for a failed match
   f.f->getBasicBlockList().push_back(failedbb);
   f.builder.SetInsertPoint(failedbb);
+  if (debugging && !is_init(f.name)) debug_redn(0);
   if (nodefault) {
     // failed match is fatal, throw an exception
 #if DEBUG>1
@@ -7288,12 +7349,18 @@ void interpreter::complex_match(matcher *pm, BasicBlock *failedbb)
     // matched => emit code for the reduct, and return the result
     f.f->getBasicBlockList().push_back(matchedbb);
     f.builder.SetInsertPoint(matchedbb);
+    const rule* rp = 0;
+    if (debugging && !is_init(f.name)) {
+      const rule& rr = pm->r[0];
+      rp = &rr;
+      debug_rule(rp);
+    }
 #if DEBUG>1
     if (!is_init(f.name)) { ostringstream msg;
       msg << "exit " << f.name << ", result: " << pm->r[0].rhs;
       debug(msg.str().c_str()); }
 #endif
-    toplevel_codegen(pm->r[0].rhs);
+    toplevel_codegen(pm->r[0].rhs, rp);
   } else {
     // build the initial stack of expressions to be matched
     list<Value*>xs;
@@ -7591,6 +7658,7 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
     f.fmap.select(*r);
     f.f->getBasicBlockList().push_back(rulebb);
     f.builder.SetInsertPoint(rulebb);
+    if (debugging && !is_init(f.name)) debug_rule(&rr);
 #if DEBUG>1
     if (!is_init(f.name)) { ostringstream msg;
       msg << "complex match " << f.name << ", trying rule #" << *r;
@@ -7598,12 +7666,14 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
 #endif
     if (rr.qual.is_null() && !rr.rhs.is_guarded()) {
       // rule always matches, generate code for the reduct and bail out
+      const rule *rp = 0;
+      if (debugging && !is_init(f.name)) rp = &rr;
 #if DEBUG>1
       if (!is_init(f.name)) { ostringstream msg;
 	msg << "exit " << f.name << ", result: " << rr.rhs;
 	debug(msg.str().c_str()); }
 #endif
-      toplevel_codegen(rr.rhs);
+      toplevel_codegen(rr.rhs, rp);
       break;
     }
     Value *retv = 0, *condv = 0;
@@ -7649,6 +7719,8 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
     // to the next rule (if any), or bail out with failure
     f.f->getBasicBlockList().push_back(okbb);
     f.builder.SetInsertPoint(okbb);
+    const rule *rp = 0;
+    if (debugging && !is_init(f.name)) rp = &rr;
 #if DEBUG>1
     if (!is_init(f.name)) { ostringstream msg;
       msg << "exit " << f.name << ", result: " << rr.rhs;
@@ -7662,9 +7734,10 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
 	f.builder.CreateCall3(free_fun, retv, UInt(f.n), UInt(f.m));
 	f.builder.CreateCall(unref_fun, retv);
       }
+      if (rp) debug_redn(rp, retv);
       f.builder.CreateRet(retv);
     } else
-      toplevel_codegen(rr.rhs);
+      toplevel_codegen(rr.rhs, rp);
     rulebb = nextbb;
   }
   f.fmap.first();

@@ -2473,6 +2473,8 @@ pure_interp *pure_create_interp(int argc, char *argv[])
       /* ignored */;
     else if (*args == string("-c"))
       /* ignored */;
+    else if (*args == string("-g"))
+      /* ignored */;
     else if (*args == string("-i"))
       /* ignored */;
     else if (*args == string("-n") || *args == string("--noprelude"))
@@ -2874,7 +2876,7 @@ void *pure_get_bigint(pure_expr *x)
 extern "C"
 void *pure_get_matrix(pure_expr *x)
 {
-  assert(x && x->tag == EXPR::MATRIX || x->tag == EXPR::DMATRIX ||
+  assert((x && x->tag == EXPR::MATRIX) || x->tag == EXPR::DMATRIX ||
 	 x->tag == EXPR::CMATRIX || x->tag == EXPR::IMATRIX);
   return x->data.mat.p;
 }
@@ -3876,6 +3878,160 @@ void pure_debug(int32_t tag, const char *format, ...)
   while (cin.good() && ans != '\n') cin >> noskipws >> ans;
   if (!cin.good()) cout << "\n";
   if (bail_out) exit(0);
+}
+
+static size_t argno(size_t n, path &p)
+{
+  size_t m = p.len(), k = n-1;
+  size_t i;
+  for (i = 0; i < m && p[i] == 0; i++) {
+    assert(k>0); --k;
+  }
+  assert(i < m && p[i] == 1);
+  path q(m-++i);
+  for (size_t j = 0; i < m; i++, j++) q.set(j, p[i]);
+  p = q;
+  return k;
+}
+
+static pure_expr *subterm(size_t n, pure_expr **xs, path p, bool b)
+{
+  size_t k = 0;
+  if (b)
+    // pattern binding
+    assert(n==1);
+  else
+    k = argno(n, p);
+  pure_expr *x = xs[k];
+  for (size_t i = 0, m = p.len(); i < m; i++) {
+    assert(x->tag == EXPR::APP);
+    x = x->data.x[p[i]?1:0];
+  }
+  return x;
+}
+
+static string printx(pure_expr *x, size_t n = 30)
+{
+  static const string dots = "...";
+  static const size_t l = dots.size();
+  ostringstream sout;
+  sout << x;
+  string s = sout.str();
+  if (s.size() > n+l) {
+    s.erase(n);
+    s += dots;
+  }
+  return s;
+}
+
+static void get_vars(DebugInfo& d)
+{
+  // find the arguments and environment of this call on the shadow stack
+  interpreter& interp = *interpreter::g_interp;
+  pure_expr **sstk = interp.sstk;
+  size_t sz = interp.sstk_sz;
+  assert(d.e->n+d.e->m < sz);
+  d.envs = sstk+sz-d.e->m;
+  d.args = d.envs-d.e->n;
+  assert(d.args[-1] == 0);
+}
+
+static void print_vars(DebugInfo& d)
+{
+  interpreter& interp = *interpreter::g_interp;
+  map<string,pure_expr*> vals;
+  for (env::iterator it = d.vars.begin(); it != d.vars.end(); ++it) {
+    int32_t vno = it->first;
+    symbol& sym = interp.symtab.sym(vno);
+    env_info& info = it->second;
+    assert(info.t == env_info::lvar);
+    vals[sym.s] = subterm(d.e->n, d.args, *info.p, d.e->b);
+  }
+  for (list<VarInfo>::iterator it = d.e->xtab.begin(); it != d.e->xtab.end();
+       ++it) {
+    VarInfo& info = *it;
+    symbol& sym = interp.symtab.sym(info.vtag);
+    assert(info.v < d.e->m);
+    vals[sym.s] = d.envs[info.v];
+  }
+  if (!vals.empty()) cout << "   ";
+  size_t count = 0;
+  for (map<string,pure_expr*>::iterator it = vals.begin(); it != vals.end();
+       ++it, ++count) {
+    const string& id = it->first;
+    pure_expr *x = it->second;
+    if (count > 0) cout << "; ";
+    cout << id << " = " << printx(x);
+  }
+  if (count > 0) cout << endl;
+}
+
+extern "C"
+void pure_debug_rule(void *_e, void *_r, bool owner)
+{
+  Env *e = (Env*)_e;
+  rule *r = (rule*)_r;
+  interpreter& interp = *interpreter::g_interp;
+  if (!interp.interactive) return;
+  if (!r) {
+    // push a new activation record
+    interp.dbg_info.push_back(DebugInfo(e));
+    return;
+  }
+  assert(!interp.dbg_info.empty());
+  DebugInfo& d = interp.dbg_info.back();
+  assert(d.e == e);
+  if (d.r && d.owner) delete d.r;
+  d.r = r; d.owner = owner;
+  // build the lhs variable table
+  d.vars.clear();
+  interp.bind(d.vars, r->lhs, e->b);
+  cout << "** [" << interp.dbg_info.size() << "] ";
+  if (e->tag > 0)
+    cout << interp.symtab.sym(e->tag).x;
+  else
+    cout << "<<anonymous>>";
+  cout << ": " << *r << ";\n";
+  get_vars(d);
+  print_vars(d);
+  static bool init = false;
+  if (!init) {
+    cout << "(Press 'x' to exit the interpreter, <cr> to continue, <eof> to run unattended.)\n";
+    init = true;
+  }
+  cout << ": ";
+  char ans;
+  cin >> noskipws >> ans;
+  bool bail_out = ans=='x';
+  while (cin.good() && ans != '\n') cin >> noskipws >> ans;
+  if (!cin.good()) cout << endl;
+  if (bail_out) exit(0);
+}
+
+extern "C"
+void pure_debug_redn(void *_e, void *_r, pure_expr *x)
+{
+  Env *e = (Env*)_e;
+  rule *r = (rule*)_r;
+  interpreter& interp = *interpreter::g_interp;
+  if (!interp.interactive) return;
+  assert(!interp.dbg_info.empty());
+  DebugInfo& d = interp.dbg_info.back();
+  assert(d.e == e);
+  if (r) {
+    cout << "++ [" << interp.dbg_info.size() << "] ";
+    if (e->tag > 0)
+      cout << interp.symtab.sym(e->tag).x;
+    else
+      cout << "<<anonymous>>";
+    cout << ": " << *r << ";\n";
+    get_vars(d);
+    print_vars(d);
+    if (x) cout << "   --> " << printx(x, 70) << endl;
+  }
+  // pop an activation record
+  if (d.r && d.owner) delete d.r;
+  interp.dbg_info.pop_back();
 }
 
 /* LIBRARY API. *************************************************************/
