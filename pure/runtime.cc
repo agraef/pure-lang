@@ -4014,6 +4014,13 @@ static void parse_cmd(string& cmdline, string& cmd, string& arg)
   }
 }
 
+static const char *stacklab(interpreter& interp,
+			    list<DebugInfo>::reverse_iterator it,
+			    list<DebugInfo>::reverse_iterator kt)
+{
+  return (it == interp.debug_info.rbegin())?"**":(it == kt)?">>":"  ";
+}
+
 extern "C"
 void pure_debug_rule(void *_e, void *_r)
 {
@@ -4045,27 +4052,63 @@ void pure_debug_rule(void *_e, void *_r)
     cout << "(Type 'h' for help.)\n";
     init = true;
   }
-  string cmdline, cmd, arg;
+  list<DebugInfo>::reverse_iterator kt = interp.debug_info.rbegin();
   while (1) {
+    string cmdline, cmd, arg;
     cout << ": ";
     getline(cin, cmdline);
     parse_cmd(cmdline, cmd, arg);
     if (!cin.good()) cout << endl;
     if (cmdline == "" || cmd == "s")
       break;
-    else if (cmd == "x")
+    else if (cmd == "x") {
       exit(0);
-    else if (cmd == "c") {
+    } else if (cmd == "d" || cmd == "u" || cmd == "b" || cmd == "t") {
+      if (cmd == "d")
+	if (kt == interp.debug_info.rbegin()) {
+	  cerr << "already at bottom\n";
+	  goto errexit;
+	} else
+	  kt--;
+      else if (cmd == "u") {
+	list<DebugInfo>::reverse_iterator lt = kt; lt++;
+	if (lt == interp.debug_info.rend()) {
+	  cerr << "already at top\n";
+	  goto errexit;
+	} else
+	  kt = lt;
+      } else if (cmd == "b")
+	if (kt == interp.debug_info.rbegin()) {
+	  cerr << "already at bottom\n";
+	  goto errexit;
+	} else
+	  kt = interp.debug_info.rbegin();
+      else if (cmd == "t") {
+	list<DebugInfo>::reverse_iterator lt = interp.debug_info.rend(); lt--;
+	if (kt == lt) {
+	  cerr << "already at top\n";
+	  goto errexit;
+	} else
+	  kt = lt;
+      }
+      {
+	DebugInfo& d = *kt;
+	cout << stacklab(interp, kt, kt) << " [" << d.n << "] "
+	     << pname(interp, d.e) << ": " << *d.r << ";\n";
+      }
+    errexit: ;
+    } else if (cmd == "c") {
       interp.stoplevel = 0;
       interp.debug_skip = true;
       break;
     } else if (cmd == "n") {
+      DebugInfo& d = *kt;
       interp.stoplevel = d.n;
       interp.debug_skip = true;
       break;
     } else if (cmd == ".") {
-      DebugInfo& d = interp.debug_info.back();
-      cout << "** [" << d.n << "] "
+      DebugInfo& d = *kt;
+      cout << stacklab(interp, kt, kt) << " [" << d.n << "] "
 	   << pname(interp, d.e) << ": " << *d.r << ";\n";
     } else if (cmd == "p") {
       static size_t last_count = 5;
@@ -4075,12 +4118,12 @@ void pure_debug_rule(void *_e, void *_r)
       else
 	count = last_count;
       list<DebugInfo>::reverse_iterator it;
-      for (it = interp.debug_info.rbegin();
-	   count>0 && it != interp.debug_info.rend(); ++it, --count)
+      for (it = kt; count>0 && it != interp.debug_info.rend(); ++it, --count)
 	;
-      while (1) {
+      count = last_count;
+      while (count-- > 0) {
 	DebugInfo& d = *--it;
-	cout << "** [" << d.n << "] "
+	cout << stacklab(interp, it, kt) << " [" << d.n << "] "
 	     << pname(interp, d.e) << ": " << *d.r << ";\n";
 	if (it == interp.debug_info.rbegin()) break;
       }
@@ -4097,7 +4140,7 @@ void pure_debug_rule(void *_e, void *_r)
 	    f = 0;
 	}
 	if (f == 0)
-	  cerr << "run: unknown function symbol '" << arg << "'\n";
+	  cerr << "unknown function symbol '" << arg << "'\n";
 	else {
 	  interp.stoplevel = 0;
 	  break;
@@ -4114,12 +4157,14 @@ n	next: step over reduction\n\
 p [n]	print: print rule stack (n = number of frames)\n\
 r [bp]	run: run until next (or given) breakpoint\n\
 s	step: step into reduction\n\
+t, b	move to the top or bottom of the rule stack\n\
+u, d	move up or down one level in the rule stack\n\
 x	exit: exit the interpreter\n\
 .	reprint current rule\n\
 <cr>	same as step\n\
 <eof>	run unattended, but with debugging output\n";
     else
-      cerr << "unrecognized debugger command\n";
+      cerr << "unrecognized command '" << cmdline << "'\n";
   }
 }
 
