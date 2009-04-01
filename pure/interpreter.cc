@@ -5526,8 +5526,8 @@ Value *interpreter::when_codegen(expr x, matcher *m,
     e.builder.SetInsertPoint(matchedbb);
     const rule& rr = m->r[0];
     if (debugging) {
-      expr x = rr.lhs, y = (s==end)?x:expr::when(x, copy_rulel(s, end));
-      e.rp = new rule(x, y);
+      expr y = (s==end)?x:expr::when(x, copy_rulel(s, end));
+      e.rp = new rule(rr.lhs, y);
       debug_rule(e.rp);
     }
     Value *v = when_codegen(x, m+1, s, end, e.rp);
