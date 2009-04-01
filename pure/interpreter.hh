@@ -295,11 +295,12 @@ ostream &operator<< (ostream& os, const ExternInfo& info);
 
 struct DebugInfo {
   // debugger activation record
+  size_t n;			// stack level
   Env *e;			// environment
   const rule *r;		// executed rule
   env vars;			// lhs variable bindings
   pure_expr **args, **envs;	// pointers to args and environment
-  DebugInfo(Env *_e) : e(_e), r(0) {}
+  DebugInfo(size_t _n, Env *_e) : n(_n), e(_e), r(0) {}
 };
 
 /* The interpreter. */
@@ -555,11 +556,13 @@ public:
 				 bool varargs = false, void *fp = 0,
 				 string asname = "");
   void compiler(string out, list<string> libnames);
-  list<DebugInfo> dbg_info;
-  set<int32_t> breakpoints;
+  list<DebugInfo> debug_info;
+  set<int32_t> breakpoints, tmp_breakpoints;
   int32_t stoplevel;
+  bool debug_skip;
   llvm::Value *debug_rule(const rule *r);
   llvm::Value *debug_redn(const rule *r, llvm::Value *v = 0);
+  void debug_init();
 private:
   void init();
   Env *__fptr;

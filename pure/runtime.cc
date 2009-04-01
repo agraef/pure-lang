@@ -3968,11 +3968,18 @@ static inline bool stop(interpreter& interp, Env *e)
 {
   if (!interp.interactive)
     return false;
-  if (e->tag>0 &&
-      interp.breakpoints.find(e->tag) != interp.breakpoints.end())
-    return true;
+  if (!interp.debug_skip) {
+    if (e->tag>0 &&
+	interp.breakpoints.find(e->tag) != interp.breakpoints.end())
+      return true;
+    if (e->tag>0 &&
+	interp.tmp_breakpoints.find(e->tag) != interp.tmp_breakpoints.end()) {
+      interp.tmp_breakpoints.erase(e->tag);
+      return true;
+    }
+  }
   if (interp.stoplevel < 0 ||
-      interp.dbg_info.size() <= (uint32_t)interp.stoplevel)
+      interp.debug_info.size() <= (uint32_t)interp.stoplevel)
     return true;
   return false;
 }
@@ -3989,42 +3996,131 @@ static inline string pname(interpreter& interp, Env *e)
     return "#<closure>";
 }
 
+static void parse_cmd(string& cmdline, string& cmd, string& arg)
+{
+  size_t p = cmdline.find_last_not_of(" \t");
+  if (p != string::npos)
+    cmdline.erase(p+1);
+  else
+    cmdline.clear();
+  p = cmdline.find_first_of(" \t");
+  if (p != string::npos) {
+    cmd = cmdline.substr(0, p);
+    p = cmdline.find_first_not_of(" \t", p);
+    assert(p != string::npos);
+    arg = cmdline.substr(p);
+  } else {
+    cmd = cmdline; arg = "";
+  }
+}
+
 extern "C"
 void pure_debug_rule(void *_e, void *_r)
 {
   Env *e = (Env*)_e;
   rule *r = (rule*)_r;
   interpreter& interp = *interpreter::g_interp;
-  if (!stop(interp, e)) return;
+  if (!interp.interactive) return;
   if (!r) {
     // push a new activation record
-    interp.dbg_info.push_back(DebugInfo(e));
+    interp.debug_info.push_back(DebugInfo(interp.debug_info.size()+1, e));
     return;
   }
-  assert(!interp.dbg_info.empty());
-  DebugInfo& d = interp.dbg_info.back();
+  assert(!interp.debug_info.empty());
+  DebugInfo& d = interp.debug_info.back();
   assert(d.e == e);
   d.r = r;
-  interp.stoplevel = -1;
   // build the lhs variable table
   d.vars.clear();
   interp.bind(d.vars, r->lhs, e->b);
-  cout << "** [" << interp.dbg_info.size() << "] "
+  if (!stop(interp, e)) return;
+  interp.stoplevel = -1;
+  interp.debug_skip = false;
+  cout << "** [" << d.n << "] "
        << pname(interp, e) << ": " << *r << ";\n";
   get_vars(interp, d);
   print_vars(interp, d);
   static bool init = false;
   if (!init) {
-    cout << "(Press 'x' to exit the interpreter, <cr> to continue, <eof> to run unattended.)\n";
+    cout << "(Type 'h' for help.)\n";
     init = true;
   }
-  cout << ": ";
-  char ans;
-  cin >> noskipws >> ans;
-  bool bail_out = ans=='x';
-  while (cin.good() && ans != '\n') cin >> noskipws >> ans;
-  if (!cin.good()) cout << endl;
-  if (bail_out) exit(0);
+  string cmdline, cmd, arg;
+  while (1) {
+    cout << ": ";
+    getline(cin, cmdline);
+    parse_cmd(cmdline, cmd, arg);
+    if (!cin.good()) cout << endl;
+    if (cmdline == "" || cmd == "s")
+      break;
+    else if (cmd == "x")
+      exit(0);
+    else if (cmd == "c") {
+      interp.stoplevel = 0;
+      interp.debug_skip = true;
+      break;
+    } else if (cmd == "n") {
+      interp.stoplevel = d.n;
+      interp.debug_skip = true;
+      break;
+    } else if (cmd == ".") {
+      DebugInfo& d = interp.debug_info.back();
+      cout << "** [" << d.n << "] "
+	   << pname(interp, d.e) << ": " << *d.r << ";\n";
+    } else if (cmd == "p") {
+      static size_t last_count = 5;
+      size_t count = atoi(arg.c_str());
+      if (count)
+	last_count = count;
+      else
+	count = last_count;
+      list<DebugInfo>::reverse_iterator it;
+      for (it = interp.debug_info.rbegin();
+	   count>0 && it != interp.debug_info.rend(); ++it, --count)
+	;
+      while (1) {
+	DebugInfo& d = *--it;
+	cout << "** [" << d.n << "] "
+	     << pname(interp, d.e) << ": " << *d.r << ";\n";
+	if (it == interp.debug_info.rbegin()) break;
+      }
+    } else if (cmd == "r") {
+      if (!arg.empty()) {
+	int32_t f = pure_getsym(arg.c_str());
+	if (f > 0) {
+	  env::const_iterator jt = interp.globenv.find(f);
+	  if ((jt != interp.globenv.end() && jt->second.t == env_info::fun) ||
+	      interp.externals.find(f) != interp.externals.end()) {
+	    if (interp.breakpoints.find(f) == interp.breakpoints.end())
+	      interp.tmp_breakpoints.insert(f);
+	  } else
+	    f = 0;
+	}
+	if (f == 0)
+	  cerr << "run: unknown function symbol '" << arg << "'\n";
+	else {
+	  interp.stoplevel = 0;
+	  break;
+	}
+      } else {
+	interp.stoplevel = 0;
+	break;
+      }
+    } else if (cmd == "h")
+      cout << "Debugger commands:\n\
+c	continue: run unattended, without debugging\n\
+h	help: print this list\n\
+n	next: step over reduction\n\
+p [n]	print: print rule stack (n = number of frames)\n\
+r [bp]	run: run until next (or given) breakpoint\n\
+s	step: step into reduction\n\
+x	exit: exit the interpreter\n\
+.	reprint current rule\n\
+<cr>	same as step\n\
+<eof>	run unattended, but with debugging output\n";
+    else
+      cerr << "unrecognized debugger command\n";
+  }
 }
 
 extern "C"
@@ -4033,19 +4129,21 @@ void pure_debug_redn(void *_e, void *_r, pure_expr *x)
   Env *e = (Env*)_e;
   rule *r = (rule*)_r;
   interpreter& interp = *interpreter::g_interp;
-  if (!stop(interp, e)) return;
-  assert(!interp.dbg_info.empty());
-  DebugInfo& d = interp.dbg_info.back();
-  assert(d.e == e);
-  if (r) {
-    cout << "++ [" << interp.dbg_info.size() << "] "
-	 << pname(interp, e) << ": " << *r << ";\n";
-    get_vars(interp, d);
-    print_vars(interp, d);
-    if (x) cout << "   --> " << printx(x, 70) << endl;
+  if (!interp.interactive) return;
+  assert(!interp.debug_info.empty());
+  if (stop(interp, e)) {
+    DebugInfo& d = interp.debug_info.back();
+    assert(d.e == e);
+    if (r) {
+      cout << "++ [" << d.n << "] "
+	   << pname(interp, e) << ": " << *r << ";\n";
+      get_vars(interp, d);
+      print_vars(interp, d);
+      if (x) cout << "   --> " << printx(x, 70) << endl;
+    }
   }
   // pop an activation record
-  interp.dbg_info.pop_back();
+  interp.debug_info.pop_back();
 }
 
 /* LIBRARY API. *************************************************************/

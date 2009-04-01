@@ -62,6 +62,14 @@ static int c_stack_dir()
   return (dir>0)?1:(dir<0)?-1:0;
 }
 
+void interpreter::debug_init()
+{
+  cin.clear();
+  tmp_breakpoints.clear();
+  stoplevel = 0;
+  debug_skip = false;
+}
+
 void interpreter::init()
 {
   if (!g_interp) g_interp = this;
@@ -455,7 +463,7 @@ interpreter::interpreter()
     ps("> "), libdir(""), histfile("/.pure_history"), modname("pure"),
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0), result(0),
     mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0),
-    sstk(__sstk), stoplevel(0), fptr(__fptr)
+    sstk(__sstk), stoplevel(0), debug_skip(false), fptr(__fptr)
 {
   init();
 }
@@ -469,7 +477,7 @@ interpreter::interpreter(int32_t nsyms, char *syms,
     ps("> "), libdir(""), histfile("/.pure_history"), modname("pure"),
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0), result(0),
     mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0),
-    sstk(*_sstk), stoplevel(0), fptr(*(Env**)_fptr)
+    sstk(*_sstk), stoplevel(0), debug_skip(false), fptr(*(Env**)_fptr)
 {
   using namespace llvm;
   init();
