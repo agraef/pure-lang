@@ -3924,15 +3924,25 @@ static string printx(pure_expr *x, size_t n = 30)
   return s;
 }
 
-static void get_vars(interpreter& interp, DebugInfo& d)
+static void get_vars(interpreter& interp, list<DebugInfo>::reverse_iterator kt)
 {
-  // find the arguments and environment of this call on the shadow stack
+  // find the arguments and environment of this call and all subsequent calls
+  // on the shadow stack
   pure_expr **sstk = interp.sstk;
   size_t sz = interp.sstk_sz;
-  assert(d.e->n+d.e->m < sz);
-  d.envs = sstk+sz-d.e->m;
-  d.args = d.envs-d.e->n;
-  assert(d.args[-1] == 0);
+  list<DebugInfo>::reverse_iterator it = interp.debug_info.rbegin();
+  do {
+    DebugInfo& d = *it;
+#if 0
+    cout << d.n << "@" << sz << ": " << d.e->name
+	 << "(" << d.e->n << ", " << d.e->m << ")\n";
+#endif
+    assert(d.e->n+d.e->m < sz);
+    sz -= d.e->n+d.e->m+1;
+    while (sz > 0 && sstk[sz]) --sz;
+    d.args = sstk+sz+1;
+    d.envs = d.args+d.e->n;
+  } while (it++ != kt);
 }
 
 static void print_vars(interpreter& interp, DebugInfo& d)
@@ -3952,7 +3962,7 @@ static void print_vars(interpreter& interp, DebugInfo& d)
     assert(info.v < d.e->m);
     vals[sym.s] = d.envs[info.v];
   }
-  if (!vals.empty()) cout << "   ";
+  if (!vals.empty()) cout << "     ";
   size_t count = 0;
   for (map<string,pure_expr*>::iterator it = vals.begin(); it != vals.end();
        ++it, ++count) {
@@ -3968,15 +3978,15 @@ static inline bool stop(interpreter& interp, Env *e)
 {
   if (!interp.interactive)
     return false;
-  if (!interp.debug_skip) {
-    if (e->tag>0 &&
-	interp.breakpoints.find(e->tag) != interp.breakpoints.end())
+  if (e->tag>0 && !interp.debug_skip) {
+    if (!interp.tmp_breakpoints.empty()) {
+      if (interp.tmp_breakpoints.find(e->tag) !=
+	  interp.tmp_breakpoints.end()) {
+	interp.tmp_breakpoints.clear();
+	return true;
+      }
+    } else if (interp.breakpoints.find(e->tag) != interp.breakpoints.end())
       return true;
-    if (e->tag>0 &&
-	interp.tmp_breakpoints.find(e->tag) != interp.tmp_breakpoints.end()) {
-      interp.tmp_breakpoints.erase(e->tag);
-      return true;
-    }
   }
   if (interp.stoplevel < 0 ||
       interp.debug_info.size() <= (uint32_t)interp.stoplevel)
@@ -4003,6 +4013,11 @@ static void parse_cmd(string& cmdline, string& cmd, string& arg)
     cmdline.erase(p+1);
   else
     cmdline.clear();
+  if (!cmdline.empty() && (cmdline[0] == '!' || cmdline[0] == '?')) {
+    cmd = cmdline.substr(0, 1);
+    arg = cmdline.substr(1);
+    return;
+  }
   p = cmdline.find_first_of(" \t");
   if (p != string::npos) {
     cmd = cmdline.substr(0, p);
@@ -4019,6 +4034,18 @@ static const char *stacklab(interpreter& interp,
 			    list<DebugInfo>::reverse_iterator kt)
 {
   return (it == interp.debug_info.rbegin())?"**":(it == kt)?">>":"  ";
+}
+
+static const bool yes_or_no(const string& msg)
+{
+  char ans;
+  cout << msg << " ";
+  cin >> noskipws >> ans;
+  bool res = cin.good() && ans == 'y';
+  while (cin.good() && ans != '\n') cin >> noskipws >> ans;
+  if (!cin.good()) cout << endl;
+  cin.clear();
+  return res;
 }
 
 extern "C"
@@ -4045,7 +4072,7 @@ void pure_debug_rule(void *_e, void *_r)
   interp.debug_skip = false;
   cout << "** [" << d.n << "] "
        << pname(interp, e) << ": " << *r << ";\n";
-  get_vars(interp, d);
+  get_vars(interp, interp.debug_info.rbegin());
   print_vars(interp, d);
   static bool init = false;
   if (!init) {
@@ -4053,84 +4080,39 @@ void pure_debug_rule(void *_e, void *_r)
     init = true;
   }
   list<DebugInfo>::reverse_iterator kt = interp.debug_info.rbegin();
-  while (1) {
+  bool done = false;
+  while (!done) {
     string cmdline, cmd, arg;
     cout << ": ";
     getline(cin, cmdline);
     parse_cmd(cmdline, cmd, arg);
     if (!cin.good()) cout << endl;
-    if (cmdline == "" || cmd == "s")
-      break;
-    else if (cmd == "x") {
-      exit(0);
-    } else if (cmd == "d" || cmd == "u" || cmd == "b" || cmd == "t") {
-      if (cmd == "d")
-	if (kt == interp.debug_info.rbegin()) {
-	  cerr << "already at bottom\n";
-	  goto errexit;
-	} else
-	  kt--;
-      else if (cmd == "u") {
-	list<DebugInfo>::reverse_iterator lt = kt; lt++;
-	if (lt == interp.debug_info.rend()) {
-	  cerr << "already at top\n";
-	  goto errexit;
-	} else
-	  kt = lt;
-      } else if (cmd == "b")
-	if (kt == interp.debug_info.rbegin()) {
-	  cerr << "already at bottom\n";
-	  goto errexit;
-	} else
-	  kt = interp.debug_info.rbegin();
-      else if (cmd == "t") {
-	list<DebugInfo>::reverse_iterator lt = interp.debug_info.rend(); lt--;
-	if (kt == lt) {
-	  cerr << "already at top\n";
-	  goto errexit;
-	} else
-	  kt = lt;
-      }
-      {
-	DebugInfo& d = *kt;
-	cout << stacklab(interp, kt, kt) << " [" << d.n << "] "
-	     << pname(interp, d.e) << ": " << *d.r << ";\n";
-      }
-    errexit: ;
-    } else if (cmd == "c") {
-      interp.stoplevel = 0;
-      interp.debug_skip = true;
-      break;
-    } else if (cmd == "n") {
+    if (cmd=="!")
+      // shell escape
+      system(arg.c_str());
+    else if (cmd=="?" || cmd.size()>1) {
+      // eval (not yet implemented)
+      cout << arg << endl;
+    } else if (cmdline == "" || cmd == "s")
+      // single step
+      done = true;
+    else switch (cmd[0]) {
+    case 'n': {
+      // next step
       DebugInfo& d = *kt;
       interp.stoplevel = d.n;
       interp.debug_skip = true;
+      done = true;
       break;
-    } else if (cmd == ".") {
-      DebugInfo& d = *kt;
-      cout << stacklab(interp, kt, kt) << " [" << d.n << "] "
-	   << pname(interp, d.e) << ": " << *d.r << ";\n";
-    } else if (cmd == "p") {
-      static size_t last_count = 5;
-      size_t count = atoi(arg.c_str());
-      if (count)
-	last_count = count;
-      else
-	count = last_count;
-      list<DebugInfo>::reverse_iterator it = kt;
-      for (size_t i = 0; it != interp.debug_info.rbegin() && i < last_count%2;
-	   it--, i++)
-	;
-      for (; count>0 && it != interp.debug_info.rend(); ++it, --count)
-	;
-      count = last_count;
-      while (count-- > 0) {
-	DebugInfo& d = *--it;
-	cout << stacklab(interp, it, kt) << " [" << d.n << "] "
-	     << pname(interp, d.e) << ": " << *d.r << ";\n";
-	if (it == interp.debug_info.rbegin()) break;
-      }
-    } else if (cmd == "r") {
+    }
+    case 'r':
+      // run unattended
+      interp.stoplevel = 0;
+      interp.debug_skip = true;
+      done = true;
+      break;
+    case 'c': {
+      // continue until breakpoint
       if (!arg.empty()) {
 	int32_t f = pure_getsym(arg.c_str());
 	if (f > 0) {
@@ -4146,28 +4128,124 @@ void pure_debug_rule(void *_e, void *_r)
 	  cerr << "unknown function symbol '" << arg << "'\n";
 	else {
 	  interp.stoplevel = 0;
-	  break;
+	  done = true;
 	}
       } else {
 	interp.stoplevel = 0;
+	done = true;
+      }
+      break;
+    }
+    case '.': {
+      // print current rule
+      DebugInfo& d = *kt;
+      cout << stacklab(interp, kt, kt) << " [" << d.n << "] "
+	   << pname(interp, d.e) << ": " << *d.r << ";\n";
+      get_vars(interp, kt);
+      print_vars(interp, d);
+      break;
+    }
+    case 'p': {
+      // print rule stack
+      static size_t last_count = 5;
+      size_t count = atoi(arg.c_str());
+      if (count)
+	last_count = count;
+      else
+	count = last_count;
+      list<DebugInfo>::reverse_iterator it = kt;
+      for (size_t i = 0; it != interp.debug_info.rbegin() && i < last_count/2;
+	   it--, i++)
+	;
+      for (; count>0 && it != interp.debug_info.rend(); ++it, --count)
+	;
+      count = last_count;
+      get_vars(interp, --it);
+      while (count-- > 0) {
+	DebugInfo& d = *it;
+	cout << stacklab(interp, it, kt) << " [" << d.n << "] "
+	     << pname(interp, d.e) << ": " << *d.r << ";\n";
+	print_vars(interp, d);
+	if (it == interp.debug_info.rbegin())
+	  break;
+	else
+	  --it;
+      }
+      break;
+    }
+    case 'd': case 'u': case 'b': case 't': {
+      // stack navigation
+      switch (cmd[0]) {
+      case 'd':
+	if (kt == interp.debug_info.rbegin()) {
+	  cerr << "already at bottom\n";
+	  goto errexit;
+	} else
+	  kt--;
+	break;
+      case 'u': {
+	list<DebugInfo>::reverse_iterator lt = kt; lt++;
+	if (lt == interp.debug_info.rend()) {
+	  cerr << "already at top\n";
+	  goto errexit;
+	} else
+	  kt = lt;
 	break;
       }
-    } else if (cmd == "h")
+      case 'b':
+	if (kt == interp.debug_info.rbegin()) {
+	  cerr << "already at bottom\n";
+	  goto errexit;
+	} else
+	  kt = interp.debug_info.rbegin();
+	break;
+      case 't': {
+	list<DebugInfo>::reverse_iterator lt = interp.debug_info.rend(); lt--;
+	if (kt == lt) {
+	  cerr << "already at top\n";
+	  goto errexit;
+	} else
+	  kt = lt;
+	break;
+      }
+      }
+      {
+	DebugInfo& d = *kt;
+	cout << stacklab(interp, kt, kt) << " [" << d.n << "] "
+	     << pname(interp, d.e) << ": " << *d.r << ";\n";
+	get_vars(interp, kt);
+	print_vars(interp, d);
+      }
+      errexit:
+      break;
+    }
+    case 'x':
+      // bail out
+      if (yes_or_no("This will exit the interpreter. Continue (y/n)?"))
+	exit(0);
+      break;
+    case 'h':
+      // help
       cout << "Debugger commands:\n\
-c	continue: run unattended, without debugging\n\
+c [f]	continue until next or given breakpoint (f = function name)\n\
 h	help: print this list\n\
-n	next: step over reduction\n\
-p [n]	print: print rule stack (n = number of frames)\n\
-r [bp]	run: run until next (or given) breakpoint\n\
-s	step: step into reduction\n\
+n	next step: step over reduction\n\
+p [n]	print rule stack (n = number of frames)\n\
+r	run unattended, without debugger\n\
+s	single step: step into reduction\n\
 t, b	move to the top or bottom of the rule stack\n\
 u, d	move up or down one level in the rule stack\n\
-x	exit: exit the interpreter\n\
+x	exit the interpreter (after confirmation)\n\
 .	reprint current rule\n\
-<cr>	same as step\n\
-<eof>	run unattended, but with debugging output\n";
-    else
-      cerr << "unrecognized command '" << cmdline << "'\n";
+!	shell escape\n\
+?	evaluate expression\n\
+<cr>	single step (same as 's')\n\
+<eof>	run unattended, with debugger\n";
+      break;
+    default:
+      cerr << "unknown command '" << cmdline << "', type 'h' for help\n";
+      break;
+    }
   }
 }
 
@@ -4185,9 +4263,9 @@ void pure_debug_redn(void *_e, void *_r, pure_expr *x)
     if (r) {
       cout << "++ [" << d.n << "] "
 	   << pname(interp, e) << ": " << *r << ";\n";
-      get_vars(interp, d);
+      get_vars(interp, interp.debug_info.rbegin());
       print_vars(interp, d);
-      if (x) cout << "   --> " << printx(x, 70) << endl;
+      if (x) cout << "     --> " << printx(x, 68) << endl;
     }
   }
   // pop an activation record
