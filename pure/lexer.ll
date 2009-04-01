@@ -898,7 +898,10 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
 	env::const_iterator jt = interp.globenv.find(f);
 	if ((jt != interp.globenv.end() && jt->second.t == env_info::fun) ||
 	    interp.externals.find(f) != interp.externals.end())
-	  interp.breakpoints.insert(f);
+	  if (interp.breakpoints.find(f) == interp.breakpoints.end())
+	    interp.breakpoints.insert(f);
+	  else
+	    cerr << "break: breakpoint '" << s << "' already set\n";
 	else
 	  f = 0;
       }
@@ -916,7 +919,10 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
 	env::const_iterator jt = interp.globenv.find(f);
 	if ((jt != interp.globenv.end() && jt->second.t == env_info::fun) ||
 	    interp.externals.find(f) != interp.externals.end())
-	  interp.breakpoints.erase(f);
+	  if (interp.breakpoints.find(f) != interp.breakpoints.end())
+	    interp.breakpoints.erase(f);
+	  else
+	    cerr << "del: unknown breakpoint '" << s << "'\n";
 	else
 	  f = 0;
       }
