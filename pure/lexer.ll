@@ -521,6 +521,7 @@ void my_readline(const char *prompt, char *buf, int &result, int max_size)
 {
   if (!my_buf) {
     cin.clear();
+    interpreter::g_interp->stoplevel = 0;
     if (using_readline) {
       // read a new line using readline()
       char *s = readline(prompt);

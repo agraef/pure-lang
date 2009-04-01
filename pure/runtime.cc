@@ -3995,6 +3995,7 @@ void pure_debug_rule(void *_e, void *_r)
   DebugInfo& d = interp.dbg_info.back();
   assert(d.e == e);
   d.r = r;
+  interp.stoplevel = -1;
   // build the lhs variable table
   d.vars.clear();
   interp.bind(d.vars, r->lhs, e->b);
