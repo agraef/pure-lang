@@ -3924,10 +3924,9 @@ static string printx(pure_expr *x, size_t n = 30)
   return s;
 }
 
-static void get_vars(DebugInfo& d)
+static void get_vars(interpreter& interp, DebugInfo& d)
 {
   // find the arguments and environment of this call on the shadow stack
-  interpreter& interp = *interpreter::g_interp;
   pure_expr **sstk = interp.sstk;
   size_t sz = interp.sstk_sz;
   assert(d.e->n+d.e->m < sz);
@@ -3936,9 +3935,8 @@ static void get_vars(DebugInfo& d)
   assert(d.args[-1] == 0);
 }
 
-static void print_vars(DebugInfo& d)
+static void print_vars(interpreter& interp, DebugInfo& d)
 {
-  interpreter& interp = *interpreter::g_interp;
   map<string,pure_expr*> vals;
   for (env::iterator it = d.vars.begin(); it != d.vars.end(); ++it) {
     int32_t vno = it->first;
@@ -3979,6 +3977,16 @@ static inline bool stop(interpreter& interp, Env *e)
   return false;
 }
 
+static inline string pname(interpreter& interp, Env *e)
+{
+  if (e->tag > 0) {
+    ostringstream sout;
+    sout << interp.symtab.sym(e->tag).x;
+    return sout.str();
+  } else
+    return "#<closure>";
+}
+
 extern "C"
 void pure_debug_rule(void *_e, void *_r)
 {
@@ -3999,14 +4007,10 @@ void pure_debug_rule(void *_e, void *_r)
   // build the lhs variable table
   d.vars.clear();
   interp.bind(d.vars, r->lhs, e->b);
-  cout << "** [" << interp.dbg_info.size() << "] ";
-  if (e->tag > 0)
-    cout << interp.symtab.sym(e->tag).x;
-  else
-    cout << "<<anonymous>>";
-  cout << ": " << *r << ";\n";
-  get_vars(d);
-  print_vars(d);
+  cout << "** [" << interp.dbg_info.size() << "] "
+       << pname(interp, e) << ": " << *r << ";\n";
+  get_vars(interp, d);
+  print_vars(interp, d);
   static bool init = false;
   if (!init) {
     cout << "(Press 'x' to exit the interpreter, <cr> to continue, <eof> to run unattended.)\n";
@@ -4032,14 +4036,10 @@ void pure_debug_redn(void *_e, void *_r, pure_expr *x)
   DebugInfo& d = interp.dbg_info.back();
   assert(d.e == e);
   if (r) {
-    cout << "++ [" << interp.dbg_info.size() << "] ";
-    if (e->tag > 0)
-      cout << interp.symtab.sym(e->tag).x;
-    else
-      cout << "<<anonymous>>";
-    cout << ": " << *r << ";\n";
-    get_vars(d);
-    print_vars(d);
+    cout << "++ [" << interp.dbg_info.size() << "] "
+	 << pname(interp, e) << ": " << *r << ";\n";
+    get_vars(interp, d);
+    print_vars(interp, d);
     if (x) cout << "   --> " << printx(x, 70) << endl;
   }
   // pop an activation record
