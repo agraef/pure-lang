@@ -3844,6 +3844,7 @@ Env& Env::operator= (const Env& e)
     b = e.b; local = e.local; parent = e.parent;
   }
   fmap = e.fmap; xmap = e.xmap; xtab = e.xtab; prop = e.prop; m = e.m;
+  if (e.descr) descr = e.descr;
   return *this;
 }
 
@@ -4103,14 +4104,14 @@ void Env::build_map(expr x)
     if (n == 1 && f.tag() == interp.symtab.amp_sym().f) {
       expr y = x.xval2();
       push("&");
-      Env* eptr = fmap.act()[-x.hash()] = new Env(0, 0, y, true, true);
+      Env* eptr = fmap.act()[-x.hash()] = new Env(0, 0, 0, y, true, true);
       Env& e = *eptr;
       e.build_map(y); e.promote_map();
       pop();
     } else if (n == 2 && f.tag() == interp.symtab.catch_sym().f) {
       expr h = x.xval1().xval2(), y = x.xval2();
       push("catch");
-      Env* eptr = fmap.act()[-x.hash()] = new Env(0, 0, y, true, true);
+      Env* eptr = fmap.act()[-x.hash()] = new Env(0, 0, 0, y, true, true);
       Env& e = *eptr;
       e.build_map(y); e.promote_map();
       pop();
@@ -4132,7 +4133,8 @@ void Env::build_map(expr x)
     break;
   case EXPR::LAMBDA: {
     push("lambda");
-    Env* eptr = fmap.act()[-x.hash()] = new Env(0, 1, x.xval2(), true, true);
+    Env* eptr = fmap.act()[-x.hash()] =
+      new Env(0, 0, 1, x.xval2(), true, true);
     Env& e = *eptr;
     e.build_map(x.xval2()); e.promote_map();
     pop();
@@ -4140,7 +4142,8 @@ void Env::build_map(expr x)
   }
   case EXPR::CASE: {
     push("case");
-    Env* eptr = fmap.act()[-x.hash()] = new Env(0, 1, x.xval(), true, true);
+    Env* eptr = fmap.act()[-x.hash()] =
+      new Env(0, "case", 1, x.xval(), true, true);
     Env& e = *eptr;
     e.build_map(*x.rules()); e.promote_map();
     pop();
@@ -4190,7 +4193,7 @@ void Env::build_map(expr x, rulel::const_iterator r, rulel::const_iterator end)
     rulel::const_iterator s = r;
     expr y = (++s == end)?x:s->rhs;
     push("when");
-    Env* eptr = fmap.act()[-y.hash()] = new Env(0, 1, y, true, true);
+    Env* eptr = fmap.act()[-y.hash()] = new Env(0, "when", 1, y, true, true);
     Env& e = *eptr;
     e.build_map(x, s, end); e.promote_map();
     pop();
@@ -5257,7 +5260,7 @@ pure_expr *interpreter::doeval(expr x, pure_expr*& e)
      environments survive for the entire lifetime of any embedded closures,
      which might still be called at a later time. */
   Env *save_fptr = fptr;
-  fptr = new Env(0, 0, x, false); fptr->refc = 1;
+  fptr = new Env(0, 0, 0, x, false); fptr->refc = 1;
   Env &f = *fptr;
   push("doeval", &f);
   fun_prolog("$$init");
@@ -5364,7 +5367,7 @@ pure_expr *interpreter::dodefn(env vars, expr lhs, expr rhs, pure_expr*& e)
   // Create an anonymous function to call in order to evaluate the rhs
   // expression, match against the lhs and bind variables in lhs accordingly.
   Env *save_fptr = fptr;
-  fptr = new Env(0, 0, rhs, false); fptr->refc = 1;
+  fptr = new Env(0, 0, 0, rhs, false); fptr->refc = 1;
   Env &f = *fptr;
   push("dodefn", &f);
   fun_prolog("$$init");

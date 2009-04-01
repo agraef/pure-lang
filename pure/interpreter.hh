@@ -150,6 +150,8 @@ struct Env {
   // function environment
   int32_t tag; // function id, zero for anonymous functions
   string name; // LLVM assembly function name
+  // descriptor for type of environment
+  const char *descr;
   // n = #function args, m = #extra args (captured environment)
   uint32_t n, m;
   // f = the (internal) LLVM function, h = the C-callable stub (if needed)
@@ -217,12 +219,13 @@ struct Env {
   void print(ostream& os) const;
   // default constructor
   Env()
-    : tag(0), n(0), m(0), f(0), h(0), fp(0), args(0), envs(0),
+    : tag(0), descr(0), n(0), m(0), f(0), h(0), fp(0), args(0), envs(0),
       rp(0), b(false), local(false), parent(0), refc(0) {}
   // environment for an anonymous closure with given body x
-  Env(int32_t _tag, uint32_t _n, expr x, bool _b, bool _local = false)
-    : tag(_tag), n(_n), m(0), f(0), h(0), fp(0), args(n), envs(0),
-      rp(0), b(_b), local(_local), parent(0), refc(0)
+  Env(int32_t _tag, const char *_descr, uint32_t _n, expr x,
+      bool _b, bool _local = false)
+    : tag(_tag), descr(_descr), n(_n), m(0), f(0), h(0), fp(0),
+      args(n), envs(0), rp(0), b(_b), local(_local), parent(0), refc(0)
   {
     if (envstk.empty()) {
       assert(!local);
@@ -236,8 +239,8 @@ struct Env {
   }
   // environment for a named closure with given definition info
   Env(int32_t _tag, const env_info& info, bool _b, bool _local = false)
-    : tag(_tag), n(info.argc), m(0), f(0), h(0), fp(0), args(n), envs(0),
-      rp(0), b(_b), local(_local), parent(0), refc(0)
+    : tag(_tag), descr(0), n(info.argc), m(0), f(0), h(0), fp(0),
+      args(n), envs(0), rp(0), b(_b), local(_local), parent(0), refc(0)
   {
     if (envstk.empty()) {
       assert(!local);

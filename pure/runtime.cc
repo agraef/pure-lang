@@ -3983,7 +3983,9 @@ static inline string pname(interpreter& interp, Env *e)
     ostringstream sout;
     sout << interp.symtab.sym(e->tag).x;
     return sout.str();
-  } else
+  } else if (e->descr)
+    return "#<"+string(e->descr)+">";
+  else
     return "#<closure>";
 }
 
