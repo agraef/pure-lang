@@ -104,7 +104,7 @@ int    [0-9]+|0[0-7]+|0[xX][0-9a-fA-F]+
 exp    ([Ee][+-]?[0-9]+)
 float  [0-9]+{exp}|[0-9]+\.{exp}|[0-9]*\.[0-9]+{exp}?
 str    ([^\"\\\n]|\\(.|\n))*
-cmd    (!|help|ls|pwd|cd|show|dump|clear|save|run|override|underride|stats|quit|completion_matches)
+cmd    (!|help|ls|pwd|break|del|cd|show|dump|clear|save|run|override|underride|stats|quit|completion_matches)
 blank  [ \t\f\v\r]
 
 %x comment xdecl xdecl_comment xusing xusing_comment rescan
@@ -880,8 +880,12 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
     while (isspace(*s)) ++s;
     if (!*s) {
       ostringstream sout;
-      for (set<string>::iterator it = interp.breakpoints.begin();
+      list<string> syms;
+      for (set<int32_t>::iterator it = interp.breakpoints.begin();
 	   it != interp.breakpoints.end(); ++it)
+	syms.push_back(interp.symtab.sym(*it).s);
+      syms.sort();
+      for (list<string>::iterator it = syms.begin(); it != syms.end(); ++it)
 	sout << *it << endl;
       if (interp.output)
 	(*interp.output) << sout.str();
@@ -893,7 +897,7 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
 	env::const_iterator jt = interp.globenv.find(f);
 	if ((jt != interp.globenv.end() && jt->second.t == env_info::fun) ||
 	    interp.externals.find(f) != interp.externals.end())
-	  interp.breakpoints.insert(interp.symtab.sym(f).s);
+	  interp.breakpoints.insert(f);
 	else
 	  f = 0;
       }
@@ -911,7 +915,7 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
 	env::const_iterator jt = interp.globenv.find(f);
 	if ((jt != interp.globenv.end() && jt->second.t == env_info::fun) ||
 	    interp.externals.find(f) != interp.externals.end())
-	  interp.breakpoints.erase(interp.symtab.sym(f).s);
+	  interp.breakpoints.erase(f);
 	else
 	  f = 0;
       }

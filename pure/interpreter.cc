@@ -5526,8 +5526,8 @@ Value *interpreter::when_codegen(expr x, matcher *m,
     const rule& rr = m->r[0];
     rule *rp = 0;
     if (debugging) {
-      expr y = (s==end)?x:expr::when(x, copy_rulel(s, end));
-      rp = new rule(rr.lhs, y);
+      expr x = rr.lhs, y = (s==end)?x:expr::when(x, copy_rulel(s, end));
+      rp = new rule(x, y);
       debug_rule(rp, true);
     }
     Value *v = when_codegen(x, m+1, s, end, rp);

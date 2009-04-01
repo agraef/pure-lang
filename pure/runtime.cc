@@ -3966,13 +3966,30 @@ static void print_vars(DebugInfo& d)
   if (count > 0) cout << endl;
 }
 
+static inline bool stop(interpreter& interp, Env *e)
+{
+  if (!interp.interactive)
+    return false;
+  if (e->tag>0 &&
+      interp.breakpoints.find(e->tag) != interp.breakpoints.end())
+    return true;
+  if (interp.stoplevel < 0 ||
+      interp.dbg_info.size() <= (uint32_t)interp.stoplevel)
+    return true;
+  return false;
+}
+
 extern "C"
 void pure_debug_rule(void *_e, void *_r, bool owner)
 {
   Env *e = (Env*)_e;
   rule *r = (rule*)_r;
   interpreter& interp = *interpreter::g_interp;
-  if (!interp.interactive) return;
+  if (!stop(interp, e)) {
+    // XXXFIXME: This leaks memory, but we can't delete r just yet. :(
+    //if (r && owner) delete r;
+    return;
+  }
   if (!r) {
     // push a new activation record
     interp.dbg_info.push_back(DebugInfo(e));
@@ -4014,7 +4031,7 @@ void pure_debug_redn(void *_e, void *_r, pure_expr *x)
   Env *e = (Env*)_e;
   rule *r = (rule*)_r;
   interpreter& interp = *interpreter::g_interp;
-  if (!interp.interactive) return;
+  if (!stop(interp, e)) return;
   assert(!interp.dbg_info.empty());
   DebugInfo& d = interp.dbg_info.back();
   assert(d.e == e);
