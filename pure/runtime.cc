@@ -4117,8 +4117,11 @@ void pure_debug_rule(void *_e, void *_r)
 	last_count = count;
       else
 	count = last_count;
-      list<DebugInfo>::reverse_iterator it;
-      for (it = kt; count>0 && it != interp.debug_info.rend(); ++it, --count)
+      list<DebugInfo>::reverse_iterator it = kt;
+      for (size_t i = 0; it != interp.debug_info.rbegin() && i < last_count%2;
+	   it--, i++)
+	;
+      for (; count>0 && it != interp.debug_info.rend(); ++it, --count)
 	;
       count = last_count;
       while (count-- > 0) {
