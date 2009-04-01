@@ -596,7 +596,7 @@ void pure_pop_tail_arg();
 /* Debugging support. Experimental. */
 
 void pure_debug(int32_t tag, const char *format, ...);
-void pure_debug_rule(void *e, void *r, bool owner);
+void pure_debug_rule(void *e, void *r);
 void pure_debug_redn(void *e, void *r, pure_expr *x);
 
 /* LIBRARY API. *************************************************************/

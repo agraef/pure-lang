@@ -3980,16 +3980,12 @@ static inline bool stop(interpreter& interp, Env *e)
 }
 
 extern "C"
-void pure_debug_rule(void *_e, void *_r, bool owner)
+void pure_debug_rule(void *_e, void *_r)
 {
   Env *e = (Env*)_e;
   rule *r = (rule*)_r;
   interpreter& interp = *interpreter::g_interp;
-  if (!stop(interp, e)) {
-    // XXXFIXME: This leaks memory, but we can't delete r just yet. :(
-    //if (r && owner) delete r;
-    return;
-  }
+  if (!stop(interp, e)) return;
   if (!r) {
     // push a new activation record
     interp.dbg_info.push_back(DebugInfo(e));
@@ -3998,8 +3994,7 @@ void pure_debug_rule(void *_e, void *_r, bool owner)
   assert(!interp.dbg_info.empty());
   DebugInfo& d = interp.dbg_info.back();
   assert(d.e == e);
-  if (d.r && d.owner) delete d.r;
-  d.r = r; d.owner = owner;
+  d.r = r;
   // build the lhs variable table
   d.vars.clear();
   interp.bind(d.vars, r->lhs, e->b);
@@ -4047,7 +4042,6 @@ void pure_debug_redn(void *_e, void *_r, pure_expr *x)
     if (x) cout << "   --> " << printx(x, 70) << endl;
   }
   // pop an activation record
-  if (d.r && d.owner) delete d.r;
   interp.dbg_info.pop_back();
 }
 

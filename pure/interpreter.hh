@@ -166,6 +166,8 @@ struct Env {
   list<VarInfo> xtab;
   // local function environments
   FMap fmap;
+  // auxiliary rule storage used by when_codegen()
+  rule *rp;
   // propagation links for environment variables (pointers to call sites)
   // e in prop means that there's a call with de Bruijn index prop[e] at e
   map<Env*,uint8_t> prop;
@@ -216,11 +218,11 @@ struct Env {
   // default constructor
   Env()
     : tag(0), n(0), m(0), f(0), h(0), fp(0), args(0), envs(0),
-      b(false), local(false), parent(0), refc(0) {}
+      rp(0), b(false), local(false), parent(0), refc(0) {}
   // environment for an anonymous closure with given body x
   Env(int32_t _tag, uint32_t _n, expr x, bool _b, bool _local = false)
     : tag(_tag), n(_n), m(0), f(0), h(0), fp(0), args(n), envs(0),
-      b(_b), local(_local), parent(0), refc(0)
+      rp(0), b(_b), local(_local), parent(0), refc(0)
   {
     if (envstk.empty()) {
       assert(!local);
@@ -235,7 +237,7 @@ struct Env {
   // environment for a named closure with given definition info
   Env(int32_t _tag, const env_info& info, bool _b, bool _local = false)
     : tag(_tag), n(info.argc), m(0), f(0), h(0), fp(0), args(n), envs(0),
-      b(_b), local(_local), parent(0), refc(0)
+      rp(0), b(_b), local(_local), parent(0), refc(0)
   {
     if (envstk.empty()) {
       assert(!local);
@@ -292,10 +294,9 @@ struct DebugInfo {
   // debugger activation record
   Env *e;			// environment
   const rule *r;		// executed rule
-  bool owner;			// whether we own r (must be deleted)
   env vars;			// lhs variable bindings
   pure_expr **args, **envs;	// pointers to args and environment
-  DebugInfo(Env *_e) : e(_e), r(0), owner(false) {}
+  DebugInfo(Env *_e) : e(_e), r(0) {}
 };
 
 /* The interpreter. */
@@ -554,7 +555,7 @@ public:
   list<DebugInfo> dbg_info;
   set<int32_t> breakpoints;
   int32_t stoplevel;
-  llvm::Value *debug_rule(const rule *r, bool owner = false);
+  llvm::Value *debug_rule(const rule *r);
   llvm::Value *debug_redn(const rule *r, llvm::Value *v = 0);
 private:
   void init();

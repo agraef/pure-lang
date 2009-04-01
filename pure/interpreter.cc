@@ -439,7 +439,7 @@ void interpreter::init()
   declare_extern((void*)pure_debug,
 		 "pure_debug",      "void",  -2, "int", "char*");
   declare_extern((void*)pure_debug_rule,
-		 "pure_debug_rule", "void",   3, "void*", "void*", "bool");
+		 "pure_debug_rule", "void",   2, "void*", "void*");
   declare_extern((void*)pure_debug_redn,
 		 "pure_debug_redn", "void",   3, "void*", "void*", "expr*");
 
@@ -3851,6 +3851,7 @@ void Env::clear()
 {
   static list<Function*> to_be_deleted;
   if (!f) return; // not initialized
+  if (rp) delete rp;
   interpreter& interp = *interpreter::g_interp;
   if (local) {
     // purge local functions
@@ -5524,14 +5525,13 @@ Value *interpreter::when_codegen(expr x, matcher *m,
     e.f->getBasicBlockList().push_back(matchedbb);
     e.builder.SetInsertPoint(matchedbb);
     const rule& rr = m->r[0];
-    rule *rp = 0;
     if (debugging) {
       expr x = rr.lhs, y = (s==end)?x:expr::when(x, copy_rulel(s, end));
-      rp = new rule(x, y);
-      debug_rule(rp, true);
+      e.rp = new rule(x, y);
+      debug_rule(e.rp);
     }
-    Value *v = when_codegen(x, m+1, s, end, rp);
-    if (v) e.CreateRet(v, rp);
+    Value *v = when_codegen(x, m+1, s, end, e.rp);
+    if (v) e.CreateRet(v, e.rp);
     // failed => throw an exception
     e.f->getBasicBlockList().push_back(failedbb);
     e.builder.SetInsertPoint(failedbb);
@@ -6807,7 +6807,7 @@ void interpreter::make_bigint(const mpz_t& z, Value*& sz, Value*& ptr)
 
 // Debugger calls.
 
-Value *interpreter::debug_rule(const rule *r, bool owner)
+Value *interpreter::debug_rule(const rule *r)
 {
   Env* e = &act_env();
   Function *f = module->getFunction("pure_debug_rule");
@@ -6815,7 +6815,6 @@ Value *interpreter::debug_rule(const rule *r, bool owner)
   vector<Value*> args;
   args.push_back(constptr(e));
   args.push_back(constptr(r));
-  args.push_back(Bool(owner));
   return e->CreateCall(f, args);
 }
 
