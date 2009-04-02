@@ -2439,10 +2439,16 @@ commands useful for interactive purposes. Here is a quick rundown of the
 currently supported operations:
 
 ``! command``
-    Shell escape. 
+    Shell escape.
+
+``break [symbol]``
+    Sets a breakpoint on the given function or operator symbol. If invoked
+    without an argument, prints all currently defined breakpoints. This
+    requires that the interpreter was invoked with the -g option to enable
+    debugging support. See Debugging_ below for details.
 
 ``cd dir``
-    Change the current working dir. 
+    Change the current working dir.
 
 ``clear [option ...] [symbol ...]``
     Purge the definitions of the given symbols (functions, macros, constants
@@ -2455,6 +2461,12 @@ currently supported operations:
     Levels`_ below for further details. A description of the common options
     accepted by the ``clear``, ``dump`` and ``show`` commands can be found in
     `Specifying Symbol Selections`_ below.
+
+``del [symbol]``
+    Deletes a breakpoint on the given function or operator symbol. If invoked
+    without an argument, clears all currently defined breakpoints (after
+    confirmation). This requires that the interpreter was invoked with the -g
+    option to enable debugging support. See Debugging_ below for details.
 
 ``dump [-n filename] [option ...] [symbol ...]``
     Dump a snapshot of the current function, macro, constant and variable
@@ -2484,7 +2496,7 @@ currently supported operations:
     `Online Help`_ above for details.
 
 ``ls [args]``
-    List files (shell ls(1) command). 
+    List files (shell ls(1) command).
 
 ``override``
     Enter "override" mode. This allows you to add equations "above" existing
@@ -2492,10 +2504,10 @@ currently supported operations:
     equations. See `Definition Levels`_ below for details.
 
 ``pwd``
-    Print the current working dir (shell pwd(1) command). 
+    Print the current working dir (shell pwd(1) command).
 
 ``quit``
-    Exits the interpreter. 
+    Exits the interpreter.
 
 ``run script``
     Loads the given script file and adds its definitions to the current
@@ -3747,6 +3759,11 @@ anonymous global variable. (This is done so that a global function definition
 can be changed at any time during an interactive session, without having to
 recompile the entire program.) However, mutual tail recursion *does* work with
 local functions, so it's easy to work around this limitation.
+
+Also note that tail call optimization is *always* disabled if the debugger is
+enabled (-g). This makes it much easier to debug programs, but of course this
+means that you should always run your program without -g when the debugger is
+not needed.
 
 Handling of Asynchronous Signals
 --------------------------------
