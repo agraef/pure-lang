@@ -2,26 +2,28 @@
 TODO
 ====
 
-While the interpreter is already useful as it is, there are still a few
-features which would be nice to have in future releases.
+While the interpreter is already full-featured, there are still a few things
+which would be nice to have in future releases.
 
 (NB: These are just the most substantial wishlist items, which might well turn
 out to be difficult or subprojects in their own right. Don't let this
 discourage you from contributing smaller improvements if you notice any
 shortcomings in the interpreter. -ag)
 
-- Symbolic (Pure-level) debugger, profiler. The necessary hooks are mostly
-  there, we just need to add a few runtime calls in the generated code.
-  However, it might be even cooler to employ LLVM's debugging intrinsics
-  to create code which could be debugged at the Pure source level using gdb.
+- Support for LLVM's debugging and profiling intrinsics to create code which
+  can be debugged and profiled using external tools like gdb and gprof.
+
+- Support for direct object (.o) file generation once LLVM supports this.
+  This will make it possible to do batch compilation without having the LLVM
+  toolchain installed.
 
 - Better error recovery in the parser. Unfortunately, Pure's terseness makes
   this rather difficult. The current panic mode recovery seems to cope
   surprisingly well with most common kinds of errors, although it might catch
   errors much too late in some cases.
 
-- Add support for externals from languages with other calling conventions
-  already fully supported by LLVM (Fortran, Ada?).
+- Support for externals from languages with other calling conventions already
+  fully supported by LLVM (Fortran, Ada?).
 
 - Multithreading support. This requires thread-local data instead of globals
   in a few places, and synchronization where interpreter globals are used
