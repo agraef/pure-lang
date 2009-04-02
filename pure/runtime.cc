@@ -4112,8 +4112,20 @@ void pure_debug_rule(void *_e, void *_r)
   bool done = false;
   while (!done) {
     string cmdline, cmd, arg;
-    cout << ": ";
-    getline(cin, cmdline);
+    extern bool using_readline;
+    if (!cin.eof() && using_readline) {
+      char *s = readline(": ");
+      if (s) {
+	cmdline = s;
+	if (strlen(s) > 1) add_history(s);
+      } else {
+	cmdline = "";
+	cin.clear(ios_base::eofbit);
+      }
+    } else {
+      cout << ": ";
+      getline(cin, cmdline);
+    }
     parse_cmd(cmdline, cmd, arg);
     if (!cin.good()) cout << endl;
     if (cmd=="!")
