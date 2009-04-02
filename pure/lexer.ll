@@ -867,6 +867,18 @@ static int argcmp(const char *s, const char *t)
     return 0;
 }
 
+static const bool yes_or_no(const string& msg)
+{
+  char ans;
+  cout << msg << " ";
+  cin >> noskipws >> ans;
+  bool res = cin.good() && ans == 'y';
+  while (cin.good() && ans != '\n') cin >> noskipws >> ans;
+  if (!cin.good()) cout << endl;
+  cin.clear();
+  return res;
+}
+
 static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const char *cmd, const char *cmdline)
 {
   if (interp.restricted) {
@@ -913,7 +925,11 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
     const char *s = cmdline+3;
     while (isspace(*s)) ++s;
     if (!*s) {
-      cerr << "del: no function name specified\n";
+      if (!interp.breakpoints.empty()) {
+	if (yes_or_no("This will clear all breakpoints. Continue (y/n)?"))
+	  interp.breakpoints.clear();
+      } else
+	  cerr << "del: no breakpoints\n";
     } else {
       int32_t f = pure_getsym(s);
       if (f > 0) {
