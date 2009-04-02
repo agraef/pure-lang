@@ -889,8 +889,10 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
     system(s);
   } else if (strcmp(cmd, "break") == 0)  {
     const char *s = cmdline+5;
-    while (isspace(*s)) ++s;
-    if (!*s) {
+    argl args(s, "break");
+    if (!args.ok)
+      ;
+    else if (args.c == 0) {
       ostringstream sout;
       list<string> syms;
       for (set<int32_t>::iterator it = interp.breakpoints.begin();
@@ -903,9 +905,12 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
 	(*interp.output) << sout.str();
       else
 	cout << sout.str();
+    } else if (args.c > 1) {
+      cerr << "break: extra parameter\n";
     } else if (!interp.debugging) {
       cerr << "break: debugging not enabled (add -g when invoking the interpreter)\n";
     } else {
+      const char *s = args.l.begin()->c_str();
       int32_t f = pure_getsym(s);
       if (f > 0) {
 	env::const_iterator jt = interp.globenv.find(f);
@@ -923,14 +928,19 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
     }
   } else if (strcmp(cmd, "del") == 0)  {
     const char *s = cmdline+3;
-    while (isspace(*s)) ++s;
-    if (!*s) {
+    argl args(s, "del");
+    if (!args.ok)
+      ;
+    else if (args.c == 0) {
       if (!interp.breakpoints.empty()) {
 	if (yes_or_no("This will clear all breakpoints. Continue (y/n)?"))
 	  interp.breakpoints.clear();
       } else
 	  cerr << "del: no breakpoints\n";
+    } else if (args.c > 1) {
+      cerr << "del: extra parameter\n";
     } else {
+      const char *s = args.l.begin()->c_str();
       int32_t f = pure_getsym(s);
       if (f > 0) {
 	env::const_iterator jt = interp.globenv.find(f);
