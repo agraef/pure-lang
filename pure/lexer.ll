@@ -918,16 +918,11 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
       int32_t f = pure_getsym(s);
       if (f > 0) {
 	env::const_iterator jt = interp.globenv.find(f);
-	if ((jt != interp.globenv.end() && jt->second.t == env_info::fun) ||
-	    interp.externals.find(f) != interp.externals.end())
-	  if (interp.breakpoints.find(f) != interp.breakpoints.end())
-	    interp.breakpoints.erase(f);
-	  else
-	    cerr << "del: unknown breakpoint '" << s << "'\n";
+	if (interp.breakpoints.find(f) != interp.breakpoints.end())
+	  interp.breakpoints.erase(f);
 	else
-	  f = 0;
-      }
-      if (f == 0)
+	  cerr << "del: unknown breakpoint '" << s << "'\n";
+      } else
 	cerr << "del: unknown function symbol '" << s << "'\n";
     }
   } else if (strcmp(cmd, "help") == 0)  {
