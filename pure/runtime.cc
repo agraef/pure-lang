@@ -4037,11 +4037,19 @@ static inline string pname(interpreter& interp, Env *e)
 
 static void parse_cmd(string& cmdline, string& cmd, string& arg)
 {
+  // strip trailing whitespace
   size_t p = cmdline.find_last_not_of(" \t");
   if (p != string::npos)
     cmdline.erase(p+1);
   else
     cmdline.clear();
+  // strip leading whitespace
+  p = cmdline.find_first_not_of(" \t");
+  if (p != string::npos)
+    cmdline.erase(0, p);
+  else
+    cmdline.clear();
+  // tokenize
   if (!cmdline.empty() && (cmdline[0] == '!' || cmdline[0] == '?')) {
     cmd = cmdline.substr(0, 1);
     arg = cmdline.substr(1);
@@ -4136,7 +4144,10 @@ void pure_debug_rule(void *_e, void *_r)
       // eval
       if (cmd != "?") arg = cmdline;
       size_t p = arg.find_first_not_of(" \t");
-      if (p != string::npos) arg.erase(0, p);
+      if (p != string::npos)
+	arg.erase(0, p);
+      else
+	arg.clear();
       p = arg.find_last_not_of(";");
       if (p != string::npos)
 	arg.erase(p+1);
