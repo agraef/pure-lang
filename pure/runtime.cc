@@ -4055,6 +4055,11 @@ static void parse_cmd(string& cmdline, string& cmd, string& arg)
     arg = cmdline.substr(1);
     return;
   }
+  if (cmdline.substr(0, 2) == "//") {
+    cmd = cmdline.substr(0, 2);
+    arg = cmdline.substr(2);
+    return;
+  }
   p = cmdline.find_first_of(" \t");
   if (p != string::npos) {
     cmd = cmdline.substr(0, p);
@@ -4136,7 +4141,10 @@ void pure_debug_rule(void *_e, void *_r)
     }
     parse_cmd(cmdline, cmd, arg);
     if (!cin.good()) cout << endl;
-    if (cmd=="!")
+    if (cmd=="//")
+      // comment line
+      ;
+    else if (cmd=="!")
       // shell escape
       system(arg.c_str());
     else if (cmd=="?" || cmd.size()>1 ||
