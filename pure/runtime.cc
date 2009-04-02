@@ -3948,19 +3948,30 @@ static void get_vars(interpreter& interp, list<DebugInfo>::reverse_iterator kt)
 static void print_vars(interpreter& interp, DebugInfo& d)
 {
   map<string,pure_expr*> vals;
-  for (env::iterator it = d.vars.begin(); it != d.vars.end(); ++it) {
-    int32_t vno = it->first;
-    symbol& sym = interp.symtab.sym(vno);
-    env_info& info = it->second;
-    assert(info.t == env_info::lvar);
-    vals[sym.s] = subterm(d.e->n, d.args, *info.p, d.e->b);
-  }
-  for (list<VarInfo>::iterator it = d.e->xtab.begin(); it != d.e->xtab.end();
-       ++it) {
-    VarInfo& info = *it;
-    symbol& sym = interp.symtab.sym(info.vtag);
-    assert(info.v < d.e->m);
-    vals[sym.s] = d.envs[info.v];
+  if (d.r) {
+    for (env::iterator it = d.vars.begin(); it != d.vars.end(); ++it) {
+      int32_t vno = it->first;
+      symbol& sym = interp.symtab.sym(vno);
+      env_info& info = it->second;
+      assert(info.t == env_info::lvar);
+      vals[sym.s] = subterm(d.e->n, d.args, *info.p, d.e->b);
+    }
+    for (list<VarInfo>::iterator it = d.e->xtab.begin(); it != d.e->xtab.end();
+	 ++it) {
+      VarInfo& info = *it;
+      symbol& sym = interp.symtab.sym(info.vtag);
+      assert(info.v < d.e->m);
+      vals[sym.s] = d.envs[info.v];
+    }
+  } else {
+    // This is an external. There are no variable symbols for the arguments
+    // right now, so we need to make up our own.
+    for (uint32_t i = 0; i < d.e->n; i++) {
+      char buf[100];
+      sprintf(buf, "x%u", i+1);
+      assert(d.args[i]);
+      vals[buf] = d.args[i];
+    }
   }
   if (!vals.empty()) cout << "     ";
   size_t count = 0;
@@ -3978,19 +3989,29 @@ static string localvars(interpreter& interp, DebugInfo& d)
 {
   ostringstream sout;
   map<string,pure_expr*> vals;
-  for (env::iterator it = d.vars.begin(); it != d.vars.end(); ++it) {
-    int32_t vno = it->first;
-    symbol& sym = interp.symtab.sym(vno);
-    env_info& info = it->second;
-    assert(info.t == env_info::lvar);
-    vals[sym.s] = subterm(d.e->n, d.args, *info.p, d.e->b);
-  }
-  for (list<VarInfo>::iterator it = d.e->xtab.begin(); it != d.e->xtab.end();
-       ++it) {
-    VarInfo& info = *it;
-    symbol& sym = interp.symtab.sym(info.vtag);
-    assert(info.v < d.e->m);
-    vals[sym.s] = d.envs[info.v];
+  if (d.r) {
+    for (env::iterator it = d.vars.begin(); it != d.vars.end(); ++it) {
+      int32_t vno = it->first;
+      symbol& sym = interp.symtab.sym(vno);
+      env_info& info = it->second;
+      assert(info.t == env_info::lvar);
+      vals[sym.s] = subterm(d.e->n, d.args, *info.p, d.e->b);
+    }
+    for (list<VarInfo>::iterator it = d.e->xtab.begin(); it != d.e->xtab.end();
+	 ++it) {
+      VarInfo& info = *it;
+      symbol& sym = interp.symtab.sym(info.vtag);
+      assert(info.v < d.e->m);
+      vals[sym.s] = d.envs[info.v];
+    }
+  } else {
+    // This is an external. There are no variable symbols for the arguments
+    // right now, so we need to make up our own.
+    for (uint32_t i = 0; i < d.e->n; i++) {
+      char buf[100];
+      sprintf(buf, "x%u", i+1);
+      vals[buf] = d.args[i];
+    }
   }
   size_t count = 0;
   for (map<string,pure_expr*>::iterator it = vals.begin(); it != vals.end();
@@ -4100,20 +4121,31 @@ void pure_debug_rule(void *_e, void *_r)
   if (!r) {
     // push a new activation record
     interp.debug_info.push_back(DebugInfo(interp.debug_info.size()+1, e));
-    return;
+    if (e->tag <= 0 ||
+	interp.externals.find(e->tag) == interp.externals.end())
+      return;
   }
   assert(!interp.debug_info.empty());
   DebugInfo& d = interp.debug_info.back();
   assert(d.e == e);
   d.r = r;
-  // build the lhs variable table
-  d.vars.clear();
-  interp.bind(d.vars, r->lhs, e->b);
+  if (r) {
+    // build the lhs variable table
+    d.vars.clear();
+    interp.bind(d.vars, r->lhs, e->b);
+  }
   if (!stop(interp, e)) return;
   interp.stoplevel = -1;
   interp.debug_skip = false;
-  cout << "** [" << d.n << "] "
-       << pname(interp, e) << ": " << *r << ";\n";
+  if (r) {
+    cout << "** [" << d.n << "] "
+	 << pname(interp, e) << ": " << *r << ";\n";
+  } else if (e->tag > 0 &&
+	     interp.externals.find(e->tag) != interp.externals.end()) {
+    ExternInfo &info = interp.externals[e->tag];
+    cout << "** [" << d.n << "] "
+	 << pname(interp, e) << ": " << info << ";\n";
+  }
   get_vars(interp, interp.debug_info.rbegin());
   print_vars(interp, d);
   static bool init = false;
@@ -4163,8 +4195,8 @@ void pure_debug_rule(void *_e, void *_r)
 	arg.clear();
       if (!arg.empty()) {
 	DebugInfo& d = *kt;
-	get_vars(interp, kt);
 	// supply the environment
+	get_vars(interp, kt);
 	string expr = "("+arg+") when "+localvars(interp, d)+" end";
 	// make sure we don't invoke the interpreter recursively
 	interp.interactive = false;
@@ -4242,8 +4274,15 @@ void pure_debug_rule(void *_e, void *_r)
     case '.': {
       // print current rule
       DebugInfo& d = *kt;
-      cout << stacklab(interp, kt, kt) << " [" << d.n << "] "
-	   << pname(interp, d.e) << ": " << *d.r << ";\n";
+      if (d.r) {
+	cout << stacklab(interp, kt, kt) << " [" << d.n << "] "
+	     << pname(interp, d.e) << ": " << *d.r << ";\n";
+      } else if (d.e->tag > 0 &&
+		 interp.externals.find(d.e->tag) != interp.externals.end()) {
+	ExternInfo &info = interp.externals[d.e->tag];
+	cout << stacklab(interp, kt, kt) << " [" << d.n << "] "
+	     << pname(interp, d.e) << ": " << info << ";\n";
+      }
       get_vars(interp, kt);
       print_vars(interp, d);
       break;
@@ -4266,8 +4305,15 @@ void pure_debug_rule(void *_e, void *_r)
       get_vars(interp, --it);
       while (count-- > 0) {
 	DebugInfo& d = *it;
-	cout << stacklab(interp, it, kt) << " [" << d.n << "] "
-	     << pname(interp, d.e) << ": " << *d.r << ";\n";
+	if (d.r) {
+	  cout << stacklab(interp, it, kt) << " [" << d.n << "] "
+	       << pname(interp, d.e) << ": " << *d.r << ";\n";
+	} else if (d.e->tag > 0 &&
+		   interp.externals.find(d.e->tag) != interp.externals.end()) {
+	  ExternInfo &info = interp.externals[d.e->tag];
+	  cout << stacklab(interp, it, kt) << " [" << d.n << "] "
+	       << pname(interp, d.e) << ": " << info << ";\n";
+	}
 	print_vars(interp, d);
 	if (it == interp.debug_info.rbegin())
 	  break;
@@ -4367,10 +4413,15 @@ void pure_debug_redn(void *_e, void *_r, pure_expr *x)
     if (r) {
       cout << "++ [" << d.n << "] "
 	   << pname(interp, e) << ": " << *r << ";\n";
-      get_vars(interp, interp.debug_info.rbegin());
-      print_vars(interp, d);
-      if (x) cout << "     --> " << printx(x, 68) << endl;
+    } else if (d.e->tag > 0 &&
+	       interp.externals.find(d.e->tag) != interp.externals.end()) {
+      ExternInfo &info = interp.externals[d.e->tag];
+      cout << "++ [" << d.n << "] "
+	   << pname(interp, e) << ": " << info << ";\n";
     }
+    get_vars(interp, interp.debug_info.rbegin());
+    print_vars(interp, d);
+    if (x) cout << "     --> " << printx(x, 68) << endl;
   }
   // pop an activation record
   interp.debug_info.pop_back();

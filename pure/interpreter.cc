@@ -4986,6 +4986,18 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     } else
       assert(0 && "invalid C type");
   }
+  // For the debugger we create a little dummy environment which provides the
+  // information about the external function that we need.
+  Env *e = 0;
+  if (debugging) {
+    e = new Env(sym.f, n);
+    Function *f = module->getFunction("pure_debug_rule");
+    assert(f);
+    vector<Value*> args;
+    args.push_back(constptr(e));
+    args.push_back(constptr(0));
+    b.CreateCall(f, args.begin(), args.end());
+  }
   // call the function
   Value* u = b.CreateCall(g, unboxed.begin(), unboxed.end());
   // free temporaries
@@ -5046,6 +5058,15 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     u = b.CreateCall(module->getFunction("pure_pointer"), u);
   else
     assert(0 && "invalid C type");
+  if (debugging) {
+    Function *f = module->getFunction("pure_debug_redn");
+    assert(f);
+    vector<Value*> args;
+    args.push_back(constptr(e));
+    args.push_back(constptr(0));
+    args.push_back(u);
+    b.CreateCall(f, args.begin(), args.end());
+  }
   // free arguments (we do that here so that the arguments don't get freed
   // before we know that we don't need them anymore)
   if (n > 0) {
@@ -5061,6 +5082,15 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   // The call failed. Provide a default value.
   f->getBasicBlockList().push_back(failedbb);
   b.SetInsertPoint(failedbb);
+  if (debugging) {
+    Function *f = module->getFunction("pure_debug_redn");
+    assert(f);
+    vector<Value*> args;
+    args.push_back(constptr(e));
+    args.push_back(constptr(0));
+    args.push_back(NullExprPtr);
+    b.CreateCall(f, args.begin(), args.end());
+  }
   // free temporaries
   if (temps) b.CreateCall(module->getFunction("pure_free_cstrings"));
   if (vtemps) b.CreateCall(module->getFunction("pure_free_cvectors"));

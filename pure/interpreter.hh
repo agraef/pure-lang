@@ -252,6 +252,12 @@ struct Env {
     }
     fmap.first();
   }
+  // dummy environment for an external
+  Env(int32_t _tag, uint32_t _n, bool _local = false)
+    : tag(_tag), descr(0), n(_n), m(0), f(0), h(0), fp(0),
+      args(n), envs(0), rp(0), b(false), local(false), parent(0), refc(0)
+  {
+  }
   // assignment -- this is only allowed if the lvalue is an uninitialized
   // environment for which no LLVM function has been created yet, or if it is
   // a global function to be overridden
