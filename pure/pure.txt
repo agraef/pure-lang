@@ -289,7 +289,7 @@ Startup Files
 The interpreter may source various files during its startup. These are:
 
 ~/.pure_history
-    Interactive command history. 
+    Interactive command history.
 
 ~/.purerc, .purerc, .pure
     Interactive startup files. The latter is usually a dump from a previous
@@ -2270,7 +2270,7 @@ operations which, besides the usual arithmetic and logical operators, are
 probably used most frequently:
 
 ``x+y``
-    This is also used to denote list and string concatenation. 
+    This is also used to denote list and string concatenation.
 
 ``x:y``
     This is the list-consing operation. ``x`` becomes the head of the list,
@@ -2296,7 +2296,7 @@ probably used most frequently:
     columns) of a matrix.
 
 ``x'``
-    The transpose of a matrix. 
+    The transpose of a matrix.
 
 ``x!y``
     This is Pure's indexing operation, which applies to lists, tuples,
@@ -2562,17 +2562,17 @@ operate. Options may be combined, thus, e.g., ``show -mft`` is the same as
 must follow immediately behind the option character if present, as in ``-t0``.
 
 -c
-    Selects defined constants. 
+    Selects defined constants.
 
 -f
-    Selects defined functions. 
+    Selects defined functions.
 
 -g
     Indicates that the following symbols are actually shell glob patterns and
     that all matching symbols should be selected.
 
 -m
-    Select defined macros. 
+    Select defined macros.
 
 -pflag
     Select only private symbols if *flag* is nonzero (the default), otherwise
@@ -2590,7 +2590,7 @@ must follow immediately behind the option character if present, as in ``-t0``.
     the current definitions level.
 
 -v
-    Select defined variables. 
+    Select defined variables.
 
 In addition, the -h option prints a short help message describing all
 available options of the command at hand.
@@ -2649,7 +2649,7 @@ to be listed and the format to use.
     information. This implies -s.
 
 -s
-    Summary format, print just summary information about listed symbols. 
+    Summary format, print just summary information about listed symbols.
 
 Symbols are always listed in lexicographic order. Note that some of the
 options (in particular, -a and -d) may produce excessive amounts of
@@ -2854,7 +2854,139 @@ instance::
 Debugging
 ---------
 
-TODO
+The interpreter provides a simple but reasonably convenient symbolic debugging
+facility when running interactively. To make this work, you have to specify
+the -g option when invoking the interpreter. This option disables tail call
+optimization to make it easier to debug programs. It also causes special
+debugging code to be generated which will make your program run *much*
+slower. Therefore the -g option should only be used if you need the debugger.
+
+To debug a given function, just set a breakpoint with the ``break`` command.
+For instance::
+
+  > fact n::int = if n>0 then n*fact (n-1) else 1;
+  > break fact
+  > fact 1;
+  ** [1] fact: fact n::int = if n>0 then n*fact (n-1) else 1;
+       n = 1
+  (Type 'h' for help.)
+  :
+  ** [2] fact: fact n::int = if n>0 then n*fact (n-1) else 1;
+       n = 0
+  :
+  ++ [2] fact: fact n::int = if n>0 then n*fact (n-1) else 1;
+       n = 0
+       --> 1
+  ** [2] (*): x::int*y::int = x*y;
+       x = 1; y = 1
+  :
+  ++ [2] (*): x::int*y::int = x*y;
+       x = 1; y = 1
+       --> 1
+  ++ [1] fact: fact n::int = if n>0 then n*fact (n-1) else 1;
+       n = 1
+       --> 1
+  1
+
+Lines beginning with ``**`` indicate that the evaluation was interrupted to
+show the rule which is currently being considered, along with the depth of the
+call stack, the invoked function and the values of parameters and other local
+variables in the current lexical environment. At the debugger prompt ``:`` you
+can then enter various special debugger commands, or just keep on hitting the
+carriage return key to walk through an evaluation step by step. (Command line
+editing using readline works as usual at the debugger prompt, if it is
+enabled.)
+
+Lines beginning with ``++`` show reductions which were actually performed
+during the evaluation and the results that were returned by the function call.
+
+The debugger provides the usual commands to walk through an evaluation, print
+and navigate the call stack, step over the current call and continue the
+evaluation unattended until you hit another breakpoint. Type ``h`` while in
+the debugger to get a list of these. If you know other source level debuggers
+like gdb then you should feel right at home.
+
+The debugger can be exited or suspended in the following ways:
+
+* You can type ``c`` to continue the evaluation until the next breakpoint, or
+  ``c foo`` in order to proceed until the debugger hits an invokation of the
+  function ``foo``.
+
+* You can type ``r`` to run the rest of the evaluation without the debugger.
+
+* The ``a`` ("auto") command steps through the rest of the evaluation, running
+  unattended and printing just the performed reductions. This command can also
+  be entered by just hitting the end-of-file key (``Ctrl-D`` on Unix systems)
+  at the debugger prompt.
+
+* You can also type ``x`` to exit from the debugger *and* the interpreter
+  immediately (after confirmation).
+
+At the debugger prompt, you can use the ``u`` ("up"), ``d`` ("down"), ``t``
+("top") and ``b`` ("bottom") commands to move around on the current call
+stack. The ``p`` command prints a range of the call stack centered around the
+currently selected stack frame, which is indicated with the ``>>`` tag,
+whereas ``**`` denotes the current bottom of the stack. The ``n`` command
+steps over the currently selected call (whereas the single step command always
+returns you to the bottom of the call stack). For instance::
+
+  > fact 3;
+  ** [1] fact: fact n::int = if n>0 then n*fact (n-1) else 1;
+       n = 3
+  : c *
+  ** [4] (*): x::int*y::int = x*y;
+       x = 1; y = 1
+  : p
+     [1] fact: fact n::int = if n>0 then n*fact (n-1) else 1;
+       n = 3
+     [2] fact: fact n::int = if n>0 then n*fact (n-1) else 1;
+       n = 2
+     [3] fact: fact n::int = if n>0 then n*fact (n-1) else 1;
+       n = 1
+  ** [4] (*): x::int*y::int = x*y;
+       x = 1; y = 1
+  : u
+  >> [3] fact: fact n::int = if n>0 then n*fact (n-1) else 1;
+       n = 1
+  : u
+  >> [2] fact: fact n::int = if n>0 then n*fact (n-1) else 1;
+       n = 2
+  : p
+     [1] fact: fact n::int = if n>0 then n*fact (n-1) else 1;
+       n = 3
+  >> [2] fact: fact n::int = if n>0 then n*fact (n-1) else 1;
+       n = 2
+     [3] fact: fact n::int = if n>0 then n*fact (n-1) else 1;
+       n = 1
+  ** [4] (*): x::int*y::int = x*y;
+       x = 1; y = 1
+  : n
+  ++ [2] fact: fact n::int = if n>0 then n*fact (n-1) else 1;
+       n = 2
+       --> 2
+  ** [2] (*): x::int*y::int = x*y;
+       x = 3; y = 2
+
+Another useful feature is the ``?`` command which lets you evaluate any Pure
+expression, with the local variables of the current rule bound to their
+corresponding values. (The expression must be entered on a single line here,
+and the trailing semicolon is optional. For convenience, the ``?`` command can
+also be omitted if the expression doesn't start with a single letter that
+could be mistaken for a debugger command.) For instance::
+
+  > fact 3;
+  ** [1] fact: fact n::int = if n>0 then n*fact (n-1) else 1;
+       n = 3
+  : c *
+  ** [4] (*): x::int*y::int = x*y;
+       x = 1; y = 1
+  : x+y
+  2
+  : u
+  >> [3] fact: fact n::int = if n>0 then n*fact (n-1) else 1;
+       n = 1
+  : n>0, fact n
+  1,1
 
 Interactive Startup
 -------------------
@@ -3085,10 +3217,10 @@ being batch-compiled, and it still works as before when we run it through the
 interpreter in both batch and interactive mode, too::
 
   $ pure -i -q hello.pure
-  Hello, world!                                                    
-  [1,2,6,24,120,720,5040,40320,362880,3628800]                     
-  > main 5;                                                        
-  Hello, world!                                                    
+  Hello, world!
+  [1,2,6,24,120,720,5040,40320,362880,3628800]
+  > main 5;
+  Hello, world!
   [1,2,6,24,120]
   ()
   > quit
@@ -3856,12 +3988,12 @@ GNU Scientific Library
 .. _Haskell:
 
 Haskell
-    A popular non-strict FPL, http://www.haskell.org. 
+    A popular non-strict FPL, http://www.haskell.org.
 
 .. _LLVM:
 
 LLVM
-    The LLVM code generator framework, http://llvm.org. 
+    The LLVM code generator framework, http://llvm.org.
 
 .. _ML:
 
@@ -3878,4 +4010,4 @@ Pure
 .. _Q:
 
 Q
-    Another term rewriting language by yours truly, http://q-lang.sf.net. 
+    Another term rewriting language by yours truly, http://q-lang.sf.net.

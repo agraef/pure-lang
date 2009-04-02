@@ -3066,7 +3066,133 @@ clear: now at temporary definitions level #1
 </div>
 <div class="section" id="debugging">
 <h2><a class="toc-backref" href="#id42">12.6&nbsp;&nbsp;&nbsp;Debugging</a></h2>
-<p>TODO</p>
+<p>The interpreter provides a simple but reasonably convenient symbolic debugging
+facility when running interactively. To make this work, you have to specify
+the -g option when invoking the interpreter. This option disables tail call
+optimization to make it easier to debug programs. It also causes special
+debugging code to be generated which will make your program run <em>much</em>
+slower. Therefore the -g option should only be used if you need the debugger.</p>
+<p>To debug a given function, just set a breakpoint with the <tt class="docutils literal"><span class="pre">break</span></tt> command.
+For instance:</p>
+<pre class="literal-block">
+&gt; fact n::int = if n&gt;0 then n*fact (n-1) else 1;
+&gt; break fact
+&gt; fact 1;
+** [1] fact: fact n::int = if n&gt;0 then n*fact (n-1) else 1;
+     n = 1
+(Type 'h' for help.)
+:
+** [2] fact: fact n::int = if n&gt;0 then n*fact (n-1) else 1;
+     n = 0
+:
+++ [2] fact: fact n::int = if n&gt;0 then n*fact (n-1) else 1;
+     n = 0
+     --&gt; 1
+** [2] (*): x::int*y::int = x*y;
+     x = 1; y = 1
+:
+++ [2] (*): x::int*y::int = x*y;
+     x = 1; y = 1
+     --&gt; 1
+++ [1] fact: fact n::int = if n&gt;0 then n*fact (n-1) else 1;
+     n = 1
+     --&gt; 1
+1
+</pre>
+<p>Lines beginning with <tt class="docutils literal"><span class="pre">**</span></tt> indicate that the evaluation was interrupted to
+show the rule which is currently being considered, along with the depth of the
+call stack, the invoked function and the values of parameters and other local
+variables in the current lexical environment. At the debugger prompt <tt class="docutils literal"><span class="pre">:</span></tt> you
+can then enter various special debugger commands, or just keep on hitting the
+carriage return key to walk through an evaluation step by step. (Command line
+editing using readline works as usual at the debugger prompt, if it is
+enabled.)</p>
+<p>Lines beginning with <tt class="docutils literal"><span class="pre">++</span></tt> show reductions which were actually performed
+during the evaluation and the results that were returned by the function call.</p>
+<p>The debugger provides the usual commands to walk through an evaluation, print
+and navigate the call stack, step over the current call and continue the
+evaluation unattended until you hit another breakpoint. Type <tt class="docutils literal"><span class="pre">h</span></tt> while in
+the debugger to get a list of these. If you know other source level debuggers
+like gdb then you should feel right at home.</p>
+<p>The debugger can be exited or suspended in the following ways:</p>
+<ul class="simple">
+<li>You can type <tt class="docutils literal"><span class="pre">c</span></tt> to continue the evaluation until the next breakpoint, or
+<tt class="docutils literal"><span class="pre">c</span> <span class="pre">foo</span></tt> in order to proceed until the debugger hits an invokation of the
+function <tt class="docutils literal"><span class="pre">foo</span></tt>.</li>
+<li>You can type <tt class="docutils literal"><span class="pre">r</span></tt> to run the rest of the evaluation without the debugger.</li>
+<li>The <tt class="docutils literal"><span class="pre">a</span></tt> (&quot;auto&quot;) command steps through the rest of the evaluation, running
+unattended and printing just the performed reductions. This command can also
+be entered by just hitting the end-of-file key (<tt class="docutils literal"><span class="pre">Ctrl-D</span></tt> on Unix systems)
+at the debugger prompt.</li>
+<li>You can also type <tt class="docutils literal"><span class="pre">x</span></tt> to exit from the debugger <em>and</em> the interpreter
+immediately (after confirmation).</li>
+</ul>
+<p>At the debugger prompt, you can use the <tt class="docutils literal"><span class="pre">u</span></tt> (&quot;up&quot;), <tt class="docutils literal"><span class="pre">d</span></tt> (&quot;down&quot;), <tt class="docutils literal"><span class="pre">t</span></tt>
+(&quot;top&quot;) and <tt class="docutils literal"><span class="pre">b</span></tt> (&quot;bottom&quot;) commands to move around on the current call
+stack. The <tt class="docutils literal"><span class="pre">p</span></tt> command prints a range of the call stack centered around the
+currently selected stack frame, which is indicated with the <tt class="docutils literal"><span class="pre">&gt;&gt;</span></tt> tag,
+whereas <tt class="docutils literal"><span class="pre">**</span></tt> denotes the current bottom of the stack. The <tt class="docutils literal"><span class="pre">n</span></tt> command
+steps over the currently selected call (whereas the single step command always
+returns you to the bottom of the call stack). For instance:</p>
+<pre class="literal-block">
+&gt; fact 3;
+** [1] fact: fact n::int = if n&gt;0 then n*fact (n-1) else 1;
+     n = 3
+: c *
+** [4] (*): x::int*y::int = x*y;
+     x = 1; y = 1
+: p
+   [1] fact: fact n::int = if n&gt;0 then n*fact (n-1) else 1;
+     n = 3
+   [2] fact: fact n::int = if n&gt;0 then n*fact (n-1) else 1;
+     n = 2
+   [3] fact: fact n::int = if n&gt;0 then n*fact (n-1) else 1;
+     n = 1
+** [4] (*): x::int*y::int = x*y;
+     x = 1; y = 1
+: u
+&gt;&gt; [3] fact: fact n::int = if n&gt;0 then n*fact (n-1) else 1;
+     n = 1
+: u
+&gt;&gt; [2] fact: fact n::int = if n&gt;0 then n*fact (n-1) else 1;
+     n = 2
+: p
+   [1] fact: fact n::int = if n&gt;0 then n*fact (n-1) else 1;
+     n = 3
+&gt;&gt; [2] fact: fact n::int = if n&gt;0 then n*fact (n-1) else 1;
+     n = 2
+   [3] fact: fact n::int = if n&gt;0 then n*fact (n-1) else 1;
+     n = 1
+** [4] (*): x::int*y::int = x*y;
+     x = 1; y = 1
+: n
+++ [2] fact: fact n::int = if n&gt;0 then n*fact (n-1) else 1;
+     n = 2
+     --&gt; 2
+** [2] (*): x::int*y::int = x*y;
+     x = 3; y = 2
+</pre>
+<p>Another useful feature is the <tt class="docutils literal"><span class="pre">?</span></tt> command which lets you evaluate any Pure
+expression, with the local variables of the current rule bound to their
+corresponding values. (The expression must be entered on a single line here,
+and the trailing semicolon is optional. For convenience, the <tt class="docutils literal"><span class="pre">?</span></tt> command can
+also be omitted if the expression doesn't start with a single letter that
+could be mistaken for a debugger command.) For instance:</p>
+<pre class="literal-block">
+&gt; fact 3;
+** [1] fact: fact n::int = if n&gt;0 then n*fact (n-1) else 1;
+     n = 3
+: c *
+** [4] (*): x::int*y::int = x*y;
+     x = 1; y = 1
+: x+y
+2
+: u
+&gt;&gt; [3] fact: fact n::int = if n&gt;0 then n*fact (n-1) else 1;
+     n = 1
+: n&gt;0, fact n
+1,1
+</pre>
 </div>
 <div class="section" id="interactive-startup">
 <h2><a class="toc-backref" href="#id43">12.7&nbsp;&nbsp;&nbsp;Interactive Startup</a></h2>
