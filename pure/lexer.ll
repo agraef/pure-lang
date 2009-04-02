@@ -891,6 +891,8 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
 	(*interp.output) << sout.str();
       else
 	cout << sout.str();
+    } else if (!interp.debugging) {
+      cerr << "break: debugging not enabled (add -g when invoking the interpreter)\n";
     } else {
       int32_t f = pure_getsym(s);
       if (f > 0) {
