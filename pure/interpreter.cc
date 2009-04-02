@@ -66,6 +66,7 @@ void interpreter::debug_init()
 {
   cin.clear();
   tmp_breakpoints.clear();
+  debug_info.clear();
   stoplevel = 0;
   debug_skip = false;
 }
