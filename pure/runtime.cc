@@ -3974,6 +3974,35 @@ static void print_vars(interpreter& interp, DebugInfo& d)
   if (count > 0) cout << endl;
 }
 
+static string localvars(interpreter& interp, DebugInfo& d)
+{
+  ostringstream sout;
+  map<string,pure_expr*> vals;
+  for (env::iterator it = d.vars.begin(); it != d.vars.end(); ++it) {
+    int32_t vno = it->first;
+    symbol& sym = interp.symtab.sym(vno);
+    env_info& info = it->second;
+    assert(info.t == env_info::lvar);
+    vals[sym.s] = subterm(d.e->n, d.args, *info.p, d.e->b);
+  }
+  for (list<VarInfo>::iterator it = d.e->xtab.begin(); it != d.e->xtab.end();
+       ++it) {
+    VarInfo& info = *it;
+    symbol& sym = interp.symtab.sym(info.vtag);
+    assert(info.v < d.e->m);
+    vals[sym.s] = d.envs[info.v];
+  }
+  size_t count = 0;
+  for (map<string,pure_expr*>::iterator it = vals.begin(); it != vals.end();
+       ++it, ++count) {
+    const string& id = it->first;
+    pure_expr *x = it->second;
+    if (count > 0) sout << "; ";
+    sout << id << " = " << printx(x);
+  }
+  return sout.str();
+}
+
 static inline bool stop(interpreter& interp, Env *e)
 {
   if (!interp.interactive)
@@ -4090,13 +4119,56 @@ void pure_debug_rule(void *_e, void *_r)
     if (cmd=="!")
       // shell escape
       system(arg.c_str());
-    else if (cmd=="?" || cmd.size()>1) {
-      // eval (not yet implemented)
-      cout << arg << endl;
-    } else if (cmdline == "" || cmd == "s")
+    else if (cmd=="?" || cmd.size()>1 ||
+	     (!cmd.empty() && !isalpha(cmd[0]) && cmd[0] != '.')) {
+      // eval
+      if (cmd != "?") arg = cmdline;
+      size_t p = arg.find_first_not_of(" \t");
+      if (p != string::npos) arg.erase(0, p);
+      p = arg.find_last_not_of(";");
+      if (p != string::npos)
+	arg.erase(p+1);
+      else
+	arg.clear();
+      if (!arg.empty()) {
+	DebugInfo& d = *kt;
+	get_vars(interp, kt);
+	// supply the environment
+	string expr = "("+arg+") when "+localvars(interp, d)+" end";
+	// make sure we don't invoke the interpreter recursively
+	interp.interactive = false;
+	interp.restricted = true;
+	pure_expr *x = pure_eval(expr.c_str());
+	interp.interactive = true;
+	interp.restricted = false;
+	if (x) {
+	  cout << x << endl;
+	  pure_freenew(x);
+	} else {
+	  const char *s = lasterr();
+	  if (s && *s) {
+	    // Only print the first error message if any.
+	    string msg = s;
+	    size_t p = msg.find('\n');
+	    if (p != string::npos)
+	      msg.erase(p);
+	    // Do some more cosmetic surgery.
+	    p = msg.find(", unexpected ");
+	    if (p != string::npos)
+	      msg.erase(p);
+	    if (!msg.empty())
+	      cerr << msg << endl;
+	  }
+	}
+      }
+    } else if (cmdline == "" || cmd == "s") {
       // single step
       done = true;
-    else switch (cmd[0]) {
+    } else if (cmd == "a") {
+      // auto
+      done = true;
+      cin.clear(ios_base::eofbit);
+    } else switch (cmd[0]) {
     case 'n': {
       // next step
       DebugInfo& d = *kt;
@@ -4221,26 +4293,27 @@ void pure_debug_rule(void *_e, void *_r)
     }
     case 'x':
       // bail out
-      if (yes_or_no("This will exit the interpreter. Continue (y/n)?"))
+      if (yes_or_no("This will exit the interpreter. Proceed (y/n)?"))
 	exit(0);
       break;
     case 'h':
       // help
       cout << "Debugger commands:\n\
-c [f]	continue until next or given breakpoint (f = function name)\n\
-h	help: print this list\n\
-n	next step: step over reduction\n\
-p [n]	print rule stack (n = number of frames)\n\
-r	run unattended, without debugger\n\
-s	single step: step into reduction\n\
-t, b	move to the top or bottom of the rule stack\n\
-u, d	move up or down one level in the rule stack\n\
-x	exit the interpreter (after confirmation)\n\
-.	reprint current rule\n\
-!	shell escape\n\
-?	evaluate expression\n\
-<cr>	single step (same as 's')\n\
-<eof>	run unattended, with debugger\n";
+a       auto: step through the entire program, run unattended\n\
+c [f]   continue until next breakpoint, or given function f\n\
+h       help: print this list\n\
+n       next step: step over reduction\n\
+p [n]   print rule stack (n = number of frames)\n\
+r       run: finish evaluation without debugger\n\
+s       single step: step into reduction\n\
+t, b    move to the top or bottom of the rule stack\n\
+u, d    move up or down one level in the rule stack\n\
+x       exit the interpreter (after confirmation)\n\
+.       reprint current rule\n\
+! cmd   shell escape\n\
+? expr  evaluate expression\n\
+<cr>    single step (same as 's')\n\
+<eof>   step through program, run unattended (same as 'a')\n";
       break;
     default:
       cerr << "unknown command '" << cmdline << "', type 'h' for help\n";
