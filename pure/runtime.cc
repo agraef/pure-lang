@@ -4198,7 +4198,7 @@ void pure_debug_rule(void *_e, void *_r)
 	// supply the environment
 	get_vars(interp, kt);
 	string expr = "("+arg+") when "+localvars(interp, d)+" end";
-	// make sure we don't invoke the interpreter recursively
+	// make sure we don't invoke the debugger recursively
 	interp.interactive = false;
 	interp.restricted = true;
 	pure_expr *x = pure_eval(expr.c_str());
@@ -4360,8 +4360,15 @@ void pure_debug_rule(void *_e, void *_r)
       }
       {
 	DebugInfo& d = *kt;
-	cout << stacklab(interp, kt, kt) << " [" << d.n << "] "
-	     << pname(interp, d.e) << ": " << *d.r << ";\n";
+	if (d.r) {
+	  cout << stacklab(interp, kt, kt) << " [" << d.n << "] "
+	       << pname(interp, d.e) << ": " << *d.r << ";\n";
+	} else if (d.e->tag > 0 &&
+		   interp.externals.find(d.e->tag) != interp.externals.end()) {
+	  ExternInfo &info = interp.externals[d.e->tag];
+	  cout << stacklab(interp, kt, kt) << " [" << d.n << "] "
+	       << pname(interp, d.e) << ": " << info << ";\n";
+	}
 	get_vars(interp, kt);
 	print_vars(interp, d);
       }
