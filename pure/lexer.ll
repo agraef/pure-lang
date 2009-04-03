@@ -892,8 +892,6 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
     argl args(s, "break");
     if (!args.ok)
       ;
-    else if (args.c > 1)
-      cerr << "break: extra parameter\n";
     else if (!interp.debugging)
       cerr << "break: debugging not enabled (add -g when invoking the interpreter)\n";
     else if (args.c == 0) {
@@ -910,21 +908,24 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
       else
 	cout << sout.str();
     } else {
-      const char *s = args.l.begin()->c_str();
-      int32_t f = pure_getsym(s);
-      if (f > 0) {
-	env::const_iterator jt = interp.globenv.find(f);
-	if ((jt != interp.globenv.end() && jt->second.t == env_info::fun) ||
-	    interp.externals.find(f) != interp.externals.end())
-	  if (interp.breakpoints.find(f) == interp.breakpoints.end())
-	    interp.breakpoints.insert(f);
+      for (list<string>::iterator it = args.l.begin();
+	   it != args.l.end(); ++it) {
+	const char *s = it->c_str();
+	int32_t f = pure_getsym(s);
+	if (f > 0) {
+	  env::const_iterator jt = interp.globenv.find(f);
+	  if ((jt != interp.globenv.end() && jt->second.t == env_info::fun) ||
+	      interp.externals.find(f) != interp.externals.end())
+	    if (interp.breakpoints.find(f) == interp.breakpoints.end())
+	      interp.breakpoints.insert(f);
+	    else
+	      cerr << "break: breakpoint '" << s << "' already set\n";
 	  else
-	    cerr << "break: breakpoint '" << s << "' already set\n";
-	else
-	  f = 0;
+	    f = 0;
+	}
+	if (f == 0)
+	  cerr << "break: unknown function symbol '" << s << "'\n";
       }
-      if (f == 0)
-	cerr << "break: unknown function symbol '" << s << "'\n";
     }
   } else if (strcmp(cmd, "del") == 0)  {
     const char *s = cmdline+3;
@@ -936,20 +937,21 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
 	if (yes_or_no("This will clear all breakpoints. Continue (y/n)?"))
 	  interp.breakpoints.clear();
       } else
-	  cerr << "del: no breakpoints\n";
-    } else if (args.c > 1) {
-      cerr << "del: extra parameter\n";
+	cerr << "del: no breakpoints\n";
     } else {
-      const char *s = args.l.begin()->c_str();
-      int32_t f = pure_getsym(s);
-      if (f > 0) {
-	env::const_iterator jt = interp.globenv.find(f);
-	if (interp.breakpoints.find(f) != interp.breakpoints.end())
-	  interp.breakpoints.erase(f);
-	else
-	  cerr << "del: unknown breakpoint '" << s << "'\n";
-      } else
-	cerr << "del: unknown function symbol '" << s << "'\n";
+      for (list<string>::iterator it = args.l.begin();
+	   it != args.l.end(); ++it) {
+	const char *s = it->c_str();
+	int32_t f = pure_getsym(s);
+	if (f > 0) {
+	  env::const_iterator jt = interp.globenv.find(f);
+	  if (interp.breakpoints.find(f) != interp.breakpoints.end())
+	    interp.breakpoints.erase(f);
+	  else
+	    cerr << "del: unknown breakpoint '" << s << "'\n";
+	} else
+	  cerr << "del: unknown function symbol '" << s << "'\n";
+      }
     }
   } else if (strcmp(cmd, "help") == 0)  {
     const char *s = cmdline+4, *p, *q;
