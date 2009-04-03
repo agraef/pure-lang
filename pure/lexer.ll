@@ -892,6 +892,10 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
     argl args(s, "break");
     if (!args.ok)
       ;
+    else if (args.c > 1)
+      cerr << "break: extra parameter\n";
+    else if (!interp.debugging)
+      cerr << "break: debugging not enabled (add -g when invoking the interpreter)\n";
     else if (args.c == 0) {
       ostringstream sout;
       list<string> syms;
@@ -905,10 +909,6 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
 	(*interp.output) << sout.str();
       else
 	cout << sout.str();
-    } else if (args.c > 1) {
-      cerr << "break: extra parameter\n";
-    } else if (!interp.debugging) {
-      cerr << "break: debugging not enabled (add -g when invoking the interpreter)\n";
     } else {
       const char *s = args.l.begin()->c_str();
       int32_t f = pure_getsym(s);
