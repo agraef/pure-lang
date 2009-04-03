@@ -2910,9 +2910,27 @@ during the evaluation and the results that were returned by the function call.
 
 The debugger provides the usual commands to walk through an evaluation, print
 and navigate the call stack, step over the current call and continue the
-evaluation unattended until you hit another breakpoint. Type ``h`` while in
-the debugger to get a list of these. If you know other source level debuggers
-like gdb then you should feel right at home.
+evaluation unattended until you hit another breakpoint. If you know other
+source level debuggers like gdb then you should feel right at home. You can
+type ``h`` at the debugger prompt to print the following list::
+
+  : h
+  Debugger commands:
+  a       auto: step through the entire program, run unattended
+  c [f]   continue until next breakpoint, or given function f
+  h       help: print this list
+  n       next step: step over reduction
+  p [n]   print rule stack (n = number of frames)
+  r       run: finish evaluation without debugger
+  s       single step: step into reduction
+  t, b    move to the top or bottom of the rule stack
+  u, d    move up or down one level in the rule stack
+  x       exit the interpreter (after confirmation)
+  .       reprint current rule
+  ! cmd   shell escape
+  ? expr  evaluate expression
+  <cr>    single step (same as 's')
+  <eof>   step through program, run unattended (same as 'a')
 
 The debugger can be exited or suspended in the following ways:
 
@@ -2922,10 +2940,9 @@ The debugger can be exited or suspended in the following ways:
 
 * You can type ``r`` to run the rest of the evaluation without the debugger.
 
-* The ``a`` ("auto") command steps through the rest of the evaluation, running
-  unattended and printing just the performed reductions. This command can also
-  be entered by just hitting the end-of-file key (``Ctrl-D`` on Unix systems)
-  at the debugger prompt.
+* The ``a`` ("auto") command single-steps through the rest of the evaluation,
+  running unattended. This command can also be entered by just hitting the
+  end-of-file key (``Ctrl-D`` on Unix systems) at the debugger prompt.
 
 * You can also type ``x`` to exit from the debugger *and* the interpreter
   immediately (after confirmation).
@@ -2988,7 +3005,7 @@ could be mistaken for a debugger command.) For instance::
   : c *
   ** [4] (*): x::int*y::int = x*y;
        x = 1; y = 1
-  : x+y
+  : ?x+y
   2
   : u
   >> [3] fact: fact n::int = if n>0 then n*fact (n-1) else 1;

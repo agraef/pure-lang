@@ -7,7 +7,7 @@
 <title>The Pure Manual</title>
 <meta name="author" content="Albert Graef &lt;Dr.Graef&#64;t-online.de&gt;" />
 <meta name="copyright" content="Copyright (c) 2009" />
-<meta name="date" content="2009-04-02" />
+<meta name="date" content="2009-04-03" />
 <style type="text/css">
 
 /*
@@ -297,7 +297,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Copyright:</th>
 <td>Copyright (c) 2009</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2009-04-02</td></tr>
+<td>2009-04-03</td></tr>
 </tbody>
 </table>
 <p>This document is available under the <a class="reference external" href="http://www.gnu.org/copyleft/fdl.html">GNU Free Documentation License</a>. Also see <a class="reference internal" href="#copying">Copying</a> for licensing
@@ -3117,19 +3117,37 @@ readline works as usual at the debugger prompt, if it is enabled.)</p>
 during the evaluation and the results that were returned by the function call.</p>
 <p>The debugger provides the usual commands to walk through an evaluation, print
 and navigate the call stack, step over the current call and continue the
-evaluation unattended until you hit another breakpoint. Type <tt class="docutils literal"><span class="pre">h</span></tt> while in
-the debugger to get a list of these. If you know other source level debuggers
-like gdb then you should feel right at home.</p>
+evaluation unattended until you hit another breakpoint. If you know other
+source level debuggers like gdb then you should feel right at home. You can
+type <tt class="docutils literal"><span class="pre">h</span></tt> at the debugger prompt to print the following list:</p>
+<pre class="literal-block">
+: h
+Debugger commands:
+a       auto: step through the entire program, run unattended
+c [f]   continue until next breakpoint, or given function f
+h       help: print this list
+n       next step: step over reduction
+p [n]   print rule stack (n = number of frames)
+r       run: finish evaluation without debugger
+s       single step: step into reduction
+t, b    move to the top or bottom of the rule stack
+u, d    move up or down one level in the rule stack
+x       exit the interpreter (after confirmation)
+.       reprint current rule
+! cmd   shell escape
+? expr  evaluate expression
+&lt;cr&gt;    single step (same as 's')
+&lt;eof&gt;   step through program, run unattended (same as 'a')
+</pre>
 <p>The debugger can be exited or suspended in the following ways:</p>
 <ul class="simple">
 <li>You can type <tt class="docutils literal"><span class="pre">c</span></tt> to continue the evaluation until the next breakpoint, or
 <tt class="docutils literal"><span class="pre">c</span> <span class="pre">foo</span></tt> in order to proceed until the debugger hits an invokation of the
 function <tt class="docutils literal"><span class="pre">foo</span></tt>.</li>
 <li>You can type <tt class="docutils literal"><span class="pre">r</span></tt> to run the rest of the evaluation without the debugger.</li>
-<li>The <tt class="docutils literal"><span class="pre">a</span></tt> (&quot;auto&quot;) command steps through the rest of the evaluation, running
-unattended and printing just the performed reductions. This command can also
-be entered by just hitting the end-of-file key (<tt class="docutils literal"><span class="pre">Ctrl-D</span></tt> on Unix systems)
-at the debugger prompt.</li>
+<li>The <tt class="docutils literal"><span class="pre">a</span></tt> (&quot;auto&quot;) command single-steps through the rest of the evaluation,
+running unattended. This command can also be entered by just hitting the
+end-of-file key (<tt class="docutils literal"><span class="pre">Ctrl-D</span></tt> on Unix systems) at the debugger prompt.</li>
 <li>You can also type <tt class="docutils literal"><span class="pre">x</span></tt> to exit from the debugger <em>and</em> the interpreter
 immediately (after confirmation).</li>
 </ul>
@@ -3191,7 +3209,7 @@ could be mistaken for a debugger command.) For instance:</p>
 : c *
 ** [4] (*): x::int*y::int = x*y;
      x = 1; y = 1
-: x+y
+: ?x+y
 2
 : u
 &gt;&gt; [3] fact: fact n::int = if n&gt;0 then n*fact (n-1) else 1;
