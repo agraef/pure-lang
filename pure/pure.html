@@ -428,58 +428,41 @@ pure [options ...] -x script [args ...]
 <h2><a class="toc-backref" href="#id5">2.1&nbsp;&nbsp;&nbsp;Options</a></h2>
 <p>The interpreter accepts various options which are described in more detail
 below:</p>
-<table class="docutils option-list" frame="void" rules="none">
-<col class="option" />
-<col class="description" />
-<tbody valign="top">
-<tr><td class="option-group">
-<kbd><span class="option">-c</span></kbd></td>
-<td>Batch compilation.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">-g</span></kbd></td>
-<td>Enable symbolic debugging.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--help</span>, <span class="option">-h</span></kbd></td>
-<td>Print help message and exit.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">-i</span></kbd></td>
-<td>Force interactive mode (read commands from stdin).</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">-I<var>directory</var></span></kbd></td>
-<td>Add a directory to be searched for included source scripts.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">-L<var>directory</var></span></kbd></td>
-<td>Add a directory to be searched for dynamic libraries.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">-l<var>libname</var></span></kbd></td>
-<td>Library to be linked in batch compilation.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--noediting</span></kbd></td>
-<td>Do not use readline for command-line editing.</td></tr>
-<tr><td class="option-group" colspan="2">
-<kbd><span class="option">--noprelude</span>, <span class="option">-n</span></kbd></td>
-</tr>
-<tr><td>&nbsp;</td><td>Do not load the prelude.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--norc</span></kbd></td>
-<td>Do not run the interactive startup files.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">-o<var>filename</var></span></kbd></td>
-<td>Output filename for batch compilation.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">-q</span></kbd></td>
-<td>Quiet startup (suppresses sign-on message in interactive mode).</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">-v<var>level</var></span></kbd></td>
-<td>Set verbosity level. See below for details.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">--version</span></kbd></td>
-<td>Print version information and exit.</td></tr>
-<tr><td class="option-group">
-<kbd><span class="option">-x</span></kbd></td>
-<td>Execute script with given command line arguments.</td></tr>
-</tbody>
-</table>
+<dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">-c</span></tt></dt>
+<dd>Batch compilation.</dd>
+<dt><tt class="docutils literal"><span class="pre">-g</span></tt></dt>
+<dd>Enable symbolic debugging.</dd>
+<dt><tt class="docutils literal"><span class="pre">--help</span></tt>, <tt class="docutils literal"><span class="pre">-h</span></tt></dt>
+<dd>Print help message and exit.</dd>
+<dt><tt class="docutils literal"><span class="pre">-i</span></tt></dt>
+<dd>Force interactive mode (read commands from stdin).</dd>
+<dt><tt class="docutils literal"><span class="pre">-I</span> <span class="pre">directory</span></tt></dt>
+<dd>Add a directory to be searched for included source scripts.</dd>
+<dt><tt class="docutils literal"><span class="pre">-L</span> <span class="pre">directory</span></tt></dt>
+<dd>Add a directory to be searched for dynamic libraries.</dd>
+<dt><tt class="docutils literal"><span class="pre">-l</span> <span class="pre">libname</span></tt></dt>
+<dd>Library to be linked in batch compilation.</dd>
+<dt><tt class="docutils literal"><span class="pre">--noediting</span></tt></dt>
+<dd>Do not use readline for command-line editing.</dd>
+<dt><tt class="docutils literal"><span class="pre">--noprelude</span></tt>, <tt class="docutils literal"><span class="pre">-n</span></tt></dt>
+<dd>Do not load the prelude.</dd>
+<dt><tt class="docutils literal"><span class="pre">--norc</span></tt></dt>
+<dd>Do not run the interactive startup files.</dd>
+<dt><tt class="docutils literal"><span class="pre">-o</span> <span class="pre">filename</span></tt></dt>
+<dd>Output filename for batch compilation.</dd>
+<dt><tt class="docutils literal"><span class="pre">-q</span></tt></dt>
+<dd>Quiet startup (suppresses sign-on message in interactive mode).</dd>
+<dt><tt class="docutils literal"><span class="pre">-v[level]</span></tt></dt>
+<dd>Set verbosity level. See below for details.</dd>
+<dt><tt class="docutils literal"><span class="pre">--version</span></tt></dt>
+<dd>Print version information and exit.</dd>
+<dt><tt class="docutils literal"><span class="pre">-x</span></tt></dt>
+<dd>Execute script with given command line arguments.</dd>
+<dt><tt class="docutils literal"><span class="pre">--</span></tt></dt>
+<dd>Stop option processing and pass the remaining command line arguments in
+the <tt class="docutils literal"><span class="pre">argv</span></tt> variable.</dd>
+</dl>
 </div>
 <div class="section" id="overview-of-operation">
 <h2><a class="toc-backref" href="#id6">2.2&nbsp;&nbsp;&nbsp;Overview of Operation</a></h2>
@@ -1344,8 +1327,8 @@ let fibs = map fib (1..30); fibs;
 </pre>
 <p>It is worth noting here that in most cases Pure performs tail call
 optimization so that tail-recursive definitions like the following will be
-executed in constant stack space (see the <a class="reference internal" href="#caveats-and-notes">Caveats and Notes</a> section for
-more details on this):</p>
+executed in constant stack space (see <a class="reference internal" href="#stack-size-and-tail-recursion">Stack Size and Tail Recursion</a> in the
+<a class="reference internal" href="#caveats-and-notes">Caveats and Notes</a> section for more details on this):</p>
 <pre class="literal-block">
 // tail-recursive factorial using an &quot;accumulating parameter&quot;
 fact n = loop 1 n with
@@ -3067,10 +3050,15 @@ clear: now at temporary definitions level #1
 <h2><a class="toc-backref" href="#id42">12.6&nbsp;&nbsp;&nbsp;Debugging</a></h2>
 <p>The interpreter provides a simple but reasonably convenient symbolic debugging
 facility when running interactively. To make this work, you have to specify
-the -g option when invoking the interpreter. This option disables tail call
-optimization to make it easier to debug programs. It also causes special
+the -g option when invoking the interpreter:</p>
+<pre class="literal-block">
+$ pure -g
+</pre>
+<p>This option disables tail call optimization (see <a class="reference internal" href="#stack-size-and-tail-recursion">Stack Size and Tail
+Recursion</a>) to make it easier to debug programs. It also causes special
 debugging code to be generated which will make your program run <em>much</em>
-slower. Therefore the -g option should only be used if you need the debugger.</p>
+slower. Therefore the -g option should only be used if you actually need the
+debugger.</p>
 <p>To debug a given function, just set a breakpoint with the <tt class="docutils literal"><span class="pre">break</span></tt> command.
 For instance:</p>
 <pre class="literal-block">
@@ -3100,10 +3088,13 @@ For instance:</p>
 </pre>
 <p>Lines beginning with <tt class="docutils literal"><span class="pre">**</span></tt> indicate that the evaluation was interrupted to
 show the rule (or external) which is currently being considered, along with
-the depth of the call stack, the invoked function and the values of parameters
-and other local variables in the current lexical environment.</p>
-<p>Sometimes you may also see funny symbols like <tt class="docutils literal"><span class="pre">#&lt;case&gt;</span></tt>, <tt class="docutils literal"><span class="pre">#&lt;when&gt;</span></tt> or
-<tt class="docutils literal"><span class="pre">#&lt;closure&gt;</span></tt> instead of the function name, which indicates lambdas and the
+the current depth of the call stack, the invoked function and the values of
+parameters and other local variables in the current lexical environment. In
+contrast, the prefix <tt class="docutils literal"><span class="pre">++</span></tt> denotes reductions which were actually performed
+during the evaluation and the results that were returned by the function call
+(printed as <tt class="docutils literal"><span class="pre">--&gt;</span> <span class="pre">return</span> <span class="pre">value</span></tt>).</p>
+<p>Sometimes you might also see funny symbols like <tt class="docutils literal"><span class="pre">#&lt;case&gt;</span></tt>, <tt class="docutils literal"><span class="pre">#&lt;when&gt;</span></tt> or
+<tt class="docutils literal"><span class="pre">#&lt;closure&gt;</span></tt> instead of the function name. These indicate lambdas and the
 special variable-binding environments, which are all implemented as anonymous
 closures in Pure. Also note that the debugger doesn't know about the argument
 names of external functions (which are optional in Pure and not recorded
@@ -3111,14 +3102,12 @@ anywhere), so it will display the generic names <tt class="docutils literal"><sp
 <p>At the debugger prompt <tt class="docutils literal"><span class="pre">:</span></tt> you can enter various special debugger commands,
 or just keep on hitting the carriage return key to walk through an evaluation
 step by step, as we did in the example above. (Command line editing using
-readline works as usual at the debugger prompt, if it is enabled.)</p>
-<p>Lines beginning with <tt class="docutils literal"><span class="pre">++</span></tt> show reductions which were actually performed
-during the evaluation and the results that were returned by the function call.</p>
-<p>The debugger provides the usual commands to walk through an evaluation, print
-and navigate the call stack, step over the current call and continue the
-evaluation unattended until you hit another breakpoint. If you know other
-source level debuggers like gdb then you should feel right at home. You can
-type <tt class="docutils literal"><span class="pre">h</span></tt> at the debugger prompt to print the following list:</p>
+readline works as usual at the debugger prompt, if it is enabled.) The usual
+commands are provided to walk through an evaluation, print and navigate the
+call stack, step over the current call, or continue the evaluation unattended
+until you hit another breakpoint. If you know other source level debuggers
+like gdb then you should feel right at home. You can type <tt class="docutils literal"><span class="pre">h</span></tt> at the
+debugger prompt to print the following list:</p>
 <pre class="literal-block">
 : h
 Debugger commands:
@@ -3138,6 +3127,15 @@ x       exit the interpreter (after confirmation)
 &lt;cr&gt;    single step (same as 's')
 &lt;eof&gt;   step through program, run unattended (same as 'a')
 </pre>
+<p>The command syntax is very simple. Besides the commands listed above you can
+also enter comment lines (<tt class="docutils literal"><span class="pre">//</span> <span class="pre">comment</span> <span class="pre">text</span></tt>) which will just be
+ignored. Extra arguments on commands which don't expect any will generally be
+ignored as well. The single letter commands all have to be separated from any
+additional parameters with whitespace, whereas the <tt class="docutils literal"><span class="pre">!</span></tt>, <tt class="docutils literal"><span class="pre">?</span></tt> and <tt class="docutils literal"><span class="pre">.</span></tt>
+commands count as word delimiters and can thus be followed immediately by an
+argument. For convenience, the <tt class="docutils literal"><span class="pre">?</span></tt> command can also be omitted if the
+expression to be evaluated doesn't start with a single letter or one of the
+special punctuation commands.</p>
 <p>The debugger can be exited or suspended in the following ways:</p>
 <ul class="simple">
 <li>You can type <tt class="docutils literal"><span class="pre">c</span></tt> to continue the evaluation until the next breakpoint, or
@@ -3154,9 +3152,12 @@ immediately (after confirmation).</li>
 (&quot;top&quot;) and <tt class="docutils literal"><span class="pre">b</span></tt> (&quot;bottom&quot;) commands to move around on the current call
 stack. The <tt class="docutils literal"><span class="pre">p</span></tt> command prints a range of the call stack centered around the
 currently selected stack frame, which is indicated with the <tt class="docutils literal"><span class="pre">&gt;&gt;</span></tt> tag,
-whereas <tt class="docutils literal"><span class="pre">**</span></tt> denotes the current bottom of the stack. The <tt class="docutils literal"><span class="pre">n</span></tt> command
-steps over the currently selected call (whereas the single step command always
-returns you to the bottom of the call stack). For instance:</p>
+whereas <tt class="docutils literal"><span class="pre">**</span></tt> denotes the current bottom of the stack (which is the rule to
+be executed with the single step command). The <tt class="docutils literal"><span class="pre">p</span></tt> command can also be
+followed by a numeric argument which indicates the number of stack frames to
+be printed (this will then become the default for subsequent invocations of
+<tt class="docutils literal"><span class="pre">p</span></tt>). The <tt class="docutils literal"><span class="pre">n</span></tt> command steps over the call selected with the stack
+navigation commands. For instance:</p>
 <pre class="literal-block">
 &gt; fact 3;
 ** [1] fact: fact n::int = if n&gt;0 then n*fact (n-1) else 1;
@@ -3194,13 +3195,21 @@ returns you to the bottom of the call stack). For instance:</p>
      --&gt; 2
 ** [2] (*): x::int*y::int = x*y;
      x = 3; y = 2
+:
+</pre>
+<p>If you ever get lost, you can reprint the current rule with the <tt class="docutils literal"><span class="pre">.</span></tt>
+command:</p>
+<pre class="literal-block">
+: .
+** [2] (*): x::int*y::int = x*y;
+     x = 3; y = 2
 </pre>
 <p>Another useful feature is the <tt class="docutils literal"><span class="pre">?</span></tt> command which lets you evaluate any Pure
 expression, with the local variables of the current rule bound to their
-corresponding values. (The expression must be entered on a single line here,
-and the trailing semicolon is optional. For convenience, the <tt class="docutils literal"><span class="pre">?</span></tt> command can
-also be omitted if the expression doesn't start with a single letter that
-could be mistaken for a debugger command.) For instance:</p>
+corresponding values. Like the <tt class="docutils literal"><span class="pre">n</span></tt> command, <tt class="docutils literal"><span class="pre">?</span></tt> applies to the current
+stack frame as selected with the stack navigation commands. The expression
+must be entered on a single line, and the trailing semicolon is optional. For
+instance:</p>
 <pre class="literal-block">
 &gt; fact 3;
 ** [1] fact: fact n::int = if n&gt;0 then n*fact (n-1) else 1;
@@ -3216,6 +3225,13 @@ could be mistaken for a debugger command.) For instance:</p>
 : n&gt;0, fact n
 1,1
 </pre>
+<p>Note that the current set of breakpoints can only be changed with the
+<tt class="docutils literal"><span class="pre">break</span></tt> and <tt class="docutils literal"><span class="pre">del</span></tt> commands of the interpreter, see <a class="reference internal" href="#interactive-commands">Interactive Commands</a>
+above. Use <tt class="docutils literal"><span class="pre">break</span></tt> without arguments to list the currently defined
+breakpoints. Breakpoints can be deleted with the <tt class="docutils literal"><span class="pre">del</span></tt> command, which is
+followed by the function and operator symbols to be removed from the
+breakpoint list. If <tt class="docutils literal"><span class="pre">del</span></tt> is invoked without arguments, it clears all
+breakpoints (after confirmation).</p>
 </div>
 <div class="section" id="interactive-startup">
 <h2><a class="toc-backref" href="#id43">12.7&nbsp;&nbsp;&nbsp;Interactive Startup</a></h2>

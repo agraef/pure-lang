@@ -80,36 +80,54 @@ Options
 The interpreter accepts various options which are described in more detail
 below:
 
--c
+``-c``
     Batch compilation.
--g
+
+``-g``
     Enable symbolic debugging.
---help, -h
+
+``--help``, ``-h``
     Print help message and exit.
--i
+
+``-i``
     Force interactive mode (read commands from stdin).
--Idirectory
+
+``-I directory``
     Add a directory to be searched for included source scripts.
--Ldirectory
+
+``-L directory``
     Add a directory to be searched for dynamic libraries.
--llibname
+
+``-l libname``
     Library to be linked in batch compilation.
---noediting
+
+``--noediting``
     Do not use readline for command-line editing.
---noprelude, -n
+
+``--noprelude``, ``-n``
     Do not load the prelude.
---norc
+
+``--norc``
     Do not run the interactive startup files.
--ofilename
+
+``-o filename``
     Output filename for batch compilation.
--q
+
+``-q``
     Quiet startup (suppresses sign-on message in interactive mode).
--vlevel
+
+``-v[level]``
     Set verbosity level. See below for details.
---version
+
+``--version``
     Print version information and exit.
--x
+
+``-x``
     Execute script with given command line arguments.
+
+``--``
+    Stop option processing and pass the remaining command line arguments in
+    the ``argv`` variable.
 
 Overview of Operation
 ---------------------
@@ -1040,8 +1058,8 @@ The Fibonacci numbers::
 
 It is worth noting here that in most cases Pure performs tail call
 optimization so that tail-recursive definitions like the following will be
-executed in constant stack space (see the `Caveats and Notes`_ section for
-more details on this)::
+executed in constant stack space (see `Stack Size and Tail Recursion`_ in the
+`Caveats and Notes`_ section for more details on this)::
 
   // tail-recursive factorial using an "accumulating parameter"
   fact n = loop 1 n with
@@ -2855,10 +2873,15 @@ Debugging
 
 The interpreter provides a simple but reasonably convenient symbolic debugging
 facility when running interactively. To make this work, you have to specify
-the -g option when invoking the interpreter. This option disables tail call
-optimization to make it easier to debug programs. It also causes special
+the -g option when invoking the interpreter::
+
+  $ pure -g
+
+This option disables tail call optimization (see `Stack Size and Tail
+Recursion`_) to make it easier to debug programs. It also causes special
 debugging code to be generated which will make your program run *much*
-slower. Therefore the -g option should only be used if you need the debugger.
+slower. Therefore the -g option should only be used if you actually need the
+debugger.
 
 To debug a given function, just set a breakpoint with the ``break`` command.
 For instance::
@@ -2889,11 +2912,14 @@ For instance::
 
 Lines beginning with ``**`` indicate that the evaluation was interrupted to
 show the rule (or external) which is currently being considered, along with
-the depth of the call stack, the invoked function and the values of parameters
-and other local variables in the current lexical environment.
+the current depth of the call stack, the invoked function and the values of
+parameters and other local variables in the current lexical environment. In
+contrast, the prefix ``++`` denotes reductions which were actually performed
+during the evaluation and the results that were returned by the function call
+(printed as ``--> return value``).
 
-Sometimes you may also see funny symbols like ``#<case>``, ``#<when>`` or
-``#<closure>`` instead of the function name, which indicates lambdas and the
+Sometimes you might also see funny symbols like ``#<case>``, ``#<when>`` or
+``#<closure>`` instead of the function name. These indicate lambdas and the
 special variable-binding environments, which are all implemented as anonymous
 closures in Pure. Also note that the debugger doesn't know about the argument
 names of external functions (which are optional in Pure and not recorded
@@ -2902,16 +2928,12 @@ anywhere), so it will display the generic names ``x1``, ``x2`` etc. instead.
 At the debugger prompt ``:`` you can enter various special debugger commands,
 or just keep on hitting the carriage return key to walk through an evaluation
 step by step, as we did in the example above. (Command line editing using
-readline works as usual at the debugger prompt, if it is enabled.)
-
-Lines beginning with ``++`` show reductions which were actually performed
-during the evaluation and the results that were returned by the function call.
-
-The debugger provides the usual commands to walk through an evaluation, print
-and navigate the call stack, step over the current call and continue the
-evaluation unattended until you hit another breakpoint. If you know other
-source level debuggers like gdb then you should feel right at home. You can
-type ``h`` at the debugger prompt to print the following list::
+readline works as usual at the debugger prompt, if it is enabled.) The usual
+commands are provided to walk through an evaluation, print and navigate the
+call stack, step over the current call, or continue the evaluation unattended
+until you hit another breakpoint. If you know other source level debuggers
+like gdb then you should feel right at home. You can type ``h`` at the
+debugger prompt to print the following list::
 
   : h
   Debugger commands:
@@ -2930,6 +2952,16 @@ type ``h`` at the debugger prompt to print the following list::
   ? expr  evaluate expression
   <cr>    single step (same as 's')
   <eof>   step through program, run unattended (same as 'a')
+
+The command syntax is very simple. Besides the commands listed above you can
+also enter comment lines (``// comment text``) which will just be
+ignored. Extra arguments on commands which don't expect any will generally be
+ignored as well. The single letter commands all have to be separated from any
+additional parameters with whitespace, whereas the ``!``, ``?`` and ``.``
+commands count as word delimiters and can thus be followed immediately by an
+argument. For convenience, the ``?`` command can also be omitted if the
+expression to be evaluated doesn't start with a single letter or one of the
+special punctuation commands.
 
 The debugger can be exited or suspended in the following ways:
 
@@ -2950,9 +2982,12 @@ At the debugger prompt, you can use the ``u`` ("up"), ``d`` ("down"), ``t``
 ("top") and ``b`` ("bottom") commands to move around on the current call
 stack. The ``p`` command prints a range of the call stack centered around the
 currently selected stack frame, which is indicated with the ``>>`` tag,
-whereas ``**`` denotes the current bottom of the stack. The ``n`` command
-steps over the currently selected call (whereas the single step command always
-returns you to the bottom of the call stack). For instance::
+whereas ``**`` denotes the current bottom of the stack (which is the rule to
+be executed with the single step command). The ``p`` command can also be
+followed by a numeric argument which indicates the number of stack frames to
+be printed (this will then become the default for subsequent invocations of
+``p``). The ``n`` command steps over the call selected with the stack
+navigation commands. For instance::
 
   > fact 3;
   ** [1] fact: fact n::int = if n>0 then n*fact (n-1) else 1;
@@ -2990,13 +3025,21 @@ returns you to the bottom of the call stack). For instance::
        --> 2
   ** [2] (*): x::int*y::int = x*y;
        x = 3; y = 2
+  :
+
+If you ever get lost, you can reprint the current rule with the ``.``
+command::
+
+  : .
+  ** [2] (*): x::int*y::int = x*y;
+       x = 3; y = 2
 
 Another useful feature is the ``?`` command which lets you evaluate any Pure
 expression, with the local variables of the current rule bound to their
-corresponding values. (The expression must be entered on a single line here,
-and the trailing semicolon is optional. For convenience, the ``?`` command can
-also be omitted if the expression doesn't start with a single letter that
-could be mistaken for a debugger command.) For instance::
+corresponding values. Like the ``n`` command, ``?`` applies to the current
+stack frame as selected with the stack navigation commands. The expression
+must be entered on a single line, and the trailing semicolon is optional. For
+instance::
 
   > fact 3;
   ** [1] fact: fact n::int = if n>0 then n*fact (n-1) else 1;
@@ -3011,6 +3054,14 @@ could be mistaken for a debugger command.) For instance::
        n = 1
   : n>0, fact n
   1,1
+
+Note that the current set of breakpoints can only be changed with the
+``break`` and ``del`` commands of the interpreter, see `Interactive Commands`_
+above. Use ``break`` without arguments to list the currently defined
+breakpoints. Breakpoints can be deleted with the ``del`` command, which is
+followed by the function and operator symbols to be removed from the
+breakpoint list. If ``del`` is invoked without arguments, it clears all
+breakpoints (after confirmation).
 
 Interactive Startup
 -------------------
