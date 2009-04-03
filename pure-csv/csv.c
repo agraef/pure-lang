@@ -33,20 +33,21 @@
      csv::error msg is invoked f there is a system memory allocation  error,
      beyond end of file, or a file error is encountered.
 */
+
 pure_expr *csv_fgets(FILE *fp, char *quote) {
   char *bf, *tb, *s;
   int quote_count = 0, n_quote;
-  long sz = BUFSIZE, n = 0;
+  size_t sz = BUFSIZE, n = 0;
   pure_expr *ret;
 
-  if (!(s = bf = (char *)malloc(sz))) {
+  if (!(s = bf = malloc(sz))) {
     error_handler("malloc error");
   }
 
   n_quote = strlen(quote);
   while (1) {
     s = bf + n;
-    if (n > sz) {
+    if (n+BUFSIZE > sz) {
       if (!(tb = realloc(bf, sz <<= 1))) {
         free(bf);
         error_handler("realloc error");
@@ -71,7 +72,7 @@ pure_expr *csv_fgets(FILE *fp, char *quote) {
       if (!strncmp(s, quote, n_quote)) {
         ++quote_count;
         s += n_quote;
-      } else 
+      } else
       ++s;
     }
     if (!(quote_count & 1))
