@@ -5147,7 +5147,11 @@ Value *interpreter::constptr(const void *p)
   if (!p)
     return NullPtr;
   else
+#if SIZEOF_VOID_P==8
     return ConstantExpr::getIntToPtr(UInt64((uint64_t)p), VoidPtrTy);
+#else
+    return ConstantExpr::getIntToPtr(UInt((uint32_t)p), VoidPtrTy);
+#endif
 }
 
 pure_expr *interpreter::const_value(expr x)
