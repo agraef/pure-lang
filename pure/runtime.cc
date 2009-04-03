@@ -4071,7 +4071,8 @@ static void parse_cmd(string& cmdline, string& cmd, string& arg)
   else
     cmdline.clear();
   // tokenize
-  if (!cmdline.empty() && (cmdline[0] == '!' || cmdline[0] == '?')) {
+  if (!cmdline.empty() &&
+      (cmdline[0] == '!' || cmdline[0] == '?' || cmdline[0] == '.')) {
     cmd = cmdline.substr(0, 1);
     arg = cmdline.substr(1);
     return;
