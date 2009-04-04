@@ -4415,7 +4415,7 @@ void pure_debug_redn(void *_e, void *_r, pure_expr *x)
   interpreter& interp = *interpreter::g_interp;
   if (!interp.interactive) return;
   assert(!interp.debug_info.empty());
-  if (stop(interp, e)) {
+  if (x && stop(interp, e)) {
     DebugInfo& d = interp.debug_info.back();
     assert(d.e == e);
     if (r) {
@@ -4430,7 +4430,7 @@ void pure_debug_redn(void *_e, void *_r, pure_expr *x)
       goto pop;
     get_vars(interp, interp.debug_info.rbegin());
     print_vars(interp, d);
-    if (x) cout << "     --> " << printx(x, 68) << endl;
+    cout << "     --> " << printx(x, 68) << endl;
   }
  pop:
   // pop an activation record
