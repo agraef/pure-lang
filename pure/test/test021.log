@@ -180,8 +180,14 @@ format (f/*0:101*/,x/*0:1101*/,z/*0:111*/) = str f/*0:101*/+","+print x/*0:1101*
 	<var> state 15
   state 15: #0 #1
 }
-const eps = 1e-08;
-roundz x/*0:1*/::double = if abs x/*0:1*/<1e-08 then 0.0 else x/*0:1*/;
+{
+  rule #0: eps = 1/100000000
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let eps = 1/100000000;
+roundz x/*0:1*/::double = if abs x/*0:1*/<eps then 0.0 else x/*0:1*/;
 print x/*0:1*/::double = str x/*0:1*/ if infp x/*0:1*/||nanp x/*0:1*/;
 print x/*0:1*/::double = sprintf double_format (roundz x/*0:1*/);
 print (x/*0:101*/+:y/*0:11*/) = print x/*0:101*/+"+:"+print y/*0:11*/;
@@ -275,7 +281,7 @@ tests = puts "*** EXACT/INEXACT ***"$$do test (catmap (\op/*0:*/ -> listmap (\a/
   state 18: #3 #4 #5
 }
 {
-  rule #0: roundz x::double = if abs x<1e-08 then 0.0 else x
+  rule #0: roundz x::double = if abs x<eps then 0.0 else x
   state 0: #0
 	<var>::double state 1
   state 1: #0
