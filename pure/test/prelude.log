@@ -494,48 +494,46 @@ stream (x/*0:101*/:xs/*0:11*/) = x/*0:101*/:xs/*0:11*/ if thunkp xs/*0:11*/;
 stream (x/*0:101*/:xs/*0:11*/) = x/*0:101*/:stream xs/*1:11*/&;
 stream () = [];
 stream xs@(_/*0:101*/,_/*0:11*/) = stream (list xs/*0:1*/);
-n1/*0:0101*/:n2/*0:011*/..m/*0:1*/ = if m/*2:1*/===s/*0:*/*inf then iterate (\x/*0:*/ -> x/*0:*/+k/*2:*/ {
+n1/*0:0101*/:n2/*0:011*/..m/*0:1*/ = if m/*2:1*/===s/*0:01*/ then iterate (\x/*0:*/ -> x/*0:*/+k/*2:*/ {
   rule #0: x = x+k
   state 0: #0
 	<var> state 1
   state 1: #0
-}) n1/*2:0101*/ else while (\i/*0:*/ -> s/*1:*/*i/*0:*/<=s/*1:*/*m/*3:1*/ {
-  rule #0: i = s*i<=s*m
-  state 0: #0
-	<var> state 1
-  state 1: #0
-}) (\x/*0:*/ -> x/*0:*/+k/*2:*/ {
+}) n1/*2:0101*/ else if m/*2:1*/===-s/*0:01*/ then [] else while (p/*0:1*/ m/*2:1*/) (\x/*0:*/ -> x/*0:*/+k/*2:*/ {
   rule #0: x = x+k
   state 0: #0
 	<var> state 1
   state 1: #0
-}) n1/*2:0101*/ when k/*0:*/ = n2/*0:011*/-n1/*0:0101*/; s/*0:*/ = if k/*0:*/>0 then 1 else -1 {
-  rule #0: s = if k>0 then 1 else -1
+}) n1/*2:0101*/ when s/*0:01*/,p/*0:1*/ = if k/*0:*/>0 then inf,(>=) else -inf,(<=) {
+  rule #0: s,p = if k>0 then inf,(>=) else -inf,(<=)
   state 0: #0
-	<var> state 1
+	<app> state 1
   state 1: #0
-} {
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+} end if realp k/*0:*/&&k/*0:*/~=0&&~infp n1/*1:0101*/&&~infp n2/*1:011*/ when k/*0:*/ = n2/*0:011*/-n1/*0:0101*/ {
   rule #0: k = n2-n1
   state 0: #0
 	<var> state 1
   state 1: #0
-} end if n1/*0:0101*/~=n2/*0:011*/;
+} end;
 n/*0:01*/..m/*0:1*/ = if m/*0:1*/===inf then iterate (\x/*0:*/ -> x/*0:*/+1 {
   rule #0: x = x+1
   state 0: #0
 	<var> state 1
   state 1: #0
-}) n/*0:01*/ else while (\i/*0:*/ -> i/*0:*/<=m/*1:1*/ {
-  rule #0: i = i<=m
-  state 0: #0
-	<var> state 1
-  state 1: #0
-}) (\x/*0:*/ -> x/*0:*/+1 {
+}) n/*0:01*/ else if m/*0:1*/===-inf then [] else while ((>=) m/*0:1*/) (\x/*0:*/ -> x/*0:*/+1 {
   rule #0: x = x+1
   state 0: #0
 	<var> state 1
   state 1: #0
-}) n/*0:01*/;
+}) n/*0:01*/ if ~listnp n/*0:01*/&&~infp n/*0:01*/;
 all p/*0:01*/ [] = 1;
 all p/*0:01*/ (x/*0:101*/:xs/*0:11*/) = if p/*0:01*/ x/*0:101*/ then all p/*0:01*/ xs/*0:11*/ else 0;
 any p/*0:01*/ [] = 0;
