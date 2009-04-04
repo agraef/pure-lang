@@ -4421,16 +4421,18 @@ void pure_debug_redn(void *_e, void *_r, pure_expr *x)
     if (r) {
       cout << "++ [" << d.n << "] "
 	   << pname(interp, e) << ": " << *r << ";\n";
-    } else if (d.e->tag > 0 &&
-	       interp.externals.find(d.e->tag) != interp.externals.end()) {
-      ExternInfo &info = interp.externals[d.e->tag];
+    } else if (e->tag > 0 &&
+	       interp.externals.find(e->tag) != interp.externals.end()) {
+      ExternInfo &info = interp.externals[e->tag];
       cout << "++ [" << d.n << "] "
 	   << pname(interp, e) << ": " << info << ";\n";
-    }
+    } else
+      goto pop;
     get_vars(interp, interp.debug_info.rbegin());
     print_vars(interp, d);
     if (x) cout << "     --> " << printx(x, 68) << endl;
   }
+ pop:
   // pop an activation record
   interp.debug_info.pop_back();
 }
