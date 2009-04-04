@@ -93,9 +93,17 @@ llvm-gcc at a later time; only the LLVM library is required to build Pure.
 
 NB: LLVM 2.3 and 2.4 should still work, too, but we really recommend the
 latest LLVM version because there have been substantial improvements in the
-LLVM JIT in recent releases. Also, there are some x86-64 specific quirks with
-LLVM 2.3, see the notes on 64 bit support in the SYSTEM NOTES section for
-details.
+LLVM JIT in recent releases. (Also note that there are some x86-64 specific
+quirks with LLVM 2.3, see the notes on 64 bit support in the SYSTEM NOTES
+section for details.) In order to make the batch compiler work, you'll need
+LLVM 2.5 or later.
+
+*IMPORTANT:* If you plan to use Pure's batch compiler on 32 bit x86 systems,
+you need to patch up the llvmc tool in LLVM 2.5. We provide the necessary
+patch here: http://pure-lang.googlecode.com/svn/wiki/Base.td-x86_32.patch
+(Without this, llvmc causes suboptimal 32 bit code to be generated, and even
+breaks llc on Windows. This bug was fixed in LLVM svn r68127, so the patch
+shouldn't be needed with LLVM 2.6 and later any more.)
 
 STEP 3. Configure, build and install LLVM as follows:
 
@@ -607,13 +615,12 @@ batch compiler work. Just unzip these into some convenient location on your
 harddrive and set up PATH so that it points to the llvm-x.y and
 llvm-gcc-x.y/bin directories.
 
-NOTE: As of LLVM 2.5, llvmc seems to be broken on (32 bit) Windows. If you get
-a failed assertion from llvmc when running pure -c, you'll need a version of
-llvmc which doesn't hardcode the -relocationmodel=pic option into the llc
-compile command. A patched up version of llvmc.exe from LLVM 2.5 can be found
-at http://groups.google.com/group/pure-lang/files.
+NOTE: The llvmc compiler driver included in LLVM 2.5 has a bug which breaks
+batch compilation on (32 bit) Windows. (This will be fixed in the next LLVM
+release.) For the time being, a patched up version of llvmc.exe can be found
+at http://pure-lang.googlecode.com/svn/stuff/llvmc.exe.zip.
 
 
-March 2009
+April 2009
 Albert Graef <Dr.Graef at t-online.de>
 Eddie Rucker <erucker at bmc.edu>
