@@ -453,6 +453,8 @@ def quasiquote x		= quote x;
      > -1:-3..-inf;
      -1:#<thunk 0x7f696cd2fde8>
 
+   The lower bounds of an arithmetic sequence must always be finite.
+
    .. _list:
    .. _tuple:
 
@@ -703,11 +705,16 @@ stream xs@(_,_)	= stream (list xs);
 
 /* Arithmetic sequences. */
 
-n1:n2..m	= if m===s*inf then iterate (\x->x+k) n1
-		  else while (\i->s*i<=s*m) (\x->x+k) n1
-		  when k = n2-n1; s = if k>0 then 1 else -1 end if n1~=n2;
+n1:n2..m	= if m===s then iterate (\x->x+k) n1
+		  else if m===-s then []
+		  else while (p m) (\x->x+k) n1
+		  when s,p = if k>0 then inf,(>=) else -inf,(<=) end
+		  if realp k && k~=0 && ~infp n1 && ~infp n2
+		  when k = n2-n1 end;
 n..m		= if m===inf then iterate (\x->x+1) n
-		  else while (\i->i<=m) (\x->x+1) n;
+		  else if m===-inf then []
+		  else while ((>=) m) (\x->x+1) n
+		  if ~listnp n && ~infp n;
 
 /* ..
 
