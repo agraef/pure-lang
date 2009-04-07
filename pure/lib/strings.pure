@@ -289,6 +289,13 @@ namespace;
 chr n::int		= c if stringp c when c = string_chr n end;
 ord s::string		= n if intp n when n = string_ord s end;
 
+/* Special case rules for sequences of characters. */
+
+a::string..b::string	= map chr (ord a..ord b) if charp a && charp b;
+a::string:b::string..c::string
+			= map chr (ord a:ord b..ord c)
+			    if charp a && charp b && charp c;
+
 /* ..
 
    Low-Level Operations

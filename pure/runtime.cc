@@ -4454,6 +4454,60 @@ pure_expr *pure_byte_cstring(const char *s)
 }
 
 extern "C"
+pure_expr *pure_int_seq(int32_t from, int32_t to, int32_t step)
+{
+  if (step == 0)
+    return 0;
+  if ((step > 0 && from > to) || (step < 0 && from < to))
+    return mk_nil();
+  int32_t count = (to-from)/step;
+  if (count < 0) count = 0;
+  count++;
+  pure_expr **xs = (pure_expr**)malloc(count*sizeof(pure_expr*));
+  if (!xs) {
+    pure_throw(pure_symbol(pure_sym("malloc_error")));
+    return 0;
+  }
+  for (int32_t i = 0; i < count; i++) {
+    xs[i] = pure_int(from);
+    from += step;
+  }
+  pure_expr *x = pure_listv(count, xs);
+  free(xs);
+  return x;
+}
+
+extern "C"
+pure_expr *pure_double_seq(double from, double to, double step)
+{
+  if (step == 0.0)
+    return 0;
+  if ((step > 0.0 && from > to) || (step < 0.0 && from < to) ||
+      is_nan(from) || is_nan(to))
+    return mk_nil();
+  else if (is_nan(step))
+    return pure_listl(1, pure_double(from));
+  int32_t count = (int32_t)((to-from)/step);
+  if (count < 0) count = 0;
+  count++;
+  pure_expr **xs = (pure_expr**)malloc(count*sizeof(pure_expr*));
+  if (!xs) {
+    pure_throw(pure_symbol(pure_sym("malloc_error")));
+    return 0;
+  }
+  double last = 0.0;
+  for (int32_t i = 0; i < count; i++) {
+    last = from;
+    xs[i] = pure_double(from);
+    from += step;
+  }
+  if ((step > 0.0 && last > to) || (step < 0.0 && last < to)) count--;
+  pure_expr *x = pure_listv(count, xs);
+  free(xs);
+  return x;
+}
+
+extern "C"
 pure_expr *pure_intval(pure_expr *x)
 {
   assert(x);

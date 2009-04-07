@@ -807,6 +807,43 @@ const inf = 1.0e307 * 1.0e307; const nan = inf-inf;
 infp x		= case x of x::double = x==inf || x==-inf; _ = 0 end;
 nanp x		= case x of x::double = ~(x==x); _ = 0 end;
 
+/* Some common special cases of finite arithmetic sequences are implemented
+   here using the runtime for better performance. */
+
+namespace C;
+extern expr* pure_int_seq(int from, int to, int step);
+extern expr* pure_double_seq(double from, double to, double step);
+namespace;
+
+n::int..m::int		= C::pure_int_seq n m 1;
+n1::int:n2::int..m::int	= C::pure_int_seq n1 m (n2-n1) if n1~=n2;
+
+n::double..m::double	= C::pure_double_seq n m 1.0 if ~infp n && ~infp m;
+n::int..m::double	= C::pure_double_seq (double n) m 1.0 if ~infp m;
+n::double..m::int	= C::pure_double_seq n (double m) 1.0 if ~infp n;
+
+n1::double:n2::double..m::double
+			= C::pure_double_seq n1 m (n2-n1)
+			    if ~infp n1 && ~infp m && n1~=n2;
+n1::int:n2::double..m::double
+			= C::pure_double_seq (double n1) m (n2-n1)
+			    if ~infp m && n1~=n2;
+n1::double:n2::int..m::double
+			= C::pure_double_seq n1 m (n2-n1)
+			    if ~infp n1 && ~infp m && n1~=n2;
+n1::double:n2::double..m::int
+			= C::pure_double_seq n1 (double m) (n2-n1)
+			    if ~infp n1 && n1~=n2;
+n1::int:n2::int..m::double
+			= C::pure_double_seq (double n1) m (double (n2-n1))
+			    if ~infp m && n1~=n2;
+n1::int:n2::double..m::int
+			= C::pure_double_seq (double n1) (double m) (n2-n1)
+			    if n1~=n2;
+n1::double:n2::int..m::int
+			= C::pure_double_seq n1 (double m) (n2-n1)
+			    if ~infp n1 && n1~=n2;
+
 /* ..
 
    Pointer Operations

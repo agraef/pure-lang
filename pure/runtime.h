@@ -605,6 +605,11 @@ void pure_debug_redn(void *e, void *r, pure_expr *x);
    external C modules may call these, but be warned that these APIs are
    subject to change without further notice. */
 
+/* Construct arithmetic sequences. */
+
+pure_expr *pure_int_seq(int32_t from, int32_t to, int32_t step);
+pure_expr *pure_double_seq(double from, double to, double step);
+
 /* Conversions between numeric and pointer types. The input argument must be
    an expression denoting an int, double, bigint or pointer value. The numeric
    value of a pointer is its address, cast to a suitably large integer type,
