@@ -879,6 +879,12 @@ static const bool yes_or_no(const string& msg)
   return res;
 }
 
+#ifdef _WIN32
+#define PATHSEP ";"
+#else
+#define PATHSEP ":"
+#endif
+
 static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const char *cmd, const char *cmdline)
 {
   if (interp.restricted) {
@@ -987,9 +993,27 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
       docname.erase(docname.length()-1);
     // invoke the browser
     const char *browser = getenv("PURE_HELP");
-    if (!browser) browser = "w3m"; // default
-    string helpcmd = string(browser) + " " + docname;
-    system(helpcmd.c_str());
+    if (!browser && (browser = getenv("BROWSER"))) {
+      char *browsercmd = strdup(browser);
+      if (browsercmd) {
+	char *part;
+	part = strtok(browsercmd, PATHSEP);
+	do {
+	  char buf[4096];
+	  if (strstr(part, "%s"))
+	    snprintf(buf, sizeof(buf), part, docname.c_str());
+	  else
+	    snprintf(buf, sizeof(buf), "%s %s", part, docname.c_str());
+	  if (system(buf) == 0) break;
+	} while ((part = strtok(NULL, PATHSEP)));
+	free(browsercmd);
+      } else
+	cerr << "help: memory allocation error\n";
+    } else {
+      if (!browser) browser = "w3m"; // default
+      string helpcmd = string(browser) + " " + docname;
+      system(helpcmd.c_str());
+    }
   } else if (strcmp(cmd, "ls") == 0)  {
     system(cmdline);
   } else if (strcmp(cmd, "pwd") == 0)  {
