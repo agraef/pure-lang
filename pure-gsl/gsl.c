@@ -12,6 +12,7 @@
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_statistics.h>
 #include <gsl/gsl_statistics_int.h>
+#include <gsl/gsl_poly.h>
 
 #include <pure/runtime.h>
 
@@ -278,7 +279,6 @@ pure_expr* wrap_gsl_stats_minmax(double* data, size_t stride, size_t n)
   return pure_tuplel(2, pure_double(x), pure_double(y));
 }
 
-
 pure_expr* wrap_gsl_stats_int_minmax_index(int* data, size_t stride, size_t n)
 {
   size_t x, y;
@@ -291,4 +291,93 @@ pure_expr* wrap_gsl_stats_minmax_index(double* data, size_t stride, size_t n)
   size_t x, y;
   gsl_stats_minmax_index(&x, &y, data, 1, n);
   return pure_tuplel(2, pure_int(x), pure_int(y));
+}
+
+pure_expr* wrap_gsl_poly_complex_eval(double* c, int len, double a, double b)
+{
+  gsl_complex z;
+  z.dat[0] = a;
+  z.dat[1] = b;
+  z = gsl_poly_complex_eval(c, len, z);
+  return pure_complex(z.dat);
+}
+
+pure_expr* wrap_gsl_complex_poly_complex_eval
+  (gsl_matrix_complex *c, int len, double a, double b)
+{
+  int i = 0;
+  gsl_complex z, *p, cc[2*len];
+  double *d = c->data;
+  z.dat[0] = a;
+  z.dat[1] = b;
+  p = cc;
+  while (i++ < len) {
+    p->dat[0] = *d++;
+    p++->dat[1] = *d++;
+  }
+  z = gsl_complex_poly_complex_eval(cc, len, z);
+  return pure_complex(z.dat);
+}
+
+pure_expr* wrap_gsl_poly_solve_quadratic(double a, double b, double c)
+{
+  double x0, x1;
+
+  switch (gsl_poly_solve_quadratic(a, b, c, &x0, &x1)) {
+    case 0: return pure_matrix_columnsl(0);
+    case 1: return pure_matrix_columnsl(1, pure_double(x0));
+    case 2: return pure_matrix_columnsl(2, pure_double(x0), pure_double(x1));
+  }
+}
+
+pure_expr* wrap_gsl_poly_complex_solve_quadratic(double a, double b, double c)
+{
+  gsl_complex z0, z1;
+
+  if (gsl_poly_complex_solve_quadratic(a, b, c, &z0, &z1) == 1)
+    return pure_matrix_columnsl(1, pure_complex(z0.dat));
+  else
+    return pure_matrix_columnsl(2, pure_complex(z0.dat),
+      pure_complex(z1.dat));
+}
+
+pure_expr* wrap_gsl_poly_solve_cubic(double a, double b, double c)
+{
+  double x0, x1, x2;
+
+  if (gsl_poly_solve_cubic(a, b, c, &x0, &x1, &x2) == 1)
+    return pure_matrix_columnsl(1, pure_double(x0));
+  else
+    return pure_matrix_columnsl(3, pure_double(x0), pure_double(x1), 
+      pure_double(x2));
+}
+
+pure_expr* wrap_gsl_poly_complex_solve_cubic(double a, double b, double c)
+{
+  gsl_complex z0, z1, z2;
+
+  gsl_poly_complex_solve_cubic(a, b, c, &z0, &z1, &z2);
+  return pure_matrix_columnsl(3, pure_complex(z0.dat), 
+    pure_complex(z1.dat), pure_complex(z2.dat));
+}
+
+pure_expr* wrap_gsl_poly_complex_solve(double* a, size_t n)
+{
+  double tz[2*(n-1)];
+  pure_expr *z[n-1];
+  double t[2];
+  int i, j = 0, r;
+  
+  gsl_poly_complex_workspace* w = gsl_poly_complex_workspace_alloc(n);
+  r = gsl_poly_complex_solve(a, n, w, tz);
+  gsl_poly_complex_workspace_free(w);
+  if (r == GSL_SUCCESS) {
+    for (i = 0; i < 2*(n-1); i+=2) {
+      t[0] = tz[i];
+      t[1] = tz[i+1];
+      z[j++] = pure_complex(t);
+    }
+    return pure_matrix_columnsv(n-1, z);
+  } else
+    return pure_matrix_columnsl(0);
 }
