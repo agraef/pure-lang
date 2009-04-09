@@ -19,6 +19,21 @@
    You should have received a copy of the GNU General Public License along
    with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
+/* ..
+   
+   Polynomials
+   -----------
+   
+   This module provides Pure wrappers for the GSL polynomial routines. See
+   Chapter 6 of the GSL manual, 
+   http://www.gnu.org/software/gsl/manual/html_node/Polynomials.html,
+   for details. Note that Pure routines do not contain or need a ``len`` 
+   parameter like the C the routines provided in the GSL library.
+       
+   Routines
+   ~~~~~~~~
+*/
+
 using "lib:gsl";
 
 namespace gsl;
@@ -28,23 +43,26 @@ private extern expr* wrap_gsl_poly_complex_eval(double*, int, double, double);
 private extern expr* wrap_gsl_complex_poly_complex_eval
   (cmatrix*, int, double, double);
 
-public
-  poly_eval;
+public poly_eval;
 
-/* ..
-  ``poly_eval  c::matrix  x``
-    evaluates the polynomial 
-    ``(c!0)+(c!1)x+(c!2)x^2+...+(c!(#c-1))x^(#c-1)``.
+/* .. _poly_eval:
+
+   ``poly_eval  c::matrix  x``
+     evaluates the polynomial
+     
+     ``(c!0)+(c!1)x+(c!2)x^2+...+(c!(#c-1))x^(#c-1)``.
+     
+     An extra Pure routine for evaluating polynomials with ``int`` and
+     ``bigint`` coefficients has been provided because GSL does not supply one.
+     The routine implements the Chinese Remainder Theorem for efficiency.
 */
 
-poly_eval c::matrix (a+:b)
+poly_eval  c::matrix  (a+:b)
   = wrap_gsl_poly_complex_eval (dmatrix c) (#c) (double a) (double b)
     if rowvectorp c && (dmatrixp c || imatrixp c);
   = wrap_gsl_complex_poly_complex_eval c (#c) (double a) (double b)
     if rowvectorp c && cmatrixp c;
 
-// GSL doesn't support plain int coefficients
-// This is just the Chinese Remainder Thoerem
 poly_eval c::matrix x
   = loop x (c!n) c (n-1)
     when
@@ -52,7 +70,7 @@ poly_eval c::matrix x
     end
     with
       loop x s c i = loop x (x*s+(c!i)) c (i-1) if i >= 0;
-      loop x s c i = s;
+                   = s;
     end
     if rowvectorp c && imatrixp c && (intp x || bigintp x);
   = gsl_poly_eval (dmatrix c) (#c) (double x) 
@@ -68,12 +86,13 @@ public
   poly_dd_eval
   poly_dd_taylor;
 
-/* ..
-  ``poly_dd_init x::matrix y::matrix``
-    computes a divided-difference representation of the interpolating
-    polynomial for the points
+/* .. _poly_dd_init:
+
+   ``poly_dd_init x::matrix y::matrix``
+     computes a divided-difference representation of the interpolating
+     polynomial for the points
    
-    (x!0, y!0), (x!1, y!1), ..., (x!(#x-1), y!(#x-1)).
+     ``(x!0, y!0), (x!1, y!1), ..., (x!(#x-1), y!(#x-1))``.
 */
 
 poly_dd_init  xa::matrix  ya::matrix
@@ -83,21 +102,23 @@ poly_dd_init  xa::matrix  ya::matrix
     end
     if rowvectorp xa && rowvectorp ya;
 
-/* ..
-  ``poly_dd_eval dd:matrix xa::matrix x::double``
-    evaluates the polynomial stored in divided-difference form in 
-    dd and xa at the point x.
+/* .. _poly_dd_eval:
+
+   ``poly_dd_eval dd:matrix xa::matrix x::double``
+     evaluates the polynomial stored in divided-difference form in matrices
+     ``dd`` and ``xa`` at the point ``x``.
 */
 
-poly_dd_eval  dd::matrix  xa::matrix  x::double
-  = gsl_poly_dd_eval (dmatrix dd) (dmatrix xa) (#dd) x
-    if rowvectorp dd && rowvectorp xa;
+poly_dd_eval  dd::matrix  xa::matrix  x
+  = gsl_poly_dd_eval (dmatrix dd) (dmatrix xa) (#dd) (double x)
+    if rowvectorp dd && rowvectorp xa && realp x;
 
-/* ..
-  ``poly_dd_taylor xp::double dd::matrix xa::matrix``
-    converts the divided-difference representation of a polynomial to a
-    Taylor expansion where the divided-difference representation is supplied
-    in the arrays dd and xa expanded about the point xp.
+/* .._ poly_dd_talyor
+
+   ``poly_dd_taylor xp::double dd::matrix xa::matrix``
+     converts the divided-difference representation of a polynomial to a
+     Taylor expansion where the divided-difference representation is supplied
+     by the matrices ``dd`` and ``xa`` expanded about the point ``xp``.
 */
 
 poly_dd_taylor  xp  dd::matrix  xa::matrix
@@ -107,7 +128,7 @@ poly_dd_taylor  xp  dd::matrix  xa::matrix
       w = dmatrix xa;
       c = dmatrix xa;
     end
-    if rowvectorp dd && rowvectorp xa;
+    if realp xp && rowvectorp dd && rowvectorp xa;
 
 private extern expr* wrap_gsl_poly_solve_quadratic
   (double, double, double);
@@ -125,7 +146,8 @@ public
   poly_solve_cubic
   poly_complex_solve_cubic;
 
-/* ..
+/* .. _poly_solve_quadratic:
+
    ``poly_solve_quadratic a b c``
      finds the real roots of the quadratic equation
 
@@ -140,7 +162,8 @@ poly_solve_quadratic  a  b  c
   = wrap_gsl_poly_solve_quadratic (double a) (double b) (double c)
     if realp a && realp b && realp c;
 
-/* ..
+/* .. _poly_complex_solve_quadratic:
+
    ``poly_complex_solve_quadratic``
      finds the complex roots of the quadratic equation
      
@@ -151,30 +174,32 @@ poly_solve_quadratic  a  b  c
 */     
 
 poly_complex_solve_quadratic  a  b  c
-  = wrap_gsl_poly_complex_solve_quadratic (double a) (double b) 
-      (double c)
+  = wrap_gsl_poly_complex_solve_quadratic (double a) (double b) (double c)
     if realp a && realp b && realp c;
 
-/* ..
+/* .. _poly_solve_cubic:
+
    ``poly_solve_cubic``
      finds the real roots of the cubic equation
         
      ``x^3+a*x^2+b*x+c=0``.
      
-     This function returns a matrix with one or three double roots.
+     This function returns a matrix with exactly one or exactly three double
+     roots.
 */
 
 poly_solve_cubic  a  b  c
   = wrap_gsl_poly_solve_cubic (double a) (double b) (double c)
     if realp a && realp b && realp c;
 
-/* ..
-   ``poly_complex_solve_cubic  a  b  c
-    finds the complex roots of the cubic equation
+/* .. _poly_complex_colve_cubic:
+
+   ``poly_complex_solve_cubic a b c``
+     finds the complex roots of the cubic equation
     
-    ``x^3+z*x^2+b*x+c=0``.
+     ``x^3+a*x^2+b*x+c=0``.
     
-    This functions returns a matrix with three complex roots.
+     This functions returns a matrix with three complex roots.
 */
 
 poly_complex_solve_cubic  a  b  c
@@ -185,16 +210,124 @@ private extern expr* wrap_gsl_poly_complex_solve(double*, size_t);
 
 public poly_complex_solve;
 
-/* ..
+/* .. _poly_complex_solve:
+
    ``poly_complex_solve  m::matrix``
-   returns a matrix of the roots of the general polynomial
+     returns a matrix of the roots of the general polynomial
    
-   ``P(x)=(a!0)+(a!1)*x+(a!2)*x^2+(a!(n-1))*x^(n-1)``
+     ``P(x)=(m!0)+(m!1)*x+(m!2)*x^2+(m!(#a-1))*x^(#m-1)``.
    
-   if they exist. Otherwise, an empty matrix ``{}`` is returned. Note 
-   that GSL routines for creating and freeing a workspace are not 
-   needed.
+     If the roots cannot be found, an empty matrix ``{}`` is returned. Note the
+     user does not need to supply the GSL routines for creating and freeing a
+     workspace.
 */
 
 poly_complex_solve  m::matrix
-  = wrap_gsl_poly_complex_solve (pointer m) (#m);
+  = wrap_gsl_poly_complex_solve m (#m);
+
+/* ..
+   
+   Examples
+   ~~~~~~~~
+   
+   Usage of each library routine is illustrated below.
+   
+   ::
+   
+     > using gsl_poly;
+     
+   Pure routine for integer coefficients:
+   
+   ::
+     
+     > gsl::poly_eval {1,2,3} 2;
+     17
+     
+   GSL function: ``gsl_poly_eval``
+   
+   ::
+   
+     > gsl::poly_eval {1.0,2.0,3.0} (-2.0);
+     9.0
+     
+   GSL function: ``gsl_poly_complex_eval``
+   
+   ::
+   
+     > gsl::poly_eval {1, 2, 2} (1+:1);
+     3.0+:6.0
+   
+   GSL function: ``gsl_complex_poly_complex_eval``
+   
+   ::
+   
+     > gsl::poly_eval {1+:2, 2+:3, 2+:3} (1+:1);
+     -6.0+:11.0
+   
+   GSL function: ``gsl_poly_dd_init``
+   
+   ::
+   
+     > let dd = gsl::poly_dd_init {1,2,3} {2,4,6};
+     > dd;
+     {2.0,2.0,0.0}
+   
+   
+   GSL function: ``gsl_poly_dd_eval``
+   
+   ::
+   
+     > gsl::poly_dd_eval dd {1,2,3} 2;
+     4.0
+   
+   GSL function: ``gsl_poly_dd_taylor``
+   
+   ::
+   
+     > gsl::poly_dd_taylor 0.0 dd {1,2,3};
+     {0.0,2.0,0.0}
+   
+   GSL function: ``gsl_poly_solve_quadratic``
+   
+   ::
+   
+     > gsl::poly_solve_quadratic 2 4 1;
+     {-3.41421356237309,-0.585786437626905}
+     > gsl::poly-solve_quadratic 1 4 4;
+     {-2.0,-2.0}
+     > gsl::poly-solve_quadratic 0 2 1;
+     {-0.5}
+   
+   GSL function: ``gsl_poly_complex_solve_quadratic``
+   
+   ::
+   
+     > gsl::poly_complex_solve_quadratic 0 2 1;
+     {-0.5+:0.0}
+     >  gsl::poly_complex_solve_quadratic 2 2 3;
+     {-0.5+:-1.11803398874989,-0.5+:1.11803398874989}
+   
+   GSL function: ``gsl_poly_solve_cubic``
+   
+   ::
+   
+     > gsl::poly_solve_cubic 3 3 1;
+     {-1.0,-1.0,-1.0}
+     > gsl::poly_solve_cubic 3 2 1;
+     {-2.32471795724475}
+   
+   GSL function: ``gsl_poly_complex_solve_cubic``
+   
+   ::
+   
+     > gsl::poly_complex_solve_cubic 2 2 1;
+     {-1.0+:0.0,-0.5+:-0.866025403784439,-0.5+:0.866025403784439}
+   
+   GSL function: ``gsl_poly_complex_solve``
+   
+   ::
+   
+     > gsl::poly_complex_solve {6,1,-7,-1,1};
+     {0.999999999999999+:0.0,-0.999999999999999+:0.0,-2.0+:0.0,3.0+:0.0}
+   
+*/

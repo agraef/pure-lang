@@ -366,16 +366,16 @@ pure_expr* wrap_gsl_poly_complex_solve(double* a, size_t n)
   double tz[2*(n-1)];
   pure_expr *z[n-1];
   double t[2];
-  int i, j = 0, r;
+  int i, r;
   
   gsl_poly_complex_workspace* w = gsl_poly_complex_workspace_alloc(n);
   r = gsl_poly_complex_solve(a, n, w, tz);
   gsl_poly_complex_workspace_free(w);
   if (r == GSL_SUCCESS) {
-    for (i = 0; i < 2*(n-1); i+=2) {
-      t[0] = tz[i];
-      t[1] = tz[i+1];
-      z[j++] = pure_complex(t);
+    for (i = 0; i < n-1; ++i) {
+      t[0] = tz[2*i];
+      t[1] = tz[2*i+1];
+      z[i] = pure_complex(t);
     }
     return pure_matrix_columnsv(n-1, z);
   } else
