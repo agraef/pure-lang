@@ -71,7 +71,7 @@ get_proc_addr(const char *name)
 #elif defined(__APPLE__) /* Mac */
 #include <OpenGL/gl.h>
 #include <OpenGL/glu.h>
-#include <OpenGL/glut.h>
+#include <GLUT/glut.h>
 #include <mach-o/dyld.h>
 
 static void*

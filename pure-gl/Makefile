@@ -52,8 +52,6 @@ CFLAGS = -g -O2
 
 # No need to edit below this line, usually.
 
-FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
-
 # Generated stuff:
 modules = GL.pure GL_ARB.pure GL_EXT.pure GL_NV.pure GL_ATI.pure \
 GLU.pure GLUT.pure
@@ -67,7 +65,7 @@ examples/*.jpg GL/all_gl.h GL/all_gl_freeglut.h $(modules) $(c-modules)
 all: pure-gl$(DLL)
 
 pure-gl$(DLL): $(c-modules)
-	$(CC) $(shared) -o $@ $(c-modules) $(FLAGS) $(LinkGL) -lpure $(LIBS)
+	$(CC) $(shared) $(CPPFLAGS) $(CFLAGS) $(PIC) $(c-modules) -o $@ $(LDFLAGS) $(LinkGL) -lpure $(LIBS)
 
 # Clean, but keep generated modules.
 
