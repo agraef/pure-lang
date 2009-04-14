@@ -3937,11 +3937,14 @@ static void get_vars(interpreter& interp, list<DebugInfo>::reverse_iterator kt)
     cout << d.n << "@" << sz << ": " << d.e->name
 	 << "(" << d.e->n << ", " << d.e->m << ")\n";
 #endif
-    assert(d.e->n+d.e->m < sz);
-    sz -= d.e->n+d.e->m+1;
-    while (sz > 0 && sstk[sz]) --sz;
-    d.args = sstk+sz+1;
-    d.envs = d.args+d.e->n;
+    if (d.e->n+d.e->m > 0) {
+      assert(d.e->n+d.e->m < sz);
+      sz -= d.e->n+d.e->m+1;
+      while (sz > 0 && sstk[sz]) --sz;
+      d.args = sstk+sz+1;
+      d.envs = d.args+d.e->n;
+    } else
+      d.args = d.envs = 0;
   } while (it++ != kt);
 }
 
