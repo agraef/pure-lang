@@ -1,0 +1,1406 @@
+
+/* glpk.pure - Pure bindings for the GNU Linear Programming Kit (GLPK) */
+
+/* Copyright (c) 2009 by Jiri Spitz <jiri.spitz@bluetone.cz>.
+
+   This file is part of the Pure programming language and system.
+
+   Pure is free software: you can redistribute it and/or modify it under the
+   terms of the GNU General Public License as published by the Free Software
+   Foundation, either version 3 of the License, or (at your option) any later
+   version.
+
+   Pure is distributed in the hope that it will be useful, but WITHOUT ANY
+   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+   FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+   details.
+
+   You should have received a copy of the GNU General Public License along
+   with this program.  If not, see <http://www.gnu.org/licenses/>. */
+
+using "lib:glpk";
+using dict;
+
+namespace glp;
+
+/*****************************************************************************/
+/*                            Symbolic constants                             */
+/*****************************************************************************/
+
+/* optimization direction flag: */
+public nullary
+  min		// minimization
+  max		// maximization
+;
+
+/* kind of structural variable: */
+public nullary
+  cv		// continuous variable
+  iv		// integer variable
+  bv		// binary variable
+;
+/* type of auxiliary/structural variable: */
+public nullary
+  fr		// free variable
+  lo		// variable with lower bound
+  up		// variable with upper bound
+  db		// double-bounded variable
+  fx		// fixed variable
+;
+
+/* status of auxiliary/structural variable: */
+public nullary
+  bs		// basic variable
+  nl		// non-basic variable on lower bound
+  nu		// non-basic variable on upper bound
+  nf		// non-basic free variable
+  ns		// non-basic fixed variable
+;
+
+/* scaling options, can be bitwise or'ed: */
+const glp::sf_gm   = 0x01; // perform geometric mean scaling
+const glp::sf_eq   = 0x10; // perform equilibration scaling
+const glp::sf_2n   = 0x20; // round scale factors to power of two
+const glp::sf_skip = 0x40; // skip if problem is well scaled
+const glp::sf_auto = 0x80; // choose scaling options automatically
+
+/* solution indicator: */
+public nullary
+  sol		// basic solution
+  ipt		// interior-point solution
+  mip		// mixed integer solution
+;
+
+/* solution status: */
+public nullary
+  undef		// solution is undefined
+  feas		// solution is feasible
+  infeas	// solution is infeasible
+  nofeas	// no feasible solution exists
+  opt		// solution is optimal
+  unbnd		// solution is unbounded
+;
+
+/* factorization type: */
+public nullary
+  bf_ft		// luf + Forrest-Tomlin
+  bf_bg		// luf + Schur compl. + Bartels-Golub
+  bf_gr		// luf + Schur compl. + givens rotation
+;
+
+/* simplex method control parameters */
+/* message level: */
+public nullary
+  msg_off	// no output
+  msg_err	// warning and error messages only
+  msg_on	// normal output
+  msg_all	// full output
+  msg_dbg	// debug output
+;
+
+/* simplex method option: */
+public nullary
+  primal	// use primal simplex
+  dualp		// use dual; if it fails, use primal
+  dual		// use dual simplex
+;
+
+/* pricing technique: */
+public nullary
+  pt_std	// standard (Dantzig rule)
+  pt_pse	// projected steepest edge
+;
+
+/* ratio test technique: */
+public nullary
+  rt_std	// standard (textbook)
+  rt_har	// two-pass Harris' ratio test
+;
+
+/* integer optimizer control parameters */
+/* branching technique: */
+public nullary
+  br_ffv	// first fractional variable
+  br_lfv	// last fractional variable
+  br_mfv	// most fractional variable
+  br_dth	// heuristic by Driebeck and Tomlin
+  br_hpc	// hybrid pseudocost
+;
+
+/* backtracking technique: */
+public nullary
+  bt_dfs	// depth first search
+  bt_bfs	// breadth first search
+  bt_blb	// best local bound
+  bt_bph	// best projection heuristic
+;
+
+/* preprocessing technique: */
+public nullary
+  pp_none	// disable preprocessing
+  pp_root	// preprocessing only on root level
+  pp_all	// preprocessing on all levels
+;
+
+/* the row origin flag: */
+public nullary
+  rf_reg	// regular constraint
+  rf_lazy	// "lazy" constraint
+  rf_cut	// cutting plane constraint
+;
+
+/* the row class descriptor: */
+public nullary
+  rf_gmi	// Gomory's mixed integer cut
+  rf_mir	// mixed integer rounding cut
+  rf_cov	// mixed cover cut
+  rf_clq	// clique cut
+;
+
+/* enable/disable flag: */
+public nullary
+  on		// enable something
+  off		// disable something
+;
+
+/* reason codes: */
+public nullary
+  irowgen	// request for row generation
+  ibingo	// better integer solution found
+  iheur		// request for heuristic solution
+  icutgen	// request for cut generation
+  ibranch	// request for branching
+  iselect	// request for subproblem selection
+  iprepro	// request for preprocessing
+;
+
+/* branch selection indicator: */
+public nullary
+  no_brnch	// select no branch
+  dn_brnch	// select down-branch
+  up_brnch	// select up-branch
+;
+
+/* return codes: */
+public nullary
+  ok		// solver finished OK
+  ebadb		// invalid basis
+  esing		// singular matrix
+  econd		// ill-conditioned matrix
+  ebound	// invalid bounds
+  efail		// solver failed
+  eobjll	// objective lower limit reached
+  eobjul	// objective upper limit reached
+  eitlim	// iteration limit exceeded
+  etmlim	// time limit exceeded
+  enopfs	// no primal feasible solution
+  enodfs	// no dual feasible solution
+  eroot		// root LP optimum not provided
+  estop		// search terminated by application
+  emipgap	// relative mip gap tolerance reached
+  enofeas	// no primal/dual feasible solution
+  enocvg	// no convergence
+  einstab	// numerical instability
+  edata		// invalid data
+  erange	// result out of range
+;
+
+/* mps file format: */
+public nullary
+  mps_deck	// fixed (ancient)
+  mps_file	// free (modern)
+;
+
+namespace lpx;
+/* exit codes returned by solver routines: */
+public nullary
+  e_ok		// success
+  e_empty	// empty problem
+  e_badb	// invalid initial basis
+  e_sing	// problems with basis matrix
+;
+namespace glp;
+
+/*****************************************************************************/
+/*                          Symbolic option names                            */
+/*****************************************************************************/
+
+/* basis factorization control parameters */
+public nullary
+//  msg_lev	// (reserved)
+  type		// factorization type:
+  lu_size	// luf.sv_size
+  piv_tol	// luf.piv_tol
+  piv_lim	// luf.piv_lim
+  suhl		// luf.suhl
+  eps_tol	// luf.eps_tol
+  max_gro	// luf.max_gro
+  nfs_max	// fhv.hh_max
+  upd_tol	// fhv.upd_tol
+  nrs_max	// lpf.n_max
+  rs_size	// lpf.v_size
+;
+
+/* simplex method control parameters */
+public nullary
+  msg_lev	// message level:
+  meth		// simplex method option:
+  pricing	// pricing technique:
+  r_test	// ratio test technique:
+  tol_bnd	// spx.tol_bnd
+  tol_dj	// spx.tol_dj
+  tol_piv	// spx.tol_piv
+  obj_ll	// spx.obj_ll
+  obj_ul	// spx.obj_ul
+  it_lim	// spx.it_lim
+  tm_lim	// spx.tm_lim (milliseconds)
+  out_frq	// spx.out_frq
+  out_dly	// spx.out_dly (milliseconds)
+  presolve	// enable/disable using LP presolver
+;
+
+/* integer optimizer control parameters */
+public nullary
+  msg_lev	// message level (see glp_smcp)
+  br_tech	// branching technique:
+  bt_tech	// backtracking technique:
+  tol_int	// mip.tol_int
+  tol_obj	// mip.tol_obj
+  tm_lim	// mip.tm_lim (milliseconds)
+  out_frq	// mip.out_frq (milliseconds)
+  out_dly	// mip.out_dly (milliseconds)
+  cb_func	// mip.cb_func
+  cb_info	// mip.cb_info
+  cb_size	// mip.cb_size
+  pp_tech	// preprocessing technique:
+  fp_heur	// feasibility pump heuristic option
+  mip_gap	// relative MIP gap tolerance
+  mir_cuts	// MIR cuts       (GLP_ON/GLP_OFF)
+  gmi_cuts	// Gomory's cuts  (GLP_ON/GLP_OFF)
+  cov_cuts	// cover cuts     (GLP_ON/GLP_OFF)
+  clq_cuts	// clique cuts    (GLP_ON/GLP_OFF)
+  presolve	// enable/disable using MIP presolver
+  binarize	// try to binarize integer variables
+  fn_sol	// file name to write solution found
+;
+
+private nullary
+  direction	// optimization direction flag
+  varkind	// kind of structural variable
+  vartype	// type of auxiliary/structural variable
+  varstat	// status of auxiliary/structural variable
+  scaling	// scaling options
+  solind	// solution indicator
+  solstat	// solution status
+  basfact	// factorization type
+  msglev	// message level
+  simplexmeth	// simplex method
+  pricingtech	// pricing technique
+  ratiotest	// ratio test technique
+  branching	// branching technique
+  backtracking	// backtracking technique
+  preprocess	// preprocessing technique
+  roworigin	// the row origin flag
+  rowclass	// the row class descriptor
+  onoff		// enable/disable flag
+  reasoncode	// reason codes
+  branchselect	// branch selection indicator
+  returncode	// return codes
+  mpsfile	// mps file format
+  exitcode	// exit codes returned by solver routines
+;
+
+/*****************************************************************************/
+/*                    Assign values to symbolic constants                    */
+/*****************************************************************************/
+
+let symlist = 
+  [
+    /* optimization direction flag: */
+    (direction,     min,     1),    // minimization
+    (direction,     max,     2),    // maximization
+
+    /* kind of structural variable: */
+    (varkind,       cv,      1),    // continuous variable
+    (varkind,       iv,      2),    // integer variable
+    (varkind,       bv,      3),    // binary variable
+
+    /* type of auxiliary/structural variable: */
+    (vartype,       fr,      1),    // free variable
+    (vartype,       lo,      2),    // variable with lower bound
+    (vartype,       up,      3),    // variable with upper bound
+    (vartype,       db,      4),    // double-bounded variable
+    (vartype,       fx,      5),    // fixed variable
+
+    /* status of auxiliary/structural variable: */
+    (varstat,       bs,      1),    // basic variable
+    (varstat,       nl,      2),    // non-basic variable on lower bound
+    (varstat,       nu,      3),    // non-basic variable on upper bound
+    (varstat,       nf,      4),    // non-basic free variable
+    (varstat,       ns,      5),    // non-basic fixed variable
+
+    /* scaling options: */
+    (scaling,       sf_gm,   0x01), // perform geometric mean scaling
+    (scaling,       sf_eq,   0x10), // perform equilibration scaling
+    (scaling,       sf_2n,   0x20), // round scale factors to power of two
+    (scaling,       sf_skip, 0x40), // skip if problem is well scaled
+    (scaling,       sf_auto, 0x80), // choose scaling options automatically
+
+    /* solution indicator: */
+    (solind,        sol,     1),    // basic solution
+    (solind,        ipt,     2),    // interior-point solution
+    (solind,        mip,     3),    // mixed integer solution
+
+    /* solution status: */
+    (solstat,       undef,   1),    // solution is undefined
+    (solstat,       feas,    2),    // solution is feasible
+    (solstat,       infeas,  3),    // solution is infeasible
+    (solstat,       nofeas,  4),    // no feasible solution exists
+    (solstat,       opt,     5),    // solution is optimal
+    (solstat,       unbnd,   6),    // solution is unbounded
+
+    /* factorization type: */
+    (basfact,       bf_ft,   1),    // luf + Forrest-Tomlin
+    (basfact,       bf_bg,   2),    // luf + Schur compl. + Bartels-Golub
+    (basfact,       bf_gr,   3),    // luf + Schur compl. + givens rotation
+
+    /* message level */
+    (msglev,        msg_off, 0),    // no output
+    (msglev,        msg_err, 1),    // warning and error messages only
+    (msglev,        msg_on,  2),    // normal output
+    (msglev,        msg_all, 3),    // full output
+    (msglev,        msg_dbg, 4),    // debug output
+
+    /* simplex method */
+    (simplexmeth,   primal,  1),    // use primal simplex
+    (simplexmeth,   dualp,   2),    // use dual; if it fails, use primal
+    (simplexmeth,   dual,    3),    // use dual simplex
+
+    /* pricing technique: */
+    (pricingtech,   pt_std,  0x11), // standard (Dantzig rule)
+    (pricingtech,   pt_pse,  0x22), // projected steepest edge
+
+    /* ratio test technique: */
+    (ratiotest,    rt_std,   0x11), // standard (textbook)
+    (ratiotest,    rt_har,   0x22), // two-pass harris' ratio test
+
+    /* branching technique: */
+    (branching,    br_ffv,   1),    // first fractional variable
+    (branching,    br_lfv,   2),    // last fractional variable
+    (branching,    br_mfv,   3),    // most fractional variable
+    (branching,    br_dth,   4),    // heuristic by Driebeck and Tomlin
+    (branching,    br_hpc,   5),    // hybrid pseudocost
+
+    /* backtracking technique: */
+    (backtracking, bt_dfs,   1),    // depth first search
+    (backtracking, bt_bfs,   2),    // breadth first search
+    (backtracking, bt_blb,   3),    // best local bound
+    (backtracking, bt_bph,   4),    // best projection heuristic
+
+    /* preprocessing technique: */
+    (preprocess,   pp_none,  0),    // disable preprocessing
+    (preprocess,   pp_root,  1),    // preprocessing only on root level
+    (preprocess,   pp_all,   2),    // preprocessing on all levels
+
+    /* the row origin flag: */
+    (roworigin,    rf_reg,   0),    // regular constraint
+    (roworigin,    rf_lazy,  1),    // "lazy" constraint
+    (roworigin,    rf_cut,   2),    // cutting plane constraint
+
+    /* the row class descriptor: */
+    (rowclass,     rf_gmi,   1),    // Gomory's mixed integer cut
+    (rowclass,     rf_mir,   2),    // mixed integer rounding cut
+    (rowclass,     rf_cov,   3),    // mixed cover cut
+    (rowclass,     rf_clq,   4),    // clique cut
+
+    /* enable/disable flag: */
+    (onoff,        on,       1),    // enable something
+    (onoff,        off,      0),    // disable something
+
+    /* reason codes: */
+    (reasoncode,   irowgen,  0x01), // request for row generation
+    (reasoncode,   ibingo,   0x02), // better integer solution found
+    (reasoncode,   iheur,    0x03), // request for heuristic solution
+    (reasoncode,   icutgen,  0x04), // request for cut generation
+    (reasoncode,   ibranch,  0x05), // request for branching
+    (reasoncode,   iselect,  0x06), // request for subproblem selection
+    (reasoncode,   iprepro,  0x07), // request for preprocessing
+
+    /* branch selection indicator: */
+    (branchselect, no_brnch, 0),    // select no branch
+    (branchselect, dn_brnch, 1),    // select down-branch
+    (branchselect, up_brnch, 2),    // select up-branch
+
+    /* return codes: */
+    (returncode,   ok,       0x00), // solver finished OK
+    (returncode,   ebadb,    0x01), // invalid basis
+    (returncode,   esing,    0x02), // singular matrix
+    (returncode,   econd,    0x03), // ill-conditioned matrix
+    (returncode,   ebound,   0x04), // invalid bounds
+    (returncode,   efail,    0x05), // solver failed
+    (returncode,   eobjll,   0x06), // objective lower limit reached
+    (returncode,   eobjul,   0x07), // objective upper limit reached
+    (returncode,   eitlim,   0x08), // iteration limit exceeded
+    (returncode,   etmlim,   0x09), // time limit exceeded
+    (returncode,   enopfs,   0x0A), // no primal feasible solution
+    (returncode,   enodfs,   0x0B), // no dual feasible solution
+    (returncode,   eroot,    0x0C), // root lp optimum not provided
+    (returncode,   estop,    0x0D), // search terminated by application
+    (returncode,   emipgap,  0x0E), // relative mip gap tolerance reached
+    (returncode,   enofeas,  0x0F), // no primal/dual feasible solution
+    (returncode,   enocvg,   0x10), // no convergence
+    (returncode,   einstab,  0x11), // numerical instability
+    (returncode,   edata,    0x12), // invalid data
+    (returncode,   erange,   0x13), // result out of range
+
+    /* mps file format: */
+    (mpsfile,      mps_deck, 1),    // fixed (ancient)
+    (mpsfile,      mps_file, 2),    // free (modern)
+
+    /* exit codes returned by solver routines: */
+    (exitcode,     e_ok,     200),  // success
+    (exitcode,     e_empty,  201),  // empty problem
+    (exitcode,     e_badb,   202),  // invalid initial basis
+    (exitcode,     e_sing,   211)   // problems with basis matrix
+  ];
+
+private s2v v2s;
+
+// Dictionary for search of value by code type and symbolic name
+let s2v = hdict (map (\(x, y, z) -> (x, y) => z) symlist);
+
+// Dictionary for search of symbolic name by code type and value
+let v2s = hdict (map (\(x, y, z) -> (x, z) => y) symlist);
+
+// Test whether symbolic constant is of a given type.
+private symbolicp;
+symbolicp symtyp symval	= member s2v (symtyp, symval);
+
+/*****************************************************************************/
+/*                      Treatment of parameter structs                       */
+/*****************************************************************************/
+
+/* Test the option list. The test returns an empty list if all options are OK.
+   Otherwise it returns a list of bad options. */
+private test_option_list;
+test_option_list opt_struct options =
+  filter (bad_option opt_struct) options
+    with
+      bad_option opt_struct (optname, optval) =
+        if member opt_struct optname		// option belongs to the struct
+          then ~((opt_struct!optname) optval)	// option value is of correct
+          else 1;				// type
+      bad_option _ _ =
+        1 otherwise;
+    end;
+
+// Replace symbolic constants in an option list with corresponding values
+private opts2vals;
+opts2vals opts_struct opts =
+  map replace opts
+    with
+      replace (sym, val::int)		|
+      replace (sym, val::double)	|
+      replace (sym, val::bigint)	= (sym, val);
+      replace (sym, sym2)		= (sym, val)
+        when
+          _ typ	= opts_struct!sym;
+          val	= s2v!(typ, sym2);
+        end
+    end;
+	 
+// Replace values in an option list with corresponding symbolic constants
+private vals2opts;
+vals2opts opts_struct opts =
+  map replace opts
+    with
+      replace (sym, val::double)	= (sym, val);
+      replace (sym, val::int)		= (sym, val)
+        if opts_struct!sym === intp;
+      replace (sym, val::int)		= (sym, sym2)
+        when
+          _ typ	= opts_struct!sym;
+          sym2	= v2s!(typ, val);
+        end;
+    end;
+	 
+/* On error return error message otherwise convert
+   an integer value to corresponding symbolic constant */
+private getcode;
+getcode codetype codeval
+	= if  intp codeval then v2s!(codetype, codeval) else codeval;
+
+/* Definition of option block for the simplex method
+   The dictionary contains functions used to test whether options are given
+   correct values. */
+private simplex_options;
+let simplex_options =
+  hdict [
+    (msg_lev  => (symbolicp msglev)),       // message level
+    (meth     => (symbolicp simplexmeth)),  // simplex method option
+    (pricing  => (symbolicp pricingtech)),  // pricing technique
+    (r_test   => (symbolicp ratiotest)),    // ratio test technique
+    (tol_bnd  => numberp),                  // spx.tol_bnd
+    (tol_dj   => numberp),                  // spx.tol_dj
+    (tol_piv  => numberp),                  // spx.tol_piv
+    (obj_ll   => numberp),                  // objective lower limit
+    (obj_ul   => numberp),                  // objective upper limit
+    (it_lim   => intp),                     // iteration limit
+    (tm_lim   => intp),                     // time limit (ms)
+    (out_frq  => intp),                     // output frequency (ms)
+    (out_dly  => intp),                     // output delay (ms)
+    (presolve => (symbolicp onoff))         // enable/disable LP presolver
+  ];
+
+private mip_options;
+let mip_options =
+  hdict [
+    (msg_lev  => (symbolicp msglev)),       // message level
+    (br_tech  => (symbolicp branching)),    // branching technique
+    (bt_tech  => (symbolicp backtracking)), // backtracking technique
+    (tol_int  => numberp),                  // mip.tol_int
+    (tol_obj  => numberp),                  // mip.tol_obj
+    (tm_lim   => intp),                     // searching time limit (ms)
+    (out_frq  => intp),                     // terminal output frequency (ms)
+    (out_dly  => intp),                     // terminal output delay (ms)
+    (cb_func  => (symbolicp onoff)),        // use external callback function
+    (cb_info  => pointerp),                 // transit pointer for cb_func
+    (cb_size  => intp),                     // number of node extra bytes
+    (pp_tech  => (symbolicp preprocess)),   // preprocessing technique
+    (fp_heur  => (symbolicp onoff)),        // use feasibility pump heuristic
+    (mip_gap  => numberp),                  // relative MIP gap tolerance
+    (mir_cuts => (symbolicp onoff)),        // use MIR cuts
+    (gmi_cuts => (symbolicp onoff)),        // use Gomory's cuts
+    (cov_cuts => (symbolicp onoff)),        // use cover cuts
+    (clq_cuts => (symbolicp onoff)),        // use clique cuts
+    (presolve => (symbolicp onoff)),        // use MIP presolver
+    (binarize => (symbolicp onoff)),        // binarize integer variables
+    (fn_sol   => stringp)                   // file name to write solution
+  ];
+
+private bf_options;
+let bf_options =
+  hdict [
+    (type     => (symbolicp basfact)),      // factorization type
+    (lu_size  => intp),                     // init. size of Sparse Vector Area
+    (piv_tol  => numberp),                  // treshold pivoting tolerance
+    (piv_lim  => intp),                     // # of pivot candidates
+    (suhl     => (symbolicp onoff)),        // use heuristics by Uwe Suhl
+    (eps_tol  => numberp),                  // epsilon tolerance
+    (max_gro  => numberp),                  // max growth of factor elements
+    (nfs_max  => intp),                     // max # of additional factors
+    (upd_tol  => numberp),                  // update tolerance
+    (nrs_max  => intp),                     // max # of additional rows or cols
+    (rs_size  => intp)                      // init. size of SVA for Schur meth
+  ];
+
+/*****************************************************************************/
+/*                             GLPK wrapper routines                         */
+/*****************************************************************************/
+
+// Create the GLPK problem object
+public extern expr *glpk_create_prob() =
+  create_prob;
+
+// Set the problem name
+public extern expr *glpk_set_prob_name(expr *lp, char *name) =
+  set_prob_name;
+
+// Set objective name
+public extern expr *glpk_set_obj_name(expr *lp, char *name) =
+  set_obj_name;
+
+// Set minimization (glp::min) or maximization (glp::max)
+private extern expr *glpk_set_obj_dir(expr *lp, int);
+glp::set_obj_dir lp dir =
+  glpk_set_obj_dir lp (s2v!(direction, dir));
+
+// Add new rows to the problem, return ordinal number of the first row added
+public extern expr *glpk_add_rows(expr *lp, int count) =
+  add_rows;
+
+// Add new cols to the problem, return ordinal number of the first col added
+public extern expr *glpk_add_cols(expr *lp, int count) =
+  add_cols;
+
+// Set the row name
+private extern expr *glpk_set_row_name(expr *lp, int rowind, char *rowname);
+glp::set_row_name lp (rowind::int, rowname::string) =
+  glpk_set_row_name lp rowind rowname;
+
+// Set the column name
+private extern expr *glpk_set_col_name(expr *lp, int colind, char *colname);
+glp::set_col_name lp (colind::int, colname::string) =
+  glpk_set_col_name lp colind colname;
+
+// Set (change) row bounds
+private extern expr *glpk_set_row_bnds(expr *lp, int rowind,
+                                       int rowtype, double lb, double ub);
+glp::set_row_bnds lp (rowind::int, rowtype, lb, ub) =
+  glpk_set_row_bnds lp rowind (s2v!(vartype, rowtype)) (double lb) (double ub)
+  if numberp lb && numberp ub;
+
+// Set (change) column bounds
+private extern expr *glpk_set_col_bnds(expr *lp, int colind,
+                                       int coltype, double lb, double ub);
+glp::set_col_bnds lp (colind::int, coltype, lb, ub) =
+  glpk_set_col_bnds lp colind (s2v!(vartype, coltype)) (double lb) (double ub)
+  if numberp lb && numberp ub;
+
+// Set (change) objective coeﬃcient or constant term
+private extern expr *glpk_set_obj_coef(expr *lp, int colind, double coef);
+glp::set_obj_coef lp (colind::int, coef) =
+  glpk_set_obj_coef lp colind (double coef)
+  if numberp coef;
+
+// Load or replace matrix row
+private extern expr *glpk_set_mat_row(expr *lp, int rowind, expr *row);
+glp::set_mat_row lp (rowind::int, row) =
+  glpk_set_mat_row lp rowind row
+  if listp row;
+
+// Load or replace matrix column
+private extern expr *glpk_set_mat_col(expr *lp, int colind, expr *column);
+glp::set_mat_col lp (colind::int, column) =
+  glpk_set_mat_col lp colind column
+  if listp column;
+
+// Load or replace the whole problem matrix
+private extern expr *glpk_load_matrix(expr *lp, expr *data);
+glp::load_matrix lp mat =
+  glpk_load_matrix lp mat if listp mat;
+
+// Delete rows from the matrix
+private extern expr *glpk_del_rows(expr *lp, expr *data);
+glp::del_rows lp rows =
+  glpk_del_rows lp rows
+  if listp rows;
+
+// Delete columns from the matrix
+private extern expr *glpk_del_cols(expr *lp, expr *data);
+glp::del_cols lp columns =
+  glpk_del_cols lp columns
+  if listp columns;
+
+// Copy the whole content of an GLPK problem object to another one
+private extern expr *glpk_copy_prob(expr *dest, expr *src, int names);
+glp::copy_prob dest src names =
+  glpk_copy_prob dest src (s2v!(onoff, names));
+
+// Erase all data from the GLPK problem object
+public extern expr *glpk_erase_prob(expr *lp) =
+  erase_prob;
+
+// Delete the GLPK problem object
+public extern expr *glpk_delete_prob(expr *lp) =
+  delete_prob;
+
+// Get the problem name
+public extern expr *glpk_get_prob_name(expr *lp) =
+  get_prob_name;
+
+// Get the objective name
+public extern expr *glpk_get_obj_name(expr *lp) =
+  get_obj_name;
+
+// Get minimization (glp::min) or maximization (glp::max)
+private extern expr *glpk_get_obj_dir(expr *lp);
+glp::get_obj_dir lp =
+  getcode direction (glpk_get_obj_dir lp);
+
+// Get number of rows
+public extern expr *glpk_get_num_rows(expr *lp) =
+  get_num_rows;
+
+// Get number of columns
+public extern expr *glpk_get_num_cols(expr *lp) =
+  get_num_cols;
+
+// Get name of a row
+public extern expr *glpk_get_row_name(expr *lp, int rowind) =
+  get_row_name;
+
+// Get name of a column
+public extern expr *glpk_get_col_name(expr *lp, int colind) =
+  get_col_name;
+
+// Get row type
+private extern expr *glpk_get_row_type(expr *lp, int rowind);
+glp::get_row_type lp rowind::int =
+  getcode vartype (glpk_get_row_type lp rowind);
+
+// Get row lower bound
+public extern expr *glpk_get_row_lb(expr *lp, int rowind) =
+  get_row_lb;
+
+// Get row upper bound
+public extern expr *glpk_get_row_ub(expr *lp, int rowind) =
+  get_row_ub;
+
+// Get column type
+private extern expr *glpk_get_col_type(expr *lp, int rowind);
+glp::get_col_type lp colind::int =
+  getcode vartype (glpk_get_col_type lp colind);
+
+// Get column lower bound
+public extern expr *glpk_get_col_lb(expr *lp, int colind) =
+  get_col_lb;
+
+// Get column upper bound
+public extern expr *glpk_get_col_ub(expr *lp, int colind) =
+  get_col_ub;
+
+// Get objective coefficient
+public extern expr *glpk_get_obj_coef(expr *lp, int colind) =
+  get_obj_coef;
+
+// Get number of nonzero coefficients
+public extern expr *glpk_get_num_nz(expr *lp) =
+  get_num_nz;
+
+// Retrive a row from the problem matrix
+public extern expr *glpk_get_mat_row(expr *lp, int rowind) =
+  get_mat_row;
+
+// Retrive a column from the problem matrix
+public extern expr *glpk_get_mat_col(expr *lp, int colind) =
+  get_mat_col;
+
+// Create index for searching rows and columns by their names
+public extern expr *glpk_create_index(expr *lp) =
+  create_index;
+
+// Find a row number by name
+public extern expr *glpk_find_row(expr *lp, char *rowname) =
+  find_row;
+
+// Find a column number by name
+public extern expr *glpk_find_col(expr *lp, char *colname) =
+  find_col;
+
+// Delete index for searching rows and columns by their names
+public extern expr *glpk_delete_index(expr *lp) =
+  delete_index;
+
+// Set the row scale factor
+public extern expr *glpk_set_rii(expr *lp, expr *tpl) =
+  set_rii;
+
+// Set the column scale factor
+public extern expr *glpk_set_sjj(expr *lp, expr *tpl) =
+  set_sjj;
+
+// Retrieve the row scale factor
+public extern expr *glpk_get_rii(expr *lp, int rowind) =
+  get_rii;
+
+// Retrieve the column scale factor
+public extern expr *glpk_get_sjj(expr *lp, int colind) =
+  get_sjj;
+
+// Scale the problem data according to supplied flags
+public extern expr *glpk_scale_prob(expr *lp, int flags) =
+  scale_prob;
+
+// Unscale the problem data
+public extern expr *glpk_unscale_prob(expr *lp) =
+  unscale_prob;
+
+// Set the row status
+private extern expr *glpk_set_row_stat(expr *lp, int rowind, int status);
+glp::set_row_stat lp (rowind::int, status) =
+  glpk_set_row_stat lp rowind (s2v!(varstat, status));
+
+// Set the column status
+private extern expr *glpk_set_col_stat(expr *lp, int colind, int status);
+glp::set_col_stat lp (colind::int, status) =
+  glpk_set_col_stat lp colind (s2v!(varstat, status));
+
+// Construct standard problem basis
+public extern expr *glpk_std_basis(expr *lp) =
+  std_basis;
+
+// Construct advanced problem basis
+public extern expr *glpk_adv_basis(expr *lp) =
+  adv_basis;
+
+// Construct Bixby's problem basis
+public extern expr *glpk_cpx_basis(expr *lp) =
+  cpx_basis;
+
+// Solve the LP problem using simplex method
+private extern expr *glpk_simplex(expr *lp, expr *opts);
+glp::simplex lp options =
+  if null bad_opts
+    then
+      getcode returncode (glpk_simplex lp (opts2vals simplex_options options))
+    else
+      bad_opts
+  when
+    bad_opts = test_option_list simplex_options options
+  end;
+
+// Solve the LP problem using simplex method in exact arithmetics
+private extern expr *glpk_exact(expr *lp, expr *opts);
+glp::exact lp options =
+  if null bad_opts
+    then
+      getcode returncode (glpk_exact lp (opts2vals simplex_options options))
+    else
+      bad_opts
+  when
+    bad_opts = test_option_list simplex_options options
+  end;
+
+// Retrieve generic status of basic solution
+private extern expr *glpk_get_status(expr *lp);
+glp::get_status lp =
+  getcode solstat (glpk_get_status lp);
+
+// Retrieve generic status of primal solution
+private extern expr *glpk_get_prim_stat(expr *lp);
+glp::get_prim_stat lp =
+  getcode solstat (glpk_get_prim_stat lp);
+
+// Retrieve generic status of dual solution
+private extern expr *glpk_get_dual_stat(expr *lp);
+glp::get_dual_stat lp =
+  getcode solstat (glpk_get_dual_stat lp);
+
+// Retrieve value of the objective function
+public extern expr *glpk_get_obj_val(expr *lp) =
+  get_obj_val;
+
+// Retrieve generic status of a row variable
+private extern expr *glpk_get_row_stat(expr *lp, int rowind);
+glp::get_row_stat lp rowind =
+  getcode varstat (glpk_get_row_stat lp rowind);
+
+// Retrieve row primal value
+public extern expr *glpk_get_row_prim(expr *lp, int rowind) =
+  get_row_prim;
+
+// Retrieve row dual value
+public extern expr *glpk_get_row_dual(expr *lp, int rowind) =
+  get_row_dual;
+
+// Retrieve generic status of a column variable
+private extern expr *glpk_get_col_stat(expr *lp, int colind);
+glp::get_col_stat lp colind =
+  getcode varstat (glpk_get_col_stat lp colind);
+
+// Retrieve column primal value
+public extern expr *glpk_get_col_prim(expr *lp, int colind) =
+  get_col_prim;
+
+// Retrieve column dual value
+public extern expr *glpk_get_col_dual(expr *lp, int colind) =
+  get_col_dual;
+
+// Determine variable causing unboundedness
+public extern expr *glpk_get_unbnd_ray(expr *lp) =
+  get_unbnd_ray;
+
+// Solve the LP problem using interior-point method
+private extern expr *glpk_interior(expr *lp);
+glp::interior lp =
+  getcode returncode (glpk_interior lp);
+
+// Retrieve status of interior-point solution
+private extern expr *glpk_ipt_status(expr *lp);
+glp::ipt_status lp =
+  getcode solstat (glpk_ipt_status lp);
+
+// Retrieve the objective function value of interior-point solution
+public extern expr *glpk_ipt_obj_val(expr *lp) =
+  ipt_obj_val;
+
+// Retrieve row primal value of interior-point solution
+public extern expr *glpk_ipt_row_prim(expr *lp, int rowind) =
+  ipt_row_prim;
+
+// Retrieve row dual value of interior-point solution
+public extern expr *glpk_ipt_row_dual(expr *lp, int rowind) =
+  ipt_row_dual;
+
+// Retrieve column primal value of interior-point solution
+public extern expr *glpk_ipt_col_prim(expr *lp, int colind) =
+  ipt_col_prim;
+
+// Retrieve column dual value of interior-point solution
+public extern expr *glpk_ipt_col_dual(expr *lp, int colind) =
+  ipt_col_dual;
+
+// Set column kind
+private extern expr *glpk_set_col_kind(expr *lp, int colind, int kind);
+glp::set_col_kind lp (colind::int, kind) =
+  glpk_set_col_kind lp colind (s2v!(varkind, kind));
+
+// Retrieve column kind
+private extern expr *glpk_get_col_kind(expr *lp, int colind);
+glp::get_col_kind lp colind =
+  getcode varkind (glpk_get_col_kind lp colind);
+
+// Retrieve number of integer columns
+public extern expr *glpk_get_num_int(expr *lp) =
+  get_num_int;
+
+// Retrieve number of binary columns
+public extern expr *glpk_get_num_bin(expr *lp) =
+  get_num_bin;
+
+// Solve the MIP problem using branch-and-cut method
+private extern expr *glpk_intopt(expr *lp, expr *opts);
+glp::intopt lp options =
+  if null bad_opts
+    then
+      getcode returncode (glpk_intopt lp (opts2vals mip_options options))
+    else
+      bad_opts
+  when
+    bad_opts = test_option_list mip_options options
+  end;
+
+// Retrieve status of mip solution
+private extern expr *glpk_mip_status(expr *lp);
+glp::mip_status lp =
+  getcode solstat (glpk_mip_status lp);
+
+// Retrieve the objective function value of mip solution
+public extern expr *glpk_mip_obj_val(expr *lp) =
+  mip_obj_val;
+
+// Retrieve row value of mip solution
+public extern expr *glpk_mip_row_val(expr *lp, int rowind) =
+  mip_row_val;
+
+// Retrieve column value of mip solution
+public extern expr *glpk_mip_col_val(expr *lp, int colind) =
+  mip_col_val;
+
+// Check Karush-Kuhn-Tucker conditions
+namespace lpx;
+private extern expr *glpx_check_kkt(expr *lp, int scaled);
+lpx::check_kkt lp scaled =
+  glpx_check_kkt lp (s2v!(onoff, scaled));
+namespace glp;
+
+// Read LP problem data from a MPS file
+private extern expr *glpk_read_mps(expr *lp, int fmt, char *fname);
+glp::read_mps lp fmt fname =
+  glpk_read_mps lp (s2v!(mpsfile, fmt)) fname;
+
+// Write LP problem data into a MPS file
+private extern expr *glpk_write_mps(expr *lp, int fmt, char *fname);
+glp::write_mps lp fmt fname =
+  glpk_write_mps lp (s2v!(mpsfile, fmt)) fname;
+
+// Read LP problem data from a CPLEX file
+public extern expr *glpk_read_lp(expr *lp, char *fname) =
+  read_lp;
+
+// Write LP problem data into a CPLEX file
+public extern expr *glpk_write_lp(expr *lp, char *fname) =
+  write_lp;
+
+// Create the MathProg translator object
+public extern expr *glpk_mpl_alloc_wksp() =
+  mpl_alloc_wksp;
+
+// Read and translate model section
+public extern expr *glpk_mpl_read_model(expr *tran, char *fname, int skip) =
+  mpl_read_model;
+
+// Read and translate data section
+public extern expr *glpk_mpl_read_data(expr *tran, char *fname) =
+  mpl_read_data;
+
+// Generate the model
+public extern expr *glpk_mpl_generate(expr *tran, char *fname) =
+  mpl_generate;
+
+// Build problem instance from the model
+public extern expr *glpk_mpl_build_prob(expr *tran, expr *lp) =
+  mpl_build_prob;
+
+// Postsolve the model
+private extern expr *glpk_mpl_postsolve(expr *tran, expr *lp, int sol);
+glp::mpl_postsolve tran lp sol =
+  glpk_mpl_postsolve tran lp (s2v!(solind, sol));
+
+// Delete the MathProg translator object
+public extern expr *glpk_mpl_free_wksp(expr *tran) =
+  mpl_free_wksp;
+
+// Write basic solution in printable format
+public extern expr *glpk_print_sol(expr *lp, char *fname) =
+  print_sol;
+
+// Read basic solution from a text file
+public extern expr *glpk_read_sol(expr *lp, char *fname) =
+  read_sol;
+
+// Write basic solution into a text file
+public extern expr *glpk_write_sol(expr *lp, char *fname) =
+  write_sol;
+
+namespace lpx;
+// Write bounds sensitivity information
+public extern expr *glpx_print_sens_bnds(expr *lp, char *fname) =
+  print_sens_bnds;
+namespace glp;
+
+// Write interior-point solution in printable format
+public extern expr *glpk_print_ipt(expr *lp, char *fname) =
+  print_ipt;
+
+// Read interior-point solution from a text file
+public extern expr *glpk_read_ipt(expr *lp, char *fname) =
+  read_ipt;
+
+// Write interior-point solution into a text file
+public extern expr *glpk_write_ipt(expr *lp, char *fname) =
+  write_ipt;
+
+// Write MIP solution in printable format
+public extern expr *glpk_print_mip(expr *lp, char *fname) =
+  print_mip;
+
+// Read MIP solution from a text file
+public extern expr *glpk_read_mip(expr *lp, char *fname) =
+  read_mip;
+
+// Write MIP solution into a text file
+public extern expr *glpk_write_mip(expr *lp, char *fname) =
+  write_mip;
+
+// Check whether basis factorization exists
+public extern expr *glpk_bf_exists(expr *lp) =
+  bf_exists;
+
+// Compute the basis factorization
+private extern expr *glpk_factorize(expr *lp);
+glp::factorize lp =
+  getcode returncode (glpk_factorize lp);
+
+// Check whether basis factorization has been updated
+public extern expr *glpk_bf_updated(expr *lp) =
+  bf_updated;
+
+// Get basis factorization parameters
+private extern expr *glpk_get_bfcp(expr *lp);
+glp::get_bfcp lp =
+  if listp result then vals2opts bf_options result else result
+  when
+    result = glpk_get_bfcp lp
+  end;
+
+// Change basis factorization parameters
+private extern expr *glpk_set_bfcp(expr *lp, expr *opts);
+glp::set_bfcp lp options =
+  if null bad_opts
+    then
+      glpk_set_bfcp lp (opts2vals bf_options options)
+    else
+      bad_opts
+  when
+    bad_opts = test_option_list bf_options options
+  end;
+
+// Retrieve the basis header information
+public extern expr *glpk_get_bhead(expr *lp, int k) =
+  get_bhead;
+
+// Retrieve row index in the basis header
+public extern expr *glpk_get_row_bind(expr *lp, int rowind) =
+  get_row_bind;
+
+// Retrieve column index in the basis header
+public extern expr *glpk_get_col_bind(expr *lp, int colind) =
+  get_col_bind;
+
+// Perform forward transformation
+public extern expr *glpk_ftran(expr *lp, expr *x) =
+  ftran;
+
+// Perform backward transformation
+public extern expr *glpk_btran(expr *lp, expr *x) =
+  btran;
+
+namespace lpx;
+// Warm up LP basis
+private extern expr *glpx_warm_up(expr *lp);
+lpx::warm_up lp =
+  getcode exitcode (glpx_warm_up lp);
+namespace glp;
+
+// Compute row of the tableau
+public extern expr *glpk_eval_tab_row(expr *lp, int k) =
+  eval_tab_row;
+
+// Compute column of the tableau
+public extern expr *glpk_eval_tab_col(expr *lp, int k) =
+  eval_tab_col;
+
+namespace lpx;
+// Transform explicitly specified row
+public extern expr *glpx_transform_row(expr *lp, expr *inrow) =
+  transform_row;
+
+// Transform explicitly specified column
+public extern expr *glpx_transform_col(expr *lp, expr *incol) =
+  transform_col;
+
+// Perform primal ratio test
+public extern expr *glpx_prim_ratio_test(expr *lp, expr *vect,
+                                         int how, double tol) =
+  prim_ratio_test;
+
+// Perform dual ratio test
+public extern expr *glpx_dual_ratio_test(expr *lp, expr *vect,
+                                         int how, double tol) =
+  dual_ratio_test;
+namespace glp;
+
+// Determine reason for calling the callback routine
+private extern expr *glpk_ios_reason(expr *tree);
+glp::ios_reason tree::pointer =
+  getcode reasoncode (glpk_ios_reason tree);
+
+// Delete the wrapper of the glp_prob object
+public extern expr *glpk_delete_wrapper(expr *lp) =
+  delete_wrapper;
+
+// Access the problem object
+public extern expr *glpk_ios_get_prob(expr *tree) =
+  ios_get_prob;
+
+// Determine additional row attributes
+private extern expr *glpk_ios_row_attr(expr *tree, int irow);
+glp::ios_row_attr tree::pointer irow::int =
+  (level, getcode roworigin origin, getcode rowclass klass)
+    when
+      (level, origin, klass) = glpk_ios_row_attr tree irow
+    end;
+
+// Compute relative MIP gap
+public extern expr *glpk_ios_mip_gap(expr *tree) =
+  ios_mip_gap;
+
+// Access application-speciﬁc data
+public extern expr *glpk_ios_node_data(expr *tree, int p) =
+  ios_node_data;
+
+// Select subproblem to continue the search
+public extern expr *glpk_ios_select_node(expr *tree, int p) =
+  ios_select_node;
+
+// Provide solution found by heuristic
+public extern expr *glpk_ios_heur_sol(expr *tree, expr *x) =
+  ios_heur_sol;
+
+// Check whether can branch upon speciﬁed variable
+public extern expr *glpk_ios_can_branch(expr *tree, int j) =
+  ios_can_branch;
+
+// Choose variable to branch upon
+private extern expr *glpk_ios_branch_upon(expr *tree, int j, int sel);
+glp::ios_branch_upon tree::pointer j::int sel =
+  glpk_ios_branch_upon tree j (s2v!(branchselect, sel));
+
+// Terminate the solution process
+public extern expr *glpk_ios_terminate(expr *tree) =
+  ios_terminate;
+
+// Determine the search tree size
+public extern expr *glpk_ios_tree_size(expr *tree) =
+  ios_tree_size;
+
+// Determine current active subproblem
+public extern expr *glpk_ios_curr_node(expr *tree) =
+  ios_curr_node;
+
+// Determine next active subproblem
+public extern expr *glpk_ios_next_node(expr *tree, int p) =
+  ios_next_node;
+
+// Determine previous active subproblem
+public extern expr *glpk_ios_prev_node(expr *tree, int p) =
+  ios_prev_node;
+
+// Determine parent active subproblem
+public extern expr *glpk_ios_up_node(expr *tree, int p) =
+  ios_up_node;
+
+// Determine subproblem level
+public extern expr *glpk_ios_node_level(expr *tree, int p) =
+  ios_node_level;
+
+// Determine subproblem local bound
+public extern expr *glpk_ios_node_bound(expr *tree, int p) =
+  ios_node_bound;
+
+// Find active subproblem with the best local bound
+public extern expr *glpk_ios_best_node(expr *tree) =
+  ios_best_node;
+
+// Determine current size of the cut pool
+public extern expr *glpk_ios_pool_size(expr *tree) =
+  ios_pool_size;
+
+// Add constraint to the cut pool
+private extern pure_expr *glpk_ios_add_row(expr *tree, char *name, int klass,
+                                           int flags, expr *row, int type,
+                                           double rhs);
+glp::ios_add_row tree (name::string, klass, flags, row, type, rhs::double) =
+  glpk_ios_add_row tree name (s2v!(rowclass, klass)) 0 row
+                   (s2v!(vartype, type)) rhs;
+
+// Remove constraint from the cut pool
+public extern expr *glpk_ios_del_row(expr *tree, int irow) =
+  ios_del_row;
+
+// Remove all constraints from the cut pool
+public extern expr *glpk_ios_clear_pool(expr *tree) =
+  ios_clear_pool;
+
+// Create the GLPK graph object
+public extern expr *glpk_create_graph(int v_size, int a_size) =
+  create_graph;
+
+// Set the graph name
+public extern expr *glpk_set_graph_name(expr *graph, char *name) =
+  set_graph_name;
+
+// Add vertices to a graph
+public extern expr *glpk_add_vertices(pure_expr *graph, int nadd) =
+  add_vertices;
+
+// Delete the wrapper of the glp_arc object
+public extern expr *glpk_delete_arc_wrapper(expr *arc) =
+  delete_arc_wrapper;
+
+// Add arc to a graph
+public extern expr *glpk_add_arc(expr *graph, int i, int j) =
+  add_arc;
+
+// Erase content of the GLPK graph object
+public extern expr *glpk_erase_graph(expr *graph, int v_size, int a_size) =
+  erase_graph;
+
+// Delete the GLPK graph object
+public extern expr *glpk_delete_graph(expr *graph) =
+  delete_graph;
+
+// Read graph in a plain text format
+public extern expr *glpk_read_graph(expr *graph, char *fname) =
+  read_graph;
+
+// Write graph in a plain text format
+public extern expr *glpk_write_graph(expr *graph, char *fname) =
+  write_graph;
+
+// Find all weakly connected components of a graph
+public extern expr *glpk_weak_comp(expr *graph, int v_num) =
+  weak_comp;
+
+// Find all strongly connected components of a graph
+public extern expr *glpk_strong_comp(expr *graph, int v_num) =
+  strong_comp;
+
+// Read minimum cost flow problem data in DIMACS format
+public extern expr *glpk_read_mincost(expr *graph, int v_rhs, int a_low,
+                                      int a_cap, int a_cost, char *fname) =
+  read_mincost;
+
+// Write minimum cost flow problem data in DIMACS format
+public extern expr *glpk_write_mincost(expr *graph, int v_rhs, int a_low,
+                                       int a_cap, int a_cost, char *fname) =
+  write_mincost;
+
+// Convert minimum cost flow problem to LP
+private extern expr *glpk_mincost_lp(expr *lp, expr *graph,
+                                     int names, int v_rhs, int a_low,
+                                     int a_cap, int a_cost);
+glp::mincost_lp lp graph names v_rhs a_low a_cap a_cost =
+  glpk_mincost_lp lp graph (s2v!(onoff, names)) v_rhs a_low a_cap a_cost;
+
+// Solve minimum cost flow problem with out-of-kilter algorithm
+private extern expr *glpk_mincost_okalg(expr *graph, int v_rhs, int a_low,
+                                        int a_cap, int a_cost, int a_x,
+                                        int v_pi);
+glp::mincost_okalg graph v_rhs a_low a_cap a_cost a_x v_pi =
+  getcode returncode code, obj
+    when
+      (code, obj) = glpk_mincost_okalg graph v_rhs a_low
+                                       a_cap a_cost a_x v_pi
+    end;
+
+// Klingman's network problem generator
+public extern expr *glpk_netgen(expr *graph, int v_rhs, int a_cap, int a_cost,
+                                expr *parm) =
+  netgen;
+
+// Grid-like network problem generator
+public extern expr *glpk_gridgen(expr *graph, int v_rhs, int a_cap, int a_cost,
+                                 expr *parm) =
+  gridgen;
+
+// Read maximum cost flow problem data in DIMACS format
+public extern expr *glpk_read_maxflow(expr *graph, int a_cap, char *fname) =
+  read_maxflow;
+
+// Write maximum cost flow problem data in DIMACS format
+public extern expr *glpk_write_maxflow(expr *graph, int s, int t, int a_cap,
+                                       char *fname) =
+  write_maxflow;
+
+// Convert maximum flow problem to LP
+public extern expr *glpk_maxflow_lp(expr *lp, expr *graph, int names,
+                           int s, int t, int a_cap) =
+  maxflow_lp;
+
+// Solve maximum flow problem with Ford-Fulkerson algorithm
+private extern expr *glpk_maxflow_ffalg(expr *graph, int s, int t, int a_cap,
+                                        int a_x, int v_cut);
+glp::maxflow_ffalg graph s t a_cap a_x v_cut =
+  getcode returncode code, obj
+    when
+      (code, obj) = glpk_maxflow_ffalg graph s t a_cap a_x v_cut
+    end;
+
+// Goldfarb's maximum flow problem generator
+public extern expr *glpk_rmfgen(expr *graph, int a_cap, expr *parm) =
+  rmfgen;
+
+// Determine library version
+public extern expr *glpk_version() =
+  version;
+
+// Enable/disable terminal output
+private extern expr *glpk_term_out(int sw);
+glp::term_out sw =
+  glpk_term_out (s2v!(onoff, sw));
+
+// Enable/disable the terminal hook routine
+private extern expr *glpk_term_hook(int sw, void *info);
+glp::term_hook sw info =
+  glpk_term_hook (s2v!(onoff, sw)) info;
+
+// Get memory usage information
+private extern expr *glpk_mem_usage();
+glp::mem_usage =
+  (count, cpeak, total, tpeak)
+    when
+      (count, cpeak, tothi, totlo, tphi, tplo) = glpk_mem_usage;
+      total = ((pow 2L 32L) - 1L) * tothi + totlo;
+      tpeak = ((pow 2L 32L) - 1L) * tphi + tplo
+    end;
+
+// Set memory usage limit
+public extern expr *glpk_mem_limit(int limit) =
+  mem_limit;
+
+// Free GLPK library environment
+public extern expr *glpk_free_env() =
+  free_env;

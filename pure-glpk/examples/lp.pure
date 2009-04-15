@@ -1,0 +1,34 @@
+using glpk;
+using namespace glp, lpx;
+
+// define the problem matrix
+let mat = [(1, 1,  1.0), (1, 2, 1.0), (1, 3, 1.0),
+           (2, 1, 10.0), (2, 2, 4.0), (2, 3, 5.0),
+           (3, 1,  2.0), (3, 2, 2.0), (3, 3, 6.0)];
+
+
+// create the lp problem object
+let lp = create_prob;
+
+test =  set_prob_name lp "sample" $$			// set problem name
+	set_obj_dir lp max $$				// set maximization
+	add_rows lp 3 $$				// add 3 rows
+	set_row_name lp (1, "p") $$			// set row name
+	set_row_bnds lp (1, up, 0.0, 100.0) $$		// set row bounds
+	set_row_name lp (2, "q") $$
+	set_row_bnds lp (2, up, 0.0, 600.0) $$
+	set_row_name lp (3, "r") $$
+	set_row_bnds lp (3, up, 0.0, 300.0) $$
+	add_cols lp 3,					// add 3 columns
+	set_col_name lp (1, "x1") $$			// set column name
+	set_col_bnds lp (1, lo, 0.0, 0.0) $$		// set column bounds
+	set_obj_coef lp (1, 10.0) $$
+	set_col_name lp (2, "x2") $$
+	set_col_bnds lp (2, lo, 0.0, 0.0) $$
+	set_obj_coef lp (2, 6.0) $$
+	set_col_name lp (3, "x3") $$
+	set_col_bnds lp (3, lo, 0.0, 0.0) $$
+	set_obj_coef lp (3, 4.0) $$			// set objective coeffs
+	load_matrix lp mat $$				// load problem matrix
+	simplex lp [(presolve, on), (meth, primal)] $$	// solve the problem
+	map (get_col_prim lp) (1..get_num_cols lp);	// retrieve solution
