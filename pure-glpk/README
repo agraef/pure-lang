@@ -3,7 +3,7 @@
 Pure-GLPK - GLPK interface for the Pure programming language
 ============================================================
 
-:Author: - Jiri Spitz <jiri.spitz@bluetone.cz>
+:Author: Jiri Spitz <jiri.spitz@bluetone.cz>
 :Date: |date|
 
 .. |date| date::
@@ -29,9 +29,9 @@ the version 4.37 is required.
 .. sectnum::
 
 .. Note: If you're wondering about the funny formatting, this README
-simultaneously serves to generate the documentation for this module
-in a variety of formats, using the docutils text formatting system
-(http://docutils.sourceforge.net/).
+   simultaneously serves to generate the documentation for this module
+   in a variety of formats, using the docutils text formatting system
+   (http://docutils.sourceforge.net/).
 
 
 Installation
@@ -80,15 +80,15 @@ are still trapped by the GLPK library.
 When one of the most common errors occurs, an error term of the form
 ``glp::error message`` will be returned, which specifies what kind of error
 happend. For instance, an index out of boundsd will cause a report like the
-following::
+following:
 
-glp::error "[Pure GLPK error] row index out of bounds"
+``glp::error "[Pure GLPK error] row index out of bounds"``
 
 You can check for such return values and take some appropriate action. By
-redefining glp::error accordingly, you can also have it generate exceptions
-or print an error message. For instance::
+redefining ``glp::error`` accordingly, you can also have it generate exceptions
+or print an error message. For instance:
 
-glp::error message = fprintf stderr "%s\n" message $$ ();
+``glp::error message = fprintf stderr "%s\n" message $$ ();``
 
 **NOTE:** When redefining ``glp::error`` in this manner, you should be aware
 that the return value of ``glp::error`` is what will be returned by the other
@@ -139,79 +139,334 @@ Problem creating and modifying routines
 
 Create the GLPK problem object
 ------------------------------
-``glp::create_prob``
+**Synopsis:**
+  ``glp::create_prob``
+
+**Parameters:**
+  none
+
+**Returns:**
+  pointer to the LP problem object
+
+**Example:**
+  ``let lp = glp::create_prob;``
 
 Set the problem name
 --------------------
-``glp::set_prob_name lp name``
+**Synopsis:**
+  ``glp::set_prob_name lp name``
+
+**Parameters:**
+  :lp: pointer to the LP problem object
+  :name: problem name
+
+**Returns:**
+  ``()``
+
+**Example:**
+  ``glp::set_prob_name lp "Testing problem";``
 
 Set objective name
 ------------------
-``glp::set_obj_name lp name``
+**Synopsis:**
+  ``glp::set_obj_name lp name``
+
+**Parameters:**
+  :lp: pointer to the LP problem object
+  :name: objective name
+
+**Returns:**
+  ``()``
+
+**Example:**
+  ``glp::set_obj_name lp "Total costs";``
 
 Set minimization or maximization
 --------------------------------
-``glp::set_obj_dir lp direction``
+**Synopsis:**
+  ``glp::set_obj_dir lp direction``
+
+**Parameters:**
+  :lp: pointer to the LP problem object
+  :direction: ``glp::min`` or ``glp::max``
+
+**Returns:**
+  ``()``
+
+**Example:**
+  ``glp::set_obj_dir lp glp::min;``
 
 Add new rows to the problem
 ---------------------------
-``glp::add_rows lp count``
+**Synopsis:**
+  ``glp::add_rows lp count``
 
-Add new cols to the problem
----------------------------
-``glp::add_cols lp count``
+**Parameters:**
+  :lp: pointer to the LP problem object
+  :count: number of rows to add
+
+**Returns:**
+  index of the first row added
+
+**Example:**
+  ``let first_added_row = glp_add_rows lp 3;``
+
+Add new columns to the problem
+------------------------------
+**Synopsis:**
+  ``glp::add_cols lp count``
+
+**Parameters:**
+  :lp: pointer to the LP problem object
+  :count: number of columns to add
+
+**Returns:**
+  index of the first column added
+
+**Example:**
+  ``let first_added_col = glp_add_cols lp 3;``
 
 Set the row name
 ----------------
-``glp::set_row_name lp (rowindex, rowname)``
+**Synopsis:**
+  ``glp::set_row_name lp (rowindex, rowname)``
+
+**Parameters:**
+  :lp: pointer to the LP problem object
+  :rowindex: row index
+  :rowname: row name
+
+**Returns:**
+  ``()``
+
+**Example:**
+  ``glp::set_row_name lp (3, "The third row");``
 
 Set the column name
 -------------------
-``glp::set_col_name lp (colindex, colname)``
+**Synopsis:**
+  ``glp::set_col_name lp (colindex, colname)``
+
+**Parameters:**
+  :lp: pointer to the LP problem object
+  :colindex: column index
+  :colname: column name
+
+**Returns:**
+  ``()``
+
+**Example:**
+  ``glp::set_col_name lp (3, "The third column");``
 
 Set (change) row bounds
 -----------------------
-``glp::set_row_bnds lp (rowindex, rowtype, lowerbound, upperbound)``
+**Synopsis:**
+  ``glp::set_row_bnds lp (rowindex, rowtype, lowerbound, upperbound)``
+
+**Parameters:**
+  :lp: pointer to the LP problem object
+  :rowindex: row index
+  :rowtype: one of the following:
+            **glp::fr** - free variable (both bounds are ignored),
+            **glp::lo** - variable with lower bound (upper bound is ignored),
+            **glp::up** - variable with upper bound (lower bound is ignored),
+            **glp::db** - double bounded variable,
+            **glp::fx** - fixed variable (lower bound applies, upper bound
+            is ignored)
+  :lowerbound: lower row bound
+  :upperbound: upper row bound
+
+**Returns:**
+  ``()``
+
+**Example:**
+  ``glp::set_row_bnds lp (3, glp::up, 0.0, 150.0);``
 
 Set (change) column bounds
 --------------------------
-``glp::set_col_bnds lp (colindex, coltype, lowerbound, upperbound)``
+**Synopsis:**
+  ``glp::set_col_bnds lp (colindex, coltype, lowerbound, upperbound)``
 
-Set (change) objective coeﬃcient or constant term
+**Parameters:**
+  :lp: pointer to the LP problem object
+  :colindex: column index
+  :coltype: one of the following:
+            **glp::fr** - free variable (both bounds are ignored),
+            **glp::lo** - variable with lower bound (upper bound is ignored),
+            **glp::up** - variable with upper bound (lower bound is ignored),
+            **glp::db** - double bounded variable,
+            **glp::fx** - fixed variable (lower bound applies, upper bound
+            is ignored)
+  :lowerbound: lower column bound
+  :upperbound: upper column bound
+
+**Returns:**
+  ``()``
+
+**Example:**
+  ``glp::set_col_bnds lp (3, glp::db, 100.0, 150.0);``
+
+Set (change) objective coefficient or constant term
 ---------------------------------------------------
-``glp::set_obj_coef lp (colindex, coefficient)``
+**Synopsis:**
+  ``glp::set_obj_coef lp (colindex, coefficient)``
+
+**Parameters:**
+  :lp: pointer to the LP problem object
+  :colindex: column index, zero index denotes the constant term
+             (objective shift)
+
+**Returns:**
+  ``()``
+
+**Example:**
+  ``glp::set_obj_coef lp (3, 15.8);``
 
 Load or replace matrix row
 --------------------------
-``glp::set_mat_row lp (rowindex, rowvector)``
+**Synopsis:**
+  ``glp::set_mat_row lp (rowindex, rowvector)``
+
+**Parameters:**
+  :lp: pointer to the LP problem object
+  :rowindex: row index
+  :rowvector: list of tuples (colindex, coefficient); only non-zero
+              coefficients have to be specified, the order of column
+              indices is not important, duplicates are **not** allowed
+
+**Returns:**
+  ``()``
+
+**Example:**
+  ``glp::set_mat_row lp (3, [(1, 3.0), (4, 5.2)]);``
 
 Load or replace matrix column
 -----------------------------
-``glp::set_mat_col lp (colindex, colvector)``
+**Synopsis:**
+  ``glp::set_mat_col lp (colindex, colvector)``
+
+**Parameters:**
+  :lp: pointer to the LP problem object
+  :colindex: column index
+  :colvector: list of tuples (rowindex, coefficient); only non-zero
+              coefficients have to be specified, the order of row
+              indices is not important, duplicates are **not** allowed
+
+**Returns:**
+  ``()``
+
+**Example:**
+  ``glp::set_mat_col lp (2, [(4, 2.0), (2, 1.5)]);``
 
 Load or replace the whole problem matrix
 ----------------------------------------
-``glp::load_matrix lp matrix``
+**Synopsis:**
+  ``glp::load_matrix lp matrix``
+
+**Parameters:**
+  :lp: pointer to the LP problem object
+  :matrix: list of tuples (rowindex, colindex, coefficient); only non-zero
+           coefficients have to be specified, the order of indices is not
+           important, duplicates are **not** allowed
+
+**Returns:**
+  ``()``
+
+**Example:**
+  ``glp::load_matrix lp [(1, 3, 5.0), (2, 2, 3.5),
+  (3, 1, -2.0), (3, 2, 1.0)];``
 
 Delete rows from the matrix
 ---------------------------
-``glp::del_rows lp rows``
+**Synopsis:**
+  ``glp::del_rows lp rows``
+
+**Parameters:**
+  :lp: pointer to the LP problem object
+  :rows: list of indices of rows to be deleted; the order of indices is not
+         important, duplicates are **not** allowed
+
+**Returns:**
+  ``()``
+
+**Remark:**
+  Deleting rows involves changing ordinal numbers of other rows
+  remaining in the problem object. New ordinal numbers of the remaining
+  rows are assigned under the assumption that the original order of rows is
+  not changed.
+
+**Example:**
+  ``glp::del_rows lp [3, 4, 7];``
 
 Delete columns from the matrix
 ------------------------------
-``glp::del_cols lp cols``
+**Synopsis:**
+  ``glp::del_cols lp cols``
 
-Copy the whole content of an GLPK problem object to another one
----------------------------------------------------------------
-``glp::copy_prob destination source names``
+**Parameters:**
+  :lp: pointer to the LP problem object
+  :cols: list of indices of columns to be deleted; the order of indices is not
+         important, duplicates are **not** allowed
+
+**Returns:**
+  ``()``
+
+**Remark:**
+  Deleting columns involves changing ordinal numbers of other columns
+  remaining in the problem object. New ordinal numbers of the remaining
+  columns are assigned under the assumption that the original order of
+  columns is not changed.
+
+**Example:**
+  ``glp::del_cols lp [6, 4, 5];``
+
+Copy the whole content of the GLPK problem object to another one
+----------------------------------------------------------------
+**Synopsis:**
+  ``glp::copy_prob destination source names``
+
+**Parameters:**
+  :destination: pointer to the destination LP problem object (must already
+                exist)
+  :source: pointer to the source LP problem object
+  :names: one of the following: **glp::on** - copy all symbolic names as well,
+          **glp::off** - do not copy the symbolic names
+
+**Returns:**
+  ``()``
+
+**Example:**
+  ``glp::copy_prob lp_dest lp_src glp::on;``
 
 Erase all data from the GLPK problem object
 -------------------------------------------
-``glp::erase_prob lp``
+**Synopsis:**
+  ``glp::erase_prob lp``
+
+**Parameters:**
+  :lp: pointer to the LP problem object, it remains still valid after
+       the function call
+
+**Returns:**
+  ``()``
+
+**Example:**
+  ``glp::erase_prob lp;``
 
 Delete the GLPK problem object
 ------------------------------
-``glp::delete_prob lp``
+**Synopsis:**
+  ``glp::delete_prob lp``
+
+**Parameters:**
+  :lp: pointer to the LP problem object, it is not valid any more after
+       the function call
+
+**Returns:**
+  ``()``
+
+**Example:**
+  ``glp::delete_prob lp;``
 
 
 Problem retrieving routines
@@ -220,70 +475,190 @@ Problem retrieving routines
 
 Get the problem name
 --------------------
-``glp::get_prob_name lp``
+**Synopsis:**
+  ``glp::get_prob_name lp``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Get the objective name
 ----------------------
-``glp::get_obj_name lp``
+**Synopsis:**
+  ``glp::get_obj_name lp``
 
-// Get minimization or maximization
-``glp::get_obj_dir lp``
+**Parameters:**
+
+**Returns:**
+
+**Example:**
+
+Get minimization or maximization
+--------------------------------
+**Synopsis:**
+  ``glp::get_obj_dir lp``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Get number of rows
 ------------------
-``glp::get_num_rows lp``
+**Synopsis:**
+  ``glp::get_num_rows lp``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Get number of columns
 ---------------------
-``glp::get_num_cols lp``
+**Synopsis:**
+  ``glp::get_num_cols lp``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Get name of a row
 -----------------
-``glp::get_row_name lp rowindex``
+**Synopsis:**
+  ``glp::get_row_name lp rowindex``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Get name of a column
 --------------------
-``glp::get_col_name lp colindex``
+**Synopsis:**
+  ``glp::get_col_name lp colindex``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Get row type
 ------------
-``glp::get_row_type lp rowindex``
+**Synopsis:**
+  ``glp::get_row_type lp rowindex``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Get row lower bound
 -------------------
-``glp::get_row_lb lp rowindex``
+**Synopsis:**
+  ``glp::get_row_lb lp rowindex``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Get row upper bound
 -------------------
-``glp::get_row_ub lp rowindex``
+**Synopsis:**
+  ``glp::get_row_ub lp rowindex``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Get column type
 ---------------
-``glp::get_col_type lp colindex``
+**Synopsis:**
+  ``glp::get_col_type lp colindex``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Get column lower bound
 ----------------------
-``glp::get_col_lb lp colindex``
+**Synopsis:**
+  ``glp::get_col_lb lp colindex``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Get column upper bound
 ----------------------
-``glp::get_col_ub lp colindex``
+**Synopsis:**
+  ``glp::get_col_ub lp colindex``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Get objective coefficient
 -------------------------
-``glp::get_obj_coef lp colindex``
+**Synopsis:**
+  ``glp::get_obj_coef lp colindex``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Get number of nonzero coefficients
 ----------------------------------
-``glp::get_num_nz lp``
+**Synopsis:**
+  ``glp::get_num_nz lp``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Retrive a row from the problem matrix
 -------------------------------------
-``glp::get_mat_row lp rowindex``
+**Synopsis:**
+  ``glp::get_mat_row lp rowindex``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Retrive a column from the problem matrix
 ----------------------------------------
-``glp::get_mat_col lp colindex``
+**Synopsis:**
+  ``glp::get_mat_col lp colindex``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 
 Row and column searchin routines
@@ -292,19 +667,47 @@ Row and column searchin routines
 
 Create index for searching rows and columns by their names
 ----------------------------------------------------------
-``glp::create_index lp``
+**Synopsis:**
+  ``glp::create_index lp``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Find a row number by name
 -------------------------
-``glp::find_row lp rowname``
+**Synopsis:**
+  ``glp::find_row lp rowname``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Find a column number by name
 ----------------------------
-``glp::find_col lp colname``
+**Synopsis:**
+  ``glp::find_col lp colname``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Delete index for searching rows and columns by their names
 ----------------------------------------------------------
-``glp::delete_index lp``
+**Synopsis:**
+  ``glp::delete_index lp``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 
 Problem scaling routines
@@ -313,27 +716,69 @@ Problem scaling routines
 
 Set the row scale factor
 ------------------------
-``glp::set_rii lp (rowindex, coefficient)``
+**Synopsis:**
+  ``glp::set_rii lp (rowindex, coefficient)``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Set the column scale factor
 ---------------------------
-``glp::set_sjj lp (colindex, coefficient)``
+**Synopsis:**
+  ``glp::set_sjj lp (colindex, coefficient)``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Retrieve the row scale factor
 -----------------------------
-``glp::get_rii lp rowindex``
+**Synopsis:**
+  ``glp::get_rii lp rowindex``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Retrieve the column scale factor
 --------------------------------
-``glp::get_sjj lp colindex``
+**Synopsis:**
+  ``glp::get_sjj lp colindex``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Scale the problem data according to supplied flags
 --------------------------------------------------
-``glp::scale_prob lp flags``
+**Synopsis:**
+  ``glp::scale_prob lp flags``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Unscale the problem data
 ------------------------
-``glp::unscale_prob lp``
+**Synopsis:**
+  ``glp::unscale_prob lp``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 
 LP basis constructing routines
@@ -342,23 +787,58 @@ LP basis constructing routines
 
 Set the row status
 ------------------
-``glp::set_row_stat lp (rowindex, status)``
+**Synopsis:**
+  ``glp::set_row_stat lp (rowindex, status)``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Set the column status
 ---------------------
-``glp::set_col_stat lp (colindex, status)``
+**Synopsis:**
+  ``glp::set_col_stat lp (colindex, status)``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Construct standard problem basis
 --------------------------------
-``glp::std_basis lp``
+**Synopsis:**
+  ``glp::std_basis lp``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Construct advanced problem basis
 --------------------------------
-``glp::adv_basis lp``
+**Synopsis:**
+  ``glp::adv_basis lp``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Construct Bixby's problem basis
 -------------------------------
-``glp::cpx_basis lp``
+**Synopsis:**
+  ``glp::cpx_basis lp``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 
 Simplex method routines
@@ -367,55 +847,146 @@ Simplex method routines
 
 Solve the LP problem using simplex method
 -----------------------------------------
-``glp::simplex lp options``
+**Synopsis:**
+  ``glp::simplex lp options``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Solve the LP problem using simplex method in exact arithmetics
 --------------------------------------------------------------
-``glp::exact lp options``
+**Synopsis:**
+  ``glp::exact lp options``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Retrieve generic status of basic solution
 -----------------------------------------
-``glp::get_status lp``
+**Synopsis:**
+  ``glp::get_status lp``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Retrieve generic status of primal solution
 ------------------------------------------
+**Synopsis:**
 ``glp::get_prim_stat lp``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Retrieve generic status of dual solution
 ----------------------------------------
-``glp::get_dual_stat lp``
+**Synopsis:**
+  ``glp::get_dual_stat lp``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Retrieve value of the objective function
 ----------------------------------------
-``glp::get_obj_val lp``
+**Synopsis:**
+  ``glp::get_obj_val lp``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Retrieve generic status of a row variable
 -----------------------------------------
-``glp::get_row_stat lp rowindex``
+**Synopsis:**
+  ``glp::get_row_stat lp rowindex``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Retrieve row primal value
 -------------------------
-``glp::get_row_prim lp rowindex``
+**Synopsis:**
+  ``glp::get_row_prim lp rowindex``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Retrieve row dual value
 -----------------------
-``glp::get_row_dual lp rowindex``
+**Synopsis:**
+  ``glp::get_row_dual lp rowindex``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Retrieve generic status of a column variable
 --------------------------------------------
-``glp::get_col_stat lp colindex``
+**Synopsis:**
+  ``glp::get_col_stat lp colindex``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Retrieve column primal value
 ----------------------------
-``glp::get_col_prim lp colindex``
+**Synopsis:**
+  ``glp::get_col_prim lp colindex``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Retrieve column dual value
 --------------------------
-``glp::get_col_dual lp colindex``
+**Synopsis:**
+  ``glp::get_col_dual lp colindex``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Determine variable causing unboundedness
 ----------------------------------------
-``glp::get_unbnd_ray lp``
+**Synopsis:**
+  ``glp::get_unbnd_ray lp``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 
 Interior-point method routines
@@ -424,31 +995,80 @@ Interior-point method routines
 
 Solve the LP problem using interior-point method
 ------------------------------------------------
-``glp::interior lp``
+**Synopsis:**
+  ``glp::interior lp``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Retrieve status of interior-point solution
 ------------------------------------------
-``glp::ipt_status lp``
+**Synopsis:**
+  ``glp::ipt_status lp``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Retrieve the objective function value of interior-point solution
 ----------------------------------------------------------------
-``glp::ipt_obj_val lp``
+**Synopsis:**
+  ``glp::ipt_obj_val lp``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Retrieve row primal value of interior-point solution
 ----------------------------------------------------
-``glp::ipt_row_prim lp rowindex``
+**Synopsis:**
+  ``glp::ipt_row_prim lp rowindex``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Retrieve row dual value of interior-point solution
 --------------------------------------------------
-``glp::ipt_row_dual lp rowindex``
+**Synopsis:**
+  ``glp::ipt_row_dual lp rowindex``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Retrieve column primal value of interior-point solution
 -------------------------------------------------------
-``glp::ipt_col_prim lp colindex``
+**Synopsis:**
+  ``glp::ipt_col_prim lp colindex``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Retrieve column dual value of interior-point solution
 -----------------------------------------------------
-``glp::ipt_col_dual lp colindex``
+**Synopsis:**
+  ``glp::ipt_col_dual lp colindex``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 
 Mixed integer programming routines
@@ -457,39 +1077,102 @@ Mixed integer programming routines
 
 Set column kind
 ---------------
-``glp::set_col_kind lp (colindex, colkind)``
+**Synopsis:**
+  ``glp::set_col_kind lp (colindex, colkind)``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Retrieve column kind
 --------------------
-``glp::get_col_kind lp colindex``
+**Synopsis:**
+  ``glp::get_col_kind lp colindex``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Retrieve number of integer columns
 ----------------------------------
-``glp::get_num_int lp``
+**Synopsis:**
+  ``glp::get_num_int lp``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Retrieve number of binary columns
 ---------------------------------
-``glp::get_num_bin lp``
+**Synopsis:**
+  ``glp::get_num_bin lp``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Solve the MIP problem using branch-and-cut method
 -------------------------------------------------
-``glp::intopt lp options``
+**Synopsis:**
+  ``glp::intopt lp options``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Retrieve status of mip solution
 -------------------------------
-``glp::mip_status lp``
+**Synopsis:**
+  ``glp::mip_status lp``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Retrieve the objective function value of mip solution
 -----------------------------------------------------
-``glp::mip_obj_val lp``
+**Synopsis:**
+  ``glp::mip_obj_val lp``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Retrieve row value of mip solution
 ----------------------------------
-``glp::mip_row_val lp rowindex``
+**Synopsis:**
+  ``glp::mip_row_val lp rowindex``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Retrieve column value of mip solution
 -------------------------------------
-``glp::mip_col_val lp colindex``
+**Synopsis:**
+  ``glp::mip_col_val lp colindex``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 
 Additional routines
@@ -498,7 +1181,14 @@ Additional routines
 
 Check Karush-Kuhn-Tucker conditions
 -----------------------------------
-``lpx::check_kkt lp scaled``
+**Synopsis:**
+  ``lpx::check_kkt lp scaled``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 
 Utility API routines
@@ -511,19 +1201,47 @@ Problem data reading/writing routines
 
 Read LP problem data from a MPS file
 ------------------------------------
-``glp::read_mps lp format filename``
+**Synopsis:**
+  ``glp::read_mps lp format filename``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Write LP problem data into a MPS file
 -------------------------------------
-``glp::write_mps lp format filename``
+**Synopsis:**
+  ``glp::write_mps lp format filename``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Read LP problem data from a CPLEX file
 --------------------------------------
-``glp::read_lp lp filename``
+**Synopsis:**
+  ``glp::read_lp lp filename``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Write LP problem data into a CPLEX file
 ---------------------------------------
-``glp::write_lp lp filename``
+**Synopsis:**
+  ``glp::write_lp lp filename``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 
 Routines for MathProg models
@@ -532,31 +1250,80 @@ Routines for MathProg models
 
 Create the MathProg translator object
 -------------------------------------
-``glp::mpl_alloc_wksp``
+**Synopsis:**
+  ``glp::mpl_alloc_wksp``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Read and translate model section
 --------------------------------
-``glp::mpl_read_model tranobject filename skip``
+**Synopsis:**
+  ``glp::mpl_read_model tranobject filename skip``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Read and translate data section
 -------------------------------
-``glp::mpl_read_data tranobject filename``
+**Synopsis:**
+  ``glp::mpl_read_data tranobject filename``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Generate the model
 ------------------
-``glp::mpl_generate tranobject filename``
+**Synopsis:**
+  ``glp::mpl_generate tranobject filename``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Build problem instance from the model
 -------------------------------------
-``glp::mpl_build_prob tranobject lp``
+**Synopsis:**
+  ``glp::mpl_build_prob tranobject lp``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Postsolve the model
 -------------------
-``glp::mpl_postsolve tran lp solution``
+**Synopsis:**
+  ``glp::mpl_postsolve tran lp solution``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Delete the MathProg translator object
 -------------------------------------
-``glp::mpl_free_wksp tranobject``
+**Synopsis:**
+  ``glp::mpl_free_wksp tranobject``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 
 Problem solution reading/writing routines
@@ -565,43 +1332,113 @@ Problem solution reading/writing routines
 
 Write basic solution in printable format
 ----------------------------------------
-``glp::print_sol lp filename``
+**Synopsis:**
+  ``glp::print_sol lp filename``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Read basic solution from a text file
 ------------------------------------
-``glp::read_sol lp filename``
+**Synopsis:**
+  ``glp::read_sol lp filename``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Write basic solution into a text file
 -------------------------------------
-``glp::write_sol lp filename``
+**Synopsis:**
+  ``glp::write_sol lp filename``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Write bounds sensitivity information
 ------------------------------------
-``lpx::print_sens_bnds lp filename``
+**Synopsis:**
+  ``lpx::print_sens_bnds lp filename``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Write interior-point solution in printable format
 -------------------------------------------------
-``glp::print_ipt lp filename``
+**Synopsis:**
+  ``glp::print_ipt lp filename``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Read interior-point solution from a text file
 ---------------------------------------------
-``glp::read_ipt lp filename``
+**Synopsis:**
+  ``glp::read_ipt lp filename``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Write interior-point solution into a text file
 ----------------------------------------------
-``glp::write_ipt lp filename``
+**Synopsis:**
+  ``glp::write_ipt lp filename``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Write MIP solution in printable format
 --------------------------------------
-``glp::print_mip lp filename``
+**Synopsis:**
+  ``glp::print_mip lp filename``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Read MIP solution from a text file
 ----------------------------------
-``glp::read_mip lp filename``
+**Synopsis:**
+  ``glp::read_mip lp filename``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Write MIP solution into a text file
 -----------------------------------
-``glp::write_mip lp filename``
+**Synopsis:**
+  ``glp::write_mip lp filename``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 
 Advanced API routines
@@ -614,47 +1451,124 @@ LP basis routines
 
 Check whether basis factorization exists
 ----------------------------------------
-``glp::bf_exists lp``
+**Synopsis:**
+  ``glp::bf_exists lp``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Compute the basis factorization
 -------------------------------
-``glp::factorize lp``
+**Synopsis:**
+  ``glp::factorize lp``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Check whether basis factorization has been updated
 --------------------------------------------------
-``glp::bf_updated lp``
+**Synopsis:**
+  ``glp::bf_updated lp``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Get basis factorization parameters
 ----------------------------------
-``glp::get_bfcp lp``
+**Synopsis:**
+  ``glp::get_bfcp lp``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Change basis factorization parameters
 -------------------------------------
-``glp::set_bfcp lp options``
+**Synopsis:**
+  ``glp::set_bfcp lp options``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Retrieve the basis header information
 -------------------------------------
-``glp::get_bhead lp k``
+**Synopsis:**
+  ``glp::get_bhead lp k``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Retrieve row index in the basis header
 --------------------------------------
-``glp::get_row_bind lp rowindex``
+**Synopsis:**
+  ``glp::get_row_bind lp rowindex``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Retrieve column index in the basis header
 -----------------------------------------
-``glp::get_col_bind lp colindex``
+**Synopsis:**
+  ``glp::get_col_bind lp colindex``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Perform forward transformation
 ------------------------------
-``glp::ftran lp vector``
+**Synopsis:**
+  ``glp::ftran lp vector``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Perform backward transformation
 -------------------------------
-``glp::btran lp vector``
+**Synopsis:**
+  ``glp::btran lp vector``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Warm up LP basis
 ----------------
-``lpx::warm_up lp``
+**Synopsis:**
+  ``lpx::warm_up lp``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 
 Simplex tableau routines
@@ -663,27 +1577,69 @@ Simplex tableau routines
 
 Compute row of the tableau
 --------------------------
-``glp::eval_tab_row lp k``
+**Synopsis:**
+  ``glp::eval_tab_row lp k``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Compute column of the tableau
 -----------------------------
-``glp::eval_tab_col lp k``
+**Synopsis:**
+  ``glp::eval_tab_col lp k``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Transform explicitly specified row
 ----------------------------------
-``lpx::transform_row lp rowvector``
+**Synopsis:**
+  ``lpx::transform_row lp rowvector``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Transform explicitly specified column
 -------------------------------------
-``lpx::transform_col lp colvector``
+**Synopsis:**
+  ``lpx::transform_col lp colvector``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Perform primal ratio test
 -------------------------
-``lpx::prim_ratio_test lp vector how tol``
+**Synopsis:**
+  ``lpx::prim_ratio_test lp vector how tol``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Perform dual ratio test
 -----------------------
-``lpx::dual_ratio_test lp vector how tol``
+**Synopsis:**
+  ``lpx::dual_ratio_test lp vector how tol``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 
 Branch-and-cut API routines
@@ -696,43 +1652,113 @@ Basic routines
 
 Determine reason for calling the callback routine
 -------------------------------------------------
-``glp::ios_reason tree``
+**Synopsis:**
+  ``glp::ios_reason tree``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Access the problem object
 -------------------------
-``glp::ios_get_prob tree``
+**Synopsis:**
+  ``glp::ios_get_prob tree``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Determine additional row attributes
 -----------------------------------
-``glp::ios_row_attr tree rowindex``
+**Synopsis:**
+  ``glp::ios_row_attr tree rowindex``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Compute relative MIP gap
 ------------------------
-``glp::ios_mip_gap tree``
+**Synopsis:**
+  ``glp::ios_mip_gap tree``
 
-Access application-speciﬁc data
--------------------------------
-``glp::ios_node_data tree node``
+**Parameters:**
+
+**Returns:**
+
+**Example:**
+
+Access application-specific data
+--------------------------------
+**Synopsis:**
+  ``glp::ios_node_data tree node``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Select subproblem to continue the search
 ----------------------------------------
-``glp::ios_select_node tree node``
+**Synopsis:**
+  ``glp::ios_select_node tree node``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Provide solution found by heuristic
 -----------------------------------
-``glp::ios_heur_sol tree colvector``
+**Synopsis:**
+  ``glp::ios_heur_sol tree colvector``
 
-Check whether can branch upon speciﬁed variable
------------------------------------------------
-``glp::ios_can_branch tree j``
+**Parameters:**
+
+**Returns:**
+
+**Example:**
+
+Check whether can branch upon specified variable
+------------------------------------------------
+**Synopsis:**
+  ``glp::ios_can_branch tree j``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Choose variable to branch upon
 ------------------------------
-``glp::ios_branch_upon tree j selection``
+**Synopsis:**
+  ``glp::ios_branch_upon tree j selection``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Terminate the solution process
 ------------------------------
-``glp::ios_terminate tree``
+**Synopsis:**
+  ``glp::ios_terminate tree``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 
 The search tree exploring routines
@@ -741,35 +1767,91 @@ The search tree exploring routines
 
 Determine the search tree size
 ------------------------------
-``glp::ios_tree_size tree``
+**Synopsis:**
+  ``glp::ios_tree_size tree``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Determine current active subproblem
 -----------------------------------
-``glp::ios_curr_node tree``
+**Synopsis:**
+  ``glp::ios_curr_node tree``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Determine next active subproblem
 --------------------------------
-``glp::ios_next_node tree node``
+**Synopsis:**
+  ``glp::ios_next_node tree node``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Determine previous active subproblem
 ------------------------------------
-``glp::ios_prev_node tree node``
+**Synopsis:**
+  ``glp::ios_prev_node tree node``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Determine parent active subproblem
 ----------------------------------
-``glp::ios_up_node tree node``
+**Synopsis:**
+  ``glp::ios_up_node tree node``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Determine subproblem level
 --------------------------
-``glp::ios_node_level tree node``
+**Synopsis:**
+  ``glp::ios_node_level tree node``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Determine subproblem local bound
 --------------------------------
-``glp::ios_node_bound tree node``
+**Synopsis:**
+  ``glp::ios_node_bound tree node``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Find active subproblem with the best local bound
 ------------------------------------------------
-``glp::ios_best_node tree``
+**Synopsis:**
+  ``glp::ios_best_node tree``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 
 The cut pool routines
@@ -778,19 +1860,47 @@ The cut pool routines
 
 Determine current size of the cut pool
 --------------------------------------
-``glp::ios_pool_size tree``
+**Synopsis:**
+  ``glp::ios_pool_size tree``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Add constraint to the cut pool
 ------------------------------
-``glp::ios_add_row tree (name, klass, flags, row, type, rhs)``
+**Synopsis:**
+  ``glp::ios_add_row tree (name, klass, flags, row, type, rhs)``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Remove constraint from the cut pool
 -----------------------------------
-``glp::ios_del_row tree rowindex``
+**Synopsis:**
+  ``glp::ios_del_row tree rowindex``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Remove all constraints from the cut pool
 ----------------------------------------
-``glp::ios_clear_pool tree``
+**Synopsis:**
+  ``glp::ios_clear_pool tree``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 
 Graph and network API routines
@@ -803,35 +1913,91 @@ Basic graph routines
 
 Create the GLPK graph object
 ----------------------------
-``glp::create_graph v_size a_size``
+**Synopsis:**
+  ``glp::create_graph v_size a_size``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Set the graph name
 ------------------
-``glp::set_graph_name graph name``
+**Synopsis:**
+  ``glp::set_graph_name graph name``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Add vertices to a graph
 -----------------------
-``glp::add_vertices graph count``
+**Synopsis:**
+  ``glp::add_vertices graph count``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Add arc to a graph
 ------------------
-``glp::add_arc graph i j``
+**Synopsis:**
+  ``glp::add_arc graph i j``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Erase content of the GLPK graph object
 --------------------------------------
-``glp::erase_graph graph v_size a_size``
+**Synopsis:**
+  ``glp::erase_graph graph v_size a_size``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Delete the GLPK graph object
 ----------------------------
-``glp::delete_graph graph``
+**Synopsis:**
+  ``glp::delete_graph graph``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Read graph in a plain text format
 ---------------------------------
-``glp::read_graph graph filename``
+**Synopsis:**
+  ``glp::read_graph graph filename``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Write graph in a plain text format
 ----------------------------------
-``glp::write_graph graph filename``
+**Synopsis:**
+  ``glp::write_graph graph filename``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 
 Graph analysis routines
@@ -840,11 +2006,25 @@ Graph analysis routines
 
 Find all weakly connected components of a graph
 -----------------------------------------------
-``glp::weak_comp graph v_num``
+**Synopsis:**
+  ``glp::weak_comp graph v_num``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Find all strongly connected components of a graph
 -------------------------------------------------
-``glp::strong_comp graph v_num``
+**Synopsis:**
+  ``glp::strong_comp graph v_num``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 
 Minimum cost flow problem
@@ -853,27 +2033,69 @@ Minimum cost flow problem
 
 Read minimum cost flow problem data in DIMACS format
 ----------------------------------------------------
-``glp::read_mincost graph v_rhs a_low a_cap a_cost filename``
+**Synopsis:**
+  ``glp::read_mincost graph v_rhs a_low a_cap a_cost filename``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Write minimum cost flow problem data in DIMACS format
 -----------------------------------------------------
-``glp::write_mincost graph v_rhs a_low a_cap a_cost fname``
+**Synopsis:**
+  ``glp::write_mincost graph v_rhs a_low a_cap a_cost fname``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Convert minimum cost flow problem to LP
 ---------------------------------------
-``glp::mincost_lp lp graph names v_rhs a_low a_cap a_cost``
+**Synopsis:**
+  ``glp::mincost_lp lp graph names v_rhs a_low a_cap a_cost``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Solve minimum cost flow problem with out-of-kilter algorithm
 ------------------------------------------------------------
-``glp::mincost_okalg graph v_rhs a_low a_cap a_cost a_x v_pi``
+**Synopsis:**
+  ``glp::mincost_okalg graph v_rhs a_low a_cap a_cost a_x v_pi``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Klingman's network problem generator
 ------------------------------------
-``glp::netgen graph v_rhs a_cap a_cost parameters``
+**Synopsis:**
+  ``glp::netgen graph v_rhs a_cap a_cost parameters``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Grid-like network problem generator
 -----------------------------------
-``glp::gridgen graph v_rhs a_cap a_cost parameters``
+**Synopsis:**
+  ``glp::gridgen graph v_rhs a_cap a_cost parameters``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 
 Maximum flow problem
@@ -882,23 +2104,58 @@ Maximum flow problem
 
 Read maximum cost flow problem data in DIMACS format
 ----------------------------------------------------
-``glp::read_maxflow graph a_cap filename``
+**Synopsis:**
+  ``glp::read_maxflow graph a_cap filename``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Write maximum cost flow problem data in DIMACS format
 -----------------------------------------------------
-``glp::write_maxflow graph s t a_cap filename``
+**Synopsis:**
+  ``glp::write_maxflow graph s t a_cap filename``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Convert maximum flow problem to LP
 ----------------------------------
-``glp::maxflow_lp lp graph names s t a_cap``
+**Synopsis:**
+  ``glp::maxflow_lp lp graph names s t a_cap``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Solve maximum flow problem with Ford-Fulkerson algorithm
 --------------------------------------------------------
-``glp::maxflow_ffalg graph s t a_cap a_x v_cut``
+**Synopsis:**
+  ``glp::maxflow_ffalg graph s t a_cap a_x v_cut``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Goldfarb's maximum flow problem generator
 -----------------------------------------
-``glp::rmfgen graph a_cap parameters``
+**Synopsis:**
+  ``glp::rmfgen graph a_cap parameters``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 
 Miscellaneous routines
@@ -911,24 +2168,68 @@ Library environment routines
 
 Determine library version
 -------------------------
-``glp::version``
+**Synopsis:**
+  ``glp::version``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Enable/disable terminal output
 ------------------------------
-``glp::term_out switch``
+**Synopsis:**
+  ``glp::term_out switch``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Enable/disable the terminal hook routine
 ----------------------------------------
-``glp::term_hook switch info``
+**Synopsis:**
+  ``glp::term_hook switch info``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Get memory usage information
 ----------------------------
-``glp::mem_usage``
+**Synopsis:**
+  ``glp::mem_usage``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Set memory usage limit
 ----------------------
-``glp::mem_limit limit``
+**Synopsis:**
+  ``glp::mem_limit limit``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
 
 Free GLPK library environment
 -----------------------------
-``glp::free_env``
+**Synopsis:**
+  ``glp::free_env``
+
+**Parameters:**
+
+**Returns:**
+
+**Example:**
+
+
