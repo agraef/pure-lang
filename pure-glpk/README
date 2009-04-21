@@ -984,9 +984,13 @@ Create index for searching rows and columns by their names
 
 **Returns**:
 
+  ``()``
+
 **Example**::
 
-  > 
+  > glp::create_index lp;
+  ()
+  >
 
 Find a row number by name
 -------------------------
@@ -997,12 +1001,21 @@ Find a row number by name
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :rowname: row name
 
 **Returns**:
 
+  ordinal number (index) of the row
+
+**Remark**:
+
+  The search index is automatically created if it does not already exists.
+
 **Example**::
 
-  > 
+  > glp::find_row lp "The third row";
+  3
+  >
 
 Find a column number by name
 ----------------------------
@@ -1013,12 +1026,21 @@ Find a column number by name
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :colname: column name
 
 **Returns**:
 
+  ordinal number (index) of the column
+
+**Remark**:
+
+  The search index is automatically created if it does not already exists.
+
 **Example**::
 
-  > 
+  > glp::find_col lp "The second row";
+  2
+  >
 
 Delete index for searching rows and columns by their names
 ----------------------------------------------------------
@@ -1032,10 +1054,13 @@ Delete index for searching rows and columns by their names
 
 **Returns**:
 
+  ``()``
+
 **Example**::
 
-  > 
-
+  > glp::delete:index lp;
+  ()
+  >
 
 Problem scaling routines
 >>>>>>>>>>>>>>>>>>>>>>>>
@@ -1050,12 +1075,18 @@ Set the row scale factor
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :rowindex: row index
+  :coefficient: scaling coefficient
 
 **Returns**:
 
+  ``()``
+
 **Example**::
 
-  > 
+  > glp::set_rii lp (3, 258.6);
+  ()
+  >
 
 Set the column scale factor
 ---------------------------
@@ -1066,12 +1097,18 @@ Set the column scale factor
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :colindex: column index
+  :coefficient: scaling coefficient
 
 **Returns**:
 
+  ``()``
+
 **Example**::
 
-  > 
+  > glp::set_sjj lp (2, 12.8);
+  ()
+  >
 
 Retrieve the row scale factor
 -----------------------------
@@ -1082,12 +1119,17 @@ Retrieve the row scale factor
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :rowindex: row index
 
 **Returns**:
 
+  scaling coefficient of given row
+
 **Example**::
 
-  > 
+  > glp::get_rii lp 3;
+  258.6
+  >
 
 Retrieve the column scale factor
 --------------------------------
@@ -1098,12 +1140,17 @@ Retrieve the column scale factor
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :colindex: column index
 
 **Returns**:
 
+  scaling coefficient of given column
+
 **Example**::
 
-  > 
+  > glp::get_sjj lp 2;
+  12.8
+  >
 
 Scale the problem data according to supplied flags
 --------------------------------------------------
@@ -1114,12 +1161,24 @@ Scale the problem data according to supplied flags
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :flags: symbolic integer constants which can be combined together
+          by arithmetic `or`; the possible constants are:
+
+          :glp\:\:sf_gm: perform geometric mean scaling
+          :glp\:\:sf_eq: perform equilibration scaling
+          :glp\:\:sf_2n: round scale factors to power of two
+          :glp\:\:sf_skip: skip if problem is well scaled
+          :glp\:\:sf_auto: choose scaling options automatically
 
 **Returns**:
 
+  ``()``
+
 **Example**::
 
-  > 
+  > glp::scale_prob lp (glp::sf_gm || glp::sf_2n);
+  ()
+  >
 
 Unscale the problem data
 ------------------------
@@ -1133,9 +1192,13 @@ Unscale the problem data
 
 **Returns**:
 
+  ``()``
+
 **Example**::
 
-  > 
+  > glp::unscale_prob lp;
+  ()
+  >
 
 
 LP basis constructing routines
@@ -1151,12 +1214,26 @@ Set the row status
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :rowindex: row index
+  :status: one of the following:
+
+           :glp\:\:bs: make the row basic (make the constraint inactive)
+           :glp\:\:nl: make the row non-basic (make the constraint active)
+           :glp\:\:nu: make the row non-basic and set it to the upper bound;
+                       if the row is not double-bounded, this status is
+                       equivalent to glp::nl (only in the case of this routine)
+           :glp\:\:nf: the same as glp::nl (only in the case of this routine)
+           :glp\:\:ns: the same as glp::nl (only in the case of this routine)
 
 **Returns**:
 
+  ``()``
+
 **Example**::
 
-  > 
+  > glp::set_row_stat lp (3, glp::nu);
+  ()
+  >
 
 Set the column status
 ---------------------
@@ -1167,12 +1244,26 @@ Set the column status
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :colindex: column index
+  :status: one of the following:
+
+           :glp\:\:bs: make the column basic
+           :glp\:\:nl: make the column non-basic
+           :glp\:\:nu: make the column non-basic and set it to the upper bound;
+                       if the column is not double-bounded, this status is
+                       equivalent to glp::nl (only in the case of this routine)
+           :glp\:\:nf: the same as glp::nl (only in the case of this routine)
+           :glp\:\:ns: the same as glp::nl (only in the case of this routine)
 
 **Returns**:
 
+  ``()``
+
 **Example**::
 
-  > 
+  > glp::set_col_stat lp (2, glp::bs);
+  ()
+  >
 
 Construct standard problem basis
 --------------------------------
@@ -1186,9 +1277,13 @@ Construct standard problem basis
 
 **Returns**:
 
+  ``()``
+
 **Example**::
 
-  > 
+  > glp::std_basis lp;
+  ()
+  >
 
 Construct advanced problem basis
 --------------------------------
@@ -1202,9 +1297,13 @@ Construct advanced problem basis
 
 **Returns**:
 
+  ``()``
+
 **Example**::
 
-  > 
+  > glp::adv_basis lp;
+  ()
+  >
 
 Construct Bixby's problem basis
 -------------------------------
@@ -1218,9 +1317,13 @@ Construct Bixby's problem basis
 
 **Returns**:
 
+  ``()``
+
 **Example**::
 
-  > 
+  > glp::cpx_basis lp;
+  ()
+  >
 
 
 Simplex method routines
@@ -1236,12 +1339,119 @@ Solve the LP problem using simplex method
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :options: list of solver options in the form of tuples (option_name, value):
+
+            :glp\:\:msg_lev: (default: glp::msg_all) - message level for
+                             terminal output:
+
+                             :glp\:\:msg_off: no output
+                             :glp\:\:msg_err: error and warning messages only
+                             :glp\:\:msg_on: normal output;
+                             :glp\:\:msg_all: full output (including
+                                              informational messages)
+
+            :glp\:\:meth: (default: glp::primal) - simplex method option
+
+                          :glp\:\:primal: use two-phase primal simplex
+                          :glp\:\:dual: use two-phase dual simplex;
+                          :glp\:\:dualp: use two-phase dual simplex,
+                                         and if it fails, switch to the
+                                         primal simplex
+                          :glp\:\:pricing: (default: glp::pt_pse) - pricing
+                                           technique
+
+                          :glp\:\:pt_std: standard (textbook)
+                          :glp\:\:pt_pse: projected steepest edge
+
+            :glp\:\:r_test: (default: glp::rt_har) - ratio test technique
+
+                            :glp\:\:rt_std: standard (textbook)
+                            :glp\:\:rt_har: Harris’ two-pass ratio test
+
+            :glp\:\:tol_bnd: (default: 1e-7) - tolerance used to check if the
+                             basic solution is primal feasible.
+            :glp\:\:tol_dj: (default: 1e-7) - tolerance used to check if the
+                            basic solution is dual feasible.
+            :glp\:\:tol_piv: (default: 1e-10) - tolerance used to choose
+                             eligble pivotal elements of the simplex table
+            :glp\:\:obj_ll: (default: -DBL_MAX) - lower limit of the objective
+                            function - if the objective function reaches this
+                            limit and continues decreasing, the solver
+                            terminates the search - used in the dual simplex
+                            only
+            :glp\:\:obj_ul: (default: +DBL_MAX) - upper limit of the objective
+                            function. If the objective function reaches
+                            this limit and continues increasing, the solver
+                            terminates the search - used in the dual simplex
+                            only
+            :glp\:\:it_lim: (default: INT_MAX) - simplex iteration limit
+            :glp\:\:tm lim: (default: INT_MAX) - searching time limit, in
+                            milliseconds
+            :glp\:\:out_frq: (default: 200) - output frequency, in
+                             iterations - this parameter specifies how
+                             frequently the solver sends information about
+                             the solution process to the terminal
+            :glp\:\:out_dly: (default: 0) - output delay, in milliseconds
+                             - this parameter specifies how long the solver
+                             should delay sending information about the
+                             solution process to the terminal
+            :glp\:\:presolve: (default: glp::off) - LP presolver option:
+
+                              :glp\:\:on: enable using the LP presolver
+                              :glp\:\:off: disable using the LP presolver
 
 **Returns**:
 
+  one of the following:
+
+  :glp\:\:ok: the LP problem instance has been successfully solved; this code
+              does not necessarily mean that the solver has found optimal
+              solution, it only means that the solution process was successful
+  :glp\:\:ebadb: unable to start the search, because the initial basis
+                 specified in the problem object is invalid — the number
+                 of basic (auxiliary and structural) variables is not the same
+                 as the number of rows in the problem object
+  :glp\:\:esing: unable to start the search, because the basis matrix
+                 corresponding to the initial basis is singular within the
+                 working precision
+  :glp\:\:econd: unable to start the search, because the basis matrix
+                 corresponding to the initial basis is ill-conditioned,
+                 i.e. its condition number is too large
+  :glp\:\:ebound: unable to start the search, because some double-bounded
+                  (auxiliary or structural) variables have incorrect bounds
+  :glp\:\:efail: the search was prematurely terminated due to the solver
+                 failure
+  :glp\:\:eobjll: the search was prematurely terminated, because the objective
+                  function being maximized has reached its lower limit and
+                  continues decreasing (the dual simplex only)
+  :glp\:\:eobjul: the search was prematurely terminated, because the objective
+                  function being minimized has reached its upper limit and
+                  continues increasing (the dual simplex only)
+  :glp\:\:eitlim: the search was prematurely terminated, because the simplex
+                  iteration limit has been exceeded
+  :glp\:\:etmlim: the search was prematurely terminated, because the time
+                  limit has been exceeded
+  :glp\:\:enopfs: the LP problem instance has no primal feasible solution
+                  (only if the LP presolver is used)
+  :glp\:\:enodfs: the LP problem instance has no dual feasible solution
+                  (only if the LP presolver is used)
+
 **Example**::
 
-  > 
+  > glp::simplex lp [(glp::presolve, glp::on), (glp::msg_lev, glp::msg_all)];
+  glp_simplex: original LP has 3 rows, 3 columns, 9 non-zeros
+  glp_simplex: presolved LP has 3 rows, 3 columns, 9 non-zeros
+  Scaling...
+   A: min|aij| = 1,000e+000  max|aij| = 1,000e+001  ratio = 1,000e+001
+  Problem data seem to be well scaled
+  Crashing...
+  Size of triangular part = 3
+  *     0: obj =  0,000000000e+000  infeas = 0,000e+000 (0)
+  *     2: obj =  7,333333333e+002  infeas = 0,000e+000 (0)
+  OPTIMAL SOLUTION FOUND
+  glp::ok
+  >
+
 
 Solve the LP problem using simplex method in exact arithmetics
 --------------------------------------------------------------
@@ -1252,11 +1462,44 @@ Solve the LP problem using simplex method in exact arithmetics
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :options: list of solver options in the form of tuples (option_name, value):
+
+            :glp\:\:it_lim: (default: INT_MAX) - simplex iteration limit
+            :glp\:\:tm lim: (default: INT_MAX) - searching time limit, in
+                            milliseconds
 
 **Returns**:
 
+  one of the following:
+
+  :glp\:\:ok: the LP problem instance has been successfully solved; this code
+              does not necessarily mean that the solver has found optimal
+              solution, it only means that the solution process was successful
+  :glp\:\:ebadb: unable to start the search, because the initial basis
+                 specified in the problem object is invalid — the number
+                 of basic (auxiliary and structural) variables is not the same
+                 as the number of rows in the problem object
+  :glp\:\:esing: unable to start the search, because the basis matrix
+                 corresponding to the initial basis is singular within the
+                 working precision
+  :glp\:\:ebound: unable to start the search, because some double-bounded
+                  (auxiliary or structural) variables have incorrect bounds
+  :glp\:\:efail: the search was prematurely terminated due to the solver
+                 failure
+  :glp\:\:eitlim: the search was prematurely terminated, because the simplex
+                  iteration limit has been exceeded
+  :glp\:\:etmlim: the search was prematurely terminated, because the time
+                  limit has been exceeded
+
 **Example**::
 
+  > glp::exact lp [];
+  glp_exact: 3 rows, 3 columns, 9 non-zeros
+  GNU MP bignum library is being used
+  *     2:   objval =                      0   (0)
+  *     4:   objval =       733,333333333333   (0)
+  OPTIMAL SOLUTION FOUND
+  glp::ok
   > 
 
 Retrieve generic status of basic solution
@@ -1271,9 +1514,20 @@ Retrieve generic status of basic solution
 
 **Returns**:
 
+  one of the following:
+
+  :glp\:\:undef: solution is undefined
+  :glp\:\:feas: solution is feasible
+  :glp\:\:infeas: solution is infeasible
+  :glp\:\:nofeas: no feasible solution exists
+  :glp\:\:opt: solution is optimal
+  :glp\:\:unbnd: solution is unbounded
+
 **Example**::
 
-  > 
+  > glp::get_status lp;
+  glp::opt
+  >
 
 Retrieve generic status of primal solution
 ------------------------------------------
@@ -1287,9 +1541,18 @@ Retrieve generic status of primal solution
 
 **Returns**:
 
+  one of the following:
+
+  :glp\:\:undef: primal solution is undefined
+  :glp\:\:feas: primal solution is feasible
+  :glp\:\:infeas: primal solution is infeasible
+  :glp\:\:nofeas: no primal feasible solution exists
+
 **Example**::
 
-  > 
+  > glp::get_prim_stat lp;
+  glp::feas
+  >
 
 Retrieve generic status of dual solution
 ----------------------------------------
@@ -1303,9 +1566,18 @@ Retrieve generic status of dual solution
 
 **Returns**:
 
+  one of the following:
+
+  :glp\:\:undef: dual solution is undefined
+  :glp\:\:feas: dual solution is feasible
+  :glp\:\:infeas: dual solution is infeasible
+  :glp\:\:nofeas: no dual feasible solution exists
+
 **Example**::
 
-  > 
+  > glp::get_dual_stat lp;
+  glp::feas
+  >
 
 Retrieve value of the objective function
 ----------------------------------------
@@ -1319,9 +1591,13 @@ Retrieve value of the objective function
 
 **Returns**:
 
+  value of the objective function
+
 **Example**::
 
-  > 
+  > glp::get_obj_val lp
+  733.333333333333
+  >
 
 Retrieve generic status of a row variable
 -----------------------------------------
@@ -1332,12 +1608,23 @@ Retrieve generic status of a row variable
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :rowindex: row index
 
 **Returns**:
 
+  one of the following:
+
+  :glp\:\:bs: basic variable
+  :glp\:\:nl: non-basic variable on its lower bound
+  :glp\:\:nu: non-basic variable on its upper bound
+  :glp\:\:nf: non-basic free (unbounded) variable
+  :glp\:\:ns: non-basic fixed variable
+  
 **Example**::
 
-  > 
+  > glp::get_row_stat lp 3;
+  glp::bs
+  >
 
 Retrieve row primal value
 -------------------------
@@ -1347,12 +1634,17 @@ Retrieve row primal value
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :rowindex: row index
 
 **Returns**:
 
+  primal value of the row (auxiliary) variable
+
 **Example**::
 
-  > 
+  > glp::get_row_prim lp 3;
+  200.0
+  >
 
 Retrieve row dual value
 -----------------------
@@ -1363,11 +1655,16 @@ Retrieve row dual value
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :rowindex: row index
 
 **Returns**:
 
+  dual value of the row (auxiliary) variable
+
 **Example**::
 
+  > glp::get_row_dual lp 3;
+  0.0
   > 
 
 Retrieve generic status of a column variable
@@ -1379,12 +1676,23 @@ Retrieve generic status of a column variable
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :colindex: column index
 
 **Returns**:
 
+  one of the following:
+
+  :glp\:\:bs: basic variable
+  :glp\:\:nl: non-basic variable on its lower bound
+  :glp\:\:nu: non-basic variable on its upper bound
+  :glp\:\:nf: non-basic free (unbounded) variable
+  :glp\:\:ns: non-basic fixed variable
+  
 **Example**::
 
-  > 
+  > glp::get_col_stat lp 2;
+  glp::bs
+  >
 
 Retrieve column primal value
 ----------------------------
@@ -1395,11 +1703,16 @@ Retrieve column primal value
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :colindex: column index
 
 **Returns**:
 
+  primal value of the column (structural) variable
+
 **Example**::
 
+  > glp::get_col_prim lp 2;
+  66.6666666666667
   > 
 
 Retrieve column dual value
@@ -1411,11 +1724,16 @@ Retrieve column dual value
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :colindex: column index
 
 **Returns**:
 
+  dual value of the column (structural) variable
+
 **Example**::
 
+  > glp::get_col_dual lp 2;
+  0.0
   > 
 
 Determine variable causing unboundedness
@@ -1430,9 +1748,27 @@ Determine variable causing unboundedness
 
 **Returns**:
 
+  The routine glp_get_unbnd_ray returns the number k of a variable, which
+  causes primal or dual unboundedness. If 1 <= k <= m, it is k-th auxiliary
+  variable, and if m + 1 <= k <= m + n, it is (k - m)-th structural variable,
+  where m is the number of rows, n is the number of columns in the problem
+  object. If such variable is not defined, the routine returns 0.
+
+**Remark**:
+
+  If it is not exactly known which version of the simplex solver detected
+  unboundedness, i.e. whether the unboundedness is primal or dual, it is
+  sufficient to check the status of the variable with the routine
+  glp::get_row_stat or glp::get_col_stat. If the variable is non-basic,
+  the unboundedness is primal, otherwise, if the variable is basic,
+  the unboundedness is dual (the latter case means that the problem has
+  no primal feasible dolution).
+
 **Example**::
 
-  > 
+  > glp::get_unbnd_ray lp;
+  0
+  >
 
 
 Interior-point method routines
@@ -1451,8 +1787,43 @@ Solve the LP problem using interior-point method
 
 **Returns**:
 
+  one of the following:
+
+  :glp\:\:ok: the LP problem instance has been successfully solved;
+              this code does not necessarily mean that the solver has
+              found optimal solution, it only means that the solution
+              process was successful
+  :glp\:\:efail: the problem has no rows/columns
+  :glp\:\:enofeas: the problem has no feasible (primal/dual) solution
+  :glp\:\:enocvg: very slow convergence or divergence
+  :glp\:\:eitlim: iteration limit exceeded
+  :glp\:\:einstab: numerical instability on solving Newtonian system
+  
 **Example**::
 
+> glp::interior lp;
+  glp_interior: original LP problem has 3 rows and 3 columns
+  glp_interior: transformed LP problem has 3 rows and 6 columns
+  lpx_interior: A has 12 non-zeros
+  lpx_interior: S has 6 non-zeros (upper triangle)
+  lpx_interior: minimal degree ordering...
+  lpx_interior: computing Cholesky factorization...
+  lpx_interior: U has 6 non-zeros
+  lpx_interior: guessing initial point...
+  Optimization begins...
+    0: obj = -8,218489503e+002; rpi = 3,6e-001; rdi = 6,8e-001; gap = 2,5e-001
+    1: obj = -6,719060895e+002; rpi = 3,6e-002; rdi = 1,9e-001; gap = 1,4e-002
+    2: obj = -6,917210389e+002; rpi = 3,6e-003; rdi = 9,3e-002; gap = 3,0e-002
+    3: obj = -7,267557732e+002; rpi = 2,1e-003; rdi = 9,3e-003; gap = 4,4e-002
+    4: obj = -7,323038146e+002; rpi = 2,1e-004; rdi = 1,1e-003; gap = 4,8e-003
+    5: obj = -7,332295932e+002; rpi = 2,1e-005; rdi = 1,1e-004; gap = 4,8e-004
+    6: obj = -7,333229585e+002; rpi = 2,1e-006; rdi = 1,1e-005; gap = 4,8e-005
+    7: obj = -7,333322959e+002; rpi = 2,1e-007; rdi = 1,1e-006; gap = 4,8e-006
+    8: obj = -7,333332296e+002; rpi = 2,1e-008; rdi = 1,1e-007; gap = 4,8e-007
+    9: obj = -7,333333230e+002; rpi = 2,1e-009; rdi = 1,1e-008; gap = 4,8e-008
+   10: obj = -7,333333323e+002; rpi = 2,1e-010; rdi = 1,1e-009; gap = 4,8e-009
+  OPTIMAL SOLUTION FOUND
+  glp::ok
   > 
 
 Retrieve status of interior-point solution
@@ -1467,9 +1838,16 @@ Retrieve status of interior-point solution
 
 **Returns**:
 
+  one of the following
+
+  :glp\:\:undef: interior-point solution is undefined
+  :glp\:\:opt: interior-point solution is optimal
+
 **Example**::
 
-  > 
+  > glp::ipt_status lp;
+  glp::opt
+  >
 
 Retrieve the objective function value of interior-point solution
 ----------------------------------------------------------------
@@ -1483,9 +1861,13 @@ Retrieve the objective function value of interior-point solution
 
 **Returns**:
 
+  objective function value of interior-point solution
+
 **Example**::
 
-  > 
+  > glp::ipt_obj_val lp;
+  733.333332295849
+  >
 
 Retrieve row primal value of interior-point solution
 ----------------------------------------------------
@@ -1496,11 +1878,16 @@ Retrieve row primal value of interior-point solution
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :rowindex: row index
 
 **Returns**:
 
+  primal value of the row (auxiliary) variable
+
 **Example**::
 
+  > glp::ipt_row_prim lp 3;
+  200.000000920688
   > 
 
 Retrieve row dual value of interior-point solution
@@ -1512,11 +1899,16 @@ Retrieve row dual value of interior-point solution
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :rowindex: row index
 
 **Returns**:
 
+  dual value of the row (auxiliary) variable
+
 **Example**::
 
+  > glp::ipt_row_dual lp 3;
+  2.50607466186742e-008
   > 
 
 Retrieve column primal value of interior-point solution
@@ -1528,11 +1920,16 @@ Retrieve column primal value of interior-point solution
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :colindex: column index
 
 **Returns**:
 
+  primal value of the column (structural) variable
+
 **Example**::
 
+  > glp::ipt_col_prim lp 2;
+  66.666666406779
   > 
 
 Retrieve column dual value of interior-point solution
@@ -1544,11 +1941,16 @@ Retrieve column dual value of interior-point solution
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :colindex: column index
 
 **Returns**:
 
+  dual value of the column (structural) variable
+
 **Example**::
 
+  > glp::ipt_col_dual lp 2;
+  2.00019467655466e-009
   > 
 
 
@@ -1565,12 +1967,22 @@ Set column kind
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :colindex: column index
+  :colkind: column kind - one of the following:
+
+            :glp\:\:cv: continuous variable
+            :glp\:\:iv: integer variable
+            :glp\:\:bv: binary variable
 
 **Returns**:
 
+  ``()``
+
 **Example**::
 
-  > 
+  > glp::set_col_kind lp (1, glp::iv);
+  ()
+  >
 
 Retrieve column kind
 --------------------
