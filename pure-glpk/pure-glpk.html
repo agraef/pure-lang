@@ -3,15 +3,15 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
+<meta name="generator" content="Docutils 0.5: http://docutils.sourceforge.net/" />
 <title>Pure-GLPK - GLPK interface for the Pure programming language</title>
 <meta name="author" content="Jiri Spitz &lt;jiri.spitz&#64;bluetone.cz&gt;" />
-<meta name="date" content="2009-04-21" />
+<meta name="date" content="2009-04-22" />
 <style type="text/css">
 
 /*
 :Author: David Goodger (goodger@python.org)
-:Id: $Id: html4css1.css 5631 2008-08-24 13:01:23Z goodger $
+:Id: $Id: html4css1.css 5196 2007-06-03 20:25:28Z wiemann $
 :Copyright: This stylesheet has been placed in the public domain.
 
 Default cascading style sheet for the HTML output of Docutils.
@@ -218,7 +218,8 @@ p.topic-title {
 pre.address {
   margin-bottom: 0 ;
   margin-top: 0 ;
-  font: inherit }
+  font-family: serif ;
+  font-size: 100% }
 
 pre.literal-block, pre.doctest-block {
   margin-left: 2em ;
@@ -294,7 +295,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Jiri Spitz &lt;<a class="reference external" href="mailto:jiri.spitz&#64;bluetone.cz">jiri.spitz&#64;bluetone.cz</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2009-04-21</td></tr>
+<td>2009-04-22</td></tr>
 </tbody>
 </table>
 <p>This module provides a feature complete GLPK interface for the Pure programming
@@ -2412,9 +2413,15 @@ informational messages)</td>
 and if it fails, switch to the
 primal simplex</td>
 </tr>
-<tr class="field"><th class="field-name">glp::pricing:</th><td class="field-body">(default: glp::pt_pse) - pricing
-technique</td>
+</tbody>
+</table>
+</td>
 </tr>
+<tr class="field"><th class="field-name">glp::pricing:</th><td class="field-body"><p class="first">(default: glp::pt_pse) - pricing technique</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
 <tr class="field"><th class="field-name">glp::pt_std:</th><td class="field-body">standard (textbook)</td>
 </tr>
 <tr class="field"><th class="field-name">glp::pt_pse:</th><td class="field-body">projected steepest edge</td>
@@ -2430,18 +2437,18 @@ technique</td>
 <tbody valign="top">
 <tr class="field"><th class="field-name">glp::rt_std:</th><td class="field-body">standard (textbook)</td>
 </tr>
-<tr class="field"><th class="field-name">glp::rt_har:</th><td class="field-body">Harris’ two-pass ratio test</td>
+<tr class="field"><th class="field-name">glp::rt_har:</th><td class="field-body">Harris' two-pass ratio test</td>
 </tr>
 </tbody>
 </table>
 </td>
 </tr>
 <tr class="field"><th class="field-name">glp::tol_bnd:</th><td class="field-body"><p class="first">(default: 1e-7) - tolerance used to check if the
-basic solution is primal feasible.</p>
+basic solution is primal feasible</p>
 </td>
 </tr>
 <tr class="field"><th class="field-name">glp::tol_dj:</th><td class="field-body"><p class="first">(default: 1e-7) - tolerance used to check if the
-basic solution is dual feasible.</p>
+basic solution is dual feasible</p>
 </td>
 </tr>
 <tr class="field"><th class="field-name">glp::tol_piv:</th><td class="field-body"><p class="first">(default: 1e-10) - tolerance used to choose
@@ -2513,7 +2520,7 @@ does not necessarily mean that the solver has found optimal
 solution, it only means that the solution process was successful</td>
 </tr>
 <tr class="field"><th class="field-name">glp::ebadb:</th><td class="field-body">unable to start the search, because the initial basis
-specified in the problem object is invalid — the number
+specified in the problem object is invalid - the number
 of basic (auxiliary and structural) variables is not the same
 as the number of rows in the problem object</td>
 </tr>
@@ -2553,6 +2560,8 @@ limit has been exceeded</td>
 </tr>
 </tbody>
 </table>
+<p>When the list of options contains some bad option(s) then a list of bad
+options is returned instead.</p>
 </blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
@@ -2615,7 +2624,7 @@ does not necessarily mean that the solver has found optimal
 solution, it only means that the solution process was successful</td>
 </tr>
 <tr class="field"><th class="field-name">glp::ebadb:</th><td class="field-body">unable to start the search, because the initial basis
-specified in the problem object is invalid — the number
+specified in the problem object is invalid - the number
 of basic (auxiliary and structural) variables is not the same
 as the number of rows in the problem object</td>
 </tr>
@@ -2637,6 +2646,8 @@ limit has been exceeded</td>
 </tr>
 </tbody>
 </table>
+<p>When the list of options contains some bad option(s) then a list of bad
+options is returned instead.</p>
 </blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
@@ -3076,8 +3087,55 @@ glp::interior lp
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<p>one of the following:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::ok:</th><td class="field-body">the LP problem instance has been successfully solved;
+this code does not necessarily mean that the solver has
+found optimal solution, it only means that the solution
+process was successful</td>
+</tr>
+<tr class="field"><th class="field-name">glp::efail:</th><td class="field-body">the problem has no rows/columns</td>
+</tr>
+<tr class="field"><th class="field-name">glp::enofeas:</th><td class="field-body">the problem has no feasible (primal/dual) solution</td>
+</tr>
+<tr class="field"><th class="field-name">glp::enocvg:</th><td class="field-body">very slow convergence or divergence</td>
+</tr>
+<tr class="field"><th class="field-name">glp::eitlim:</th><td class="field-body">iteration limit exceeded</td>
+</tr>
+<tr class="field"><th class="field-name">glp::einstab:</th><td class="field-body">numerical instability on solving Newtonian system</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::interior lp;
+glp_interior: original LP problem has 3 rows and 3 columns
+glp_interior: transformed LP problem has 3 rows and 6 columns
+lpx_interior: A has 12 non-zeros
+lpx_interior: S has 6 non-zeros (upper triangle)
+lpx_interior: minimal degree ordering...
+lpx_interior: computing Cholesky factorization...
+lpx_interior: U has 6 non-zeros
+lpx_interior: guessing initial point...
+Optimization begins...
+  0: obj = -8,218489503e+002; rpi = 3,6e-001; rdi = 6,8e-001; gap = 2,5e-001
+  1: obj = -6,719060895e+002; rpi = 3,6e-002; rdi = 1,9e-001; gap = 1,4e-002
+  2: obj = -6,917210389e+002; rpi = 3,6e-003; rdi = 9,3e-002; gap = 3,0e-002
+  3: obj = -7,267557732e+002; rpi = 2,1e-003; rdi = 9,3e-003; gap = 4,4e-002
+  4: obj = -7,323038146e+002; rpi = 2,1e-004; rdi = 1,1e-003; gap = 4,8e-003
+  5: obj = -7,332295932e+002; rpi = 2,1e-005; rdi = 1,1e-004; gap = 4,8e-004
+  6: obj = -7,333229585e+002; rpi = 2,1e-006; rdi = 1,1e-005; gap = 4,8e-005
+  7: obj = -7,333322959e+002; rpi = 2,1e-007; rdi = 1,1e-006; gap = 4,8e-006
+  8: obj = -7,333332296e+002; rpi = 2,1e-008; rdi = 1,1e-007; gap = 4,8e-007
+  9: obj = -7,333333230e+002; rpi = 2,1e-009; rdi = 1,1e-008; gap = 4,8e-008
+ 10: obj = -7,333333323e+002; rpi = 2,1e-010; rdi = 1,1e-009; gap = 4,8e-009
+OPTIMAL SOLUTION FOUND
+glp::ok
 &gt;
 </pre>
 </div>
@@ -3099,8 +3157,23 @@ glp::ipt_status lp
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<p>one of the following</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::undef:</th><td class="field-body">interior-point solution is undefined</td>
+</tr>
+<tr class="field"><th class="field-name">glp::opt:</th><td class="field-body">interior-point solution is optimal</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::ipt_status lp;
+glp::opt
 &gt;
 </pre>
 </div>
@@ -3122,8 +3195,12 @@ glp::ipt_obj_val lp
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+objective function value of interior-point solution</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::ipt_obj_val lp;
+733.333332295849
 &gt;
 </pre>
 </div>
@@ -3141,12 +3218,18 @@ glp::ipt_row_prim lp rowindex
 <tbody valign="top">
 <tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
 </tr>
+<tr class="field"><th class="field-name">rowindex:</th><td class="field-body">row index</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+primal value of the row (auxiliary) variable</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::ipt_row_prim lp 3;
+200.000000920688
 &gt;
 </pre>
 </div>
@@ -3164,12 +3247,18 @@ glp::ipt_row_dual lp rowindex
 <tbody valign="top">
 <tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
 </tr>
+<tr class="field"><th class="field-name">rowindex:</th><td class="field-body">row index</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+dual value of the row (auxiliary) variable</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::ipt_row_dual lp 3;
+2.50607466186742e-008
 &gt;
 </pre>
 </div>
@@ -3187,12 +3276,18 @@ glp::ipt_col_prim lp colindex
 <tbody valign="top">
 <tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
 </tr>
+<tr class="field"><th class="field-name">colindex:</th><td class="field-body">column index</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+primal value of the column (structural) variable</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::ipt_col_prim lp 2;
+66.666666406779
 &gt;
 </pre>
 </div>
@@ -3210,12 +3305,18 @@ glp::ipt_col_dual lp colindex
 <tbody valign="top">
 <tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
 </tr>
+<tr class="field"><th class="field-name">colindex:</th><td class="field-body">column index</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+dual value of the column (structural) variable</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::ipt_col_dual lp 2;
+2.00019467655466e-009
 &gt;
 </pre>
 </div>
@@ -3234,14 +3335,37 @@ glp::set_col_kind lp (colindex, colkind)
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
+<tr class="field"><th class="field-name">lp:</th><td class="field-body"><p class="first">pointer to the LP problem object</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">colindex:</th><td class="field-body"><p class="first">column index</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">colkind:</th><td class="field-body"><p class="first">column kind - one of the following:</p>
+<table class="last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::cv:</th><td class="field-body">continuous variable</td>
+</tr>
+<tr class="field"><th class="field-name">glp::iv:</th><td class="field-body">integer variable</td>
+</tr>
+<tr class="field"><th class="field-name">glp::bv:</th><td class="field-body">binary variable</td>
+</tr>
+</tbody>
+</table>
+</td>
 </tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::set_col_kind lp (1, glp::iv);
+()
 &gt;
 </pre>
 </div>
@@ -3259,12 +3383,31 @@ glp::get_col_kind lp colindex
 <tbody valign="top">
 <tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
 </tr>
+<tr class="field"><th class="field-name">colindex:</th><td class="field-body">column index</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<p>one of the following:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::cv:</th><td class="field-body">continuous variable</td>
+</tr>
+<tr class="field"><th class="field-name">glp::iv:</th><td class="field-body">integer variable</td>
+</tr>
+<tr class="field"><th class="field-name">glp::bv:</th><td class="field-body">binary variable</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::get_col_kind lp 1;
+glp::iv
 &gt;
 </pre>
 </div>
@@ -3286,8 +3429,12 @@ glp::get_num_int lp
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+number of integer columns (including binary columns)</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp_get_num_int lp;
+1
 &gt;
 </pre>
 </div>
@@ -3309,8 +3456,12 @@ glp::get_num_bin lp
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+number of binary columns</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::get_num_bin lp
+0
 &gt;
 </pre>
 </div>
@@ -3326,14 +3477,329 @@ glp::intopt lp options
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
+<tr class="field"><th class="field-name">lp:</th><td class="field-body"><p class="first">pointer to the LP problem object</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">options:</th><td class="field-body"><p class="first">list of solver options in the form of tuples (option_name, value):</p>
+<table class="last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::msg_lev:</th><td class="field-body"><p class="first">(default: glp::msg_all) - message level for
+terminal output:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::msg_off:</th><td class="field-body">no output</td>
+</tr>
+<tr class="field"><th class="field-name">glp::msg_err:</th><td class="field-body">error and warning messages only</td>
+</tr>
+<tr class="field"><th class="field-name">glp::msg_on:</th><td class="field-body">normal output;</td>
+</tr>
+<tr class="field"><th class="field-name">glp::msg_all:</th><td class="field-body">full output (including
+informational messages)</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::br_tech:</th><td class="field-body"><p class="first">(default: glp::bt::blb) - branching technique</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::br_ffv:</th><td class="field-body">first fractional variable</td>
+</tr>
+<tr class="field"><th class="field-name">glp::br_lfv:</th><td class="field-body">last fractional variable</td>
+</tr>
+<tr class="field"><th class="field-name">glp::br_mfv:</th><td class="field-body">most fractional variable</td>
+</tr>
+<tr class="field"><th class="field-name">glp::br_dth:</th><td class="field-body">heuristic by Driebeck and Tomlin</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::bt_tech:</th><td class="field-body"><p class="first">(default: glp::pt_pse) - backtracking technique</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::bt_dfs:</th><td class="field-body">depth first search;</td>
+</tr>
+<tr class="field"><th class="field-name">glp::bt_bfs:</th><td class="field-body">breadth first search;</td>
+</tr>
+<tr class="field"><th class="field-name">glp::bt_blb:</th><td class="field-body">best local bound;</td>
+</tr>
+<tr class="field"><th class="field-name">glp::bt_bph:</th><td class="field-body">best projection heuristic.</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::pp_tech:</th><td class="field-body"><p class="first">(default: glp::pp_all) - preprocessing technique</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::pp_none:</th><td class="field-body">disable preprocessing;</td>
+</tr>
+<tr class="field"><th class="field-name">glp::pp_root:</th><td class="field-body">perform preprocessing only
+on the root level</td>
+</tr>
+<tr class="field"><th class="field-name">glp::pp_all:</th><td class="field-body">perform preprocessing on all
+levels</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::fp_heur:</th><td class="field-body"><p class="first">(default: glp::off) - feasibility pump heuristic:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::on:</th><td class="field-body">enable applying the feasibility
+pump heuristic</td>
+</tr>
+<tr class="field"><th class="field-name">glp::off:</th><td class="field-body">disable applying the feasibility
+pump heuristic</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::gmi_cuts:</th><td class="field-body"><p class="first">(default: glp::off) - Gomory’s mixed integer
+cuts:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::on:</th><td class="field-body">enable generating Gomory’s cuts;</td>
+</tr>
+<tr class="field"><th class="field-name">glp::off:</th><td class="field-body">disable generating Gomory’s cuts.</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::mir_cuts:</th><td class="field-body"><p class="first">(default: glp::off) - mixed integer rounding
+(MIR) cuts:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::on:</th><td class="field-body">enable generating MIR cuts;</td>
+</tr>
+<tr class="field"><th class="field-name">glp::off:</th><td class="field-body">disable generating MIR cuts.</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::cov_cuts:</th><td class="field-body"><p class="first">(default: glp::off) - mixed cover cuts:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::on:</th><td class="field-body">enable generating mixed cover cuts;</td>
+</tr>
+<tr class="field"><th class="field-name">glp::off:</th><td class="field-body">disable generating mixed cover cuts.</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">glp::clq_cuts (default:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body"><p class="first">glp::off) - clique cuts:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::on:</th><td class="field-body">enable generating clique cuts;</td>
+</tr>
+<tr class="field"><th class="field-name">glp::off:</th><td class="field-body">disable generating clique cuts.</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::tol_int:</th><td class="field-body"><p class="first">(default: 1e-5) - absolute tolerance used to
+check if optimal solution to the current LP
+relaxation is integer feasible</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::tol_obj:</th><td class="field-body"><p class="first">(default: 1e-7) - relative tolerance used to
+check if the objective value in optimal solution
+to the current LP relaxation is not better than
+in the best known integer feasible solution</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::mip_gap:</th><td class="field-body"><p class="first">(default: 0.0) - the relative mip gap tolerance;
+if the relative mip gap for currently known best
+integer feasible solution falls below this
+tolerance, the solver terminates the search -
+this allows obtainig suboptimal integer feasible
+solutions if solving the problem to optimality
+takes too long time</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::tm lim:</th><td class="field-body"><p class="first">(default: INT_MAX) - searching time limit, in
+milliseconds</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::out_frq:</th><td class="field-body"><p class="first">(default: 5000) - output frequency, in
+miliseconds - this parameter specifies how
+frequently the solver sends information about
+the solution process to the terminal</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::out_dly:</th><td class="field-body"><p class="first">(default: 10000) - output delay, in milliseconds
+- this parameter specifies how long the solver
+should delay sending information about the
+solution of the current LP relaxation with the
+simplex method to the terminal</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::cb_func:</th><td class="field-body"><p class="first">(default: glp::off) - specifies whether to use
+the user-defined callback routine</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::on:</th><td class="field-body">use user-defined callback function -
+the function <tt class="docutils literal"><span class="pre">glp::mip_cb</span> <span class="pre">tree</span> <span class="pre">info</span></tt>
+<strong>must</strong> be defined by the user</td>
+</tr>
+<tr class="field"><th class="field-name">glp::off:</th><td class="field-body">do not use user-defined callback
+function</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::cb_info:</th><td class="field-body"><p class="first">(default: NULL) - transit pointer passed to the
+routine <tt class="docutils literal"><span class="pre">glp::mip_cb</span> <span class="pre">tree</span> <span class="pre">info</span></tt> (see above)</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::cb_size:</th><td class="field-body"><p class="first">(default: 0) - the number of extra (up to 256)
+bytes allocated for each node of the
+branch-and-bound tree to store
+application-specific data - on creating a
+node these bytes are initialized by binary zeros</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::presolve:</th><td class="field-body"><p class="first">(default: glp::off) - LP presolver option:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::on:</th><td class="field-body">enable using the MIP presolver</td>
+</tr>
+<tr class="field"><th class="field-name">glp::off:</th><td class="field-body">disable using the MIP presolver</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::binarize:</th><td class="field-body"><p class="first">(default: glp::off) - binarization (used only if
+the presolver is enabled):</p>
+<table class="last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::on:</th><td class="field-body">replace general integer variables by
+binary ones</td>
+</tr>
+<tr class="field"><th class="field-name">glp::off:</th><td class="field-body">do not use binarization</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+</tbody>
+</table>
+</td>
 </tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<p>one of the following:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::ok:</th><td class="field-body">the MIP problem instance has been successfully solved; this code
+does not necessarily mean that the solver has found optimal
+solution, it only means that the solution process was successful</td>
+</tr>
+<tr class="field"><th class="field-name">glp::ebound:</th><td class="field-body">unable to start the search, because some double-bounded
+(auxiliary or structural) variables have incorrect bounds
+or some integer variables have non-integer (fractional)
+bounds</td>
+</tr>
+<tr class="field"><th class="field-name">glp::eroot:</th><td class="field-body">unable to start the search, because optimal basis for initial
+LP relaxation is not provided - this code may appear only
+if the presolver is disabled</td>
+</tr>
+<tr class="field"><th class="field-name">glp::enopfs:</th><td class="field-body">unable to start the search, because LP relaxation of the
+MIP problem instance has no primal feasible solution -
+this code may appear only if the presolver is enabled</td>
+</tr>
+<tr class="field"><th class="field-name">glp::enodfs:</th><td class="field-body">unable to start the search, because LP relaxation of the
+MIP problem instance has no dual feasible solution; in
+other word, this code means that if the LP relaxation has
+at least one primal feasible solution, its optimal solution
+is unbounded, so if the MIP problem has at least one integer
+feasible solution, its (integer) optimal solution is also
+unbounded - this code may appear only if the presolver is
+enabled</td>
+</tr>
+<tr class="field"><th class="field-name">glp::efail:</th><td class="field-body">the search was prematurely terminated due to the solver
+failure</td>
+</tr>
+<tr class="field"><th class="field-name">glp::emipgap:</th><td class="field-body">the search was prematurely terminated, because the
+relative mip gap tolerance has been reached</td>
+</tr>
+<tr class="field"><th class="field-name">glp::etmlim:</th><td class="field-body">the search was prematurely terminated, because the time
+limit has been exceeded</td>
+</tr>
+<tr class="field"><th class="field-name">glp::estop:</th><td class="field-body">the search was prematurely terminated by application -
+this code may appear only if the advanced solver
+interface is used</td>
+</tr>
+</tbody>
+</table>
+<p>When the list of options contains some bad option(s) then a list of bad
+options is returned instead.</p>
+</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::intopt lp [(glp::presolve, glp::on)];
+ipp_basic_tech:  0 row(s) and 0 column(s) removed
+ipp_reduce_bnds: 2 pass(es) made, 3 bound(s) reduced
+ipp_basic_tech:  0 row(s) and 0 column(s) removed
+ipp_reduce_coef: 1 pass(es) made, 0 coefficient(s) reduced
+glp_intopt: presolved MIP has 3 rows, 3 columns, 9 non-zeros
+glp_intopt: 3 integer columns, none of which are binary
+Scaling...
+ A: min|aij| =  1,000e+00  max|aij| =  1,000e+01  ratio =  1,000e+01
+Problem data seem to be well scaled
+Crashing...
+Size of triangular part = 3
+Solving LP relaxation...
+*     2: obj =   0,000000000e+00  infeas =  0,000e+00 (0)
+*     5: obj =   7,333333333e+02  infeas =  0,000e+00 (0)
+OPTIMAL SOLUTION FOUND
+Integer optimization begins...
++     5: mip =     not found yet &lt;=              +inf        (1; 0)
++     6: &gt;&gt;&gt;&gt;&gt;   7,320000000e+02 &lt;=   7,320000000e+02   0.0% (2; 0)
++     6: mip =   7,320000000e+02 &lt;=     tree is empty   0.0% (0; 3)
+INTEGER OPTIMAL SOLUTION FOUND
+glp::ok
 &gt;
 </pre>
 </div>
@@ -3355,8 +3821,30 @@ glp::mip_status lp
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<p>one of the following:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::undef:</th><td class="field-body">MIP solution is undefined</td>
+</tr>
+<tr class="field"><th class="field-name">glp::opt:</th><td class="field-body">MIP solution is integer optimal</td>
+</tr>
+<tr class="field"><th class="field-name">glp::feas:</th><td class="field-body">MIP solution is integer feasible, however, its optimality
+(or non-optimality) has not been proven, perhaps due
+to premature termination of the search</td>
+</tr>
+<tr class="field"><th class="field-name">glp::nofeas:</th><td class="field-body">problem has no integer feasible solution (proven by the
+solver)</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::mip_status lp;
+glp::opt
 &gt;
 </pre>
 </div>
@@ -3378,8 +3866,12 @@ glp::mip_obj_val lp
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+objective function value of mip solution</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::mip_obj_val lp;
+732.0
 &gt;
 </pre>
 </div>
@@ -3397,12 +3889,18 @@ glp::mip_row_val lp rowindex
 <tbody valign="top">
 <tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
 </tr>
+<tr class="field"><th class="field-name">rowindex:</th><td class="field-body">row index</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+row value (value of auxiliary variable)</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::mip_row_val lp 3;
+200.0
 &gt;
 </pre>
 </div>
@@ -3420,12 +3918,18 @@ glp::mip_col_val lp colindex
 <tbody valign="top">
 <tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
 </tr>
+<tr class="field"><th class="field-name">colindex:</th><td class="field-body">column index</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+column value (value of structural variable)</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::mip_col_val lp 2;
+67.0
 &gt;
 </pre>
 </div>
@@ -3444,14 +3948,99 @@ lpx::check_kkt lp scaled
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
+<tr class="field"><th class="field-name">lp:</th><td class="field-body"><p class="first">pointer to the LP problem object</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">scaled:</th><td class="field-body"><p class="first">one of the following:</p>
+<table class="last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">true:</th><td class="field-body">test the scaled problem</td>
+</tr>
+<tr class="field"><th class="field-name">false:</th><td class="field-body">test the unscaled problem</td>
+</tr>
+</tbody>
+</table>
+</td>
 </tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<p>list of four tuples with five mebers (see GLPK reference manual):</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="14%" />
+<col width="15%" />
+<col width="71%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">Condition</th>
+<th class="head">Member</th>
+<th class="head">Comment</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>(KKT.PE)</td>
+<td>pe_ae_max
+pe_ae_row
+pe_re_max
+pe_re_row
+pe_quality</td>
+<td>Largest absolute error
+Number of row with largest absolute error
+Largest relative error
+Number of row with largest relative error
+Quality of primal solution</td>
+</tr>
+<tr><td>(KKT.PB)</td>
+<td>pb_ae_max
+pb_ae_ind
+pb_re_max
+pb_re_ind
+pb_quality</td>
+<td>Largest absolute error
+Number of variable with largest absolute error
+Largest relative error
+Number of variable with largest relative error
+Quality of primal feasibility</td>
+</tr>
+<tr><td>(KKT.DE)</td>
+<td>de_ae_max
+de_ae_col
+de_re_max
+de_re_col
+de_quality</td>
+<td>Largest absolute error
+Number of column with largest absolute error
+Largest relative error
+Number of column with largest relative error
+Quality of dual solution</td>
+</tr>
+<tr><td>(KKT.DB)</td>
+<td>db_ae_max
+db_ae_ind
+db_re_max
+db_re_ind
+db_quality</td>
+<td>Largest absolute error
+Number of variable with largest absolute error
+Largest relative error
+Number of variable with largest relative error
+Quality of dual feasibility</td>
+</tr>
+</tbody>
+</table>
+<p>where number of variable is (1 &lt;= k &lt;= m) for auxiliary variable
+and (m+1 &lt;= k &lt;= m+n) for structural variable</p>
+</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; &gt; lpx::check_kkt lp true;
+[(1.4210854715202e-14,2,3.54385404369127e-17,3,&quot;H&quot;),(0.0,0,0.0,0,&quot;H&quot;),
+(4.44089209850063e-16,1,2.11471052309554e-17,1,&quot;H&quot;),(0.0,0,0.0,0,&quot;H&quot;)]
 &gt;
 </pre>
 </div>

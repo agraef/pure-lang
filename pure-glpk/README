@@ -1357,21 +1357,21 @@ Solve the LP problem using simplex method
                           :glp\:\:dualp: use two-phase dual simplex,
                                          and if it fails, switch to the
                                          primal simplex
-                          :glp\:\:pricing: (default: glp::pt_pse) - pricing
-                                           technique
 
-                          :glp\:\:pt_std: standard (textbook)
-                          :glp\:\:pt_pse: projected steepest edge
+            :glp\:\:pricing: (default: glp::pt_pse) - pricing technique
+
+                             :glp\:\:pt_std: standard (textbook)
+                             :glp\:\:pt_pse: projected steepest edge
 
             :glp\:\:r_test: (default: glp::rt_har) - ratio test technique
 
                             :glp\:\:rt_std: standard (textbook)
-                            :glp\:\:rt_har: Harris’ two-pass ratio test
+                            :glp\:\:rt_har: Harris' two-pass ratio test
 
             :glp\:\:tol_bnd: (default: 1e-7) - tolerance used to check if the
-                             basic solution is primal feasible.
+                             basic solution is primal feasible
             :glp\:\:tol_dj: (default: 1e-7) - tolerance used to check if the
-                            basic solution is dual feasible.
+                            basic solution is dual feasible
             :glp\:\:tol_piv: (default: 1e-10) - tolerance used to choose
                              eligble pivotal elements of the simplex table
             :glp\:\:obj_ll: (default: -DBL_MAX) - lower limit of the objective
@@ -1408,7 +1408,7 @@ Solve the LP problem using simplex method
               does not necessarily mean that the solver has found optimal
               solution, it only means that the solution process was successful
   :glp\:\:ebadb: unable to start the search, because the initial basis
-                 specified in the problem object is invalid — the number
+                 specified in the problem object is invalid - the number
                  of basic (auxiliary and structural) variables is not the same
                  as the number of rows in the problem object
   :glp\:\:esing: unable to start the search, because the basis matrix
@@ -1435,6 +1435,9 @@ Solve the LP problem using simplex method
                   (only if the LP presolver is used)
   :glp\:\:enodfs: the LP problem instance has no dual feasible solution
                   (only if the LP presolver is used)
+
+  When the list of options contains some bad option(s) then a list of bad
+  options is returned instead.
 
 **Example**::
 
@@ -1476,7 +1479,7 @@ Solve the LP problem using simplex method in exact arithmetics
               does not necessarily mean that the solver has found optimal
               solution, it only means that the solution process was successful
   :glp\:\:ebadb: unable to start the search, because the initial basis
-                 specified in the problem object is invalid — the number
+                 specified in the problem object is invalid - the number
                  of basic (auxiliary and structural) variables is not the same
                  as the number of rows in the problem object
   :glp\:\:esing: unable to start the search, because the basis matrix
@@ -1490,6 +1493,9 @@ Solve the LP problem using simplex method in exact arithmetics
                   iteration limit has been exceeded
   :glp\:\:etmlim: the search was prematurely terminated, because the time
                   limit has been exceeded
+
+  When the list of options contains some bad option(s) then a list of bad
+  options is returned instead.
 
 **Example**::
 
@@ -1801,7 +1807,7 @@ Solve the LP problem using interior-point method
   
 **Example**::
 
-> glp::interior lp;
+  > glp::interior lp;
   glp_interior: original LP problem has 3 rows and 3 columns
   glp_interior: transformed LP problem has 3 rows and 6 columns
   lpx_interior: A has 12 non-zeros
@@ -1993,12 +1999,21 @@ Retrieve column kind
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :colindex: column index
 
 **Returns**:
 
+  one of the following:
+
+  :glp\:\:cv: continuous variable
+  :glp\:\:iv: integer variable
+  :glp\:\:bv: binary variable
+
 **Example**::
 
-  > 
+  > glp::get_col_kind lp 1;
+  glp::iv
+  >
 
 Retrieve number of integer columns
 ----------------------------------
@@ -2012,9 +2027,13 @@ Retrieve number of integer columns
 
 **Returns**:
 
+  number of integer columns (including binary columns)
+
 **Example**::
 
-  > 
+  > glp_get_num_int lp;
+  1
+  >
 
 Retrieve number of binary columns
 ---------------------------------
@@ -2028,9 +2047,13 @@ Retrieve number of binary columns
 
 **Returns**:
 
+  number of binary columns
+
 **Example**::
 
-  > 
+  > glp::get_num_bin lp
+  0
+  >
 
 Solve the MIP problem using branch-and-cut method
 -------------------------------------------------
@@ -2041,12 +2064,187 @@ Solve the MIP problem using branch-and-cut method
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :options: list of solver options in the form of tuples (option_name, value):
+
+            :glp\:\:msg_lev: (default: glp::msg_all) - message level for
+                             terminal output:
+
+                             :glp\:\:msg_off: no output
+                             :glp\:\:msg_err: error and warning messages only
+                             :glp\:\:msg_on: normal output;
+                             :glp\:\:msg_all: full output (including
+                                              informational messages)
+
+            :glp\:\:br_tech: (default: glp::bt::blb) - branching technique
+
+                             :glp\:\:br_ffv: first fractional variable
+                             :glp\:\:br_lfv: last fractional variable
+                             :glp\:\:br_mfv: most fractional variable
+                             :glp\:\:br_dth: heuristic by Driebeck and Tomlin
+
+            :glp\:\:bt_tech: (default: glp::pt_pse) - backtracking technique
+
+                             :glp\:\:bt_dfs: depth first search;
+                             :glp\:\:bt_bfs: breadth first search;
+                             :glp\:\:bt_blb: best local bound;
+                             :glp\:\:bt_bph: best projection heuristic.
+
+            :glp\:\:pp_tech: (default: glp::pp_all) - preprocessing technique
+
+                             :glp\:\:pp_none: disable preprocessing;
+                             :glp\:\:pp_root: perform preprocessing only
+                                              on the root level
+                             :glp\:\:pp_all: perform preprocessing on all
+                                             levels
+
+            :glp\:\:fp_heur: (default: glp::off) - feasibility pump heuristic:
+
+                             :glp\:\:on: enable applying the feasibility
+                                         pump heuristic
+                             :glp\:\:off: disable applying the feasibility
+                                          pump heuristic
+
+            :glp\:\:gmi_cuts: (default: glp::off) - Gomoryâ€™s mixed integer
+                              cuts:
+
+                              :glp\:\:on: enable generating Gomoryâ€™s cuts;
+                              :glp\:\:off: disable generating Gomoryâ€™s cuts.
+
+            :glp\:\:mir_cuts: (default: glp::off) - mixed integer rounding
+                              (MIR) cuts:
+
+                              :glp\:\:on: enable generating MIR cuts;
+                              :glp\:\:off: disable generating MIR cuts.
+
+            :glp\:\:cov_cuts: (default: glp::off) - mixed cover cuts:
+
+                             :glp\:\:on: enable generating mixed cover cuts;
+                             :glp\:\:off: disable generating mixed cover cuts.
+
+            :glp\:\:clq_cuts (default: glp::off) - clique cuts:
+
+                             :glp\:\:on: enable generating clique cuts;
+                             :glp\:\:off: disable generating clique cuts.
+
+
+            :glp\:\:tol_int: (default: 1e-5) - absolute tolerance used to
+                             check if optimal solution to the current LP
+                             relaxation is integer feasible
+            :glp\:\:tol_obj: (default: 1e-7) - relative tolerance used to
+                             check if the objective value in optimal solution
+                             to the current LP relaxation is not better than
+                             in the best known integer feasible solution
+            :glp\:\:mip_gap: (default: 0.0) - the relative mip gap tolerance;
+                             if the relative mip gap for currently known best
+                             integer feasible solution falls below this
+                             tolerance, the solver terminates the search -
+                             this allows obtainig suboptimal integer feasible
+                             solutions if solving the problem to optimality
+                             takes too long time
+            :glp\:\:tm lim: (default: INT_MAX) - searching time limit, in
+                            milliseconds
+            :glp\:\:out_frq: (default: 5000) - output frequency, in
+                             miliseconds - this parameter specifies how
+                             frequently the solver sends information about
+                             the solution process to the terminal
+            :glp\:\:out_dly: (default: 10000) - output delay, in milliseconds
+                             - this parameter specifies how long the solver
+                             should delay sending information about the
+                             solution of the current LP relaxation with the
+                             simplex method to the terminal
+
+            :glp\:\:cb_func: (default: glp::off) - specifies whether to use
+                             the user-defined callback routine
+
+                             :glp\:\:on: use user-defined callback function -
+                                         the function ``glp::mip_cb tree info``
+                                         **must** be defined by the user
+                             :glp\:\:off: do not use user-defined callback
+                                          function
+
+            :glp\:\:cb_info: (default: NULL) - transit pointer passed to the
+                             routine ``glp::mip_cb tree info`` (see above)
+            :glp\:\:cb_size: (default: 0) - the number of extra (up to 256)
+                             bytes allocated for each node of the
+                             branch-and-bound tree to store
+                             application-specific data - on creating a
+                             node these bytes are initialized by binary zeros
+
+            :glp\:\:presolve: (default: glp::off) - LP presolver option:
+
+                              :glp\:\:on: enable using the MIP presolver
+                              :glp\:\:off: disable using the MIP presolver
+
+            :glp\:\:binarize: (default: glp::off) - binarization (used only if
+                              the presolver is enabled):
+
+                              :glp\:\:on: replace general integer variables by
+                                          binary ones
+                              :glp\:\:off: do not use binarization
 
 **Returns**:
 
+  one of the following:
+
+  :glp\:\:ok: the MIP problem instance has been successfully solved; this code
+              does not necessarily mean that the solver has found optimal
+              solution, it only means that the solution process was successful
+  :glp\:\:ebound: unable to start the search, because some double-bounded
+                  (auxiliary or structural) variables have incorrect bounds
+                  or some integer variables have non-integer (fractional)
+                  bounds
+  :glp\:\:eroot: unable to start the search, because optimal basis for initial
+                 LP relaxation is not provided - this code may appear only
+                 if the presolver is disabled
+  :glp\:\:enopfs: unable to start the search, because LP relaxation of the
+                  MIP problem instance has no primal feasible solution -
+                  this code may appear only if the presolver is enabled
+  :glp\:\:enodfs: unable to start the search, because LP relaxation of the
+                  MIP problem instance has no dual feasible solution; in
+                  other word, this code means that if the LP relaxation has
+                  at least one primal feasible solution, its optimal solution
+                  is unbounded, so if the MIP problem has at least one integer
+                  feasible solution, its (integer) optimal solution is also
+                  unbounded - this code may appear only if the presolver is
+                  enabled
+  :glp\:\:efail: the search was prematurely terminated due to the solver
+                 failure
+  :glp\:\:emipgap: the search was prematurely terminated, because the
+                   relative mip gap tolerance has been reached
+  :glp\:\:etmlim: the search was prematurely terminated, because the time
+                  limit has been exceeded
+  :glp\:\:estop: the search was prematurely terminated by application -
+                 this code may appear only if the advanced solver
+                 interface is used
+
+  When the list of options contains some bad option(s) then a list of bad
+  options is returned instead.
+
 **Example**::
 
-  > 
+  > glp::intopt lp [(glp::presolve, glp::on)];
+  ipp_basic_tech:  0 row(s) and 0 column(s) removed
+  ipp_reduce_bnds: 2 pass(es) made, 3 bound(s) reduced
+  ipp_basic_tech:  0 row(s) and 0 column(s) removed
+  ipp_reduce_coef: 1 pass(es) made, 0 coefficient(s) reduced
+  glp_intopt: presolved MIP has 3 rows, 3 columns, 9 non-zeros
+  glp_intopt: 3 integer columns, none of which are binary
+  Scaling...
+   A: min|aij| =  1,000e+00  max|aij| =  1,000e+01  ratio =  1,000e+01
+  Problem data seem to be well scaled
+  Crashing...
+  Size of triangular part = 3
+  Solving LP relaxation...
+  *     2: obj =   0,000000000e+00  infeas =  0,000e+00 (0)
+  *     5: obj =   7,333333333e+02  infeas =  0,000e+00 (0)
+  OPTIMAL SOLUTION FOUND
+  Integer optimization begins...
+  +     5: mip =     not found yet <=              +inf        (1; 0)
+  +     6: >>>>>   7,320000000e+02 <=   7,320000000e+02   0.0% (2; 0)
+  +     6: mip =   7,320000000e+02 <=     tree is empty   0.0% (0; 3)
+  INTEGER OPTIMAL SOLUTION FOUND
+  glp::ok
+  >
 
 Retrieve status of mip solution
 -------------------------------
@@ -2060,9 +2258,21 @@ Retrieve status of mip solution
 
 **Returns**:
 
+  one of the following:
+
+  :glp\:\:undef: MIP solution is undefined
+  :glp\:\:opt: MIP solution is integer optimal
+  :glp\:\:feas: MIP solution is integer feasible, however, its optimality
+                (or non-optimality) has not been proven, perhaps due
+                to premature termination of the search
+  :glp\:\:nofeas: problem has no integer feasible solution (proven by the
+                  solver)
+
 **Example**::
 
-  > 
+  > glp::mip_status lp;
+  glp::opt
+  >
 
 Retrieve the objective function value of mip solution
 -----------------------------------------------------
@@ -2076,9 +2286,13 @@ Retrieve the objective function value of mip solution
 
 **Returns**:
 
+  objective function value of mip solution
+
 **Example**::
 
-  > 
+  > glp::mip_obj_val lp;
+  732.0
+  >
 
 Retrieve row value of mip solution
 ----------------------------------
@@ -2089,12 +2303,17 @@ Retrieve row value of mip solution
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :rowindex: row index
 
 **Returns**:
 
+  row value (value of auxiliary variable)
+
 **Example**::
 
-  > 
+  > glp::mip_row_val lp 3;
+  200.0
+  >
 
 Retrieve column value of mip solution
 -------------------------------------
@@ -2105,12 +2324,17 @@ Retrieve column value of mip solution
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :colindex: column index
 
 **Returns**:
 
+  column value (value of structural variable)
+
 **Example**::
 
-  > 
+  > glp::mip_col_val lp 2;
+  67.0
+  >
 
 
 Additional routines
@@ -2126,12 +2350,49 @@ Check Karush-Kuhn-Tucker conditions
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :scaled: one of the following:
+
+          :true: test the scaled problem
+          :false: test the unscaled problem
 
 **Returns**:
 
+  list of four tuples with five mebers (see GLPK reference manual):
+
+  ========= ========== ==============================================
+  Condition Member     Comment
+  ========= ========== ==============================================
+  (KKT.PE)  pe_ae_max  Largest absolute error
+            pe_ae_row  Number of row with largest absolute error
+            pe_re_max  Largest relative error
+            pe_re_row  Number of row with largest relative error
+            pe_quality Quality of primal solution
+  (KKT.PB)  pb_ae_max  Largest absolute error
+            pb_ae_ind  Number of variable with largest absolute error
+            pb_re_max  Largest relative error
+            pb_re_ind  Number of variable with largest relative error
+            pb_quality Quality of primal feasibility
+  (KKT.DE)  de_ae_max  Largest absolute error
+            de_ae_col  Number of column with largest absolute error
+            de_re_max  Largest relative error
+            de_re_col  Number of column with largest relative error
+            de_quality Quality of dual solution
+  (KKT.DB)  db_ae_max  Largest absolute error
+            db_ae_ind  Number of variable with largest absolute error
+            db_re_max  Largest relative error
+            db_re_ind  Number of variable with largest relative error
+            db_quality Quality of dual feasibility
+  ========= ========== ==============================================
+
+  where number of variable is (1 <= k <= m) for auxiliary variable
+  and (m+1 <= k <= m+n) for structural variable
+
 **Example**::
 
-  > 
+  > > lpx::check_kkt lp true;
+  [(1.4210854715202e-14,2,3.54385404369127e-17,3,"H"),(0.0,0,0.0,0,"H"),
+  (4.44089209850063e-16,1,2.11471052309554e-17,1,"H"),(0.0,0,0.0,0,"H")]
+  >
 
 
 Utility API routines
