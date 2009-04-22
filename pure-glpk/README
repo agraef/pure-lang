@@ -2408,7 +2408,7 @@ Check Karush-Kuhn-Tucker conditions
 
 **Example**::
 
-  > > lpx::check_kkt lp true;
+  > lpx::check_kkt lp true;
   [(1.4210854715202e-14,2,3.54385404369127e-17,3,"H"),(0.0,0,0.0,0,"H"),
   (4.44089209850063e-16,1,2.11471052309554e-17,1,"H"),(0.0,0,0.0,0,"H")]
   >
@@ -2431,12 +2431,28 @@ Read LP problem data from a MPS file
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :format: one of the following
+
+           :glp\:\:mps_deck: fixed (ancient) MPS file format
+           :glp\:\:mps_file: free (modern) MPS file format
+
+  :filename: file name - if the ﬁle name ends with suﬃx **.gz**,
+             the ﬁle is assumed to be compressed, in which case
+             the routine glp::read_mps decompresses it “on the ﬂy”
 
 **Returns**:
 
+  `0` if reading went OK; non-zero in case of an error
+
 **Example**::
 
-  > 
+  > glp::read_mps lp glp::mps_deck "examples/plan.mps";
+  glp_read_mps: reading problem data from `examples/plan.mps'...
+  glp_read_mps: problem PLAN
+  glp_read_mps: 8 rows, 7 columns, 48 non-zeros
+  glp_read_mps: 54 cards were read
+  0
+  >
 
 Write LP problem data into a MPS file
 -------------------------------------
@@ -2447,12 +2463,26 @@ Write LP problem data into a MPS file
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :format: one of the following
+
+           :glp\:\:mps_deck: fixed (ancient) MPS file format
+           :glp\:\:mps_file: free (modern) MPS file format
+
+  :filename: file name - if the ﬁle name ends with suﬃx **.gz**,
+             the ﬁle is assumed to be compressed, in which case
+             the routine glp_write_mps performs automatic
+             compression on writing it
 
 **Returns**:
 
+  `0` if writing went OK; non-zero in case of an error
+
 **Example**::
 
-  > 
+  > glp::write_mps lp glp::mps_file "examples/plan1.mps";
+  glp_write_mps: writing problem data to `examples/plan1.mps'...
+  0
+  >
 
 Read LP problem data from a CPLEX file
 --------------------------------------
@@ -2463,12 +2493,22 @@ Read LP problem data from a CPLEX file
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :filename: file name - if the ﬁle name ends with suﬃx **.gz**,
+             the ﬁle is assumed to be compressed, in which case
+             the routine glp::read_lp decompresses it “on the ﬂy”
 
 **Returns**:
 
+  `0` if writing went OK; non-zero in case of an error
+
 **Example**::
 
-  > 
+  > glp::read_lp lp "examples/plan.lp";
+  glp_read_lp: reading problem data from `examples/plan.lp'...
+  glp_read_lp: 8 rows, 7 columns, 48 non-zeros
+  glp_read_lp: 39 lines were read
+  0
+  >
 
 Write LP problem data into a CPLEX file
 ---------------------------------------
@@ -2479,12 +2519,21 @@ Write LP problem data into a CPLEX file
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :filename: file name - if the ﬁle name ends with suﬃx **.gz**,
+             the ﬁle is assumed to be compressed, in which case
+             the routine glp::write_lp performs automatic
+             compression on writing it
 
 **Returns**:
 
+  `0` if writing went OK; non-zero in case of an error
+
 **Example**::
 
-  > 
+  > glp::write_lp lp "examples/plan1.lp";
+  glp_write_lp: writing problem data to `examples/plan1.lp'...
+  0
+  >
 
 
 Routines for MathProg models
@@ -2499,11 +2548,18 @@ Create the MathProg translator object
 
 **Parameters**:
 
+  none
+
 **Returns**:
+
+  pointer to the MathProg translator object
 
 **Example**::
 
-  > 
+  > let mpt = glp::mpl_alloc_wksp;
+  > mpt;
+  #<pointer 0xa0d0180>
+  >
 
 Read and translate model section
 --------------------------------
@@ -2513,11 +2569,23 @@ Read and translate model section
 
 **Parameters**:
 
+  :tranobject: pointer to the MathProg translator object
+  :filename: file name
+  :skip: if **0** then the data section from the model file is read;
+         if non-zero, the data section in the data model is skipped
+
 **Returns**:
+
+  **0** if reading went OK; non-zero in case of an error
 
 **Example**::
 
-  > 
+  > mpl_read_model mpt "examples/sudoku.mod" 1;
+  Reading model section from examples/sudoku.mod...
+  examples/sudoku.mod:69: warning: data section ignored
+  69 lines were read
+  0
+  >
 
 Read and translate data section
 -------------------------------
@@ -2527,11 +2595,20 @@ Read and translate data section
 
 **Parameters**:
 
+  :tranobject: pointer to the MathProg translator object
+  :filename: file name
+
 **Returns**:
+
+  **0** if reading went OK; non-zero in case of an error
 
 **Example**::
 
-  > 
+  > glp::mpl_read_data mpt "examples/sudoku.dat";
+  Reading data section from examples/sudoku.dat...
+  16 lines were read
+  0
+  >
 
 Generate the model
 ------------------
@@ -2541,11 +2618,24 @@ Generate the model
 
 **Parameters**:
 
+  :tranobject: pointer to the MathProg translator object
+  :filename: file name
+
 **Returns**:
+
+  **0** if generating went OK; non-zero in case of an error
 
 **Example**::
 
-  > 
+  > glp::mpl_generate mpt "examples/sudoku.lst";
+  Generating fa...
+  Generating fb...
+  Generating fc...
+  Generating fd...
+  Generating fe...
+  Model has been successfully generated
+  0
+  >
 
 Build problem instance from the model
 -------------------------------------
@@ -2555,13 +2645,18 @@ Build problem instance from the model
 
 **Parameters**:
 
+  :tranobject: pointer to the MathProg translator object
   :lp: pointer to the LP problem object
 
 **Returns**:
 
+  ``()``
+
 **Example**::
 
-  > 
+  > glp::mpl_build_prob mpt lp;
+  ()
+  >
 
 Postsolve the model
 -------------------
@@ -2571,11 +2666,24 @@ Postsolve the model
 
 **Parameters**:
 
+  :tranobject: pointer to the MathProg translator object
+  :lp: pointer to the LP problem object
+  :solution: one of the following:
+
+             :glp\:\:sol: use the basic solution
+             :glp\:\:ipt: use the interior-point solution
+             :glp\:\:mip: use mixed integer solution
+
 **Returns**:
+
+  **0** if postsolve went OK; non-zero in case of an error
 
 **Example**::
 
-  > 
+  > glp::mpl_postsolve mpt lp glp::sol;
+  Model has been successfully processed
+  0
+  >
 
 Delete the MathProg translator object
 -------------------------------------
@@ -2585,13 +2693,17 @@ Delete the MathProg translator object
 
 **Parameters**:
 
-  :lp: pointer to the LP problem object
+  :tranobject: pointer to the MathProg translator object
 
 **Returns**:
 
+  ``()``
+
 **Example**::
 
-  > 
+  > glp::mpl_free_wksp mpt;
+  ()
+  >
 
 
 Problem solution reading/writing routines
@@ -2607,12 +2719,18 @@ Write basic solution in printable format
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :filename: file name
 
 **Returns**:
 
+  **0** if writing went OK; non-zero in case of an error
+
 **Example**::
 
-  > 
+  > glp::print_sol lp "examples/test.txt";
+  Writing basic solution to `examples/test.txt'...
+  0
+  >
 
 Read basic solution from a text file
 ------------------------------------
@@ -2623,12 +2741,19 @@ Read basic solution from a text file
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :filename: file name
 
 **Returns**:
 
+  **0** if reading went OK; non-zero in case of an error
+
 **Example**::
 
-  > 
+  > glp::read_sol lp "examples/test.txt";
+  Reading basic solution from `examples/test.txt'...
+  1235 lines were read
+  0
+  >
 
 Write basic solution into a text file
 -------------------------------------
@@ -2639,12 +2764,20 @@ Write basic solution into a text file
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :filename: file name
 
 **Returns**:
 
+  **0** if writing went OK; non-zero in case of an error
+
 **Example**::
 
-  > 
+  > glp::write_sol lp "examples/test.txt";
+  Writing basic solution to `examples/test.txt'...
+  1235 lines were written
+  0
+  >
+
 
 Write bounds sensitivity information
 ------------------------------------
@@ -2655,12 +2788,19 @@ Write bounds sensitivity information
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :filename: file name
 
 **Returns**:
 
+  **0** if writing went OK; non-zero in case of an error
+
 **Example**::
 
-  > 
+  > lpx::print_sens_bnds lp "examples/test.txt";
+  lpx_print_sens_bnds: writing LP problem solution bounds to
+  `examples/test.txt'...
+  0
+  >
 
 Write interior-point solution in printable format
 -------------------------------------------------
@@ -2671,12 +2811,18 @@ Write interior-point solution in printable format
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :filename: file name
 
 **Returns**:
 
+  **0** if writing went OK; non-zero in case of an error
+
 **Example**::
 
-  > 
+  > glp::print_ipt lp "examples/test.txt";
+  Writing interior-point solution to `examples/test.txt'...
+  0
+  >
 
 Read interior-point solution from a text file
 ---------------------------------------------
@@ -2687,12 +2833,19 @@ Read interior-point solution from a text file
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :filename: file name
 
 **Returns**:
 
+  **0** if reading went OK; non-zero in case of an error
+
 **Example**::
 
-  > 
+  > glp::read_ipt lp "examples/test.txt";
+  Reading interior-point solution from `examples/test.txt'...
+  1235 lines were read
+  0
+  >
 
 Write interior-point solution into a text file
 ----------------------------------------------
@@ -2703,12 +2856,19 @@ Write interior-point solution into a text file
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :filename: file name
 
 **Returns**:
 
+  **0** if writing went OK; non-zero in case of an error
+
 **Example**::
 
-  > 
+  > glp::write_ipt lp "examples/test.txt";
+  Writing interior-point solution to `examples/test.txt'...
+  1235 lines were written
+  0
+  >
 
 Write MIP solution in printable format
 --------------------------------------
@@ -2719,12 +2879,18 @@ Write MIP solution in printable format
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :filename: file name
 
 **Returns**:
 
+  **0** if writing went OK; non-zero in case of an error
+
 **Example**::
 
-  > 
+  > glp::print_mip lp "examples/test.txt";
+  Writing MIP solution to `examples/test.txt'...
+  0
+  >
 
 Read MIP solution from a text file
 ----------------------------------
@@ -2735,12 +2901,19 @@ Read MIP solution from a text file
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :filename: file name
 
 **Returns**:
 
+  **0** if reading went OK; non-zero in case of an error
+
 **Example**::
 
-  > 
+  > glp::read_mip lp "examples/test.txt";
+  Reading MIP solution from `examples/test.txt'...
+  1235 lines were read
+  0
+  >
 
 Write MIP solution into a text file
 -----------------------------------
@@ -2751,12 +2924,19 @@ Write MIP solution into a text file
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :filename: file name
 
 **Returns**:
 
+  **0** if writing went OK; non-zero in case of an error
+
 **Example**::
 
-  > 
+  > glp::write_mip lp "examples/test.txt";
+  Writing MIP solution to `examples/test.txt'...
+  1235 lines were written
+  0
+  >
 
 
 Advanced API routines

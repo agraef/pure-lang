@@ -4054,7 +4054,7 @@ and (m+1 &lt;= k &lt;= m+n) for structural variable</p>
 </blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
-&gt; &gt; lpx::check_kkt lp true;
+&gt; lpx::check_kkt lp true;
 [(1.4210854715202e-14,2,3.54385404369127e-17,3,&quot;H&quot;),(0.0,0,0.0,0,&quot;H&quot;),
 (4.44089209850063e-16,1,2.11471052309554e-17,1,&quot;H&quot;),(0.0,0,0.0,0,&quot;H&quot;)]
 &gt;
@@ -4078,14 +4078,41 @@ glp::read_mps lp format filename
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
+<tr class="field"><th class="field-name">lp:</th><td class="field-body"><p class="first">pointer to the LP problem object</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">format:</th><td class="field-body"><p class="first">one of the following</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::mps_deck:</th><td class="field-body">fixed (ancient) MPS file format</td>
+</tr>
+<tr class="field"><th class="field-name">glp::mps_file:</th><td class="field-body">free (modern) MPS file format</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr class="field"><th class="field-name">filename:</th><td class="field-body"><p class="first last">file name - if the ﬁle name ends with suﬃx <strong>.gz</strong>,
+the ﬁle is assumed to be compressed, in which case
+the routine glp::read_mps decompresses it “on the ﬂy”</p>
+</td>
 </tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<cite>0</cite> if reading went OK; non-zero in case of an error</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::read_mps lp glp::mps_deck &quot;examples/plan.mps&quot;;
+glp_read_mps: reading problem data from `examples/plan.mps'...
+glp_read_mps: problem PLAN
+glp_read_mps: 8 rows, 7 columns, 48 non-zeros
+glp_read_mps: 54 cards were read
+0
 &gt;
 </pre>
 </div>
@@ -4101,14 +4128,39 @@ glp::write_mps lp format filename
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
+<tr class="field"><th class="field-name">lp:</th><td class="field-body"><p class="first">pointer to the LP problem object</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">format:</th><td class="field-body"><p class="first">one of the following</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::mps_deck:</th><td class="field-body">fixed (ancient) MPS file format</td>
+</tr>
+<tr class="field"><th class="field-name">glp::mps_file:</th><td class="field-body">free (modern) MPS file format</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr class="field"><th class="field-name">filename:</th><td class="field-body"><p class="first last">file name - if the ﬁle name ends with suﬃx <strong>.gz</strong>,
+the ﬁle is assumed to be compressed, in which case
+the routine glp_write_mps performs automatic
+compression on writing it</p>
+</td>
 </tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<cite>0</cite> if writing went OK; non-zero in case of an error</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::write_mps lp glp::mps_file &quot;examples/plan1.mps&quot;;
+glp_write_mps: writing problem data to `examples/plan1.mps'...
+0
 &gt;
 </pre>
 </div>
@@ -4126,12 +4178,23 @@ glp::read_lp lp filename
 <tbody valign="top">
 <tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
 </tr>
+<tr class="field"><th class="field-name">filename:</th><td class="field-body">file name - if the ﬁle name ends with suﬃx <strong>.gz</strong>,
+the ﬁle is assumed to be compressed, in which case
+the routine glp::read_lp decompresses it “on the ﬂy”</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<cite>0</cite> if writing went OK; non-zero in case of an error</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::read_lp lp &quot;examples/plan.lp&quot;;
+glp_read_lp: reading problem data from `examples/plan.lp'...
+glp_read_lp: 8 rows, 7 columns, 48 non-zeros
+glp_read_lp: 39 lines were read
+0
 &gt;
 </pre>
 </div>
@@ -4149,12 +4212,22 @@ glp::write_lp lp filename
 <tbody valign="top">
 <tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
 </tr>
+<tr class="field"><th class="field-name">filename:</th><td class="field-body">file name - if the ﬁle name ends with suﬃx <strong>.gz</strong>,
+the ﬁle is assumed to be compressed, in which case
+the routine glp::write_lp performs automatic
+compression on writing it</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<cite>0</cite> if writing went OK; non-zero in case of an error</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::write_lp lp &quot;examples/plan1.lp&quot;;
+glp_write_lp: writing problem data to `examples/plan1.lp'...
+0
 &gt;
 </pre>
 </div>
@@ -4168,9 +4241,16 @@ glp::write_lp lp filename
 glp::mpl_alloc_wksp
 </pre>
 <p><strong>Parameters</strong>:</p>
+<blockquote>
+none</blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+pointer to the MathProg translator object</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; let mpt = glp::mpl_alloc_wksp;
+&gt; mpt;
+#&lt;pointer 0xa0d0180&gt;
 &gt;
 </pre>
 </div>
@@ -4181,9 +4261,31 @@ glp::mpl_alloc_wksp
 glp::mpl_read_model tranobject filename skip
 </pre>
 <p><strong>Parameters</strong>:</p>
+<blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">tranobject:</th><td class="field-body">pointer to the MathProg translator object</td>
+</tr>
+<tr class="field"><th class="field-name">filename:</th><td class="field-body">file name</td>
+</tr>
+<tr class="field"><th class="field-name">skip:</th><td class="field-body">if <strong>0</strong> then the data section from the model file is read;
+if non-zero, the data section in the data model is skipped</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<strong>0</strong> if reading went OK; non-zero in case of an error</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; mpl_read_model mpt &quot;examples/sudoku.mod&quot; 1;
+Reading model section from examples/sudoku.mod...
+examples/sudoku.mod:69: warning: data section ignored
+69 lines were read
+0
 &gt;
 </pre>
 </div>
@@ -4194,9 +4296,27 @@ glp::mpl_read_model tranobject filename skip
 glp::mpl_read_data tranobject filename
 </pre>
 <p><strong>Parameters</strong>:</p>
+<blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">tranobject:</th><td class="field-body">pointer to the MathProg translator object</td>
+</tr>
+<tr class="field"><th class="field-name">filename:</th><td class="field-body">file name</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<strong>0</strong> if reading went OK; non-zero in case of an error</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::mpl_read_data mpt &quot;examples/sudoku.dat&quot;;
+Reading data section from examples/sudoku.dat...
+16 lines were read
+0
 &gt;
 </pre>
 </div>
@@ -4207,9 +4327,31 @@ glp::mpl_read_data tranobject filename
 glp::mpl_generate tranobject filename
 </pre>
 <p><strong>Parameters</strong>:</p>
+<blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">tranobject:</th><td class="field-body">pointer to the MathProg translator object</td>
+</tr>
+<tr class="field"><th class="field-name">filename:</th><td class="field-body">file name</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<strong>0</strong> if generating went OK; non-zero in case of an error</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::mpl_generate mpt &quot;examples/sudoku.lst&quot;;
+Generating fa...
+Generating fb...
+Generating fc...
+Generating fd...
+Generating fe...
+Model has been successfully generated
+0
 &gt;
 </pre>
 </div>
@@ -4225,14 +4367,20 @@ glp::mpl_build_prob tranobject lp
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
+<tr class="field"><th class="field-name">tranobject:</th><td class="field-body">pointer to the MathProg translator object</td>
+</tr>
 <tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
 </tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::mpl_build_prob mpt lp;
+()
 &gt;
 </pre>
 </div>
@@ -4243,9 +4391,43 @@ glp::mpl_build_prob tranobject lp
 glp::mpl_postsolve tran lp solution
 </pre>
 <p><strong>Parameters</strong>:</p>
+<blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">tranobject:</th><td class="field-body"><p class="first">pointer to the MathProg translator object</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">lp:</th><td class="field-body"><p class="first">pointer to the LP problem object</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">solution:</th><td class="field-body"><p class="first">one of the following:</p>
+<table class="last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::sol:</th><td class="field-body">use the basic solution</td>
+</tr>
+<tr class="field"><th class="field-name">glp::ipt:</th><td class="field-body">use the interior-point solution</td>
+</tr>
+<tr class="field"><th class="field-name">glp::mip:</th><td class="field-body">use mixed integer solution</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<strong>0</strong> if postsolve went OK; non-zero in case of an error</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::mpl_postsolve mpt lp glp::sol;
+Model has been successfully processed
+0
 &gt;
 </pre>
 </div>
@@ -4261,14 +4443,18 @@ glp::mpl_free_wksp tranobject
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
+<tr class="field"><th class="field-name">tranobject:</th><td class="field-body">pointer to the MathProg translator object</td>
 </tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::mpl_free_wksp mpt;
+()
 &gt;
 </pre>
 </div>
@@ -4289,12 +4475,19 @@ glp::print_sol lp filename
 <tbody valign="top">
 <tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
 </tr>
+<tr class="field"><th class="field-name">filename:</th><td class="field-body">file name</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<strong>0</strong> if writing went OK; non-zero in case of an error</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::print_sol lp &quot;examples/test.txt&quot;;
+Writing basic solution to `examples/test.txt'...
+0
 &gt;
 </pre>
 </div>
@@ -4312,12 +4505,20 @@ glp::read_sol lp filename
 <tbody valign="top">
 <tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
 </tr>
+<tr class="field"><th class="field-name">filename:</th><td class="field-body">file name</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<strong>0</strong> if reading went OK; non-zero in case of an error</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::read_sol lp &quot;examples/test.txt&quot;;
+Reading basic solution from `examples/test.txt'...
+1235 lines were read
+0
 &gt;
 </pre>
 </div>
@@ -4335,12 +4536,20 @@ glp::write_sol lp filename
 <tbody valign="top">
 <tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
 </tr>
+<tr class="field"><th class="field-name">filename:</th><td class="field-body">file name</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<strong>0</strong> if writing went OK; non-zero in case of an error</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::write_sol lp &quot;examples/test.txt&quot;;
+Writing basic solution to `examples/test.txt'...
+1235 lines were written
+0
 &gt;
 </pre>
 </div>
@@ -4358,12 +4567,20 @@ lpx::print_sens_bnds lp filename
 <tbody valign="top">
 <tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
 </tr>
+<tr class="field"><th class="field-name">filename:</th><td class="field-body">file name</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<strong>0</strong> if writing went OK; non-zero in case of an error</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; lpx::print_sens_bnds lp &quot;examples/test.txt&quot;;
+lpx_print_sens_bnds: writing LP problem solution bounds to
+`examples/test.txt'...
+0
 &gt;
 </pre>
 </div>
@@ -4381,12 +4598,19 @@ glp::print_ipt lp filename
 <tbody valign="top">
 <tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
 </tr>
+<tr class="field"><th class="field-name">filename:</th><td class="field-body">file name</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<strong>0</strong> if writing went OK; non-zero in case of an error</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::print_ipt lp &quot;examples/test.txt&quot;;
+Writing interior-point solution to `examples/test.txt'...
+0
 &gt;
 </pre>
 </div>
@@ -4404,12 +4628,20 @@ glp::read_ipt lp filename
 <tbody valign="top">
 <tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
 </tr>
+<tr class="field"><th class="field-name">filename:</th><td class="field-body">file name</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<strong>0</strong> if reading went OK; non-zero in case of an error</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::read_ipt lp &quot;examples/test.txt&quot;;
+Reading interior-point solution from `examples/test.txt'...
+1235 lines were read
+0
 &gt;
 </pre>
 </div>
@@ -4427,12 +4659,20 @@ glp::write_ipt lp filename
 <tbody valign="top">
 <tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
 </tr>
+<tr class="field"><th class="field-name">filename:</th><td class="field-body">file name</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<strong>0</strong> if writing went OK; non-zero in case of an error</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::write_ipt lp &quot;examples/test.txt&quot;;
+Writing interior-point solution to `examples/test.txt'...
+1235 lines were written
+0
 &gt;
 </pre>
 </div>
@@ -4450,12 +4690,19 @@ glp::print_mip lp filename
 <tbody valign="top">
 <tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
 </tr>
+<tr class="field"><th class="field-name">filename:</th><td class="field-body">file name</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<strong>0</strong> if writing went OK; non-zero in case of an error</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::print_mip lp &quot;examples/test.txt&quot;;
+Writing MIP solution to `examples/test.txt'...
+0
 &gt;
 </pre>
 </div>
@@ -4473,12 +4720,20 @@ glp::read_mip lp filename
 <tbody valign="top">
 <tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
 </tr>
+<tr class="field"><th class="field-name">filename:</th><td class="field-body">file name</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<strong>0</strong> if reading went OK; non-zero in case of an error</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::read_mip lp &quot;examples/test.txt&quot;;
+Reading MIP solution from `examples/test.txt'...
+1235 lines were read
+0
 &gt;
 </pre>
 </div>
@@ -4496,12 +4751,20 @@ glp::write_mip lp filename
 <tbody valign="top">
 <tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
 </tr>
+<tr class="field"><th class="field-name">filename:</th><td class="field-body">file name</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<strong>0</strong> if writing went OK; non-zero in case of an error</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::write_mip lp &quot;examples/test.txt&quot;;
+Writing MIP solution to `examples/test.txt'...
+1235 lines were written
+0
 &gt;
 </pre>
 </div>
