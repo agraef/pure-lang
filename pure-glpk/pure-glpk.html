@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.5: http://docutils.sourceforge.net/" />
 <title>Pure-GLPK - GLPK interface for the Pure programming language</title>
 <meta name="author" content="Jiri Spitz &lt;jiri.spitz&#64;bluetone.cz&gt;" />
-<meta name="date" content="2009-04-22" />
+<meta name="date" content="2009-04-24" />
 <style type="text/css">
 
 /*
@@ -295,7 +295,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Jiri Spitz &lt;<a class="reference external" href="mailto:jiri.spitz&#64;bluetone.cz">jiri.spitz&#64;bluetone.cz</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2009-04-22</td></tr>
+<td>2009-04-24</td></tr>
 </tbody>
 </table>
 <p>This module provides a feature complete GLPK interface for the Pure programming
@@ -2563,6 +2563,9 @@ limit has been exceeded</td>
 <p>When the list of options contains some bad option(s) then a list of bad
 options is returned instead.</p>
 </blockquote>
+<p><strong>Remark</strong>:</p>
+<blockquote>
+Options not mentioned in the option list are set to their default values.</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::simplex lp [(glp::presolve, glp::on), (glp::msg_lev, glp::msg_all)];
@@ -2649,6 +2652,9 @@ limit has been exceeded</td>
 <p>When the list of options contains some bad option(s) then a list of bad
 options is returned instead.</p>
 </blockquote>
+<p><strong>Remark</strong>:</p>
+<blockquote>
+Options not mentioned in the option list are set to their default values.</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::exact lp [];
@@ -3776,6 +3782,9 @@ interface is used</td>
 <p>When the list of options contains some bad option(s) then a list of bad
 options is returned instead.</p>
 </blockquote>
+<p><strong>Remark</strong>:</p>
+<blockquote>
+Options not mentioned in the option list are set to their default values.</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::intopt lp [(glp::presolve, glp::on)];
@@ -4104,7 +4113,7 @@ the routine glp::read_mps decompresses it “on the ﬂy”</p>
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<cite>0</cite> if reading went OK; non-zero in case of an error</blockquote>
+<strong>0</strong> if reading went OK; non-zero in case of an error</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::read_mps lp glp::mps_deck &quot;examples/plan.mps&quot;;
@@ -4155,7 +4164,7 @@ compression on writing it</p>
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<cite>0</cite> if writing went OK; non-zero in case of an error</blockquote>
+<strong>0</strong> if writing went OK; non-zero in case of an error</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::write_mps lp glp::mps_file &quot;examples/plan1.mps&quot;;
@@ -4187,7 +4196,7 @@ the routine glp::read_lp decompresses it “on the ﬂy”</td>
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<cite>0</cite> if writing went OK; non-zero in case of an error</blockquote>
+<strong>0</strong> if writing went OK; non-zero in case of an error</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::read_lp lp &quot;examples/plan.lp&quot;;
@@ -4222,7 +4231,7 @@ compression on writing it</td>
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<cite>0</cite> if writing went OK; non-zero in case of an error</blockquote>
+<strong>0</strong> if writing went OK; non-zero in case of an error</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::write_lp lp &quot;examples/plan1.lp&quot;;
@@ -4792,8 +4801,22 @@ glp::bf_exists lp
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">non-zero:</th><td class="field-body">the basis factorization exists and can be used for calculations</td>
+</tr>
+<tr class="field"><th class="field-name">0:</th><td class="field-body">the basis factorization does not exist</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::bf:exists lp;
+1
 &gt;
 </pre>
 </div>
@@ -4815,8 +4838,30 @@ glp::factorize lp
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<p>one of the following:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::ok:</th><td class="field-body">the basis factorization has been successfully computed</td>
+</tr>
+<tr class="field"><th class="field-name">glp::ebadb:</th><td class="field-body">the basis matrix is invalid, because the number of basic
+(auxiliary and structural) variables is not the same as the
+number of rows in the problem object</td>
+</tr>
+<tr class="field"><th class="field-name">glp::esing:</th><td class="field-body">the basis matrix is singular within the working precision</td>
+</tr>
+<tr class="field"><th class="field-name">glp::exond:</th><td class="field-body">the basis matrix is ill-conditioned, i.e. its condition
+number is too large</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::factorize lp;
+glp::ok
 &gt;
 </pre>
 </div>
@@ -4838,8 +4883,22 @@ glp::bf_updated lp
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">0:</th><td class="field-body">if the basis factorization has been just computed from “scratch”</td>
+</tr>
+<tr class="field"><th class="field-name">non-zero:</th><td class="field-body">if the factorization has been updated at least once</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::bf_updated lp;
+0
 &gt;
 </pre>
 </div>
@@ -4861,8 +4920,98 @@ glp::get_bfcp lp
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<p>complete list of options in a form of tuples (option_name, value):</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::type:</th><td class="field-body"><p class="first">basis factorization type:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::bf_ft:</th><td class="field-body">LU + Forrest–Tomlin update</td>
+</tr>
+<tr class="field"><th class="field-name">glp::bf_bg:</th><td class="field-body">LU + Schur complement + Bartels–Golub update</td>
+</tr>
+<tr class="field"><th class="field-name">glp::bf_gr:</th><td class="field-body">LU + Schur complement + Givens rotation update</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::lu_size:</th><td class="field-body"><p class="first">the initial size of the Sparse Vector Area, in non-zeros,
+used on computing LU-factorization of the basis matrix for
+the ﬁrst time - if this parameter is set to 0, the initial
+SVA size is determined automatically</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::piv_tol:</th><td class="field-body"><p class="first">threshold pivoting (Markowitz) tolerance, 0 &lt; piv_tol &lt; 1,
+used on computing LU-factorization of the basis matrix</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::piv_lim:</th><td class="field-body"><p class="first">this parameter is used on computing
+LU-factorization of the basis matrix and speciﬁes how many
+pivot candidates needs to be considered on choosing a pivot
+element, piv_lim ≥ 1</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::suhl:</th><td class="field-body"><p class="first">this parameter is used on computing LU-factorization of
+the basis matrix</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::on:</th><td class="field-body">enables applying the heuristic proposed by Uwe Suhl</td>
+</tr>
+<tr class="field"><th class="field-name">glp::off:</th><td class="field-body">disables this heuristic</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::eps_tol:</th><td class="field-body"><p class="first">epsilon tolerance, eps_tol ≥ 0, used on computing
+LU-factorization of the basis matrix</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::max_gro:</th><td class="field-body"><p class="first">maximal growth of elements of factor U, max_gro ≥ 1,
+allowable on computing LU-factorization of the basis matrix</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::nfs_max:</th><td class="field-body"><p class="first">maximal number of additional row-like factors (entries of
+the eta ﬁle), nfs_max ≥ 1, which can be added to
+LU-factorization of the basis matrix on updating it with
+the Forrest–Tomlin technique</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::upd_tol:</th><td class="field-body"><p class="first">update tolerance, 0 &lt; upd_tol &lt; 1, used on updating
+LU-factorization of the basis matrix with the Forrest–Tomlin
+technique</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::nrs_max:</th><td class="field-body"><p class="first">maximal number of additional rows and columns, nrs_max ≥ 1,
+which can be added to LU-factorization of the basis matrix
+on updating it with the Schur complement technique</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::rs_size:</th><td class="field-body"><p class="first last">the initial size of the Sparse Vector Area, in non-zeros,
+used to store non-zero elements of additional rows and
+columns introduced on updating LU-factorization of the basis
+matrix with the Schur complement technique - if this
+parameter is set to 0, the initial SVA size is determined
+automatically</p>
+</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::get_bfcp lp;
+[(glp::type,glp::bf_ft),(glp::lu_size,0),(glp::piv_tol,0.1),(glp::piv_lim,4),
+(glp::suhl,glp::on),(glp::eps_tol,1e-15),(glp::max_gro,10000000000.0),
+(glp::nfs_max,50),(glp::upd_tol,1e-06),(glp::nrs_max,50),(glp::rs_size,0)]
 &gt;
 </pre>
 </div>
@@ -4878,14 +5027,108 @@ glp::set_bfcp lp options
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
+<tr class="field"><th class="field-name">lp:</th><td class="field-body"><p class="first">pointer to the LP problem object</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">options:</th><td class="field-body"><p class="first">list of options in a form of tuples (option_name, value):</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::type:</th><td class="field-body"><p class="first">(default: glp::bf_ft) - basis factorization type:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::bf_ft:</th><td class="field-body">LU + Forrest–Tomlin update</td>
+</tr>
+<tr class="field"><th class="field-name">glp::bf_bg:</th><td class="field-body">LU + Schur complement + Bartels–Golub update</td>
+</tr>
+<tr class="field"><th class="field-name">glp::bf_gr:</th><td class="field-body">LU + Schur complement + Givens rotation update</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::lu_size:</th><td class="field-body"><p class="first">(default: 0) - the initial size of the Sparse Vector Area,
+in non-zeros, used on computing LU-factorization of the
+basis matrix for the ﬁrst time - if this parameter is set
+to 0, the initial SVA size is determined automatically</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::piv_tol:</th><td class="field-body"><p class="first">(default: 0.10) - threshold pivoting (Markowitz) tolerance,
+0 &lt; piv_tol &lt; 1, used on computing LU-factorization of the
+basis matrix.</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::piv_lim:</th><td class="field-body"><p class="first">(default: 4) - this parameter is used on computing
+LU-factorization of the basis matrix and speciﬁes how many
+pivot candidates needs to be considered on choosing a pivot
+element, piv_lim ≥ 1</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::suhl:</th><td class="field-body"><p class="first">(default: glp::on) - this parameter is used on computing
+LU-factorization of the basis matrix.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::on:</th><td class="field-body">enables applying the heuristic proposed by Uwe Suhl</td>
+</tr>
+<tr class="field"><th class="field-name">glp::off:</th><td class="field-body">disables this heuristic</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::eps_tol:</th><td class="field-body"><p class="first">(default: 1e-15) - epsilon tolerance, eps_tol ≥ 0, used on
+computing LU -factorization of the basis matrix.</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::max_gro:</th><td class="field-body"><p class="first">(default: 1e+10) - maximal growth of elements of factor U,
+max_gro ≥ 1, allowable on computing LU-factorization of the
+basis matrix.</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::nfs_max:</th><td class="field-body"><p class="first">(default: 50) - maximal number of additional row-like
+factors (entries of the eta ﬁle), nfs_max ≥ 1, which can
+be added to LU-factorization of the basis matrix
+on updating it with the Forrest–Tomlin technique.</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::upd_tol:</th><td class="field-body"><p class="first">(default: 1e-6) - update tolerance, 0 &lt; upd_tol &lt; 1,
+used on updating LU -factorization of the basis matrix
+with the Forrest–Tomlin technique.</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::nrs_max:</th><td class="field-body"><p class="first">(default: 50) - maximal number of additional rows and
+columns, nrs_max ≥ 1, which can be added to LU-factorization
+of the basis matrix on updating it with the Schur complement
+technique.</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">glp::rs_size:</th><td class="field-body"><p class="first last">(default: 0) - the initial size of the Sparse Vector Area,
+in non-zeros, used to store non-zero elements of additional
+rows and columns introduced on updating LU-factorization
+of the basis matrix with the Schur complement technique -
+if this parameter is set to 0, the initial SVA size is
+determined automatically</p>
+</td>
 </tr>
 </tbody>
 </table>
 </blockquote>
+<p><strong>Remarks</strong>:</p>
+<blockquote>
+<p>Options not mentioned in the option list are left unchanged.</p>
+<p>All options will be reset to their default values when an empty option list
+is supplied.</p>
+</blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt> if all options are OK, otherwise returns a list of bad options</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp_set_bfcp lp [(glp::type, glp::bf_ft), (glp::piv_tol, 0.15)];
+()
 &gt;
 </pre>
 </div>
@@ -4903,12 +5146,21 @@ glp::get_bhead lp k
 <tbody valign="top">
 <tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
 </tr>
+<tr class="field"><th class="field-name">k:</th><td class="field-body">variable index in the basis matrix</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+If basic variable (xB )k , 1 ≤ k ≤ m, is i-th auxiliary variable (1 ≤ i ≤ m), the
+routine returns i. Otherwise, if (xB )k is j-th structural variable (1 ≤ j ≤ n),
+the routine returns m+j. Here m is the number of rows and n is the number
+of columns in the problem object.</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::get_bhead lp 3;
+5
 &gt;
 </pre>
 </div>
@@ -4926,12 +5178,22 @@ glp::get_row_bind lp rowindex
 <tbody valign="top">
 <tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
 </tr>
+<tr class="field"><th class="field-name">rowindex:</th><td class="field-body">row index</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+This routine returns the index k of basic variable (xB )k, 1 ≤ k ≤ m,
+which is i-th auxiliary variable (that is, the auxiliary variable
+corresponding to i-th row), 1 ≤ i ≤ m, in the current basis associated with
+the speciﬁed problem object, where m is the number of rows. However, if
+i-th auxiliary variable is non-basic, the routine returns zero.</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::get_row_bind lp 3;
+1
 &gt;
 </pre>
 </div>
@@ -4949,12 +5211,23 @@ glp::get_col_bind lp colindex
 <tbody valign="top">
 <tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
 </tr>
+<tr class="field"><th class="field-name">colindex:</th><td class="field-body">column index</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+This routine returns the index k of basic variable (xB )k, 1 ≤ k ≤ m,
+which is j-th structural variable (that is, the structural variable
+corresponding to j-th column), 1 ≤ j ≤ n, in the current basis associated
+with the speciﬁed problem object, where m is the number of rows, n is the
+number of columns. However, if j-th structural variable is non-basic, the
+routine returns zero.</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::get_col_bind lp 2;
+3
 &gt;
 </pre>
 </div>
@@ -4972,12 +5245,20 @@ glp::ftran lp vector
 <tbody valign="top">
 <tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
 </tr>
+<tr class="field"><th class="field-name">vector:</th><td class="field-body">vector to be transformed - a dense vector in a form of a list of
+double numbers has to be supplied and the number of its members
+must exactly correspond to the number of LP problem constraints</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+the transformed vector in the same format</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::ftran lp [1.5, 3.2, 4.8];
+[1.8,0.466666666666667,-1.96666666666667]
 &gt;
 </pre>
 </div>
@@ -4995,12 +5276,20 @@ glp::btran lp vector
 <tbody valign="top">
 <tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
 </tr>
+<tr class="field"><th class="field-name">vector:</th><td class="field-body">vector to be transformed - a dense vector in a form of a list of
+double numbers has to be supplied and the number of its members
+must exactly correspond to the number of LP problem constraints</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+the transformed vector in the same format</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::btran lp [1.5, 3.2, 4.8];
+[-8.86666666666667,0.266666666666667,1.5]
 &gt;
 </pre>
 </div>
@@ -5022,8 +5311,28 @@ lpx::warm_up lp
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<p>one of the following:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">lpx::e_ok:</th><td class="field-body">the LP basis has been successfully “warmed up”</td>
+</tr>
+<tr class="field"><th class="field-name">lpx::e_empty:</th><td class="field-body">the problem has no rows and/or no columns</td>
+</tr>
+<tr class="field"><th class="field-name">lpx::e_badb:</th><td class="field-body">the LP basis is invalid, because the number of basic
+variables is not the same as the number of rows</td>
+</tr>
+<tr class="field"><th class="field-name">lpx::e_sing:</th><td class="field-body">the basis matrix is numerically singular or ill-conditioned</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; lpx::warm_up lp;
+lpx::e_ok
 &gt;
 </pre>
 </div>

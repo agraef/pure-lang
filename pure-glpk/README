@@ -1439,6 +1439,10 @@ Solve the LP problem using simplex method
   When the list of options contains some bad option(s) then a list of bad
   options is returned instead.
 
+**Remark**:
+
+  Options not mentioned in the option list are set to their default values.
+
 **Example**::
 
   > glp::simplex lp [(glp::presolve, glp::on), (glp::msg_lev, glp::msg_all)];
@@ -1496,6 +1500,10 @@ Solve the LP problem using simplex method in exact arithmetics
 
   When the list of options contains some bad option(s) then a list of bad
   options is returned instead.
+
+**Remark**:
+
+  Options not mentioned in the option list are set to their default values.
 
 **Example**::
 
@@ -2220,6 +2228,10 @@ Solve the MIP problem using branch-and-cut method
   When the list of options contains some bad option(s) then a list of bad
   options is returned instead.
 
+**Remark**:
+
+  Options not mentioned in the option list are set to their default values.
+
 **Example**::
 
   > glp::intopt lp [(glp::presolve, glp::on)];
@@ -2442,7 +2454,7 @@ Read LP problem data from a MPS file
 
 **Returns**:
 
-  `0` if reading went OK; non-zero in case of an error
+  **0** if reading went OK; non-zero in case of an error
 
 **Example**::
 
@@ -2475,7 +2487,7 @@ Write LP problem data into a MPS file
 
 **Returns**:
 
-  `0` if writing went OK; non-zero in case of an error
+  **0** if writing went OK; non-zero in case of an error
 
 **Example**::
 
@@ -2499,7 +2511,7 @@ Read LP problem data from a CPLEX file
 
 **Returns**:
 
-  `0` if writing went OK; non-zero in case of an error
+  **0** if writing went OK; non-zero in case of an error
 
 **Example**::
 
@@ -2526,7 +2538,7 @@ Write LP problem data into a CPLEX file
 
 **Returns**:
 
-  `0` if writing went OK; non-zero in case of an error
+  **0** if writing went OK; non-zero in case of an error
 
 **Example**::
 
@@ -2959,9 +2971,14 @@ Check whether basis factorization exists
 
 **Returns**:
 
+  :non-zero: the basis factorization exists and can be used for calculations
+  :0: the basis factorization does not exist
+
 **Example**::
 
-  > 
+  > glp::bf:exists lp;
+  1
+  >
 
 Compute the basis factorization
 -------------------------------
@@ -2975,9 +2992,21 @@ Compute the basis factorization
 
 **Returns**:
 
+  one of the following:
+
+  :glp\:\:ok: the basis factorization has been successfully computed
+  :glp\:\:ebadb: the basis matrix is invalid, because the number of basic
+                 (auxiliary and structural) variables is not the same as the
+                 number of rows in the problem object
+  :glp\:\:esing: the basis matrix is singular within the working precision
+  :glp\:\:exond: the basis matrix is ill-conditioned, i.e. its condition
+                 number is too large
+
 **Example**::
 
-  > 
+  > glp::factorize lp;
+  glp::ok
+  >
 
 Check whether basis factorization has been updated
 --------------------------------------------------
@@ -2991,9 +3020,14 @@ Check whether basis factorization has been updated
 
 **Returns**:
 
+  :0: if the basis factorization has been just computed from “scratch”
+  :non-zero: if the factorization has been updated at least once
+
 **Example**::
 
-  > 
+  > glp::bf_updated lp;
+  0
+  >
 
 Get basis factorization parameters
 ----------------------------------
@@ -3007,9 +3041,66 @@ Get basis factorization parameters
 
 **Returns**:
 
+  complete list of options in a form of tuples (option_name, value):
+
+  :glp\:\:type: basis factorization type:
+
+                :glp\:\:bf_ft: LU + Forrest–Tomlin update
+                :glp\:\:bf_bg: LU + Schur complement + Bartels–Golub update
+                :glp\:\:bf_gr: LU + Schur complement + Givens rotation update
+
+  :glp\:\:lu_size: the initial size of the Sparse Vector Area, in non-zeros,
+                   used on computing LU-factorization of the basis matrix for
+                   the ﬁrst time - if this parameter is set to 0, the initial
+                   SVA size is determined automatically
+
+  :glp\:\:piv_tol: threshold pivoting (Markowitz) tolerance, 0 < piv_tol < 1,
+                   used on computing LU-factorization of the basis matrix
+
+  :glp\:\:piv_lim: this parameter is used on computing
+                   LU-factorization of the basis matrix and speciﬁes how many
+                   pivot candidates needs to be considered on choosing a pivot
+                   element, piv_lim ≥ 1
+
+  :glp\:\:suhl: this parameter is used on computing LU-factorization of
+                the basis matrix
+
+                :glp\:\:on: enables applying the heuristic proposed by Uwe Suhl
+                :glp\:\:off: disables this heuristic
+
+  :glp\:\:eps_tol: epsilon tolerance, eps_tol ≥ 0, used on computing
+                   LU-factorization of the basis matrix
+
+  :glp\:\:max_gro: maximal growth of elements of factor U, max_gro ≥ 1,
+                   allowable on computing LU-factorization of the basis matrix
+
+  :glp\:\:nfs_max: maximal number of additional row-like factors (entries of
+                   the eta ﬁle), nfs_max ≥ 1, which can be added to
+                   LU-factorization of the basis matrix on updating it with
+                   the Forrest–Tomlin technique
+
+  :glp\:\:upd_tol: update tolerance, 0 < upd_tol < 1, used on updating
+                   LU-factorization of the basis matrix with the Forrest–Tomlin
+                   technique
+
+  :glp\:\:nrs_max: maximal number of additional rows and columns, nrs_max ≥ 1,
+                   which can be added to LU-factorization of the basis matrix
+                   on updating it with the Schur complement technique
+
+  :glp\:\:rs_size: the initial size of the Sparse Vector Area, in non-zeros,
+                   used to store non-zero elements of additional rows and
+                   columns introduced on updating LU-factorization of the basis
+                   matrix with the Schur complement technique - if this
+                   parameter is set to 0, the initial SVA size is determined
+                   automatically
+
 **Example**::
 
-  > 
+  > glp::get_bfcp lp;
+  [(glp::type,glp::bf_ft),(glp::lu_size,0),(glp::piv_tol,0.1),(glp::piv_lim,4),
+  (glp::suhl,glp::on),(glp::eps_tol,1e-15),(glp::max_gro,10000000000.0),
+  (glp::nfs_max,50),(glp::upd_tol,1e-06),(glp::nrs_max,50),(glp::rs_size,0)]
+  >
 
 Change basis factorization parameters
 -------------------------------------
@@ -3020,12 +3111,78 @@ Change basis factorization parameters
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :options: list of options in a form of tuples (option_name, value):
+
+  :glp\:\:type: (default: glp::bf_ft) - basis factorization type:
+
+                :glp\:\:bf_ft: LU + Forrest–Tomlin update
+                :glp\:\:bf_bg: LU + Schur complement + Bartels–Golub update
+                :glp\:\:bf_gr: LU + Schur complement + Givens rotation update
+
+  :glp\:\:lu_size: (default: 0) - the initial size of the Sparse Vector Area,
+                   in non-zeros, used on computing LU-factorization of the
+                   basis matrix for the ﬁrst time - if this parameter is set
+                   to 0, the initial SVA size is determined automatically
+
+  :glp\:\:piv_tol: (default: 0.10) - threshold pivoting (Markowitz) tolerance,
+                   0 < piv_tol < 1, used on computing LU-factorization of the
+                   basis matrix.
+
+  :glp\:\:piv_lim: (default: 4) - this parameter is used on computing
+                   LU-factorization of the basis matrix and speciﬁes how many
+                   pivot candidates needs to be considered on choosing a pivot
+                   element, piv_lim ≥ 1
+
+  :glp\:\:suhl: (default: glp::on) - this parameter is used on computing
+                LU-factorization of the basis matrix.
+
+                :glp\:\:on: enables applying the heuristic proposed by Uwe Suhl
+                :glp\:\:off: disables this heuristic
+
+  :glp\:\:eps_tol: (default: 1e-15) - epsilon tolerance, eps_tol ≥ 0, used on
+                   computing LU -factorization of the basis matrix.
+
+  :glp\:\:max_gro: (default: 1e+10) - maximal growth of elements of factor U,
+                   max_gro ≥ 1, allowable on computing LU-factorization of the
+                   basis matrix.
+
+  :glp\:\:nfs_max: (default: 50) - maximal number of additional row-like
+                   factors (entries of the eta ﬁle), nfs_max ≥ 1, which can
+                   be added to LU-factorization of the basis matrix
+                   on updating it with the Forrest–Tomlin technique.
+
+  :glp\:\:upd_tol: (default: 1e-6) - update tolerance, 0 < upd_tol < 1,
+                   used on updating LU -factorization of the basis matrix
+                   with the Forrest–Tomlin technique.
+
+  :glp\:\:nrs_max: (default: 50) - maximal number of additional rows and
+                   columns, nrs_max ≥ 1, which can be added to LU-factorization
+                   of the basis matrix on updating it with the Schur complement
+                   technique.
+
+  :glp\:\:rs_size: (default: 0) - the initial size of the Sparse Vector Area,
+                   in non-zeros, used to store non-zero elements of additional
+                   rows and columns introduced on updating LU-factorization
+                   of the basis matrix with the Schur complement technique -
+                   if this parameter is set to 0, the initial SVA size is
+                   determined automatically
+
+**Remarks**:
+
+  Options not mentioned in the option list are left unchanged.
+
+  All options will be reset to their default values when an empty option list
+  is supplied.
 
 **Returns**:
 
+  ``()`` if all options are OK, otherwise returns a list of bad options
+
 **Example**::
 
-  > 
+  > glp_set_bfcp lp [(glp::type, glp::bf_ft), (glp::piv_tol, 0.15)];
+  ()
+  >
 
 Retrieve the basis header information
 -------------------------------------
@@ -3036,12 +3193,20 @@ Retrieve the basis header information
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :k: variable index in the basis matrix
 
 **Returns**:
 
+  If basic variable (xB )k , 1 ≤ k ≤ m, is i-th auxiliary variable (1 ≤ i ≤ m), the
+  routine returns i. Otherwise, if (xB )k is j-th structural variable (1 ≤ j ≤ n),
+  the routine returns m+j. Here m is the number of rows and n is the number
+  of columns in the problem object.
+
 **Example**::
 
-  > 
+  > glp::get_bhead lp 3;
+  5
+  >
 
 Retrieve row index in the basis header
 --------------------------------------
@@ -3052,12 +3217,21 @@ Retrieve row index in the basis header
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :rowindex: row index
 
 **Returns**:
 
+  This routine returns the index k of basic variable (xB )k, 1 ≤ k ≤ m,
+  which is i-th auxiliary variable (that is, the auxiliary variable
+  corresponding to i-th row), 1 ≤ i ≤ m, in the current basis associated with
+  the speciﬁed problem object, where m is the number of rows. However, if
+  i-th auxiliary variable is non-basic, the routine returns zero.
+
 **Example**::
 
-  > 
+  > glp::get_row_bind lp 3;
+  1
+  >
 
 Retrieve column index in the basis header
 -----------------------------------------
@@ -3068,12 +3242,22 @@ Retrieve column index in the basis header
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :colindex: column index
 
 **Returns**:
 
+  This routine returns the index k of basic variable (xB )k, 1 ≤ k ≤ m,
+  which is j-th structural variable (that is, the structural variable
+  corresponding to j-th column), 1 ≤ j ≤ n, in the current basis associated
+  with the speciﬁed problem object, where m is the number of rows, n is the
+  number of columns. However, if j-th structural variable is non-basic, the
+  routine returns zero.
+
 **Example**::
 
-  > 
+  > glp::get_col_bind lp 2;
+  3
+  >
 
 Perform forward transformation
 ------------------------------
@@ -3084,12 +3268,19 @@ Perform forward transformation
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :vector: vector to be transformed - a dense vector in a form of a list of
+           double numbers has to be supplied and the number of its members
+           must exactly correspond to the number of LP problem constraints
 
 **Returns**:
 
+  the transformed vector in the same format
+
 **Example**::
 
-  > 
+  > glp::ftran lp [1.5, 3.2, 4.8];
+  [1.8,0.466666666666667,-1.96666666666667]
+  >
 
 Perform backward transformation
 -------------------------------
@@ -3100,12 +3291,19 @@ Perform backward transformation
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :vector: vector to be transformed - a dense vector in a form of a list of
+           double numbers has to be supplied and the number of its members
+           must exactly correspond to the number of LP problem constraints
 
 **Returns**:
 
+  the transformed vector in the same format
+
 **Example**::
 
-  > 
+  > glp::btran lp [1.5, 3.2, 4.8];
+  [-8.86666666666667,0.266666666666667,1.5]
+  >
 
 Warm up LP basis
 ----------------
@@ -3119,9 +3317,19 @@ Warm up LP basis
 
 **Returns**:
 
+  one of the following:
+
+  :lpx\:\:e_ok: the LP basis has been successfully “warmed up”
+  :lpx\:\:e_empty: the problem has no rows and/or no columns
+  :lpx\:\:e_badb: the LP basis is invalid, because the number of basic
+                  variables is not the same as the number of rows
+  :lpx\:\:e_sing: the basis matrix is numerically singular or ill-conditioned
+
 **Example**::
 
-  > 
+  > lpx::warm_up lp;
+  lpx::e_ok
+  >
 
 
 Simplex tableau routines
