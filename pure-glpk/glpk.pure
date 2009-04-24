@@ -307,8 +307,13 @@ private nullary
   branchselect	// branch selection indicator
   returncode	// return codes
   mpsfile	// mps file format
+;
+
+namespace lpx;
+public nullary
   exitcode	// exit codes returned by solver routines
 ;
+namespace glp;
 
 /*****************************************************************************/
 /*                    Assign values to symbolic constants                    */
@@ -458,10 +463,10 @@ let symlist =
     (mpsfile,      mps_file, 2),    // free (modern)
 
     /* exit codes returned by solver routines: */
-    (exitcode,     e_ok,     200),  // success
-    (exitcode,     e_empty,  201),  // empty problem
-    (exitcode,     e_badb,   202),  // invalid initial basis
-    (exitcode,     e_sing,   211)   // problems with basis matrix
+    (lpx::exitcode,     lpx::e_ok,     200),  // success
+    (lpx::exitcode,     lpx::e_empty,  201),  // empty problem
+    (lpx::exitcode,     lpx::e_badb,   202),  // invalid initial basis
+    (lpx::exitcode,     lpx::e_sing,   211)   // problems with basis matrix
   ];
 
 private s2v v2s;
@@ -526,7 +531,7 @@ vals2opts opts_struct opts =
 	 
 /* On error return error message otherwise convert
    an integer value to corresponding symbolic constant */
-private getcode;
+public getcode;
 getcode codetype codeval
 	= if  intp codeval then v2s!(codetype, codeval) else codeval;
 
@@ -1130,7 +1135,7 @@ namespace lpx;
 // Warm up LP basis
 private extern expr *glpx_warm_up(expr *lp);
 lpx::warm_up lp =
-  getcode exitcode (glpx_warm_up lp);
+  glp::getcode lpx::exitcode (glpx_warm_up lp);
 namespace glp;
 
 // Compute row of the tableau
