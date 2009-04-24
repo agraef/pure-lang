@@ -2323,7 +2323,12 @@ pure_expr *glpk_set_bfcp(pure_expr *ptr, pure_expr *parms)
     res = pure_listv(cnterr, list);
   }
   else {
-    glp_set_bfcp(glpobj->lp, parm);
+    if (cnt) {
+      glp_set_bfcp(glpobj->lp, parm);
+    }
+    else {
+      glp_set_bfcp(glpobj->lp, NULL); // reset all options to their defaults
+    }
     res = pure_void;
   }
   free(list);
