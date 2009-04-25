@@ -3345,12 +3345,22 @@ Compute row of the tableau
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :k: variable index such that it corresponds to some basic variable:
+      if 1 ≤ k ≤ m, the basic variable is k-th auxiliary variable,
+      and if m + 1 ≤ k ≤ m + n, the basic variable is (k − m)-th structural
+      variable, where m is the number of rows and n is the number of columns
+      in the speciﬁed problem object (the basis factorization must exist)
 
 **Returns**:
 
+  simplex tableau row in a sparse form as a list of tuples (index, value),
+  where index has the same meaning as k in parameters
+
 **Example**::
 
-  > 
+  > glp::eval_tab_row lp 3;
+  [(1,2.0),(6,4.0)]
+  >
 
 Compute column of the tableau
 -----------------------------
@@ -3361,12 +3371,23 @@ Compute column of the tableau
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :k: variable index such that it corresponds to some non-basic variable:
+      if 1 ≤ k ≤ m, the non-basic variable is k-th auxiliary variable,
+      and if m + 1 ≤ k ≤ m + n, the non-basic variable is (k − m)-th
+      structural variable, where m is the number of rows and n is the
+      number of columns in the speciﬁed problem object (the basis
+      factorization must exist)
 
 **Returns**:
 
+  simplex tableau column in a sparse form as a list of tuples (index, value),
+  where index has the same meaning as k in parameters
+
 **Example**::
 
-  > 
+  > glp::eval_tab_col lp 1;
+  [(3,2.0),(4,-0.666666666666667),(5,1.66666666666667)]
+  >
 
 Transform explicitly specified row
 ----------------------------------
@@ -3377,12 +3398,23 @@ Transform explicitly specified row
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :rowvector: row vector to be transformed in a sparse form as a list of tuples
+              (k, value): if 1 ≤ k ≤ m, the non-basic variable is k-th
+              auxiliary variable, and if m + 1 ≤ k ≤ m + n, the non-basic
+              variable is (k − m)-th structural variable, where m is the number
+              of rows and n is the number of columns in the speciﬁed problem
+              object (the basis factorization must exist)
 
 **Returns**:
 
+  the transformed row in a sparse form as a list of tuples (index, value),
+  where index has the same meaning as k in parameters
+
 **Example**::
 
-  > 
+  > lpx::transform_row lp [(1, 3.0), (2, 3.5)];
+  [(1,3.83333333333333),(2,-0.0833333333333333),(6,-3.41666666666667)]
+  >
 
 Transform explicitly specified column
 -------------------------------------
@@ -3393,44 +3425,91 @@ Transform explicitly specified column
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :colvector: column vector to be transformed in a sparse form as a list of
+              tuples (k, value): if 1 ≤ k ≤ m, the non-basic variable is k-th
+              auxiliary variable, and if m + 1 ≤ k ≤ m + n, the non-basic
+              variable is (k − m)-th structural variable, where m is the number
+              of rows and n is the number of columns in the speciﬁed problem
+              object (the basis factorization must exist)
 
 **Returns**:
 
+  the transformed column in a sparse form as a list of tuples (index, value),
+  where index has the same meaning as k in parameters
+
 **Example**::
 
-  > 
+  > lpx::transform_col lp [(2, 1.0), (3, 2.3)];
+  [(3,2.3),(4,-0.166666666666667),(5,0.166666666666667)]
+  >
 
 Perform primal ratio test
 -------------------------
 **Synopsis**::
 
-  lpx::prim_ratio_test lp vector how tol
+  lpx::prim_ratio_test lp colvector how tol
 
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :colvector: simplex tableau column in a sparse form as a list of
+              tuples (k, value): if 1 ≤ k ≤ m, the basic variable is k-th
+              auxiliary variable, and if m + 1 ≤ k ≤ m + n, the basic variable
+              is (k − m)-th structural variable, where m is the number
+              of rows and n is the number of columns in the speciﬁed problem
+              object (the basis factorization must exist and the primal
+              solution must be feasible)
+  :how: speciﬁes in which direction the variable y changes on entering the
+        basis: +1 means increasing, −1 means decreasing
+  :tol: relative tolerance (small positive number) used to skip small
+        values in the column
 
 **Returns**:
 
+  The routine returns the ordinal number of some basic variable (xB )i,
+  which should leave the basis instead the variable y in order
+  to keep primal feasibility. If the adjacent basic solution is primal
+  unbounded and therefore the choice cannot be made, the routine returns zero.
+
 **Example**::
 
-  > 
+  > lpx::prim_ratio_test lp [(3, 2.5), (5, 7.0)] 1 1.0e-5;
+  3
+  >
 
 Perform dual ratio test
 -----------------------
 **Synopsis**::
 
-  lpx::dual_ratio_test lp vector how tol
+  lpx::dual_ratio_test lp rowvector how tol
 
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :rowvector: simplex tableau row in a sparse form as a list of
+              tuples (k, value): if 1 ≤ k ≤ m, the non-basic variable is k-th
+              auxiliary variable, and if m + 1 ≤ k ≤ m + n, the non-basic
+              variable is (k − m)-th structural variable, where m is the number
+              of rows and n is the number of columns in the speciﬁed problem
+              object (the basis factorization must exist and the dual
+              solution must be feasible)
+  :how: speciﬁes in which direction the variable y changes on leaving
+        the basis: +1 means increasing, −1 means decreasing
+  :tol: relative tolerance (small positive number) used to skip small
+        values in the row
 
 **Returns**:
 
+  The routine returns the ordinal number of some non-basic variable (xN )j,
+  which should enter the basis instead the variable y in order to keep dual
+  feasibility. If the adjacent basic solution is dual un-bounded and therefore
+  the choice cannot be made, the routine returns zero.
+
 **Example**::
 
-  > 
+  > lpx::dual_ratio_test lp [(1, 1.5), (6, 4.0)] 1 1.0e-5;
+  6
+  >
 
 
 Branch-and-cut API routines
