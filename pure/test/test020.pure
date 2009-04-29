@@ -47,15 +47,13 @@ format (f,x,y,z) = str f+","+print x+","+print y+","+print z;
 format (f,x,z) = str f+","+print x+","+print z;
 
 /* Kludge: To avoid rounding discrepancies near zero, round everything to zero
-   which is below a certain threshold. This also works around issues with
-   negative zeros, which aren't supported on some systems and broken on
-   others. */
+   which is below a certain threshold. */
 
 let eps = 1/100000000;
 roundz x::double = if abs x < eps then 0.0 else x;
 
 print x::double
-= str x if infp x || nanp x; // Windoze compatibility
+= str x if infp x || nanp x; // Windows compatibility
 = sprintf double_format (roundz x) otherwise;
 
 print (x+:y) = print x+"+:"+print y;
