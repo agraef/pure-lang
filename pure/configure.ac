@@ -75,7 +75,6 @@ AC_ARG_ENABLE(warnings,
   esac])
 dnl Check for libraries.
 AC_CHECK_LIB(gmp, __gmpz_init)
-AC_CHECK_LIB(readline, readline)
 AC_CHECK_LIB(m, cos)
 dnl On some systems iconv is in a separate library, and may actually be named
 dnl libiconv.
@@ -87,6 +86,8 @@ dnl On non-POSIX systems like Windows, we have to get the glob and regex
 dnl functions from separate libraries, too.
 AC_CHECK_LIB(glob, glob)
 AC_CHECK_LIB(regex, regcomp)
+dnl readline needs special treatment (macro by Ville Laurikari).
+AC_CHECK_READLINE
 dnl iconv and nl_langinfo need special treatment (macros by Bruno Haible).
 AM_ICONV
 AM_LANGINFO_CODESET
