@@ -3312,6 +3312,9 @@ pure_expr *pure_force(pure_expr *x)
     x->tag = ret->tag;
     x->data = ret->data;
     switch (x->tag) {
+    case EXPR::BIGINT:
+      mpz_init_set(x->data.z, ret->data.z);
+      break;
     case EXPR::APP:
       pure_new_internal(x->data.x[0]);
       pure_new_internal(x->data.x[1]);
