@@ -6080,9 +6080,9 @@ pure_expr *matrix_matcat(pure_expr *x)
   case EXPR::CMATRIX:
   case EXPR::IMATRIX:
     return x;
+#endif
   default:
     return 0;
-#endif
   }
 }
 
@@ -8219,27 +8219,33 @@ namespace matrix {
 
 //the element type of a matrix
 template <typename t> struct element_of {};
+#ifdef HAVE_GSL
 template <> struct element_of<gsl_matrix> { typedef double type; };
 template <> struct element_of<gsl_matrix_int> { typedef int type; };
 template <> struct element_of<gsl_matrix_complex> { typedef Complex type; };
+#endif
 template <> struct element_of<gsl_matrix_symbolic>
 { typedef pure_expr* type; };
 
 //create a matrix
 template <typename t> t* create_matrix(size_t n,size_t m);
+#ifdef HAVE_GSL
 template <> gsl_matrix* create_matrix<gsl_matrix>(size_t n, size_t m)
 { return create_double_matrix(n,m); }
 template <> gsl_matrix_int* create_matrix<gsl_matrix_int>(size_t n, size_t m)
 { return create_int_matrix(n,m); }
 template <> gsl_matrix_complex* create_matrix<gsl_matrix_complex>
 (size_t n, size_t m) { return create_complex_matrix(n,m); }
+#endif
 template <> gsl_matrix_symbolic* create_matrix<gsl_matrix_symbolic>
 (size_t n, size_t m) { return create_symbolic_matrix(n,m); }
 
 //free a matrix
+#ifdef HAVE_GSL
 void matrix_free(gsl_matrix *m) { gsl_matrix_free(m); }
 void matrix_free(gsl_matrix_int *m) { gsl_matrix_int_free(m); }
 void matrix_free(gsl_matrix_complex *m) { gsl_matrix_complex_free(m); }
+#endif
 void matrix_free(gsl_matrix_symbolic *m) { gsl_matrix_symbolic_free(m); }
 
 //convert a matrix element into an expression
@@ -8434,11 +8440,13 @@ pure_expr* matrix_map( pure_expr *f, pure_expr *x )
   elem_type *inp = reinterpret_cast<elem_type* >(xm->data);
   //make a guess at what the result type is by the first element
   pure_expr *first = pure_app(f,to_expr(*inp));
+#ifdef HAVE_GSL
   int32_t firsti;
   double firstd;
   Complex firstc;
   
   size_t lasti=0,lastj=0;
+#endif
   pure_expr *out=0; //final result
 
 #if HAVE_GSL
@@ -8673,11 +8681,13 @@ pure_expr* matrix_zipwith( pure_expr *f, pure_expr *x, pure_expr *y )
   elem2_type *inp2 = reinterpret_cast<elem2_type* >(ym->data);
   //make a guess at what the result type is by the first element
   pure_expr *first = pure_appl(f,2,to_expr(*inp1),to_expr(*inp2));
+#ifdef HAVE_GSL
   int32_t firsti;
   double firstd;
   Complex firstc;
   
   size_t lasti=0,lastj=0;
+#endif
   pure_expr *out=0; //final result
 
 #if HAVE_GSL
@@ -8938,11 +8948,13 @@ pure_expr* matrix_zipwith3( pure_expr *f, pure_expr *x, pure_expr *y,
   //make a guess at what the result type is by the first element
   pure_expr *first = pure_appl(f,3,to_expr(*inp1),to_expr(*inp2),
 			       to_expr(*inp3));
+#ifdef HAVE_GSL
   int32_t firsti;
   double firstd;
   Complex firstc;
   
   size_t lasti=0,lastj=0;
+#endif
   pure_expr *out=0; //final result
 
 #if HAVE_GSL
@@ -9127,12 +9139,16 @@ pure_expr* matrix_scanl( pure_expr *f, pure_expr *z, pure_expr *x )
 
   typedef typename element_of<matrix_type>::type elem_type;
   matrix_type *xm = static_cast<matrix_type*>(x->data.mat.p);
+#ifdef HAVE_GSL
   size_t lasti,lastj;
+#endif
   pure_expr *out; //result matrix
 
+#ifdef HAVE_GSL
   double zd;
   int zi;
   Complex zc;
+#endif
 
 #if HAVE_GSL
   if (from_expr(z,zd)) {
@@ -9204,12 +9220,16 @@ pure_expr* matrix_scanl1( pure_expr *f, pure_expr *x )
   pure_ref(x);
 
   typedef typename element_of<matrix_type>::type elem_type;
+#ifdef HAVE_GSL
   size_t lasti,lastj;
+#endif
   pure_expr *out; //result matrix
 
+#ifdef HAVE_GSL
   double zd;
   int zi;
   Complex zc;
+#endif
 
   elem_type *p = reinterpret_cast<elem_type*>(xm->data);
   pure_expr *z = to_expr(*p);
@@ -9395,11 +9415,15 @@ pure_expr* matrix_scanr( pure_expr *f, pure_expr *z, pure_expr *x )
 
   typedef typename element_of<matrix_type>::type elem_type;
   matrix_type *xm = static_cast<matrix_type*>(x->data.mat.p);
+#ifdef HAVE_GSL
   ptrdiff_t lasti,lastj;
+#endif
   pure_expr *out; //result matrix
+#ifdef HAVE_GSL
   double zd;
   int32_t zi;
   Complex zc;
+#endif
 
 #if HAVE_GSL
   if (from_expr(z,zd)) {
@@ -9475,11 +9499,15 @@ pure_expr* matrix_scanr1( pure_expr *f, pure_expr *x )
   pure_ref(x);
 
   typedef typename element_of<matrix_type>::type elem_type;
+#ifdef HAVE_GSL
   ptrdiff_t lasti,lastj;
+#endif
   pure_expr *out; //result matrix
+#ifdef HAVE_GSL
   double zd;
   int32_t zi;
   Complex zc;
+#endif
 
   elem_type *p = reinterpret_cast<elem_type*>(xm->data+xm->size1*xm->size2-1);
   pure_expr *z = to_expr(*p);
@@ -9849,9 +9877,11 @@ extern "C"
 void matrix_do ( pure_expr *f, pure_expr *x )
 {
   switch (x->tag) {
+#ifdef HAVE_GSL
   case EXPR::DMATRIX : return matrix::matrix_do<gsl_matrix>(f,x);
   case EXPR::IMATRIX : return matrix::matrix_do<gsl_matrix_int>(f,x);
   case EXPR::CMATRIX : return matrix::matrix_do<gsl_matrix_complex>(f,x);
+#endif
   case EXPR::MATRIX  : return matrix::matrix_do<gsl_matrix_symbolic>(f,x);
   }
 }
@@ -9860,9 +9890,11 @@ extern "C"
 pure_expr* matrix_map ( pure_expr *f, pure_expr *x )
 {
   switch (x->tag) {
+#ifdef HAVE_GSL
   case EXPR::DMATRIX : return matrix::matrix_map<gsl_matrix>(f,x);
   case EXPR::IMATRIX : return matrix::matrix_map<gsl_matrix_int>(f,x);
   case EXPR::CMATRIX : return matrix::matrix_map<gsl_matrix_complex>(f,x);
+#endif
   case EXPR::MATRIX  : return matrix::matrix_map<gsl_matrix_symbolic>(f,x);
   default : return 0;
   }
@@ -9872,6 +9904,7 @@ extern "C"
 pure_expr* matrix_zipwith ( pure_expr *f, pure_expr *x, pure_expr *y )
 {
   switch (x->tag) {
+#ifdef HAVE_GSL
   case EXPR::DMATRIX :
     switch (y->tag) {
     case EXPR::DMATRIX : 
@@ -9908,14 +9941,17 @@ pure_expr* matrix_zipwith ( pure_expr *f, pure_expr *x, pure_expr *y )
       return matrix::matrix_zipwith<gsl_matrix_complex,gsl_matrix_symbolic>(f,x,y);
     default : return 0;
     }
+#endif
   case EXPR::MATRIX  :
     switch (y->tag) {
+#ifdef HAVE_GSL
     case EXPR::DMATRIX : 
       return matrix::matrix_zipwith<gsl_matrix_symbolic,gsl_matrix>(f,x,y);
     case EXPR::IMATRIX : 
       return matrix::matrix_zipwith<gsl_matrix_symbolic,gsl_matrix_int>(f,x,y);
     case EXPR::CMATRIX :
       return matrix::matrix_zipwith<gsl_matrix_symbolic,gsl_matrix_complex>(f,x,y);
+#endif
     case EXPR::MATRIX :
       return matrix::matrix_zipwith<gsl_matrix_symbolic,gsl_matrix_symbolic>(f,x,y);
     default : return 0;
@@ -9929,6 +9965,7 @@ pure_expr* matrix_zipwith3 ( pure_expr *f, pure_expr *x, pure_expr *y,
 			     pure_expr *z )
 {
   switch (x->tag) {
+#ifdef HAVE_GSL
   case EXPR::DMATRIX :
     switch (y->tag) {
     case EXPR::DMATRIX : 
@@ -10085,8 +10122,10 @@ pure_expr* matrix_zipwith3 ( pure_expr *f, pure_expr *x, pure_expr *y,
       }
     default : return 0;
     }
+#endif
   case EXPR::MATRIX  :
     switch (y->tag) {
+#ifdef HAVE_GSL
     case EXPR::DMATRIX : 
       switch (z->tag) {
       case EXPR::DMATRIX : 
@@ -10123,14 +10162,17 @@ pure_expr* matrix_zipwith3 ( pure_expr *f, pure_expr *x, pure_expr *y,
 	return matrix::matrix_zipwith3<gsl_matrix_symbolic,gsl_matrix_complex,gsl_matrix_symbolic>(f,x,y,z);
       default : return 0;
       }
+#endif
     case EXPR::MATRIX :
       switch (z->tag) {
+#ifdef HAVE_GSL
       case EXPR::DMATRIX : 
 	return matrix::matrix_zipwith3<gsl_matrix_symbolic,gsl_matrix_symbolic,gsl_matrix>(f,x,y,z);
       case EXPR::IMATRIX : 
 	return matrix::matrix_zipwith3<gsl_matrix_symbolic,gsl_matrix_symbolic,gsl_matrix_int>(f,x,y,z);
       case EXPR::CMATRIX :
 	return matrix::matrix_zipwith3<gsl_matrix_symbolic,gsl_matrix_symbolic,gsl_matrix_complex>(f,x,y,z);
+#endif
       case EXPR::MATRIX :
 	return matrix::matrix_zipwith3<gsl_matrix_symbolic,gsl_matrix_symbolic,gsl_matrix_symbolic>(f,x,y,z);
       default : return 0;
@@ -10145,12 +10187,14 @@ extern "C"
 pure_expr* matrix_scanl ( pure_expr *f, pure_expr *z, pure_expr *x )
 {
   switch (x->tag) {
+#ifdef HAVE_GSL
   case EXPR::DMATRIX :
     return matrix::matrix_scanl<gsl_matrix>(f,z,x);
   case EXPR::IMATRIX :
     return matrix::matrix_scanl<gsl_matrix_int>(f,z,x);
   case EXPR::CMATRIX :
     return matrix::matrix_scanl<gsl_matrix_complex>(f,z,x);
+#endif
   case EXPR::MATRIX  :
     return matrix::matrix_scanl<gsl_matrix_symbolic>(f,z,x);
   default : return 0;
@@ -10161,12 +10205,14 @@ extern "C"
 pure_expr* matrix_scanl1 ( pure_expr *f, pure_expr *x )
 {
   switch (x->tag) {
+#ifdef HAVE_GSL
   case EXPR::DMATRIX :
     return matrix::matrix_scanl1<gsl_matrix>(f,x);
   case EXPR::IMATRIX :
     return matrix::matrix_scanl1<gsl_matrix_int>(f,x);
   case EXPR::CMATRIX :
     return matrix::matrix_scanl1<gsl_matrix_complex>(f,x);
+#endif
   case EXPR::MATRIX  :
     return matrix::matrix_scanl1<gsl_matrix_symbolic>(f,x);
   default : return 0;
@@ -10177,12 +10223,14 @@ extern "C"
 pure_expr* matrix_scanr ( pure_expr *f, pure_expr *z, pure_expr *x )
 {
   switch (x->tag) {
+#ifdef HAVE_GSL
   case EXPR::DMATRIX :
     return matrix::matrix_scanr<gsl_matrix>(f,z,x);
   case EXPR::IMATRIX :
     return matrix::matrix_scanr<gsl_matrix_int>(f,z,x);
   case EXPR::CMATRIX :
     return matrix::matrix_scanr<gsl_matrix_complex>(f,z,x);
+#endif
   case EXPR::MATRIX  :
     return matrix::matrix_scanr<gsl_matrix_symbolic>(f,z,x);
   default : return 0;
@@ -10193,12 +10241,14 @@ extern "C"
 pure_expr* matrix_scanr1 ( pure_expr *f, pure_expr *x )
 {
   switch (x->tag) {
+#ifdef HAVE_GSL
   case EXPR::DMATRIX :
     return matrix::matrix_scanr1<gsl_matrix>(f,x);
   case EXPR::IMATRIX :
     return matrix::matrix_scanr1<gsl_matrix_int>(f,x);
   case EXPR::CMATRIX :
     return matrix::matrix_scanr1<gsl_matrix_complex>(f,x);
+#endif
   case EXPR::MATRIX  :
     return matrix::matrix_scanr1<gsl_matrix_symbolic>(f,x);
   default : return 0;
@@ -10209,12 +10259,14 @@ extern "C"
 pure_expr* matrix_foldl ( pure_expr *f, pure_expr *z, pure_expr *x )
 {
   switch (x->tag) {
+#ifdef HAVE_GSL
   case EXPR::DMATRIX :
     return matrix::matrix_foldl<gsl_matrix>(f,z,x);
   case EXPR::IMATRIX :
     return matrix::matrix_foldl<gsl_matrix_int>(f,z,x);
   case EXPR::CMATRIX :
     return matrix::matrix_foldl<gsl_matrix_complex>(f,z,x);
+#endif
   case EXPR::MATRIX  :
     return matrix::matrix_foldl<gsl_matrix_symbolic>(f,z,x);
   default : return 0;
@@ -10225,12 +10277,14 @@ extern "C"
 pure_expr* matrix_foldl1 ( pure_expr *f, pure_expr *x )
 {
   switch (x->tag) {
+#ifdef HAVE_GSL
   case EXPR::DMATRIX :
     return matrix::matrix_foldl1<gsl_matrix>(f,x);
   case EXPR::IMATRIX :
     return matrix::matrix_foldl1<gsl_matrix_int>(f,x);
   case EXPR::CMATRIX :
     return matrix::matrix_foldl1<gsl_matrix_complex>(f,x);
+#endif
   case EXPR::MATRIX  :
     return matrix::matrix_foldl1<gsl_matrix_symbolic>(f,x);
   default : return 0;
@@ -10241,12 +10295,14 @@ extern "C"
 pure_expr* matrix_foldr ( pure_expr *f, pure_expr *z, pure_expr *x )
 {
   switch (x->tag) {
+#ifdef HAVE_GSL
   case EXPR::DMATRIX :
     return matrix::matrix_foldr<gsl_matrix>(f,z,x);
   case EXPR::IMATRIX :
     return matrix::matrix_foldr<gsl_matrix_int>(f,z,x);
   case EXPR::CMATRIX :
     return matrix::matrix_foldr<gsl_matrix_complex>(f,z,x);
+#endif
   case EXPR::MATRIX  :
     return matrix::matrix_foldr<gsl_matrix_symbolic>(f,z,x);
   default : return 0;
@@ -10257,12 +10313,14 @@ extern "C"
 pure_expr* matrix_foldr1 ( pure_expr *f, pure_expr *x )
 {
   switch (x->tag) {
+#ifdef HAVE_GSL
   case EXPR::DMATRIX :
     return matrix::matrix_foldr1<gsl_matrix>(f,x);
   case EXPR::IMATRIX :
     return matrix::matrix_foldr1<gsl_matrix_int>(f,x);
   case EXPR::CMATRIX :
     return matrix::matrix_foldr1<gsl_matrix_complex>(f,x);
+#endif
   case EXPR::MATRIX  :
     return matrix::matrix_foldr1<gsl_matrix_symbolic>(f,x);
   default : return 0;
@@ -10273,6 +10331,7 @@ extern "C"
 pure_expr* matrix_filter ( pure_expr *p, pure_expr *x )
 {
   switch ( x->tag ) {
+#ifdef HAVE_GSL
   case EXPR::DMATRIX : 
     return pure_double_matrix( matrix::matrix_filter<gsl_matrix>(p,x) ); 
   case EXPR::IMATRIX : 
@@ -10280,6 +10339,7 @@ pure_expr* matrix_filter ( pure_expr *p, pure_expr *x )
   case EXPR::CMATRIX : 
     return pure_complex_matrix
       ( matrix::matrix_filter<gsl_matrix_complex>(p,x) ); 
+#endif
   case EXPR::MATRIX : 
     return pure_symbolic_matrix
       ( matrix::matrix_filter<gsl_matrix_symbolic>(p,x) ); 
@@ -10291,6 +10351,7 @@ extern "C"
 pure_expr* matrix_dropwhile ( pure_expr *p, pure_expr *x )
 {
   switch ( x->tag ) {
+#ifdef HAVE_GSL
   case EXPR::DMATRIX : 
     return pure_double_matrix( matrix::matrix_dropwhile<gsl_matrix>(p,x) ); 
   case EXPR::IMATRIX : 
@@ -10298,6 +10359,7 @@ pure_expr* matrix_dropwhile ( pure_expr *p, pure_expr *x )
   case EXPR::CMATRIX : 
     return pure_complex_matrix
       ( matrix::matrix_dropwhile<gsl_matrix_complex>(p,x) ); 
+#endif
   case EXPR::MATRIX : 
     return pure_symbolic_matrix
       ( matrix::matrix_dropwhile<gsl_matrix_symbolic>(p,x) ); 
@@ -10309,6 +10371,7 @@ extern "C"
 pure_expr* matrix_takewhile ( pure_expr *p, pure_expr *x )
 {
   switch ( x->tag ) {
+#ifdef HAVE_GSL
   case EXPR::DMATRIX : 
     return pure_double_matrix( matrix::matrix_takewhile<gsl_matrix>(p,x) ); 
   case EXPR::IMATRIX : 
@@ -10316,6 +10379,7 @@ pure_expr* matrix_takewhile ( pure_expr *p, pure_expr *x )
   case EXPR::CMATRIX : 
     return pure_complex_matrix
       ( matrix::matrix_takewhile<gsl_matrix_complex>(p,x) ); 
+#endif
   case EXPR::MATRIX : 
     return pure_symbolic_matrix
       ( matrix::matrix_takewhile<gsl_matrix_symbolic>(p,x) ); 
@@ -10327,12 +10391,14 @@ extern "C"
 pure_expr* matrix_all ( pure_expr *p, pure_expr *x )
 {
   switch ( x->tag ) {
+#ifdef HAVE_GSL
   case EXPR::DMATRIX : 
     return pure_int( matrix::matrix_all<gsl_matrix>(p,x) ); 
   case EXPR::IMATRIX : 
     return pure_int( matrix::matrix_all<gsl_matrix_int>(p,x) ); 
   case EXPR::CMATRIX : 
     return pure_int( matrix::matrix_all<gsl_matrix_complex>(p,x) ); 
+#endif
   case EXPR::MATRIX : 
     return pure_int( matrix::matrix_all<gsl_matrix_symbolic>(p,x) ); 
   default : return 0;
@@ -10343,12 +10409,14 @@ extern "C"
 pure_expr* matrix_any ( pure_expr *p, pure_expr *x )
 {
   switch ( x->tag ) {
+#ifdef HAVE_GSL
   case EXPR::DMATRIX : 
     return pure_int( matrix::matrix_any<gsl_matrix>(p,x) ); 
   case EXPR::IMATRIX : 
     return pure_int( matrix::matrix_any<gsl_matrix_int>(p,x) ); 
   case EXPR::CMATRIX : 
     return pure_int( matrix::matrix_any<gsl_matrix_complex>(p,x) ); 
+#endif
   case EXPR::MATRIX : 
     return pure_int( matrix::matrix_any<gsl_matrix_symbolic>(p,x) ); 
   default : return 0;
