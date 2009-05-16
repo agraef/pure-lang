@@ -2539,7 +2539,7 @@ pure_interp *pure_create_interp(int argc, char *argv[])
       string s = string(*args).substr(2);
       if (s.empty()) continue;
       char *end;
-      strtoul(s.c_str(), &end, 0);
+      (void)strtoul(s.c_str(), &end, 0);
       if (*end) {
 	cerr << "pure_create_interp: invalid option " << *args << endl;
 	delete _interp;
@@ -4185,7 +4185,7 @@ void pure_debug_rule(void *_e, void *_r)
       ;
     else if (cmd=="!")
       // shell escape
-      system(arg.c_str());
+      (void)system(arg.c_str());
     else if (cmd=="?" || cmd.size()>1 ||
 	     (!cmd.empty() && !isalpha(cmd[0]) && cmd[0] != '.')) {
       // eval
@@ -7778,7 +7778,10 @@ double __atanh(double x)
 extern "C"
 int pure_fprintf(FILE *fp, const char *format)
 {
-  return fprintf(fp, format);
+  /* Silence stupid gcc warnings about fprintf being used with a non-literal
+     format string and no parameters, even if we *know* here that the format
+     string doesn't contain format specifiers. */
+  return fprintf(fp, "%s", format);
 }
 
 extern "C"
@@ -7808,7 +7811,8 @@ int pure_fprintf_pointer(FILE *fp, const char *format, const void *x)
 extern "C"
 int pure_snprintf(char *buf, size_t size, const char *format)
 {
-  return snprintf(buf, size, format);
+  /* Silence gcc warnings (cf. pure_fprintf above). */
+  return snprintf(buf, size, "%s", format);
 }
 
 extern "C"
@@ -7847,7 +7851,7 @@ extern "C"
 int pure_fscanf(FILE *fp, const char *format)
 {
   int count = -1;
-  fscanf(fp, myformat(format), &count);
+  (void)fscanf(fp, myformat(format), &count);
   return count;
 }
 
@@ -7856,7 +7860,7 @@ int pure_fscanf_int(FILE *fp, const char *format, int32_t *x)
 {
   // wrap this up in case int on the target platform is not 32 bit
   int count = -1, y;
-  fscanf(fp, myformat(format), &y, &count);
+  (void)fscanf(fp, myformat(format), &y, &count);
   if (count >= 0) *x = y;
   return count;
 }
@@ -7865,7 +7869,7 @@ extern "C"
 int pure_fscanf_double(FILE *fp, const char *format, double *x)
 {
   int count = -1;
-  fscanf(fp, myformat(format), x, &count);
+  (void)fscanf(fp, myformat(format), x, &count);
   return count;
 }
 
@@ -7873,7 +7877,7 @@ extern "C"
 int pure_fscanf_string(FILE *fp, const char *format, const char *x)
 {
   int count = -1;
-  fscanf(fp, myformat(format), x, &count);
+  (void)fscanf(fp, myformat(format), x, &count);
   return count;
 }
 
@@ -7881,7 +7885,7 @@ extern "C"
 int pure_fscanf_pointer(FILE *fp, const char *format, const void **x)
 {
   int count = -1;
-  fscanf(fp, myformat(format), x, &count);
+  (void)fscanf(fp, myformat(format), x, &count);
   return count;
 }
 
