@@ -522,22 +522,37 @@ PURE_STACK environment variable accordingly; see the Pure manual for details.
 The interpreter will then generate orderly "stack fault" exceptions in case of
 a stack overflow.
 
+32 BIT SYSTEMS
+-- --- -------
+
+LLVM is broken on x86-32 if it is built with --enable-pic (which is the
+default in the current svn version of LLVM). So make sure you *always* specify
+--disable-pic when configuring LLVM for x86-32 systems.
+
+The Ubuntu 9.04 LLVM 2.5 package (2.5-0ubuntu1) is broken on x86-32 for
+similar reasons (the package was built using --enable-pic unconditionally for
+both 32 and 64 bit; cf. http://packages.ubuntu.com/jaunty/llvm). Don't use
+that package on x86-32, build your own LLVM from source instead. Or complain
+to the maintainers so that the package gets fixed.
+
 64 BIT SYSTEMS
 -- --- -------
 
 64 bit systems are fully supported by Pure (as far as LLVM supports them).
 
-As of LLVM 2.4, building the Pure runtime library (libpure) should work out of
-the box on x86-64 systems, too. To make this work, you have to configure LLVM
-with --enable-pic so that the static LLVM libraries can be linked into the
-runtime library. (This option is required on 64 bit systems *only*, on x86-32
-this usually does more harm than good and thus should not be used there.)
+As of LLVM 2.4, building the Pure runtime library (libpure) works out of the
+box on x86-64 systems, too. To make this work, you have to configure LLVM with
+--enable-pic so that the static LLVM libraries can be linked into the runtime
+library.
 
 If you still use LLVM 2.3 on x86-64, there is a patch by Cyrille Berger which
 you need to apply in the llvm-2.3 source directory to make that version link
 properly with the Pure runtime library. The patch is available at:
 http://pure-lang.googlecode.com/svn/wiki/X86JITInfo.cpp.pic.2.3.patch. After
 applying the patch, configure LLVM with --enable-pic and build it as usual.
+
+Note that if you're using the latest LLVM from svn, --enable-pic is the
+default, thus you don't have to explicitly specify the flag any more.
 
 LINUX
 -----
@@ -622,6 +637,6 @@ release.) For the time being, a patched up version of llvmc.exe can be found
 at http://pure-lang.googlecode.com/svn/stuff/llvmc.exe.zip.
 
 
-April 2009
+May 2009
 Albert Graef <Dr.Graef at t-online.de>
 Eddie Rucker <erucker at bmc.edu>
