@@ -49,9 +49,9 @@ a<<{1,2,3};
 let x = {1,0,0,0,2;0,0,3,0,0;0,0,0,0,0;0,4,0,0,0}; x;
 let u,s,v = svd x; u;s;v;
 // This should yield the original matrix x:
-u*s*v';
-// The matrices u and v' are orthogonal:
-u*u'; v'*v; // these yield identity matrices, up to rounding issues
+u*s*transpose v;
+// The matrices u and transpose v are orthogonal:
+u*transpose u; transpose v*v; // identity matrices, up to rounding issues
 // The diagonal of s yields the singular values in descending order:
 diag s;
 // Solve x*a = b using the computed SVD:
@@ -69,4 +69,4 @@ let b = {2;3;0;0}; pinv x*b;
 x\\b;
 // This solves the transposed system using right division, yielding the same
 // result but as a row vector.
-b'/x';
+transpose b/transpose x;

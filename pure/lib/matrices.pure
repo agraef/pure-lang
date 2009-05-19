@@ -66,14 +66,6 @@ using namespace C;
    ``null x`` can be used to check for empty matrices. Note that there are
    various kinds of these, as a matrix may have zero rows or columns, or both.
 
-   .. _matrix transposition:
-   .. _':
-
-   A matrix can be transposed with the ``'`` operator::
-
-     > {1,2,3;4,5,6}';
-     {1,4;2,5;3,6}
-
    Indexing and slicing works pretty much like in MATLAB and Octave, except
    that you use the Pure operators ``!`` and ``!!`` for that. It is possible
    to access elements with a one-dimensional index (in row-major oder)::
@@ -497,13 +489,19 @@ redim m::int x::matrix	= redim (#x div m,m) x if m>0 && #x mod m==0;
 rowvector x::matrix	= redim (1,#x) x;
 colvector x::matrix	= redim (#x,1) x;
 
-/* Transpose a matrix. */
+/* .. _transpose (matrix):
+
+   ``transpose x``
+     Transpose a matrix. Example::
+
+       > {1,2,3;4,5,6}';
+       {1,4;2,5;3,6} */
 
 namespace C;
 extern expr* matrix_transpose(expr *x);
 namespace;
 
-x::matrix'		= matrix_transpose x;
+transpose x::matrix	= matrix_transpose x;
 
 /* .. _rowrev:
    .. _colrev:
