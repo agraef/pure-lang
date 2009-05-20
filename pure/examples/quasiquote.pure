@@ -1,6 +1,14 @@
 
 /* Quasiquote example. 2008-10-08 AG. */
 
+/* These rules implement a (simplified) Lisp-like quasiquote. See the Pure
+   manual for a discussion of this macro. */
+
+def quasiquote (unquote x)	= x;
+def quasiquote (f@_ (splice x))	= foldl ($) (quasiquote f) (quasiquote x);
+def quasiquote (f@_ x)		= quasiquote f (quasiquote x);
+def quasiquote x		= quote x;
+
 /* Some syntactic sugar for Lisp weenies. Note that we cannot have ',' for
    unquoting, so we use ',,' instead. */
 

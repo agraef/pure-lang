@@ -320,50 +320,6 @@ def (f . g) x	= f (g x);
 def void (catmap f x) = do f x;
 def void (listmap f x) = do f x;
 
-/* ..
-
-   Quasiquote
-   ----------
-
-   The prelude also defines a general Lisp-like ``quasiquote`` macro which is
-   used to construct quoted expressions by unquoting and splicing subterms
-   indicated with the ``unquote`` and ``splice`` constructors. For instance::
-
-     > quasiquote (2*42+unquote (2^12));
-     2*42+4096.0
-     > quasiquote (foo 1 2 (splice [2/3,3/4]) (5/6));
-     foo 1 2 (2/3) (3/4) (5/6)
-
-   Lisp weenies might want to add some syntactic sugar for convenience. This
-   isn't in the prelude, so you'll have to define it yourself. Also note that
-   we cannot have ``,`` for unquoting, so we use ``,,`` instead::
-
-     prefix 9 ` ,, ,@ ;
-     def ‘x = quasiquote x; def ,,x = unquote x; def ,@x = splice x;
-
-   Examples::
-
-     > `(2*42+2^12);
-     2*42+2^12
-     > `(2*42+,,(2^12));
-     2*42+4096.0
-     > `foo 1 2 (,@[2/3,3/4]) (5/6);
-     foo 1 2 (2/3) (3/4) (5/6)
-     > `foo 1 2 (,@args) (5/6) when args = quote [2/3,3/4] end;
-     foo 1 2 (2/3) (3/4) (5/6)
-
-   This is discussed in more detail in section `Recursive Macros`_ of the Pure
-   Manual.
-
-   .. _Recursive Macros: pure.html#recursive-macros
-
-*/
-
-def quasiquote (unquote x)	= x;
-def quasiquote (f@_ (splice x))	= foldl ($) (quasiquote f) (quasiquote x);
-def quasiquote (f@_ x)		= quasiquote f (quasiquote x);
-def quasiquote x		= quote x;
-
 /* "Mapsto" operator. This constructor is declared here so that it can be used
    in other standard library modules to denote special kinds of pairs which
    map keys to values. Here we only define equality of such pairs. */
