@@ -289,8 +289,9 @@ item
    symbols (interp.declare_op = true) instead of searching for existing ones
    in the symbol table. */
 { if ($1->special && $1->fix != nullary && $1->prec > 9) {
-    error(yylloc, "invalid fixity declaration"); YYERROR;
-  } else if ($1->fix == nullary || $1->prec < 10)
+    error(yylloc, "invalid fixity declaration"); $1->prec = 9;
+  }
+  if ($1->fix == nullary || $1->prec < 10)
     interp.declare_op = true; }
   ids
 { interp.declare_op = false;
