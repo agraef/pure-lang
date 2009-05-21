@@ -507,6 +507,11 @@ void pure_free_cvectors();
 pure_expr *pure_matrix_rows(uint32_t n, ...);
 pure_expr *pure_matrix_columns(uint32_t n, ...);
 
+/* These are used internally to construct quoted matrices. */
+
+pure_expr *pure_matrix_rowsq(uint32_t n, ...);
+pure_expr *pure_matrix_columnsq(uint32_t n, ...);
+
 /* Execute a closure. If the given expression x (or x y in the case of
    pure_apply) is a parameterless closure (or a saturated application of a
    closure), call it with the appropriate parameters and environment, if

@@ -361,6 +361,10 @@ void interpreter::init()
 		 "pure_matrix_rows", "expr*",    -1, "int");
   declare_extern((void*)pure_matrix_columns,
 		 "pure_matrix_columns", "expr*", -1, "int");
+  declare_extern((void*)pure_matrix_rowsq,
+		 "pure_matrix_rowsq", "expr*",    -1, "int");
+  declare_extern((void*)pure_matrix_columnsq,
+		 "pure_matrix_columnsq", "expr*", -1, "int");
   declare_extern((void*)pure_symbolic_matrix,
 		 "pure_symbolic_matrix", "expr*", 1, "void*");
   declare_extern((void*)pure_double_matrix,
@@ -6141,6 +6145,14 @@ Value *interpreter::codegen(expr x, bool quote)
     return pbox(x.pval());
   // matrix:
   case EXPR::MATRIX: {
+    Function *row_fun = 0, *col_fun = 0;
+    if (quote) {
+      row_fun = module->getFunction("pure_matrix_rowsq");
+      col_fun = module->getFunction("pure_matrix_columnsq");
+    } else {
+      row_fun = module->getFunction("pure_matrix_rows");
+      col_fun = module->getFunction("pure_matrix_columns");
+    }
     size_t n = x.xvals()->size(), i = 1;
     vector<Value*> us(n+1);
     us[0] = UInt(n);
@@ -6154,9 +6166,9 @@ Value *interpreter::codegen(expr x, bool quote)
 	vs[j] = codegen(*ys, quote);
       }
       us[i] =
-	act_env().CreateCall(module->getFunction("pure_matrix_columns"), vs);
+	act_env().CreateCall(col_fun, vs);
     }
-    return act_env().CreateCall(module->getFunction("pure_matrix_rows"), us);
+    return act_env().CreateCall(row_fun, us);
   }
   // application:
   case EXPR::APP:
