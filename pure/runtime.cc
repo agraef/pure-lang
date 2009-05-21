@@ -3680,6 +3680,7 @@ void pure_free_args(pure_expr *x, uint32_t n, ...)
       pure_free_internal(x);
   };
   va_end(ap);
+  if (x) pure_unref_internal(x);
 }
 
 extern "C"
@@ -3756,6 +3757,7 @@ void pure_pop_args(pure_expr *x, uint32_t n, uint32_t m)
     else
       pure_free_internal(x);
   };
+  if (x) pure_unref_internal(x);
   interp.sstk_sz = sz;
 }
 
@@ -3790,6 +3792,7 @@ void pure_pop_tail_args(pure_expr *x, uint32_t n, uint32_t m)
     else
       pure_free_internal(x);
   };
+  if (x) pure_unref_internal(x);
   memmove(sstk+sz, sstk+lastsz, (oldsz-lastsz)*sizeof(pure_expr*));
   interp.sstk_sz -= n+m+1;
 }
@@ -3821,36 +3824,40 @@ void pure_push_arg(pure_expr *x)
 }
 
 extern "C"
-void pure_pop_arg()
+void pure_pop_arg(pure_expr *y)
 {
 #if SSTK_DEBUG
-  pure_pop_args(0, 1, 0);
+  pure_pop_args(y, 1, 0);
 #else
   interpreter& interp = *interpreter::g_interp;
   pure_expr *x = interp.sstk[interp.sstk_sz-1];
+  if (y) y->refc++;
   if (x->refc > 1)
     x->refc--;
   else
     pure_free_internal(x);
+  if (y) pure_unref_internal(y);
   interp.sstk_sz -= 2;
 #endif
 }
 
 extern "C"
-void pure_pop_tail_arg()
+void pure_pop_tail_arg(pure_expr *y)
 {
 #if SSTK_DEBUG
-  pure_pop_tail_args(0, 1, 0);
+  pure_pop_tail_args(y, 1, 0);
 #else
   interpreter& interp = *interpreter::g_interp;
   pure_expr **sstk = interp.sstk;
   size_t lastsz = interp.sstk_sz, oldsz = lastsz;
   while (lastsz > 0 && sstk[--lastsz]) ;
   pure_expr *x = interp.sstk[lastsz-1];
+  if (y) y->refc++;
   if (x->refc > 1)
     x->refc--;
   else
     pure_free_internal(x);
+  if (y) pure_unref_internal(y);
   memmove(sstk+lastsz-2, sstk+lastsz, (oldsz-lastsz)*sizeof(pure_expr*));
   interp.sstk_sz -= 2;
 #endif

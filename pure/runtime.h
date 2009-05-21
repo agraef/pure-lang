@@ -559,10 +559,9 @@ pure_expr *pure_invoke(void *f, pure_expr** e);
    expression argument is the return value; if not null, an extra reference is
    temporarily counted on this expression so that it doesn't get freed if the
    return value happens to be a (subterm of an) argument or environment
-   expression. (It's the caller's duty to call pure_unref later.) These
-   functions are only to be used for internal calls (apply, catch, etc.); for
-   calls which are to be visible on the shadow stack see pure_push_args and
-   pure_pop_args below. */
+   expression. These functions are only to be used for internal calls (apply,
+   catch, etc.); for calls which are to be visible on the shadow stack see
+   pure_push_args and pure_pop_args below. */
 
 void pure_new_args(uint32_t n, ...);
 void pure_free_args(pure_expr *x, uint32_t n, ...);
@@ -590,8 +589,8 @@ void pure_pop_tail_args(pure_expr *x, uint32_t n, uint32_t m);
    pushed/popped. */
 
 void pure_push_arg(pure_expr *x);
-void pure_pop_arg();
-void pure_pop_tail_arg();
+void pure_pop_arg(pure_expr *x);
+void pure_pop_tail_arg(pure_expr *x);
 
 /* Debugging support. Experimental. */
 

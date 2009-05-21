@@ -441,9 +441,9 @@ void interpreter::init()
   declare_extern((void*)pure_push_arg,
 		 "pure_push_arg",  "void",    1, "expr*");
   declare_extern((void*)pure_pop_arg,
-		 "pure_pop_arg",   "void",    0);
+		 "pure_pop_arg",   "void",    1, "expr*");
   declare_extern((void*)pure_pop_tail_arg,
-		 "pure_pop_tail_arg", "void", 0);
+		 "pure_pop_tail_arg", "void", 1, "expr*");
 
   declare_extern((void*)pure_debug,
 		 "pure_debug",      "void",  -2, "int", "char*");
@@ -3981,9 +3981,14 @@ ReturnInst *Env::CreateRet(Value *v, const rule *rp)
   }
   // We must garbage-collect args and environment here, immediately before the
   // call (if any), or the return instruction otherwise.
-  if (pi != ret && n == 1 && m == 0)
-    CallInst::Create(free1_fun, "", pi);
-  else if (n+m != 0) {
+  if (n == 1 && m == 0) {
+    vector<Value*> myargs;
+    if (pi == ret)
+      myargs.push_back(v);
+    else
+      myargs.push_back(ConstantPointerNull::get(interp.ExprPtrTy));
+    CallInst::Create(free1_fun, myargs.begin(), myargs.end(), "", pi);
+  } else if (n+m != 0) {
     vector<Value*> myargs;
     if (pi == ret)
       myargs.push_back(v);
@@ -3992,10 +3997,6 @@ ReturnInst *Env::CreateRet(Value *v, const rule *rp)
     myargs.push_back(UInt(n));
     myargs.push_back(UInt(m));
     CallInst::Create(free_fun, myargs.begin(), myargs.end(), "", pi);
-    if (pi == ret && v != ConstantPointerNull::get(interp.ExprPtrTy)) {
-      Value *x[1] = { v };
-      CallInst::Create(interp.module->getFunction("pure_unref"), x, x+1, "", ret);
-    }
   }
   return ret;
 }
@@ -5078,7 +5079,6 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     freeargs[2] = Zero;
     b.CreateCall(module->getFunction("pure_pop_args"),
 		 freeargs.begin(), freeargs.end());
-    b.CreateCall(module->getFunction("pure_unref"), u);
   }
   b.CreateRet(u);
   // The call failed. Provide a default value.
@@ -5126,7 +5126,6 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     freeargs[2] = Zero;
     b.CreateCall(module->getFunction("pure_pop_args"),
 		 freeargs.begin(), freeargs.end());
-    b.CreateCall(module->getFunction("pure_unref"), defaultv);
   }
   b.CreateRet(defaultv);
   verifyFunction(*f);
@@ -7777,9 +7776,7 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
       if (f.n+f.m != 0) {
 	// do cleanup
 	Function *free_fun = module->getFunction("pure_pop_args");
-	Function *unref_fun = module->getFunction("pure_unref");
 	f.builder.CreateCall3(free_fun, retv, UInt(f.n), UInt(f.m));
-	f.builder.CreateCall(unref_fun, retv);
       }
       if (rp) debug_redn(rp, retv);
       f.builder.CreateRet(retv);
