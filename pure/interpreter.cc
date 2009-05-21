@@ -3946,36 +3946,38 @@ ReturnInst *Env::CreateRet(Value *v, const rule *rp)
     CallInst* c = cast<CallInst>(v);
     // Check whether the call is actually subject to tail call elimination (as
     // determined by the calling convention).
-    if (c->getCallingConv() == CallingConv::Fast) c->setTailCall();
-    // Check for a tail call situation (previous instruction must be a call to
-    // pure_push_args()).
-    BasicBlock::iterator it(c);
-    if (it != c->getParent()->begin()) {
-      --it;
-      if (isa<CallInst>(it)) {
-	CallInst* c1 = cast<CallInst>(it);
-	if (c1->getCalledFunction() ==
-	    interp.module->getFunction("pure_push_arg")) {
-	  free_fun = interp.module->getFunction("pure_pop_tail_args");
-	  free1_fun = interp.module->getFunction("pure_pop_tail_arg");
-	} else if (c1->getCalledFunction() ==
-		   interp.module->getFunction("pure_push_args")) {
-	  free_fun = interp.module->getFunction("pure_pop_tail_args");
-	  free1_fun = interp.module->getFunction("pure_pop_tail_arg");
-	  /* Patch up this call to correct the offset of the environment. */
-	  CallInst *c2 = c1->clone();
-	  c1->getParent()->getInstList().insert(c1, c2);
+    if (c->getCallingConv() == CallingConv::Fast) {
+      c->setTailCall();
+      // Check for a tail call situation (previous instruction must be a call
+      // to pure_push_args()).
+      BasicBlock::iterator it(c);
+      if (it != c->getParent()->begin()) {
+	--it;
+	if (isa<CallInst>(it)) {
+	  CallInst* c1 = cast<CallInst>(it);
+	  if (c1->getCalledFunction() ==
+	      interp.module->getFunction("pure_push_arg")) {
+	    free_fun = interp.module->getFunction("pure_pop_tail_args");
+	    free1_fun = interp.module->getFunction("pure_pop_tail_arg");
+	  } else if (c1->getCalledFunction() ==
+		     interp.module->getFunction("pure_push_args")) {
+	    free_fun = interp.module->getFunction("pure_pop_tail_args");
+	    free1_fun = interp.module->getFunction("pure_pop_tail_arg");
+	    /* Patch up this call to correct the offset of the environment. */
+	    CallInst *c2 = c1->clone();
+	    c1->getParent()->getInstList().insert(c1, c2);
 #ifdef NEW_BUILDER
-	  Value *v = BinaryOperator::CreateSub(c2, UInt(n+m+1), "", c1);
+	    Value *v = BinaryOperator::CreateSub(c2, UInt(n+m+1), "", c1);
 #else
-	  Value *v = BinaryOperator::createSub(c2, UInt(n+m+1), "", c1);
+	    Value *v = BinaryOperator::createSub(c2, UInt(n+m+1), "", c1);
 #endif
-	  BasicBlock::iterator ii(c1);
-	  ReplaceInstWithValue(c1->getParent()->getInstList(), ii, v);
+	    BasicBlock::iterator ii(c1);
+	    ReplaceInstWithValue(c1->getParent()->getInstList(), ii, v);
+	  }
 	}
       }
+      pi = c;
     }
-    pi = c;
   }
   // We must garbage-collect args and environment here, immediately before the
   // call (if any), or the return instruction otherwise.
