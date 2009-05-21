@@ -84,6 +84,7 @@ class symtable {
   symbol* __segfault_sym;
   symbol* __bad_matrix_sym;
   symbol* __amp_sym;
+  symbol* __quoteop_sym;
   symbol* __complex_rect_sym;
   symbol* __complex_polar_sym;
 public:
@@ -193,6 +194,7 @@ public:
   symbol& bad_matrix_sym()
   { return *sym_p("bad_matrix_value", __bad_matrix_sym); }
   symbol& amp_sym();
+  symbol& quoteop_sym();
   symbol& complex_rect_sym();
   symbol& complex_polar_sym();
 };

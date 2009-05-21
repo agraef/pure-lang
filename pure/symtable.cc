@@ -45,6 +45,7 @@ symtable::symtable()
     __segfault_sym(0),
     __bad_matrix_sym(0),
     __amp_sym(0),
+    __quoteop_sym(0),
     __complex_rect_sym(0),
     __complex_polar_sym(0),
     current_namespace(new string),
@@ -102,6 +103,7 @@ void symtable::init_builtins()
   segfault_sym();
   bad_matrix_sym();
   amp_sym();
+  quoteop_sym();
   complex_rect_sym();
   complex_polar_sym();
 }
@@ -564,6 +566,15 @@ symbol& symtable::amp_sym()
     return *__amp_sym;
   else
     return *sym_p("&", __amp_sym, 9, postfix);
+}
+
+symbol& symtable::quoteop_sym()
+{
+  lookup_p("'", __quoteop_sym);
+  if (__quoteop_sym)
+    return *__quoteop_sym;
+  else
+    return *sym_p("'", __quoteop_sym, 9, prefix);
 }
 
 symbol& symtable::complex_rect_sym()
