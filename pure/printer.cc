@@ -649,16 +649,16 @@ static prec_t pure_expr_nprec(const pure_expr *x)
   switch (x->tag) {
   case EXPR::STR:
   case EXPR::PTR:
+  case EXPR::DMATRIX:
+  case EXPR::CMATRIX:
+  case EXPR::IMATRIX:
+    return 100;
   case EXPR::MATRIX:
     if (quoted_matrix(x))
       // precedence of ':
       return sym_nprec(interpreter::g_interp->symtab.quoteop_sym().f);
     else
       return 100;
-  case EXPR::DMATRIX:
-  case EXPR::CMATRIX:
-  case EXPR::IMATRIX:
-    return 100;
   case EXPR::INT:
     if (x->data.i < 0)
       // precedence of unary minus:
