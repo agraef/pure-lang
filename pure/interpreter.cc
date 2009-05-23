@@ -2684,7 +2684,7 @@ expr interpreter::macsubst(expr x)
   // application:
   case EXPR::APP: {
     expr u = macsubst(x.xval1()),
-      v = macsubst(x.xval2());
+      v = (u.tag() == symtab.quote_sym().f)?x.xval2():macsubst(x.xval2());
     expr w = expr(u, v);
     return macval(w);
   }
