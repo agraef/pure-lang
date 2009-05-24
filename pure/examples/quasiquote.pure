@@ -1,19 +1,13 @@
 
-/* Quasiquote example. 2008-10-08 AG. */
+/* An implementation of Lisp's quasiquote. 2008-10-08 AG. */
 
-/* These rules implement a (simplified) Lisp-like quasiquote. See the Pure
-   manual for a discussion of this macro. */
-
-apply (x:xs)     = apply x xs with
-  apply x []     = x;
-  apply x (y:ys) = apply (x y) ys;
-  apply _ ys     = throw (bad_list_value ys);
-end;
-apply xs         = throw (bad_list_value xs);
+/* These rules implement a Lisp-like quasiquote which produces a quoted
+   expression while evaluating embedded calls of 'unquote' and 'splice'. See
+   the Pure manual for a discussion of this macro. */
 
 def quasiquote (unquote x)	= x;
-def quasiquote (splice x)	= apply x;
-def quasiquote (f@_ (splice x))	= apply (quasiquote f:x);
+def quasiquote (splice x)	= foldl1 ($) x;
+def quasiquote (f@_ (splice x))	= foldl ($) (quasiquote f) x;
 def quasiquote (f@_ x)		= quasiquote f (quasiquote x);
 def quasiquote x::matrix	= map qq (quote x) with
 				    qq (unquote x) = eval x;
@@ -33,7 +27,15 @@ def `x = quasiquote x; def ,$x = unquote x; def ,@x = splice x;
 
 `foo 1 2 (,$(3/4)) (5/6);
 
-/* Splicing example. This yields 'foo 1 2 (2/3) (3/4) (5/6)'. */
+/* This also works for list, tuple and matrix values. */
+
+`[1,2,,$(3/4),5/6];
+`(1,2,,$(3/4),5/6);
+`{1,2,,$(3/4),5/6};
+
+/* Splicing allows you to insert arguments into a function application. The
+   argument of 'splice' must be a list value with the arguments to be
+   spliced. E.g., the following example yields 'foo 1 2 (2/3) (3/4) (5/6)'. */
 
 `foo 1 2 (,@'[2/3,3/4]) (5/6);
 
@@ -41,3 +43,8 @@ def `x = quasiquote x; def ,$x = unquote x; def ,@x = splice x;
    lists computed at runtime works ok, too. */
 
 `foo 1 2 (,@x) (5/6) when x = '[2/3,3/4] end;
+
+/* Our implementation also allows you to splice a list as the head of a
+   function application. */
+
+`(,@'[foo,2/3,3/4]) (5/6);
