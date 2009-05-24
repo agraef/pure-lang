@@ -1042,6 +1042,19 @@ with
   tick zs xs ys		= tack zs (xs+ys);
   tack (x:xs) ys	= tack xs (x:ys);
   tack [] ys		= ys;
+  /* We also use a slightly modified foldr function here, so that we can
+     handle the case that xs is an improper list more gracefully. */
+  foldr f a []		= a;
+  foldr f a xs@(_:_)	= tick [] xs
+  with
+    tick zs (x:xs)	= tack (x:zs) (foldr f a xs&) if thunkp xs;
+			= tick (x:zs) xs;
+    tick zs []		= tack zs a;
+    tick zs xs		= tack zs (foldr f a xs);
+    tack (x:xs) y	= tack xs (f x y);
+    tack [] y		= y;
+  end;
+  foldr (tick _) [] x	= cat x;
 end;
 
 /* Map a function to a list and concatenate the results. This is used by list
