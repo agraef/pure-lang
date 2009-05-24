@@ -15,6 +15,12 @@ def quasiquote (unquote x)	= x;
 def quasiquote (splice x)	= apply x;
 def quasiquote (f@_ (splice x))	= apply (quasiquote f:x);
 def quasiquote (f@_ x)		= quasiquote f (quasiquote x);
+def quasiquote x::matrix	= map qq (quote x) with
+				    qq (unquote x) = eval x;
+				    qq (f@_ x)     = qq f (qq x);
+				    qq x::matrix   = map qq x;
+				    qq x           = x;
+				  end;
 def quasiquote x		= quote x;
 
 /* Some syntactic sugar for Lisp weenies. Note that we cannot have ',' for
