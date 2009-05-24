@@ -421,10 +421,36 @@ list (x/*0:101*/,xs/*0:11*/) = accum/*0*/ [x/*0:101*/] xs/*0:11*/ with accum ys/
   state 12: #0 #1
 } end;
 tuple [] = ();
-tuple (x/*0:101*/:xs/*0:11*/) = accum/*0*/ x/*0:101*/ xs/*0:11*/ with accum ys/*0:01*/ (x/*0:101*/:xs/*0:11*/) = accum/*1*/ (x/*0:101*/,ys/*0:01*/) xs/*0:11*/; accum ys/*0:01*/ [] = if tuplep ys/*0:01*/ then reverse ys/*0:01*/ else ys/*0:01*/; accum ys/*0:01*/ xs/*0:1*/ = ys/*0:01*/,xs/*0:1*/ {
-  rule #0: accum ys (x:xs) = accum (x,ys) xs
-  rule #1: accum ys [] = if tuplep ys then reverse ys else ys
-  rule #2: accum ys xs = ys,xs
+tuple (x/*0:101*/:xs/*0:11*/) = accum/*0*/ (t/*0*/ x/*0:101*/) xs/*0:11*/ with t x@(_/*0:101*/,_/*0:11*/) = reverse x/*0:1*/; t x/*0:1*/ = x/*0:1*/ {
+  rule #0: t x@(_,_) = reverse x
+  rule #1: t x = x
+  state 0: #0 #1
+	<var> state 1
+	<app> state 2
+  state 1: #1
+  state 2: #0 #1
+	<var> state 3
+	<app> state 5
+  state 3: #1
+	<var> state 4
+  state 4: #1
+  state 5: #0 #1
+	<var> state 6
+	, state 9
+  state 6: #1
+	<var> state 7
+  state 7: #1
+	<var> state 8
+  state 8: #1
+  state 9: #0 #1
+	<var> state 10
+  state 10: #0 #1
+	<var> state 11
+  state 11: #0 #1
+}; accum ys/*0:01*/ (x/*0:101*/:xs/*0:11*/) = accum/*1*/ (t/*1*/ x/*0:101*/,ys/*0:01*/) xs/*0:11*/; accum ys/*0:01*/ [] = t/*1*/ ys/*0:01*/; accum ys/*0:01*/ xs/*0:1*/ = throw (bad_list_value xs/*0:1*/) {
+  rule #0: accum ys (x:xs) = accum (t x,ys) xs
+  rule #1: accum ys [] = t ys
+  rule #2: accum ys xs = throw (bad_list_value xs)
   state 0: #0 #1 #2
 	<var> state 1
   state 1: #0 #1 #2

@@ -644,10 +644,12 @@ list (x,xs)	= accum [x] xs with
 end;
 
 tuple []	= ();
-tuple (x:xs)	= accum x xs with
-  accum ys (x:xs)	= accum (x,ys) xs;
-  accum ys []		= if tuplep ys then reverse ys else ys;
-  accum	ys xs		= ys,xs;
+tuple (x:xs)	= accum (t x) xs with
+  accum ys (x:xs)	= accum (t x,ys) xs;
+  accum ys []		= t ys;
+  accum	ys xs		= throw (bad_list_value xs);
+  t x@(_,_)		= reverse x;
+  t x			= x;
 end;
 
 list []		= [];
