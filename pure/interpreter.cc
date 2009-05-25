@@ -2505,7 +2505,7 @@ expr interpreter::csubst(expr x)
       return expr(symtab.catch_sym().x, u, v);
     } else {
       expr u = csubst(x.xval1()),
-	v = csubst(x.xval2());
+	v = (u.tag() == symtab.quote_sym().f)?x.xval2():csubst(x.xval2());
       expr w = expr(u, v);
       // promote type tags
       expr f; uint32_t n = count_args(w, f);
