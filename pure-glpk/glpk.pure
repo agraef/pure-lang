@@ -150,12 +150,10 @@ public nullary
 ;
 
 /* the row class descriptor: */
-public nullary
-  rf_gmi	// Gomory's mixed integer cut
-  rf_mir	// mixed integer rounding cut
-  rf_cov	// mixed cover cut
-  rf_clq	// clique cut
-;
+const glp::rf_gmi = 1;	// Gomory's mixed integer cut
+const glp::rf_mir = 2;	// mixed integer rounding cut
+const glp::rf_cov = 3;	// mixed cover cut
+const glp::rf_clq = 4;	// clique cut
 
 /* enable/disable flag: */
 public nullary
@@ -301,7 +299,6 @@ private nullary
   backtracking	// backtracking technique
   preprocess	// preprocessing technique
   roworigin	// the row origin flag
-  rowclass	// the row class descriptor
   onoff		// enable/disable flag
   reasoncode	// reason codes
   branchselect	// branch selection indicator
@@ -411,12 +408,6 @@ let symlist =
     (roworigin,    rf_reg,   0),    // regular constraint
     (roworigin,    rf_lazy,  1),    // "lazy" constraint
     (roworigin,    rf_cut,   2),    // cutting plane constraint
-
-    /* the row class descriptor: */
-    (rowclass,     rf_gmi,   1),    // Gomory's mixed integer cut
-    (rowclass,     rf_mir,   2),    // mixed integer rounding cut
-    (rowclass,     rf_cov,   3),    // mixed cover cut
-    (rowclass,     rf_clq,   4),    // clique cut
 
     /* enable/disable flag: */
     (onoff,        on,       1),    // enable something
@@ -1182,7 +1173,7 @@ public extern expr *glpk_ios_get_prob(expr *tree) =
 // Determine additional row attributes
 private extern expr *glpk_ios_row_attr(expr *tree, int irow);
 glp::ios_row_attr tree::pointer irow::int =
-  (level, getcode roworigin origin, getcode rowclass klass)
+  (level, getcode roworigin origin, klass)
     when
       (level, origin, klass) = glpk_ios_row_attr tree irow
     end;
@@ -1257,7 +1248,7 @@ private extern pure_expr *glpk_ios_add_row(expr *tree, char *name, int klass,
                                            int flags, expr *row, int type,
                                            double rhs);
 glp::ios_add_row tree (name::string, klass, flags, row, type, rhs::double) =
-  glpk_ios_add_row tree name (s2v!(rowclass, klass)) 0 row
+  glpk_ios_add_row tree name klass 0 row
                    (s2v!(vartype, type)) rhs;
 
 // Remove constraint from the cut pool
