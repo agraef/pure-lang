@@ -6,8 +6,14 @@
    the Pure manual for a discussion of this macro. */
 
 def quasiquote (unquote x)	= x;
-def quasiquote (splice x)	= foldl1 ($) x;
-def quasiquote (f@_ (splice x))	= foldl ($) (quasiquote f) x;
+def quasiquote (splice x)	= case x of
+				    x = foldl1 ($) x if listp x;
+				      = throw (bad_list_value x);
+				  end;
+def quasiquote (f@_ (splice x))	= case x of
+				    x = foldl ($) (quasiquote f) x if listp x;
+				      = throw (bad_list_value x);
+				  end;
 def quasiquote (f@_ x)		= quasiquote f (quasiquote x);
 def quasiquote x::matrix	= map qq (quote x) with
 				    qq (unquote x) = eval x;
