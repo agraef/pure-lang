@@ -1659,16 +1659,19 @@ void interpreter::exec(expr *x)
 {
   last.clear();
   if (result) pure_free(result); result = 0;
+  // Keep a copy of the original expression, so that we can give proper
+  // diagnostics below.
+  expr y = *x;
   pure_expr *e, *res = eval(*x, e);
   if ((verbose&verbosity::defs) != 0) cout << *x << ";\n";
   if (!res) {
     ostringstream msg;
     if (e) {
       msg << "unhandled exception '" << e << "' while evaluating '"
-	  << *x << "'";
+	  << y << "'";
       pure_free(e);
     } else
-      msg << "unhandled exception while evaluating '" << *x << "'";
+      msg << "unhandled exception while evaluating '" << y << "'";
     throw err(msg.str());
   }
   result = pure_new(res);
@@ -1683,6 +1686,9 @@ void interpreter::exec(expr *x)
 void interpreter::define(rule *r)
 {
   last.clear();
+  // Keep a copy of the original rule, so that we can give proper
+  // diagnostics below.
+  expr lhs = r->lhs, rhs = r->rhs;
   pure_expr *e, *res = defn(r->lhs, r->rhs, e);
   if ((verbose&verbosity::defs) != 0)
     cout << "let " << r->lhs << " = " << r->rhs << ";\n";
@@ -1690,11 +1696,11 @@ void interpreter::define(rule *r)
     ostringstream msg;
     if (e) {
       msg << "unhandled exception '" << e << "' while evaluating '"
-	  << "let " << r->lhs << " = " << r->rhs << "'";
+	  << "let " << lhs << " = " << rhs << "'";
       pure_free(e);
     } else
       msg << "failed match while evaluating '"
-	  << "let " << r->lhs << " = " << r->rhs << "'";
+	  << "let " << lhs << " = " << rhs << "'";
     throw err(msg.str());
   }
   delete r;
@@ -1706,6 +1712,9 @@ void interpreter::define(rule *r)
 void interpreter::define_const(rule *r)
 {
   last.clear();
+  // Keep a copy of the original rule, so that we can give proper
+  // diagnostics below.
+  expr lhs = r->lhs, rhs = r->rhs;
   pure_expr *e, *res = const_defn(r->lhs, r->rhs, e);
   if ((verbose&verbosity::defs) != 0)
     cout << "const " << r->lhs << " = " << r->rhs << ";\n";
@@ -1713,11 +1722,11 @@ void interpreter::define_const(rule *r)
     ostringstream msg;
     if (e) {
       msg << "unhandled exception '" << e << "' while evaluating '"
-	  << "const " << r->lhs << " = " << r->rhs << "'";
+	  << "const " << lhs << " = " << rhs << "'";
       pure_free(e);
     } else
       msg << "failed match while evaluating '"
-	  << "const " << r->lhs << " = " << r->rhs << "'";
+	  << "const " << lhs << " = " << rhs << "'";
     throw err(msg.str());
   }
   delete r;
