@@ -1,0 +1,66 @@
+
+/* An alternative implementation of Lisp's quasiquote. 2009-05-26 AG. */
+
+/* This is an implemention of Lisp's quasiquote as a macro, which has the
+   advantage that quasiquoted expressions are (mostly) expanded at compile
+   time. However, this also means that nested quasiquotes are expanded in one
+   go, which produces somewhat less readable results than the implementation
+   in quasiquote.pure, which only expands the outermost quasiquote level.
+
+   E.g., the macro implementation produces:
+
+   > `(a (`(b (,$(1+2)) (,$(foo (,$(1+3)) d)) e)) f);
+   a (quote b (1+2) (foo 4 d) (quote e)) f
+
+   Conversely, the implementation in quasiquote.pure yields:
+
+   > `(a ('`(b (,$(1+2)) (,$(foo (,$(1+3)) d)) e)) f);
+   a (quasiquote (b (unquote (1+2)) (unquote (foo 4 d)) e)) f
+
+   Note that both forms yield the same result 'a (b 3 (foo 4 d) e) f' when
+   evaluated. */
+
+prefix 9 ` ,$ ,@ ;
+def (`) = quasiquote; def (,$) = unquote; def (,@) = splice;
+
+/* Note that we have to deal with both the normalized and the literal forms of
+   embedded instances of quasiquote, unquote and splice here, as these forms
+   may occur unevaluated inside quoted subterms. */
+
+def quasiquote (quasiquote x)	= quasiquote (quasiquote x);
+def quasiquote (`x)		= quasiquote (quasiquote x);
+def quasiquote (unquote x)	= x;
+def quasiquote (,$x)		= x;
+def quasiquote (splice x)	= case x of
+				    x = foldl1 ($) x if listp x;
+				      = throw (bad_list_value x);
+				  end;
+def quasiquote (,@x)		= quasiquote (splice x);
+def quasiquote (f@_ (splice x))	= case x of
+				    x = foldl ($) (quasiquote f) x if listp x;
+				      = throw (bad_list_value x);
+				  end;
+def quasiquote (f@_ (,@x))	= quasiquote (f (splice x));
+def quasiquote (f@_ x)		= quasiquote f (quasiquote x);
+def quasiquote x::matrix	= map qq (quote x) with
+				    qq (unquote x) = eval x;
+				    qq (f@_ x)     = qq f (qq x);
+				    qq x::matrix   = map qq x;
+				    qq x           = x;
+				  end;
+def quasiquote x		= quote x;
+
+/* Here are a few examples (same as in quasiquote.pure). */
+
+`foo 1 2 (,$(3/4)) (5/6);
+
+'foo 1 2 x (5/6) when x = 3/4 end;
+
+`foo 1 2 (,@'[2/3,3/4]) (5/6);
+
+`foo 1 2 (,@'x) (5/6) when x = '[2/3,3/4] end;
+
+`(,@'[foo,2/3,3/4]) (5/6);
+
+let x = `(a (`(b (,$(1+2)) (,$(foo (,$(1+3)) d)) e)) f);
+x; eval x;
