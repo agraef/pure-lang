@@ -762,18 +762,7 @@ time. For instance::
   4180.0
 
 This facility should be well familiar to Lisp programmers. However, there are
-some notable differences:
-
-* Local variables (i.e., variables bound by the left-hand side of an equation,
-  a lambda expression or the ``when`` construct) can never be quoted, so the
-  corresponding value gets substituted even into quoted expressions. Thus,
-  e.g., ``'(2*42+2^n) when n = 12 end`` evaluates to ``2*42+2^12`` rather than
-  ``2*42+2^n``.
-
-* Only simple expressions can be quoted in Pure. Special constructs embedded
-  in a quoted expression, such as conditionals and local bindings, are
-  evaluated as usual. For instance, ``'(2*42+(2^n when n = 2*6 end))``
-  evaluates to ``2*42+4096.0``.
+some notable differences and pitfalls, please see `The Quote`_ in the `Caveats and Notes`_ section for details and more examples.
 
 Toplevel
 --------
@@ -1547,7 +1536,7 @@ Macros can also be recursive, in which case they usually consist of multiple
 rules and make use of pattern-matching like ordinary function definitions. As
 a simple example, let's implement a Pure version of Lisp's quasiquote which
 allows you to create a quoted expression from a "template" while substituting
-variable parts of the tempate. (For the sake of brevity, our definition is
+variable parts of the template. (For the sake of brevity, our definition is
 somewhat simplified and does not cover some corner cases. See the Pure
 distribution for a full version of this example.)
 
@@ -3835,6 +3824,83 @@ still be used if you pass them around as function values or in partial
 applications, but in this case they lose all their special call-by-name
 argument processing.
 
+The Quote
+---------
+
+Like in Lisp, the ``quote`` special form can be used to construct literal
+expressions which can then be manipulated before actually evaluating them
+using the built-in ``eval`` function. However, there are some notable
+differences to the Lisp version of ``quote``:
+
+* Local variables (i.e., variables bound by the left-hand side of an equation,
+  a lambda expression or the ``when`` construct) can never be quoted, so the
+  corresponding value gets substituted even into quoted expressions. Thus,
+  e.g., ``'(2*42+2^n) when n = 12 end`` evaluates to ``2*42+2^12`` rather than
+  ``2*42+2^n``.
+
+* Only simple expressions can be quoted in Pure. Special constructs embedded
+  in a quoted expression, such as conditionals and local bindings, are
+  evaluated as usual. For instance, ``'(2*42+(2^n when n = 2*6 end))``
+  evaluates to ``2*42+4096.0`` rather than quoting the embedded ``when``
+  expression.
+
+While it's possible to define a Lisp-like ``quasiquote`` in Pure (see
+`Recursive Macros`_ for a simplified version, a full implementation can be
+found in the Pure library sources), it's usually not needed. As discussed
+above, substitution of local variables is performed even in quoted
+expressions, so that it is quite easy to fill in variable parts in a quoted
+"template" expression. For instance::
+
+  > (\x -> '(2*x+1)) 99;
+  2*99+1
+  > foo x = '(2*x+1);
+  > foo 99; foo $ '(7/y);
+  2*99+1
+  2*(7/y)+1
+
+In fact, it is possible to perform arbitrary computations right in the middle
+of a quoted expression, using lambdas or one of the special
+``if``-``then``-``else``, ``case``, ``when`` and ``with`` expressions, since
+these are never quoted either. Example::
+
+  > '(\x->x+1) (2*3);
+  2*3+1
+
+Another useful feature of Lisp's ``quasiquote`` is the capability to splice
+arguments into a function application. It is possible to achieve pretty much
+the same in Pure with the following variation of the ``$`` operator which
+"curries" its second (tuple) operand::
+
+  infixr 0 $@ ;
+  f $@ ()     = f;
+  f $@ (x,xs) = f x $@ xs;
+  f $@ x      = f x;
+
+Now you can write, e.g.::
+
+  > '(foo 1 2) $@ '(2/3,3/4);
+  foo 1 2 (2/3) (3/4)
+
+One shortcoming of Pure's ``quote`` is that there is no way to quote special
+constructs such as lambdas. But it is possible to work around this limitation
+by defining a custom special form to be used as a symbolic representation for,
+say, a lambda expression, which reduces to a real lambda when evaluated. To
+these ends, the ``eval`` function can be invoked with a string argument as
+follows::
+
+  def lambda x y = eval $ "\\ "+str ('x)+" -> "+str ('y);
+
+Example::
+
+  > let l = 'lambda x (x+1); l;
+  lambda x (x+1)
+  > let f = eval l; f; f 9;
+  #<closure 0x7fdc3ca45be8>
+  10
+
+Other special constructs, such as ``case``, ``when`` and ``with`` can be
+handled in a similar fashion.
+
 Laziness
 --------
 
@@ -3888,7 +3954,8 @@ like ``clear``, ``save`` and ``show``, which enable you to inspect and modify
 the running program. The only "canonical" way to represent an entire Pure
 program in Pure itself is the program text, hence ``evalcmd`` only provides a
 textual interface at this time. But of course custom higher-level
-representations can be built on top of that.
+representations can be built on top of that, similar to those discussed in
+section `The Quote`_.
 
 Here's an example showing what can be done using the ``show`` command and a
 little bit of trivial text processing. The following ``sym_info`` function

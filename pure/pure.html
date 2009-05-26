@@ -382,15 +382,16 @@ the description of the standard library operations.</p>
 <li><a class="reference internal" href="#constant-definitions" id="id55">13.11&nbsp;&nbsp;&nbsp;Constant Definitions</a></li>
 <li><a class="reference internal" href="#external-c-functions" id="id56">13.12&nbsp;&nbsp;&nbsp;External C Functions</a></li>
 <li><a class="reference internal" href="#id2" id="id57">13.13&nbsp;&nbsp;&nbsp;Special Forms</a></li>
-<li><a class="reference internal" href="#laziness" id="id58">13.14&nbsp;&nbsp;&nbsp;Laziness</a></li>
-<li><a class="reference internal" href="#reflection" id="id59">13.15&nbsp;&nbsp;&nbsp;Reflection</a></li>
-<li><a class="reference internal" href="#stack-size-and-tail-recursion" id="id60">13.16&nbsp;&nbsp;&nbsp;Stack Size and Tail Recursion</a></li>
-<li><a class="reference internal" href="#handling-of-asynchronous-signals" id="id61">13.17&nbsp;&nbsp;&nbsp;Handling of Asynchronous Signals</a></li>
+<li><a class="reference internal" href="#the-quote" id="id58">13.14&nbsp;&nbsp;&nbsp;The Quote</a></li>
+<li><a class="reference internal" href="#laziness" id="id59">13.15&nbsp;&nbsp;&nbsp;Laziness</a></li>
+<li><a class="reference internal" href="#reflection" id="id60">13.16&nbsp;&nbsp;&nbsp;Reflection</a></li>
+<li><a class="reference internal" href="#stack-size-and-tail-recursion" id="id61">13.17&nbsp;&nbsp;&nbsp;Stack Size and Tail Recursion</a></li>
+<li><a class="reference internal" href="#handling-of-asynchronous-signals" id="id62">13.18&nbsp;&nbsp;&nbsp;Handling of Asynchronous Signals</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#copying" id="id62">14&nbsp;&nbsp;&nbsp;Copying</a></li>
-<li><a class="reference internal" href="#author" id="id63">15&nbsp;&nbsp;&nbsp;Author</a></li>
-<li><a class="reference internal" href="#see-also" id="id64">16&nbsp;&nbsp;&nbsp;See Also</a></li>
+<li><a class="reference internal" href="#copying" id="id63">14&nbsp;&nbsp;&nbsp;Copying</a></li>
+<li><a class="reference internal" href="#author" id="id64">15&nbsp;&nbsp;&nbsp;Author</a></li>
+<li><a class="reference internal" href="#see-also" id="id65">16&nbsp;&nbsp;&nbsp;See Also</a></li>
 </ul>
 </div>
 <div class="section" id="introduction">
@@ -1043,18 +1044,7 @@ time. For instance:</p>
 4180.0
 </pre>
 <p>This facility should be well familiar to Lisp programmers. However, there are
-some notable differences:</p>
-<ul class="simple">
-<li>Local variables (i.e., variables bound by the left-hand side of an equation,
-a lambda expression or the <tt class="docutils literal"><span class="pre">when</span></tt> construct) can never be quoted, so the
-corresponding value gets substituted even into quoted expressions. Thus,
-e.g., <tt class="docutils literal"><span class="pre">'(2*42+2^n)</span> <span class="pre">when</span> <span class="pre">n</span> <span class="pre">=</span> <span class="pre">12</span> <span class="pre">end</span></tt> evaluates to <tt class="docutils literal"><span class="pre">2*42+2^12</span></tt> rather than
-<tt class="docutils literal"><span class="pre">2*42+2^n</span></tt>.</li>
-<li>Only simple expressions can be quoted in Pure. Special constructs embedded
-in a quoted expression, such as conditionals and local bindings, are
-evaluated as usual. For instance, <tt class="docutils literal"><span class="pre">'(2*42+(2^n</span> <span class="pre">when</span> <span class="pre">n</span> <span class="pre">=</span> <span class="pre">2*6</span> <span class="pre">end))</span></tt>
-evaluates to <tt class="docutils literal"><span class="pre">2*42+4096.0</span></tt>.</li>
-</ul>
+some notable differences and pitfalls, please see <a class="reference internal" href="#the-quote">The Quote</a> in the <a class="reference internal" href="#caveats-and-notes">Caveats and Notes</a> section for details and more examples.</p>
 </div>
 <div class="section" id="toplevel">
 <h2><a class="toc-backref" href="#id18">3.6&nbsp;&nbsp;&nbsp;Toplevel</a></h2>
@@ -1796,7 +1786,7 @@ to write a macro which descends recursively into the lambda argument of
 rules and make use of pattern-matching like ordinary function definitions. As
 a simple example, let's implement a Pure version of Lisp's quasiquote which
 allows you to create a quoted expression from a &quot;template&quot; while substituting
-variable parts of the tempate. (For the sake of brevity, our definition is
+variable parts of the template. (For the sake of brevity, our definition is
 somewhat simplified and does not cover some corner cases. See the Pure
 distribution for a full version of this example.)</p>
 <pre class="literal-block">
@@ -3944,8 +3934,83 @@ still be used if you pass them around as function values or in partial
 applications, but in this case they lose all their special call-by-name
 argument processing.</p>
 </div>
+<div class="section" id="the-quote">
+<h2><a class="toc-backref" href="#id58">13.14&nbsp;&nbsp;&nbsp;The Quote</a></h2>
+<p>Like in Lisp, the <tt class="docutils literal"><span class="pre">quote</span></tt> special form can be used to construct literal
+expressions which can then be manipulated before actually evaluating them
+using the built-in <tt class="docutils literal"><span class="pre">eval</span></tt> function. However, there are some notable
+differences to the Lisp version of <tt class="docutils literal"><span class="pre">quote</span></tt>:</p>
+<ul class="simple">
+<li>Local variables (i.e., variables bound by the left-hand side of an equation,
+a lambda expression or the <tt class="docutils literal"><span class="pre">when</span></tt> construct) can never be quoted, so the
+corresponding value gets substituted even into quoted expressions. Thus,
+e.g., <tt class="docutils literal"><span class="pre">'(2*42+2^n)</span> <span class="pre">when</span> <span class="pre">n</span> <span class="pre">=</span> <span class="pre">12</span> <span class="pre">end</span></tt> evaluates to <tt class="docutils literal"><span class="pre">2*42+2^12</span></tt> rather than
+<tt class="docutils literal"><span class="pre">2*42+2^n</span></tt>.</li>
+<li>Only simple expressions can be quoted in Pure. Special constructs embedded
+in a quoted expression, such as conditionals and local bindings, are
+evaluated as usual. For instance, <tt class="docutils literal"><span class="pre">'(2*42+(2^n</span> <span class="pre">when</span> <span class="pre">n</span> <span class="pre">=</span> <span class="pre">2*6</span> <span class="pre">end))</span></tt>
+evaluates to <tt class="docutils literal"><span class="pre">2*42+4096.0</span></tt> rather than quoting the embedded <tt class="docutils literal"><span class="pre">when</span></tt>
+expression.</li>
+</ul>
+<p>While it's possible to define a Lisp-like <tt class="docutils literal"><span class="pre">quasiquote</span></tt> in Pure (see
+<a class="reference internal" href="#recursive-macros">Recursive Macros</a> for a simplified version, a full implementation can be
+found in the Pure library sources), it's usually not needed. As discussed
+above, substitution of local variables is performed even in quoted
+expressions, so that it is quite easy to fill in variable parts in a quoted
+&quot;template&quot; expression. For instance:</p>
+<pre class="literal-block">
+&gt; (\x -&gt; '(2*x+1)) 99;
+2*99+1
+&gt; foo x = '(2*x+1);
+&gt; foo 99; foo $ '(7/y);
+2*99+1
+2*(7/y)+1
+</pre>
+<p>In fact, it is possible to perform arbitrary computations right in the middle
+of a quoted expression, using lambdas or one of the special
+<tt class="docutils literal"><span class="pre">if</span></tt>-<tt class="docutils literal"><span class="pre">then</span></tt>-<tt class="docutils literal"><span class="pre">else</span></tt>, <tt class="docutils literal"><span class="pre">case</span></tt>, <tt class="docutils literal"><span class="pre">when</span></tt> and <tt class="docutils literal"><span class="pre">with</span></tt> expressions, since
+these are never quoted either. Example:</p>
+<pre class="literal-block">
+&gt; '(\x-&gt;x+1) (2*3);
+2*3+1
+</pre>
+<p>Another useful feature of Lisp's <tt class="docutils literal"><span class="pre">quasiquote</span></tt> is the capability to splice
+arguments into a function application. It is possible to achieve pretty much
+the same in Pure with the following variation of the <tt class="docutils literal"><span class="pre">$</span></tt> operator which
+&quot;curries&quot; its second (tuple) operand:</p>
+<pre class="literal-block">
+infixr 0 $&#64; ;
+f $&#64; ()     = f;
+f $&#64; (x,xs) = f x $&#64; xs;
+f $&#64; x      = f x;
+</pre>
+<p>Now you can write, e.g.:</p>
+<pre class="literal-block">
+&gt; '(foo 1 2) $&#64; '(2/3,3/4);
+foo 1 2 (2/3) (3/4)
+</pre>
+<p>One shortcoming of Pure's <tt class="docutils literal"><span class="pre">quote</span></tt> is that there is no way to quote special
+constructs such as lambdas. But it is possible to work around this limitation
+by defining a custom special form to be used as a symbolic representation for,
+say, a lambda expression, which reduces to a real lambda when evaluated. To
+these ends, the <tt class="docutils literal"><span class="pre">eval</span></tt> function can be invoked with a string argument as
+follows:</p>
+<pre class="literal-block">
+def lambda x y = eval $ &quot;\\ &quot;+str ('x)+&quot; -&gt; &quot;+str ('y);
+</pre>
+<p>Example:</p>
+<pre class="literal-block">
+&gt; let l = 'lambda x (x+1); l;
+lambda x (x+1)
+&gt; let f = eval l; f; f 9;
+#&lt;closure 0x7fdc3ca45be8&gt;
+10
+</pre>
+<p>Other special constructs, such as <tt class="docutils literal"><span class="pre">case</span></tt>, <tt class="docutils literal"><span class="pre">when</span></tt> and <tt class="docutils literal"><span class="pre">with</span></tt> can be
+handled in a similar fashion.</p>
+</div>
 <div class="section" id="laziness">
-<h2><a class="toc-backref" href="#id58">13.14&nbsp;&nbsp;&nbsp;Laziness</a></h2>
+<h2><a class="toc-backref" href="#id59">13.15&nbsp;&nbsp;&nbsp;Laziness</a></h2>
 <p>Pure does lazy evaluation in the same way as <a class="reference internal" href="#alice-ml">Alice ML</a>, providing an
 explicit operation (<tt class="docutils literal"><span class="pre">&amp;</span></tt>) to defer evaluation and create a &quot;future&quot; which is
 called by need. However, note that like any language with a basically eager
@@ -3986,14 +4051,15 @@ the prelude for an example showing how to do this.</li>
 </ul>
 </div>
 <div class="section" id="reflection">
-<h2><a class="toc-backref" href="#id59">13.15&nbsp;&nbsp;&nbsp;Reflection</a></h2>
+<h2><a class="toc-backref" href="#id60">13.16&nbsp;&nbsp;&nbsp;Reflection</a></h2>
 <p>Pure versions since 0.12 offer some basic reflection capabilities via the
 <tt class="docutils literal"><span class="pre">evalcmd</span></tt> primitive. This function provides access to interactive commands
 like <tt class="docutils literal"><span class="pre">clear</span></tt>, <tt class="docutils literal"><span class="pre">save</span></tt> and <tt class="docutils literal"><span class="pre">show</span></tt>, which enable you to inspect and modify
 the running program. The only &quot;canonical&quot; way to represent an entire Pure
 program in Pure itself is the program text, hence <tt class="docutils literal"><span class="pre">evalcmd</span></tt> only provides a
 textual interface at this time. But of course custom higher-level
-representations can be built on top of that.</p>
+representations can be built on top of that, similar to those discussed in
+section <a class="reference internal" href="#the-quote">The Quote</a>.</p>
 <p>Here's an example showing what can be done using the <tt class="docutils literal"><span class="pre">show</span></tt> command and a
 little bit of trivial text processing. The following <tt class="docutils literal"><span class="pre">sym_info</span></tt> function
 retrieves information about a given collection of global symbols in a way
@@ -4037,7 +4103,7 @@ end;
 </pre>
 </div>
 <div class="section" id="stack-size-and-tail-recursion">
-<h2><a class="toc-backref" href="#id60">13.16&nbsp;&nbsp;&nbsp;Stack Size and Tail Recursion</a></h2>
+<h2><a class="toc-backref" href="#id61">13.17&nbsp;&nbsp;&nbsp;Stack Size and Tail Recursion</a></h2>
 <p>Pure programs may need a considerable amount of stack space to handle
 recursive function and macro calls, and the interpreter itself also takes its
 toll. So you should configure your system accordingly (8 MB of stack space is
@@ -4084,7 +4150,7 @@ means that you should always run your program without -g when the debugger is
 not needed.</p>
 </div>
 <div class="section" id="handling-of-asynchronous-signals">
-<h2><a class="toc-backref" href="#id61">13.17&nbsp;&nbsp;&nbsp;Handling of Asynchronous Signals</a></h2>
+<h2><a class="toc-backref" href="#id62">13.18&nbsp;&nbsp;&nbsp;Handling of Asynchronous Signals</a></h2>
 <p>As described in section <a class="reference internal" href="#exception-handling">Exception Handling</a>, signals delivered to the
 process can be caught and handled with Pure's exception handling
 facilities. Like stack checks, checks for pending signals are only performed
@@ -4118,7 +4184,7 @@ check x = ...;
 </div>
 </div>
 <div class="section" id="copying">
-<h1><a class="toc-backref" href="#id62">14&nbsp;&nbsp;&nbsp;Copying</a></h1>
+<h1><a class="toc-backref" href="#id63">14&nbsp;&nbsp;&nbsp;Copying</a></h1>
 <p>Pure is free software: you can redistribute it and/or modify it under the
 terms of the GNU General Public License as published by the Free Software
 Foundation, either version 3 of the License, or (at your option) any later
@@ -4129,12 +4195,12 @@ A PARTICULAR PURPOSE. See the <a class="reference external" href="http://www.gnu
 GPL in the COPYING file accompanying the software.)</p>
 </div>
 <div class="section" id="author">
-<h1><a class="toc-backref" href="#id63">15&nbsp;&nbsp;&nbsp;Author</a></h1>
+<h1><a class="toc-backref" href="#id64">15&nbsp;&nbsp;&nbsp;Author</a></h1>
 <p>Albert Graef &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;, Dept. of Computer Music, Johannes
 Gutenberg University of Mainz, Germany.</p>
 </div>
 <div class="section" id="see-also">
-<h1><a class="toc-backref" href="#id64">16&nbsp;&nbsp;&nbsp;See Also</a></h1>
+<h1><a class="toc-backref" href="#id65">16&nbsp;&nbsp;&nbsp;See Also</a></h1>
 <dl class="docutils" id="aardappel">
 <dt>Aardappel</dt>
 <dd>Another functional programming language based on term rewriting,
