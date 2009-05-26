@@ -71,7 +71,9 @@ end;
 
 /* In fact, you can also achieve the same by just substituting a local
    variable into a normal quoted expression. This works in Pure, because in
-   difference to Lisp a local variable is never quoted. */
+   difference to Lisp a local variable is never quoted, rather its value is
+   always substituted directly into the quoted expression without any further
+   ado. */
 
 'foo 1 2 x (5/6) when x = 3/4 end;
 
@@ -81,13 +83,12 @@ end;
 
 `foo 1 2 (,@'[2/3,3/4]) (5/6);
 
-/* You can also splice a list in a local variable. The following example
-   computes the same value as above. Note, however, that since local variables
-   can never be quoted, in difference to Lisp the *value* of the variable gets
-   evaluated, not the variable itself. Hence an extra quote is needed on the
-   value x to make one quote go through. */
+/* The following example computes the same value as above, but takes the
+   spliced value from a local variable. Note again that the variable x can't
+   be quoted, thus the extra quote before the spliced value is needed to
+   inhibit its evaluation. */
 
-`foo 1 2 (,@x) (5/6) when x = ''[2/3,3/4] end;
+`foo 1 2 (,@'x) (5/6) when x = '[2/3,3/4] end;
 
 /* It's also possible to splice a list as the head of a function application.
    This example yields 'foo (2/3) (3/4) (5/6)'. */
