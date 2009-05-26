@@ -2466,7 +2466,7 @@ expr interpreter::fsubst(const env& funs, expr x, uint8_t idx)
   }
 }
 
-expr interpreter::csubst(expr x)
+expr interpreter::csubst(expr x, bool quote)
 {
   if (x.is_null()) return x;
   switch (x.tag()) {
@@ -2488,14 +2488,25 @@ expr interpreter::csubst(expr x)
       exprl& vs = us->back();
       for (exprl::iterator ys = xs->begin(), end = xs->end();
 	   ys != end; ys++) {
-	vs.push_back(csubst(*ys));
+	vs.push_back(csubst(*ys, quote));
       }
     }
     return expr(EXPR::MATRIX, us);
   }
   // application:
   case EXPR::APP:
-    if (x.xval1().tag() == symtab.amp_sym().f) {
+    if (quote) {
+      expr u = csubst(x.xval1(), true),
+	v = csubst(x.xval2(), true);
+      expr w = expr(u, v);
+      // promote type tags
+      expr f; uint32_t n = count_args(w, f);
+      if (n == 1)
+	promote_ttags(f, w, w.xval2());
+      else if (n == 2)
+	promote_ttags(f, w, w.xval1().xval2(), w.xval2());
+      return w;
+    } else if (x.xval1().tag() == symtab.amp_sym().f) {
       expr v = csubst(x.xval2());
       return expr(symtab.amp_sym().x, v);
     } else if (x.xval1().tag() == EXPR::APP &&
@@ -2505,7 +2516,7 @@ expr interpreter::csubst(expr x)
       return expr(symtab.catch_sym().x, u, v);
     } else {
       expr u = csubst(x.xval1()),
-	v = (u.tag() == symtab.quote_sym().f)?x.xval2():csubst(x.xval2());
+	v = csubst(x.xval2(), (u.tag() == symtab.quote_sym().f));
       expr w = expr(u, v);
       // promote type tags
       expr f; uint32_t n = count_args(w, f);
@@ -2573,13 +2584,17 @@ expr interpreter::csubst(expr x)
   }
   default:
     assert(x.tag() > 0);
-    const symbol& sym = symtab.sym(x.tag());
-    env::const_iterator it = globenv.find(sym.f);
-    if (it != globenv.end() && it->second.t == env_info::cvar)
-      // substitute constant value
-      return *it->second.cval;
-    else
+    if (quote)
       return x;
+    else {
+      const symbol& sym = symtab.sym(x.tag());
+      env::const_iterator it = globenv.find(sym.f);
+      if (it != globenv.end() && it->second.t == env_info::cvar)
+	// substitute constant value
+	return *it->second.cval;
+      else
+	return x;
+    }
   }
 }
 
@@ -2660,7 +2675,7 @@ expr interpreter::lcsubst(expr x)
    cannot represent special kinds of expressions like anonymous closures, with
    and when clauses, etc.) */
 
-expr interpreter::macsubst(expr x)
+expr interpreter::macsubst(expr x, bool quote)
 {
   char test;
   if (x.is_null()) return x;
@@ -2685,17 +2700,17 @@ expr interpreter::macsubst(expr x)
       exprl& vs = us->back();
       for (exprl::iterator ys = xs->begin(), end = xs->end();
 	   ys != end; ys++) {
-	vs.push_back(macsubst(*ys));
+	vs.push_back(macsubst(*ys, quote));
       }
     }
     return expr(EXPR::MATRIX, us);
   }
   // application:
   case EXPR::APP: {
-    expr u = macsubst(x.xval1()),
-      v = (u.tag() == symtab.quote_sym().f)?x.xval2():macsubst(x.xval2());
+    expr u = macsubst(x.xval1(), quote),
+      v = macsubst(x.xval2(), quote || (u.tag() == symtab.quote_sym().f));
     expr w = expr(u, v);
-    return macval(w);
+    return quote?w:macval(w);
   }
   // conditionals:
   case EXPR::COND: {
@@ -2755,7 +2770,7 @@ expr interpreter::macsubst(expr x)
   }
   default:
     assert(x.tag() > 0);
-    return macval(x);
+    return quote?x:macval(x);
   }
 }
 
