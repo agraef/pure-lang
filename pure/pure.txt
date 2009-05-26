@@ -673,14 +673,14 @@ Operators and Precedence
 ------------------------
 
 Expressions are parsed according to the following precedence rules: Lambda
-binds most weakly, followed by when, with and case, followed by conditional
-expressions (``if``-``then``-``else``), followed by the simple expressions,
-i.e., all other kinds of expressions involving operators, function
-applications, constants, symbols and other primary expressions. Precedence and
-associativity of operator symbols are given by their declarations (in the
-prelude or the user's program), and function application binds stronger than
-all operators. Parentheses can be used to override default precedences and
-associativities as usual.
+binds most weakly, followed by ``when``, ``with`` and ``case``, followed by
+conditional expressions (``if``-``then``-``else``), followed by the simple
+expressions, i.e., all other kinds of expressions involving operators,
+function applications, constants, symbols and other primary
+expressions. Precedence and associativity of operator symbols are given by
+their declarations (in the prelude or the user's program), and function
+application binds stronger than all operators. Parentheses can be used to
+override default precedences and associativities as usual.
 
 The common operator symbols like ``+``, ``-``, ``*``, ``/`` etc. are all
 declared at the beginning of the prelude, see the prelude.pure script for a
@@ -750,25 +750,30 @@ objects; further details and examples can be found in the Examples_ section
 below.
 
 Last but not least, the special form ``quote`` quotes an expression, i.e.,
-``quote x`` returns just ``x`` itself without evaluating it. The runtime
-provides a function ``eval`` which can be used to evaluate the quoted
-expression at a later time. For instance::
+``quote x`` returns just ``x`` itself without evaluating it. For convenience,
+the prelude defines the single quote ``'`` as an alias for ``quote``, so
+instead of ``quote x`` you can also write ``'x``. The prelude also provides a
+function ``eval`` which can be used to evaluate a quoted expression at a later
+time. For instance::
 
-  > let x = quote (2*42+2^12); x;
+  > let x = '(2*42+2^12); x;
   2*42+2^12
   > eval x;
   4180.0
 
-This facility should be well familiar to Lisp programmers. Note that only
-simple expressions can be quoted in Pure, special constructs such as
-conditionals and local bindings will be evaluated as usual. This allows you to
-forcibly evaluate parts of a quoted expression, as in the following example::
+This facility should be well familiar to Lisp programmers. However, there are
+some notable differences:
 
-  > quote (2*42+(2^n when n = 2*6 end));
-  2*42+4096.0
+* Local variables (i.e., variables bound by the left-hand side of an equation,
+  a lambda expression or the ``when`` construct) can never be quoted, so the
+  corresponding value gets substituted even into quoted expressions. Thus,
+  e.g., ``'(2*42+2^n) when n = 12 end`` evaluates to ``2*42+2^12`` rather than
+  ``2*42+2^n``.
 
-In addition, a Lisp-like "quasiquote" is provided in the prelude; see the
-Macros_ section for details.
+* Only simple expressions can be quoted in Pure. Special constructs embedded
+  in a quoted expression, such as conditionals and local bindings, are
+  evaluated as usual. For instance, ``'(2*42+(2^n when n = 2*6 end))``
+  evaluates to ``2*42+4096.0``.
 
 Toplevel
 --------
@@ -1540,8 +1545,13 @@ Recursive Macros
 
 Macros can also be recursive, in which case they usually consist of multiple
 rules and make use of pattern-matching like ordinary function definitions. As
-a simple example, let's have a look at Pure's version of Lisp's quasiquote
-from the prelude::
+a simple example, let's implement a Pure version of Lisp's quasiquote which
+allows you to create a quoted expression from a "template" while substituting
+variable parts of the tempate. (For the sake of brevity, our definition is
+somewhat simplified and does not cover some corner cases. See the Pure
+distribution for a full version of this example.)
+
+::
 
   def quasiquote (unquote x)      = x;
   def quasiquote (f@_ (splice x)) = foldl ($) (quasiquote f)
@@ -1563,32 +1573,32 @@ the real work is done by ``quasiquote``, using ``foldl`` at runtime to
 actually perform the splicing. (Putting off the splicing until runtime makes
 it possible to splice argument lists computed at runtime.)
 
-If we want, we can also add some syntactic sugar for Lisp weenies. (This isn't
-in the prelude, so you'll have to define it yourself. Also note that we cannot
-have ``,`` for unquoting, so we use ``,,`` instead.)
+If we want, we can also add some syntactic sugar for Lisp weenies. (Note that
+we cannot have ``,`` for unquoting, so we use ``,$`` instead.)
 
 ::
 
-  prefix 9 ` ,, ,@ ;
-  def ‘x = quasiquote x; def ,,x = unquote x; def ,@x = splice x;
+  prefix 9 ` ,$ ,@ ;
+  def `x = quasiquote x; def ,$x = unquote x; def ,@x = splice x;
 
 Examples::
 
   > `(2*42+2^12);
   2*42+2^12
-  > `(2*42+,,(2^12));
+  > `(2*42+,$(2^12));
   2*42+4096.0
-  > `foo 1 2 (,@[2/3,3/4]) (5/6);
+  > `foo 1 2 (,@'[2/3,3/4]) (5/6);
   foo 1 2 (2/3) (3/4) (5/6)
-  > `foo 1 2 (,@args) (5/6) when args = quote [2/3,3/4] end;
+  > `foo 1 2 (,@'args) (5/6) when args = '[2/3,3/4] end;
   foo 1 2 (2/3) (3/4) (5/6)
 
-Note that, technically, Pure macros are just as powerful as (unconditional)
-term rewriting systems and thus they are Turing-complete. This implies that a
-badly written macro may well send the Pure compiler into an infinite
-recursion, which results in a stack overflow at compile time. See the `Caveats
-and Notes`_ section at the end of this manual for information on how to deal
-with these by setting the PURE_STACK environment variable.
+We mention in passing here that, technically, Pure macros are just as powerful
+as (unconditional) term rewriting systems and thus they are
+Turing-complete. This implies that a badly written macro may well send the
+Pure compiler into an infinite recursion, which results in a stack overflow at
+compile time. See the `Caveats and Notes`_ section at the end of this manual
+for information on how to deal with these by setting the PURE_STACK
+environment variable.
 
 User-Defined Special Forms
 --------------------------
@@ -2317,9 +2327,6 @@ probably used most frequently:
     The size (number of elements) of the list, tuple, matrix or string
     ``x``. In addition, ``dim x`` yields the dimensions (number of rows and
     columns) of a matrix.
-
-``x'``
-    The transpose of a matrix.
 
 ``x!y``
     This is Pure's indexing operation, which applies to lists, tuples,
@@ -3923,9 +3930,8 @@ category and description of the symbol, as provided by ``show -s``.
 E.g., this call retrieves information about all defined macros::
 
   > sym_info "m" "*";
-  [("$",($),"mac","2 args, 1 rules"),(".",(.),"mac","3 args, 1 rules"),
-  ("quasiquote",quasiquote,"mac","1 args, 4 rules"),
-  ("void",void,"mac","1 args, 3 rules")]
+  [("$",($),"mac","2 args, 1 rules"),("'",quote,"mac","0 args, 1 rules"),
+  (".",(.),"mac","3 args, 1 rules"),("void",void,"mac","1 args, 6 rules")]
 
 Stack Size and Tail Recursion
 -----------------------------

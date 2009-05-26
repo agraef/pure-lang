@@ -7,7 +7,7 @@
 <title>The Pure Manual</title>
 <meta name="author" content="Albert Graef &lt;Dr.Graef&#64;t-online.de&gt;" />
 <meta name="copyright" content="Copyright (c) 2009" />
-<meta name="date" content="2009-04-24" />
+<meta name="date" content="2009-05-26" />
 <style type="text/css">
 
 /*
@@ -297,7 +297,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Copyright:</th>
 <td>Copyright (c) 2009</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2009-04-24</td></tr>
+<td>2009-05-26</td></tr>
 </tbody>
 </table>
 <p>This document is available under the <a class="reference external" href="http://www.gnu.org/copyleft/fdl.html">GNU Free Documentation License</a>. Also see <a class="reference internal" href="#copying">Copying</a> for licensing
@@ -958,14 +958,14 @@ and the definitions may consist of as many equations as you want.</dd>
 <div class="section" id="operators-and-precedence">
 <h2><a class="toc-backref" href="#id16">3.4&nbsp;&nbsp;&nbsp;Operators and Precedence</a></h2>
 <p>Expressions are parsed according to the following precedence rules: Lambda
-binds most weakly, followed by when, with and case, followed by conditional
-expressions (<tt class="docutils literal"><span class="pre">if</span></tt>-<tt class="docutils literal"><span class="pre">then</span></tt>-<tt class="docutils literal"><span class="pre">else</span></tt>), followed by the simple expressions,
-i.e., all other kinds of expressions involving operators, function
-applications, constants, symbols and other primary expressions. Precedence and
-associativity of operator symbols are given by their declarations (in the
-prelude or the user's program), and function application binds stronger than
-all operators. Parentheses can be used to override default precedences and
-associativities as usual.</p>
+binds most weakly, followed by <tt class="docutils literal"><span class="pre">when</span></tt>, <tt class="docutils literal"><span class="pre">with</span></tt> and <tt class="docutils literal"><span class="pre">case</span></tt>, followed by
+conditional expressions (<tt class="docutils literal"><span class="pre">if</span></tt>-<tt class="docutils literal"><span class="pre">then</span></tt>-<tt class="docutils literal"><span class="pre">else</span></tt>), followed by the simple
+expressions, i.e., all other kinds of expressions involving operators,
+function applications, constants, symbols and other primary
+expressions. Precedence and associativity of operator symbols are given by
+their declarations (in the prelude or the user's program), and function
+application binds stronger than all operators. Parentheses can be used to
+override default precedences and associativities as usual.</p>
 <p>The common operator symbols like <tt class="docutils literal"><span class="pre">+</span></tt>, <tt class="docutils literal"><span class="pre">-</span></tt>, <tt class="docutils literal"><span class="pre">*</span></tt>, <tt class="docutils literal"><span class="pre">/</span></tt> etc. are all
 declared at the beginning of the prelude, see the prelude.pure script for a
 list of these. Arithmetic and relational operators mostly follow C
@@ -1031,25 +1031,30 @@ prelude defines many functions for creating and manipulating these kinds of
 objects; further details and examples can be found in the <a class="reference internal" href="#examples">Examples</a> section
 below.</p>
 <p>Last but not least, the special form <tt class="docutils literal"><span class="pre">quote</span></tt> quotes an expression, i.e.,
-<tt class="docutils literal"><span class="pre">quote</span> <span class="pre">x</span></tt> returns just <tt class="docutils literal"><span class="pre">x</span></tt> itself without evaluating it. The runtime
-provides a function <tt class="docutils literal"><span class="pre">eval</span></tt> which can be used to evaluate the quoted
-expression at a later time. For instance:</p>
+<tt class="docutils literal"><span class="pre">quote</span> <span class="pre">x</span></tt> returns just <tt class="docutils literal"><span class="pre">x</span></tt> itself without evaluating it. For convenience,
+the prelude defines the single quote <tt class="docutils literal"><span class="pre">'</span></tt> as an alias for <tt class="docutils literal"><span class="pre">quote</span></tt>, so
+instead of <tt class="docutils literal"><span class="pre">quote</span> <span class="pre">x</span></tt> you can also write <tt class="docutils literal"><span class="pre">'x</span></tt>. The prelude also provides a
+function <tt class="docutils literal"><span class="pre">eval</span></tt> which can be used to evaluate a quoted expression at a later
+time. For instance:</p>
 <pre class="literal-block">
-&gt; let x = quote (2*42+2^12); x;
+&gt; let x = '(2*42+2^12); x;
 2*42+2^12
 &gt; eval x;
 4180.0
 </pre>
-<p>This facility should be well familiar to Lisp programmers. Note that only
-simple expressions can be quoted in Pure, special constructs such as
-conditionals and local bindings will be evaluated as usual. This allows you to
-forcibly evaluate parts of a quoted expression, as in the following example:</p>
-<pre class="literal-block">
-&gt; quote (2*42+(2^n when n = 2*6 end));
-2*42+4096.0
-</pre>
-<p>In addition, a Lisp-like &quot;quasiquote&quot; is provided in the prelude; see the
-<a class="reference internal" href="#macros">Macros</a> section for details.</p>
+<p>This facility should be well familiar to Lisp programmers. However, there are
+some notable differences:</p>
+<ul class="simple">
+<li>Local variables (i.e., variables bound by the left-hand side of an equation,
+a lambda expression or the <tt class="docutils literal"><span class="pre">when</span></tt> construct) can never be quoted, so the
+corresponding value gets substituted even into quoted expressions. Thus,
+e.g., <tt class="docutils literal"><span class="pre">'(2*42+2^n)</span> <span class="pre">when</span> <span class="pre">n</span> <span class="pre">=</span> <span class="pre">12</span> <span class="pre">end</span></tt> evaluates to <tt class="docutils literal"><span class="pre">2*42+2^12</span></tt> rather than
+<tt class="docutils literal"><span class="pre">2*42+2^n</span></tt>.</li>
+<li>Only simple expressions can be quoted in Pure. Special constructs embedded
+in a quoted expression, such as conditionals and local bindings, are
+evaluated as usual. For instance, <tt class="docutils literal"><span class="pre">'(2*42+(2^n</span> <span class="pre">when</span> <span class="pre">n</span> <span class="pre">=</span> <span class="pre">2*6</span> <span class="pre">end))</span></tt>
+evaluates to <tt class="docutils literal"><span class="pre">2*42+4096.0</span></tt>.</li>
+</ul>
 </div>
 <div class="section" id="toplevel">
 <h2><a class="toc-backref" href="#id18">3.6&nbsp;&nbsp;&nbsp;Toplevel</a></h2>
@@ -1789,8 +1794,11 @@ to write a macro which descends recursively into the lambda argument of
 <h2><a class="toc-backref" href="#id27">6.2&nbsp;&nbsp;&nbsp;Recursive Macros</a></h2>
 <p>Macros can also be recursive, in which case they usually consist of multiple
 rules and make use of pattern-matching like ordinary function definitions. As
-a simple example, let's have a look at Pure's version of Lisp's quasiquote
-from the prelude:</p>
+a simple example, let's implement a Pure version of Lisp's quasiquote which
+allows you to create a quoted expression from a &quot;template&quot; while substituting
+variable parts of the tempate. (For the sake of brevity, our definition is
+somewhat simplified and does not cover some corner cases. See the Pure
+distribution for a full version of this example.)</p>
 <pre class="literal-block">
 def quasiquote (unquote x)      = x;
 def quasiquote (f&#64;_ (splice x)) = foldl ($) (quasiquote f)
@@ -1810,30 +1818,30 @@ and last rule takes care of quoting the &quot;atomic&quot; subterms. Note that
 the real work is done by <tt class="docutils literal"><span class="pre">quasiquote</span></tt>, using <tt class="docutils literal"><span class="pre">foldl</span></tt> at runtime to
 actually perform the splicing. (Putting off the splicing until runtime makes
 it possible to splice argument lists computed at runtime.)</p>
-<p>If we want, we can also add some syntactic sugar for Lisp weenies. (This isn't
-in the prelude, so you'll have to define it yourself. Also note that we cannot
-have <tt class="docutils literal"><span class="pre">,</span></tt> for unquoting, so we use <tt class="docutils literal"><span class="pre">,,</span></tt> instead.)</p>
+<p>If we want, we can also add some syntactic sugar for Lisp weenies. (Note that
+we cannot have <tt class="docutils literal"><span class="pre">,</span></tt> for unquoting, so we use <tt class="docutils literal"><span class="pre">,$</span></tt> instead.)</p>
 <pre class="literal-block">
-prefix 9 ` ,, ,&#64; ;
-def ‘x = quasiquote x; def ,,x = unquote x; def ,&#64;x = splice x;
+prefix 9 ` ,$ ,&#64; ;
+def `x = quasiquote x; def ,$x = unquote x; def ,&#64;x = splice x;
 </pre>
 <p>Examples:</p>
 <pre class="literal-block">
 &gt; `(2*42+2^12);
 2*42+2^12
-&gt; `(2*42+,,(2^12));
+&gt; `(2*42+,$(2^12));
 2*42+4096.0
-&gt; `foo 1 2 (,&#64;[2/3,3/4]) (5/6);
+&gt; `foo 1 2 (,&#64;'[2/3,3/4]) (5/6);
 foo 1 2 (2/3) (3/4) (5/6)
-&gt; `foo 1 2 (,&#64;args) (5/6) when args = quote [2/3,3/4] end;
+&gt; `foo 1 2 (,&#64;'args) (5/6) when args = '[2/3,3/4] end;
 foo 1 2 (2/3) (3/4) (5/6)
 </pre>
-<p>Note that, technically, Pure macros are just as powerful as (unconditional)
-term rewriting systems and thus they are Turing-complete. This implies that a
-badly written macro may well send the Pure compiler into an infinite
-recursion, which results in a stack overflow at compile time. See the <a class="reference internal" href="#caveats-and-notes">Caveats
-and Notes</a> section at the end of this manual for information on how to deal
-with these by setting the PURE_STACK environment variable.</p>
+<p>We mention in passing here that, technically, Pure macros are just as powerful
+as (unconditional) term rewriting systems and thus they are
+Turing-complete. This implies that a badly written macro may well send the
+Pure compiler into an infinite recursion, which results in a stack overflow at
+compile time. See the <a class="reference internal" href="#caveats-and-notes">Caveats and Notes</a> section at the end of this manual
+for information on how to deal with these by setting the PURE_STACK
+environment variable.</p>
 </div>
 <div class="section" id="user-defined-special-forms">
 <h2><a class="toc-backref" href="#id28">6.3&nbsp;&nbsp;&nbsp;User-Defined Special Forms</a></h2>
@@ -2521,8 +2529,6 @@ explained in more detail in the <a class="reference internal" href="#pure-overvi
 <dd>The size (number of elements) of the list, tuple, matrix or string
 <tt class="docutils literal"><span class="pre">x</span></tt>. In addition, <tt class="docutils literal"><span class="pre">dim</span> <span class="pre">x</span></tt> yields the dimensions (number of rows and
 columns) of a matrix.</dd>
-<dt><tt class="docutils literal"><span class="pre">x'</span></tt></dt>
-<dd>The transpose of a matrix.</dd>
 <dt><tt class="docutils literal"><span class="pre">x!y</span></tt></dt>
 <dd>This is Pure's indexing operation, which applies to lists, tuples,
 matrices and strings. Note that all indices in Pure are zero-based, thus
@@ -4026,9 +4032,8 @@ end;
 <p>E.g., this call retrieves information about all defined macros:</p>
 <pre class="literal-block">
 &gt; sym_info &quot;m&quot; &quot;*&quot;;
-[(&quot;$&quot;,($),&quot;mac&quot;,&quot;2 args, 1 rules&quot;),(&quot;.&quot;,(.),&quot;mac&quot;,&quot;3 args, 1 rules&quot;),
-(&quot;quasiquote&quot;,quasiquote,&quot;mac&quot;,&quot;1 args, 4 rules&quot;),
-(&quot;void&quot;,void,&quot;mac&quot;,&quot;1 args, 3 rules&quot;)]
+[(&quot;$&quot;,($),&quot;mac&quot;,&quot;2 args, 1 rules&quot;),(&quot;'&quot;,quote,&quot;mac&quot;,&quot;0 args, 1 rules&quot;),
+(&quot;.&quot;,(.),&quot;mac&quot;,&quot;3 args, 1 rules&quot;),(&quot;void&quot;,void,&quot;mac&quot;,&quot;1 args, 6 rules&quot;)]
 </pre>
 </div>
 <div class="section" id="stack-size-and-tail-recursion">

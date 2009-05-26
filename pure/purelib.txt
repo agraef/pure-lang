@@ -162,11 +162,11 @@ key-value associations. See, e.g., Dictionaries_ for an example.
   infixl  7   * / div mod and ;   // multiplication, bitwise and
   infixl  7   % ;                 // exact division (cf. math.pure)
   prefix  7   not ;               // bitwise not
-  postfix 7   ' ;                 // matrix transposition
   infixr  8   ^ ;                 // exponentiation
   prefix  8   # ;                 // size operator
   infixl  9   ! !! ;              // indexing, slicing
   infixr  9   . ;                 // function composition
+  prefix  9   ' ;                 // quote
   postfix 9   & ;                 // thunk
 
 ..
@@ -342,43 +342,6 @@ Haskell:
     1:#<thunk 0x7fe537fe2f90>
     > xs!!(0..10);
     [1,1,1,1,1,1,1,1,1,1,1]
-
-..
-
-Quasiquote
-----------
-
-The prelude also defines a general Lisp-like ``quasiquote`` macro which is
-used to construct quoted expressions by unquoting and splicing subterms
-indicated with the ``unquote`` and ``splice`` constructors. For instance::
-
-  > quasiquote (2*42+unquote (2^12));
-  2*42+4096.0
-  > quasiquote (foo 1 2 (splice [2/3,3/4]) (5/6));
-  foo 1 2 (2/3) (3/4) (5/6)
-
-Lisp weenies might want to add some syntactic sugar for convenience. This
-isn't in the prelude, so you'll have to define it yourself. Also note that
-we cannot have ``,`` for unquoting, so we use ``,,`` instead::
-
-  prefix 9 ` ,, ,@ ;
-  def ‘x = quasiquote x; def ,,x = unquote x; def ,@x = splice x;
-
-Examples::
-
-  > `(2*42+2^12);
-  2*42+2^12
-  > `(2*42+,,(2^12));
-  2*42+4096.0
-  > `foo 1 2 (,@[2/3,3/4]) (5/6);
-  foo 1 2 (2/3) (3/4) (5/6)
-  > `foo 1 2 (,@args) (5/6) when args = quote [2/3,3/4] end;
-  foo 1 2 (2/3) (3/4) (5/6)
-
-This is discussed in more detail in section `Recursive Macros`_ of the Pure
-Manual.
-
-.. _Recursive Macros: pure.html#recursive-macros
 
 ..
 
@@ -1576,22 +1539,6 @@ and columns)::
 ``null x`` can be used to check for empty matrices. Note that there are
 various kinds of these, as a matrix may have zero rows or columns, or both.
 
-.. raw:: html
-
-   <a name="matrix transposition">
-
-.. raw:: html
-
-   <a name="'">
-
-.. _matrix transposition:
-.. _':
-
-A matrix can be transposed with the ``'`` operator::
-
-  > {1,2,3;4,5,6}';
-  {1,4;2,5;3,6}
-
 Indexing and slicing works pretty much like in MATLAB and Octave, except
 that you use the Pure operators ``!`` and ``!!`` for that. It is possible
 to access elements with a one-dimensional index (in row-major oder)::
@@ -1921,6 +1868,18 @@ Matrix Inspection and Manipulation
 
 ``rowvector x``, ``colvector x``
   Convenience functions to convert a matrix to a row or column vector.
+
+.. raw:: html
+
+   <a name="transpose (matrix)">
+
+.. _transpose (matrix):
+
+``transpose x``
+  Transpose a matrix. Example::
+
+    > transpose {1,2,3;4,5,6};
+    {1,4;2,5;3,6}
 
 .. raw:: html
 
@@ -5464,7 +5423,6 @@ Index
 * `$`_
 * `%`_
 * `&&`_
-* `'`_
 * `*`_
 * `* (bag)`_
 * `* (set)`_
@@ -5729,7 +5687,6 @@ Index
 * `matrix (string)`_
 * `matrix dimensions`_
 * `matrix size`_
-* `matrix transposition`_
 * `matrixp`_
 * `max`_
 * `member (bag)`_
@@ -5889,6 +5846,7 @@ Index
 * `throw`_
 * `thunkp`_
 * `time`_
+* `transpose (matrix)`_
 * `trap`_
 * `true`_
 * `trunc`_
