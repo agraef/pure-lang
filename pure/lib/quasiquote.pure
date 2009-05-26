@@ -1,6 +1,27 @@
 
 /* An implementation of Lisp's quasiquote. 2009-05-26 AG. */
 
+/* NOTE: This is still considered experimental and is not part of the official
+   Pure library (yet). But it's installed in the Pure library directory for
+   those who need it. */
+
+/* Copyright (c) 2008 by Albert Graef <Dr.Graef@t-online.de>.
+
+   This file is part of the Pure programming language and system.
+
+   Pure is free software: you can redistribute it and/or modify it under the
+   terms of the GNU General Public License as published by the Free Software
+   Foundation, either version 3 of the License, or (at your option) any later
+   version.
+
+   Pure is distributed in the hope that it will be useful, but WITHOUT ANY
+   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+   FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+   details.
+
+   You should have received a copy of the GNU General Public License along
+   with this program.  If not, see <http://www.gnu.org/licenses/>. */
+
 /* Our implementation tries to stay as close to the spirit of the original
    quasiquote (see, e.g., Guy L. Steele, Common Lisp the Language, 2nd
    Edition) as reasonably possible in Pure. Nested quasiquotes work as
@@ -40,6 +61,9 @@ def (`) = quasiquote; def (,$) = unquote; def (,@) = splice;
    of the qq function below. Thus the evaluation of the quasiquote is actually
    done at runtime. */
 
+namespace quasiquote;
+private qq;
+
 def quasiquote x = qq (quote x);
 
 /* qq x descends into x, substituting embedded instances of unquote and splice
@@ -73,41 +97,3 @@ qqn n (f@_ x)		= qqn n f (qqn n x);
 qqn n x::matrix		= map (qqn n) x;
 qqn n x			= x;
 end;
-
-/* Unquoting example. This yields 'foo 1 2 0.75 (5/6)'. */
-
-`foo 1 2 (,$(3/4)) (5/6);
-
-/* In fact, you can also achieve the same by just substituting a local
-   variable into a normal quoted expression. This works in Pure, because in
-   difference to Lisp a local variable is never quoted, rather its value is
-   always substituted directly into the quoted expression without any further
-   ado. */
-
-'foo 1 2 x (5/6) when x = 3/4 end;
-
-/* Splicing allows you to insert arguments into a function application. The
-   argument of 'splice' must be a list value with the arguments to be
-   inserted. The following example yields 'foo 1 2 (2/3) (3/4) (5/6)'. */
-
-`foo 1 2 (,@'[2/3,3/4]) (5/6);
-
-/* The following example computes the same value as above, but takes the
-   spliced value from a local variable. Note again that the variable x can't
-   be quoted, thus the extra quote before the spliced value is needed to
-   inhibit its evaluation. */
-
-`foo 1 2 (,@'x) (5/6) when x = '[2/3,3/4] end;
-
-/* It's also possible to splice a list as the head of a function application.
-   This example yields 'foo (2/3) (3/4) (5/6)'. */
-
-`(,@'[foo,2/3,3/4]) (5/6);
-
-/* A nested quasiquote. Like in Scheme, this only expands the outermost
-   quasiquote, yielding 'a (quasiquote (b (unquote (1+2)) (unquote (foo 4 d))
-   e)) f'. A subsequent evaluation of the resulting term then expands the
-   nested quasiquote, yielding 'a (b 3 (foo 4 d) e) f'. */
-
-let x = `(a (`(b (,$(1+2)) (,$(foo (,$(1+3)) d)) e)) f);
-x; eval x;
