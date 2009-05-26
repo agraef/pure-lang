@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.5: http://docutils.sourceforge.net/" />
 <title>Pure-GLPK - GLPK interface for the Pure programming language</title>
 <meta name="author" content="Jiri Spitz &lt;jiri.spitz&#64;bluetone.cz&gt;" />
-<meta name="date" content="2009-05-26" />
+<meta name="date" content="2009-05-27" />
 <style type="text/css">
 
 /*
@@ -295,7 +295,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Jiri Spitz &lt;<a class="reference external" href="mailto:jiri.spitz&#64;bluetone.cz">jiri.spitz&#64;bluetone.cz</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2009-05-26</td></tr>
+<td>2009-05-27</td></tr>
 </tbody>
 </table>
 <p>This module provides a feature complete GLPK interface for the Pure programming
@@ -6225,9 +6225,26 @@ glp::ios_clear_pool tree
 glp::create_graph v_size a_size
 </pre>
 <p><strong>Parameters</strong>:</p>
+<blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">v_size:</th><td class="field-body">size of vertex data blocks, in bytes, 0 ≤ v size ≤ 256</td>
+</tr>
+<tr class="field"><th class="field-name">a_size:</th><td class="field-body">size of arc data blocks, in bytes, 0 ≤ a size ≤ 256.</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+The routine returns a pointer to the graph created.</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; let g = glp::create_graph 32 64;
+&gt; g;
+#&lt;pointer 0x9de7168&gt;
 &gt;
 </pre>
 </div>
@@ -6238,9 +6255,25 @@ glp::create_graph v_size a_size
 glp::set_graph_name graph name
 </pre>
 <p><strong>Parameters</strong>:</p>
+<blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">graph:</th><td class="field-body">pointer to the graph object</td>
+</tr>
+<tr class="field"><th class="field-name">name:</th><td class="field-body">the graph name, an empty string erases the current name</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+()</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::set_graph_name graph &quot;MyGraph&quot;;
+()
 &gt;
 </pre>
 </div>
@@ -6251,9 +6284,26 @@ glp::set_graph_name graph name
 glp::add_vertices graph count
 </pre>
 <p><strong>Parameters</strong>:</p>
+<blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">graph:</th><td class="field-body">pointer to the graph object</td>
+</tr>
+<tr class="field"><th class="field-name">count:</th><td class="field-body">number of vertices to add</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+The routine returns the ordinal number of the ﬁrst new
+vertex added to the graph.</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::add_vertices graph 5;
+18
 &gt;
 </pre>
 </div>
@@ -6264,9 +6314,27 @@ glp::add_vertices graph count
 glp::add_arc graph i j
 </pre>
 <p><strong>Parameters</strong>:</p>
+<blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">graph:</th><td class="field-body">pointer to the graph object</td>
+</tr>
+<tr class="field"><th class="field-name">i:</th><td class="field-body">index of the tail vertex</td>
+</tr>
+<tr class="field"><th class="field-name">j:</th><td class="field-body">index of the head vertex</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+()</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::add_arc graph 7 12;
+()
 &gt;
 </pre>
 </div>
@@ -6277,9 +6345,31 @@ glp::add_arc graph i j
 glp::erase_graph graph v_size a_size
 </pre>
 <p><strong>Parameters</strong>:</p>
+<blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">graph:</th><td class="field-body">pointer to the graph object</td>
+</tr>
+<tr class="field"><th class="field-name">v_size:</th><td class="field-body">size of vertex data blocks, in bytes, 0 ≤ v size ≤ 256</td>
+</tr>
+<tr class="field"><th class="field-name">a_size:</th><td class="field-body">size of arc data blocks, in bytes, 0 ≤ a size ≤ 256.</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+()</blockquote>
+<p><strong>Remark</strong>:</p>
+<blockquote>
+The routine reinitialises the graph object. Its efect is equivalent to
+calling delet_graph followed by a call to create_graph.</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::erase_graph graph 16 34;
+()
 &gt;
 </pre>
 </div>
@@ -6290,9 +6380,28 @@ glp::erase_graph graph v_size a_size
 glp::delete_graph graph
 </pre>
 <p><strong>Parameters</strong>:</p>
+<blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">graph:</th><td class="field-body">pointer to the graph object</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+()</blockquote>
+<p><strong>Remark</strong>:</p>
+<blockquote>
+The routine destroys the graph object and invalidates the pointer.
+This is done automatically when the graph is not needed anymore,
+the routine need not be usually called.</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::delete_graph graph
+()
 &gt;
 </pre>
 </div>
@@ -6303,9 +6412,25 @@ glp::delete_graph graph
 glp::read_graph graph filename
 </pre>
 <p><strong>Parameters</strong>:</p>
+<blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">graph:</th><td class="field-body">pointer to the graph object</td>
+</tr>
+<tr class="field"><th class="field-name">filename:</th><td class="field-body">file name</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<strong>0</strong> if reading went OK; non-zero in case of an error</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::read_graph graph &quot;graph_data.txt&quot;;
+0
 &gt;
 </pre>
 </div>
@@ -6316,9 +6441,25 @@ glp::read_graph graph filename
 glp::write_graph graph filename
 </pre>
 <p><strong>Parameters</strong>:</p>
+<blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">graph:</th><td class="field-body">pointer to the graph object</td>
+</tr>
+<tr class="field"><th class="field-name">filename:</th><td class="field-body">file name</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<strong>0</strong> if reading went OK; non-zero in case of an error</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::write_graph graph &quot;graph_data.txt&quot;;
+0
 &gt;
 </pre>
 </div>
@@ -6521,7 +6662,7 @@ GLPK library version</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::version;
-&quot;4.37&quot;
+&quot;4.38&quot;
 &gt;
 </pre>
 </div>

@@ -153,10 +153,10 @@ Create the GLPK problem object
 
 **Example**::
 
-    > let lp = glp::create_prob;
-    > lp;
-    #<pointer 0x9de7168>
-    >
+  > let lp = glp::create_prob;
+  > lp;
+  #<pointer 0x9de7168>
+  >
 
 Set the problem name
 --------------------
@@ -3634,6 +3634,8 @@ Compute relative MIP gap
 
 **Returns**:
 
+  
+
 **Example**::
 
   > 
@@ -3953,11 +3955,19 @@ Create the GLPK graph object
 
 **Parameters**:
 
+  :v_size: size of vertex data blocks, in bytes, 0 ≤ v size ≤ 256
+  :a_size: size of arc data blocks, in bytes, 0 ≤ a size ≤ 256.
+
 **Returns**:
+
+  The routine returns a pointer to the graph created.
 
 **Example**::
 
-  > 
+  > let g = glp::create_graph 32 64;
+  > g;
+  #<pointer 0x9de7168>
+  >
 
 Set the graph name
 ------------------
@@ -3967,11 +3977,18 @@ Set the graph name
 
 **Parameters**:
 
+  :graph: pointer to the graph object
+  :name: the graph name, an empty string erases the current name
+
 **Returns**:
+
+ ()
 
 **Example**::
 
-  > 
+  > glp::set_graph_name graph "MyGraph";
+  ()
+  >
 
 Add vertices to a graph
 -----------------------
@@ -3981,11 +3998,19 @@ Add vertices to a graph
 
 **Parameters**:
 
+  :graph: pointer to the graph object
+  :count: number of vertices to add
+
 **Returns**:
+
+  The routine returns the ordinal number of the ﬁrst new
+  vertex added to the graph.
 
 **Example**::
 
-  > 
+  > glp::add_vertices graph 5;
+  18
+  >
 
 Add arc to a graph
 ------------------
@@ -3995,11 +4020,19 @@ Add arc to a graph
 
 **Parameters**:
 
+  :graph: pointer to the graph object
+  :i: index of the tail vertex
+  :j: index of the head vertex
+
 **Returns**:
 
+  ()
+ 
 **Example**::
 
-  > 
+  > glp::add_arc graph 7 12;
+  ()
+  >
 
 Erase content of the GLPK graph object
 --------------------------------------
@@ -4009,11 +4042,24 @@ Erase content of the GLPK graph object
 
 **Parameters**:
 
+  :graph: pointer to the graph object
+  :v_size: size of vertex data blocks, in bytes, 0 ≤ v size ≤ 256
+  :a_size: size of arc data blocks, in bytes, 0 ≤ a size ≤ 256.
+
 **Returns**:
+
+  ()
+
+**Remark**:
+
+  The routine reinitialises the graph object. Its efect is equivalent to
+  calling delet_graph followed by a call to create_graph.
 
 **Example**::
 
-  > 
+  > glp::erase_graph graph 16 34;
+  ()
+  >
 
 Delete the GLPK graph object
 ----------------------------
@@ -4023,11 +4069,23 @@ Delete the GLPK graph object
 
 **Parameters**:
 
+  :graph: pointer to the graph object
+
 **Returns**:
+
+  ()
+
+**Remark**:
+
+  The routine destroys the graph object and invalidates the pointer.
+  This is done automatically when the graph is not needed anymore,
+  the routine need not be usually called.
 
 **Example**::
 
-  > 
+  > glp::delete_graph graph
+  ()
+  >
 
 Read graph in a plain text format
 ---------------------------------
@@ -4037,11 +4095,18 @@ Read graph in a plain text format
 
 **Parameters**:
 
+  :graph: pointer to the graph object
+  :filename: file name
+  
 **Returns**:
+
+  **0** if reading went OK; non-zero in case of an error
 
 **Example**::
 
-  > 
+  > glp::read_graph graph "graph_data.txt";
+  0
+  >
 
 Write graph in a plain text format
 ----------------------------------
@@ -4051,11 +4116,18 @@ Write graph in a plain text format
 
 **Parameters**:
 
+  :graph: pointer to the graph object
+  :filename: file name
+
 **Returns**:
+
+  **0** if reading went OK; non-zero in case of an error
 
 **Example**::
 
-  > 
+  > glp::write_graph graph "graph_data.txt";
+  0
+  >
 
 
 Graph analysis routines
@@ -4280,7 +4352,7 @@ Determine library version
 **Example**::
 
   > glp::version;
-  "4.37"
+  "4.38"
   >
 
 Enable/disable terminal output
