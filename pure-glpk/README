@@ -23,7 +23,7 @@ The interface uses native Pure data types - lists and tuples - so that you
 need not perform any data conversions to/from GLPK internal data structures.
 
 To make this module work, you must have a GLPK installation on your system,
-the version 4.37 is required. 
+the version 4.38 is required.
 
 .. contents::
 .. sectnum::
@@ -1793,11 +1793,29 @@ Solve the LP problem using interior-point method
 ------------------------------------------------
 **Synopsis**::
 
-  glp::interior lp
+  glp::interior lp options
 
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :options: list of solver options in the form of tuples (option_name, value):
+
+            :glp\:\:msg_lev: (default: glp::msg_all) - message level for
+                             terminal output:
+
+                             :glp\:\:msg_off: no output
+                             :glp\:\:msg_err: error and warning messages only
+                             :glp\:\:msg_on: normal output;
+                             :glp\:\:msg_all: full output (including
+                                              informational messages)
+
+            :glp\:\:ord_alg: (default: glp::ord_amd) - ordering algorithm option
+
+                          :glp\:\:ord_none: use natural (original) ordering
+                          :glp\:\:ord_qmd: quotient minimum degree (QMD)
+                          :glp\:\:ord_amd: approximate minimum degree (AMD)
+                          :glp\:\:ord_sysamd: approximate minimum degree
+                                              (SYSAMD)
 
 **Returns**:
 
@@ -1808,22 +1826,21 @@ Solve the LP problem using interior-point method
               found optimal solution, it only means that the solution
               process was successful
   :glp\:\:efail: the problem has no rows/columns
-  :glp\:\:enofeas: the problem has no feasible (primal/dual) solution
   :glp\:\:enocvg: very slow convergence or divergence
   :glp\:\:eitlim: iteration limit exceeded
   :glp\:\:einstab: numerical instability on solving Newtonian system
   
 **Example**::
 
-  > glp::interior lp;
-  glp_interior: original LP problem has 3 rows and 3 columns
-  glp_interior: transformed LP problem has 3 rows and 6 columns
-  lpx_interior: A has 12 non-zeros
-  lpx_interior: S has 6 non-zeros (upper triangle)
-  lpx_interior: minimal degree ordering...
-  lpx_interior: computing Cholesky factorization...
-  lpx_interior: U has 6 non-zeros
-  lpx_interior: guessing initial point...
+  > glp::interior lp [(glp::ord_alg, glp::ord_amd)];
+  Original LP has 3 row(s), 3 column(s), and 9 non-zero(s)
+  Working LP has 3 row(s), 6 column(s), and 12 non-zero(s)
+  Matrix A has 12 non-zeros
+  Matrix S = A*A' has 6 non-zeros (upper triangle)
+  Approximate minimum degree ordering (AMD)...
+  Computing Cholesky factorization S = L*L'...
+  Matrix L has 6 non-zeros
+  Guessing initial point...
   Optimization begins...
     0: obj = -8,218489503e+002; rpi = 3,6e-001; rdi = 6,8e-001; gap = 2,5e-001
     1: obj = -6,719060895e+002; rpi = 3,6e-002; rdi = 1,9e-001; gap = 1,4e-002
@@ -1856,6 +1873,8 @@ Retrieve status of interior-point solution
 
   :glp\:\:undef: interior-point solution is undefined
   :glp\:\:opt: interior-point solution is optimal
+  :glp\:\:infeas: interior-point solution is infeasible
+  :glp\:\:nofeas: no feasible primal-dual solution exists
 
 **Example**::
 

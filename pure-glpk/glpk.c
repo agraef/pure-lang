@@ -34,8 +34,8 @@
 extern "C" {
 #endif
 
-#if GLP_MAJOR_VERSION != 4 || GLP_MINOR_VERSION != 37
-#error GLPK version 4.37 required
+#if GLP_MAJOR_VERSION != 4 || GLP_MINOR_VERSION != 38
+#error GLPK version 4.38 required
 #endif
 
 
@@ -1444,14 +1444,82 @@ pure_expr *glpk_get_unbnd_ray(pure_expr *ptr)
   return pure_int(glp_get_unbnd_ray(glpobj->lp));
 }
 
-pure_expr *glpk_interior(pure_expr *ptr)
+static pure_expr *get_ipt_parm(pure_expr *parms, glp_iptcp *parm, int *cnterr)
+{
+  // Read the option list for glp_interior
+  pure_expr **list, **tpl, *snd, *res;
+  int32_t fst, intparm;
+  double doubleparm;
+  int i;
+  size_t it, cnt;
+  *cnterr = 0;
+  if (!pure_is_listv(parms, &cnt, &list)) {
+    *cnterr = 1;
+    return 0;
+  }
+  for (i = 0; i < cnt; i++) {
+    if (!pure_is_tuplev(list[i], &it, &tpl)) {
+      list[*cnterr++] = list[i];
+      goto err;
+    }
+    if (it != 2) {
+      free(tpl);
+      list[*cnterr++] = list[i];
+      goto err;
+    }
+    if (!pure_is_symbol(tpl[0], &fst)) {
+      free(tpl);
+      list[*cnterr++] = list[i];
+      goto err;
+    }
+    snd = tpl[1];
+    free(tpl);
+    if (fst == pure_getsym("glp::msg_lev")) {
+      if (pure_is_int(snd, &intparm)) parm->msg_lev = intparm;
+      else list[*cnterr++] = list[i];
+    }
+    else if (fst == pure_getsym("glp::ord_alg")) {
+      if (pure_is_int(snd, &intparm)) parm->ord_alg = intparm;
+      else list[*cnterr++] = list[i];
+    }
+    else {
+      list[*cnterr++] = list[i];
+    }
+  err: ;
+  }
+  if (*cnterr > 0) {
+    res = pure_listv((size_t)*cnterr, list);
+  }
+  else {
+    res = 0;
+  }
+  free(list);
+  return res;
+}
+
+pure_expr *glpk_interior(pure_expr *ptr, pure_expr * params)
 {
   // Solve the LP problem using interior-point method
+  glp_iptcp *parm;
+  pure_expr *ret, *res;
+  int cnterr;
   glp_obj *glpobj;
   if (!is_glp_pointer(ptr, &glpobj)) {
     return 0;
   }
-  return pure_int(glp_interior(glpobj->lp, NULL));
+  if (!(parm = (glp_iptcp *)malloc(sizeof(glp_iptcp)))) {
+    return pure_err_internal("insufficient memory");
+  }
+  glp_init_iptcp(parm);
+  ret = get_ipt_parm(params, parm, &cnterr);
+  if (!cnterr) {
+    res = pure_int(glp_interior(glpobj->lp, parm));
+  }
+  else {
+    res = ret;
+  }
+  free(parm);
+  return res;
 }
 
 pure_expr *glpk_ipt_status(pure_expr *ptr)

@@ -219,6 +219,14 @@ public nullary
 ;
 namespace glp;
 
+/* factorization ordering options */
+public nullary
+  ord_none	// use natural (original) ordering
+  ord_qmd	// quotient minimum degree (QMD)
+  ord_amd	// approximate minimum degree (AMD)
+  ord_sysamd	// approximate minimum degree (SYSAMD)
+;
+
 /*****************************************************************************/
 /*                          Symbolic option names                            */
 /*****************************************************************************/
@@ -304,6 +312,7 @@ private nullary
   branchselect	// branch selection indicator
   returncode	// return codes
   mpsfile	// mps file format
+  ordalg	// factorization ordering options
 ;
 
 namespace lpx;
@@ -453,6 +462,12 @@ let symlist =
     (mpsfile,      mps_deck, 1),    // fixed (ancient)
     (mpsfile,      mps_file, 2),    // free (modern)
 
+    /* factorization ordering options */
+    (ordalg,       ord_none,   0),  // use natural (original) ordering
+    (ordalg,       ord_qmd,    1),  // quotient minimum degree (QMD)
+    (ordalg,       ord_amd,    2),  // approximate minimum degree (AMD)
+    (ordalg,       ord_sysamd, 3),  // approximate minimum degree (SYSAMD)
+
     /* exit codes returned by solver routines: */
     (lpx::exitcode,     lpx::e_ok,     200),  // success
     (lpx::exitcode,     lpx::e_empty,  201),  // empty problem
@@ -588,6 +603,13 @@ let bf_options =
     (upd_tol  => numberp),                  // update tolerance
     (nrs_max  => intp),                     // max # of additional rows or cols
     (rs_size  => intp)                      // init. size of SVA for Schur meth
+  ];
+
+private ipt_options;
+let ipt_options =
+  hdict [
+    (msg_lev  => (symbolicp msglev)),       // message level
+    (ord_alg  => (symbolicp ordalg))        // ordering method option
   ];
 
 /*****************************************************************************/
@@ -898,9 +920,16 @@ public extern expr *glpk_get_unbnd_ray(expr *lp) =
   get_unbnd_ray;
 
 // Solve the LP problem using interior-point method
-private extern expr *glpk_interior(expr *lp);
-glp::interior lp =
-  getcode returncode (glpk_interior lp);
+private extern expr *glpk_interior(expr *lp, expr *opts);
+glp::interior lp options =
+  if null bad_opts
+    then
+      getcode returncode (glpk_interior lp (opts2vals ipt_options options))
+    else
+      bad_opts
+  when
+    bad_opts = test_option_list ipt_options options
+  end;
 
 // Retrieve status of interior-point solution
 private extern expr *glpk_ipt_status(expr *lp);
