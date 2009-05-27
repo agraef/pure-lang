@@ -761,8 +761,21 @@ time. For instance::
   > eval x;
   4180.0
 
-This facility should be well familiar to Lisp programmers. However, there are
-some notable differences and pitfalls, please see `The Quote`_ in the `Caveats and Notes`_ section for details and more examples.
+The quote also inhibits evaluation inside matrix values, including the
+"splicing" of embedded submatrices::
+
+  > '{1,2+3,2*3};
+  {1,2+3,2*3}
+  > '{1,{2,3},4};
+  '{1,{2,3},4}
+
+Note that in the second example above, the result is actually printed in its
+quoted form. Symbolic matrices with nested submatrices are always handled this
+way, so that they can be reconstructed from their textual representation.
+
+The ``quote`` should be well familiar to Lisp programmers. However, there are
+some notable differences and pitfalls, please see `The Quote`_ in the `Caveats
+and Notes`_ section for details and more examples.
 
 Toplevel
 --------
