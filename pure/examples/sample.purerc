@@ -2,19 +2,23 @@
 
 /* Example for the .purerc startup file which can be used to customize your
    interactive Pure environment. Rename this to .purerc, edit as needed, and
-   put it into your home (or project) directory. See the Pure manual page for
+   put it into your home (or project) directory. See the Pure Manual for
    details. */
 
 // Maybe you want to load some additional non-prelude modules here.
 //using math;
 //using system;
+//using quasiquote;
 
 /* Add any other stuff that you use all the time, like your favourite macros,
    constants, convenience functions... */
 
-// Syntactic sugar for Lisp weenies.
-prefix 9 ` ,, ,@ ;
-def `x = quasiquote x; def ,,x = unquote x; def ,@x = splice x;
+// This is a kind of "curried-apply" operator, which is useful for splicing
+// arguments into quoted expressions (see "The Quote" in the Pure Manual).
+infixr 0 $@ ;
+f $@ []     | f $@ ()     = f;
+f $@ (x:xs) | f $@ (x,xs) = f x $@ xs;
+f $@ x                    = f x;
 
 /* Since this is just an ordinary Pure script, interactive commands cannot be
    run directly, but it's still possible to invoke them through 'evalcmd'.
