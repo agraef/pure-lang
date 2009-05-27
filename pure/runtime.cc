@@ -3311,7 +3311,7 @@ static int32_t get_matrix_int_value(pure_expr *x)
     return (int32_t)x->data.d;
   default:
     assert(0 && "bad matrix element");
-    return 0.0;
+    return 0;
   }
 }
 
