@@ -1300,7 +1300,7 @@ pure_expr *glpk_exact(pure_expr *ptr, pure_expr * params)
   }
   glp_init_smcp(parm);
   ret = get_spx_parm(params, parm, &cnterr);
-  if (!cnterr) {
+  if (cnterr == 0) {
     res = pure_int(glp_exact(glpobj->lp, parm));
   }
   else {
@@ -1479,7 +1479,8 @@ static pure_expr *get_ipt_parm(pure_expr *parms, glp_iptcp *parm, int *cnterr)
       else list[*cnterr++] = list[i];
     }
     else if (fst == pure_getsym("glp::ord_alg")) {
-      if (pure_is_int(snd, &intparm)) parm->ord_alg = intparm;
+      if (pure_is_int(snd, &intparm)) {parm->ord_alg = intparm;
+      printf("%d\n", intparm);}
       else list[*cnterr++] = list[i];
     }
     else {
@@ -1497,7 +1498,7 @@ static pure_expr *get_ipt_parm(pure_expr *parms, glp_iptcp *parm, int *cnterr)
   return res;
 }
 
-pure_expr *glpk_interior(pure_expr *ptr, pure_expr * params)
+pure_expr *glpk_interior(pure_expr *ptr, pure_expr *params)
 {
   // Solve the LP problem using interior-point method
   glp_iptcp *parm;
@@ -1512,7 +1513,7 @@ pure_expr *glpk_interior(pure_expr *ptr, pure_expr * params)
   }
   glp_init_iptcp(parm);
   ret = get_ipt_parm(params, parm, &cnterr);
-  if (!cnterr) {
+  if (cnterr == 0) {
     res = pure_int(glp_interior(glpobj->lp, parm));
   }
   else {
