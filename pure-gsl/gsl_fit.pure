@@ -1,0 +1,247 @@
+
+/* gsl_fit.pure: GSL wrapper for the Pure programming language. */
+
+/* Copyright (c) 2008 by Albert Graef <Dr.Graef@t-online.de>.
+   Copyright (c) 2008 by Robert E. Rucker <erucker@bmc.edu>.
+
+   This file is part of the Pure programming language and system.
+
+   Pure is free software: you can redistribute it and/or modify it under the
+   terms of the GNU General Public License as published by the Free Software
+   Foundation, either version 3 of the License, or (at your option) any later
+   version.
+
+   Pure is distributed in the hope that it will be useful, but WITHOUT ANY
+   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+   FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+   details.
+
+   You should have received a copy of the GNU General Public License along
+   with this program.  If not, see <http://www.gnu.org/licenses/>. */
+
+/* ..
+   
+   Least-Squares Fitting
+   ---------------------
+   
+   This module provides Pure wrappers for the GSL linear regression 
+   routines. See Chapter 36 of the GSL manual, 
+   http://www.gnu.org/software/gsl/manual/html_node/Least_002dSquares-Fitting.html, 
+   for details. Note that Pure routines do not contain or need a ``len`` 
+   parameter like the C the routines provided in the GSL library.
+   
+   Routines
+   ~~~~~~~~
+*/
+
+using "lib:gsl";
+
+namespace gsl;
+
+private extern expr* wrap_gsl_fit_linear(double*, double*, size_t);
+private extern expr* wrap_gsl_fit_wlinear(double*, double*, double*, size_t);
+private extern expr* wrap_gsl_fit_linear_est(double, double, double, double,
+  double, double);
+
+public
+  fit_linear
+  fit_wlinear
+  fit_linear_est;
+
+/* .. _fit_linear:
+
+   ``fit_linear  x::matrix  y::matrix``
+     performs a least-squares fit to a straight line model,
+     ``Y c x = c0 + c1* x``.
+     
+     Results are given as the tuple ``(c0, c1, cov00, cov01, cov11, sumsq)``
+     where ``c0`` and ``c1`` are the coefficients and the errors on 
+     ``y`` are returned via the parameters ``cov00``, ``cov01``, and 
+     ``cov11``. The sum of squares of the residuals is returned in 
+     ``sumsq``.
+   
+   .. _fit_wlinear:
+   
+   ``fit_wlinear  x::matrix  w::matrix  y::matrix``
+     performs a least-squares fit to a straight line model with weighted
+     datapoints ``w``.
+     
+     Results are given as the tuple ``(c0, c1, cov00, cov01, cov11, chisq)``
+     where ``c0`` and ``c1`` are the coefficients and the errors on 
+     ``y`` are returned via the parameters ``cov00``, ``cov01``, and 
+     ``cov11``. The sum of squares of the residuals is returned in 
+     ``chisq``.
+     
+   .. _fit_linear_est:
+   
+   ``fit_linear_est  x  c0::double  c1::double  cov00::double  cov01::double
+     cov11::double``
+     compute the fitted function ``y`` and its standard deviation ``y_err``
+     at point ``x``.
+     
+     Results are given as the tuple ``(y, y_err)``.
+*/
+
+private validmatrixp;
+def validmatrixp x
+  = rowvectorp x && (imatrixp x || dmatrixp x);
+
+fit_linear  x::matrix  y::matrix
+  = wrap_gsl_fit_linear (dmatrix x) (dmatrix y) (#x)
+    if validmatrixp x && validmatrixp y && #x == #y;
+
+fit_wlinear  x::matrix  w::matrix  y::matrix
+  = wrap_gsl_fit_wlinear (dmatrix x) (dmatrix w) (dmatrix y) (#x)
+    if validmatrixp x && validmatrixp y && validmatrixp w
+      && #x == #y && #x == #w;
+
+fit_linear_est  x  c0::double  c1::double
+                cov00::double  cov01::double  cov11::double
+  = wrap_gsl_fit_linear_est (double x) c0 c1 cov00 cov01 cov11
+    if realp x;
+
+private extern expr* wrap_gsl_fit_mul(double*, double*, size_t);
+private extern expr* wrap_gsl_fit_wmul(double*, double*, double*, size_t);
+private extern expr* wrap_gsl_fit_mul_est(double, double, double);
+
+public
+  fit_mul
+  fit_wmul
+  fit_mul_est;
+
+/* .. _fit_mul:
+
+   ``fit_mul  x::matrix  y::matrix``
+     performs a least-squares fit to a straight line model,
+     ``Y c x = c1 * x`` without constant term ``c0``.
+     
+     Results are given as the tuple ``(c1, cov11, sumsq)`` where ````c1``
+     is the coefficient and the error on ``y`` is returned via the parameter
+     ``cov11``. The sum of squares of the residuals is returned in ``sumsq``.
+   
+   .. _fit_wmul:
+   
+   ``fit_wmul  x::matrix  w::matrix  y::matrix``
+     performs a least-squares fit to a straight line model with weighted
+     datapoints ``w``.
+     
+     Results are given as the tuple ``(c1, cov11, sumsq)`` where ``c1``
+     is the coefficient and the error on ``y`` is returned via the parameter
+     ``cov11``. The sum of squares of the residuals is returned in ``sumsq``.
+     
+   .. _fit_mul_est:
+   
+   ``fit_mul_est  x  c1::double  cov11::double``
+     compute the fitted function ``y`` and its standard deviation ``y_err``
+     at point ``x``.
+     
+     Results are given as the tuple ``(y, y_err)``.
+*/
+
+fit_mul  x::matrix  y::matrix
+  = wrap_gsl_fit_mul (dmatrix x) (dmatrix y) (#x)
+    if validmatrixp x && validmatrixp y && #x == #y;
+
+fit_wmul  x::matrix  w::matrix  y::matrix
+  = wrap_gsl_fit_wmul (dmatrix x) (dmatrix w) (dmatrix y) (#x)
+    if validmatrixp x && validmatrixp y && validmatrixp w
+      && #x == #y && #x == #w;
+
+fit_mul_est  x  c1::double  cov11::double
+  = wrap_gsl_fit_mul_est (double x) c1 cov11
+    if realp x;
+
+private extern expr* wrap_gsl_multifit_linear(dmatrix*, dmatrix*);
+
+public
+  multifit_linear;
+
+/* This one is not ready for consumption yet */
+multifit_linear  x::matrix  y::matrix
+  = wrap_gsl_multifit_linear (dmatrix x) (dmatrix y);
+
+/* ..
+   
+   Examples
+   ~~~~~~~~
+   
+   Usage of each library routine is illustrated below.
+   
+   ::
+   
+     > using gsl_fit;
+     
+   The equation for a least-squares line through the points (1,0.01),
+   (2,1.11), (3,1.9), (4,2.85), and (5,4.01) may be calculated by ...
+   
+   ::
+     
+     > Y x = '(a + b * x)
+     > when
+     >   a:b:_ = gsl::fit_linear {1,2,3,4,5} {0.01,1.11,1.9,2.85,4.01}
+     > end;
+     Y x;
+     -0.946+0.974*x
+     > eval $ Y 2;
+     1.002
+     
+   The estimate of some y values and there standard error for at x = 1, 2,
+   and 3 are ...
+   
+   ::
+     
+     > let c0:c1:cov00:cov01:cov11:_ = gsl::fit_linear {1,2,3,4,5}
+     >   {0.01,1.11,1.9,2.85,4.01};
+     > gsl::fit_linear_est 1 c0 c1 cov00 cov01 cov11;
+     [0.028,0.0838570211729465]
+     > gsl::fit_linear_est 2 c0 c1 cov00 cov01 cov11;
+     [1.002,0.0592958683214944]
+     > gsl::fit_linear_est 3 c0 c1 cov00 cov01 cov11;
+     [1.976,0.0484148737476408]
+
+   The equation for a least-squares line through the points (1,0.01), 
+   (2,1.11), (3,1.9), (4,2.85), and (5,4.01) using weights 0.1, 0.2, 0.3, 
+   0.4, and 0.5 is calculated by ...
+   
+   ::
+     
+     > W x = '(a + b * x)
+     > when
+     >   a:b:_ = gsl::fit_wlinear (matrix (1..5)) 
+     >           {0.1, 0.2, 0.3, 0.4, 0.5}
+     >           {0.01, 1.11, 1.9, 2.85, 4.01};
+     > end;
+     > W u;
+     -0.99+0.986*u
+     > eval $ W 2;
+     0.982
+     
+   The least-squares parameters for ``Y = c1 * X`` without the constant 
+   term using the points (1,3), (2,5), and (3,7) is give below. The y-values
+   and standard error about x = 1, 2, and 3 are also given.
+   
+   ::
+   
+     > let c1:cov11:sumsq:_ = gsl::fit_mul {1,2,3} {3,5,7};
+     > gsl::fit_mul_est 1 c1 cov11;
+     [2.42857142857143,0.123717914826348]
+     > gsl::fit_mul_est 2 c1 cov11;
+     [4.85714285714286,0.247435829652697]
+     > gsl::fit_mul_est 3 c1 cov11;
+     [7.28571428571428,0.371153744479045]
+     
+   The least-squares parameters for ``Y = c1 * X`` without the constant 
+   term using the points (1,3), (2,5), and (3,7), the weights 0.4, 0.9, and 
+   0.4 is given below. The approximation of y-values and standard error about 
+   x = 1, 2, and 3 follows
+   
+   > let c1:cov11:sumsq:_ = gsl::fit_wmul {1,2,3} {0.4,0.9,0.4} {3,5,7};
+   > gsl::fit_mul_est 1 c1 cov11;
+   [2.44736842105263,0.362738125055006]
+   > gsl::fit_mul_est 2 c1 cov11;
+   [4.89473684210526,0.725476250110012]
+   > gsl::fit_mul_est 3 c1 cov11;
+   [7.34210526315789,1.08821437516502]
+
+*/
+

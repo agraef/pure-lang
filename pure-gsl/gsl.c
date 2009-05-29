@@ -13,8 +13,12 @@
 #include <gsl/gsl_statistics.h>
 #include <gsl/gsl_statistics_int.h>
 #include <gsl/gsl_poly.h>
+#include <gsl/gsl_fit.h>
+#include <gsl/gsl_multifit.h>
 
 #include <pure/runtime.h>
+
+#include <stdio.h>
 
 /* Copyright (c) 2008 by Albert Graef <Dr.Graef@t-online.de>.
    Copyright (c) 2008 by Robert E. Rucker <erucker@bmc.edu>.
@@ -265,32 +269,32 @@ int wrap_gsl_linalg_SV_solve(gsl_matrix* U, gsl_matrix* V, gsl_matrix* S,
   return gsl_linalg_SV_solve(U, V, &_S.vector, &_b.vector, &_x.vector);
 }
 
-pure_expr* wrap_gsl_stats_int_minmax(int* data, size_t stride, size_t n)
+pure_expr* wrap_gsl_stats_int_minmax(int* data, size_t n)
 {
   int x, y;
   gsl_stats_int_minmax(&x, &y, data, 1, n);
-  return pure_tuplel(2, pure_int(x), pure_int(y));
+  return pure_listl(2, pure_int(x), pure_int(y));
 }
 
-pure_expr* wrap_gsl_stats_minmax(double* data, size_t stride, size_t n)
+pure_expr* wrap_gsl_stats_minmax(double* data, size_t n)
 {
   double x, y;
   gsl_stats_minmax(&x, &y, data, 1, n);
-  return pure_tuplel(2, pure_double(x), pure_double(y));
+  return pure_listl(2, pure_double(x), pure_double(y));
 }
 
-pure_expr* wrap_gsl_stats_int_minmax_index(int* data, size_t stride, size_t n)
+pure_expr* wrap_gsl_stats_int_minmax_index(int* data, size_t n)
 {
   size_t x, y;
   gsl_stats_int_minmax_index(&x, &y, data, 1, n);
-  return pure_tuplel(2, pure_int(x), pure_int(y));
+  return pure_listl(2, pure_int(x), pure_int(y));
 }
 
-pure_expr* wrap_gsl_stats_minmax_index(double* data, size_t stride, size_t n)
+pure_expr* wrap_gsl_stats_minmax_index(double* data, size_t n)
 {
   size_t x, y;
   gsl_stats_minmax_index(&x, &y, data, 1, n);
-  return pure_tuplel(2, pure_int(x), pure_int(y));
+  return pure_listl(2, pure_int(x), pure_int(y));
 }
 
 pure_expr* wrap_gsl_poly_complex_eval(double* c, int len, double a, double b)
@@ -324,9 +328,9 @@ pure_expr* wrap_gsl_poly_solve_quadratic(double a, double b, double c)
   double x0, x1;
 
   switch (gsl_poly_solve_quadratic(a, b, c, &x0, &x1)) {
-    case 0: return pure_matrix_columnsl(0);
-    case 1: return pure_matrix_columnsl(1, pure_double(x0));
-    case 2: return pure_matrix_columnsl(2, pure_double(x0), pure_double(x1));
+    case 0: return pure_listl(0);
+    case 1: return pure_listl(1, pure_double(x0));
+    case 2: return pure_listl(2, pure_double(x0), pure_double(x1));
   }
 }
 
@@ -335,10 +339,9 @@ pure_expr* wrap_gsl_poly_complex_solve_quadratic(double a, double b, double c)
   gsl_complex z0, z1;
 
   if (gsl_poly_complex_solve_quadratic(a, b, c, &z0, &z1) == 1)
-    return pure_matrix_columnsl(1, pure_complex(z0.dat));
+    return pure_listl(1, pure_complex(z0.dat));
   else
-    return pure_matrix_columnsl(2, pure_complex(z0.dat),
-      pure_complex(z1.dat));
+    return pure_listl(2, pure_complex(z0.dat), pure_complex(z1.dat));
 }
 
 pure_expr* wrap_gsl_poly_solve_cubic(double a, double b, double c)
@@ -346,10 +349,9 @@ pure_expr* wrap_gsl_poly_solve_cubic(double a, double b, double c)
   double x0, x1, x2;
 
   if (gsl_poly_solve_cubic(a, b, c, &x0, &x1, &x2) == 1)
-    return pure_matrix_columnsl(1, pure_double(x0));
+    return pure_listl(1, pure_double(x0));
   else
-    return pure_matrix_columnsl(3, pure_double(x0), pure_double(x1), 
-      pure_double(x2));
+    return pure_listl(3, pure_double(x0), pure_double(x1), pure_double(x2));
 }
 
 pure_expr* wrap_gsl_poly_complex_solve_cubic(double a, double b, double c)
@@ -357,8 +359,8 @@ pure_expr* wrap_gsl_poly_complex_solve_cubic(double a, double b, double c)
   gsl_complex z0, z1, z2;
 
   gsl_poly_complex_solve_cubic(a, b, c, &z0, &z1, &z2);
-  return pure_matrix_columnsl(3, pure_complex(z0.dat), 
-    pure_complex(z1.dat), pure_complex(z2.dat));
+  return pure_listl(3, pure_complex(z0.dat), pure_complex(z1.dat), 
+		    pure_complex(z2.dat));
 }
 
 pure_expr* wrap_gsl_poly_complex_solve(double* a, size_t n)
@@ -377,7 +379,86 @@ pure_expr* wrap_gsl_poly_complex_solve(double* a, size_t n)
       t[1] = tz[2*i+1];
       z[i] = pure_complex(t);
     }
-    return pure_matrix_columnsv(n-1, z);
+    return pure_listv(n-1, z);
   } else
-    return pure_matrix_columnsl(0);
+    return pure_listl(0);
+}
+
+pure_expr* wrap_gsl_fit_linear(double* x, double* y, size_t n)
+{
+  double c0, c1, cov00, cov01, cov11, sumsq;
+  
+  gsl_fit_linear(x, 1, y, 1, n, &c0, &c1, &cov00, &cov01, &cov11, &sumsq);
+  return pure_listl(6, pure_double(c0), pure_double(c1), pure_double(cov00), 
+		    pure_double(cov01), pure_double(cov11),
+		    pure_double(sumsq));
+}
+
+pure_expr* wrap_gsl_fit_wlinear(double* x, double* w, double* y, size_t n)
+{
+  double c0, c1, cov00, cov01, cov11, chisq;
+  
+  gsl_fit_wlinear(x, 1, w, 1, y, 1, n, &c0, &c1, &cov00, &cov01, &cov11, 
+		  &chisq);
+  return pure_listl(6, pure_double(c0), pure_double(c1), pure_double(cov00),
+		    pure_double(cov01), pure_double(cov11), 
+		    pure_double(chisq));
+}
+
+pure_expr* wrap_gsl_fit_linear_est(double x, double c0, double c1,
+  double cov00, double cov01, double cov11)
+{
+  double y, y_err;
+  
+  gsl_fit_linear_est(x, c0, c1, cov00, cov01, cov11, &y, &y_err);
+  return pure_listl(2, pure_double(y), pure_double(y_err));
+}
+
+pure_expr* wrap_gsl_fit_mul(double* x, double* y, size_t n)
+{
+  double c1, cov11, sumsq;
+  
+  gsl_fit_mul(x, 1, y, 1, n, &c1, &cov11, &sumsq);
+  return pure_listl(3, pure_double(c1), pure_double(cov11), pure_double(sumsq));
+}
+
+pure_expr* wrap_gsl_fit_wmul(double* x, double* w, double* y, size_t n)
+{
+  double c1, cov11, sumsq;
+  
+  gsl_fit_wmul(x, 1, w, 1, y, 1, n, &c1, &cov11, &sumsq);
+  return pure_listl(3, pure_double(c1), pure_double(cov11), pure_double(sumsq));
+}
+
+pure_expr* wrap_gsl_fit_mul_est(double x, double c1, double cov11)
+{
+  double y, y_err;
+  
+  gsl_fit_mul_est(x, c1, cov11, &y, &y_err);
+  return pure_listl(2, pure_double(y), pure_double(y_err));
+}
+
+pure_expr* wrap_gsl_multifit_linear(gsl_matrix* X, gsl_matrix* y)
+{
+  int i;
+  double chisq;
+  pure_expr *cx[X->size1];
+  double *p;
+
+  gsl_vector* c = gsl_vector_alloc(X->size1);
+  gsl_vector* yt = gsl_vector_alloc(X->size1);
+  gsl_matrix_get_row(yt, y, 0);
+  gsl_matrix* cov = gsl_matrix_alloc(X->size1, X->size2);
+  gsl_multifit_linear_workspace* w;
+  w = gsl_multifit_linear_alloc(X->size1, X->size2);
+  gsl_multifit_linear(X, yt, c, cov, &chisq, w);
+  gsl_multifit_linear_free(w);
+  gsl_vector_free(yt);
+  p = c->data;
+  for (i = 0; i < X->size1; ++i) {
+    cx[i] = pure_double(*p);
+    ++p;
+  }
+  return pure_listl(3, pure_matrix_columnsv(X->size1, cx),
+		    pure_double_matrix(cov), pure_double(chisq));
 }
