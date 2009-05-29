@@ -113,6 +113,14 @@ typedef struct _pure_mem {
    operator on level 9). Applications have nprec=95, ordinary function and
    variable symbols nprec=100. */
 
+/* Fixity values. */
+#define OP_INFIX   0
+#define OP_INFIXL  1
+#define OP_INFIXR  2
+#define OP_PREFIX  3
+#define OP_POSTFIX 4
+#define OP_NULLARY 5
+
 int32_t pure_sym(const char *s);
 int32_t pure_getsym(const char *s);
 const char *pure_sym_pname(int32_t sym);
@@ -134,7 +142,7 @@ pure_expr *pure_pointer(void *p);
 
 /* Expression pointers. The following routine returns a Pure pointer object
    suitably allocated to hold a Pure expression (pure_expr*). The pointer is
-   initialized to hold a null expression. */
+   initialized to hold a null pointer value. */
 
 pure_expr *pure_expr_pointer(void);
 
@@ -142,7 +150,7 @@ pure_expr *pure_expr_pointer(void);
    whether the original string is already in utf-8 (_string routines) or in
    the system encoding (_cstring), and whether the string should be copied
    (_dup suffix) or whether Pure takes ownership of the string. All four
-   routines handle the case that the given string is a null pointer and will
+   routines handle the case that the given string is a NULL pointer and will
    then return the appropriate Pure pointer expression instead. */
 
 pure_expr *pure_string_dup(const char *s);
@@ -159,7 +167,7 @@ pure_expr *pure_cstring(char *s);
    the matrix must be allocated dynamically and Pure takes ownership of the
    matrix. The matrix_dup routines first take a copy of the matrix, so the
    ownership of the original matrix remains with the caller. The result is a
-   Pure expression representing the matrix object, or null if GSL matrix
+   Pure expression representing the matrix object, or NULL if GSL matrix
    support is not available or some other error occurs. */
 
 pure_expr *pure_symbolic_matrix(void *p);
@@ -187,7 +195,7 @@ pure_expr *pure_int_matrix_dup(const void *p);
    (numeric) values in the matrix have different types, the result is always a
    symbolic matrix.
 
-   A null expression is returned in case of an error (dimension mismatch,
+   A NULL value is returned in case of an error (dimension mismatch,
    insufficient memory), leaving the input expressions untouched. Otherwise a
    new matrix expression is returned and references are counted on component
    expressions as appropriate (temporary components may also be
@@ -530,7 +538,7 @@ pure_expr *pure_force(pure_expr *x);
 
 typedef struct { jmp_buf jmp; pure_expr* e; size_t sz; } pure_exception;
 
-/* Throw the given expression (which may also be null) as an exception. */
+/* Throw the given expression (which may also be NULL) as an exception. */
 
 void pure_throw(pure_expr* e);
 
@@ -561,7 +569,7 @@ pure_expr *pure_invoke(void *f, pure_expr** e);
    given collection of arguments in preparation for a function call, while
    pure_free_args collects the arguments of a function call. In both cases the
    arguments follow the given parameter count n. For pure_free_args, the first
-   expression argument is the return value; if not null, an extra reference is
+   expression argument is the return value; if not NULL, an extra reference is
    temporarily counted on this expression so that it doesn't get freed if the
    return value happens to be a (subterm of an) argument or environment
    expression. These functions are only to be used for internal calls (apply,
