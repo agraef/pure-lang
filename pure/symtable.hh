@@ -87,6 +87,7 @@ class symtable {
   symbol* __quoteop_sym;
   symbol* __complex_rect_sym;
   symbol* __complex_polar_sym;
+  symbol* __rational_xdiv_sym;
 public:
   symtable();
   ~symtable();
@@ -197,6 +198,7 @@ public:
   symbol& quoteop_sym();
   symbol& complex_rect_sym();
   symbol& complex_polar_sym();
+  symbol& rational_xdiv_sym();
 };
 
 #endif // ! SYMTABLE_HH

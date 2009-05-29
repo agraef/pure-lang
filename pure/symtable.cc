@@ -48,6 +48,7 @@ symtable::symtable()
     __quoteop_sym(0),
     __complex_rect_sym(0),
     __complex_polar_sym(0),
+    __rational_xdiv_sym(0),
     current_namespace(new string),
     search_namespaces(new set<string>),
     __show__sym(0)
@@ -106,6 +107,7 @@ void symtable::init_builtins()
   quoteop_sym();
   complex_rect_sym();
   complex_polar_sym();
+  rational_xdiv_sym();
 }
 
 /* These are used internally to dump the entire symbol table from a string,
@@ -593,4 +595,13 @@ symbol& symtable::complex_polar_sym()
     return *__complex_polar_sym;
   else
     return *sym_p("<:", __complex_polar_sym, 5, infix);
+}
+
+symbol& symtable::rational_xdiv_sym()
+{
+  lookup_p("%", __rational_xdiv_sym);
+  if (__rational_xdiv_sym)
+    return *__rational_xdiv_sym;
+  else
+    return *sym_p("+:", __rational_xdiv_sym, 7, infixl);
 }

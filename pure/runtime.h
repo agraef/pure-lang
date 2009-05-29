@@ -307,6 +307,11 @@ bool pure_is_tuplev(pure_expr *x, size_t *size, pure_expr ***elems);
 pure_expr *pure_complex(double c[2]);
 bool pure_is_complex(pure_expr *x, double *c);
 
+/* Same for rational values (cf. math.pure). */
+
+pure_expr *pure_rationalz(const mpz_t z[2]);
+bool pure_is_rationalz(const pure_expr *x, mpz_t *z);
+
 /* Memory management. */
 
 /* Count a new reference to an expression. This should be called whenever you
@@ -372,6 +377,10 @@ bool pure_clear(int32_t sym);
 
 uint32_t pure_save();
 uint32_t pure_restore();
+
+/* pure_savelevel() returns the current save level. */
+
+uint32_t pure_savelevel();
 
 /* Like eval() and evalcmd() in the library API, the following routines
    evaluate Pure expressions and other Pure code, but, for convenience, the
@@ -538,19 +547,12 @@ pure_expr *pure_force(pure_expr *x);
 
 typedef struct { jmp_buf jmp; pure_expr* e; size_t sz; } pure_exception;
 
-/* Throw the given expression (which may also be NULL) as an exception. */
-
-void pure_throw(pure_expr* e);
+/* NOTE: pure_throw() and pure_trap() are in the library API now. */
 
 /* Throw a 'signal SIGFPE' exception. This is used to signal division by
    zero. */
 
 void pure_sigfpe(void);
-
-/* Configure signal handlers. The second argument is the signal number, the
-   first the action to take (-1 = ignore, 1 = handle, 0 = default). */
-
-void pure_trap(int32_t action, int32_t sig);
 
 /* Execute a parameterless fbox x and return its result. If an exception
    occurs while x is executed, apply h to the value of the exception
@@ -616,6 +618,15 @@ void pure_debug_redn(void *e, void *r, pure_expr *x);
 /* Add any stuff that is needed in the standard library here. Applications and
    external C modules may call these, but be warned that these APIs are
    subject to change without further notice. */
+
+/* Throw the given expression (which may also be NULL) as an exception. */
+
+void pure_throw(pure_expr* e);
+
+/* Configure signal handlers. The second argument is the signal number, the
+   first the action to take (-1 = ignore, 1 = handle, 0 = default). */
+
+void pure_trap(int32_t action, int32_t sig);
 
 /* Construct arithmetic sequences. */
 

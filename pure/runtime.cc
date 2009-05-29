@@ -2216,6 +2216,35 @@ bool pure_is_complex(pure_expr *x, double *c)
 }
 
 extern "C"
+pure_expr *pure_rationalz(const mpz_t z[2])
+{
+  interpreter& interp = *interpreter::g_interp;
+  symbol &xdiv = interp.symtab.rational_xdiv_sym();
+  return pure_appl(pure_symbol(xdiv.f), 2, pure_mpz(z[0]), pure_mpz(z[1]));
+}
+
+extern "C"
+bool pure_is_rationalz(const pure_expr *x, mpz_t *z)
+{
+  assert(x);
+  if (x->tag != EXPR::APP) return false;
+  pure_expr *u = x->data.x[0], *v = x->data.x[1];
+  if (u->tag == EXPR::APP) {
+    interpreter& interp = *interpreter::g_interp;
+    pure_expr *f = u->data.x[0];
+    symbol &xdiv = interp.symtab.rational_xdiv_sym();
+    if (f->tag != xdiv.f)
+      return false;
+    u = u->data.x[1];
+    if (u->tag == EXPR::BIGINT && v->tag == EXPR::BIGINT)
+      return pure_is_mpz(u, z) && pure_is_mpz(v, z+1);
+    else
+      return false;
+  } else
+    return false;
+}
+
+extern "C"
 pure_expr *pure_new(pure_expr *x)
 {
   return pure_new_internal(x);
@@ -2326,6 +2355,13 @@ uint32_t pure_restore()
   uint32_t level = interp.temp;
   interp.clear();
   if (level > 0 && interp.temp > level-1) --interp.temp;
+  return interp.temp;
+}
+
+extern "C"
+uint32_t pure_savelevel()
+{
+  interpreter& interp = *interpreter::g_interp;
   return interp.temp;
 }
 
