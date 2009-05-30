@@ -4752,7 +4752,8 @@ pure_expr *pure_double_seq(double from, double to, double step)
 {
   if (step == 0.0)
     return 0;
-  if ((step > 0.0 && from > to) || (step < 0.0 && from < to) ||
+  double to2 = to+0.5*step;
+  if ((step > 0.0 && from > to2) || (step < 0.0 && from < to2) ||
       is_nan(from) || is_nan(to))
     return mk_nil();
   else if (is_nan(step))
@@ -4765,13 +4766,14 @@ pure_expr *pure_double_seq(double from, double to, double step)
     pure_throw(pure_symbol(pure_sym("malloc_error")));
     return 0;
   }
-  double last = 0.0;
   for (int32_t i = 0; i < count; i++) {
-    last = from;
+    if ((step > 0.0 && from > to2) || (step < 0.0 && from < to2)) {
+      count = i;
+      break;
+    }
     xs[i] = pure_double(from);
     from += step;
   }
-  if ((step > 0.0 && last > to) || (step < 0.0 && last < to)) count--;
   pure_expr *x = pure_listv(count, xs);
   free(xs);
   return x;
