@@ -392,12 +392,18 @@ uint32_t pure_savelevel();
    their output; see the description of the library API routines for details.
    pure_eval() returns the (last) evaluated expression (if any), while
    pure_evalcmd only returns the output from interactive commands like 'show'
-   as a string (0 if none). Both routines also return 0 in case of an error;
-   in that case you can use lasterr() in the library API to check for error
-   messages from the interpreter. */
+   as a string (NULL if none). Both routines also return NULL in case of an
+   error; in that case you can use lasterr() in the library API to check for
+   error messages from the interpreter. */
 
 pure_expr *pure_eval(const char *s);
 char *pure_evalcmd(const char *s);
+
+/* pure_evalx() evaluates a (quoted) Pure expression, like eval() in the
+   library API, but returns exceptions (if any) to the caller. In the latter
+   case, NULL is returned, and the exception value is stored in *e. */
+
+pure_expr *pure_evalx(pure_expr *x, pure_expr** e);
 
 /* The following routines provide standalone C/C++ applications with fully
    initialized interpreter instances which can be used together with the
