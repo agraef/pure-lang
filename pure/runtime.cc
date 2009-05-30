@@ -741,6 +741,13 @@ pure_expr *pure_symbol(int32_t tag)
 }
 
 extern "C"
+pure_expr *pure_quoted_symbol(int32_t tag)
+{
+  assert(tag>0);
+  return pure_const(tag);
+}
+
+extern "C"
 pure_expr *pure_int(int32_t i)
 {
   pure_expr *x = new_expr();

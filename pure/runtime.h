@@ -130,11 +130,14 @@ int8_t pure_sym_nprec(int32_t sym);
    returns that symbol as a Pure value. If the symbol is a global variable
    bound to a value then that value is returned, if it's a parameterless
    function then it is evaluated, giving the return value of the function as
-   the result. pure_int, pure_mpz, pure_double and pure_pointer construct a
-   Pure machine int, bigint, floating point value and pointer from a 32 bit
-   integer, (copy of a) GMP mpz_t, double and C pointer, respectively. */
+   the result. pure_quoted_symbol constructs a symbol expression, too, but
+   doesn't evaluate it. pure_int, pure_mpz, pure_double and pure_pointer
+   construct a Pure machine int, bigint, floating point value and pointer from
+   a 32 bit integer, (copy of a) GMP mpz_t, double and C pointer,
+   respectively. */
 
 pure_expr *pure_symbol(int32_t sym);
+pure_expr *pure_quoted_symbol(int32_t tag);
 pure_expr *pure_int(int32_t i);
 pure_expr *pure_mpz(const mpz_t z);
 pure_expr *pure_double(double d);
