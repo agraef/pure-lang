@@ -4758,7 +4758,7 @@ pure_expr *pure_double_seq(double from, double to, double step)
     return mk_nil();
   else if (is_nan(step))
     return pure_listl(1, pure_double(from));
-  int32_t count = (int32_t)((to-from)/step);
+  int32_t count = (int32_t)((to-from)/step+0.5);
   if (count < 0) count = 0;
   count++;
   pure_expr **xs = (pure_expr**)malloc(count*sizeof(pure_expr*));
