@@ -112,9 +112,10 @@ $ ./configure --enable-optimized --disable-assertions --disable-expensive-checks
 $ make
 $ sudo make install
 
-*IMPORTANT:* On x86-64 systems you also have to add --enable-pic to the
+*IMPORTANT:* On x86-64 systems you might have to add --enable-pic to the
 configure command, so that the static LLVM libraries can be linked into the
-Pure runtime library. See the comments on 64 bit support in the SYSTEM NOTES
+Pure runtime library. Conversely, on 32 bit systems the --disable-pic option
+might be needed. See the comments on 32/64 bit support in the SYSTEM NOTES
 section below.
 
 Note that the configure flags are for an optimized (non-debug) build and
@@ -525,9 +526,11 @@ a stack overflow.
 32 BIT SYSTEMS
 -- --- -------
 
-LLVM is currently broken on x86-32 if it is built with --enable-pic (which is
-the default in the current svn version of LLVM). So make sure you *always*
-specify --disable-pic when configuring LLVM for x86-32 systems.
+The LLVM JIT is currently broken on x86-32 if it is built with --enable-pic
+(which is the default in the current svn version of LLVM). Right now, the
+easiest way to work around this is to specify --disable-pic when configuring
+LLVM for x86-32 systems. Please check the following bug report for details on
+this issue: http://llvm.org/bugs/show_bug.cgi?id=3239
 
 The Ubuntu 9.04 LLVM 2.5 package (2.5-0ubuntu1) is broken on x86-32 for
 similar reasons (the package was built using --enable-pic unconditionally for
@@ -543,16 +546,13 @@ to the maintainers so that the package gets fixed.
 As of LLVM 2.4, building the Pure runtime library (libpure) works out of the
 box on x86-64 systems, too. To make this work, you have to configure LLVM with
 --enable-pic so that the static LLVM libraries can be linked into the runtime
-library.
+library. (This is the default in the svn version of LLVM.)
 
 If you still use LLVM 2.3 on x86-64, there is a patch by Cyrille Berger which
 you need to apply in the llvm-2.3 source directory to make that version link
 properly with the Pure runtime library. The patch is available at:
 http://pure-lang.googlecode.com/svn/wiki/X86JITInfo.cpp.pic.2.3.patch. After
 applying the patch, configure LLVM with --enable-pic and build it as usual.
-
-Note that if you're using the latest LLVM from svn, --enable-pic is the
-default, thus you don't have to explicitly specify the flag any more.
 
 LINUX
 -----
