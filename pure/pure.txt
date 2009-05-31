@@ -552,34 +552,38 @@ Operator and nullary symbols: ``x+y``, ``x==y``, ``not x``
     constant rather than a variable (cf. the "head = function" rule described
     under `Definitions and Expression Evaluation`_ above).
 
-Lists and tuples: ``[x,y,z]``, ``x..y``, ``x:xs``, ``x,y,z``
-    The necessary constructors to build lists and tuples are actually defined
-    in the prelude: ``[]`` and ``()`` are the empty list and tuple, ``:``
-    produces list "conses", and ``,`` produces "pairs". As indicated, Pure
-    provides the usual syntactic sugar for list values in brackets, such as
-    ``[x,y,z]``, which is exactly the same as ``x:y:z:[]``. Moreover, the
-    prelude also provides an infix ``..`` operator to denote arithmetic
-    sequences such as ``1..10``. Sequences with arbitrary stepsizes can be
-    written by denoting the first two sequence elements using the ``:``
-    operator, as in ``1.0:1.2..3.0``. (To prevent strange artifacts due to
-    rounding errors, the upper bound in a floating point sequence is rounded
-    to the nearest step at or above the given bound. Thus, e.g.,
-    ``0.0:0.1..0.29`` actually yields ``[0.0,0.1,0.2,0.3]``.)
+Lists: ``[x,y,z]``, ``x:xs``, ``x..y``, ``x:y..z``
+    Pure's basic list syntax is the same as in Haskell, thus ``[]`` is the
+    empty list and ``x:xs`` denotes a list with head element ``x`` and tail
+    list ``xs``. (The infix constructor symbol ``:`` is declared in the
+    prelude.) The usual syntactic sugar for list values in brackets is
+    provided, thus ``[x,y,z]`` is exactly the same as ``x:y:z:[]``.
 
+    There's also a way to denote arithmetic sequences such as ``1..5``, which
+    denotes the list ``[1,2,3,4,5]``. (Haskell users should note the missing
+    brackets. In difference to Haskell, Pure doesn't use any special syntax
+    for arithmetic sequences, the ``..`` symbol is just an ordinary infix
+    operator declared and defined in the prelude.) Sequences with arbitrary
+    stepsizes can be written by denoting the first two sequence elements using
+    the ``:`` operator, as in ``1.0:1.2..3.0``. (To prevent unwanted artifacts
+    due to rounding errors, the upper bound in a floating point sequence is
+    always rounded to the nearest grid point. Thus, e.g., ``0.0:0.1..0.29``
+    actually yields ``[0.0,0.1,0.2,0.3]``, as does ``0.0:0.1..0.31``.)
+
+Tuples: ``x,y,z``
     Pure's tuples are a bit unusual: They are constructed by just "pairing"
-    things using the ``,`` operator, for which the empty tuple acts as a
-    neutral element (i.e., ``(),x`` is just ``x``, as is ``x,()``). Pairs
+    things using the ``,`` operator, for which the empty tuple ``()`` acts as
+    a neutral element (i.e., ``(),x`` is just ``x``, as is ``x,()``). Pairs
     always associate to the right, meaning that ``x,y,z == x,(y,z) ==
     (x,y),z``, where ``x,(y,z)`` is the normalized representation. This
     implies that tuples are always flat, i.e., there are no nested tuples
     (tuples of tuples); if you need such constructs then you should use lists
     instead. Also note that parentheses are generally only used to group
-    expressions and are *not* part of the tuple syntax in Pure. There's one
-    exception to this rule, however, namely that in order to include a tuple
-    in a bracketed list you have to put it inside parentheses. E.g.,
-    ``[(1,2),3,(4,5)]`` is a three element list consisting of the tuple
-    ``1,2``, the integer ``3``, and another tuple ``4,5``. Likewise,
-    ``[(1,2,3)]`` is a list with a single element, the tuple ``1,2,3``.
+    expressions and are *not* part of the tuple syntax in Pure, *except* if
+    you need to include a tuple in a list or matrix. E.g., ``[(1,2),3,(4,5)]``
+    is a three element list consisting of the tuple ``1,2``, the integer
+    ``3``, and another tuple ``4,5``. Likewise, ``[(1,2,3)]`` is a list with a
+    single element, the tuple ``1,2,3``.
 
 Matrices: ``{1.0,2.0,3.0}``, ``{1,2;3,4}``, ``{1L,y+1;foo,bar}``
     Pure also offers matrices, a kind of arrays, as a built-in data structure
@@ -592,6 +596,14 @@ Matrices: ``{1.0,2.0,3.0}``, ``{1,2;3,4}``, ``{1L,y+1;foo,bar}``
     ``{{1;3},{2;4}}`` is another way to write a 2x2 matrix in "column-major"
     form (however, internally all matrices are stored in C's row-major
     format).
+
+    Note that, while the ``[...]`` and ``{...}`` constructs look superficially
+    similar, they work in very different ways. The former is just syntactic
+    sugar for a corresponding constructor term and can thus be used as a
+    pattern on the left-hand side of an equation. In contrast, the latter is a
+    built-in operation which creates objects of a special matrix type. These
+    can *not* be used as patterns (instead, matrix values can be matched using
+    the special ``matrix::`` type tag, see `Rule Syntax`_ for details).
 
     If the interpreter was built with support for the `GNU Scientific
     Library`_ (GSL) then both numeric and symbolic matrices are available. The
@@ -681,9 +693,9 @@ conditional expressions (``if``-``then``-``else``), followed by the simple
 expressions, i.e., all other kinds of expressions involving operators,
 function applications, constants, symbols and other primary
 expressions. Precedence and associativity of operator symbols are given by
-their declarations (in the prelude or the user's program), and function
-application binds stronger than all operators. Parentheses can be used to
-override default precedences and associativities as usual.
+their declarations (c.f. Declarations_), and function application binds
+stronger than all operators. Parentheses can be used to override default
+precedences and associativities as usual.
 
 The common operator symbols like ``+``, ``-``, ``*``, ``/`` etc. are all
 declared at the beginning of the prelude, see the prelude.pure script for a
@@ -692,11 +704,12 @@ conventions. However, out of necessity (``!``, ``&`` and ``|`` are used for
 other purposes in Pure) the logical and bitwise operations, as well as the
 negated equality predicates are named a bit differently: ``~``, ``&&`` and
 ``||`` denote logical negation, conjunction and disjunction, while the
-corresponding bitwise operations are named ``not``, ``and`` and ``or``, and,
-following these conventions, inequality is denoted ``~=``. Also note that
-``&&`` and ``||`` are special forms which are evaluated in short-circuit mode
-like in C (see below), whereas the bitwise connectives receive their arguments
-using call-by-value, just like the other arithmetic operations.
+corresponding bitwise operations are named ``not``, ``and`` and
+``or``. Moreoever, following these conventions, inequality is denoted
+``~=``. Also note that ``&&`` and ``||`` are special forms which are evaluated
+in short-circuit mode like in C (see below), whereas the bitwise connectives
+receive their arguments using call-by-value, just like the other arithmetic
+operations.
 
 Special Forms
 -------------
@@ -929,11 +942,11 @@ an arbitrary value without binding a variable symbol.
 A left-hand side variable (including the anonymous variable) may be followed
 by one of the special type tags ``::int``, ``::bigint``, ``::double``,
 ``::string``, ``::matrix``, ``::pointer``, to indicate that it can only match
-a constant value of the corresponding built-in type. (This is useful if you
-want to write rules matching any object of one of these types; note that there
+a constant value of the corresponding built-in type. This is useful if you
+want to write rules matching any object of one of these types. Note that there
 is no way to write out all "constructors" for the built-in types, as there are
-infinitely many, or none, in the case of ``matrix`` and ``pointer`` which are
-constructed using special operations.)
+infinitely many. (Or none, as in the case of ``matrix`` and ``pointer`` which
+are constructed using special primitives.)
 
 Pure also supports Haskell-style "as" patterns of the form
 ``variable@pattern`` which binds the given variable to the expression matched
@@ -1057,18 +1070,18 @@ Here are a few examples of simple Pure programs.
 
 The factorial::
 
-  fact n  = n*fact (n-1) if n>0;
-          = 1 otherwise;
+  fact n = n*fact (n-1) if n>0;
+         = 1 otherwise;
   let facts = map fact (1..10); facts;
 
 The Fibonacci numbers::
 
-  fib n   = a  when a, b   = fibs n end
-               with fibs n = 0, 1 if n<=0;
-                           = case fibs (n-1) of
-                               a, b = b, a+b;
-                             end;
-               end;
+  fib n = a when a,b = fibs n end
+            with fibs n = 0,1 if n<=0;
+                        = case fibs (n-1) of
+                            a,b = b,a+b;
+                          end;
+            end;
   let fibs = map fib (1..30); fibs;
 
 It is worth noting here that in most cases Pure performs tail call

@@ -847,34 +847,37 @@ on the left-hand side of an equation, it is to be interpreted as a
 constant rather than a variable (cf. the &quot;head = function&quot; rule described
 under <a class="reference internal" href="#definitions-and-expression-evaluation">Definitions and Expression Evaluation</a> above).</p>
 </dd>
-<dt>Lists and tuples: <tt class="docutils literal"><span class="pre">[x,y,z]</span></tt>, <tt class="docutils literal"><span class="pre">x..y</span></tt>, <tt class="docutils literal"><span class="pre">x:xs</span></tt>, <tt class="docutils literal"><span class="pre">x,y,z</span></tt></dt>
-<dd><p class="first">The necessary constructors to build lists and tuples are actually defined
-in the prelude: <tt class="docutils literal"><span class="pre">[]</span></tt> and <tt class="docutils literal"><span class="pre">()</span></tt> are the empty list and tuple, <tt class="docutils literal"><span class="pre">:</span></tt>
-produces list &quot;conses&quot;, and <tt class="docutils literal"><span class="pre">,</span></tt> produces &quot;pairs&quot;. As indicated, Pure
-provides the usual syntactic sugar for list values in brackets, such as
-<tt class="docutils literal"><span class="pre">[x,y,z]</span></tt>, which is exactly the same as <tt class="docutils literal"><span class="pre">x:y:z:[]</span></tt>. Moreover, the
-prelude also provides an infix <tt class="docutils literal"><span class="pre">..</span></tt> operator to denote arithmetic
-sequences such as <tt class="docutils literal"><span class="pre">1..10</span></tt>. Sequences with arbitrary stepsizes can be
-written by denoting the first two sequence elements using the <tt class="docutils literal"><span class="pre">:</span></tt>
-operator, as in <tt class="docutils literal"><span class="pre">1.0:1.2..3.0</span></tt>. (To prevent strange artifacts due to
-rounding errors, the upper bound in a floating point sequence is rounded
-to the nearest step at or above the given bound. Thus, e.g.,
-<tt class="docutils literal"><span class="pre">0.0:0.1..0.29</span></tt> actually yields <tt class="docutils literal"><span class="pre">[0.0,0.1,0.2,0.3]</span></tt>.)</p>
-<p class="last">Pure's tuples are a bit unusual: They are constructed by just &quot;pairing&quot;
-things using the <tt class="docutils literal"><span class="pre">,</span></tt> operator, for which the empty tuple acts as a
-neutral element (i.e., <tt class="docutils literal"><span class="pre">(),x</span></tt> is just <tt class="docutils literal"><span class="pre">x</span></tt>, as is <tt class="docutils literal"><span class="pre">x,()</span></tt>). Pairs
+<dt>Lists: <tt class="docutils literal"><span class="pre">[x,y,z]</span></tt>, <tt class="docutils literal"><span class="pre">x:xs</span></tt>, <tt class="docutils literal"><span class="pre">x..y</span></tt>, <tt class="docutils literal"><span class="pre">x:y..z</span></tt></dt>
+<dd><p class="first">Pure's basic list syntax is the same as in Haskell, thus <tt class="docutils literal"><span class="pre">[]</span></tt> is the
+empty list and <tt class="docutils literal"><span class="pre">x:xs</span></tt> denotes a list with head element <tt class="docutils literal"><span class="pre">x</span></tt> and tail
+list <tt class="docutils literal"><span class="pre">xs</span></tt>. (The infix constructor symbol <tt class="docutils literal"><span class="pre">:</span></tt> is declared in the
+prelude.) The usual syntactic sugar for list values in brackets is
+provided, thus <tt class="docutils literal"><span class="pre">[x,y,z]</span></tt> is exactly the same as <tt class="docutils literal"><span class="pre">x:y:z:[]</span></tt>.</p>
+<p class="last">There's also a way to denote arithmetic sequences such as <tt class="docutils literal"><span class="pre">1..5</span></tt>, which
+denotes the list <tt class="docutils literal"><span class="pre">[1,2,3,4,5]</span></tt>. (Haskell users should note the missing
+brackets. In difference to Haskell, Pure doesn't use any special syntax
+for arithmetic sequences, the <tt class="docutils literal"><span class="pre">..</span></tt> symbol is just an ordinary infix
+operator declared and defined in the prelude.) Sequences with arbitrary
+stepsizes can be written by denoting the first two sequence elements using
+the <tt class="docutils literal"><span class="pre">:</span></tt> operator, as in <tt class="docutils literal"><span class="pre">1.0:1.2..3.0</span></tt>. (To prevent unwanted artifacts
+due to rounding errors, the upper bound in a floating point sequence is
+always rounded to the nearest grid point. Thus, e.g., <tt class="docutils literal"><span class="pre">0.0:0.1..0.29</span></tt>
+actually yields <tt class="docutils literal"><span class="pre">[0.0,0.1,0.2,0.3]</span></tt>, as does <tt class="docutils literal"><span class="pre">0.0:0.1..0.31</span></tt>.)</p>
+</dd>
+<dt>Tuples: <tt class="docutils literal"><span class="pre">x,y,z</span></tt></dt>
+<dd>Pure's tuples are a bit unusual: They are constructed by just &quot;pairing&quot;
+things using the <tt class="docutils literal"><span class="pre">,</span></tt> operator, for which the empty tuple <tt class="docutils literal"><span class="pre">()</span></tt> acts as
+a neutral element (i.e., <tt class="docutils literal"><span class="pre">(),x</span></tt> is just <tt class="docutils literal"><span class="pre">x</span></tt>, as is <tt class="docutils literal"><span class="pre">x,()</span></tt>). Pairs
 always associate to the right, meaning that <tt class="docutils literal"><span class="pre">x,y,z</span> <span class="pre">==</span> <span class="pre">x,(y,z)</span> <span class="pre">==</span>
 <span class="pre">(x,y),z</span></tt>, where <tt class="docutils literal"><span class="pre">x,(y,z)</span></tt> is the normalized representation. This
 implies that tuples are always flat, i.e., there are no nested tuples
 (tuples of tuples); if you need such constructs then you should use lists
 instead. Also note that parentheses are generally only used to group
-expressions and are <em>not</em> part of the tuple syntax in Pure. There's one
-exception to this rule, however, namely that in order to include a tuple
-in a bracketed list you have to put it inside parentheses. E.g.,
-<tt class="docutils literal"><span class="pre">[(1,2),3,(4,5)]</span></tt> is a three element list consisting of the tuple
-<tt class="docutils literal"><span class="pre">1,2</span></tt>, the integer <tt class="docutils literal"><span class="pre">3</span></tt>, and another tuple <tt class="docutils literal"><span class="pre">4,5</span></tt>. Likewise,
-<tt class="docutils literal"><span class="pre">[(1,2,3)]</span></tt> is a list with a single element, the tuple <tt class="docutils literal"><span class="pre">1,2,3</span></tt>.</p>
-</dd>
+expressions and are <em>not</em> part of the tuple syntax in Pure, <em>except</em> if
+you need to include a tuple in a list or matrix. E.g., <tt class="docutils literal"><span class="pre">[(1,2),3,(4,5)]</span></tt>
+is a three element list consisting of the tuple <tt class="docutils literal"><span class="pre">1,2</span></tt>, the integer
+<tt class="docutils literal"><span class="pre">3</span></tt>, and another tuple <tt class="docutils literal"><span class="pre">4,5</span></tt>. Likewise, <tt class="docutils literal"><span class="pre">[(1,2,3)]</span></tt> is a list with a
+single element, the tuple <tt class="docutils literal"><span class="pre">1,2,3</span></tt>.</dd>
 <dt>Matrices: <tt class="docutils literal"><span class="pre">{1.0,2.0,3.0}</span></tt>, <tt class="docutils literal"><span class="pre">{1,2;3,4}</span></tt>, <tt class="docutils literal"><span class="pre">{1L,y+1;foo,bar}</span></tt></dt>
 <dd><p class="first">Pure also offers matrices, a kind of arrays, as a built-in data structure
 which provides efficient storage and element access. These work more or
@@ -886,6 +889,13 @@ elements and/or submatrices, provided that all dimensions match up. E.g.,
 <tt class="docutils literal"><span class="pre">{{1;3},{2;4}}</span></tt> is another way to write a 2x2 matrix in &quot;column-major&quot;
 form (however, internally all matrices are stored in C's row-major
 format).</p>
+<p>Note that, while the <tt class="docutils literal"><span class="pre">[...]</span></tt> and <tt class="docutils literal"><span class="pre">{...}</span></tt> constructs look superficially
+similar, they work in very different ways. The former is just syntactic
+sugar for a corresponding constructor term and can thus be used as a
+pattern on the left-hand side of an equation. In contrast, the latter is a
+built-in operation which creates objects of a special matrix type. These
+can <em>not</em> be used as patterns (instead, matrix values can be matched using
+the special <tt class="docutils literal"><span class="pre">matrix::</span></tt> type tag, see <a class="reference internal" href="#rule-syntax">Rule Syntax</a> for details).</p>
 <p>If the interpreter was built with support for the <a class="reference internal" href="#gnu-scientific-library">GNU Scientific
 Library</a> (GSL) then both numeric and symbolic matrices are available. The
 former are thin wrappers around GSL's homogeneous arrays of double,
@@ -967,9 +977,9 @@ conditional expressions (<tt class="docutils literal"><span class="pre">if</span
 expressions, i.e., all other kinds of expressions involving operators,
 function applications, constants, symbols and other primary
 expressions. Precedence and associativity of operator symbols are given by
-their declarations (in the prelude or the user's program), and function
-application binds stronger than all operators. Parentheses can be used to
-override default precedences and associativities as usual.</p>
+their declarations (c.f. <a class="reference internal" href="#declarations">Declarations</a>), and function application binds
+stronger than all operators. Parentheses can be used to override default
+precedences and associativities as usual.</p>
 <p>The common operator symbols like <tt class="docutils literal"><span class="pre">+</span></tt>, <tt class="docutils literal"><span class="pre">-</span></tt>, <tt class="docutils literal"><span class="pre">*</span></tt>, <tt class="docutils literal"><span class="pre">/</span></tt> etc. are all
 declared at the beginning of the prelude, see the prelude.pure script for a
 list of these. Arithmetic and relational operators mostly follow C
@@ -977,11 +987,12 @@ conventions. However, out of necessity (<tt class="docutils literal"><span class
 other purposes in Pure) the logical and bitwise operations, as well as the
 negated equality predicates are named a bit differently: <tt class="docutils literal"><span class="pre">~</span></tt>, <tt class="docutils literal"><span class="pre">&amp;&amp;</span></tt> and
 <tt class="docutils literal"><span class="pre">||</span></tt> denote logical negation, conjunction and disjunction, while the
-corresponding bitwise operations are named <tt class="docutils literal"><span class="pre">not</span></tt>, <tt class="docutils literal"><span class="pre">and</span></tt> and <tt class="docutils literal"><span class="pre">or</span></tt>, and,
-following these conventions, inequality is denoted <tt class="docutils literal"><span class="pre">~=</span></tt>. Also note that
-<tt class="docutils literal"><span class="pre">&amp;&amp;</span></tt> and <tt class="docutils literal"><span class="pre">||</span></tt> are special forms which are evaluated in short-circuit mode
-like in C (see below), whereas the bitwise connectives receive their arguments
-using call-by-value, just like the other arithmetic operations.</p>
+corresponding bitwise operations are named <tt class="docutils literal"><span class="pre">not</span></tt>, <tt class="docutils literal"><span class="pre">and</span></tt> and
+<tt class="docutils literal"><span class="pre">or</span></tt>. Moreoever, following these conventions, inequality is denoted
+<tt class="docutils literal"><span class="pre">~=</span></tt>. Also note that <tt class="docutils literal"><span class="pre">&amp;&amp;</span></tt> and <tt class="docutils literal"><span class="pre">||</span></tt> are special forms which are evaluated
+in short-circuit mode like in C (see below), whereas the bitwise connectives
+receive their arguments using call-by-value, just like the other arithmetic
+operations.</p>
 </div>
 <div class="section" id="special-forms">
 <h2><a class="toc-backref" href="#id17">3.5&nbsp;&nbsp;&nbsp;Special Forms</a></h2>
@@ -1200,11 +1211,11 @@ an arbitrary value without binding a variable symbol.</p>
 <p>A left-hand side variable (including the anonymous variable) may be followed
 by one of the special type tags <tt class="docutils literal"><span class="pre">::int</span></tt>, <tt class="docutils literal"><span class="pre">::bigint</span></tt>, <tt class="docutils literal"><span class="pre">::double</span></tt>,
 <tt class="docutils literal"><span class="pre">::string</span></tt>, <tt class="docutils literal"><span class="pre">::matrix</span></tt>, <tt class="docutils literal"><span class="pre">::pointer</span></tt>, to indicate that it can only match
-a constant value of the corresponding built-in type. (This is useful if you
-want to write rules matching any object of one of these types; note that there
+a constant value of the corresponding built-in type. This is useful if you
+want to write rules matching any object of one of these types. Note that there
 is no way to write out all &quot;constructors&quot; for the built-in types, as there are
-infinitely many, or none, in the case of <tt class="docutils literal"><span class="pre">matrix</span></tt> and <tt class="docutils literal"><span class="pre">pointer</span></tt> which are
-constructed using special operations.)</p>
+infinitely many. (Or none, as in the case of <tt class="docutils literal"><span class="pre">matrix</span></tt> and <tt class="docutils literal"><span class="pre">pointer</span></tt> which
+are constructed using special primitives.)</p>
 <p>Pure also supports Haskell-style &quot;as&quot; patterns of the form
 <tt class="docutils literal"><span class="pre">variable&#64;pattern</span></tt> which binds the given variable to the expression matched
 by the subpattern <tt class="docutils literal"><span class="pre">pattern</span></tt> (in addition to the variables bound by
@@ -1325,18 +1336,18 @@ solve 2 4
 <p>Here are a few examples of simple Pure programs.</p>
 <p>The factorial:</p>
 <pre class="literal-block">
-fact n  = n*fact (n-1) if n&gt;0;
-        = 1 otherwise;
+fact n = n*fact (n-1) if n&gt;0;
+       = 1 otherwise;
 let facts = map fact (1..10); facts;
 </pre>
 <p>The Fibonacci numbers:</p>
 <pre class="literal-block">
-fib n   = a  when a, b   = fibs n end
-             with fibs n = 0, 1 if n&lt;=0;
-                         = case fibs (n-1) of
-                             a, b = b, a+b;
-                           end;
-             end;
+fib n = a when a,b = fibs n end
+          with fibs n = 0,1 if n&lt;=0;
+                      = case fibs (n-1) of
+                          a,b = b,a+b;
+                        end;
+          end;
 let fibs = map fib (1..30); fibs;
 </pre>
 <p>It is worth noting here that in most cases Pure performs tail call

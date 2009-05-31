@@ -349,18 +349,15 @@ def void (listmap f x) = do f x;
    .. _,:
 
    The prelude defines the list and tuple constructors (``x:y``, ``x,y``), as
-   well as equality (``==``) and inequality (``~=``) on these structures. It
-   also provides the predicate ``null x`` which tests whether ``x`` is the
-   empty list or tuple, the function ``reverse x`` which reverses a list or
-   tuple, and the operators ``#x`` (size of a list or tuple), ``x!i``
-   (indexing), ``x!!is`` (slicing) and ``x+y`` (list concatenation).
-
-   Note that list and tuple equality use the equality of their members to
-   decide equality of lists and tuples, so ``==`` must be defined on the list
-   or tuple members.
-
-   Also note that there isn't a separate operation for concatenating tuples,
-   since the pairing operator already does this::
+   well as equality (``==``) and inequality (``~=``) on these structures. (The
+   latter compare two lists or tuples by recursively comparing their members,
+   so ``==`` must be defined on the list or tuple members if you want to use
+   these operations.) It also provides the predicate ``null x`` which tests
+   whether ``x`` is the empty list or tuple, the function ``reverse x`` which
+   reverses a list or tuple, and the operators ``#x`` (size of a list or
+   tuple), ``x!i`` (indexing), ``x!!is`` (slicing) and ``x+y`` (list
+   concatenation). Note that there isn't a separate operation for
+   concatenating tuples, since the pairing operator already does this::
 
      > (1,2,3),(10,9,8);
      1,2,3,10,9,8
@@ -404,10 +401,11 @@ def void (listmap f x) = do f x;
      > 1:3..11;
      [1,3,5,7,9,11]
 
-   Note that the Pure syntax differs slightly from Haskell in that a step
-   width is indicated by specifying the first two elements as ``x:y`` instead
-   of ``x,y``. Also, to specify infinite sequences you have to use an infinite
-   upper bound (``inf`` or ``-inf``)::
+   Note that the Pure syntax differs from Haskell in that there are no
+   brackets around the construct and a step width is indicated by specifying
+   the first two elements as ``x:y`` instead of ``x,y``. Also, to specify
+   infinite sequences you have to use an infinite upper bound (``inf`` or
+   ``-inf``)::
 
      > 1:3..inf;
      1:#<thunk 0x7f696cd2dbd8>
