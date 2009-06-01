@@ -1,76 +1,130 @@
-/* Several Solutions to the Queens Problem  Dr Libor Spacek, 21th May 2008
+/* .. We use docutils to produce the documentation. Docstrings are extracted
+   .. with pure-doc. Please see the pure-doc documentation for details.
 
-queens.pure example usage: 
->using namespace queens;
->fullboard (thequeens 50);
-   
-   (allqueens n) returns all solutions but is slow
-   (queens n) and (tailqueens n) return one different solution each
-   (thequeens n) does no search and is very fast even for large boards
-   
-Examples: 
-    >allqueens 8; // returns all 92 solutions, as a list of lists
-    >queens 8;    // gives solution number 52 in the allqueens' list,
-    >tailqueens 8; // gives solution no. 89, which is a reflection of no. 52
-    >map succ (thequeens 8); // gives solution no. 56 */
+======================================
+Some Solutions to the N Queens Problem
+======================================
 
-// row j in current column not attacked by any queens in preceding columns? 
-// id is the column positions difference
+:Author: Libor Spacek (C) <libors@gmail.com>
+:License: GPL V3
+:Date: 21th May 2008  Version 2: May 2009
 
-namespace queens;
-public allqueens queens tailqueens fullboard thequeens checkqs queenstest;
-private safe;
-private nullary failed nosolution; 
-// nosolution is returned by thequeens for n=2 and n=3 
+**Example usage:**
 
-safe _ _ [] = 1;
-safe id::int j::int (j2::int:l) = 
-   if (j==j2) || (id==j2-j) || (id==j-j2) then 0 else safe (1+id) j l;
+	# pure -i queens.pure
 
-allqueens n::int = list (searchall n n []) // returns all possible solutions
+	>fullboard (thequeens 50); */
+
+// using namespace queens;
+// public allqueens queens tailqueens fullboard thequeens checkqs queenstest;
+// private safe;
+nullary failed nosolution; 
+
+/* 
+**(safe j l)**
+	is square j in current row safe from any attacks by previously
+	placed queens in list l? id is the +ve rows difference  used for recursion */
+
+safe j::int l = rsafe 1 j l
+	with
+	rsafe _ _ [] = 1;
+	rsafe id::int j::int (j2::int:l) = 
+		if ((j==j2) || (id==(abs(j2-j)))) then 0 else rsafe (succ id) j l
+	end;
+
+/* 
+**(diagsafe j l)**
+	is square j in current row safe from just the diagonal attacks by previously
+	placed queens in list l? id is the +ve rows difference  used for recursion */
+
+diagsafe j::int l = rsafe 1 j l
+	with
+	rsafe _ _ [] = 1;
+	rsafe id::int j::int (j2::int:l) = 
+		if id==(abs(j2-j)) then 0 else rsafe (succ id) j l
+	end;
+
+rem _ [] = [];
+rem h1::int (h2::int:t) = if h1 == h2 then t else h2:(rem h1 t);
+
+/* ..
+**(allqueens n)**
+	returns all possible solutions by constrained search
+	n.b. nobody has so far been able to find out, by any known method, the number
+	of solutions for n=26 and beyond. Allqueens, which is quite fast,
+	starts getting `breathless' beyond n=13 with #solutions = 73,712.
+	Only half the first row is used for the first queen, 
+	thus halving the total search effort, followed by a single reflection of the solutions found. Odd sized boards have in addition the middle row searched separately. All row and column checking is eliminated by passing 
+	valid candidates c (generating only valid permutations), 
+	leaving just a single check to perform for both diagonals.
+	More reflections/rotations could be done but they would have to be 
+	tested for duplicates.
+		>allqueens 8; returns all 92 solutions, as a list of lists */
+
+allqueens n::int = unimplemented for less than 5 if (n < 5);
+	= if (n mod 2 == 0) then (hsoln+revsoln) else
+		(hsoln+(list (search pn (rem hsn nl) [hsn]))+revsoln)
+  when pn = pred n; sn = succ n; hsn = sn div 2;
+	hnl = (1..(n div 2)); nl = (1..n);
+	hsoln = list (tuple (map (\j -> search pn (rem j nl) [j]) hnl));
+   revsoln = map (\y -> map (\z -> sn-z) y) hsoln
+	end
+	with
+	search 0 c p = p;
+	search i::int c p = tuple 
+		(map (\j -> search (pred i) (rem j c) (j:p)) [k | k = c; diagsafe k p])
+  end;
+
+/* ..
+**(queens n)**
+	the single solution is encoded as the columns permutation, 
+	leaving out the ordered rows i: (1..n). Full 2D board coordinates can always
+	be reconstructed with zip (1..n) (queens n); 
+		>queens 8;    gives solution number 52 in the allqueens' list. */
+
+queens n::int = search n n []
   with
-  	searchall n::int 0 p = p;
-   searchall n::int i::int p = 
-		tuple [searchall n (i-1) (j:p) | j = 1..n; safe 1 j p]
-  end;
-  
-// the solution is only the rows permutation, without the ordered columns (1..n) 
-// full 2D board coordinates can be reconstructed with zip (1..n) (queens n); 
-
-queens n::int = list (search n n n [])
-  with
-   search _ 0 _ p = ();  			// last i, solved
-   search _ _ 0 _ = failed;    	// failed, run out of alternative js
-   search n::int i::int j::int p = 
-     if (failed === solution) then search n i (j-1) p else j,solution
-     when solution = search n (i-1) n (j:p); end if safe 1 j p;   	          
-     = search n i (j-1) p	       // also try another j when unsafe
+   search 0 _ p = [];  			// last i, solved
+   search _ 0 _ = nosolution;    	// failed, run out of alternative js
+   search i::int j::int p = 
+     if (nosolution === solution) then search i (j-1) p else j:solution
+     when solution = search (i-1) n (j:p) end if safe j p;
+     = search i (j-1) p	       // also try another j when unsafe
   end;
 
-// this concise backtracking tailrecursive version throws a single solution - 
-// a reverse of "queens"
+/* ..
+**(tailqueens n)**
+	this concise backtracking tailrecursive version 
+	throws a single solution which is the rows reflection
+	of that found by "queens"  */
 
-tailqueens n::int = catch id (srch n n n []) 
-  with srch _ 0 _ p = throw p; 
-		 srch _ _ 0 _ = failed;
-       srch n::int i::int j::int p = if safe 1 j p then 
-         ( if failed === (srch n (i-1) n (j:p)) then srch n i (j-1) p else () ) 
-       else srch n i (j-1) p
+tailqueens n::int = catch id (srch n n []) 
+  with srch 0 _ p = throw p; 
+		 srch _ 0 _ = nosolution;
+       srch i::int j::int p = if safe j p then 
+         ( if nosolution === (srch (i-1) n (j:p)) then srch i (j-1) p else [] ) 
+       else srch i (j-1) p
   end;
-  
-/*
-thequeens encodes my no search solution, which is to my knowledge the simplest 
-known algorithm for this problem.
-There always exists one fundamental centre-symmetrical solution of this form, 
-representing an orbit of just 4 reflected solutions, instead of the usual 8.
-These few lines of code are self-contained (not calling any square checking).
-The solutions had been tested exhaustively for board sizes 0 to 5000 and also
-individually for board size 50000x50000.
 
-Row numbering in 'thequeens' is changed for simplicity to 'C style'  0..n-1 
-Solution using 2D board coordinates (1..n)x(1..n) can be easily reconstructed 
-with: (fullboard (thequeens n)).
-*/
+/* ..
+**(thequeens n)**
+	encodes my no search regular solution, 
+	which is to my knowledge the simplest and fastest known algorithm for 
+	the N-Queens problem. It is very fast even for large boards.
+
+	There always exists one symmetrical (under 180 degrees rotation) 
+	solution of this form, 
+	consequently producing an orbit of just 4 equivalent solutions, 
+	instead of the usual 8.
+	These few lines of code are self-contained (not calling any square checking).
+	The solutions had been tested exhaustively for board sizes 0 to 5000 and also
+	individually for board size 50000x50000.
+
+	Row numbering in 'thequeens' is changed for simplicity to 'C style'  0..n-1.
+	Solution using 2D board coordinates (1..n)x(1..n) can be easily 
+	reconstructed with: (**fullboard** (thequeens n)). 
+	Note - *nosolution* is correctly returned for n=2 and n=3 
+		>map succ (thequeens 8);  gives solution no. 56, encoded 1..n */
 
 fullboard simple = zip (1..(#simple)) (map succ simple);
 
@@ -91,17 +145,29 @@ thequeens n::int = case n of
 end; // end of case and thequeens
   
 
-// The rest are test utilities for the queens problem:
-// checks one queens solution either in 0..7 encoding or in 1..8 encoding.
-// returns 1 for a correct result, including "nosolution" for sizes 2 and 3. 
-// returns 0 if a queen attack exists anywhere in the presented 'solution':
+/* ..
+The rest are test utilities:
+
+**(checkqs l)**
+	checks one solution either in 0..n-1 encoding or in 1..n
+	encoding. It returns 1 for a correct result, including "nosolution" 
+	for sizes 2 and 3; 0 is returned if a queen attack exists anywhere 
+	within the presented 'solution'.
+
+**(queenstest method l)**
+	conducts an exhaustive test of solutions for boards of 
+	all listed sizes. Usage:
+		>queenstest (id) (allqueens 8);
+		
+		>queenstest queens (1..10); 
+
+		>queenstest tailqueens ([5,6,7]);
+
+		>queenstest thequeens (5000:4999..100); */
+
 checkqs [] = 1;
-checkqs (s::int:l) = if safe 1 s l then checkqs l else 0;
+checkqs (s::int:l) = if safe s l then checkqs l else 0;
 checkqs (nosolution) = 1;
 
-// conducts an exhaustive test of solutions for boards of all listed sizes. 
-// examples of use: >queenstest (1..1000); >queenstest (5000,4999..4990);
-// > queenstest ([5,6,7]);
-
-queenstest [] = 1;
-queenstest (h:l) = if checkqs (thequeens h) then queenstest l else 0;
+queenstest _ [] = 1;
+queenstest method (h:l) = if checkqs (method h) then (queenstest method l) else 0;
