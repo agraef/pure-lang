@@ -588,7 +588,7 @@ main(int argc, char *argv[])
       if (have_prelude)
 	cout << "Loaded prelude from " << prelude << ".\n";
       else if (want_prelude)
-	cout << "Couldn't find the prelude. Please check your PURELIB environment variable.\n";
+	cout << "\nCouldn't find the prelude. Please check your PURELIB environment variable.\n";
       cout << endl;
     }
     interp.compile();
