@@ -5424,6 +5424,13 @@ const char *lasterr()
 }
 
 extern "C"
+pure_expr *lastx()
+{
+  interpreter& interp = *interpreter::g_interp;
+  return interp.lastres;
+}
+
+extern "C"
 uint32_t matrix_size(pure_expr *x)
 {
   switch (x->tag) {

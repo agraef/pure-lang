@@ -361,7 +361,8 @@ public:
   list<string> loaded_libs; // the list of all loaded libs (lib:...)
   ostream *output;   // redirected output stream for interactive commands
   symtable symtab;   // the symbol table
-  pure_expr *result; // last computed result
+  pure_expr *result; // last result computed by exec()
+  pure_expr *lastres;// last printed result (interactive mode only)
   clock_t clocks;    // last evaluation time, if stats is set
   exprl last;        // last processed lhs collection
   env globenv;       // global function and variable environment
