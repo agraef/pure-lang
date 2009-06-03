@@ -1695,6 +1695,11 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
     argl args(s, "clear");
     list<string>::iterator arg;
     if (!args.ok) goto out3;
+    if (args.c == 1 && args.l.front() == "lastx") {
+      if (interp.lastres) pure_free(interp.lastres);
+      interp.lastres = 0;
+      goto out3;
+    }
     // process option arguments
     for (arg = args.l.begin(); arg != args.l.end(); arg++) {
       const char *s = arg->c_str();
