@@ -2419,15 +2419,6 @@ is also possible to override the print representation of any kind of
 expression by means of the ``__show__`` function, see the `Caveats and Notes`_
 section for details.
 
-Another convenience for interactive usage is the ``lastx`` function defined in
-the prelude, which retrieves the most recent result printed in interactive
-mode. For instance::
-
-  > map fact (1..10);
-  [1,2,6,24,120,720,5040,40320,362880,3628800]
-  > scanl (+) 0 lastx;
-  [0,1,3,9,33,153,873,5913,46233,409113,4037913]
-
 Online Help
 -----------
 
@@ -2509,15 +2500,16 @@ currently supported operations:
 
 ``clear [option ...] [symbol ...]``
     Purge the definitions of the given symbols (functions, macros, constants
-    or global variables). When invoked without any arguments, ``clear`` purges
-    all definitions at the current interactive "level" (after confirmation)
-    and returns you to the previous level, if any. (It might be a good idea to
-    first check your current definitions with ``show`` or back them up with
-    ``dump`` before you do that.) The desired level can be specified with the
-    -t option. See the description of the ``save`` command and `Definition
-    Levels`_ below for further details. A description of the common options
-    accepted by the ``clear``, ``dump`` and ``show`` commands can be found in
-    `Specifying Symbol Selections`_ below.
+    or global variables). If invoked as ``clear lastx``, clears the ``lastx``
+    value (see Lastx_ below). When invoked without any arguments, ``clear``
+    purges all definitions at the current interactive "level" (after
+    confirmation) and returns you to the previous level, if any. (It might be
+    a good idea to first check your current definitions with ``show`` or back
+    them up with ``dump`` before you do that.) The desired level can be
+    specified with the -t option. See the description of the ``save`` command
+    and `Definition Levels`_ below for further details. A description of the
+    common options accepted by the ``clear``, ``dump`` and ``show`` commands
+    can be found in `Specifying Symbol Selections`_ below.
 
 ``del [symbol ...]``
     Deletes breakpoints on the given function or operator symbols. If invoked
@@ -2601,12 +2593,30 @@ underride
 Note that these special commands are only recognized at the beginning of the
 interactive command line (they are not reserved keywords of the Pure
 language). Thus it's possible to "escape" identifiers looking like commands by
-entering a space at the beginning of the line. However, the compiler also
-warns you about identifiers which might be mistaken as command names, so that
-you can easily avoid this kind of problem.
+entering a space at the beginning of the line.
 
-Some of the more advanced commands and options for power users are discussed
-in more detail in the following subsections.
+Lastx
+-----
+
+Another convenience for interactive usage is the ``lastx`` function, which
+retrieves the most recent result printed in interactive mode. For instance::
+
+  > fact n = if n<=1 then 1 else n*fact (n-1);
+  > map fact (1..10);
+  [1,2,6,24,120,720,5040,40320,362880,3628800]
+  > scanl (+) 0 lastx;
+  [0,1,3,9,33,153,873,5913,46233,409113,4037913]
+
+Note that ``lastx`` is just an ordinary function, defined in the prelude, not
+a special command. However, there is a special ``clear lastx`` command which
+purges the ``lastx`` value. This is useful, e.g., if you got a huge result
+which you want to erase from memory before starting the next computation.
+
+::
+
+  > clear lastx
+  > lastx;
+  lastx
 
 Specifying Symbol Selections
 ----------------------------
