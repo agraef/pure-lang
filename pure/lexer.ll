@@ -34,8 +34,17 @@ static void my_readline(const char *prompt, char *buf, int &result, int max_size
 static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const char *cmd, const char *cmdline);
 static string pstring(const char *s);
 static string format_namespace(const string& name);
-static void check(const yy::location& l, const char* s, bool decl);
 static int32_t checktag(const char *s);
+
+/* Uncomment this to enable checking for interactive command names. This is
+   rather annoying and hence disabled by default. */
+//#define CHECK_NAMES 1
+
+#if CHECK_NAMES
+static void check(const yy::location& l, const char* s, bool decl);
+#else
+#define check(l, s, decl) 
+#endif
 
 #define YY_INPUT(buf,result,max_size)					\
   if (interpreter::g_interp->source_s) {				\
@@ -733,6 +742,7 @@ static void list_completions(ostream& os, const char *s)
   }
 }
 
+#if CHECK_NAMES
 static void check(const yy::location& l, const char* s, bool decl)
 {
   if (decl) {
@@ -758,6 +768,7 @@ static void check(const yy::location& l, const char* s, bool decl)
       return;
     }
 }
+#endif
 
 static int32_t checktag(const char *s)
 {
