@@ -1,7 +1,7 @@
 
 # Package name and version number:
 dist = pure-gen-$(version)
-version = 0.5
+version = 0.6
 
 # Try to guess the installation prefix (this needs GNU make):
 prefix = $(patsubst %/bin/pure,%,$(shell which pure 2>/dev/null))

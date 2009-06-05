@@ -675,7 +675,7 @@ static void *ffi_to_c(void *v, ffi_type *type, pure_expr *x)
       *(int64_t*)v = (int64_t)i;
     else if (pure_is_mpz(x, &z)) {
       mpz_clear(z);
-      *(int64_t*)v = pure_get_long(x);
+      *(int64_t*)v = pure__get_int64(x);
     } else
       return 0;
     break;
@@ -740,7 +740,7 @@ static pure_expr *ffi_from_c(ffi_type *type, void *v)
     return pure_int(*(int32_t*)v);
   case FFI_TYPE_UINT64:
   case FFI_TYPE_SINT64:
-    return pure_long(*(int64_t*)v);
+    return pure_int64(*(int64_t*)v);
   case FFI_TYPE_POINTER:
     if (type == &ffi_type_string)
       return pure_cstring_dup(*(char**)v);

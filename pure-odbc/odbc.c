@@ -191,7 +191,7 @@ static int set_arg(ODBCHandle *db, int i, pure_expr *x)
       buflen = (int64_t)iv;
     else if (pure_is_mpz(elems[0], &z)) {
       mpz_clear(z);
-      buflen = pure_get_long(elems[0]);
+      buflen = pure_get_int64(elems[0]);
     } else {
       free(elems);
       return 0;
@@ -1188,12 +1188,12 @@ pure_expr *odbc_sql_fetch(pure_expr *dbx)
 	if (len == SQL_NULL_DATA)
 	  xs[i] = pure_sqlnull();
 	else if (total == 0) {
-	  xs[i] = pure_tuplel(2, pure_long(0),
+	  xs[i] = pure_tuplel(2, pure_int64(0),
 			      pure_pointer(NULL));
 	} else {
 	  char *buf1 = realloc(buf, total);
 	  if (buf1) buf = buf1;
-	  xs[i] = pure_tuplel(2, pure_long((int64_t) total),
+	  xs[i] = pure_tuplel(2, pure_int64((int64_t) total),
 			      pure_sentry(pure_symbol(pure_sym("free")),
 					  pure_pointer(buf)));
 	  /* make a new buffer */
