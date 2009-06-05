@@ -482,7 +482,7 @@ pure_expr *pure_clos(bool local, bool thunked, int32_t tag, uint32_t n,
 
 /* Additional bigint constructors. */
 
-pure_expr *pure_long(int64_t l);
+pure_expr *pure_int64(int64_t l);
 pure_expr *pure_bigint(int32_t size, const limb_t *limbs);
 
 /* Compare a bigint or string expression against a constant value. This is
@@ -503,7 +503,7 @@ void pure_free_cstrings();
    integer. This is used to marshall bigint arguments in the C interface. */
 
 void *pure_get_bigint(pure_expr *x);
-int64_t pure_get_long(pure_expr *x);
+int64_t pure_get_int64(pure_expr *x);
 int32_t pure_get_int(pure_expr *x);
 
 /* Convert a matrix expression to a pointer to the corresponding GSL matrix
@@ -948,7 +948,8 @@ pure_expr *arity(const pure_expr *x);
 int32_t pointer_get_byte(void *ptr);
 int32_t pointer_get_short(void *ptr);
 int32_t pointer_get_int(void *ptr);
-int64_t pointer_get_long(void *ptr);
+int64_t pointer_get_int64(void *ptr);
+long pointer_get_long(void *ptr);
 double pointer_get_float(void *ptr);
 double pointer_get_double(void *ptr);
 char *pointer_get_string(void *ptr);
@@ -958,7 +959,8 @@ pure_expr *pointer_get_expr(void *ptr);
 void pointer_put_byte(void *ptr, int32_t x);
 void pointer_put_short(void *ptr, int32_t x);
 void pointer_put_int(void *ptr, int32_t x);
-void pointer_put_long(void *ptr, int64_t x);
+void pointer_put_int64(void *ptr, int64_t x);
+void pointer_put_long(void *ptr, long x);
 void pointer_put_float(void *ptr, double x);
 void pointer_put_double(void *ptr, double x);
 void pointer_put_string(void *ptr, const char *x);

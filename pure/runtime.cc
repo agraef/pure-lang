@@ -2813,7 +2813,7 @@ pure_expr *pure_clos(bool local, bool thunked, int32_t tag, uint32_t n,
 }
 
 extern "C"
-pure_expr *pure_long(int64_t l)
+pure_expr *pure_int64(int64_t l)
 {
   int sgn = (l>0)?1:(l<0)?-1:0;
   uint64_t v = (uint64_t)(l>=0?l:-l);
@@ -2891,7 +2891,7 @@ void pure_free_cstrings()
 }
 
 extern "C"
-int64_t pure_get_long(pure_expr *x)
+int64_t pure_get_int64(pure_expr *x)
 {
   uint64_t v =
     (sizeof(mp_limb_t) == 8) ? (uint64_t)mpz_getlimbn(x->data.z, 0) :
@@ -4837,7 +4837,7 @@ pure_expr *pure_pointerval(pure_expr *x)
 #endif
     else
 #if SIZEOF_VOID_P==8
-      return pure_pointer((void*)(uint64_t)pure_get_long(x));
+      return pure_pointer((void*)(uint64_t)pure_get_int64(x));
 #else
       return pure_pointer((void*)(uint32_t)pure_get_int(x));
 #endif
@@ -7777,10 +7777,22 @@ int32_t pointer_get_int(void *ptr)
 }
 
 extern "C"
-int64_t pointer_get_long(void *ptr)
+int64_t pointer_get_int64(void *ptr)
 {
   int64_t *p = (int64_t*)ptr;
   return *p;
+}
+
+extern "C"
+long pointer_get_long(void *ptr)
+{
+#if SIZEOF_LONG==4
+  int32_t *p = (int32_t*)ptr;
+  return *p;
+#else
+  int64_t *p = (int64_t*)ptr;
+  return *p;
+#endif
 }
 
 extern "C"
@@ -7840,10 +7852,22 @@ void pointer_put_int(void *ptr, int32_t x)
 }
 
 extern "C"
-void pointer_put_long(void *ptr, int64_t x)
+void pointer_put_int64(void *ptr, int64_t x)
 {
   int64_t *p = (int64_t*)ptr;
   *p = x;
+}
+
+extern "C"
+void pointer_put_long(void *ptr, long x)
+{
+#if SIZEOF_LONG==4
+  int32_t *p = (int32_t*)ptr;
+  *p = x;
+#else
+  int64_t *p = (int64_t*)ptr;
+  *p = x;
+#endif
 }
 
 extern "C"

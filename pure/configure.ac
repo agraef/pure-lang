@@ -1,8 +1,8 @@
 
 dnl To regenerate the configury after changes:
-dnl autoconf -I config && autoheader -I config
+dnl autoconf -I config && autoheader -I config  (or just: make config)
 
-AC_INIT(pure, 0.24)
+AC_INIT(pure, 0.25)
 AC_CONFIG_AUX_DIR(config)
 dnl AC_CONFIG_MACRO_DIR(config)
 AC_CONFIG_HEADERS(config.h)
@@ -29,8 +29,10 @@ dnl Check for programs.
 AC_PROG_INSTALL
 AC_PROG_CC
 AC_PROG_CXX
-dnl Determine pointer sizes. This will be 8 on 64 bit systems.
+dnl Determine the sizes of pointers and various integer types.
 AC_CHECK_SIZEOF(void *)
+AC_CHECK_SIZEOF(long)
+AC_CHECK_SIZEOF(size_t)
 dnl Parse --enable options.
 gsllib=yes
 AC_ARG_ENABLE(gsl,

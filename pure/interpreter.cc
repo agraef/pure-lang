@@ -158,16 +158,15 @@ void interpreter::init()
   // interface.
   {
     std::vector<const Type*> elts;
-    if (sizeof(size_t) == 4) {
-      elts.push_back(Type::Int32Ty);	// size1
-      elts.push_back(Type::Int32Ty);	// size2
-      elts.push_back(Type::Int32Ty);	// tda
-    } else {
-      assert(sizeof(size_t) == 8);
-      elts.push_back(Type::Int64Ty);	// size1
-      elts.push_back(Type::Int64Ty);	// size2
-      elts.push_back(Type::Int64Ty);	// tda
-    }
+#if SIZEOF_SIZE_T==4
+    elts.push_back(Type::Int32Ty);	// size1
+    elts.push_back(Type::Int32Ty);	// size2
+    elts.push_back(Type::Int32Ty);	// tda
+#else
+    elts.push_back(Type::Int64Ty);	// size1
+    elts.push_back(Type::Int64Ty);	// size2
+    elts.push_back(Type::Int64Ty);	// tda
+#endif
     elts.push_back(VoidPtrTy);		// data
     elts.push_back(VoidPtrTy);		// block
     elts.push_back(Type::Int32Ty);	// owner
@@ -177,16 +176,15 @@ void interpreter::init()
   }
   {
     std::vector<const Type*> elts;
-    if (sizeof(size_t) == 4) {
-      elts.push_back(Type::Int32Ty);	// size1
-      elts.push_back(Type::Int32Ty);	// size2
-      elts.push_back(Type::Int32Ty);	// tda
-    } else {
-      assert(sizeof(size_t) == 8);
-      elts.push_back(Type::Int64Ty);	// size1
-      elts.push_back(Type::Int64Ty);	// size2
-      elts.push_back(Type::Int64Ty);	// tda
-    }
+#if SIZEOF_SIZE_T==4
+    elts.push_back(Type::Int32Ty);	// size1
+    elts.push_back(Type::Int32Ty);	// size2
+    elts.push_back(Type::Int32Ty);	// tda
+#else
+    elts.push_back(Type::Int64Ty);	// size1
+    elts.push_back(Type::Int64Ty);	// size2
+    elts.push_back(Type::Int64Ty);	// tda
+#endif
     elts.push_back(DoublePtrTy);	// data
     elts.push_back(VoidPtrTy);		// block
     elts.push_back(Type::Int32Ty);	// owner
@@ -196,16 +194,15 @@ void interpreter::init()
   }
   {
     std::vector<const Type*> elts;
-    if (sizeof(size_t) == 4) {
-      elts.push_back(Type::Int32Ty);	// size1
-      elts.push_back(Type::Int32Ty);	// size2
-      elts.push_back(Type::Int32Ty);	// tda
-    } else {
-      assert(sizeof(size_t) == 8);
-      elts.push_back(Type::Int64Ty);	// size1
-      elts.push_back(Type::Int64Ty);	// size2
-      elts.push_back(Type::Int64Ty);	// tda
-    }
+#if SIZEOF_SIZE_T==4
+    elts.push_back(Type::Int32Ty);	// size1
+    elts.push_back(Type::Int32Ty);	// size2
+    elts.push_back(Type::Int32Ty);	// tda
+#else
+    elts.push_back(Type::Int64Ty);	// size1
+    elts.push_back(Type::Int64Ty);	// size2
+    elts.push_back(Type::Int64Ty);	// tda
+#endif
     elts.push_back(ComplexPtrTy);	// data
     elts.push_back(VoidPtrTy);		// block
     elts.push_back(Type::Int32Ty);	// owner
@@ -215,16 +212,15 @@ void interpreter::init()
   }
   {
     std::vector<const Type*> elts;
-    if (sizeof(size_t) == 4) {
-      elts.push_back(Type::Int32Ty);	// size1
-      elts.push_back(Type::Int32Ty);	// size2
-      elts.push_back(Type::Int32Ty);	// tda
-    } else {
-      assert(sizeof(size_t) == 8);
-      elts.push_back(Type::Int64Ty);	// size1
-      elts.push_back(Type::Int64Ty);	// size2
-      elts.push_back(Type::Int64Ty);	// tda
-    }
+#if SIZEOF_SIZE_T==4
+    elts.push_back(Type::Int32Ty);	// size1
+    elts.push_back(Type::Int32Ty);	// size2
+    elts.push_back(Type::Int32Ty);	// tda
+#else
+    elts.push_back(Type::Int64Ty);	// size1
+    elts.push_back(Type::Int64Ty);	// size2
+    elts.push_back(Type::Int64Ty);	// tda
+#endif
     elts.push_back(IntPtrTy);		// data
     elts.push_back(VoidPtrTy);		// block
     elts.push_back(Type::Int32Ty);	// owner
@@ -341,8 +337,8 @@ void interpreter::init()
 		 "pure_const",      "expr*",  1, "int");
   declare_extern((void*)pure_int,
 		 "pure_int",        "expr*",  1, "int");
-  declare_extern((void*)pure_long,
-		 "pure_long",       "expr*",  1, "long");
+  declare_extern((void*)pure_int64,
+		 "pure_int64",      "expr*",  1, "int64");
   declare_extern((void*)pure_bigint,
 		 "pure_bigint",     "expr*",  2, "int",
 		 sizeof(mp_limb_t)==8?"long*":"int*");
@@ -391,8 +387,8 @@ void interpreter::init()
 		 "pure_free_cstrings","void", 0);
   declare_extern((void*)pure_get_bigint,
 		 "pure_get_bigint",  "void*", 1, "expr*");
-  declare_extern((void*)pure_get_long,
-		 "pure_get_long",    "long",  1, "expr*");
+  declare_extern((void*)pure_get_int64,
+		 "pure_get_int64",   "int64", 1, "expr*");
   declare_extern((void*)pure_get_int,
 		 "pure_get_int",     "int",   1, "expr*");
   declare_extern((void*)pure_get_matrix,
@@ -4429,31 +4425,56 @@ const Type *interpreter::named_type(string name)
     return Type::VoidTy;
   else if (name == "bool")
     return Type::Int1Ty;
-  else if (name == "char")
+  else if (name == "char" || name == "int8")
     return Type::Int8Ty;
-  else if (name == "short")
+  else if (name == "short" || name == "int16")
     return Type::Int16Ty;
-  else if (name == "int")
+  else if (name == "int" || name == "int32")
     return Type::Int32Ty;
-  else if (name == "long")
+  else if (name == "int64")
     return Type::Int64Ty;
+  else if (name == "long")
+#if SIZEOF_LONG==4
+    return Type::Int32Ty;
+#else
+#if SIZEOF_LONG!=8
+#error "Unknown size of long type."
+#endif
+    return Type::Int64Ty;
+#endif
   else if (name == "size_t")
-    if (sizeof(size_t) == 4)
-      return Type::Int32Ty;
-    else
-      return Type::Int64Ty;
+#if SIZEOF_SIZE_T==4
+    return Type::Int32Ty;
+#else
+#if SIZEOF_SIZE_T!=8
+#error "Unknown size of size_t type."
+#endif
+    return Type::Int64Ty;
+#endif
   else if (name == "float")
     return Type::FloatTy;
   else if (name == "double")
     return Type::DoubleTy;
-  else if (name == "char*")
+  else if (name == "char*" || name == "int8*")
     return CharPtrTy;
-  else if (name == "short*")
+  else if (name == "short*" || name == "int16*")
     return PointerType::get(Type::Int16Ty, 0);
-  else if (name == "int*")
+  else if (name == "int*" || name == "int32*")
     return PointerType::get(Type::Int32Ty, 0);
-  else if (name == "long*")
+  else if (name == "int64*")
     return PointerType::get(Type::Int64Ty, 0);
+  else if (name == "long*")
+#if SIZEOF_LONG==4
+    return PointerType::get(Type::Int32Ty, 0);
+#else
+    return PointerType::get(Type::Int64Ty, 0);
+#endif
+  else if (name == "size_t*")
+#if SIZEOF_SIZE_T==4
+    return PointerType::get(Type::Int32Ty, 0);
+#else
+    return PointerType::get(Type::Int64Ty, 0);
+#endif
   else if (name == "float*")
     return PointerType::get(Type::FloatTy, 0);
   else if (name == "double*")
@@ -4490,9 +4511,21 @@ const char *interpreter::type_name(const Type *type)
   else if (type == Type::Int16Ty)
     return "short";
   else if (type == Type::Int32Ty)
+    /* We render this type as 'int' here, which should be the right thing in
+       most cases. Unfortunately, if we are on a 32 bit system. we have no way
+       of knowing whether the type was originally specified as 'long' instead,
+       but time will hopefully remedy this issue. */
     return "int";
   else if (type == Type::Int64Ty)
+#if SIZEOF_LONG==8
+    /* We render this type as 'long' here, which should be the right thing in
+       most cases. Again, we have no way of knowing whether the type was
+       originally specified as 'int64' instead, but time will hopefully remedy
+       this issue. */
     return "long";
+#else
+    return "int64";
+#endif
   else if (type == Type::FloatTy)
     return "float";
   else if (type == Type::DoubleTy)
@@ -4504,7 +4537,11 @@ const char *interpreter::type_name(const Type *type)
   else if (type == PointerType::get(Type::Int32Ty, 0))
     return "int*";
   else if (type == PointerType::get(Type::Int64Ty, 0))
+#if SIZEOF_LONG==8
     return "long*";
+#else
+    return "int64*";
+#endif
   else if (type == PointerType::get(Type::FloatTy, 0))
     return "float*";
   else if (type == PointerType::get(Type::DoubleTy, 0))
@@ -4844,7 +4881,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       f->getBasicBlockList().push_back(mpzbb);
       b.SetInsertPoint(mpzbb);
       // Handle the case of a bigint (mpz_t -> long).
-      Value *mpzv = b.CreateCall(module->getFunction("pure_get_long"), x);
+      Value *mpzv = b.CreateCall(module->getFunction("pure_get_int64"), x);
       b.CreateBr(okbb);
       f->getBasicBlockList().push_back(okbb);
       b.SetInsertPoint(okbb);
@@ -5052,7 +5089,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   else if (type == Type::Int32Ty)
     u = b.CreateCall(module->getFunction("pure_int"), u);
   else if (type == Type::Int64Ty)
-    u = b.CreateCall(module->getFunction("pure_long"), u);
+    u = b.CreateCall(module->getFunction("pure_int64"), u);
   else if (type == Type::FloatTy)
     u = b.CreateCall(module->getFunction("pure_double"),
 		     b.CreateFPExt(u, Type::DoubleTy));

@@ -1,3 +1,28 @@
+2009-06-06  Albert Graef  <Dr.Graef@t-online.de>
+
+	* configure.ac, Makefile.in: Bumped version number to 0.25. Also
+	bumped the runtime library version to 2.0, to account for 'long'
+	related changes breaking backward compatibility, see below.
+
+2009-06-05  Albert Graef  <Dr.Graef@t-online.de>
+
+	* runtime.h/cc, interpreter.cc: C interface changes as discussed
+	on the mailing list. 'long' is now a 32 or 64 bit integer type,
+	depending on the architecture. This incurs various changes in the
+	runtime and the library:
+
+	- pure_long, pure_get_long (internal API) are renamed to
+	pure_int64, pure_get_int64, respectively.
+
+	- pointer_get_long, pointer_put_long now use long integers,
+	pointer_get_int64, pointer_put_int64 are provided to deal with 64
+	bit integers. This affects lib/primitives.pure.
+
+	- int8, int16, int32 are now available as synonyms for char,
+	short, int, respectively, and int64 denotes true 64 bit
+	integers. The time-related functions in lib/system.pure were
+	modified accordingly.
+
 2009-06-03  Albert Graef  <Dr.Graef@t-online.de>
 
 	* lexer.ll (check): Disabled the check for symbols which might be
