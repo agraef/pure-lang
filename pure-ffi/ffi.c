@@ -671,7 +671,7 @@ static void *ffi_to_c(void *v, ffi_type *type, pure_expr *x)
     if (pure_is_int(x, &i))
       *(int64_t*)v = (int64_t)i;
     else if (pure_is_mpz(x, NULL)) {
-      *(int64_t*)v = pure__get_int64(x);
+      *(int64_t*)v = pure_get_int64(x);
     } else
       return 0;
     break;
