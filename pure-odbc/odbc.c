@@ -189,8 +189,7 @@ static int set_arg(ODBCHandle *db, int i, pure_expr *x)
     }
     if (pure_is_int(elems[0], &iv))
       buflen = (int64_t)iv;
-    else if (pure_is_mpz(elems[0], &z)) {
-      mpz_clear(z);
+    else if (pure_is_mpz(elems[0], NULL)) {
       buflen = pure_get_int64(elems[0]);
     } else {
       free(elems);

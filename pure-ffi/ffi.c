@@ -641,8 +641,7 @@ static void *ffi_to_c(void *v, ffi_type *type, pure_expr *x)
   case FFI_TYPE_SINT8:
     if (pure_is_int(x, &i))
       *(int8_t*)v = (int8_t)i;
-    else if (pure_is_mpz(x, &z)) {
-      mpz_clear(z);
+    else if (pure_is_mpz(x, NULL)) {
       *(int8_t*)v = (int8_t)pure_get_int(x);
     } else
       return 0;
@@ -651,8 +650,7 @@ static void *ffi_to_c(void *v, ffi_type *type, pure_expr *x)
   case FFI_TYPE_SINT16:
     if (pure_is_int(x, &i))
       *(int16_t*)v = (int16_t)i;
-    else if (pure_is_mpz(x, &z)) {
-      mpz_clear(z);
+    else if (pure_is_mpz(x, NULL)) {
       *(int16_t*)v = (int16_t)pure_get_int(x);
     } else
       return 0;
@@ -663,8 +661,7 @@ static void *ffi_to_c(void *v, ffi_type *type, pure_expr *x)
   case FFI_TYPE_SINT32:
     if (pure_is_int(x, &i))
       *(int32_t*)v = i;
-    else if (pure_is_mpz(x, &z)) {
-      mpz_clear(z);
+    else if (pure_is_mpz(x, NULL)) {
       *(int32_t*)v = pure_get_int(x);
     } else
       return 0;
@@ -673,8 +670,7 @@ static void *ffi_to_c(void *v, ffi_type *type, pure_expr *x)
   case FFI_TYPE_SINT64:
     if (pure_is_int(x, &i))
       *(int64_t*)v = (int64_t)i;
-    else if (pure_is_mpz(x, &z)) {
-      mpz_clear(z);
+    else if (pure_is_mpz(x, NULL)) {
       *(int64_t*)v = pure__get_int64(x);
     } else
       return 0;
