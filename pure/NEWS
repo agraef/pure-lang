@@ -1,4 +1,26 @@
 
+** Pure 0.25 (in progress)
+
+The biggest change in this release is that in the C interface, 'long' now
+denotes a real C long int (whose size usually depends on the architecture),
+instead of always assuming 64 bit integers. This makes it easier to interface
+to C functions involving such values. Real 64 bit integers are now denoted
+'int64', and 'int8/int16/int32' are provided as synonyms for the
+'char/short/int' types. Affected bits and pieces in the standard library were
+fixed to accommodate these changes, see the ChangeLog for details.
+
+Unfortunately, this also required changes which break backward compatibility
+in the runtime library, so existing addon modules must be recompiled as
+well. Moreover, the following addons have been updated, so you should make
+sure that you run the latest releases of these (required versions are
+indicated): pure-ffi (0.6), pure-gen (0.6), pure-gl (0.6), pure-gtk (0.3),
+pure-odbc (0.3).
+
+In addition, there is a new 'lastx' function to retrieve the most recent
+result printed on the interactive command line. Some minor bugs that crept
+into the 0.23/0.24 releases were fixed as well. Please see the ChangeLog for
+details.
+
 ** Pure 0.24 2009-05-30
 
 This is a maintenance release featuring some additions and cosmetic changes in
