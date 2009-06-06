@@ -40,6 +40,7 @@ syn keyword pureKeyword	using when with
 syn keyword pureSpecial catch throw
 syn keyword pureType bigint bool char short int long double
 syn keyword pureType expr string pointer void
+syn keyword pureType int8 int16 int32 int64
 syn keyword pureType matrix dmatrix cmatrix imatrix
 
 syn match   pureNumber	         "\<[0-9]*\>"
