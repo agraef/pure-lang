@@ -173,18 +173,21 @@ using namespace C;
    .. _ubyte:
    .. _ushort:
    .. _uint:
+   .. _uint64:
    .. _ulong:
 
-   ``ubyte x``, ``ushort x``, ``uint x``, ``ulong x``
+   ``ubyte x``, ``ushort x``, ``uint x``, ``uint64 x``, ``ulong x``
      Convert signed (8/16/32/64) bit integers to the corresponding unsigned
      quantities. These functions behave as if the value was "cast" to the
      corresponding unsigned C type, and are most useful for dealing with
      unsigned integers returned by external C routines. The routines always
      use the smallest Pure int type capable of holding the result: ``int`` for
-     ``ubyte`` and ``ushort``, ``bigint`` for ``uint`` and ``ulong``. (Note
-     that in the case of 64 bit values the C interface returns a bigint,
-     that's why ``ulong`` takes a bigint parameter. The other routines all
-     take an int as input.)
+     ``ubyte`` and ``ushort``, ``bigint`` for ``uint``, ``uint64`` and
+     ``ulong``. All routines take int parameters. In the case of ``uint64``, a
+     bigint parameter is also permitted (which is what the C interface returns
+     for 64 bit values). Also note that ``ulong`` reduces to either ``uint``
+     or ``uint64``, depending on the size of ``long`` for the host
+     architecture.
 
    The following _`rounding functions` work with all kinds of numbers:
 
@@ -505,18 +508,14 @@ pointer x::double	|
 pointer x::string	= pure_pointerval x;
 
 /* Convert signed (8/16/32/64) bit integers to the corresponding unsigned
-   quantities. These functions behave as if the value was "cast" to the
-   corresponding unsigned C type, and are most useful for dealing with
-   unsigned integers returned by external C routines. The routines always use
-   the smallest Pure int type capable of holding the result: int for ubyte and
-   ushort, bigint for uint and ulong. (Note that in the case of 64 bit values
-   the C interface returns a bigint, that's why ulong takes a bigint
-   parameter. The other routines all take an int as input.)  */
+   quantities. */
 
 ubyte x::int		= if x>=0 then x else x+0x100;
 ushort x::int		= if x>=0 then x else x+0x10000;
 uint x::int		= if x>=0 then bigint x else x+0x100000000L;
-ulong x::bigint		= if x>=0 then x else x+0x10000000000000000L;
+uint64 x::int		|
+uint64 x::bigint	= if x>=0 then bigint x else x+0x10000000000000000L;
+ulong			= if SIZEOF_LONG==4 then uint else uint64;
 
 /* Rounding functions. */
 
@@ -880,6 +879,7 @@ extern void free(void* ptr);
 /* .. _get_byte:
    .. _get_short:
    .. _get_int:
+   .. _get_int64:
    .. _get_long:
    .. _get_float:
    .. _get_double:
@@ -888,15 +888,16 @@ extern void free(void* ptr);
    .. _put_byte:
    .. _put_short:
    .. _put_int:
+   .. _put_int64:
    .. _put_long:
    .. _put_float:
    .. _put_double:
    .. _put_string:
    .. _put_pointer:
 
-   ``get_byte ptr``, ``get_short ptr``, ``get_int ptr``, ``get_long ptr``, ``get_float ptr``, ``get_double ptr``, ``get_string ptr``, ``get_pointer ptr``
+   ``get_byte ptr``, ``get_short ptr``, ``get_int ptr``, ``get_int64 ptr``, ``get_long ptr``, ``get_float ptr``, ``get_double ptr``, ``get_string ptr``, ``get_pointer ptr``
 
-   ``put_byte ptr x``, ``put_short ptr x``, ``put_int ptr x``, ``put_long ptr x``, ``put_float ptr x``, ``put_double ptr x``, ``put_string ptr x``, ``put_pointer ptr x``
+   ``put_byte ptr x``, ``put_short ptr x``, ``put_int ptr x``, ``put_int64 ptr x``, ``put_long ptr x``, ``put_float ptr x``, ``put_double ptr x``, ``put_string ptr x``, ``put_pointer ptr x``
      Direct memory accesses. Use with care ... or else! */
 
 namespace C;
