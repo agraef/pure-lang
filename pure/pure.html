@@ -7,7 +7,7 @@
 <title>The Pure Manual</title>
 <meta name="author" content="Albert Graef &lt;Dr.Graef&#64;t-online.de&gt;" />
 <meta name="copyright" content="Copyright (c) 2009" />
-<meta name="date" content="2009-06-03" />
+<meta name="date" content="2009-06-06" />
 <style type="text/css">
 
 /*
@@ -297,7 +297,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Copyright:</th>
 <td>Copyright (c) 2009</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2009-06-03</td></tr>
+<td>2009-06-06</td></tr>
 </tbody>
 </table>
 <p>This document is available under the <a class="reference external" href="http://www.gnu.org/copyleft/fdl.html">GNU Free Documentation License</a>. Also see <a class="reference internal" href="#copying">Copying</a> for licensing
@@ -2370,24 +2370,27 @@ interfacing to C libraries.</p>
 Pure's double precision floating point numbers automatically.</p>
 <p>A variety of C integer types (<tt class="docutils literal"><span class="pre">char</span></tt>, <tt class="docutils literal"><span class="pre">short</span></tt>, <tt class="docutils literal"><span class="pre">int</span></tt>, <tt class="docutils literal"><span class="pre">long</span></tt>) are
 provided which are converted from/to the available Pure integer types in a
-straightforward way. One important thing to note here is that the <tt class="docutils literal"><span class="pre">long</span></tt>
-type <em>always</em> denotes 64 bit integers, even if the corresponding C type is
-actually 32 bit (as it usually is on 32 bit systems). To make it easier to
-interface to various system routines, there's also a special <tt class="docutils literal"><span class="pre">size_t</span></tt>
-integer type which usually is 4 bytes on 32 bit and 8 bytes on 64 bit
-systems. All integer parameters take both Pure ints and bigints as actual
-arguments; truncation or sign extension is performed as needed, so that the C
-interface behaves as if the argument was &quot;cast&quot; to the C target type. Returned
-integers use the smallest Pure type capable of holding the result (i.e., int
-for the C char, short and int types, bigint for long a.k.a. 64 bit integers).</p>
+straightforward way. In addition, the synonyms <tt class="docutils literal"><span class="pre">int8</span></tt>, <tt class="docutils literal"><span class="pre">int16</span></tt> and
+<tt class="docutils literal"><span class="pre">int32</span></tt> are provided for <tt class="docutils literal"><span class="pre">char</span></tt>, <tt class="docutils literal"><span class="pre">short</span></tt> and <tt class="docutils literal"><span class="pre">int</span></tt>, respectively, and
+<tt class="docutils literal"><span class="pre">int64</span></tt> denotes 64 bit integers (a.k.a. ISO C99 <tt class="docutils literal"><span class="pre">long</span> <span class="pre">long</span></tt>). Note that
+<tt class="docutils literal"><span class="pre">long</span></tt> is equivalent to <tt class="docutils literal"><span class="pre">int32</span></tt> on 32 bit systems, whereas it is the same
+as <tt class="docutils literal"><span class="pre">int64</span></tt> on most 64 bit systems. To make it easier to interface to various
+system routines, there's also a special <tt class="docutils literal"><span class="pre">size_t</span></tt> integer type which usually
+is 4 bytes on 32 bit and 8 bytes on 64 bit systems. All integer parameters
+take both Pure ints and bigints as actual arguments; truncation or sign
+extension is performed as needed, so that the C interface behaves as if the
+argument was &quot;cast&quot; to the C target type. Returned integers use the smallest
+Pure type capable of holding the result, i.e., int for the C <tt class="docutils literal"><span class="pre">char</span></tt>,
+<tt class="docutils literal"><span class="pre">short</span></tt> and <tt class="docutils literal"><span class="pre">int</span></tt> types (as well as <tt class="docutils literal"><span class="pre">long</span></tt> on 32 bit systems), bigint
+for <tt class="docutils literal"><span class="pre">int64</span></tt> (as well as <tt class="docutils literal"><span class="pre">long</span></tt> on 64 bit systems).</p>
 <p>Pure considers all integers as signed quantities, but it is possible to pass
 unsigned integers as well (if necessary, you can use a bigint to pass positive
 values which are too big to fit into a machine int). Also note that when an
-unsigned integer is returned by a C routine which is too big to fit into the
+unsigned integer is returned by a C routine, which is too big to fit into the
 corresponding signed integer type, it will &quot;wrap around&quot; and become
 negative. In this case, depending on the target type, you can use the
-<tt class="docutils literal"><span class="pre">ubyte</span></tt>, <tt class="docutils literal"><span class="pre">ushort</span></tt>, <tt class="docutils literal"><span class="pre">uint</span></tt> and <tt class="docutils literal"><span class="pre">ulong</span></tt> functions provided by the
-prelude to convert the result back to an unsigned quantity.</p>
+<tt class="docutils literal"><span class="pre">ubyte</span></tt>, <tt class="docutils literal"><span class="pre">ushort</span></tt>, <tt class="docutils literal"><span class="pre">uint</span></tt>, <tt class="docutils literal"><span class="pre">ulong</span></tt> and <tt class="docutils literal"><span class="pre">uint64</span></tt> functions provided
+by the prelude to convert the result back to an unsigned quantity.</p>
 <p>Concerning the pointer types, <tt class="docutils literal"><span class="pre">char*</span></tt> is for string arguments and return
 values which need translation between Pure's internal utf-8 representation and
 the system encoding, while <tt class="docutils literal"><span class="pre">void*</span></tt> is for any generic kind of pointer

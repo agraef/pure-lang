@@ -2156,25 +2156,28 @@ Pure's double precision floating point numbers automatically.
 
 A variety of C integer types (``char``, ``short``, ``int``, ``long``) are
 provided which are converted from/to the available Pure integer types in a
-straightforward way. One important thing to note here is that the ``long``
-type *always* denotes 64 bit integers, even if the corresponding C type is
-actually 32 bit (as it usually is on 32 bit systems). To make it easier to
-interface to various system routines, there's also a special ``size_t``
-integer type which usually is 4 bytes on 32 bit and 8 bytes on 64 bit
-systems. All integer parameters take both Pure ints and bigints as actual
-arguments; truncation or sign extension is performed as needed, so that the C
-interface behaves as if the argument was "cast" to the C target type. Returned
-integers use the smallest Pure type capable of holding the result (i.e., int
-for the C char, short and int types, bigint for long a.k.a. 64 bit integers).
+straightforward way. In addition, the synonyms ``int8``, ``int16`` and
+``int32`` are provided for ``char``, ``short`` and ``int``, respectively, and
+``int64`` denotes 64 bit integers (a.k.a. ISO C99 ``long long``). Note that
+``long`` is equivalent to ``int32`` on 32 bit systems, whereas it is the same
+as ``int64`` on most 64 bit systems. To make it easier to interface to various
+system routines, there's also a special ``size_t`` integer type which usually
+is 4 bytes on 32 bit and 8 bytes on 64 bit systems. All integer parameters
+take both Pure ints and bigints as actual arguments; truncation or sign
+extension is performed as needed, so that the C interface behaves as if the
+argument was "cast" to the C target type. Returned integers use the smallest
+Pure type capable of holding the result, i.e., int for the C ``char``,
+``short`` and ``int`` types (as well as ``long`` on 32 bit systems), bigint
+for ``int64`` (as well as ``long`` on 64 bit systems).
 
 Pure considers all integers as signed quantities, but it is possible to pass
 unsigned integers as well (if necessary, you can use a bigint to pass positive
 values which are too big to fit into a machine int). Also note that when an
-unsigned integer is returned by a C routine which is too big to fit into the
+unsigned integer is returned by a C routine, which is too big to fit into the
 corresponding signed integer type, it will "wrap around" and become
 negative. In this case, depending on the target type, you can use the
-``ubyte``, ``ushort``, ``uint`` and ``ulong`` functions provided by the
-prelude to convert the result back to an unsigned quantity.
+``ubyte``, ``ushort``, ``uint``, ``ulong`` and ``uint64`` functions provided
+by the prelude to convert the result back to an unsigned quantity.
 
 Concerning the pointer types, ``char*`` is for string arguments and return
 values which need translation between Pure's internal utf-8 representation and

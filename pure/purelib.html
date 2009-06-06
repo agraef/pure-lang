@@ -7,7 +7,7 @@
 <title>Pure Library Manual</title>
 <meta name="author" content="Albert Graef &lt;Dr.Graef&#64;t-online.de&gt;" />
 <meta name="copyright" content="Copyright (c) 2009" />
-<meta name="date" content="2009-06-02" />
+<meta name="date" content="2009-06-06" />
 <style type="text/css">
 
 /*
@@ -297,7 +297,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Copyright:</th>
 <td>Copyright (c) 2009</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2009-06-02</td></tr>
+<td>2009-06-06</td></tr>
 </tbody>
 </table>
 <!-- We use docutils to produce the documentation. Docstrings are extracted -->
@@ -1607,17 +1607,19 @@ using rational numbers.</dd>
 <span id="double"></span><span id="bigint"></span><span id="int"></span><dt><tt class="docutils literal"><span class="pre">int</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">bigint</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">double</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">pointer</span> <span class="pre">x</span></tt></dt>
 <dd>Conversions between the different numeric and pointer types.</dd>
 </dl>
-<a name="ubyte"><a name="ushort"><a name="uint"><a name="ulong"><dl class="docutils" id="ulong">
-<span id="uint"></span><span id="ushort"></span><span id="ubyte"></span><dt><tt class="docutils literal"><span class="pre">ubyte</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">ushort</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">uint</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">ulong</span> <span class="pre">x</span></tt></dt>
+<a name="ubyte"><a name="ushort"><a name="uint"><a name="uint64"><a name="ulong"><dl class="docutils" id="ulong">
+<span id="uint64"></span><span id="uint"></span><span id="ushort"></span><span id="ubyte"></span><dt><tt class="docutils literal"><span class="pre">ubyte</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">ushort</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">uint</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">uint64</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">ulong</span> <span class="pre">x</span></tt></dt>
 <dd>Convert signed (8/16/32/64) bit integers to the corresponding unsigned
 quantities. These functions behave as if the value was &quot;cast&quot; to the
 corresponding unsigned C type, and are most useful for dealing with
 unsigned integers returned by external C routines. The routines always
 use the smallest Pure int type capable of holding the result: <tt class="docutils literal"><span class="pre">int</span></tt> for
-<tt class="docutils literal"><span class="pre">ubyte</span></tt> and <tt class="docutils literal"><span class="pre">ushort</span></tt>, <tt class="docutils literal"><span class="pre">bigint</span></tt> for <tt class="docutils literal"><span class="pre">uint</span></tt> and <tt class="docutils literal"><span class="pre">ulong</span></tt>. (Note
-that in the case of 64 bit values the C interface returns a bigint,
-that's why <tt class="docutils literal"><span class="pre">ulong</span></tt> takes a bigint parameter. The other routines all
-take an int as input.)</dd>
+<tt class="docutils literal"><span class="pre">ubyte</span></tt> and <tt class="docutils literal"><span class="pre">ushort</span></tt>, <tt class="docutils literal"><span class="pre">bigint</span></tt> for <tt class="docutils literal"><span class="pre">uint</span></tt>, <tt class="docutils literal"><span class="pre">uint64</span></tt> and
+<tt class="docutils literal"><span class="pre">ulong</span></tt>. All routines take int parameters. In the case of <tt class="docutils literal"><span class="pre">uint64</span></tt>, a
+bigint parameter is also permitted (which is what the C interface returns
+for 64 bit values). Also note that <tt class="docutils literal"><span class="pre">ulong</span></tt> reduces to either <tt class="docutils literal"><span class="pre">uint</span></tt>
+or <tt class="docutils literal"><span class="pre">uint64</span></tt>, depending on the size of <tt class="docutils literal"><span class="pre">long</span></tt> for the host
+architecture.</dd>
 </dl>
 <p>The following <span class="target" id="rounding-functions">rounding functions</span> work with all kinds of numbers:</p>
 <a name="floor"><a name="ceil"><dl class="docutils" id="ceil">
@@ -1796,9 +1798,9 @@ pointer. The function fails if the symbol was not found.</dd>
 dynamic buffers (represented as Pure pointer values) for various nasty
 purposes.</dd>
 </dl>
-<a name="get_byte"><a name="get_short"><a name="get_int"><a name="get_long"><a name="get_float"><a name="get_double"><a name="get_string"><a name="get_pointer"><a name="put_byte"><a name="put_short"><a name="put_int"><a name="put_long"><a name="put_float"><a name="put_double"><a name="put_string"><a name="put_pointer"><p id="put-pointer"><span id="put-string"></span><span id="put-double"></span><span id="put-float"></span><span id="put-long"></span><span id="put-int"></span><span id="put-short"></span><span id="put-byte"></span><span id="get-pointer"></span><span id="get-string"></span><span id="get-double"></span><span id="get-float"></span><span id="get-long"></span><span id="get-int"></span><span id="get-short"></span><span id="get-byte"></span><tt class="docutils literal"><span class="pre">get_byte</span> <span class="pre">ptr</span></tt>, <tt class="docutils literal"><span class="pre">get_short</span> <span class="pre">ptr</span></tt>, <tt class="docutils literal"><span class="pre">get_int</span> <span class="pre">ptr</span></tt>, <tt class="docutils literal"><span class="pre">get_long</span> <span class="pre">ptr</span></tt>, <tt class="docutils literal"><span class="pre">get_float</span> <span class="pre">ptr</span></tt>, <tt class="docutils literal"><span class="pre">get_double</span> <span class="pre">ptr</span></tt>, <tt class="docutils literal"><span class="pre">get_string</span> <span class="pre">ptr</span></tt>, <tt class="docutils literal"><span class="pre">get_pointer</span> <span class="pre">ptr</span></tt></p>
+<a name="get_byte"><a name="get_short"><a name="get_int"><a name="get_int64"><a name="get_long"><a name="get_float"><a name="get_double"><a name="get_string"><a name="get_pointer"><a name="put_byte"><a name="put_short"><a name="put_int"><a name="put_int64"><a name="put_long"><a name="put_float"><a name="put_double"><a name="put_string"><a name="put_pointer"><p id="put-pointer"><span id="put-string"></span><span id="put-double"></span><span id="put-float"></span><span id="put-long"></span><span id="put-int64"></span><span id="put-int"></span><span id="put-short"></span><span id="put-byte"></span><span id="get-pointer"></span><span id="get-string"></span><span id="get-double"></span><span id="get-float"></span><span id="get-long"></span><span id="get-int64"></span><span id="get-int"></span><span id="get-short"></span><span id="get-byte"></span><tt class="docutils literal"><span class="pre">get_byte</span> <span class="pre">ptr</span></tt>, <tt class="docutils literal"><span class="pre">get_short</span> <span class="pre">ptr</span></tt>, <tt class="docutils literal"><span class="pre">get_int</span> <span class="pre">ptr</span></tt>, <tt class="docutils literal"><span class="pre">get_int64</span> <span class="pre">ptr</span></tt>, <tt class="docutils literal"><span class="pre">get_long</span> <span class="pre">ptr</span></tt>, <tt class="docutils literal"><span class="pre">get_float</span> <span class="pre">ptr</span></tt>, <tt class="docutils literal"><span class="pre">get_double</span> <span class="pre">ptr</span></tt>, <tt class="docutils literal"><span class="pre">get_string</span> <span class="pre">ptr</span></tt>, <tt class="docutils literal"><span class="pre">get_pointer</span> <span class="pre">ptr</span></tt></p>
 <dl class="docutils">
-<dt><tt class="docutils literal"><span class="pre">put_byte</span> <span class="pre">ptr</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">put_short</span> <span class="pre">ptr</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">put_int</span> <span class="pre">ptr</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">put_long</span> <span class="pre">ptr</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">put_float</span> <span class="pre">ptr</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">put_double</span> <span class="pre">ptr</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">put_string</span> <span class="pre">ptr</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">put_pointer</span> <span class="pre">ptr</span> <span class="pre">x</span></tt></dt>
+<dt><tt class="docutils literal"><span class="pre">put_byte</span> <span class="pre">ptr</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">put_short</span> <span class="pre">ptr</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">put_int</span> <span class="pre">ptr</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">put_int64</span> <span class="pre">ptr</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">put_long</span> <span class="pre">ptr</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">put_float</span> <span class="pre">ptr</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">put_double</span> <span class="pre">ptr</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">put_string</span> <span class="pre">ptr</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">put_pointer</span> <span class="pre">ptr</span> <span class="pre">x</span></tt></dt>
 <dd>Direct memory accesses. Use with care ... or else!</dd>
 </dl>
 <!--  -->
@@ -3467,6 +3469,7 @@ copied to the result lists as is.</p>
 <li><a class="reference internal" href="#get-double">get_double</a></li>
 <li><a class="reference internal" href="#get-float">get_float</a></li>
 <li><a class="reference internal" href="#get-int">get_int</a></li>
+<li><a class="reference internal" href="#get-int64">get_int64</a></li>
 <li><a class="reference internal" href="#get-long">get_long</a></li>
 <li><a class="reference internal" href="#get-pointer">get_pointer</a></li>
 <li><a class="reference internal" href="#get-sentry">get_sentry</a></li>
@@ -3599,6 +3602,7 @@ copied to the result lists as is.</p>
 <li><a class="reference internal" href="#put-double">put_double</a></li>
 <li><a class="reference internal" href="#put-float">put_float</a></li>
 <li><a class="reference internal" href="#put-int">put_int</a></li>
+<li><a class="reference internal" href="#put-int64">put_int64</a></li>
 <li><a class="reference internal" href="#put-long">put_long</a></li>
 <li><a class="reference internal" href="#put-pointer">put_pointer</a></li>
 <li><a class="reference internal" href="#put-short">put_short</a></li>
@@ -3719,6 +3723,7 @@ copied to the result lists as is.</p>
 <li><a class="reference internal" href="#tuples">tuples</a></li>
 <li><a class="reference internal" href="#ubyte">ubyte</a></li>
 <li><a class="reference internal" href="#uint">uint</a></li>
+<li><a class="reference internal" href="#uint64">uint64</a></li>
 <li><a class="reference internal" href="#ulong">ulong</a></li>
 <li><a class="reference internal" href="#uncurry">uncurry</a></li>
 <li><a class="reference internal" href="#uncurry3">uncurry3</a></li>

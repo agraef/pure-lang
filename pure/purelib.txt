@@ -2375,23 +2375,30 @@ These operations convert between various types of Pure values.
 
 .. raw:: html
 
+   <a name="uint64">
+
+.. raw:: html
+
    <a name="ulong">
 
 .. _ubyte:
 .. _ushort:
 .. _uint:
+.. _uint64:
 .. _ulong:
 
-``ubyte x``, ``ushort x``, ``uint x``, ``ulong x``
+``ubyte x``, ``ushort x``, ``uint x``, ``uint64 x``, ``ulong x``
   Convert signed (8/16/32/64) bit integers to the corresponding unsigned
   quantities. These functions behave as if the value was "cast" to the
   corresponding unsigned C type, and are most useful for dealing with
   unsigned integers returned by external C routines. The routines always
   use the smallest Pure int type capable of holding the result: ``int`` for
-  ``ubyte`` and ``ushort``, ``bigint`` for ``uint`` and ``ulong``. (Note
-  that in the case of 64 bit values the C interface returns a bigint,
-  that's why ``ulong`` takes a bigint parameter. The other routines all
-  take an int as input.)
+  ``ubyte`` and ``ushort``, ``bigint`` for ``uint``, ``uint64`` and
+  ``ulong``. All routines take int parameters. In the case of ``uint64``, a
+  bigint parameter is also permitted (which is what the C interface returns
+  for 64 bit values). Also note that ``ulong`` reduces to either ``uint``
+  or ``uint64``, depending on the size of ``long`` for the host
+  architecture.
 
 The following _`rounding functions` work with all kinds of numbers:
 
@@ -2778,6 +2785,10 @@ caveats apply, so *only* use these directly if you know what you're doing!
 
 .. raw:: html
 
+   <a name="get_int64">
+
+.. raw:: html
+
    <a name="get_long">
 
 .. raw:: html
@@ -2810,6 +2821,10 @@ caveats apply, so *only* use these directly if you know what you're doing!
 
 .. raw:: html
 
+   <a name="put_int64">
+
+.. raw:: html
+
    <a name="put_long">
 
 .. raw:: html
@@ -2831,6 +2846,7 @@ caveats apply, so *only* use these directly if you know what you're doing!
 .. _get_byte:
 .. _get_short:
 .. _get_int:
+.. _get_int64:
 .. _get_long:
 .. _get_float:
 .. _get_double:
@@ -2839,15 +2855,16 @@ caveats apply, so *only* use these directly if you know what you're doing!
 .. _put_byte:
 .. _put_short:
 .. _put_int:
+.. _put_int64:
 .. _put_long:
 .. _put_float:
 .. _put_double:
 .. _put_string:
 .. _put_pointer:
 
-``get_byte ptr``, ``get_short ptr``, ``get_int ptr``, ``get_long ptr``, ``get_float ptr``, ``get_double ptr``, ``get_string ptr``, ``get_pointer ptr``
+``get_byte ptr``, ``get_short ptr``, ``get_int ptr``, ``get_int64 ptr``, ``get_long ptr``, ``get_float ptr``, ``get_double ptr``, ``get_string ptr``, ``get_pointer ptr``
 
-``put_byte ptr x``, ``put_short ptr x``, ``put_int ptr x``, ``put_long ptr x``, ``put_float ptr x``, ``put_double ptr x``, ``put_string ptr x``, ``put_pointer ptr x``
+``put_byte ptr x``, ``put_short ptr x``, ``put_int ptr x``, ``put_int64 ptr x``, ``put_long ptr x``, ``put_float ptr x``, ``put_double ptr x``, ``put_string ptr x``, ``put_pointer ptr x``
   Direct memory accesses. Use with care ... or else!
 
 ..
@@ -5626,6 +5643,7 @@ Index
 * `get_double`_
 * `get_float`_
 * `get_int`_
+* `get_int64`_
 * `get_long`_
 * `get_pointer`_
 * `get_sentry`_
@@ -5758,6 +5776,7 @@ Index
 * `put_double`_
 * `put_float`_
 * `put_int`_
+* `put_int64`_
 * `put_long`_
 * `put_pointer`_
 * `put_short`_
@@ -5878,6 +5897,7 @@ Index
 * `tuples`_
 * `ubyte`_
 * `uint`_
+* `uint64`_
 * `ulong`_
 * `uncurry`_
 * `uncurry3`_
