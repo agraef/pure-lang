@@ -8105,10 +8105,11 @@ double __atanh(double x)
 extern "C"
 int pure_fprintf(FILE *fp, const char *format)
 {
-  /* Silence stupid gcc warnings about fprintf being used with a non-literal
-     format string and no parameters, even if we *know* here that the format
-     string doesn't contain format specifiers. */
-  return fprintf(fp, "%s", format);
+  /* Note that 'format' *must* be passed as the format string here in order to
+     expand embedded '%%' literals. Some recent gcc versions will complain
+     about this ("format not a string literal and no format arguments"), these
+     warnings can be ignored. */
+  return fprintf(fp, format);
 }
 
 extern "C"
@@ -8138,8 +8139,7 @@ int pure_fprintf_pointer(FILE *fp, const char *format, const void *x)
 extern "C"
 int pure_snprintf(char *buf, size_t size, const char *format)
 {
-  /* Silence gcc warnings (cf. pure_fprintf above). */
-  return snprintf(buf, size, "%s", format);
+  return snprintf(buf, size, format);
 }
 
 extern "C"
