@@ -5424,7 +5424,7 @@ const char *lasterr()
 }
 
 extern "C"
-pure_expr *lastx()
+pure_expr *lastres()
 {
   interpreter& interp = *interpreter::g_interp;
   return interp.lastres;

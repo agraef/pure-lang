@@ -757,7 +757,7 @@ const char *lasterr();
 /* In interactive mode, this returns the most recent toplevel expression
    printed by the interpreter (NULL if none). */
 
-pure_expr *lastx();
+pure_expr *lastres();
 
 /* Basic matrix operations. These work with all supported GSL matrix types.
    matrix_size determines the number of elements in a matrix, matrix_dim the
