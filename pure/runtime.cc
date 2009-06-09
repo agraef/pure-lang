@@ -3483,6 +3483,7 @@ pure_expr *pure_call(pure_expr *x)
     else
       cerr << "pure_call: returning " << x << endl;
 #endif
+    checkstk(test);
     return x;
   }
 }
