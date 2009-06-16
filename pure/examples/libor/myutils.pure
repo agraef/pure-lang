@@ -19,17 +19,27 @@ fac n = Pi 1L n id;
 //Binomial using (k, n-k) symmetry and bignum division
 binomial n k = (Pi (k+1L) n id) div (Pi 2L (n-k) id) if n-k < k;
 	          = (Pi (n-k+1L) n id) div (Pi 2L k id);
-        
+
 // Euclid's recursive greatest common factor algorithm for ints and bignums
 gcf x 0 | gcf x 0L = x;
 gcf x y = gcf y (x mod y);
 
 //(2) List Processing
-// take the head of a list and put it at the end	
-ecat h::int [] = [h];
-ecat h::int (h2::int:t) = h2:(ecat h t);
 
+ecat h [] = [h];
+ecat h (h2:t) = h2:(ecat h t);
+
+// take the head of a list and put it at the end	
 rotate (h:t) = ecat h t;
+
+rot 1 l = [l];
+rot i::int l = l:(rot (pred i)(rotate l));
+// list of all rotations
+rotations l = rot (#l) l;
+
+// generate a complete tree of all permutations of a list
+permtree [i::int] = [i];
+permtree l =  map (\(h::int:t) -> h:(permtree t)) (rotations l);
 
 // take n items from the front and put them at the end (n positive 0<=n<=#n)
 protate 0 l = l;

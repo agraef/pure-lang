@@ -1,4 +1,4 @@
-/* ..
+/*..
 
 ======================================
 Some Solutions to the N Queens Problem
@@ -8,11 +8,10 @@ Some Solutions to the N Queens Problem
 :License: GPL V3
 :Date: Version 2: June 2009
 
-**Example usage:**
+**Example usage**::
 
-	\# pure -i queens.pure
-	
-	\>fullboard (thequeens 50); */
+	#pure -i queens.pure
+	>fullboard (thequeens 30); */
 
 // using namespace queens;
 // public allqueens queens tailqueens fullboard thequeens checkqs queenstest;
@@ -20,13 +19,12 @@ Some Solutions to the N Queens Problem
 
 nullary nosolution passed failed;
 
-/* ..
+/*..
 
 **(diagsafe j l)**
 
-	is square j in current row safe from the diagonal attacks by previously
-	placed queens in list l? id is the +ve rows difference  used in
-	local recursion to check all the occupied rows */
+	is square j in the current row safe from the diagonal attacks by 
+	queens placed on the previous rows (list l)? */
 
 diagsafe j::int l = rsafe 1 l
 	with
@@ -45,10 +43,8 @@ rotations l = rot (#l) l;
 iteraten n::int f x = (iterate f x)!!(0..(pred n));
 lazyrotations l = iteraten (#l) rotate l;
 
-/* work in progress
-permute [i::int] = [i];
-permute (h::int:t) =  (hr:(permute tr)) when (hr:tr) = (ecat h t) end;
-permuten l = iteraten (foldl1 (*) (1..(#l))) permute l; */
+permtree [i::int] = [i];
+permtree l =  map (\(h::int:t) -> h:(permtree t)) (rotations l);
 
 /* remove an element from an ordered list used for candidates list reduction */
 rem _ [] = [];
@@ -70,30 +66,34 @@ remlists (ld::int,m::int,hd::int) (h2:t2) = ((remlist (h1:t1) h2):(remlists   if
 remlist (h1::int:t1) (h2::int:t2) = remlist t1 (h2:t2) if h1 < h2;
 remlist (h1::int:t1) (h2::int:t2) = remlist t1 t2 if h1 == h2;
 		= h2:(remlist (h1:t1) t2); */
-/* ..
+/*..
 
 **(fullboard s)**
 
 	full coordinates representation [(row,column),...] is redundant
 	because the first coordinate of any solution will always be 1..n. 
-	However, it can be reconstructed with, e.g.\: (fullboard (thequeens n));
-	By default all solutions here are encoded as the columns permutations only, 
-	[column, ...], leaving out the ordered rows.
-	In all cases rows and columns are interchangeable without affecting
-	the solutions, i.e. reading the same numbers as [row, ....] for ordered
-	columns is also valid. */
+	However, it can be reconstructed with, e.g. (fullboard (thequeens n));
+	All solutions here are encoded as the columns permutations only, 
+	[column, ...], leaving out (the index formed by) the ordered rows.
+	In all cases rows and columns are interchangeable, 
+	i.e. reading the same numbers as [row, ....] for ordered
+	columns is also a valid solution. */
 	
 fullboard s = zip (1..(#s)) s;
 
-/* ..
+/*..
 
 **(allqueens n)**
 
-	returns all possible solutions by constrained search.
-	N.B. nobody has so far been able to find out, by any known method, the number
-	of solutions for n=26 and beyond. Allqueens, which is quite fast,
-	starts getting breathless beyond n=13 with the total number of 
-	solutions = 73,712.
+	returns all possible solutions by constrained search, e.g.
+	(allqueens 8) returns a list of all 92 chessboard solutions. 
+	There is no known method to find the number
+	of solutions for any n. Experimental solutions exist currently 
+	for up to n=26 by using special purpose parallel hardware and 
+	running for a long time. Allqueens, which is quite fast,
+	is quite breathless for n=15 (number of solutions = 2 279 184). 
+	It is unwise to ask for the full list
+	to be printed for anything beyond n=10 (724  solutions).
 	
 	Only half of the first row is considered for the first queen, 
 	thus halving the total search effort, 
@@ -104,11 +104,8 @@ fullboard s = zip (1..(#s)) s;
 	More reflections and rotations could be done but the solutions 
 	would have to be 	tested for duplicates.
 	All rook checking (row and column) is eliminated by using only unused 
-	candidates list c (generating only valid permutations), 
-	leaving just a single check, id==abs(j2-j),  
-	to perform for the bishop (both diagonals).
-		
-		\>allqueens 8; returns all 92 solutions, as a list of lists */
+	candidates list c, leaving just the bishop check, id==abs(j2-j),  
+	(both diagonals).*/
 
 allqueens n::int = unimplemented for less than 5 if (n < 5);
 	= if (n mod 2 == 0) then (hsoln+revsoln) else
@@ -139,7 +136,7 @@ newqueens n::int = unimplemented for less than 5 if (n < 5);
   end;
 */
 
-/* ..
+/*..
 
 **(queens n)** */
 
@@ -153,7 +150,7 @@ queens n::int = search n n []
      = search i (pred j) p	       // also try another j when unsafe
   end;
 
-/* ..
+/*..
 
 **(tailqueens n)**
 
@@ -169,7 +166,7 @@ tailqueens n::int = catch id (srch n n [])
        else srch i (j-1) p
   end;
 
-/* ..
+/*..
 
 **(thequeens n)**
 
@@ -197,7 +194,7 @@ thequeens n::int = case n of
 			restart::int = (1+n-start) end 
 end; // end of case and thequeens
 
-/* .. The rest are test utilities
+/*.. The rest are test utilities
 
 **(safe j l)**
 
@@ -230,16 +227,14 @@ checkqs (nosolution) = 1;
 
 **(queenstest method l)**
 
-	conducts exhaustive tests of solutions for boards of all listed sizes. Usage:
+	conducts exhaustive tests of solutions for boards of all listed sizes. 
+	Example usage::
 	
-		\>queenstest (id) (allqueens 8);
-		
-		\>queenstest queens (1..10);
-		 
-		\>queenstest tailqueens ([5,6,7]);
-		
-		\>queenstest thequeens (5000:4999..100); */
+	>queenstest (id) (allqueens 8);
+	>queenstest queens (1..10);
+	>queenstest tailqueens ([5,6,7]);
+	>queenstest thequeens (5000:4999..100); */
 
 queenstest _ [] = passed;
 queenstest method (h:l) = 
-		if checkqs (method h) then (queenstest method l) else failed;
+	if checkqs (method h) then (queenstest method l) else failed;

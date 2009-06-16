@@ -3,15 +3,17 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<meta name="generator" content="Docutils 0.5: http://docutils.sourceforge.net/" />
+<meta name="generator" content="Docutils 0.4: http://docutils.sourceforge.net/" />
 <title>Some Solutions to the N Queens Problem</title>
 <meta name="author" content="Libor Spacek (C) &lt;libors&#64;gmail.com&gt;" />
 <meta name="date" content="Version 2: June 2009" />
 <style type="text/css">
 
 /*
-:Author: David Goodger (goodger@python.org)
-:Id: $Id: html4css1.css 5196 2007-06-03 20:25:28Z wiemann $
+:Author: David Goodger
+:Contact: goodger@users.sourceforge.net
+:Date: $Date: 2005-12-18 01:56:14 +0100 (Sun, 18 Dec 2005) $
+:Revision: $Revision: 4224 $
 :Copyright: This stylesheet has been placed in the public domain.
 
 Default cascading style sheet for the HTML output of Docutils.
@@ -117,7 +119,7 @@ div.line-block div.line-block {
   margin-left: 1.5em }
 
 div.sidebar {
-  margin: 0 0 0.5em 1em ;
+  margin-left: 1em ;
   border: medium outset ;
   padding: 1em ;
   background-color: #ffffee ;
@@ -223,7 +225,8 @@ pre.address {
 
 pre.literal-block, pre.doctest-block {
   margin-left: 2em ;
-  margin-right: 2em }
+  margin-right: 2em ;
+  background-color: #eeeeee }
 
 span.classifier {
   font-family: sans-serif ;
@@ -280,6 +283,9 @@ h1 tt.docutils, h2 tt.docutils, h3 tt.docutils,
 h4 tt.docutils, h5 tt.docutils, h6 tt.docutils {
   font-size: 100% }
 
+tt.docutils {
+  background-color: #eeeeee }
+
 ul.auto-toc {
   list-style-type: none }
 
@@ -293,7 +299,7 @@ ul.auto-toc {
 <col class="docinfo-content" />
 <tbody valign="top">
 <tr><th class="docinfo-name">Author:</th>
-<td>Libor Spacek (C) &lt;<a class="reference external" href="mailto:libors&#64;gmail.com">libors&#64;gmail.com</a>&gt;</td></tr>
+<td>Libor Spacek (C) &lt;<a class="reference" href="mailto:libors&#64;gmail.com">libors&#64;gmail.com</a>&gt;</td></tr>
 <tr class="field"><th class="docinfo-name">License:</th><td class="field-body">GPL V3</td>
 </tr>
 <tr><th class="docinfo-name">Date:</th>
@@ -301,36 +307,39 @@ ul.auto-toc {
 </tbody>
 </table>
 <!--  -->
-<p><strong>Example usage:</strong></p>
-<blockquote>
-<p># pure -i queens.pure</p>
-<p>&gt;fullboard (thequeens 50);</p>
-</blockquote>
+<p><strong>Example usage</strong>:</p>
+<pre class="literal-block">
+#pure -i queens.pure
+&gt;fullboard (thequeens 30);
+</pre>
 <!--  -->
 <p><strong>(diagsafe j l)</strong></p>
 <blockquote>
-is square j in current row safe from the diagonal attacks by previously
-placed queens in list l? id is the +ve rows difference  used in
-local recursion to check all the occupied rows</blockquote>
+is square j in the current row safe from the diagonal attacks by
+queens placed on the previous rows (list l)?</blockquote>
 <!--  -->
 <p><strong>(fullboard s)</strong></p>
 <blockquote>
 full coordinates representation [(row,column),...] is redundant
 because the first coordinate of any solution will always be 1..n.
-However, it can be reconstructed with, e.g.: (fullboard (thequeens n));
-By default all solutions here are encoded as the columns permutations only,
-[column, ...], leaving out the ordered rows.
-In all cases rows and columns are interchangeable without affecting
-the solutions, i.e. reading the same numbers as [row, ....] for ordered
-columns is also valid.</blockquote>
+However, it can be reconstructed with, e.g. (fullboard (thequeens n));
+All solutions here are encoded as the columns permutations only,
+[column, ...], leaving out (the index formed by) the ordered rows.
+In all cases rows and columns are interchangeable,
+i.e. reading the same numbers as [row, ....] for ordered
+columns is also a valid solution.</blockquote>
 <!--  -->
 <p><strong>(allqueens n)</strong></p>
 <blockquote>
-<p>returns all possible solutions by constrained search.
-N.B. nobody has so far been able to find out, by any known method, the number
-of solutions for n=26 and beyond. Allqueens, which is quite fast,
-starts getting breathless beyond n=13 with the total number of
-solutions = 73,712.</p>
+<p>returns all possible solutions by constrained search, e.g.
+(allqueens 8) returns a list of all 92 chessboard solutions.
+There is no known method to find the number
+of solutions for any n. Experimental solutions exist currently
+for up to n=26 by using special purpose parallel hardware and
+running for a long time. Allqueens, which is quite fast,
+is quite breathless for n=15 (number of solutions = 2 279 184).
+It is unwise to ask for the full list
+to be printed for anything beyond n=10 (724  solutions).</p>
 <p>Only half of the first row is considered for the first queen,
 thus halving the total search effort,
 followed by adding a reflection of all the solutions found
@@ -338,13 +347,10 @@ about the middle column.
 Odd sized boards must have additionally the first midrow starting position
 searched and add its solutions.
 More reflections and rotations could be done but the solutions
-would have to be   tested for duplicates.
+would have to be       tested for duplicates.
 All rook checking (row and column) is eliminated by using only unused
-candidates list c (generating only valid permutations),
-leaving just a single check, id==abs(j2-j),
-to perform for the bishop (both diagonals).</p>
-<blockquote>
-&gt;allqueens 8; returns all 92 solutions, as a list of lists</blockquote>
+candidates list c, leaving just the bishop check, id==abs(j2-j),
+(both diagonals).</p>
 </blockquote>
 <!--  -->
 <p><strong>(queens n)</strong></p>
@@ -383,13 +389,14 @@ within the presented 'solution'.</blockquote>
 <!--  -->
 <p><strong>(queenstest method l)</strong></p>
 <blockquote>
-<p>conducts exhaustive tests of solutions for boards of all listed sizes. Usage:</p>
-<blockquote>
-<p>&gt;queenstest (id) (allqueens 8);</p>
-<p>&gt;queenstest queens (1..10);</p>
-<p>&gt;queenstest tailqueens ([5,6,7]);</p>
-<p>&gt;queenstest thequeens (5000:4999..100);</p>
-</blockquote>
+<p>conducts exhaustive tests of solutions for boards of all listed sizes.
+Example usage:</p>
+<pre class="literal-block">
+&gt;queenstest (id) (allqueens 8);
+&gt;queenstest queens (1..10);
+&gt;queenstest tailqueens ([5,6,7]);
+&gt;queenstest thequeens (5000:4999..100);
+</pre>
 </blockquote>
 </div>
 </body>
