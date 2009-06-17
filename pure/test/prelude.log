@@ -1629,6 +1629,20 @@ while p/*0:001*/ f/*0:01*/ x/*0:1*/ = accum/*0*/ [] p/*0:001*/ f/*0:01*/ x/*0:1*
 	<var> state 4
   state 4: #0 #1
 } end;
+iteraten n/*0:001*/::int f/*0:01*/ x/*0:1*/ = [] if n/*0:001*/<=0;
+iteraten n/*0:001*/::int f/*0:01*/ x/*0:1*/ = accum/*0*/ [] n/*0:001*/ f/*0:01*/ x/*0:1*/ with accum xs/*0:0001*/ n/*0:001*/::int f/*0:01*/ x/*0:1*/ = reverse (x/*0:1*/:xs/*0:0001*/) if n/*0:001*/==1; accum xs/*0:0001*/ n/*0:001*/::int f/*0:01*/ x/*0:1*/ = accum/*1*/ (x/*0:1*/:xs/*0:0001*/) (n/*0:001*/-1) f/*0:01*/ (f/*0:01*/ x/*0:1*/) {
+  rule #0: accum xs n::int f x = reverse (x:xs) if n==1
+  rule #1: accum xs n::int f x = accum (x:xs) (n-1) f (f x)
+  state 0: #0 #1
+	<var> state 1
+  state 1: #0 #1
+	<var>::int state 2
+  state 2: #0 #1
+	<var> state 3
+  state 3: #0 #1
+	<var> state 4
+  state 4: #0 #1
+} end;
 repeatn n/*0:01*/::int x/*0:1*/ = accum/*0*/ [] n/*0:01*/ x/*0:1*/ with accum xs/*0:001*/ n/*0:01*/::int x/*0:1*/ = xs/*0:001*/ if n/*0:01*/<=0; accum xs/*0:001*/ n/*0:01*/::int x/*0:1*/ = accum/*1*/ (x/*0:1*/:xs/*0:001*/) (n/*0:01*/-1) x/*0:1*/ {
   rule #0: accum xs n::int x = xs if n<=0
   rule #1: accum xs n::int x = accum (x:xs) (n-1) x

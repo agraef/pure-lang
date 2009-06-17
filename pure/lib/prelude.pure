@@ -1104,6 +1104,12 @@ end;
      returns the stream containing ``x``, ``f x``, ``f (f x)``, etc.,
      ad infinitum
 
+   .. _iteraten:
+
+   ``iterate n f x``
+     eager version of ``iterate``, returns the first ``n`` elements of
+     ``iterate f x``
+
    .. _repeat:
 
    ``repeat x``
@@ -1118,7 +1124,7 @@ end;
 
    ``while p f x``
      eager version of ``iterate``, returns the list of all elements from
-     the front of ``iterate f xs`` for which the predicate ``p`` holds
+     the front of ``iterate f x`` for which the predicate ``p`` holds
 
 */
 
@@ -1136,6 +1142,13 @@ while p f x		= accum [] p f x with
 			    accum xs p f x = accum (x:xs) p f (f x) if p x;
 				           = reverse xs otherwise;
 			  end;
+
+iteraten n::int f x	= [] if n<=0;
+			= accum [] n f x
+with
+  accum xs n::int f x	= reverse (x:xs) if n==1;
+			= accum (x:xs) (n-1) f (f x);
+end;
 
 repeatn n::int x	= accum [] n x with
   accum xs n::int x	= xs if n<=0;
