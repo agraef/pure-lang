@@ -668,13 +668,13 @@ stream xs@(_,_)	= stream (list xs);
 
 n1:n2..m	= if m===s then iterate (\x->x+k) n1
 		  else if m===-s then []
-		  else while (p m) (\x->x+k) n1
+		  else iterwhile (p m) (\x->x+k) n1
 		  when s,p = if k>0 then inf,(>=) else -inf,(<=) end
 		  if realp k && k~=0 && ~infp n1 && ~infp n2
 		  when k = n2-n1 end;
 n..m		= if m===inf then iterate (\x->x+1) n
 		  else if m===-inf then []
-		  else while ((>=) m) (\x->x+1) n
+		  else iterwhile ((>=) m) (\x->x+1) n
 		  if ~listnp n && ~infp n;
 
 /* ..
@@ -1087,6 +1087,11 @@ end;
    List Generators
    ~~~~~~~~~~~~~~~
 
+   Some useful (infinite) list generators, as well as some finite (and eager)
+   variations of these. The latter work like the a combination of ``take`` or
+   ``takewhile`` and the former, but are implemented directly for better
+   efficiency.
+
    .. _cycle:
 
    ``cycle xs``
@@ -1106,9 +1111,15 @@ end;
 
    .. _iteraten:
 
-   ``iterate n f x``
+   ``iteraten n f x``
      eager version of ``iterate``, returns the first ``n`` elements of
      ``iterate f x``
+
+   .. _iterwhile:
+
+   ``iterwhile p f x``
+     another eager version of ``iterate``, returns the list of all elements
+     from the front of ``iterate f x`` for which the predicate ``p`` holds
 
    .. _repeat:
 
@@ -1119,12 +1130,6 @@ end;
 
    ``repeatn n x``
      eager version of ``repeat``, returns a list with ``n`` ``x``\ s
-
-   .. _while:
-
-   ``while p f x``
-     eager version of ``iterate``, returns the list of all elements from
-     the front of ``iterate f x`` for which the predicate ``p`` holds
 
 */
 
@@ -1138,7 +1143,7 @@ cycle ys@(x:xs)		= x : (xs+cycle ys)&;
    takewhile/take and the above, but are implemented directly for maximum
    efficiency. */
 
-while p f x		= accum [] p f x with
+iterwhile p f x		= accum [] p f x with
 			    accum xs p f x = accum (x:xs) p f (f x) if p x;
 				           = reverse xs otherwise;
 			  end;

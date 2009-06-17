@@ -517,7 +517,7 @@ n1/*0:0101*/:n2/*0:011*/..m/*0:1*/ = if m/*2:1*/===s/*0:01*/ then iterate (\x/*0
   state 0: #0
 	<var> state 1
   state 1: #0
-}) n1/*2:0101*/ else if m/*2:1*/===-s/*0:01*/ then [] else while (p/*0:1*/ m/*2:1*/) (\x/*0:*/ -> x/*0:*/+k/*2:*/ {
+}) n1/*2:0101*/ else if m/*2:1*/===-s/*0:01*/ then [] else iterwhile (p/*0:1*/ m/*2:1*/) (\x/*0:*/ -> x/*0:*/+k/*2:*/ {
   rule #0: x = x+k
   state 0: #0
 	<var> state 1
@@ -546,7 +546,7 @@ n/*0:01*/..m/*0:1*/ = if m/*0:1*/===inf then iterate (\x/*0:*/ -> x/*0:*/+1 {
   state 0: #0
 	<var> state 1
   state 1: #0
-}) n/*0:01*/ else if m/*0:1*/===-inf then [] else while ((>=) m/*0:1*/) (\x/*0:*/ -> x/*0:*/+1 {
+}) n/*0:01*/ else if m/*0:1*/===-inf then [] else iterwhile ((>=) m/*0:1*/) (\x/*0:*/ -> x/*0:*/+1 {
   rule #0: x = x+1
   state 0: #0
 	<var> state 1
@@ -1616,7 +1616,7 @@ index (x/*0:0101*/:xs/*0:011*/) y/*0:1*/ = search/*0*/ 0 (x/*0:0101*/:xs/*0:011*
 iterate f/*0:01*/ x/*0:1*/ = x/*0:1*/:iterate f/*1:01*/ (f/*1:01*/ x/*1:1*/)&;
 repeat x/*0:1*/ = x/*0:1*/:repeat x/*1:1*/&;
 cycle ys@(x/*0:101*/:xs/*0:11*/) = x/*0:101*/:(xs/*1:11*/+cycle ys/*1:1*/)&;
-while p/*0:001*/ f/*0:01*/ x/*0:1*/ = accum/*0*/ [] p/*0:001*/ f/*0:01*/ x/*0:1*/ with accum xs/*0:0001*/ p/*0:001*/ f/*0:01*/ x/*0:1*/ = accum/*1*/ (x/*0:1*/:xs/*0:0001*/) p/*0:001*/ f/*0:01*/ (f/*0:01*/ x/*0:1*/) if p/*0:001*/ x/*0:1*/; accum xs/*0:0001*/ p/*0:001*/ f/*0:01*/ x/*0:1*/ = reverse xs/*0:0001*/ {
+iterwhile p/*0:001*/ f/*0:01*/ x/*0:1*/ = accum/*0*/ [] p/*0:001*/ f/*0:01*/ x/*0:1*/ with accum xs/*0:0001*/ p/*0:001*/ f/*0:01*/ x/*0:1*/ = accum/*1*/ (x/*0:1*/:xs/*0:0001*/) p/*0:001*/ f/*0:01*/ (f/*0:01*/ x/*0:1*/) if p/*0:001*/ x/*0:1*/; accum xs/*0:0001*/ p/*0:001*/ f/*0:01*/ x/*0:1*/ = reverse xs/*0:0001*/ {
   rule #0: accum xs p f x = accum (x:xs) p f (f x) if p x
   rule #1: accum xs p f x = reverse xs
   state 0: #0 #1
