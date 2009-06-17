@@ -6476,12 +6476,30 @@ pure_expr *matrix_double(pure_expr *x)
     size_t n = m1->size1, m = m1->size2;
     for (size_t i = 0; i < n; i++)
       for (size_t j = 0; j < m; j++)
-	if (m1->data[i*m1->tda+j]->tag != EXPR::DBL)
+	switch (m1->data[i*m1->tda+j]->tag) {
+	case EXPR::DBL:
+	case EXPR::INT:
+	case EXPR::BIGINT:
+	  break;
+	default:
 	  return 0;
+	}
     gsl_matrix *m2 = create_double_matrix(n, m);
     for (size_t i = 0; i < n; i++)
       for (size_t j = 0; j < m; j++)
-	m2->data[i*m2->tda+j] = m1->data[i*m1->tda+j]->data.d;
+	switch (m1->data[i*m1->tda+j]->tag) {
+	case EXPR::DBL:
+	  m2->data[i*m2->tda+j] = m1->data[i*m1->tda+j]->data.d;
+	  break;
+	case EXPR::INT:
+	  m2->data[i*m2->tda+j] = (double)m1->data[i*m1->tda+j]->data.i;
+	  break;
+	case EXPR::BIGINT:
+	  m2->data[i*m2->tda+j] = mpz_get_d(m1->data[i*m1->tda+j]->data.z);
+	  break;
+	default:
+	  return 0; // can't happen
+	}
     return pure_double_matrix(m2);
   }
   case EXPR::DMATRIX:
@@ -6541,16 +6559,40 @@ pure_expr *matrix_complex(pure_expr *x)
     size_t n = m1->size1, m = m1->size2;
     for (size_t i = 0; i < n; i++)
       for (size_t j = 0; j < m; j++)
-	if (!is_complex(m1->data[i*m1->tda+j]))
-	  return 0;
+	switch (m1->data[i*m1->tda+j]->tag) {
+	case EXPR::DBL:
+	case EXPR::INT:
+	case EXPR::BIGINT:
+	  break;
+	default:
+	  if (!is_complex(m1->data[i*m1->tda+j]))
+	    return 0;
+	  else
+	    break;
+	}
     gsl_matrix_complex *m2 = create_complex_matrix(n, m);
     double a = 0.0, b = 0.0;
     for (size_t i = 0; i < n; i++)
       for (size_t j = 0; j < m; j++) {
 	size_t k = 2*(i*m2->tda+j);
-	get_complex(m1->data[i*m1->tda+j], a, b);
-	m2->data[k] = a;
-	m2->data[k+1] = b;
+	switch (m1->data[i*m1->tda+j]->tag) {
+	case EXPR::DBL:
+	  m2->data[k] = m1->data[i*m1->tda+j]->data.d;
+	  m2->data[k+1] = 0.0;
+	  break;
+	case EXPR::INT:
+	  m2->data[k] = (double)m1->data[i*m1->tda+j]->data.i;
+	  m2->data[k+1] = 0.0;
+	  break;
+	case EXPR::BIGINT:
+	  m2->data[k] = mpz_get_d(m1->data[i*m1->tda+j]->data.z);
+	  m2->data[k+1] = 0.0;
+	  break;
+	default:
+	  get_complex(m1->data[i*m1->tda+j], a, b);
+	  m2->data[k] = a;
+	  m2->data[k+1] = b;
+	}
       }
     return pure_complex_matrix(m2);
   }
@@ -6618,12 +6660,30 @@ pure_expr *matrix_int(pure_expr *x)
     size_t n = m1->size1, m = m1->size2;
     for (size_t i = 0; i < n; i++)
       for (size_t j = 0; j < m; j++)
-	if (m1->data[i*m1->tda+j]->tag != EXPR::INT)
+	switch (m1->data[i*m1->tda+j]->tag) {
+	case EXPR::DBL:
+	case EXPR::INT:
+	case EXPR::BIGINT:
+	  break;
+	default:
 	  return 0;
+	}
     gsl_matrix_int *m2 = create_int_matrix(n, m);
     for (size_t i = 0; i < n; i++)
       for (size_t j = 0; j < m; j++)
-	m2->data[i*m2->tda+j] = m1->data[i*m1->tda+j]->data.i;
+	switch (m1->data[i*m1->tda+j]->tag) {
+	case EXPR::DBL:
+	  m2->data[i*m2->tda+j] = (int32_t)m1->data[i*m1->tda+j]->data.d;
+	  break;
+	case EXPR::INT:
+	  m2->data[i*m2->tda+j] = m1->data[i*m1->tda+j]->data.i;
+	  break;
+	case EXPR::BIGINT:
+	  m2->data[i*m2->tda+j] = pure_get_int(m1->data[i*m1->tda+j]);
+	  break;
+	default:
+	  return 0; // can't happen
+	}
     return pure_int_matrix(m2);
   }
   case EXPR::DMATRIX: {
