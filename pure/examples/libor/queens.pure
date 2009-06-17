@@ -31,41 +31,11 @@ diagsafe j::int l = rsafe 1 l
 	rsafe id::int [j2::int] = if id==(abs(j2-j)) then 0 else 1;
 	rsafe id::int (j2::int:l) = if id==(abs(j2-j)) then 0 else rsafe (succ id) l 
 	end;
-	
-ecat h::int [] = [h];
-ecat h::int (h2::int:t) = h2:(ecat h t);
-rotate (h::int:t) = ecat h t;
-
-rot 1 l = [l];
-rot i::int l = l:(rot (pred i)(rotate l));
-rotations l = rot (#l) l;
-
-iteraten n::int f x = (iterate f x)!!(0..(pred n));
-lazyrotations l = iteraten (#l) rotate l;
-
-permtree [i::int] = [i];
-permtree l =  map (\(h::int:t) -> h:(permtree t)) (rotations l);
 
 /* remove an element from an ordered list used for candidates list reduction */
 rem _ [] = [];
 rem h1::int (h2::int:t) = if h1 == h2 then t else h2:(rem h1 t);
 
-/* remove an ordered tuple from an ordered tuple of ints */
-remtuple _ () = ();
-remtuple () l = l;
-remtuple h1::int (h2::int,t2) = (h2,t2) if h1 < h2;
-remtuple h1::int (h2::int,t2) = t2 if h1 == h2;
-remtuple h1::int (h2::int,t2) = h2,(remtuple h1 t2);
-remtuple (h1::int,t1) (h2::int,t2) = remtuple t1 (h2,t2) if h1 < h2;
-remtuple (h1::int,t1) (h2::int,t2) = remtuple t1 t2 if h1 == h2;
-		= h2,(remtuple (h1,t1) t2); 
-
-/* remove an ordered triple from a list of ordered lists 
-remlists _ [] = [];
-remlists (ld::int,m::int,hd::int) (h2:t2) = ((remlist (h1:t1) h2):(remlists   if h1 == 1;
-remlist (h1::int:t1) (h2::int:t2) = remlist t1 (h2:t2) if h1 < h2;
-remlist (h1::int:t1) (h2::int:t2) = remlist t1 t2 if h1 == h2;
-		= h2:(remlist (h1:t1) t2); */
 /*..
 
 **(fullboard s)**

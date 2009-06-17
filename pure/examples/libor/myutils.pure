@@ -1,16 +1,28 @@
-/* General Utilities Copyright (c) 2008 by Libor Spacek */
+/*..
 
-//General mathematical iterators over one and two indices
+==============
+Some Utilities
+==============
+
+:Author: Libor Spacek (C) <libors@gmail.com\>
+:License: GPL V3
+:Date: June 2009
+*/
 
 // namespace myutils;
-// public iter1d iter2d sigma Pi fac binomial gcf 
-//       rotate protate nrotate;
+// public iter1d iter2d sigma Pi fac binomial gcf rotate protate nrotate;
+
+//>>>
+
+// General mathematical iterators over one and two indices
 
 iter1d op i1 i2 f = foldl1 op (map f (i1..i2));
 
 iter2d op i1 i2 j1 j2 f = 
-		foldl1 op (map (uncurry f) [x,y | x = i1..i2; y = j1..j2]);
-      
+	foldl1 op (map (uncurry f) [x,y | x = i1..i2; y = j1..j2]);
+
+iteraten n::int f x = (iterate f x)!!(0..(pred n));
+
 //Examples on how to use the mathematical iterators
 sigma i1 i2 f = iter1d (+) i1 i2 f;
 Pi i1 i2 f = iter2d (*) i1 i2 f;
@@ -18,37 +30,71 @@ fac n = Pi 1L n id;
 
 //Binomial using (k, n-k) symmetry and bignum division
 binomial n k = (Pi (k+1L) n id) div (Pi 2L (n-k) id) if n-k < k;
-	          = (Pi (n-k+1L) n id) div (Pi 2L k id);
+   = (Pi (n-k+1L) n id) div (Pi 2L k id);
 
 // Euclid's recursive greatest common factor algorithm for ints and bignums
 gcf x 0 | gcf x 0L = x;
 gcf x y = gcf y (x mod y);
 
-//(2) List Processing
+//List Processing
 
+// ecat puts h at the end of list l 
 ecat h [] = [h];
 ecat h (h2:t) = h2:(ecat h t);
 
-// take the head of a list and put it at the end	
+// take off the head of a list and put it at the end	
 rotate (h:t) = ecat h t;
 
-rot 1 l = [l];
-rot i::int l = l:(rot (pred i)(rotate l));
 // list of all rotations
-rotations l = rot (#l) l;
+rotations l = rot (#l) l
+	with
+	rot 1 l = [l];
+	rot i::int l = l:(rot (pred i)(rotate l))
+	end;
 
-// generate a complete tree of all permutations of a list
-permtree [i::int] = [i];
-permtree l =  map (\(h::int:t) -> h:(permtree t)) (rotations l);
+// list of all rotations using iterate
+lazyrotations l = iteraten (#l) rotate l;
+
+// generate a tree of all permutations of a list
+permtree [i] = [i];
+permtree l =  map (\(h:t) -> h:(permtree t)) (rotations l);
 
 // take n items from the front and put them at the end (n positive 0<=n<=#n)
 protate 0 l = l;
 protate n::int l = (drop n l)+(take n l);
 
-// rotate n items, cf. "rotate n bits instruction" (n can now also be negative)
+// rotate n items, cf. "rotate n bits instruction" (n can now also be -ve) 
 // example applied to clocks: >head (nrotate (-33) (0..23)); 
 // what time is 33 hrs before midnight? Answer: 15 hrs.
 nrotate  n::int l 
    = if n<0  then (protate (ll + (n mod ll)) l)
              else	(protate (n mod ll) l) when ll=#l end;
-             
+
+
+/* nil terminated tuples (nt) that can be properly recursed */
+
+nullary nil;
+
+ntp nil = 1;
+ntp (a,t) = ntp t;
+ntp _	= 0;
+
+nt () = ();
+nt l = (tuple l),nil if listp l;
+nt a = a,nil;
+
+tuplify nil = ();
+tuplify (h,t) = h,(tuplify t);
+
+/* remove the first ordered nt from the second one.
+Example: 
+>tuplify (remtuple (1,5,8,nil) (nt (1..10)));
+2,3,4,6,7,9,10 */
+
+remtuple _ nil = nil;
+remtuple nil l = l;
+remtuple (h1::int,t1) (h2::int,t2) = remtuple t1 (h2,t2) if h1 < h2;
+remtuple (h1::int,t1) (h2::int,t2) = remtuple t1 t2 if h1 == h2;
+											= h2,(remtuple (h1,t1) t2); 
+
+//<<<
