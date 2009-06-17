@@ -363,6 +363,33 @@ protate n::int l = (drop n l)+(take n l);
 nrotate  n::int l
 = if n&lt;0  then (protate (ll + (n mod ll)) l)
 else  (protate (n mod ll) l) when ll=#l end;
+
+
+/* nil terminated tuples (nt) that can be properly recursed */
+
+nullary nil;
+
+ntp nil = 1;
+ntp (a,t) = ntp t;
+ntp _ = 0;
+
+nt () = ();
+nt l = (tuple l),nil if listp l;
+nt a = a,nil;
+
+tuplify nil = ();
+tuplify (h,t) = h,(tuplify t);
+
+/* remove the first ordered nt from the second one.
+Example:
+&gt;tuplify (remtuple (1,5,8,nil) (nt (1..10)));
+2,3,4,6,7,9,10 */
+
+remtuple _ nil = nil;
+remtuple nil l = l;
+remtuple (h1::int,t1) (h2::int,t2) = remtuple t1 (h2,t2) if h1 &lt; h2;
+remtuple (h1::int,t1) (h2::int,t2) = remtuple t1 t2 if h1 == h2;
+= h2,(remtuple (h1,t1) t2);
 </pre>
 </div>
 </body>
