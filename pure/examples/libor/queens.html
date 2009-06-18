@@ -307,28 +307,51 @@ ul.auto-toc {
 </tbody>
 </table>
 <!--  -->
-<p><strong>Example usage</strong>:</p>
+<div class="section">
+<h1><a id="example-usage" name="example-usage">Example usage:</a></h1>
+<blockquote>
+<p>#pure -i queens.pure</p>
+<p>&gt;fullboard (thequeens 30);</p>
+</blockquote>
+<!--  -->
+</div>
+<div class="section">
+<h1><a id="utilities" name="utilities">Utilities:</a></h1>
 <pre class="literal-block">
-#pure -i queens.pure
-&gt;fullboard (thequeens 30);
+nullary nosolution passed failed;
 </pre>
 <!--  -->
 <p><strong>(diagsafe j l)</strong></p>
 <blockquote>
-is square j in the current row safe from the diagonal attacks by
-queens placed on the previous rows (list l)?</blockquote>
+<p>is square j in the current row safe from the diagonal attacks by
+all queens in previous rows placed on other columns recorded in list l ?</p>
+<pre class="literal-block">
+diagsafe j::int l = rsafe 1 l
+   with
+      rsafe id::int [j2::int] = if id==(abs(j2-j)) then 0 else 1;
+      rsafe id::int (j2::int:l) = if id==(abs(j2-j)) then 0 else rsafe (succ id) l
+   end;
+</pre>
+</blockquote>
 <!--  -->
 <p><strong>(fullboard s)</strong></p>
 <blockquote>
-full coordinates representation [(row,column),...] is redundant
+<p>full coordinates representation [(row,column),...] is redundant
 because the first coordinate of any solution will always be 1..n.
 However, it can be reconstructed with, e.g. (fullboard (thequeens n));
 All solutions here are encoded as the columns permutations only,
 [column, ...], leaving out (the index formed by) the ordered rows.
 In all cases rows and columns are interchangeable,
 i.e. reading the same numbers as [row, ....] for ordered
-columns is also a valid solution.</blockquote>
+columns is also a valid solution.</p>
+<pre class="literal-block">
+fullboard s = zip (1..(#s)) s;
+</pre>
+</blockquote>
 <!--  -->
+</div>
+<div class="section">
+<h1><a id="solutions" name="solutions">Solutions:</a></h1>
 <p><strong>(allqueens n)</strong></p>
 <blockquote>
 <p>returns all possible solutions by constrained search, e.g.
@@ -351,6 +374,22 @@ would have to be       tested for duplicates.
 All rook checking (row and column) is eliminated by using only unused
 candidates list c, leaving just the bishop check, id==abs(j2-j),
 (both diagonals).</p>
+<pre class="literal-block">
+allqueens n::int = unimplemented for less than 5 if (n &lt; 5);
+   = if (n mod 2 == 0) then (hsoln+revsoln)
+      else hsoln+(list (search pn (rem hsn nl) [hsn]))+revsoln
+   when
+      pn = pred n; sn = succ n; hsn = sn div 2;
+      hnl = (1..(n div 2)); nl = (1..n);
+      hsoln = list (tuple (map (\j -&gt; search pn (rem j nl) [j]) hnl));
+      revsoln = map (\y -&gt; map (\z -&gt; sn-z) y) hsoln
+   end
+   with
+      search 0 c p = p;
+      search i::int c p = tuple
+      (map (\j -&gt; search (pred i) (rem j c) (j:p)) [k | k = c; diagsafe k p])
+   end;
+</pre>
 </blockquote>
 <!--  -->
 <p><strong>(queens n)</strong></p>
@@ -363,33 +402,91 @@ of that found by &quot;queens&quot;</blockquote>
 <!--  -->
 <p><strong>(thequeens n)</strong></p>
 <blockquote>
-<p>encodes my no search regular solution in just 12 lines of code,
-which is to my knowledge the simplest and fastest known algorithm for
-the N-Queens problem. It is very fast even for large boards.</p>
-<p>There always exists one symmetrical (under 180 degrees rotation)
-solution of this form, producing an orbit of just 4 equivalent solutions,
-instead of the usual 8. The correct pattern is generated directly without
-any checking or searching being necessary.
-The solutions had been tested exhaustively for board sizes 0 to 5000
+<p>Any two queens placement symmetric under a single reflection around any of the
+board's four axis of symmetry is not part of a solution by problem definition.
+It follows that any complete solution cannot be symmetric (invariant) under a single reflection.</p>
+<p>There are so called doubly symmetric solutions, invariant under any
+combination of 90 degrees rotations,
+which have an orbit of just two equivalent solutions, produced by a single reflection
+(e.g. viewing the board from top or from underneath). A double symmetric solution has the
+full square symmetry internally but its axis of symmetry do not coincide with those of the
+board.</p>
+<p>There always exists at least one symmetric solution
+invariant under 180 degrees rotation (or two orthogonal reflections), producing an orbit of
+four equivalent solutions. The symmetric solutions are the ones found by 'thequeens' and
+possibly other regular methods.</p>
+<p>All other solutions are asymmetric and thus can be rotated into four different positions
+and viewed from above or below the board, in each case producing a different (equivalent)
+solution, the total orbit (of the dihedral group) of eight.</p>
+<p>There are no other solutions.</p>
+<p>'Thequeens' encodes my solution in the following few lines of code.
+It is to my knowledge the simplest algorithm for
+the N-Queens problem. It is very fast even for large boards,
+being a regular (linear) solution requiring no search.
+Of course, it does not give all the solutions and thus does not solve the
+hard problem described above for 'allqueens'.</p>
+<p>The correct pattern is simply written down directly without
+any checking or searching being necessary. It can be easily learnt to do
+'by inspection', which is probably a neat party trick to perform.
+The solutions had been tested exhaustively for board sizes 0 to 5001
 and individually for board size 50000x50000.</p>
+<pre class="literal-block">
+thequeens n::int = case n of
+   1 = [1];  // trivial solution to one square board
+   2 | 3 = nosolution;
+   _::int = 1:(map succ (thequeens (n-1))) if (n mod 2);// odd size boards done
+      = map (newsq) (0..(n-1)) // the rest is even sized boards solution
+   with
+      newsq x::int = (succ ((start+2*x) mod n)) if x &lt; hn;
+                   = (succ ((restart+2*(x-hn)) mod n)) end
+   when
+      hn::int = (n div 2); // half n
+      start::int = if (n mod 3) then (pred hn) else 1; //(n mod 3) special
+      restart::int = (1+n-start)
+   end
+end; // end of case and thequeens
+</pre>
 </blockquote>
-<!-- The rest are test utilities -->
-<p><strong>(safe j l)</strong></p>
+<!--  -->
+</div>
+<div class="section">
+<h1><a id="testing" name="testing">Testing:</a></h1>
+<p><strong>(unsafe j l)</strong></p>
 <blockquote>
-is square j in current row safe from any attacks by previously
-placed queens in list l? id is the +ve rows difference used for recursion
-with rsafe</blockquote>
+<p>is square j in the current row attacked (rook or bishop)
+by any previously placed queen in list l?</p>
+<pre class="literal-block">
+unsafe j::int l = rsafe 1 l
+   with
+      rsafe _ [] = 0;
+      rsafe id::int (j2::int:l) =
+         if ((jd == 0) || ((id-jd) == 0) || ((id+jd) == 0)) then 1
+         else rsafe (succ id) l
+         when jd = j2-j end
+   end;
+</pre>
+</blockquote>
 <!--  -->
 <p><strong>(checkqs l)</strong></p>
 <blockquote>
-checks one solution either in 0..n-1 encoding or in 1..n
-encoding. It returns 1 for a correct result, including &quot;nosolution&quot;
-for sizes 2 and 3; 0 is returned if a queen attack exists anywhere
-within the presented 'solution'.</blockquote>
+<p>checks one solution either in 0..n-1 encoding or in 1..n
+encoding. It returns 0 for a correct result, including &quot;nosolution&quot;
+for sizes 2 and 3; 1 is returned if a queen attack exists anywhere
+within the presented 'solution'.</p>
+<pre class="literal-block">
+checkqs [] = 0;
+checkqs (s::int:l) = if unsafe s l then 1 else checkqs l;
+checkqs (nosolution) = 0;
+</pre>
+</blockquote>
 <!--  -->
 <p><strong>(queenstest method l)</strong></p>
 <blockquote>
-<p>conducts exhaustive tests of solutions for boards of all listed sizes.
+<p>conducts exhaustive tests of solutions,
+returns either 'passed' or 'failed'. Can be supplied either a
+name of a method that will produce a single solution for each
+listed board size, or (id) followed by a list of candidate
+solutions. The latter form is useful for testing 'allqueens'.
 Example usage:</p>
 <pre class="literal-block">
 &gt;queenstest (id) (allqueens 8);
@@ -397,7 +494,14 @@ Example usage:</p>
 &gt;queenstest tailqueens ([5,6,7]);
 &gt;queenstest thequeens (5000:4999..100);
 </pre>
+<pre class="literal-block">
+queenstest _ [] = passed;
+queenstest method (h:l) =
+      if checkqs (method h) then failed
+      else (queenstest method l);
+</pre>
 </blockquote>
+</div>
 </div>
 </body>
 </html>
