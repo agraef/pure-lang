@@ -1886,8 +1886,28 @@ static void tabs(unsigned& col, const char *text, unsigned len)
       col++;
 }
 
+static string expand_tabs(const string& text)
+{
+  string buf;
+  unsigned col = 0;
+  for (unsigned i = 0; i < text.size(); i++)
+    if (strchr("\n\f\v\r", text[i])) {
+      col = 0;
+      buf += text[i];
+    } else if (text[i] == '\t') {
+      unsigned col0 = col;
+      col = (col/tabsize+1)*tabsize;
+      buf += string(col-col0, ' ');
+    } else { // FIXME: no proper handling of utf-8
+      col++;
+      buf += text[i];
+    }
+  return buf;
+}
+
 static unsigned trim(string& text, unsigned col)
 {
+  text = expand_tabs(text);
   size_t p = text.find_first_not_of(" \t");
   if (p != string::npos) {
     unsigned col1 = 0;
