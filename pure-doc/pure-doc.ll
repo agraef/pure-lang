@@ -48,7 +48,7 @@ space  [ \t\f\v\r\n]
 ^"#!".*			echo(yytext); tabs(col, yytext, yyleng);
 
 "//".*			{
-  start = 0; buf = yytext+2;
+  start = col; buf = yytext+2;
   comment_text = yytext;
   tabs(col, yytext, yyleng);
   BEGIN(lcomment);
@@ -216,6 +216,7 @@ static void print(unsigned col, string& text)
   static unsigned last_offs = 0, last_indent = 0;
 
   // trim whitespace from the front
+  unsigned col0 = col;
   size_t p = text.find_first_not_of(" \t");
   if (p != string::npos) {
     tabs(col, text.c_str(), p);
@@ -230,7 +231,7 @@ static void print(unsigned col, string& text)
 
   if (text == ">>>") {
     literate = true;
-    last_offs = col-2;
+    last_offs = col0;
     return;
   } else if (text == "<<<") {
     literate = false;
