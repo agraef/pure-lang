@@ -1870,23 +1870,14 @@ static inline pure_expr *mk_nil()
   return pure_symbol(interp.symtab.nil_sym().f);
 }
 
-static inline pure_expr *mk_cons(pure_expr *x, pure_expr *y)
-{
-  interpreter& interp = *interpreter::g_interp;
-  pure_expr *f = pure_const(interp.symtab.cons_sym().f);
-  return pure_apply2(pure_apply2(f, x), y);
-}
-
 static inline pure_expr *mk_void()
 {
   interpreter& interp = *interpreter::g_interp;
   return pure_symbol(interp.symtab.void_sym().f);
 }
 
-static inline pure_expr *mk_pair(pure_expr *x, pure_expr *y)
+static inline pure_expr *mk_cons(pure_expr *f, pure_expr *x, pure_expr *y)
 {
-  interpreter& interp = *interpreter::g_interp;
-  pure_expr *f = pure_symbol(interp.symtab.pair_sym().f);
   return pure_apply2(pure_apply2(f, x), y);
 }
 
@@ -1905,9 +1896,11 @@ pure_expr *pure_listl(size_t size, ...)
 extern "C"
 pure_expr *pure_listv(size_t size, pure_expr **elems)
 {
+  interpreter& interp = *interpreter::g_interp;
+  pure_expr *f = pure_symbol(interp.symtab.cons_sym().f);
   pure_expr *y = mk_nil();
   for (size_t i = size; i-- > 0; )
-    y = mk_cons(elems[i], y);
+    y = mk_cons(f, elems[i], y);
   return y;
 }
 
@@ -1927,9 +1920,11 @@ extern "C"
 pure_expr *pure_tuplev(size_t size, pure_expr **elems)
 {
   if (size == 0) return mk_void();
+  interpreter& interp = *interpreter::g_interp;
+  pure_expr *f = pure_symbol(interp.symtab.pair_sym().f);
   pure_expr *y = elems[--size];
   for (size_t i = size; i-- > 0; )
-    y = mk_pair(elems[i], y);
+    y = mk_cons(f, elems[i], y);
   return y;
 }
 
