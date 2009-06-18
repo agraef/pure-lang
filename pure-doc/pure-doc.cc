@@ -503,7 +503,7 @@ static bool literate = false;
 static unsigned col = 0, start;
 static unsigned tabsize = 8;
 static string buf, comment_text, literate_text;
-static unsigned tabs(unsigned& col, const char *text, unsigned len);
+static void tabs(unsigned& col, const char *text, unsigned len);
 static void print(unsigned col, string& text);
 
 static inline void echo(const char *s)
@@ -1875,7 +1875,7 @@ void yyfree (void * ptr )
 
 
 
-static unsigned tabs(unsigned& col, const char *text, unsigned len)
+static void tabs(unsigned& col, const char *text, unsigned len)
 {
   for (unsigned i = 0; i < len; i++)
     if (strchr("\n\f\v\r", text[i]))
