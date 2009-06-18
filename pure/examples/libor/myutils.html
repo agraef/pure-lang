@@ -307,31 +307,34 @@ ul.auto-toc {
 </tbody>
 </table>
 <!--  -->
+<div class="section">
+<h1><a id="general-mathematical-iterators-over-one-and-two-indices" name="general-mathematical-iterators-over-one-and-two-indices">General mathematical iterators over one and two indices</a></h1>
 <pre class="literal-block">
-// General mathematical iterators over one and two indices
-
 iter1d op i1 i2 f = foldl1 op (map f (i1..i2));
 
 iter2d op i1 i2 j1 j2 f =
-foldl1 op (map (uncurry f) [x,y | x = i1..i2; y = j1..j2]);
+   foldl1 op (map (uncurry f) [x,y | x = i1..i2; y = j1..j2]);
 
-iteraten n::int f x = (iterate f x)!!(0..(pred n));
-
-//Examples on how to use the mathematical iterators
-sigma i1 i2 f = iter1d (+) i1 i2 f;
-Pi i1 i2 f = iter2d (*) i1 i2 f;
+//Examples using the mathematical iterators (sums and products)
+Sigma i1 i2 f = iter1d (+) i1 i2 f;
+Sigma2 i1 i2 j1 j2 = iter2d (+) i1 i2 j1 j2 f;
+Pi i1 i2 f = iter1d (*) i1 i2 f;
+Pi2 i1 i2 j1 j2 f = iter2d (*) i1 i2 j1 j2 f;
 fac n = Pi 1L n id;
 
-//Binomial using (k, n-k) symmetry and bignum division
+//Binomial using (k, n-k) symmetry, Pi, and bignum division
 binomial n k = (Pi (k+1L) n id) div (Pi 2L (n-k) id) if n-k &lt; k;
-= (Pi (n-k+1L) n id) div (Pi 2L k id);
+   = (Pi (n-k+1L) n id) div (Pi 2L k id);
 
 // Euclid's recursive greatest common factor algorithm for ints and bignums
 gcf x 0 | gcf x 0L = x;
 gcf x y = gcf y (x mod y);
-
-//List Processing
-
+</pre>
+<!--  -->
+</div>
+<div class="section">
+<h1><a id="list-processing" name="list-processing">List Processing</a></h1>
+<pre class="literal-block">
 // ecat puts h at the end of list l
 ecat h [] = [h];
 ecat h (h2:t) = h2:(ecat h t);
@@ -339,17 +342,16 @@ ecat h (h2:t) = h2:(ecat h t);
 // take off the head of a list and put it at the end
 rotate (h:t) = ecat h t;
 
-// list of all rotations
-rotations l = rot (#l) l
-with
-rot 1 l = [l];
-rot i::int l = l:(rot (pred i)(rotate l))
-end;
+// list of all rotations using recursion and the size of the list
+rotations l = rot (#l) l with
+   rot 1 l = [l];
+   rot i::int l = l:(rot (pred i)(rotate l)) end;
 
-// list of all rotations using iterate
+// list of all rotations using iteraten and the size of the list
 lazyrotations l = iteraten (#l) rotate l;
 
-// generate a tree of all permutations of a list
+// generate a reducing branching factor tree of all permutations of a list.
+// nodes are head items for their branches
 permtree [i] = [i];
 permtree l =  map (\(h:t) -&gt; h:(permtree t)) (rotations l);
 
@@ -361,36 +363,59 @@ protate n::int l = (drop n l)+(take n l);
 // example applied to clocks: &gt;head (nrotate (-33) (0..23));
 // what time is 33 hrs before midnight? Answer: 15 hrs.
 nrotate  n::int l
-= if n&lt;0  then (protate (ll + (n mod ll)) l)
-else  (protate (n mod ll) l) when ll=#l end;
-
-
-/* nil terminated tuples (nt) that can be properly recursed */
-
+   = if n&lt;0  then (protate (ll + (n mod ll)) l)
+             else     (protate (n mod ll) l) when ll=#l end;
+</pre>
+<!--  -->
+</div>
+<div class="section">
+<h1><a id="nil-terminated-tuples-nt" name="nil-terminated-tuples-nt">Nil terminated tuples (nt)</a></h1>
+<p>Nts, unlike poor man's tupples, can be properly recursed just like lists, while
+maintaining poor man's tuples positive properties.</p>
+<pre class="literal-block">
 nullary nil;
 
+// operator to return the size of a deep structure of
+// arbitrarily mixed lists, tuples and nil terminated tuples
+prefix 8 ##;
+## [] | ## () | ## nil = 0;
+## (x:xs) | ## (x,xs) = accum (accum 0 x) xs with
+   accum n::int [] | accum n::int () | accum n::int nil = n;
+   accum n::int (x:xs) | accum n::int (x,xs)  = accum (accum n x) xs;
+   accum n::int x = n+1 end;
+
+// this ensures correct tuple concatenation by removing all nil markers
+// followed by another item (monoid structure)
+nil,y = y;
+
+// end marker is a null tuple
+null nil = 1;
+
+// nil terminated tuple recognising predicate
 ntp nil = 1;
 ntp (a,t) = ntp t;
 ntp _ = 0;
 
+// conversion of poor man's tuples and lists to nil terminated tuples
 nt () = ();
 nt l = (tuple l),nil if listp l;
 nt a = a,nil;
 
+// conversion of nil terminated tuples to poor man's tuples
 tuplify nil = ();
 tuplify (h,t) = h,(tuplify t);
 
-/* remove the first ordered nt from the second one.
-Example:
+/* Example code: remove the first ordered nt from the second one.
 &gt;tuplify (remtuple (1,5,8,nil) (nt (1..10)));
 2,3,4,6,7,9,10 */
 
 remtuple _ nil = nil;
 remtuple nil l = l;
-remtuple (h1::int,t1) (h2::int,t2) = remtuple t1 (h2,t2) if h1 &lt; h2;
-remtuple (h1::int,t1) (h2::int,t2) = remtuple t1 t2 if h1 == h2;
-= h2,(remtuple (h1,t1) t2);
+remtuple (h1,t1) (h2,t2) = remtuple t1 (h2,t2) if h1 &lt; h2;
+remtuple (h1,t1) (h2,t2) = remtuple t1 t2 if h1 == h2;
+                        = h2,(remtuple (h1,t1) t2);
 </pre>
+</div>
 </div>
 </body>
 </html>

@@ -7,36 +7,37 @@ Some Utilities
 :Author: Libor Spacek (C) <libors@gmail.com\>
 :License: GPL V3
 :Date: June 2009
+
+General mathematical iterators over one and two indices
+=======================================================
 */
-
-// namespace myutils;
-// public iter1d iter2d sigma Pi fac binomial gcf rotate protate nrotate;
-
 //>>>
-
-// General mathematical iterators over one and two indices
-
 iter1d op i1 i2 f = foldl1 op (map f (i1..i2));
 
 iter2d op i1 i2 j1 j2 f = 
 	foldl1 op (map (uncurry f) [x,y | x = i1..i2; y = j1..j2]);
 
-iteraten n::int f x = (iterate f x)!!(0..(pred n));
-
-//Examples on how to use the mathematical iterators
-sigma i1 i2 f = iter1d (+) i1 i2 f;
-Pi i1 i2 f = iter2d (*) i1 i2 f;
+//Examples using the mathematical iterators (sums and products)
+Sigma i1 i2 f = iter1d (+) i1 i2 f;
+Sigma2 i1 i2 j1 j2 = iter2d (+) i1 i2 j1 j2 f;
+Pi i1 i2 f = iter1d (*) i1 i2 f;
+Pi2 i1 i2 j1 j2 f = iter2d (*) i1 i2 j1 j2 f;
 fac n = Pi 1L n id;
 
-//Binomial using (k, n-k) symmetry and bignum division
+//Binomial using (k, n-k) symmetry, Pi, and bignum division
 binomial n k = (Pi (k+1L) n id) div (Pi 2L (n-k) id) if n-k < k;
    = (Pi (n-k+1L) n id) div (Pi 2L k id);
 
 // Euclid's recursive greatest common factor algorithm for ints and bignums
 gcf x 0 | gcf x 0L = x;
 gcf x y = gcf y (x mod y);
+//<<<
+/*..
 
-//List Processing
+List Processing
+===============
+*/
+//>>>
 
 // ecat puts h at the end of list l 
 ecat h [] = [h];
@@ -45,17 +46,16 @@ ecat h (h2:t) = h2:(ecat h t);
 // take off the head of a list and put it at the end	
 rotate (h:t) = ecat h t;
 
-// list of all rotations
-rotations l = rot (#l) l
-	with
+// list of all rotations using recursion and the size of the list
+rotations l = rot (#l) l with
 	rot 1 l = [l];
-	rot i::int l = l:(rot (pred i)(rotate l))
-	end;
+	rot i::int l = l:(rot (pred i)(rotate l)) end;
 
-// list of all rotations using iterate
+// list of all rotations using iteraten and the size of the list
 lazyrotations l = iteraten (#l) rotate l;
 
-// generate a tree of all permutations of a list
+// generate a reducing branching factor tree of all permutations of a list. 
+// nodes are head items for their branches
 permtree [i] = [i];
 permtree l =  map (\(h:t) -> h:(permtree t)) (rotations l);
 
@@ -69,25 +69,49 @@ protate n::int l = (drop n l)+(take n l);
 nrotate  n::int l 
    = if n<0  then (protate (ll + (n mod ll)) l)
              else	(protate (n mod ll) l) when ll=#l end;
+//<<<
+/*..
 
+Nil terminated tuples (nt)
+==========================
 
-/* nil terminated tuples (nt) that can be properly recursed */
-
+Nts, unlike poor man's tupples, can be properly recursed just like lists, while
+maintaining poor man's tuples positive properties.
+*/
+//>>>
 nullary nil;
 
+// operator to return the size of a deep structure of 
+// arbitrarily mixed lists, tuples and nil terminated tuples
+prefix 8 ##;
+## [] | ## () | ## nil = 0; 
+## (x:xs) | ## (x,xs) = accum (accum 0 x) xs with 
+	accum n::int [] | accum n::int () | accum n::int nil = n; 
+	accum n::int (x:xs) | accum n::int (x,xs)  = accum (accum n x) xs;
+	accum n::int x = n+1 end;
+
+// this ensures correct tuple concatenation by removing all nil markers
+// followed by another item (monoid structure)
+nil,y = y;
+
+// end marker is a null tuple
+null nil = 1;
+
+// nil terminated tuple recognising predicate
 ntp nil = 1;
 ntp (a,t) = ntp t;
 ntp _	= 0;
 
+// conversion of poor man's tuples and lists to nil terminated tuples
 nt () = ();
 nt l = (tuple l),nil if listp l;
 nt a = a,nil;
 
+// conversion of nil terminated tuples to poor man's tuples
 tuplify nil = ();
 tuplify (h,t) = h,(tuplify t);
 
-/* remove the first ordered nt from the second one.
-Example: 
+/* Example code: remove the first ordered nt from the second one.
 >tuplify (remtuple (1,5,8,nil) (nt (1..10)));
 2,3,4,6,7,9,10 */
 
