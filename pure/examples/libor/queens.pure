@@ -88,35 +88,34 @@ __________
 	candidates list c, leaving just the bishop check, id==abs(j2-j),  
 	(both diagonals).*/
 //>>>
-allqueens n::int = unimplemented for less than 5 if (n < 5);
-	= if (n mod 2 == 0) then (hsoln+revsoln) 
-		else hsoln+(list (search (rem hsn nl) [hsn]))+revsoln
+allqueens n::int = if (n mod 2 == 0) then (hsoln+revsoln) 
+		else hsoln+(search (rem hsn nl) [hsn])+revsoln
 	when 
-		pn = pred n; sn = succ n; hsn = sn div 2;
+		sn = succ n; hsn = sn div 2;
 		hnl = (1..(n div 2)); nl = (1..n);
-		hsoln = list (tuple [search (rem j nl) [j] | j = hnl]);
+		hsoln = cat [search (rem j nl) [j] | j = hnl];
 		revsoln = map (\y -> map (\z -> sn-z) y) hsoln
 	end
 	with
-		search [] p = p;
-		search c p = tuple [ search (rem j c) (j:p) | j = c; diagsafe j p]
+		search [] p = [p]; // solved
+		search c p = cat [ search (rem j c) (j:p) | j = c; diagsafe j p]
 	end;
 //<<<
-
 /*..
 
 **(queens n)** 
-*/
 
+	now also finds all solutions. Queens is more concise than allqueens but
+	is also slower */
+//>>>
 queens n::int = search n n []
 	with
-	search 0 _ p = [];   // last i, solved
-	search _ 0 _ = nosolution;   // failed, run out of alternative js
+	search 0 _ p = [p];     // no more rows, solved
+	search i::int 0 _ = []; // failed, run out of alternative js
 	search i::int j::int p = search i (pred j) p if unsafe j p; // try another j
-		= if (solution === nosolution) then search i (pred j) p else j:solution
-		when solution = search (pred i) n (j:p) end 
-   end;
-
+		= (search (pred i) n (j:p))+(search i (pred j) p); // depth-first
+	end;
+//<<<
 /*..
 
 **(tailqueens n)**
@@ -125,7 +124,7 @@ queens n::int = search n n []
 	throws a single solution which is the rows reflection
 	of that found by "queens"  */
 
-tailqueens n::int = catch id (srch n n [])
+tailqueens n::int = catch id (srch (1..n) n [])
 	with srch 0 _ p = throw p; // no more rows: solved
 		srch _ 0 _ = nosolution; // out of columns: failed
 		srch i::int j::int p = if unsafe j p then srch i (j-1) p else
@@ -136,40 +135,41 @@ tailqueens n::int = catch id (srch n n [])
 
 **(thequeens n)**
 
-	Any two queens placement symmetric under a single reflection around any of the
-	board's four axis of symmetry is not part of a solution by problem definition.
-	It follows that any complete solution cannot be symmetric (invariant) under a single reflection.
+	Any two queens placement symmetric under a single reflection around any of 
+	the 	board's four axis of symmetry is not part of a solution by problem 
+	definition. 	It follows that any complete solution cannot be symmetric 
+	(invariant) under a single reflection.
 
 	There are so called doubly symmetric solutions, invariant under any 
-	combination of 90 degrees rotations,
-	which have an orbit of just two equivalent solutions, produced by a single reflection
-	(e.g. viewing the board from top or from underneath). A double symmetric solution has the
-	full square symmetry internally but its axis of symmetry do not coincide with those of the
-	board.
+	combination of 90 degrees rotations, which have an orbit of just two 
+	equivalent solutions, produced by a single reflection (e.g. viewing the board
+	from top or from underneath). A double symmetric solution has the full square
+	symmetry internally but its axis of symmetry do not coincide with those of 
+	the board.
 
-	There always exists at least one symmetric solution 
-	invariant under 180 degrees rotation (or two orthogonal reflections), producing an orbit of  
-	four equivalent solutions. The symmetric solutions are the ones found by 'thequeens' and
-	possibly other regular methods.
+	There always exists at least one symmetric solution invariant under 180 
+	degrees rotation (or two orthogonal reflections), producing an orbit of four
+	equivalent solutions. The symmetric solutions are the ones found by 
+	'thequeens' and possibly other regular methods.
 
-	All other solutions are asymmetric and thus can be rotated into four different positions
-	and viewed from above or below the board, in each case producing a different (equivalent)
-	solution, the total orbit (of the dihedral group) of eight.
+	All other solutions are asymmetric and thus can be rotated into four 
+	different positions 	and viewed from above or below the board, in each case 
+	producing a different (equivalent) 	solution, the total orbit 
+	(of the dihedral group) of eight.
 
 	There are no other solutions.
 
-	'Thequeens' encodes my solution in the following few lines of code.
-	It is to my knowledge the simplest algorithm for 
-	the N-Queens problem. It is very fast even for large boards, 
-	being a regular (linear) solution requiring no search.
+	'Thequeens' encodes my solution in the following few lines of code. It is to 
+	my knowledge the simplest algorithm for the N-Queens problem. It is very fast
+	even for large boards, being a regular (linear) solution requiring no search.
 	Of course, it does not give all the solutions and thus does not solve the
 	hard problem described above for 'allqueens'.
 
-	The correct pattern is simply written down directly without
-	any checking or searching being necessary. It can be easily learnt to do
-	'by inspection', which is probably a neat party trick to perform.
-	The solutions had been tested exhaustively for board sizes 0 to 5001 
-	and individually for board size 50000x50000. */
+	The correct pattern is simply written down directly without any checking or 
+	searching being necessary. It can be easily learnt to do 'by inspection', 
+	which is probably a neat party trick to perform. The solutions had been 
+	tested exhaustively for board sizes 0 to 5001 and individually for board size
+	50000x50000. */
 //>>>
 thequeens n::int = case n of
 	1 = [1];  // trivial solution to one square board
@@ -231,7 +231,7 @@ checkqs (nosolution) = 0;
 	Example usage::
 	
 	>queenstest (id) (allqueens 8);
-	>queenstest queens (1..10);
+	>queenstest (id) (queens 8);
 	>queenstest tailqueens ([5,6,7]);
 	>queenstest thequeens (5000:4999..100); */
 //>>>
