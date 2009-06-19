@@ -3472,6 +3472,12 @@ static string& quote(string& s)
   return s;
 }
 
+#ifdef __MINGW32__
+#include <process.h>
+#define WIFEXITED(w)   (((w) & 0XFFFFFF00) == 0)
+#define WEXITSTATUS(w) (w)
+#endif
+
 int interpreter::compiler(string out, list<string> libnames)
 {
   /* We allow either '-' or *.ll to indicate an LLVM assembler file. In the
