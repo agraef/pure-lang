@@ -3,17 +3,15 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<meta name="generator" content="Docutils 0.4: http://docutils.sourceforge.net/" />
+<meta name="generator" content="Docutils 0.5: http://docutils.sourceforge.net/" />
 <title>Some Solutions to the N Queens Problem</title>
 <meta name="author" content="Libor Spacek (C) &lt;libors&#64;gmail.com&gt;" />
 <meta name="date" content="Version 2: June 2009" />
 <style type="text/css">
 
 /*
-:Author: David Goodger
-:Contact: goodger@users.sourceforge.net
-:Date: $Date: 2005-12-18 01:56:14 +0100 (Sun, 18 Dec 2005) $
-:Revision: $Revision: 4224 $
+:Author: David Goodger (goodger@python.org)
+:Id: $Id: html4css1.css 5196 2007-06-03 20:25:28Z wiemann $
 :Copyright: This stylesheet has been placed in the public domain.
 
 Default cascading style sheet for the HTML output of Docutils.
@@ -119,7 +117,7 @@ div.line-block div.line-block {
   margin-left: 1.5em }
 
 div.sidebar {
-  margin-left: 1em ;
+  margin: 0 0 0.5em 1em ;
   border: medium outset ;
   padding: 1em ;
   background-color: #ffffee ;
@@ -225,8 +223,7 @@ pre.address {
 
 pre.literal-block, pre.doctest-block {
   margin-left: 2em ;
-  margin-right: 2em ;
-  background-color: #eeeeee }
+  margin-right: 2em }
 
 span.classifier {
   font-family: sans-serif ;
@@ -283,9 +280,6 @@ h1 tt.docutils, h2 tt.docutils, h3 tt.docutils,
 h4 tt.docutils, h5 tt.docutils, h6 tt.docutils {
   font-size: 100% }
 
-tt.docutils {
-  background-color: #eeeeee }
-
 ul.auto-toc {
   list-style-type: none }
 
@@ -299,7 +293,7 @@ ul.auto-toc {
 <col class="docinfo-content" />
 <tbody valign="top">
 <tr><th class="docinfo-name">Author:</th>
-<td>Libor Spacek (C) &lt;<a class="reference" href="mailto:libors&#64;gmail.com">libors&#64;gmail.com</a>&gt;</td></tr>
+<td>Libor Spacek (C) &lt;<a class="reference external" href="mailto:libors&#64;gmail.com">libors&#64;gmail.com</a>&gt;</td></tr>
 <tr class="field"><th class="docinfo-name">License:</th><td class="field-body">GPL V3</td>
 </tr>
 <tr><th class="docinfo-name">Date:</th>
@@ -307,16 +301,16 @@ ul.auto-toc {
 </tbody>
 </table>
 <!--  -->
-<div class="section">
-<h1><a id="example-usage" name="example-usage">Example usage:</a></h1>
+<div class="section" id="example-usage">
+<h1>Example usage:</h1>
 <blockquote>
 <p>#pure -i queens.pure</p>
 <p>&gt;fullboard (thequeens 30);</p>
 </blockquote>
 <!--  -->
 </div>
-<div class="section">
-<h1><a id="utilities" name="utilities">Utilities:</a></h1>
+<div class="section" id="utilities">
+<h1>Utilities:</h1>
 <pre class="literal-block">
 nullary nosolution passed failed;
 </pre>
@@ -329,7 +323,8 @@ all queens in previous rows placed on other columns recorded in list l ?</p>
 diagsafe j::int l = rsafe 1 l
    with
       rsafe id::int [j2::int] = if id==(abs(j2-j)) then 0 else 1;
-      rsafe id::int (j2::int:l) = if id==(abs(j2-j)) then 0 else rsafe (succ id) l
+      rsafe id::int (j2::int:l) =
+         if id==(abs(j2-j)) then 0 else rsafe (succ id) l
    end;
 </pre>
 </blockquote>
@@ -350,8 +345,8 @@ fullboard s = zip (1..(#s)) s;
 </blockquote>
 <!--  -->
 </div>
-<div class="section">
-<h1><a id="solutions" name="solutions">Solutions:</a></h1>
+<div class="section" id="solutions">
+<h1>Solutions:</h1>
 <p><strong>(allqueens n)</strong></p>
 <blockquote>
 <p>returns all possible solutions by constrained search, e.g.
@@ -377,17 +372,16 @@ candidates list c, leaving just the bishop check, id==abs(j2-j),
 <pre class="literal-block">
 allqueens n::int = unimplemented for less than 5 if (n &lt; 5);
    = if (n mod 2 == 0) then (hsoln+revsoln)
-      else hsoln+(list (search pn (rem hsn nl) [hsn]))+revsoln
+      else hsoln+(list (search (rem hsn nl) [hsn]))+revsoln
    when
       pn = pred n; sn = succ n; hsn = sn div 2;
       hnl = (1..(n div 2)); nl = (1..n);
-      hsoln = list (tuple (map (\j -&gt; search pn (rem j nl) [j]) hnl));
+      hsoln = list (tuple [search (rem j nl) [j] | j = hnl]);
       revsoln = map (\y -&gt; map (\z -&gt; sn-z) y) hsoln
    end
    with
-      search 0 c p = p;
-      search i::int c p = tuple
-      (map (\j -&gt; search (pred i) (rem j c) (j:p)) [k | k = c; diagsafe k p])
+      search [] p = p;
+      search c p = tuple [ search (rem j c) (j:p) | j = c; diagsafe j p]
    end;
 </pre>
 </blockquote>
@@ -449,8 +443,8 @@ end; // end of case and thequeens
 </blockquote>
 <!--  -->
 </div>
-<div class="section">
-<h1><a id="testing" name="testing">Testing:</a></h1>
+<div class="section" id="testing">
+<h1>Testing:</h1>
 <p><strong>(unsafe j l)</strong></p>
 <blockquote>
 <p>is square j in the current row attacked (rook or bishop)
