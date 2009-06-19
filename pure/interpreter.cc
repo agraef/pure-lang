@@ -3472,7 +3472,7 @@ static string& quote(string& s)
   return s;
 }
 
-void interpreter::compiler(string out, list<string> libnames)
+int interpreter::compiler(string out, list<string> libnames)
 {
   /* We allow either '-' or *.ll to indicate an LLVM assembler file. In the
      former case, output is written to stdout, which is useful if the output
@@ -3686,24 +3686,29 @@ void interpreter::compiler(string out, list<string> libnames)
       "-c -x llvm-assembler "+quote(target)+" -o "+quote(obj);
     if (vflag)
       std::cerr << cmd << endl;
-    system(cmd.c_str());
-    string linkopts = quote(obj)+libs+
+    int status = system(cmd.c_str());
+    if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+      string linkopts = quote(obj)+libs+
 #ifdef __MINGW32__
-      /* We need to link some extra libraries on Windows. */
-      " -lregex -lglob -lreadline"+
+	/* We need to link some extra libraries on Windows. */
+	" -lregex -lglob -lreadline"+
 #endif
-      " -lpure";
-    if (ext != ".o") {
-      cmd = "llvm-g++ -o "+quote(out)+" "+
-	quote(libdir)+"pure_main.o "+linkopts;
-      if (vflag)
-	std::cerr << cmd << endl;
-      system(cmd.c_str());
-      unlink(obj.c_str());
-    } else if (vflag)
-      std::cerr << "Link with: llvm-g++ " << linkopts << endl;
+	" -lpure";
+      if (ext != ".o") {
+	cmd = "llvm-g++ -o "+quote(out)+" "+
+	  quote(libdir)+"pure_main.o "+linkopts;
+	if (vflag)
+	  std::cerr << cmd << endl;
+	status = system(cmd.c_str());
+	unlink(obj.c_str());
+      } else if (vflag)
+	std::cerr << "Link with: llvm-g++ " << linkopts << endl;
+    }
     unlink(target.c_str());
-  }
+    if (WIFEXITED(status)) status = WEXITSTATUS(status);
+    return status;
+  } else
+    return 0;
 }
 
 void interpreter::defn(const char *varname, pure_expr *x)

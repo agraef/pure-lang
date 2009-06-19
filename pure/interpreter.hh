@@ -562,7 +562,7 @@ public:
 				 const list<string>& argtypes,
 				 bool varargs = false, void *fp = 0,
 				 string asname = "");
-  void compiler(string out, list<string> libnames);
+  int compiler(string out, list<string> libnames);
   list<DebugInfo> debug_info;
   set<int32_t> breakpoints, tmp_breakpoints;
   int32_t stoplevel;

@@ -545,10 +545,12 @@ main(int argc, char *argv[])
       }
     }
   if ((count > 0 || interp.compiling) && !force_interactive) {
+    int status = 0;
     if (interp.compiling || interp.verbose&verbosity::dump)
       interp.compile();
-    if (interp.compiling) interp.compiler(outname, libnames);
-    return 0;
+    if (interp.compiling) status = interp.compiler(outname, libnames);
+    //printf("status = %d\n", status);
+    return (status>=0)?status:1;
   }
   interp.symtab.init_builtins();
   /* Only when running interactively, set up handlers for all standard POSIX
