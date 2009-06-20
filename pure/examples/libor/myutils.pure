@@ -69,55 +69,27 @@ protate n::int l = (drop n l)+(take n l);
 nrotate  n::int l 
    = if n<0  then (protate (ll + (n mod ll)) l)
              else	(protate (n mod ll) l) when ll=#l end;
+
+// removal of the first ordered list from the second. (<) must be defined
+orem _ [] = [];
+orem [] l = l;
+orem (h1:t1) l2@(h2:_) = orem t1 l2 if h1 < h2; // h1 not found in l2
+orem l1@(h1:t1) (h2:t2) = if (h1 === h2) then orem t1 t2 else h2:(orem l1 t2);
 //<<<
 /*..
 
-Nil terminated tuples (nt)
-==========================
-Nts, unlike poor man's tuples, can be properly recursed just like lists, while
-maintaining poor man's tuples positive properties.
-*/
+**## operator**
+
+	returns the total (deep) size of a heterogeneous list-like binary 
+	structure using arbitrary constructors and the terminators, [] () nil,
+	in any combination. */
+
 //>>>
 nullary nil;
-
-// operator to return the size of a deep structure of 
-// arbitrarily mixed lists, tuples and nil terminated tuples
 prefix 8 ##;
-## [] | ## () | ## nil = 0; 
-## (x:xs) | ## (x,xs) = accum (accum 0 x) xs with 
-	accum n::int [] | accum n::int () | accum n::int nil = n; 
-	accum n::int (x:xs) | accum n::int (x,xs)  = accum (accum n x) xs;
+## [] | ## () | ## nil = 0;
+## (f@_ x xs) = accum (accum 0 x) xs with
+	accum n::int [] | accum n::int () | accum n::int nil = n;
+	accum n::int (f@_ x xs)  = accum (accum n x) xs;
 	accum n::int x = n+1 end;
-
-// this ensures correct tuple concatenation by removing all nil markers
-// followed by another item 
-nil,y = y;
-
-// end marker is a null tuple
-null nil = 1;
-
-// nil terminated tuple recognising predicate
-ntp nil = 1;
-ntp (a,t) = ntp t;
-ntp _	= 0;
-
-// conversion of poor man's tuples and lists to nil terminated tuples
-nt () = ();
-nt l = (tuple l),nil if listp l;
-nt a = a,nil;
-
-// conversion of nil terminated tuples to poor man's tuples
-tuplify nil = ();
-tuplify (h,t) = h,(tuplify t);
-
-/* Example code: remove the first ordered nt from the second one.
->tuplify (remtuple (1,5,8,nil) (nt (1..10)));
-2,3,4,6,7,9,10 */
-
-remtuple _ nil = nil;
-remtuple nil l = l;
-remtuple (h1,t1) (h2,t2) = remtuple t1 (h2,t2) if h1 < h2;
-remtuple (h1,t1) (h2,t2) = remtuple t1 t2 if h1 == h2;
-								= h2,(remtuple (h1,t1) t2); 
-
 //<<<
