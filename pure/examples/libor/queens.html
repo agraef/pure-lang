@@ -393,7 +393,7 @@ is also slower</p>
 queens n::int = search n n []
    with
    search 0 _ p = [p];     // no more rows, solved
-   search i::int 0 _ = []; // failed, run out of alternative js
+   search _ 0 _ = []; // failed, run out of alternative js
    search i::int j::int p = search i (pred j) p if unsafe j p; // try another j
       = (search (pred i) n (j:p))+(search i (pred j) p); // depth-first
    end;
@@ -402,9 +402,19 @@ queens n::int = search n n []
 <!--  -->
 <p><strong>(tailqueens n)</strong></p>
 <blockquote>
-this concise backtracking tailrecursive version
-throws a single solution which is the rows reflection
-of that found by &quot;queens&quot;</blockquote>
+<p>this concise backtracking tailrecursive version
+throws a single solution  - the first one of queens' as it searches
+in the same order</p>
+<pre class="literal-block">
+tailqueens n::int = catch id (srch n n [])
+   with srch 0 _ p = throw p; // no more rows: solved
+      srch _ 0 _ = []; // out of columns: failed
+      srch i::int j::int p =
+         (if unsafe j p then void else (srch (i-1) n (j:p)))
+         $$ (srch i (j-1) p)
+   end;
+</pre>
+</blockquote>
 <!--  -->
 <p><strong>(thequeens n)</strong></p>
 <blockquote>
@@ -498,7 +508,7 @@ Example usage:</p>
 <pre class="literal-block">
 &gt;queenstest (id) (allqueens 8);
 &gt;queenstest (id) (queens 8);
-&gt;queenstest tailqueens ([5,6,7]);
+&gt;queenstest tailqueens [5,6,7];
 &gt;queenstest thequeens (5000:4999..100);
 </pre>
 <pre class="literal-block">

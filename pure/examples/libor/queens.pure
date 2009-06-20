@@ -111,7 +111,7 @@ allqueens n::int = if (n mod 2 == 0) then (hsoln+revsoln)
 queens n::int = search n n []
 	with
 	search 0 _ p = [p];     // no more rows, solved
-	search i::int 0 _ = []; // failed, run out of alternative js
+	search _ 0 _ = []; // failed, run out of alternative js
 	search i::int j::int p = search i (pred j) p if unsafe j p; // try another j
 		= (search (pred i) n (j:p))+(search i (pred j) p); // depth-first
 	end;
@@ -121,16 +121,17 @@ queens n::int = search n n []
 **(tailqueens n)**
 
 	this concise backtracking tailrecursive version 
-	throws a single solution which is the rows reflection
-	of that found by "queens"  */
-
-tailqueens n::int = catch id (srch (1..n) n [])
+	throws a single solution  - the first one of queens' as it searches
+	in the same order */
+//>>>
+tailqueens n::int = catch id (srch n n [])
 	with srch 0 _ p = throw p; // no more rows: solved
-		srch _ 0 _ = nosolution; // out of columns: failed
-		srch i::int j::int p = if unsafe j p then srch i (j-1) p else
-		( if ((srch (i-1) n (j:p)) === nosolution) then srch i (j-1) p else [] )
+		srch _ 0 _ = []; // out of columns: failed
+		srch i::int j::int p = 
+			(if unsafe j p then void else (srch (i-1) n (j:p)))
+			$$ (srch i (j-1) p)
 	end;
-
+//<<<
 /*..
 
 **(thequeens n)**
@@ -232,7 +233,7 @@ checkqs (nosolution) = 0;
 	
 	>queenstest (id) (allqueens 8);
 	>queenstest (id) (queens 8);
-	>queenstest tailqueens ([5,6,7]);
+	>queenstest tailqueens [5,6,7];
 	>queenstest thequeens (5000:4999..100); */
 //>>>
 queenstest _ [] = passed;
