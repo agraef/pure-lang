@@ -17,10 +17,11 @@ dnl Figure out special programs and filename extensions for various systems.
 dnl XXXFIXME: This is probably incomplete.
 DIFF="diff"
 DLLEXT=".so"
+rdynamic="-rdynamic"
 case "$host" in
     *-*-mingw*)       DLLEXT=".dll"; DIFF="diff --strip-trailing-cr";;
-    *-*-darwin*)      DLLEXT=".dylib";;
-    hppa*-hp-hpux*)   DLLEXT=".sl";;
+    *-*-darwin*)      rdynamic=""; DLLEXT=".dylib";;
+    hppa*-hp-hpux*)   rdynamic=""; DLLEXT=".sl";;
 esac
 AC_SUBST(DIFF)
 AC_SUBST(DLLEXT)
