@@ -292,6 +292,8 @@ ul.auto-toc {
 <col class="docinfo-name" />
 <col class="docinfo-content" />
 <tbody valign="top">
+<tr class="field"><th class="docinfo-name">Source:</th><td class="field-body"><a class="reference external" href="http://pure-lang.googlecode.com/svn/trunk/pure/examples/libor/queens.pure">http://pure-lang.googlecode.com/svn/trunk/pure/examples/libor/queens.pure</a></td>
+</tr>
 <tr><th class="docinfo-name">Author:</th>
 <td>Libor Spacek (C) &lt;<a class="reference external" href="mailto:libors&#64;gmail.com">libors&#64;gmail.com</a>&gt;</td></tr>
 <tr class="field"><th class="docinfo-name">License:</th><td class="field-body">GPL V3</td>
@@ -305,7 +307,7 @@ ul.auto-toc {
 <h1>Example usage:</h1>
 <blockquote>
 <p>#pure -i queens.pure</p>
-<p>&gt;fullboard (thequeens 30);</p>
+<p>&gt;fullboard (thequeen 30);</p>
 </blockquote>
 <!--  -->
 </div>
@@ -320,11 +322,11 @@ nullary nosolution passed failed;
 <p>is square j in the current row safe from the diagonal attacks by
 all queens in previous rows placed on other columns recorded in list l ?</p>
 <pre class="literal-block">
-diagsafe j::int l = rsafe 1 l
+diagsafe j::int l = rsafe 1 j l
    with
-      rsafe id::int [j2::int] = if id==(abs(j2-j)) then 0 else 1;
-      rsafe id::int (j2::int:l) =
-         if id==(abs(j2-j)) then 0 else rsafe (succ id) l
+      rsafe _ _ [] = 1;
+      rsafe id::int j::int (j2::int:l) = if ((id==j-j2)||(id==j2-j)) then 0
+         else rsafe (succ id) j l
    end;
 </pre>
 </blockquote>
@@ -370,6 +372,8 @@ All rook checking (row and column) is eliminated by using only unused
 candidates list c, leaving just the bishop check, id==abs(j2-j),
 (both diagonals).</p>
 <pre class="literal-block">
+allqueens 1 = [[1]];
+allqueens n::int = nosolution if n&lt;4;
 allqueens n::int = if (n mod 2 == 0) then (hsoln+revsoln)
       else hsoln+(search (rem hsn nl) [hsn])+revsoln
    when
@@ -385,42 +389,27 @@ allqueens n::int = if (n mod 2 == 0) then (hsoln+revsoln)
 </pre>
 </blockquote>
 <!--  -->
-<p><strong>(queens n)</strong></p>
+<p><strong>(queen n)</strong></p>
 <blockquote>
-<p>now also finds all solutions. Queens is more concise than allqueens but
-is also slower</p>
+<p>this concise depth-first search throws the first found solution</p>
 <pre class="literal-block">
-queens n::int = search n n []
-   with
-   search 0 _ p = [p];     // no more rows, solved
-   search _ 0 _ = []; // failed, run out of alternative js
-   search i::int j::int p = search i (pred j) p if unsafe j p; // try another j
-      = (search (pred i) n (j:p))+(search i (pred j) p); // depth-first
-   end;
-</pre>
-</blockquote>
-<!--  -->
-<p><strong>(tailqueens n)</strong></p>
-<blockquote>
-<p>this concise backtracking tailrecursive version
-throws a single solution  - the first one of queens' as it searches
-in the same order</p>
-<pre class="literal-block">
-tailqueens n::int = catch id (srch n n [])
-   with srch 0 _ p = throw p; // no more rows: solved
-      srch _ 0 _ = []; // out of columns: failed
+queen 1 = [[1]];
+queen n::int = nosolution if n&lt;4;
+queen n::int = catch id (srch n n [])
+   with srch 0 _ p = throw [p];  // no more rows: solved
+      srch _ 0 _ = [];  // out of columns
       srch i::int j::int p =
-         (if unsafe j p then void else (srch (i-1) n (j:p)))
-         $$ (srch i (j-1) p)
+         ( if (unsafe j p) then void else void (srch (i-1) n (j:p)) )
+         $$ void (srch i (j-1) p)
    end;
 </pre>
 </blockquote>
 <!--  -->
-<p><strong>(thequeens n)</strong></p>
+<p><strong>(thequeen n)</strong></p>
 <blockquote>
 <p>Any two queens placement symmetric under a single reflection around any of
-the   board's four axis of symmetry is not part of a solution by problem
-definition.    It follows that any complete solution cannot be symmetric
+the board's four axis of symmetry is not part of a solution by problem
+definition. It follows that any complete solution cannot be symmetric
 (invariant) under a single reflection.</p>
 <p>There are so called doubly symmetric solutions, invariant under any
 combination of 90 degrees rotations, which have an orbit of just two
@@ -434,10 +423,10 @@ equivalent solutions. The symmetric solutions are the ones found by
 'thequeens' and possibly other regular methods.</p>
 <p>All other solutions are asymmetric and thus can be rotated into four
 different positions  and viewed from above or below the board, in each case
-producing a different (equivalent)  solution, the total orbit
+producing a different (equivalent) solution, the total orbit
 (of the dihedral group) of eight.</p>
 <p>There are no other solutions.</p>
-<p>'Thequeens' encodes my solution in the following few lines of code. It is to
+<p>'Thequeen' encodes my solution in the following few lines of code. It is to
 my knowledge the simplest algorithm for the N-Queens problem. It is very fast
 even for large boards, being a regular (linear) solution requiring no search.
 Of course, it does not give all the solutions and thus does not solve the
@@ -448,20 +437,18 @@ which is probably a neat party trick to perform. The solutions had been
 tested exhaustively for board sizes 0 to 5001 and individually for board size
 50000x50000.</p>
 <pre class="literal-block">
-thequeens n::int = case n of
-   1 = [1];  // trivial solution to one square board
-   2 | 3 = nosolution;
-   _::int = 1:(map succ (thequeens (n-1))) if (n mod 2);// odd size boards done
-      = map (newsq) (0..(n-1)) // the rest is even sized boards solution
+thequeen 1 = [[1]];
+thequeen n::int = nosolution if n&lt;4;
+thequeen n::int
+   = [ 1:(map succ (head (thequeen (n-1)))) ] if (n mod 2);// odd sized boards
+   = [ map (newsq) (0..(n-1)) ] // the rest is even sized boards solution
    with
       newsq x::int = (succ ((start+2*x) mod n)) if x &lt; hn;
                    = (succ ((restart+2*(x-hn)) mod n)) end
    when
       hn::int = (n div 2); // half n
       start::int = if (n mod 3) then (pred hn) else 1; //(n mod 3) special
-      restart::int = (1+n-start)
-   end
-end; // end of case and thequeens
+      restart::int = (1+n-start) end;
 </pre>
 </blockquote>
 <!--  -->
@@ -487,35 +474,39 @@ unsafe j::int l = rsafe 1 l
 <p><strong>(checkqs l)</strong></p>
 <blockquote>
 <p>checks one solution either in 0..n-1 encoding or in 1..n
-encoding. It returns 0 for a correct result, including &quot;nosolution&quot;
-for sizes 2 and 3; 1 is returned if a queen attack exists anywhere
-within the presented 'solution'.</p>
+encoding. It returns 0 for a correct result and 1 when
+a queen attack exists anywhere within the presented 'solution'.</p>
 <pre class="literal-block">
 checkqs [] = 0;
 checkqs (s::int:l) = if unsafe s l then 1 else checkqs l;
-checkqs (nosolution) = 0;
+</pre>
+</blockquote>
+<!--  -->
+<p><strong>(checksols l)</strong></p>
+<blockquote>
+<p>checks a list of solutions. It returns 0 iff they are all correct,
+otherwise it returns 1. Correct solutions include 'nosolution' produced
+for sizes 2 and 3;</p>
+<pre class="literal-block">
+checksols [] = 0;
+checksols (s:l) = if checkqs s then 1 else checksols l;
+checksols nosolution = 0;
 </pre>
 </blockquote>
 <!--  -->
 <p><strong>(queenstest method l)</strong></p>
 <blockquote>
-<p>conducts exhaustive tests of solutions,
-returns either 'passed' or 'failed'. Can be supplied either a
-name of a method that will produce a single solution for each
-listed board size, or (id) followed by a list of candidate
-solutions. The latter form is useful for testing 'allqueens'.
-Example usage:</p>
+<p>conducts exhaustive tests of solutions. Returns either 'passed' or 'failed'.
+Needs name of a method, followed by a list of board sizes. Example usage:</p>
 <pre class="literal-block">
-&gt;queenstest (id) (allqueens 8);
-&gt;queenstest (id) (queens 8);
-&gt;queenstest tailqueens [5,6,7];
-&gt;queenstest thequeens (5000:4999..100);
+&gt;queenstest allqueens [8];
+&gt;queenstest queen [5,6,7];
+&gt;queenstest thequeen (5000:4999..100);
 </pre>
 <pre class="literal-block">
 queenstest _ [] = passed;
 queenstest method (h:l) =
-      if checkqs (method h) then failed
-      else (queenstest method l);
+      if (checksols (method h)) then failed else (queenstest method l);
 </pre>
 </blockquote>
 </div>
