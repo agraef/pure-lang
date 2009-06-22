@@ -601,9 +601,10 @@ private:
   llvm::Value *external_funcall(int32_t tag, uint32_t n, expr x);
   llvm::Value *call(llvm::Value *x);
   llvm::Value *apply(llvm::Value *x, llvm::Value *y);
+  llvm::Value *applc(llvm::Value *x, llvm::Value *y);
   llvm::Value *cond(expr x, expr y, expr z);
   void toplevel_cond(expr x, expr y, expr z, const rule *rp);
-  llvm::Value *fbox(Env& f, bool thunked = false);
+  llvm::Value *fbox(Env& f);
   llvm::Value *cbox(int32_t tag);
   llvm::Value *ibox(llvm::Value *i);
   llvm::Value *ibox(int32_t i);
@@ -615,12 +616,12 @@ private:
   llvm::Value *vref(int32_t tag, path p);
   llvm::Value *vref(int32_t tag, uint32_t offs);
   llvm::Value *vref(int32_t tag, uint8_t idx, path p);
-  llvm::Value *fref(int32_t tag, uint8_t idx, bool thunked = false);
+  llvm::Value *fref(int32_t tag, uint8_t idx);
   llvm::Value *fcall(Env& f, vector<llvm::Value*>& args,
 		     vector<llvm::Value*>& env);
   llvm::Value *fcall(Env& f, vector<llvm::Value*>& env)
   { vector<llvm::Value*> args; return fcall(f, args, env); }
-  llvm::Value *call(string name, bool local, bool thunked, int32_t tag,
+  llvm::Value *call(string name, bool local, int32_t tag,
 		    llvm::Function* f, llvm::Value *e, uint32_t argc,
 		    vector<llvm::Value*>& vars);
   llvm::Value *call(string name, llvm::Value *x);

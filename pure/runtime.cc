@@ -448,7 +448,6 @@ static pure_closure *pure_copy_clos(pure_closure *clos)
   assert(clos);
   pure_closure *ret = new pure_closure;
   ret->local = clos->local;
-  ret->thunked = clos->thunked;
   ret->n = clos->n;
   ret->m = clos->m;
   ret->fp = clos->fp;
@@ -729,7 +728,7 @@ pure_expr *pure_symbol(int32_t tag)
 	else
 	  // External with parameters. Build an fbox for the external, return
 	  // this as the value of the symbol.
-	  return pure_clos(false, false, tag, n, f, 0, 0);
+	  return pure_clos(false, tag, n, f, 0, 0);
       }
       // If we come here, the external wrapper failed to compile for some
       // reason, just proceed as if it was an ordinary Pure function.
@@ -2775,17 +2774,13 @@ pure_expr *pure_const(int32_t tag)
 }
 
 extern "C"
-pure_expr *pure_clos(bool local, bool thunked, int32_t tag, uint32_t n,
+pure_expr *pure_clos(bool local, int32_t tag, uint32_t n,
 		     void *f, void *e, uint32_t m, /* m x pure_expr* */ ...)
 {
-  // Parameterless closures are always thunked, otherwise they would already
-  // have been executed.
-  if (n==0) thunked = true;
   pure_expr *x = new_expr();
   x->tag = tag;
   x->data.clos = new pure_closure;
   x->data.clos->local = local;
-  x->data.clos->thunked = thunked;
   x->data.clos->n = n;
   x->data.clos->m = m;
   x->data.clos->fp = f;
@@ -3506,7 +3501,6 @@ pure_expr *pure_force(pure_expr *x)
   assert(x);
   if (is_thunk(x)) {
     // parameterless anonymous closure (thunk)
-    assert(x->data.clos->thunked);
     pure_expr *ret;
     interpreter& interp = *interpreter::g_interp;
     void *fp = x->data.clos->fp;
@@ -3615,8 +3609,7 @@ pure_expr *pure_apply(pure_expr *x, pure_expr *y)
   uint32_t n = 1;
   while (f->tag == EXPR::APP) { f = f->data.x[0]; n++; }
   f0 = f;
-  if (f->tag >= 0 && f->data.clos && !f->data.clos->thunked &&
-      f->data.clos->n == n) {
+  if (f->tag >= 0 && f->data.clos && f->data.clos->n == n) {
     // saturated call; execute it now
     interpreter& interp = *interpreter::g_interp;
     void *fp = f->data.clos->fp;
@@ -3702,6 +3695,17 @@ pure_expr *pure_apply(pure_expr *x, pure_expr *y)
     MEMDEBUG_NEW(f)
     return f;
   }
+}
+
+extern "C"
+pure_expr *pure_applc(pure_expr *x, pure_expr *y)
+{
+  pure_expr *f = new_expr();
+  f->tag = EXPR::APP;
+  f->data.x[0] = x;
+  f->data.x[1] = y;
+  MEMDEBUG_NEW(f)
+  return f;
 }
 
 extern "C"

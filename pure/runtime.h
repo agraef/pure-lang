@@ -27,7 +27,6 @@ typedef struct {
   uint32_t n, m;		// number of arguments and environment size
   struct _pure_expr **env;	// captured environment (if m>0, 0 otherwise)
   bool local;			// local function?
-  bool thunked;			// thunked closure? (kept unevaluated)
 } pure_closure;
 
 /* Matrix data. The GSL matrix data is represented as a void* whose actual
@@ -477,8 +476,12 @@ pure_interp *pure_interp_main(int argc, char *argv[],
 /* Construct constant symbols and closures. */
 
 pure_expr *pure_const(int32_t tag);
-pure_expr *pure_clos(bool local, bool thunked, int32_t tag, uint32_t n,
+pure_expr *pure_clos(bool local, int32_t tag, uint32_t n,
 		     void *f, void *e, uint32_t m, /* m x pure_expr* */ ...);
+
+/* Construct a literal application. */
+
+pure_expr *pure_applc(pure_expr *x, pure_expr *y);
 
 /* Additional bigint constructors. */
 

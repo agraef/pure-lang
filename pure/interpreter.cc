@@ -327,7 +327,7 @@ void interpreter::init()
   // function pointers into the runtime map.
 
   declare_extern((void*)pure_clos,
-		 "pure_clos",       "expr*", -7, "bool", "bool", "int", "int",
+		 "pure_clos",       "expr*", -6, "bool", "int", "int",
 		                                 "void*", "void*", "int");
   declare_extern((void*)pure_call,
 		 "pure_call",       "expr*",  1, "expr*");
@@ -352,6 +352,8 @@ void interpreter::init()
 		 "pure_pointer",    "expr*",  1, "void*");
   declare_extern((void*)pure_apply,
 		 "pure_apply",      "expr*",  2, "expr*", "expr*");
+  declare_extern((void*)pure_applc,
+		 "pure_applc",      "expr*",  2, "expr*", "expr*");
 
   declare_extern((void*)pure_matrix_rows,
 		 "pure_matrix_rows", "expr*",    -1, "int");
@@ -513,7 +515,7 @@ interpreter::interpreter(int32_t nsyms, char *syms,
     pure_expr *x;
     if (!vars[f]) continue;
     if (vals[f])
-      x = pure_clos(false, false, f, arities[f], vals[f], 0, 0);
+      x = pure_clos(false, f, arities[f], vals[f], 0, 0);
     else
       x = pure_const(f);
     GlobalVariable *u = 0;
@@ -1457,7 +1459,7 @@ void interpreter::compile()
 #endif
 	// do a direct call to the runtime to create the fbox and cache it in
 	// a global variable
-	pure_expr *fv = pure_clos(false, false, f.tag, f.n, f.fp, 0, 0);
+	pure_expr *fv = pure_clos(false, f.tag, f.n, f.fp, 0, 0);
 	GlobalVar& v = globalvars[f.tag];
 	if (!v.v) {
 	  v.v = new GlobalVariable
@@ -6435,7 +6437,7 @@ Value *interpreter::codegen(expr x, bool quote)
       const ExternInfo& info = it->second;
       vector<Value*> env;
       // build an fbox for the external
-      return call("pure_clos", false, false, x.tag(), info.f, NullPtr,
+      return call("pure_clos", false, x.tag(), info.f, NullPtr,
 		  info.argtypes.size(), env);
     }
     // check for an existing global variable
@@ -6456,10 +6458,9 @@ Value *interpreter::codegen(expr x, bool quote)
 
 // Function boxes. These also take care of capturing the environment so that
 // it can be passed as extra parameters when the function actually gets
-// invoked. If thunked is true, a "thunk" (literal, unevaluated fbox) is
-// created.
+// invoked.
 
-Value *interpreter::fbox(Env& f, bool thunked)
+Value *interpreter::fbox(Env& f)
 {
   assert(f.f);
   // build extra parameters for the captured environment
@@ -6484,7 +6485,7 @@ Value *interpreter::fbox(Env& f, bool thunked)
       newargs.insert(newargs.end(), x.begin(), x.end());
       act_env().CreateCall(module->getFunction("pure_new_args"), newargs);
     }
-    return call("pure_clos", f.local, thunked, f.tag, f.h, envptr(&f), f.n, x);
+    return call("pure_clos", f.local, f.tag, f.h, envptr(&f), f.n, x);
   }
 }
 
@@ -6520,6 +6521,14 @@ Value *interpreter::apply(Value *x, Value *y)
 {
   call("pure_new_args", Two, x, y);
   return call("pure_apply", x, y);
+}
+
+// Construct a literal application.
+
+Value *interpreter::applc(Value *x, Value *y)
+{
+  call("pure_new_args", Two, x, y);
+  return call("pure_applc", x, y);
 }
 
 // Conditionals.
@@ -6700,14 +6709,14 @@ Value *interpreter::vref(int32_t tag, uint8_t idx, path p)
   }
 }
 
-Value *interpreter::fref(int32_t tag, uint8_t idx, bool thunked)
+Value *interpreter::fref(int32_t tag, uint8_t idx)
 {
   // local function reference; box the function as a value on the fly
   assert(!envstk.empty());
   if (idx == 0) {
     // function in current environment ('with'-bound)
     Env& f = *act_env().fmap.act()[tag];
-    return fbox(f, thunked);
+    return fbox(f);
   }
   // If we come here, the function is defined in an outer environment. Locate
   // the function, the de Bruijn index idx tells us where on the current
@@ -6726,7 +6735,7 @@ Value *interpreter::fref(int32_t tag, uint8_t idx, bool thunked)
   list<VarInfo>::iterator info;
   for (i = 0, info = f.xtab.begin(); info != f.xtab.end(); i++, info++)
     x[i] = vref(info->vtag, info->idx+idx-1, info->p);
-  if (f.n == 0 && !thunked)
+  if (f.n == 0)
     // parameterless function, emit a direct call
     return fcall(f, x);
   else {
@@ -6739,7 +6748,7 @@ Value *interpreter::fref(int32_t tag, uint8_t idx, bool thunked)
       newargs.insert(newargs.end(), x.begin(), x.end());
       act_env().CreateCall(module->getFunction("pure_new_args"), newargs);
     }
-    return call("pure_clos", f.local, thunked, f.tag, f.h, envptr(&f), f.n, x);
+    return call("pure_clos", f.local, f.tag, f.h, envptr(&f), f.n, x);
   }
 }
 
@@ -6773,7 +6782,7 @@ Value *interpreter::fcall(Env &f, vector<Value*>& args, vector<Value*>& env)
   return e.CreateCall(f.f, x);
 }
 
-Value *interpreter::call(string name, bool local, bool thunked, int32_t tag,
+Value *interpreter::call(string name, bool local, int32_t tag,
 			 Function *f, Value *e, uint32_t argc,
 			 vector<Value*>& x)
 {
@@ -6784,8 +6793,6 @@ Value *interpreter::call(string name, bool local, bool thunked, int32_t tag,
   vector<Value*> args;
   // local flag
   args.push_back(Bool(local));
-  // thunked flag
-  args.push_back(Bool(thunked));
   // tag
   args.push_back(SInt(tag));
   // argc
@@ -7237,11 +7244,11 @@ void interpreter::fun_body(matcher *pm, bool nodefault)
       act_env().CreateCall(module->getFunction("pure_new_args"), newargs);
     }
     Value *defaultv =
-      call("pure_clos", f.local, true, f.tag, f.h, envptr(&f), f.n, x);
+      call("pure_clos", f.local, f.tag, f.h, envptr(&f), f.n, x);
     for (size_t i = 0; i < f.n; ++i) {
       Value *arg = f.args[i];
       assert(arg->getType() == ExprPtrTy);
-      defaultv = apply(defaultv, arg);
+      defaultv = applc(defaultv, arg);
     }
     f.CreateRet(defaultv);
   }
