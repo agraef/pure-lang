@@ -613,13 +613,21 @@ static bool pure_is_list(const pure_expr *x)
   return pure_is_nil(x);
 }
 
-static bool pure_is_list(const pure_expr *x, list<const pure_expr*>& xs)
+static bool pure_is_list(const pure_expr *x, list<const pure_expr*>& xs,
+			 const pure_expr*& tl)
 {
   while (pure_is_cons(x)) {
     xs.push_back(x->data.x[0]->data.x[1]);
     x = x->data.x[1];
   }
-  return pure_is_nil(x);
+  if (pure_is_nil(x)) {
+    tl = 0;
+    return true;
+  } else if (!xs.empty()) {
+    tl = x;
+    return true;
+  } else
+    return false;
 }
 
 static bool quoted_matrix(const pure_expr *x)
@@ -901,27 +909,41 @@ ostream& operator << (ostream& os, const pure_expr *x)
 #endif
   case EXPR::APP: {
     list<const pure_expr*> xs;
+    const pure_expr *tl;
     prec_t p;
-    if (pure_is_list(x, xs)) {
-      // proper list value
+    if (pure_is_list(x, xs, tl)) {
       size_t n = xs.size();
-      os << "[";
-      if (n>1 || (n==1 && pure_is_pair(xs.front()))) {
-	// list elements at a precedence not larger than ',' have to be
+      if (tl) {
+	/* Improper list value. This case needs to be optimized as well, to
+	   prevent the printer from checking for proper lists over and over
+	   again, leading to quadratic complexity. */
+	// list elements at a precedence not larger than ':' have to be
 	// parenthesized
-	p = sym_nprec(interpreter::g_interp->symtab.pair_sym().f) + 1;
+	p = sym_nprec(interpreter::g_interp->symtab.cons_sym().f) + 1;
 	for (list<const pure_expr*>::const_iterator it = xs.begin();
-	     it != xs.end(); ) {
-	  os << pure_paren(p, *it);
-	  if (++it != xs.end()) os << ",";
-	}
-      } else
-	for (list<const pure_expr*>::const_iterator it = xs.begin();
-	     it != xs.end(); ) {
-	  os << *it;
-	  if (++it != xs.end()) os << ",";
-	}
-      return os << "]";
+	     it != xs.end(); ++it)
+	  os << pure_paren(p, *it) << ":";
+	return os << pure_paren(p-1, tl);
+      } else {
+	/* Proper list value. */
+	os << "[";
+	if (n>1 || (n==1 && pure_is_pair(xs.front()))) {
+	  // list elements at a precedence not larger than ',' have to be
+	  // parenthesized
+	  p = sym_nprec(interpreter::g_interp->symtab.pair_sym().f) + 1;
+	  for (list<const pure_expr*>::const_iterator it = xs.begin();
+	       it != xs.end(); ) {
+	    os << pure_paren(p, *it);
+	    if (++it != xs.end()) os << ",";
+	  }
+	} else
+	  for (list<const pure_expr*>::const_iterator it = xs.begin();
+	       it != xs.end(); ) {
+	    os << *it;
+	    if (++it != xs.end()) os << ",";
+	  }
+	return os << "]";
+      }
     }
     const pure_expr *u = x->data.x[0], *v = x->data.x[1], *w, *y;
     if (u->tag > 0 && (p = sym_nprec(u->tag)) < 100 && p%10 >= 3) {
