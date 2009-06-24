@@ -1,0 +1,14 @@
+// Basic bit manipulation facilities on 32bit integers (::int) type
+
+const bitmask = {int (2^i)|i=(0..31)};
+const notbitmask = { (not bitmask!i)|i=(0..31)};
+
+setbit r::pointer bit::int = put r ((get r) or (bitmask!bit));
+clearbit r::pointer bit::int = put r ((get r) and (notbitmask!bit));
+bitval r::pointer bit::int = ((get r) >> bit) and 1;
+
+r::pointer << bitsno::int = put r ((get r) << bitsno);
+r::pointer >> bitsno::int = put r ((get r) >> bitsno);
+
+/* test = y (get y) (setbit y 5) (bitval y 5) (y<<2) 
+	(clearbit y 7) (y>>2) when x = 1; y = ref x end; */
