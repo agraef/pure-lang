@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.5: http://docutils.sourceforge.net/" />
 <title>Pure-GLPK - GLPK interface for the Pure programming language</title>
 <meta name="author" content="Jiri Spitz &lt;jiri.spitz&#64;bluetone.cz&gt;" />
-<meta name="date" content="2009-05-27" />
+<meta name="date" content="2009-06-24" />
 <style type="text/css">
 
 /*
@@ -295,7 +295,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Jiri Spitz &lt;<a class="reference external" href="mailto:jiri.spitz&#64;bluetone.cz">jiri.spitz&#64;bluetone.cz</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2009-05-27</td></tr>
+<td>2009-06-24</td></tr>
 </tbody>
 </table>
 <p>This module provides a feature complete GLPK interface for the Pure programming
@@ -6365,7 +6365,7 @@ glp::erase_graph graph v_size a_size
 <p><strong>Remark</strong>:</p>
 <blockquote>
 The routine reinitialises the graph object. Its efect is equivalent to
-calling delet_graph followed by a call to create_graph.</blockquote>
+calling delete_graph followed by a call to create_graph.</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::erase_graph graph 16 34;
@@ -6473,9 +6473,28 @@ glp::write_graph graph filename
 glp::weak_comp graph v_num
 </pre>
 <p><strong>Parameters</strong>:</p>
+<blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">graph:</th><td class="field-body">pointer to the graph object</td>
+</tr>
+<tr class="field"><th class="field-name">v_num:</th><td class="field-body">oﬀset of the ﬁeld of type int in the vertex data block, to which
+the routine stores the number of a weakly connected component
+containing that vertex - if v_num &lt; 0, no component numbers are
+stored</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+The routine returns the total number of components found.</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::weak_comp graph 16;
+3
 &gt;
 </pre>
 </div>
@@ -6486,9 +6505,27 @@ glp::weak_comp graph v_num
 glp::strong_comp graph v_num
 </pre>
 <p><strong>Parameters</strong>:</p>
+<blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">graph:</th><td class="field-body">pointer to the graph object</td>
+</tr>
+<tr class="field"><th class="field-name">v_num:</th><td class="field-body">oﬀset of the ﬁeld of type int in the vertex data block, to which
+the routine stores the number of a strongly connected component
+containing that vertex - if v_num &lt; 0, no component numbers are
+stored</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Returns</strong>:</p>
+<p>The routine returns the total number of components found.</p>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::strong_comp graph 16;
+4
 &gt;
 </pre>
 </div>
@@ -6502,9 +6539,44 @@ glp::strong_comp graph v_num
 glp::read_mincost graph v_rhs a_low a_cap a_cost filename
 </pre>
 <p><strong>Parameters</strong>:</p>
+<blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">graph:</th><td class="field-body">pointer to the graph object</td>
+</tr>
+<tr class="field"><th class="field-name">v_rhs:</th><td class="field-body">oﬀset of the ﬁeld of type double in the vertex data block,
+to which the routine stores bi, the supply/demand value -
+if v_rhs &lt; 0, the value is not stored</td>
+</tr>
+<tr class="field"><th class="field-name">a_low:</th><td class="field-body">oﬀset of the ﬁeld of type double in the arc data block,
+to which the routine stores lij, the lower bound to the
+arc ﬂow - if a_low &lt; 0, the lower bound is not stored</td>
+</tr>
+<tr class="field"><th class="field-name">a_cap:</th><td class="field-body">oﬀset of the ﬁeld of type double in the arc data block,
+to which the routine stores uij, the upper bound to the
+arc ﬂow (the arc capacity) - if a_cap &lt; 0, the upper bound
+is not stored</td>
+</tr>
+<tr class="field"><th class="field-name">a_cost:</th><td class="field-body">oﬀset of the ﬁeld of type double in the arc data block,
+to which the routine stores cij, the per-unit cost of the
+arc ﬂow - if a_cost &lt; 0, the cost is not stored</td>
+</tr>
+<tr class="field"><th class="field-name">fname:</th><td class="field-body">the name of a text ﬁle to be read in - if the ﬁle name name
+ends with the suﬃx ‘.gz’, the ﬁle is assumed to be compressed,
+in which case the routine decompresses it “on the ﬂy”</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<strong>0</strong> if reading went OK; non-zero in case of an error</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::read_mincost graph 0 8 16 24 &quot;graphdata.txt&quot;;
+0
 &gt;
 </pre>
 </div>
@@ -6515,9 +6587,44 @@ glp::read_mincost graph v_rhs a_low a_cap a_cost filename
 glp::write_mincost graph v_rhs a_low a_cap a_cost fname
 </pre>
 <p><strong>Parameters</strong>:</p>
+<blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">graph:</th><td class="field-body">pointer to the graph object</td>
+</tr>
+<tr class="field"><th class="field-name">v_rhs:</th><td class="field-body">oﬀset of the ﬁeld of type double in the vertex data block,
+to which the routine stores bi, the supply/demand value -
+if v_rhs &lt; 0, the value is not stored</td>
+</tr>
+<tr class="field"><th class="field-name">a_low:</th><td class="field-body">oﬀset of the ﬁeld of type double in the arc data block,
+to which the routine stores lij, the lower bound to the
+arc ﬂow - if a_low &lt; 0, the lower bound is not stored</td>
+</tr>
+<tr class="field"><th class="field-name">a_cap:</th><td class="field-body">oﬀset of the ﬁeld of type double in the arc data block,
+to which the routine stores uij, the upper bound to the
+arc ﬂow (the arc capacity) - if a_cap &lt; 0, the upper bound
+is not stored</td>
+</tr>
+<tr class="field"><th class="field-name">a_cost:</th><td class="field-body">oﬀset of the ﬁeld of type double in the arc data block,
+to which the routine stores cij, the per-unit cost of the
+arc ﬂow - if a_cost &lt; 0, the cost is not stored</td>
+</tr>
+<tr class="field"><th class="field-name">fname:</th><td class="field-body">the name of a text ﬁle to be written out - if the ﬁle name name
+ends with the suﬃx ‘.gz’, the ﬁle is assumed to be compressed,
+in which case the routine compresses it “on the ﬂy”</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<strong>0</strong> if reading went OK; non-zero in case of an error</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::write_mincost graph 0 8 16 24 &quot;graphdata.txt&quot;;
+0
 &gt;
 </pre>
 </div>
@@ -6528,9 +6635,62 @@ glp::write_mincost graph v_rhs a_low a_cap a_cost fname
 glp::mincost_lp lp graph names v_rhs a_low a_cap a_cost
 </pre>
 <p><strong>Parameters</strong>:</p>
+<blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">lp:</th><td class="field-body"><p class="first">pointer to the LP problem object</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">graph:</th><td class="field-body"><p class="first">pointer to the graph object</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">names:</th><td class="field-body"><p class="first">one of the following:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::on:</th><td class="field-body">assign symbolic names of the graph object components
+to symbolic names of the LP problem object components</td>
+</tr>
+<tr class="field"><th class="field-name">glp::off:</th><td class="field-body">no symbolic names are assigned</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr class="field"><th class="field-name">v_rhs:</th><td class="field-body"><p class="first">oﬀset of the ﬁeld of type double in the vertex data block,
+to which the routine stores bi, the supply/demand value -
+if v_rhs &lt; 0, it is assumed bi = 0 for all nodes</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">a_low:</th><td class="field-body"><p class="first">oﬀset of the ﬁeld of type double in the arc data block,
+to which the routine stores lij, the lower bound to the
+arc ﬂow - if a_low &lt; 0, it is assumed lij = 0 for all arcs</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">a_cap:</th><td class="field-body"><p class="first">oﬀset of the ﬁeld of type double in the arc data block,
+to which the routine stores uij, the upper bound to the
+arc ﬂow (the arc capacity) - if a_cap &lt; 0,it is assumed
+uij = 1 for all arcs, value of DBL_MAX means an uncapacitated arc</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">a_cost:</th><td class="field-body"><p class="first last">oﬀset of the ﬁeld of type double in the arc data block,
+to which the routine stores cij, the per-unit cost of the
+arc ﬂow - if a_cost &lt; 0, it is assumed cij = 0 for all arcs</p>
+</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+()</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::mincost_lp lp graph glp::on 0 8 16 24;
+()
 &gt;
 </pre>
 </div>
@@ -6541,6 +6701,16 @@ glp::mincost_lp lp graph names v_rhs a_low a_cap a_cost
 glp::mincost_okalg graph v_rhs a_low a_cap a_cost a_x v_pi
 </pre>
 <p><strong>Parameters</strong>:</p>
+<blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">graph:</th><td class="field-body">pointer to the graph object</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Returns</strong>:</p>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
@@ -6554,6 +6724,16 @@ glp::mincost_okalg graph v_rhs a_low a_cap a_cost a_x v_pi
 glp::netgen graph v_rhs a_cap a_cost parameters
 </pre>
 <p><strong>Parameters</strong>:</p>
+<blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">graph:</th><td class="field-body">pointer to the graph object</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Returns</strong>:</p>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
@@ -6567,6 +6747,16 @@ glp::netgen graph v_rhs a_cap a_cost parameters
 glp::gridgen graph v_rhs a_cap a_cost parameters
 </pre>
 <p><strong>Parameters</strong>:</p>
+<blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">graph:</th><td class="field-body">pointer to the graph object</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Returns</strong>:</p>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
@@ -6581,6 +6771,8 @@ glp::gridgen graph v_rhs a_cap a_cost parameters
 <p><strong>Synopsis</strong>:</p>
 <pre class="literal-block">
 glp::read_maxflow graph a_cap filename
+
+:graph: pointer to the graph object
 </pre>
 <p><strong>Parameters</strong>:</p>
 <p><strong>Returns</strong>:</p>
@@ -6596,6 +6788,16 @@ glp::read_maxflow graph a_cap filename
 glp::write_maxflow graph s t a_cap filename
 </pre>
 <p><strong>Parameters</strong>:</p>
+<blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">graph:</th><td class="field-body">pointer to the graph object</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Returns</strong>:</p>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
@@ -6609,6 +6811,16 @@ glp::write_maxflow graph s t a_cap filename
 glp::maxflow_lp lp graph names s t a_cap
 </pre>
 <p><strong>Parameters</strong>:</p>
+<blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">graph:</th><td class="field-body">pointer to the graph object</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Returns</strong>:</p>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
@@ -6622,6 +6834,16 @@ glp::maxflow_lp lp graph names s t a_cap
 glp::maxflow_ffalg graph s t a_cap a_x v_cut
 </pre>
 <p><strong>Parameters</strong>:</p>
+<blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">graph:</th><td class="field-body">pointer to the graph object</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Returns</strong>:</p>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
@@ -6635,6 +6857,16 @@ glp::maxflow_ffalg graph s t a_cap a_x v_cut
 glp::rmfgen graph a_cap parameters
 </pre>
 <p><strong>Parameters</strong>:</p>
+<blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">graph:</th><td class="field-body">pointer to the graph object</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Returns</strong>:</p>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">

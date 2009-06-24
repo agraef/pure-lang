@@ -4142,11 +4142,21 @@ Find all weakly connected components of a graph
 
 **Parameters**:
 
+  :graph: pointer to the graph object
+  :v_num: oﬀset of the ﬁeld of type int in the vertex data block, to which
+          the routine stores the number of a weakly connected component
+          containing that vertex - if v_num < 0, no component numbers are
+          stored
+
 **Returns**:
+
+  The routine returns the total number of components found.
 
 **Example**::
 
-  > 
+  > glp::weak_comp graph 16;
+  3
+  >
 
 Find all strongly connected components of a graph
 -------------------------------------------------
@@ -4156,11 +4166,21 @@ Find all strongly connected components of a graph
 
 **Parameters**:
 
+  :graph: pointer to the graph object
+  :v_num: oﬀset of the ﬁeld of type int in the vertex data block, to which
+          the routine stores the number of a strongly connected component
+          containing that vertex - if v_num < 0, no component numbers are
+          stored
+
 **Returns**:
+
+The routine returns the total number of components found.
 
 **Example**::
 
-  > 
+  > glp::strong_comp graph 16;
+  4
+  >
 
 
 Minimum cost flow problem
@@ -4175,11 +4195,33 @@ Read minimum cost flow problem data in DIMACS format
 
 **Parameters**:
 
+  :graph: pointer to the graph object
+  :v_rhs: oﬀset of the ﬁeld of type double in the vertex data block,
+          to which the routine stores bi, the supply/demand value -
+          if v_rhs < 0, the value is not stored
+  :a_low: oﬀset of the ﬁeld of type double in the arc data block,
+          to which the routine stores lij, the lower bound to the
+          arc ﬂow - if a_low < 0, the lower bound is not stored
+  :a_cap: oﬀset of the ﬁeld of type double in the arc data block,
+          to which the routine stores uij, the upper bound to the
+          arc ﬂow (the arc capacity) - if a_cap < 0, the upper bound
+          is not stored
+  :a_cost: oﬀset of the ﬁeld of type double in the arc data block,
+           to which the routine stores cij, the per-unit cost of the
+           arc ﬂow - if a_cost < 0, the cost is not stored
+  :fname: the name of a text ﬁle to be read in - if the ﬁle name name
+          ends with the suﬃx ‘.gz’, the ﬁle is assumed to be compressed,
+          in which case the routine decompresses it “on the ﬂy”
+
 **Returns**:
+
+  **0** if reading went OK; non-zero in case of an error
 
 **Example**::
 
-  > 
+  > glp::read_mincost graph 0 8 16 24 "graphdata.txt";
+  0
+  >
 
 Write minimum cost flow problem data in DIMACS format
 -----------------------------------------------------
@@ -4189,11 +4231,33 @@ Write minimum cost flow problem data in DIMACS format
 
 **Parameters**:
 
+  :graph: pointer to the graph object
+  :v_rhs: oﬀset of the ﬁeld of type double in the vertex data block,
+          to which the routine stores bi, the supply/demand value -
+          if v_rhs < 0, the value is not stored
+  :a_low: oﬀset of the ﬁeld of type double in the arc data block,
+          to which the routine stores lij, the lower bound to the
+          arc ﬂow - if a_low < 0, the lower bound is not stored
+  :a_cap: oﬀset of the ﬁeld of type double in the arc data block,
+          to which the routine stores uij, the upper bound to the
+          arc ﬂow (the arc capacity) - if a_cap < 0, the upper bound
+          is not stored
+  :a_cost: oﬀset of the ﬁeld of type double in the arc data block,
+           to which the routine stores cij, the per-unit cost of the
+           arc ﬂow - if a_cost < 0, the cost is not stored
+  :fname: the name of a text ﬁle to be written out - if the ﬁle name name
+          ends with the suﬃx ‘.gz’, the ﬁle is assumed to be compressed,
+          in which case the routine compresses it “on the ﬂy”
+
 **Returns**:
+
+  **0** if reading went OK; non-zero in case of an error
 
 **Example**::
 
-  > 
+  > glp::write_mincost graph 0 8 16 24 "graphdata.txt";
+  0
+  >
 
 Convert minimum cost flow problem to LP
 ---------------------------------------
@@ -4203,11 +4267,38 @@ Convert minimum cost flow problem to LP
 
 **Parameters**:
 
+  :lp: pointer to the LP problem object
+  :graph: pointer to the graph object
+  
+  :names: one of the following:
+  
+          :glp\:\:on: assign symbolic names of the graph object components
+                      to symbolic names of the LP problem object components
+          :glp\:\:off: no symbolic names are assigned
+  
+  :v_rhs: oﬀset of the ﬁeld of type double in the vertex data block,
+          to which the routine stores bi, the supply/demand value -
+          if v_rhs < 0, it is assumed bi = 0 for all nodes
+  :a_low: oﬀset of the ﬁeld of type double in the arc data block,
+          to which the routine stores lij, the lower bound to the
+          arc ﬂow - if a_low < 0, it is assumed lij = 0 for all arcs
+  :a_cap: oﬀset of the ﬁeld of type double in the arc data block,
+          to which the routine stores uij, the upper bound to the
+          arc ﬂow (the arc capacity) - if a_cap < 0,it is assumed
+          uij = 1 for all arcs, value of DBL_MAX means an uncapacitated arc
+  :a_cost: oﬀset of the ﬁeld of type double in the arc data block,
+           to which the routine stores cij, the per-unit cost of the
+           arc ﬂow - if a_cost < 0, it is assumed cij = 0 for all arcs
+
 **Returns**:
 
+  ()
+  
 **Example**::
 
-  > 
+  > glp::mincost_lp lp graph glp::on 0 8 16 24;
+  ()
+  >
 
 Solve minimum cost flow problem with out-of-kilter algorithm
 ------------------------------------------------------------
@@ -4216,6 +4307,8 @@ Solve minimum cost flow problem with out-of-kilter algorithm
   glp::mincost_okalg graph v_rhs a_low a_cap a_cost a_x v_pi
 
 **Parameters**:
+
+  :graph: pointer to the graph object
 
 **Returns**:
 
@@ -4231,6 +4324,8 @@ Klingman's network problem generator
 
 **Parameters**:
 
+  :graph: pointer to the graph object
+
 **Returns**:
 
 **Example**::
@@ -4244,6 +4339,8 @@ Grid-like network problem generator
   glp::gridgen graph v_rhs a_cap a_cost parameters
 
 **Parameters**:
+
+  :graph: pointer to the graph object
 
 **Returns**:
 
@@ -4262,6 +4359,8 @@ Read maximum cost flow problem data in DIMACS format
 
   glp::read_maxflow graph a_cap filename
 
+  :graph: pointer to the graph object
+
 **Parameters**:
 
 **Returns**:
@@ -4278,6 +4377,8 @@ Write maximum cost flow problem data in DIMACS format
 
 **Parameters**:
 
+  :graph: pointer to the graph object
+
 **Returns**:
 
 **Example**::
@@ -4291,6 +4392,8 @@ Convert maximum flow problem to LP
   glp::maxflow_lp lp graph names s t a_cap
 
 **Parameters**:
+
+  :graph: pointer to the graph object
 
 **Returns**:
 
@@ -4306,6 +4409,8 @@ Solve maximum flow problem with Ford-Fulkerson algorithm
 
 **Parameters**:
 
+  :graph: pointer to the graph object
+
 **Returns**:
 
 **Example**::
@@ -4319,6 +4424,8 @@ Goldfarb's maximum flow problem generator
   glp::rmfgen graph a_cap parameters
 
 **Parameters**:
+
+  :graph: pointer to the graph object
 
 **Returns**:
 
