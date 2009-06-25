@@ -1,28 +1,32 @@
-// Basic bit manipulation facilities Libor Spacek (C) 25th June, 2009
+// Basic bit manipulation facilities Libor Spacek (C) 26th June, 2009
 
-def setbit i::int bit::int = i or (1<<bit);
-def clearbit i::int bit::int = i and (not (1<<bit));
-def getbit i::int bit::int = (i>>bit) and 1;
+setbit i::int bit::int = i or (1<<bit);
+setbit i::bigint bit::int = i or (1L<<bit);
 
-def setbit i::bigint bit::int = i or (1L<<bit);
-def clearbit i::bigint bit::int = (i and (not (1L<<bit)));
-def getbit i::bigint bit::int = (i>>bit) and 1;
+clearbit i::int bit::int = i and (not (1<<bit));
+clearbit i::bigint bit::int = (i and (not (1L<<bit)));
+
+getbit i::int bit::int | getbit i::bigint bit::int = (i>>bit) and 1;
+
+def setbit i bit = i or (1<<bit);
+def clearbit i bit = i and (not (1<<bit));
+def getbit i bit = (i>>bit) and 1;
 
 // conversions from and to little-endian lists of integers
 // any nonzero integer is interpreted as a set bit
-list2n l =  if ((#l) > 32) then (ltbb l 0L) else (ltb l 0)
+list2n l =  if ((#l) < 33) then (lti l 0) else (ltb l 0L)
 	with
-		ltb [] j::int = j;
-		ltb (0:t) 0 = ltb t 0;
-		ltb (h::int:t) 0 = ltb t 1;
-		ltb (0:t) j::int = ltb t (j<<1);
-		ltb (h::int:t) j::int = ltb t ((j<<1)+1);
+		lti [] j::int = j;
+		lti (0:t) 0 = lti t 0;
+		lti (h::int:t) 0 = lti t 1;
+		lti (0:t) j::int = lti t (j<<1);
+		lti (h::int:t) j::int = lti t ((j<<1)+1);
 
-		ltbb [] j::bigint = j;
-		ltbb (0:t) 0L = ltbb t 0L;
-		ltbb (h::int:t) 0L = ltbb t 1L;
-		ltbb (0:t) j::bigint = ltbb t (j<<1);
-		ltbb (h::int:t) j::bigint = ltbb t ((j<<1)+1);
+		ltb [] j::bigint = j;
+		ltb (0:t) 0L = ltb t 0L;
+		ltb (h::int:t) 0L = ltb t 1L;
+		ltb (0:t) j::bigint = ltb t (j<<1);
+		ltb (h::int:t) j::bigint = ltb t ((j<<1)+1);
 	end;
 
 n2list i::int = itl i [] 
@@ -34,13 +38,22 @@ n2list i::int = itl i []
 n2list i::bigint = itl i [] 
 	with
 		itl 0L l = l;
-		itl j::bigint l = if (int (j and 1)) then itl (j>>1) (1:l) else itl (j>>1) (0:l);
+		itl j::bigint l = 
+			if (int (j and 1)) then itl (j>>1) (1:l) else itl (j>>1) (0:l);
 	end;
 
 // direct modifications using pointers (refs to ints and bigints)
-def refsetbit r::pointer bit::int = put r ((get r) or (1<<bit));
-def refclearbit r::pointer bit::int = put r ((get r) and (not (1<<bit)));
-def refgetbit r::pointer bit::int = ((get r) >> bit) and 1;
+refsetbit r::pointer bit::int = put r ((get r) or (1<<bit));
+refclearbit r::pointer bit::int = put r ((get r) and (not (1<<bit)));
+refgetbit r::pointer bit::int = ((get r) >> bit) and 1;
 
-def r::pointer << bitsno::int = put r ((get r) << bitsno);
-def r::pointer >> bitsno::int = put r ((get r) >> bitsno);
+r::pointer << bitsno::int = put r ((get r) << bitsno);
+r::pointer >> bitsno::int = put r ((get r) >> bitsno);
+
+def refsetbit r bit = put r ((get r) or (1<<bit));
+def refclearbit r bit = put r ((get r) and (not (1<<bit)));
+def refgetbit r bit = ((get r) >> bit) and 1;
+
+def r::pointer << bitsno = put r ((get r) << bitsno);
+def r::pointer >> bitsno = put r ((get r) >> bitsno);
+
