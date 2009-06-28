@@ -3,6 +3,14 @@
 setbit i::int bit::int = i or (1<<bit);
 setbit i::bigint bit::int = i or (1L<<bit);
 
+setnbits i::int bit::int n::int = i if ((n < 1) || (bit < 0) || ((n+bit) > 31));
+setnbits i::int bit::int n::int = // sets n consecutive bits starting from bit
+	i or ((last (iteraten n (\x-> (x<<1) or 1) 1)) << bit);
+
+setnbits i::bigint bit::int n::int = i if ((n < 1) || (bit < 0)); 
+setnbits i::bigint bit::int n::int = // sets n consecutive bits from bit
+	i or ((last (iteraten n (\x-> (x<<1) or 1L) 1L)) << bit);
+	
 clearbit i::int bit::int = i and (not (1<<bit));
 clearbit i::bigint bit::int = (i and (not (1L<<bit)));
 
