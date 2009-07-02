@@ -2229,7 +2229,9 @@ to temporary storage in order to preserve value sematics.
 In addition, any kind of matrix (including symbolic matrices) can also be
 passed for a generic ``void*`` pointer. In this case no conversions are done
 and a pointer to the raw matrix data is passed, which allows the matrix to be
-modified in-place.
+modified in-place. Similarly, ``void*`` also allows you to pass a bigint
+argument as a raw ``mpz_t`` value. This makes it possible to call most GMP
+integer routines directly from Pure.
 
 As already mentioned, it is possible to augment an external C function with
 ordinary Pure equations, but in this case you have to make sure that the
@@ -3714,13 +3716,20 @@ as fast as possible for the special case of machine integers::
 arguments of different types, however, so in this case it is usually better to
 just use a polymorphic rule.)
 
-Also note that int (the machine integers) and bigint (the GMP "big" integers)
-are really different kinds of objects, and thus if you want to define a
-function operating on both kinds of integers, you'll also have to provide
-equations for both. This also applies to equations matching against constant
-values of these types; in particular, a small integer constant like ``0`` only
-matches machine integers, not bigints; for the latter you'll have to use the
-"big L" notation ``0L``.
+Also note that int (the machine integers), bigint (the GMP "big" integers) and
+double (floating point numbers) are all different kinds of objects. While they
+can be used in mixed operations (such as multiplying an int with a bigint
+which produces a bigint, or a bigint with a double which produces a double),
+the ``::int`` tag will only ever match a machine int, *not* a bigint or a
+double. Likewise, ``::bigint`` only matches bigints (never int or double
+values), and ``::double`` only doubles. Thus, if you want to define a function
+operating on different kinds of numbers, you'll also have to provide equations
+for all the types that you need (or a polymorphic rule which catches them
+all). This also applies to equations matching against constant values of these
+types. In particular, a small integer constant like ``0`` only matches machine
+integers, not bigints; for the latter you'll have to use the "big L" notation
+``0L``. Similarly, the constant ``0.0`` only matches doubles, but not ints or
+bigints.
 
 Constant Definitions
 --------------------
