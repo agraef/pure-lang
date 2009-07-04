@@ -1939,9 +1939,12 @@ void interpreter::add_rule(env &e, rule &r, bool toplevel)
     compile(r.rhs);
     compile(r.qual);
   }
-  int32_t f; uint32_t argc = count_args(r.lhs, f);
+  expr fx; uint32_t argc = count_args(r.lhs, fx);
+  int32_t f = fx.tag();
   if (f <= 0)
     throw err("error in function definition (missing head symbol)");
+  else if (!toplevel && (fx.flags()&EXPR::QUAL))
+    throw err("error in local function definition (qualified head symbol)");
   env::iterator it = e.find(f);
   const symbol& sym = symtab.sym(f);
   if (it != e.end()) {
@@ -2459,10 +2462,11 @@ expr interpreter::fsubst(const env& funs, expr x, uint8_t idx)
     assert(x.tag() > 0);
     const symbol& sym = symtab.sym(x.tag());
     env::const_iterator it = funs.find(sym.f);
-    if (it != funs.end())
-      return expr(EXPR::FVAR, sym.f, idx);
-    else
+    if (it == funs.end() || (!qual && (x.flags()&EXPR::QUAL)))
+      // not a locally bound function
       return x;
+    else
+      return expr(EXPR::FVAR, sym.f, idx);
   }
 }
 

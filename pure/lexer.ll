@@ -359,7 +359,12 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
   }
   symbol* sym = interp.symtab.lookup(yytext);
   if (sym && sym->prec >= 0 && sym->prec < 10) {
-    yylval->xval = new expr(sym->x);
+    if (strstr(yytext, "::")) {
+      // Return a new qualified instance here.
+      yylval->xval = new expr(sym->f);
+      yylval->xval->flags() |= EXPR::QUAL;
+    } else
+      yylval->xval = new expr(sym->x);
     return optoken[sym->prec][sym->fix];
   } else {
     if (!interp.nerrs && !sym && interp.symtab.count != 1 &&
@@ -438,7 +443,12 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
   }
   if (sym) {
     if (sym->prec < 10) {
-      yylval->xval = new expr(sym->x);
+      if (strstr(yytext, "::")) {
+	// Return a new qualified instance here.
+	yylval->xval = new expr(sym->f);
+	yylval->xval->flags() |= EXPR::QUAL;
+      } else
+	yylval->xval = new expr(sym->x);
       return optoken[sym->prec][sym->fix];
     } else {
       yylval->sval = new string(yytext);
