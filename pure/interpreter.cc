@@ -2155,12 +2155,12 @@ void interpreter::promote_ttags(expr f, expr x, expr u)
 {
   if (u.ttag() == EXPR::INT) {
     // unary int operations
-    if (f.ftag() == symtab.neg_sym().f || f.ftag() == symtab.not_sym().f ||
-	f.ftag() == symtab.bitnot_sym().f)
+    if (f.tag() == symtab.neg_sym().f || f.tag() == symtab.not_sym().f ||
+	f.tag() == symtab.bitnot_sym().f)
       x.set_ttag(EXPR::INT);
   } else if (u.ttag() == EXPR::DBL) {
     // unary double operations
-    if (f.ftag() == symtab.neg_sym().f) {
+    if (f.tag() == symtab.neg_sym().f) {
       x.set_ttag(EXPR::DBL);
     }
   }
@@ -2172,44 +2172,44 @@ void interpreter::promote_ttags(expr f, expr x, expr u, expr v)
        (v.ttag() == EXPR::INT || v.ttag() == EXPR::DBL))) {
     if (u.ttag() == EXPR::INT && v.ttag() == EXPR::INT) {
       // binary int operations
-      if (f.ftag() == symtab.or_sym().f ||
-	  f.ftag() == symtab.and_sym().f ||
-	  f.ftag() == symtab.bitor_sym().f ||
-	  f.ftag() == symtab.bitand_sym().f ||
-	  f.ftag() == symtab.shl_sym().f ||
-	  f.ftag() == symtab.shr_sym().f ||
-	  f.ftag() == symtab.less_sym().f ||
-	  f.ftag() == symtab.greater_sym().f ||
-	  f.ftag() == symtab.lesseq_sym().f ||
-	  f.ftag() == symtab.greatereq_sym().f ||
-	  f.ftag() == symtab.equal_sym().f ||
-	  f.ftag() == symtab.notequal_sym().f ||
-	  f.ftag() == symtab.plus_sym().f ||
-	  f.ftag() == symtab.minus_sym().f ||
-	  f.ftag() == symtab.mult_sym().f ||
-	  f.ftag() == symtab.div_sym().f ||
-	  f.ftag() == symtab.mod_sym().f) {
+      if (f.tag() == symtab.or_sym().f ||
+	  f.tag() == symtab.and_sym().f ||
+	  f.tag() == symtab.bitor_sym().f ||
+	  f.tag() == symtab.bitand_sym().f ||
+	  f.tag() == symtab.shl_sym().f ||
+	  f.tag() == symtab.shr_sym().f ||
+	  f.tag() == symtab.less_sym().f ||
+	  f.tag() == symtab.greater_sym().f ||
+	  f.tag() == symtab.lesseq_sym().f ||
+	  f.tag() == symtab.greatereq_sym().f ||
+	  f.tag() == symtab.equal_sym().f ||
+	  f.tag() == symtab.notequal_sym().f ||
+	  f.tag() == symtab.plus_sym().f ||
+	  f.tag() == symtab.minus_sym().f ||
+	  f.tag() == symtab.mult_sym().f ||
+	  f.tag() == symtab.div_sym().f ||
+	  f.tag() == symtab.mod_sym().f) {
 	x.set_ttag(EXPR::INT);
-      } else if (f.ftag() == symtab.fdiv_sym().f) {
+      } else if (f.tag() == symtab.fdiv_sym().f) {
 	x.set_ttag(EXPR::DBL);
       }
     } else {
       // binary int/double operations
-      if (f.ftag() == symtab.less_sym().f ||
-	  f.ftag() == symtab.greater_sym().f ||
-	  f.ftag() == symtab.lesseq_sym().f ||
-	  f.ftag() == symtab.greatereq_sym().f ||
-	  f.ftag() == symtab.equal_sym().f ||
-	  f.ftag() == symtab.notequal_sym().f) {
+      if (f.tag() == symtab.less_sym().f ||
+	  f.tag() == symtab.greater_sym().f ||
+	  f.tag() == symtab.lesseq_sym().f ||
+	  f.tag() == symtab.greatereq_sym().f ||
+	  f.tag() == symtab.equal_sym().f ||
+	  f.tag() == symtab.notequal_sym().f) {
 	x.set_ttag(EXPR::INT);
-      } else if (f.ftag() == symtab.plus_sym().f ||
-		 f.ftag() == symtab.minus_sym().f ||
-		 f.ftag() == symtab.mult_sym().f ||
-		 f.ftag() == symtab.fdiv_sym().f) {
+      } else if (f.tag() == symtab.plus_sym().f ||
+		 f.tag() == symtab.minus_sym().f ||
+		 f.tag() == symtab.mult_sym().f ||
+		 f.tag() == symtab.fdiv_sym().f) {
 	x.set_ttag(EXPR::DBL);
       }
     }
-  } else if (f.ftag() == symtab.or_sym().f || f.ftag() == symtab.and_sym().f)
+  } else if (f.tag() == symtab.or_sym().f || f.tag() == symtab.and_sym().f)
     /* These two get special treatment, because they have to be evaluated in
        short-circuit mode. Operand types will be checked at runtime if
        necessary. */
@@ -5799,12 +5799,12 @@ Value *interpreter::builtin_codegen(expr x)
   if (n == 1 && x.ttag() == EXPR::INT) {
     // unary int operations
     Value *u = get_int(x.xval2());
-    if (f.ftag() == symtab.neg_sym().f)
+    if (f.tag() == symtab.neg_sym().f)
       return b.CreateSub(Zero, u);
-    else if (f.ftag() == symtab.not_sym().f)
+    else if (f.tag() == symtab.not_sym().f)
       return b.CreateZExt
 	(b.CreateICmpEQ(Zero, u, "cmp"), Type::Int32Ty);
-    else if (f.ftag() == symtab.bitnot_sym().f)
+    else if (f.tag() == symtab.bitnot_sym().f)
       return b.CreateXor(UInt(0xffffffff), u);
     else {
       assert(0 && "error in type checker");
@@ -5813,7 +5813,7 @@ Value *interpreter::builtin_codegen(expr x)
   } else if (n == 1 && x.ttag() == EXPR::DBL) {
     // unary double operations
     Value *u = get_double(x.xval2());
-    if (f.ftag() == symtab.neg_sym().f)
+    if (f.tag() == symtab.neg_sym().f)
       return b.CreateSub(Dbl(0.0), u);
     else {
       assert(0 && "error in type checker");
@@ -5825,7 +5825,7 @@ Value *interpreter::builtin_codegen(expr x)
     // binary int operations
     Value *u = get_int(x.xval1().xval2());
     // these two need special treatment (short-circuit evaluation)
-    if (f.ftag() == symtab.or_sym().f) {
+    if (f.tag() == symtab.or_sym().f) {
       Env& e = act_env();
       Value *condv = b.CreateICmpNE(u, Zero, "cond");
       BasicBlock *iftruebb = b.GetInsertBlock();
@@ -5838,7 +5838,7 @@ Value *interpreter::builtin_codegen(expr x)
 #if DEBUG
       if (u->getType() != v->getType()) {
 	llvm::cerr << "** operand mismatch!\n";
-	llvm::cerr << "operator:      " << symtab.sym(f.ftag()).s << endl;
+	llvm::cerr << "operator:      " << symtab.sym(f.tag()).s << endl;
 	llvm::cerr << "left operand:  "; u->dump();
 	llvm::cerr << "right operand: "; v->dump();
 	assert(0 && "operand mismatch");
@@ -5853,7 +5853,7 @@ Value *interpreter::builtin_codegen(expr x)
       phi->addIncoming(condv, iftruebb);
       phi->addIncoming(condv2, iffalsebb);
       return b.CreateZExt(phi, Type::Int32Ty);
-    } else if (f.ftag() == symtab.and_sym().f) {
+    } else if (f.tag() == symtab.and_sym().f) {
       Env& e = act_env();
       Value *condv = b.CreateICmpNE(u, Zero, "cond");
       BasicBlock *iffalsebb = b.GetInsertBlock();
@@ -5866,7 +5866,7 @@ Value *interpreter::builtin_codegen(expr x)
 #if DEBUG
       if (u->getType() != v->getType()) {
 	llvm::cerr << "** operand mismatch!\n";
-	llvm::cerr << "operator:      " << symtab.sym(f.ftag()).s << endl;
+	llvm::cerr << "operator:      " << symtab.sym(f.tag()).s << endl;
 	llvm::cerr << "left operand:  "; u->dump();
 	llvm::cerr << "right operand: "; v->dump();
 	assert(0 && "operand mismatch");
@@ -5886,17 +5886,17 @@ Value *interpreter::builtin_codegen(expr x)
 #if DEBUG
       if (u->getType() != v->getType()) {
 	llvm::cerr << "** operand mismatch!\n";
-	llvm::cerr << "operator:      " << symtab.sym(f.ftag()).s << endl;
+	llvm::cerr << "operator:      " << symtab.sym(f.tag()).s << endl;
 	llvm::cerr << "left operand:  "; u->dump();
 	llvm::cerr << "right operand: "; v->dump();
 	assert(0 && "operand mismatch");
       }
 #endif
-      if (f.ftag() == symtab.bitor_sym().f)
+      if (f.tag() == symtab.bitor_sym().f)
 	return b.CreateOr(u, v);
-      else if (f.ftag() == symtab.bitand_sym().f)
+      else if (f.tag() == symtab.bitand_sym().f)
 	return b.CreateAnd(u, v);
-      else if (f.ftag() == symtab.shl_sym().f) {
+      else if (f.tag() == symtab.shl_sym().f) {
 	// result of shl is undefined if u>=#bits, return 0 in that case
 	BasicBlock *okbb = BasicBlock::Create("ok");
 	BasicBlock *zerobb = b.GetInsertBlock();
@@ -5913,33 +5913,33 @@ Value *interpreter::builtin_codegen(expr x)
 	phi->addIncoming(ok, okbb);
 	phi->addIncoming(Zero, zerobb);
 	return phi;
-      } else if (f.ftag() == symtab.shr_sym().f)
+      } else if (f.tag() == symtab.shr_sym().f)
 	return b.CreateAShr(u, v);
-      else if (f.ftag() == symtab.less_sym().f)
+      else if (f.tag() == symtab.less_sym().f)
 	return b.CreateZExt
 	  (b.CreateICmpSLT(u, v), Type::Int32Ty);
-      else if (f.ftag() == symtab.greater_sym().f)
+      else if (f.tag() == symtab.greater_sym().f)
 	return b.CreateZExt
 	  (b.CreateICmpSGT(u, v), Type::Int32Ty);
-      else if (f.ftag() == symtab.lesseq_sym().f)
+      else if (f.tag() == symtab.lesseq_sym().f)
 	return b.CreateZExt
 	  (b.CreateICmpSLE(u, v), Type::Int32Ty);
-      else if (f.ftag() == symtab.greatereq_sym().f)
+      else if (f.tag() == symtab.greatereq_sym().f)
 	return b.CreateZExt
 	  (b.CreateICmpSGE(u, v), Type::Int32Ty);
-      else if (f.ftag() == symtab.equal_sym().f)
+      else if (f.tag() == symtab.equal_sym().f)
 	return b.CreateZExt
 	  (b.CreateICmpEQ(u, v), Type::Int32Ty);
-      else if (f.ftag() == symtab.notequal_sym().f)
+      else if (f.tag() == symtab.notequal_sym().f)
 	return b.CreateZExt
 	  (b.CreateICmpNE(u, v), Type::Int32Ty);
-      else if (f.ftag() == symtab.plus_sym().f)
+      else if (f.tag() == symtab.plus_sym().f)
 	return b.CreateAdd(u, v);
-      else if (f.ftag() == symtab.minus_sym().f)
+      else if (f.tag() == symtab.minus_sym().f)
 	return b.CreateSub(u, v);
-      else if (f.ftag() == symtab.mult_sym().f)
+      else if (f.tag() == symtab.mult_sym().f)
 	return b.CreateMul(u, v);
-      else if (f.ftag() == symtab.div_sym().f) {
+      else if (f.tag() == symtab.div_sym().f) {
 	// catch division by zero
 	if (x.xval2().tag() == EXPR::INT && x.xval2().ival() == 0) {
 	  b.CreateCall(module->getFunction("pure_sigfpe"));
@@ -5957,7 +5957,7 @@ Value *interpreter::builtin_codegen(expr x)
 	  b.SetInsertPoint(okbb);
 	  return b.CreateSDiv(u, v);
 	}
-      } else if (f.ftag() == symtab.mod_sym().f) {
+      } else if (f.tag() == symtab.mod_sym().f) {
 	// catch division by zero
 	if (x.xval2().tag() == EXPR::INT && x.xval2().ival() == 0) {
 	  b.CreateCall(module->getFunction("pure_sigfpe"));
@@ -5987,37 +5987,37 @@ Value *interpreter::builtin_codegen(expr x)
 #if DEBUG
     if (u->getType() != v->getType()) {
       llvm::cerr << "** operand mismatch!\n";
-      llvm::cerr << "operator:      " << symtab.sym(f.ftag()).s << endl;
+      llvm::cerr << "operator:      " << symtab.sym(f.tag()).s << endl;
       llvm::cerr << "left operand:  "; u->dump();
       llvm::cerr << "right operand: "; v->dump();
       assert(0 && "operand mismatch");
     }
 #endif
-    if (f.ftag() == symtab.less_sym().f)
+    if (f.tag() == symtab.less_sym().f)
       return b.CreateZExt
 	(b.CreateFCmpOLT(u, v), Type::Int32Ty);
-    else if (f.ftag() == symtab.greater_sym().f)
+    else if (f.tag() == symtab.greater_sym().f)
       return b.CreateZExt
 	(b.CreateFCmpOGT(u, v), Type::Int32Ty);
-    else if (f.ftag() == symtab.lesseq_sym().f)
+    else if (f.tag() == symtab.lesseq_sym().f)
       return b.CreateZExt
 	(b.CreateFCmpOLE(u, v), Type::Int32Ty);
-    else if (f.ftag() == symtab.greatereq_sym().f)
+    else if (f.tag() == symtab.greatereq_sym().f)
       return b.CreateZExt
 	(b.CreateFCmpOGE(u, v), Type::Int32Ty);
-    else if (f.ftag() == symtab.equal_sym().f)
+    else if (f.tag() == symtab.equal_sym().f)
       return b.CreateZExt
 	(b.CreateFCmpOEQ(u, v), Type::Int32Ty);
-    else if (f.ftag() == symtab.notequal_sym().f)
+    else if (f.tag() == symtab.notequal_sym().f)
       return b.CreateZExt
 	(b.CreateFCmpONE(u, v), Type::Int32Ty);
-    else if (f.ftag() == symtab.plus_sym().f)
+    else if (f.tag() == symtab.plus_sym().f)
       return b.CreateAdd(u, v);
-    else if (f.ftag() == symtab.minus_sym().f)
+    else if (f.tag() == symtab.minus_sym().f)
       return b.CreateSub(u, v);
-    else if (f.ftag() == symtab.mult_sym().f)
+    else if (f.tag() == symtab.mult_sym().f)
       return b.CreateMul(u, v);
-    else if (f.ftag() == symtab.fdiv_sym().f)
+    else if (f.tag() == symtab.fdiv_sym().f)
       return b.CreateFDiv(u, v);
     else {
       assert(0 && "error in type checker");
@@ -6168,7 +6168,7 @@ void interpreter::toplevel_codegen(expr x, const rule *rp)
   if (n == 2 && x.ttag() == EXPR::INT &&
       x.xval1().xval2().ttag() != EXPR::DBL &&
       x.xval2().ttag() != EXPR::DBL) {
-    if (f.ftag() == symtab.or_sym().f) {
+    if (f.tag() == symtab.or_sym().f) {
       Value *u = get_int(x.xval1().xval2());
       Value *condv = b.CreateICmpNE(u, Zero, "cond");
       BasicBlock *iftruebb = BasicBlock::Create("iftrue");
@@ -6180,7 +6180,7 @@ void interpreter::toplevel_codegen(expr x, const rule *rp)
       e.f->getBasicBlockList().push_back(iffalsebb);
       b.SetInsertPoint(iffalsebb);
       toplevel_codegen(x.xval2(), rp);
-    } else if (f.ftag() == symtab.and_sym().f) {
+    } else if (f.tag() == symtab.and_sym().f) {
       Value *u = get_int(x.xval1().xval2());
       Value *condv = b.CreateICmpNE(u, Zero, "cond");
       BasicBlock *iftruebb = BasicBlock::Create("iftrue");
@@ -6286,7 +6286,7 @@ Value *interpreter::codegen(expr x, bool quote)
 	       (v = funcall(e, n, x)))
 	// recursive call to a global function
 	return v;
-      else if (n == 2 && f.ftag() == symtab.seq_sym().f) {
+      else if (n == 2 && f.tag() == symtab.seq_sym().f) {
 	// sequence operator
 	Value *u = codegen(x.xval1().xval2());
 	act_builder().CreateCall(module->getFunction("pure_freenew"), u);
