@@ -327,7 +327,7 @@ void interpreter::init()
   // function pointers into the runtime map.
 
   declare_extern((void*)pure_clos,
-		 "pure_clos",       "expr*", -6, "bool", "int", "int",
+		 "pure_clos",       "expr*", -7, "bool", "int", "int", "int",
 		                                 "void*", "void*", "int");
   declare_extern((void*)pure_call,
 		 "pure_call",       "expr*",  1, "expr*");
@@ -515,7 +515,7 @@ interpreter::interpreter(int32_t nsyms, char *syms,
     pure_expr *x;
     if (!vars[f]) continue;
     if (vals[f])
-      x = pure_clos(false, f, arities[f], vals[f], 0, 0);
+      x = pure_clos(false, f, 0, arities[f], vals[f], 0, 0);
     else
       x = pure_const(f);
     GlobalVariable *u = 0;
@@ -1459,7 +1459,7 @@ void interpreter::compile()
 #endif
 	// do a direct call to the runtime to create the fbox and cache it in
 	// a global variable
-	pure_expr *fv = pure_clos(false, f.tag, f.n, f.fp, 0, 0);
+	pure_expr *fv = pure_clos(false, f.tag, f.getkey(), f.n, f.fp, 0, 0);
 	GlobalVar& v = globalvars[f.tag];
 	if (!v.v) {
 	  v.v = new GlobalVariable
@@ -3897,6 +3897,7 @@ Env& Env::operator= (const Env& e)
   }
   fmap = e.fmap; xmap = e.xmap; xtab = e.xtab; prop = e.prop; m = e.m;
   if (e.descr) descr = e.descr;
+  key = e.key;
   return *this;
 }
 
@@ -4045,6 +4046,7 @@ ReturnInst *Env::CreateRet(Value *v, const rule *rp)
 }
 
 // XXXFIXME: this should be TLD
+uint32_t Env::act_key = 0;
 EnvStack Env::envstk;
 set<Env*> Env::props;
 
@@ -6441,8 +6443,8 @@ Value *interpreter::codegen(expr x, bool quote)
       const ExternInfo& info = it->second;
       vector<Value*> env;
       // build an fbox for the external
-      return call("pure_clos", false, x.tag(), info.f, NullPtr,
-		  info.argtypes.size(), env);
+      return call("pure_clos", false, x.tag(), 0, info.f,
+		  NullPtr, info.argtypes.size(), env);
     }
     // check for an existing global variable
     map<int32_t,GlobalVar>::iterator v = globalvars.find(x.tag());
@@ -6489,7 +6491,8 @@ Value *interpreter::fbox(Env& f)
       newargs.insert(newargs.end(), x.begin(), x.end());
       act_env().CreateCall(module->getFunction("pure_new_args"), newargs);
     }
-    return call("pure_clos", f.local, f.tag, f.h, envptr(&f), f.n, x);
+    return call("pure_clos", f.local, f.tag, f.getkey(), f.h,
+		envptr(&f), f.n, x);
   }
 }
 
@@ -6752,7 +6755,8 @@ Value *interpreter::fref(int32_t tag, uint8_t idx)
       newargs.insert(newargs.end(), x.begin(), x.end());
       act_env().CreateCall(module->getFunction("pure_new_args"), newargs);
     }
-    return call("pure_clos", f.local, f.tag, f.h, envptr(&f), f.n, x);
+    return call("pure_clos", f.local, f.tag, f.getkey(), f.h,
+		envptr(&f), f.n, x);
   }
 }
 
@@ -6786,7 +6790,7 @@ Value *interpreter::fcall(Env &f, vector<Value*>& args, vector<Value*>& env)
   return e.CreateCall(f.f, x);
 }
 
-Value *interpreter::call(string name, bool local, int32_t tag,
+Value *interpreter::call(string name, bool local, int32_t tag, uint32_t key,
 			 Function *f, Value *e, uint32_t argc,
 			 vector<Value*>& x)
 {
@@ -6799,6 +6803,8 @@ Value *interpreter::call(string name, bool local, int32_t tag,
   args.push_back(Bool(local));
   // tag
   args.push_back(SInt(tag));
+  // key
+  args.push_back(UInt(key));
   // argc
   args.push_back(SInt(argc));
   // function pointer
@@ -7247,8 +7253,18 @@ void interpreter::fun_body(matcher *pm, bool nodefault)
       newargs.insert(newargs.end(), x.begin(), x.end());
       act_env().CreateCall(module->getFunction("pure_new_args"), newargs);
     }
-    Value *defaultv =
-      call("pure_clos", f.local, f.tag, f.h, envptr(&f), f.n, x);
+    Value *defaultv;
+    map<int32_t,ExternInfo>::const_iterator it;
+    if (!f.local && (it = externals.find(f.tag)) != externals.end()) {
+      /* Patch up a failed call chained from an external. In this case we must
+	 return an fbox for the external instead of ourself. */
+      const ExternInfo& info = it->second;
+      vector<Value*> env;
+      assert(f.m==0 && info.argtypes.size() == f.n);
+      defaultv = call("pure_clos", false, f.tag, 0, info.f, NullPtr, f.n, x);
+    } else
+      defaultv =
+	call("pure_clos", f.local, f.tag, f.getkey(), f.h, envptr(&f), f.n, x);
     for (size_t i = 0; i < f.n; ++i) {
       Value *arg = f.args[i];
       assert(arg->getType() == ExprPtrTy);

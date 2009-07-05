@@ -1,3 +1,16 @@
+2009-07-05  Albert Graef  <Dr.Graef@t-online.de>
+
+	* interpreter.cc/h, runtime.cc/h: Add a key field to closures
+	which, for local functions, holds a unique key identifying the
+	closure which is used by the same() function to compare function
+	objects. This resolves a bug which would cause different instances
+	of the same local function appear to be different based on
+	function pointer comparisons, due to the way the JIT handles lazy
+	compilation.
+
+	Please note that this required some changes in the internal
+	runtime API. Existing modules have to be recompiled.
+
 2009-07-04  Albert Graef  <Dr.Graef@t-online.de>
 
 	* interpreter.cc (add_rule): Check for qualified head symbols in

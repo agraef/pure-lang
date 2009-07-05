@@ -150,6 +150,9 @@ struct Env {
   // function environment
   int32_t tag; // function id, zero for anonymous functions
   string name; // LLVM assembly function name
+private:
+  uint32_t key; // cached key of a local closure (see getkey() below)
+public:
   // descriptor for type of environment
   const char *descr;
   // n = #function args, m = #extra args (captured environment)
@@ -219,12 +222,13 @@ struct Env {
   void print(ostream& os) const;
   // default constructor
   Env()
-    : tag(0), descr(0), n(0), m(0), f(0), h(0), fp(0), args(0), envs(0),
-      rp(0), b(false), local(false), parent(0), refc(0) {}
+    : tag(0), key(0), descr(0), n(0), m(0), f(0), h(0), fp(0),
+      args(0), envs(0), rp(0), b(false), local(false), parent(0), refc(0)
+  {}
   // environment for an anonymous closure with given body x
   Env(int32_t _tag, const char *_descr, uint32_t _n, expr x,
       bool _b, bool _local = false)
-    : tag(_tag), descr(_descr), n(_n), m(0), f(0), h(0), fp(0),
+    : tag(_tag), key(0), descr(_descr), n(_n), m(0), f(0), h(0), fp(0),
       args(n), envs(0), rp(0), b(_b), local(_local), parent(0), refc(0)
   {
     if (envstk.empty()) {
@@ -239,7 +243,7 @@ struct Env {
   }
   // environment for a named closure with given definition info
   Env(int32_t _tag, const env_info& info, bool _b, bool _local = false)
-    : tag(_tag), descr(0), n(info.argc), m(0), f(0), h(0), fp(0),
+    : tag(_tag), key(0), descr(0), n(info.argc), m(0), f(0), h(0), fp(0),
       args(n), envs(0), rp(0), b(_b), local(_local), parent(0), refc(0)
   {
     if (envstk.empty()) {
@@ -254,7 +258,7 @@ struct Env {
   }
   // dummy environment for an external
   Env(int32_t _tag, uint32_t _n, bool _local = false)
-    : tag(_tag), descr(0), n(_n), m(0), f(0), h(0), fp(0),
+    : tag(_tag), key(0), descr(0), n(_n), m(0), f(0), h(0), fp(0),
       args(n), envs(0), rp(0), b(false), local(false), parent(0), refc(0)
   {
   }
@@ -267,6 +271,7 @@ struct Env {
   // destructor
   ~Env() { clear(); }
 private:
+  static uint32_t act_key;
   // build the fmap and xmap tables
   static EnvStack envstk;
   static set<Env*> props;
@@ -279,6 +284,9 @@ private:
   void promote_map();
   size_t propagate_map();
   static void propagate_maps();
+public:
+  uint32_t getkey() // key which identifies a local closure
+  { if (local && key==0) key = ++act_key; return key; }
 };
 
 struct ExternInfo {
@@ -621,7 +629,7 @@ private:
 		     vector<llvm::Value*>& env);
   llvm::Value *fcall(Env& f, vector<llvm::Value*>& env)
   { vector<llvm::Value*> args; return fcall(f, args, env); }
-  llvm::Value *call(string name, bool local, int32_t tag,
+  llvm::Value *call(string name, bool local, int32_t tag, uint32_t key,
 		    llvm::Function* f, llvm::Value *e, uint32_t argc,
 		    vector<llvm::Value*>& vars);
   llvm::Value *call(string name, llvm::Value *x);

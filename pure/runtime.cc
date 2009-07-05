@@ -448,6 +448,7 @@ static pure_closure *pure_copy_clos(pure_closure *clos)
   assert(clos);
   pure_closure *ret = new pure_closure;
   ret->local = clos->local;
+  ret->key = clos->key;
   ret->n = clos->n;
   ret->m = clos->m;
   ret->fp = clos->fp;
@@ -728,7 +729,7 @@ pure_expr *pure_symbol(int32_t tag)
 	else
 	  // External with parameters. Build an fbox for the external, return
 	  // this as the value of the symbol.
-	  return pure_clos(false, tag, n, f, 0, 0);
+	  return pure_clos(false, tag, 0, n, f, 0, 0);
       }
       // If we come here, the external wrapper failed to compile for some
       // reason, just proceed as if it was an ordinary Pure function.
@@ -2774,13 +2775,14 @@ pure_expr *pure_const(int32_t tag)
 }
 
 extern "C"
-pure_expr *pure_clos(bool local, int32_t tag, uint32_t n,
+pure_expr *pure_clos(bool local, int32_t tag, uint32_t key, uint32_t n,
 		     void *f, void *e, uint32_t m, /* m x pure_expr* */ ...)
 {
   pure_expr *x = new_expr();
   x->tag = tag;
   x->data.clos = new pure_closure;
   x->data.clos->local = local;
+  x->data.clos->key = key;
   x->data.clos->n = n;
   x->data.clos->m = m;
   x->data.clos->fp = f;
@@ -7675,7 +7677,10 @@ uint32_t hash(pure_expr *x)
     return (uint32_t)h;
   }
   default:
-    return (uint32_t)x->tag;
+    if (x->data.clos && x->data.clos->local)
+      return ((uint32_t)x->tag) ^ x->data.clos->key;
+    else
+      return (uint32_t)x->tag;
   }
 }
 
@@ -7692,14 +7697,24 @@ bool same(pure_expr *x, pure_expr *y)
     return 0;
   else if (x->tag >= 0 && y->tag >= 0)
     if (x->data.clos && y->data.clos)
-      /* Note that for global functions the function pointers may differ in
-	 some cases (specifically in the case of an external which may chain
-	 to a Pure definition of the same global). However, in that case we
-	 may safely assume that the functions are the same anyway, since they
-	 are referred to by the same global symbol. */
-      return (!x->data.clos->local && !y->data.clos->local) ||
-	(x->data.clos->fp == y->data.clos->fp);
+      /* We're comparing two closures. Unfortunately, just comparing the
+	 function pointers doesn't work reliably in the JIT-hosted
+	 environment, since the JIT creates stubs which later get replaced
+	 with the real code when a function is first executed. We solve this
+	 by having a unique key assigned to at least to all local closures. */
+      if (!x->data.clos->local || !y->data.clos->local)
+	/* If one of the closures is a global, they can only be equal if the
+	   other is a global, too, and in this case we already know that they
+	   must be identical since their function symbols match up. */
+	return x->data.clos->local == y->data.clos->local;
+      else
+	/* Otherwise we have two local closures, in which case we just need to
+	   compare their keys. */
+	return x->data.clos->key == y->data.clos->key;
     else
+      /* This will assert two function symbols to be equal only if they both
+	 have closures attached to them, and will thus fail if one of the
+	 symbols is quoted. */
       return x->data.clos == y->data.clos;
   else {
     switch (x->tag) {
