@@ -7684,6 +7684,16 @@ uint32_t hash(pure_expr *x)
   }
 }
 
+static inline bool same_env(pure_closure *clos1, pure_closure *clos2)
+{
+  if (clos1->m != clos2->m)
+    return false;
+  for (uint32_t i = 0; i < clos1->m; i++)
+    if (!same(clos1->env[i], clos2->env[i]))
+      return false;
+  return true;
+}
+
 extern "C"
 bool same(pure_expr *x, pure_expr *y)
 {
@@ -7706,11 +7716,13 @@ bool same(pure_expr *x, pure_expr *y)
 	/* If one of the closures is a global, they can only be equal if the
 	   other is a global, too, and in this case we already know that they
 	   must be identical since their function symbols match up. */
-	return x->data.clos->local == y->data.clos->local;
+	return x->data.clos->local == y->data.clos->local &&
+	  same_env(x->data.clos, y->data.clos);
       else
 	/* Otherwise we have two local closures, in which case we just need to
 	   compare their keys. */
-	return x->data.clos->key == y->data.clos->key;
+	return x->data.clos->key == y->data.clos->key &&
+	  same_env(x->data.clos, y->data.clos);
     else
       /* This will assert two function symbols to be equal only if they both
 	 have closures attached to them, and will thus fail if one of the
