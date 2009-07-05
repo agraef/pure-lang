@@ -2385,6 +2385,29 @@ pure_expr *pure_eval(const char *s)
 }
 
 extern "C"
+pure_expr *pure_evalx(pure_expr *x, pure_expr** e)
+{
+  assert(x);
+  pure_expr *res = 0;
+  interpreter& interp = *interpreter::g_interp;
+  *e = 0;
+  try {
+    expr y = interp.pure_expr_to_expr(x);
+    res = interp.eval(y, *e);
+  } catch (err &e) {
+    return x;
+  }
+  if (res) {
+    assert(!*e);
+    return res;
+  } else if (*e) {
+    pure_unref_internal(*e);
+    return 0;
+  } else
+    return 0;
+}
+
+extern "C"
 char *pure_evalcmd(const char *s)
 {
   assert(s);
@@ -5369,29 +5392,6 @@ pure_expr *eval(pure_expr *x)
     } else
       return 0;
   }
-}
-
-extern "C"
-pure_expr *pure_evalx(pure_expr *x, pure_expr** e)
-{
-  assert(x);
-  pure_expr *res = 0;
-  interpreter& interp = *interpreter::g_interp;
-  *e = 0;
-  try {
-    expr y = interp.pure_expr_to_expr(x);
-    res = interp.eval(y, *e);
-  } catch (err &e) {
-    return x;
-  }
-  if (res) {
-    assert(!*e);
-    return res;
-  } else if (*e) {
-    pure_unref_internal(*e);
-    return 0;
-  } else
-    return 0;
 }
 
 extern "C"
