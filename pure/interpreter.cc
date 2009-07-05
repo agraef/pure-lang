@@ -6257,7 +6257,7 @@ Value *interpreter::codegen(expr x, bool quote)
     if (quote) {
       // quoted function application
       Value *u = codegen(x.xval1(), true), *v = codegen(x.xval2(), true);
-      return apply(u, v);
+      return applc(u, v);
     } else if (x.ttag() != 0) {
       // inlined unboxed builtin int/float operations
       assert(x.ttag() == EXPR::INT || x.ttag() == EXPR::DBL);
