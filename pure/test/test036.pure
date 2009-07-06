@@ -1,0 +1,55 @@
+
+// Various regression tests involving local functions.
+
+using dict;
+
+subst r x = subst (hdict r) x with
+  subst r (x@_ y) = (subst r x) (subst r y);
+  subst r x::matrix = map (subst r) x;
+  subst r x = if member r x then r!x else x;
+end;
+
+local r x = subst s $ subst r x when
+  s = [y=>x | x=>y = r];
+end;
+
+expand x = local [(::*)=>(*)] x
+with
+  (a+b)*c = a*c+b*c;
+  a*(b+c) = a*b+a*c;
+end;
+
+// This should return 1,1 (doesn't work in Pure <0.26 due to bugs in 'same').
+f===g, f===(*) when (f@_ _ _)+(g@_ _ _) = expand $ (a+b)*2 end;
+
+// locally redefined operator
+(x+2)*3
+with
+  (a+b)*c = a*c+b*c;
+  a*(b+c) = a*b+a*c;
+end;
+
+// qualifier incorrectly discarded in Pure <0.26
+(x+2)::*3
+with
+  (a+b)*c = a*c+b*c;
+  a*(b+c) = a*b+a*c;
+end;
+
+// incorrectly treated as global (*) in Pure <0.26
+2*3
+with
+  (a+b)*c = a*c+b*c;
+  a*(b+c) = a*b+a*c;
+end;
+
+// here '-' is sign of a number rather than local function, so -3 is the
+// correct result here?
+-3 with -a = 1/a end;
+
+// Applications of local closures must be kept unevaluated. As of Pure 0.26,
+// this works correctly now.
+
+'(succ 99) with succ x = x+1 end;
+
+f===succ,x===99 when succ = \x -> x+1; f@_ x = '(succ 99) end;

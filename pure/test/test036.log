@@ -1,0 +1,444 @@
+subst r/*0:01*/ x/*0:1*/ = subst/*0*/ (hdict r/*0:01*/) x/*0:1*/ with subst r/*0:01*/ (x@_/*0:10*/ y/*0:11*/) = subst/*1*/ r/*0:01*/ x/*0:10*/ (subst/*1*/ r/*0:01*/ y/*0:11*/); subst r/*0:01*/ x/*0:1*/::matrix = map (subst/*1*/ r/*0:01*/) x/*0:1*/; subst r/*0:01*/ x/*0:1*/ = if member r/*0:01*/ x/*0:1*/ then r/*0:01*/!x/*0:1*/ else x/*0:1*/ {
+  rule #0: subst r (x@_ y) = subst r x (subst r y)
+  rule #1: subst r x::matrix = map (subst r) x
+  rule #2: subst r x = if member r x then r!x else x
+  state 0: #0 #1 #2
+	<var> state 1
+  state 1: #0 #1 #2
+	<var> state 2
+	<var>::matrix state 3
+	<app> state 4
+  state 2: #2
+  state 3: #1 #2
+  state 4: #0 #2
+	<var> state 5
+  state 5: #0 #2
+	<var> state 6
+  state 6: #0 #2
+} end;
+local r/*0:01*/ x/*0:1*/ = subst s/*0:*/ (subst r/*1:01*/ x/*1:1*/) when s/*0:*/ = listmap (\(x/*0:01*/=>y/*0:1*/) -> y/*0:1*/=>x/*0:01*/ {
+  rule #0: x=>y = y=>x
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	=> state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+}) r/*0:01*/ {
+  rule #0: s = listmap (\(x=>y) -> y=>x) r
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+expand x/*0:1*/ = local [(*)=>(*/*0*/)] x/*0:1*/ with (a/*0:0101*/+b/*0:011*/)*c/*0:1*/ = a/*0:0101*/*/*1*/c/*0:1*/+b/*0:011*/*/*1*/c/*0:1*/; a/*0:01*/*(b/*0:101*/+c/*0:11*/) = a/*0:01*/*/*1*/b/*0:101*/+a/*0:01*/*/*1*/c/*0:11*/ {
+  rule #0: (a+b)*c = a*c+b*c
+  rule #1: a*(b+c) = a*b+a*c
+  state 0: #0 #1
+	<var> state 1
+	<app> state 7
+  state 1: #1
+	<app> state 2
+  state 2: #1
+	<app> state 3
+  state 3: #1
+	+ state 4
+  state 4: #1
+	<var> state 5
+  state 5: #1
+	<var> state 6
+  state 6: #1
+  state 7: #0 #1
+	<var> state 8
+	<app> state 15
+  state 8: #1
+	<var> state 9
+  state 9: #1
+	<app> state 10
+  state 10: #1
+	<app> state 11
+  state 11: #1
+	+ state 12
+  state 12: #1
+	<var> state 13
+  state 13: #1
+	<var> state 14
+  state 14: #1
+  state 15: #0 #1
+	<var> state 16
+	+ state 24
+  state 16: #1
+	<var> state 17
+  state 17: #1
+	<var> state 18
+  state 18: #1
+	<app> state 19
+  state 19: #1
+	<app> state 20
+  state 20: #1
+	+ state 21
+  state 21: #1
+	<var> state 22
+  state 22: #1
+	<var> state 23
+  state 23: #1
+  state 24: #0 #1
+	<var> state 25
+  state 25: #0 #1
+	<var> state 26
+  state 26: #0 #1
+	<var> state 27
+	<app> state 28
+  state 27: #0
+  state 28: #0 #1
+	<var> state 29
+	<app> state 31
+  state 29: #0
+	<var> state 30
+  state 30: #0
+  state 31: #0 #1
+	<var> state 32
+	+ state 35
+  state 32: #0
+	<var> state 33
+  state 33: #0
+	<var> state 34
+  state 34: #0
+  state 35: #0 #1
+	<var> state 36
+  state 36: #0 #1
+	<var> state 37
+  state 37: #0 #1
+} end;
+{
+  rule #0: subst r x = subst (hdict r) x with subst r (x@_ y) = subst r x (subst r y); subst r x::matrix = map (subst r) x; subst r x = if member r x then r!x else x end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+	<var> state 2
+  state 2: #0
+}
+{
+  rule #0: local r x = subst s (subst r x) when s = listmap (\(x=>y) -> y=>x) r end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+	<var> state 2
+  state 2: #0
+}
+{
+  rule #0: expand x = local [(*)=>(*)] x with (a+b)*c = a*c+b*c; a*(b+c) = a*b+a*c end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+f/*0:0100*/===g/*0:100*/,f/*0:0100*/===(*) when f@_/*0:0100*/ _/*0:0101*/ _/*0:011*/+g@_/*0:100*/ _/*0:101*/ _/*0:11*/ = expand ((a+b)*2) {
+  rule #0: f@_ _ _+g@_ _ _ = expand ((a+b)*2)
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	+ state 3
+  state 3: #0
+	<app> state 4
+  state 4: #0
+	<app> state 5
+  state 5: #0
+	<var> state 6
+  state 6: #0
+	<var> state 7
+  state 7: #0
+	<var> state 8
+  state 8: #0
+	<app> state 9
+  state 9: #0
+	<app> state 10
+  state 10: #0
+	<var> state 11
+  state 11: #0
+	<var> state 12
+  state 12: #0
+	<var> state 13
+  state 13: #0
+} end;
+1,1
+(x+2)*/*0*/3 with (a/*0:0101*/+b/*0:011*/)*c/*0:1*/ = a/*0:0101*/*/*1*/c/*0:1*/+b/*0:011*/*/*1*/c/*0:1*/; a/*0:01*/*(b/*0:101*/+c/*0:11*/) = a/*0:01*/*/*1*/b/*0:101*/+a/*0:01*/*/*1*/c/*0:11*/ {
+  rule #0: (a+b)*c = a*c+b*c
+  rule #1: a*(b+c) = a*b+a*c
+  state 0: #0 #1
+	<var> state 1
+	<app> state 7
+  state 1: #1
+	<app> state 2
+  state 2: #1
+	<app> state 3
+  state 3: #1
+	+ state 4
+  state 4: #1
+	<var> state 5
+  state 5: #1
+	<var> state 6
+  state 6: #1
+  state 7: #0 #1
+	<var> state 8
+	<app> state 15
+  state 8: #1
+	<var> state 9
+  state 9: #1
+	<app> state 10
+  state 10: #1
+	<app> state 11
+  state 11: #1
+	+ state 12
+  state 12: #1
+	<var> state 13
+  state 13: #1
+	<var> state 14
+  state 14: #1
+  state 15: #0 #1
+	<var> state 16
+	+ state 24
+  state 16: #1
+	<var> state 17
+  state 17: #1
+	<var> state 18
+  state 18: #1
+	<app> state 19
+  state 19: #1
+	<app> state 20
+  state 20: #1
+	+ state 21
+  state 21: #1
+	<var> state 22
+  state 22: #1
+	<var> state 23
+  state 23: #1
+  state 24: #0 #1
+	<var> state 25
+  state 25: #0 #1
+	<var> state 26
+  state 26: #0 #1
+	<var> state 27
+	<app> state 28
+  state 27: #0
+  state 28: #0 #1
+	<var> state 29
+	<app> state 31
+  state 29: #0
+	<var> state 30
+  state 30: #0
+  state 31: #0 #1
+	<var> state 32
+	+ state 35
+  state 32: #0
+	<var> state 33
+  state 33: #0
+	<var> state 34
+  state 34: #0
+  state 35: #0 #1
+	<var> state 36
+  state 36: #0 #1
+	<var> state 37
+  state 37: #0 #1
+} end;
+x*3+2*3
+(x+2)*3 with (a/*0:0101*/+b/*0:011*/)*c/*0:1*/ = a/*0:0101*/*/*1*/c/*0:1*/+b/*0:011*/*/*1*/c/*0:1*/; a/*0:01*/*(b/*0:101*/+c/*0:11*/) = a/*0:01*/*/*1*/b/*0:101*/+a/*0:01*/*/*1*/c/*0:11*/ {
+  rule #0: (a+b)*c = a*c+b*c
+  rule #1: a*(b+c) = a*b+a*c
+  state 0: #0 #1
+	<var> state 1
+	<app> state 7
+  state 1: #1
+	<app> state 2
+  state 2: #1
+	<app> state 3
+  state 3: #1
+	+ state 4
+  state 4: #1
+	<var> state 5
+  state 5: #1
+	<var> state 6
+  state 6: #1
+  state 7: #0 #1
+	<var> state 8
+	<app> state 15
+  state 8: #1
+	<var> state 9
+  state 9: #1
+	<app> state 10
+  state 10: #1
+	<app> state 11
+  state 11: #1
+	+ state 12
+  state 12: #1
+	<var> state 13
+  state 13: #1
+	<var> state 14
+  state 14: #1
+  state 15: #0 #1
+	<var> state 16
+	+ state 24
+  state 16: #1
+	<var> state 17
+  state 17: #1
+	<var> state 18
+  state 18: #1
+	<app> state 19
+  state 19: #1
+	<app> state 20
+  state 20: #1
+	+ state 21
+  state 21: #1
+	<var> state 22
+  state 22: #1
+	<var> state 23
+  state 23: #1
+  state 24: #0 #1
+	<var> state 25
+  state 25: #0 #1
+	<var> state 26
+  state 26: #0 #1
+	<var> state 27
+	<app> state 28
+  state 27: #0
+  state 28: #0 #1
+	<var> state 29
+	<app> state 31
+  state 29: #0
+	<var> state 30
+  state 30: #0
+  state 31: #0 #1
+	<var> state 32
+	+ state 35
+  state 32: #0
+	<var> state 33
+  state 33: #0
+	<var> state 34
+  state 34: #0
+  state 35: #0 #1
+	<var> state 36
+  state 36: #0 #1
+	<var> state 37
+  state 37: #0 #1
+} end;
+(x+2)*3
+2*/*0*/3 with (a/*0:0101*/+b/*0:011*/)*c/*0:1*/ = a/*0:0101*/*/*1*/c/*0:1*/+b/*0:011*/*/*1*/c/*0:1*/; a/*0:01*/*(b/*0:101*/+c/*0:11*/) = a/*0:01*/*/*1*/b/*0:101*/+a/*0:01*/*/*1*/c/*0:11*/ {
+  rule #0: (a+b)*c = a*c+b*c
+  rule #1: a*(b+c) = a*b+a*c
+  state 0: #0 #1
+	<var> state 1
+	<app> state 7
+  state 1: #1
+	<app> state 2
+  state 2: #1
+	<app> state 3
+  state 3: #1
+	+ state 4
+  state 4: #1
+	<var> state 5
+  state 5: #1
+	<var> state 6
+  state 6: #1
+  state 7: #0 #1
+	<var> state 8
+	<app> state 15
+  state 8: #1
+	<var> state 9
+  state 9: #1
+	<app> state 10
+  state 10: #1
+	<app> state 11
+  state 11: #1
+	+ state 12
+  state 12: #1
+	<var> state 13
+  state 13: #1
+	<var> state 14
+  state 14: #1
+  state 15: #0 #1
+	<var> state 16
+	+ state 24
+  state 16: #1
+	<var> state 17
+  state 17: #1
+	<var> state 18
+  state 18: #1
+	<app> state 19
+  state 19: #1
+	<app> state 20
+  state 20: #1
+	+ state 21
+  state 21: #1
+	<var> state 22
+  state 22: #1
+	<var> state 23
+  state 23: #1
+  state 24: #0 #1
+	<var> state 25
+  state 25: #0 #1
+	<var> state 26
+  state 26: #0 #1
+	<var> state 27
+	<app> state 28
+  state 27: #0
+  state 28: #0 #1
+	<var> state 29
+	<app> state 31
+  state 29: #0
+	<var> state 30
+  state 30: #0
+  state 31: #0 #1
+	<var> state 32
+	+ state 35
+  state 32: #0
+	<var> state 33
+  state 33: #0
+	<var> state 34
+  state 34: #0
+  state 35: #0 #1
+	<var> state 36
+  state 36: #0 #1
+	<var> state 37
+  state 37: #0 #1
+} end;
+2*3
+-3 with -a/*0:1*/ = 1/a/*0:1*/ {
+  rule #0: -a = 1/a
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+-3
+quote (succ/*0*/ 99) with succ x/*0:1*/ = x/*0:1*/+1 {
+  rule #0: succ x = x+1
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+succ 99
+f/*0:0*/===succ/*1:*/,x/*0:1*/===99 when succ/*0:*/ = \x/*0:*/ -> x/*0:*/+1 {
+  rule #0: x = x+1
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}; f@_/*0:0*/ x/*0:1*/ = quote (succ/*0:*/ 99) {
+  rule #0: f@_ x = quote (succ 99)
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<var> state 2
+  state 2: #0
+	<var> state 3
+  state 3: #0
+} {
+  rule #0: succ = \x -> x+1
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+1,1
