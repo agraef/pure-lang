@@ -8354,7 +8354,7 @@ pure_expr *globlist(const glob_t *pglob)
   pure_expr *x = mk_nil();
   int i = pglob->gl_pathc;
   while (--i >= 0) {
-    pure_expr *f = pure_const(interp.symtab.cons_sym().f);
+    pure_expr *f = pure_symbol(interp.symtab.cons_sym().f);
     pure_expr *y = pure_cstring_dup(pglob->gl_pathv[i]);
     x = pure_apply2(pure_apply2(f, y), x);
   }
@@ -8371,7 +8371,7 @@ pure_expr *regmatches(const regex_t *preg, int flags)
   int n = (flags&REG_NOSUB)?0:preg->re_nsub+1;
   regmatch_t *matches = 0;
   if (n > 0) matches = (regmatch_t*)malloc(n*sizeof(regmatch_t));
-  pure_expr *f = pure_const(interp.symtab.pair_sym().f);
+  pure_expr *f = pure_symbol(interp.symtab.pair_sym().f);
   pure_expr *x = pure_apply2(pure_apply2(f, pure_int(n)),
 			     pure_pointer(matches));
   return x;
@@ -8400,7 +8400,7 @@ pure_expr *reglist(const regex_t *preg, const char *s,
     // Optimize for the case that the system encoding is utf-8. This should be
     // pretty much standard on Linux/Unix systems these days.
     while (--i >= 0) {
-      pure_expr *f = pure_const(interp.symtab.pair_sym().f);
+      pure_expr *f = pure_symbol(interp.symtab.pair_sym().f);
       pure_expr *y1 = pure_int(matches[i].rm_so);
       pure_expr *y2;
       if (matches[i].rm_so >= 0 && matches[i].rm_eo >= matches[i].rm_so) {
@@ -8435,7 +8435,7 @@ pure_expr *reglist(const regex_t *preg, const char *s,
       assert(p >= p0);
       q = q0 + translate_pos(u, p-p0, l);
     }
-    pure_expr *f = pure_const(interp.symtab.pair_sym().f);
+    pure_expr *f = pure_symbol(interp.symtab.pair_sym().f);
     pure_expr *y1 = pure_int(q);
     pure_expr *y2;
     if (q >= 0 && matches[i].rm_eo >= matches[i].rm_so) {
