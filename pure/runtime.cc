@@ -8681,7 +8681,7 @@ static inline pure_expr* to_expr(pure_expr* e) { return e; }
 //convert an expression into a matrix element
 inline bool from_expr( pure_expr* e, double & d )
 { return pure_is_double(e,&d); }
-inline bool from_expr( pure_expr* e, int & i )
+inline bool from_expr( pure_expr* e, int32_t & i )
 { return pure_is_int(e,&i); }
 inline bool from_expr( pure_expr* e, Complex & c )
 { return pure_is_complex(e,&c.real()); }
@@ -9564,7 +9564,7 @@ pure_expr* matrix_scanl( pure_expr *f, pure_expr *z, pure_expr *x )
 
 #ifdef HAVE_GSL
   double zd;
-  int zi;
+  int32_t zi;
   Complex zc;
 #endif
 
@@ -9645,7 +9645,7 @@ pure_expr* matrix_scanl1( pure_expr *f, pure_expr *x )
 
 #ifdef HAVE_GSL
   double zd;
-  int zi;
+  int32_t zi;
   Complex zc;
 #endif
 

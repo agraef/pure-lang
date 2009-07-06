@@ -61,7 +61,7 @@ class interpreter;
 %union
 {
   char    cval;
-  int     ival;
+  int32_t ival;
   double  dval;
   mpz_t  *zval;
   string *sval;
