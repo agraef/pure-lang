@@ -386,13 +386,14 @@ the description of the standard library operations.</p>
 <li><a class="reference internal" href="#the-quote" id="id59">13.14&nbsp;&nbsp;&nbsp;The Quote</a></li>
 <li><a class="reference internal" href="#laziness" id="id60">13.15&nbsp;&nbsp;&nbsp;Laziness</a></li>
 <li><a class="reference internal" href="#reflection" id="id61">13.16&nbsp;&nbsp;&nbsp;Reflection</a></li>
-<li><a class="reference internal" href="#stack-size-and-tail-recursion" id="id62">13.17&nbsp;&nbsp;&nbsp;Stack Size and Tail Recursion</a></li>
-<li><a class="reference internal" href="#handling-of-asynchronous-signals" id="id63">13.18&nbsp;&nbsp;&nbsp;Handling of Asynchronous Signals</a></li>
+<li><a class="reference internal" href="#hygienic-macros" id="id62">13.17&nbsp;&nbsp;&nbsp;Hygienic Macros</a></li>
+<li><a class="reference internal" href="#stack-size-and-tail-recursion" id="id63">13.18&nbsp;&nbsp;&nbsp;Stack Size and Tail Recursion</a></li>
+<li><a class="reference internal" href="#handling-of-asynchronous-signals" id="id64">13.19&nbsp;&nbsp;&nbsp;Handling of Asynchronous Signals</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#copying" id="id64">14&nbsp;&nbsp;&nbsp;Copying</a></li>
-<li><a class="reference internal" href="#author" id="id65">15&nbsp;&nbsp;&nbsp;Author</a></li>
-<li><a class="reference internal" href="#see-also" id="id66">16&nbsp;&nbsp;&nbsp;See Also</a></li>
+<li><a class="reference internal" href="#copying" id="id65">14&nbsp;&nbsp;&nbsp;Copying</a></li>
+<li><a class="reference internal" href="#author" id="id66">15&nbsp;&nbsp;&nbsp;Author</a></li>
+<li><a class="reference internal" href="#see-also" id="id67">16&nbsp;&nbsp;&nbsp;See Also</a></li>
 </ul>
 </div>
 <div class="section" id="introduction">
@@ -1949,7 +1950,8 @@ macro parameter substitution also takes into account binding constructs, such
 as <tt class="docutils literal"><span class="pre">with</span></tt> and <tt class="docutils literal"><span class="pre">when</span></tt> clauses, in the right-hand side of the
 definition. Macro facilities with these pleasant properties are also known as
 <strong class="dfn">hygienic macros</strong>. They are not susceptible to so-called &quot;name capture,&quot; which
-makes macros in less sophisticated languages bug-ridden and hard to use.</p>
+makes macros in less sophisticated languages bug-ridden and hard to use. (This
+is explained in more detail in the <a class="reference internal" href="#hygienic-macros">Hygienic Macros</a> section.)</p>
 <p>Pure macros also have their limitations. Specifically, the left-hand side of a
 macro rule must be a simple expression, just like in ordinary function
 definitions. This restricts the kinds of expressions which can be rewritten by
@@ -4159,8 +4161,72 @@ end;
 (&quot;.&quot;,(.),&quot;mac&quot;,&quot;3 args, 1 rules&quot;),(&quot;void&quot;,void,&quot;mac&quot;,&quot;1 args, 6 rules&quot;)]
 </pre>
 </div>
+<div class="section" id="hygienic-macros">
+<h2><a class="toc-backref" href="#id62">13.17&nbsp;&nbsp;&nbsp;Hygienic Macros</a></h2>
+<p>Macro hygiene is a somewhat esoteric topic for most programmers, so let us
+take a brief look at what it's all about. The problem avoided by hygienic
+macros is that of <em>name capture</em>. There are actually two kinds of name capture
+which may occur in unhygienic macro systems:</p>
+<ul class="simple">
+<li>A free symbol in the macro <em>body</em> inadvertently becomes bound to the value
+of a local symbol in the context in which the macro is called.</li>
+<li>A free symbol in the macro <em>call</em> inadvertently becomes bound to the value
+of a local symbol in the macro body.</li>
+</ul>
+<p>Pure's hygienic macros avoid both pitfalls. Here is an example for the first
+form of name capture:</p>
+<pre class="literal-block">
+&gt; def G x = x+y;
+&gt; G 10 when y = 99 end;
+10+y
+</pre>
+<p>Note that the expansion of the <tt class="docutils literal"><span class="pre">G</span></tt> macro correctly uses the global instance
+of <tt class="docutils literal"><span class="pre">y</span></tt>, even though <tt class="docutils literal"><span class="pre">y</span></tt> is locally defined in the context of the macro
+call. (Sometimes this form of name capture is actually used deliberately in
+order to make the macro use the binding of the symbol which is active at the
+point of the macro call. This never works in Pure, hence in such cases you
+will have to explicitly pass such symbols to the macro.)</p>
+<p>In contrast, the second form of name capture is usually not intended, and is
+therefore more dangerous. Consider the following example:</p>
+<pre class="literal-block">
+&gt; def F x = x+y when y = x+1 end;
+&gt; F y;
+y+(y+1)
+</pre>
+<p>Pure again gives the correct result here. You'd have to be worried if you got
+<tt class="docutils literal"><span class="pre">(y+1)+(y+1)</span></tt> instead, which would result from the literal expansion <tt class="docutils literal"><span class="pre">y+y</span>
+<span class="pre">when</span> <span class="pre">y</span> <span class="pre">=</span> <span class="pre">y+1</span> <span class="pre">end</span></tt>, where the (free) variable <tt class="docutils literal"><span class="pre">y</span></tt> passed to <tt class="docutils literal"><span class="pre">F</span></tt> gets
+captured by the local binding of <tt class="docutils literal"><span class="pre">y</span></tt>. In fact, that's exactly what you get
+with C macros:</p>
+<pre class="literal-block">
+#define F(x) { int y = x+1; return x+y; }
+</pre>
+<p>Here <tt class="docutils literal"><span class="pre">F(y)</span></tt> expands to <tt class="docutils literal"><span class="pre">{</span> <span class="pre">int</span> <span class="pre">y</span> <span class="pre">=</span> <span class="pre">y+1;</span> <span class="pre">return</span> <span class="pre">y+y;</span> <span class="pre">}</span></tt> which is usually
+<em>not</em> what you want.</p>
+<p>There is also one Pure-related caveat here. The expression printer currently
+doesn't check for different bindings of the same variable identifier when it
+prints a (compile time) expression. E.g.:</p>
+<pre class="literal-block">
+&gt; foo y = F y;
+&gt; show foo
+foo y = y+y when y = y+1 end;
+</pre>
+<p>This <em>looks</em> as if <tt class="docutils literal"><span class="pre">y</span></tt> got captured, but in fact it's not, it's just the
+<tt class="docutils literal"><span class="pre">show</span></tt> command which displays the definition in an incorrect way. When in
+doubt, you can add the <tt class="docutils literal"><span class="pre">-e</span></tt> option to <tt class="docutils literal"><span class="pre">show</span></tt> which prints the deBruijn
+indices of locally bound symbols, then you see that the actual bindings are
+all right anyway (note that the number before the colon is the actual deBruijn
+index, the sequence of bits behind it is the subterm path):</p>
+<pre class="literal-block">
+&gt; show -e foo
+foo y/*0:1*/ = y/*1:1*/+y/*0:*/ when y/*0:*/ = y/*0:1*/+1 end;
+</pre>
+<p>Alas, this means that if you use <tt class="docutils literal"><span class="pre">dump</span></tt> to write such a definition to a text
+file and read it back with <tt class="docutils literal"><span class="pre">run</span></tt> later, then you'll get the wrong
+definition. Currently you will have to correct this manually.</p>
+</div>
 <div class="section" id="stack-size-and-tail-recursion">
-<h2><a class="toc-backref" href="#id62">13.17&nbsp;&nbsp;&nbsp;Stack Size and Tail Recursion</a></h2>
+<h2><a class="toc-backref" href="#id63">13.18&nbsp;&nbsp;&nbsp;Stack Size and Tail Recursion</a></h2>
 <p>Pure programs may need a considerable amount of stack space to handle
 recursive function and macro calls, and the interpreter itself also takes its
 toll. So you should configure your system accordingly (8 MB of stack space is
@@ -4207,7 +4273,7 @@ means that you should always run your program without -g when the debugger is
 not needed.</p>
 </div>
 <div class="section" id="handling-of-asynchronous-signals">
-<h2><a class="toc-backref" href="#id63">13.18&nbsp;&nbsp;&nbsp;Handling of Asynchronous Signals</a></h2>
+<h2><a class="toc-backref" href="#id64">13.19&nbsp;&nbsp;&nbsp;Handling of Asynchronous Signals</a></h2>
 <p>As described in section <a class="reference internal" href="#exception-handling">Exception Handling</a>, signals delivered to the
 process can be caught and handled with Pure's exception handling
 facilities. Like stack checks, checks for pending signals are only performed
@@ -4241,7 +4307,7 @@ check x = ...;
 </div>
 </div>
 <div class="section" id="copying">
-<h1><a class="toc-backref" href="#id64">14&nbsp;&nbsp;&nbsp;Copying</a></h1>
+<h1><a class="toc-backref" href="#id65">14&nbsp;&nbsp;&nbsp;Copying</a></h1>
 <p>Pure is free software: you can redistribute it and/or modify it under the
 terms of the GNU General Public License as published by the Free Software
 Foundation, either version 3 of the License, or (at your option) any later
@@ -4252,12 +4318,12 @@ A PARTICULAR PURPOSE. See the <a class="reference external" href="http://www.gnu
 GPL in the COPYING file accompanying the software.)</p>
 </div>
 <div class="section" id="author">
-<h1><a class="toc-backref" href="#id65">15&nbsp;&nbsp;&nbsp;Author</a></h1>
+<h1><a class="toc-backref" href="#id66">15&nbsp;&nbsp;&nbsp;Author</a></h1>
 <p>Albert Graef &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;, Dept. of Computer Music, Johannes
 Gutenberg University of Mainz, Germany.</p>
 </div>
 <div class="section" id="see-also">
-<h1><a class="toc-backref" href="#id66">16&nbsp;&nbsp;&nbsp;See Also</a></h1>
+<h1><a class="toc-backref" href="#id67">16&nbsp;&nbsp;&nbsp;See Also</a></h1>
 <dl class="docutils" id="aardappel">
 <dt>Aardappel</dt>
 <dd>Another functional programming language based on term rewriting,
