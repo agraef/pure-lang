@@ -3663,7 +3663,7 @@ Pure it is impossible to distinguish local variables from unqualified function
 symbols at the lexical level, and thus all undeclared and unqualified
 identifiers are implicitly declared in the default namespace. Thus, if you
 really want the ``foo`` symbol to become a member of the ``bar`` namespace,
-you must either declare it explicitly or use a qualfified identifier. That is,
+you must either declare it explicitly or use a qualified identifier. That is,
 either::
 
   namespace bar;
@@ -3919,11 +3919,11 @@ expressions, so that it is quite easy to fill in variable parts in a quoted
   2*(7/y)+1
 
 In fact, it is possible to perform arbitrary computations right in the middle
-of a quoted expression, using lambdas or one of the special
-``if``-``then``-``else``, ``case``, ``when`` and ``with`` expressions, since
-these are never quoted either. Example::
+of a quoted expression, using one of the special ``if``-``then``-``else``,
+``case``, ``when`` and ``with`` expressions, since these are never quoted
+either. Example::
 
-  > '(\x->x+1) (2*3);
+  > '(x+1 when x = '(2*3) end);
   2*3+1
 
 Another useful feature of Lisp's ``quasiquote`` is the capability to splice
@@ -3981,7 +3981,7 @@ issues resulting from definitions being too lazy or not lazy enough. You can
 read about that in any good textbook on Haskell.)
 
 The prelude goes to great lengths to implement all standard list operations in
-a way that properly deals with streams (a.k.a. list futures). What this all
+a way that properly deals with streams (a.k.a. lazy lists). What this all
 boils down to is that all list operations which can reasonably be expected to
 operate in a lazy way on streams, will do so. (Exceptions are inherently eager
 operations such as ``#``, ``reverse`` and ``foldl``.) Only those portions of
