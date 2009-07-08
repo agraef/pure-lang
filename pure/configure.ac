@@ -98,6 +98,9 @@ dnl Determine how to get alloca.
 AC_FUNC_ALLOCA
 dnl Platform-dependent time functions.
 AC_CHECK_FUNCS(ftime gettimeofday nanosleep usleep)
+dnl Check for the dirent.h header and the readdir() function.
+AC_CHECK_HEADERS([dirent.h])
+AC_CHECK_FUNCS(readdir)
 dnl Platform specifics of signal handlers.
 AC_REINSTALL_SIGHANDLERS
 dnl Check to see whether we have POSIX/ISOC99 complex numbers.

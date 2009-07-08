@@ -8344,6 +8344,56 @@ int pure_sscanf_pointer(const char *buf, const char *format, void **x)
   return count;
 }
 
+#if HAVE_DIRENT_H
+#include <dirent.h>
+#endif
+#define N_ENT 1024 // buffer increment
+
+pure_expr *pure_readdir(const char *name)
+{
+#ifdef HAVE_READDIR
+  pure_expr *x;
+  DIR *dir;
+  struct dirent *d;
+  int n = 0, m = N_ENT;
+  /* open directory */
+  if (!(dir = opendir(name))) {
+    return 0;
+  }
+  /* allocate an initial buffer large enough for N_ENT entries */
+  pure_expr **xv = (pure_expr **)malloc(m * sizeof(pure_expr *));
+  if (!xv) goto alloc_error;
+  /* read entries */
+  for (d = readdir(dir); d; d = readdir(dir)) {
+    if (n >= m) {
+      /* we need to enlarge the buffer */
+      m += N_ENT;
+      pure_expr **xv1 = (pure_expr **)realloc(xv, m * sizeof(pure_expr *));
+      if (!xv1) goto alloc_error;
+      xv = xv1;
+    }
+    if ((xv[n] = pure_cstring_dup(d->d_name)))
+      n++;
+    else
+      goto alloc_error;
+  }
+  /* close directory */
+  closedir(dir);
+  /* return the list */
+  x = pure_listv(n, xv);
+  free(xv);
+  return x;
+ alloc_error:
+  closedir(dir);
+  if (xv) {
+    while (n > 0) pure_freenew(xv[--n]);
+    free(xv);
+  }
+  pure_throw(pure_symbol(pure_sym("malloc_error")));
+#endif
+  return 0;
+}
+
 #include <fnmatch.h>
 #include <glob.h>
 

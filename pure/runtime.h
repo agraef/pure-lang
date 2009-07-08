@@ -1053,6 +1053,10 @@ int pure_sscanf_double(const char *buf, const char *format, double *x);
 int pure_sscanf_string(const char *buf, const char *format, char *x);
 int pure_sscanf_pointer(const char *buf, const char *format, void **x);
 
+/* readdir(3) support. */
+
+pure_expr *pure_readdir(const char *name);
+
 /* glob(3) support. */
 
 #include <glob.h>
