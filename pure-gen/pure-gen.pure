@@ -422,16 +422,17 @@ typedefs1 d@(CDecl decl_specs _) fname =
   then zip (decl_idents d) (decl_types1 d fname)
   else [];
 
-
-// func_decl : returns a list containing a single (name,type,fname) binding if
-// this declaration declares a function, otherwise [].
+// func_decl : returns the list of triples (name,type,fname) for all
+// function declarations in this declaration.
 func_decl (CFDefExt _) = [];
 func_decl (CDeclExt d fname) = func_decl1 d fname;
 func_decl1 d@(CDecl decl_specs _) fname
 = [] if is_typedef decl_specs; // skip typedefs
-= case decl_types1 d fname of
-    f@([func_type ret args]) = [fundecls,fname | fundecls = zip (decl_idents d) f];
-    _ = [];
+= [decl,fname | decl = zip (decl_idents d) (decl_types1 d fname);
+                is_func_decl decl]
+  with
+    is_func_decl (_,func_type ret args) = true;
+    is_func_decl _ = false otherwise;
   end;
 
 //resolve a typedef : d is a dictionary 
