@@ -15,6 +15,14 @@
 # undef yywrap
 # define yywrap() 1
 
+/* Uncomment this to get latex labels for explicit hypelink targets
+   (experimental). This is needed to get proper page numbers in the
+   TeX-formatted index. Unfortunately, this also messes up the formatting of
+   bulleted and description lists with embedded targets, so it's disabled by
+   default until we find a better solution. */
+
+// #define LATEX_TARGETS 1
+
 using namespace std;
 
 static char *prog, **files;
@@ -154,14 +162,14 @@ static unsigned trim(string& text, unsigned col)
 }
 
 /* Handle hyperlink targets. To supplement docutils' own hyperlink processing,
-   we also create raw html and latex targets for these. This works around the
-   docutils name mangling (which is undesirable if we're looking, e.g., for
-   function names), and resolves quirks with w3m which doesn't pick up all
-   'id' attributes. It also allows us to output an index of all explicit
-   targets in a document. This is requested with the 'makeindex::' directive.
-   (This feature is rather simplistic right now and can't compete with a
-   carefully handmade index, but as docutils doesn't provide an index facility
-   of its own, it is certainly better than having no index at all.) */
+   we also create raw html targets for these. This works around the docutils
+   name mangling (which is undesirable if we're looking, e.g., for function
+   names), and resolves quirks with w3m which doesn't pick up all 'id'
+   attributes. It also allows us to output an index of all explicit targets in
+   a document. This is requested with the 'makeindex::' directive.  (This
+   feature is rather simplistic right now and can't compete with a carefully
+   handmade index, but as docutils doesn't provide an index facility of its
+   own, it is certainly better than having no index at all.) */
 
 static string cache;
 
@@ -206,7 +214,7 @@ static bool targetp(const string& text)
 	if (target.empty()) goto notarget;
 	if (labels.find(target) == labels.end()) {
 	  /* We found a new hyperlink target. Store it away in the cache, to
-	     be emitted later, and create raw html and latex targets for it. */
+	     be emitted later, and create a raw html target for it. */
 	  targets.push_back(target);
 	  labels[target] = act_label++;
 	  cache += text; cache += "\n";
@@ -214,9 +222,11 @@ static bool targetp(const string& text)
 	  cout << indent << ".. raw:: html" << endl << endl
 	       << indent << "   <a name=\"" << target << "\">"
 	       << endl << endl;
+#if LATEX_TARGETS
 	  cout << indent << ".. raw:: latex" << endl << endl
 	       << indent << "   \\label{idx:" << labels[target] << "}"
 	       << endl << endl;
+#endif
 	}
 	return true;
       } else
@@ -232,9 +242,13 @@ static bool targetp(const string& text)
 	char ind = (*it)[0];
 	if (last && isalpha(ind) && ind != last) cout << endl;
 	last = ind;
+#if LATEX_TARGETS
 	cout << "| `" << *it
 	     << "`_\\ :raw-latex-index:`\\ \\ \\pageref{idx:"
 	     << labels[*it] << "}`" << endl;
+#else
+	cout << "| `" << *it << "`_" << endl;
+#endif
       }
       cout << endl;
       targets.clear();
@@ -385,7 +399,9 @@ int main(int argc, char *argv[])
     }
   } else
     --files;
+#if LATEX_TARGETS
   cout << ".. role:: raw-latex-index(raw)\n   :format: latex\n\n";
+#endif
   yylex();
   exit(0);
 }

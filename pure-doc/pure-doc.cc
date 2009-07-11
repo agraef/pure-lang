@@ -497,6 +497,14 @@ char *yytext;
 # undef yywrap
 # define yywrap() 1
 
+/* Uncomment this to get latex labels for explicit hypelink targets
+   (experimental). This is needed to get proper page numbers in the
+   TeX-formatted index. Unfortunately, this also messes up the formatting of
+   bulleted and description lists with embedded targets, so it's disabled by
+   default until we find a better solution. */
+
+// #define LATEX_TARGETS 1
+
 using namespace std;
 
 static char *prog, **files;
@@ -517,7 +525,7 @@ static inline void echo(const char *s)
   }
 }
 
-#line 521 "pure-doc.cc"
+#line 529 "pure-doc.cc"
 
 #define INITIAL 0
 #define comment 1
@@ -702,10 +710,10 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 46 "pure-doc.ll"
+#line 54 "pure-doc.ll"
 
 
-#line 709 "pure-doc.cc"
+#line 717 "pure-doc.cc"
 
 	if ( !(yy_init) )
 		{
@@ -791,16 +799,16 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 /* rule 1 can match eol */
-#line 49 "pure-doc.ll"
+#line 57 "pure-doc.ll"
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 49 "pure-doc.ll"
+#line 57 "pure-doc.ll"
 echo(yytext); tabs(col, yytext, yyleng);
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 51 "pure-doc.ll"
+#line 59 "pure-doc.ll"
 {
   start = col; buf = yytext+2;
   comment_text = yytext;
@@ -810,7 +818,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 57 "pure-doc.ll"
+#line 65 "pure-doc.ll"
 {
   col += yyleng; start = col; buf.clear();
   comment_text = yytext;
@@ -823,12 +831,12 @@ case 5:
 (yy_c_buf_p) = yy_cp = yy_bp + 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 63 "pure-doc.ll"
+#line 71 "pure-doc.ll"
 comment_text += yytext; tabs(col, yytext, yyleng);
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 64 "pure-doc.ll"
+#line 72 "pure-doc.ll"
 {
   buf += string("\n")+(yytext+2);
   comment_text += yytext;
@@ -837,17 +845,17 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 /* rule 7 can match eol */
-#line 70 "pure-doc.ll"
+#line 78 "pure-doc.ll"
 case 8:
 /* rule 8 can match eol */
 YY_RULE_SETUP
-#line 70 "pure-doc.ll"
+#line 78 "pure-doc.ll"
 print(start, buf); yyless(0); BEGIN(INITIAL);
 	YY_BREAK
 case 9:
 /* rule 9 can match eol */
 YY_RULE_SETUP
-#line 72 "pure-doc.ll"
+#line 80 "pure-doc.ll"
 {
   tabs(col, yytext, yyleng);
   buf += yytext; comment_text += yytext;
@@ -856,7 +864,7 @@ YY_RULE_SETUP
 case 10:
 /* rule 10 can match eol */
 YY_RULE_SETUP
-#line 76 "pure-doc.ll"
+#line 84 "pure-doc.ll"
 {
   tabs(col, yytext, yyleng);
   buf += yytext; comment_text += yytext;
@@ -864,7 +872,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 80 "pure-doc.ll"
+#line 88 "pure-doc.ll"
 {
   col += yyleng;
   comment_text += yytext;
@@ -874,22 +882,22 @@ YY_RULE_SETUP
 	YY_BREAK
 case 12:
 /* rule 12 can match eol */
-#line 88 "pure-doc.ll"
+#line 96 "pure-doc.ll"
 case 13:
 /* rule 13 can match eol */
 YY_RULE_SETUP
-#line 88 "pure-doc.ll"
+#line 96 "pure-doc.ll"
 echo(yytext); tabs(col, yytext, yyleng);
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 89 "pure-doc.ll"
+#line 97 "pure-doc.ll"
 echo(yytext); col++;
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(comment):
 case YY_STATE_EOF(lcomment):
-#line 91 "pure-doc.ll"
+#line 99 "pure-doc.ll"
 {
   if (YY_START != INITIAL)
     print(start, buf); BEGIN(INITIAL);
@@ -907,10 +915,10 @@ case YY_STATE_EOF(lcomment):
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 106 "pure-doc.ll"
+#line 114 "pure-doc.ll"
 ECHO;
 	YY_BREAK
-#line 914 "pure-doc.cc"
+#line 922 "pure-doc.cc"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -1872,7 +1880,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 106 "pure-doc.ll"
+#line 114 "pure-doc.ll"
 
 
 
@@ -1925,14 +1933,14 @@ static unsigned trim(string& text, unsigned col)
 }
 
 /* Handle hyperlink targets. To supplement docutils' own hyperlink processing,
-   we also create raw html and latex targets for these. This works around the
-   docutils name mangling (which is undesirable if we're looking, e.g., for
-   function names), and resolves quirks with w3m which doesn't pick up all
-   'id' attributes. It also allows us to output an index of all explicit
-   targets in a document. This is requested with the 'makeindex::' directive.
-   (This feature is rather simplistic right now and can't compete with a
-   carefully handmade index, but as docutils doesn't provide an index facility
-   of its own, it is certainly better than having no index at all.) */
+   we also create raw html targets for these. This works around the docutils
+   name mangling (which is undesirable if we're looking, e.g., for function
+   names), and resolves quirks with w3m which doesn't pick up all 'id'
+   attributes. It also allows us to output an index of all explicit targets in
+   a document. This is requested with the 'makeindex::' directive.  (This
+   feature is rather simplistic right now and can't compete with a carefully
+   handmade index, but as docutils doesn't provide an index facility of its
+   own, it is certainly better than having no index at all.) */
 
 static string cache;
 
@@ -1977,7 +1985,7 @@ static bool targetp(const string& text)
 	if (target.empty()) goto notarget;
 	if (labels.find(target) == labels.end()) {
 	  /* We found a new hyperlink target. Store it away in the cache, to
-	     be emitted later, and create raw html and latex targets for it. */
+	     be emitted later, and create a raw html target for it. */
 	  targets.push_back(target);
 	  labels[target] = act_label++;
 	  cache += text; cache += "\n";
@@ -1985,9 +1993,11 @@ static bool targetp(const string& text)
 	  cout << indent << ".. raw:: html" << endl << endl
 	       << indent << "   <a name=\"" << target << "\">"
 	       << endl << endl;
+#if LATEX_TARGETS
 	  cout << indent << ".. raw:: latex" << endl << endl
 	       << indent << "   \\label{idx:" << labels[target] << "}"
 	       << endl << endl;
+#endif
 	}
 	return true;
       } else
@@ -2003,9 +2013,13 @@ static bool targetp(const string& text)
 	char ind = (*it)[0];
 	if (last && isalpha(ind) && ind != last) cout << endl;
 	last = ind;
+#if LATEX_TARGETS
 	cout << "| `" << *it
 	     << "`_\\ :raw-latex-index:`\\ \\ \\pageref{idx:"
 	     << labels[*it] << "}`" << endl;
+#else
+	cout << "| `" << *it << "`_" << endl;
+#endif
       }
       cout << endl;
       targets.clear();
@@ -2156,7 +2170,9 @@ int main(int argc, char *argv[])
     }
   } else
     --files;
+#if LATEX_TARGETS
   cout << ".. role:: raw-latex-index(raw)\n   :format: latex\n\n";
+#endif
   yylex();
   exit(0);
 }
