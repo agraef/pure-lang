@@ -6,6 +6,7 @@
 #include <ctype.h>
 #include <string>
 #include <list>
+#include <map>
 #include <iostream>
 
 /* Work around an incompatibility in flex (at least versions 2.5.31 through
@@ -153,14 +154,14 @@ static unsigned trim(string& text, unsigned col)
 }
 
 /* Handle hyperlink targets. To supplement docutils' own hyperlink processing,
-   we also create raw html targets for these. This works around the docutils
-   name mangling (which is undesirable if we're looking, e.g., for function
-   names), and to resolve quirks with w3m which doesn't pick up all 'id'
-   attributes. It also allows us to output an index of all explicit targets in
-   a document. This is requested with the 'makeindex::' directive. (This
-   feature is rather simplistic right now and can't compete with a carefully
-   handmade index, but as docutils doesn't provide an index facility of its
-   own, it is certainly better than having no index at all.) */
+   we also create raw html and latex targets for these. This works around the
+   docutils name mangling (which is undesirable if we're looking, e.g., for
+   function names), and resolves quirks with w3m which doesn't pick up all
+   'id' attributes. It also allows us to output an index of all explicit
+   targets in a document. This is requested with the 'makeindex::' directive.
+   (This feature is rather simplistic right now and can't compete with a
+   carefully handmade index, but as docutils doesn't provide an index facility
+   of its own, it is certainly better than having no index at all.) */
 
 static string cache;
 
@@ -171,6 +172,8 @@ static void flush_cache()
 }
 
 static list<string> targets;
+static map<string,int> labels;
+static int act_label = 0;
 
 static bool compare(string first, string second)
 {
@@ -201,13 +204,20 @@ static bool targetp(const string& text)
 	if (target[0]=='`' && n>1 && target[n-1]=='`')
 	  target = target.substr(1, n-2);
 	if (target.empty()) goto notarget;
-	/* We found a hyperlink target. Store it away in the cache, to be
-	   emitted later, and create a raw html target for it. */
-	targets.push_back(target);
-	cache += text; cache += "\n";
-	string indent = text.substr(0, p0);
-	cout << indent << ".. raw:: html" << endl << endl
-	     << indent << "   <a name=\"" << target << "\">" << endl << endl;
+	if (labels.find(target) == labels.end()) {
+	  /* We found a new hyperlink target. Store it away in the cache, to
+	     be emitted later, and create raw html and latex targets for it. */
+	  targets.push_back(target);
+	  labels[target] = act_label++;
+	  cache += text; cache += "\n";
+	  string indent = text.substr(0, p0);
+	  cout << indent << ".. raw:: html" << endl << endl
+	       << indent << "   <a name=\"" << target << "\">"
+	       << endl << endl;
+	  cout << indent << ".. raw:: latex" << endl << endl
+	       << indent << "   \\label{idx:" << labels[target] << "}"
+	       << endl << endl;
+	}
 	return true;
       } else
 	goto notarget;
@@ -216,11 +226,20 @@ static bool targetp(const string& text)
       /* Emit the index. */
       flush_cache();
       targets.sort(compare);
+      cout << ".. role:: raw-latex-index(raw)\n   :format: latex\n\n";
+      char last = 0;
       for (list<string>::iterator it = targets.begin(), end = targets.end();
-	   it != end; it++)
-	cout << "* `" << *it << "`_" << endl;
+	   it != end; it++) {
+	char ind = (*it)[0];
+	if (last && isalpha(ind) && ind != last) cout << endl;
+	last = ind;
+	cout << "| `" << *it
+	     << "`_\\ :raw-latex-index:`\\ \\ \\pageref{idx:"
+	     << labels[*it] << "}`" << endl;
+      }
       cout << endl;
       targets.clear();
+      labels.clear();
       return true;
     } else
       goto notarget;

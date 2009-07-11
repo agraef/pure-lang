@@ -488,6 +488,7 @@ char *yytext;
 #include <ctype.h>
 #include <string>
 #include <list>
+#include <map>
 #include <iostream>
 
 /* Work around an incompatibility in flex (at least versions 2.5.31 through
@@ -516,7 +517,7 @@ static inline void echo(const char *s)
   }
 }
 
-#line 520 "pure-doc.cc"
+#line 521 "pure-doc.cc"
 
 #define INITIAL 0
 #define comment 1
@@ -701,10 +702,10 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 45 "pure-doc.ll"
+#line 46 "pure-doc.ll"
 
 
-#line 708 "pure-doc.cc"
+#line 709 "pure-doc.cc"
 
 	if ( !(yy_init) )
 		{
@@ -790,16 +791,16 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 /* rule 1 can match eol */
-#line 48 "pure-doc.ll"
+#line 49 "pure-doc.ll"
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 48 "pure-doc.ll"
+#line 49 "pure-doc.ll"
 echo(yytext); tabs(col, yytext, yyleng);
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 50 "pure-doc.ll"
+#line 51 "pure-doc.ll"
 {
   start = col; buf = yytext+2;
   comment_text = yytext;
@@ -809,7 +810,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 56 "pure-doc.ll"
+#line 57 "pure-doc.ll"
 {
   col += yyleng; start = col; buf.clear();
   comment_text = yytext;
@@ -822,12 +823,12 @@ case 5:
 (yy_c_buf_p) = yy_cp = yy_bp + 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 62 "pure-doc.ll"
+#line 63 "pure-doc.ll"
 comment_text += yytext; tabs(col, yytext, yyleng);
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 63 "pure-doc.ll"
+#line 64 "pure-doc.ll"
 {
   buf += string("\n")+(yytext+2);
   comment_text += yytext;
@@ -836,17 +837,17 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 /* rule 7 can match eol */
-#line 69 "pure-doc.ll"
+#line 70 "pure-doc.ll"
 case 8:
 /* rule 8 can match eol */
 YY_RULE_SETUP
-#line 69 "pure-doc.ll"
+#line 70 "pure-doc.ll"
 print(start, buf); yyless(0); BEGIN(INITIAL);
 	YY_BREAK
 case 9:
 /* rule 9 can match eol */
 YY_RULE_SETUP
-#line 71 "pure-doc.ll"
+#line 72 "pure-doc.ll"
 {
   tabs(col, yytext, yyleng);
   buf += yytext; comment_text += yytext;
@@ -855,7 +856,7 @@ YY_RULE_SETUP
 case 10:
 /* rule 10 can match eol */
 YY_RULE_SETUP
-#line 75 "pure-doc.ll"
+#line 76 "pure-doc.ll"
 {
   tabs(col, yytext, yyleng);
   buf += yytext; comment_text += yytext;
@@ -863,7 +864,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 79 "pure-doc.ll"
+#line 80 "pure-doc.ll"
 {
   col += yyleng;
   comment_text += yytext;
@@ -873,22 +874,22 @@ YY_RULE_SETUP
 	YY_BREAK
 case 12:
 /* rule 12 can match eol */
-#line 87 "pure-doc.ll"
+#line 88 "pure-doc.ll"
 case 13:
 /* rule 13 can match eol */
 YY_RULE_SETUP
-#line 87 "pure-doc.ll"
+#line 88 "pure-doc.ll"
 echo(yytext); tabs(col, yytext, yyleng);
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 88 "pure-doc.ll"
+#line 89 "pure-doc.ll"
 echo(yytext); col++;
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(comment):
 case YY_STATE_EOF(lcomment):
-#line 90 "pure-doc.ll"
+#line 91 "pure-doc.ll"
 {
   if (YY_START != INITIAL)
     print(start, buf); BEGIN(INITIAL);
@@ -906,10 +907,10 @@ case YY_STATE_EOF(lcomment):
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 105 "pure-doc.ll"
+#line 106 "pure-doc.ll"
 ECHO;
 	YY_BREAK
-#line 913 "pure-doc.cc"
+#line 914 "pure-doc.cc"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -1871,7 +1872,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 105 "pure-doc.ll"
+#line 106 "pure-doc.ll"
 
 
 
@@ -1924,14 +1925,14 @@ static unsigned trim(string& text, unsigned col)
 }
 
 /* Handle hyperlink targets. To supplement docutils' own hyperlink processing,
-   we also create raw html targets for these. This works around the docutils
-   name mangling (which is undesirable if we're looking, e.g., for function
-   names), and to resolve quirks with w3m which doesn't pick up all 'id'
-   attributes. It also allows us to output an index of all explicit targets in
-   a document. This is requested with the 'makeindex::' directive. (This
-   feature is rather simplistic right now and can't compete with a carefully
-   handmade index, but as docutils doesn't provide an index facility of its
-   own, it is certainly better than having no index at all.) */
+   we also create raw html and latex targets for these. This works around the
+   docutils name mangling (which is undesirable if we're looking, e.g., for
+   function names), and resolves quirks with w3m which doesn't pick up all
+   'id' attributes. It also allows us to output an index of all explicit
+   targets in a document. This is requested with the 'makeindex::' directive.
+   (This feature is rather simplistic right now and can't compete with a
+   carefully handmade index, but as docutils doesn't provide an index facility
+   of its own, it is certainly better than having no index at all.) */
 
 static string cache;
 
@@ -1942,6 +1943,8 @@ static void flush_cache()
 }
 
 static list<string> targets;
+static map<string,int> labels;
+static int act_label = 0;
 
 static bool compare(string first, string second)
 {
@@ -1972,13 +1975,20 @@ static bool targetp(const string& text)
 	if (target[0]=='`' && n>1 && target[n-1]=='`')
 	  target = target.substr(1, n-2);
 	if (target.empty()) goto notarget;
-	/* We found a hyperlink target. Store it away in the cache, to be
-	   emitted later, and create a raw html target for it. */
-	targets.push_back(target);
-	cache += text; cache += "\n";
-	string indent = text.substr(0, p0);
-	cout << indent << ".. raw:: html" << endl << endl
-	     << indent << "   <a name=\"" << target << "\">" << endl << endl;
+	if (labels.find(target) == labels.end()) {
+	  /* We found a new hyperlink target. Store it away in the cache, to
+	     be emitted later, and create raw html and latex targets for it. */
+	  targets.push_back(target);
+	  labels[target] = act_label++;
+	  cache += text; cache += "\n";
+	  string indent = text.substr(0, p0);
+	  cout << indent << ".. raw:: html" << endl << endl
+	       << indent << "   <a name=\"" << target << "\">"
+	       << endl << endl;
+	  cout << indent << ".. raw:: latex" << endl << endl
+	       << indent << "   \\label{idx:" << labels[target] << "}"
+	       << endl << endl;
+	}
 	return true;
       } else
 	goto notarget;
@@ -1987,11 +1997,20 @@ static bool targetp(const string& text)
       /* Emit the index. */
       flush_cache();
       targets.sort(compare);
+      cout << ".. role:: raw-latex-index(raw)\n   :format: latex\n\n";
+      char last = 0;
       for (list<string>::iterator it = targets.begin(), end = targets.end();
-	   it != end; it++)
-	cout << "* `" << *it << "`_" << endl;
+	   it != end; it++) {
+	char ind = (*it)[0];
+	if (last && isalpha(ind) && ind != last) cout << endl;
+	last = ind;
+	cout << "| `" << *it
+	     << "`_\\ :raw-latex-index:`\\ \\ \\pageref{idx:"
+	     << labels[*it] << "}`" << endl;
+      }
       cout << endl;
       targets.clear();
+      labels.clear();
       return true;
     } else
       goto notarget;
