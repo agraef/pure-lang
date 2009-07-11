@@ -189,10 +189,11 @@ pure-doc recognizes explicit hyperlink targets of the form::
 
   .. _target:
 
-pure-doc automatically creates raw html targets (``<a name=...>``) for
-those. This works around the docutils name mangling (which is undesirable if
-you're indexing, say, function names). It also resolves a quirk with w3m which
-doesn't pick up all ``id`` attributes in the docutils-generated html source.
+pure-doc automatically creates raw html targets (``<a name=...>``) and LaTeX
+labels (``\label{...}``) for those. This works around the docutils name
+mangling (which is undesirable if you're indexing, say, function names). It
+also resolves a quirk with w3m which doesn't pick up all ``id`` attributes in
+the docutils-generated html source.
 
 In addition, you can also have pure-doc generate an index from all explicit
 targets. To these ends, just add the following special directive at the place
@@ -200,15 +201,13 @@ where you want the index to appear::
 
   .. makeindex::
 
-The directive will be replaced with a bullet list of references to all targets
+The directive will be replaced with a list of references to all targets
 collected *up to that point*, sorted alphabetically. This also resets the list
 of collected targets, so that you can have multiple smaller indices in your
 document instead of one big one.
 
-.. note::
-
-   docutils doesn't allow multiple explicit targets with the same name, so you
-   should take that into consideration when devising your index terms.
+Note: docutils doesn't allow multiple explicit targets with the same name, so
+you should take that into consideration when devising your index terms.
 
 It goes without saying that this facility is rather simplistic, and can't
 compete with a carefully hand-made index. But we decided to toss it in because
@@ -266,6 +265,15 @@ to adapt the pattern rules accordingly.)
 Now you can just type ``make`` or ``make html`` to generate the documentation
 in html format, and ``make tex`` or ``make pdf`` to generate the other
 formats. The ``clean`` target removes the generated files.
+
+Note: If you're generating documentation in latex or pdf format, you might
+have to fiddle with the formatting to get results suitable for publication
+purposes. The rts2latex.py program provides some options which let you adjust
+the formatting of various document elements, and allows you to use a custom
+preamble to be included in the LaTeX output. To learn more about this, please
+consult the rts2latex.py documentation at the docutils website, or have a look
+at how the LaTeX version of the Pure manual included in the Pure main
+distribution is formatted.
 
 Installing Documentation
 ========================
