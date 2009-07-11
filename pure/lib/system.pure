@@ -167,6 +167,7 @@ extern void pure_trap(int action, int sig) = trap;
    --------------
 
    .. _time:
+   .. |time| replace:: ``time``
 
    ``time``
      Reports the current time in seconds since the `epoch`, 00:00:00 UTC, Jan
@@ -184,7 +185,7 @@ extern int64 pure_time() = time;
    .. _ctime:
 
    ``ctime t``
-     Convert a time value as returned by the time_ function to a string in
+     Convert a time value as returned by the |time|_ function to a string in
      local time.
 
    .. _gmtime:
@@ -193,12 +194,16 @@ extern int64 pure_time() = time;
    ``gmtime t``, ``localtime t``
      Convert a time value to UTC or local time in "broken-down" form (a static
      pointer to a ``tm`` struct containing a bunch of ``int`` fields) which
-     can then be passed to the asctime_ and strftime_ functions, or to
-     int_matrix_ if you want to convert the data to a matrix; see the example
-     below.
+     can then be passed to the |asctime|_ and |strftime|_ functions, or to
+     |int_matrix|_ if you want to convert the data to a matrix; see the
+     example below.
+
+   .. |int_matrix| replace:: ``int_matrix``
 
    .. _asctime:
    .. _strftime:
+   .. |asctime| replace:: ``asctime``
+   .. |strftime| replace:: ``strftime``
 
    ``asctime tm``, ``strftime format tm``
      Format broken-down time as a string. ``strftime`` also uses a format
@@ -224,12 +229,12 @@ extern char* pure_strftime(char* format, void *tm) = strftime;
 /* ..
 
    We also provide some functions to retrieve wallclock and cpu time which
-   usually offer much better resolution than time_.
+   usually offer much better resolution than |time|_.
 
    .. _gettimeofday:
 
    ``gettimeofday``
-     Returns wallclock time as seconds since the epoch, like time_, but
+     Returns wallclock time as seconds since the epoch, like |time|_, but
      theoretically offers resolutions in the microsec range (actual
      resolutions vary, but are usually in the msec range for contemporary
      systems). The result is returned as a double value (which also limits
@@ -333,6 +338,7 @@ extern int system(char* cmd), void exit(int status);
 
    .. _fgets:
    .. _gets:
+   .. |fgets| replace:: ``fgets``
 
    ``fgets fp``, ``gets``
      Pure wrappers for the C ``fgets`` and ``gets`` functions which handle the
@@ -341,7 +347,7 @@ extern int system(char* cmd), void exit(int status);
    .. _fget:
 
    ``fget fp``
-     A variation of fgets_ which slurps in an entire text file at once.
+     A variation of |fgets|_ which slurps in an entire text file at once.
 
    .. _fputs:
    .. _puts:
@@ -436,6 +442,8 @@ end;
 
    .. _printf:
    .. _fprintf:
+   .. |printf| replace:: ``printf``
+   .. |fprintf| replace:: ``fprintf``
 
    ``printf format args``, ``fprintf fp format args``
      Print a formatted string to ``stdout`` or the given file, respectively.
@@ -450,9 +458,9 @@ end;
      Print a formatted string to a buffer and return the result as a string.
      Unlike the C routine, this wrapper just returns the string result, or a
      null pointer in case of an error; otherwise, the error handling is the
-     same as with printf_ and fprintf_. The implementation actually uses the C
-     routine ``snprintf`` for safety, and a suitable output buffer is provided
-     automatically. */
+     same as with |printf|_ and |fprintf|_. The implementation actually uses
+     the C routine ``snprintf`` for safety, and a suitable output buffer is
+     provided automatically. */
 
 /* Since Pure cannot call C varargs functions directly, the runtime provides
    us with some functions which only process a single argument at a time. */
@@ -572,6 +580,8 @@ end;
 
 /* .. _scanf:
    .. _fscanf:
+   .. |scanf| replace:: ``scanf``
+   .. |fscanf| replace:: ``fscanf``
 
    ``scanf format``, ``fscanf fp format``
      Read formatted input from ``stdin`` or the given file, respectively.
@@ -581,7 +591,7 @@ end;
      number of requested input items), is thrown if end-of-file was met or
      another error occurred while still reading. The handling of other
      abnormal conditions (e.g., error in format string) is analogous to
-     printf_ et al. Also note that our implementation here doesn't accept any
+     |printf|_ et al. Also note that our implementation here doesn't accept any
      of the length modifiers used by the C routines. Floating point values
      will *always* be read in double precision, so you just specify ``"e"``,
      ``"g"`` etc. for these. However, the "assignment suppression" flag
@@ -686,7 +696,7 @@ end;
 /* .. _sscanf:
 
    ``sscanf s format``
-     This works exactly like fscanf_, but input comes from a string (first
+     This works exactly like |fscanf|_, but input comes from a string (first
      argument) rather than a file.
 
    Examples::
@@ -774,6 +784,7 @@ using namespace;
    --------
 
    .. _readline:
+   .. |readline| replace:: ``readline``
 
    ``readline prompt``
      A simple wrapper around GNU readline which reads a line from ``stdin``
@@ -782,7 +793,7 @@ using namespace;
    .. _add_history:
 
    ``add_history s``
-     readline_\ 's companion, which you need to add strings to readline's
+     |readline|_\ 's companion, which you need to add strings to readline's
      history.
 
    Example::
@@ -898,6 +909,7 @@ extern expr* reglist(void* regptr, void* s, void* matches);
 namespace;
 
 /* .. _regex:
+   .. |regex| replace:: ``regex``
 
    ``regex pat cflags s eflags``
      Compiles and matches a regex in one go, and returns the list of
@@ -987,7 +999,7 @@ end;
 /* ..
 
    The following helper functions are provided to analyze the result returned
-   by regex_.
+   by |regex|_.
 
    .. _reg_result:
 
@@ -1001,6 +1013,7 @@ reg_result b::int = b;
 reg_result (b::int,_) = b;
 
 /* .. _reg_info:
+   .. |reg_info| replace:: ``reg_info``
 
    ``reg_info res``
      Returns the submatch info if any, otherwise it returns ``()``. */
@@ -1012,7 +1025,7 @@ reg_info _ = () otherwise;
 
    ``reg n info``
      Returns the ``n``\ th submatch of the given submatch info, where ``info``
-     is the result of a reg_info_ call. */
+     is the result of a |reg_info|_ call. */
 
 reg 0 (p,s,_) = p,s;
 reg 0 (p,s) = p,s;
@@ -1038,11 +1051,12 @@ end;
    according to a given delimiter regex.
 
    .. _regexg:
+   .. |regexg| replace:: ``regexg``
 
    ``regexg f pat cflags s eflags``
      Perform a global regular expression search. This routine will scan the
      entire string for (non-overlapping) instances of the pattern, applies the
-     given function ``f`` to the reg_info_ for each match, and collects all
+     given function ``f`` to the |reg_info|_ for each match, and collects all
      results in a list. Note: Never specify the ``REG_NOSUB`` flag with this
      function, it needs the submatch info. */
 
@@ -1086,7 +1100,7 @@ end;
 /* .. _regexgg:
 
    ``regexgg f pat cflags s eflags``
-     This works like regexg_, but allows overlapping matches. */
+     This works like |regexg|_, but allows overlapping matches. */
 
 regexgg f pat::string cflags::int s::string eflags::int = result
 when
@@ -1130,7 +1144,7 @@ end;
    ``regsub f pat cflags s eflags``
      Replaces all non-overlapping instances of a pattern with a computed
      substitution string. To these ends, the given function ``f`` is applied
-     to the reg_info_ for each match; it should return a string value. The
+     to the |reg_info|_ for each match; it should return a string value. The
      result string is then obtained by concatenating ``f info`` for all
      matches, with the unmatched portions of the string in between. */
 
@@ -1325,8 +1339,8 @@ end;
      > head env;
      "BASH"=>"/usr/bin/sh"
 
-   Just for the fun of it, let's employ dict_ to convert this to a dictionary,
-   providing easy random access to the environment variables::
+   Just for the fun of it, let's employ |dict|_ to convert this to a
+   dictionary, providing easy random access to the environment variables::
 
      > using dict;
      > let env_dict = dict env;

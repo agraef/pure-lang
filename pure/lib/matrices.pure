@@ -170,7 +170,7 @@ null x::matrix		= #x==0;
 
    ``stride x``
      The stride of a matrix denotes the real row size of the underlying C
-     array, see the description of the pack_ function below for further
+     array, see the description of the |pack|_ function below for further
      details. There's little use for this value in Pure, but it may be needed
      when interfacing to C. */
 
@@ -354,9 +354,12 @@ extern expr* matrix_matcat(expr *x) = matcat;
 /* .. _rowcatmap:
    .. _colcatmap:
 
+   .. |rowcat| replace:: ``rowcat``
+   .. |colcat| replace:: ``colcat``
+
    ``rowcatmap f xs``, ``colcatmap f xs``
-     Combinations of rowcat_, colcat_ and map_. These are used, in particular,
-     for implementing matrix comprehensions. */
+     Combinations of |rowcat|_, |colcat|_ and |map|_. These are used, in
+     particular, for implementing matrix comprehensions. */
 
 rowcatmap f []		= {};
 rowcatmap f xs@(_:_)	= rowcat (map f xs);
@@ -408,10 +411,12 @@ extern expr* matrix_supdiagm(expr* x, int k) = supdiagmat;
    .. _imatrix:
    .. _smatrix:
 
+   .. |matrix| replace:: ``matrix``
+
    ``dmatrix x``, ``cmatrix x``, ``imatrix x``, ``smatrix x``
      Matrix conversions. These convert between different types of numeric and
      symbolic matrices. The same operations also convert a list directly to a
-     row vector; this is usually much faster than the generic matrix_
+     row vector; this is usually much faster than the generic |matrix|_
      operation, but requires that the elements already are of the appropriate
      type. */
 
@@ -445,10 +450,14 @@ conj x::matrix		= matrix_conj x if nmatrixp x;
 /* .. _pack:
    .. _packed:
 
+   .. |pack| replace:: ``pack``
+   .. |packed| replace:: ``packed``
+   .. |submat| replace:: ``submat``
+
    ``pack x``, ``packed x``
      Pack a matrix. This creates a copy of the matrix which has the data in
      contiguous storage. It also frees up extra memory if the matrix was
-     created as a slice from a bigger matrix (see submat_ above) which has
+     created as a slice from a bigger matrix (see |submat|_ above) which has
      since gone the way of the dodo.
 
      The ``packed`` predicate can be used to verify whether a matrix is
@@ -466,7 +475,7 @@ packed x::matrix	= stride x==dim x!1;
      Change the dimensions of a matrix without changing its size. The total
      number of elements must match that of the input matrix. Reuses the
      underlying storage of the input matrix if possible (i.e., if the matrix
-     is packed_).
+     is |packed|_).
 
      You can also redim a matrix to a given row size ``n``. In this case the
      row size must divide the total size of the matrix. */
@@ -641,7 +650,7 @@ unzip3 x::matrix	= {u | u,_ = x},{v | _,v,_ = x},{w | _,_,w = x}
      Get a pointer to the underlying C array of a matrix. The data is *not*
      copied. Hence you have to be careful when passing such a pointer to C
      functions if the underlying data is non-contiguous; when in doubt, first
-     use the pack_ function to place the data in contiguous storage, or use
+     use the |pack|_ function to place the data in contiguous storage, or use
      one of the matrix-pointer conversion routines below. */
 
 namespace C;

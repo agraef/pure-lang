@@ -39,7 +39,6 @@
    .. default-role:: dfn
 
    .. |date| date::
-   .. |time| date:: %H:%M
 
    .. |GPL| replace:: GNU General Public License
    .. |FDL| replace:: GNU Free Documentation License
@@ -214,12 +213,14 @@ using primitives, matrices, strings;
      424238335
      ()
 
-   Note that the above list comprehension is actually implemented using do_
-   (instead of map_, which would normally be the case), so that the
+   Note that the above list comprehension is actually implemented using |do|_
+   (instead of |map|_, which would normally be the case), so that the
    intermediate list value of the comprehension is never constructed. This is
    described in more detail in section `Optimization Rules`_ of the Pure
    Manual.
 
+   .. |do| replace:: ``do``
+   .. |map| replace:: ``map``
    .. _Optimization Rules: pure.html#optimization-rules
 
 */
@@ -488,11 +489,13 @@ def void (listmap f x) = do f x;
    repeated traversals of the list for each index. For larger lists you should
    hence use vectors or matrices instead, to avoid the quadratic complexity.
 
+   .. |catmap| replace:: ``catmap``
+
    (The prelude actually implements the slicing operation in a fairly generic
    way, so that it works with any kind of container data structure which
    defines ``!`` in such a manner that it throws an exception when the index
    is out of bounds. It also works with any kind of index container that
-   implements the catmap_ operation.) */
+   implements the |catmap|_ operation.) */
 
 /* Poor man's tuples(TM). These are constructed with the pairing operator ',',
    are always flat and associate to the right. The empty tuple, denoted (), is
@@ -702,6 +705,7 @@ n..m		= if m===inf then iterate (\x->x+1) n
      tests whether the predicate ``p`` holds for all of the members of ``xs``
 
    .. _cat:
+   .. |cat| replace:: ``cat``
 
    ``cat xs``
      concatenate a list of lists
@@ -709,13 +713,13 @@ n..m		= if m===inf then iterate (\x->x+1) n
    .. _catmap:
 
    ``catmap f xs``
-     convenience function which combines cat_ and map_; this is also used
+     convenience function which combines |cat|_ and |map|_; this is also used
      to implement list comprehensions
 
    .. _do:
 
    ``do f xs``
-     apply ``f`` to all members of ``xs``, like map_, but throw away all
+     apply ``f`` to all members of ``xs``, like |map|_, but throw away all
      intermediate results and return ``()``
 
    .. _drop:
@@ -790,7 +794,7 @@ n..m		= if m===inf then iterate (\x->x+1) n
    .. _listmap:
 
    ``listmap f xs``
-     convenience function which works like map_, but also deals with matrix
+     convenience function which works like |map|_, but also deals with matrix
      and string arguments while ensuring that the result is always a list;
      this is primarily used to implement list comprehensions
 
@@ -1208,7 +1212,7 @@ cyclen n::int (x:xs)	= [] if n<=0;
 
    Pure also has the following variations of ``zipwith``/``zipwith3`` which
    throw away all intermediate results and return ``()``. That is, these work
-   like do_ but pull arguments from two or three lists, respectively:
+   like |do|_ but pull arguments from two or three lists, respectively:
 
    .. _dowith:
 
