@@ -235,17 +235,17 @@ purelib.txt: $(libfiles)
 	rst2html.py $< $@
 
 %.tex: %.txt
-	rst2latex.py $< $@
+	rst2latex.py --use-latex-toc --no-section-numbering --use-latex-docinfo --stylesheet=preamble.tex --documentoptions="11pt" --literal-block-env=lstlisting $< $@
 
-%.pdf: %.tex
+%.pdf: %.tex preamble.tex
 	pdflatex $<
 	pdflatex $<
-	rm -f *.aux *.log *.out
+	pdflatex $<
 
 # cleaning
 
 clean:
-	rm -f *~ *.bak *.tex *.pdf pure$(EXE) $(OBJECT) pure.o pure_main.o $(libpure_lnkname) $(libpure_soname) $(libpure) parser.output
+	rm -f *~ *.bak pure*.tex *.pdf *.aux *.log *.out pure$(EXE) $(OBJECT) pure.o pure_main.o $(libpure_lnkname) $(libpure_soname) $(libpure) parser.output
 
 distclean: clean
 	rm -f Makefile config.h config.log config.status etc/pure-mode.el $(dist).tar.gz
