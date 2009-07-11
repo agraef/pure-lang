@@ -1997,7 +1997,6 @@ static bool targetp(const string& text)
       /* Emit the index. */
       flush_cache();
       targets.sort(compare);
-      cout << ".. role:: raw-latex-index(raw)\n   :format: latex\n\n";
       char last = 0;
       for (list<string>::iterator it = targets.begin(), end = targets.end();
 	   it != end; it++) {
@@ -2157,6 +2156,7 @@ int main(int argc, char *argv[])
     }
   } else
     --files;
+  cout << ".. role:: raw-latex-index(raw)\n   :format: latex\n\n";
   yylex();
   exit(0);
 }
