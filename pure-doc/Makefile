@@ -16,7 +16,7 @@ bindir = $(prefix)/bin
 libdir = $(prefix)/lib
 datadir = $(libdir)/pure
 
-DISTFILES = COPYING Makefile README pure-doc.html pure-doc.ll pure-doc.cc
+DISTFILES = COPYING Makefile README fixdoc pure-doc.html pure-doc.ll pure-doc.cc
 
 all: pure-doc
 
