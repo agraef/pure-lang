@@ -234,8 +234,9 @@ purelib.txt: $(libfiles)
 %.html: %.txt
 	rst2html.py $< $@
 
+# This requires fixdoc from the pure-doc package.
 %.tex: %.txt
-	rst2latex.py --use-latex-toc --no-section-numbering --use-latex-docinfo --stylesheet=preamble.tex --documentoptions="11pt" --literal-block-env=lstlisting $< $@
+	rst2latex.py --use-latex-toc --no-section-numbering --use-latex-docinfo --stylesheet=preamble.tex --documentoptions="11pt" --literal-block-env=lstlisting $< | fixdoc > $@
 
 %.pdf: %.tex preamble.tex
 	pdflatex $<
@@ -252,6 +253,9 @@ distclean: clean
 
 realclean: distclean
 	rm -f $(addprefix $(srcdir)/, test/*.log $(EXTRA_SOURCE) *.html)
+
+cleandocs:
+	rm -f *~ *.bak pure*.tex *.pdf *.aux *.log *.out
 
 # dependencies (rerun configure after this)
 
