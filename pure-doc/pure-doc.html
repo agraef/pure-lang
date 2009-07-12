@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>pure-doc</title>
 <meta name="author" content="Albert Graef &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2009-07-11" />
+<meta name="date" content="2009-07-12" />
 <style type="text/css">
 
 /*
@@ -296,7 +296,7 @@ ul.auto-toc {
 <tr class="field"><th class="docinfo-name">License:</th><td class="field-body">GPL V3, see the accompanying COPYING file</td>
 </tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2009-07-11</td></tr>
+<td>2009-07-12</td></tr>
 </tbody>
 </table>
 <p>pure-doc is a simple utility for literate programming and documenting source
@@ -319,6 +319,7 @@ rst2latex.py to create the documentation in a variety of formats.</p>
 <li><a class="reference internal" href="#hyperlink-targets-and-index-generation" id="id4">Hyperlink Targets and Index Generation</a></li>
 <li><a class="reference internal" href="#generating-documentation" id="id5">Generating Documentation</a></li>
 <li><a class="reference internal" href="#installing-documentation" id="id6">Installing Documentation</a></li>
+<li><a class="reference internal" href="#formatting-tips" id="id7">Formatting Tips</a></li>
 </ul>
 </div>
 <div class="section" id="installation">
@@ -563,14 +564,6 @@ to adapt the pattern rules accordingly.)</p>
 <p>Now you can just type <tt class="docutils literal"><span class="pre">make</span></tt> or <tt class="docutils literal"><span class="pre">make</span> <span class="pre">html</span></tt> to generate the documentation
 in html format, and <tt class="docutils literal"><span class="pre">make</span> <span class="pre">tex</span></tt> or <tt class="docutils literal"><span class="pre">make</span> <span class="pre">pdf</span></tt> to generate the other
 formats. The <tt class="docutils literal"><span class="pre">clean</span></tt> target removes the generated files.</p>
-<p>Note: If you're generating documentation in latex or pdf format, you might
-have to fiddle with the formatting to get results suitable for publication
-purposes. The rts2latex.py program provides some options which let you adjust
-the formatting of various document elements, and allows you to use a custom
-preamble to be included in the LaTeX output. To learn more about this, please
-consult the rts2latex.py documentation at the docutils website, or have a look
-at how the LaTeX version of the Pure manual included in the Pure main
-distribution is formatted.</p>
 </div>
 <div class="section" id="installing-documentation">
 <h1><a class="toc-backref" href="#id6">Installing Documentation</a></h1>
@@ -616,6 +609,48 @@ pure-doc manual as follows:</p>
 </pre>
 <p>Please also refer to the <a class="reference external" href="pure.html">Pure Manual</a> for more information on how to use the
 interpreter's online help.</p>
+</div>
+<div class="section" id="formatting-tips">
+<h1><a class="toc-backref" href="#id7">Formatting Tips</a></h1>
+<p>If you're generating documentation in pdf format via LaTeX, you might have to
+fiddle with the formatting to get results suitable for publication purposes.
+The rts2latex.py program provides some options which let you adjust the
+formatting of various document elements. Here are the options that the author
+found particularly helpful:</p>
+<ul class="simple">
+<li>The table of contents that RST produces isn't all that useful in printed
+documentation, since it lacks page numbers. As a remedy, you can invoke
+rst2latex with <tt class="docutils literal"><span class="pre">--use-latex-toc</span></tt> to have LaTeX handle the formatting
+of the table of contents, which looks much nicer. Note that if you have
+section numbers enabled in the RST source (using the <tt class="docutils literal"><span class="pre">sectnum</span></tt> directive),
+you should combine <tt class="docutils literal"><span class="pre">--use-latex-toc</span></tt> with <tt class="docutils literal"><span class="pre">--no-section-numbering</span></tt> since
+LaTeX adds its own section numbers when <tt class="docutils literal"><span class="pre">--use-latex-toc</span></tt> is used.</li>
+<li>Similarly, <tt class="docutils literal"><span class="pre">--use-latex-docinfo</span></tt> can be used to tell rst2latex that you
+want the title information (author and date) to be formatted the LaTeX way.</li>
+<li>If you need specific LaTeX document options, these can be specified with
+<tt class="docutils literal"><span class="pre">--documentoptions</span></tt>, e.g.: <tt class="docutils literal"><span class="pre">--documentoptions=&quot;11pt&quot;</span></tt>.</li>
+<li>For more comprehensive formatting changes which require special LaTeX
+code and/or packages, you can use the <tt class="docutils literal"><span class="pre">--stylesheet</span></tt> option. E.g.,
+<tt class="docutils literal"><span class="pre">--stylesheet=preamble.tex</span></tt> will cause a preamble.tex file with your own
+definitions to be included in the preamble of the generated document.</li>
+<li>To format literal code blocks using an alternative environment instead of
+the default verbatim environment, use the <tt class="docutils literal"><span class="pre">--literal-block-env</span></tt> option.
+E.g., <tt class="docutils literal"><span class="pre">--literal-block-env=lstlisting</span></tt> will use the highlighted code
+environment from the listings package. (Note that in this case you'll also
+need a preamble which loads the corresponding package.).</li>
+</ul>
+<p>To learn more about this, please consult the rts2latex.py documentation at the
+docutils website, or have a look at how the LaTeX version of the Pure manual
+included in the Pure main distribution is formatted.</p>
+<p>In addition, the pure-doc package contains a little Awk script called fixdoc,
+which attempts to improve the LaTeX output produced by rst2latex in various
+ways. Specifically, rst2latex splits itemize and description environments at
+link targets, which is rather inconvenient since pure-doc can't handle inlined
+link targets right now. The fixdoc script repairs this by merging adjacent
+itemize and description environments in such cases. It also adds labels to
+link targets and page numbers to index entries created with pure-doc's
+<tt class="docutils literal"><span class="pre">makeindex</span></tt> directive. (The latter requires that the index is in its own
+section named 'Index'.)</p>
 </div>
 </div>
 </body>

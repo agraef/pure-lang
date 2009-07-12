@@ -265,15 +265,6 @@ Now you can just type ``make`` or ``make html`` to generate the documentation
 in html format, and ``make tex`` or ``make pdf`` to generate the other
 formats. The ``clean`` target removes the generated files.
 
-Note: If you're generating documentation in latex or pdf format, you might
-have to fiddle with the formatting to get results suitable for publication
-purposes. The rts2latex.py program provides some options which let you adjust
-the formatting of various document elements, and allows you to use a custom
-preamble to be included in the LaTeX output. To learn more about this, please
-consult the rts2latex.py documentation at the docutils website, or have a look
-at how the LaTeX version of the Pure manual included in the Pure main
-distribution is formatted.
-
 Installing Documentation
 ========================
 
@@ -321,3 +312,51 @@ Please also refer to the `Pure Manual`_ for more information on how to use the
 interpreter's online help.
 
 .. _Pure Manual: pure.html
+
+Formatting Tips
+===============
+
+If you're generating documentation in pdf format via LaTeX, you might have to
+fiddle with the formatting to get results suitable for publication purposes.
+The rts2latex.py program provides some options which let you adjust the
+formatting of various document elements. Here are the options that the author
+found particularly helpful:
+
+* The table of contents that RST produces isn't all that useful in printed
+  documentation, since it lacks page numbers. As a remedy, you can invoke
+  rst2latex with ``--use-latex-toc`` to have LaTeX handle the formatting
+  of the table of contents, which looks much nicer. Note that if you have
+  section numbers enabled in the RST source (using the ``sectnum`` directive),
+  you should combine ``--use-latex-toc`` with ``--no-section-numbering`` since
+  LaTeX adds its own section numbers when ``--use-latex-toc`` is used.
+
+* Similarly, ``--use-latex-docinfo`` can be used to tell rst2latex that you
+  want the title information (author and date) to be formatted the LaTeX way.
+
+* If you need specific LaTeX document options, these can be specified with
+  ``--documentoptions``, e.g.: ``--documentoptions="11pt"``.
+
+* For more comprehensive formatting changes which require special LaTeX
+  code and/or packages, you can use the ``--stylesheet`` option. E.g.,
+  ``--stylesheet=preamble.tex`` will cause a preamble.tex file with your own
+  definitions to be included in the preamble of the generated document.
+
+* To format literal code blocks using an alternative environment instead of
+  the default verbatim environment, use the ``--literal-block-env`` option.
+  E.g., ``--literal-block-env=lstlisting`` will use the highlighted code
+  environment from the listings package. (Note that in this case you'll also
+  need a preamble which loads the corresponding package.).
+
+To learn more about this, please consult the rts2latex.py documentation at the
+docutils website, or have a look at how the LaTeX version of the Pure manual
+included in the Pure main distribution is formatted.
+
+In addition, the pure-doc package contains a little Awk script called fixdoc,
+which attempts to improve the LaTeX output produced by rst2latex in various
+ways. Specifically, rst2latex splits itemize and description environments at
+link targets, which is rather inconvenient since pure-doc can't handle inlined
+link targets right now. The fixdoc script repairs this by merging adjacent
+itemize and description environments in such cases. It also adds labels to
+link targets and page numbers to index entries created with pure-doc's
+``makeindex`` directive. (The latter requires that the index is in its own
+section named 'Index'.)
