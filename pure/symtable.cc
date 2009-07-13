@@ -10,6 +10,7 @@ symtable::symtable()
     __void_sym(0),
     __pair_sym(0),
     __seq_sym(0),
+    __flip_sym(0),
     __neg_sym(0),
     __not_sym(0),
     __bitnot_sym(0),
@@ -70,6 +71,8 @@ void symtable::init_builtins()
   cons_sym();
   void_sym();
   pair_sym();
+  flip_sym();
+  neg_sym();
   not_sym();
   bitnot_sym();
   or_sym();

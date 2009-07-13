@@ -3116,6 +3116,24 @@ expr* interpreter::uminop(expr *op, expr *x)
   return y;
 }
 
+expr *interpreter::mklsect(expr *x, expr *y)
+{
+  expr *u = new expr(*x, *y);
+  delete x; delete y;
+  return u;
+}
+
+expr *interpreter::mkrsect(expr *x, expr *y)
+{
+  if (x->tag() == symtab.sym("-")->f)
+    return uminop(x, y);
+  else {
+    expr *u = new expr(symtab.flip_sym().x, *x, *y);
+    delete x; delete y;
+    return u;
+  }
+}
+
 expr *interpreter::mkexpr(expr *x, expr *y)
 {
   expr *u = new expr(*x, *y);

@@ -8,6 +8,10 @@
 %require "2.1a"
 %defines
 
+/* The operator section syntax causes a number of shift/reduce conflicts, we
+   take care of these here. */
+%expect 30
+
 %{
 #include <iostream>
 #include <string>
@@ -567,6 +571,76 @@ prim
 			  if ($$->is_pair()) $$->flags() |= EXPR::PAREN; }
 | '(' ')'		{ $$ = new expr(interp.symtab.void_sym().f); }
 | '(' op ')'		{ $$ = $2; }
+
+/* Operator sections. Note that the right section rules overlap with the
+   special case rules for unary minus above, which causes a number of
+   shift/reduce conflicts. These are resolved in favour of the rules below
+   which also catch the case of unary minus in parentheses, and are thus
+   ok. */
+
+| '(' NA0 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+| '(' NA1 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+| '(' NA2 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+| '(' NA3 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+| '(' NA4 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+| '(' NA5 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+| '(' NA6 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+| '(' NA7 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+| '(' NA8 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+| '(' NA9 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+| '(' LT0 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+| '(' LT1 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+| '(' LT2 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+| '(' LT3 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+| '(' LT4 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+| '(' LT5 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+| '(' LT6 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+| '(' LT7 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+| '(' LT8 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+| '(' LT9 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+| '(' RT0 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+| '(' RT1 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+| '(' RT2 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+| '(' RT3 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+| '(' RT4 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+| '(' RT5 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+| '(' RT6 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+| '(' RT7 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+| '(' RT8 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+| '(' RT9 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+
+/* Left sections. */
+
+| '(' simple NA0 ')'	{ $$ = interp.mklsect($3, $2); }
+| '(' simple NA1 ')'	{ $$ = interp.mklsect($3, $2); }
+| '(' simple NA2 ')'	{ $$ = interp.mklsect($3, $2); }
+| '(' simple NA3 ')'	{ $$ = interp.mklsect($3, $2); }
+| '(' simple NA4 ')'	{ $$ = interp.mklsect($3, $2); }
+| '(' simple NA5 ')'	{ $$ = interp.mklsect($3, $2); }
+| '(' simple NA6 ')'	{ $$ = interp.mklsect($3, $2); }
+| '(' simple NA7 ')'	{ $$ = interp.mklsect($3, $2); }
+| '(' simple NA8 ')'	{ $$ = interp.mklsect($3, $2); }
+| '(' simple NA9 ')'	{ $$ = interp.mklsect($3, $2); }
+| '(' simple LT0 ')'	{ $$ = interp.mklsect($3, $2); }
+| '(' simple LT1 ')'	{ $$ = interp.mklsect($3, $2); }
+| '(' simple LT2 ')'	{ $$ = interp.mklsect($3, $2); }
+| '(' simple LT3 ')'	{ $$ = interp.mklsect($3, $2); }
+| '(' simple LT4 ')'	{ $$ = interp.mklsect($3, $2); }
+| '(' simple LT5 ')'	{ $$ = interp.mklsect($3, $2); }
+| '(' simple LT6 ')'	{ $$ = interp.mklsect($3, $2); }
+| '(' simple LT7 ')'	{ $$ = interp.mklsect($3, $2); }
+| '(' simple LT8 ')'	{ $$ = interp.mklsect($3, $2); }
+| '(' simple LT9 ')'	{ $$ = interp.mklsect($3, $2); }
+| '(' simple RT0 ')'	{ $$ = interp.mklsect($3, $2); }
+| '(' simple RT1 ')'	{ $$ = interp.mklsect($3, $2); }
+| '(' simple RT2 ')'	{ $$ = interp.mklsect($3, $2); }
+| '(' simple RT3 ')'	{ $$ = interp.mklsect($3, $2); }
+| '(' simple RT4 ')'	{ $$ = interp.mklsect($3, $2); }
+| '(' simple RT5 ')'	{ $$ = interp.mklsect($3, $2); }
+| '(' simple RT6 ')'	{ $$ = interp.mklsect($3, $2); }
+| '(' simple RT7 ')'	{ $$ = interp.mklsect($3, $2); }
+| '(' simple RT8 ')'	{ $$ = interp.mklsect($3, $2); }
+| '(' simple RT9 ')'	{ $$ = interp.mklsect($3, $2); }
 ;
 
 comp_clauses

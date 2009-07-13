@@ -49,6 +49,7 @@ class symtable {
   symbol* __void_sym;
   symbol* __pair_sym;
   symbol* __seq_sym;
+  symbol* __flip_sym;
   symbol* __neg_sym;
   symbol* __not_sym;
   symbol* __bitnot_sym;
@@ -146,6 +147,8 @@ public:
   symbol& void_sym();
   symbol& pair_sym();
   symbol& seq_sym();
+  symbol& flip_sym()
+  { return *sym_p("flip", __flip_sym); }
   symbol& neg_sym()
   { return *sym_p("neg", __neg_sym); }
   symbol& not_sym();

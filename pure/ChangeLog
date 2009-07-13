@@ -1,3 +1,29 @@
+2009-07-13  Albert Graef  <Dr.Graef@t-online.de>
+
+	* parser.yy: Add rules for left and right operator sections to the
+	primary expression syntax. This causes a number of shift/reduce
+	conflicts which are resolved correctly.
+
+	Thus you can now write '(x+)' for '(+) x' and '(+x)' for
+	'flip (+) x', respectively. (Note that since the expression
+	printer has no special support for printing sections yet, the
+	latter representations will be used for printing.)
+
+	The operand in a section must be a well-formed simple expression
+	which respects the precedence rules. For instance, '(x+2+)' works,
+	but '(+x+2)' will give a syntax error because '+' is left-associative.
+	Also note that '(-x)' always denotes an instance of unary minus.
+
+	* interpreter.cc/hh: Add new mklsect/mkrsect operations for
+	constructing operator sections. mklsect is in fact just the same
+	as mkexpr, while mkrsect employs the 'flip' combinator to
+	implement right sections of the form '(+x) === flip (+) x'.
+	mkrsect also handles the case of unary minus in parentheses, to
+	make up for some syntactic ambiguities.
+
+	* symtable.cc/hh: Add 'flip' to the predefined symbols, so that we
+	can use it for implementing operator sections.
+
 2009-07-12  Albert Graef  <Dr.Graef@t-online.de>
 
 	* pure.html, purelib.html: Regenerated docs using the latest
