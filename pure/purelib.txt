@@ -330,9 +330,9 @@ Haskell:
     > map fact (1..5);
     [1,2,6,24,120]
 
-  See |fixpoint|_ for an explanation of how this magic works. Just like in
-  Haskell, ``fix`` can be used to produce least fixed points of arbitrary
-  functions. For instance::
+  See |fixpoint|_ at Wikipedia for an explanation of how this magic works.
+  Just like in Haskell, ``fix`` can be used to produce least fixed points
+  of arbitrary functions. For instance::
 
     > fix (cst bar);
     bar
@@ -342,7 +342,7 @@ Haskell:
     > xs!!(0..10);
     [1,1,1,1,1,1,1,1,1,1,1]
 
-.. |fixpoint| replace:: *Fixed point combinator* at Wikipedia
+.. |fixpoint| replace:: Fixed point combinator
 .. _fixpoint: http://en.wikipedia.org/wiki/Fixed_point_combinator
 
 ..
@@ -1238,10 +1238,8 @@ between strings and lists (or other aggregates) of characters.
 
 ``string xs``
   Convert a list, tuple or (symbolic) matrix of strings to a string.
-  In the case of a list, this is synonymous with |strcat|_, but it also
+  In the case of a list, this is synonymous with ``strcat``, but it also
   works with the other types of aggregates.
-
-.. |strcat| replace:: ``strcat``
 
 For instance::
 
@@ -1340,11 +1338,9 @@ anonymous functions do not have a parseable string representation.)
    <a name="evalcmd">
 
 .. _evalcmd:
-.. |eval| replace:: ``eval``
-.. |evalcmd| replace:: ``evalcmd``
 
 ``evalcmd x``
-  Like |eval|_, but allows execution of interactive commands and returns
+  Like ``eval``, but allows execution of interactive commands and returns
   their captured output as a string. No other results are returned, so this
   operation is most useful for executing Pure definitions and interactive
   commands for their side-effects. (At this time, only the regular output
@@ -1358,7 +1354,7 @@ anonymous functions do not have a parseable string representation.)
 .. _lasterr:
 
 ``lasterr``
-  Reports errors in |eval|_ and |evalcmd|_. This string value will be
+  Reports errors in ``eval`` and ``evalcmd``. This string value will be
   nonempty iff a compilation or execution error was encountered during the
   most recent invokation of ``eval`` and ``evalcmd``. In that case each
   reported error message is terminated with a newline character.
@@ -3492,10 +3488,8 @@ bigintvalp x => ratvalp x => realvalp x => compvalp x <=> numberp x``.
 .. _ratvalp:
 
 ``ratvalp x``
-  Check for rational values (same as |realvalp|_, except that IEEE 754
+  Check for rational values (same as ``realvalp``, except that IEEE 754
   infinities and NaNs are excluded).
-
-.. |realvalp| replace:: ``realvalp``
 
 .. raw:: html
 
@@ -3791,9 +3785,7 @@ Heaps allow quick (constant time) access to the smallest member, and to
 remove the smallest nember and insert new elements in logarithmic time.
 This implementation does not allow quick update of heap members; if
 such functionality is required, bags should be used instead
-(see |bag|_ in `Sets and Bags`_).
-
-.. |bag| replace:: ``bag``
+(see `Sets and Bags`_).
 
 Heap members *must* be ordered by the ``<=`` predicate. Multiple instances
 of the same element may be stored in a heap; however, the order in which
@@ -4682,7 +4674,6 @@ Time Functions
    <a name="time">
 
 .. _time:
-.. |time| replace:: ``time``
 
 ``time``
   Reports the current time in seconds since the `epoch`, 00:00:00 UTC, Jan
@@ -4702,7 +4693,7 @@ asctime(3) and strftime(3) manual pages for details.
 .. _ctime:
 
 ``ctime t``
-  Convert a time value as returned by the |time|_ function to a string in
+  Convert a time value as returned by the ``time`` function to a string in
   local time.
 
 .. raw:: html
@@ -4719,7 +4710,7 @@ asctime(3) and strftime(3) manual pages for details.
 ``gmtime t``, ``localtime t``
   Convert a time value to UTC or local time in "broken-down" form (a static
   pointer to a ``tm`` struct containing a bunch of ``int`` fields) which
-  can then be passed to the |asctime|_ and |strftime|_ functions, or to
+  can then be passed to the ``asctime`` and ``strftime`` functions, or to
   |int_matrix|_ if you want to convert the data to a matrix; see the
   example below.
 
@@ -4735,8 +4726,6 @@ asctime(3) and strftime(3) manual pages for details.
 
 .. _asctime:
 .. _strftime:
-.. |asctime| replace:: ``asctime``
-.. |strftime| replace:: ``strftime``
 
 ``asctime tm``, ``strftime format tm``
   Format broken-down time as a string. ``strftime`` also uses a format
@@ -4754,7 +4743,7 @@ For instance::
 ..
 
 We also provide some functions to retrieve wallclock and cpu time which
-usually offer much better resolution than |time|_.
+usually offer much better resolution than ``time``.
 
 .. raw:: html
 
@@ -4763,7 +4752,7 @@ usually offer much better resolution than |time|_.
 .. _gettimeofday:
 
 ``gettimeofday``
-  Returns wallclock time as seconds since the epoch, like |time|_, but
+  Returns wallclock time as seconds since the epoch, like ``time``, but
   theoretically offers resolutions in the microsec range (actual
   resolutions vary, but are usually in the msec range for contemporary
   systems). The result is returned as a double value (which also limits
@@ -4914,7 +4903,6 @@ providing the raw C library routines.
 
 .. _fgets:
 .. _gets:
-.. |fgets| replace:: ``fgets``
 
 ``fgets fp``, ``gets``
   Pure wrappers for the C ``fgets`` and ``gets`` functions which handle the
@@ -4927,7 +4915,7 @@ providing the raw C library routines.
 .. _fget:
 
 ``fget fp``
-  A variation of |fgets|_ which slurps in an entire text file at once.
+  A variation of ``fgets`` which slurps in an entire text file at once.
 
 .. raw:: html
 
@@ -4987,8 +4975,6 @@ shouldn't segfault. However, only simple formats derived from ``%cdioux``,
 
 .. _printf:
 .. _fprintf:
-.. |printf| replace:: ``printf``
-.. |fprintf| replace:: ``fprintf``
 
 ``printf format args``, ``fprintf fp format args``
   Print a formatted string to ``stdout`` or the given file, respectively.
@@ -5007,7 +4993,7 @@ shouldn't segfault. However, only simple formats derived from ``%cdioux``,
   Print a formatted string to a buffer and return the result as a string.
   Unlike the C routine, this wrapper just returns the string result, or a
   null pointer in case of an error; otherwise, the error handling is the
-  same as with |printf|_ and |fprintf|_. The implementation actually uses
+  same as with ``printf`` and ``fprintf``. The implementation actually uses
   the C routine ``snprintf`` for safety, and a suitable output buffer is
   provided automatically.
 
@@ -5021,8 +5007,6 @@ shouldn't segfault. However, only simple formats derived from ``%cdioux``,
 
 .. _scanf:
 .. _fscanf:
-.. |scanf| replace:: ``scanf``
-.. |fscanf| replace:: ``fscanf``
 
 ``scanf format``, ``fscanf fp format``
   Read formatted input from ``stdin`` or the given file, respectively.
@@ -5032,8 +5016,8 @@ shouldn't segfault. However, only simple formats derived from ``%cdioux``,
   number of requested input items), is thrown if end-of-file was met or
   another error occurred while still reading. The handling of other
   abnormal conditions (e.g., error in format string) is analogous to
-  |printf|_ et al. Also note that our implementation here doesn't accept any
-  of the length modifiers used by the C routines. Floating point values
+  ``printf`` et al. Also note that our implementation here doesn't accept
+  any of the length modifiers used by the C routines. Floating point values
   will *always* be read in double precision, so you just specify ``"e"``,
   ``"g"`` etc. for these. However, the "assignment suppression" flag
   ``"*"`` *is* understood; the corresponding items will not be returned.
@@ -5045,7 +5029,7 @@ shouldn't segfault. However, only simple formats derived from ``%cdioux``,
 .. _sscanf:
 
 ``sscanf s format``
-  This works exactly like |fscanf|_, but input comes from a string (first
+  This works exactly like ``fscanf``, but input comes from a string (first
   argument) rather than a file.
 
 Examples::
@@ -5067,7 +5051,6 @@ Readline
    <a name="readline">
 
 .. _readline:
-.. |readline| replace:: ``readline``
 
 ``readline prompt``
   A simple wrapper around GNU readline which reads a line from ``stdin``
@@ -5080,7 +5063,7 @@ Readline
 .. _add_history:
 
 ``add_history s``
-  |readline|_\ 's companion, which you need to add strings to readline's
+  ``readline``\ 's companion, which you need to add strings to readline's
   history.
 
 Example::
@@ -5162,7 +5145,6 @@ high-level wrapper functions for use in Pure programs.
    <a name="regex">
 
 .. _regex:
-.. |regex| replace:: ``regex``
 
 ``regex pat cflags s eflags``
   Compiles and matches a regex in one go, and returns the list of
@@ -5233,7 +5215,7 @@ in the match at all, in which case the pair ``(-1,"")`` is returned.
 ..
 
 The following helper functions are provided to analyze the result returned
-by |regex|_.
+by ``regex``.
 
 .. raw:: html
 
@@ -5251,7 +5233,6 @@ by |regex|_.
    <a name="reg_info">
 
 .. _reg_info:
-.. |reg_info| replace:: ``reg_info``
 
 ``reg_info res``
   Returns the submatch info if any, otherwise it returns ``()``.
@@ -5264,7 +5245,7 @@ by |regex|_.
 
 ``reg n info``
   Returns the ``n``\ th submatch of the given submatch info, where ``info``
-  is the result of a |reg_info|_ call.
+  is the result of a ``reg_info`` call.
 
 .. raw:: html
 
@@ -5287,12 +5268,11 @@ according to a given delimiter regex.
    <a name="regexg">
 
 .. _regexg:
-.. |regexg| replace:: ``regexg``
 
 ``regexg f pat cflags s eflags``
   Perform a global regular expression search. This routine will scan the
   entire string for (non-overlapping) instances of the pattern, applies the
-  given function ``f`` to the |reg_info|_ for each match, and collects all
+  given function ``f`` to the ``reg_info`` for each match, and collects all
   results in a list. Note: Never specify the ``REG_NOSUB`` flag with this
   function, it needs the submatch info.
 
@@ -5303,7 +5283,7 @@ according to a given delimiter regex.
 .. _regexgg:
 
 ``regexgg f pat cflags s eflags``
-  This works like |regexg|_, but allows overlapping matches.
+  This works like ``regexg``, but allows overlapping matches.
 
 .. raw:: html
 
@@ -5314,7 +5294,7 @@ according to a given delimiter regex.
 ``regsub f pat cflags s eflags``
   Replaces all non-overlapping instances of a pattern with a computed
   substitution string. To these ends, the given function ``f`` is applied
-  to the |reg_info|_ for each match; it should return a string value. The
+  to the ``reg_info`` for each match; it should return a string value. The
   result string is then obtained by concatenating ``f info`` for all
   matches, with the unmatched portions of the string in between.
 
@@ -5529,7 +5509,7 @@ copied to the result lists as is.
 
 .. raw:: latex
 
-   \twocolumn
+   \twocolumn\plainhref
 
 Index
 =====
