@@ -1,18 +1,21 @@
 2009-07-13  Albert Graef  <Dr.Graef@t-online.de>
 
 	* parser.yy: Add rules for left and right operator sections to the
-	primary expression syntax. This causes a number of shift/reduce
-	conflicts which are resolved correctly.
+	primary expression syntax. Thus you can now write '(x+)' for '(+)
+	x' and '(+x)' for 'flip (+) x', respectively. (Note that since the
+	expression printer has no special support for printing sections
+	yet, the latter representations will be used for printing.)
 
-	Thus you can now write '(x+)' for '(+) x' and '(+x)' for
-	'flip (+) x', respectively. (Note that since the expression
-	printer has no special support for printing sections yet, the
-	latter representations will be used for printing.)
-
-	The operand in a section must be a well-formed simple expression
-	which respects the precedence rules. For instance, '(x+2+)' works,
-	but '(+x+2)' will give a syntax error because '+' is left-associative.
-	Also note that '(-x)' always denotes an instance of unary minus.
+	This feature should be considered experimental. It introduces a
+	number of shift/reduce conflicts which are hopefully resolved
+	correctly, but there are still some issues due to the way the
+	parser handles unary operators. Specifically, a right section of
+	the form '(*x*2)' will never be parsed correctly, even if '*'
+	happens to be a right-associative operator. Due to some
+	ambiguities in the grammar the parser tries to parse this as
+	'((*x)*2)' and then bails out reporting that '*' is not a unary
+	operator. There is no easy cure for that behaviour, so parentheses
+	on the section operand are always required in such cases.
 
 	* interpreter.cc/hh: Add new mklsect/mkrsect operations for
 	constructing operator sections. mklsect is in fact just the same
