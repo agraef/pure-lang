@@ -668,13 +668,10 @@ Function and operator applications: ``foo x y z``, ``-x``, ``x+y``, ``(+x)``
     *right* section takes the form ``(+x)`` and is equivalent to the term
     ``flip (+) x``. (This uses the ``flip`` combinator from the prelude which
     is defined as ``flip f x y = f y x``.) For instance, ``(1/)`` denotes the
-    reciprocal and ``(+1)`` the successor function. Note, however, that
-    ``(-x)`` always denotes an application of unary minus. The section
+    reciprocal and ``(+1)`` the successor function. (Note, however, that
+    ``(-x)`` always denotes an application of unary minus; the section
     ``(+-x)`` can be used to indicate a function which subtracts ``x`` from
-    its argument. Also note that the operand in a section must be a
-    well-formed expression which respects the usual precedence rules. For
-    instance, ``(x+2+)`` works, but ``(+x+2)`` will give a syntax error
-    because ``+`` is declared as a left-associative operator in the prelude.
+    its argument.)
 
 Conditional expressions: ``if x then y else z``
     Evaluates to ``y`` or ``z`` depending on whether ``x`` is "true" (i.e., a
@@ -720,16 +717,27 @@ Operators and Precedence
 
 Expressions are parsed according to the following precedence rules: Lambda
 binds most weakly, followed by ``when``, ``with`` and ``case``, followed by
-conditional expressions (``if``-``then``-``else``), followed by the simple
-expressions, i.e., all other kinds of expressions involving operators,
+conditional expressions (``if``-``then``-``else``), followed by the `simple
+expressions`, i.e., all other kinds of expressions involving operators,
 function applications, constants, symbols and other primary
 expressions. Precedence and associativity of operator symbols are given by
 their declarations (cf. Declarations_), and function application binds
 stronger than all operators. Parentheses can be used to override default
 precedences and associativities as usual.
 
+Operands in operator sections must be well-formed simple expressions which
+respect the usual precedence rules. This means that if the operand is a
+compound expression then it must be parenthesized, unless it has a higher
+precedence than the section operator. For instance, ``(+x*2)`` works, as does
+``(+(x+2))``, but ``(+x+2)`` will give a syntax error. (Due to some
+ambiguities in the grammar, the interpreter will try to parse the latter
+expression as ``((+x)+2)`` and bail out, reporting that ``+`` is not a unary
+operator. In fact this will even happen with right-associative operators at
+the same precedence level, so that you must always parenthesize the operand of
+a right section in such cases.)
+
 The common operator symbols like ``+``, ``-``, ``*``, ``/`` etc. are all
-declared at the beginning of the prelude, see the prelude.pure script for a
+declared at the beginning of the prelude, see the `Pure Library Manual`_ for a
 list of these. Arithmetic and relational operators mostly follow C
 conventions. However, out of necessity (``!``, ``&`` and ``|`` are used for
 other purposes in Pure) the logical and bitwise operations, as well as the
