@@ -738,7 +738,7 @@ they can be used in symbolic expressions like ``a and b or c``.
 The sequencing operator ``$$`` evaluates its left operand, immediately throws
 the result away and then goes on to evaluate the right operand which gives the
 result of the entire expression. This operator is useful to write
-imperative-style code such as the following prompt/input interaction::
+imperative-style code such as the following prompt-input interaction::
 
   > using system;
   > puts "Enter a number:" $$ scanf "%g";
@@ -940,35 +940,60 @@ first matching rule (whose guard evaluates to a nonzero value, if applicable)
 is picked. (Again, the ``when`` construct is treated differently, because each
 rule is actually a separate definition.)
 
-In any case, the left-hand side pattern (which, as already mentioned, is
-always a simple expression) must not contain repeated variables (i.e., rules
-must be "left-linear"), except for the anonymous variable ``_`` which matches
-an arbitrary value without binding a variable symbol.
+Patterns
+--------
 
-A left-hand side variable (including the anonymous variable) may be followed
-by one of the special type tags ``::int``, ``::bigint``, ``::double``,
-``::string``, ``::matrix``, ``::pointer``, to indicate that it can only match
-a constant value of the corresponding built-in type. This is useful if you
-want to write rules matching any object of one of these types. Note that there
-is no way to write out all "constructors" for the built-in types, as there are
-infinitely many. (Or none, as in the case of ``matrix`` and ``pointer`` which
-are constructed using special primitives.)
+In any case, the left-hand side of a rule is a special kind of simple
+expression, called a `pattern`. Patterns consist of function and operator
+applications as well as any of the "atomic" expression types (symbols,
+numbers, strings and list values). *Not* permitted are any of the special
+expression types (lambda, ``case``, ``when``, ``with``, conditional
+expressions). Note that, since list and matrix comprehensions expand into
+lambdas, these aren't permitted in patterns either. Also note that in the
+current implementation matrix values aren't allowed in patterns, but it is
+possible to match a matrix value as a whole using the ``::matrix`` type tag,
+see below.
 
-Pure also supports Haskell-style "as" patterns of the form
-``variable@pattern`` which binds the given variable to the expression matched
-by the subpattern ``pattern`` (in addition to the variables bound by
-``pattern`` itself). This is convenient if the value matched by the subpattern
-is to be used on the right-hand side of an equation. Syntactically, "as"
-patterns are primary expressions; if the subpattern is not a primary
+In addition, patterns must not contain repeated variables, i.e., rules must be
+"left-linear". The only exception to this rule is the `anonymous variable`
+``_`` which matches an arbitrary value (independently for all occurrences)
+without binding a variable symbol.
+
+Patterns may contain the following special elements which are not permitted in
+right-hand side expressions:
+
+* A left-hand side variable (including the anonymous variable) may be followed
+  by one of the special type tags ``::int``, ``::bigint``, ``::double``,
+  ``::string``, ``::matrix``, ``::pointer``, to indicate that it can only
+  match a constant value of the corresponding built-in type. This is useful if
+  you want to write rules matching any object of one of these types. Note that
+  there is no way to write out all "constructors" for the built-in types, as
+  there are infinitely many. (Or none, as in the case of ``matrix`` and
+  ``pointer`` which are constructed using special primitives.)
+
+* Pure also supports Haskell-style "as" patterns of the form
+  ``variable@pattern`` which binds the given variable to the expression
+  matched by the subpattern ``pattern`` (in addition to the variables bound by
+  ``pattern`` itself). This is convenient if the value matched by the
+  subpattern is to be used on the right-hand side of an
+  equation.
+
+Note that, syntactically, both type tags and "as" patterns are primary
+expressions. Thus, if the subpattern of an "as" pattern is a compound
 expression, it must be parenthesized. For instance, the following function
 duplicates the head element of a list::
 
   foo xs@(x:_) = x:xs;
 
-The left-hand side of a rule can be omitted if it is the same as for the
-previous rule. This provides a convenient means to write out a collection of
-equations for the same left-hand side which discriminates over different
-conditions::
+General Rules
+-------------
+
+The most general type of rule, used in function definitions and ``case``
+expressions, consists of a left-hand side pattern, a right-hand side
+expression and an optional guard. The left-hand side of a rule can be omitted
+if it is the same as for the previous rule. This provides a convenient means
+to write out a collection of equations for the same left-hand side which
+discriminates over different conditions::
 
   lhs       = rhs if guard;
             = rhs if guard;
@@ -1000,12 +1025,12 @@ also write something like::
 
   foo x | bar y = x*y;
 
-However, this is most useful when using an "as" pattern to bind a common
-variable to a parameter value after checking that it matches one of several
-possible argument patterns (which is slightly more efficient than using an
-equivalent type-checking guard). E.g., the following definition binds the
-``xs`` variable to the parameter of ``foo``, if it is either the empty list or
-a list starting with an integer::
+However, this construct is most useful when using an "as" pattern to bind a
+common variable to a parameter value after checking that it matches one of
+several possible argument patterns (which is slightly more efficient than
+using an equivalent type-checking guard). E.g., the following definition binds
+the ``xs`` variable to the parameter of ``foo``, if it is either the empty
+list or a list starting with an integer::
 
   foo xs@[] | foo xs@(_::int:_) = ... xs ...;
 
@@ -1015,11 +1040,10 @@ different cases should be mapped to the same value, e.g.::
   case ans of "y" | "Y" = 1; _ = 0; end;
 
 Sometimes it is useful if local definitions (``when`` and ``with``) can be
-shared by the right-hand side and the guard of a rule in a function definition
-or a ``case`` expression. This can be done by placing the local definitions
-behind the guard, as follows (we only show the case of a single ``when``
-clause here, but of course there may be any number of ``when`` and ``with``
-clauses behind the guard)::
+shared by the right-hand side and the guard of a rule. This can be done by
+placing the local definitions behind the guard, as follows (we only show the
+case of a single ``when`` clause here, but of course there may be any number
+of ``when`` and ``with`` clauses behind the guard)::
 
   lhs = rhs if guard when defns end;
 
@@ -1035,8 +1059,8 @@ side but not the guard (no parentheses are required in this case)::
 
 An example showing the use of a local variable binding spanning both the
 right-hand side and the guard of a rule is the following quadratic equation
-solver, which returns the (real) solutions of the equation x^2+p*x+q=0 if the
-discriminant d = p^2/4-q is nonnegative::
+solver, which returns the (real) solutions of the equation ``x^2+p*x+q = 0``
+if the discriminant ``d = p^2/4-q`` is nonnegative::
 
   > using math;
   > solve p q = -p/2+sqrt d,-p/2-sqrt d if d>=0 when d = p^2/4-q end;
@@ -1047,17 +1071,22 @@ discriminant d = p^2/4-q is nonnegative::
 Note that the above definition leaves the case of a negative discriminant
 undefined.
 
-As already mentioned, ``when``, ``let``, ``const`` and ``def`` use a
-simplified kind of rule syntax which just consists of a left-hand and a
-right-hand side separated by ``=``. Guards or multiple left-hand or right-hand
-sides are not permitted in these rules. However, it is possible to omit the
-left-hand side if it is just the anonymous variable ``_`` by itself,
-indicating that you don't care about the result. (Note that this doesn't make
-sense for ``def``, you'll get an error in this case.) The right-hand side is
-still evaluated, if only for its side-effects, which is handy, e.g., for
-adding debugging statements to your code. For instance, here is a variation of
-the quadratic equation solver which also prints the discriminant after it has
-been computed::
+Simple Rules
+------------
+
+As already mentioned, ``when``, ``let`` and ``const`` use a simplified kind of
+rule syntax which just consists of a left-hand and a right-hand side separated
+by the equals sign. In this case the meaning of the rule is to bind the
+variables in the left-hand side of the rule to the corresponding subterms of
+the value of the right-hand side. This is also called a `pattern binding`.
+
+Guards or multiple left-hand or right-hand sides are not permitted in these
+rules. However, it is possible to omit the left-hand side if it is just the
+anonymous variable ``_`` by itself, indicating that you don't care about the
+result. The right-hand side is still evaluated, if only for its side-effects,
+which is handy, e.g., for adding debugging statements to your code. For
+instance, here is a variation of the quadratic equation solver which also
+prints the discriminant after it has been computed::
 
   > using math, system;
   > solve p q = -p/2+sqrt d,-p/2-sqrt d if d>=0
@@ -1068,6 +1097,11 @@ been computed::
   > solve 2 4;
   The discriminant is: -3
   solve 2 4
+
+Note that simple rules of the same form ``lhs = rhs`` are also used in macro
+definitions (``def``), to be discussed in the `Macros`_ section. In this case,
+however, the rule denotes a real rewriting rule, not a pattern binding, hence
+the left-hand side is mandatory in these rules.
 
 Examples
 ========
