@@ -938,12 +938,37 @@ comprehensions alternate between row and column generation so that most
 common mathematical abbreviations carry over quite easily. Examples of
 both kinds of comprehensions can be found in the <a class="reference internal" href="#examples">Examples</a> section below.</p>
 </dd>
-<dt>Function applications: <tt class="docutils literal"><span class="pre">foo</span> <span class="pre">x</span> <span class="pre">y</span> <span class="pre">z</span></tt></dt>
-<dd>As in other modern FPLs, these are written simply as juxtaposition (i.e.,
-in &quot;curried&quot; form) and associate to the left. Operator applications are
-written using prefix, postfix or infix notation, as the declaration of the
-operator demands, but are just ordinary function applications in
-disguise. E.g., <tt class="docutils literal"><span class="pre">x+y</span></tt> is exactly the same as <tt class="docutils literal"><span class="pre">(+)</span> <span class="pre">x</span> <span class="pre">y</span></tt>.</dd>
+<dt>Function and operator applications: <tt class="docutils literal"><span class="pre">foo</span> <span class="pre">x</span> <span class="pre">y</span> <span class="pre">z</span></tt>, <tt class="docutils literal"><span class="pre">-x</span></tt>, <tt class="docutils literal"><span class="pre">x+y</span></tt>, <tt class="docutils literal"><span class="pre">(+x)</span></tt></dt>
+<dd><p class="first">As in other modern FPLs, function applications are written simply as
+juxtaposition (i.e., in &quot;curried&quot; form) and associate to the left. This
+means that in fact all functions only take a single argument.
+Multi-argument functions are represented as chains of single-argument
+functions. For instance, in <tt class="docutils literal"><span class="pre">f</span> <span class="pre">x</span> <span class="pre">y</span> <span class="pre">=</span> <span class="pre">(f</span> <span class="pre">x)</span> <span class="pre">y</span></tt> first the function <tt class="docutils literal"><span class="pre">f</span></tt>
+is applied to the first argument <tt class="docutils literal"><span class="pre">x</span></tt>, yielding the function <tt class="docutils literal"><span class="pre">f</span> <span class="pre">x</span></tt>
+which in turn gets applied to the second argument <tt class="docutils literal"><span class="pre">y</span></tt>. This makes it
+possible to derive new functions from existing ones using <strong class="dfn">partial
+applications</strong> which only specify some but not all arguments of a
+function. For instance, taking the <tt class="docutils literal"><span class="pre">max</span></tt> function from the prelude as an
+example, <tt class="docutils literal"><span class="pre">max</span> <span class="pre">0</span></tt> is the function which, for a given <tt class="docutils literal"><span class="pre">x</span></tt>, returns <tt class="docutils literal"><span class="pre">x</span></tt>
+itself if it is nonnegative and zero otherwise. This works because
+<tt class="docutils literal"><span class="pre">(max</span> <span class="pre">0)</span> <span class="pre">x</span> <span class="pre">=</span> <span class="pre">max</span> <span class="pre">0</span> <span class="pre">x</span></tt> is the maximum of <tt class="docutils literal"><span class="pre">0</span></tt> and <tt class="docutils literal"><span class="pre">x</span></tt>.</p>
+<p class="last">Operator applications are written using prefix, postfix or infix notation,
+as the declaration of the operator demands, but are just ordinary function
+applications in disguise. E.g., <tt class="docutils literal"><span class="pre">x+y</span></tt> is exactly the same as <tt class="docutils literal"><span class="pre">(+)</span> <span class="pre">x</span> <span class="pre">y</span></tt>.
+For convenience, partial applications of infix operators can also be
+written using so-called <strong class="dfn">operator sections</strong>. A <em>left</em> section takes the
+form <tt class="docutils literal"><span class="pre">(x+)</span></tt> which is equivalent to the partial application <tt class="docutils literal"><span class="pre">(+)</span> <span class="pre">x</span></tt>. A
+<em>right</em> section takes the form <tt class="docutils literal"><span class="pre">(+x)</span></tt> and is equivalent to the term
+<tt class="docutils literal"><span class="pre">flip</span> <span class="pre">(+)</span> <span class="pre">x</span></tt>. (This uses the <tt class="docutils literal"><span class="pre">flip</span></tt> combinator from the prelude which
+is defined as <tt class="docutils literal"><span class="pre">flip</span> <span class="pre">f</span> <span class="pre">x</span> <span class="pre">y</span> <span class="pre">=</span> <span class="pre">f</span> <span class="pre">y</span> <span class="pre">x</span></tt>.) For instance, <tt class="docutils literal"><span class="pre">(1/)</span></tt> denotes the
+reciprocal and <tt class="docutils literal"><span class="pre">(+1)</span></tt> the successor function. Note, however, that
+<tt class="docutils literal"><span class="pre">(-x)</span></tt> always denotes an application of unary minus. The section
+<tt class="docutils literal"><span class="pre">(+-x)</span></tt> can be used to indicate a function which subtracts <tt class="docutils literal"><span class="pre">x</span></tt> from
+its argument. Also note that the operand in a section must be a
+well-formed expression which respects the usual precedence rules. For
+instance, <tt class="docutils literal"><span class="pre">(x+2+)</span></tt> works, but <tt class="docutils literal"><span class="pre">(+x+2)</span></tt> will give a syntax error
+because <tt class="docutils literal"><span class="pre">+</span></tt> is declared as a left-associative operator in the prelude.</p>
+</dd>
 <dt>Conditional expressions: <tt class="docutils literal"><span class="pre">if</span> <span class="pre">x</span> <span class="pre">then</span> <span class="pre">y</span> <span class="pre">else</span> <span class="pre">z</span></tt></dt>
 <dd>Evaluates to <tt class="docutils literal"><span class="pre">y</span></tt> or <tt class="docutils literal"><span class="pre">z</span></tt> depending on whether <tt class="docutils literal"><span class="pre">x</span></tt> is &quot;true&quot; (i.e., a
 nonzero integer). An exception is generated if the condition is not an
@@ -1587,10 +1612,10 @@ for the Pure language).</p>
 your own, if desired. First, the prelude provides matrix versions of the
 common list operations like <tt class="docutils literal"><span class="pre">map</span></tt>, <tt class="docutils literal"><span class="pre">fold</span></tt>, <tt class="docutils literal"><span class="pre">zip</span></tt> etc., which provide a
 way to implement common matrix operations. E.g., multiplying a matrix <tt class="docutils literal"><span class="pre">x</span></tt>
-with a scalar <tt class="docutils literal"><span class="pre">a</span></tt> amounts to mapping the function <tt class="docutils literal"><span class="pre">\x-&gt;a*x</span></tt> to x, which
+with a scalar <tt class="docutils literal"><span class="pre">a</span></tt> amounts to mapping the function <tt class="docutils literal"><span class="pre">(a*)</span></tt> to x, which
 can be done as follows:</p>
 <pre class="literal-block">
-&gt; a * x::matrix = map (\x-&gt;a*x) x if ~matrixp a;
+&gt; a * x::matrix = map (a*) x if ~matrixp a;
 &gt; 2*{1,2,3;4,5,6};
 {2,4,6;8,10,12}
 </pre>
@@ -4140,7 +4165,7 @@ counterparts.</li>
 ones you get, e.g., with Haskell's <tt class="docutils literal"><span class="pre">cycle</span></tt> operation. (This is actually a
 good thing, because the current implementation of the interpreter cannot
 garbage-collect cyclic expression data.) Cyclic streams such as <tt class="docutils literal"><span class="pre">cycle</span>
-<span class="pre">[1]</span></tt> or <tt class="docutils literal"><span class="pre">fix</span> <span class="pre">(\x</span> <span class="pre">-&gt;</span> <span class="pre">1:x)</span></tt> will of course work as expected, but, depending
+<span class="pre">[1]</span></tt> or <tt class="docutils literal"><span class="pre">fix</span> <span class="pre">(1:)</span></tt> will of course work as expected, but, depending
 on the algorithm, memory usage may increase linearly as they are traversed.</li>
 <li>Pattern matching is always refutable (and therefore eager) in Pure. If you
 need something like Haskell's irrefutable matches, you'll have to code them

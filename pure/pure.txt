@@ -644,12 +644,37 @@ Comprehensions: ``[x,y | x=1..n; y=1..m; x<y]``, ``{i~=j | i=1..n; j=1..m}``
     common mathematical abbreviations carry over quite easily. Examples of
     both kinds of comprehensions can be found in the Examples_ section below.
 
-Function applications: ``foo x y z``
-    As in other modern FPLs, these are written simply as juxtaposition (i.e.,
-    in "curried" form) and associate to the left. Operator applications are
-    written using prefix, postfix or infix notation, as the declaration of the
-    operator demands, but are just ordinary function applications in
-    disguise. E.g., ``x+y`` is exactly the same as ``(+) x y``.
+Function and operator applications: ``foo x y z``, ``-x``, ``x+y``, ``(+x)``
+    As in other modern FPLs, function applications are written simply as
+    juxtaposition (i.e., in "curried" form) and associate to the left. This
+    means that in fact all functions only take a single argument.
+    Multi-argument functions are represented as chains of single-argument
+    functions. For instance, in ``f x y = (f x) y`` first the function ``f``
+    is applied to the first argument ``x``, yielding the function ``f x``
+    which in turn gets applied to the second argument ``y``. This makes it
+    possible to derive new functions from existing ones using `partial
+    applications` which only specify some but not all arguments of a
+    function. For instance, taking the ``max`` function from the prelude as an
+    example, ``max 0`` is the function which, for a given ``x``, returns ``x``
+    itself if it is nonnegative and zero otherwise. This works because
+    ``(max 0) x = max 0 x`` is the maximum of ``0`` and ``x``.
+
+    Operator applications are written using prefix, postfix or infix notation,
+    as the declaration of the operator demands, but are just ordinary function
+    applications in disguise. E.g., ``x+y`` is exactly the same as ``(+) x y``.
+    For convenience, partial applications of infix operators can also be
+    written using so-called `operator sections`. A *left* section takes the
+    form ``(x+)`` which is equivalent to the partial application ``(+) x``. A
+    *right* section takes the form ``(+x)`` and is equivalent to the term
+    ``flip (+) x``. (This uses the ``flip`` combinator from the prelude which
+    is defined as ``flip f x y = f y x``.) For instance, ``(1/)`` denotes the
+    reciprocal and ``(+1)`` the successor function. Note, however, that
+    ``(-x)`` always denotes an application of unary minus. The section
+    ``(+-x)`` can be used to indicate a function which subtracts ``x`` from
+    its argument. Also note that the operand in a section must be a
+    well-formed expression which respects the usual precedence rules. For
+    instance, ``(x+2+)`` works, but ``(+x+2)`` will give a syntax error
+    because ``+`` is declared as a left-associative operator in the prelude.
 
 Conditional expressions: ``if x then y else z``
     Evaluates to ``y`` or ``z`` depending on whether ``x`` is "true" (i.e., a
@@ -1325,10 +1350,10 @@ But Pure's facilities for matrix and list processing also make it easy to roll
 your own, if desired. First, the prelude provides matrix versions of the
 common list operations like ``map``, ``fold``, ``zip`` etc., which provide a
 way to implement common matrix operations. E.g., multiplying a matrix ``x``
-with a scalar ``a`` amounts to mapping the function ``\x->a*x`` to x, which
+with a scalar ``a`` amounts to mapping the function ``(a*)`` to x, which
 can be done as follows::
 
-  > a * x::matrix = map (\x->a*x) x if ~matrixp a;
+  > a * x::matrix = map (a*) x if ~matrixp a;
   > 2*{1,2,3;4,5,6};
   {2,4,6;8,10,12}
 
@@ -4038,7 +4063,7 @@ Haskell. However, there are some notable differences:
   ones you get, e.g., with Haskell's ``cycle`` operation. (This is actually a
   good thing, because the current implementation of the interpreter cannot
   garbage-collect cyclic expression data.) Cyclic streams such as ``cycle
-  [1]`` or ``fix (\x -> 1:x)`` will of course work as expected, but, depending
+  [1]`` or ``fix (1:)`` will of course work as expected, but, depending
   on the algorithm, memory usage may increase linearly as they are traversed.
 
 * Pattern matching is always refutable (and therefore eager) in Pure. If you

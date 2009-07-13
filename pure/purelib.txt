@@ -267,11 +267,10 @@ Haskell:
     > map (flip (/) 2) (1..3);
     [0.5,1.0,1.5]
 
-  This idiom is used much more frequently in Pure than in Haskell because
-  Pure doesn't have Haskell's operator sections. Note, however, that the
-  same effect can also be achieved with a lambda::
+  This combinator is also used by the compiler to implement right operator
+  sections, which allows you to write the above simply as::
 
-    > map (\x -> x/2) (1..3);
+    > map (/2) (1..3);
     [0.5,1.0,1.5]
 
 .. raw:: html
@@ -336,7 +335,7 @@ Haskell:
 
     > fix (cst bar);
     bar
-    > let xs = fix (\x -> 1:x);
+    > let xs = fix (1:);
     > xs;
     1:#<thunk 0x7fe537fe2f90>
     > xs!!(0..10);
