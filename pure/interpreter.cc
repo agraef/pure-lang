@@ -1079,7 +1079,7 @@ pure_expr *interpreter::eval(expr& x, pure_expr*& e)
   env vars; expr u = csubst(macsubst(subst(vars, x)));
   compile(u);
   x = u;
-  pure_expr *res = doeval(u, e);
+  pure_expr *res = doeval(u, e, compiling);
   restore_globals(g);
   return res;
 }
@@ -1129,7 +1129,7 @@ pure_expr *interpreter::defn(expr pat, expr& x, pure_expr*& e)
   }
   compile(rhs);
   x = rhs;
-  pure_expr *res = dodefn(vars, lhs, rhs, e);
+  pure_expr *res = dodefn(vars, lhs, rhs, e, compiling);
   if (!res) return 0;
   for (env::const_iterator it = vars.begin(); it != vars.end(); ++it) {
     int32_t f = it->first;
@@ -1362,7 +1362,10 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
   }
   compile(rhs);
   x = rhs;
-  pure_expr *res = doeval(rhs, e);
+  // We *don't* want to keep the generated code here. This means that
+  // batch-compiled programs shouldn't rely on any side-effects of the code
+  // executed to compute a constant value.
+  pure_expr *res = doeval(rhs, e, false);
   if (!res) return 0;
   // convert the result back to a compile time expression
   expr u = pure_expr_to_expr(res);
@@ -5452,7 +5455,7 @@ pure_expr *interpreter::const_app_value(expr x)
     return 0;
 }
 
-pure_expr *interpreter::doeval(expr x, pure_expr*& e)
+pure_expr *interpreter::doeval(expr x, pure_expr*& e, bool keep)
 {
   char test;
   if (stackmax > 0 && stackdir*(&test - baseptr) >= stackmax) {
@@ -5462,7 +5465,7 @@ pure_expr *interpreter::doeval(expr x, pure_expr*& e)
   e = 0;
   clock_t t0 = clock();
   pure_expr *res = 0;
-  if (!compiling) {
+  if (!keep) {
     // First check whether the value is actually a constant, then we can skip
     // the compilation step. (We only do this if we're not batch-compiling,
     // since in a batch compilation we need the generated code.)
@@ -5498,7 +5501,7 @@ pure_expr *interpreter::doeval(expr x, pure_expr*& e)
   if (interactive && stats) clocks = clock()-t0;
   // Get rid of our anonymous function.
   JIT->freeMachineCodeForFunction(f.f);
-  if (!compiling) {
+  if (!keep) {
     f.f->eraseFromParent();
     // If there are no more references, we can get rid of the environment now.
     if (fptr->refc == 1)
@@ -5529,7 +5532,8 @@ static pure_expr *pure_subterm(pure_expr *x, const path& p)
   return x;
 }
 
-pure_expr *interpreter::dodefn(env vars, expr lhs, expr rhs, pure_expr*& e)
+pure_expr *interpreter::dodefn(env vars, expr lhs, expr rhs, pure_expr*& e,
+			       bool keep)
 {
   char test;
   if (stackmax > 0 && stackdir*(&test - baseptr) >= stackmax) {
@@ -5539,7 +5543,7 @@ pure_expr *interpreter::dodefn(env vars, expr lhs, expr rhs, pure_expr*& e)
   e = 0;
   clock_t t0 = clock();
   pure_expr *res = 0;
-  if (!compiling) {
+  if (!keep) {
     // First check whether the value is actually a constant, then we can skip
     // the compilation step. (We only do this if we're not batch-compiling,
     // since in a batch compilation we need the generated code.)
@@ -5659,7 +5663,7 @@ pure_expr *interpreter::dodefn(env vars, expr lhs, expr rhs, pure_expr*& e)
   if (interactive && stats) clocks = clock()-t0;
   // Get rid of our anonymous function.
   JIT->freeMachineCodeForFunction(f.f);
-  if (!compiling) {
+  if (!keep) {
     f.f->eraseFromParent();
     // If there are no more references, we can get rid of the environment now.
     if (fptr->refc == 1)

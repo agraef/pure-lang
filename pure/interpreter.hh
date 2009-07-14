@@ -596,8 +596,9 @@ private:
   pure_expr *const_value(expr x);
   pure_expr *const_matrix_value(expr x);
   pure_expr *const_app_value(expr x);
-  pure_expr *doeval(expr x, pure_expr*& e);
-  pure_expr *dodefn(env vars, expr lhs, expr rhs, pure_expr*& e);
+  pure_expr *doeval(expr x, pure_expr*& e, bool keep = false);
+  pure_expr *dodefn(env vars, expr lhs, expr rhs, pure_expr*& e,
+		    bool keep = false);
   llvm::Value *codegen(expr x, bool quote = false);
   void toplevel_codegen(expr x, const rule *rp);
   llvm::Value *builtin_codegen(expr x);
