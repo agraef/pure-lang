@@ -3294,15 +3294,16 @@ implies the following quirks and limitations:
   functions have been defined. This might cause inconsistent behaviour with an
   interpreted run of the same program, which executes expressions and variable
   definitions immediately, as the program is being processed. To avoid these
-  semantic differences, you'll have to make sure that global variables are
-  defined after all functions used in the variable definition have been
-  defined completely.
+  semantic differences, you'll have to make sure that expressions are
+  evaluated *after* all functions used in the evaluation have been defined
+  completely.
 
 * Toplevel expressions won't be of much use in a batch-compiled program,
-  unless, of course, they are evaluated for their side-effects. Your program
-  will have to include at least one of these to play the role of the "main
-  program" in your script. In most cases these expressions are best placed
-  after all the function and variable definitions, at the end of your program.
+  unless, of course, they are evaluated for their side-effects. Usually your
+  program will have to include at least one of these to play the role of the
+  "main program" in your script. In most cases these expressions are best
+  placed after all the function and variable definitions, at the end of your
+  program.
 
 * The eval_ function can only be used to evaluate plain toplevel expressions.
   You can define local functions and variables in ``with`` and ``when``
@@ -3310,14 +3311,18 @@ implies the following quirks and limitations:
   variables and functions. In other words, anything which changes the
   executing program is "verboten".
 
+* The introspective capabilities provided by evalcmd_ (discussed under
+  Reflection_ below) won't work either because the interactive commands are
+  all disabled.
+
 * Constant and macro definitions, being compile time features, aren't
   available in the compiled program. If you need to use these with eval_ at
   run time, you have to provide them through variable and function definitions
   instead.
 
-* The introspective capabilities provided by evalcmd_ (discussed under
-  Reflection_ below) won't work either because the interactive commands are
-  all disabled.
+* Code which gets executed to compute constant values at compile time will
+  *not* be executed in the compiled executable, so your program shouldn't rely
+  on side-effects of such computations (this would be bad practice anyway).
 
 .. _eval: purelib.html#eval
 .. _evalcmd: purelib.html#evalcmd
@@ -3325,9 +3330,9 @@ implies the following quirks and limitations:
 What all this boils down to is that anything which requires the compile time
 or interactive facilities of the interpreter, is unavailable. These
 restrictions only apply at run time, of course. At compile time the program
-*is* being executed by the interpreter (see below) so you can use eval_ and
-evalcmd_ in any desired way. See the description of the ``compiling`` variable
-below for how to distinguish these cases in your script.
+*is* being executed by the interpreter so you can use eval_ and evalcmd_ in
+any desired way. See the description of the ``compiling`` variable below for
+how to distinguish these cases in your script.
 
 For most kinds of scripts, the above restrictions aren't really that much of
 an obstacle, or can easily be worked around. For the few scripts which

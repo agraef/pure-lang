@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>The Pure Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2009-07-13" />
+<meta name="date" content="2009-07-14" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2009-07-13</td></tr>
+<td>2009-07-14</td></tr>
 </tbody>
 </table>
 <!-- Note: This document is formatted using docutils. The Makefile has rules -->
@@ -3447,33 +3447,37 @@ implies the following quirks and limitations:</p>
 functions have been defined. This might cause inconsistent behaviour with an
 interpreted run of the same program, which executes expressions and variable
 definitions immediately, as the program is being processed. To avoid these
-semantic differences, you'll have to make sure that global variables are
-defined after all functions used in the variable definition have been
-defined completely.</li>
+semantic differences, you'll have to make sure that expressions are
+evaluated <em>after</em> all functions used in the evaluation have been defined
+completely.</li>
 <li>Toplevel expressions won't be of much use in a batch-compiled program,
-unless, of course, they are evaluated for their side-effects. Your program
-will have to include at least one of these to play the role of the &quot;main
-program&quot; in your script. In most cases these expressions are best placed
-after all the function and variable definitions, at the end of your program.</li>
+unless, of course, they are evaluated for their side-effects. Usually your
+program will have to include at least one of these to play the role of the
+&quot;main program&quot; in your script. In most cases these expressions are best
+placed after all the function and variable definitions, at the end of your
+program.</li>
 <li>The <a class="reference external" href="purelib.html#eval">eval</a> function can only be used to evaluate plain toplevel expressions.
 You can define local functions and variables in <tt class="docutils literal"><span class="pre">with</span></tt> and <tt class="docutils literal"><span class="pre">when</span></tt>
 clauses inside an expression, but you can't use <a class="reference external" href="purelib.html#eval">eval</a> to define new global
 variables and functions. In other words, anything which changes the
 executing program is &quot;verboten&quot;.</li>
+<li>The introspective capabilities provided by <a class="reference external" href="purelib.html#evalcmd">evalcmd</a> (discussed under
+<a class="reference internal" href="#reflection">Reflection</a> below) won't work either because the interactive commands are
+all disabled.</li>
 <li>Constant and macro definitions, being compile time features, aren't
 available in the compiled program. If you need to use these with <a class="reference external" href="purelib.html#eval">eval</a> at
 run time, you have to provide them through variable and function definitions
 instead.</li>
-<li>The introspective capabilities provided by <a class="reference external" href="purelib.html#evalcmd">evalcmd</a> (discussed under
-<a class="reference internal" href="#reflection">Reflection</a> below) won't work either because the interactive commands are
-all disabled.</li>
+<li>Code which gets executed to compute constant values at compile time will
+<em>not</em> be executed in the compiled executable, so your program shouldn't rely
+on side-effects of such computations (this would be bad practice anyway).</li>
 </ul>
 <p>What all this boils down to is that anything which requires the compile time
 or interactive facilities of the interpreter, is unavailable. These
 restrictions only apply at run time, of course. At compile time the program
-<em>is</em> being executed by the interpreter (see below) so you can use <a class="reference external" href="purelib.html#eval">eval</a> and
-<a class="reference external" href="purelib.html#evalcmd">evalcmd</a> in any desired way. See the description of the <tt class="docutils literal"><span class="pre">compiling</span></tt> variable
-below for how to distinguish these cases in your script.</p>
+<em>is</em> being executed by the interpreter so you can use <a class="reference external" href="purelib.html#eval">eval</a> and <a class="reference external" href="purelib.html#evalcmd">evalcmd</a> in
+any desired way. See the description of the <tt class="docutils literal"><span class="pre">compiling</span></tt> variable below for
+how to distinguish these cases in your script.</p>
 <p>For most kinds of scripts, the above restrictions aren't really that much of
 an obstacle, or can easily be worked around. For the few scripts which
 actually need the full dynamic capabilities of Pure you'll just have to run
