@@ -669,15 +669,15 @@ stream xs@(_,_)	= stream (list xs);
 
 /* Arithmetic sequences. */
 
-n1:n2..m	= if m===s then iterate (\x->x+k) n1
+n1:n2..m	= if m===s then iterate (+k) n1
 		  else if m===-s then []
-		  else iterwhile (p m) (\x->x+k) n1
+		  else iterwhile (p m) (+k) n1
 		  when s,p = if k>0 then inf,(>=) else -inf,(<=) end
 		  if realp k && k~=0 && ~infp n1 && ~infp n2
 		  when k = n2-n1 end;
-n..m		= if m===inf then iterate (\x->x+1) n
+n..m		= if m===inf then iterate (+1) n
 		  else if m===-inf then []
-		  else iterwhile ((>=) m) (\x->x+1) n
+		  else iterwhile ((>=) m) (+1) n
 		  if ~listnp n && ~infp n;
 
 /* ..
