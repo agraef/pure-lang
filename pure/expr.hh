@@ -527,6 +527,7 @@ public:
   bool is_tuplex() const;
   bool is_cons(expr &x, expr &y) const;
   bool is_list(exprl &xs) const;
+  bool is_list2(exprl &xs, expr& tl) const;
   bool is_pair(expr &x, expr &y) const;
   // Always true (see note above). Use is_pair() && istuple(xs) to test for a
   // "real" tuple instead.

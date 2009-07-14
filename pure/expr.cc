@@ -184,11 +184,11 @@ bool expr::is_cons() const
 
 bool expr::is_list() const
 {
-  expr x, y;
-  if (is_cons(x, y))
-    return y.is_list();
-  else
-    return is_nil();
+  /* Implemented iteratively, to avoid stack overflows. */
+  expr x = *this, y, z;
+  while (x.is_cons(y, z))
+    x = z;
+  return x.is_nil();
 }
 
 bool expr::is_voidx() const
@@ -221,15 +221,33 @@ bool expr::is_cons(expr &x, expr &y) const
 
 bool expr::is_list(exprl &xs) const
 {
-  expr x, y;
-  if (is_cons(x, y)) {
-    xs.push_back(x);
-    return y.is_list(xs);
-  } else if (is_nil())
+  /* Implemented iteratively, to avoid stack overflows. */
+  expr x = *this, y, z;
+  while (x.is_cons(y, z)) {
+    xs.push_back(y);
+    x = z;
+  }
+  if (x.is_nil())
     return true;
   else {
     xs.clear();
     return false;
+  }
+}
+
+bool expr::is_list2(exprl &xs, expr& tl) const
+{
+  /* Implemented iteratively, to avoid stack overflows. */
+  expr x = *this, y, z;
+  while (x.is_cons(y, z)) {
+    xs.push_back(y);
+    x = z;
+  }
+  if (xs.empty())
+    return false;
+  else {
+    tl = x;
+    return true;
   }
 }
 

@@ -1153,15 +1153,64 @@ pure_expr *interpreter::const_defn(expr pat, expr& x)
   return res;
 }
 
+static inline bool is_cons(interpreter& interp,
+			   const pure_expr *x,
+			   const pure_expr*& y, const pure_expr*& z)
+{
+  if (x->tag == EXPR::APP && x->data.x[0]->tag == EXPR::APP &&
+      x->data.x[0]->data.x[0]->tag == interp.symtab.cons_sym().f) {
+    y = x->data.x[0]->data.x[1];
+    z = x->data.x[1];
+    return true;
+  } else
+    return false;
+}
+
+static bool is_list2(interpreter& interp,
+		     const pure_expr *x, size_t& size,
+		     const pure_expr**& elems,
+		     const pure_expr*& tl)
+{
+  assert(x);
+  const pure_expr *u = x, *y, *z;
+  size = 0;
+  while (is_cons(interp, u, y, z)) {
+    size++;
+    u = z;
+  }
+  if (size == 0) return false;
+  tl = u;
+  elems = (const pure_expr**)malloc(size*sizeof(pure_expr*));
+  assert(elems);
+  size_t i = 0;
+  u = x;
+  while (is_cons(interp, u, y, z)) {
+    elems[i++] = y;
+    u = z;
+  }
+  return true;
+}
+
 expr interpreter::pure_expr_to_expr(const pure_expr *x)
 {
   char test;
   if (stackmax > 0 && stackdir*(&test - baseptr) >= stackmax)
     throw err("expression too deep in constant definition");
   switch (x->tag) {
-  case EXPR::APP:
-    return expr(pure_expr_to_expr(x->data.x[0]),
-		pure_expr_to_expr(x->data.x[1]));
+  case EXPR::APP: {
+    size_t size;
+    const pure_expr **elems, *tl;
+    if (is_list2(*this, x, size, elems, tl)) {
+      /* Optimize the list case, so that we don't run out of stack space. */
+      expr x = pure_expr_to_expr(tl);
+      while (size > 0)
+	x = expr::cons(pure_expr_to_expr(elems[--size]), x);
+      free(elems);
+      return x;
+    } else
+      return expr(pure_expr_to_expr(x->data.x[0]),
+		  pure_expr_to_expr(x->data.x[1]));
+  }
   case EXPR::INT:
     return expr(EXPR::INT, x->data.i);
   case EXPR::BIGINT: {
@@ -1531,7 +1580,7 @@ void interpreter::compile(expr x)
 {
   if (x.is_null()) return;
   switch (x.tag()) {
-  case EXPR::MATRIX:
+  case EXPR::MATRIX: {
     for (exprll::iterator xs = x.xvals()->begin(), end = x.xvals()->end();
 	 xs != end; xs++)
       for (exprl::iterator ys = xs->begin(), end = xs->end();
@@ -1539,10 +1588,21 @@ void interpreter::compile(expr x)
 	compile(*ys);
       }
     break;
-  case EXPR::APP:
-    compile(x.xval1());
-    compile(x.xval2());
+  }
+  case EXPR::APP: {
+    exprl xs;
+    expr tl;
+    if (x.is_list2(xs, tl)) {
+      /* Optimize the list case so that we don't run out of stack here. */
+      for (exprl::iterator it = xs.begin(), end = xs.end(); it != end; it++)
+	compile(*it);
+      compile(tl);
+    } else {
+      compile(x.xval1());
+      compile(x.xval2());
+    }
     break;
+  }
   case EXPR::COND:
     compile(x.xval1());
     compile(x.xval2());
@@ -4176,6 +4236,8 @@ void Env::build_map(expr x)
   case EXPR::APP: {
     expr f; uint32_t n = count_args(x, f);
     interpreter& interp = *interpreter::g_interp;
+    exprl xs;
+    expr tl;
     if (n == 1 && f.tag() == interp.symtab.amp_sym().f) {
       expr y = x.xval2();
       push("&");
@@ -4191,6 +4253,11 @@ void Env::build_map(expr x)
       e.build_map(y); e.promote_map();
       pop();
       build_map(h);
+    } else if (x.is_list2(xs, tl)) {
+      /* Optimize the list case so that we don't run out of stack here. */
+      for (exprl::iterator it = xs.begin(), end = xs.end(); it != end; it++)
+	build_map(*it);
+      build_map(tl);
     } else {
       build_map(x.xval1());
       build_map(x.xval2());
@@ -5279,6 +5346,7 @@ pure_expr *interpreter::const_value(expr x)
     exprl xs;
     if (x.is_list(xs) || (x.is_pair() && x.is_tuple(xs))) {
       // proper lists and tuples
+      // XXXFIXME: We should make this work for improper lists, too.
       size_t i, n = xs.size();
       pure_expr **xv = (pure_expr**)malloc(n*sizeof(pure_expr*));
       if (!xv) return 0;
@@ -6348,7 +6416,10 @@ Value *interpreter::codegen(expr x, bool quote)
 #if LIST_KLUDGE>0
 	/* Alternative code for proper lists and tuples, which considerably
 	   speeds up compilation for larger sequences. See the comments at the
-	   beginning of interpreter.hh for details. */
+	   beginning of interpreter.hh for details. XXXFIXME: We should make
+	   this work with improper lists as well. Also, pure_listv/tuplev
+	   should be used rather than pure_listl/tuplel so that we don't run
+	   out of stack space for large sequences. */
 	exprl xs;
 	if ((x.is_list(xs) || (x.is_pair() && x.is_tuple(xs))) &&
 	    xs.size() >= LIST_KLUDGE) {
