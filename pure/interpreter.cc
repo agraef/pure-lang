@@ -3330,11 +3330,13 @@ expr *interpreter::mkwhen_expr(expr *x, rulel *r)
   }
   expr u = *x;
   delete x;
-  rulel *s = new rulel;
   // x when l1 = r1; ...; lk = rk end  ===
   // case r1 of l1 = ... case rk of lk = x end ... end
-  if (r->size() > 0x100)
+  if (r->size() > 0x100) {
+    delete r;
     throw err("error in expression (too many nested closures)");
+  }
+  rulel *s = new rulel;
   uint8_t idx = 0;
   for (rulel::reverse_iterator it = r->rbegin();
        it != r->rend(); ++it, ++idx) {
