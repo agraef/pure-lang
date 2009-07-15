@@ -6393,14 +6393,14 @@ pure_expr *matrix_matcat(pure_expr *x)
       return 0; // FIXME: should maybe throw an exception here
     for (size_t i = 0; i < mp->size1; i++) {
       pure_expr **xs = mp->data+i*mp->tda;
-      if (!(ys[i] = pure_matrix_columnsv(mp->size2, xs))) {
+      if (!(ys[i] = matrix_columnsv(mp->size2, xs))) {
 	for (size_t j = 0; j < i; j++)
 	  pure_freenew(ys[j]);
 	free(ys);
 	return 0;
       }
     }
-    pure_expr *y = pure_matrix_rowsv(mp->size1, ys);
+    pure_expr *y = matrix_rowsv(mp->size1, ys);
     free(ys);
     return y;
   }
