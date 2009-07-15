@@ -552,6 +552,11 @@ interpreter::interpreter(int32_t nsyms, char *syms,
 
 interpreter::~interpreter()
 {
+  // get rid of global environments and the LLVM data
+  globenv.clear(); macenv.clear();
+  globalfuns.clear(); globalvars.clear();
+  // free the shadow stack
+  free(sstk);
   // free expression memory
   pure_mem *m = mem, *n;
   while (m) {
@@ -559,10 +564,6 @@ interpreter::~interpreter()
     delete m;
     m = n;
   }
-  // get rid of global environments and the LLVM data
-  globalfuns.clear(); globalvars.clear();
-  // free the shadow stack
-  free(sstk);
   // free the execution engine and the pass manager
 #if 1
   // If this segfaults then you're probably running an older LLVM version. Get
@@ -1154,8 +1155,7 @@ pure_expr *interpreter::const_defn(expr pat, expr& x)
 }
 
 static inline bool is_cons(interpreter& interp,
-			   const pure_expr *x,
-			   const pure_expr*& y, const pure_expr*& z)
+			   pure_expr *x, pure_expr*& y, pure_expr*& z)
 {
   if (x->tag == EXPR::APP && x->data.x[0]->tag == EXPR::APP &&
       x->data.x[0]->data.x[0]->tag == interp.symtab.cons_sym().f) {
@@ -1167,12 +1167,11 @@ static inline bool is_cons(interpreter& interp,
 }
 
 static bool is_list2(interpreter& interp,
-		     const pure_expr *x, size_t& size,
-		     const pure_expr**& elems,
-		     const pure_expr*& tl)
+		     pure_expr *x, size_t& size,
+		     pure_expr**& elems, pure_expr*& tl)
 {
   assert(x);
-  const pure_expr *u = x, *y, *z;
+  pure_expr *u = x, *y, *z;
   size = 0;
   while (is_cons(interp, u, y, z)) {
     size++;
@@ -1180,7 +1179,7 @@ static bool is_list2(interpreter& interp,
   }
   if (size == 0) return false;
   tl = u;
-  elems = (const pure_expr**)malloc(size*sizeof(pure_expr*));
+  elems = (pure_expr**)malloc(size*sizeof(pure_expr*));
   assert(elems);
   size_t i = 0;
   u = x;
@@ -1191,7 +1190,7 @@ static bool is_list2(interpreter& interp,
   return true;
 }
 
-expr interpreter::pure_expr_to_expr(const pure_expr *x)
+expr interpreter::pure_expr_to_expr(pure_expr *x)
 {
   char test;
   if (stackmax > 0 && stackdir*(&test - baseptr) >= stackmax)
@@ -1199,7 +1198,7 @@ expr interpreter::pure_expr_to_expr(const pure_expr *x)
   switch (x->tag) {
   case EXPR::APP: {
     size_t size;
-    const pure_expr **elems, *tl;
+    pure_expr **elems, *tl;
     if (is_list2(*this, x, size, elems, tl)) {
       /* Optimize the list case, so that we don't run out of stack space. */
       expr x = pure_expr_to_expr(tl);
@@ -1224,10 +1223,12 @@ expr interpreter::pure_expr_to_expr(const pure_expr *x)
   case EXPR::STR:
     return expr(EXPR::STR, strdup(x->data.s));
   case EXPR::PTR:
-    if (x->data.p != 0)
-      // Only null pointer constants permitted right now.
-      throw err("pointer must be null in constant definition");
-    return expr(EXPR::PTR, x->data.p);
+    if (x->data.p == 0)
+      return expr(EXPR::PTR, x->data.p);
+    else
+      /* A non-null pointer isn't representable at compile time, so we wrap it
+	 up in a global variable. */
+      return wrap_expr(x);
   case EXPR::MATRIX: {
     if (x->data.mat.p) {
       gsl_matrix_symbolic *m = (gsl_matrix_symbolic*)x->data.mat.p;
@@ -1308,12 +1309,13 @@ expr interpreter::pure_expr_to_expr(const pure_expr *x)
 #endif
   }
   default:
-    assert(x->tag > 0);
+    assert(x->tag >= 0);
     if (x->data.clos && x->data.clos->local)
-      // There's no way we can capture a local function in a compile time
-      // expression right now, so we have to forbid this, too.
-      throw err("anonymous closure not permitted in constant definition");
-    return expr(x->tag);
+      /* A local closure isn't representable at compile time, so we wrap it up
+	 in a global variable. */
+      return wrap_expr(x);
+    else
+      return expr(x->tag);
   }
 }
 
@@ -2138,6 +2140,7 @@ expr interpreter::bind(env& vars, expr x, bool b, path p)
   case EXPR::DBL:
   case EXPR::STR:
   case EXPR::PTR:
+  case EXPR::WRAP:
     y = x;
     break;
   // application:
@@ -2293,6 +2296,7 @@ expr interpreter::subst(const env& vars, expr x, uint8_t idx)
   case EXPR::DBL:
   case EXPR::STR:
   case EXPR::PTR:
+  case EXPR::WRAP:
     return x;
   // matrix:
   case EXPR::MATRIX: {
@@ -2423,6 +2427,7 @@ expr interpreter::fsubst(const env& funs, expr x, uint8_t idx)
   case EXPR::DBL:
   case EXPR::STR:
   case EXPR::PTR:
+  case EXPR::WRAP:
     return x;
   // matrix:
   case EXPR::MATRIX: {
@@ -2545,6 +2550,7 @@ expr interpreter::csubst(expr x, bool quote)
   case EXPR::DBL:
   case EXPR::STR:
   case EXPR::PTR:
+  case EXPR::WRAP:
     return x;
   // matrix:
   case EXPR::MATRIX: {
@@ -2680,6 +2686,7 @@ expr interpreter::lcsubst(expr x)
   case EXPR::DBL:
   case EXPR::STR:
   case EXPR::PTR:
+  case EXPR::WRAP:
     return x;
   // these must not occur on the lhs:
   case EXPR::MATRIX:
@@ -2757,6 +2764,7 @@ expr interpreter::macsubst(expr x, bool quote)
   case EXPR::DBL:
   case EXPR::STR:
   case EXPR::PTR:
+  case EXPR::WRAP:
     return x;
   // matrix:
   case EXPR::MATRIX: {
@@ -2867,6 +2875,7 @@ expr interpreter::varsubst(expr x, uint8_t offs, uint8_t idx)
   case EXPR::DBL:
   case EXPR::STR:
   case EXPR::PTR:
+  case EXPR::WRAP:
     return x;
   // matrix:
   case EXPR::MATRIX: {
@@ -2986,6 +2995,7 @@ expr interpreter::macred(expr x, expr y, uint8_t idx)
   case EXPR::DBL:
   case EXPR::STR:
   case EXPR::PTR:
+  case EXPR::WRAP:
     return y;
   // lhs variable
   case EXPR::VAR:
@@ -3549,6 +3559,17 @@ static inline bool is_init(const string& name)
     name.find_first_not_of("0123456789", 6) == string::npos;
 }
 
+static inline bool is_tmpvar(const string& name, string& label)
+{
+  if (name.compare(0, 8, "$$tmpvar") == 0) {
+    label = name.substr(8);
+    size_t pos = label.find_last_not_of("0123456789");
+    if (pos != string::npos) label.erase(pos+1);
+    return true;
+  } else
+    return false;
+}
+
 static string& quote(string& s)
 {
   size_t p = 0, q;
@@ -3614,12 +3635,29 @@ int interpreter::compiler(string out, list<string> libnames)
   code << endl;
   // Global variables. This includes the special $$sstk$$ (shadow stack) and
   // $$fptr$$ (environment pointer) globals, as well as all the expression
-  // pointers for the global symbols of the Pure program.
+  // pointers for the global symbols of the Pure program. Here we also have to
+  // check for any unresolvable constant values (wrapped pointers or local
+  // closures).
+  int nerrs = 0;
   for (Module::global_iterator it = module->global_begin(),
 	 end = module->global_end(); it != end; ++it) {
     GlobalVariable &v = *it;
     if (!v.hasName()) continue;
+    string label;
+    if (is_tmpvar(v.getName(), label)) {
+      // We can't handle these, sorry.
+      std::cerr << "'" << label << "' is not a constant value" << endl;
+      nerrs++;
+    }
     v.print(code);
+  }
+  if (nerrs > 0) {
+    unlink(target.c_str());
+    std::cerr << 
+"** Your program contains one or more constants referring to run time\n\
+data such as pointers and closures. Changing the offending constants\n\
+to variables should fix this. **\n";
+    exit(1);
   }
   // Global and local functions.
   for (Module::iterator it = module->begin(), end = module->end();
@@ -5329,6 +5367,20 @@ Value *interpreter::constptr(const void *p)
 #endif
 }
 
+expr interpreter::wrap_expr(pure_expr *x)
+{
+  ostringstream label;
+  label << x;
+  GlobalVar *v = new GlobalVar;
+  v->v = new llvm::GlobalVariable
+    (ExprPtrTy, false, llvm::GlobalVariable::InternalLinkage,
+     llvm::ConstantPointerNull::get(ExprPtrTy), "$$tmpvar"+label.str(),
+     module);
+  v->x = pure_new(x);
+  JIT->addGlobalMapping(v->v, &v->x);
+  return expr(EXPR::WRAP, v);
+}
+
 pure_expr *interpreter::const_value(expr x)
 {
   switch (x.tag()) {
@@ -5343,6 +5395,12 @@ pure_expr *interpreter::const_value(expr x)
     return pure_string_dup(x.sval());
   case EXPR::PTR:
     return pure_pointer(x.pval());
+  case EXPR::WRAP:
+    if (x.pval()) {
+      GlobalVar *v = (GlobalVar*)x.pval();
+      return v->x;
+    } else
+      return 0;
   case EXPR::MATRIX:
     return const_matrix_value(x);
   case EXPR::APP: {
@@ -6312,9 +6370,15 @@ Value *interpreter::codegen(expr x, bool quote)
   case EXPR::STR:
     return sbox(x.sval());
   case EXPR::PTR:
-    // FIXME: Only null pointers are supported right now.
+    // We only need to support null pointers here, other constant pointer
+    // values are handled in the EXPR::WRAP case below.
     assert(x.pval() == 0);
     return pbox(x.pval());
+  case EXPR::WRAP: {
+    assert(x.pval());
+    GlobalVar *v = (GlobalVar*)x.pval();
+    return act_builder().CreateLoad(v->v);
+  }
   // matrix:
   case EXPR::MATRIX: {
     Function *row_fun = 0, *col_fun = 0;
@@ -7537,6 +7601,9 @@ void interpreter::simple_match(Value *x, state*& s,
     break;
   }
   case EXPR::PTR:
+    assert(0 && "not implemented");
+    break;
+  case EXPR::WRAP:
     assert(0 && "not implemented");
     break;
   case EXPR::MATRIX:

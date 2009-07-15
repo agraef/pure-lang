@@ -129,6 +129,8 @@ struct EXPR {
     CASE	= -11,	// case expression
     WHEN	= -12,	// when expression
     WITH	= -13,	// with expression
+    // wrapper for embedded runtime expressions
+    WRAP	= -14,	// pointer to variable binding (GlobalVar*)
     // GSL matrix types:
     MATRIX	= -32,  // generic GSL matrix, symbolic matrices
     DMATRIX	= -31,	// double matrix
@@ -216,7 +218,7 @@ struct EXPR {
   { assert(_tag == STR); data.s = _s; }
   explicit EXPR(int32_t _tag, void *_p) :
     refc(0), tag(_tag), m(0), flags(0), ttag(_tag), astag(0), aspath(0)
-  { assert(_tag == PTR); data.p = _p; }
+  { assert(_tag == PTR || _tag == WRAP); data.p = _p; }
   EXPR(int32_t _tag, EXPR *_arg1, EXPR *_arg2, EXPR *_arg3) :
     refc(0), tag(_tag), m(0), flags(0), ttag(0), astag(0), aspath(0)
   { assert(_tag == COND);
@@ -354,7 +356,7 @@ public:
                            return p->data.d; }
   char    *sval()  const { assert(p->tag == EXPR::STR);
                            return p->data.s; }
-  void    *pval()  const { assert(p->tag == EXPR::PTR);
+  void    *pval()  const { assert(p->tag == EXPR::PTR || p->tag == EXPR::WRAP);
                            return p->data.p; }
   expr     xval1() const { assert(p->tag == EXPR::APP ||
 				  p->tag == EXPR::COND ||
@@ -449,7 +451,7 @@ public:
       return false;
   }
   bool is_ptr(void *&_p) const
-  { if (p->tag == EXPR::PTR) {
+  { if (p->tag == EXPR::PTR || p->tag == EXPR::WRAP) {
       _p = p->data.p;
       return true;
     } else

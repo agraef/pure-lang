@@ -469,7 +469,7 @@ public:
   void compile();
 
   /* Convert a runtime to a compile time expression. */
-  expr pure_expr_to_expr(const pure_expr *x);
+  expr pure_expr_to_expr(pure_expr *x);
 
   /* Errors and warnings. These are for various types of messages from the
      compiler. Default is to write error messages to stdout. You might wish to
@@ -593,6 +593,7 @@ private:
   Env *find_stacked(int32_t tag);
   Env& act_env() { assert(!envstk.empty()); return *envstk.front(); }
   Builder& act_builder() { return act_env().builder; }
+  expr wrap_expr(pure_expr *x);
   pure_expr *const_value(expr x);
   pure_expr *const_matrix_value(expr x);
   pure_expr *const_app_value(expr x);

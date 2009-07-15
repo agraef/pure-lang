@@ -66,6 +66,7 @@ static prec_t expr_nprec(expr x, bool aspat = true)
   case EXPR::VAR:
   case EXPR::STR:
   case EXPR::PTR:
+  case EXPR::WRAP:
   case EXPR::MATRIX:
     return 100;
   case EXPR::FVAR:
@@ -276,6 +277,11 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
   }
   case EXPR::PTR:
     return os << "#<pointer " << x.pval() << ">";
+  case EXPR::WRAP: {
+    assert(x.pval());
+    GlobalVar *v = (GlobalVar*)x.pval();
+    return os << v->x;
+  }
   case EXPR::MATRIX: {
     os << "{";
     for (exprll::const_iterator xs = x.xvals()->begin(),

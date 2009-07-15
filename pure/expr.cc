@@ -12,6 +12,15 @@ EXPR::~EXPR()
   case STR:
     if (data.s) free(data.s);
     break;
+  case WRAP:
+    if (data.p) {
+      GlobalVar *v = (GlobalVar*)data.p;
+      interpreter::g_interp->JIT->updateGlobalMapping(v->v, 0);
+      v->v->eraseFromParent();
+      pure_free(v->x);
+      delete v;
+    }
+    break;
   case VAR:
     if (data.v.p) delete data.v.p;
     break;
