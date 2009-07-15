@@ -4287,24 +4287,23 @@ static void print_vars(interpreter& interp, DebugInfo& d)
   if (count > 0) cout << endl;
 }
 
-static string localvars(interpreter& interp, DebugInfo& d)
+static expr localvars(interpreter& interp, DebugInfo& d, pure_expr *x)
 {
-  ostringstream sout;
-  map<string,pure_expr*> vals;
+  // convert to compile time expression
+  expr y = interp.pure_expr_to_expr(x);
+  map<int32_t,pure_expr*> vals;
   if (d.r) {
     for (env::iterator it = d.vars.begin(); it != d.vars.end(); ++it) {
       int32_t vno = it->first;
-      symbol& sym = interp.symtab.sym(vno);
       env_info& info = it->second;
       assert(info.t == env_info::lvar);
-      vals[sym.s] = subterm(d.e->n, d.args, *info.p, d.e->b);
+      vals[vno] = subterm(d.e->n, d.args, *info.p, d.e->b);
     }
     for (list<VarInfo>::iterator it = d.e->xtab.begin(); it != d.e->xtab.end();
 	 ++it) {
       VarInfo& info = *it;
-      symbol& sym = interp.symtab.sym(info.vtag);
       assert(info.v < d.e->m);
-      vals[sym.s] = d.envs[info.v];
+      vals[info.vtag] = d.envs[info.v];
     }
   } else {
     // This is an external. There are no variable symbols for the arguments
@@ -4312,18 +4311,38 @@ static string localvars(interpreter& interp, DebugInfo& d)
     for (uint32_t i = 0; i < d.e->n; i++) {
       char buf[100];
       sprintf(buf, "x%u", i+1);
-      vals[buf] = d.args[i];
+      symbol *sym = interp.symtab.sym(buf);
+      if (sym) vals[sym->f] = d.args[i];
     }
   }
+  // build the rule list
+  rulel *r = new rulel;
+  // at present, the compiler can't build 'when' expressions with more than
+  // 256 definitions, so we enforce that limit here
   size_t count = 0;
-  for (map<string,pure_expr*>::iterator it = vals.begin(); it != vals.end();
-       ++it, ++count) {
-    const string& id = it->first;
+  for (map<int32_t,pure_expr*>::iterator it = vals.begin();
+       it != vals.end() && count < 0x100; ++it, ++count) {
+    int32_t v = it->first;
     pure_expr *x = it->second;
-    if (count > 0) sout << "; ";
-    sout << id << " = " << printx(x);
+    r->push_back(rule(expr(v), interp.pure_expr_to_expr(x)));
   }
-  return sout.str();
+  if (r->empty()) {
+    // no locals, return y as it is
+    delete r;
+    return y;
+  } else {
+    try {
+      // build a 'when' expression with all the locals
+      expr *z = interp.mkwhen_expr(new expr(y), r);
+      expr ret = *z;
+      delete z;
+      return ret;
+    } catch (err &e) {
+      // error in constructing the 'when' expression, pretend that we
+      // succeeded anyway (this should never happen)
+      return y;
+    }
+  }
 }
 
 static inline bool stop(interpreter& interp, Env *e)
@@ -4498,34 +4517,39 @@ void pure_debug_rule(void *_e, void *_r)
 	arg.clear();
       if (!arg.empty()) {
 	DebugInfo& d = *kt;
-	// supply the environment
-	get_vars(interp, kt);
-	string expr = "("+arg+") when "+localvars(interp, d)+" end";
 	// make sure we don't invoke the debugger recursively
 	interp.interactive = false;
 	interp.restricted = true;
-	pure_expr *x = pure_eval(expr.c_str());
+	string s = "'("+arg+");";
+	pure_expr *x = interp.runstr(s), *e;
+	if (x) {
+	  // supply the environment
+	  get_vars(interp, kt);
+	  expr y = localvars(interp, d, x);
+	  // evaluate
+	  x = interp.eval(y, e);
+	  if (x) {
+	    cout << x << endl;
+	    pure_freenew(x);
+	  } else if (e) {
+	    cerr << "unhandled exception '" << e << "' while evaluating '"
+		 << arg << "'\n";
+	    pure_free(e);
+	  } else
+	    cerr << "unhandled exception while evaluating '" << arg << "'\n";
+	} else {
+	  // Only print the first error message if any.
+	  string msg = interp.errmsg;
+	  size_t p = msg.find('\n');
+	  if (p != string::npos) msg.erase(p);
+	  // Do some more cosmetic surgery.
+	  p = msg.find(", unexpected ");
+	  if (p != string::npos) msg.erase(p);
+	  if (!msg.empty()) cerr << msg << endl;
+	  interp.errmsg.clear();
+	}
 	interp.interactive = true;
 	interp.restricted = false;
-	if (x) {
-	  cout << x << endl;
-	  pure_freenew(x);
-	} else {
-	  const char *s = lasterr();
-	  if (s && *s) {
-	    // Only print the first error message if any.
-	    string msg = s;
-	    size_t p = msg.find('\n');
-	    if (p != string::npos)
-	      msg.erase(p);
-	    // Do some more cosmetic surgery.
-	    p = msg.find(", unexpected ");
-	    if (p != string::npos)
-	      msg.erase(p);
-	    if (!msg.empty())
-	      cerr << msg << endl;
-	  }
-	}
       }
     } else if (cmdline == "" || cmd == "s") {
       // single step
