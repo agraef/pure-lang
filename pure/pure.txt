@@ -3324,6 +3324,11 @@ implies the following quirks and limitations:
   *not* be executed in the compiled executable, so your program shouldn't rely
   on side-effects of such computations (this would be bad practice anyway).
 
+* Constant values in a batch-compiled script must be real constants, run time
+  data such as pointers (other than the null pointer) and local functions are
+  not permitted. (If necessary, you can bind such values to variables instead,
+  then they will work fine even in a batch-compiled program.)
+
 .. _eval: purelib.html#eval
 .. _evalcmd: purelib.html#evalcmd
 
@@ -3848,15 +3853,6 @@ environments, without any runtime penalties::
 
 In this case the code for one of the branches of ``check`` will be completely
 eliminated, depending on the outcome of the configuration check.
-
-On the other hand, constant definitions are somewhat limited in scope compared
-to variable definitions, since the bound value must be usable at compile time,
-so that it can be substituted into other definitions. Thus, while there is no
-a priori restriction on the computations you can perform to obtain the value
-of the constant, the value must not be a pointer object (other than the null
-pointer), or an anonymous closure (which also rules out local functions,
-because these cannot be referred to by their names at the toplevel), or an
-aggregate value containing any such values.
 
 Constants also differ from variables in that they cannot be redefined (that's
 their purpose after all) and will only take effect on subsequent
