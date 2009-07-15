@@ -2387,7 +2387,7 @@ into a simple loop which suppresses the normal list result and just returns
 <tt class="docutils literal"><span class="pre">()</span></tt> instead. Thus, if no value gets thrown then the function regularly
 returns with <tt class="docutils literal"><span class="pre">()</span></tt> to indicate that there is no solution.</p>
 <pre class="literal-block">
-queens1 n      = catch reverse (search n 1 []) with
+queens n       = catch reverse (search n 1 []) with
   search n i p = throw p if i&gt;n;
                = void [search n (i+1) ((i,j):p) | j = 1..n; safe (i,j) p];
   safe (i,j) p = ~any (check (i,j)) p;
@@ -2635,7 +2635,7 @@ string of all <tt class="docutils literal"><span class="pre">x!y</span></tt> whi
 <tt class="docutils literal"><span class="pre">ys</span></tt>. Thus, e.g., <tt class="docutils literal"><span class="pre">x!!(i..j)</span></tt> returns all the elements between <tt class="docutils literal"><span class="pre">i</span></tt>
 and <tt class="docutils literal"><span class="pre">j</span></tt> (inclusive). Indices which fall outside the valid index range
 are quietly discarded. The index range <tt class="docutils literal"><span class="pre">ys</span></tt> may contain any number of
-indices (also duplicates), in any order. Thus <tt class="docutils literal"><span class="pre">x![0|i=1..n]</span></tt> returns the
+indices (also duplicates), in any order. Thus <tt class="docutils literal"><span class="pre">x!![0|i=1..n]</span></tt> returns the
 first element of <tt class="docutils literal"><span class="pre">x</span></tt> <tt class="docutils literal"><span class="pre">n</span></tt> times, and, if <tt class="docutils literal"><span class="pre">ys</span></tt> is a permutation of the
 range <tt class="docutils literal"><span class="pre">0..#x-1</span></tt>, then <tt class="docutils literal"><span class="pre">x!!ys</span></tt> yields the corresponding permutation of
 the elements of <tt class="docutils literal"><span class="pre">x</span></tt>. In the case of matrices the index range may also
@@ -2688,10 +2688,10 @@ printed after each expression is entered. We also call this the
 same form as you'd enter them. However, there are a few special kinds of
 objects like anonymous closures, thunks (&quot;lazy&quot; values to be evaluated when
 needed) and pointers which don't have a textual representation in the Pure
-syntax and will be printed in the format #&lt;object description&gt; by default. It
-is also possible to override the print representation of any kind of
-expression by means of the <tt class="docutils literal"><span class="pre">__show__</span></tt> function, see the <a class="reference internal" href="#caveats-and-notes">Caveats and Notes</a>
-section for details.</p>
+syntax and will be printed in the format <tt class="docutils literal"><span class="pre">#&lt;</span></tt>object description<tt class="docutils literal"><span class="pre">&gt;</span></tt>
+by default. It is also possible to override the print representation of any
+kind of expression by means of the <tt class="docutils literal"><span class="pre">__show__</span></tt> function, see the <a class="reference internal" href="#caveats-and-notes">Caveats and
+Notes</a> section for details.</p>
 <div class="section" id="online-help">
 <h2><a class="toc-backref" href="#id40">12.1&nbsp;&nbsp;&nbsp;Online Help</a></h2>
 <p>Online help is available in the interpreter with the interactive <tt class="docutils literal"><span class="pre">help</span></tt>
