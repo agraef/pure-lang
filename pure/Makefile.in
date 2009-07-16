@@ -234,19 +234,35 @@ purelib.txt: $(libfiles)
 %.html: %.txt
 	rst2html.py $< $@
 
-# This requires fixdoc from the pure-doc package.
+# Note: This requires a fairly recent (>= 07-2009) svn version of rst2latex.
+# For older rst2latex versions, you might have to remove some or all of the
+# extra formatting options.
+
+LATEXOPT=--use-latex-toc --use-latex-docinfo --stylesheet=preamble.tex --documentoptions="11pt" --literal-block-env=lstlisting
+
 %.tex: %.txt
-	rst2latex.py --use-latex-toc --no-section-numbering --use-latex-docinfo --stylesheet=preamble.tex --documentoptions="11pt" --literal-block-env=lstlisting $< | fixdoc > $@
+	rst2latex.py $(LATEXOPT) $< > $@
 
 %.pdf: %.tex preamble.tex
 	pdflatex $<
 	pdflatex $<
 	pdflatex $<
 
+# Private stuff. This is for an older svn snapshot of rst2latex that the
+# author uses. Requires fixdoc from the pure-doc package. Hopefully, this can
+# eventually go away, but current rst2latex versions still have issues with
+# hyperlink generation which make them unusable to create print versions of
+# the Pure documentation right now.
+
+pdf-fixed: pure-fixed.pdf purelib-fixed.pdf
+
+%-fixed.tex: %.txt
+	rst2latex.py --no-section-numbering $(LATEXOPT) $< | fixdoc > $@
+
 # cleaning
 
 clean:
-	rm -f *~ *.bak pure*.tex *.pdf *.aux *.log *.out pure$(EXE) $(OBJECT) pure.o pure_main.o $(libpure_lnkname) $(libpure_soname) $(libpure) parser.output
+	rm -f *~ *.bak pure*.tex *.pdf *.aux *.log *.out *.toc pure$(EXE) $(OBJECT) pure.o pure_main.o $(libpure_lnkname) $(libpure_soname) $(libpure) parser.output
 
 distclean: clean
 	rm -f Makefile config.h config.log config.status etc/pure-mode.el $(dist).tar.gz
@@ -255,7 +271,7 @@ realclean: distclean
 	rm -f $(addprefix $(srcdir)/, test/*.log $(EXTRA_SOURCE) *.html)
 
 cleandocs:
-	rm -f *~ *.bak pure*.tex *.pdf *.aux *.log *.out
+	rm -f *~ *.bak pure*.tex *.pdf *.aux *.log *.out *.toc
 
 # dependencies (rerun configure after this)
 
