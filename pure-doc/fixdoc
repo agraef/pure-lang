@@ -5,33 +5,44 @@
 # Synopsis: fixdoc latex-input-file > latex-output-file
 
 # 'fixdoc' is a little utility script which attempts to clean up some of the
-# mess that rst2latex produces. Specifically, sequences of link targets seem
-# to produce nested \hyperref calls for some mysterious reason, and itemize
-# and description environments get split at link targets, which is rather
-# inconvenient since pure-doc can't handle inlined link targets right now.
+# mess that older svn versions of rst2latex produce. Specifically, it deals
+# with incorrect nested \hyperref calls, and itemize/description environments
+# getting split at link targets, which is rather inconvenient since pure-doc
+# can't handle inlined link targets right now.
 
 # As an added bonus, 'fixdoc' also adds LaTeX labels to link targets and
 # augments index entries with page numbers. Note that the latter only works if
 # the index is in its own section named 'Index'.
 
+# This script shouldn't be needed for the latest svn versions of rst2latex any
+# more.
+
 BEGIN { RS = ""; FS = ""; idx = 0 }
 {
+  # Old rst2latex versions.
   # Remove nested link targets (bug in rst2latex?).
   while (gsub(/\{\\hypertarget\{[^}]*\}\{[^}]*\}\}/, "{}") > 0) { }
   x = $0
-  # Merge adjacent itemize and description environments.
+  # Merge adjacent itemize and description environments, tro prevent extra
+  # vspace.
   x = gensub(/\\end{itemize}\n*((\\hypertarget\{[^}]*\}\{[^}]*\})*)\n*\\begin{itemize}/, "\\1", "g", x)
   x = gensub(/\\end{description}\n*((\\hypertarget\{[^}]*\}\{[^}]*\})*)\n*\\begin{description}/, "\\1", "g", x)
+  # Add newlines before lines starting with a link target, to prevent merging
+  # of adjacent paragraphs.
+  x = gensub(/\n\\hypertarget/, "\n\n\\\\hypertarget", "g", x)
   # Add LaTeX labels to link targets.
   x = gensub(/\\hypertarget\{([^}]*)\}\{([^}]*)\}/, "\\0\\\\label{\\1}", "g", x)
   # Add pagerefs to entries in the Index section.
-  if (match($0, /\\section\{Index\}/) > 0) {
+  if (match($0, /\\section\{Index/) > 0) {
       idx = 1
   } else if (match($0, /\\section/) > 0) {
       idx = 0
   }
   if (idx != 0) {
+      # Old rst2latex versions.
       x = gensub(/\\href\{\\\#([^}]*)\}\{(([^}]|\{[^}]*\})*)\}/, "\\0\\\\ \\\\ \\\\pageref*{\\1}", "g", x)
+      # Latest rst2latex from svn.
+      x = gensub(/\\hyperref\[([^]]*)\]\{(([^}]|\{[^}]*\})*)\}/, "\\0\\\\ \\\\ \\\\pageref*{\\1}", "g", x)
   }
   print x, "\n"
 }
