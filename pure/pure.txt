@@ -547,7 +547,8 @@ Operator and nullary symbols: ``x+y``, ``x==y``, ``not x``
     corresponding ``prefix``, ``postfix`` and ``infix`` declarations, which
     are discussed in section Declarations_. Operators are just syntax;
     enclosing an operator in parentheses, such as ``(+)`` or ``(not)``, turns
-    it into an ordinary function symbol.
+    it into an ordinary function symbol. Also, operators can be qualified with
+    a namespace just like identifiers.
 
     In addition, a symbol declared as ``nullary`` denotes an "operator without
     operands", i.e., a constant symbol. In difference to operators, these are
@@ -661,17 +662,18 @@ Function and operator applications: ``foo x y z``, ``-x``, ``x+y``, ``(+x)``
 
     Operator applications are written using prefix, postfix or infix notation,
     as the declaration of the operator demands, but are just ordinary function
-    applications in disguise. E.g., ``x+y`` is exactly the same as ``(+) x y``.
-    For convenience, partial applications of infix operators can also be
-    written using so-called `operator sections`. A *left* section takes the
-    form ``(x+)`` which is equivalent to the partial application ``(+) x``. A
-    *right* section takes the form ``(+x)`` and is equivalent to the term
-    ``flip (+) x``. (This uses the ``flip`` combinator from the prelude which
-    is defined as ``flip f x y = f y x``.) For instance, ``(1/)`` denotes the
-    reciprocal and ``(+1)`` the successor function. (Note, however, that
-    ``(-x)`` always denotes an application of unary minus; the section
-    ``(+-x)`` can be used to indicate a function which subtracts ``x`` from
-    its argument.)
+    applications in disguise. As already mentioned, enclosing an operator in
+    parentheses turns it into an ordinary function symbol, thus ``x+y`` is
+    exactly the same as ``(+) x y``. For convenience, partial applications of
+    infix operators can also be written using so-called `operator sections`. A
+    *left section* takes the form ``(x+)`` which is equivalent to the partial
+    application ``(+) x``. A *right section* takes the form ``(+x)`` and is
+    equivalent to the term ``flip (+) x``. (This uses the ``flip`` combinator
+    from the prelude which is defined as ``flip f x y = f y x``.) For
+    instance, ``(1/)`` denotes the reciprocal and ``(+1)`` the successor
+    function. (Note, however, that ``(-x)`` always denotes an application of
+    unary minus; the section ``(+-x)`` can be used to indicate a function
+    which subtracts ``x`` from its argument.)
 
 Conditional expressions: ``if x then y else z``
     Evaluates to ``y`` or ``z`` depending on whether ``x`` is "true" (i.e., a
@@ -744,7 +746,7 @@ other purposes in Pure) the logical and bitwise operations, as well as the
 negated equality predicates are named a bit differently: ``~``, ``&&`` and
 ``||`` denote logical negation, conjunction and disjunction, while the
 corresponding bitwise operations are named ``not``, ``and`` and
-``or``. Moreoever, following these conventions, inequality is denoted
+``or``. Moreover, following these conventions, inequality is denoted
 ``~=``. Also note that ``&&`` and ``||`` are special forms which are evaluated
 in short-circuit mode like in C (see below), whereas the bitwise connectives
 receive their arguments using call-by-value, just like the other arithmetic
@@ -3245,10 +3247,10 @@ Pure 0.7 introduced built-in matrix structures, which called for some minor
 changes in the syntax of comprehensions and arithmetic
 sequences. Specifically, the template expression and generator/filter clauses
 of a comprehension are now separated with ``|`` instead of ``;``. Moreover,
-arithmetic sequences with arbitrary stepsize are now written x:y..z instead of
-x,y..z, and the ``..`` operator now has a higher precedence than the ``,``
-operator. This makes writing matrix slices like x!!(i..j,k..l) much more
-convenient.
+arithmetic sequences with arbitrary stepsize are now written ``x:y..z``
+instead of ``x,y..z``, and the ``..`` operator now has a higher precedence
+than the ``,`` operator. This makes writing matrix slices like
+``x!!(i..j,k..l)`` much more convenient.
 
 In Pure 0.13 the naming of the logical and bitwise operations was changed, so
 that these are now called ``~``, ``&&``, ``||`` and ``not``/``and``/``or``,
@@ -3885,7 +3887,7 @@ an existing constant or variable as a different kind of symbol. The same also
 holds if a symbol is currently defined as a function or a macro.)
 
 Finally, note that in difference to ``nullary`` symbols, by default ``const``
-symbols can not be used on the left-hand side of a rule. E.g., the following
+symbols cannot be used on the left-hand side of a rule. E.g., the following
 will not work as expected::
 
   > const zero = 0; const one = 1;
