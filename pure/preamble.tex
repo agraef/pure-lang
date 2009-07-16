@@ -41,14 +41,14 @@
 \usepackage[breaklinks]{hyperref}
 \hypersetup{bookmarksnumbered,pdfborder=0 0 0}
 
-% Some hacks to make the hyperlinks look nicer. (Unfortunately, this works
-% only partially with the latest rst2latex versions from svn.)
+% Some hacks to make the hyperlinks look nicer.
+\usepackage{patchcmd}
 \makeatletter
-\newcommand{\plain@href}{}
-\let\plain@href\href
-\newcommand{\fancy@href}[2]{\plain@href{#1}{$\triangleright$\emph{#2}}}
-\newcommand{\fancyhref}{\let\href\fancy@href}
-\newcommand{\plainhref}{\let\href\plain@href}
+\newcommand{\before@hyperref}{}
+\newcommand{\fancyhref}{\renewcommand{\before@hyperref}{$\triangleright$}}
+\newcommand{\plainhref}{\renewcommand{\before@hyperref}{}}
+\patchcommand\href{\before@hyperref}{}
+\patchcommand\hyperref{\before@hyperref}{}
 \fancyhref
 \makeatother
 
