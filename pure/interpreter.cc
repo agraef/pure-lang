@@ -5419,21 +5419,32 @@ pure_expr *interpreter::const_value(expr x)
     return const_matrix_value(x);
   case EXPR::APP: {
     exprl xs;
-    if (x.is_list(xs) || (x.is_pair() && x.is_tuple(xs))) {
-      // proper lists and tuples
-      // XXXFIXME: We should make this work for improper lists, too.
+    expr tl;
+    if (x.is_list2(xs, tl) || (x.is_pair() && x.is_tuple(xs))) {
+      // lists and tuples
       size_t i, n = xs.size();
+      pure_expr *u = 0;
+      if (!x.is_pair() && tl.tag() != symtab.nil_sym().f) {
+	u = const_value(tl);
+	if (u == 0) return 0;
+      }
       pure_expr **xv = (pure_expr**)malloc(n*sizeof(pure_expr*));
       if (!xv) return 0;
       exprl::iterator it = xs.begin(), end = xs.end();
       for (i = 0; it != end; i++, it++)
 	if ((xv[i] = const_value(*it)) == 0) {
+	  if (u != 0)
+	    pure_freenew(u);
 	  for (size_t j = 0; j < i; j++)
 	    pure_freenew(xv[j]);
 	  free(xv);
 	  return 0;
 	}
-      pure_expr *res = (x.is_pair()?pure_tuplev:pure_listv)(n, xv);
+      pure_expr *res;
+      if (u == 0)
+	res = (x.is_pair()?pure_tuplev:pure_listv)(n, xv);
+      else
+	res = pure_listv2(n, xv, u);
       free(xv);
       return res;
     } else
