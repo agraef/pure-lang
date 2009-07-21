@@ -379,6 +379,8 @@ void interpreter::init()
 
   declare_extern((void*)pure_listv,
 		 "pure_listv",      "expr*",  2, "size_t", "expr**");
+  declare_extern((void*)pure_listv2,
+		 "pure_listv2",     "expr*",  3, "size_t", "expr**", "expr*");
   declare_extern((void*)pure_tuplev,
 		 "pure_tuplev",     "expr*",  2, "size_t", "expr**");
 
@@ -6494,12 +6496,13 @@ Value *interpreter::codegen(expr x, bool quote)
 	return call("pure_catch", handler, body);
       } else {
 #if LIST_KLUDGE>0
-	/* Alternative code for proper lists and tuples, which considerably
-	   speeds up compilation for larger sequences. See the comments at the
-	   beginning of interpreter.hh for details. XXXFIXME: We should make
-	   this work with improper lists as well. */
+	/* Alternative code for lists and tuples, which considerably speeds up
+	   compilation for larger sequences. See the comments at the beginning
+	   of interpreter.hh for details. XXXFIXME: We should do further
+	   optimizations here for the case of lists and tuples of numbers. */
 	exprl xs;
-	if ((x.is_list(xs) || (x.is_pair() && x.is_tuple(xs))) &&
+	expr tl;
+	if ((x.is_list2(xs, tl) || (x.is_pair() && x.is_tuple(xs))) &&
 	    xs.size() >= LIST_KLUDGE) {
 	  size_t i = 0, n = xs.size();
 	  Value *p = act_builder().CreateCall
@@ -6513,12 +6516,21 @@ Value *interpreter::codegen(expr x, bool quote)
 	    act_builder().CreateStore
 	      (v, act_builder().CreateGEP(a, idx, idx+1));
 	  }
+	  Value *u = 0;
+	  if (!x.is_pair() && tl.tag() != symtab.nil_sym().f)
+	    u = codegen(tl);
 	  vector<Value*> args;
 	  args.push_back(SizeInt(n));
 	  args.push_back(a);
-	  v = act_env().CreateCall
-	    (module->getFunction(x.is_pair()?"pure_tuplev":"pure_listv"),
-	     args);
+	  if (u == 0)
+	    v = act_env().CreateCall
+	      (module->getFunction(x.is_pair()?"pure_tuplev":"pure_listv"),
+	       args);
+	  else {
+	    args.push_back(u);
+	    v = act_env().CreateCall
+	      (module->getFunction("pure_listv2"), args);
+	  }
 	  act_builder().CreateCall(module->getFunction("free"), p);
 	  return v;
 	}
