@@ -236,6 +236,12 @@ pure_expr *pure_listv(size_t size, pure_expr **elems);
 pure_expr *pure_tuplel(size_t size, ...);
 pure_expr *pure_tuplev(size_t size, pure_expr **elems);
 
+/* pure_listv2 works like pure_listv but takes a third argument denoting the
+   tail of the list. This allows you to create list values with an arbitrary
+   tail instead of []. */
+
+pure_expr *pure_listv2(size_t size, pure_expr **elems, pure_expr *tail);
+
 /* Expression deconstructors for all of the expression types above. These
    return a bool value indicating whether the given expression is of the
    corresponding type and, if so, set the remaining pointers to the

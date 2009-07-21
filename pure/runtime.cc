@@ -1905,6 +1905,17 @@ pure_expr *pure_listv(size_t size, pure_expr **elems)
 }
 
 extern "C"
+pure_expr *pure_listv2(size_t size, pure_expr **elems, pure_expr *tail)
+{
+  interpreter& interp = *interpreter::g_interp;
+  pure_expr *f = pure_symbol(interp.symtab.cons_sym().f);
+  pure_expr *y = tail;
+  for (size_t i = size; i-- > 0; )
+    y = mk_cons(f, elems[i], y);
+  return y;
+}
+
+extern "C"
 pure_expr *pure_tuplel(size_t size, ...)
 {
   if (size == 0) return mk_void();
