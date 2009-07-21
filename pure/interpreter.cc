@@ -326,6 +326,11 @@ void interpreter::init()
   // Add prototypes for the runtime interface and enter the corresponding
   // function pointers into the runtime map.
 
+  declare_extern((void*)malloc,
+		 "malloc",          "void*",  1, "size_t");
+  declare_extern((void*)free,
+		 "free",            "void",   1, "void*");
+
   declare_extern((void*)pure_clos,
 		 "pure_clos",       "expr*", -7, "bool", "int", "int", "int",
 		                                 "void*", "void*", "int");
@@ -372,10 +377,10 @@ void interpreter::init()
   declare_extern((void*)pure_int_matrix,
 		 "pure_int_matrix", "expr*",      1, "void*");
 
-  declare_extern((void*)pure_listl,
-		 "pure_listl",      "expr*", -1, "int");
-  declare_extern((void*)pure_tuplel,
-		 "pure_tuplel",     "expr*", -1, "int");
+  declare_extern((void*)pure_listv,
+		 "pure_listv",      "expr*",  2, "size_t", "expr**");
+  declare_extern((void*)pure_tuplev,
+		 "pure_tuplev",     "expr*",  2, "size_t", "expr**");
 
   declare_extern((void*)pure_cmp_bigint,
 		 "pure_cmp_bigint", "int",    3, "expr*", "int",
@@ -3480,6 +3485,11 @@ expr *interpreter::mkmatcomp_expr(expr *x, comp_clause_list *cs)
 #define SInt(i)		ConstantInt::get(Type::Int32Ty, (uint64_t)i, true)
 #define UInt64(i)	ConstantInt::get(Type::Int64Ty, i)
 #define SInt64(i)	ConstantInt::get(Type::Int64Ty, (uint64_t)i, true)
+#if SIZEOF_SIZE_T==4
+#define SizeInt(i)	UInt(i)
+#else
+#define SizeInt(i)	UInt64(i)
+#endif
 #define False		Bool(0)
 #define True		Bool(1)
 #define Zero		UInt(0)
@@ -6487,26 +6497,29 @@ Value *interpreter::codegen(expr x, bool quote)
 	/* Alternative code for proper lists and tuples, which considerably
 	   speeds up compilation for larger sequences. See the comments at the
 	   beginning of interpreter.hh for details. XXXFIXME: We should make
-	   this work with improper lists as well. Also, pure_listv/tuplev
-	   should be used rather than pure_listl/tuplel so that we don't run
-	   out of stack space for large sequences. */
+	   this work with improper lists as well. */
 	exprl xs;
 	if ((x.is_list(xs) || (x.is_pair() && x.is_tuple(xs))) &&
 	    xs.size() >= LIST_KLUDGE) {
 	  size_t i = 0, n = xs.size();
-	  vector<Value*> argv(n+1);
-	  argv[0] = UInt(n);
+	  Value *p = act_builder().CreateCall
+	    (module->getFunction("malloc"), SizeInt(n*sizeof(pure_expr*)));
+	  Value *a = act_builder().CreateBitCast(p, ExprPtrPtrTy);
 	  for (exprl::iterator it = xs.begin(), end = xs.end(); it != end;
-	       it++)
-	    argv[++i] = codegen(*it);
-	  act_env().CreateCall(module->getFunction("pure_new_args"), argv);
+	       it++) {
+	    Value *v = codegen(*it);
+	    Value *idx[1];
+	    idx[0] = UInt(i++);
+	    act_builder().CreateStore
+	      (v, act_builder().CreateGEP(a, idx, idx+1));
+	  }
+	  vector<Value*> args;
+	  args.push_back(SizeInt(n));
+	  args.push_back(a);
 	  v = act_env().CreateCall
-	    (module->getFunction(x.is_pair()?"pure_tuplel":"pure_listl"),
-	     argv);
-	  vector<Value*> argv1;
-	  argv1.push_back(NullExprPtr);
-	  argv1.insert(argv1.end(), argv.begin(), argv.end());
-	  act_env().CreateCall(module->getFunction("pure_free_args"), argv1);
+	    (module->getFunction(x.is_pair()?"pure_tuplev":"pure_listv"),
+	     args);
+	  act_builder().CreateCall(module->getFunction("free"), p);
 	  return v;
 	}
 	xs.clear();
