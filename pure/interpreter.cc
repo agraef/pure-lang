@@ -3841,7 +3841,8 @@ to variables should fix this. **\n";
        only call llvmc to create the object file and do the linking (if
        requested) manually. */
     string obj = (ext==".o")?out:out+".o";
-    string cmd = "llvmc "+(pure_copts?string(pure_copts)+" ":string())+
+    string cmd = "llvmc -opt -Wo,-tailcallelim "+
+      (pure_copts?string(pure_copts)+" ":string())+
       "-c -x llvm-assembler "+quote(target)+" -o "+quote(obj);
     if (vflag)
       std::cerr << cmd << endl;
