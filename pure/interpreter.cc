@@ -6543,11 +6543,11 @@ Value *interpreter::codegen(expr x, bool quote)
 	   of interpreter.hh for details. */
 	exprl xs;
 	expr tl;
-	bool ints = false, doubles = false;
 	if ((x.is_list2(xs, tl) || (x.is_pair() && x.is_tuple(xs))) &&
-	    xs.size() >= LIST_KLUDGE &&
-	    ((ints = is_int_vect(xs)) || (doubles = is_double_vect(xs)))) {
+	    xs.size() >= LIST_KLUDGE) {
 	  size_t i = 0, n = xs.size();
+	  bool ints = false, doubles = false;
+	  (ints = is_int_vect(xs)) || (doubles = is_double_vect(xs));
 	  if (ints || doubles) {
 	    /* Optimize the case of lists and tuples of ints or doubles. These
 	       can be coded directly as array constants. FIXME: We should
