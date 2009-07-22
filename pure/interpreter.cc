@@ -6390,20 +6390,15 @@ void interpreter::toplevel_codegen(expr x, const rule *rp)
 #endif
 }
 
-static bool is_int_vect(exprl xs)
+static int32_t is_const_vect(exprl xs)
 {
+  if (xs.empty()) return EXPR::INT;
+  int32_t t = xs.begin()->tag();
+  if (t != EXPR::INT && t != EXPR::DBL) return 0;
   for (exprl::iterator it = xs.begin(), end = xs.end(); it != end; it++)
-    if (it->tag() != EXPR::INT)
-      return false;
-  return true;
-}
-
-static bool is_double_vect(exprl xs)
-{
-  for (exprl::iterator it = xs.begin(), end = xs.end(); it != end; it++)
-    if (it->tag() != EXPR::DBL)
-      return false;
-  return true;
+    if (it->tag() != t)
+      return 0;
+  return t;
 }
 
 Value *interpreter::codegen(expr x, bool quote)
@@ -6546,21 +6541,20 @@ Value *interpreter::codegen(expr x, bool quote)
 	if ((x.is_list2(xs, tl) || (x.is_pair() && x.is_tuple(xs))) &&
 	    xs.size() >= LIST_KLUDGE) {
 	  size_t i = 0, n = xs.size();
-	  bool ints = false, doubles = false;
-	  (ints = is_int_vect(xs)) || (doubles = is_double_vect(xs));
-	  if (ints || doubles) {
+	  int32_t ttag = is_const_vect(xs);
+	  if (ttag==EXPR::INT || ttag==EXPR::DBL) {
 	    /* Optimize the case of lists and tuples of ints or doubles. These
 	       can be coded directly as array constants. FIXME: We should
 	       handle lists and tuples of bigints and strings in a similar
 	       fashion. */
-	    const char * tuplev_fun = ints?"pure_inttuplev":
+	    const char * tuplev_fun = ttag==EXPR::INT?"pure_inttuplev":
 	      "pure_doubletuplev";
-	    const char * listv_fun = ints?"pure_intlistv":
+	    const char * listv_fun = ttag==EXPR::INT?"pure_intlistv":
 	      "pure_doublelistv";
-	    const char * listv2_fun = ints?"pure_intlistv2":
+	    const char * listv2_fun = ttag==EXPR::INT?"pure_intlistv2":
 	      "pure_doublelistv2";
 	    vector<Constant*> c(n);
-	    if (ints)
+	    if (ttag==EXPR::INT)
 	      for (exprl::iterator it = xs.begin(), end = xs.end(); it != end;
 		   it++)
 		c[i++] = SInt(it->ival());
@@ -6569,7 +6563,7 @@ Value *interpreter::codegen(expr x, bool quote)
 		   it++)
 		c[i++] = Dbl(it->dval());
 	    Value *p;
-	    if (ints) {
+	    if (ttag==EXPR::INT) {
 	      Constant *a = ConstantArray::get
 		(ArrayType::get(Type::Int32Ty, n), c);
 	      GlobalVariable *w = new GlobalVariable
