@@ -1939,6 +1939,72 @@ pure_expr *pure_tuplev(size_t size, pure_expr **elems)
   return y;
 }
 
+pure_expr *pure_intlistv(size_t size, int32_t *elems)
+{
+  if (size == 0) return mk_nil();
+  pure_expr **myelems = (pure_expr**)malloc(size*sizeof(pure_expr*));
+  for (size_t i = 0; i < size; i++)
+    myelems[i] = pure_int(elems[i]);
+  pure_expr *res = pure_listv(size, myelems);
+  free(myelems);
+  return res;
+}
+
+pure_expr *pure_intlistv2(size_t size, int32_t *elems, pure_expr *tail)
+{
+  if (size == 0) return tail;
+  pure_expr **myelems = (pure_expr**)malloc(size*sizeof(pure_expr*));
+  for (size_t i = 0; i < size; i++)
+    myelems[i] = pure_int(elems[i]);
+  pure_expr *res = pure_listv2(size, myelems, tail);
+  free(myelems);
+  return res;
+}
+
+pure_expr *pure_inttuplev(size_t size, int32_t *elems)
+{
+  if (size == 0) return mk_void();
+  pure_expr **myelems = (pure_expr**)malloc(size*sizeof(pure_expr*));
+  for (size_t i = 0; i < size; i++)
+    myelems[i] = pure_int(elems[i]);
+  pure_expr *res = pure_tuplev(size, myelems);
+  free(myelems);
+  return res;
+}
+
+pure_expr *pure_doublelistv(size_t size, double *elems)
+{
+  if (size == 0) return mk_nil();
+  pure_expr **myelems = (pure_expr**)malloc(size*sizeof(pure_expr*));
+  for (size_t i = 0; i < size; i++)
+    myelems[i] = pure_double(elems[i]);
+  pure_expr *res = pure_listv(size, myelems);
+  free(myelems);
+  return res;
+}
+
+pure_expr *pure_doublelistv2(size_t size, double *elems, pure_expr *tail)
+{
+  if (size == 0) return tail;
+  pure_expr **myelems = (pure_expr**)malloc(size*sizeof(pure_expr*));
+  for (size_t i = 0; i < size; i++)
+    myelems[i] = pure_double(elems[i]);
+  pure_expr *res = pure_listv2(size, myelems, tail);
+  free(myelems);
+  return res;
+}
+
+pure_expr *pure_doubletuplev(size_t size, double *elems)
+{
+  if (size == 0) return mk_void();
+  pure_expr **myelems = (pure_expr**)malloc(size*sizeof(pure_expr*));
+  for (size_t i = 0; i < size; i++)
+    myelems[i] = pure_double(elems[i]);
+  pure_expr *res = pure_tuplev(size, myelems);
+  free(myelems);
+  return res;
+}
+
 extern "C"
 bool pure_is_symbol(const pure_expr *x, int32_t *sym)
 {

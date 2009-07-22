@@ -227,20 +227,30 @@ pure_expr *pure_appv(pure_expr *fun, size_t argc, pure_expr **args);
 
 /* Convenience functions to construct Pure list and tuple values from a vector
    or a varargs list of element expressions. (Internally these are actually
-   represented as function applications.) The vectors are owned by the caller
-   and won't be freed. References on the element expressions are counted
-   automatically. */
+   represented as function applications.) Note that pure_listv2 works like
+   pure_listv but takes a third argument denoting the tail of the list; this
+   allows you to create list values with an arbitrary tail instead of []. In
+   any case, the vectors are owned by the caller and won't be freed.
+   References on the element expressions are counted automatically. */
 
 pure_expr *pure_listl(size_t size, ...);
 pure_expr *pure_listv(size_t size, pure_expr **elems);
+pure_expr *pure_listv2(size_t size, pure_expr **elems, pure_expr *tail);
 pure_expr *pure_tuplel(size_t size, ...);
 pure_expr *pure_tuplev(size_t size, pure_expr **elems);
 
-/* pure_listv2 works like pure_listv but takes a third argument denoting the
-   tail of the list. This allows you to create list values with an arbitrary
-   tail instead of []. */
+/* Convenience functions to create Pure lists and tuples of int or double
+   values. These work like the corresponding generic functions above but take
+   their input from a C vector of 32 bit integers or double values,
+   respectively. */
 
-pure_expr *pure_listv2(size_t size, pure_expr **elems, pure_expr *tail);
+pure_expr *pure_intlistv(size_t size, int32_t *elems);
+pure_expr *pure_intlistv2(size_t size, int32_t *elems, pure_expr *tail);
+pure_expr *pure_inttuplev(size_t size, int32_t *elems);
+
+pure_expr *pure_doublelistv(size_t size, double *elems);
+pure_expr *pure_doublelistv2(size_t size, double *elems, pure_expr *tail);
+pure_expr *pure_doubletuplev(size_t size, double *elems);
 
 /* Expression deconstructors for all of the expression types above. These
    return a bool value indicating whether the given expression is of the

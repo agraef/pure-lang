@@ -384,6 +384,20 @@ void interpreter::init()
   declare_extern((void*)pure_tuplev,
 		 "pure_tuplev",     "expr*",  2, "size_t", "expr**");
 
+  declare_extern((void*)pure_intlistv,
+		 "pure_intlistv",   "expr*",  2, "size_t", "int*");
+  declare_extern((void*)pure_intlistv2,
+		 "pure_intlistv2",  "expr*",  3, "size_t", "int*", "expr*");
+  declare_extern((void*)pure_inttuplev,
+		 "pure_inttuplev",  "expr*",  2, "size_t", "int*");
+
+  declare_extern((void*)pure_doublelistv,
+		 "pure_doublelistv", "expr*", 2, "size_t", "double*");
+  declare_extern((void*)pure_doublelistv2,
+		 "pure_doublelistv2","expr*", 3, "size_t", "double*", "expr*");
+  declare_extern((void*)pure_doubletuplev,
+		 "pure_doubletuplev","expr*", 2, "size_t", "double*");
+
   declare_extern((void*)pure_cmp_bigint,
 		 "pure_cmp_bigint", "int",    3, "expr*", "int",
 		 sizeof(mp_limb_t)==8?"long*":"int*");
@@ -6375,6 +6389,22 @@ void interpreter::toplevel_codegen(expr x, const rule *rp)
 #endif
 }
 
+static bool is_int_vect(exprl xs)
+{
+  for (exprl::iterator it = xs.begin(), end = xs.end(); it != end; it++)
+    if (it->tag() != EXPR::INT)
+      return false;
+  return true;
+}
+
+static bool is_double_vect(exprl xs)
+{
+  for (exprl::iterator it = xs.begin(), end = xs.end(); it != end; it++)
+    if (it->tag() != EXPR::DBL)
+      return false;
+  return true;
+}
+
 Value *interpreter::codegen(expr x, bool quote)
 {
   if (x.is_null()) return NullExprPtr;
@@ -6509,13 +6539,65 @@ Value *interpreter::codegen(expr x, bool quote)
 #if LIST_KLUDGE>0
 	/* Alternative code for lists and tuples, which considerably speeds up
 	   compilation for larger sequences. See the comments at the beginning
-	   of interpreter.hh for details. XXXFIXME: We should do further
-	   optimizations here for the case of lists and tuples of numbers. */
+	   of interpreter.hh for details. */
 	exprl xs;
 	expr tl;
+	bool ints = false, doubles = false;
 	if ((x.is_list2(xs, tl) || (x.is_pair() && x.is_tuple(xs))) &&
-	    xs.size() >= LIST_KLUDGE) {
+	    xs.size() >= LIST_KLUDGE &&
+	    ((ints = is_int_vect(xs)) || (doubles = is_double_vect(xs)))) {
 	  size_t i = 0, n = xs.size();
+	  if (ints || doubles) {
+	    /* Optimize the case of lists and tuples of ints or doubles. These
+	       can be coded directly as array constants. FIXME: We should
+	       handle lists and tuples of bigints and strings in a similar
+	       fashion. */
+	    const char * tuplev_fun = ints?"pure_inttuplev":
+	      "pure_doubletuplev";
+	    const char * listv_fun = ints?"pure_intlistv":
+	      "pure_doublelistv";
+	    const char * listv2_fun = ints?"pure_intlistv2":
+	      "pure_doublelistv2";
+	    vector<Constant*> c(n);
+	    if (ints)
+	      for (exprl::iterator it = xs.begin(), end = xs.end(); it != end;
+		   it++)
+		c[i++] = SInt(it->ival());
+	    else
+	      for (exprl::iterator it = xs.begin(), end = xs.end(); it != end;
+		   it++)
+		c[i++] = Dbl(it->dval());
+	    Value *p;
+	    if (ints) {
+	      Constant *a = ConstantArray::get
+		(ArrayType::get(Type::Int32Ty, n), c);
+	      GlobalVariable *w = new GlobalVariable
+		(ArrayType::get(Type::Int32Ty, n), true,
+		 GlobalVariable::InternalLinkage, a, "$$intv", module);
+	      p = act_env().CreateGEP(w, Zero, Zero);
+	    } else {
+	      Constant *a = ConstantArray::get
+		(ArrayType::get(Type::DoubleTy, n), c);
+	      GlobalVariable *w = new GlobalVariable
+		(ArrayType::get(Type::DoubleTy, n), true,
+		 GlobalVariable::InternalLinkage, a, "$$doublev", module);
+	      p = act_env().CreateGEP(w, Zero, Zero);
+	    }
+	    Value *u = 0;
+	    if (!x.is_pair() && tl.tag() != symtab.nil_sym().f)
+	      u = codegen(tl);
+	    vector<Value*> args;
+	    args.push_back(SizeInt(n));
+	    args.push_back(p);
+	    if (u == 0)
+	      v = act_env().CreateCall
+		(module->getFunction(x.is_pair()?tuplev_fun:listv_fun), args);
+	    else {
+	      args.push_back(u);
+	      v = act_env().CreateCall(module->getFunction(listv2_fun), args);
+	    }
+	    return v;
+	  }
 	  Value *p = act_builder().CreateCall
 	    (module->getFunction("malloc"), SizeInt(n*sizeof(pure_expr*)));
 	  Value *a = act_builder().CreateBitCast(p, ExprPtrPtrTy);
