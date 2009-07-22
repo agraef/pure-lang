@@ -346,7 +346,7 @@ void interpreter::init()
 		 "pure_int64",      "expr*",  1, "int64");
   declare_extern((void*)pure_bigint,
 		 "pure_bigint",     "expr*",  2, "int",
-		 sizeof(mp_limb_t)==8?"long*":"int*");
+		 sizeof(mp_limb_t)==8?"int64*":"int*");
   declare_extern((void*)pure_double,
 		 "pure_double",     "expr*",  1, "double");
   declare_extern((void*)pure_string_dup,
@@ -400,7 +400,7 @@ void interpreter::init()
 
   declare_extern((void*)pure_cmp_bigint,
 		 "pure_cmp_bigint", "int",    3, "expr*", "int",
-		 sizeof(mp_limb_t)==8?"long*":"int*");
+		 sizeof(mp_limb_t)==8?"int64*":"int*");
   declare_extern((void*)pure_cmp_string,
 		 "pure_cmp_string", "int",    2, "expr*", "char*");
 
