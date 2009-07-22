@@ -5,6 +5,20 @@
 
 EXPR::~EXPR()
 {
+#if 1
+  /* Horrible kludge to avoid stack overflows while recursing into deep
+     expressions. If we run into this, we simply bail out. Thus the compiler
+     will continue to work but we'll leak memory (possibly copious amounts).
+     To avoid this, this destructor should really be implemented
+     non-recursively, but in practice this condition will only arise if the
+     Pure program uses huge constant expressions. */
+  char test;
+  if (interpreter::stackmax > 0 &&
+      interpreter::stackdir*(&test - interpreter::baseptr) >=
+      interpreter::stackmax)
+    // nesting too deep -- give up
+    return;
+#endif
   switch (tag) {
   case BIGINT:
     mpz_clear(data.z);
@@ -24,10 +38,22 @@ EXPR::~EXPR()
   case VAR:
     if (data.v.p) delete data.v.p;
     break;
-  case APP:
+  case APP: {
     if (data.x[0]) data.x[0]->del();
-    if (data.x[1]) data.x[1]->del();
+    EXPR *x = data.x[1];
+#if 1
+    /* We handle this case in a partially iterative fashion, to prevent stack
+       overflows on deep right-recursive structures such as lists. */
+    while (x && x->tag == APP && x->refc == 1) {
+      EXPR *y = x->data.x[1]; x->data.x[1] = 0;
+      assert(x->decref() == 0);
+      delete x;
+      x = y;
+    }
+#endif
+    if (x) x->del();
     break;
+  }
   case LAMBDA:
     if (data.x[0]) data.x[0]->del();
     if (data.x[1]) data.x[1]->del();

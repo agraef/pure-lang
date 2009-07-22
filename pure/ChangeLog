@@ -1,5 +1,12 @@
 2009-07-22  Albert Graef  <Dr.Graef@t-online.de>
 
+	* expr.cc (~EXPR): Workarounds to avoid stack overflows when
+	destroying deep compile time expressions. Specifically, the case of
+	right-recursive application structures is now done iteratively, so
+	that big list constants are handled gracefully. In other cases,
+	PURE_STACK is obeyed to prune the recursion when nesting becomes
+	too deep.
+
 	* interpreter.cc (codegen): Optimize the case of list and tuples
 	of int and double constants. These can be encoded as constant
 	arrays in the output code.
