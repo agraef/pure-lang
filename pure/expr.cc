@@ -286,24 +286,24 @@ bool expr::is_pair(expr &x, expr &y) const
 
 bool expr::is_tuple(exprl &xs) const
 {
-  expr x, y;
-  if (is_pair(x, y))
-    return x.is_tuple(xs) && y.is_tuple(xs);
-  else {
-    xs.push_back(*this);
-    return true;
+  expr x = *this, y, z;
+  while (x.is_pair(y, z)) {
+    (void)y.is_tuple(xs); // always true
+    x = z;
   }
+  xs.push_back(x);
+  return true;
 }
 
 bool expr::is_tuplel(exprl &xs) const
 {
-  expr x, y;
-  if (is_pair(x, y) && !(flags()&EXPR::PAREN))
-    return x.is_tuplel(xs) && y.is_tuplel(xs);
-  else {
-    xs.push_back(*this);
-    return true;
+  expr x = *this, y, z;
+  while (x.is_pair(y, z) && !(x.flags()&EXPR::PAREN)) {
+    (void)y.is_tuplel(xs); // always true
+    x = z;
   }
+  xs.push_back(x);
+  return true;
 }
 
 env_info::env_info(const env_info& e) : t(e.t), temp(e.temp) {
