@@ -6466,6 +6466,163 @@ static int32_t const_vect(exprl xs)
   return t;
 }
 
+/* Alternative code for lists and tuples, which considerably speeds up
+   compilation for larger sequences. See the comments at the beginning of
+   interpreter.hh for details. */
+
+Value *interpreter::list_codegen(expr x)
+{
+#if LIST_KLUDGE>0
+  exprl xs;
+  expr tl;
+  if ((x.is_list2(xs, tl) || x.is_tuple(xs)) &&
+      xs.size() >= LIST_KLUDGE) {
+    Value *v;
+    size_t i = 0, n = xs.size();
+    int32_t ttag = const_vect(xs);
+    if (ttag==EXPR::INT || ttag==EXPR::DBL) {
+      /* Optimize the case of lists and tuples of ints or doubles. These
+	 can be coded directly as array constants. */
+      const char * tuplev_fun = ttag==EXPR::INT?"pure_inttuplev":
+	"pure_doubletuplev";
+      const char * listv_fun = ttag==EXPR::INT?"pure_intlistv":
+	"pure_doublelistv";
+      const char * listv2_fun = ttag==EXPR::INT?"pure_intlistv2":
+	"pure_doublelistv2";
+      vector<Constant*> c(n);
+      if (ttag==EXPR::INT)
+	for (exprl::iterator it = xs.begin(), end = xs.end(); it != end;
+	     it++)
+	  c[i++] = SInt(it->ival());
+      else
+	for (exprl::iterator it = xs.begin(), end = xs.end(); it != end;
+	     it++)
+	  c[i++] = Dbl(it->dval());
+      Value *p;
+      if (ttag==EXPR::INT) {
+	Constant *a = ConstantArray::get
+	  (ArrayType::get(Type::Int32Ty, n), c);
+	GlobalVariable *w = new GlobalVariable
+	  (ArrayType::get(Type::Int32Ty, n), true,
+	   GlobalVariable::InternalLinkage, a, "$$intv", module);
+	p = act_env().CreateGEP(w, Zero, Zero);
+      } else {
+	Constant *a = ConstantArray::get
+	  (ArrayType::get(Type::DoubleTy, n), c);
+	GlobalVariable *w = new GlobalVariable
+	  (ArrayType::get(Type::DoubleTy, n), true,
+	   GlobalVariable::InternalLinkage, a, "$$doublev", module);
+	p = act_env().CreateGEP(w, Zero, Zero);
+      }
+      Value *u = 0;
+      if (!x.is_pair() && tl.tag() != symtab.nil_sym().f)
+	u = codegen(tl);
+      vector<Value*> args;
+      args.push_back(SizeInt(n));
+      args.push_back(p);
+      if (u == 0)
+	v = act_env().CreateCall
+	  (module->getFunction(x.is_pair()?tuplev_fun:listv_fun), args);
+      else {
+	args.push_back(u);
+	v = act_env().CreateCall(module->getFunction(listv2_fun), args);
+      }
+      return v;
+    } else if (ttag==EXPR::BIGINT) {
+      /* Optimize the case of bigint lists and tuples. These are coded
+	 as a collection of array constants containing the limbs of all
+	 elements, as well as offsets into the limb array and the bigint
+	 sizes with signs. */
+      const char * tuplev_fun = "pure_biginttuplev";
+      const char * listv_fun = "pure_bigintlistv";
+      const char * listv2_fun = "pure_bigintlistv2";
+      vector<Constant*> c, offs(n), sz(n);
+      size_t k = 0;
+      for (exprl::iterator it = xs.begin(), end = xs.end(); it != end;
+	   it++) {
+	const mpz_t& z = it->zval();
+	size_t m = (size_t)(z->_mp_size>=0 ? z->_mp_size : -z->_mp_size);
+	sz[i] = SInt((int32_t)z->_mp_size);
+	offs[i] = UInt((uint32_t)k);
+	vector<Constant*> u(m);
+	if (sizeof(mp_limb_t) == 8)
+	  for (size_t j = 0; j < m; j++) u[j] = UInt64(z->_mp_d[j]);
+	else
+	  for (size_t j = 0; j < m; j++) u[j] = UInt(z->_mp_d[j]);
+	c.insert(c.end(), u.begin(), u.end());
+	i++; k += m;
+      }
+      Constant *a = ConstantArray::get
+	(ArrayType::get((sizeof(mp_limb_t) == 8)?Type::Int64Ty
+			:Type::Int32Ty, k), c);
+      GlobalVariable *w = new GlobalVariable
+	(ArrayType::get((sizeof(mp_limb_t) == 8)?Type::Int64Ty
+			:Type::Int32Ty, k), true,
+	 GlobalVariable::InternalLinkage, a, "$$bigintv", module);
+      Constant *offs_a = ConstantArray::get
+	(ArrayType::get(Type::Int32Ty, n), offs);
+      GlobalVariable *offs_w = new GlobalVariable
+	(ArrayType::get(Type::Int32Ty, n), true,
+	 GlobalVariable::InternalLinkage, offs_a, "$$bigintv_offs",
+	 module);
+      Constant *sz_a = ConstantArray::get
+	(ArrayType::get(Type::Int32Ty, n), sz);
+      GlobalVariable *sz_w = new GlobalVariable
+	(ArrayType::get(Type::Int32Ty, n), true,
+	 GlobalVariable::InternalLinkage, sz_a, "$$bigintv_sz", module);
+      Value *p = act_env().CreateGEP(w, Zero, Zero);
+      Value *offs_p = act_env().CreateGEP(offs_w, Zero, Zero);
+      Value *sz_p = act_env().CreateGEP(sz_w, Zero, Zero);
+      Value *u = 0;
+      if (!x.is_pair() && tl.tag() != symtab.nil_sym().f)
+	u = codegen(tl);
+      vector<Value*> args;
+      args.push_back(SizeInt(n));
+      args.push_back(p);
+      args.push_back(offs_p);
+      args.push_back(sz_p);
+      if (u == 0)
+	v = act_env().CreateCall
+	  (module->getFunction(x.is_pair()?tuplev_fun:listv_fun), args);
+      else {
+	args.push_back(u);
+	v = act_env().CreateCall(module->getFunction(listv2_fun), args);
+      }
+      return v;
+    }
+    Value *p = act_builder().CreateCall
+      (module->getFunction("malloc"), SizeInt(n*sizeof(pure_expr*)));
+    Value *a = act_builder().CreateBitCast(p, ExprPtrPtrTy);
+    for (exprl::iterator it = xs.begin(), end = xs.end(); it != end;
+	 it++) {
+      Value *v = codegen(*it);
+      Value *idx[1];
+      idx[0] = UInt(i++);
+      act_builder().CreateStore
+	(v, act_builder().CreateGEP(a, idx, idx+1));
+    }
+    Value *u = 0;
+    if (!x.is_pair() && tl.tag() != symtab.nil_sym().f)
+      u = codegen(tl);
+    vector<Value*> args;
+    args.push_back(SizeInt(n));
+    args.push_back(a);
+    if (u == 0)
+      v = act_env().CreateCall
+	(module->getFunction(x.is_pair()?"pure_tuplev":"pure_listv"),
+	 args);
+    else {
+      args.push_back(u);
+      v = act_env().CreateCall
+	(module->getFunction("pure_listv2"), args);
+    }
+    act_builder().CreateCall(module->getFunction("free"), p);
+    return v;
+  } else
+#endif
+    return 0;
+}
+
 Value *interpreter::codegen(expr x, bool quote)
 {
   if (x.is_null()) return NullExprPtr;
@@ -6598,155 +6755,9 @@ Value *interpreter::codegen(expr x, bool quote)
 	return call("pure_catch", handler, body);
       } else {
 #if LIST_KLUDGE>0
-	/* Alternative code for lists and tuples, which considerably speeds up
-	   compilation for larger sequences. See the comments at the beginning
-	   of interpreter.hh for details. */
-	exprl xs;
-	expr tl;
-	if ((x.is_list2(xs, tl) || x.is_tuple(xs)) &&
-	    xs.size() >= LIST_KLUDGE) {
-	  size_t i = 0, n = xs.size();
-	  int32_t ttag = const_vect(xs);
-	  if (ttag==EXPR::INT || ttag==EXPR::DBL) {
-	    /* Optimize the case of lists and tuples of ints or doubles. These
-	       can be coded directly as array constants. */
-	    const char * tuplev_fun = ttag==EXPR::INT?"pure_inttuplev":
-	      "pure_doubletuplev";
-	    const char * listv_fun = ttag==EXPR::INT?"pure_intlistv":
-	      "pure_doublelistv";
-	    const char * listv2_fun = ttag==EXPR::INT?"pure_intlistv2":
-	      "pure_doublelistv2";
-	    vector<Constant*> c(n);
-	    if (ttag==EXPR::INT)
-	      for (exprl::iterator it = xs.begin(), end = xs.end(); it != end;
-		   it++)
-		c[i++] = SInt(it->ival());
-	    else
-	      for (exprl::iterator it = xs.begin(), end = xs.end(); it != end;
-		   it++)
-		c[i++] = Dbl(it->dval());
-	    Value *p;
-	    if (ttag==EXPR::INT) {
-	      Constant *a = ConstantArray::get
-		(ArrayType::get(Type::Int32Ty, n), c);
-	      GlobalVariable *w = new GlobalVariable
-		(ArrayType::get(Type::Int32Ty, n), true,
-		 GlobalVariable::InternalLinkage, a, "$$intv", module);
-	      p = act_env().CreateGEP(w, Zero, Zero);
-	    } else {
-	      Constant *a = ConstantArray::get
-		(ArrayType::get(Type::DoubleTy, n), c);
-	      GlobalVariable *w = new GlobalVariable
-		(ArrayType::get(Type::DoubleTy, n), true,
-		 GlobalVariable::InternalLinkage, a, "$$doublev", module);
-	      p = act_env().CreateGEP(w, Zero, Zero);
-	    }
-	    Value *u = 0;
-	    if (!x.is_pair() && tl.tag() != symtab.nil_sym().f)
-	      u = codegen(tl);
-	    vector<Value*> args;
-	    args.push_back(SizeInt(n));
-	    args.push_back(p);
-	    if (u == 0)
-	      v = act_env().CreateCall
-		(module->getFunction(x.is_pair()?tuplev_fun:listv_fun), args);
-	    else {
-	      args.push_back(u);
-	      v = act_env().CreateCall(module->getFunction(listv2_fun), args);
-	    }
-	    return v;
-	  } else if (ttag==EXPR::BIGINT) {
-	    /* Optimize the case of bigint lists and tuples. These are coded
-	       as a collection of array constants containing the limbs of all
-	       elements, as well as offsets into the limb array and the bigint
-	       sizes with signs. */
-	    const char * tuplev_fun = "pure_biginttuplev";
-	    const char * listv_fun = "pure_bigintlistv";
-	    const char * listv2_fun = "pure_bigintlistv2";
-	    vector<Constant*> c, offs(n), sz(n);
-	    size_t k = 0;
-	    for (exprl::iterator it = xs.begin(), end = xs.end(); it != end;
-		 it++) {
-	      const mpz_t& z = it->zval();
-	      size_t m = (size_t)(z->_mp_size>=0 ? z->_mp_size : -z->_mp_size);
-	      sz[i] = SInt((int32_t)z->_mp_size);
-	      offs[i] = UInt((uint32_t)k);
-	      vector<Constant*> u(m);
-	      if (sizeof(mp_limb_t) == 8)
-		for (size_t j = 0; j < m; j++) u[j] = UInt64(z->_mp_d[j]);
-	      else
-		for (size_t j = 0; j < m; j++) u[j] = UInt(z->_mp_d[j]);
-	      c.insert(c.end(), u.begin(), u.end());
-	      i++; k += m;
-	    }
-	    Constant *a = ConstantArray::get
-	      (ArrayType::get((sizeof(mp_limb_t) == 8)?Type::Int64Ty
-			      :Type::Int32Ty, k), c);
-	    GlobalVariable *w = new GlobalVariable
-	      (ArrayType::get((sizeof(mp_limb_t) == 8)?Type::Int64Ty
-			      :Type::Int32Ty, k), true,
-	       GlobalVariable::InternalLinkage, a, "$$bigintv", module);
-	    Constant *offs_a = ConstantArray::get
-	      (ArrayType::get(Type::Int32Ty, n), offs);
-	    GlobalVariable *offs_w = new GlobalVariable
-	      (ArrayType::get(Type::Int32Ty, n), true,
-	       GlobalVariable::InternalLinkage, offs_a, "$$bigintv_offs",
-	       module);
-	    Constant *sz_a = ConstantArray::get
-	      (ArrayType::get(Type::Int32Ty, n), sz);
-	    GlobalVariable *sz_w = new GlobalVariable
-	      (ArrayType::get(Type::Int32Ty, n), true,
-	       GlobalVariable::InternalLinkage, sz_a, "$$bigintv_sz", module);
-	    Value *p = act_env().CreateGEP(w, Zero, Zero);
-	    Value *offs_p = act_env().CreateGEP(offs_w, Zero, Zero);
-	    Value *sz_p = act_env().CreateGEP(sz_w, Zero, Zero);
-	    Value *u = 0;
-	    if (!x.is_pair() && tl.tag() != symtab.nil_sym().f)
-	      u = codegen(tl);
-	    vector<Value*> args;
-	    args.push_back(SizeInt(n));
-	    args.push_back(p);
-	    args.push_back(offs_p);
-	    args.push_back(sz_p);
-	    if (u == 0)
-	      v = act_env().CreateCall
-		(module->getFunction(x.is_pair()?tuplev_fun:listv_fun), args);
-	    else {
-	      args.push_back(u);
-	      v = act_env().CreateCall(module->getFunction(listv2_fun), args);
-	    }
-	    return v;
-	  }
-	  Value *p = act_builder().CreateCall
-	    (module->getFunction("malloc"), SizeInt(n*sizeof(pure_expr*)));
-	  Value *a = act_builder().CreateBitCast(p, ExprPtrPtrTy);
-	  for (exprl::iterator it = xs.begin(), end = xs.end(); it != end;
-	       it++) {
-	    Value *v = codegen(*it);
-	    Value *idx[1];
-	    idx[0] = UInt(i++);
-	    act_builder().CreateStore
-	      (v, act_builder().CreateGEP(a, idx, idx+1));
-	  }
-	  Value *u = 0;
-	  if (!x.is_pair() && tl.tag() != symtab.nil_sym().f)
-	    u = codegen(tl);
-	  vector<Value*> args;
-	  args.push_back(SizeInt(n));
-	  args.push_back(a);
-	  if (u == 0)
-	    v = act_env().CreateCall
-	      (module->getFunction(x.is_pair()?"pure_tuplev":"pure_listv"),
-	       args);
-	  else {
-	    args.push_back(u);
-	    v = act_env().CreateCall
-	      (module->getFunction("pure_listv2"), args);
-	  }
-	  act_builder().CreateCall(module->getFunction("free"), p);
-	  return v;
-	}
-	xs.clear();
+	// special code for lists and tuples
+	Value *w = list_codegen(x);
+	if (w) return w;
 #endif
 	// ordinary function application
 	Value *u = codegen(x.xval1()), *v = codegen(x.xval2());
