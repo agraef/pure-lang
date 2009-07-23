@@ -505,6 +505,18 @@ pure_expr *pure_applc(pure_expr *x, pure_expr *y);
 pure_expr *pure_int64(int64_t l);
 pure_expr *pure_bigint(int32_t size, const limb_t *limbs);
 
+/* Additional bigint list and tuple constructors. These take the limbs of all
+   elements in a single array. The offs array gives the offset of each bigint
+   in the limbs array, and the sz array gives the size (and sign) of each
+   bigint. */
+
+pure_expr *pure_bigintlistv(size_t size, limb_t *limbs,
+			    uint32_t *offs, int32_t *sz);
+pure_expr *pure_bigintlistv2(size_t size, limb_t *limbs,
+			     uint32_t *offs, int32_t *sz, pure_expr *tail);
+pure_expr *pure_biginttuplev(size_t size, limb_t *limbs,
+			     uint32_t *offs, int32_t *sz);
+
 /* Compare a bigint or string expression against a constant value. This is
    used by the pattern matching code. */
 

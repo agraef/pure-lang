@@ -2005,6 +2005,42 @@ pure_expr *pure_doubletuplev(size_t size, double *elems)
   return res;
 }
 
+pure_expr *pure_bigintlistv(size_t size, limb_t *limbs,
+			    uint32_t *offs, int32_t *sz)
+{
+  if (size == 0) return mk_nil();
+  pure_expr **myelems = (pure_expr**)malloc(size*sizeof(pure_expr*));
+  for (size_t i = 0; i < size; i++)
+    myelems[i] = pure_bigint(sz[i], limbs+offs[i]);
+  pure_expr *res = pure_listv(size, myelems);
+  free(myelems);
+  return res;
+}
+
+pure_expr *pure_bigintlistv2(size_t size, limb_t *limbs,
+			     uint32_t *offs, int32_t *sz, pure_expr *tail)
+{
+  if (size == 0) return tail;
+  pure_expr **myelems = (pure_expr**)malloc(size*sizeof(pure_expr*));
+  for (size_t i = 0; i < size; i++)
+    myelems[i] = pure_bigint(sz[i], limbs+offs[i]);
+  pure_expr *res = pure_listv2(size, myelems, tail);
+  free(myelems);
+  return res;
+}
+
+pure_expr *pure_biginttuplev(size_t size, limb_t *limbs,
+			     uint32_t *offs, int32_t *sz)
+{
+  if (size == 0) return mk_void();
+  pure_expr **myelems = (pure_expr**)malloc(size*sizeof(pure_expr*));
+  for (size_t i = 0; i < size; i++)
+    myelems[i] = pure_bigint(sz[i], limbs+offs[i]);
+  pure_expr *res = pure_tuplev(size, myelems);
+  free(myelems);
+  return res;
+}
+
 extern "C"
 bool pure_is_symbol(const pure_expr *x, int32_t *sym)
 {
