@@ -1681,7 +1681,7 @@ void interpreter::compile(expr x)
       for (exprl::iterator it = xs.begin(), end = xs.end(); it != end; it++)
 	compile(*it);
       compile(tl);
-    } else if (x.is_pair() && x.is_tuple(xs)) {
+    } else if (x.is_tuple(xs)) {
       for (exprl::iterator it = xs.begin(), end = xs.end(); it != end; it++)
 	compile(*it);
     } else {
@@ -4389,7 +4389,7 @@ void Env::build_map(expr x)
       for (exprl::iterator it = xs.begin(), end = xs.end(); it != end; it++)
 	build_map(*it);
       build_map(tl);
-    } else if (x.is_pair() && x.is_tuple(xs)) {
+    } else if (x.is_tuple(xs)) {
       /* Optimize the tuple case so that we don't run out of stack here. */
       for (exprl::iterator it = xs.begin(), end = xs.end(); it != end; it++)
 	build_map(*it);
@@ -5500,7 +5500,7 @@ pure_expr *interpreter::const_value(expr x)
   case EXPR::APP: {
     exprl xs;
     expr tl;
-    if (x.is_list2(xs, tl) || (x.is_pair() && x.is_tuple(xs))) {
+    if (x.is_list2(xs, tl) || x.is_tuple(xs)) {
       // lists and tuples
       size_t i, n = xs.size();
       pure_expr *u = 0;
@@ -6603,7 +6603,7 @@ Value *interpreter::codegen(expr x, bool quote)
 	   of interpreter.hh for details. */
 	exprl xs;
 	expr tl;
-	if ((x.is_list2(xs, tl) || (x.is_pair() && x.is_tuple(xs))) &&
+	if ((x.is_list2(xs, tl) || x.is_tuple(xs)) &&
 	    xs.size() >= LIST_KLUDGE) {
 	  size_t i = 0, n = xs.size();
 	  int32_t ttag = const_vect(xs);

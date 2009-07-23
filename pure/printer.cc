@@ -307,27 +307,48 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
     return os << "}";
   }
   case EXPR::APP: {
-    expr u, v, w, y;
+    expr u, v, w, y, tl;
     exprl xs;
     prec_t p;
-    if (x.is_list(xs)) {
-      // proper list value
+    if (x.is_list2(xs, tl)) {
       size_t n = xs.size();
-      os << "[";
-      if (n>1 || (n==1 && xs.front().is_pair())) {
-	// list elements at a precedence not larger than ',' have to be
-	// parenthesized
-	p = sym_nprec(interpreter::g_interp->symtab.pair_sym().f) + 1;
-	for (exprl::const_iterator it = xs.begin(); it != xs.end(); ) {
-	  os << paren(p, *it, pat);
-	  if (++it != xs.end()) os << ",";
-	}
-      } else
-	for (exprl::const_iterator it = xs.begin(); it != xs.end(); ) {
-	  printx(os, *it, pat);
-	  if (++it != xs.end()) os << ",";
-	}
-      return os << "]";
+      if (tl.is_nil()) {
+	// proper list value
+	os << "[";
+	if (n>1 || (n==1 && xs.front().is_pair())) {
+	  // list elements at a precedence not larger than ',' have to be
+	  // parenthesized
+	  p = sym_nprec(interpreter::g_interp->symtab.pair_sym().f) + 1;
+	  for (exprl::const_iterator it = xs.begin(); it != xs.end(); ) {
+	    os << paren(p, *it, pat);
+	    if (++it != xs.end()) os << ",";
+	  }
+	} else
+	  for (exprl::const_iterator it = xs.begin(); it != xs.end(); ) {
+	    printx(os, *it, pat);
+	    if (++it != xs.end()) os << ",";
+	  }
+	return os << "]";
+      } else {
+	// improper list value
+	p = sym_nprec(interpreter::g_interp->symtab.cons_sym().f) + 1;
+	for (exprl::const_iterator it = xs.begin(); it != xs.end(); it++)
+	  os << paren(p, *it, pat) << ":";
+	return os << paren(p-1, tl, pat);
+      }
+    } else if (x.is_tuple(xs)) {
+      // tuple elements at a precedence not larger than ',' have to be
+      // parenthesized
+      p = sym_nprec(interpreter::g_interp->symtab.pair_sym().f) + 1;
+      for (exprl::const_iterator it = xs.begin(); it != xs.end(); ) {
+	exprl::const_iterator jt = it;
+	if (++jt != xs.end())
+	  os << paren(p, *it, pat) << ",";
+	else
+	  os << paren(p-1, *it, pat);
+	it = jt;
+      }
+      return os;
     } else if (x.is_app(u, v)) {
       if (u.ftag() > 0 && (p = sym_nprec(u.ftag())) < 100 && p%10 >= 3) {
 	// unary operator
@@ -634,6 +655,17 @@ static bool pure_is_list(const pure_expr *x, list<const pure_expr*>& xs,
     return true;
   } else
     return false;
+}
+
+static bool pure_is_tuple(const pure_expr *x, list<const pure_expr*>& xs)
+{
+  while (pure_is_pair(x)) {
+    xs.push_back(x->data.x[0]->data.x[1]);
+    x = x->data.x[1];
+  }
+  if (xs.empty()) return false;
+  xs.push_back(x);
+  return true;
 }
 
 static bool quoted_matrix(const pure_expr *x)
@@ -950,6 +982,22 @@ ostream& operator << (ostream& os, const pure_expr *x)
 	  }
 	return os << "]";
       }
+    } else if (pure_is_tuple(x, xs)) {
+      /* A tuple. We implement this case iteratively, to prevent segfaults on
+	 large tuples. */
+      // tuple elements at a precedence not larger than ',' have to be
+      // parenthesized
+      p = sym_nprec(interpreter::g_interp->symtab.pair_sym().f) + 1;
+      for (list<const pure_expr*>::const_iterator it = xs.begin();
+	   it != xs.end(); ) {
+	list<const pure_expr*>::const_iterator jt = it;
+	if (++jt != xs.end())
+	  os << pure_paren(p, *it) << ",";
+	else
+	  os << pure_paren(p-1, *it);
+	it = jt;
+      }
+      return os;
     }
     const pure_expr *u = x->data.x[0], *v = x->data.x[1], *w, *y;
     if (u->tag > 0 && (p = sym_nprec(u->tag)) < 100 && p%10 >= 3) {

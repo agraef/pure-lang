@@ -286,13 +286,16 @@ bool expr::is_pair(expr &x, expr &y) const
 
 bool expr::is_tuple(exprl &xs) const
 {
-  expr x = *this, y, z;
-  while (x.is_pair(y, z)) {
-    (void)y.is_tuple(xs); // always true
-    x = z;
-  }
-  xs.push_back(x);
-  return true;
+  if (is_pair()) {
+    expr x = *this, y, z;
+    while (x.is_pair(y, z)) {
+      xs.push_back(y);
+      x = z;
+    }
+    xs.push_back(x);
+    return true;
+  } else
+    return false;
 }
 
 bool expr::is_tuplel(exprl &xs) const

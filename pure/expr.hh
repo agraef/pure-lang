@@ -522,15 +522,10 @@ public:
   bool is_list()   const;
   bool is_voidx()  const;
   bool is_pair()   const;
-  // This is always true, as we consider a singleton as a tuple, too. Use
-  // is_pair() to test for a "real" tuple instead.
-  bool is_tuple()  const { return true; }
   bool is_cons(expr &x, expr &y) const;
   bool is_list(exprl &xs) const;
   bool is_list2(exprl &xs, expr& tl) const;
   bool is_pair(expr &x, expr &y) const;
-  // Always true (see note above). Use is_pair() && istuple(xs) to test for a
-  // "real" tuple instead.
   bool is_tuple(exprl &xs) const;
   // Special check for tuples used in list construction.
   bool is_tuplel(exprl &xs) const;
