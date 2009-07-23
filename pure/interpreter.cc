@@ -1222,6 +1222,43 @@ static bool is_list2(interpreter& interp,
   return true;
 }
 
+static inline bool is_pair(interpreter& interp,
+			   pure_expr *x, pure_expr*& y, pure_expr*& z)
+{
+  if (x->tag == EXPR::APP && x->data.x[0]->tag == EXPR::APP &&
+      x->data.x[0]->data.x[0]->tag == interp.symtab.pair_sym().f) {
+    y = x->data.x[0]->data.x[1];
+    z = x->data.x[1];
+    return true;
+  } else
+    return false;
+}
+
+static bool is_tuple(interpreter& interp,
+		     pure_expr *x, size_t& size,
+		     pure_expr**& elems)
+{
+  assert(x);
+  pure_expr *u = x, *y, *z;
+  size = 0;
+  while (is_pair(interp, u, y, z)) {
+    size++;
+    u = z;
+  }
+  if (size == 0) return false;
+  size++;
+  elems = (pure_expr**)malloc(size*sizeof(pure_expr*));
+  assert(elems);
+  size_t i = 0;
+  u = x;
+  while (is_pair(interp, u, y, z)) {
+    elems[i++] = y;
+    u = z;
+  }
+  elems[i++] = u;
+  return true;
+}
+
 expr interpreter::pure_expr_to_expr(pure_expr *x)
 {
   char test;
@@ -1236,6 +1273,15 @@ expr interpreter::pure_expr_to_expr(pure_expr *x)
       expr x = pure_expr_to_expr(tl);
       while (size > 0)
 	x = expr::cons(pure_expr_to_expr(elems[--size]), x);
+      free(elems);
+      return x;
+    } else if (is_tuple(*this, x, size, elems)) {
+      /* Optimize the tuple case. */
+      expr x = pure_expr_to_expr(elems[--size]);
+      while (size > 0) {
+	expr y = pure_expr_to_expr(elems[--size]);
+	x = expr::pair(y, x);
+      }
       free(elems);
       return x;
     } else
@@ -1629,11 +1675,15 @@ void interpreter::compile(expr x)
   case EXPR::APP: {
     exprl xs;
     expr tl;
+    /* Optimize the list and tuple cases so that we don't run out of stack
+       space here. */
     if (x.is_list2(xs, tl)) {
-      /* Optimize the list case so that we don't run out of stack here. */
       for (exprl::iterator it = xs.begin(), end = xs.end(); it != end; it++)
 	compile(*it);
       compile(tl);
+    } else if (x.is_pair() && x.is_tuple(xs)) {
+      for (exprl::iterator it = xs.begin(), end = xs.end(); it != end; it++)
+	compile(*it);
     } else {
       compile(x.xval1());
       compile(x.xval2());
@@ -4339,6 +4389,10 @@ void Env::build_map(expr x)
       for (exprl::iterator it = xs.begin(), end = xs.end(); it != end; it++)
 	build_map(*it);
       build_map(tl);
+    } else if (x.is_pair() && x.is_tuple(xs)) {
+      /* Optimize the tuple case so that we don't run out of stack here. */
+      for (exprl::iterator it = xs.begin(), end = xs.end(); it != end; it++)
+	build_map(*it);
     } else {
       build_map(x.xval1());
       build_map(x.xval2());
