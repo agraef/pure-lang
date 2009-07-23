@@ -238,15 +238,6 @@ bool expr::is_pair() const
     u.tag() == interpreter::g_interp->symtab.pair_sym().f;
 }
 
-bool expr::is_tuplex() const
-{
-  expr x, y;
-  if (is_pair(x, y))
-    return !x.is_pair() && y.is_tuplex();
-  else
-    return true;
-}
-
 bool expr::is_cons(expr &x, expr &y) const
 {
   expr u, v;
@@ -298,23 +289,6 @@ bool expr::is_tuple(exprl &xs) const
   expr x, y;
   if (is_pair(x, y))
     return x.is_tuple(xs) && y.is_tuple(xs);
-  else {
-    xs.push_back(*this);
-    return true;
-  }
-}
-
-bool expr::is_tuplex(exprl &xs) const
-{
-  expr x, y;
-  if (is_pair(x, y))
-    if (x.is_pair()) {
-      xs.clear();
-      return false;
-    } else {
-      xs.push_back(x);
-      return y.is_tuplex(xs);
-    }
   else {
     xs.push_back(*this);
     return true;
