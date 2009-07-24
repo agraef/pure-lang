@@ -517,6 +517,16 @@ pure_expr *pure_bigintlistv2(size_t size, limb_t *limbs,
 pure_expr *pure_biginttuplev(size_t size, limb_t *limbs,
 			     uint32_t *offs, int32_t *sz);
 
+/* Additional string list and tuple constructors. These take a char array
+   containing all (0-terminated) strings in the second argument. The offs
+   array gives the offset of each string in the chars array. The strings are
+   assumed to be in utf-8 encoding. */
+
+pure_expr *pure_strlistv(size_t size, char *chars, uint32_t *offs);
+pure_expr *pure_strlistv2(size_t size, char *chars, uint32_t *offs,
+			  pure_expr *tail);
+pure_expr *pure_strtuplev(size_t size, char *chars, uint32_t *offs);
+
 /* Compare a bigint or string expression against a constant value. This is
    used by the pattern matching code. */
 

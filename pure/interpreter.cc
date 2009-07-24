@@ -409,6 +409,14 @@ void interpreter::init()
 		 "pure_biginttuplev","expr*", 4, "size_t",
 		 sizeof(mp_limb_t)==8?"int64*":"int*", "int*", "int*");
 
+  declare_extern((void*)pure_strlistv,
+		 "pure_strlistv",   "expr*",  3, "size_t", "char*", "int*");
+  declare_extern((void*)pure_strlistv2,
+		 "pure_strlistv2",  "expr*",  4, "size_t", "char*", "int*",
+		 "expr*");
+  declare_extern((void*)pure_strtuplev,
+		 "pure_strtuplev",  "expr*",  3, "size_t", "char*", "int*");
+
   declare_extern((void*)pure_cmp_bigint,
 		 "pure_cmp_bigint", "int",    3, "expr*", "int",
 		 sizeof(mp_limb_t)==8?"int64*":"int*");
@@ -3558,6 +3566,7 @@ expr *interpreter::mkmatcomp_expr(expr *x, comp_clause_list *cs)
 
 #define Dbl(d)		ConstantFP::get(Type::DoubleTy, d)
 #define Bool(i)		ConstantInt::get(Type::Int1Ty, i)
+#define Char(i)		ConstantInt::get(Type::Int8Ty, i)
 #define UInt(i)		ConstantInt::get(Type::Int32Ty, i)
 #define SInt(i)		ConstantInt::get(Type::Int32Ty, (uint64_t)i, true)
 #define UInt64(i)	ConstantInt::get(Type::Int64Ty, i)
@@ -6459,7 +6468,8 @@ static int32_t const_vect(exprl xs)
 {
   if (xs.empty()) return EXPR::INT;
   int32_t t = xs.begin()->tag();
-  if (t != EXPR::INT && t != EXPR::BIGINT && t != EXPR::DBL) return 0;
+  if (t != EXPR::INT && t != EXPR::BIGINT && t != EXPR::DBL && t != EXPR::STR)
+    return 0;
   for (exprl::iterator it = xs.begin(), end = xs.end(); it != end; it++)
     if (it->tag() != t)
       return 0;
@@ -6581,6 +6591,53 @@ Value *interpreter::list_codegen(expr x)
       args.push_back(p);
       args.push_back(offs_p);
       args.push_back(sz_p);
+      if (u == 0)
+	v = act_env().CreateCall
+	  (module->getFunction(x.is_pair()?tuplev_fun:listv_fun), args);
+      else {
+	args.push_back(u);
+	v = act_env().CreateCall(module->getFunction(listv2_fun), args);
+      }
+      return v;
+    } else if (ttag==EXPR::STR) {
+      /* Optimize the case of string lists and tuples. These are coded as a
+	 single char array containing all (0-terminated) strings, together
+	 with an offset table. */
+      const char * tuplev_fun = "pure_strtuplev";
+      const char * listv_fun = "pure_strlistv";
+      const char * listv2_fun = "pure_strlistv2";
+      vector<Constant*> c, offs(n);
+      size_t k = 0;
+      for (exprl::iterator it = xs.begin(), end = xs.end(); it != end;
+	   it++) {
+	const char *s = it->sval();
+	size_t m = strlen(s)+1;
+	offs[i] = UInt((uint32_t)k);
+	vector<Constant*> u(m);
+	for (size_t j = 0; j < m; j++) u[j] = Char(s[j]);
+	c.insert(c.end(), u.begin(), u.end());
+	i++; k += m;
+      }
+      Constant *a = ConstantArray::get
+	(ArrayType::get(Type::Int8Ty, k), c);
+      GlobalVariable *w = new GlobalVariable
+	(ArrayType::get(Type::Int8Ty, k), true,
+	 GlobalVariable::InternalLinkage, a, "$$strv", module);
+      Constant *offs_a = ConstantArray::get
+	(ArrayType::get(Type::Int32Ty, n), offs);
+      GlobalVariable *offs_w = new GlobalVariable
+	(ArrayType::get(Type::Int32Ty, n), true,
+	 GlobalVariable::InternalLinkage, offs_a, "$$strv_offs",
+	 module);
+      Value *p = act_env().CreateGEP(w, Zero, Zero);
+      Value *offs_p = act_env().CreateGEP(offs_w, Zero, Zero);
+      Value *u = 0;
+      if (!x.is_pair() && tl.tag() != symtab.nil_sym().f)
+	u = codegen(tl);
+      vector<Value*> args;
+      args.push_back(SizeInt(n));
+      args.push_back(p);
+      args.push_back(offs_p);
       if (u == 0)
 	v = act_env().CreateCall
 	  (module->getFunction(x.is_pair()?tuplev_fun:listv_fun), args);
