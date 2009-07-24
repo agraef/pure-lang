@@ -418,6 +418,9 @@ void interpreter::init()
   declare_extern((void*)pure_biginttuplev,
 		 "pure_biginttuplev","expr*", 4, "size_t",
 		 sizeof(mp_limb_t)==8?"int64*":"int*", "int*", "int*");
+  declare_extern((void*)pure_bigintmatrixv,
+		 "pure_bigintmatrixv","expr*", 5, "size_t", "size_t",
+		 sizeof(mp_limb_t)==8?"int64*":"int*", "int*", "int*");
 
   declare_extern((void*)pure_strlistv,
 		 "pure_strlistv",   "expr*",  3, "size_t", "char*", "int*");
@@ -426,6 +429,9 @@ void interpreter::init()
 		 "expr*");
   declare_extern((void*)pure_strtuplev,
 		 "pure_strtuplev",  "expr*",  3, "size_t", "char*", "int*");
+  declare_extern((void*)pure_strmatrixv,
+		 "pure_strmatrixv", "expr*",  4, "size_t", "size_t",
+		 "char*", "int*");
 
   declare_extern((void*)pure_cmp_bigint,
 		 "pure_cmp_bigint", "int",    3, "expr*", "int",
@@ -6735,6 +6741,8 @@ static inline int32_t matrix_tag(interpreter& interp, expr x)
   switch (x.tag()) {
   case EXPR::INT: return EXPR::IMATRIX;
   case EXPR::DBL: return EXPR::DMATRIX;
+  case EXPR::BIGINT: return EXPR::BIGINT;
+  case EXPR::STR: return EXPR::STR;
   default: {
     double a, b;
     if (is_complex(interp, x, a, b))
@@ -6748,9 +6756,12 @@ static inline int32_t matrix_tag(interpreter& interp, expr x)
 static bool is_const_matrix(interpreter& interp,
 			    exprll xs, int32_t& t, size_t& n, size_t& m)
 {
+#if LIST_OPT>0
   // We don't allow empty matrices here.
   if (xs.empty() || xs.front().empty()) return false;
   n = xs.size(); m = xs.front().size();
+  // Also skip small matrices.
+  if (n*m < LIST_OPT) return false;
   t = matrix_tag(interp, xs.front().front());
   if (t == 0) return false;
   for (exprll::iterator it = xs.begin(), end = xs.end();
@@ -6763,6 +6774,9 @@ static bool is_const_matrix(interpreter& interp,
     }
   }
   return true;
+#else
+  return false;
+#endif
 }
 
 Value *interpreter::matrix_codegen(expr x)
@@ -6771,7 +6785,7 @@ Value *interpreter::matrix_codegen(expr x)
   exprll& xs = *x.xvals();
   int32_t ttag = 0;
   size_t n = 0, m = 0;
-  if (is_const_matrix(*this, xs, ttag, n, m) && n*m >= LIST_OPT) {
+  if (is_const_matrix(*this, xs, ttag, n, m)) {
     Value *v;
     size_t i = 0;
     if (ttag==EXPR::IMATRIX || ttag==EXPR::DMATRIX || ttag==EXPR::CMATRIX) {
@@ -6827,6 +6841,96 @@ Value *interpreter::matrix_codegen(expr x)
       args.push_back(SInt(m));
       args.push_back(act_builder().CreateBitCast(p, VoidPtrTy));
       v = act_env().CreateCall(module->getFunction(matrix_fun), args);
+      return v;
+    } else if (ttag==EXPR::BIGINT) {
+      /* Optimize the case of bigint matrices. These are coded as a collection
+	 of array constants containing the limbs of all elements, as well as
+	 offsets into the limb array and the bigint sizes with signs. */
+      size_t N = n*m;
+      vector<Constant*> c, offs(N), sz(N);
+      size_t k = 0;
+      for (exprll::iterator it = xs.begin(), end = xs.end(); it != end; it++)
+	for (exprl::iterator jt = it->begin(), end = it->end();
+	     jt != end; jt++) {
+	const mpz_t& z = jt->zval();
+	size_t m = (size_t)(z->_mp_size>=0 ? z->_mp_size : -z->_mp_size);
+	sz[i] = SInt((int32_t)z->_mp_size);
+	offs[i] = UInt((uint32_t)k);
+	vector<Constant*> u(m);
+	if (sizeof(mp_limb_t) == 8)
+	  for (size_t j = 0; j < m; j++) u[j] = UInt64(z->_mp_d[j]);
+	else
+	  for (size_t j = 0; j < m; j++) u[j] = UInt(z->_mp_d[j]);
+	c.insert(c.end(), u.begin(), u.end());
+	i++; k += m;
+      }
+      Constant *a = ConstantArray::get
+	(ArrayType::get((sizeof(mp_limb_t) == 8)?Type::Int64Ty
+			:Type::Int32Ty, k), c);
+      GlobalVariable *w = new GlobalVariable
+	(ArrayType::get((sizeof(mp_limb_t) == 8)?Type::Int64Ty
+			:Type::Int32Ty, k), true,
+	 GlobalVariable::InternalLinkage, a, "$$bigintv", module);
+      Constant *offs_a = ConstantArray::get
+	(ArrayType::get(Type::Int32Ty, N), offs);
+      GlobalVariable *offs_w = new GlobalVariable
+	(ArrayType::get(Type::Int32Ty, N), true,
+	 GlobalVariable::InternalLinkage, offs_a, "$$bigintv_offs",
+	 module);
+      Constant *sz_a = ConstantArray::get
+	(ArrayType::get(Type::Int32Ty, N), sz);
+      GlobalVariable *sz_w = new GlobalVariable
+	(ArrayType::get(Type::Int32Ty, N), true,
+	 GlobalVariable::InternalLinkage, sz_a, "$$bigintv_sz", module);
+      Value *p = act_env().CreateGEP(w, Zero, Zero);
+      Value *offs_p = act_env().CreateGEP(offs_w, Zero, Zero);
+      Value *sz_p = act_env().CreateGEP(sz_w, Zero, Zero);
+      vector<Value*> args;
+      args.push_back(SizeInt(n));
+      args.push_back(SizeInt(m));
+      args.push_back(p);
+      args.push_back(offs_p);
+      args.push_back(sz_p);
+      v = act_env().CreateCall
+	(module->getFunction("pure_bigintmatrixv"), args);
+      return v;
+    } else if (ttag==EXPR::STR) {
+      /* Optimize the case of string lists and tuples. These are coded as a
+	 single char array containing all (0-terminated) strings, together
+	 with an offset table. */
+      size_t N = n*m;
+      vector<Constant*> c, offs(N);
+      size_t k = 0;
+      for (exprll::iterator it = xs.begin(), end = xs.end(); it != end; it++)
+	for (exprl::iterator jt = it->begin(), end = it->end();
+	     jt != end; jt++) {
+	const char *s = jt->sval();
+	size_t m = strlen(s)+1;
+	offs[i] = UInt((uint32_t)k);
+	vector<Constant*> u(m);
+	for (size_t j = 0; j < m; j++) u[j] = Char(s[j]);
+	c.insert(c.end(), u.begin(), u.end());
+	i++; k += m;
+      }
+      Constant *a = ConstantArray::get
+	(ArrayType::get(Type::Int8Ty, k), c);
+      GlobalVariable *w = new GlobalVariable
+	(ArrayType::get(Type::Int8Ty, k), true,
+	 GlobalVariable::InternalLinkage, a, "$$strv", module);
+      Constant *offs_a = ConstantArray::get
+	(ArrayType::get(Type::Int32Ty, N), offs);
+      GlobalVariable *offs_w = new GlobalVariable
+	(ArrayType::get(Type::Int32Ty, N), true,
+	 GlobalVariable::InternalLinkage, offs_a, "$$strv_offs",
+	 module);
+      Value *p = act_env().CreateGEP(w, Zero, Zero);
+      Value *offs_p = act_env().CreateGEP(offs_w, Zero, Zero);
+      vector<Value*> args;
+      args.push_back(SizeInt(n));
+      args.push_back(SizeInt(m));
+      args.push_back(p);
+      args.push_back(offs_p);
+      v = act_env().CreateCall(module->getFunction("pure_strmatrixv"), args);
       return v;
     } else
       return 0;

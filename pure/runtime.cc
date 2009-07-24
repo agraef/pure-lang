@@ -2041,6 +2041,21 @@ pure_expr *pure_biginttuplev(size_t size, limb_t *limbs,
   return res;
 }
 
+pure_expr *pure_bigintmatrixv(size_t nrows, size_t ncols, limb_t *limbs,
+			      uint32_t *offs, int32_t *sz)
+{
+  gsl_matrix_symbolic *mat = create_symbolic_matrix(nrows, ncols);
+  if (!mat) return 0;
+  pure_expr **data = mat->data;
+  size_t tda = mat->tda, k = 0;
+  for (size_t i = 0; i < nrows; i++)
+    for (size_t j = 0; j < ncols; j++) {
+      data[i*tda+j] = pure_bigint(sz[k], limbs+offs[k]);
+      k++;
+    }
+  return pure_symbolic_matrix(mat);
+}
+
 pure_expr *pure_strlistv(size_t size, char *chars, uint32_t *offs)
 {
   if (size == 0) return mk_nil();
@@ -2073,6 +2088,20 @@ pure_expr *pure_strtuplev(size_t size, char *chars, uint32_t *offs)
   pure_expr *res = pure_tuplev(size, myelems);
   free(myelems);
   return res;
+}
+
+pure_expr *pure_strmatrixv(size_t nrows, size_t ncols, char *chars,
+			   uint32_t *offs)
+{
+  gsl_matrix_symbolic *mat = create_symbolic_matrix(nrows, ncols);
+  if (!mat) return 0;
+  pure_expr **data = mat->data;
+  size_t tda = mat->tda, k = 0;
+  for (size_t i = 0; i < nrows; i++)
+    for (size_t j = 0; j < ncols; j++) {
+      data[i*tda+j] = pure_string_dup(chars+offs[k++]);
+    }
+  return pure_symbolic_matrix(mat);
 }
 
 extern "C"

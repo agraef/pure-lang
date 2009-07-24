@@ -505,10 +505,10 @@ pure_expr *pure_applc(pure_expr *x, pure_expr *y);
 pure_expr *pure_int64(int64_t l);
 pure_expr *pure_bigint(int32_t size, const limb_t *limbs);
 
-/* Additional bigint list and tuple constructors. These take the limbs of all
-   elements in a single array. The offs array gives the offset of each bigint
-   in the limbs array, and the sz array gives the size (and sign) of each
-   bigint. */
+/* Additional bigint list, tuple and matrix constructors. These take the limbs
+   of all elements in a single array. The offs array gives the offset of each
+   bigint in the limbs array, and the sz array gives the size (and sign) of
+   each bigint. */
 
 pure_expr *pure_bigintlistv(size_t size, limb_t *limbs,
 			    uint32_t *offs, int32_t *sz);
@@ -516,16 +516,20 @@ pure_expr *pure_bigintlistv2(size_t size, limb_t *limbs,
 			     uint32_t *offs, int32_t *sz, pure_expr *tail);
 pure_expr *pure_biginttuplev(size_t size, limb_t *limbs,
 			     uint32_t *offs, int32_t *sz);
+pure_expr *pure_bigintmatrixv(size_t nrows, size_t ncols, limb_t *limbs,
+			      uint32_t *offs, int32_t *sz);
 
-/* Additional string list and tuple constructors. These take a char array
-   containing all (0-terminated) strings in the second argument. The offs
-   array gives the offset of each string in the chars array. The strings are
-   assumed to be in utf-8 encoding. */
+/* Additional string list, tuple and matrix constructors. These take a char
+   array containing all (0-terminated) strings as an argument. The offs array
+   gives the offset of each string in the chars array. The strings are assumed
+   to be in utf-8 encoding. */
 
 pure_expr *pure_strlistv(size_t size, char *chars, uint32_t *offs);
 pure_expr *pure_strlistv2(size_t size, char *chars, uint32_t *offs,
 			  pure_expr *tail);
 pure_expr *pure_strtuplev(size_t size, char *chars, uint32_t *offs);
+pure_expr *pure_strmatrixv(size_t nrows, size_t ncols, char *chars,
+			   uint32_t *offs);
 
 /* Compare a bigint or string expression against a constant value. This is
    used by the pattern matching code. */
