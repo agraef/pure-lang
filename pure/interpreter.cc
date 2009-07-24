@@ -377,6 +377,16 @@ void interpreter::init()
   declare_extern((void*)pure_int_matrix,
 		 "pure_int_matrix", "expr*",      1, "void*");
 
+  declare_extern((void*)matrix_from_int_array_nodup,
+		 "matrix_from_int_array_nodup", "expr*", 3, "int", "int",
+		 "void*");
+  declare_extern((void*)matrix_from_double_array_nodup,
+		 "matrix_from_double_array_nodup", "expr*", 3, "int", "int",
+		 "void*");
+  declare_extern((void*)matrix_from_complex_array_nodup,
+		 "matrix_from_complex_array_nodup", "expr*", 3, "int", "int",
+		 "void*");
+
   declare_extern((void*)pure_listv,
 		 "pure_listv",      "expr*",  2, "size_t", "expr**");
   declare_extern((void*)pure_listv2,
@@ -6476,17 +6486,17 @@ static int32_t const_vect(exprl xs)
   return t;
 }
 
-/* Alternative code for lists and tuples, which considerably speeds up
-   compilation for larger sequences. See the comments at the beginning of
-   interpreter.hh for details. */
+/* Alternative code for list, tuple and matrix values, which considerably
+   speeds up compilation for larger aggregates. See the comments at the
+   beginning of interpreter.hh for details. */
 
 Value *interpreter::list_codegen(expr x)
 {
-#if LIST_KLUDGE>0
+#if LIST_OPT>0
   exprl xs;
   expr tl;
   if ((x.is_list2(xs, tl) || x.is_tuple(xs)) &&
-      xs.size() >= LIST_KLUDGE) {
+      xs.size() >= LIST_OPT) {
     Value *v;
     size_t i = 0, n = xs.size();
     int32_t ttag = const_vect(xs);
@@ -6680,6 +6690,151 @@ Value *interpreter::list_codegen(expr x)
     return 0;
 }
 
+static bool is_complex(interpreter& interp, expr x, double& a, double& b)
+{
+  if (x.tag() != EXPR::APP) return false;
+  expr u = x.xval1(), v = x.xval2();
+  if (u.tag() == EXPR::APP) {
+    expr f = u.xval1();
+    symbol &rect = interp.symtab.complex_rect_sym(),
+      &polar = interp.symtab.complex_polar_sym();
+    if (f.tag() != rect.f && f.tag() != polar.f)
+      return false;
+    u = u.xval2();
+    switch (u.tag()) {
+    case EXPR::INT:
+      a = (double)u.ival();
+      break;
+    case EXPR::DBL:
+      a = u.dval();
+      break;
+    default:
+      return false;
+    }
+    switch (v.tag()) {
+    case EXPR::INT:
+      b = (double)v.ival();
+      break;
+    case EXPR::DBL:
+      b = v.dval();
+      break;
+    default:
+      return false;
+    }
+    if (f.tag() == polar.f) {
+      double r = a, t = b;
+      a = r*cos(t); b = r*sin(t);
+    }
+    return true;
+  } else
+    return false;
+}
+
+static inline int32_t matrix_tag(interpreter& interp, expr x)
+{
+  switch (x.tag()) {
+  case EXPR::INT: return EXPR::IMATRIX;
+  case EXPR::DBL: return EXPR::DMATRIX;
+  default: {
+    double a, b;
+    if (is_complex(interp, x, a, b))
+      return EXPR::CMATRIX;
+    else
+      return 0;
+  }
+  }
+}
+
+static bool is_const_matrix(interpreter& interp,
+			    exprll xs, int32_t& t, size_t& n, size_t& m)
+{
+  // We don't allow empty matrices here.
+  if (xs.empty() || xs.front().empty()) return false;
+  n = xs.size(); m = xs.front().size();
+  t = matrix_tag(interp, xs.front().front());
+  if (t == 0) return false;
+  for (exprll::iterator it = xs.begin(), end = xs.end();
+       it != end; it++) {
+    if (it->size() != m) return false;
+    for (exprl::iterator jt = it->begin(), end = it->end();
+	 jt != end; jt++) {
+      if (matrix_tag(interp, *jt) != t)
+	return false;
+    }
+  }
+  return true;
+}
+
+Value *interpreter::matrix_codegen(expr x)
+{
+#if LIST_OPT>0
+  exprll& xs = *x.xvals();
+  int32_t ttag = 0;
+  size_t n = 0, m = 0;
+  if (is_const_matrix(*this, xs, ttag, n, m) && n*m >= LIST_OPT) {
+    Value *v;
+    size_t i = 0;
+    if (ttag==EXPR::IMATRIX || ttag==EXPR::DMATRIX || ttag==EXPR::CMATRIX) {
+      /* Optimize the case of numeric matrices. These can be coded directly as
+	 array constants. */
+      const char *matrix_fun =
+	ttag==EXPR::IMATRIX?"matrix_from_int_array_nodup":
+	ttag==EXPR::DMATRIX?"matrix_from_double_array_nodup":
+	"matrix_from_complex_array_nodup";
+      size_t N = n*m;
+      if (ttag==EXPR::CMATRIX) N *= 2;
+      vector<Constant*> c(N);
+      if (ttag==EXPR::IMATRIX)
+	for (exprll::iterator it = xs.begin(), end = xs.end(); it != end; it++)
+	  for (exprl::iterator jt = it->begin(), end = it->end();
+	       jt != end; jt++)
+	    c[i++] = SInt(jt->ival());
+      else if (ttag==EXPR::DMATRIX)
+	for (exprll::iterator it = xs.begin(), end = xs.end(); it != end; it++)
+	  for (exprl::iterator jt = it->begin(), end = it->end();
+	       jt != end; jt++)
+	    c[i++] = Dbl(jt->dval());
+      else
+	for (exprll::iterator it = xs.begin(), end = xs.end(); it != end; it++)
+	  for (exprl::iterator jt = it->begin(), end = it->end();
+	       jt != end; jt++) {
+	    double a, b;
+	    if (is_complex(*this, *jt, a, b)) {
+	      c[i++] = Dbl(a);
+	      c[i++] = Dbl(b);
+	    } else {
+	      assert(0 && "This can't happen!");
+	    }
+	  }
+      Value *p;
+      if (ttag==EXPR::IMATRIX) {
+	Constant *a = ConstantArray::get
+	  (ArrayType::get(Type::Int32Ty, N), c);
+	GlobalVariable *w = new GlobalVariable
+	  (ArrayType::get(Type::Int32Ty, N), true,
+	   GlobalVariable::InternalLinkage, a, "$$intv", module);
+	p = act_env().CreateGEP(w, Zero, Zero);
+      } else {
+	Constant *a = ConstantArray::get
+	  (ArrayType::get(Type::DoubleTy, N), c);
+	GlobalVariable *w = new GlobalVariable
+	  (ArrayType::get(Type::DoubleTy, N), true,
+	   GlobalVariable::InternalLinkage, a, "$$doublev", module);
+	p = act_env().CreateGEP(w, Zero, Zero);
+      }
+      vector<Value*> args;
+      args.push_back(SInt(n));
+      args.push_back(SInt(m));
+      args.push_back(act_builder().CreateBitCast(p, VoidPtrTy));
+      v = act_env().CreateCall(module->getFunction(matrix_fun), args);
+      return v;
+    } else
+      return 0;
+  } else
+#endif
+    return 0;
+}
+
 Value *interpreter::codegen(expr x, bool quote)
 {
   if (x.is_null()) return NullExprPtr;
@@ -6711,6 +6866,11 @@ Value *interpreter::codegen(expr x, bool quote)
   }
   // matrix:
   case EXPR::MATRIX: {
+#if LIST_OPT>0
+    // special code for matrix constants
+    Value *w = matrix_codegen(x);
+    if (w) return w;
+#endif
     Function *row_fun = 0, *col_fun = 0;
     if (quote) {
       row_fun = module->getFunction("pure_matrix_rowsq");
@@ -6811,7 +6971,7 @@ Value *interpreter::codegen(expr x, bool quote)
 	act_env().CreateCall(module->getFunction("pure_new_args"), argv);
 	return call("pure_catch", handler, body);
       } else {
-#if LIST_KLUDGE>0
+#if LIST_OPT>0
 	// special code for lists and tuples
 	Value *w = list_codegen(x);
 	if (w) return w;

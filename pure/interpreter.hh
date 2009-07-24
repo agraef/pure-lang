@@ -42,13 +42,14 @@
    recommend to leave this disabled. */
 #define FAST_JIT 0
 
-/* Alternative code generation for the case of proper lists and tuples. This
-   is a kludge to work around performance issues with the JIT which (as of
-   LLVM 2.3) gets very slow with deeply nested call graphs. The code enabled
-   with this option here is actually less efficient for small list/tuple
-   values, which is why we impose a lower bound on the list/tuple size (10 by
-   default, use 0 to disable this option). */
-#define LIST_KLUDGE 10
+/* Alternative code generation for aggregate values (currently lists, tuples
+   and matrices are supported). This works around performance issues with the
+   JIT which (as of LLVM 2.3) gets very slow with deeply nested call graphs.
+   It also enables some optimizations to tidy up the code for constant
+   aggregates. The code enabled with this option here is actually less
+   efficient for small aggregates, which is why we impose a lower bound on the
+   aggregate size (10 by default, use 0 to disable this option). */
+#define LIST_OPT 10
 
 using namespace std;
 
@@ -603,6 +604,7 @@ private:
   llvm::Value *codegen(expr x, bool quote = false);
   void toplevel_codegen(expr x, const rule *rp);
   llvm::Value *builtin_codegen(expr x);
+  llvm::Value *matrix_codegen(expr x);
   llvm::Value *list_codegen(expr x);
   llvm::Value *get_int(expr x);
   llvm::Value *get_double(expr x);
