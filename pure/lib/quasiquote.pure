@@ -75,6 +75,7 @@ qq x = qqn 0 x with
    may occur unevaluated inside quoted subterms. */
 qqn n (`x)		|
 qqn n (qq (quote x))	= quote (quasiquote y) when y = qqn (n+1) x end;
+qqn n (qq ('x))		= '(quasiquote y) when y = qqn (n+1) x end;
 qqn 0 (,$x)		|
 qqn 0 (unquote x)	= eval x;
 qqn 0 (,@x)		|
