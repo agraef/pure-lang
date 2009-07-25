@@ -1,9 +1,26 @@
 
 ** Pure 0.26 (in progress)
 
-This is a bugfix release. In particular, it fixes some obscure issues in the
-handling of closures and the expression printer, please see the ChangeLog for
-details.
+This is mainly a bugfix release, please see the ChangeLog for details. The
+most important fixes and improvements are:
+
+- The code generated for numeric and string list/tuple/matrix constants has
+  been improved a lot. This speeds up compilation and enables the interpreter
+  to handle much bigger constant aggregates of these types than before.
+
+- Values used in constant definitions and 'eval' calls may now contain
+  arbitrary run time data. Thus you can now write stuff like 'const x = malloc
+  10;' or 'const y = \x->x*x;'. (This only works in interpreted scripts, the
+  batch compiler still forbids such "constants".)
+
+- Tail call elimination now works in batch-compiled scripts.
+
+In addition, the following new features have been implemented:
+
+- Added support for Miranda/Haskell-style operator sections. Thus you can now
+  write '(x+)' for '(+) x' and '(+x)' for 'flip (+) x', respectively.
+
+- Added readdir function to the system module (constributed by Jiri Spitz).
 
 ** Pure 0.25 2009-06-19
 
