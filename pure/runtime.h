@@ -583,6 +583,8 @@ pure_expr *pure_matrix_columns(uint32_t n, ...);
 
 pure_expr *pure_matrix_rowsq(uint32_t n, ...);
 pure_expr *pure_matrix_columnsq(uint32_t n, ...);
+pure_expr *pure_matrix_rowsvq(uint32_t n, pure_expr **xs);
+pure_expr *pure_matrix_columnsvq(uint32_t n, pure_expr **xs);
 
 /* Execute a closure. If the given expression x (or x y in the case of
    pure_apply) is a parameterless closure (or a saturated application of a

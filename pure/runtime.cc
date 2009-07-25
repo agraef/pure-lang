@@ -3436,13 +3436,19 @@ pure_expr *pure_matrix_rowsq(uint32_t n, ...)
 {
   va_list ap;
   pure_expr **xs = (pure_expr**)alloca(n*sizeof(pure_expr*));
-  int k = -1;
-  int32_t target = 0;
-  pure_expr *x = 0;
   va_start(ap, n);
   for (size_t i = 0; i < n; i++)
     xs[i] = va_arg(ap, pure_expr*);
   va_end(ap);
+  return pure_matrix_rowsvq(n, xs);
+}
+
+extern "C"
+pure_expr *pure_matrix_rowsvq(uint32_t n, pure_expr **xs)
+{
+  int k = -1;
+  int32_t target = 0;
+  pure_expr *x = 0;
   for (size_t i = 0; i < n; i++) {
     x = xs[i];
     switch (x->tag) {
@@ -3578,12 +3584,18 @@ pure_expr *pure_matrix_columnsq(uint32_t n, ...)
 {
   va_list ap;
   pure_expr **xs = (pure_expr**)alloca(n*sizeof(pure_expr*));
-  int32_t target = 0;
-  pure_expr *x = 0;
   va_start(ap, n);
   for (size_t i = 0; i < n; i++)
     xs[i] = va_arg(ap, pure_expr*);
   va_end(ap);
+  return pure_matrix_columnsvq(n, xs);
+}
+
+extern "C"
+pure_expr *pure_matrix_columnsvq(uint32_t n, pure_expr **xs)
+{
+  int32_t target = 0;
+  pure_expr *x = 0;
   for (size_t i = 0; i < n; i++) {
     x = xs[i];
     switch (x->tag) {

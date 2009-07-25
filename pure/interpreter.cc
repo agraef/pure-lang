@@ -5500,7 +5500,7 @@ expr interpreter::wrap_expr(pure_expr *x)
   return expr(EXPR::WRAP, v);
 }
 
-pure_expr *interpreter::const_value(expr x)
+pure_expr *interpreter::const_value(expr x, bool quote)
 {
   switch (x.tag()) {
   // constants:
@@ -5521,57 +5521,72 @@ pure_expr *interpreter::const_value(expr x)
     } else
       return 0;
   case EXPR::MATRIX:
-    return const_matrix_value(x);
-  case EXPR::APP: {
-    exprl xs;
-    expr tl;
-    if (x.is_list2(xs, tl) || x.is_tuple(xs)) {
-      // lists and tuples
-      size_t i, n = xs.size();
-      pure_expr *u = 0;
-      if (!x.is_pair() && tl.tag() != symtab.nil_sym().f) {
-	u = const_value(tl);
-	if (u == 0) return 0;
+    return const_matrix_value(x, quote);
+  case EXPR::APP:
+    if (quote) {
+      pure_expr *f = 0, *y = 0;
+      if ((f = const_value(x.xval1(), quote)) &&
+	  (y = const_value(x.xval2(), quote))) {
+	pure_new_args(2, f, y);
+	return pure_applc(f, y);
+      } else {
+	if (f) pure_freenew(f);
+	return 0;
       }
-      pure_expr **xv = (pure_expr**)malloc(n*sizeof(pure_expr*));
-      if (!xv) return 0;
-      exprl::iterator it = xs.begin(), end = xs.end();
-      for (i = 0; it != end; i++, it++)
-	if ((xv[i] = const_value(*it)) == 0) {
-	  if (u != 0)
-	    pure_freenew(u);
-	  for (size_t j = 0; j < i; j++)
-	    pure_freenew(xv[j]);
-	  free(xv);
-	  return 0;
+    } else {
+      exprl xs;
+      expr tl;
+      if (x.is_list2(xs, tl) || x.is_tuple(xs)) {
+	// lists and tuples
+	size_t i, n = xs.size();
+	pure_expr *u = 0;
+	if (!x.is_pair() && tl.tag() != symtab.nil_sym().f) {
+	  u = const_value(tl);
+	  if (u == 0) return 0;
 	}
-      pure_expr *res;
-      if (u == 0)
-	res = (x.is_pair()?pure_tuplev:pure_listv)(n, xv);
-      else
-	res = pure_listv2(n, xv, u);
-      free(xv);
-      return res;
-    } else
-      return const_app_value(x);
-  }
+	pure_expr **xv = (pure_expr**)malloc(n*sizeof(pure_expr*));
+	if (!xv) return 0;
+	exprl::iterator it = xs.begin(), end = xs.end();
+	for (i = 0; it != end; i++, it++)
+	  if ((xv[i] = const_value(*it)) == 0) {
+	    if (u != 0)
+	      pure_freenew(u);
+	    for (size_t j = 0; j < i; j++)
+	      pure_freenew(xv[j]);
+	    free(xv);
+	    return 0;
+	  }
+	pure_expr *res;
+	if (u == 0)
+	  res = (x.is_pair()?pure_tuplev:pure_listv)(n, xv);
+	else
+	  res = pure_listv2(n, xv, u);
+	free(xv);
+	return res;
+      } else
+	return const_app_value(x);
+    }
   default: {
     if (x.tag() > 0) {
-      if (externals.find(x.tag()) != externals.end())
-	return 0;
-      map<int32_t,GlobalVar>::iterator v = globalvars.find(x.tag());
-      if (v != globalvars.end()) {
-	// bound variable
-	pure_expr *y = v->second.x;
-	// check if we got a closure subject to evaluation
-	if (y->tag >= 0 && y->data.clos && y->data.clos->n == 0)
-	  return 0;
-	else
-	  return y;
-      } else {
-	// unbound symbol
-	assert(globenv.find(x.tag()) == globenv.end() && "bad global");
+      if (quote)
 	return pure_const(x.tag());
+      else {
+	if (externals.find(x.tag()) != externals.end())
+	  return 0;
+	map<int32_t,GlobalVar>::iterator v = globalvars.find(x.tag());
+	if (v != globalvars.end()) {
+	  // bound variable
+	  pure_expr *y = v->second.x;
+	  // check if we got a closure subject to evaluation
+	  if (y->tag >= 0 && y->data.clos && y->data.clos->n == 0)
+	    return 0;
+	  else
+	    return y;
+	} else {
+	  // unbound symbol
+	  assert(globenv.find(x.tag()) == globenv.end() && "bad global");
+	  return pure_const(x.tag());
+	}
       }
     } else
       return 0;
@@ -5579,7 +5594,7 @@ pure_expr *interpreter::const_value(expr x)
   }
 }
 
-pure_expr *interpreter::const_matrix_value(expr x)
+pure_expr *interpreter::const_matrix_value(expr x, bool quote)
 {
   size_t n = x.xvals()->size(), m = 0, i = 0, j = 0;
   pure_expr **us = new pure_expr*[n], **vs = 0, *ret;
@@ -5590,14 +5605,14 @@ pure_expr *interpreter::const_matrix_value(expr x)
     assert(vs);
     for (exprl::iterator ys = xs->begin(), end = xs->end();
 	 ys != end; ys++, j++) {
-      vs[j] = const_value(*ys);
+      vs[j] = const_value(*ys, quote);
       if (!vs[j]) goto err;
     }
-    us[i] = pure_matrix_columnsv(m, vs);
+    us[i] = (quote?pure_matrix_columnsvq:pure_matrix_columnsv)(m, vs);
     if (!us[i]) goto err;
     delete[] vs;
   }
-  ret = pure_matrix_rowsv(n, us);
+  ret = (quote?pure_matrix_rowsvq:pure_matrix_rowsv)(n, us);
   delete[] us;
   return ret;
  err:
@@ -5612,12 +5627,16 @@ pure_expr *interpreter::const_matrix_value(expr x)
 pure_expr *interpreter::const_app_value(expr x)
 {
   if (x.tag() == EXPR::APP) {
-    pure_expr *f = 0, *y = 0;
-    if ((f = const_app_value(x.xval1())) && (y = const_value(x.xval2())))
-      return pure_app(f, y);
+    if (is_quote(x.xval1().tag()))
+      return const_value(x.xval2(), true);
     else {
-      if (f) pure_freenew(f);
-      return 0;
+      pure_expr *f = 0, *y = 0;
+      if ((f = const_app_value(x.xval1())) && (y = const_value(x.xval2())))
+	return pure_app(f, y);
+      else {
+	if (f) pure_freenew(f);
+	return 0;
+      }
     }
   } else if (x.tag() > 0) {
     if (externals.find(x.tag()) != externals.end())
