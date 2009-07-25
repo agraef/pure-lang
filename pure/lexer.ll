@@ -109,6 +109,7 @@ punct  (\xC2[\xA1-\xBF]|\xC3[\xD7\xF7]|\xE2[\x84-\xAF][\x80-\xBF]|\xE2\x83[\x90-
 letter ([a-zA-Z_]|[\xC4-\xDF][\x80-\xBF]|\xC2[^\x01-\x7F\xA1-\xFF]|\xC3[^\x01-\x7F\xD7\xF7\xC0-\xFF]|\xE0[\xA0-\xBF][\x80-\xBF]|[\xE1\xE3-\xEC\xEE\xEF][\x80-\xBF]{2}|\xE2[^\x01-\x7F\x83-\xAF\xC0-\xFF][\x80-\xBF]|\xE2\x83[\x80-\x8F]|\xED[\x80-\x9F][\x80-\xBF]|\xF0[\x90-\xBF][\x80-\xBF]{2}|[\xF1-\xF3][\x80-\xBF]{3}|\xF4[\x80-\x8F][\x80-\xBF]{2})
 
 id     ({letter}({letter}|[0-9])*)
+qual   ({id}?::)
 int    [0-9]+|0[0-7]+|0[xX][0-9a-fA-F]+
 exp    ([Ee][+-]?[0-9]+)
 float  [0-9]+{exp}|[0-9]+\.{exp}|[0-9]*\.[0-9]+{exp}?
@@ -333,7 +334,7 @@ when	   return token::WHEN;
 with	   return token::WITH;
 using      BEGIN(xusing); return token::USING;
 namespace  BEGIN(xusing); return token::NAMESPACE;
-{id}?::{id} {
+{qual}{id} {
   string qualid = yytext;
   size_t k = qualid.find("::");
   string qual = qualid.substr(0, k), id = qualid.substr(k+2);
@@ -409,10 +410,9 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
 [@=|;()\[\]{}\\] BEGIN(INITIAL); return yy::parser::token_type(yytext[0]);
 "->"       return token::MAPSTO;
 "#<"{id}(" "{int})?">" return token::BADTOK;
-{id}?::([[:punct:]]|{punct})+  {
-  const char *t = strstr(yytext, "::");
-  int k = t-yytext;
+{qual}([[:punct:]]|{punct})+  {
   string qualid = yytext;
+  size_t k = qualid.find("::");
   string qual = qualid.substr(0, k), id = qualid.substr(k+2);
   if (!qual.empty() &&
       interp.namespaces.find(qual) == interp.namespaces.end()) {
@@ -429,13 +429,13 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     interp.error(*yylloc, msg);
     break;
   }
-  while (yyleng > k+1 && yytext[yyleng-1] == ';') yyless(yyleng-1);
+  while (yyleng > (int)k+1 && yytext[yyleng-1] == ';') yyless(yyleng-1);
   if (interp.declare_op) {
     yylval->sval = new string(yytext);
     return token::ID;
   }
   symbol* sym = interp.symtab.lookup(yytext);
-  while (!sym && yyleng > k+1) {
+  while (!sym && yyleng > (int)k+1) {
     if (yyleng == 2 && yytext[0] == '-' && yytext[1] == '>')
       return token::MAPSTO;
     yyless(yyleng-1);
