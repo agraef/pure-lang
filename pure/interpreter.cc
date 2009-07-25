@@ -2695,7 +2695,7 @@ expr interpreter::csubst(expr x, bool quote)
       return expr(symtab.catch_sym().x, u, v);
     } else {
       expr u = csubst(x.xval1()),
-	v = csubst(x.xval2(), (u.tag() == symtab.quote_sym().f));
+	v = csubst(x.xval2(), is_quote(u.tag()));
       expr w = expr(u, v);
       // promote type tags
       expr f; uint32_t n = count_args(w, f);
@@ -2889,7 +2889,7 @@ expr interpreter::macsubst(expr x, bool quote)
   // application:
   case EXPR::APP: {
     expr u = macsubst(x.xval1(), quote),
-      v = macsubst(x.xval2(), quote || (u.tag() == symtab.quote_sym().f));
+      v = macsubst(x.xval2(), quote || is_quote(u.tag()));
     expr w = expr(u, v);
     return quote?w:macval(w);
   }
@@ -7039,7 +7039,7 @@ Value *interpreter::codegen(expr x, bool quote)
 	Value *u = codegen(x.xval1().xval2());
 	act_builder().CreateCall(module->getFunction("pure_freenew"), u);
 	return codegen(x.xval2());
-      } else if (n == 1 && f.tag() == symtab.quote_sym().f) {
+      } else if (n == 1 && is_quote(f.tag())) {
 	// quoted subterm
 	return codegen(x.xval2(), true);
       } else if (n == 1 && f.tag() == symtab.amp_sym().f) {
