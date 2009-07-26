@@ -1922,15 +1922,18 @@ Namespaces
 ----------
 
 To facilitate modular development, Pure also provides namespaces as a means to
-avoid name clashes between symbols of different modules, and to keep the
-global namespace tidy and clean. The global namespace is always available. By
-default, new symbols are created in this namespace, which is also called the
-`default namespace`.
+avoid name clashes between symbols, and to keep the global namespace tidy and
+clean. Namespaces serve as containers holding logical groups of identifiers
+and other symbols. Inside each namespace, symbols must be unique, but the same
+symbol may be used to denote different objects (variables, functions, etc.) in
+different namespaces.
 
-Additional namespaces can be created with the ``namespace`` declaration, which
-also switches to the given namespace (makes it the *current* namespace), so
-that subsequent symbol declarations create symbols in that namespace rather
-than the default one. The current namespace applies to all kinds of symbol
+The global namespace is always available. By default, new symbols are created
+in this namespace, which is also called the `default namespace`. Additional
+namespaces can be created with the ``namespace`` declaration, which also
+switches to the given namespace (makes it the *current* namespace), so that
+subsequent symbol declarations create symbols in that namespace rather than
+the default one. The current namespace applies to all kinds of symbol
 declarations, including operator and ``nullary`` symbol declarations, as well
 as ``extern`` declarations (the latter are described in the `C Interface`_
 section).
@@ -1948,7 +1951,7 @@ in two different namespaces ``foo`` and ``bar``, you can write::
 
 Note that just the ``namespace`` keyword by itself in the last line switches
 back to the default namespace. We can now refer to the symbols we just defined
-using qualified symbols of the form ``namespace::symbol``::
+using `qualified symbols` of the form ``namespace::symbol``::
 
   > foo::foo 99;
   100
@@ -1960,10 +1963,31 @@ notation always makes it clear which namespace the given identifier belongs
 to. (The namespace prefix in a qualified symbol can also be empty in which
 case it explicitly denotes a symbol in the default namespace.)
 
+Similar to the ``using`` declaration, a ``namespace`` declaration accepts
+either identifiers or double-quoted strings as namespace names. E.g., the
+following two declarations are equivalent::
+
+  namespace foo;
+  namespace "foo";
+
+The latter form also allows more descriptive labels which aren't identifiers,
+e.g.::
+
+  namespace "Private stuff, keep out!";
+
+(Note that the namespace prefix in a qualified identifier must be a legal
+identifier, so it isn't possible to access symbols in namespaces with such
+descriptive labels in a direct fashion; the only way to get at the symbols in
+this case is to use a ``namespace`` or ``using namespace`` declaration, as
+described below.)
+
+Using Namespaces
+----------------
+
 Since it is rather inconvenient if you always have to write identifiers in
-their fully qualified form, Pure allows you to specify a list of *search*
-namespaces which are to be searched for unqualified symbols. This is done with
-the ``using namespace`` declaration, as follows::
+their qualified form, Pure allows you to specify a list of *search* namespaces
+which are used to look up symbols not in the default or the current
+namespace. This is done with the ``using namespace`` declaration, as follows::
 
   > using namespace foo;
   > foo 99;
@@ -1995,18 +2019,24 @@ back to the default empty list of search namespaces::
 
   using namespace;
 
-The precise rules for looking up unqualified identifiers are as follows. The
-compiler searches for unqualified symbols first in the current namespace (if
-any), then in the currently active search namespaces (if any), and finally in
-the default (i.e., the global) namespace, in that order. If no existing symbol
-is found, a new symbol is created, implicitly declaring the identifier as a
-public symbol with default attributes. New *unqualified* symbols are always
-created in the default namespace, unless you explicitly declare them (in which
-case they become members of the current namespace, as explained above). New
-*qualified* symbols are created in the given namespace (which must already
-exist). This makes it possible to avoid explicit symbol declarations in the
-most common case of ordinary, public identifiers. E.g., we could have written
-the above example simply as follows::
+The precise rules for looking up symbols are as follows. The compiler searches
+for symbols first in the current namespace (if any), then in the currently
+active search namespaces (if any), and finally in the default (i.e., the
+global) namespace, in that order. This automatic lookup can be bypassed by
+using an *absolute* namespace qualifier of the form ``::foo::bar``. In
+particular, ``::bar`` always denotes the symbol ``bar`` in the default
+namespace, while ``::foo::bar`` denotes the symbol ``bar`` in the ``foo``
+namespace. (Normally, the latter kind of notation is only needed if you have
+to deal with nested namespaces, see `Hierarchical Namespaces`_ below.)
+
+If no existing symbol is found, a new symbol is created, implicitly declaring
+the identifier as a public symbol with default attributes. New *unqualified*
+symbols are always created in the default namespace, unless you explicitly
+declare them (in which case they become members of the current namespace, as
+explained above). New *qualified* symbols are created in the given namespace,
+which *must* be the current namespace. This makes it possible to avoid
+explicit symbol declarations in the most common case of ordinary, public
+identifiers. E.g., we could have written the above example simply as follows::
 
   namespace foo;
   foo::foo x = x+1;
@@ -2014,22 +2044,22 @@ the above example simply as follows::
   bar::foo x = x-1;
   namespace;
 
-As a little safety measure against silly typos, the compiler warns you about
-implicit declarations of new qualified symbols which are created out of their
-"home" namespace::
+Note that, as a little safety measure against silly typos, the compiler
+insists that new qualified symbols *must* be introduced in their "home"
+namespace, otherwise it complains about an undeclared symbol::
 
   > namespace;
   > foo::bar x = 1/x;
-  <stdin>, line 6: warning: implicit declaration of symbol 'foo::bar'
+  <stdin>, line 7: undeclared symbol 'foo::bar'
 
-To avoid these warnings, you either have to use an explicit declaration or
-make sure that the right namespace is current when introducing the symbol.
+To avoid such errors, you either have to use an explicit declaration or make
+sure that the right namespace is current when introducing the symbol.
 
-Explicit declarations are also needed if you want to introduce special
-operator and ``nullary`` symbols. This works just like in the default
-namespace, except that you add the appropriate ``namespace`` declaration
-before declaring the symbols. For instance, here is how you can create a new
-``+`` operation which multiplies its operands rather than adding them::
+Explicit declarations *must* be used if you want to introduce special operator
+and ``nullary`` symbols. This works just like in the default namespace, except
+that you add the appropriate ``namespace`` declaration before declaring the
+symbols. For instance, here is how you can create a new ``+`` operation which
+multiplies its operands rather than adding them::
 
   > namespace my;
   > infixl 6 +;
@@ -2049,11 +2079,15 @@ fact you can use qualified symbols to pick the version that you need::
   > 5 my::+ 7;
   35
 
+Private Symbols
+---------------
+
 Pure also allows you to have private symbols, as a means to hide away internal
-operations which shouldn't be accessed directly by client programs. The scope
-of a private symbol is confined to its namespace, i.e., the symbol is only
-visible when its "home" namespace is current. Symbols are declared private by
-using the ``private`` keyword in the symbol declaration::
+operations which shouldn't be accessed directly outside the namespace in which
+they are declared. The scope of a private symbol is confined to its namespace,
+i.e., the symbol is only visible when its "home" namespace is current. Symbols
+are declared private by using the ``private`` keyword in the symbol
+declaration::
 
   > namespace secret;
   > private baz;
@@ -2083,23 +2117,63 @@ namespace current again::
   > secret::baz 99;
   198
 
-Finally, note that, similar to the ``using`` declaration, a ``namespace`` or
-``using namespace`` declaration accepts either identifiers or double-quoted
-strings as namespace names. E.g., the following two declarations are in fact
-equivalent::
+Hierarchical Namespaces
+-----------------------
 
-  namespace foo;
-  namespace "foo";
+Namespace identifiers can themselves be qualified identifiers in Pure, which
+enables you to introduce a hierarchy of namespaces. This is useful, e.g., to
+group related namespaces together under a common "umbrella" namespace::
 
-The latter form also allows more descriptive labels which aren't identifiers,
-e.g.::
+  > namespace my;
+  > namespace my::old;
+  > my::old::foo x = x+1;
+  > namespace my::new;
+  > my::new::foo x = x-1;
 
-  namespace "Private stuff, keep out!";
+Note that the namespace ``my``, which serves as the parent namespace, must be
+created before creating the ``my::old`` and ``my::new`` namespaces, even if it
+does not contain any symbols of its own. After these declarations, the
+``my::old`` and ``my::new`` namespaces are part of the ``my`` namespace and
+will be considered in name lookup accordingly, so that you can write::
 
-Note that the namespace prefix in a qualified identifier must be a legal
-identifier, so it isn't possible to access symbols in namespaces with such
-descriptive labels in a direct fashion; the only way to get at the symbols in
-this case is to use a ``namespace`` or ``using namespace`` declaration.
+  > using namespace my;
+  > old::foo 99;
+  100
+  > new::foo 99;
+  98
+
+Readers familiar with Unix-style filesystems will notice that this works
+pretty much like a hierarchy of directories and files, where the namespaces
+play the role of the directories, the symbols in each namespace correspond to
+the files in a directory, and the ``using namespace`` declaration functions
+similar to the shell's ``PATH`` variable. The analogy goes even
+further. Sometimes it is necessary to tell the compiler to use a symbol in a
+specific namespace, bypassing the usual symbol lookup mechanism. For instance,
+suppose that we introduce another *global* ``old`` namespace and define yet
+another version of ``foo`` in that namespace::
+
+  > namespace old;
+  > public foo;
+  > foo x = 2*x;
+  > namespace;
+
+Now, if we want to access that function, with ``my`` still active as the
+search namespace, we cannot simply refer to the new function as ``old::foo``,
+since this name will resolve to ``my::old::foo`` instead. As a remedy, the
+compiler accepts an `absolute` qualified identifier of the form
+``::old::foo``. This bypasses name lookup and thus always yields exactly the
+symbol in the given namespace (if it exists; as mentioned previously, the
+compiler will complain about an undeclared symbol otherwise)::
+
+  > old::foo 99;
+  100
+  > ::old::foo 99;
+  198
+  > ::old::bar 99;
+  <stdin>, line 15: undeclared symbol '::old::bar'
+
+Also note that, as a special case of the absolute qualifier notation,
+``::foo`` always denotes the symbol ``foo`` in the default namespace.
 
 Exception Handling
 ==================
