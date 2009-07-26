@@ -34,6 +34,7 @@ static void my_readline(const char *prompt, char *buf, int &result, int max_size
 static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const char *cmd, const char *cmdline);
 static string pstring(const char *s);
 static string format_namespace(const string& name);
+static bool find_namespace(interpreter& interp, const string& name);
 static int32_t checktag(const char *s);
 
 /* Uncomment this to enable checking for interactive command names. This is
@@ -109,7 +110,7 @@ punct  (\xC2[\xA1-\xBF]|\xC3[\xD7\xF7]|\xE2[\x84-\xAF][\x80-\xBF]|\xE2\x83[\x90-
 letter ([a-zA-Z_]|[\xC4-\xDF][\x80-\xBF]|\xC2[^\x01-\x7F\xA1-\xFF]|\xC3[^\x01-\x7F\xD7\xF7\xC0-\xFF]|\xE0[\xA0-\xBF][\x80-\xBF]|[\xE1\xE3-\xEC\xEE\xEF][\x80-\xBF]{2}|\xE2[^\x01-\x7F\x83-\xAF\xC0-\xFF][\x80-\xBF]|\xE2\x83[\x80-\x8F]|\xED[\x80-\x9F][\x80-\xBF]|\xF0[\x90-\xBF][\x80-\xBF]{2}|[\xF1-\xF3][\x80-\xBF]{3}|\xF4[\x80-\x8F][\x80-\xBF]{2})
 
 id     ({letter}({letter}|[0-9])*)
-qual   ({id}?::)
+qual   ({id}?::({id}::)*)
 int    [0-9]+|0[0-7]+|0[xX][0-9a-fA-F]+
 exp    ([Ee][+-]?[0-9]+)
 float  [0-9]+{exp}|[0-9]+\.{exp}|[0-9]*\.[0-9]+{exp}?
@@ -205,7 +206,7 @@ blank  [ \t\f\v\r]
 <xusing>with	   return token::WITH;
 <xusing>using      return token::USING;
 <xusing>namespace  return token::NAMESPACE;
-<xusing>{id}	   yylval->sval = new string(yytext); return token::ID;
+<xusing>{qual}?{id}  yylval->sval = new string(yytext); return token::ID;
 <xusing>,	   return yy::parser::token_type(yytext[0]);
 <xusing>"//".*	   yylloc->step();
 <xusing>"/*"	   BEGIN(xusing_comment);
@@ -336,16 +337,16 @@ using      BEGIN(xusing); return token::USING;
 namespace  BEGIN(xusing); return token::NAMESPACE;
 {qual}{id} {
   string qualid = yytext;
-  size_t k = qualid.find("::");
+  size_t k = qualid.rfind("::");
   string qual = qualid.substr(0, k), id = qualid.substr(k+2);
   int32_t tag = checktag(id.c_str());
   if (qual.empty() && tag) {
     // This is actually a type tag.
     goto parse_tag;
-  } else if (!qual.empty() &&
-	     interp.namespaces.find(qual) == interp.namespaces.end()) {
+  } 
+  if (!find_namespace(interp, qualid)) {
     // not a valid namespace prefix
-    if (tag) {
+    if (tag && find_namespace(interp, qual)) {
       // we can still parse this as an identifier with a type tag
       yyless(k); qual = "";
       //check(*yylloc, yytext, false);
@@ -369,11 +370,12 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     return optoken[sym->prec][sym->fix];
   } else {
     if (!interp.nerrs && !sym && interp.symtab.count != 1 &&
-	strstr(yytext, "::") &&
-	qual != *interp.symtab.current_namespace) {
-      string msg = "warning: implicit declaration of symbol '"+
-	string(yytext)+"'";
-      interp.warning(*yylloc, msg);
+	strstr(yytext, "::")) {
+      if (qual.compare(0, 2, "::") == 0) qual.erase(0, 2);
+      if (qual != *interp.symtab.current_namespace) {
+	string msg = "undeclared symbol '"+string(yytext)+"'";
+	interp.error(*yylloc, msg);
+      }
     }
     yylval->sval = new string(yytext);
     return token::ID;
@@ -412,10 +414,9 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
 "#<"{id}(" "{int})?">" return token::BADTOK;
 {qual}([[:punct:]]|{punct})+  {
   string qualid = yytext;
-  size_t k = qualid.find("::");
+  size_t k = qualid.rfind("::");
   string qual = qualid.substr(0, k), id = qualid.substr(k+2);
-  if (!qual.empty() &&
-      interp.namespaces.find(qual) == interp.namespaces.end()) {
+  if (!find_namespace(interp, qualid)) {
     // not a valid namespace prefix
     string msg = "unknown namespace '"+qual+"'";
     interp.error(*yylloc, msg);
@@ -620,13 +621,54 @@ static string pstring(const char *s)
   }
 }
 
+static bool is_id(const string& name)
+{
+  if (name.empty() || !(isalpha(name[0]) || name[0] == '_')) return false;
+  for (size_t i = 1, n = name.length(); i < n; i++)
+    if (name[i] == ':') {
+      if (++i >= n || name[i] != ':')
+	return false;
+    } else if (!isalnum(name[i]) && name[0] != '_')
+      return false;
+  return true;
+}
+
 static string format_namespace(const string& name)
 {
-  size_t p = name.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0-9");
-  if (p != string::npos || (name[0] >= '0' && name[0] <= '9'))
-    return "\""+name+"\"";
-  else
+  if (is_id(name))
     return name;
+  else
+    return "\""+name+"\"";
+}
+
+static bool find_namespace(interpreter& interp, const string& name)
+{
+  // determine the namespace prefix
+  size_t k = name.rfind("::");
+  if (k == 0 || k == string::npos) return true; // default namespace
+  string qual = name.substr(0, k);
+  if (qual.compare(0, 2, "::") == 0) {
+    // absolute namespace qualifier
+    qual.erase(0, 2);
+    return interp.namespaces.find(qual) != interp.namespaces.end();
+  }
+  // search the default namespace
+  if (interp.namespaces.find(qual) != interp.namespaces.end())
+    return true;
+  // search the current namespace
+  string& ns = *interp.symtab.current_namespace;
+  if (!ns.empty() &&
+      interp.namespaces.find(ns+"::"+qual) != interp.namespaces.end())
+    return true;
+  // search the search namespaces
+  for (set<string>::iterator it = interp.symtab.search_namespaces->begin(),
+	 end = interp.symtab.search_namespaces->end(); it != end; it++) {
+    const string& ns = *it;
+    if (!ns.empty() &&
+	interp.namespaces.find(ns+"::"+qual) != interp.namespaces.end())
+      return true;
+  }
+  return false;
 }
 
 /* This is a watered-down version of the command completion routine from

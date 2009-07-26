@@ -225,13 +225,13 @@ symbol* symtable::sym_p(const char *s, symbol*& cache,
 symbol* symtable::lookup(const char *s)
 {
   const char *t = strstr(s, "::");
-  if (t) {
-    // normalize symbols in the default namespace
-    if (t == s) s+=2;
-    symbol *sym = lookup_p(s, count);
+  if (t == s) {
+    // absolute qualifier
+    symbol *sym = lookup_p(s+2, count);
     return sym;
   }
-  symbol *default_sym = lookup_p(s), *search_sym = 0;
+  int priv;
+  symbol *default_sym = lookup_p(s, priv), *search_sym = 0;
   count = 0;
   if (strcmp(s, "_") == 0) {
     // anonymous variable is always taken as is
@@ -252,13 +252,15 @@ symbol* symtable::lookup(const char *s)
   for (set<string>::iterator it = search_namespaces->begin(),
 	 end = search_namespaces->end(); it != end; it++) {
     string id = (*it)+"::"+s;
-    symbol *sym = lookup_p(id.c_str());
+    int priv2;
+    symbol *sym = lookup_p(id.c_str(), priv2);
+    if (!sym) priv |= priv2;
     if (sym && ++count > 1) return 0;
     if (!search_sym) search_sym = sym;
   }
   if (search_sym) return search_sym;
   // fall back to a symbol in the default namespace, if any
-  count = default_sym!=0;
+  count = (default_sym!=0) | priv;
   return default_sym;
 }
 

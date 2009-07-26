@@ -304,9 +304,17 @@ item
 | USING fnames
 { action(interp.run(*$2), {}); delete $2; }
 | NAMESPACE name
-{ interp.namespaces.insert(*$2);
-  delete interp.symtab.current_namespace;
-  interp.symtab.current_namespace = $2; }
+{ size_t k = $2->rfind("::");
+  if (k != string::npos &&
+      interp.namespaces.find($2->substr(0, k)) == interp.namespaces.end()) {
+    error(yylloc, "unknown namespace '"+$2->substr(0, k)+"'");
+    interp.symtab.current_namespace->clear();
+  } else {
+    interp.namespaces.insert(*$2);
+    delete interp.symtab.current_namespace;
+    interp.symtab.current_namespace = $2;
+  }
+}
 | NAMESPACE
 { interp.symtab.current_namespace->clear(); }
 | USING NAMESPACE names
@@ -344,7 +352,14 @@ fnames
 ;
 
 fname
-: ID			{ $$ = $1; *$$ += ".pure"; }
+: ID
+{ if ($1->find("::") != string::npos) {
+    error(yylloc, "qualified identifier not permitted here");
+    YYERROR;
+  } else {
+    $$ = $1; *$$ += ".pure";
+  }
+}
 | STR			{ char *s = fromutf8($1); free($1);
 			  $$ = new string(s); free(s); }
 ;
@@ -358,7 +373,10 @@ names
 
 name
 : ID
-| STR			{ $$ = new string($1); free($1); }
+{ $$ = $1; if ($$->compare(0, 2, "::") == 0) $$->erase(0, 2); }
+| STR
+{ $$ = new string($1); free($1);
+  if ($$->compare(0, 2, "::") == 0) $$->erase(0, 2); }
 ;
 
 prototypes
