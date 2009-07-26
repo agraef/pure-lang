@@ -224,8 +224,7 @@ symbol* symtable::sym_p(const char *s, symbol*& cache,
 
 symbol* symtable::lookup(const char *s)
 {
-  const char *t = strstr(s, "::");
-  if (t == s) {
+  if (strncmp(s, "::", 2) == 0) {
     // absolute qualifier
     symbol *sym = lookup_p(s+2, count);
     return sym;

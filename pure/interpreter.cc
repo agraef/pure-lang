@@ -1797,8 +1797,9 @@ void interpreter::declare(bool priv, prec_t prec, fix_t fix, list<string> *ids)
       delete ids;
       throw err("qualified symbol '"+id+"' not permitted in declaration");
     }
-    string id = (*symtab.current_namespace)+"::"+(*it);
-    symbol* sym = symtab.lookup(id);
+    string id = (*symtab.current_namespace)+"::"+(*it), absid = id;
+    if (!symtab.current_namespace->empty()) absid.insert(0, "::");
+    symbol* sym = symtab.lookup(absid);
     if (sym) {
       // crosscheck declarations
       if (sym->priv != priv) {
@@ -1819,7 +1820,7 @@ void interpreter::declare(bool priv, prec_t prec, fix_t fix, list<string> *ids)
 	}
       }
     } else
-      symtab.sym(id, prec, fix, priv);
+      symtab.sym(absid, prec, fix, priv);
   }
   delete ids;
 }
@@ -3272,7 +3273,7 @@ expr interpreter::macval(expr x)
 
 expr* interpreter::uminop(expr *op, expr *x)
 {
-  if (op->tag() != symtab.sym("-")->f) {
+  if (op->tag() != symtab.sym("::-")->f) {
     int32_t f = op->tag();
     delete op; delete x;
     throw err("syntax error, '" + symtab.sym(f).s +
@@ -3304,7 +3305,7 @@ expr *interpreter::mklsect(expr *x, expr *y)
 
 expr *interpreter::mkrsect(expr *x, expr *y)
 {
-  if (x->tag() == symtab.sym("-")->f)
+  if (x->tag() == symtab.sym("::-")->f)
     return uminop(x, y);
   else {
     expr *u = new expr(symtab.flip_sym().x, *x, *y);
@@ -4894,8 +4895,9 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     else if (argt[i] == Type::Int32Ty && sizeof(int) > 4)
       argt[i] = Type::Int64Ty;
   if (asname.empty()) asname = name;
-  string asid = (*symtab.current_namespace)+"::"+asname;
-  symbol* _sym = symtab.lookup(asid);
+  string asid = (*symtab.current_namespace)+"::"+asname, absasid = asid;
+  if (!symtab.current_namespace->empty()) absasid.insert(0, "::");
+  symbol* _sym = symtab.lookup(absasid);
   /* If the symbol is already declared and we have a public/private specifier,
      make sure that they match up. */
   if (_sym) {
@@ -4903,7 +4905,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       throw err("symbol '"+asid+"' already declared "+
 		(_sym->priv?"'private'":"'public'"));
   } else {
-    _sym = symtab.sym(asid);
+    _sym = symtab.sym(absasid);
     if (priv >= 0)
       _sym->priv = priv;
   }

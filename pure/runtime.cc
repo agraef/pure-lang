@@ -636,8 +636,9 @@ int32_t pure_sym(const char *s)
 {
   assert(s);
   interpreter& interp = *interpreter::g_interp;
-  const char *t = strstr(s, "::");
-  string id = t?s:"::"+string(s), qual = t?id.substr(0, t-s):"";
+  string id = (strncmp(s, "::", 2)==0)?s:"::"+string(s);
+  size_t pos = id.rfind("::");
+  string qual = (pos>2)?id.substr(2, pos-2):"";
   const symbol* sym;
   if (qual != *interp.symtab.current_namespace) {
     /* Switch to the desired namespace so that we also get the private
@@ -659,7 +660,7 @@ int32_t pure_getsym(const char *s)
 {
   assert(s);
   interpreter& interp = *interpreter::g_interp;
-  string id = strstr(s, "::")?s:"::"+string(s);
+  string id = (strncmp(s, "::", 2)==0)?s:"::"+string(s);
   const symbol* sym = interp.symtab.lookup(id);
   if (sym)
     return sym->f;
@@ -4498,7 +4499,7 @@ static expr localvars(interpreter& interp, DebugInfo& d, pure_expr *x)
     // right now, so we need to make up our own.
     for (uint32_t i = 0; i < d.e->n; i++) {
       char buf[100];
-      sprintf(buf, "x%u", i+1);
+      sprintf(buf, "::x%u", i+1);
       symbol *sym = interp.symtab.sym(buf);
       if (sym) vals[sym->f] = d.args[i];
     }
