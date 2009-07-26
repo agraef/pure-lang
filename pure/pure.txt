@@ -3812,20 +3812,20 @@ Namespaces and Implicit Declarations
 
 A common pitfall is the implicit declaration of unqualified symbols in
 conjunction with the ``namespace`` declaration. For instance, it is tempting
-to write::
+to write the following, and expect ``foo`` to become a member of the ``bar``
+namespace::
 
   namespace bar;
   foo x = x+1;
 
-and expect ``foo`` to become a member of the ``bar`` namespace. But, assuming
-that ``foo`` is not already declared or defined elsewhere, it will actually
-become a member of the default namespace instead. This is necessary because in
-Pure it is impossible to distinguish local variables from unqualified function
-symbols at the lexical level, and thus all undeclared and unqualified
-identifiers are implicitly declared in the default namespace. Thus, if you
-really want the ``foo`` symbol to become a member of the ``bar`` namespace,
-you must either declare it explicitly or use a qualified identifier. That is,
-you have to write either::
+But, assuming that ``foo`` is not already declared or defined elsewhere, it
+will actually become a member of the default namespace instead. This is
+necessary because in Pure it is impossible to distinguish local variables from
+unqualified function symbols at the lexical level, and thus all undeclared and
+unqualified identifiers are implicitly declared in the default
+namespace. Thus, if you really want the ``foo`` symbol to become a member of
+the ``bar`` namespace, you must either declare it explicitly or use a
+qualified identifier. That is, you have to write either::
 
   namespace bar;
   bar::foo x = x+1;
