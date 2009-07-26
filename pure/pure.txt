@@ -1960,8 +1960,7 @@ using `qualified symbols` of the form ``namespace::symbol``::
 
 This avoids any potential name clashes, since the qualified identifier
 notation always makes it clear which namespace the given identifier belongs
-to. (The namespace prefix in a qualified symbol can also be empty in which
-case it explicitly denotes a symbol in the default namespace.)
+to.
 
 Similar to the ``using`` declaration, a ``namespace`` declaration accepts
 either identifiers or double-quoted strings as namespace names. E.g., the
@@ -2001,8 +2000,8 @@ simultaneously::
 
   using namespace foo, bar;
 
-However, this requires that an unqualified identifier exists in at most one of
-the listed namespaces, otherwise you get an error message::
+However, this requires that a symbol exists in at most one of the listed
+namespaces, otherwise you get an error message::
 
   > using namespace foo, bar;
   > foo 99;
@@ -2169,8 +2168,6 @@ compiler will complain about an undeclared symbol otherwise)::
   100
   > ::old::foo 99;
   198
-  > ::old::bar 99;
-  <stdin>, line 15: undeclared symbol '::old::bar'
 
 Also note that, as a special case of the absolute qualifier notation,
 ``::foo`` always denotes the symbol ``foo`` in the default namespace.
@@ -3343,6 +3340,11 @@ by placing spaces around the ``::`` delimiter (these aren't permitted in a
 qualified symbol, so the construct ``foo :: int`` is always interpreted as a
 tagged variable, no matter whether ``foo`` is also a valid namespace).
 
+Pure 0.26 extended the namespaces feature to add support for hierarchical
+namespaces. This means that name lookup works in a slightly different fashion
+now (see `Hierarchical Namespaces`_ for details), but old code which doesn't
+use the new feature should continue to work unchanged.
+
 Error Recovery
 --------------
 
@@ -3823,18 +3825,18 @@ symbols at the lexical level, and thus all undeclared and unqualified
 identifiers are implicitly declared in the default namespace. Thus, if you
 really want the ``foo`` symbol to become a member of the ``bar`` namespace,
 you must either declare it explicitly or use a qualified identifier. That is,
-either::
+you have to write either::
 
   namespace bar;
   bar::foo x = x+1;
 
-or::
+Or::
 
   namespace bar;
   public foo;
   foo x = x+1;
 
-will tell the compiler about the desired namespace of the symbol.
+This will tell the compiler about the desired namespace of the symbol.
 
 With or when?
 -------------
