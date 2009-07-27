@@ -1890,33 +1890,69 @@ makes available all the definitions in the included script in your
 program. Each script only gets included once, at the point where the first
 ``using`` clause for the script is encountered.
 
-The script name in a ``using`` clause can be specified either as a string
-denoting the proper filename (possibly including path and/or filename
-extension), or as an identifier. In the latter case, the .pure filename
-extension is added automatically. In both cases, the interpreter performs a
-search to locate the script, unless an absolute pathname was given. It first
-searches the directory of the script containing the ``using`` clause (or the
-current working directory if the clause was read from standard input, as is
-the case, e.g., in an interactive session), then the directories named in -I
-options on the command line (in the given order), then the colon-separated
-list of directories in the PURE_INCLUDE environment variable, and finally the
-directory named by the PURELIB environment variable. Note that the current
-working directory is not searched by default (unless the ``using`` clause is
-read from standard input), but of course you can force this by adding the
-option -I. to the command line, or by including ``.`` in the PURE_INCLUDE
-variable.
+For instance, the following declaration causes the math.pure script from the
+standard library to be included in your program::
 
-For the purpose of comparing script names, the interpreter always uses the
-canonicalized full pathname of the script, following symbolic links to the
-destination file (albeit only one level). Thus different scripts with the same
-basename, such as foo/utils.pure and bar/utils.pure can both be included in
-the same program (unless they link to the same file). The resolution of
-symbolic links also makes it possible to have an executable script with a
-shebang line in its own directory, to be executed via a symbolic link placed
-on the system PATH. In this case the script search performed in ``using``
-clauses will use the real script directory and thus other required scripts can
-be located there. This is the recommended practice for installing standalone
-Pure applications in source form which are to be run directly from the shell.
+  using math;
+
+You can also import multiple scripts in one go::
+
+  using array, dict, set;
+
+Scripts can be specified using either (possibly qualified) identifiers or
+proper filenames enclosed in double quotes. The notation for qualified script
+identifiers uses the same syntax as for qualified symbols, see Namespaces_
+below. Such names are useful, e.g., if a collection of scripts is distributed
+as a "package" which goes into its own subdirectory.
+
+Script identifiers are translated to the corresponding filenames by replacing
+the ``::`` symbol with the pathname separator ``/`` and tacking on the
+``.pure`` suffix. The following table illustrates this with a few examples.
+
+===========================  ===============================
+Script identifier            Filename
+===========================  ===============================
+``math``                     ``"math.pure"``
+``examples::libor::bits``    ``"examples/libor/bits.pure"``
+``::pure::examples::hello``  ``"/pure/examples/hello.pure"``
+===========================  ===============================
+
+In your programs you can use either notation, thus the following two
+declarations have exactly the same effect::
+
+  using examples::libor::bits;
+  using "examples/libor/bits.pure";
+
+The former notation is usually more convenient, but the latter is useful if
+the script name is not a valid Pure identifier, e.g.::
+
+  using "my-examples/hello-world.pure";
+
+In either case, the interpreter performs a search to locate the script, unless
+an absolute pathname (or an absolute qualified name like ``::foo``) was
+given. It first searches the directory of the script containing the ``using``
+clause (or the current working directory if the clause was read from standard
+input, as is the case, e.g., in an interactive session), then the directories
+named in -I options on the command line (in the given order), then the
+colon-separated list of directories in the PURE_INCLUDE environment variable,
+and finally the directory named by the PURELIB environment variable. Note that
+the current working directory is not searched by default (unless the ``using``
+clause is read from standard input), but of course you can force this by
+adding the option -I. to the command line, or by including ``.`` in the
+PURE_INCLUDE variable.
+
+For the purpose of comparing script names (to determine whether two scripts
+are actually the same), the interpreter always uses the canonicalized full
+pathname of the script, following symbolic links to the destination file
+(albeit only one level). Thus different scripts with the same basename, such
+as foo/utils.pure and bar/utils.pure can both be included in the same program
+(unless they link to the same file). The resolution of symbolic links also
+makes it possible to have an executable script with a shebang line in its own
+directory, to be executed via a symbolic link placed on the system PATH. In
+this case the script search performed in ``using`` clauses will use the real
+script directory and thus other required scripts can be located there. This is
+the recommended practice for installing standalone Pure applications in source
+form which are to be run directly from the shell.
 
 Namespaces
 ----------
@@ -2123,11 +2159,11 @@ Namespace identifiers can themselves be qualified identifiers in Pure, which
 enables you to introduce a hierarchy of namespaces. This is useful, e.g., to
 group related namespaces together under a common "umbrella" namespace::
 
-  > namespace my;
-  > namespace my::old;
-  > my::old::foo x = x+1;
-  > namespace my::new;
-  > my::new::foo x = x-1;
+  namespace my;
+  namespace my::old;
+  my::old::foo x = x+1;
+  namespace my::new;
+  my::new::foo x = x-1;
 
 Note that the namespace ``my``, which serves as the parent namespace, must be
 created before creating the ``my::old`` and ``my::new`` namespaces, even if it
@@ -2151,10 +2187,10 @@ specific namespace, bypassing the usual symbol lookup mechanism. For instance,
 suppose that we introduce another *global* ``old`` namespace and define yet
 another version of ``foo`` in that namespace::
 
-  > namespace old;
-  > public foo;
-  > foo x = 2*x;
-  > namespace;
+  namespace old;
+  public foo;
+  foo x = 2*x;
+  namespace;
 
 Now, if we want to access that function, with ``my`` still active as the
 search namespace, we cannot simply refer to the new function as ``old::foo``,
