@@ -1,3 +1,18 @@
+2009-07-27  Albert Graef  <Dr.Graef@t-online.de>
+
+	* parser.yy: Allow qualified module names in 'using' clauses, as
+	suggested by Eddie Rucker. These are translated to filenames by
+	replacing the "::" symbol with the path separator "/", which makes
+	it possible to package libraries in their own subdirectories.
+
+	Note that the pathname components must be legal Pure identifiers
+	to make this work. E.g., 'using examples::hello;' will try to load
+	'hello.pure' from the 'examples' subdirectory. The module is
+	searched on the library paths as usual. To bypass the search
+	mechanism, you can also specify an absolute qualid, such as
+	'::usr::lib::pure::foo' which translates to the absolute pathname
+	'/usr/lib/pure/foo.pure'.
+
 2009-07-26  Albert Graef  <Dr.Graef@t-online.de>
 
 	* symtable.cc, lexer.ll, parser.yy: Implemented hierarchical

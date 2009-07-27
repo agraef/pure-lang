@@ -89,6 +89,7 @@ class interpreter;
 #include "lexerdefs.hh"
 #include "interpreter.hh"
 static int extern_priv;
+static void mangle_fname(string& name);
 %}
 
 %token		PRIVATE	"private"
@@ -352,14 +353,7 @@ fnames
 ;
 
 fname
-: ID
-{ if ($1->find("::") != string::npos) {
-    error(yylloc, "qualified identifier not permitted here");
-    YYERROR;
-  } else {
-    $$ = $1; *$$ += ".pure";
-  }
-}
+: ID			{ $$ = $1; mangle_fname(*$$); }
 | STR			{ char *s = fromutf8($1); free($1);
 			  $$ = new string(s); free(s); }
 ;
@@ -845,4 +839,14 @@ yy::parser::error (const yy::parser::location_type& l,
 		   const string& m)
 {
   interp.error(l, m);
+}
+
+static void mangle_fname(string& name)
+{
+  size_t pos = name.find("::");
+  while (pos != string::npos) {
+    name.replace(pos, 2, "/");
+    pos = name.find("::", pos);
+  }
+  name += ".pure";
 }
