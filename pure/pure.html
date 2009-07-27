@@ -2129,11 +2129,19 @@ using math;
 <pre class="literal-block">
 using array, dict, set;
 </pre>
-<p>Scripts can be specified using either (possibly qualified) identifiers or
-proper filenames enclosed in double quotes. The notation for qualified script
-identifiers uses the same syntax as for qualified symbols, see <a class="reference internal" href="#namespaces">Namespaces</a>
-below. Such names are useful, e.g., if a collection of scripts is distributed
-as a &quot;package&quot; which goes into its own subdirectory.</p>
+<p>Moreover, Pure provides a notation for qualified module names which can be
+used to denote scripts located in specific package directories, e.g.:</p>
+<pre class="literal-block">
+using examples::libor::bits;
+</pre>
+<p>In fact this is equivalent to the following <tt class="docutils literal"><span class="pre">using</span></tt> clause which spells out
+the real filename of the script:</p>
+<pre class="literal-block">
+using &quot;examples/libor/bits.pure&quot;;
+</pre>
+<p>Both notations can be used interchangeably; the former is usually more
+convenient, but the latter allows you to denote scripts whose names aren't
+valid Pure identifiers.</p>
 <p>Script identifiers are translated to the corresponding filenames by replacing
 the <tt class="docutils literal"><span class="pre">::</span></tt> symbol with the pathname separator <tt class="docutils literal"><span class="pre">/</span></tt> and tacking on the
 <tt class="docutils literal"><span class="pre">.pure</span></tt> suffix. The following table illustrates this with a few examples.</p>
@@ -2159,17 +2167,6 @@ the <tt class="docutils literal"><span class="pre">::</span></tt> symbol with th
 </tr>
 </tbody>
 </table>
-<p>In your programs you can use either notation, thus the following two
-declarations have exactly the same effect:</p>
-<pre class="literal-block">
-using examples::libor::bits;
-using &quot;examples/libor/bits.pure&quot;;
-</pre>
-<p>The former notation is usually more convenient, but the latter is useful if
-the script name is not a valid Pure identifier, e.g.:</p>
-<pre class="literal-block">
-using &quot;my-examples/hello-world.pure&quot;;
-</pre>
 <p>In either case, the interpreter performs a search to locate the script, unless
 an absolute pathname (or an absolute qualified name like <tt class="docutils literal"><span class="pre">::foo</span></tt>) was
 given. It first searches the directory of the script containing the <tt class="docutils literal"><span class="pre">using</span></tt>

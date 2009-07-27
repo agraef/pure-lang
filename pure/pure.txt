@@ -1899,11 +1899,19 @@ You can also import multiple scripts in one go::
 
   using array, dict, set;
 
-Scripts can be specified using either (possibly qualified) identifiers or
-proper filenames enclosed in double quotes. The notation for qualified script
-identifiers uses the same syntax as for qualified symbols, see Namespaces_
-below. Such names are useful, e.g., if a collection of scripts is distributed
-as a "package" which goes into its own subdirectory.
+Moreover, Pure provides a notation for qualified module names which can be
+used to denote scripts located in specific package directories, e.g.::
+
+  using examples::libor::bits;
+
+In fact this is equivalent to the following ``using`` clause which spells out
+the real filename of the script::
+
+  using "examples/libor/bits.pure";
+
+Both notations can be used interchangeably; the former is usually more
+convenient, but the latter allows you to denote scripts whose names aren't
+valid Pure identifiers.
 
 Script identifiers are translated to the corresponding filenames by replacing
 the ``::`` symbol with the pathname separator ``/`` and tacking on the
@@ -1916,17 +1924,6 @@ Script identifier            Filename
 ``examples::libor::bits``    ``"examples/libor/bits.pure"``
 ``::pure::examples::hello``  ``"/pure/examples/hello.pure"``
 ===========================  ===============================
-
-In your programs you can use either notation, thus the following two
-declarations have exactly the same effect::
-
-  using examples::libor::bits;
-  using "examples/libor/bits.pure";
-
-The former notation is usually more convenient, but the latter is useful if
-the script name is not a valid Pure identifier, e.g.::
-
-  using "my-examples/hello-world.pure";
 
 In either case, the interpreter performs a search to locate the script, unless
 an absolute pathname (or an absolute qualified name like ``::foo``) was
