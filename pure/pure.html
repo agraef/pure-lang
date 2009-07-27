@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>The Pure Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2009-07-27" />
+<meta name="date" content="2009-07-28" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2009-07-27</td></tr>
+<td>2009-07-28</td></tr>
 </tbody>
 </table>
 <!-- Note: This document is formatted using docutils. The Makefile has rules -->
@@ -527,8 +527,8 @@ LLVM assembler (.ll) file, a native object (.o) file, or a native executable,
 depending on the output filename specified with -o. If the output filename
 ends in the .ll extension, an LLVM assembler file is created which can then be
 processed with the LLVM toolchain (llvmc, llvm-gcc, etc.). If the output
-filename is just <tt class="docutils literal"><span class="pre">-</span></tt>, the assembler file is written to standard output,
-which is useful if you want to pass the generated code to the LLVM tools in a
+filename is just '-', the assembler file is written to standard output, which
+is useful if you want to pass the generated code to the LLVM tools in a
 pipeline. Otherwise the interpreter automatically invokes llvmc to compile the
 program to either a native object file (if the output filename ends in the .o
 extension) or a native executable with the given name. You can also specify
@@ -687,8 +687,8 @@ for advanced uses Pure offers macro functions as a kind of preprocessing
 facility. These are all described below and in the following sections.</p>
 <p>Here's a first example which demonstrates how to define a simple recursive
 function in Pure, entered interactively in the interpreter (note that the
-<tt class="docutils literal"><span class="pre">&gt;</span></tt> symbol at the beginning of each input line is the interpreter's default
-command prompt):</p>
+'<tt class="docutils literal"><span class="pre">&gt;</span></tt>' symbol at the beginning of each input line is the interpreter's
+default command prompt):</p>
 <pre class="literal-block">
 &gt; // my first Pure example
 &gt; fact 0 = 1;
@@ -837,12 +837,12 @@ Characters</a>. Thus, e.g., <tt class="docutils literal"><span class="pre">&quot
 <dt>Function and variable symbols: <tt class="docutils literal"><span class="pre">foo</span></tt>, <tt class="docutils literal"><span class="pre">foo_bar</span></tt>, <tt class="docutils literal"><span class="pre">BAR</span></tt>, <tt class="docutils literal"><span class="pre">foo::bar</span></tt></dt>
 <dd>These consist of the usual sequence of letters (including the underscore)
 and digits, starting with a letter. Case is significant, thus <tt class="docutils literal"><span class="pre">foo</span></tt>,
-<tt class="docutils literal"><span class="pre">Foo</span></tt> and <tt class="docutils literal"><span class="pre">FOO</span></tt> are distinct identifiers. The <tt class="docutils literal"><span class="pre">_</span></tt> symbol, when
+<tt class="docutils literal"><span class="pre">Foo</span></tt> and <tt class="docutils literal"><span class="pre">FOO</span></tt> are distinct identifiers. The '<tt class="docutils literal"><span class="pre">_</span></tt>' symbol, when
 occurring on the left-hand side of an equation, is special; it denotes the
 <strong class="dfn">anonymous variable</strong> which matches any value without actually binding a
 variable. Identifiers can also be prefixed with a namespace identifier,
 like in <tt class="docutils literal"><span class="pre">foo::bar</span></tt>. (This requires that the given namespace has already
-been created, as explained under Namespaces in the <a class="reference internal" href="#declarations">Declarations</a> section.)</dd>
+been created, as explained under <a class="reference internal" href="#namespaces">Namespaces</a> in the <a class="reference internal" href="#declarations">Declarations</a> section.)</dd>
 <dt>Operator and nullary symbols: <tt class="docutils literal"><span class="pre">x+y</span></tt>, <tt class="docutils literal"><span class="pre">x==y</span></tt>, <tt class="docutils literal"><span class="pre">not</span> <span class="pre">x</span></tt></dt>
 <dd><p class="first">For convenience, Pure also provides you with a limited means to extend the
 syntax of the language with your own operators and &quot;nullary&quot; (constant)
@@ -864,24 +864,25 @@ under <a class="reference internal" href="#definitions-and-expression-evaluation
 <dt>Lists: <tt class="docutils literal"><span class="pre">[x,y,z]</span></tt>, <tt class="docutils literal"><span class="pre">x:xs</span></tt>, <tt class="docutils literal"><span class="pre">x..y</span></tt>, <tt class="docutils literal"><span class="pre">x:y..z</span></tt></dt>
 <dd><p class="first">Pure's basic list syntax is the same as in Haskell, thus <tt class="docutils literal"><span class="pre">[]</span></tt> is the
 empty list and <tt class="docutils literal"><span class="pre">x:xs</span></tt> denotes a list with head element <tt class="docutils literal"><span class="pre">x</span></tt> and tail
-list <tt class="docutils literal"><span class="pre">xs</span></tt>. (The infix constructor symbol <tt class="docutils literal"><span class="pre">:</span></tt> is declared in the
+list <tt class="docutils literal"><span class="pre">xs</span></tt>. (The infix constructor symbol '<tt class="docutils literal"><span class="pre">:</span></tt>' is declared in the
 prelude.) The usual syntactic sugar for list values in brackets is
 provided, thus <tt class="docutils literal"><span class="pre">[x,y,z]</span></tt> is exactly the same as <tt class="docutils literal"><span class="pre">x:y:z:[]</span></tt>.</p>
 <p class="last">There's also a way to denote arithmetic sequences such as <tt class="docutils literal"><span class="pre">1..5</span></tt>, which
 denotes the list <tt class="docutils literal"><span class="pre">[1,2,3,4,5]</span></tt>. (Haskell users should note the missing
 brackets. In difference to Haskell, Pure doesn't use any special syntax
-for arithmetic sequences, the <tt class="docutils literal"><span class="pre">..</span></tt> symbol is just an ordinary infix
+for arithmetic sequences, the '<tt class="docutils literal"><span class="pre">..</span></tt>' symbol is just an ordinary infix
 operator declared and defined in the prelude.) Sequences with arbitrary
 stepsizes can be written by denoting the first two sequence elements using
-the <tt class="docutils literal"><span class="pre">:</span></tt> operator, as in <tt class="docutils literal"><span class="pre">1.0:1.2..3.0</span></tt>. (To prevent unwanted artifacts
-due to rounding errors, the upper bound in a floating point sequence is
-always rounded to the nearest grid point. Thus, e.g., <tt class="docutils literal"><span class="pre">0.0:0.1..0.29</span></tt>
-actually yields <tt class="docutils literal"><span class="pre">[0.0,0.1,0.2,0.3]</span></tt>, as does <tt class="docutils literal"><span class="pre">0.0:0.1..0.31</span></tt>.)</p>
+the '<tt class="docutils literal"><span class="pre">:</span></tt>' operator, as in <tt class="docutils literal"><span class="pre">1.0:1.2..3.0</span></tt>. (To prevent unwanted
+artifacts due to rounding errors, the upper bound in a floating point
+sequence is always rounded to the nearest grid point. Thus, e.g.,
+<tt class="docutils literal"><span class="pre">0.0:0.1..0.29</span></tt> actually yields <tt class="docutils literal"><span class="pre">[0.0,0.1,0.2,0.3]</span></tt>, as does
+<tt class="docutils literal"><span class="pre">0.0:0.1..0.31</span></tt>.)</p>
 </dd>
 <dt>Tuples: <tt class="docutils literal"><span class="pre">x,y,z</span></tt></dt>
 <dd>Pure's tuples are a bit unusual: They are constructed by just &quot;pairing&quot;
-things using the <tt class="docutils literal"><span class="pre">,</span></tt> operator, for which the empty tuple <tt class="docutils literal"><span class="pre">()</span></tt> acts as
-a neutral element (i.e., <tt class="docutils literal"><span class="pre">(),x</span></tt> is just <tt class="docutils literal"><span class="pre">x</span></tt>, as is <tt class="docutils literal"><span class="pre">x,()</span></tt>). Pairs
+things using the '<tt class="docutils literal"><span class="pre">,</span></tt>' operator, for which the empty tuple <tt class="docutils literal"><span class="pre">()</span></tt> acts
+as a neutral element (i.e., <tt class="docutils literal"><span class="pre">(),x</span></tt> is just <tt class="docutils literal"><span class="pre">x</span></tt>, as is <tt class="docutils literal"><span class="pre">x,()</span></tt>). Pairs
 always associate to the right, meaning that <tt class="docutils literal"><span class="pre">x,y,z</span> <span class="pre">==</span> <span class="pre">x,(y,z)</span> <span class="pre">==</span>
 <span class="pre">(x,y),z</span></tt>, where <tt class="docutils literal"><span class="pre">x,(y,z)</span></tt> is the normalized representation. This
 implies that tuples are always flat, i.e., there are no nested tuples
@@ -1266,7 +1267,7 @@ possible to match a matrix value as a whole using the <tt class="docutils litera
 see below.</p>
 <p>In addition, patterns must not contain repeated variables, i.e., rules must be
 &quot;left-linear&quot;. The only exception to this rule is the <strong class="dfn">anonymous variable</strong>
-<tt class="docutils literal"><span class="pre">_</span></tt> which matches an arbitrary value (independently for all occurrences)
+'<tt class="docutils literal"><span class="pre">_</span></tt>' which matches an arbitrary value (independently for all occurrences)
 without binding a variable symbol.</p>
 <p>Patterns may contain the following special elements which are not permitted in
 right-hand side expressions:</p>
@@ -1388,7 +1389,7 @@ variables in the left-hand side of the rule to the corresponding subterms of
 the value of the right-hand side. This is also called a <strong class="dfn">pattern binding</strong>.</p>
 <p>Guards or multiple left-hand or right-hand sides are not permitted in these
 rules. However, it is possible to omit the left-hand side if it is just the
-anonymous variable <tt class="docutils literal"><span class="pre">_</span></tt> by itself, indicating that you don't care about the
+anonymous variable '<tt class="docutils literal"><span class="pre">_</span></tt>' by itself, indicating that you don't care about the
 result. The right-hand side is still evaluated, if only for its side-effects,
 which is handy, e.g., for adding debugging statements to your code. For
 instance, here is a variation of the quadratic equation solver which also
@@ -1913,7 +1914,7 @@ the real work is done by <tt class="docutils literal"><span class="pre">quasiquo
 actually perform the splicing. (Putting off the splicing until runtime makes
 it possible to splice argument lists computed at runtime.)</p>
 <p>If we want, we can also add some syntactic sugar for Lisp weenies. (Note that
-we cannot have <tt class="docutils literal"><span class="pre">,</span></tt> for unquoting, so we use <tt class="docutils literal"><span class="pre">,$</span></tt> instead.)</p>
+we cannot have '<tt class="docutils literal"><span class="pre">,</span></tt>' for unquoting, so we use '<tt class="docutils literal"><span class="pre">,$</span></tt>' instead.)</p>
 <pre class="literal-block">
 prefix 9 ` ,$ ,&#64; ;
 def `x = quasiquote x; def ,$x = unquote x; def ,&#64;x = splice x;
@@ -1999,7 +2000,7 @@ def fact n = trace fact n;
 fact n = if n&gt;0 then n*fact(n-1) else 1;
 </pre>
 <p>Here's a trace of the <tt class="docutils literal"><span class="pre">fact</span></tt> function obtained in this fashion (hit carriage
-return after each <tt class="docutils literal"><span class="pre">:</span></tt> prompt to proceed with the computation):</p>
+return after each '<tt class="docutils literal"><span class="pre">:</span></tt>' prompt to proceed with the computation):</p>
 <pre class="literal-block">
 &gt; fact 2;
 ** call fact: 2
@@ -2106,8 +2107,8 @@ and libraries consisting of a large number of different modules.</dd>
 </dl>
 <p>Examples for all types of symbol declarations can be found in the prelude
 which declares a bunch of standard (arithmetic, relational, logical) operator
-symbols as well as the list and pair constructors <tt class="docutils literal"><span class="pre">:</span></tt> and <tt class="docutils literal"><span class="pre">,</span></tt>, and a few
-nullary symbols (mostly for denoting different kinds of exceptions). The
+symbols as well as the list and pair constructors '<tt class="docutils literal"><span class="pre">:</span></tt>' and '<tt class="docutils literal"><span class="pre">,</span></tt>', and a
+few nullary symbols (mostly for denoting different kinds of exceptions). The
 <tt class="docutils literal"><span class="pre">using</span></tt> and <tt class="docutils literal"><span class="pre">namespace</span></tt> declarations are discussed in further detail
 below.</p>
 <div class="section" id="modules">
@@ -2177,7 +2178,7 @@ colon-separated list of directories in the PURE_INCLUDE environment variable,
 and finally the directory named by the PURELIB environment variable. Note that
 the current working directory is not searched by default (unless the <tt class="docutils literal"><span class="pre">using</span></tt>
 clause is read from standard input), but of course you can force this by
-adding the option -I. to the command line, or by including <tt class="docutils literal"><span class="pre">.</span></tt> in the
+adding the option -I. to the command line, or by including '.' in the
 PURE_INCLUDE variable.</p>
 <p>For the purpose of comparing script names (to determine whether two scripts
 are actually the same), the interpreter always uses the canonicalized full
@@ -2725,7 +2726,7 @@ probably used most frequently:</p>
 <dd>This is also used to denote list and string concatenation.</dd>
 <dt><tt class="docutils literal"><span class="pre">x:y</span></tt></dt>
 <dd>This is the list-consing operation. <tt class="docutils literal"><span class="pre">x</span></tt> becomes the head of the list,
-<tt class="docutils literal"><span class="pre">y</span></tt> its tail. As <tt class="docutils literal"><span class="pre">:</span></tt> is a constructor symbol, you can use it in
+<tt class="docutils literal"><span class="pre">y</span></tt> its tail. As '<tt class="docutils literal"><span class="pre">:</span></tt>' is a constructor symbol, you can use it in
 patterns on the left hand side of rewriting rules.</dd>
 <dt><tt class="docutils literal"><span class="pre">x..y</span></tt></dt>
 <dd>Constructs arithmetic sequences. <tt class="docutils literal"><span class="pre">x:y..z</span></tt> can be used to denote
@@ -2792,7 +2793,7 @@ definitions and expressions to be evaluated.</p>
 individual definitions and expressions must be terminated with a semicolon
 before they are processed. For instance, here is a simple interaction which
 defines the factorial and then uses that definition in some evaluations. Input
-lines begin with <tt class="docutils literal"><span class="pre">&gt;</span></tt>, which is the interpreter's default command prompt:</p>
+lines begin with '<tt class="docutils literal"><span class="pre">&gt;</span></tt>', which is the interpreter's default command prompt:</p>
 <pre class="literal-block">
 &gt; fact 1 = 1;
 &gt; fact n = n*fact (n-1) if n&gt;1;
@@ -3341,15 +3342,15 @@ special variable-binding environments, which are all implemented as anonymous
 closures in Pure. Also note that the debugger doesn't know about the argument
 names of external functions (which are optional in Pure and not recorded
 anywhere), so it will display the generic names <tt class="docutils literal"><span class="pre">x1</span></tt>, <tt class="docutils literal"><span class="pre">x2</span></tt> etc. instead.</p>
-<p>At the debugger prompt <tt class="docutils literal"><span class="pre">:</span></tt> you can enter various special debugger commands,
-or just keep on hitting the carriage return key to walk through an evaluation
-step by step, as we did in the example above. (Command line editing using
-readline works as usual at the debugger prompt, if it is enabled.) The usual
-commands are provided to walk through an evaluation, print and navigate the
-call stack, step over the current call, or continue the evaluation unattended
-until you hit another breakpoint. If you know other source level debuggers
-like gdb then you should feel right at home. You can type <tt class="docutils literal"><span class="pre">h</span></tt> at the
-debugger prompt to print the following list:</p>
+<p>At the debugger prompt '<tt class="docutils literal"><span class="pre">:</span></tt>' you can enter various special debugger
+commands, or just keep on hitting the carriage return key to walk through an
+evaluation step by step, as we did in the example above. (Command line editing
+using readline works as usual at the debugger prompt, if it is enabled.) The
+usual commands are provided to walk through an evaluation, print and navigate
+the call stack, step over the current call, or continue the evaluation
+unattended until you hit another breakpoint. If you know other source level
+debuggers like gdb then you should feel right at home. You can type <tt class="docutils literal"><span class="pre">h</span></tt> at
+the debugger prompt to print the following list:</p>
 <pre class="literal-block">
 : h
 Debugger commands:
@@ -3373,11 +3374,11 @@ x       exit the interpreter (after confirmation)
 also enter comment lines (<tt class="docutils literal"><span class="pre">//</span> <span class="pre">comment</span> <span class="pre">text</span></tt>) which will just be
 ignored. Extra arguments on commands which don't expect any will generally be
 ignored as well. The single letter commands all have to be separated from any
-additional parameters with whitespace, whereas the <tt class="docutils literal"><span class="pre">!</span></tt>, <tt class="docutils literal"><span class="pre">?</span></tt> and <tt class="docutils literal"><span class="pre">.</span></tt>
-commands count as word delimiters and can thus be followed immediately by an
-argument. For convenience, the <tt class="docutils literal"><span class="pre">?</span></tt> command can also be omitted if the
-expression to be evaluated doesn't start with a single letter or one of the
-special punctuation commands.</p>
+additional parameters with whitespace, whereas the '<tt class="docutils literal"><span class="pre">!</span></tt>', '<tt class="docutils literal"><span class="pre">?</span></tt>' and
+'<tt class="docutils literal"><span class="pre">.</span></tt>' commands count as word delimiters and can thus be followed immediately
+by an argument. For convenience, the '<tt class="docutils literal"><span class="pre">?</span></tt>' command can also be omitted if
+the expression to be evaluated doesn't start with a single letter or one of
+the special punctuation commands.</p>
 <p>The debugger can be exited or suspended in the following ways:</p>
 <ul class="simple">
 <li>You can type <tt class="docutils literal"><span class="pre">c</span></tt> to continue the evaluation until the next breakpoint, or
@@ -3439,7 +3440,7 @@ navigation commands. For instance:</p>
      x = 3; y = 2
 :
 </pre>
-<p>If you ever get lost, you can reprint the current rule with the <tt class="docutils literal"><span class="pre">.</span></tt>
+<p>If you ever get lost, you can reprint the current rule with the '<tt class="docutils literal"><span class="pre">.</span></tt>'
 command:</p>
 <pre class="literal-block">
 : .
@@ -3522,8 +3523,8 @@ changes in the syntax of comprehensions and arithmetic
 sequences. Specifically, the template expression and generator/filter clauses
 of a comprehension are now separated with <tt class="docutils literal"><span class="pre">|</span></tt> instead of <tt class="docutils literal"><span class="pre">;</span></tt>. Moreover,
 arithmetic sequences with arbitrary stepsize are now written <tt class="docutils literal"><span class="pre">x:y..z</span></tt>
-instead of <tt class="docutils literal"><span class="pre">x,y..z</span></tt>, and the <tt class="docutils literal"><span class="pre">..</span></tt> operator now has a higher precedence
-than the <tt class="docutils literal"><span class="pre">,</span></tt> operator. This makes writing matrix slices like
+instead of <tt class="docutils literal"><span class="pre">x,y..z</span></tt>, and the '<tt class="docutils literal"><span class="pre">..</span></tt>' operator now has a higher precedence
+than the '<tt class="docutils literal"><span class="pre">,</span></tt>' operator. This makes writing matrix slices like
 <tt class="docutils literal"><span class="pre">x!!(i..j,k..l)</span></tt> much more convenient.</p>
 <p>In Pure 0.13 the naming of the logical and bitwise operations was changed, so
 that these are now called <tt class="docutils literal"><span class="pre">~</span></tt>, <tt class="docutils literal"><span class="pre">&amp;&amp;</span></tt>, <tt class="docutils literal"><span class="pre">||</span></tt> and <tt class="docutils literal"><span class="pre">not</span></tt>/<tt class="docutils literal"><span class="pre">and</span></tt>/<tt class="docutils literal"><span class="pre">or</span></tt>,
