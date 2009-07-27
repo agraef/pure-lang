@@ -1926,31 +1926,36 @@ Script identifier            Filename
 ``::pure::examples::hello``  ``"/pure/examples/hello.pure"``
 ===========================  ===============================
 
-In either case, the interpreter performs a search to locate the script, unless
-an absolute pathname (or an absolute qualified name like ``::foo``) was
-given. It first searches the directory of the script containing the ``using``
-clause (or the current working directory if the clause was read from standard
-input, as is the case, e.g., in an interactive session), then the directories
-named in -I options on the command line (in the given order), then the
-colon-separated list of directories in the PURE_INCLUDE environment variable,
-and finally the directory named by the PURELIB environment variable. Note that
-the current working directory is not searched by default (unless the ``using``
-clause is read from standard input), but of course you can force this by
-adding the option -I. to the command line, or by including '.' in the
-PURE_INCLUDE variable.
+Note the last example, which shows how an absolute pathname can be denoted
+using a qualifier starting with '``::``'.
+
+Unless an absolute pathname is given, the interpreter performs a search to
+locate the script. It first searches the directory of the script containing
+the ``using`` clause (or the current working directory if the clause was read
+from standard input, as is the case, e.g., in an interactive session), then
+the directories named in -I options on the command line (in the given order),
+then the colon-separated list of directories in the PURE_INCLUDE environment
+variable, and finally the directory named by the PURELIB environment
+variable. Note that the current working directory is not searched by default
+(unless the ``using`` clause is read from standard input), but of course you
+can force this by adding the option -I. to the command line, or by including
+'.' in the PURE_INCLUDE variable.
 
 For the purpose of comparing script names (to determine whether two scripts
 are actually the same), the interpreter always uses the canonicalized full
 pathname of the script, following symbolic links to the destination file
 (albeit only one level). Thus different scripts with the same basename, such
 as foo/utils.pure and bar/utils.pure can both be included in the same program
-(unless they link to the same file). The resolution of symbolic links also
-makes it possible to have an executable script with a shebang line in its own
-directory, to be executed via a symbolic link placed on the system PATH. In
-this case the script search performed in ``using`` clauses will use the real
-script directory and thus other required scripts can be located there. This is
-the recommended practice for installing standalone Pure applications in source
-form which are to be run directly from the shell.
+(unless they link to the same file).
+
+The directory of the canonicalized pathname is also used when searching other
+scripts included in a script. This makes it possible to have an executable
+script with a shebang line in its own directory, which is then executed via a
+symbolic link placed on the system PATH. In this case the script search
+performed in ``using`` clauses will use the real script directory and thus
+other required scripts can be located there. This is the recommended practice
+for installing standalone Pure applications in source form which are to be run
+directly from the shell.
 
 Namespaces
 ----------
@@ -2164,10 +2169,10 @@ group related namespaces together under a common "umbrella" namespace::
   my::new::foo x = x-1;
 
 Note that the namespace ``my``, which serves as the parent namespace, must be
-created before creating the ``my::old`` and ``my::new`` namespaces, even if it
-does not contain any symbols of its own. After these declarations, the
-``my::old`` and ``my::new`` namespaces are part of the ``my`` namespace and
-will be considered in name lookup accordingly, so that you can write::
+created before the ``my::old`` and ``my::new`` namespaces, even if it does not
+contain any symbols of its own. After these declarations, the ``my::old`` and
+``my::new`` namespaces are part of the ``my`` namespace and will be considered
+in name lookup accordingly, so that you can write::
 
   > using namespace my;
   > old::foo 99;
@@ -2175,15 +2180,16 @@ will be considered in name lookup accordingly, so that you can write::
   > new::foo 99;
   98
 
-Readers familiar with Unix-style filesystems will notice that this works
-pretty much like a hierarchy of directories and files, where the namespaces
-play the role of the directories, the symbols in each namespace correspond to
-the files in a directory, and the ``using namespace`` declaration functions
-similar to the shell's ``PATH`` variable. The analogy goes even
-further. Sometimes it is necessary to tell the compiler to use a symbol in a
-specific namespace, bypassing the usual symbol lookup mechanism. For instance,
-suppose that we introduce another *global* ``old`` namespace and define yet
-another version of ``foo`` in that namespace::
+This works pretty much like a hierarchy of directories and files, where the
+namespaces play the role of the directories (with the default namespace as the
+root directory), the symbols in each namespace correspond to the files in a
+directory, and the ``using namespace`` declaration functions similar to the
+shell's ``PATH`` variable.
+
+Sometimes it is necessary to tell the compiler to use a symbol in a specific
+namespace, bypassing the usual symbol lookup mechanism. For instance, suppose
+that we introduce another *global* ``old`` namespace and define yet another
+version of ``foo`` in that namespace::
 
   namespace old;
   public foo;
@@ -3695,11 +3701,11 @@ Pure expression, calls ``__show__`` as well::
   > str (1/7);
   "0.142857"
 
-Conversely, you can call the ``str`` function from __show__, but in this case
-it always returns the default representation of an expression. This prevents
-the expression printer from going recursive, and allows you to define your
-custom representation in terms of the default one. E.g., the following rule
-removes the ``L`` suffixes from bigint values::
+Conversely, you can call the ``str`` function from ``__show__``, but in this
+case it always returns the default representation of an expression. This
+prevents the expression printer from going recursive, and allows you to define
+your custom representation in terms of the default one. E.g., the following
+rule removes the ``L`` suffixes from bigint values::
 
   > __show__ x::bigint = init (str x);
   > fact n = foldl (*) 1L (1..n);
@@ -4338,6 +4344,7 @@ work fine in limited stack space. For instance, the following little program
 will loop forever if your platform supports the required optimizations::
 
   loop = loop;
+  loop;
 
 This also works if your definition involves function parameters, guards and
 multiple equations, of course. Moreover, conditional expressions
@@ -4419,20 +4426,32 @@ Author
 Albert Gräf <Dr.Graef@t-online.de>, Dept. of Computer Music, Johannes
 Gutenberg University of Mainz, Germany.
 
+The author gratefully acknowledges the contributions by Scott E. Dillard,
+Rooslan S. Khayrov, Eddie Rucker, Libor Spacek and Jiri Spitz, as well as Toni
+Graffy and Ryan Schmidt who maintain the SUSE Linux and OSX packages. Thanks
+are also due to Vili Aapro, Alvaro Castro Castilla, John Cowan, Chris Double,
+Tim Haynes, John Lunney and Max Wolf.
+
 See Also
 ========
 
 .. _Aardappel:
 
 Aardappel
-    Another functional programming language based on term rewriting,
-    http://wouter.fov120.com/aardappel.
+    Wouter van Oortmerssen's functional programming language based on term
+    rewriting, http://wouter.fov120.com/aardappel.
 
 .. _Alice ML:
 
 Alice ML
     A version of ML (see below) from which Pure borrows its model of lazy
     evaluation, http://www.ps.uni-sb.de/alice.
+
+.. _Bertrand:
+
+Bertrand
+    Wm Leler's constraint programming language based on term rewriting,
+    http://groups.google.com/group/bertrand-constraint.
 
 .. _GNU Multiprecision Library:
 .. _GMP:

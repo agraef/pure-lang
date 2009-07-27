@@ -2168,30 +2168,33 @@ the <tt class="docutils literal"><span class="pre">::</span></tt> symbol with th
 </tr>
 </tbody>
 </table>
-<p>In either case, the interpreter performs a search to locate the script, unless
-an absolute pathname (or an absolute qualified name like <tt class="docutils literal"><span class="pre">::foo</span></tt>) was
-given. It first searches the directory of the script containing the <tt class="docutils literal"><span class="pre">using</span></tt>
-clause (or the current working directory if the clause was read from standard
-input, as is the case, e.g., in an interactive session), then the directories
-named in -I options on the command line (in the given order), then the
-colon-separated list of directories in the PURE_INCLUDE environment variable,
-and finally the directory named by the PURELIB environment variable. Note that
-the current working directory is not searched by default (unless the <tt class="docutils literal"><span class="pre">using</span></tt>
-clause is read from standard input), but of course you can force this by
-adding the option -I. to the command line, or by including '.' in the
-PURE_INCLUDE variable.</p>
+<p>Note the last example, which shows how an absolute pathname can be denoted
+using a qualifier starting with '<tt class="docutils literal"><span class="pre">::</span></tt>'.</p>
+<p>Unless an absolute pathname is given, the interpreter performs a search to
+locate the script. It first searches the directory of the script containing
+the <tt class="docutils literal"><span class="pre">using</span></tt> clause (or the current working directory if the clause was read
+from standard input, as is the case, e.g., in an interactive session), then
+the directories named in -I options on the command line (in the given order),
+then the colon-separated list of directories in the PURE_INCLUDE environment
+variable, and finally the directory named by the PURELIB environment
+variable. Note that the current working directory is not searched by default
+(unless the <tt class="docutils literal"><span class="pre">using</span></tt> clause is read from standard input), but of course you
+can force this by adding the option -I. to the command line, or by including
+'.' in the PURE_INCLUDE variable.</p>
 <p>For the purpose of comparing script names (to determine whether two scripts
 are actually the same), the interpreter always uses the canonicalized full
 pathname of the script, following symbolic links to the destination file
 (albeit only one level). Thus different scripts with the same basename, such
 as foo/utils.pure and bar/utils.pure can both be included in the same program
-(unless they link to the same file). The resolution of symbolic links also
-makes it possible to have an executable script with a shebang line in its own
-directory, to be executed via a symbolic link placed on the system PATH. In
-this case the script search performed in <tt class="docutils literal"><span class="pre">using</span></tt> clauses will use the real
-script directory and thus other required scripts can be located there. This is
-the recommended practice for installing standalone Pure applications in source
-form which are to be run directly from the shell.</p>
+(unless they link to the same file).</p>
+<p>The directory of the canonicalized pathname is also used when searching other
+scripts included in a script. This makes it possible to have an executable
+script with a shebang line in its own directory, which is then executed via a
+symbolic link placed on the system PATH. In this case the script search
+performed in <tt class="docutils literal"><span class="pre">using</span></tt> clauses will use the real script directory and thus
+other required scripts can be located there. This is the recommended practice
+for installing standalone Pure applications in source form which are to be run
+directly from the shell.</p>
 </div>
 <div class="section" id="namespaces">
 <h2><a class="toc-backref" href="#id35">7.2&nbsp;&nbsp;&nbsp;Namespaces</a></h2>
@@ -2398,10 +2401,10 @@ namespace my::new;
 my::new::foo x = x-1;
 </pre>
 <p>Note that the namespace <tt class="docutils literal"><span class="pre">my</span></tt>, which serves as the parent namespace, must be
-created before creating the <tt class="docutils literal"><span class="pre">my::old</span></tt> and <tt class="docutils literal"><span class="pre">my::new</span></tt> namespaces, even if it
-does not contain any symbols of its own. After these declarations, the
-<tt class="docutils literal"><span class="pre">my::old</span></tt> and <tt class="docutils literal"><span class="pre">my::new</span></tt> namespaces are part of the <tt class="docutils literal"><span class="pre">my</span></tt> namespace and
-will be considered in name lookup accordingly, so that you can write:</p>
+created before the <tt class="docutils literal"><span class="pre">my::old</span></tt> and <tt class="docutils literal"><span class="pre">my::new</span></tt> namespaces, even if it does not
+contain any symbols of its own. After these declarations, the <tt class="docutils literal"><span class="pre">my::old</span></tt> and
+<tt class="docutils literal"><span class="pre">my::new</span></tt> namespaces are part of the <tt class="docutils literal"><span class="pre">my</span></tt> namespace and will be considered
+in name lookup accordingly, so that you can write:</p>
 <pre class="literal-block">
 &gt; using namespace my;
 &gt; old::foo 99;
@@ -2409,15 +2412,15 @@ will be considered in name lookup accordingly, so that you can write:</p>
 &gt; new::foo 99;
 98
 </pre>
-<p>Readers familiar with Unix-style filesystems will notice that this works
-pretty much like a hierarchy of directories and files, where the namespaces
-play the role of the directories, the symbols in each namespace correspond to
-the files in a directory, and the <tt class="docutils literal"><span class="pre">using</span> <span class="pre">namespace</span></tt> declaration functions
-similar to the shell's <tt class="docutils literal"><span class="pre">PATH</span></tt> variable. The analogy goes even
-further. Sometimes it is necessary to tell the compiler to use a symbol in a
-specific namespace, bypassing the usual symbol lookup mechanism. For instance,
-suppose that we introduce another <em>global</em> <tt class="docutils literal"><span class="pre">old</span></tt> namespace and define yet
-another version of <tt class="docutils literal"><span class="pre">foo</span></tt> in that namespace:</p>
+<p>This works pretty much like a hierarchy of directories and files, where the
+namespaces play the role of the directories (with the default namespace as the
+root directory), the symbols in each namespace correspond to the files in a
+directory, and the <tt class="docutils literal"><span class="pre">using</span> <span class="pre">namespace</span></tt> declaration functions similar to the
+shell's <tt class="docutils literal"><span class="pre">PATH</span></tt> variable.</p>
+<p>Sometimes it is necessary to tell the compiler to use a symbol in a specific
+namespace, bypassing the usual symbol lookup mechanism. For instance, suppose
+that we introduce another <em>global</em> <tt class="docutils literal"><span class="pre">old</span></tt> namespace and define yet another
+version of <tt class="docutils literal"><span class="pre">foo</span></tt> in that namespace:</p>
 <pre class="literal-block">
 namespace old;
 public foo;
@@ -3834,11 +3837,11 @@ Pure expression, calls <tt class="docutils literal"><span class="pre">__show__</
 &gt; str (1/7);
 &quot;0.142857&quot;
 </pre>
-<p>Conversely, you can call the <tt class="docutils literal"><span class="pre">str</span></tt> function from __show__, but in this case
-it always returns the default representation of an expression. This prevents
-the expression printer from going recursive, and allows you to define your
-custom representation in terms of the default one. E.g., the following rule
-removes the <tt class="docutils literal"><span class="pre">L</span></tt> suffixes from bigint values:</p>
+<p>Conversely, you can call the <tt class="docutils literal"><span class="pre">str</span></tt> function from <tt class="docutils literal"><span class="pre">__show__</span></tt>, but in this
+case it always returns the default representation of an expression. This
+prevents the expression printer from going recursive, and allows you to define
+your custom representation in terms of the default one. E.g., the following
+rule removes the <tt class="docutils literal"><span class="pre">L</span></tt> suffixes from bigint values:</p>
 <pre class="literal-block">
 &gt; __show__ x::bigint = init (str x);
 &gt; fact n = foldl (*) 1L (1..n);
@@ -4441,6 +4444,7 @@ work fine in limited stack space. For instance, the following little program
 will loop forever if your platform supports the required optimizations:</p>
 <pre class="literal-block">
 loop = loop;
+loop;
 </pre>
 <p>This also works if your definition involves function parameters, guards and
 multiple equations, of course. Moreover, conditional expressions
@@ -4516,18 +4520,28 @@ GPL in the COPYING file accompanying the software.)</p>
 <h1><a class="toc-backref" href="#id72">14&nbsp;&nbsp;&nbsp;Author</a></h1>
 <p>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;, Dept. of Computer Music, Johannes
 Gutenberg University of Mainz, Germany.</p>
+<p>The author gratefully acknowledges the contributions by Scott E. Dillard,
+Rooslan S. Khayrov, Eddie Rucker, Libor Spacek and Jiri Spitz, as well as Toni
+Graffy and Ryan Schmidt who maintain the SUSE Linux and OSX packages. Thanks
+are also due to Vili Aapro, Alvaro Castro Castilla, John Cowan, Chris Double,
+Tim Haynes, John Lunney and Max Wolf.</p>
 </div>
 <div class="section" id="see-also">
 <h1><a class="toc-backref" href="#id73">15&nbsp;&nbsp;&nbsp;See Also</a></h1>
 <dl class="docutils" id="aardappel">
 <dt>Aardappel</dt>
-<dd>Another functional programming language based on term rewriting,
-<a class="reference external" href="http://wouter.fov120.com/aardappel">http://wouter.fov120.com/aardappel</a>.</dd>
+<dd>Wouter van Oortmerssen's functional programming language based on term
+rewriting, <a class="reference external" href="http://wouter.fov120.com/aardappel">http://wouter.fov120.com/aardappel</a>.</dd>
 </dl>
 <dl class="docutils" id="alice-ml">
 <dt>Alice ML</dt>
 <dd>A version of ML (see below) from which Pure borrows its model of lazy
 evaluation, <a class="reference external" href="http://www.ps.uni-sb.de/alice">http://www.ps.uni-sb.de/alice</a>.</dd>
+</dl>
+<dl class="docutils" id="bertrand">
+<dt>Bertrand</dt>
+<dd>Wm Leler's constraint programming language based on term rewriting,
+<a class="reference external" href="http://groups.google.com/group/bertrand-constraint">http://groups.google.com/group/bertrand-constraint</a>.</dd>
 </dl>
 <dl class="docutils" id="gmp">
 <span id="gnu-multiprecision-library"></span><dt>GNU Multiprecision Library</dt>
