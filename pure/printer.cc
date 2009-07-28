@@ -97,7 +97,11 @@ static prec_t expr_nprec(expr x, bool aspat = true)
     if (x.is_list())
       return 100;
     else if (x.is_app(u, v))
-      if (u.tag() > 0 && (p = sym_nprec(u.tag())) < 100 && p%10 >= 3)
+      if (u.tag() > 0 &&
+	  interpreter::g_interp->symtab.sym(u.tag()).fix == outfix)
+	// unary outfix
+	return 100;
+      else if (u.tag() > 0 && (p = sym_nprec(u.tag())) < 100 && p%10 >= 3)
 	// unary (prefix, postfix)
 	return p;
       else if (u.is_app(v, w) && v.tag() > 0 &&
@@ -236,6 +240,13 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
 	os << "/*" << (unsigned)x.vidx() << "*/";
       }
       os << ')';
+    } else if (sym.fix == outfix) {
+      const symbol& sym2 = interpreter::g_interp->symtab.sym(sym.g);
+      os << '(' << sym.s << ' ' << sym2.s;
+      if ((interpreter::g_verbose&verbosity::envs) != 0) {
+	os << "/*" << (unsigned)x.vidx() << "*/";
+      }
+      os << ')';
     } else {
       os << sym.s;
       if ((interpreter::g_verbose&verbosity::envs) != 0) {
@@ -350,7 +361,15 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
       }
       return os;
     } else if (x.is_app(u, v)) {
-      if (u.ftag() > 0 && (p = sym_nprec(u.ftag())) < 100 && p%10 >= 3) {
+      if (u.tag() > 0 &&
+	  interpreter::g_interp->symtab.sym(u.tag()).fix == outfix) {
+	// unary outfix
+	int32_t f = u.tag(), g = interpreter::g_interp->symtab.sym(f).g;
+	string blank1 = sym_padding(f), blank2 = sym_padding(g);
+	return os << pname(f) << blank1 << pattern(v, pat)
+		  << blank2 << pname(g);
+      } else if
+	  (u.ftag() > 0 && (p = sym_nprec(u.ftag())) < 100 && p%10 >= 3) {
 	// unary operator
 	string blank = sym_padding(u.ftag());
 	prec_t q = expr_nprec(v);
@@ -466,7 +485,10 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
     const symbol& sym = interpreter::g_interp->symtab.sym(x.tag());
     if (sym.prec < 10)
       return os << '(' << sym.s << ')';
-    else if ((x.flags() & EXPR::QUAL) && sym.s.find("::") == string::npos)
+    else if (sym.fix == outfix) {
+      const symbol& sym2 = interpreter::g_interp->symtab.sym(sym.g);
+      return os << '(' << sym.s << ' ' << sym2.s << ')';
+    } else if ((x.flags() & EXPR::QUAL) && sym.s.find("::") == string::npos)
       return os << "::" << sym.s;
     else
       return os << sym.s;
@@ -731,7 +753,11 @@ static prec_t pure_expr_nprec(const pure_expr *x)
     else {
       const pure_expr *u = x->data.x[0], *v = x->data.x[1], *w;
       prec_t p;
-      if (u->tag > 0 && (p = sym_nprec(u->tag)) < 100 && p%10 >= 3)
+      if (u->tag > 0 &&
+	  interpreter::g_interp->symtab.sym(u->tag).fix == outfix)
+	// unary outfix
+	return 100;
+      else if (u->tag > 0 && (p = sym_nprec(u->tag)) < 100 && p%10 >= 3)
 	// unary (prefix, postfix)
 	return p;
       else if (u->tag == EXPR::APP) {
@@ -1000,7 +1026,13 @@ ostream& operator << (ostream& os, const pure_expr *x)
       return os;
     }
     const pure_expr *u = x->data.x[0], *v = x->data.x[1], *w, *y;
-    if (u->tag > 0 && (p = sym_nprec(u->tag)) < 100 && p%10 >= 3) {
+    if (u->tag > 0 &&
+	interpreter::g_interp->symtab.sym(u->tag).fix == outfix) {
+      // unary outfix
+      int32_t f = u->tag, g = interpreter::g_interp->symtab.sym(f).g;
+      string blank1 = sym_padding(f), blank2 = sym_padding(g);
+      return os << pname(f) << blank1 << v << blank2 << pname(g);
+    } else if (u->tag > 0 && (p = sym_nprec(u->tag)) < 100 && p%10 >= 3) {
       // unary operator
       string blank = sym_padding(u->tag);
       prec_t q = pure_expr_nprec(v);
@@ -1078,7 +1110,10 @@ ostream& operator << (ostream& os, const pure_expr *x)
 #endif
     if (sym.prec < 10)
       return os << '(' << sym.s << ')';
-    else
+    else if (sym.fix == outfix) {
+      const symbol& sym2 = interpreter::g_interp->symtab.sym(sym.g);
+      return os << '(' << sym.s << ' ' << sym2.s << ')';
+    } else
       return os << sym.s;
   }
   }

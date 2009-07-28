@@ -149,6 +149,7 @@ blank  [ \t\f\v\r]
 <xdecl>infixr     yylval->fix = infixr; return token::FIX;
 <xdecl>prefix     yylval->fix = prefix; return token::FIX;
 <xdecl>postfix    yylval->fix = postfix; return token::FIX;
+<xdecl>outfix     return token::OUTFIX;
 <xdecl>nullary    return token::NULLARY;
 <xdecl>private    return token::PRIVATE;
 <xdecl>public     return token::PUBLIC;
@@ -189,6 +190,7 @@ blank  [ \t\f\v\r]
 <xusing>infixr     yylval->fix = infixr; return token::FIX;
 <xusing>prefix     yylval->fix = prefix; return token::FIX;
 <xusing>postfix    yylval->fix = postfix; return token::FIX;
+<xusing>outfix     return token::OUTFIX;
 <xusing>nullary    return token::NULLARY;
 <xusing>private    return token::PRIVATE;
 <xusing>public     return token::PUBLIC;
@@ -318,6 +320,7 @@ infixl     yylval->fix = infixl; return token::FIX;
 infixr     yylval->fix = infixr; return token::FIX;
 prefix     yylval->fix = prefix; return token::FIX;
 postfix    yylval->fix = postfix; return token::FIX;
+outfix     return token::OUTFIX;
 nullary    return token::NULLARY;
 private    return token::PRIVATE;
 public     return token::PUBLIC;
@@ -360,14 +363,17 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     return token::ID;
   }
   symbol* sym = interp.symtab.lookup(yytext);
-  if (sym && sym->prec >= 0 && sym->prec < 10) {
+  if (sym && ((sym->prec >= 0 && sym->prec < 10) || sym->fix == outfix)) {
     if (strstr(yytext, "::")) {
       // Return a new qualified instance here.
       yylval->xval = new expr(sym->f);
       yylval->xval->flags() |= EXPR::QUAL;
     } else
       yylval->xval = new expr(sym->x);
-    return optoken[sym->prec][sym->fix];
+    if (sym->fix == outfix)
+      return sym->g?token::LO:token::RO;
+    else
+      return optoken[sym->prec][sym->fix];
   } else {
     if (!interp.nerrs && !sym && interp.symtab.count != 1 &&
 	strstr(yytext, "::")) {
@@ -388,9 +394,12 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     return token::ID;
   }
   symbol* sym = interp.symtab.lookup(yytext);
-  if (sym && sym->prec >= 0 && sym->prec < 10) {
+  if (sym && ((sym->prec >= 0 && sym->prec < 10) || sym->fix == outfix)) {
     yylval->xval = new expr(sym->x);
-    return optoken[sym->prec][sym->fix];
+    if (sym->fix == outfix)
+      return sym->g?token::LO:token::RO;
+    else
+      return optoken[sym->prec][sym->fix];
   } else {
     yylval->sval = new string(yytext);
     return token::ID;
@@ -443,14 +452,17 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     sym = interp.symtab.lookup(yytext);
   }
   if (sym) {
-    if (sym->prec < 10) {
+    if (sym->prec < 10 || sym->fix == outfix) {
       if (strstr(yytext, "::")) {
 	// Return a new qualified instance here.
 	yylval->xval = new expr(sym->f);
 	yylval->xval->flags() |= EXPR::QUAL;
       } else
 	yylval->xval = new expr(sym->x);
-      return optoken[sym->prec][sym->fix];
+      if (sym->fix == outfix)
+	return sym->g?token::LO:token::RO;
+      else
+	return optoken[sym->prec][sym->fix];
     } else {
       yylval->sval = new string(yytext);
       return token::ID;
@@ -479,9 +491,12 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     sym = interp.symtab.lookup(yytext);
   }
   if (sym) {
-    if (sym->prec < 10) {
+    if (sym->prec < 10 || sym->fix == outfix) {
       yylval->xval = new expr(sym->x);
-      return optoken[sym->prec][sym->fix];
+      if (sym->fix == outfix)
+	return sym->g?token::LO:token::RO;
+      else
+	return optoken[sym->prec][sym->fix];
     } else {
       yylval->sval = new string(yytext);
       return token::ID;
@@ -680,7 +695,7 @@ static bool find_namespace(interpreter& interp, const string& name)
 
 static const char *commands[] = {
   "break", "cd", "clear", "const", "def", "del", "dump", "extern", "help",
-  "infix", "infixl", "infixr", "let", "ls", "namespace", "nullary",
+  "infix", "infixl", "infixr", "let", "ls", "namespace", "nullary", "outfix",
   "override", "postfix", "prefix", "private", "public", "pwd", "quit", "run",
   "save", "show", "stats", "underride", "using", 0
 };
@@ -725,7 +740,7 @@ command_generator(const char *text, int state)
     /* Skip non-toplevel symbols. */
     const symbol& sym = interp.symtab.sym(f);
     if (!interp.symtab.visible(f) ||
-	(sym.prec == 10 && sym.fix != nullary &&
+	(sym.prec == 10 && sym.fix != nullary && sym.fix != outfix &&
 	 interp.globenv.find(f) == interp.globenv.end() &&
 	 interp.macenv.find(f) == interp.macenv.end() &&
 	 interp.globalvars.find(f) == interp.globalvars.end() &&
@@ -1340,6 +1355,9 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	  const ExternInfo& info = xt->second;
 	  if (sym.fix == nullary)
 	    sout << "nullary " << sym.s << ";\n";
+	  else if (sym.fix == outfix && sym.g)
+	    sout << "outfix " << sym.s << " "
+		 << interp.symtab.sym(sym.g).s << ";\n";
 	  sout << info << ";";
 	  if ((!sflag||lflag) && dflag) {
 	    if (!sflag) sout << endl;
@@ -1378,6 +1396,9 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	} else {
 	  if (sym.fix == nullary)
 	    sout << "nullary " << sym.s << ";\n";
+	  else if (sym.fix == outfix && sym.g)
+	    sout << "outfix " << sym.s << " "
+		 << interp.symtab.sym(sym.g).s << ";\n";
 	  else if (sym.prec < 10) {
 	    switch (sym.fix) {
 	    case infix:
@@ -1391,6 +1412,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	    case postfix:
 	      sout << "postfix"; break;
 	    case nullary:
+	    case outfix:
 	      assert(0 && "this can't happen"); break;
 	    }
 	    sout << " " << (int)sym.prec << " " << sym.s << ";\n";
@@ -1688,6 +1710,9 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	if (jt == interp.globenv.end() && kt == interp.macenv.end()) {
 	  if (sym.fix == nullary)
 	    fout << "nullary " << sym.s << ";\n";
+	  else if (sym.fix == outfix && sym.g)
+	    fout << "outfix " << sym.s << " "
+		 << interp.symtab.sym(sym.g).s << ";\n";
 	  assert(xt != interp.externals.end());
 	  const ExternInfo& info = xt->second;
 	  fout << info << ";\n";
@@ -1706,6 +1731,9 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	} else {
 	  if (sym.fix == nullary)
 	    fout << "nullary " << sym.s << ";\n";
+	  else if (sym.fix == outfix && sym.g)
+	    fout << "outfix " << sym.s << " "
+		 << interp.symtab.sym(sym.g).s << ";\n";
 	  else if (sym.prec < 10) {
 	    switch (sym.fix) {
 	    case infix:
@@ -1719,6 +1747,7 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	    case postfix:
 	      fout << "postfix"; break;
 	    case nullary:
+	    case outfix:
 	      assert(0 && "this can't happen"); break;
 	    }
 	    fout << " " << (int)sym.prec << " " << sym.s << ";\n";

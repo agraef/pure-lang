@@ -698,8 +698,11 @@ pure_expr *pure_symbol(int32_t tag)
     // The variable doesn't exist yet (we have a new symbol), create it.
     string lab;
     // Create a name for the variable (cf. interpreter::mkvarlabel).
-    if (sym.prec < 10 || sym.fix == nullary)
-      lab = "$("+sym.s+")";
+    if (sym.prec < 10 || sym.fix == nullary || sym.fix == outfix)
+      if (sym.fix == outfix && sym.g)
+	lab = "$("+sym.s+" "+interp.symtab.sym(sym.g).s+")";
+      else
+	lab = "$("+sym.s+")";
     else
       lab = "$"+sym.s;
     // Create a global variable bound to the symbol for now.

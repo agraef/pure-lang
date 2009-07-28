@@ -29,18 +29,19 @@ using namespace std;
    if-then-else -10 (the latter all bind weaker than any other operator).
 
    As a special case of primary expressions, a symbol may also have the
-   special 'nullary' fixity value, indicating a constant symbol (with nprec =
-   100, just like any other primary expression). */
+   special 'outfix' and 'nullary' fixity values, indicating a constant symbol
+   and user-defined parens, respectively (with nprec = 100, just like any
+   other primary expression). */
 
 typedef int8_t prec_t;
 // Don't change the order of these constants, some code depends on it!
-enum fix_t { infix, infixl, infixr, prefix, postfix, nullary };
+enum fix_t { infix, infixl, infixr, prefix, postfix, outfix, nullary };
 
 prec_t nprec(prec_t prec, fix_t fix = infix);
 
 inline prec_t nprec(prec_t prec, fix_t fix)
 {
-  if (fix == nullary) fix = infix;
+  if (fix == outfix || fix == nullary) fix = infix;
   return 10*prec+fix;
 }
 

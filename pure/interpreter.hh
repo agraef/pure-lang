@@ -681,6 +681,8 @@ private:
   const char *mklabel(const char *name, uint32_t i, uint32_t j);
   const char *mkvarlabel(int32_t tag);
   void clear_cache();
+  string make_qualid(const string& id);
+  string make_absid(const string& id);
 
 public:
   // Global data, saved and restored by the run method.

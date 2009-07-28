@@ -1797,8 +1797,7 @@ void interpreter::declare(bool priv, prec_t prec, fix_t fix, list<string> *ids)
       delete ids;
       throw err("qualified symbol '"+id+"' not permitted in declaration");
     }
-    string id = (*symtab.current_namespace)+"::"+(*it), absid = id;
-    if (!symtab.current_namespace->empty()) absid.insert(0, "::");
+    string id = make_qualid(*it), absid = make_absid(*it);
     symbol* sym = symtab.lookup(absid);
     if (sym) {
       // crosscheck declarations
@@ -1806,19 +1805,54 @@ void interpreter::declare(bool priv, prec_t prec, fix_t fix, list<string> *ids)
 	delete ids;
 	throw err("symbol '"+id+"' already declared "+
 		  (sym->priv?"'private'":"'public'"));
-      } else if (sym->prec != prec || sym->fix != fix) {
+      } else if (sym->prec != prec || sym->fix != fix ||
+		 (fix == outfix && sym->g==0)) {
 	/* We explicitly permit 'nullary' redeclarations here, to support
 	   'const nullary' symbols on the lhs of rules. Note that this
 	   actually permits a 'nullary' redeclaration of *any* symbol unless
 	   it's already been declared as an operator, but this is actually
 	   only useful with 'const' symbols. */
-	if (fix == nullary && sym->prec == 10)
+	if (fix == nullary && sym->fix != outfix && sym->prec == 10)
 	  sym->fix = nullary;
 	else {
 	  delete ids;
 	  throw err("symbol '"+id+"' already declared with different fixity");
 	}
+      } else if (fix == outfix) {
+	list<string>::const_iterator jt = ++it;
+	if (jt == ids->end()) {
+	  delete ids;
+	  throw err("right symbol missing in outfix declaration");
+	}
+	string id2 = make_qualid(*it), absid2 = make_absid(*it);
+	symbol* sym2 = symtab.lookup(absid2);
+	if (!sym2 || sym->g != sym2->f) {
+	  delete ids;
+	  throw err("right outfix symbol '"+id2+"' doesn't match existing declaration");
+	}
+	it = jt;
       }
+    } else if (fix == outfix) {
+      // determine the matching right symbol
+      list<string>::const_iterator jt = ++it;
+      if (jt == ids->end()) {
+	delete ids;
+	throw err("right symbol missing in outfix declaration");
+      }
+      string id2 = make_qualid(*it), absid2 = make_absid(*it);
+      symbol* sym2 = symtab.lookup(absid2);
+      if (sym2) {
+	delete ids;
+	if (sym2->g != 0)
+	  throw err("symbol '"+id2+"' already declared with different fixity");
+	else
+	  throw err("left outfix symbol '"+id+"' doesn't match existing declaration");
+      }
+      sym = symtab.sym(absid, prec, fix, priv);
+      sym2 = symtab.sym(absid2, prec, fix, priv);
+      assert(sym && sym2);
+      sym->g = sym2->f;
+      it = jt;
     } else
       symtab.sym(absid, prec, fix, priv);
   }
@@ -2283,8 +2317,8 @@ expr interpreter::bind(env& vars, expr x, bool b, path p)
     const symbol& sym = symtab.sym(x.tag());
     if ((!qual && (x.flags()&EXPR::QUAL)) ||
 	(sym.s != "_" &&
-	 (sym.prec < 10 || sym.fix == nullary || (p.len() == 0 && !b) ||
-	  (p.len() > 0 && p.last() == 0)))) {
+	 (sym.prec < 10 || sym.fix == nullary || sym.fix == outfix ||
+	  (p.len() == 0 && !b) || (p.len() > 0 && p.last() == 0)))) {
       // constant or constructor
       if (x.ttag() != 0)
 	throw err("error in pattern (misplaced type tag)");
@@ -2305,7 +2339,7 @@ expr interpreter::bind(env& vars, expr x, bool b, path p)
     const symbol& sym = symtab.sym(x.astag());
     if (sym.s != "_") {
       if ((!qual && (x.flags()&EXPR::ASQUAL)) ||
-	  sym.prec < 10 || sym.fix == nullary)
+	  sym.prec < 10 || sym.fix == nullary || sym.fix == outfix)
 	throw err("error in  \"as\" pattern (bad variable symbol)");
       // Unless we're doing a pattern binding, subterms at the spine of a
       // function application won't be available at runtime, so we forbid
@@ -2510,8 +2544,8 @@ expr interpreter::subst(const env& vars, expr x, uint8_t idx)
     assert(x.tag() > 0);
     const symbol& sym = symtab.sym(x.tag());
     env::const_iterator it = vars.find(sym.f);
-    if (sym.prec < 10 || sym.fix == nullary || it == vars.end() ||
-	(!qual && (x.flags()&EXPR::QUAL))) {
+    if (sym.prec < 10 || sym.fix == nullary || sym.fix == outfix ||
+	it == vars.end() || (!qual && (x.flags()&EXPR::QUAL))) {
       // not a bound variable
       if (x.ttag() != 0)
 	throw err("error in expression (misplaced type tag)");
@@ -3344,7 +3378,8 @@ expr *interpreter::mksym_expr(string *s, int8_t tag)
       x->flags() |= EXPR::QUAL;
     } else
       x = new expr(sym.x);
-  else if (sym.f <= 0 || sym.prec < 10 || sym.fix == nullary)
+  else if (sym.f <= 0 || sym.prec < 10 ||
+	   sym.fix == nullary || sym.fix == outfix)
     throw err("error in expression (misplaced type tag)");
   else {
     x = new expr(sym.f);
@@ -3359,7 +3394,7 @@ expr *interpreter::mksym_expr(string *s, int8_t tag)
 expr *interpreter::mkas_expr(string *s, expr *x)
 {
   const symbol &sym = symtab.checksym(*s);
-  if (sym.f <= 0 || sym.prec < 10 || sym.fix == nullary)
+  if (sym.f <= 0 || sym.prec < 10 || sym.fix == nullary || sym.fix == outfix)
     throw err("error in  \"as\" pattern (bad variable symbol)");
   if (x->tag() > 0) {
     // Avoid globbering cached function symbols.
@@ -3630,8 +3665,11 @@ const char *interpreter::mkvarlabel(int32_t tag)
   assert(tag > 0);
   const symbol& sym = symtab.sym(tag);
   string lab;
-  if (sym.prec < 10 || sym.fix == nullary)
-    lab = "$("+sym.s+")";
+  if (sym.prec < 10 || sym.fix == nullary || sym.fix == outfix)
+    if (sym.fix == outfix && sym.g)
+      lab = "$("+sym.s+" "+symtab.sym(sym.g).s+")";
+    else
+      lab = "$("+sym.s+")";
   else
     lab = "$"+sym.s;
   char *s = strdup(lab.c_str());
@@ -3644,6 +3682,22 @@ void interpreter::clear_cache()
   for (list<char*>::iterator s = cache.begin(); s != cache.end(); s++)
     free(*s);
   cache.clear();
+}
+
+string interpreter::make_qualid(const string& id)
+{
+  if (!symtab.current_namespace->empty())
+    return (*symtab.current_namespace)+"::"+id;
+  else
+    return id;
+}
+
+string interpreter::make_absid(const string& id)
+{
+  if (!symtab.current_namespace->empty())
+    return "::"+(*symtab.current_namespace)+"::"+id;
+  else
+    return "::"+id;
 }
 
 using namespace llvm;
@@ -4895,8 +4949,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     else if (argt[i] == Type::Int32Ty && sizeof(int) > 4)
       argt[i] = Type::Int64Ty;
   if (asname.empty()) asname = name;
-  string asid = (*symtab.current_namespace)+"::"+asname, absasid = asid;
-  if (!symtab.current_namespace->empty()) absasid.insert(0, "::");
+  string asid = make_qualid(asname), absasid = make_absid(asname);
   symbol* _sym = symtab.lookup(absasid);
   /* If the symbol is already declared and we have a public/private specifier,
      make sure that they match up. */
@@ -7872,14 +7925,15 @@ Function *interpreter::fun_prolog(string name)
 	// anonymous and private functions and operators use internal linkage,
 	// too:
 	f.tag == 0 || symtab.sym(f.tag).priv ||
-	symtab.sym(f.tag).prec < 10)
+	symtab.sym(f.tag).prec < 10 || symtab.sym(f.tag).fix == outfix)
       scope = Function::InternalLinkage;
 #if USE_FASTCC
     if (!is_init(name)) cc = CallingConv::Fast;
 #endif
     string pure_name = name;
     /* Mangle operator names. */
-    if (f.tag > 0 && symtab.sym(f.tag).prec < 10)
+    if (f.tag > 0 &&
+	(symtab.sym(f.tag).prec < 10 || symtab.sym(f.tag).fix == outfix))
       pure_name = "("+pure_name+")";
     /* Mangle the name of the C-callable wrapper if it's private, or would
        shadow another C function. */

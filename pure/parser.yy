@@ -95,6 +95,7 @@ static void mangle_fname(string& name);
 %token		PRIVATE	"private"
 %token		PUBLIC	"public"
 %token		NULLARY	"nullary"
+%token		OUTFIX	"outfix"
 %token <fix>	FIX	"fixity"
 
 %token		DEF	"def"
@@ -112,6 +113,9 @@ static void mangle_fname(string& name);
 %token		USING	"using"
 %token		NAMESPACE "namespace"
 %token		EXTERN	"extern"
+
+%token <xval>	LO	"left outfix operator"
+%token <xval>	RO	"right outfix operator"
 
 %token <xval>	NA0	"infix 0 operator"
 %token <xval>	LT0	"infixl 0 operator"
@@ -293,10 +297,11 @@ item
 /* Lexical tie-in: We need to tell the lexer that we're defining new operator
    symbols (interp.declare_op = true) instead of searching for existing ones
    in the symbol table. */
-{ if ($1->special && $1->fix != nullary && $1->prec > 9) {
+{ if ($1->special && $1->fix != nullary && $1->fix != outfix &&
+      $1->prec > 9) {
     error(yylloc, "invalid fixity declaration"); $1->prec = 9;
   }
-  if ($1->fix == nullary || $1->prec < 10)
+  if ($1->fix == nullary || $1->fix == outfix || $1->prec < 10)
     interp.declare_op = true; }
   ids
 { interp.declare_op = false;
@@ -329,11 +334,14 @@ item
 
 fixity
 : FIX INT		{ $$ = new sym_info(true, false,$2,$1); }
+| OUTFIX		{ $$ = new sym_info(true, false,10,outfix); }
 | NULLARY		{ $$ = new sym_info(true, false,10,nullary); }
 | PUBLIC FIX INT	{ $$ = new sym_info(true, false,$3,$2); }
+| PUBLIC OUTFIX		{ $$ = new sym_info(true, false,10,outfix); }
 | PUBLIC NULLARY	{ $$ = new sym_info(true, false,10,nullary); }
 | PUBLIC		{ $$ = new sym_info(false, false,10,infix); }
 | PRIVATE FIX INT	{ $$ = new sym_info(true, true,$3,$2); }
+| PRIVATE OUTFIX	{ $$ = new sym_info(true, true,10,outfix); }
 | PRIVATE NULLARY	{ $$ = new sym_info(true, true,10,nullary); }
 | PRIVATE		{ $$ = new sym_info(false, true,10,infix); }
 ;
@@ -566,6 +574,18 @@ prim
 | BIGINT		{ $$ = new expr(EXPR::BIGINT, *$1); free($1); }
 | DBL			{ $$ = new expr(EXPR::DBL, $1); }
 | STR			{ $$ = new expr(EXPR::STR, $1); }
+| LO expr RO		{ int32_t g = interp.symtab.sym($1->tag()).g;
+			  assert(g != 0);
+			  if (g == $3->tag())
+			    $$ = interp.mkexpr($1, $2);
+			  else {
+			    string id = interp.symtab.sym($3->tag()).s;
+			    string rid = interp.symtab.sym(g).s;
+			    string msg = "syntax error, unexpected '"+id+
+			      "', expecting '"+rid+"'";
+			    interp.error(yyloc, msg);
+			    YYERROR;
+			  } }
 | '{' rows '}'		{ $$ = new expr(EXPR::MATRIX, $2); }
 | '{' expr '|' comp_clauses '}'
 			{ $$ = interp.mkmatcomp_expr($2, $4); }
@@ -583,6 +603,18 @@ prim
 			  if ($$->is_pair()) $$->flags() |= EXPR::PAREN; }
 | '(' ')'		{ $$ = new expr(interp.symtab.void_sym().f); }
 | '(' op ')'		{ $$ = $2; }
+| '(' LO RO ')'		{ int32_t g = interp.symtab.sym($2->tag()).g;
+			  assert(g != 0);
+			  if (g == $3->tag())
+			    $$ = $2;
+			  else {
+			    string id = interp.symtab.sym($3->tag()).s;
+			    string rid = interp.symtab.sym(g).s;
+			    string msg = "syntax error, unexpected '"+id+
+			      "', expecting '"+rid+"'";
+			    interp.error(yyloc, msg);
+			    YYERROR;
+			  } }
 
 /* Operator sections. Note that the right section rules overlap with the
    special case rules for unary minus above, which causes a number of
