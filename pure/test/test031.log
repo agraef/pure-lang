@@ -71,3 +71,45 @@ arity (x:y);
 -1
 arity (:);
 -1
+[|x/*0:101*/,y/*0:11*/|] = list (x/*0:101*/,y/*0:11*/);
+[|x/*0:1*/|] = [x/*0:1*/];
+{
+  rule #0: [|x,y|] = list (x,y)
+  rule #1: [|x|] = [x]
+  state 0: #0 #1
+	<var> state 1
+	<app> state 2
+  state 1: #1
+  state 2: #0 #1
+	<var> state 3
+	<app> state 5
+  state 3: #1
+	<var> state 4
+  state 4: #1
+  state 5: #0 #1
+	<var> state 6
+	, state 9
+  state 6: #1
+	<var> state 7
+  state 7: #1
+	<var> state 8
+  state 8: #1
+  state 9: #0 #1
+	<var> state 10
+  state 10: #0 #1
+	<var> state 11
+  state 11: #0 #1
+}
+arity ([| |]);
+1
+[|1,2,3|]+[|4|];
+[1,2,3,4]
+def BEGIN x/*0:101*/,y/*0:11*/ END = x/*0:101*/$$BEGIN y/*0:11*/ END;
+def BEGIN x/*0:1*/ END = x/*0:1*/;
+test = a$$b;
+{
+  rule #0: test = a$$b
+  state 0: #0
+}
+test;
+b
