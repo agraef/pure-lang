@@ -690,27 +690,6 @@ static bool pure_is_tuple(const pure_expr *x, list<const pure_expr*>& xs)
   return true;
 }
 
-static bool quoted_matrix(const pure_expr *x)
-{
-  if (x->data.mat.p) {
-    gsl_matrix_symbolic *m = (gsl_matrix_symbolic*)x->data.mat.p;
-    for (size_t i = 0; i < m->size1; i++)
-      for (size_t j = 0; j < m->size2; j++) {
-	pure_expr *y = m->data[i * m->tda + j];
-	switch (y->tag) {
-	case EXPR::MATRIX:
-	case EXPR::DMATRIX:
-	case EXPR::CMATRIX:
-	case EXPR::IMATRIX:
-	  return true;
-	default:
-	  break;
-	}
-      }
-  }
-  return false;
-}
-
 static prec_t pure_expr_nprec(const pure_expr *x)
 {
   assert(x);
@@ -720,13 +699,8 @@ static prec_t pure_expr_nprec(const pure_expr *x)
   case EXPR::DMATRIX:
   case EXPR::CMATRIX:
   case EXPR::IMATRIX:
-    return 100;
   case EXPR::MATRIX:
-    if (quoted_matrix(x))
-      // precedence of ':
-      return sym_nprec(interpreter::g_interp->symtab.quoteop_sym().f);
-    else
-      return 100;
+    return 100;
   case EXPR::INT:
     if (x->data.i < 0)
       // precedence of unary minus:
@@ -892,7 +866,6 @@ ostream& operator << (ostream& os, const pure_expr *x)
      matrix elements. As a workaround, you can define __show__ on matrices as
      a whole. */
   case EXPR::MATRIX:
-    if (quoted_matrix(x)) os << "'";
     os << "{";
     if (x->data.mat.p) {
       gsl_matrix_symbolic *m = (gsl_matrix_symbolic*)x->data.mat.p;
