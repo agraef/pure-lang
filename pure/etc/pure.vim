@@ -33,7 +33,7 @@ syn region   pureString	        start=+L\="+ skip=+\\\\\|\\"+ end=+"+
 
 
 " keywords
-syn keyword pureKeyword	infix infixl infixr prefix postfix
+syn keyword pureKeyword	infix infixl infixr outfix prefix postfix
 syn keyword pureKeyword namespace nullary private public
 syn keyword pureKeyword	case const def else end extern if let of otherwise then
 syn keyword pureKeyword	using when with
