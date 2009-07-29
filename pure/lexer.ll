@@ -1579,7 +1579,7 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 -v  Dump defined variables.\n";
 	  goto out2;
 	default:
-	  cerr << "show: invalid option character '" << *s << "'\n";
+	  cerr << "dump: invalid option character '" << *s << "'\n";
 	  goto out2;
 	}
       }
@@ -1839,7 +1839,7 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
 -v  Clear defined variables.\n";
 	  goto out3;
 	default:
-	  cerr << "show: invalid option character '" << *s << "'\n";
+	  cerr << "clear: invalid option character '" << *s << "'\n";
 	  goto out3;
 	}
       }
