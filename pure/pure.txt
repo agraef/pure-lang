@@ -400,7 +400,8 @@ script in order to turn it into an executable program.
 There are a few reserved keywords which cannot be used as identifiers::
 
   case const def else end extern if infix infixl infixr let namespace
-  nullary of otherwise postfix prefix private public then using when with
+  nullary of otherwise outfix postfix prefix private public then using
+  when with
 
 The customary notations for identifiers, numbers and strings are all
 provided. In addition, Pure also allows you to define your own operator
@@ -544,11 +545,11 @@ Operator and nullary symbols: ``x+y``, ``x==y``, ``not x``
     syntax of the language with your own operators and "nullary" (constant)
     symbols. These special symbols may take the form of an identifier or a
     sequence of punctuation characters. Operators are declared using the
-    corresponding ``prefix``, ``postfix`` and ``infix`` declarations, which
-    are discussed in section Declarations_. Operators are just syntax;
-    enclosing an operator in parentheses, such as ``(+)`` or ``(not)``, turns
-    it into an ordinary function symbol. Also, operators can be qualified with
-    a namespace just like identifiers.
+    corresponding ``prefix``, ``postfix``, ``outfix`` and ``infix``
+    declarations, which are discussed in section Declarations_. Operators are
+    just syntax; enclosing an operator in parentheses, such as ``(+)`` or
+    ``(not)``, turns it into an ordinary function symbol. Also, operators can
+    be qualified with a namespace just like identifiers.
 
     In addition, a symbol declared as ``nullary`` denotes an "operator without
     operands", i.e., a constant symbol. In difference to operators, these are
@@ -661,20 +662,20 @@ Function and operator applications: ``foo x y z``, ``-x``, ``x+y``, ``(+x)``
     itself if it is nonnegative and zero otherwise. This works because
     ``(max 0) x = max 0 x`` is the maximum of ``0`` and ``x``.
 
-    Operator applications are written using prefix, postfix or infix notation,
-    as the declaration of the operator demands, but are just ordinary function
-    applications in disguise. As already mentioned, enclosing an operator in
-    parentheses turns it into an ordinary function symbol, thus ``x+y`` is
-    exactly the same as ``(+) x y``. For convenience, partial applications of
-    infix operators can also be written using so-called `operator sections`. A
-    *left section* takes the form ``(x+)`` which is equivalent to the partial
-    application ``(+) x``. A *right section* takes the form ``(+x)`` and is
-    equivalent to the term ``flip (+) x``. (This uses the ``flip`` combinator
-    from the prelude which is defined as ``flip f x y = f y x``.) For
-    instance, ``(1/)`` denotes the reciprocal and ``(+1)`` the successor
-    function. (Note, however, that ``(-x)`` always denotes an application of
-    unary minus; the section ``(+-x)`` can be used to indicate a function
-    which subtracts ``x`` from its argument.)
+    Operator applications are written using prefix, postfix, outfix or infix
+    notation, as the declaration of the operator demands, but are just
+    ordinary function applications in disguise. As already mentioned,
+    enclosing an operator in parentheses turns it into an ordinary function
+    symbol, thus ``x+y`` is exactly the same as ``(+) x y``. For convenience,
+    partial applications of infix operators can also be written using
+    so-called `operator sections`. A *left section* takes the form ``(x+)``
+    which is equivalent to the partial application ``(+) x``. A *right
+    section* takes the form ``(+x)`` and is equivalent to the term ``flip (+)
+    x``. (This uses the ``flip`` combinator from the prelude which is defined
+    as ``flip f x y = f y x``.) For instance, ``(1/)`` denotes the reciprocal
+    and ``(+1)`` the successor function. (Note, however, that ``(-x)`` always
+    denotes an application of unary minus; the section ``(+-x)`` can be used
+    to indicate a function which subtracts ``x`` from its argument.)
 
 Conditional expressions: ``if x then y else z``
     Evaluates to ``y`` or ``z`` depending on whether ``x`` is "true" (i.e., a
@@ -1831,12 +1832,12 @@ Scope declarations: ``public symbol ...; private symbol ...;``
     applies to the other types of symbol declarations discussed below.
 
 Operator declarations: ``infix level op ...;``
-    Ten different precedence levels are available for user-defined operators,
-    numbered 0 (lowest) thru 9 (highest). On each precedence level, you can
-    declare (in order of increasing precedence) ``infix`` (binary
-    non-associative), ``infixl`` (binary left-associative), ``infixr`` (binary
-    right-associative), ``prefix`` (unary prefix) and ``postfix`` (unary
-    postfix) operators. For instance::
+    Ten different precedence levels are available for user-defined infix,
+    prefix and postfix operators, numbered 0 (lowest) thru 9 (highest). On
+    each precedence level, you can declare (in order of increasing precedence)
+    ``infix`` (binary non-associative), ``infixl`` (binary left-associative),
+    ``infixr`` (binary right-associative), ``prefix`` (unary prefix) and
+    ``postfix`` (unary postfix) operators. For instance::
 
       infixl 6 + - ;
       infixl 7 * / div mod ;
@@ -1849,6 +1850,21 @@ Operator declarations: ``infix level op ...;``
     ``(-x)+y``, whereas ``-x*y`` is the same as ``-(x*y)``. Also note that the
     notation ``(-)`` always denotes the binary minus operator; the unary minus
     operation can be denoted using the built-in ``neg`` function.
+
+Outfix symbol declarations: ``outfix left right ...;``
+    Pure also provides unary outfix operators, which work like in Wm Leler's
+    constraint programming language Bertrand_. Outfix operators let you define
+    your own bracket structures. The operators must be given as pairs of
+    matching left and right symbols. For instance::
+
+      outfix [: :] BEGIN END;
+
+    After this declaration you can write bracketed expressions like
+    ``[:a,b:]`` or ``BEGIN foo, bar END``. These are always at the highest
+    precedence level (i.e., syntactically they work like parenthesized
+    expressions). Just like other operators, you can turn outfix symbols into
+    ordinary functions by enclosing them in parentheses, but you have to
+    specify the symbols in matching pairs, such as ``(BEGIN END)``.
 
 Constant symbol declarations: ``nullary symbol ...;``
     Constant symbols are introduced using a ``nullary`` declaration, e.g.::
@@ -4237,7 +4253,7 @@ category and description of the symbol, as provided by ``show -s``.
     // Retrieve the information that we need.
     info = [x | x@(s,_) = map fields info;
     // Get rid of extra lines containing extern and fixity declarations.
-            s ~= "extern" && s ~= "nullary" &&
+            s ~= "extern" && s ~= "nullary" && s ~= "outfix" &&
             s ~= "prefix" && s ~= "postfix" && ~fnmatch "infix*" s 0];
   end with
     // Regex call to split the summary information about one symbol, as
@@ -4250,8 +4266,8 @@ category and description of the symbol, as provided by ``show -s``.
 E.g., this call retrieves information about all defined macros::
 
   > sym_info "m" "*";
-  [("$",($),"mac","2 args, 1 rules"),("'",quote,"mac","0 args, 1 rules"),
-  (".",(.),"mac","3 args, 1 rules"),("void",void,"mac","1 args, 6 rules")]
+  [("$",($),"mac","2 args, 1 rules"),(".",(.),"mac","3 args, 1 rules"),
+  ("void",void,"mac","1 args, 6 rules")]
 
 Hygienic Macros
 ---------------

@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>The Pure Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2009-07-28" />
+<meta name="date" content="2009-07-29" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2009-07-28</td></tr>
+<td>2009-07-29</td></tr>
 </tbody>
 </table>
 <!-- Note: This document is formatted using docutils. The Makefile has rules -->
@@ -710,7 +710,8 @@ script in order to turn it into an executable program.</p>
 <p>There are a few reserved keywords which cannot be used as identifiers:</p>
 <pre class="literal-block">
 case const def else end extern if infix infixl infixr let namespace
-nullary of otherwise postfix prefix private public then using when with
+nullary of otherwise outfix postfix prefix private public then using
+when with
 </pre>
 <p>The customary notations for identifiers, numbers and strings are all
 provided. In addition, Pure also allows you to define your own operator
@@ -848,11 +849,11 @@ been created, as explained under <a class="reference internal" href="#namespaces
 syntax of the language with your own operators and &quot;nullary&quot; (constant)
 symbols. These special symbols may take the form of an identifier or a
 sequence of punctuation characters. Operators are declared using the
-corresponding <tt class="docutils literal"><span class="pre">prefix</span></tt>, <tt class="docutils literal"><span class="pre">postfix</span></tt> and <tt class="docutils literal"><span class="pre">infix</span></tt> declarations, which
-are discussed in section <a class="reference internal" href="#declarations">Declarations</a>. Operators are just syntax;
-enclosing an operator in parentheses, such as <tt class="docutils literal"><span class="pre">(+)</span></tt> or <tt class="docutils literal"><span class="pre">(not)</span></tt>, turns
-it into an ordinary function symbol. Also, operators can be qualified with
-a namespace just like identifiers.</p>
+corresponding <tt class="docutils literal"><span class="pre">prefix</span></tt>, <tt class="docutils literal"><span class="pre">postfix</span></tt>, <tt class="docutils literal"><span class="pre">outfix</span></tt> and <tt class="docutils literal"><span class="pre">infix</span></tt>
+declarations, which are discussed in section <a class="reference internal" href="#declarations">Declarations</a>. Operators are
+just syntax; enclosing an operator in parentheses, such as <tt class="docutils literal"><span class="pre">(+)</span></tt> or
+<tt class="docutils literal"><span class="pre">(not)</span></tt>, turns it into an ordinary function symbol. Also, operators can
+be qualified with a namespace just like identifiers.</p>
 <p class="last">In addition, a symbol declared as <tt class="docutils literal"><span class="pre">nullary</span></tt> denotes an &quot;operator without
 operands&quot;, i.e., a constant symbol. In difference to operators, these are
 actually treated more or less like ordinary identifiers, but the
@@ -957,20 +958,20 @@ function. For instance, taking the <tt class="docutils literal"><span class="pre
 example, <tt class="docutils literal"><span class="pre">max</span> <span class="pre">0</span></tt> is the function which, for a given <tt class="docutils literal"><span class="pre">x</span></tt>, returns <tt class="docutils literal"><span class="pre">x</span></tt>
 itself if it is nonnegative and zero otherwise. This works because
 <tt class="docutils literal"><span class="pre">(max</span> <span class="pre">0)</span> <span class="pre">x</span> <span class="pre">=</span> <span class="pre">max</span> <span class="pre">0</span> <span class="pre">x</span></tt> is the maximum of <tt class="docutils literal"><span class="pre">0</span></tt> and <tt class="docutils literal"><span class="pre">x</span></tt>.</p>
-<p class="last">Operator applications are written using prefix, postfix or infix notation,
-as the declaration of the operator demands, but are just ordinary function
-applications in disguise. As already mentioned, enclosing an operator in
-parentheses turns it into an ordinary function symbol, thus <tt class="docutils literal"><span class="pre">x+y</span></tt> is
-exactly the same as <tt class="docutils literal"><span class="pre">(+)</span> <span class="pre">x</span> <span class="pre">y</span></tt>. For convenience, partial applications of
-infix operators can also be written using so-called <strong class="dfn">operator sections</strong>. A
-<em>left section</em> takes the form <tt class="docutils literal"><span class="pre">(x+)</span></tt> which is equivalent to the partial
-application <tt class="docutils literal"><span class="pre">(+)</span> <span class="pre">x</span></tt>. A <em>right section</em> takes the form <tt class="docutils literal"><span class="pre">(+x)</span></tt> and is
-equivalent to the term <tt class="docutils literal"><span class="pre">flip</span> <span class="pre">(+)</span> <span class="pre">x</span></tt>. (This uses the <tt class="docutils literal"><span class="pre">flip</span></tt> combinator
-from the prelude which is defined as <tt class="docutils literal"><span class="pre">flip</span> <span class="pre">f</span> <span class="pre">x</span> <span class="pre">y</span> <span class="pre">=</span> <span class="pre">f</span> <span class="pre">y</span> <span class="pre">x</span></tt>.) For
-instance, <tt class="docutils literal"><span class="pre">(1/)</span></tt> denotes the reciprocal and <tt class="docutils literal"><span class="pre">(+1)</span></tt> the successor
-function. (Note, however, that <tt class="docutils literal"><span class="pre">(-x)</span></tt> always denotes an application of
-unary minus; the section <tt class="docutils literal"><span class="pre">(+-x)</span></tt> can be used to indicate a function
-which subtracts <tt class="docutils literal"><span class="pre">x</span></tt> from its argument.)</p>
+<p class="last">Operator applications are written using prefix, postfix, outfix or infix
+notation, as the declaration of the operator demands, but are just
+ordinary function applications in disguise. As already mentioned,
+enclosing an operator in parentheses turns it into an ordinary function
+symbol, thus <tt class="docutils literal"><span class="pre">x+y</span></tt> is exactly the same as <tt class="docutils literal"><span class="pre">(+)</span> <span class="pre">x</span> <span class="pre">y</span></tt>. For convenience,
+partial applications of infix operators can also be written using
+so-called <strong class="dfn">operator sections</strong>. A <em>left section</em> takes the form <tt class="docutils literal"><span class="pre">(x+)</span></tt>
+which is equivalent to the partial application <tt class="docutils literal"><span class="pre">(+)</span> <span class="pre">x</span></tt>. A <em>right
+section</em> takes the form <tt class="docutils literal"><span class="pre">(+x)</span></tt> and is equivalent to the term <tt class="docutils literal"><span class="pre">flip</span> <span class="pre">(+)</span>
+<span class="pre">x</span></tt>. (This uses the <tt class="docutils literal"><span class="pre">flip</span></tt> combinator from the prelude which is defined
+as <tt class="docutils literal"><span class="pre">flip</span> <span class="pre">f</span> <span class="pre">x</span> <span class="pre">y</span> <span class="pre">=</span> <span class="pre">f</span> <span class="pre">y</span> <span class="pre">x</span></tt>.) For instance, <tt class="docutils literal"><span class="pre">(1/)</span></tt> denotes the reciprocal
+and <tt class="docutils literal"><span class="pre">(+1)</span></tt> the successor function. (Note, however, that <tt class="docutils literal"><span class="pre">(-x)</span></tt> always
+denotes an application of unary minus; the section <tt class="docutils literal"><span class="pre">(+-x)</span></tt> can be used
+to indicate a function which subtracts <tt class="docutils literal"><span class="pre">x</span></tt> from its argument.)</p>
 </dd>
 <dt>Conditional expressions: <tt class="docutils literal"><span class="pre">if</span> <span class="pre">x</span> <span class="pre">then</span> <span class="pre">y</span> <span class="pre">else</span> <span class="pre">z</span></tt></dt>
 <dd>Evaluates to <tt class="docutils literal"><span class="pre">y</span></tt> or <tt class="docutils literal"><span class="pre">z</span></tt> depending on whether <tt class="docutils literal"><span class="pre">x</span></tt> is &quot;true&quot; (i.e., a
@@ -2065,12 +2066,12 @@ declaration, you just list them all with whitespace in between. The same
 applies to the other types of symbol declarations discussed below.</p>
 </dd>
 <dt>Operator declarations: <tt class="docutils literal"><span class="pre">infix</span> <span class="pre">level</span> <span class="pre">op</span> <span class="pre">...;</span></tt></dt>
-<dd><p class="first">Ten different precedence levels are available for user-defined operators,
-numbered 0 (lowest) thru 9 (highest). On each precedence level, you can
-declare (in order of increasing precedence) <tt class="docutils literal"><span class="pre">infix</span></tt> (binary
-non-associative), <tt class="docutils literal"><span class="pre">infixl</span></tt> (binary left-associative), <tt class="docutils literal"><span class="pre">infixr</span></tt> (binary
-right-associative), <tt class="docutils literal"><span class="pre">prefix</span></tt> (unary prefix) and <tt class="docutils literal"><span class="pre">postfix</span></tt> (unary
-postfix) operators. For instance:</p>
+<dd><p class="first">Ten different precedence levels are available for user-defined infix,
+prefix and postfix operators, numbered 0 (lowest) thru 9 (highest). On
+each precedence level, you can declare (in order of increasing precedence)
+<tt class="docutils literal"><span class="pre">infix</span></tt> (binary non-associative), <tt class="docutils literal"><span class="pre">infixl</span></tt> (binary left-associative),
+<tt class="docutils literal"><span class="pre">infixr</span></tt> (binary right-associative), <tt class="docutils literal"><span class="pre">prefix</span></tt> (unary prefix) and
+<tt class="docutils literal"><span class="pre">postfix</span></tt> (unary postfix) operators. For instance:</p>
 <pre class="literal-block">
 infixl 6 + - ;
 infixl 7 * / div mod ;
@@ -2083,6 +2084,21 @@ prelude). Thus, with the standard prelude, <tt class="docutils literal"><span cl
 <tt class="docutils literal"><span class="pre">(-x)+y</span></tt>, whereas <tt class="docutils literal"><span class="pre">-x*y</span></tt> is the same as <tt class="docutils literal"><span class="pre">-(x*y)</span></tt>. Also note that the
 notation <tt class="docutils literal"><span class="pre">(-)</span></tt> always denotes the binary minus operator; the unary minus
 operation can be denoted using the built-in <tt class="docutils literal"><span class="pre">neg</span></tt> function.</p>
+</dd>
+<dt>Outfix symbol declarations: <tt class="docutils literal"><span class="pre">outfix</span> <span class="pre">left</span> <span class="pre">right</span> <span class="pre">...;</span></tt></dt>
+<dd><p class="first">Pure also provides unary outfix operators, which work like in Wm Leler's
+constraint programming language <a class="reference internal" href="#bertrand">Bertrand</a>. Outfix operators let you define
+your own bracket structures. The operators must be given as pairs of
+matching left and right symbols. For instance:</p>
+<pre class="literal-block">
+outfix [: :] BEGIN END;
+</pre>
+<p class="last">After this declaration you can write bracketed expressions like
+<tt class="docutils literal"><span class="pre">[:a,b:]</span></tt> or <tt class="docutils literal"><span class="pre">BEGIN</span> <span class="pre">foo,</span> <span class="pre">bar</span> <span class="pre">END</span></tt>. These are always at the highest
+precedence level (i.e., syntactically they work like parenthesized
+expressions). Just like other operators, you can turn outfix symbols into
+ordinary functions by enclosing them in parentheses, but you have to
+specify the symbols in matching pairs, such as <tt class="docutils literal"><span class="pre">(BEGIN</span> <span class="pre">END)</span></tt>.</p>
 </dd>
 <dt>Constant symbol declarations: <tt class="docutils literal"><span class="pre">nullary</span> <span class="pre">symbol</span> <span class="pre">...;</span></tt></dt>
 <dd><p class="first">Constant symbols are introduced using a <tt class="docutils literal"><span class="pre">nullary</span></tt> declaration, e.g.:</p>
@@ -4342,7 +4358,7 @@ when
   // Retrieve the information that we need.
   info = [x | x&#64;(s,_) = map fields info;
   // Get rid of extra lines containing extern and fixity declarations.
-          s ~= &quot;extern&quot; &amp;&amp; s ~= &quot;nullary&quot; &amp;&amp;
+          s ~= &quot;extern&quot; &amp;&amp; s ~= &quot;nullary&quot; &amp;&amp; s ~= &quot;outfix&quot; &amp;&amp;
           s ~= &quot;prefix&quot; &amp;&amp; s ~= &quot;postfix&quot; &amp;&amp; ~fnmatch &quot;infix*&quot; s 0];
 end with
   // Regex call to split the summary information about one symbol, as
@@ -4355,8 +4371,8 @@ end;
 <p>E.g., this call retrieves information about all defined macros:</p>
 <pre class="literal-block">
 &gt; sym_info &quot;m&quot; &quot;*&quot;;
-[(&quot;$&quot;,($),&quot;mac&quot;,&quot;2 args, 1 rules&quot;),(&quot;'&quot;,quote,&quot;mac&quot;,&quot;0 args, 1 rules&quot;),
-(&quot;.&quot;,(.),&quot;mac&quot;,&quot;3 args, 1 rules&quot;),(&quot;void&quot;,void,&quot;mac&quot;,&quot;1 args, 6 rules&quot;)]
+[(&quot;$&quot;,($),&quot;mac&quot;,&quot;2 args, 1 rules&quot;),(&quot;.&quot;,(.),&quot;mac&quot;,&quot;3 args, 1 rules&quot;),
+(&quot;void&quot;,void,&quot;mac&quot;,&quot;1 args, 6 rules&quot;)]
 </pre>
 </div>
 <div class="section" id="hygienic-macros">
