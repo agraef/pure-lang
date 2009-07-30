@@ -5069,6 +5069,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   }
   Builder b;
   BasicBlock *bb = BasicBlock::Create("entry", f),
+    *noretbb = BasicBlock::Create("noret"),
     *failedbb = BasicBlock::Create("failed");
   b.SetInsertPoint(bb);
   // unbox arguments
@@ -5440,7 +5441,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     // check that we actually got a valid pointer; otherwise the call failed
     BasicBlock *okbb = BasicBlock::Create("ok");
     b.CreateCondBr
-      (b.CreateICmpNE(u, NullExprPtr, "cmp"), okbb, failedbb);
+      (b.CreateICmpNE(u, NullExprPtr, "cmp"), okbb, noretbb);
     f->getBasicBlockList().push_back(okbb);
     b.SetInsertPoint(okbb);
     // value is passed through
@@ -5469,8 +5470,8 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   }
   b.CreateRet(u);
   // The call failed. Provide a default value.
-  f->getBasicBlockList().push_back(failedbb);
-  b.SetInsertPoint(failedbb);
+  f->getBasicBlockList().push_back(noretbb);
+  b.SetInsertPoint(noretbb);
   if (debugging) {
     Function *f = module->getFunction("pure_debug_redn");
     assert(f);
@@ -5480,6 +5481,9 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     args.push_back(NullExprPtr);
     b.CreateCall(f, args.begin(), args.end());
   }
+  b.CreateBr(failedbb);
+  f->getBasicBlockList().push_back(failedbb);
+  b.SetInsertPoint(failedbb);
   // free temporaries
   if (temps) b.CreateCall(module->getFunction("pure_free_cstrings"));
   if (vtemps) b.CreateCall(module->getFunction("pure_free_cvectors"));
