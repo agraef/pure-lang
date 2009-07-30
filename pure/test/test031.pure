@@ -1,44 +1,19 @@
 
-// The arity function.
-
-// Syntactic vs. semantic arity.
-infix 0 oops;
-(oops) x y z = x*z+y;
-arity (oops);
-arity (5 oops 8);
-
-// Named functions.
-foo x y = x*y;
-arity foo;
-arity (foo x);
-arity (foo x y); // saturated
-arity (foo x y z); // over-saturated
-
-// Anonymous functions (always yield 1 when unsaturated).
-bar = \x y -> x*y;
-arity bar;
-arity (bar x);
-arity (bar x y); // saturated
-arity (bar x y z); // over-saturated
-
-// Thunks.
-arity (x&); // saturated
-arity ((x&) y); // over-saturated
-arity ((x&) y z); // over-saturated
-
-// Non-function objects and their applications (always yield -1).
-arity 99;
-arity (force (x&));
-arity (foo 1 2);
-arity (baz a b);
-arity (x:y);
-arity (:);
+// Arities, fixities and arg count.
+arity foo, fixity foo, nargs foo;
+nullary foo;
+arity foo, fixity foo, nargs foo;
+arity (&), fixity (&), nargs (&);
+arity ('), fixity ('), nargs (');
+arity (.), fixity (.), nargs (.);
+arity (!), fixity (!), nargs (!);
+arity (..), fixity (..), nargs (..);
 
 // Outfix symbols (Pure 0.26+).
 outfix [| |];
 [|x,y|] = list (x,y);
 [|x|] = [x];
-arity ([||]);
+arity ([||]), fixity ([||]), nargs ([||]);
 [|1,2,3|]+[|4|];
 
 outfix BEGIN END;
@@ -46,3 +21,37 @@ def BEGIN x,y END = x $$ BEGIN y END;
 def BEGIN x END = x;
 test = BEGIN a,b END;
 test;
+
+// Arity vs. arg count.
+infix 0 oops;
+(oops) x y z = x*z+y;
+arity (oops);
+nargs (oops);
+nargs (5 oops 8);
+
+// Named functions.
+foo x y = x*y;
+nargs foo;
+nargs (foo x);
+nargs (foo x y); // saturated
+nargs (foo x y z); // over-saturated
+
+// Anonymous functions (always yield 1 when unsaturated).
+bar = \x y -> x*y;
+nargs bar;
+nargs (bar x);
+nargs (bar x y); // saturated
+nargs (bar x y z); // over-saturated
+
+// Thunks.
+nargs (x&); // saturated
+nargs ((x&) y); // over-saturated
+nargs ((x&) y z); // over-saturated
+
+// Non-function objects and their applications (always yield -1).
+nargs 99;
+nargs (force (x&));
+nargs (foo 1 2);
+nargs (baz a b);
+nargs (x:y);
+nargs (:);

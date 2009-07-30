@@ -8050,12 +8050,47 @@ bool varp(const pure_expr *x)
 }
 
 extern "C"
-pure_expr *arity(const pure_expr *x)
+int32_t nargs(const pure_expr *x)
 {
-  if (x->tag >= 0 && x->data.clos)
-    return pure_int(x->data.clos->n);
+  size_t n = 0;
+  while (x->tag == EXPR::APP) {
+    n++;
+    x = x->data.x[0];
+  }
+  if (x->tag >= 0 && x->data.clos && x->data.clos->n >= n)
+    return x->data.clos->n-n;
   else
-    return 0;
+    return -1;
+}
+
+extern "C"
+int32_t arity(const pure_expr *x)
+{
+  if (x->tag > 0) {
+    symbol& sym = interpreter::g_interp->symtab.sym(x->tag);
+    if (sym.prec < 10)
+      if (sym.fix == prefix || sym.fix == postfix)
+	return 1;
+      else
+	return 2;
+    else if (sym.fix == outfix)
+      return 1;
+    else if (sym.fix == nullary)
+      return 0;
+    else
+      return -1;
+  } else
+    return -1;
+}
+
+extern "C"
+int32_t fixity(const pure_expr *x)
+{
+  if (x->tag > 0) {
+    symbol& sym = interpreter::g_interp->symtab.sym(x->tag);
+    return nprec(sym.prec, sym.fix);
+  } else
+    return 10;
 }
 
 extern "C"

@@ -984,10 +984,22 @@ bool lambdap(const pure_expr *x);
 bool thunkp(const pure_expr *x);
 bool varp(const pure_expr *x);
 
-/* Get the arity of a closure (named, anonymous or thunk), i.e., the number of
-   arguments it expects. */
+/* Get the argument count of a closure (named, anonymous or thunk), i.e., the
+   number of arguments it needs to be saturated. Returns -1 if not a closure
+   or the closure is over-saturated. */
 
-pure_expr *arity(const pure_expr *x);
+int nargs(const pure_expr *x);
+
+/* Determine the arity and fixity of an operator symbol. arity is 0, 1 or 2
+   for nullary, unary and binary symbols, respectively, -1 for symbols without
+   a fixity declaration or other kinds of objects. fixity is encoded as a
+   2-digit number 10n+m where n is the precedence level (ranging from 0 to 10,
+   10 denotes the precedence of primary expressions) and m indicates the
+   actual fixity (0 = infix, 1 = infixl, 2 = infixr, 3 = prefix, 4 =
+   postfix). For non-symbol objects, fixity is always 100. */
+
+int arity(const pure_expr *x);
+int fixity(const pure_expr *x);
 
 /* Direct memory accesses. Use these with care. In particular, note that the
    pointer_put_expr() routine doesn't do any reference counting by itself, so

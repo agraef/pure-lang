@@ -1,76 +1,17 @@
-(x/*0:001*/ oops y/*0:01*/) z/*0:1*/ = x/*0:001*/*z/*0:1*/+y/*0:01*/;
-{
-  rule #0: (x oops y) z = x*z+y
-  state 0: #0
-	<var> state 1
-  state 1: #0
-	<var> state 2
-  state 2: #0
-	<var> state 3
-  state 3: #0
-}
-arity (oops);
-3
-arity (5 oops 8);
-1
-foo x/*0:01*/ y/*0:1*/ = x/*0:01*/*y/*0:1*/;
-{
-  rule #0: foo x y = x*y
-  state 0: #0
-	<var> state 1
-  state 1: #0
-	<var> state 2
-  state 2: #0
-}
-arity foo;
-2
-arity (foo x);
-1
-arity (foo x y);
-0
-arity (foo x y z);
--1
-bar = \x/*0:*/ -> \y/*0:*/ -> x/*1:*/*y/*0:*/ {
-  rule #0: y = x*y
-  state 0: #0
-	<var> state 1
-  state 1: #0
-} {
-  rule #0: x = \y -> x*y
-  state 0: #0
-	<var> state 1
-  state 1: #0
-};
-{
-  rule #0: bar = \x -> \y -> x*y
-  state 0: #0
-}
-arity bar;
-1
-arity (bar x);
-1
-arity (bar x y);
-0
-arity (bar x y z);
--1
-arity (x&);
-0
-arity ((x&) y);
--1
-arity ((x&) y z);
--1
-arity 99;
--1
-arity (force (x&));
--1
-arity (foo 1 2);
--1
-arity (baz a b);
--1
-arity (x:y);
--1
-arity (:);
--1
+arity foo,fixity foo,nargs foo;
+-1,100,-1
+arity foo,fixity foo,nargs foo;
+0,100,-1
+arity (&),fixity (&),nargs (&);
+1,94,1
+arity ('),fixity ('),nargs (');
+1,93,1
+arity (.),fixity (.),nargs (.);
+2,92,3
+arity (!),fixity (!),nargs (!);
+2,91,2
+arity (..),fixity (..),nargs (..);
+2,20,2
 [|x/*0:101*/,y/*0:11*/|] = list (x/*0:101*/,y/*0:11*/);
 [|x/*0:1*/|] = [x/*0:1*/];
 {
@@ -100,8 +41,8 @@ arity (:);
 	<var> state 11
   state 11: #0 #1
 }
-arity ([| |]);
-1
+arity ([| |]),fixity ([| |]),nargs ([| |]);
+1,100,1
 [|1,2,3|]+[|4|];
 [1,2,3,4]
 def BEGIN x/*0:101*/,y/*0:11*/ END = x/*0:101*/$$BEGIN y/*0:11*/ END;
@@ -113,3 +54,78 @@ test = a$$b;
 }
 test;
 b
+(x/*0:001*/ oops y/*0:01*/) z/*0:1*/ = x/*0:001*/*z/*0:1*/+y/*0:01*/;
+{
+  rule #0: (x oops y) z = x*z+y
+  state 0: #0
+	<var> state 1
+  state 1: #0
+	<var> state 2
+  state 2: #0
+	<var> state 3
+  state 3: #0
+}
+arity (oops);
+2
+nargs (oops);
+3
+nargs (5 oops 8);
+1
+foo x/*0:01*/ y/*0:1*/ = x/*0:01*/*y/*0:1*/;
+{
+  rule #0: foo x y = x*y
+  state 0: #0
+	<var> state 1
+  state 1: #0
+	<var> state 2
+  state 2: #0
+}
+nargs foo;
+2
+nargs (foo x);
+1
+nargs (foo x y);
+0
+nargs (foo x y z);
+-1
+bar = \x/*0:*/ -> \y/*0:*/ -> x/*1:*/*y/*0:*/ {
+  rule #0: y = x*y
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: x = \y -> x*y
+  state 0: #0
+	<var> state 1
+  state 1: #0
+};
+{
+  rule #0: bar = \x -> \y -> x*y
+  state 0: #0
+}
+nargs bar;
+1
+nargs (bar x);
+1
+nargs (bar x y);
+0
+nargs (bar x y z);
+-1
+nargs (x&);
+0
+nargs ((x&) y);
+-1
+nargs ((x&) y z);
+-1
+nargs 99;
+-1
+nargs (force (x&));
+-1
+nargs (foo 1 2);
+-1
+nargs (baz a b);
+-1
+nargs (x:y);
+-1
+nargs (:);
+-1

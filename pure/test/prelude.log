@@ -183,17 +183,7 @@ xs/*0:01*/!!ns/*0:1*/ = ys/*0:*/ if ok/*1*/ ys/*0:*/ when ys/*0:*/ = case ns/*0:
   state 0: #0
 	<var> state 1
   state 1: #0
-} end with count ns/*0:1*/ = #dropwhile (\n/*0:*/::int -> n/*0:*/<0 {
-  rule #0: n::int = n<0
-  state 0: #0
-	<var>::int state 1
-  state 1: #0
-}) ns/*0:1*/ {
-  rule #0: count ns = #dropwhile (\n::int -> n<0) ns
-  state 0: #0
-	<var> state 1
-  state 1: #0
-}; cont (n/*0:101*/::int:ns/*0:11*/) = ~thunkp ns/*0:11*/&&(case ns/*0:11*/ of [] = 1; m/*0:01*/::int:_/*0:1*/ = cont/*2*/ ns/*1:11*/ if m/*0:01*/==n/*1:101*/+1; _/*0:*/ = 0 {
+} end with cont (n/*0:101*/::int:ns/*0:11*/) = ~thunkp ns/*0:11*/&&(case ns/*0:11*/ of [] = 1; m/*0:01*/::int:_/*0:1*/ = cont/*2*/ ns/*1:11*/ if m/*0:01*/==n/*1:101*/+1; _/*0:*/ = 0 {
   rule #0: [] = 1
   rule #1: m::int:_ = cont ns if m==n+1
   rule #2: _ = 0
@@ -246,6 +236,16 @@ xs/*0:01*/!!ns/*0:1*/ = ys/*0:*/ if ok/*1*/ ys/*0:*/ when ys/*0:*/ = case ns/*0:
   state 1: #0
 	<var> state 2
   state 2: #0
+}; count ns/*0:1*/ = #dropwhile (\n/*0:*/::int -> n/*0:*/<0 {
+  rule #0: n::int = n<0
+  state 0: #0
+	<var>::int state 1
+  state 1: #0
+}) ns/*0:1*/ {
+  rule #0: count ns = #dropwhile (\n::int -> n<0) ns
+  state 0: #0
+	<var> state 1
+  state 1: #0
 }; ok (catmap (nth _/*0:1011*/) _/*0:11*/) = 0; ok _/*0:1*/ = 1 {
   rule #0: ok (catmap (nth _) _) = 0
   rule #1: ok _ = 1
