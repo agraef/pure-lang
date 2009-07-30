@@ -281,7 +281,7 @@ using namespace C;
    The following operations let you inspect various internal attributes of
    symbols and function objects, which determine how these objects are applied
    to their operands or arguments. These functions all take a single argument,
-   the symbol or function object to be inspected.
+   the symbol or function object to be inspected, and return an integer value.
 
    .. _nargs:
 
@@ -302,9 +302,11 @@ using namespace C;
    ``fixity f``
      Determine the fixity of an operator symbol. The fixity is encoded as a
      2-digit number ``10*n+m`` where ``n`` is the precedence level (ranging
-     from 0 to 10, 10 denotes the precedence of primary expressions) and ``m``
+     from 0 to 10; 10 denotes the precedence of primary expressions) and ``m``
      indicates the actual fixity (0 = infix, 1 = infixl, 2 = infixr, 3 =
-     prefix, 4 = postfix). For non-symbol objects, ``fixity`` is always 100.
+     prefix, 4 = postfix). Note that the fixity of nonfix and outfix symbols,
+     as well as symbols without a fixity declaration, is always 100. For
+     non-symbol objects, ``fixity`` also returns 100.
 
    Note that only closures (i.e., named and anonymous functions and thunks)
    have a defined argument count in Pure, otherwise ``nargs`` returns -1

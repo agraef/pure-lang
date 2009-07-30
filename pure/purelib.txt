@@ -2632,10 +2632,104 @@ predicates.
   Predicates to check for function objects (named, anonymous or thunk) and
   global (unbound) variables.
 
+Inspection
+~~~~~~~~~~
+
+The following operations let you inspect various internal attributes of
+symbols and function objects, which determine how these objects are applied
+to their operands or arguments. These functions all take a single argument,
+the symbol or function object to be inspected, and return an integer value.
+
+.. raw:: html
+
+   <a name="nargs">
+
+.. _nargs:
+
+``nargs x``
+  Get the argument count of a function object, i.e., the number of
+  arguments it expects. Returns 0 for thunks and saturated applications, -1
+  for over-saturated applications and non-functions.
+
+.. raw:: html
+
+   <a name="arity">
+
+.. _arity:
+
+``arity x``
+  Determine the arity of an operator symbol. The returned value is 0, 1 or
+  2 for nullary, unary and binary symbols, respectively, -1 for symbols
+  without a fixity declaration or other kinds of objects.
+
+.. raw:: html
+
+   <a name="fixity">
+
+.. _fixity:
+
+``fixity f``
+  Determine the fixity of an operator symbol. The fixity is encoded as a
+  2-digit number ``10*n+m`` where ``n`` is the precedence level (ranging
+  from 0 to 10; 10 denotes the precedence of primary expressions) and ``m``
+  indicates the actual fixity (0 = infix, 1 = infixl, 2 = infixr, 3 =
+  prefix, 4 = postfix). Note that the fixity of nonfix and outfix symbols,
+  as well as symbols without a fixity declaration, is always 100. For
+  non-symbol objects, ``fixity`` also returns 100.
+
+Note that only closures (i.e., named and anonymous functions and thunks)
+have a defined argument count in Pure, otherwise ``nargs`` returns -1
+indicating an unknown argument count. Partial applications of closures
+return the number of remaining arguments, which may be zero to indicate a
+`saturated` (but unevaluated) application, or -1 for `over-saturated` and
+constructor applications. (Note that in Pure a saturated application may
+also remain unevaluated because there is no definition for the given
+combination of arguments and thus the expression is in normal form, or
+because the application was quoted. If such a normal form application is
+then applied to some "extra" arguments it becomes over-saturated.)
+
+The value returned by ``nargs`` always denotes the actual argument count of
+the given function, not the declared arity if the function also happens to
+be an operator symbol. Usually these will coincide (as, e.g., in the case
+of ``+`` which is a binary operator and also expects two arguments). But
+this is not necessarily the case, as shown in the following example of a
+binary operator which actually takes *three* arguments::
+
+  > infix 0 oops;
+  > (oops) x y z = x*z+y;
+  > arity (oops);
+  2
+  > nargs (oops);
+  3
+  > nargs (5 oops 8);
+  1
+  > map (5 oops 8) (1..5);
+  [13,18,23,28,33]
+
+Also note that the argument count of a *named* function will be the actual
+number of arguments, as given in the function definition::
+
+  > foo x y = x*y;
+  > nargs foo;
+  2
+  > nargs (foo x);
+  1
+
+In contrast, *anonymous* functions (lambdas) always yield an argument count
+of 1, because a multi-argument lambda like ``\x y -> x*y`` is in fact just
+a shorthand for several nested 1-argument lambdas, ``\x -> \y -> x*y`` in
+this example. Hence::
+
+  > bar = \x y -> x*y;
+  > nargs bar;
+  1
+  > nargs (bar x);
+  1
+
 Specials
 ~~~~~~~~
 
-Some special operations to deal with exceptions and function objects.
+The following operations are provided to deal with exceptions and thunks.
 
 .. raw:: html
 
@@ -2653,102 +2747,6 @@ Some special operations to deal with exceptions and function objects.
   automagically when the value of a thunk is needed.
 
 .. _Special Forms: pure.html#special-forms
-
-.. raw:: html
-
-   <a name="arity">
-
-.. _arity:
-
-``arity f``
-  Get the arity of a function object, i.e., the number of arguments it
-  expects. Returns 0 for thunks and saturated applications, -1 for
-  over-saturated applications and non-functions.
-
-Note that only closures (i.e., named and anonymous functions and thunks)
-have a defined arity in Pure, otherwise ``arity`` returns -1 indicating an
-unknown argument count. Partial applications of closures return the number
-of remaining arguments, which may be zero to indicate a `saturated` (but
-unevaluated) application, or -1 for `over-saturated` and constructor
-applications. (Note that in Pure a saturated application may also remain
-unevaluated because there is no definition for the given combination of
-arguments and thus the expression is in normal form, or because the
-application was quoted. If such a normal form application is then applied
-to some "extra" arguments it becomes over-saturated.)
-
-The value returned by ``arity`` always denotes the `semantic arity` of the
-given function, not the declared `syntactic arity` if the function also
-happens to be an operator symbol. Usually these will coincide (as, e.g., in
-the case of ``+`` which is a binary operator and also expects two
-arguments). But this is not necessarily the case, as shown in the following
-example of a binary operator which actually takes *three* arguments::
-
-  > infix 0 oops;
-  > (oops) x y z = x*z+y;
-  > arity (oops);
-  3
-  > arity (5 oops 8);
-  1
-  > map (5 oops 8) (1..5);
-  [13,18,23,28,33]
-
-Also note that the arity of a *named* function will be the actual number of
-arguments, as given in the function definition::
-
-  > foo x y = x*y;
-  > arity foo;
-  2
-  > arity (foo x);
-  1
-
-In contrast, *anonymous* functions (lambdas) always yield an arity of 1,
-because a multi-argument lambda like ``\x y -> x*y`` is in fact just a
-shorthand for several nested 1-argument lambdas, ``\x -> \y -> x*y`` in
-this example. Hence::
-
-  > bar = \x y -> x*y;
-  > arity bar;
-  1
-  > arity (bar x);
-  1
-
-Note that in either case the arity becomes zero for an unevaluated
-saturated application::
-
-  > arity (foo x y);
-  0
-  > arity (bar x y);
-  0
-
-Unevaluated thunks, being parameterless closures, yield a zero arity, too::
-
-  > arity (x&);
-  0
-
-By adding extra arguments you then get an over-saturated application::
-
-  > arity (foo x y z);
-  -1
-  > arity (bar x y z);
-  -1
-  > arity ((x&) y);
-  -1
-
-Finally, the value -1 is also returned for non-function objects (including
-pure constructors) and their applications::
-
-  > arity 99;
-  -1
-  > arity (force (x&));
-  -1
-  > arity (foo 1 2);
-  -1
-  > arity (baz a b);
-  -1
-  > arity (x:y);
-  -1
-  > arity (:);
-  -1
 
 ..
 
@@ -5699,6 +5697,7 @@ Index
 | `first (heap)`_
 | `first (set)`_
 | `fix`_
+| `fixity`_
 | `flip`_
 | `float_matrix`_
 | `float_pointer`_
@@ -5832,6 +5831,7 @@ Index
 | `mod`_
 
 | `nanosleep`_
+| `nargs`_
 | `not`_
 | `null`_
 | `null (array)`_
