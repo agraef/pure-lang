@@ -566,7 +566,7 @@ interpreter::interpreter(int32_t nsyms, char *syms,
   }
   for (int32_t f = 1; f <= nsyms; f++) {
     symbol& sym = symtab.sym(f);
-    size_t p = sym.s.find("::");
+    size_t p = sym.s.rfind("::");
     if (p != string::npos && p > 0)
       namespaces.insert(sym.s.substr(0, p));
     pure_expr *x;
