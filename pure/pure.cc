@@ -60,7 +60,7 @@ Type 'help' in the interpreter for more help.\n"
 
 static const char *commands[] = {
   "break", "cd", "clear", "const", "def", "del", "dump", "extern", "help",
-  "infix", "infixl", "infixr", "let", "ls", "namespace", "nullary", "outfix",
+  "infix", "infixl", "infixr", "let", "ls", "namespace", "nonfix", "outfix",
   "override", "postfix", "prefix", "private", "public", "pwd", "quit", "run",
   "save", "show", "stats", "underride", "using", 0
 };
@@ -105,7 +105,7 @@ command_generator(const char *text, int state)
     /* Skip non-toplevel symbols. */
     const symbol& sym = interp.symtab.sym(f);
     if (!interp.symtab.visible(f) ||
-	(sym.prec == 10 && sym.fix != nullary && sym.fix != outfix &&
+	(sym.prec == 10 && sym.fix != nonfix && sym.fix != outfix &&
 	 interp.globenv.find(f) == interp.globenv.end() &&
 	 interp.macenv.find(f) == interp.macenv.end() &&
 	 interp.globalvars.find(f) == interp.globalvars.end() &&
@@ -173,7 +173,7 @@ symbol_generator(const char *text, int state)
     /* Skip non-toplevel symbols. */
     const symbol& sym = interp.symtab.sym(f);
     if (!interp.symtab.visible(f) ||
-	(sym.prec == 10 && sym.fix != nullary && sym.fix != outfix &&
+	(sym.prec == 10 && sym.fix != nonfix && sym.fix != outfix &&
 	 interp.globenv.find(f) == interp.globenv.end() &&
 	 interp.macenv.find(f) == interp.macenv.end() &&
 	 interp.globalvars.find(f) == interp.globalvars.end() &&

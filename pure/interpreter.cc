@@ -1808,13 +1808,13 @@ void interpreter::declare(bool priv, prec_t prec, fix_t fix, list<string> *ids)
 		  (sym->priv?"'private'":"'public'"));
       } else if (sym->prec != prec || sym->fix != fix ||
 		 (fix == outfix && sym->g==0)) {
-	/* We explicitly permit 'nullary' redeclarations here, to support
-	   'const nullary' symbols on the lhs of rules. Note that this
-	   actually permits a 'nullary' redeclaration of *any* symbol unless
+	/* We explicitly permit 'nonfix' redeclarations here, to support
+	   'const nonfix' symbols on the lhs of rules. Note that this
+	   actually permits a 'nonfix' redeclaration of *any* symbol unless
 	   it's already been declared as an operator, but this is actually
 	   only useful with 'const' symbols. */
-	if (fix == nullary && sym->fix != outfix && sym->prec == 10)
-	  sym->fix = nullary;
+	if (fix == nonfix && sym->fix != outfix && sym->prec == 10)
+	  sym->fix = nonfix;
 	else {
 	  delete ids;
 	  throw err("symbol '"+id+"' already declared with different fixity");
@@ -1970,10 +1970,10 @@ void interpreter::clear(int32_t f)
     env::iterator it = globenv.find(f);
     if (it != globenv.end()) {
       symbol& sym = symtab.sym(f);
-      // get rid of temporary 'nullary' designation of variable and constant
+      // get rid of temporary 'nonfix' designation of variable and constant
       // symbols
       if ((it->second.t == env_info::cvar || it->second.t == env_info::fvar) &&
-	  sym.prec == 10 && sym.fix == nullary)
+	  sym.prec == 10 && sym.fix == nonfix)
 	sym.fix = infix;
       globenv.erase(it);
       clearsym(f);
@@ -1987,7 +1987,7 @@ void interpreter::clear(int32_t f)
       if (info.temp >= temp) {
 	symbol& sym = symtab.sym(f);
 	if ((info.t == env_info::cvar || info.t == env_info::fvar) &&
-	    sym.prec == 10 && sym.fix == nullary)
+	    sym.prec == 10 && sym.fix == nonfix)
 	  sym.fix = infix;
 	globenv.erase(jt);
 	clearsym(f);
@@ -2318,7 +2318,7 @@ expr interpreter::bind(env& vars, expr x, bool b, path p)
     const symbol& sym = symtab.sym(x.tag());
     if ((!qual && (x.flags()&EXPR::QUAL)) ||
 	(sym.s != "_" &&
-	 (sym.prec < 10 || sym.fix == nullary || sym.fix == outfix ||
+	 (sym.prec < 10 || sym.fix == nonfix || sym.fix == outfix ||
 	  (p.len() == 0 && !b) || (p.len() > 0 && p.last() == 0)))) {
       // constant or constructor
       if (x.ttag() != 0)
@@ -2340,7 +2340,7 @@ expr interpreter::bind(env& vars, expr x, bool b, path p)
     const symbol& sym = symtab.sym(x.astag());
     if (sym.s != "_") {
       if ((!qual && (x.flags()&EXPR::ASQUAL)) ||
-	  sym.prec < 10 || sym.fix == nullary || sym.fix == outfix)
+	  sym.prec < 10 || sym.fix == nonfix || sym.fix == outfix)
 	throw err("error in  \"as\" pattern (bad variable symbol)");
       // Unless we're doing a pattern binding, subterms at the spine of a
       // function application won't be available at runtime, so we forbid
@@ -2545,7 +2545,7 @@ expr interpreter::subst(const env& vars, expr x, uint8_t idx)
     assert(x.tag() > 0);
     const symbol& sym = symtab.sym(x.tag());
     env::const_iterator it = vars.find(sym.f);
-    if (sym.prec < 10 || sym.fix == nullary || sym.fix == outfix ||
+    if (sym.prec < 10 || sym.fix == nonfix || sym.fix == outfix ||
 	it == vars.end() || (!qual && (x.flags()&EXPR::QUAL))) {
       // not a bound variable
       if (x.ttag() != 0)
@@ -2814,7 +2814,7 @@ expr interpreter::csubst(expr x, bool quote)
 }
 
 /* This is a trimmed-down version of csubst() for performing replacements of
-   nullary const symbols in patterns. */
+   nonfix const symbols in patterns. */
 
 expr interpreter::lcsubst(expr x)
 {
@@ -2860,7 +2860,7 @@ expr interpreter::lcsubst(expr x)
   default:
     assert(x.tag() > 0);
     const symbol& sym = symtab.sym(x.tag());
-    if (sym.fix == nullary) {
+    if (sym.fix == nonfix) {
       env::const_iterator it = globenv.find(sym.f);
       if (it != globenv.end() && it->second.t == env_info::cvar) {
 	/* FIXME: This breaks when the same constant is used with different
@@ -3380,7 +3380,7 @@ expr *interpreter::mksym_expr(string *s, int8_t tag)
     } else
       x = new expr(sym.x);
   else if (sym.f <= 0 || sym.prec < 10 ||
-	   sym.fix == nullary || sym.fix == outfix)
+	   sym.fix == nonfix || sym.fix == outfix)
     throw err("error in expression (misplaced type tag)");
   else {
     x = new expr(sym.f);
@@ -3395,7 +3395,7 @@ expr *interpreter::mksym_expr(string *s, int8_t tag)
 expr *interpreter::mkas_expr(string *s, expr *x)
 {
   const symbol &sym = symtab.checksym(*s);
-  if (sym.f <= 0 || sym.prec < 10 || sym.fix == nullary || sym.fix == outfix)
+  if (sym.f <= 0 || sym.prec < 10 || sym.fix == nonfix || sym.fix == outfix)
     throw err("error in  \"as\" pattern (bad variable symbol)");
   if (x->tag() > 0) {
     // Avoid globbering cached function symbols.
@@ -3666,7 +3666,7 @@ const char *interpreter::mkvarlabel(int32_t tag)
   assert(tag > 0);
   const symbol& sym = symtab.sym(tag);
   string lab;
-  if (sym.prec < 10 || sym.fix == nullary || sym.fix == outfix)
+  if (sym.prec < 10 || sym.fix == nonfix || sym.fix == outfix)
     if (sym.fix == outfix && sym.g)
       lab = "$("+sym.s+" "+symtab.sym(sym.g).s+")";
     else

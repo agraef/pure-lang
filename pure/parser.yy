@@ -94,7 +94,7 @@ static void mangle_fname(string& name);
 
 %token		PRIVATE	"private"
 %token		PUBLIC	"public"
-%token		NULLARY	"nullary"
+%token		NONFIX	"nonfix"
 %token		OUTFIX	"outfix"
 %token <fix>	FIX	"fixity"
 
@@ -297,11 +297,11 @@ item
 /* Lexical tie-in: We need to tell the lexer that we're defining new operator
    symbols (interp.declare_op = true) instead of searching for existing ones
    in the symbol table. */
-{ if ($1->special && $1->fix != nullary && $1->fix != outfix &&
+{ if ($1->special && $1->fix != nonfix && $1->fix != outfix &&
       $1->prec > 9) {
     error(yylloc, "invalid fixity declaration"); $1->prec = 9;
   }
-  if ($1->fix == nullary || $1->fix == outfix || $1->prec < 10)
+  if ($1->fix == nonfix || $1->fix == outfix || $1->prec < 10)
     interp.declare_op = true; }
   ids
 { interp.declare_op = false;
@@ -335,14 +335,14 @@ item
 fixity
 : FIX INT		{ $$ = new sym_info(true, false,$2,$1); }
 | OUTFIX		{ $$ = new sym_info(true, false,10,outfix); }
-| NULLARY		{ $$ = new sym_info(true, false,10,nullary); }
+| NONFIX		{ $$ = new sym_info(true, false,10,nonfix); }
 | PUBLIC FIX INT	{ $$ = new sym_info(true, false,$3,$2); }
 | PUBLIC OUTFIX		{ $$ = new sym_info(true, false,10,outfix); }
-| PUBLIC NULLARY	{ $$ = new sym_info(true, false,10,nullary); }
+| PUBLIC NONFIX		{ $$ = new sym_info(true, false,10,nonfix); }
 | PUBLIC		{ $$ = new sym_info(false, false,10,infix); }
 | PRIVATE FIX INT	{ $$ = new sym_info(true, true,$3,$2); }
 | PRIVATE OUTFIX	{ $$ = new sym_info(true, true,10,outfix); }
-| PRIVATE NULLARY	{ $$ = new sym_info(true, true,10,nullary); }
+| PRIVATE NONFIX	{ $$ = new sym_info(true, true,10,nonfix); }
 | PRIVATE		{ $$ = new sym_info(false, true,10,infix); }
 ;
 

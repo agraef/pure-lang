@@ -346,7 +346,7 @@ symbol& symtable::nil_sym()
   if (__nil_sym)
     return *__nil_sym;
   else
-    return *sym_p("[]", __nil_sym, 10, nullary);
+    return *sym_p("[]", __nil_sym, 10, nonfix);
 }
 
 symbol& symtable::cons_sym()
@@ -364,7 +364,7 @@ symbol& symtable::void_sym()
   if (__void_sym)
     return *__void_sym;
   else
-    return *sym_p("()", __void_sym, 10, nullary);
+    return *sym_p("()", __void_sym, 10, nonfix);
 }
 
 symbol& symtable::pair_sym()

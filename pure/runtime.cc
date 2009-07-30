@@ -698,7 +698,7 @@ pure_expr *pure_symbol(int32_t tag)
     // The variable doesn't exist yet (we have a new symbol), create it.
     string lab;
     // Create a name for the variable (cf. interpreter::mkvarlabel).
-    if (sym.prec < 10 || sym.fix == nullary || sym.fix == outfix)
+    if (sym.prec < 10 || sym.fix == nonfix || sym.fix == outfix)
       if (sym.fix == outfix && sym.g)
 	lab = "$("+sym.s+" "+interp.symtab.sym(sym.g).s+")";
       else
@@ -8075,7 +8075,7 @@ int32_t arity(const pure_expr *x)
 	return 2;
     else if (sym.fix == outfix)
       return 1;
-    else if (sym.fix == nullary)
+    else if (sym.fix == nonfix)
       return 0;
     else
       return -1;
