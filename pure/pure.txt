@@ -400,7 +400,7 @@ script in order to turn it into an executable program.
 There are a few reserved keywords which cannot be used as identifiers::
 
   case const def else end extern if infix infixl infixr let namespace
-  nullary of otherwise outfix postfix prefix private public then using
+  nonfix of otherwise outfix postfix prefix private public then using
   when with
 
 The customary notations for identifiers, numbers and strings are all
@@ -439,6 +439,14 @@ at any time. For instance, we can extend the example above to make the
   > fact 10;
   3628800
 
+Expressions are generally evaluated from left to right, innermost expressions
+first, i.e., using call by value semantics. Pure also has a few built-in
+special forms (most notably, conditional expressions, the short-circuit
+logical connectives ``&&`` and ``||``, the sequencing operator ``$$``, the
+lazy evaluation operator ``&``, and the ``quote``) which take some or all of
+their arguments unevaluated, using call by name. (User-defined special forms
+can be created with macros. More about that later.)
+
 Like in Haskell and ML, functions are often defined by pattern-matching, i.e.,
 the left-hand side of a definition is compared to the target expression,
 binding the variables in the pattern to their actual values accordingly::
@@ -446,14 +454,6 @@ binding the variables in the pattern to their actual values accordingly::
   > foo (bar x) = x-1;
   > foo (bar 99);
   98
-
-There are no declarations or lexical conventions to distinguish the variables
-in an equation. Instead, Pure parses the left-hand side of an equation using
-the following syntactic convention, which is also called the `head = function
-rule`: A symbol is a literal function (or constructor) symbol if it is the
-head symbol of a function application (like ``foo`` and ``bar`` in the above
-example). Other identifiers on the left-hand side are the variables of the
-equation (like ``x`` in this example).
 
 Due to its term rewriting semantics, Pure goes beyond most other functional
 languages in that it can do symbolic evaluations just as well as "normal"
@@ -471,22 +471,55 @@ expressions in a symbolic fashion, rewriting expressions using the equations
 supplied by the programmer, until no more equations are applicable. The result
 of this process is called a `normal form` which represents the "value" of the
 original expression. Keeping with the tradition of term rewriting, there's no
-distinction between "defined" and "constructor" function symbols in Pure; any
+distinction between "defined" and "constructor" function symbols in Pure; that
+is, Pure does *not* enforce the so-called "constructor discipline" which
+stipulates that only pure constructor symbols (without any defining equations)
+may occur as a subterm on the left-hand side of an equation. In Pure, any
 function symbol (or operator) also acts as a constructor if it happens to
-occur in a normal form term::
+occur in a normal form term. This enables you to apply algebraic rules
+violating the constructor discipline, like the following::
 
   > (x+y)*z = x*z+y*z; x*(y+z) = x*y+x*z;
   > x*(y*z) = (x*y)*z; x+(y+z) = (x+y)+z;
   > square (a+b);
   a*a+a*b+b*a+b*b
 
-Expressions are generally evaluated from left to right, innermost expressions
-first, i.e., using call by value semantics. Pure also has a few built-in
-special forms (most notably, conditional expressions, the short-circuit
-logical connectives ``&&`` and ``||``, the sequencing operator ``$$``, the
-lazy evaluation operator ``&``, and the ``quote``) which take some or all of
-their arguments unevaluated, using call by name. (User-defined special forms
-can be created with macros. More about that later.)
+Parameters in Equations
+-----------------------
+
+Taking a look at the above examples, you might have been wondering how the
+Pure interpreter figures out what the parameters (a.k.a. "variables") in an
+equation are. This is quite obvious in rules involving just variables and
+special operator symbols, such as ``(x+y)*z = x*z+y*z``. However, what about
+an equation like ``foo (foo bar) = bar``? Since most of the time we don't
+declare any symbols in Pure, how does the interpreter know that ``foo`` is a
+literal function symbol here, while ``bar`` is a variable?
+
+The answer is that the interpreter considers the different positions in the
+left-hand side expression of an equation. Basically, a Pure expression is just
+a tree formed by applying expressions to other expressions, with the atomic
+subexpressions like numbers and symbols at the leaves of the tree. (This is
+even true for infix expressions like ``x+y``, since in Pure these are always
+equivalent to a function application of the form ``(+) x y`` which has the
+atomic subterms ``(+)``, ``x`` and ``y`` at its leaves.)
+
+Now the interpreter divides the leaves of the expression tree into "head" (or
+"function") and "parameter" (or "variable") positions based on which leaves
+are leftmost in a function application or not. Thus, in an expression like ``f
+x y z``, ``f`` is in the head or function position, while ``x``, ``y`` and
+``z`` are in parameter or variable positions. (Note that in an infix
+expression like ``x+y``, ``(+)`` is the head symbol, not ``x``, as the
+expression is really parsed as ``(+) x y``, see above.)
+
+Identifiers in head positions are taken as literal function symbols by the
+interpreter, while identifiers in variable positions denote, well,
+variables. We also refer to this convention as the the `head = function
+rule`. It is quite intuitive and lets us get away without declaring the
+variables in equations. (There are some corner cases not covered here,
+however. In particular, Pure allows you to declare special constant symbols,
+if you need a symbol to be recognized as a literal even if it occurs in a
+variable position. This is done by means of a ``nonfix`` declaration, see
+`Symbol Declarations`_ for details.)
 
 Expression Syntax
 -----------------
@@ -540,24 +573,24 @@ Function and variable symbols: ``foo``, ``foo_bar``, ``BAR``, ``foo::bar``
     like in ``foo::bar``. (This requires that the given namespace has already
     been created, as explained under Namespaces_ in the Declarations_ section.)
 
-Operator and nullary symbols: ``x+y``, ``x==y``, ``not x``
+Operator and constant symbols: ``x+y``, ``x==y``, ``not x``
     For convenience, Pure also provides you with a limited means to extend the
-    syntax of the language with your own operators and "nullary" (constant)
-    symbols. These special symbols may take the form of an identifier or a
-    sequence of punctuation characters. Operators are declared using the
-    corresponding ``prefix``, ``postfix``, ``outfix`` and ``infix``
-    declarations, which are discussed in section Declarations_. Operators are
-    just syntax; enclosing an operator in parentheses, such as ``(+)`` or
-    ``(not)``, turns it into an ordinary function symbol. Also, operators can
-    be qualified with a namespace just like identifiers.
+    syntax of the language with special operator and constant symbols by means
+    of a corresponding `fixity` declaration, as discussed in section
+    Declarations_. Besides the usual infix, prefix and postfix operators, Pure
+    also provides outfix (bracket) and nonfix (constant) symbols. (Nonfix
+    symbols actually work more or less like ordinary identifiers, but the
+    ``nonfix`` attribute tells the compiler that, when such a symbol occurs on
+    the left-hand side of an equation, it is always to be interpreted as a
+    literal constant, cf. `Parameters in Equations`_.)
 
-    In addition, a symbol declared as ``nullary`` denotes an "operator without
-    operands", i.e., a constant symbol. In difference to operators, these are
-    actually treated more or less like ordinary identifiers, but the
-    ``nullary`` attribute tells the compiler that, when such a symbol occurs
-    on the left-hand side of an equation, it is to be interpreted as a
-    constant rather than a variable (cf. the "head = function" rule described
-    under `Definitions and Expression Evaluation`_ above).
+    Operator and constant symbols may take the form of an identifier or a
+    sequence of punctuation characters. They must always be declared before
+    use. Once declared, they are always special, and can't be used as ordinary
+    identifiers any more. However, like in Haskell, by enclosing an operator
+    in parentheses, such as ``(+)`` or ``(not)``, you can turn it into an
+    ordinary function symbol. Also, operators and constant symbols can be
+    qualified with a namespace just like normal identifiers.
 
 Lists: ``[x,y,z]``, ``x:xs``, ``x..y``, ``x:y..z``
     Pure's basic list syntax is the same as in Haskell, thus ``[]`` is the
@@ -870,7 +903,7 @@ Global variable bindings: ``let lhs = rhs;``
 
 Constant bindings: ``const lhs = rhs;``
     An alternative form of ``let`` which defines constants rather than
-    variables. (These are not to be confused with nullary symbols which simply
+    variables. (These are not to be confused with nonfix symbols which simply
     stand for themselves!) Like ``let``, this construct binds the variable
     symbols on the left-hand side to the corresponding values on the
     right-hand side (after evaluation). The difference is that ``const``
@@ -1545,7 +1578,7 @@ that a macro may have the same name as an ordinary Pure function, which is
 essential if you want to optimize calls to an existing function, as in the
 previous example. (Just like ordinary functions, the number of parameters in
 each rule for a given macro must be the same, but a macro may have a different
-arity than the corresponding function.)
+number of arguments than the corresponding function.)
 
 A somewhat more practical example is the following rule from the prelude,
 which eliminates saturated instances of the right-associative function
@@ -1803,12 +1836,20 @@ Declarations
 Pure is a very terse language by design. Usually you don't declare much stuff,
 you just define it and be done with it. However, there are a few toplevel
 constructs which let you declare symbols with special attributes and manage
-programs consisting of several source modules. These are: explicit symbol
-declarations which determine "scope" and "fixity" of a symbol, ``extern``
-declarations for external C functions (described in the `C Interface`_
-section), ``using`` clauses which let you include other scripts in a Pure
-script, and ``namespace`` declarations which make it easier to manage large
-programs consisting of many separate modules.
+programs consisting of several source modules:
+
+* symbol declarations determine "scope" and "fixity" of a symbol;
+
+* ``extern`` declarations specify external C functions (described in the
+  `C Interface`_ section);
+
+* ``using`` clauses let you include other scripts in a Pure script;
+
+* ``namespace`` declarations let you avoid name clashes and thereby make it
+  easier to manage large programs consisting of many separate modules.
+
+Symbol Declarations
+-------------------
 
 Scope declarations: ``public symbol ...; private symbol ...;``
     Declares the listed symbols as public or private, respectively. All
@@ -1853,23 +1894,49 @@ Outfix symbol declarations: ``outfix left right ...;``
     your own bracket structures. The operators must be given as pairs of
     matching left and right symbols. For instance::
 
-      outfix [: :] BEGIN END;
+      outfix |: :| BEGIN END;
 
-    After this declaration you can write bracketed expressions like
-    ``[:a,b:]`` or ``BEGIN foo, bar END``. These are always at the highest
-    precedence level (i.e., syntactically they work like parenthesized
-    expressions). Just like other operators, you can turn outfix symbols into
-    ordinary functions by enclosing them in parentheses, but you have to
-    specify the symbols in matching pairs, such as ``(BEGIN END)``.
+    After this declaration you can write bracketed expressions like ``|:x:|``
+    or ``BEGIN foo, bar END``. These are always at the highest precedence
+    level (i.e., syntactically they work like parenthesized expressions). Just
+    like other operators, you can turn outfix symbols into ordinary functions
+    by enclosing them in parentheses, but you have to specify the symbols in
+    matching pairs, such as ``(BEGIN END)``.
 
-Constant symbol declarations: ``nullary symbol ...;``
-    Constant symbols are introduced using a ``nullary`` declaration, e.g.::
+Constant symbol declarations: ``nonfix symbol ...;``
+    Pure also has a notation for "nullary" operators, i.e., "operators without
+    operands", which are used to denote special constants. These are
+    introduced using a ``nonfix`` declaration, e.g.::
 
-      nullary foo;
+      nonfix red green blue;
 
-    As explained in the `Pure Overview`_ section, nullary symbols are like
-    ordinary identifiers, but are treated as constants rather than variables
-    when they occur on the left-hand side of an equation.
+    Syntactically, these work just like ordinary identifiers, so they may
+    stand whereever an identifier is allowed (no parentheses are required to
+    "escape" them). The difference to ordinary identifiers is that nonfix
+    symbols are always interpreted as literals, even if they occur in a
+    variable position on the left-hand side of a rule. So, with the above
+    declaration, you can write something like::
+
+      > foo x = case x of red = green; green = blue; blue = red end;
+      > map foo [red,green,blue];
+      [green,blue,red]
+
+    Thus, on the syntactic level, nonfix symbols are pretty much like nullary
+    constructor symbols in languages like Haskell. However, Pure doesn't
+    enforce that such values are really "constant", so you can still write a
+    "constructor equation" like the following::
+
+      > red = blue;
+      > map foo [red,green,blue];
+      [blue,blue,blue]
+
+Examples for all types of symbol declarations can be found in the prelude
+which declares a bunch of standard (arithmetic, relational, logical) operator
+symbols as well as the list and pair constructors '``:``' and '``,``', and a
+few nonfix symbols (mostly for denoting different kinds of exceptions).
+
+Modules and Imports
+-------------------
 
 Using clause: ``using name, ...;``
     Causes each given script to be included in the Pure program. Each included
@@ -1878,30 +1945,13 @@ Using clause: ``using name, ...;``
     form which allows dynamic libraries to be loaded, this will be discussed
     in the `C Interface`_ section.
 
-Namespace declarations: ``namespace name; using namespace name, ...;``
-    These declarations allow you to create new namespaces and then later use
-    them in your program. This provides a means to avoid name collisions and
-    hide away internal operations, which makes it easier to manage programs
-    and libraries consisting of a large number of different modules.
-
-Examples for all types of symbol declarations can be found in the prelude
-which declares a bunch of standard (arithmetic, relational, logical) operator
-symbols as well as the list and pair constructors '``:``' and '``,``', and a
-few nullary symbols (mostly for denoting different kinds of exceptions). The
-``using`` and ``namespace`` declarations are discussed in further detail
-below.
-
-Modules
--------
-
 While Pure doesn't offer separate compilation, the ``using`` declaration
 provides a simple but effective way to assemble a Pure program from several
-source modules. The Pure program is basically the concatenation of all the
+source modules. A Pure program is basically the concatenation of all the
 source modules listed as command line arguments. A ``using`` clause instructs
-the compiler to include the corresponding source script at this point, which
-makes available all the definitions in the included script in your
-program. Each script only gets included once, at the point where the first
-``using`` clause for the script is encountered.
+the compiler to include the corresponding source script at this point (if it
+wasn't already included before), which makes available all the definitions in
+the included script in your program.
 
 For instance, the following declaration causes the math.pure script from the
 standard library to be included in your program::
@@ -1972,6 +2022,10 @@ directly from the shell.
 Namespaces
 ----------
 
+Namespace declarations: ``namespace name; using namespace name, ...;``
+    These declarations allow you to create new namespaces and then later use
+    them in your program.
+
 To facilitate modular development, Pure also provides namespaces as a means to
 avoid name clashes between symbols, and to keep the global namespace tidy and
 clean. Namespaces serve as containers holding logical groups of identifiers
@@ -1985,8 +2039,8 @@ namespaces can be created with the ``namespace`` declaration, which also
 switches to the given namespace (makes it the *current* namespace), so that
 subsequent symbol declarations create symbols in that namespace rather than
 the default one. The current namespace applies to all kinds of symbol
-declarations, including operator and ``nullary`` symbol declarations, as well
-as ``extern`` declarations (the latter are described in the `C Interface`_
+declarations, including operator and constant symbol declarations, as well as
+``extern`` declarations (the latter are described in the `C Interface`_
 section).
 
 For instance, in order to create two symbols with the same print name ``foo``
@@ -2106,7 +2160,7 @@ To avoid such errors, you either have to use an explicit declaration or make
 sure that the right namespace is current when introducing the symbol.
 
 Explicit declarations *must* be used if you want to introduce special operator
-and ``nullary`` symbols. This works just like in the default namespace, except
+and constant symbols. This works just like in the default namespace, except
 that you add the appropriate ``namespace`` declaration before declaring the
 symbols. For instance, here is how you can create a new ``+`` operation which
 multiplies its operands rather than adding them::
@@ -3733,7 +3787,7 @@ inadvertently. In fact, you *can* use ``__show__`` to define custom
 representations for thunks, but only in the context of a rule for other kinds
 of objects, such as lists. For instance::
 
-  > nullary ...;
+  > nonfix ...;
   > __show__ (x:xs) = str (x:...) if thunkp xs;
   > 1:2:(3..inf);
   1:2:3:...
@@ -3808,7 +3862,7 @@ the function and all arguments::
 
 This may seem a little awkward, but as a matter of fact the "head = function"
 rule is quite useful since it covers the common cases without forcing the
-programmer to declare "constructor" symbols (except nullary symbols). On the
+programmer to declare "constructor" symbols (except nonfix symbols). On the
 other hand, generic rules operating on arbitrary function applications are not
 all that common, so having to "escape" a variable using the anonymous "as"
 pattern trick is a small price to pay for that convenience.
@@ -3828,14 +3882,14 @@ true! In fact, the Pure compiler will warn you about the second rule of the
   warning: rule never reduced: _ = 0;
   1
 
-This happens because a non-nullary symbol on the left-hand side of a rule,
-which is not the head symbol of a function application, is always considered
-to be a variable, even if that symbol is defined as a global function
-elsewhere. So ``foo`` isn't a literal name in the above ``case`` expression,
-it's a variable! (As a matter of fact, this is rather useful, since otherwise
-a rule like ``f g = g+1`` would suddenly change meaning if you happen to add a
-definition like ``g x = x-1`` somewhere else in your program, which certainly
-isn't desirable.)
+This happens because an identifier on the left-hand side of a rule, which is
+neither the head symbol of a function application nor a ``nonfix`` symbol, is
+always considered to be a variable (cf. `Parameters in Equations`_), even if
+that symbol is defined as a global function elsewhere. So ``foo`` isn't a
+literal name in the above ``case`` expression, it's a variable! (As a matter
+of fact, this is rather useful, since otherwise a rule like ``f g = g+1``
+would suddenly change meaning if you happen to add a definition like ``g x =
+x-1`` somewhere else in your program, which certainly isn't desirable.)
 
 A possible workaround is to "escape" the function symbol using an empty
 namespace qualifier::
@@ -3854,7 +3908,7 @@ predicate as follows::
   1,0
 
 Another way to deal with the situation would be to just declare ``foo`` as a
-nullary symbol. However, this makes the ``foo`` symbol "precious", i.e., after
+nonfix symbol. However, this makes the ``foo`` symbol "precious", i.e., after
 such a declaration it cannot be used as a local variable anymore. It's usually
 a good idea to avoid that kind of thing, at least for generic symbols, so the
 above solution is preferred in this case.
@@ -4014,7 +4068,7 @@ to redefine it as a constant, or vice versa, since Pure won't let you redefine
 an existing constant or variable as a different kind of symbol. The same also
 holds if a symbol is currently defined as a function or a macro.)
 
-Finally, note that in difference to ``nullary`` symbols, by default ``const``
+Finally, note that in difference to ``nonfix`` symbols, by default ``const``
 symbols cannot be used on the left-hand side of a rule. E.g., the following
 will not work as expected::
 
@@ -4028,13 +4082,12 @@ will not work as expected::
   "one","one","one"
 
 This is the same kind of pitfall as discussed in the context of the ``foop``
-predicate in `Head = Function`_ above. However, it is possible to also declare
-a ``const`` symbol as ``nullary`` (with the usual caveats, see the `Head =
-Function`_ section) and have it behave like a nullary symbol on the left-hand
-side of a rule. In that case the value of the symbol will be substituted for
-its occurrences in a pattern::
+predicate in `Head = Function`_ above. As a remedy, Pure allows you to declare
+a ``const`` symbol as ``nonfix`` and have it behave as a nonfix symbol also on
+the *left-hand side* of a rule. To these ends, the value of the symbol will
+then be substituted for its occurrences in a pattern::
 
-  > nullary zero one;
+  > nonfix zero one;
   > bar x = case x of one = "one"; zero = "zero"; _ = "???" end;
   > show bar
   bar x = case x of 1 = "one"; 0 = "zero"; _ = "???" end;
@@ -4249,7 +4302,7 @@ category and description of the symbol, as provided by ``show -s``.
     // Retrieve the information that we need.
     info = [x | x@(s,_) = map fields info;
     // Get rid of extra lines containing extern and fixity declarations.
-            s ~= "extern" && s ~= "nullary" && s ~= "outfix" &&
+            s ~= "extern" && s ~= "nonfix" && s ~= "outfix" &&
             s ~= "prefix" && s ~= "postfix" && ~fnmatch "infix*" s 0];
   end with
     // Regex call to split the summary information about one symbol, as
