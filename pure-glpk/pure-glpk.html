@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.5: http://docutils.sourceforge.net/" />
 <title>Pure-GLPK - GLPK interface for the Pure programming language</title>
 <meta name="author" content="Jiri Spitz &lt;jiri.spitz&#64;bluetone.cz&gt;" />
-<meta name="date" content="2009-06-24" />
+<meta name="date" content="2009-07-31" />
 <style type="text/css">
 
 /*
@@ -295,7 +295,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Jiri Spitz &lt;<a class="reference external" href="mailto:jiri.spitz&#64;bluetone.cz">jiri.spitz&#64;bluetone.cz</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2009-06-24</td></tr>
+<td>2009-07-31</td></tr>
 </tbody>
 </table>
 <p>This module provides a feature complete GLPK interface for the Pure programming
@@ -6708,12 +6708,71 @@ glp::mincost_okalg graph v_rhs a_low a_cap a_cost a_x v_pi
 <tbody valign="top">
 <tr class="field"><th class="field-name">graph:</th><td class="field-body">pointer to the graph object</td>
 </tr>
+<tr class="field"><th class="field-name">v_rhs:</th><td class="field-body">oﬀset of the ﬁeld of type double in the vertex data block,
+to which the routine stores bi, the supply/demand value -
+if v_rhs &lt; 0, it is assumed bi = 0 for all nodes</td>
+</tr>
+<tr class="field"><th class="field-name">a_low:</th><td class="field-body">oﬀset of the ﬁeld of type double in the arc data block,
+to which the routine stores lij, the lower bound to the
+arc ﬂow - if a_low &lt; 0, it is assumed lij = 0 for all arcs</td>
+</tr>
+<tr class="field"><th class="field-name">a_cap:</th><td class="field-body">oﬀset of the ﬁeld of type double in the arc data block,
+to which the routine stores uij, the upper bound to the
+arc ﬂow (the arc capacity) - if a_cap &lt; 0,it is assumed
+uij = 1 for all arcs, value of DBL_MAX means an uncapacitated arc</td>
+</tr>
+<tr class="field"><th class="field-name">a_cost:</th><td class="field-body">oﬀset of the ﬁeld of type double in the arc data block,
+to which the routine stores cij, the per-unit cost of the
+arc ﬂow - if a_cost &lt; 0, it is assumed cij = 0 for all arcs</td>
+</tr>
+<tr class="field"><th class="field-name">a_x:</th><td class="field-body">oﬀset of the ﬁeld of type double in the arc data block,
+to which the routine stores xij, the arc ﬂow found - if a_x &lt; 0,
+the arc ﬂow value is not stored</td>
+</tr>
+<tr class="field"><th class="field-name">v_pi:</th><td class="field-body">speciﬁes an oﬀset of the ﬁeld of type double in the vertex data block,
+to which the routine stores πi, the node potential, which is the
+Lagrange multiplier for the corresponding ﬂow conservation
+equality constraint</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
+<p><strong>Remark</strong>:</p>
+<blockquote>
+Note that all solution components (the objective value, arc ﬂows, and
+node potentials) computed by the routine are always integer-valued.</blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<p>The function returns a tuple in the form <strong>(code, obj)</strong>, where
+<strong>code</strong> is one of the following</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::ok:</th><td class="field-body">optimal solution found</td>
+</tr>
+<tr class="field"><th class="field-name">glp::enopfs:</th><td class="field-body">no (primal) feasible solution exists</td>
+</tr>
+<tr class="field"><th class="field-name">glp::edata:</th><td class="field-body">unable to start the search, because some problem data are
+either not integer-valued or out of range; this code is also
+returned if the total supply, which is the sum of bi over all
+source nodes (nodes with bi &gt; 0), exceeds INT_MAX</td>
+</tr>
+<tr class="field"><th class="field-name">glp::erange:</th><td class="field-body">the search was prematurely terminated because of integer
+overflow</td>
+</tr>
+<tr class="field"><th class="field-name">glp::efail:</th><td class="field-body">an error has been detected in the program logic -  if this
+code is returned for your problem instance, please report
+to &lt;<a class="reference external" href="mailto:bug-glpk&#64;gnu.org">bug-glpk&#64;gnu.org</a>&gt;</td>
+</tr>
+</tbody>
+</table>
+<p>and <strong>obj</strong> is value of the objective function.</p>
+</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::mincost_okalg graph 0 8 16 24 32 40;
+(glp::ok, 15)
 &gt;
 </pre>
 </div>
@@ -6729,14 +6788,77 @@ glp::netgen graph v_rhs a_cap a_cost parameters
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">graph:</th><td class="field-body">pointer to the graph object</td>
+<tr class="field"><th class="field-name">graph:</th><td class="field-body"><p class="first">pointer to the graph object</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">v_rhs:</th><td class="field-body"><p class="first">oﬀset of the ﬁeld of type double in the vertex data block,
+to which the routine stores bi, the supply/demand value -
+if v_rhs &lt; 0, it is assumed bi = 0 for all nodes</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">a_cap:</th><td class="field-body"><p class="first">oﬀset of the ﬁeld of type double in the arc data block,
+to which the routine stores uij, the upper bound to the
+arc ﬂow (the arc capacity) - if a_cap &lt; 0,it is assumed
+uij = 1 for all arcs, value of DBL_MAX means an uncapacitated arc</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">a_cost:</th><td class="field-body"><p class="first">oﬀset of the ﬁeld of type double in the arc data block,
+to which the routine stores cij, the per-unit cost of the
+arc ﬂow - if a_cost &lt; 0, it is assumed cij = 0 for all arcs</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">parameters:</th><td class="field-body"><p class="first">tuple of exactly 15 integer numbers with the following meaning:</p>
+<table class="last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">parm[1]:</th><td class="field-body">iseed 8-digit positive random number seed</td>
+</tr>
+<tr class="field"><th class="field-name">parm[2]:</th><td class="field-body">nprob 8-digit problem id number</td>
+</tr>
+<tr class="field"><th class="field-name">parm[3]:</th><td class="field-body">nodes total number of nodes</td>
+</tr>
+<tr class="field"><th class="field-name">parm[4]:</th><td class="field-body">nsorc total number of source nodes
+(including transshipment nodes)</td>
+</tr>
+<tr class="field"><th class="field-name">parm[5]:</th><td class="field-body">nsink total number of sink nodes
+(including transshipment nodes)</td>
+</tr>
+<tr class="field"><th class="field-name">parm[6]:</th><td class="field-body">iarcs number of arc</td>
+</tr>
+<tr class="field"><th class="field-name">parm[7]:</th><td class="field-body">mincst minimum cost for arcs</td>
+</tr>
+<tr class="field"><th class="field-name">parm[8]:</th><td class="field-body">maxcst maximum cost for arcs</td>
+</tr>
+<tr class="field"><th class="field-name">parm[9]:</th><td class="field-body">itsup total supply</td>
+</tr>
+<tr class="field"><th class="field-name">parm[10]:</th><td class="field-body">ntsorc number of transshipment source nodes</td>
+</tr>
+<tr class="field"><th class="field-name">parm[11]:</th><td class="field-body">ntsink number of transshipment sink nodes</td>
+</tr>
+<tr class="field"><th class="field-name">parm[12]:</th><td class="field-body">iphic percentage of skeleton arcs to be given the
+maximum cost</td>
+</tr>
+<tr class="field"><th class="field-name">parm[13]:</th><td class="field-body">ipcap percentage of arcs to be capacitated</td>
+</tr>
+<tr class="field"><th class="field-name">parm[14]:</th><td class="field-body">mincap minimum upper bound for capacitated arcs</td>
+</tr>
+<tr class="field"><th class="field-name">parm[15]:</th><td class="field-body">maxcap maximum upper bound for capacitated arcs</td>
+</tr>
+</tbody>
+</table>
+</td>
 </tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<strong>0</strong> if the instance was successfully generated, nonzero otherwise</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::netgen graph 0 8 16 (12345678, 87654321, 20, 12, 8, 25, 5, 20, 300, 6, 5, 15, 100, 1, 30);
+0
 &gt;
 </pre>
 </div>
@@ -6752,14 +6874,121 @@ glp::gridgen graph v_rhs a_cap a_cost parameters
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">graph:</th><td class="field-body">pointer to the graph object</td>
+<tr class="field"><th class="field-name">graph:</th><td class="field-body"><p class="first">pointer to the graph object</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">v_rhs:</th><td class="field-body"><p class="first">oﬀset of the ﬁeld of type double in the vertex data block,
+to which the routine stores bi, the supply/demand value -
+if v_rhs &lt; 0, it is assumed bi = 0 for all nodes</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">a_cap:</th><td class="field-body"><p class="first">oﬀset of the ﬁeld of type double in the arc data block,
+to which the routine stores uij, the upper bound to the
+arc ﬂow (the arc capacity) - if a_cap &lt; 0,it is assumed
+uij = 1 for all arcs, value of DBL_MAX means an uncapacitated arc</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">a_cost:</th><td class="field-body"><p class="first">oﬀset of the ﬁeld of type double in the arc data block,
+to which the routine stores cij, the per-unit cost of the
+arc ﬂow - if a_cost &lt; 0, it is assumed cij = 0 for all arcs</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">parameters:</th><td class="field-body"><p class="first">tuple of exactly 14 integer numbers with the following meaning:</p>
+<table class="last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">parm[1]:</th><td class="field-body"><p class="first">two-ways arcs indicator:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">1:</th><td class="field-body">if links in both direction should be generated</td>
+</tr>
+<tr class="field"><th class="field-name">0:</th><td class="field-body">otherwise</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr class="field"><th class="field-name">parm[2]:</th><td class="field-body"><p class="first">random number seed (a positive integer)</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">parm[3]:</th><td class="field-body"><p class="first">number of nodes (the number of nodes generated might be
+slightly different to make the network a grid)</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">parm[4]:</th><td class="field-body"><p class="first">grid width</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">parm[5]:</th><td class="field-body"><p class="first">number of sources</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">parm[6]:</th><td class="field-body"><p class="first">number of sinks</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">parm[7]:</th><td class="field-body"><p class="first">average degree</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">parm[8]:</th><td class="field-body"><p class="first">total flow</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">parm[9]:</th><td class="field-body"><p class="first">distribution of arc costs:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">1:</th><td class="field-body">uniform</td>
+</tr>
+<tr class="field"><th class="field-name">2:</th><td class="field-body">exponential</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr class="field"><th class="field-name">parm[10]:</th><td class="field-body"><p class="first">lower bound for arc cost (uniform),
+100 lambda¸ (exponential)</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">parm[11]:</th><td class="field-body"><p class="first">upper bound for arc cost (uniform),
+not used (exponential)</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">parm[12]:</th><td class="field-body"><p class="first">distribution of arc capacities:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">1:</th><td class="field-body">uniform</td>
+</tr>
+<tr class="field"><th class="field-name">2:</th><td class="field-body">exponential</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr class="field"><th class="field-name">parm[13]:</th><td class="field-body"><p class="first">lower bound for arc capacity (uniform),
+100 lambda (exponential)</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">parm[14]:</th><td class="field-body"><p class="first last">upper bound for arc capacity (uniform),
+not used (exponential)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</td>
 </tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<strong>0</strong> if the instance was successfully generated, nonzero otherwise</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
+&gt; glp::gridgen graph 0 8 16 (1, 123, 20, 4, 7, 5, 3, 300, 1, 1, 5, 1, 5, 30);
+0
 &gt;
 </pre>
 </div>
@@ -6771,10 +7000,18 @@ glp::gridgen graph v_rhs a_cap a_cost parameters
 <p><strong>Synopsis</strong>:</p>
 <pre class="literal-block">
 glp::read_maxflow graph a_cap filename
-
-:graph: pointer to the graph object
 </pre>
 <p><strong>Parameters</strong>:</p>
+<blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">graph:</th><td class="field-body">pointer to the graph object</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Returns</strong>:</p>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">

@@ -4309,12 +4309,56 @@ Solve minimum cost flow problem with out-of-kilter algorithm
 **Parameters**:
 
   :graph: pointer to the graph object
+  :v_rhs: oﬀset of the ﬁeld of type double in the vertex data block,
+          to which the routine stores bi, the supply/demand value -
+          if v_rhs < 0, it is assumed bi = 0 for all nodes
+  :a_low: oﬀset of the ﬁeld of type double in the arc data block,
+          to which the routine stores lij, the lower bound to the
+          arc ﬂow - if a_low < 0, it is assumed lij = 0 for all arcs
+  :a_cap: oﬀset of the ﬁeld of type double in the arc data block,
+          to which the routine stores uij, the upper bound to the
+          arc ﬂow (the arc capacity) - if a_cap < 0,it is assumed
+          uij = 1 for all arcs, value of DBL_MAX means an uncapacitated arc
+  :a_cost: oﬀset of the ﬁeld of type double in the arc data block,
+           to which the routine stores cij, the per-unit cost of the
+           arc ﬂow - if a_cost < 0, it is assumed cij = 0 for all arcs
+  :a_x: oﬀset of the ﬁeld of type double in the arc data block,
+        to which the routine stores xij, the arc ﬂow found - if a_x < 0,
+        the arc ﬂow value is not stored
+  :v_pi: speciﬁes an oﬀset of the ﬁeld of type double in the vertex data block,
+         to which the routine stores πi, the node potential, which is the
+         Lagrange multiplier for the corresponding ﬂow conservation
+         equality constraint
+
+**Remark**:
+
+  Note that all solution components (the objective value, arc ﬂows, and
+  node potentials) computed by the routine are always integer-valued.
 
 **Returns**:
 
+  The function returns a tuple in the form **(code, obj)**, where
+  **code** is one of the following
+
+  :glp\:\:ok: optimal solution found
+  :glp\:\:enopfs: no (primal) feasible solution exists
+  :glp\:\:edata: unable to start the search, because some problem data are
+                 either not integer-valued or out of range; this code is also
+                 returned if the total supply, which is the sum of bi over all
+                 source nodes (nodes with bi > 0), exceeds INT_MAX
+  :glp\:\:erange: the search was prematurely terminated because of integer
+                  overflow
+  :glp\:\:efail: an error has been detected in the program logic -  if this
+                 code is returned for your problem instance, please report
+                 to <bug-glpk@gnu.org>
+
+  and **obj** is value of the objective function.
+
 **Example**::
 
-  > 
+  > glp::mincost_okalg graph 0 8 16 24 32 40;
+  (glp::ok, 15)
+  >
 
 Klingman's network problem generator
 ------------------------------------
@@ -4325,12 +4369,46 @@ Klingman's network problem generator
 **Parameters**:
 
   :graph: pointer to the graph object
+  :v_rhs: oﬀset of the ﬁeld of type double in the vertex data block,
+          to which the routine stores bi, the supply/demand value -
+          if v_rhs < 0, it is assumed bi = 0 for all nodes
+  :a_cap: oﬀset of the ﬁeld of type double in the arc data block,
+          to which the routine stores uij, the upper bound to the
+          arc ﬂow (the arc capacity) - if a_cap < 0,it is assumed
+          uij = 1 for all arcs, value of DBL_MAX means an uncapacitated arc
+  :a_cost: oﬀset of the ﬁeld of type double in the arc data block,
+           to which the routine stores cij, the per-unit cost of the
+           arc ﬂow - if a_cost < 0, it is assumed cij = 0 for all arcs
+  :parameters: tuple of exactly 15 integer numbers with the following meaning:
+
+               :parm[1]: iseed 8-digit positive random number seed
+               :parm[2]: nprob 8-digit problem id number
+               :parm[3]: nodes total number of nodes
+               :parm[4]: nsorc total number of source nodes
+                         (including transshipment nodes)
+               :parm[5]: nsink total number of sink nodes
+                         (including transshipment nodes)
+               :parm[6]: iarcs number of arc
+               :parm[7]: mincst minimum cost for arcs
+               :parm[8]: maxcst maximum cost for arcs
+               :parm[9]: itsup total supply
+               :parm[10]: ntsorc number of transshipment source nodes
+               :parm[11]: ntsink number of transshipment sink nodes
+               :parm[12]: iphic percentage of skeleton arcs to be given the
+                          maximum cost
+               :parm[13]: ipcap percentage of arcs to be capacitated
+               :parm[14]: mincap minimum upper bound for capacitated arcs
+               :parm[15]: maxcap maximum upper bound for capacitated arcs
 
 **Returns**:
 
+  **0** if the instance was successfully generated, nonzero otherwise
+
 **Example**::
 
-  > 
+  > glp::netgen graph 0 8 16 (12345678, 87654321, 20, 12, 8, 25, 5, 20, 300, 6, 5, 15, 100, 1, 30);
+  0
+  >
 
 Grid-like network problem generator
 -----------------------------------
@@ -4341,12 +4419,59 @@ Grid-like network problem generator
 **Parameters**:
 
   :graph: pointer to the graph object
+  :v_rhs: oﬀset of the ﬁeld of type double in the vertex data block,
+          to which the routine stores bi, the supply/demand value -
+          if v_rhs < 0, it is assumed bi = 0 for all nodes
+  :a_cap: oﬀset of the ﬁeld of type double in the arc data block,
+          to which the routine stores uij, the upper bound to the
+          arc ﬂow (the arc capacity) - if a_cap < 0,it is assumed
+          uij = 1 for all arcs, value of DBL_MAX means an uncapacitated arc
+  :a_cost: oﬀset of the ﬁeld of type double in the arc data block,
+           to which the routine stores cij, the per-unit cost of the
+           arc ﬂow - if a_cost < 0, it is assumed cij = 0 for all arcs
+  :parameters: tuple of exactly 14 integer numbers with the following meaning:
+
+              :parm[1]: two-ways arcs indicator:
+
+                        :1: if links in both direction should be generated
+                        :0: otherwise
+
+              :parm[2]: random number seed (a positive integer)
+              :parm[3]: number of nodes (the number of nodes generated might be
+                        slightly different to make the network a grid)
+              :parm[4]: grid width
+              :parm[5]: number of sources
+              :parm[6]: number of sinks
+              :parm[7]: average degree
+              :parm[8]: total flow
+              :parm[9]: distribution of arc costs:
+
+                        :1: uniform
+                        :2: exponential
+
+              :parm[10]: lower bound for arc cost (uniform),
+                         100 lambda¸ (exponential)
+              :parm[11]: upper bound for arc cost (uniform),
+                         not used (exponential)
+              :parm[12]: distribution of arc capacities:
+
+                         :1: uniform
+                         :2: exponential
+
+              :parm[13]: lower bound for arc capacity (uniform),
+                         100 lambda (exponential)
+              :parm[14]: upper bound for arc capacity (uniform),
+                         not used (exponential)
 
 **Returns**:
 
+  **0** if the instance was successfully generated, nonzero otherwise
+
 **Example**::
 
-  > 
+  > glp::gridgen graph 0 8 16 (1, 123, 20, 4, 7, 5, 3, 300, 1, 1, 5, 1, 5, 30);
+  0
+  >
 
 
 Maximum flow problem
@@ -4359,9 +4484,9 @@ Read maximum cost flow problem data in DIMACS format
 
   glp::read_maxflow graph a_cap filename
 
-  :graph: pointer to the graph object
-
 **Parameters**:
+
+  :graph: pointer to the graph object
 
 **Returns**:
 
