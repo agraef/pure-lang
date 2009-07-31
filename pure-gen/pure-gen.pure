@@ -71,31 +71,31 @@ end;
 /******************************************************************/
 
 // Haskell Maybe type constructor
-nullary Nothing;
+nonfix Nothing;
 
 // Language.C AST terminals
 // typedef storage spec, denotes typedefs
-nullary CTypedef;
+nonfix CTypedef;
 // const qualifier
-nullary CConstQual;
+nonfix CConstQual;
 // basic C types
-nullary CVoidType CCharType CShortType CIntType CLongType CFloatType
+nonfix CVoidType CCharType CShortType CIntType CLongType CFloatType
   CDoubleType CSignedType CUnsigType CBoolType;
 // struct/union types (these aren't used right now)
-nullary CStructTag CUnionTag;
+nonfix CStructTag CUnionTag;
 // constant expressions, we evaluate these
-nullary CPlusOp CMinOp CNegOp CAddOp CSubOp CMulOp CDivOp CRmdOp CShlOp
+nonfix CPlusOp CMinOp CNegOp CAddOp CSubOp CMulOp CDivOp CRmdOp CShlOp
   CShrOp CLeOp CGrOp CLeqOp CGeqOp CEqOp CNeqOp CAndOp COrOp CLndOp CLorOp
   CXorOp;
 
 // these mirror the ffi type values
-nullary unsupported_t void_t uint8_t sint8_t uint16_t sint16_t
+nonfix unsupported_t void_t uint8_t sint8_t uint16_t sint16_t
   uint32_t sint32_t uint64_t sint64_t
   uchar_t schar_t ushort_t sshort_t uint_t sint_t ulong_t slong_t
   float_t double_t longdouble_t pointer_t string_t;
 // special pure_expr and GSL matrix types
-nullary expr_t;
-nullary dmatrix_t cmatrix_t imatrix_t;
+nonfix expr_t;
+nonfix dmatrix_t cmatrix_t imatrix_t;
 
 // to_ffi_type does a preliminary conversion from Language.C types (types
 // specified in the C spec) to ffi types (real types on the machine.)
@@ -309,7 +309,7 @@ complete_ffi_type x =
    
   
 // exception value signifying an unknown or unrecognized C type
-nullary unknown_decl_type;
+nonfix unknown_decl_type;
 
 // The primitive type of a declaration. Returns an ffi type, with specifiers.
 // We do need to keep track of the const qualifier, to make the C compiler
@@ -650,7 +650,7 @@ check_string name val::string fname
 
 // Some constants are defined in terms of others.  Here we resolve those
 // indirections.
-nullary unknown_const;
+nonfix unknown_const;
 resolve_indirects constants =
   filter ((~==) unknown_const) $ map (lookup dict) constants 
   when
