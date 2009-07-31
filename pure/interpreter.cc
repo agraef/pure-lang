@@ -4,7 +4,9 @@
 #include <stdarg.h>
 #include <errno.h>
 #include <sys/types.h>
+#ifndef __MINGW32__
 #include <sys/wait.h>
+#endif
 #include <regex.h>
 #include <fnmatch.h>
 #include <glob.h>
