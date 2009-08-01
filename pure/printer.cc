@@ -162,6 +162,37 @@ ostream& operator << (ostream& os, const expr& x)
   return printx(os, x, false);
 }
 
+static ostream& printr(ostream& os, const rule& r, bool simple = false)
+{
+  if (!simple || !r.lhs.is_var() ||
+      interpreter::g_interp->symtab.sym(r.lhs.vtag()).s != "_") {
+    printx(os, r.lhs, true);
+    os << " = ";
+  }
+  os << r.rhs;
+  if (!r.qual.is_null()) os << " if " << paren(0, r.qual);
+  return os;
+}
+
+static ostream& printrl(ostream& os, const rulel& rl, bool simple = false)
+{
+  for (rulel::const_iterator it = rl.begin(); it != rl.end(); ) {
+    printr(os, *it, simple);
+    if (++it != rl.end()) os << "; ";
+  }
+  return os;
+}
+
+ostream& operator << (ostream& os, const rule& r)
+{
+  return printr(os, r);
+}
+
+ostream& operator << (ostream& os, const rulel& rl)
+{
+  return printrl(os, rl);
+}
+
 static inline ostream& print_ttag(ostream& os, int8_t ttag, bool pad = false)
 {
   if (pad) switch (ttag) {
@@ -467,7 +498,8 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
     return os;
   }
   case EXPR::WHEN:
-    os << x.xval() << " when " << *x.rules();
+    os << x.xval() << " when ";
+    printrl(os, *x.rules(), true);
     if ((interpreter::g_verbose&verbosity::code) && x.pm()) {
       size_t n = x.rules()->size();
       matcher *pm = x.pm();
@@ -501,22 +533,6 @@ ostream& operator << (ostream& os, const exprl& xl)
   for (exprl::const_iterator it = xl.begin(); it != xl.end(); ) {
     os << *it;
     if (++it != xl.end()) os << " ";
-  }
-  return os;
-}
-
-ostream& operator << (ostream& os, const rule& r)
-{
-  printx(os, r.lhs, true); os << " = " << r.rhs;
-  if (!r.qual.is_null()) os << " if " << paren(0, r.qual);
-  return os;
-}
-
-ostream& operator << (ostream& os, const rulel& rl)
-{
-  for (rulel::const_iterator it = rl.begin(); it != rl.end(); ) {
-    os << *it;
-    if (++it != rl.end()) os << "; ";
   }
   return os;
 }
