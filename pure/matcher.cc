@@ -5,7 +5,7 @@
 trans::trans(int32_t _tag, int8_t _ttag)
   : tag(_tag), st(new state), ttag(_ttag)
 {
-  assert(_tag == EXPR::VAR || _tag == EXPR::APP || _tag > 0);
+  //assert(_tag == EXPR::VAR || _tag == EXPR::APP || _tag > 0);
 }
 
 trans::trans(int32_t _tag, int32_t _i)
@@ -243,7 +243,7 @@ state *matcher::make_state(state *st, uint32_t r, expr x, uint32_t& skip)
     st->tr.push_back(trans(EXPR::STR, x.sval()));
     return st->tr.begin()->st;
   default:
-    assert(x.tag() > 0);
+    //assert(x.tag() > 0);
     st->tr.push_back(trans(x.tag()));
     return st->tr.begin()->st;
   }

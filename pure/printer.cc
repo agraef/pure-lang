@@ -613,11 +613,14 @@ ostream& operator << (ostream& os, const trans& tr)
     free(s);
     return os;
   }
-  default: {
-    assert(tr.tag > 0);
-    const symbol& sym = interpreter::g_interp->symtab.sym(tr.tag);
-    return os << "\t" << sym.s << " state " << tr.st->s << endl;
-  }
+  default:
+    if (tr.tag < 0)
+      return os << "\t<pointer> state " << tr.st->s << endl;
+    else {
+      assert(tr.tag > 0);
+      const symbol& sym = interpreter::g_interp->symtab.sym(tr.tag);
+      return os << "\t" << sym.s << " state " << tr.st->s << endl;
+    }
   }
 }
 

@@ -8254,13 +8254,12 @@ void interpreter::simple_match(Value *x, state*& s,
     break;
   }
   case EXPR::PTR:
-    assert(0 && "not implemented");
-    break;
   case EXPR::WRAP:
-    assert(0 && "not implemented");
-    break;
   case EXPR::MATRIX:
-    assert(0 && "not implemented");
+    //assert(0 && "not implemented");
+    // We silently fail on these.
+    f.builder.CreateBr(failedbb);
+    s = t.st;
     break;
   case EXPR::APP: {
     // first match the tag...
@@ -8556,7 +8555,13 @@ void interpreter::complex_match(matcher *pm, const list<Value*>& xs, state *s,
 	    break;
 	  }
 	  default:
-	    assert(0 && "not implemented");
+	    //assert(0 && "not implemented");
+	    // We silently let everything else fail.
+	    f.builder.CreateBr(trynextbb);
+	    f.f->getBasicBlockList().push_back(trynextbb);
+	    f.builder.SetInsertPoint(trynextbb);
+	    if (k == info.tlist.end())
+	      f.builder.CreateBr(retrybb);
 	    break;
 	  }
 	}
