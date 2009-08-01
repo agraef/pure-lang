@@ -669,7 +669,7 @@ Matrices: ``{1.0,2.0,3.0}``, ``{1,2;3,4}``, ``{1L,y+1;foo,bar}``
     More information about matrices and corresponding examples can be found in
     the Examples_ section below.
 
-Comprehensions: ``[x,y | x=1..n; y=1..m; x<y]``, ``{f i | i=1..n}``
+Comprehensions: ``[x,y | x=1..n; y=1..m; x<y]``, ``{f x | x=1..n}``
     Pure provides both list and matrix comprehensions as a convenient means to
     construct list and matrix values from a "template" expression and one or
     more "generator" and "filter" clauses. The former bind a pattern to values
@@ -809,11 +809,10 @@ short-circuit mode just like in C. Thus, e.g., ``x&&y`` immediately becomes
 false if ``x`` evaluates to false, without ever evaluating ``y``. Also note
 that ``&&`` and ``||`` only work with machine int arguments and always raise
 an exception in case of argument mismatch, so they cannot be used for symbolic
-evaluations unless you explicitly "quote" them using the ``quote`` primitive
-discussed below. In contrast, the bitwise connectives (``not``, ``and``,
-``or``) use the standard call-by-value argument passing, and the prelude
-defines these operations only for machine int and bigint operands, so that
-they can be used in symbolic expressions like ``a and b or c``.
+evaluations. In contrast, the bitwise connectives (``not``, ``and``, ``or``)
+use the standard call-by-value argument passing, and the prelude defines these
+operations only for machine int and bigint operands, so that they can be used
+in symbolic expressions like ``a and b or c``.
 
 The sequencing operator ``$$`` evaluates its left operand, immediately throws
 the result away and then goes on to evaluate the right operand which gives the
@@ -842,7 +841,7 @@ operation except function application. It turns its operand into a kind of
 parameterless anonymous closure, deferring its evaluation. These kinds of
 objects are also commonly known as `thunks` or `futures`. When the value of a
 future is actually needed (during pattern-matching, or when the value becomes
-an argument of a C call), it is evaluated automagically and gets memoized,
+an argument of a C call), it is evaluated automatically and gets memoized,
 i.e., the computed result replaces the thunk so that it only has to be
 computed once. Futures are useful to implement all kinds of lazy data
 structures in Pure, in particular: lazy lists a.k.a. streams. A `stream` is
@@ -852,11 +851,9 @@ objects; further details and examples can be found in the Examples_ section
 below.
 
 Last but not least, the special form ``quote`` quotes an expression, i.e.,
-``quote x`` returns just ``x`` itself without evaluating it. For convenience,
-the single quote ``'`` can be used as an alias for ``quote``, so instead of
-``quote x`` you can also write ``'x``. The prelude also provides a function
-``eval`` which can be used to evaluate a quoted expression at a later
-time. For instance::
+``quote x`` (or, equivalently, ``'x``) returns just ``x`` itself without
+evaluating it. The prelude also provides a function ``eval`` which can be used
+to evaluate a quoted expression at a later time. For instance::
 
   > let x = '(2*42+2^12); x;
   2*42+2^12
@@ -1055,9 +1052,9 @@ right-hand side expressions:
   equation.
 
 Note that, syntactically, both type tags and "as" patterns are primary
-expressions. Thus, if the subpattern of an "as" pattern is a compound
-expression, it must be parenthesized. For instance, the following function
-duplicates the head element of a list::
+expressions. If the subpattern of an "as" pattern is a compound expression, it
+must be parenthesized. For instance, the following function duplicates the
+head element of a list::
 
   foo xs@(x:_) = x:xs;
 
@@ -1333,12 +1330,13 @@ sequence, e.g.::
   [1,2,3,4,5,6,7,8,9,10,11]
   [-1.0,-1.2,-1.4,-1.6,-1.8,-2.0,-2.2,-2.4,-2.6,-2.8,-3.0]
 
-Other useful stream generator functions are ``iterate``, ``repeat`` and
-``cycle``, which have been adopted from Haskell. In fact, infinite arithmetic
-progressions are implemented in terms of ``iterate``. The ``repeat`` function
-just repeats its argument, and ``cycle`` cycles through the elements of the
+Other useful stream generator functions are ``iterate``, which keeps applying
+the same function over and over again, ``repeat``, which just repeats its
+argument forever, and ``cycle``, which cycles through the elements of the
 given list::
 
+  > iterate (*2) 1!!(0..10);
+  [1,2,4,8,16,32,64,128,256,512,1024]
   > repeat 1!!(0..10);
   [1,1,1,1,1,1,1,1,1,1,1]
   > cycle [0,1]!!(0..10);
@@ -1444,7 +1442,7 @@ preserved. For instance::
 Note that a matrix comprehension involving filters may fail because the
 filtered result isn't a rectangular matrix any more. E.g.,
 ``{2*x|x={1,2,3,-4};x>0}`` works, as does ``{2*x|x={-1,2;3,-4};x>0}``, but
-``{2*x|x={1,2;3,-4};x>0}`` looses because the rows of the result matrix have
+``{2*x|x={1,2;3,-4};x>0}`` doesn't because the rows of the result matrix have
 different lengths.
 
 As a slightly more comprehensive example (no pun intended!), here is a
@@ -1473,8 +1471,17 @@ Well, that was easy. So let's take a look at a more challenging example,
 Gaussian elimination, which can be used to solve systems of linear
 equations. The algorithm brings a matrix into "row echelon" form, a
 generalization of triangular matrices. The resulting system can then be solved
-quite easily using back substitution. Here is a Pure implementation of the
-algorithm::
+quite easily using back substitution.
+
+Here is a Pure implementation of the algorithm. Note that the real meat is in
+the pivoting and elimination step (``step`` function) which is iterated over
+all columns of the input matrix. In each step, ``x`` is the current matrix,
+``i`` the current row index, ``j`` the current column index, and ``p`` keeps
+track of the current permutation of the row indices performed during
+pivoting. The algorithm returns the updated matrix ``x``, row index ``i`` and
+row permutation ``p``.
+
+::
 
   gauss_elimination x::matrix = p,x
   when n,m = dim x; p,_,x = foldl step (0..n-1,0,x) (0..m-1) end;
@@ -1498,13 +1505,6 @@ algorithm::
     pivot i x       = foldl max (0,0) [j,abs (x!j)|j=i..#x-1];
     max (i,x) (j,y) = if x<y then j,y else i,x;
   end;
-
-The real meat is in the pivoting and elimination step (``step`` function)
-which is iterated over all columns of the input matrix. In each step, ``x`` is
-the current matrix, ``i`` the current row index, ``j`` the current column
-index, and ``p`` keeps track of the current permutation of the row indices
-performed during pivoting. The algorithm returns the updated matrix ``x``, row
-index ``i`` and row permutation ``p``.
 
 Please refer to any good textbook on numerical mathematics for a closer
 description of the algorithm. But here is a brief rundown of what happens in
@@ -1530,7 +1530,7 @@ Finally, let us define a convenient print representation of double matrices a
 la Octave_ (the meaning of the ``__show__`` function is explained in the
 `Caveats and Notes`_ section)::
 
- using system;
+  using system;
   __show__ x::matrix
   = strcat [printd j (x!(i,j))|i=0..n-1; j=0..m-1] + "\n"
   with printd 0 = sprintf "\n%10.5f"; printd _ = sprintf "%10.5f" end
@@ -1598,7 +1598,7 @@ application operator::
 
 Like in Haskell, this low-priority operator is handy to write cascading
 function calls. With the above macro rule, these will be "inlined" as ordinary
-function applications automagically. Example::
+function applications automatically. Example::
 
   > foo x = bar $ bar $ 2*x;
   > show foo
@@ -1825,14 +1825,15 @@ function you want to trace.
 Macro Hygiene
 -------------
 
-Pure macros are lexically scoped, i.e., symbols on the right-hand-side of a
-macro definition can never refer to anything outside the macro definition, and
-macro parameter substitution also takes into account binding constructs, such
-as ``with`` and ``when`` clauses, in the right-hand side of the
-definition. Macro facilities with these pleasant properties are also known as
-`hygienic macros`. They are not susceptible to so-called "name capture," which
-makes macros in less sophisticated languages bug-ridden and hard to use. (This
-is explained in more detail in the `Hygienic Macros`_ section.)
+Pure macros are lexically scoped, i.e., the binding of symbols in the
+right-hand-side of a macro definition is determined statically by the text of
+the definition, and macro parameter substitution also takes into account
+binding constructs, such as ``with`` and ``when`` clauses, in the right-hand
+side of the definition. Macro facilities with these pleasant properties are
+also known as `hygienic macros`. They are not susceptible to so-called "name
+capture," which makes macros in less sophisticated languages bug-ridden and
+hard to use. (This is explained in more detail in the `Hygienic Macros`_
+section.)
 
 Pure macros also have their limitations. Specifically, the left-hand side of a
 macro rule must be a simple expression, just like in ordinary function
@@ -1931,10 +1932,10 @@ Constant symbol declarations: ``nonfix symbol ...;``
       > map foo [red,green,blue];
       [green,blue,red]
 
-    Thus, on the syntactic level, nonfix symbols are pretty much like nullary
-    constructor symbols in languages like Haskell. However, Pure doesn't
-    enforce that such values are really "constant", so you can still write a
-    "constructor equation" like the following::
+    Thus nonfix symbols are pretty much like nullary constructor symbols in
+    languages like Haskell. Non-fixity is just a syntactic attribute,
+    however. Pure doesn't enforce that such values are really "constant", so
+    you can still write a "constructor equation" like the following::
 
       > red = blue;
       > map foo [red,green,blue];
@@ -2588,7 +2589,8 @@ operations which, besides the usual arithmetic and logical operators, are
 probably used most frequently:
 
 ``x+y``
-    This is also used to denote list and string concatenation.
+    The arithmetic ``+`` operation is also used to denote list and string
+    concatenation in Pure.
 
 ``x:y``
     This is the list-consing operation. ``x`` becomes the head of the list,
@@ -2599,7 +2601,7 @@ probably used most frequently:
     Constructs arithmetic sequences. ``x:y..z`` can be used to denote
     sequences with arbitrary stepsize ``y-x``. Infinite sequences can be
     constructed using an infinite bound (i.e., ``inf`` or ``-inf``). E.g.,
-    ``1:3..inf`` denotes the stream of all positive odd (machine) integers.
+    ``1:3..inf`` denotes the stream of all odd integers starting at 1.
 
 ``x,y``
     This is the pair constructor, used to create tuples of arbitrary
@@ -2639,7 +2641,7 @@ matrix comprehensions, as well as the customary list operations like ``head``,
 ``scanl``, ``scanr``, ``zip``, ``unzip``, etc., which make list programming so
 much fun in modern FPLs. In Pure, these also work on strings as well as
 matrices, although, for reasons of efficiency, these data structures are
-internally represented as different kinds of array data structures.
+internally represented as arrays.
 
 Besides the prelude, Pure's standard library also comprises a growing number
 of additional library modules which we can only mention in passing here. In
@@ -3415,9 +3417,9 @@ Purity
 
 People keep asking me what's so "pure" about Pure. The long and apologetic
 answer is that at its core, Pure is in fact purely algebraic and purely
-functional. Pure doesn't get in your way if you want to call external
-operations with side effects (it does allow you to call any C function after
-all), but with a few exceptions the standard library operations are free of
+functional. However, Pure doesn't get in your way if you want to call external
+operations with side effects; it does allow you to call any C function after
+all. But with a few exceptions the standard library operations are free of
 those. Just stay away from operations marked "IMPURE" in the library sources
 (most notably, ``eval``, ``catch``/``throw``, references, sentries and direct
 pointer manipulations) and avoid the system module, then your program will
@@ -3460,6 +3462,11 @@ Pure 0.26 extended the namespaces feature to add support for hierarchical
 namespaces. This means that name lookup works in a slightly different fashion
 now (see `Hierarchical Namespaces`_ for details), but old code which doesn't
 use the new feature should continue to work unchanged.
+
+Pure 0.26 also changed the ``nullary`` keyword to ``nonfix``, which is more
+consistent with the other kinds of fixity declarations. The ``nullary``
+keyword is still supported for now, but the compiler will flag it as
+deprecated and it will go in a future version.
 
 Error Recovery
 --------------
@@ -3697,7 +3704,7 @@ creating an executable, except that it uses llvm-g++ to do the linking.
 
 If your script loads dynamic libraries (``using "lib:...";``) then you'll also
 have to link with those; *all* external references have to be resolved at
-compile time. This is taken care of automagically when creating
+compile time. This is taken care of automatically when creating
 executables. Otherwise it is a good idea to run ``pure -c`` with the
 ``-v0100`` verbosity option so that it prints the libraries to be linked (in
 addition to the command used to invoke llvmc)::
@@ -3940,7 +3947,7 @@ necessary because in Pure it is impossible to distinguish local variables from
 unqualified function symbols at the lexical level, and thus all undeclared and
 unqualified identifiers are implicitly declared in the default
 namespace. Thus, if you really want the ``foo`` symbol to become a member of
-the ``bar`` namespace, you must either declare it explicitly or use a
+the ``bar`` namespace, you *must* either declare it explicitly or use a
 qualified identifier. That is, you have to write either::
 
   namespace bar;
@@ -4037,7 +4044,7 @@ time. E.g., compare the above with the following macro definition::
   > show foo
   foo x = 2*(4*atan 1.0)*x;
 
-The LLVM backend also eliminates dead code automagically, which enables you to
+The LLVM backend also eliminates dead code automatically, which enables you to
 employ a constant computed at runtime to configure your code for different
 environments, without any runtime penalties::
 
@@ -4093,9 +4100,9 @@ will not work as expected::
 
 This is the same kind of pitfall as discussed in the context of the ``foop``
 predicate in `Head = Function`_ above. As a remedy, Pure allows you to declare
-a ``const`` symbol as ``nonfix`` and have it behave as a nonfix symbol also on
-the *left-hand side* of a rule. To these ends, the value of the symbol will
-then be substituted for its occurrences in a pattern::
+an existing ``const`` symbol as ``nonfix`` and have it behave as a nonfix
+symbol also on the *left-hand side* of a rule. To these ends, the value of the
+symbol will then be substituted for its occurrences in a pattern::
 
   > nonfix zero one;
   > bar x = case x of one = "one"; zero = "zero"; _ = "???" end;
@@ -4526,7 +4533,9 @@ Alice ML
 
 Bertrand
     Wm Leler's constraint programming language based on term rewriting,
-    http://groups.google.com/group/bertrand-constraint.
+    http://groups.google.com/group/bertrand-constraint. See Wm Leler:
+    Constraint Programming Languages: Their Specification and Generation.
+    Addison-Wesley, 1988.
 
 .. _GNU Multiprecision Library:
 .. _GMP:
