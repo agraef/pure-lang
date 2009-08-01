@@ -142,6 +142,7 @@ blank  [ \t\f\v\r]
 <comment>"*"+[^*/\n]*   yylloc->step();
 <comment>[\n]+          yylloc->lines(yyleng); yylloc->step();
 <comment>"*"+"/"        yylloc->step(); BEGIN(INITIAL);
+<comment><<EOF>>	interp.error(*yylloc, "open comment at end of file"); BEGIN(INITIAL);
 
 <xdecl>extern     return token::EXTERN;
 <xdecl>infix      yylval->fix = infix; return token::FIX;
@@ -184,6 +185,7 @@ blank  [ \t\f\v\r]
 <xdecl_comment>"*"+[^*/\n]*   yylloc->step();
 <xdecl_comment>[\n]+          yylloc->lines(yyleng); yylloc->step();
 <xdecl_comment>"*"+"/"        yylloc->step(); BEGIN(xdecl);
+<xdecl_comment><<EOF>>        interp.error(*yylloc, "open comment at end of file"); BEGIN(xdecl);
 
 <xusing>extern     return token::EXTERN;
 <xusing>infix      yylval->fix = infix; return token::FIX;
@@ -240,6 +242,7 @@ blank  [ \t\f\v\r]
 <xusing_comment>"*"+[^*/\n]*   yylloc->step();
 <xusing_comment>[\n]+          yylloc->lines(yyleng); yylloc->step();
 <xusing_comment>"*"+"/"        yylloc->step(); BEGIN(xusing);
+<xusing_comment><<EOF>>        interp.error(*yylloc, "open comment at end of file"); BEGIN(xusing);
 
 ^{cmd} {
   /* These are treated as commands in interactive mode, and as ordinary
