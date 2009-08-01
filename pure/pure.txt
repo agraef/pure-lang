@@ -669,17 +669,17 @@ Matrices: ``{1.0,2.0,3.0}``, ``{1,2;3,4}``, ``{1L,y+1;foo,bar}``
     More information about matrices and corresponding examples can be found in
     the Examples_ section below.
 
-Comprehensions: ``[x,y | x=1..n; y=1..m; x<y]``, ``{i~=j | i=1..n; j=1..m}``
-    Pure provides the usual comprehension syntax as a convenient means to
-    construct both list and matrix values from a "template" expression and
-    one or more "generator" and "filter" clauses. The former bind a
-    pattern to values drawn from a list or matrix, the latter are just
-    predicates determining which generated elements should actually be added
-    to the result. Both list and matrix comprehensions are in fact syntactic
-    sugar for a combination of nested lambdas, conditional expressions and
-    "catmaps" (a collection of operations which combine list or matrix
-    construction and mapping a function over a list or matrix, defined in the
-    prelude), but they are often much easier to write.
+Comprehensions: ``[x,y | x=1..n; y=1..m; x<y]``, ``{f i | i=1..n}``
+    Pure provides both list and matrix comprehensions as a convenient means to
+    construct list and matrix values from a "template" expression and one or
+    more "generator" and "filter" clauses. The former bind a pattern to values
+    drawn from a list or matrix, the latter are just predicates determining
+    which generated elements should actually be added to the result. Both list
+    and matrix comprehensions are in fact syntactic sugar for a combination of
+    nested lambdas, conditional expressions and "catmaps" (a collection of
+    operations which combine list or matrix construction and mapping a
+    function over a list or matrix, defined in the prelude), but they are
+    often much easier to write.
 
     Matrix comprehensions work pretty much like list comprehensions, but
     produce matrices instead of lists. List generators in matrix
@@ -719,15 +719,17 @@ Function and operator applications: ``foo x y z``, ``-x``, ``x+y``, ``(+x)``
 
 Conditional expressions: ``if x then y else z``
     Evaluates to ``y`` or ``z`` depending on whether ``x`` is "true" (i.e., a
-    nonzero integer). An exception is generated if the condition is not an
+    nonzero integer). An exception is raised if the condition is not an
     integer.
 
 Lambdas: ``\x -> y``
-    These work pretty much like in Haskell. More than one variable may be
-    bound (e.g, ``\x y -> x*y``), which is equivalent to a nested lambda
-    (``\x -> \y -> x*y``). Pure also fully supports pattern-matching lambda
-    abstractions which match a pattern against the lambda argument and bind
-    multiple lambda variables in one go, such as ``\(x,y) -> x*y``.
+    These denote anonymous functions and work pretty much like in Haskell.
+    More than one variable may be bound (e.g, ``\x y -> x*y``), which is
+    equivalent to a nested lambda (``\x -> \y -> x*y``). Pure also supports
+    pattern-matching lambda abstractions which match a pattern against the
+    lambda argument and bind multiple lambda variables in one go, such as
+    ``\(x,y) -> x*y``. An exception is raised if the actual lambda argument
+    doesn't match the pattern.
 
 Case expressions: ``case x of rule; ... end``
     Matches an expression, discriminating over a number of different cases,
@@ -735,18 +737,18 @@ Case expressions: ``case x of rule; ... end``
     turn against each left-hand side pattern in the rule list, and the first
     pattern which matches ``x`` gives the value of the entire expression, by
     evaluating the corresponding right-hand side with the variables in the
-    pattern bound to their corresponding values.
+    pattern bound to their corresponding values. An exception is raised if the
+    target expression doesn't match any of the patterns.
 
 When expressions: ``x when rule; ... end``
     An alternative way to bind local variables by matching a collection of
-    subject terms against corresponding patterns. Similar to Aardappel_'s
+    subject terms against corresponding patterns, similar to Aardappel_'s
     ``when`` construct. A single binding such as ``x when u = v end`` is
     equivalent to ``case v of u = x end``, but the former is often more
-    convenient to write. In difference to Aardappel, Pure also allows multiple
-    definitions in a single when clause, which are processed from left to
-    right, so that later definitions may refer to the variables in earlier
-    ones. In fact, a ``when`` expression with multiple definitions is treated
-    like several nested ``when`` expressions, with the first binding being the
+    convenient to write. A ``when`` clause may contain multiple definitions,
+    which are processed from left to right, so that later definitions may
+    refer to the variables in earlier ones. This is exactly the same as
+    several nested single definitions, with the first binding being the
     "outermost" one.
 
 With expressions: ``x with rule; ... end``
@@ -754,7 +756,8 @@ With expressions: ``x with rule; ... end``
     used anywhere inside an expression (just like Aardappel's ``where``, but
     Pure uses the keyword ``with`` which better lines up with ``case`` and
     ``when``). Several functions can be defined in a single ``with`` clause,
-    and the definitions may consist of as many equations as you want.
+    and the definitions can be mutually recursive and consist of as many
+    equations as you want.
 
 Operators and Precedence
 ------------------------
