@@ -1815,7 +1815,7 @@ void interpreter::declare(bool priv, prec_t prec, fix_t fix, list<string> *ids)
 	   actually permits a 'nonfix' redeclaration of *any* symbol unless
 	   it's already been declared as an operator, but this is actually
 	   only useful with 'const' symbols. */
-	if (fix == nonfix && sym->fix != outfix && sym->prec == 10)
+	if (fix == nonfix && sym->fix != outfix && sym->prec == PREC_MAX)
 	  sym->fix = nonfix;
 	else {
 	  delete ids;
@@ -1975,7 +1975,7 @@ void interpreter::clear(int32_t f)
       // get rid of temporary 'nonfix' designation of variable and constant
       // symbols
       if ((it->second.t == env_info::cvar || it->second.t == env_info::fvar) &&
-	  sym.prec == 10 && sym.fix == nonfix)
+	  sym.prec == PREC_MAX && sym.fix == nonfix)
 	sym.fix = infix;
       globenv.erase(it);
       clearsym(f);
@@ -1989,7 +1989,7 @@ void interpreter::clear(int32_t f)
       if (info.temp >= temp) {
 	symbol& sym = symtab.sym(f);
 	if ((info.t == env_info::cvar || info.t == env_info::fvar) &&
-	    sym.prec == 10 && sym.fix == nonfix)
+	    sym.prec == PREC_MAX && sym.fix == nonfix)
 	  sym.fix = infix;
 	globenv.erase(jt);
 	clearsym(f);
@@ -2320,7 +2320,7 @@ expr interpreter::bind(env& vars, expr x, bool b, path p)
     const symbol& sym = symtab.sym(x.tag());
     if ((!qual && (x.flags()&EXPR::QUAL)) ||
 	(sym.s != "_" &&
-	 (sym.prec < 10 || sym.fix == nonfix || sym.fix == outfix ||
+	 (sym.prec < PREC_MAX || sym.fix == nonfix || sym.fix == outfix ||
 	  (p.len() == 0 && !b) || (p.len() > 0 && p.last() == 0)))) {
       // constant or constructor
       if (x.ttag() != 0)
@@ -2342,7 +2342,7 @@ expr interpreter::bind(env& vars, expr x, bool b, path p)
     const symbol& sym = symtab.sym(x.astag());
     if (sym.s != "_") {
       if ((!qual && (x.flags()&EXPR::ASQUAL)) ||
-	  sym.prec < 10 || sym.fix == nonfix || sym.fix == outfix)
+	  sym.prec < PREC_MAX || sym.fix == nonfix || sym.fix == outfix)
 	throw err("error in  \"as\" pattern (bad variable symbol)");
       // Unless we're doing a pattern binding, subterms at the spine of a
       // function application won't be available at runtime, so we forbid
@@ -2547,7 +2547,7 @@ expr interpreter::subst(const env& vars, expr x, uint8_t idx)
     assert(x.tag() > 0);
     const symbol& sym = symtab.sym(x.tag());
     env::const_iterator it = vars.find(sym.f);
-    if (sym.prec < 10 || sym.fix == nonfix || sym.fix == outfix ||
+    if (sym.prec < PREC_MAX || sym.fix == nonfix || sym.fix == outfix ||
 	it == vars.end() || (!qual && (x.flags()&EXPR::QUAL))) {
       // not a bound variable
       if (x.ttag() != 0)
@@ -3381,7 +3381,7 @@ expr *interpreter::mksym_expr(string *s, int8_t tag)
       x->flags() |= EXPR::QUAL;
     } else
       x = new expr(sym.x);
-  else if (sym.f <= 0 || sym.prec < 10 ||
+  else if (sym.f <= 0 || sym.prec < PREC_MAX ||
 	   sym.fix == nonfix || sym.fix == outfix)
     throw err("error in expression (misplaced type tag)");
   else {
@@ -3397,7 +3397,7 @@ expr *interpreter::mksym_expr(string *s, int8_t tag)
 expr *interpreter::mkas_expr(string *s, expr *x)
 {
   const symbol &sym = symtab.checksym(*s);
-  if (sym.f <= 0 || sym.prec < 10 || sym.fix == nonfix || sym.fix == outfix)
+  if (sym.f <= 0 || sym.prec < PREC_MAX || sym.fix == nonfix || sym.fix == outfix)
     throw err("error in  \"as\" pattern (bad variable symbol)");
   if (x->tag() > 0) {
     // Avoid globbering cached function symbols.
@@ -3668,7 +3668,7 @@ const char *interpreter::mkvarlabel(int32_t tag)
   assert(tag > 0);
   const symbol& sym = symtab.sym(tag);
   string lab;
-  if (sym.prec < 10 || sym.fix == nonfix || sym.fix == outfix)
+  if (sym.prec < PREC_MAX || sym.fix == nonfix || sym.fix == outfix)
     if (sym.fix == outfix && sym.g)
       lab = "$("+sym.s+" "+symtab.sym(sym.g).s+")";
     else
@@ -7932,7 +7932,7 @@ Function *interpreter::fun_prolog(string name)
 	// anonymous and private functions and operators use internal linkage,
 	// too:
 	f.tag == 0 || symtab.sym(f.tag).priv ||
-	symtab.sym(f.tag).prec < 10 || symtab.sym(f.tag).fix == outfix)
+	symtab.sym(f.tag).prec < PREC_MAX || symtab.sym(f.tag).fix == outfix)
       scope = Function::InternalLinkage;
 #if USE_FASTCC
     if (!is_init(name)) cc = CallingConv::Fast;
@@ -7940,7 +7940,7 @@ Function *interpreter::fun_prolog(string name)
     string pure_name = name;
     /* Mangle operator names. */
     if (f.tag > 0 &&
-	(symtab.sym(f.tag).prec < 10 || symtab.sym(f.tag).fix == outfix))
+	(symtab.sym(f.tag).prec < PREC_MAX || symtab.sym(f.tag).fix == outfix))
       pure_name = "("+pure_name+")";
     /* Mangle the name of the C-callable wrapper if it's private, or would
        shadow another C function. */

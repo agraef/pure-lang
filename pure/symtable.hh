@@ -23,13 +23,10 @@ public:
   prec_t prec; // precedence level
   fix_t fix; // fixity
   bool priv; // private attribute
-  symbol() : // constructor for dummy entries
-    f(0), g(0), s(""), prec(10), fix(infix), priv(false) { }
-  symbol(const string& _s, int _f, bool _priv = false) :
-    f(_f), g(0), s(_s), prec(10), fix(infix), priv(_priv) { x = expr(f); }
+  symbol();
+  symbol(const string& _s, int _f, bool _priv = false);
   symbol(const string& _s, int _f, prec_t _prec, fix_t _fix,
-	 bool _priv = false) :
-    f(_f), g(0), s(_s), prec(_prec), fix(_fix), priv(_priv) { x = expr(f); }
+	 bool _priv = false);
 };
 
 /* Symbol table. */

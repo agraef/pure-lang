@@ -1,7 +1,25 @@
 
 #include "symtable.hh"
+#include "runtime.h"
 #include "util.hh"
 #include <assert.h>
+
+symbol::symbol() // constructor for dummy entries
+  : f(0), g(0), s(""), prec(PREC_MAX), fix(infix), priv(false)
+{
+}
+
+symbol::symbol(const string& _s, int _f, bool _priv)
+  : f(_f), g(0), s(_s), prec(PREC_MAX), fix(infix), priv(_priv)
+{
+  x = expr(f);
+}
+
+symbol::symbol(const string& _s, int _f, prec_t _prec, fix_t _fix, bool _priv)
+  : f(_f), g(0), s(_s), prec(_prec), fix(_fix), priv(_priv)
+{
+  x = expr(f);
+}
 
 symtable::symtable()
   : fno(0), rtab(1024),
@@ -203,7 +221,7 @@ symbol* symtable::sym_p(const char *s, symbol*& cache,
 			prec_t prec, fix_t fix, bool priv)
 {
   if (cache) return cache;
-  assert(prec <= 10);
+  assert(prec <= PREC_MAX);
   symbol *_sym = lookup_p(s, cache);
   if (_sym)
     return _sym;
@@ -289,7 +307,7 @@ symbol* symtable::sym(const char *s, bool priv)
 
 symbol* symtable::sym(const char *s, prec_t prec, fix_t fix, bool priv)
 {
-  assert(prec <= 10);
+  assert(prec <= PREC_MAX);
   symbol *_sym = lookup(s);
   if (_sym)
     return _sym;
@@ -346,7 +364,7 @@ symbol& symtable::nil_sym()
   if (__nil_sym)
     return *__nil_sym;
   else
-    return *sym_p("[]", __nil_sym, 10, nonfix);
+    return *sym_p("[]", __nil_sym, PREC_MAX, nonfix);
 }
 
 symbol& symtable::cons_sym()
@@ -364,7 +382,7 @@ symbol& symtable::void_sym()
   if (__void_sym)
     return *__void_sym;
   else
-    return *sym_p("()", __void_sym, 10, nonfix);
+    return *sym_p("()", __void_sym, PREC_MAX, nonfix);
 }
 
 symbol& symtable::pair_sym()

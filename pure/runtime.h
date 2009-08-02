@@ -108,10 +108,7 @@ typedef struct _pure_mem {
    Given the (positive) symbol number, pure_sym_pname returns its print name
    and pure_sym_nprec its "normalized" precedence. The latter is a small
    integer value defined as nprec = 10*prec+fix, where prec is the precedence
-   level of the symbol and fix its fixity. For operators, the combined value
-   ranges from 0 (weakest infix operator on level 0) to 94 (strongest postfix
-   operator on level 9). Applications have nprec=95, ordinary function and
-   variable symbols nprec=100. */
+   level of the symbol and fix its fixity. */
 
 /* Fixity values. */
 #define OP_INFIX   0
@@ -120,6 +117,10 @@ typedef struct _pure_mem {
 #define OP_PREFIX  3
 #define OP_POSTFIX 4
 #define OP_NULLARY 5
+
+/* Maximum precedence. */
+#define PREC_MAX 10
+#define NPREC_MAX 100
 
 int32_t pure_sym(const char *s);
 int32_t pure_getsym(const char *s);
@@ -993,10 +994,11 @@ int nargs(const pure_expr *x);
 /* Determine the arity and fixity of an operator symbol. arity is 0, 1 or 2
    for nullary, unary and binary symbols, respectively, -1 for symbols without
    a fixity declaration or other kinds of objects. fixity is encoded as a
-   2-digit number 10n+m where n is the precedence level (ranging from 0 to 10,
-   10 denotes the precedence of primary expressions) and m indicates the
-   actual fixity (0 = infix, 1 = infixl, 2 = infixr, 3 = prefix, 4 =
-   postfix). For non-symbol objects, fixity is always 100. */
+   2-digit number 10n+m where n is the precedence level (ranging from 0 to
+   PREC_MAX; PREC_MAX denotes the precedence of primary expressions) and m
+   indicates the actual fixity (0 = infix, 1 = infixl, 2 = infixr, 3 = prefix,
+   4 = postfix). For non-symbol objects, fixity is always NPREC_MAX =
+   10*PREC_MAX. */
 
 int arity(const pure_expr *x);
 int fixity(const pure_expr *x);

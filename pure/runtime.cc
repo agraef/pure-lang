@@ -698,7 +698,7 @@ pure_expr *pure_symbol(int32_t tag)
     // The variable doesn't exist yet (we have a new symbol), create it.
     string lab;
     // Create a name for the variable (cf. interpreter::mkvarlabel).
-    if (sym.prec < 10 || sym.fix == nonfix || sym.fix == outfix)
+    if (sym.prec < PREC_MAX || sym.fix == nonfix || sym.fix == outfix)
       if (sym.fix == outfix && sym.g)
 	lab = "$("+sym.s+" "+interp.symtab.sym(sym.g).s+")";
       else
@@ -8068,7 +8068,7 @@ int32_t arity(const pure_expr *x)
 {
   if (x->tag > 0) {
     symbol& sym = interpreter::g_interp->symtab.sym(x->tag);
-    if (sym.prec < 10)
+    if (sym.prec < PREC_MAX)
       if (sym.fix == prefix || sym.fix == postfix)
 	return 1;
       else
@@ -8090,7 +8090,7 @@ int32_t fixity(const pure_expr *x)
     symbol& sym = interpreter::g_interp->symtab.sym(x->tag);
     return nprec(sym.prec, sym.fix);
   } else
-    return 10;
+    return NPREC_MAX;
 }
 
 extern "C"

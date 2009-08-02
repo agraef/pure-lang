@@ -15,23 +15,24 @@ using namespace std;
 /* Pure expression data structure and related stuff. */
 
 /* Symbol precedences and fixity. Standard precedence levels of simple
-   expressions are 0..9 (weakest to strongest), inside each level infix
-   (non-associative) operators have the lowest (0), postfix operators the
-   highest (4) precedence.
+   expressions are 0..PREC_MAX-1 (weakest to strongest, PREC_MAX is defined in
+   runtime.h), inside each level infix (non-associative) operators have the
+   lowest (0), postfix operators the highest (4) precedence.
 
    These are reconciled into a single figure, "normalized precedence" nprec =
    10*prec+fixity, which ranges from 0 (weakest infix operator on level 0) to
-   94 (strongest postfix operator on level 9).
+   10*PREC_MAX+4 (strongest postfix operator on the highest level).
 
    This scheme is extended to other syntactic constructions in expressions as
-   follows. Primary expressions have nprec = 100, applications 95 (above all
-   operators, but below the primaries), lambda -30, case/when/with -20, and
-   if-then-else -10 (the latter all bind weaker than any other operator).
+   follows. Primary expressions have nprec = NPREC_MAX = 10*PREC_MAX,
+   applications NPREC_MAX-5 (above all operators, but below the primaries),
+   lambda -30, case/when/with -20, and if-then-else -10 (the latter all bind
+   weaker than any other operator).
 
    As a special case of primary expressions, a symbol may also have the
    special 'nonfix' and 'outfix' fixity values, indicating a constant symbol
-   and user-defined brackets, respectively (with nprec = 100, just like any
-   other primary expression). */
+   and user-defined brackets, respectively (with nprec = NPREC_MAX, just like
+   any other primary expression). */
 
 typedef int8_t prec_t;
 // Don't change the order of these constants, some code depends on it!

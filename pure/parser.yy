@@ -298,10 +298,10 @@ item
    symbols (interp.declare_op = true) instead of searching for existing ones
    in the symbol table. */
 { if ($1->special && $1->fix != nonfix && $1->fix != outfix &&
-      $1->prec > 9) {
-    error(yylloc, "invalid fixity declaration"); $1->prec = 9;
+      $1->prec >= PREC_MAX) {
+    error(yylloc, "invalid fixity declaration"); $1->prec = 0;
   }
-  if ($1->fix == nonfix || $1->fix == outfix || $1->prec < 10)
+  if ($1->fix == nonfix || $1->fix == outfix || $1->prec < PREC_MAX)
     interp.declare_op = true; }
   ids
 { interp.declare_op = false;
@@ -334,16 +334,16 @@ item
 
 fixity
 : FIX INT		{ $$ = new sym_info(true, false,$2,$1); }
-| OUTFIX		{ $$ = new sym_info(true, false,10,outfix); }
-| NONFIX		{ $$ = new sym_info(true, false,10,nonfix); }
+| OUTFIX		{ $$ = new sym_info(true, false,PREC_MAX,outfix); }
+| NONFIX		{ $$ = new sym_info(true, false,PREC_MAX,nonfix); }
 | PUBLIC FIX INT	{ $$ = new sym_info(true, false,$3,$2); }
-| PUBLIC OUTFIX		{ $$ = new sym_info(true, false,10,outfix); }
-| PUBLIC NONFIX		{ $$ = new sym_info(true, false,10,nonfix); }
-| PUBLIC		{ $$ = new sym_info(false, false,10,infix); }
+| PUBLIC OUTFIX		{ $$ = new sym_info(true, false,PREC_MAX,outfix); }
+| PUBLIC NONFIX		{ $$ = new sym_info(true, false,PREC_MAX,nonfix); }
+| PUBLIC		{ $$ = new sym_info(false, false,PREC_MAX,infix); }
 | PRIVATE FIX INT	{ $$ = new sym_info(true, true,$3,$2); }
-| PRIVATE OUTFIX	{ $$ = new sym_info(true, true,10,outfix); }
-| PRIVATE NONFIX	{ $$ = new sym_info(true, true,10,nonfix); }
-| PRIVATE		{ $$ = new sym_info(false, true,10,infix); }
+| PRIVATE OUTFIX	{ $$ = new sym_info(true, true,PREC_MAX,outfix); }
+| PRIVATE NONFIX	{ $$ = new sym_info(true, true,PREC_MAX,nonfix); }
+| PRIVATE		{ $$ = new sym_info(false, true,PREC_MAX,infix); }
 ;
 
 ids

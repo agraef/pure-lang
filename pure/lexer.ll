@@ -72,7 +72,7 @@ static void check(const yy::location& l, const char* s, bool decl);
 
 typedef yy::parser::token token;
 
-static yy::parser::token_type optoken[10][5] = {
+static yy::parser::token_type optoken[PREC_MAX][5] = {
   {token::NA0, token::LT0, token::RT0, token::PR0, token::PO0},
   {token::NA1, token::LT1, token::RT1, token::PR1, token::PO1},
   {token::NA2, token::LT2, token::RT2, token::PR2, token::PO2},
@@ -369,7 +369,7 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     return token::ID;
   }
   symbol* sym = interp.symtab.lookup(yytext);
-  if (sym && ((sym->prec >= 0 && sym->prec < 10) || sym->fix == outfix)) {
+  if (sym && ((sym->prec >= 0 && sym->prec < PREC_MAX) || sym->fix == outfix)) {
     if (strstr(yytext, "::")) {
       // Return a new qualified instance here.
       yylval->xval = new expr(sym->f);
@@ -400,7 +400,7 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     return token::ID;
   }
   symbol* sym = interp.symtab.lookup(yytext);
-  if (sym && ((sym->prec >= 0 && sym->prec < 10) || sym->fix == outfix)) {
+  if (sym && ((sym->prec >= 0 && sym->prec < PREC_MAX) || sym->fix == outfix)) {
     yylval->xval = new expr(sym->x);
     if (sym->fix == outfix)
       return sym->g?token::LO:token::RO;
@@ -458,7 +458,7 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     sym = interp.symtab.lookup(yytext);
   }
   if (sym) {
-    if (sym->prec < 10 || sym->fix == outfix) {
+    if (sym->prec < PREC_MAX || sym->fix == outfix) {
       if (strstr(yytext, "::")) {
 	// Return a new qualified instance here.
 	yylval->xval = new expr(sym->f);
@@ -497,7 +497,7 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     sym = interp.symtab.lookup(yytext);
   }
   if (sym) {
-    if (sym->prec < 10 || sym->fix == outfix) {
+    if (sym->prec < PREC_MAX || sym->fix == outfix) {
       yylval->xval = new expr(sym->x);
       if (sym->fix == outfix)
 	return sym->g?token::LO:token::RO;
@@ -744,7 +744,7 @@ command_generator(const char *text, int state)
     /* Skip non-toplevel symbols. */
     const symbol& sym = interp.symtab.sym(f);
     if (!interp.symtab.visible(f) ||
-	(sym.prec == 10 && sym.fix != nonfix && sym.fix != outfix &&
+	(sym.prec == PREC_MAX && sym.fix != nonfix && sym.fix != outfix &&
 	 interp.globenv.find(f) == interp.globenv.end() &&
 	 interp.macenv.find(f) == interp.macenv.end() &&
 	 interp.globalvars.find(f) == interp.globalvars.end() &&
@@ -1403,7 +1403,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	  else if (sym.fix == outfix && sym.g)
 	    sout << "outfix " << sym.s << " "
 		 << interp.symtab.sym(sym.g).s << ";\n";
-	  else if (sym.prec < 10) {
+	  else if (sym.prec < PREC_MAX) {
 	    switch (sym.fix) {
 	    case infix:
 	      sout << "infix"; break;
@@ -1738,7 +1738,7 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	  else if (sym.fix == outfix && sym.g)
 	    fout << "outfix " << sym.s << " "
 		 << interp.symtab.sym(sym.g).s << ";\n";
-	  else if (sym.prec < 10) {
+	  else if (sym.prec < PREC_MAX) {
 	    switch (sym.fix) {
 	    case infix:
 	      fout << "infix"; break;

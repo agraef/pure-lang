@@ -46,12 +46,14 @@ static inline const string sym_padding(int32_t f)
     return " ";
 }
 
+#define NPREC_APP (NPREC_MAX-5)
+
 static prec_t sym_nprec(int32_t f)
 {
   assert(f > 0);
   if (f == interpreter::g_interp->symtab.neg_sym().f) {
     prec_t p = interpreter::g_interp->symtab.sym("-")->prec*10;
-    if (p < 100) p += 3; // precedence of unary minus
+    if (p < NPREC_MAX) p += 3; // precedence of unary minus
     return p;
   } else {
     const symbol& sym = interpreter::g_interp->symtab.sym(f);
@@ -61,14 +63,14 @@ static prec_t sym_nprec(int32_t f)
 
 static prec_t expr_nprec(expr x, bool aspat = true)
 {
-  if (x.is_null() || (aspat && x.astag()>0)) return 100;
+  if (x.is_null() || (aspat && x.astag()>0)) return NPREC_MAX;
   switch (x.tag()) {
   case EXPR::VAR:
   case EXPR::STR:
   case EXPR::PTR:
   case EXPR::WRAP:
   case EXPR::MATRIX:
-    return 100;
+    return NPREC_MAX;
   case EXPR::FVAR:
     return sym_nprec(x.vtag());
   case EXPR::INT:
@@ -76,13 +78,13 @@ static prec_t expr_nprec(expr x, bool aspat = true)
       // precedence of unary minus:
       return sym_nprec(interpreter::g_interp->symtab.neg_sym().f);
     else
-      return 100;
+      return NPREC_MAX;
   case EXPR::BIGINT:
     if (mpz_sgn(x.zval()) < 0)
       // precedence of unary minus:
       return sym_nprec(interpreter::g_interp->symtab.neg_sym().f);
     else
-      return 100;
+      return NPREC_MAX;
   case EXPR::DBL:
     /* NOTE: The check for negative zero really needs IEEE 754 floating point
        numbers, otherwise we'll divide by zero here. */
@@ -90,28 +92,29 @@ static prec_t expr_nprec(expr x, bool aspat = true)
       // precedence of unary minus:
       return sym_nprec(interpreter::g_interp->symtab.neg_sym().f);
     else
-      return 100;
+      return NPREC_MAX;
   case EXPR::APP: {
     expr u, v, w;
     prec_t p;
     if (x.is_list())
-      return 100;
+      return NPREC_MAX;
     else if (x.is_app(u, v))
       if (u.tag() > 0 &&
 	  interpreter::g_interp->symtab.sym(u.tag()).fix == outfix)
 	// unary outfix
-	return 100;
-      else if (u.tag() > 0 && (p = sym_nprec(u.tag())) < 100 && p%10 >= 3)
+	return NPREC_MAX;
+      else if (u.tag() > 0 &&
+	       (p = sym_nprec(u.tag())) < NPREC_MAX && p%10 >= 3)
 	// unary (prefix, postfix)
 	return p;
       else if (u.is_app(v, w) && v.tag() > 0 &&
-	       (p = sym_nprec(v.tag())) < 100 && p%10 < 3)
+	       (p = sym_nprec(v.tag())) < NPREC_MAX && p%10 < 3)
 	// binary (infix, infixl, infixr)
 	return p;
       else
-	return 95;
+	return NPREC_APP;
     else
-      return 95;
+      return NPREC_APP;
   }
   case EXPR::LAMBDA:
   case EXPR::COND1:
@@ -123,7 +126,7 @@ static prec_t expr_nprec(expr x, bool aspat = true)
   case EXPR::WITH:
     return -20;
   default:
-    return 100;
+    return NPREC_MAX;
   }
 }
 
@@ -236,7 +239,7 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
   // handle "as" patterns
   if (aspat && x.astag()>0) {
     const symbol& sym = interpreter::g_interp->symtab.sym(x.astag());
-    if (expr_nprec(x, false) < 100) {
+    if (expr_nprec(x, false) < NPREC_MAX) {
       os << sym.s << "@(";
       printx(os, x, pat, false);
       return os << ")";
@@ -265,7 +268,7 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
   case EXPR::FVAR: {
     assert(x.vtag() > 0);
     const symbol& sym = interpreter::g_interp->symtab.sym(x.vtag());
-    if (sym.prec < 10) {
+    if (sym.prec < PREC_MAX) {
       os << '(' << sym.s;
       if ((interpreter::g_verbose&verbosity::envs) != 0) {
 	os << "/*" << (unsigned)x.vidx() << "*/";
@@ -400,7 +403,8 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
 	return os << pname(f) << blank1 << pattern(v, pat)
 		  << blank2 << pname(g);
       } else if
-	  (u.ftag() > 0 && (p = sym_nprec(u.ftag())) < 100 && p%10 >= 3) {
+	  (u.ftag() > 0 &&
+	   (p = sym_nprec(u.ftag())) < NPREC_MAX && p%10 >= 3) {
 	// unary operator
 	string blank = sym_padding(u.ftag());
 	prec_t q = expr_nprec(v);
@@ -427,7 +431,7 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
 	    // postfix
 	    return os << pattern(v, pat) << blank << pnamex(u);
       } else if (u.is_app(y, w) && y.ftag() > 0 &&
-		 (p = sym_nprec(y.ftag())) < 100 && p%10 < 3) {
+		 (p = sym_nprec(y.ftag())) < NPREC_MAX && p%10 < 3) {
 	// binary operator (infix, infixl, infixr)
 	u = y; // u is the operator now, w the left, v the right operand
 	string blank = sym_padding(u.ftag());
@@ -441,7 +445,8 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
 	    // infix (non-associative) will give a syntax error, use a plain
 	    // application instead
 	    u = x.xval1(); v = x.xval2();
-	    return os << paren(95, u, pat) << " " << paren(100, v, pat);
+	    return os << paren(NPREC_APP, u, pat) << " "
+		      << paren(NPREC_MAX, v, pat);
 	  case 2:
 	    // infixr, need parens
 	    l++;
@@ -456,7 +461,8 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
 	    // infix (non-associative) will give a syntax error, use a plain
 	    // application instead
 	    u = x.xval1(); v = x.xval2();
-	    return os << paren(95, u, pat) << " " << paren(100, v, pat);
+	    return os << paren(NPREC_APP, u, pat) << " "
+		      << paren(NPREC_MAX, v, pat);
 	  case 1:
 	    // infixl, need parens
 	    r++;
@@ -466,16 +472,18 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
 		  << blank << paren(r, v, pat);
       } else {
 	u = x.xval1(); v = x.xval2();
-	return os << paren(95, u, pat) << " " << paren(100, v, pat);
+	return os << paren(NPREC_APP, u, pat) << " "
+		  << paren(NPREC_MAX, v, pat);
       }
     } else {
       u = x.xval1(); v = x.xval2();
-      return os << paren(95, u, pat) << " " << paren(100, v, pat);
+      return os << paren(NPREC_APP, u, pat) << " "
+		<< paren(NPREC_MAX, v, pat);
     }
   }
   case EXPR::LAMBDA: {
     expr u = x.xval1(), v = x.xval2();
-    os << '\\' << paren(100, u, true) << " -> " << v;
+    os << '\\' << paren(NPREC_MAX, u, true) << " -> " << v;
     if ((interpreter::g_verbose&verbosity::code) && x.pm())
       os << " " << *x.pm();
     return os;
@@ -515,7 +523,7 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
   default: {
     assert(x.tag() > 0);
     const symbol& sym = interpreter::g_interp->symtab.sym(x.tag());
-    if (sym.prec < 10)
+    if (sym.prec < PREC_MAX)
       return os << '(' << sym.s << ')';
     else if (sym.fix == outfix) {
       const symbol& sym2 = interpreter::g_interp->symtab.sym(sym.g);
@@ -719,19 +727,19 @@ static prec_t pure_expr_nprec(const pure_expr *x)
   case EXPR::CMATRIX:
   case EXPR::IMATRIX:
   case EXPR::MATRIX:
-    return 100;
+    return NPREC_MAX;
   case EXPR::INT:
     if (x->data.i < 0)
       // precedence of unary minus:
       return sym_nprec(interpreter::g_interp->symtab.neg_sym().f);
     else
-      return 100;
+      return NPREC_MAX;
   case EXPR::BIGINT:
     if (mpz_sgn(x->data.z) < 0)
       // precedence of unary minus:
       return sym_nprec(interpreter::g_interp->symtab.neg_sym().f);
     else
-      return 100;
+      return NPREC_MAX;
   case EXPR::DBL:
     /* NOTE: The check for negative zero really needs IEEE 754 floating point
        numbers, otherwise we'll divide by zero here. */
@@ -739,33 +747,34 @@ static prec_t pure_expr_nprec(const pure_expr *x)
       // precedence of unary minus:
       return sym_nprec(interpreter::g_interp->symtab.neg_sym().f);
     else
-      return 100;
+      return NPREC_MAX;
   case EXPR::APP:
     if (pure_is_list(x))
-      return 100;
+      return NPREC_MAX;
     else {
       const pure_expr *u = x->data.x[0], *v = x->data.x[1], *w;
       prec_t p;
       if (u->tag > 0 &&
 	  interpreter::g_interp->symtab.sym(u->tag).fix == outfix)
 	// unary outfix
-	return 100;
-      else if (u->tag > 0 && (p = sym_nprec(u->tag)) < 100 && p%10 >= 3)
+	return NPREC_MAX;
+      else if (u->tag > 0 &&
+	       (p = sym_nprec(u->tag)) < NPREC_MAX && p%10 >= 3)
 	// unary (prefix, postfix)
 	return p;
       else if (u->tag == EXPR::APP) {
 	v = u->data.x[0]; w = u->data.x[1];
-	if (v->tag > 0 && (p = sym_nprec(v->tag)) < 100 && p%10 < 3)
+	if (v->tag > 0 && (p = sym_nprec(v->tag)) < NPREC_MAX && p%10 < 3)
 	  // binary (infix, infixl, infixr)
 	  return p;
 	else
-	  return 95;
+	  return NPREC_APP;
       } else
-	return 95;
+	return NPREC_APP;
     }
   default:
     assert(x->tag >= 0);
-    return 100;
+    return NPREC_MAX;
   }
 }
 
@@ -1024,7 +1033,8 @@ ostream& operator << (ostream& os, const pure_expr *x)
       int32_t f = u->tag, g = interpreter::g_interp->symtab.sym(f).g;
       string blank1 = sym_padding(f), blank2 = sym_padding(g);
       return os << pname(f) << blank1 << v << blank2 << pname(g);
-    } else if (u->tag > 0 && (p = sym_nprec(u->tag)) < 100 && p%10 >= 3) {
+    } else if (u->tag > 0 &&
+	       (p = sym_nprec(u->tag)) < NPREC_MAX && p%10 >= 3) {
       // unary operator
       string blank = sym_padding(u->tag);
       prec_t q = pure_expr_nprec(v);
@@ -1049,7 +1059,7 @@ ostream& operator << (ostream& os, const pure_expr *x)
 	  // postfix
 	  return os << v << blank << pname(u->tag);
     } else if (u->tag == EXPR::APP && (y = u->data.x[0])->tag > 0 &&
-	       (p = sym_nprec(y->tag)) < 100 && p%10 < 3) {
+	       (p = sym_nprec(y->tag)) < NPREC_MAX && p%10 < 3) {
       // binary operator (infix, infixl, infixr)
       w = u->data.x[1]; u = y;
       // u is the operator now, w the left, v the right operand
@@ -1064,7 +1074,8 @@ ostream& operator << (ostream& os, const pure_expr *x)
 	  // infix (non-associative) will give a syntax error, use a plain
 	  // application instead
 	  u = x->data.x[0]; v = x->data.x[1];
-	  return os << pure_paren(95, u) << " " << pure_paren(100, v);
+	  return os << pure_paren(NPREC_APP, u) << " "
+		    << pure_paren(NPREC_MAX, v);
 	case 2:
 	  // infixr, need parens
 	  l++;
@@ -1079,7 +1090,8 @@ ostream& operator << (ostream& os, const pure_expr *x)
 	  // infix (non-associative) will give a syntax error, use a plain
 	  // application instead
 	  u = x->data.x[0]; v = x->data.x[1];
-	  return os << pure_paren(95, u) << " " << pure_paren(100, v);
+	  return os << pure_paren(NPREC_APP, u) << " "
+		    << pure_paren(NPREC_MAX, v);
 	case 1:
 	  // infixl, need parens
 	  r++;
@@ -1088,7 +1100,8 @@ ostream& operator << (ostream& os, const pure_expr *x)
       return os << pure_paren(l, w) << blank << pname(u->tag)
 		<< blank << pure_paren(r, v);
     } else
-      return os << pure_paren(95, u) << " " << pure_paren(100, v);
+      return os << pure_paren(NPREC_APP, u) << " "
+		<< pure_paren(NPREC_MAX, v);
   }
   default: {
     if (x->tag == 0) {
@@ -1100,7 +1113,7 @@ ostream& operator << (ostream& os, const pure_expr *x)
     if (x->data.clos && x->data.clos->local)
       return os << "#<closure " << sym.s << ">";
 #endif
-    if (sym.prec < 10)
+    if (sym.prec < PREC_MAX)
       return os << '(' << sym.s << ')';
     else if (sym.fix == outfix) {
       const symbol& sym2 = interpreter::g_interp->symtab.sym(sym.g);

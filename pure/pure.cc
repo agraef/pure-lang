@@ -105,7 +105,7 @@ command_generator(const char *text, int state)
     /* Skip non-toplevel symbols. */
     const symbol& sym = interp.symtab.sym(f);
     if (!interp.symtab.visible(f) ||
-	(sym.prec == 10 && sym.fix != nonfix && sym.fix != outfix &&
+	(sym.prec == PREC_MAX && sym.fix != nonfix && sym.fix != outfix &&
 	 interp.globenv.find(f) == interp.globenv.end() &&
 	 interp.macenv.find(f) == interp.macenv.end() &&
 	 interp.globalvars.find(f) == interp.globalvars.end() &&
@@ -173,7 +173,7 @@ symbol_generator(const char *text, int state)
     /* Skip non-toplevel symbols. */
     const symbol& sym = interp.symtab.sym(f);
     if (!interp.symtab.visible(f) ||
-	(sym.prec == 10 && sym.fix != nonfix && sym.fix != outfix &&
+	(sym.prec == PREC_MAX && sym.fix != nonfix && sym.fix != outfix &&
 	 interp.globenv.find(f) == interp.globenv.end() &&
 	 interp.macenv.find(f) == interp.macenv.end() &&
 	 interp.globalvars.find(f) == interp.globalvars.end() &&
