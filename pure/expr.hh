@@ -19,15 +19,16 @@ using namespace std;
    runtime.h), inside each level infix (non-associative) operators have the
    lowest (0), postfix operators the highest (4) precedence.
 
-   These are reconciled into a single figure, "normalized precedence" nprec =
-   10*prec+fixity, which ranges from 0 (weakest infix operator on level 0) to
-   10*PREC_MAX+4 (strongest postfix operator on the highest level).
+   These are reconciled into a single figure, "normalized precedence"
+   nprec(prec, fix), which ranges from nprec(0, 0) (weakest infix operator on
+   level 0) to nprec(PREC_MAX, 4) (strongest postfix operator on the highest
+   level).
 
    This scheme is extended to other syntactic constructions in expressions as
-   follows. Primary expressions have nprec = NPREC_MAX = 10*PREC_MAX,
-   applications NPREC_MAX-5 (above all operators, but below the primaries),
-   lambda -30, case/when/with -20, and if-then-else -10 (the latter all bind
-   weaker than any other operator).
+   follows. Primary expressions have normalized precedence NPREC_MAX =
+   nprec(PREC_MAX, 0), applications an nprec value above all operators, but
+   below the primaries, lambda nprec(-3, 0), case/when/with nprec(-2, 0), and
+   if-then-else nprec(-1, 0) (these all bind weaker than any other operator).
 
    As a special case of primary expressions, a symbol may also have the
    special 'nonfix' and 'outfix' fixity values, indicating a constant symbol
@@ -38,12 +39,34 @@ typedef int8_t prec_t;
 // Don't change the order of these constants, some code depends on it!
 enum fix_t { infix, infixl, infixr, prefix, postfix, outfix, nonfix };
 
+/* Maximum precedence values. Note that these definitions are duplicated in
+   runtime.h, so make sure that they match up. */
+
+#define PREC_MAX	10
+#define NPREC_MAX	100
+
+/* Some special precedence values for internal use. */
+
+#define NPREC_APP	95
+#define NPREC_LAMBDA	(-30)
+#define NPREC_CASE	(-20)
+#define NPREC_COND	(-10)
+
+/* Compute the normalized precedence for a given precedence and fixity, and
+   the precedence level of the given normalized precedence. */
+
 prec_t nprec(prec_t prec, fix_t fix = infix);
+prec_t prec(prec_t nprec);
 
 inline prec_t nprec(prec_t prec, fix_t fix)
 {
   if (fix == outfix || fix == nonfix) fix = infix;
   return 10*prec+fix;
+}
+
+inline prec_t prec(prec_t nprec)
+{
+  return nprec%10;
 }
 
 /* Subexpression paths are used in pattern matching. These are actually

@@ -46,8 +46,6 @@ static inline const string sym_padding(int32_t f)
     return " ";
 }
 
-#define NPREC_APP (NPREC_MAX-5)
-
 static prec_t sym_nprec(int32_t f)
 {
   assert(f > 0);
@@ -104,11 +102,11 @@ static prec_t expr_nprec(expr x, bool aspat = true)
 	// unary outfix
 	return NPREC_MAX;
       else if (u.tag() > 0 &&
-	       (p = sym_nprec(u.tag())) < NPREC_MAX && p%10 >= 3)
+	       (p = sym_nprec(u.tag())) < NPREC_MAX && prec(p) >= 3)
 	// unary (prefix, postfix)
 	return p;
       else if (u.is_app(v, w) && v.tag() > 0 &&
-	       (p = sym_nprec(v.tag())) < NPREC_MAX && p%10 < 3)
+	       (p = sym_nprec(v.tag())) < NPREC_MAX && prec(p) < 3)
 	// binary (infix, infixl, infixr)
 	return p;
       else
@@ -118,13 +116,13 @@ static prec_t expr_nprec(expr x, bool aspat = true)
   }
   case EXPR::LAMBDA:
   case EXPR::COND1:
-    return -30;
+    return NPREC_LAMBDA;
   case EXPR::COND:
-    return -10;
+    return NPREC_COND;
   case EXPR::CASE:
   case EXPR::WHEN:
   case EXPR::WITH:
-    return -20;
+    return NPREC_CASE;
   default:
     return NPREC_MAX;
   }
@@ -404,17 +402,17 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
 		  << blank2 << pname(g);
       } else if
 	  (u.ftag() > 0 &&
-	   (p = sym_nprec(u.ftag())) < NPREC_MAX && p%10 >= 3) {
+	   (p = sym_nprec(u.ftag())) < NPREC_MAX && prec(p) >= 3) {
 	// unary operator
 	string blank = sym_padding(u.ftag());
 	prec_t q = expr_nprec(v);
 	if (// both prefix/postfix => add parens for clarity if we don't do
 	    // padding anyway:
-	    (q%10 == p%10 && blank.empty()) ||
+	    (prec(q) == prec(p) && blank.empty()) ||
 	    // mixed operators where subexpr has lower precedence => parens
 	    // required:
-	    (q%10 != p%10 && q < p))
-	  if (p%10 == 3)
+	    (prec(q) != prec(p) && q < p))
+	  if (prec(p) == 3)
 	    // prefix
 	    return os << pnamex(u) << blank << "(" << pattern(v, pat)
 		      << ")";
@@ -424,14 +422,14 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
 		      << pnamex(u);
 	else
 	  // no parens needed, just add padding
-	  if (p%10 == 3)
+	  if (prec(p) == 3)
 	    // prefix
 	    return os << pnamex(u) << blank << pattern(v, pat);
 	  else
 	    // postfix
 	    return os << pattern(v, pat) << blank << pnamex(u);
       } else if (u.is_app(y, w) && y.ftag() > 0 &&
-		 (p = sym_nprec(y.ftag())) < NPREC_MAX && p%10 < 3) {
+		 (p = sym_nprec(y.ftag())) < NPREC_MAX && prec(p) < 3) {
 	// binary operator (infix, infixl, infixr)
 	u = y; // u is the operator now, w the left, v the right operand
 	string blank = sym_padding(u.ftag());
@@ -440,7 +438,7 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
 	prec_t q = expr_nprec(w);
 	if (p == q) {
 	  // operators of same precedence, associativity decides
-	  switch (p%10) {
+	  switch (prec(p)) {
 	  case 0:
 	    // infix (non-associative) will give a syntax error, use a plain
 	    // application instead
@@ -456,7 +454,7 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
 	q = expr_nprec(v);
 	if (p == q) {
 	  // operators of same precedence, associativity decides
-	  switch (p%10) {
+	  switch (prec(p)) {
 	  case 0:
 	    // infix (non-associative) will give a syntax error, use a plain
 	    // application instead
@@ -490,8 +488,8 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
   }
   case EXPR::COND: {
     expr u = x.xval1(), v = x.xval2(), w = x.xval3();
-    return os << "if " << paren(0, u) << " then " << paren(-10, v)
-	      << " else " << paren(-10, w);
+    return os << "if " << paren(0, u) << " then " << paren(NPREC_COND, v)
+	      << " else " << paren(NPREC_COND, w);
   }
   case EXPR::COND1: {
     expr u = x.xval1(), v = x.xval2();
@@ -499,7 +497,7 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
   }
   case EXPR::CASE: {
     expr u = x.xval();
-    os << "case " << paren(-10, u) << " of " << *x.rules();
+    os << "case " << paren(NPREC_COND, u) << " of " << *x.rules();
     if ((interpreter::g_verbose&verbosity::code) && x.pm())
       os << " " << *x.pm();
     os << " end";
@@ -759,12 +757,12 @@ static prec_t pure_expr_nprec(const pure_expr *x)
 	// unary outfix
 	return NPREC_MAX;
       else if (u->tag > 0 &&
-	       (p = sym_nprec(u->tag)) < NPREC_MAX && p%10 >= 3)
+	       (p = sym_nprec(u->tag)) < NPREC_MAX && prec(p) >= 3)
 	// unary (prefix, postfix)
 	return p;
       else if (u->tag == EXPR::APP) {
 	v = u->data.x[0]; w = u->data.x[1];
-	if (v->tag > 0 && (p = sym_nprec(v->tag)) < NPREC_MAX && p%10 < 3)
+	if (v->tag > 0 && (p = sym_nprec(v->tag)) < NPREC_MAX && prec(p) < 3)
 	  // binary (infix, infixl, infixr)
 	  return p;
 	else
@@ -1034,17 +1032,17 @@ ostream& operator << (ostream& os, const pure_expr *x)
       string blank1 = sym_padding(f), blank2 = sym_padding(g);
       return os << pname(f) << blank1 << v << blank2 << pname(g);
     } else if (u->tag > 0 &&
-	       (p = sym_nprec(u->tag)) < NPREC_MAX && p%10 >= 3) {
+	       (p = sym_nprec(u->tag)) < NPREC_MAX && prec(p) >= 3) {
       // unary operator
       string blank = sym_padding(u->tag);
       prec_t q = pure_expr_nprec(v);
       if (// both prefix/postfix => add parens for clarity if we don't do
 	  // padding anyway:
-	  (q%10 == p%10 && blank.empty()) ||
+	  (prec(q) == prec(p) && blank.empty()) ||
 	  // mixed operators where subexpr has lower precedence => parens
 	  // required:
-	  (q%10 != p%10 && q < p))
-	if (p%10 == 3)
+	  (prec(q) != prec(p) && q < p))
+	if (prec(p) == 3)
 	  // prefix
 	  return os << pname(u->tag) << blank << "(" << v << ")";
 	else
@@ -1052,14 +1050,14 @@ ostream& operator << (ostream& os, const pure_expr *x)
 	  return os << "(" << v << ")" << blank << pname(u->tag);
       else
 	// no parens needed, just add padding
-	if (p%10 == 3)
+	if (prec(p) == 3)
 	  // prefix
 	  return os << pname(u->tag) << blank << v;
 	else
 	  // postfix
 	  return os << v << blank << pname(u->tag);
     } else if (u->tag == EXPR::APP && (y = u->data.x[0])->tag > 0 &&
-	       (p = sym_nprec(y->tag)) < NPREC_MAX && p%10 < 3) {
+	       (p = sym_nprec(y->tag)) < NPREC_MAX && prec(p) < 3) {
       // binary operator (infix, infixl, infixr)
       w = u->data.x[1]; u = y;
       // u is the operator now, w the left, v the right operand
@@ -1069,7 +1067,7 @@ ostream& operator << (ostream& os, const pure_expr *x)
       prec_t q = pure_expr_nprec(w);
       if (p == q) {
 	// operators of same precedence, associativity decides
-	switch (p%10) {
+	switch (prec(p)) {
 	case 0:
 	  // infix (non-associative) will give a syntax error, use a plain
 	  // application instead
@@ -1085,7 +1083,7 @@ ostream& operator << (ostream& os, const pure_expr *x)
       q = pure_expr_nprec(v);
       if (p == q) {
 	// operators of same precedence, associativity decides
-	switch (p%10) {
+	switch (prec(p)) {
 	case 0:
 	  // infix (non-associative) will give a syntax error, use a plain
 	  // application instead

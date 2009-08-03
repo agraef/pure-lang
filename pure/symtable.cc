@@ -1,25 +1,7 @@
 
 #include "symtable.hh"
-#include "runtime.h"
 #include "util.hh"
 #include <assert.h>
-
-symbol::symbol() // constructor for dummy entries
-  : f(0), g(0), s(""), prec(PREC_MAX), fix(infix), priv(false)
-{
-}
-
-symbol::symbol(const string& _s, int _f, bool _priv)
-  : f(_f), g(0), s(_s), prec(PREC_MAX), fix(infix), priv(_priv)
-{
-  x = expr(f);
-}
-
-symbol::symbol(const string& _s, int _f, prec_t _prec, fix_t _fix, bool _priv)
-  : f(_f), g(0), s(_s), prec(_prec), fix(_fix), priv(_priv)
-{
-  x = expr(f);
-}
 
 symtable::symtable()
   : fno(0), rtab(1024),
