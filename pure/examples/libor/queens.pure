@@ -7,7 +7,7 @@ Some Solutions to the N Queens Problem
 :Source: http://pure-lang.googlecode.com/svn/trunk/pure/examples/libor/queens.pure
 :Author: Libor Spacek (C) <libors@gmail.com\>
 :License: GPL V3
-:Date: Version 2: June 2009
+:Date: Version 3: August 2009
 
 
 Example usage:
@@ -23,7 +23,7 @@ Utilities:
 __________
 */
 //>>>
-nonfix nosolution passed failed;
+nonfix nosolution notimplemented passed failed;
 //<<<
 /*..
 
@@ -31,6 +31,7 @@ nonfix nosolution passed failed;
 
 	is square j in the current row safe from the diagonal attacks by 
 	all queens in previous rows placed on other columns recorded in list l ? */
+
 // >>>
 diagsafe j::int l = rsafe 1 j l
 	with
@@ -38,11 +39,12 @@ diagsafe j::int l = rsafe 1 j l
 		rsafe id::int j::int (j2::int:l) = if ((id==j-j2)||(id==j2-j)) then 0 
 			else rsafe (succ id) j l
 	end;
-// <<<
-/* remove an element from an ordered list used for candidates list reduction */
+
+/* remove one element from an ordered list */
 rem _ [] = [];
 rem h1::int (h2::int:t) = if h1 == h2 then t else h2:(rem h1 t);
 
+// <<<
 /*..
 
 **(fullboard s)**
@@ -82,24 +84,25 @@ __________
 	Odd sized boards must have additionally the first midrow starting position
 	searched and add its solutions. 
 	More reflections and rotations could be done but the solutions 
-	would have to be 	tested for duplicates.
+	would have to be tested for duplicates.
 	All rook checking (row and column) is eliminated by using only unused 
 	candidates list c, leaving just the bishop check, id==abs(j2-j),  
 	(both diagonals).*/
 //>>>
 allqueens 1 = [[1]];
 allqueens n::int = nosolution if n<4;
-allqueens n::int = if (n mod 2 == 0) then (hsoln+revsoln) 
-		else hsoln+(search (rem hsn nl) [hsn])+revsoln
+ = if (n mod 2 == 0) then (hsol+revsol) else hsol+(tryjs rhsn rhsn [hsn])+revsol
 	when 
-		sn = succ n; hsn = sn div 2;
-		hnl = (1..(n div 2)); nl = (1..n);
-		hsoln = cat [search (rem j nl) [j] | j = hnl];
-		revsoln = map (\y -> map (\z -> sn-z) y) hsoln
+		nl = (1..n); sn::int = succ n; hsn::int = sn div 2; rhsn = rem hsn nl;
+		hsol = (tryjs nl (1..(n div 2)) []);
+		revsol = map (\y -> map (\z -> sn-z) y) hsol
 	end
 	with
-		search [] p = [p]; // solved
-		search c p = cat [ search (rem j c) (j:p) | j = c; diagsafe j p]
+		tryjs [] _ p = [p]; // solution p
+		tryjs _ [] _ = [];  // out of candidate js - no solution here
+		tryjs cs (j:ct) p =  res+(tryjs cs ct p)
+		when rjs = (rem j cs); res = (tryjs rjs rjs (j:p)) end if (diagsafe j p);
+			= (tryjs cs ct p) otherwise;
 	end;
 //<<<
 /*..
