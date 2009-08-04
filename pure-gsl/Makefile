@@ -1,7 +1,7 @@
 
 # Package name and version number:
 dist = pure-gsl-$(version)
-version = 0.5
+version = 0.6
 
 # Try to guess the installation prefix (this needs GNU make):
 prefix = $(patsubst %/bin/pure,%,$(shell which pure 2>/dev/null))
@@ -47,7 +47,7 @@ CFLAGS = -g -O2
 
 FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 
-DISTFILES = COPYING Makefile README config.guess examples/*.pure gsl.c gsl*.pure
+DISTFILES = COPYING Makefile README config.guess pure-gsl.html examples/*.pure gsl/*.pure gsl.c gsl.pure
 
 all: gsl$(DLL)
 
@@ -59,14 +59,17 @@ clean:
 
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
-	cp gsl*.pure gsl$(DLL) "$(DESTDIR)$(libdir)/pure"
+	mkdir -p "$(DESTDIR)$(libdir)/pure/gsl"
+	cp gsl.pure gsl$(DLL) "$(DESTDIR)$(libdir)/pure"
+	cp gsl/*.pure "$(DESTDIR)$(libdir)/pure/gsl/"
 
 uninstall:
-	rm -f "$(DESTDIR)$(libdir)/pure/gsl*.pure" "$(DESTDIR)$(libdir)/pure/gsl$(DLL)"
+	rm -f "$(DESTDIR)$(libdir)/pure/gsl.pure" "$(DESTDIR)$(libdir)/pure/gsl$(DLL)"
+	rm -R -f "$(DESTDIR)$(libdir)/pure/gsl"
 
 dist:
 	rm -rf $(dist)
-	mkdir $(dist) && mkdir $(dist)/examples
+	mkdir $(dist) && mkdir $(dist)/examples && mkdir $(dist)/gsl
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
