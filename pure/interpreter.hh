@@ -523,7 +523,7 @@ public:
   expr *mkrsect(expr *x, expr *y);
   expr *mkexpr(expr *x, expr *y);
   expr *mkexpr(expr *x, expr *y, expr *z);
-  expr *mksym_expr(string *s, int8_t tag = 0);
+  expr *mksym_expr(string *s, int32_t tag = 0);
   expr *mkas_expr(string *s, expr *x);
   expr *mksimple_expr(OpStack *stk);
   expr parse_simple(list<OpEntry>::iterator& act,

@@ -847,8 +847,14 @@ static int32_t checktag(const char *s)
     return EXPR::PTR;
   else if (strcmp(s, "matrix") == 0)
     return EXPR::MATRIX;
-  else
-    return 0;
+  else {
+    interpreter& interp = *interpreter::g_interp;
+    symbol* sym = interp.symtab.lookup(s);
+    if (sym && sym->prec == PREC_MAX && sym->fix != outfix)
+      return sym->f;
+    else
+      return 0;
+  }
 }
 
 /* Interactive command processing. */

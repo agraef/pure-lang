@@ -3352,7 +3352,7 @@ expr *interpreter::mkexpr(expr *x, expr *y, expr *z)
   return u;
 }
 
-expr *interpreter::mksym_expr(string *s, int8_t tag)
+expr *interpreter::mksym_expr(string *s, int32_t tag)
 {
   expr *x;
   const symbol &sym = symtab.checksym(*s);
@@ -3371,6 +3371,11 @@ expr *interpreter::mksym_expr(string *s, int8_t tag)
   else if (sym.f <= 0 || sym.prec < PREC_MAX ||
 	   sym.fix == nonfix || sym.fix == outfix)
     throw err("error in expression (misplaced type tag)");
+  else if (tag > 0)
+    if (*s == "_")
+      x = new expr(expr(tag), expr(symtab.sym("::_")->f));
+    else
+      return mkas_expr(s, new expr(expr(tag), expr(symtab.sym("::_")->f)));
   else {
     x = new expr(sym.f);
     if (s->find("::") != string::npos) x->flags() |= EXPR::QUAL;
