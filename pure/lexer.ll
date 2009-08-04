@@ -352,7 +352,8 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
       yyless(k); qual = "";
       //check(*yylloc, yytext, false);
     } else {
-      string msg = "unknown namespace '"+qual+"'";
+      string msg = "unknown namespace '"+qual+
+	"', or invalid type tag '"+id+"'";
       interp.error(*yylloc, msg);
     }
   }
