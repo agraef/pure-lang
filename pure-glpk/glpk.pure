@@ -209,16 +209,6 @@ public nonfix
   mps_file	// free (modern)
 ;
 
-namespace lpx;
-/* exit codes returned by solver routines: */
-public nonfix
-  e_ok		// success
-  e_empty	// empty problem
-  e_badb	// invalid initial basis
-  e_sing	// problems with basis matrix
-;
-namespace glp;
-
 /* factorization ordering options */
 public nonfix
   ord_none	// use natural (original) ordering
@@ -321,11 +311,6 @@ private nonfix
   ordalg	// factorization ordering options
 ;
 
-namespace lpx;
-public nonfix
-  exitcode	// exit codes returned by solver routines
-;
-namespace glp;
 
 /*****************************************************************************/
 /*                    Assign values to symbolic constants                    */
@@ -472,13 +457,7 @@ let symlist =
     (ordalg,       ord_none,   0),  // use natural (original) ordering
     (ordalg,       ord_qmd,    1),  // quotient minimum degree (QMD)
     (ordalg,       ord_amd,    2),  // approximate minimum degree (AMD)
-    (ordalg,       ord_sysamd, 3),  // approximate minimum degree (SYSAMD)
-
-    /* exit codes returned by solver routines: */
-    (lpx::exitcode,     lpx::e_ok,     200),  // success
-    (lpx::exitcode,     lpx::e_empty,  201),  // empty problem
-    (lpx::exitcode,     lpx::e_badb,   202),  // invalid initial basis
-    (lpx::exitcode,     lpx::e_sing,   211)   // problems with basis matrix
+    (ordalg,       ord_sysamd, 3)  // approximate minimum degree (SYSAMD)
   ];
 
 private s2v v2s;
@@ -1157,12 +1136,10 @@ public extern expr *glpk_ftran(expr *lp, expr *x) =
 public extern expr *glpk_btran(expr *lp, expr *x) =
   btran;
 
-namespace lpx;
 // Warm up LP basis
-private extern expr *glpx_warm_up(expr *lp);
-lpx::warm_up lp =
-  glp::getcode lpx::exitcode (glpx_warm_up lp);
-namespace glp;
+private extern expr *glpk_warm_up(expr *lp);
+glp::warm_up lp =
+  getcode returncode (glpk_warm_up lp);
 
 // Compute row of the tableau
 public extern expr *glpk_eval_tab_row(expr *lp, int k) =

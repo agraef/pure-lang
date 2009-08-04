@@ -34,8 +34,8 @@
 extern "C" {
 #endif
 
-#if GLP_MAJOR_VERSION != 4 || GLP_MINOR_VERSION != 38
-#error GLPK version 4.38 required
+#if GLP_MAJOR_VERSION != 4 || GLP_MINOR_VERSION != 39
+#error GLPK version 4.39 required
 #endif
 
 
@@ -2542,14 +2542,14 @@ err:
   return res;
 }
 
-pure_expr *glpx_warm_up(pure_expr *ptr)
+pure_expr *glpk_warm_up(pure_expr *ptr)
 {
   // Warm up LP basis
   glp_obj *glpobj;
   if (!is_glp_pointer(ptr, &glpobj)) {
     return 0;
   }
-  return pure_int(lpx_warm_up(glpobj->lp));
+  return pure_int(glp_warm_up(glpobj->lp));
 }
 
 pure_expr *glpk_eval_tab_row(pure_expr *ptr, int k)
