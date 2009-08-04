@@ -518,13 +518,17 @@ public:
   expr macval(expr x);
   void closure(expr& l, expr& r, bool b = true);
   void closure(rule& r, bool b = true);
-  expr *uminop(expr *op, expr *x);
+  expr uminop(expr op, expr x);
   expr *mklsect(expr *x, expr *y);
   expr *mkrsect(expr *x, expr *y);
   expr *mkexpr(expr *x, expr *y);
   expr *mkexpr(expr *x, expr *y, expr *z);
   expr *mksym_expr(string *s, int8_t tag = 0);
   expr *mkas_expr(string *s, expr *x);
+  expr *mksimple_expr(OpStack *stk);
+  expr parse_simple(list<OpEntry>::iterator& act,
+		    list<OpEntry>::iterator end,
+		    prec_t min);
   expr *mkcond_expr(expr *x, expr *y, expr *z);
   expr *mkcond1_expr(expr *x, expr *y);
   expr *mklambda_expr(exprl *args, expr *body);

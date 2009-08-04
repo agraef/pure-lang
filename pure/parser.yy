@@ -10,7 +10,7 @@
 
 /* The operator section syntax causes a number of shift/reduce conflicts, we
    take care of these here. */
-%expect 30
+%expect 5
 
 %{
 #include <iostream>
@@ -30,10 +30,8 @@
   catch (err &e) { error(yyloc, e.what()); } \
   interp.nerrs = 0;
 
-#define umin_action(x,y,z) \
-  try { x = interp.uminop(y, z); } \
-  catch (err &e) \
-  { error(yylloc, e.what()); x = new expr(interp.symtab.void_sym().f); }
+#define parser_action(task,cleanup) \
+  try { task; }	catch (err &e) { cleanup; error(yyloc, e.what()); YYERROR; }
 
 using namespace std;
 
@@ -73,6 +71,7 @@ class interpreter;
   expr   *xval;
   exprl  *xlval;
   exprll *xllval;
+  OpStack *opstk;
   rule   *rval;
   rulel  *rlval;
   rhs_info *rhsval;
@@ -116,111 +115,14 @@ static void mangle_fname(string& name);
 
 %token <xval>	LO	"left outfix operator"
 %token <xval>	RO	"right outfix operator"
-
-%token <xval>	NA0	"infix 0 operator"
-%token <xval>	LT0	"infixl 0 operator"
-%token <xval>	RT0	"infixr 0 operator"
-%token <xval>	PR0	"prefix 0 operator"
-%token <xval>	PO0	"postfix 0 operator"
-%token <xval>	NA1	"infix 1 operator"
-%token <xval>	LT1	"infixl 1 operator"
-%token <xval>	RT1	"infixr 1 operator"
-%token <xval>	PR1	"prefix 1 operator"
-%token <xval>	PO1	"postfix 1 operator"
-%token <xval>	NA2	"infix 2 operator"
-%token <xval>	LT2	"infixl 2 operator"
-%token <xval>	RT2	"infixr 2 operator"
-%token <xval>	PR2	"prefix 2 operator"
-%token <xval>	PO2	"postfix 2 operator"
-%token <xval>	NA3	"infix 3 operator"
-%token <xval>	LT3	"infixl 3 operator"
-%token <xval>	RT3	"infixr 3 operator"
-%token <xval>	PR3	"prefix 3 operator"
-%token <xval>	PO3	"postfix 3 operator"
-%token <xval>	NA4	"infix 4 operator"
-%token <xval>	LT4	"infixl 4 operator"
-%token <xval>	RT4	"infixr 4 operator"
-%token <xval>	PR4	"prefix 4 operator"
-%token <xval>	PO4	"postfix 4 operator"
-%token <xval>	NA5	"infix 5 operator"
-%token <xval>	LT5	"infixl 5 operator"
-%token <xval>	RT5	"infixr 5 operator"
-%token <xval>	PR5	"prefix 5 operator"
-%token <xval>	PO5	"postfix 5 operator"
-%token <xval>	NA6	"infix 6 operator"
-%token <xval>	LT6	"infixl 6 operator"
-%token <xval>	RT6	"infixr 6 operator"
-%token <xval>	PR6	"prefix 6 operator"
-%token <xval>	PO6	"postfix 6 operator"
-%token <xval>	NA7	"infix 7 operator"
-%token <xval>	LT7	"infixl 7 operator"
-%token <xval>	RT7	"infixr 7 operator"
-%token <xval>	PR7	"prefix 7 operator"
-%token <xval>	PO7	"postfix 7 operator"
-%token <xval>	NA8	"infix 8 operator"
-%token <xval>	LT8	"infixl 8 operator"
-%token <xval>	RT8	"infixr 8 operator"
-%token <xval>	PR8	"prefix 8 operator"
-%token <xval>	PO8	"postfix 8 operator"
-%token <xval>	NA9	"infix 9 operator"
-%token <xval>	LT9	"infixl 9 operator"
-%token <xval>	RT9	"infixr 9 operator"
-%token <xval>	PR9	"prefix 9 operator"
-%token <xval>	PO9	"postfix 9 operator"
+%token <xval>	NA	"infix operator"
+%token <xval>	LT	"infixl operator"
+%token <xval>	RT	"infixr operator"
+%token <xval>	PR	"prefix operator"
+%token <xval>	PO	"postfix operator"
 
 %right		MAPSTO
 %left		WHEN WITH
-
-%nonassoc	NA0
-%left		LT0
-%right		RT0
-%left		PR0
-%right		PO0
-%nonassoc	NA1
-%left		LT1
-%right		RT1
-%left		PR1
-%right		PO1
-%nonassoc	NA2
-%left		LT2
-%right		RT2
-%left		PR2
-%right		PO2
-%nonassoc	NA3
-%left		LT3
-%right		RT3
-%left		PR3
-%right		PO3
-%nonassoc	NA4
-%left		LT4
-%right		RT4
-%left		PR4
-%right		PO4
-%nonassoc	NA5
-%left		LT5
-%right		RT5
-%left		PR5
-%right		PO5
-%nonassoc	NA6
-%left		LT6
-%right		RT6
-%left		PR6
-%right		PO6
-%nonassoc	NA7
-%left		LT7
-%right		RT7
-%left		PR7
-%right		PO7
-%nonassoc	NA8
-%left		LT8
-%right		RT8
-%left		PR8
-%right		PO8
-%nonassoc	NA9
-%left		LT9
-%right		RT9
-%left		PR9
-%right		PO9
 
 %token		EOFTOK 0 "end of file"
 %token		ERRTOK  "invalid character"
@@ -236,7 +138,8 @@ static void mangle_fname(string& name);
 %type  <sval>	name fname optalias ctype
 %type  <slval>	ids names fnames ctypes opt_ctypes
 %type  <info>	fixity
-%type  <xval>	expr cond simple app prim op
+%type  <xval>	expr cond prim
+%type  <opstk>  simple  "simple expression"
 %type  <rhsval> rhs qual_rhs
 %type  <xlval>	args lhs row
 %type  <xllval>	rows row_list
@@ -247,14 +150,14 @@ static void mangle_fname(string& name);
 %type  <rval>	simple_rule
 %type  <rlval>	rule simple_rules simple_rulel
 
-%destructor { delete $$; } ID fixity expr cond simple app prim op
+%destructor { delete $$; } ID fixity expr cond simple prim
   comp_clauses comp_clause_list rows row_list row args lhs rhs qual_rhs
   rules rulel rule pat_rules pat_rulel simple_rules simple_rulel simple_rule
   ids fnames fname names name optalias opt_ctypes ctypes ctype
 %destructor { mpz_clear(*$$); free($$); } BIGINT CBIGINT
 %destructor { free($$); } STR
 %printer { debug_stream() << *$$; } ID name fname optalias ctype expr cond
-  simple app prim op args lhs rule simple_rules simple_rulel simple_rule
+  prim args lhs rule simple_rules simple_rulel simple_rule
 %printer { debug_stream() << $$->r; } rhs qual_rhs
 %printer { debug_stream() << $$->e; } rules rulel
 %printer { debug_stream() << $$->rl; } pat_rules pat_rulel
@@ -441,8 +344,11 @@ expr
 
 cond
 : simple
+{ parser_action($$ = interp.mksimple_expr($1), delete $1); }
 | IF simple THEN cond ELSE cond
-{ $$ = interp.mkcond_expr($2, $4, $6); }
+{ expr *x; parser_action(x = interp.mksimple_expr($2),
+			 (delete $2, delete $4, delete $6));
+  $$ = interp.mkcond_expr(x, $4, $6); }
 ;
 
 args
@@ -452,106 +358,23 @@ args
 { $$ = $1; $$->push_back(*$2); delete $2; }
 ;
 
-/* Simple expressions (infix, prefix and postfix). This comprises the standard
-   precedence levels 0..9. On each level, we have non-, left-, right-
-   associative and unary prefix and postfix operators, in that order, from
-   weakest to strongest. */
+/* Simple expressions (infix, prefix, postfix, applications). These are parsed
+   as a sequence of primaries here, which is then rearranged using a separate
+   operator precedence parser. This enables us to deal with an unlimited
+   number of precedence levels. */
 
 simple
-: simple NA0 simple	{ $$ = interp.mkexpr($2, $1, $3); }
-| simple LT0 simple	{ $$ = interp.mkexpr($2, $1, $3); }
-| simple RT0 simple	{ $$ = interp.mkexpr($2, $1, $3); }
-| PR0 simple		{ $$ = interp.mkexpr($1, $2); }
-| simple PO0		{ $$ = interp.mkexpr($2, $1); }
-| simple NA1 simple	{ $$ = interp.mkexpr($2, $1, $3); }
-| simple LT1 simple	{ $$ = interp.mkexpr($2, $1, $3); }
-| simple RT1 simple	{ $$ = interp.mkexpr($2, $1, $3); }
-| PR1 simple		{ $$ = interp.mkexpr($1, $2); }
-| simple PO1		{ $$ = interp.mkexpr($2, $1); }
-| simple NA2 simple	{ $$ = interp.mkexpr($2, $1, $3); }
-| simple LT2 simple	{ $$ = interp.mkexpr($2, $1, $3); }
-| simple RT2 simple	{ $$ = interp.mkexpr($2, $1, $3); }
-| PR2 simple		{ $$ = interp.mkexpr($1, $2); }
-| simple PO2		{ $$ = interp.mkexpr($2, $1); }
-| simple NA3 simple	{ $$ = interp.mkexpr($2, $1, $3); }
-| simple LT3 simple	{ $$ = interp.mkexpr($2, $1, $3); }
-| simple RT3 simple	{ $$ = interp.mkexpr($2, $1, $3); }
-| PR3 simple		{ $$ = interp.mkexpr($1, $2); }
-| simple PO3		{ $$ = interp.mkexpr($2, $1); }
-| simple NA4 simple	{ $$ = interp.mkexpr($2, $1, $3); }
-| simple LT4 simple	{ $$ = interp.mkexpr($2, $1, $3); }
-| simple RT4 simple	{ $$ = interp.mkexpr($2, $1, $3); }
-| PR4 simple		{ $$ = interp.mkexpr($1, $2); }
-| simple PO4		{ $$ = interp.mkexpr($2, $1); }
-| simple NA5 simple	{ $$ = interp.mkexpr($2, $1, $3); }
-| simple LT5 simple	{ $$ = interp.mkexpr($2, $1, $3); }
-| simple RT5 simple	{ $$ = interp.mkexpr($2, $1, $3); }
-| PR5 simple		{ $$ = interp.mkexpr($1, $2); }
-| simple PO5		{ $$ = interp.mkexpr($2, $1); }
-| simple NA6 simple	{ $$ = interp.mkexpr($2, $1, $3); }
-| simple LT6 simple	{ $$ = interp.mkexpr($2, $1, $3); }
-| simple RT6 simple	{ $$ = interp.mkexpr($2, $1, $3); }
-| PR6 simple		{ $$ = interp.mkexpr($1, $2); }
-| simple PO6		{ $$ = interp.mkexpr($2, $1); }
-| simple NA7 simple	{ $$ = interp.mkexpr($2, $1, $3); }
-| simple LT7 simple	{ $$ = interp.mkexpr($2, $1, $3); }
-| simple RT7 simple	{ $$ = interp.mkexpr($2, $1, $3); }
-| PR7 simple		{ $$ = interp.mkexpr($1, $2); }
-| simple PO7		{ $$ = interp.mkexpr($2, $1); }
-| simple NA8 simple	{ $$ = interp.mkexpr($2, $1, $3); }
-| simple LT8 simple	{ $$ = interp.mkexpr($2, $1, $3); }
-| simple RT8 simple	{ $$ = interp.mkexpr($2, $1, $3); }
-| PR8 simple		{ $$ = interp.mkexpr($1, $2); }
-| simple PO8		{ $$ = interp.mkexpr($2, $1); }
-| simple NA9 simple	{ $$ = interp.mkexpr($2, $1, $3); }
-| simple LT9 simple	{ $$ = interp.mkexpr($2, $1, $3); }
-| simple RT9 simple	{ $$ = interp.mkexpr($2, $1, $3); }
-| PR9 simple		{ $$ = interp.mkexpr($1, $2); }
-| simple PO9		{ $$ = interp.mkexpr($2, $1); }
-
-/* Special case rules for unary minus. This requires that an infix minus
-   operator has been defined already, and will automagically make unary minus
-   a prefix operator on the same precedence level as the binary operator. */
-| NA0 simple %prec PR0	{ umin_action($$, $1, $2); }
-| NA1 simple %prec PR1	{ umin_action($$, $1, $2); }
-| NA2 simple %prec PR2	{ umin_action($$, $1, $2); }
-| NA3 simple %prec PR3	{ umin_action($$, $1, $2); }
-| NA4 simple %prec PR4	{ umin_action($$, $1, $2); }
-| NA5 simple %prec PR5	{ umin_action($$, $1, $2); }
-| NA6 simple %prec PR6	{ umin_action($$, $1, $2); }
-| NA7 simple %prec PR7	{ umin_action($$, $1, $2); }
-| NA8 simple %prec PR8	{ umin_action($$, $1, $2); }
-| NA9 simple %prec PR9	{ umin_action($$, $1, $2); }
-| LT0 simple %prec PR0	{ umin_action($$, $1, $2); }
-| LT1 simple %prec PR1	{ umin_action($$, $1, $2); }
-| LT2 simple %prec PR2	{ umin_action($$, $1, $2); }
-| LT3 simple %prec PR3	{ umin_action($$, $1, $2); }
-| LT4 simple %prec PR4	{ umin_action($$, $1, $2); }
-| LT5 simple %prec PR5	{ umin_action($$, $1, $2); }
-| LT6 simple %prec PR6	{ umin_action($$, $1, $2); }
-| LT7 simple %prec PR7	{ umin_action($$, $1, $2); }
-| LT8 simple %prec PR8	{ umin_action($$, $1, $2); }
-| LT9 simple %prec PR9	{ umin_action($$, $1, $2); }
-| RT0 simple %prec PR0	{ umin_action($$, $1, $2); }
-| RT1 simple %prec PR1	{ umin_action($$, $1, $2); }
-| RT2 simple %prec PR2	{ umin_action($$, $1, $2); }
-| RT3 simple %prec PR3	{ umin_action($$, $1, $2); }
-| RT4 simple %prec PR4	{ umin_action($$, $1, $2); }
-| RT5 simple %prec PR5	{ umin_action($$, $1, $2); }
-| RT6 simple %prec PR6	{ umin_action($$, $1, $2); }
-| RT7 simple %prec PR7	{ umin_action($$, $1, $2); }
-| RT8 simple %prec PR8	{ umin_action($$, $1, $2); }
-| RT9 simple %prec PR9	{ umin_action($$, $1, $2); }
-
-| app
+: prim			{ $$ = (new OpStack())->push_arg($1); }
+| PR			{ $$ = (new OpStack())->push_op($1); }
+| simple prim		{ $$ = $1->push_arg($2); }
+| simple PO		{ $$ = $1->push_op($2); }
+| simple PR		{ $$ = $1->push_op($2); }
+| simple LT		{ $$ = $1->push_op($2); }
+| simple RT		{ $$ = $1->push_op($2); }
+| simple NA		{ $$ = $1->push_op($2); }
 ;
 
-/* Applications and primary expressions. */
-
-app
-: prim
-| app prim		{ $$ = interp.mkexpr($1, $2); }
-;
+/* Primary expressions. */
 
 prim
 : ID			{ try { $$ = interp.mksym_expr($1); }
@@ -602,7 +425,11 @@ prim
 | '(' expr ')'		{ $$ = $2;
 			  if ($$->is_pair()) $$->flags() |= EXPR::PAREN; }
 | '(' ')'		{ $$ = new expr(interp.symtab.void_sym().f); }
-| '(' op ')'		{ $$ = $2; }
+| '(' NA ')'		{ $$ = $2; }
+| '(' LT ')'		{ $$ = $2; }
+| '(' RT ')'		{ $$ = $2; }
+| '(' PR ')'		{ $$ = $2; }
+| '(' PO ')'		{ $$ = $2; }
 | '(' LO RO ')'		{ int32_t g = interp.symtab.sym($2->tag()).g;
 			  assert(g != 0);
 			  if (g == $3->tag())
@@ -616,75 +443,41 @@ prim
 			    YYERROR;
 			  } }
 
-/* Operator sections. Note that the right section rules overlap with the
-   special case rules for unary minus above, which causes a number of
-   shift/reduce conflicts. These are resolved in favour of the rules below
-   which also catch the case of unary minus in parentheses, and are thus
-   ok. */
+/* Left sections. These cause a number of shift/reduce conflicts with the
+   rules for simple above. */
 
-| '(' NA0 simple ')'	{ $$ = interp.mkrsect($2, $3); }
-| '(' NA1 simple ')'	{ $$ = interp.mkrsect($2, $3); }
-| '(' NA2 simple ')'	{ $$ = interp.mkrsect($2, $3); }
-| '(' NA3 simple ')'	{ $$ = interp.mkrsect($2, $3); }
-| '(' NA4 simple ')'	{ $$ = interp.mkrsect($2, $3); }
-| '(' NA5 simple ')'	{ $$ = interp.mkrsect($2, $3); }
-| '(' NA6 simple ')'	{ $$ = interp.mkrsect($2, $3); }
-| '(' NA7 simple ')'	{ $$ = interp.mkrsect($2, $3); }
-| '(' NA8 simple ')'	{ $$ = interp.mkrsect($2, $3); }
-| '(' NA9 simple ')'	{ $$ = interp.mkrsect($2, $3); }
-| '(' LT0 simple ')'	{ $$ = interp.mkrsect($2, $3); }
-| '(' LT1 simple ')'	{ $$ = interp.mkrsect($2, $3); }
-| '(' LT2 simple ')'	{ $$ = interp.mkrsect($2, $3); }
-| '(' LT3 simple ')'	{ $$ = interp.mkrsect($2, $3); }
-| '(' LT4 simple ')'	{ $$ = interp.mkrsect($2, $3); }
-| '(' LT5 simple ')'	{ $$ = interp.mkrsect($2, $3); }
-| '(' LT6 simple ')'	{ $$ = interp.mkrsect($2, $3); }
-| '(' LT7 simple ')'	{ $$ = interp.mkrsect($2, $3); }
-| '(' LT8 simple ')'	{ $$ = interp.mkrsect($2, $3); }
-| '(' LT9 simple ')'	{ $$ = interp.mkrsect($2, $3); }
-| '(' RT0 simple ')'	{ $$ = interp.mkrsect($2, $3); }
-| '(' RT1 simple ')'	{ $$ = interp.mkrsect($2, $3); }
-| '(' RT2 simple ')'	{ $$ = interp.mkrsect($2, $3); }
-| '(' RT3 simple ')'	{ $$ = interp.mkrsect($2, $3); }
-| '(' RT4 simple ')'	{ $$ = interp.mkrsect($2, $3); }
-| '(' RT5 simple ')'	{ $$ = interp.mkrsect($2, $3); }
-| '(' RT6 simple ')'	{ $$ = interp.mkrsect($2, $3); }
-| '(' RT7 simple ')'	{ $$ = interp.mkrsect($2, $3); }
-| '(' RT8 simple ')'	{ $$ = interp.mkrsect($2, $3); }
-| '(' RT9 simple ')'	{ $$ = interp.mkrsect($2, $3); }
+| '(' simple NA ')'
+{ expr *x; parser_action(x = interp.mksimple_expr($2),
+			 (delete $2, delete $3));
+  $$ = interp.mklsect($3, x); }
+| '(' simple LT ')'
+{ expr *x; parser_action(x = interp.mksimple_expr($2),
+			 (delete $2, delete $3));
+  $$ = interp.mklsect($3, x); }
+| '(' simple RT ')'
+{ expr *x; parser_action(x = interp.mksimple_expr($2),
+			 (delete $2, delete $3));
+  $$ = interp.mklsect($3, x); }
+| '(' simple PR ')'
+{ expr *x; parser_action(x = interp.mksimple_expr($2),
+			 (delete $2, delete $3));
+  $$ = interp.mklsect($3, x); }
 
-/* Left sections. */
+/* Right sections. */
 
-| '(' simple NA0 ')'	{ $$ = interp.mklsect($3, $2); }
-| '(' simple NA1 ')'	{ $$ = interp.mklsect($3, $2); }
-| '(' simple NA2 ')'	{ $$ = interp.mklsect($3, $2); }
-| '(' simple NA3 ')'	{ $$ = interp.mklsect($3, $2); }
-| '(' simple NA4 ')'	{ $$ = interp.mklsect($3, $2); }
-| '(' simple NA5 ')'	{ $$ = interp.mklsect($3, $2); }
-| '(' simple NA6 ')'	{ $$ = interp.mklsect($3, $2); }
-| '(' simple NA7 ')'	{ $$ = interp.mklsect($3, $2); }
-| '(' simple NA8 ')'	{ $$ = interp.mklsect($3, $2); }
-| '(' simple NA9 ')'	{ $$ = interp.mklsect($3, $2); }
-| '(' simple LT0 ')'	{ $$ = interp.mklsect($3, $2); }
-| '(' simple LT1 ')'	{ $$ = interp.mklsect($3, $2); }
-| '(' simple LT2 ')'	{ $$ = interp.mklsect($3, $2); }
-| '(' simple LT3 ')'	{ $$ = interp.mklsect($3, $2); }
-| '(' simple LT4 ')'	{ $$ = interp.mklsect($3, $2); }
-| '(' simple LT5 ')'	{ $$ = interp.mklsect($3, $2); }
-| '(' simple LT6 ')'	{ $$ = interp.mklsect($3, $2); }
-| '(' simple LT7 ')'	{ $$ = interp.mklsect($3, $2); }
-| '(' simple LT8 ')'	{ $$ = interp.mklsect($3, $2); }
-| '(' simple LT9 ')'	{ $$ = interp.mklsect($3, $2); }
-| '(' simple RT0 ')'	{ $$ = interp.mklsect($3, $2); }
-| '(' simple RT1 ')'	{ $$ = interp.mklsect($3, $2); }
-| '(' simple RT2 ')'	{ $$ = interp.mklsect($3, $2); }
-| '(' simple RT3 ')'	{ $$ = interp.mklsect($3, $2); }
-| '(' simple RT4 ')'	{ $$ = interp.mklsect($3, $2); }
-| '(' simple RT5 ')'	{ $$ = interp.mklsect($3, $2); }
-| '(' simple RT6 ')'	{ $$ = interp.mklsect($3, $2); }
-| '(' simple RT7 ')'	{ $$ = interp.mklsect($3, $2); }
-| '(' simple RT8 ')'	{ $$ = interp.mklsect($3, $2); }
-| '(' simple RT9 ')'	{ $$ = interp.mklsect($3, $2); }
+| '(' NA simple ')'
+{ expr *x; parser_action(x = interp.mksimple_expr($3),
+			 (delete $2, delete $3));
+  $$ = interp.mkrsect($2, x); }
+| '(' LT simple ')'
+{ expr *x; parser_action(x = interp.mksimple_expr($3),
+			 (delete $2, delete $3));
+  $$ = interp.mkrsect($2, x); }
+| '(' RT simple ')'
+{ expr *x; parser_action(x = interp.mksimple_expr($3),
+			 (delete $2, delete $3));
+  $$ = interp.mkrsect($2, x); }
+
 ;
 
 comp_clauses
@@ -723,19 +516,6 @@ row
 : expr		{ $$ = interp.mkrow_exprl($1); }
 ;
 
-op
-: NA0 | LT0 | RT0 | PR0 | PO0
-| NA1 | LT1 | RT1 | PR1 | PO1
-| NA2 | LT2 | RT2 | PR2 | PO2
-| NA3 | LT3 | RT3 | PR3 | PO3
-| NA4 | LT4 | RT4 | PR4 | PO4
-| NA5 | LT5 | RT5 | PR5 | PO5
-| NA6 | LT6 | RT6 | PR6 | PO6
-| NA7 | LT7 | RT7 | PR7 | PO7
-| NA8 | LT8 | RT8 | PR8 | PO8
-| NA9 | LT9 | RT9 | PR9 | PO9
-;
-
 /* Rewriting rule syntax. These generally take the form l = r [if g]; ... For
    convenience, we also allow a semicolon at the end of a rule list. Moreover,
    multiple left-hand sides are permitted (denoting a collection of rules for
@@ -766,7 +546,10 @@ rhs
 
 qual_rhs
 : expr OTHERWISE	{ $$ = new rhs_info($1); }
-| expr IF simple	{ $$ = new rhs_info($1, $3); }
+| expr IF simple
+{ expr *x; parser_action(x = interp.mksimple_expr($3),
+			 (delete $1, delete $3));
+  $$ = new rhs_info($1, x); }
 | qual_rhs WHEN simple_rules END
 { $$ = $1;
   if ($$->q) {

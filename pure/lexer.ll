@@ -72,18 +72,10 @@ static void check(const yy::location& l, const char* s, bool decl);
 
 typedef yy::parser::token token;
 
-static yy::parser::token_type optoken[PREC_MAX][5] = {
-  {token::NA0, token::LT0, token::RT0, token::PR0, token::PO0},
-  {token::NA1, token::LT1, token::RT1, token::PR1, token::PO1},
-  {token::NA2, token::LT2, token::RT2, token::PR2, token::PO2},
-  {token::NA3, token::LT3, token::RT3, token::PR3, token::PO3},
-  {token::NA4, token::LT4, token::RT4, token::PR4, token::PO4},
-  {token::NA5, token::LT5, token::RT5, token::PR5, token::PO5},
-  {token::NA6, token::LT6, token::RT6, token::PR6, token::PO6},
-  {token::NA7, token::LT7, token::RT7, token::PR7, token::PO7},
-  {token::NA8, token::LT8, token::RT8, token::PR8, token::PO8},
-  {token::NA9, token::LT9, token::RT9, token::PR9, token::PO9},
-};
+static yy::parser::token_type optoken[5] =
+  {token::NA, token::LT, token::RT, token::PR, token::PO};
+
+#define optok(_f, _fix) ((_fix<=infixr && _f==interp.symtab.minus_sym().f)?token::PR:optoken[_fix])
 %}
 
 %option noyywrap nounput debug
@@ -379,7 +371,7 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     if (sym->fix == outfix)
       return sym->g?token::LO:token::RO;
     else
-      return optoken[sym->prec][sym->fix];
+      return optok(sym->f, sym->fix);
   } else {
     if (!interp.nerrs && !sym && interp.symtab.count != 1 &&
 	strstr(yytext, "::")) {
@@ -405,7 +397,7 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     if (sym->fix == outfix)
       return sym->g?token::LO:token::RO;
     else
-      return optoken[sym->prec][sym->fix];
+      return optok(sym->f, sym->fix);
   } else {
     yylval->sval = new string(yytext);
     return token::ID;
@@ -468,7 +460,7 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
       if (sym->fix == outfix)
 	return sym->g?token::LO:token::RO;
       else
-	return optoken[sym->prec][sym->fix];
+	return optok(sym->f, sym->fix);
     } else {
       yylval->sval = new string(yytext);
       return token::ID;
@@ -502,7 +494,7 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
       if (sym->fix == outfix)
 	return sym->g?token::LO:token::RO;
       else
-	return optoken[sym->prec][sym->fix];
+	return optok(sym->f, sym->fix);
     } else {
       yylval->sval = new string(yytext);
       return token::ID;

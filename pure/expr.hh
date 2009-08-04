@@ -35,19 +35,19 @@ using namespace std;
    and user-defined brackets, respectively (with nprec = NPREC_MAX, just like
    any other primary expression). */
 
-typedef int8_t prec_t;
+typedef int32_t prec_t;
 // Don't change the order of these constants, some code depends on it!
 enum fix_t { infix, infixl, infixr, prefix, postfix, outfix, nonfix };
 
 /* Maximum precedence values. Note that these definitions are duplicated in
    runtime.h, so make sure that they match up. */
 
-#define PREC_MAX	10
-#define NPREC_MAX	100
+#define PREC_MAX	16777216
+#define NPREC_MAX	167772160
 
 /* Some special precedence values for internal use. */
 
-#define NPREC_APP	95
+#define NPREC_APP	167772155
 #define NPREC_LAMBDA	(-30)
 #define NPREC_CASE	(-20)
 #define NPREC_COND	(-10)

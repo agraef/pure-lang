@@ -3308,29 +3308,20 @@ expr interpreter::macval(expr x)
   return x;
 }
 
-expr* interpreter::uminop(expr *op, expr *x)
+expr interpreter::uminop(expr op, expr x)
 {
-  if (op->tag() != symtab.sym("::-")->f) {
-    int32_t f = op->tag();
-    delete op; delete x;
-    throw err("syntax error, '" + symtab.sym(f).s +
-	      "' is not a unary operator");
-  }
-  expr *y;
   // handle special case of a numeric argument
-  if (x->tag() == EXPR::BIGINT && (x->flags()&EXPR::OVF) &&
-      mpz_cmp_ui(x->zval(), 0x80000000U) == 0)
+  if (x.tag() == EXPR::BIGINT && (x.flags()&EXPR::OVF) &&
+      mpz_cmp_ui(x.zval(), 0x80000000U) == 0)
     // The negated int 0x80000000 can actually be represented as a machine int
     // value, we convert it back on the fly here.
-    y = new expr(EXPR::INT, (int32_t)-0x80000000);
-  else if (x->tag() == EXPR::INT)
-    y = new expr(EXPR::INT, -x->ival());
-  else if (x->tag() == EXPR::DBL)
-    y = new expr(EXPR::DBL, -x->dval());
-  else // otherwise fall back to the neg builtin
-    y = new expr(symtab.neg_sym().x, *x);
-  delete op; delete x;
-  return y;
+    return expr(EXPR::INT, (int32_t)-0x80000000);
+  else if (x.tag() == EXPR::INT)
+    return expr(EXPR::INT, -x.ival());
+  else if (x.tag() == EXPR::DBL)
+    return expr(EXPR::DBL, -x.dval());
+  else // otherwise fall back to an explicit application
+    return expr(op, x);
 }
 
 expr *interpreter::mklsect(expr *x, expr *y)
@@ -3342,13 +3333,9 @@ expr *interpreter::mklsect(expr *x, expr *y)
 
 expr *interpreter::mkrsect(expr *x, expr *y)
 {
-  if (x->tag() == symtab.sym("::-")->f)
-    return uminop(x, y);
-  else {
-    expr *u = new expr(symtab.flip_sym().x, *x, *y);
-    delete x; delete y;
-    return u;
-  }
+  expr *u = new expr(symtab.flip_sym().x, *x, *y);
+  delete x; delete y;
+  return u;
 }
 
 expr *interpreter::mkexpr(expr *x, expr *y)
@@ -3409,6 +3396,137 @@ expr *interpreter::mkas_expr(string *s, expr *x)
   if (s->find("::") != string::npos) x->flags() |= EXPR::ASQUAL;
   delete s;
   return x;
+}
+
+expr *interpreter::mksimple_expr(OpStack *in)
+{
+  list<OpEntry>::iterator act = in->stk.begin(), end = in->stk.end();
+  expr ret = parse_simple(act, end, 0);
+  delete in;
+  return new expr(ret);
+}
+
+static string fixity_str(fix_t fix)
+{
+  switch (fix) {
+  case infix: return "infix";
+  case infixl: return "infixl";
+  case infixr: return "infixr";
+  case prefix: return "prefix";
+  case postfix: return "postfix";
+  case outfix: return "outfix";
+  case nonfix: return "nonfix";
+  default: return "<bad fixity value>";
+  }
+}
+
+expr interpreter::parse_simple(list<OpEntry>::iterator& act,
+			       list<OpEntry>::iterator end,
+			       prec_t min)
+{
+  /* Operator precedence parser for the Pure expression syntax. We use a
+     variation of Dijkstra's "shunting yard" algorithm here, modified to deal
+     with prefix and postfix symbols. This lets us determine the proper
+     parsing of a list of primary expressions and declared operator symbols on
+     the fly. */
+#if 0
+  std::cerr << "unparsed input:";
+  for (list<OpEntry>::iterator it = act; it != end; ++it)
+    std::cerr << " " << it->x;
+  std::cerr << endl;
+#endif
+  OpStack out;
+  while (act != end) {
+    if (act->is_op) {
+      expr x = act->x;
+      int32_t f = x.tag();
+      fix_t fix = symtab.sym(f).fix;
+      prec_t prec = symtab.sym(f).prec;
+      if (out.stk.empty() || out.stk.back().is_op) {
+	// we expect a prefix operator here
+	if (fix != prefix && f != symtab.minus_sym().f) {
+	  throw err("syntax error, unexpected "+fixity_str(fix)+
+		    " operator '"+symtab.sym(f).s+"'");
+	}
+	// an operand must follow here
+	if (++act == end) {
+	  throw err("syntax error, expected operand after prefix operator '"+
+		    symtab.sym(f).s+"'");
+	}
+	expr y = parse_simple(act, end, nprec(prec, prefix));
+	if (x.tag() == symtab.minus_sym().f)
+	  y = uminop(symtab.neg_sym().x, y);
+	else
+	  y = expr(x, y);
+	out.push_arg(y);
+	continue;
+      }
+      // an operand most be on the top of the output stack now
+      assert(!out.stk.empty() && !out.stk.back().is_op);
+      prec_t p = nprec(prec, fix);
+      if (p < min) break;
+      expr *y = out.last_op();
+      while (y) {
+	symbol& sym = symtab.sym(y->tag());
+	prec_t q = nprec(sym.prec, sym.fix);
+	if (q > p || (q == p && fix == infixl)) {
+	  expr b = out.stk.back().x; out.pop();
+	  expr f = out.stk.back().x; out.pop();
+	  expr a = out.stk.back().x; out.pop();
+	  a = expr(f, a, b);
+	  out.push_arg(a);
+	  y = out.last_op();
+	} else
+	  break;
+      }
+      if (fix == infix && y) {
+	symbol& sym = symtab.sym(y->tag());
+	prec_t q = nprec(sym.prec, sym.fix);
+	if (p == q) {
+	  throw err("syntax error, unexpected infix operator '"+
+		    symtab.sym(f).s+"'");
+	}
+      }
+      if (fix == infix || fix == infixl || fix == infixr) {
+	// process infix operator
+	out.push_op(x);
+	act++;
+      } else if (fix == postfix) {
+	// process postfix operator
+	expr y = out.stk.back().x; out.pop();
+	x = expr(x, y);
+	out.push_arg(x);
+	act++;
+      } else {
+	throw err("syntax error, unexpected "+fixity_str(fix)+
+		  " operator '"+symtab.sym(f).s+"'");
+      }
+    } else {
+      /* process a primary or application */
+      expr x = act->x;
+      while (++act != end && !act->is_op)
+	x = expr(x, act->x);
+      out.push_arg(x);
+    }
+  }
+  expr *y = out.last_op();
+  while (y) {
+    expr b = out.stk.back().x; out.pop();
+    expr f = out.stk.back().x; out.pop();
+    expr a = out.stk.back().x; out.pop();
+    a = expr(f, a, b);
+    out.push_arg(a);
+    y = out.last_op();
+  }
+#if 0
+  std::cerr << "parsed output:";
+  for (list<OpEntry>::iterator it = out.stk.begin(), end = out.stk.end();
+       it != end; ++it)
+    std::cerr << " " << it->x;
+  std::cerr << endl;
+#endif
+  assert(out.stk.size() == 1);
+  return out.stk.back().x;
 }
 
 expr *interpreter::mkcond_expr(expr *x, expr *y, expr *z)

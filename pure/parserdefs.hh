@@ -35,4 +35,30 @@ struct pat_rule_info {
 typedef pair<expr,expr> comp_clause;
 typedef list<comp_clause> comp_clause_list;
 
+/* Data structures used by the operator precedence parser. */
+
+struct OpEntry {
+  bool is_op;
+  expr x;
+  OpEntry(bool _is_op, expr _x) : is_op(_is_op), x(_x) {}
+};
+
+struct OpStack {
+  list<OpEntry> stk;
+  OpStack *push_op(expr x) { stk.push_back(OpEntry(true, x)); return this; }
+  OpStack *push_arg(expr x) { stk.push_back(OpEntry(false, x)); return this; }
+  OpStack *push_op(expr *x) { stk.push_back(OpEntry(true, *x)); delete x; return this; }
+  OpStack *push_arg(expr *x) { stk.push_back(OpEntry(false, *x)); delete x; return this; }
+  void pop() { assert(!stk.empty()); stk.pop_back(); }
+  expr *last_op()
+  {
+    list<OpEntry>::reverse_iterator it = stk.rbegin(), end = stk.rend();
+    while (it != end && !it->is_op) ++it;
+    if (it == end)
+      return 0;
+    else
+      return &it->x;
+  }
+};
+
 #endif // ! PARSERDEFS_HH

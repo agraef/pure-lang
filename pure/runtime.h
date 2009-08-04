@@ -119,8 +119,8 @@ typedef struct _pure_mem {
 #define OP_NULLARY 5
 
 /* Maximum precedence. */
-#define PREC_MAX 10
-#define NPREC_MAX 100
+#define PREC_MAX 16777216
+#define NPREC_MAX 167772160
 
 int32_t pure_sym(const char *s);
 int32_t pure_getsym(const char *s);

@@ -1,3 +1,30 @@
+2009-08-04  Albert Graef  <Dr.Graef@t-online.de>
+
+	* parser.yy, lexer.ll, parserdefs.hh, interpreter.cc/hh, expr.hh,
+	runtime.h: Added support for an essentially unlimited number of
+	precedence levels.
+
+	The Bison parser now delegates the parsing of simple expressions
+	to a second operator precedence parser (based on Dijkstra's
+	"shunting yard" algorithm, with some modifications to deal with
+	unary prefix and postfix operators) which can handle an unlimited
+	number of precedence levels and rearranges a list of preparsed
+	primaries and operator symbols on the fly.
+
+	This has the nice side effect to simplify the Bison grammar
+	considerably. It also fixes various quirks due to parsing
+	conflicts and the messy symbol precedences in the old Bison
+	grammar. Error messages for syntax error in simple expressions are
+	now slightly more informative as well. Parsing speed hasn't
+	suffered, AFAICT.
+
+	The parser still imposes a limit on the number of precedence
+	levels, but this has now been set to a very large value, 16777216
+	a.k.a. 24 bit (this is about what's possible so that "normalized
+	precedence" a.k.a. combined precedence and fixity values still fit
+	into 32 bit signed integers). This should be large enough for
+	anything I can imagine.
+
 2009-08-02  Albert Graef  <Dr.Graef@t-online.de>
 
 	* runtime.cc (fixity): Fixed wrong return value of fixity for
