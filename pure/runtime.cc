@@ -3305,12 +3305,14 @@ pure_expr *pure_matrix_rows(uint32_t n, ...)
  err:
   /* This is called without a shadow stack frame, so we do our own cleanup
      here to avoid having temporaries hanging around indefinitely. */
-  if (x) x->refc++;
+  if (x) pure_new_internal(x);
   pure_new_vect(n, xs);
   for (size_t i = 0; i < n; i++)
     pure_free_internal(xs[i]);
-  pure_unref_internal(x);
-  pure_throw(bad_matrix_exception(x));
+  if (x) {
+    pure_unref_internal(x);
+    pure_throw(bad_matrix_exception(x));
+  }
   return 0;
 }
 
@@ -3426,12 +3428,14 @@ pure_expr *pure_matrix_columns(uint32_t n, ...)
  err:
   /* This is called without a shadow stack frame, so we do our own cleanup
      here to avoid having temporaries hanging around indefinitely. */
-  if (x) x->refc++;
+  if (x) pure_new_internal(x);
   pure_new_vect(n, xs);
   for (size_t i = 0; i < n; i++)
     pure_free_internal(xs[i]);
-  pure_unref_internal(x);
-  pure_throw(bad_matrix_exception(x));
+  if (x) {
+    pure_unref_internal(x);
+    pure_throw(bad_matrix_exception(x));
+  }
   return 0;
 }
 
@@ -3520,12 +3524,14 @@ pure_expr *pure_matrix_rowsvq(uint32_t n, pure_expr **xs)
  err:
   /* This is called without a shadow stack frame, so we do our own cleanup
      here to avoid having temporaries hanging around indefinitely. */
-  if (x) x->refc++;
+  if (x) pure_new_internal(x);
   pure_new_vect(n, xs);
   for (size_t i = 0; i < n; i++)
     pure_free_internal(xs[i]);
-  pure_unref_internal(x);
-  pure_throw(bad_matrix_exception(x));
+  if (x) {
+    pure_unref_internal(x);
+    pure_throw(bad_matrix_exception(x));
+  }
   return 0;
 }
 
