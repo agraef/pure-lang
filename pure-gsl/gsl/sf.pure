@@ -1,0 +1,258 @@
+
+/* gsl/sf.pure: GSL wrapper for the Pure programming language. */
+
+/* Copyright (c) 2008 by Albert Graef <Dr.Graef@t-online.de>.
+   Copyright (c) 2008 by Robert E. Rucker <erucker@bmc.edu>.
+
+   This file is part of the Pure programming language and system.
+
+   Pure is free software: you can redistribute it and/or modify it under the
+   terms of the GNU General Public License as published by the Free Software
+   Foundation, either version 3 of the License, or (at your option) any later
+   version.
+
+   Pure is distributed in the hope that it will be useful, but WITHOUT ANY
+   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+   FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+   details.
+
+   You should have received a copy of the GNU General Public License along
+   with this program.  If not, see <http://www.gnu.org/licenses/>. */
+
+/* ..
+   
+   Special Functions
+   -----------------
+   
+   This module is loaded via the command ``using gsl::sf`` and provides 
+   Pure wrappers for the GSL Special Functions. For details, see Chapter 7
+   of the GSL manual, 
+   
+   http://www.gnu.org/software/gsl/manual/html_node/Special-Functions.html.
+   
+   To load the libraray, use the Pure command ``using gsl::sf``.
+   Modes for the functions must be one of::
+   
+     GSL_PREC_DOUBLE
+     GSL_PREC_SINGLE
+     GSL_PREC_APPROX
+   
+   Results for some of the functions are returned as a Pure list instead of 
+   the ``gsl_sf_result`` or  ``gsl_sf_result_e10`` structures in C. In these
+   cases, the resulting list is one of the forms:
+   
+     ``[val, err]`` for the ``gsl_sf_result`` struct and
+     ``[val, err, e10]`` for ``gsl_sf_result_e10`` struct.
+
+   Routines
+   ~~~~~~~~
+*/
+
+using "lib:gsl";
+
+namespace gsl;
+namespace gsl::sf;
+
+public
+  GSL_PREC_DOUBLE
+  GSL_PREC_SINGLE
+  GSL_PREC_APPROX;
+
+const GSL_PREC_DOUBLE = 0;
+const GSL_PREC_SINGLE = 1;
+const GSL_PREC_APPROX = 2;
+  
+private extern double gsl_sf_airy_Ai(double, int);
+private extern int gsl_sf_airy_Ai_e(double, int, double*);
+private extern double gsl_sf_airy_Ai_scaled(double, int);
+private extern int gsl_sf_airy_Ai_scaled_e(double, int, double*);
+
+public
+  airy_Ai
+  airy_Ai_e;
+  airy_Ai_scaled;
+  airy_Ai_scaled_e;
+  
+/* .. _airy_Ai:
+      _airy_Ai_e:
+
+   ``airy_Ai x``
+     computes the Airy function ``Ai x`` with a default ``GSL_PREC_DOUBLE``
+     accuracy.
+   
+   ``airy_Ai (x, mode::int)``
+     computes a double result of the Airy function ``Ai x`` with an accuracy 
+     specified by ``mode``.
+   
+   ``airy_Ai_e x``
+     computes the list ``[value, error]`` of the Airy function ``Ai x`` with
+     a default ``GSL_PREC_DOUBLE`` accuracy.
+     
+   ``airy_Ai_e (x, mode::int)``
+     computes the list ``[value, error]`` of the Airy function ``Ai x`` with
+     an accuracy specified by ``mode``.
+   
+   ``airy_Ai_scaled x``
+     compute a scaled version of the Airy function. See the GSL for more 
+     information.
+   
+   ``airy_Ai_scaled_e (x, mode::int)``
+     computes the list ``[value, error]`` of the Airy function ``Ai x`` with
+     an accuracy specified by ``mode``.
+*/
+
+airy_Ai  (x, mode::int)
+  = gsl_sf_airy_Ai (double x) mode;
+
+airy_Ai  x
+  = gsl_sf_airy_Ai (double x) GSL_PREC_DOUBLE;
+
+airy_Ai_e  (x, mode::int)
+  = gsl_sf_airy_Ai_e (double x) mode (pointer m) $$ m
+    when
+      m = {0.0, 0.0};
+    end;
+
+airy_Ai_e  x
+  = gsl_sf_airy_Ai_e (double x) GSL_PREC_DOUBLE (pointer m) $$ list m
+    when
+      m = {0.0, 0.0};
+    end;
+
+airy_Ai_scaled  (x, mode::int)
+  = gsl_sf_airy_Ai_scaled (double x) mode;
+
+airy_Ai_scaled  x
+  = gsl_sf_airy_Ai_scaled (double x) GSL_PREC_DOUBLE;
+
+airy_Ai_scaled_e  (x, mode::int)
+  = gsl_sf_airy_Ai_scaled_e (double x) mode (pointer m) $$ list m
+    when
+      m = {0.0, 0.0};
+    end;
+
+airy_Ai_scaled_e  x
+  = gsl_sf_airy_Ai_scaled_e (double x) GSL_PREC_DOUBLE (pointer m)
+    $$ list m
+    when
+      m = {0.0, 0.0};
+    end;
+
+private extern double gsl_sf_airy_Bi(double, int);
+private extern int gsl_sf_airy_Bi_e(double, int, double*);
+private extern double gsl_sf_airy_Bi_scaled(double, int);
+private extern int gsl_sf_airy_Bi_scaled_e(double, int, double*);
+
+
+public
+  airy_Bi
+  airy_Bi_e;
+
+/* .. _airy_Bi:
+      _airy_Bi_e:
+
+   ``airy_Bi x``
+     computes the Airy function ``Bi x`` with a default ``GSL_PREC_DOUBLE`` 
+     accuracy.
+   
+   ``airy_Bi (x, mode::int)``
+     computes the Airy function ``Bi x`` with an accuracy specified by 
+     ``mode``.
+   
+   ``airy_Bi_e x``
+     computes the list ``[value, error]`` of the Airy function ``Bi x`` with
+     a default ``GSL_PREC_DOUBLE`` accuracy.
+     
+   ``airy_Bi_e (x, mode::int)``
+     computes the list ``[value, error]`` of the Airy function ``Bi x`` with
+     an accuracy specified by `mode`.
+   
+   ``airy_Bi_scaled x``
+     compute a scaled version of the Airy function ``Bi x``. See the GSL 
+     for more information.
+   
+   ``airy_Bi_scaled_e (x, mode::int)``
+     computes the list ``[value, error]`` of the Airy function ``Bi x``
+     with an accuracy specified by ``mode``.
+
+*/
+
+airy_Bi  (x, mode::int)
+  = gsl_sf_airy_Bi (double x) mode;
+
+airy_Bi  x
+  = gsl_sf_airy_Bi (double x) GSL_PREC_DOUBLE;
+
+airy_Bi_e  (x, mode::int)
+  = gsl_sf_airy_Bi_e (double x) mode (pointer m) $$ list m
+    when
+      m = {0.0, 0.0};
+    end;
+
+airy_Bi_e  x
+  = gsl_sf_airy_Bi_e (double x) GSL_PREC_DOUBLE (pointer m) $$ list m
+    when
+      m = {0.0, 0.0};
+    end;
+
+airy_Bi_scaled  (x, mode::int)
+  = gsl_sf_airy_Ai_scaled (double x) mode;
+
+airy_Bi_scaled  x
+  = gsl_sf_airy_Ai_scaled (double x) GSL_PREC_DOUBLE;
+
+airy_Bi_scaled_e  (x, mode::int)
+  = gsl_sf_airy_Ai_scaled_e (double x) mode (pointer m) $$ list m
+    when
+      m = {0.0, 0.0};
+    end;
+
+airy_Bi_scaled_e  x
+  = gsl_sf_airy_Ai_scaled_e (double x) GSL_PREC_DOUBLE (pointer m)
+    $$ list m
+    when
+      m = {0.0, 0.0};
+    end;
+
+/* ..
+   
+   Examples
+   ~~~~~~~~
+   
+   ::
+   
+     > using gsl::sf;
+     > using namespace gsl::sf;
+     > airy_Ai (-1.2); // defaults to GSL_PREC_DOUBLE
+     0.52619437480212
+     > airy_Ai_scaled (-1.2);
+     0.52619437480212
+     > airy_Ai (-1.2,GSL_PREC_APPROX);
+     0.526194374771687
+     > airy_Ai_scaled (-1.2, GSL_PREC_SINGLE);
+     0.526194374771687
+     > airy_Ai_e (-1.2);
+     [0.52619437480212,1.88330586480371e-15]
+     > airy_Ai_e (-1.2,GSL_PREC_APPROX);
+     {0.526194374771687,1.01942940819652e-08}
+     > airy_Ai_scaled_e (-1.2);
+     [0.52619437480212,1.88330586480371e-15]
+     > airy_Ai_scaled_e (-1.2,GSL_PREC_APPROX);
+     [0.526194374771687,1.01942940819652e-08]
+     > airy_Bi (-1.2); 
+     -0.015821370184632
+     > airy_Bi_scaled (-1.2);
+     0.52619437480212
+     > airy_Bi (-1.2,GSL_PREC_APPROX);
+     -0.0158213701898015
+     > airy_Bi_scaled (-1.2, GSL_PREC_SINGLE);
+     0.526194374771687
+     > airy_Bi_e (-1.2);
+     [-0.015821370184632,1.31448899295896e-16]
+     >  airy_Bi_e (-1.2,GSL_PREC_APPROX);
+     [-0.0158213701898015,4.10638404843775e-10]
+     >  airy_Bi_scaled_e (-1.2);
+     [0.52619437480212,1.88330586480371e-15]
+     > airy_Bi_scaled_e (-1.2,GSL_PREC_APPROX);
+     [0.526194374771687,1.01942940819652e-08]
+*/

@@ -1,0 +1,96 @@
+
+/* gsl/sort.pure: GSL wrapper for the Pure programming language. */
+
+/* Copyright (c) 2008 by Albert Graef <Dr.Graef@t-online.de>.
+   Copyright (c) 2008 by Robert E. Rucker <erucker@bmc.edu>.
+
+   This file is part of the Pure programming language and system.
+
+   Pure is free software: you can redistribute it and/or modify it under the
+   terms of the GNU General Public License as published by the Free Software
+   Foundation, either version 3 of the License, or (at your option) any later
+   version.
+
+   Pure is distributed in the hope that it will be useful, but WITHOUT ANY
+   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+   FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+   details.
+
+   You should have received a copy of the GNU General Public License along
+   with this program.  If not, see <http://www.gnu.org/licenses/>. */
+
+/* ..
+   
+   Sorting
+   -------
+   
+   This module is loaded via the command ``using gsl::sort`` and 
+   provides Pure wrappers for the GSL sorting
+   routines found in Chapter 11 of the GSL manual,
+   
+   http://www.gnu.org/software/gsl/manual/html_node/Sorting.html.
+   
+   Routines
+   ~~~~~~~~
+*/
+
+using "lib:gsl";
+
+namespace gsl;
+
+private extern void gsl_sort(double*, size_t, size_t) = c_gsl_sort;
+private extern void gsl_sort_int(int*, size_t, size_t) = c_gsl_sort_int;
+private extern void gsl_sort_index(size_t*, double*, size_t, size_t);
+private extern void gsl_sort_int_index(size_t*, int*, size_t, size_t);
+
+public
+  sort_vector
+  sort_vector_index;
+
+/* .. sort_vector:
+
+   ``sort_vector m::matrix``
+     sorts the elements of the vector ``m`` into ascending numerical order.
+
+   .. _sort_vector_index:
+
+   ``sort_vector_index m::matrix``
+     returns the vector of indexes corresponding to the elements of a 
+     sorted array ``m``. Note that sort_vector_index does not sort ``m``.
+*/
+
+sort_vector  m::matrix
+  = v $$ m
+    with
+      v = gsl_sort_int (pointer m) 1 (#m) if imatrixp m;
+      v = gsl_sort (pointer m) 1 (#m) if dmatrixp m;
+    end
+    if rowvectorp m;
+
+sort_vector_index  m::matrix
+  = v $$ k
+    with
+      v = gsl_sort_int_index (pointer k) m 1 (#m) if imatrixp m;
+      v = gsl_sort_index (pointer k) m 1 (#m) if dmatrixp m;
+    end
+    when
+      k = {0 | i=0..#m-1};
+    end
+    if rowvectorp m;
+
+/* ..
+   
+   Examples
+   ~~~~~~~~
+   
+   Usage of each library routine is illustrated below.
+   
+   ::
+   
+     > using gsl::sort;
+     > using namespace gsl;
+     > sort_vector {0,3,2,4,5};
+     {0,2,3,4,5} 
+     > sort_vector_index {0.0,1.0,5.0,2.0,8.0,0.0};
+     {5,0,1,3,2,4}
+*/

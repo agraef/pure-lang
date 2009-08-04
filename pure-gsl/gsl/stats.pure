@@ -1,0 +1,734 @@
+
+/* gsl/stats.pure: GSL wrapper for the Pure programming language. */
+
+/* Copyright (c) 2008 by Albert Graef <Dr.Graef@t-online.de>.
+   Copyright (c) 2008 by Robert E. Rucker <erucker@bmc.edu>.
+
+   This file is part of the Pure programming language and system.
+
+   Pure is free software: you can redistribute it and/or modify it under the
+   terms of the GNU General Public License as published by the Free Software
+   Foundation, either version 3 of the License, or (at your option) any later
+   version.
+
+   Pure is distributed in the hope that it will be useful, but WITHOUT ANY
+   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+   FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+   details.
+
+   You should have received a copy of the GNU General Public License along
+   with this program.  If not, see <http://www.gnu.org/licenses/>. */
+
+/* ..
+   
+   Statistics
+   ----------
+   
+   This module is loaded via the command ``using gsl::stats`` and provides Pure
+   wrappers for the GSL Statistics routines found in Chapter 20 of
+   the GSL manual,
+   
+   http://www.gnu.org/software/gsl/manual/html_node/Statistics.html.
+   
+   Routines
+   ~~~~~~~~
+*/
+
+using "lib:gsl";
+
+namespace gsl;
+namespace gsl::stats;
+
+private extern double gsl_stats_mean(double*, size_t, size_t);
+private extern double gsl_stats_variance(double*, size_t, size_t);
+private extern double gsl_stats_variance_m(double*, size_t, size_t, double);
+private extern double gsl_stats_sd(double*, size_t, size_t);
+private extern double gsl_stats_sd_m(double*, size_t, size_t, double);
+private extern double gsl_stats_tss(double*, size_t, size_t);
+private extern double gsl_stats_tss_m(double*, size_t, size_t, double);
+private extern double gsl_stats_variance_with_fixed_mean
+  (double*, size_t, size_t, double);
+private extern double gsl_stats_sd_with_fixed_mean
+  (double*, size_t, size_t, double);
+private extern double gsl_stats_absdev(double*, size_t, size_t);
+private extern double gsl_stats_absdev_m(double*, size_t, size_t, double);
+private extern double gsl_stats_skew(double*, size_t, size_t);
+private extern double gsl_stats_skew_m_sd
+  (double*, size_t, size_t, double, double);
+private extern double gsl_stats_kurtosis(double*, size_t, size_t);
+private extern double gsl_stats_kurtosis_m_sd
+ (double*, size_t, size_t, double, double);
+private extern double gsl_stats_lag1_autocorrelation(double*, size_t, size_t);
+private extern double gsl_stats_lag1_autocorrelation_m
+  (double*, size_t, size_t, double);
+private extern double gsl_stats_covariance
+  (double*, size_t, double*, size_t, size_t);
+private extern double gsl_stats_covariance_m
+  (double*, size_t, double*, size_t, size_t, double, double);
+private extern double gsl_stats_wmean(double*, size_t, double*, size_t, size_t);
+private extern double gsl_stats_wvariance
+  (double*, size_t, double*, size_t, size_t);
+private extern double gsl_stats_wvariance_m
+  (double*, size_t, double*, size_t, size_t, double);
+private extern double gsl_stats_wsd(double*, size_t, double*, size_t, size_t);
+private extern double gsl_stats_wsd_m
+  (double*, size_t, double*, size_t, size_t, double);
+private extern double gsl_stats_wvariance_with_fixed_mean
+  (double*, size_t, double*, size_t, size_t, double);
+private extern double gsl_stats_wsd_with_fixed_mean
+  (double*, size_t, double*, size_t, size_t, double);
+private extern double gsl_stats_wtss(double*, size_t, double*, size_t, size_t);
+private extern double gsl_stats_wtss_m
+  (double*, size_t, double*, size_t, size_t, double);
+private extern double gsl_stats_wabsdev
+  (double*, size_t, double*, size_t, size_t);
+private extern double gsl_stats_wabsdev_m
+  (double*, size_t, double*, size_t, size_t, double);
+private extern double gsl_stats_wskew(double*, size_t, double*, size_t, size_t);
+private extern double gsl_stats_wskew_m_sd
+  (double*, size_t, double*, size_t, size_t, double, double);
+private extern double gsl_stats_wkurtosis
+  (double*, size_t, double*, size_t, size_t);
+private extern double gsl_stats_wkurtosis_m_sd
+  (double*, size_t, double*, size_t, size_t, double, double);
+private extern double gsl_stats_correlation
+  (double*, size_t, double*, size_t, size_t);
+private extern double gsl_stats_median_from_sorted_data
+  (double*, size_t, size_t);
+private extern double gsl_stats_quantile_from_sorted_data
+  (double*, size_t, size_t, double);
+private extern int gsl_stats_int_max(int*, size_t, size_t);
+private extern double gsl_stats_max(double*, size_t, size_t);
+private extern int gsl_stats_int_min(int*, size_t, size_t);
+private extern double gsl_stats_min(double*, size_t, size_t);
+private extern expr* wrap_gsl_stats_int_minmax(int*, size_t);
+private extern expr* wrap_gsl_stats_minmax(double*, size_t);
+private extern int gsl_stats_int_max_index(int*, size_t, size_t);
+private extern int gsl_stats_max_index(double*, size_t, size_t);
+private extern int gsl_stats_int_min_index(int*, size_t, size_t);
+private extern int gsl_stats_min_index(double*, size_t, size_t);
+private extern expr* wrap_gsl_stats_int_minmax_index(int*, size_t);
+private extern expr* wrap_gsl_stats_minmax_index(double*, size_t);
+
+private
+  apply1
+  apply1_w
+  dapply1
+  dapply1_d
+  dapply1_dd
+  dapply2
+  dapply2_d
+  dapply2_dd;
+
+/* Statistics macros. */
+
+def apply1  f  m  =
+  if rowvectorp m then
+    (v when v = f (pointer m) 1 (#m) end)
+  else
+    f m;
+    
+def apply1_w  f  m  =
+  if rowvectorp m then
+    (v when v = f (pointer m) (#m) end)
+  else
+    f m;
+
+def dapply1  f  m  =
+  if rowvectorp m then
+    (v when 
+         x = dmatrix m;
+         v = f (pointer x) 1 (#m)
+       end)
+  else
+    f m;
+  
+def dapply1_d  f  m  d  =
+  if rowvectorp m then
+    (v when
+         x = dmatrix m;
+         v = f (pointer x) 1 (#m) (double d)
+       end)
+  else
+    f m d;
+
+def dapply1_dd  f  m  d1  d2  =
+  if rowvectorp m then
+    (v when
+         x = dmatrix m;
+         v = f (pointer x) 1 (#m) (double d1) (double d2)
+       end)
+  else
+    f m d1 d2;
+
+def dapply2  f  m1  m2  =
+  if rowvectorp m1 && rowvectorp m2 && #m1 == #m2 then
+    (v when
+         x1, x2 = dmatrix m1, dmatrix m2;
+         v = f (pointer x1) 1 (pointer x2) 1 (#m1);
+       end)
+  else
+    f m1 m2;
+
+def dapply2_d  f  m1  m2  d  =
+  if rowvectorp m1 && rowvectorp m2 && #m1 == #m2 then
+    (v when
+         x1, x2 = dmatrix m1, dmatrix m2;
+         v = f (pointer x1) 1 (pointer x2) 1 (#m1) (double d);
+       end)
+  else
+    f m1 m2 d;
+
+def dapply2_dd  f  m1  m2  d1  d2  =
+  if rowvectorp m1 && rowvectorp m2 && #m1 == #m2 then
+    (v when
+         x1, x2 = dmatrix m1, dmatrix m2;
+         v = f (pointer x1) 1 (pointer x2) 1 (#m1) (double d1) (double d2);
+       end)
+  else
+    f m1 m2 d1 d2;
+
+public
+  mean
+  variance
+  variance_m
+  sd
+  sd_m
+  tss
+  tss_m
+  variance_with_fixed_mean
+  sd_with_fixed_mean
+  absdev
+  absdev_m
+  skew
+  skew_m_sd
+  kurtosis
+  kurtosis_m_sd
+  lag1_autocorrelation
+  lag1_autocorrelation_m
+  covariance
+  covariance_m
+  correlation
+  wmean
+  wvariance
+  wvariance_m
+  wsd
+  wsd_m
+  wvariance_with_fixed_mean
+  wsd_with_fixed_mean
+  wabsdev
+  wabsdev_m
+  wskew
+  wskew_m_sd
+  wkurtosis
+  wkurtosis_m_sd
+  max
+  min
+  minmax
+  max_index
+  min_index
+  minmax_index
+  median_from_sorted_data
+  quantile_from_sorted_data;
+
+/* .. _mean:
+
+   ``mean  data::matrix``
+     calcualtes the mean of the dataset.
+*/
+
+mean  data::matrix
+  = dapply1 gsl_stats_mean data;
+
+/* .. _variance:
+
+   ``variance  data::matrix``
+     calcualtes the variance of the dataset.
+*/
+
+variance  data::matrix
+  = dapply1 gsl_stats_variance data;
+
+/* .. _variance_m:
+
+   ``variance  data::matrix  mean``
+     calcualtes the variance of the dataset relative to the given mean.
+*/
+
+variance_m  data::matrix  mean
+  = dapply1_d gsl_stats_variance_m data mean;
+
+/* .. _sd:
+
+   ``sd  data::matrix``
+     calcualtes the standard deviation of the dataset.
+*/
+
+sd  data::matrix
+  = dapply1 gsl_stats_sd data;
+
+/* .. _sd_m:
+
+   ``sd_m  data::matrix  mean``
+     calcualtes the standard deviation of the dataset relative to the  given mean.
+*/
+
+sd_m  data::matrix  mean
+  = dapply1_d gsl_stats_sd_m data mean;
+
+/* .. _tss:
+
+   ``tss  data::matrix``
+     returns the total sum of squares of the dataset.
+*/
+
+tss  data::matrix
+  = dapply1 gsl_stats_tss data;
+
+/* .. _tss_m:
+
+   ``tss  data::matrix  mean``
+     returns the total sum of squares of the dataset about the given mean.
+*/
+
+tss_m  data::matrix  mean
+  = dapply1_d gsl_stats_tss_m data mean;
+
+/* .. _variance_with_fixed_mean:
+
+   ``variance_with_fixed_mean data::matrix  mean``
+     returns the total sum of squares of the dataset abount the population mean.
+*/
+
+variance_with_fixed_mean  data::matrix  mean
+  = dapply1_d gsl_stats_variance_with_fixed_mean data mean;
+
+/* .. _sd_with_fixed_mean:
+
+   ``sd_with_fixed_mean  data::matrix  mean``
+     computes an unbiased estimate of the variance about the population mean.
+*/
+
+sd_with_fixed_mean  data::matrix  mean
+  = dapply1_d gsl_stats_sd_with_fixed_mean data mean;
+
+/* .. _absdev:
+
+   ``absdev  data::matrix``
+     computes the absolute deviation from the mean of the data.
+*/
+
+absdev  data::matrix
+  = dapply1 gsl_stats_absdev data;
+
+/* .. _absdev_m:
+
+   ``absdev_m  data::matrix  mean``
+     computes the absolute deviation from the mean relative to the given mean.
+*/
+
+absdev_m  data::matrix  mean
+  = dapply1_d gsl_stats_absdev_m data mean;
+
+/* .. _skew:
+
+   ``skew  data::matrix  mean``
+     computes the skewness of the data.
+*/
+
+skew  data::matrix
+  = dapply1 gsl_stats_skew data;
+
+/* .. _skew_m_sd:
+
+   ``skew_m_sd  data::matrix  mean  sd``
+     computes the skewness of data using the given mean and standard deviation.
+*/
+
+skew_m_sd  data::matrix  mean  sd
+  = dapply1_dd gsl_stats_skew_m_sd data mean sd if sd >= 0.0;
+
+/* .. _skew:
+
+   ``kurtosis  data::matrix``
+     computes the kurtosis of the data.
+*/
+
+kurtosis  data::matrix
+  = dapply1 gsl_stats_kurtosis data;
+
+/* .. _kurtosis_m_sd:
+
+   ``kurtosis_m_sd  data::matrix  mean  sd``
+     computes the kurtosis of the dataset about the given mean and standard deviation.
+*/
+
+kurtosis_m_sd  data::matrix  mean  sd
+  = dapply1_dd gsl_stats_kurtosis_m_sd data mean sd if sd >= 0.0;
+
+/* .. _lag1_autocorrelation:
+
+   ``lag1_autocorrelation  data::matrix``
+     computes the lag-1 autocorrelation of the the data.
+*/
+
+lag1_autocorrelation  data::matrix
+  = dapply1 gsl_stats_lag1_autocorrelation data;
+
+/* .. _lag1_autocorrelation_m:
+
+   ``lag1_autocorrelation_m  data::matrix  mean``
+     computes the lag-1 autocorrelation of the the data about the given mean.
+*/
+
+lag1_autocorrelation_m  data::matrix  mean
+  = dapply1_d gsl_stats_lag1_autocorrelation_m data mean;
+
+/* .. _covariance:
+
+   ``covariance  d1::matrix  d2::matrix``
+     computes the covariance of the datasests ``d1`` and ``d2``.
+*/
+
+covariance  d1::matrix  d2::matrix
+  = dapply2 gsl_stats_covariance d1 d2;
+
+/* .. _covariance_m:
+
+   ``covariance_m  d1::matrix  d2::matrix  mean1  mean2``
+     computes the covariance of the datasets ``d1`` with mean, ``mean1``,
+     and ``d2`` with mean, ``mean2``.
+*/
+
+covariance_m  d1::matrix  d2::matrix  mean1  mean2
+  = dapply2_dd gsl_stats_covariance_m d1 d2 mean1 mean2;
+
+/* .. _correlation:
+
+   ``correlation  d1::matrix  d2::matrix``
+     computes the Pearson correlation coefficient between the datasets 
+     ``d1`` and ``d2``.
+*/
+
+correlation  d1::matrix  d2::matrix
+  = dapply2 gsl_stats_correlation d1 d2;
+
+/* .. _wmean:
+
+   ``wmean  weight::matrix  data::matrix``
+     computes the weighted mean of the data.
+*/
+
+wmean  weight::matrix  data::matrix
+  = dapply2 gsl_stats_wmean weight data;
+
+/* .. _wvariance:
+   
+   ``wvariance  weight::matrix  data::matrix``
+     computes the weighted variance of data.
+*/
+
+wvariance  weight::matrix  data::matrix
+  = dapply2 gsl_stats_wvariance weight data;
+
+/* .. _wvariance_m:
+
+   ``wvariance_m  weight::matrix  data::matrix  mean``
+     computes the weighted variance of the data about the given mean.
+*/
+
+wvariance_m  weight::matrix  data::matrix  mean
+  = dapply2_d gsl_stats_wvariance_m weight data mean;
+
+/* .. _wsd:
+
+   ``wsd  weight::matrix  data::matrix``
+     computes the weighed standard deviation of the data.
+*/
+
+wsd  weight::matrix  data::matrix
+  = dapply2 gsl_stats_wsd weight data;
+
+/* .. _wsd_m:
+   
+   ``wsd_m  weights::matrix  m::matrix  mean``
+     computes the weighed standard deviation of the data about the given mean.
+*/
+
+wsd_m  weight::matrix  data::matrix  mean
+  = dapply2_d gsl_stats_wsd_m weight data mean;
+
+/* .. _wvariance_with_fixed_mean:
+   
+   ``wvariance_with_fixed_mean  weight::matrix  data::matrix  mean``
+     computes the unbiased estimate of the variance of the weighted data
+     about the given population mean.
+*/
+
+wvariance_with_fixed_mean  weight::matrix  data::matrix  mean
+  = dapply2_d gsl_stats_wvariance_with_fixed_mean weight data mean;
+
+/* .. _wsd_with_fixed_mean:
+   
+   ``wsd_with_fixed_mean  weight::matrix  data::matrix  mean``
+     computes the unbiased estimate of the standard deviation of the 
+     weighted data about the given population mean.
+*/
+
+wsd_with_fixed_mean  weight::matrix  data::matrix  mean
+  = dapply2_d gsl_stats_wsd_with_fixed_mean weight data mean;
+
+/* .. _wtss:
+   
+   ``wtss  weights::matrix  data::matrix``
+     returns the weighted total sum of squares of the weighted data.
+*/
+
+wtss  weight::matrix  data::matrix
+  = dapply2 gsl_stats_wtss weight data;
+
+/* .. _wtss:
+   
+   ``wtss  weights::matrix  data::matrix  mean``
+     returns the weighted total sum of squares of the weighted data
+     about the given population mean.
+*/
+
+wtss_m  weights::matrix  data::matrix  mean
+  = dapply2_d gsl_stats_wtss_m weights data mean;
+
+/* .. _wabsdev:
+   
+   ``wabsdev  weight::matrix  data::matrix``
+     computes the weighted absolute deviation from the weighted mean of the
+     data.
+*/
+
+wabsdev  weight::matrix  data::matrix
+  = dapply2 gsl_stats_wabsdev weight data;
+
+/* .. _wabsdev_m:
+   
+   ``wabsdev_m  weight::matrix  data::matrix  mean``
+      computes the weighted absolute deviation about the given mean.
+*/
+
+wabsdev_m  weight::matrix  data::matrix  mean
+  = dapply2_d gsl_stats_wabsdev_m weight data mean;
+
+/* .. _wskew:
+   
+   ``wskew  weight::matrix  data::matrix``
+     computed the weighted skewness of the dataset data.
+*/
+
+wskew  weight::matrix  data::matrix
+  = dapply2 gsl_stats_wskew weight data;
+
+/* .. _wskew_m_sd:
+   
+   ``wskew_m_sd  weight::matrix  data::matrix  mean  sd``
+     computes the weighted skewness of the data using the given mean
+     and standard deviation.
+*/
+
+wskew_m_sd  weight::matrix  data::matrix  mean  sd
+  = dapply2_dd gsl_stats_wskew_m_sd weight data mean sd if sd >= 0.0;
+
+/* .. _wkurtosis:
+   
+   ``wkurtosis  weight::matrix  data::matrix``
+     computes the weighted kurtosis of the data.
+*/
+
+wkurtosis  weight::matrix  data::matrix
+  = dapply2 gsl_stats_wkurtosis weight data;
+
+/* .. _wkurtosis_m_sd:
+   
+   ``wkurtosis_m_sd  weight::matrix  data::matrix``
+     computes the weighted kurtosis of the data about the given mean 
+     and standard deviation.
+*/
+
+wkurtosis_m_sd  weight::matrix  data::matrix mean sd
+  = dapply2_dd gsl_stats_wkurtosis_m_sd weight data mean sd 
+    if sd >= 0.0;
+
+/* .. _max:
+   
+   ``max  data::matrix``
+     returns the maximum value of the data.
+*/
+
+max  data::matrix
+  = apply1 gsl_stats_int_max data if imatrixp data;
+  = apply1 gsl_stats_max data if dmatrixp data;
+
+/* .. _min:
+   
+   ``min  data::matrix``
+     returns the minimum value of the data.
+*/
+
+min  data::matrix
+  = apply1 gsl_stats_int_min data if imatrixp data;
+  = apply1 gsl_stats_min data if dmatrixp data;
+
+/* .. _minmax:
+   
+   ``minmax  data::matrix``
+     returns a list containing the minimum and maximum values of the data.
+*/
+
+minmax  data::matrix
+  = apply1_w wrap_gsl_stats_int_minmax data if imatrixp data;
+  = apply1_w wrap_gsl_stats_minmax data if dmatrixp data;
+
+/* .. _min_index:
+   
+   ``min_index  data::matrix``
+     returns the index of minimum value of the data.
+*/
+
+min_index  data::matrix
+  = apply1 gsl_stats_int_min_index data if imatrixp data;
+  = apply1 gsl_stats_min_index data if dmatrixp data;
+
+/* .. _max_index:
+   
+   ``max_index  data::matrix``
+     returns the index of maximum value of the data.
+*/
+  
+max_index  data::matrix
+  = apply1 gsl_stats_int_max_index data if imatrixp data;
+  = apply1 gsl_stats_max_index data if dmatrixp data;
+
+/* .. _minmax_index:
+   
+   ``minmax_index  data::matrix``
+     returns a list of the indexs of the minimum and maximum value of the data.
+*/
+
+minmax_index  data::matrix
+  = apply1_w wrap_gsl_stats_int_minmax_index data if imatrixp data;
+  = apply1_w wrap_gsl_stats_minmax_index data if dmatrixp data;
+
+/* .. _median_from_sorted_data:
+   
+   ``median_from_sorted_data  data::matrix``
+     returns the median value of the data. Note that the data `must` be sorted.
+*/
+
+median_from_sorted_data  data::matrix
+  = dapply1 gsl_stats_median_from_sorted_data data;
+
+/* .. _quantile_from_sorted_data:
+   
+   ``quantile_from_sorted_data  data::matrix  f::double``
+     returns the quantile value of the data. Note that the data `must` be sorted.
+*/
+
+quantile_from_sorted_data  data::matrix  f::double
+  = dapply1_d gsl_stats_quantile_from_sorted_data data f
+    if f >= 0.0 && f <= 1.0;
+
+/* ..
+   
+   Examples
+   ~~~~~~~~
+   
+   The following illustrates the use of each function in the ``stats`` module.
+   
+     ::
+     
+       > using gsl::stats;
+       > using namespace gsl::stats;
+       > mean {1,2,3,4,5};
+       3.0
+       > variance {1,2,3,4,5};
+       2.5
+       > variance_m {1,2,3,4,5}  4;
+       3.75
+       > sd {1,2,3,4,5};
+       1.58113883008419
+       > sd_m {1,2,3,4,5} 4;
+       1.93649167310371
+       > tss {1,2,3,4,5};
+       10.0
+       > tss_m {1,2,3,4,5} 4;
+       15.0
+       > variance_with_fixed_mean {0.0,1.2,3.4,5.6,6.0} 4.1;
+       6.314
+       > sd_with_fixed_mean {0.0,1.2,3.4,5.6,6.0} 4.1;
+       2.51276739870606
+       > absdev {2,2,3,4,4};
+       0.8
+       > absdev_m {2,2,3,4,4} 4;
+       1.0
+       > skew {1,1,1,1,2,2,2,2,2,2,2,2,3,30};
+       2.94796699504537
+       > skew_m_sd {1,2,2,3,3,3,3,3,3,3,4,4,5} 3 1;
+       0.0
+       > kurtosis  {1,2,2,3,3,3,3,3,3,3,4,4,5};
+       -0.230769230769231
+       > kurtosis_m_sd {1,2,2,3,3,3,3,3,3,3,4,4,5} 3 1;
+       -0.230769230769231
+       > lag1_autocorrelation {1,2,3,4,5};
+       0.4
+       > lag1_autocorrelation_m {1,2,3,4,5} 2.5;
+       0.444444444444444
+       > covariance {1,2,3,4,5} {3.0,4.5,6.0,7.5,9.0};
+       3.75
+       > covariance_m {1,2,3,4,5} {3.0,4.5,6.0,7.5,9.0} 3 6;
+       3.75
+       > correlation {1,2,3,4} {2,3,4,5};
+       1.0
+       > wmean {0.4,0.2,0.3,0.3,0.3} {2,3,4,5,6};
+       3.93333333333333
+       > wvariance {0.4,0.2,0.3,0.3,0.3} {2,3,4,5,6};
+       2.7752808988764
+       > wvariance_m {0.4,0.2,0.3,0.3,0.3} {2,3,4,5,6} 3.0;
+       3.87640449438202
+       > wsd {0.4,0.2,0.3,0.3,0.3} {2,3,4,5,6};
+       1.66591743459164
+       > wsd_m {0.4,0.2,0.3,0.3,0.3} {2,3,4,5,6} 3.0;
+       1.96885867811329
+       > wvariance_with_fixed_mean {1,2,3,4} {1,2,3,4} 2.5;
+       1.25
+       > wsd_with_fixed_mean {1,2,3,4} {1,2,3,4} 2.5;
+       1.11803398874989
+       > wtss {1,1,2,2} {2,3,4,5};
+       6.83333333333333
+       > wtss_m {1,1,2,2} {2,3,4,5} 3.1;
+       10.06
+       > wabsdev {1,1,2,2} {2,3,4,5};
+       0.888888888888889
+       > wabsdev_m {1,1,2,2} {2,3,4,5} 3.1;
+       1.13333333333333
+       > wskew {1,1,2,2} {2,3,4,5};
+       -0.299254338484713
+       > wskew_m_sd {1,1,2,2} {2,3,4,5} 3.1 1.2;
+       1.33526234567901
+       > wkurtosis {1,1,2,2} {2,3,4,5};
+       -1.96206512878137
+       > wkurtosis_m_sd {1,1,2,2} {2,3,4,5} 3.1 1.2;
+       -0.681921939300412
+       > min {9,4,2,1,9};
+       1
+       > max {9.1,4.2,2.6,1.1,9.2};
+       9.2
+       > minmax {9.0,4.0,2.0,1.0,9.0};
+       [1.0,9.0]
+       > min_index {9.1,4.2,2.6,1.1,9.2};
+       3
+       > max_index {9,4,2,1,9};
+       0
+       > minmax_index {9,4,2,1,0,9};
+       [4,0]
+       > median_from_sorted_data {1.0,2.0,3.0};
+       2.0
+       > quantile_from_sorted_data {1.0,2.0,3.0} 0.25;
+       1.5
+*/

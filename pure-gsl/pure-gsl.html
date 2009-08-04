@@ -1,0 +1,1853 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Docutils 0.5: http://docutils.sourceforge.net/" />
+<title>pure-gsl - GNU Scientific Library interface for Pure</title>
+<meta name="authors" content="Albert Graef &lt;Dr.Graef&#64;t-online.de&gt; and Eddie Rucker &lt;erucker&#64;bmc.edu&gt;" />
+<style type="text/css">
+
+/*
+:Author: David Goodger (goodger@python.org)
+:Id: $Id: html4css1.css 5196 2007-06-03 20:25:28Z wiemann $
+:Copyright: This stylesheet has been placed in the public domain.
+
+Default cascading style sheet for the HTML output of Docutils.
+
+See http://docutils.sf.net/docs/howto/html-stylesheets.html for how to
+customize this style sheet.
+*/
+
+/* used to remove borders from tables and images */
+.borderless, table.borderless td, table.borderless th {
+  border: 0 }
+
+table.borderless td, table.borderless th {
+  /* Override padding for "table.docutils td" with "! important".
+     The right padding separates the table cells. */
+  padding: 0 0.5em 0 0 ! important }
+
+.first {
+  /* Override more specific margin styles with "! important". */
+  margin-top: 0 ! important }
+
+.last, .with-subtitle {
+  margin-bottom: 0 ! important }
+
+.hidden {
+  display: none }
+
+a.toc-backref {
+  text-decoration: none ;
+  color: black }
+
+blockquote.epigraph {
+  margin: 2em 5em ; }
+
+dl.docutils dd {
+  margin-bottom: 0.5em }
+
+/* Uncomment (and remove this text!) to get bold-faced definition list terms
+dl.docutils dt {
+  font-weight: bold }
+*/
+
+div.abstract {
+  margin: 2em 5em }
+
+div.abstract p.topic-title {
+  font-weight: bold ;
+  text-align: center }
+
+div.admonition, div.attention, div.caution, div.danger, div.error,
+div.hint, div.important, div.note, div.tip, div.warning {
+  margin: 2em ;
+  border: medium outset ;
+  padding: 1em }
+
+div.admonition p.admonition-title, div.hint p.admonition-title,
+div.important p.admonition-title, div.note p.admonition-title,
+div.tip p.admonition-title {
+  font-weight: bold ;
+  font-family: sans-serif }
+
+div.attention p.admonition-title, div.caution p.admonition-title,
+div.danger p.admonition-title, div.error p.admonition-title,
+div.warning p.admonition-title {
+  color: red ;
+  font-weight: bold ;
+  font-family: sans-serif }
+
+/* Uncomment (and remove this text!) to get reduced vertical space in
+   compound paragraphs.
+div.compound .compound-first, div.compound .compound-middle {
+  margin-bottom: 0.5em }
+
+div.compound .compound-last, div.compound .compound-middle {
+  margin-top: 0.5em }
+*/
+
+div.dedication {
+  margin: 2em 5em ;
+  text-align: center ;
+  font-style: italic }
+
+div.dedication p.topic-title {
+  font-weight: bold ;
+  font-style: normal }
+
+div.figure {
+  margin-left: 2em ;
+  margin-right: 2em }
+
+div.footer, div.header {
+  clear: both;
+  font-size: smaller }
+
+div.line-block {
+  display: block ;
+  margin-top: 1em ;
+  margin-bottom: 1em }
+
+div.line-block div.line-block {
+  margin-top: 0 ;
+  margin-bottom: 0 ;
+  margin-left: 1.5em }
+
+div.sidebar {
+  margin: 0 0 0.5em 1em ;
+  border: medium outset ;
+  padding: 1em ;
+  background-color: #ffffee ;
+  width: 40% ;
+  float: right ;
+  clear: right }
+
+div.sidebar p.rubric {
+  font-family: sans-serif ;
+  font-size: medium }
+
+div.system-messages {
+  margin: 5em }
+
+div.system-messages h1 {
+  color: red }
+
+div.system-message {
+  border: medium outset ;
+  padding: 1em }
+
+div.system-message p.system-message-title {
+  color: red ;
+  font-weight: bold }
+
+div.topic {
+  margin: 2em }
+
+h1.section-subtitle, h2.section-subtitle, h3.section-subtitle,
+h4.section-subtitle, h5.section-subtitle, h6.section-subtitle {
+  margin-top: 0.4em }
+
+h1.title {
+  text-align: center }
+
+h2.subtitle {
+  text-align: center }
+
+hr.docutils {
+  width: 75% }
+
+img.align-left {
+  clear: left }
+
+img.align-right {
+  clear: right }
+
+ol.simple, ul.simple {
+  margin-bottom: 1em }
+
+ol.arabic {
+  list-style: decimal }
+
+ol.loweralpha {
+  list-style: lower-alpha }
+
+ol.upperalpha {
+  list-style: upper-alpha }
+
+ol.lowerroman {
+  list-style: lower-roman }
+
+ol.upperroman {
+  list-style: upper-roman }
+
+p.attribution {
+  text-align: right ;
+  margin-left: 50% }
+
+p.caption {
+  font-style: italic }
+
+p.credits {
+  font-style: italic ;
+  font-size: smaller }
+
+p.label {
+  white-space: nowrap }
+
+p.rubric {
+  font-weight: bold ;
+  font-size: larger ;
+  color: maroon ;
+  text-align: center }
+
+p.sidebar-title {
+  font-family: sans-serif ;
+  font-weight: bold ;
+  font-size: larger }
+
+p.sidebar-subtitle {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+p.topic-title {
+  font-weight: bold }
+
+pre.address {
+  margin-bottom: 0 ;
+  margin-top: 0 ;
+  font-family: serif ;
+  font-size: 100% }
+
+pre.literal-block, pre.doctest-block {
+  margin-left: 2em ;
+  margin-right: 2em }
+
+span.classifier {
+  font-family: sans-serif ;
+  font-style: oblique }
+
+span.classifier-delimiter {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+span.interpreted {
+  font-family: sans-serif }
+
+span.option {
+  white-space: nowrap }
+
+span.pre {
+  white-space: pre }
+
+span.problematic {
+  color: red }
+
+span.section-subtitle {
+  /* font-size relative to parent (h1..h6 element) */
+  font-size: 80% }
+
+table.citation {
+  border-left: solid 1px gray;
+  margin-left: 1px }
+
+table.docinfo {
+  margin: 2em 4em }
+
+table.docutils {
+  margin-top: 0.5em ;
+  margin-bottom: 0.5em }
+
+table.footnote {
+  border-left: solid 1px black;
+  margin-left: 1px }
+
+table.docutils td, table.docutils th,
+table.docinfo td, table.docinfo th {
+  padding-left: 0.5em ;
+  padding-right: 0.5em ;
+  vertical-align: top }
+
+table.docutils th.field-name, table.docinfo th.docinfo-name {
+  font-weight: bold ;
+  text-align: left ;
+  white-space: nowrap ;
+  padding-left: 0 }
+
+h1 tt.docutils, h2 tt.docutils, h3 tt.docutils,
+h4 tt.docutils, h5 tt.docutils, h6 tt.docutils {
+  font-size: 100% }
+
+ul.auto-toc {
+  list-style-type: none }
+
+</style>
+</head>
+<body>
+<div class="document" id="pure-gsl-gnu-scientific-library-interface-for-pure">
+<h1 class="title">pure-gsl - GNU Scientific Library interface for Pure</h1>
+<table class="docinfo" frame="void" rules="none">
+<col class="docinfo-name" />
+<col class="docinfo-content" />
+<tbody valign="top">
+<tr><th class="docinfo-name">Authors:</th>
+<td>Albert Graef &lt;Dr.Graef&#64;t-online.de&gt; and
+Eddie Rucker &lt;erucker&#64;bmc.edu&gt;</td></tr>
+<tr class="field"><th class="docinfo-name">License:</th><td class="field-body">GPL V3, see the accompanying COPYING file</td>
+</tr>
+</tbody>
+</table>
+<!--  -->
+<p>Building on Pure's GSL matrix support, this module aims to provide a
+complete wrapper for the GNU Scientific Library which provides a wide
+range of mathematical routines useful for scientific programming, number
+crunching and signal processing applications.</p>
+<p>This is still work in progress, only a small part of the interface is
+finished right now. Here is a brief summary of the operations which are
+implemented:</p>
+<ul class="simple">
+<li>Matrix-scalar and matrix-matrix arithmetic. This is fairly complete
+and includes matrix multiplication, as well as element-wise
+exponentiation (^) and integer operations (div, mod, bit shifts and
+bitwise logical operations) which aren't actually in the GSL API.</li>
+<li>SVD (singular value decomposition), as well as the corresponding
+solvers, pseudo inverses and left and right matrix division. This is
+only available for real matrices right now, as GSL doesn't implement
+complex SVD.</li>
+<li>Random distributions (p.d.f. and c.d.f.) and statistic functions.</li>
+<li>Polynomial evaluation and roots.</li>
+<li>Linear least-squares fitting. Multi-fitting is not available yet.</li>
+</ul>
+<p>Installation instructions: Run 'make' to compile the module and
+'make install' (as root) to install it in the Pure library directory.
+This requires GNU make, and of course you need to have Pure and GSL
+installed. The 'make install' step is only necessary for system-wide
+installation.</p>
+<p>'make' tries to guess your Pure installation directory and
+platform-specific setup. If it gets this wrong, you can set some
+variables manually. In particular, 'make install prefix=/usr' sets the
+installation prefix, and 'make PIC=-fPIC' or some similar flag might be
+needed for compilation on 64 bit systems. Please see the Makefile for
+details.</p>
+<p>The current release requires GSL 1.11 or later. Older GSL versions might
+still work, but then some operations may be missing. The latest and
+greatest GSL version is always available from
+<a class="reference external" href="http://www.gnu.org/software/gsl">http://www.gnu.org/software/gsl</a>.</p>
+<p>See the 'examples' folder in the sources for some examples.</p>
+<p>If you'd like to contribute, please mail the authors or contact us at
+<a class="reference external" href="http://groups.google.com/group/pure-lang">http://groups.google.com/group/pure-lang</a>.</p>
+<div class="contents topic" id="contents">
+<p class="topic-title first">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#polynomials" id="id11">Polynomials</a><ul>
+<li><a class="reference internal" href="#routines" id="id12">Routines</a></li>
+<li><a class="reference internal" href="#examples" id="id13">Examples</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#special-functions" id="id14">Special Functions</a><ul>
+<li><a class="reference internal" href="#id1" id="id15">Routines</a></li>
+<li><a class="reference internal" href="#id2" id="id16">Examples</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#sorting" id="id17">Sorting</a><ul>
+<li><a class="reference internal" href="#id3" id="id18">Routines</a></li>
+<li><a class="reference internal" href="#id4" id="id19">Examples</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#random-number-distributions" id="id20">Random Number Distributions</a><ul>
+<li><a class="reference internal" href="#id5" id="id21">Routines</a></li>
+<li><a class="reference internal" href="#id6" id="id22">Examples</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#statistics" id="id23">Statistics</a><ul>
+<li><a class="reference internal" href="#id7" id="id24">Routines</a></li>
+<li><a class="reference internal" href="#id8" id="id25">Examples</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#least-squares-fitting" id="id26">Least-Squares Fitting</a><ul>
+<li><a class="reference internal" href="#id9" id="id27">Routines</a></li>
+<li><a class="reference internal" href="#id10" id="id28">Examples</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<!--  -->
+<div class="section" id="polynomials">
+<h1><a class="toc-backref" href="#id11">Polynomials</a></h1>
+<p>This module provides Pure wrappers for the GSL polynomial routines. For details, see
+Chapter 6 of the GSL manual,</p>
+<p><a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/Polynomials.html">http://www.gnu.org/software/gsl/manual/html_node/Polynomials.html</a>.</p>
+<p>Notes:</p>
+<blockquote>
+<ol class="arabic simple">
+<li>Pure routines omit the C routines' array length parameters.</li>
+<li>A Polynomials is represented by a one row matrix.</li>
+</ol>
+</blockquote>
+<div class="section" id="routines">
+<h2><a class="toc-backref" href="#id12">Routines</a></h2>
+<a name="eval"><dl class="docutils" id="eval">
+<dt><tt class="docutils literal"><span class="pre">eval</span>&nbsp; <span class="pre">c::matrix</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd><p class="first">evaluates the polynomial</p>
+<p><tt class="docutils literal"><span class="pre">(c!0)+(c!1)x+(c!2)x^2+...+(c!(#c-1))x^(#c-1)</span></tt>.</p>
+<p class="last">An extra Pure routine for evaluating polynomials with <tt class="docutils literal"><span class="pre">int</span></tt> and
+<tt class="docutils literal"><span class="pre">bigint</span></tt> coefficients is provided because GSL does not supply one.
+The integer routine implements the Chinese Remainder Theorem.</p>
+</dd>
+</dl>
+<a name="dd_init"><dl class="docutils" id="dd-init">
+<dt><tt class="docutils literal"><span class="pre">dd_init</span> <span class="pre">x::matrix</span> <span class="pre">y::matrix</span></tt></dt>
+<dd><p class="first">computes a divided-difference representation of the interpolating
+polynomial for the points</p>
+<p class="last"><tt class="docutils literal"><span class="pre">(x!0,</span> <span class="pre">y!0),</span> <span class="pre">(x!1,</span> <span class="pre">y!1),</span> <span class="pre">...,</span> <span class="pre">(x!(#x-1),</span> <span class="pre">y!(#x-1))</span></tt>.</p>
+</dd>
+</dl>
+<a name="dd_eval"><dl class="docutils" id="dd-eval">
+<dt><tt class="docutils literal"><span class="pre">dd_eval</span> <span class="pre">dd::matrix</span> <span class="pre">xa::matrix</span> <span class="pre">x::double</span></tt></dt>
+<dd>evaluates the polynomial stored in divided-difference form in matrices
+<tt class="docutils literal"><span class="pre">dd</span></tt> and <tt class="docutils literal"><span class="pre">xa</span></tt> at the point <tt class="docutils literal"><span class="pre">x</span></tt>.</dd>
+</dl>
+<a name="dd_talyor"><dl class="docutils" id="dd-talyor">
+<dt><tt class="docutils literal"><span class="pre">dd_taylor</span> <span class="pre">xp::double</span> <span class="pre">dd::matrix</span> <span class="pre">xa::matrix</span></tt></dt>
+<dd>converts the divided-difference representation of a polynomial to a
+Taylor expansion where the divided-difference representation is supplied
+by the matrices <tt class="docutils literal"><span class="pre">dd</span></tt> and <tt class="docutils literal"><span class="pre">xa</span></tt> expanded about the point <tt class="docutils literal"><span class="pre">xp</span></tt>.</dd>
+</dl>
+<a name="solve_quadratic"><dl class="docutils" id="solve-quadratic">
+<dt><tt class="docutils literal"><span class="pre">solve_quadratic</span> <span class="pre">a</span> <span class="pre">b</span> <span class="pre">c</span></tt></dt>
+<dd><p class="first">computes the real roots of the quadratic equation</p>
+<p><tt class="docutils literal"><span class="pre">a*x^2+b*x+c=0</span></tt>.</p>
+<p class="last">This function returns a list with no root if the determinate is
+negative, one root if <tt class="docutils literal"><span class="pre">a</span> <span class="pre">==</span> <span class="pre">0</span></tt>, or two of roots otherwise.</p>
+</dd>
+</dl>
+<a name="complex_solve_quadratic"><dl class="docutils" id="complex-solve-quadratic">
+<dt><tt class="docutils literal"><span class="pre">complex_solve_quadratic</span> <span class="pre">a</span> <span class="pre">b</span> <span class="pre">c</span></tt></dt>
+<dd><p class="first">computes the complex roots of the quadratic equation</p>
+<p><tt class="docutils literal"><span class="pre">a*x^2+b*x+c=0</span></tt>.</p>
+<p class="last">This function returns a list with one root if <tt class="docutils literal"><span class="pre">a</span> <span class="pre">==</span> <span class="pre">0</span></tt>, or a pair,
+sorted by real part and then img part, of roots otherwise.</p>
+</dd>
+</dl>
+<a name="solve_cubic"><dl class="docutils" id="solve-cubic">
+<dt><tt class="docutils literal"><span class="pre">solve_cubic</span> <span class="pre">a</span> <span class="pre">b</span> <span class="pre">c</span></tt></dt>
+<dd><p class="first">computes the real roots of the cubic equation</p>
+<p><tt class="docutils literal"><span class="pre">x^3+a*x^2+b*x+c=0</span></tt>.</p>
+<p class="last">This function returns a list with exactly one or exactly three roots.</p>
+</dd>
+</dl>
+<a name="complex_colve_cubic"><dl class="docutils" id="complex-colve-cubic">
+<dt><tt class="docutils literal"><span class="pre">complex_solve_cubic</span> <span class="pre">a</span> <span class="pre">b</span> <span class="pre">c</span></tt></dt>
+<dd><p class="first">computes the complex roots of the cubic equation</p>
+<p><tt class="docutils literal"><span class="pre">x^3+a*x^2+b*x+c=0</span></tt>.</p>
+<p class="last">This functions returns a list with three complex roots.</p>
+</dd>
+</dl>
+<a name="complex_solve"><dl class="docutils" id="complex-solve">
+<dt><tt class="docutils literal"><span class="pre">complex_solve</span>&nbsp; <span class="pre">c::matrix</span></tt></dt>
+<dd><p class="first">returns a list of the roots of the general polynomial</p>
+<p><tt class="docutils literal"><span class="pre">P(x)=(c!0)+(c!1)*x+(c!2)*x^2+(c!(#c-1))*x^(#c-1)</span></tt>.</p>
+<p class="last">If the roots cannot be found, an empty list, <tt class="docutils literal"><span class="pre">[]</span></tt>, is returned. The
+user does not need to supply the GSL routines for creating and freeing a
+workspace as in the C programming language.</p>
+</dd>
+</dl>
+<!--  -->
+</div>
+<div class="section" id="examples">
+<h2><a class="toc-backref" href="#id13">Examples</a></h2>
+<p>Usage of each library routine is illustrated below.</p>
+<pre class="literal-block">
+&gt; using gsl::poly;
+&gt; using namespace gsl::poly;
+&gt; eval {1,2,3} 2;
+17
+&gt; eval {1.0,2.0,3.0} (-2.0);
+9.0
+&gt; eval {1, 2, 2} (1+:1);
+3.0+:6.0
+&gt; eval {1+:2, 2+:3, 2+:3} (1+:1);
+-6.0+:11.0
+&gt; let dd = dd_init {1,2,3} {2,4,6};
+&gt; dd;
+{2.0,2.0,0.0}
+&gt; dd_eval dd {1,2,3} 2;
+4.0
+&gt; dd_taylor 0.0 dd {1,2,3};
+{0.0,2.0,0.0}
+&gt; solve_quadratic 2 4 1;
+[-1.70710678118655,-0.292893218813452]
+&gt; solve_quadratic 1 4 4;
+[-2.0,-2.0]
+&gt; solve_quadratic 0 2 1;
+[-0.5]
+&gt; solve_quadratic 1 2 8;
+[]
+&gt; complex_solve_quadratic 0 2 1;
+[-0.5+:0.0]
+&gt; complex_solve_quadratic 2 2 3;
+[-0.5+:-1.11803398874989,-0.5+:1.11803398874989]
+&gt; solve_cubic 3 3 1;
+[-1.0,-1.0,-1.0]
+&gt; solve_cubic 3 2 1;
+[-2.32471795724475]
+&gt; complex_solve_cubic 2 2 1;
+[-1.0+:0.0,-0.5+:-0.866025403784439,-0.5+:0.866025403784439]
+&gt; complex_solve {6,1,-7,-1,1};
+[1.0+:0.0,-1.0+:0.0,-2.0+:0.0,3.0+:0.0]
+</pre>
+<!--  -->
+</div>
+</div>
+<div class="section" id="special-functions">
+<h1><a class="toc-backref" href="#id14">Special Functions</a></h1>
+<p>This module is loaded via the command <tt class="docutils literal"><span class="pre">using</span> <span class="pre">gsl::sf</span></tt> and provides
+Pure wrappers for the GSL Special Functions. For details, see Chapter 7
+of the GSL manual,</p>
+<p><a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/Special-Functions.html">http://www.gnu.org/software/gsl/manual/html_node/Special-Functions.html</a>.</p>
+<p>To load the libraray, use the Pure command <tt class="docutils literal"><span class="pre">using</span> <span class="pre">gsl::sf</span></tt>.
+Modes for the functions must be one of:</p>
+<pre class="literal-block">
+GSL_PREC_DOUBLE
+GSL_PREC_SINGLE
+GSL_PREC_APPROX
+</pre>
+<p>Results for some of the functions are returned as a Pure list instead of
+the <tt class="docutils literal"><span class="pre">gsl_sf_result</span></tt> or  <tt class="docutils literal"><span class="pre">gsl_sf_result_e10</span></tt> structures in C. In these
+cases, the resulting list is one of the forms:</p>
+<blockquote>
+<tt class="docutils literal"><span class="pre">[val,</span> <span class="pre">err]</span></tt> for the <tt class="docutils literal"><span class="pre">gsl_sf_result</span></tt> struct and
+<tt class="docutils literal"><span class="pre">[val,</span> <span class="pre">err,</span> <span class="pre">e10]</span></tt> for <tt class="docutils literal"><span class="pre">gsl_sf_result_e10</span></tt> struct.</blockquote>
+<div class="section" id="id1">
+<h2><a class="toc-backref" href="#id15">Routines</a></h2>
+<a name="airy_Ai"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">airy_Ai</span> <span class="pre">x</span></tt></dt>
+<dd>computes the Airy function <tt class="docutils literal"><span class="pre">Ai</span> <span class="pre">x</span></tt> with a default <tt class="docutils literal"><span class="pre">GSL_PREC_DOUBLE</span></tt>
+accuracy.</dd>
+<dt><tt class="docutils literal"><span class="pre">airy_Ai</span> <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></dt>
+<dd>computes a double result of the Airy function <tt class="docutils literal"><span class="pre">Ai</span> <span class="pre">x</span></tt> with an accuracy
+specified by <tt class="docutils literal"><span class="pre">mode</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">airy_Ai_e</span> <span class="pre">x</span></tt></dt>
+<dd>computes the list <tt class="docutils literal"><span class="pre">[value,</span> <span class="pre">error]</span></tt> of the Airy function <tt class="docutils literal"><span class="pre">Ai</span> <span class="pre">x</span></tt> with
+a default <tt class="docutils literal"><span class="pre">GSL_PREC_DOUBLE</span></tt> accuracy.</dd>
+<dt><tt class="docutils literal"><span class="pre">airy_Ai_e</span> <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></dt>
+<dd>computes the list <tt class="docutils literal"><span class="pre">[value,</span> <span class="pre">error]</span></tt> of the Airy function <tt class="docutils literal"><span class="pre">Ai</span> <span class="pre">x</span></tt> with
+an accuracy specified by <tt class="docutils literal"><span class="pre">mode</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">airy_Ai_scaled</span> <span class="pre">x</span></tt></dt>
+<dd>compute a scaled version of the Airy function. See the GSL for more
+information.</dd>
+<dt><tt class="docutils literal"><span class="pre">airy_Ai_scaled_e</span> <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></dt>
+<dd>computes the list <tt class="docutils literal"><span class="pre">[value,</span> <span class="pre">error]</span></tt> of the Airy function <tt class="docutils literal"><span class="pre">Ai</span> <span class="pre">x</span></tt> with
+an accuracy specified by <tt class="docutils literal"><span class="pre">mode</span></tt>.</dd>
+</dl>
+<a name="airy_Bi"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">airy_Bi</span> <span class="pre">x</span></tt></dt>
+<dd>computes the Airy function <tt class="docutils literal"><span class="pre">Bi</span> <span class="pre">x</span></tt> with a default <tt class="docutils literal"><span class="pre">GSL_PREC_DOUBLE</span></tt>
+accuracy.</dd>
+<dt><tt class="docutils literal"><span class="pre">airy_Bi</span> <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></dt>
+<dd>computes the Airy function <tt class="docutils literal"><span class="pre">Bi</span> <span class="pre">x</span></tt> with an accuracy specified by
+<tt class="docutils literal"><span class="pre">mode</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">airy_Bi_e</span> <span class="pre">x</span></tt></dt>
+<dd>computes the list <tt class="docutils literal"><span class="pre">[value,</span> <span class="pre">error]</span></tt> of the Airy function <tt class="docutils literal"><span class="pre">Bi</span> <span class="pre">x</span></tt> with
+a default <tt class="docutils literal"><span class="pre">GSL_PREC_DOUBLE</span></tt> accuracy.</dd>
+<dt><tt class="docutils literal"><span class="pre">airy_Bi_e</span> <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></dt>
+<dd>computes the list <tt class="docutils literal"><span class="pre">[value,</span> <span class="pre">error]</span></tt> of the Airy function <tt class="docutils literal"><span class="pre">Bi</span> <span class="pre">x</span></tt> with
+an accuracy specified by <cite>mode</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">airy_Bi_scaled</span> <span class="pre">x</span></tt></dt>
+<dd>compute a scaled version of the Airy function <tt class="docutils literal"><span class="pre">Bi</span> <span class="pre">x</span></tt>. See the GSL
+for more information.</dd>
+<dt><tt class="docutils literal"><span class="pre">airy_Bi_scaled_e</span> <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></dt>
+<dd>computes the list <tt class="docutils literal"><span class="pre">[value,</span> <span class="pre">error]</span></tt> of the Airy function <tt class="docutils literal"><span class="pre">Bi</span> <span class="pre">x</span></tt>
+with an accuracy specified by <tt class="docutils literal"><span class="pre">mode</span></tt>.</dd>
+</dl>
+<!--  -->
+</div>
+<div class="section" id="id2">
+<h2><a class="toc-backref" href="#id16">Examples</a></h2>
+<pre class="literal-block">
+&gt; using gsl::sf;
+&gt; using namespace gsl::sf;
+&gt; airy_Ai (-1.2); // defaults to GSL_PREC_DOUBLE
+0.52619437480212
+&gt; airy_Ai_scaled (-1.2);
+0.52619437480212
+&gt; airy_Ai (-1.2,GSL_PREC_APPROX);
+0.526194374771687
+&gt; airy_Ai_scaled (-1.2, GSL_PREC_SINGLE);
+0.526194374771687
+&gt; airy_Ai_e (-1.2);
+[0.52619437480212,1.88330586480371e-15]
+&gt; airy_Ai_e (-1.2,GSL_PREC_APPROX);
+{0.526194374771687,1.01942940819652e-08}
+&gt; airy_Ai_scaled_e (-1.2);
+[0.52619437480212,1.88330586480371e-15]
+&gt; airy_Ai_scaled_e (-1.2,GSL_PREC_APPROX);
+[0.526194374771687,1.01942940819652e-08]
+&gt; airy_Bi (-1.2);
+-0.015821370184632
+&gt; airy_Bi_scaled (-1.2);
+0.52619437480212
+&gt; airy_Bi (-1.2,GSL_PREC_APPROX);
+-0.0158213701898015
+&gt; airy_Bi_scaled (-1.2, GSL_PREC_SINGLE);
+0.526194374771687
+&gt; airy_Bi_e (-1.2);
+[-0.015821370184632,1.31448899295896e-16]
+&gt;  airy_Bi_e (-1.2,GSL_PREC_APPROX);
+[-0.0158213701898015,4.10638404843775e-10]
+&gt;  airy_Bi_scaled_e (-1.2);
+[0.52619437480212,1.88330586480371e-15]
+&gt; airy_Bi_scaled_e (-1.2,GSL_PREC_APPROX);
+[0.526194374771687,1.01942940819652e-08]
+</pre>
+<!--  -->
+</div>
+</div>
+<div class="section" id="sorting">
+<h1><a class="toc-backref" href="#id17">Sorting</a></h1>
+<p>This module is loaded via the command <tt class="docutils literal"><span class="pre">using</span> <span class="pre">gsl::sort</span></tt> and
+provides Pure wrappers for the GSL sorting
+routines found in Chapter 11 of the GSL manual,</p>
+<p><a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/Sorting.html">http://www.gnu.org/software/gsl/manual/html_node/Sorting.html</a>.</p>
+<div class="section" id="id3">
+<h2><a class="toc-backref" href="#id18">Routines</a></h2>
+<!-- sort_vector: -->
+<dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">sort_vector</span> <span class="pre">m::matrix</span></tt></dt>
+<dd>sorts the elements of the vector <tt class="docutils literal"><span class="pre">m</span></tt> into ascending numerical order.</dd>
+</dl>
+<a name="sort_vector_index"><dl class="docutils" id="sort-vector-index">
+<dt><tt class="docutils literal"><span class="pre">sort_vector_index</span> <span class="pre">m::matrix</span></tt></dt>
+<dd>returns the vector of indexes corresponding to the elements of a
+sorted array <tt class="docutils literal"><span class="pre">m</span></tt>. Note that sort_vector_index does not sort <tt class="docutils literal"><span class="pre">m</span></tt>.</dd>
+</dl>
+<!--  -->
+</div>
+<div class="section" id="id4">
+<h2><a class="toc-backref" href="#id19">Examples</a></h2>
+<p>Usage of each library routine is illustrated below.</p>
+<pre class="literal-block">
+&gt; using gsl::sort;
+&gt; using namespace gsl;
+&gt; sort_vector {0,3,2,4,5};
+{0,2,3,4,5}
+&gt; sort_vector_index {0.0,1.0,5.0,2.0,8.0,0.0};
+{5,0,1,3,2,4}
+</pre>
+<!--  -->
+</div>
+</div>
+<div class="section" id="random-number-distributions">
+<h1><a class="toc-backref" href="#id20">Random Number Distributions</a></h1>
+<p>This module is loaded via the command <tt class="docutils literal"><span class="pre">using</span> <span class="pre">gsl::randist</span></tt> and provides
+Pure wrappers for the GSL random distribution routines found in Chapter
+19 of the GSL manual,</p>
+<p><a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/Random-Number-Distributions.html">http://www.gnu.org/software/gsl/manual/html_node/Random-Number-Distributions.html</a>.</p>
+<p>There are two namespaces provided by randist.pure, <tt class="docutils literal"><span class="pre">gsl::ran</span></tt> for
+probability densitity functions and <tt class="docutils literal"><span class="pre">gsl::cdf</span></tt> for cumulative
+distribution functions. The two namespaces minimize typing of the
+prefixes <tt class="docutils literal"><span class="pre">gsl_ran_</span></tt> and <tt class="docutils literal"><span class="pre">gsl_cdf_</span></tt> respectively.</p>
+<div class="section" id="id5">
+<h2><a class="toc-backref" href="#id21">Routines</a></h2>
+<p>Some of the information for each function is copied from the GSL
+reference manual.</p>
+<a name="ugaussian_pdf"><dl class="docutils" id="ugaussian-pdf">
+<dt><tt class="docutils literal"><span class="pre">ugaussian_pdf</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>computes the probability density <cite>p(x)</cite> at <cite>x</cite> for the Gaussian distribution with a
+standard deviation of 1.</dd>
+</dl>
+<a name="gaussian_pdf"><dl class="docutils" id="gaussian-pdf">
+<dt><tt class="docutils literal"><span class="pre">gaussian_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>computes the probability density <cite>p(x)</cite> at <cite>x</cite> for the Gaussian distribution with
+standard deviation <cite>sigma</cite>.</dd>
+</dl>
+<a name="gaussian_tail_pdf"><dl class="docutils" id="gaussian-tail-pdf">
+<dt><tt class="docutils literal"><span class="pre">gaussian_tail_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>computes the probability density <cite>p(x)</cite> at <cite>x</cite> for the Gaussian tail distribution
+with standard deviation <cite>sigma</cite> and lower limit <cite>a</cite>.</dd>
+</dl>
+<a name="ugaussian_tail_pdf"><dl class="docutils" id="ugaussian-tail-pdf">
+<dt><tt class="docutils literal"><span class="pre">ugaussian_tail_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>computes the probability density <cite>p(x)</cite> at <cite>x</cite> for the Gaussian tail distribution with
+standard deviation 1 and lower limit <cite>a</cite>.</dd>
+</dl>
+<a name="bivariate_gaussian_pdf"><dl class="docutils" id="bivariate-gaussian-pdf">
+<dt><tt class="docutils literal"><span class="pre">bivariate_gaussian_tail_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>computes the probability density <cite>p(x,y)</cite> at <cite>(x,y)</cite> for a bivariate Gaussian
+distribution with standard deviations <cite>sigma_x</cite>, <cite>sigma_y</cite> and correlation
+coefficient <cite>rho</cite>.</dd>
+</dl>
+<a name="expoential_pdf"><dl class="docutils" id="expoential-pdf">
+<dt><tt class="docutils literal"><span class="pre">exponential_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">mu</span></tt></dt>
+<dd>computes the probability density <cite>p(x)</cite> at <cite>x</cite> for an exponential distribution with
+mean <cite>mu</cite>.</dd>
+</dl>
+<a name="laplace_pdf"><dl class="docutils" id="laplace-pdf">
+<dt><tt class="docutils literal"><span class="pre">laplace_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>computes the probability density <cite>p(x)</cite> at <cite>x</cite> for a Laplace distribution with width <cite>a</cite>.</dd>
+</dl>
+<a name="exppow_pdf"><dl class="docutils" id="exppow-pdf">
+<dt><tt class="docutils literal"><span class="pre">exppow_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the probability density <cite>p(x)</cite> at <cite>x</cite> for an exponential power distribution
+with scale parameter <cite>a</cite> and exponent <cite>b</cite>.</dd>
+</dl>
+<a name="cauchy_pdf"><dl class="docutils" id="cauchy-pdf">
+<dt><tt class="docutils literal"><span class="pre">cauchy_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>computes the probability density <cite>p(x)</cite> at <cite>x</cite> for a Cauchy distribution with scale
+parameter <cite>a</cite>.</dd>
+</dl>
+<a name="rayleigh_pdf"><dl class="docutils" id="rayleigh-pdf">
+<dt><tt class="docutils literal"><span class="pre">rayleigh_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>computes the probability density <cite>p(x)</cite> at <cite>x</cite> for a Rayleigh distribution with scale
+parameter <cite>sigma</cite>.</dd>
+</dl>
+<a name="rayleigh_tail_pdf"><dl class="docutils" id="rayleigh-tail-pdf">
+<dt><tt class="docutils literal"><span class="pre">rayleigh_tail_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>computes the probability density <cite>p(x)</cite> at <cite>x</cite> for a Rayleigh tail distribution with
+scale parameter <cite>sigma</cite> and lower limit <cite>a</cite>.</dd>
+</dl>
+<a name="landau_pdf"><dl class="docutils" id="landau-pdf">
+<dt><tt class="docutils literal"><span class="pre">landau_pdf</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>computes the probability density <cite>p(x)</cite> at <cite>x</cite> for the Landau distribution.</dd>
+</dl>
+<a name="gamma_pdf"><dl class="docutils" id="gamma-pdf">
+<dt><tt class="docutils literal"><span class="pre">gamma_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the probability density <cite>p(x)</cite> at <cite>x</cite> for a gamma distribution with parameters
+<cite>a</cite> and <cite>b</cite>.</dd>
+</dl>
+<a name="flat_pdf"><dl class="docutils" id="flat-pdf">
+<dt><tt class="docutils literal"><span class="pre">flat_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the probability density <cite>p(x)</cite> at <cite>x</cite> for a uniform distribution from <cite>a</cite> to
+<cite>b</cite>.</dd>
+</dl>
+<a name="lognormal_pdf"><dl class="docutils" id="lognormal-pdf">
+<dt><tt class="docutils literal"><span class="pre">lognormal_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">zeta</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>computes the probability density <cite>p(x)</cite> at <cite>x</cite> for a lognormal distribution with
+parameters <cite>zeta</cite> and <cite>sigma</cite>.</dd>
+</dl>
+<a name="chisq_pdf"><dl class="docutils" id="chisq-pdf">
+<dt><tt class="docutils literal"><span class="pre">chisq_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">nu</span></tt></dt>
+<dd>computes the probability density <cite>p(x)</cite> at <cite>x</cite> for a chi-squared distribution with
+<cite>nu</cite> degrees of freedom.</dd>
+</dl>
+<a name="fdist_pdf"><dl class="docutils" id="fdist-pdf">
+<dt><tt class="docutils literal"><span class="pre">fdist_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">nu1</span>&nbsp; <span class="pre">nu2</span></tt></dt>
+<dd>computes the probability density <cite>p(x)</cite> at <cite>x</cite> for an F-distribution with <cite>nu1</cite> and
+<cite>nu2</cite> degrees of freedom.</dd>
+</dl>
+<a name="tdist_pdf"><dl class="docutils" id="tdist-pdf">
+<dt><tt class="docutils literal"><span class="pre">tdist_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">nu</span></tt></dt>
+<dd>computes the probability density <cite>p(x)</cite> at <cite>x</cite> for a t-distribution with <cite>nu</cite> degrees
+of freedom.</dd>
+</dl>
+<a name="beta_pdf"><dl class="docutils" id="beta-pdf">
+<dt><tt class="docutils literal"><span class="pre">beta_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the probability density <cite>p(x)</cite> at <cite>x</cite> for a beta distribution with parameters
+<cite>a</cite> and <cite>b</cite>.</dd>
+</dl>
+<a name="logistic_pdf"><dl class="docutils" id="logistic-pdf">
+<dt><tt class="docutils literal"><span class="pre">logistic_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>computes the probability density <cite>p(x)</cite> at <cite>x</cite> for a logistic distribution with
+scale parameter <cite>a</cite>.</dd>
+</dl>
+<a name="pareto_pdf"><dl class="docutils" id="pareto-pdf">
+<dt><tt class="docutils literal"><span class="pre">pareto_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the probability density <cite>p(x)</cite> at <cite>x</cite> for a Pareto distribution with
+exponent <cite>a</cite> and scale <cite>b</cite>.</dd>
+</dl>
+<a name="weibull_pdf"><dl class="docutils" id="weibull-pdf">
+<dt><tt class="docutils literal"><span class="pre">weibull_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the probability density <cite>p(x)</cite> at <cite>x</cite> for a Weibull distribution with
+scale <cite>a</cite> and exponent <cite>b</cite>.</dd>
+</dl>
+<a name="gumbel1_pdf"><dl class="docutils" id="gumbel1-pdf">
+<dt><tt class="docutils literal"><span class="pre">gumbel1_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the probability density <cite>p(x)</cite> at <cite>x</cite> for a Type-1 Gumbel distribution with
+parameters <cite>a</cite> and <cite>b</cite>.</dd>
+</dl>
+<a name="gumbel2_pdf"><dl class="docutils" id="gumbel2-pdf">
+<dt><tt class="docutils literal"><span class="pre">gumbel2_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the probability density <cite>p(x)</cite> at <cite>x</cite> for a Type-2 Gumbel distribution
+with parameters <cite>a</cite> and <cite>b</cite>.</dd>
+</dl>
+<a name="dirichlet_pdf"><dl class="docutils" id="dirichlet-pdf">
+<dt><tt class="docutils literal"><span class="pre">dirichlet_pdf</span>&nbsp; <span class="pre">alpha::matrix</span>&nbsp; <span class="pre">theta::matrix</span></tt></dt>
+<dd>computes the probability density <cite>p(theta_1, ... , theta_K)</cite> at <cite>theta[K]</cite> for a
+Dirichlet distribution with parameters <cite>alpha[K]</cite>.</dd>
+</dl>
+<a name="dirichlet_lnpdf"><dl class="docutils" id="dirichlet-lnpdf">
+<dt><tt class="docutils literal"><span class="pre">dirichlet_lnpdf</span>&nbsp; <span class="pre">alpha::matrix</span>&nbsp; <span class="pre">theta::matrix</span></tt></dt>
+<dd>computes the logarithm of the probability density <cite>p(theta_1, ... , theta_K)</cite> for
+a Dirichlet distribution with parameters <cite>alpha[K]</cite>.</dd>
+</dl>
+<a name="discrete_preproc"><dl class="docutils" id="discrete-preproc">
+<dt><tt class="docutils literal"><span class="pre">discrete_preproc</span>&nbsp; <span class="pre">p::matrix</span></tt></dt>
+<dd>returns a pointer to a structure that contains the lookup table for the discrete
+random number generator.</dd>
+</dl>
+<a name="discrete_pdf"><dl class="docutils" id="discrete-pdf">
+<dt><tt class="docutils literal"><span class="pre">discrete_pdf</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p::pointer</span></tt></dt>
+<dd>Returns the probability <cite>P[k]</cite> of observing the variable <cite>k</cite>.</dd>
+</dl>
+<a name="discrete_free"><dl class="docutils" id="discrete-free">
+<dt><tt class="docutils literal"><span class="pre">discrete_free</span>&nbsp; <span class="pre">p::pointer</span></tt></dt>
+<dd>De-allocates the lookup table pointed to by <cite>g</cite>.</dd>
+</dl>
+<a name="poisson_pdf"><dl class="docutils" id="poisson-pdf">
+<dt><tt class="docutils literal"><span class="pre">poisson_pdf</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">mu</span></tt></dt>
+<dd>computes the probability <cite>p(k)</cite> of obtaining <cite>k</cite> from a Poisson distribution with mean
+<cite>mu</cite>.</dd>
+</dl>
+<a name="bernoulli_pdf"><dl class="docutils" id="bernoulli-pdf">
+<dt><tt class="docutils literal"><span class="pre">bernoulli_pdf</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span></tt></dt>
+<dd>computes the probability <cite>p(k)</cite> of obtaining <cite>k</cite> from a Bernoulli distribution with
+probability parameter <cite>p</cite>.</dd>
+</dl>
+<a name="binomial_pdf"><dl class="docutils" id="binomial-pdf">
+<dt><tt class="docutils literal"><span class="pre">binomial_pdf</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">n::int</span></tt></dt>
+<dd>computes the probability <cite>p(k)</cite> of obtaining <cite>k</cite> from a binomial distribution with
+parameters <cite>p</cite> and <cite>n</cite>.</dd>
+</dl>
+<a name="multinomial_pdf"><dl class="docutils" id="multinomial-pdf">
+<dt><tt class="docutils literal"><span class="pre">multinomial_pdf</span>&nbsp; <span class="pre">p::matrix</span>&nbsp; <span class="pre">n::matrix</span></tt></dt>
+<dd>computes the probability <cite>P(n_1, n_2, ..., n_K)</cite> of sampling <cite>n[K]</cite> from a
+multinomial distribution with parameters <cite>p[K]</cite>.</dd>
+</dl>
+<a name="multinomial_lnpdf"><dl class="docutils" id="multinomial-lnpdf">
+<dt><tt class="docutils literal"><span class="pre">multinomial_lnpdf</span>&nbsp; <span class="pre">p::matrix</span>&nbsp; <span class="pre">n::matrix</span></tt></dt>
+<dd>returns the logarithm of the probability for the multinomial distribution
+<cite>P(n_1, n_2, ..., n_K)</cite> with parameters <cite>p[K]</cite>.</dd>
+</dl>
+<a name="negative_binomial_pdf"><dl class="docutils" id="negative-binomial-pdf">
+<dt><tt class="docutils literal"><span class="pre">negative_binomial_pdf</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">n</span></tt></dt>
+<dd>computes the probability <cite>p(k)</cite> of obtaining <cite>k</cite> from a negative binomial
+distribution with parameters <cite>p</cite> and <cite>n</cite>.</dd>
+</dl>
+<a name="pascal_pdf"><dl class="docutils" id="pascal-pdf">
+<dt><tt class="docutils literal"><span class="pre">pascal_pdf</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">n::int</span></tt></dt>
+<dd>computes the probability <cite>p(k)</cite> of obtaining <cite>k</cite> from a Pascal distribution with
+parameters <cite>p</cite> and <cite>n</cite>.</dd>
+</dl>
+<a name="geometric_pdf"><dl class="docutils" id="geometric-pdf">
+<dt><tt class="docutils literal"><span class="pre">geometric_pdf</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span></tt></dt>
+<dd>computes the probability <cite>p(k)</cite> of obtaining <cite>k</cite> from a geometric distribution
+with probability parameter <cite>p</cite>.</dd>
+</dl>
+<a name="hypergeometric_pdf"><dl class="docutils" id="hypergeometric-pdf">
+<dt><tt class="docutils literal"><span class="pre">hypergeometric_pdf</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">n1::int</span>&nbsp; <span class="pre">n2::int</span>&nbsp; <span class="pre">t::int</span></tt></dt>
+<dd>computes the probability <cite>p(k)</cite> of obtaining <cite>k</cite> from a hypergeometric distribution
+with parameters <cite>n1</cite>, <cite>n2</cite>, <cite>t</cite>.</dd>
+</dl>
+<a name="logarithmic_pdf"><dl class="docutils" id="logarithmic-pdf">
+<dt><tt class="docutils literal"><span class="pre">logarithmic_pdf</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span></tt></dt>
+<dd>computes the probability <cite>p(k)</cite> of obtaining <cite>k</cite> from a logarithmic distribution
+with probability parameter <cite>p</cite>.</dd>
+</dl>
+<a name="ugaussian_P: _ugaussian_Q: _ugaussian_Pinv: _ugaussian_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">ugaussian_P</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>P(x)</cite> with
+standard deviation 1.</dd>
+<dt><tt class="docutils literal"><span class="pre">ugaussian_Q</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>Q(x)</cite> with
+standard deviation 1.</dd>
+<dt><tt class="docutils literal"><span class="pre">ugaussian_Pinv</span> <span class="pre">p</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>P(x)</cite> with standard deviation 1.</dd>
+<dt><tt class="docutils literal"><span class="pre">ugaussian_Qinv</span> <span class="pre">q</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>Q(x)</cite> with standard deviation 1.</dd>
+</dl>
+<a name="gaussian_P: _gaussian_Q: _gaussian_Pinv: _gaussian_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">gaussian_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>P(x)</cite> with
+standard deviation <cite>sigma</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">gaussian_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>Q(x)</cite> with
+standard deviation <cite>sigma</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">gaussian_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>P(x)</cite> with standard deviation <cite>sigma</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">guassian_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>Q(x)</cite> with standard deviation sigma.</dd>
+</dl>
+<a name="exponential_P: _exponential_Q: _exponential_Pinv: _exponential_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">exponential_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">mu</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>P(x)</cite> with
+mean <cite>mu</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">exponential_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">mu</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>Q(x)</cite> with
+mean <cite>mu</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">exponential_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">mu</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>P(x)</cite> with mean <cite>mu</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">exponential_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">mu</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>Q(x)</cite> with mean <cite>mu</cite>.</dd>
+</dl>
+<a name="laplace_P: _laplace_Q: _laplace_Pinv: _laplace_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">laplace_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>P(x)</cite> with
+width <cite>a</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">laplace_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>Q(x)</cite> with
+width <cite>a</cite></dd>
+<dt><tt class="docutils literal"><span class="pre">laplace_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>P(x)</cite> with width <cite>a</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">laplace_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>Q(x)</cite> with width <cite>a</cite>.</dd>
+</dl>
+<a name="exppow_P: _exppow_Q"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">exppow_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>P(x)</cite> with
+parameters <cite>a</cite> and <cite>b</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">exppow_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>Q(x)</cite> with
+parameters <cite>a</cite> and <cite>b</cite>.</dd>
+</dl>
+<a name="cauchy_P: _cauchy_Q: _cauchy_Pinv: _cauchy_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">cauchy_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>P(x)</cite> with
+scale parameter <cite>a</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">cauchy_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>Q(x)</cite> with
+scale parameter <cite>a</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">cauchy_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>P(x)</cite> with scale <cite>a</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">cauchy_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>Q(x)</cite> with scale <cite>a</cite>.</dd>
+</dl>
+<a name="rayleigh_P: _rayleigh_Q: _rayleigh_Pinv: _rayleigh_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">rayleigh_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>P(x)</cite> with
+scale parameter <cite>a</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">rayleigh_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>Q(x)</cite> with
+scale parameter <cite>a</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">rayleigh_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>P(x)</cite> with scale parameter <cite>sigma</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">rayleigh_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>Q(x)</cite> with scale parameter <cite>sigma</cite>.</dd>
+</dl>
+<a name="gamma_P: _gamma_Q: _gamma_Pinv: _gamma_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">gamma_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>P(x)</cite> with
+parameters <cite>a</cite> and <cite>b</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">gamma_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>Q(x)</cite> with
+parameters <cite>a</cite> and <cite>b</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">gamma_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>P(x)</cite> with parameters <cite>a</cite> and <cite>b</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">gamma_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>Q(x)</cite> with parameters <cite>a</cite> and <cite>b</cite>.</dd>
+</dl>
+<a name="flat_P: _flat_Q: _flat_Pinv: _flat_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">flat_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>P(x)</cite> from
+<cite>a</cite> to <cite>b</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">flat_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>P(x)</cite> from
+<cite>a</cite> to <cite>b</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">flat_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>P(x)</cite> from <cite>a</cite> to <cite>b</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">flat_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>Q(x)</cite> from <cite>a</cite> to <cite>b</cite>.</dd>
+</dl>
+<a name="lognormal_P: _lognormal_Q: _lognormal_Pinv: _lognormal_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">lognormal_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">zeta</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>P(x)</cite> with
+parameters <cite>zeta</cite> and <cite>sigma</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">lognormal_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">zeta</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>Q(x)</cite> with
+parameters <cite>zeta</cite> and <cite>sigma</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">lognormal_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">zeta</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>P(x)</cite> with parameters <cite>zeta</cite> and <cite>sigma</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">lognormal_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">zeta</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>Q(x)</cite> with parameters <cite>zeta</cite> and <cite>sigma</cite>.</dd>
+</dl>
+<a name="chisq_P: _chisq_Q: _chisq_Pinv: _chisq_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">chisq_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">nu</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>P(x)</cite> with
+<cite>nu</cite> degrees of freedom.</dd>
+<dt><tt class="docutils literal"><span class="pre">chisq_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">nu</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>Q(x)</cite> with
+<cite>nu</cite> degrees of freedom.</dd>
+<dt><tt class="docutils literal"><span class="pre">chisq_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">nu</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>P(x)</cite> with <cite>nu</cite> degrees of freedom.</dd>
+<dt><tt class="docutils literal"><span class="pre">chisq_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">nu</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>Q(x)</cite> with <cite>nu</cite> degrees of freedom.</dd>
+</dl>
+<a name="fdist_P: _fdist_Q: _fdist_Pinv: _fdist_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">fdist_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">nu1</span>&nbsp; <span class="pre">nu2</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>P(x)</cite> with
+<cite>nu1</cite> and <cite>nu2</cite> degrees of freedom.</dd>
+<dt><tt class="docutils literal"><span class="pre">fdist_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">nu1</span>&nbsp; <span class="pre">nu2</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>Q(x)</cite> with
+<cite>nu1</cite> and <cite>nu2</cite>  degrees of freedom.</dd>
+<dt><tt class="docutils literal"><span class="pre">fdist_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">nu1</span>&nbsp; <span class="pre">nu2</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>P(x)</cite> with <cite>nu1</cite> and <cite>nu2</cite>  degrees of freedom.</dd>
+<dt><tt class="docutils literal"><span class="pre">fdist_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">nu1</span>&nbsp; <span class="pre">nu2</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>Q(x)</cite> with <cite>nu1</cite> and <cite>nu2</cite>  degrees of freedom.</dd>
+</dl>
+<a name="tdist_P: _tdist_Q: _tdist_Pinv: _tdist_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">tdist_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">nu</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>P(x)</cite> with
+<cite>nu</cite> degrees of freedom.</dd>
+<dt><tt class="docutils literal"><span class="pre">tdist_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">nu</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>Q(x)</cite> with
+<cite>nu</cite> degrees of freedom.</dd>
+<dt><tt class="docutils literal"><span class="pre">tdist_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">nu</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>P(x)</cite> with <cite>nu</cite> degrees of freedom.</dd>
+<dt><tt class="docutils literal"><span class="pre">tdist_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">nu</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>Q(x)</cite> with <cite>nu</cite> degrees of freedom.</dd>
+</dl>
+<a name="beta_P: _beta_Q: _beta_Pinv: _beta_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">beta_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>P(x)</cite> with
+parameters <cite>a</cite> and <cite>b</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">beta_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>Q(x)</cite> with
+parameters <cite>a</cite> and <cite>b</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">beta_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>P(x)</cite> with parameters <cite>a</cite> and <cite>b</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">beta_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>Q(x)</cite> with parameters <cite>a</cite> and <cite>b</cite>.</dd>
+</dl>
+<a name="logistic_P: _logistic_Q: _logistic_Pinv: _logistic_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">logistic_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>P(x)</cite> with
+scale parameter <cite>a</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">logistic_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>Q(x)</cite> with
+scale parameter <cite>a</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">logistic_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>P(x)</cite> with scale parameter <cite>a</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">logistic_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>Q(x)</cite> with scale parameter <cite>a</cite>.</dd>
+</dl>
+<a name="pareto_P: _pareto_Q: _pareto_Pinv: _pareto_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">pareto_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>P(x)</cite> with
+exponent <cite>a</cite> and scale <cite>b</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">pareto_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>Q(x)</cite> with
+exponent <cite>a</cite> and scale <cite>b</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">pareto_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>P(x)</cite> with exponent <cite>a</cite> and scale <cite>b</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">pareto_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>Q(x)</cite> with exponent <cite>a</cite> and scale <cite>b</cite>.</dd>
+</dl>
+<a name="weibull_P: _weibull_Q: _weibull_Pinv: _weibull_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">weibull_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>P(x)</cite> with
+exponent <cite>a</cite> and scale <cite>b</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">weibull_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>Q(x)</cite> with
+exponent <cite>a</cite> and scale <cite>b</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">weibull_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>P(x)</cite> with exponent <cite>a</cite> and scale <cite>b</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">weibull_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>Q(x)</cite> with exponent <cite>a</cite> and scale <cite>b</cite>.</dd>
+</dl>
+<a name="gumbel1_P: _gumbel1_Q: _gumbel1_Pinv: _gumbel1_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">gumbel1_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>P(x)</cite> with
+parameters <cite>a</cite> and <cite>b</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">gumbel1_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>Q(x)</cite> with
+parameters <cite>a</cite> and <cite>b</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">gumbel1_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>P(x)</cite> with parameters <cite>a</cite> and <cite>b</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">gumbel1_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>Q(x)</cite> with parameters <cite>a</cite> and <cite>b</cite>.</dd>
+</dl>
+<a name="gumbel2_P: _gumbel2_Q: _gumbel2_Pinv: _gumbel2_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">gumbel2_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>P(x)</cite> with
+parameters <cite>a</cite> and <cite>b</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">gumbel2_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>Q(x)</cite> with
+parameters <cite>a</cite> and <cite>b</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">gumbel2_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>P(x)</cite> with parameters <cite>a</cite> and <cite>b</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">gumbel2_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>computes the inverse of the cumulative distribution function
+of <cite>Q(x)</cite> with parameters <cite>a</cite> and <cite>b</cite>.</dd>
+</dl>
+<a name="poisson_P: _poisson_Q"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">poisson_P</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">mu</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>P(k)</cite> with
+parameter <cite>mu</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">poisson_Q</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">mu</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>Q(k)</cite> with
+parameter <cite>mu</cite>.</dd>
+</dl>
+<a name="binomial_P: _binomial_Q"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">binomial_P</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">n::int</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>P(k)</cite> with
+parameters <cite>p</cite> and <cite>n</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">binomial_Q</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">n::int</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>Q(k)</cite> with
+parameters <cite>p</cite> and <cite>n</cite>.</dd>
+</dl>
+<a name="negative_binomial_P: _negative_binomial_Q"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">negative_binomial_P</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">n</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>P(k)</cite> with
+parameters <cite>p</cite> and <cite>n</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">negative_binomial_Q</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">n</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>Q(k)</cite> with
+parameters <cite>p</cite> and <cite>n</cite>.</dd>
+</dl>
+<a name="pascal_P"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">pascal_P</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">n::int</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>P(k)</cite> with
+parameters <cite>p</cite> and <cite>n</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">pascal_Q</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">n::int</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>Q(k)</cite> with
+parameters <cite>p</cite> and <cite>n</cite>.</dd>
+</dl>
+<a name="geometric_P: _geometric_Q"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">geometric_P</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>P(k)</cite> with
+parameter <cite>p</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">geometric_Q</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>Q(k)</cite> with
+parameter <cite>p</cite>.</dd>
+</dl>
+<a name="hypergeometric_P: _hypergeometric_Q"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">hypergeometric_P</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">n1::int</span>&nbsp; <span class="pre">n2::int</span>&nbsp; <span class="pre">t::int</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>P(k)</cite> with
+parameters <cite>p</cite>, <cite>n1</cite>, <cite>n2</cite>, and <cite>t</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">hypergeometric_Q</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">n1::int</span>&nbsp; <span class="pre">n2::int</span>&nbsp; <span class="pre">t::int</span></tt></dt>
+<dd>computes the cumulative distribution function <cite>Q(k)</cite> with
+parameters <cite>p</cite>, <cite>n1</cite>, <cite>n2</cite>, and <cite>t</cite>.</dd>
+</dl>
+<!--  -->
+</div>
+<div class="section" id="id6">
+<h2><a class="toc-backref" href="#id22">Examples</a></h2>
+<p>The following illustrates the use of each function in the <tt class="docutils literal"><span class="pre">randist</span></tt> module.
+The pdf functions are illustrated first.</p>
+<blockquote>
+<pre class="literal-block">
+&gt; using gsl::stats;
+&gt; using namespace gsl::ran;
+&gt; ugaussian_pdf 1.2;
+0.194186054983213
+&gt; gaussian_pdf (-1.3) 1.5;
+0.182690978264686
+&gt; gaussian_tail_pdf 2.0 1.0 1.5;
+0.433042698395299
+&gt; ugaussian_tail_pdf 2.0 1.0;
+0.34030367841782
+&gt; bivariate_gaussian_pdf 1.2 0.9 1.0 1.0 0.95;
+0.184646843689817
+&gt; exponential_pdf 1.0 0.5;
+0.270670566473225
+&gt; laplace_pdf 1.5 2.0;
+0.118091638185254
+&gt; exppow_pdf 0.0 1.0 1.5;
+0.553866083716236
+&gt; cauchy_pdf (-1.0) 1.0;
+0.159154943091895
+&gt; rayleigh_pdf 2.5 1.0;
+0.109842334058519
+&gt; rayleigh_tail_pdf 1.5 1.0 1.0;
+0.802892142778485
+&gt; landau_pdf 1.1;
+0.140968737919623
+&gt; gamma_pdf 1.0 1.0 1.5;
+0.342278079355061
+&gt; flat_pdf 1.0 0.5 2.5;
+0.5
+&gt; lognormal_pdf 0.01 0.0 1.0;
+0.000990238664959182
+&gt; chisq_pdf 1.0 2.0;
+0.303265329856317
+&gt; fdist_pdf 0.5 3.0 2.0;
+0.480970043785452
+&gt; tdist_pdf 0.1 10.0;
+0.386975225815181
+&gt; beta_pdf 0.5 4.0 1.0;
+0.499999999999999
+&gt; logistic_pdf (-1.0) 2.0;
+0.117501856100797
+&gt; pareto_pdf 0.01 3.0 2.0;
+0.0
+&gt; weibull_pdf  0.01 1.0 1.0;
+0.990049833749168
+&gt; gumbel1_pdf 0.01 1.0 1.0;
+0.367861108816436
+&gt; gumbel2_pdf 0.01 1.0 1.0;
+3.72007597602084e-40
+&gt; dirichlet_pdf {0.1,0.2,0.8} {2.0,2.0,2.0};
+0.00501316294425874
+&gt; dirichlet_lnpdf {0.1,0.2,0.8} {2.0,2.0,2.0};
+-5.29568823688856
+&gt; poisson_pdf 4 0.4;
+0.000715008049104682
+&gt; bernoulli_pdf 1 0.7;
+0.7
+&gt; binomial_pdf 3 0.5 9;
+0.1640625
+&gt; multinomial_pdf {0.1,0.2,0.7} {2,2,2};
+0.0
+&gt; multinomial_lnpdf {0.1,0.2,0.7} {2,2,2};
+-1728120799.71174
+&gt; negative_binomial_pdf 10 0.5 3.5;
+0.0122430486923836
+&gt; pascal_pdf 10 0.5 3;
+0.00805664062499999
+&gt; geometric_pdf 5 0.4;
+0.05184
+&gt; hypergeometric_pdf 1 5 20 3;
+0.413043478260872
+&gt; logarithmic_pdf 10 0.7;
+0.00234619293712492
+&gt; test_discrete
+&gt;   = v
+&gt;     when
+&gt;       px = discrete_preproc {0.1,0.3,0.4};
+&gt;       v = discrete_pdf 0 px +
+&gt;           discrete_pdf 1 px +
+&gt;           discrete_pdf 2 px;
+&gt;       _ = discrete_free px
+&gt;     end;
+&gt; test_discrete;
+1.0
+</pre>
+</blockquote>
+<p>Here the cdf functions are shown.</p>
+<blockquote>
+<pre class="literal-block">
+&gt; ugaussian_P  (-1.3);
+0.0968004845856103
+&gt; ugaussian_Q  (-1.3);
+0.90319951541439
+&gt; ugaussian_Pinv  0.84;
+0.994457883209753
+&gt; ugaussian_Qinv  0.84;
+-0.994457883209753
+&gt; gaussian_P  (1.3)  1.5;
+0.806937662858093
+&gt; gaussian_Q  (1.3)  1.5;
+0.193062337141907
+&gt; gaussian_Pinv  0.4  5.0;
+-1.266735515679
+&gt; gaussian_Qinv  0.4 5.0;
+1.266735515679
+&gt; exponential_P  1.0  0.5;
+0.864664716763387
+&gt; exponential_Q  1.0  0.5;
+0.135335283236613
+&gt; exponential_Pinv  0.6  0.5;
+0.458145365937077
+&gt; exponential_Qinv  0.6  0.5;
+0.255412811882995
+&gt; laplace_P  1.5  2.0;
+0.763816723629493
+&gt; laplace_Q  1.5  2.0;
+0.236183276370507
+&gt; laplace_Pinv  0.6  2.0;
+0.446287102628419
+&gt; laplace_Qinv  0.4  2.0;
+0.446287102628419
+&gt; exppow_P  0.0  1.0  2.5;
+0.5
+&gt; exppow_Q  0.0  1.0  0.5;
+0.5
+&gt; cauchy_P  (-1.0)  1.0;
+0.25
+&gt; cauchy_Q  (-1.0)  1.0;
+0.75
+&gt; cauchy_Pinv  0.75  1.0;
+1.0
+&gt; cauchy_Qinv  0.25  1.0;
+1.0
+&gt; rayleigh_P  1.5  2.0;
+0.245160398010993
+&gt; rayleigh_Q  0.5  1.0;
+0.882496902584595
+&gt; rayleigh_Pinv  0.5  1.0;
+1.17741002251547
+&gt; rayleigh_Qinv  0.5  1.0;
+1.17741002251547
+&gt; gamma_P  1.0  1.0  3.0;
+0.283468689426211
+&gt; gamma_Q  1.0  1.0  3.0;
+0.716531310573789
+&gt; gamma_Pinv  0.5  1.0  1.0;
+0.693147180559945
+&gt; gamma_Qinv  0.5  1.0  1.0;
+0.693147180559945
+&gt; flat_P  2.0  1.2  4.8;
+0.222222222222222
+&gt; flat_Q  2.0  1.2  4.8;
+0.777777777777778
+&gt; flat_Pinv  0.2  0.5  2.5;
+0.9
+&gt; flat_Qinv  0.2  0.5  2.5;
+2.1
+&gt; lognormal_P  0.01  0.0  1.0;
+2.06064339597172e-06
+&gt; lognormal_Q  0.01  0.0  1.0;
+0.999997939356604
+&gt; lognormal_Pinv  0.1  0.0  1.0;
+0.27760624185201
+&gt; lognormal_Qinv  0.1  0.0  1.0;
+3.60222447927916
+&gt; chisq_P  1.0  2.0;
+0.393469340287367
+&gt; chisq_Q  1.0  2.0;
+0.606530659712633
+&gt; chisq_Pinv  0.5  2.0;
+0.221199216928595
+&gt; chisq_Qinv  0.5  2.0;
+1.38629436111989
+&gt; fdist_P  1.0  3.0  2.0;
+0.46475800154489
+&gt; fdist_Q  1.0  3.0  2.0;
+0.53524199845511
+&gt; fdist_Pinv  0.5  3.0  2.0;
+1.13494292261288
+&gt; fdist_Qinv  0.5  3.0  2.0;
+1.13494292261288
+&gt; tdist_P  2.1  10.0;
+0.968961377898891
+&gt; tdist_Q  (-2.1)  10.0;
+0.968961377898891
+&gt; tdist_Pinv  0.68  10.0;
+0.482264205919689
+&gt; tdist_Qinv  0.68  10.0;
+-0.482264205919689
+&gt; beta_P  0.75  2.0  2.0;
+0.84375
+&gt; beta_Q  0.75  2.0  2.0;
+0.15625
+&gt; beta_Pinv  0.75  2.0  2.0;
+0.673648177666931
+&gt; beta_Qinv  0.25  2.0  2.0;
+0.673648177666931
+&gt; logistic_P  (-1.0)  2.0;
+1
+&gt; logistic_Q  (-1.0)  2.0;
+0.622459331201855
+&gt; logistic_Pinv  0.75  1.0;
+1.09861228866811
+&gt; logistic_Qinv  0.25  1.0;
+1.09861228866811
+&gt; pareto_P  2.01  3.0  2.0;
+0.0148512406901899
+&gt; pareto_Q  2.01  3.0  2.0;
+0.98514875930981
+&gt; pareto_Pinv  0.1  3.0  2.0;
+2.07148833730257
+&gt; pareto_Qinv  0.1  3.0  2.0;
+4.30886938006377
+&gt; weibull_P  1.01  1.0  2.0;
+0.639441117518024
+&gt; weibull_Q  1.01  2.0  3.0;
+0.879160657465162
+&gt; weibull_Pinv  0.1  1.0  2.0;
+0.324592845974501
+&gt; weibull_Qinv  0.1  1.0  2.0;
+1.51742712938515
+&gt; gumbel1_P  1.01  1.0  1.0;
+0.694739044426344
+&gt; gumbel1_Q  1.01  1.0  1.0;
+0.305260955573656
+&gt; gumbel1_Pinv  0.1  1.0  1.0;
+-0.834032445247956
+&gt; gumbel1_Qinv  0.1  1.0  1.0;
+2.25036732731245
+&gt; gumbel2_P  1.01  1.0  1.0;
+0.371539903071873
+&gt; gumbel2_Q  1.01  1.0  1.0;
+0.628460096928127
+&gt; gumbel2_Pinv  0.1  1.0  1.0;
+0.434294481903252
+&gt; gumbel2_Qinv  0.1  1.0  1.0;
+9.4912215810299
+&gt; poisson_P  4  0.4;
+0.999938756672898
+&gt; poisson_Q  4  0.6;
+0.000394486018340255
+&gt; binomial_P  3  0.5  10;
+0.171874999999999
+&gt; binomial_Q  3  0.5  10;
+0.828125000000001
+&gt; negative_binomial_P  10  0.5  3.0;
+0.98876953125
+&gt; negative_binomial_Q  10  0.5  3.0;
+0.01123046875
+&gt; pascal_P  10  0.5  3;
+0.98876953125
+&gt; pascal_Q  10  0.5  3;
+0.01123046875
+&gt; geometric_P  5  0.4;
+0.92224
+&gt; geometric_Q  5  0.6;
+0.01024
+&gt; hypergeometric_P  1  5  20  3;
+0.908695652173913
+&gt; hypergeometric_Q  1  5  20  3;
+0.0913043478260873
+</pre>
+</blockquote>
+<!--  -->
+</div>
+</div>
+<div class="section" id="statistics">
+<h1><a class="toc-backref" href="#id23">Statistics</a></h1>
+<p>This module is loaded via the command <tt class="docutils literal"><span class="pre">using</span> <span class="pre">gsl::stats</span></tt> and provides Pure
+wrappers for the GSL Statistics routines found in Chapter 20 of
+the GSL manual,</p>
+<p><a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/Statistics.html">http://www.gnu.org/software/gsl/manual/html_node/Statistics.html</a>.</p>
+<div class="section" id="id7">
+<h2><a class="toc-backref" href="#id24">Routines</a></h2>
+<a name="mean"><dl class="docutils" id="mean">
+<dt><tt class="docutils literal"><span class="pre">mean</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>calcualtes the mean of the dataset.</dd>
+</dl>
+<a name="variance"><dl class="docutils" id="variance">
+<dt><tt class="docutils literal"><span class="pre">variance</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>calcualtes the variance of the dataset.</dd>
+</dl>
+<a name="variance_m"><dl class="docutils" id="variance-m">
+<dt><tt class="docutils literal"><span class="pre">variance</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>calcualtes the variance of the dataset relative to the given mean.</dd>
+</dl>
+<a name="sd"><dl class="docutils" id="sd">
+<dt><tt class="docutils literal"><span class="pre">sd</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>calcualtes the standard deviation of the dataset.</dd>
+</dl>
+<a name="sd_m"><dl class="docutils" id="sd-m">
+<dt><tt class="docutils literal"><span class="pre">sd_m</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>calcualtes the standard deviation of the dataset relative to the  given mean.</dd>
+</dl>
+<a name="tss"><dl class="docutils" id="tss">
+<dt><tt class="docutils literal"><span class="pre">tss</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>returns the total sum of squares of the dataset.</dd>
+</dl>
+<a name="tss_m"><dl class="docutils" id="tss-m">
+<dt><tt class="docutils literal"><span class="pre">tss</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>returns the total sum of squares of the dataset about the given mean.</dd>
+</dl>
+<a name="variance_with_fixed_mean"><dl class="docutils" id="variance-with-fixed-mean">
+<dt><tt class="docutils literal"><span class="pre">variance_with_fixed_mean</span> <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>returns the total sum of squares of the dataset abount the population mean.</dd>
+</dl>
+<a name="sd_with_fixed_mean"><dl class="docutils" id="sd-with-fixed-mean">
+<dt><tt class="docutils literal"><span class="pre">sd_with_fixed_mean</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>computes an unbiased estimate of the variance about the population mean.</dd>
+</dl>
+<a name="absdev"><dl class="docutils" id="absdev">
+<dt><tt class="docutils literal"><span class="pre">absdev</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>computes the absolute deviation from the mean of the data.</dd>
+</dl>
+<a name="absdev_m"><dl class="docutils" id="absdev-m">
+<dt><tt class="docutils literal"><span class="pre">absdev_m</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>computes the absolute deviation from the mean relative to the given mean.</dd>
+</dl>
+<a name="skew"><dl class="docutils" id="skew">
+<dt><tt class="docutils literal"><span class="pre">skew</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>computes the skewness of the data.</dd>
+</dl>
+<a name="skew_m_sd"><dl class="docutils" id="skew-m-sd">
+<dt><tt class="docutils literal"><span class="pre">skew_m_sd</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span>&nbsp; <span class="pre">sd</span></tt></dt>
+<dd>computes the skewness of data using the given mean and standard deviation.</dd>
+<dt><tt class="docutils literal"><span class="pre">kurtosis</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>computes the kurtosis of the data.</dd>
+</dl>
+<a name="kurtosis_m_sd"><dl class="docutils" id="kurtosis-m-sd">
+<dt><tt class="docutils literal"><span class="pre">kurtosis_m_sd</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span>&nbsp; <span class="pre">sd</span></tt></dt>
+<dd>computes the kurtosis of the dataset about the given mean and standard deviation.</dd>
+</dl>
+<a name="lag1_autocorrelation"><dl class="docutils" id="lag1-autocorrelation">
+<dt><tt class="docutils literal"><span class="pre">lag1_autocorrelation</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>computes the lag-1 autocorrelation of the the data.</dd>
+</dl>
+<a name="lag1_autocorrelation_m"><dl class="docutils" id="lag1-autocorrelation-m">
+<dt><tt class="docutils literal"><span class="pre">lag1_autocorrelation_m</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>computes the lag-1 autocorrelation of the the data about the given mean.</dd>
+</dl>
+<a name="covariance"><dl class="docutils" id="covariance">
+<dt><tt class="docutils literal"><span class="pre">covariance</span>&nbsp; <span class="pre">d1::matrix</span>&nbsp; <span class="pre">d2::matrix</span></tt></dt>
+<dd>computes the covariance of the datasests <tt class="docutils literal"><span class="pre">d1</span></tt> and <tt class="docutils literal"><span class="pre">d2</span></tt>.</dd>
+</dl>
+<a name="covariance_m"><dl class="docutils" id="covariance-m">
+<dt><tt class="docutils literal"><span class="pre">covariance_m</span>&nbsp; <span class="pre">d1::matrix</span>&nbsp; <span class="pre">d2::matrix</span>&nbsp; <span class="pre">mean1</span>&nbsp; <span class="pre">mean2</span></tt></dt>
+<dd>computes the covariance of the datasets <tt class="docutils literal"><span class="pre">d1</span></tt> with mean, <tt class="docutils literal"><span class="pre">mean1</span></tt>,
+and <tt class="docutils literal"><span class="pre">d2</span></tt> with mean, <tt class="docutils literal"><span class="pre">mean2</span></tt>.</dd>
+</dl>
+<a name="correlation"><dl class="docutils" id="correlation">
+<dt><tt class="docutils literal"><span class="pre">correlation</span>&nbsp; <span class="pre">d1::matrix</span>&nbsp; <span class="pre">d2::matrix</span></tt></dt>
+<dd>computes the Pearson correlation coefficient between the datasets
+<tt class="docutils literal"><span class="pre">d1</span></tt> and <tt class="docutils literal"><span class="pre">d2</span></tt>.</dd>
+</dl>
+<a name="wmean"><dl class="docutils" id="wmean">
+<dt><tt class="docutils literal"><span class="pre">wmean</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>computes the weighted mean of the data.</dd>
+</dl>
+<a name="wvariance"><dl class="docutils" id="wvariance">
+<dt><tt class="docutils literal"><span class="pre">wvariance</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>computes the weighted variance of data.</dd>
+</dl>
+<a name="wvariance_m"><dl class="docutils" id="wvariance-m">
+<dt><tt class="docutils literal"><span class="pre">wvariance_m</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>computes the weighted variance of the data about the given mean.</dd>
+</dl>
+<a name="wsd"><dl class="docutils" id="wsd">
+<dt><tt class="docutils literal"><span class="pre">wsd</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>computes the weighed standard deviation of the data.</dd>
+</dl>
+<a name="wsd_m"><dl class="docutils" id="wsd-m">
+<dt><tt class="docutils literal"><span class="pre">wsd_m</span>&nbsp; <span class="pre">weights::matrix</span>&nbsp; <span class="pre">m::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>computes the weighed standard deviation of the data about the given mean.</dd>
+</dl>
+<a name="wvariance_with_fixed_mean"><dl class="docutils" id="wvariance-with-fixed-mean">
+<dt><tt class="docutils literal"><span class="pre">wvariance_with_fixed_mean</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>computes the unbiased estimate of the variance of the weighted data
+about the given population mean.</dd>
+</dl>
+<a name="wsd_with_fixed_mean"><dl class="docutils" id="wsd-with-fixed-mean">
+<dt><tt class="docutils literal"><span class="pre">wsd_with_fixed_mean</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>computes the unbiased estimate of the standard deviation of the
+weighted data about the given population mean.</dd>
+</dl>
+<a name="wtss"><dl class="docutils" id="wtss">
+<dt><tt class="docutils literal"><span class="pre">wtss</span>&nbsp; <span class="pre">weights::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>returns the weighted total sum of squares of the weighted data.</dd>
+<dt><tt class="docutils literal"><span class="pre">wtss</span>&nbsp; <span class="pre">weights::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>returns the weighted total sum of squares of the weighted data
+about the given population mean.</dd>
+</dl>
+<a name="wabsdev"><dl class="docutils" id="wabsdev">
+<dt><tt class="docutils literal"><span class="pre">wabsdev</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>computes the weighted absolute deviation from the weighted mean of the
+data.</dd>
+</dl>
+<a name="wabsdev_m"><dl class="docutils" id="wabsdev-m">
+<dt><tt class="docutils literal"><span class="pre">wabsdev_m</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>computes the weighted absolute deviation about the given mean.</dd>
+</dl>
+<a name="wskew"><dl class="docutils" id="wskew">
+<dt><tt class="docutils literal"><span class="pre">wskew</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>computed the weighted skewness of the dataset data.</dd>
+</dl>
+<a name="wskew_m_sd"><dl class="docutils" id="wskew-m-sd">
+<dt><tt class="docutils literal"><span class="pre">wskew_m_sd</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span>&nbsp; <span class="pre">sd</span></tt></dt>
+<dd>computes the weighted skewness of the data using the given mean
+and standard deviation.</dd>
+</dl>
+<a name="wkurtosis"><dl class="docutils" id="wkurtosis">
+<dt><tt class="docutils literal"><span class="pre">wkurtosis</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>computes the weighted kurtosis of the data.</dd>
+</dl>
+<a name="wkurtosis_m_sd"><dl class="docutils" id="wkurtosis-m-sd">
+<dt><tt class="docutils literal"><span class="pre">wkurtosis_m_sd</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>computes the weighted kurtosis of the data about the given mean
+and standard deviation.</dd>
+</dl>
+<a name="max"><dl class="docutils" id="max">
+<dt><tt class="docutils literal"><span class="pre">max</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>returns the maximum value of the data.</dd>
+</dl>
+<a name="min"><dl class="docutils" id="min">
+<dt><tt class="docutils literal"><span class="pre">min</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>returns the minimum value of the data.</dd>
+</dl>
+<a name="minmax"><dl class="docutils" id="minmax">
+<dt><tt class="docutils literal"><span class="pre">minmax</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>returns a list containing the minimum and maximum values of the data.</dd>
+</dl>
+<a name="min_index"><dl class="docutils" id="min-index">
+<dt><tt class="docutils literal"><span class="pre">min_index</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>returns the index of minimum value of the data.</dd>
+</dl>
+<a name="max_index"><dl class="docutils" id="max-index">
+<dt><tt class="docutils literal"><span class="pre">max_index</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>returns the index of maximum value of the data.</dd>
+</dl>
+<a name="minmax_index"><dl class="docutils" id="minmax-index">
+<dt><tt class="docutils literal"><span class="pre">minmax_index</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>returns a list of the indexs of the minimum and maximum value of the data.</dd>
+</dl>
+<a name="median_from_sorted_data"><dl class="docutils" id="median-from-sorted-data">
+<dt><tt class="docutils literal"><span class="pre">median_from_sorted_data</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>returns the median value of the data. Note that the data <cite>must</cite> be sorted.</dd>
+</dl>
+<a name="quantile_from_sorted_data"><dl class="docutils" id="quantile-from-sorted-data">
+<dt><tt class="docutils literal"><span class="pre">quantile_from_sorted_data</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">f::double</span></tt></dt>
+<dd>returns the quantile value of the data. Note that the data <cite>must</cite> be sorted.</dd>
+</dl>
+<!--  -->
+</div>
+<div class="section" id="id8">
+<h2><a class="toc-backref" href="#id25">Examples</a></h2>
+<p>The following illustrates the use of each function in the <tt class="docutils literal"><span class="pre">stats</span></tt> module.</p>
+<blockquote>
+<pre class="literal-block">
+&gt; using gsl::stats;
+&gt; using namespace gsl::stats;
+&gt; mean {1,2,3,4,5};
+3.0
+&gt; variance {1,2,3,4,5};
+2.5
+&gt; variance_m {1,2,3,4,5}  4;
+3.75
+&gt; sd {1,2,3,4,5};
+1.58113883008419
+&gt; sd_m {1,2,3,4,5} 4;
+1.93649167310371
+&gt; tss {1,2,3,4,5};
+10.0
+&gt; tss_m {1,2,3,4,5} 4;
+15.0
+&gt; variance_with_fixed_mean {0.0,1.2,3.4,5.6,6.0} 4.1;
+6.314
+&gt; sd_with_fixed_mean {0.0,1.2,3.4,5.6,6.0} 4.1;
+2.51276739870606
+&gt; absdev {2,2,3,4,4};
+0.8
+&gt; absdev_m {2,2,3,4,4} 4;
+1.0
+&gt; skew {1,1,1,1,2,2,2,2,2,2,2,2,3,30};
+2.94796699504537
+&gt; skew_m_sd {1,2,2,3,3,3,3,3,3,3,4,4,5} 3 1;
+0.0
+&gt; kurtosis  {1,2,2,3,3,3,3,3,3,3,4,4,5};
+-0.230769230769231
+&gt; kurtosis_m_sd {1,2,2,3,3,3,3,3,3,3,4,4,5} 3 1;
+-0.230769230769231
+&gt; lag1_autocorrelation {1,2,3,4,5};
+0.4
+&gt; lag1_autocorrelation_m {1,2,3,4,5} 2.5;
+0.444444444444444
+&gt; covariance {1,2,3,4,5} {3.0,4.5,6.0,7.5,9.0};
+3.75
+&gt; covariance_m {1,2,3,4,5} {3.0,4.5,6.0,7.5,9.0} 3 6;
+3.75
+&gt; correlation {1,2,3,4} {2,3,4,5};
+1.0
+&gt; wmean {0.4,0.2,0.3,0.3,0.3} {2,3,4,5,6};
+3.93333333333333
+&gt; wvariance {0.4,0.2,0.3,0.3,0.3} {2,3,4,5,6};
+2.7752808988764
+&gt; wvariance_m {0.4,0.2,0.3,0.3,0.3} {2,3,4,5,6} 3.0;
+3.87640449438202
+&gt; wsd {0.4,0.2,0.3,0.3,0.3} {2,3,4,5,6};
+1.66591743459164
+&gt; wsd_m {0.4,0.2,0.3,0.3,0.3} {2,3,4,5,6} 3.0;
+1.96885867811329
+&gt; wvariance_with_fixed_mean {1,2,3,4} {1,2,3,4} 2.5;
+1.25
+&gt; wsd_with_fixed_mean {1,2,3,4} {1,2,3,4} 2.5;
+1.11803398874989
+&gt; wtss {1,1,2,2} {2,3,4,5};
+6.83333333333333
+&gt; wtss_m {1,1,2,2} {2,3,4,5} 3.1;
+10.06
+&gt; wabsdev {1,1,2,2} {2,3,4,5};
+0.888888888888889
+&gt; wabsdev_m {1,1,2,2} {2,3,4,5} 3.1;
+1.13333333333333
+&gt; wskew {1,1,2,2} {2,3,4,5};
+-0.299254338484713
+&gt; wskew_m_sd {1,1,2,2} {2,3,4,5} 3.1 1.2;
+1.33526234567901
+&gt; wkurtosis {1,1,2,2} {2,3,4,5};
+-1.96206512878137
+&gt; wkurtosis_m_sd {1,1,2,2} {2,3,4,5} 3.1 1.2;
+-0.681921939300412
+&gt; min {9,4,2,1,9};
+1
+&gt; max {9.1,4.2,2.6,1.1,9.2};
+9.2
+&gt; minmax {9.0,4.0,2.0,1.0,9.0};
+[1.0,9.0]
+&gt; min_index {9.1,4.2,2.6,1.1,9.2};
+3
+&gt; max_index {9,4,2,1,9};
+0
+&gt; minmax_index {9,4,2,1,0,9};
+[4,0]
+&gt; median_from_sorted_data {1.0,2.0,3.0};
+2.0
+&gt; quantile_from_sorted_data {1.0,2.0,3.0} 0.25;
+1.5
+</pre>
+</blockquote>
+<!--  -->
+</div>
+</div>
+<div class="section" id="least-squares-fitting">
+<h1><a class="toc-backref" href="#id26">Least-Squares Fitting</a></h1>
+<p>This module is loaded via the command <tt class="docutils literal"><span class="pre">using</span> <span class="pre">gsl::fit</span></tt> and provides Pure
+wrappers for the GSL least-squares fitting routines found in Chapter 36 of
+the GSL manual,</p>
+<p><a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/Least_002dSquares-Fitting.htm">http://www.gnu.org/software/gsl/manual/html_node/Least_002dSquares-Fitting.htm</a>.</p>
+<div class="section" id="id9">
+<h2><a class="toc-backref" href="#id27">Routines</a></h2>
+<a name="linear"><dl class="docutils" id="linear">
+<dt><tt class="docutils literal"><span class="pre">linear</span>&nbsp; <span class="pre">x::matrix</span>&nbsp; <span class="pre">y::matrix</span></tt></dt>
+<dd><p class="first">performs a least-squares fit to a straight line model,</p>
+<p><tt class="docutils literal"><span class="pre">Y</span> <span class="pre">c</span> <span class="pre">x</span> <span class="pre">=</span> <span class="pre">c0</span> <span class="pre">+</span> <span class="pre">c1</span> <span class="pre">*</span> <span class="pre">x</span></tt>.</p>
+<p class="last">Results are given as the list <tt class="docutils literal"><span class="pre">[c0,</span> <span class="pre">c1,</span> <span class="pre">cov00,</span> <span class="pre">cov01,</span> <span class="pre">cov11,</span> <span class="pre">sumsq]</span></tt>
+where <tt class="docutils literal"><span class="pre">c0</span></tt> and <tt class="docutils literal"><span class="pre">c1</span></tt> are the coefficients and the errors on
+<cite>y</cite> are returned via the parameters <tt class="docutils literal"><span class="pre">cov00</span></tt>, <tt class="docutils literal"><span class="pre">cov01</span></tt>, and
+<tt class="docutils literal"><span class="pre">cov11</span></tt>. The sum of squares of the residuals is returned in
+<tt class="docutils literal"><span class="pre">sumsq</span></tt>.</p>
+</dd>
+</dl>
+<a name="wlinear"><dl class="docutils" id="wlinear">
+<dt><tt class="docutils literal"><span class="pre">wlinear</span>&nbsp; <span class="pre">x::matrix</span>&nbsp; <span class="pre">w::matrix</span>&nbsp; <span class="pre">y::matrix</span></tt></dt>
+<dd><p class="first">performs a least-squares fit to a straight line model with weighted
+datapoints <tt class="docutils literal"><span class="pre">w</span></tt>.</p>
+<p class="last">Results are given as the list <tt class="docutils literal"><span class="pre">[c0,</span> <span class="pre">c1,</span> <span class="pre">cov00,</span> <span class="pre">cov01,</span> <span class="pre">cov11,</span> <span class="pre">chisq]</span></tt>
+where <tt class="docutils literal"><span class="pre">c0</span></tt> and <tt class="docutils literal"><span class="pre">c1</span></tt> are the coefficients and the errors on
+<tt class="docutils literal"><span class="pre">y</span></tt> are returned via the parameters <tt class="docutils literal"><span class="pre">cov00</span></tt>, <tt class="docutils literal"><span class="pre">cov01</span></tt>, and
+<tt class="docutils literal"><span class="pre">cov11</span></tt>. The sum of squares of the residuals is returned in
+<tt class="docutils literal"><span class="pre">chisq</span></tt>.</p>
+</dd>
+</dl>
+<a name="linear_est"><dl class="docutils" id="linear-est">
+<dt><tt class="docutils literal"><span class="pre">linear_est</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">c0::double</span>&nbsp; <span class="pre">c1::double</span>&nbsp; <span class="pre">cov00::double</span>&nbsp; <span class="pre">cov01::double</span> <span class="pre">cov11::double</span></tt></dt>
+<dd><p class="first">compute the fitted function <tt class="docutils literal"><span class="pre">y</span></tt> and its standard deviation <tt class="docutils literal"><span class="pre">y_err</span></tt>
+at point <tt class="docutils literal"><span class="pre">x</span></tt>.</p>
+<p class="last">Results are given as the list <tt class="docutils literal"><span class="pre">[y,</span> <span class="pre">y_err]</span></tt>.</p>
+</dd>
+</dl>
+<a name="mul"><dl class="docutils" id="mul">
+<dt><tt class="docutils literal"><span class="pre">mul</span>&nbsp; <span class="pre">x::matrix</span>&nbsp; <span class="pre">y::matrix</span></tt></dt>
+<dd><p class="first">performs a least-squares fit to a straight line model,
+<tt class="docutils literal"><span class="pre">Y</span> <span class="pre">c</span> <span class="pre">x</span> <span class="pre">=</span> <span class="pre">c1</span> <span class="pre">*</span> <span class="pre">x</span></tt> without constant term <tt class="docutils literal"><span class="pre">c0</span></tt>.</p>
+<p class="last">Results are given as the list <tt class="docutils literal"><span class="pre">[c1,</span> <span class="pre">cov11,</span> <span class="pre">sumsq]</span></tt> where <tt class="docutils literal"><span class="pre">c1</span></tt>
+is the coefficient and the error on <tt class="docutils literal"><span class="pre">y</span></tt> is returned via the parameter
+<tt class="docutils literal"><span class="pre">cov11</span></tt>. The sum of squares of the residuals is returned in <tt class="docutils literal"><span class="pre">sumsq</span></tt>.</p>
+</dd>
+</dl>
+<a name="wmul"><dl class="docutils" id="wmul">
+<dt><tt class="docutils literal"><span class="pre">wmul</span>&nbsp; <span class="pre">x::matrix</span>&nbsp; <span class="pre">w::matrix</span>&nbsp; <span class="pre">y::matrix</span></tt></dt>
+<dd><p class="first">performs a least-squares fit to a straight line model with weighted
+datapoints <tt class="docutils literal"><span class="pre">w</span></tt>.</p>
+<p class="last">Results are given as the list <tt class="docutils literal"><span class="pre">[c1,</span> <span class="pre">cov11,</span> <span class="pre">sumsq]</span></tt> where <tt class="docutils literal"><span class="pre">c1</span></tt>
+is the coefficient and the error on <tt class="docutils literal"><span class="pre">y</span></tt> is returned via the parameter
+<tt class="docutils literal"><span class="pre">cov11</span></tt>. The sum of squares of the residuals is returned in <tt class="docutils literal"><span class="pre">sumsq</span></tt>.</p>
+</dd>
+</dl>
+<a name="mul_est"><dl class="docutils" id="mul-est">
+<dt><tt class="docutils literal"><span class="pre">mul_est</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">c1::double</span>&nbsp; <span class="pre">cov11::double</span></tt></dt>
+<dd><p class="first">compute the fitted function <tt class="docutils literal"><span class="pre">y</span></tt> and its standard deviation <tt class="docutils literal"><span class="pre">y_err</span></tt>
+at point <tt class="docutils literal"><span class="pre">x</span></tt>.</p>
+<p class="last">Results are given as the list <tt class="docutils literal"><span class="pre">[y,</span> <span class="pre">y_err]</span></tt>.</p>
+</dd>
+</dl>
+<!--  -->
+</div>
+<div class="section" id="id10">
+<h2><a class="toc-backref" href="#id28">Examples</a></h2>
+<p>Usage of each implemented library routine is illustrated below.</p>
+<pre class="literal-block">
+&gt; using gsl::fit;
+&gt; using namespace gsl::fit;
+</pre>
+<p>The equation for a least-squares line through the points (1,0.01),
+(2,1.11), (3,1.9), (4,2.85), and (5,4.01) may be calculated by ...</p>
+<pre class="literal-block">
+&gt; Y x = '(a + b * x)
+&gt; when
+&gt;   a:b:_ = linear {1,2,3,4,5} {0.01,1.11,1.9,2.85,4.01}
+&gt; end;
+&gt; Y x;
+-0.946+0.974*x
+&gt; eval $ Y 2;
+1.002
+</pre>
+<p>The estimate of some y values and there standard error for at x = 1, 2,
+and 3 are ...</p>
+<pre class="literal-block">
+&gt; let c0:c1:cov00:cov01:cov11:_ = linear {1,2,3,4,5}
+&gt;   {0.01,1.11,1.9,2.85,4.01};
+&gt; linear_est 1 c0 c1 cov00 cov01 cov11;
+[0.028,0.0838570211729465]
+&gt; linear_est 2 c0 c1 cov00 cov01 cov11;
+[1.002,0.0592958683214944]
+&gt; linear_est 3 c0 c1 cov00 cov01 cov11;
+[1.976,0.0484148737476408]
+</pre>
+<p>The equation for a least-squares line through the points (1,0.01),
+(2,1.11), (3,1.9), (4,2.85), and (5,4.01) using weights 0.1, 0.2, 0.3,
+0.4, and 0.5 is calculated by ...</p>
+<pre class="literal-block">
+&gt; W x = '(a + b * x)
+&gt; when
+&gt;   a:b:_ = wlinear (matrix (1..5))
+&gt;           {0.1, 0.2, 0.3, 0.4, 0.5}
+&gt;           {0.01, 1.11, 1.9, 2.85, 4.01};
+&gt; end;
+&gt; W u;
+-0.99+0.986*u
+&gt; eval $ W 2;
+0.982
+</pre>
+<p>The least-squares parameters for <tt class="docutils literal"><span class="pre">Y</span> <span class="pre">=</span> <span class="pre">c1</span> <span class="pre">*</span> <span class="pre">X</span></tt> without the constant
+term using the points (1,3), (2,5), and (3,7) is give below. The y-values
+and standard error about x = 1, 2, and 3 are also given.</p>
+<pre class="literal-block">
+&gt; let c1:cov11:sumsq:_ = mul {1,2,3} {3,5,7};
+&gt; mul_est 1 c1 cov11;
+[2.42857142857143,0.123717914826348]
+&gt; mul_est 2 c1 cov11;
+[4.85714285714286,0.247435829652697]
+&gt; mul_est 3 c1 cov11;
+[7.28571428571428,0.371153744479045]
+</pre>
+<p>The least-squares parameters for <tt class="docutils literal"><span class="pre">Y</span> <span class="pre">=</span> <span class="pre">c1</span> <span class="pre">*</span> <span class="pre">X</span></tt> without the constant
+term using the points (1,3), (2,5), and (3,7), the weights 0.4, 0.9, and
+0.4 is given below. The approximation of y-values and standard error about
+x = 1, 2, and 3 follows.</p>
+<pre class="literal-block">
+&gt; let c1:cov11:sumsq:_ = wmul {1,2,3} {0.4,0.9,0.4} {3,5,7};
+&gt; mul_est 1 c1 cov11;
+[2.44736842105263,0.362738125055006]
+&gt; mul_est 2 c1 cov11;
+[4.89473684210526,0.725476250110012]
+&gt; mul_est 3 c1 cov11;
+[7.34210526315789,1.08821437516502]
+</pre>
+</div>
+</div>
+</div>
+</body>
+</html>
