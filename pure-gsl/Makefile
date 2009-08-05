@@ -62,6 +62,7 @@ install:
 	mkdir -p "$(DESTDIR)$(libdir)/pure/gsl"
 	cp gsl.pure gsl$(DLL) "$(DESTDIR)$(libdir)/pure"
 	cp gsl/*.pure "$(DESTDIR)$(libdir)/pure/gsl/"
+	cp pure-gsl.html "$(DESTDIR)$(libdir)/pure/"
 
 uninstall:
 	rm -f "$(DESTDIR)$(libdir)/pure/gsl.pure" "$(DESTDIR)$(libdir)/pure/gsl$(DLL)"
@@ -79,3 +80,31 @@ distcheck: dist
 	tar xfz $(dist).tar.gz
 	cd $(dist) && make && make install DESTDIR=./BUILD
 	rm -rf $(dist)
+
+# Generate the documentation. This needs docutils.
+# Keep the files in order of the GSL manual Chapter order.
+
+sources = gsl.pure gsl/poly.pure gsl/fit.pure gsl/stats.pure gsl/randist.pure gsl/sort.pure
+target = pure-gsl
+
+$(target).txt: $(sources)
+	pure-doc $(sources) > $@
+
+.PHONY: html tex pdf
+
+html: $(target).html
+tex: $(target).tex
+pdf: $(target).pdf
+
+%.html: %.txt
+	rst2html.py $< $@
+
+%.tex: %.txt
+	rst2latex.py $< $@
+
+# This also requires that you have TeX installed.
+
+%.pdf: %.tex
+	pdflatex $<
+	pdflatex $<
+	rm -f *.aux *.log *.out
