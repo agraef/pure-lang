@@ -1,5 +1,5 @@
 
-/* gsl.pure: GSL wrapper for the Pure programming language. */
+/* gsl/matrix.pure: GSL wrapper for the Pure programming language. */
 
 /* Copyright (c) 2008 by Albert Graef <Dr.Graef@t-online.de>.
    Copyright (c) 2008 by Robert E. Rucker <erucker@bmc.edu>.
@@ -28,26 +28,35 @@ using "lib:gsl";
 infixl 2200 .* ./ \\;
 infixr 2400 .^ ;
 
+/* Stuff below goes into the global namespace. */
+
 /* Additional number predicates. gsl_complexp checks if a Pure expression
    represents a valid GSL complex value (which is a Pure complex value whose
    real and imaginary components are either double or machine int values).
-   scalarp checks for any kind of Pure number which passes muster as a
+   gsl_scalarp checks for any kind of Pure number which passes muster as a
    scalar in GSL land (i.e., int, double, GSL complex value). */
 
-private extern bool gsl_complexp(expr*);
+extern bool gsl_complexp(expr*);
 
-scalarp x = intp x || doublep x || gsl_complexp x;
+public gsl_scalarp;
+gsl_scalarp x = intp x || doublep x || gsl_complexp x;
 
 /* Complex functions. */
 
-private extern expr* wrap_gsl_complex_sqrt(expr*) = gsl_complex_sqrt;
-complex_sqrt x = gsl_complex_sqrt x;
+extern expr* wrap_gsl_complex_sqrt(expr*) = gsl_complex_sqrt;
+
+/* Stuff below goes into the gsl::matrix namespace. */
+
+namespace gsl;
+namespace gsl::matrix;
 
 /* Utility matrices. zeros and ones create matrices with all elements zero or
    one, respectively, and eye creates identity matrices. These functions can
    be invoked either with a pair (n,m) denoting the desired number of rows or
    columns, or an integer n in which case a square nxn matrix is created. The
    result is always a double matrix. */
+
+public zeros ones eye;
 
 zeros (n::int,m::int)	= dmatrix (n,m);
 zeros n::int		= zeros (n,n);
@@ -68,6 +77,8 @@ eye n::int		= eye (n,n);
 
 /* Complex and integer matrix variations of the above. */
 
+public czeros cones ceye;
+
 czeros (n::int,m::int)	= cmatrix (n,m);
 czeros n::int		= czeros (n,n);
 
@@ -86,6 +97,8 @@ ceye (n::int,m::int)	= x when
 			  end;
 ceye n::int		= ceye (n,n);
 
+public izeros iones ieye;
+
 izeros (n::int,m::int)	= imatrix (n,m);
 izeros n::int		= izeros (n,n);
 
@@ -102,12 +115,6 @@ ieye (n::int,m::int)	= x when
 			    _ = gsl_matrix_int_set_identity x;
 			  end;
 ieye n::int		= ieye (n,n);
-
-/* Set all variations */
-
-set_all (n::int,m::int) v = {v | i=imatrix(n,m)}; // symbolic case
-
-set_all n::int v = set_all (n,n) v;
 
 /* Matrix-scalar operations. */
 
@@ -138,13 +145,13 @@ x::matrix + a		= if gsl_complexp a then
 			             3 = gsl_matrix_add_constant x a;
 			           end
 			     end)
-			  if nmatrixp x && scalarp a;
+			  if nmatrixp x && gsl_scalarp a;
 // symbolic cases
 a + x::matrix		= map (\x->a+x) x if ~matrixp a;
 x::matrix + a		= map (\x->x+a) x if ~matrixp a;
 
-a - x::matrix		= (-x)+a if nmatrixp x && scalarp a;
-x::matrix - a		= x+(-a) if nmatrixp x && scalarp a;
+a - x::matrix		= (-x)+a if nmatrixp x && gsl_scalarp a;
+x::matrix - a		= x+(-a) if nmatrixp x && gsl_scalarp a;
 a - x::matrix		= map (\x->a-x) x if ~matrixp a;
 x::matrix - a		= map (\x->x-a) x if ~matrixp a;
 
@@ -174,21 +181,21 @@ x::matrix * a		= if gsl_complexp a then
 			             3 = gsl_matrix_scale x a;
 			           end
 			     end)
-			  if nmatrixp x && scalarp a;
+			  if nmatrixp x && gsl_scalarp a;
 // symbolic cases
 a * x::matrix		= map (\x->a*x) x if ~matrixp a;
 x::matrix * a		= map (\x->x*a) x if ~matrixp a;
 
-a / x::matrix		= a*ones(dim x)./x if nmatrixp x && scalarp a;
-x::matrix / a		= x*(1/a) if nmatrixp x && scalarp a;
+a / x::matrix		= a*ones(dim x)./x if nmatrixp x && gsl_scalarp a;
+x::matrix / a		= x*(1/a) if nmatrixp x && gsl_scalarp a;
 a / x::matrix		= map (\x->a/x) x if ~matrixp a;
 x::matrix / a		= map (\x->x/a) x if ~matrixp a;
 
 /* Some additional matrix-scalar operations which aren't in GSL, but are
    provided as matrix-matrix operations below. */
 
-a ^ x::matrix		= (a*ones(dim x)).^x if nmatrixp x && scalarp a;
-x::matrix ^ a		= x.^(a*ones(dim x)) if nmatrixp x && scalarp a;
+a ^ x::matrix		= (a*ones(dim x)).^x if nmatrixp x && gsl_scalarp a;
+x::matrix ^ a		= x.^(a*ones(dim x)) if nmatrixp x && gsl_scalarp a;
 a ^ x::matrix		= map (\x->a^x) x if ~matrixp a;
 x::matrix ^ a		= map (\x->x^a) x if ~matrixp a;
 
@@ -452,6 +459,8 @@ pow x::matrix k::bigint	= pow x (int k);
    our wrapper functions by just adding a suitable number of zero rows in the
    underdetermined case.  */
 
+public svd svd_mod svd_jacobi svd_solve;
+
 /* This uses the Golub-Reinsch algorithm. */
 
 private extern int wrap_gsl_linalg_SV_decomp
@@ -534,6 +543,8 @@ svd_solve (u::matrix,s::matrix,v::matrix) b::matrix
 			= svd_solve (u,s,v) (dmatrix b) if imatrixp b;
 
 /* Pseudo inverse of a matrix. */
+
+public pinv;
 
 pinv x::matrix		= v*s*transpose u when
 			    u,s,v = svd x;
