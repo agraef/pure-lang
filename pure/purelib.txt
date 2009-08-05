@@ -53,7 +53,7 @@ separate modules string.pure and matrix.pure, the primitive arithmetic and
 logical operations can be found in primitives.pure.)
 
 The prelude also declares a signature of commonly used constant and
-operator symbols. This comprises:
+operator symbols.
 
 .. raw:: html
 
@@ -144,29 +144,29 @@ key-value associations. See, e.g., Dictionaries_ for an example.
 
 ::
 
-  infixl  0   $$ ;                // sequence operator
-  infixr  0   $ ;                 // right-associative application
-  infixr  1   , ;                 // pair (tuple)
-  infix   2   .. ;                // arithmetic sequences
-  infix   2   => ;                // mapsto constructor
-  infixr  2   || ;                // logical or (short-circuit)
-  infixr  3   && ;                // logical and (short-circuit)
-  prefix  3   ~ ;                 // logical negation
-  infix   4   < > <= >= == ~= ;   // relations
-  infix   4   === ~== ;           // syntactic equality
-  infixr  4   : ;                 // list cons
-  infix   5   +: <: ;             // complex numbers (cf. math.pure)
-  infixl  5   << >> ;             // bit shifts
-  infixl  6   + - or ;            // addition, bitwise or
-  infixl  7   * / div mod and ;   // multiplication, bitwise and
-  infixl  7   % ;                 // exact division (cf. math.pure)
-  prefix  7   not ;               // bitwise not
-  infixr  8   ^ ;                 // exponentiation
-  prefix  8   # ;                 // size operator
-  infixl  9   ! !! ;              // indexing, slicing
-  infixr  9   . ;                 // function composition
-  prefix  9   ' ;                 // quote
-  postfix 9   & ;                 // thunk
+  infixl  1000   $$ ;                // sequence operator
+  infixr  1000   $ ;                 // right-associative application
+  infixr  1100   , ;                 // pair (tuple)
+  infix   1200   => ;                // mapsto constructor
+  infix   1300   .. ;                // arithmetic sequences
+  infixr  1400   || ;                // logical or (short-circuit)
+  infixr  1500   && ;                // logical and (short-circuit)
+  prefix  1600   ~ ;                 // logical negation
+  infix   1700   < > <= >= == ~= ;   // relations
+  infix   1700   === ~== ;           // syntactic equality
+  infixr  1800   : ;                 // list cons
+  infix   1900   +: <: ;             // complex numbers (cf. math.pure)
+  infixl  2000   << >> ;             // bit shifts
+  infixl  2100   + - or ;            // addition, bitwise or
+  infixl  2200   * / div mod and ;   // multiplication, bitwise and
+  infixl  2200   % ;                 // exact division (cf. math.pure)
+  prefix  2300   not ;               // bitwise not
+  infixr  2400   ^ ;                 // exponentiation
+  prefix  2500   # ;                 // size operator
+  infixl  2600   ! !! ;              // indexing, slicing
+  infixr  2700   . ;                 // function composition
+  prefix  2800   ' ;                 // quote
+  postfix 2900   & ;                 // thunk
 
 ..
 
@@ -312,8 +312,8 @@ Haskell:
 .. _curry3:
 .. _uncurry3:
 
-* ``curry3`` and ``uncurry3`` work analogously, but are used to work with
-  ternary functions.
+* ``curry3`` and ``uncurry3`` are defined analogously, but are used to work
+  with ternary functions.
 
 .. raw:: html
 
@@ -2671,12 +2671,16 @@ the symbol or function object to be inspected, and return an integer value.
 ``fixity f``
   Determine the fixity of an operator symbol. The fixity is encoded as a
   2-digit number ``10*n+m`` where ``n`` is the precedence level (ranging
-  from 0 to max, where max denotes the precedence of primary expressions,
-  10 in the current implementation) and ``m`` indicates the actual fixity
-  (0 = infix, 1 = infixl, 2 = infixr, 3 = prefix, 4 = postfix). Note that
-  the fixity of nonfix and outfix symbols, as well as symbols without a
-  fixity declaration, is always 10*max. The same value is also returned for
-  non-symbol objects.
+  from ``0`` to ``PREC_MAX``, where ``PREC_MAX`` denotes the precedence of
+  primary expressions, 16777216 in the current implementation) and ``m``
+  indicates the actual fixity at each level, in the order of increasing
+  precedence (0 = infix, 1 = infixl, 2 = infixr, 3 = prefix, 4 =
+  postfix). The fixity value of nonfix and outfix symbols, as well as
+  symbols without a fixity declaration, is always given as ``10*PREC_MAX``,
+  and the same value is also reported for non-symbol objects. (``PREC_MAX``
+  isn't actually defined as a constant anywhere, but you can easily do that
+  yourself by setting ``PREC_MAX`` to the fixity value of any nonfix symbol
+  or non-symbol value, e.g.: ``const PREC_MAX = fixity [];``)
 
 Note that only closures (i.e., named and anonymous functions and thunks)
 have a defined argument count in Pure, otherwise ``nargs`` returns -1
@@ -2690,11 +2694,11 @@ because the application was quoted. If such a normal form application is
 then applied to some "extra" arguments it becomes over-saturated.)
 
 The value returned by ``nargs`` always denotes the actual argument count of
-the given function, not the declared arity if the function also happens to
-be an operator symbol. Usually these will coincide (as, e.g., in the case
-of ``+`` which is a binary operator and also expects two arguments). But
-this is not necessarily the case, as shown in the following example of a
-binary operator which actually takes *three* arguments::
+the given function, regardless of the declared arity if the function also
+happens to be an operator symbol. Often these will coincide (as, e.g., in
+the case of ``+`` which is a binary operator and also expects two
+arguments). But this is not necessarily the case, as shown in the following
+example of a binary operator which actually takes *three* arguments::
 
   > infix 0 oops;
   > (oops) x y z = x*z+y;

@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>Pure Library Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2009-08-03" />
+<meta name="date" content="2009-08-05" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2009-08-03</td></tr>
+<td>2009-08-05</td></tr>
 </tbody>
 </table>
 <!-- We use docutils to produce the documentation. Docstrings are extracted -->
@@ -423,7 +423,7 @@ list and matrix comprehensions. (The string and matrix operations are in
 separate modules string.pure and matrix.pure, the primitive arithmetic and
 logical operations can be found in primitives.pure.)</p>
 <p>The prelude also declares a signature of commonly used constant and
-operator symbols. This comprises:</p>
+operator symbols.</p>
 <a name="failed_cond"><a name="failed_match"><a name="stack_fault"><a name="bad_matrix_value"><ul class="simple" id="bad-matrix-value">
 <span id="stack-fault"></span><span id="failed-match"></span><span id="failed-cond"></span><li>The built-in exception values <tt class="docutils literal"><span class="pre">failed_cond</span></tt> (failed conditional in
 guard or if-then-else), <tt class="docutils literal"><span class="pre">failed_match</span></tt> (failed pattern match in lambda,
@@ -455,29 +455,29 @@ pairs&quot; <tt class="docutils literal"><span class="pre">x=&gt;y</span></tt> f
 several libraries, however, which usually employ it to denote some kind of
 key-value associations. See, e.g., <a class="reference internal" href="#dictionaries">Dictionaries</a> for an example.</p>
 <pre class="literal-block">
-infixl  0   $$ ;                // sequence operator
-infixr  0   $ ;                 // right-associative application
-infixr  1   , ;                 // pair (tuple)
-infix   2   .. ;                // arithmetic sequences
-infix   2   =&gt; ;                // mapsto constructor
-infixr  2   || ;                // logical or (short-circuit)
-infixr  3   &amp;&amp; ;                // logical and (short-circuit)
-prefix  3   ~ ;                 // logical negation
-infix   4   &lt; &gt; &lt;= &gt;= == ~= ;   // relations
-infix   4   === ~== ;           // syntactic equality
-infixr  4   : ;                 // list cons
-infix   5   +: &lt;: ;             // complex numbers (cf. math.pure)
-infixl  5   &lt;&lt; &gt;&gt; ;             // bit shifts
-infixl  6   + - or ;            // addition, bitwise or
-infixl  7   * / div mod and ;   // multiplication, bitwise and
-infixl  7   % ;                 // exact division (cf. math.pure)
-prefix  7   not ;               // bitwise not
-infixr  8   ^ ;                 // exponentiation
-prefix  8   # ;                 // size operator
-infixl  9   ! !! ;              // indexing, slicing
-infixr  9   . ;                 // function composition
-prefix  9   ' ;                 // quote
-postfix 9   &amp; ;                 // thunk
+infixl  1000   $$ ;                // sequence operator
+infixr  1000   $ ;                 // right-associative application
+infixr  1100   , ;                 // pair (tuple)
+infix   1200   =&gt; ;                // mapsto constructor
+infix   1300   .. ;                // arithmetic sequences
+infixr  1400   || ;                // logical or (short-circuit)
+infixr  1500   &amp;&amp; ;                // logical and (short-circuit)
+prefix  1600   ~ ;                 // logical negation
+infix   1700   &lt; &gt; &lt;= &gt;= == ~= ;   // relations
+infix   1700   === ~== ;           // syntactic equality
+infixr  1800   : ;                 // list cons
+infix   1900   +: &lt;: ;             // complex numbers (cf. math.pure)
+infixl  2000   &lt;&lt; &gt;&gt; ;             // bit shifts
+infixl  2100   + - or ;            // addition, bitwise or
+infixl  2200   * / div mod and ;   // multiplication, bitwise and
+infixl  2200   % ;                 // exact division (cf. math.pure)
+prefix  2300   not ;               // bitwise not
+infixr  2400   ^ ;                 // exponentiation
+prefix  2500   # ;                 // size operator
+infixl  2600   ! !! ;              // indexing, slicing
+infixr  2700   . ;                 // function composition
+prefix  2800   ' ;                 // quote
+postfix 2900   &amp; ;                 // thunk
 </pre>
 <!--  -->
 <div class="section" id="basic-combinators">
@@ -562,8 +562,8 @@ arguments into a function processing a single pair argument:</p>
 </li>
 </ul>
 <a name="curry3"><a name="uncurry3"><ul class="simple" id="uncurry3">
-<span id="curry3"></span><li><tt class="docutils literal"><span class="pre">curry3</span></tt> and <tt class="docutils literal"><span class="pre">uncurry3</span></tt> work analogously, but are used to work with
-ternary functions.</li>
+<span id="curry3"></span><li><tt class="docutils literal"><span class="pre">curry3</span></tt> and <tt class="docutils literal"><span class="pre">uncurry3</span></tt> are defined analogously, but are used to work
+with ternary functions.</li>
 </ul>
 <a name="fix"><ul id="fix">
 <li><p class="first">The (normal order) fixed point combinator <tt class="docutils literal"><span class="pre">fix</span></tt> allows you to create
@@ -1702,12 +1702,16 @@ without a fixity declaration or other kinds of objects.</dd>
 <dt><tt class="docutils literal"><span class="pre">fixity</span> <span class="pre">f</span></tt></dt>
 <dd>Determine the fixity of an operator symbol. The fixity is encoded as a
 2-digit number <tt class="docutils literal"><span class="pre">10*n+m</span></tt> where <tt class="docutils literal"><span class="pre">n</span></tt> is the precedence level (ranging
-from 0 to max, where max denotes the precedence of primary expressions,
-10 in the current implementation) and <tt class="docutils literal"><span class="pre">m</span></tt> indicates the actual fixity
-(0 = infix, 1 = infixl, 2 = infixr, 3 = prefix, 4 = postfix). Note that
-the fixity of nonfix and outfix symbols, as well as symbols without a
-fixity declaration, is always 10*max. The same value is also returned for
-non-symbol objects.</dd>
+from <tt class="docutils literal"><span class="pre">0</span></tt> to <tt class="docutils literal"><span class="pre">PREC_MAX</span></tt>, where <tt class="docutils literal"><span class="pre">PREC_MAX</span></tt> denotes the precedence of
+primary expressions, 16777216 in the current implementation) and <tt class="docutils literal"><span class="pre">m</span></tt>
+indicates the actual fixity at each level, in the order of increasing
+precedence (0 = infix, 1 = infixl, 2 = infixr, 3 = prefix, 4 =
+postfix). The fixity value of nonfix and outfix symbols, as well as
+symbols without a fixity declaration, is always given as <tt class="docutils literal"><span class="pre">10*PREC_MAX</span></tt>,
+and the same value is also reported for non-symbol objects. (<tt class="docutils literal"><span class="pre">PREC_MAX</span></tt>
+isn't actually defined as a constant anywhere, but you can easily do that
+yourself by setting <tt class="docutils literal"><span class="pre">PREC_MAX</span></tt> to the fixity value of any nonfix symbol
+or non-symbol value, e.g.: <tt class="docutils literal"><span class="pre">const</span> <span class="pre">PREC_MAX</span> <span class="pre">=</span> <span class="pre">fixity</span> <span class="pre">[];</span></tt>)</dd>
 </dl>
 <p>Note that only closures (i.e., named and anonymous functions and thunks)
 have a defined argument count in Pure, otherwise <tt class="docutils literal"><span class="pre">nargs</span></tt> returns -1
@@ -1720,11 +1724,11 @@ combination of arguments and thus the expression is in normal form, or
 because the application was quoted. If such a normal form application is
 then applied to some &quot;extra&quot; arguments it becomes over-saturated.)</p>
 <p>The value returned by <tt class="docutils literal"><span class="pre">nargs</span></tt> always denotes the actual argument count of
-the given function, not the declared arity if the function also happens to
-be an operator symbol. Usually these will coincide (as, e.g., in the case
-of <tt class="docutils literal"><span class="pre">+</span></tt> which is a binary operator and also expects two arguments). But
-this is not necessarily the case, as shown in the following example of a
-binary operator which actually takes <em>three</em> arguments:</p>
+the given function, regardless of the declared arity if the function also
+happens to be an operator symbol. Often these will coincide (as, e.g., in
+the case of <tt class="docutils literal"><span class="pre">+</span></tt> which is a binary operator and also expects two
+arguments). But this is not necessarily the case, as shown in the following
+example of a binary operator which actually takes <em>three</em> arguments:</p>
 <pre class="literal-block">
 &gt; infix 0 oops;
 &gt; (oops) x y z = x*z+y;

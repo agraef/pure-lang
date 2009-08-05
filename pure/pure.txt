@@ -386,7 +386,7 @@ default command prompt)::
 
   > // my first Pure example
   > fact 0 = 1;
-  > fact n::int = n*fact (n-1) if n>0;
+  > fact n :: int = n*fact (n-1) if n>0;
   > let x = fact 10; x;
   3628800
 
@@ -440,7 +440,7 @@ at any time. For instance, we can extend the example above to make the
 ``fact`` function work with floating point numbers, too::
 
   > fact 0.0 = 1.0;
-  > fact n::double = n*fact (n-1) if n>0;
+  > fact n :: double = n*fact (n-1) if n>0;
   > fact 10.0;
   3628800.0
   > fact 10;
@@ -451,8 +451,7 @@ first, i.e., using call by value semantics. Pure also has a few built-in
 special forms (most notably, conditional expressions, the short-circuit
 logical connectives ``&&`` and ``||``, the sequencing operator ``$$``, the
 lazy evaluation operator ``&``, and the ``quote``) which take some or all of
-their arguments unevaluated, using call by name. (User-defined special forms
-can be created with macros. More about that later.)
+their arguments unevaluated, using call by name.
 
 Like in Haskell and ML, functions are often defined by pattern-matching, i.e.,
 the left-hand side of a definition is compared to the target expression,
@@ -478,18 +477,24 @@ expressions in a symbolic fashion, rewriting expressions using the equations
 supplied by the programmer, until no more equations are applicable. The result
 of this process is called a `normal form` which represents the "value" of the
 original expression. Keeping with the tradition of term rewriting, there's no
-distinction between "defined" and "constructor" function symbols in Pure; that
-is, Pure does *not* enforce the so-called "constructor discipline" which
-stipulates that only pure constructor symbols (without any defining equations)
-may occur as a subterm on the left-hand side of an equation. In Pure, any
-function symbol (or operator) also acts as a constructor if it happens to
-occur in a normal form term. This enables you to apply algebraic rules
-violating the constructor discipline, like the following::
+distinction between "defined" and "constructor" function symbols in
+Pure. Consequently, any function symbol or operator can be used *anywhere* on
+the left-hand side of an equation, and may act as a constructor symbol if it
+happens to occur in a normal form term. This enables you to work with
+algebraic rules like associativity and distributivity in a direct fashion::
 
   > (x+y)*z = x*z+y*z; x*(y+z) = x*y+x*z;
   > x*(y*z) = (x*y)*z; x+(y+z) = (x+y)+z;
   > square (a+b);
   a*a+a*b+b*a+b*b
+
+Note that, in contrast, languages like Haskell and ML always enforce the
+so-called "constructor discipline", which stipulates that only pure
+constructor symbols (without any defining equations) may occur as a subterm on
+the left-hand side of a definition. Thus equational definitions like the above
+are forbidden in these languages. In Pure such definitions are just normal
+business, which makes the language directly usable as a tool for symbolic
+algebra.
 
 Parameters in Equations
 -----------------------
@@ -651,7 +656,7 @@ Matrices: ``{1.0,2.0,3.0}``, ``{1,2;3,4}``, ``{1L,y+1;foo,bar}``
     pattern on the left-hand side of an equation. In contrast, the latter is a
     built-in operation which creates objects of a special matrix type. These
     can *not* be used as patterns (instead, matrix values can be matched using
-    the special ``::matrix`` type tag, see the `Rule Syntax`_ section for
+    the special ``matrix`` type tag, see the `Rule Syntax`_ section for
     details).
 
     If the interpreter was built with support for the `GNU Scientific
@@ -712,10 +717,12 @@ Function and operator applications: ``foo x y z``, ``-x``, ``x+y``, ``(+x)``
     which is equivalent to the partial application ``(+) x``. A *right
     section* takes the form ``(+x)`` and is equivalent to the term ``flip (+)
     x``. (This uses the ``flip`` combinator from the prelude which is defined
-    as ``flip f x y = f y x``.) For instance, ``(1/)`` denotes the reciprocal
-    and ``(+1)`` the successor function. (Note, however, that ``(-x)`` always
-    denotes an application of unary minus; the section ``(+-x)`` can be used
-    to indicate a function which subtracts ``x`` from its argument.)
+    as ``flip f x y = f y x``.) Thus ``(x+) y`` is equivalent to ``x+y``,
+    while ``(+x) y`` reduces to ``y+x``. For instance, ``(1/)`` denotes the
+    reciprocal and ``(+1)`` the successor function. (Note that, in contrast,
+    ``(-x)`` always denotes an application of unary minus; the section
+    ``(+-x)`` can be used to indicate a function which subtracts ``x`` from
+    its argument.)
 
 Conditional expressions: ``if x then y else z``
     Evaluates to ``y`` or ``z`` depending on whether ``x`` is "true" (i.e., a
@@ -772,17 +779,6 @@ their declarations (cf. `Symbol Declarations`_), and function application
 binds stronger than all operators. Parentheses can be used to override default
 precedences and associativities as usual.
 
-Operands in operator sections must be well-formed simple expressions which
-respect the usual precedence rules. This means that if the operand is a
-compound expression then it must be parenthesized, unless it has a higher
-precedence than the section operator. For instance, ``(+x*2)`` works, as does
-``(+(x+2))``, but ``(+x+2)`` will give a syntax error. (Due to some
-ambiguities in the grammar, the interpreter will try to parse the latter
-expression as ``((+x)+2)`` and bail out, reporting that ``+`` is not a unary
-operator. In fact this will even happen with right-associative operators at
-the same precedence level, so that you must always parenthesize the operand of
-a right section in such cases.)
-
 The common operator symbols like ``+``, ``-``, ``*``, ``/`` etc. are all
 declared at the beginning of the prelude, see the `Pure Library Manual`_ for a
 list of these. Arithmetic and relational operators mostly follow C
@@ -836,19 +832,17 @@ side-effects and just ignore the return value::
 
 The ``&`` operator does lazy evaluation. This is the only postfix operator
 defined in the standard prelude, written as ``x&``, where ``x`` is an
-arbitrary Pure expression. The ``&`` operator binds stronger than any other
-operation except function application. It turns its operand into a kind of
-parameterless anonymous closure, deferring its evaluation. These kinds of
-objects are also commonly known as `thunks` or `futures`. When the value of a
-future is actually needed (during pattern-matching, or when the value becomes
-an argument of a C call), it is evaluated automatically and gets memoized,
-i.e., the computed result replaces the thunk so that it only has to be
-computed once. Futures are useful to implement all kinds of lazy data
-structures in Pure, in particular: lazy lists a.k.a. streams. A `stream` is
-simply a list with a thunked tail, which allows it to be infinite. The Pure
-prelude defines many functions for creating and manipulating these kinds of
-objects; further details and examples can be found in the Examples_ section
-below.
+arbitrary Pure expression. It turns its operand into a kind of parameterless
+anonymous closure, deferring its evaluation. These kinds of objects are also
+commonly known as `thunks` or `futures`. When the value of a future is
+actually needed (during pattern-matching, or when the value becomes an
+argument of a C call), it is evaluated automatically and gets memoized, i.e.,
+the computed result replaces the thunk so that it only has to be computed
+once. Futures are useful to implement all kinds of lazy data structures in
+Pure, in particular: lazy lists a.k.a. streams. A `stream` is simply a list
+with a thunked tail, which allows it to be infinite. The Pure prelude defines
+many functions for creating and manipulating these kinds of objects; further
+details and examples can be found in the Examples_ section below.
 
 Last but not least, the special form ``quote`` quotes an expression, i.e.,
 ``quote x`` (or, equivalently, ``'x``) returns just ``x`` itself without
@@ -978,13 +972,13 @@ Similarly, you can also add new equations to an existing function at any
 time::
 
   > fact 0 = 1;
-  > fact n::int = n*fact (n-1) if n>0;
+  > fact n :: int = n*fact (n-1) if n>0;
   > fact 10;
   3628800
   > fact 10.0;
   fact 10.0
   > fact 1.0 = 1.0;
-  > fact n::double = n*fact (n-1) if n>1;
+  > fact n :: double = n*fact (n-1) if n>1;
   > fact 10.0;
   3628800.0
   > fact 10;
@@ -1016,18 +1010,17 @@ rule is actually a separate definition.)
 Patterns
 --------
 
-In any case, the left-hand side of a rule is a special kind of simple
-expression, called a `pattern`. Patterns consist of function and operator
-applications as well as any of the "atomic" expression types (symbols,
-numbers, strings and list values). *Not* permitted are any of the special
-expression types (lambda, ``case``, ``when``, ``with``, conditional
-expressions). Note that, since list and matrix comprehensions expand into
-lambdas, these aren't permitted in patterns either. Also note that in the
-current implementation matrix values aren't allowed in patterns, but it is
-possible to match a matrix value as a whole using the ``::matrix`` type tag,
-see below.
+The left-hand side of a rule is a special kind of simple expression, called a
+`pattern`. Patterns consist of function and operator applications as well as
+any of the "atomic" expression types (symbols, numbers, strings and list
+values). *Not* permitted are any of the special expression types (lambda,
+``case``, ``when``, ``with``, conditional expressions). Also note that, since
+list and matrix comprehensions expand into lambdas, these aren't permitted in
+patterns either. The current implementation also forbids matrix values in
+patterns, but it is possible to match a matrix value as a whole using the
+``matrix`` type tag, see below.
 
-In addition, patterns must not contain repeated variables, i.e., rules must be
+Patterns must not contain repeated variables, i.e., rules must be
 "left-linear". The only exception to this rule is the `anonymous variable`
 '``_``' which matches an arbitrary value (independently for all occurrences)
 without binding a variable symbol.
@@ -1035,28 +1028,81 @@ without binding a variable symbol.
 Patterns may contain the following special elements which are not permitted in
 right-hand side expressions:
 
+* A Haskell-style `"as" pattern` of the form '\ ``variable @ pattern``\ '
+  binds the given variable to the expression matched by the subpattern
+  ``pattern`` (in addition to the variables bound by ``pattern`` itself). This
+  is convenient if the value matched by the subpattern is to be used on the
+  right-hand side of an equation.
+
 * A left-hand side variable (including the anonymous variable) may be followed
-  by one of the special type tags ``::int``, ``::bigint``, ``::double``,
-  ``::string``, ``::matrix``, ``::pointer``, to indicate that it can only
-  match a constant value of the corresponding built-in type. This is useful if
-  you want to write rules matching any object of one of these types. Note that
-  there is no way to write out all "constructors" for the built-in types, as
-  there are infinitely many. (Or none, as in the case of ``matrix`` and
-  ``pointer`` which are constructed using special primitives.)
+  by a `type tag` of the form '\ ``:: name``\ ', where ``name`` is either one
+  of the built-in type symbols ``int``, ``bigint``, ``double``, ``string``,
+  ``matrix``, ``pointer``, or an existing identifier or nonfix symbol denoting
+  a custom constructor symbol for a user-defined data type. The variable can
+  then match only values of the designated type. Thus, for instance,
+  '\ ``x :: int``\ ' only matches machine integers. This is explained in more
+  detail below.
 
-* Pure also supports Haskell-style "as" patterns of the form
-  ``variable@pattern`` which binds the given variable to the expression
-  matched by the subpattern ``pattern`` (in addition to the variables bound by
-  ``pattern`` itself). This is convenient if the value matched by the
-  subpattern is to be used on the right-hand side of an
-  equation.
+Syntactically, both "as" patterns and type tags are primary expressions. If
+the subpattern of an "as" pattern is a compound expression, it *must* be
+parenthesized. For instance, the following function duplicates the head
+element of a list::
 
-Note that, syntactically, both type tags and "as" patterns are primary
-expressions. If the subpattern of an "as" pattern is a compound expression, it
-must be parenthesized. For instance, the following function duplicates the
-head element of a list::
+  foo xs @ (x:_) = x:xs;
 
-  foo xs@(x:_) = x:xs;
+Note that if you accidentally forget the parentheses around the subpattern
+``x:_``, you still get a syntactically correct definition::
+
+  foo xs @ x:_ = x:xs;
+
+But this gets parsed as ``(foo xs@x):_ = x:xs`` (despite the spacing which is
+ignored by the parser), which is most certainly *not* what you want. It is
+thus a good idea to just always enclose the subpattern with parentheses in
+order to prevent such glitches.
+
+Another potential pitfall is that the notation ``foo::bar`` is also used to
+denote "qualified symbols" in Pure, cf. Namespaces_. That's why in the
+examples above, we've written tagged variables as ``foo :: bar``, with spaces
+around the '``::``' symbol. Spaces are never permitted in qualified symbols,
+so this always makes it clear that the construct denotes a type tag. It's
+possible to omit the spaces around '``::``', but then you should be 100% sure
+that the variable identifier does not also denote a namespace. It seems that
+many proficient Pure programmers have fallen victim to that kind of sloppiness
+(the author is guilty of that, too), but it's really preferable and considered
+good coding style to add the spaces anyway.
+
+Type tags are actually nothing but a special form of "as" patterns which
+restrict variables to given data "domains". Like Lisp, Pure is essentially a
+typeless language and doesn't really have a notion of "data types"; all data
+belongs to the same universe of terms. Thus the only way to restrict the type
+of values which can be matched by a variable is to provide an "as" pattern
+which matches objects of the desired domain and nothing else. However, in the
+special case of the built-in types (machine and big integers, double values,
+strings, matrices and pointers) there is no way to spell out all
+"constructors", as there are infinitely many (or none, as in the case of
+``matrix`` and ``pointer`` which are constructed and inspected using special
+primitives, but are otherwise "opaque" at the Pure level). As a remedy, an
+appropriate type tag makes it possible to match these values.
+
+In order to generalize this to user-defined domains of data, Pure adopts the
+convention that any other tagged variable ``x::bar`` is just a shorthand for
+the "as" pattern ``x@(bar _)`` which matches terms of the form ``bar
+data``. Thus a custom data type can be represented by designating a special
+constructor symbol (``bar`` in the above example) which takes the actual data
+as its single argument. This works the same no matter what the internal
+structure of the data is (which in many cases you wouldn't want to depend on
+anyway, for the sake of data abstraction).
+
+Note that this is merely a convention, but it works reasonably well and makes
+up for the fact that Pure doesn't support data types at the language level.
+You can find examples for this approach in the standard library. For instance,
+the dict.pure module implements a ``Dict`` type, so that you can write
+something like::
+
+  > using dict;
+  > foo x :: Dict = keys x, vals x;
+  > foo (dict [99=>a,77=>b]);
+  [77,99],[b,a]
 
 General Rules
 -------------
@@ -1088,10 +1134,10 @@ same right-hand side(s) to be abbreviated as follows::
 This is useful if you need different specializations of the same rule which
 use different type tags on the left-hand side variables. For instance::
 
-  fact n::int    |
-  fact n::double |
-  fact n         = n*fact(n-1) if n>0;
-                 = 1 otherwise;
+  fact n :: int    |
+  fact n :: double |
+  fact n           = n*fact(n-1) if n>0;
+                   = 1 otherwise;
 
 In fact, the left-hand sides don't have to be related at all, so that you can
 also write something like::
@@ -1402,7 +1448,7 @@ way to implement common matrix operations. E.g., multiplying a matrix ``x``
 with a scalar ``a`` amounts to mapping the function ``(a*)`` to x, which
 can be done as follows::
 
-  > a * x::matrix = map (a*) x if ~matrixp a;
+  > a * x :: matrix = map (a*) x if ~matrixp a;
   > 2*{1,2,3;4,5,6};
   {2,4,6;8,10,12}
 
@@ -1410,7 +1456,7 @@ Likewise, matrix addition and other element-wise operations can be realized
 using ``zipwith``, which combines corresponding elements of two matrices using
 a given binary function::
 
-  > x::matrix + y::matrix = zipwith (+) x y;
+  > x :: matrix + y :: matrix = zipwith (+) x y;
   > {1,2,3;4,5,6}+{1,2,1;3,2,3};
   {2,4,4;7,7,9}
 
@@ -1459,7 +1505,7 @@ which just computes the dot product of all rows of ``x`` with all columns of
 ``y`` (the ``rows`` and ``cols`` functions are prelude operations found in
 matrices.pure)::
 
-  > x::matrix * y::matrix = {dot u v | u = rows x; v = cols y};
+  > x :: matrix * y :: matrix = {dot u v | u = rows x; v = cols y};
   > {0,1;1,0;1,1}*{1,2,3;4,5,6};
   {4,5,6;1,2,3;5,7,9}
 
@@ -1483,7 +1529,7 @@ row permutation ``p``.
 
 ::
 
-  gauss_elimination x::matrix = p,x
+  gauss_elimination x :: matrix = p,x
   when n,m = dim x; p,_,x = foldl step (0..n-1,0,x) (0..m-1) end;
 
   // One pivoting and elimination step in column j of the matrix:
@@ -1531,7 +1577,7 @@ la Octave_ (the meaning of the ``__show__`` function is explained in the
 `Caveats and Notes`_ section)::
 
   using system;
-  __show__ x::matrix
+  __show__ x :: matrix
   = strcat [printd j (x!(i,j))|i=0..n-1; j=0..m-1] + "\n"
   with printd 0 = sprintf "\n%10.5f"; printd _ = sprintf "%10.5f" end
   when n,m = dim x end if dmatrixp x;
@@ -1579,7 +1625,7 @@ Here is a simple example, showing a rule which expands saturated calls of the
 ``succ`` function (defined in the prelude) at compile time::
 
   > def succ x = x+1;
-  > foo x::int = succ (succ x);
+  > foo x :: int = succ (succ x);
   > show foo
   foo x::int = x+1+1;
 
@@ -1879,25 +1925,47 @@ Scope declarations: ``public symbol ...; private symbol ...;``
     declaration, you just list them all with whitespace in between. The same
     applies to the other types of symbol declarations discussed below.
 
-Operator declarations: ``infix level op ...;``
-    Ten different precedence levels are available for user-defined infix,
-    prefix and postfix operators, numbered 0 (lowest) thru 9 (highest). On
-    each precedence level, you can declare (in order of increasing precedence)
-    ``infix`` (binary non-associative), ``infixl`` (binary left-associative),
-    ``infixr`` (binary right-associative), ``prefix`` (unary prefix) and
-    ``postfix`` (unary postfix) operators. For instance::
+The following "fixity" declarations are available for introducing special
+operator and constant symbols. This changes the way that these symbols are
+parsed and thus provides you with a limited means to extend the Pure language
+at the lexical and syntactical level.
 
-      infixl 6 + - ;
-      infixl 7 * / div mod ;
+Operator declarations: ``infix level op ...;``
+    Pure provides you with a theoretically unlimited number of different
+    precedence levels for user-defined infix, prefix and postfix operators.
+    Precedence levels are numbered starting at 0; larger numbers indicate
+    higher precedence. (For practical reasons, the current implementation does
+    require that precedence numbers can be encoded as 24 bit unsigned machine
+    integers, giving you a range from 0 to 16777215, but this should be large
+    enough to incur no real limitations on applications. Also, the operator
+    declarations in the prelude have been set up to leave enough "space"
+    between the "standard" levels so that you can easily sneak in new operator
+    symbols at low, high or intermediate precedences.)
+
+    On each precedence level, you can declare (in order of increasing
+    precedence) ``infix`` (binary non-associative), ``infixl`` (binary
+    left-associative), ``infixr`` (binary right-associative), ``prefix``
+    (unary prefix) and ``postfix`` (unary postfix) operators. For instance,
+    here is a typical excerpt from the prelude (the full table can be found in
+    the Prelude_ section of the `Pure Library Manual`_)::
+
+      infix  1700 < > <= >= == ~= ;
+      infixl 2100 + - ;
+      infixl 2200 * / div mod ;
+      infixr 2400 ^ ;
+      prefix 2500 # ;
+
+    .. _Prelude: purelib.html#prelude
 
     One thing worth noting here is that unary minus plays a special role in
-    the syntax. Like in Haskell, unary minus is the only prefix operator
-    symbol which is also used as an infix operator, and it always has the same
-    precedence as binary minus (whose precedence may be chosen freely in the
-    prelude). Thus, with the standard prelude, ``-x+y`` will be parsed as
-    ``(-x)+y``, whereas ``-x*y`` is the same as ``-(x*y)``. Also note that the
-    notation ``(-)`` always denotes the binary minus operator; the unary minus
-    operation can be denoted using the built-in ``neg`` function.
+    the syntax. Like in Haskell and following mathematical tradition, unary
+    minus is the only prefix operator symbol which is also used as an infix
+    operator, and is always on the same precedence level as binary minus
+    (whose precedence may be chosen freely in the prelude). Thus, with the
+    standard prelude, ``-x+y`` will be parsed as ``(-x)+y``, whereas ``-x*y``
+    is the same as ``-(x*y)``. Also note that the notation ``(-)`` always
+    denotes the binary minus operator; the unary minus operation can be
+    denoted using the built-in ``neg`` function.
 
 Outfix symbol declarations: ``outfix left right ...;``
     Pure also provides unary outfix operators, which work like in Wm Leler's
@@ -1988,8 +2056,8 @@ convenient, but the latter allows you to denote scripts whose names aren't
 valid Pure identifiers.
 
 Script identifiers are translated to the corresponding filenames by replacing
-the ``::`` symbol with the pathname separator ``/`` and tacking on the
-``.pure`` suffix. The following table illustrates this with a few examples.
+the '``::``' symbol with the pathname separator '``/``' and tacking on the
+'``.pure``' suffix. The following table illustrates this with a few examples.
 
 ===========================  ===============================
 Script identifier            Filename
@@ -2474,7 +2542,7 @@ GSL's double matrix addition function in a way that preserves value
 semantics::
 
   > extern int gsl_matrix_add(dmatrix*, dmatrix*);
-  > x::matrix + y::matrix = gsl_matrix_add x y $$ x when x = pack x end;
+  > x :: matrix + y :: matrix = gsl_matrix_add x y $$ x when x = pack x end;
   > let x = dmatrix {1,2,3}; let y = dmatrix {2,3,2}; x; y; x+y;
   {1.0,2.0,3.0}
   {2.0,3.0,2.0}
@@ -2506,7 +2574,7 @@ want to extend our imported ``sin`` function with a rule to handle integers::
   0.29552020666134
   > sin 0;
   sin 0
-  > sin x::int = sin (double x);
+  > sin x :: int = sin (double x);
   > sin 0;
   0.0
 
@@ -2517,8 +2585,8 @@ the C function from the wrapper. An alias is introduced by terminating the
 extern declaration with a clause of the form ``= alias``. For instance::
 
   > extern double sin(double) = c_sin;
-  > sin x::double = c_sin x;
-  > sin x::int = c_sin (double x);
+  > sin x :: double = c_sin x;
+  > sin x :: int = c_sin (double x);
   > sin 0.3; sin 0;
   0.29552020666134
   0.0
@@ -3205,7 +3273,7 @@ debugger.
 To debug a given function, just set a breakpoint with the ``break`` command.
 For instance::
 
-  > fact n::int = if n>0 then n*fact (n-1) else 1;
+  > fact n :: int = if n>0 then n*fact (n-1) else 1;
   > break fact
   > fact 1;
   ** [1] fact: fact n::int = if n>0 then n*fact (n-1) else 1;
@@ -3454,7 +3522,7 @@ scripts making use of private symbols need to be adapted accordingly. Also
 note that syntax like ``foo::int`` may now also denote a qualified symbol
 rather than a tagged variable, if ``foo`` has been declared as a
 namespace. You can work around such ambiguities by renaming the variable, or
-by placing spaces around the ``::`` delimiter (these aren't permitted in a
+by placing spaces around the '``::``' delimiter (these aren't permitted in a
 qualified symbol, so the construct ``foo :: int`` is always interpreted as a
 tagged variable, no matter whether ``foo`` is also a valid namespace).
 
@@ -3464,9 +3532,13 @@ now (see `Hierarchical Namespaces`_ for details), but old code which doesn't
 use the new feature should continue to work unchanged.
 
 Pure 0.26 also changed the ``nullary`` keyword to ``nonfix``, which is more
-consistent with the other kinds of fixity declarations. The ``nullary``
+consistent with the other kinds of fixity declarations. (The ``nullary``
 keyword is still supported for now, but the compiler will flag it as
-deprecated and it will go in a future version.
+deprecated and it will go in a future version.) Moreover, the parser was
+enhanced so that it can cope with a theoretically unbounded number of
+precedence levels, and the system of standard operators in the prelude was
+modified so that it becomes possible to sneak in new operator symbols with
+ease; details can be found in the `Symbol Declarations`_ section.
 
 Error Recovery
 --------------
@@ -3767,14 +3839,14 @@ particularly useful application of ``__show__`` is to change the format of
 numeric values. Here are some examples::
 
   > using system;
-  > __show__ x::double = sprintf "%0.6f" x;
+  > __show__ x :: double = sprintf "%0.6f" x;
   > 1/7;
   0.142857
-  > __show__ x::int = sprintf "0x%0x" x;
+  > __show__ x :: int = sprintf "0x%0x" x;
   > 1786;
   0x6fa
   > using math;
-  > __show__ (x::double+:y::double) = sprintf "%0.6f+%0.6fi" (x,y);
+  > __show__ (x :: double +: y :: double) = sprintf "%0.6f+%0.6fi" (x,y);
   > cis (-pi/2);
   0.000000+-1.000000i
 
@@ -3790,7 +3862,7 @@ prevents the expression printer from going recursive, and allows you to define
 your custom representation in terms of the default one. E.g., the following
 rule removes the ``L`` suffixes from bigint values::
 
-  > __show__ x::bigint = init (str x);
+  > __show__ x :: bigint = init (str x);
   > fact n = foldl (*) 1L (1..n);
   > fact 30;
   265252859812191058636308480000000
@@ -3816,7 +3888,7 @@ whole. E.g., the following rule for double matrices mimics Octave's default
 output format (for the sake of simplicity, this isn't perfect, but you get the
 idea)::
 
-  > __show__ x::matrix =
+  > __show__ x :: matrix =
   >   strcat [printd j (x!(i,j))|i=0..n-1; j=0..m-1] + "\n"
   > with printd 0 = sprintf "\n%10.5f"; printd _ = sprintf "%10.5f" end
   > when n,m = dim x end if dmatrixp x;
@@ -3984,17 +4056,17 @@ Numeric Calculations
 --------------------
 
 If possible, you should decorate numeric variables on the left-hand sides of
-function definitions with the appropriate type tags, like ``::int`` or
-``::double``. This often helps the compiler to generate better code and makes
+function definitions with the appropriate type tags, like ``int`` or
+``double``. This often helps the compiler to generate better code and makes
 your programs run faster. The ``|`` syntax makes it easy to add the necessary
 specializations of existing rules to your program. E.g., taking the
 polymorphic implementation of the factorial as an example, you only have to
 add a left-hand side with the appropriate type tag to make that definition go
 as fast as possible for the special case of machine integers::
 
-  fact n::int    |
-  fact n         = n*fact(n-1) if n>0;
-                 = 1 otherwise;
+  fact n :: int    |
+  fact n           = n*fact(n-1) if n>0;
+                   = 1 otherwise;
 
 (This obviously becomes unwieldy if you have to deal with several numeric
 arguments of different types, however, so in this case it is usually better to
@@ -4004,9 +4076,9 @@ Also note that int (the machine integers), bigint (the GMP "big" integers) and
 double (floating point numbers) are all different kinds of objects. While they
 can be used in mixed operations (such as multiplying an int with a bigint
 which produces a bigint, or a bigint with a double which produces a double),
-the ``::int`` tag will only ever match a machine int, *not* a bigint or a
-double. Likewise, ``::bigint`` only matches bigints (never int or double
-values), and ``::double`` only doubles. Thus, if you want to define a function
+the ``int`` tag will only ever match a machine int, *not* a bigint or a
+double. Likewise, ``bigint`` only matches bigints (never int or double
+values), and ``double`` only doubles. Thus, if you want to define a function
 operating on different kinds of numbers, you'll also have to provide equations
 for all the types that you need (or a polymorphic rule which catches them
 all). This also applies to equations matching against constant values of these
@@ -4307,7 +4379,7 @@ category and description of the symbol, as provided by ``show -s``.
 ::
 
   using system;
-  sym_info cat::string pat::string
+  sym_info cat :: string pat :: string
   = [name,eval ("("+name+")"),descr | name,descr = info]
   when
     // Get the info about matching symbols from the 'show' command.
@@ -4324,7 +4396,7 @@ category and description of the symbol, as provided by ``show -s``.
   end with
     // Regex call to split the summary information about one symbol, as
     // returned by 'show -s', into the name and description parts.
-    fields s::string = tuple $
+    fields s :: string = tuple $
             [info!2 | info = tail $ regs $ reg_info $
              regex "([^ ]+)[ ]+([a-z]*)[ ]*(.*)" REG_EXTENDED s 0];
   end;

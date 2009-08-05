@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>The Pure Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2009-08-01" />
+<meta name="date" content="2009-08-05" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2009-08-01</td></tr>
+<td>2009-08-05</td></tr>
 </tbody>
 </table>
 <!-- Note: This document is formatted using docutils. The Makefile has rules -->
@@ -695,7 +695,7 @@ default command prompt):</p>
 <pre class="literal-block">
 &gt; // my first Pure example
 &gt; fact 0 = 1;
-&gt; fact n::int = n*fact (n-1) if n&gt;0;
+&gt; fact n :: int = n*fact (n-1) if n&gt;0;
 &gt; let x = fact 10; x;
 3628800
 </pre>
@@ -745,7 +745,7 @@ at any time. For instance, we can extend the example above to make the
 <tt class="docutils literal"><span class="pre">fact</span></tt> function work with floating point numbers, too:</p>
 <pre class="literal-block">
 &gt; fact 0.0 = 1.0;
-&gt; fact n::double = n*fact (n-1) if n&gt;0;
+&gt; fact n :: double = n*fact (n-1) if n&gt;0;
 &gt; fact 10.0;
 3628800.0
 &gt; fact 10;
@@ -756,8 +756,7 @@ first, i.e., using call by value semantics. Pure also has a few built-in
 special forms (most notably, conditional expressions, the short-circuit
 logical connectives <tt class="docutils literal"><span class="pre">&amp;&amp;</span></tt> and <tt class="docutils literal"><span class="pre">||</span></tt>, the sequencing operator <tt class="docutils literal"><span class="pre">$$</span></tt>, the
 lazy evaluation operator <tt class="docutils literal"><span class="pre">&amp;</span></tt>, and the <tt class="docutils literal"><span class="pre">quote</span></tt>) which take some or all of
-their arguments unevaluated, using call by name. (User-defined special forms
-can be created with macros. More about that later.)</p>
+their arguments unevaluated, using call by name.</p>
 <p>Like in Haskell and ML, functions are often defined by pattern-matching, i.e.,
 the left-hand side of a definition is compared to the target expression,
 binding the variables in the pattern to their actual values accordingly:</p>
@@ -782,19 +781,24 @@ expressions in a symbolic fashion, rewriting expressions using the equations
 supplied by the programmer, until no more equations are applicable. The result
 of this process is called a <strong class="dfn">normal form</strong> which represents the &quot;value&quot; of the
 original expression. Keeping with the tradition of term rewriting, there's no
-distinction between &quot;defined&quot; and &quot;constructor&quot; function symbols in Pure; that
-is, Pure does <em>not</em> enforce the so-called &quot;constructor discipline&quot; which
-stipulates that only pure constructor symbols (without any defining equations)
-may occur as a subterm on the left-hand side of an equation. In Pure, any
-function symbol (or operator) also acts as a constructor if it happens to
-occur in a normal form term. This enables you to apply algebraic rules
-violating the constructor discipline, like the following:</p>
+distinction between &quot;defined&quot; and &quot;constructor&quot; function symbols in
+Pure. Consequently, any function symbol or operator can be used <em>anywhere</em> on
+the left-hand side of an equation, and may act as a constructor symbol if it
+happens to occur in a normal form term. This enables you to work with
+algebraic rules like associativity and distributivity in a direct fashion:</p>
 <pre class="literal-block">
 &gt; (x+y)*z = x*z+y*z; x*(y+z) = x*y+x*z;
 &gt; x*(y*z) = (x*y)*z; x+(y+z) = (x+y)+z;
 &gt; square (a+b);
 a*a+a*b+b*a+b*b
 </pre>
+<p>Note that, in contrast, languages like Haskell and ML always enforce the
+so-called &quot;constructor discipline&quot;, which stipulates that only pure
+constructor symbols (without any defining equations) may occur as a subterm on
+the left-hand side of a definition. Thus equational definitions like the above
+are forbidden in these languages. In Pure such definitions are just normal
+business, which makes the language directly usable as a tool for symbolic
+algebra.</p>
 </div>
 <div class="section" id="parameters-in-equations">
 <h2><a class="toc-backref" href="#id15">3.3&nbsp;&nbsp;&nbsp;Parameters in Equations</a></h2>
@@ -944,7 +948,7 @@ sugar for a corresponding constructor term and can thus be used as a
 pattern on the left-hand side of an equation. In contrast, the latter is a
 built-in operation which creates objects of a special matrix type. These
 can <em>not</em> be used as patterns (instead, matrix values can be matched using
-the special <tt class="docutils literal"><span class="pre">::matrix</span></tt> type tag, see the <a class="reference internal" href="#rule-syntax">Rule Syntax</a> section for
+the special <tt class="docutils literal"><span class="pre">matrix</span></tt> type tag, see the <a class="reference internal" href="#rule-syntax">Rule Syntax</a> section for
 details).</p>
 <p>If the interpreter was built with support for the <a class="reference internal" href="#gnu-scientific-library">GNU Scientific
 Library</a> (GSL) then both numeric and symbolic matrices are available. The
@@ -1001,10 +1005,12 @@ so-called <strong class="dfn">operator sections</strong>. A <em>left section</em
 which is equivalent to the partial application <tt class="docutils literal"><span class="pre">(+)</span> <span class="pre">x</span></tt>. A <em>right
 section</em> takes the form <tt class="docutils literal"><span class="pre">(+x)</span></tt> and is equivalent to the term <tt class="docutils literal"><span class="pre">flip</span> <span class="pre">(+)</span>
 <span class="pre">x</span></tt>. (This uses the <tt class="docutils literal"><span class="pre">flip</span></tt> combinator from the prelude which is defined
-as <tt class="docutils literal"><span class="pre">flip</span> <span class="pre">f</span> <span class="pre">x</span> <span class="pre">y</span> <span class="pre">=</span> <span class="pre">f</span> <span class="pre">y</span> <span class="pre">x</span></tt>.) For instance, <tt class="docutils literal"><span class="pre">(1/)</span></tt> denotes the reciprocal
-and <tt class="docutils literal"><span class="pre">(+1)</span></tt> the successor function. (Note, however, that <tt class="docutils literal"><span class="pre">(-x)</span></tt> always
-denotes an application of unary minus; the section <tt class="docutils literal"><span class="pre">(+-x)</span></tt> can be used
-to indicate a function which subtracts <tt class="docutils literal"><span class="pre">x</span></tt> from its argument.)</p>
+as <tt class="docutils literal"><span class="pre">flip</span> <span class="pre">f</span> <span class="pre">x</span> <span class="pre">y</span> <span class="pre">=</span> <span class="pre">f</span> <span class="pre">y</span> <span class="pre">x</span></tt>.) Thus <tt class="docutils literal"><span class="pre">(x+)</span> <span class="pre">y</span></tt> is equivalent to <tt class="docutils literal"><span class="pre">x+y</span></tt>,
+while <tt class="docutils literal"><span class="pre">(+x)</span> <span class="pre">y</span></tt> reduces to <tt class="docutils literal"><span class="pre">y+x</span></tt>. For instance, <tt class="docutils literal"><span class="pre">(1/)</span></tt> denotes the
+reciprocal and <tt class="docutils literal"><span class="pre">(+1)</span></tt> the successor function. (Note that, in contrast,
+<tt class="docutils literal"><span class="pre">(-x)</span></tt> always denotes an application of unary minus; the section
+<tt class="docutils literal"><span class="pre">(+-x)</span></tt> can be used to indicate a function which subtracts <tt class="docutils literal"><span class="pre">x</span></tt> from
+its argument.)</p>
 </dd>
 <dt>Conditional expressions: <tt class="docutils literal"><span class="pre">if</span> <span class="pre">x</span> <span class="pre">then</span> <span class="pre">y</span> <span class="pre">else</span> <span class="pre">z</span></tt></dt>
 <dd>Evaluates to <tt class="docutils literal"><span class="pre">y</span></tt> or <tt class="docutils literal"><span class="pre">z</span></tt> depending on whether <tt class="docutils literal"><span class="pre">x</span></tt> is &quot;true&quot; (i.e., a
@@ -1056,16 +1062,6 @@ expressions. Precedence and associativity of operator symbols are given by
 their declarations (cf. <a class="reference internal" href="#symbol-declarations">Symbol Declarations</a>), and function application
 binds stronger than all operators. Parentheses can be used to override default
 precedences and associativities as usual.</p>
-<p>Operands in operator sections must be well-formed simple expressions which
-respect the usual precedence rules. This means that if the operand is a
-compound expression then it must be parenthesized, unless it has a higher
-precedence than the section operator. For instance, <tt class="docutils literal"><span class="pre">(+x*2)</span></tt> works, as does
-<tt class="docutils literal"><span class="pre">(+(x+2))</span></tt>, but <tt class="docutils literal"><span class="pre">(+x+2)</span></tt> will give a syntax error. (Due to some
-ambiguities in the grammar, the interpreter will try to parse the latter
-expression as <tt class="docutils literal"><span class="pre">((+x)+2)</span></tt> and bail out, reporting that <tt class="docutils literal"><span class="pre">+</span></tt> is not a unary
-operator. In fact this will even happen with right-associative operators at
-the same precedence level, so that you must always parenthesize the operand of
-a right section in such cases.)</p>
 <p>The common operator symbols like <tt class="docutils literal"><span class="pre">+</span></tt>, <tt class="docutils literal"><span class="pre">-</span></tt>, <tt class="docutils literal"><span class="pre">*</span></tt>, <tt class="docutils literal"><span class="pre">/</span></tt> etc. are all
 declared at the beginning of the prelude, see the <a class="reference external" href="purelib.html">Pure Library Manual</a> for a
 list of these. Arithmetic and relational operators mostly follow C
@@ -1117,19 +1113,17 @@ Enter a number:
 </pre>
 <p>The <tt class="docutils literal"><span class="pre">&amp;</span></tt> operator does lazy evaluation. This is the only postfix operator
 defined in the standard prelude, written as <tt class="docutils literal"><span class="pre">x&amp;</span></tt>, where <tt class="docutils literal"><span class="pre">x</span></tt> is an
-arbitrary Pure expression. The <tt class="docutils literal"><span class="pre">&amp;</span></tt> operator binds stronger than any other
-operation except function application. It turns its operand into a kind of
-parameterless anonymous closure, deferring its evaluation. These kinds of
-objects are also commonly known as <strong class="dfn">thunks</strong> or <strong class="dfn">futures</strong>. When the value of a
-future is actually needed (during pattern-matching, or when the value becomes
-an argument of a C call), it is evaluated automatically and gets memoized,
-i.e., the computed result replaces the thunk so that it only has to be
-computed once. Futures are useful to implement all kinds of lazy data
-structures in Pure, in particular: lazy lists a.k.a. streams. A <strong class="dfn">stream</strong> is
-simply a list with a thunked tail, which allows it to be infinite. The Pure
-prelude defines many functions for creating and manipulating these kinds of
-objects; further details and examples can be found in the <a class="reference internal" href="#examples">Examples</a> section
-below.</p>
+arbitrary Pure expression. It turns its operand into a kind of parameterless
+anonymous closure, deferring its evaluation. These kinds of objects are also
+commonly known as <strong class="dfn">thunks</strong> or <strong class="dfn">futures</strong>. When the value of a future is
+actually needed (during pattern-matching, or when the value becomes an
+argument of a C call), it is evaluated automatically and gets memoized, i.e.,
+the computed result replaces the thunk so that it only has to be computed
+once. Futures are useful to implement all kinds of lazy data structures in
+Pure, in particular: lazy lists a.k.a. streams. A <strong class="dfn">stream</strong> is simply a list
+with a thunked tail, which allows it to be infinite. The Pure prelude defines
+many functions for creating and manipulating these kinds of objects; further
+details and examples can be found in the <a class="reference internal" href="#examples">Examples</a> section below.</p>
 <p>Last but not least, the special form <tt class="docutils literal"><span class="pre">quote</span></tt> quotes an expression, i.e.,
 <tt class="docutils literal"><span class="pre">quote</span> <span class="pre">x</span></tt> (or, equivalently, <tt class="docutils literal"><span class="pre">'x</span></tt>) returns just <tt class="docutils literal"><span class="pre">x</span></tt> itself without
 evaluating it. The prelude also provides a function <tt class="docutils literal"><span class="pre">eval</span></tt> which can be used
@@ -1251,13 +1245,13 @@ expressions, it will always take the same value in a single evaluation.</p>
 time:</p>
 <pre class="literal-block">
 &gt; fact 0 = 1;
-&gt; fact n::int = n*fact (n-1) if n&gt;0;
+&gt; fact n :: int = n*fact (n-1) if n&gt;0;
 &gt; fact 10;
 3628800
 &gt; fact 10.0;
 fact 10.0
 &gt; fact 1.0 = 1.0;
-&gt; fact n::double = n*fact (n-1) if n&gt;1;
+&gt; fact n :: double = n*fact (n-1) if n&gt;1;
 &gt; fact 10.0;
 3628800.0
 &gt; fact 10;
@@ -1286,44 +1280,92 @@ is picked. (Again, the <tt class="docutils literal"><span class="pre">when</span
 rule is actually a separate definition.)</p>
 <div class="section" id="patterns">
 <h2><a class="toc-backref" href="#id22">4.1&nbsp;&nbsp;&nbsp;Patterns</a></h2>
-<p>In any case, the left-hand side of a rule is a special kind of simple
-expression, called a <strong class="dfn">pattern</strong>. Patterns consist of function and operator
-applications as well as any of the &quot;atomic&quot; expression types (symbols,
-numbers, strings and list values). <em>Not</em> permitted are any of the special
-expression types (lambda, <tt class="docutils literal"><span class="pre">case</span></tt>, <tt class="docutils literal"><span class="pre">when</span></tt>, <tt class="docutils literal"><span class="pre">with</span></tt>, conditional
-expressions). Note that, since list and matrix comprehensions expand into
-lambdas, these aren't permitted in patterns either. Also note that in the
-current implementation matrix values aren't allowed in patterns, but it is
-possible to match a matrix value as a whole using the <tt class="docutils literal"><span class="pre">::matrix</span></tt> type tag,
-see below.</p>
-<p>In addition, patterns must not contain repeated variables, i.e., rules must be
+<p>The left-hand side of a rule is a special kind of simple expression, called a
+<strong class="dfn">pattern</strong>. Patterns consist of function and operator applications as well as
+any of the &quot;atomic&quot; expression types (symbols, numbers, strings and list
+values). <em>Not</em> permitted are any of the special expression types (lambda,
+<tt class="docutils literal"><span class="pre">case</span></tt>, <tt class="docutils literal"><span class="pre">when</span></tt>, <tt class="docutils literal"><span class="pre">with</span></tt>, conditional expressions). Also note that, since
+list and matrix comprehensions expand into lambdas, these aren't permitted in
+patterns either. The current implementation also forbids matrix values in
+patterns, but it is possible to match a matrix value as a whole using the
+<tt class="docutils literal"><span class="pre">matrix</span></tt> type tag, see below.</p>
+<p>Patterns must not contain repeated variables, i.e., rules must be
 &quot;left-linear&quot;. The only exception to this rule is the <strong class="dfn">anonymous variable</strong>
 '<tt class="docutils literal"><span class="pre">_</span></tt>' which matches an arbitrary value (independently for all occurrences)
 without binding a variable symbol.</p>
 <p>Patterns may contain the following special elements which are not permitted in
 right-hand side expressions:</p>
 <ul class="simple">
+<li>A Haskell-style <strong class="dfn">&quot;as&quot; pattern</strong> of the form '<tt class="docutils literal"><span class="pre">variable</span> <span class="pre">&#64;</span> <span class="pre">pattern</span></tt>'
+binds the given variable to the expression matched by the subpattern
+<tt class="docutils literal"><span class="pre">pattern</span></tt> (in addition to the variables bound by <tt class="docutils literal"><span class="pre">pattern</span></tt> itself). This
+is convenient if the value matched by the subpattern is to be used on the
+right-hand side of an equation.</li>
 <li>A left-hand side variable (including the anonymous variable) may be followed
-by one of the special type tags <tt class="docutils literal"><span class="pre">::int</span></tt>, <tt class="docutils literal"><span class="pre">::bigint</span></tt>, <tt class="docutils literal"><span class="pre">::double</span></tt>,
-<tt class="docutils literal"><span class="pre">::string</span></tt>, <tt class="docutils literal"><span class="pre">::matrix</span></tt>, <tt class="docutils literal"><span class="pre">::pointer</span></tt>, to indicate that it can only
-match a constant value of the corresponding built-in type. This is useful if
-you want to write rules matching any object of one of these types. Note that
-there is no way to write out all &quot;constructors&quot; for the built-in types, as
-there are infinitely many. (Or none, as in the case of <tt class="docutils literal"><span class="pre">matrix</span></tt> and
-<tt class="docutils literal"><span class="pre">pointer</span></tt> which are constructed using special primitives.)</li>
-<li>Pure also supports Haskell-style &quot;as&quot; patterns of the form
-<tt class="docutils literal"><span class="pre">variable&#64;pattern</span></tt> which binds the given variable to the expression
-matched by the subpattern <tt class="docutils literal"><span class="pre">pattern</span></tt> (in addition to the variables bound by
-<tt class="docutils literal"><span class="pre">pattern</span></tt> itself). This is convenient if the value matched by the
-subpattern is to be used on the right-hand side of an
-equation.</li>
+by a <strong class="dfn">type tag</strong> of the form '<tt class="docutils literal"><span class="pre">::</span> <span class="pre">name</span></tt>', where <tt class="docutils literal"><span class="pre">name</span></tt> is either one
+of the built-in type symbols <tt class="docutils literal"><span class="pre">int</span></tt>, <tt class="docutils literal"><span class="pre">bigint</span></tt>, <tt class="docutils literal"><span class="pre">double</span></tt>, <tt class="docutils literal"><span class="pre">string</span></tt>,
+<tt class="docutils literal"><span class="pre">matrix</span></tt>, <tt class="docutils literal"><span class="pre">pointer</span></tt>, or an existing identifier or nonfix symbol denoting
+a custom constructor symbol for a user-defined data type. The variable can
+then match only values of the designated type. Thus, for instance,
+'<tt class="docutils literal"><span class="pre">x</span> <span class="pre">::</span> <span class="pre">int</span></tt>' only matches machine integers. This is explained in more
+detail below.</li>
 </ul>
-<p>Note that, syntactically, both type tags and &quot;as&quot; patterns are primary
-expressions. If the subpattern of an &quot;as&quot; pattern is a compound expression, it
-must be parenthesized. For instance, the following function duplicates the
-head element of a list:</p>
+<p>Syntactically, both &quot;as&quot; patterns and type tags are primary expressions. If
+the subpattern of an &quot;as&quot; pattern is a compound expression, it <em>must</em> be
+parenthesized. For instance, the following function duplicates the head
+element of a list:</p>
 <pre class="literal-block">
-foo xs&#64;(x:_) = x:xs;
+foo xs &#64; (x:_) = x:xs;
+</pre>
+<p>Note that if you accidentally forget the parentheses around the subpattern
+<tt class="docutils literal"><span class="pre">x:_</span></tt>, you still get a syntactically correct definition:</p>
+<pre class="literal-block">
+foo xs &#64; x:_ = x:xs;
+</pre>
+<p>But this gets parsed as <tt class="docutils literal"><span class="pre">(foo</span> <span class="pre">xs&#64;x):_</span> <span class="pre">=</span> <span class="pre">x:xs</span></tt> (despite the spacing which is
+ignored by the parser), which is most certainly <em>not</em> what you want. It is
+thus a good idea to just always enclose the subpattern with parentheses in
+order to prevent such glitches.</p>
+<p>Another potential pitfall is that the notation <tt class="docutils literal"><span class="pre">foo::bar</span></tt> is also used to
+denote &quot;qualified symbols&quot; in Pure, cf. <a class="reference internal" href="#namespaces">Namespaces</a>. That's why in the
+examples above, we've written tagged variables as <tt class="docutils literal"><span class="pre">foo</span> <span class="pre">::</span> <span class="pre">bar</span></tt>, with spaces
+around the '<tt class="docutils literal"><span class="pre">::</span></tt>' symbol. Spaces are never permitted in qualified symbols,
+so this always makes it clear that the construct denotes a type tag. It's
+possible to omit the spaces around '<tt class="docutils literal"><span class="pre">::</span></tt>', but then you should be 100% sure
+that the variable identifier does not also denote a namespace. It seems that
+many proficient Pure programmers have fallen victim to that kind of sloppiness
+(the author is guilty of that, too), but it's really preferable and considered
+good coding style to add the spaces anyway.</p>
+<p>Type tags are actually nothing but a special form of &quot;as&quot; patterns which
+restrict variables to given data &quot;domains&quot;. Like Lisp, Pure is essentially a
+typeless language and doesn't really have a notion of &quot;data types&quot;; all data
+belongs to the same universe of terms. Thus the only way to restrict the type
+of values which can be matched by a variable is to provide an &quot;as&quot; pattern
+which matches objects of the desired domain and nothing else. However, in the
+special case of the built-in types (machine and big integers, double values,
+strings, matrices and pointers) there is no way to spell out all
+&quot;constructors&quot;, as there are infinitely many (or none, as in the case of
+<tt class="docutils literal"><span class="pre">matrix</span></tt> and <tt class="docutils literal"><span class="pre">pointer</span></tt> which are constructed and inspected using special
+primitives, but are otherwise &quot;opaque&quot; at the Pure level). As a remedy, an
+appropriate type tag makes it possible to match these values.</p>
+<p>In order to generalize this to user-defined domains of data, Pure adopts the
+convention that any other tagged variable <tt class="docutils literal"><span class="pre">x::bar</span></tt> is just a shorthand for
+the &quot;as&quot; pattern <tt class="docutils literal"><span class="pre">x&#64;(bar</span> <span class="pre">_)</span></tt> which matches terms of the form <tt class="docutils literal"><span class="pre">bar</span>
+<span class="pre">data</span></tt>. Thus a custom data type can be represented by designating a special
+constructor symbol (<tt class="docutils literal"><span class="pre">bar</span></tt> in the above example) which takes the actual data
+as its single argument. This works the same no matter what the internal
+structure of the data is (which in many cases you wouldn't want to depend on
+anyway, for the sake of data abstraction).</p>
+<p>Note that this is merely a convention, but it works reasonably well and makes
+up for the fact that Pure doesn't support data types at the language level.
+You can find examples for this approach in the standard library. For instance,
+the dict.pure module implements a <tt class="docutils literal"><span class="pre">Dict</span></tt> type, so that you can write
+something like:</p>
+<pre class="literal-block">
+&gt; using dict;
+&gt; foo x :: Dict = keys x, vals x;
+&gt; foo (dict [99=&gt;a,77=&gt;b]);
+[77,99],[b,a]
 </pre>
 </div>
 <div class="section" id="general-rules">
@@ -1355,10 +1397,10 @@ lhs       = rhs;
 <p>This is useful if you need different specializations of the same rule which
 use different type tags on the left-hand side variables. For instance:</p>
 <pre class="literal-block">
-fact n::int    |
-fact n::double |
-fact n         = n*fact(n-1) if n&gt;0;
-               = 1 otherwise;
+fact n :: int    |
+fact n :: double |
+fact n           = n*fact(n-1) if n&gt;0;
+                 = 1 otherwise;
 </pre>
 <p>In fact, the left-hand sides don't have to be related at all, so that you can
 also write something like:</p>
@@ -1660,7 +1702,7 @@ way to implement common matrix operations. E.g., multiplying a matrix <tt class=
 with a scalar <tt class="docutils literal"><span class="pre">a</span></tt> amounts to mapping the function <tt class="docutils literal"><span class="pre">(a*)</span></tt> to x, which
 can be done as follows:</p>
 <pre class="literal-block">
-&gt; a * x::matrix = map (a*) x if ~matrixp a;
+&gt; a * x :: matrix = map (a*) x if ~matrixp a;
 &gt; 2*{1,2,3;4,5,6};
 {2,4,6;8,10,12}
 </pre>
@@ -1668,7 +1710,7 @@ can be done as follows:</p>
 using <tt class="docutils literal"><span class="pre">zipwith</span></tt>, which combines corresponding elements of two matrices using
 a given binary function:</p>
 <pre class="literal-block">
-&gt; x::matrix + y::matrix = zipwith (+) x y;
+&gt; x :: matrix + y :: matrix = zipwith (+) x y;
 &gt; {1,2,3;4,5,6}+{1,2,1;3,2,3};
 {2,4,4;7,7,9}
 </pre>
@@ -1715,7 +1757,7 @@ which just computes the dot product of all rows of <tt class="docutils literal">
 <tt class="docutils literal"><span class="pre">y</span></tt> (the <tt class="docutils literal"><span class="pre">rows</span></tt> and <tt class="docutils literal"><span class="pre">cols</span></tt> functions are prelude operations found in
 matrices.pure):</p>
 <pre class="literal-block">
-&gt; x::matrix * y::matrix = {dot u v | u = rows x; v = cols y};
+&gt; x :: matrix * y :: matrix = {dot u v | u = rows x; v = cols y};
 &gt; {0,1;1,0;1,1}*{1,2,3;4,5,6};
 {4,5,6;1,2,3;5,7,9}
 </pre>
@@ -1735,7 +1777,7 @@ track of the current permutation of the row indices performed during
 pivoting. The algorithm returns the updated matrix <tt class="docutils literal"><span class="pre">x</span></tt>, row index <tt class="docutils literal"><span class="pre">i</span></tt> and
 row permutation <tt class="docutils literal"><span class="pre">p</span></tt>.</p>
 <pre class="literal-block">
-gauss_elimination x::matrix = p,x
+gauss_elimination x :: matrix = p,x
 when n,m = dim x; p,_,x = foldl step (0..n-1,0,x) (0..m-1) end;
 
 // One pivoting and elimination step in column j of the matrix:
@@ -1782,7 +1824,7 @@ la <a class="reference internal" href="#octave">Octave</a> (the meaning of the <
 <a class="reference internal" href="#caveats-and-notes">Caveats and Notes</a> section):</p>
 <pre class="literal-block">
 using system;
-__show__ x::matrix
+__show__ x :: matrix
 = strcat [printd j (x!(i,j))|i=0..n-1; j=0..m-1] + &quot;\n&quot;
 with printd 0 = sprintf &quot;\n%10.5f&quot;; printd _ = sprintf &quot;%10.5f&quot; end
 when n,m = dim x end if dmatrixp x;
@@ -1827,7 +1869,7 @@ macro gets applied to its parameters).</p>
 <tt class="docutils literal"><span class="pre">succ</span></tt> function (defined in the prelude) at compile time:</p>
 <pre class="literal-block">
 &gt; def succ x = x+1;
-&gt; foo x::int = succ (succ x);
+&gt; foo x :: int = succ (succ x);
 &gt; show foo
 foo x::int = x+1+1;
 </pre>
@@ -2102,25 +2144,45 @@ to <tt class="docutils literal"><span class="pre">public</span></tt>). Also note
 declaration, you just list them all with whitespace in between. The same
 applies to the other types of symbol declarations discussed below.</p>
 </dd>
+</dl>
+<p>The following &quot;fixity&quot; declarations are available for introducing special
+operator and constant symbols. This changes the way that these symbols are
+parsed and thus provides you with a limited means to extend the Pure language
+at the lexical and syntactical level.</p>
+<dl class="docutils">
 <dt>Operator declarations: <tt class="docutils literal"><span class="pre">infix</span> <span class="pre">level</span> <span class="pre">op</span> <span class="pre">...;</span></tt></dt>
-<dd><p class="first">Ten different precedence levels are available for user-defined infix,
-prefix and postfix operators, numbered 0 (lowest) thru 9 (highest). On
-each precedence level, you can declare (in order of increasing precedence)
-<tt class="docutils literal"><span class="pre">infix</span></tt> (binary non-associative), <tt class="docutils literal"><span class="pre">infixl</span></tt> (binary left-associative),
-<tt class="docutils literal"><span class="pre">infixr</span></tt> (binary right-associative), <tt class="docutils literal"><span class="pre">prefix</span></tt> (unary prefix) and
-<tt class="docutils literal"><span class="pre">postfix</span></tt> (unary postfix) operators. For instance:</p>
+<dd><p class="first">Pure provides you with a theoretically unlimited number of different
+precedence levels for user-defined infix, prefix and postfix operators.
+Precedence levels are numbered starting at 0; larger numbers indicate
+higher precedence. (For practical reasons, the current implementation does
+require that precedence numbers can be encoded as 24 bit unsigned machine
+integers, giving you a range from 0 to 16777215, but this should be large
+enough to incur no real limitations on applications. Also, the operator
+declarations in the prelude have been set up to leave enough &quot;space&quot;
+between the &quot;standard&quot; levels so that you can easily sneak in new operator
+symbols at low, high or intermediate precedences.)</p>
+<p>On each precedence level, you can declare (in order of increasing
+precedence) <tt class="docutils literal"><span class="pre">infix</span></tt> (binary non-associative), <tt class="docutils literal"><span class="pre">infixl</span></tt> (binary
+left-associative), <tt class="docutils literal"><span class="pre">infixr</span></tt> (binary right-associative), <tt class="docutils literal"><span class="pre">prefix</span></tt>
+(unary prefix) and <tt class="docutils literal"><span class="pre">postfix</span></tt> (unary postfix) operators. For instance,
+here is a typical excerpt from the prelude (the full table can be found in
+the <a class="reference external" href="purelib.html#prelude">Prelude</a> section of the <a class="reference external" href="purelib.html">Pure Library Manual</a>):</p>
 <pre class="literal-block">
-infixl 6 + - ;
-infixl 7 * / div mod ;
+infix  1700 &lt; &gt; &lt;= &gt;= == ~= ;
+infixl 2100 + - ;
+infixl 2200 * / div mod ;
+infixr 2400 ^ ;
+prefix 2500 # ;
 </pre>
 <p class="last">One thing worth noting here is that unary minus plays a special role in
-the syntax. Like in Haskell, unary minus is the only prefix operator
-symbol which is also used as an infix operator, and it always has the same
-precedence as binary minus (whose precedence may be chosen freely in the
-prelude). Thus, with the standard prelude, <tt class="docutils literal"><span class="pre">-x+y</span></tt> will be parsed as
-<tt class="docutils literal"><span class="pre">(-x)+y</span></tt>, whereas <tt class="docutils literal"><span class="pre">-x*y</span></tt> is the same as <tt class="docutils literal"><span class="pre">-(x*y)</span></tt>. Also note that the
-notation <tt class="docutils literal"><span class="pre">(-)</span></tt> always denotes the binary minus operator; the unary minus
-operation can be denoted using the built-in <tt class="docutils literal"><span class="pre">neg</span></tt> function.</p>
+the syntax. Like in Haskell and following mathematical tradition, unary
+minus is the only prefix operator symbol which is also used as an infix
+operator, and is always on the same precedence level as binary minus
+(whose precedence may be chosen freely in the prelude). Thus, with the
+standard prelude, <tt class="docutils literal"><span class="pre">-x+y</span></tt> will be parsed as <tt class="docutils literal"><span class="pre">(-x)+y</span></tt>, whereas <tt class="docutils literal"><span class="pre">-x*y</span></tt>
+is the same as <tt class="docutils literal"><span class="pre">-(x*y)</span></tt>. Also note that the notation <tt class="docutils literal"><span class="pre">(-)</span></tt> always
+denotes the binary minus operator; the unary minus operation can be
+denoted using the built-in <tt class="docutils literal"><span class="pre">neg</span></tt> function.</p>
 </dd>
 <dt>Outfix symbol declarations: <tt class="docutils literal"><span class="pre">outfix</span> <span class="pre">left</span> <span class="pre">right</span> <span class="pre">...;</span></tt></dt>
 <dd><p class="first">Pure also provides unary outfix operators, which work like in Wm Leler's
@@ -2211,8 +2273,8 @@ using &quot;examples/libor/bits.pure&quot;;
 convenient, but the latter allows you to denote scripts whose names aren't
 valid Pure identifiers.</p>
 <p>Script identifiers are translated to the corresponding filenames by replacing
-the <tt class="docutils literal"><span class="pre">::</span></tt> symbol with the pathname separator <tt class="docutils literal"><span class="pre">/</span></tt> and tacking on the
-<tt class="docutils literal"><span class="pre">.pure</span></tt> suffix. The following table illustrates this with a few examples.</p>
+the '<tt class="docutils literal"><span class="pre">::</span></tt>' symbol with the pathname separator '<tt class="docutils literal"><span class="pre">/</span></tt>' and tacking on the
+'<tt class="docutils literal"><span class="pre">.pure</span></tt>' suffix. The following table illustrates this with a few examples.</p>
 <table border="1" class="docutils">
 <colgroup>
 <col width="47%" />
@@ -2688,7 +2750,7 @@ GSL's double matrix addition function in a way that preserves value
 semantics:</p>
 <pre class="literal-block">
 &gt; extern int gsl_matrix_add(dmatrix*, dmatrix*);
-&gt; x::matrix + y::matrix = gsl_matrix_add x y $$ x when x = pack x end;
+&gt; x :: matrix + y :: matrix = gsl_matrix_add x y $$ x when x = pack x end;
 &gt; let x = dmatrix {1,2,3}; let y = dmatrix {2,3,2}; x; y; x+y;
 {1.0,2.0,3.0}
 {2.0,3.0,2.0}
@@ -2717,7 +2779,7 @@ want to extend our imported <tt class="docutils literal"><span class="pre">sin</
 0.29552020666134
 &gt; sin 0;
 sin 0
-&gt; sin x::int = sin (double x);
+&gt; sin x :: int = sin (double x);
 &gt; sin 0;
 0.0
 </pre>
@@ -2728,8 +2790,8 @@ the C function from the wrapper. An alias is introduced by terminating the
 extern declaration with a clause of the form <tt class="docutils literal"><span class="pre">=</span> <span class="pre">alias</span></tt>. For instance:</p>
 <pre class="literal-block">
 &gt; extern double sin(double) = c_sin;
-&gt; sin x::double = c_sin x;
-&gt; sin x::int = c_sin (double x);
+&gt; sin x :: double = c_sin x;
+&gt; sin x :: int = c_sin (double x);
 &gt; sin 0.3; sin 0;
 0.29552020666134
 0.0
@@ -3381,7 +3443,7 @@ debugger.</p>
 <p>To debug a given function, just set a breakpoint with the <tt class="docutils literal"><span class="pre">break</span></tt> command.
 For instance:</p>
 <pre class="literal-block">
-&gt; fact n::int = if n&gt;0 then n*fact (n-1) else 1;
+&gt; fact n :: int = if n&gt;0 then n*fact (n-1) else 1;
 &gt; break fact
 &gt; fact 1;
 ** [1] fact: fact n::int = if n&gt;0 then n*fact (n-1) else 1;
@@ -3614,7 +3676,7 @@ scripts making use of private symbols need to be adapted accordingly. Also
 note that syntax like <tt class="docutils literal"><span class="pre">foo::int</span></tt> may now also denote a qualified symbol
 rather than a tagged variable, if <tt class="docutils literal"><span class="pre">foo</span></tt> has been declared as a
 namespace. You can work around such ambiguities by renaming the variable, or
-by placing spaces around the <tt class="docutils literal"><span class="pre">::</span></tt> delimiter (these aren't permitted in a
+by placing spaces around the '<tt class="docutils literal"><span class="pre">::</span></tt>' delimiter (these aren't permitted in a
 qualified symbol, so the construct <tt class="docutils literal"><span class="pre">foo</span> <span class="pre">::</span> <span class="pre">int</span></tt> is always interpreted as a
 tagged variable, no matter whether <tt class="docutils literal"><span class="pre">foo</span></tt> is also a valid namespace).</p>
 <p>Pure 0.26 extended the namespaces feature to add support for hierarchical
@@ -3622,9 +3684,13 @@ namespaces. This means that name lookup works in a slightly different fashion
 now (see <a class="reference internal" href="#hierarchical-namespaces">Hierarchical Namespaces</a> for details), but old code which doesn't
 use the new feature should continue to work unchanged.</p>
 <p>Pure 0.26 also changed the <tt class="docutils literal"><span class="pre">nullary</span></tt> keyword to <tt class="docutils literal"><span class="pre">nonfix</span></tt>, which is more
-consistent with the other kinds of fixity declarations. The <tt class="docutils literal"><span class="pre">nullary</span></tt>
+consistent with the other kinds of fixity declarations. (The <tt class="docutils literal"><span class="pre">nullary</span></tt>
 keyword is still supported for now, but the compiler will flag it as
-deprecated and it will go in a future version.</p>
+deprecated and it will go in a future version.) Moreover, the parser was
+enhanced so that it can cope with a theoretically unbounded number of
+precedence levels, and the system of standard operators in the prelude was
+modified so that it becomes possible to sneak in new operator symbols with
+ease; details can be found in the <a class="reference internal" href="#symbol-declarations">Symbol Declarations</a> section.</p>
 </div>
 <div class="section" id="error-recovery">
 <h2><a class="toc-backref" href="#id56">12.3&nbsp;&nbsp;&nbsp;Error Recovery</a></h2>
@@ -3897,14 +3963,14 @@ particularly useful application of <tt class="docutils literal"><span class="pre
 numeric values. Here are some examples:</p>
 <pre class="literal-block">
 &gt; using system;
-&gt; __show__ x::double = sprintf &quot;%0.6f&quot; x;
+&gt; __show__ x :: double = sprintf &quot;%0.6f&quot; x;
 &gt; 1/7;
 0.142857
-&gt; __show__ x::int = sprintf &quot;0x%0x&quot; x;
+&gt; __show__ x :: int = sprintf &quot;0x%0x&quot; x;
 &gt; 1786;
 0x6fa
 &gt; using math;
-&gt; __show__ (x::double+:y::double) = sprintf &quot;%0.6f+%0.6fi&quot; (x,y);
+&gt; __show__ (x :: double +: y :: double) = sprintf &quot;%0.6f+%0.6fi&quot; (x,y);
 &gt; cis (-pi/2);
 0.000000+-1.000000i
 </pre>
@@ -3920,7 +3986,7 @@ prevents the expression printer from going recursive, and allows you to define
 your custom representation in terms of the default one. E.g., the following
 rule removes the <tt class="docutils literal"><span class="pre">L</span></tt> suffixes from bigint values:</p>
 <pre class="literal-block">
-&gt; __show__ x::bigint = init (str x);
+&gt; __show__ x :: bigint = init (str x);
 &gt; fact n = foldl (*) 1L (1..n);
 &gt; fact 30;
 265252859812191058636308480000000
@@ -3945,7 +4011,7 @@ whole. E.g., the following rule for double matrices mimics Octave's default
 output format (for the sake of simplicity, this isn't perfect, but you get the
 idea):</p>
 <pre class="literal-block">
-&gt; __show__ x::matrix =
+&gt; __show__ x :: matrix =
 &gt;   strcat [printd j (x!(i,j))|i=0..n-1; j=0..m-1] + &quot;\n&quot;
 &gt; with printd 0 = sprintf &quot;\n%10.5f&quot;; printd _ = sprintf &quot;%10.5f&quot; end
 &gt; when n,m = dim x end if dmatrixp x;
@@ -4106,17 +4172,17 @@ rightmost/outermost to the leftmost/innermost clause).</p>
 <div class="section" id="numeric-calculations">
 <h2><a class="toc-backref" href="#id63">12.10&nbsp;&nbsp;&nbsp;Numeric Calculations</a></h2>
 <p>If possible, you should decorate numeric variables on the left-hand sides of
-function definitions with the appropriate type tags, like <tt class="docutils literal"><span class="pre">::int</span></tt> or
-<tt class="docutils literal"><span class="pre">::double</span></tt>. This often helps the compiler to generate better code and makes
+function definitions with the appropriate type tags, like <tt class="docutils literal"><span class="pre">int</span></tt> or
+<tt class="docutils literal"><span class="pre">double</span></tt>. This often helps the compiler to generate better code and makes
 your programs run faster. The <tt class="docutils literal"><span class="pre">|</span></tt> syntax makes it easy to add the necessary
 specializations of existing rules to your program. E.g., taking the
 polymorphic implementation of the factorial as an example, you only have to
 add a left-hand side with the appropriate type tag to make that definition go
 as fast as possible for the special case of machine integers:</p>
 <pre class="literal-block">
-fact n::int    |
-fact n         = n*fact(n-1) if n&gt;0;
-               = 1 otherwise;
+fact n :: int    |
+fact n           = n*fact(n-1) if n&gt;0;
+                 = 1 otherwise;
 </pre>
 <p>(This obviously becomes unwieldy if you have to deal with several numeric
 arguments of different types, however, so in this case it is usually better to
@@ -4125,9 +4191,9 @@ just use a polymorphic rule.)</p>
 double (floating point numbers) are all different kinds of objects. While they
 can be used in mixed operations (such as multiplying an int with a bigint
 which produces a bigint, or a bigint with a double which produces a double),
-the <tt class="docutils literal"><span class="pre">::int</span></tt> tag will only ever match a machine int, <em>not</em> a bigint or a
-double. Likewise, <tt class="docutils literal"><span class="pre">::bigint</span></tt> only matches bigints (never int or double
-values), and <tt class="docutils literal"><span class="pre">::double</span></tt> only doubles. Thus, if you want to define a function
+the <tt class="docutils literal"><span class="pre">int</span></tt> tag will only ever match a machine int, <em>not</em> a bigint or a
+double. Likewise, <tt class="docutils literal"><span class="pre">bigint</span></tt> only matches bigints (never int or double
+values), and <tt class="docutils literal"><span class="pre">double</span></tt> only doubles. Thus, if you want to define a function
 operating on different kinds of numbers, you'll also have to provide equations
 for all the types that you need (or a polymorphic rule which catches them
 all). This also applies to equations matching against constant values of these
@@ -4406,7 +4472,7 @@ listed (just &quot;*&quot; matches all symbols). The result is a list of tuples 
 category and description of the symbol, as provided by <tt class="docutils literal"><span class="pre">show</span> <span class="pre">-s</span></tt>.</p>
 <pre class="literal-block">
 using system;
-sym_info cat::string pat::string
+sym_info cat :: string pat :: string
 = [name,eval (&quot;(&quot;+name+&quot;)&quot;),descr | name,descr = info]
 when
   // Get the info about matching symbols from the 'show' command.
@@ -4423,7 +4489,7 @@ when
 end with
   // Regex call to split the summary information about one symbol, as
   // returned by 'show -s', into the name and description parts.
-  fields s::string = tuple $
+  fields s :: string = tuple $
           [info!2 | info = tail $ regs $ reg_info $
            regex &quot;([^ ]+)[ ]+([a-z]*)[ ]*(.*)&quot; REG_EXTENDED s 0];
 end;
