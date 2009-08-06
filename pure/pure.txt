@@ -386,7 +386,7 @@ default command prompt)::
 
   > // my first Pure example
   > fact 0 = 1;
-  > fact n :: int = n*fact (n-1) if n>0;
+  > fact n::int = n*fact (n-1) if n>0;
   > let x = fact 10; x;
   3628800
 
@@ -440,13 +440,13 @@ at any time. For instance, we can extend the example above to make the
 ``fact`` function work with floating point numbers, too::
 
   > fact 0.0 = 1.0;
-  > fact n :: double = n*fact (n-1) if n>0;
+  > fact n::double = n*fact (n-1) if n>0;
   > fact 10.0;
   3628800.0
   > fact 10;
   3628800
 
-Note the ``n :: double`` construct on the left-hand side of the second
+Note the ``n::double`` construct on the left-hand side of the second
 equation, which means that the equation is only to be applied for (double
 precision) floating point values ``x``. This construct is also called a "type
 tag" in Pure parlance, which is actually a simple form of pattern matching
@@ -983,13 +983,13 @@ Similarly, you can also add new equations to an existing function at any
 time::
 
   > fact 0 = 1;
-  > fact n :: int = n*fact (n-1) if n>0;
+  > fact n::int = n*fact (n-1) if n>0;
   > fact 10;
   3628800
   > fact 10.0;
   fact 10.0
   > fact 1.0 = 1.0;
-  > fact n :: double = n*fact (n-1) if n>1;
+  > fact n::double = n*fact (n-1) if n>1;
   > fact 10.0;
   3628800.0
   > fact 10;
@@ -1049,7 +1049,7 @@ right-hand side expressions:
   of the built-in type symbols ``int``, ``bigint``, ``double``, ``string``,
   ``matrix``, ``pointer``, or an existing identifier denoting a custom
   constructor symbol for a user-defined data type. The variable can then match
-  only values of the designated type. Thus, for instance, '``x :: int``'
+  only values of the designated type. Thus, for instance, '``x::int``'
   only matches machine integers. See the `Type Tags`_ section below for
   details.
 
@@ -1071,13 +1071,12 @@ thus a good idea to just always enclose the subpattern with parentheses in
 order to prevent such glitches.
 
 Another potential pitfall is that the notation ``foo::bar`` is also used to
-denote "qualified symbols" in Pure, cf. Namespaces_. That's why in the
-examples above, we've written tagged variables as ``foo :: bar``, with spaces
-around the '``::``' symbol. Spaces are never permitted in qualified symbols,
-so this always makes it clear that the construct denotes a type tag. It's
-possible to omit the spaces around '``::``' if you're sure that the variable
-identifier does not also denote a namespace, but it's really preferable and
-considered good coding style to add the spaces anyway.
+denote "qualified symbols" in Pure, cf. Namespaces_. Usually this will be
+resolved correctly, but if ``foo`` happens to also be a valid namespace then
+most likely you'll get an error message about an undeclared symbol.  You can
+always work around this by adding spaces around the '``::``' symbol, as in
+``foo :: bar``. Spaces are never permitted in qualified symbols, so this makes
+it clear that the construct denotes a type tag.
 
 Type Tags
 ---------
@@ -1164,10 +1163,10 @@ same right-hand side(s) to be abbreviated as follows::
 This is useful if you need different specializations of the same rule which
 use different type tags on the left-hand side variables. For instance::
 
-  fact n :: int    |
-  fact n :: double |
-  fact n           = n*fact(n-1) if n>0;
-                   = 1 otherwise;
+  fact n::int    |
+  fact n::double |
+  fact n         = n*fact(n-1) if n>0;
+                 = 1 otherwise;
 
 In fact, the left-hand sides don't have to be related at all, so that you can
 also write something like::
@@ -1478,7 +1477,7 @@ way to implement common matrix operations. E.g., multiplying a matrix ``x``
 with a scalar ``a`` amounts to mapping the function ``(a*)`` to x, which
 can be done as follows::
 
-  > a * x :: matrix = map (a*) x if ~matrixp a;
+  > a * x::matrix = map (a*) x if ~matrixp a;
   > 2*{1,2,3;4,5,6};
   {2,4,6;8,10,12}
 
@@ -1486,7 +1485,7 @@ Likewise, matrix addition and other element-wise operations can be realized
 using ``zipwith``, which combines corresponding elements of two matrices using
 a given binary function::
 
-  > x :: matrix + y :: matrix = zipwith (+) x y;
+  > x::matrix + y::matrix = zipwith (+) x y;
   > {1,2,3;4,5,6}+{1,2,1;3,2,3};
   {2,4,4;7,7,9}
 
@@ -1535,7 +1534,7 @@ which just computes the dot product of all rows of ``x`` with all columns of
 ``y`` (the ``rows`` and ``cols`` functions are prelude operations found in
 matrices.pure)::
 
-  > x :: matrix * y :: matrix = {dot u v | u = rows x; v = cols y};
+  > x::matrix * y::matrix = {dot u v | u = rows x; v = cols y};
   > {0,1;1,0;1,1}*{1,2,3;4,5,6};
   {4,5,6;1,2,3;5,7,9}
 
@@ -1559,7 +1558,7 @@ row permutation ``p``.
 
 ::
 
-  gauss_elimination x :: matrix = p,x
+  gauss_elimination x::matrix = p,x
   when n,m = dim x; p,_,x = foldl step (0..n-1,0,x) (0..m-1) end;
 
   // One pivoting and elimination step in column j of the matrix:
@@ -1607,7 +1606,7 @@ la Octave_ (the meaning of the ``__show__`` function is explained in the
 `Caveats and Notes`_ section)::
 
   using system;
-  __show__ x :: matrix
+  __show__ x::matrix
   = strcat [printd j (x!(i,j))|i=0..n-1; j=0..m-1] + "\n"
   with printd 0 = sprintf "\n%10.5f"; printd _ = sprintf "%10.5f" end
   when n,m = dim x end if dmatrixp x;
@@ -1655,7 +1654,7 @@ Here is a simple example, showing a rule which expands saturated calls of the
 ``succ`` function (defined in the prelude) at compile time::
 
   > def succ x = x+1;
-  > foo x :: int = succ (succ x);
+  > foo x::int = succ (succ x);
   > show foo
   foo x::int = x+1+1;
 
@@ -2572,7 +2571,7 @@ GSL's double matrix addition function in a way that preserves value
 semantics::
 
   > extern int gsl_matrix_add(dmatrix*, dmatrix*);
-  > x :: matrix + y :: matrix = gsl_matrix_add x y $$ x when x = pack x end;
+  > x::matrix + y::matrix = gsl_matrix_add x y $$ x when x = pack x end;
   > let x = dmatrix {1,2,3}; let y = dmatrix {2,3,2}; x; y; x+y;
   {1.0,2.0,3.0}
   {2.0,3.0,2.0}
@@ -2604,7 +2603,7 @@ want to extend our imported ``sin`` function with a rule to handle integers::
   0.29552020666134
   > sin 0;
   sin 0
-  > sin x :: int = sin (double x);
+  > sin x::int = sin (double x);
   > sin 0;
   0.0
 
@@ -2615,8 +2614,8 @@ the C function from the wrapper. An alias is introduced by terminating the
 extern declaration with a clause of the form ``= alias``. For instance::
 
   > extern double sin(double) = c_sin;
-  > sin x :: double = c_sin x;
-  > sin x :: int = c_sin (double x);
+  > sin x::double = c_sin x;
+  > sin x::int = c_sin (double x);
   > sin 0.3; sin 0;
   0.29552020666134
   0.0
@@ -3303,7 +3302,7 @@ debugger.
 To debug a given function, just set a breakpoint with the ``break`` command.
 For instance::
 
-  > fact n :: int = if n>0 then n*fact (n-1) else 1;
+  > fact n::int = if n>0 then n*fact (n-1) else 1;
   > break fact
   > fact 1;
   ** [1] fact: fact n::int = if n>0 then n*fact (n-1) else 1;
@@ -3869,14 +3868,14 @@ particularly useful application of ``__show__`` is to change the format of
 numeric values. Here are some examples::
 
   > using system;
-  > __show__ x :: double = sprintf "%0.6f" x;
+  > __show__ x::double = sprintf "%0.6f" x;
   > 1/7;
   0.142857
-  > __show__ x :: int = sprintf "0x%0x" x;
+  > __show__ x::int = sprintf "0x%0x" x;
   > 1786;
   0x6fa
   > using math;
-  > __show__ (x :: double +: y :: double) = sprintf "%0.6f+%0.6fi" (x,y);
+  > __show__ (x::double +: y::double) = sprintf "%0.6f+%0.6fi" (x,y);
   > cis (-pi/2);
   0.000000+-1.000000i
 
@@ -3892,7 +3891,7 @@ prevents the expression printer from going recursive, and allows you to define
 your custom representation in terms of the default one. E.g., the following
 rule removes the ``L`` suffixes from bigint values::
 
-  > __show__ x :: bigint = init (str x);
+  > __show__ x::bigint = init (str x);
   > fact n = foldl (*) 1L (1..n);
   > fact 30;
   265252859812191058636308480000000
@@ -3918,7 +3917,7 @@ whole. E.g., the following rule for double matrices mimics Octave's default
 output format (for the sake of simplicity, this isn't perfect, but you get the
 idea)::
 
-  > __show__ x :: matrix =
+  > __show__ x::matrix =
   >   strcat [printd j (x!(i,j))|i=0..n-1; j=0..m-1] + "\n"
   > with printd 0 = sprintf "\n%10.5f"; printd _ = sprintf "%10.5f" end
   > when n,m = dim x end if dmatrixp x;
@@ -4094,9 +4093,9 @@ polymorphic implementation of the factorial as an example, you only have to
 add a left-hand side with the appropriate type tag to make that definition go
 as fast as possible for the special case of machine integers::
 
-  fact n :: int    |
-  fact n           = n*fact(n-1) if n>0;
-                   = 1 otherwise;
+  fact n::int    |
+  fact n         = n*fact(n-1) if n>0;
+                 = 1 otherwise;
 
 (This obviously becomes unwieldy if you have to deal with several numeric
 arguments of different types, however, so in this case it is usually better to
@@ -4409,7 +4408,7 @@ category and description of the symbol, as provided by ``show -s``.
 ::
 
   using system;
-  sym_info cat :: string pat :: string
+  sym_info cat::string pat::string
   = [name,eval ("("+name+")"),descr | name,descr = info]
   when
     // Get the info about matching symbols from the 'show' command.
@@ -4426,7 +4425,7 @@ category and description of the symbol, as provided by ``show -s``.
   end with
     // Regex call to split the summary information about one symbol, as
     // returned by 'show -s', into the name and description parts.
-    fields s :: string = tuple $
+    fields s::string = tuple $
             [info!2 | info = tail $ regs $ reg_info $
              regex "([^ ]+)[ ]+([a-z]*)[ ]*(.*)" REG_EXTENDED s 0];
   end;
