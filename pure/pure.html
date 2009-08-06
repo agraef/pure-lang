@@ -752,13 +752,23 @@ at any time. For instance, we can extend the example above to make the
 &gt; fact 10;
 3628800
 </pre>
+<p>Note the <tt class="docutils literal"><span class="pre">n</span> <span class="pre">::</span> <span class="pre">double</span></tt> construct on the left-hand side of the second
+equation, which means that the equation is only to be applied for (double
+precision) floating point values <tt class="docutils literal"><span class="pre">x</span></tt>. This construct is also called a &quot;type
+tag&quot; in Pure parlance, which is actually a simple form of pattern matching
+(see below). Similarly, our previous definition at the beginning of this
+section employed the <tt class="docutils literal"><span class="pre">int</span></tt> tag to indicate that the <tt class="docutils literal"><span class="pre">n</span></tt> parameter is an
+integer value. The <tt class="docutils literal"><span class="pre">int</span></tt> and <tt class="docutils literal"><span class="pre">double</span></tt> types are built into the Pure
+language, but it is also possible to introduce your own type tags for
+user-defined data structures. This will be explained in more detail under
+<a class="reference internal" href="#type-tags">Type Tags</a> in the <a class="reference internal" href="#rule-syntax">Rule Syntax</a> section below.</p>
 <p>Expressions are generally evaluated from left to right, innermost expressions
 first, i.e., using call by value semantics. Pure also has a few built-in
 special forms (most notably, conditional expressions, the short-circuit
 logical connectives <tt class="docutils literal"><span class="pre">&amp;&amp;</span></tt> and <tt class="docutils literal"><span class="pre">||</span></tt>, the sequencing operator <tt class="docutils literal"><span class="pre">$$</span></tt>, the
 lazy evaluation operator <tt class="docutils literal"><span class="pre">&amp;</span></tt>, and the <tt class="docutils literal"><span class="pre">quote</span></tt>) which take some or all of
 their arguments unevaluated, using call by name.</p>
-<p>Like in Haskell and ML, functions are often defined by pattern-matching, i.e.,
+<p>Like in Haskell and ML, functions are often defined by pattern matching, i.e.,
 the left-hand side of a definition is compared to the target expression,
 binding the variables in the pattern to their actual values accordingly:</p>
 <pre class="literal-block">
@@ -1285,11 +1295,10 @@ rule is actually a separate definition.)</p>
 <strong class="dfn">pattern</strong>. Patterns consist of function and operator applications as well as
 any of the &quot;atomic&quot; expression types (symbols, numbers, strings and list
 values). <em>Not</em> permitted are any of the special expression types (lambda,
-<tt class="docutils literal"><span class="pre">case</span></tt>, <tt class="docutils literal"><span class="pre">when</span></tt>, <tt class="docutils literal"><span class="pre">with</span></tt>, conditional expressions). Also note that, since
-list and matrix comprehensions expand into lambdas, these aren't permitted in
-patterns either. The current implementation also forbids matrix values in
-patterns, but it is possible to match a matrix value as a whole using the
-<tt class="docutils literal"><span class="pre">matrix</span></tt> type tag, see below.</p>
+<tt class="docutils literal"><span class="pre">case</span></tt>, <tt class="docutils literal"><span class="pre">when</span></tt>, <tt class="docutils literal"><span class="pre">with</span></tt>, conditional expressions, as well as list and
+matrix comprehensions). For technical reasons, the current implementation also
+forbids matrix values in patterns, but it is possible to match a matrix value
+as a whole using the <tt class="docutils literal"><span class="pre">matrix</span></tt> type tag, see below.</p>
 <p>Patterns must not contain repeated variables, i.e., rules must be
 &quot;left-linear&quot;. The only exception to this rule is the <strong class="dfn">anonymous variable</strong>
 '<tt class="docutils literal"><span class="pre">_</span></tt>' which matches an arbitrary value (independently for all occurrences)
@@ -1308,7 +1317,8 @@ of the built-in type symbols <tt class="docutils literal"><span class="pre">int<
 <tt class="docutils literal"><span class="pre">matrix</span></tt>, <tt class="docutils literal"><span class="pre">pointer</span></tt>, or an existing identifier denoting a custom
 constructor symbol for a user-defined data type. The variable can then match
 only values of the designated type. Thus, for instance, '<tt class="docutils literal"><span class="pre">x</span> <span class="pre">::</span> <span class="pre">int</span></tt>'
-only matches machine integers. This is explained in more detail below.</li>
+only matches machine integers. See the <a class="reference internal" href="#type-tags">Type Tags</a> section below for
+details.</li>
 </ul>
 <p>Syntactically, both &quot;as&quot; patterns and type tags are primary expressions. If
 the subpattern of an &quot;as&quot; pattern is a compound expression, it <em>must</em> be

@@ -3521,6 +3521,16 @@ functional, i.e., immutable data structures implemented using different
 flavours of binary trees. Nevertheless operations are performed
 efficiently, in logarithmic time where possible.
 
+The container types are all implemented as abstract data structures, so
+client modules shouldn't rely on the internal representation. Each type
+provides a corresponding type tag (cf. `Type Tags`_ in the Pure Manual), as
+given in the "Data Structure" section of each type, which can be used to
+match values of the type, e.g.::
+
+  shift a::Array = rmfirst a;
+
+.. _Type Tags: pure.html#type-tags
+
 All container types implement the equality predicates ``==`` and ``~=`` by
 recursively comparing their members. In addition, the set and bag data
 structures also implement the other comparison predicates (``<``, ``<=``
@@ -3541,6 +3551,29 @@ To use the operations of this module, add the following import declaration
 to your program::
 
   using array;
+
+Data Structure
+~~~~~~~~~~~~~~
+
+Arrays are represented as balanced tree structures of the form ``Array T``,
+thus ``Array`` may be used as a type tag to restrict variables in pattern
+matching.
+
+The internal data structure ``T`` is a binary tree built with the following
+constructors:
+
+``nil``
+  the empty tree.
+
+``tip value``
+  a leaf of the tree, holding the given value.
+
+``bin balance left right``
+  a nonempty tree with the given balance flag (0 or 1) and left and right
+  subtrees.
+
+(This is for informational purposes only. The tree constructors are
+private, and client modules must not rely on the internal representation.)
 
 Operations
 ~~~~~~~~~~
@@ -3730,7 +3763,7 @@ Import the module::
 
 A one-dimensional array::
 
-  > let a = array (0.0:0.1..1.0);
+  > let a::Array = array (0.0:0.1..1.0);
   > #a; members a;
   11
   [0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
@@ -3746,14 +3779,14 @@ expected::
 
 Updating a member of an array produces a new array::
 
-  > let b = update a 1 2.0;
+  > let b::Array = update a 1 2.0;
   > members b;
   [0.0,2.0,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
 
 Two-dimensional arrays can be created with ``array2`` from a list of
 lists::
 
-  > let a2 = array2 [[i,x | x = [u,v,w]] | i = 1..2];
+  > let a2::Array = array2 [[i,x | x = [u,v,w]] | i = 1..2];
   > members2 a2;
   [[(1,u),(1,v),(1,w)],[(2,u),(2,v),(2,w)]]
   > a2!(1,2);
@@ -3772,7 +3805,7 @@ Here's how to convert an array to a Pure matrix::
 
 Converting back from a matrix to an array::
 
-  > let b2 = array2 $ list2 {(1,u),(1,v),(1,w);(2,u),(2,v),(2,w)};
+  > let b2::Array = array2 $ list2 {(1,u),(1,v),(1,w);(2,u),(2,v),(2,w)};
   > members2 b2;
   [[(1,u),(1,v),(1,w)],[(2,u),(2,v),(2,w)]]
 
@@ -3798,6 +3831,26 @@ To use the operations of this module, add the following import declaration
 to your program::
 
   using heap;
+
+Data Structure
+~~~~~~~~~~~~~~
+
+Heaps are represented as balanced tree structures of the form ``Heap T``,
+thus ``Heap`` may be used as a type tag to restrict variables in pattern
+matching.
+
+The internal data structure ``T`` is a binary tree built with the following
+constructors:
+
+``nil``
+  the empty tree.
+
+``bin balance value left right``
+  a nonempty tree holding the given value at its root node, with the given
+  balance flag (0 or 1) and left and right subtrees.
+
+(This is for informational purposes only. The tree constructors are
+private, and client modules must not rely on the internal representation.)
 
 Operations
 ~~~~~~~~~~
@@ -3893,7 +3946,7 @@ Examples
 
 ::
 
-  > let h = heap [5,1,3,11,3];
+  > let h::Heap = heap [5,1,3,11,3];
   > members h;
   [1,3,3,5,11]
   > first h;
@@ -3906,9 +3959,9 @@ Examples
 Dictionaries
 ------------
 
-The dict.pure module provides Pure's ``dict`` and ``hdict`` data types
-based on AVL trees. ``dict`` is an ordered dictionary (assuming an ordered
-key type), ``hdict`` a hashed dictionary which works with any (mixture of)
+The dict.pure module provides Pure's ``Dict`` and ``Hdict`` data types
+based on AVL trees. ``Dict`` is an ordered dictionary (assuming an ordered
+key type), ``Hdict`` a hashed dictionary which works with any (mixture of)
 key types but stores members in an apparently random order.
 
 The used AVL tree algorithm has its origin in the SWI-Prolog implementation
@@ -3933,11 +3986,15 @@ to your program::
 Data Structure
 ~~~~~~~~~~~~~~
 
-A tree for ``dict`` and ``hdict`` takes the form ``Dict T`` or ``HDict T``
-where ``T`` is either:
+Dictionaries are represented as balanced tree structures of the form ``Dict
+T`` or ``Hdict T``, respectively, thus ``Dict`` and ``Hdict`` may be used
+as type tags to restrict variables in pattern matching.
+
+The internal data structure ``T`` is an AVL tree built with the following
+constructors:
 
 ``nil``
-  the empty tree; or
+  the empty tree.
 
 ``bin key value balance left right``
   a nonempty tree with given ``key`` and ``value`` in the root node, where
@@ -3945,7 +4002,8 @@ where ``T`` is either:
   is either 1, 0 or -1, denoting ``|left|-|right|`` = 1, 0, or -1,
   respectively.
 
-The tree constructors are private.
+(This is for informational purposes only. The tree constructors are
+private, and client modules must not rely on the internal representation.)
 
 Operations
 ~~~~~~~~~~
@@ -4198,7 +4256,7 @@ Examples
 A normal (ordered) dictionary::
 
   > using dict;
-  > let d = dict ["foo"=>77,"bar"=>99.1];
+  > let d::Dict = dict ["foo"=>77,"bar"=>99.1];
   > keys d; vals d; members d;
   ["bar","foo"]
   [99.1,77]
@@ -4216,7 +4274,7 @@ expected::
 A hashed dictionary can be used with any key values, which are stored in a
 seemingly random order::
 
-  > let h = hdict [foo=>77,42=>99.1];
+  > let h::Hdict = hdict [foo=>77,42=>99.1];
   > keys h; vals h; members h;
   [42,foo]
   [99.1,77]
@@ -4231,8 +4289,8 @@ seemingly random order::
 Sets and Bags
 -------------
 
-The set.pure module implements Pure's set and bag (multiset) data types
-based on AVL trees. Set and bag elements must be ordered, i.e., the
+The set.pure module implements Pure's ``Set`` and ``Bag`` (multiset) data
+types based on AVL trees. Set and bag elements must be ordered, i.e., the
 predicates ``==``, ``<`` and ``>`` must be defined on them. The used AVL
 tree algorithm has its origin in the SWI-Prolog implementation of
 association lists and was ported to Pure by Jiri Spitz, see Dictionaries_
@@ -4251,11 +4309,15 @@ to your program::
 Data Structure
 ~~~~~~~~~~~~~~
 
-A tree for ``set`` and ``bag`` takes the form ``Set T`` or ``Bag T`` where
-``T`` is either:
+Sets and bags are represented as balanced tree structures of the form ``Set
+T`` or ``Bag T``, respectively, thus ``Set`` and ``Bag`` may be used as
+type tags to restrict variables in pattern matching.
+
+The internal data structure ``T`` is an AVL tree built with the following
+constructors:
 
 ``nil``
-  the empty tree; or
+  the empty tree.
 
 ``bin key balance left right``
   a nonempty tree with given ``key`` (set element) in the root node, where
@@ -4263,7 +4325,8 @@ A tree for ``set`` and ``bag`` takes the form ``Set T`` or ``Bag T`` where
   either 1, 0 or -1, denoting ``|left|-|right|`` = 1, 0, or -1,
   respectively.
 
-The tree constructors are private.
+(This is for informational purposes only. The tree constructors are
+private, and client modules must not rely on the internal representation.)
 
 Operations
 ~~~~~~~~~~
@@ -4502,7 +4565,7 @@ Examples
 
 Some basic set operations::
 
-  > let m = set [5,1,3,11,3];
+  > let m::Set = set [5,1,3,11,3];
   > members m;
   [1,3,5,11]
   > map (member m) (1..5);
@@ -4518,7 +4581,7 @@ The bag operations work in a similar fashion, but note that multiple
 instances are permitted in this case, and each instance counts as a
 separate member::
 
-  > let m = bag [5,1,3,11,3];
+  > let m::Bag = bag [5,1,3,11,3];
   > members m;
   [1,3,3,5,11]
   > members $ delete m 3;

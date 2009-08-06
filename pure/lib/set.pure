@@ -24,8 +24,8 @@
    Sets and Bags
    -------------
 
-   The set.pure module implements Pure's set and bag (multiset) data types
-   based on AVL trees. Set and bag elements must be ordered, i.e., the
+   The set.pure module implements Pure's ``Set`` and ``Bag`` (multiset) data
+   types based on AVL trees. Set and bag elements must be ordered, i.e., the
    predicates ``==``, ``<`` and ``>`` must be defined on them. The used AVL
    tree algorithm has its origin in the SWI-Prolog implementation of
    association lists and was ported to Pure by Jiri Spitz, see Dictionaries_
@@ -50,11 +50,15 @@ private bin;
    Data Structure
    ~~~~~~~~~~~~~~
 
-   A tree for ``set`` and ``bag`` takes the form ``Set T`` or ``Bag T`` where
-   ``T`` is either:
+   Sets and bags are represented as balanced tree structures of the form ``Set
+   T`` or ``Bag T``, respectively, thus ``Set`` and ``Bag`` may be used as
+   type tags to restrict variables in pattern matching.
+
+   The internal data structure ``T`` is an AVL tree built with the following
+   constructors:
 
    ``nil``
-     the empty tree; or
+     the empty tree.
 
    ``bin key balance left right``
      a nonempty tree with given ``key`` (set element) in the root node, where
@@ -62,7 +66,8 @@ private bin;
      either 1, 0 or -1, denoting ``|left|-|right|`` = 1, 0, or -1,
      respectively.
 
-   The tree constructors are private.
+   (This is for informational purposes only. The tree constructors are
+   private, and client modules must not rely on the internal representation.)
 
    Operations
    ~~~~~~~~~~
@@ -165,7 +170,7 @@ private bin;
 
    Some basic set operations::
 
-     > let m = set [5,1,3,11,3];
+     > let m::Set = set [5,1,3,11,3];
      > members m;
      [1,3,5,11]
      > map (member m) (1..5);
@@ -181,7 +186,7 @@ private bin;
    instances are permitted in this case, and each instance counts as a
    separate member::
 
-     > let m = bag [5,1,3,11,3];
+     > let m::Bag = bag [5,1,3,11,3];
      > members m;
      [1,3,3,5,11]
      > members $ delete m 3;

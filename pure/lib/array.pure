@@ -30,6 +30,16 @@
    flavours of binary trees. Nevertheless operations are performed
    efficiently, in logarithmic time where possible.
 
+   The container types are all implemented as abstract data structures, so
+   client modules shouldn't rely on the internal representation. Each type
+   provides a corresponding type tag (cf. `Type Tags`_ in the Pure Manual), as
+   given in the "Data Structure" section of each type, which can be used to
+   match values of the type, e.g.::
+
+     shift a::Array = rmfirst a;
+
+   .. _Type Tags: pure.html#type-tags
+
    All container types implement the equality predicates ``==`` and ``~=`` by
    recursively comparing their members. In addition, the set and bag data
    structures also implement the other comparison predicates (``<``, ``<=``
@@ -50,6 +60,29 @@
    to your program::
 
      using array;
+
+   Data Structure
+   ~~~~~~~~~~~~~~
+
+   Arrays are represented as balanced tree structures of the form ``Array T``,
+   thus ``Array`` may be used as a type tag to restrict variables in pattern
+   matching.
+
+   The internal data structure ``T`` is a binary tree built with the following
+   constructors:
+
+   ``nil``
+     the empty tree.
+
+   ``tip value``
+     a leaf of the tree, holding the given value.
+
+   ``bin balance left right``
+     a nonempty tree with the given balance flag (0 or 1) and left and right
+     subtrees.
+
+   (This is for informational purposes only. The tree constructors are
+   private, and client modules must not rely on the internal representation.)
 
    Operations
    ~~~~~~~~~~
@@ -155,7 +188,7 @@
 
    A one-dimensional array::
 
-     > let a = array (0.0:0.1..1.0);
+     > let a::Array = array (0.0:0.1..1.0);
      > #a; members a;
      11
      [0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
@@ -171,14 +204,14 @@
 
    Updating a member of an array produces a new array::
 
-     > let b = update a 1 2.0;
+     > let b::Array = update a 1 2.0;
      > members b;
      [0.0,2.0,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
 
    Two-dimensional arrays can be created with ``array2`` from a list of
    lists::
 
-     > let a2 = array2 [[i,x | x = [u,v,w]] | i = 1..2];
+     > let a2::Array = array2 [[i,x | x = [u,v,w]] | i = 1..2];
      > members2 a2;
      [[(1,u),(1,v),(1,w)],[(2,u),(2,v),(2,w)]]
      > a2!(1,2);
@@ -197,7 +230,7 @@
 
    Converting back from a matrix to an array::
 
-     > let b2 = array2 $ list2 {(1,u),(1,v),(1,w);(2,u),(2,v),(2,w)};
+     > let b2::Array = array2 $ list2 {(1,u),(1,v),(1,w);(2,u),(2,v),(2,w)};
      > members2 b2;
      [[(1,u),(1,v),(1,w)],[(2,u),(2,v),(2,w)]]
 

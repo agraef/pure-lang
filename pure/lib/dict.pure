@@ -24,9 +24,9 @@
    Dictionaries
    ------------
 
-   The dict.pure module provides Pure's ``dict`` and ``hdict`` data types
-   based on AVL trees. ``dict`` is an ordered dictionary (assuming an ordered
-   key type), ``hdict`` a hashed dictionary which works with any (mixture of)
+   The dict.pure module provides Pure's ``Dict`` and ``Hdict`` data types
+   based on AVL trees. ``Dict`` is an ordered dictionary (assuming an ordered
+   key type), ``Hdict`` a hashed dictionary which works with any (mixture of)
    key types but stores members in an apparently random order.
 
    The used AVL tree algorithm has its origin in the SWI-Prolog implementation
@@ -57,11 +57,15 @@ private bin;
    Data Structure
    ~~~~~~~~~~~~~~
 
-   A tree for ``dict`` and ``hdict`` takes the form ``Dict T`` or ``HDict T``
-   where ``T`` is either:
+   Dictionaries are represented as balanced tree structures of the form ``Dict
+   T`` or ``Hdict T``, respectively, thus ``Dict`` and ``Hdict`` may be used
+   as type tags to restrict variables in pattern matching.
+
+   The internal data structure ``T`` is an AVL tree built with the following
+   constructors:
 
    ``nil``
-     the empty tree; or
+     the empty tree.
 
    ``bin key value balance left right``
      a nonempty tree with given ``key`` and ``value`` in the root node, where
@@ -69,7 +73,8 @@ private bin;
      is either 1, 0 or -1, denoting ``|left|-|right|`` = 1, 0, or -1,
      respectively.
 
-   The tree constructors are private.
+   (This is for informational purposes only. The tree constructors are
+   private, and client modules must not rely on the internal representation.)
 
    Operations
    ~~~~~~~~~~
@@ -178,7 +183,7 @@ private bin;
    A normal (ordered) dictionary::
 
      > using dict;
-     > let d = dict ["foo"=>77,"bar"=>99.1];
+     > let d::Dict = dict ["foo"=>77,"bar"=>99.1];
      > keys d; vals d; members d;
      ["bar","foo"]
      [99.1,77]
@@ -196,7 +201,7 @@ private bin;
    A hashed dictionary can be used with any key values, which are stored in a
    seemingly random order::
 
-     > let h = hdict [foo=>77,42=>99.1];
+     > let h::Hdict = hdict [foo=>77,42=>99.1];
      > keys h; vals h; members h;
      [42,foo]
      [99.1,77]

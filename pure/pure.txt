@@ -446,6 +446,17 @@ at any time. For instance, we can extend the example above to make the
   > fact 10;
   3628800
 
+Note the ``n :: double`` construct on the left-hand side of the second
+equation, which means that the equation is only to be applied for (double
+precision) floating point values ``x``. This construct is also called a "type
+tag" in Pure parlance, which is actually a simple form of pattern matching
+(see below). Similarly, our previous definition at the beginning of this
+section employed the ``int`` tag to indicate that the ``n`` parameter is an
+integer value. The ``int`` and ``double`` types are built into the Pure
+language, but it is also possible to introduce your own type tags for
+user-defined data structures. This will be explained in more detail under
+`Type Tags`_ in the `Rule Syntax`_ section below.
+
 Expressions are generally evaluated from left to right, innermost expressions
 first, i.e., using call by value semantics. Pure also has a few built-in
 special forms (most notably, conditional expressions, the short-circuit
@@ -453,7 +464,7 @@ logical connectives ``&&`` and ``||``, the sequencing operator ``$$``, the
 lazy evaluation operator ``&``, and the ``quote``) which take some or all of
 their arguments unevaluated, using call by name.
 
-Like in Haskell and ML, functions are often defined by pattern-matching, i.e.,
+Like in Haskell and ML, functions are often defined by pattern matching, i.e.,
 the left-hand side of a definition is compared to the target expression,
 binding the variables in the pattern to their actual values accordingly::
 
@@ -1014,11 +1025,10 @@ The left-hand side of a rule is a special kind of simple expression, called a
 `pattern`. Patterns consist of function and operator applications as well as
 any of the "atomic" expression types (symbols, numbers, strings and list
 values). *Not* permitted are any of the special expression types (lambda,
-``case``, ``when``, ``with``, conditional expressions). Also note that, since
-list and matrix comprehensions expand into lambdas, these aren't permitted in
-patterns either. The current implementation also forbids matrix values in
-patterns, but it is possible to match a matrix value as a whole using the
-``matrix`` type tag, see below.
+``case``, ``when``, ``with``, conditional expressions, as well as list and
+matrix comprehensions). For technical reasons, the current implementation also
+forbids matrix values in patterns, but it is possible to match a matrix value
+as a whole using the ``matrix`` type tag, see below.
 
 Patterns must not contain repeated variables, i.e., rules must be
 "left-linear". The only exception to this rule is the `anonymous variable`
@@ -1040,7 +1050,8 @@ right-hand side expressions:
   ``matrix``, ``pointer``, or an existing identifier denoting a custom
   constructor symbol for a user-defined data type. The variable can then match
   only values of the designated type. Thus, for instance, '``x :: int``'
-  only matches machine integers. This is explained in more detail below.
+  only matches machine integers. See the `Type Tags`_ section below for
+  details.
 
 Syntactically, both "as" patterns and type tags are primary expressions. If
 the subpattern of an "as" pattern is a compound expression, it *must* be
