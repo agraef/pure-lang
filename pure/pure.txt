@@ -1028,20 +1028,19 @@ without binding a variable symbol.
 Patterns may contain the following special elements which are not permitted in
 right-hand side expressions:
 
-* A Haskell-style `"as" pattern` of the form '\ ``variable @ pattern``\ '
+* A Haskell-style `"as" pattern` of the form *variable* ``@`` *pattern*
   binds the given variable to the expression matched by the subpattern
-  ``pattern`` (in addition to the variables bound by ``pattern`` itself). This
+  *pattern* (in addition to the variables bound by *pattern* itself). This
   is convenient if the value matched by the subpattern is to be used on the
   right-hand side of an equation.
 
 * A left-hand side variable (including the anonymous variable) may be followed
-  by a `type tag` of the form '\ ``:: name``\ ', where ``name`` is either one
+  by a `type tag` of the form ``::`` *name*, where *name* is either one
   of the built-in type symbols ``int``, ``bigint``, ``double``, ``string``,
-  ``matrix``, ``pointer``, or an existing identifier or nonfix symbol denoting
-  a custom constructor symbol for a user-defined data type. The variable can
-  then match only values of the designated type. Thus, for instance,
-  '\ ``x :: int``\ ' only matches machine integers. This is explained in more
-  detail below.
+  ``matrix``, ``pointer``, or an existing identifier denoting a custom
+  constructor symbol for a user-defined data type. The variable can then match
+  only values of the designated type. Thus, for instance, '``x :: int``'
+  only matches machine integers. This is explained in more detail below.
 
 Syntactically, both "as" patterns and type tags are primary expressions. If
 the subpattern of an "as" pattern is a compound expression, it *must* be
@@ -1065,13 +1064,14 @@ denote "qualified symbols" in Pure, cf. Namespaces_. That's why in the
 examples above, we've written tagged variables as ``foo :: bar``, with spaces
 around the '``::``' symbol. Spaces are never permitted in qualified symbols,
 so this always makes it clear that the construct denotes a type tag. It's
-possible to omit the spaces around '``::``', but then you should be 100% sure
-that the variable identifier does not also denote a namespace. It seems that
-many proficient Pure programmers have fallen victim to that kind of sloppiness
-(the author is guilty of that, too), but it's really preferable and considered
-good coding style to add the spaces anyway.
+possible to omit the spaces around '``::``' if you're sure that the variable
+identifier does not also denote a namespace, but it's really preferable and
+considered good coding style to add the spaces anyway.
 
-Type tags are actually nothing but a special form of "as" patterns which
+Type Tags
+---------
+
+Type tags are really nothing but a special form of "as" patterns which
 restrict variables to given data "domains". Like Lisp, Pure is essentially a
 typeless language and doesn't really have a notion of "data types"; all data
 belongs to the same universe of terms. Thus the only way to restrict the type
@@ -1086,23 +1086,42 @@ appropriate type tag makes it possible to match these values.
 
 In order to generalize this to user-defined domains of data, Pure adopts the
 convention that any other tagged variable ``x::bar`` is just a shorthand for
-the "as" pattern ``x@(bar _)`` which matches terms of the form ``bar
-data``. Thus a custom data type can be represented by designating a special
-constructor symbol (``bar`` in the above example) which takes the actual data
-as its single argument. This works the same no matter what the internal
-structure of the data is (which in many cases you wouldn't want to depend on
-anyway, for the sake of data abstraction).
+the "as" pattern ``x@(bar _)``. Thus a custom data type can be represented by
+designating a special constructor symbol (``bar`` in the above example) which
+takes the actual data as its single argument. This works the same no matter
+what the internal structure of the data is (which in many cases you wouldn't
+want to depend on anyway, for the sake of data abstraction).
 
 Note that this is merely a convention, but it works reasonably well and makes
 up for the fact that Pure doesn't support data types at the language level.
-You can find examples for this approach in the standard library. For instance,
-the dict.pure module implements a ``Dict`` type, so that you can write
-something like::
+For instance, we might represent points in the plane using a constructor
+symbol ``Point`` which gets applied to pairs of coordinates. We equip this
+data type with an operation ``point`` to construct a point from its
+coordinates, and two operations ``xcoord`` and ``ycoord`` to retrieve the
+coordinates::
 
-  > using dict;
-  > foo x :: Dict = keys x, vals x;
-  > foo (dict [99=>a,77=>b]);
-  [77,99],[b,a]
+  point x y = Point (x,y);
+  xcoord (Point (x,y)) = x;
+  ycoord (Point (x,y)) = y;
+
+Now we might define a function ``translate`` which shifts the coordinates of a
+point by a given amount in the x and y directions as follows::
+
+  translate (x,y) p::Point = point (xcoord p+x) (ycoord p+y);
+
+Note the use of ``Point`` as a type tag on the ``p`` variable. By these means,
+we can ensure that the argument is actually an instance of the point data
+type, without knowing anything about the internal representation. We can use
+these definitions as follows::
+
+  > let p::Point = point 3 3;
+  > p; translate (1,2) p;
+  Point (3,3)
+  Point (4,5)
+
+Some data types in Pure's standard library (specifically, the container data
+types) are actually represented in this fashion, see the `Pure Library
+Manual`_ for details.
 
 General Rules
 -------------
