@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="generator" content="Docutils 0.5: http://docutils.sourceforge.net/" />
-<title>pure-gsl - GNU Scientific Library interface for Pure</title>
+<title>pure-gsl - GNU Scientific Library Interface for Pure</title>
 <meta name="authors" content="Albert Graef &lt;Dr.Graef&#64;t-online.de&gt; and Eddie Rucker &lt;erucker&#64;bmc.edu&gt;" />
 <style type="text/css">
 
@@ -286,7 +286,7 @@ ul.auto-toc {
 </head>
 <body>
 <div class="document" id="pure-gsl-gnu-scientific-library-interface-for-pure">
-<h1 class="title">pure-gsl - GNU Scientific Library interface for Pure</h1>
+<h1 class="title">pure-gsl - GNU Scientific Library Interface for Pure</h1>
 <table class="docinfo" frame="void" rules="none">
 <col class="docinfo-name" />
 <col class="docinfo-content" />
@@ -340,62 +340,56 @@ greatest GSL version is always available from
 <div class="contents topic" id="contents">
 <p class="topic-title first">Contents</p>
 <ul class="simple">
-<li><a class="reference internal" href="#polynomials" id="id11">Polynomials</a><ul>
-<li><a class="reference internal" href="#routines" id="id12">Routines</a></li>
-<li><a class="reference internal" href="#examples" id="id13">Examples</a></li>
+<li><a class="reference internal" href="#polynomials" id="id9">Polynomials</a><ul>
+<li><a class="reference internal" href="#routines" id="id10">Routines</a></li>
+<li><a class="reference internal" href="#examples" id="id11">Examples</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#special-functions" id="id14">Special Functions</a><ul>
-<li><a class="reference internal" href="#id1" id="id15">Routines</a></li>
-<li><a class="reference internal" href="#id2" id="id16">Examples</a></li>
+<li><a class="reference internal" href="#least-squares-fitting" id="id12">Least-Squares Fitting</a><ul>
+<li><a class="reference internal" href="#id1" id="id13">Routines</a></li>
+<li><a class="reference internal" href="#id2" id="id14">Examples</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#sorting" id="id17">Sorting</a><ul>
-<li><a class="reference internal" href="#id3" id="id18">Routines</a></li>
-<li><a class="reference internal" href="#id4" id="id19">Examples</a></li>
+<li><a class="reference internal" href="#statistics" id="id15">Statistics</a><ul>
+<li><a class="reference internal" href="#id3" id="id16">Routines</a></li>
+<li><a class="reference internal" href="#id4" id="id17">Examples</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#random-number-distributions" id="id20">Random Number Distributions</a><ul>
-<li><a class="reference internal" href="#id5" id="id21">Routines</a></li>
-<li><a class="reference internal" href="#id6" id="id22">Examples</a></li>
+<li><a class="reference internal" href="#random-number-distributions" id="id18">Random Number Distributions</a><ul>
+<li><a class="reference internal" href="#id5" id="id19">Routines</a></li>
+<li><a class="reference internal" href="#id6" id="id20">Examples</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#statistics" id="id23">Statistics</a><ul>
-<li><a class="reference internal" href="#id7" id="id24">Routines</a></li>
-<li><a class="reference internal" href="#id8" id="id25">Examples</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#least-squares-fitting" id="id26">Least-Squares Fitting</a><ul>
-<li><a class="reference internal" href="#id9" id="id27">Routines</a></li>
-<li><a class="reference internal" href="#id10" id="id28">Examples</a></li>
+<li><a class="reference internal" href="#sorting" id="id21">Sorting</a><ul>
+<li><a class="reference internal" href="#id7" id="id22">Routines</a></li>
+<li><a class="reference internal" href="#id8" id="id23">Examples</a></li>
 </ul>
 </li>
 </ul>
 </div>
 <!--  -->
 <div class="section" id="polynomials">
-<h1><a class="toc-backref" href="#id11">Polynomials</a></h1>
-<p>This module provides Pure wrappers for the GSL polynomial routines. For details, see
-Chapter 6 of the GSL manual,</p>
+<h1><a class="toc-backref" href="#id9">Polynomials</a></h1>
+<p>This module provides Pure wrappers for the GSL polynomial routines. For
+details, see Chapter 6 of the GSL manual,</p>
 <p><a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/Polynomials.html">http://www.gnu.org/software/gsl/manual/html_node/Polynomials.html</a>.</p>
 <p>Notes:</p>
 <blockquote>
 <ol class="arabic simple">
 <li>Pure routines omit the C routines' array length parameters.</li>
-<li>A Polynomials is represented by a one row matrix.</li>
+<li>A Polynomial is represented by a vector (one row matrix).</li>
 </ol>
 </blockquote>
 <div class="section" id="routines">
-<h2><a class="toc-backref" href="#id12">Routines</a></h2>
-<a name="eval"><dl class="docutils" id="eval">
-<dt><tt class="docutils literal"><span class="pre">eval</span>&nbsp; <span class="pre">c::matrix</span>&nbsp; <span class="pre">x</span></tt></dt>
-<dd><p class="first">evaluates the polynomial</p>
+<h2><a class="toc-backref" href="#id10">Routines</a></h2>
+<a name="eval"><p id="eval"><tt class="docutils literal"><span class="pre">eval</span>&nbsp; <span class="pre">c::matrix</span>&nbsp; <span class="pre">x</span></tt></p>
+<blockquote>
+<p>evaluates the polynomial</p>
 <p><tt class="docutils literal"><span class="pre">(c!0)+(c!1)x+(c!2)x^2+...+(c!(#c-1))x^(#c-1)</span></tt>.</p>
-<p class="last">An extra Pure routine for evaluating polynomials with <tt class="docutils literal"><span class="pre">int</span></tt> and
+<p>An extra Pure routine for evaluating polynomials with <tt class="docutils literal"><span class="pre">int</span></tt> and
 <tt class="docutils literal"><span class="pre">bigint</span></tt> coefficients is provided because GSL does not supply one.
 The integer routine implements the Chinese Remainder Theorem.</p>
-</dd>
-</dl>
+</blockquote>
 <a name="dd_init"><dl class="docutils" id="dd-init">
 <dt><tt class="docutils literal"><span class="pre">dd_init</span> <span class="pre">x::matrix</span> <span class="pre">y::matrix</span></tt></dt>
 <dd><p class="first">computes a divided-difference representation of the interpolating
@@ -456,7 +450,7 @@ workspace as in the C programming language.</p>
 <!--  -->
 </div>
 <div class="section" id="examples">
-<h2><a class="toc-backref" href="#id13">Examples</a></h2>
+<h2><a class="toc-backref" href="#id11">Examples</a></h2>
 <p>Usage of each library routine is illustrated below.</p>
 <pre class="literal-block">
 &gt; using gsl::poly;
@@ -500,146 +494,425 @@ workspace as in the C programming language.</p>
 <!--  -->
 </div>
 </div>
-<div class="section" id="special-functions">
-<h1><a class="toc-backref" href="#id14">Special Functions</a></h1>
-<p>This module is loaded via the command <tt class="docutils literal"><span class="pre">using</span> <span class="pre">gsl::sf</span></tt> and provides
-Pure wrappers for the GSL Special Functions. For details, see Chapter 7
-of the GSL manual,</p>
-<p><a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/Special-Functions.html">http://www.gnu.org/software/gsl/manual/html_node/Special-Functions.html</a>.</p>
-<p>To load the library, use the Pure command <tt class="docutils literal"><span class="pre">using</span> <span class="pre">gsl::sf</span></tt>.
-Modes for the functions must be one of:</p>
-<pre class="literal-block">
-GSL_PREC_DOUBLE
-GSL_PREC_SINGLE
-GSL_PREC_APPROX
-</pre>
-<p>Results for some of the functions are returned as a Pure list instead of
-the <tt class="docutils literal"><span class="pre">gsl_sf_result</span></tt> or  <tt class="docutils literal"><span class="pre">gsl_sf_result_e10</span></tt> structures in C. In these
-cases, the resulting list is one of the forms:</p>
-<blockquote>
-<tt class="docutils literal"><span class="pre">[val,</span> <span class="pre">err]</span></tt> for the <tt class="docutils literal"><span class="pre">gsl_sf_result</span></tt> struct and
-<tt class="docutils literal"><span class="pre">[val,</span> <span class="pre">err,</span> <span class="pre">e10]</span></tt> for <tt class="docutils literal"><span class="pre">gsl_sf_result_e10</span></tt> struct.</blockquote>
+<div class="section" id="least-squares-fitting">
+<h1><a class="toc-backref" href="#id12">Least-Squares Fitting</a></h1>
+<p>This module is loaded via the command <tt class="docutils literal"><span class="pre">using</span> <span class="pre">gsl::fit</span></tt> and provides Pure
+wrappers for the GSL least-squares fitting routines found in Chapter 36 of
+the GSL manual,</p>
+<p><a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/Least_002dSquares-Fitting.htm">http://www.gnu.org/software/gsl/manual/html_node/Least_002dSquares-Fitting.htm</a>.</p>
 <div class="section" id="id1">
-<h2><a class="toc-backref" href="#id15">Routines</a></h2>
-<a name="airy_Ai"><dl class="docutils">
-<dt><tt class="docutils literal"><span class="pre">airy_Ai</span> <span class="pre">x</span></tt></dt>
-<dd>computes the Airy function <tt class="docutils literal"><span class="pre">Ai</span> <span class="pre">x</span></tt> with a default <tt class="docutils literal"><span class="pre">GSL_PREC_DOUBLE</span></tt>
-accuracy.</dd>
-<dt><tt class="docutils literal"><span class="pre">airy_Ai</span> <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></dt>
-<dd>computes a double result of the Airy function <tt class="docutils literal"><span class="pre">Ai</span> <span class="pre">x</span></tt> with an accuracy
-specified by <tt class="docutils literal"><span class="pre">mode</span></tt>.</dd>
-<dt><tt class="docutils literal"><span class="pre">airy_Ai_e</span> <span class="pre">x</span></tt></dt>
-<dd>computes the list <tt class="docutils literal"><span class="pre">[value,</span> <span class="pre">error]</span></tt> of the Airy function <tt class="docutils literal"><span class="pre">Ai</span> <span class="pre">x</span></tt> with
-a default <tt class="docutils literal"><span class="pre">GSL_PREC_DOUBLE</span></tt> accuracy.</dd>
-<dt><tt class="docutils literal"><span class="pre">airy_Ai_e</span> <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></dt>
-<dd>computes the list <tt class="docutils literal"><span class="pre">[value,</span> <span class="pre">error]</span></tt> of the Airy function <tt class="docutils literal"><span class="pre">Ai</span> <span class="pre">x</span></tt> with
-an accuracy specified by <tt class="docutils literal"><span class="pre">mode</span></tt>.</dd>
-<dt><tt class="docutils literal"><span class="pre">airy_Ai_scaled</span> <span class="pre">x</span></tt></dt>
-<dd>compute a scaled version of the Airy function. See the GSL for more
-information.</dd>
-<dt><tt class="docutils literal"><span class="pre">airy_Ai_scaled_e</span> <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></dt>
-<dd>computes the list <tt class="docutils literal"><span class="pre">[value,</span> <span class="pre">error]</span></tt> of the Airy function <tt class="docutils literal"><span class="pre">Ai</span> <span class="pre">x</span></tt> with
-an accuracy specified by <tt class="docutils literal"><span class="pre">mode</span></tt>.</dd>
-</dl>
-<a name="airy_Bi"><dl class="docutils">
-<dt><tt class="docutils literal"><span class="pre">airy_Bi</span> <span class="pre">x</span></tt></dt>
-<dd>computes the Airy function <tt class="docutils literal"><span class="pre">Bi</span> <span class="pre">x</span></tt> with a default <tt class="docutils literal"><span class="pre">GSL_PREC_DOUBLE</span></tt>
-accuracy.</dd>
-<dt><tt class="docutils literal"><span class="pre">airy_Bi</span> <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></dt>
-<dd>computes the Airy function <tt class="docutils literal"><span class="pre">Bi</span> <span class="pre">x</span></tt> with an accuracy specified by
-<tt class="docutils literal"><span class="pre">mode</span></tt>.</dd>
-<dt><tt class="docutils literal"><span class="pre">airy_Bi_e</span> <span class="pre">x</span></tt></dt>
-<dd>computes the list <tt class="docutils literal"><span class="pre">[value,</span> <span class="pre">error]</span></tt> of the Airy function <tt class="docutils literal"><span class="pre">Bi</span> <span class="pre">x</span></tt> with
-a default <tt class="docutils literal"><span class="pre">GSL_PREC_DOUBLE</span></tt> accuracy.</dd>
-<dt><tt class="docutils literal"><span class="pre">airy_Bi_e</span> <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></dt>
-<dd>computes the list <tt class="docutils literal"><span class="pre">[value,</span> <span class="pre">error]</span></tt> of the Airy function <tt class="docutils literal"><span class="pre">Bi</span> <span class="pre">x</span></tt> with
-an accuracy specified by <cite>mode</cite>.</dd>
-<dt><tt class="docutils literal"><span class="pre">airy_Bi_scaled</span> <span class="pre">x</span></tt></dt>
-<dd>compute a scaled version of the Airy function <tt class="docutils literal"><span class="pre">Bi</span> <span class="pre">x</span></tt>. See the GSL
-for more information.</dd>
-<dt><tt class="docutils literal"><span class="pre">airy_Bi_scaled_e</span> <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></dt>
-<dd>computes the list <tt class="docutils literal"><span class="pre">[value,</span> <span class="pre">error]</span></tt> of the Airy function <tt class="docutils literal"><span class="pre">Bi</span> <span class="pre">x</span></tt>
-with an accuracy specified by <tt class="docutils literal"><span class="pre">mode</span></tt>.</dd>
-</dl>
+<h2><a class="toc-backref" href="#id13">Routines</a></h2>
+<a name="linear"><p id="linear"><tt class="docutils literal"><span class="pre">linear</span>&nbsp; <span class="pre">x::matrix</span>&nbsp; <span class="pre">y::matrix</span></tt></p>
+<blockquote>
+<p>perform a least-squares fit to a straight line model,</p>
+<p><tt class="docutils literal"><span class="pre">Y</span> <span class="pre">c</span> <span class="pre">x</span> <span class="pre">=</span> <span class="pre">c0</span> <span class="pre">+</span> <span class="pre">c1</span> <span class="pre">*</span> <span class="pre">x</span></tt>.</p>
+<p>Results are given as the list <tt class="docutils literal"><span class="pre">[c0,</span> <span class="pre">c1,</span> <span class="pre">cov00,</span> <span class="pre">cov01,</span> <span class="pre">cov11,</span> <span class="pre">sumsq]</span></tt>
+where <tt class="docutils literal"><span class="pre">c0</span></tt> and <tt class="docutils literal"><span class="pre">c1</span></tt> are the coefficients of the equation and
+<tt class="docutils literal"><span class="pre">cov00</span></tt>, <tt class="docutils literal"><span class="pre">cov01</span></tt>, and <tt class="docutils literal"><span class="pre">cov11</span></tt> are the errors on <tt class="docutils literal"><span class="pre">y</span></tt>. The sum
+of squares of the residuals is denoted by <tt class="docutils literal"><span class="pre">sumsq</span></tt>.</p>
+</blockquote>
+<a name="wlinear"><p id="wlinear"><tt class="docutils literal"><span class="pre">wlinear</span>&nbsp; <span class="pre">x::matrix</span>&nbsp; <span class="pre">w::matrix</span>&nbsp; <span class="pre">y::matrix</span></tt></p>
+<blockquote>
+<p>perform a least-squares fit to a straight line model with weighted
+datapoints <tt class="docutils literal"><span class="pre">w</span></tt>.</p>
+<p>Results are given as the list <tt class="docutils literal"><span class="pre">[c0,</span> <span class="pre">c1,</span> <span class="pre">cov00,</span> <span class="pre">cov01,</span> <span class="pre">cov11,</span> <span class="pre">chisq]</span></tt>
+where <tt class="docutils literal"><span class="pre">c0</span></tt> and <tt class="docutils literal"><span class="pre">c1</span></tt> are the coefficients of the equation and
+<tt class="docutils literal"><span class="pre">cov00</span></tt>, <tt class="docutils literal"><span class="pre">cov01</span></tt>, and <tt class="docutils literal"><span class="pre">cov11</span></tt> are the errors on <tt class="docutils literal"><span class="pre">y</span></tt>. The sum
+of squares of the residuals is denoted by <tt class="docutils literal"><span class="pre">chisq</span></tt>.</p>
+</blockquote>
+<a name="linear_est"><p id="linear-est"><tt class="docutils literal"><span class="pre">linear_est</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">c0::double</span>&nbsp; <span class="pre">c1::double</span>&nbsp; <span class="pre">cov00::double</span>&nbsp; <span class="pre">cov01::double</span> <span class="pre">cov11::double</span></tt></p>
+<blockquote>
+<p>compute the fitted function <tt class="docutils literal"><span class="pre">y</span></tt> and its standard deviation <tt class="docutils literal"><span class="pre">y_err</span></tt>
+at point <tt class="docutils literal"><span class="pre">x</span></tt>.</p>
+<p>Results are given as the list <tt class="docutils literal"><span class="pre">[y,</span> <span class="pre">y_err]</span></tt>.</p>
+</blockquote>
+<a name="mul"><p id="mul"><tt class="docutils literal"><span class="pre">mul</span>&nbsp; <span class="pre">x::matrix</span>&nbsp; <span class="pre">y::matrix</span></tt></p>
+<blockquote>
+<p>perform a least-squares fit to a straight line model,
+<tt class="docutils literal"><span class="pre">Y</span> <span class="pre">c</span> <span class="pre">x</span> <span class="pre">=</span> <span class="pre">c1</span> <span class="pre">*</span> <span class="pre">x</span></tt> without constant term <tt class="docutils literal"><span class="pre">c0</span></tt>.</p>
+<p>Results are given as the list <tt class="docutils literal"><span class="pre">[c1,</span> <span class="pre">cov11,</span> <span class="pre">sumsq]</span></tt> where <tt class="docutils literal"><span class="pre">c1</span></tt>
+is the coefficient and <tt class="docutils literal"><span class="pre">cov11</span></tt> is the error on <tt class="docutils literal"><span class="pre">y</span></tt>. The sum of
+squares of the residuals is denoted by <tt class="docutils literal"><span class="pre">sumsq</span></tt>.</p>
+</blockquote>
+<a name="wmul"><p id="wmul"><tt class="docutils literal"><span class="pre">wmul</span>&nbsp; <span class="pre">x::matrix</span>&nbsp; <span class="pre">w::matrix</span>&nbsp; <span class="pre">y::matrix</span></tt></p>
+<blockquote>
+<p>perform a least-squares fit to a straight line model with weighted
+datapoints <tt class="docutils literal"><span class="pre">w</span></tt>.</p>
+<p>Results are given as the list <tt class="docutils literal"><span class="pre">[c1,</span> <span class="pre">cov11,</span> <span class="pre">sumsq]</span></tt> where <tt class="docutils literal"><span class="pre">c1</span></tt>
+is the coefficient and the error on <tt class="docutils literal"><span class="pre">y</span></tt> is returned via the parameter
+<tt class="docutils literal"><span class="pre">cov11</span></tt>. The sum of squares of the residuals is denoted by <tt class="docutils literal"><span class="pre">sumsq</span></tt>.</p>
+</blockquote>
+<a name="mul_est"><p id="mul-est"><tt class="docutils literal"><span class="pre">mul_est</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">c1::double</span>&nbsp; <span class="pre">cov11::double</span></tt></p>
+<blockquote>
+<p>compute the fitted function <tt class="docutils literal"><span class="pre">y</span></tt> and its standard deviation <tt class="docutils literal"><span class="pre">y_err</span></tt>
+at point <tt class="docutils literal"><span class="pre">x</span></tt>.</p>
+<p>Results are given as the list <tt class="docutils literal"><span class="pre">[y,</span> <span class="pre">y_err]</span></tt>.</p>
+</blockquote>
 <!--  -->
 </div>
 <div class="section" id="id2">
-<h2><a class="toc-backref" href="#id16">Examples</a></h2>
+<h2><a class="toc-backref" href="#id14">Examples</a></h2>
+<p>Usage of each implemented library routine is illustrated below.</p>
 <pre class="literal-block">
-&gt; using gsl::sf;
-&gt; using namespace gsl::sf;
-&gt; airy_Ai (-1.2); // defaults to GSL_PREC_DOUBLE
-0.52619437480212
-&gt; airy_Ai_scaled (-1.2);
-0.52619437480212
-&gt; airy_Ai (-1.2,GSL_PREC_APPROX);
-0.526194374771687
-&gt; airy_Ai_scaled (-1.2, GSL_PREC_SINGLE);
-0.526194374771687
-&gt; airy_Ai_e (-1.2);
-[0.52619437480212,1.88330586480371e-15]
-&gt; airy_Ai_e (-1.2,GSL_PREC_APPROX);
-{0.526194374771687,1.01942940819652e-08}
-&gt; airy_Ai_scaled_e (-1.2);
-[0.52619437480212,1.88330586480371e-15]
-&gt; airy_Ai_scaled_e (-1.2,GSL_PREC_APPROX);
-[0.526194374771687,1.01942940819652e-08]
-&gt; airy_Bi (-1.2);
--0.015821370184632
-&gt; airy_Bi_scaled (-1.2);
-0.52619437480212
-&gt; airy_Bi (-1.2,GSL_PREC_APPROX);
--0.0158213701898015
-&gt; airy_Bi_scaled (-1.2, GSL_PREC_SINGLE);
-0.526194374771687
-&gt; airy_Bi_e (-1.2);
-[-0.015821370184632,1.31448899295896e-16]
-&gt;  airy_Bi_e (-1.2,GSL_PREC_APPROX);
-[-0.0158213701898015,4.10638404843775e-10]
-&gt;  airy_Bi_scaled_e (-1.2);
-[0.52619437480212,1.88330586480371e-15]
-&gt; airy_Bi_scaled_e (-1.2,GSL_PREC_APPROX);
-[0.526194374771687,1.01942940819652e-08]
+&gt; using gsl::fit;
+&gt; using namespace gsl::fit;
+</pre>
+<p>The following code determines the equation for the least-squares line
+through the points (1,0.01), (2,1.11), (3,1.9), (4,2.85), and (5,4.01).</p>
+<pre class="literal-block">
+&gt; Y x = '(a + b * x)
+&gt; when
+&gt;   a:b:_ = linear {1,2,3,4,5} {0.01,1.11,1.9,2.85,4.01}
+&gt; end;
+&gt; Y x;
+-0.946+0.974*x
+&gt; eval $ Y 2;
+1.002
+</pre>
+<p>The following code illustrates estimating y-values without
+constructing an equation for the least-squares line determined by
+the points {x1,x2,x3,...,xn}, {y1,y2,y3,...,yn}. Here we estimate
+the y-value at x = 1, x = 2, and x = 3. Compare the output above at
+x = 2 to the output at x = 2 below.</p>
+<pre class="literal-block">
+&gt; let c0:c1:cov00:cov01:cov11:_ = linear {1,2,3,4,5}
+&gt;   {0.01,1.11,1.9,2.85,4.01};
+&gt; linear_est 1 c0 c1 cov00 cov01 cov11;
+[0.028,0.0838570211729465]
+&gt; linear_est 2 c0 c1 cov00 cov01 cov11;
+[1.002,0.0592958683214944]
+&gt; linear_est 3 c0 c1 cov00 cov01 cov11;
+[1.976,0.0484148737476408]
+</pre>
+<p>Next, we determine a least-squares line through the points (1,0.01),
+(2,1.11), (3,1.9), (4,2.85), and (5,4.01) using weights 0.1, 0.2, 0.3,
+0.4, and 0.5.</p>
+<pre class="literal-block">
+&gt; W x = '(a + b * x)
+&gt; when
+&gt;   a:b:_ = wlinear (matrix (1..5))
+&gt;           {0.1, 0.2, 0.3, 0.4, 0.5}
+&gt;           {0.01, 1.11, 1.9, 2.85, 4.01};
+&gt; end;
+&gt; W u;
+-0.99+0.986*u
+&gt; eval $ W 2;
+0.982
+</pre>
+<p>The least-squares slope for <tt class="docutils literal"><span class="pre">Y</span> <span class="pre">=</span> <span class="pre">c1</span> <span class="pre">*</span> <span class="pre">X</span></tt> using the points (1,3),
+(2,5), and (3,7) is calculated below. Also, the y-values and
+standard error about x = 1, 2, and 3 are given.</p>
+<pre class="literal-block">
+&gt; let c1:cov11:sumsq:_ = mul {1,2,3} {3,5,7};
+&gt; mul_est 1 c1 cov11;
+[2.42857142857143,0.123717914826348]
+&gt; mul_est 2 c1 cov11;
+[4.85714285714286,0.247435829652697]
+&gt; mul_est 3 c1 cov11;
+[7.28571428571428,0.371153744479045]
+</pre>
+<p>The least-squares slope for <tt class="docutils literal"><span class="pre">Y</span> <span class="pre">=</span> <span class="pre">c1</span> <span class="pre">*</span> <span class="pre">X</span></tt> using the points (1,3),
+(2,5), and (3,7), and weights 0.4, 0.9, and 0.4 is calculated below.
+The approximation of y-values and standard error about x = 1, 2, and
+3 follows.</p>
+<pre class="literal-block">
+&gt; let c1:cov11:sumsq:_ = wmul {1,2,3} {0.4,0.9,0.4} {3,5,7};
+&gt; mul_est 1 c1 cov11;
+[2.44736842105263,0.362738125055006]
+&gt; mul_est 2 c1 cov11;
+[4.89473684210526,0.725476250110012]
+&gt; mul_est 3 c1 cov11;
+[7.34210526315789,1.08821437516502]
 </pre>
 <!--  -->
 </div>
 </div>
-<div class="section" id="sorting">
-<h1><a class="toc-backref" href="#id17">Sorting</a></h1>
-<p>This module is loaded via the command <tt class="docutils literal"><span class="pre">using</span> <span class="pre">gsl::sort</span></tt> and
-provides Pure wrappers for the GSL sorting
-routines found in Chapter 11 of the GSL manual,</p>
-<p><a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/Sorting.html">http://www.gnu.org/software/gsl/manual/html_node/Sorting.html</a>.</p>
+<div class="section" id="statistics">
+<h1><a class="toc-backref" href="#id15">Statistics</a></h1>
+<p>This module is loaded via the command <tt class="docutils literal"><span class="pre">using</span> <span class="pre">gsl::stats</span></tt> and provides
+Pure wrappers for the GSL Statistics routines found in Chapter 20 of the
+GSL manual,</p>
+<p><a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/Statistics.html">http://www.gnu.org/software/gsl/manual/html_node/Statistics.html</a>.</p>
 <div class="section" id="id3">
-<h2><a class="toc-backref" href="#id18">Routines</a></h2>
-<!-- sort_vector: -->
-<dl class="docutils">
-<dt><tt class="docutils literal"><span class="pre">sort_vector</span> <span class="pre">m::matrix</span></tt></dt>
-<dd>sorts the elements of the vector <tt class="docutils literal"><span class="pre">m</span></tt> into ascending numerical order.</dd>
+<h2><a class="toc-backref" href="#id16">Routines</a></h2>
+<a name="mean"><dl class="docutils" id="mean">
+<dt><tt class="docutils literal"><span class="pre">mean</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>calcualtes the mean of the dataset.</dd>
 </dl>
-<a name="sort_vector_index"><dl class="docutils" id="sort-vector-index">
-<dt><tt class="docutils literal"><span class="pre">sort_vector_index</span> <span class="pre">m::matrix</span></tt></dt>
-<dd>returns the vector of indexes corresponding to the elements of a
-sorted array <tt class="docutils literal"><span class="pre">m</span></tt>. Note that sort_vector_index does not sort <tt class="docutils literal"><span class="pre">m</span></tt>.</dd>
+<a name="variance"><dl class="docutils" id="variance">
+<dt><tt class="docutils literal"><span class="pre">variance</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>calcualtes the variance of the dataset.</dd>
+</dl>
+<a name="variance_m"><dl class="docutils" id="variance-m">
+<dt><tt class="docutils literal"><span class="pre">variance</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>calcualtes the variance of the dataset relative to the given mean.</dd>
+</dl>
+<a name="sd"><dl class="docutils" id="sd">
+<dt><tt class="docutils literal"><span class="pre">sd</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>calcualtes the standard deviation of the dataset.</dd>
+</dl>
+<a name="sd_m"><dl class="docutils" id="sd-m">
+<dt><tt class="docutils literal"><span class="pre">sd_m</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>calcualtes the standard deviation of the dataset relative to the  given mean.</dd>
+</dl>
+<a name="tss"><dl class="docutils" id="tss">
+<dt><tt class="docutils literal"><span class="pre">tss</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>returns the total sum of squares of the dataset.</dd>
+</dl>
+<a name="tss_m"><dl class="docutils" id="tss-m">
+<dt><tt class="docutils literal"><span class="pre">tss</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>returns the total sum of squares of the dataset about the given mean.</dd>
+</dl>
+<a name="variance_with_fixed_mean"><dl class="docutils" id="variance-with-fixed-mean">
+<dt><tt class="docutils literal"><span class="pre">variance_with_fixed_mean</span> <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>returns the total sum of squares of the dataset abount the population mean.</dd>
+</dl>
+<a name="sd_with_fixed_mean"><dl class="docutils" id="sd-with-fixed-mean">
+<dt><tt class="docutils literal"><span class="pre">sd_with_fixed_mean</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>computes an unbiased estimate of the variance about the population mean.</dd>
+</dl>
+<a name="absdev"><dl class="docutils" id="absdev">
+<dt><tt class="docutils literal"><span class="pre">absdev</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>computes the absolute deviation from the mean of the data.</dd>
+</dl>
+<a name="absdev_m"><dl class="docutils" id="absdev-m">
+<dt><tt class="docutils literal"><span class="pre">absdev_m</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>computes the absolute deviation from the mean relative to the given mean.</dd>
+</dl>
+<a name="skew"><dl class="docutils" id="skew">
+<dt><tt class="docutils literal"><span class="pre">skew</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>computes the skewness of the data.</dd>
+</dl>
+<a name="skew_m_sd"><dl class="docutils" id="skew-m-sd">
+<dt><tt class="docutils literal"><span class="pre">skew_m_sd</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span>&nbsp; <span class="pre">sd</span></tt></dt>
+<dd>computes the skewness of data using the given mean and standard deviation.</dd>
+<dt><tt class="docutils literal"><span class="pre">kurtosis</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>computes the kurtosis of the data.</dd>
+</dl>
+<a name="kurtosis_m_sd"><dl class="docutils" id="kurtosis-m-sd">
+<dt><tt class="docutils literal"><span class="pre">kurtosis_m_sd</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span>&nbsp; <span class="pre">sd</span></tt></dt>
+<dd>computes the kurtosis of the dataset about the given mean and standard deviation.</dd>
+</dl>
+<a name="lag1_autocorrelation"><dl class="docutils" id="lag1-autocorrelation">
+<dt><tt class="docutils literal"><span class="pre">lag1_autocorrelation</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>computes the lag-1 autocorrelation of the the data.</dd>
+</dl>
+<a name="lag1_autocorrelation_m"><dl class="docutils" id="lag1-autocorrelation-m">
+<dt><tt class="docutils literal"><span class="pre">lag1_autocorrelation_m</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>computes the lag-1 autocorrelation of the the data about the given mean.</dd>
+</dl>
+<a name="covariance"><dl class="docutils" id="covariance">
+<dt><tt class="docutils literal"><span class="pre">covariance</span>&nbsp; <span class="pre">d1::matrix</span>&nbsp; <span class="pre">d2::matrix</span></tt></dt>
+<dd>computes the covariance of the datasests <tt class="docutils literal"><span class="pre">d1</span></tt> and <tt class="docutils literal"><span class="pre">d2</span></tt>.</dd>
+</dl>
+<a name="covariance_m"><dl class="docutils" id="covariance-m">
+<dt><tt class="docutils literal"><span class="pre">covariance_m</span>&nbsp; <span class="pre">d1::matrix</span>&nbsp; <span class="pre">d2::matrix</span>&nbsp; <span class="pre">mean1</span>&nbsp; <span class="pre">mean2</span></tt></dt>
+<dd>computes the covariance of the datasets <tt class="docutils literal"><span class="pre">d1</span></tt> with mean, <tt class="docutils literal"><span class="pre">mean1</span></tt>,
+and <tt class="docutils literal"><span class="pre">d2</span></tt> with mean, <tt class="docutils literal"><span class="pre">mean2</span></tt>.</dd>
+</dl>
+<a name="correlation"><dl class="docutils" id="correlation">
+<dt><tt class="docutils literal"><span class="pre">correlation</span>&nbsp; <span class="pre">d1::matrix</span>&nbsp; <span class="pre">d2::matrix</span></tt></dt>
+<dd>computes the Pearson correlation coefficient between the datasets
+<tt class="docutils literal"><span class="pre">d1</span></tt> and <tt class="docutils literal"><span class="pre">d2</span></tt>.</dd>
+</dl>
+<a name="wmean"><dl class="docutils" id="wmean">
+<dt><tt class="docutils literal"><span class="pre">wmean</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>computes the weighted mean of the data.</dd>
+</dl>
+<a name="wvariance"><dl class="docutils" id="wvariance">
+<dt><tt class="docutils literal"><span class="pre">wvariance</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>computes the weighted variance of data.</dd>
+</dl>
+<a name="wvariance_m"><dl class="docutils" id="wvariance-m">
+<dt><tt class="docutils literal"><span class="pre">wvariance_m</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>computes the weighted variance of the data about the given mean.</dd>
+</dl>
+<a name="wsd"><dl class="docutils" id="wsd">
+<dt><tt class="docutils literal"><span class="pre">wsd</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>computes the weighed standard deviation of the data.</dd>
+</dl>
+<a name="wsd_m"><dl class="docutils" id="wsd-m">
+<dt><tt class="docutils literal"><span class="pre">wsd_m</span>&nbsp; <span class="pre">weights::matrix</span>&nbsp; <span class="pre">m::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>computes the weighed standard deviation of the data about the given mean.</dd>
+</dl>
+<a name="wvariance_with_fixed_mean"><dl class="docutils" id="wvariance-with-fixed-mean">
+<dt><tt class="docutils literal"><span class="pre">wvariance_with_fixed_mean</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>computes the unbiased estimate of the variance of the weighted data
+about the given population mean.</dd>
+</dl>
+<a name="wsd_with_fixed_mean"><dl class="docutils" id="wsd-with-fixed-mean">
+<dt><tt class="docutils literal"><span class="pre">wsd_with_fixed_mean</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>computes the unbiased estimate of the standard deviation of the
+weighted data about the given population mean.</dd>
+</dl>
+<a name="wtss"><dl class="docutils" id="wtss">
+<dt><tt class="docutils literal"><span class="pre">wtss</span>&nbsp; <span class="pre">weights::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>returns the weighted total sum of squares of the weighted data.</dd>
+<dt><tt class="docutils literal"><span class="pre">wtss</span>&nbsp; <span class="pre">weights::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>returns the weighted total sum of squares of the weighted data
+about the given population mean.</dd>
+</dl>
+<a name="wabsdev"><dl class="docutils" id="wabsdev">
+<dt><tt class="docutils literal"><span class="pre">wabsdev</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>computes the weighted absolute deviation from the weighted mean of the
+data.</dd>
+</dl>
+<a name="wabsdev_m"><dl class="docutils" id="wabsdev-m">
+<dt><tt class="docutils literal"><span class="pre">wabsdev_m</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>computes the weighted absolute deviation about the given mean.</dd>
+</dl>
+<a name="wskew"><dl class="docutils" id="wskew">
+<dt><tt class="docutils literal"><span class="pre">wskew</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>computed the weighted skewness of the dataset data.</dd>
+</dl>
+<a name="wskew_m_sd"><dl class="docutils" id="wskew-m-sd">
+<dt><tt class="docutils literal"><span class="pre">wskew_m_sd</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span>&nbsp; <span class="pre">sd</span></tt></dt>
+<dd>computes the weighted skewness of the data using the given mean
+and standard deviation.</dd>
+</dl>
+<a name="wkurtosis"><dl class="docutils" id="wkurtosis">
+<dt><tt class="docutils literal"><span class="pre">wkurtosis</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>computes the weighted kurtosis of the data.</dd>
+</dl>
+<a name="wkurtosis_m_sd"><dl class="docutils" id="wkurtosis-m-sd">
+<dt><tt class="docutils literal"><span class="pre">wkurtosis_m_sd</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>computes the weighted kurtosis of the data about the given mean
+and standard deviation.</dd>
+</dl>
+<a name="max"><dl class="docutils" id="max">
+<dt><tt class="docutils literal"><span class="pre">max</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>returns the maximum value of the data.</dd>
+</dl>
+<a name="min"><dl class="docutils" id="min">
+<dt><tt class="docutils literal"><span class="pre">min</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>returns the minimum value of the data.</dd>
+</dl>
+<a name="minmax"><dl class="docutils" id="minmax">
+<dt><tt class="docutils literal"><span class="pre">minmax</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>returns a list containing the minimum and maximum values of the data.</dd>
+</dl>
+<a name="min_index"><dl class="docutils" id="min-index">
+<dt><tt class="docutils literal"><span class="pre">min_index</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>returns the index of minimum value of the data.</dd>
+</dl>
+<a name="max_index"><dl class="docutils" id="max-index">
+<dt><tt class="docutils literal"><span class="pre">max_index</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>returns the index of maximum value of the data.</dd>
+</dl>
+<a name="minmax_index"><dl class="docutils" id="minmax-index">
+<dt><tt class="docutils literal"><span class="pre">minmax_index</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>returns a list of the indexs of the minimum and maximum value of the data.</dd>
+</dl>
+<a name="median_from_sorted_data"><dl class="docutils" id="median-from-sorted-data">
+<dt><tt class="docutils literal"><span class="pre">median_from_sorted_data</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>returns the median value of the data. Note that the data <cite>must</cite> be sorted.</dd>
+</dl>
+<a name="quantile_from_sorted_data"><dl class="docutils" id="quantile-from-sorted-data">
+<dt><tt class="docutils literal"><span class="pre">quantile_from_sorted_data</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">f::double</span></tt></dt>
+<dd>returns the quantile value of the data. Note that the data <cite>must</cite> be sorted.</dd>
 </dl>
 <!--  -->
 </div>
 <div class="section" id="id4">
-<h2><a class="toc-backref" href="#id19">Examples</a></h2>
-<p>Usage of each library routine is illustrated below.</p>
+<h2><a class="toc-backref" href="#id17">Examples</a></h2>
+<p>The following illustrates the use of each function in the <tt class="docutils literal"><span class="pre">stats</span></tt> module.</p>
+<blockquote>
 <pre class="literal-block">
-&gt; using gsl::sort;
-&gt; using namespace gsl;
-&gt; sort_vector {0,3,2,4,5};
-{0,2,3,4,5}
-&gt; sort_vector_index {0.0,1.0,5.0,2.0,8.0,0.0};
-{5,0,1,3,2,4}
+&gt; using gsl::stats;
+&gt; using namespace gsl::stats;
+&gt; mean {1,2,3,4,5};
+3.0
+&gt; variance {1,2,3,4,5};
+2.5
+&gt; variance_m {1,2,3,4,5}  4;
+3.75
+&gt; sd {1,2,3,4,5};
+1.58113883008419
+&gt; sd_m {1,2,3,4,5} 4;
+1.93649167310371
+&gt; tss {1,2,3,4,5};
+10.0
+&gt; tss_m {1,2,3,4,5} 4;
+15.0
+&gt; variance_with_fixed_mean {0.0,1.2,3.4,5.6,6.0} 4.1;
+6.314
+&gt; sd_with_fixed_mean {0.0,1.2,3.4,5.6,6.0} 4.1;
+2.51276739870606
+&gt; absdev {2,2,3,4,4};
+0.8
+&gt; absdev_m {2,2,3,4,4} 4;
+1.0
+&gt; skew {1,1,1,1,2,2,2,2,2,2,2,2,3,30};
+2.94796699504537
+&gt; skew_m_sd {1,2,2,3,3,3,3,3,3,3,4,4,5} 3 1;
+0.0
+&gt; kurtosis  {1,2,2,3,3,3,3,3,3,3,4,4,5};
+-0.230769230769231
+&gt; kurtosis_m_sd {1,2,2,3,3,3,3,3,3,3,4,4,5} 3 1;
+-0.230769230769231
+&gt; lag1_autocorrelation {1,2,3,4,5};
+0.4
+&gt; lag1_autocorrelation_m {1,2,3,4,5} 2.5;
+0.444444444444444
+&gt; covariance {1,2,3,4,5} {3.0,4.5,6.0,7.5,9.0};
+3.75
+&gt; covariance_m {1,2,3,4,5} {3.0,4.5,6.0,7.5,9.0} 3 6;
+3.75
+&gt; correlation {1,2,3,4} {2,3,4,5};
+1.0
+&gt; wmean {0.4,0.2,0.3,0.3,0.3} {2,3,4,5,6};
+3.93333333333333
+&gt; wvariance {0.4,0.2,0.3,0.3,0.3} {2,3,4,5,6};
+2.7752808988764
+&gt; wvariance_m {0.4,0.2,0.3,0.3,0.3} {2,3,4,5,6} 3.0;
+3.87640449438202
+&gt; wsd {0.4,0.2,0.3,0.3,0.3} {2,3,4,5,6};
+1.66591743459164
+&gt; wsd_m {0.4,0.2,0.3,0.3,0.3} {2,3,4,5,6} 3.0;
+1.96885867811329
+&gt; wvariance_with_fixed_mean {1,2,3,4} {1,2,3,4} 2.5;
+1.25
+&gt; wsd_with_fixed_mean {1,2,3,4} {1,2,3,4} 2.5;
+1.11803398874989
+&gt; wtss {1,1,2,2} {2,3,4,5};
+6.83333333333333
+&gt; wtss_m {1,1,2,2} {2,3,4,5} 3.1;
+10.06
+&gt; wabsdev {1,1,2,2} {2,3,4,5};
+0.888888888888889
+&gt; wabsdev_m {1,1,2,2} {2,3,4,5} 3.1;
+1.13333333333333
+&gt; wskew {1,1,2,2} {2,3,4,5};
+-0.299254338484713
+&gt; wskew_m_sd {1,1,2,2} {2,3,4,5} 3.1 1.2;
+1.33526234567901
+&gt; wkurtosis {1,1,2,2} {2,3,4,5};
+-1.96206512878137
+&gt; wkurtosis_m_sd {1,1,2,2} {2,3,4,5} 3.1 1.2;
+-0.681921939300412
+&gt; min {9,4,2,1,9};
+1
+&gt; max {9.1,4.2,2.6,1.1,9.2};
+9.2
+&gt; minmax {9.0,4.0,2.0,1.0,9.0};
+[1.0,9.0]
+&gt; min_index {9.1,4.2,2.6,1.1,9.2};
+3
+&gt; max_index {9,4,2,1,9};
+0
+&gt; minmax_index {9,4,2,1,0,9};
+[4,0]
+&gt; median_from_sorted_data {1.0,2.0,3.0};
+2.0
+&gt; quantile_from_sorted_data {1.0,2.0,3.0} 0.25;
+1.5
 </pre>
+</blockquote>
 <!--  -->
 </div>
 </div>
 <div class="section" id="random-number-distributions">
-<h1><a class="toc-backref" href="#id20">Random Number Distributions</a></h1>
+<h1><a class="toc-backref" href="#id18">Random Number Distributions</a></h1>
 <p>This module is loaded via the command <tt class="docutils literal"><span class="pre">using</span> <span class="pre">gsl::randist</span></tt> and provides
 Pure wrappers for the GSL random distribution routines found in Chapter
 19 of the GSL manual,</p>
@@ -649,7 +922,7 @@ probability densitity functions and <tt class="docutils literal"><span class="pr
 distribution functions. The two namespaces minimize typing of the
 prefixes <tt class="docutils literal"><span class="pre">gsl_ran_</span></tt> and <tt class="docutils literal"><span class="pre">gsl_cdf_</span></tt> respectively.</p>
 <div class="section" id="id5">
-<h2><a class="toc-backref" href="#id21">Routines</a></h2>
+<h2><a class="toc-backref" href="#id19">Routines</a></h2>
 <p>Some of the information for each function is copied from the GSL
 reference manual.</p>
 <a name="ugaussian_pdf"><dl class="docutils" id="ugaussian-pdf">
@@ -1155,7 +1428,7 @@ parameters <cite>p</cite>, <cite>n1</cite>, <cite>n2</cite>, and <cite>t</cite>.
 <!--  -->
 </div>
 <div class="section" id="id6">
-<h2><a class="toc-backref" href="#id22">Examples</a></h2>
+<h2><a class="toc-backref" href="#id20">Examples</a></h2>
 <p>The following illustrates the use of each function in the <tt class="docutils literal"><span class="pre">randist</span></tt> module.
 The pdf functions are illustrated first.</p>
 <blockquote>
@@ -1427,424 +1700,36 @@ The pdf functions are illustrated first.</p>
 <!--  -->
 </div>
 </div>
-<div class="section" id="statistics">
-<h1><a class="toc-backref" href="#id23">Statistics</a></h1>
-<p>This module is loaded via the command <tt class="docutils literal"><span class="pre">using</span> <span class="pre">gsl::stats</span></tt> and provides Pure
-wrappers for the GSL Statistics routines found in Chapter 20 of
-the GSL manual,</p>
-<p><a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/Statistics.html">http://www.gnu.org/software/gsl/manual/html_node/Statistics.html</a>.</p>
+<div class="section" id="sorting">
+<h1><a class="toc-backref" href="#id21">Sorting</a></h1>
+<p>This module is loaded via the command <tt class="docutils literal"><span class="pre">using</span> <span class="pre">gsl::sort</span></tt> and
+provides Pure wrappers for the GSL sorting
+routines found in Chapter 11 of the GSL manual,</p>
+<p><a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/Sorting.html">http://www.gnu.org/software/gsl/manual/html_node/Sorting.html</a>.</p>
 <div class="section" id="id7">
-<h2><a class="toc-backref" href="#id24">Routines</a></h2>
-<a name="mean"><dl class="docutils" id="mean">
-<dt><tt class="docutils literal"><span class="pre">mean</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
-<dd>calcualtes the mean of the dataset.</dd>
+<h2><a class="toc-backref" href="#id22">Routines</a></h2>
+<!-- sort_vector: -->
+<dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">sort_vector</span> <span class="pre">m::matrix</span></tt></dt>
+<dd>sorts the elements of the vector <tt class="docutils literal"><span class="pre">m</span></tt> into ascending numerical order.</dd>
 </dl>
-<a name="variance"><dl class="docutils" id="variance">
-<dt><tt class="docutils literal"><span class="pre">variance</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
-<dd>calcualtes the variance of the dataset.</dd>
-</dl>
-<a name="variance_m"><dl class="docutils" id="variance-m">
-<dt><tt class="docutils literal"><span class="pre">variance</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
-<dd>calcualtes the variance of the dataset relative to the given mean.</dd>
-</dl>
-<a name="sd"><dl class="docutils" id="sd">
-<dt><tt class="docutils literal"><span class="pre">sd</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
-<dd>calcualtes the standard deviation of the dataset.</dd>
-</dl>
-<a name="sd_m"><dl class="docutils" id="sd-m">
-<dt><tt class="docutils literal"><span class="pre">sd_m</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
-<dd>calcualtes the standard deviation of the dataset relative to the  given mean.</dd>
-</dl>
-<a name="tss"><dl class="docutils" id="tss">
-<dt><tt class="docutils literal"><span class="pre">tss</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
-<dd>returns the total sum of squares of the dataset.</dd>
-</dl>
-<a name="tss_m"><dl class="docutils" id="tss-m">
-<dt><tt class="docutils literal"><span class="pre">tss</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
-<dd>returns the total sum of squares of the dataset about the given mean.</dd>
-</dl>
-<a name="variance_with_fixed_mean"><dl class="docutils" id="variance-with-fixed-mean">
-<dt><tt class="docutils literal"><span class="pre">variance_with_fixed_mean</span> <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
-<dd>returns the total sum of squares of the dataset abount the population mean.</dd>
-</dl>
-<a name="sd_with_fixed_mean"><dl class="docutils" id="sd-with-fixed-mean">
-<dt><tt class="docutils literal"><span class="pre">sd_with_fixed_mean</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
-<dd>computes an unbiased estimate of the variance about the population mean.</dd>
-</dl>
-<a name="absdev"><dl class="docutils" id="absdev">
-<dt><tt class="docutils literal"><span class="pre">absdev</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
-<dd>computes the absolute deviation from the mean of the data.</dd>
-</dl>
-<a name="absdev_m"><dl class="docutils" id="absdev-m">
-<dt><tt class="docutils literal"><span class="pre">absdev_m</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
-<dd>computes the absolute deviation from the mean relative to the given mean.</dd>
-</dl>
-<a name="skew"><dl class="docutils" id="skew">
-<dt><tt class="docutils literal"><span class="pre">skew</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
-<dd>computes the skewness of the data.</dd>
-</dl>
-<a name="skew_m_sd"><dl class="docutils" id="skew-m-sd">
-<dt><tt class="docutils literal"><span class="pre">skew_m_sd</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span>&nbsp; <span class="pre">sd</span></tt></dt>
-<dd>computes the skewness of data using the given mean and standard deviation.</dd>
-<dt><tt class="docutils literal"><span class="pre">kurtosis</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
-<dd>computes the kurtosis of the data.</dd>
-</dl>
-<a name="kurtosis_m_sd"><dl class="docutils" id="kurtosis-m-sd">
-<dt><tt class="docutils literal"><span class="pre">kurtosis_m_sd</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span>&nbsp; <span class="pre">sd</span></tt></dt>
-<dd>computes the kurtosis of the dataset about the given mean and standard deviation.</dd>
-</dl>
-<a name="lag1_autocorrelation"><dl class="docutils" id="lag1-autocorrelation">
-<dt><tt class="docutils literal"><span class="pre">lag1_autocorrelation</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
-<dd>computes the lag-1 autocorrelation of the the data.</dd>
-</dl>
-<a name="lag1_autocorrelation_m"><dl class="docutils" id="lag1-autocorrelation-m">
-<dt><tt class="docutils literal"><span class="pre">lag1_autocorrelation_m</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
-<dd>computes the lag-1 autocorrelation of the the data about the given mean.</dd>
-</dl>
-<a name="covariance"><dl class="docutils" id="covariance">
-<dt><tt class="docutils literal"><span class="pre">covariance</span>&nbsp; <span class="pre">d1::matrix</span>&nbsp; <span class="pre">d2::matrix</span></tt></dt>
-<dd>computes the covariance of the datasests <tt class="docutils literal"><span class="pre">d1</span></tt> and <tt class="docutils literal"><span class="pre">d2</span></tt>.</dd>
-</dl>
-<a name="covariance_m"><dl class="docutils" id="covariance-m">
-<dt><tt class="docutils literal"><span class="pre">covariance_m</span>&nbsp; <span class="pre">d1::matrix</span>&nbsp; <span class="pre">d2::matrix</span>&nbsp; <span class="pre">mean1</span>&nbsp; <span class="pre">mean2</span></tt></dt>
-<dd>computes the covariance of the datasets <tt class="docutils literal"><span class="pre">d1</span></tt> with mean, <tt class="docutils literal"><span class="pre">mean1</span></tt>,
-and <tt class="docutils literal"><span class="pre">d2</span></tt> with mean, <tt class="docutils literal"><span class="pre">mean2</span></tt>.</dd>
-</dl>
-<a name="correlation"><dl class="docutils" id="correlation">
-<dt><tt class="docutils literal"><span class="pre">correlation</span>&nbsp; <span class="pre">d1::matrix</span>&nbsp; <span class="pre">d2::matrix</span></tt></dt>
-<dd>computes the Pearson correlation coefficient between the datasets
-<tt class="docutils literal"><span class="pre">d1</span></tt> and <tt class="docutils literal"><span class="pre">d2</span></tt>.</dd>
-</dl>
-<a name="wmean"><dl class="docutils" id="wmean">
-<dt><tt class="docutils literal"><span class="pre">wmean</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
-<dd>computes the weighted mean of the data.</dd>
-</dl>
-<a name="wvariance"><dl class="docutils" id="wvariance">
-<dt><tt class="docutils literal"><span class="pre">wvariance</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
-<dd>computes the weighted variance of data.</dd>
-</dl>
-<a name="wvariance_m"><dl class="docutils" id="wvariance-m">
-<dt><tt class="docutils literal"><span class="pre">wvariance_m</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
-<dd>computes the weighted variance of the data about the given mean.</dd>
-</dl>
-<a name="wsd"><dl class="docutils" id="wsd">
-<dt><tt class="docutils literal"><span class="pre">wsd</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
-<dd>computes the weighed standard deviation of the data.</dd>
-</dl>
-<a name="wsd_m"><dl class="docutils" id="wsd-m">
-<dt><tt class="docutils literal"><span class="pre">wsd_m</span>&nbsp; <span class="pre">weights::matrix</span>&nbsp; <span class="pre">m::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
-<dd>computes the weighed standard deviation of the data about the given mean.</dd>
-</dl>
-<a name="wvariance_with_fixed_mean"><dl class="docutils" id="wvariance-with-fixed-mean">
-<dt><tt class="docutils literal"><span class="pre">wvariance_with_fixed_mean</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
-<dd>computes the unbiased estimate of the variance of the weighted data
-about the given population mean.</dd>
-</dl>
-<a name="wsd_with_fixed_mean"><dl class="docutils" id="wsd-with-fixed-mean">
-<dt><tt class="docutils literal"><span class="pre">wsd_with_fixed_mean</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
-<dd>computes the unbiased estimate of the standard deviation of the
-weighted data about the given population mean.</dd>
-</dl>
-<a name="wtss"><dl class="docutils" id="wtss">
-<dt><tt class="docutils literal"><span class="pre">wtss</span>&nbsp; <span class="pre">weights::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
-<dd>returns the weighted total sum of squares of the weighted data.</dd>
-<dt><tt class="docutils literal"><span class="pre">wtss</span>&nbsp; <span class="pre">weights::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
-<dd>returns the weighted total sum of squares of the weighted data
-about the given population mean.</dd>
-</dl>
-<a name="wabsdev"><dl class="docutils" id="wabsdev">
-<dt><tt class="docutils literal"><span class="pre">wabsdev</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
-<dd>computes the weighted absolute deviation from the weighted mean of the
-data.</dd>
-</dl>
-<a name="wabsdev_m"><dl class="docutils" id="wabsdev-m">
-<dt><tt class="docutils literal"><span class="pre">wabsdev_m</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
-<dd>computes the weighted absolute deviation about the given mean.</dd>
-</dl>
-<a name="wskew"><dl class="docutils" id="wskew">
-<dt><tt class="docutils literal"><span class="pre">wskew</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
-<dd>computed the weighted skewness of the dataset data.</dd>
-</dl>
-<a name="wskew_m_sd"><dl class="docutils" id="wskew-m-sd">
-<dt><tt class="docutils literal"><span class="pre">wskew_m_sd</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span>&nbsp; <span class="pre">sd</span></tt></dt>
-<dd>computes the weighted skewness of the data using the given mean
-and standard deviation.</dd>
-</dl>
-<a name="wkurtosis"><dl class="docutils" id="wkurtosis">
-<dt><tt class="docutils literal"><span class="pre">wkurtosis</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
-<dd>computes the weighted kurtosis of the data.</dd>
-</dl>
-<a name="wkurtosis_m_sd"><dl class="docutils" id="wkurtosis-m-sd">
-<dt><tt class="docutils literal"><span class="pre">wkurtosis_m_sd</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
-<dd>computes the weighted kurtosis of the data about the given mean
-and standard deviation.</dd>
-</dl>
-<a name="max"><dl class="docutils" id="max">
-<dt><tt class="docutils literal"><span class="pre">max</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
-<dd>returns the maximum value of the data.</dd>
-</dl>
-<a name="min"><dl class="docutils" id="min">
-<dt><tt class="docutils literal"><span class="pre">min</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
-<dd>returns the minimum value of the data.</dd>
-</dl>
-<a name="minmax"><dl class="docutils" id="minmax">
-<dt><tt class="docutils literal"><span class="pre">minmax</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
-<dd>returns a list containing the minimum and maximum values of the data.</dd>
-</dl>
-<a name="min_index"><dl class="docutils" id="min-index">
-<dt><tt class="docutils literal"><span class="pre">min_index</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
-<dd>returns the index of minimum value of the data.</dd>
-</dl>
-<a name="max_index"><dl class="docutils" id="max-index">
-<dt><tt class="docutils literal"><span class="pre">max_index</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
-<dd>returns the index of maximum value of the data.</dd>
-</dl>
-<a name="minmax_index"><dl class="docutils" id="minmax-index">
-<dt><tt class="docutils literal"><span class="pre">minmax_index</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
-<dd>returns a list of the indexs of the minimum and maximum value of the data.</dd>
-</dl>
-<a name="median_from_sorted_data"><dl class="docutils" id="median-from-sorted-data">
-<dt><tt class="docutils literal"><span class="pre">median_from_sorted_data</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
-<dd>returns the median value of the data. Note that the data <cite>must</cite> be sorted.</dd>
-</dl>
-<a name="quantile_from_sorted_data"><dl class="docutils" id="quantile-from-sorted-data">
-<dt><tt class="docutils literal"><span class="pre">quantile_from_sorted_data</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">f::double</span></tt></dt>
-<dd>returns the quantile value of the data. Note that the data <cite>must</cite> be sorted.</dd>
+<a name="sort_vector_index"><dl class="docutils" id="sort-vector-index">
+<dt><tt class="docutils literal"><span class="pre">sort_vector_index</span> <span class="pre">m::matrix</span></tt></dt>
+<dd>returns the vector of indexes corresponding to the elements of a
+sorted array <tt class="docutils literal"><span class="pre">m</span></tt>. Note that sort_vector_index does not sort <tt class="docutils literal"><span class="pre">m</span></tt>.</dd>
 </dl>
 <!--  -->
 </div>
 <div class="section" id="id8">
-<h2><a class="toc-backref" href="#id25">Examples</a></h2>
-<p>The following illustrates the use of each function in the <tt class="docutils literal"><span class="pre">stats</span></tt> module.</p>
-<blockquote>
+<h2><a class="toc-backref" href="#id23">Examples</a></h2>
+<p>Usage of each library routine is illustrated below.</p>
 <pre class="literal-block">
-&gt; using gsl::stats;
-&gt; using namespace gsl::stats;
-&gt; mean {1,2,3,4,5};
-3.0
-&gt; variance {1,2,3,4,5};
-2.5
-&gt; variance_m {1,2,3,4,5}  4;
-3.75
-&gt; sd {1,2,3,4,5};
-1.58113883008419
-&gt; sd_m {1,2,3,4,5} 4;
-1.93649167310371
-&gt; tss {1,2,3,4,5};
-10.0
-&gt; tss_m {1,2,3,4,5} 4;
-15.0
-&gt; variance_with_fixed_mean {0.0,1.2,3.4,5.6,6.0} 4.1;
-6.314
-&gt; sd_with_fixed_mean {0.0,1.2,3.4,5.6,6.0} 4.1;
-2.51276739870606
-&gt; absdev {2,2,3,4,4};
-0.8
-&gt; absdev_m {2,2,3,4,4} 4;
-1.0
-&gt; skew {1,1,1,1,2,2,2,2,2,2,2,2,3,30};
-2.94796699504537
-&gt; skew_m_sd {1,2,2,3,3,3,3,3,3,3,4,4,5} 3 1;
-0.0
-&gt; kurtosis  {1,2,2,3,3,3,3,3,3,3,4,4,5};
--0.230769230769231
-&gt; kurtosis_m_sd {1,2,2,3,3,3,3,3,3,3,4,4,5} 3 1;
--0.230769230769231
-&gt; lag1_autocorrelation {1,2,3,4,5};
-0.4
-&gt; lag1_autocorrelation_m {1,2,3,4,5} 2.5;
-0.444444444444444
-&gt; covariance {1,2,3,4,5} {3.0,4.5,6.0,7.5,9.0};
-3.75
-&gt; covariance_m {1,2,3,4,5} {3.0,4.5,6.0,7.5,9.0} 3 6;
-3.75
-&gt; correlation {1,2,3,4} {2,3,4,5};
-1.0
-&gt; wmean {0.4,0.2,0.3,0.3,0.3} {2,3,4,5,6};
-3.93333333333333
-&gt; wvariance {0.4,0.2,0.3,0.3,0.3} {2,3,4,5,6};
-2.7752808988764
-&gt; wvariance_m {0.4,0.2,0.3,0.3,0.3} {2,3,4,5,6} 3.0;
-3.87640449438202
-&gt; wsd {0.4,0.2,0.3,0.3,0.3} {2,3,4,5,6};
-1.66591743459164
-&gt; wsd_m {0.4,0.2,0.3,0.3,0.3} {2,3,4,5,6} 3.0;
-1.96885867811329
-&gt; wvariance_with_fixed_mean {1,2,3,4} {1,2,3,4} 2.5;
-1.25
-&gt; wsd_with_fixed_mean {1,2,3,4} {1,2,3,4} 2.5;
-1.11803398874989
-&gt; wtss {1,1,2,2} {2,3,4,5};
-6.83333333333333
-&gt; wtss_m {1,1,2,2} {2,3,4,5} 3.1;
-10.06
-&gt; wabsdev {1,1,2,2} {2,3,4,5};
-0.888888888888889
-&gt; wabsdev_m {1,1,2,2} {2,3,4,5} 3.1;
-1.13333333333333
-&gt; wskew {1,1,2,2} {2,3,4,5};
--0.299254338484713
-&gt; wskew_m_sd {1,1,2,2} {2,3,4,5} 3.1 1.2;
-1.33526234567901
-&gt; wkurtosis {1,1,2,2} {2,3,4,5};
--1.96206512878137
-&gt; wkurtosis_m_sd {1,1,2,2} {2,3,4,5} 3.1 1.2;
--0.681921939300412
-&gt; min {9,4,2,1,9};
-1
-&gt; max {9.1,4.2,2.6,1.1,9.2};
-9.2
-&gt; minmax {9.0,4.0,2.0,1.0,9.0};
-[1.0,9.0]
-&gt; min_index {9.1,4.2,2.6,1.1,9.2};
-3
-&gt; max_index {9,4,2,1,9};
-0
-&gt; minmax_index {9,4,2,1,0,9};
-[4,0]
-&gt; median_from_sorted_data {1.0,2.0,3.0};
-2.0
-&gt; quantile_from_sorted_data {1.0,2.0,3.0} 0.25;
-1.5
-</pre>
-</blockquote>
-<!--  -->
-</div>
-</div>
-<div class="section" id="least-squares-fitting">
-<h1><a class="toc-backref" href="#id26">Least-Squares Fitting</a></h1>
-<p>This module is loaded via the command <tt class="docutils literal"><span class="pre">using</span> <span class="pre">gsl::fit</span></tt> and provides Pure
-wrappers for the GSL least-squares fitting routines found in Chapter 36 of
-the GSL manual,</p>
-<p><a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/Least_002dSquares-Fitting.htm">http://www.gnu.org/software/gsl/manual/html_node/Least_002dSquares-Fitting.htm</a>.</p>
-<div class="section" id="id9">
-<h2><a class="toc-backref" href="#id27">Routines</a></h2>
-<a name="linear"><dl class="docutils" id="linear">
-<dt><tt class="docutils literal"><span class="pre">linear</span>&nbsp; <span class="pre">x::matrix</span>&nbsp; <span class="pre">y::matrix</span></tt></dt>
-<dd><p class="first">performs a least-squares fit to a straight line model,</p>
-<p><tt class="docutils literal"><span class="pre">Y</span> <span class="pre">c</span> <span class="pre">x</span> <span class="pre">=</span> <span class="pre">c0</span> <span class="pre">+</span> <span class="pre">c1</span> <span class="pre">*</span> <span class="pre">x</span></tt>.</p>
-<p class="last">Results are given as the list <tt class="docutils literal"><span class="pre">[c0,</span> <span class="pre">c1,</span> <span class="pre">cov00,</span> <span class="pre">cov01,</span> <span class="pre">cov11,</span> <span class="pre">sumsq]</span></tt>
-where <tt class="docutils literal"><span class="pre">c0</span></tt> and <tt class="docutils literal"><span class="pre">c1</span></tt> are the coefficients and the errors on
-<cite>y</cite> are returned via the parameters <tt class="docutils literal"><span class="pre">cov00</span></tt>, <tt class="docutils literal"><span class="pre">cov01</span></tt>, and
-<tt class="docutils literal"><span class="pre">cov11</span></tt>. The sum of squares of the residuals is returned in
-<tt class="docutils literal"><span class="pre">sumsq</span></tt>.</p>
-</dd>
-</dl>
-<a name="wlinear"><dl class="docutils" id="wlinear">
-<dt><tt class="docutils literal"><span class="pre">wlinear</span>&nbsp; <span class="pre">x::matrix</span>&nbsp; <span class="pre">w::matrix</span>&nbsp; <span class="pre">y::matrix</span></tt></dt>
-<dd><p class="first">performs a least-squares fit to a straight line model with weighted
-datapoints <tt class="docutils literal"><span class="pre">w</span></tt>.</p>
-<p class="last">Results are given as the list <tt class="docutils literal"><span class="pre">[c0,</span> <span class="pre">c1,</span> <span class="pre">cov00,</span> <span class="pre">cov01,</span> <span class="pre">cov11,</span> <span class="pre">chisq]</span></tt>
-where <tt class="docutils literal"><span class="pre">c0</span></tt> and <tt class="docutils literal"><span class="pre">c1</span></tt> are the coefficients and the errors on
-<tt class="docutils literal"><span class="pre">y</span></tt> are returned via the parameters <tt class="docutils literal"><span class="pre">cov00</span></tt>, <tt class="docutils literal"><span class="pre">cov01</span></tt>, and
-<tt class="docutils literal"><span class="pre">cov11</span></tt>. The sum of squares of the residuals is returned in
-<tt class="docutils literal"><span class="pre">chisq</span></tt>.</p>
-</dd>
-</dl>
-<a name="linear_est"><dl class="docutils" id="linear-est">
-<dt><tt class="docutils literal"><span class="pre">linear_est</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">c0::double</span>&nbsp; <span class="pre">c1::double</span>&nbsp; <span class="pre">cov00::double</span>&nbsp; <span class="pre">cov01::double</span> <span class="pre">cov11::double</span></tt></dt>
-<dd><p class="first">compute the fitted function <tt class="docutils literal"><span class="pre">y</span></tt> and its standard deviation <tt class="docutils literal"><span class="pre">y_err</span></tt>
-at point <tt class="docutils literal"><span class="pre">x</span></tt>.</p>
-<p class="last">Results are given as the list <tt class="docutils literal"><span class="pre">[y,</span> <span class="pre">y_err]</span></tt>.</p>
-</dd>
-</dl>
-<a name="mul"><dl class="docutils" id="mul">
-<dt><tt class="docutils literal"><span class="pre">mul</span>&nbsp; <span class="pre">x::matrix</span>&nbsp; <span class="pre">y::matrix</span></tt></dt>
-<dd><p class="first">performs a least-squares fit to a straight line model,
-<tt class="docutils literal"><span class="pre">Y</span> <span class="pre">c</span> <span class="pre">x</span> <span class="pre">=</span> <span class="pre">c1</span> <span class="pre">*</span> <span class="pre">x</span></tt> without constant term <tt class="docutils literal"><span class="pre">c0</span></tt>.</p>
-<p class="last">Results are given as the list <tt class="docutils literal"><span class="pre">[c1,</span> <span class="pre">cov11,</span> <span class="pre">sumsq]</span></tt> where <tt class="docutils literal"><span class="pre">c1</span></tt>
-is the coefficient and the error on <tt class="docutils literal"><span class="pre">y</span></tt> is returned via the parameter
-<tt class="docutils literal"><span class="pre">cov11</span></tt>. The sum of squares of the residuals is returned in <tt class="docutils literal"><span class="pre">sumsq</span></tt>.</p>
-</dd>
-</dl>
-<a name="wmul"><dl class="docutils" id="wmul">
-<dt><tt class="docutils literal"><span class="pre">wmul</span>&nbsp; <span class="pre">x::matrix</span>&nbsp; <span class="pre">w::matrix</span>&nbsp; <span class="pre">y::matrix</span></tt></dt>
-<dd><p class="first">performs a least-squares fit to a straight line model with weighted
-datapoints <tt class="docutils literal"><span class="pre">w</span></tt>.</p>
-<p class="last">Results are given as the list <tt class="docutils literal"><span class="pre">[c1,</span> <span class="pre">cov11,</span> <span class="pre">sumsq]</span></tt> where <tt class="docutils literal"><span class="pre">c1</span></tt>
-is the coefficient and the error on <tt class="docutils literal"><span class="pre">y</span></tt> is returned via the parameter
-<tt class="docutils literal"><span class="pre">cov11</span></tt>. The sum of squares of the residuals is returned in <tt class="docutils literal"><span class="pre">sumsq</span></tt>.</p>
-</dd>
-</dl>
-<a name="mul_est"><dl class="docutils" id="mul-est">
-<dt><tt class="docutils literal"><span class="pre">mul_est</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">c1::double</span>&nbsp; <span class="pre">cov11::double</span></tt></dt>
-<dd><p class="first">compute the fitted function <tt class="docutils literal"><span class="pre">y</span></tt> and its standard deviation <tt class="docutils literal"><span class="pre">y_err</span></tt>
-at point <tt class="docutils literal"><span class="pre">x</span></tt>.</p>
-<p class="last">Results are given as the list <tt class="docutils literal"><span class="pre">[y,</span> <span class="pre">y_err]</span></tt>.</p>
-</dd>
-</dl>
-<!--  -->
-</div>
-<div class="section" id="id10">
-<h2><a class="toc-backref" href="#id28">Examples</a></h2>
-<p>Usage of each implemented library routine is illustrated below.</p>
-<pre class="literal-block">
-&gt; using gsl::fit;
-&gt; using namespace gsl::fit;
-</pre>
-<p>The equation for a least-squares line through the points (1,0.01),
-(2,1.11), (3,1.9), (4,2.85), and (5,4.01) may be calculated by ...</p>
-<pre class="literal-block">
-&gt; Y x = '(a + b * x)
-&gt; when
-&gt;   a:b:_ = linear {1,2,3,4,5} {0.01,1.11,1.9,2.85,4.01}
-&gt; end;
-&gt; Y x;
--0.946+0.974*x
-&gt; eval $ Y 2;
-1.002
-</pre>
-<p>The estimate of some y values and there standard error for at x = 1, 2,
-and 3 are ...</p>
-<pre class="literal-block">
-&gt; let c0:c1:cov00:cov01:cov11:_ = linear {1,2,3,4,5}
-&gt;   {0.01,1.11,1.9,2.85,4.01};
-&gt; linear_est 1 c0 c1 cov00 cov01 cov11;
-[0.028,0.0838570211729465]
-&gt; linear_est 2 c0 c1 cov00 cov01 cov11;
-[1.002,0.0592958683214944]
-&gt; linear_est 3 c0 c1 cov00 cov01 cov11;
-[1.976,0.0484148737476408]
-</pre>
-<p>The equation for a least-squares line through the points (1,0.01),
-(2,1.11), (3,1.9), (4,2.85), and (5,4.01) using weights 0.1, 0.2, 0.3,
-0.4, and 0.5 is calculated by ...</p>
-<pre class="literal-block">
-&gt; W x = '(a + b * x)
-&gt; when
-&gt;   a:b:_ = wlinear (matrix (1..5))
-&gt;           {0.1, 0.2, 0.3, 0.4, 0.5}
-&gt;           {0.01, 1.11, 1.9, 2.85, 4.01};
-&gt; end;
-&gt; W u;
--0.99+0.986*u
-&gt; eval $ W 2;
-0.982
-</pre>
-<p>The least-squares parameters for <tt class="docutils literal"><span class="pre">Y</span> <span class="pre">=</span> <span class="pre">c1</span> <span class="pre">*</span> <span class="pre">X</span></tt> without the constant
-term using the points (1,3), (2,5), and (3,7) is give below. The y-values
-and standard error about x = 1, 2, and 3 are also given.</p>
-<pre class="literal-block">
-&gt; let c1:cov11:sumsq:_ = mul {1,2,3} {3,5,7};
-&gt; mul_est 1 c1 cov11;
-[2.42857142857143,0.123717914826348]
-&gt; mul_est 2 c1 cov11;
-[4.85714285714286,0.247435829652697]
-&gt; mul_est 3 c1 cov11;
-[7.28571428571428,0.371153744479045]
-</pre>
-<p>The least-squares parameters for <tt class="docutils literal"><span class="pre">Y</span> <span class="pre">=</span> <span class="pre">c1</span> <span class="pre">*</span> <span class="pre">X</span></tt> without the constant
-term using the points (1,3), (2,5), and (3,7), the weights 0.4, 0.9, and
-0.4 is given below. The approximation of y-values and standard error about
-x = 1, 2, and 3 follows.</p>
-<pre class="literal-block">
-&gt; let c1:cov11:sumsq:_ = wmul {1,2,3} {0.4,0.9,0.4} {3,5,7};
-&gt; mul_est 1 c1 cov11;
-[2.44736842105263,0.362738125055006]
-&gt; mul_est 2 c1 cov11;
-[4.89473684210526,0.725476250110012]
-&gt; mul_est 3 c1 cov11;
-[7.34210526315789,1.08821437516502]
+&gt; using gsl::sort;
+&gt; using namespace gsl;
+&gt; sort_vector {0,3,2,4,5};
+{0,2,3,4,5}
+&gt; sort_vector_index {0.0,1.0,5.0,2.0,8.0,0.0};
+{5,0,1,3,2,4}
 </pre>
 </div>
 </div>
