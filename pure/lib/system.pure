@@ -51,7 +51,7 @@
    regex functions. After loading this module, see show -gcv * for a list of
    these. */
 
-namespace C;
+namespace __C;
 extern void pure_sys_vars(); pure_sys_vars;
 namespace;
 
@@ -122,15 +122,15 @@ extern void perror(char*), char* strerror(int);
 
 */
 
-namespace C;
+namespace __C;
 extern void* setlocale(int category, void* locale);
 namespace;
 
 setlocale category::int locale = cstring_dup res if ~null res when
   res = case locale of
-          _::string  = C::setlocale category $ sentry free $
+          _::string  = __C::setlocale category $ sentry free $
                        byte_cstring locale;
-          _::pointer = C::setlocale category locale if null locale;
+          _::pointer = __C::setlocale category locale if null locale;
           _          = pointer 0 otherwise;
         end;
 end;
@@ -371,7 +371,7 @@ extern int system(char* cmd), void exit(int status);
 
 */
 
-namespace C;
+namespace __C;
 extern FILE* fopen(char* name, char* mode);
 extern FILE* popen(char* cmd, char* mode);
 extern int fclose(FILE* fp), int pclose(FILE* fp);
@@ -390,20 +390,20 @@ extern int feof(FILE* fp), int ferror(FILE* fp);
    you can provide any desired error handling simply by adding suitable
    equations. */
 
-fopen name::string mode::string = sentry C::fclose fp if ~null fp
-when fp = C::fopen name mode end;
+fopen name::string mode::string = sentry __C::fclose fp if ~null fp
+when fp = __C::fopen name mode end;
 
-popen name::string mode::string = sentry C::pclose fp if ~null fp
-when fp = C::popen name mode end;
+popen name::string mode::string = sentry __C::pclose fp if ~null fp
+when fp = __C::popen name mode end;
 
-fclose fp::pointer = clear_sentry fp $$ C::fclose fp;
-pclose fp::pointer = clear_sentry fp $$ C::pclose fp;
+fclose fp::pointer = clear_sentry fp $$ __C::fclose fp;
+pclose fp::pointer = clear_sentry fp $$ __C::pclose fp;
 
 /* Pure wrappers for fgets and gets which handle the necessary buffering
    automatically. */
 
 fgets f::pointer = read_a_line f buf "" when buf = malloc 1024 end
-with read_a_line f buf t = check s when s = C::fgets buf 1024 f end
+with read_a_line f buf t = check s when s = __C::fgets buf 1024 f end
   with check s::string = return (t+s) if done s;
 		       = read_a_line f buf (t+s) otherwise;
        check s         = return s if null t;
@@ -419,7 +419,7 @@ when s = fgets stdin end;
 /* A variation of fgets which slurps in an entire text file at once. */
 
 fget f::pointer = read_a_file f buf "" when buf = malloc 0x10000 end
-with read_a_file f buf t = check s when s = C::fgets buf 0x10000 f end
+with read_a_file f buf t = check s when s = __C::fgets buf 0x10000 f end
   with check s::string = return (t+s) if feof f || ferror f;
 		       = read_a_file f buf (t+s) otherwise;
        check s         = return s if null t;
@@ -459,9 +459,9 @@ end;
 /* Since Pure cannot call C varargs functions directly, the runtime provides
    us with some functions which only process a single argument at a time. */
 
-using namespace C, system;
+using namespace __C, system;
 
-namespace C;
+namespace __C;
 extern int pure_fprintf(FILE *fp, char *format);
 extern int pure_fprintf_int(FILE *fp, char *format, int x);
 extern int pure_fprintf_double(FILE *fp, char *format, double x);
@@ -525,7 +525,7 @@ with
     else x;
 end;
 
-namespace C;
+namespace __C;
 extern int pure_snprintf(void *buf, int, char *format);
 extern int pure_snprintf_int(void *buf, int, char *format, int x);
 extern int pure_snprintf_double(void *buf, int, char *format, double x);
@@ -589,7 +589,7 @@ end;
      ``"g"`` etc. for these. However, the "assignment suppression" flag
      ``"*"`` *is* understood; the corresponding items will not be returned. */
 
-namespace C;
+namespace __C;
 extern int pure_fscanf(FILE *fp, char *format);
 extern int pure_fscanf_int(FILE *fp, char *format, int *x);
 extern int pure_fscanf_double(FILE *fp, char *format, double *x);
@@ -702,7 +702,7 @@ end;
 
 */
 
-namespace C;
+namespace __C;
 extern int pure_sscanf(char *buf, char *format);
 extern int pure_sscanf_int(char *buf, char *format, int *x);
 extern int pure_sscanf_double(char *buf, char *format, double *x);
@@ -798,12 +798,12 @@ using namespace;
 /* Note that we cannot simply use the C readline function directly in Pure
    since it would leak memory on the return value. */
 
-namespace C;
+namespace __C;
 extern void* readline(char* prompt);
 namespace;
 extern void add_history(char* s);
 
-readline prompt::string = cstring $ C::readline prompt;
+readline prompt::string = cstring $ __C::readline prompt;
 
 /* ..
 
@@ -860,7 +860,7 @@ extern expr *pure_readdir(char *name) = readdir;
 
 */
 
-namespace C;
+namespace __C;
 extern int fnmatch(char* pat, char* s, int flags);
 extern int glob(char* pat, int flags, void* errfunc, void* globptr);
 extern void globfree(void* globptr);
@@ -868,13 +868,14 @@ extern void globfree(void* globptr);
 extern expr* globlist(void* globptr);
 namespace;
 
-fnmatch pat::string s::string flags::int = C::fnmatch pat s flags == 0;
+fnmatch pat::string s::string flags::int = __C::fnmatch pat s flags == 0;
 
 glob pat::string flags::int = result
 when
-  globptr = calloc 1 GLOB_SIZE; result = C::glob pat flags (pointer 0) globptr;
-  result = if result==0 then C::globlist globptr else result;
-  _ = C::globfree globptr $$ free globptr;
+  globptr = calloc 1 GLOB_SIZE;
+  result = __C::glob pat flags (pointer 0) globptr;
+  result = if result==0 then __C::globlist globptr else result;
+  _ = __C::globfree globptr $$ free globptr;
 end;
 
 /* ..
@@ -886,9 +887,9 @@ end;
    difficult calling sequence, hence we provide a couple of rather elaborate
    high-level wrapper functions for use in Pure programs. */
 
-using namespace C;
+using namespace __C;
 
-namespace C;
+namespace __C;
 extern int regcomp(void* regptr, char* pat, int cflags);
 extern int regexec(void* regptr, char* s, int n, void* matches, int eflags);
 extern int regerror(int errcode, void* regptr, void* buf, int size);

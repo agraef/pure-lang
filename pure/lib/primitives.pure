@@ -19,7 +19,7 @@
    You should have received a copy of the GNU General Public License along
    with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
-using namespace C;
+using namespace __C;
 
 /* ..
 
@@ -482,7 +482,7 @@ extern int hash(expr*);
 
 /* Conversions between the different numeric and pointer types. */
 
-namespace C;
+namespace __C;
 extern expr* pure_intval(expr*), expr* pure_dblval(expr*),
   expr* pure_bigintval(expr*), expr* pure_pointerval(expr*);
 namespace;
@@ -629,7 +629,7 @@ quote x			= x;
 
 /* Bigint arithmetic. */
 
-namespace C;
+namespace __C;
 extern expr* bigint_neg(void*);
 extern expr* bigint_not(void*);
 extern expr* bigint_add(void*, void*);
@@ -731,7 +731,7 @@ x::double~=y::bigint	= x~=double y;
 /* The gcd and lcm functions from the GMP library. These return a bigint if at
    least one of the arguments is a bigint, a machine int otherwise. */
 
-namespace C;
+namespace __C;
 extern expr* bigint_gcd(void*, void*);
 extern expr* bigint_lcm(void*, void*);
 namespace;
@@ -751,7 +751,7 @@ lcm x::int y::int	= int (bigint_lcm (bigint x) (bigint y));
    always a bigint. Note that y must always be nonnegative here, but see
    math.pure which deals with the case y<0 using rational numbers. */
 
-namespace C;
+namespace __C;
 extern expr* bigint_pow(void*, int);
 namespace;
 
@@ -765,19 +765,19 @@ pow x::bigint y::int	= bigint_pow x y if y>=0;
 /* The ^ operator. Computes inexact powers for any combination of int, bigint
    and double operands. The result is always a double. */
 
-namespace C;
+namespace __C;
 extern double pow(double, double);
 namespace;
 
-x::double^y::double	= C::pow x y;
+x::double^y::double	= __C::pow x y;
 x::int^y::int		|
 x::bigint^y::bigint	|
 x::int^y::bigint	|
-x::bigint^y::int	= C::pow (double x) (double y);
+x::bigint^y::int	= __C::pow (double x) (double y);
 x::double^y::int	|
-x::double^y::bigint	= C::pow x (double y);
+x::double^y::bigint	= __C::pow x (double y);
 x::int^y::double	|
-x::bigint^y::double	= C::pow (double x) y;
+x::bigint^y::double	= __C::pow (double x) y;
 
 /* Pointer arithmetic. We do this using bigints, so that the code is portable
    to 64 bit systems. */
@@ -810,38 +810,38 @@ nanp x		= case x of x::double = ~(x==x); _ = 0 end;
 /* Some common special cases of finite arithmetic sequences are implemented
    here using the runtime for better performance. */
 
-namespace C;
+namespace __C;
 extern expr* pure_int_seq(int from, int to, int step);
 extern expr* pure_double_seq(double from, double to, double step);
 namespace;
 
-n::int..m::int		= C::pure_int_seq n m 1;
-n1::int:n2::int..m::int	= C::pure_int_seq n1 m (n2-n1) if n1~=n2;
+n::int..m::int		= __C::pure_int_seq n m 1;
+n1::int:n2::int..m::int	= __C::pure_int_seq n1 m (n2-n1) if n1~=n2;
 
-n::double..m::double	= C::pure_double_seq n m 1.0 if ~infp n && ~infp m;
-n::int..m::double	= C::pure_double_seq (double n) m 1.0 if ~infp m;
-n::double..m::int	= C::pure_double_seq n (double m) 1.0 if ~infp n;
+n::double..m::double	= __C::pure_double_seq n m 1.0 if ~infp n && ~infp m;
+n::int..m::double	= __C::pure_double_seq (double n) m 1.0 if ~infp m;
+n::double..m::int	= __C::pure_double_seq n (double m) 1.0 if ~infp n;
 
 n1::double:n2::double..m::double
-			= C::pure_double_seq n1 m (n2-n1)
+			= __C::pure_double_seq n1 m (n2-n1)
 			    if ~infp n1 && ~infp m && n1~=n2;
 n1::int:n2::double..m::double
-			= C::pure_double_seq (double n1) m (n2-n1)
+			= __C::pure_double_seq (double n1) m (n2-n1)
 			    if ~infp m && n1~=n2;
 n1::double:n2::int..m::double
-			= C::pure_double_seq n1 m (n2-n1)
+			= __C::pure_double_seq n1 m (n2-n1)
 			    if ~infp n1 && ~infp m && n1~=n2;
 n1::double:n2::double..m::int
-			= C::pure_double_seq n1 (double m) (n2-n1)
+			= __C::pure_double_seq n1 (double m) (n2-n1)
 			    if ~infp n1 && n1~=n2;
 n1::int:n2::int..m::double
-			= C::pure_double_seq (double n1) m (double (n2-n1))
+			= __C::pure_double_seq (double n1) m (double (n2-n1))
 			    if ~infp m && n1~=n2;
 n1::int:n2::double..m::int
-			= C::pure_double_seq (double n1) (double m) (n2-n1)
+			= __C::pure_double_seq (double n1) (double m) (n2-n1)
 			    if n1~=n2;
 n1::double:n2::int..m::int
-			= C::pure_double_seq n1 (double m) (n2-n1)
+			= __C::pure_double_seq n1 (double m) (n2-n1)
 			    if ~infp n1 && n1~=n2;
 
 /* ..
@@ -908,7 +908,7 @@ extern void free(void* ptr);
      ``put_double ptr x``, ``put_string ptr x``, ``put_pointer ptr x``
 */
 
-namespace C;
+namespace __C;
 extern int pointer_get_byte(void *ptr);
 extern int pointer_get_short(void *ptr);
 extern int pointer_get_int(void *ptr);
@@ -930,7 +930,7 @@ get_double x::pointer = pointer_get_double x;
 get_string x::pointer = pointer_get_string x;
 get_pointer x::pointer = pointer_get_pointer x;
 
-namespace C;
+namespace __C;
 extern void pointer_put_byte(void *ptr, int x); // IMPURE!
 extern void pointer_put_short(void *ptr, int x); // IMPURE!
 extern void pointer_put_int(void *ptr, int x); // IMPURE!
@@ -1073,7 +1073,7 @@ cookedp p = case p of
    reference into just a normal pointer object and renders it unusable as a
    reference. Doing this will also leak memory, so don't! */
 
-namespace C;
+namespace __C;
 extern expr* pure_new(expr*), expr* pure_expr_pointer();
 extern void pure_free(expr*);
 extern expr* pointer_get_expr(void*), void pointer_put_expr(void*, expr*);

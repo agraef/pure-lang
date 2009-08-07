@@ -18,7 +18,7 @@
    You should have received a copy of the GNU General Public License along
    with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
-using namespace C;
+using namespace __C;
 
 /* ..
 
@@ -229,7 +229,7 @@ using namespace C;
      expression, which is recompiled and then evaluated. Exceptions during
      evaluation are reported back to the caller. */
 
-namespace C;
+namespace __C;
 extern void* str(expr*) = pure_str;
 namespace;
 
@@ -296,7 +296,7 @@ extern expr* lastres() = ans;
 
 /* Convert between Unicode character codes and single character strings. */
 
-namespace C;
+namespace __C;
 extern expr* string_chr(int);
 extern expr* string_ord(void*);
 namespace;
@@ -342,7 +342,7 @@ a::string:b::string..c::string
      Convert a pointer ``s`` to a Pure string. Like above, but these functions
      take a copy of the string, leaving the original C string untouched. */
 
-namespace C;
+namespace __C;
 extern expr* pure_string(void* s);
 extern expr* pure_cstring(void* s);
 extern expr* pure_string_dup(void* s);
@@ -370,7 +370,7 @@ cstring_dup s::pointer	= pure_cstring_dup s;
      which can be used like a C ``char*``, and has to be freed explicitly by
      the caller when no longer needed. */
 
-namespace C;
+namespace __C;
 extern expr* pure_byte_string(void *s);
 extern expr* pure_byte_cstring(void *s);
 namespace;
@@ -460,7 +460,7 @@ c::string-d::string	= ord c-ord d if #c==1 && #d==1;
    string takes quadratic time; as a remedy, we also offer a linear-time
    operation to determine the list of all characters of a string in one go. */
 
-namespace C;
+namespace __C;
 extern bool string_null(void*);
 extern int string_size(void*);
 extern expr* string_concat(void*, void*);
@@ -482,7 +482,7 @@ chars s::string		= string_chars s if varp (:);
 
 /* Lexicographic string comparison. */
 
-namespace C;
+namespace __C;
 extern int strcmp(void*, void*);
 namespace;
 
@@ -495,7 +495,7 @@ x::string~=y::string	= strcmp x y ~= 0;
 
 /* Compute and find substrings of a string. */
 
-namespace C;
+namespace __C;
 extern expr* string_substr(void*, int, int);
 extern int string_index(void*, void*);
 namespace;
@@ -521,7 +521,7 @@ s::string!!ns		= case ns of
 
 /* Concatenate a list of strings. */
 
-namespace C;
+namespace __C;
 extern expr* string_concat_list(expr*);
 namespace;
 strcat xs		= string_concat_list xs if listp xs && all stringp xs;

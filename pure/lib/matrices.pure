@@ -18,7 +18,7 @@
    You should have received a copy of the GNU General Public License along
    with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
-using namespace C;
+using namespace __C;
 
 /* ..
 
@@ -158,7 +158,7 @@ x::matrix ~= y::matrix	= ~(x == y);
    rows or the number of columns is zero, or both. The null predicate checks
    for empty matrices. */
 
-namespace C;
+namespace __C;
 extern int matrix_size(expr *x), expr* matrix_dim(expr *x);
 namespace;
 
@@ -174,7 +174,7 @@ null x::matrix		= #x==0;
      details. There's little use for this value in Pure, but it may be needed
      when interfacing to C. */
 
-namespace C;
+namespace __C;
 extern int matrix_stride(expr *x);
 namespace;
 
@@ -188,7 +188,7 @@ stride x::matrix	= matrix_stride x;
    take only constant time, and an 'out_of_bounds' exception is thrown if an
    index falls outside the valid range. */
 
-namespace C;
+namespace __C;
 extern expr* matrix_elem_at(expr* x, int i);
 extern expr* matrix_elem_at2(expr* x, int i, int j);
 namespace;
@@ -236,7 +236,7 @@ x::matrix!!ns		= if all intp ns && packed x
 
 /* Extract rows and columns from a matrix. */
 
-namespace C;
+namespace __C;
 extern expr* matrix_slice(expr* x, int i1, int j1, int i2, int j2);
 namespace;
 
@@ -420,7 +420,7 @@ extern expr* matrix_supdiagm(expr* x, int k) = supdiagmat;
      operation, but requires that the elements already are of the appropriate
      type. */
 
-namespace C;
+namespace __C;
 extern expr* matrix_double(expr *x), expr* matrix_complex(expr *x),
   expr* matrix_int(expr *x), expr* matrix_symbolic(expr *x);
 namespace;
@@ -438,7 +438,7 @@ smatrix x		= y if matrixp y when y = matrix_symbolic x end;
      Extract the real and imaginary parts and compute the conjugate of a
      numeric matrix. */
 
-namespace C;
+namespace __C;
 extern expr* matrix_re(expr *x), expr* matrix_im(expr *x);
 extern expr* matrix_conj(expr *x);
 namespace;
@@ -480,7 +480,7 @@ packed x::matrix	= stride x==dim x!1;
      You can also redim a matrix to a given row size ``n``. In this case the
      row size must divide the total size of the matrix. */
 
-namespace C;
+namespace __C;
 extern expr* matrix_redim(expr* x, int n, int m);
 namespace;
 
@@ -507,7 +507,7 @@ colvector x::matrix	= redim (#x,1) x;
        > transpose {1,2,3;4,5,6};
        {1,4;2,5;3,6} */
 
-namespace C;
+namespace __C;
 extern expr* matrix_transpose(expr *x);
 namespace;
 
@@ -556,7 +556,7 @@ colmap f x@(_:_)	= colcat (map f x);
    columns of the input matrices (this is analogous to the truncation that
    happens when zip is applied to lists of different lengths). */
 
-namespace C;
+namespace __C;
 /* Optimized matrix functions, by Scott E. Dillard. These are *much* faster
    (usually 10 times or more) than doing conversions from/to lists and using
    the corresponding list functions. */
@@ -653,7 +653,7 @@ unzip3 x::matrix	= {u | u,_ = x},{v | _,v,_ = x},{w | _,_,w = x}
      use the |pack|_ function to place the data in contiguous storage, or use
      one of the matrix-pointer conversion routines below. */
 
-namespace C;
+namespace __C;
 extern expr* pure_pointerval(expr*);
 namespace;
 
@@ -684,7 +684,7 @@ pointer x::matrix	= pure_pointerval x;
 
 */
 
-namespace C;
+namespace __C;
 extern void* matrix_to_double_array(void* p, expr* x);
 extern void* matrix_to_float_array(void* p, expr* x);
 extern void* matrix_to_complex_array(void* p, expr* x);
@@ -735,7 +735,7 @@ byte_pointer p::pointer x::matrix
 
 */
 
-namespace C;
+namespace __C;
 extern expr* matrix_from_double_array(int n, int m, void* p);
 extern expr* matrix_from_float_array(int n, int m, void* p);
 extern expr* matrix_from_complex_array(int n, int m, void* p);
@@ -792,7 +792,7 @@ byte_matrix n::int p::pointer
 
 */
 
-namespace C;
+namespace __C;
 extern expr* matrix_from_double_array_nodup(int n, int m, void* p);
 extern expr* matrix_from_complex_array_nodup(int n, int m, void* p);
 extern expr* matrix_from_int_array_nodup(int n, int m, void* p);
