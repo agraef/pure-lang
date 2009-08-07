@@ -1,5 +1,7 @@
 2009-08-07  Albert Graef  <Dr.Graef@t-online.de>
 
+	* 0.26 release.
+
 	* lib/*.pure: Rename the 'C' namespace in various standard library
 	modules to '__C', to prevent potential clashes with type tags on
 	the variable 'C'.
@@ -29,11 +31,11 @@
 	number of precedence levels and rearranges a list of preparsed
 	primaries and operator symbols on the fly.
 
-	This has the nice side effect to simplify the Bison grammar
+	This has the nice side effect that it simplifies the Bison grammar
 	considerably. It also fixes various quirks due to parsing
 	conflicts and the messy symbol precedences in the old Bison
-	grammar. Error messages for syntax error in simple expressions are
-	now slightly more informative as well. Parsing speed hasn't
+	grammar. Error messages for syntax errors in simple expressions
+	are now slightly more informative as well. Parsing speed hasn't
 	suffered, AFAICT.
 
 	The parser still imposes a limit on the number of precedence
@@ -245,17 +247,6 @@
 	expression printer has no special support for printing sections
 	yet, the latter representations will be used for printing.)
 
-	This feature should be considered experimental. It introduces a
-	number of shift/reduce conflicts which are hopefully resolved
-	correctly, but there are still some issues due to the way the
-	parser handles unary operators. Specifically, a right section of
-	the form '(*x*2)' will never be parsed correctly, even if '*'
-	happens to be a right-associative operator. Due to some
-	ambiguities in the grammar the parser tries to parse this as
-	'((*x)*2)' and then bails out reporting that '*' is not a unary
-	operator. There is no easy cure for that behaviour, so parentheses
-	on the section operand are always required in such cases.
-
 	* interpreter.cc/hh: Add new mklsect/mkrsect operations for
 	constructing operator sections. mklsect is in fact just the same
 	as mkexpr, while mkrsect employs the 'flip' combinator to
@@ -348,7 +339,7 @@
 
 2009-06-21  Albert Graef  <Dr.Graef@t-online.de>
 
-	* configure.ac: Readded definition of the rdynamic flag which got
+	* configure.ac: Re-added definition of the rdynamic flag which got
 	lost somewhere along the way. Hence configure --disable-shared now
 	produces a working interpreter again. Reported by Sergej Winitzki.
 
