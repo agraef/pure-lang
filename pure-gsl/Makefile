@@ -84,7 +84,7 @@ distcheck: dist
 # Generate the documentation. This needs docutils.
 # Keep the files in order of the GSL manual Chapter order.
 
-sources = gsl.pure gsl/poly.pure gsl/fit.pure gsl/stats.pure gsl/randist.pure gsl/sort.pure
+sources = gsl.pure gsl/poly.pure gsl/sf.pure gsl/matrix.pure gsl/fit.pure gsl/stats.pure gsl/randist.pure gsl/sort.pure
 target = pure-gsl
 
 $(target).txt: $(sources)
