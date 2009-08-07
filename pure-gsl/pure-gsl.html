@@ -381,69 +381,54 @@ greatest GSL version is always available from
 <div class="section" id="polynomials">
 <h1><a class="toc-backref" href="#id18">Polynomials</a></h1>
 <p>This module provides Pure wrappers for the GSL polynomial routines. For
-details, see Chapter 6 of the GSL manual,
+detail about the routines, see Chapter 6 of the GSL manual,
 <a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/Polynomials.html">http://www.gnu.org/software/gsl/manual/html_node/Polynomials.html</a>.</p>
 <div class="section" id="routines">
 <h2><a class="toc-backref" href="#id19">Routines</a></h2>
 <p>Polynomials are represented by vectors (one row matrices).</p>
 <a name="eval"><p id="eval"><tt class="docutils literal"><span class="pre">eval</span>&nbsp; <span class="pre">c::matrix</span>&nbsp; <span class="pre">x</span></tt></p>
 <blockquote>
-<p>evaluates the polynomial</p>
-<p><tt class="docutils literal"><span class="pre">(c!0)+(c!1)x+(c!2)x^2+...+(c!(#c-1))x^(#c-1)</span></tt>.</p>
+<p>implements <tt class="docutils literal"><span class="pre">gsl_poly_eval</span></tt>, <tt class="docutils literal"><span class="pre">gsl_poly_complex_eval</span></tt>, and
+<tt class="docutils literal"><span class="pre">gsl_complex_poly_eval</span></tt> without the <tt class="docutils literal"><span class="pre">len</span></tt> parameter.</p>
 <p>GSL does not supply an integer routine for evaluating polynomials
 with <tt class="docutils literal"><span class="pre">int</span></tt> or  <tt class="docutils literal"><span class="pre">bigint</span></tt> coefficients. Therefore, an integer
-routine has been provided pure-gsl using the Chinese Remainder
+routine has been provided in pure-gsl using the Chinese Remainder
 Theorem.</p>
 </blockquote>
 <a name="dd_init"><p id="dd-init"><tt class="docutils literal"><span class="pre">dd_init</span>&nbsp; <span class="pre">x::matrix</span>&nbsp; <span class="pre">y::matrix</span></tt></p>
 <blockquote>
-<p>computes a divided-difference representation of the interpolating
-polynomial for the points</p>
-<p><tt class="docutils literal"><span class="pre">(x!0,</span> <span class="pre">y!0),</span> <span class="pre">(x!1,</span> <span class="pre">y!1),</span> <span class="pre">...,</span> <span class="pre">(x!(#x-1),</span> <span class="pre">y!(#x-1))</span></tt>.</p>
-</blockquote>
+implements <tt class="docutils literal"><span class="pre">gsl_poly_dd_init</span></tt> without the <tt class="docutils literal"><span class="pre">size</span></tt> parameter.</blockquote>
 <a name="dd_eval"><p id="dd-eval"><tt class="docutils literal"><span class="pre">dd_eval</span>&nbsp; <span class="pre">dd::matrix</span>&nbsp; <span class="pre">xa::matrix</span>&nbsp; <span class="pre">x::double</span></tt></p>
 <blockquote>
-evaluates the polynomial at point <tt class="docutils literal"><span class="pre">x</span></tt> and stores the result in
-divided-difference form in matrices <tt class="docutils literal"><span class="pre">dd</span></tt> and <tt class="docutils literal"><span class="pre">xa</span></tt>.</blockquote>
+implements <tt class="docutils literal"><span class="pre">gsl_poly_dd_eval</span></tt> without the <tt class="docutils literal"><span class="pre">size</span></tt> parameter.</blockquote>
 <a name="dd_talyor"><p id="dd-talyor"><tt class="docutils literal"><span class="pre">dd_taylor</span>&nbsp; <span class="pre">xp::double</span>&nbsp; <span class="pre">dd::matrix</span>&nbsp; <span class="pre">xa::matrix</span></tt></p>
 <blockquote>
-converts the divided-difference representation of a polynomial to a
-Taylor expansion where the divided-difference representation is supplied
-by the matrices <tt class="docutils literal"><span class="pre">dd</span></tt> and <tt class="docutils literal"><span class="pre">xa</span></tt> expanded about the point <tt class="docutils literal"><span class="pre">xp</span></tt>.</blockquote>
+implements <tt class="docutils literal"><span class="pre">gsl_poly_dd_taylor</span></tt> without the <tt class="docutils literal"><span class="pre">size</span></tt> and workspace
+<tt class="docutils literal"><span class="pre">w</span></tt> arguments.</blockquote>
 <a name="solve_quadratic"><p id="solve-quadratic"><tt class="docutils literal"><span class="pre">solve_quadratic</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span>&nbsp; <span class="pre">c</span></tt></p>
 <blockquote>
-<p>computes the real roots of the quadratic equation</p>
-<p><tt class="docutils literal"><span class="pre">a*x^2+b*x+c=0</span></tt>.</p>
-<p>This function returns a list with no root if the determinate is
-negative, one root if <tt class="docutils literal"><span class="pre">a</span> <span class="pre">==</span> <span class="pre">0</span></tt>, or two of roots otherwise.</p>
-</blockquote>
+implements <tt class="docutils literal"><span class="pre">gsl_poly_solve_quadratic</span></tt>.  This function returns a list
+of roots instead of passing them through the parameters <tt class="docutils literal"><span class="pre">x0</span></tt> and <tt class="docutils literal"><span class="pre">x1</span></tt>.</blockquote>
 <a name="complex_solve_quadratic"><p id="complex-solve-quadratic"><tt class="docutils literal"><span class="pre">complex_solve_quadratic</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span>&nbsp; <span class="pre">c</span></tt></p>
 <blockquote>
-<p>computes the complex roots of the quadratic equation</p>
-<p><tt class="docutils literal"><span class="pre">a*x^2+b*x+c=0</span></tt>.</p>
-<p>This function returns a list with one root if <tt class="docutils literal"><span class="pre">a</span> <span class="pre">==</span> <span class="pre">0</span></tt>, or a pair
-of roots sorted by real part and then img part.</p>
-</blockquote>
+implements <tt class="docutils literal"><span class="pre">gsl_poly_complex_solve_quadratic</span></tt>. This function returns
+a list of roots instead of passing trhough the parameters <tt class="docutils literal"><span class="pre">z0</span></tt> and
+<tt class="docutils literal"><span class="pre">z1</span></tt>.</blockquote>
 <a name="solve_cubic"><p id="solve-cubic"><tt class="docutils literal"><span class="pre">solve_cubic</span> <span class="pre">a</span>&nbsp; <span class="pre">b</span>&nbsp; <span class="pre">c</span></tt></p>
 <blockquote>
-<p>computes the real roots of the cubic equation</p>
-<p><tt class="docutils literal"><span class="pre">x^3+a*x^2+b*x+c=0</span></tt>.</p>
-<p>This function returns a list with exactly one or exactly three roots.</p>
-</blockquote>
+implements <tt class="docutils literal"><span class="pre">gsl_poly_solve_cubic</span></tt>. This function returns a list of
+roots instead of passing them through the parameters <tt class="docutils literal"><span class="pre">x0</span></tt>, <tt class="docutils literal"><span class="pre">x1</span></tt>, and
+<tt class="docutils literal"><span class="pre">x2</span></tt>.</blockquote>
 <a name="complex_colve_cubic"><p id="complex-colve-cubic"><tt class="docutils literal"><span class="pre">complex_solve_cubic</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span>&nbsp; <span class="pre">c</span></tt></p>
 <blockquote>
-<p>computes the complex roots of the cubic equation</p>
-<p><tt class="docutils literal"><span class="pre">x^3+a*x^2+b*x+c=0</span></tt>.</p>
-<p>This functions returns a list with three complex roots.</p>
-</blockquote>
+implments <tt class="docutils literal"><span class="pre">gsl_poly_complex_colve_cubic</span></tt>. This function returns a
+list of roots instead of passing them through the parameters <tt class="docutils literal"><span class="pre">z0</span></tt>,
+<tt class="docutils literal"><span class="pre">z1</span></tt>, and <tt class="docutils literal"><span class="pre">z2</span></tt>.</blockquote>
 <a name="complex_solve"><p id="complex-solve"><tt class="docutils literal"><span class="pre">complex_solve</span>&nbsp; <span class="pre">c::matrix</span></tt></p>
 <blockquote>
-<p>returns a list of the roots of the general polynomial</p>
-<p><tt class="docutils literal"><span class="pre">P(x)=(c!0)+(c!1)*x+(c!2)*x^2+(c!(#c-1))*x^(#c-1)</span></tt>.</p>
-<p>If the roots cannot be found, an empty list, <tt class="docutils literal"><span class="pre">[]</span></tt>, is returned. The
-user does not need to supply the GSL routines for creating and freeing a
-workspace as in the C programming language.</p>
-</blockquote>
+implements <tt class="docutils literal"><span class="pre">gsl_poly_complex_solve</span></tt> omitting the parametrs <tt class="docutils literal"><span class="pre">n</span></tt> and
+<tt class="docutils literal"><span class="pre">w</span></tt>. The GSL routines for creating and freeing the workspace are
+handled automatically.</blockquote>
 <!--  -->
 </div>
 <div class="section" id="examples">
@@ -909,8 +894,8 @@ the GSL manual,</p>
 <h2><a class="toc-backref" href="#id28">Routines</a></h2>
 <a name="linear"><p id="linear"><tt class="docutils literal"><span class="pre">linear</span>&nbsp; <span class="pre">x::matrix</span>&nbsp; <span class="pre">y::matrix</span></tt></p>
 <blockquote>
-<p>performs a least-squares fit to a straight line model,</p>
-<p><tt class="docutils literal"><span class="pre">Y</span> <span class="pre">c</span> <span class="pre">x</span> <span class="pre">=</span> <span class="pre">c0</span> <span class="pre">+</span> <span class="pre">c1</span> <span class="pre">*</span> <span class="pre">x</span></tt>.</p>
+<p>implements <tt class="docutils literal"><span class="pre">gsl_</span>
+<span class="pre">``Y</span> <span class="pre">c</span> <span class="pre">x</span> <span class="pre">=</span> <span class="pre">c0</span> <span class="pre">+</span> <span class="pre">c1</span> <span class="pre">*</span> <span class="pre">x</span></tt>.</p>
 <p>Results are given as the list <tt class="docutils literal"><span class="pre">[c0,</span> <span class="pre">c1,</span> <span class="pre">cov00,</span> <span class="pre">cov01,</span> <span class="pre">cov11,</span> <span class="pre">sumsq]</span></tt>
 where <tt class="docutils literal"><span class="pre">c0</span></tt> and <tt class="docutils literal"><span class="pre">c1</span></tt> are the coefficients of the equation and
 <tt class="docutils literal"><span class="pre">cov00</span></tt>, <tt class="docutils literal"><span class="pre">cov01</span></tt>, and <tt class="docutils literal"><span class="pre">cov11</span></tt> are the errors on <tt class="docutils literal"><span class="pre">y</span></tt>. The sum

@@ -25,7 +25,7 @@
    -----------
    
    This module provides Pure wrappers for the GSL polynomial routines. For
-   details, see Chapter 6 of the GSL manual,
+   detail about the routines, see Chapter 6 of the GSL manual,
    http://www.gnu.org/software/gsl/manual/html_node/Polynomials.html.
    
    Routines
@@ -49,15 +49,14 @@ public eval;
 
 /* .. _eval:
 
-   ``eval  c::matrix  x``
+   ``eval  c::matrix  x``  
      
-     evaluates the polynomial
-     
-     ``(c!0)+(c!1)x+(c!2)x^2+...+(c!(#c-1))x^(#c-1)``.
+     implements ``gsl_poly_eval``, ``gsl_poly_complex_eval``, and 
+     ``gsl_complex_poly_eval`` without the ``len`` parameter.
      
      GSL does not supply an integer routine for evaluating polynomials 
      with ``int`` or  ``bigint`` coefficients. Therefore, an integer 
-     routine has been provided pure-gsl using the Chinese Remainder 
+     routine has been provided in pure-gsl using the Chinese Remainder 
      Theorem.
 */
 
@@ -95,10 +94,7 @@ public
 
    ``dd_init  x::matrix  y::matrix``
      
-     computes a divided-difference representation of the interpolating
-     polynomial for the points
-   
-     ``(x!0, y!0), (x!1, y!1), ..., (x!(#x-1), y!(#x-1))``.
+     implements ``gsl_poly_dd_init`` without the ``size`` parameter.
 */
 
 dd_init  xa::matrix  ya::matrix
@@ -112,8 +108,7 @@ dd_init  xa::matrix  ya::matrix
 
    ``dd_eval  dd::matrix  xa::matrix  x::double``
      
-     evaluates the polynomial at point ``x`` and stores the result in
-     divided-difference form in matrices ``dd`` and ``xa``.
+     implements ``gsl_poly_dd_eval`` without the ``size`` parameter.
 */
 
 dd_eval  dd::matrix  xa::matrix  x
@@ -124,13 +119,13 @@ dd_eval  dd::matrix  xa::matrix  x
 
    ``dd_taylor  xp::double  dd::matrix  xa::matrix``
      
-     converts the divided-difference representation of a polynomial to a
-     Taylor expansion where the divided-difference representation is supplied
-     by the matrices ``dd`` and ``xa`` expanded about the point ``xp``.
+     implements ``gsl_poly_dd_taylor`` without the ``size`` and workspace
+     ``w`` arguments.
 */
 
 dd_taylor  xp  dd::matrix  xa::matrix
-  = gsl_poly_dd_taylor (pointer c) (double xp) (dmatrix dd) (dmatrix xa) (#xa) w
+  = gsl_poly_dd_taylor (pointer c) (double xp) (dmatrix dd) (dmatrix xa) (#xa)
+    w
     $$ c
     when
       w = dmatrix xa;
@@ -154,12 +149,8 @@ public
 
    ``solve_quadratic  a  b  c``
      
-     computes the real roots of the quadratic equation
-     
-     ``a*x^2+b*x+c=0``.
-     
-     This function returns a list with no root if the determinate is 
-     negative, one root if ``a == 0``, or two of roots otherwise.
+     implements ``gsl_poly_solve_quadratic``.  This function returns a list
+     of roots instead of passing them through the parameters ``x0`` and ``x1``.
 */
 
 solve_quadratic  a  b  c
@@ -170,12 +161,9 @@ solve_quadratic  a  b  c
 
    ``complex_solve_quadratic  a  b  c``
      
-     computes the complex roots of the quadratic equation
-     
-     ``a*x^2+b*x+c=0``.
-          
-     This function returns a list with one root if ``a == 0``, or a pair
-     of roots sorted by real part and then img part.
+     implements ``gsl_poly_complex_solve_quadratic``. This function returns
+     a list of roots instead of passing trhough the parameters ``z0`` and
+     ``z1``.
 */
 
 complex_solve_quadratic  a  b  c
@@ -186,11 +174,9 @@ complex_solve_quadratic  a  b  c
 
    ``solve_cubic a  b  c``
      
-     computes the real roots of the cubic equation
-     
-     ``x^3+a*x^2+b*x+c=0``.
-     
-     This function returns a list with exactly one or exactly three roots.
+     implements ``gsl_poly_solve_cubic``. This function returns a list of
+     roots instead of passing them through the parameters ``x0``, ``x1``, and
+     ``x2``.
 */
 
 solve_cubic  a  b  c
@@ -201,11 +187,9 @@ solve_cubic  a  b  c
 
    ``complex_solve_cubic  a  b  c``
      
-     computes the complex roots of the cubic equation
-     
-     ``x^3+a*x^2+b*x+c=0``.
-     
-     This functions returns a list with three complex roots.
+     implments ``gsl_poly_complex_colve_cubic``. This function returns a 
+     list of roots instead of passing them through the parameters ``z0``, 
+     ``z1``, and ``z2``.
 */
 
 complex_solve_cubic  a  b  c
@@ -220,13 +204,9 @@ public complex_solve;
    
    ``complex_solve  c::matrix``
      
-     returns a list of the roots of the general polynomial
-     
-     ``P(x)=(c!0)+(c!1)*x+(c!2)*x^2+(c!(#c-1))*x^(#c-1)``.
-     
-     If the roots cannot be found, an empty list, ``[]``, is returned. The
-     user does not need to supply the GSL routines for creating and freeing a
-     workspace as in the C programming language.
+     implements ``gsl_poly_complex_solve`` omitting the parametrs ``n`` and
+     ``w``. The GSL routines for creating and freeing the workspace are
+     handled automatically.
 */
 
 complex_solve  c::matrix
