@@ -1,0 +1,51 @@
+
+/* Symbolic evaluation example with local rule sets. */
+
+using dict;
+
+/* subst r x performs literal substitutions in an expression x. r is the list
+   of the substitutions (ground rewriting rules) to be applied, each given as
+   a pair u=>v. */
+
+subst r x = subst (hdict r) x with
+  subst r (x@_ y) = (subst r x) (subst r y);
+  subst r x::matrix = map (subst r) x;
+  subst r x = if member r x then r!x else x;
+end;
+
+/* rules r x lets you rewrite the expression x using local rules in a 'with'
+   clause, see the examples below. r is a list of substitutions involving the
+   head symbols of local rules which should be applied. These are substituted
+   into x, the local rules get applied, and the reverse substitutions are then
+   carried out to yield the final result. r may also just be a list of the
+   head symbols of the rules that you want to apply, which are mapped from/to
+   their global equivalents automatically. */
+
+rules r = subst s . subst r when
+  r = [x=>y | x=>y = map rule r; x~==y];
+  s = [y=>x | x=>y = r];
+end with
+  rule r@(x=>y) = r;
+  rule x = global x => x;
+  // This maps a local symbol to its global equivalent if possible.
+  global x = if null lasterr then y else x when y = eval (str x) end;
+end;
+
+/* Two rule sets showing the use of 'rules' to expand and factor terms. */
+
+expand = rules [(*)]
+with
+  (a+b)*c = a*c+b*c;
+  a*(b+c) = a*b+a*c;
+end;
+
+factor = rules [(+)]
+with
+  a*c+b*c1 = (a+b)*c if c===c1;
+  a*b+a1*c = a*(b+c) if a===a1;
+end;
+
+/* Usage example. */
+
+expand ((a+b)*2);
+factor (a*2+b*2);
