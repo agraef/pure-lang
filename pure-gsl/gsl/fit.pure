@@ -47,7 +47,7 @@ public
 private extern expr* wrap_gsl_fit_linear(double*, double*, size_t);
 private extern expr* wrap_gsl_fit_wlinear(double*, double*, double*, size_t);
 private extern expr* wrap_gsl_fit_linear_est(double, double, double, double,
-  double, double);
+					     double, double);
 
 public
   linear
@@ -57,31 +57,32 @@ public
 /* .. _linear:
 
    ``linear  x::matrix  y::matrix``
-     performs a least-squares fit to a straight line model,
-
+     
+     perform a least-squares fit to a straight line model,
+     
      ``Y c x = c0 + c1 * x``.
      
      Results are given as the list ``[c0, c1, cov00, cov01, cov11, sumsq]``
-     where ``c0`` and ``c1`` are the coefficients and the errors on 
-     `y` are returned via the parameters ``cov00``, ``cov01``, and 
-     ``cov11``. The sum of squares of the residuals is returned in 
-     ``sumsq``.
-   
+     where ``c0`` and ``c1`` are the coefficients of the equation and
+     ``cov00``, ``cov01``, and ``cov11`` are the errors on ``y``. The sum
+     of squares of the residuals is denoted by ``sumsq``.
+     
    .. _wlinear:
    
    ``wlinear  x::matrix  w::matrix  y::matrix``
-     performs a least-squares fit to a straight line model with weighted
+     
+     perform a least-squares fit to a straight line model with weighted
      datapoints ``w``.
      
      Results are given as the list ``[c0, c1, cov00, cov01, cov11, chisq]``
-     where ``c0`` and ``c1`` are the coefficients and the errors on 
-     ``y`` are returned via the parameters ``cov00``, ``cov01``, and 
-     ``cov11``. The sum of squares of the residuals is returned in 
-     ``chisq``.
+     where ``c0`` and ``c1`` are the coefficients of the equation and 
+     ``cov00``, ``cov01``, and ``cov11`` are the errors on ``y``. The sum
+     of squares of the residuals is denoted by ``chisq``.
      
    .. _linear_est:
    
    ``linear_est  x  c0::double  c1::double  cov00::double  cov01::double cov11::double``
+     
      compute the fitted function ``y`` and its standard deviation ``y_err``
      at point ``x``.
      
@@ -118,26 +119,29 @@ public
 /* .. _mul:
 
    ``mul  x::matrix  y::matrix``
-     performs a least-squares fit to a straight line model,
+     
+     perform a least-squares fit to a straight line model,
      ``Y c x = c1 * x`` without constant term ``c0``.
      
      Results are given as the list ``[c1, cov11, sumsq]`` where ``c1``
-     is the coefficient and the error on ``y`` is returned via the parameter
-     ``cov11``. The sum of squares of the residuals is returned in ``sumsq``.
+     is the coefficient and ``cov11`` is the error on ``y``. The sum of
+     squares of the residuals is denoted by ``sumsq``.
    
    .. _wmul:
    
    ``wmul  x::matrix  w::matrix  y::matrix``
-     performs a least-squares fit to a straight line model with weighted
+     
+     perform a least-squares fit to a straight line model with weighted
      datapoints ``w``.
      
      Results are given as the list ``[c1, cov11, sumsq]`` where ``c1``
      is the coefficient and the error on ``y`` is returned via the parameter
-     ``cov11``. The sum of squares of the residuals is returned in ``sumsq``.
+     ``cov11``. The sum of squares of the residuals is denoted by ``sumsq``.
      
    .. _mul_est:
    
    ``mul_est  x  c1::double  cov11::double``
+     
      compute the fitted function ``y`` and its standard deviation ``y_err``
      at point ``x``.
      
@@ -178,8 +182,8 @@ multifit_linear  x::matrix  y::matrix
      > using gsl::fit;
      > using namespace gsl::fit;
      
-   The equation for a least-squares line through the points (1,0.01),
-   (2,1.11), (3,1.9), (4,2.85), and (5,4.01) may be calculated by ...
+   The following code determines the equation for the least-squares line
+   through the points (1,0.01), (2,1.11), (3,1.9), (4,2.85), and (5,4.01).
    
    ::
      
@@ -192,8 +196,11 @@ multifit_linear  x::matrix  y::matrix
      > eval $ Y 2;
      1.002
      
-   The estimate of some y values and there standard error for at x = 1, 2,
-   and 3 are ...
+   The following code illustrates how to estimate y-values without
+   constructing an equation for the least-squares line determined by
+   the points {x1,x2,x3,...,xn}, {y1,y2,y3,...,yn}. Here we estimate
+   the y-value at x = 1, x = 2, and x = 3. Compare the output above at
+   x = 2 to the output at x = 2 below.
    
    ::
      
@@ -206,9 +213,9 @@ multifit_linear  x::matrix  y::matrix
      > linear_est 3 c0 c1 cov00 cov01 cov11;
      [1.976,0.0484148737476408]
 
-   The equation for a least-squares line through the points (1,0.01), 
+   Next, we determine a least-squares line through the points (1,0.01), 
    (2,1.11), (3,1.9), (4,2.85), and (5,4.01) using weights 0.1, 0.2, 0.3, 
-   0.4, and 0.5 is calculated by ...
+   0.4, and 0.5.
    
    ::
      
@@ -223,9 +230,9 @@ multifit_linear  x::matrix  y::matrix
      > eval $ W 2;
      0.982
      
-   The least-squares parameters for ``Y = c1 * X`` without the constant 
-   term using the points (1,3), (2,5), and (3,7) is give below. The y-values
-   and standard error about x = 1, 2, and 3 are also given.
+   The least-squares slope for ``Y = c1 * X`` using the points (1,3), 
+   (2,5), and (3,7) is calculated below. Also, the y-values and 
+   standard error about x = 1, 2, and 3 are given.
    
    ::
    
@@ -237,10 +244,10 @@ multifit_linear  x::matrix  y::matrix
      > mul_est 3 c1 cov11;
      [7.28571428571428,0.371153744479045]
      
-   The least-squares parameters for ``Y = c1 * X`` without the constant 
-   term using the points (1,3), (2,5), and (3,7), the weights 0.4, 0.9, and 
-   0.4 is given below. The approximation of y-values and standard error about 
-   x = 1, 2, and 3 follows.
+   The least-squares slope for ``Y = c1 * X`` using the points (1,3),
+   (2,5), and (3,7), and weights 0.4, 0.9, and 0.4 is calculated below. 
+   The approximation of y-values and standard error about x = 1, 2, and
+   3 follows.
 
    ::
    
