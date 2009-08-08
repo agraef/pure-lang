@@ -2430,7 +2430,7 @@ expr interpreter::subst(const env& vars, expr x, uint8_t idx)
 {
   if (x.is_null()) return x;
   if (x.astag() > 0)
-    throw err("error in expression (misplaced \"as\" pattern)");
+    throw err("error in expression (misplaced \"as\" pattern or type tag)");
   switch (x.tag()) {
   // constants:
   case EXPR::VAR:
