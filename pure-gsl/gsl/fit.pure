@@ -57,34 +57,24 @@ public
 
    ``linear  x::matrix  y::matrix``
      
-     implements ``gsl_     
-     ``Y c x = c0 + c1 * x``.
-     
-     Results are given as the list ``[c0, c1, cov00, cov01, cov11, sumsq]``
-     where ``c0`` and ``c1`` are the coefficients of the equation and
-     ``cov00``, ``cov01``, and ``cov11`` are the errors on ``y``. The sum
-     of squares of the residuals is denoted by ``sumsq``.
+     implements ``gsl_fit_linear`` without the ``xstride``, ``ystride``, 
+     and ``n`` parameters. Results are returned as a list 
+     ``[c0, c1, cov00, cov01, cov11, sumsq]``.
      
    .. _wlinear:
    
    ``wlinear  x::matrix  w::matrix  y::matrix``
      
-     performs a least-squares fit to a straight line model with weighted
-     datapoints ``w``.
-     
-     Results are given as the list ``[c0, c1, cov00, cov01, cov11, chisq]``
-     where ``c0`` and ``c1`` are the coefficients of the equation and 
-     ``cov00``, ``cov01``, and ``cov11`` are the errors on ``y``. The sum
-     of squares of the residuals is denoted by ``chisq``.
+     implements ``gsl_fit_wlinear`` without the ``xstride``, ``wstride``,
+     ``ystride``, and ``n`` parameters. Results are given as a list
+     ``[c0, c1, cov00, cov01, cov11, chisq]``.
      
    .. _linear_est:
    
    ``linear_est  x  c0::double  c1::double  cov00::double  cov01::double  cov11::double``
      
-     computes the fitted function ``y`` and its standard deviation ``y_err``
-     at point ``x``.
-     
-     Results are given as the list ``[y, y_err]``.
+     implements ``gsl_fit_linear_est``. Results are returned as a list
+     ``[y, y_err]``.
 */
 
 private validmatrixp;
@@ -118,32 +108,24 @@ public
 
    ``mul  x::matrix  y::matrix``
      
-     performs a least-squares fit to a straight line model,
-     ``Y c x = c1 * x`` without constant term ``c0``.
-     
-     Results are given as the list ``[c1, cov11, sumsq]`` where ``c1``
-     is the coefficient and ``cov11`` is the error on ``y``. The sum of
-     squares of the residuals is denoted by ``sumsq``.
+     implements ``gsl_fit_mul`` omitting the parameters ``xstride``, 
+     ``ystride``, and ``n``. Results are returned as a list 
+     ``[c1, cov11, sumsq]``.
    
    .. _wmul:
    
    ``wmul  x::matrix  w::matrix  y::matrix``
      
-     performs a least-squares fit to a straight line model with weighted
-     datapoints ``w``.
-     
-     Results are given as the list ``[c1, cov11, sumsq]`` where ``c1``
-     is the coefficient and the error on ``y`` is returned via the parameter
-     ``cov11``. The sum of squares of the residuals is denoted by ``sumsq``.
+     implements ``gsl_fit_wmul`` omitting the parametrs ``xstride``,
+     ``ystride``, and ``n``. Results are returned as a list 
+     ``[c1, cov11, sumsq]``.
      
    .. _mul_est:
    
    ``mul_est  x  c1::double  cov11::double``
      
-     computes the fitted function ``y`` and its standard deviation ``y_err``
-     at point ``x``.
-     
-     Results are given as the list ``[y, y_err]``.
+     implements ``gsl_fit_mul_est``. Results are returned as a list
+     ``[y, y_err]``.
 */
 
 mul  x::matrix  y::matrix

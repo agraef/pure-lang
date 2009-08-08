@@ -39,10 +39,11 @@
    
    Results for some of the functions are returned as a Pure list instead of 
    the ``gsl_sf_result`` or  ``gsl_sf_result_e10`` structures in C. In these
-   cases, the resulting list is one of the forms:
+   cases, the resulting list is one of the following forms.
    
-     ``[val, err]`` for the ``gsl_sf_result`` struct and
-     ``[val, err, e10]`` for ``gsl_sf_result_e10`` struct.
+     - ``[val, err]`` for the ``gsl_sf_result`` struct and
+     
+     - ``[val, err, e10]`` for the ``gsl_sf_result_e10`` struct.
 
    Routines
    ~~~~~~~~ */
@@ -73,37 +74,32 @@ public
   airy_Ai_scaled_e;
   
 /* .. _airy_Ai:
-      _airy_Ai_e:
-
-   ``airy_Ai x``
-     
-     computes the Airy function ``Ai x`` with a default ``GSL_PREC_DOUBLE``
-     accuracy.
    
-   ``airy_Ai (x, mode::int)``
+   ``airy_Ai  x``, ``airy_Ai  (x, mode::int)``
      
-     computes a double result of the Airy function ``Ai x`` with an accuracy 
-     specified by ``mode``.
+     implements ``gsl_sf_airy_Ai``. The first form computes the function with
+     ``mode = GSL_PREC_DOUBLE``.
+     
+   .. _airy_Ai_e:
    
-   ``airy_Ai_e x``
+   ``airy_Ai_e  x``, ``airy_Ai_e  (x, mode::int)``
      
-     computes the list ``[value, error]`` of the Airy function ``Ai x`` with
-     a default ``GSL_PREC_DOUBLE`` accuracy.
+     implements ``gsl_sf_airy_Ai_e``. The first form computes the function 
+     with ``mode = GSL_PREC_DOUBLE``.
      
-   ``airy_Ai_e (x, mode::int)``
-     
-     computes the list ``[value, error]`` of the Airy function ``Ai x`` with
-     an accuracy specified by ``mode``.
+   .. _airy_Ai_scaled:
    
-   ``airy_Ai_scaled x``
+   ``airy_Ai_scaled  x``, ``airy_Ai_scaled  (x, mode::int)``
      
-     compute a scaled version of the Airy function. See the GSL for more 
-     information.
-   
-   ``airy_Ai_scaled_e (x, mode::int)``
+     implements ``gsl_sf_airy_Ai_scaled``. The first form computes the
+     function with ``mode = GSL_PREC_DOUBLE``.
      
-     computes the list ``[value, error]`` of the Airy function ``Ai x`` with
-     an accuracy specified by ``mode``.
+   .. _airy_Ai_scaled_e:
+        
+   ``airy_Ai_scaled_e  x``, ``airy_Ai_scaled_e  (x, mode::int)``
+     
+     implements ``gsl_sf_airy_Ai_scaled_e``. The first form computes the
+     function with ``mode = GSL_PREC_DOUBLE``.
 */
 
 airy_Ai  (x, mode::int)
@@ -155,37 +151,32 @@ public
 
 /* .. _airy_Bi:
       _airy_Bi_e:
-
-   ``airy_Bi x``
+      
+   ``airy_Bi  x``, ``airy_Bi  (x, mode::int)``
      
-     computes the Airy function ``Bi x`` with a default ``GSL_PREC_DOUBLE`` 
-     accuracy.
+     implements ``gsl_sf_airy_Bi``. The first form computes the function with
+     ``mode = GSL_PREC_DOUBLE``.
+     
+   .. _airy_Bi_e:
    
-   ``airy_Bi (x, mode::int)``
+   ``airy_Bi_e  x``, ``airy_Bi_e  (x, mode::int)``
      
-     computes the Airy function ``Bi x`` with an accuracy specified by 
-     ``mode``.
+     implements ``gsl_sf_airy_Bi_e``. The first form computes the function 
+     with ``mode = GSL_PREC_DOUBLE``.
+     
+   .. _airy_Bi_scaled:
    
-   ``airy_Bi_e x``
+   ``airy_Bi_scaled  x``, ``airy_Bi_scaled  (x, mode::int)``
      
-     computes the list ``[value, error]`` of the Airy function ``Bi x`` with
-     a default ``GSL_PREC_DOUBLE`` accuracy.
+     implements ``gsl_sf_airy_Bi_scaled``. The first form computes the
+     function with ``mode = GSL_PREC_DOUBLE``.
      
-   ``airy_Bi_e (x, mode::int)``
+   .. _airy_Bi_scaled_e:
+        
+   ``airy_Bi_scaled_e  x``, ``airy_Bi_scaled_e  (x, mode::int)``
      
-     computes the list ``[value, error]`` of the Airy function ``Bi x`` with
-     an accuracy specified by ``mode``.
-   
-   ``airy_Bi_scaled x``
-     
-     compute a scaled version of the Airy function ``Bi x``. See the GSL 
-     for more information.
-   
-   ``airy_Bi_scaled_e (x, mode::int)``
-     
-     computes the list ``[value, error]`` of the Airy function ``Bi x``
-     with an accuracy specified by ``mode``.
-
+     implements ``gsl_sf_airy_Bi_scaled_e``. The first form computes the
+     function with ``mode = GSL_PREC_DOUBLE``.
 */
 
 airy_Bi  (x, mode::int)
@@ -207,19 +198,19 @@ airy_Bi_e  x
     end;
 
 airy_Bi_scaled  (x, mode::int)
-  = gsl_sf_airy_Ai_scaled (double x) mode;
+  = gsl_sf_airy_Bi_scaled (double x) mode;
 
 airy_Bi_scaled  x
-  = gsl_sf_airy_Ai_scaled (double x) GSL_PREC_DOUBLE;
+  = gsl_sf_airy_Bi_scaled (double x) GSL_PREC_DOUBLE;
 
 airy_Bi_scaled_e  (x, mode::int)
-  = gsl_sf_airy_Ai_scaled_e (double x) mode (pointer m) $$ list m
+  = gsl_sf_airy_Bi_scaled_e (double x) mode (pointer m) $$ list m
     when
       m = {0.0, 0.0};
     end;
 
 airy_Bi_scaled_e  x
-  = gsl_sf_airy_Ai_scaled_e (double x) GSL_PREC_DOUBLE (pointer m)
+  = gsl_sf_airy_Bi_scaled_e (double x) GSL_PREC_DOUBLE (pointer m)
     $$ list m
     when
       m = {0.0, 0.0};

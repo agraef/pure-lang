@@ -233,7 +233,8 @@ public
 /* .. _mean:
 
    ``mean  data::matrix``
-     calculates the mean of the data.
+     
+     implements ``gsl_stats_mean`` without ``stride`` and ``n`` arguments.
 */
 
 mean  data::matrix
@@ -242,7 +243,8 @@ mean  data::matrix
 /* .. _variance:
 
    ``variance  data::matrix``
-     calculates the variance of the data.
+     
+     implements ``gsl_stats_variance`` without ``stride`` and ``n`` arguments.
 */
 
 variance  data::matrix
@@ -252,7 +254,8 @@ variance  data::matrix
 
    ``variance  data::matrix  mean``
      
-     calculates the variance of the data relative to the given mean.
+     implements ``gsl_stats_variance_m`` without ``stride`` and ``n`` 
+     arguments.
 */
 
 variance_m  data::matrix  mean
@@ -262,7 +265,7 @@ variance_m  data::matrix  mean
 
    ``sd  data::matrix``
      
-     calculates the standard deviation of the data.
+     implements ``gsl_stats_sd`` without ``stride`` and ``n`` arguments.
 */
 
 sd  data::matrix
@@ -272,7 +275,7 @@ sd  data::matrix
 
    ``sd_m  data::matrix  mean``
      
-     calculates the standard deviation of the data relative to the given mean.
+     implements ``gsl_stats_sd_m`` without ``stride`` and ``n`` arguments.
 */
 
 sd_m  data::matrix  mean
@@ -282,7 +285,7 @@ sd_m  data::matrix  mean
 
    ``tss  data::matrix``
      
-     returns the total sum of squares of the data.
+     implements ``gsl_stats_tss`` without ``stride`` and ``n`` arguments.
 */
 
 tss  data::matrix
@@ -290,9 +293,10 @@ tss  data::matrix
 
 /* .. _tss_m:
 
-   ``tss  data::matrix  mean``
+   ``tss_m  data::matrix  mean``
      
-     returns the total sum of squares of the data about the given mean.
+     implements ``gsl_stats_tss_m`` without ``stride`` and ``n`` 
+     arguments.
 */
 
 tss_m  data::matrix  mean
@@ -302,8 +306,8 @@ tss_m  data::matrix  mean
 
    ``variance_with_fixed_mean  data::matrix  mean``
      
-     returns the total sum of squares of the data abount the population
-     mean.
+     implements ``gsl_stats_variance_with_fixed_mean`` without 
+     ``stride`` and ``n`` arguments.
 */
 
 variance_with_fixed_mean  data::matrix  mean
@@ -313,7 +317,8 @@ variance_with_fixed_mean  data::matrix  mean
 
    ``sd_with_fixed_mean  data::matrix  mean``
      
-     computes an unbiased estimate of the variance about the population mean.
+     implements ``gsl_stats_sd_with_fixed_mean`` without 
+     ``stride`` and ``n`` arguments.
 */
 
 sd_with_fixed_mean  data::matrix  mean
@@ -323,7 +328,8 @@ sd_with_fixed_mean  data::matrix  mean
 
    ``absdev  data::matrix``
      
-     computes the absolute deviation from the mean of the data.
+     implements ``gsl_stats_absdev`` without 
+     ``stride`` and ``n`` arguments.
 */
 
 absdev  data::matrix
@@ -333,8 +339,8 @@ absdev  data::matrix
 
    ``absdev_m  data::matrix  mean``
      
-     computes the absolute deviation from the mean relative to the given
-     mean.
+     implements ``gsl_stats_absdev_m`` without ``stride`` and
+     ``n`` arguments.
 */
 
 absdev_m  data::matrix  mean
@@ -344,7 +350,8 @@ absdev_m  data::matrix  mean
 
    ``skew  data::matrix  mean``
      
-     computes the skewness of the data about the mean.
+     implements ``gsl_stats_skew`` without ``stride`` and ``n``
+     arguments.
 */
 
 skew  data::matrix
@@ -354,18 +361,19 @@ skew  data::matrix
 
    ``skew_m_sd  data::matrix  mean  sd``
      
-     computes the skewness of data using the given mean and standard 
-     deviation.
+     implements ``gsl_stats_skew_m_sd`` without ``stride`` and
+     ``n`` arguments.
 */
 
 skew_m_sd  data::matrix  mean  sd
   = dapply1_dd gsl_stats_skew_m_sd data mean sd if sd >= 0.0;
 
-/* .. _skew:
+/* .. _kurtosis:
 
    ``kurtosis  data::matrix``
      
-     computes the kurtosis of the data.
+     implements ``gsl_stats_kurtosis`` without ``stride`` and
+     ``n`` arguments.
 */
 
 kurtosis  data::matrix
@@ -375,8 +383,8 @@ kurtosis  data::matrix
 
    ``kurtosis_m_sd  data::matrix  mean  sd``
      
-     computes the kurtosis of the data about the given mean and
-     standard deviation.
+     implements ``gsl_stats_kurtosis_m_sd`` without ``stride``
+     and ``n`` arguments.
 */
 
 kurtosis_m_sd  data::matrix  mean  sd
@@ -386,8 +394,8 @@ kurtosis_m_sd  data::matrix  mean  sd
 
    ``lag1_autocorrelation  data::matrix``
      
-     computes the lag-1 autocorrelation of the the data about the given
-     mean and standard deviation.
+     implements ``gsl_stats_lag1_autocorrelation`` without ``stride``
+     and ``n`` arguments.
 */
 
 lag1_autocorrelation  data::matrix
@@ -397,8 +405,8 @@ lag1_autocorrelation  data::matrix
 
    ``lag1_autocorrelation_m  data::matrix  mean``
      
-     computes the lag-1 autocorrelation of the the data about the given
-     mean.
+     implements ``gsl_stats_lag1_autocorrelation_m`` without 
+     ``stride`` and ``n`` arguments.
 */
 
 lag1_autocorrelation_m  data::matrix  mean
@@ -408,7 +416,8 @@ lag1_autocorrelation_m  data::matrix  mean
 
    ``covariance  d1::matrix  d2::matrix``
      
-     computes the covariance of the dataset ``d1`` and ``d2``.
+     implements ``gsl_stats_covariance`` without ``stride1``, 
+     ``stride2``, and ``n`` arguments.
 */
 
 covariance  d1::matrix  d2::matrix
@@ -418,8 +427,8 @@ covariance  d1::matrix  d2::matrix
 
    ``covariance_m  d1::matrix  d2::matrix  mean1  mean2``
      
-     computes the covariance of the dataset ``d1`` with mean, ``mean1``,
-     and ``d2`` with mean, ``mean2``.
+     implements ``gsl_stats_covariance_m`` without ``stride1``, 
+     ``stride2``, and ``n`` arguments.
 */
 
 covariance_m  d1::matrix  d2::matrix  mean1  mean2
@@ -429,8 +438,8 @@ covariance_m  d1::matrix  d2::matrix  mean1  mean2
 
    ``correlation  d1::matrix  d2::matrix``
      
-     computes the Pearson correlation coefficient between the dataset
-     ``d1`` and ``d2``.
+     implements ``gsl_stats_correlation`` without ``stride1``, 
+     ``stride2``, and ``n`` arguments.
 */
 
 correlation  d1::matrix  d2::matrix
@@ -440,7 +449,8 @@ correlation  d1::matrix  d2::matrix
 
    ``wmean  weight::matrix  data::matrix``
      
-     computes the weighted mean of the dataset ``weight`` and ``data``.
+     implements ``gsl_stats_wmean`` without ``stride`` 
+     and ``n`` arguments.
 */
 
 wmean  weight::matrix  data::matrix
@@ -450,7 +460,8 @@ wmean  weight::matrix  data::matrix
    
    ``wvariance  weight::matrix  data::matrix``
      
-     computes the weighted variance of the dataset ``weight`` and ``data``.
+     implements ``gsl_stats_wvariance`` without ``stride`` 
+     and ``n`` arguments.
 */
 
 wvariance  weight::matrix  data::matrix
@@ -460,7 +471,8 @@ wvariance  weight::matrix  data::matrix
 
    ``wvariance_m  weight::matrix  data::matrix  mean``
      
-     computes the weighted variance of the data about the given mean.
+     implements ``gsl_stats_wvariance_m`` without ``stride`` 
+     and ``n`` arguments.
 */
 
 wvariance_m  weight::matrix  data::matrix  mean
@@ -470,8 +482,8 @@ wvariance_m  weight::matrix  data::matrix  mean
 
    ``wsd  weight::matrix  data::matrix``
      
-     computes the weighed standard deviation of the dataset ``weight`` and
-     ``data``.
+     implements ``gsl_stats_wsd`` without ``stride`` and 
+     ``n`` arguments.
 */
 
 wsd  weight::matrix  data::matrix
@@ -481,8 +493,8 @@ wsd  weight::matrix  data::matrix
    
    ``wsd_m  weight::matrix  data::matrix  mean``
      
-     computes the weighed standard deviation of the dataset
-     ``weight`` and ``data`` about the given mean.
+     implements ``gsl_stats_wsd_m`` without ``stride`` and 
+     ``n`` arguments.
 */
 
 wsd_m  weight::matrix  data::matrix  mean
@@ -492,8 +504,8 @@ wsd_m  weight::matrix  data::matrix  mean
    
    ``wvariance_with_fixed_mean  weight::matrix  data::matrix  mean``
      
-     computes the unbiased estimate of the weighted variance of the
-     dataset ``weight`` and ``data`` about the given population mean.
+     implements ``gsl_stats_wvariance_with_fixed_mean`` without 
+     ``stride`` and ``n`` arguments.
 */
 
 wvariance_with_fixed_mean  weight::matrix  data::matrix  mean
@@ -503,8 +515,8 @@ wvariance_with_fixed_mean  weight::matrix  data::matrix  mean
    
    ``wsd_with_fixed_mean  weight::matrix  data::matrix  mean``
      
-     computes the unbiased estimate of the weighted standard deviation of
-     the dataset ``weight`` and ``data`` about the given population mean.
+     implements ``gsl_stats_wsd_with_fixed_mean`` without 
+     ``stride`` and ``n`` arguments.
 */
 
 wsd_with_fixed_mean  weight::matrix  data::matrix  mean
@@ -514,19 +526,19 @@ wsd_with_fixed_mean  weight::matrix  data::matrix  mean
    
    ``wtss  weight::matrix  data::matrix``
      
-     returns the weighted total sum of squares of the dataset ``weight``
-     and ``data``.
+     implements ``gsl_stats_wtss`` without ``stride`` and ``n``
+     arguments.
 */
 
 wtss  weight::matrix  data::matrix
   = dapply2 gsl_stats_wtss weight data;
 
-/* .. _wtss:
+/* .. _wtss_m:
    
-   ``wtss  weight::matrix  data::matrix  mean``
+   ``wtss_m  weight::matrix  data::matrix  mean``
      
-     returns the weighted total sum of squares of the dataset ``weight``
-     and ``data`` about the given population mean.
+     implements ``gsl_stats_wtss_m`` without ``stride`` and ``n``
+     arguments.
 */
 
 wtss_m  weights::matrix  data::matrix  mean
@@ -536,8 +548,8 @@ wtss_m  weights::matrix  data::matrix  mean
    
    ``wabsdev  weight::matrix  data::matrix``
      
-     computes the weighted absolute deviation from the dataset ``weight``
-     and ``data``.
+     implements ``gsl_stats_wabsdev`` without ``stride`` and ``n``
+     arguments.
 */
 
 wabsdev  weight::matrix  data::matrix
@@ -547,8 +559,8 @@ wabsdev  weight::matrix  data::matrix
    
    ``wabsdev_m  weight::matrix  data::matrix  mean``
      
-     computes the weighted absolute deviation from the dataset ``weight``
-     and ``data`` about the given mean.
+     implements ``gsl_stats_wabsdev_m`` without ``stride`` and ``n``
+     arguments.
 */
 
 wabsdev_m  weight::matrix  data::matrix  mean
@@ -558,7 +570,8 @@ wabsdev_m  weight::matrix  data::matrix  mean
    
    ``wskew  weight::matrix  data::matrix``
      
-     computes the weighted skewness of the dataset ``weight`` and ``data``.
+     implements ``gsl_stats_wskew`` without ``stride`` and ``n``
+     arguments.
 */
 
 wskew  weight::matrix  data::matrix
@@ -568,8 +581,8 @@ wskew  weight::matrix  data::matrix
    
    ``wskew_m_sd  weight::matrix  data::matrix  mean  sd``
      
-     computes the weighted skewness of the dataset ``weight`` and ``data``
-     using the given mean and standard deviation.
+     implements ``gsl_stats_wskew_m_sd`` without ``stride`` and 
+     ``n`` arguments.
 */
 
 wskew_m_sd  weight::matrix  data::matrix  mean  sd
@@ -579,7 +592,8 @@ wskew_m_sd  weight::matrix  data::matrix  mean  sd
    
    ``wkurtosis  weight::matrix  data::matrix``
      
-     computes the weighted kurtosis of the dataset ``weight`` and ``data``.
+     implements ``gsl_stats_wkurtosis`` without ``stride`` and 
+     ``n`` arguments.
 */
 
 wkurtosis  weight::matrix  data::matrix
@@ -589,8 +603,8 @@ wkurtosis  weight::matrix  data::matrix
    
    ``wkurtosis_m_sd  weight::matrix  data::matrix``
      
-     computes the weighted kurtosis of the dataset ``weight`` and ``data``
-     about the given mean and standard deviation.
+     implements ``gsl_stats_wkurtosis_m_sd`` without ``stride`` 
+     and ``n`` arguments.
 */
 
 wkurtosis_m_sd  weight::matrix  data::matrix mean sd
@@ -601,7 +615,8 @@ wkurtosis_m_sd  weight::matrix  data::matrix mean sd
    
    ``max  data::matrix``
      
-     returns the maximum value of the data.
+     implements ``gsl_stats_max`` without ``stride`` 
+     and ``n`` arguments.
 */
 
 max  data::matrix
@@ -612,7 +627,8 @@ max  data::matrix
    
    ``min  data::matrix``
      
-     returns the minimum value of the data.
+     implements ``gsl_stats_min`` without ``stride`` 
+     and ``n`` arguments.
 */
 
 min  data::matrix
@@ -623,7 +639,9 @@ min  data::matrix
    
    ``minmax  data::matrix``
      
-     returns a list containing the minimum and maximum values of the data.
+     implements ``gsl_stats_minmax`` without ``stride`` 
+     and ``n`` arguments. Results are returned as a list
+     ``[min, max]``.
 */
 
 minmax  data::matrix
@@ -634,7 +652,8 @@ minmax  data::matrix
    
    ``min_index  data::matrix``
      
-     returns the index of minimum value of the data.
+     implements ``gsl_stats_min_index`` without ``stride`` 
+     and ``n`` arguments.
 */
 
 min_index  data::matrix
@@ -645,7 +664,8 @@ min_index  data::matrix
    
    ``max_index  data::matrix``
      
-     returns the index of maximum value of the data.
+     implements ``gsl_stats_max_index`` without ``stride`` 
+     and ``n`` arguments.
 */
   
 max_index  data::matrix
@@ -656,8 +676,9 @@ max_index  data::matrix
    
    ``minmax_index  data::matrix``
      
-     returns a list ``[min_i, max_i]`` where ``min_i`` is the index of the
-     minimum value and ``max_i`` is the maximum value of the data.
+     implements ``gsl_stats_minmax_index`` without ``stride`` 
+     and ``n`` arguments. Results are returned as a list
+     ``[min_index, max_index]``.
 */
 
 minmax_index  data::matrix
@@ -668,7 +689,8 @@ minmax_index  data::matrix
    
    ``median_from_sorted_data  data::matrix``
      
-     returns the median value of the data. Note that the data `must` be sorted.
+     implements ``gsl_stats_median_from_sorted_data`` without
+     ``stride`` and ``n`` arguments.
 */
 
 median_from_sorted_data  data::matrix
@@ -678,8 +700,8 @@ median_from_sorted_data  data::matrix
    
    ``quantile_from_sorted_data  data::matrix  f::double``
      
-     returns the quantile value of the data. Note that the data `must` be 
-     sorted.
+     implements ``gsl_stats_quantile_from_sorted_data`` without
+     ``stride`` and ``n`` arguments.
 */
 
 quantile_from_sorted_data  data::matrix  f::double
@@ -693,94 +715,94 @@ quantile_from_sorted_data  data::matrix  f::double
    
    The following illustrates the use of each function in the ``stats`` module.
    
-     ::
-     
-       > using gsl::stats;
-       > using namespace gsl::stats;
-       > mean {1,2,3,4,5};
-       3.0
-       > variance {1,2,3,4,5};
-       2.5
-       > variance_m {1,2,3,4,5}  4;
-       3.75
-       > sd {1,2,3,4,5};
-       1.58113883008419
-       > sd_m {1,2,3,4,5} 4;
-       1.93649167310371
-       > tss {1,2,3,4,5};
-       10.0
-       > tss_m {1,2,3,4,5} 4;
-       15.0
-       > variance_with_fixed_mean {0.0,1.2,3.4,5.6,6.0} 4.1;
-       6.314
-       > sd_with_fixed_mean {0.0,1.2,3.4,5.6,6.0} 4.1;
-       2.51276739870606
-       > absdev {2,2,3,4,4};
-       0.8
-       > absdev_m {2,2,3,4,4} 4;
-       1.0
-       > skew {1,1,1,1,2,2,2,2,2,2,2,2,3,30};
-       2.94796699504537
-       > skew_m_sd {1,2,2,3,3,3,3,3,3,3,4,4,5} 3 1;
-       0.0
-       > kurtosis  {1,2,2,3,3,3,3,3,3,3,4,4,5};
-       -0.230769230769231
-       > kurtosis_m_sd {1,2,2,3,3,3,3,3,3,3,4,4,5} 3 1;
-       -0.230769230769231
-       > lag1_autocorrelation {1,2,3,4,5};
-       0.4
-       > lag1_autocorrelation_m {1,2,3,4,5} 2.5;
-       0.444444444444444
-       > covariance {1,2,3,4,5} {3.0,4.5,6.0,7.5,9.0};
-       3.75
-       > covariance_m {1,2,3,4,5} {3.0,4.5,6.0,7.5,9.0} 3 6;
-       3.75
-       > correlation {1,2,3,4} {2,3,4,5};
-       1.0
-       > wmean {0.4,0.2,0.3,0.3,0.3} {2,3,4,5,6};
-       3.93333333333333
-       > wvariance {0.4,0.2,0.3,0.3,0.3} {2,3,4,5,6};
-       2.7752808988764
-       > wvariance_m {0.4,0.2,0.3,0.3,0.3} {2,3,4,5,6} 3.0;
-       3.87640449438202
-       > wsd {0.4,0.2,0.3,0.3,0.3} {2,3,4,5,6};
-       1.66591743459164
-       > wsd_m {0.4,0.2,0.3,0.3,0.3} {2,3,4,5,6} 3.0;
-       1.96885867811329
-       > wvariance_with_fixed_mean {1,2,3,4} {1,2,3,4} 2.5;
-       1.25
-       > wsd_with_fixed_mean {1,2,3,4} {1,2,3,4} 2.5;
-       1.11803398874989
-       > wtss {1,1,2,2} {2,3,4,5};
-       6.83333333333333
-       > wtss_m {1,1,2,2} {2,3,4,5} 3.1;
-       10.06
-       > wabsdev {1,1,2,2} {2,3,4,5};
-       0.888888888888889
-       > wabsdev_m {1,1,2,2} {2,3,4,5} 3.1;
-       1.13333333333333
-       > wskew {1,1,2,2} {2,3,4,5};
-       -0.299254338484713
-       > wskew_m_sd {1,1,2,2} {2,3,4,5} 3.1 1.2;
-       1.33526234567901
-       > wkurtosis {1,1,2,2} {2,3,4,5};
-       -1.96206512878137
-       > wkurtosis_m_sd {1,1,2,2} {2,3,4,5} 3.1 1.2;
-       -0.681921939300412
-       > min {9,4,2,1,9};
-       1
-       > max {9.1,4.2,2.6,1.1,9.2};
-       9.2
-       > minmax {9.0,4.0,2.0,1.0,9.0};
-       [1.0,9.0]
-       > min_index {9.1,4.2,2.6,1.1,9.2};
-       3
-       > max_index {9,4,2,1,9};
-       0
-       > minmax_index {9,4,2,1,0,9};
-       [4,0]
-       > median_from_sorted_data {1.0,2.0,3.0};
-       2.0
-       > quantile_from_sorted_data {1.0,2.0,3.0} 0.25;
-       1.5
+   ::
+   
+     > using gsl::stats;
+     > using namespace gsl::stats;
+     > mean {1,2,3,4,5};
+     3.0
+     > variance {1,2,3,4,5};
+     2.5
+     > variance_m {1,2,3,4,5}  4;
+     3.75
+     > sd {1,2,3,4,5};
+     1.58113883008419
+     > sd_m {1,2,3,4,5} 4;
+     1.93649167310371
+     > tss {1,2,3,4,5};
+     10.0
+     > tss_m {1,2,3,4,5} 4;
+     15.0
+     > variance_with_fixed_mean {0.0,1.2,3.4,5.6,6.0} 4.1;
+     6.314
+     > sd_with_fixed_mean {0.0,1.2,3.4,5.6,6.0} 4.1;
+     2.51276739870606
+     > absdev {2,2,3,4,4};
+     0.8
+     > absdev_m {2,2,3,4,4} 4;
+     1.0
+     > skew {1,1,1,1,2,2,2,2,2,2,2,2,3,30};
+     2.94796699504537
+     > skew_m_sd {1,2,2,3,3,3,3,3,3,3,4,4,5} 3 1;
+     0.0
+     > kurtosis  {1,2,2,3,3,3,3,3,3,3,4,4,5};
+     -0.230769230769231
+     > kurtosis_m_sd {1,2,2,3,3,3,3,3,3,3,4,4,5} 3 1;
+     -0.230769230769231
+     > lag1_autocorrelation {1,2,3,4,5};
+     0.4
+     > lag1_autocorrelation_m {1,2,3,4,5} 2.5;
+     0.444444444444444
+     > covariance {1,2,3,4,5} {3.0,4.5,6.0,7.5,9.0};
+     3.75
+     > covariance_m {1,2,3,4,5} {3.0,4.5,6.0,7.5,9.0} 3 6;
+     3.75
+     > correlation {1,2,3,4} {2,3,4,5};
+     1.0
+     > wmean {0.4,0.2,0.3,0.3,0.3} {2,3,4,5,6};
+     3.93333333333333
+     > wvariance {0.4,0.2,0.3,0.3,0.3} {2,3,4,5,6};
+     2.7752808988764
+     > wvariance_m {0.4,0.2,0.3,0.3,0.3} {2,3,4,5,6} 3.0;
+     3.87640449438202
+     > wsd {0.4,0.2,0.3,0.3,0.3} {2,3,4,5,6};
+     1.66591743459164
+     > wsd_m {0.4,0.2,0.3,0.3,0.3} {2,3,4,5,6} 3.0;
+     1.96885867811329
+     > wvariance_with_fixed_mean {1,2,3,4} {1,2,3,4} 2.5;
+     1.25
+     > wsd_with_fixed_mean {1,2,3,4} {1,2,3,4} 2.5;
+     1.11803398874989
+     > wtss {1,1,2,2} {2,3,4,5};
+     6.83333333333333
+     > wtss_m {1,1,2,2} {2,3,4,5} 3.1;
+     10.06
+     > wabsdev {1,1,2,2} {2,3,4,5};
+     0.888888888888889
+     > wabsdev_m {1,1,2,2} {2,3,4,5} 3.1;
+     1.13333333333333
+     > wskew {1,1,2,2} {2,3,4,5};
+     -0.299254338484713
+     > wskew_m_sd {1,1,2,2} {2,3,4,5} 3.1 1.2;
+     1.33526234567901
+     > wkurtosis {1,1,2,2} {2,3,4,5};
+     -1.96206512878137
+     > wkurtosis_m_sd {1,1,2,2} {2,3,4,5} 3.1 1.2;
+     -0.681921939300412
+     > min {9,4,2,1,9};
+     1
+     > max {9.1,4.2,2.6,1.1,9.2};
+     9.2
+     > minmax {9.0,4.0,2.0,1.0,9.0};
+     [1.0,9.0]
+     > min_index {9.1,4.2,2.6,1.1,9.2};
+     3
+     > max_index {9,4,2,1,9};
+     0
+     > minmax_index {9,4,2,1,0,9};
+     [4,0]
+     > median_from_sorted_data {1.0,2.0,3.0};
+     2.0
+     > quantile_from_sorted_data {1.0,2.0,3.0} 0.25;
+     1.5
 */
