@@ -10,7 +10,7 @@
 
 /*
 :Author: David Goodger (goodger@python.org)
-:Id: $Id: html4css1.css 5631 2008-08-24 13:01:23Z goodger $
+:Id: $Id: html4css1.css 5951 2009-05-18 18:03:10Z milde $
 :Copyright: This stylesheet has been placed in the public domain.
 
 Default cascading style sheet for the HTML output of Docutils.
@@ -158,11 +158,32 @@ h2.subtitle {
 hr.docutils {
   width: 75% }
 
-img.align-left {
-  clear: left }
+img.align-left, .figure.align-left{
+  clear: left ;
+  float: left ;
+  margin-right: 1em }
 
-img.align-right {
-  clear: right }
+img.align-right, .figure.align-right {
+  clear: right ;
+  float: right ;
+  margin-left: 1em }
+
+.align-left {
+  text-align: left }
+
+.align-center {
+  clear: both ;
+  text-align: center }
+
+.align-right {
+  text-align: right }
+
+/* reset inner alignment in figures */
+div.align-right {
+  text-align: left }
+
+/* div.align-center * { */
+/*   text-align: left } */
 
 ol.simple, ul.simple {
   margin-bottom: 1em }
@@ -385,49 +406,58 @@ detail about the routines, see Chapter 6 of the GSL manual,</p>
 <p>Polynomials are represented by vectors (one row matrices).</p>
 <div class="section" id="routines">
 <h2><a class="toc-backref" href="#id19">Routines</a></h2>
-<a name="eval"><p id="eval"><tt class="docutils literal"><span class="pre">eval</span>&nbsp; <span class="pre">c::matrix</span>&nbsp; <span class="pre">x</span></tt></p>
-<blockquote>
-<p>implements <tt class="docutils literal"><span class="pre">gsl_poly_eval</span></tt>, <tt class="docutils literal"><span class="pre">gsl_poly_complex_eval</span></tt>, and
+<a name="eval"><dl class="docutils" id="eval">
+<dt><tt class="docutils literal"><span class="pre">eval</span>&nbsp; <span class="pre">c::matrix</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd><p class="first">implements <tt class="docutils literal"><span class="pre">gsl_poly_eval</span></tt>, <tt class="docutils literal"><span class="pre">gsl_poly_complex_eval</span></tt>, and
 <tt class="docutils literal"><span class="pre">gsl_complex_poly_eval</span></tt> without the <tt class="docutils literal"><span class="pre">len</span></tt> parameter.</p>
-<p>GSL does not supply an integer routine for evaluating polynomials
+<p class="last">GSL does not supply an integer routine for evaluating polynomials
 with <tt class="docutils literal"><span class="pre">int</span></tt> or  <tt class="docutils literal"><span class="pre">bigint</span></tt> coefficients. Therefore, an integer
 routine has been provided in pure-gsl using the Chinese Remainder
 Theorem.</p>
-</blockquote>
-<a name="dd_init"><p id="dd-init"><tt class="docutils literal"><span class="pre">dd_init</span>&nbsp; <span class="pre">x::matrix</span>&nbsp; <span class="pre">y::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_poly_dd_init</span></tt> without the <tt class="docutils literal"><span class="pre">size</span></tt> parameter.</blockquote>
-<a name="dd_eval"><p id="dd-eval"><tt class="docutils literal"><span class="pre">dd_eval</span>&nbsp; <span class="pre">dd::matrix</span>&nbsp; <span class="pre">xa::matrix</span>&nbsp; <span class="pre">x::double</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_poly_dd_eval</span></tt> without the <tt class="docutils literal"><span class="pre">size</span></tt> parameter.</blockquote>
-<a name="dd_talyor"><p id="dd-talyor"><tt class="docutils literal"><span class="pre">dd_taylor</span>&nbsp; <span class="pre">xp::double</span>&nbsp; <span class="pre">dd::matrix</span>&nbsp; <span class="pre">xa::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_poly_dd_taylor</span></tt> without the <tt class="docutils literal"><span class="pre">size</span></tt> and workspace
-<tt class="docutils literal"><span class="pre">w</span></tt> arguments.</blockquote>
-<a name="solve_quadratic"><p id="solve-quadratic"><tt class="docutils literal"><span class="pre">solve_quadratic</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span>&nbsp; <span class="pre">c</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_poly_solve_quadratic</span></tt>.  This function returns a list
-of roots instead of passing them through the parameters <tt class="docutils literal"><span class="pre">x0</span></tt> and <tt class="docutils literal"><span class="pre">x1</span></tt>.</blockquote>
-<a name="complex_solve_quadratic"><p id="complex-solve-quadratic"><tt class="docutils literal"><span class="pre">complex_solve_quadratic</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span>&nbsp; <span class="pre">c</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_poly_complex_solve_quadratic</span></tt>. This function returns
+</dd>
+</dl>
+<a name="dd_init"><dl class="docutils" id="dd-init">
+<dt><tt class="docutils literal"><span class="pre">dd_init</span>&nbsp; <span class="pre">x::matrix</span>&nbsp; <span class="pre">y::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_poly_dd_init</span></tt> without the <tt class="docutils literal"><span class="pre">size</span></tt> parameter.</dd>
+</dl>
+<a name="dd_eval"><dl class="docutils" id="dd-eval">
+<dt><tt class="docutils literal"><span class="pre">dd_eval</span>&nbsp; <span class="pre">dd::matrix</span>&nbsp; <span class="pre">xa::matrix</span>&nbsp; <span class="pre">x::double</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_poly_dd_eval</span></tt> without the <tt class="docutils literal"><span class="pre">size</span></tt> parameter.</dd>
+</dl>
+<a name="dd_talyor"><dl class="docutils" id="dd-talyor">
+<dt><tt class="docutils literal"><span class="pre">dd_taylor</span>&nbsp; <span class="pre">xp::double</span>&nbsp; <span class="pre">dd::matrix</span>&nbsp; <span class="pre">xa::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_poly_dd_taylor</span></tt> without the <tt class="docutils literal"><span class="pre">size</span></tt> and workspace
+<tt class="docutils literal"><span class="pre">w</span></tt> arguments.</dd>
+</dl>
+<a name="solve_quadratic"><dl class="docutils" id="solve-quadratic">
+<dt><tt class="docutils literal"><span class="pre">solve_quadratic</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span>&nbsp; <span class="pre">c</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_poly_solve_quadratic</span></tt>.  This function returns a list
+of roots instead of passing them through the parameters <tt class="docutils literal"><span class="pre">x0</span></tt> and <tt class="docutils literal"><span class="pre">x1</span></tt>.</dd>
+</dl>
+<a name="complex_solve_quadratic"><dl class="docutils" id="complex-solve-quadratic">
+<dt><tt class="docutils literal"><span class="pre">complex_solve_quadratic</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span>&nbsp; <span class="pre">c</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_poly_complex_solve_quadratic</span></tt>. This function returns
 a list of roots instead of passing trhough the parameters <tt class="docutils literal"><span class="pre">z0</span></tt> and
-<tt class="docutils literal"><span class="pre">z1</span></tt>.</blockquote>
-<a name="solve_cubic"><p id="solve-cubic"><tt class="docutils literal"><span class="pre">solve_cubic</span> <span class="pre">a</span>&nbsp; <span class="pre">b</span>&nbsp; <span class="pre">c</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_poly_solve_cubic</span></tt>. This function returns a list of
+<tt class="docutils literal"><span class="pre">z1</span></tt>.</dd>
+</dl>
+<a name="solve_cubic"><dl class="docutils" id="solve-cubic">
+<dt><tt class="docutils literal"><span class="pre">solve_cubic</span> <span class="pre">a</span>&nbsp; <span class="pre">b</span>&nbsp; <span class="pre">c</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_poly_solve_cubic</span></tt>. This function returns a list of
 roots instead of passing them through the parameters <tt class="docutils literal"><span class="pre">x0</span></tt>, <tt class="docutils literal"><span class="pre">x1</span></tt>, and
-<tt class="docutils literal"><span class="pre">x2</span></tt>.</blockquote>
-<a name="complex_colve_cubic"><p id="complex-colve-cubic"><tt class="docutils literal"><span class="pre">complex_solve_cubic</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span>&nbsp; <span class="pre">c</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_poly_complex_colve_cubic</span></tt>. This function returns a
+<tt class="docutils literal"><span class="pre">x2</span></tt>.</dd>
+</dl>
+<a name="complex_colve_cubic"><dl class="docutils" id="complex-colve-cubic">
+<dt><tt class="docutils literal"><span class="pre">complex_solve_cubic</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span>&nbsp; <span class="pre">c</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_poly_complex_colve_cubic</span></tt>. This function returns a
 list of roots instead of passing them through the parameters <tt class="docutils literal"><span class="pre">z0</span></tt>,
-<tt class="docutils literal"><span class="pre">z1</span></tt>, and <tt class="docutils literal"><span class="pre">z2</span></tt>.</blockquote>
-<a name="complex_solve"><p id="complex-solve"><tt class="docutils literal"><span class="pre">complex_solve</span>&nbsp; <span class="pre">c::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_poly_complex_solve</span></tt> omitting the parametrs <tt class="docutils literal"><span class="pre">n</span></tt> and
+<tt class="docutils literal"><span class="pre">z1</span></tt>, and <tt class="docutils literal"><span class="pre">z2</span></tt>.</dd>
+</dl>
+<a name="complex_solve"><dl class="docutils" id="complex-solve">
+<dt><tt class="docutils literal"><span class="pre">complex_solve</span>&nbsp; <span class="pre">c::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_poly_complex_solve</span></tt> omitting the parametrs <tt class="docutils literal"><span class="pre">n</span></tt> and
 <tt class="docutils literal"><span class="pre">w</span></tt>. The GSL routines for creating and freeing the workspace are
-handled automatically.</blockquote>
+handled automatically.</dd>
+</dl>
 <!--  -->
 </div>
 <div class="section" id="examples">
@@ -499,38 +529,46 @@ cases, the resulting list is one of the following forms.</p>
 </blockquote>
 <div class="section" id="id1">
 <h2><a class="toc-backref" href="#id22">Routines</a></h2>
-<a name="airy_Ai"><p id="airy-ai"><tt class="docutils literal"><span class="pre">airy_Ai</span>&nbsp; <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">airy_Ai</span>&nbsp; <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_Ai</span></tt>. The first form computes the function with
-<tt class="docutils literal"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">GSL_PREC_DOUBLE</span></tt>.</blockquote>
-<a name="airy_Ai_e"><p id="airy-ai-e"><tt class="docutils literal"><span class="pre">airy_Ai_e</span>&nbsp; <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">airy_Ai_e</span>&nbsp; <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_Ai_e</span></tt>. The first form computes the function
-with <tt class="docutils literal"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">GSL_PREC_DOUBLE</span></tt>.</blockquote>
-<a name="airy_Ai_scaled"><p id="airy-ai-scaled"><tt class="docutils literal"><span class="pre">airy_Ai_scaled</span>&nbsp; <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">airy_Ai_scaled</span>&nbsp; <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_Ai_scaled</span></tt>. The first form computes the
-function with <tt class="docutils literal"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">GSL_PREC_DOUBLE</span></tt>.</blockquote>
-<a name="airy_Ai_scaled_e"><p id="airy-ai-scaled-e"><tt class="docutils literal"><span class="pre">airy_Ai_scaled_e</span>&nbsp; <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">airy_Ai_scaled_e</span>&nbsp; <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_Ai_scaled_e</span></tt>. The first form computes the
-function with <tt class="docutils literal"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">GSL_PREC_DOUBLE</span></tt>.</blockquote>
-<a name="airy_Bi"><p><tt class="docutils literal"><span class="pre">airy_Bi</span>&nbsp; <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">airy_Bi</span>&nbsp; <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_Bi</span></tt>. The first form computes the function with
-<tt class="docutils literal"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">GSL_PREC_DOUBLE</span></tt>.</blockquote>
-<a name="airy_Bi_e"><p id="airy-bi-e"><tt class="docutils literal"><span class="pre">airy_Bi_e</span>&nbsp; <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">airy_Bi_e</span>&nbsp; <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_Bi_e</span></tt>. The first form computes the function
-with <tt class="docutils literal"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">GSL_PREC_DOUBLE</span></tt>.</blockquote>
-<a name="airy_Bi_scaled"><p id="airy-bi-scaled"><tt class="docutils literal"><span class="pre">airy_Bi_scaled</span>&nbsp; <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">airy_Bi_scaled</span>&nbsp; <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_Bi_scaled</span></tt>. The first form computes the
-function with <tt class="docutils literal"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">GSL_PREC_DOUBLE</span></tt>.</blockquote>
-<a name="airy_Bi_scaled_e"><p id="airy-bi-scaled-e"><tt class="docutils literal"><span class="pre">airy_Bi_scaled_e</span>&nbsp; <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">airy_Bi_scaled_e</span>&nbsp; <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_Bi_scaled_e</span></tt>. The first form computes the
-function with <tt class="docutils literal"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">GSL_PREC_DOUBLE</span></tt>.</blockquote>
+<a name="airy_Ai"><dl class="docutils" id="airy-ai">
+<dt><tt class="docutils literal"><span class="pre">airy_Ai</span> <span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">airy_Ai</span> <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_Ai</span></tt>. The first form computes the function with
+<tt class="docutils literal"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">GSL_PREC_DOUBLE</span></tt>.</dd>
+</dl>
+<a name="airy_Ai_e"><dl class="docutils" id="airy-ai-e">
+<dt><tt class="docutils literal"><span class="pre">airy_Ai_e</span> <span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">airy_Ai_e</span> <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_Ai_e</span></tt>. The first form computes the function
+with <tt class="docutils literal"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">GSL_PREC_DOUBLE</span></tt>.</dd>
+</dl>
+<a name="airy_Ai_scaled"><dl class="docutils" id="airy-ai-scaled">
+<dt><tt class="docutils literal"><span class="pre">airy_Ai_scaled</span> <span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">airy_Ai_scaled</span> <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_Ai_scaled</span></tt>. The first form computes the
+function with <tt class="docutils literal"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">GSL_PREC_DOUBLE</span></tt>.</dd>
+</dl>
+<a name="airy_Ai_scaled_e"><dl class="docutils" id="airy-ai-scaled-e">
+<dt><tt class="docutils literal"><span class="pre">airy_Ai_scaled_e</span> <span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">airy_Ai_scaled_e</span> <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_Ai_scaled_e</span></tt>. The first form computes the
+function with <tt class="docutils literal"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">GSL_PREC_DOUBLE</span></tt>.</dd>
+</dl>
+<a name="airy_Bi: _airy_Bi_e"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">airy_Bi</span> <span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">airy_Bi</span> <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_Bi</span></tt>. The first form computes the function with
+<tt class="docutils literal"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">GSL_PREC_DOUBLE</span></tt>.</dd>
+</dl>
+<a name="airy_Bi_e"><dl class="docutils" id="airy-bi-e">
+<dt><tt class="docutils literal"><span class="pre">airy_Bi_e</span> <span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">airy_Bi_e</span> <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_Bi_e</span></tt>. The first form computes the function
+with <tt class="docutils literal"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">GSL_PREC_DOUBLE</span></tt>.</dd>
+</dl>
+<a name="airy_Bi_scaled"><dl class="docutils" id="airy-bi-scaled">
+<dt><tt class="docutils literal"><span class="pre">airy_Bi_scaled</span> <span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">airy_Bi_scaled</span> <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_Bi_scaled</span></tt>. The first form computes the
+function with <tt class="docutils literal"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">GSL_PREC_DOUBLE</span></tt>.</dd>
+</dl>
+<a name="airy_Bi_scaled_e"><dl class="docutils" id="airy-bi-scaled-e">
+<dt><tt class="docutils literal"><span class="pre">airy_Bi_scaled_e</span> <span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">airy_Bi_scaled_e</span> <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_Bi_scaled_e</span></tt>. The first form computes the
+function with <tt class="docutils literal"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">GSL_PREC_DOUBLE</span></tt>.</dd>
+</dl>
 <!--  -->
 </div>
 <div class="section" id="id2">
@@ -587,130 +625,121 @@ be found at</p>
 <p>The following operations are defined for constant <tt class="docutils literal"><span class="pre">a</span></tt> and matrixces
 <tt class="docutils literal"><span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">y</span></tt>. Some operators are not defined in the GSL library but
 are provided here for convenience.</p>
-<a name="+"><p id="id3"><tt class="docutils literal"><span class="pre">a</span> <span class="pre">+</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">x</span> <span class="pre">+</span> <span class="pre">a</span></tt></p>
-<blockquote>
-returns a matrix with entries <tt class="docutils literal"><span class="pre">a</span> <span class="pre">+</span> <span class="pre">x!(i,j)</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">x</span> <span class="pre">+</span> <span class="pre">y</span></tt></p>
-<blockquote>
-adds matrix <tt class="docutils literal"><span class="pre">x</span></tt> to matrix <tt class="docutils literal"><span class="pre">y</span></tt>.</blockquote>
-<a name="\-"><p id="id4"><tt class="docutils literal"><span class="pre">-</span> <span class="pre">x</span></tt></p>
-<blockquote>
-returns a matrix with entries <tt class="docutils literal"><span class="pre">-</span> <span class="pre">x!(i,j)</span></tt>. Note that <tt class="docutils literal"><span class="pre">neg</span> <span class="pre">x</span></tt> is
-equivalent to <tt class="docutils literal"><span class="pre">-</span> <span class="pre">x</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">a</span> <span class="pre">-</span> <span class="pre">x</span></tt></p>
-<blockquote>
-returns a matrix with entries <tt class="docutils literal"><span class="pre">a</span> <span class="pre">-</span> <span class="pre">x!(i,j)</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">x</span> <span class="pre">-</span> <span class="pre">a</span></tt></p>
-<blockquote>
-returns a matrix with entries <tt class="docutils literal"><span class="pre">x!(i,j)</span> <span class="pre">-</span> <span class="pre">a</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">x</span> <span class="pre">-</span> <span class="pre">y</span></tt></p>
-<blockquote>
-subtracts matrix <tt class="docutils literal"><span class="pre">y</span></tt> from matrix <tt class="docutils literal"><span class="pre">x</span></tt>.</blockquote>
-<a name="*: _.*"><p><tt class="docutils literal"><span class="pre">a</span> <span class="pre">*</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">x</span> <span class="pre">*</span> <span class="pre">a</span></tt></p>
-<blockquote>
-returns a matrix with entries <tt class="docutils literal"><span class="pre">a</span> <span class="pre">*</span> <span class="pre">x!(i,j)</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">x</span> <span class="pre">.*</span> <span class="pre">y</span></tt></p>
-<blockquote>
-multiplies, element-wise, matrix <tt class="docutils literal"><span class="pre">x</span></tt> to matrix <tt class="docutils literal"><span class="pre">y</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">x</span> <span class="pre">*</span> <span class="pre">y</span></tt></p>
-<blockquote>
-multiplies matrix <tt class="docutils literal"><span class="pre">x</span></tt> to matrix <tt class="docutils literal"><span class="pre">y</span></tt>.</blockquote>
-<a name="/: _: _ ./"><p><tt class="docutils literal"><span class="pre">a</span> <span class="pre">/</span> <span class="pre">x</span></tt></p>
-<blockquote>
-returns a matrix with entries <tt class="docutils literal"><span class="pre">a</span> <span class="pre">/</span> <span class="pre">x!(i,j)</span></tt>. Note that matrix <tt class="docutils literal"><span class="pre">x</span></tt>
-must not have any zero entries.</blockquote>
-<p><tt class="docutils literal"><span class="pre">x</span> <span class="pre">/</span> <span class="pre">a</span></tt></p>
-<blockquote>
-returns a matrix with entries <tt class="docutils literal"><span class="pre">x!(i,j)</span> <span class="pre">/</span> <span class="pre">a</span></tt>. Note that <tt class="docutils literal"><span class="pre">a</span></tt> must be
-nonzero.</blockquote>
-<p><tt class="docutils literal"><span class="pre">x</span> <span class="pre">./</span> <span class="pre">y</span></tt></p>
-<blockquote>
-divides, element-wise, matrix <cite>x</cite> by matrix <cite>y</cite>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">x</span> <span class="pre">/</span> <span class="pre">y</span></tt></p>
-<blockquote>
-right divides matrix <cite>x</cite> by matrix <cite>y</cite>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">x</span> <span class="pre">\\</span> <span class="pre">y</span></tt></p>
-<blockquote>
-left divides matrix <cite>x</cite> by matrix <cite>y</cite>.</blockquote>
-<a name="div"><p id="div"><tt class="docutils literal"><span class="pre">a</span> <span class="pre">div</span> <span class="pre">x</span></tt></p>
-<blockquote>
-returns an integer matrix with entries <tt class="docutils literal"><span class="pre">a</span> <span class="pre">div</span> <span class="pre">x!(i,j)</span></tt>. Note that
+<a name="+"><dl class="docutils" id="id3">
+<dt><tt class="docutils literal"><span class="pre">a</span> <span class="pre">+</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">x</span> <span class="pre">+</span> <span class="pre">a</span></tt></dt>
+<dd>returns a matrix with entries <tt class="docutils literal"><span class="pre">a</span> <span class="pre">+</span> <span class="pre">x!(i,j)</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">x</span> <span class="pre">+</span> <span class="pre">y</span></tt></dt>
+<dd>adds matrix <tt class="docutils literal"><span class="pre">x</span></tt> to matrix <tt class="docutils literal"><span class="pre">y</span></tt>.</dd>
+</dl>
+<a name="\-"><dl class="docutils" id="id4">
+<dt><tt class="docutils literal"><span class="pre">-</span> <span class="pre">x</span></tt></dt>
+<dd>returns a matrix with entries <tt class="docutils literal"><span class="pre">-</span> <span class="pre">x!(i,j)</span></tt>. Note that <tt class="docutils literal"><span class="pre">neg</span> <span class="pre">x</span></tt> is
+equivalent to <tt class="docutils literal"><span class="pre">-</span> <span class="pre">x</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">a</span> <span class="pre">-</span> <span class="pre">x</span></tt></dt>
+<dd>returns a matrix with entries <tt class="docutils literal"><span class="pre">a</span> <span class="pre">-</span> <span class="pre">x!(i,j)</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">x</span> <span class="pre">-</span> <span class="pre">a</span></tt></dt>
+<dd>returns a matrix with entries <tt class="docutils literal"><span class="pre">x!(i,j)</span> <span class="pre">-</span> <span class="pre">a</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">x</span> <span class="pre">-</span> <span class="pre">y</span></tt></dt>
+<dd>subtracts matrix <tt class="docutils literal"><span class="pre">y</span></tt> from matrix <tt class="docutils literal"><span class="pre">x</span></tt>.</dd>
+</dl>
+<a name="*: _.*"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">a</span> <span class="pre">*</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">x</span> <span class="pre">*</span> <span class="pre">a</span></tt></dt>
+<dd>returns a matrix with entries <tt class="docutils literal"><span class="pre">a</span> <span class="pre">*</span> <span class="pre">x!(i,j)</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">x</span> <span class="pre">.*</span> <span class="pre">y</span></tt></dt>
+<dd>multiplies, element-wise, matrix <tt class="docutils literal"><span class="pre">x</span></tt> to matrix <tt class="docutils literal"><span class="pre">y</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">x</span> <span class="pre">*</span> <span class="pre">y</span></tt></dt>
+<dd>multiplies matrix <tt class="docutils literal"><span class="pre">x</span></tt> to matrix <tt class="docutils literal"><span class="pre">y</span></tt>.</dd>
+</dl>
+<a name="/: _: _ ./"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">a</span> <span class="pre">/</span> <span class="pre">x</span></tt></dt>
+<dd>returns a matrix with entries <tt class="docutils literal"><span class="pre">a</span> <span class="pre">/</span> <span class="pre">x!(i,j)</span></tt>. Note that matrix <tt class="docutils literal"><span class="pre">x</span></tt>
+must not have any zero entries.</dd>
+<dt><tt class="docutils literal"><span class="pre">x</span> <span class="pre">/</span> <span class="pre">a</span></tt></dt>
+<dd>returns a matrix with entries <tt class="docutils literal"><span class="pre">x!(i,j)</span> <span class="pre">/</span> <span class="pre">a</span></tt>. Note that <tt class="docutils literal"><span class="pre">a</span></tt> must be
+nonzero.</dd>
+<dt><tt class="docutils literal"><span class="pre">x</span> <span class="pre">./</span> <span class="pre">y</span></tt></dt>
+<dd>divides, element-wise, matrix <cite>x</cite> by matrix <cite>y</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">x</span> <span class="pre">/</span> <span class="pre">y</span></tt></dt>
+<dd>right divides matrix <cite>x</cite> by matrix <cite>y</cite>.</dd>
+<dt><tt class="docutils literal"><span class="pre">x</span> <span class="pre">\\</span> <span class="pre">y</span></tt></dt>
+<dd>left divides matrix <cite>x</cite> by matrix <cite>y</cite>.</dd>
+</dl>
+<a name="div"><dl class="docutils" id="div">
+<dt><tt class="docutils literal"><span class="pre">a</span> <span class="pre">div</span> <span class="pre">x</span></tt></dt>
+<dd>returns an integer matrix with entries <tt class="docutils literal"><span class="pre">a</span> <span class="pre">div</span> <span class="pre">x!(i,j)</span></tt>. Note that
 <cite>a</cite> must be an integer and matrix <tt class="docutils literal"><span class="pre">x</span></tt> must be an integer matrix
-with nonzero entries.</blockquote>
-<p><tt class="docutils literal"><span class="pre">x</span> <span class="pre">div</span> <span class="pre">a</span></tt></p>
-<blockquote>
-returns an integer matrix with entries <tt class="docutils literal"><span class="pre">x!(i,j)</span> <span class="pre">div</span> <span class="pre">a</span></tt>. Note that
+with nonzero entries.</dd>
+<dt><tt class="docutils literal"><span class="pre">x</span> <span class="pre">div</span> <span class="pre">a</span></tt></dt>
+<dd>returns an integer matrix with entries <tt class="docutils literal"><span class="pre">x!(i,j)</span> <span class="pre">div</span> <span class="pre">a</span></tt>. Note that
 <tt class="docutils literal"><span class="pre">a</span></tt> must be a nonzero integer and matrix <tt class="docutils literal"><span class="pre">x</span></tt> must have integer
-entries.</blockquote>
-<p><tt class="docutils literal"><span class="pre">x</span> <span class="pre">div</span> <span class="pre">y</span></tt></p>
-<blockquote>
-computes the quotient integer matrix <tt class="docutils literal"><span class="pre">x</span></tt> by integer matrix <tt class="docutils literal"><span class="pre">y</span></tt>.</blockquote>
-<a name="mod"><p id="mod"><tt class="docutils literal"><span class="pre">a</span> <span class="pre">mod</span> <span class="pre">x</span></tt></p>
-<blockquote>
-returns an integer matrix with entries <tt class="docutils literal"><span class="pre">a</span> <span class="pre">mod</span> <span class="pre">x!(i,j)</span></tt>. Note that
+entries.</dd>
+<dt><tt class="docutils literal"><span class="pre">x</span> <span class="pre">div</span> <span class="pre">y</span></tt></dt>
+<dd>computes the quotient integer matrix <tt class="docutils literal"><span class="pre">x</span></tt> by integer matrix <tt class="docutils literal"><span class="pre">y</span></tt>.</dd>
+</dl>
+<a name="mod"><dl class="docutils" id="mod">
+<dt><tt class="docutils literal"><span class="pre">a</span> <span class="pre">mod</span> <span class="pre">x</span></tt></dt>
+<dd>returns an integer matrix with entries <tt class="docutils literal"><span class="pre">a</span> <span class="pre">mod</span> <span class="pre">x!(i,j)</span></tt>. Note that
 <tt class="docutils literal"><span class="pre">a</span></tt> must be an integer and matrix <tt class="docutils literal"><span class="pre">x</span></tt> must be an integer matrix
-with nonzero entries.</blockquote>
-<p><tt class="docutils literal"><span class="pre">x</span> <span class="pre">mod</span> <span class="pre">a</span></tt></p>
-<blockquote>
-returns an integer matrix with entries <tt class="docutils literal"><span class="pre">a</span> <span class="pre">mod</span> <span class="pre">x!(i,j)</span></tt>. Note that
+with nonzero entries.</dd>
+<dt><tt class="docutils literal"><span class="pre">x</span> <span class="pre">mod</span> <span class="pre">a</span></tt></dt>
+<dd>returns an integer matrix with entries <tt class="docutils literal"><span class="pre">a</span> <span class="pre">mod</span> <span class="pre">x!(i,j)</span></tt>. Note that
 <tt class="docutils literal"><span class="pre">a</span></tt> must be an integer and matrix <tt class="docutils literal"><span class="pre">x</span></tt> must be an integer matrix
-with nonzero entries.</blockquote>
-<p><tt class="docutils literal"><span class="pre">x</span> <span class="pre">mod</span> <span class="pre">y</span></tt></p>
-<blockquote>
-returns the remainder integer matrix <tt class="docutils literal"><span class="pre">x</span></tt> mod integer matrix <tt class="docutils literal"><span class="pre">y</span></tt>.</blockquote>
-<a name="not"><p id="not"><tt class="docutils literal"><span class="pre">not</span> <span class="pre">x</span></tt></p>
-<blockquote>
-returns a matrix with integer entries <tt class="docutils literal"><span class="pre">not</span> <span class="pre">x!(i,j)</span></tt>. Note that <tt class="docutils literal"><span class="pre">x</span></tt>
+with nonzero entries.</dd>
+<dt><tt class="docutils literal"><span class="pre">x</span> <span class="pre">mod</span> <span class="pre">y</span></tt></dt>
+<dd>returns the remainder integer matrix <tt class="docutils literal"><span class="pre">x</span></tt> mod integer matrix <tt class="docutils literal"><span class="pre">y</span></tt>.</dd>
+</dl>
+<a name="not"><dl class="docutils" id="not">
+<dt><tt class="docutils literal"><span class="pre">not</span> <span class="pre">x</span></tt></dt>
+<dd>returns a matrix with integer entries <tt class="docutils literal"><span class="pre">not</span> <span class="pre">x!(i,j)</span></tt>. Note that <tt class="docutils literal"><span class="pre">x</span></tt>
 must be a matrix with integer entries and <tt class="docutils literal"><span class="pre">not</span></tt> is the bitwise
-negation operation.</blockquote>
-<a name="^: _.^"><p><tt class="docutils literal"><span class="pre">a</span> <span class="pre">^</span> <span class="pre">x</span></tt></p>
-<blockquote>
-returns a matrix with entries <tt class="docutils literal"><span class="pre">a</span> <span class="pre">^</span> <span class="pre">x!(i,j)</span></tt>. Note that 0``^``0 is
-defined as 1.</blockquote>
-<p><tt class="docutils literal"><span class="pre">x</span> <span class="pre">^</span> <span class="pre">a</span></tt></p>
-<blockquote>
-returns a matrix with entries <tt class="docutils literal"><span class="pre">x!(i,j)</span> <span class="pre">^</span> <span class="pre">a</span></tt>. Note that 0``^``0 is
-defined as 1.</blockquote>
-<p><tt class="docutils literal"><span class="pre">x</span> <span class="pre">.^</span> <span class="pre">y</span></tt></p>
-<blockquote>
-returns a matrix with entries <tt class="docutils literal"><span class="pre">x!(i,j)</span> <span class="pre">^</span> <span class="pre">y!(i,j)</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">x</span> <span class="pre">^</span> <span class="pre">y</span></tt></p>
-<blockquote>
-returns a matrix with entries <tt class="docutils literal"><span class="pre">x!(i,j)</span> <span class="pre">^</span> <span class="pre">y!(i,j)</span></tt>.</blockquote>
-<a name="<<"><p id="id8"><tt class="docutils literal"><span class="pre">x</span> <span class="pre">&lt;&lt;</span> <span class="pre">a</span></tt></p>
-<blockquote>
-returns an integer matrix with entries <tt class="docutils literal"><span class="pre">x!(i,j)</span> <span class="pre">&lt;&lt;</span> <span class="pre">a</span></tt>. Note that
-<tt class="docutils literal"><span class="pre">a</span></tt> must be an integer and matrix <tt class="docutils literal"><span class="pre">x</span></tt> must have integer entries.</blockquote>
-<p><tt class="docutils literal"><span class="pre">x</span> <span class="pre">&lt;&lt;</span> <span class="pre">y</span></tt></p>
-<blockquote>
-returns an integer matrix with entries <tt class="docutils literal"><span class="pre">x!(i,j)</span> <span class="pre">&lt;&lt;</span> <span class="pre">y!(i,j)</span></tt>. Note
-that <tt class="docutils literal"><span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">y</span></tt> must have integer entries.</blockquote>
-<a name=">>"><p id="id9"><tt class="docutils literal"><span class="pre">x</span> <span class="pre">&gt;&gt;</span> <span class="pre">a</span></tt></p>
-<blockquote>
-returns an integer matrix with entries <tt class="docutils literal"><span class="pre">x!(i,j)</span> <span class="pre">&gt;&gt;</span> <span class="pre">a</span></tt>. Note that
-<tt class="docutils literal"><span class="pre">a</span></tt> must be an integer and matrix <tt class="docutils literal"><span class="pre">x</span></tt> must have integer entries.</blockquote>
-<p><tt class="docutils literal"><span class="pre">x</span> <span class="pre">&gt;&gt;</span> <span class="pre">y</span></tt></p>
-<blockquote>
-returns an integer matrix with entries <tt class="docutils literal"><span class="pre">x!(i,j)</span> <span class="pre">&gt;&gt;</span> <span class="pre">y!(i,j)</span></tt>. Note
-that <tt class="docutils literal"><span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">y</span></tt> must have integer entries.</blockquote>
-<a name="and"><p id="and"><tt class="docutils literal"><span class="pre">x</span> <span class="pre">and</span> <span class="pre">a</span></tt>, <tt class="docutils literal"><span class="pre">a</span> <span class="pre">and</span> <span class="pre">x</span></tt></p>
-<blockquote>
-returns an integer matrix with entries <tt class="docutils literal"><span class="pre">a</span> <span class="pre">and</span> <span class="pre">x!(i,j)</span></tt>. Note that
+negation operation.</dd>
+</dl>
+<a name="^: _.^"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">a</span> <span class="pre">^</span> <span class="pre">x</span></tt></dt>
+<dd>returns a matrix with entries <tt class="docutils literal"><span class="pre">a</span> <span class="pre">^</span> <span class="pre">x!(i,j)</span></tt>. Note that <tt class="docutils literal"><span class="pre">0^0</span></tt> is
+defined as 1.</dd>
+<dt><tt class="docutils literal"><span class="pre">x</span> <span class="pre">^</span> <span class="pre">a</span></tt></dt>
+<dd>returns a matrix with entries <tt class="docutils literal"><span class="pre">x!(i,j)</span> <span class="pre">^</span> <span class="pre">a</span></tt>. Note that <tt class="docutils literal"><span class="pre">0^0</span></tt> is
+defined as 1.</dd>
+<dt><tt class="docutils literal"><span class="pre">x</span> <span class="pre">.^</span> <span class="pre">y</span></tt></dt>
+<dd>returns a matrix with entries <tt class="docutils literal"><span class="pre">x!(i,j)</span> <span class="pre">^</span> <span class="pre">y!(i,j)</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">x</span> <span class="pre">^</span> <span class="pre">y</span></tt></dt>
+<dd>returns a matrix with entries <tt class="docutils literal"><span class="pre">x!(i,j)</span> <span class="pre">^</span> <span class="pre">y!(i,j)</span></tt>.</dd>
+</dl>
+<a name="<<"><dl class="docutils" id="id8">
+<dt><tt class="docutils literal"><span class="pre">x</span> <span class="pre">&lt;&lt;</span> <span class="pre">a</span></tt></dt>
+<dd>returns an integer matrix with entries <tt class="docutils literal"><span class="pre">x!(i,j)</span> <span class="pre">&lt;&lt;</span> <span class="pre">a</span></tt>. Note that
+<tt class="docutils literal"><span class="pre">a</span></tt> must be an integer and matrix <tt class="docutils literal"><span class="pre">x</span></tt> must have integer entries.</dd>
+<dt><tt class="docutils literal"><span class="pre">x</span> <span class="pre">&lt;&lt;</span> <span class="pre">y</span></tt></dt>
+<dd>returns an integer matrix with entries <tt class="docutils literal"><span class="pre">x!(i,j)</span> <span class="pre">&lt;&lt;</span> <span class="pre">y!(i,j)</span></tt>. Note
+that <tt class="docutils literal"><span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">y</span></tt> must have integer entries.</dd>
+</dl>
+<a name=">>"><dl class="docutils" id="id9">
+<dt><tt class="docutils literal"><span class="pre">x</span> <span class="pre">&gt;&gt;</span> <span class="pre">a</span></tt></dt>
+<dd>returns an integer matrix with entries <tt class="docutils literal"><span class="pre">x!(i,j)</span> <span class="pre">&gt;&gt;</span> <span class="pre">a</span></tt>. Note that
+<tt class="docutils literal"><span class="pre">a</span></tt> must be an integer and matrix <tt class="docutils literal"><span class="pre">x</span></tt> must have integer entries.</dd>
+<dt><tt class="docutils literal"><span class="pre">x</span> <span class="pre">&gt;&gt;</span> <span class="pre">y</span></tt></dt>
+<dd>returns an integer matrix with entries <tt class="docutils literal"><span class="pre">x!(i,j)</span> <span class="pre">&gt;&gt;</span> <span class="pre">y!(i,j)</span></tt>. Note
+that <tt class="docutils literal"><span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">y</span></tt> must have integer entries.</dd>
+</dl>
+<a name="and"><dl class="docutils" id="and">
+<dt><tt class="docutils literal"><span class="pre">x</span> <span class="pre">and</span> <span class="pre">a</span></tt>, <tt class="docutils literal"><span class="pre">a</span> <span class="pre">and</span> <span class="pre">x</span></tt></dt>
+<dd>returns an integer matrix with entries <tt class="docutils literal"><span class="pre">a</span> <span class="pre">and</span> <span class="pre">x!(i,j)</span></tt>. Note that
 <tt class="docutils literal"><span class="pre">a</span></tt> must be an integer, matrix <tt class="docutils literal"><span class="pre">x</span></tt> must have integer entries,
-and <tt class="docutils literal"><span class="pre">and</span></tt> is the bitwise operator.</blockquote>
-<p><tt class="docutils literal"><span class="pre">x</span> <span class="pre">and</span> <span class="pre">y</span></tt></p>
-<blockquote>
-returns an integer matrix with entries <tt class="docutils literal"><span class="pre">x!(i,j)</span> <span class="pre">and</span> <span class="pre">y!(i,j)</span></tt>. Note
-that <tt class="docutils literal"><span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">y</span></tt> must be matrices with integer entries.</blockquote>
-<a name="or"><p id="or"><tt class="docutils literal"><span class="pre">x</span> <span class="pre">or</span> <span class="pre">a</span></tt>, <tt class="docutils literal"><span class="pre">a</span> <span class="pre">or</span> <span class="pre">x</span></tt></p>
-<blockquote>
-returns an integer matrix with entries <tt class="docutils literal"><span class="pre">a</span> <span class="pre">or</span> <span class="pre">x!(i,j)</span></tt>. Note that
+and <tt class="docutils literal"><span class="pre">and</span></tt> is a bitwise operator.</dd>
+<dt><tt class="docutils literal"><span class="pre">x</span> <span class="pre">and</span> <span class="pre">y</span></tt></dt>
+<dd>returns an integer matrix with entries <tt class="docutils literal"><span class="pre">x!(i,j)</span> <span class="pre">and</span> <span class="pre">y!(i,j)</span></tt>. Note
+that <tt class="docutils literal"><span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">y</span></tt> must be matrices with integer entries.</dd>
+</dl>
+<a name="or"><dl class="docutils" id="or">
+<dt><tt class="docutils literal"><span class="pre">x</span> <span class="pre">or</span> <span class="pre">a</span></tt>, <tt class="docutils literal"><span class="pre">a</span> <span class="pre">or</span> <span class="pre">x</span></tt></dt>
+<dd>returns an integer matrix with entries <tt class="docutils literal"><span class="pre">a</span> <span class="pre">or</span> <span class="pre">x!(i,j)</span></tt>. Note that
 <tt class="docutils literal"><span class="pre">a</span></tt> must be an integer, matrix <tt class="docutils literal"><span class="pre">x</span></tt> must have integer entries,
-and <tt class="docutils literal"><span class="pre">or</span></tt> is a bitwise operator.</blockquote>
-<p><tt class="docutils literal"><span class="pre">x</span> <span class="pre">or</span> <span class="pre">y</span></tt></p>
-<blockquote>
-returns an integer matrix with entries <tt class="docutils literal"><span class="pre">x!(i,j)</span> <span class="pre">or</span> <span class="pre">y!(i,j)</span></tt>. Note
-that <tt class="docutils literal"><span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">y</span></tt> must be matrices with integer entries.</blockquote>
+and <tt class="docutils literal"><span class="pre">or</span></tt> is a bitwise operator.</dd>
+<dt><tt class="docutils literal"><span class="pre">x</span> <span class="pre">or</span> <span class="pre">y</span></tt></dt>
+<dd>returns an integer matrix with entries <tt class="docutils literal"><span class="pre">x!(i,j)</span> <span class="pre">or</span> <span class="pre">y!(i,j)</span></tt>. Note
+that <tt class="docutils literal"><span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">y</span></tt> must be matrices with integer entries.</dd>
+</dl>
 </div>
 <div class="section" id="matrix-utilties-and-functions">
 <h2><a class="toc-backref" href="#id26">Matrix Utilties and Functions</a></h2>
@@ -720,66 +749,53 @@ matrices. These functions can be invoked either with a pair <cite>(n,m)</cite>
 denoting the desired number of rows or columns, or an integer <cite>n</cite> in
 which case a square <cite>n</cite> x <cite>n</cite> matrix is created. The result is always
 a double matrix.</p>
-<a name="zeros: _izeros: _czeros"><p><tt class="docutils literal"><span class="pre">zeros</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></p>
-<blockquote>
-creates an <cite>n</cite> x <cite>m</cite> double matrix with all of its entries being zero.</blockquote>
-<p><tt class="docutils literal"><span class="pre">zeros</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></p>
-<blockquote>
-creates an <cite>n`x`n</cite> double matrix with all of its entries being zero.</blockquote>
-<p><tt class="docutils literal"><span class="pre">izeros</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></p>
-<blockquote>
-creates an <cite>n</cite> x <cite>m</cite> integer matrix with all of its entries being zero.</blockquote>
-<p><tt class="docutils literal"><span class="pre">izeros</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></p>
-<blockquote>
-creates an <cite>n`x`n</cite> integer matrix with all of its entries being zero.</blockquote>
-<p><tt class="docutils literal"><span class="pre">czeros</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></p>
-<blockquote>
-creates an <cite>n</cite> x <cite>m</cite> complex matrix with all of its entries being zero.</blockquote>
-<p><tt class="docutils literal"><span class="pre">czeros</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></p>
-<blockquote>
-creates an <cite>n</cite> x <cite>n</cite> complex matrix with all of its entries being zero.</blockquote>
-<a name="ones: _iones: _cones"><p><tt class="docutils literal"><span class="pre">ones</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></p>
-<blockquote>
-creates an <cite>n</cite> x <cite>m</cite> double matrix with all of its entries being one.</blockquote>
-<p><tt class="docutils literal"><span class="pre">ones</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></p>
-<blockquote>
-creates an <cite>n</cite> x <cite>n</cite> double matrix with all of its entries being one.</blockquote>
-<p><tt class="docutils literal"><span class="pre">iones</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></p>
-<blockquote>
-creates an <cite>n</cite> x <cite>m</cite> integer matrix with all of its entries being one.</blockquote>
-<p><tt class="docutils literal"><span class="pre">iones</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></p>
-<blockquote>
-creates an <cite>n</cite> x <cite>n</cite> integer matrix with all of its entries being one.</blockquote>
-<p><tt class="docutils literal"><span class="pre">cones</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></p>
-<blockquote>
-creates an <cite>n</cite> x <cite>m</cite> complex matrix with all of its entries being one.</blockquote>
-<p><tt class="docutils literal"><span class="pre">cones</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></p>
-<blockquote>
-creates an <cite>n</cite> x <cite>n</cite> complex matrix with all of its entries being one.</blockquote>
-<a name="eye: _ieye: _ceye"><p><tt class="docutils literal"><span class="pre">eye</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></p>
-<blockquote>
-creates an <cite>n</cite> x <cite>m</cite> identity matrix with double entries.</blockquote>
-<p><tt class="docutils literal"><span class="pre">eye</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></p>
-<blockquote>
-creates an <cite>n</cite> x <cite>n</cite> identity matrix with double entries.</blockquote>
-<p><tt class="docutils literal"><span class="pre">ieye</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></p>
-<blockquote>
-creates an <cite>n</cite> x <cite>m</cite> identity matrix with integer entries.</blockquote>
-<p><tt class="docutils literal"><span class="pre">ieye</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></p>
-<blockquote>
-creates an <cite>n</cite> x <cite>n</cite> identity matrix with integer entries.</blockquote>
-<p><tt class="docutils literal"><span class="pre">ceye</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></p>
-<blockquote>
-creates an <cite>n</cite> x <cite>m</cite> identity matrix with complex entries.</blockquote>
-<p><tt class="docutils literal"><span class="pre">ceye</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></p>
-<blockquote>
-creates an <cite>n</cite> x <cite>n</cite> identity matrix with complex entries.</blockquote>
-<p><tt class="docutils literal"><span class="pre">pow</span> <span class="pre">x</span> <span class="pre">::</span> <span class="pre">matrix</span>&nbsp; <span class="pre">k</span> <span class="pre">::</span> <span class="pre">int</span></tt>, <tt class="docutils literal"><span class="pre">pow</span> <span class="pre">x</span> <span class="pre">::</span> <span class="pre">matrix</span>&nbsp; <span class="pre">k</span> <span class="pre">::</span> <span class="pre">bigint</span></tt></p>
-<blockquote>
-Raises matrix <tt class="docutils literal"><span class="pre">x</span></tt> to the <tt class="docutils literal"><span class="pre">k</span></tt> th power. Note <tt class="docutils literal"><span class="pre">x</span></tt> must be a
-square matrix and <tt class="docutils literal"><span class="pre">k</span></tt> a nonnegative integer.</blockquote>
+<a name="zeros: _izeros: _czeros"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">zeros</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>m</cite> double matrix with all of its entries being zero.</dd>
+<dt><tt class="docutils literal"><span class="pre">zeros</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>n</cite> double matrix with all of its entries being zero.</dd>
+<dt><tt class="docutils literal"><span class="pre">izeros</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>m</cite> integer matrix with all of its entries being zero.</dd>
+<dt><tt class="docutils literal"><span class="pre">izeros</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></dt>
+<dd>creates an <cite>n`x`n</cite> integer matrix with all of its entries being zero.</dd>
+<dt><tt class="docutils literal"><span class="pre">czeros</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>m</cite> complex matrix with all of its entries being zero.</dd>
+<dt><tt class="docutils literal"><span class="pre">czeros</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>n</cite> complex matrix with all of its entries being zero.</dd>
+</dl>
+<a name="ones: _iones: _cones"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">ones</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>m</cite> double matrix with all of its entries being one.</dd>
+<dt><tt class="docutils literal"><span class="pre">ones</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>n</cite> double matrix with all of its entries being one.</dd>
+<dt><tt class="docutils literal"><span class="pre">iones</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>m</cite> integer matrix with all of its entries being one.</dd>
+<dt><tt class="docutils literal"><span class="pre">iones</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>n</cite> integer matrix with all of its entries being one.</dd>
+<dt><tt class="docutils literal"><span class="pre">cones</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>m</cite> complex matrix with all of its entries being one.</dd>
+<dt><tt class="docutils literal"><span class="pre">cones</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>n</cite> complex matrix with all of its entries being one.</dd>
+</dl>
+<a name="eye: _ieye: _ceye"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">eye</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>m</cite> identity matrix with double entries.</dd>
+<dt><tt class="docutils literal"><span class="pre">eye</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>n</cite> identity matrix with double entries.</dd>
+<dt><tt class="docutils literal"><span class="pre">ieye</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>m</cite> identity matrix with integer entries.</dd>
+<dt><tt class="docutils literal"><span class="pre">ieye</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>n</cite> identity matrix with integer entries.</dd>
+<dt><tt class="docutils literal"><span class="pre">ceye</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>m</cite> identity matrix with complex entries.</dd>
+<dt><tt class="docutils literal"><span class="pre">ceye</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>n</cite> identity matrix with complex entries.</dd>
+<dt><tt class="docutils literal"><span class="pre">pow</span> <span class="pre">x</span> <span class="pre">::</span> <span class="pre">matrix</span>&nbsp; <span class="pre">k</span> <span class="pre">::</span> <span class="pre">int</span></tt>, <tt class="docutils literal"><span class="pre">pow</span> <span class="pre">x</span> <span class="pre">::</span> <span class="pre">matrix</span>&nbsp; <span class="pre">k</span> <span class="pre">::</span> <span class="pre">bigint</span></tt></dt>
+<dd>Raises matrix <tt class="docutils literal"><span class="pre">x</span></tt> to the <tt class="docutils literal"><span class="pre">k</span></tt> th power. Note <tt class="docutils literal"><span class="pre">x</span></tt> must be a
+square matrix and <tt class="docutils literal"><span class="pre">k</span></tt> a nonnegative integer.</dd>
+</dl>
 <p>For a given <cite>n</cite> x <cite>m</cite> matrix <tt class="docutils literal"><span class="pre">x</span></tt>, these functions yield a
-singular-value decomposition <tt class="docutils literal"><span class="pre">u</span></tt>,``s``, <tt class="docutils literal"><span class="pre">v</span></tt> of the matrix such
+singular-value decomposition <tt class="docutils literal"><span class="pre">u</span></tt>, <tt class="docutils literal"><span class="pre">s</span></tt>, <tt class="docutils literal"><span class="pre">v</span></tt> of the matrix such
 that <tt class="docutils literal"><span class="pre">x</span> <span class="pre">==</span> <span class="pre">u*s*transpose</span> <span class="pre">v</span></tt>, where <tt class="docutils literal"><span class="pre">u</span></tt> and <tt class="docutils literal"><span class="pre">v</span></tt> are orthogonal
 matrices of dimensions <cite>n</cite> x <cite>m</cite> and <cite>n</cite> x <cite>n</cite>, respectively, and <cite>s</cite> is
 a <cite>n</cite> x <cite>n</cite> diagonal matrix which has the singular values in its
@@ -788,27 +804,32 @@ double matrices right now. Also, GSL only handles the case of square or
 overdetermined systems, but we work around that in our wrapper functions
 by just adding a suitable number of zero rows in the underdetermined
 case.</p>
-<a name="svd"><p id="svd"><tt class="docutils literal"><span class="pre">svd</span> <span class="pre">x</span></tt></p>
-<blockquote>
-singular-value decomposition of matrix <tt class="docutils literal"><span class="pre">x</span></tt>.</blockquote>
-<a name="svd_mod"><p id="svd-mod"><tt class="docutils literal"><span class="pre">svd_mod</span></tt></p>
-<blockquote>
-This uses the modified Golub-Reinsch algorithm, which is faster if
-<tt class="docutils literal"><span class="pre">n</span> <span class="pre">&gt;</span> <span class="pre">m</span></tt> but needs <cite>O(m^2)</cite> extra memory as internal workspace.</blockquote>
-<a name="svd_jacobi"><p id="svd-jacobi"><tt class="docutils literal"><span class="pre">svd_jacobi</span> <span class="pre">x</span></tt></p>
-<blockquote>
-This uses one-sided Jacobi orthogonalization which provides better
-relative accuracy but is slower.</blockquote>
-<a name="svd_solve"><p id="svd-solve"><tt class="docutils literal"><span class="pre">svd_solve</span> <span class="pre">(u,</span> <span class="pre">s,</span> <span class="pre">v)</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-Solve the system <tt class="docutils literal"><span class="pre">Ax=b</span></tt>, using the SVD of <tt class="docutils literal"><span class="pre">A</span></tt>. Our wrapper
+<a name="svd"><dl class="docutils" id="svd">
+<dt><tt class="docutils literal"><span class="pre">svd</span> <span class="pre">x</span></tt></dt>
+<dd>singular-value decomposition of matrix <tt class="docutils literal"><span class="pre">x</span></tt>.</dd>
+</dl>
+<a name="svd_mod"><dl class="docutils" id="svd-mod">
+<dt><tt class="docutils literal"><span class="pre">svd_mod</span></tt></dt>
+<dd>This uses the modified Golub-Reinsch algorithm, which is faster if
+<tt class="docutils literal"><span class="pre">n</span> <span class="pre">&gt;</span> <span class="pre">m</span></tt> but needs <cite>O(m^2)</cite> extra memory as internal workspace.</dd>
+</dl>
+<a name="svd_jacobi"><dl class="docutils" id="svd-jacobi">
+<dt><tt class="docutils literal"><span class="pre">svd_jacobi</span> <span class="pre">x</span></tt></dt>
+<dd>This uses one-sided Jacobi orthogonalization which provides better
+relative accuracy but is slower.</dd>
+</dl>
+<a name="svd_solve"><dl class="docutils" id="svd-solve">
+<dt><tt class="docutils literal"><span class="pre">svd_solve</span> <span class="pre">(u,</span> <span class="pre">s,</span> <span class="pre">v)</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>Solve the system <tt class="docutils literal"><span class="pre">Ax=b</span></tt>, using the SVD of <tt class="docutils literal"><span class="pre">A</span></tt>. Our wrapper
 <tt class="docutils literal"><span class="pre">svd_solve</span></tt> takes the result <tt class="docutils literal"><span class="pre">(u,s,v)</span></tt> of a <tt class="docutils literal"><span class="pre">svd</span></tt> call, and
 a column vector <tt class="docutils literal"><span class="pre">b</span></tt> of the appropriate dimension. The result is
 another column vector solving the system (possibly in the
-least-squares sense).</blockquote>
-<a name="pinv"><p id="pinv"><tt class="docutils literal"><span class="pre">pinv</span> <span class="pre">x</span></tt></p>
-<blockquote>
-returns the pseudo inverse of a matrix.</blockquote>
+least-squares sense).</dd>
+</dl>
+<a name="pinv"><dl class="docutils" id="pinv">
+<dt><tt class="docutils literal"><span class="pre">pinv</span> <span class="pre">x</span></tt></dt>
+<dd>returns the pseudo inverse of a matrix.</dd>
+</dl>
 <!--  -->
 </div>
 </div>
@@ -820,34 +841,40 @@ the GSL manual,</p>
 <p><a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/Least_002dSquares-Fitting.html">http://www.gnu.org/software/gsl/manual/html_node/Least_002dSquares-Fitting.html</a>.</p>
 <div class="section" id="id10">
 <h2><a class="toc-backref" href="#id28">Routines</a></h2>
-<a name="linear"><p id="linear"><tt class="docutils literal"><span class="pre">linear</span>&nbsp; <span class="pre">x::matrix</span>&nbsp; <span class="pre">y::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_fit_linear</span></tt> without the <tt class="docutils literal"><span class="pre">xstride</span></tt>, <tt class="docutils literal"><span class="pre">ystride</span></tt>,
+<a name="linear"><dl class="docutils" id="linear">
+<dt><tt class="docutils literal"><span class="pre">linear</span>&nbsp; <span class="pre">x::matrix</span>&nbsp; <span class="pre">y::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_fit_linear</span></tt> without the <tt class="docutils literal"><span class="pre">xstride</span></tt>, <tt class="docutils literal"><span class="pre">ystride</span></tt>,
 and <tt class="docutils literal"><span class="pre">n</span></tt> parameters. Results are returned as a list
-<tt class="docutils literal"><span class="pre">[c0,</span> <span class="pre">c1,</span> <span class="pre">cov00,</span> <span class="pre">cov01,</span> <span class="pre">cov11,</span> <span class="pre">sumsq]</span></tt>.</blockquote>
-<a name="wlinear"><p id="wlinear"><tt class="docutils literal"><span class="pre">wlinear</span>&nbsp; <span class="pre">x::matrix</span>&nbsp; <span class="pre">w::matrix</span>&nbsp; <span class="pre">y::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_fit_wlinear</span></tt> without the <tt class="docutils literal"><span class="pre">xstride</span></tt>, <tt class="docutils literal"><span class="pre">wstride</span></tt>,
+<tt class="docutils literal"><span class="pre">[c0,</span> <span class="pre">c1,</span> <span class="pre">cov00,</span> <span class="pre">cov01,</span> <span class="pre">cov11,</span> <span class="pre">sumsq]</span></tt>.</dd>
+</dl>
+<a name="wlinear"><dl class="docutils" id="wlinear">
+<dt><tt class="docutils literal"><span class="pre">wlinear</span>&nbsp; <span class="pre">x::matrix</span>&nbsp; <span class="pre">w::matrix</span>&nbsp; <span class="pre">y::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_fit_wlinear</span></tt> without the <tt class="docutils literal"><span class="pre">xstride</span></tt>, <tt class="docutils literal"><span class="pre">wstride</span></tt>,
 <tt class="docutils literal"><span class="pre">ystride</span></tt>, and <tt class="docutils literal"><span class="pre">n</span></tt> parameters. Results are given as a list
-<tt class="docutils literal"><span class="pre">[c0,</span> <span class="pre">c1,</span> <span class="pre">cov00,</span> <span class="pre">cov01,</span> <span class="pre">cov11,</span> <span class="pre">chisq]</span></tt>.</blockquote>
-<a name="linear_est"><p id="linear-est"><tt class="docutils literal"><span class="pre">linear_est</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">c0::double</span>&nbsp; <span class="pre">c1::double</span>&nbsp; <span class="pre">cov00::double</span>&nbsp; <span class="pre">cov01::double</span>&nbsp; <span class="pre">cov11::double</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_fit_linear_est</span></tt>. Results are returned as a list
-<tt class="docutils literal"><span class="pre">[y,</span> <span class="pre">y_err]</span></tt>.</blockquote>
-<a name="mul"><p id="mul"><tt class="docutils literal"><span class="pre">mul</span>&nbsp; <span class="pre">x::matrix</span>&nbsp; <span class="pre">y::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_fit_mul</span></tt> omitting the parameters <tt class="docutils literal"><span class="pre">xstride</span></tt>,
+<tt class="docutils literal"><span class="pre">[c0,</span> <span class="pre">c1,</span> <span class="pre">cov00,</span> <span class="pre">cov01,</span> <span class="pre">cov11,</span> <span class="pre">chisq]</span></tt>.</dd>
+</dl>
+<a name="linear_est"><dl class="docutils" id="linear-est">
+<dt><tt class="docutils literal"><span class="pre">linear_est</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">c0::double</span>&nbsp; <span class="pre">c1::double</span>&nbsp; <span class="pre">cov00::double</span>&nbsp; <span class="pre">cov01::double</span>&nbsp; <span class="pre">cov11::double</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_fit_linear_est</span></tt>. Results are returned as a list
+<tt class="docutils literal"><span class="pre">[y,</span> <span class="pre">y_err]</span></tt>.</dd>
+</dl>
+<a name="mul"><dl class="docutils" id="mul">
+<dt><tt class="docutils literal"><span class="pre">mul</span>&nbsp; <span class="pre">x::matrix</span>&nbsp; <span class="pre">y::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_fit_mul</span></tt> omitting the parameters <tt class="docutils literal"><span class="pre">xstride</span></tt>,
 <tt class="docutils literal"><span class="pre">ystride</span></tt>, and <tt class="docutils literal"><span class="pre">n</span></tt>. Results are returned as a list
-<tt class="docutils literal"><span class="pre">[c1,</span> <span class="pre">cov11,</span> <span class="pre">sumsq]</span></tt>.</blockquote>
-<a name="wmul"><p id="wmul"><tt class="docutils literal"><span class="pre">wmul</span>&nbsp; <span class="pre">x::matrix</span>&nbsp; <span class="pre">w::matrix</span>&nbsp; <span class="pre">y::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_fit_wmul</span></tt> omitting the parametrs <tt class="docutils literal"><span class="pre">xstride</span></tt>,
+<tt class="docutils literal"><span class="pre">[c1,</span> <span class="pre">cov11,</span> <span class="pre">sumsq]</span></tt>.</dd>
+</dl>
+<a name="wmul"><dl class="docutils" id="wmul">
+<dt><tt class="docutils literal"><span class="pre">wmul</span>&nbsp; <span class="pre">x::matrix</span>&nbsp; <span class="pre">w::matrix</span>&nbsp; <span class="pre">y::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_fit_wmul</span></tt> omitting the parametrs <tt class="docutils literal"><span class="pre">xstride</span></tt>,
 <tt class="docutils literal"><span class="pre">ystride</span></tt>, and <tt class="docutils literal"><span class="pre">n</span></tt>. Results are returned as a list
-<tt class="docutils literal"><span class="pre">[c1,</span> <span class="pre">cov11,</span> <span class="pre">sumsq]</span></tt>.</blockquote>
-<a name="mul_est"><p id="mul-est"><tt class="docutils literal"><span class="pre">mul_est</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">c1::double</span>&nbsp; <span class="pre">cov11::double</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_fit_mul_est</span></tt>. Results are returned as a list
-<tt class="docutils literal"><span class="pre">[y,</span> <span class="pre">y_err]</span></tt>.</blockquote>
+<tt class="docutils literal"><span class="pre">[c1,</span> <span class="pre">cov11,</span> <span class="pre">sumsq]</span></tt>.</dd>
+</dl>
+<a name="mul_est"><dl class="docutils" id="mul-est">
+<dt><tt class="docutils literal"><span class="pre">mul_est</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">c1::double</span>&nbsp; <span class="pre">cov11::double</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_fit_mul_est</span></tt>. Results are returned as a list
+<tt class="docutils literal"><span class="pre">[y,</span> <span class="pre">y_err]</span></tt>.</dd>
+</dl>
 <!--  -->
 </div>
 <div class="section" id="id11">
@@ -871,9 +898,9 @@ through the points (1,0.01), (2,1.11), (3,1.9), (4,2.85), and (5,4.01).</p>
 </pre>
 <p>The following code illustrates estimating y-values without
 constructing an equation for the least-squares line determined by
-the points {x1,x2,x3,...,xn}, {y1,y2,y3,...,yn}. Here we estimate
-the y-value at x = 1, x = 2, and x = 3. Compare the output above at
-x = 2 to the output at x = 2 below.</p>
+the points <tt class="docutils literal"><span class="pre">{x1,x2,x3,...,xn}</span></tt>, <tt class="docutils literal"><span class="pre">{y1,y2,y3,...,yn}</span></tt>. Here we
+estimate the <cite>y</cite>-value at <cite>x</cite> = 1, <cite>x</cite> = 2, and <cite>x</cite> = 3. Compare the output
+above at <cite>x</cite> = 2 to the output at <cite>x</cite> = 2 below.</p>
 <pre class="literal-block">
 &gt; let c0:c1:cov00:cov01:cov11:_ = linear {1,2,3,4,5}
 &gt;   {0.01,1.11,1.9,2.85,4.01};
@@ -900,8 +927,8 @@ x = 2 to the output at x = 2 below.</p>
 0.982
 </pre>
 <p>The least-squares slope for <tt class="docutils literal"><span class="pre">Y</span> <span class="pre">=</span> <span class="pre">c1</span> <span class="pre">*</span> <span class="pre">X</span></tt> using the points (1,3),
-(2,5), and (3,7) is calculated below. Also, the y-values and
-standard error about x = 1, 2, and 3 are given.</p>
+(2,5), and (3,7) is calculated below. Also, the <cite>y</cite>-values and
+standard error about <cite>x</cite> = 1, 2, and 3 are given.</p>
 <pre class="literal-block">
 &gt; let c1:cov11:sumsq:_ = mul {1,2,3} {3,5,7};
 &gt; mul_est 1 c1 cov11;
@@ -913,7 +940,7 @@ standard error about x = 1, 2, and 3 are given.</p>
 </pre>
 <p>The least-squares slope for <tt class="docutils literal"><span class="pre">Y</span> <span class="pre">=</span> <span class="pre">c1</span> <span class="pre">*</span> <span class="pre">X</span></tt> using the points (1,3),
 (2,5), and (3,7), and weights 0.4, 0.9, and 0.4 is calculated below.
-The approximation of y-values and standard error about x = 1, 2, and
+The approximation of y-values and standard error about <cite>x</cite> = 1, 2, and
 3 follows.</p>
 <pre class="literal-block">
 &gt; let c1:cov11:sumsq:_ = wmul {1,2,3} {0.4,0.9,0.4} {3,5,7};
@@ -935,175 +962,218 @@ GSL manual,</p>
 <p><a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/Statistics.html">http://www.gnu.org/software/gsl/manual/html_node/Statistics.html</a>.</p>
 <div class="section" id="id12">
 <h2><a class="toc-backref" href="#id31">Routines</a></h2>
-<a name="mean"><p id="mean"><tt class="docutils literal"><span class="pre">mean</span>&nbsp; <span class="pre">data::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_mean</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="variance"><p id="variance"><tt class="docutils literal"><span class="pre">variance</span>&nbsp; <span class="pre">data::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_variance</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="variance_m"><p id="variance-m"><tt class="docutils literal"><span class="pre">variance</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_variance_m</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt>
-arguments.</blockquote>
-<a name="sd"><p id="sd"><tt class="docutils literal"><span class="pre">sd</span>&nbsp; <span class="pre">data::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_sd</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="sd_m"><p id="sd-m"><tt class="docutils literal"><span class="pre">sd_m</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_sd_m</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="tss"><p id="tss"><tt class="docutils literal"><span class="pre">tss</span>&nbsp; <span class="pre">data::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_tss</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="tss_m"><p id="tss-m"><tt class="docutils literal"><span class="pre">tss_m</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_tss_m</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt>
-arguments.</blockquote>
-<a name="variance_with_fixed_mean"><p id="variance-with-fixed-mean"><tt class="docutils literal"><span class="pre">variance_with_fixed_mean</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_variance_with_fixed_mean</span></tt> without
-<tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="sd_with_fixed_mean"><p id="sd-with-fixed-mean"><tt class="docutils literal"><span class="pre">sd_with_fixed_mean</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_sd_with_fixed_mean</span></tt> without
-<tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="absdev"><p id="absdev"><tt class="docutils literal"><span class="pre">absdev</span>&nbsp; <span class="pre">data::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_absdev</span></tt> without
-<tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="absdev_m"><p id="absdev-m"><tt class="docutils literal"><span class="pre">absdev_m</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_absdev_m</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and
-<tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="skew"><p id="skew"><tt class="docutils literal"><span class="pre">skew</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_skew</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt>
-arguments.</blockquote>
-<a name="skew_m_sd"><p id="skew-m-sd"><tt class="docutils literal"><span class="pre">skew_m_sd</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span>&nbsp; <span class="pre">sd</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_skew_m_sd</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and
-<tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="kurtosis"><p id="kurtosis"><tt class="docutils literal"><span class="pre">kurtosis</span>&nbsp; <span class="pre">data::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_kurtosis</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and
-<tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="kurtosis_m_sd"><p id="kurtosis-m-sd"><tt class="docutils literal"><span class="pre">kurtosis_m_sd</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span>&nbsp; <span class="pre">sd</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_kurtosis_m_sd</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt>
-and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="lag1_autocorrelation"><p id="lag1-autocorrelation"><tt class="docutils literal"><span class="pre">lag1_autocorrelation</span>&nbsp; <span class="pre">data::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_lag1_autocorrelation</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt>
-and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="lag1_autocorrelation_m"><p id="lag1-autocorrelation-m"><tt class="docutils literal"><span class="pre">lag1_autocorrelation_m</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_lag1_autocorrelation_m</span></tt> without
-<tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="covariance"><p id="covariance"><tt class="docutils literal"><span class="pre">covariance</span>&nbsp; <span class="pre">d1::matrix</span>&nbsp; <span class="pre">d2::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_covariance</span></tt> without <tt class="docutils literal"><span class="pre">stride1</span></tt>,
-<tt class="docutils literal"><span class="pre">stride2</span></tt>, and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="covariance_m"><p id="covariance-m"><tt class="docutils literal"><span class="pre">covariance_m</span>&nbsp; <span class="pre">d1::matrix</span>&nbsp; <span class="pre">d2::matrix</span>&nbsp; <span class="pre">mean1</span>&nbsp; <span class="pre">mean2</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_covariance_m</span></tt> without <tt class="docutils literal"><span class="pre">stride1</span></tt>,
-<tt class="docutils literal"><span class="pre">stride2</span></tt>, and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="correlation"><p id="correlation"><tt class="docutils literal"><span class="pre">correlation</span>&nbsp; <span class="pre">d1::matrix</span>&nbsp; <span class="pre">d2::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_correlation</span></tt> without <tt class="docutils literal"><span class="pre">stride1</span></tt>,
-<tt class="docutils literal"><span class="pre">stride2</span></tt>, and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="wmean"><p id="wmean"><tt class="docutils literal"><span class="pre">wmean</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_wmean</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt>
-and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="wvariance"><p id="wvariance"><tt class="docutils literal"><span class="pre">wvariance</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_wvariance</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt>
-and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="wvariance_m"><p id="wvariance-m"><tt class="docutils literal"><span class="pre">wvariance_m</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_wvariance_m</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt>
-and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="wsd"><p id="wsd"><tt class="docutils literal"><span class="pre">wsd</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_wsd</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and
-<tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="wsd_m"><p id="wsd-m"><tt class="docutils literal"><span class="pre">wsd_m</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_wsd_m</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and
-<tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="wvariance_with_fixed_mean"><p id="wvariance-with-fixed-mean"><tt class="docutils literal"><span class="pre">wvariance_with_fixed_mean</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_wvariance_with_fixed_mean</span></tt> without
-<tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="wsd_with_fixed_mean"><p id="wsd-with-fixed-mean"><tt class="docutils literal"><span class="pre">wsd_with_fixed_mean</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_wsd_with_fixed_mean</span></tt> without
-<tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="wtss"><p id="wtss"><tt class="docutils literal"><span class="pre">wtss</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_wtss</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt>
-arguments.</blockquote>
-<a name="wtss_m"><p id="wtss-m"><tt class="docutils literal"><span class="pre">wtss_m</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_wtss_m</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt>
-arguments.</blockquote>
-<a name="wabsdev"><p id="wabsdev"><tt class="docutils literal"><span class="pre">wabsdev</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_wabsdev</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt>
-arguments.</blockquote>
-<a name="wabsdev_m"><p id="wabsdev-m"><tt class="docutils literal"><span class="pre">wabsdev_m</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_wabsdev_m</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt>
-arguments.</blockquote>
-<a name="wskew"><p id="wskew"><tt class="docutils literal"><span class="pre">wskew</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_wskew</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt>
-arguments.</blockquote>
-<a name="wskew_m_sd"><p id="wskew-m-sd"><tt class="docutils literal"><span class="pre">wskew_m_sd</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span>&nbsp; <span class="pre">sd</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_wskew_m_sd</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and
-<tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="wkurtosis"><p id="wkurtosis"><tt class="docutils literal"><span class="pre">wkurtosis</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_wkurtosis</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and
-<tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="wkurtosis_m_sd"><p id="wkurtosis-m-sd"><tt class="docutils literal"><span class="pre">wkurtosis_m_sd</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_wkurtosis_m_sd</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt>
-and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="max"><p id="max"><tt class="docutils literal"><span class="pre">max</span>&nbsp; <span class="pre">data::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_max</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt>
-and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="min"><p id="min"><tt class="docutils literal"><span class="pre">min</span>&nbsp; <span class="pre">data::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_min</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt>
-and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="minmax"><p id="minmax"><tt class="docutils literal"><span class="pre">minmax</span>&nbsp; <span class="pre">data::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_minmax</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt>
+<a name="mean"><dl class="docutils" id="mean">
+<dt><tt class="docutils literal"><span class="pre">mean</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_mean</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="variance"><dl class="docutils" id="variance">
+<dt><tt class="docutils literal"><span class="pre">variance</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_variance</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="variance_m"><dl class="docutils" id="variance-m">
+<dt><tt class="docutils literal"><span class="pre">variance</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_variance_m</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt>
+arguments.</dd>
+</dl>
+<a name="sd"><dl class="docutils" id="sd">
+<dt><tt class="docutils literal"><span class="pre">sd</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_sd</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="sd_m"><dl class="docutils" id="sd-m">
+<dt><tt class="docutils literal"><span class="pre">sd_m</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_sd_m</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="tss"><dl class="docutils" id="tss">
+<dt><tt class="docutils literal"><span class="pre">tss</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_tss</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="tss_m"><dl class="docutils" id="tss-m">
+<dt><tt class="docutils literal"><span class="pre">tss_m</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_tss_m</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt>
+arguments.</dd>
+</dl>
+<a name="variance_with_fixed_mean"><dl class="docutils" id="variance-with-fixed-mean">
+<dt><tt class="docutils literal"><span class="pre">variance_with_fixed_mean</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_variance_with_fixed_mean</span></tt> without
+<tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="sd_with_fixed_mean"><dl class="docutils" id="sd-with-fixed-mean">
+<dt><tt class="docutils literal"><span class="pre">sd_with_fixed_mean</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_sd_with_fixed_mean</span></tt> without
+<tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="absdev"><dl class="docutils" id="absdev">
+<dt><tt class="docutils literal"><span class="pre">absdev</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_absdev</span></tt> without
+<tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="absdev_m"><dl class="docutils" id="absdev-m">
+<dt><tt class="docutils literal"><span class="pre">absdev_m</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_absdev_m</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and
+<tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="skew"><dl class="docutils" id="skew">
+<dt><tt class="docutils literal"><span class="pre">skew</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_skew</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt>
+arguments.</dd>
+</dl>
+<a name="skew_m_sd"><dl class="docutils" id="skew-m-sd">
+<dt><tt class="docutils literal"><span class="pre">skew_m_sd</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span>&nbsp; <span class="pre">sd</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_skew_m_sd</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and
+<tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="kurtosis"><dl class="docutils" id="kurtosis">
+<dt><tt class="docutils literal"><span class="pre">kurtosis</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_kurtosis</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and
+<tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="kurtosis_m_sd"><dl class="docutils" id="kurtosis-m-sd">
+<dt><tt class="docutils literal"><span class="pre">kurtosis_m_sd</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span>&nbsp; <span class="pre">sd</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_kurtosis_m_sd</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt>
+and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="lag1_autocorrelation"><dl class="docutils" id="lag1-autocorrelation">
+<dt><tt class="docutils literal"><span class="pre">lag1_autocorrelation</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_lag1_autocorrelation</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt>
+and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="lag1_autocorrelation_m"><dl class="docutils" id="lag1-autocorrelation-m">
+<dt><tt class="docutils literal"><span class="pre">lag1_autocorrelation_m</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_lag1_autocorrelation_m</span></tt> without
+<tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="covariance"><dl class="docutils" id="covariance">
+<dt><tt class="docutils literal"><span class="pre">covariance</span>&nbsp; <span class="pre">d1::matrix</span>&nbsp; <span class="pre">d2::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_covariance</span></tt> without <tt class="docutils literal"><span class="pre">stride1</span></tt>,
+<tt class="docutils literal"><span class="pre">stride2</span></tt>, and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="covariance_m"><dl class="docutils" id="covariance-m">
+<dt><tt class="docutils literal"><span class="pre">covariance_m</span>&nbsp; <span class="pre">d1::matrix</span>&nbsp; <span class="pre">d2::matrix</span>&nbsp; <span class="pre">mean1</span>&nbsp; <span class="pre">mean2</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_covariance_m</span></tt> without <tt class="docutils literal"><span class="pre">stride1</span></tt>,
+<tt class="docutils literal"><span class="pre">stride2</span></tt>, and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="correlation"><dl class="docutils" id="correlation">
+<dt><tt class="docutils literal"><span class="pre">correlation</span>&nbsp; <span class="pre">d1::matrix</span>&nbsp; <span class="pre">d2::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_correlation</span></tt> without <tt class="docutils literal"><span class="pre">stride1</span></tt>,
+<tt class="docutils literal"><span class="pre">stride2</span></tt>, and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="wmean"><dl class="docutils" id="wmean">
+<dt><tt class="docutils literal"><span class="pre">wmean</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_wmean</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt>
+and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="wvariance"><dl class="docutils" id="wvariance">
+<dt><tt class="docutils literal"><span class="pre">wvariance</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_wvariance</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt>
+and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="wvariance_m"><dl class="docutils" id="wvariance-m">
+<dt><tt class="docutils literal"><span class="pre">wvariance_m</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_wvariance_m</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt>
+and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="wsd"><dl class="docutils" id="wsd">
+<dt><tt class="docutils literal"><span class="pre">wsd</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_wsd</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and
+<tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="wsd_m"><dl class="docutils" id="wsd-m">
+<dt><tt class="docutils literal"><span class="pre">wsd_m</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_wsd_m</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and
+<tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="wvariance_with_fixed_mean"><dl class="docutils" id="wvariance-with-fixed-mean">
+<dt><tt class="docutils literal"><span class="pre">wvariance_with_fixed_mean</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_wvariance_with_fixed_mean</span></tt> without
+<tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="wsd_with_fixed_mean"><dl class="docutils" id="wsd-with-fixed-mean">
+<dt><tt class="docutils literal"><span class="pre">wsd_with_fixed_mean</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_wsd_with_fixed_mean</span></tt> without
+<tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="wtss"><dl class="docutils" id="wtss">
+<dt><tt class="docutils literal"><span class="pre">wtss</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_wtss</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt>
+arguments.</dd>
+</dl>
+<a name="wtss_m"><dl class="docutils" id="wtss-m">
+<dt><tt class="docutils literal"><span class="pre">wtss_m</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_wtss_m</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt>
+arguments.</dd>
+</dl>
+<a name="wabsdev"><dl class="docutils" id="wabsdev">
+<dt><tt class="docutils literal"><span class="pre">wabsdev</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_wabsdev</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt>
+arguments.</dd>
+</dl>
+<a name="wabsdev_m"><dl class="docutils" id="wabsdev-m">
+<dt><tt class="docutils literal"><span class="pre">wabsdev_m</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_wabsdev_m</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt>
+arguments.</dd>
+</dl>
+<a name="wskew"><dl class="docutils" id="wskew">
+<dt><tt class="docutils literal"><span class="pre">wskew</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_wskew</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt>
+arguments.</dd>
+</dl>
+<a name="wskew_m_sd"><dl class="docutils" id="wskew-m-sd">
+<dt><tt class="docutils literal"><span class="pre">wskew_m_sd</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">mean</span>&nbsp; <span class="pre">sd</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_wskew_m_sd</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and
+<tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="wkurtosis"><dl class="docutils" id="wkurtosis">
+<dt><tt class="docutils literal"><span class="pre">wkurtosis</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_wkurtosis</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and
+<tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="wkurtosis_m_sd"><dl class="docutils" id="wkurtosis-m-sd">
+<dt><tt class="docutils literal"><span class="pre">wkurtosis_m_sd</span>&nbsp; <span class="pre">weight::matrix</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_wkurtosis_m_sd</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt>
+and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="max"><dl class="docutils" id="max">
+<dt><tt class="docutils literal"><span class="pre">max</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_max</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt>
+and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="min"><dl class="docutils" id="min">
+<dt><tt class="docutils literal"><span class="pre">min</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_min</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt>
+and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="minmax"><dl class="docutils" id="minmax">
+<dt><tt class="docutils literal"><span class="pre">minmax</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_minmax</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt>
 and <tt class="docutils literal"><span class="pre">n</span></tt> arguments. Results are returned as a list
-<tt class="docutils literal"><span class="pre">[min,</span> <span class="pre">max]</span></tt>.</blockquote>
-<a name="min_index"><p id="min-index"><tt class="docutils literal"><span class="pre">min_index</span>&nbsp; <span class="pre">data::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_min_index</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt>
-and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="max_index"><p id="max-index"><tt class="docutils literal"><span class="pre">max_index</span>&nbsp; <span class="pre">data::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_max_index</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt>
-and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="minmax_index"><p id="minmax-index"><tt class="docutils literal"><span class="pre">minmax_index</span>&nbsp; <span class="pre">data::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_minmax_index</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt>
+<tt class="docutils literal"><span class="pre">[min,</span> <span class="pre">max]</span></tt>.</dd>
+</dl>
+<a name="min_index"><dl class="docutils" id="min-index">
+<dt><tt class="docutils literal"><span class="pre">min_index</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_min_index</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt>
+and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="max_index"><dl class="docutils" id="max-index">
+<dt><tt class="docutils literal"><span class="pre">max_index</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_max_index</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt>
+and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="minmax_index"><dl class="docutils" id="minmax-index">
+<dt><tt class="docutils literal"><span class="pre">minmax_index</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_minmax_index</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt>
 and <tt class="docutils literal"><span class="pre">n</span></tt> arguments. Results are returned as a list
-<tt class="docutils literal"><span class="pre">[min_index,</span> <span class="pre">max_index]</span></tt>.</blockquote>
-<a name="median_from_sorted_data"><p id="median-from-sorted-data"><tt class="docutils literal"><span class="pre">median_from_sorted_data</span>&nbsp; <span class="pre">data::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_median_from_sorted_data</span></tt> without
-<tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
-<a name="quantile_from_sorted_data"><p id="quantile-from-sorted-data"><tt class="docutils literal"><span class="pre">quantile_from_sorted_data</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">f::double</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_stats_quantile_from_sorted_data</span></tt> without
-<tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</blockquote>
+<tt class="docutils literal"><span class="pre">[min_index,</span> <span class="pre">max_index]</span></tt>.</dd>
+</dl>
+<a name="median_from_sorted_data"><dl class="docutils" id="median-from-sorted-data">
+<dt><tt class="docutils literal"><span class="pre">median_from_sorted_data</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_median_from_sorted_data</span></tt> without
+<tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
+<a name="quantile_from_sorted_data"><dl class="docutils" id="quantile-from-sorted-data">
+<dt><tt class="docutils literal"><span class="pre">quantile_from_sorted_data</span>&nbsp; <span class="pre">data::matrix</span>&nbsp; <span class="pre">f::double</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_quantile_from_sorted_data</span></tt> without
+<tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
+</dl>
 <!--  -->
 </div>
 <div class="section" id="id13">
@@ -1214,383 +1284,386 @@ distribution functions. The two namespaces minimize typing of the
 prefixes <tt class="docutils literal"><span class="pre">gsl_ran_</span></tt> and <tt class="docutils literal"><span class="pre">gsl_cdf_</span></tt> respectively.</p>
 <div class="section" id="id14">
 <h2><a class="toc-backref" href="#id34">Routines</a></h2>
-<a name="ugaussian_pdf"><p id="ugaussian-pdf"><tt class="docutils literal"><span class="pre">ugaussian_pdf</span>&nbsp; <span class="pre">x</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_ugaussian</span></tt>.</blockquote>
-<a name="gaussian_pdf"><p id="gaussian-pdf"><tt class="docutils literal"><span class="pre">gaussian_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">sigma</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_gaussian_pdf</span></tt>.</blockquote>
-<a name="gaussian_tail_pdf"><p id="gaussian-tail-pdf"><tt class="docutils literal"><span class="pre">gaussian_tail_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">sigma</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_gaussian_tail_pdf</span></tt>.</blockquote>
-<a name="ugaussian_tail_pdf"><p id="ugaussian-tail-pdf"><tt class="docutils literal"><span class="pre">ugaussian_tail_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_ugaussian_tail_pdf</span></tt>.</blockquote>
-<a name="bivariate_gaussian_pdf"><p id="bivariate-gaussian-pdf"><tt class="docutils literal"><span class="pre">bivariate_gaussian_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_bivariate_gaussian_pdf</span></tt>.</blockquote>
-<a name="expoential_pdf"><p id="expoential-pdf"><tt class="docutils literal"><span class="pre">exponential_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">mu</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_exponential_pdf</span></tt>.</blockquote>
-<a name="laplace_pdf"><p id="laplace-pdf"><tt class="docutils literal"><span class="pre">laplace_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_laplace_pdf</span></tt>.</blockquote>
-<a name="exppow_pdf"><p id="exppow-pdf"><tt class="docutils literal"><span class="pre">exppow_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_exppow_pdf</span></tt>.</blockquote>
-<a name="cauchy_pdf"><p id="cauchy-pdf"><tt class="docutils literal"><span class="pre">cauchy_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_cauchy_pdf</span></tt>.</blockquote>
-<a name="rayleigh_pdf"><p id="rayleigh-pdf"><tt class="docutils literal"><span class="pre">rayleigh_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">sigma</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_rayleigh_pdf</span></tt>.</blockquote>
-<a name="rayleigh_tail_pdf"><p id="rayleigh-tail-pdf"><tt class="docutils literal"><span class="pre">rayleigh_tail_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">sigma</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_rayleigh_tail_pdf</span></tt>.</blockquote>
-<a name="landau_pdf"><p id="landau-pdf"><tt class="docutils literal"><span class="pre">landau_pdf</span>&nbsp; <span class="pre">x</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_landau_pdf</span></tt>.</blockquote>
-<a name="gamma_pdf"><p id="gamma-pdf"><tt class="docutils literal"><span class="pre">gamma_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_gamma_pdf</span></tt>.</blockquote>
-<a name="flat_pdf"><p id="flat-pdf"><tt class="docutils literal"><span class="pre">flat_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_flat_pdf</span></tt>.</blockquote>
-<a name="lognormal_pdf"><p id="lognormal-pdf"><tt class="docutils literal"><span class="pre">lognormal_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">zeta</span>&nbsp; <span class="pre">sigma</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_lognormal_pdf</span></tt>.</blockquote>
-<a name="chisq_pdf"><p id="chisq-pdf"><tt class="docutils literal"><span class="pre">chisq_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">nu</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_chisq_pdf</span></tt>.</blockquote>
-<a name="fdist_pdf"><p id="fdist-pdf"><tt class="docutils literal"><span class="pre">fdist_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">nu1</span>&nbsp; <span class="pre">nu2</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_fdist_pdf</span></tt>.</blockquote>
-<a name="tdist_pdf"><p id="tdist-pdf"><tt class="docutils literal"><span class="pre">tdist_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">nu</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_tdist_pdf</span></tt>.</blockquote>
-<a name="beta_pdf"><p id="beta-pdf"><tt class="docutils literal"><span class="pre">beta_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_beta_pdf</span></tt>.</blockquote>
-<a name="logistic_pdf"><p id="logistic-pdf"><tt class="docutils literal"><span class="pre">logistic_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_logistic_pdf</span></tt>.</blockquote>
-<a name="pareto_pdf"><p id="pareto-pdf"><tt class="docutils literal"><span class="pre">pareto_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_pareto_pdf</span></tt>.</blockquote>
-<a name="weibull_pdf"><p id="weibull-pdf"><tt class="docutils literal"><span class="pre">weibull_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_weibull_pdf</span></tt>.</blockquote>
-<a name="gumbel1_pdf"><p id="gumbel1-pdf"><tt class="docutils literal"><span class="pre">gumbel1_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_gumbel1_pdf</span></tt>.</blockquote>
-<a name="gumbel2_pdf"><p id="gumbel2-pdf"><tt class="docutils literal"><span class="pre">gumbel2_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_gumbel2_pdf</span></tt>.</blockquote>
-<a name="dirichlet_pdf"><p id="dirichlet-pdf"><tt class="docutils literal"><span class="pre">dirichlet_pdf</span>&nbsp; <span class="pre">alpha::matrix</span>&nbsp; <span class="pre">theta::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_dirichlet_pdf</span></tt>.</blockquote>
-<a name="dirichlet_lnpdf"><p id="dirichlet-lnpdf"><tt class="docutils literal"><span class="pre">dirichlet_lnpdf</span>&nbsp; <span class="pre">alpha::matrix</span>&nbsp; <span class="pre">theta::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_dirichlet_lnpdf</span></tt>.</blockquote>
-<a name="discrete_preproc"><p id="discrete-preproc"><tt class="docutils literal"><span class="pre">discrete_preproc</span>&nbsp; <span class="pre">p::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_discrete_preproc</span></tt> without the
-<tt class="docutils literal"><span class="pre">K</span></tt> parameter.</blockquote>
-<a name="discrete_pdf"><p id="discrete-pdf"><tt class="docutils literal"><span class="pre">discrete_pdf</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p::pointer</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_discrete_pdf</span></tt> without the
-<tt class="docutils literal"><span class="pre">K</span></tt> parameter.</blockquote>
-<a name="discrete_free"><p id="discrete-free"><tt class="docutils literal"><span class="pre">discrete_free</span>&nbsp; <span class="pre">p::pointer</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_discrete_free</span></tt></blockquote>
-<a name="poisson_pdf"><p id="poisson-pdf"><tt class="docutils literal"><span class="pre">poisson_pdf</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">mu</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_poisson_pdf</span></tt>.</blockquote>
-<a name="bernoulli_pdf"><p id="bernoulli-pdf"><tt class="docutils literal"><span class="pre">bernoulli_pdf</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_bernoulli_pdf</span></tt>.</blockquote>
-<a name="binomial_pdf"><p id="binomial-pdf"><tt class="docutils literal"><span class="pre">binomial_pdf</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">n::int</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_binomial_pdf</span></tt>.</blockquote>
-<a name="multinomial_pdf"><p id="multinomial-pdf"><tt class="docutils literal"><span class="pre">multinomial_pdf</span>&nbsp; <span class="pre">p::matrix</span>&nbsp; <span class="pre">n::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_multinomial_pdf</span></tt>.</blockquote>
-<a name="multinomial_lnpdf"><p id="multinomial-lnpdf"><tt class="docutils literal"><span class="pre">multinomial_lnpdf</span>&nbsp; <span class="pre">p::matrix</span>&nbsp; <span class="pre">n::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_multinomial_lnpdf</span></tt>.</blockquote>
-<a name="negative_binomial_pdf"><p id="negative-binomial-pdf"><tt class="docutils literal"><span class="pre">negative_binomial_pdf</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">n</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_negative_binomial_pdf</span></tt>.</blockquote>
-<a name="pascal_pdf"><p id="pascal-pdf"><tt class="docutils literal"><span class="pre">pascal_pdf</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">n::int</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_pascal_pdf</span></tt>.</blockquote>
-<a name="geometric_pdf"><p id="geometric-pdf"><tt class="docutils literal"><span class="pre">geometric_pdf</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_geometric_pdf</span></tt>.</blockquote>
-<a name="hypergeometric_pdf"><p id="hypergeometric-pdf"><tt class="docutils literal"><span class="pre">hypergeometric_pdf</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">n1::int</span>&nbsp; <span class="pre">n2::int</span>&nbsp; <span class="pre">t::int</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_hypergeometric_pdf</span></tt>.</blockquote>
-<a name="logarithmic_pdf"><p id="logarithmic-pdf"><tt class="docutils literal"><span class="pre">logarithmic_pdf</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_ran_logarithmic_pdf</span></tt>.</blockquote>
-<a name="ugaussian_P: _ugaussian_Q: _ugaussian_Pinv: _ugaussian_Qinv"><p><tt class="docutils literal"><span class="pre">ugaussian_P</span>&nbsp; <span class="pre">x</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_ugaussian_P</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">ugaussian_Q</span>&nbsp; <span class="pre">x</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_ugaussian_Q</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">ugaussian_Pinv</span> <span class="pre">p</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_ugaussian_Pinv</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">ugaussian_Qinv</span> <span class="pre">q</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_ugaussian_Qinv</span></tt>.</blockquote>
-<a name="gaussian_P: _gaussian_Q: _gaussian_Pinv: _gaussian_Qinv"><p><tt class="docutils literal"><span class="pre">gaussian_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">sigma</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_gaussian_P</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">gaussian_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">sigma</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_gaussian_Q</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">gaussian_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">sigma</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_gaussian_Pinv</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">guassian_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">sigma</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_gaussian_Qinv</span></tt>.</blockquote>
-<a name="exponential_P: _exponential_Q: _exponential_Pinv: _exponential_Qinv"><p><tt class="docutils literal"><span class="pre">exponential_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">mu</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_exponential_P</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">exponential_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">mu</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_exponential_Q</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">exponential_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">mu</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_exponential_Pinv</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">exponential_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">mu</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_exponential_Qinv</span></tt>.</blockquote>
-<a name="laplace_P: _laplace_Q: _laplace_Pinv: _laplace_Qinv"><p><tt class="docutils literal"><span class="pre">laplace_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_laplace_P</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">laplace_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_laplace_Q</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">laplace_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">a</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_laplace_Pinv</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">laplace_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">a</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_laplace_Qinv</span></tt>.</blockquote>
-<a name="exppow_P: _exppow_Q"><p><tt class="docutils literal"><span class="pre">exppow_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_exppow_P</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">exppow_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_exppow_Q</span></tt>.</blockquote>
-<a name="cauchy_P: _cauchy_Q: _cauchy_Pinv: _cauchy_Qinv"><p><tt class="docutils literal"><span class="pre">cauchy_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_cauchy_P</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">cauchy_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_cauchy_Q</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">cauchy_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">a</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_cauchy_Pinv</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">cauchy_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">a</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_cauchy_Qinv</span></tt>.</blockquote>
-<a name="rayleigh_P: _rayleigh_Q: _rayleigh_Pinv: _rayleigh_Qinv"><p><tt class="docutils literal"><span class="pre">rayleigh_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">sigma</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_rayleigh_P</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">rayleigh_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">sigma</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_rayleigh_Q</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">rayleigh_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">sigma</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_rayleigh_Pinv</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">rayleigh_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">sigma</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_rayleigh_Qinv</span></tt>.</blockquote>
-<a name="gamma_P: _gamma_Q: _gamma_Pinv: _gamma_Qinv"><p><tt class="docutils literal"><span class="pre">gamma_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_gamma_P</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">gamma_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_gamMa_Q</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">gamma_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_gamma_Pinv</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">gamma_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_gamma_Qinv</span></tt>.</blockquote>
-<a name="flat_P: _flat_Q: _flat_Pinv: _flat_Qinv"><p><tt class="docutils literal"><span class="pre">flat_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_flat_P</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">flat_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_flat_Q</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">flat_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_flat_Pinv</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">flat_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_flat_Qinv</span></tt>.</blockquote>
-<a name="lognormal_P: _lognormal_Q: _lognormal_Pinv: _lognormal_Qinv"><p><tt class="docutils literal"><span class="pre">lognormal_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">zeta</span>&nbsp; <span class="pre">sigma</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_lognormal_P</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">lognormal_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">zeta</span>&nbsp; <span class="pre">sigma</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_lognormal_Q</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">lognormal_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">zeta</span>&nbsp; <span class="pre">sigma</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_lognormal_Pinv</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">lognormal_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">zeta</span>&nbsp; <span class="pre">sigma</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_lognormal_Qinv</span></tt>.</blockquote>
-<a name="chisq_P: _chisq_Q: _chisq_Pinv: _chisq_Qinv"><p><tt class="docutils literal"><span class="pre">chisq_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">nu</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_chisq_P</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">chisq_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">nu</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_chisq_Q</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">chisq_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">nu</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_chisq_Pinv</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">chisq_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">nu</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_chisq_Qinv</span></tt>.</blockquote>
-<a name="fdist_P: _fdist_Q: _fdist_Pinv: _fdist_Qinv"><p><tt class="docutils literal"><span class="pre">fdist_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">nu1</span>&nbsp; <span class="pre">nu2</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_fdist_P</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">fdist_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">nu1</span>&nbsp; <span class="pre">nu2</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_fdist_Q</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">fdist_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">nu1</span>&nbsp; <span class="pre">nu2</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_fdist_Pinv</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">fdist_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">nu1</span>&nbsp; <span class="pre">nu2</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_fdist_Qinv</span></tt>.</blockquote>
-<a name="tdist_P: _tdist_Q: _tdist_Pinv: _tdist_Qinv"><p><tt class="docutils literal"><span class="pre">tdist_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">nu</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_tdist_P</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">tdist_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">nu</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_tdist_Q</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">tdist_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">nu</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_tdist_Pinv</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">tdist_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">nu</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_tdist_Qinv</span></tt>.</blockquote>
-<a name="beta_P: _beta_Q: _beta_Pinv: _beta_Qinv"><p><tt class="docutils literal"><span class="pre">beta_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_beta_P</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">beta_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_beta_Q</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">beta_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_beta_Pinv</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">beta_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_beta_Qinv</span></tt>.</blockquote>
-<a name="logistic_P: _logistic_Q: _logistic_Pinv: _logistic_Qinv"><p><tt class="docutils literal"><span class="pre">logistic_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_logistic_P</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">logistic_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_logistic_Q</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">logistic_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">a</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_logistic_Pinv</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">logistic_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">a</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_logistic_Qinv</span></tt>.</blockquote>
-<a name="pareto_P: _pareto_Q: _pareto_Pinv: _pareto_Qinv"><p><tt class="docutils literal"><span class="pre">pareto_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_pareto_P</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">pareto_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_pareto_Q</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">pareto_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_pareto_Pinv</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">pareto_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_pareto_Qinv</span></tt>.</blockquote>
-<a name="weibull_P: _weibull_Q: _weibull_Pinv: _weibull_Qinv"><p><tt class="docutils literal"><span class="pre">weibull_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_weibull_P</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">weibull_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_weibull_Q</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">weibull_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_weibull_Pinv</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">weibull_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_weibull_Qinv</span></tt>.</blockquote>
-<a name="gumbel1_P: _gumbel1_Q: _gumbel1_Pinv: _gumbel1_Qinv"><p><tt class="docutils literal"><span class="pre">gumbel1_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_gumbel1_P</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">gumbel1_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_gumbel1_Q</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">gumbel1_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_gumbel1_Pinv</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">gumbel1_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_gumbel1_Qinv</span></tt>.</blockquote>
-<a name="gumbel2_P: _gumbel2_Q: _gumbel2_Pinv: _gumbel2_Qinv"><p><tt class="docutils literal"><span class="pre">gumbel2_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_gumbel2_P</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">gumbel2_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_gumbel2_Q</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">gumbel2_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_gumbel2_Pinv</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">gumbel2_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_gumbel2_Qinv</span></tt>.</blockquote>
-<a name="poisson_P: _poisson_Q"><p><tt class="docutils literal"><span class="pre">poisson_P</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">mu</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_poisson_P</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">poisson_Q</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">mu</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_poisson_Q</span></tt>.</blockquote>
-<a name="binomial_P: _binomial_Q"><p><tt class="docutils literal"><span class="pre">binomial_P</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">n::int</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_binomial_P</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">binomial_Q</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">n::int</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_binomial_Q</span></tt>.</blockquote>
-<a name="negative_binomial_P: _negative_binomial_Q"><p><tt class="docutils literal"><span class="pre">negative_binomial_P</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">n</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_negative_binomial_P</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">negative_binomial_Q</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">n</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_negative_binomial_Q</span></tt>.</blockquote>
-<a name="pascal_P"><p><tt class="docutils literal"><span class="pre">pascal_P</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">n::int</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_pascal_P</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">pascal_Q</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">n::int</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_pascal_Q</span></tt>.</blockquote>
-<a name="geometric_P: _geometric_Q"><p><tt class="docutils literal"><span class="pre">geometric_P</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_geometric_P</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">geometric_Q</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_geometric_Q</span></tt>.</blockquote>
-<a name="hypergeometric_P: _hypergeometric_Q"><p><tt class="docutils literal"><span class="pre">hypergeometric_P</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">n1::int</span>&nbsp; <span class="pre">n2::int</span>&nbsp; <span class="pre">t::int</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_hypergeometric_P</span></tt>.</blockquote>
-<p><tt class="docutils literal"><span class="pre">hypergeometric_Q</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">n1::int</span>&nbsp; <span class="pre">n2::int</span>&nbsp; <span class="pre">t::int</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_cdf_hypergeometric_Q</span></tt>.</blockquote>
+<a name="ugaussian_pdf"><dl class="docutils" id="ugaussian-pdf">
+<dt><tt class="docutils literal"><span class="pre">ugaussian_pdf</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_ugaussian</span></tt>.</dd>
+</dl>
+<a name="gaussian_pdf"><dl class="docutils" id="gaussian-pdf">
+<dt><tt class="docutils literal"><span class="pre">gaussian_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_gaussian_pdf</span></tt>.</dd>
+</dl>
+<a name="gaussian_tail_pdf"><dl class="docutils" id="gaussian-tail-pdf">
+<dt><tt class="docutils literal"><span class="pre">gaussian_tail_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_gaussian_tail_pdf</span></tt>.</dd>
+</dl>
+<a name="ugaussian_tail_pdf"><dl class="docutils" id="ugaussian-tail-pdf">
+<dt><tt class="docutils literal"><span class="pre">ugaussian_tail_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_ugaussian_tail_pdf</span></tt>.</dd>
+</dl>
+<a name="bivariate_gaussian_pdf"><dl class="docutils" id="bivariate-gaussian-pdf">
+<dt><tt class="docutils literal"><span class="pre">bivariate_gaussian_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_bivariate_gaussian_pdf</span></tt>.</dd>
+</dl>
+<a name="expoential_pdf"><dl class="docutils" id="expoential-pdf">
+<dt><tt class="docutils literal"><span class="pre">exponential_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">mu</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_exponential_pdf</span></tt>.</dd>
+</dl>
+<a name="laplace_pdf"><dl class="docutils" id="laplace-pdf">
+<dt><tt class="docutils literal"><span class="pre">laplace_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_laplace_pdf</span></tt>.</dd>
+</dl>
+<a name="exppow_pdf"><dl class="docutils" id="exppow-pdf">
+<dt><tt class="docutils literal"><span class="pre">exppow_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_exppow_pdf</span></tt>.</dd>
+</dl>
+<a name="cauchy_pdf"><dl class="docutils" id="cauchy-pdf">
+<dt><tt class="docutils literal"><span class="pre">cauchy_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_cauchy_pdf</span></tt>.</dd>
+</dl>
+<a name="rayleigh_pdf"><dl class="docutils" id="rayleigh-pdf">
+<dt><tt class="docutils literal"><span class="pre">rayleigh_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_rayleigh_pdf</span></tt>.</dd>
+</dl>
+<a name="rayleigh_tail_pdf"><dl class="docutils" id="rayleigh-tail-pdf">
+<dt><tt class="docutils literal"><span class="pre">rayleigh_tail_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_rayleigh_tail_pdf</span></tt>.</dd>
+</dl>
+<a name="landau_pdf"><dl class="docutils" id="landau-pdf">
+<dt><tt class="docutils literal"><span class="pre">landau_pdf</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_landau_pdf</span></tt>.</dd>
+</dl>
+<a name="gamma_pdf"><dl class="docutils" id="gamma-pdf">
+<dt><tt class="docutils literal"><span class="pre">gamma_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_gamma_pdf</span></tt>.</dd>
+</dl>
+<a name="flat_pdf"><dl class="docutils" id="flat-pdf">
+<dt><tt class="docutils literal"><span class="pre">flat_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_flat_pdf</span></tt>.</dd>
+</dl>
+<a name="lognormal_pdf"><dl class="docutils" id="lognormal-pdf">
+<dt><tt class="docutils literal"><span class="pre">lognormal_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">zeta</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_lognormal_pdf</span></tt>.</dd>
+</dl>
+<a name="chisq_pdf"><dl class="docutils" id="chisq-pdf">
+<dt><tt class="docutils literal"><span class="pre">chisq_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">nu</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_chisq_pdf</span></tt>.</dd>
+</dl>
+<a name="fdist_pdf"><dl class="docutils" id="fdist-pdf">
+<dt><tt class="docutils literal"><span class="pre">fdist_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">nu1</span>&nbsp; <span class="pre">nu2</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_fdist_pdf</span></tt>.</dd>
+</dl>
+<a name="tdist_pdf"><dl class="docutils" id="tdist-pdf">
+<dt><tt class="docutils literal"><span class="pre">tdist_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">nu</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_tdist_pdf</span></tt>.</dd>
+</dl>
+<a name="beta_pdf"><dl class="docutils" id="beta-pdf">
+<dt><tt class="docutils literal"><span class="pre">beta_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_beta_pdf</span></tt>.</dd>
+</dl>
+<a name="logistic_pdf"><dl class="docutils" id="logistic-pdf">
+<dt><tt class="docutils literal"><span class="pre">logistic_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_logistic_pdf</span></tt>.</dd>
+</dl>
+<a name="pareto_pdf"><dl class="docutils" id="pareto-pdf">
+<dt><tt class="docutils literal"><span class="pre">pareto_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_pareto_pdf</span></tt>.</dd>
+</dl>
+<a name="weibull_pdf"><dl class="docutils" id="weibull-pdf">
+<dt><tt class="docutils literal"><span class="pre">weibull_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_weibull_pdf</span></tt>.</dd>
+</dl>
+<a name="gumbel1_pdf"><dl class="docutils" id="gumbel1-pdf">
+<dt><tt class="docutils literal"><span class="pre">gumbel1_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_gumbel1_pdf</span></tt>.</dd>
+</dl>
+<a name="gumbel2_pdf"><dl class="docutils" id="gumbel2-pdf">
+<dt><tt class="docutils literal"><span class="pre">gumbel2_pdf</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_gumbel2_pdf</span></tt>.</dd>
+</dl>
+<a name="dirichlet_pdf"><dl class="docutils" id="dirichlet-pdf">
+<dt><tt class="docutils literal"><span class="pre">dirichlet_pdf</span>&nbsp; <span class="pre">alpha::matrix</span>&nbsp; <span class="pre">theta::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_dirichlet_pdf</span></tt>.</dd>
+</dl>
+<a name="dirichlet_lnpdf"><dl class="docutils" id="dirichlet-lnpdf">
+<dt><tt class="docutils literal"><span class="pre">dirichlet_lnpdf</span>&nbsp; <span class="pre">alpha::matrix</span>&nbsp; <span class="pre">theta::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_dirichlet_lnpdf</span></tt>.</dd>
+</dl>
+<a name="discrete_preproc"><dl class="docutils" id="discrete-preproc">
+<dt><tt class="docutils literal"><span class="pre">discrete_preproc</span>&nbsp; <span class="pre">p::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_discrete_preproc</span></tt> without the
+<tt class="docutils literal"><span class="pre">K</span></tt> parameter.</dd>
+</dl>
+<a name="discrete_pdf"><dl class="docutils" id="discrete-pdf">
+<dt><tt class="docutils literal"><span class="pre">discrete_pdf</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p::pointer</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_discrete_pdf</span></tt> without the
+<tt class="docutils literal"><span class="pre">K</span></tt> parameter.</dd>
+</dl>
+<a name="discrete_free"><dl class="docutils" id="discrete-free">
+<dt><tt class="docutils literal"><span class="pre">discrete_free</span>&nbsp; <span class="pre">p::pointer</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_discrete_free</span></tt></dd>
+</dl>
+<a name="poisson_pdf"><dl class="docutils" id="poisson-pdf">
+<dt><tt class="docutils literal"><span class="pre">poisson_pdf</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">mu</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_poisson_pdf</span></tt>.</dd>
+</dl>
+<a name="bernoulli_pdf"><dl class="docutils" id="bernoulli-pdf">
+<dt><tt class="docutils literal"><span class="pre">bernoulli_pdf</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_bernoulli_pdf</span></tt>.</dd>
+</dl>
+<a name="binomial_pdf"><dl class="docutils" id="binomial-pdf">
+<dt><tt class="docutils literal"><span class="pre">binomial_pdf</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">n::int</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_binomial_pdf</span></tt>.</dd>
+</dl>
+<a name="multinomial_pdf"><dl class="docutils" id="multinomial-pdf">
+<dt><tt class="docutils literal"><span class="pre">multinomial_pdf</span>&nbsp; <span class="pre">p::matrix</span>&nbsp; <span class="pre">n::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_multinomial_pdf</span></tt>.</dd>
+</dl>
+<a name="multinomial_lnpdf"><dl class="docutils" id="multinomial-lnpdf">
+<dt><tt class="docutils literal"><span class="pre">multinomial_lnpdf</span>&nbsp; <span class="pre">p::matrix</span>&nbsp; <span class="pre">n::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_multinomial_lnpdf</span></tt>.</dd>
+</dl>
+<a name="negative_binomial_pdf"><dl class="docutils" id="negative-binomial-pdf">
+<dt><tt class="docutils literal"><span class="pre">negative_binomial_pdf</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">n</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_negative_binomial_pdf</span></tt>.</dd>
+</dl>
+<a name="pascal_pdf"><dl class="docutils" id="pascal-pdf">
+<dt><tt class="docutils literal"><span class="pre">pascal_pdf</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">n::int</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_pascal_pdf</span></tt>.</dd>
+</dl>
+<a name="geometric_pdf"><dl class="docutils" id="geometric-pdf">
+<dt><tt class="docutils literal"><span class="pre">geometric_pdf</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_geometric_pdf</span></tt>.</dd>
+</dl>
+<a name="hypergeometric_pdf"><dl class="docutils" id="hypergeometric-pdf">
+<dt><tt class="docutils literal"><span class="pre">hypergeometric_pdf</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">n1::int</span>&nbsp; <span class="pre">n2::int</span>&nbsp; <span class="pre">t::int</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_hypergeometric_pdf</span></tt>.</dd>
+</dl>
+<a name="logarithmic_pdf"><dl class="docutils" id="logarithmic-pdf">
+<dt><tt class="docutils literal"><span class="pre">logarithmic_pdf</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_logarithmic_pdf</span></tt>.</dd>
+</dl>
+<a name="ugaussian_P: _ugaussian_Q: _ugaussian_Pinv: _ugaussian_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">ugaussian_P</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_ugaussian_P</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">ugaussian_Q</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_ugaussian_Q</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">ugaussian_Pinv</span> <span class="pre">p</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_ugaussian_Pinv</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">ugaussian_Qinv</span> <span class="pre">q</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_ugaussian_Qinv</span></tt>.</dd>
+</dl>
+<a name="gaussian_P: _gaussian_Q: _gaussian_Pinv: _gaussian_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">gaussian_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_gaussian_P</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">gaussian_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_gaussian_Q</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">gaussian_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_gaussian_Pinv</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">guassian_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_gaussian_Qinv</span></tt>.</dd>
+</dl>
+<a name="exponential_P: _exponential_Q: _exponential_Pinv: _exponential_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">exponential_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">mu</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_exponential_P</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">exponential_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">mu</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_exponential_Q</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">exponential_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">mu</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_exponential_Pinv</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">exponential_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">mu</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_exponential_Qinv</span></tt>.</dd>
+</dl>
+<a name="laplace_P: _laplace_Q: _laplace_Pinv: _laplace_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">laplace_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_laplace_P</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">laplace_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_laplace_Q</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">laplace_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_laplace_Pinv</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">laplace_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_laplace_Qinv</span></tt>.</dd>
+</dl>
+<a name="exppow_P: _exppow_Q"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">exppow_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_exppow_P</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">exppow_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_exppow_Q</span></tt>.</dd>
+</dl>
+<a name="cauchy_P: _cauchy_Q: _cauchy_Pinv: _cauchy_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">cauchy_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_cauchy_P</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">cauchy_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_cauchy_Q</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">cauchy_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_cauchy_Pinv</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">cauchy_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_cauchy_Qinv</span></tt>.</dd>
+</dl>
+<a name="rayleigh_P: _rayleigh_Q: _rayleigh_Pinv: _rayleigh_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">rayleigh_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_rayleigh_P</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">rayleigh_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_rayleigh_Q</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">rayleigh_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_rayleigh_Pinv</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">rayleigh_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_rayleigh_Qinv</span></tt>.</dd>
+</dl>
+<a name="gamma_P: _gamma_Q: _gamma_Pinv: _gamma_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">gamma_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_gamma_P</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">gamma_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_gamMa_Q</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">gamma_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_gamma_Pinv</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">gamma_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_gamma_Qinv</span></tt>.</dd>
+</dl>
+<a name="flat_P: _flat_Q: _flat_Pinv: _flat_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">flat_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_flat_P</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">flat_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_flat_Q</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">flat_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_flat_Pinv</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">flat_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_flat_Qinv</span></tt>.</dd>
+</dl>
+<a name="lognormal_P: _lognormal_Q: _lognormal_Pinv: _lognormal_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">lognormal_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">zeta</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_lognormal_P</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">lognormal_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">zeta</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_lognormal_Q</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">lognormal_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">zeta</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_lognormal_Pinv</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">lognormal_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">zeta</span>&nbsp; <span class="pre">sigma</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_lognormal_Qinv</span></tt>.</dd>
+</dl>
+<a name="chisq_P: _chisq_Q: _chisq_Pinv: _chisq_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">chisq_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">nu</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_chisq_P</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">chisq_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">nu</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_chisq_Q</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">chisq_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">nu</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_chisq_Pinv</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">chisq_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">nu</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_chisq_Qinv</span></tt>.</dd>
+</dl>
+<a name="fdist_P: _fdist_Q: _fdist_Pinv: _fdist_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">fdist_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">nu1</span>&nbsp; <span class="pre">nu2</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_fdist_P</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">fdist_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">nu1</span>&nbsp; <span class="pre">nu2</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_fdist_Q</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">fdist_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">nu1</span>&nbsp; <span class="pre">nu2</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_fdist_Pinv</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">fdist_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">nu1</span>&nbsp; <span class="pre">nu2</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_fdist_Qinv</span></tt>.</dd>
+</dl>
+<a name="tdist_P: _tdist_Q: _tdist_Pinv: _tdist_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">tdist_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">nu</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_tdist_P</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">tdist_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">nu</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_tdist_Q</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">tdist_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">nu</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_tdist_Pinv</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">tdist_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">nu</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_tdist_Qinv</span></tt>.</dd>
+</dl>
+<a name="beta_P: _beta_Q: _beta_Pinv: _beta_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">beta_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_beta_P</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">beta_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_beta_Q</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">beta_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_beta_Pinv</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">beta_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_beta_Qinv</span></tt>.</dd>
+</dl>
+<a name="logistic_P: _logistic_Q: _logistic_Pinv: _logistic_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">logistic_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_logistic_P</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">logistic_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_logistic_Q</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">logistic_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_logistic_Pinv</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">logistic_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">a</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_logistic_Qinv</span></tt>.</dd>
+</dl>
+<a name="pareto_P: _pareto_Q: _pareto_Pinv: _pareto_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">pareto_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_pareto_P</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">pareto_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_pareto_Q</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">pareto_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_pareto_Pinv</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">pareto_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_pareto_Qinv</span></tt>.</dd>
+</dl>
+<a name="weibull_P: _weibull_Q: _weibull_Pinv: _weibull_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">weibull_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_weibull_P</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">weibull_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_weibull_Q</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">weibull_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_weibull_Pinv</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">weibull_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_weibull_Qinv</span></tt>.</dd>
+</dl>
+<a name="gumbel1_P: _gumbel1_Q: _gumbel1_Pinv: _gumbel1_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">gumbel1_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_gumbel1_P</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">gumbel1_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_gumbel1_Q</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">gumbel1_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_gumbel1_Pinv</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">gumbel1_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_gumbel1_Qinv</span></tt>.</dd>
+</dl>
+<a name="gumbel2_P: _gumbel2_Q: _gumbel2_Pinv: _gumbel2_Qinv"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">gumbel2_P</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_gumbel2_P</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">gumbel2_Q</span>&nbsp; <span class="pre">x</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_gumbel2_Q</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">gumbel2_Pinv</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_gumbel2_Pinv</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">gumbel2_Qinv</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">a</span>&nbsp; <span class="pre">b</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_gumbel2_Qinv</span></tt>.</dd>
+</dl>
+<a name="poisson_P: _poisson_Q"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">poisson_P</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">mu</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_poisson_P</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">poisson_Q</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">mu</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_poisson_Q</span></tt>.</dd>
+</dl>
+<a name="binomial_P: _binomial_Q"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">binomial_P</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">n::int</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_binomial_P</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">binomial_Q</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">q</span>&nbsp; <span class="pre">n::int</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_binomial_Q</span></tt>.</dd>
+</dl>
+<a name="negative_binomial_P: _negative_binomial_Q"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">negative_binomial_P</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">n</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_negative_binomial_P</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">negative_binomial_Q</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">n</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_negative_binomial_Q</span></tt>.</dd>
+</dl>
+<a name="pascal_P"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">pascal_P</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">n::int</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_pascal_P</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">pascal_Q</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span>&nbsp; <span class="pre">n::int</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_pascal_Q</span></tt>.</dd>
+</dl>
+<a name="geometric_P: _geometric_Q"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">geometric_P</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_geometric_P</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">geometric_Q</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">p</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_geometric_Q</span></tt>.</dd>
+</dl>
+<a name="hypergeometric_P: _hypergeometric_Q"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">hypergeometric_P</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">n1::int</span>&nbsp; <span class="pre">n2::int</span>&nbsp; <span class="pre">t::int</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_hypergeometric_P</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">hypergeometric_Q</span>&nbsp; <span class="pre">k::int</span>&nbsp; <span class="pre">n1::int</span>&nbsp; <span class="pre">n2::int</span>&nbsp; <span class="pre">t::int</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_cdf_hypergeometric_Q</span></tt>.</dd>
+</dl>
 <!--  -->
 </div>
 <div class="section" id="id15">
@@ -1684,7 +1757,7 @@ The pdf functions are illustrated first.</p>
 &gt; test_discrete;
 1.0
 </pre>
-<p>Here the cdf functions are shown.</p>
+<p>The cumulative distribution functions are shown.</p>
 <pre class="literal-block">
 &gt; ugaussian_P  (-1.3);
 0.0968004845856103
@@ -1871,14 +1944,16 @@ routines found in Chapter 11 of the GSL manual,</p>
 <div class="section" id="id16">
 <h2><a class="toc-backref" href="#id37">Routines</a></h2>
 <!-- sort_vector: -->
-<p><tt class="docutils literal"><span class="pre">sort_vector</span>&nbsp; <span class="pre">m::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_sort</span></tt> and <tt class="docutils literal"><span class="pre">gsl_sort_int</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and
-<tt class="docutils literal"><span class="pre">n</span></tt> parameters.</blockquote>
-<a name="sort_vector_index"><p id="sort-vector-index"><tt class="docutils literal"><span class="pre">sort_vector_index</span>&nbsp; <span class="pre">m::matrix</span></tt></p>
-<blockquote>
-implements <tt class="docutils literal"><span class="pre">gsl_sort_index</span></tt> and <tt class="docutils literal"><span class="pre">gsl_sort_int_index</span></tt> without
-<tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt> parameters.</blockquote>
+<dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">sort_vector</span>&nbsp; <span class="pre">m::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sort</span></tt> and <tt class="docutils literal"><span class="pre">gsl_sort_int</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and
+<tt class="docutils literal"><span class="pre">n</span></tt> parameters.</dd>
+</dl>
+<a name="sort_vector_index"><dl class="docutils" id="sort-vector-index">
+<dt><tt class="docutils literal"><span class="pre">sort_vector_index</span>&nbsp; <span class="pre">m::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sort_index</span></tt> and <tt class="docutils literal"><span class="pre">gsl_sort_int_index</span></tt> without
+<tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt> parameters.</dd>
+</dl>
 <!--  -->
 </div>
 <div class="section" id="id17">
