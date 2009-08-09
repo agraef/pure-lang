@@ -1,0 +1,49 @@
+
+// Resolution of qualids and type tags. This is a real mess. :(
+
+// This is a type tag.
+let x::int = 99;
+// This too.
+let x :: int = 99;
+// But this is a qualid (::int), gives an error.
+let x ::int = 99;
+
+// This is also a qualid, compiler complains about an unknown namespace.
+let bar::x::int = 99;
+
+// Define the 'bar' namespace.
+namespace bar;
+
+// This still gets interpreted as a single qualid => same error.
+let bar::x::int = 99;
+// This works (note the blanks around the second '::').
+let bar::x :: int = 99;
+// In fact it is good enough to have a space in front of the type tag.
+let bar::x:: int = 99;
+// But of course this gives a failed match.
+let bar::x:: int = 99.0;
+
+// Back to the default namespace.
+namespace;
+
+// This still works.
+let bar::x :: int = 99;
+// Here the compiler must complain, since we're not allowed to define a new
+// symbol out of its home namespace.
+let bar::y :: int = 99;
+
+// Back to the 'bar' namespace.
+namespace bar;
+
+// Declare a constructor symbol in the 'bar' namespace.
+public foo;
+
+// Back to the default namespace.
+namespace;
+
+// Again, this doesn't work because the lhs is mistaken for a qualid.
+let x::bar::foo = bar::foo 99;
+// This works.
+let x :: bar::foo = bar::foo 99;
+// This too.
+let x:: bar::foo = bar::foo 99;
