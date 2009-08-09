@@ -248,12 +248,12 @@ pure_expr *ffi_type_info(ffi_type *type)
    cooked pointers which carry typing information in the sentry, which also
    takes care of freeing the struct when it is garbage-collected. NOTE: To
    make this work, the ffi_free_struct routine must be visible in ffi.pure
-   under the name "C::ffi_free_struct". */
+   under the name "__C::ffi_free_struct". */
 
 static inline pure_expr *pure_struct(ffi_type *type, void *v)
 {
   pure_expr *x = pure_pointer(v),
-    *y = pure_app(pure_symbol(pure_sym("C::ffi_free_struct")),
+    *y = pure_app(pure_symbol(pure_sym("__C::ffi_free_struct")),
 		  pure_pointer(type));
   assert(x && y);
   return pure_sentry(y, x);
@@ -264,7 +264,7 @@ static inline bool pure_is_struct(pure_expr *x, ffi_type **type, void **v)
   pure_expr *y, *z, *f;
   return pure_is_pointer(x, v) && (y = pure_get_sentry(x)) &&
     pure_is_app(y, &f, &z) && f->tag > 0 &&
-    strcmp(pure_sym_pname(f->tag), "C::ffi_free_struct") == 0 &&
+    strcmp(pure_sym_pname(f->tag), "__C::ffi_free_struct") == 0 &&
     pure_is_pointer(z, (void**)type) && *type &&
     (*type)->type == FFI_TYPE_STRUCT;
 }
