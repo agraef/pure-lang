@@ -1,3 +1,24 @@
+2009-08-09  Albert Graef  <Dr.Graef@t-online.de>
+
+	* 0.27 release.
+
+	* configure.ac: Bump version number.
+
+	* lexer.ll: Fixed a critical bug in the lexer which would cause
+	any global qualid of the form ::foo to be mistaken for a type tag.
+	Also made it possible to specify a qualid as a type tag.
+
+	To make this work, qualid/type tag resolution requires a more
+	stringent syntax. The construct 'foo::bar' still works both ways,
+	depending on whether 'foo' is a valid namespace or not. But if
+	either the variable or the type tag is a qualid then whitespace
+	must be used around the '::' symbol separating variable and type
+	tag; otherwise the construct is always assumed to be a simple
+	qualid. (In fact, it is sufficient to place a blank after the '::'
+	separator. But note that something like '::foo...' will always be
+	interpreted as an absolute qualid, thus placing whitespace in
+	front of the separator alone isn't sufficient.)
+
 2009-08-07  Albert Graef  <Dr.Graef@t-online.de>
 
 	* 0.26 release.

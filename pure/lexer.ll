@@ -110,7 +110,7 @@ str    ([^\"\\\n]|\\(.|\n))*
 cmd    (!|help|ls|pwd|break|del|cd|show|dump|clear|save|run|override|underride|stats|quit|completion_matches)
 blank  [ \t\f\v\r]
 
-%x comment xdecl xdecl_comment xusing xusing_comment rescan
+%x comment xdecl xdecl_comment xusing xusing_comment xtag rescan
 
 %{
 # define YY_USER_ACTION  yylloc->columns(yyleng);
@@ -336,24 +336,22 @@ when	   return token::WHEN;
 with	   return token::WITH;
 using      BEGIN(xusing); return token::USING;
 namespace  BEGIN(xusing); return token::NAMESPACE;
+<xtag>::{id} BEGIN(INITIAL); goto parse_tag;
 {qual}{id} {
   string qualid = yytext;
   size_t k = qualid.rfind("::");
   string qual = qualid.substr(0, k), id = qualid.substr(k+2);
-  int32_t tag = checktag(id.c_str());
-  if (qual.empty() && tag) {
-    // This is actually a type tag.
-    goto parse_tag;
-  } 
+  bool might_be_tag = qual.find("::") == string::npos;
+  int32_t tag = might_be_tag && checktag(id.c_str());
   if (!find_namespace(interp, qualid)) {
     // not a valid namespace prefix
     if (tag && find_namespace(interp, qual)) {
       // we can still parse this as an identifier with a type tag
-      yyless(k); qual = "";
+      yyless(k); qualid = yytext; BEGIN(xtag);
       //check(*yylloc, yytext, false);
     } else {
-      string msg = "unknown namespace '"+qual+
-	"', or invalid type tag '"+id+"'";
+      string msg = "unknown namespace '"+qual+"'";
+      if (might_be_tag && !tag) msg += ", or invalid type tag '"+id+"'";
       interp.error(*yylloc, msg);
     }
   }
@@ -362,7 +360,8 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     return token::ID;
   }
   symbol* sym = interp.symtab.lookup(yytext);
-  if (sym && ((sym->prec >= 0 && sym->prec < PREC_MAX) || sym->fix == outfix)) {
+  if (sym &&
+      ((sym->prec >= 0 && sym->prec < PREC_MAX) || sym->fix == outfix)) {
     if (strstr(yytext, "::")) {
       // Return a new qualified instance here.
       yylval->xval = new expr(sym->f);
@@ -375,7 +374,8 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
       return optok(sym->f, sym->fix);
   } else {
     if (!interp.nerrs && !sym && interp.symtab.count != 1 &&
-	strstr(yytext, "::")) {
+	(k = qualid.rfind("::")) != string::npos) {
+      qual = qualid.substr(0, k);
       if (qual.compare(0, 2, "::") == 0) qual.erase(0, 2);
       if (qual != *interp.symtab.current_namespace) {
 	string msg = "undeclared symbol '"+string(yytext)+"'";
@@ -404,7 +404,7 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     return token::ID;
   }
 }
-::{blank}*{id} {
+::{blank}+({qual})?{id} {
  parse_tag:
   char *s = yytext+2;
   while (isspace(*s)) s++;
@@ -836,6 +836,21 @@ static void check(const yy::location& l, const char* s, bool decl)
 
 static int32_t checktag(const char *s)
 {
+  int32_t ret = 0;
+  bool qual = strstr(s, "::") != 0;
+  const char *id = 0;
+  interpreter& interp = *interpreter::g_interp;
+  symbol* sym = interp.symtab.lookup(s);
+  if (sym && sym->prec == PREC_MAX && sym->fix != outfix) {
+    ret = sym->f;
+    id = sym->s.c_str();
+  }
+  if (qual) return ret; // qualified symbol, must be declared already
+  qual = id && strstr(id, "::") != 0;
+  if (qual) return ret; // unqualified symbol, has definition in namespace
+  // We have an unqualified symbol here, which doesn't have a definition in a
+  // visible namespace. Either it is one of the built-in type tags, or it's a
+  // new symbol in the global namespace which we create on the fly.
   if (strcmp(s, "int") == 0)
     return EXPR::INT;
   else if (strcmp(s, "bigint") == 0)
@@ -849,9 +864,8 @@ static int32_t checktag(const char *s)
   else if (strcmp(s, "matrix") == 0)
     return EXPR::MATRIX;
   else {
-    interpreter& interp = *interpreter::g_interp;
-    symbol* sym = interp.symtab.lookup(s);
-    if (sym && sym->prec == PREC_MAX && sym->fix != outfix)
+    sym = interp.symtab.sym(s);
+    if (sym)
       return sym->f;
     else
       return 0;
