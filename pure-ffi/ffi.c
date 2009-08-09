@@ -290,15 +290,17 @@ static void *offset(void *data, unsigned n, ffi_type **types)
 {
   size_t ofs = 0;
   unsigned i;
+  unsigned short a;
   for (i = 0; i < n && types[i]; i++) {
-    unsigned short a = ofs % types[i]->alignment;
+    a = ofs % types[i]->alignment;
     if (a != 0) ofs += types[i]->alignment-a;
     ofs += types[i]->size;
   }
   if (i < n || !types[i])
     return 0;
-  else
-    return data+ofs;
+  a = ofs % types[i]->alignment;
+  if (a != 0) ofs += types[i]->alignment-a;
+  return data+ofs;
 }
 
 static void *ffi_to_c(void *v, ffi_type *type, pure_expr *x);
