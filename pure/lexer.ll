@@ -846,11 +846,9 @@ static int32_t checktag(const char *s)
     id = sym->s.c_str();
   }
   if (qual) return ret; // qualified symbol, must be declared already
-  qual = id && strstr(id, "::") != 0;
-  if (qual) return ret; // unqualified symbol, has definition in namespace
-  // We have an unqualified symbol here, which doesn't have a definition in a
-  // visible namespace. Either it is one of the built-in type tags, or it's a
-  // new symbol in the global namespace which we create on the fly.
+  // We have an unqualified symbol. Either it is one of the built-in type
+  // tags, or some other symbol (if necessary, we create the symbol on the fly
+  // in the global namespace).
   if (strcmp(s, "int") == 0)
     return EXPR::INT;
   else if (strcmp(s, "bigint") == 0)
