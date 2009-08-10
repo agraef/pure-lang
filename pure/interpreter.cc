@@ -3516,6 +3516,10 @@ expr interpreter::parse_simple(list<OpEntry>::iterator& act,
   }
   expr *y = out.last_op();
   while (y) {
+    if (out.stk.back().is_op) {
+      throw err("syntax error, expected operand after infix operator '"+
+		symtab.sym(y->tag()).s+"'");
+    }
     expr b = out.stk.back().x; out.pop();
     expr f = out.stk.back().x; out.pop();
     expr a = out.stk.back().x; out.pop();
