@@ -259,6 +259,44 @@ extern expr* evalcmd(expr*); // IMPURE!
 
 extern char* lasterr();
 
+/* .. _reduce:
+
+   ``reduce x``
+     Reevaluates an expression in a local environment. This dynamically
+     rebinds function symbols in the given expression to whatever local
+     definitions are in effect at the point of the ``reval` call. Note that
+     ``reduce`` is actually implemented as a macro which uses the
+     `__locals__`_ builtin to enumerate the bindings which are in effect at
+     the call site.
+
+   .. |__locals__| replace:: ``__locals__``
+
+   ``reduce`` provides a restricted form of dynamic binding which is useful to
+   implement local rewriting rules. Example::
+
+     expand = reduce with
+       (a+b)*c = a*c+b*c;
+       a*(b+c) = a*b+a*c;
+     end;
+
+     factor = reduce with
+       a*c+b*c1 = (a+b)*c if c===c1;
+       a*b+a1*c = a*(b+c) if a===a1;
+     end;
+
+     expand ((a+b)*2); // yields a*2+b*2
+     factor (a*2+b*2); // yields (a+b)*2
+
+   Note that ``reduce`` only sees local *function* bindings from ``with``
+   clauses, local *variable* bindings do not affect its operation in any
+   way. */
+
+namespace __C;
+extern expr *reduce(expr *locals, expr *x);
+namespace;
+
+def ::reduce = reduce __locals__;
+
 /* .. _ans:
 
    ``ans``

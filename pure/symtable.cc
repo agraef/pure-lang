@@ -5,6 +5,7 @@
 
 symtable::symtable()
   : fno(0), rtab(1024),
+    __locals_sym(0),
     __nil_sym(0),
     __cons_sym(0),
     __void_sym(0),
@@ -47,6 +48,7 @@ symtable::symtable()
     __bad_matrix_sym(0),
     __amp_sym(0),
     __quoteop_sym(0),
+    __mapsto_sym(0),
     __complex_rect_sym(0),
     __complex_polar_sym(0),
     __rational_xdiv_sym(0),
@@ -67,6 +69,7 @@ symtable::~symtable()
 
 void symtable::init_builtins()
 {
+  locals_sym();
   nil_sym();
   cons_sym();
   void_sym();
@@ -581,6 +584,15 @@ symbol& symtable::quoteop_sym()
     return *__quoteop_sym;
   else
     return *sym_p("'", __quoteop_sym, 2800, prefix);
+}
+
+symbol& symtable::mapsto_sym()
+{
+  lookup_p("=>", __mapsto_sym);
+  if (__mapsto_sym)
+    return *__mapsto_sym;
+  else
+    return *sym_p("=>", __mapsto_sym, 1200, infix);
 }
 
 symbol& symtable::complex_rect_sym()

@@ -3008,6 +3008,24 @@ pure_expr *pure_clos(bool local, int32_t tag, uint32_t key, uint32_t n,
 }
 
 extern "C"
+pure_expr *pure_locals(uint32_t n, /* n x int32_t,pure_expr* */ ...)
+{
+  interpreter& interp = *interpreter::g_interp;
+  pure_expr *h = pure_symbol(interp.symtab.mapsto_sym().f);
+  pure_expr **xs = (pure_expr**)alloca(n*sizeof(pure_expr*));
+  va_list ap;
+  va_start(ap, n);
+  for (size_t i = 0; i < n; i++) {
+    int32_t fno = va_arg(ap, int32_t);
+    pure_expr *f = va_arg(ap, pure_expr*);
+    assert(fno>0 && f);
+    xs[i] = mk_cons(h, pure_const(fno), f);
+  }
+  va_end(ap);
+  return pure_listv(n, xs);
+}
+
+extern "C"
 pure_expr *pure_int64(int64_t l)
 {
   int sgn = (l>0)?1:(l<0)?-1:0;
@@ -5636,6 +5654,238 @@ pure_expr *evalcmd(pure_expr *x)
     else if (!interp.errmsg.empty())
       return 0;
     return pure_cstring_dup(sout.str().c_str());
+  } else
+    return 0;
+}
+
+static inline bool is_mapsto(pure_expr *x, pure_expr*& y, pure_expr*& z)
+{
+  interpreter& interp = *interpreter::g_interp;
+  if (x->tag == EXPR::APP && x->data.x[0]->tag == EXPR::APP &&
+      x->data.x[0]->data.x[0]->tag == interp.symtab.mapsto_sym().f) {
+    y = x->data.x[0]->data.x[1];
+    z = x->data.x[1];
+    return true;
+  } else
+    return false;
+}
+
+static bool is_list2(pure_expr *x, size_t& size,
+		     pure_expr**& elems, pure_expr*& tl)
+{
+  assert(x);
+  pure_expr *u = x, *y, *z;
+  size = 0;
+  while (is_cons(u, y, z)) {
+    size++;
+    u = z;
+  }
+  if (size == 0) return false;
+  tl = u;
+  elems = (pure_expr**)malloc(size*sizeof(pure_expr*));
+  assert(elems);
+  size_t i = 0;
+  u = x;
+  while (is_cons(u, y, z)) {
+    elems[i++] = y;
+    u = z;
+  }
+  return true;
+}
+
+static bool is_tuple(pure_expr *x, size_t& size,
+		     pure_expr**& elems)
+{
+  assert(x);
+  pure_expr *u = x, *y, *z;
+  size = 0;
+  while (is_pair(u, y, z)) {
+    size++;
+    u = z;
+  }
+  if (size == 0) return false;
+  size++;
+  elems = (pure_expr**)malloc(size*sizeof(pure_expr*));
+  assert(elems);
+  size_t i = 0;
+  u = x;
+  while (is_pair(u, y, z)) {
+    elems[i++] = y;
+    u = z;
+  }
+  elems[i++] = u;
+  return true;
+}
+
+static pure_expr *subst(map<int32_t,pure_expr*> &env,
+			map<uint32_t,bool> &force, pure_expr *x)
+{
+  char test;
+  switch (x->tag) {
+  case EXPR::APP: {
+    checkstk(test);
+    size_t size;
+    pure_expr **elems, *tl;
+    interpreter& interp = *interpreter::g_interp;
+    if (is_list2(x, size, elems, tl)) {
+      /* Optimize the list case, so that we don't run out of stack space. */
+      pure_expr *f = pure_symbol(interp.symtab.cons_sym().f);
+      pure_expr *x = subst(env, force, tl);
+      while (size > 0)
+	x = mk_cons(f, subst(env, force, elems[--size]), x);
+      free(elems);
+      return x;
+    } else if (is_tuple(x, size, elems)) {
+      /* Optimize the tuple case. */
+      pure_expr *f = pure_symbol(interp.symtab.pair_sym().f);
+      pure_expr *x = subst(env, force, elems[--size]);
+      while (size > 0) {
+	pure_expr *y = subst(env, force, elems[--size]);
+	x = mk_cons(f, y, x);
+      }
+      free(elems);
+      return x;
+    } else
+      return pure_apply2(subst(env, force, x->data.x[0]),
+			 subst(env, force, x->data.x[1]));
+  }
+  case EXPR::INT:
+  case EXPR::BIGINT:
+  case EXPR::DBL:
+  case EXPR::STR:
+  case EXPR::PTR:
+  case EXPR::DMATRIX:
+  case EXPR::IMATRIX:
+  case EXPR::CMATRIX:
+    return x;
+  case EXPR::MATRIX:
+    if (x->data.mat.p) {
+      gsl_matrix_symbolic *m = (gsl_matrix_symbolic*)x->data.mat.p;
+      size_t n1 = m->size1, n2 = m->size2;
+      if (n1 == 0 || n2 == 0) // empty matrix
+	return x;
+      checkstk(test);
+      gsl_matrix_symbolic *m1 = create_symbolic_matrix(n1, n2);
+      for (size_t i = 0; i < n1; i++)
+	for (size_t j = 0; j < n2; j++)
+	  m1->data[i*m1->tda+j] = subst(env, force, m->data[i*m->tda+j]);
+      return pure_symbolic_matrix(m1);
+    } else
+      return x;
+  default: {
+    assert(x->tag >= 0);
+    map<int32_t,pure_expr*>::iterator it;
+    if (x->tag > 0 && (!x->data.clos || !x->data.clos->local) &&
+	(it = env.find(x->tag)) != env.end()) {
+      /* Substitute a local closure from the environment. */
+      pure_expr *y = it->second;
+      if (x->data.clos) {
+	assert(y->data.clos && y->data.clos->local);
+	force[y->data.clos->key] = true;
+      }
+      return y;
+    } else
+      return x;
+  }
+  }
+}
+
+static pure_expr *rsubst(map<uint32_t,pure_expr*> &env,
+			 map<uint32_t,bool> &force, pure_expr *x)
+{
+  char test;
+  switch (x->tag) {
+  case EXPR::APP: {
+    checkstk(test);
+    size_t size;
+    pure_expr **elems, *tl;
+    interpreter& interp = *interpreter::g_interp;
+    if (is_list2(x, size, elems, tl)) {
+      /* Optimize the list case, so that we don't run out of stack space. */
+      pure_expr *f = pure_symbol(interp.symtab.cons_sym().f);
+      pure_expr *x = rsubst(env, force, tl);
+      while (size > 0)
+	x = mk_cons(f, rsubst(env, force, elems[--size]), x);
+      free(elems);
+      return x;
+    } else if (is_tuple(x, size, elems)) {
+      /* Optimize the tuple case. */
+      pure_expr *f = pure_symbol(interp.symtab.pair_sym().f);
+      pure_expr *x = rsubst(env, force, elems[--size]);
+      while (size > 0) {
+	pure_expr *y = rsubst(env, force, elems[--size]);
+	x = mk_cons(f, y, x);
+      }
+      free(elems);
+      return x;
+    } else
+      return pure_apply2(rsubst(env, force, x->data.x[0]),
+			 rsubst(env, force, x->data.x[1]));
+  }
+  case EXPR::INT:
+  case EXPR::BIGINT:
+  case EXPR::DBL:
+  case EXPR::STR:
+  case EXPR::PTR:
+  case EXPR::DMATRIX:
+  case EXPR::IMATRIX:
+  case EXPR::CMATRIX:
+    return x;
+  case EXPR::MATRIX:
+    if (x->data.mat.p) {
+      gsl_matrix_symbolic *m = (gsl_matrix_symbolic*)x->data.mat.p;
+      size_t n1 = m->size1, n2 = m->size2;
+      if (n1 == 0 || n2 == 0) // empty matrix
+	return x;
+      checkstk(test);
+      gsl_matrix_symbolic *m1 = create_symbolic_matrix(n1, n2);
+      for (size_t i = 0; i < n1; i++)
+	for (size_t j = 0; j < n2; j++)
+	  m1->data[i*m1->tda+j] = rsubst(env, force, m->data[i*m->tda+j]);
+      return pure_symbolic_matrix(m1);
+    } else
+      return x;
+  default: {
+    assert(x->tag >= 0);
+    map<uint32_t,pure_expr*>::iterator it;
+    if (x->tag > 0 && x->data.clos && x->data.clos->local &&
+	(it = env.find(x->data.clos->key)) != env.end()) {
+      /* Resubstitute a global for a local closure from the environment. */
+      pure_expr *y = it->second;
+      if (force[x->data.clos->key])
+	return pure_symbol(y->tag);
+      else
+	return y;
+    } else
+      return x;
+  }
+  }
+}
+
+extern "C"
+pure_expr *reduce(pure_expr *locals, pure_expr *x)
+{
+  size_t n;
+  pure_expr **xs;
+  if (pure_is_listv(locals, &n, &xs)) {
+    map<int32_t,pure_expr*> env;
+    map<uint32_t,pure_expr*> renv;
+    map<uint32_t,bool> force;
+    for (size_t i = 0; i < n; i++) {
+      pure_expr *x, *y;
+      int32_t f;
+      if (is_mapsto(xs[i], x, y) && pure_is_symbol(x, &f) && f>0 &&
+	  y->tag > 0 && y->data.clos && y->data.clos->local) {
+	env[f] = y;
+	renv[y->data.clos->key] = x;
+	force[y->data.clos->key] = false;
+      } else {
+	free(xs);
+	return 0;
+      }
+    }
+    free(xs);
+    return rsubst(renv, force, subst(env, force, x));
   } else
     return 0;
 }

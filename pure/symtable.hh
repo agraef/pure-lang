@@ -47,6 +47,7 @@ class symtable {
   symbol* sym_p(const char *s, symbol*& cache,
 		prec_t prec, fix_t fix, bool priv = false);
   // these are cached here to speed up predefined symbol lookups
+  symbol* __locals_sym;
   symbol* __nil_sym;
   symbol* __cons_sym;
   symbol* __void_sym;
@@ -89,6 +90,7 @@ class symtable {
   symbol* __bad_matrix_sym;
   symbol* __amp_sym;
   symbol* __quoteop_sym;
+  symbol* __mapsto_sym;
   symbol* __complex_rect_sym;
   symbol* __complex_polar_sym;
   symbol* __rational_xdiv_sym;
@@ -145,6 +147,8 @@ public:
     return visible(*rtab[f]); }
   // retrieve various builtin symbols (create when necessary)
   int32_t __show__sym; // This is cached here to improve performance.
+  symbol& locals_sym()
+  { return *sym_p("__locals__", __locals_sym); }
   symbol& nil_sym();
   symbol& cons_sym();
   symbol& void_sym();
@@ -202,6 +206,7 @@ public:
   { return *sym_p("bad_matrix_value", __bad_matrix_sym); }
   symbol& amp_sym();
   symbol& quoteop_sym();
+  symbol& mapsto_sym();
   symbol& complex_rect_sym();
   symbol& complex_polar_sym();
   symbol& rational_xdiv_sym();

@@ -337,6 +337,9 @@ void interpreter::init()
   declare_extern((void*)pure_clos,
 		 "pure_clos",       "expr*", -7, "bool", "int", "int", "int",
 		                                 "void*", "void*", "int");
+  declare_extern((void*)pure_locals,
+		 "pure_locals",     "expr*", -1, "int");
+
   declare_extern((void*)pure_call,
 		 "pure_call",       "expr*",  1, "expr*");
   declare_extern((void*)pure_force,
@@ -5760,7 +5763,8 @@ pure_expr *interpreter::const_value(expr x, bool quote)
       if (quote)
 	return pure_const(x.tag());
       else {
-	if (externals.find(x.tag()) != externals.end())
+	if (x.tag() == symtab.locals_sym().f ||
+	    externals.find(x.tag()) != externals.end())
 	  return 0;
 	map<int32_t,GlobalVar>::iterator v = globalvars.find(x.tag());
 	if (v != globalvars.end()) {
@@ -7365,6 +7369,28 @@ Value *interpreter::codegen(expr x, bool quote)
     if (quote)
       return act_builder().CreateCall
 	(module->getFunction("pure_const"), SInt(x.tag()));
+    // check for a call to the '__locals__' builtin
+    if (x.tag() == symtab.locals_sym().f) {
+      // enumerate all local functions visible in the current environment
+      vector<Value*> argv;
+      set<int32_t> done;
+      size_t n = 0;
+      argv.push_back(Zero);
+      for (Env *e = &act_env(); e; e = e->parent) {
+	EnvMap& m = e->fmap.act();
+	for (EnvMap::iterator it = m.begin(), end = m.end(); it != end; ++it) {
+	  int32_t fno = it->first;
+	  if (fno <= 0 || done.find(fno) != done.end()) continue;
+	  Env& f = *it->second;
+	  argv.push_back(SInt(fno));
+	  argv.push_back(fbox(f));
+	  done.insert(fno); n++;
+	}
+      }
+      argv[0] = UInt(n);
+      return act_builder().CreateCall
+	(module->getFunction("pure_locals"), argv.begin(), argv.end());
+    }
     // check for a parameterless global (or external) function call
     Value *u; Env *e;
     if ((u = external_funcall(x.tag(), 0, x)))

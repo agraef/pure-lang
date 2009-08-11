@@ -497,6 +497,10 @@ pure_expr *pure_const(int32_t tag);
 pure_expr *pure_clos(bool local, int32_t tag, uint32_t key, uint32_t n,
 		     void *f, void *e, uint32_t m, /* m x pure_expr* */ ...);
 
+/* Enumerate local functions visible at a given point in the program. */
+
+pure_expr *pure_locals(uint32_t n, /* n x int32_t,pure_expr* */ ...);
+
 /* Construct a literal application. */
 
 pure_expr *pure_applc(pure_expr *x, pure_expr *y);
@@ -797,6 +801,11 @@ pure_expr *eval(pure_expr *x);
    the result string will be empty. No other results are returned. */
 
 pure_expr *evalcmd(pure_expr *x);
+
+/* reduce evaluates a given expression in a given dynamic environment of local
+   function bindings. */
+
+pure_expr *reduce(pure_expr *locals, pure_expr *x);
 
 /* After an invokation of eval() or evalcmd(), this returns error messages
    from the interpreter (an empty string if none). */
