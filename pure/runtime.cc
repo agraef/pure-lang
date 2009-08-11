@@ -5779,10 +5779,9 @@ static pure_expr *subst(map<int32_t,pure_expr*> &env,
 	(it = env.find(x->tag)) != env.end()) {
       /* Substitute a local closure from the environment. */
       pure_expr *y = it->second;
-      if (x->data.clos) {
-	assert(y->data.clos && y->data.clos->local);
+      if (x->data.clos && y->data.clos && y->data.clos->local &&
+	  force.find(y->data.clos->key) != force.end())
 	force[y->data.clos->key] = true;
-      }
       return y;
     } else
       return x;
@@ -5874,11 +5873,12 @@ pure_expr *reduce(pure_expr *locals, pure_expr *x)
     for (size_t i = 0; i < n; i++) {
       pure_expr *x, *y;
       int32_t f;
-      if (is_mapsto(xs[i], x, y) && pure_is_symbol(x, &f) && f>0 &&
-	  y->tag > 0 && y->data.clos && y->data.clos->local) {
+      if (is_mapsto(xs[i], x, y) && pure_is_symbol(x, &f) && f>0) {
 	env[f] = y;
-	renv[y->data.clos->key] = x;
-	force[y->data.clos->key] = false;
+	if (y->tag == f && y->data.clos && y->data.clos->local) {
+	  renv[y->data.clos->key] = x;
+	  force[y->data.clos->key] = false;
+	}
       } else {
 	free(xs);
 	return 0;
