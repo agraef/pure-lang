@@ -1008,10 +1008,11 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
   srcdir = dirname(fname);
   if (sticky)
     ; // keep the current module
-  else
+  else {
     modno = modctr++;
-  symtab.current_namespace = new string;
-  symtab.search_namespaces = new set<string>;
+    symtab.current_namespace = new string;
+    symtab.search_namespaces = new set<string>;
+  }
   errmsg.clear();
   if (check && !interactive) temp = 0;
   bool ok = lex_begin(fname);
@@ -1040,10 +1041,12 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
   output = l_output;
   srcdir = l_srcdir;
   modno = l_modno;
-  delete symtab.current_namespace;
-  delete symtab.search_namespaces;
-  symtab.current_namespace = l_current_namespace;
-  symtab.search_namespaces = l_search_namespaces;
+  if (!sticky) {
+    delete symtab.current_namespace;
+    delete symtab.search_namespaces;
+    symtab.current_namespace = l_current_namespace;
+    symtab.search_namespaces = l_search_namespaces;
+  }
   // return last computed result, if any
   return result;
 }

@@ -390,10 +390,11 @@ public:
      performed for relative pathnames (checking include directories and
      PURELIB to locate the script file) and the script is only loaded if it
      wasn't included before. If 'sticky' is true (default is false), the
-     current module namespace is kept, otherwise a new namespace is created
-     for the loaded module. Using this option isn't recommended, but it is
-     used internally by the 'run' command and the '-i' option to give access
-     to the private symbols of the executed script when running interactively.
+     current module scope is kept, otherwise a new scope is created for the
+     loaded module. Using this option isn't recommended, but it is used
+     internally by the interactive startup and the 'run' command to make
+     namespace settings of the executed script stick when running
+     interactively.
 
      Returns the last computed expression (if any). (This expression is owned
      by the interpreter and must *not* be freed by the caller.) This is the

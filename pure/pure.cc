@@ -605,9 +605,13 @@ main(int argc, char *argv[])
   }
   interp.temp = 1;
   if (last_modno < 0) force_interactive = false;
-  if (force_interactive) interp.modno = last_modno;
+  // create a new module for the interactive scope
+  interp.modno = interp.modctr++;
+  delete interp.symtab.current_namespace;
+  delete interp.symtab.search_namespaces;
+  interp.symtab.current_namespace = new string;
+  interp.symtab.search_namespaces = new set<string>;
   // source the initialization files, if any
-  bool sticky = force_interactive;
   if (want_rcfile) {
     // Avoid reading .purerc twice, if we happen to be invoked from the user's
     // homedir.
@@ -620,20 +624,14 @@ main(int argc, char *argv[])
 	want_both = false;
       chdir(cwd);
     }
-    if (!rcfile.empty() && chkfile(rcfile)) {
-      interp.run(rcfile, false, sticky);
-      sticky = true;
-    }
-    if (want_both && chkfile(".purerc")) {
-      interp.run(".purerc", false, sticky);
-      sticky = true;
-    }
-    if (chkfile(".pure")) {
-      interp.run(".pure", false, sticky);
-      sticky = true;
-    }
+    if (!rcfile.empty() && chkfile(rcfile))
+      interp.run(rcfile, false, true);
+    if (want_both && chkfile(".purerc"))
+      interp.run(".purerc", false, true);
+    if (chkfile(".pure"))
+      interp.run(".pure", false, true);
   }
-  interp.run("", false, sticky);
+  interp.run("", false, true);
   if (interp.ttymode) cout << endl;
   return 0;
 }
