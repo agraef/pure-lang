@@ -2553,7 +2553,7 @@ primitives discussed below, see `Eval and Friends`_.
 .. _ans:
 
 ``ans``
-  Retrieves the most recently printed result of a toplevel expression
+  Retrieve the most recently printed result of a toplevel expression
   evaluated in the read-eval-print loop. This is just a convenience for
   interactive usage. Note that the ``ans`` value will stick around until a
   new expression is computed. (It is possible to clear the ``ans`` value
@@ -2575,9 +2575,15 @@ primitives discussed below, see `Eval and Friends`_.
   at this point in the program. This is actually implemented as a
   built-in. The return value is a list of "hash" pairs ``x=>f`` where ``x``
   is the (quoted) symbol denoting the function and ``f`` is the function
-  itself. The ``__locals__`` function is useful for debugging purposes, as
-  well as to implement dynamic environments. It is also used internally to
-  implement the reduce_ macro, see `Eval and Friends`_.
+  itself (or its value, if ``f`` is a parameterless function). The
+  ``__locals__`` function is useful for debugging purposes, as well as to
+  implement dynamic environments. It is also used internally to implement
+  the reduce_ macro, see `Eval and Friends`_. Example::
+
+    > __locals__ with foo x = x+1; x = a+b end;
+    [x=>a+b,foo=>foo]
+    > f 99 when _=>f = ans!1 end;
+    100
 
 .. |reduce| replace:: ``reduce``
 
@@ -2772,9 +2778,11 @@ Examples::
   "<stdin>, line 1: syntax error, unexpected ')', expecting '=' or '|'\n"
 
 The ``reduce`` macro provides a restricted form of dynamic binding which is
-useful to implement local rewriting rules. Note that ``reduce`` only sees
-local *function* bindings from ``with`` clauses, local *variable* bindings
-do not affect its operation in any way. Example::
+useful to implement local rewriting rules. It is invoked without parameters
+and expands to a curried primitive which takes one additional argument, the
+expression to be rewritten. The following example shows how to expand or
+factorize an expression using local rules for the corresponding laws of
+distributivity::
 
   expand = reduce with
     (a+b)*c = a*c+b*c;
@@ -2789,16 +2797,34 @@ do not affect its operation in any way. Example::
   expand ((a+b)*2); // yields a*2+b*2
   factor (a*2+b*2); // yields (a+b)*2
 
-``reduce`` can also be used in a way similar to Mathematica's
-``ReplaceAll`` function::
+Note that instances of locally bound functions are substituted back in the
+computed result, thus the instances of ``*`` and ``+`` in the results
+``a*2+b*2`` and ``(a+b)*2`` shown above denote the corresponding globals,
+not the local incarnations of ``*`` and ``+`` defined in ``expand`` and
+``factor``, respectively.
 
-  > let X = [x,x^2,x^3];
-  > reduce X with x = u+v end;
+``reduce`` also adjusts to quoted arguments. In this case, the local rules
+are applied as usual, but back-substituted globals are *not* evaluated in
+the result::
+
+  > expand ((a+1)*2);
+  a*2+2
+  > expand ('((a+1)*2));
+  a*2+1*2
+
+Note that ``reduce`` only takes into account local *function* bindings from
+``with`` clauses, local *variable* bindings do not affect its operation in
+any way::
+
+  > let y = [x,x^2,x^3];
+  > reduce y when x = u+v end;
+  [x,x^2,x^3]
+
+However, in such cases you can perform the desired substitution by just
+turning the ``when`` into a ``with`` clause::
+
+  > reduce y with x = u+v end;
   [u+v,(u+v)^2,(u+v)^3]
-
-  > let Y = 1+x^2+x^4;
-  > reduce Y with x^p = f p end;
-  1+f 2+f 4
 
 Other Special Primitives
 ~~~~~~~~~~~~~~~~~~~~~~~~
