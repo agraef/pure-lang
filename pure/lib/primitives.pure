@@ -278,26 +278,42 @@ using namespace __C;
    Inspection
    ~~~~~~~~~~
 
-   The following operations let you inspect various internal attributes of
-   symbols and function objects.
+   The following operations let you peek at various internal information that
+   the interpreter provides to Pure programs either for convenience or for
+   metaprogramming purposes. They are complemented by the evaluation
+   primitives discussed below, see `Eval and Friends`_.
+
+   .. _ans:
+
+   ``ans``
+     Retrieves the most recently printed result of a toplevel expression
+     evaluated in the read-eval-print loop. This is just a convenience for
+     interactive usage. Note that the ``ans`` value will stick around until a
+     new expression is computed. (It is possible to clear the ``ans`` value
+     with the interactive command ``clear ans``, however.) Example::
+
+       > 1/3;
+       0.333333333333333
+       > ans/2;
+       0.166666666666667
 
    .. _\__locals__:
 
    ``__locals__``
      Return a list with the local function bindings (``with`` clauses) visible
      at this point in the program. This is actually implemented as a
-     built-in. The returned list consists of "hash" pairs ``x=>f`` where ``x``
+     built-in. The return value is a list of "hash" pairs ``x=>f`` where ``x``
      is the (quoted) symbol denoting the function and ``f`` is the function
-     itself. The ``__locals__`` function is useful to implement dynamic
-     environments and, in particular, is used internally to implement the
-     reduce_ macro.
+     itself. The ``__locals__`` function is useful for debugging purposes, as
+     well as to implement dynamic environments. It is also used internally to
+     implement the reduce_ macro, see `Eval and Friends`_.
 
    .. |reduce| replace:: ``reduce``
 
-   The functions below are used to retrieve attributes of a function symbol
-   which determine how the operation is applied to its operands or
-   arguments. These functions all take a single argument, the symbol or
-   function object to be inspected, and return an integer value.
+   The prelude also provides some functions to retrieve various attributes of
+   a function symbol which determine how the operation is applied to its
+   operands or arguments. These functions all take a single argument, the
+   symbol or function object to be inspected, and return an integer value.
 
    .. _nargs:
 
@@ -378,10 +394,111 @@ using namespace __C;
      > nargs (bar x);
      1
 
-   Specials
-   ~~~~~~~~
+   Eval and Friends
+   ~~~~~~~~~~~~~~~~
 
-   The following operations are provided to deal with exceptions and thunks.
+   Pure provides some rather powerful operations to convert between Pure
+   expressions and their string representation, and to evaluate quoted
+   expressions (``'x``). The string conversions ``str`` and ``eval`` also
+   provide a convenient means to serialize Pure expressions, e.g., when they
+   are transferred from/to persistant storage or transmitted over a
+   socket. (Note, however, that this has its limitations. Specifically, some
+   objects like pointers and anonymous functions do not have a parsable string
+   representation.)
+
+   .. _str:
+
+   ``str x``
+     Yields the print representation of an expression in Pure syntax, as a
+     string.
+
+   .. _eval:
+
+   ``eval x``
+     Parses an expression, specified as a string in Pure syntax, and returns
+     its value. In fact, ``eval`` can also parse and execute arbitrary Pure
+     code. In that case it will return the last computed expression, if any.
+     Alternatively, ``eval`` can also be invoked on a (quoted) Pure
+     expression, which is recompiled and then evaluated. Exceptions during
+     evaluation are reported back to the caller.
+
+   .. _evalcmd:
+
+   ``evalcmd x``
+     Like ``eval``, but allows execution of interactive commands and returns
+     their captured output as a string. No other results are returned, so this
+     operation is most useful for executing Pure definitions and interactive
+     commands for their side-effects. (At this time, only the regular output
+     of a few commands can be captured, most notably ``clear``, ``save`` and
+     ``show``; otherwise the result string will be empty.)
+
+   .. _lasterr:
+
+   ``lasterr``
+     Reports errors in ``eval`` and ``evalcmd``. This string value will be
+     nonempty iff a compilation or execution error was encountered during the
+     most recent invokation of ``eval`` and ``evalcmd``. In that case each
+     reported error message is terminated with a newline character.
+
+   .. _reduce:
+
+   ``reduce x``
+     Reevaluates an expression in a local environment. This dynamically
+     rebinds function symbols in the given expression to whatever local
+     definitions are in effect at the point of the ``reduce`` call. Note that
+     ``reduce`` is actually implemented as a macro which uses the
+     `__locals__`_ builtin to enumerate the bindings which are in effect at
+     the call site.
+
+   .. |__locals__| replace:: ``__locals__``
+
+   Examples::
+
+     > str (1/3);
+     "0.333333333333333"
+     > eval "1/3";
+     0.333333333333333
+     > eval ('(1/3));
+     0.333333333333333
+     > evalcmd "show evalcmd";
+     "extern expr* evalcmd(expr*);\n"
+
+     > eval "1/3)";
+     eval "1/3)"
+     > lasterr;
+     "<stdin>, line 1: syntax error, unexpected ')', expecting '=' or '|'\n"
+
+   The ``reduce`` macro provides a restricted form of dynamic binding which is
+   useful to implement local rewriting rules. Note that ``reduce`` only sees
+   local *function* bindings from ``with`` clauses, local *variable* bindings
+   do not affect its operation in any way. Example::
+
+     expand = reduce with
+       (a+b)*c = a*c+b*c;
+       a*(b+c) = a*b+a*c;
+     end;
+
+     factor = reduce with
+       a*c+b*c1 = (a+b)*c if c===c1;
+       a*b+a1*c = a*(b+c) if a===a1;
+     end;
+
+     expand ((a+b)*2); // yields a*2+b*2
+     factor (a*2+b*2); // yields (a+b)*2
+
+   ``reduce`` can also be used in a way similar to Mathematica's
+   ``ReplaceAll`` function::
+
+     > let X = [x,x^2,x^3];
+     > reduce X with x = u+v end;
+     [u+v,(u+v)^2,(u+v)^3]
+
+     > let Y = 1+x^2+x^4;
+     > reduce Y with x^p = f p end;
+     1+f 2+f 4
+
+   Other Special Primitives
+   ~~~~~~~~~~~~~~~~~~~~~~~~
 
    .. _throw:
 
@@ -398,8 +515,21 @@ using namespace __C;
 
 */
 
-extern void pure_throw(expr*) = throw; // IMPURE!
+extern expr* lastres() = ans;
+extern expr* eval(expr*); // IMPURE!
+extern expr* evalcmd(expr*); // IMPURE!
+extern char* lasterr();
 
+namespace __C;
+extern expr *reduce(expr *locals, expr *x);
+extern void* str(expr*) = pure_str;
+namespace;
+
+def ::reduce = reduce __locals__;
+
+str x = cstring (pure_str x);
+
+extern void pure_throw(expr*) = throw; // IMPURE!
 extern expr* pure_force(expr*) = force;
 
 /* Syntactic equality. */
