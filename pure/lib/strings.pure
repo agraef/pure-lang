@@ -191,15 +191,17 @@ using namespace __C;
    system module, see `System Interface`_.
 
    If that isn't enough already, most generic list operations carry over to
-   strings in the obvious way, treating the string like a list of
-   characters. For instance::
+   strings in the obvious way, treating the string like a list of characters.
+   (Some operations will actually return character lists in that case, so you
+   might have to apply ``string`` explicitly to convert these back to a
+   string.) For instance::
 
      > filter (>="k") s;
      "qukrownoxumpsovrtlzyo"
-     > map pred ["i","b","m"];
-     ["h","a","l"]
+     > string $ map pred "ibm";
+     "hal"
 
-   This also provides for list comprehensions drawing values from strings::
+   List comprehensions can draw values from strings, too::
 
      > string [x+1 | x="HAL"];
      "IBM"
