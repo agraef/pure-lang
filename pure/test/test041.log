@@ -1,0 +1,90 @@
+#p/*0:1*/::pointer = blob_size p/*0:1*/ if blobp p/*0:1*/;
+{
+  rule #0: #x::matrix = __C::matrix_size x
+  rule #1: #s::string = __C::string_size s
+  rule #2: #() = 0
+  rule #3: #(x,xs) = accum 1 xs with accum n::int (x,xs) = accum (n+1) xs; accum n::int x = n+1 end
+  rule #4: #[] = 0
+  rule #5: #(x:xs) = accum 1 xs with accum n::int (x:xs) = accum (n+1) xs; accum n::int [] = n; accum n::int xs = n+#xs end
+  rule #6: #p::pointer = blob_size p if blobp p
+  state 0: #0 #1 #2 #3 #4 #5 #6
+	<var>::string state 1
+	<var>::pointer state 2
+	<var>::matrix state 3
+	<app> state 4
+	[] state 12
+	() state 13
+  state 1: #1
+  state 2: #6
+  state 3: #0
+  state 4: #3 #5
+	<app> state 5
+  state 5: #3 #5
+	, state 6
+	: state 9
+  state 6: #3
+	<var> state 7
+  state 7: #3
+	<var> state 8
+  state 8: #3
+  state 9: #5
+	<var> state 10
+  state 10: #5
+	<var> state 11
+  state 11: #5
+  state 12: #4
+  state 13: #2
+}
+val (blob (x+1));
+x+1
+val (blob (\x/*0:*/ -> x/*0:*/+1 {
+  rule #0: x = x+1
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}));
+val (blob #<closure 0x2b24d983a820>)
+val (blob foo/*0*/) with foo x/*0:1*/ = x/*0:1*/+1 {
+  rule #0: foo x = x+1
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+val (blob foo)
+val (blob (malloc 10));
+val (blob #<pointer 0x124d080>)
+val (blob #<pointer 0>);
+#<pointer 0>
+blobp #<pointer 0>;
+0
+blobp (malloc 10);
+0
+blobp (blob (1..10));
+1
+#blob (1..10);
+208L
+#blob (1..10000);
+160048L
+val (blob (17+1));
+18
+val (blob (17L+1));
+18L
+val (blob (17.0+1));
+18.0
+val (blob "Hello, world!");
+"Hello, world!"
+val (blob (x:y:z));
+x:y:z
+val (blob (1/3,4711,#<pointer 0>));
+0.333333333333333,4711,#<pointer 0>
+val (blob [1/3,4711,#<pointer 0>]);
+[0.333333333333333,4711,#<pointer 0>]
+val (blob {1/3,4711,#<pointer 0>});
+{0.333333333333333,4711,#<pointer 0>}
+let x = {1,2,3;4,5,6};
+val (blob x);
+{1,2,3;4,5,6}
+val (blob (dmatrix x));
+{1.0,2.0,3.0;4.0,5.0,6.0}
+val (blob (cmatrix x));
+{1.0+:0.0,2.0+:0.0,3.0+:0.0;4.0+:0.0,5.0+:0.0,6.0+:0.0}

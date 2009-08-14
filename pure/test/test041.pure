@@ -1,0 +1,39 @@
+// Expression serialization (Pure 0.28+).
+
+extern expr* blob(expr*); // should have a sentry on these
+extern expr* val(void*);
+extern bool blobp(void*);
+extern size_t blob_size(void*);
+#p::pointer = blob_size p if blobp p;
+
+val $ blob (x+1);
+val $ blob (\x->x+1);			// not allowed
+val $ blob foo with foo x = x+1 end;	// not allowed
+val $ blob (malloc 10);			// not allowed
+val $ blob NULL;			// NULL pointers are ok, though
+
+// type checking, calculating the size of a blob
+
+blobp NULL;
+blobp (malloc 10);
+blobp (blob (1..10));
+#blob (1..10);
+#blob (1..10000);
+
+// various data types
+
+val $ blob (17+1);
+val $ blob (17L+1);
+val $ blob (17.0+1);
+
+val $ blob "Hello, world!";
+
+val $ blob (x:y:z);
+val $ blob (1/3,4711,NULL);
+val $ blob [1/3,4711,NULL];
+val $ blob {1/3,4711,NULL};
+
+let x = {1,2,3;4,5,6};
+val $ blob x;
+val $ blob $ dmatrix x;
+val $ blob $ cmatrix x;
