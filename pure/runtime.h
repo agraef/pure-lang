@@ -840,8 +840,9 @@ pure_expr *lastres();
 
 pure_expr *blob(pure_expr *x);
 pure_expr *val(void *x);
-bool blobp(void *p);
-size_t blob_size(void *p);
+bool blobp(pure_expr *x);
+pure_expr *blob_size(pure_expr *x);
+pure_expr *blob_crc(pure_expr *x);
 
 /* Basic matrix operations. These work with all supported GSL matrix types.
    matrix_size determines the number of elements in a matrix, matrix_dim the

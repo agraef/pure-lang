@@ -6845,19 +6845,37 @@ pure_expr *val(void *x)
 }
 
 extern "C"
-bool blobp(void *p)
+bool blobp(pure_expr *x)
 {
-  if (!p) return false;
-  hdrdata *h = (hdrdata*)p;
-  return h->tag == MAGIC && h->n1 >= h->n2;
+  void *p;
+  if (pure_is_pointer(x, &p) && p) {
+    hdrdata *h = (hdrdata*)p;
+    return h->tag == MAGIC && h->n1 >= h->n2;
+  } else
+    return false;
 }
 
 extern "C"
-size_t blob_size(void *p)
+pure_expr *blob_size(pure_expr *x)
 {
-  if (!blobp(p)) return 0;
-  hdrdata *h = (hdrdata*)p;
-  return h->n1;
+  void *p;
+  if (pure_is_pointer(x, &p) && p) {
+    hdrdata *h = (hdrdata*)p;
+    // FIXME: This should probably be a bigint?
+    return pure_int((int32_t)h->n1);
+  } else
+    return 0;
+}
+
+extern "C"
+pure_expr *blob_crc(pure_expr *x)
+{
+  void *p;
+  if (pure_is_pointer(x, &p) && p) {
+    hdrdata *h = (hdrdata*)p;
+    return pure_int(h->crc);
+  } else
+    return 0;
 }
 
 extern "C"

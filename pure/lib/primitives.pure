@@ -541,6 +541,8 @@ using namespace __C;
 
 */
 
+/* eval and friends. */
+
 extern expr* lastres() = ans;
 extern expr* eval(expr*); // IMPURE!
 extern expr* evalcmd(expr*); // IMPURE!
@@ -554,6 +556,19 @@ namespace;
 def ::reduce = reduce __locals__;
 
 str x = cstring (pure_str x);
+
+/* Expression serialization. */
+
+extern expr* blob(expr*);
+extern expr* val(void*);
+extern bool blobp(expr*);
+extern expr* blob_size(expr*);
+extern expr* blob_crc(expr*);
+
+blobp _ = false;
+#p::pointer = blob_size p if blobp p;
+
+/* Other specials. */
 
 extern void pure_throw(expr*) = throw; // IMPURE!
 extern expr* pure_force(expr*) = force;
