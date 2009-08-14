@@ -817,6 +817,21 @@ const char *lasterr();
 
 pure_expr *lastres();
 
+/* Expression serialization. blob() stores the expression contents as a binary
+   data block (returned as a pointer object), val() retrieves the serialized
+   expression. blobp() checks for a valid blob object, blob_size() determines
+   the size of a blob (in bytes).
+
+   These operations can be used to safely transfer expression data between
+   different processes in a compact format. Note that runtime data (local
+   closures and non-NULL pointers) can't be serialized in the current
+   implementation. */
+
+pure_expr *blob(pure_expr *x);
+pure_expr *val(void *x);
+bool blobp(void *p);
+size_t blob_size(void *p);
+
 /* Basic matrix operations. These work with all supported GSL matrix types.
    matrix_size determines the number of elements in a matrix, matrix_dim the
    number of rows and columns, which are returned as a pair (n,m).

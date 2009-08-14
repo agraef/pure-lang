@@ -661,7 +661,18 @@ int32_t pure_getsym(const char *s)
   assert(s);
   interpreter& interp = *interpreter::g_interp;
   string id = (strncmp(s, "::", 2)==0)?s:"::"+string(s);
-  const symbol* sym = interp.symtab.lookup(id);
+  size_t pos = id.rfind("::");
+  string qual = (pos>2)?id.substr(2, pos-2):"";
+  const symbol* sym;
+  if (qual != *interp.symtab.current_namespace) {
+    /* Switch to the desired namespace so that we also get the private
+       symbols. */
+    string *save_namespace = interp.symtab.current_namespace;
+    interp.symtab.current_namespace = &qual;
+    sym = interp.symtab.lookup(id);
+    interp.symtab.current_namespace = save_namespace;
+  } else
+    sym = interp.symtab.lookup(id);
   if (sym)
     return sym->f;
   else
@@ -5902,6 +5913,772 @@ pure_expr *lastres()
 {
   interpreter& interp = *interpreter::g_interp;
   return interp.lastres;
+}
+
+// Special tags for list and tuple values.
+#define __LIST  (-48)
+#define __LIST2 (-47)
+#define __TUPLE (-46)
+
+// Magic header.
+#define MAGIC 471709
+
+struct data1 {
+  int32_t tag;
+  size_t n;
+};
+
+struct data2 {
+  int32_t tag;
+  size_t n1, n2;
+};
+
+struct symdata {
+  int32_t tag;
+  bool clos;
+};
+
+struct symentry {
+  int32_t f, g;
+  prec_t prec;
+  fix_t fix;
+  bool priv;
+  const char *s;
+};
+
+struct Blob {
+  // XXXTODO: We should keep track of shared expressions.
+  void *buf;
+  size_t pos, size;
+  map<int32_t,symentry> symtab;
+  size_t align(size_t pos)
+  {
+    // Align to 8 byte boundaries.
+    unsigned a = pos%8;
+    if (a > 0) a = 8-a;
+    return pos+a;
+  }
+  // Create and write a blob.
+  Blob() : buf(0), pos(0), size(0) { write_header(); }
+  void ensure(size_t n)
+  {
+    // Resize the buffer to make room for n more bytes.
+    if (pos+n > size) {
+      size_t needed = pos+n;
+      // Allocate memory in 8K chunks.
+      if (needed % 8192 > 0)
+	needed = ((needed/8192)+1)*8192;
+      assert(needed >= 8192);
+      void *p = realloc(buf, needed);
+      assert(p && "memory allocation error");
+      buf = p; size = needed;
+    }
+  }
+  void write(size_t n, const void *data, bool a = true)
+  {
+    if (a) {
+      unsigned a = align(pos)-pos;
+      ensure(a+n);
+      pos += a;
+    } else
+      ensure(n);
+    if (n > 0) {
+      assert(data);
+      memcpy((char*)buf+pos, data, n);
+      pos += n;
+    }
+  }
+  void write_header()
+  {
+    data2 h = { /* magic word */ MAGIC,
+		/* size, to be patched up later */ 0,
+		/* offset of symbol table, to be patched up later */ 0 };
+    write(sizeof(data2), &h);
+  }
+  void write_symtab()
+  {
+    size_t n = symtab.size();
+    // A tag of zero marks the beginning of the symbol table.
+    int32_t tag = 0;
+    write(sizeof(int32_t), &tag);
+    write(0, 0); // force alignment
+    // Calculate offsets of the symbol and the string table.
+    size_t t_pos = pos, s_pos = align(t_pos+n*sizeof(symentry));
+    // Symbol table entries.
+    for (map<int32_t,symentry>::iterator it = symtab.begin(),
+	   end = symtab.end(); it != end; ++it) {
+      symentry e = it->second;
+      e.s = (char*)buf+s_pos;
+      write(sizeof(symentry), &e, false);
+      s_pos += strlen(it->second.s)+1;
+    }
+    write(0, 0); // force alignment
+    // Print names of symbols.
+    for (map<int32_t,symentry>::iterator it = symtab.begin(),
+	   end = symtab.end(); it != end; ++it) {
+      symentry& e = it->second;
+      size_t l = strlen(e.s);
+      write(l+1, e.s, false);
+    }
+  }
+  void fini(bool rid = false)
+  {
+    if (pos == 0) rid = true;
+    if (rid && buf) {
+      free(buf);
+      buf = 0; pos = size = 0;
+    } else if (buf && size > pos) {
+      size_t t_pos = align(pos);
+      write_symtab();
+      void *p = realloc(buf, pos);
+      if (p) {
+	buf = p; size = pos;
+      }
+      // Fix up header information.
+      data2 *h = (data2*)buf;
+      h->n1 = size;
+      h->n2 = t_pos;
+    }
+  }
+  void dump(int32_t tag)
+  {
+    assert(tag == EXPR::APP);
+    write(sizeof(int32_t), &tag);
+  }
+  void dump(int32_t tag, int32_t x)
+  {
+    assert(tag == EXPR::INT);
+    write(sizeof(int32_t), &tag);
+    write(sizeof(int32_t), &x);
+  }
+  void dump(int32_t tag, mpz_t x)
+  {
+    assert(tag == EXPR::BIGINT);
+    int len = x->_mp_size;
+    size_t n = (size_t)len;
+    data1 d = {tag, n};
+    if (len < 0) len = -len;
+    write(sizeof(data1), &d);
+    write(len*sizeof(mp_limb_t), x->_mp_d);
+  }
+  void dump(int32_t tag, double x)
+  {
+    assert(tag == EXPR::DBL);
+    write(sizeof(int32_t), &tag);
+    write(sizeof(double), &x);
+  }
+  void dump(int32_t tag, const char *x)
+  {
+    assert(tag == EXPR::STR);
+    size_t n = strlen(x)+1;
+    data1 d = {tag, n};
+    write(sizeof(data1), &d);
+    write(n, x);
+  }
+  void dump(int32_t tag, const void *x)
+  {
+    assert(tag == EXPR::PTR);
+    write(sizeof(int32_t), &tag);
+    write(sizeof(void*), &x);
+  }
+  void dump(int32_t tag, size_t n)
+  {
+    assert(tag == __LIST || tag == __LIST2 || tag == __TUPLE);
+    data1 d = {tag, n};
+    write(sizeof(data1), &d);
+  }
+  void dump(int32_t tag, size_t n1, size_t n2)
+  {
+    assert(tag == EXPR::MATRIX);
+    data2 d = {tag, n1, n2};
+    write(sizeof(data2), &d);
+  }
+  void dump(int32_t tag, size_t n1, size_t n2, size_t tda, void *p)
+  {
+    assert(tag == EXPR::DMATRIX || tag == EXPR::IMATRIX ||
+	   tag == EXPR::CMATRIX);
+    data2 d = {tag, n1, n2};
+    write(sizeof(data2), &d);
+    size_t k = tag == EXPR::DMATRIX?sizeof(double):
+      tag == EXPR::IMATRIX?sizeof(int):2*sizeof(double);
+    if (tda == n2)
+      write(n1*n2*k, p);
+    else {
+      // Fragmented data, do one write per row.
+      write(0, 0); // force alignment
+      char *q = (char*)p;
+      for (size_t i = 0; i < n1; i++) {
+	write(n2*k, q, false);
+	q += tda*k;
+      }
+    }
+  }
+  void dump(int32_t tag, bool clos, const symbol &sym)
+  {
+    assert(tag > 0 && tag == sym.f);
+    symdata d = {tag, clos};
+    write(sizeof(symdata), &d);
+    symentry e = {sym.f, sym.g, sym.prec, sym.fix, sym.priv, sym.s.c_str()};
+    if (symtab.find(tag) == symtab.end())
+      symtab[tag] = e;
+  }
+  void dump(const symbol &sym)
+  {
+    symentry e = {sym.f, sym.g, sym.prec, sym.fix, sym.priv, sym.s.c_str()};
+    if (symtab.find(sym.f) == symtab.end())
+      symtab[sym.f] = e;
+  }
+  // Verify and read a blob.
+  Blob(void *data) : buf(0), pos(0), size(0)
+  {
+    data2 *h = (data2*)data;
+    if (h->tag == MAGIC && h->n1 >= h->n2) {
+      int32_t *tag = (int32_t*)((char*)data+h->n2);
+      if (*tag == 0) {
+	size_t t_pos = align(h->n2+sizeof(int32_t));
+	symentry *t = (symentry*)((char*)data+t_pos);
+	size_t n = (h->n1-t_pos)/sizeof(symentry);
+	for (size_t i = 0; i < n; i++) {
+	  if (t[i].f <= 0) return;
+	  symtab[t[i].f] = t[i];
+	}
+	// All nice and well so far. Assume that it's a valid blob.
+	buf = data;
+	size = h->n1;
+	pos = sizeof(data2);
+      }
+    }
+  }
+  bool verify()
+  {
+    return buf!=0;
+  }
+  int32_t tag()
+  {
+    pos = align(pos);
+    if (pos+sizeof(int32_t) > size) return 0;
+    int32_t *tag = (int32_t*)((char*)buf+pos);
+    return *tag;
+  }
+  void read(size_t n, void*& data, bool a = true)
+  {
+    if (a) pos = align(pos);
+    assert(pos+n<=size);
+    data = (char*)buf+pos;
+    pos += n;
+  }
+  void load(int32_t& tag)
+  {
+    void *p;
+    read(sizeof(int32_t), p);
+    tag = *(int32_t*)p;
+    assert(tag == EXPR::APP || tag>0);
+  }
+  void load(int32_t& tag, int32_t& x)
+  {
+    void *p;
+    read(sizeof(int32_t), p);
+    tag = *(int32_t*)p;
+    assert(tag == EXPR::INT);
+    read(sizeof(int32_t), p);
+    x = *(int32_t*)p;
+  }
+  void load(int32_t& tag, mpz_t& x)
+  {
+    void *p;
+    data1 *d;
+    read(sizeof(data1), p);
+    d = (data1*)p;
+    tag = d->tag; size_t n = d->n;
+    assert(tag == EXPR::BIGINT);
+    int len = (int)n, sz = (len<0)?-len:len;
+    mp_limb_t *xp;
+    read(sz*sizeof(mp_limb_t), p);
+    xp = (mp_limb_t*)p;
+    // FIXME: For efficiency, we poke directly into the mpz struct here, this
+    // might need to be reviewed for future GMP revisions.
+    mpz_init(x);
+    if (sz > 0) _mpz_realloc(x, sz);
+    assert(sz == 0 || x->_mp_d);
+    for (int i = 0; i < sz; i++) x->_mp_d[i] = xp[i];
+    x->_mp_size = len;
+  }
+  void load(int32_t& tag, double& x)
+  {
+    void *p;
+    read(sizeof(int32_t), p);
+    tag = *(int32_t*)p;
+    assert(tag == EXPR::DBL);
+    read(sizeof(double), p);
+    x = *(double*)p;
+  }
+  void load(int32_t& tag, char*& x)
+  {
+    void *p;
+    data1 *d;
+    read(sizeof(data1), p);
+    d = (data1*)p;
+    tag = d->tag; size_t n = d->n;
+    assert(tag == EXPR::STR && n>0);
+    read(n, p);
+    x = (char*)p;
+    assert(x[n-1] == 0);
+  }
+  void load(int32_t& tag, void*& x)
+  {
+    void *p;
+    read(sizeof(int32_t), p);
+    tag = *(int32_t*)p;
+    assert(tag == EXPR::PTR);
+    read(sizeof(void*), p);
+    x = *(void**)p;
+  }
+  void load(int32_t& tag, size_t& n)
+  {
+    void *p;
+    data1 *d;
+    read(sizeof(data1), p);
+    d = (data1*)p;
+    tag = d->tag; n = d->n;
+    assert(tag == __LIST || tag == __LIST2 || tag == __TUPLE);
+  }
+  void load(int32_t& tag, size_t& n1, size_t& n2)
+  {
+    void *p;
+    data2 *d;
+    read(sizeof(data2), p);
+    d = (data2*)p;
+    tag = d->tag; n1 = d->n1; n2 = d->n2;
+    assert(tag == EXPR::MATRIX);
+  }
+  void load(int32_t& tag, size_t& n1, size_t& n2, void*& _p)
+  {
+    void *p;
+    data2 *d;
+    read(sizeof(data2), p);
+    d = (data2*)p;
+    tag = d->tag; n1 = d->n1; n2 = d->n2;
+    assert(tag == EXPR::DMATRIX || tag == EXPR::IMATRIX ||
+	   tag == EXPR::CMATRIX);
+    size_t k = tag == EXPR::DMATRIX?sizeof(double):
+      tag == EXPR::IMATRIX?sizeof(int):2*sizeof(double);
+    read(n1*n2*k, _p);
+  }
+  void load(int32_t& tag, bool& clos)
+  {
+    void *p;
+    symdata *d;
+    read(sizeof(symdata), p);
+    d = (symdata*)p;
+    tag = d->tag; clos = d->clos;
+    assert(tag > 0);
+  }
+  void print_symtab()
+  {
+    // Print the embedded symbol table (useful for debugging purposes).
+    for (map<int32_t,symentry>::iterator it = symtab.begin(),
+	   end = symtab.end(); it != end; ++it) {
+      symentry& e = it->second;
+      if (e.fix != outfix || e.g) {
+	if (e.priv)
+	  cout << "private";
+	else
+	  cout << "public";
+      }
+      switch (e.fix) {
+      case infix:
+	if (e.prec < PREC_MAX) cout << " infix " << e.prec;
+	break;
+      case infixl:
+	cout << " infixl " << e.prec;
+	break;
+      case infixr:
+	cout << " infixr " << e.prec;
+	break;
+      case prefix:
+	cout << " prefix " << e.prec;
+	break;
+      case postfix:
+	cout << " postfix " << e.prec;
+	break;
+      case outfix:
+	if (e.g) cout << " outfix";
+	break;
+      case nonfix:
+	cout << " nonfix";
+	break;
+      default:
+	break;
+      }
+      if (e.fix == outfix) {
+	if (e.g) cout << " " << e.s << " " << symtab[e.g].s << endl;
+      } else
+	cout << " " << e.s << endl;
+    }
+  }
+};
+
+static bool dump(Blob &b, pure_expr *x)
+{
+  char test;
+  switch (x->tag) {
+  case EXPR::APP: {
+    checkstk(test);
+    size_t size;
+    pure_expr **elems, *tl;
+    if (is_list2(x, size, elems, tl)) {
+      bool null = is_nil(tl);
+      if (null)
+	b.dump(__LIST, size);
+      else
+	b.dump(__LIST2, size+1);
+      for (size_t i = 0; i < size; i++)
+	if (!dump(b, elems[i])) {
+	  free(elems);
+	  return false;
+	}
+      free(elems);
+      if (null)
+	return true;
+      else
+	return dump(b, tl);
+    } else if (is_tuple(x, size, elems)) {
+      b.dump(__TUPLE, size);
+      for (size_t i = 0; i < size; i++)
+	if (!dump(b, elems[i])) {
+	  free(elems);
+	  return false;
+	}
+      free(elems);
+      return true;
+    } else {
+      b.dump(EXPR::APP);
+      return dump(b, x->data.x[0]) && dump(b, x->data.x[1]);
+    }
+  }
+  case EXPR::INT:
+    b.dump(EXPR::INT, x->data.i);
+    return true;
+  case EXPR::BIGINT:
+    b.dump(EXPR::BIGINT, x->data.z);
+    return true;
+  case EXPR::DBL:
+    b.dump(EXPR::DBL, x->data.d);
+    return true;
+  case EXPR::STR:
+    b.dump(EXPR::STR, x->data.s);
+    return true;
+  case EXPR::PTR:
+    // Only NULL pointers allowed.
+    if (x->data.p)
+      return false;
+    else {
+      b.dump(EXPR::PTR, x->data.p);
+      return true;
+    }
+  case EXPR::DMATRIX:
+    if (x->data.mat.p) {
+      gsl_matrix *m = (gsl_matrix*)x->data.mat.p;
+      size_t n1 = m->size1, n2 = m->size2;
+      b.dump(EXPR::DMATRIX, n1, n2, m->tda, m->data);
+      return true;
+    } else
+      return false;
+  case EXPR::IMATRIX:
+    if (x->data.mat.p) {
+      gsl_matrix_int *m = (gsl_matrix_int*)x->data.mat.p;
+      size_t n1 = m->size1, n2 = m->size2;
+      b.dump(EXPR::IMATRIX, n1, n2, m->tda, m->data);
+      return true;
+    } else
+      return false;
+  case EXPR::CMATRIX:
+    if (x->data.mat.p) {
+      gsl_matrix_complex *m = (gsl_matrix_complex*)x->data.mat.p;
+      size_t n1 = m->size1, n2 = m->size2;
+      b.dump(EXPR::CMATRIX, n1, n2, m->tda, m->data);
+      return true;
+    } else
+      return false;
+  case EXPR::MATRIX:
+    if (x->data.mat.p) {
+      checkstk(test);
+      gsl_matrix_symbolic *m = (gsl_matrix_symbolic*)x->data.mat.p;
+      size_t n1 = m->size1, n2 = m->size2;
+      b.dump(EXPR::MATRIX, n1, n2);
+      for (size_t i = 0; i < n1; i++)
+	for (size_t j = 0; j < n2; j++)
+	  if (!dump(b, m->data[i*m->tda+j]))
+	    return false;
+      return true;
+    } else
+      return false;
+  default: {
+    assert(x->tag >= 0);
+    // Only plain symbols or global named closures are allowed here.
+    if (x->tag > 0 && (!x->data.clos || !x->data.clos->local)) {
+      interpreter& interp = *interpreter::g_interp;
+      symbol &sym = interp.symtab.sym(x->tag);
+      b.dump(x->tag, x->data.clos != 0, sym);
+      if (sym.fix == outfix && sym.g)
+	b.dump(interp.symtab.sym(sym.g));
+      return true;
+    } else
+      return false;
+  }
+  }
+}
+
+static int32_t make_symbol(symentry& e, symentry* e2)
+{
+  int32_t tag = e.f;
+  if (tag == 0) return 0;
+  // First check to see whether we already have an entry for this symbol.
+  interpreter& interp = *interpreter::g_interp;
+  if (tag <= interp.symtab.nsyms()) {
+    symbol &sym = interp.symtab.sym(tag);
+    if (strcmp(sym.s.c_str(), e.s) == 0) {
+      /* Verify the symbols for consistency. We don't actually care about the
+	 exact precedence levels and whether it's a private symbol or not, but
+	 the fixities ought to match. */
+      if (sym.fix != e.fix ||
+	  (e.fix == outfix && (e.g==0)!=(sym.g==0))) {
+	/* Mark this symbol as "bad" so that we can bail out immediately the
+	   next time we see it. */
+	e.f = 0;
+	return 0;
+      } else
+	return tag;
+    }
+  }
+  // Next check for a similar entry.
+  tag = pure_getsym(e.s);
+  if (tag > 0) {
+    symbol &sym = interp.symtab.sym(tag);
+    if (sym.fix != e.fix ||
+	(e.fix == outfix && (e.g==0)!=(sym.g==0))) {
+      e.f = 0;
+      return 0;
+    } else
+      return tag;
+  }
+  // No existing symbol, create a new one.
+  if (e.fix == outfix && e2 && pure_getsym(e2->s) > 0) {
+    /* We have an outfix symbol, but its right bracket is already in use.
+       There's really not much we can do here, so give up. */
+    e.f = 0;
+    return 0;
+  }  
+  tag = pure_sym(e.s);
+  assert(tag > 0);
+  symbol& sym = interp.symtab.sym(tag);
+  sym.prec = e.prec; sym.fix = e.fix; sym.priv = e.priv;
+  if (e.fix == outfix && e2)
+    sym.g = make_symbol(*e2, 0);
+  return tag;
+}
+
+static pure_expr *load(Blob &b)
+{
+  char test;
+  int32_t tag;
+  size_t n, n1, n2;
+  switch (b.tag()) {
+  case __LIST: {
+    checkstk(test);
+    b.load(tag, n);
+    pure_expr **elems = new pure_expr*[n];
+    for (size_t i = 0; i < n; i++) {
+      elems[i] = load(b);
+      if (!elems[i]) {
+	pure_new_vect(i, elems);
+	for (size_t j = 0; j < i; j++)
+	  pure_free_internal(elems[j]);
+	delete[] elems;
+	return 0;
+      }
+    }
+    pure_expr *x = pure_listv(n, elems);
+    delete[] elems;
+    return x;
+  }
+  case __LIST2: {
+    checkstk(test);
+    b.load(tag, n);
+    assert(n>0); n--;
+    pure_expr **elems = new pure_expr*[n];
+    for (size_t i = 0; i < n; i++) {
+      elems[i] = load(b);
+      if (!elems[i]) {
+	pure_new_vect(i, elems);
+	for (size_t j = 0; j < i; j++)
+	  pure_free_internal(elems[j]);
+	delete[] elems;
+	return 0;
+      }
+    }
+    pure_expr *tl = load(b);
+    if (!tl) {
+      pure_new_vect(n, elems);
+      for (size_t j = 0; j < n; j++)
+	pure_free_internal(elems[j]);
+      delete[] elems;
+      return 0;
+    }
+    pure_expr *x = pure_listv2(n, elems, tl);
+    delete[] elems;
+    return x;
+  }
+  case __TUPLE: {
+    checkstk(test);
+    b.load(tag, n);
+    pure_expr **elems = new pure_expr*[n];
+    for (size_t i = 0; i < n; i++) {
+      elems[i] = load(b);
+      if (!elems[i]) {
+	pure_new_vect(i, elems);
+	for (size_t j = 0; j < i; j++)
+	  pure_free_internal(elems[j]);
+	delete[] elems;
+	return 0;
+      }
+    }
+    pure_expr *x = pure_tuplev(n, elems);
+    delete[] elems;
+    return x;
+  }
+  case EXPR::APP: {
+    checkstk(test);
+    b.load(tag);
+    pure_expr *x = load(b);
+    if (!x) return 0;
+    pure_expr *y = load(b);
+    if (!y) {
+      pure_freenew(x);
+      return 0;
+    }
+    return pure_apply2(x, y);
+  }
+  case EXPR::INT: {
+    int32_t x;
+    b.load(tag, x);
+    return pure_int(x);
+  }
+  case EXPR::BIGINT: {
+    mpz_t z;
+    b.load(tag, z);
+    pure_expr *x = pure_mpz(z);
+    mpz_clear(z);
+    return x;
+  }
+  case EXPR::DBL: {
+    double x;
+    b.load(tag, x);
+    return pure_double(x);
+  }
+  case EXPR::STR: {
+    char *x;
+    b.load(tag, x);
+    return pure_string_dup(x);
+  }
+  case EXPR::PTR: {
+    void *x;
+    b.load(tag, x);
+    assert(x == NULL);
+    return pure_pointer(x);
+  }
+  case EXPR::DMATRIX: {
+    void *p;
+    b.load(tag, n1, n2, p);
+    return matrix_from_double_array(n1, n2, p);
+  }
+  case EXPR::IMATRIX: {
+    void *p;
+    b.load(tag, n1, n2, p);
+    return matrix_from_int_array(n1, n2, p);
+  }
+  case EXPR::CMATRIX: {
+    void *p;
+    b.load(tag, n1, n2, p);
+    return matrix_from_complex_array(n1, n2, p);
+  }
+  case EXPR::MATRIX: {
+    checkstk(test);
+    b.load(tag, n1, n2);
+    n = n1*n2;
+    pure_expr **elems = new pure_expr*[n];
+    for (size_t i = 0; i < n; i++) {
+      elems[i] = load(b);
+      if (!elems[i]) {
+	pure_new_vect(i, elems);
+	for (size_t j = 0; j < i; j++)
+	  pure_free_internal(elems[j]);
+	delete[] elems;
+	return 0;
+      }
+    }
+    gsl_matrix_symbolic *m = create_symbolic_matrix(n1, n2);
+    assert(m);
+    pure_expr **data = m->data;
+    size_t tda = m->tda;
+    for (size_t i = 0; i < n1; i++)
+      for (size_t j = 0; j < n2; j++)
+	data[i*tda+j] = elems[i*n2+j];
+    pure_expr *x = pure_symbolic_matrix(m);
+    delete[] elems;
+    return x;
+  }
+  default: {
+    bool clos;
+    b.load(tag, clos);
+    assert(tag > 0 && b.symtab.find(tag) != b.symtab.end());
+    symentry& e = b.symtab[tag];
+    if (e.f == 0) return 0; // bad symbol
+    symentry* e2 = (e.fix==outfix&&e.g)?&b.symtab[e.g]:0;
+    tag = make_symbol(e, e2);
+    if (tag == 0) return 0; // bad symbol
+    return clos?pure_symbol(tag):pure_const(tag);
+  }
+  }
+}
+
+extern "C"
+pure_expr *blob(pure_expr *x)
+{
+  Blob b;
+  bool ret = dump(b, x);
+  b.fini(!ret);
+  if (ret)
+    return pure_pointer(b.buf);
+  else
+    return 0;
+}
+
+extern "C"
+pure_expr *val(void *x)
+{
+  Blob b(x);
+  if (b.verify()) {
+    //b.print_symtab();
+    return load(b);
+  } else
+    return 0;
+}
+
+extern "C"
+bool blobp(void *p)
+{
+  if (!p) return false;
+  data2 *h = (data2*)p;
+  return h->tag == MAGIC && h->n1 >= h->n2;
+}
+
+extern "C"
+size_t blob_size(void *p)
+{
+  if (!blobp(p)) return 0;
+  data2 *h = (data2*)p;
+  return h->n1;
 }
 
 extern "C"
