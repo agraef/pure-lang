@@ -825,7 +825,7 @@ pure_expr *lastres();
    a quick check for a valid blob object, blob_size() and blob_crc() determine
    the size (in bytes) and crc checksum of a blob, respectively. (Note that
    val() may fail even if blobp() returns true, because for performance
-   reasons blobp() only does a quick plausability check on the header
+   reasons blobp() only does a quick plausibility check on the header
    information of the blob, whereas val() also performs a crc check and
    verifies data integrity.) */
 
