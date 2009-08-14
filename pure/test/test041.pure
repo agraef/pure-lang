@@ -38,3 +38,13 @@ let x = {1,2,3;4,5,6};
 val $ blob x;
 val $ blob $ dmatrix x;
 val $ blob $ cmatrix x;
+
+// reconstruction of shared subexpressions
+
+let x = 1..100;
+#blob (x,x);
+val $ blob (x,x);
+get_pointer p==get_pointer q when
+  u,v = val $ blob (x,x);
+  p,q = ref u, ref v;
+end;

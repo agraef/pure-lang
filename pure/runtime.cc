@@ -5915,10 +5915,11 @@ pure_expr *lastres()
   return interp.lastres;
 }
 
-// Special tags for list and tuple values.
+// Special tags for list and tuple values and back references.
 #define __LIST  (-48)
 #define __LIST2 (-47)
 #define __TUPLE (-46)
+#define __REF   (-45)
 
 // Magic header.
 #define MAGIC 471709
@@ -5947,7 +5948,7 @@ struct symentry {
 };
 
 struct Blob {
-  // XXXTODO: We should keep track of shared expressions.
+  // XXXTODO: Compute some kind of checksum to prevent data corruption.
   void *buf;
   size_t pos, size;
   map<int32_t,symentry> symtab;
@@ -6083,7 +6084,7 @@ struct Blob {
   }
   void dump(int32_t tag, size_t n)
   {
-    assert(tag == __LIST || tag == __LIST2 || tag == __TUPLE);
+    assert(tag == __LIST || tag == __LIST2 || tag == __TUPLE || tag == __REF);
     data1 d = {tag, n};
     write(sizeof(data1), &d);
   }
@@ -6240,7 +6241,7 @@ struct Blob {
     read(sizeof(data1), p);
     d = (data1*)p;
     tag = d->tag; n = d->n;
-    assert(tag == __LIST || tag == __LIST2 || tag == __TUPLE);
+    assert(tag == __LIST || tag == __LIST2 || tag == __TUPLE || tag == __REF);
   }
   void load(int32_t& tag, size_t& n1, size_t& n2)
   {
@@ -6318,9 +6319,17 @@ struct Blob {
   }
 };
 
-static bool dump(Blob &b, pure_expr *x)
+static bool dump(Blob &b, map<pure_expr*,size_t>& ref, size_t& key,
+		 pure_expr *x)
 {
   char test;
+  {
+    map<pure_expr*,size_t>::iterator kt = ref.find(x);
+    if (kt != ref.end()) {
+      b.dump(__REF, kt->second);
+      return true;
+    }
+  }
   switch (x->tag) {
   case EXPR::APP: {
     checkstk(test);
@@ -6333,40 +6342,45 @@ static bool dump(Blob &b, pure_expr *x)
       else
 	b.dump(__LIST2, size+1);
       for (size_t i = 0; i < size; i++)
-	if (!dump(b, elems[i])) {
+	if (!dump(b, ref, key, elems[i])) {
 	  free(elems);
 	  return false;
 	}
       free(elems);
-      if (null)
-	return true;
-      else
-	return dump(b, tl);
+      if (!null && !dump(b, ref, key, tl))
+	return false;
     } else if (is_tuple(x, size, elems)) {
       b.dump(__TUPLE, size);
       for (size_t i = 0; i < size; i++)
-	if (!dump(b, elems[i])) {
+	if (!dump(b, ref, key, elems[i])) {
 	  free(elems);
 	  return false;
 	}
       free(elems);
-      return true;
     } else {
       b.dump(EXPR::APP);
-      return dump(b, x->data.x[0]) && dump(b, x->data.x[1]);
+      if (!dump(b, ref, key, x->data.x[0]) ||
+	  !dump(b, ref, key, x->data.x[1]))
+	return false;
     }
+    ref[x] = key++;
+    return true;
   }
   case EXPR::INT:
     b.dump(EXPR::INT, x->data.i);
+    ref[x] = key++;
     return true;
   case EXPR::BIGINT:
     b.dump(EXPR::BIGINT, x->data.z);
+    ref[x] = key++;
     return true;
   case EXPR::DBL:
     b.dump(EXPR::DBL, x->data.d);
+    ref[x] = key++;
     return true;
   case EXPR::STR:
     b.dump(EXPR::STR, x->data.s);
+    ref[x] = key++;
     return true;
   case EXPR::PTR:
     // Only NULL pointers allowed.
@@ -6374,6 +6388,7 @@ static bool dump(Blob &b, pure_expr *x)
       return false;
     else {
       b.dump(EXPR::PTR, x->data.p);
+      ref[x] = key++;
       return true;
     }
   case EXPR::DMATRIX:
@@ -6381,6 +6396,7 @@ static bool dump(Blob &b, pure_expr *x)
       gsl_matrix *m = (gsl_matrix*)x->data.mat.p;
       size_t n1 = m->size1, n2 = m->size2;
       b.dump(EXPR::DMATRIX, n1, n2, m->tda, m->data);
+      ref[x] = key++;
       return true;
     } else
       return false;
@@ -6389,6 +6405,7 @@ static bool dump(Blob &b, pure_expr *x)
       gsl_matrix_int *m = (gsl_matrix_int*)x->data.mat.p;
       size_t n1 = m->size1, n2 = m->size2;
       b.dump(EXPR::IMATRIX, n1, n2, m->tda, m->data);
+      ref[x] = key++;
       return true;
     } else
       return false;
@@ -6397,6 +6414,7 @@ static bool dump(Blob &b, pure_expr *x)
       gsl_matrix_complex *m = (gsl_matrix_complex*)x->data.mat.p;
       size_t n1 = m->size1, n2 = m->size2;
       b.dump(EXPR::CMATRIX, n1, n2, m->tda, m->data);
+      ref[x] = key++;
       return true;
     } else
       return false;
@@ -6408,8 +6426,9 @@ static bool dump(Blob &b, pure_expr *x)
       b.dump(EXPR::MATRIX, n1, n2);
       for (size_t i = 0; i < n1; i++)
 	for (size_t j = 0; j < n2; j++)
-	  if (!dump(b, m->data[i*m->tda+j]))
+	  if (!dump(b, ref, key, m->data[i*m->tda+j]))
 	    return false;
+      ref[x] = key++;
       return true;
     } else
       return false;
@@ -6422,6 +6441,7 @@ static bool dump(Blob &b, pure_expr *x)
       b.dump(x->tag, x->data.clos != 0, sym);
       if (sym.fix == outfix && sym.g)
 	b.dump(interp.symtab.sym(sym.g));
+      ref[x] = key++;
       return true;
     } else
       return false;
@@ -6478,18 +6498,33 @@ static int32_t make_symbol(symentry& e, symentry* e2)
   return tag;
 }
 
-static pure_expr *load(Blob &b)
+static inline pure_expr *add_ref(map<size_t,pure_expr*>& ref, size_t& key,
+				 pure_expr *x)
+{
+  ref[key++] = x;
+  return x;
+}
+
+static pure_expr *load(Blob &b, map<size_t,pure_expr*>& ref, size_t& key)
 {
   char test;
   int32_t tag;
   size_t n, n1, n2;
   switch (b.tag()) {
+  case __REF: {
+    b.load(tag, n);
+    map<size_t,pure_expr*>::iterator kt = ref.find(n);
+    if (kt != ref.end())
+      return kt->second;
+    else
+      return 0;
+  }
   case __LIST: {
     checkstk(test);
     b.load(tag, n);
     pure_expr **elems = new pure_expr*[n];
     for (size_t i = 0; i < n; i++) {
-      elems[i] = load(b);
+      elems[i] = load(b, ref, key);
       if (!elems[i]) {
 	pure_new_vect(i, elems);
 	for (size_t j = 0; j < i; j++)
@@ -6500,7 +6535,7 @@ static pure_expr *load(Blob &b)
     }
     pure_expr *x = pure_listv(n, elems);
     delete[] elems;
-    return x;
+    return add_ref(ref, key, x);
   }
   case __LIST2: {
     checkstk(test);
@@ -6508,7 +6543,7 @@ static pure_expr *load(Blob &b)
     assert(n>0); n--;
     pure_expr **elems = new pure_expr*[n];
     for (size_t i = 0; i < n; i++) {
-      elems[i] = load(b);
+      elems[i] = load(b, ref, key);
       if (!elems[i]) {
 	pure_new_vect(i, elems);
 	for (size_t j = 0; j < i; j++)
@@ -6517,7 +6552,7 @@ static pure_expr *load(Blob &b)
 	return 0;
       }
     }
-    pure_expr *tl = load(b);
+    pure_expr *tl = load(b, ref, key);
     if (!tl) {
       pure_new_vect(n, elems);
       for (size_t j = 0; j < n; j++)
@@ -6527,14 +6562,14 @@ static pure_expr *load(Blob &b)
     }
     pure_expr *x = pure_listv2(n, elems, tl);
     delete[] elems;
-    return x;
+    return add_ref(ref, key, x);
   }
   case __TUPLE: {
     checkstk(test);
     b.load(tag, n);
     pure_expr **elems = new pure_expr*[n];
     for (size_t i = 0; i < n; i++) {
-      elems[i] = load(b);
+      elems[i] = load(b, ref, key);
       if (!elems[i]) {
 	pure_new_vect(i, elems);
 	for (size_t j = 0; j < i; j++)
@@ -6545,62 +6580,62 @@ static pure_expr *load(Blob &b)
     }
     pure_expr *x = pure_tuplev(n, elems);
     delete[] elems;
-    return x;
+    return add_ref(ref, key, x);
   }
   case EXPR::APP: {
     checkstk(test);
     b.load(tag);
-    pure_expr *x = load(b);
+    pure_expr *x = load(b, ref, key);
     if (!x) return 0;
-    pure_expr *y = load(b);
+    pure_expr *y = load(b, ref, key);
     if (!y) {
       pure_freenew(x);
       return 0;
     }
-    return pure_apply2(x, y);
+    return add_ref(ref, key, pure_apply2(x, y));
   }
   case EXPR::INT: {
     int32_t x;
     b.load(tag, x);
-    return pure_int(x);
+    return add_ref(ref, key, pure_int(x));
   }
   case EXPR::BIGINT: {
     mpz_t z;
     b.load(tag, z);
     pure_expr *x = pure_mpz(z);
     mpz_clear(z);
-    return x;
+    return add_ref(ref, key, x);
   }
   case EXPR::DBL: {
     double x;
     b.load(tag, x);
-    return pure_double(x);
+    return add_ref(ref, key, pure_double(x));
   }
   case EXPR::STR: {
     char *x;
     b.load(tag, x);
-    return pure_string_dup(x);
+    return add_ref(ref, key, pure_string_dup(x));
   }
   case EXPR::PTR: {
     void *x;
     b.load(tag, x);
     assert(x == NULL);
-    return pure_pointer(x);
+    return add_ref(ref, key, pure_pointer(x));
   }
   case EXPR::DMATRIX: {
     void *p;
     b.load(tag, n1, n2, p);
-    return matrix_from_double_array(n1, n2, p);
+    return add_ref(ref, key, matrix_from_double_array(n1, n2, p));
   }
   case EXPR::IMATRIX: {
     void *p;
     b.load(tag, n1, n2, p);
-    return matrix_from_int_array(n1, n2, p);
+    return add_ref(ref, key, matrix_from_int_array(n1, n2, p));
   }
   case EXPR::CMATRIX: {
     void *p;
     b.load(tag, n1, n2, p);
-    return matrix_from_complex_array(n1, n2, p);
+    return add_ref(ref, key, matrix_from_complex_array(n1, n2, p));
   }
   case EXPR::MATRIX: {
     checkstk(test);
@@ -6608,7 +6643,7 @@ static pure_expr *load(Blob &b)
     n = n1*n2;
     pure_expr **elems = new pure_expr*[n];
     for (size_t i = 0; i < n; i++) {
-      elems[i] = load(b);
+      elems[i] = load(b, ref, key);
       if (!elems[i]) {
 	pure_new_vect(i, elems);
 	for (size_t j = 0; j < i; j++)
@@ -6626,7 +6661,7 @@ static pure_expr *load(Blob &b)
 	data[i*tda+j] = elems[i*n2+j];
     pure_expr *x = pure_symbolic_matrix(m);
     delete[] elems;
-    return x;
+    return add_ref(ref, key, x);
   }
   default: {
     bool clos;
@@ -6637,7 +6672,7 @@ static pure_expr *load(Blob &b)
     symentry* e2 = (e.fix==outfix&&e.g)?&b.symtab[e.g]:0;
     tag = make_symbol(e, e2);
     if (tag == 0) return 0; // bad symbol
-    return clos?pure_symbol(tag):pure_const(tag);
+    return add_ref(ref, key, clos?pure_symbol(tag):pure_const(tag));
   }
   }
 }
@@ -6646,7 +6681,9 @@ extern "C"
 pure_expr *blob(pure_expr *x)
 {
   Blob b;
-  bool ret = dump(b, x);
+  map<pure_expr*,size_t> ref;
+  size_t key = 0;
+  bool ret = dump(b, ref, key, x);
   b.fini(!ret);
   if (ret)
     return pure_pointer(b.buf);
@@ -6660,7 +6697,9 @@ pure_expr *val(void *x)
   Blob b(x);
   if (b.verify()) {
     //b.print_symtab();
-    return load(b);
+    map<size_t,pure_expr*> ref;
+    size_t key = 0;
+    return load(b, ref, key);
   } else
     return 0;
 }
