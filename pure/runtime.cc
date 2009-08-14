@@ -6273,19 +6273,17 @@ struct Blob {
     } else if (buf && size > pos) {
       size_t t_pos = align(pos);
       write_symtab();
+      // Write an extra end marker.
+      int32_t marker = -4711;
+      write(sizeof(int32_t), &marker, false);
       void *p = realloc(buf, pos);
-      if (p) {
-	buf = p; size = pos;
-      }
+      if (p) buf = p; size = pos;
       // Fix up header information.
       hdrdata *h = (hdrdata*)buf;
       size_t ofs = align(sizeof(hdrdata));
       h->crc = cksum(size-ofs, (unsigned char*)buf+ofs);
       h->n1 = size;
       h->n2 = t_pos;
-      // Write an extra end marker.
-      int32_t marker = -4711;
-      write(sizeof(int32_t), &marker, false);
     }
   }
   void dump(int32_t tag)
@@ -6438,7 +6436,7 @@ struct Blob {
     src_endian = h->tag==(int32_t)MAGIC?dest_endian:-dest_endian;
     if (swap(h->n1) >= swap(h->n2)) {
       int32_t tag = swap(*(int32_t*)((char*)data+h->n2));
-      int32_t marker = swap(*(int32_t*)((char*)data+h->n1));
+      int32_t marker = swap(*(int32_t*)((char*)data+h->n1-sizeof(int32_t)));
       if (tag == 0 && marker == -4711) {
 	h->n1 = swap(h->n1); h->n2 = swap(h->n2); h->crc = swap(h->crc);
 	size_t ofs = align(sizeof(hdrdata));
