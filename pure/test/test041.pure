@@ -4,12 +4,13 @@ extern expr* blob(expr*); // should have a sentry on these
 extern expr* val(void*);
 extern bool blobp(void*);
 extern size_t blob_size(void*);
+blobp _ = false;
 #p::pointer = blob_size p if blobp p;
 
 val $ blob (x+1);
-val $ blob (\x->x+1);			// not allowed
-val $ blob foo with foo x = x+1 end;	// not allowed
-val $ blob (malloc 10);			// not allowed
+blobp $ blob (\x->x+1);			// not allowed
+blobp $ blob foo with foo x = x+1 end;	// not allowed
+blobp $ blob (malloc 10);		// not allowed
 val $ blob NULL;			// NULL pointers are ok, though
 
 // type checking, calculating the size of a blob
