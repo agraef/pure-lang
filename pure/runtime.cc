@@ -6825,9 +6825,13 @@ pure_expr *blob(pure_expr *x)
   size_t key = 0;
   bool ret = dump(b, ref, key, x);
   b.fini(!ret);
-  if (ret)
-    return pure_pointer(b.buf);
-  else
+  if (ret) {
+    // This assumes that ::free is declared in the library.
+    pure_expr *x = pure_pointer(b.buf),
+      *y = pure_symbol(pure_sym("::free"));
+    assert(x && y);
+    return pure_sentry(y, x);
+  } else
     return 0;
 }
 

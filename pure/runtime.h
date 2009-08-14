@@ -820,12 +820,14 @@ pure_expr *lastres();
 /* Expression serialization. These operations can be used to safely transfer
    expression data to/from persistent storage and between different processes
    in a compact format. blob() stores the expression contents as a binary
-   object (returned as a pointer object), val() retrieves the serialized
-   expression. blobp() does a quick check for a valid blob object, blob_size()
-   determines the size of a blob (in bytes). (Note that val() may fail even if
-   blobp() returns true, because for performance reasons blobp() only does a
-   quick plausability check on the header information of the blob, whereas
-   val() also performs a crc check and verifies data integrity.) */
+   object (returned as a cooked pointer object which frees itself when
+   garbage-collected), val() retrieves the serialized expression. blobp() does
+   a quick check for a valid blob object, blob_size() and blob_crc() determine
+   the size (in bytes) and crc checksum of a blob, respectively. (Note that
+   val() may fail even if blobp() returns true, because for performance
+   reasons blobp() only does a quick plausability check on the header
+   information of the blob, whereas val() also performs a crc check and
+   verifies data integrity.) */
 
 /* The current implementation has some limitations. Specifically, runtime data
    (local closures and pointers) can't be serialized right now, causing blob()
