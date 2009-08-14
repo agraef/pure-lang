@@ -1,0 +1,66 @@
+write_test fname/*0:1*/::string = () when fp/*0:*/::pointer = fopen fname/*0:1*/ "w"; X/*0:*/ = {1,2,3;4,5,6}; b/*0:*/ = blob [("Hello, world!",x+y,1/3,4711,#<pointer 0>),["Hello, world!",x+y,1/3,4711,#<pointer 0>],{"Hello, world!",x+y,1/3,4711,#<pointer 0>},X/*0:*/,dmatrix X/*0:*/,cmatrix X/*0:*/]; printf "blob size: %d bytes\n" (#b/*0:*/); printf "wrote %d bytes\n" (int (fwrite b/*1:*/ 1 (#b/*1:*/) fp/*3:*/)) {
+  rule #0: _ = printf "wrote %d bytes\n" (int (fwrite b 1 (#b) fp))
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: _ = printf "blob size: %d bytes\n" (#b)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: b = blob [("Hello, world!",x+y,1/3,4711,#<pointer 0>),["Hello, world!",x+y,1/3,4711,#<pointer 0>],{"Hello, world!",x+y,1/3,4711,#<pointer 0>},X,dmatrix X,cmatrix X]
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: X = {1,2,3;4,5,6}
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: fp::pointer = fopen fname "w"
+  state 0: #0
+	<var>::pointer state 1
+  state 1: #0
+} end;
+read_test fname/*0:1*/::string = do (puts.str) (val b/*3:*/) when n/*0:*/ = 10000; b/*0:*/::pointer = cooked (malloc n/*0:*/); fp/*0:*/::pointer = fopen fname/*2:1*/ "r"; printf "read %d bytes\n" (int (fread b/*1:*/ 1 n/*2:*/ fp/*0:*/)); if blobp b/*2:*/ then printf "blob size: %d bytes\n" (#b/*2:*/) else throw "invalid blob!" {
+  rule #0: _ = if blobp b then printf "blob size: %d bytes\n" (#b) else throw "invalid blob!"
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: _ = printf "read %d bytes\n" (int (fread b 1 n fp))
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: fp::pointer = fopen fname "r"
+  state 0: #0
+	<var>::pointer state 1
+  state 1: #0
+} {
+  rule #0: b::pointer = cooked (malloc n)
+  state 0: #0
+	<var>::pointer state 1
+  state 1: #0
+} {
+  rule #0: n = 10000
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+{
+  rule #0: write_test fname::string = () when fp::pointer = fopen fname "w"; X = {1,2,3;4,5,6}; b = blob [("Hello, world!",x+y,1/3,4711,#<pointer 0>),["Hello, world!",x+y,1/3,4711,#<pointer 0>],{"Hello, world!",x+y,1/3,4711,#<pointer 0>},X,dmatrix X,cmatrix X]; printf "blob size: %d bytes\n" (#b); printf "wrote %d bytes\n" (int (fwrite b 1 (#b) fp)) end
+  state 0: #0
+	<var>::string state 1
+  state 1: #0
+}
+{
+  rule #0: read_test fname::string = do (puts.str) (val b) when n = 10000; b::pointer = cooked (malloc n); fp::pointer = fopen fname "r"; printf "read %d bytes\n" (int (fread b 1 n fp)); if blobp b then printf "blob size: %d bytes\n" (#b) else throw "invalid blob!" end
+  state 0: #0
+	<var>::string state 1
+  state 1: #0
+}
+read_test "linux-amd64.blob";
+<stdin>, line 58: unhandled exception 'failed_match' while evaluating 'read_test "linux-amd64.blob"'

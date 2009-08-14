@@ -1,0 +1,58 @@
+// Read and write blobs of different host architectures (Pure 0.28+).
+
+/* This is woefully incomplete right now. In particular, we don't have any
+   blobs from bigendian systems yet. If you can contribute blobs for systems
+   not yet covered here, please send them to Dr.Graef (at) t-online.de, or
+   post them on the Pure mailing list. (To create a blob file, just run the
+   'write_test' function below with a filename identifying your system as
+   argument.) Thanks! :) */
+
+using system;
+
+// Write a blob to a file. Here the blob will always use the data
+// representation of the host architecture, so actual results may vary.
+
+write_test fname::string = () when
+  fp::pointer = fopen fname "w";
+  X = {1,2,3;4,5,6};
+  b = blob [("Hello, world!",x+y,1/3,4711,NULL),
+	    ["Hello, world!",x+y,1/3,4711,NULL],
+	    {"Hello, world!",x+y,1/3,4711,NULL},
+	    X, dmatrix X, cmatrix X];
+  printf "blob size: %d bytes\n" (#b);
+  printf "wrote %d bytes\n" $ int $ fwrite b 1 (#b) fp;
+end;
+
+// Read a blob from a file. Here the blob will be translated to the data
+// representation of the host architecture on the fly.
+
+read_test fname::string = do (puts.str) (val b) when
+  n = 10000; // this should be large enough in any case
+  b::pointer = cooked $ malloc n;
+  fp::pointer = fopen fname "r";
+  printf "read %d bytes\n" $ int $ fread b 1 n fp;
+  if blobp b then printf "blob size: %d bytes\n" (#b)
+  else throw "invalid blob!";
+end;
+
+/* Here are the tests that we already have. If everything goes smoothly, each
+   test should produce output similar to the following (taking 64 bit Linux as
+   an example):
+
+   > read_test "linux-amd64.blob";
+   read 818 bytes
+   blob size: 818 bytes
+   "Hello, world!",x+y,0.333333333333333,4711,#<pointer 0>
+   ["Hello, world!",x+y,0.333333333333333,4711,#<pointer 0>]
+   {"Hello, world!",x+y,0.333333333333333,4711,#<pointer 0>}
+   {1,2,3;4,5,6}
+   {1.0,2.0,3.0;4.0,5.0,6.0}
+   {1.0+:0.0,2.0+:0.0,3.0+:0.0;4.0+:0.0,5.0+:0.0,6.0+:0.0}
+   ()
+
+   If you get an error message or an exception instead, then please report
+   these via the Pure mailing list or the Pure issue tracker at
+   http://pure-lang.googlecode.com/, mentioning the hardware and system
+   configuration that you have, so that can weed out the bugs. */
+
+read_test "linux-amd64.blob";
