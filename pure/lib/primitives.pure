@@ -534,17 +534,23 @@ using namespace __C;
    usually much more compact and gets processed much faster than the string
    representations used by ``str`` and ``eval``. Also, ``val`` offers some
    additional protection against transmission errors through a crc check. (The
-   advantage of the textual representation, however, is that it's readable and
-   completely portable across architectures.)
+   advantage of the string representation, however, is that it's readable
+   plain text in Pure syntax.)
+
+   .. _blob:
 
    ``blob x``
      Stores the contents of the given expression as a binary object. The
      return value is a cooked pointer which frees itself when
      garbage-collected.
 
+   .. _val:
+
    ``val p``
      Reconstructs a serialized expression from the result of a previous
      invocation of the ``blob`` function.
+
+   .. _blobp:
 
    ``blobp p``
      Does a quick check for a valid ``blob`` object. (Note that ``val`` may
@@ -552,6 +558,9 @@ using namespace __C;
      ``blobp`` only does a quick plausibility check on the header information
      of the blob, whereas ``val`` also performs a crc check and verifies data
      integrity.)
+
+   .. _blob_size:
+   .. _blob_crc:
 
    ``blob_size p``, ``blob_crc p``
      Determines the size (in bytes) and crc checksum of a blob, respectively.
