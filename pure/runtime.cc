@@ -6242,11 +6242,11 @@ struct Blob {
   {
     size_t n = symtab.size();
     // A tag of zero marks the beginning of the symbol table.
-    int32_t tag = 0;
-    write(sizeof(int32_t), &tag);
+    data1 d = {0, n};
+    write(sizeof(data1), &d);
     write(0, 0); // force alignment
     // Calculate offsets of the symbol and the string table.
-    size_t t_pos = pos, s_pos = align(t_pos+n*sizeof(symentry));
+    size_t t_pos = pos, s_pos = align(t_pos+n*sizeof(symentrydata));
     // Symbol table entries.
     for (map<int32_t,symentry>::iterator it = symtab.begin(),
 	   end = symtab.end(); it != end; ++it) {
@@ -6442,9 +6442,11 @@ struct Blob {
 	size_t ofs = align(sizeof(hdrdata));
 	uint32_t crc = cksum(h->n1-ofs, (unsigned char*)data+ofs);
 	if (crc != h->crc) return; // failed crc check
-	size_t t_pos = align(h->n2+sizeof(int32_t));
+	data1 *d = (data1*)((char*)data+h->n2);
+	if (d->tag != 0) return; // invalid symbol table format
+	size_t t_pos = align(h->n2+sizeof(data1));
 	symentrydata *t = (symentrydata*)((char*)data+t_pos);
-	size_t n = (h->n1-t_pos)/sizeof(symentrydata);
+	size_t n = d->n;
 	for (size_t i = 0; i < n; i++) {
 	  symentrydata& ed = t[i];
 	  if (ed.f <= 0) return;
