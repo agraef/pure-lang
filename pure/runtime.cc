@@ -6042,6 +6042,95 @@ cksum (size_t n, unsigned char *buf)
 
 /* End of cksum algorithm. *************************************************/
 
+/* Helper functions to convert endianness on the fly. */
+
+char *swap_endian(char* s, const int nbytes)
+{
+  static char t[16];
+  switch (nbytes) {
+  case 2:
+    t[0]=*(s+1);
+    t[1]=*(s  );
+    break;
+  case 3:
+    t[0]=*(s+2);
+    t[1]=*(s+1);
+    t[2]=*(s  );
+    break;
+  case 4:
+    t[0]=*(s+3);
+    t[1]=*(s+2);
+    t[2]=*(s+1);
+    t[3]=*(s  );
+    break;
+  case 8:
+    t[0]=*(s+7);
+    t[1]=*(s+6);
+    t[2]=*(s+5);
+    t[3]=*(s+4);
+    t[4]=*(s+3);
+    t[5]=*(s+2);
+    t[6]=*(s+1);
+    t[7]=*(s  );
+    break;
+  case 16:
+    t[0]=*(s+15);
+    t[1]=*(s+14);
+    t[2]=*(s+13);
+    t[3]=*(s+12);
+    t[4]=*(s+11);
+    t[5]=*(s+10);
+    t[6]=*(s+9);
+    t[7]=*(s+8);
+    t[8]=*(s+7);
+    t[9]=*(s+6);
+    t[10]=*(s+5);
+    t[11]=*(s+4);
+    t[12]=*(s+3);
+    t[13]=*(s+2);
+    t[14]=*(s+1);
+    t[15]=*(s  );
+    break;
+  }
+  return t;
+}
+
+static inline int16_t swap_int16(int16_t x)
+{
+  return *(int16_t*)swap_endian((char*)&x, sizeof(int16_t));
+}
+
+static inline uint16_t swap_uint16(uint16_t x)
+{
+  return *(uint16_t*)swap_endian((char*)&x, sizeof(uint16_t));
+}
+
+static inline int32_t swap_int32(int32_t x)
+{
+  return *(int32_t*)swap_endian((char*)&x, sizeof(int32_t));
+}
+
+static inline uint32_t swap_uint32(uint32_t x)
+{
+  return *(uint32_t*)swap_endian((char*)&x, sizeof(uint32_t));
+}
+
+static inline int64_t swap_int64(int64_t x)
+{
+  return *(int64_t*)swap_endian((char*)&x, sizeof(int64_t));
+}
+
+static inline uint64_t swap_uint64(uint64_t x)
+{
+  return *(uint64_t*)swap_endian((char*)&x, sizeof(uint64_t));
+}
+
+// NOTE: We assume IEEE754 here.
+static inline double swap_double(double x)
+{
+  return *(double*)swap_endian((char*)&x, sizeof(double));
+}
+
 // Special tags for list and tuple values and back references.
 #define __LIST  (-48)
 #define __LIST2 (-47)
@@ -6049,7 +6138,7 @@ cksum (size_t n, unsigned char *buf)
 #define __REF   (-45)
 
 // Magic header.
-#define MAGIC 0x7329d
+#define MAGIC 0x87329d00
 
 // Platform-agnostic data types (up to endianness).
 typedef uint64_t mysize_t;
@@ -6095,7 +6184,6 @@ struct symentrydata {
 };
 
 struct Blob {
-  int32_t magic;
   void *buf;
   size_t pos, size;
   int src_endian, dest_endian;
@@ -6109,8 +6197,7 @@ struct Blob {
   }
   // Create and write a blob.
   Blob()
-    : magic(MAGIC|(WORDS_BIGENDIAN<<31)),
-      buf(0), pos(0), size(0), src_endian(0), dest_endian(0)
+    : buf(0), pos(0), size(0), src_endian(0), dest_endian(0)
   {
     write_header();
   }
@@ -6144,7 +6231,7 @@ struct Blob {
   }
   void write_header()
   {
-    hdrdata h = { magic, // magic word
+    hdrdata h = { MAGIC, // magic header
 		  // these will be patched up later
 		  0,   // crc
 		  0,   // size
@@ -6290,20 +6377,70 @@ struct Blob {
     if (symtab.find(sym.f) == symtab.end())
       symtab[sym.f] = e;
   }
+  int16_t swap(int16_t x)
+  {
+    if (src_endian != dest_endian)
+      return swap_int16(x);
+    else
+      return x;
+  }
+  int32_t swap(int32_t x)
+  {
+    if (src_endian != dest_endian)
+      return swap_int32(x);
+    else
+      return x;
+  }
+  int64_t swap(int64_t x)
+  {
+    if (src_endian != dest_endian)
+      return swap_int64(x);
+    else
+      return x;
+  }
+  uint16_t swap(uint16_t x)
+  {
+    if (src_endian != dest_endian)
+      return swap_uint16(x);
+    else
+      return x;
+  }
+  uint32_t swap(uint32_t x)
+  {
+    if (src_endian != dest_endian)
+      return swap_uint32(x);
+    else
+      return x;
+  }
+  uint64_t swap(uint64_t x)
+  {
+    if (src_endian != dest_endian)
+      return swap_uint64(x);
+    else
+      return x;
+  }
+  double swap(double x)
+  {
+    if (src_endian != dest_endian)
+      return swap_double(x);
+    else
+      return x;
+  }
   // Verify and read a blob.
   Blob(void *data)
-    : magic(MAGIC|(WORDS_BIGENDIAN<<31)),
-      buf(0), pos(0), size(0), src_endian(0), dest_endian(0)
+    : buf(0), pos(0), size(0), src_endian(0), dest_endian(0)
   {
-    if (!data) return;
     hdrdata *h = (hdrdata*)data;
-    if (h->tag == magic && h->n1 >= h->n2) {
-      // Determine source and destination endianness.
-      src_endian = ((uint32_t)h->tag&(1<<31))!=0?1:-1;
-      dest_endian = ((uint32_t)magic&(1<<31))!=0?1:-1;
-      int32_t *tag = (int32_t*)((char*)data+h->n2);
-      int32_t *marker = (int32_t*)((char*)data+h->n1);
-      if (*tag == 0 && *marker == -4711) {
+    if (!data || !(h->tag == (int32_t)MAGIC ||
+		   swap(h->tag) == (int32_t)MAGIC)) return;
+    // Determine source and destination endianness.
+    dest_endian = WORDS_BIGENDIAN?1:-1;
+    src_endian = h->tag==(int32_t)MAGIC?dest_endian:-dest_endian;
+    if (swap(h->n1) >= swap(h->n2)) {
+      int32_t tag = swap(*(int32_t*)((char*)data+h->n2));
+      int32_t marker = swap(*(int32_t*)((char*)data+h->n1));
+      if (tag == 0 && marker == -4711) {
+	h->n1 = swap(h->n1); h->n2 = swap(h->n2); h->crc = swap(h->crc);
 	size_t ofs = align(sizeof(hdrdata));
 	uint32_t crc = cksum(h->n1-ofs, (unsigned char*)data+ofs);
 	if (crc != h->crc) return; // failed crc check
@@ -6313,9 +6450,9 @@ struct Blob {
 	for (size_t i = 0; i < n; i++) {
 	  symentrydata& ed = t[i];
 	  if (ed.f <= 0) return;
-	  symentry e = {ed.f, ed.g, ed.prec, ed.fix, ed.priv,
-			(char*)data+ed.offs};
-	  symtab[ed.f] = e;
+	  symentry e = {swap(ed.f), swap(ed.g), swap(ed.prec), swap(ed.fix),
+			ed.priv, (char*)data+swap(ed.offs)};
+	  symtab[swap(ed.f)] = e;
 	}
 	// All nice and well so far. Assume that it's a valid blob.
 	buf = data;
@@ -6332,8 +6469,8 @@ struct Blob {
   {
     pos = align(pos);
     if (pos+sizeof(int32_t) > size) return 0;
-    int32_t *tag = (int32_t*)((char*)buf+pos);
-    return *tag;
+    int32_t tag = swap(*(int32_t*)((char*)buf+pos));
+    return tag;
   }
   void read(size_t n, void*& data, bool a = true)
   {
@@ -6346,17 +6483,17 @@ struct Blob {
   {
     void *p;
     read(sizeof(int32_t), p);
-    tag = *(int32_t*)p;
+    tag = swap(*(int32_t*)p);
     assert(tag == EXPR::APP || tag>0);
   }
   void load(int32_t& tag, int32_t& x)
   {
     void *p;
     read(sizeof(int32_t), p);
-    tag = *(int32_t*)p;
+    tag = swap(*(int32_t*)p);
     assert(tag == EXPR::INT);
     read(sizeof(int32_t), p);
-    x = *(int32_t*)p;
+    x = swap(*(int32_t*)p);
   }
   void load(int32_t& tag, mpz_t& x)
   {
@@ -6364,7 +6501,7 @@ struct Blob {
     data1 *d;
     read(sizeof(data1), p);
     d = (data1*)p;
-    tag = d->tag; mysize_t n = d->n;
+    tag = swap(d->tag); mysize_t n = swap(d->n);
     assert(tag == EXPR::BIGINT);
     int64_t len = (int64_t)n;
     int8_t sgn = (len<0)?-1:1;
@@ -6377,10 +6514,10 @@ struct Blob {
   {
     void *p;
     read(sizeof(int32_t), p);
-    tag = *(int32_t*)p;
+    tag = swap(*(int32_t*)p);
     assert(tag == EXPR::DBL);
     read(sizeof(double), p);
-    x = *(double*)p;
+    x = swap(*(double*)p);
   }
   void load(int32_t& tag, char*& x)
   {
@@ -6388,7 +6525,7 @@ struct Blob {
     data1 *d;
     read(sizeof(data1), p);
     d = (data1*)p;
-    tag = d->tag; size_t n = d->n;
+    tag = swap(d->tag); mysize_t n = swap(d->n);
     assert(tag == EXPR::STR && n>0);
     read(n, p);
     x = (char*)p;
@@ -6398,10 +6535,12 @@ struct Blob {
   {
     void *p;
     read(sizeof(int32_t), p);
-    tag = *(int32_t*)p;
+    tag = swap(*(int32_t*)p);
     assert(tag == EXPR::PTR);
     read(sizeof(void*), p);
-    x = *(void**)p;
+    // This must always be a NULL pointer.
+    //x = *(void**)p;
+    x = NULL;
   }
   void load(int32_t& tag, size_t& n)
   {
@@ -6409,7 +6548,7 @@ struct Blob {
     data1 *d;
     read(sizeof(data1), p);
     d = (data1*)p;
-    tag = d->tag; n = d->n;
+    tag = swap(d->tag); n = swap(d->n);
     assert(tag == __LIST || tag == __LIST2 || tag == __TUPLE || tag == __REF);
   }
   void load(int32_t& tag, size_t& n1, size_t& n2)
@@ -6418,7 +6557,7 @@ struct Blob {
     data2 *d;
     read(sizeof(data2), p);
     d = (data2*)p;
-    tag = d->tag; n1 = d->n1; n2 = d->n2;
+    tag = swap(d->tag); n1 = swap(d->n1); n2 = swap(d->n2);
     assert(tag == EXPR::MATRIX);
   }
   void load(int32_t& tag, size_t& n1, size_t& n2, void*& _p)
@@ -6427,12 +6566,37 @@ struct Blob {
     data2 *d;
     read(sizeof(data2), p);
     d = (data2*)p;
-    tag = d->tag; n1 = d->n1; n2 = d->n2;
+    tag = swap(d->tag); n1 = swap(d->n1); n2 = swap(d->n2);
     assert(tag == EXPR::DMATRIX || tag == EXPR::IMATRIX ||
 	   tag == EXPR::CMATRIX);
-    size_t k = tag == EXPR::DMATRIX?sizeof(double):
-      tag == EXPR::IMATRIX?sizeof(int):2*sizeof(double);
-    read(n1*n2*k, _p);
+    switch (tag) {
+    case EXPR::DMATRIX:
+      read(n1*n2*sizeof(double), _p);
+      if (src_endian != dest_endian) {
+	double *p = (double*)_p;
+	for (size_t i = 0; i < n1*n2; i++)
+	  p[i] = swap(p[i]);
+      }
+      break;
+    case EXPR::IMATRIX:
+      read(n1*n2*sizeof(int), _p);
+      if (src_endian != dest_endian) {
+	int *p = (int*)_p;
+	for (size_t i = 0; i < n1*n2; i++)
+	  p[i] = swap(p[i]);
+      }
+      break;
+    case EXPR::CMATRIX:
+      read(2*n1*n2*sizeof(double), _p);
+      if (src_endian != dest_endian) {
+	double *p = (double*)_p;
+	for (size_t i = 0; i < 2*n1*n2; i++)
+	  p[i] = swap(p[i]);
+      }
+      break;
+    default:
+      assert(0 && "this can't happen");
+    }
   }
   void load(int32_t& tag, bool& clos)
   {
@@ -6440,7 +6604,7 @@ struct Blob {
     symdata *d;
     read(sizeof(symdata), p);
     d = (symdata*)p;
-    tag = d->tag; clos = d->clos;
+    tag = swap(d->tag); clos = d->clos;
     assert(tag > 0);
   }
   void print_symtab()
