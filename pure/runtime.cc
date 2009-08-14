@@ -36,6 +36,10 @@ char *alloca ();
 #include "config.h"
 #include "funcall.h"
 
+#ifndef WORDS_BIGENDIAN
+#define WORDS_BIGENDIAN 0
+#endif
+
 #ifdef HAVE_GSL
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_matrix.h>
@@ -6045,40 +6049,56 @@ cksum (size_t n, unsigned char *buf)
 #define __REF   (-45)
 
 // Magic header.
-#define MAGIC 471709
+#define MAGIC 0x7329d
+
+// Platform-agnostic data types (up to endianness).
+typedef uint64_t mysize_t;
+typedef uint8_t mybool;
+typedef int32_t myprec_t;
+typedef uint16_t myfix_t;
 
 struct hdrdata {
   int32_t tag;
   uint32_t crc;
-  size_t n1, n2;
+  mysize_t n1, n2;
 };
 
 struct data1 {
   int32_t tag;
-  size_t n;
+  mysize_t n;
 };
 
 struct data2 {
   int32_t tag;
-  size_t n1, n2;
+  mysize_t n1, n2;
 };
 
 struct symdata {
   int32_t tag;
-  bool clos;
+  mybool clos;
 };
 
 struct symentry {
   int32_t f, g;
-  prec_t prec;
-  fix_t fix;
-  bool priv;
+  myprec_t prec;
+  myfix_t fix;
+  mybool priv;
   const char *s;
 };
 
+struct symentrydata {
+  int32_t f, g;
+  myprec_t prec;
+  myfix_t fix;
+  mybool priv;
+  mysize_t offs;
+};
+
 struct Blob {
+  int32_t magic;
   void *buf;
   size_t pos, size;
+  int src_endian, dest_endian;
   map<int32_t,symentry> symtab;
   size_t align(size_t pos)
   {
@@ -6088,7 +6108,12 @@ struct Blob {
     return pos+a;
   }
   // Create and write a blob.
-  Blob() : buf(0), pos(0), size(0) { write_header(); }
+  Blob()
+    : magic(MAGIC|(WORDS_BIGENDIAN<<31)),
+      buf(0), pos(0), size(0), src_endian(0), dest_endian(0)
+  {
+    write_header();
+  }
   void ensure(size_t n)
   {
     // Resize the buffer to make room for n more bytes.
@@ -6119,7 +6144,7 @@ struct Blob {
   }
   void write_header()
   {
-    hdrdata h = { MAGIC, // magic word
+    hdrdata h = { magic, // magic word
 		  // these will be patched up later
 		  0,   // crc
 		  0,   // size
@@ -6138,9 +6163,9 @@ struct Blob {
     // Symbol table entries.
     for (map<int32_t,symentry>::iterator it = symtab.begin(),
 	   end = symtab.end(); it != end; ++it) {
-      symentry e = it->second;
-      e.s = (char*)buf+s_pos;
-      write(sizeof(symentry), &e, false);
+      symentry& e = it->second;
+      symentrydata ed = {e.f, e.g, e.prec, e.fix, e.priv, s_pos};
+      write(sizeof(symentrydata), &ed, false);
       s_pos += strlen(it->second.s)+1;
     }
     write(0, 0); // force alignment
@@ -6190,12 +6215,13 @@ struct Blob {
   void dump(int32_t tag, mpz_t x)
   {
     assert(tag == EXPR::BIGINT);
-    int len = x->_mp_size;
-    size_t n = (size_t)len;
-    data1 d = {tag, n};
-    if (len < 0) len = -len;
+    size_t count;
+    void *p = mpz_export(NULL, &count, -1, sizeof(uint32_t), 0, 0, x);
+    assert(count == 0 || p);
+    data1 d = {tag, (mysize_t)(mpz_sgn(x)*(int64_t)count)};
     write(sizeof(data1), &d);
-    write(len*sizeof(mp_limb_t), x->_mp_d);
+    write(count*sizeof(uint32_t), p);
+    free(p);
   }
   void dump(int32_t tag, double x)
   {
@@ -6265,11 +6291,16 @@ struct Blob {
       symtab[sym.f] = e;
   }
   // Verify and read a blob.
-  Blob(void *data) : buf(0), pos(0), size(0)
+  Blob(void *data)
+    : magic(MAGIC|(WORDS_BIGENDIAN<<31)),
+      buf(0), pos(0), size(0), src_endian(0), dest_endian(0)
   {
     if (!data) return;
     hdrdata *h = (hdrdata*)data;
-    if (h->tag == MAGIC && h->n1 >= h->n2) {
+    if (h->tag == magic && h->n1 >= h->n2) {
+      // Determine source and destination endianness.
+      src_endian = ((uint32_t)h->tag&(1<<31))!=0?1:-1;
+      dest_endian = ((uint32_t)magic&(1<<31))!=0?1:-1;
       int32_t *tag = (int32_t*)((char*)data+h->n2);
       int32_t *marker = (int32_t*)((char*)data+h->n1);
       if (*tag == 0 && *marker == -4711) {
@@ -6277,11 +6308,14 @@ struct Blob {
 	uint32_t crc = cksum(h->n1-ofs, (unsigned char*)data+ofs);
 	if (crc != h->crc) return; // failed crc check
 	size_t t_pos = align(h->n2+sizeof(int32_t));
-	symentry *t = (symentry*)((char*)data+t_pos);
-	size_t n = (h->n1-t_pos)/sizeof(symentry);
+	symentrydata *t = (symentrydata*)((char*)data+t_pos);
+	size_t n = (h->n1-t_pos)/sizeof(symentrydata);
 	for (size_t i = 0; i < n; i++) {
-	  if (t[i].f <= 0) return;
-	  symtab[t[i].f] = t[i];
+	  symentrydata& ed = t[i];
+	  if (ed.f <= 0) return;
+	  symentry e = {ed.f, ed.g, ed.prec, ed.fix, ed.priv,
+			(char*)data+ed.offs};
+	  symtab[ed.f] = e;
 	}
 	// All nice and well so far. Assume that it's a valid blob.
 	buf = data;
@@ -6330,19 +6364,14 @@ struct Blob {
     data1 *d;
     read(sizeof(data1), p);
     d = (data1*)p;
-    tag = d->tag; size_t n = d->n;
+    tag = d->tag; mysize_t n = d->n;
     assert(tag == EXPR::BIGINT);
-    int len = (int)n, sz = (len<0)?-len:len;
-    mp_limb_t *xp;
-    read(sz*sizeof(mp_limb_t), p);
-    xp = (mp_limb_t*)p;
-    // FIXME: For efficiency, we poke directly into the mpz struct here, this
-    // might need to be reviewed for future GMP revisions.
-    mpz_init(x);
-    if (sz > 0) _mpz_realloc(x, sz);
-    assert(sz == 0 || x->_mp_d);
-    for (int i = 0; i < sz; i++) x->_mp_d[i] = xp[i];
-    x->_mp_size = len;
+    int64_t len = (int64_t)n;
+    int8_t sgn = (len<0)?-1:1;
+    n = (mysize_t)(sgn*len);
+    read(n*sizeof(uint32_t), p);
+    mpz_import(x, n, -1, sizeof(uint32_t), src_endian, 0, p);
+    x->_mp_size = sgn*x->_mp_size;
   }
   void load(int32_t& tag, double& x)
   {
@@ -6632,7 +6661,7 @@ static int32_t make_symbol(symentry& e, symentry* e2)
   tag = pure_sym(e.s);
   assert(tag > 0);
   symbol& sym = interp.symtab.sym(tag);
-  sym.prec = e.prec; sym.fix = e.fix; sym.priv = e.priv;
+  sym.prec = (prec_t)e.prec; sym.fix = (fix_t)e.fix; sym.priv = (bool)e.priv;
   if (e.fix == outfix && e2)
     sym.g = make_symbol(*e2, 0);
   return tag;
@@ -6741,6 +6770,7 @@ static pure_expr *load(Blob &b, map<size_t,pure_expr*>& ref, size_t& key)
   }
   case EXPR::BIGINT: {
     mpz_t z;
+    mpz_init(z);
     b.load(tag, z);
     pure_expr *x = pure_mpz(z);
     mpz_clear(z);
@@ -6853,8 +6883,9 @@ bool blobp(pure_expr *x)
 {
   void *p;
   if (pure_is_pointer(x, &p) && p) {
+    int32_t magic = MAGIC|(WORDS_BIGENDIAN<<31);
     hdrdata *h = (hdrdata*)p;
-    return h->tag == MAGIC && h->n1 >= h->n2;
+    return h->tag == magic && h->n1 >= h->n2;
   } else
     return false;
 }
@@ -6863,7 +6894,7 @@ extern "C"
 pure_expr *blob_size(pure_expr *x)
 {
   void *p;
-  if (pure_is_pointer(x, &p) && p) {
+  if (blobp(x) && pure_is_pointer(x, &p)) {
     hdrdata *h = (hdrdata*)p;
     // FIXME: This should probably be a bigint?
     return pure_int((int32_t)h->n1);
@@ -6875,7 +6906,7 @@ extern "C"
 pure_expr *blob_crc(pure_expr *x)
 {
   void *p;
-  if (pure_is_pointer(x, &p) && p) {
+  if (blobp(x) && pure_is_pointer(x, &p)) {
     hdrdata *h = (hdrdata*)p;
     return pure_int(h->crc);
   } else

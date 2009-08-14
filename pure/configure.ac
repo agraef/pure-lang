@@ -30,7 +30,8 @@ dnl Check for programs.
 AC_PROG_INSTALL
 AC_PROG_CC
 AC_PROG_CXX
-dnl Determine the sizes of pointers and various integer types.
+dnl Determine compiler characteristics.
+AC_C_BIGENDIAN
 AC_CHECK_SIZEOF(void *)
 AC_CHECK_SIZEOF(long)
 AC_CHECK_SIZEOF(size_t)
