@@ -6025,6 +6025,9 @@ typedef uint8_t mybool;
 typedef int32_t myprec_t;
 typedef uint16_t myfix_t;
 
+// Be careful to lay out the fields in such a manner that the structs
+// hopefully work on all 32 and 64 bit systems. This probably requires gcc.
+
 struct hdrdata {
   int32_t tag;
   uint32_t crc;
@@ -6033,12 +6036,12 @@ struct hdrdata {
 
 struct data1 {
   int32_t tag;
-  mysize_t n;
+  mysize_t n __attribute__ ((aligned (8)));
 };
 
 struct data2 {
   int32_t tag;
-  mysize_t n1, n2;
+  mysize_t n1 __attribute__ ((aligned (8))), n2;
 };
 
 struct symdata {
@@ -6051,7 +6054,7 @@ struct symentry {
   myprec_t prec;
   myfix_t fix;
   mybool priv;
-  const char *s;
+  const char *s __attribute__ ((aligned (8)));
 };
 
 struct symentrydata {
@@ -6059,7 +6062,7 @@ struct symentrydata {
   myprec_t prec;
   myfix_t fix;
   mybool priv;
-  mysize_t offs;
+  mysize_t offs __attribute__ ((aligned (8)));
 };
 
 struct Blob {
