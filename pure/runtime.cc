@@ -6184,7 +6184,7 @@ struct symentrydata {
 };
 
 struct Blob {
-  void *buf;
+  void *buf, *mem;
   size_t pos, size;
   int src_endian, dest_endian;
   map<int32_t,symentry> symtab;
@@ -6197,7 +6197,7 @@ struct Blob {
   }
   // Create and write a blob.
   Blob()
-    : buf(0), pos(0), size(0), src_endian(0), dest_endian(0)
+    : buf(0), mem(0), pos(0), size(0), src_endian(0), dest_endian(0)
   {
     write_header();
   }
@@ -6426,7 +6426,7 @@ struct Blob {
   }
   // Verify and read a blob.
   Blob(void *data)
-    : buf(0), pos(0), size(0), src_endian(0), dest_endian(0)
+    : buf(0), mem(0), pos(0), size(0), src_endian(0), dest_endian(0)
   {
     hdrdata *h = (hdrdata*)data;
     if (!data || !(h->tag == (int32_t)MAGIC ||
@@ -6434,20 +6434,20 @@ struct Blob {
     // Determine source and destination endianness.
     dest_endian = WORDS_BIGENDIAN?1:-1;
     src_endian = h->tag==(int32_t)MAGIC?dest_endian:-dest_endian;
-    if (swap(h->n1) < swap(h->n2)) return;
-    int32_t tag = swap(*(int32_t*)((char*)data+h->n2));
-    int32_t marker = swap(*(int32_t*)((char*)data+h->n1-sizeof(int32_t)));
+    size_t n1 = swap(h->n1), n2 = swap(h->n2); uint32_t crc = swap(h->crc);
+    if (n1 < n2) return;
+    int32_t tag = swap(*(int32_t*)((char*)data+n2));
+    int32_t marker = swap(*(int32_t*)((char*)data+n1-sizeof(int32_t)));
     if (tag != 0 || marker != -4711) return;
-    h->n1 = swap(h->n1); h->n2 = swap(h->n2); h->crc = swap(h->crc);
     size_t ofs = align(sizeof(hdrdata));
-    uint32_t crc = cksum(h->n1-ofs, (unsigned char*)data+ofs);
-    if (crc != h->crc) return; // failed crc check
-    data1 *d = (data1*)((char*)data+h->n2);
+    uint32_t mycrc = cksum(n1-ofs, (unsigned char*)data+ofs);
+    if (mycrc != crc) return; // failed crc check
+    data1 *d = (data1*)((char*)data+n2);
     if (swap(d->tag) != 0) return; // invalid symbol table format
-    size_t t_pos = align(h->n2+sizeof(data1));
+    size_t t_pos = align(n2+sizeof(data1));
     symentrydata *t = (symentrydata*)((char*)data+t_pos);
     size_t n = swap(d->n);
-    if (t_pos+n*sizeof(symentrydata) > h->n1) return;
+    if (t_pos+n*sizeof(symentrydata) > n1) return;
     for (size_t i = 0; i < n; i++) {
       symentrydata& ed = t[i];
       if (ed.f <= 0) return;
@@ -6457,8 +6457,18 @@ struct Blob {
     }
     // All nice and well so far. Assume that it's a valid blob.
     buf = data;
-    size = h->n1;
+    size = n1;
     pos = align(sizeof(hdrdata));
+  }
+  ~Blob() {
+    if (mem) free(mem);
+  }
+  void *mkmem(size_t size)
+  {
+    if (mem) free(mem);
+    mem = size>0?malloc(size):0;
+    assert(size == 0 || mem != 0);
+    return mem;
   }
   bool verify()
   {
@@ -6562,9 +6572,8 @@ struct Blob {
   void load(int32_t& tag, size_t& n1, size_t& n2, void*& _p)
   {
     void *p;
-    data2 *d;
     read(sizeof(data2), p);
-    d = (data2*)p;
+    data2 *d = (data2*)p;
     tag = swap(d->tag); n1 = swap(d->n1); n2 = swap(d->n2);
     assert(tag == EXPR::DMATRIX || tag == EXPR::IMATRIX ||
 	   tag == EXPR::CMATRIX);
@@ -6572,25 +6581,31 @@ struct Blob {
     case EXPR::DMATRIX:
       read(n1*n2*sizeof(double), _p);
       if (src_endian != dest_endian) {
-	double *p = (double*)_p;
+	double *p = (double*)mkmem(n1*n2*sizeof(double));
+	double *__p = (double*)_p;
 	for (size_t i = 0; i < n1*n2; i++)
-	  p[i] = swap(p[i]);
+	  p[i] = swap(__p[i]);
+	_p = p;
       }
       break;
     case EXPR::IMATRIX:
       read(n1*n2*sizeof(int), _p);
       if (src_endian != dest_endian) {
-	int *p = (int*)_p;
+	int *p = (int*)mkmem(n1*n2*sizeof(int));
+	int *__p = (int*)_p;
 	for (size_t i = 0; i < n1*n2; i++)
-	  p[i] = swap(p[i]);
+	  p[i] = swap(__p[i]);
+	_p = p;
       }
       break;
     case EXPR::CMATRIX:
       read(2*n1*n2*sizeof(double), _p);
       if (src_endian != dest_endian) {
-	double *p = (double*)_p;
+	double *p = (double*)mkmem(2*n1*n2*sizeof(double));
+	double *__p = (double*)_p;
 	for (size_t i = 0; i < 2*n1*n2; i++)
-	  p[i] = swap(p[i]);
+	  p[i] = swap(__p[i]);
+	_p = p;
       }
       break;
     default:
@@ -7046,9 +7061,13 @@ bool blobp(pure_expr *x)
 {
   void *p;
   if (pure_is_pointer(x, &p) && p) {
-    int32_t magic = MAGIC|(WORDS_BIGENDIAN<<31);
     hdrdata *h = (hdrdata*)p;
-    return h->tag == magic && h->n1 >= h->n2;
+    if (h->tag == (int32_t)MAGIC)
+      return h->n1 >= h->n2;
+    else if (swap_int32(h->tag) == (int32_t)MAGIC)
+      return swap_uint64(h->n1) >= swap_uint64(h->n2);
+    else
+      return false;
   } else
     return false;
 }
@@ -7057,10 +7076,14 @@ extern "C"
 pure_expr *blob_size(pure_expr *x)
 {
   void *p;
-  if (blobp(x) && pure_is_pointer(x, &p)) {
+  if (pure_is_pointer(x, &p) && p) {
     hdrdata *h = (hdrdata*)p;
-    // FIXME: This should probably be a bigint?
-    return pure_int((int32_t)h->n1);
+    if (h->tag == (int32_t)MAGIC)
+      return pure_int((int32_t)h->n1);
+    else if (swap_int32(h->tag) == (int32_t)MAGIC)
+      return pure_int((int32_t)swap_uint64(h->n1));
+    else
+      return 0;
   } else
     return 0;
 }
@@ -7069,9 +7092,14 @@ extern "C"
 pure_expr *blob_crc(pure_expr *x)
 {
   void *p;
-  if (blobp(x) && pure_is_pointer(x, &p)) {
+  if (pure_is_pointer(x, &p) && p) {
     hdrdata *h = (hdrdata*)p;
-    return pure_int(h->crc);
+    if (h->tag == (int32_t)MAGIC)
+      return pure_int((int32_t)h->crc);
+    else if (swap_int32(h->tag) == (int32_t)MAGIC)
+      return pure_int((int32_t)swap_uint32(h->crc));
+    else
+      return 0;
   } else
     return 0;
 }
