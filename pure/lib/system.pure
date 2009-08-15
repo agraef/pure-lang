@@ -358,6 +358,17 @@ extern int system(char* cmd), void exit(int status);
 
    ``fread ptr size nmemb fp``, ``fwrite ptr size nmemb fp``
      Binary read/writes. Here you'll have to manage the buffers yourself.
+     See the corresponding manual pages for details.
+
+   .. _fseek:
+   .. _ftell:
+   .. _rewind:
+
+   ``fseek fp offset whence``, ``ftell fp``, ``rewind fp``
+     Reposition the file pointer and retrieve its current value. The constants
+     ``SEEK_SET``, ``SEEK_CUR`` and ``SEEK_END`` can be used for the
+     ``whence`` argument of ``fseek``. See the corresponding manual pages for
+     details.
 
    Examples::
 
@@ -377,12 +388,17 @@ extern FILE* popen(char* cmd, char* mode);
 extern int fclose(FILE* fp), int pclose(FILE* fp);
 extern char* fgets(void* buf, int size, FILE* fp);
 namespace;
+
 extern int fflush(FILE* fp);
 extern int fputs(char* s, FILE* fp), int puts(char* s);
 extern size_t fread(void* ptr, size_t size, size_t nmemb, FILE* fp);
 extern size_t fwrite(void* ptr, size_t size, size_t nmemb, FILE* fp);
 extern void clearerr(FILE* fp);
 extern int feof(FILE* fp), int ferror(FILE* fp);
+
+extern int fseek(FILE* fp, long offset, int whence);
+extern long ftell(FILE *fp);
+extern void rewind(FILE *fp);
 
 /* Pure wrappers for fopen/popen and fclose/pclose which take care of closing
    a file object automagically when it's garbage-collected. Please note that

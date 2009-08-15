@@ -10347,6 +10347,15 @@ void pure_sys_vars(void)
 #ifdef LC_TIME
   cdf(interp, "LC_TIME",	pure_int(LC_TIME));
 #endif
+#ifdef SEEK_SET
+  cdf(interp, "SEEK_SET",	pure_int(SEEK_SET));
+#endif
+#ifdef SEEK_CUR
+  cdf(interp, "SEEK_CUR",	pure_int(SEEK_CUR));
+#endif
+#ifdef SEEK_END
+  cdf(interp, "SEEK_END",	pure_int(SEEK_END));
+#endif
   // file type bits
 #ifdef S_IFMT
   cdf(interp, "S_IFMT",		pure_int(S_IFMT));
