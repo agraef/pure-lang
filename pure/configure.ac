@@ -102,6 +102,9 @@ AC_CHECK_FUNCS(ftime gettimeofday nanosleep usleep)
 dnl Check for the dirent.h header and the readdir() function.
 AC_CHECK_HEADERS([dirent.h])
 AC_CHECK_FUNCS(readdir)
+# Other platform-specific system functions.
+AC_CHECK_FUNCS(fstat)
+AC_CHECK_MEMBERS([struct stat.st_rdev])
 dnl Platform specifics of signal handlers.
 AC_REINSTALL_SIGHANDLERS
 dnl Check to see whether we have POSIX/ISOC99 complex numbers.

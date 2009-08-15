@@ -1121,6 +1121,16 @@ int pclose(FILE *stream);
 unsigned int sleep(unsigned int secs);
 #endif
 
+/* stat() and friends. These wrappers return a tuple with the most important
+   fields from the stat structure (all bigint values). Note that in difference
+   to the C library, our fstat() wrapper takes a file pointer as argument. On
+   systems, where lstat() and fstat() aren't supported (e.g., Windows), the
+   pure_lstat() works the same as pure_stat() and pure_fstat() always fails. */
+
+pure_expr *pure_stat(const char *path);
+pure_expr *pure_lstat(const char *path);
+pure_expr *pure_fstat(FILE *fp);
+
 /* printf/scanf support. Since we don't support calling C vararg functions
    from Pure right now, these little wrappers are provided to process at most
    one value at a time. It is the responsibility of the caller that the

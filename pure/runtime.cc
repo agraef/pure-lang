@@ -9795,6 +9795,70 @@ double __atanh(double x)
   return atanh(x);
 }
 
+/* File type bits. */
+
+static pure_expr *statbuf(struct stat *buf)
+{
+  pure_expr *st[11];
+  /* On modern 64 bit systems, most of these fields may be 64 bit values, we
+     encode these as bigints on all platforms. */
+  st[0]  = pure_uint64(buf->st_dev);
+  st[1]  = pure_uint64(buf->st_ino);
+  st[2]  = pure_int(buf->st_mode);
+  st[3]  = pure_int(buf->st_nlink);
+  st[4]  = pure_int(buf->st_uid);
+  st[5]  = pure_int(buf->st_gid);
+#ifdef HAVE_STRUCT_STAT_ST_RDEV
+  st[6]  = pure_uint64(buf->st_rdev);
+#else
+  st[6]  = pure_uint64(0);
+#endif
+  st[7]  = pure_uint64(buf->st_size);
+  st[8]  = pure_int64(buf->st_atime);
+  st[9]  = pure_int64(buf->st_mtime);
+  st[10] = pure_int64(buf->st_ctime);
+  return pure_tuplev(11, st);
+}
+
+extern "C"
+pure_expr *pure_stat(const char *path)
+{
+  struct stat buf;
+  if (stat(path, &buf))
+    return 0;
+  else
+    return statbuf(&buf);
+}
+
+#ifdef _WIN32
+#define lstat stat
+#endif
+
+extern "C"
+pure_expr *pure_lstat(const char *path)
+{
+  struct stat buf;
+  if (lstat(path, &buf))
+    return 0;
+  else
+    return statbuf(&buf);
+}
+
+extern "C"
+pure_expr *pure_fstat(FILE *fp)
+{
+#ifdef HAVE_FSTAT
+  struct stat buf;
+  int fd = fileno(fp);
+  if (fd<0 || fstat(fd, &buf))
+    return 0;
+  else
+    return statbuf(&buf);
+#else
+  return 0;
+#endif
+}
+
 extern "C"
 int pure_fprintf(FILE *fp, const char *format)
 {
@@ -10283,8 +10347,78 @@ void pure_sys_vars(void)
 #ifdef LC_TIME
   cdf(interp, "LC_TIME",	pure_int(LC_TIME));
 #endif
+  // file type bits
+#ifdef S_IFMT
+  cdf(interp, "S_IFMT",		pure_int(S_IFMT));
+#endif
+#ifdef S_IFBLK
+  cdf(interp, "S_IFBLK",	pure_int(S_IFBLK));
+#endif
+#ifdef S_IFCHR
+  cdf(interp, "S_IFCHR",	pure_int(S_IFCHR));
+#endif
+#ifdef S_IFIFO
+  cdf(interp, "S_IFIFO",	pure_int(S_IFIFO));
+#endif
+#ifdef S_IFREG
+  cdf(interp, "S_IFREG",	pure_int(S_IFREG));
+#endif
+#ifdef S_IFDIR
+  cdf(interp, "S_IFDIR",	pure_int(S_IFDIR));
+#endif
+#ifdef S_IFLNK
+  cdf(interp, "S_IFLNK",	pure_int(S_IFLNK));
+#endif
+#ifdef S_IFSOCK
+  cdf(interp, "S_IFSOCK",	pure_int(S_IFSOCK));
+#endif
+#ifdef S_ISUID
+  cdf(interp, "S_ISUID",	pure_int(S_ISUID));
+#endif
+  // file permission bits
+#ifdef S_ISGID
+  cdf(interp, "S_ISGID",	pure_int(S_ISGID));
+#endif
+#ifdef S_ISVTX
+  cdf(interp, "S_ISVTX",	pure_int(S_ISVTX));
+#endif
+#ifdef S_IRWXU
+  cdf(interp, "S_IRWXU",	pure_int(S_IRWXU));
+#endif
+#ifdef S_IRUSR
+  cdf(interp, "S_IRUSR",	pure_int(S_IRUSR));
+#endif
+#ifdef S_IWUSR
+  cdf(interp, "S_IWUSR",	pure_int(S_IWUSR));
+#endif
+#ifdef S_IXUSR
+  cdf(interp, "S_IXUSR",	pure_int(S_IXUSR));
+#endif
+#ifdef S_IRWXG
+  cdf(interp, "S_IRWXG",	pure_int(S_IRWXG));
+#endif
+#ifdef S_IRGRP
+  cdf(interp, "S_IRGRP",	pure_int(S_IRGRP));
+#endif
+#ifdef S_IWGRP
+  cdf(interp, "S_IWGRP",	pure_int(S_IWGRP));
+#endif
+#ifdef S_IXGRP
+  cdf(interp, "S_IXGRP",	pure_int(S_IXGRP));
+#endif
+#ifdef S_IRWXO
+  cdf(interp, "S_IRWXO",	pure_int(S_IRWXO));
+#endif
+#ifdef S_IROTH
+  cdf(interp, "S_IROTH",	pure_int(S_IROTH));
+#endif
+#ifdef S_IWOTH
+  cdf(interp, "S_IWOTH",	pure_int(S_IWOTH));
+#endif
+#ifdef S_IXOTH
+  cdf(interp, "S_IXOTH",	pure_int(S_IXOTH));
+#endif
 }
-
 
 /* Optimized matrix functions, by Scott E. Dillard. */
 
