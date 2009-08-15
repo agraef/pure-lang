@@ -1,4 +1,4 @@
-write_test fname/*0:1*/::string = () when fp/*0:*/::pointer = fopen fname/*0:1*/ "w"; X/*0:*/ = {1,2,3;4,5,6}; b/*0:*/ = blob [("Hello, world!",x+y,1/3,4711,#<pointer 0>),["Hello, world!",x+y,1/3,4711,#<pointer 0>],{"Hello, world!",x+y,1/3,4711,#<pointer 0>},X/*0:*/,dmatrix X/*0:*/,cmatrix X/*0:*/]; printf "blob size: %d bytes\n" (#b/*0:*/); printf "wrote %d bytes\n" (int (fwrite b/*1:*/ 1 (#b/*1:*/) fp/*3:*/)) {
+write_test fname/*0:1*/::string = () when fp/*0:*/::pointer = fopen fname/*0:1*/ "w"; X/*0:*/ = {1,2,3;4,5,6}; b/*0:*/ = blob [("Hello, world!",x+y,1/2,4711,-4711L,#<pointer 0>),["Hello, world!",x+y,1/2,4711,-4711L,#<pointer 0>],{"Hello, world!",x+y,1/2,4711,-4711L,#<pointer 0>},X/*0:*/,dmatrix X/*0:*/,cmatrix X/*0:*/]; printf "writing blob file: %s\n" fname/*3:1*/; printf "blob size: %d bytes\n" (#b/*1:*/); printf "wrote %d bytes\n" (int (fwrite b/*2:*/ 1 (#b/*2:*/) fp/*4:*/)) {
   rule #0: _ = printf "wrote %d bytes\n" (int (fwrite b 1 (#b) fp))
   state 0: #0
 	<var> state 1
@@ -9,7 +9,12 @@ write_test fname/*0:1*/::string = () when fp/*0:*/::pointer = fopen fname/*0:1*/
 	<var> state 1
   state 1: #0
 } {
-  rule #0: b = blob [("Hello, world!",x+y,1/3,4711,#<pointer 0>),["Hello, world!",x+y,1/3,4711,#<pointer 0>],{"Hello, world!",x+y,1/3,4711,#<pointer 0>},X,dmatrix X,cmatrix X]
+  rule #0: _ = printf "writing blob file: %s\n" fname
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: b = blob [("Hello, world!",x+y,1/2,4711,-4711L,#<pointer 0>),["Hello, world!",x+y,1/2,4711,-4711L,#<pointer 0>],{"Hello, world!",x+y,1/2,4711,-4711L,#<pointer 0>},X,dmatrix X,cmatrix X]
   state 0: #0
 	<var> state 1
   state 1: #0
@@ -24,20 +29,30 @@ write_test fname/*0:1*/::string = () when fp/*0:*/::pointer = fopen fname/*0:1*/
 	<var>::pointer state 1
   state 1: #0
 } end;
-read_test fname/*0:1*/::string = do (puts.str) (val b/*3:*/) when n/*0:*/ = 10000; b/*0:*/::pointer = cooked (malloc n/*0:*/); fp/*0:*/::pointer = fopen fname/*2:1*/ "r"; printf "read %d bytes\n" (int (fread b/*1:*/ 1 n/*2:*/ fp/*0:*/)); if blobp b/*2:*/ then printf "blob size: %d bytes\n" (#b/*2:*/) else throw "invalid blob!" {
+read_test fname/*0:1*/::string = do (puts.str) (val b/*5:*/) when n/*0:*/ = 10000; b/*0:*/::pointer = cooked (malloc n/*0:*/); printf "reading blob file: %s\n" fname/*2:1*/; fp/*0:*/ = fopen fname/*3:1*/ "r"; fp/*0:*/ = if pointerp fp/*0:*/ then fp/*0:*/ else fopen ("test/"+fname/*4:1*/) "r"; if pointerp fp/*0:*/ then printf "read %d bytes\n" (int (fread b/*3:*/ 1 n/*4:*/ fp/*0:*/)) else throw "file not found"; if blobp b/*4:*/ then printf "blob size: %d bytes\n" (#b/*4:*/) else throw "invalid blob!" {
   rule #0: _ = if blobp b then printf "blob size: %d bytes\n" (#b) else throw "invalid blob!"
   state 0: #0
 	<var> state 1
   state 1: #0
 } {
-  rule #0: _ = printf "read %d bytes\n" (int (fread b 1 n fp))
+  rule #0: _ = if pointerp fp then printf "read %d bytes\n" (int (fread b 1 n fp)) else throw "file not found"
   state 0: #0
 	<var> state 1
   state 1: #0
 } {
-  rule #0: fp::pointer = fopen fname "r"
+  rule #0: fp = if pointerp fp then fp else fopen ("test/"+fname) "r"
   state 0: #0
-	<var>::pointer state 1
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: fp = fopen fname "r"
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: _ = printf "reading blob file: %s\n" fname
+  state 0: #0
+	<var> state 1
   state 1: #0
 } {
   rule #0: b::pointer = cooked (malloc n)
@@ -51,16 +66,36 @@ read_test fname/*0:1*/::string = do (puts.str) (val b/*3:*/) when n/*0:*/ = 1000
   state 1: #0
 } end;
 {
-  rule #0: write_test fname::string = () when fp::pointer = fopen fname "w"; X = {1,2,3;4,5,6}; b = blob [("Hello, world!",x+y,1/3,4711,#<pointer 0>),["Hello, world!",x+y,1/3,4711,#<pointer 0>],{"Hello, world!",x+y,1/3,4711,#<pointer 0>},X,dmatrix X,cmatrix X]; printf "blob size: %d bytes\n" (#b); printf "wrote %d bytes\n" (int (fwrite b 1 (#b) fp)) end
+  rule #0: write_test fname::string = () when fp::pointer = fopen fname "w"; X = {1,2,3;4,5,6}; b = blob [("Hello, world!",x+y,1/2,4711,-4711L,#<pointer 0>),["Hello, world!",x+y,1/2,4711,-4711L,#<pointer 0>],{"Hello, world!",x+y,1/2,4711,-4711L,#<pointer 0>},X,dmatrix X,cmatrix X]; printf "writing blob file: %s\n" fname; printf "blob size: %d bytes\n" (#b); printf "wrote %d bytes\n" (int (fwrite b 1 (#b) fp)) end
   state 0: #0
 	<var>::string state 1
   state 1: #0
 }
 {
-  rule #0: read_test fname::string = do (puts.str) (val b) when n = 10000; b::pointer = cooked (malloc n); fp::pointer = fopen fname "r"; printf "read %d bytes\n" (int (fread b 1 n fp)); if blobp b then printf "blob size: %d bytes\n" (#b) else throw "invalid blob!" end
+  rule #0: read_test fname::string = do (puts.str) (val b) when n = 10000; b::pointer = cooked (malloc n); printf "reading blob file: %s\n" fname; fp = fopen fname "r"; fp = if pointerp fp then fp else fopen ("test/"+fname) "r"; if pointerp fp then printf "read %d bytes\n" (int (fread b 1 n fp)) else throw "file not found"; if blobp b then printf "blob size: %d bytes\n" (#b) else throw "invalid blob!" end
   state 0: #0
 	<var>::string state 1
   state 1: #0
 }
-read_test "linux-amd64.blob";
-<stdin>, line 58: unhandled exception 'failed_match' while evaluating 'read_test "linux-amd64.blob"'
+reading blob file: linux64-amd64.blob
+read 898 bytes
+blob size: 898 bytes
+"Hello, world!",x+y,0.5,4711,-4711L,#<pointer 0>
+["Hello, world!",x+y,0.5,4711,-4711L,#<pointer 0>]
+{"Hello, world!",x+y,0.5,4711,-4711L,#<pointer 0>}
+{1,2,3;4,5,6}
+{1.0,2.0,3.0;4.0,5.0,6.0}
+{1.0+:0.0,2.0+:0.0,3.0+:0.0;4.0+:0.0,5.0+:0.0,6.0+:0.0}
+read_test "linux64-amd64.blob";
+()
+reading blob file: win32-amd64.blob
+read 826 bytes
+blob size: 826 bytes
+"Hello, world!",x+y,0.333333333333333,4711,#<pointer 0>
+["Hello, world!",x+y,0.333333333333333,4711,#<pointer 0>]
+{"Hello, world!",x+y,0.333333333333333,4711,#<pointer 0>}
+{1,2,3;4,5,6}
+{1.0,2.0,3.0;4.0,5.0,6.0}
+{1.0+:0.0,2.0+:0.0,3.0+:0.0;4.0+:0.0,5.0+:0.0,6.0+:0.0}
+read_test "win32-amd64.blob";
+()

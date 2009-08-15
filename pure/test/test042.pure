@@ -15,10 +15,11 @@ using system;
 write_test fname::string = () when
   fp::pointer = fopen fname "w";
   X = {1,2,3;4,5,6};
-  b = blob [("Hello, world!",x+y,1/3,4711,NULL),
-	    ["Hello, world!",x+y,1/3,4711,NULL],
-	    {"Hello, world!",x+y,1/3,4711,NULL},
+  b = blob [("Hello, world!",x+y,1/2,4711,-4711L,NULL),
+	    ["Hello, world!",x+y,1/2,4711,-4711L,NULL],
+	    {"Hello, world!",x+y,1/2,4711,-4711L,NULL},
 	    X, dmatrix X, cmatrix X];
+  printf "writing blob file: %s\n" fname;
   printf "blob size: %d bytes\n" (#b);
   printf "wrote %d bytes\n" $ int $ fwrite b 1 (#b) fp;
 end;
@@ -29,8 +30,13 @@ end;
 read_test fname::string = do (puts.str) (val b) when
   n = 10000; // this should be large enough in any case
   b::pointer = cooked $ malloc n;
-  fp::pointer = fopen fname "r";
-  printf "read %d bytes\n" $ int $ fread b 1 n fp;
+  printf "reading blob file: %s\n" fname;
+  fp = fopen fname "r";
+  // 'make check' runs this from the parent directory, so try the test subdir
+  // if we can't open the file by its name.
+  fp = if pointerp fp then fp else fopen ("test/"+fname) "r";
+  if pointerp fp then printf "read %d bytes\n" $ int $ fread b 1 n fp
+  else throw "file not found";
   if blobp b then printf "blob size: %d bytes\n" (#b)
   else throw "invalid blob!";
 end;
@@ -39,12 +45,13 @@ end;
    test should produce output similar to the following (taking 64 bit Linux as
    an example):
 
-   > read_test "linux-amd64.blob";
-   read 818 bytes
-   blob size: 818 bytes
-   "Hello, world!",x+y,0.333333333333333,4711,#<pointer 0>
-   ["Hello, world!",x+y,0.333333333333333,4711,#<pointer 0>]
-   {"Hello, world!",x+y,0.333333333333333,4711,#<pointer 0>}
+   > read_test "linux64-amd64.blob";
+   reading blob file: linux64-amd64.blob
+   read 826 bytes
+   blob size: 826 bytes
+   "Hello, world!",x+y,0.5,4711,-4711L,#<pointer 0>
+   ["Hello, world!",x+y,0.5,4711,-4711L,#<pointer 0>]
+   {"Hello, world!",x+y,0.5,4711,-4711L,#<pointer 0>}
    {1,2,3;4,5,6}
    {1.0,2.0,3.0;4.0,5.0,6.0}
    {1.0+:0.0,2.0+:0.0,3.0+:0.0;4.0+:0.0,5.0+:0.0,6.0+:0.0}
@@ -56,3 +63,4 @@ end;
    configuration that you have, so that can weed out the bugs. */
 
 read_test "linux64-amd64.blob";
+read_test "win32-amd64.blob";
