@@ -25,6 +25,10 @@ inline int is_inf(double f) {
   return (!is_nan(f) && is_nan(f-f));
 }
 
+/* POSIX.2 CRC32 checksum algorithm. */
+
+uint32_t cksum(size_t n, unsigned char *buf);
+
 /* Determine the system's default encoding. */
 
 char *default_encoding();
