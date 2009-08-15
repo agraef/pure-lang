@@ -2889,16 +2889,18 @@ plain text in Pure syntax.)
 
 ``blob_size p``, ``blob_crc p``
   Determines the size (in bytes) and crc checksum of a blob, respectively.
-  For convenience, ``#p`` is defined as an alias for ``blob_size p`` on
+  ``blob_size`` always returns a bigint, ``blob_crc`` a machine int (use
+  ``uint`` on the latter to get a proper unsigned 32 bit value). For
+  convenience, ``#p`` is defined as an alias for ``blob_size p`` on
   ``blob`` pointers.
 
 Example::
 
   > let b = blob {"Hello, world!", 1/3, 4711, NULL};
-  > b; #b; blob_crc b;
-  #<pointer 0x143ce80>
-  136
-  892738801
+  > b; #b; uint $ blob_crc b;
+  #<pointer 0x141dca0>
+  148L
+  3249898239L
   > val b;
   {"Hello, world!",0.333333333333333,4711,#<pointer 0>}
 
@@ -5294,6 +5296,79 @@ Examples::
 
 ..
 
+Stat and Friends
+----------------
+
+.. raw:: html
+
+   <a name="stat">
+
+.. _stat:
+
+``stat path``
+  Return information about the given file. This is a simple wrapper around
+  the corresponding system call, see the stat(2) manual page for
+  details. The function returns a tuple with the most important fields from
+  the ``stat`` structure, in this order: ``st_dev``, ``st_ino``,
+  ``st_mode``, ``st_nlink``, ``st_uid``, ``st_gid``, ``st_rdev``,
+  ``st_size``, ``st_atime``, ``st_mtime``, ``st_ctime``. Among these,
+  ``st_mode``, ``st_nlink``, ``st_uid`` and ``st_gid`` are simple machine
+  integers, the rest is encoded as bigints (even on 32 bit platforms).
+
+.. raw:: html
+
+   <a name="lstat">
+
+.. _lstat:
+
+``lstat path``
+  Return information about the given symbolic link (rather than the file
+  it points to). On systems where this function isn't supported (e.g.,
+  Windows), ``lstat`` is identical to ``stat``.
+
+.. raw:: html
+
+   <a name="fstat">
+
+.. _fstat:
+
+``fstat fp``
+  Return information about the given file object. Same as ``stat``, but
+  here the file is given as a file pointer created with ``fopen`` (see
+  `Basic I/O Interface`_ above). Note that the corresponding system
+  function actually takes a file descriptor, so the Pure implementation is
+  equivalent to the C call ``fstat(fileno(fp))``. This function might not
+  be supported on all platforms.
+
+For average applications, the most interesting fields are ``st_mode`` and
+``st_size``, which can be retrieved with ``stat filename!![2,7]``. Note
+that to facilitate access to the ``st_mode`` field, the usual masks and
+bits for file types (``S_IFMT``, ``S_IFREG``, etc.) and permissions
+(``S_ISUID``, ``S_ISGID``, ``S_IRWXU``, etc.) are defined as constants by
+this module.  Use the command ``show -g S_*`` in the interpreter to get a
+full list of these. Other interesting fields are ``st_atime``, ``st_mtime``
+and ``st_ctime``, which can be accessed using ``stat filename!!(8..10)``.
+The values of these fields are the times of last access, last modification
+and creation, respectively, which can be decoded using the appropriate time
+functions like ``ctime`` or ``strftime``, see `Time Functions`_.
+
+Examples::
+
+  > stat "/etc/passwd";
+  64773L,9726294L,33188,1,0,0,0L,1623L,1250373163L,1242692339L,1242692339L
+  > stat "/etc/passwd"!7;                                // file size
+  1623L
+  > strftime "%c" $ localtime $ stat "/etc/passwd"!10;   // creation time
+  "Tue 19 May 2009 02:18:59 AM CEST"
+  > sprintf "0%o" $ stat "/etc/passwd"!2 and not S_IFMT; // permissions
+  "0644"
+  > stat "/etc/passwd"!2 and S_IFMT == S_IFREG; // this is a regular file
+  1
+  > stat "/etc"!2 and S_IFMT == S_IFDIR;        // this is a directory
+  1
+
+..
+
 Readline
 --------
 
@@ -5975,6 +6050,7 @@ Index
 | `fread`_
 | `free`_
 | `fscanf`_
+| `fstat`_
 | `funp`_
 | `fwrite`_
 
@@ -6062,6 +6138,7 @@ Index
 | `ln`_
 | `localtime`_
 | `log`_
+| `lstat`_
 
 | `malloc`_
 | `malloc_error`_
@@ -6207,6 +6284,7 @@ Index
 | `srandom`_
 | `sscanf`_
 | `stack_fault`_
+| `stat`_
 | `str`_
 | `strcat`_
 | `stream`_
