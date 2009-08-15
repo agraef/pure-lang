@@ -564,16 +564,18 @@ using namespace __C;
 
    ``blob_size p``, ``blob_crc p``
      Determines the size (in bytes) and crc checksum of a blob, respectively.
-     For convenience, ``#p`` is defined as an alias for ``blob_size p`` on
+     ``blob_size`` always returns a bigint, ``blob_crc`` a machine int (use
+     ``uint`` on the latter to get a proper unsigned 32 bit value). For
+     convenience, ``#p`` is defined as an alias for ``blob_size p`` on
      ``blob`` pointers.
 
    Example::
 
      > let b = blob {"Hello, world!", 1/3, 4711, NULL};
-     > b; #b; blob_crc b;
-     #<pointer 0x143ce80>
-     136
-     892738801
+     > b; #b; uint $ blob_crc b;
+     #<pointer 0x141dca0>
+     148L
+     3249898239L
      > val b;
      {"Hello, world!",0.333333333333333,4711,#<pointer 0>}
 

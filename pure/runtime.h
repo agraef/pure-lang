@@ -508,6 +508,7 @@ pure_expr *pure_applc(pure_expr *x, pure_expr *y);
 /* Additional bigint constructors. */
 
 pure_expr *pure_int64(int64_t l);
+pure_expr *pure_uint64(uint64_t l);
 pure_expr *pure_bigint(int32_t size, const limb_t *limbs);
 
 /* Additional bigint list, tuple and matrix constructors. These take the limbs

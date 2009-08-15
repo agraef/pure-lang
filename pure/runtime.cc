@@ -3056,6 +3056,21 @@ pure_expr *pure_int64(int64_t l)
   }
 }
 
+extern "C"
+pure_expr *pure_uint64(uint64_t l)
+{
+  int sgn = (l!=0);
+  if (sizeof(mp_limb_t) == 8) {
+    // 8 byte limbs, value fits in a single limb.
+    limb_t u[1] = { l };
+    return pure_bigint(sgn, u);
+  } else {
+    // 4 byte limbs, put least significant word in the first limb.
+    limb_t u[2] = { (uint32_t)l, (uint32_t)(l>>32) };
+    return pure_bigint(sgn+sgn, u);
+  }
+}
+
 static void make_bigint(mpz_t z, int32_t size, const limb_t *limbs)
 {
   // FIXME: For efficiency, we poke directly into the mpz struct here, this
@@ -6963,9 +6978,9 @@ pure_expr *blob_size(pure_expr *x)
   if (pure_is_pointer(x, &p) && p) {
     hdrdata *h = (hdrdata*)p;
     if (h->tag == (int32_t)MAGIC)
-      return pure_int((int32_t)h->n1);
+      return pure_uint64(h->n1);
     else if (swap_int32(h->tag) == (int32_t)MAGIC)
-      return pure_int((int32_t)swap_uint64(h->n1));
+      return pure_uint64(swap_uint64(h->n1));
     else
       return 0;
   } else
