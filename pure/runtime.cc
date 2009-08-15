@@ -6492,6 +6492,8 @@ struct Blob {
       break;
     default:
       assert(0 && "this can't happen");
+      _p = 0;
+      break;
     }
   }
   void load(int32_t& tag, bool& clos)
@@ -11747,7 +11749,7 @@ matrix_type* matrix_filter( pure_expr *p, pure_expr *x ) {
     elem_type *pi = reinterpret_cast<elem_type*>(xm->data)+i*xm->tda; 
     for (size_t j=0; j<xm->size2; ++j,++pi) {
       pure_expr *b = pure_app( p, to_expr(*pi) );
-      int32_t bi;
+      int32_t bi = 0;
       bool res = pure_is_int(b,&bi);
       pure_freenew(b);
       if (!res) goto exception;
@@ -11788,7 +11790,7 @@ matrix_type* matrix_takewhile( pure_expr *p, pure_expr *x ) {
     elem_type *pi = reinterpret_cast<elem_type*>(xm->data)+i*xm->tda; 
     for (size_t j=0; j<xm->size2; ++j,++pi) {
       pure_expr *b = pure_app( p, to_expr(*pi) );
-      int32_t bi;
+      int32_t bi = 0;
       bool res = pure_is_int(b,&bi);
       pure_freenew(b);
       if (!res) goto exception;
@@ -11835,7 +11837,7 @@ matrix_type* matrix_dropwhile( pure_expr *p, pure_expr *x ) {
     elem_type *pi = reinterpret_cast<elem_type*>(xm->data)+i*xm->tda; 
     for (size_t j=0; j<xm->size2; ++j,++pi) {
       pure_expr *b = pure_app( p, to_expr(*pi) );
-      int32_t bi;
+      int32_t bi = 0;
       bool res = pure_is_int(b,&bi);
       pure_freenew(b);
       if (!res) goto exception;
@@ -11884,7 +11886,7 @@ bool matrix_all( pure_expr *p, pure_expr *x ) {
     elem_type *pi = reinterpret_cast<elem_type*>(xm->data)+i*xm->tda; 
     for (size_t j=0; j<xm->size2; ++j,++pi) {
       pure_expr *b = pure_app( p, to_expr(*pi) );
-      int32_t bi;
+      int32_t bi = 0;
       bool res = pure_is_int(b,&bi);
       pure_freenew(b);
       if (!res) goto exception;
@@ -11910,7 +11912,7 @@ bool matrix_any( pure_expr *p, pure_expr *x ) {
     elem_type *pi = reinterpret_cast<elem_type*>(xm->data)+i*xm->tda; 
     for (size_t j=0; j<xm->size2; ++j,++pi) {
       pure_expr *b = pure_app( p, to_expr(*pi) );
-      int32_t bi;
+      int32_t bi = 0;
       bool res = pure_is_int(b,&bi);
       pure_freenew(b);
       if (!res) goto exception;
