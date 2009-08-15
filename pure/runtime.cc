@@ -6375,49 +6375,49 @@ struct Blob {
     if (symtab.find(sym.f) == symtab.end())
       symtab[sym.f] = e;
   }
-  int16_t swap(int16_t x)
+  inline int16_t swap(int16_t x)
   {
     if (src_endian != dest_endian)
       return swap_int16(x);
     else
       return x;
   }
-  int32_t swap(int32_t x)
+  inline int32_t swap(int32_t x)
   {
     if (src_endian != dest_endian)
       return swap_int32(x);
     else
       return x;
   }
-  int64_t swap(int64_t x)
+  inline int64_t swap(int64_t x)
   {
     if (src_endian != dest_endian)
       return swap_int64(x);
     else
       return x;
   }
-  uint16_t swap(uint16_t x)
+  inline uint16_t swap(uint16_t x)
   {
     if (src_endian != dest_endian)
       return swap_uint16(x);
     else
       return x;
   }
-  uint32_t swap(uint32_t x)
+  inline uint32_t swap(uint32_t x)
   {
     if (src_endian != dest_endian)
       return swap_uint32(x);
     else
       return x;
   }
-  uint64_t swap(uint64_t x)
+  inline uint64_t swap(uint64_t x)
   {
     if (src_endian != dest_endian)
       return swap_uint64(x);
     else
       return x;
   }
-  double swap(double x)
+  inline double swap(double x)
   {
     if (src_endian != dest_endian)
       return swap_double(x);
@@ -6434,32 +6434,31 @@ struct Blob {
     // Determine source and destination endianness.
     dest_endian = WORDS_BIGENDIAN?1:-1;
     src_endian = h->tag==(int32_t)MAGIC?dest_endian:-dest_endian;
-    if (swap(h->n1) >= swap(h->n2)) {
-      int32_t tag = swap(*(int32_t*)((char*)data+h->n2));
-      int32_t marker = swap(*(int32_t*)((char*)data+h->n1-sizeof(int32_t)));
-      if (tag == 0 && marker == -4711) {
-	h->n1 = swap(h->n1); h->n2 = swap(h->n2); h->crc = swap(h->crc);
-	size_t ofs = align(sizeof(hdrdata));
-	uint32_t crc = cksum(h->n1-ofs, (unsigned char*)data+ofs);
-	if (crc != h->crc) return; // failed crc check
-	data1 *d = (data1*)((char*)data+h->n2);
-	if (d->tag != 0) return; // invalid symbol table format
-	size_t t_pos = align(h->n2+sizeof(data1));
-	symentrydata *t = (symentrydata*)((char*)data+t_pos);
-	size_t n = d->n;
-	for (size_t i = 0; i < n; i++) {
-	  symentrydata& ed = t[i];
-	  if (ed.f <= 0) return;
-	  symentry e = {swap(ed.f), swap(ed.g), swap(ed.prec), swap(ed.fix),
-			ed.priv, (char*)data+swap(ed.offs)};
-	  symtab[swap(ed.f)] = e;
-	}
-	// All nice and well so far. Assume that it's a valid blob.
-	buf = data;
-	size = h->n1;
-	pos = align(sizeof(hdrdata));
-      }
+    if (swap(h->n1) < swap(h->n2)) return;
+    int32_t tag = swap(*(int32_t*)((char*)data+h->n2));
+    int32_t marker = swap(*(int32_t*)((char*)data+h->n1-sizeof(int32_t)));
+    if (tag != 0 || marker != -4711) return;
+    h->n1 = swap(h->n1); h->n2 = swap(h->n2); h->crc = swap(h->crc);
+    size_t ofs = align(sizeof(hdrdata));
+    uint32_t crc = cksum(h->n1-ofs, (unsigned char*)data+ofs);
+    if (crc != h->crc) return; // failed crc check
+    data1 *d = (data1*)((char*)data+h->n2);
+    if (swap(d->tag) != 0) return; // invalid symbol table format
+    size_t t_pos = align(h->n2+sizeof(data1));
+    symentrydata *t = (symentrydata*)((char*)data+t_pos);
+    size_t n = swap(d->n);
+    if (t_pos+n*sizeof(symentrydata) > h->n1) return;
+    for (size_t i = 0; i < n; i++) {
+      symentrydata& ed = t[i];
+      if (ed.f <= 0) return;
+      symentry e = {swap(ed.f), swap(ed.g), swap(ed.prec), swap(ed.fix),
+		    ed.priv, (char*)data+swap(ed.offs)};
+      symtab[swap(ed.f)] = e;
     }
+    // All nice and well so far. Assume that it's a valid blob.
+    buf = data;
+    size = h->n1;
+    pos = align(sizeof(hdrdata));
   }
   bool verify()
   {
