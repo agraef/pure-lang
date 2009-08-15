@@ -28,18 +28,24 @@ end;
 // representation of the host architecture on the fly.
 
 read_test fname::string = do (puts.str) (val b) when
-  n = 10000; // this should be large enough in any case
-  b::pointer = cooked $ malloc n;
+  name,fp = check fname;
+  n::bigint = stat name!7; b::pointer = cooked $ malloc n;
   printf "reading blob file: %s\n" fname;
-  fp = fopen fname "r";
-  // 'make check' runs this from the parent directory, so try the test subdir
-  // if we can't open the file by its name.
-  fp = if pointerp fp then fp else fopen ("test/"+fname) "r";
-  if pointerp fp then printf "read %d bytes\n" $ int $ fread b 1 n fp
-  else throw "file not found";
+  printf "read %d bytes\n" $ int $ fread b 1 n fp;
   if blobp b then printf "blob size: %d bytes\n" (#b)
   else throw "invalid blob!";
 end;
+
+/* 'make check' runs this from the parent directory, so try the test subdir
+   if we can't open the file by its name. */
+
+check fname::string = fname,fp if pointerp fp when
+  fname,fp = case fopen fname "r" of
+	       fp::pointer = fname, fp;
+               _ = fname, fopen fname "r" when fname = "test/"+fname end;
+             end;
+end;
+check _ = throw "file not found";
 
 /* Here are the tests that we already have. If everything goes smoothly, each
    test should produce output similar to the following (taking 64 bit Linux as
