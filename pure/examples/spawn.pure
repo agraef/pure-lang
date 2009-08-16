@@ -5,7 +5,7 @@
 
 extern int fork();
 extern int execvp(char *prog, void *argv);
-extern int waitpid(int pid, int *status, int options);
+extern int waitpid(int pid, void *status, int options);
 
 /* spawn executes the given program with the given list of arguments. Note
    that args!0 is supposed to be the program name, the remaining elements of
@@ -25,7 +25,7 @@ end;
 wait_for_pid pid = res
 when
   status = {0};
-  res = waitpid pid (pointer status) 0;
+  res = waitpid pid status 0;
   res = if res >= 0 then status!0 >> 8 else res;
 end;
 
