@@ -2636,6 +2636,7 @@ char *pure_evalcmd(const char *s)
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/fcntl.h>
 
 static inline bool chkfile(const string& s)
 {
@@ -10426,6 +10427,85 @@ void pure_sys_vars(void)
 #endif
 #ifdef S_IXOTH
   cdf(interp, "S_IXOTH",	pure_int(S_IXOTH));
+#endif
+  // open/fcntl flags
+#ifdef O_ACCMODE
+  cdf(interp, "O_ACCMODE",	pure_int(O_ACCMODE));
+#endif
+#ifdef O_RDONLY
+  cdf(interp, "O_RDONLY",	pure_int(O_RDONLY));
+#endif
+#ifdef O_WRONLY
+  cdf(interp, "O_WRONLY",	pure_int(O_WRONLY));
+#endif
+#ifdef O_RDWR
+  cdf(interp, "O_RDWR",	pure_int(O_RDWR));
+#endif
+#ifdef O_CREAT
+  cdf(interp, "O_CREAT",	pure_int(O_CREAT));
+#endif
+#ifdef O_EXCL
+  cdf(interp, "O_EXCL",	pure_int(O_EXCL));
+#endif
+#ifdef O_NOCTTY
+  cdf(interp, "O_NOCTTY",	pure_int(O_NOCTTY));
+#endif
+#ifdef O_TRUNC
+  cdf(interp, "O_TRUNC",	pure_int(O_TRUNC));
+#endif
+#ifdef O_APPEND
+  cdf(interp, "O_APPEND",	pure_int(O_APPEND));
+#endif
+#ifdef O_NONBLOCK
+  cdf(interp, "O_NONBLOCK",	pure_int(O_NONBLOCK));
+#endif
+#ifdef O_NDELAY
+  cdf(interp, "O_NDELAY",	pure_int(O_NDELAY));
+#endif
+#ifdef O_SYNC
+  cdf(interp, "O_SYNC",		pure_int(O_SYNC));
+#endif
+#ifdef O_FSYNC
+  cdf(interp, "O_FSYNC",	pure_int(O_FSYNC));
+#endif
+#ifdef O_ASYNC
+  cdf(interp, "O_ASYNC",	pure_int(O_ASYNC));
+#endif
+#ifdef FD_CLOEXEC
+  cdf(interp, "FD_CLOEXEC",	pure_int(FD_CLOEXEC));
+#endif
+#ifdef F_DUPFD
+  cdf(interp, "F_DUPFD",	pure_int(F_DUPFD));
+#endif
+#ifdef F_GETFD
+  cdf(interp, "F_GETFD",	pure_int(F_GETFD));
+#endif
+#ifdef F_SETFD
+  cdf(interp, "F_SETFD",	pure_int(F_SETFD));
+#endif
+#ifdef F_GETFL
+  cdf(interp, "F_GETFL",	pure_int(F_GETFL));
+#endif
+#ifdef F_SETFL
+  cdf(interp, "F_SETFL",	pure_int(F_SETFL));
+#endif
+#ifdef F_GETLK
+  cdf(interp, "F_GETLK",	pure_int(F_GETLK));
+#endif
+#ifdef F_SETLK
+  cdf(interp, "F_SETLK",	pure_int(F_SETLK));
+#endif
+#ifdef F_SETLKW
+  cdf(interp, "F_SETLKW",	pure_int(F_SETLKW));
+#endif
+#ifdef F_RDLCK
+  cdf(interp, "F_RDLCK",	pure_int(F_RDLCK));
+#endif
+#ifdef F_WRLCK
+  cdf(interp, "F_WRLCK",	pure_int(F_WRLCK));
+#endif
+#ifdef F_UNLCK
+  cdf(interp, "F_UNLCK",	pure_int(F_UNLCK));
 #endif
 }
 
