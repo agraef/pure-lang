@@ -1,0 +1,95 @@
+
+/* fork.pure: Illustrate the use of fork() to implement a form of concurrent
+   future which asynchronously evaluates a stream in a child process. */
+
+/* Please note that this script requires some additional system routines which
+   are Un*x-specific, so this example will not work on Windows. */
+
+using system, posix;
+
+extern int pipe(void *fd);
+extern FILE *fdopen(int fd, char *mode);
+extern void setbuf(FILE *fp, void *buf);
+
+/* Create an anonymous pipe and return it as a pair of file objects. This
+   provides an easy way to transfer Pure expression data between parent and
+   child process using Pure's data serialization routines 'blob' and 'val'
+   (available in Pure 0.28 and later). More elaborate protocols like POSIX
+   message queues might be used instead, we leave this as an exercise. :) */
+
+mkpipe = fdopen (fd!0) "r", fdopen (fd!1) "w"
+	   if pipe fd == 0 when fd = {0,0} end;
+
+/* Create a pipe and fork a child process which fills the pipe with data from
+   a Pure stream. The argument to pfork should be a thunked stream which gets
+   evaluated in the child. In the parent process, pfork then returns another
+   thunked stream which, on demand, yields the data produced by the child
+   process as it becomes available. */
+
+pfork x =
+  case fork of
+    /* child: Close the input and start writing to the output. */
+    0 = fclose in $$ setbuf out NULL $$ catch (
+	// uncomment this to get notified of exceptions in the child
+	// printf "unhandled exception in child: %s\n".str
+        ) (push out x) $$ exit 0;
+    /* parent: Close the output and start reading from the input. Note that we
+       also keep track of the child's pid and set a special sentry on the
+       input file so that we terminate the child process as soon as it isn't
+       needed any more. */
+    pid = fclose out $$ pull (sentry (done pid) in);
+  end
+  when in, out = mkpipe end
+  with
+    // Sentry which kills the child when the parent is done with it.
+    done pid in = // uncomment this to see when the child gets killed
+                  // printf "killing child pid = %d\n" pid $$
+                  kill pid SIGTERM $$ waitpid pid NULL 0 $$ fclose in;
+    // Pull data from the child's output.
+    pull in = catch (\_->[]) (read_blob in:pull in) &;
+    // Decode data blobs written by the child.
+    read_blob in =
+      case fread size SIZEOF_INT 1 in of
+        1L = // uncomment this to trace data read by the parent
+             // printf "parent: %s (%d bytes)\n" (str (val b), n) $$
+             val b if fread b 1 n in == n && blobp b
+               when n = size!0; b = cooked (calloc 1 n) end;
+        _ = throw end_of_data;
+      end when size = {0} end;
+    // Push data to the parent's input. If we get a write error then it's most
+    // likely a broken pipe (parent exited), bail out in that case.
+    push out (x:xs) = if write_blob out x then push out xs else ();
+    push out [] = ();
+    push out x = throw (bad_list_value x);
+    // Encode data as blobs to be read by the parent.
+    write_blob out x = fwrite size SIZEOF_INT 1 out == 1 &&
+                       fwrite b 1 n out == n
+      when
+        b = blob x; if blobp b then () else throw (bad_value x);
+        n::int = int (#b); size = {n};
+        // uncomment this to trace data written by the child
+        // printf "child: %s (%d bytes)\n" (str x, n);
+      end;
+  end;
+
+/* A convenience macro which allows us to write 'x&!' for 'pfork (x&)'. */
+
+postfix 2900 &!;
+def x&! = pfork (x&);
+
+/* Example: The stream of all primes. */
+
+primes = sieve (2..inf) with
+  sieve (p:qs)	= p : sieve [q | q = qs; q mod p] &;
+end;
+
+/* Create the stream (just a thunk initially) and bind it to a variable. At
+   this point, the child process is created and starts producing prime numbers
+   (and blocks as soon as the pipe's output buffer fills up). */
+
+let P = primes&!; P;
+
+/* Read a number of elements from the stream. This blocks until all requested
+   elements have been produced by the child. */
+
+P!!(0..100); P;
