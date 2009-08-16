@@ -5199,16 +5199,53 @@ providing the raw C library routines.
 
 ``fread ptr size nmemb fp``, ``fwrite ptr size nmemb fp``
   Binary read/writes. Here you'll have to manage the buffers yourself.
+  See the corresponding manual pages for details.
+
+.. raw:: html
+
+   <a name="fseek">
+
+.. raw:: html
+
+   <a name="ftell">
+
+.. raw:: html
+
+   <a name="rewind">
+
+.. _fseek:
+.. _ftell:
+.. _rewind:
+
+``fseek fp offset whence``, ``ftell fp``, ``rewind fp``
+  Reposition the file pointer and retrieve its current value. The constants
+  ``SEEK_SET``, ``SEEK_CUR`` and ``SEEK_END`` can be used for the
+  ``whence`` argument of ``fseek``. The call ``rewind fp`` is equivalent to
+  ``fseek fp 0 SEEK_SET`` (except that the latter also returns a result
+  code). See the corresponding manual pages for details.
 
 Examples::
 
   > puts "Hello, world!";
   Hello, world!
   14
+
+  > let fp = fopen "/etc/passwd" "r";
+  > fgets fp;
+  "at:x:25:25:Batch jobs daemon:/var/spool/atjobs:/bin/bash\n"
+  > fgets fp;
+  "avahi:x:103:104:User for Avahi:/var/run/avahi-daemon:/bin/false\n"
+  > ftell fp;
+  121L
+  > rewind fp;
+  ()
+  > fgets fp;
+  "at:x:25:25:Batch jobs daemon:/var/spool/atjobs:/bin/bash\n"
+
   > split "\n" $ fget $ popen "ls *.pure" "r";
   ["array.pure","dict.pure","getopt.pure","heap.pure","math.pure",
-  "matrices.pure","prelude.pure","primitives.pure","set.pure",
-  "strings.pure","system.pure",""]
+  "matrices.pure","prelude.pure","primitives.pure","quasiquote2.pure",
+  "quasiquote.pure","set.pure","strings.pure","system.pure",""]
 
 ..
 
@@ -6050,7 +6087,9 @@ Index
 | `fread`_
 | `free`_
 | `fscanf`_
+| `fseek`_
 | `fstat`_
+| `ftell`_
 | `funp`_
 | `fwrite`_
 
@@ -6241,6 +6280,7 @@ Index
 | `repeatn`_
 | `reverse`_
 | `reverse (matrix)`_
+| `rewind`_
 | `rmfirst (array)`_
 | `rmfirst (bag)`_
 | `rmfirst (dict)`_

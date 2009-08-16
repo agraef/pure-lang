@@ -3053,17 +3053,39 @@ a newline, while <tt class="docutils literal"><span class="pre">fputs</span></tt
 </dl>
 <a name="fread"><a name="fwrite"><dl class="docutils" id="fwrite">
 <span id="fread"></span><dt><tt class="docutils literal"><span class="pre">fread</span> <span class="pre">ptr</span> <span class="pre">size</span> <span class="pre">nmemb</span> <span class="pre">fp</span></tt>, <tt class="docutils literal"><span class="pre">fwrite</span> <span class="pre">ptr</span> <span class="pre">size</span> <span class="pre">nmemb</span> <span class="pre">fp</span></tt></dt>
-<dd>Binary read/writes. Here you'll have to manage the buffers yourself.</dd>
+<dd>Binary read/writes. Here you'll have to manage the buffers yourself.
+See the corresponding manual pages for details.</dd>
+</dl>
+<a name="fseek"><a name="ftell"><a name="rewind"><dl class="docutils" id="rewind">
+<span id="ftell"></span><span id="fseek"></span><dt><tt class="docutils literal"><span class="pre">fseek</span> <span class="pre">fp</span> <span class="pre">offset</span> <span class="pre">whence</span></tt>, <tt class="docutils literal"><span class="pre">ftell</span> <span class="pre">fp</span></tt>, <tt class="docutils literal"><span class="pre">rewind</span> <span class="pre">fp</span></tt></dt>
+<dd>Reposition the file pointer and retrieve its current value. The constants
+<tt class="docutils literal"><span class="pre">SEEK_SET</span></tt>, <tt class="docutils literal"><span class="pre">SEEK_CUR</span></tt> and <tt class="docutils literal"><span class="pre">SEEK_END</span></tt> can be used for the
+<tt class="docutils literal"><span class="pre">whence</span></tt> argument of <tt class="docutils literal"><span class="pre">fseek</span></tt>. The call <tt class="docutils literal"><span class="pre">rewind</span> <span class="pre">fp</span></tt> is equivalent to
+<tt class="docutils literal"><span class="pre">fseek</span> <span class="pre">fp</span> <span class="pre">0</span> <span class="pre">SEEK_SET</span></tt> (except that the latter also returns a result
+code). See the corresponding manual pages for details.</dd>
 </dl>
 <p>Examples:</p>
 <pre class="literal-block">
 &gt; puts &quot;Hello, world!&quot;;
 Hello, world!
 14
+
+&gt; let fp = fopen &quot;/etc/passwd&quot; &quot;r&quot;;
+&gt; fgets fp;
+&quot;at:x:25:25:Batch jobs daemon:/var/spool/atjobs:/bin/bash\n&quot;
+&gt; fgets fp;
+&quot;avahi:x:103:104:User for Avahi:/var/run/avahi-daemon:/bin/false\n&quot;
+&gt; ftell fp;
+121L
+&gt; rewind fp;
+()
+&gt; fgets fp;
+&quot;at:x:25:25:Batch jobs daemon:/var/spool/atjobs:/bin/bash\n&quot;
+
 &gt; split &quot;\n&quot; $ fget $ popen &quot;ls *.pure&quot; &quot;r&quot;;
 [&quot;array.pure&quot;,&quot;dict.pure&quot;,&quot;getopt.pure&quot;,&quot;heap.pure&quot;,&quot;math.pure&quot;,
-&quot;matrices.pure&quot;,&quot;prelude.pure&quot;,&quot;primitives.pure&quot;,&quot;set.pure&quot;,
-&quot;strings.pure&quot;,&quot;system.pure&quot;,&quot;&quot;]
+&quot;matrices.pure&quot;,&quot;prelude.pure&quot;,&quot;primitives.pure&quot;,&quot;quasiquote2.pure&quot;,
+&quot;quasiquote.pure&quot;,&quot;set.pure&quot;,&quot;strings.pure&quot;,&quot;system.pure&quot;,&quot;&quot;]
 </pre>
 <!--  -->
 <p>C-style formatted I/O is provided through the following wrappers for the C
@@ -3758,7 +3780,9 @@ copied to the result lists as is.</p>
 <div class="line"><a class="reference internal" href="#fread">fread</a></div>
 <div class="line"><a class="reference internal" href="#free">free</a></div>
 <div class="line"><a class="reference internal" href="#fscanf">fscanf</a></div>
+<div class="line"><a class="reference internal" href="#fseek">fseek</a></div>
 <div class="line"><a class="reference internal" href="#fstat">fstat</a></div>
+<div class="line"><a class="reference internal" href="#ftell">ftell</a></div>
 <div class="line"><a class="reference internal" href="#funp">funp</a></div>
 <div class="line"><a class="reference internal" href="#fwrite">fwrite</a></div>
 </div>
@@ -3960,6 +3984,7 @@ copied to the result lists as is.</p>
 <div class="line"><a class="reference internal" href="#repeatn">repeatn</a></div>
 <div class="line"><a class="reference internal" href="#reverse">reverse</a></div>
 <div class="line"><a class="reference internal" href="#reverse-matrix">reverse (matrix)</a></div>
+<div class="line"><a class="reference internal" href="#rewind">rewind</a></div>
 <div class="line"><a class="reference internal" href="#rmfirst-array">rmfirst (array)</a></div>
 <div class="line"><a class="reference internal" href="#rmfirst-bag">rmfirst (bag)</a></div>
 <div class="line"><a class="reference internal" href="#rmfirst-dict">rmfirst (dict)</a></div>
