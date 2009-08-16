@@ -290,36 +290,37 @@ nanosleep t::int | nanosleep t::bigint = nanosleep (double t);
    .. _execve:
 
    ``execv prog argv``, ``execvp prog argv``, ``execve prog argv envp``
-     Executes a new process. The new process replaces the current process.
-     ``prog`` denotes the name of the executable to be run, ``argv`` the
-     argument vector (which repeats the program name in the first component),
-     and ``envp`` a vector of environment strings of the form
-     ``"var=value"``. For convenience, Both ``argv`` and ``envp`` can be
-     specified as Pure string lists, which are automatically translated to the
-     raw, ``NULL``-terminated C string vectors (i.e., ``char**``) required by
-     the underlying C functions, using the ``byte_cstring_pointer`` function
-     (see `Low-Level Operations`_ in the `String Functions`_ section).
+     Execute a new process. ``prog`` denotes the name of the executable to be
+     run, ``argv`` the argument vector (which repeats the program name in the
+     first component), and ``envp`` a vector of environment strings of the
+     form ``"var=value"``. The ``execv`` function executes the program
+     ``prog`` exactly as given, while ``execvp`` also performs a path
+     search. The ``execve`` function is like ``execv``, but also specifies an
+     environment to be passed to the process. In either case, the new process
+     replaces the current process. For convenience, both ``argv`` and ``envp``
+     can be specified as Pure string lists, which are automatically translated
+     to the raw, ``NULL``-terminated C string vectors (i.e., ``char**``)
+     required by the underlying C functions, using the
+     ``byte_cstring_pointer`` function (see `Low-Level Operations`_ in the
+     `String Functions`_ section).
 
    .. _spawnv:
    .. _spawnvp:
    .. _spawnve:
 
    ``spawnv mode prog argv``, ``spawnvp mode prog argv``, ``spawnve mode prog argv envp``
-     Spawn a new child process. These work like the corresponding Windows
+     Spawn a new child process. These work like the corresponding MS Windows
      functions; on Un*x systems this functionality is implemented using a
-     combination of ``fork`` and ``execv``. As with the ``execv`` functions,
-     ``spawnvp`` and ``spawnve`` are provided as variations of ``spawnv``
-     which perform a path search for the executable, or pass the given
-     environment vector, respectively. ``prog`` is the filename of the
-     executable to be run, ``argv`` the argument vector and ``envp`` the
-     environment vector. The additional ``mode`` argument specifies how the
-     process is to be executed: ``P_WAIT`` waits for the process to finish,
-     after which ``spawnv`` returns with the exit status of the terminated
-     child process; ``P_NOWAIT`` makes ``spawnv``return immediately, returning
-     the process id; and ``P_OVERLAY`` causes the child process to replace its
-     parent, just like ``execv``. (On Windows, there's an additional
-     ``P_DETACH`` flag which works like ``P_NOWAIT`` but also turns the child
-     process into a background task.)
+     combination of ``fork`` and ``execv``. The arguments are the same as for
+     the ``execv`` functions, except that there's an additional ``mode``
+     argument which specifies how the process is to be executed: ``P_WAIT``
+     waits for the process to finish, after which ``spawnv`` returns with the
+     exit status of the terminated child process; ``P_NOWAIT`` makes
+     ``spawnv`` return immediately, returning the process id; and
+     ``P_OVERLAY`` causes the child process to replace its parent, just like
+     with ``execv``. (On Windows, there's an additional ``P_DETACH`` flag
+     which works like ``P_NOWAIT`` but also turns the child process into a
+     background task.)
 
    Examples::
 
@@ -336,7 +337,7 @@ nanosleep t::int | nanosleep t::bigint = nanosleep (double t);
      getopt.pure  matrices.pure  quasiquote2.pure  strings.pure
      0
 
-     > exit 0
+     > exit 0 // This exits from the interpreter with the given status code.
 
 */
 
