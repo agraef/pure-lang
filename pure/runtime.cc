@@ -2636,7 +2636,12 @@ char *pure_evalcmd(const char *s)
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifdef HAVE_SYS_FCNTL_H
 #include <sys/fcntl.h>
+#endif
+#if HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
 
 static inline bool chkfile(const string& s)
 {
@@ -10506,6 +10511,16 @@ void pure_sys_vars(void)
 #endif
 #ifdef F_UNLCK
   cdf(interp, "F_UNLCK",	pure_int(F_UNLCK));
+#endif
+  // wait flags
+#ifdef WNOHANG
+  cdf(interp, "WNOHANG",	pure_int(WNOHANG));
+#endif
+#ifdef WUNTRACED
+  cdf(interp, "WUNTRACED",	pure_int(WUNTRACED));
+#endif
+#ifdef WCONTINUED
+  cdf(interp, "WCONTINUED",	pure_int(WCONTINUED));
 #endif
 }
 
