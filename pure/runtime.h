@@ -1112,6 +1112,14 @@ double pure_gettimeofday(void);
 
 double pure_nanosleep(double t);
 
+/* Windows-like spawnv() family of functions, which provide a portable way to
+   spawn processes. On Un*x, these are emulated using fork() and execv(). */
+
+int pure_spawnv(int mode, const char *prog, char * const argv[]);
+int pure_spawnvp(int mode, const char *prog, char * const argv[]);
+int pure_spawnve(int mode, const char *prog, char * const argv[],
+		 char * const envp[]);
+
 #include <stdio.h>
 
 #ifdef __MINGW32__

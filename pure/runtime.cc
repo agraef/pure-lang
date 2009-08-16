@@ -36,6 +36,25 @@ char *alloca ();
 #include "config.h"
 #include "funcall.h"
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#ifdef HAVE_SYS_FCNTL_H
+#include <sys/fcntl.h>
+#endif
+#if HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
+
+#ifdef __MINGW32__
+#include <process.h>
+#endif
+
+#ifndef P_WAIT
+#define P_WAIT 0
+#define P_NOWAIT 1
+#define P_OVERLAY 2
+#endif
+
 #ifndef WORDS_BIGENDIAN
 #define WORDS_BIGENDIAN 0
 #endif
@@ -2633,15 +2652,6 @@ char *pure_evalcmd(const char *s)
 #endif
 
 #include <llvm/Target/TargetOptions.h>
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#ifdef HAVE_SYS_FCNTL_H
-#include <sys/fcntl.h>
-#endif
-#if HAVE_SYS_WAIT_H
-#include <sys/wait.h>
-#endif
 
 static inline bool chkfile(const string& s)
 {
@@ -9746,6 +9756,85 @@ double pure_nanosleep(double t)
 }
 #endif
 
+int pure_spawnv(int mode, const char *prog, char * const argv[])
+{
+#ifdef __MINGW32__
+  return spawnv(mode, prog, argv);
+#else
+  int pid;
+  if (mode == P_OVERLAY) {
+    execv(prog, argv);
+    return -1;
+  }
+  switch ((pid = fork())) {
+  case 0:
+    execv(prog, argv);
+    exit(1);
+  case -1:
+    return -1;
+  }
+  if (mode == P_WAIT) {
+    int status;
+    waitpid(pid, &status, 0);
+    return status;
+  } else
+    return pid;
+#endif
+}
+
+int pure_spawnvp(int mode, const char *prog, char * const argv[])
+{
+#ifdef __MINGW32__
+  return spawnvp(mode, prog, argv);
+#else
+  int pid;
+  if (mode == P_OVERLAY) {
+    execvp(prog, argv);
+    return -1;
+  }
+  switch ((pid = fork())) {
+  case 0:
+    execvp(prog, argv);
+    exit(1);
+  case -1:
+    return -1;
+  }
+  if (mode == P_WAIT) {
+    int status;
+    waitpid(pid, &status, 0);
+    return status;
+  } else
+    return pid;
+#endif
+}
+
+int pure_spawnve(int mode, const char *prog, char * const argv[],
+		 char * const envp[])
+{
+#ifdef __MINGW32__
+  return spawnve(mode, prog, argv, envp);
+#else
+  int pid;
+  if (mode == P_OVERLAY) {
+    execve(prog, argv, envp);
+    return -1;
+  }
+  switch ((pid = fork())) {
+  case 0:
+    execve(prog, argv, envp);
+    exit(1);
+  case -1:
+    return -1;
+  }
+  if (mode == P_WAIT) {
+    int status;
+    waitpid(pid, &status, 0);
+    return status;
+  } else
+    return pid;
+#endif
+}
+
 #ifdef __MINGW32__
 extern "C"
 FILE *popen(const char *command, const char *type)
@@ -10521,6 +10610,19 @@ void pure_sys_vars(void)
 #endif
 #ifdef WCONTINUED
   cdf(interp, "WCONTINUED",	pure_int(WCONTINUED));
+#endif
+  // spawnv flags
+#ifdef P_WAIT
+  cdf(interp, "P_WAIT",		pure_int(P_WAIT));
+#endif
+#ifdef P_NOWAIT
+  cdf(interp, "P_NOWAIT",	pure_int(P_NOWAIT));
+#endif
+#ifdef P_OVERLAY
+  cdf(interp, "P_OVERLAY",	pure_int(P_OVERLAY));
+#endif
+#ifdef P_DETACH
+  cdf(interp, "P_DETACH",	pure_int(P_DETACH));
 #endif
 }
 
