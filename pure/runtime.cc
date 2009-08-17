@@ -9837,6 +9837,24 @@ int pure_spawnve(int mode, const char *prog, char * const argv[],
 
 #ifdef __MINGW32__
 extern "C"
+int execv(const char* prog, const char* const* argv)
+{
+  return _execv(prog, argv);
+}
+
+extern "C"
+int execvp(const char* prog, const char* const* argv)
+{
+  return _execvp(prog, argv);
+}
+
+extern "C"
+int execve(const char* prog, const char* const* argv, const char* const* envp)
+{
+  return _execve(prog, argv, envp);
+}
+
+extern "C"
 FILE *popen(const char *command, const char *type)
 {
   return _popen(command, type);
