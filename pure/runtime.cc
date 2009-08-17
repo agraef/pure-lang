@@ -9756,11 +9756,10 @@ double pure_nanosleep(double t)
 }
 #endif
 
-int pure_spawnv(int mode, const char *prog, char * const argv[])
+#ifndef __MINGW32__
+extern "C"
+int spawnv(int mode, const char *prog, char * const argv[])
 {
-#ifdef __MINGW32__
-  return spawnv(mode, prog, argv);
-#else
   int pid;
   if (mode == P_OVERLAY) {
     execv(prog, argv);
@@ -9779,14 +9778,11 @@ int pure_spawnv(int mode, const char *prog, char * const argv[])
     return status;
   } else
     return pid;
-#endif
 }
 
-int pure_spawnvp(int mode, const char *prog, char * const argv[])
+extern "C"
+int spawnvp(int mode, const char *prog, char * const argv[])
 {
-#ifdef __MINGW32__
-  return spawnvp(mode, prog, argv);
-#else
   int pid;
   if (mode == P_OVERLAY) {
     execvp(prog, argv);
@@ -9805,15 +9801,12 @@ int pure_spawnvp(int mode, const char *prog, char * const argv[])
     return status;
   } else
     return pid;
-#endif
 }
 
-int pure_spawnve(int mode, const char *prog, char * const argv[],
+extern "C"
+int spawnve(int mode, const char *prog, char * const argv[],
 		 char * const envp[])
 {
-#ifdef __MINGW32__
-  return spawnve(mode, prog, argv, envp);
-#else
   int pid;
   if (mode == P_OVERLAY) {
     execve(prog, argv, envp);
@@ -9832,10 +9825,12 @@ int pure_spawnve(int mode, const char *prog, char * const argv[],
     return status;
   } else
     return pid;
-#endif
 }
+#endif
 
 #ifdef __MINGW32__
+/* Windows compatibility. */
+
 extern "C"
 int execv(const char* prog, const char* const* argv)
 {
@@ -9852,6 +9847,25 @@ extern "C"
 int execve(const char* prog, const char* const* argv, const char* const* envp)
 {
   return _execve(prog, argv, envp);
+}
+
+extern "C"
+int spawnv(int mode, const char* prog, const char* const* argv)
+{
+  return _spawnv(mode, prog, argv);
+}
+
+extern "C"
+int spawnvp(int mode, const char* prog, const char* const* argv)
+{
+  return _spawnvp(mode, prog, argv);
+}
+
+extern "C"
+int spawnve(int mode, const char* prog, const char* const* argv,
+	    const char* const* envp)
+{
+  return _spawnve(mode, prog, argv, envp);
 }
 
 extern "C"
