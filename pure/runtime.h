@@ -1118,6 +1118,8 @@ double pure_nanosleep(double t);
    systems, where lstat() and fstat() aren't supported (e.g., Windows), the
    pure_lstat() works the same as pure_stat() and pure_fstat() always fails. */
 
+#include <stdio.h>
+
 pure_expr *pure_stat(const char *path);
 pure_expr *pure_lstat(const char *path);
 pure_expr *pure_fstat(FILE *fp);
