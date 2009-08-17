@@ -7,18 +7,19 @@
 
 using system, posix;
 
-extern int pipe(void *fd);
-extern FILE *fdopen(int fd, char *mode);
-extern void setbuf(FILE *fp, void *buf);
-
 /* Create an anonymous pipe and return it as a pair of file objects. This
    provides an easy way to transfer Pure expression data between parent and
    child process using Pure's data serialization routines 'blob' and 'val'
    (available in Pure 0.28 and later). More elaborate protocols like POSIX
    message queues might be used instead, we leave this as an exercise. :) */
 
-mkpipe = fdopen (fd!0) "r", fdopen (fd!1) "w"
-	   if pipe fd == 0 when fd = {0,0} end;
+extern int pipe(void *fd);
+extern FILE *fdopen(int fd, char *mode);
+extern void setbuf(FILE *fp, void *buf);
+
+mkpipe = in, out
+  when in = fdopen (fd!0) "r"; out = fdopen (fd!1) "w"; setbuf out NULL end
+  if pipe fd == 0 when fd = {0,0} end;
 
 /* Create a pipe and fork a child process which fills the pipe with data from
    a Pure stream. The argument to pfork should be a thunked stream which gets
@@ -29,7 +30,7 @@ mkpipe = fdopen (fd!0) "r", fdopen (fd!1) "w"
 pfork x =
   case fork of
     /* child: Close the input and start writing to the output. */
-    0 = fclose in $$ setbuf out NULL $$ catch (
+    0 = fclose in $$ catch (
 	// uncomment this to get notified of exceptions in the child
 	// printf "unhandled exception in child: %s\n".str
         ) (push out x) $$ exit 0;
