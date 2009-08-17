@@ -49,11 +49,11 @@ pfork x =
     pull in = catch (\_->[]) (read_blob in:pull in) &;
     // Decode data blobs written by the child.
     read_blob in =
-      case fread size SIZEOF_INT 1 in of
-        1L = // uncomment this to trace data read by the parent
-             // printf "parent: %s (%d bytes)\n" (str (val b), n) $$
-             val b if fread b 1 n in == n && blobp b
-               when n = size!0; b = cooked (calloc 1 n) end;
+      case int (fread size SIZEOF_INT 1 in) of
+        1 = // uncomment this to trace data read by the parent
+            // printf "parent: %s (%d bytes)\n" (str (val b), n) $$
+            val b if fread b 1 n in == n && blobp b
+              when n = size!0; b = cooked (calloc 1 n) end;
         _ = throw end_of_data;
       end when size = {0} end;
     // Push data to the parent's input. If we get a write error then it's most
