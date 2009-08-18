@@ -280,8 +280,8 @@ int InstallSignalHandler()
 {
   TCHAR szSigInt[MAX_PATH], szSigTerm[MAX_PATH];
   DWORD dwSignalHandler;
-  sprintf(szSigInt, "PURE_SIGINT-%u", GetCurrentProcessId());
-  sprintf(szSigTerm, "PURE_SIGTERM-%u", GetCurrentProcessId());
+  sprintf(szSigInt, "PURE_SIGINT-%u", (unsigned)GetCurrentProcessId());
+  sprintf(szSigTerm, "PURE_SIGTERM-%u", (unsigned)GetCurrentProcessId());
   hSigInt = OpenEvent(EVENT_ALL_ACCESS, FALSE, szSigInt);
   hSigTerm = OpenEvent(EVENT_ALL_ACCESS, FALSE, szSigTerm);
   if (hSigInt != NULL && hSigTerm != NULL) {

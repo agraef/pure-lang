@@ -806,7 +806,7 @@ static bool absname(const string& s)
     return false;
   else
 #ifdef _WIN32
-    return s[0]=='/' || s.size() >= 2 && s[1] == ':';
+    return s[0]=='/' || (s.size() >= 2 && s[1] == ':');
 #else
     return s[0]=='/';
 #endif
