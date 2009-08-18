@@ -42,10 +42,12 @@ shared = -shared
 
 # Take care of some common systems.
 ifneq "$(findstring -mingw,$(host))" ""
-# Windows
+# Windows (this assumes that a working Pd installation lives in $(PDDIR))
+PDDIR=/c/progra~1/pd
 DLL = .dll
 LIBS = -lpd
-LDFLAGS = -Wl,--enable-auto-import
+LDFLAGS = -Wl,--enable-auto-import -L$(PDDIR)/lib
+CPPFLAGS = -I$(PDDIR)/include
 endif
 ifneq "$(findstring -linux,$(host))" ""
 # Linux
