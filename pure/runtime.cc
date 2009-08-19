@@ -257,11 +257,13 @@ static inline pure_expr* bad_matrix_exception(pure_expr *x)
     return f;
 }
 
+#define sentryp(f) (x->tag >= 0 || x->tag == EXPR::APP || x->tag == EXPR::PTR)
+
 static inline pure_expr *get_sentry(pure_expr *x)
 {
   if (x==0)
     return 0;
-  else if (x->tag == EXPR::APP || x->tag == EXPR::PTR)
+  else if (sentryp(x->tag))
     return x->data.x[2];
   else
     return 0;
@@ -269,7 +271,7 @@ static inline pure_expr *get_sentry(pure_expr *x)
 
 static inline void call_sentry(pure_expr *x)
 {
-  if (x->tag == EXPR::APP || x->tag == EXPR::PTR) {
+  if (sentryp(x->tag)) {
     pure_expr *s = x->data.x[2];
     if (s) {
       ++x->refc;
@@ -281,7 +283,7 @@ static inline void call_sentry(pure_expr *x)
 
 static inline void free_sentry(pure_expr *x)
 {
-  if (x->tag == EXPR::APP || x->tag == EXPR::PTR) {
+  if (sentryp(x->tag)) {
     pure_expr *s = x->data.x[2];
     if (s) pure_free(s);
   }
@@ -2496,7 +2498,7 @@ pure_expr *pure_sentry(pure_expr *sentry, pure_expr *x)
 {
   if (x==0)
     return 0;
-  else if (x->tag == EXPR::APP || x->tag == EXPR::PTR) {
+  else if (sentryp(x->tag)) {
     if (x->data.x[2])
       pure_free_internal(x->data.x[2]);
     x->data.x[2] = sentry?pure_new_internal(sentry):0;
