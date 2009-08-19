@@ -1803,7 +1803,13 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
     list<string>::iterator arg;
     if (!args.ok) goto out3;
     if (args.c == 1 && args.l.front() == "ans") {
-      if (interp.lastres) pure_free(interp.lastres);
+      if (interp.lastres) {
+	if (interp.result == interp.lastres) {
+	  pure_free(interp.result);
+	  interp.result = 0;
+	}
+	pure_free(interp.lastres);
+      }
       interp.lastres = 0;
       goto out3;
     }
