@@ -2711,6 +2711,10 @@ pure_interp *pure_create_interp(int argc, char *argv[])
   interpreter::g_interp = _interp;
   // This is used in advisory stack checks.
   if (!interpreter::baseptr) interpreter::baseptr = &base;
+  // We always ignore SIGPIPE by default.
+#ifdef SIGPIPE
+  signal(SIGPIPE, SIG_IGN);
+#endif
   // get some settings from the environment
   const char *env;
   if ((env = getenv("HOME")))
@@ -2962,6 +2966,9 @@ pure_interp *pure_interp_main(int argc, char *argv[],
     &interp = *_interp;
   interpreter::g_interp = _interp;
   if (!interpreter::baseptr) interpreter::baseptr = &base;
+#ifdef SIGPIPE
+  signal(SIGPIPE, SIG_IGN);
+#endif
   // get some settings from the environment
   const char *env;
   if ((env = getenv("PURE_STACK"))) {
