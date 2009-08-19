@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>Pure Library Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2009-08-17" />
+<meta name="date" content="2009-08-19" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2009-08-17</td></tr>
+<td>2009-08-19</td></tr>
 </tbody>
 </table>
 <!-- We use docutils to produce the documentation. Docstrings are extracted -->
@@ -1963,19 +1963,13 @@ purposes.</dd>
 </div>
 <div class="section" id="sentries">
 <h3><a class="toc-backref" href="#id94">1.6.9&nbsp;&nbsp;&nbsp;Sentries</a></h3>
-<p>Sentries are Pure's flavour of object <strong class="dfn">finalizers</strong>. A sentry is simply a
-function which gets applied to the target expression when it is
-garbage-collected. This is useful to perform automatic cleanup actions on
-objects with internal state, such as files. Pure's sentries are <em>much</em> more
-useful than finalizers in other garbage-collected languages, since it is
-guaranteed that they are called as soon as an object &quot;goes out of scope&quot;,
-i.e., becomes inaccessible.</p>
-<p>Note that in the current implementation sentries can only be placed at
-applications and pointer objects, but the department of fake statistics has
-assured us that this covers 99% of all practical uses. The sentry itself
-can be any type of object (but usually it's a function). There can be only
-one sentry per expression but, building on the operations provided here,
-it's easy to design a scheme where sentries are chained.</p>
+<p>Sentries are Pure's flavour of object <strong class="dfn">finalizers</strong>. A sentry is simply an
+object (usually a function) which gets applied to the target expression
+when it is garbage-collected. This is useful to perform automatic cleanup
+actions on objects with internal state, such as files. Pure's sentries are
+<em>much</em> more useful than finalizers in other garbage-collected languages,
+since it is guaranteed that they are called as soon as an object &quot;goes out
+of scope&quot;, i.e., becomes inaccessible.</p>
 <a name="sentry"><dl class="docutils" id="sentry">
 <dt><tt class="docutils literal"><span class="pre">sentry</span> <span class="pre">f</span> <span class="pre">x</span></tt></dt>
 <dd>Places a sentry <tt class="docutils literal"><span class="pre">f</span></tt> at an expression <tt class="docutils literal"><span class="pre">x</span></tt> and returns the modified
@@ -1989,14 +1983,38 @@ expression.</dd>
 <dt><tt class="docutils literal"><span class="pre">get_sentry</span> <span class="pre">x</span></tt></dt>
 <dd>Returns the sentry of an expression <tt class="docutils literal"><span class="pre">x</span></tt> (if any, fails otherwise).</dd>
 </dl>
-<a name="cooked"><a name="cookedp"><dl class="docutils" id="cookedp">
-<span id="cooked"></span><dt><tt class="docutils literal"><span class="pre">cooked</span> <span class="pre">ptr</span></tt>, <tt class="docutils literal"><span class="pre">cookedp</span> <span class="pre">ptr</span></tt></dt>
-<dd><tt class="docutils literal"><span class="pre">cooked</span></tt> is a convenience function to create a <strong class="dfn">cooked</strong> pointer which
-disposes itself after use. This is just a shorthand for <tt class="docutils literal"><span class="pre">sentry</span>
-<span class="pre">free</span></tt>. The given pointer <tt class="docutils literal"><span class="pre">ptr</span></tt> must be <a class="reference internal" href="#malloc"><tt class="docutils literal"><span class="pre">malloc</span></tt></a>ed to make this
-work. There's also a predicate <tt class="docutils literal"><span class="pre">cookedp</span></tt> to decide whether a given
-pointer is cooked already (we actually assume any pointer to be cooked
-which has a sentry set on it).</dd>
+<p>Note that in the current implementation sentries can only be placed at
+symbols, applications, as well as function and pointer objects, but the
+department of fake statistics has assured us that this covers 99.7% of all
+practical uses. The sentry itself can be any type of object (but usually
+it's a function). There can be only one sentry per expression but, building
+on the operations provided here, it's easy to design a scheme where
+sentries are chained.</p>
+<p>Example:</p>
+<pre class="literal-block">
+&gt; using system;
+&gt; sentry (\_-&gt;puts &quot;Hello, world!&quot;) (1..3);
+[1,2,3]
+&gt; clear ans
+Hello, world!
+</pre>
+<p>Note that setting a finalizer on a global symbol won't usually be of much
+use since such values are cached by the interpreter. (However, the sentry
+<em>will</em> be invoked if the symbol gets recompiled because its definition
+has changed. This may be useful for some purposes.)</p>
+<p>One common case where sentries are particularly useful are pointers. The
+library provides some special support for these by means of the following
+operations:</p>
+<a name="cooked"><dl class="docutils" id="cooked">
+<dt><tt class="docutils literal"><span class="pre">cooked</span> <span class="pre">ptr</span></tt></dt>
+<dd>Create a <strong class="dfn">cooked</strong> pointer which disposes itself after use. This is just a
+shorthand for <tt class="docutils literal"><span class="pre">sentry</span> <span class="pre">free</span></tt>. The given pointer <tt class="docutils literal"><span class="pre">ptr</span></tt> must be
+<a class="reference internal" href="#malloc"><tt class="docutils literal"><span class="pre">malloc</span></tt></a>ed to make this work.</dd>
+</dl>
+<a name="cookedp"><dl class="docutils" id="cookedp">
+<dt><tt class="docutils literal"><span class="pre">cookedp</span> <span class="pre">ptr</span></tt></dt>
+<dd>Check whether a given pointer is cooked (this predicate actually assumes
+any pointer to be cooked which has a sentry set on it).</dd>
 </dl>
 <p>Example:</p>
 <pre class="literal-block">
@@ -2006,6 +2024,45 @@ which has a sentry set on it).</dd>
 1
 &gt; clear p
 I'm done for!
+</pre>
+<p>Besides their use as finalizers, sentries can also be handy in other
+circumstances, when you need to associate an expression with another,
+&quot;invisible&quot; value. In this case the sentry is usually some kind of data
+structure instead of a function to be executed at finalization time. For
+instance, here's how can employ sentries to implement hashing of function
+values:</p>
+<pre class="literal-block">
+using dict;
+hashed f x = case get_sentry f of
+               h::Hdict = h!x if member h x;
+               _ = y when y = f x; sentry (update h x y) f
+                       when h = case get_sentry f of
+                                  h::Hdict = h; _ = emptyhdict
+                                end;
+                       end;
+                     end;
+             end;
+</pre>
+<p>E.g., consider the naive recursive definition of the Fibonacci function:</p>
+<pre class="literal-block">
+fib n = if n&lt;=1 then 1 else fib (n-1)+fib (n-2);
+</pre>
+<p>A hashed version of the Fibonacci function can be defined as follows:</p>
+<pre class="literal-block">
+let hfib = hashed f with
+  f n = if n&lt;=1 then 1 else hfib (n-1)+hfib (n-2)
+end;
+</pre>
+<p>This turns the naive definition of the Fibonacci function (which has
+exponential time complexity) into a linear time operation:</p>
+<pre class="literal-block">
+&gt; stats
+&gt; fib 35;
+14930352
+12.78s
+&gt; hfib 35;
+14930352
+0.25s
 </pre>
 <!--  -->
 </div>
