@@ -4127,8 +4127,10 @@ to variables should fix this. **\n";
     if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
       string linkopts = quote(obj)+libs+
 #ifdef __MINGW32__
-	/* We need to link some extra libraries on Windows. */
-	" -lregex -lglob -lreadline"+
+	/* We need to link some extra libraries and beef up the stack size on
+	   Windows. (Alas, as of LLVM-2.5, llvm-g++ doesn't seem to honor the
+	   --stack linker flag.) */
+	" -Wl,--stack=0x800000 -lregex -lglob -lreadline"+
 #endif
 	" -lpure";
       if (ext != ".o") {
