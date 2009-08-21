@@ -2759,6 +2759,8 @@ pure_interp *pure_create_interp(int argc, char *argv[])
       /* ignored */;
     else if (*args == string("-q"))
       /* ignored */;
+    else if (*args == string("-O"))
+      /* ignored */;
     else if (string(*args).substr(0,2) == "-o") {
       string s = string(*args).substr(2);
       if (s.empty()) {

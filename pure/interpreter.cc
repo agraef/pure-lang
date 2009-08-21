@@ -13,6 +13,7 @@
 
 #include <llvm/CallingConv.h>
 #include <llvm/PassManager.h>
+#include <llvm/Support/CallSite.h>
 #include <llvm/System/DynamicLibrary.h>
 #include <llvm/Transforms/Utils/BasicBlockUtils.h>
 
@@ -524,10 +525,10 @@ void interpreter::init()
 
 interpreter::interpreter()
   : verbose(0), compiling(false), interactive(false), debugging(false),
-    restricted(false), ttymode(false), override(false), stats(false), temp(0),
-    ps("> "), libdir(""), histfile("/.pure_history"), modname("pure"),
-    nerrs(0), modno(-1), modctr(0), source_s(0), output(0), result(0),
-    lastres(0), mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0),
+    optimize(false), restricted(false), ttymode(false), override(false),
+    stats(false), temp(0), ps("> "), libdir(""), histfile("/.pure_history"),
+    modname("pure"), nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
+    result(0), lastres(0), mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0),
     sstk(__sstk), stoplevel(0), debug_skip(false), fptr(__fptr)
 {
   init();
@@ -538,10 +539,10 @@ interpreter::interpreter(int32_t nsyms, char *syms,
 			 int32_t *arities, void **externs,
 			 pure_expr ***_sstk, void **_fptr)
   : verbose(0), compiling(false), interactive(false), debugging(false),
-    restricted(true), ttymode(false), override(false), stats(false), temp(0),
-    ps("> "), libdir(""), histfile("/.pure_history"), modname("pure"),
-    nerrs(0), modno(-1), modctr(0), source_s(0), output(0), result(0),
-    lastres(0), mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0),
+    optimize(false), restricted(true), ttymode(false), override(false),
+    stats(false), temp(0), ps("> "), libdir(""), histfile("/.pure_history"),
+    modname("pure"), nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
+    result(0), lastres(0), mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0),
     sstk(*_sstk), stoplevel(0), debug_skip(false), fptr(*(Env**)_fptr)
 {
   using namespace llvm;
@@ -3964,11 +3965,26 @@ data such as pointers and closures. Changing the offending constants\n\
 to variables should fix this. **\n";
     exit(1);
   }
+  Function *initfun = module->getFunction("pure_interp_main");
+  Function *freefun = module->getFunction("pure_freenew");
+  set<Function*> unused;
+  if (optimize) {
+    // Quick and dirty check for unused functions. We ought to do something
+    // more comprehensive here.
+    map<Function*, set<Function*> > callers, callees;
+    for (Module::iterator it = module->begin(), end = module->end();
+	 it != end; ++it) {
+      Function &f = *it;
+      if (!is_init(f.getName()) && &f != initfun && !f.hasNUsesOrMore(1))
+	unused.insert(&f);
+    }
+  }
   // Global and local functions.
   for (Module::iterator it = module->begin(), end = module->end();
        it != end; ++it) {
     Function &f = *it;
-    f.print(code);
+    if (!optimize || unused.find(&f) == unused.end())
+      f.print(code);
   }
   // Build the main function with all the initialization code.
   vector<const Type*> argt;
@@ -3980,8 +3996,6 @@ to variables should fix this. **\n";
   BasicBlock *bb = BasicBlock::Create("entry", main);
   Builder b;
   b.SetInsertPoint(bb);
-  Function *initfun = module->getFunction("pure_interp_main");
-  Function *freefun = module->getFunction("pure_freenew");
   /* To make at least simple evals work, we have to dump the information in
      the symbol and external tables so that they can be reconstructed at
      runtime. We collect this information as a string, one line per symbol and
@@ -4010,18 +4024,22 @@ to variables should fix this. **\n";
       map<int32_t,Env>::iterator jt = globalfuns.find(f);
       if (jt != globalfuns.end()) {
 	Env& e = jt->second;
-	vals[f] = ConstantExpr::getPointerCast(e.h, VoidPtrTy);
-	arity[f] = SInt(e.n);
+	if (!optimize || unused.find(e.h) == unused.end()) {
+	  vals[f] = ConstantExpr::getPointerCast(e.h, VoidPtrTy);
+	  arity[f] = SInt(e.n);
+	}
       }
       map<int32_t,ExternInfo>::iterator kt = externals.find(f);
       if (kt != externals.end()) {
 	ExternInfo& info = kt->second;
-	externs[f] = ConstantExpr::getPointerCast(info.f, VoidPtrTy);
-	sout << info.tag << " " << info.name << " " << type_name(info.type)
-	     << " " << info.argtypes.size();
-	for (size_t i = 0; i < info.argtypes.size(); i++)
-	  sout << " " << type_name(info.argtypes[i]);
-	sout << endl;
+	if (!optimize || unused.find(info.f) == unused.end()) {
+	  externs[f] = ConstantExpr::getPointerCast(info.f, VoidPtrTy);
+	  sout << info.tag << " " << info.name << " " << type_name(info.type)
+	       << " " << info.argtypes.size();
+	  for (size_t i = 0; i < info.argtypes.size(); i++)
+	    sout << " " << type_name(info.argtypes[i]);
+	  sout << endl;
+	}
       }
     }
   }
