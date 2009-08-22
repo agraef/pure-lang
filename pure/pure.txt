@@ -128,6 +128,9 @@ below:
 ``-q``
     Quiet startup (suppresses sign-on message in interactive mode).
 
+``-s``
+    Strip unused functions (batch compilation).
+
 ``-v[level]``
     Set verbosity level. See below for details.
 
@@ -342,8 +345,7 @@ BROWSER
 
 PURELIB
     Directory to search for library scripts, including the prelude. If PURELIB
-    is not set, it defaults to some default location specified at installation
-    time.
+    is not set, it defaults to some location specified at installation time.
 
 PURE_COPTS
     Extra options to be passed to llvmc in a batch compilation (-c).
@@ -3753,6 +3755,41 @@ You'll rarely need an elaborate setup like this, most of the time something
 like our simple first example will do the trick. But, as you've seen, Pure can
 easily do it.
 
+A note on code sizes: Batch-compiled Pure programs tend to be large and take a
+while to compile. This is because, to be on the safe side, the output code
+includes *all* functions defined in the compiled program or imported through a
+``using`` clause, even if they don't seem to be "used" anywhere. As a remedy,
+the batch compiler has an additional option (-s) to strip unused functions
+from the output code. For instance, on a 64 bit Linux systems with ELF
+binaries, the -s option shaves off more than two thirds of the code size from
+our hello.pure example. (Note that, even then the resulting code is fairly
+large when compared to compiled C code, as it still contains the symbol table
+of the entire program, which is needed by the runtime environment.)
+
+::
+
+  $ pure -o hello -c -x hello.pure 7 && ls -l hello
+  -rwxr-xr-x 1 ag users 626693 2009-08-22 10:04 hello
+  $ pure -o hello -c -s -x hello.pure 7 && ls -l hello
+  -rwxr-xr-x 1 ag users 203088 2009-08-22 10:04 hello
+  $ ./hello
+  Hello, world!
+  [1,2,6,24,120,720,5040]
+
+Be careful when using this option. The -s option only does a *static* analysis
+of which functions might be reached from the initialization code (i.e.,
+toplevel expressions and ``let`` bindings). It cannot take into account
+functions called in code supplied as a string to the ``eval`` routine at
+runtime. Thus, if a function is never used explicitly in the program, it will
+be stripped from the executable, as if it was never defined at all. If the
+function is then being called using ``eval``, it will evaluate to a plain
+constructor symbol. However, you can always work around this obstacle by just
+adding a dummy "call" to functions which are to be used with ``eval``, like
+this::
+
+  let foo, bar;
+  eval "foo (bar 99)";
+
 Note that while the batch compiler generates native executables by default, it
 can just as well create object files which can be linked into other C/C++
 programs and libraries::
@@ -3820,7 +3857,8 @@ example from Pure's ODBC module::
   $ pure -v0100 -c pure-odbc/examples/menagerie.pure -o menagerie.o
   llvmc -c -x llvm-assembler menagerie.o.ll -o menagerie.o
   Link with: llvm-g++ menagerie.o /usr/local/lib/pure/odbc.so -lpure
-  $ llvm-g++ -shared -o menagerie.so menagerie.o /usr/local/lib/pure/odbc.so -lpure
+  $ llvm-g++ -shared -o menagerie.so menagerie.o \
+  /usr/local/lib/pure/odbc.so -lpure
 
 Note that the listed link options are necessary but might not be sufficient;
 ``pure -c`` just makes a best guess based on the Pure source. On most systems

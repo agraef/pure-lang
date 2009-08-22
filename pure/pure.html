@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>The Pure Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2009-08-07" />
+<meta name="date" content="2009-08-22" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2009-08-07</td></tr>
+<td>2009-08-22</td></tr>
 </tbody>
 </table>
 <!-- Note: This document is formatted using docutils. The Makefile has rules -->
@@ -471,6 +471,8 @@ below:</p>
 <dd>Output filename for batch compilation.</dd>
 <dt><tt class="docutils literal"><span class="pre">-q</span></tt></dt>
 <dd>Quiet startup (suppresses sign-on message in interactive mode).</dd>
+<dt><tt class="docutils literal"><span class="pre">-s</span></tt></dt>
+<dd>Strip unused functions (batch compilation).</dd>
 <dt><tt class="docutils literal"><span class="pre">-v[level]</span></tt></dt>
 <dd>Set verbosity level. See below for details.</dd>
 <dt><tt class="docutils literal"><span class="pre">--version</span></tt></dt>
@@ -659,8 +661,7 @@ colon-separated list of browsers to try for reading the online
 documentation. See <a class="reference external" href="http://www.catb.org/~esr/BROWSER/">http://www.catb.org/~esr/BROWSER/</a>.</dd>
 <dt>PURELIB</dt>
 <dd>Directory to search for library scripts, including the prelude. If PURELIB
-is not set, it defaults to some default location specified at installation
-time.</dd>
+is not set, it defaults to some location specified at installation time.</dd>
 <dt>PURE_COPTS</dt>
 <dd>Extra options to be passed to llvmc in a batch compilation (-c).</dd>
 <dt>PURE_HELP</dt>
@@ -3886,6 +3887,39 @@ Hello, world!
 <p>You'll rarely need an elaborate setup like this, most of the time something
 like our simple first example will do the trick. But, as you've seen, Pure can
 easily do it.</p>
+<p>A note on code sizes: Batch-compiled Pure programs tend to be large and take a
+while to compile. This is because, to be on the safe side, the output code
+includes <em>all</em> functions defined in the compiled program or imported through a
+<tt class="docutils literal"><span class="pre">using</span></tt> clause, even if they don't seem to be &quot;used&quot; anywhere. As a remedy,
+the batch compiler has an additional option (-s) to strip unused functions
+from the output code. For instance, on a 64 bit Linux systems with ELF
+binaries, the -s option shaves off more than two thirds of the code size from
+our hello.pure example. (Note that, even then the resulting code is fairly
+large when compared to compiled C code, as it still contains the symbol table
+of the entire program, which is needed by the runtime environment.)</p>
+<pre class="literal-block">
+$ pure -o hello -c -x hello.pure 7 &amp;&amp; ls -l hello
+-rwxr-xr-x 1 ag users 626693 2009-08-22 10:04 hello
+$ pure -o hello -c -s -x hello.pure 7 &amp;&amp; ls -l hello
+-rwxr-xr-x 1 ag users 203088 2009-08-22 10:04 hello
+$ ./hello
+Hello, world!
+[1,2,6,24,120,720,5040]
+</pre>
+<p>Be careful when using this option. The -s option only does a <em>static</em> analysis
+of which functions might be reached from the initialization code (i.e.,
+toplevel expressions and <tt class="docutils literal"><span class="pre">let</span></tt> bindings). It cannot take into account
+functions called in code supplied as a string to the <tt class="docutils literal"><span class="pre">eval</span></tt> routine at
+runtime. Thus, if a function is never used explicitly in the program, it will
+be stripped from the executable, as if it was never defined at all. If the
+function is then being called using <tt class="docutils literal"><span class="pre">eval</span></tt>, it will evaluate to a plain
+constructor symbol. However, you can always work around this obstacle by just
+adding a dummy &quot;call&quot; to functions which are to be used with <tt class="docutils literal"><span class="pre">eval</span></tt>, like
+this:</p>
+<pre class="literal-block">
+let foo, bar;
+eval &quot;foo (bar 99)&quot;;
+</pre>
 <p>Note that while the batch compiler generates native executables by default, it
 can just as well create object files which can be linked into other C/C++
 programs and libraries:</p>
@@ -3950,7 +3984,8 @@ example from Pure's ODBC module:</p>
 $ pure -v0100 -c pure-odbc/examples/menagerie.pure -o menagerie.o
 llvmc -c -x llvm-assembler menagerie.o.ll -o menagerie.o
 Link with: llvm-g++ menagerie.o /usr/local/lib/pure/odbc.so -lpure
-$ llvm-g++ -shared -o menagerie.so menagerie.o /usr/local/lib/pure/odbc.so -lpure
+$ llvm-g++ -shared -o menagerie.so menagerie.o \
+/usr/local/lib/pure/odbc.so -lpure
 </pre>
 <p>Note that the listed link options are necessary but might not be sufficient;
 <tt class="docutils literal"><span class="pre">pure</span> <span class="pre">-c</span></tt> just makes a best guess based on the Pure source. On most systems
