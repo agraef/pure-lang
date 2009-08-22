@@ -1,6 +1,7 @@
 #ifndef UTIL_HH
 #define UTIL_HH
 
+#include <stdint.h>
 #include <string.h>
 #include <string>
 
