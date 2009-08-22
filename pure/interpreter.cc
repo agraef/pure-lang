@@ -2221,9 +2221,9 @@ void interpreter::add_macro_rule(rule *r)
   env::iterator it = macenv.find(f), jt = globenv.find(f);
   const symbol& sym = symtab.sym(f);
   if (jt != globenv.end()) {
-    if (it->second.t == env_info::cvar)
+    if (jt->second.t == env_info::cvar)
       throw err("symbol '"+sym.s+"' is already defined as a constant");
-    else if (it->second.t == env_info::fvar)
+    else if (jt->second.t == env_info::fvar)
       throw err("symbol '"+sym.s+"' is already defined as a variable");
   } else if (it != macenv.end()) {
     if (it->second.argc != argc) {
