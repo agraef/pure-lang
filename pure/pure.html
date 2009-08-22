@@ -3992,10 +3992,44 @@ $ llvm-g++ -shared -o menagerie.so menagerie.o \
 this will be good enough, but if it isn't, you can just add options to the
 linker command as needed to pull in additional required libraries.</p>
 <p>As this last example shows, you can also create shared libraries from Pure
-modules. (Even then you'll have to supply an initialization routine which
-calls <tt class="docutils literal"><span class="pre">__pure_main__</span></tt> somewhere. Once the Pure module is initialized, you
-can employ the Pure runtime API to call Pure functions in the module. See the
-runtime.h header file for details.)</p>
+modules. Even then you'll have to supply an initialization routine which calls
+<tt class="docutils literal"><span class="pre">__pure_main__</span></tt> somewhere. Also note that you can't just call Pure functions
+in a batch-compiled module directly. That's because in order to call a Pure
+function, at least in the current implementation, you have to set up a stack
+frame for the function. However, there's a convenience function called
+<tt class="docutils literal"><span class="pre">pure_funcall</span></tt> in the runtime API to handle this. This function takes a
+pointer to the Pure function, the argument count and the arguments themselves
+(as <tt class="docutils literal"><span class="pre">pure_expr*</span></tt> objects) as parameters. For instance, here is a pure_main.c
+module which can be linked against the hello.pure program from above, which
+calls the <tt class="docutils literal"><span class="pre">fact</span></tt> function from the Pure program:</p>
+<pre class="literal-block">
+#include &lt;stdio.h&gt;
+#include &lt;pure/runtime.h&gt;
+
+extern void __pure_main__(int argc, char** argv);
+extern pure_expr *fact(pure_expr *x);
+
+int main()
+{
+  int n = 10, m;
+  __pure_main__(0, NULL);
+  if (pure_is_int(pure_funcall(fact, 1, pure_int(n)), &amp;m))
+    printf(&quot;fact %d = %d\n&quot;, n, m);
+  return 0;
+}
+</pre>
+<p>And here's how you can compile, link and run this program:</p>
+<pre class="literal-block">
+$ pure -o hello.o -c -s -x hello.pure 7
+$ gcc -o pure_main.o -c pure_main.c
+$ g++ -o myhello hello.o pure_main.o -lpure
+$ ./myhello
+Hello, world!
+[1,2,6,24,120,720,5040]
+fact 10 = 3628800
+</pre>
+<p>Note that the first two lines are output from the Pure program; the last line
+is what gets printed by the <tt class="docutils literal"><span class="pre">main</span></tt> routine in pure_main.c.</p>
 <p>Last but not least, <tt class="docutils literal"><span class="pre">pure</span> <span class="pre">-c</span></tt> can also generate just plain LLVM assembler
 code:</p>
 <pre class="literal-block">
