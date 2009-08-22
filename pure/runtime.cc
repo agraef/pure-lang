@@ -1877,6 +1877,25 @@ pure_expr *pure_matrix_columnsv(uint32_t n, pure_expr **xs)
   }
 }
 
+static uint32_t pure_push_argv(uint32_t n, uint32_t m, pure_expr **args);
+
+extern "C"
+pure_expr *pure_funcall(void *f, uint32_t n, ...)
+{
+  va_list ap;
+  pure_expr *ret, **argv = (pure_expr**)alloca((n+1)*sizeof(pure_expr*));
+  argv[n] = 0;
+  va_start(ap, n);
+  for (uint32_t i = 0; i < n; i++) {
+    pure_expr *x = va_arg(ap, pure_expr*);
+    argv[i] = x;
+  };
+  va_end(ap);
+  pure_push_argv(n, 0, argv);
+  funcall(ret, f, n, argv)
+  return ret;
+}
+
 extern "C"
 pure_expr *pure_app(pure_expr *fun, pure_expr *arg)
 {
@@ -4256,6 +4275,46 @@ uint32_t pure_push_args(uint32_t n, uint32_t m, ...)
     sstk[sz++] = x;
   };
   va_end(ap);
+  /* The reference counts are updated in reverse which is faster in the common
+     case that temporary arguments have been generated in order. */
+  for (uint32_t i = k; i > 0; ) {
+    pure_expr *x = frame[--i];
+    if (x->refc > 0)
+      x->refc++;
+    else
+      pure_new_internal(x);
+  }
+#if SSTK_DEBUG
+  cerr << "++ stack: (sz = " << sz << ")\n";
+  for (size_t i = 0; i < sz; i++) {
+    pure_expr *x = sstk[i];
+    if (i == interp.sstk_sz) cerr << "** pushed:\n";
+    if (x)
+      cerr << i << ": " << (void*)x << ": " << x << endl;
+    else
+      cerr << i << ": " << "** frame **\n";
+  }
+#endif
+  interp.sstk_sz = sz;
+  // return a pointer to the environment:
+  return env;
+}
+
+// This is used by pure_funcall().
+static uint32_t pure_push_argv(uint32_t n, uint32_t m, pure_expr **args)
+{
+  interpreter& interp = *interpreter::g_interp;
+  size_t sz = interp.sstk_sz;
+  resize_sstk(interp.sstk, interp.sstk_cap, sz, n+m+1);
+  pure_expr **sstk = interp.sstk; uint32_t env = (m>0)?sz+n+1:0;
+  // mark the beginning of this frame
+  sstk[sz++] = 0;
+  pure_expr **frame = sstk+sz;
+  const uint32_t k = n+m;
+  for (uint32_t i = 0; i < k; i++) {
+    pure_expr *x = args[i];
+    sstk[sz++] = x;
+  };
   /* The reference counts are updated in reverse which is faster in the common
      case that temporary arguments have been generated in order. */
   for (uint32_t i = k; i > 0; ) {

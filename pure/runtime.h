@@ -211,6 +211,16 @@ pure_expr *pure_matrix_rowsv(uint32_t n, pure_expr **elems);
 pure_expr *pure_matrix_columnsl(uint32_t n, ...);
 pure_expr *pure_matrix_columnsv(uint32_t n, pure_expr **elems);
 
+/* Direct Pure function calls. This is provided to call a function in
+   batch-compiled Pure code (which cannot be done directly, because the
+   function needs a stack frame; pure_funcall supplies this). The first
+   argument must be a pointer to a global Pure function, which is followed by
+   the number of arguments and the arguments (pure_expr*) themselves. The
+   number of arguments *must* match the number of parameters of the function
+   (no partial applications!), otherwise the results are undefined. */
+
+pure_expr *pure_funcall(void *f, uint32_t n, ...);
+
 /* Function applications. pure_app applies the given function to the given
    argument. The result is evaluated if possible (i.e., if it is a saturated
    function call). Otherwise, the result is a literal application and
