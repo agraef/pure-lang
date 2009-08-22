@@ -344,7 +344,7 @@ public:
   bool compiling;    // batch compiler mode
   bool interactive;  // interactive mode
   bool debugging;    // debugging mode
-  bool optimize;     // optimization mode (batch compiler)
+  bool strip;        // strip unused functions (batch compiler)
   bool restricted;   // restricted mode
   bool ttymode;      // connected to a tty
   bool override;     // override mode

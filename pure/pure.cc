@@ -49,9 +49,9 @@ using namespace std;
 --noediting      Do not use readline for command-line editing.\n\
 --noprelude, -n  Do not load the prelude.\n\
 --norc           Do not run the interactive startup files.\n\
--O               Output code optimization in batch compilation.\n\
 -o filename      Output filename for batch compilation.\n\
 -q               Quiet startup (suppresses sign-on message).\n\
+-s               Strip unused functions (batch compilation).\n\
 -v[level]        Set debugging level (default: 1).\n\
 --version        Print version information and exit.\n\
 -x               Execute script with given command line arguments.\n\
@@ -418,8 +418,8 @@ main(int argc, char *argv[])
       want_editing = false;
     else if (*args == string("-q"))
       quiet = true;
-    else if (*args == string("-O"))
-      interp.optimize = true;
+    else if (*args == string("-s"))
+      interp.strip = true;
     else if (string(*args).substr(0,2) == "-o") {
       string s = string(*args).substr(2);
       if (s.empty()) {

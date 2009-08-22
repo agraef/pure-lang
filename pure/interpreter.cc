@@ -525,7 +525,7 @@ void interpreter::init()
 
 interpreter::interpreter()
   : verbose(0), compiling(false), interactive(false), debugging(false),
-    optimize(false), restricted(false), ttymode(false), override(false),
+    strip(false), restricted(false), ttymode(false), override(false),
     stats(false), temp(0), ps("> "), libdir(""), histfile("/.pure_history"),
     modname("pure"), nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
     result(0), lastres(0), mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0),
@@ -539,7 +539,7 @@ interpreter::interpreter(int32_t nsyms, char *syms,
 			 int32_t *arities, void **externs,
 			 pure_expr ***_sstk, void **_fptr)
   : verbose(0), compiling(false), interactive(false), debugging(false),
-    optimize(false), restricted(true), ttymode(false), override(false),
+    strip(false), restricted(true), ttymode(false), override(false),
     stats(false), temp(0), ps("> "), libdir(""), histfile("/.pure_history"),
     modname("pure"), nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
     result(0), lastres(0), mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0),
@@ -3967,23 +3967,164 @@ to variables should fix this. **\n";
   }
   Function *initfun = module->getFunction("pure_interp_main");
   Function *freefun = module->getFunction("pure_freenew");
-  set<Function*> unused;
-  if (optimize) {
-    // Quick and dirty check for unused functions. We ought to do something
-    // more comprehensive here.
+  // Eliminate unused functions.
+  set<Function*> used;
+  if (strip) {
+    /* We start out by collecting all immediate dependencies where a function
+       f calls or refers to another function g. Note that there are several
+       ways that this can happen:
+
+       - via a direct call (call site)
+       - via a function pointer (constant)
+       - via an indirect reference (global variable)
+
+       Thus we need to analyze all uses of a function or its associated global
+       variable. At the same time we also determine all the roots in the
+       dependency graph (initialization code). */
+    set<Function*> roots;
     map<Function*, set<Function*> > callers, callees;
+    // Scan the global variable table for function pointers.
+    for (map<int32_t,GlobalVar>::iterator it = globalvars.begin();
+	 it != globalvars.end(); ++it) {
+      int32_t fno = it->first;
+      GlobalVariable* v = it->second.v;
+      Function *f = 0;
+      map<int32_t,Env>::iterator jt = globalfuns.find(fno);
+      if (jt != globalfuns.end()) {
+	Env& e = jt->second;
+	f = e.h;
+      }
+      if (!f) {
+	map<int32_t,ExternInfo>::iterator kt = externals.find(fno);
+	if (kt != externals.end()) {
+	  ExternInfo& info = kt->second;
+	  f = info.f;
+	}
+      }
+      if (f) {
+	for (Value::use_iterator it = v->use_begin(), end = v->use_end();
+	     it != end; it++) {
+	  if (Instruction *inst = dyn_cast<Instruction>(*it)) {
+	    Function *g = inst->getParent()->getParent();
+	    // Indirect reference through a variable. Note that we're not
+	    // interested in loops in the dependency graph, so we check that
+	    // the caller is different from the callee.
+	    if (g && g != f) {
+#if 0
+	      std::cout << g->getName() << " calls " << f->getName()
+			<< " via var " << v->getName() << endl;
+#endif
+	      callers[f].insert(g);
+	      callees[g].insert(f);
+	    }
+	  }
+	}
+      }
+    }
+    // Next scan the table of all functions for direct uses.
     for (Module::iterator it = module->begin(), end = module->end();
 	 it != end; ++it) {
       Function &f = *it;
-      if (!is_init(f.getName()) && &f != initfun && !f.hasNUsesOrMore(1))
-	unused.insert(&f);
+      if (is_init(f.getName()) || &f == initfun) {
+	// This is a root.
+	roots.insert(&f);
+      } else if (f.hasNUsesOrMore(1)) {
+	// Look for uses of the function.
+	for (Value::use_iterator it = f.use_begin(), end = f.use_end(); 
+	     it != end; it++) {
+	  if (Instruction *inst = dyn_cast<Instruction>(*it)) {
+	    Function *g = inst->getParent()->getParent();
+	    // This is a direct call.
+	    if (g && g != &f) {
+#if 0
+	      std::cout << g->getName() << " calls " << f.getName() << endl;
+#endif
+	      callers[&f].insert(g);
+	      callees[g].insert(&f);
+	    }
+	  } else if (Constant *c = dyn_cast<Constant>(*it)) {
+	    // A function pointer. Check its uses.
+	    for (Value::use_iterator jt = c->use_begin(), end = c->use_end(); 
+		 jt != end; jt++) {
+	      if (Instruction *inst = dyn_cast<Instruction>(*jt)) {
+		// This is a function that refers to f via a pointer.
+		Function *g = inst->getParent()->getParent();
+		if (g && g != &f) {
+#if 0
+		  std::cout << g->getName() << " calls " << f.getName()
+			    << " via cst " << c->getName() << endl;
+#endif
+		  callers[&f].insert(g);
+		  callees[g].insert(&f);
+		}
+	      }
+	    }
+	  }
+	}
+      }
     }
+    /* Next we determine the functions which can be reached from the roots of
+       the dependency graph (transitive closure). */
+    set<Function*> marked = roots;
+    used = roots;
+    while (!marked.empty()) {
+      set<Function*> marked1;
+      for (set<Function*>::iterator it = marked.begin(), end = marked.end();
+	   it != end; it++) {
+	Function *f = *it;
+	for (set<Function*>::iterator jt = callees[f].begin(),
+	       end = callees[f].end(); jt != end; jt++) {
+	  Function *g = *jt;
+	  if (used.find(g) == used.end()) {
+	    marked1.insert(g);
+	    used.insert(g);
+	  }
+	}
+      }
+      marked = marked1;
+    }
+#if 0
+    // Debugging: Print the list of all used functions on stdout.
+    for (set<Function*>::iterator it = used.begin(), end = used.end();
+	 it != end; it++) {
+      Function *f = *it;
+      std::cout << "** used function: " << f->getName() << " callers:";
+      for (set<Function*>::iterator jt = callers[f].begin(),
+	     end = callers[f].end(); jt != end; jt++) {
+	Function *g = *jt;
+	std::cout << " " << g->getName();
+      }
+      std::cout << " callees:";
+      for (set<Function*>::iterator jt = callees[f].begin(),
+	     end = callees[f].end(); jt != end; jt++) {
+	Function *g = *jt;
+	std::cout << " " << g->getName();
+      }
+      std::cout << endl;
+    }
+#endif
+#if 0
+    // Debugging: Print the list of all unused functions on stdout.
+    for (Module::iterator it = module->begin(), end = module->end();
+	 it != end; ++it) {
+      Function &f = *it;
+      if (used.find(&f) == used.end()) {
+	std::cout << "** unused function: " << f.getName() << " callees:";
+	for (set<Function*>::iterator jt = callees[&f].begin(),
+	       end = callees[&f].end(); jt != end; jt++) {
+	  Function *g = *jt;
+	  std::cout << " " << g->getName();
+	}
+	std::cout << endl;
+      }
+    }
+#endif
   }
   // Global and local functions.
   for (Module::iterator it = module->begin(), end = module->end();
        it != end; ++it) {
     Function &f = *it;
-    if (!optimize || unused.find(&f) == unused.end())
+    if (!strip || used.find(&f) != used.end())
       f.print(code);
   }
   // Build the main function with all the initialization code.
@@ -4024,7 +4165,7 @@ to variables should fix this. **\n";
       map<int32_t,Env>::iterator jt = globalfuns.find(f);
       if (jt != globalfuns.end()) {
 	Env& e = jt->second;
-	if (!optimize || unused.find(e.h) == unused.end()) {
+	if (!strip || used.find(e.h) != used.end()) {
 	  vals[f] = ConstantExpr::getPointerCast(e.h, VoidPtrTy);
 	  arity[f] = SInt(e.n);
 	}
@@ -4032,7 +4173,7 @@ to variables should fix this. **\n";
       map<int32_t,ExternInfo>::iterator kt = externals.find(f);
       if (kt != externals.end()) {
 	ExternInfo& info = kt->second;
-	if (!optimize || unused.find(info.f) == unused.end()) {
+	if (!strip || used.find(info.f) != used.end()) {
 	  externs[f] = ConstantExpr::getPointerCast(info.f, VoidPtrTy);
 	  sout << info.tag << " " << info.name << " " << type_name(info.type)
 	       << " " << info.argtypes.size();
