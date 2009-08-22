@@ -3892,6 +3892,9 @@ static string& quote(string& s)
 #define WEXITSTATUS(w) (w)
 #endif
 
+#define DEBUG_USED 0
+#define DEBUG_UNUSED 0
+
 int interpreter::compiler(string out, list<string> libnames)
 {
   /* We allow either '-' or *.ll to indicate an LLVM assembler file. In the
@@ -3975,14 +3978,19 @@ to variables should fix this. **\n";
        ways that this can happen:
 
        - via a direct call (call site)
+
        - via a function pointer (constant)
+
        - via an indirect reference (global variable)
 
-       Thus we need to analyze all uses of a function or its associated global
-       variable. At the same time we also determine all the roots in the
-       dependency graph (initialization code). */
+       Thus we need to analyze all uses of a function and its associated
+       global variable. At the same time we also determine all the roots in
+       the dependency graph (initialization code). */
     set<Function*> roots;
-    map<Function*, set<Function*> > callers, callees;
+#if DEBUG_USED||DEBUG_UNUSED
+    map<Function*, set<Function*> > callers;
+#endif
+    map<Function*, set<Function*> > callees;
     // Scan the global variable table for function pointers.
     for (map<int32_t,GlobalVar>::iterator it = globalvars.begin();
 	 it != globalvars.end(); ++it) {
@@ -4014,7 +4022,9 @@ to variables should fix this. **\n";
 	      std::cout << g->getName() << " calls " << f->getName()
 			<< " via var " << v->getName() << endl;
 #endif
+#if DEBUG_USED||DEBUG_UNUSED
 	      callers[f].insert(g);
+#endif
 	      callees[g].insert(f);
 	    }
 	  }
@@ -4024,23 +4034,25 @@ to variables should fix this. **\n";
     // Next scan the table of all functions for direct uses.
     for (Module::iterator it = module->begin(), end = module->end();
 	 it != end; ++it) {
-      Function &f = *it;
-      if (is_init(f.getName()) || &f == initfun) {
+      Function *f = &*it;
+      if (is_init(f->getName()) || f == initfun) {
 	// This is a root.
-	roots.insert(&f);
-      } else if (f.hasNUsesOrMore(1)) {
+	roots.insert(f);
+      } else if (f->hasNUsesOrMore(1)) {
 	// Look for uses of the function.
-	for (Value::use_iterator it = f.use_begin(), end = f.use_end(); 
+	for (Value::use_iterator it = f->use_begin(), end = f->use_end(); 
 	     it != end; it++) {
 	  if (Instruction *inst = dyn_cast<Instruction>(*it)) {
 	    Function *g = inst->getParent()->getParent();
 	    // This is a direct call.
-	    if (g && g != &f) {
+	    if (g && g != f) {
 #if 0
-	      std::cout << g->getName() << " calls " << f.getName() << endl;
+	      std::cout << g->getName() << " calls " << f->getName() << endl;
 #endif
-	      callers[&f].insert(g);
-	      callees[g].insert(&f);
+#if DEBUG_USED||DEBUG_UNUSED
+	      callers[f].insert(g);
+#endif
+	      callees[g].insert(f);
 	    }
 	  } else if (Constant *c = dyn_cast<Constant>(*it)) {
 	    // A function pointer. Check its uses.
@@ -4049,13 +4061,15 @@ to variables should fix this. **\n";
 	      if (Instruction *inst = dyn_cast<Instruction>(*jt)) {
 		// This is a function that refers to f via a pointer.
 		Function *g = inst->getParent()->getParent();
-		if (g && g != &f) {
+		if (g && g != f) {
 #if 0
-		  std::cout << g->getName() << " calls " << f.getName()
+		  std::cout << g->getName() << " calls " << f->getName()
 			    << " via cst " << c->getName() << endl;
 #endif
-		  callers[&f].insert(g);
-		  callees[g].insert(&f);
+#if DEBUG_USED||DEBUG_UNUSED
+		  callers[f].insert(g);
+#endif
+		  callees[g].insert(f);
 		}
 	      }
 	    }
@@ -4083,7 +4097,7 @@ to variables should fix this. **\n";
       }
       marked = marked1;
     }
-#if 0
+#if DEBUG_USED
     // Debugging: Print the list of all used functions on stdout.
     for (set<Function*>::iterator it = used.begin(), end = used.end();
 	 it != end; it++) {
@@ -4103,15 +4117,21 @@ to variables should fix this. **\n";
       std::cout << endl;
     }
 #endif
-#if 0
+#if DEBUG_UNUSED
     // Debugging: Print the list of all unused functions on stdout.
     for (Module::iterator it = module->begin(), end = module->end();
 	 it != end; ++it) {
-      Function &f = *it;
-      if (used.find(&f) == used.end()) {
-	std::cout << "** unused function: " << f.getName() << " callees:";
-	for (set<Function*>::iterator jt = callees[&f].begin(),
-	       end = callees[&f].end(); jt != end; jt++) {
+      Function *f = &*it;
+      if (used.find(f) == used.end()) {
+	std::cout << "** unused function: " << f->getName() << " callers:";
+	for (set<Function*>::iterator jt = callers[f].begin(),
+	       end = callers[f].end(); jt != end; jt++) {
+	  Function *g = *jt;
+	  std::cout << " " << g->getName();
+	}
+	std::cout << " callees:";
+	for (set<Function*>::iterator jt = callees[f].begin(),
+	       end = callees[f].end(); jt != end; jt++) {
 	  Function *g = *jt;
 	  std::cout << " " << g->getName();
 	}
