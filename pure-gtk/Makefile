@@ -91,7 +91,7 @@ generate:
 # Compile the examples.
 
 examples:
-	(cd examples && pure $(PURE_COPTS) -c hello.pure -o hello && pure $(PURE_COPTS) -c uiexample.pure -o uiexample)
+	(cd examples && pure $(PURE_COPTS) -c -s hello.pure -o hello && pure $(PURE_COPTS) -c -s uiexample.pure -o uiexample)
 
 # Install targets.
 

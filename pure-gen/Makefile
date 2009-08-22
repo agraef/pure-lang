@@ -44,7 +44,7 @@ dump_ast = $(pkgdatadir)/dump-ast
 
 pure-gen: pure-gen.pure
 	sed -e 's?@version@?$(version)?' -e 's?./dump-ast?$(dump_ast)?' < $< > xx$<
-	pure -c xx$< -o $@
+	pure -c -s xx$< -o $@
 	rm -f xx$<
 
 # NOTE: This requires ghc (http://www.haskell.org/ghc/) and language-c
