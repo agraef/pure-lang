@@ -3974,11 +3974,11 @@ int interpreter::compiler(string out, list<string> libnames)
       code << "%" << name << " = type " << type->getDescription() << endl;
   }
   code << endl;
-  // Global variables. This includes the special $$sstk$$ (shadow stack) and
-  // $$fptr$$ (environment pointer) globals, as well as all the expression
-  // pointers for the global symbols of the Pure program. Here we also have to
-  // check for any unresolvable constant values (wrapped pointers or local
-  // closures).
+  /* Verify the global variables. This includes the special $$sstk$$ (shadow
+     stack) and $$fptr$$ (environment pointer) globals, as well as all the
+     expression pointers for the global symbols of the Pure program. Here we
+     do a first scan of the global variables, checking for any unresolvable
+     constant values (wrapped pointers or local closures). */
   int nerrs = 0;
   for (Module::global_iterator it = module->global_begin(),
 	 end = module->global_end(); it != end; ++it) {
@@ -3990,7 +3990,6 @@ int interpreter::compiler(string out, list<string> libnames)
       std::cerr << "'" << label << "' is not a constant value" << endl;
       nerrs++;
     }
-    v.print(code);
   }
   if (nerrs > 0) {
     unlink(target.c_str());
@@ -4004,6 +4003,7 @@ to variables should fix this. **\n";
   Function *freefun = module->getFunction("pure_freenew");
   // Eliminate unused functions.
   set<Function*> used;
+  map<GlobalVariable*,Function*> varmap;
   if (strip) {
     /* We start out by collecting all immediate dependencies where a function
        f calls or refers to another function g. Note that there are several
@@ -4042,6 +4042,7 @@ to variables should fix this. **\n";
 	}
       }
       if (f) {
+	varmap[v] = f;
 	for (Value::use_iterator it = v->use_begin(), end = v->use_end();
 	     it != end; it++) {
 	  if (Instruction *inst = dyn_cast<Instruction>(*it)) {
@@ -4172,6 +4173,19 @@ to variables should fix this. **\n";
     }
 #endif
   }
+  // Emit the global variables.
+  for (Module::global_iterator it = module->global_begin(),
+	 end = module->global_end(); it != end; ++it) {
+    GlobalVariable &v = *it;
+    if (!v.hasName()) continue;
+    map<GlobalVariable*,Function*>::iterator jt = varmap.find(&v);
+    if (jt != varmap.end()) {
+      // Strip variables holding unused function pointers.
+      Function *f = jt->second;
+      if (strip && used.find(f) == used.end()) continue;
+    }
+    v.print(code);
+  }
   // Global and local functions.
   for (Module::iterator it = module->begin(), end = module->end();
        it != end; ++it) {
@@ -4217,26 +4231,29 @@ to variables should fix this. **\n";
     int32_t f = it->first;
     GlobalVar& v = it->second;
     if (v.v && v.x) {
-      vars[f] = v.v;
       map<int32_t,Env>::iterator jt = globalfuns.find(f);
       if (jt != globalfuns.end()) {
 	Env& e = jt->second;
 	if (!strip || used.find(e.h) != used.end()) {
 	  vals[f] = ConstantExpr::getPointerCast(e.h, VoidPtrTy);
 	  arity[f] = SInt(e.n);
+	  vars[f] = v.v;
 	}
-      }
-      map<int32_t,ExternInfo>::iterator kt = externals.find(f);
-      if (kt != externals.end()) {
-	ExternInfo& info = kt->second;
-	if (!strip || used.find(info.f) != used.end()) {
-	  externs[f] = ConstantExpr::getPointerCast(info.f, VoidPtrTy);
-	  sout << info.tag << " " << info.name << " " << type_name(info.type)
-	       << " " << info.argtypes.size();
-	  for (size_t i = 0; i < info.argtypes.size(); i++)
-	    sout << " " << type_name(info.argtypes[i]);
-	  sout << endl;
-	}
+      } else {
+	map<int32_t,ExternInfo>::iterator kt = externals.find(f);
+	if (kt != externals.end()) {
+	  ExternInfo& info = kt->second;
+	  if (!strip || used.find(info.f) != used.end()) {
+	    externs[f] = ConstantExpr::getPointerCast(info.f, VoidPtrTy);
+	    sout << info.tag << " " << info.name << " " << type_name(info.type)
+		 << " " << info.argtypes.size();
+	    for (size_t i = 0; i < info.argtypes.size(); i++)
+	      sout << " " << type_name(info.argtypes[i]);
+	    sout << endl;
+	    vars[f] = v.v;
+	  }
+	} else
+	  vars[f] = v.v;
       }
     }
   }
