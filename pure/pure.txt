@@ -3759,12 +3759,12 @@ A note on code sizes: Batch-compiled Pure programs tend to be large and take a
 while to compile. This is because, to be on the safe side, the output code
 includes *all* functions defined in the compiled program or imported through a
 ``using`` clause, even if they don't seem to be "used" anywhere. As a remedy,
-the batch compiler has an additional option (-s) to strip unused functions
-from the output code. For instance, on a 64 bit Linux systems with ELF
-binaries, the -s option shaves off more than two thirds of the code size from
-our hello.pure example. (Note that, even then the resulting code is fairly
-large when compared to compiled C code, as it still contains the symbol table
-of the entire program, which is needed by the runtime environment.)
+the batch compiler has an additional -s option to strip unused functions from
+the output code. For instance, on a 64 bit Linux systems with ELF binaries,
+the -s option shaves off more than two thirds of the code size from our
+hello.pure example. (Note that, even then the resulting code is fairly large
+when compared to compiled C code, as it still contains the symbol table of the
+entire program, which is needed by the runtime environment.)
 
 ::
 
@@ -3779,12 +3779,12 @@ of the entire program, which is needed by the runtime environment.)
 Be careful when using this option. The -s option only does a *static* analysis
 of which functions might be reached from the initialization code (i.e.,
 toplevel expressions and ``let`` bindings). It does *not* take into account
-code run via the ``eval`` routine. Thus, if the batch compiler doesn't know
-that a given function will be used, it will strip the function from the
-executable, as if it was never defined at all. If the function is then being
-called using ``eval`` at runtime, it will evaluate to a plain constructor
-symbol. However, you can always work around this obstacle by just adding a
-dummy "call" to functions which are to be used with ``eval``, like this::
+code run via the ``eval`` routine. Thus, functions used only in ``eval``\ ed
+code will be stripped from the executable, as if they were never defined at
+all. If such a function is then being called using ``eval`` at runtime, it
+will evaluate to a plain constructor symbol. However, it is possible to work
+around this limitation by just adding a dummy "call" to functions which are to
+be used with ``eval``, e.g.::
 
   let foo, bar;
   eval "foo (bar 99)";

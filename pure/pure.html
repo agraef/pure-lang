@@ -3891,12 +3891,12 @@ easily do it.</p>
 while to compile. This is because, to be on the safe side, the output code
 includes <em>all</em> functions defined in the compiled program or imported through a
 <tt class="docutils literal"><span class="pre">using</span></tt> clause, even if they don't seem to be &quot;used&quot; anywhere. As a remedy,
-the batch compiler has an additional option (-s) to strip unused functions
-from the output code. For instance, on a 64 bit Linux systems with ELF
-binaries, the -s option shaves off more than two thirds of the code size from
-our hello.pure example. (Note that, even then the resulting code is fairly
-large when compared to compiled C code, as it still contains the symbol table
-of the entire program, which is needed by the runtime environment.)</p>
+the batch compiler has an additional -s option to strip unused functions from
+the output code. For instance, on a 64 bit Linux systems with ELF binaries,
+the -s option shaves off more than two thirds of the code size from our
+hello.pure example. (Note that, even then the resulting code is fairly large
+when compared to compiled C code, as it still contains the symbol table of the
+entire program, which is needed by the runtime environment.)</p>
 <pre class="literal-block">
 $ pure -o hello -c -x hello.pure 7 &amp;&amp; ls -l hello
 -rwxr-xr-x 1 ag users 626693 2009-08-22 10:04 hello
@@ -3909,12 +3909,12 @@ Hello, world!
 <p>Be careful when using this option. The -s option only does a <em>static</em> analysis
 of which functions might be reached from the initialization code (i.e.,
 toplevel expressions and <tt class="docutils literal"><span class="pre">let</span></tt> bindings). It does <em>not</em> take into account
-code run via the <tt class="docutils literal"><span class="pre">eval</span></tt> routine. Thus, if the batch compiler doesn't know
-that a given function will be used, it will strip the function from the
-executable, as if it was never defined at all. If the function is then being
-called using <tt class="docutils literal"><span class="pre">eval</span></tt> at runtime, it will evaluate to a plain constructor
-symbol. However, you can always work around this obstacle by just adding a
-dummy &quot;call&quot; to functions which are to be used with <tt class="docutils literal"><span class="pre">eval</span></tt>, like this:</p>
+code run via the <tt class="docutils literal"><span class="pre">eval</span></tt> routine. Thus, functions used only in <tt class="docutils literal"><span class="pre">eval</span></tt>ed
+code will be stripped from the executable, as if they were never defined at
+all. If such a function is then being called using <tt class="docutils literal"><span class="pre">eval</span></tt> at runtime, it
+will evaluate to a plain constructor symbol. However, it is possible to work
+around this limitation by just adding a dummy &quot;call&quot; to functions which are to
+be used with <tt class="docutils literal"><span class="pre">eval</span></tt>, e.g.:</p>
 <pre class="literal-block">
 let foo, bar;
 eval &quot;foo (bar 99)&quot;;
