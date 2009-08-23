@@ -2,6 +2,19 @@
 
 	* 0.31 release.
 
+	* parser.yy: Put if-then-else at the same level as the other
+	special expressions, as suggested by Eddie Rucker. This makes it
+	possible to use lambda and 'case' inside conditionals without
+	having to parenthesize them.
+
+	Note that if-then-else still binds stronger than 'when' and
+	'with', so 'if x then y else z when x = ... end' is parsed as
+	'(if x then y else z) when x = ... end', as before. Also note that
+	lambda still binds weakest among the special expressions, so
+	'if x then f else \x->f f x when f x = x+1 end' (which was
+	previously a syntax error) is now parsed as
+	'if x then f else (\x->f (f x) when f x = x+1 end)', so beware!
+
 	* configure.ac: Bump version number.
 
 	* interpreter.cc (compiler): Strip global variables for unused

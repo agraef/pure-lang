@@ -122,7 +122,7 @@ static void mangle_fname(string& name);
 %token <xval>	PO	"postfix operator"
 
 %right		MAPSTO
-%left		WHEN WITH
+%left		WHEN WITH ELSE
 
 %token		EOFTOK 0 "end of file"
 %token		ERRTOK  "invalid character"
@@ -138,7 +138,7 @@ static void mangle_fname(string& name);
 %type  <sval>	name fname optalias ctype
 %type  <slval>	ids names fnames ctypes opt_ctypes
 %type  <info>	fixity
-%type  <xval>	expr cond prim
+%type  <xval>	expr prim
 %type  <opstk>  simple  "simple expression"
 %type  <rhsval> rhs qual_rhs
 %type  <xlval>	args lhs row
@@ -150,13 +150,13 @@ static void mangle_fname(string& name);
 %type  <rval>	simple_rule
 %type  <rlval>	rule simple_rules simple_rulel
 
-%destructor { delete $$; } ID fixity expr cond simple prim
+%destructor { delete $$; } ID fixity expr simple prim
   comp_clauses comp_clause_list rows row_list row args lhs rhs qual_rhs
   rules rulel rule pat_rules pat_rulel simple_rules simple_rulel simple_rule
   ids fnames fname names name optalias opt_ctypes ctypes ctype
 %destructor { mpz_clear(*$$); free($$); } BIGINT CBIGINT
 %destructor { free($$); } STR
-%printer { debug_stream() << *$$; } ID name fname optalias ctype expr cond
+%printer { debug_stream() << *$$; } ID name fname optalias ctype expr
   prim args lhs rule simple_rules simple_rulel simple_rule
 %printer { debug_stream() << $$->r; } rhs qual_rhs
 %printer { debug_stream() << $$->e; } rules rulel
@@ -329,26 +329,20 @@ optalias
    simple expressions. */
 
 expr
-: cond
+: simple
+{ parser_action($$ = interp.mksimple_expr($1), delete $1); }
 | '\\' args MAPSTO expr
 { try { $$ = interp.mklambda_expr($2, $4); }
   catch (err &e) { interp.error(yyloc, e.what()); $$ = new expr; } }
-| CASE cond OF pat_rules END
+| CASE expr OF pat_rules END
 { $$ = interp.mkcase_expr($2, new rulel($4->rl)); delete $4; }
 | expr WHEN simple_rules END
 { try { $$ = interp.mkwhen_expr($1, $3); }
   catch (err &e) { interp.error(yyloc, e.what()); $$ = new expr; } }
 | expr WITH rules END
 { $$ = interp.mkwith_expr($1, new env($3->e)); delete $3; }
-;
-
-cond
-: simple
-{ parser_action($$ = interp.mksimple_expr($1), delete $1); }
-| IF simple THEN cond ELSE cond
-{ expr *x; parser_action(x = interp.mksimple_expr($2),
-			 (delete $2, delete $4, delete $6));
-  $$ = interp.mkcond_expr(x, $4, $6); }
+| IF expr THEN expr ELSE expr
+{ $$ = interp.mkcond_expr($2, $4, $6); }
 ;
 
 args
