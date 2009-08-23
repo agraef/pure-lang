@@ -2959,24 +2959,24 @@ pure_interp *pure_interp_main(int argc, char *argv[],
 {
   char base;
 #if 0
-  std::cerr << "\n** argc = " << argc << endl;
+  std::cerr << "\n** argc = " << argc << '\n';
   for (int i = 0; i < argc; i++)
     std::cerr << "argv[" << i << "] = '"
 	      << (argv[i]?argv[i]:"(null)") << "'\n";
   std::cerr << "\n** " << nsyms << " symbols\n";
   std::cerr << syms;
-  std::cerr << "\n** vars table " << vars << endl;
+  std::cerr << "\n** vars table " << vars << '\n';
   for (int32_t f = 1; f <= nsyms; f++)
     if (vars[f])
-      std::cerr << f << " = " << vars[f] << endl;
-  std::cerr << "\n** vals table " << vals << endl;
+      std::cerr << f << " = " << vars[f] << '\n';
+  std::cerr << "\n** vals table " << vals << '\n';
   for (int32_t f = 1; f <= nsyms; f++)
     if (vals[f])
       std::cerr << f << " = " << vals[f] << " (" << arities[f] << ")\n";
-  std::cerr << "\n** externs table " << externs << endl;
+  std::cerr << "\n** externs table " << externs << '\n';
   for (int32_t f = 1; f <= nsyms; f++)
     if (externs[f])
-      std::cerr << f << " = " << externs[f] << endl;
+      std::cerr << f << " = " << externs[f] << '\n';
   std::cerr << "\n** sstk = " << sstk << ", fptr = " << fptr << endl;
 #endif
   interpreter *_interp =
@@ -3836,7 +3836,7 @@ pure_expr *pure_force(pure_expr *x)
 	pure_expr *x = sstk[i];
 	if (i == interp.sstk_sz) cerr << "** pushed:\n";
 	if (x)
-	  cerr << i << ": " << (void*)x << ": " << x << endl;
+	  cerr << i << ": " << (void*)x << ": " << x << '\n';
 	else
 	  cerr << i << ": " << "** frame **\n";
       }
@@ -3846,7 +3846,7 @@ pure_expr *pure_force(pure_expr *x)
 #if DEBUG>1
     cerr << "pure_force: calling " << x << " -> " << fp << endl;
     for (size_t j = 0; j < m; j++)
-      cerr << "env#" << j << " = " << x->data.clos->env[j] << " -> " << (void*)x->data.clos->env[j] << ", refc = " << x->data.clos->env[j]->refc << endl;
+      cerr << "env#" << j << " = " << x->data.clos->env[j] << " -> " << (void*)x->data.clos->env[j] << ", refc = " << x->data.clos->env[j]->refc << '\n';
 #endif
     // parameterless call
     checkall(test);
@@ -3963,7 +3963,7 @@ pure_expr *pure_apply(pure_expr *x, pure_expr *y)
 	pure_expr *x = sstk[i];
 	if (i == interp.sstk_sz) cerr << "** pushed:\n";
 	if (x)
-	  cerr << i << ": " << (void*)x << ": " << x << endl;
+	  cerr << i << ": " << (void*)x << ": " << x << '\n';
 	else
 	  cerr << i << ": " << "** frame **\n";
       }
@@ -3973,9 +3973,9 @@ pure_expr *pure_apply(pure_expr *x, pure_expr *y)
 #if DEBUG>1
     cerr << "pure_apply: calling " << f0 << " -> " << fp << endl;
     for (size_t j = 0; j < n; j++)
-      cerr << "arg#" << j << " = " << (pure_expr*)argv[j] << " -> " << argv[j] << ", refc = " << ((pure_expr*)argv[j])->refc << endl;
+      cerr << "arg#" << j << " = " << (pure_expr*)argv[j] << " -> " << argv[j] << ", refc = " << ((pure_expr*)argv[j])->refc << '\n';
     for (size_t j = 0; j < m; j++)
-      cerr << "env#" << j << " = " << f0->data.clos->env[j] << " -> " << (void*)f0->data.clos->env[j] << ", refc = " << f0->data.clos->env[j]->refc << endl;
+      cerr << "env#" << j << " = " << f0->data.clos->env[j] << " -> " << (void*)f0->data.clos->env[j] << ", refc = " << f0->data.clos->env[j]->refc << '\n';
 #endif
     checkall(test);
     if (m>0)
@@ -4092,7 +4092,7 @@ pure_expr *pure_catch(pure_expr *h, pure_expr *x)
 	pure_expr *x = sstk[i];
 	if (i == interp.sstk_sz) cerr << "** pushed:\n";
 	if (x)
-	  cerr << i << ": " << (void*)x << ": " << x << endl;
+	  cerr << i << ": " << (void*)x << ": " << x << '\n';
 	else
 	  cerr << i << ": " << "** frame **\n";
       }
@@ -4149,7 +4149,7 @@ pure_expr *pure_catch(pure_expr *h, pure_expr *x)
 #if DEBUG>2
       pure_expr *tmps = interp.tmps;
       while (tmps) {
-	if (tmps != res) cerr << "uncollected temporary: " << tmps << endl;
+	if (tmps != res) cerr << "uncollected temporary: " << tmps << '\n';
 	tmps = tmps->xp;
       }
 #endif
@@ -4218,7 +4218,7 @@ pure_expr *pure_invoke(void *f, pure_expr** _e)
 #if DEBUG>2
     pure_expr *tmps = interp.tmps;
     while (tmps) {
-      if (tmps != res) cerr << "uncollected temporary: " << tmps << endl;
+      if (tmps != res) cerr << "uncollected temporary: " << tmps << '\n';
       tmps = tmps->xp;
     }
 #endif
@@ -4291,7 +4291,7 @@ uint32_t pure_push_args(uint32_t n, uint32_t m, ...)
     pure_expr *x = sstk[i];
     if (i == interp.sstk_sz) cerr << "** pushed:\n";
     if (x)
-      cerr << i << ": " << (void*)x << ": " << x << endl;
+      cerr << i << ": " << (void*)x << ": " << x << '\n';
     else
       cerr << i << ": " << "** frame **\n";
   }
@@ -4331,7 +4331,7 @@ static uint32_t pure_push_argv(uint32_t n, uint32_t m, pure_expr **args)
     pure_expr *x = sstk[i];
     if (i == interp.sstk_sz) cerr << "** pushed:\n";
     if (x)
-      cerr << i << ": " << (void*)x << ": " << x << endl;
+      cerr << i << ": " << (void*)x << ": " << x << '\n';
     else
       cerr << i << ": " << "** frame **\n";
   }
@@ -4358,7 +4358,7 @@ void pure_pop_args(pure_expr *x, uint32_t n, uint32_t m)
     pure_expr *x = sstk[i];
     if (i == sz) cerr << "** popped:\n";
     if (x)
-      cerr << i << ": " << (void*)x << ": " << x << endl;
+      cerr << i << ": " << (void*)x << ": " << x << '\n';
     else
       cerr << i << ": " << "** frame **\n";
   }
@@ -4393,7 +4393,7 @@ void pure_pop_tail_args(pure_expr *x, uint32_t n, uint32_t m)
     if (i == sz) cerr << "** popped:\n";
     if (i == lastsz) cerr << "** moved:\n";
     if (x)
-      cerr << i << ": " << (void*)x << ": " << x << endl;
+      cerr << i << ": " << (void*)x << ": " << x << '\n';
     else
       cerr << i << ": " << "** frame **\n";
   }
@@ -4430,7 +4430,7 @@ void pure_push_arg(pure_expr *x)
     pure_expr *x = sstk[i];
     if (i == interp.sstk_sz) cerr << "** pushed:\n";
     if (x)
-      cerr << i << ": " << (void*)x << ": " << x << endl;
+      cerr << i << ": " << (void*)x << ": " << x << '\n';
     else
       cerr << i << ": " << "** frame **\n";
   }
@@ -6638,9 +6638,9 @@ struct Blob {
 	break;
       }
       if (e.fix == outfix) {
-	if (e.g) cout << " " << e.s << " " << symtab[e.g].s << endl;
+	if (e.g) cout << " " << e.s << " " << symtab[e.g].s << '\n';
       } else
-	cout << " " << e.s << endl;
+	cout << " " << e.s << '\n';
     }
   }
 };

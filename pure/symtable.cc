@@ -128,7 +128,7 @@ void symtable::dump(string& s)
     symbol *sym = rtab[i];
     if (sym)
       sout << sym->s << " " << sym->f << " " << (int)sym->prec << " "
-	   << sym->fix << " " << sym->priv << endl;
+	   << sym->fix << " " << sym->priv << '\n';
   }
   s = sout.str();
 }

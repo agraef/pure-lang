@@ -16,6 +16,8 @@
 #include <llvm/Support/CallSite.h>
 #include <llvm/System/DynamicLibrary.h>
 #include <llvm/Transforms/Utils/BasicBlockUtils.h>
+#include <llvm/Support/raw_ostream.h>
+#include <llvm/Support/Streams.h>
 
 #include "config.h"
 
@@ -45,7 +47,7 @@ static void* resolve_external(const std::string& name)
   // This is just to give a little more informative error message before we
   // bail out anyway.
   cout.flush();
-  cerr << "error trying to resolve external: " << name << endl;
+  cerr << "error trying to resolve external: " << name << '\n';
   assert(0);
   return 0;
 }
@@ -676,7 +678,7 @@ cdf(interpreter& interp, const char* s, pure_expr *x)
   try {
     interp.const_defn(s, x);
   } catch (err &e) {
-    std::cerr << "warning: " << e.what() << endl;
+    std::cerr << "warning: " << e.what() << '\n';
   }
   pure_freenew(x);
 }
@@ -736,12 +738,12 @@ interpreter::error(const yy::location& l, const string& m)
   if (source_s) {
     ostringstream msg;
     msg << *l.begin.filename << ", line " << l.begin.line
-	<< ": " << m1 << endl;
+	<< ": " << m1 << '\n';
     errmsg += msg.str();
   } else {
     cout.flush();
     cerr << *l.begin.filename << ", line " << l.begin.line
-	 << ": " << m1 << endl;
+	 << ": " << m1 << '\n';
   }
 }
 
@@ -751,11 +753,11 @@ interpreter::error(const string& m)
   nerrs++;
   if (source_s) {
     ostringstream msg;
-    msg << m << endl;
+    msg << m << '\n';
     errmsg += msg.str();
   } else {
     cout.flush();
-    cerr << m << endl;
+    cerr << m << '\n';
   }
 }
 
@@ -765,7 +767,7 @@ interpreter::warning(const yy::location& l, const string& m)
   if (!source_s) {
     cout.flush();
     cerr << *l.begin.filename << ", line " << l.begin.line
-	 << ": " << m << endl;
+	 << ": " << m << '\n';
   }
 }
 
@@ -774,7 +776,7 @@ interpreter::warning(const string& m)
 {
   if (!source_s) {
     cout.flush();
-    cerr << m << endl;
+    cerr << m << '\n';
   }
 }
 
@@ -1604,7 +1606,7 @@ void print_map(ostream& os, const Env *e)
        << (uint32_t)x.idx << ":";
     const path &p = x.p;
     for (size_t i = 0; i < p.len(); i++) os << p[i];
-    os << endl;
+    os << '\n';
   }
   for (size_t i = 0, n = e->fmap.m.size(); i < n; i++) {
     os << blanks << "FMAP #" << i << ":\n";
@@ -1632,7 +1634,7 @@ void interpreter::compile()
 	int32_t ftag = e->first;
 	env_info& info = e->second;
 	info.m = new matcher(*info.rules, info.argc+1);
-	if (verbose&verbosity::code) std::cout << *info.m << endl;
+	if (verbose&verbosity::code) std::cout << *info.m << '\n';
 	// regenerate LLVM code (prolog)
 	Env& f = globalfuns[ftag] = Env(ftag, info, false, false);
 #if DEBUG>1
@@ -1656,7 +1658,7 @@ void interpreter::compile()
 	// compile to native code (always use the C-callable stub here)
 	assert(!f.fp); f.fp = JIT->getPointerToFunction(f.h);
 #if DEBUG>1
-	llvm::cerr << "JIT " << f.f->getNameStr() << " -> " << f.fp << endl;
+	llvm::cerr << "JIT " << f.f->getNameStr() << " -> " << f.fp << '\n';
 #endif
 	// do a direct call to the runtime to create the fbox and cache it in
 	// a global variable
@@ -1673,7 +1675,7 @@ void interpreter::compile()
 #if DEBUG>1
 	llvm::cerr << "global " << &v.x << " (== "
 		   << JIT->getPointerToGlobal(v.v) << ") -> "
-		   << (void*)fv << endl;
+		   << (void*)fv << '\n';
 #endif
       }
     }
@@ -1928,7 +1930,7 @@ void interpreter::exec(expr *x)
   if (interactive) {
     if (lastres) pure_free(lastres);
     lastres = pure_new(result);
-    cout << result << endl;
+    cout << result << '\n';
     if (stats)
       cout << ((double)clocks)/(double)CLOCKS_PER_SEC << "s\n";
   }
@@ -3194,7 +3196,7 @@ expr interpreter::macred(expr x, expr y, uint8_t idx)
       expr v = varsubst(subterm(x, y.vpath()), idx);
 #if DEBUG>1
       std::cerr << "macro var: " << y << " = " << v
-		<< " (" << (uint32_t)idx << ")" << endl;
+		<< " (" << (uint32_t)idx << ")" << '\n';
 #endif
       return v;
     } else
@@ -3343,7 +3345,7 @@ expr interpreter::macval(expr x)
     assert(!st->r.empty());
     expr y = macred(x, info.m->r[st->r.front()].rhs);
 #if DEBUG>1
-    std::cerr << "macro expansion: " << x << " -> " << y << endl;
+    std::cerr << "macro expansion: " << x << " -> " << y << '\n';
 #endif
     return macsubst(y);
   }
@@ -3930,6 +3932,14 @@ static string& quote(string& s)
 #define DEBUG_USED 0
 #define DEBUG_UNUSED 0
 
+#if LLVM26
+/* More LLVM >= 2.6 compatibility madness. raw_ostream claims to be just like
+   ostream, but it isn't. :( */
+#define ostream_error(os) os.has_error()
+#else
+#define ostream_error(os) os.fail()
+#endif
+
 int interpreter::compiler(string out, list<string> libnames)
 {
   /* We allow either '-' or *.ll to indicate an LLVM assembler file. In the
@@ -3951,12 +3961,27 @@ int interpreter::compiler(string out, list<string> libnames)
      be called by the main() or other initialization code of the standalone
      module. It takes two arguments, the argc and argv of the interpreter. */
   setlocale(LC_ALL, "C");
+  bool file_target = target!="-";
+#if LLVM26
+  // As of LLVM 2.7 (svn), these need to be wrapped up in a raw_ostream.
+  string error;
+  llvm::raw_ostream *codep = file_target?
+    new llvm::raw_fd_ostream(target.c_str(), error,
+			     llvm::raw_fd_ostream::F_Force):
+    new llvm::raw_stdout_ostream();
+  if (!error.empty()) {
+    std::cerr << "Error opening " << target << '\n';
+    exit(1);
+  }
+  llvm::raw_ostream &code = *codep;
+#else
   std::ostream *codep =
-    (target!="-")?new std::ofstream(target.c_str()):&std::cout;
+    file_target?new std::ofstream(target.c_str()):&std::cout;
   std::ostream &code = *codep;
-  if (target == "-") out = target = "<stdout>";
-  if (code.fail()) {
-    std::cerr << "Error opening " << target << endl;
+#endif
+  if (!file_target) out = target = "<stdout>";
+  if (ostream_error(code)) {
+    std::cerr << "Error opening " << target << '\n';
     exit(1);
   }
   // Module header.
@@ -3973,10 +3998,12 @@ int interpreter::compiler(string out, list<string> libnames)
        it != end; ++it) {
     const string &name = it->first;
     const Type *type = it->second;
-    if (name != "struct.expr")
-      code << "%" << name << " = type " << type->getDescription() << endl;
+    if (name != "struct.expr") {
+      string descr = type->getDescription();
+      code << "%" << name << " = type " << descr << '\n';
+    }
   }
-  code << endl;
+  code << '\n';
   /* Verify the global variables. This includes the special $$sstk$$ (shadow
      stack) and $$fptr$$ (environment pointer) globals, as well as all the
      expression pointers for the global symbols of the Pure program. Here we
@@ -3990,7 +4017,7 @@ int interpreter::compiler(string out, list<string> libnames)
     string label;
     if (is_tmpvar(v.getName(), label)) {
       // We can't handle these, sorry.
-      std::cerr << "'" << label << "' is not a constant value" << endl;
+      std::cerr << "'" << label << "' is not a constant value" << '\n';
       nerrs++;
     }
   }
@@ -4056,7 +4083,7 @@ to variables should fix this. **\n";
 	    if (g && g != f) {
 #if 0
 	      std::cout << g->getNameStr() << " calls " << f->getNameStr()
-			<< " via var " << v->getNameStr() << endl;
+			<< " via var " << v->getNameStr() << '\n';
 #endif
 #if DEBUG_USED||DEBUG_UNUSED
 	      callers[f].insert(g);
@@ -4083,7 +4110,7 @@ to variables should fix this. **\n";
 	    // This is a direct call.
 	    if (g && g != f) {
 #if 0
-	      std::cout << g->getNameStr() << " calls " << f->getNameStr() << endl;
+	      std::cout << g->getNameStr() << " calls " << f->getNameStr() << '\n';
 #endif
 #if DEBUG_USED||DEBUG_UNUSED
 	      callers[f].insert(g);
@@ -4100,7 +4127,7 @@ to variables should fix this. **\n";
 		if (g && g != f) {
 #if 0
 		  std::cout << g->getNameStr() << " calls " << f->getNameStr()
-			    << " via cst " << c->getNameStr() << endl;
+			    << " via cst " << c->getNameStr() << '\n';
 #endif
 #if DEBUG_USED||DEBUG_UNUSED
 		  callers[f].insert(g);
@@ -4150,7 +4177,7 @@ to variables should fix this. **\n";
 	Function *g = *jt;
 	std::cout << " " << g->getNameStr();
       }
-      std::cout << endl;
+      std::cout << '\n';
     }
 #endif
 #if DEBUG_UNUSED
@@ -4171,7 +4198,7 @@ to variables should fix this. **\n";
 	  Function *g = *jt;
 	  std::cout << " " << g->getNameStr();
 	}
-	std::cout << endl;
+	std::cout << '\n';
       }
     }
 #endif
@@ -4252,7 +4279,7 @@ to variables should fix this. **\n";
 		 << " " << info.argtypes.size();
 	    for (size_t i = 0; i < info.argtypes.size(); i++)
 	      sout << " " << type_name(info.argtypes[i]);
-	    sout << endl;
+	    sout << '\n';
 	    vars[f] = v.v;
 	  }
 	} else
@@ -4294,7 +4321,7 @@ to variables should fix this. **\n";
      ConstantArray::get(ArrayType::get(VoidPtrTy, n+1), externs),
      "$$externs$$");
   // Emit code for the special globals.
-  code << endl;
+  code << '\n';
   syms->print(code);
   vvars->print(code);
   vvals->print(code);
@@ -4329,11 +4356,14 @@ to variables should fix this. **\n";
   b.CreateRet(0);
   // Emit code for the __pure_main__ function.
   main->print(code);
-  if (code.fail()) {
-    std::cerr << "Error writing " << target << endl;
+  if (ostream_error(code)) {
+    std::cerr << "Error writing " << target << '\n';
     exit(1);
   }
-  if (codep != &std::cout) delete codep;
+#if !LLVM26
+  if (codep != &std::cout)
+#endif
+  delete codep;
   if (target != out) {
     bool vflag = (verbose&verbosity::compiler) != 0;
     char *pure_copts = getenv("PURE_COPTS");
@@ -4357,7 +4387,7 @@ to variables should fix this. **\n";
       (pure_copts?string(pure_copts)+" ":string())+
       "-c -x llvm-assembler "+quote(target)+" -o "+quote(obj);
     if (vflag)
-      std::cerr << cmd << endl;
+      std::cerr << cmd << '\n';
     int status = system(cmd.c_str());
     if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
       string linkopts = quote(obj)+libs+
@@ -4372,11 +4402,11 @@ to variables should fix this. **\n";
 	cmd = "llvm-g++ -o "+quote(out)+" "+
 	  quote(libdir)+"pure_main.o "+linkopts;
 	if (vflag)
-	  std::cerr << cmd << endl;
+	  std::cerr << cmd << '\n';
 	status = system(cmd.c_str());
 	unlink(obj.c_str());
       } else if (vflag)
-	std::cerr << "Link with: llvm-g++ " << linkopts << endl;
+	std::cerr << "Link with: llvm-g++ " << linkopts << '\n';
     }
     unlink(target.c_str());
     if (WIFEXITED(status)) status = WEXITSTATUS(status);
@@ -4630,7 +4660,7 @@ CallInst *Env::CreateCall(Function *f, const vector<Value*>& args)
     ok = false;
   }
   if (!ok) {
-    llvm::cerr << "** calling function: " << f->getNameStr() << endl;
+    llvm::cerr << "** calling function: " << f->getNameStr() << '\n';
     f->dump();
     assert(0 && "bad function call");
   }
@@ -4723,7 +4753,7 @@ void Env::push(const char *msg)
   interpreter& interp = *interpreter::g_interp;
   llvm::cerr << "push (" << msg << ") " << this << " -> "
 	     << (tag>0?interp.symtab.sym(tag).s:"<<anonymous>>")
-	     << endl;
+	     << '\n';
 #endif
 }
 
@@ -4735,7 +4765,7 @@ void Env::pop()
   interpreter& interp = *interpreter::g_interp;
   llvm::cerr << "pop " << this << " -> "
 	     << (tag>0?interp.symtab.sym(tag).s:"<<anonymous>>")
-	     << endl;
+	     << '\n';
 #endif
 }
 
@@ -4778,7 +4808,7 @@ void Env::build_map(expr x)
 	  "." + name;
       }
       llvm::cerr << name << ": call " << interp.symtab.sym(x.vtag()).s
-		 << ":" << (unsigned)x.vidx() << endl;
+		 << ":" << (unsigned)x.vidx() << '\n';
     }
 #endif
       fenv->prop[this] = x.vidx();
@@ -4982,7 +5012,7 @@ void Env::promote_map()
 		   << " (offset " << info.idx-i << ") "
 		   << " to "
 		   << (f->tag>0?interp.symtab.sym(f->tag).s:"<<anonymous>>")
-		   << endl;
+		   << '\n';
       }
 #endif
       int32_t tag = info.vtag;
@@ -5045,7 +5075,7 @@ size_t Env::propagate_map()
 		   << " (offset " << offs << ") "
 		   << " to "
 		   << (e.tag>0?interp.symtab.sym(e.tag).s:"<<anonymous>>")
-		   << endl;
+		   << '\n';
       }
 #endif
       int32_t tag = info.vtag;
@@ -5088,7 +5118,7 @@ void interpreter::push(const char *msg, Env *e)
   interpreter& interp = *interpreter::g_interp;
   llvm::cerr << "push (" << msg << ") " << e << " -> "
 	     << (e->tag>0?interp.symtab.sym(e->tag).s:"<<anonymous>>")
-	     << endl;
+	     << '\n';
 #endif
 }
 
@@ -5100,7 +5130,7 @@ void interpreter::pop(Env *e)
   interpreter& interp = *interpreter::g_interp;
   llvm::cerr << "pop (" << e << ") -> "
 	     << (e->tag>0?interp.symtab.sym(e->tag).s:"<<anonymous>>")
-	     << endl;
+	     << '\n';
 #endif
 }
 
@@ -5902,7 +5932,10 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   b.CreateRet(defaultv);
   verifyFunction(*f);
   if (FPM) FPM->run(*f);
-  if (verbose&verbosity::dump) f->print(std::cout);
+  if (verbose&verbosity::dump) {
+    raw_stdout_ostream out;
+    f->print(out);
+  }
   externals[sym.f] = ExternInfo(sym.f, name, type, argt, f);
   return f;
 }
@@ -6250,7 +6283,7 @@ pure_expr *interpreter::dodefn(env vars, expr lhs, expr rhs, pure_expr*& e,
   BasicBlock *matchedbb = basic_block("matched");
   BasicBlock *failedbb = basic_block("failed");
   matcher m(rule(lhs, rhs));
-  if (verbose&verbosity::code) std::cout << m << endl;
+  if (verbose&verbosity::code) std::cout << m << '\n';
   state *start = m.start;
   simple_match(arg, start, matchedbb, failedbb);
   // matched => emit code for binding the variables
@@ -6576,7 +6609,7 @@ Value *interpreter::builtin_codegen(expr x)
 #if DEBUG
       if (u->getType() != v->getType()) {
 	llvm::cerr << "** operand mismatch!\n";
-	llvm::cerr << "operator:      " << symtab.sym(f.tag()).s << endl;
+	llvm::cerr << "operator:      " << symtab.sym(f.tag()).s << '\n';
 	llvm::cerr << "left operand:  "; u->dump();
 	llvm::cerr << "right operand: "; v->dump();
 	assert(0 && "operand mismatch");
@@ -6604,7 +6637,7 @@ Value *interpreter::builtin_codegen(expr x)
 #if DEBUG
       if (u->getType() != v->getType()) {
 	llvm::cerr << "** operand mismatch!\n";
-	llvm::cerr << "operator:      " << symtab.sym(f.tag()).s << endl;
+	llvm::cerr << "operator:      " << symtab.sym(f.tag()).s << '\n';
 	llvm::cerr << "left operand:  "; u->dump();
 	llvm::cerr << "right operand: "; v->dump();
 	assert(0 && "operand mismatch");
@@ -6624,7 +6657,7 @@ Value *interpreter::builtin_codegen(expr x)
 #if DEBUG
       if (u->getType() != v->getType()) {
 	llvm::cerr << "** operand mismatch!\n";
-	llvm::cerr << "operator:      " << symtab.sym(f.tag()).s << endl;
+	llvm::cerr << "operator:      " << symtab.sym(f.tag()).s << '\n';
 	llvm::cerr << "left operand:  "; u->dump();
 	llvm::cerr << "right operand: "; v->dump();
 	assert(0 && "operand mismatch");
@@ -6725,7 +6758,7 @@ Value *interpreter::builtin_codegen(expr x)
 #if DEBUG
     if (u->getType() != v->getType()) {
       llvm::cerr << "** operand mismatch!\n";
-      llvm::cerr << "operator:      " << symtab.sym(f.tag()).s << endl;
+      llvm::cerr << "operator:      " << symtab.sym(f.tag()).s << '\n';
       llvm::cerr << "left operand:  "; u->dump();
       llvm::cerr << "right operand: "; v->dump();
       assert(0 && "operand mismatch");
@@ -7915,7 +7948,7 @@ Value *interpreter::vref(int32_t tag, uint8_t idx, path p)
     // idx>0 => non-local, return the local proxy
 #if DEBUG>2
     llvm::cerr << act_env().name << ": looking for " << symtab.sym(tag).s
-	       << ":" << (unsigned)idx << endl;
+	       << ":" << (unsigned)idx << '\n';
 #endif
     assert(act_env().xmap.find(xmap_key(tag, idx)) != act_env().xmap.end());
     return vref(tag, act_env().xmap[xmap_key(tag, idx)]);
@@ -8388,11 +8421,14 @@ Function *interpreter::fun_prolog(string name)
       // optimize
       if (FPM) FPM->run(*f.h);
       // show output code, if requested
-      if (verbose&verbosity::dump) f.h->print(std::cout);
+      if (verbose&verbosity::dump) {
+	raw_stdout_ostream out;
+	f.h->print(out);
+      }
     }
   }
 #if DEBUG>1
-  llvm::cerr << "PROLOG FUNCTION " << f.name << endl;
+  llvm::cerr << "PROLOG FUNCTION " << f.name << '\n';
 #endif
   // create a new basic block to start insertion into
   BasicBlock *bb = basic_block("entry", f.f);
@@ -8411,7 +8447,7 @@ void interpreter::fun_body(matcher *pm, bool nodefault)
   Env& f = act_env();
   assert(f.f!=0);
 #if DEBUG>1
-  llvm::cerr << "BODY FUNCTION " << f.name << endl;
+  llvm::cerr << "BODY FUNCTION " << f.name << '\n';
 #endif
   BasicBlock *bodybb = basic_block("body");
   f.builder.CreateBr(bodybb);
@@ -8491,9 +8527,12 @@ void interpreter::fun_finish()
   // optimize
   if (FPM) FPM->run(*f.f);
   // show output code, if requested
-  if (verbose&verbosity::dump) f.f->print(std::cout);
+  if (verbose&verbosity::dump)  {
+    raw_stdout_ostream out;
+    f.f->print(out);
+  }
 #if DEBUG>1
-  llvm::cerr << "END BODY FUNCTION " << f.name << endl;
+  llvm::cerr << "END BODY FUNCTION " << f.name << '\n';
 #endif
 }
 

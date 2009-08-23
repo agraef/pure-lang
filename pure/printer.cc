@@ -590,42 +590,42 @@ ostream& operator << (ostream& os, const trans& tr)
 {
   switch (tr.tag) {
   case EXPR::APP:
-    return os << "\t<app> state " << tr.st->s << endl;
+    return os << "\t<app> state " << tr.st->s << '\n';
   case EXPR::VAR:
     os << "\t<var>";
     print_ttag(os, tr.ttag);
-    return os << " state " << tr.st->s << endl;
+    return os << " state " << tr.st->s << '\n';
   case EXPR::INT:
     os << "\t" << tr.i;
     print_ttag(os, tr.ttag);
-    return os << " state " << tr.st->s << endl;
+    return os << " state " << tr.st->s << '\n';
   case EXPR::BIGINT: {
     char *s = mpz_get_str(NULL, 10, tr.z);
     os << "\t" << s << "L";
     print_ttag(os, tr.ttag);
-    os << " state " << tr.st->s << endl;
+    os << " state " << tr.st->s << '\n';
     free(s);
     return os;
   }
   case EXPR::DBL:
     os << "\t" << tr.d;
     print_ttag(os, tr.ttag);
-    return os << " state " << tr.st->s << endl;
+    return os << " state " << tr.st->s << '\n';
   case EXPR::STR: {
     char *s = printstr(tr.s);
     os << "\t" << '"' << s << '"';
     print_ttag(os, tr.ttag);
-    os << " state " << tr.st->s << endl;
+    os << " state " << tr.st->s << '\n';
     free(s);
     return os;
   }
   default:
     if (tr.tag < 0)
-      return os << "\t<pointer> state " << tr.st->s << endl;
+      return os << "\t<pointer> state " << tr.st->s << '\n';
     else {
       assert(tr.tag > 0);
       const symbol& sym = interpreter::g_interp->symtab.sym(tr.tag);
-      return os << "\t" << sym.s << " state " << tr.st->s << endl;
+      return os << "\t" << sym.s << " state " << tr.st->s << '\n';
     }
   }
 }
@@ -636,7 +636,7 @@ ostream& operator << (ostream& os, const state& st)
   ruleml::const_iterator r;
   for (r = st.r.begin(); r != st.r.end(); r++)
     os << " #" << *r;
-  os << endl;
+  os << '\n';
   transl::const_iterator t;
   for (t = st.tr.begin(); t != st.tr.end(); t++)
     os << *t;
@@ -650,7 +650,7 @@ ostream& operator << (ostream& os, const matcher& m)
   os << "{\n";
   size_t n = m.r.size();
   for (size_t i = 0; i < n; i++)
-    os << "  rule #" << i << ": " << m.r[i] << endl;
+    os << "  rule #" << i << ": " << m.r[i] << '\n';
   n = m.st.size();
   for (size_t i = 0; i < n; i++)
     os << *m.st[i];

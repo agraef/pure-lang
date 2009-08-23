@@ -398,11 +398,11 @@ main(int argc, char *argv[])
   for (char **args = ++argv; *args; ++args)
     if (*args == string("-h") || *args == string("--help")) {
       cout << "Pure " << PACKAGE_VERSION << " (" << HOST << ") "
-	   << COPYRIGHT << endl << USAGE;
+	   << COPYRIGHT << '\n' << USAGE;
       return 0;
     } else if (*args == string("--version")) {
       cout << "Pure " << PACKAGE_VERSION << " (" << HOST << ") "
-	   << COPYRIGHT << endl;
+	   << COPYRIGHT << '\n';
       return 0;
     } else if (*args == string("-c"))
       interp.compiling = true;
@@ -585,7 +585,7 @@ main(int argc, char *argv[])
     // sign-on message.
     if (!quiet) {
       cout << "Pure " << PACKAGE_VERSION << " (" << HOST << ") "
-	   << COPYRIGHT << endl << LICENSE;
+	   << COPYRIGHT << '\n' << LICENSE;
       if (have_prelude)
 	cout << "Loaded prelude from " << prelude << ".\n";
       else if (want_prelude)

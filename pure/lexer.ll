@@ -608,11 +608,15 @@ void my_readline(const char *prompt, char *buf, int &result, int max_size)
   result = k;
 }
 
+#include <llvm/Support/raw_ostream.h>
+
 void Env::print(ostream& os) const
 {
   if (!f) return; // not used, probably a shadowed rule
-  if (h && h != f) h->print(os);
-  f->print(os);
+  { llvm::raw_os_ostream raw_os(os);
+    if (h && h != f) h->print(raw_os);
+    f->print(raw_os);
+  }
   set<Env*> e;
   for (size_t i = 0, n = fmap.m.size(); i < n; i++) {
     for (EnvMap::const_iterator it = fmap.m[i]->begin(),
@@ -791,13 +795,13 @@ static void list_completions(ostream& os, const char *s)
   if (matches) {
     if (matches[0]) {
       if (!matches[1]) {
-	os << matches[0] << endl;
+	os << matches[0] << '\n';
 	free(matches[0]);
       } else {
 	int i;
 	free(matches[0]);
 	for (i = 1; matches[i]; i++) {
-	  os << matches[i] << endl;
+	  os << matches[i] << '\n';
 	  free(matches[i]);
 	}
       }
@@ -902,7 +906,7 @@ struct argl {
 	t = tmp2;
 	free(tmp); free(tmp2);
 	if (msg) {
-	  cerr << m << ": " << msg << endl;
+	  cerr << m << ": " << msg << '\n';
 	  return;
 	}
       }
@@ -1001,7 +1005,7 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
 	syms.push_back(interp.symtab.sym(*it).s);
       syms.sort();
       for (list<string>::iterator it = syms.begin(); it != syms.end(); ++it)
-	sout << *it << endl;
+	sout << *it << '\n';
       if (interp.output)
 	(*interp.output) << sout.str();
       else
@@ -1375,10 +1379,12 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 		 << interp.symtab.sym(sym.g).s << ";\n";
 	  sout << info << ";";
 	  if ((!sflag||lflag) && dflag) {
-	    if (!sflag) sout << endl;
-	    info.f->print(sout);
+	    if (!sflag) sout << '\n';
+	    { llvm::raw_os_ostream raw_sout(sout);
+	      info.f->print(raw_sout);
+	    }
 	  } else
-	    sout << endl;
+	    sout << '\n';
 	  ++nfuns;
 	} else if (jt != interp.globenv.end() &&
 		   jt->second.t == env_info::fvar) {
@@ -1390,7 +1396,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 		 << "  var";
 	    if (lflag) sout << "  " << sym.s << " = "
 			    << *(pure_expr**)jt->second.val << ";";
-	    sout << endl;
+	    sout << '\n';
 	  } else
 	    sout << "let " << sym.s << " = " << *(pure_expr**)jt->second.val
 		 << ";\n";
@@ -1404,7 +1410,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 		 << "  cst";
 	    if (lflag) sout << "  " << sym.s << " = "
 			    << *jt->second.cval << ";";
-	    sout << endl;
+	    sout << '\n';
 	  } else
 	    sout << "const " << sym.s << " = " << *jt->second.cval
 		 << ";\n";
@@ -1436,10 +1442,12 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	    const ExternInfo& info = xt->second;
 	    sout << info << ";";
 	    if ((!sflag||lflag) && dflag) {
-	      if (!sflag) sout << endl;
-	      info.f->print(sout);
+	      if (!sflag) sout << '\n';
+	      { llvm::raw_os_ostream raw_sout(sout);
+		info.f->print(raw_sout);
+	      }
 	    } else
-	      sout << endl;
+	      sout << '\n';
 	  }
 	  if (mflag && kt != interp.macenv.end()) {
 	    uint32_t argc = kt->second.argc;
@@ -1450,11 +1458,11 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	      sout << sym.s << string(maxsize-sym.s.size(), ' ') << "  mac";
 	      if (lflag) {
 		sout << "  " << rules << ";";
-		if (aflag && m) sout << endl << *m;
+		if (aflag && m) sout << '\n' << *m;
 	      } else {
 		sout << " " << argc << " args, " << rules.size() << " rules";
 	      }
-	      sout << endl;
+	      sout << '\n';
 	    } else {
 	      size_t n = 0;
 	      for (rulel::const_iterator it = rules.begin();
@@ -1465,7 +1473,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 		}
 	      }
 	      if (n > 0) {
-		if (aflag && m) sout << *m << endl;
+		if (aflag && m) sout << *m << '\n';
 		mrules += n;
 		++nmacs;
 	      }
@@ -1480,13 +1488,13 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	      sout << sym.s << string(maxsize-sym.s.size(), ' ') << "  fun";
 	      if (lflag) {
 		sout << "  " << rules << ";";
-		if (aflag && m) sout << endl << *m;
+		if (aflag && m) sout << '\n' << *m;
 		if (dflag && fenv != interp.globalfuns.end() && fenv->second.f)
 		  fenv->second.print(sout);
 	      } else {
 		sout << " " << argc << " args, " << rules.size() << " rules";
 	      }
-	      sout << endl;
+	      sout << '\n';
 	    } else {
 	      size_t n = 0;
 	      for (rulel::const_iterator it = rules.begin();
@@ -1497,7 +1505,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 		}
 	      }
 	      if (n > 0) {
-		if (aflag && m) sout << *m << endl;
+		if (aflag && m) sout << *m << '\n';
 		if (dflag && fenv != interp.globalfuns.end() && fenv->second.f)
 		  fenv->second.print(sout);
 		nrules += n;
@@ -1519,7 +1527,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	  summary << nfuns << " functions (" << nrules << " rules), ";
 	string s = summary.str();
 	if (!s.empty())
-	  sout << s.substr(0, s.size()-2) << endl;
+	  sout << s.substr(0, s.size()-2) << '\n';
       }
       if (interp.output)
 	(*interp.output) << sout.str();
@@ -1896,7 +1904,7 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
       ostream& os = interp.output?*interp.output:cout;
       if (chk && old > 1)
 	os << "clear: now at temporary definitions level #"
-	   << interp.temp << endl;
+	   << interp.temp << '\n';
       if (chk && interp.override)
 	os << "clear: override mode is on\n";
       goto out3;
@@ -2021,7 +2029,7 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
     else {
       ostream& os = interp.output?*interp.output:cout;
       os << "save: now at temporary definitions level #"
-	 << ++interp.temp << endl;
+	 << ++interp.temp << '\n';
       if (interp.override) os << "save: override mode is on\n";
     }
   } else if (strcmp(cmd, "run") == 0)  {
