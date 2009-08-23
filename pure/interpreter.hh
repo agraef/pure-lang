@@ -6,15 +6,21 @@
 #include <llvm/Module.h>
 #include <llvm/ModuleProvider.h>
 #include <llvm/PassManager.h>
+#include <llvm/GlobalValue.h>
 #include <llvm/Analysis/Verifier.h>
 #include <llvm/Target/TargetData.h>
 #include <llvm/Transforms/Scalar.h>
 #include <llvm/Support/IRBuilder.h>
 
+#include "config.h"
+
+#if LLVM26
+#include "llvm/LLVMContext.h"
+#endif
+
 #include <time.h>
 #include <set>
 #include <string>
-#include "config.h"
 #include "expr.hh"
 #include "matcher.hh"
 #include "symtable.hh"
@@ -224,13 +230,21 @@ public:
   // default constructor
   Env()
     : tag(0), key(0), descr(0), n(0), m(0), f(0), h(0), fp(0),
-      args(0), envs(0), rp(0), b(false), local(false), parent(0), refc(0)
+      args(0), envs(0), rp(0), b(false), local(false),
+#ifdef LLVM26
+      builder(llvm::getGlobalContext()),
+#endif
+      parent(0), refc(0)
   {}
   // environment for an anonymous closure with given body x
   Env(int32_t _tag, const char *_descr, uint32_t _n, expr x,
       bool _b, bool _local = false)
     : tag(_tag), key(0), descr(_descr), n(_n), m(0), f(0), h(0), fp(0),
-      args(n), envs(0), rp(0), b(_b), local(_local), parent(0), refc(0)
+      args(n), envs(0), rp(0), b(_b), local(_local),
+#ifdef LLVM26
+      builder(llvm::getGlobalContext()),
+#endif
+      parent(0), refc(0)
   {
     if (envstk.empty()) {
       assert(!local);
@@ -245,7 +259,11 @@ public:
   // environment for a named closure with given definition info
   Env(int32_t _tag, const env_info& info, bool _b, bool _local = false)
     : tag(_tag), key(0), descr(0), n(info.argc), m(0), f(0), h(0), fp(0),
-      args(n), envs(0), rp(0), b(_b), local(_local), parent(0), refc(0)
+      args(n), envs(0), rp(0), b(_b), local(_local),
+#ifdef LLVM26
+      builder(llvm::getGlobalContext()),
+#endif
+      parent(0), refc(0)
   {
     if (envstk.empty()) {
       assert(!local);
@@ -260,7 +278,11 @@ public:
   // dummy environment for an external
   Env(int32_t _tag, uint32_t _n, bool _local = false)
     : tag(_tag), key(0), descr(0), n(_n), m(0), f(0), h(0), fp(0),
-      args(n), envs(0), rp(0), b(false), local(false), parent(0), refc(0)
+      args(n), envs(0), rp(0), b(false), local(false),
+#ifdef LLVM26
+      builder(llvm::getGlobalContext()),
+#endif
+      parent(0), refc(0)
   {
   }
   // assignment -- this is only allowed if the lvalue is an uninitialized
@@ -560,6 +582,94 @@ public:
   llvm::PointerType *VoidPtrTy, *CharPtrTy, *IntPtrTy, *DoublePtrTy;
   llvm::PointerType *ComplexPtrTy, *GSLMatrixPtrTy, *GSLDoubleMatrixPtrTy,
     *GSLComplexMatrixPtrTy, *GSLIntMatrixPtrTy;
+
+  // Helpers for LLVM 2.6 compatibility.
+  static const llvm::IntegerType* int1_type()
+#ifdef LLVM26
+  { return llvm::Type::getInt1Ty(llvm::getGlobalContext()); }
+#else
+  { return llvm::Type::Int1Ty; }
+#endif
+  static const llvm::IntegerType* int8_type()
+#ifdef LLVM26
+  { return llvm::Type::getInt8Ty(llvm::getGlobalContext()); }
+#else
+  { return llvm::Type::Int8Ty; }
+#endif
+  static const llvm::IntegerType* int16_type()
+#ifdef LLVM26
+  { return llvm::Type::getInt16Ty(llvm::getGlobalContext()); }
+#else
+  { return llvm::Type::Int16Ty; }
+#endif
+  static const llvm::IntegerType* int32_type()
+#ifdef LLVM26
+  { return llvm::Type::getInt32Ty(llvm::getGlobalContext()); }
+#else
+  { return llvm::Type::Int32Ty; }
+#endif
+  static const llvm::IntegerType* int64_type()
+#ifdef LLVM26
+  { return llvm::Type::getInt64Ty(llvm::getGlobalContext()); }
+#else
+  { return llvm::Type::Int64Ty; }
+#endif
+  static const llvm::Type* float_type()
+#ifdef LLVM26
+  { return llvm::Type::getFloatTy(llvm::getGlobalContext()); }
+#else
+  { return llvm::Type::FloatTy; }
+#endif
+  static const llvm::Type* double_type()
+#ifdef LLVM26
+  { return llvm::Type::getDoubleTy(llvm::getGlobalContext()); }
+#else
+  { return llvm::Type::DoubleTy; }
+#endif
+
+  static const llvm::Type* void_type()
+#ifdef LLVM26
+  { return llvm::Type::getVoidTy(llvm::getGlobalContext()); }
+#else
+  { return llvm::Type::VoidTy; }
+#endif
+  static llvm::OpaqueType* opaque_type()
+#ifdef LLVM26
+  { return llvm::OpaqueType::get(llvm::getGlobalContext()); }
+#else
+  { return llvm::OpaqueType::get(); }
+#endif
+  static llvm::StructType* struct_type(std::vector<const llvm::Type*>& elts)
+#ifdef LLVM26
+  { return llvm::StructType::get(llvm::getGlobalContext(), elts); }
+#else
+  { return llvm::StructType::get(elts); }
+#endif
+
+  static llvm::Constant* constant_char_array(const char *s)
+#ifdef LLVM26
+  { return llvm::ConstantArray::get(llvm::getGlobalContext(), s); }
+#else
+  { return llvm::ConstantArray::get(s); }
+#endif
+
+  static llvm::GlobalVariable* global_variable
+  (llvm::Module *M, const llvm::Type *Ty, bool isConstant,
+   llvm::GlobalValue::LinkageTypes Linkage,
+   llvm::Constant *Init = 0, string Name = "")
+#ifdef LLVM26
+  { return new llvm::GlobalVariable(*M, Ty, isConstant, Linkage, Init, Name); }
+#else
+  { return new llvm::GlobalVariable(Ty, isConstant, Linkage, Init, Name, M); }
+#endif
+
+  llvm::BasicBlock *basic_block(const char *name, llvm::Function* f = 0)
+#ifdef LLVM26
+  { return llvm::BasicBlock::Create(llvm::getGlobalContext(), name, f); }
+#else
+  { return llvm::BasicBlock::Create(name, f); }
+#endif
+
   const llvm::Type *named_type(string name);
   const char *type_name(const llvm::Type *type);
   map<int32_t,GlobalVar> globalvars;

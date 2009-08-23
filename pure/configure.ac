@@ -128,6 +128,19 @@ dnl Check for the new-style template arguments of the IRBuilder class.
 AC_LANG_PUSH([C++])
 save_CXXFLAGS=$CXXFLAGS
 CXXFLAGS="`llvm-config --cppflags` $CXXFLAGS"
+AC_CACHE_CHECK([for new LLVM IRBuilder class (LLVM >= 2.6)], [pure_cv_new_builder26],
+  [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
+       #include <llvm/LLVMContext.h>
+       #include <llvm/Support/IRBuilder.h>
+      ], [
+        llvm::IRBuilder<> b(llvm::getGlobalContext());
+      ])
+    ], [pure_cv_new_builder26=yes], [pure_cv_new_builder26=no])
+  ])
+if test "$pure_cv_new_builder26" = yes; then
+  AC_DEFINE(NEW_BUILDER, 1, [Define when building with new-style LLVM IRBuilder template class.])
+  AC_DEFINE(LLVM26, 1, [Define when building with new-style LLVM API (LLVM 2.6 or later).])
+else
 AC_CACHE_CHECK([for new LLVM IRBuilder class], [pure_cv_new_builder],
   [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
        #include <llvm/Support/IRBuilder.h>
@@ -136,11 +149,11 @@ AC_CACHE_CHECK([for new LLVM IRBuilder class], [pure_cv_new_builder],
       ])
     ], [pure_cv_new_builder=yes], [pure_cv_new_builder=no])
   ])
-CXXFLAGS=$save_CXXFLAGS
 if test "$pure_cv_new_builder" = yes; then
-  # do whatever adjusting you need to do for presence of the library:
   AC_DEFINE(NEW_BUILDER, 1, [Define when building with new-style LLVM IRBuilder template class.])
 fi
+fi
+CXXFLAGS=$save_CXXFLAGS
 AC_LANG_POP([C++])
 dnl Output files.
 AC_CONFIG_FILES([Makefile])

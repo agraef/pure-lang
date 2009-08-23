@@ -742,10 +742,11 @@ pure_expr *pure_symbol(int32_t tag)
     else
       lab = "$"+sym.s;
     // Create a global variable bound to the symbol for now.
-    v.v = new llvm::GlobalVariable
-      (interp.ExprPtrTy, false, llvm::GlobalVariable::InternalLinkage,
+    v.v = interpreter::global_variable
+      (interp.module, interp.ExprPtrTy, false,
+       llvm::GlobalVariable::InternalLinkage,
        llvm::ConstantPointerNull::get(interp.ExprPtrTy),
-       lab.c_str(), interp.module);
+       lab.c_str());
     interp.JIT->addGlobalMapping(v.v, &v.x);
     v.x = pure_new_internal(pure_const(tag));
     // Since we just created this variable, it doesn't have any closure bound

@@ -19,6 +19,11 @@
 
 #include "config.h"
 
+#include <llvm/Target/TargetData.h>
+#if LLVM26
+#include <llvm/Target/TargetSelect.h>
+#endif
+
 #ifdef HAVE_GSL
 #include <gsl/gsl_version.h>
 #include <gsl/gsl_matrix.h>
@@ -103,13 +108,39 @@ void interpreter::init()
 
   using namespace llvm;
 
+  // Accommodate the major API breakage in recent LLVM versions. This is just
+  // horrible, maybe we should drop support for anything earlier than LLVM 2.6
+  // in the future.
+#if LLVM26
+  llvm::InitializeNativeTarget(); // XXFIXME: This is broken.
+  module = new Module(modname, llvm::getGlobalContext());
+#else
   module = new Module(modname);
+#endif
   MP = new ExistingModuleProvider(module);
+#if LLVM26
+  string error;
+  JIT = ExecutionEngine::create(MP, false, &error,
+#if FAST_JIT
+#warning "You selected FAST_JIT. This isn't recommended!"
+				llvm::CodeGenOpt::None
+#else
+				llvm::CodeGenOpt::Default
+#endif
+				);
+  if (!JIT) {
+    if (error.empty()) error = "The JIT could not be created.";
+    std::cerr << "** Panic: " << error << " Giving up. **\n";
+    exit(1);
+  }
+#else
 #if FAST_JIT
   JIT = ExecutionEngine::create(MP, false, 0, true);
 #else
   JIT = ExecutionEngine::create(MP);
 #endif
+#endif
+  assert(JIT);
   FPM = new FunctionPassManager(MP);
 
   // Set up the optimizer pipeline. Start with registering info about how the
@@ -136,25 +167,25 @@ void interpreter::init()
   // void* apart.)
   {
     std::vector<const Type*> elts;
-    Type *VoidTy = StructType::get(elts);
+    Type *VoidTy = struct_type(elts);
     module->addTypeName("void", VoidTy);
     VoidPtrTy = PointerType::get(VoidTy, 0);
   }
 
   // Char pointer type.
-  CharPtrTy = PointerType::get(Type::Int8Ty, 0);
+  CharPtrTy = PointerType::get(int8_type(), 0);
 
   // int and double pointers.
-  IntPtrTy = PointerType::get(Type::Int32Ty, 0);
-  DoublePtrTy = PointerType::get(Type::DoubleTy, 0);
+  IntPtrTy = PointerType::get(int32_type(), 0);
+  DoublePtrTy = PointerType::get(double_type(), 0);
 
   // Complex numbers (complex double).
   {
     std::vector<const Type*> elts;
-    elts.push_back(ArrayType::get(Type::DoubleTy, 2));
-    //elts.push_back(Type::DoubleTy);
-    //elts.push_back(Type::DoubleTy);
-    ComplexTy = StructType::get(elts);
+    elts.push_back(ArrayType::get(double_type(), 2));
+    //elts.push_back(double_type());
+    //elts.push_back(double_type());
+    ComplexTy = struct_type(elts);
     ComplexPtrTy = PointerType::get(ComplexTy, 0);
   }
 
@@ -163,72 +194,72 @@ void interpreter::init()
   {
     std::vector<const Type*> elts;
 #if SIZEOF_SIZE_T==4
-    elts.push_back(Type::Int32Ty);	// size1
-    elts.push_back(Type::Int32Ty);	// size2
-    elts.push_back(Type::Int32Ty);	// tda
+    elts.push_back(int32_type());	// size1
+    elts.push_back(int32_type());	// size2
+    elts.push_back(int32_type());	// tda
 #else
-    elts.push_back(Type::Int64Ty);	// size1
-    elts.push_back(Type::Int64Ty);	// size2
-    elts.push_back(Type::Int64Ty);	// tda
+    elts.push_back(int64_type());	// size1
+    elts.push_back(int64_type());	// size2
+    elts.push_back(int64_type());	// tda
 #endif
     elts.push_back(VoidPtrTy);		// data
     elts.push_back(VoidPtrTy);		// block
-    elts.push_back(Type::Int32Ty);	// owner
-    GSLMatrixTy = StructType::get(elts);
+    elts.push_back(int32_type());	// owner
+    GSLMatrixTy = struct_type(elts);
     module->addTypeName("struct.gsl_matrix", GSLMatrixTy);
     GSLMatrixPtrTy = PointerType::get(GSLMatrixTy, 0);
   }
   {
     std::vector<const Type*> elts;
 #if SIZEOF_SIZE_T==4
-    elts.push_back(Type::Int32Ty);	// size1
-    elts.push_back(Type::Int32Ty);	// size2
-    elts.push_back(Type::Int32Ty);	// tda
+    elts.push_back(int32_type());	// size1
+    elts.push_back(int32_type());	// size2
+    elts.push_back(int32_type());	// tda
 #else
-    elts.push_back(Type::Int64Ty);	// size1
-    elts.push_back(Type::Int64Ty);	// size2
-    elts.push_back(Type::Int64Ty);	// tda
+    elts.push_back(int64_type());	// size1
+    elts.push_back(int64_type());	// size2
+    elts.push_back(int64_type());	// tda
 #endif
     elts.push_back(DoublePtrTy);	// data
     elts.push_back(VoidPtrTy);		// block
-    elts.push_back(Type::Int32Ty);	// owner
-    GSLDoubleMatrixTy = StructType::get(elts);
+    elts.push_back(int32_type());	// owner
+    GSLDoubleMatrixTy = struct_type(elts);
     module->addTypeName("struct.gsl_matrix_double", GSLDoubleMatrixTy);
     GSLDoubleMatrixPtrTy = PointerType::get(GSLDoubleMatrixTy, 0);
   }
   {
     std::vector<const Type*> elts;
 #if SIZEOF_SIZE_T==4
-    elts.push_back(Type::Int32Ty);	// size1
-    elts.push_back(Type::Int32Ty);	// size2
-    elts.push_back(Type::Int32Ty);	// tda
+    elts.push_back(int32_type());	// size1
+    elts.push_back(int32_type());	// size2
+    elts.push_back(int32_type());	// tda
 #else
-    elts.push_back(Type::Int64Ty);	// size1
-    elts.push_back(Type::Int64Ty);	// size2
-    elts.push_back(Type::Int64Ty);	// tda
+    elts.push_back(int64_type());	// size1
+    elts.push_back(int64_type());	// size2
+    elts.push_back(int64_type());	// tda
 #endif
     elts.push_back(ComplexPtrTy);	// data
     elts.push_back(VoidPtrTy);		// block
-    elts.push_back(Type::Int32Ty);	// owner
-    GSLComplexMatrixTy = StructType::get(elts);
+    elts.push_back(int32_type());	// owner
+    GSLComplexMatrixTy = struct_type(elts);
     module->addTypeName("struct.gsl_matrix_complex", GSLComplexMatrixTy);
     GSLComplexMatrixPtrTy = PointerType::get(GSLComplexMatrixTy, 0);
   }
   {
     std::vector<const Type*> elts;
 #if SIZEOF_SIZE_T==4
-    elts.push_back(Type::Int32Ty);	// size1
-    elts.push_back(Type::Int32Ty);	// size2
-    elts.push_back(Type::Int32Ty);	// tda
+    elts.push_back(int32_type());	// size1
+    elts.push_back(int32_type());	// size2
+    elts.push_back(int32_type());	// tda
 #else
-    elts.push_back(Type::Int64Ty);	// size1
-    elts.push_back(Type::Int64Ty);	// size2
-    elts.push_back(Type::Int64Ty);	// tda
+    elts.push_back(int64_type());	// size1
+    elts.push_back(int64_type());	// size2
+    elts.push_back(int64_type());	// tda
 #endif
     elts.push_back(IntPtrTy);		// data
     elts.push_back(VoidPtrTy);		// block
-    elts.push_back(Type::Int32Ty);	// owner
-    GSLIntMatrixTy = StructType::get(elts);
+    elts.push_back(int32_type());	// owner
+    GSLIntMatrixTy = struct_type(elts);
     module->addTypeName("struct.gsl_matrix_int", GSLIntMatrixTy);
     GSLIntMatrixPtrTy = PointerType::get(GSLIntMatrixTy, 0);
   }
@@ -263,47 +294,47 @@ void interpreter::init()
      to the other types (using a bitcast on a pointer) as needed. */
 
   {
-    PATypeHolder StructTy = OpaqueType::get();
+    PATypeHolder StructTy = opaque_type();
     std::vector<const Type*> elts;
-    elts.push_back(Type::Int32Ty);
-    elts.push_back(Type::Int32Ty);
+    elts.push_back(int32_type());
+    elts.push_back(int32_type());
     elts.push_back(PointerType::get(StructTy, 0));
     elts.push_back(PointerType::get(StructTy, 0));
-    ExprTy = StructType::get(elts);
+    ExprTy = struct_type(elts);
     cast<OpaqueType>(StructTy.get())->refineAbstractTypeTo(ExprTy);
     ExprTy = cast<StructType>(StructTy.get());
     module->addTypeName("struct.expr", ExprTy);
   }
   {
     std::vector<const Type*> elts;
-    elts.push_back(Type::Int32Ty);
-    elts.push_back(Type::Int32Ty);
-    elts.push_back(Type::Int32Ty);
-    IntExprTy = StructType::get(elts);
+    elts.push_back(int32_type());
+    elts.push_back(int32_type());
+    elts.push_back(int32_type());
+    IntExprTy = struct_type(elts);
     module->addTypeName("struct.intexpr", IntExprTy);
   }
   {
     std::vector<const Type*> elts;
-    elts.push_back(Type::Int32Ty);
-    elts.push_back(Type::Int32Ty);
-    elts.push_back(Type::DoubleTy);
-    DblExprTy = StructType::get(elts);
+    elts.push_back(int32_type());
+    elts.push_back(int32_type());
+    elts.push_back(double_type());
+    DblExprTy = struct_type(elts);
     module->addTypeName("struct.dblexpr", DblExprTy);
   }
   {
     std::vector<const Type*> elts;
-    elts.push_back(Type::Int32Ty);
-    elts.push_back(Type::Int32Ty);
+    elts.push_back(int32_type());
+    elts.push_back(int32_type());
     elts.push_back(CharPtrTy);
-    StrExprTy = StructType::get(elts);
+    StrExprTy = struct_type(elts);
     module->addTypeName("struct.strexpr", StrExprTy);
   }
   {
     std::vector<const Type*> elts;
-    elts.push_back(Type::Int32Ty);
-    elts.push_back(Type::Int32Ty);
+    elts.push_back(int32_type());
+    elts.push_back(int32_type());
     elts.push_back(VoidPtrTy);
-    PtrExprTy = StructType::get(elts);
+    PtrExprTy = struct_type(elts);
     module->addTypeName("struct.ptrexpr", PtrExprTy);
   }
 
@@ -316,15 +347,15 @@ void interpreter::init()
   StrExprPtrTy = PointerType::get(StrExprTy, 0);
   PtrExprPtrTy = PointerType::get(PtrExprTy, 0);
 
-  sstkvar = new GlobalVariable
-    (ExprPtrPtrTy, false, GlobalVariable::InternalLinkage,
+  sstkvar = global_variable
+    (module, ExprPtrPtrTy, false, GlobalVariable::InternalLinkage,
      ConstantPointerNull::get(ExprPtrPtrTy),
-     "$$sstk$$", module);
+     "$$sstk$$");
   JIT->addGlobalMapping(sstkvar, &sstk);
-  fptrvar = new GlobalVariable
-    (VoidPtrTy, false, GlobalVariable::InternalLinkage,
+  fptrvar = global_variable
+    (module, VoidPtrTy, false, GlobalVariable::InternalLinkage,
      ConstantPointerNull::get(VoidPtrTy),
-     "$$fptr$$", module);
+     "$$fptr$$");
   JIT->addGlobalMapping(fptrvar, &fptr);
 
   // Add prototypes for the runtime interface and enter the corresponding
@@ -594,10 +625,10 @@ interpreter::interpreter(int32_t nsyms, char *syms,
     GlobalVar& v = it->second;
     v.v = u;
     if (!v.v) {
-      v.v = new GlobalVariable
-	(ExprPtrTy, false, GlobalVariable::InternalLinkage,
+      v.v = global_variable
+	(module, ExprPtrTy, false, GlobalVariable::InternalLinkage,
 	 ConstantPointerNull::get(ExprPtrTy),
-	 mkvarlabel(f), module);
+	 mkvarlabel(f));
       JIT->addGlobalMapping(v.v, &v.x);
     }
     if (v.x) pure_free(v.x); v.x = pure_new(x);
@@ -1621,17 +1652,17 @@ void interpreter::compile()
 	// compile to native code (always use the C-callable stub here)
 	assert(!f.fp); f.fp = JIT->getPointerToFunction(f.h);
 #if DEBUG>1
-	llvm::cerr << "JIT " << f.f->getName() << " -> " << f.fp << endl;
+	llvm::cerr << "JIT " << f.f->getNameStr() << " -> " << f.fp << endl;
 #endif
 	// do a direct call to the runtime to create the fbox and cache it in
 	// a global variable
 	pure_expr *fv = pure_clos(false, f.tag, f.getkey(), f.n, f.fp, 0, 0);
 	GlobalVar& v = globalvars[f.tag];
 	if (!v.v) {
-	  v.v = new GlobalVariable
-	    (ExprPtrTy, false, GlobalVariable::InternalLinkage,
+	  v.v = global_variable
+	    (module, ExprPtrTy, false, GlobalVariable::InternalLinkage,
 	     ConstantPointerNull::get(ExprPtrTy),
-	     mkvarlabel(f.tag), module);
+	     mkvarlabel(f.tag));
 	  JIT->addGlobalMapping(v.v, &v.x);
 	}
 	if (v.x) pure_free(v.x); v.x = pure_new(fv);
@@ -3753,13 +3784,13 @@ expr *interpreter::mkmatcomp_expr(expr *x, comp_clause_list *cs)
 
 // Code generation.
 
-#define Dbl(d)		ConstantFP::get(Type::DoubleTy, d)
-#define Bool(i)		ConstantInt::get(Type::Int1Ty, i)
-#define Char(i)		ConstantInt::get(Type::Int8Ty, i)
-#define UInt(i)		ConstantInt::get(Type::Int32Ty, i)
-#define SInt(i)		ConstantInt::get(Type::Int32Ty, (uint64_t)i, true)
-#define UInt64(i)	ConstantInt::get(Type::Int64Ty, i)
-#define SInt64(i)	ConstantInt::get(Type::Int64Ty, (uint64_t)i, true)
+#define Dbl(d)		ConstantFP::get(interpreter::double_type(), d)
+#define Bool(i)		ConstantInt::get(interpreter::int1_type(), i)
+#define Char(i)		ConstantInt::get(interpreter::int8_type(), i)
+#define UInt(i)		ConstantInt::get(interpreter::int32_type(), i)
+#define SInt(i)		ConstantInt::get(interpreter::int32_type(), (uint64_t)i, true)
+#define UInt64(i)	ConstantInt::get(interpreter::int64_type(), i)
+#define SInt64(i)	ConstantInt::get(interpreter::int64_type(), (uint64_t)i, true)
 #if SIZEOF_SIZE_T==4
 #define SizeInt(i)	UInt(i)
 #else
@@ -4019,8 +4050,8 @@ to variables should fix this. **\n";
 	    // the caller is different from the callee.
 	    if (g && g != f) {
 #if 0
-	      std::cout << g->getName() << " calls " << f->getName()
-			<< " via var " << v->getName() << endl;
+	      std::cout << g->getNameStr() << " calls " << f->getNameStr()
+			<< " via var " << v->getNameStr() << endl;
 #endif
 #if DEBUG_USED||DEBUG_UNUSED
 	      callers[f].insert(g);
@@ -4047,7 +4078,7 @@ to variables should fix this. **\n";
 	    // This is a direct call.
 	    if (g && g != f) {
 #if 0
-	      std::cout << g->getName() << " calls " << f->getName() << endl;
+	      std::cout << g->getNameStr() << " calls " << f->getNameStr() << endl;
 #endif
 #if DEBUG_USED||DEBUG_UNUSED
 	      callers[f].insert(g);
@@ -4063,8 +4094,8 @@ to variables should fix this. **\n";
 		Function *g = inst->getParent()->getParent();
 		if (g && g != f) {
 #if 0
-		  std::cout << g->getName() << " calls " << f->getName()
-			    << " via cst " << c->getName() << endl;
+		  std::cout << g->getNameStr() << " calls " << f->getNameStr()
+			    << " via cst " << c->getNameStr() << endl;
 #endif
 #if DEBUG_USED||DEBUG_UNUSED
 		  callers[f].insert(g);
@@ -4102,17 +4133,17 @@ to variables should fix this. **\n";
     for (set<Function*>::iterator it = used.begin(), end = used.end();
 	 it != end; it++) {
       Function *f = *it;
-      std::cout << "** used function: " << f->getName() << " callers:";
+      std::cout << "** used function: " << f->getNameStr() << " callers:";
       for (set<Function*>::iterator jt = callers[f].begin(),
 	     end = callers[f].end(); jt != end; jt++) {
 	Function *g = *jt;
-	std::cout << " " << g->getName();
+	std::cout << " " << g->getNameStr();
       }
       std::cout << " callees:";
       for (set<Function*>::iterator jt = callees[f].begin(),
 	     end = callees[f].end(); jt != end; jt++) {
 	Function *g = *jt;
-	std::cout << " " << g->getName();
+	std::cout << " " << g->getNameStr();
       }
       std::cout << endl;
     }
@@ -4123,17 +4154,17 @@ to variables should fix this. **\n";
 	 it != end; ++it) {
       Function *f = &*it;
       if (used.find(f) == used.end()) {
-	std::cout << "** unused function: " << f->getName() << " callers:";
+	std::cout << "** unused function: " << f->getNameStr() << " callers:";
 	for (set<Function*>::iterator jt = callers[f].begin(),
 	       end = callers[f].end(); jt != end; jt++) {
 	  Function *g = *jt;
-	  std::cout << " " << g->getName();
+	  std::cout << " " << g->getNameStr();
 	}
 	std::cout << " callees:";
 	for (set<Function*>::iterator jt = callees[f].begin(),
 	       end = callees[f].end(); jt != end; jt++) {
 	  Function *g = *jt;
-	  std::cout << " " << g->getName();
+	  std::cout << " " << g->getNameStr();
 	}
 	std::cout << endl;
       }
@@ -4149,13 +4180,17 @@ to variables should fix this. **\n";
   }
   // Build the main function with all the initialization code.
   vector<const Type*> argt;
-  argt.push_back(Type::Int32Ty);
+  argt.push_back(int32_type());
   argt.push_back(VoidPtrTy);
-  FunctionType *ft = FunctionType::get(Type::VoidTy, argt, false);
+  FunctionType *ft = FunctionType::get(void_type(), argt, false);
   Function *main = Function::Create(ft, Function::ExternalLinkage,
 				    "__pure_main__", module);
-  BasicBlock *bb = BasicBlock::Create("entry", main);
+  BasicBlock *bb = basic_block("entry", main);
+#ifdef LLVM26
+  Builder b(llvm::getGlobalContext());
+#else
   Builder b;
+#endif
   b.SetInsertPoint(bb);
   /* To make at least simple evals work, we have to dump the information in
      the symbol and external tables so that they can be reconstructed at
@@ -4207,36 +4242,36 @@ to variables should fix this. **\n";
   dump += sout.str();
   // Dump the symbol and external tables.
   const char *dump_s = dump.c_str();
-  GlobalVariable *syms = new GlobalVariable
-    (ArrayType::get(Type::Int8Ty, strlen(dump_s)+1), true,
-     GlobalVariable::InternalLinkage, ConstantArray::get(dump_s),
-     "$$syms$$", module);
+  GlobalVariable *syms = global_variable
+    (module, ArrayType::get(int8_type(), strlen(dump_s)+1), true,
+     GlobalVariable::InternalLinkage, constant_char_array(dump_s),
+     "$$syms$$");
   // This holds the pointers to the global variables
-  GlobalVariable *vvars = new GlobalVariable
-    (ArrayType::get(ExprPtrPtrTy, n+1), true,
+  GlobalVariable *vvars = global_variable
+    (module, ArrayType::get(ExprPtrPtrTy, n+1), true,
      GlobalVariable::InternalLinkage,
      ConstantArray::get(ArrayType::get(ExprPtrPtrTy, n+1), vars),
-     "$$vars$$", module);
+     "$$vars$$");
   // This holds all the corresponding values. Each value is a pointer which
   // can either be null (indicating an unbound symbol), or a pointer to a
   // function (indicating a global named function).
-  GlobalVariable *vvals = new GlobalVariable
-    (ArrayType::get(VoidPtrTy, n+1), true,
+  GlobalVariable *vvals = global_variable
+    (module, ArrayType::get(VoidPtrTy, n+1), true,
      GlobalVariable::InternalLinkage,
      ConstantArray::get(ArrayType::get(VoidPtrTy, n+1), vals),
-     "$$vals$$", module);
+     "$$vals$$");
   // This holds all the arities of the functions.
-  GlobalVariable *varity = new GlobalVariable
-    (ArrayType::get(Type::Int32Ty, n+1), true,
+  GlobalVariable *varity = global_variable
+    (module, ArrayType::get(int32_type(), n+1), true,
      GlobalVariable::InternalLinkage,
-     ConstantArray::get(ArrayType::get(Type::Int32Ty, n+1), arity),
-     "$$arity$$", module);
+     ConstantArray::get(ArrayType::get(int32_type(), n+1), arity),
+     "$$arity$$");
   // This holds all the externals.
-  GlobalVariable *vexterns = new GlobalVariable
-    (ArrayType::get(VoidPtrTy, n+1), true,
+  GlobalVariable *vexterns = global_variable
+    (module, ArrayType::get(VoidPtrTy, n+1), true,
      GlobalVariable::InternalLinkage,
      ConstantArray::get(ArrayType::get(VoidPtrTy, n+1), externs),
-     "$$externs$$", module);
+     "$$externs$$");
   // Emit code for the special globals.
   code << endl;
   syms->print(code);
@@ -4359,13 +4394,13 @@ void interpreter::defn(int32_t tag, pure_expr *x)
   GlobalVar& v = globalvars[tag];
   if (!v.v) {
     if (sym.priv)
-      v.v = new GlobalVariable
-	(ExprPtrTy, false, GlobalVariable::InternalLinkage, NullExprPtr,
-	 "$$private."+sym.s, module);
+      v.v = global_variable
+	(module, ExprPtrTy, false, GlobalVariable::InternalLinkage,
+	 NullExprPtr, "$$private."+sym.s);
     else
-      v.v = new GlobalVariable
-	(ExprPtrTy, false, GlobalVariable::ExternalLinkage, NullExprPtr,
-	 mkvarsym(sym.s), module);
+      v.v = global_variable
+	(module, ExprPtrTy, false, GlobalVariable::ExternalLinkage,
+	 NullExprPtr, mkvarsym(sym.s));
     JIT->addGlobalMapping(v.v, &v.x);
   }
   if (v.x) pure_free(v.x); v.x = pure_new(x);
@@ -4574,7 +4609,7 @@ CallInst *Env::CreateCall(Function *f, const vector<Value*>& args)
     ok = false;
   }
   if (!ok) {
-    llvm::cerr << "** calling function: " << f->getName() << endl;
+    llvm::cerr << "** calling function: " << f->getNameStr() << endl;
     f->dump();
     assert(0 && "bad function call");
   }
@@ -4614,7 +4649,11 @@ ReturnInst *Env::CreateRet(Value *v, const rule *rp)
 	    free_fun = interp.module->getFunction("pure_pop_tail_args");
 	    free1_fun = interp.module->getFunction("pure_pop_tail_arg");
 	    /* Patch up this call to correct the offset of the environment. */
+#ifdef LLVM26
+	    CallInst *c2 = c1->clone(llvm::getGlobalContext());
+#else
 	    CallInst *c2 = c1->clone();
+#endif
 	    c1->getParent()->getInstList().insert(c1, c2);
 #ifdef NEW_BUILDER
 	    Value *v = BinaryOperator::CreateSub(c2, UInt(n+m+1), "", c1);
@@ -5058,63 +5097,63 @@ Env *interpreter::find_stacked(int32_t tag)
 const Type *interpreter::named_type(string name)
 {
   if (name == "void")
-    return Type::VoidTy;
+    return void_type();
   else if (name == "bool")
-    return Type::Int1Ty;
+    return int1_type();
   else if (name == "char" || name == "int8")
-    return Type::Int8Ty;
+    return int8_type();
   else if (name == "short" || name == "int16")
-    return Type::Int16Ty;
+    return int16_type();
   else if (name == "int" || name == "int32")
-    return Type::Int32Ty;
+    return int32_type();
   else if (name == "int64")
-    return Type::Int64Ty;
+    return int64_type();
   else if (name == "long")
 #if SIZEOF_LONG==4
-    return Type::Int32Ty;
+    return int32_type();
 #else
 #if SIZEOF_LONG!=8
 #error "Unknown size of long type."
 #endif
-    return Type::Int64Ty;
+    return int64_type();
 #endif
   else if (name == "size_t")
 #if SIZEOF_SIZE_T==4
-    return Type::Int32Ty;
+    return int32_type();
 #else
 #if SIZEOF_SIZE_T!=8
 #error "Unknown size of size_t type."
 #endif
-    return Type::Int64Ty;
+    return int64_type();
 #endif
   else if (name == "float")
-    return Type::FloatTy;
+    return float_type();
   else if (name == "double")
-    return Type::DoubleTy;
+    return double_type();
   else if (name == "char*" || name == "int8*")
     return CharPtrTy;
   else if (name == "short*" || name == "int16*")
-    return PointerType::get(Type::Int16Ty, 0);
+    return PointerType::get(int16_type(), 0);
   else if (name == "int*" || name == "int32*")
-    return PointerType::get(Type::Int32Ty, 0);
+    return PointerType::get(int32_type(), 0);
   else if (name == "int64*")
-    return PointerType::get(Type::Int64Ty, 0);
+    return PointerType::get(int64_type(), 0);
   else if (name == "long*")
 #if SIZEOF_LONG==4
-    return PointerType::get(Type::Int32Ty, 0);
+    return PointerType::get(int32_type(), 0);
 #else
-    return PointerType::get(Type::Int64Ty, 0);
+    return PointerType::get(int64_type(), 0);
 #endif
   else if (name == "size_t*")
 #if SIZEOF_SIZE_T==4
-    return PointerType::get(Type::Int32Ty, 0);
+    return PointerType::get(int32_type(), 0);
 #else
-    return PointerType::get(Type::Int64Ty, 0);
+    return PointerType::get(int64_type(), 0);
 #endif
   else if (name == "float*")
-    return PointerType::get(Type::FloatTy, 0);
+    return PointerType::get(float_type(), 0);
   else if (name == "double*")
-    return PointerType::get(Type::DoubleTy, 0);
+    return PointerType::get(double_type(), 0);
   else if (name == "expr*")
     return ExprPtrTy;
   else if (name == "expr**")
@@ -5138,21 +5177,21 @@ const Type *interpreter::named_type(string name)
 
 const char *interpreter::type_name(const Type *type)
 {
-  if (type == Type::VoidTy)
+  if (type == void_type())
     return "void";
-  else if (type == Type::Int1Ty)
+  else if (type == int1_type())
     return "bool";
-  else if (type == Type::Int8Ty)
+  else if (type == int8_type())
     return "char";
-  else if (type == Type::Int16Ty)
+  else if (type == int16_type())
     return "short";
-  else if (type == Type::Int32Ty)
+  else if (type == int32_type())
     /* We render this type as 'int' here, which should be the right thing in
        most cases. Unfortunately, if we are on a 32 bit system. we have no way
        of knowing whether the type was originally specified as 'long' instead,
        but time will hopefully remedy this issue. */
     return "int";
-  else if (type == Type::Int64Ty)
+  else if (type == int64_type())
 #if SIZEOF_LONG==8
     /* We render this type as 'long' here, which should be the right thing in
        most cases. Again, we have no way of knowing whether the type was
@@ -5162,25 +5201,25 @@ const char *interpreter::type_name(const Type *type)
 #else
     return "int64";
 #endif
-  else if (type == Type::FloatTy)
+  else if (type == float_type())
     return "float";
-  else if (type == Type::DoubleTy)
+  else if (type == double_type())
     return "double";
   else if (type == CharPtrTy)
     return "char*";
-  else if (type == PointerType::get(Type::Int16Ty, 0))
+  else if (type == PointerType::get(int16_type(), 0))
     return "short*";
-  else if (type == PointerType::get(Type::Int32Ty, 0))
+  else if (type == PointerType::get(int32_type(), 0))
     return "int*";
-  else if (type == PointerType::get(Type::Int64Ty, 0))
+  else if (type == PointerType::get(int64_type(), 0))
 #if SIZEOF_LONG==8
     return "long*";
 #else
     return "int64*";
 #endif
-  else if (type == PointerType::get(Type::FloatTy, 0))
+  else if (type == PointerType::get(float_type(), 0))
     return "float*";
-  else if (type == PointerType::get(Type::DoubleTy, 0))
+  else if (type == PointerType::get(double_type(), 0))
     return "double*";
   else if (type == ExprPtrTy)
     return "expr*";
@@ -5231,7 +5270,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   for (size_t i = 0; i < n; i++, atype++) {
     argt[i] = named_type(*atype);
     // sanity check
-    if (argt[i] == Type::VoidTy)
+    if (argt[i] == void_type())
       throw err("'void' not permitted as an argument type");
   }
   if (fp) {
@@ -5258,13 +5297,13 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   assert(!varargs);
   if (type == ExprPtrPtrTy)
     type = VoidPtrTy;
-  else if (type == Type::Int32Ty && sizeof(int) > 4)
-    type = Type::Int64Ty;
+  else if (type == int32_type() && sizeof(int) > 4)
+    type = int64_type();
   for (size_t i = 0; i < n; i++, atype++)
     if (argt[i] == ExprPtrPtrTy)
       argt[i] = VoidPtrTy;
-    else if (argt[i] == Type::Int32Ty && sizeof(int) > 4)
-      argt[i] = Type::Int64Ty;
+    else if (argt[i] == int32_type() && sizeof(int) > 4)
+      argt[i] = int64_type();
   if (asname.empty()) asname = name;
   string asid = make_qualid(asname), absasid = make_absid(asname);
   symbol* _sym = symtab.lookup(absasid);
@@ -5383,10 +5422,14 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   for (size_t i = 0; a != f->arg_end(); ++a, ++i) {
     a->setName(mklabel("arg", i)); args[i] = a;
   }
+#ifdef LLVM26
+  Builder b(llvm::getGlobalContext());
+#else
   Builder b;
-  BasicBlock *bb = BasicBlock::Create("entry", f),
-    *noretbb = BasicBlock::Create("noret"),
-    *failedbb = BasicBlock::Create("failed");
+#endif
+  BasicBlock *bb = basic_block("entry", f),
+    *noretbb = basic_block("noret"),
+    *failedbb = basic_block("failed");
   b.SetInsertPoint(bb);
   // unbox arguments
   bool temps = false, vtemps = false;
@@ -5398,8 +5441,8 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       Value *idx[2] = { Zero, Zero };
       Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
       Value *checkv = b.CreateICmpEQ(tagv, Zero, "check");
-      BasicBlock *forcebb = BasicBlock::Create("force");
-      BasicBlock *skipbb = BasicBlock::Create("skip");
+      BasicBlock *forcebb = basic_block("force");
+      BasicBlock *skipbb = basic_block("skip");
       b.CreateCondBr(checkv, forcebb, skipbb);
       f->getBasicBlockList().push_back(forcebb);
       b.SetInsertPoint(forcebb);
@@ -5408,8 +5451,8 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       f->getBasicBlockList().push_back(skipbb);
       b.SetInsertPoint(skipbb);
     }
-    if (argt[i] == Type::Int1Ty) {
-      BasicBlock *okbb = BasicBlock::Create("ok");
+    if (argt[i] == int1_type()) {
+      BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
       Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
       b.CreateCondBr
@@ -5420,11 +5463,11 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       idx[1] = ValFldIndex;
       Value *iv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "intval");
       unboxed[i] = b.CreateICmpNE(iv, Zero);
-    } else if (argt[i] == Type::Int8Ty) {
+    } else if (argt[i] == int8_type()) {
       /* We allow either ints or bigints to be passed for C integers. */
-      BasicBlock *intbb = BasicBlock::Create("int");
-      BasicBlock *mpzbb = BasicBlock::Create("mpz");
-      BasicBlock *okbb = BasicBlock::Create("ok");
+      BasicBlock *intbb = basic_block("int");
+      BasicBlock *mpzbb = basic_block("mpz");
+      BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
       Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
       SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 2);
@@ -5443,14 +5486,14 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       b.CreateBr(okbb);
       f->getBasicBlockList().push_back(okbb);
       b.SetInsertPoint(okbb);
-      PHINode *phi = b.CreatePHI(Type::Int32Ty);
+      PHINode *phi = b.CreatePHI(int32_type());
       phi->addIncoming(intv, intbb);
       phi->addIncoming(mpzv, mpzbb);
-      unboxed[i] = b.CreateTrunc(phi, Type::Int8Ty);
-    } else if (argt[i] == Type::Int16Ty) {
-      BasicBlock *intbb = BasicBlock::Create("int");
-      BasicBlock *mpzbb = BasicBlock::Create("mpz");
-      BasicBlock *okbb = BasicBlock::Create("ok");
+      unboxed[i] = b.CreateTrunc(phi, int8_type());
+    } else if (argt[i] == int16_type()) {
+      BasicBlock *intbb = basic_block("int");
+      BasicBlock *mpzbb = basic_block("mpz");
+      BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
       Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
       SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 2);
@@ -5469,14 +5512,14 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       b.CreateBr(okbb);
       f->getBasicBlockList().push_back(okbb);
       b.SetInsertPoint(okbb);
-      PHINode *phi = b.CreatePHI(Type::Int32Ty);
+      PHINode *phi = b.CreatePHI(int32_type());
       phi->addIncoming(intv, intbb);
       phi->addIncoming(mpzv, mpzbb);
-      unboxed[i] = b.CreateTrunc(phi, Type::Int16Ty);
-    } else if (argt[i] == Type::Int32Ty) {
-      BasicBlock *intbb = BasicBlock::Create("int");
-      BasicBlock *mpzbb = BasicBlock::Create("mpz");
-      BasicBlock *okbb = BasicBlock::Create("ok");
+      unboxed[i] = b.CreateTrunc(phi, int16_type());
+    } else if (argt[i] == int32_type()) {
+      BasicBlock *intbb = basic_block("int");
+      BasicBlock *mpzbb = basic_block("mpz");
+      BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
       Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
       SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 2);
@@ -5495,14 +5538,14 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       b.CreateBr(okbb);
       f->getBasicBlockList().push_back(okbb);
       b.SetInsertPoint(okbb);
-      PHINode *phi = b.CreatePHI(Type::Int32Ty);
+      PHINode *phi = b.CreatePHI(int32_type());
       phi->addIncoming(intv, intbb);
       phi->addIncoming(mpzv, mpzbb);
       unboxed[i] = phi;
-    } else if (argt[i] == Type::Int64Ty) {
-      BasicBlock *intbb = BasicBlock::Create("int");
-      BasicBlock *mpzbb = BasicBlock::Create("mpz");
-      BasicBlock *okbb = BasicBlock::Create("ok");
+    } else if (argt[i] == int64_type()) {
+      BasicBlock *intbb = basic_block("int");
+      BasicBlock *mpzbb = basic_block("mpz");
+      BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
       Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
       SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 2);
@@ -5513,7 +5556,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       Value *pv = b.CreateBitCast(x, IntExprPtrTy, "intexpr");
       idx[1] = ValFldIndex;
       Value *intv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "intval");
-      intv = b.CreateSExt(intv, Type::Int64Ty);
+      intv = b.CreateSExt(intv, int64_type());
       b.CreateBr(okbb);
       f->getBasicBlockList().push_back(mpzbb);
       b.SetInsertPoint(mpzbb);
@@ -5522,12 +5565,12 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       b.CreateBr(okbb);
       f->getBasicBlockList().push_back(okbb);
       b.SetInsertPoint(okbb);
-      PHINode *phi = b.CreatePHI(Type::Int64Ty);
+      PHINode *phi = b.CreatePHI(int64_type());
       phi->addIncoming(intv, intbb);
       phi->addIncoming(mpzv, mpzbb);
       unboxed[i] = phi;
-    } else if (argt[i] == Type::FloatTy) {
-      BasicBlock *okbb = BasicBlock::Create("ok");
+    } else if (argt[i] == float_type()) {
+      BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
       Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
       b.CreateCondBr
@@ -5537,9 +5580,9 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       Value *pv = b.CreateBitCast(x, DblExprPtrTy, "dblexpr");
       idx[1] = ValFldIndex;
       Value *dv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "dblval");
-      unboxed[i] = b.CreateFPTrunc(dv, Type::FloatTy);
-    } else if (argt[i] == Type::DoubleTy) {
-      BasicBlock *okbb = BasicBlock::Create("ok");
+      unboxed[i] = b.CreateFPTrunc(dv, float_type());
+    } else if (argt[i] == double_type()) {
+      BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
       Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
       b.CreateCondBr
@@ -5551,7 +5594,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       Value *dv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "dblval");
       unboxed[i] = dv;
     } else if (argt[i] == CharPtrTy) {
-      BasicBlock *okbb = BasicBlock::Create("ok");
+      BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
       Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
       b.CreateCondBr
@@ -5560,8 +5603,8 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       b.SetInsertPoint(okbb);
       Value *sv = b.CreateCall(module->getFunction("pure_get_cstring"), x);
       unboxed[i] = sv; temps = true;
-    } else if (argt[i] == PointerType::get(Type::Int64Ty, 0)) {
-      BasicBlock *okbb = BasicBlock::Create("ok");
+    } else if (argt[i] == PointerType::get(int64_type(), 0)) {
+      BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
       Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
       b.CreateCondBr
@@ -5572,24 +5615,24 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       idx[1] = ValFldIndex;
       Value *ptrv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "ptrval");
       unboxed[i] = b.CreateBitCast(ptrv, argt[i]);
-    } else if (argt[i] == PointerType::get(Type::Int16Ty, 0) ||
-	       argt[i] == PointerType::get(Type::Int32Ty, 0) ||
-	       argt[i] == PointerType::get(Type::DoubleTy, 0) ||
-	       argt[i] == PointerType::get(Type::FloatTy, 0)) {
+    } else if (argt[i] == PointerType::get(int16_type(), 0) ||
+	       argt[i] == PointerType::get(int32_type(), 0) ||
+	       argt[i] == PointerType::get(double_type(), 0) ||
+	       argt[i] == PointerType::get(float_type(), 0)) {
       /* These get special treatment, because we also allow numeric matrices
 	 to be passed as an integer or floating point vector here. */
-      BasicBlock *ptrbb = BasicBlock::Create("ptr");
-      BasicBlock *matrixbb = BasicBlock::Create("matrix");
-      BasicBlock *okbb = BasicBlock::Create("ok");
+      BasicBlock *ptrbb = basic_block("ptr");
+      BasicBlock *matrixbb = basic_block("matrix");
+      BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
       Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
       SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 4);
       Function *get_fun = module->getFunction
-	((argt[i] == PointerType::get(Type::Int16Ty, 0)) ?
+	((argt[i] == PointerType::get(int16_type(), 0)) ?
 	 "pure_get_matrix_data_short" :
-	 (argt[i] == PointerType::get(Type::Int32Ty, 0)) ?
+	 (argt[i] == PointerType::get(int32_type(), 0)) ?
 	 "pure_get_matrix_data_int" :
-	 (argt[i] == PointerType::get(Type::FloatTy, 0)) ?
+	 (argt[i] == PointerType::get(float_type(), 0)) ?
 	 "pure_get_matrix_data_float" :
 	 "pure_get_matrix_data_double");
       sw->addCase(SInt(EXPR::PTR), ptrbb);
@@ -5616,7 +5659,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 	       argt[i] == GSLDoubleMatrixPtrTy ||
 	       argt[i] == GSLComplexMatrixPtrTy ||
 	       argt[i] == GSLIntMatrixPtrTy) {
-      BasicBlock *okbb = BasicBlock::Create("ok");
+      BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
       Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
       int32_t ttag = -99;
@@ -5638,10 +5681,10 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       // passed through
       unboxed[i] = x;
     } else if (argt[i] == VoidPtrTy) {
-      BasicBlock *ptrbb = BasicBlock::Create("ptr");
-      BasicBlock *mpzbb = BasicBlock::Create("mpz");
-      BasicBlock *matrixbb = BasicBlock::Create("matrix");
-      BasicBlock *okbb = BasicBlock::Create("ok");
+      BasicBlock *ptrbb = basic_block("ptr");
+      BasicBlock *mpzbb = basic_block("mpz");
+      BasicBlock *matrixbb = basic_block("matrix");
+      BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
       Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
       SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 7);
@@ -5711,34 +5754,34 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   if (temps) b.CreateCall(module->getFunction("pure_free_cstrings"));
   if (vtemps) b.CreateCall(module->getFunction("pure_free_cvectors"));
   // box the result
-  if (type == Type::VoidTy)
+  if (type == void_type())
     u = b.CreateCall(module->getFunction("pure_const"),
 		     SInt(symtab.void_sym().f));
-  else if (type == Type::Int1Ty)
+  else if (type == int1_type())
     u = b.CreateCall(module->getFunction("pure_int"),
-		     b.CreateZExt(u, Type::Int32Ty));
-  else if (type == Type::Int8Ty)
+		     b.CreateZExt(u, int32_type()));
+  else if (type == int8_type())
     u = b.CreateCall(module->getFunction("pure_int"),
-		     b.CreateSExt(u, Type::Int32Ty));
-  else if (type == Type::Int16Ty)
+		     b.CreateSExt(u, int32_type()));
+  else if (type == int16_type())
     u = b.CreateCall(module->getFunction("pure_int"),
-		     b.CreateSExt(u, Type::Int32Ty));
-  else if (type == Type::Int32Ty)
+		     b.CreateSExt(u, int32_type()));
+  else if (type == int32_type())
     u = b.CreateCall(module->getFunction("pure_int"), u);
-  else if (type == Type::Int64Ty)
+  else if (type == int64_type())
     u = b.CreateCall(module->getFunction("pure_int64"), u);
-  else if (type == Type::FloatTy)
+  else if (type == float_type())
     u = b.CreateCall(module->getFunction("pure_double"),
-		     b.CreateFPExt(u, Type::DoubleTy));
-  else if (type == Type::DoubleTy)
+		     b.CreateFPExt(u, double_type()));
+  else if (type == double_type())
     u = b.CreateCall(module->getFunction("pure_double"), u);
   else if (type == CharPtrTy)
     u = b.CreateCall(module->getFunction("pure_cstring_dup"), u);
-  else if (type == PointerType::get(Type::Int16Ty, 0) ||
-	   type == PointerType::get(Type::Int32Ty, 0) ||
-	   type == PointerType::get(Type::Int64Ty, 0) ||
-	   type == PointerType::get(Type::FloatTy, 0) ||
-	   type == PointerType::get(Type::DoubleTy, 0))
+  else if (type == PointerType::get(int16_type(), 0) ||
+	   type == PointerType::get(int32_type(), 0) ||
+	   type == PointerType::get(int64_type(), 0) ||
+	   type == PointerType::get(float_type(), 0) ||
+	   type == PointerType::get(double_type(), 0))
     u = b.CreateCall(module->getFunction("pure_pointer"),
 		     b.CreateBitCast(u, VoidPtrTy));
   else if (type == GSLMatrixPtrTy)
@@ -5755,7 +5798,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 		     b.CreateBitCast(u, VoidPtrTy));
   else if (type == ExprPtrTy) {
     // check that we actually got a valid pointer; otherwise the call failed
-    BasicBlock *okbb = BasicBlock::Create("ok");
+    BasicBlock *okbb = basic_block("ok");
     b.CreateCondBr
       (b.CreateICmpNE(u, NullExprPtr, "cmp"), okbb, noretbb);
     f->getBasicBlockList().push_back(okbb);
@@ -5812,9 +5855,9 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   assert(JIT);
   GlobalVar& v = globalvars[sym.f];
   if (!v.v) {
-    v.v = new GlobalVariable
-      (ExprPtrTy, false, GlobalVariable::InternalLinkage, NullExprPtr,
-       mkvarlabel(sym.f), module);
+    v.v = global_variable
+      (module, ExprPtrTy, false, GlobalVariable::InternalLinkage, NullExprPtr,
+       mkvarlabel(sym.f));
     JIT->addGlobalMapping(v.v, &v.x);
   }
   if (v.x) pure_free(v.x); v.x = pure_new(cv);
@@ -5867,10 +5910,9 @@ expr interpreter::wrap_expr(pure_expr *x)
   ostringstream label;
   label << x;
   GlobalVar *v = new GlobalVar;
-  v->v = new llvm::GlobalVariable
-    (ExprPtrTy, false, llvm::GlobalVariable::InternalLinkage,
-     llvm::ConstantPointerNull::get(ExprPtrTy), "$$tmpvar"+label.str(),
-     module);
+  v->v = global_variable
+    (module, ExprPtrTy, false, llvm::GlobalVariable::InternalLinkage,
+     llvm::ConstantPointerNull::get(ExprPtrTy), "$$tmpvar"+label.str());
   v->x = pure_new(x);
   JIT->addGlobalMapping(v->v, &v->x);
   return expr(EXPR::WRAP, v);
@@ -6147,13 +6189,13 @@ pure_expr *interpreter::dodefn(env vars, expr lhs, expr rhs, pure_expr*& e,
 	  GlobalVar& v = globalvars[tag];
 	  if (!v.v) {
 	    if (sym.priv)
-	      v.v = new GlobalVariable
-		(ExprPtrTy, false, GlobalVariable::InternalLinkage,
-		 NullExprPtr, "$$private."+sym.s, module);
+	      v.v = global_variable
+		(module, ExprPtrTy, false, GlobalVariable::InternalLinkage,
+		 NullExprPtr, "$$private."+sym.s);
 	    else
-	      v.v = new GlobalVariable
-		(ExprPtrTy, false, GlobalVariable::ExternalLinkage,
-		 NullExprPtr, mkvarsym(sym.s), module);
+	      v.v = global_variable
+		(module, ExprPtrTy, false, GlobalVariable::ExternalLinkage,
+		 NullExprPtr, mkvarsym(sym.s));
 	    JIT->addGlobalMapping(v.v, &v.x);
 	  }
 	  if (v.x) pure_free(v.x);
@@ -6183,8 +6225,8 @@ pure_expr *interpreter::dodefn(env vars, expr lhs, expr rhs, pure_expr*& e,
   // compute the matchee
   Value *arg = codegen(rhs);
   // emit the matching code
-  BasicBlock *matchedbb = BasicBlock::Create("matched");
-  BasicBlock *failedbb = BasicBlock::Create("failed");
+  BasicBlock *matchedbb = basic_block("matched");
+  BasicBlock *failedbb = basic_block("failed");
   matcher m(rule(lhs, rhs));
   if (verbose&verbosity::code) std::cout << m << endl;
   state *start = m.start;
@@ -6208,13 +6250,13 @@ pure_expr *interpreter::dodefn(env vars, expr lhs, expr rhs, pure_expr*& e,
     GlobalVar& v = globalvars[tag];
     if (!v.v) {
       if (sym.priv)
-	v.v = new GlobalVariable
-	  (ExprPtrTy, false, GlobalVariable::InternalLinkage, NullExprPtr,
-	   "$$private."+sym.s, module);
+	v.v = global_variable
+	  (module, ExprPtrTy, false, GlobalVariable::InternalLinkage,
+	   NullExprPtr, "$$private."+sym.s);
       else
-	v.v = new GlobalVariable
-	  (ExprPtrTy, false, GlobalVariable::ExternalLinkage, NullExprPtr,
-	   mkvarsym(sym.s), module);
+	v.v = global_variable
+	  (module, ExprPtrTy, false, GlobalVariable::ExternalLinkage,
+	   NullExprPtr, mkvarsym(sym.s));
       JIT->addGlobalMapping(v.v, &v.x);
     }
     /* Cache any old value so that we can free it later. Note that it is not
@@ -6317,9 +6359,9 @@ Value *interpreter::when_codegen(expr x, matcher *m,
     Env& e = *act.fmap.act()[-y.hash()];
     push("when", &e);
     fun_prolog("anonymous");
-    BasicBlock *bodybb = BasicBlock::Create("body");
-    BasicBlock *matchedbb = BasicBlock::Create("matched");
-    BasicBlock *failedbb = BasicBlock::Create("failed");
+    BasicBlock *bodybb = basic_block("body");
+    BasicBlock *matchedbb = basic_block("matched");
+    BasicBlock *failedbb = basic_block("failed");
     e.builder.CreateBr(bodybb);
     e.f->getBasicBlockList().push_back(bodybb);
     e.builder.SetInsertPoint(bodybb);
@@ -6360,7 +6402,7 @@ Value *interpreter::get_int(expr x)
       if (x.ttag() == EXPR::INT)
 	return u;
       else
-	return e.builder.CreateFPToSI(u, Type::Int32Ty);
+	return e.builder.CreateFPToSI(u, int32_type());
     } else if (x.tag() == EXPR::INT)
       // integer constant, return "as is"
       return SInt(x.ival());
@@ -6384,7 +6426,7 @@ Value *interpreter::get_int(expr x)
       Value *u = codegen(x);
       Value *p = e.builder.CreateBitCast(u, DblExprPtrTy, "dblexpr");
       Value *v = e.CreateLoadGEP(p, Zero, ValFldIndex, "dblval");
-      v = e.builder.CreateFPToSI(v, Type::Int32Ty);
+      v = e.builder.CreateFPToSI(v, int32_type());
 #if 0
       // collect the temporary, it's not needed any more
       call("pure_freenew", u);
@@ -6414,7 +6456,7 @@ Value *interpreter::get_double(expr x)
       // embedded int/float operation, recursively generate unboxed value
       Value *u = builtin_codegen(x);
       if (x.ttag() == EXPR::INT)
-	return e.builder.CreateSIToFP(u, Type::DoubleTy);
+	return e.builder.CreateSIToFP(u, double_type());
       else
 	return u;
     } else if (x.tag() == EXPR::INT)
@@ -6429,7 +6471,7 @@ Value *interpreter::get_double(expr x)
       Value *u = codegen(x);
       Value *p = e.builder.CreateBitCast(u, IntExprPtrTy, "intexpr");
       Value *v = e.CreateLoadGEP(p, Zero, ValFldIndex, "intval");
-      v = e.builder.CreateSIToFP(v, Type::DoubleTy);
+      v = e.builder.CreateSIToFP(v, double_type());
 #if 0
       // collect the temporary, it's not needed any more
       call("pure_freenew", u);
@@ -6477,7 +6519,7 @@ Value *interpreter::builtin_codegen(expr x)
       return b.CreateSub(Zero, u);
     else if (f.tag() == symtab.not_sym().f)
       return b.CreateZExt
-	(b.CreateICmpEQ(Zero, u, "cmp"), Type::Int32Ty);
+	(b.CreateICmpEQ(Zero, u, "cmp"), int32_type());
     else if (f.tag() == symtab.bitnot_sym().f)
       return b.CreateXor(UInt(0xffffffff), u);
     else {
@@ -6503,8 +6545,8 @@ Value *interpreter::builtin_codegen(expr x)
       Env& e = act_env();
       Value *condv = b.CreateICmpNE(u, Zero, "cond");
       BasicBlock *iftruebb = b.GetInsertBlock();
-      BasicBlock *iffalsebb = BasicBlock::Create("iffalse");
-      BasicBlock *endbb = BasicBlock::Create("end");
+      BasicBlock *iffalsebb = basic_block("iffalse");
+      BasicBlock *endbb = basic_block("end");
       b.CreateCondBr(condv, endbb, iffalsebb);
       e.f->getBasicBlockList().push_back(iffalsebb);
       b.SetInsertPoint(iffalsebb);
@@ -6523,16 +6565,16 @@ Value *interpreter::builtin_codegen(expr x)
       iffalsebb = b.GetInsertBlock();
       e.f->getBasicBlockList().push_back(endbb);
       b.SetInsertPoint(endbb);
-      PHINode *phi = b.CreatePHI(Type::Int1Ty, "fi");
+      PHINode *phi = b.CreatePHI(int1_type(), "fi");
       phi->addIncoming(condv, iftruebb);
       phi->addIncoming(condv2, iffalsebb);
-      return b.CreateZExt(phi, Type::Int32Ty);
+      return b.CreateZExt(phi, int32_type());
     } else if (f.tag() == symtab.and_sym().f) {
       Env& e = act_env();
       Value *condv = b.CreateICmpNE(u, Zero, "cond");
       BasicBlock *iffalsebb = b.GetInsertBlock();
-      BasicBlock *iftruebb = BasicBlock::Create("iftrue");
-      BasicBlock *endbb = BasicBlock::Create("end");
+      BasicBlock *iftruebb = basic_block("iftrue");
+      BasicBlock *endbb = basic_block("end");
       b.CreateCondBr(condv, iftruebb, endbb);
       e.f->getBasicBlockList().push_back(iftruebb);
       b.SetInsertPoint(iftruebb);
@@ -6551,10 +6593,10 @@ Value *interpreter::builtin_codegen(expr x)
       iftruebb = b.GetInsertBlock();
       e.f->getBasicBlockList().push_back(endbb);
       b.SetInsertPoint(endbb);
-      PHINode *phi = b.CreatePHI(Type::Int1Ty, "fi");
+      PHINode *phi = b.CreatePHI(int1_type(), "fi");
       phi->addIncoming(condv, iffalsebb);
       phi->addIncoming(condv2, iftruebb);
-      return b.CreateZExt(phi, Type::Int32Ty);
+      return b.CreateZExt(phi, int32_type());
     } else {
       Value *v = get_int(x.xval2());
 #if DEBUG
@@ -6572,9 +6614,9 @@ Value *interpreter::builtin_codegen(expr x)
 	return b.CreateAnd(u, v);
       else if (f.tag() == symtab.shl_sym().f) {
 	// result of shl is undefined if u>=#bits, return 0 in that case
-	BasicBlock *okbb = BasicBlock::Create("ok");
+	BasicBlock *okbb = basic_block("ok");
 	BasicBlock *zerobb = b.GetInsertBlock();
-	BasicBlock *endbb = BasicBlock::Create("end");
+	BasicBlock *endbb = basic_block("end");
 	Value *cmp = b.CreateICmpULT(v, UInt(32));
 	b.CreateCondBr(cmp, okbb, endbb);
 	act_env().f->getBasicBlockList().push_back(okbb);
@@ -6583,7 +6625,7 @@ Value *interpreter::builtin_codegen(expr x)
 	b.CreateBr(endbb);
 	act_env().f->getBasicBlockList().push_back(endbb);
 	b.SetInsertPoint(endbb);
-	PHINode *phi = b.CreatePHI(Type::Int32Ty);
+	PHINode *phi = b.CreatePHI(int32_type());
 	phi->addIncoming(ok, okbb);
 	phi->addIncoming(Zero, zerobb);
 	return phi;
@@ -6591,22 +6633,22 @@ Value *interpreter::builtin_codegen(expr x)
 	return b.CreateAShr(u, v);
       else if (f.tag() == symtab.less_sym().f)
 	return b.CreateZExt
-	  (b.CreateICmpSLT(u, v), Type::Int32Ty);
+	  (b.CreateICmpSLT(u, v), int32_type());
       else if (f.tag() == symtab.greater_sym().f)
 	return b.CreateZExt
-	  (b.CreateICmpSGT(u, v), Type::Int32Ty);
+	  (b.CreateICmpSGT(u, v), int32_type());
       else if (f.tag() == symtab.lesseq_sym().f)
 	return b.CreateZExt
-	  (b.CreateICmpSLE(u, v), Type::Int32Ty);
+	  (b.CreateICmpSLE(u, v), int32_type());
       else if (f.tag() == symtab.greatereq_sym().f)
 	return b.CreateZExt
-	  (b.CreateICmpSGE(u, v), Type::Int32Ty);
+	  (b.CreateICmpSGE(u, v), int32_type());
       else if (f.tag() == symtab.equal_sym().f)
 	return b.CreateZExt
-	  (b.CreateICmpEQ(u, v), Type::Int32Ty);
+	  (b.CreateICmpEQ(u, v), int32_type());
       else if (f.tag() == symtab.notequal_sym().f)
 	return b.CreateZExt
-	  (b.CreateICmpNE(u, v), Type::Int32Ty);
+	  (b.CreateICmpNE(u, v), int32_type());
       else if (f.tag() == symtab.plus_sym().f)
 	return b.CreateAdd(u, v);
       else if (f.tag() == symtab.minus_sym().f)
@@ -6619,8 +6661,8 @@ Value *interpreter::builtin_codegen(expr x)
 	  b.CreateCall(module->getFunction("pure_sigfpe"));
 	  return v;
 	} else {
-	  BasicBlock *okbb = BasicBlock::Create("ok");
-	  BasicBlock *errbb = BasicBlock::Create("err");
+	  BasicBlock *okbb = basic_block("ok");
+	  BasicBlock *errbb = basic_block("err");
 	  Value *cmp = b.CreateICmpEQ(v, Zero);
 	  b.CreateCondBr(cmp, errbb, okbb);
 	  act_env().f->getBasicBlockList().push_back(errbb);
@@ -6637,8 +6679,8 @@ Value *interpreter::builtin_codegen(expr x)
 	  b.CreateCall(module->getFunction("pure_sigfpe"));
 	  return v;
 	} else {
-	  BasicBlock *okbb = BasicBlock::Create("ok");
-	  BasicBlock *errbb = BasicBlock::Create("err");
+	  BasicBlock *okbb = basic_block("ok");
+	  BasicBlock *errbb = basic_block("err");
 	  Value *cmp = b.CreateICmpEQ(v, Zero);
 	  b.CreateCondBr(cmp, errbb, okbb);
 	  act_env().f->getBasicBlockList().push_back(errbb);
@@ -6669,22 +6711,22 @@ Value *interpreter::builtin_codegen(expr x)
 #endif
     if (f.tag() == symtab.less_sym().f)
       return b.CreateZExt
-	(b.CreateFCmpOLT(u, v), Type::Int32Ty);
+	(b.CreateFCmpOLT(u, v), int32_type());
     else if (f.tag() == symtab.greater_sym().f)
       return b.CreateZExt
-	(b.CreateFCmpOGT(u, v), Type::Int32Ty);
+	(b.CreateFCmpOGT(u, v), int32_type());
     else if (f.tag() == symtab.lesseq_sym().f)
       return b.CreateZExt
-	(b.CreateFCmpOLE(u, v), Type::Int32Ty);
+	(b.CreateFCmpOLE(u, v), int32_type());
     else if (f.tag() == symtab.greatereq_sym().f)
       return b.CreateZExt
-	(b.CreateFCmpOGE(u, v), Type::Int32Ty);
+	(b.CreateFCmpOGE(u, v), int32_type());
     else if (f.tag() == symtab.equal_sym().f)
       return b.CreateZExt
-	(b.CreateFCmpOEQ(u, v), Type::Int32Ty);
+	(b.CreateFCmpOEQ(u, v), int32_type());
     else if (f.tag() == symtab.notequal_sym().f)
       return b.CreateZExt
-	(b.CreateFCmpONE(u, v), Type::Int32Ty);
+	(b.CreateFCmpONE(u, v), int32_type());
     else if (f.tag() == symtab.plus_sym().f)
       return b.CreateAdd(u, v);
     else if (f.tag() == symtab.minus_sym().f)
@@ -6845,8 +6887,8 @@ void interpreter::toplevel_codegen(expr x, const rule *rp)
     if (f.tag() == symtab.or_sym().f) {
       Value *u = get_int(x.xval1().xval2());
       Value *condv = b.CreateICmpNE(u, Zero, "cond");
-      BasicBlock *iftruebb = BasicBlock::Create("iftrue");
-      BasicBlock *iffalsebb = BasicBlock::Create("iffalse");
+      BasicBlock *iftruebb = basic_block("iftrue");
+      BasicBlock *iffalsebb = basic_block("iffalse");
       b.CreateCondBr(condv, iftruebb, iffalsebb);
       e.f->getBasicBlockList().push_back(iftruebb);
       b.SetInsertPoint(iftruebb);
@@ -6857,8 +6899,8 @@ void interpreter::toplevel_codegen(expr x, const rule *rp)
     } else if (f.tag() == symtab.and_sym().f) {
       Value *u = get_int(x.xval1().xval2());
       Value *condv = b.CreateICmpNE(u, Zero, "cond");
-      BasicBlock *iftruebb = BasicBlock::Create("iftrue");
-      BasicBlock *iffalsebb = BasicBlock::Create("iffalse");
+      BasicBlock *iftruebb = basic_block("iftrue");
+      BasicBlock *iffalsebb = basic_block("iffalse");
       b.CreateCondBr(condv, iftruebb, iffalsebb);
       e.f->getBasicBlockList().push_back(iffalsebb);
       b.SetInsertPoint(iffalsebb);
@@ -6923,17 +6965,17 @@ Value *interpreter::list_codegen(expr x)
       Value *p;
       if (ttag==EXPR::INT) {
 	Constant *a = ConstantArray::get
-	  (ArrayType::get(Type::Int32Ty, n), c);
-	GlobalVariable *w = new GlobalVariable
-	  (ArrayType::get(Type::Int32Ty, n), true,
-	   GlobalVariable::InternalLinkage, a, "$$intv", module);
+	  (ArrayType::get(int32_type(), n), c);
+	GlobalVariable *w = global_variable
+	  (module, ArrayType::get(int32_type(), n), true,
+	   GlobalVariable::InternalLinkage, a, "$$intv");
 	p = act_env().CreateGEP(w, Zero, Zero);
       } else {
 	Constant *a = ConstantArray::get
-	  (ArrayType::get(Type::DoubleTy, n), c);
-	GlobalVariable *w = new GlobalVariable
-	  (ArrayType::get(Type::DoubleTy, n), true,
-	   GlobalVariable::InternalLinkage, a, "$$doublev", module);
+	  (ArrayType::get(double_type(), n), c);
+	GlobalVariable *w = global_variable
+	  (module, ArrayType::get(double_type(), n), true,
+	   GlobalVariable::InternalLinkage, a, "$$doublev");
 	p = act_env().CreateGEP(w, Zero, Zero);
       }
       Value *u = 0;
@@ -6975,23 +7017,22 @@ Value *interpreter::list_codegen(expr x)
 	i++; k += m;
       }
       Constant *a = ConstantArray::get
-	(ArrayType::get((sizeof(mp_limb_t) == 8)?Type::Int64Ty
-			:Type::Int32Ty, k), c);
-      GlobalVariable *w = new GlobalVariable
-	(ArrayType::get((sizeof(mp_limb_t) == 8)?Type::Int64Ty
-			:Type::Int32Ty, k), true,
-	 GlobalVariable::InternalLinkage, a, "$$bigintv", module);
+	(ArrayType::get((sizeof(mp_limb_t) == 8)?int64_type()
+			:int32_type(), k), c);
+      GlobalVariable *w = global_variable
+	(module, ArrayType::get((sizeof(mp_limb_t) == 8)?int64_type()
+				:int32_type(), k), true,
+	 GlobalVariable::InternalLinkage, a, "$$bigintv");
       Constant *offs_a = ConstantArray::get
-	(ArrayType::get(Type::Int32Ty, n), offs);
-      GlobalVariable *offs_w = new GlobalVariable
-	(ArrayType::get(Type::Int32Ty, n), true,
-	 GlobalVariable::InternalLinkage, offs_a, "$$bigintv_offs",
-	 module);
+	(ArrayType::get(int32_type(), n), offs);
+      GlobalVariable *offs_w = global_variable
+	(module, ArrayType::get(int32_type(), n), true,
+	 GlobalVariable::InternalLinkage, offs_a, "$$bigintv_offs");
       Constant *sz_a = ConstantArray::get
-	(ArrayType::get(Type::Int32Ty, n), sz);
-      GlobalVariable *sz_w = new GlobalVariable
-	(ArrayType::get(Type::Int32Ty, n), true,
-	 GlobalVariable::InternalLinkage, sz_a, "$$bigintv_sz", module);
+	(ArrayType::get(int32_type(), n), sz);
+      GlobalVariable *sz_w = global_variable
+	(module, ArrayType::get(int32_type(), n), true,
+	 GlobalVariable::InternalLinkage, sz_a, "$$bigintv_sz");
       Value *p = act_env().CreateGEP(w, Zero, Zero);
       Value *offs_p = act_env().CreateGEP(offs_w, Zero, Zero);
       Value *sz_p = act_env().CreateGEP(sz_w, Zero, Zero);
@@ -7031,16 +7072,15 @@ Value *interpreter::list_codegen(expr x)
 	i++; k += m;
       }
       Constant *a = ConstantArray::get
-	(ArrayType::get(Type::Int8Ty, k), c);
-      GlobalVariable *w = new GlobalVariable
-	(ArrayType::get(Type::Int8Ty, k), true,
-	 GlobalVariable::InternalLinkage, a, "$$strv", module);
+	(ArrayType::get(int8_type(), k), c);
+      GlobalVariable *w = global_variable
+	(module, ArrayType::get(int8_type(), k), true,
+	 GlobalVariable::InternalLinkage, a, "$$strv");
       Constant *offs_a = ConstantArray::get
-	(ArrayType::get(Type::Int32Ty, n), offs);
-      GlobalVariable *offs_w = new GlobalVariable
-	(ArrayType::get(Type::Int32Ty, n), true,
-	 GlobalVariable::InternalLinkage, offs_a, "$$strv_offs",
-	 module);
+	(ArrayType::get(int32_type(), n), offs);
+      GlobalVariable *offs_w = global_variable
+	(module, ArrayType::get(int32_type(), n), true,
+	 GlobalVariable::InternalLinkage, offs_a, "$$strv_offs");
       Value *p = act_env().CreateGEP(w, Zero, Zero);
       Value *offs_p = act_env().CreateGEP(offs_w, Zero, Zero);
       Value *u = 0;
@@ -7219,17 +7259,17 @@ Value *interpreter::matrix_codegen(expr x)
       Value *p;
       if (ttag==EXPR::IMATRIX) {
 	Constant *a = ConstantArray::get
-	  (ArrayType::get(Type::Int32Ty, N), c);
-	GlobalVariable *w = new GlobalVariable
-	  (ArrayType::get(Type::Int32Ty, N), true,
-	   GlobalVariable::InternalLinkage, a, "$$intv", module);
+	  (ArrayType::get(int32_type(), N), c);
+	GlobalVariable *w = global_variable
+	  (module, ArrayType::get(int32_type(), N), true,
+	   GlobalVariable::InternalLinkage, a, "$$intv");
 	p = act_env().CreateGEP(w, Zero, Zero);
       } else {
 	Constant *a = ConstantArray::get
-	  (ArrayType::get(Type::DoubleTy, N), c);
-	GlobalVariable *w = new GlobalVariable
-	  (ArrayType::get(Type::DoubleTy, N), true,
-	   GlobalVariable::InternalLinkage, a, "$$doublev", module);
+	  (ArrayType::get(double_type(), N), c);
+	GlobalVariable *w = global_variable
+	  (module, ArrayType::get(double_type(), N), true,
+	   GlobalVariable::InternalLinkage, a, "$$doublev");
 	p = act_env().CreateGEP(w, Zero, Zero);
       }
       vector<Value*> args;
@@ -7261,23 +7301,22 @@ Value *interpreter::matrix_codegen(expr x)
 	i++; k += m;
       }
       Constant *a = ConstantArray::get
-	(ArrayType::get((sizeof(mp_limb_t) == 8)?Type::Int64Ty
-			:Type::Int32Ty, k), c);
-      GlobalVariable *w = new GlobalVariable
-	(ArrayType::get((sizeof(mp_limb_t) == 8)?Type::Int64Ty
-			:Type::Int32Ty, k), true,
-	 GlobalVariable::InternalLinkage, a, "$$bigintv", module);
+	(ArrayType::get((sizeof(mp_limb_t) == 8)?int64_type()
+			:int32_type(), k), c);
+      GlobalVariable *w = global_variable
+	(module, ArrayType::get((sizeof(mp_limb_t) == 8)?int64_type()
+				:int32_type(), k), true,
+	 GlobalVariable::InternalLinkage, a, "$$bigintv");
       Constant *offs_a = ConstantArray::get
-	(ArrayType::get(Type::Int32Ty, N), offs);
-      GlobalVariable *offs_w = new GlobalVariable
-	(ArrayType::get(Type::Int32Ty, N), true,
-	 GlobalVariable::InternalLinkage, offs_a, "$$bigintv_offs",
-	 module);
+	(ArrayType::get(int32_type(), N), offs);
+      GlobalVariable *offs_w = global_variable
+	(module, ArrayType::get(int32_type(), N), true,
+	 GlobalVariable::InternalLinkage, offs_a, "$$bigintv_offs");
       Constant *sz_a = ConstantArray::get
-	(ArrayType::get(Type::Int32Ty, N), sz);
-      GlobalVariable *sz_w = new GlobalVariable
-	(ArrayType::get(Type::Int32Ty, N), true,
-	 GlobalVariable::InternalLinkage, sz_a, "$$bigintv_sz", module);
+	(ArrayType::get(int32_type(), N), sz);
+      GlobalVariable *sz_w = global_variable
+	(module, ArrayType::get(int32_type(), N), true,
+	 GlobalVariable::InternalLinkage, sz_a, "$$bigintv_sz");
       Value *p = act_env().CreateGEP(w, Zero, Zero);
       Value *offs_p = act_env().CreateGEP(offs_w, Zero, Zero);
       Value *sz_p = act_env().CreateGEP(sz_w, Zero, Zero);
@@ -7309,16 +7348,15 @@ Value *interpreter::matrix_codegen(expr x)
 	i++; k += m;
       }
       Constant *a = ConstantArray::get
-	(ArrayType::get(Type::Int8Ty, k), c);
-      GlobalVariable *w = new GlobalVariable
-	(ArrayType::get(Type::Int8Ty, k), true,
-	 GlobalVariable::InternalLinkage, a, "$$strv", module);
+	(ArrayType::get(int8_type(), k), c);
+      GlobalVariable *w = global_variable
+	(module, ArrayType::get(int8_type(), k), true,
+	 GlobalVariable::InternalLinkage, a, "$$strv");
       Constant *offs_a = ConstantArray::get
-	(ArrayType::get(Type::Int32Ty, N), offs);
-      GlobalVariable *offs_w = new GlobalVariable
-	(ArrayType::get(Type::Int32Ty, N), true,
-	 GlobalVariable::InternalLinkage, offs_a, "$$strv_offs",
-	 module);
+	(ArrayType::get(int32_type(), N), offs);
+      GlobalVariable *offs_w = global_variable
+	(module, ArrayType::get(int32_type(), N), true,
+	 GlobalVariable::InternalLinkage, offs_a, "$$strv_offs");
       Value *p = act_env().CreateGEP(w, Zero, Zero);
       Value *offs_p = act_env().CreateGEP(offs_w, Zero, Zero);
       vector<Value*> args;
@@ -7652,9 +7690,9 @@ Value *interpreter::cbox(int32_t tag)
   assert(JIT);
   GlobalVar& v = globalvars[tag];
   if (!v.v) {
-    v.v = new GlobalVariable
-      (ExprPtrTy, false, GlobalVariable::InternalLinkage, NullExprPtr,
-       mkvarlabel(tag), module);
+    v.v = global_variable
+      (module, ExprPtrTy, false, GlobalVariable::InternalLinkage,
+       NullExprPtr, mkvarlabel(tag));
     JIT->addGlobalMapping(v.v, &v.x);
   }
   if (v.x) pure_free(v.x); v.x = pure_new(cv);
@@ -7706,9 +7744,9 @@ Value *interpreter::cond(expr x, expr y, expr z)
   // emit the condition (turn the previous result into a flag)
   Value *condv = f.builder.CreateICmpNE(iv, Zero, "cond");
   // create the basic blocks for the branches
-  BasicBlock *thenbb = BasicBlock::Create("then");
-  BasicBlock *elsebb = BasicBlock::Create("else");
-  BasicBlock *endbb = BasicBlock::Create("end");
+  BasicBlock *thenbb = basic_block("then");
+  BasicBlock *elsebb = basic_block("else");
+  BasicBlock *endbb = basic_block("end");
   // create the branch instruction and emit the 'then' block
   f.builder.CreateCondBr(condv, thenbb, elsebb);
   f.f->getBasicBlockList().push_back(thenbb);
@@ -7754,8 +7792,8 @@ void interpreter::toplevel_cond(expr x, expr y, expr z, const rule *rp)
   // emit the condition (turn the previous result into a flag)
   Value *condv = f.builder.CreateICmpNE(iv, Zero, "cond");
   // create the basic blocks for the branches
-  BasicBlock *thenbb = BasicBlock::Create("then");
-  BasicBlock *elsebb = BasicBlock::Create("else");
+  BasicBlock *thenbb = basic_block("then");
+  BasicBlock *elsebb = basic_block("else");
   // create the branch instruction and emit the 'then' block
   f.builder.CreateCondBr(condv, thenbb, elsebb);
   f.f->getBasicBlockList().push_back(thenbb);
@@ -8020,10 +8058,10 @@ Value *interpreter::call(string name, double d)
 Value *interpreter::call(string name, const char *s)
 {
   Env& e = act_env();
-  GlobalVariable *v = new GlobalVariable
-    (ArrayType::get(Type::Int8Ty, strlen(s)+1), true,
-     GlobalVariable::InternalLinkage, ConstantArray::get(s),
-     "$$str", module);
+  GlobalVariable *v = global_variable
+    (module, ArrayType::get(int8_type(), strlen(s)+1), true,
+     GlobalVariable::InternalLinkage, constant_char_array(s),
+     "$$str");
   // "cast" the char array to a char*
   Value *p = e.CreateGEP(v, Zero, Zero);
   return call(name, p);
@@ -8038,10 +8076,10 @@ Value *interpreter::call(string name, void *p)
 Value *interpreter::call(string name, Value *x, const char *s)
 {
   Env& e = act_env();
-  GlobalVariable *v = new GlobalVariable
-    (ArrayType::get(Type::Int8Ty, strlen(s)+1), true,
-     GlobalVariable::InternalLinkage, ConstantArray::get(s),
-     "$$str", module);
+  GlobalVariable *v = global_variable
+    (module, ArrayType::get(int8_type(), strlen(s)+1), true,
+     GlobalVariable::InternalLinkage, constant_char_array(s),
+     "$$str");
   // "cast" the char array to a char*
   Value *p = e.CreateGEP(v, Zero, Zero);
   return call(name, x, p);
@@ -8081,10 +8119,10 @@ void interpreter::make_bigint(const mpz_t& z, Value*& sz, Value*& ptr)
     size_t n = (size_t)(z->_mp_size>=0 ? z->_mp_size : -z->_mp_size);
     vector<Constant*> u(n);
     for (size_t i = 0; i < n; i++) u[i] = UInt64(z->_mp_d[i]);
-    Constant *limbs = ConstantArray::get(ArrayType::get(Type::Int64Ty, n), u);
-    v = new GlobalVariable
-      (ArrayType::get(Type::Int64Ty, n), true,
-       GlobalVariable::InternalLinkage, limbs, "$$limbs", module);
+    Constant *limbs = ConstantArray::get(ArrayType::get(int64_type(), n), u);
+    v = global_variable
+      (module, ArrayType::get(int64_type(), n), true,
+       GlobalVariable::InternalLinkage, limbs, "$$limbs");
   } else {
     // assume 32 bit limbs
     assert(sizeof(mp_limb_t) == 4);
@@ -8092,10 +8130,10 @@ void interpreter::make_bigint(const mpz_t& z, Value*& sz, Value*& ptr)
     size_t n = (size_t)(z->_mp_size>=0 ? z->_mp_size : -z->_mp_size);
     vector<Constant*> u(n);
     for (size_t i = 0; i < n; i++) u[i] = UInt(z->_mp_d[i]);
-    Constant *limbs = ConstantArray::get(ArrayType::get(Type::Int32Ty, n), u);
-    v = new GlobalVariable
-      (ArrayType::get(Type::Int32Ty, n), true,
-       GlobalVariable::InternalLinkage, limbs, "$$limbs", module);
+    Constant *limbs = ConstantArray::get(ArrayType::get(int32_type(), n), u);
+    v = global_variable
+      (module, ArrayType::get(int32_type(), n), true,
+       GlobalVariable::InternalLinkage, limbs, "$$limbs");
   }
   // "cast" the int array to a int*
   ptr = e.CreateGEP(v, Zero, Zero);
@@ -8132,10 +8170,10 @@ Value *interpreter::debug(const char *format)
   Function *f = module->getFunction("pure_debug");
   assert(f);
   Env& e = act_env();
-  GlobalVariable *v = new GlobalVariable
-    (ArrayType::get(Type::Int8Ty, strlen(format)+1), true,
-     GlobalVariable::InternalLinkage, ConstantArray::get(format),
-     "$$str", module);
+  GlobalVariable *v = global_variable
+    (module, ArrayType::get(int8_type(), strlen(format)+1), true,
+     GlobalVariable::InternalLinkage, constant_char_array(format),
+     "$$str");
   // "cast" the char array to a char*
   Value *p = e.CreateGEP(v, Zero, Zero);
   vector<Value*> args;
@@ -8149,10 +8187,10 @@ Value *interpreter::debug(const char *format, Value *x)
   Function *f = module->getFunction("pure_debug");
   assert(f);
   Env& e = act_env();
-  GlobalVariable *v = new GlobalVariable
-    (ArrayType::get(Type::Int8Ty, strlen(format)+1), true,
-     GlobalVariable::InternalLinkage, ConstantArray::get(format),
-     "$$str", module);
+  GlobalVariable *v = global_variable
+    (module, ArrayType::get(int8_type(), strlen(format)+1), true,
+     GlobalVariable::InternalLinkage, constant_char_array(format),
+     "$$str");
   // "cast" the char array to a char*
   Value *p = e.CreateGEP(v, Zero, Zero);
   vector<Value*> args;
@@ -8167,10 +8205,10 @@ Value *interpreter::debug(const char *format, Value *x, Value *y)
   Function *f = module->getFunction("pure_debug");
   assert(f);
   Env& e = act_env();
-  GlobalVariable *v = new GlobalVariable
-    (ArrayType::get(Type::Int8Ty, strlen(format)+1), true,
-     GlobalVariable::InternalLinkage, ConstantArray::get(format),
-     "$$str", module);
+  GlobalVariable *v = global_variable
+    (module, ArrayType::get(int8_type(), strlen(format)+1), true,
+     GlobalVariable::InternalLinkage, constant_char_array(format),
+     "$$str");
   // "cast" the char array to a char*
   Value *p = e.CreateGEP(v, Zero, Zero);
   vector<Value*> args;
@@ -8186,10 +8224,10 @@ Value *interpreter::debug(const char *format, Value *x, Value *y, Value *z)
   Function *f = module->getFunction("pure_debug");
   assert(f);
   Env& e = act_env();
-  GlobalVariable *v = new GlobalVariable
-    (ArrayType::get(Type::Int8Ty, strlen(format)+1), true,
-     GlobalVariable::InternalLinkage, ConstantArray::get(format),
-     "$$str", module);
+  GlobalVariable *v = global_variable
+    (module, ArrayType::get(int8_type(), strlen(format)+1), true,
+     GlobalVariable::InternalLinkage, constant_char_array(format),
+     "$$str");
   // "cast" the char array to a char*
   Value *p = e.CreateGEP(v, Zero, Zero);
   vector<Value*> args;
@@ -8233,7 +8271,7 @@ Function *interpreter::fun_prolog(string name)
     // argument types
     vector<const Type*> argt(f.n, ExprPtrTy);
     assert(f.m == 0 || f.local);
-    if (f.m > 0) argt.insert(argt.begin(), Type::Int32Ty);
+    if (f.m > 0) argt.insert(argt.begin(), int32_type());
     // function type
     FunctionType *ft = FunctionType::get(ExprPtrTy, argt, false);
     /* Mangle local function names so that they're easier to identify; as a
@@ -8317,7 +8355,7 @@ Function *interpreter::fun_prolog(string name)
       }
       /* Create the body of the stub. This is just a call to the internal
 	 function, passing through all arguments including the environment. */
-      BasicBlock *bb = BasicBlock::Create("entry", f.h);
+      BasicBlock *bb = basic_block("entry", f.h);
       f.builder.SetInsertPoint(bb);
       CallInst* v = f.builder.CreateCall(f.f, myargs.begin(), myargs.end());
       v->setCallingConv(cc);
@@ -8335,7 +8373,7 @@ Function *interpreter::fun_prolog(string name)
   llvm::cerr << "PROLOG FUNCTION " << f.name << endl;
 #endif
   // create a new basic block to start insertion into
-  BasicBlock *bb = BasicBlock::Create("entry", f.f);
+  BasicBlock *bb = basic_block("entry", f.f);
   f.builder.SetInsertPoint(bb);
 #if DEBUG>1
   if (!is_init(f.name)) { ostringstream msg;
@@ -8353,7 +8391,7 @@ void interpreter::fun_body(matcher *pm, bool nodefault)
 #if DEBUG>1
   llvm::cerr << "BODY FUNCTION " << f.name << endl;
 #endif
-  BasicBlock *bodybb = BasicBlock::Create("body");
+  BasicBlock *bodybb = basic_block("body");
   f.builder.CreateBr(bodybb);
   f.f->getBasicBlockList().push_back(bodybb);
   f.builder.SetInsertPoint(bodybb);
@@ -8362,7 +8400,7 @@ void interpreter::fun_body(matcher *pm, bool nodefault)
     msg << "body " << f.name;
     debug(msg.str().c_str()); }
 #endif
-  BasicBlock *failedbb = BasicBlock::Create("failed");
+  BasicBlock *failedbb = basic_block("failed");
   // emit the matching code
   if (debugging && !is_init(f.name)) debug_rule(0);
   complex_match(pm, failedbb);
@@ -8444,8 +8482,8 @@ void interpreter::unwind_iffalse(Value *v)
   // throw an exception if v == false
   Env& f = act_env();
   assert(f.f!=0);
-  BasicBlock *errbb = BasicBlock::Create("err");
-  BasicBlock *okbb = BasicBlock::Create("ok");
+  BasicBlock *errbb = basic_block("err");
+  BasicBlock *okbb = basic_block("ok");
   f.builder.CreateCondBr(v, okbb, errbb);
   f.f->getBasicBlockList().push_back(errbb);
   f.builder.SetInsertPoint(errbb);
@@ -8459,8 +8497,8 @@ void interpreter::unwind_iftrue(Value *v)
   // throw an exception if v == true
   Env& f = act_env();
   assert(f.f!=0);
-  BasicBlock *errbb = BasicBlock::Create("err");
-  BasicBlock *okbb = BasicBlock::Create("ok");
+  BasicBlock *errbb = basic_block("err");
+  BasicBlock *okbb = basic_block("ok");
   f.builder.CreateCondBr(v, errbb, okbb);
   f.f->getBasicBlockList().push_back(errbb);
   f.builder.SetInsertPoint(errbb);
@@ -8514,8 +8552,8 @@ void interpreter::simple_match(Value *x, state*& s,
     // do a quick check on the tag value
     tagv = f.CreateLoadGEP(x, Zero, Zero, "tag");
     Value *checkv = f.builder.CreateICmpEQ(tagv, Zero, "check");
-    BasicBlock *forcebb = BasicBlock::Create("force");
-    BasicBlock *skipbb = BasicBlock::Create("skip");
+    BasicBlock *forcebb = basic_block("force");
+    BasicBlock *skipbb = basic_block("skip");
     f.builder.CreateCondBr(checkv, forcebb, skipbb);
     f.f->getBasicBlockList().push_back(forcebb);
     f.builder.SetInsertPoint(forcebb);
@@ -8547,7 +8585,7 @@ void interpreter::simple_match(Value *x, state*& s,
   case EXPR::INT:
   case EXPR::DBL: {
     // first check the tag
-    BasicBlock *okbb = BasicBlock::Create("ok");
+    BasicBlock *okbb = basic_block("ok");
     if (!tagv) tagv = f.CreateLoadGEP(x, Zero, Zero, "tag");
     f.builder.CreateCondBr
       (f.builder.CreateICmpEQ(tagv, SInt(t.tag), "cmp"), okbb, failedbb);
@@ -8572,7 +8610,7 @@ void interpreter::simple_match(Value *x, state*& s,
   case EXPR::STR: {
     // first do a quick check on the tag so that we may avoid an expensive
     // call if the tags don't match
-    BasicBlock *okbb = BasicBlock::Create("ok");
+    BasicBlock *okbb = basic_block("ok");
     if (!tagv) tagv = f.CreateLoadGEP(x, Zero, Zero, "tag");
     f.builder.CreateCondBr
       (f.builder.CreateICmpEQ(tagv, SInt(t.tag), "cmp"), okbb, failedbb);
@@ -8600,8 +8638,8 @@ void interpreter::simple_match(Value *x, state*& s,
     break;
   case EXPR::APP: {
     // first match the tag...
-    BasicBlock *ok1bb = BasicBlock::Create("arg1");
-    BasicBlock *ok2bb = BasicBlock::Create("arg2");
+    BasicBlock *ok1bb = basic_block("arg1");
+    BasicBlock *ok2bb = basic_block("arg2");
     if (!tagv) tagv = f.CreateLoadGEP(x, Zero, Zero, "tag");
     f.builder.CreateCondBr
       (f.builder.CreateICmpEQ(tagv, SInt(t.tag)), ok1bb, failedbb);
@@ -8651,7 +8689,7 @@ void interpreter::complex_match(matcher *pm, BasicBlock *failedbb)
       !pm->r[0].rhs.is_guarded()) {
     Value *arg = f.args[0];
     // emit the matching code
-    BasicBlock *matchedbb = BasicBlock::Create("matched");
+    BasicBlock *matchedbb = basic_block("matched");
     state *start = pm->start;
     simple_match(arg, start, matchedbb, failedbb);
     // matched => emit code for the reduct, and return the result
@@ -8749,7 +8787,7 @@ void interpreter::complex_match(matcher *pm, const list<Value*>& xs, state *s,
   assert(x->getType() == ExprPtrTy);
   // start a new block for this state (this is just for purposes of
   // readability, we don't actually need this as a label to branch to)
-  BasicBlock *statebb = BasicBlock::Create(mklabel("state", s->s));
+  BasicBlock *statebb = basic_block(mklabel("state", s->s));
   f.builder.CreateBr(statebb);
   f.f->getBasicBlockList().push_back(statebb);
   f.builder.SetInsertPoint(statebb);
@@ -8759,8 +8797,8 @@ void interpreter::complex_match(matcher *pm, const list<Value*>& xs, state *s,
     debug(msg.str().c_str()); }
 #endif
   // blocks for retrying with default transitions after a failed match
-  BasicBlock *retrybb = BasicBlock::Create(mklabel("retry.state", s->s));
-  BasicBlock *defaultbb = BasicBlock::Create(mklabel("default.state", s->s));
+  BasicBlock *retrybb = basic_block(mklabel("retry.state", s->s));
+  BasicBlock *defaultbb = basic_block(mklabel("default.state", s->s));
   // first check for a literal match
   size_t i, n = s->tr.size(), m = 0;
   transl::iterator t0 = s->tr.begin();
@@ -8776,8 +8814,8 @@ void interpreter::complex_match(matcher *pm, const list<Value*>& xs, state *s,
     // do a quick check on the tag value
     tagv = f.CreateLoadGEP(x, Zero, Zero, "tag");
     Value *checkv = f.builder.CreateICmpEQ(tagv, Zero, "check");
-    BasicBlock *forcebb = BasicBlock::Create("force");
-    BasicBlock *skipbb = BasicBlock::Create("skip");
+    BasicBlock *forcebb = basic_block("force");
+    BasicBlock *skipbb = basic_block("skip");
     f.builder.CreateCondBr(checkv, forcebb, skipbb);
     f.f->getBasicBlockList().push_back(forcebb);
     f.builder.SetInsertPoint(forcebb);
@@ -8803,7 +8841,7 @@ void interpreter::complex_match(matcher *pm, const list<Value*>& xs, state *s,
     transl::iterator t;
     for (t = t0; t != s->tr.end(); t++) {
       // first create the block for this specific transition
-      BasicBlock *bb = BasicBlock::Create(mklabel("trans.state", s->s, t->st->s));
+      BasicBlock *bb = basic_block(mklabel("trans.state", s->s, t->st->s));
       if (t->tag == EXPR::APP || t->tag > 0) {
 	// transition on a function symbol; in this case there's only a single
 	// transition, to which we simply assign the label just generated
@@ -8818,7 +8856,7 @@ void interpreter::complex_match(matcher *pm, const list<Value*>& xs, state *s,
 	  // no outer label has been generated yet, do it now and add the
 	  // target to the outer switch
 	  tmap[t->tag].bb =
-	    BasicBlock::Create(mklabel("begin.state", s->s, -t->tag));
+	    basic_block(mklabel("begin.state", s->s, -t->tag));
 	  sw->addCase(SInt(t->tag), tmap[t->tag].bb);
 	}
       }
@@ -8847,7 +8885,7 @@ void interpreter::complex_match(matcher *pm, const list<Value*>& xs, state *s,
 	  list<trans_info>::iterator k = l; k++;
 	  BasicBlock *okbb = l->bb;
 	  BasicBlock *trynextbb =
-	    BasicBlock::Create(mklabel("next.state", s->s, -tag));
+	    basic_block(mklabel("next.state", s->s, -tag));
 	  switch (tag) {
 	  case EXPR::INT:
 	  case EXPR::DBL: {
@@ -8921,7 +8959,7 @@ void interpreter::complex_match(matcher *pm, const list<Value*>& xs, state *s,
     transl::iterator t;
     for (t = t1, i = 0; t != s->tr.end() && t->tag == EXPR::VAR; t++, i++) {
       vtransbb.push_back
-	(BasicBlock::Create(mklabel("trans.state", s->s, t->st->s)));
+	(basic_block(mklabel("trans.state", s->s, t->st->s)));
       sw->addCase(SInt(t->ttag), vtransbb[i]);
       if (t->ttag == EXPR::MATRIX) {
 	// this can denote any type of matrix, add the other possible cases
@@ -8964,7 +9002,7 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
   ruleml::const_iterator r = rl.begin();
   assert(r != rl.end());
   assert(f.fmap.idx == 0);
-  BasicBlock* rulebb = BasicBlock::Create(mklabel("rule.state", s->s, rl.front()));
+  BasicBlock* rulebb = basic_block(mklabel("rule.state", s->s, rl.front()));
   f.builder.CreateBr(rulebb);
   while (r != rl.end()) {
     const rule& rr = rules[*r];
@@ -9021,11 +9059,11 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
       condv = f.builder.CreateICmpNE(retv, NullExprPtr, "cond");
     }
     assert(condv != 0);
-    BasicBlock *okbb = BasicBlock::Create("ok");
+    BasicBlock *okbb = basic_block("ok");
     // determine the next rule block ('failed' if none)
     BasicBlock *nextbb;
     if (++r != rl.end())
-      nextbb = BasicBlock::Create(mklabel("rule.state", s->s, *r));
+      nextbb = basic_block(mklabel("rule.state", s->s, *r));
     else
       nextbb = failedbb;
     f.builder.CreateCondBr(condv, okbb, nextbb);
