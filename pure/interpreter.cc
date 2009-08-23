@@ -1104,6 +1104,7 @@ pure_expr* interpreter::run(const list<string> &sl, bool check, bool sticky)
 pure_expr *interpreter::runstr(const string& s)
 {
   // save local data
+  bool l_compiling = compiling;
   bool l_interactive = interactive;
   string l_source = source;
   int l_nerrs = nerrs;
@@ -1128,6 +1129,7 @@ pure_expr *interpreter::runstr(const string& s)
   symtab.current_namespace = new string;
   symtab.search_namespaces = new set<string>;
   errmsg.clear();
+  compiling = false;
   bool ok = lex_begin();
   if (ok) {
     yy::parser parser(*this);
@@ -1142,6 +1144,7 @@ pure_expr *interpreter::runstr(const string& s)
   g_interactive = s_interactive;
   g_interp = s_interp;
   // restore local data
+  compiling = l_compiling;
   interactive = l_interactive;
   source = l_source;
   source_s = 0;
@@ -1159,17 +1162,17 @@ pure_expr *interpreter::runstr(const string& s)
 
 // Evaluate an expression.
 
-pure_expr *interpreter::eval(expr& x)
+pure_expr *interpreter::eval(expr& x, bool keep)
 {
   globals g;
   save_globals(g);
-  pure_expr *e, *res = eval(x, e);
+  pure_expr *e, *res = eval(x, e, keep);
   if (!res && e) pure_free(e);
   restore_globals(g);
   return res;
 }
 
-pure_expr *interpreter::eval(expr& x, pure_expr*& e)
+pure_expr *interpreter::eval(expr& x, pure_expr*& e, bool keep)
 {
   globals g;
   save_globals(g);
@@ -1178,7 +1181,7 @@ pure_expr *interpreter::eval(expr& x, pure_expr*& e)
   env vars; expr u = csubst(macsubst(subst(vars, x)));
   compile(u);
   x = u;
-  pure_expr *res = doeval(u, e, compiling);
+  pure_expr *res = doeval(u, e, keep);
   restore_globals(g);
   return res;
 }
@@ -1908,7 +1911,7 @@ void interpreter::exec(expr *x)
   // Keep a copy of the original expression, so that we can give proper
   // diagnostics below.
   expr y = *x;
-  pure_expr *e, *res = eval(*x, e);
+  pure_expr *e, *res = eval(*x, e, compiling);
   if ((verbose&verbosity::defs) != 0) cout << *x << ";\n";
   if (!res) {
     ostringstream msg;

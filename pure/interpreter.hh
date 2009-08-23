@@ -440,10 +440,12 @@ public:
   /* Evaluate a (compile time) expression and return the (runtime expression)
      result. Returns a null pointer if an exception occurred during the
      evaluation. In such a case, the variant with the extra e parameter
-     returns the runtime expression thrown by the exception, if any. Both the
-     result and the exception value (if any) are to be freed by the caller. */
-  pure_expr *eval(expr& x);
-  pure_expr *eval(expr& x, pure_expr*& e);
+     returns the runtime expression thrown by the exception, if any. The
+     'keep' flag indicates whether the code should be output in a batch
+     compilation. Both the result and the exception value (if any) are to be
+     freed by the caller. */
+  pure_expr *eval(expr& x, bool keep);
+  pure_expr *eval(expr& x, pure_expr*& e, bool keep);
 
   /* Evaluate an expression and define global variables. This works like
      eval() above, but also binds the variables in pat to the corresponding

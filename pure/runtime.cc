@@ -2629,7 +2629,7 @@ pure_expr *pure_evalx(pure_expr *x, pure_expr** e)
   *e = 0;
   try {
     expr y = interp.pure_expr_to_expr(x);
-    res = interp.eval(y, *e);
+    res = interp.eval(y, *e, false);
   } catch (err &e) {
     return x;
   }
@@ -4853,7 +4853,7 @@ void pure_debug_rule(void *_e, void *_r)
 	  get_vars(interp, kt);
 	  expr y = localvars(interp, d, x);
 	  // evaluate
-	  x = interp.eval(y, e);
+	  x = interp.eval(y, e, false);
 	  if (x) {
 	    cout << x << endl;
 	    pure_freenew(x);
@@ -5728,7 +5728,7 @@ pure_expr *eval(pure_expr *x)
     interpreter& interp = *interpreter::g_interp;
     try {
       expr y = interp.pure_expr_to_expr(x);
-      res = interp.eval(y, e);
+      res = interp.eval(y, e, false);
     } catch (err &e) {
       return x;
     }
