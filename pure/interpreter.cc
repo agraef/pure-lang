@@ -126,7 +126,7 @@ void interpreter::init()
 #warning "You selected FAST_JIT. This isn't recommended!"
 				llvm::CodeGenOpt::None
 #else
-				llvm::CodeGenOpt::Default
+				llvm::CodeGenOpt::Aggressive
 #endif
 				);
   if (!JIT) {
