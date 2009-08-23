@@ -19,6 +19,7 @@
 
 #include "config.h"
 
+#include <llvm/ExecutionEngine/JIT.h>
 #include <llvm/Target/TargetData.h>
 #if LLVM26
 #include <llvm/Target/TargetSelect.h>
@@ -108,11 +109,11 @@ void interpreter::init()
 
   using namespace llvm;
 
-  // Accommodate the major API breakage in recent LLVM versions. This is just
-  // horrible, maybe we should drop support for anything earlier than LLVM 2.6
-  // in the future.
+  /* Accommodate the major API breakage in recent LLVM versions. This is just
+     horrible, maybe we should drop support for anything older than LLVM 2.6
+     in the future. */
 #if LLVM26
-  llvm::InitializeNativeTarget(); // XXFIXME: This is broken.
+  llvm::InitializeNativeTarget();
   module = new Module(modname, llvm::getGlobalContext());
 #else
   module = new Module(modname);
