@@ -3771,21 +3771,20 @@ of the entire program, which is needed by the runtime environment.)
   $ pure -o hello -c -x hello.pure 7 && ls -l hello
   -rwxr-xr-x 1 ag users 626693 2009-08-22 10:04 hello
   $ pure -o hello -c -s -x hello.pure 7 && ls -l hello
-  -rwxr-xr-x 1 ag users 203088 2009-08-22 10:04 hello
+  -rwxr-xr-x 1 ag users 188139 2009-08-22 10:04 hello
   $ ./hello
   Hello, world!
   [1,2,6,24,120,720,5040]
 
 Be careful when using this option. The -s option only does a *static* analysis
 of which functions might be reached from the initialization code (i.e.,
-toplevel expressions and ``let`` bindings). It cannot take into account
-functions called in code supplied as a string to the ``eval`` routine at
-runtime. Thus, if a function is never used explicitly in the program, it will
-be stripped from the executable, as if it was never defined at all. If the
-function is then being called using ``eval``, it will evaluate to a plain
-constructor symbol. However, you can always work around this obstacle by just
-adding a dummy "call" to functions which are to be used with ``eval``, like
-this::
+toplevel expressions and ``let`` bindings). It does *not* take into account
+code run via the ``eval`` routine. Thus, if the batch compiler doesn't know
+that a given function will be used, it will strip the function from the
+executable, as if it was never defined at all. If the function is then being
+called using ``eval`` at runtime, it will evaluate to a plain constructor
+symbol. However, you can always work around this obstacle by just adding a
+dummy "call" to functions which are to be used with ``eval``, like this::
 
   let foo, bar;
   eval "foo (bar 99)";
