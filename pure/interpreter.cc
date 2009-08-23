@@ -4020,8 +4020,8 @@ to variables should fix this. **\n";
 
        Thus we need to analyze all uses of a function and its associated
        global variable. At the same time we also determine all the roots in
-       the dependency graph (initialization code). */
-    set<Function*> roots;
+       the dependency graph (initialization code and builtins). */
+    set<Function*> roots = always_used;
 #if DEBUG_USED||DEBUG_UNUSED
     map<Function*, set<Function*> > callers;
 #endif
@@ -5309,6 +5309,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     // the interpreter executable (e.g., if the interpreter was linked
     // without -rdynamic), the interpreter will still find them.
     sys::DynamicLibrary::AddSymbol(name, fp);
+    always_used.insert(f);
     return f;
   }
   // External C function visible in the Pure program. No varargs are allowed
