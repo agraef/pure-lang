@@ -3932,10 +3932,20 @@ static string& quote(string& s)
 #define DEBUG_USED 0
 #define DEBUG_UNUSED 0
 
-#if LLVM26
+// Use this to force the raw_ostream interface with LLVM <= 2.5.
+//#define RAW_STREAM 1
+#if !RAW_STREAM
+#define RAW_STREAM LLVM26
+#endif
+
+#if RAW_STREAM
 /* More LLVM >= 2.6 compatibility madness. raw_ostream claims to be just like
    ostream, but it isn't. :( */
+#if LLVM26
 #define ostream_error(os) os.has_error()
+#else
+#define ostream_error(os) (0) // LLVM <= 2.5 doesn't have this method.
+#endif
 #else
 #define ostream_error(os) os.fail()
 #endif
@@ -3962,12 +3972,16 @@ int interpreter::compiler(string out, list<string> libnames)
      module. It takes two arguments, the argc and argv of the interpreter. */
   setlocale(LC_ALL, "C");
   bool file_target = target!="-";
-#if LLVM26
+#if RAW_STREAM
   // As of LLVM 2.7 (svn), these need to be wrapped up in a raw_ostream.
   string error;
   llvm::raw_ostream *codep = file_target?
-    new llvm::raw_fd_ostream(target.c_str(), error,
-			     llvm::raw_fd_ostream::F_Force):
+    new llvm::raw_fd_ostream(target.c_str(),
+#if LLVM26
+			     error, llvm::raw_fd_ostream::F_Force):
+#else
+			     0, error):
+#endif
     new llvm::raw_stdout_ostream();
   if (!error.empty()) {
     std::cerr << "Error opening " << target << '\n';
@@ -4360,7 +4374,7 @@ to variables should fix this. **\n";
     std::cerr << "Error writing " << target << '\n';
     exit(1);
   }
-#if !LLVM26
+#if !RAW_STREAM
   if (codep != &std::cout)
 #endif
   delete codep;
