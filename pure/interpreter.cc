@@ -3946,12 +3946,16 @@ static string& quote(string& s)
 #if RAW_STREAM
 #if LLVM26
 #define ostream_error(os) os.has_error()
+#define ostream_clear_error(os) os.clear_error()
 #else
-#define ostream_error(os) (0) // LLVM <= 2.5 doesn't have this method.
+// LLVM <= 2.5 doesn't have these methods.
+#define ostream_error(os) (0)
+#define ostream_clear_error(os) 
 #endif
 #else
 // !RAW_STREAM: Use the simple old std::ostream interface.
 #define ostream_error(os) os.fail()
+#define ostream_clear_error(os) os.clear()
 #endif
 
 #if NEW_OSTREAM // LLVM >= 2.7 takes an enumeration as the last parameter
@@ -3989,9 +3993,8 @@ int interpreter::compiler(string out, list<string> libnames)
 #if RAW_STREAM
   // As of LLVM 2.7 (svn), these need to be wrapped up in a raw_ostream.
   string error;
-  llvm::raw_ostream *codep = file_target?
-    new_raw_fd_ostream(target.c_str(),error):
-    new llvm::raw_stdout_ostream();
+  // Note: raw_fd_ostream already handles "-".
+  llvm::raw_ostream *codep = new_raw_fd_ostream(target.c_str(),error);
   if (!error.empty()) {
     std::cerr << "Error opening " << target << '\n';
     exit(1);
@@ -4383,10 +4386,12 @@ to variables should fix this. **\n";
     std::cerr << "Error writing " << target << '\n';
     exit(1);
   }
-#if !RAW_STREAM
-  if (codep != &std::cout)
-#endif
+  ostream_clear_error(code);
+#if RAW_STREAM
   delete codep;
+#else
+  if (codep != &std::cout) delete codep;
+#endif
   if (target != out) {
     bool vflag = (verbose&verbosity::compiler) != 0;
     char *pure_copts = getenv("PURE_COPTS");
