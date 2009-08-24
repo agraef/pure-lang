@@ -702,6 +702,7 @@ public:
   void debug_init();
 private:
   void init();
+  void init_llvm_target();
   Env *__fptr;
   Env *&fptr;
   llvm::GlobalVariable *fptrvar;

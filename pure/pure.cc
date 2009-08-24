@@ -549,7 +549,10 @@ main(int argc, char *argv[])
       interp.compile();
     if (interp.compiling) status = interp.compiler(outname, libnames);
     //printf("status = %d\n", status);
-    return (status>=0)?status:1;
+    /* interp.compiler() apparently leaves the code module in a dangling
+       state, so make sure that we take the quick way out. There's really no
+       need to clean up the interpreter instance if we're exiting anyway. */
+    exit((status>=0)?status:1);
   }
   interp.symtab.init_builtins();
   /* Only when running interactively, set up handlers for all standard POSIX
@@ -636,5 +639,7 @@ main(int argc, char *argv[])
   }
   interp.run("", false, true);
   if (interp.ttymode) cout << endl;
-  return 0;
+  /* Take the quick way out. There's really no need to clean up the
+     interpreter instance if we're exiting anyway. */
+  exit(0);
 }
