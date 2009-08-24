@@ -3938,16 +3938,30 @@ static string& quote(string& s)
 #define RAW_STREAM LLVM26
 #endif
 
-#if RAW_STREAM
 /* More LLVM >= 2.6 compatibility madness. raw_ostream claims to be just like
-   ostream, but it isn't. :( */
+   ostream, but it isn't. Adding insult to injury, LLVM <=2.5, 2.6 and 2.7
+   (svn) each provide their own interface to construct a raw_fd_ostream, with
+   no backward compatibility whatsoever. :( */
+
+#if RAW_STREAM
 #if LLVM26
 #define ostream_error(os) os.has_error()
 #else
 #define ostream_error(os) (0) // LLVM <= 2.5 doesn't have this method.
 #endif
 #else
+// !RAW_STREAM: Use the simple old std::ostream interface.
 #define ostream_error(os) os.fail()
+#endif
+
+#if NEW_OSTREAM // LLVM >= 2.7 takes an enumeration as the last parameter
+#define new_raw_fd_ostream(s,msg) new llvm::raw_fd_ostream(s,msg,llvm::raw_fd_ostream::F_Force)
+#else
+#if LLVM26 // LLVM 2.6 takes two flags (Binary, Force)
+#define new_raw_fd_ostream(s,msg) new llvm::raw_fd_ostream(s,0,1,msg)
+#else // LLVM 2.5 and earlier only have the Binary flag
+#define new_raw_fd_ostream(s,msg) new llvm::raw_fd_ostream(s,0,msg)
+#endif
 #endif
 
 int interpreter::compiler(string out, list<string> libnames)
@@ -3976,12 +3990,7 @@ int interpreter::compiler(string out, list<string> libnames)
   // As of LLVM 2.7 (svn), these need to be wrapped up in a raw_ostream.
   string error;
   llvm::raw_ostream *codep = file_target?
-    new llvm::raw_fd_ostream(target.c_str(),
-#if LLVM26
-			     error, llvm::raw_fd_ostream::F_Force):
-#else
-			     0, error):
-#endif
+    new_raw_fd_ostream(target.c_str(),error):
     new llvm::raw_stdout_ostream();
   if (!error.empty()) {
     std::cerr << "Error opening " << target << '\n';

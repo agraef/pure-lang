@@ -140,6 +140,19 @@ AC_CACHE_CHECK([for new LLVM IRBuilder class (LLVM >= 2.6)], [pure_cv_new_builde
 if test "$pure_cv_new_builder26" = yes; then
   AC_DEFINE(NEW_BUILDER, 1, [Define when building with new-style LLVM IRBuilder template class.])
   AC_DEFINE(LLVM26, 1, [Define when building with new-style LLVM API (LLVM 2.6 or later).])
+AC_CACHE_CHECK([for new llvm::raw_fd_ostream interface (LLVM >= 2.7)], [pure_cv_new_ostream],
+  [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
+	#include <string>
+        #include <llvm/Support/raw_ostream.h>
+      ], [
+  	std::string error;
+        llvm::raw_fd_ostream os("xxxjunk", error, llvm::raw_fd_ostream::F_Force);
+      ])
+    ], [pure_cv_new_ostream=yes], [pure_cv_new_ostream=no])
+  ])
+if test "$pure_cv_new_ostream" = yes; then
+  AC_DEFINE(NEW_OSTREAM, 1, [Define when building with new llvm::raw_fd_ostream interface (LLVM >= 2.7).])
+fi
 else
 AC_CACHE_CHECK([for new LLVM IRBuilder class], [pure_cv_new_builder],
   [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
