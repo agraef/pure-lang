@@ -168,11 +168,14 @@ fi
 fi
 CXXFLAGS=$save_CXXFLAGS
 AC_LANG_POP([C++])
+
+dnl Determine the LLVM version.
+llvm_version=`llvm-config --version`
+AC_DEFINE_UNQUOTED(LLVM_VERSION, "${llvm_version}", [Define to the LLVM version string.])
+
 dnl Output files.
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
-
-llvm_version=`llvm-config --version`
 
 AC_MSG_RESULT([
 Pure ${PACKAGE_VERSION} is now configured for LLVM ${llvm_version} on ${host}.
