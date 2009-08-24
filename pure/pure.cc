@@ -403,6 +403,7 @@ main(int argc, char *argv[])
     } else if (*args == string("--version")) {
       cout << "Pure " << PACKAGE_VERSION << " (" << HOST << ") "
 	   << COPYRIGHT << '\n';
+      cout << "Compiled for LLVM " << LLVM_VERSION << " (http://llvm.org)\n";
       return 0;
     } else if (*args == string("-c"))
       interp.compiling = true;
