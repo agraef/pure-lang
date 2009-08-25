@@ -85,8 +85,6 @@ void interpreter::init()
   if (!g_interp) g_interp = this;
   if (!g_init) {
     stackdir = c_stack_dir();
-    // Try to dlopen the executable. Ignore any errors here.
-    llvm::sys::DynamicLibrary::LoadLibraryPermanently(0, 0);
     // Preload some auxiliary dlls. First load the Pure library if we built it.
 #ifdef LIBPURE
     llvm::sys::DynamicLibrary::LoadLibraryPermanently(LIBPURE, 0);
