@@ -161,7 +161,7 @@ DISTFILES = COPYING ChangeLog INSTALL NEWS README TODO \
 Makefile.in configure.ac configure config.h.in \
 config/aclocal.m4 config/config.guess config/config.sub config/install-sh \
 $(SOURCE) $(EXTRA_SOURCE) w3centities.c pure.cc pure_main.c \
-pure.1 pure.txt pure.html purelib.txt purelib.html preamble.tex \
+pure.1 pure.txt pure.html purelib.txt purelib.html preamble.tex run-tests \
 etc/pure-mode.el.in etc/pure.* etc/gpure.lang \
 examples/*.pure examples/*.purerc examples/*.c examples/libor/*.pure \
 lib/*.pure test/*.pure test/*.log test/*.blob
@@ -363,12 +363,10 @@ $(srcdir)/test/prelude.log: lib/prelude.pure lib/primitives.pure lib/strings.pur
 	LC_ALL=C $(LD_LIB_PATH)=".:$$$(LD_LIB_PATH)" PURELIB=$(srcdir)/lib PURE_INCLUDE=$(srcdir)/test ./pure --norc -n -v$(level) $< > $@ 2>&1
 
 %.log: %.pure
-	LC_ALL=C $(LD_LIB_PATH)=".:$$$(LD_LIB_PATH)" PURELIB=$(srcdir)/lib PURE_INCLUDE=$(srcdir)/test ./pure --norc -v$(level) < $< > $@ 2>&1
+	LC_ALL=C $(LD_LIB_PATH)=".:$$$(LD_LIB_PATH)" PURELIB=$(srcdir)/lib PURE_INCLUDE=$(srcdir)/test srcdir="$(srcdir)" ./pure --norc -v$(level) < $< > $@ 2>&1
 
 check: pure
-	@ echo Running tests.
-	@ (export LC_ALL=C; export $(LD_LIB_PATH)=".:$$$(LD_LIB_PATH)"; export PURELIB=$(srcdir)/lib; export PURE_INCLUDE=$(srcdir)/test; echo $(ECHO_N) "prelude.pure: $(ECHO_C)"; if ./pure --norc -n -v$(level) $(srcdir)/lib/prelude.pure 2>&1 | $(DIFF) -u $(srcdir)/test/prelude.log - > $(srcdir)/test/prelude.diff; then rm -f $(srcdir)/test/prelude.diff; echo "$(ECHO_T)passed"; else echo "$(ECHO_T)FAILED"; fi)
-	@ (export LC_ALL=C; export $(LD_LIB_PATH)=".:$$$(LD_LIB_PATH)"; export PURELIB=$(srcdir)/lib; export PURE_INCLUDE=$(srcdir)/test; for x in $(notdir $(tests)); do echo $(ECHO_N) "$$x: $(ECHO_C)"; if ./pure --norc -v$(level) < $(srcdir)/test/$$x 2>&1 | $(DIFF) -u $(srcdir)/test/"`basename $$x .pure`.log" - > $(srcdir)/test/"`basename $$x .pure`.diff"; then rm -f $(srcdir)/test/"`basename $$x .pure`.diff"; echo "$(ECHO_T)passed"; else echo "$(ECHO_T)FAILED"; fi; done)
+	@ $(LD_LIB_PATH)=".:$$$(LD_LIB_PATH)" PURELIB=$(srcdir)/lib PURE_INCLUDE=$(srcdir)/test DIFF="$(DIFF)" ECHO_N="$(ECHO_N)" ECHO_C="$(ECHO_C)" ECHO_T="$(ECHO_T)" srcdir="$(srcdir)" level="$(level)" $(srcdir)/run-tests $(notdir $(tests))
 
 # DO NOT DELETE
 

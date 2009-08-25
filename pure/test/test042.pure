@@ -27,25 +27,22 @@ end;
 // Read a blob from a file. Here the blob will be translated to the data
 // representation of the host architecture on the fly.
 
+/* 'make check' runs this from the parent directory, so we use the test subdir
+   of the source directory if the corresponding environment variable is
+   defined. */
+
+extern char *getenv(char*);
+let srcdir = if stringp srcdir then srcdir+"/test/" else ""
+  when srcdir = getenv "srcdir" end;
+
 read_test fname::string = do (puts.str) (val b) when
-  name,fp = check fname;
+  name = srcdir+fname; fp::pointer = fopen name "r";
   n::bigint = stat name!7; b::pointer = cooked $ malloc n;
   printf "reading blob file: %s\n" fname;
   printf "read %d bytes\n" $ int $ fread b 1 n fp;
   if blobp b then printf "blob size: %d bytes\n" (#b)
   else throw "invalid blob!";
 end;
-
-/* 'make check' runs this from the parent directory, so try the test subdir
-   if we can't open the file by its name. */
-
-check fname::string = fname,fp if pointerp fp when
-  fname,fp = case fopen fname "r" of
-	       fp::pointer = fname, fp;
-               _ = fname, fopen fname "r" when fname = "test/"+fname end;
-             end;
-end;
-check _ = throw "file not found";
 
 /* Here are the tests that we already have. If everything goes smoothly, each
    test should produce output similar to the following (taking 64 bit Linux as

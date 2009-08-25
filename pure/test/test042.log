@@ -29,7 +29,25 @@ write_test fname/*0:1*/::string = () when fp/*0:*/::pointer = fopen fname/*0:1*/
 	<var>::pointer state 1
   state 1: #0
 } end;
-read_test fname/*0:1*/::string = do (puts.str) (val b/*3:*/) when name/*0:01*/,fp/*0:1*/ = check fname/*0:1*/; n/*0:*/::bigint = stat name/*0:01*/!7; b/*0:*/::pointer = cooked (malloc n/*0:*/); printf "reading blob file: %s\n" fname/*3:1*/; printf "read %d bytes\n" (int (fread b/*1:*/ 1 n/*2:*/ fp/*3:1*/)); if blobp b/*2:*/ then printf "blob size: %d bytes\n" (#b/*2:*/) else throw "invalid blob!" {
+{
+  rule #0: write_test fname::string = () when fp::pointer = fopen fname "w"; X = {1,2,3;4,5,6}; b = blob [("Hello, world!",x+y,1/2,4711,-4711L,#<pointer 0>),["Hello, world!",x+y,1/2,4711,-4711L,#<pointer 0>],{"Hello, world!",x+y,1/2,4711,-4711L,#<pointer 0>},X,dmatrix X,cmatrix X]; printf "writing blob file: %s\n" fname; printf "blob size: %d bytes\n" (#b); printf "wrote %d bytes\n" (int (fwrite b 1 (#b) fp)) end
+  state 0: #0
+	<var>::string state 1
+  state 1: #0
+}
+{
+  rule #0: srcdir = if stringp srcdir then srcdir+"/test/" else "" when srcdir = getenv "srcdir" end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let srcdir = if stringp srcdir/*0:*/ then srcdir/*0:*/+"/test/" else "" when srcdir/*0:*/ = getenv "srcdir" {
+  rule #0: srcdir = getenv "srcdir"
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+read_test fname/*0:1*/::string = do (puts.str) (val b/*3:*/) when name/*0:*/ = srcdir+fname/*0:1*/; fp/*0:*/::pointer = fopen name/*0:*/ "r"; n/*0:*/::bigint = stat name/*1:*/!7; b/*0:*/::pointer = cooked (malloc n/*0:*/); printf "reading blob file: %s\n" fname/*4:1*/; printf "read %d bytes\n" (int (fread b/*1:*/ 1 n/*2:*/ fp/*3:*/)); if blobp b/*2:*/ then printf "blob size: %d bytes\n" (#b/*2:*/) else throw "invalid blob!" {
   rule #0: _ = if blobp b then printf "blob size: %d bytes\n" (#b) else throw "invalid blob!"
   state 0: #0
 	<var> state 1
@@ -55,64 +73,18 @@ read_test fname/*0:1*/::string = do (puts.str) (val b/*3:*/) when name/*0:01*/,f
 	<var>::bigint state 1
   state 1: #0
 } {
-  rule #0: name,fp = check fname
+  rule #0: fp::pointer = fopen name "r"
   state 0: #0
-	<app> state 1
+	<var>::pointer state 1
   state 1: #0
-	<app> state 2
-  state 2: #0
-	, state 3
-  state 3: #0
-	<var> state 4
-  state 4: #0
-	<var> state 5
-  state 5: #0
+} {
+  rule #0: name = srcdir+fname
+  state 0: #0
+	<var> state 1
+  state 1: #0
 } end;
-check fname/*0:1*/::string = fname/*0:01*/,fp/*0:1*/ if pointerp fp/*0:1*/ when fname/*0:01*/,fp/*0:1*/ = case fopen fname/*0:1*/ "r" of fp/*0:*/::pointer = fname/*1:1*/,fp/*0:*/; _/*0:*/ = fname/*0:*/,fopen fname/*0:*/ "r" when fname/*0:*/ = "test/"+fname/*1:1*/ {
-  rule #0: fname = "test/"+fname
-  state 0: #0
-	<var> state 1
-  state 1: #0
-} end {
-  rule #0: fp::pointer = fname,fp
-  rule #1: _ = fname,fopen fname "r" when fname = "test/"+fname end
-  state 0: #0 #1
-	<var> state 1
-	<var>::pointer state 2
-  state 1: #1
-  state 2: #0 #1
-} end {
-  rule #0: fname,fp = case fopen fname "r" of fp::pointer = fname,fp; _ = fname,fopen fname "r" when fname = "test/"+fname end end
-  state 0: #0
-	<app> state 1
-  state 1: #0
-	<app> state 2
-  state 2: #0
-	, state 3
-  state 3: #0
-	<var> state 4
-  state 4: #0
-	<var> state 5
-  state 5: #0
-} end;
-check _/*0:1*/ = throw "file not found";
 {
-  rule #0: check fname::string = fname,fp if pointerp fp when fname,fp = case fopen fname "r" of fp::pointer = fname,fp; _ = fname,fopen fname "r" when fname = "test/"+fname end end end
-  rule #1: check _ = throw "file not found"
-  state 0: #0 #1
-	<var> state 1
-	<var>::string state 2
-  state 1: #1
-  state 2: #0 #1
-}
-{
-  rule #0: write_test fname::string = () when fp::pointer = fopen fname "w"; X = {1,2,3;4,5,6}; b = blob [("Hello, world!",x+y,1/2,4711,-4711L,#<pointer 0>),["Hello, world!",x+y,1/2,4711,-4711L,#<pointer 0>],{"Hello, world!",x+y,1/2,4711,-4711L,#<pointer 0>},X,dmatrix X,cmatrix X]; printf "writing blob file: %s\n" fname; printf "blob size: %d bytes\n" (#b); printf "wrote %d bytes\n" (int (fwrite b 1 (#b) fp)) end
-  state 0: #0
-	<var>::string state 1
-  state 1: #0
-}
-{
-  rule #0: read_test fname::string = do (puts.str) (val b) when name,fp = check fname; n::bigint = stat name!7; b::pointer = cooked (malloc n); printf "reading blob file: %s\n" fname; printf "read %d bytes\n" (int (fread b 1 n fp)); if blobp b then printf "blob size: %d bytes\n" (#b) else throw "invalid blob!" end
+  rule #0: read_test fname::string = do (puts.str) (val b) when name = srcdir+fname; fp::pointer = fopen name "r"; n::bigint = stat name!7; b::pointer = cooked (malloc n); printf "reading blob file: %s\n" fname; printf "read %d bytes\n" (int (fread b 1 n fp)); if blobp b then printf "blob size: %d bytes\n" (#b) else throw "invalid blob!" end
   state 0: #0
 	<var>::string state 1
   state 1: #0
