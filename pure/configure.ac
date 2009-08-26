@@ -131,8 +131,8 @@ if test "$LLVMCONF" = no; then
 fi
 dnl Check for the new-style template arguments of the IRBuilder class.
 AC_LANG_PUSH([C++])
-save_CXXFLAGS=$CXXFLAGS
-CXXFLAGS="`$LLVMCONF --cppflags` $CXXFLAGS"
+save_CPPFLAGS=$CPPFLAGS
+CPPFLAGS="`$LLVMCONF --cppflags` $CPPFLAGS"
 AC_CACHE_CHECK([for new LLVM IRBuilder class (LLVM >= 2.6)], [pure_cv_new_builder26],
   [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
        #include <llvm/LLVMContext.h>
@@ -151,7 +151,7 @@ AC_CACHE_CHECK([for new llvm::raw_fd_ostream interface (LLVM >= 2.7)], [pure_cv_
         #include <llvm/Support/raw_ostream.h>
       ], [
   	std::string error;
-        llvm::raw_fd_ostream os("xxxjunk", error, llvm::raw_fd_ostream::F_Force);
+        llvm::raw_fd_ostream os("xxxjunk", error, llvm::raw_fd_ostream::F_Excl);
       ])
     ], [pure_cv_new_ostream=yes], [pure_cv_new_ostream=no])
   ])
@@ -159,7 +159,7 @@ if test "$pure_cv_new_ostream" = yes; then
   AC_DEFINE(NEW_OSTREAM, 1, [Define when building with new llvm::raw_fd_ostream interface (LLVM >= 2.7).])
 fi
 else
-AC_CACHE_CHECK([for new LLVM IRBuilder class], [pure_cv_new_builder],
+AC_CACHE_CHECK([for new LLVM IRBuilder class (LLVM >= 2.4)], [pure_cv_new_builder],
   [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
        #include <llvm/Support/IRBuilder.h>
       ], [
@@ -171,7 +171,8 @@ if test "$pure_cv_new_builder" = yes; then
   AC_DEFINE(NEW_BUILDER, 1, [Define when building with new-style LLVM IRBuilder template class.])
 fi
 fi
-CXXFLAGS=$save_CXXFLAGS
+AC_CHECK_HEADERS([llvm/Support/raw_os_ostream.h])
+CPPFLAGS=$save_CPPFLAGS
 AC_LANG_POP([C++])
 
 dnl Determine the LLVM version.

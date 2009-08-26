@@ -609,6 +609,9 @@ void my_readline(const char *prompt, char *buf, int &result, int max_size)
 }
 
 #include <llvm/Support/raw_ostream.h>
+#ifdef HAVE_LLVM_SUPPORT_RAW_OS_OSTREAM_H
+#include <llvm/Support/raw_os_ostream.h>
+#endif
 
 void Env::print(ostream& os) const
 {

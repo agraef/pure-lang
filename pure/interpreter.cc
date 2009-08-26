@@ -17,7 +17,6 @@
 #include <llvm/System/DynamicLibrary.h>
 #include <llvm/Transforms/Utils/BasicBlockUtils.h>
 #include <llvm/Support/raw_ostream.h>
-#include <llvm/Support/Streams.h>
 
 #include <llvm/ExecutionEngine/JIT.h>
 #include <llvm/Target/TargetData.h>
@@ -3929,16 +3928,13 @@ static string& quote(string& s)
 #define DEBUG_USED 0
 #define DEBUG_UNUSED 0
 
+/* LLVM >= 2.6 raw_ostream compatibility. This is a mess. */
+
 // Use this to force the raw_ostream interface with LLVM <= 2.5.
 //#define RAW_STREAM 1
 #if !RAW_STREAM
 #define RAW_STREAM LLVM26
 #endif
-
-/* More LLVM >= 2.6 compatibility madness. raw_ostream claims to be just like
-   ostream, but it isn't. Adding insult to injury, LLVM <=2.5, 2.6 and 2.7
-   (svn) each provide their own interface to construct a raw_fd_ostream, with
-   no backward compatibility whatsoever. :( */
 
 #if RAW_STREAM
 #if LLVM26
@@ -3956,7 +3952,7 @@ static string& quote(string& s)
 #endif
 
 #if NEW_OSTREAM // LLVM >= 2.7 takes an enumeration as the last parameter
-#define new_raw_fd_ostream(s,msg) new llvm::raw_fd_ostream(s,msg,llvm::raw_fd_ostream::F_Force)
+#define new_raw_fd_ostream(s,msg) new llvm::raw_fd_ostream(s,msg,0)
 #else
 #if LLVM26 // LLVM 2.6 takes two flags (Binary, Force)
 #define new_raw_fd_ostream(s,msg) new llvm::raw_fd_ostream(s,0,1,msg)
