@@ -124,10 +124,15 @@ if test $gsllib = yes; then
     fi
   fi
 fi
+dnl Check for LLVM.
+AC_CHECK_PROG(LLVMCONF,llvm-config,llvm-config,no)
+if test "$LLVMCONF" = no; then
+  AC_MSG_ERROR(Cannot find LLVM.)
+fi
 dnl Check for the new-style template arguments of the IRBuilder class.
 AC_LANG_PUSH([C++])
 save_CXXFLAGS=$CXXFLAGS
-CXXFLAGS="`llvm-config --cppflags` $CXXFLAGS"
+CXXFLAGS="`$LLVMCONF --cppflags` $CXXFLAGS"
 AC_CACHE_CHECK([for new LLVM IRBuilder class (LLVM >= 2.6)], [pure_cv_new_builder26],
   [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
        #include <llvm/LLVMContext.h>
@@ -170,7 +175,7 @@ CXXFLAGS=$save_CXXFLAGS
 AC_LANG_POP([C++])
 
 dnl Determine the LLVM version.
-llvm_version=`llvm-config --version`
+llvm_version=`$LLVMCONF --version`
 AC_DEFINE_UNQUOTED(LLVM_VERSION, "${llvm_version}", [Define to the LLVM version string.])
 
 dnl Output files.
