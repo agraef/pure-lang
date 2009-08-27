@@ -470,15 +470,8 @@ manipulating the command history, etc. See `pure-eval-mode'.
 	(message "Aborted")
       (set-buffer pure-eval-buffer)
       (goto-char (point-max))
-      ;; give process some time to terminate, then blast it away
-      (if pure-eval-running
-	  (progn
-	    (comint-send-eof)
-	    (sleep-for 0.5)))
-      (if (comint-check-proc "*pure-eval*")
-	  (progn
-	    (comint-kill-subjob)
-	    (sleep-for .1)))
+      (let ((proc (get-buffer-process pure-eval-buffer)))
+	(if proc (delete-process proc))) ; Blast any old process.
       (cd dir)
       (if (not pure-eval-active)
 	  (pure-eval-mode)
