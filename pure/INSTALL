@@ -29,7 +29,8 @@ BASIC INSTALLATION
 
 The basic installation process is as follows. Note that steps 1-3 are only
 required once. Steps 2-3 can be avoided if binary LLVM packages are available
-for your system. Additional instructions for compiling Pure from SVN sources
+for your system (but see the caveats about broken LLVM packages on some
+systems below). Additional instructions for compiling Pure from SVN sources
 can be found in the INSTALLING FROM SVN SOURCES section below. Moreover, you
 can refer to the OTHER BUILD AND INSTALLATION OPTIONS section below for
 details about various options available when building and installing Pure.
@@ -110,6 +111,12 @@ llvm-gcc at a later time; only the LLVM library is required to build Pure.
   Windows. This bug was fixed in LLVM svn r68127, so the patch shouldn't be
   needed with LLVM 2.6 and later any more.)
 
+- Some Linux distributions provide LLVM packages which are broken on 32 bit
+  x86 systems. The symptom usually is that the interpreter segfaults inside
+  the LLVM JIT right at startup. This is a known issue on Ubuntu 9.04 and
+  Fedora Core 10. If you run into this, you'll have to compile LLVM yourself;
+  please see the notes on x86-32/64 compilation below.
+
 STEP 3. Configure, build and install LLVM as follows:
 
 $ cd llvm-2.5
@@ -134,8 +141,8 @@ the speed of the Pure compiler.
 
 *OPTIONAL, BUT RECOMMENDED:* As already mentioned, you'll also need llvm-gcc
 to make Pure's batch compiler work. You can build and install llvm-gcc as
-follows (this assumes that you have unpacked the llvm-gcc-4.2-2.5.source
-tarball in the same directory as the llvm-2.5 tarball):
+follows (this assumes that you have unpacked the the llvm-2.5 and
+llvm-gcc-4.2-2.5.source tarballs in the same directory):
 
 $ cd llvm-gcc4.2-2.5.source
 $ mkdir obj
@@ -213,7 +220,7 @@ $ pure
 Pure 1.0 (i686-pc-linux-gnu) Copyright (c) 2009 by Albert Graef
 This program is free software distributed under the GNU Public License
 (GPL V3 or later). Please see the COPYING file for details.
-Loaded prelude from /usr/local/lib/pure-1.0/prelude.pure.
+Loaded prelude from /usr/local/lib/pure/prelude.pure.
 
 Check that it works:
 
@@ -223,7 +230,7 @@ Check that it works:
 Check that GSL support is available:
 
 > show gsl_version
-let gsl_version = "1.9";
+let gsl_version = "1.11";
 
 (If this doesn't display anything then please review your installation process
 and make sure that you have GSL installed. The configure program should show
@@ -250,9 +257,10 @@ beginning of a line, i.e., Ctrl-D on Unix):
 
 > quit
 
-You can also run the interpreter from GNU Emacs (check the etc subdirectory in
-the sources for pure-mode.el), and for Windows there is a nice GUI application
-named "PurePad" which makes it easy to edit and run your Pure scripts.
+You can also run the interpreter from GNU Emacs (after running 'make', check
+the etc subdirectory in the sources for pure-mode.el), and for Windows there
+is a nice GUI application named "PurePad" which makes it easy to edit and run
+your Pure scripts.
 
 
 INSTALLING FROM SVN SOURCES
@@ -275,13 +283,17 @@ STEP 4': Fetch the SVN sources.
 
 $ svn co http://pure-lang.googlecode.com/svn/trunk/pure pure
 
-(This is for an anonymous, read-only copy. Project members please use https:
-instead of http: if you're planning to commit any changes.)
+This fetches the latest development sources (the "trunk") from svn and puts it
+into the 'pure' subdirectory in the current directory. This step needs to be
+done only once; once you've checked out your working copy, you can update it
+to the latest revision at any time by running 'svn up'.
 
-This will fetch the latest development sources (the "trunk") from svn and put
-it into the 'pure' subdirectory in the current directory. This step needs to
-be done only once; once you've checked out your working copy, you can update
-it to the latest revision at any time by running 'svn up'.
+(The above command is for an anonymous, read-only copy. Project members please
+use https: instead of http: if you're planning to commit any changes. Also,
+you might want to check out the entire trunk instead of just the trunk/pure
+directory if you plan to also compile some of the addon modules, or the
+complete svn tree if you want the whole shebang including all documentation
+and wiki files.)
 
 STEP 5': Configure, build and install Pure:
 
@@ -537,11 +549,11 @@ easiest way to work around this is to specify --disable-pic when configuring
 LLVM for x86-32 systems. Please check the following bug report for details on
 this issue: http://llvm.org/bugs/show_bug.cgi?id=3239
 
-The Ubuntu 9.04 LLVM 2.5 package (2.5-0ubuntu1) is broken on x86-32 for
-similar reasons (the package was built using --enable-pic unconditionally for
-both 32 and 64 bit; cf. http://packages.ubuntu.com/jaunty/llvm). Don't use
-that package on x86-32, build your own LLVM from source instead. Or complain
-to the maintainers so that the package gets fixed.
+The Ubuntu 9.04 LLVM 2.5 package (2.5-0ubuntu1) is broken on x86-32 for this
+reason (the package was built using --enable-pic unconditionally for both 32
+and 64 bit; cf. http://packages.ubuntu.com/jaunty/llvm). Don't use that
+package on x86-32, build your own LLVM from source instead. Or complain to the
+maintainers so that the package gets fixed.
 
 64 BIT SYSTEMS
 -- --- -------
@@ -585,7 +597,7 @@ MacPorts collection, see http://www.macports.org/. The current version of the
 interpreter does not appear to work with OSX/PPC; this is being worked on.
 
 Note that with at least some versions of the Apple gcc compiler, with all
-warnings turned on you'll get the (bogus) warning "control reaches end of
+warnings turned on you may get the (bogus) warning "control reaches end of
 non-void function" a couple of times in interpreter.cc. These are due to a bug
 in older gcc versions (see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=16558),
 but they are harmless and can be ignored. These warnings should also go away
@@ -642,6 +654,6 @@ release.) For the time being, a patched up version of llvmc.exe can be found
 at http://pure-lang.googlecode.com/svn/stuff/llvmc.exe.zip.
 
 
-May 2009
+August 2009
 Albert Graef <Dr.Graef at t-online.de>
 Eddie Rucker <erucker at bmc.edu>
