@@ -130,7 +130,7 @@ libpure_soname = lib$(libpure_name)$(major)$(DLL)
 libpure = lib$(libpure_name)$(major)$(DLL)
 LDFLAGS = -Wl,--stack=0x800000 -Wl,--enable-auto-import
 AUXLIBS += -DLIBGLOB='"libglob.dll"' -DLIBREGEX='"libgnurx-0.dll"'
-LIBS += $(LLVM_LDFLAGS) -lmingwex
+LIBS += -lmingwex
 endif
 
 # OSX
@@ -176,14 +176,14 @@ all: pure$(EXE) pure_main.o etc/pure-mode.el
 
 ifeq ($(sharedlib), yes)
 pure$(EXE): pure.o $(libpure)
-	$(CXX) -o $@ -L. $(LDFLAGS) pure.o -l$(libpure_name) $(LIBS)
+	$(CXX) -o $@ -L. $(LDFLAGS) pure.o -l$(libpure_name) $(LLVM_LDFLAGS) $(LIBS)
 else
 pure$(EXE): pure.o $(OBJECT)
-	$(CXX) -o $@ $(LDFLAGS) pure.o $(OBJECT) $(LLVM_LIBS) $(LIBS)
+	$(CXX) -o $@ $(LDFLAGS) pure.o $(OBJECT) $(LLVM_LIBS) $(LLVM_LDFLAGS) $(LIBS)
 endif
 
 $(libpure): $(OBJECT)
-	$(CXX) $(shared) $(soname) -o $@ $(LDFLAGS) $(OBJECT) $(LLVM_LIBS) $(LIBS)
+	$(CXX) $(shared) $(soname) -o $@ $(LDFLAGS) $(OBJECT) $(LLVM_LIBS) $(LLVM_LDFLAGS) $(LIBS)
 ifneq ($(libpure), $(libpure_soname))
 	ln -sf $(libpure) $(libpure_soname)
 endif
