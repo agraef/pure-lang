@@ -1654,7 +1654,7 @@ void interpreter::compile()
 	// compile to native code (always use the C-callable stub here)
 	assert(!f.fp); f.fp = JIT->getPointerToFunction(f.h);
 #if DEBUG>1
-	llvm::cerr << "JIT " << f.f->getNameStr() << " -> " << f.fp << '\n';
+	std::cerr << "JIT " << f.f->getNameStr() << " -> " << f.fp << '\n';
 #endif
 	// do a direct call to the runtime to create the fbox and cache it in
 	// a global variable
@@ -1669,9 +1669,9 @@ void interpreter::compile()
 	}
 	if (v.x) pure_free(v.x); v.x = pure_new(fv);
 #if DEBUG>1
-	llvm::cerr << "global " << &v.x << " (== "
-		   << JIT->getPointerToGlobal(v.v) << ") -> "
-		   << (void*)fv << '\n';
+	std::cerr << "global " << &v.x << " (== "
+		  << JIT->getPointerToGlobal(v.v) << ") -> "
+		  << (void*)fv << '\n';
 #endif
       }
     }
@@ -4616,7 +4616,7 @@ void Env::clear()
   if (local) {
     // purge local functions
 #if DEBUG>2
-    llvm::cerr << "clearing local '" << name << "'\n";
+    std::cerr << "clearing local '" << name << "'\n";
 #endif
     if (h != f) interp.JIT->freeMachineCodeForFunction(h);
     interp.JIT->freeMachineCodeForFunction(f);
@@ -4626,7 +4626,7 @@ void Env::clear()
     to_be_deleted.push_back(f); if (h != f) to_be_deleted.push_back(h);
   } else {
 #if DEBUG>2
-    llvm::cerr << "clearing global '" << name << "'\n";
+    std::cerr << "clearing global '" << name << "'\n";
 #endif
     // The code of anonymous globals (doeval, dodefn) is taken care of
     // elsewhere, we must not collect that here.
@@ -4659,22 +4659,22 @@ CallInst *Env::CreateCall(Function *f, const vector<Value*>& args)
   for (size_t i = 0; a != f->arg_end() && b != args.end(); i++, a++, b++) {
     Value* c = *b;
     if (a->getType() != c->getType()) {
-      llvm::cerr << "** argument mismatch!\n";
-      llvm::cerr << "function parameter #" << i << ": "; a->dump();
-      llvm::cerr << "provided argument  #" << i << ": "; c->dump();
+      std::cerr << "** argument mismatch!\n";
+      std::cerr << "function parameter #" << i << ": "; a->dump();
+      std::cerr << "provided argument  #" << i << ": "; c->dump();
       ok = false;
     }
   }
   if (ok && a != f->arg_end()) {
-    llvm::cerr << "** missing arguments!\n";
+    std::cerr << "** missing arguments!\n";
     ok = false;
   }
   if (ok && b != args.end() && !f->isVarArg()) {
-    llvm::cerr << "** extra arguments!\n";
+    std::cerr << "** extra arguments!\n";
     ok = false;
   }
   if (!ok) {
-    llvm::cerr << "** calling function: " << f->getNameStr() << '\n';
+    std::cerr << "** calling function: " << f->getNameStr() << '\n';
     f->dump();
     assert(0 && "bad function call");
   }
@@ -4765,9 +4765,9 @@ void Env::push(const char *msg)
   envstk.push_front(this);
 #if DEBUG>1
   interpreter& interp = *interpreter::g_interp;
-  llvm::cerr << "push (" << msg << ") " << this << " -> "
-	     << (tag>0?interp.symtab.sym(tag).s:"<<anonymous>>")
-	     << '\n';
+  std::cerr << "push (" << msg << ") " << this << " -> "
+	    << (tag>0?interp.symtab.sym(tag).s:"<<anonymous>>")
+	    << '\n';
 #endif
 }
 
@@ -4777,9 +4777,9 @@ void Env::pop()
   envstk.pop_front();
 #if DEBUG>1
   interpreter& interp = *interpreter::g_interp;
-  llvm::cerr << "pop " << this << " -> "
-	     << (tag>0?interp.symtab.sym(tag).s:"<<anonymous>>")
-	     << '\n';
+  std::cerr << "pop " << this << " -> "
+	    << (tag>0?interp.symtab.sym(tag).s:"<<anonymous>>")
+	    << '\n';
 #endif
 }
 
@@ -4821,8 +4821,8 @@ void Env::build_map(expr x)
 	name = (fenv->tag>0?interp.symtab.sym(fenv->tag).s:"<<anonymous>>") +
 	  "." + name;
       }
-      llvm::cerr << name << ": call " << interp.symtab.sym(x.vtag()).s
-		 << ":" << (unsigned)x.vidx() << '\n';
+      std::cerr << name << ": call " << interp.symtab.sym(x.vtag()).s
+		<< ":" << (unsigned)x.vidx() << '\n';
     }
 #endif
       fenv->prop[this] = x.vidx();
@@ -5019,14 +5019,14 @@ void Env::promote_map()
       {
 	interpreter& interp = *interpreter::g_interp;
 	assert(info.vtag>0);
-	llvm::cerr << "promoting " << interp.symtab.sym(info.vtag).s
-		   << " (idx " << (uint32_t)info.idx << ")"
-		   << " from "
-		   << (tag>0?interp.symtab.sym(tag).s:"<<anonymous>>")
-		   << " (offset " << info.idx-i << ") "
-		   << " to "
-		   << (f->tag>0?interp.symtab.sym(f->tag).s:"<<anonymous>>")
-		   << '\n';
+	std::cerr << "promoting " << interp.symtab.sym(info.vtag).s
+		  << " (idx " << (uint32_t)info.idx << ")"
+		  << " from "
+		  << (tag>0?interp.symtab.sym(tag).s:"<<anonymous>>")
+		  << " (offset " << info.idx-i << ") "
+		  << " to "
+		  << (f->tag>0?interp.symtab.sym(f->tag).s:"<<anonymous>>")
+		  << '\n';
       }
 #endif
       int32_t tag = info.vtag;
@@ -5082,14 +5082,14 @@ size_t Env::propagate_map()
       {
 	interpreter& interp = *interpreter::g_interp;
 	assert(info.vtag>0);
-	llvm::cerr << "propagating " << interp.symtab.sym(info.vtag).s
-		   << " (idx " << (uint32_t)info.idx << ")"
-		   << " from "
-		   << (tag>0?interp.symtab.sym(tag).s:"<<anonymous>>")
-		   << " (offset " << offs << ") "
-		   << " to "
-		   << (e.tag>0?interp.symtab.sym(e.tag).s:"<<anonymous>>")
-		   << '\n';
+	std::cerr << "propagating " << interp.symtab.sym(info.vtag).s
+		  << " (idx " << (uint32_t)info.idx << ")"
+		  << " from "
+		  << (tag>0?interp.symtab.sym(tag).s:"<<anonymous>>")
+		  << " (offset " << offs << ") "
+		  << " to "
+		  << (e.tag>0?interp.symtab.sym(e.tag).s:"<<anonymous>>")
+		  << '\n';
       }
 #endif
       int32_t tag = info.vtag;
@@ -5130,9 +5130,9 @@ void interpreter::push(const char *msg, Env *e)
   envstk.push_front(e);
 #if DEBUG>1
   interpreter& interp = *interpreter::g_interp;
-  llvm::cerr << "push (" << msg << ") " << e << " -> "
-	     << (e->tag>0?interp.symtab.sym(e->tag).s:"<<anonymous>>")
-	     << '\n';
+  std::cerr << "push (" << msg << ") " << e << " -> "
+	    << (e->tag>0?interp.symtab.sym(e->tag).s:"<<anonymous>>")
+	    << '\n';
 #endif
 }
 
@@ -5142,9 +5142,9 @@ void interpreter::pop(Env *e)
   envstk.pop_front();
 #if DEBUG>1
   interpreter& interp = *interpreter::g_interp;
-  llvm::cerr << "pop (" << e << ") -> "
-	     << (e->tag>0?interp.symtab.sym(e->tag).s:"<<anonymous>>")
-	     << '\n';
+  std::cerr << "pop (" << e << ") -> "
+	    << (e->tag>0?interp.symtab.sym(e->tag).s:"<<anonymous>>")
+	    << '\n';
 #endif
 }
 
@@ -6622,10 +6622,10 @@ Value *interpreter::builtin_codegen(expr x)
       Value *v = get_int(x.xval2());
 #if DEBUG
       if (u->getType() != v->getType()) {
-	llvm::cerr << "** operand mismatch!\n";
-	llvm::cerr << "operator:      " << symtab.sym(f.tag()).s << '\n';
-	llvm::cerr << "left operand:  "; u->dump();
-	llvm::cerr << "right operand: "; v->dump();
+	std::cerr << "** operand mismatch!\n";
+	std::cerr << "operator:      " << symtab.sym(f.tag()).s << '\n';
+	std::cerr << "left operand:  "; u->dump();
+	std::cerr << "right operand: "; v->dump();
 	assert(0 && "operand mismatch");
       }
 #endif
@@ -6650,10 +6650,10 @@ Value *interpreter::builtin_codegen(expr x)
       Value *v = get_int(x.xval2());
 #if DEBUG
       if (u->getType() != v->getType()) {
-	llvm::cerr << "** operand mismatch!\n";
-	llvm::cerr << "operator:      " << symtab.sym(f.tag()).s << '\n';
-	llvm::cerr << "left operand:  "; u->dump();
-	llvm::cerr << "right operand: "; v->dump();
+	std::cerr << "** operand mismatch!\n";
+	std::cerr << "operator:      " << symtab.sym(f.tag()).s << '\n';
+	std::cerr << "left operand:  "; u->dump();
+	std::cerr << "right operand: "; v->dump();
 	assert(0 && "operand mismatch");
       }
 #endif
@@ -6670,10 +6670,10 @@ Value *interpreter::builtin_codegen(expr x)
       Value *v = get_int(x.xval2());
 #if DEBUG
       if (u->getType() != v->getType()) {
-	llvm::cerr << "** operand mismatch!\n";
-	llvm::cerr << "operator:      " << symtab.sym(f.tag()).s << '\n';
-	llvm::cerr << "left operand:  "; u->dump();
-	llvm::cerr << "right operand: "; v->dump();
+	std::cerr << "** operand mismatch!\n";
+	std::cerr << "operator:      " << symtab.sym(f.tag()).s << '\n';
+	std::cerr << "left operand:  "; u->dump();
+	std::cerr << "right operand: "; v->dump();
 	assert(0 && "operand mismatch");
       }
 #endif
@@ -6771,10 +6771,10 @@ Value *interpreter::builtin_codegen(expr x)
       *v = get_double(x.xval2());
 #if DEBUG
     if (u->getType() != v->getType()) {
-      llvm::cerr << "** operand mismatch!\n";
-      llvm::cerr << "operator:      " << symtab.sym(f.tag()).s << '\n';
-      llvm::cerr << "left operand:  "; u->dump();
-      llvm::cerr << "right operand: "; v->dump();
+      std::cerr << "** operand mismatch!\n";
+      std::cerr << "operator:      " << symtab.sym(f.tag()).s << '\n';
+      std::cerr << "left operand:  "; u->dump();
+      std::cerr << "right operand: "; v->dump();
       assert(0 && "operand mismatch");
     }
 #endif
@@ -7961,8 +7961,8 @@ Value *interpreter::vref(int32_t tag, uint8_t idx, path p)
   else {
     // idx>0 => non-local, return the local proxy
 #if DEBUG>2
-    llvm::cerr << act_env().name << ": looking for " << symtab.sym(tag).s
-	       << ":" << (unsigned)idx << '\n';
+    std::cerr << act_env().name << ": looking for " << symtab.sym(tag).s
+	      << ":" << (unsigned)idx << '\n';
 #endif
     assert(act_env().xmap.find(xmap_key(tag, idx)) != act_env().xmap.end());
     return vref(tag, act_env().xmap[xmap_key(tag, idx)]);
@@ -8442,7 +8442,7 @@ Function *interpreter::fun_prolog(string name)
     }
   }
 #if DEBUG>1
-  llvm::cerr << "PROLOG FUNCTION " << f.name << '\n';
+  std::cerr << "PROLOG FUNCTION " << f.name << '\n';
 #endif
   // create a new basic block to start insertion into
   BasicBlock *bb = basic_block("entry", f.f);
@@ -8461,7 +8461,7 @@ void interpreter::fun_body(matcher *pm, bool nodefault)
   Env& f = act_env();
   assert(f.f!=0);
 #if DEBUG>1
-  llvm::cerr << "BODY FUNCTION " << f.name << '\n';
+  std::cerr << "BODY FUNCTION " << f.name << '\n';
 #endif
   BasicBlock *bodybb = basic_block("body");
   f.builder.CreateBr(bodybb);
@@ -8546,7 +8546,7 @@ void interpreter::fun_finish()
     f.f->print(out);
   }
 #if DEBUG>1
-  llvm::cerr << "END BODY FUNCTION " << f.name << '\n';
+  std::cerr << "END BODY FUNCTION " << f.name << '\n';
 #endif
 }
 
