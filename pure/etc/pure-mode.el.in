@@ -145,8 +145,13 @@ non-nil."
   (modify-syntax-entry ?\$  ".")
   (modify-syntax-entry ?\|  ".")
   ;; comment syntax a la C++ mode
-  (modify-syntax-entry ?/  ". 124b")
-  (modify-syntax-entry ?*  ". 23")
+  (cond
+   ((string-match "XEmacs\\|Lucid" emacs-version)
+    (modify-syntax-entry ?/  ". 1456")
+    (modify-syntax-entry ?*  ". 23"))
+   (t
+    (modify-syntax-entry ?/  ". 124b")
+    (modify-syntax-entry ?*  ". 23")))
   (modify-syntax-entry ?\n "> b")
   (modify-syntax-entry ?\^m "> b")
   (use-local-map pure-mode-map)
