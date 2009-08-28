@@ -4211,27 +4211,36 @@ to variables should fix this. **\n";
 #endif
   }
   // Remove unused globals.
+  static list<GlobalValue*> to_be_deleted;
   for (Module::global_iterator it = module->global_begin(),
 	 end = module->global_end(); it != end; ) {
     GlobalVariable &v = *(it++);
     if (!v.hasName()) {
-      v.eraseFromParent();
+      to_be_deleted.push_back(&v);
       continue;
     }
     map<GlobalVariable*,Function*>::iterator jt = varmap.find(&v);
     if (jt != varmap.end()) {
       // Strip variables holding unused function pointers.
       Function *f = jt->second;
-      if (strip && used.find(f) == used.end()) v.eraseFromParent();
+      if (strip && used.find(f) == used.end())
+	to_be_deleted.push_back(&v);
     }
   }
   // Remove unused functions.
   for (Module::iterator it = module->begin(), end = module->end();
        it != end; ) {
     Function &f = *(it++);
-    if (strip && used.find(&f) == used.end())
-      f.eraseFromParent();
+    if (strip && used.find(&f) == used.end()) {
+      f.dropAllReferences();
+      to_be_deleted.push_back(&f);
+    }
   }
+  for (list<GlobalValue*>::iterator it = to_be_deleted.begin(),
+	 end = to_be_deleted.end(); it != end; it++) {
+    (*it)->eraseFromParent();
+  }
+  to_be_deleted.clear();
   // Emit the code of the module now.
   module->print(code, 0);
   // Finally build the main function with all the initialization code.
