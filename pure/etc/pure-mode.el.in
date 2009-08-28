@@ -53,7 +53,7 @@
 ;; Try to figure out where interpreter and standard library are located. This
 ;; relies on the PURELIB environment variable being set correctly.
 
-(let ((libpath (getenv "PURELIB")))
+(let ((libpath (getenv "PURELIB")) (path (getenv "PATH")))
   (if libpath
       (let* ((prefix1 (file-name-directory libpath))
 	     (prefix2 (file-name-directory (directory-file-name prefix1)))
@@ -71,7 +71,16 @@
 	       (t exepath1))))
 	(setq pure-prog exepath)
 	(setq pure-libdir libpath)
-	)))
+	))
+  ;; If we haven't found the executable yet, try to locate it on PATH.
+  (unless (or (file-exists-p pure-prog) (null path))
+    (let ((exe1 (locate-library "pure" t (parse-colon-path path)))
+	  (exe2 (locate-library "pure.exe" t (parse-colon-path path))))
+      (cond
+       (exe1 (setq pure-prog exe1))
+       (exe2 (setq pure-prog exe2))
+       )))
+  )
 
 (defvar pure-font-lock-keywords
   (list
