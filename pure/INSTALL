@@ -519,11 +519,15 @@ autoconf, of course. (The distribution was prepared using autoconf 2.63.)
 SYSTEM NOTES
 ====== =====
 
-Pure is known to work on recent Linux and Mac OSX versions under x86, x86-64
-and ppc, as well as on MS Windows, but there are a few system-specific quirks
-which are discussed below. (Please also see the "Caveats and Notes" section of
-the manual for information on other known limitations of the current
-implementation.)
+Pure is known to work on recent Linux, Mac OSX and *BSD versions under x86 and
+x86-64, as well as on MS Windows (32 bit). There are a few system-specific
+quirks which are discussed below. (Please also see the "Caveats and Notes"
+section of the manual for information on other known limitations of the
+current implementation.)
+
+At the time of this writing, PowerPC (ppc) systems are not known to work,
+detailed feedback on the status of Pure on this architecture (whether using
+OSX, Linux or *BSD) is needed and will be much appreciated.
 
 ALL PLATFORMS
 --- ---------
@@ -592,9 +596,8 @@ know if you want to help with that.
 MAC OSX
 --- ---
 
-Pure works fine on OSX/Intel, and a port by Ryan Schmidt exists in the
-MacPorts collection, see http://www.macports.org/. The current version of the
-interpreter does not appear to work with OSX/PPC; this is being worked on.
+Pure is known to work on recent OSX versions, and a port by Ryan Schmidt
+exists in the MacPorts collection, see http://www.macports.org/.
 
 Note that with at least some versions of the Apple gcc compiler, with all
 warnings turned on you may get the (bogus) warning "control reaches end of
@@ -603,26 +606,23 @@ in older gcc versions (see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=16558),
 but they are harmless and can be ignored. These warnings should also go away
 once Apple upgrades its SDK to a newer gcc version.
 
-FREEBSD
--------
+*BSD
+----
 
-Currently only the statically compiled version of the interpreter
-(--disabled-shared) is known to work. Linking LLVM into the shared runtime
-library on FreeBSD 7.0 seems to cause undefined behaviour (failed assertions
-in LLVM). If anyone can help resolving this issue, please let us know.
+Pure is known to work on recent NetBSD and FreeBSD versions. Note that FreeBSD
+requires Pure 0.33 or later, if you have an earlier Pure version you need to
+add -lpthread to the linker options by modifying the LIBS variable, see the
+COMPILER AND LINKER OPTIONS for details.
 
-NETBSD
-------
+Also note that building Pure requires GNU make, thus you will have to use
+'gmake' instead of 'make'. In addition to gmake, you'll need recent versions
+of the following packages: perl5, flex, bison, readline, gmp, and gsl.
+Depending on your system, you might also have to set up some compiler and
+linker paths. E.g., the following does the trick on NetBSD:
 
-To install, do the usual pkg_add routine to install *updated* versions of
-subversion, gmake, perl5, flex, bison, readline, gmp, and gsl. Then, download
-llvm-2.4.tar.gz and do the usual './configure [flags]', 'gmake', and
-'gmake install' (*Notice*, use 'gmake' and not 'make' since they are different
-on *BSD systems). Pull the source files through svn, then, do the
-'./configure CPPFLAGS=-I/usr/pkg/include LDFLAGS=-L/usr/pkg/lib', 'gmake', and
-'gmake install' routine. Remember that NetBSD folks recommend not putting stuff
-in ld.so.conf, so put 'export LD_LIBRARY_PATH=/usr/pkg/lib:/usr/local/lib'
-in your shell startup script.
+export C_INCLUDE_PATH=/usr/local/include:/usr/pkg/include
+export LIBRARY_PATH=/usr/local/lib:/usr/pkg/lib
+export LD_LIBRARY_PATH=/usr/pkg/lib:/usr/local/lib
 
 MS WINDOWS
 -- -------
