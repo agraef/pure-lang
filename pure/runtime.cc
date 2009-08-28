@@ -3623,6 +3623,7 @@ pure_expr *pure_matrix_rowsvq(uint32_t n, pure_expr **xs)
   return 0;
 }
 
+#ifdef HAVE_GSL
 static double get_matrix_double_value(pure_expr *x)
 {
   switch (x->tag) {
@@ -3676,6 +3677,7 @@ static void get_matrix_complex_value(pure_expr *x, double& a, double& b)
     break;
   }
 }
+#endif
 
 extern "C"
 pure_expr *pure_matrix_columnsq(uint32_t n, ...)
@@ -6717,6 +6719,7 @@ static bool dump(Blob &b, map<pure_expr*,size_t>& ref, size_t& key,
       ref[x] = key++;
       return true;
     }
+#ifdef HAVE_GSL
   case EXPR::DMATRIX:
     if (x->data.mat.p) {
       gsl_matrix *m = (gsl_matrix*)x->data.mat.p;
@@ -6744,6 +6747,7 @@ static bool dump(Blob &b, map<pure_expr*,size_t>& ref, size_t& key,
       return true;
     } else
       return false;
+#endif
   case EXPR::MATRIX:
     if (x->data.mat.p) {
       checkstk(test);
@@ -6949,6 +6953,7 @@ static pure_expr *load(Blob &b, map<size_t,pure_expr*>& ref, size_t& key)
     assert(x == NULL);
     return add_ref(ref, key, pure_pointer(x));
   }
+#ifdef HAVE_GSL
   case EXPR::DMATRIX: {
     void *p;
     b.load(tag, n1, n2, p);
@@ -6964,6 +6969,12 @@ static pure_expr *load(Blob &b, map<size_t,pure_expr*>& ref, size_t& key)
     b.load(tag, n1, n2, p);
     return add_ref(ref, key, matrix_from_complex_array(n1, n2, p));
   }
+#else
+  case EXPR::DMATRIX:
+  case EXPR::IMATRIX:
+  case EXPR::CMATRIX:
+    return 0;
+#endif
   case EXPR::MATRIX: {
     checkstk(test);
     b.load(tag, n1, n2);
