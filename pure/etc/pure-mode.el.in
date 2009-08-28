@@ -5,10 +5,11 @@
 ;; Distributed under GPL V3 (or later; see the accompanying COPYING file).
 
 ;; INSTALLATION: If necessary, edit the values of the `pure-prog' and
-;; `pure-lib-dir' variables below.
+;; `pure-libdir' variables below. This usually isn't necessary if the PURELIB
+;; environment variable is set.
 
 (defvar pure-prog "@bindir@/pure")
-(defvar pure-lib-dir "@libdir@/pure")
+(defvar pure-libdir "@libdir@/pure")
 
 ;; Then copy this file to your site-lisp directory. The easiest way to make
 ;; Pure mode available in emacs is to add the following to your emacs startup
@@ -48,6 +49,29 @@
 ;; NOTE: For reading the Pure online documentation, you'll have to set the
 ;; PURE_HELP environment variable accordingly. Otherwise Pure's 'help' command
 ;; will try to run w3m which won't work in an Emacs buffer.
+
+;; Try to figure out where interpreter and standard library are located. This
+;; relies on the PURELIB environment variable being set correctly.
+
+(let ((libpath (getenv "PURELIB")))
+  (if libpath
+      (let* ((prefix1 (file-name-directory libpath))
+	     (prefix2 (file-name-directory (directory-file-name prefix1)))
+	     ;; On most systems the interpreter is located in ../../bin.
+	     (exepath1 (concat prefix2 "bin/pure"))
+	     ;; Windows/Msys:
+	     (exepath2 (concat prefix2 "bin/pure.exe"))
+	     ;; Windows (Pure MSI package):
+	     (exepath3 (concat prefix1 "pure.exe"))
+	     (exepath
+	      (cond
+	       ((file-exists-p exepath1) exepath1)
+	       ((file-exists-p exepath2) exepath2)
+	       ((file-exists-p exepath2) exepath3)
+	       (t exepath1))))
+	(setq pure-prog exepath)
+	(setq pure-libdir libpath)
+	)))
 
 (defvar pure-font-lock-keywords
   (list
@@ -185,6 +209,11 @@ non-nil."
 
 (defcustom pure-prog-name pure-prog
   "*Name of the interpreter executable."
+  :type 'string
+  :group 'pure)
+
+(defcustom pure-library-dir pure-libdir
+  "*Location of the Pure library directory."
   :type 'string
   :group 'pure)
 
@@ -536,7 +565,7 @@ manipulating the command history, etc. See `pure-eval-mode'.
 ;; find a script in the current directory or on the Pure library path
 
 (defun pure-locate-script (file)
-  (let ((script (locate-library file t (list "." pure-lib-dir))))
+  (let ((script (locate-library file t (list "." pure-library-dir))))
     (if script
 	script
       (error (concat "File " file " not found")))))
