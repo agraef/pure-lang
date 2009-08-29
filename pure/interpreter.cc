@@ -16,7 +16,9 @@
 #include <llvm/Support/CallSite.h>
 #include <llvm/System/DynamicLibrary.h>
 #include <llvm/Transforms/Utils/BasicBlockUtils.h>
+#ifdef HAVE_LLVM_SUPPORT_RAW_OSTREAM_H
 #include <llvm/Support/raw_ostream.h>
+#endif
 
 #include <llvm/ExecutionEngine/JIT.h>
 #include <llvm/Target/TargetData.h>
@@ -3934,6 +3936,11 @@ static string& quote(string& s)
 //#define RAW_STREAM 1
 #if !RAW_STREAM
 #define RAW_STREAM LLVM26
+#else
+#ifndef HAVE_LLVM_SUPPORT_RAW_OSTREAM_H
+// Only use raw_ostream if we have it.
+#undef RAW_STREAM
+#endif
 #endif
 
 #if RAW_STREAM
@@ -4211,12 +4218,12 @@ to variables should fix this. **\n";
 #endif
   }
   // Remove unused globals.
-  static list<GlobalValue*> to_be_deleted;
+  list<GlobalVariable*> var_to_be_deleted;
   for (Module::global_iterator it = module->global_begin(),
 	 end = module->global_end(); it != end; ) {
     GlobalVariable &v = *(it++);
     if (!v.hasName()) {
-      to_be_deleted.push_back(&v);
+      var_to_be_deleted.push_back(&v);
       continue;
     }
     map<GlobalVariable*,Function*>::iterator jt = varmap.find(&v);
@@ -4224,23 +4231,29 @@ to variables should fix this. **\n";
       // Strip variables holding unused function pointers.
       Function *f = jt->second;
       if (strip && used.find(f) == used.end())
-	to_be_deleted.push_back(&v);
+	var_to_be_deleted.push_back(&v);
     }
   }
   // Remove unused functions.
+  list<Function*> fun_to_be_deleted;
   for (Module::iterator it = module->begin(), end = module->end();
        it != end; ) {
     Function &f = *(it++);
     if (strip && used.find(&f) == used.end()) {
       f.dropAllReferences();
-      to_be_deleted.push_back(&f);
+      fun_to_be_deleted.push_back(&f);
     }
   }
-  for (list<GlobalValue*>::iterator it = to_be_deleted.begin(),
-	 end = to_be_deleted.end(); it != end; it++) {
+  for (list<GlobalVariable*>::iterator it = var_to_be_deleted.begin(),
+	 end = var_to_be_deleted.end(); it != end; it++) {
     (*it)->eraseFromParent();
   }
-  to_be_deleted.clear();
+  var_to_be_deleted.clear();
+  for (list<Function*>::iterator it = fun_to_be_deleted.begin(),
+	 end = fun_to_be_deleted.end(); it != end; it++) {
+    (*it)->eraseFromParent();
+  }
+  fun_to_be_deleted.clear();
   // Emit the code of the module now.
   module->print(code, 0);
   // Finally build the main function with all the initialization code.
@@ -5956,7 +5969,11 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   verifyFunction(*f);
   if (FPM) FPM->run(*f);
   if (verbose&verbosity::dump) {
+#if RAW_STREAM
     raw_stdout_ostream out;
+#else
+    ostream& out = std::cout;
+#endif
     f->print(out);
   }
   externals[sym.f] = ExternInfo(sym.f, name, type, argt, f);
@@ -8445,7 +8462,11 @@ Function *interpreter::fun_prolog(string name)
       if (FPM) FPM->run(*f.h);
       // show output code, if requested
       if (verbose&verbosity::dump) {
+#if RAW_STREAM
 	raw_stdout_ostream out;
+#else
+	ostream& out = std::cout;
+#endif
 	f.h->print(out);
       }
     }
@@ -8551,7 +8572,11 @@ void interpreter::fun_finish()
   if (FPM) FPM->run(*f.f);
   // show output code, if requested
   if (verbose&verbosity::dump)  {
+#if RAW_STREAM
     raw_stdout_ostream out;
+#else
+    ostream& out = std::cout;
+#endif
     f.f->print(out);
   }
 #if DEBUG>1

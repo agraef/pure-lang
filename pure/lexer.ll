@@ -608,15 +608,22 @@ void my_readline(const char *prompt, char *buf, int &result, int max_size)
   result = k;
 }
 
+#ifdef HAVE_LLVM_SUPPORT_RAW_OSTREAM_H
 #include <llvm/Support/raw_ostream.h>
 #ifdef HAVE_LLVM_SUPPORT_RAW_OS_OSTREAM_H
 #include <llvm/Support/raw_os_ostream.h>
+#endif
 #endif
 
 void Env::print(ostream& os) const
 {
   if (!f) return; // not used, probably a shadowed rule
-  { llvm::raw_os_ostream raw_os(os);
+  {
+#if HAVE_LLVM_SUPPORT_RAW_OSTREAM_H
+    llvm::raw_os_ostream raw_os(os);
+#else
+    ostream& raw_os = os;
+#endif
     if (h && h != f) h->print(raw_os);
     f->print(raw_os);
   }
@@ -1383,7 +1390,12 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	  sout << info << ";";
 	  if ((!sflag||lflag) && dflag) {
 	    if (!sflag) sout << '\n';
-	    { llvm::raw_os_ostream raw_sout(sout);
+	    {
+#if HAVE_LLVM_SUPPORT_RAW_OSTREAM_H
+	      llvm::raw_os_ostream raw_sout(sout);
+#else
+	      ostream& raw_sout = sout;
+#endif
 	      info.f->print(raw_sout);
 	    }
 	  } else
@@ -1446,7 +1458,12 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	    sout << info << ";";
 	    if ((!sflag||lflag) && dflag) {
 	      if (!sflag) sout << '\n';
-	      { llvm::raw_os_ostream raw_sout(sout);
+	      {
+#if HAVE_LLVM_SUPPORT_RAW_OSTREAM_H
+		llvm::raw_os_ostream raw_sout(sout);
+#else
+		ostream& raw_sout = sout;
+#endif
 		info.f->print(raw_sout);
 	      }
 	    } else
