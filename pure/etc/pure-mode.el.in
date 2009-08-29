@@ -372,9 +372,7 @@ when point is not at the current command line.
 Error messages are indicated with a special font, and in XEmacs they will also
 be highlighted when the mouse passes over them. Moreover, pressing the middle
 mouse button (button2) over such a message visits the corresponding source
-line in another window (`pure-mouse-msg' command); anywhere else, the middle
-mouse button invokes the usual `mouse-yank' command, so that you can also use
-the mouse to perform xterm-like cut and paste in the Pure-Eval buffer.
+line in another window (`pure-mouse-msg' command).
 
 You can also use the `pure-first-msg' (\\[pure-first-msg]), `pure-next-msg'
 (\\[pure-next-msg]), `pure-prev-msg' (\\[pure-prev-msg]) and `pure-last-msg'
@@ -728,6 +726,7 @@ window."
 	(select-window actwindow)
 	(error "No more messages")))))
 
+(if (string-match "XEmacs" emacs-version)
 (defun pure-mouse-msg (event)
   "Show the source line referenced by an error message under the mouse."
   (interactive "e")
@@ -735,6 +734,14 @@ window."
   (if (save-excursion (forward-line 0) (looking-at pure-msg-regexp))
       (progn (forward-line 0) (pure-current-msg))
     (mouse-yank event)))
+(defun pure-mouse-msg (event)
+  "Show the source line referenced by an error message under the mouse."
+  (interactive "e")
+  (mouse-set-point event)
+  (if (save-excursion (forward-line 0) (looking-at pure-msg-regexp))
+      (progn (forward-line 0) (pure-current-msg))
+    (mouse-yank-at-click event 0)))
+)
 
 ;; visit main script and the eval buffer
 
