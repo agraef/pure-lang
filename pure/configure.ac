@@ -127,7 +127,7 @@ fi
 dnl Check for LLVM.
 AC_CHECK_PROG(LLVMCONF,llvm-config,llvm-config,no)
 if test "$LLVMCONF" = no; then
-  AC_MSG_ERROR(Cannot find LLVM.)
+  AC_MSG_ERROR([Cannot find LLVM.])
 fi
 dnl Check for the new-style template arguments of the IRBuilder class.
 AC_LANG_PUSH([C++])
