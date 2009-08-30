@@ -94,6 +94,9 @@ dnl readline needs special treatment (macro by Ville Laurikari).
 AC_CHECK_READLINE
 dnl iconv and nl_langinfo need special treatment (macros by Bruno Haible).
 AM_ICONV
+if test "$am_cv_func_iconv" != yes; then
+  AC_MSG_ERROR([Cannot find iconv, please install GNU libiconv.])
+fi
 AM_LANGINFO_CODESET
 dnl Determine how to get alloca.
 AC_FUNC_ALLOCA
