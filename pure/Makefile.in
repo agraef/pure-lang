@@ -43,6 +43,8 @@ CC = @CC@
 CXX = @CXX@
 INSTALL = @INSTALL@
 DIFF = @DIFF@
+FLEX = flex
+BISON = bison
 
 ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
@@ -204,10 +206,10 @@ interpreter.o: interpreter.cc
 	$(CXX) $(CXXFLAGS) $(PIC) $(CPPFLAGS) $(LLVM_FLAGS) -I. -I$(srcdir) -c -o $@ $<
 
 lexer.cc: lexer.ll
-	flex -o $(srcdir)/lexer.cc $<
+	$(FLEX) -o $(srcdir)/lexer.cc $<
 
 parser.cc: parser.yy
-	bison -v -o $(srcdir)/parser.cc $<
+	$(BISON) -v -o $(srcdir)/parser.cc $<
 
 parser.hh location.hh position.hh stack.hh: parser.cc
 
