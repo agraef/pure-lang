@@ -25,7 +25,7 @@ AC_DEFUN([AM_ICONV],
       am_cv_func_iconv=yes)
     if test "$am_cv_func_iconv" != yes; then
       am_save_LIBS="$LIBS"
-      LIBS="$LIBS $am_cv_libiconv_ldpath -liconv"
+      LIBS="$LIBS $am_cv_lib_iconv_ldpath -liconv"
       AC_TRY_LINK([#include <stdlib.h>
 #include <iconv.h>],
         [iconv_t cd = iconv_open("","");
