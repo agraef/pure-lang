@@ -30,6 +30,25 @@ dnl Check for programs.
 AC_PROG_INSTALL
 AC_PROG_CC
 AC_PROG_CXX
+if test -z "$BISON"; then
+  AC_CHECK_PROG(BISON,bison,bison,bison-missing)
+fi
+if test "$BISON" = bison-missing; then
+  AC_MSG_WARN([Cannot find bison, won't be able to regenerate parser.cc.])
+fi
+AC_ARG_VAR(BISON, [how to invoke bison (version 2.3 or later required)])
+if test -z "$FLEX"; then
+  AC_CHECK_PROG(FLEX,flex,flex,flex-missing)
+fi
+if test "$FLEX" = flex-missing; then
+  AC_MSG_WARN([Cannot find flex, won't be able to regenerate lexer.cc.])
+else
+  flexminor=`"$FLEX" --version 2>&1 | sed -e 's,^flex 2\.5\.\(.*\),\1,'`
+  if test "$flexminor" = "3" -o "$flexminor" = "4" -o "$flexminor" = "4a"; then
+    AC_MSG_WARN([Your flex version is too old, consider installing flex 2.5.31 or newer.])
+  fi
+fi
+AC_ARG_VAR(FLEX, [how to invoke flex (version 2.5.31 or later required)])
 dnl Determine compiler characteristics.
 AC_C_BIGENDIAN
 AC_CHECK_SIZEOF(void *)
