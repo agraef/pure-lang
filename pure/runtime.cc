@@ -453,13 +453,14 @@ static void pure_free_clos(pure_expr *x)
 #if DEBUG>3
   cerr << "pure_free, freeing environment: "
        << (x->data.clos->local?"local":"global") << " closure "
-       << x << " (" << (void*)x << "), refc = " << x->refc << endl;
+       << x << " (" << (void*)x << ")\n";
 #endif
-  if (x->data.clos->ep) {
-    Env *env = (Env*)x->data.clos->ep;
-    assert(env->refc > 0);
-    if (--env->refc == 0) delete env;
-  }
+  /* XXXFIXME: We should really keep track of references to the compile time
+     (Env*) environment here and collect it when it's no longer used. There
+     used to be a field in the closure struct for that, but this caused
+     various issues, especially with thunks and when LLVM is compiled with
+     --enable-expensive-checks. So it seems safest to just leak some memory on
+     global expressions and variable definitions here. */
   if (x->data.clos->env) {
     for (size_t i = 0; i < x->data.clos->m; i++)
       pure_free(x->data.clos->env[i]);
@@ -477,8 +478,6 @@ static pure_closure *pure_copy_clos(pure_closure *clos)
   ret->n = clos->n;
   ret->m = clos->m;
   ret->fp = clos->fp;
-  ret->ep = clos->ep;
-  if (clos->ep) ((Env*)clos->ep)->refc++;
   if (clos->m == 0)
     ret->env = 0;
   else {
@@ -3044,8 +3043,12 @@ pure_expr *pure_clos(bool local, int32_t tag, uint32_t key, uint32_t n,
   x->data.clos->n = n;
   x->data.clos->m = m;
   x->data.clos->fp = f;
+#if 0
+  /* This isn't used any more, see the comments in pure_free_clos. We still
+     keep the e parameter for backward compatibility, but it's completely
+     ignored now. */
   x->data.clos->ep = e;
-  if (e) ((Env*)e)->refc++;
+#endif
   if (m == 0)
     x->data.clos->env = 0;
   else {
@@ -3866,15 +3869,6 @@ pure_expr *pure_force(pure_expr *x)
     pure_new_internal(ret);
     // memoize the result
     assert(x!=ret);
-    if (x->data.clos->ep)
-      /* XXXKLUDGE: This thunk was created inside a global variable
-	 definition. Unlink the thunk from its parent environment (effectively
-	 making the environment permanent), so that we don't leave dangling
-	 pointers to the thunk procedure, which are bound to cause segfaults
-	 later. (This leaks memory on the parent environment if the variable
-	 is cleared later, but since this can only happen on the interactive
-	 command line, that's a minor issue.) */
-      x->data.clos->ep = 0;
     pure_free_clos(x);
     x->tag = ret->tag;
     x->data = ret->data;

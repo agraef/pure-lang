@@ -1,5 +1,13 @@
 2009-08-31  Albert Graef  <Dr.Graef@t-online.de>
 
+	* interpreter.cc, runtime.cc: Remove reference counts and
+	automatic memory management on compile time environments (Env*) of
+	global expressions and variable definitions. This causes many
+	issues with thunks and when LLVM is compiled with
+	--enable-expensive-checks (reported by Roman Neuhauser), and
+	doesn't really seem to be worth the effort, so instead we now just
+	leak some memory there.
+
 	* configure.ac: Add checks for flex and bison. Warn when these
 	programs are missing, and also warn about some ancient flex
 	versions. This also makes it possible to specify alternative

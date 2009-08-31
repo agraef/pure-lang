@@ -194,8 +194,10 @@ public:
   Builder builder;
   // parent environment (if any)
   Env *parent;
+#if 0
   // reference counter
   uint32_t refc;
+#endif
   // convenience functions for invoking CreateGEP() and CreateLoad()
   llvm::Value *CreateGEP
   (llvm::Value *x, llvm::Value *i, const char* name = "")
@@ -234,7 +236,7 @@ public:
 #ifdef LLVM26
       builder(llvm::getGlobalContext()),
 #endif
-      parent(0), refc(0)
+      parent(0)
   {}
   // environment for an anonymous closure with given body x
   Env(int32_t _tag, const char *_descr, uint32_t _n, expr x,
@@ -244,7 +246,7 @@ public:
 #ifdef LLVM26
       builder(llvm::getGlobalContext()),
 #endif
-      parent(0), refc(0)
+      parent(0)
   {
     if (envstk.empty()) {
       assert(!local);
@@ -263,7 +265,7 @@ public:
 #ifdef LLVM26
       builder(llvm::getGlobalContext()),
 #endif
-      parent(0), refc(0)
+      parent(0)
   {
     if (envstk.empty()) {
       assert(!local);
@@ -282,7 +284,7 @@ public:
 #ifdef LLVM26
       builder(llvm::getGlobalContext()),
 #endif
-      parent(0), refc(0)
+      parent(0)
   {
   }
   // assignment -- this is only allowed if the lvalue is an uninitialized

@@ -6200,7 +6200,7 @@ pure_expr *interpreter::doeval(expr x, pure_expr*& e, bool keep)
      environments survive for the entire lifetime of any embedded closures,
      which might still be called at a later time. */
   Env *save_fptr = fptr;
-  fptr = new Env(0, 0, 0, x, false); fptr->refc = 1;
+  fptr = new Env(0, 0, 0, x, false);
   Env &f = *fptr;
   push("doeval", &f);
   fun_prolog("$$init");
@@ -6224,11 +6224,11 @@ pure_expr *interpreter::doeval(expr x, pure_expr*& e, bool keep)
   JIT->freeMachineCodeForFunction(f.f);
   if (!keep) {
     f.f->eraseFromParent();
-    // If there are no more references, we can get rid of the environment now.
-    if (fptr->refc == 1)
-      delete fptr;
-    else
-      fptr->refc--;
+    /* XXXFIXME: We should really keep track of references to the environment
+       and collect it when it's no longer used. But this causes various
+       issues, especially with thunks and when LLVM is compiled with
+       --enable-expensive-checks, so it seems safest to just leak some memory
+       here. */
   }
   fptr = save_fptr;
   if (estk.empty()) {
@@ -6308,7 +6308,7 @@ pure_expr *interpreter::dodefn(env vars, expr lhs, expr rhs, pure_expr*& e,
   // Create an anonymous function to call in order to evaluate the rhs
   // expression, match against the lhs and bind variables in lhs accordingly.
   Env *save_fptr = fptr;
-  fptr = new Env(0, 0, 0, rhs, false); fptr->refc = 1;
+  fptr = new Env(0, 0, 0, rhs, false);
   Env &f = *fptr;
   push("dodefn", &f);
   fun_prolog("$$init");
@@ -6386,11 +6386,11 @@ pure_expr *interpreter::dodefn(env vars, expr lhs, expr rhs, pure_expr*& e,
   JIT->freeMachineCodeForFunction(f.f);
   if (!keep) {
     f.f->eraseFromParent();
-    // If there are no more references, we can get rid of the environment now.
-    if (fptr->refc == 1)
-      delete fptr;
-    else
-      fptr->refc--;
+    /* XXXFIXME: We should really keep track of references to the environment
+       and collect it when it's no longer used. But this causes various
+       issues, especially with thunks and when LLVM is compiled with
+       --enable-expensive-checks, so it seems safest to just leak some memory
+       here. */
   }
   fptr = save_fptr;
   if (res) {
