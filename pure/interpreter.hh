@@ -694,6 +694,8 @@ public:
 				 const list<string>& argtypes,
 				 bool varargs = false, void *fp = 0,
 				 string asname = "");
+  void check_used(set<llvm::Function*>& used,
+		  map<llvm::GlobalVariable*,llvm::Function*>& varmap);
   int compiler(string out, list<string> libnames);
   list<DebugInfo> debug_info;
   set<int32_t> breakpoints, tmp_breakpoints;
