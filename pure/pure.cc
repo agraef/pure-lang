@@ -473,7 +473,7 @@ main(int argc, char *argv[])
       string s = string(*args).substr(2);
       if (s.empty()) continue;
       char *end;
-      strtoul(s.c_str(), &end, 0);
+      (void)strtoul(s.c_str(), &end, 0);
       if (*end) {
 	interp.error(prog + ": invalid option " + *args);
 	return 1;
@@ -626,10 +626,10 @@ main(int argc, char *argv[])
     char cwd[BUFSIZE];
     if (getcwd(cwd, BUFSIZE) && (env = getenv("HOME"))) {
       char home[BUFSIZE];
-      chdir(env);
+      (void)chdir(env);
       if (getcwd(home, BUFSIZE) && strcmp(home, cwd) == 0)
 	want_both = false;
-      chdir(cwd);
+      (void)chdir(cwd);
     }
     if (!rcfile.empty() && chkfile(rcfile))
       interp.run(rcfile, false, true);

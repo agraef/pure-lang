@@ -916,7 +916,7 @@ static string searchdir(const string& srcdir, const string& libdir,
       dir += "/";
     fname = dir+name;
   }
-  chdir(cwd);
+  (void)chdir(cwd);
 #if DEBUG>1
   std::cerr << "search '" << script << "', found as '" << fname << "'\n";
 #endif
