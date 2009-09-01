@@ -124,11 +124,14 @@ void interpreter::init()
   JIT = ExecutionEngine::create(MP, false, &error,
 #if FAST_JIT
 #warning "You selected FAST_JIT. This isn't recommended!"
-				llvm::CodeGenOpt::None
+				llvm::CodeGenOpt::None,
 #else
-				llvm::CodeGenOpt::Aggressive
+				llvm::CodeGenOpt::Aggressive,
 #endif
-				);
+				// bool GVsWithCode is true by default which
+				// breaks freeMachineCodeForFunction, so make
+				// sure to set it to false here
+				false);
   if (!JIT) {
     if (error.empty()) error = "The JIT could not be created.";
     std::cerr << "** Panic: " << error << " Giving up. **\n";
