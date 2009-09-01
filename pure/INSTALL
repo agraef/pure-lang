@@ -10,13 +10,13 @@ of this file details the tweaks necessary to make Pure compile and run on
 various other platforms. More information about installing LLVM and the
 required LLVM source packages can be found at http://llvm.org.
 
-Pure is known to work on Linux, NetBSD, Mac OSX, and MS Windows, and should
-compile (with the usual amount of tweaking) on all recent UNIX/POSIX-based
-platforms. We recommend using version 4.x of the GNU C++ compiler; it should
-be available almost everywhere (in fact, since you'll need LLVM anyway, you
-can also use the gcc frontend available for LLVM). You'll also need a Bourne-
-compatible shell and GNU make, which are also readily available on most
-platforms.
+Pure is known to work on Linux, FreeBSD, NetBSD, Mac OSX and MS Windows, and
+should compile (with the usual amount of tweaking) on all recent UNIX/POSIX-
+based platforms. We recommend using version 4.x of the GNU C++ compiler; it
+should be available almost everywhere (in fact, since you'll need LLVM anyway,
+you can also use the gcc frontend available for LLVM). You'll also need a
+Bourne- compatible shell and GNU make, which are also readily available on
+most platforms.
 
 A binary package in msi format is provided for Windows users in the download
 area of the pure-lang.googlecode.com project page. Ports and packages for
@@ -124,11 +124,10 @@ $ ./configure --enable-optimized --disable-assertions --disable-expensive-checks
 $ make
 $ sudo make install
 
-*IMPORTANT:* On x86-64 systems you might have to add --enable-pic to the
-configure command, so that the static LLVM libraries can be linked into the
-Pure runtime library. Conversely, on 32 bit systems the --disable-pic option
-might be needed. See the comments on 32/64 bit support in the SYSTEM NOTES
-section below.
+*IMPORTANT:* On x86-64 systems you should add --enable-pic to the configure
+command, so that the static LLVM libraries can be linked into the Pure runtime
+library. Conversely, on 32 bit systems the --disable-pic option is needed. See
+the comments on 32/64 bit support in the SYSTEM NOTES section below.
 
 Note that the configure flags are for an optimized (non-debug) build and
 disable all compilation targets but the one for your system. You might wish to
@@ -199,9 +198,11 @@ $ make check
 
 If all is well, all tests should pass. If not, the test directory will contain
 some *.diff files containing further information about the failed tests. In
-that case please zip up the entire test directory and mail it to the author or
-the Pure mailing list. Also include precise information about the Pure version
-or svn revision number you're running.
+that case please zip up the entire test directory and mail it to the author,
+post it on the Pure mailing list, or enter a bug report at
+http://code.google.com/p/pure-lang/issues/list. Also include precise
+information about the Pure and LLVM versions or svn revision numbers you're
+running.
 
 Please note that MSYS 1.0.11 (or at least the diffutils package from that
 version) is required to make 'make check' work on Windows. Also note that
@@ -211,6 +212,11 @@ routines in Microsoft's C library aren't fully POSIX-compatible. The same
 applies to BSD systems. Moreover, test025.pure as well as test041.pure and
 test042.pure will always fail if you built Pure without GSL support; take this
 as a reminder that you need GSL to enjoy full matrix support in Pure.
+
+If Pure appears to be broken on your system ('make check' reports a lot of
+failures), it's usually because of a miscompiled LLVM. Please review the
+instructions under step 3, and make sure the LLVM configure command includes
+--enable-pic or --disable-pic as required by your platform.
 
 STEP 6. The Pure interpreter should be ready to go now.
 
