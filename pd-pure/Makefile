@@ -88,8 +88,12 @@ endif
 # be linked (-l etc.).
 
 CFLAGS = -g -O2
+ifneq "$(EAGER)" ""
 override CPPFLAGS += $(EAGER)
+endif
+ifneq "$(VERBOSE)" ""
 override CPPFLAGS += $(VERBOSE)
+endif
 
 DISTFILES = COPYING Makefile README pd-pure.html config.guess pure.c \
 examples/*.pure examples/*.pd examples/*.el
