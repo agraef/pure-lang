@@ -700,14 +700,18 @@ routine allows you to overwrite any part of the array.</p>
 <h2><a class="toc-backref" href="#id14">5.1&nbsp;&nbsp;&nbsp;Livecoding Support</a></h2>
 <p>Livecoding means that you can quickly reload your Pure scripts after changes
 while the Pd patch keeps running. The Pure loader provides some experimental
-support for this by means of the special <tt class="docutils literal"><span class="pre">pure-runtime</span></tt> object.</p>
-<p>Sending a <tt class="docutils literal"><span class="pre">bang</span></tt> to this object tells the plugin to reload all loaded
-scripts and update the Pure objects in your patch accordingly. The object also
-provides two outlets to deal with the inevitable latencies caused by the
-compilation process. The right outlet is banged when the compilation starts
-and the left outlet gets a bang when the compilation is finished, so that a
-patch using this facility can respond to these events in the appropriate way
-(e.g., disabling output during compilation).</p>
+support for this by means of the special <tt class="docutils literal"><span class="pre">pure-runtime</span></tt> object. Right now,
+this isn't really as &quot;live&quot; as we'd like it to be, because of the considerable
+delays caused by scripts being recompiled on the fly when they are loaded.
+However, there's hope that this facility becomes more useful as Pure's
+LLVM-based JIT compiler and computers become faster.</p>
+<p>Sending a <tt class="docutils literal"><span class="pre">bang</span></tt> to the <tt class="docutils literal"><span class="pre">pure-runtime</span></tt> object tells the plugin to reload
+all loaded scripts and update the Pure objects in your patch accordingly. The
+object also provides two outlets to deal with the inevitable latencies caused
+by the compilation process. The right outlet is banged when the compilation
+starts and the left outlet gets a bang when the compilation is finished, so
+that a patch using this facility can respond to these events in the
+appropriate way (e.g., disabling output during compilation).</p>
 <p>Note that there can be any number of <tt class="docutils literal"><span class="pre">pure-runtime</span></tt> objects in a patch,
 which will all refer to the same instance of the Pure interpreter.</p>
 <p>Also please note that the number of inlets and outlets of Pure objects never
