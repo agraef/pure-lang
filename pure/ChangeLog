@@ -1,3 +1,39 @@
+2009-09-03  Albert Graef  <Dr.Graef@t-online.de>
+
+	* interpreter.cc (compiler): Overhaul organization of the batch
+	compiler and add support for LLVM bitcode output. Also, the new
+	batch compiler only needs the basic LLVM toolchain (llc+opt) and
+	gcc to produce native output code, so we don't rely on the
+	llvm-gcc behemoth any more, which has kept many people from taking
+	advantage of the batch compiler.
+
+	The batch compiler now recognizes and generates output code for
+	the following file types:
+
+	- .ll (or stdout): LLVM assembler.
+
+	- .bc: LLVM bitcode.
+
+	- .s: Native assembler code.
+
+	- .o: Native object code.
+
+	In all other cases, output code is written to a temporary .bc file
+	which is then passed to llc+opt+gcc to create an object file,
+	which, as before, is finally linked with a minimal 'main' to
+	create an executable. The main differences here are that llc+opt
+	are invoked directly (rather than through llvmc), that intermediate
+	files are in bitcode or native assembly format (which also speeds
+	up compilation), and that gcc is used instead of llvm-gcc.
+
+	Also note that the PURE_COPTS environment variable (which was
+	formely used to pass options to llvmc) is much less useful now and
+	has thus been removed. 'opt' is now always invoked with all
+	standard optimization options (besides -tailcallelim). If you
+	really want to pass additional options to the toolchain, you can
+	do so by compiling to .ll or .bc format and then invoking the
+	tools manually.
+
 2009-09-02  Albert Graef  <Dr.Graef@t-online.de>
 
 	* Makefile.in: Also bump the version of the runtime library
