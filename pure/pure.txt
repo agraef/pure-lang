@@ -194,19 +194,24 @@ Compiling Scripts
 If the -c option is specified, it forces the interpreter to non-interactive
 mode (unless -i is specified as well, which overrides -c). Any scripts
 specified on the command line are then executed as usual, but after execution
-the interpreter takes a snapshot of the program and compiles it to either an
-LLVM assembler (.ll) file, a native object (.o) file, or a native executable,
-depending on the output filename specified with -o. If the output filename
-ends in the .ll extension, an LLVM assembler file is created which can then be
-processed with the LLVM toolchain (llvmc, llvm-gcc, etc.). If the output
-filename is just '-', the assembler file is written to standard output, which
-is useful if you want to pass the generated code to the LLVM tools in a
-pipeline. Otherwise the interpreter automatically invokes llvmc to compile the
-program to either a native object file (if the output filename ends in the .o
-extension) or a native executable with the given name. You can also specify
-additional libraries to be linked into the executable with the -l option, and
-pass extra options to llvmc with the PURE_COPTS environment variable. If the
-output filename is omitted, it defaults to ``a.out`` (``a.exe`` on Windows).
+the interpreter takes a snapshot of the program and compiles it to one of
+several supported output formats, LLVM assembler (.ll) or bitcode (.bc),
+native assembler (.s) or object (.o), or a native executable, depending on the
+output filename specified with -o. If the output filename ends in the .ll
+extension, an LLVM assembler file is created which can then be processed with
+the LLVM toolchain. If the output filename is just '-', the assembler file is
+written to standard output, which is useful if you want to pass the generated
+code to the LLVM tools in a pipeline. If the output filename ends in the .bc
+extension, an LLVM bitcode file is created instead.
+
+The .ll and .bc formats are supported natively by the Pure interpreter, no
+external tools are required to generate these. If the target is an .s, .o or
+executable file, the Pure interpreter creates a temporary bitcode file on
+which it invokes the LLVM tools opt and llc to create a native assembler file,
+and then uses gcc to assemble and link the resulting program (if requested).
+You can also specify additional libraries to be linked into the executable
+with the -l option. If the output filename is omitted, it defaults to
+``a.out`` (``a.exe`` on Windows).
 
 The -c option provides a convenient way to quickly turn a Pure script into a
 standalone executable which can be invoked directly from the shell. One
@@ -346,9 +351,6 @@ BROWSER
 PURELIB
     Directory to search for library scripts, including the prelude. If PURELIB
     is not set, it defaults to some location specified at installation time.
-
-PURE_COPTS
-    Extra options to be passed to llvmc in a batch compilation (-c).
 
 PURE_HELP
     Command used to browse the Pure manual. This must be a browser capable of
@@ -3761,17 +3763,17 @@ includes *all* functions defined in the compiled program or imported through a
 ``using`` clause, even if they don't seem to be "used" anywhere. As a remedy,
 the batch compiler has an additional -s option to strip unused functions from
 the output code. For instance, on a 64 bit Linux systems with ELF binaries,
-the -s option shaves off more than two thirds of the code size from our
-hello.pure example. (Note that, even then the resulting code is fairly large
-when compared to compiled C code, as it still contains the symbol table of the
+the -s option shaves off some two thirds of the code size from our hello.pure
+example. (Note that, even then the resulting code is fairly large when
+compared to compiled C code, as it still contains the symbol table of the
 entire program, which is needed by the runtime environment.)
 
 ::
 
   $ pure -o hello -c -x hello.pure 7 && ls -l hello
-  -rwxr-xr-x 1 ag users 626693 2009-08-22 10:04 hello
+  -rwxr-xr-x 1 ag users 533334 2009-09-03 01:26 hello
   $ pure -o hello -c -s -x hello.pure 7 && ls -l hello
-  -rwxr-xr-x 1 ag users 188139 2009-08-22 10:04 hello
+  -rwxr-xr-x 1 ag users 178491 2009-09-03 01:26 hello
   $ ./hello
   Hello, world!
   [1,2,6,24,120,720,5040]
@@ -3837,27 +3839,28 @@ gets linked in, too. This is necessary because Pure's runtime library is
 actually written in C++.)
 
 In fact, this is pretty much what ``pure -c`` actually does for you when
-creating an executable, except that it uses llvm-g++ to do the linking.
+creating an executable.
 
 If your script loads dynamic libraries (``using "lib:...";``) then you'll also
 have to link with those; *all* external references have to be resolved at
 compile time. This is taken care of automatically when creating
 executables. Otherwise it is a good idea to run ``pure -c`` with the
 ``-v0100`` verbosity option so that it prints the libraries to be linked (in
-addition to the command used to invoke llvmc)::
+addition to the commands which are invoked in the compilation process)::
 
   $ pure -v0100 -c hello.pure -o hello.o
-  llvmc -c -x llvm-assembler hello.o.ll -o hello.o
-  Link with: llvm-g++ hello.o -lpure
+  opt -f -std-compile-opts -tailcallelim hello.o.bc | llc -f -o hello.o.s
+  gcc -c hello.o.s -o hello.o
+  Link with: g++ hello.o -lpure
 
 Well, we already knew that, so let's consider a slightly more interesting
 example from Pure's ODBC module::
 
   $ pure -v0100 -c pure-odbc/examples/menagerie.pure -o menagerie.o
-  llvmc -c -x llvm-assembler menagerie.o.ll -o menagerie.o
-  Link with: llvm-g++ menagerie.o /usr/local/lib/pure/odbc.so -lpure
-  $ llvm-g++ -shared -o menagerie.so menagerie.o \
-  /usr/local/lib/pure/odbc.so -lpure
+  opt -f -std-compile-opts -tailcallelim menagerie.o.bc | llc -f -o menagerie.o.s
+  gcc -c menagerie.o.s -o menagerie.o
+  Link with: g++ menagerie.o /usr/local/lib/pure/odbc.so -lpure
+  $ g++ -shared -o menagerie.so menagerie.o /usr/local/lib/pure/odbc.so -lpure
 
 Note that the listed link options are necessary but might not be sufficient;
 ``pure -c`` just makes a best guess based on the Pure source. On most systems
