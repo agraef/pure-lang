@@ -837,7 +837,14 @@ static int pure_loader(t_canvas *canvas, char *name)
     class_set_extern_dir(gensym(dirbuf));
     /* Load the Pure script. */
     sprintf(cmdbuf, "using \"%s/%s.pure\";\n", dirbuf, name);
+#ifdef VERBOSE
+    printf("pd-pure: compiling %s.pure\n", name);
+#endif
     pure_evalcmd(cmdbuf);
+#ifdef EAGER
+    /* Force eager compilation. */
+    pure_interp_compile(interp, pure_sym(name));
+#endif
     /* Create the object class. */
     class_setup(name, dirbuf);
     class_set_extern_dir(&s_);
@@ -857,7 +864,13 @@ static void reload(t_classes *c)
     if (strcmp(c->sym->s_name, "pure")) {
       class_set_extern_dir(gensym(c->dir));
       sprintf(cmdbuf, "using \"%s/%s.pure\";\n", c->dir, c->sym->s_name);
+#ifdef VERBOSE
+      printf("pd-pure: compiling %s.pure\n", c->sym->s_name);
+#endif
       pure_evalcmd(cmdbuf);
+#ifdef EAGER
+      pure_interp_compile(interp, pure_sym(c->sym->s_name));
+#endif
       class_set_extern_dir(&s_);
     }
   }
@@ -874,6 +887,9 @@ static void pure_restart(void)
   pure_delete_interp(interp);
   interp = pure_create_interp(0, 0);
   pure_switch_interp(interp);
+#ifdef VERBOSE
+  printf("pd-pure: reloading, please wait...\n");
+#endif
   reload(pure_classes);
   for (x = xhead; x; x = x->next)
     pure_reinit(x);
@@ -912,12 +928,6 @@ extern void pure_setup(void)
   char *ptr;
   int fd;
   interp = pure_create_interp(0, 0);
-#if EAGER
-  /* Force eager compilation *now*, so that the JIT doesn't start compiling
-     stuff from the library on demand later. Unfortunately, with the current
-     version of the LLVM JIT this is dead slow, so it's disabled for now. */
-  pure_interp_compile(interp);
-#endif
   if (interp) {
     pure_expr *x = pure_symbol(pure_sym("version"));
     char *pure_version = 0;

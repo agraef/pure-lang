@@ -1,7 +1,19 @@
 
 # Package name and version number:
 dist = pd-pure-$(version)
-version = 0.6
+version = 0.7
+
+# Here are some variables you can specify when invoking 'make', besides the
+# usual CXXFLAGS, CPPFLAGS etc.:
+
+# VERBOSE=-DVERBOSE: This enables special code to make pd-pure give some
+# feedback on stdout when it's compiling scripts. This is disabled by default.
+
+# EAGER=-DEAGER: This enables special code to enforce eager compilation at
+# script load time. This is enabled automatically for Pure versions which
+# support this (0.34 and later), thus you shouldn't have to set this flag
+# manually. However, you can forcibly disable this option (not recommended) by
+# passing 'EAGER='.
 
 # Try to guess the Pd installation prefix (this needs GNU make):
 prefix = $(patsubst %/bin/pd,%,$(shell which pd 2>/dev/null))
@@ -17,6 +29,11 @@ ifeq ($(strip $(pureprefix)),)
 # Fall back to /usr/local.
 pureprefix = /usr/local
 endif
+
+# Try to guess the Pure minor version number, and set up the EAGER option
+# accordingly:
+pureminor = $(shell pure --version 2>/dev/null | sed -n -e 's/^Pure 0\.\([0-9]*\).*/\1/' -e '/^[0-9]*$$/p' 2>/dev/null)
+EAGER = $(shell (test -z "$(pureminor)" || test "$(pureminor)" -ge 34) && echo '-DEAGER')
 
 # Installation goes into $(libdir)/pd, you can also set this directly
 # instead of $(prefix).
@@ -64,12 +81,15 @@ PIC = -fPIC
 endif
 
 # Default CFLAGS are -g -O2, CPPFLAGS, LDFLAGS and LIBS are empty by default.
-# These can be set from the command line as usual. Use CFLAGS, CPPFLAGS and
-# LDFLAGS for compiler (-O etc.), preprocessor (-I etc.) and linker (-L etc.) 
-# options, respectively. LIBS is to be used for additional libraries to be
-# linked (-l etc.).
+# If Pure 0.34 or later is used, -DEAGER is added to CPPFLAGS. These variables
+# can be set from the command line as usual. Use CFLAGS, CPPFLAGS and LDFLAGS
+# for additional compiler (-O etc.), preprocessor (-I etc.) and linker (-L
+# etc.) options, respectively. LIBS is to be used for additional libraries to
+# be linked (-l etc.).
 
 CFLAGS = -g -O2
+override CPPFLAGS += $(EAGER)
+override CPPFLAGS += $(VERBOSE)
 
 DISTFILES = COPYING Makefile README pd-pure.html config.guess pure.c \
 examples/*.pure examples/*.pd examples/*.el
