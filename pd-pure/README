@@ -14,14 +14,12 @@ functional programming language based on the term rewriting calculus.
 .. _Pd: http://puredata.info/
 .. _Pure: http://pure-lang.googlecode.com/
 
-This is still an experimental version, please report bugs to the author. In
-particular, note that the embedded Pure interpreter uses the same kind of JIT
-compiler as the command line version, which may cause annoying delays during
-startup, since the Pure functions are compiled by the JIT when they are first
-used. (However, once all Pure objects have been compiled to native code, they
-are executed very efficiently.) With the current version of the LLVM JIT used
-by the Pure interpreter there's no easy way around this, but we hope to fix
-this issue in a future release.
+Please note that the present version of the module is still somewhat
+experimental, but it seems to work fairly well at least with Pure versions
+0.34 and later. In particular, note that Pure is a *compiled* language and
+thus there are some inevitable latencies at startup, when the embedded Pure
+interpreter loads your Pure scripts and compiles them on the fly. However,
+once the scripts have been compiled, they are executed very efficiently.
 
 .. contents::
 .. sectnum::
@@ -46,9 +44,9 @@ prefix=/some/path``. Or you can specify the exact path of the lib/pd directory
 with ``make pdlibdir=/some/path``; by default the Makefile assumes
 ``$(prefix)/lib/pd``.
 
-The Makefile also tries to guess the host system type and set up some
-platform-specific things accordingly. If this doesn't work for your system
-then you'll have to edit the Makefile accordingly.
+The Makefile also tries to guess the host system type and Pure version, and
+set up some platform-specific things accordingly. If this doesn't work for
+your system then you'll have to edit the Makefile accordingly.
 
 After installation, you still have to tell Pd to load the Pure external at
 startup, either with the ``-lib`` option (``pd -lib pure``), or by specifying
@@ -65,11 +63,11 @@ well. You can find all packages on the Download page at
 http://pure-lang.googlecode.com. For instance, at the time of this writing,
 the available packages are:
 
-* http://pure-lang.googlecode.com/files/pure-0.28.msi
+* http://pure-lang.googlecode.com/files/pure-0.34.msi
 
 * http://pure-lang.googlecode.com/files/pd-mingw-0.42-5.msi
 
-* http://pure-lang.googlecode.com/files/pd-pure-0.6.msi
+* http://pure-lang.googlecode.com/files/pd-pure-0.7.msi
 
 Make sure that you get the latest versions of these packages. After installing
 the packages, you still have to configure Pd to load the ``pure`` external at
