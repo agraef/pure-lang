@@ -478,13 +478,19 @@ void pure_delete_interp(pure_interp *interp);
 void pure_switch_interp(pure_interp *interp);
 pure_interp *pure_current_interp();
 
-/* Eager compilation. Compiles all loaded definitions and runs the JIT. This
-   may be useful for applications where incremental compilation is not
-   appropriate, but it also increases startup times since it compiles all
-   definitions no matter whether they are actually used by the running program
-   or not. */
+/* Eager compilation. This runs the JIT, as necessary, on the given global
+   function and transitively all other functions it might use. This often
+   increases startup times, since the given function and its callees are
+   compiled beforehand, but might be useful for programs with a defined entry
+   point where lazy compilation is not appropriate, such as realtime
+   applications. NOTE: If the program doesn't have a defined entry point, the
+   function symbol fno can also be zero or negative. In this case the JIT is
+   run on each and every function of the program. This is *very* slow on
+   startup, because it compiles all definitions no matter whether they are
+   actually used by the running program, and thus should only be used as a
+   last resort. */
 
-void pure_interp_compile(pure_interp *interp);
+void pure_interp_compile(pure_interp *interp, int32_t fno);
 
 /* END OF PUBLIC API. *******************************************************/
 
