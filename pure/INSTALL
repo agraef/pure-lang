@@ -84,13 +84,8 @@ nice Windows frontend, TortoiseSVN, see http://tortoisesvn.tigris.org.
 STEP 2. Get and unpack the LLVM 2.5 sources at:
 http://llvm.org/releases/download.html#2.5
 
-For a basic installation, you only need the llvm-2.5 tarball which contains
-the LLVM library as well as most of the LLVM toolchain.
-
-For a complete toolchain you also need llvm-gcc, the LLVM version of gcc. This
-will let you compile Pure scripts to native executables, see "Batch
-Compilation" in the manual for details. Note that you can also install
-llvm-gcc at a later time; only the LLVM library is required to build Pure.
+You only need the llvm-2.5 tarball which contains the LLVM library as well as
+most of the LLVM toolchain.
 
 *NOTES:*
 
@@ -101,15 +96,7 @@ llvm-gcc at a later time; only the LLVM library is required to build Pure.
   latest stable LLVM release because there have been substantial improvements
   in the LLVM JIT in recent releases. (Also note that there are some x86-64
   specific quirks with LLVM 2.3, see the notes on 64 bit support in the SYSTEM
-  NOTES section for details.) In order to make the batch compiler work, you'll
-  need LLVM 2.5 or later.
-
-- If you plan to use Pure's batch compiler on 32 bit x86 systems, you need to
-  patch up the llvmc tool in LLVM 2.5. We provide the necessary patch here:
-  http://pure-lang.googlecode.com/svn/wiki/Base.td-x86_32.patch (Without this,
-  llvmc causes suboptimal 32 bit code to be generated, and even breaks llc on
-  Windows. This bug was fixed in LLVM svn r68127, so the patch shouldn't be
-  needed with LLVM 2.6 and later any more.)
+  NOTES section for details.)
 
 - Some Linux distributions provide LLVM packages which are broken on 32 bit
   x86 systems. The symptom usually is that the interpreter segfaults inside
@@ -132,36 +119,11 @@ the comments on 32/64 bit support in the SYSTEM NOTES section below.
 Note that the configure flags are for an optimized (non-debug) build and
 disable all compilation targets but the one for your system. You might wish to
 omit --enable-targets=host-only if you want to enable cross-compilation (this
-isn't supported by Pure right now, but other LLVM applications offer such
-capabilities). To do a debug build of LLVM, simply leave away all the extra
+isn't directly supported by Pure right now, but the LLVM tools offer this
+capability). To do a debug build of LLVM, simply leave away all the extra
 configure parameters (except possibly --enable-targets=host-only, and
 --enable-pic if it is needed). Note, however, that this will have an impact on
 the speed of the Pure compiler.
-
-*OPTIONAL, BUT RECOMMENDED:* As already mentioned, you'll also need llvm-gcc
-to make Pure's batch compiler work. You can build and install llvm-gcc as
-follows (this assumes that you have unpacked the the llvm-2.5 and
-llvm-gcc-4.2-2.5.source tarballs in the same directory):
-
-$ cd llvm-gcc4.2-2.5.source
-$ mkdir obj
-$ cd obj
-$ ../configure --program-prefix=llvm- --enable-llvm=$PWD/../../llvm-2.5 --enable-languages=c,c++
-$ make
-$ sudo make install
-
-Be patient, this takes a while.
-
-You might wish to add 'fortran' to --enable-languages if you also want to
-build the Fortran compiler (and, likewise, 'ada' for the Ada compiler).
-
-NOTE: On x86-64, llvm-gcc can build both 64 bit and 32 bit libraries by
-default, but compiling llvm-gcc will probably fail if you don't have some
-special development packages installed to make that work. In that case add
---disable-multilib to the above configure command to disable this feature.
-
-Also see README-LLVM in the llvm-gcc sources for additional instructions in
-case anything goes awry.
 
 STEP 4. Get and unpack the Pure sources at: http://pure-lang.googlecode.com
 
@@ -648,18 +610,12 @@ well as "PurePad", an alternative GUI frontend for editing and running Pure
 scripts on Windows.
 
 After installing the MSI, you might also want to go to the LLVM website and
-grab the LLVM toolchain for mingw32/x86. You'll have to install both the "LLVM
-binaries" and the "LLVM-GCC binaries" package on your system to make the Pure
-batch compiler work. Just unzip these into some convenient location on your
-harddrive and set up PATH so that it points to the llvm-x.y and
-llvm-gcc-x.y/bin directories.
-
-NOTE: The llvmc compiler driver included in LLVM 2.5 has a bug which breaks
-batch compilation on (32 bit) Windows. (This will be fixed in the next LLVM
-release.) For the time being, a patched up version of llvmc.exe can be found
-at http://pure-lang.googlecode.com/svn/stuff/llvmc.exe.zip.
+grab the LLVM toolchain for mingw32/x86. As of Pure 0.34, it is sufficient to
+install the "LLVM binaries" package on your system to make the Pure batch
+compiler work. Just unzip these into some convenient location on your
+harddrive and set up PATH so that it points to the llvm-x.y directory.
 
 
-August 2009
+September 2009
 Albert Graef <Dr.Graef at t-online.de>
 Eddie Rucker <erucker at bmc.edu>
