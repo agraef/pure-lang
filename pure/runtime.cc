@@ -2766,6 +2766,8 @@ pure_interp *pure_create_interp(int argc, char *argv[])
       /* ignored */;
     else if (*args == string("-c"))
       /* ignored */;
+    else if (*args == string("-fPIC") || *args == string("-fpic"))
+      /* ignored */;
     else if (*args == string("-g"))
       /* ignored */;
     else if (*args == string("-i"))

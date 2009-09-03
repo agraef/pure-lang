@@ -40,6 +40,7 @@ using namespace std;
 "Usage:           pure [options ...] [script ...] [-- args ...]\n\
                  pure [options ...] -x script [args ...]\n\
 -c               Batch compilation.\n\
+-fPIC            Create position-independent code (batch compilation).\n\
 -g               Enable symbolic debugging.\n\
 --help, -h       Print this message and exit.\n\
 -i               Force interactive mode (read commands from stdin).\n\
@@ -407,6 +408,8 @@ main(int argc, char *argv[])
       return 0;
     } else if (*args == string("-c"))
       interp.compiling = true;
+    else if (*args == string("-fPIC") || *args == string("-fpic"))
+      interp.pic = true;
     else if (*args == string("-g"))
       interp.debugging = true;
     else if (*args == string("-i"))

@@ -561,9 +561,10 @@ void interpreter::init()
 
 interpreter::interpreter()
   : verbose(0), compiling(false), interactive(false), debugging(false),
-    strip(false), restricted(false), ttymode(false), override(false),
-    stats(false), temp(0), ps("> "), libdir(""), histfile("/.pure_history"),
-    modname("pure"), nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
+    pic(false), strip(false), restricted(false), ttymode(false),
+    override(false), stats(false), temp(0), ps("> "), libdir(""),
+    histfile("/.pure_history"), modname("pure"),
+    nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
     result(0), lastres(0), mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0),
     sstk(__sstk), stoplevel(0), debug_skip(false), fptr(__fptr)
 {
@@ -575,7 +576,7 @@ interpreter::interpreter(int32_t nsyms, char *syms,
 			 int32_t *arities, void **externs,
 			 pure_expr ***_sstk, void **_fptr)
   : verbose(0), compiling(false), interactive(false), debugging(false),
-    strip(false), restricted(true), ttymode(false), override(false),
+    pic(false), strip(false), restricted(true), ttymode(false), override(false),
     stats(false), temp(0), ps("> "), libdir(""), histfile("/.pure_history"),
     modname("pure"), nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
     result(0), lastres(0), mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0),
@@ -4428,13 +4429,8 @@ to variables should fix this. **\n";
     /* Call llc (and opt) to create a native assembler file which can then be
        passed to gcc to handle assembly and linkage (if requested). */
     string asmfile = (ext==".s")?out:out+".s";
-    string cmd = "opt -f -std-compile-opts -tailcallelim "+quote(target)+
-      " | llc -f "+
-      // Why isn't this the default if LLVM was built with --enable-pic? :(
-      // Anyway, on x86_64 we want a position-independent object which can be
-      // linked into a shared library.
-      string((triple.find("x86_64-")!=string::npos)?
-	     "-relocation-model=pic ":"")+
+    string cmd = "opt -f -std-compile-opts "+quote(target)+
+      " | llc -f "+string(pic?"-relocation-model=pic ":"")+
       "-o "+quote(asmfile);
     if (vflag) std::cerr << cmd << '\n';
     int status = system(cmd.c_str());

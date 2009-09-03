@@ -368,6 +368,7 @@ public:
   bool compiling;    // batch compiler mode
   bool interactive;  // interactive mode
   bool debugging;    // debugging mode
+  bool pic;          // create position-independent code (batch compiler)
   bool strip;        // strip unused functions (batch compiler)
   bool restricted;   // restricted mode
   bool ttymode;      // connected to a tty
