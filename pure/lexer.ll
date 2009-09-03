@@ -144,7 +144,6 @@ blank  [ \t\f\v\r]
 <xdecl>postfix    yylval->fix = postfix; return token::FIX;
 <xdecl>outfix     return token::OUTFIX;
 <xdecl>nonfix     return token::NONFIX;
-<xdecl>nullary    interp.warning(*yylloc, "warning: 'nullary' keyword is deprecated"); return token::NONFIX;
 <xdecl>private    return token::PRIVATE;
 <xdecl>public     return token::PUBLIC;
 <xdecl>const      return token::CONST;
@@ -187,7 +186,6 @@ blank  [ \t\f\v\r]
 <xusing>postfix    yylval->fix = postfix; return token::FIX;
 <xusing>outfix     return token::OUTFIX;
 <xusing>nonfix     return token::NONFIX;
-<xusing>nullary    interp.warning(*yylloc, "warning: 'nullary' keyword is deprecated"); return token::NONFIX;
 <xusing>private    return token::PRIVATE;
 <xusing>public     return token::PUBLIC;
 <xusing>const      return token::CONST;
@@ -319,7 +317,6 @@ prefix     yylval->fix = prefix; return token::FIX;
 postfix    yylval->fix = postfix; return token::FIX;
 outfix     return token::OUTFIX;
 nonfix     return token::NONFIX;
-nullary    interp.warning(*yylloc, "warning: 'nullary' keyword is deprecated"); return token::NONFIX;
 private    return token::PRIVATE;
 public     return token::PUBLIC;
 const      return token::CONST;
