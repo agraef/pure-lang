@@ -87,22 +87,18 @@ http://llvm.org/releases/download.html#2.5
 You only need the llvm-2.5 tarball which contains the LLVM library as well as
 most of the LLVM toolchain.
 
-*NOTES:*
+LLVM from svn (both the 2.6 release branch and the trunk) is fully supported
+as of Pure 0.31. LLVM 2.3 and 2.4 should still work, too, but we really
+recommend the latest stable LLVM release because there have been substantial
+improvements in the LLVM JIT in recent releases. (Also note that there are
+some x86-64 specific quirks with LLVM 2.3, see the notes on 64 bit support in
+the SYSTEM NOTES section for details.)
 
-- LLVM from svn (both the 2.6 release branch and the trunk) are fully
-  supported as of Pure 0.31.
-
-- LLVM 2.3 and 2.4 should still work, too, but we really recommend the
-  latest stable LLVM release because there have been substantial improvements
-  in the LLVM JIT in recent releases. (Also note that there are some x86-64
-  specific quirks with LLVM 2.3, see the notes on 64 bit support in the SYSTEM
-  NOTES section for details.)
-
-- Some Linux distributions provide LLVM packages which are broken on 32 bit
-  x86 systems. The symptom usually is that the interpreter segfaults inside
-  the LLVM JIT right at startup. This is a known issue on Ubuntu 9.04 and
-  Fedora Core 10. If you run into this, you'll have to compile LLVM yourself;
-  please see the notes on x86-32/64 compilation below.
+NOTE: Some Linux distributions provide LLVM packages which are broken on 32
+bit x86 systems. The symptom usually is that the interpreter segfaults inside
+the LLVM JIT right at startup. This is a known issue on Ubuntu 9.04 and Fedora
+Core 10. If you run into this, you'll have to compile LLVM yourself; please
+see the notes on x86-32/64 compilation below.
 
 STEP 3. Configure, build and install LLVM as follows:
 
@@ -564,7 +560,7 @@ know if you want to help with that.
 MAC OSX
 --- ---
 
-Pure is known to work on recent OSX versions, and a port by Ryan Schmidt
+Pure should build fine on recent OSX versions, and a port by Ryan Schmidt
 exists in the MacPorts collection, see http://www.macports.org/.
 
 Note that with at least some versions of the Apple gcc compiler, with all
@@ -581,6 +577,10 @@ Pure is known to work on recent NetBSD and FreeBSD versions. Note that FreeBSD
 requires Pure 0.33 or later, if you have an earlier Pure version you need to
 add -lpthread to the linker options by modifying the LIBS variable, see the
 COMPILER AND LINKER OPTIONS for details.
+
+Note that, at the time of this writing, the LLVM port in the FreeBSD ports
+collection is built with all assertions and checks enabled, so you might want
+to compile LLVM yourself to improve performance.
 
 Also note that building Pure requires GNU make, thus you will have to use
 'gmake' instead of 'make'. In addition to gmake, you'll need recent versions
