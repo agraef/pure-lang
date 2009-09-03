@@ -449,6 +449,8 @@ below:</p>
 <dl class="docutils">
 <dt><tt class="docutils literal"><span class="pre">-c</span></tt></dt>
 <dd>Batch compilation.</dd>
+<dt><tt class="docutils literal"><span class="pre">-fPIC</span></tt>, <tt class="docutils literal"><span class="pre">-fpic</span></tt></dt>
+<dd>Create position-independent code (batch compilation).</dd>
 <dt><tt class="docutils literal"><span class="pre">-g</span></tt></dt>
 <dd>Enable symbolic debugging.</dd>
 <dt><tt class="docutils literal"><span class="pre">--help</span></tt>, <tt class="docutils literal"><span class="pre">-h</span></tt></dt>
@@ -3976,7 +3978,7 @@ executables. Otherwise it is a good idea to run <tt class="docutils literal"><sp
 addition to the commands which are invoked in the compilation process):</p>
 <pre class="literal-block">
 $ pure -v0100 -c hello.pure -o hello.o
-opt -f -std-compile-opts -tailcallelim hello.o.bc | llc -f -o hello.o.s
+opt -f -std-compile-opts hello.o.bc | llc -f -o hello.o.s
 gcc -c hello.o.s -o hello.o
 Link with: g++ hello.o -lpure
 </pre>
@@ -3984,7 +3986,7 @@ Link with: g++ hello.o -lpure
 example from Pure's ODBC module:</p>
 <pre class="literal-block">
 $ pure -v0100 -c pure-odbc/examples/menagerie.pure -o menagerie.o
-opt -f -std-compile-opts -tailcallelim menagerie.o.bc | llc -f -o menagerie.o.s
+opt -f -std-compile-opts menagerie.o.bc | llc -f -o menagerie.o.s
 gcc -c menagerie.o.s -o menagerie.o
 Link with: g++ menagerie.o /usr/local/lib/pure/odbc.so -lpure
 $ g++ -shared -o menagerie.so menagerie.o /usr/local/lib/pure/odbc.so -lpure
@@ -3994,8 +3996,15 @@ $ g++ -shared -o menagerie.so menagerie.o /usr/local/lib/pure/odbc.so -lpure
 this will be good enough, but if it isn't, you can just add options to the
 linker command as needed to pull in additional required libraries.</p>
 <p>As this last example shows, you can also create shared libraries from Pure
-modules. Even then you'll have to supply an initialization routine which calls
-<tt class="docutils literal"><span class="pre">__pure_main__</span></tt> somewhere. Also note that you can't just call Pure functions
+modules. However, on some systems (most notably x86_64), this requires that
+you pass the <tt class="docutils literal"><span class="pre">-fPIC</span></tt> option when batch-compiling the module, so that
+position-independent code is generated:</p>
+<pre class="literal-block">
+$ pure -c -fPIC pure-odbc/examples/menagerie.pure -o menagerie.o
+</pre>
+<p>Also note that even when building a shared module, you'll have to supply an
+initialization routine which calls <tt class="docutils literal"><span class="pre">__pure_main__</span></tt> somewhere.</p>
+<p>Another point worth mentioning here is that you can't just call Pure functions
 in a batch-compiled module directly. That's because in order to call a Pure
 function, at least in the current implementation, you have to set up a stack
 frame for the function. However, there's a convenience function called
@@ -4038,10 +4047,15 @@ code:</p>
 pure -c hello.pure -o hello.ll
 </pre>
 <p>Note the .ll extension; this tells the compiler that you want an LLVM
-assembler file. In this case you'll have to have to handle the rest of the
-compilation yourself. This gives you the opportunity, e.g., to employ the LLVM
-toolchain to apply special source code optimizations. Please refer to the
-<a class="reference external" href="http://llvm.org/docs/">LLVM documentation</a> for details.</p>
+assembler file. An LLVM bitcode file can be created just as easily:</p>
+<pre class="literal-block">
+pure -c hello.pure -o hello.bc
+</pre>
+<p>In these cases you'll have to have to handle the rest of the compilation
+yourself. This gives you the opportunity, e.g., to play with special
+optimization and code generation options provided by the LLVM
+toolchain. Please refer to the <a class="reference external" href="http://llvm.org/docs/">LLVM documentation</a> (in particular, the
+description of the opt and llc programs) for details.</p>
 </div>
 <div class="section" id="the-show-function">
 <h2><a class="toc-backref" href="#id59">12.5&nbsp;&nbsp;&nbsp;The __show__ Function</a></h2>

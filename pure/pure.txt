@@ -95,6 +95,9 @@ below:
 ``-c``
     Batch compilation.
 
+``-fPIC``, ``-fpic``
+    Create position-independent code (batch compilation).
+
 ``-g``
     Enable symbolic debugging.
 
@@ -3849,7 +3852,7 @@ executables. Otherwise it is a good idea to run ``pure -c`` with the
 addition to the commands which are invoked in the compilation process)::
 
   $ pure -v0100 -c hello.pure -o hello.o
-  opt -f -std-compile-opts -tailcallelim hello.o.bc | llc -f -o hello.o.s
+  opt -f -std-compile-opts hello.o.bc | llc -f -o hello.o.s
   gcc -c hello.o.s -o hello.o
   Link with: g++ hello.o -lpure
 
@@ -3857,7 +3860,7 @@ Well, we already knew that, so let's consider a slightly more interesting
 example from Pure's ODBC module::
 
   $ pure -v0100 -c pure-odbc/examples/menagerie.pure -o menagerie.o
-  opt -f -std-compile-opts -tailcallelim menagerie.o.bc | llc -f -o menagerie.o.s
+  opt -f -std-compile-opts menagerie.o.bc | llc -f -o menagerie.o.s
   gcc -c menagerie.o.s -o menagerie.o
   Link with: g++ menagerie.o /usr/local/lib/pure/odbc.so -lpure
   $ g++ -shared -o menagerie.so menagerie.o /usr/local/lib/pure/odbc.so -lpure
@@ -3868,8 +3871,16 @@ this will be good enough, but if it isn't, you can just add options to the
 linker command as needed to pull in additional required libraries.
 
 As this last example shows, you can also create shared libraries from Pure
-modules. Even then you'll have to supply an initialization routine which calls
-``__pure_main__`` somewhere. Also note that you can't just call Pure functions
+modules. However, on some systems (most notably x86_64), this requires that
+you pass the ``-fPIC`` option when batch-compiling the module, so that
+position-independent code is generated::
+
+  $ pure -c -fPIC pure-odbc/examples/menagerie.pure -o menagerie.o
+
+Also note that even when building a shared module, you'll have to supply an
+initialization routine which calls ``__pure_main__`` somewhere.
+
+Another point worth mentioning here is that you can't just call Pure functions
 in a batch-compiled module directly. That's because in order to call a Pure
 function, at least in the current implementation, you have to set up a stack
 frame for the function. However, there's a convenience function called
@@ -3913,10 +3924,15 @@ code::
   pure -c hello.pure -o hello.ll
 
 Note the .ll extension; this tells the compiler that you want an LLVM
-assembler file. In this case you'll have to have to handle the rest of the
-compilation yourself. This gives you the opportunity, e.g., to employ the LLVM
-toolchain to apply special source code optimizations. Please refer to the
-`LLVM documentation`_ for details.
+assembler file. An LLVM bitcode file can be created just as easily::
+
+  pure -c hello.pure -o hello.bc
+
+In these cases you'll have to have to handle the rest of the compilation
+yourself. This gives you the opportunity, e.g., to play with special
+optimization and code generation options provided by the LLVM
+toolchain. Please refer to the `LLVM documentation`_ (in particular, the
+description of the opt and llc programs) for details.
 
 .. _LLVM documentation: http://llvm.org/docs/
 
