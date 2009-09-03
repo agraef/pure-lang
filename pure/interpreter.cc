@@ -3965,12 +3965,12 @@ static string& quote(string& s)
 #endif
 
 #if NEW_OSTREAM // LLVM >= 2.7 takes an enumeration as the last parameter
-#define new_raw_fd_ostream(s,msg) new llvm::raw_fd_ostream(s,msg,0)
+#define new_raw_fd_ostream(s,binary,msg) new llvm::raw_fd_ostream(s,msg,(binary)?llvm::raw_fd_ostream::F_Binary:0)
 #else
 #if LLVM26 // LLVM 2.6 takes two flags (Binary, Force)
-#define new_raw_fd_ostream(s,msg) new llvm::raw_fd_ostream(s,0,1,msg)
+#define new_raw_fd_ostream(s,binary,msg) new llvm::raw_fd_ostream(s,binary,1,msg)
 #else // LLVM 2.5 and earlier only have the Binary flag
-#define new_raw_fd_ostream(s,msg) new llvm::raw_fd_ostream(s,0,msg)
+#define new_raw_fd_ostream(s,binary,msg) new llvm::raw_fd_ostream(s,binary,msg)
 #endif
 #endif
 
@@ -4175,7 +4175,7 @@ int interpreter::compiler(string out, list<string> libnames)
   // As of LLVM 2.7 (svn), these need to be wrapped up in a raw_ostream.
   string error;
   // Note: raw_fd_ostream already handles "-".
-  llvm::raw_ostream *codep = new_raw_fd_ostream(target.c_str(),error);
+  llvm::raw_ostream *codep = new_raw_fd_ostream(target.c_str(),bc_target,error);
   if (!error.empty()) {
     std::cerr << "Error opening " << target << '\n';
     exit(1);
@@ -4183,7 +4183,11 @@ int interpreter::compiler(string out, list<string> libnames)
   llvm::raw_ostream &code = *codep;
 #else
   std::ostream *codep =
-    file_target?new std::ofstream(target.c_str()):&std::cout;
+    bc_target?
+    new std::ofstream(target.c_str(), ios_base::out | ios_base::binary):
+    file_target?
+    new std::ofstream(target.c_str(), ios_base::out):
+    &std::cout;
   std::ostream &code = *codep;
 #endif
   if (!file_target) out = target = "<stdout>";
