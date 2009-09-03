@@ -4428,7 +4428,13 @@ to variables should fix this. **\n";
        passed to gcc to handle assembly and linkage (if requested). */
     string asmfile = (ext==".s")?out:out+".s";
     string cmd = "opt -f -std-compile-opts -tailcallelim "+quote(target)+
-      " | llc -f -o "+quote(asmfile);
+      " | llc -f "+
+      // Why isn't this the default if LLVM was built with --enable-pic? :(
+      // Anyway, on x86_64 we want a position-independent object which can be
+      // linked into a shared library.
+      string((triple.find("x86_64-")!=string::npos)?
+	     "-relocation-model=pic ":"")+
+      "-o "+quote(asmfile);
     if (vflag) std::cerr << cmd << '\n';
     int status = system(cmd.c_str());
     unlink(target.c_str());
