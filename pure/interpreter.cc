@@ -597,6 +597,7 @@ interpreter::interpreter(int32_t nsyms, char *syms,
   size_t n_args;
   while (1) {
     sin >> f >> s_name >> s_type >> n_args;
+    if (sin.fail()) break;
     const Type* rettype = named_type(s_type);
     vector<const Type*> argtypes(n_args);
     for (size_t i = 0; i < n_args; i++) {
