@@ -45,10 +45,23 @@
 ;; Finally, you might wish to add some global key bindings, e.g.:
 
 ;; (global-set-key "\C-c\M-p" 'run-pure)
+;; (global-set-key "\C-h\M-p" 'pure-help)
 
-;; NOTE: For reading the Pure online documentation, you'll have to set the
-;; PURE_HELP environment variable accordingly. Otherwise Pure's 'help' command
-;; will try to run w3m which won't work in an Emacs buffer.
+;; Note that in Pure and Pure-Eval mode the online help facility is already
+;; bound to C-c C-h, and also available from the Pure menu. Please use this
+;; instead of the Pure interpreter's 'help' command, which will try to run w3m
+;; which won't work in an Emacs comint buffer.
+
+;; The online help facility uses emacs-w3m to display help files in html
+;; format, if it is installed and loaded. To these ends, add the following to
+;; your .emacs:
+
+;; (require 'w3m-load)
+
+;; Otherwise Emacs' generic browse-url function will be used, which usually
+;; invokes some external browser by default.
+
+;; --------------------------------------------------------------------------
 
 ;; Try to figure out where interpreter and standard library are located. This
 ;; relies on the PURELIB environment variable being set correctly.
@@ -88,7 +101,8 @@
   (let ((path (getenv "PURE_INCLUDE")))
     (if path
 	(setq pure-includes (parse-colon-path path))
-      nil)))
+      nil))
+  "List of additional directories to search for imported scripts.")
 
 (defvar pure-font-lock-keywords
   (list
@@ -107,6 +121,7 @@
 (defvar pure-mode-map nil)
 (cond ((not pure-mode-map)
        (setq pure-mode-map (make-sparse-keymap))
+       (define-key pure-mode-map "\C-c\C-h" 'pure-help)
        (define-key pure-mode-map "\C-c\C-c" 'pure-run-script)
        (define-key pure-mode-map "\C-c\C-d" 'pure-debug-script)
        (define-key pure-mode-map "\C-c\C-u" 'pure-current-msg)
@@ -132,6 +147,7 @@
 
 (defvar pure-mode-menu
   (list "Pure"
+	["Pure Help..."			pure-help t]
 	["Describe Pure Mode"		describe-mode t]
 	["Customize"			(customize-group 'pure) t]
 	"-"
@@ -167,7 +183,8 @@ buffers when invoking this command. Special commands to quickly locate the
 main script and the input line of the Pure eval buffer, and to visit the
 source lines shown in error messages are provided as well (see
 `pure-eval-mode'). These operations can also be selected from the Pure menu
-(accessible from the menu bar).
+(accessible from the menu bar), which also provides commands for
+reading the online help and customizing the Pure mode setup.
 
 Command list:
 
@@ -325,6 +342,7 @@ For instance, add `turn-on-font-lock' to enable syntax highlighting."
 (defvar pure-eval-mode-map nil)
 (cond ((not pure-eval-mode-map)
        (setq pure-eval-mode-map (copy-keymap comint-mode-map))
+       (define-key pure-eval-mode-map "\C-c\C-h" 'pure-help)
        (define-key pure-eval-mode-map "\t" 'comint-dynamic-complete)
        (define-key pure-eval-mode-map "\C-a" 'comint-bol)
        (define-key pure-eval-mode-map [home] 'comint-bol)
@@ -344,6 +362,7 @@ For instance, add `turn-on-font-lock' to enable syntax highlighting."
 
 (defvar pure-eval-mode-menu
   (list "Pure"
+	["Pure Help..."			pure-help t]
 	["Describe Pure-Eval Mode"	describe-mode t]
 	["Customize"			(customize-group 'pure) t]
 	"-"
@@ -479,6 +498,48 @@ Entry to this mode runs the hooks on `comint-mode-hook' and
 	(if (looking-at pure-msg-regexp)
 	    (end-of-line))))
 ))
+
+;; online help
+
+(require 'thingatpt)
+
+(defun pure-help (&optional topic)
+  "Read online help in html format.
+This works pretty much like the interpreter's help command. Uses
+emacs-w3m if it is available. The command searches for help files
+in the current directory, the `pure-library-dir', and all
+directories specified in `pure-includes'. The given TOPIC may
+specify a help file and/or section/index entry, see topic
+pure#online-help for details."
+;;  (interactive "sPure help topic: ")
+  (interactive
+   (let ((default (word-at-point)))
+     (list (read-string "Pure help topic: " default))))
+  (let* ((args (split-string (if topic topic "") "#"))
+	 (base
+	  (cond
+	   ((null args) (cons "pure" ""))
+	   ((null (cdr args))
+	    (if (zerop (length (car args))) (cons "pure" "")
+	      (cons "purelib" (car args))))
+	   (t
+	    (cons (if (zerop (length (car args))) "purelib" (car args))
+	     (mapconcat 'identity (cdr args) "#")))))
+	 (file (concat (car base) ".html"))
+	 (anchor (if (zerop (length (cdr base))) "" (concat "#" (cdr base))))
+	 (helpfile
+	  (locate-library file t (append (list "." pure-library-dir)
+					 pure-includes))))
+    (cond
+     ((null helpfile) (error (concat "Couldn't locate help file " file)))
+     ;; use emacs-w3m if it is available
+     ((featurep 'w3m-load)
+      (if (get-buffer "*w3m*")
+	  (switch-to-buffer-other-window "*w3m*")
+	(switch-to-buffer-other-window (current-buffer)))
+      (w3m-browse-url (concat "file:" helpfile anchor)))
+     ;; otherwise use Emacs' generic browse-url facility
+     (t (browse-url (concat "file:" helpfile anchor))))))
 
 ;; run a Pure script in a Pure Eval buffer
 
