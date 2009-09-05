@@ -55,9 +55,15 @@ AC_CHECK_SIZEOF(void *)
 AC_CHECK_SIZEOF(long)
 AC_CHECK_SIZEOF(size_t)
 dnl Parse --enable options.
+fastcc=yes
+AC_ARG_ENABLE(fastcc,
+  [  --enable-fastcc         enable fast calls/tail call optimization (default)],
+  [case "${enableval}" in
+    no)   fastcc=no ;;
+  esac])
 gsllib=yes
 AC_ARG_ENABLE(gsl,
-  [  --enable-gsl            build with GSL support (default, experimental)],
+  [  --enable-gsl            build with GSL support (default)],
   [case "${enableval}" in
     no)   gsllib=no ;;
   esac])
@@ -146,6 +152,9 @@ if test $gsllib = yes; then
     fi
   fi
 fi
+if test $fastcc = yes; then
+  AC_DEFINE(HAVE_FASTCC, 1, [Define to build with fastcc/TCO support (broken on some systems).])
+fi
 dnl Check for LLVM.
 AC_CHECK_PROG(LLVMCONF,llvm-config,llvm-config,no)
 if test "$LLVMCONF" = no; then
@@ -215,6 +224,7 @@ Pure ${PACKAGE_VERSION} is now configured for LLVM ${llvm_version} on ${host}.
   C++ compiler:         $CXX $CXXFLAGS $CPPFLAGS
   Linker:               $CXX $LDFLAGS $LIBS
   Build libpure:        $sharedlib
+  fastcc/TCO support:   $fastcc
   GSL support:          $gsllib
 
 Now run 'make' to build everything, and 'make install' to install this

@@ -40,13 +40,23 @@
 #endif
 
 /* Experimental support for the "fast" calling convention which is needed to
-   get tail call elimination. */
+   get tail call elimination. As of LLVM 2.6, this is still broken on some
+   systems, specifically ppc. You can also disable this through configure with
+   the --disable-fastcc option. */
+#ifndef USE_FASTCC
+#ifdef HAVE_FASTCC
 #define USE_FASTCC 1
+#else
+#define USE_FASTCC 0
+#endif
+#endif
 
 /* Experimental support for fast code generation, at the expense of code
    quality. As of LLVM 2.4, this doesn't seem to have much effect. We
    recommend to leave this disabled. */
+#ifndef FAST_JIT
 #define FAST_JIT 0
+#endif
 
 /* Alternative code generation for aggregate values (currently lists, tuples
    and matrices are supported). This works around performance issues with the
@@ -55,7 +65,9 @@
    aggregates. The code enabled with this option here is actually less
    efficient for small aggregates, which is why we impose a lower bound on the
    aggregate size (10 by default, use 0 to disable this option). */
+#ifndef LIST_OPT
 #define LIST_OPT 10
+#endif
 
 using namespace std;
 

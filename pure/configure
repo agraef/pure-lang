@@ -710,6 +710,7 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
+enable_fastcc
 enable_gsl
 enable_debug
 enable_debug2
@@ -1359,7 +1360,8 @@ Optional Features:
   --disable-option-checking  ignore unrecognized --enable/--with options
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
-  --enable-gsl            build with GSL support (default, experimental)
+  --enable-fastcc         enable fast calls/tail call optimization (default)
+  --enable-gsl            build with GSL support (default)
   --enable-debug          enable the debug build
   --enable-debug2         enable the maintenance build
   --enable-release        enable the release build
@@ -5574,6 +5576,14 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
+fastcc=yes
+# Check whether --enable-fastcc was given.
+if test "${enable_fastcc+set}" = set; then
+  enableval=$enable_fastcc; case "${enableval}" in
+    no)   fastcc=no ;;
+  esac
+fi
+
 gsllib=yes
 # Check whether --enable-gsl was given.
 if test "${enable_gsl+set}" = set; then
@@ -8790,6 +8800,13 @@ $as_echo "Building with GSL support." >&6; }
     fi
   fi
 fi
+if test $fastcc = yes; then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_FASTCC 1
+_ACEOF
+
+fi
 # Extract the first word of "llvm-config", so it can be a program name with args.
 set dummy llvm-config; ac_word=$2
 { $as_echo "$as_me:$LINENO: checking for $ac_word" >&5
@@ -10693,6 +10710,7 @@ Pure ${PACKAGE_VERSION} is now configured for LLVM ${llvm_version} on ${host}.
   C++ compiler:         $CXX $CXXFLAGS $CPPFLAGS
   Linker:               $CXX $LDFLAGS $LIBS
   Build libpure:        $sharedlib
+  fastcc/TCO support:   $fastcc
   GSL support:          $gsllib
 
 Now run 'make' to build everything, and 'make install' to install this
@@ -10709,6 +10727,7 @@ Pure ${PACKAGE_VERSION} is now configured for LLVM ${llvm_version} on ${host}.
   C++ compiler:         $CXX $CXXFLAGS $CPPFLAGS
   Linker:               $CXX $LDFLAGS $LIBS
   Build libpure:        $sharedlib
+  fastcc/TCO support:   $fastcc
   GSL support:          $gsllib
 
 Now run 'make' to build everything, and 'make install' to install this
