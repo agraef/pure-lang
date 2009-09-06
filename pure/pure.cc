@@ -629,10 +629,10 @@ main(int argc, char *argv[])
     char cwd[BUFSIZE];
     if (getcwd(cwd, BUFSIZE) && (env = getenv("HOME"))) {
       char home[BUFSIZE];
-      (void)chdir(env);
+      if (chdir(env)) perror("chdir");
       if (getcwd(home, BUFSIZE) && strcmp(home, cwd) == 0)
 	want_both = false;
-      (void)chdir(cwd);
+      if (chdir(cwd)) perror("chdir");
     }
     if (!rcfile.empty() && chkfile(rcfile))
       interp.run(rcfile, false, true);

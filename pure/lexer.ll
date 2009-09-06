@@ -996,7 +996,7 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
   } else if (strcmp(cmd, "!") == 0) {
     const char *s = cmdline+1;
     while (isspace(*s)) ++s;
-    (void)system(s);
+    if (system(s) == -1) perror("system");
   } else if (strcmp(cmd, "break") == 0)  {
     const char *s = cmdline+5;
     argl args(s, "break");
@@ -1116,12 +1116,12 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
     } else {
       if (!browser) browser = "w3m"; // default
       string helpcmd = string(browser) + " " + docname;
-      (void)system(helpcmd.c_str());
+      if (system(helpcmd.c_str()) == -1) perror("system");
     }
   } else if (strcmp(cmd, "ls") == 0)  {
-    (void)system(cmdline);
+    if (system(cmdline) == -1) perror("system");
   } else if (strcmp(cmd, "pwd") == 0)  {
-    (void)system(cmdline);
+    if (system(cmdline) == -1) perror("system");
   } else if (strcmp(cmd, "cd") == 0)  {
     static const char *home = getenv("HOME");
     const char *s = cmdline+2;

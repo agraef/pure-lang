@@ -4846,11 +4846,11 @@ void pure_debug_rule(void *_e, void *_r)
     if (cmd=="//")
       // comment line
       ;
-    else if (cmd=="!")
+    else if (cmd=="!") {
       // shell escape
-      (void)system(arg.c_str());
-    else if (cmd=="?" || cmd.size()>1 ||
-	     (!cmd.empty() && !isalpha(cmd[0]) && cmd[0] != '.')) {
+      if (system(arg.c_str()) == -1) perror("system");
+    } else if (cmd=="?" || cmd.size()>1 ||
+	       (!cmd.empty() && !isalpha(cmd[0]) && cmd[0] != '.')) {
       // eval
       if (cmd != "?") arg = cmdline;
       size_t p = arg.find_first_not_of(" \t");
@@ -10162,7 +10162,7 @@ extern "C"
 int pure_fscanf(FILE *fp, const char *format)
 {
   int count = -1;
-  (void)fscanf(fp, myformat(format), &count);
+  if (fscanf(fp, myformat(format), &count) == EOF) count = -1;
   return count;
 }
 
@@ -10171,7 +10171,7 @@ int pure_fscanf_int(FILE *fp, const char *format, int32_t *x)
 {
   // wrap this up in case int on the target platform is not 32 bit
   int count = -1, y;
-  (void)fscanf(fp, myformat(format), &y, &count);
+  if (fscanf(fp, myformat(format), &y, &count) == EOF) count = -1;
   if (count >= 0) *x = y;
   return count;
 }
@@ -10180,7 +10180,7 @@ extern "C"
 int pure_fscanf_double(FILE *fp, const char *format, double *x)
 {
   int count = -1;
-  (void)fscanf(fp, myformat(format), x, &count);
+  if (fscanf(fp, myformat(format), x, &count) == EOF) count = -1;
   return count;
 }
 
@@ -10188,7 +10188,7 @@ extern "C"
 int pure_fscanf_string(FILE *fp, const char *format, const char *x)
 {
   int count = -1;
-  (void)fscanf(fp, myformat(format), x, &count);
+  if (fscanf(fp, myformat(format), x, &count) == EOF) count = -1;
   return count;
 }
 
@@ -10196,7 +10196,7 @@ extern "C"
 int pure_fscanf_pointer(FILE *fp, const char *format, const void **x)
 {
   int count = -1;
-  (void)fscanf(fp, myformat(format), x, &count);
+  if (fscanf(fp, myformat(format), x, &count) == EOF) count = -1;
   return count;
 }
 
