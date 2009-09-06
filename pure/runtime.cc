@@ -6429,7 +6429,7 @@ struct Blob {
   {
     hdrdata *h = (hdrdata*)data;
     if (!data || !(h->tag == (int32_t)MAGIC ||
-		   swap(h->tag) == (int32_t)MAGIC)) return;
+		   swap_int32(h->tag) == (int32_t)MAGIC)) return;
     // Determine source and destination endianness.
     dest_endian = WORDS_BIGENDIAN?1:-1;
     src_endian = h->tag==(int32_t)MAGIC?dest_endian:-dest_endian;
