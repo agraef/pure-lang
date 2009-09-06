@@ -9311,8 +9311,13 @@ static uint32_t double_hash(double d)
   char *c;
   size_t i;
   c = (char*)&d;
-  for (h=0, i=0; i<sizeof(double); i++) {
-    h += c[i] * 971;
+#if WORDS_BIGENDIAN
+  for (h=0, i=sizeof(double); i-->0; )
+#else
+  for (h=0, i=0; i<sizeof(double); i++)
+#endif
+  {
+    h = (h * 971) ^ (unsigned char)c[i];
   }
   return h;
 }
