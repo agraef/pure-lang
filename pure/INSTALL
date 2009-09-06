@@ -15,7 +15,7 @@ should compile (with the usual amount of tweaking) on all recent UNIX/POSIX-
 based platforms. We recommend using version 4.x of the GNU C++ compiler; it
 should be available almost everywhere (in fact, since you'll need LLVM anyway,
 you can also use the gcc frontend available for LLVM). You'll also need a
-Bourne- compatible shell and GNU make, which are also readily available on
+Bourne-compatible shell and GNU make, which are also readily available on
 most platforms.
 
 A binary package in msi format is provided for Windows users in the download
@@ -51,7 +51,8 @@ work in Pure);
 
 - the GNU readline library (libreadline, -dev);
 
-- the GNU ltdl library (libltdl, -dev; only required for building LLVM);
+- the GNU ltdl library (libltdl, -dev; only required for building some LLVM
+  versions);
 
 - subversion (this is only needed to fetch the SVN sources, see below).
 
@@ -158,9 +159,9 @@ If all is well, all tests should pass. If not, the test directory will contain
 some *.diff files containing further information about the failed tests. In
 that case please zip up the entire test directory and mail it to the author,
 post it on the Pure mailing list, or enter a bug report at
-http://code.google.com/p/pure-lang/issues/list. Also include precise
-information about the Pure and LLVM versions or svn revision numbers you're
-running.
+http://code.google.com/p/pure-lang/issues/list. Also please include precise
+information about your platform (operating system and cpu architecture) and
+the Pure and LLVM versions or svn revision numbers you're running.
 
 Please note that MSYS 1.0.11 (or at least the diffutils package from that
 version) is required to make 'make check' work on Windows. Also note that
@@ -174,7 +175,13 @@ as a reminder that you need GSL to enjoy full matrix support in Pure.
 If Pure appears to be broken on your system ('make check' reports a lot of
 failures), it's usually because of a miscompiled LLVM. Please review the
 instructions under step 3, and make sure the LLVM configure command includes
---enable-pic or --disable-pic as required by your platform.
+--enable-pic or --disable-pic as required by your platform. Also check the
+SYSTEM NOTES section to see whether your platform is known to have issues and
+which workarounds may be needed. If all that doesn't help then you might be
+running into LLVM bugs and limitations on not-so-well supported platforms; in
+that case please also report the results of 'make check' as described above,
+so that we can try to figure out what is going on and whether there's a
+fix or workaround for the problem.
 
 STEP 6. The Pure interpreter should be ready to go now.
 
@@ -486,23 +493,20 @@ autoconf, of course. (The distribution was prepared using autoconf 2.63.)
 SYSTEM NOTES
 ====== =====
 
-Pure is known to work on recent Linux, Mac OSX and *BSD versions under x86 and
-x86-64, as well as on MS Windows (32 bit). There are a few system-specific
-quirks which are discussed below. (Please also see the "Caveats and Notes"
-section of the manual for information on other known limitations of the
-current implementation.)
-
-At the time of this writing, PowerPC (ppc) systems are not known to work,
-detailed feedback on the status of Pure on this architecture (whether using
-OSX, Linux or *BSD) is needed and will be much appreciated.
+Pure is known to work on recent Linux, Mac OSX and *BSD versions under x86,
+x86-64 (AMD/Intel x86, 32 and 64 bit) and ppc (PowerPC), as well as on MS
+Windows (AMD/Intel x86, 32 bit). There are a few known system-specific quirks
+and corresponding workarounds which are discussed below. (Please also see the
+"Caveats and Notes" section of the manual for information on other known
+limitations of the current implementation.)
 
 ALL PLATFORMS
 --- ---------
 
 Compiling the default and release versions using gcc with all warnings turned
 on (-Wall) might give you the warning "dereferencing type-punned pointer will
-break strict-aliasing rules" at some point in util.cc. This is harmless and
-can be ignored.
+break strict-aliasing rules" at some point in util.cc with some gcc versions.
+This is harmless and can be ignored.
 
 If your Pure program runs out of stack space, the interpreter will segfault.
 This is *not* a bug, it happens because runtime stack checks are disabled by
@@ -542,6 +546,15 @@ properly with the Pure runtime library. The patch is available at:
 http://pure-lang.googlecode.com/svn/wiki/X86JITInfo.cpp.pic.2.3.patch. After
 applying the patch, configure LLVM with --enable-pic and build it as usual.
 
+POWERPC
+-------
+
+You'll need Pure >= 0.35 and LLVM >= 2.6 (or current svn). Also make sure that
+you always configure LLVM with --disable-expensive-checks and Pure with
+--disable-fastcc. With these settings Pure should work fine on ppc (tested on
+ppc32 running Fedora Core 12 Rawhide), but note that tail call optimization
+doesn't work on this platform right now because of LLVM limitations.
+
 LINUX
 -----
 
@@ -576,10 +589,10 @@ once Apple upgrades its SDK to a newer gcc version.
 *BSD
 ----
 
-Pure is known to work on recent NetBSD and FreeBSD versions. Note that FreeBSD
-requires Pure 0.33 or later, if you have an earlier Pure version you need to
-add -lpthread to the linker options by modifying the LIBS variable, see the
-COMPILER AND LINKER OPTIONS for details.
+Recent NetBSD and FreeBSD versions have been tested and should work fine.
+FreeBSD requires Pure 0.33 or later, if you have an earlier Pure version you
+need to add -lpthread to the linker options by modifying the LIBS variable,
+see the COMPILER AND LINKER OPTIONS for details.
 
 Note that, at the time of this writing, the LLVM port in the FreeBSD ports
 collection is built with all assertions and checks enabled, so you might want
