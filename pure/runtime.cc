@@ -9308,16 +9308,16 @@ static uint32_t mpz_hash(const mpz_t z)
 static uint32_t double_hash(double d)
 {
   uint32_t h;
-  char *c;
+  unsigned char *c;
   size_t i;
-  c = (char*)&d;
+  c = (unsigned char*)&d;
 #if WORDS_BIGENDIAN
   for (h=0, i=sizeof(double); i-->0; )
 #else
   for (h=0, i=0; i<sizeof(double); i++)
 #endif
   {
-    h = (h * 971) ^ (unsigned char)c[i];
+    h = (h * 971) ^ c[i];
   }
   return h;
 }
