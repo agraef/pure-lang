@@ -370,6 +370,11 @@ void interpreter::init()
 		 "malloc",          "void*",  1, "size_t");
   declare_extern((void*)free,
 		 "free",            "void",   1, "void*");
+  /* KLUDGE: This is needed on FC12 Rawhide to correctly resolve the strcmp()
+     function from the C library. (For some reason, dlsym() returns the wrong
+     address for this function, dynamic linker bug?) */
+  declare_extern((void*)strcmp,
+		 "strcmp",          "int",    2, "void*", "void*");
 
   declare_extern((void*)pure_clos,
 		 "pure_clos",       "expr*", -7, "bool", "int", "int", "int",
