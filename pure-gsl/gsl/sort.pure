@@ -37,8 +37,8 @@ using "lib:gsl";
 
 namespace gsl;
 
-private extern void gsl_sort(double*, size_t, size_t) = c_gsl_sort;
-private extern void gsl_sort_int(int*, size_t, size_t) = c_gsl_sort_int;
+private extern void gsl_sort(double*, size_t, size_t);
+private extern void gsl_sort_int(int*, size_t, size_t);
 private extern void gsl_sort_index(size_t*, double*, size_t, size_t);
 private extern void gsl_sort_int_index(size_t*, int*, size_t, size_t);
 
@@ -68,7 +68,7 @@ sort_vector  m::matrix
     if rowvectorp m;
 
 sort_vector_index  m::matrix
-  = v $$ k
+  = v && k
     with
       v = gsl_sort_int_index (pointer k) m 1 (#m) if imatrixp m;
       v = gsl_sort_index (pointer k) m 1 (#m) if dmatrixp m;
