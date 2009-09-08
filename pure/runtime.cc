@@ -4060,6 +4060,17 @@ void pure_throw(pure_expr* e)
   }
 }
 
+extern "C"
+char *pure_exception_string(pure_expr* e)
+{
+  ostringstream sout;
+  if (e)
+    sout << "unhandled exception '" << e << "'\n";
+  else
+    sout << "unhandled exception\n";
+  return strdup(sout.str().c_str());
+}
+
 #include <signal.h>
 
 extern "C"

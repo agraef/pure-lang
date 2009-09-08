@@ -701,6 +701,12 @@ void pure_debug_redn(void *e, void *r, pure_expr *x);
 
 void pure_throw(pure_expr* e);
 
+/* Return a printable representation of a Pure exception. The returned
+   character string is allocated dynamically and must be freed by the
+   caller. */
+
+char *pure_exception_string(pure_expr* e);
+
 /* Configure signal handlers. The second argument is the signal number, the
    first the action to take (-1 = ignore, 1 = handle, 0 = default). */
 
