@@ -727,6 +727,8 @@ pure_expr *pure_symbol(int32_t tag)
   assert(tag>0);
   interpreter& interp = *interpreter::g_interp;
   const symbol& sym = interp.symtab.sym(tag);
+  // There might be some functions still waiting to be compiled, do that now.
+  interp.compile();
   // Check for an existing global variable for this symbol.
   GlobalVar& v = interp.globalvars[tag];
   if (!v.v) {
