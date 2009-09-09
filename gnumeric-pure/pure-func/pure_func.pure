@@ -1,0 +1,59 @@
+
+using system;
+
+/* Gnumeric function descriptions. These are optional, but needed if you want
+   to tell Gnumeric about the parameters the function is to be invoked with,
+   and/or the help text to be displayed for the function.
+
+   To describe a given function to Gnumeric, all you have to do is to define
+   gnm_info "<name>" (where <name> is the name of the function) as either:
+
+   - A pair of strings. The first string gives the parameter types (e.g., "f"
+     for a single float parameter), the second one is a list of parameter
+     names (e.g., "x,y,z"). Optional parameters can be indicated using '|', as
+     in "ff|s" (two non-optional floats, followed by an optional string).
+
+   - Just a help string, in the format indicated below.
+
+   - Both parameter types/names and help string, as a triple.
+
+   See the writing-functions.sgml file in the Gnumeric sources for a list of
+   valid parameter types are.
+
+   If no parameter types/names are given, then the number accepts any number
+   of parameters of any type, so your function definition must be prepared to
+   handle that. In that case, or if there are optional parameters, the
+   function becomes *variadic* and the (optional) parameters are passed as
+   a Pure list.
+
+   See below for some examples. Note that if no description is given then the
+   function defaults to variadic and no help text will be available. */
+
+gnm_info "pure_hello" = "|s", "Your name", sprintf "@FUNCTION=pure_hello\n\
+@SYNTAX=pure_hello()\n\
+@DESCRIPTION=\
+This function demonstrates the Gnumeric/Pure interface. The function takes an optional string parameter (try your name). It formats a little text and returns it as a string.\n\n\
+Gnumeric/Pure is (c) 2009 by Albert Gräf, distributed under the GPL V3.\n\
+You're running Pure version %s.\n"
+version;
+
+gnm_info "pure_max" = "ff", "x,y","@FUNCTION=pure_max\n\
+@SYNTAX=pure_max(x,y)\n\
+@DESCRIPTION=\
+Computes the maximum of two numbers. This is an example of a function of fixed arity, where arguments are passed in curried form.\n";
+
+gnm_info "pure_sum" = "@FUNCTION=pure_sum\n\
+@SYNTAX=pure_sum(...)\n\
+@DESCRIPTION=\
+Computes the sum of a collection of numbers. This is an example of a variadic function, where arguments are passed as a Pure list.\n";
+
+/* The actual Pure function definitions. These must match the descriptions
+   given above. */
+
+pure_hello []  = sprintf "Hi Gnumeric, this is Pure %s." version;
+pure_hello [s] = sprintf "Hi %s, this is Pure %s." (s,version);
+pure_max x y = max x y;
+pure_sum xs = foldl (+) 0 xs;
+
+/* Just add your own definitions below. (You also have to add the function
+   names to plugin.xml to have them show up in Gnumeric.) */
