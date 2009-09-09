@@ -7717,7 +7717,7 @@ Value *interpreter::codegen(expr x, bool quote)
       set<int32_t> done;
       size_t n = 0;
       argv.push_back(Zero);
-      for (Env *e = &act_env(); e; e = e->parent) {
+      for (Env *e = &act_env(); e && e->f; e = e->parent) {
 	EnvMap& m = e->fmap.act();
 	for (EnvMap::iterator it = m.begin(), end = m.end(); it != end; ++it) {
 	  int32_t fno = it->first;
