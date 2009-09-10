@@ -6,6 +6,7 @@
 
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_matrix.h>
+#include <gmp.h>
 
 static gsl_matrix_symbolic* 
 gsl_matrix_symbolic_alloc(const size_t n1, const size_t n2)
@@ -233,7 +234,8 @@ pure2value(const GnmEvalPos *pos, pure_expr *x)
     v = value_new_empty();
   else if (pure_is_int(x, &iv))
     v = value_new_int(iv);
-  // XXXTODO: handle bigints
+  else if (pure_is_mpz(x, NULL))
+    v = value_new_float((gnm_float)mpz_get_d(x->data.z));
   else if (pure_is_double(x, &dv))
     v = value_new_float((gnm_float)dv);
   else if (pure_is_string(x, &s))
