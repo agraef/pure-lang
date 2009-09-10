@@ -57,6 +57,11 @@ gnm_info "pure_echo" = "@FUNCTION=pure_echo\n\
 @DESCRIPTION=\
 This simply echoes all given arguments as a string in Pure syntax, as Pure sees them. Useful for debugging purposes.\n";
 
+gnm_info "pure_eval" = "@FUNCTION=pure_eval\n\
+@SYNTAX=pure_eval(x,...)\n\
+@DESCRIPTION=\
+Evaluates a Pure expression, given as a string x. Any remaining parameters are available in the evaluated code as a list 'x', so 'x!0' denotes the first argument, x!1 the second, etc. This lets you evaluate any Pure code in a spreadsheet without first having to define a function for it.\n";
+
 namespace pure_func;
 
 /* Helper function to collect the values in a list of scalars and ranges or
@@ -74,6 +79,11 @@ pure_max x y = max x y;
 pure_sum xs = foldl (+) 0 (ranges xs);
 pure_sums xs = scanl (+) 0 (ranges xs);
 pure_echo xs = str $ tuple xs;
+pure_eval (s::string:args) =
+  case eval (sprintf "'[%s]" s) of
+    [y] = eval (reduce y) with x = args end;
+    _ = throw "pure_eval: syntax error";
+  end;
 
 namespace;
 
