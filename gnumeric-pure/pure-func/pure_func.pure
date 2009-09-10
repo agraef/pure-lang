@@ -18,7 +18,21 @@ using system;
    - Both parameter types/names and help string, as a triple.
 
    See the writing-functions.sgml file in the Gnumeric sources for a list of
-   valid parameter types.
+   valid parameter types. Marshalling between Gnumeric and Pure values is
+   pretty straightforward:
+
+   Pure                   Gnumeric
+   -------------------    -------------------------------
+   ()                     empty
+   4711, 4711L, 4711.0    scalar (number)
+   "Hello world"          string
+   [1,2,3]                array
+   {1,2,3;4,5,6}          array (or cell range)
+
+   Note that on input, cell ranges are always passed as matrices to Pure
+   functions (not the cell references themselves). Conversely, both matrices
+   and lists become Gnumeric arrays on output. The empty tuple can be used to
+   denote empty Gnumeric values.
 
    If no parameter types/names are given, then the function accepts any number
    of parameters of any type, so your function definition must be prepared to
@@ -45,12 +59,12 @@ Computes the maximum of two numbers @x and @y. This is an example of a function 
 gnm_info "pure_sum" = "@FUNCTION=pure_sum\n\
 @SYNTAX=pure_sum(...)\n\
 @DESCRIPTION=\
-Computes the sum of a collection of numbers. Takes any number of scalars or ranges as parameters. This is an example of a variadic function, where arguments are passed as a Pure list.\n";
+Computes the sum of a collection of numbers, using Pure's foldl. Takes any number of scalars or ranges as parameters. This is an example of a variadic function, where arguments are passed as a Pure list.\n";
 
 gnm_info "pure_sums" = "@FUNCTION=pure_sums\n\
 @SYNTAX=pure_sums(...)\n\
 @DESCRIPTION=\
-Computes the partial sums of a collection of numbers. Takes any number of scalars or ranges as parameters. Returns a Pure list of the results, which becomes an array in Gnumeric land, so you'll have to enter this as an array function.\n";
+Computes the partial sums of a collection of numbers, using Pure's scanl. Takes any number of scalars or ranges as parameters. Returns a Pure list of the results, which becomes an array in Gnumeric land, so you'll have to enter this as an array function.\n";
 
 gnm_info "pure_echo" = "@FUNCTION=pure_echo\n\
 @SYNTAX=pure_echo(...)\n\
@@ -61,6 +75,11 @@ gnm_info "pure_eval" = "@FUNCTION=pure_eval\n\
 @SYNTAX=pure_eval(x,...)\n\
 @DESCRIPTION=\
 Evaluates a Pure expression, given as a string x. Any remaining parameters are available in the evaluated code as a list 'x', so 'x!0' denotes the first argument, x!1 the second, etc. This lets you evaluate any Pure code in a spreadsheet without first having to define a function for it.\n";
+
+gnm_info "gnm_bitand" = "ff", "x,y","@FUNCTION=gnm_bitand\n\
+@SYNTAX=gnm_bitand(x,y)\n\
+@DESCRIPTION=\
+Computes the bitwise and of two numbers @x and @y, using the corresponding Gnumeric function. This example shows how to call Gnumeric functions from Pure.\n";
 
 namespace pure_func;
 
@@ -75,15 +94,27 @@ ranges xs = cat [ case x of _::matrix = list x; _ = [x] end | x = xs ];
 
 pure_hello []  = sprintf "Hi Gnumeric, this is Pure %s." version;
 pure_hello [s] = sprintf "Hi %s, this is Pure %s." (s,version);
+
 pure_max x y = max x y;
 pure_sum xs = foldl (+) 0 (ranges xs);
 pure_sums xs = scanl (+) 0 (ranges xs);
+
 pure_echo xs = str $ tuple xs;
+
 pure_eval (s::string:args) =
   case eval (sprintf "'[%s]" s) of
     [y] = eval (reduce y) with x = args end;
     _ = throw "pure_eval: syntax error";
   end;
+
+/* This example shows how to call Gnumeric functions from Pure. This is done
+   using the following external defined in the Pure plugin loader. The
+   arguments must be given as a list of Pure expressions which can be
+   converted to Gnumeric values ((), numbers, strings, lists and matrices). */
+
+extern expr* call_gnm_function(char* name, expr* args);
+
+gnm_bitand x y = call_gnm_function "bitand" [x,y];
 
 namespace;
 

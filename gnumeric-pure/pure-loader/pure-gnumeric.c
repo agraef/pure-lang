@@ -82,7 +82,7 @@ create_double_matrix(size_t nrows, size_t ncols)
 }
 
 pure_expr *
-value2pure(GnmFuncEvalInfo *ei, const GnmValue *v)
+value2pure(const GnmEvalPos *pos, const GnmValue *v)
 {
   switch (v->type) {
   case VALUE_EMPTY:
@@ -131,7 +131,7 @@ value2pure(GnmFuncEvalInfo *ei, const GnmValue *v)
 	for (i = 0; i < nrows; i++)
 	  for (j = 0; j < ncols; j++) {
 	    gint x = (gint)j, y = (gint)i;
-	    pure_expr *val = value2pure(ei, v->v_array.vals[x][y]);
+	    pure_expr *val = value2pure(pos, v->v_array.vals[x][y]);
 	    if (!val) {
 	      size_t i1, j1;
 	      for (i1 = 0; i1 < i; i1++)
@@ -151,12 +151,12 @@ value2pure(GnmFuncEvalInfo *ei, const GnmValue *v)
   }
   case VALUE_CELLRANGE: {
     GnmRangeRef const *rr = &v->v_range.cell;
-    Sheet *sheet = eval_sheet(rr->a.sheet, ei->pos->sheet);
+    Sheet *sheet = eval_sheet(rr->a.sheet, pos->sheet);
     int x, y;
-    int x1 = gnm_cellref_get_col(&rr->a, ei->pos),
-      y1 = gnm_cellref_get_row(&rr->a, ei->pos),
-      x2 = gnm_cellref_get_col(&rr->b, ei->pos),
-      y2 = gnm_cellref_get_row(&rr->b, ei->pos);
+    int x1 = gnm_cellref_get_col(&rr->a, pos),
+      y1 = gnm_cellref_get_row(&rr->a, pos),
+      x2 = gnm_cellref_get_col(&rr->b, pos),
+      y2 = gnm_cellref_get_row(&rr->b, pos);
     size_t nrows = y2-y1+1, ncols = x2-x1+1, i, j;
     bool dblmat = true;
     if (!sheet) return NULL;
@@ -192,7 +192,7 @@ value2pure(GnmFuncEvalInfo *ei, const GnmValue *v)
 	for (i = 0, y = y1; i < nrows; i++, y++)
 	  for (j = 0, x = x1; j < ncols; j++, x++) {
 	    const GnmCell *cell = sheet_cell_get(sheet, x, y);
-	    pure_expr *val = cell?value2pure(ei, cell->value):
+	    pure_expr *val = cell?value2pure(pos, cell->value):
 	      pure_tuplel(0);
 	    if (!val) {
 	      size_t i1, j1;
@@ -218,7 +218,7 @@ value2pure(GnmFuncEvalInfo *ei, const GnmValue *v)
 }
 
 GnmValue *
-pure2value(GnmFuncEvalInfo *ei, pure_expr *x)
+pure2value(const GnmEvalPos *pos, pure_expr *x)
 {
   int32_t iv;
   double dv;
@@ -233,6 +233,7 @@ pure2value(GnmFuncEvalInfo *ei, pure_expr *x)
     v = value_new_empty();
   else if (pure_is_int(x, &iv))
     v = value_new_int(iv);
+  // XXXTODO: handle bigints
   else if (pure_is_double(x, &dv))
     v = value_new_float((gnm_float)dv);
   else if (pure_is_string(x, &s))
@@ -242,13 +243,13 @@ pure2value(GnmFuncEvalInfo *ei, pure_expr *x)
     size_t i;
     v = value_new_array_empty(sz, 1);
     for (i = 0; i < sz; i++) {
-      GnmValue *val = pure2value(ei, xv[i]);
+      GnmValue *val = pure2value(pos, xv[i]);
       if (!val) {
 	char *s = str(xv[i]);
-	gchar *msg = s?g_strdup_printf(_("** Invalid return value: %s"), s):
-	  _("Invalid return value");
+	gchar *msg = s?g_strdup_printf(_("** Unsupported Pure value: %s"), s):
+	  _("** Unsupported Pure value");
 	if (s) free(s);
-	val = value_new_error(ei->pos, msg);
+	val = value_new_error(pos, msg);
 	g_free(msg);
       }
       v->v_array.vals[i][0] = val;
@@ -273,13 +274,13 @@ pure2value(GnmFuncEvalInfo *ei, pure_expr *x)
     for (i = 0; i < nrows; i++)
       for (j = 0; j < ncols; j++) {
 	gint x = (gint)j, y = (gint)i;
-	GnmValue *val = pure2value(ei, data[i*tda+j]);
+	GnmValue *val = pure2value(pos, data[i*tda+j]);
 	if (!val) {
 	  char *s = str(data[i*tda+j]);
-	  gchar *msg = s?g_strdup_printf(_("** Invalid return value: %s"), s):
-	    _("Invalid return value");
+	  gchar *msg = s?g_strdup_printf(_("** Unsupported Pure value: %s"), s):
+	    _("** Unsupported Pure value");
 	  if (s) free(s);
-	  val = value_new_error(ei->pos, msg);
+	  val = value_new_error(pos, msg);
 	  g_free(msg);
 	}
 	v->v_array.vals[x][y] = val;
@@ -288,6 +289,8 @@ pure2value(GnmFuncEvalInfo *ei, pure_expr *x)
     v = NULL;
   return v;
 }
+
+static const GnmEvalPos *eval_pos; //TLD
 
 GnmValue *
 call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
@@ -312,9 +315,11 @@ call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
   args = g_new(pure_expr*, n_args);
 
   for (i = 0; i < n_args && argv[i] != NULL; i++) {
-    args[i] = value2pure(ei, argv[i]);
+    args[i] = value2pure(ei->pos, argv[i]);
     if (!args[i]) {
-      gchar *msg = g_strdup_printf(_("** Invalid argument (#%d)"), i);
+      char *s = value_get_as_string(argv[i]);
+      gchar *msg = g_strdup_printf(_("** Unsupported Gnumeric value: %s"), s);
+      g_free(s);
       for (j = 0; j < i; j++) pure_freenew(args[j]);
       g_free(args);
       ret = value_new_error(ei->pos, msg);
@@ -337,14 +342,16 @@ call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
   else
     x = pure_appv(fun, i, args);
   g_free(args);
+  eval_pos = ei->pos;
   y = pure_evalx(x, &e);
+  eval_pos = NULL;
 
   if (y) {
-    ret = pure2value(ei, y);
+    ret = pure2value(ei->pos, y);
     if (!ret) {
       char *s = str(y);
-      gchar *msg = s?g_strdup_printf(_("** Invalid return value: %s"), s):
-	_("Invalid return value");
+      gchar *msg = s?g_strdup_printf(_("** Unsupported Pure value: %s"), s):
+	_("** Unsupported Pure value");
       if (s) free(s);
       ret = value_new_error(ei->pos, msg);
       g_free(msg);
@@ -353,10 +360,43 @@ call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
   } else {
     char *s = str(e);
     gchar *msg = s?g_strdup_printf(_("** Pure exception: %s"), s):
-      _("Pure exception");
+      _("** Pure exception");
     if (e) pure_freenew(e); if (s) free(s);
     ret = value_new_error(ei->pos, msg);
     g_free(msg);
   }
+  return ret;
+}
+
+pure_expr *
+call_gnm_function(const char *name, pure_expr *args)
+{
+  GnmFunc *fn_def = gnm_func_lookup(name, NULL);
+  GnmValue **val, *ret_val;
+  gint n_args, i, j;
+  size_t n;
+  pure_expr **xv, *ret;
+  if (!fn_def || !eval_pos) return NULL;
+  if (!pure_is_listv(args, &n, &xv)) return NULL;
+  n_args = (gint)n;
+  val = g_new(GnmValue*, n_args);
+  for (i = 0; i < n_args; i++) {
+    val[i] = pure2value(eval_pos, xv[i]);
+    if (!val[i]) {
+      for (j = 0; j < i; j++)
+	value_release(val[j]);
+      if (xv) free(xv);
+      g_free(val);
+      return NULL;
+    }
+  }
+  if (xv) free(xv);
+  ret_val = function_def_call_with_values(eval_pos, fn_def, n_args,
+					  (GnmValue const * const *)val);
+  ret = value2pure(eval_pos, ret_val);
+  value_release(ret_val);
+  for (i = 0; i < n; i++)
+    value_release(val[i]);
+  g_free(val);
   return ret;
 }

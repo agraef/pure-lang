@@ -5,14 +5,6 @@
  * Interface to Gnumeric internal functions.
  */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-#include <pure/runtime.h>
-#ifdef __cplusplus
-}
-#endif
-
 #include <gnumeric.h>
 #include <cell.h>
 #include <expr.h>
@@ -23,10 +15,12 @@ extern "C" {
 #include <str.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pure/runtime.h>
 
-pure_expr* value2pure(GnmFuncEvalInfo *ei, const GnmValue *v);
-GnmValue* pure2value(GnmFuncEvalInfo *ei, pure_expr *x);
+pure_expr* value2pure(const GnmEvalPos *pos, const GnmValue *v);
+GnmValue* pure2value(const GnmEvalPos *pos, pure_expr *x);
 GnmValue* call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
 			     GnmValue const * const *argv);
+pure_expr* call_gnm_function(const char *name, pure_expr *args);
 
 #endif /* _PURE_GNUMERIC_H */
