@@ -307,21 +307,40 @@ language based on the term rewriting calculus with good support for math
 operations, so it makes for a nice Gnumeric companion.</p>
 <div class="section" id="installation">
 <h1>Installation</h1>
-<p>Unfortunately, typical Gnumeric installations lack some the headers needed to
-compile Gnumeric plugins, so most likely you need to have <em>both</em> Gnumeric and
-its sources installed to make this work. By default, the Makefile assumes that
-the Gnumeric sources are in ../gnumerics-1.9.x and sets the include path
-accordingly. If you have them elsewhere, check the beginning of the Makefile
-for the variable you need to set to tell <tt class="docutils literal"><span class="pre">make</span></tt> about it.</p>
-<p>Then run <tt class="docutils literal"><span class="pre">make</span></tt>. You might have to wrestle with the Makefile to make this
-work. If you're lucky and the compile goes through, you should now have a
-pure_loader.so file in the pure-loader subdirectory. You can install the
-plugin and related stuff with <tt class="docutils literal"><span class="pre">sudo</span> <span class="pre">make</span> <span class="pre">install</span></tt> in the global Gnumeric
-plugin directory (usually something like /usr/gnumeric/1.9.x/plugins), or if
-you prefer to install into the Gnumeric's user plugin directory (usually
-something like ~/.gnumeric/1.9.x/plugins) then run <tt class="docutils literal"><span class="pre">make</span> <span class="pre">install-local</span></tt>
-instead. (Or you can just copy the pure-func and pure-loader directories
-manually to your Gnumeric plugin directory.)</p>
+<p>Obviously, you need to have both Pure and Gnumeric installed. Unfortunately,
+building the plugin is a bit more involved than usual, because typical
+Gnumeric installations lack some headers needed to compile Gnumeric plugins.</p>
+<p>See the beginning of the Makefile for detailed instructions. Briefly, you'll
+have to find the gnumeric-config.h and gnumeric-features.h files from the
+Gnumeric sources. Either place these into the directory with the gnumeric-pure
+sources, or edit the <tt class="docutils literal"><span class="pre">INCLUDE</span></tt> variable at the beginning of the Makefile so
+that gcc finds these headers.</p>
+<p>Then run <tt class="docutils literal"><span class="pre">make</span></tt>. You might have to adjust the settings at the beginning of
+the Makefile to make this work. If you're lucky and the compile goes through,
+you should now have a pure_loader.so file in the pure-loader subdirectory. You
+can install the plugin and related stuff with <tt class="docutils literal"><span class="pre">sudo</span> <span class="pre">make</span> <span class="pre">install</span></tt> in the
+global Gnumeric plugin directory, or if you prefer to install into the
+Gnumeric's user plugin directory then run <tt class="docutils literal"><span class="pre">make</span> <span class="pre">install-local</span></tt> instead.
+We recommend the latter since it lets you adjust pure_func.pure for your
+purposes more easily. Optionally, you might also want to copy the
+gnumeric-pure.html file to your Pure library directory so that you can read it
+with the <tt class="docutils literal"><span class="pre">help</span></tt> command of the Pure interpreter or in Emacs Pure mode.</p>
+<p>Typically, <tt class="docutils literal"><span class="pre">make</span> <span class="pre">install</span></tt> and <tt class="docutils literal"><span class="pre">make</span> <span class="pre">install-local</span></tt> will install the
+plugins into the following directories by default:</p>
+<ul class="simple">
+<li>System-wide installations go into /usr/local/gnumeric/1.9.x/plugins or
+similar, depending on where Gnumeric is installed.</li>
+<li>User-specific installations go into ~/.gnumeric/1.9.x/plugins.</li>
+</ul>
+<p>The Makefile tries to guess the installation path and version number of
+Gnumeric on its own. If it guesses wrong, you can change these using the
+Makefile variables <tt class="docutils literal"><span class="pre">prefix</span></tt> and <tt class="docutils literal"><span class="pre">gnmversion</span></tt>, respectively. For instance:</p>
+<pre class="literal-block">
+$ make prefix=/usr gnmversion=1.9.12
+</pre>
+<p>If <tt class="docutils literal"><span class="pre">make</span> <span class="pre">install</span></tt> doesn't work for some reason, you can also just copy the
+pure-func and pure-loader directories manually to your Gnumeric plugin
+directory.</p>
 </div>
 <div class="section" id="usage">
 <h1>Usage</h1>
@@ -349,14 +368,49 @@ Gnumeric knows about them. Once you understand how it works, you can also
 create your own plugin directories with your personal collections of
 Gnumeric/Pure functions, using the pure-func directory as a template.</p>
 <p>The marshalling of types between Gnumeric and Pure is pretty straightforward;
-numbers and strings map to numbers and strings, and Gnumeric arrays map to
-Pure matrices. Lists returned from Pure also become Gnumeric arrays. Again,
-see pure_funct.pure for examples.</p>
-<p>In a future version, we'll also add the ability to directly call Gnumeric
-functions from Pure, but for the time being you'll have to rely on passing
-values between Gnumeric and Pure instead.</p>
-<p>That's hopefully enough to get you started. More elaborate documentation will
-hopefully be written in the future.</p>
+basically, Pure numbers, strings and matrices map to Gnumeric numbers, strings
+and arrays, respectively. The following table summarizes the available
+conversions:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">Pure</th>
+<th class="head">Gnumeric</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td><tt class="docutils literal"><span class="pre">()</span></tt></td>
+<td>empty</td>
+</tr>
+<tr><td><tt class="docutils literal"><span class="pre">4711</span></tt>, <tt class="docutils literal"><span class="pre">4711L</span></tt>, <tt class="docutils literal"><span class="pre">4711.0</span></tt></td>
+<td>scalar (number)</td>
+</tr>
+<tr><td><tt class="docutils literal"><span class="pre">&quot;Hello</span> <span class="pre">world&quot;</span></tt></td>
+<td>string</td>
+</tr>
+<tr><td><tt class="docutils literal"><span class="pre">[1,2,3]</span></tt></td>
+<td>array</td>
+</tr>
+<tr><td><tt class="docutils literal"><span class="pre">{1,2,3;4,5,6}</span></tt></td>
+<td>array (or cell range)</td>
+</tr>
+</tbody>
+</table>
+<p>Note that on input, cell ranges are always passed as matrices to Pure
+functions (not the cell references themselves). Conversely, both matrices and
+lists become Gnumeric arrays on output. The empty tuple can be used to denote
+empty Gnumeric values.</p>
+<p>The pure_func.pure script contains some code showing how to write functions
+which can deal with any numbers of scalars, arrays or ranges, see the
+<tt class="docutils literal"><span class="pre">ranges</span></tt> function and the <tt class="docutils literal"><span class="pre">pure_sum</span></tt> and <tt class="docutils literal"><span class="pre">pure_sums</span></tt> examples in the
+script for details.</p>
+<p>Last but not least, it is also possible to call Gnumeric functions from
+Pure. See <tt class="docutils literal"><span class="pre">gnm_bitand</span></tt> in pure_func.pure for an example. More comprehensive
+facilities to directly work with Gnumeric spreadsheets may be added in the
+future.</p>
 </div>
 </div>
 </body>

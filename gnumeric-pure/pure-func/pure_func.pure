@@ -17,9 +17,23 @@ using system;
 
    - Both parameter types/names and help string, as a triple.
 
-   See the writing-functions.sgml file in the Gnumeric sources for a list of
-   valid parameter types. Marshalling between Gnumeric and Pure values is
-   pretty straightforward:
+   Here's the list of valid parameter types, straight from the
+   writing-functions.sgml file in the Gnumeric sources.
+
+    b : boolean		identical to f
+    f : float 		no errors, string conversion attempted, blanks
+			converted to int 0
+    s : string		no errors, blanks accepted and passed as empty
+    S : scalar		any scalar non-error, blanks passed as empty
+    E : scalar		any scalar non blank value
+    B : scalar		any scalar even a blank
+
+    r : cell range	content is _NOT_ guaranteed to have been evaluated yet
+    A : area		array, range, (range as above), or scalar
+    a : array
+    ? : anything
+
+   Marshalling between Gnumeric and Pure values is pretty straightforward:
 
    Pure                   Gnumeric
    -------------------    -------------------------------

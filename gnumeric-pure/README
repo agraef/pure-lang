@@ -20,22 +20,44 @@ operations, so it makes for a nice Gnumeric companion.
 Installation
 ============
 
-Unfortunately, typical Gnumeric installations lack some the headers needed to
-compile Gnumeric plugins, so most likely you need to have *both* Gnumeric and
-its sources installed to make this work. By default, the Makefile assumes that
-the Gnumeric sources are in ../gnumerics-1.9.x and sets the include path
-accordingly. If you have them elsewhere, check the beginning of the Makefile
-for the variable you need to set to tell ``make`` about it.
+Obviously, you need to have both Pure and Gnumeric installed. Unfortunately,
+building the plugin is a bit more involved than usual, because typical
+Gnumeric installations lack some headers needed to compile Gnumeric plugins.
 
-Then run ``make``. You might have to wrestle with the Makefile to make this
-work. If you're lucky and the compile goes through, you should now have a
-pure_loader.so file in the pure-loader subdirectory. You can install the
-plugin and related stuff with ``sudo make install`` in the global Gnumeric
-plugin directory (usually something like /usr/gnumeric/1.9.x/plugins), or if
-you prefer to install into the Gnumeric's user plugin directory (usually
-something like ~/.gnumeric/1.9.x/plugins) then run ``make install-local``
-instead. (Or you can just copy the pure-func and pure-loader directories
-manually to your Gnumeric plugin directory.)
+See the beginning of the Makefile for detailed instructions. Briefly, you'll
+have to find the gnumeric-config.h and gnumeric-features.h files from the
+Gnumeric sources. Either place these into the directory with the gnumeric-pure
+sources, or edit the ``INCLUDE`` variable at the beginning of the Makefile so
+that gcc finds these headers.
+
+Then run ``make``. You might have to adjust the settings at the beginning of
+the Makefile to make this work. If you're lucky and the compile goes through,
+you should now have a pure_loader.so file in the pure-loader subdirectory. You
+can install the plugin and related stuff with ``sudo make install`` in the
+global Gnumeric plugin directory, or if you prefer to install into the
+Gnumeric's user plugin directory then run ``make install-local`` instead.
+We recommend the latter since it lets you adjust pure_func.pure for your
+purposes more easily. Optionally, you might also want to copy the
+gnumeric-pure.html file to your Pure library directory so that you can read it
+with the ``help`` command of the Pure interpreter or in Emacs Pure mode.
+
+Typically, ``make install`` and ``make install-local`` will install the
+plugins into the following directories by default:
+
+* System-wide installations go into /usr/local/gnumeric/1.9.x/plugins or
+  similar, depending on where Gnumeric is installed.
+
+* User-specific installations go into ~/.gnumeric/1.9.x/plugins.
+
+The Makefile tries to guess the installation path and version number of
+Gnumeric on its own. If it guesses wrong, you can change these using the
+Makefile variables ``prefix`` and ``gnmversion``, respectively. For instance::
+
+  $ make prefix=/usr gnmversion=1.9.12
+
+If ``make install`` doesn't work for some reason, you can also just copy the
+pure-func and pure-loader directories manually to your Gnumeric plugin
+directory.
 
 Usage
 =====
@@ -68,13 +90,31 @@ create your own plugin directories with your personal collections of
 Gnumeric/Pure functions, using the pure-func directory as a template.
 
 The marshalling of types between Gnumeric and Pure is pretty straightforward;
-numbers and strings map to numbers and strings, and Gnumeric arrays map to
-Pure matrices. Lists returned from Pure also become Gnumeric arrays. Again,
-see pure_funct.pure for examples.
+basically, Pure numbers, strings and matrices map to Gnumeric numbers, strings
+and arrays, respectively. The following table summarizes the available
+conversions:
 
-In a future version, we'll also add the ability to directly call Gnumeric
-functions from Pure, but for the time being you'll have to rely on passing
-values between Gnumeric and Pure instead.
+===============================    ===============================
+Pure                               Gnumeric
+===============================    ===============================
+``()``                             empty
+``4711``, ``4711L``, ``4711.0``    scalar (number)
+``"Hello world"``                  string
+``[1,2,3]``                        array
+``{1,2,3;4,5,6}``                  array (or cell range)
+===============================    ===============================
 
-That's hopefully enough to get you started. More elaborate documentation will
-hopefully be written in the future.
+Note that on input, cell ranges are always passed as matrices to Pure
+functions (not the cell references themselves). Conversely, both matrices and
+lists become Gnumeric arrays on output. The empty tuple can be used to denote
+empty Gnumeric values.
+
+The pure_func.pure script contains some code showing how to write functions
+which can deal with any numbers of scalars, arrays or ranges, see the
+``ranges`` function and the ``pure_sum`` and ``pure_sums`` examples in the
+script for details.
+
+Last but not least, it is also possible to call Gnumeric functions from
+Pure. See ``gnm_bitand`` in pure_func.pure for an example. More comprehensive
+facilities to directly work with Gnumeric spreadsheets may be added in the
+future.
