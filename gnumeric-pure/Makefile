@@ -1,57 +1,54 @@
 
-# See README for detailed installation instructions. Briefly:
+# This Makefile requires GNU make.
+
+# Package name and version number:
+dist = gnumeric-pure-$(version)
+version = 0.1
+
+# Build and installation instructions:
 
 # 1.  Make sure that you have gnumeric and the corresponding development
-#     packages installed. You also need to have the gnumeric sources unpacked
-#     and configured in ..
+#     packages installed. You'll also need the gnumeric-config.h and
+#     gnumeric-features.h files from the sources, place these into the
+#     directory with the gnumeric-pure sources, or specify the include path
+#     needed to locate these files in step 2 below.
 
-# 2.  Run 'make' to build the plugin.
+# 2.  Adjust the following as needed for your GTK+/GOffice installation:
 
-# 3a. Run 'sudo make install' for a global installation in the gnumeric plugin
+INCLUDES = $(shell pkg-config --cflags libgoffice-0.8) \
+-I/usr/include/libspreadsheet-1.10/spreadsheet
+LIBS = $(shell pkg-config --libs libgoffice-0.8)
+
+# The Makefile tries to guess the installation path and version number of
+# Gnumeric on its own. If it guesses wrong, you'll also have to adjust the
+# values of the prefix and gnmversion variables (see below) accordingly.
+
+# 3.  Run 'make' to build the plugin.
+
+# 4a. Run 'sudo make install' for a global installation in the gnumeric plugin
 #     directory (usually something like /usr/local/gnumeric/1.9.x/plugins.
 
 # - OR -
 
-# 3b. Run 'make install-local' for a local installation in your home directory 
+# 4b. Run 'make install-local' for a local installation in your home directory 
 #     (usually something like ~/.gnumeric/1.9.x/plugins).
 
 # Finally, make sure that the installation directory is in Gnumeric's plugin
 # path. To use the plugin, you must enable 'Pure plugin loader' and 'Pure
 # Functions' in the plugin list under 'Tools | Plug-ins'. A few sample
 # functions can be found in .../plugins/pure-func/pure_func.pure. Edit that
-# script as needed and edit the plugin.xml directory of that file to add the
-# functions that you want.
+# script as needed and edit the plugin.xml file in that directory to add the
+# functions that you want. See the README file or gnumeric-pure.html for more
+# information.
 
-# Package name and version number:
-dist = gnumeric-pure-$(version)
-version = 0.1
-
-# Try to guess the Gnumeric version number (this needs GNU make):
+# Try to guess the Gnumeric version number:
 gnmversion=$(shell gnumeric --version | sed -n -e "s/^gnumeric version '\([0-9.]*\)'.*/\1/" -e "/^[0-9.]*$$/p")
 
-# You might have to adjust this for your GTK+ installation.
-INCLUDES = $(shell pkg-config --cflags libgoffice-0.8)
-LIBS = $(shell pkg-config --libs libgoffice-0.8)
-
-# NOTE: To compile this plugin outside the gnumeric source tree, you need to
-# have the (properly configured) gnumeric sources somewhere, since the plugin
-# requires some of Gnumeric's internal headers which aren't usually installed.
-# By default, the Makefile assumes that they are in ../gnumeric-$(gnmversion);
-# if you have them elsewhere, you'll need to adjust this variable accordingly.
-gnmsrc=../gnumeric-$(gnmversion)
-
-# Try to guess the Gnumeric installation prefix (needed to install the plugin):
+# Try to guess the Gnumeric installation prefix:
 prefix = $(patsubst %/bin/gnumeric,%,$(shell which gnumeric 2>/dev/null))
 ifeq ($(strip $(prefix)),)
 # Fall back to /usr/local.
 prefix = /usr/local
-endif
-
-# Try to guess the Pure installation prefix (needed to install the docs):
-pureprefix = $(patsubst %/bin/pure,%,$(shell which pure 2>/dev/null))
-ifeq ($(strip $(pureprefix)),)
-# Fall back to /usr/local.
-pureprefix = /usr/local
 endif
 
 # Installation goes into $(libdir)/gnumeric, you can also set this directly
@@ -64,10 +61,6 @@ gnmlibdir = $(libdir)/gnumeric
 # Install dir for the plugin and accompanying stuff.
 gnmplugindir = $(gnmlibdir)/$(gnmversion)/plugins
 gnmlocalplugindir = $(HOME)/.gnumeric/$(gnmversion)/plugins
-
-# Install dir for the documentation.
-purelibdir = $(pureprefix)/lib
-puredatadir = $(purelibdir)/pure
 
 # Try to guess the host system type.
 host = $(shell ./config.guess)
@@ -107,7 +100,7 @@ pure-loader/pure_loader$(DLL): pure-loader/boot.o pure-loader/pure-gnumeric.o pu
 	$(CC) $(shared) -o $@ $(PIC) $(LDFLAGS) $^ $(LIBS) -lpure
 
 %.o: %.c
-	$(CC) $(INCLUDES) -I$(gnmsrc) -I$(gnmsrc)/src $(CPPFLAGS) $(CFLAGS) $(PIC) -o $@ -c $<
+	$(CC) $(INCLUDES) -I. -I.. $(CPPFLAGS) $(CFLAGS) $(PIC) -o $@ -c $<
 
 clean:
 	(cd pure-loader/ && rm -f pure_loader$(DLL) *~ *.a *.o)
@@ -133,10 +126,8 @@ gnumeric-pure.pdf: gnumeric-pure.tex
 install:
 	test -d "$(DESTDIR)$(gnmplugindir)/pure-func" || mkdir -p "$(DESTDIR)$(gnmplugindir)/pure-func"
 	test -d "$(DESTDIR)$(gnmplugindir)/pure-loader" || mkdir -p "$(DESTDIR)$(gnmplugindir)/pure-loader"
-	cp COPYING README pure-func/*.pure pure-func/plugin.xml "$(DESTDIR)$(gnmplugindir)/pure-func"
+	cp COPYING README gnumeric-pure.html pure-func/*.pure pure-func/plugin.xml "$(DESTDIR)$(gnmplugindir)/pure-func"
 	cp pure-loader/pure_loader$(DLL) pure-loader/plugin.xml "$(DESTDIR)$(gnmplugindir)/pure-loader"
-	test -d "$(DESTDIR)$(puredatadir)" || mkdir -p "$(DESTDIR)$(puredatadir)"
-	cp gnumeric-pure.html "$(DESTDIR)$(puredatadir)"
 
 install-local:
 	test -d "$(DESTDIR)$(gnmlocalplugindir)/pure-func" || mkdir -p "$(DESTDIR)$(gnmlocalplugindir)/pure-func"
@@ -145,7 +136,7 @@ install-local:
 	cp pure-loader/pure_loader$(DLL) pure-loader/plugin.xml "$(DESTDIR)$(gnmlocalplugindir)/pure-loader"
 
 uninstall:
-	rm -rf "$(DESTDIR)$(gnmplugindir)/pure-func" "$(DESTDIR)$(gnmplugindir)/pure-loader" "$(DESTDIR)$(puredatadir)"/gnumeric-pure.html
+	rm -rf "$(DESTDIR)$(gnmplugindir)/pure-func" "$(DESTDIR)$(gnmplugindir)/pure-loader"
 
 uninstall-local:
 	rm -rf "$(DESTDIR)$(gnmlocalplugindir)/pure-func" "$(DESTDIR)$(gnmlocalplugindir)/pure-loader"
@@ -160,5 +151,5 @@ dist:
 
 distcheck: dist
 	tar xfz $(dist).tar.gz
-	cd $(dist) && make gnmsrc=../$(gnmsrc) && make install DESTDIR=./BUILD
+	cd $(dist) && make && make install DESTDIR=./BUILD
 	rm -rf $(dist)
