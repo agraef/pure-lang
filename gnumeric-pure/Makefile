@@ -89,7 +89,8 @@ endif
 # Default CFLAGS are -g -O2, CPPFLAGS, LDFLAGS and LIBS are empty by default.
 CFLAGS = -g -O2
 
-DISTFILES = COPYING Makefile README gnumeric-pure.html config.guess \
+DISTFILES = COPYING Makefile README gnumeric-pure.html pure-examples.gnumeric \
+config.guess \
 pure-loader/boot.c pure-loader/pure-gnumeric.c pure-loader/pure-gnumeric.h \
 pure-loader/pure-loader.c pure-loader/pure-loader.h pure-loader/plugin.xml \
 pure-func/*.pure pure-func/plugin.xml
