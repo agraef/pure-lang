@@ -101,7 +101,7 @@ value2pure(const GnmEvalPos *pos, const GnmValue *v)
     for (i = 0; dblmat && i < nrows; i++)
       for (j = 0; dblmat && j < ncols; j++) {
 	gint x = (gint)j, y = (gint)i;
-	const GnmValue *val = val->v_array.vals[x][y];
+	const GnmValue *val = v->v_array.vals[x][y];
 	if (val->type != VALUE_FLOAT)
 	  dblmat = false;
       }
@@ -116,7 +116,7 @@ value2pure(const GnmEvalPos *pos, const GnmValue *v)
 	for (i = 0; i < nrows; i++)
 	  for (j = 0; j < ncols; j++) {
 	    gint x = (gint)j, y = (gint)i;
-	    const GnmValue *val = val->v_array.vals[x][y];
+	    const GnmValue *val = v->v_array.vals[x][y];
 	    data[i*tda+j] = value_get_as_float(val);
 	  }
 	return pure_double_matrix(mat);
@@ -136,11 +136,10 @@ value2pure(const GnmEvalPos *pos, const GnmValue *v)
 	    if (!val) {
 	      size_t i1, j1;
 	      for (i1 = 0; i1 < i; i1++)
-		pure_new_vect(ncols, data+i1*tda);
-	      pure_new_vect(j, data+i*tda);
-	      for (i1 = 0; i1 < i; i1++)
 		for (j1 = 0; j1 < ncols; j1++)
-		  pure_free(data[i1*tda+j1]);
+		  pure_freenew(data[i1*tda+j1]);
+	      for (j1 = 0; j1 < j; j1++)
+		pure_freenew(data[i*tda+j1]);
 	      gsl_matrix_symbolic_free(mat);
 	      return NULL;
 	    }
@@ -198,11 +197,10 @@ value2pure(const GnmEvalPos *pos, const GnmValue *v)
 	    if (!val) {
 	      size_t i1, j1;
 	      for (i1 = 0; i1 < i; i1++)
-		pure_new_vect(ncols, data+i1*tda);
-	      pure_new_vect(j, data+i*tda);
-	      for (i1 = 0; i1 < i; i1++)
 		for (j1 = 0; j1 < ncols; j1++)
-		  pure_free(data[i1*tda+j1]);
+		  pure_freenew(data[i1*tda+j1]);
+	      for (j1 = 0; j1 < j; j1++)
+		pure_freenew(data[i*tda+j1]);
 	      gsl_matrix_symbolic_free(mat);
 	      return NULL;
 	    }
@@ -300,7 +298,7 @@ call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
 {
   GnmFunc const *func = ei->func_call->func;
   int i, j, min, max;
-  pure_expr *x, *y, *z, *e, *fun, **args;
+  pure_expr *x, *y, *e, *fun, **args;
   GnmValue *ret;
 
   if (n_args < 0) {
