@@ -354,7 +354,7 @@ call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
     char *s = str(e);
     gchar *msg = s?g_strdup_printf(_("** Pure exception: %s"), s):
       _("Pure exception");
-    if (e) pure_free(e); if (s) free(s);
+    if (e) pure_freenew(e); if (s) free(s);
     ret = value_new_error(ei->pos, msg);
     g_free(msg);
   }
