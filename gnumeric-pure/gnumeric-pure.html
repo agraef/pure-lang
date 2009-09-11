@@ -445,8 +445,67 @@ you want in <tt class="docutils literal"><span class="pre">Tools</span></tt>/<tt
 interpreter (and thus are treated like one big script) so that they can
 communicate with each other if necessary.</p>
 </div>
-<div class="section" id="gnumeric-values-and-functions-in-pure">
-<h1>Gnumeric Values and Functions in Pure</h1>
+<div class="section" id="gnumeric-pure-interface">
+<h1>Gnumeric/Pure Interface</h1>
+<p>By default, when a Pure function is called from Gnumeric, it receives its
+arguments in a list. However, it is possible to tell Gnumeric about the
+expected arguments of the function and also specify a help text to be
+displayed in the <tt class="docutils literal"><span class="pre">f(x)</span></tt> dialog. To describe a given function to Gnumeric,
+all you have to do is to define <tt class="docutils literal"><span class="pre">gnm_info</span> <span class="pre">&quot;&lt;name&gt;&quot;</span></tt> (where <tt class="docutils literal"><span class="pre">&lt;name&gt;</span></tt> is the
+name of the function) as either:</p>
+<ul class="simple">
+<li>A pair of strings. The first string gives the parameter types (e.g., <tt class="docutils literal"><span class="pre">&quot;f&quot;</span></tt>
+for a single float parameter), the second one is a list of parameter names
+(e.g., <tt class="docutils literal"><span class="pre">&quot;x,y,z&quot;</span></tt>). Optional parameters can be indicated using <tt class="docutils literal"><span class="pre">|</span></tt>, as in
+<tt class="docutils literal"><span class="pre">&quot;ff|s&quot;</span></tt> (two fixed float arguments, optionally followed by a string).</li>
+<li>Just a help string, in the format indicated below.</li>
+<li>Both parameter types/names and help string, as a triple.</li>
+</ul>
+<p>Here's the list of valid parameter types, straight from the
+writing-functions.sgml file in the Gnumeric sources:</p>
+<pre class="literal-block">
+b : boolean         identical to f
+f : float           no errors, string conversion attempted, blanks
+                    converted to int 0
+s : string          no errors, blanks accepted and passed as empty
+S : scalar          any scalar non-error, blanks passed as empty
+E : scalar          any scalar non blank value
+B : scalar          any scalar even a blank
+
+r : cell range      content is _NOT_ guaranteed to have been evaluated yet
+A : area            array, range, (range as above), or scalar
+a : array
+? : anything
+</pre>
+<p>For instance, here's a sample description for a binary function which also
+includes a help text:</p>
+<pre class="literal-block">
+gnm_info &quot;pure_max&quot; = &quot;ff&quot;,&quot;x,y&quot;,&quot;&#64;FUNCTION=pure_max\n\
+&#64;SYNTAX=pure_max(x,y)\n\
+&#64;DESCRIPTION=\
+Computes the maximum of two numbers &#64;x and &#64;y.\n&quot;;
+</pre>
+<p>Since this function only has fixed arguments, it will be called in curried
+form, i.e., as <tt class="docutils literal"><span class="pre">pure_max</span> <span class="pre">x</span> <span class="pre">y</span></tt>.</p>
+<p>Conversely, if no parameter types/names are given, then the function accepts
+any number of parameters of any type, which are passed as a list. For
+instance:</p>
+<pre class="literal-block">
+gnm_info &quot;pure_sum&quot; = &quot;&#64;FUNCTION=pure_sum\n\
+&#64;SYNTAX=pure_sum(...)\n\
+&#64;DESCRIPTION=\
+Computes the sum of a collection of numbers.\n&quot;;
+</pre>
+<p>Here the function will be called as <tt class="docutils literal"><span class="pre">pure_sum</span> <span class="pre">[x1,x2,...]</span></tt>, where <tt class="docutils literal"><span class="pre">x1</span></tt>,
+<tt class="docutils literal"><span class="pre">x2</span></tt>, etc. are the arguments the function is invoked with.</p>
+<p>A function may also have both fixed and optional arguments:</p>
+<pre class="literal-block">
+gnm_info &quot;foo&quot; = &quot;ff|ff&quot;,&quot;x,y,z,t&quot;;
+</pre>
+<p>In this case the fixed arguments are passed in curried form as usual, while
+the optional parameters are passed as a list. That is, <tt class="docutils literal"><span class="pre">foo</span></tt> may be called
+as <tt class="docutils literal"><span class="pre">foo</span> <span class="pre">x</span> <span class="pre">y</span> <span class="pre">[]</span></tt>, <tt class="docutils literal"><span class="pre">foo</span> <span class="pre">x</span> <span class="pre">y</span> <span class="pre">[z]</span></tt> or <tt class="docutils literal"><span class="pre">foo</span> <span class="pre">x</span> <span class="pre">y</span> <span class="pre">[z,t]</span></tt>, depending on whether
+it is invoked with two, three or four arguments.</p>
 <p>The marshalling of types between Gnumeric and Pure is pretty straightforward;
 basically, Pure numbers, strings and matrices map to Gnumeric numbers, strings
 and arrays, respectively. The following table summarizes the available
@@ -483,14 +542,23 @@ conversions:</p>
 functions (not the cell references themselves). Conversely, both matrices and
 lists become Gnumeric arrays on output. The empty tuple can be used to denote
 empty Gnumeric values.</p>
-<p>The pure_func.pure script contains some code showing how to write functions
-which can deal with any numbers of scalars, arrays or ranges, see the
-<tt class="docutils literal"><span class="pre">ranges</span></tt> function and the <tt class="docutils literal"><span class="pre">pure_sum</span></tt> and <tt class="docutils literal"><span class="pre">pure_sums</span></tt> examples in the
+<p>The pure_func.pure script contains some examples showing how to write
+functions which can deal with any numbers of scalars, arrays or ranges, see
+the <tt class="docutils literal"><span class="pre">ranges</span></tt> function and the <tt class="docutils literal"><span class="pre">pure_sum</span></tt> and <tt class="docutils literal"><span class="pre">pure_sums</span></tt> examples in the
 script for details.</p>
-<p>Last but not least, it is also possible to call Gnumeric functions from
-Pure. See <tt class="docutils literal"><span class="pre">gnm_bitand</span></tt> in pure_func.pure for an example. More comprehensive
-facilities to directly work with Gnumeric spreadsheets may be added in the
-future.</p>
+<p>Last but not least, it is also possible to call Gnumeric functions from Pure
+using the <tt class="docutils literal"><span class="pre">call_gnm_function</span></tt> function which takes the name of the function
+(a string) as its first, and the parameters as the second (list) argument. For
+instance:</p>
+<pre class="literal-block">
+gnm_bitand x y = call_gnm_function &quot;bitand&quot; [x,y];
+</pre>
+<p>Note that <tt class="docutils literal"><span class="pre">call_gnm_function</span></tt> is an external C function provided by the Pure
+loader. If you want to use it, it must be declared in your Pure script as
+follows:</p>
+<pre class="literal-block">
+extern expr* call_gnm_function(char* name, expr* args);
+</pre>
 </div>
 <div class="section" id="customization">
 <h1>Customization</h1>

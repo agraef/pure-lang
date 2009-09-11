@@ -172,8 +172,72 @@ you want in ``Tools``/``Plug-ins``. All scripts are loaded in the same Pure
 interpreter (and thus are treated like one big script) so that they can
 communicate with each other if necessary.
 
-Gnumeric Values and Functions in Pure
-=====================================
+Gnumeric/Pure Interface
+=======================
+
+By default, when a Pure function is called from Gnumeric, it receives its
+arguments in a list. However, it is possible to tell Gnumeric about the
+expected arguments of the function and also specify a help text to be
+displayed in the ``f(x)`` dialog. To describe a given function to Gnumeric,
+all you have to do is to define ``gnm_info "<name>"`` (where ``<name>`` is the
+name of the function) as either:
+
+* A pair of strings. The first string gives the parameter types (e.g., ``"f"``
+  for a single float parameter), the second one is a list of parameter names
+  (e.g., ``"x,y,z"``). Optional parameters can be indicated using ``|``, as in
+  ``"ff|s"`` (two fixed float arguments, optionally followed by a string).
+
+* Just a help string, in the format indicated below.
+
+* Both parameter types/names and help string, as a triple.
+
+Here's the list of valid parameter types, straight from the
+writing-functions.sgml file in the Gnumeric sources::
+
+    b : boolean		identical to f
+    f : float 		no errors, string conversion attempted, blanks
+			converted to int 0
+    s : string		no errors, blanks accepted and passed as empty
+    S : scalar		any scalar non-error, blanks passed as empty
+    E : scalar		any scalar non blank value
+    B : scalar		any scalar even a blank
+
+    r : cell range	content is _NOT_ guaranteed to have been evaluated yet
+    A : area		array, range, (range as above), or scalar
+    a : array
+    ? : anything
+
+For instance, here's a sample description for a binary function which also
+includes a help text::
+
+  gnm_info "pure_max" = "ff","x,y","@FUNCTION=pure_max\n\
+  @SYNTAX=pure_max(x,y)\n\
+  @DESCRIPTION=\
+  Computes the maximum of two numbers @x and @y.\n";
+
+Since this function only has fixed arguments, it will be called in curried
+form, i.e., as ``pure_max x y``.
+
+Conversely, if no parameter types/names are given, then the function accepts
+any number of parameters of any type, which are passed as a list. For
+instance::
+
+  gnm_info "pure_sum" = "@FUNCTION=pure_sum\n\
+  @SYNTAX=pure_sum(...)\n\
+  @DESCRIPTION=\
+  Computes the sum of a collection of numbers.\n";
+
+Here the function will be called as ``pure_sum [x1,x2,...]``, where ``x1``,
+``x2``, etc. are the arguments the function is invoked with.
+
+A function may also have both fixed and optional arguments::
+
+  gnm_info "foo" = "ff|ff","x,y,z,t";
+
+In this case the fixed arguments are passed in curried form as usual, while
+the optional parameters are passed as a list. That is, ``foo`` may be called
+as ``foo x y []``, ``foo x y [z]`` or ``foo x y [z,t]``, depending on whether
+it is invoked with two, three or four arguments.
 
 The marshalling of types between Gnumeric and Pure is pretty straightforward;
 basically, Pure numbers, strings and matrices map to Gnumeric numbers, strings
@@ -195,15 +259,23 @@ functions (not the cell references themselves). Conversely, both matrices and
 lists become Gnumeric arrays on output. The empty tuple can be used to denote
 empty Gnumeric values.
 
-The pure_func.pure script contains some code showing how to write functions
-which can deal with any numbers of scalars, arrays or ranges, see the
-``ranges`` function and the ``pure_sum`` and ``pure_sums`` examples in the
+The pure_func.pure script contains some examples showing how to write
+functions which can deal with any numbers of scalars, arrays or ranges, see
+the ``ranges`` function and the ``pure_sum`` and ``pure_sums`` examples in the
 script for details.
 
-Last but not least, it is also possible to call Gnumeric functions from
-Pure. See ``gnm_bitand`` in pure_func.pure for an example. More comprehensive
-facilities to directly work with Gnumeric spreadsheets may be added in the
-future.
+Last but not least, it is also possible to call Gnumeric functions from Pure
+using the ``call_gnm_function`` function which takes the name of the function
+(a string) as its first, and the parameters as the second (list) argument. For
+instance::
+
+  gnm_bitand x y = call_gnm_function "bitand" [x,y];
+
+Note that ``call_gnm_function`` is an external C function provided by the Pure
+loader. If you want to use it, it must be declared in your Pure script as
+follows::
+
+  extern expr* call_gnm_function(char* name, expr* args);
 
 Customization
 =============
