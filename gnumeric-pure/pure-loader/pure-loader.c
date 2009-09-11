@@ -24,6 +24,7 @@
 
 #include <glib/gi18n-lib.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #define TYPE_GNM_PURE_PLUGIN_LOADER	(gnm_pure_plugin_loader_get_type ())
 #define GNM_PURE_PLUGIN_LOADER(o)	(G_TYPE_CHECK_INSTANCE_CAST ((o), TYPE_GNM_PURE_PLUGIN_LOADER, GnmPurePluginLoader))
@@ -180,6 +181,18 @@ void pure_reload(GnmAction const *action, WorkbookControl *wbc)
     interp = pure_create_interp(0, 0);
     pure_switch_interp(interp);
     g_list_foreach(modnames, pure_reload_script, NULL);
+  }
+}
+
+void pure_edit(GnmAction const *action, WorkbookControl *wbc)
+{
+  GList *current = g_list_last(modnames);
+  if (current) {
+    const char *path = (const char*)current->data;
+    const char *editor = getenv("EDITOR");
+    gchar *cmdbuf = g_strdup_printf("%s \"%s\" &", editor?editor:"emacs", path);
+    if (system(cmdbuf) == -1) perror("system");
+    g_free(cmdbuf);
   }
 }
 
