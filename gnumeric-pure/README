@@ -3,9 +3,9 @@
 Gnumeric/Pure: A Pure Plugin for Gnumeric
 =========================================
 
-:Author: Albert Graef
+:Author: Albert Gräf
 :Contact: Dr.Graef@t-online.de
-:Copyright: Copyright (c) 2009 by Albert Graef. Distributed under the GNU
+:Copyright: Copyright (c) 2009 by Albert Gräf. Distributed under the GNU
   Public License V3, see COPYING for details.
 
 This package provides a Pure plugin loader and a sample script for use with
@@ -16,6 +16,8 @@ operations, so it makes for a nice Gnumeric companion.
 
 .. _Gnumeric: http://projects.gnome.org/gnumeric/
 .. _Pure: http://pure-lang.googlecode.com/
+
+.. contents::
 
 Installation
 ============
@@ -40,7 +42,6 @@ We recommend the latter since it lets you adjust pure_func.pure for your
 purposes more easily. Optionally, you might also want to copy the
 gnumeric-pure.html file to your Pure library directory so that you can read it
 with the ``help`` command of the Pure interpreter or in Emacs Pure mode.
-
 Typically, ``make install`` and ``make install-local`` will install the
 plugins into the following directories by default:
 
@@ -59,20 +60,52 @@ If ``make install`` doesn't work for some reason, you can also just copy the
 pure-func and pure-loader directories manually to your Gnumeric plugin
 directory.
 
-Basic Usage
-===========
-
 Once Gnumeric/Pure has been properly installed, you should see it in
 Gnumeric's ``Tools``/``Plug-ins`` dialog. As with the Perl and Python plugins,
 there are actually two entries, one labelled ``Pure functions`` and the other
-one labelled ``Pure plugin loader``. You need to enable both.
+one labelled ``Pure plugin loader``. You need to enable both before you can
+start using Pure functions in your Gnumeric spreadsheets.
 
-Now you should be ready to join the fun. Click on a cell and invoke the
-``f(x)`` dialog. The Pure functions available for use are shown in the
-``Pure`` category. E.g., click on ``pure_hello``. Now the Pure interpreter
-will be loaded and the function description displayed. Click ``Insert`` and
-then ``Ok``. You should now be able to read the friendly greeting returned by
-the ``pure_hello`` function.
+Customization Options
+---------------------
+
+Gnumeric doesn't provide much in the way of GUI customization options right
+now, but at least it's possible for plugins to install and configure
+additional menu and toolbar options. The Pure plugin loader adds two
+additional options to the ``Tools`` menu which allow you to reload Pure
+scripts and edit them. After installation, the definitions of these items can
+be found in the pure-loader/pure-ui.xml file in your Gnumeric plugin
+directory. Have a look at this file and edit is as desired. E.g., if you want
+to put the Pure-related options into a submenu and enable toolbar buttons for
+these options, then your pure-ui.xml file should look as follows::
+
+  <ui>
+    <menubar>
+      <menu name="Tools" action="MenuTools">
+        <separator/>
+        <menu name="Pure" action="PureMenu">
+          <menuitem action="PureReload"/>
+          <menuitem action="PureEdit"/>
+        </menu>
+      </menu>
+    </menubar>
+    <toolbar name="StandardToolbar">
+      <separator/>
+      <toolitem action="PureReload"/>
+      <toolitem action="PureEdit"/>
+    </toolbar>
+  </ui>
+
+Basic Usage
+===========
+
+With Pure/Gnumeric installed and enabled, you should be ready to join the fun
+now. Start up Gnumeric, click on a cell and invoke the ``f(x)`` dialog. The
+Pure functions available for use are shown in the ``Pure`` category. E.g.,
+click on ``pure_hello``. Now the Pure interpreter will be loaded and the
+function description displayed. Click ``Insert`` and then ``Ok``. You should
+now be able to read the friendly greeting returned by the ``pure_hello``
+function.
 
 Of course, you can also enter the function call directly as a formula into a
 cell as usual. Click on a cell, then enter the following::
@@ -115,20 +148,21 @@ After playing around with pure_func.pure for a while, of course you will want
 to write your own functions, that's what this plugin is about after all! For
 the beginning, you can just add your definitions to the existing
 pure_func.pure script. Use the ``Edit Pure Script`` option to edit the script
-in your favourite editor, and see the comments and the examples in the
-script.pure for guidance. (This document assumes that you're already familiar
-with Pure, if not then you should consult the available Pure documentation.)
+in your favourite editor, and see the comments and the examples in the script
+for guidance. (This document assumes that you're already familiar with Pure,
+if not then you should consult the available Pure documentation.)
 
 Note that if you delete or rename any functions in this file, or add new ones
-then you also have to change the list of function names in the plugin.xml file
-in the same directory accordingly. This file tells Gnumeric which functions
-are provided by the script. Unfortunately, you'll have to restart Gnumeric to
-make changes in this file take effect. If you only change the definition of an
-existing function then it's usually sufficient to just invoke ``Reload Pure
-Scripts`` afterwards, and maybe run ``Recalculate`` (``F9``) to recompute the
-spreadsheet. However, if you also made changes to the function descriptions
-provided via ``gnm_info`` (see the following section for explanation), then
-you'll also have to restart Gnumeric so that it picks up the changes.
+to it, then you also have to change the list of function names in the
+plugin.xml file in the same directory accordingly. This file tells Gnumeric
+which functions are provided by the script. Unfortunately, you'll have to
+restart Gnumeric to make changes in this file take effect. If you only change
+the definition of an existing function then it's usually sufficient to just
+invoke ``Reload Pure Scripts`` afterwards, and maybe run ``Recalculate``
+(``F9``) to recompute the spreadsheet. However, if you also made changes to
+the function descriptions provided via ``gnm_info`` (see the following section
+for explanation), then you'll also have to restart Gnumeric so that it picks
+up the changes.
 
 Once you understand how this works, you can also create your own plugin
 directories with your personal collections of Gnumeric/Pure functions, using
@@ -161,14 +195,15 @@ directory. The plugin.xml file in that directory might look as follows::
 The following steps are needed to tell Gnumeric about your new Pure plugin:
 
 * Open the ``Directories`` tab in the ``Tools``/``Plug-ins`` dialog and add
-  the parent directory ($HOME/pure in this case) to the plugin search
-  path. You might have to restart Gnumeric after that.
+  the $HOME/pure directory to the plugin search path. You might have to
+  restart Gnumeric after that.
 
 * The plugin can now be enabled in the ``Tools``/``Plug-ins`` dialog under
   ``My Pure functions``.
 
-The Pure loader can also load multiple Pure scripts, just enable the ones that
-you want in ``Tools``/``Plug-ins``. All scripts are loaded in the same Pure
+The Pure loader can also load multiple Pure plugins, after creating the
+corresponding plugin directories and scripts just enable the ones that you
+want in ``Tools``/``Plug-ins``. All scripts are loaded in the same Pure
 interpreter (and thus are treated like one big script) so that they can
 communicate with each other if necessary.
 
@@ -195,8 +230,7 @@ Here's the list of valid parameter types, straight from the
 writing-functions.sgml file in the Gnumeric sources::
 
     b : boolean		identical to f
-    f : float 		no errors, string conversion attempted, blanks
-			converted to int 0
+    f : float 		no errors, string conversion, blanks converted to 0
     s : string		no errors, blanks accepted and passed as empty
     S : scalar		any scalar non-error, blanks passed as empty
     E : scalar		any scalar non blank value
@@ -212,23 +246,28 @@ includes a help text::
 
   gnm_info "pure_max" = "ff","x,y","@FUNCTION=pure_max\n\
   @SYNTAX=pure_max(x,y)\n\
-  @DESCRIPTION=\
-  Computes the maximum of two numbers @x and @y.\n";
+  @DESCRIPTION=Computes the maximum of two numbers @x and @y.\n";
 
 Since this function only has fixed arguments, it will be called in curried
-form, i.e., as ``pure_max x y``.
+form, i.e., as ``pure_max x y``. For instance, the actual definition of
+``pure_max`` may look as follows::
 
-Conversely, if no parameter types/names are given, then the function accepts
-any number of parameters of any type, which are passed as a list. For
+  pure_max x y = max x y;
+
+Conversely, if no parameter types and names are given, then the function
+accepts any number of parameters of any type, which are passed as a list. For
 instance::
 
   gnm_info "pure_sum" = "@FUNCTION=pure_sum\n\
   @SYNTAX=pure_sum(...)\n\
-  @DESCRIPTION=\
-  Computes the sum of a collection of numbers.\n";
+  @DESCRIPTION=Computes the sum of a collection of numbers.\n";
 
 Here the function will be called as ``pure_sum [x1,x2,...]``, where ``x1``,
-``x2``, etc. are the arguments the function is invoked with.
+``x2``, etc. are the arguments the function is invoked with. Note that in this
+case there may be any number of arguments (including zero) of any type, so
+your function definition must be prepared to handle this. If a function does
+not have a ``gnm_info`` description at all then it is treated in the same
+fashion.
 
 A function may also have both fixed and optional arguments::
 
@@ -254,10 +293,13 @@ Pure                               Gnumeric
 ``{1,2,3;4,5,6}``                  array (or cell range)
 ===============================    ===============================
 
-Note that on input, cell ranges are always passed as matrices to Pure
-functions (not the cell references themselves). Conversely, both matrices and
-lists become Gnumeric arrays on output. The empty tuple can be used to denote
-empty Gnumeric values.
+These conversions work both ways. Note that on input, cell ranges are always
+passed as matrices to Pure functions (not the cell references
+themselves). Conversely, both matrices and lists become Gnumeric arrays on
+output, so you'll want to enter this as an array function
+(``Ctrl-Shift-Enter`` in Gnumeric). The empty tuple can be used to denote
+empty cell values, but note that empty Gnumeric values may become zeros when
+passed as float or array arguments.
 
 The pure_func.pure script contains some examples showing how to write
 functions which can deal with any numbers of scalars, arrays or ranges, see
@@ -269,6 +311,7 @@ using the ``call_gnm_function`` function which takes the name of the function
 (a string) as its first, and the parameters as the second (list) argument. For
 instance::
 
+  gnm_info "gnm_bitand" = "ff", "x,y";
   gnm_bitand x y = call_gnm_function "bitand" [x,y];
 
 Note that ``call_gnm_function`` is an external C function provided by the Pure
@@ -276,16 +319,3 @@ loader. If you want to use it, it must be declared in your Pure script as
 follows::
 
   extern expr* call_gnm_function(char* name, expr* args);
-
-Customization
-=============
-
-Gnumeric doesn't provide much in the way of GUI customization options right
-now, but at least it's possible for plugins to install and configure
-additional menu and toolbar options. As already mentioned, the Pure plugin
-loader adds two additional options to the ``Tools`` menu which allow you to
-reload Pure scripts and edit them. The definitions of these items can be found
-in the pure-loader/pure-ui.xml file in your Gnumeric plugin directory. Have a
-look at this file and edit is as desired, e.g., if you want to put the
-Pure-related options into a submenu, add them to another menu, or enable
-toolbar buttons for these menu options.
