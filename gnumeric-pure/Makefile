@@ -92,7 +92,8 @@ CFLAGS = -g -O2
 DISTFILES = COPYING Makefile README gnumeric-pure.html pure-examples.gnumeric \
 config.guess \
 pure-loader/boot.c pure-loader/pure-gnumeric.c pure-loader/pure-gnumeric.h \
-pure-loader/pure-loader.c pure-loader/pure-loader.h pure-loader/plugin.xml \
+pure-loader/pure-loader.c pure-loader/pure-loader.h \
+pure-loader/plugin.xml pure-loader/pure-ui.xml \
 pure-func/*.pure pure-func/plugin.xml
 
 all: pure-loader/pure_loader$(DLL)
@@ -128,13 +129,13 @@ install:
 	test -d "$(DESTDIR)$(gnmplugindir)/pure-func" || mkdir -p "$(DESTDIR)$(gnmplugindir)/pure-func"
 	test -d "$(DESTDIR)$(gnmplugindir)/pure-loader" || mkdir -p "$(DESTDIR)$(gnmplugindir)/pure-loader"
 	cp COPYING README gnumeric-pure.html pure-func/*.pure pure-func/plugin.xml "$(DESTDIR)$(gnmplugindir)/pure-func"
-	cp pure-loader/pure_loader$(DLL) pure-loader/plugin.xml "$(DESTDIR)$(gnmplugindir)/pure-loader"
+	cp pure-loader/pure_loader$(DLL) pure-loader/plugin.xml pure-loader/pure-ui.xml "$(DESTDIR)$(gnmplugindir)/pure-loader"
 
 install-local:
 	test -d "$(DESTDIR)$(gnmlocalplugindir)/pure-func" || mkdir -p "$(DESTDIR)$(gnmlocalplugindir)/pure-func"
 	test -d "$(DESTDIR)$(gnmlocalplugindir)/pure-loader" || mkdir -p "$(DESTDIR)$(gnmlocalplugindir)/pure-loader"
 	cp COPYING README gnumeric-pure.html pure-func/*.pure pure-func/plugin.xml "$(DESTDIR)$(gnmlocalplugindir)/pure-func"
-	cp pure-loader/pure_loader$(DLL) pure-loader/plugin.xml "$(DESTDIR)$(gnmlocalplugindir)/pure-loader"
+	cp pure-loader/pure_loader$(DLL) pure-loader/plugin.xml pure-loader/pure-ui.xml "$(DESTDIR)$(gnmlocalplugindir)/pure-loader"
 
 uninstall:
 	rm -rf "$(DESTDIR)$(gnmplugindir)/pure-func" "$(DESTDIR)$(gnmplugindir)/pure-loader"

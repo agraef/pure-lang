@@ -33,3 +33,8 @@ go_plugin_init(GOPlugin *plugin, GOCmdContext *cc)
   GTypeModule *module = go_plugin_get_type_module(plugin);
   gnm_pure_plugin_loader_register_type(module);
 }
+
+ModulePluginUIActions const pure_ui_actions[] = {
+  { "PureReload", pure_reload },
+  { NULL }
+};

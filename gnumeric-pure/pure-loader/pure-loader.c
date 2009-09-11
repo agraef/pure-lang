@@ -133,6 +133,8 @@ gplp_set_attributes(GOPluginLoader *loader, GHashTable *attrs,
     *ret_error = error_info_new_str(_("** Pure module name not given."));
 }
 
+static GList *modnames;
+
 static void
 gplp_load_base(GOPluginLoader *loader, ErrorInfo **ret_error)
 {
@@ -155,12 +157,30 @@ gplp_load_base(GOPluginLoader *loader, ErrorInfo **ret_error)
       // FIXME: This only prints errors on stderr right now.
       pure_evalcmd(cmdbuf);
       g_free(cmdbuf);
+      modnames = g_list_append(modnames, path);
     }
   } else {
     *ret_error = error_info_new_printf(_("** Couldn't find \"%s\"."), script);
   }
   g_free(script);
-  g_free(path);
+}
+
+static void pure_reload_script(gpointer data, gpointer unused)
+{
+  const char *path = (const char*)data;
+  gchar *cmdbuf = g_strdup_printf("using \"%s\";\n", path);
+  pure_evalcmd(cmdbuf);
+  g_free(cmdbuf);
+}
+
+void pure_reload(GnmAction const *action, WorkbookControl *wbc)
+{
+  if (interp && g_list_first(modnames)) {
+    pure_delete_interp(interp);
+    interp = pure_create_interp(0, 0);
+    pure_switch_interp(interp);
+    g_list_foreach(modnames, pure_reload_script, NULL);
+  }
 }
 
 static void
