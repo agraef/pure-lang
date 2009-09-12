@@ -14,6 +14,7 @@
 #include <value.h>
 #include <str.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include <pure/runtime.h>
 
@@ -22,5 +23,6 @@ GnmValue* pure2value(const GnmEvalPos *pos, pure_expr *x);
 GnmValue* call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
 			     GnmValue const * const *argv);
 pure_expr* call_gnm_function(const char *name, pure_expr *args);
+pure_expr *gnm_datasource(pure_expr *x);
 
 #endif /* _PURE_GNUMERIC_H */

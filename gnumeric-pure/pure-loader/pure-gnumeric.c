@@ -86,6 +86,10 @@ pure_expr *
 value2pure(const GnmEvalPos *pos, const GnmValue *v)
 {
   switch (v->type) {
+  case VALUE_ERROR:
+    // XXXFIXME: Do we have to convert from the system encoding here?
+    return pure_app(pure_symbol(pure_sym("gnm_error")),
+		    pure_string_dup(v->v_err.mesg->str));
   case VALUE_EMPTY:
     return pure_tuplel(0);
   case VALUE_BOOLEAN:
@@ -210,25 +214,55 @@ value2pure(const GnmEvalPos *pos, const GnmValue *v)
       }
     }
   }
-  case VALUE_ERROR:
   default:
     return NULL;
   }
 }
 
+/* Standard Gnumeric errors. We invoke the appropriate error value routines
+   for these, as they may have to be translated to the host locale. */
+
+static struct {
+  char const *C_name;
+  GnmValue *(*err_fun)(GnmEvalPos const *pos);
+} standard_errors[] = {
+  { N_("#NULL!"), value_new_error_NULL },
+  { N_("#DIV/0!"), value_new_error_DIV0 },
+  { N_("#VALUE!"), value_new_error_VALUE },
+  { N_("#REF!"), value_new_error_REF },
+  { N_("#NAME?"), value_new_error_NAME },
+  { N_("#NUM!"), value_new_error_NUM },
+  { N_("#N/A"), value_new_error_NA },
+  { NULL, NULL }
+};
+
 GnmValue *
 pure2value(const GnmEvalPos *pos, pure_expr *x)
 {
-  int32_t iv;
+  int32_t iv, f;
   double dv;
   const char *s;
   size_t sz;
   pure_expr **xv;
   void *p;
+  pure_expr *fun, *arg;
   GnmValue *v;
   if (!x)
     v = NULL;
-  else if (pure_is_tuplev(x, &sz, NULL) && sz==0)
+  else if (pure_is_app(x, &fun, &arg) &&
+	   pure_is_symbol(fun, &f) &&
+	   strcmp(pure_sym_pname(f), "gnm_error") == 0 &&
+	   pure_is_string(arg, &s)) {
+    int i;
+    for (i = 0;
+	 standard_errors[i].C_name && strcmp(standard_errors[i].C_name, s);
+	 i++) ;
+    if (standard_errors[i].C_name)
+      v = standard_errors[i].err_fun(pos);
+    else
+      // XXXFIXME: Do we have to convert to the system encoding here?
+      v = value_new_error(pos, s);
+  } else if (pure_is_tuplev(x, &sz, NULL) && sz==0)
     v = value_new_empty();
   else if (pure_is_int(x, &iv))
     v = value_new_int(iv);
@@ -244,14 +278,7 @@ pure2value(const GnmEvalPos *pos, pure_expr *x)
     v = value_new_array_empty(sz, 1);
     for (i = 0; i < sz; i++) {
       GnmValue *val = pure2value(pos, xv[i]);
-      if (!val) {
-	char *s = str(xv[i]);
-	gchar *msg = s?g_strdup_printf(_("** Unsupported Pure value: %s"), s):
-	  _("** Unsupported Pure value");
-	if (s) free(s);
-	val = value_new_error(pos, msg);
-	g_free(msg);
-      }
+      if (!val) val = value_new_error_VALUE(pos);
       v->v_array.vals[i][0] = val;
     }
     free(xv);
@@ -275,14 +302,7 @@ pure2value(const GnmEvalPos *pos, pure_expr *x)
       for (j = 0; j < ncols; j++) {
 	gint x = (gint)j, y = (gint)i;
 	GnmValue *val = pure2value(pos, data[i*tda+j]);
-	if (!val) {
-	  char *s = str(data[i*tda+j]);
-	  gchar *msg = s?g_strdup_printf(_("** Unsupported Pure value: %s"), s):
-	    _("** Unsupported Pure value");
-	  if (s) free(s);
-	  val = value_new_error(pos, msg);
-	  g_free(msg);
-	}
+	if (!val) val = value_new_error_VALUE(pos);
 	v->v_array.vals[x][y] = val;
       }
   } else
@@ -290,7 +310,7 @@ pure2value(const GnmEvalPos *pos, pure_expr *x)
   return v;
 }
 
-static const GnmEvalPos *eval_pos; //TLD
+static const GnmFuncEvalInfo *eval_info; //TLD
 
 GnmValue *
 call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
@@ -317,13 +337,9 @@ call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
   for (i = 0; i < n_args && argv[i] != NULL; i++) {
     args[i] = value2pure(ei->pos, argv[i]);
     if (!args[i]) {
-      char *s = value_get_as_string(argv[i]);
-      gchar *msg = g_strdup_printf(_("** Unsupported Gnumeric value: %s"), s);
-      g_free(s);
       for (j = 0; j < i; j++) pure_freenew(args[j]);
       g_free(args);
-      ret = value_new_error(ei->pos, msg);
-      g_free(msg);
+      ret = value_new_error_VALUE(ei->pos);
       return ret;
     }
   }
@@ -342,28 +358,17 @@ call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
   else
     x = pure_appv(fun, i, args);
   g_free(args);
-  eval_pos = ei->pos;
+  eval_info = ei;
   y = pure_evalx(x, &e);
-  eval_pos = NULL;
+  eval_info = NULL;
 
   if (y) {
     ret = pure2value(ei->pos, y);
-    if (!ret) {
-      char *s = str(y);
-      gchar *msg = s?g_strdup_printf(_("** Unsupported Pure value: %s"), s):
-	_("** Unsupported Pure value");
-      if (s) free(s);
-      ret = value_new_error(ei->pos, msg);
-      g_free(msg);
-    }
     pure_freenew(y);
+    if (!ret) ret = value_new_error_VALUE(ei->pos);
   } else {
-    char *s = str(e);
-    gchar *msg = s?g_strdup_printf(_("** Pure exception: %s"), s):
-      _("** Pure exception");
-    if (e) pure_freenew(e); if (s) free(s);
-    ret = value_new_error(ei->pos, msg);
-    g_free(msg);
+    if (e) pure_freenew(e);
+    ret = value_new_error_NULL(ei->pos);
   }
   return ret;
 }
@@ -376,12 +381,12 @@ call_gnm_function(const char *name, pure_expr *args)
   gint n_args, i, j;
   size_t n;
   pure_expr **xv, *ret;
-  if (!fn_def || !eval_pos) return NULL;
+  if (!fn_def || !eval_info) return NULL;
   if (!pure_is_listv(args, &n, &xv)) return NULL;
   n_args = (gint)n;
   val = g_new(GnmValue*, n_args);
   for (i = 0; i < n_args; i++) {
-    val[i] = pure2value(eval_pos, xv[i]);
+    val[i] = pure2value(eval_info->pos, xv[i]);
     if (!val[i]) {
       for (j = 0; j < i; j++)
 	value_release(val[j]);
@@ -391,12 +396,93 @@ call_gnm_function(const char *name, pure_expr *args)
     }
   }
   if (xv) free(xv);
-  ret_val = function_def_call_with_values(eval_pos, fn_def, n_args,
+  ret_val = function_def_call_with_values(eval_info->pos, fn_def, n_args,
 					  (GnmValue const * const *)val);
-  ret = value2pure(eval_pos, ret_val);
+  ret = value2pure(eval_info->pos, ret_val);
   value_release(ret_val);
   for (i = 0; i < n; i++)
     value_release(val[i]);
   g_free(val);
   return ret;
+}
+
+/* Support for asynchronous data sources (from sample_datasource.c). */
+
+#include "pure-loader.h"
+
+static inline bool is_nil(pure_expr *x)
+{
+  size_t n;
+  return pure_is_listv(x, &n, NULL) && n==0;
+}
+
+static inline bool is_cons(pure_expr *x, pure_expr **y, pure_expr **z)
+{
+  pure_expr *f;
+  size_t n;
+  if (pure_is_appv(x, &f, &n, NULL) && n==2 &&
+      strcmp(pure_sym_pname(f->tag), ":") == 0) {
+    if (y) *y = x->data.x[0]->data.x[1];
+    if (z) *z = x->data.x[1];
+    return true;
+  } else
+    return false;
+}
+
+static void out(FILE *fp, const char *key, pure_expr *x)
+{
+  char *s = str(x);
+  if (s) {
+    fprintf(fp, "%s:%s\n", key, s);
+    fflush(fp);
+    free(s);
+  }
+}
+
+pure_expr *gnm_datasource(pure_expr *x)
+{
+  int pid;
+  pure_expr *ret;
+  char *key;
+  if (!x || !eval_info || !atl_filename) return NULL;
+  if (atl_func_init(eval_info, &key, &ret)) {
+    g_free(key);
+    return ret;
+  } else if ((pid = fork()) == 0) {
+    /* child */
+    FILE *atl_file = fopen(atl_filename, "ab");
+#if 0
+    fprintf(stderr, "[%d] child: %s\n", getpid(), key);
+#endif
+    /* evaluate expression, and write results to the pipe */
+    if (x && (x = pure_force(x))) {
+      pure_expr *u = pure_new(x), *y, *z;
+      if (is_cons(u, NULL, NULL)) {
+	while (u && is_cons(u, &y, &z)) {
+	  out(atl_file, key, y);
+	  if (z && (z = pure_force(z))) {
+	    pure_new(z);
+	    pure_free(u);
+	    u = z;
+	  } else
+	    break;
+	}
+      } else if (!is_nil(u))
+	out(atl_file, key, u);
+      exit(0);
+    } else
+      exit(1);
+  } else if (pid > 0) {
+    /* parent */
+#if 0
+    fprintf(stderr, "[%d] started child [%d]: %s\n", getpid(), pid, key);
+#endif
+    g_free(key);
+    atl_func_process(eval_info, pid);
+    return ret;
+  } else {
+    perror("fork");
+    g_free(key);
+    return NULL;
+  }
 }
