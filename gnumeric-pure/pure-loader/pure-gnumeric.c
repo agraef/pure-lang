@@ -429,6 +429,7 @@ static inline bool is_cons(pure_expr *x, pure_expr **y, pure_expr **z)
     return false;
 }
 
+// XXXTODO: Use blobs to serialize expressions instead.
 static void out(FILE *fp, const char *key, pure_expr *x)
 {
   char *s = str(x);
@@ -444,13 +445,13 @@ pure_expr *gnm_datasource(pure_expr *x)
   int pid;
   pure_expr *ret;
   char *key;
-  if (!x || !eval_info || !atl_filename) return NULL;
-  if (atl_func_init(eval_info, &key, &ret)) {
+  if (!x || !eval_info || !pure_async_filename) return NULL;
+  if (pure_async_func_init(eval_info, &key, &ret)) {
     g_free(key);
     return ret;
   } else if ((pid = fork()) == 0) {
     /* child */
-    FILE *atl_file = fopen(atl_filename, "ab");
+    FILE *pure_async_file = fopen(pure_async_filename, "ab");
 #if 0
     fprintf(stderr, "[%d] child: %s\n", getpid(), key);
 #endif
@@ -459,7 +460,7 @@ pure_expr *gnm_datasource(pure_expr *x)
       pure_expr *u = pure_new(x), *y, *z;
       if (is_cons(u, NULL, NULL)) {
 	while (u && is_cons(u, &y, &z)) {
-	  out(atl_file, key, y);
+	  out(pure_async_file, key, y);
 	  if (z && (z = pure_force(z))) {
 	    pure_new(z);
 	    pure_free(u);
@@ -468,7 +469,7 @@ pure_expr *gnm_datasource(pure_expr *x)
 	    break;
 	}
       } else if (!is_nil(u))
-	out(atl_file, key, u);
+	out(pure_async_file, key, u);
       exit(0);
     } else
       exit(1);
@@ -478,7 +479,7 @@ pure_expr *gnm_datasource(pure_expr *x)
     fprintf(stderr, "[%d] started child [%d]: %s\n", getpid(), pid, key);
 #endif
     g_free(key);
-    atl_func_process(eval_info, pid);
+    pure_async_func_process(eval_info, pid);
     return ret;
   } else {
     perror("fork");

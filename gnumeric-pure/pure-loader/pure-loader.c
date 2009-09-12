@@ -76,8 +76,8 @@ call_pure_function_nodes(GnmFuncEvalInfo *ei, int argc,
   return v;
 }
 
-static DependentFlags atl_func_link(GnmFuncEvalInfo *ei);
-static void atl_func_unlink(GnmFuncEvalInfo *ei);
+static DependentFlags pure_async_func_link(GnmFuncEvalInfo *ei);
+static void pure_async_func_unlink(GnmFuncEvalInfo *ei);
 
 static gboolean
 gplp_func_desc_load(GOPluginService *service,
@@ -122,8 +122,8 @@ gplp_func_desc_load(GOPluginService *service,
     res->fn_args = &call_pure_function_args;
   else
     res->fn_nodes = &call_pure_function_nodes;
-  res->linker = atl_func_link;
-  res->unlinker = atl_func_unlink;
+  res->linker = pure_async_func_link;
+  res->unlinker = pure_async_func_unlink;
   res->impl_status = GNM_FUNC_IMPL_STATUS_UNIQUE_TO_GNUMERIC;
   res->test_status = GNM_FUNC_TEST_STATUS_UNKNOWN;
 
@@ -208,10 +208,10 @@ void pure_edit(GnmAction const *action, WorkbookControl *wbc)
 
 /* Support for asynchronous data sources (from sample_datasource.c). */
 
-char *atl_filename = NULL;
-static int atl_fd = -1;
-static FILE *atl_file = NULL;
-static guint atl_source = 0;
+char *pure_async_filename = NULL;
+static int pure_async_fd = -1;
+static FILE *pure_async_file = NULL;
+static guint pure_async_source = 0;
 static GHashTable *watched_values = NULL;
 static GHashTable *watchers = NULL;
 
@@ -268,10 +268,10 @@ cb_watcher_queue_recalc(gpointer key, gpointer value, gpointer closure)
 }
 
 static gboolean
-cb_atl_input(GIOChannel *gioc, GIOCondition cond, gpointer ignored)
+cb_pure_async_input(GIOChannel *gioc, GIOCondition cond, gpointer ignored)
 {
   char buf[1024]; // XXXFIXME
-  while (fgets(buf, sizeof (buf), atl_file) != NULL) {
+  while (fgets(buf, sizeof (buf), pure_async_file) != NULL) {
     char *sym = buf;
     char *value_str = strchr(buf, ':');
     if (value_str) {
@@ -293,7 +293,7 @@ cb_atl_input(GIOChannel *gioc, GIOCondition cond, gpointer ignored)
 }
 
 gboolean
-atl_func_init(const GnmFuncEvalInfo *ei, char **name, pure_expr **x)
+pure_async_func_init(const GnmFuncEvalInfo *ei, char **name, pure_expr **x)
 {
   Watcher key = { ei->func_call, ei->pos->dep, NULL, 0 };
   WatchedValue *val;
@@ -333,7 +333,7 @@ atl_func_init(const GnmFuncEvalInfo *ei, char **name, pure_expr **x)
 }
 
 void
-atl_func_process(const GnmFuncEvalInfo *ei, int pid)
+pure_async_func_process(const GnmFuncEvalInfo *ei, int pid)
 {
   Watcher key = { ei->func_call, ei->pos->dep, NULL, 0 };
   if (key.node != NULL && key.dep != NULL) {
@@ -344,16 +344,16 @@ atl_func_process(const GnmFuncEvalInfo *ei, int pid)
 }
 
 static DependentFlags
-atl_func_link(GnmFuncEvalInfo *ei)
+pure_async_func_link(GnmFuncEvalInfo *ei)
 {
 #if 0
-  fprintf(stderr, "link atl_func %p\n", ei);
+  fprintf(stderr, "link pure_async_func %p\n", ei);
 #endif
   return DEPENDENT_ALWAYS_UNLINK;
 }
 
 static void
-atl_func_unlink(GnmFuncEvalInfo *ei)
+pure_async_func_unlink(GnmFuncEvalInfo *ei)
 {
   Watcher key, *w;
   key.node = ei->func_call;
@@ -363,7 +363,7 @@ atl_func_unlink(GnmFuncEvalInfo *ei)
     if (w->value != NULL)
       g_hash_table_remove(w->value->deps, w);
 #if 0
-    fprintf(stderr, "unlink atl_func %p [%d]\n", ei, w->pid);
+    fprintf(stderr, "unlink pure_async_func %p [%d]\n", ei, w->pid);
 #endif
     if (w->pid > 0) {
       // get rid of the inferior process
@@ -380,25 +380,25 @@ static void
 watcher_init(void)
 {
   GIOChannel *channel = NULL;
-  char *filename;
+  char *filename, nambuf[L_tmpnam];
   // Set up a pipe for asynchronous data processing.
 #if 0
-  fprintf(stderr, ">>>>>>>>>>>>>>>>>>>>>>>>>>>> LOAD ATL\n");
+  fprintf(stderr, ">>>>>>>>>>>>>>>>>>>>>>>>>>>> LOAD PURE_ASYNC\n");
 #endif
-  g_return_if_fail(atl_fd < 0);
-  filename = g_build_filename(g_get_home_dir (), "atl", NULL);
-  g_unlink(filename);
-  if (mkfifo(filename, S_IRUSR | S_IWUSR) == 0) {
-    atl_filename = filename;
-    atl_fd = g_open(atl_filename, O_RDWR|O_NONBLOCK, 0);
+  g_return_if_fail(pure_async_fd < 0);
+  if (tmpnam(nambuf) && (filename = g_strdup(nambuf)) &&
+    unlink(filename) <= 0 &&
+    mkfifo(filename, S_IRUSR | S_IWUSR) == 0) {
+    pure_async_filename = filename;
+    pure_async_fd = g_open(pure_async_filename, O_RDWR|O_NONBLOCK, 0);
   } else
     g_free (filename);
-  if (atl_fd >= 0) {
-    atl_file = fdopen(atl_fd, "rb");
-    channel = g_io_channel_unix_new(atl_fd);
-    atl_source = g_io_add_watch(channel,
-				G_IO_IN | G_IO_ERR | G_IO_HUP | G_IO_NVAL,
-				cb_atl_input, NULL);
+  if (pure_async_fd >= 0) {
+    pure_async_file = fdopen(pure_async_fd, "rb");
+    channel = g_io_channel_unix_new(pure_async_fd);
+    pure_async_source =
+      g_io_add_watch(channel, G_IO_IN | G_IO_ERR | G_IO_HUP | G_IO_NVAL,
+		     cb_pure_async_input, NULL);
     g_io_channel_unref(channel);
   }
   watched_values = g_hash_table_new((GHashFunc)g_str_hash,
@@ -411,24 +411,24 @@ static void
 watcher_fini(void)
 {
 #if 0
-  fprintf(stderr, "UNLOAD ATL >>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+  fprintf(stderr, "UNLOAD PURE_ASYNC >>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
 #endif
-  if (atl_source) {
-    g_source_remove(atl_source);
-    atl_source = 0;
+  if (pure_async_source) {
+    g_source_remove(pure_async_source);
+    pure_async_source = 0;
   }
-  if (atl_filename) {
-    g_unlink(atl_filename);
-    g_free(atl_filename);
-    atl_filename = NULL;
+  if (pure_async_filename) {
+    g_unlink(pure_async_filename);
+    g_free(pure_async_filename);
+    pure_async_filename = NULL;
   }
-  if (atl_fd >= 0) {
-    close(atl_fd);
-    atl_fd = -1;
+  if (pure_async_fd >= 0) {
+    close(pure_async_fd);
+    pure_async_fd = -1;
   }
-  if (atl_file != NULL) {
-    fclose(atl_file);
-    atl_file = NULL;
+  if (pure_async_file != NULL) {
+    fclose(pure_async_file);
+    pure_async_file = NULL;
   }
   g_hash_table_destroy(watched_values);
   watched_values = NULL;
