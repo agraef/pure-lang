@@ -22,7 +22,7 @@ pure_expr* value2pure(const GnmEvalPos *pos, const GnmValue *v);
 GnmValue* pure2value(const GnmEvalPos *pos, pure_expr *x);
 GnmValue* call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
 			     GnmValue const * const *argv);
-pure_expr* call_gnm_function(const char *name, pure_expr *args);
-pure_expr *gnm_datasource(pure_expr *x);
+pure_expr* pure_gnmcall(const char *name, pure_expr *args);
+pure_expr *pure_datasource(pure_expr *x);
 
 #endif /* _PURE_GNUMERIC_H */

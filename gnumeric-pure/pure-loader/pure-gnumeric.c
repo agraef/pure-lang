@@ -374,7 +374,7 @@ call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
 }
 
 pure_expr *
-call_gnm_function(const char *name, pure_expr *args)
+pure_gnmcall(const char *name, pure_expr *args)
 {
   GnmFunc *fn_def = gnm_func_lookup(name, NULL);
   GnmValue **val, *ret_val;
@@ -440,7 +440,7 @@ static void out(FILE *fp, const char *key, pure_expr *x)
   }
 }
 
-pure_expr *gnm_datasource(pure_expr *x)
+pure_expr *pure_datasource(pure_expr *x)
 {
   int pid;
   pure_expr *ret;
