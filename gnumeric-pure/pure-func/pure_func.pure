@@ -5,6 +5,14 @@ using system;
 
 public gnm_error;
 
+/* Externals provided by the Pure plugin loader. pure-gnmcall lets you call a
+   Gnumeric function from Pure, and pure_datasource creates an asynchronous
+   data source from a Pure expression. See the gnm_bitand and pure_counter
+   examples below. */
+
+extern expr* pure_gnmcall(char* name, expr* args);
+extern expr* pure_datasource(expr* x);
+
 /* Gnumeric function descriptions. These are optional, but needed if you want
    to tell Gnumeric about the parameters the function is to be invoked with,
    and/or the help text to be displayed for the function.
@@ -100,6 +108,11 @@ gnm_info "gnm_bitand" = "ff", "x,y", "@FUNCTION=gnm_bitand\n\
 @DESCRIPTION=\
 Computes the bitwise and of two numbers @x and @y, using the corresponding Gnumeric function. This example shows how to call Gnumeric functions from Pure.\n";
 
+gnm_info "pure_counter" = "f", "start", "@FUNCTION=pure_counter\n\
+@SYNTAX=pure_counter(start)\n\
+@DESCRIPTION=\
+Counts off the seconds, beginning with the given @start value. This example demonstrates the use of an asynchronous data source.\n";
+
 namespace pure_func;
 
 /* Helper function to collect the values in a list of scalars and ranges or
@@ -126,14 +139,25 @@ pure_eval (s::string:args) =
     _ = throw "pure_eval: syntax error";
   end;
 
-/* This example shows how to call Gnumeric functions from Pure. This is done
-   using the following external defined in the Pure plugin loader. The
-   arguments must be given as a list of Pure expressions which can be
-   converted to Gnumeric values ((), numbers, strings, lists and matrices). */
-
-extern expr* pure_gnmcall(char* name, expr* args);
+/* This example shows how to call Gnumeric functions from Pure, using the
+   pure_gnmcall external defined in the Pure plugin loader. The arguments must
+   be given as a list of Pure expressions which can be converted to Gnumeric
+   values ((), numbers, strings, lists and matrices). */
 
 gnm_bitand x y = pure_gnmcall "bitand" [x,y];
+
+/* It is also possible to create external data sources using the
+   pure_datasource external defined in the Pure plugin loader. The argument to
+   pure_datasource is usually a thunk or a Pure stream (lazy list), which is
+   evaluated asynchronously in a separate process. The resulting Pure values
+   are fed back to Gnumeric as results of the pure_datasource call, as they
+   become available. #N/A is returned when no result is available yet. The
+   following example shows how to use this function, by counting off seconds
+   starting from a given initial value. */
+
+pure_counter x = y
+  when y = pure_datasource [count i | i = x..inf] end
+  with count i = if i>x then sleep 1 $$ i else i end;
 
 namespace;
 
