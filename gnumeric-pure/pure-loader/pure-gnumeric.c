@@ -310,8 +310,10 @@ pure2value(const GnmEvalPos *pos, pure_expr *x)
   return v;
 }
 
-static const GnmFuncEvalInfo *eval_info; //TLD
-static pure_expr *eval_expr; //TLD
+// These should be TLD when the Pure interpreter becomes multithreaded.
+static const GnmFuncEvalInfo *eval_info;
+static pure_expr *eval_expr;
+static unsigned id;
 
 GnmValue *
 call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
@@ -362,10 +364,10 @@ call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
   g_free(args);
   // Save the old context in case we're invoked recursively.
   save_info = eval_info; save_expr = eval_expr;
-  eval_info = ei; eval_expr = x;
+  eval_info = ei; eval_expr = x; if (!save_info) id = 0;
   y = pure_evalx(x, &e);
   // Restore the old context.
-  eval_info = save_info; eval_expr = save_expr;
+  eval_info = save_info; eval_expr = save_expr; if (!save_info) id = 0;
 
   if (y) {
     ret = pure2value(ei->pos, y);
@@ -520,10 +522,9 @@ pure_expr *pure_datasource(pure_expr *x)
   int pid;
   pure_expr *ret;
   char *key;
+  unsigned my_id = id;
   if (!x || !eval_info || !pure_async_filename) return NULL;
-  /* XXXFIXME: We should keep track of arguments here and initiate a new
-     computation when the function is invoked with new arguments. */
-  if (pure_async_func_init(eval_info, eval_expr, &key, &ret)) {
+  if (!pure_async_func_init(eval_info, eval_expr, id++, &key, &ret)) {
     g_free(key);
     return ret;
   } else if ((pid = fork()) == 0) {
@@ -556,7 +557,7 @@ pure_expr *pure_datasource(pure_expr *x)
     fprintf(stderr, "[%d] started child [%d]: %s\n", getpid(), pid, key);
 #endif
     g_free(key);
-    pure_async_func_process(eval_info, pid);
+    pure_async_func_process(eval_info, my_id, pid);
     return ret;
   } else {
     perror("fork");

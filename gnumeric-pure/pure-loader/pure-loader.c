@@ -224,6 +224,7 @@ typedef struct {
 typedef struct {
   GnmExprFunction const *node; /* Expression node that calls us */
   GnmDependent *dep; /* GnmDependent containing that node */
+  unsigned id; /* id of this datasource */
   pure_expr *expr; /* Pure funcall that initiated this datasource */
   WatchedValue *value;
   int pid; /* inferior process */
@@ -235,13 +236,14 @@ typedef struct {
 static guint
 watcher_hash(Watcher const *w)
 {
-  return (GPOINTER_TO_INT(w->node) << 16) + GPOINTER_TO_INT(w->dep);
+  return
+    (GPOINTER_TO_INT(w->node) << 16) + (GPOINTER_TO_INT(w->dep) << 8) + w->id;
 }
 
 static gint
 watcher_equal(Watcher const *w1, Watcher const *w2)
 {
-  return w1->node == w2->node && w1->dep == w2->dep;
+  return w1->node == w2->node && w1->dep == w2->dep && w1->id == w2->id;
 }
 
 static WatchedValue *
@@ -311,15 +313,15 @@ cb_pure_async_input(GIOChannel *gioc, GIOCondition cond, gpointer ignored)
 
 gboolean
 pure_async_func_init(const GnmFuncEvalInfo *ei, pure_expr *ex,
-		     char **name, pure_expr **x)
+		     unsigned id, char **name, pure_expr **x)
 {
-  Watcher key = { ei->func_call, ei->pos->dep, NULL, NULL, 0 };
+  Watcher key = { ei->func_call, ei->pos->dep, id, NULL, NULL, 0 };
   WatchedValue *val;
-  *name = g_strdup_printf("pure-gnumeric-%p-%p", ei->func_call, ei->pos->dep);
+  *name = g_strdup_printf("%p-%p-%u", ei->func_call, ei->pos->dep, id);
   val = watched_value_fetch(*name);
   *x = NULL;
   if (val) {
-    gboolean ret = TRUE;
+    gboolean ret = FALSE;
     /* If caller wants to be notified of updates */
     if (key.node != NULL && key.dep != NULL) {
       Watcher *w = g_hash_table_lookup(watchers, &key);
@@ -329,7 +331,7 @@ pure_async_func_init(const GnmFuncEvalInfo *ei, pure_expr *ex,
 	*w = key;
 	g_hash_table_insert(watchers, w, w);
 	g_hash_table_insert(w->value->deps, w, w);
-	ret = FALSE;
+	ret = TRUE;
       } else {
 	if (w->value != val) {
 	  g_hash_table_remove(w->value->deps, w);
@@ -346,12 +348,16 @@ pure_async_func_init(const GnmFuncEvalInfo *ei, pure_expr *ex,
 	  }
 	  if (w->expr) pure_free(w->expr);
 	  if (ex) w->expr = pure_new(ex);
-	  ret = FALSE;
+	  ret = TRUE;
 	}
       }
 #if 0
-      fprintf(stderr, "%s func_call = %p, dep = %p\n", ret?"old":"new",
-	      ei->func_call, ei->pos->dep);
+      if (ret) fprintf(stderr, "new datasource = %p-%p-%u\n",
+		       ei->func_call, ei->pos->dep, id);
+#endif
+#if 0
+      if (!ret) fprintf(stderr, "datasource = %p-%p-%u\n",
+			ei->func_call, ei->pos->dep, id);
 #endif
     }
     if (val->value)
@@ -361,17 +367,16 @@ pure_async_func_init(const GnmFuncEvalInfo *ei, pure_expr *ex,
 		    pure_string_dup("#N/A"));
     return ret;
   } else
-    return TRUE;
+    return FALSE;
 }
 
 void
-pure_async_func_process(const GnmFuncEvalInfo *ei, int pid)
+pure_async_func_process(const GnmFuncEvalInfo *ei, unsigned id, int pid)
 {
-  Watcher key = { ei->func_call, ei->pos->dep, NULL, 0 };
+  Watcher key = { ei->func_call, ei->pos->dep, id, NULL, 0 };
   if (key.node != NULL && key.dep != NULL) {
     Watcher *w = g_hash_table_lookup(watchers, &key);
-    if (w)
-      w->pid = pid;
+    if (w) w->pid = pid;
   }
 }
 
@@ -379,7 +384,7 @@ static DependentFlags
 pure_async_func_link(GnmFuncEvalInfo *ei)
 {
 #if 0
-  fprintf(stderr, "link pure_async_func %p\n", ei);
+  fprintf(stderr, "link func %p\n", ei);
 #endif
   return DEPENDENT_ALWAYS_UNLINK;
 }
@@ -387,15 +392,16 @@ pure_async_func_link(GnmFuncEvalInfo *ei)
 static void
 pure_async_func_unlink(GnmFuncEvalInfo *ei)
 {
-  Watcher key, *w;
-  key.node = ei->func_call;
-  key.dep = ei->pos->dep;
-  w = g_hash_table_lookup(watchers, &key);
-  if (w != NULL) {
+  Watcher *w, key = { ei->func_call, ei->pos->dep, 0, NULL, 0 };
+#if 0
+  fprintf(stderr, "unlink func %p\n", ei);
+#endif
+  while ((w = g_hash_table_lookup(watchers, &key)) != NULL) {
     if (w->value != NULL)
       g_hash_table_remove(w->value->deps, w);
 #if 0
-    fprintf(stderr, "unlink pure_async_func %p [%d]\n", ei, w->pid);
+    fprintf(stderr, "delete datasource = %p-%p-%u [%d]\n",
+	    ei->func_call, ei->pos->dep, w->id, w->pid);
 #endif
     if (w->pid > 0) {
       // get rid of the inferior process
@@ -406,6 +412,7 @@ pure_async_func_unlink(GnmFuncEvalInfo *ei)
       if (w->expr) pure_free(w->expr);
     }
     g_free(w);
+    key.id++;
   }
 }
 
