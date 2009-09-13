@@ -12,7 +12,11 @@ This package provides a Pure plugin loader and a sample script for use with
 Gnumeric_. These work pretty much like the Perl and Python plugin loaders
 which are distributed with Gnumeric. Pure_ is a functional programming
 language based on the term rewriting calculus with good support for math
-operations, so it makes for a nice Gnumeric companion.
+operations, so it makes for a nice Gnumeric companion. Also, Gnumeric/Pure
+brings some features to the table which aren't found in other Gnumeric
+scripting plugins, in particular Pure's lazy lists a.k.a. streams of data
+which can easily be turned into asychronous data sources computed in the
+background.
 
 .. _Gnumeric: http://projects.gnome.org/gnumeric/
 .. _Pure: http://pure-lang.googlecode.com/
@@ -286,6 +290,7 @@ conversions:
 ===============================    ===============================
 Pure                               Gnumeric
 ===============================    ===============================
+``gnm_error msg``                  error
 ``()``                             empty
 ``4711``, ``4711L``, ``4711.0``    scalar (number)
 ``"Hello world"``                  string
@@ -319,3 +324,41 @@ loader. If you want to use it, it must be declared in your Pure script as
 follows::
 
   extern expr* pure_gnmcall(char* name, expr* args);
+
+Asynchronous Data Sources
+=========================
+
+Gnumeric/Pure makes it easy to set up asynchronous data sources which draw
+values from a Pure computation executed in a background process. To these ends
+you simply pass an expression to the ``pure_datasource`` function. This is
+another external C function provided by the Pure loader, which is declared in
+your Pure scripts as follows::
+
+  extern expr* pure_datasource(expr* x);
+
+The argument to ``pure_datasource`` is typically a thunk or stream (lazy list)
+which is to be evaluated in the background. The call to ``pure_datasource``
+initially returns a ``#N/A`` value (``gnm_error "#N/A"``) while the
+computation is still in progress. As soon as the value becomes available, the
+corresponding cell gets reevaluated automagically, with ``pure_datasource``
+now returning the computed value.
+
+In the case of a stream (lazy list), ``pure_datasource`` returns a new element
+from the stream each time it becomes available. For instance, the following
+function counts off the seconds starting from a given initial value::
+
+  gnm_info "pure_counter" = "f", "start";
+  pure_counter x = pure_datasource [sleep (i>x) $$ i | i = x..inf];
+
+This facility is useful to carry out lengthy computations in the background,
+while you can continue to work with your spreadsheet. It also allows you to
+process incoming data from special devices (MIDI, sensors, stock tickers,
+etc.) in (soft) realtime.
+
+Note that when the arguments of a call involving ``pure_datasource`` change
+(because they depend on other cells which may have been updated), the
+computation is automatically restarted with the new parameters. Also, a cell
+value may draw values from as many independent data sources as you want.
+(Please keep in mind, however, that each data source corresponds to a separate
+background process, so having thousands of those might bring your machine to
+its knees.)
