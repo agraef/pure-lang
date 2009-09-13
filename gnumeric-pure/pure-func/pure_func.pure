@@ -155,9 +155,7 @@ gnm_bitand x y = pure_gnmcall "bitand" [x,y];
    following example shows how to use this function, by counting off seconds
    starting from a given initial value. */
 
-pure_counter x = y
-  when y = pure_datasource [count i | i = x..inf] end
-  with count i = if i>x then sleep 1 $$ i else i end;
+pure_counter x = pure_datasource [sleep (i>x) $$ i | i = x..inf];
 
 namespace;
 
