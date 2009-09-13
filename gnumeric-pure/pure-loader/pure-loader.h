@@ -10,7 +10,7 @@ void  pure_reload(GnmAction const *action, WorkbookControl *wbc);
 void  pure_edit(GnmAction const *action, WorkbookControl *wbc);
 extern char *pure_async_filename;
 gboolean pure_async_func_init(const GnmFuncEvalInfo *ei, pure_expr *ex,
-			      unsigned id, char **name, pure_expr **x);
+			      unsigned id, pure_expr **x);
 void pure_async_func_process(const GnmFuncEvalInfo *ei, unsigned id, int pid);
 
 #endif /* GNM_PURE_PLUGIN_LOADER_H */

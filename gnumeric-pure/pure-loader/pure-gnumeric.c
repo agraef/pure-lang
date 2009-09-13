@@ -436,10 +436,14 @@ static inline bool is_cons(pure_expr *x, pure_expr **y, pure_expr **z)
     return false;
 }
 
-bool pure_write_blob(FILE *fp, const char *key, pure_expr *x)
+bool pure_write_blob(FILE *fp, const keyval_t *key, pure_expr *x)
 {
-  pure_expr *b = pure_app(pure_symbol(pure_sym("blob")),
-			  pure_tuplel(2, pure_cstring_dup(key), x));
+  pure_expr *b;
+  // We should maybe encode these in binary.
+  char buf[100];
+  sprintf(buf, "%p-%p-%u", key->p, key->q, key->id);
+  b = pure_app(pure_symbol(pure_sym("blob")),
+	       pure_tuplel(2, pure_cstring_dup(buf), x));
   void *p;
   bool ret = false;
   if (b) pure_new(b);
@@ -456,8 +460,8 @@ bool pure_write_blob(FILE *fp, const char *key, pure_expr *x)
 	ret = fwrite(&n, sizeof(size_t), 1, fp) == 1 &&
 	  fwrite(p, 1, n, fp) == n;
 #if 0
-	fprintf(stderr, "%s: wrote %lu bytes, ret = %d\n", key,
-		(unsigned long)n, (int)ret);
+	fprintf(stderr, "%p-%p-%u: wrote %lu bytes, ret = %d\n",
+		key->p, key->q, key->id, (unsigned long)n, (int)ret);
 #endif
       }
       pure_freenew(size);
@@ -468,12 +472,12 @@ bool pure_write_blob(FILE *fp, const char *key, pure_expr *x)
   return ret;
 }
 
-bool pure_read_blob(FILE *fp, char **key, pure_expr **x)
+bool pure_read_blob(FILE *fp, keyval_t *key, pure_expr **x)
 {
   size_t n;
   void *buf;
   pure_expr *y, **xv = NULL;
-  char *s;
+  const char *s;
   if (fread(&n, sizeof(size_t), 1, fp) != 1)
     return false;
   buf = malloc(n);
@@ -486,10 +490,14 @@ bool pure_read_blob(FILE *fp, char **key, pure_expr **x)
   y = pure_app(pure_symbol(pure_sym("val")), pure_pointer(buf));
   free(buf);
   if (!y) return false;
-  if (pure_is_tuplev(y, &n, &xv) && n == 2 && pure_is_cstring_dup(xv[0], &s)) {
+  if (pure_is_tuplev(y, &n, &xv) && n == 2 && pure_is_string(xv[0], &s)) {
+    if (sscanf(s, "%p-%p-%u", &key->p, &key->q, &key->id) < 3) {
+      pure_freenew(y);
+      if (xv) free(xv);
+      return false;
+    }
     *x = xv[1];
     pure_ref(*x);
-    *key = s;
     pure_freenew(y);
     free(xv);
     pure_unref(*x);
@@ -501,7 +509,7 @@ bool pure_read_blob(FILE *fp, char **key, pure_expr **x)
   }
 }
 
-static void out(FILE *fp, const char *key, pure_expr *x)
+static void out(FILE *fp, keyval_t *key, pure_expr *x)
 {
   if (!pure_write_blob(fp, key, x))
     // Write error, bail out.
@@ -512,24 +520,22 @@ pure_expr *pure_datasource(pure_expr *x)
 {
   int pid;
   pure_expr *ret;
-  char *key;
-  unsigned my_id = id;
+  keyval_t key = { eval_info->func_call, eval_info->pos->dep, id };
   if (!x || !eval_info || !pure_async_filename) return NULL;
-  if (!pure_async_func_init(eval_info, eval_expr, id++, &key, &ret)) {
-    g_free(key);
+  if (!pure_async_func_init(eval_info, eval_expr, id++, &ret))
     return ret;
-  } else if ((pid = fork()) == 0) {
+  else if ((pid = fork()) == 0) {
     /* child */
     FILE *pure_async_file = fopen(pure_async_filename, "ab");
 #if 0
-    fprintf(stderr, "[%d] child: %s\n", getpid(), key);
+    fprintf(stderr, "[%d] child: %p-%p-%u\n", getpid(), key.p, key.q, key.id);
 #endif
     /* evaluate expression, and write results to the pipe */
     if (x && (x = pure_force(x))) {
       pure_expr *u = pure_new(x), *y, *z;
       if (is_cons(u, NULL, NULL)) {
 	while (u && is_cons(u, &y, &z)) {
-	  out(pure_async_file, key, y);
+	  out(pure_async_file, &key, y);
 	  if (z && (z = pure_force(z))) {
 	    pure_new(z);
 	    pure_free(u);
@@ -538,21 +544,20 @@ pure_expr *pure_datasource(pure_expr *x)
 	    break;
 	}
       } else if (!is_nil(u))
-	out(pure_async_file, key, u);
+	out(pure_async_file, &key, u);
       exit(0);
     } else
       exit(1);
   } else if (pid > 0) {
     /* parent */
 #if 0
-    fprintf(stderr, "[%d] started child [%d]: %s\n", getpid(), pid, key);
+    fprintf(stderr, "[%d] started child [%d]: %p-%p-%u\n", getpid(), pid,
+	    key.p, key.q, key.id);
 #endif
-    g_free(key);
-    pure_async_func_process(eval_info, my_id, pid);
+    pure_async_func_process(eval_info, key.id, pid);
     return ret;
   } else {
     perror("fork");
-    g_free(key);
     return NULL;
   }
 }

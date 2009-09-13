@@ -25,7 +25,9 @@ GnmValue* call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
 pure_expr* pure_gnmcall(const char *name, pure_expr *args);
 pure_expr *pure_datasource(pure_expr *x);
 
-bool pure_write_blob(FILE *fp, const char *key, pure_expr *x);
-bool pure_read_blob(FILE *fp, char **key, pure_expr **x);
+typedef struct { const void *p, *q; unsigned id; } keyval_t;
+
+bool pure_write_blob(FILE *fp, const keyval_t *key, pure_expr *x);
+bool pure_read_blob(FILE *fp, keyval_t *key, pure_expr **x);
 
 #endif /* _PURE_GNUMERIC_H */

@@ -206,33 +206,26 @@ void pure_edit(GnmAction const *action, WorkbookControl *wbc)
   }
 }
 
-/* Support for asynchronous data sources (from sample_datasource.c). */
+/* Support for asynchronous data sources (adapted from sample_datasource.c). */
 
 char *pure_async_filename = NULL;
 static int pure_async_fd = -1;
 static FILE *pure_async_file = NULL;
 static guint pure_async_source = 0;
-static GHashTable *watched_values = NULL;
-static GHashTable *watchers = NULL;
+static GHashTable *datasources = NULL;
 
 typedef struct {
-  GnmExprFunction const *node; /* Expression node that calls us */
-  GnmDependent *dep; /* GnmDependent containing that node */
-  unsigned id; /* id of this datasource */
+  GnmExprFunction const *node; /* Expression node that calls us. */
+  GnmDependent *dep;           /* GnmDependent containing that node. */
+  unsigned id;                 /* id of this datasource. */
 } DSKey;
 
 typedef struct {
-  char *name;
-  pure_expr *value;
-  GHashTable *deps;
-} WatchedValue;
-
-typedef struct {
   DSKey key;
-  pure_expr *expr; /* Pure funcall that initiated this datasource */
-  WatchedValue *value;
+  pure_expr *expr;  /* Pure funcall that initiated this datasource. */
+  pure_expr *value; /* Current value of the datasource. */
   int pid; /* inferior process */
-} Watcher;
+} DataSource;
 
 #undef G_LOG_DOMAIN
 #define G_LOG_DOMAIN "gnumeric:pure"
@@ -250,106 +243,75 @@ dskey_equal(DSKey const *k1, DSKey const *k2)
   return k1->node == k2->node && k1->dep == k2->dep && k1->id == k2->id;
 }
 
-static WatchedValue *
-watched_value_fetch(char const *tag)
-{
-  WatchedValue *val = g_hash_table_lookup(watched_values, tag);
-  if (val == NULL) {
-    val = g_new(WatchedValue, 1);
-    val->name = g_strdup(tag);
-    val->value = NULL;
-    val->deps = g_hash_table_new(g_direct_hash, g_direct_equal);
-    g_hash_table_insert(watched_values, val->name, val);
-  }
-  return val;
-}
-
-static void
-cb_watcher_queue_recalc(gpointer key, gpointer value, gpointer closure)
-{
-  Watcher const *w = key;
-  Sheet *sheet = w->key.dep->sheet;
-  dependent_queue_recalc(w->key.dep);
-  if (sheet && workbook_get_recalcmode(sheet->workbook))
-    workbook_recalc(sheet->workbook);
-}
-
 static gboolean
 cb_pure_async_input(GIOChannel *gioc, GIOCondition cond, gpointer ignored)
 {
-  char *sym;
+  DSKey key;
   pure_expr *val;
-  while (pure_read_blob(pure_async_file, &sym, &val)) {
-    WatchedValue *wv = watched_value_fetch(sym);
-    if (wv->value) pure_free(wv->value);
-    wv->value = pure_new(val);
-    g_hash_table_foreach(wv->deps, cb_watcher_queue_recalc, NULL);
+  while (pure_read_blob(pure_async_file, (keyval_t*)&key, &val)) {
+    DataSource *ds = g_hash_table_lookup(datasources, &key);
+    if (ds) {
+      Sheet *sheet = ds->key.dep->sheet;
+      if (ds->value) pure_free(ds->value);
+      ds->value = pure_new(val);
+      dependent_queue_recalc(ds->key.dep);
+      if (sheet && workbook_get_recalcmode(sheet->workbook))
+	workbook_recalc(sheet->workbook);
 #if 0
-    { char *s = str(val);
-      fprintf(stderr, "'%s' <= %s\n", sym, s);
-      free(s); }
+      {
+	char *s = str(val);
+	fprintf(stderr, "%p-%p-%u <= %s\n", key.node, key.dep, key.id, s);
+	free(s);
+      }
 #endif
+    }
   }
   return TRUE;
 }
 
 gboolean
 pure_async_func_init(const GnmFuncEvalInfo *ei, pure_expr *ex,
-		     unsigned id, char **name, pure_expr **x)
+		     unsigned id, pure_expr **x)
 {
-  Watcher new = { { ei->func_call, ei->pos->dep, id }, NULL, NULL, 0 };
-  WatchedValue *val;
-  *name = g_strdup_printf("%p-%p-%u", ei->func_call, ei->pos->dep, id);
-  val = watched_value_fetch(*name);
-  *x = NULL;
-  if (val) {
-    gboolean ret = FALSE;
-    /* If caller wants to be notified of updates */
-    if (new.key.node != NULL && new.key.dep != NULL) {
-      Watcher *w = g_hash_table_lookup(watchers, &new.key);
-      if (w == NULL) {
-	w = g_new(Watcher, 1);
-	new.value = val; if (ex) new.expr = pure_new(ex);
-	*w = new;
-	g_hash_table_insert(watchers, w, w);
-	g_hash_table_insert(w->value->deps, w, w);
-	ret = TRUE;
-      } else {
-	if (w->value != val) {
-	  g_hash_table_remove(w->value->deps, w);
-	  w->value = val;
-	  g_hash_table_insert(w->value->deps, w, w);
-	}
-	if ((ex&&w->expr)?!same(ex, w->expr):ex!=w->expr) {
-	  /* The initiating expression has changed. Nuke any old process and
-	     make sure that we start a new one. */
-	  if (w->pid > 0) {
-	    int status;
-	    kill(w->pid, SIGTERM);
-	    if (waitpid(w->pid, &status, 0) < 0) perror("waitpid");
-	  }
-	  if (w->expr) pure_free(w->expr);
-	  if (ex) w->expr = pure_new(ex);
-	  ret = TRUE;
-	}
+  DataSource *ds = NULL,
+    new = { { ei->func_call, ei->pos->dep, id }, NULL, NULL, 0 };
+  gboolean ret = FALSE;
+  /* If caller wants to be notified of updates */
+  if (new.key.node != NULL && new.key.dep != NULL) {
+    ds = g_hash_table_lookup(datasources, &new.key);
+    if (ds == NULL) {
+      ds = g_new(DataSource, 1);
+      new.value = NULL; if (ex) new.expr = pure_new(ex);
+      *ds = new;
+      g_hash_table_insert(datasources, &ds->key, ds);
+      ret = TRUE;
+    } else if ((ex&&ds->expr)?!same(ex, ds->expr):ex!=ds->expr) {
+      /* The initiating expression has changed. Nuke any old process and make
+	 sure that we start a new one. */
+      if (ds->pid > 0) {
+	int status;
+	kill(ds->pid, SIGTERM);
+	if (waitpid(ds->pid, &status, 0) < 0) perror("waitpid");
       }
-#if 0
-      if (ret) fprintf(stderr, "new datasource = %p-%p-%u\n",
-		       ei->func_call, ei->pos->dep, id);
-#endif
-#if 0
-      if (!ret) fprintf(stderr, "datasource = %p-%p-%u\n",
-			ei->func_call, ei->pos->dep, id);
-#endif
+      if (ds->expr) pure_free(ds->expr);
+      if (ex) ds->expr = pure_new(ex);
+      ret = TRUE;
     }
-    if (val->value)
-      *x = val->value;
-    else
-      *x = pure_app(pure_symbol(pure_sym("gnm_error")),
-		    pure_string_dup("#N/A"));
-    return ret;
-  } else
-    return FALSE;
+#if 0
+    if (ret) fprintf(stderr, "new datasource = %p-%p-%u\n",
+		     ei->func_call, ei->pos->dep, id);
+#endif
+#if 0
+    if (!ret) fprintf(stderr, "datasource = %p-%p-%u\n",
+		      ei->func_call, ei->pos->dep, id);
+#endif
+  }
+  if (ds->value)
+    *x = ds->value;
+  else
+    *x = pure_app(pure_symbol(pure_sym("gnm_error")),
+		  pure_string_dup("#N/A"));
+  return ret;
 }
 
 void
@@ -357,8 +319,8 @@ pure_async_func_process(const GnmFuncEvalInfo *ei, unsigned id, int pid)
 {
   DSKey key = { ei->func_call, ei->pos->dep, id };
   if (key.node != NULL && key.dep != NULL) {
-    Watcher *w = g_hash_table_lookup(watchers, &key);
-    if (w) w->pid = pid;
+    DataSource *ds = g_hash_table_lookup(datasources, &key);
+    if (ds) ds->pid = pid;
   }
 }
 
@@ -375,32 +337,30 @@ static void
 pure_async_func_unlink(GnmFuncEvalInfo *ei)
 {
   DSKey key = { ei->func_call, ei->pos->dep, 0 };
-  Watcher *w;
+  DataSource *ds;
 #if 0
   fprintf(stderr, "unlink func %p\n", ei);
 #endif
-  while ((w = g_hash_table_lookup(watchers, &key)) != NULL) {
-    if (w->value != NULL)
-      g_hash_table_remove(w->value->deps, w);
+  while ((ds = g_hash_table_lookup(datasources, &key)) != NULL) {
 #if 0
     fprintf(stderr, "delete datasource = %p-%p-%u [%d]\n",
-	    ei->func_call, ei->pos->dep, w->key.id, w->pid);
+	    ei->func_call, ei->pos->dep, ds->key.id, ds->pid);
 #endif
-    if (w->pid > 0) {
+    if (ds->pid > 0) {
       // get rid of the inferior process
       int status;
-      kill(w->pid, SIGTERM);
-      if (waitpid(w->pid, &status, 0) < 0) perror("waitpid");
-      if (w->value && w->value->value) pure_free(w->value->value);
-      if (w->expr) pure_free(w->expr);
+      kill(ds->pid, SIGTERM);
+      if (waitpid(ds->pid, &status, 0) < 0) perror("waitpid");
     }
-    g_free(w);
+    if (ds->value) pure_free(ds->value);
+    if (ds->expr) pure_free(ds->expr);
+    g_free(ds);
     key.id++;
   }
 }
 
 static void
-watcher_init(void)
+datasource_init(void)
 {
   GIOChannel *channel = NULL;
   char *filename, nambuf[L_tmpnam];
@@ -424,14 +384,12 @@ watcher_init(void)
 		     cb_pure_async_input, NULL);
     g_io_channel_unref(channel);
   }
-  watched_values = g_hash_table_new((GHashFunc)g_str_hash,
-				    (GEqualFunc)g_str_equal);
-  watchers = g_hash_table_new((GHashFunc)dskey_hash,
-			      (GEqualFunc)dskey_equal);
+  datasources = g_hash_table_new((GHashFunc)dskey_hash,
+				 (GEqualFunc)dskey_equal);
 }
 
 static void
-watcher_fini(void)
+datasource_fini(void)
 {
 #if 0
   fprintf(stderr, "UNLOAD PURE_ASYNC >>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
@@ -453,10 +411,8 @@ watcher_fini(void)
     fclose(pure_async_file);
     pure_async_file = NULL;
   }
-  g_hash_table_destroy(watched_values);
-  watched_values = NULL;
-  g_hash_table_destroy(watchers);
-  watchers = NULL;
+  g_hash_table_destroy(datasources);
+  datasources = NULL;
 }
 
 /****************************************************************************/
@@ -480,7 +436,7 @@ gplp_service_load(GOPluginLoader *l, GOPluginService *s, ErrorInfo **err)
     gplp_load_service_function_group (l, s, err);
   else
     return FALSE;
-  watcher_init();
+  datasource_init();
   return TRUE;
 }
 
@@ -491,7 +447,7 @@ gplp_service_unload(GOPluginLoader *l, GOPluginService *s, ErrorInfo **err)
     ;
   else
     return FALSE;
-  watcher_fini();
+  datasource_fini();
   return TRUE;
 }
 
