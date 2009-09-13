@@ -273,7 +273,6 @@ cb_watcher_queue_recalc(gpointer key, gpointer value, gpointer closure)
 static gboolean
 cb_pure_async_input(GIOChannel *gioc, GIOCondition cond, gpointer ignored)
 {
-#if PURE_SERIALIZE_BLOB
   char *sym;
   pure_expr *val;
   while (pure_read_blob(pure_async_file, &sym, &val)) {
@@ -287,27 +286,6 @@ cb_pure_async_input(GIOChannel *gioc, GIOCondition cond, gpointer ignored)
       free(s); }
 #endif
   }
-#else
-  char buf[0x10000];
-  while (fgets(buf, sizeof(buf), pure_async_file) != NULL) {
-    char *sym = buf;
-    char *value_str = strchr(buf, ':');
-    if (value_str) {
-      pure_expr *val;
-      *value_str++ = '\0';
-      val = pure_eval(value_str);
-      if (val) {
-	WatchedValue *wv = watched_value_fetch(sym);
-	if (wv->value) pure_free(wv->value);
-	wv->value = pure_new(val);
-	g_hash_table_foreach(wv->deps, cb_watcher_queue_recalc, NULL);
-#if 0
-	fprintf(stderr, "'%s' <= %s", sym, value_str);
-#endif
-      }
-    }
-  }
-#endif
   return TRUE;
 }
 

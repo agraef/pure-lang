@@ -503,18 +503,9 @@ bool pure_read_blob(FILE *fp, char **key, pure_expr **x)
 
 static void out(FILE *fp, const char *key, pure_expr *x)
 {
-#if PURE_SERIALIZE_BLOB
   if (!pure_write_blob(fp, key, x))
     // Write error, bail out.
     exit(1);
-#else
-  char *s = str(x);
-  if (s) {
-    fprintf(fp, "%s:%s\n", key, s);
-    fflush(fp);
-    free(s);
-  }
-#endif
 }
 
 pure_expr *pure_datasource(pure_expr *x)
