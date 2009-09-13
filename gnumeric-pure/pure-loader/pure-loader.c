@@ -224,6 +224,7 @@ typedef struct {
 typedef struct {
   GnmExprFunction const *node; /* Expression node that calls us */
   GnmDependent *dep; /* GnmDependent containing that node */
+  pure_expr *expr; /* Pure funcall that initiated this datasource */
   WatchedValue *value;
   int pid; /* inferior process */
 } Watcher;
@@ -309,9 +310,10 @@ cb_pure_async_input(GIOChannel *gioc, GIOCondition cond, gpointer ignored)
 }
 
 gboolean
-pure_async_func_init(const GnmFuncEvalInfo *ei, char **name, pure_expr **x)
+pure_async_func_init(const GnmFuncEvalInfo *ei, pure_expr *ex,
+		     char **name, pure_expr **x)
 {
-  Watcher key = { ei->func_call, ei->pos->dep, NULL, 0 };
+  Watcher key = { ei->func_call, ei->pos->dep, NULL, NULL, 0 };
   WatchedValue *val;
   *name = g_strdup_printf("pure-gnumeric-%p-%p", ei->func_call, ei->pos->dep);
   val = watched_value_fetch(*name);
@@ -323,15 +325,29 @@ pure_async_func_init(const GnmFuncEvalInfo *ei, char **name, pure_expr **x)
       Watcher *w = g_hash_table_lookup(watchers, &key);
       if (w == NULL) {
 	w = g_new(Watcher, 1);
-	key.value = val;
+	key.value = val; if (ex) key.expr = pure_new(ex);
 	*w = key;
 	g_hash_table_insert(watchers, w, w);
 	g_hash_table_insert(w->value->deps, w, w);
 	ret = FALSE;
-      } else if (w->value != val) {
-	g_hash_table_remove(w->value->deps, w);
-	w->value = val;
-	g_hash_table_insert(w->value->deps, w, w);
+      } else {
+	if (w->value != val) {
+	  g_hash_table_remove(w->value->deps, w);
+	  w->value = val;
+	  g_hash_table_insert(w->value->deps, w, w);
+	}
+	if ((ex&&w->expr)?!same(ex, w->expr):ex!=w->expr) {
+	  /* The initiating expression has changed. Nuke any old process and
+	     make sure that we start a new one. */
+	  if (w->pid > 0) {
+	    int status;
+	    kill(w->pid, SIGTERM);
+	    if (waitpid(w->pid, &status, 0) < 0) perror("waitpid");
+	  }
+	  if (w->expr) pure_free(w->expr);
+	  if (ex) w->expr = pure_new(ex);
+	  ret = FALSE;
+	}
       }
 #if 0
       fprintf(stderr, "%s func_call = %p, dep = %p\n", ret?"old":"new",
@@ -387,6 +403,7 @@ pure_async_func_unlink(GnmFuncEvalInfo *ei)
       kill(w->pid, SIGTERM);
       if (waitpid(w->pid, &status, 0) < 0) perror("waitpid");
       if (w->value && w->value->value) pure_free(w->value->value);
+      if (w->expr) pure_free(w->expr);
     }
     g_free(w);
   }

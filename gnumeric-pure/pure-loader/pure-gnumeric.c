@@ -311,6 +311,7 @@ pure2value(const GnmEvalPos *pos, pure_expr *x)
 }
 
 static const GnmFuncEvalInfo *eval_info; //TLD
+static pure_expr *eval_expr; //TLD
 
 GnmValue *
 call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
@@ -318,7 +319,8 @@ call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
 {
   GnmFunc const *func = ei->func_call->func;
   int i, j, min, max;
-  pure_expr *x, *y, *e, *fun, **args;
+  pure_expr *x, *y, *e, *fun, **args, *save_expr;
+  const GnmFuncEvalInfo *save_info;
   GnmValue *ret;
 
   if (n_args < 0) {
@@ -358,9 +360,12 @@ call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
   else
     x = pure_appv(fun, i, args);
   g_free(args);
-  eval_info = ei;
+  // Save the old context in case we're invoked recursively.
+  save_info = eval_info; save_expr = eval_expr;
+  eval_info = ei; eval_expr = x;
   y = pure_evalx(x, &e);
-  eval_info = NULL;
+  // Restore the old context.
+  eval_info = save_info; eval_expr = save_expr;
 
   if (y) {
     ret = pure2value(ei->pos, y);
@@ -518,7 +523,7 @@ pure_expr *pure_datasource(pure_expr *x)
   if (!x || !eval_info || !pure_async_filename) return NULL;
   /* XXXFIXME: We should keep track of arguments here and initiate a new
      computation when the function is invoked with new arguments. */
-  if (pure_async_func_init(eval_info, &key, &ret)) {
+  if (pure_async_func_init(eval_info, eval_expr, &key, &ret)) {
     g_free(key);
     return ret;
   } else if ((pid = fork()) == 0) {
