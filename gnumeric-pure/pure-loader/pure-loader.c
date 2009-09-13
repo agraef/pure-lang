@@ -216,15 +216,19 @@ static GHashTable *watched_values = NULL;
 static GHashTable *watchers = NULL;
 
 typedef struct {
+  GnmExprFunction const *node; /* Expression node that calls us */
+  GnmDependent *dep; /* GnmDependent containing that node */
+  unsigned id; /* id of this datasource */
+} DSKey;
+
+typedef struct {
   char *name;
   pure_expr *value;
   GHashTable *deps;
 } WatchedValue;
 
 typedef struct {
-  GnmExprFunction const *node; /* Expression node that calls us */
-  GnmDependent *dep; /* GnmDependent containing that node */
-  unsigned id; /* id of this datasource */
+  DSKey key;
   pure_expr *expr; /* Pure funcall that initiated this datasource */
   WatchedValue *value;
   int pid; /* inferior process */
@@ -234,16 +238,16 @@ typedef struct {
 #define G_LOG_DOMAIN "gnumeric:pure"
 
 static guint
-watcher_hash(Watcher const *w)
+dskey_hash(DSKey const *k)
 {
   return
-    (GPOINTER_TO_INT(w->node) << 16) + (GPOINTER_TO_INT(w->dep) << 8) + w->id;
+    (GPOINTER_TO_INT(k->node) << 16) + (GPOINTER_TO_INT(k->dep) << 8) + k->id;
 }
 
 static gint
-watcher_equal(Watcher const *w1, Watcher const *w2)
+dskey_equal(DSKey const *k1, DSKey const *k2)
 {
-  return w1->node == w2->node && w1->dep == w2->dep && w1->id == w2->id;
+  return k1->node == k2->node && k1->dep == k2->dep && k1->id == k2->id;
 }
 
 static WatchedValue *
@@ -264,8 +268,8 @@ static void
 cb_watcher_queue_recalc(gpointer key, gpointer value, gpointer closure)
 {
   Watcher const *w = key;
-  Sheet *sheet = w->dep->sheet;
-  dependent_queue_recalc(w->dep);
+  Sheet *sheet = w->key.dep->sheet;
+  dependent_queue_recalc(w->key.dep);
   if (sheet && workbook_get_recalcmode(sheet->workbook))
     workbook_recalc(sheet->workbook);
 }
@@ -293,7 +297,7 @@ gboolean
 pure_async_func_init(const GnmFuncEvalInfo *ei, pure_expr *ex,
 		     unsigned id, char **name, pure_expr **x)
 {
-  Watcher key = { ei->func_call, ei->pos->dep, id, NULL, NULL, 0 };
+  Watcher new = { { ei->func_call, ei->pos->dep, id }, NULL, NULL, 0 };
   WatchedValue *val;
   *name = g_strdup_printf("%p-%p-%u", ei->func_call, ei->pos->dep, id);
   val = watched_value_fetch(*name);
@@ -301,12 +305,12 @@ pure_async_func_init(const GnmFuncEvalInfo *ei, pure_expr *ex,
   if (val) {
     gboolean ret = FALSE;
     /* If caller wants to be notified of updates */
-    if (key.node != NULL && key.dep != NULL) {
-      Watcher *w = g_hash_table_lookup(watchers, &key);
+    if (new.key.node != NULL && new.key.dep != NULL) {
+      Watcher *w = g_hash_table_lookup(watchers, &new.key);
       if (w == NULL) {
 	w = g_new(Watcher, 1);
-	key.value = val; if (ex) key.expr = pure_new(ex);
-	*w = key;
+	new.value = val; if (ex) new.expr = pure_new(ex);
+	*w = new;
 	g_hash_table_insert(watchers, w, w);
 	g_hash_table_insert(w->value->deps, w, w);
 	ret = TRUE;
@@ -351,7 +355,7 @@ pure_async_func_init(const GnmFuncEvalInfo *ei, pure_expr *ex,
 void
 pure_async_func_process(const GnmFuncEvalInfo *ei, unsigned id, int pid)
 {
-  Watcher key = { ei->func_call, ei->pos->dep, id, NULL, 0 };
+  DSKey key = { ei->func_call, ei->pos->dep, id };
   if (key.node != NULL && key.dep != NULL) {
     Watcher *w = g_hash_table_lookup(watchers, &key);
     if (w) w->pid = pid;
@@ -370,7 +374,8 @@ pure_async_func_link(GnmFuncEvalInfo *ei)
 static void
 pure_async_func_unlink(GnmFuncEvalInfo *ei)
 {
-  Watcher *w, key = { ei->func_call, ei->pos->dep, 0, NULL, 0 };
+  DSKey key = { ei->func_call, ei->pos->dep, 0 };
+  Watcher *w;
 #if 0
   fprintf(stderr, "unlink func %p\n", ei);
 #endif
@@ -379,7 +384,7 @@ pure_async_func_unlink(GnmFuncEvalInfo *ei)
       g_hash_table_remove(w->value->deps, w);
 #if 0
     fprintf(stderr, "delete datasource = %p-%p-%u [%d]\n",
-	    ei->func_call, ei->pos->dep, w->id, w->pid);
+	    ei->func_call, ei->pos->dep, w->key.id, w->pid);
 #endif
     if (w->pid > 0) {
       // get rid of the inferior process
@@ -421,8 +426,8 @@ watcher_init(void)
   }
   watched_values = g_hash_table_new((GHashFunc)g_str_hash,
 				    (GEqualFunc)g_str_equal);
-  watchers = g_hash_table_new((GHashFunc)watcher_hash,
-			      (GEqualFunc)watcher_equal);
+  watchers = g_hash_table_new((GHashFunc)dskey_hash,
+			      (GEqualFunc)dskey_equal);
 }
 
 static void
