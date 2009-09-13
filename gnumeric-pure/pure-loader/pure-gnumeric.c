@@ -429,15 +429,85 @@ static inline bool is_cons(pure_expr *x, pure_expr **y, pure_expr **z)
     return false;
 }
 
-// XXXTODO: Use blobs to serialize expressions instead.
+bool pure_write_blob(FILE *fp, const char *key, pure_expr *x)
+{
+  pure_expr *b = pure_app(pure_symbol(pure_sym("blob")),
+			  pure_tuplel(2, pure_cstring_dup(key), x));
+  void *p;
+  bool ret = false;
+  if (b) pure_new(b);
+  if (b && pure_is_pointer(b, &p)) {
+    pure_expr *size = pure_app(pure_symbol(pure_sym("blob_size")), b);
+    if (size) {
+      size_t n = 0;
+      int32_t iv;
+      if (pure_is_int(size, &iv))
+	n = (unsigned)iv;
+      else if (pure_is_mpz(size, NULL))
+	n = mpz_get_ui(size->data.z);
+      if (n > 0) {
+	ret = fwrite(&n, sizeof(size_t), 1, fp) == 1 &&
+	  fwrite(p, 1, n, fp) == n;
+#if 0
+	fprintf(stderr, "%s: wrote %lu bytes, ret = %d\n", key,
+		(unsigned long)n, (int)ret);
+#endif
+      }
+      pure_freenew(size);
+    }
+  }
+  if (b) pure_free(b);
+  fflush(fp);
+  return ret;
+}
+
+bool pure_read_blob(FILE *fp, char **key, pure_expr **x)
+{
+  size_t n;
+  void *buf;
+  pure_expr *y, **xv = NULL;
+  char *s;
+  if (fread(&n, sizeof(size_t), 1, fp) != 1)
+    return false;
+  buf = malloc(n);
+  if (!buf)
+    return false;
+  if (fread(buf, 1, n, fp) != n) {
+    free(buf);
+    return false;
+  }
+  y = pure_app(pure_symbol(pure_sym("val")), pure_pointer(buf));
+  free(buf);
+  if (!y) return false;
+  if (pure_is_tuplev(y, &n, &xv) && n == 2 && pure_is_cstring_dup(xv[0], &s)) {
+    *x = xv[1];
+    pure_ref(*x);
+    *key = s;
+    pure_freenew(y);
+    free(xv);
+    pure_unref(*x);
+    return true;
+  } else {
+    pure_freenew(y);
+    if (xv) free(xv);
+    return false;
+  }
+}
+
 static void out(FILE *fp, const char *key, pure_expr *x)
 {
+#if PURE_SERIALIZE_BLOB
+  if (!pure_write_blob(fp, key, x))
+    // Write error, bail out.
+    exit(1);
+#else
   char *s = str(x);
   if (s) {
     fprintf(fp, "%s:%s\n", key, s);
     fflush(fp);
     free(s);
   }
+#endif
 }
 
 pure_expr *pure_datasource(pure_expr *x)
@@ -446,6 +516,8 @@ pure_expr *pure_datasource(pure_expr *x)
   pure_expr *ret;
   char *key;
   if (!x || !eval_info || !pure_async_filename) return NULL;
+  /* XXXFIXME: We should keep track of arguments here and initiate a new
+     computation when the function is invoked with new arguments. */
   if (pure_async_func_init(eval_info, &key, &ret)) {
     g_free(key);
     return ret;

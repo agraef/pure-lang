@@ -270,8 +270,23 @@ cb_watcher_queue_recalc(gpointer key, gpointer value, gpointer closure)
 static gboolean
 cb_pure_async_input(GIOChannel *gioc, GIOCondition cond, gpointer ignored)
 {
-  char buf[1024]; // XXXFIXME
-  while (fgets(buf, sizeof (buf), pure_async_file) != NULL) {
+#if PURE_SERIALIZE_BLOB
+  char *sym;
+  pure_expr *val;
+  while (pure_read_blob(pure_async_file, &sym, &val)) {
+    WatchedValue *wv = watched_value_fetch(sym);
+    if (wv->value) pure_free(wv->value);
+    wv->value = pure_new(val);
+    g_hash_table_foreach(wv->deps, cb_watcher_queue_recalc, NULL);
+#if 0
+    { char *s = str(val);
+      fprintf(stderr, "'%s' <= %s\n", sym, s);
+      free(s); }
+#endif
+  }
+#else
+  char buf[0x10000];
+  while (fgets(buf, sizeof(buf), pure_async_file) != NULL) {
     char *sym = buf;
     char *value_str = strchr(buf, ':');
     if (value_str) {
@@ -289,6 +304,7 @@ cb_pure_async_input(GIOChannel *gioc, GIOCondition cond, gpointer ignored)
       }
     }
   }
+#endif
   return TRUE;
 }
 
