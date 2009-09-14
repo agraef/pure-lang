@@ -473,15 +473,15 @@ gplp_load_service_function_group(GOPluginLoader *loader,
   PluginServiceFunctionGroupCallbacks *cbs;
   g_return_if_fail (IS_GNM_PLUGIN_SERVICE_FUNCTION_GROUP (service));
   GO_INIT_RET_ERROR_INFO (ret_error);
-  cbs = plugin_service_get_cbs (service);
+  cbs = plugin_service_get_cbs(service);
   cbs->func_desc_load = &gplp_func_desc_load;
 }
 
 static gboolean
 gplp_service_load(GOPluginLoader *l, GOPluginService *s, ErrorInfo **err)
 {
-  if (IS_GNM_PLUGIN_SERVICE_FUNCTION_GROUP (s))
-    gplp_load_service_function_group (l, s, err);
+  if (IS_GNM_PLUGIN_SERVICE_FUNCTION_GROUP(s))
+    gplp_load_service_function_group(l, s, err);
   else
     return FALSE;
   datasource_init();
@@ -491,7 +491,7 @@ gplp_service_load(GOPluginLoader *l, GOPluginService *s, ErrorInfo **err)
 static gboolean
 gplp_service_unload(GOPluginLoader *l, GOPluginService *s, ErrorInfo **err)
 {
-  if (IS_GNM_PLUGIN_SERVICE_FUNCTION_GROUP (s))
+  if (IS_GNM_PLUGIN_SERVICE_FUNCTION_GROUP(s))
     ;
   else
     return FALSE;

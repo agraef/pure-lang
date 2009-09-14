@@ -16,7 +16,7 @@ version = 0.1
 # 2.  Adjust the following as needed for your GTK+/GOffice installation:
 
 INCLUDES = $(shell pkg-config --cflags libgoffice-0.8) \
--I/usr/include/libspreadsheet-1.10/spreadsheet
+-I$(prefix)/include/libspreadsheet-1.10/spreadsheet
 LIBS = $(shell pkg-config --libs libgoffice-0.8)
 
 # The Makefile tries to guess the installation path and version number of

@@ -16,7 +16,7 @@ GNM_PLUGIN_MODULE_HEADER;
 GType pure_get_loader_type(ErrorInfo **ret_error);
 
 G_MODULE_EXPORT GType
-pure_get_loader_type (ErrorInfo **ret_error)
+pure_get_loader_type(ErrorInfo **ret_error)
 {
   GO_INIT_RET_ERROR_INFO(ret_error);
   return gnm_pure_plugin_loader_get_type();
