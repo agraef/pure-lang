@@ -26,26 +26,29 @@ background.
 Installation
 ============
 
-Obviously, you need to have both Pure and Gnumeric installed. Unfortunately,
-building the plugin is a bit more involved than usual, because typical
-Gnumeric installations lack some headers needed to compile Gnumeric plugins.
+Obviously, you need to have both Pure and Gnumeric installed. Recent versions
+of both Pure and Gnumeric are required, Pure 0.35 and Gnumeric 0.19.2 have
+been tested.
 
-See the beginning of the Makefile for detailed instructions. Briefly, you'll
-have to find the gnumeric-config.h and gnumeric-features.h files from the
-Gnumeric sources. Either place these into the directory with the gnumeric-pure
-sources, or edit the ``INCLUDE`` variable at the beginning of the Makefile so
-that gcc finds these headers.
+Unfortunately, building the plugin is a bit more involved than usual, because
+typical Gnumeric installations lack some headers needed to compile Gnumeric
+plugins. See the beginning of the Makefile for detailed instructions. Briefly,
+you'll have to find the gnumeric-config.h and gnumeric-features.h files from
+the Gnumeric sources. Either place these into the directory with the
+gnumeric-pure sources, or edit the ``INCLUDE`` variable at the beginning of
+the Makefile so that gcc finds these headers.
 
 Then run ``make``. You might have to adjust the settings at the beginning of
 the Makefile to make this work. If you're lucky and the compile goes through,
 you should now have a pure_loader.so file in the pure-loader subdirectory. You
 can install the plugin and related stuff with ``sudo make install`` in the
-global Gnumeric plugin directory, or if you prefer to install into the
-Gnumeric's user plugin directory then run ``make install-local`` instead.
-We recommend the latter since it lets you adjust pure_func.pure for your
-purposes more easily. Optionally, you might also want to copy the
-gnumeric-pure.html file to your Pure library directory so that you can read it
-with the ``help`` command of the Pure interpreter or in Emacs Pure mode.
+global Gnumeric plugin directory, or if you prefer to install it into your
+personal plugin directory then run ``make install-local`` instead.  We
+recommend the latter since it lets you adjust pure_func.pure for your purposes
+more easily. Optionally, you might also want to copy the gnumeric-pure.html
+file to your Pure library directory so that you can read it with the ``help``
+command of the Pure interpreter or in Emacs Pure mode.
+
 Typically, ``make install`` and ``make install-local`` will install the
 plugins into the following directories by default:
 
@@ -64,30 +67,32 @@ If ``make install`` doesn't work for some reason, you can also just copy the
 pure-func and pure-loader directories manually to your Gnumeric plugin
 directory.
 
+Setup
+-----
+
 Once Gnumeric/Pure has been properly installed, you should see it in
 Gnumeric's ``Tools``/``Plug-ins`` dialog. As with the Perl and Python plugins,
 there are actually two entries, one labelled ``Pure functions`` and the other
 one labelled ``Pure plugin loader``. You need to enable both before you can
 start using Pure functions in your Gnumeric spreadsheets.
 
-Customization Options
----------------------
-
 Gnumeric doesn't provide much in the way of GUI customization options right
 now, but at least it's possible for plugins to install and configure
-additional menu and toolbar options. The Pure plugin loader adds two
-additional options to the ``Tools`` menu which allow you to reload Pure
-scripts and edit them. After installation, the definitions of these items can
-be found in the pure-loader/pure-ui.xml file in your Gnumeric plugin
-directory. Have a look at this file and edit is as desired. E.g., if you want
-to put the Pure-related options into a submenu and enable toolbar buttons for
-these options, then your pure-ui.xml file should look as follows::
+additional menu and toolbar options. The Pure plugin loader adds three
+additional options to the ``Tools`` menu which allow you to stop asynchronous
+data sources, reload Pure scripts and edit them. After installation, the
+definitions of these items can be found in the pure-loader/pure-ui.xml file in
+your Gnumeric plugin directory. Have a look at this file and edit is as
+desired. E.g., if you want to put the Pure-related options into a submenu and
+enable toolbar buttons for these options, then your pure-ui.xml file should
+look as follows::
 
   <ui>
     <menubar>
       <menu name="Tools" action="MenuTools">
         <separator/>
         <menu name="Pure" action="PureMenu">
+          <menuitem action="PureStop"/>
           <menuitem action="PureReload"/>
           <menuitem action="PureEdit"/>
         </menu>
@@ -95,6 +100,7 @@ these options, then your pure-ui.xml file should look as follows::
     </menubar>
     <toolbar name="StandardToolbar">
       <separator/>
+      <toolitem action="PureStop"/>
       <toolitem action="PureReload"/>
       <toolitem action="PureEdit"/>
     </toolbar>
@@ -122,12 +128,13 @@ Play around a bit with the other Pure functions. These functions are nothing
 special; they are just ordinary Pure functions which are defined by the
 pure_func.pure script in the pure-func subdirectory of your Gnumeric plugin
 directory. You can have a look at them by invoking the ``Edit Pure Script``
-option which gets added to the ``Tools`` menu once the Pure plugin loader is
-enabled. (This will invoke the emacs editor by default, or the editor named by
-the ``EDITOR`` environment variable. You can set this environment variable in
-your shell's startup files.) The ``Tools`` menu contains a second Pure-related
-option, ``Reload Pure Scripts`` which can be used to quickly reload all loaded
-Pure scripts after edits; more about that later.
+option which gets added to the ``Tools``/``Pure`` menu once the Pure plugin
+loader is enabled. (This will invoke the emacs editor by default, or the
+editor named by the ``EDITOR`` environment variable. You can set this
+environment variable in your shell's startup files.) The ``Tools``/``Pure``
+menu contains a second Pure-related option, ``Reload Pure Scripts`` which can
+be used to quickly reload all loaded Pure scripts after edits; more about that
+later.
 
 Please note that most of the functions in pure_func.pure are rather useless,
 they are only provided for illustrative purposes. However, there are some
@@ -368,10 +375,14 @@ given initial value::
   gnm_info "pure_counter" = "f", "start";
   pure_counter x = pure_datasource [sleep (i>x) $$ i | i = x..inf];
 
-Note that because of the special way that ``pure_datasource`` handles list
-values, you cannot return a list directly as the result of
-``pure_datasource``; instead, you'll have to wrap it up as a singleton list::
+Note that in this case the cell containing the call will keep changing as long
+as new values are produced (i.e., forever in the above example). The ``Stop
+Data Sources`` option in the ``Tools``/``Pure`` menu can be used to stop all
+active data sources. ``Reload Pure Scripts`` also does this. You can then
+restart the data sources at any time by using ``Recalculate`` (``F9``) to
+recompute the spreadsheet.
 
-  gnm_info "pure_calc_list" = "f", "x";
-  pure_calc_list x = pure_data_source [lengthy_list_calculation x&];
-  lengthy_list_calculation x = sleep 3 $$ scanl (*) 1.0 (1.0..x);
+Also note that because of the special way that ``pure_datasource`` handles
+list values, you cannot return a list directly as the result of
+``pure_datasource``; instead, you'll have to wrap it up as a singleton list,
+such as ``pure_data_source [[lengthy_calculation x,lengthy_calculation y]&]``.
