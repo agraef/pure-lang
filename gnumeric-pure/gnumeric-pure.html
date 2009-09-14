@@ -626,37 +626,51 @@ extern expr* pure_gnmcall(char* name, expr* args);
 <div class="section" id="asynchronous-data-sources">
 <h1><a class="toc-backref" href="#id6">Asynchronous Data Sources</a></h1>
 <p>Gnumeric/Pure makes it easy to set up asynchronous data sources which draw
-values from a Pure computation executed in a background process. To these ends
-you simply pass an expression to the <tt class="docutils literal"><span class="pre">pure_datasource</span></tt> function. This is
-another external C function provided by the Pure loader, which is declared in
-your Pure scripts as follows:</p>
+values from a Pure computation executed in a background process. This facility
+is useful to carry out lengthy computations in the background while you can
+continue to work with your spreadsheet. It also allows you to process incoming
+data and asynchronous events from special devices (MIDI, sensors, stock
+tickers, etc.) in (soft) realtime.</p>
+<p>To do this, you simply pass an expression to the <tt class="docutils literal"><span class="pre">pure_datasource</span></tt>
+function. This is another external C function provided by the Pure loader,
+which is declared in your Pure scripts as follows:</p>
 <pre class="literal-block">
 extern expr* pure_datasource(expr* x);
 </pre>
 <p>The argument to <tt class="docutils literal"><span class="pre">pure_datasource</span></tt> is typically a thunk or stream (lazy list)
 which is to be evaluated in the background. The call to <tt class="docutils literal"><span class="pre">pure_datasource</span></tt>
 initially returns a <tt class="docutils literal"><span class="pre">#N/A</span></tt> value (<tt class="docutils literal"><span class="pre">gnm_error</span> <span class="pre">&quot;#N/A&quot;</span></tt>) while the
-computation is still in progress. As soon as the value becomes available, the
-corresponding cell gets reevaluated automagically, with <tt class="docutils literal"><span class="pre">pure_datasource</span></tt>
-now returning the computed value.</p>
-<p>In the case of a stream (lazy list), <tt class="docutils literal"><span class="pre">pure_datasource</span></tt> returns a new element
-from the stream each time it becomes available. For instance, the following
-function counts off the seconds starting from a given initial value:</p>
+computation is still in progress. The cell containing the data source gets
+updated automatically as soon as the value becomes available, with
+<tt class="docutils literal"><span class="pre">pure_datasource</span></tt> now returning the computed value. E.g., here's how you
+would wrap up a lengthy calculation as a thunk and submit it to
+<tt class="docutils literal"><span class="pre">pure_datasource</span></tt> which carries out the computation as a background task:</p>
+<pre class="literal-block">
+gnm_info &quot;pure_calc&quot; = &quot;f&quot;, &quot;x&quot;;
+pure_calc x = pure_datasource (lengthy_calculation x&amp;);
+lengthy_calculation x = sleep 3 $$ foldl (*) 1.0 (1.0..x);
+</pre>
+<p>Note that when the arguments of a call involving <tt class="docutils literal"><span class="pre">pure_datasource</span></tt> change
+(because they depend on other cells which may have been updated), the
+computation is automatically restarted with the new parameters. Also, a cell
+value may draw values from as many independent data sources as you want, so
+the definition of a cell may involve multiple <tt class="docutils literal"><span class="pre">pure_datasource</span></tt> calls.</p>
+<p>In the case of a (lazy) list, <tt class="docutils literal"><span class="pre">pure_datasource</span></tt> returns a new value each
+time the next list element becomes available. For instance, the following
+function uses an infinite stream to count off the seconds starting from a
+given initial value:</p>
 <pre class="literal-block">
 gnm_info &quot;pure_counter&quot; = &quot;f&quot;, &quot;start&quot;;
 pure_counter x = pure_datasource [sleep (i&gt;x) $$ i | i = x..inf];
 </pre>
-<p>This facility is useful to carry out lengthy computations in the background,
-while you can continue to work with your spreadsheet. It also allows you to
-process incoming data from special devices (MIDI, sensors, stock tickers,
-etc.) in (soft) realtime.</p>
-<p>Note that when the arguments of a call involving <tt class="docutils literal"><span class="pre">pure_datasource</span></tt> change
-(because they depend on other cells which may have been updated), the
-computation is automatically restarted with the new parameters. Also, a cell
-value may draw values from as many independent data sources as you want.
-(Please keep in mind, however, that each data source corresponds to a separate
-background process, so having thousands of those might bring your machine to
-its knees.)</p>
+<p>Note that because of the special way that <tt class="docutils literal"><span class="pre">pure_datasource</span></tt> handles list
+values, you cannot return a list directly as the result of
+<tt class="docutils literal"><span class="pre">pure_datasource</span></tt>; instead, you'll have to wrap it up as a singleton list:</p>
+<pre class="literal-block">
+gnm_info &quot;pure_calc_list&quot; = &quot;f&quot;, &quot;x&quot;;
+pure_calc_list x = pure_data_source [lengthy_list_calculation x&amp;];
+lengthy_list_calculation x = sleep 3 $$ scanl (*) 1.0 (1.0..x);
+</pre>
 </div>
 </div>
 </body>

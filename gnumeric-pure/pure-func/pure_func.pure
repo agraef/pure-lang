@@ -108,10 +108,15 @@ gnm_info "gnm_bitand" = "ff", "x,y", "@FUNCTION=gnm_bitand\n\
 @DESCRIPTION=\
 Computes the bitwise and of two numbers @x and @y, using the corresponding Gnumeric function. This example shows how to call Gnumeric functions from Pure.\n";
 
+gnm_info "pure_calc" = "f", "x", "@FUNCTION=pure_counter\n\
+@SYNTAX=pure_calc(x)\n\
+@DESCRIPTION=\
+Example demonstrating the use of an asynchronous data source to carry out a lengthy calculation as a background task.\n";
+
 gnm_info "pure_counter" = "f", "start", "@FUNCTION=pure_counter\n\
 @SYNTAX=pure_counter(start)\n\
 @DESCRIPTION=\
-Counts off the seconds, beginning with the given @start value. This example demonstrates the use of an asynchronous data source.\n";
+Counts off the seconds, beginning with the given @start value. This example demonstrates the use of an asynchronous data source which draws values from a Pure stream.\n";
 
 namespace pure_func;
 
@@ -152,8 +157,14 @@ gnm_bitand x y = pure_gnmcall "bitand" [x,y];
    evaluated asynchronously in a separate process. The resulting Pure values
    are fed back to Gnumeric as results of the pure_datasource call, as they
    become available. #N/A is returned when no result is available yet. The
-   following example shows how to use this function, by counting off seconds
-   starting from a given initial value. */
+   following example shows how to use this function to carry out a lengthy
+   calculation wrapped up in a thunk. */
+
+pure_calc x = pure_datasource (lengthy_calculation x&);
+lengthy_calculation x = sleep 3 $$ foldl (*) 1.0 (1.0..x);
+
+/* Here's another example which counts off the seconds starting from a given
+   initial value. */
 
 pure_counter x = pure_datasource [sleep (i>x) $$ i | i = x..inf];
 

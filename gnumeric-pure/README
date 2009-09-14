@@ -329,36 +329,49 @@ Asynchronous Data Sources
 =========================
 
 Gnumeric/Pure makes it easy to set up asynchronous data sources which draw
-values from a Pure computation executed in a background process. To these ends
-you simply pass an expression to the ``pure_datasource`` function. This is
-another external C function provided by the Pure loader, which is declared in
-your Pure scripts as follows::
+values from a Pure computation executed in a background process. This facility
+is useful to carry out lengthy computations in the background while you can
+continue to work with your spreadsheet. It also allows you to process incoming
+data and asynchronous events from special devices (MIDI, sensors, stock
+tickers, etc.) in (soft) realtime.
+
+To do this, you simply pass an expression to the ``pure_datasource``
+function. This is another external C function provided by the Pure loader,
+which is declared in your Pure scripts as follows::
 
   extern expr* pure_datasource(expr* x);
 
 The argument to ``pure_datasource`` is typically a thunk or stream (lazy list)
 which is to be evaluated in the background. The call to ``pure_datasource``
 initially returns a ``#N/A`` value (``gnm_error "#N/A"``) while the
-computation is still in progress. As soon as the value becomes available, the
-corresponding cell gets reevaluated automagically, with ``pure_datasource``
-now returning the computed value.
+computation is still in progress. The cell containing the data source gets
+updated automatically as soon as the value becomes available, with
+``pure_datasource`` now returning the computed value. E.g., here's how you
+would wrap up a lengthy calculation as a thunk and submit it to
+``pure_datasource`` which carries out the computation as a background task::
 
-In the case of a stream (lazy list), ``pure_datasource`` returns a new element
-from the stream each time it becomes available. For instance, the following
-function counts off the seconds starting from a given initial value::
-
-  gnm_info "pure_counter" = "f", "start";
-  pure_counter x = pure_datasource [sleep (i>x) $$ i | i = x..inf];
-
-This facility is useful to carry out lengthy computations in the background,
-while you can continue to work with your spreadsheet. It also allows you to
-process incoming data from special devices (MIDI, sensors, stock tickers,
-etc.) in (soft) realtime.
+  gnm_info "pure_calc" = "f", "x";
+  pure_calc x = pure_datasource (lengthy_calculation x&);
+  lengthy_calculation x = sleep 3 $$ foldl (*) 1.0 (1.0..x);
 
 Note that when the arguments of a call involving ``pure_datasource`` change
 (because they depend on other cells which may have been updated), the
 computation is automatically restarted with the new parameters. Also, a cell
-value may draw values from as many independent data sources as you want.
-(Please keep in mind, however, that each data source corresponds to a separate
-background process, so having thousands of those might bring your machine to
-its knees.)
+value may draw values from as many independent data sources as you want, so
+the definition of a cell may involve multiple ``pure_datasource`` calls.
+
+In the case of a (lazy) list, ``pure_datasource`` returns a new value each
+time the next list element becomes available. For instance, the following
+function uses an infinite stream to count off the seconds starting from a
+given initial value::
+
+  gnm_info "pure_counter" = "f", "start";
+  pure_counter x = pure_datasource [sleep (i>x) $$ i | i = x..inf];
+
+Note that because of the special way that ``pure_datasource`` handles list
+values, you cannot return a list directly as the result of
+``pure_datasource``; instead, you'll have to wrap it up as a singleton list::
+
+  gnm_info "pure_calc_list" = "f", "x";
+  pure_calc_list x = pure_data_source [lengthy_list_calculation x&];
+  lengthy_list_calculation x = sleep 3 $$ scanl (*) 1.0 (1.0..x);
