@@ -86,8 +86,9 @@ ifneq "$(findstring x86_64-,$(host))" ""
 PIC = -fPIC
 endif
 
-# Default CFLAGS are -g -O2, CPPFLAGS, LDFLAGS and LIBS are empty by default.
+# Default CFLAGS and CPPFLAGS, LDFLAGS and LIBS are empty by default.
 CFLAGS = -g -O2
+CPPFLAGS = -Wall
 
 DISTFILES = COPYING Makefile README gnumeric-pure.html pure-examples.gnumeric \
 config.guess \

@@ -527,27 +527,20 @@ pure_expr *pure_datasource(pure_expr *x)
   else if ((pid = fork()) == 0) {
     /* child */
     FILE *pure_async_file = fopen(pure_async_filename, "ab");
+    /* evaluate expression, and write results to the pipe */
+    pure_expr *u = pure_new(pure_force(x)), *y, *z;
 #if 0
     fprintf(stderr, "[%d] child: %p-%p-%u\n", getpid(), key.p, key.q, key.id);
 #endif
-    /* evaluate expression, and write results to the pipe */
-    if (x && (x = pure_force(x))) {
-      pure_expr *u = pure_new(x), *y, *z;
-      if (is_cons(u, NULL, NULL)) {
-	while (u && is_cons(u, &y, &z)) {
-	  out(pure_async_file, &key, y);
-	  if (z && (z = pure_force(z))) {
-	    pure_new(z);
-	    pure_free(u);
-	    u = z;
-	  } else
-	    break;
-	}
-      } else if (!is_nil(u))
-	out(pure_async_file, &key, u);
-      exit(0);
-    } else
-      exit(1);
+    while (is_cons(u, &y, &z)) {
+      out(pure_async_file, &key, pure_force(y));
+      pure_new(pure_force(z));
+      pure_free(u);
+      u = z;
+    }
+    if (!is_nil(u))
+      out(pure_async_file, &key, u);
+    exit(0);
   } else if (pid > 0) {
     /* parent */
 #if 0
