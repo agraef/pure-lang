@@ -50,7 +50,9 @@ static const char help_template_text[] =
      "This Pure function hasn't been documented.\n");
 
 static GnmFuncHelp help_template[] = {
+#ifdef OLD_API // XXXFIXME
   { GNM_FUNC_HELP_OLD, NULL },
+#endif
   { GNM_FUNC_HELP_END }
 };
 
@@ -112,9 +114,11 @@ gplp_func_desc_load(GOPluginService *service,
 
   res->name = g_strdup(name);
   res->arg_spec = arg_spec;
+#ifdef OLD_API // XXXFIXME
   res->arg_names = arg_names;
   if (!help_text) help_text = g_strdup_printf(help_template_text, name, name);
   help_template[0].text = help_text;
+#endif
   res->help = g_slice_dup(GnmFuncHelp, help_template);
   res->fn_args = NULL;
   res->fn_nodes = NULL;
@@ -132,7 +136,7 @@ gplp_func_desc_load(GOPluginService *service,
 
 static void
 gplp_set_attributes(GOPluginLoader *loader, GHashTable *attrs,
-		    ErrorInfo **ret_error)
+		    GOErrorInfo **ret_error)
 {
   GnmPurePluginLoader *loader_pure = GNM_PURE_PLUGIN_LOADER(loader);
   gchar *module_name = NULL;
@@ -141,13 +145,13 @@ gplp_set_attributes(GOPluginLoader *loader, GHashTable *attrs,
   if (module_name)
     loader_pure->module_name = g_strdup(module_name);
   else
-    *ret_error = error_info_new_str(_("** Pure module name not given."));
+    *ret_error = go_error_info_new_str(_("** Pure module name not given."));
 }
 
 static GList *modnames;
 
 static void
-gplp_load_base(GOPluginLoader *loader, ErrorInfo **ret_error)
+gplp_load_base(GOPluginLoader *loader, GOErrorInfo **ret_error)
 {
   GnmPurePluginLoader *loader_pure = GNM_PURE_PLUGIN_LOADER(loader);
   const char *modname = loader_pure->module_name;
@@ -162,7 +166,7 @@ gplp_load_base(GOPluginLoader *loader, ErrorInfo **ret_error)
       interp = pure_create_interp(0, 0);
     }
     if (!interp)
-      *ret_error = error_info_new_printf(_("** Error creating Pure interpreter."));
+      *ret_error = go_error_info_new_printf(_("** Error creating Pure interpreter."));
     else {
       gchar *cmdbuf = g_strdup_printf("using \"%s\";\n", path);
       // FIXME: This only prints errors on stderr right now.
@@ -171,7 +175,7 @@ gplp_load_base(GOPluginLoader *loader, ErrorInfo **ret_error)
       modnames = g_list_append(modnames, path);
     }
   } else {
-    *ret_error = error_info_new_printf(_("** Couldn't find \"%s\"."), script);
+    *ret_error = go_error_info_new_printf(_("** Couldn't find \"%s\"."), script);
   }
   g_free(script);
 }
@@ -468,17 +472,17 @@ datasource_fini(void)
 static void
 gplp_load_service_function_group(GOPluginLoader *loader,
 				 GOPluginService *service,
-				 ErrorInfo **ret_error)
+				 GOErrorInfo **ret_error)
 {
   PluginServiceFunctionGroupCallbacks *cbs;
   g_return_if_fail (IS_GNM_PLUGIN_SERVICE_FUNCTION_GROUP (service));
   GO_INIT_RET_ERROR_INFO (ret_error);
-  cbs = plugin_service_get_cbs(service);
+  cbs = go_plugin_service_get_cbs(service);
   cbs->func_desc_load = &gplp_func_desc_load;
 }
 
 static gboolean
-gplp_service_load(GOPluginLoader *l, GOPluginService *s, ErrorInfo **err)
+gplp_service_load(GOPluginLoader *l, GOPluginService *s, GOErrorInfo **err)
 {
   if (IS_GNM_PLUGIN_SERVICE_FUNCTION_GROUP(s))
     gplp_load_service_function_group(l, s, err);
@@ -489,7 +493,7 @@ gplp_service_load(GOPluginLoader *l, GOPluginService *s, ErrorInfo **err)
 }
 
 static gboolean
-gplp_service_unload(GOPluginLoader *l, GOPluginService *s, ErrorInfo **err)
+gplp_service_unload(GOPluginLoader *l, GOPluginService *s, GOErrorInfo **err)
 {
   if (IS_GNM_PLUGIN_SERVICE_FUNCTION_GROUP(s))
     ;
@@ -535,4 +539,4 @@ GSF_DYNAMIC_CLASS_FULL(GnmPurePluginLoader, gnm_pure_plugin_loader,
 		       gplp_init, G_TYPE_OBJECT, 0,
 		       GSF_INTERFACE_FULL(gnm_pure_plugin_loader_type,
 					  go_plugin_loader_init,
-					  GO_PLUGIN_LOADER_TYPE))
+					  GO_TYPE_PLUGIN_LOADER))

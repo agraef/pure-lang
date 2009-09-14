@@ -44,6 +44,10 @@ LIBS = $(shell pkg-config --libs libgoffice-0.8)
 # Try to guess the Gnumeric version number:
 gnmversion=$(shell gnumeric --version | sed -n -e "s/^gnumeric version '\([0-9.]*\)'.*/\1/" -e "/^[0-9.]*$$/p")
 
+# See whether we have Gnumeric 1.9.12 or later (API changes):
+gnmminor = $(shell gnumeric --version 2>/dev/null | sed -n -e 's/^gnumeric.*1\.9\.\([0-9]*\).*/\1/' -e '/^[0-9]*$$/p' 2>/dev/null)
+OLDAPI = $(shell (test -z "$(gnmminor)" || test "$(gnmminor)" -lt 12) && echo '-DOLD_API')
+
 # Try to guess the Gnumeric installation prefix:
 prefix = $(patsubst %/bin/gnumeric,%,$(shell which gnumeric 2>/dev/null))
 ifeq ($(strip $(prefix)),)
@@ -100,10 +104,10 @@ pure-func/*.pure pure-func/plugin.xml
 all: pure-loader/pure_loader$(DLL)
 
 pure-loader/pure_loader$(DLL): pure-loader/boot.o pure-loader/pure-gnumeric.o pure-loader/pure-loader.o
-	$(CC) $(shared) -o $@ $(PIC) $(LDFLAGS) $^ $(LIBS) -lpure
+	$(CC) $(shared) -o $@ $(LDFLAGS) $^ $(LIBS) -lpure
 
 %.o: %.c
-	$(CC) $(INCLUDES) -I. -I.. $(CPPFLAGS) $(CFLAGS) $(PIC) -o $@ -c $<
+	$(CC) $(INCLUDES) -I. -I.. $(CPPFLAGS) $(OLDAPI) $(CFLAGS) $(PIC) -o $@ -c $<
 
 clean:
 	(cd pure-loader/ && rm -f pure_loader$(DLL) *~ *.a *.o)

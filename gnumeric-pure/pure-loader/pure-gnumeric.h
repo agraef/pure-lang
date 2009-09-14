@@ -12,7 +12,9 @@
 #include <func.h>
 #include <sheet.h>
 #include <value.h>
+#ifdef OLD_API
 #include <str.h>
+#endif
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>

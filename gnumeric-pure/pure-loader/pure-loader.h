@@ -4,6 +4,14 @@
 #include <glib-object.h>
 #include <pure/runtime.h>
 
+#ifdef OLD_API
+#define GO_TYPE_PLUGIN_LOADER GO_PLUGIN_LOADER_TYPE
+#define GOErrorInfo ErrorInfo
+#define go_plugin_service_get_cbs plugin_service_get_cbs
+#define go_error_info_new_str error_info_new_str
+#define go_error_info_new_printf error_info_new_printf
+#endif
+
 GType gnm_pure_plugin_loader_get_type (void);
 void  gnm_pure_plugin_loader_register_type (GTypeModule *module);
 void  pure_stop(GnmAction const *action, WorkbookControl *wbc);
