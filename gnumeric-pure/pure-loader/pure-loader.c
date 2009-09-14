@@ -184,9 +184,19 @@ static void pure_reload_script(gpointer data, gpointer unused)
   g_free(cmdbuf);
 }
 
+static void datasource_reinit(void);
+
+void pure_stop(GnmAction const *action, WorkbookControl *wbc)
+{
+  if (interp && g_list_first(modnames)) {
+    datasource_reinit();
+  }
+}
+
 void pure_reload(GnmAction const *action, WorkbookControl *wbc)
 {
   if (interp && g_list_first(modnames)) {
+    datasource_reinit();
     pure_delete_interp(interp);
     interp = pure_create_interp(0, 0);
     pure_switch_interp(interp);
@@ -367,6 +377,34 @@ pure_async_func_unlink(GnmFuncEvalInfo *ei)
     g_free(ds);
     key.id++;
   }
+}
+
+static void
+cb_datasource_fini(gpointer key, gpointer value, gpointer closure)
+{
+  DataSource *ds = value;
+#if 0
+  fprintf(stderr, "delete datasource = %p-%p-%u [%d]\n",
+	  ds->key.node, ds->key.dep, ds->key.id, ds->pid);
+#endif
+  if (ds->pid > 0) {
+    // get rid of the inferior process
+    int status;
+    kill(ds->pid, SIGTERM);
+    if (waitpid(ds->pid, &status, 0) < 0) perror("waitpid");
+  }
+  if (ds->value) pure_free(ds->value);
+  if (ds->expr) pure_free(ds->expr);
+  g_free(ds);
+}
+
+static void
+datasource_reinit(void)
+{
+  g_hash_table_foreach(datasources, cb_datasource_fini, NULL);
+  g_hash_table_destroy(datasources);
+  datasources = g_hash_table_new((GHashFunc)dskey_hash,
+				 (GEqualFunc)dskey_equal);
 }
 
 static void

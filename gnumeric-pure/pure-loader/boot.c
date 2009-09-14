@@ -36,6 +36,7 @@ go_plugin_init(GOPlugin *plugin, GOCmdContext *cc)
 
 ModulePluginUIActions const pure_ui_actions[] = {
   { "PureMenu", NULL },
+  { "PureStop", pure_stop },
   { "PureReload", pure_reload },
   { "PureEdit", pure_edit },
   { NULL }
