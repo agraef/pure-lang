@@ -243,6 +243,27 @@ dskey_equal(DSKey const *k1, DSKey const *k2)
   return k1->node == k2->node && k1->dep == k2->dep && k1->id == k2->id;
 }
 
+static void
+update_value(DataSource *ds, pure_expr *x)
+{
+  Sheet *sheet = ds->key.dep->sheet;
+  if (ds->value) pure_free(ds->value);
+  if (x)
+    ds->value = pure_new(x);
+  else
+    ds->value = NULL;
+  dependent_queue_recalc(ds->key.dep);
+  if (sheet && workbook_get_recalcmode(sheet->workbook))
+    workbook_recalc(sheet->workbook);
+#if 0
+  {
+    char *s = val?str(val):strdup("#N/A");
+    fprintf(stderr, "%p-%p-%u <= %s\n", key.node, key.dep, key.id, s);
+    free(s);
+  }
+#endif
+}
+
 static gboolean
 cb_pure_async_input(GIOChannel *gioc, GIOCondition cond, gpointer ignored)
 {
@@ -250,21 +271,7 @@ cb_pure_async_input(GIOChannel *gioc, GIOCondition cond, gpointer ignored)
   pure_expr *val;
   while (pure_read_blob(pure_async_file, (keyval_t*)&key, &val)) {
     DataSource *ds = g_hash_table_lookup(datasources, &key);
-    if (ds) {
-      Sheet *sheet = ds->key.dep->sheet;
-      if (ds->value) pure_free(ds->value);
-      ds->value = pure_new(val);
-      dependent_queue_recalc(ds->key.dep);
-      if (sheet && workbook_get_recalcmode(sheet->workbook))
-	workbook_recalc(sheet->workbook);
-#if 0
-      {
-	char *s = str(val);
-	fprintf(stderr, "%p-%p-%u <= %s\n", key.node, key.dep, key.id, s);
-	free(s);
-      }
-#endif
-    }
+    if (ds) update_value(ds, val);
   }
   return TRUE;
 }
@@ -292,9 +299,12 @@ pure_async_func_init(const GnmFuncEvalInfo *ei, pure_expr *ex,
 	int status;
 	kill(ds->pid, SIGTERM);
 	if (waitpid(ds->pid, &status, 0) < 0) perror("waitpid");
+	ds->pid = 0;
       }
       if (ds->expr) pure_free(ds->expr);
       if (ex) ds->expr = pure_new(ex);
+      if (ds->value) pure_free(ds->value);
+      ds->value = NULL;
       ret = TRUE;
     }
 #if 0
