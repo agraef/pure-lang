@@ -411,7 +411,7 @@ static void
 datasource_init(void)
 {
   GIOChannel *channel = NULL;
-  char *filename, nambuf[L_tmpnam];
+  char *filename = NULL, nambuf[L_tmpnam];
   // Set up a pipe for asynchronous data processing.
 #if 0
   fprintf(stderr, ">>>>>>>>>>>>>>>>>>>>>>>>>>>> LOAD PURE_ASYNC\n");
@@ -422,8 +422,8 @@ datasource_init(void)
     mkfifo(filename, S_IRUSR | S_IWUSR) == 0) {
     pure_async_filename = filename;
     pure_async_fd = g_open(pure_async_filename, O_RDWR|O_NONBLOCK, 0);
-  } else
-    g_free (filename);
+  } else if (filename)
+    g_free(filename);
   if (pure_async_fd >= 0) {
     pure_async_file = fdopen(pure_async_fd, "rb");
     channel = g_io_channel_unix_new(pure_async_fd);
