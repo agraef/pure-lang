@@ -20,6 +20,10 @@
 #define go_error_info_new_printf error_info_new_printf
 #endif
 
+#ifndef PLUGIN_VERSION
+#define PLUGIN_VERSION "0.0"
+#endif
+
 GType gnm_pure_plugin_loader_get_type (void);
 void  gnm_pure_plugin_loader_register_type (GTypeModule *module);
 void  pure_stop(GnmAction const *action, WorkbookControl *wbc);

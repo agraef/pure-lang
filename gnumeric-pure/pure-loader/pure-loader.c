@@ -64,6 +64,8 @@ static void pure_init_help_consts(void)
   pure_def(pure_sym("GNM_FUNC_HELP_EXCEL"), pure_int(GNM_FUNC_HELP_EXCEL));
   pure_def(pure_sym("GNM_FUNC_HELP_ODF"), pure_int(GNM_FUNC_HELP_ODF));
 #endif
+  pure_let(pure_sym("gnm_version"), pure_string_dup(GNM_VERSION_FULL));
+  pure_let(pure_sym("gnm_pure_version"), pure_string_dup(PLUGIN_VERSION));
 }
 
 static GnmFuncHelp *pure_default_gnm_help(const char *name)

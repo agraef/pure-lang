@@ -103,7 +103,7 @@ pure-loader/pure_loader$(DLL): pure-loader/boot.o pure-loader/pure-gnumeric.o pu
 	$(CC) $(shared) -o $@ $(LDFLAGS) $^ $(LIBS) -lpure
 
 %.o: %.c
-	$(CC) $(INCLUDES) -I. -I.. $(CPPFLAGS) $(CFLAGS) $(PIC) -o $@ -c $<
+	$(CC) $(INCLUDES) -I. -I.. $(CPPFLAGS) -DPLUGIN_VERSION='"$(version)"' $(CFLAGS) $(PIC) -o $@ -c $<
 
 clean:
 	(cd pure-loader/ && rm -f pure_loader$(DLL) *~ *.a *.o)
