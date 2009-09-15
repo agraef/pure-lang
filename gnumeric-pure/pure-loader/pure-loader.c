@@ -100,27 +100,29 @@ static GnmFuncHelp *pure_get_gnm_help(pure_expr *x)
   if (pure_is_listv(x, &n, &xv)) {
     if (n == 0) return NULL;
     help = g_new(GnmFuncHelp, n+1);
-    help[n].type = GNM_FUNC_HELP_END;
-    help[n].text = NULL;
-    for (i = 0; i < n; i++) {
+    for (i = 0, j = 0; i < n; i++) {
       int32_t iv;
       const char *s;
-      if (!is_pair(xv[i], &a, &b) ||
-	  !pure_is_int(a, &iv) || iv < GNM_FUNC_HELP_NAME ||
+      // We quietly drop entries which are not in the right format.
+      if (is_pair(xv[i], &a, &b) &&
+	  pure_is_int(a, &iv) && iv >= GNM_FUNC_HELP_NAME &&
 #ifdef OLD_API
-	  iv > GNM_FUNC_HELP_SEEALSO ||
+	  iv <= GNM_FUNC_HELP_SEEALSO &&
 #else
-	  iv > GNM_FUNC_HELP_ODF ||
+	  iv <= GNM_FUNC_HELP_ODF &&
 #endif
 	  // XXXFIXME: Do we have to convert to the system encoding here?
-	  !pure_is_string(b, &s)) {
-	for (j = 0; j < i; j++) g_free((char*)help[j].text);
-	free(xv);
-	g_free(help);
-	return NULL;
+	  pure_is_string(b, &s)) {
+	help[j].type = iv;
+	help[j].text = g_strdup(s);
+	j++;
       }
-      help[i].type = iv;
-      help[i].text = g_strdup(s);
+    }
+    help[j].type = GNM_FUNC_HELP_END;
+    help[j].text = NULL;
+    if (j == 0) {
+      g_free(help);
+      help = NULL;
     }
   }
   if (xv) free(xv);

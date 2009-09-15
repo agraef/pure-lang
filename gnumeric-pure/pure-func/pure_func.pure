@@ -98,22 +98,23 @@ gnm_info "pure_eval" =
  GNM_FUNC_HELP_DESCRIPTION =>
  "Evaluates a Pure expression, given as a string @{s}. Any remaining parameters are available in the evaluated code as a list x, so x!0 denotes the first argument, x!1 the second, etc. This lets you evaluate any Pure code in a spreadsheet without first having to define a function for it.",
  GNM_FUNC_HELP_EXAMPLES	=> "=pure_eval(\"foldl (*) 1 (1..10)\")",
- GNM_FUNC_HELP_EXAMPLES	=> "=pure_eval(\"x!0*x!1\",2,3)"];
+ GNM_FUNC_HELP_EXAMPLES	=> "=pure_eval(\"x!0*x!1\",2,3)",
+ GNM_FUNC_HELP_SEEALSO	=> "pure_calc"];
 
 gnm_info "gnm_bitand" = "ff",
-[GNM_FUNC_HELP_NAME	=> "gnm_bitand:bitwise and of two integers",
- GNM_FUNC_HELP_ARG	=> "x:integer",
- GNM_FUNC_HELP_ARG	=> "y:integer",
+[GNM_FUNC_HELP_NAME	=> "gnm_bitand:bitwise and",
+ GNM_FUNC_HELP_ARG	=> "x:non-negative integer",
+ GNM_FUNC_HELP_ARG	=> "y:non-negative integer",
  GNM_FUNC_HELP_DESCRIPTION =>
  "Computes the bitwise and of two numbers @{x} and @{y}, using the corresponding Gnumeric function. This example shows how to call Gnumeric functions from Pure.",
  GNM_FUNC_HELP_EXAMPLES	=> "=gnm_bitand(17,22)"];
 
-gnm_info "pure_calc" = "f",
+gnm_info "pure_calc" = 
 [GNM_FUNC_HELP_NAME	=> "pure_calc:evaluate an expression asynchronously",
- GNM_FUNC_HELP_ARG	=> "x:integer",
+ GNM_FUNC_HELP_ARG	=> "s:string",
  GNM_FUNC_HELP_DESCRIPTION =>
- "Example demonstrating the use of an asynchronous data source to carry out a lengthy calculation as a background task.",
- GNM_FUNC_HELP_SEEALSO	=> "pure_counter"];
+ "pure_calc evaluates an expression with parameter substitution, like pure_eval, but it uses an asynchronous data source to carry out the calculation as a background task.",
+ GNM_FUNC_HELP_SEEALSO	=> "pure_eval,pure_counter"];
 
 gnm_info "pure_counter" = "f",
 [GNM_FUNC_HELP_NAME	=> "pure_count:count off the seconds",
@@ -161,11 +162,15 @@ gnm_bitand x y = pure_gnmcall "bitand" [x,y];
    evaluated asynchronously in a separate process. The resulting Pure values
    are fed back to Gnumeric as results of the pure_datasource call, as they
    become available. #N/A is returned when no result is available yet. The
-   following example shows how to use this function to carry out a lengthy
-   calculation wrapped up in a thunk. */
+   following example shows how to use this function to carry out a calculation
+   wrapped up in a thunk. This works like pure_eval, only that the evaluation
+   actually happens in the background. */
 
-pure_calc x = pure_datasource (lengthy_calculation x&);
-lengthy_calculation x = sleep 3 $$ foldl (*) 1.0 (1.0..x);
+pure_calc (s::string:args) =
+  case eval (sprintf "'[%s]" s) of
+    [y] = pure_datasource $ (eval (reduce y) with x = args end)&;
+    _ = throw "pure_eval: syntax error";
+  end;
 
 /* Here's another example which counts off the seconds starting from a given
    initial value. */
