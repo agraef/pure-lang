@@ -8,10 +8,10 @@ version = 0.2
 # Build and installation instructions:
 
 # 1.  Make sure that you have gnumeric and the corresponding development
-#     packages installed. You'll also need the gnumeric-config.h and
-#     gnumeric-features.h files from the sources, place these into the
-#     directory with the gnumeric-pure sources, or specify the include path
-#     needed to locate these files in step 2 below.
+#     packages installed. You'll also need the gnumeric-features.h file from
+#     the Gnumeric sources, place it into the directory with the gnumeric-pure
+#     sources, or specify the include path needed to locate these files in
+#     step 2 below.
 
 # 2.  Adjust the following as needed for your GTK+/GOffice installation:
 
@@ -19,9 +19,9 @@ INCLUDES = $(shell pkg-config --cflags libgoffice-0.8) \
 -I$(prefix)/include/libspreadsheet-1.10/spreadsheet
 LIBS = $(shell pkg-config --libs libgoffice-0.8)
 
-# The Makefile tries to guess the installation path and version number of
-# Gnumeric on its own. If it guesses wrong, you'll also have to adjust the
-# values of the prefix and gnmversion variables (see below) accordingly.
+#     The Makefile tries to guess the installation path and version number of
+#     Gnumeric on its own. If it guesses wrong, you'll also have to adjust the
+#     values of the prefix and gnmversion variables (see below) accordingly.
 
 # 3.  Run 'make' to build the plugin.
 
