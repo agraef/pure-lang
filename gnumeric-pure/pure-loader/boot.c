@@ -3,7 +3,7 @@
  *
  */
 
-#include <gnumeric-config.h>
+#include <gnumeric-features.h>
 #include <gnumeric.h>
 #include <glib.h>
 #include <goffice/app/error-info.h>

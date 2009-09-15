@@ -1,7 +1,7 @@
 #include <pure/runtime.h>
 #include "pure-gnumeric.h"
 
-#include <gnumeric-config.h>
+#include <gnumeric-features.h>
 #include "pure-loader.h"
 #include <gnumeric.h>
 
@@ -44,17 +44,89 @@ typedef struct {
 typedef GObjectClass GnmPurePluginLoaderClass;
 
 static const char help_template_text[] =
-  N_("@FUNCTION=%s\n"
-     "@SYNTAX=%s(...)\n"
-     "@DESCRIPTION="
-     "This Pure function hasn't been documented.\n");
+  "This Pure function hasn't been documented.";
 
 static GnmFuncHelp help_template[] = {
-#ifdef OLD_API // XXXFIXME
-  { GNM_FUNC_HELP_OLD, NULL },
-#endif
+  { GNM_FUNC_HELP_NAME, NULL },
+  { GNM_FUNC_HELP_DESCRIPTION, NULL },
   { GNM_FUNC_HELP_END }
 };
+
+static void pure_init_help_consts(void)
+{
+  pure_def(pure_sym("GNM_FUNC_HELP_NAME"), pure_int(GNM_FUNC_HELP_NAME));
+  pure_def(pure_sym("GNM_FUNC_HELP_ARG"), pure_int(GNM_FUNC_HELP_ARG));
+  pure_def(pure_sym("GNM_FUNC_HELP_DESCRIPTION"), pure_int(GNM_FUNC_HELP_DESCRIPTION));
+  pure_def(pure_sym("GNM_FUNC_HELP_NOTE"), pure_int(GNM_FUNC_HELP_NOTE));
+  pure_def(pure_sym("GNM_FUNC_HELP_EXAMPLES"), pure_int(GNM_FUNC_HELP_EXAMPLES));
+  pure_def(pure_sym("GNM_FUNC_HELP_SEEALSO"), pure_int(GNM_FUNC_HELP_SEEALSO));
+#ifndef OLD_API
+  pure_def(pure_sym("GNM_FUNC_HELP_EXTREF"), pure_int(GNM_FUNC_HELP_EXTREF));
+  pure_def(pure_sym("GNM_FUNC_HELP_EXCEL"), pure_int(GNM_FUNC_HELP_EXCEL));
+  pure_def(pure_sym("GNM_FUNC_HELP_ODF"), pure_int(GNM_FUNC_HELP_ODF));
+#endif
+}
+
+static GnmFuncHelp *pure_default_gnm_help(const char *name)
+{
+  GnmFuncHelp *help = g_new(GnmFuncHelp, 3);
+  if (help) {
+    int i;
+    for (i = 0; i < 3; i++)
+      help[i] = help_template[i];
+    help[0].text = g_strdup_printf("%s:", name);
+    help[1].text = g_strdup(help_template_text);
+  }
+  return help;
+}
+
+static inline bool is_pair(pure_expr *x, pure_expr **y, pure_expr **z)
+{
+  pure_expr *f;
+  size_t n;
+  if (pure_is_appv(x, &f, &n, NULL) && n==2 &&
+      strcmp(pure_sym_pname(f->tag), "=>") == 0) {
+    if (y) *y = x->data.x[0]->data.x[1];
+    if (z) *z = x->data.x[1];
+    return true;
+  } else
+    return false;
+}
+
+static GnmFuncHelp *pure_get_gnm_help(pure_expr *x)
+{
+  size_t i, j, n;
+  pure_expr **xv = NULL, *a, *b;
+  GnmFuncHelp *help = NULL;
+  if (pure_is_listv(x, &n, &xv)) {
+    if (n == 0) return NULL;
+    help = g_new(GnmFuncHelp, n+1);
+    help[n].type = GNM_FUNC_HELP_END;
+    help[n].text = NULL;
+    for (i = 0; i < n; i++) {
+      int32_t iv;
+      const char *s;
+      if (!is_pair(xv[i], &a, &b) ||
+	  !pure_is_int(a, &iv) || iv < GNM_FUNC_HELP_NAME ||
+#ifdef OLD_API
+	  iv > GNM_FUNC_HELP_SEEALSO ||
+#else
+	  iv > GNM_FUNC_HELP_ODF ||
+#endif
+	  // XXXFIXME: Do we have to convert to the system encoding here?
+	  !pure_is_string(b, &s)) {
+	for (j = 0; j < i; j++) g_free((char*)help[j].text);
+	free(xv);
+	g_free(help);
+	return NULL;
+      }
+      help[i].type = iv;
+      help[i].text = g_strdup(s);
+    }
+  }
+  if (xv) free(xv);
+  return help;
+}
 
 static pure_interp *interp;
 
@@ -90,23 +162,20 @@ gplp_func_desc_load(GOPluginService *service,
   // XXXFIXME: Do we have to convert from the system encoding here?
   pure_expr *desc = pure_app(descfun, pure_string_dup(name));
   gchar *arg_spec = NULL;
-  gchar *arg_names = NULL;
-  gchar *help_text = NULL;
+  GnmFuncHelp *help = NULL;
 
   if (desc) {
     size_t size;
     pure_expr **elems = NULL;
-    const char *spec = NULL, *names = NULL, *help = NULL;
+    const char *spec = NULL;
     // XXXFIXME: Do we have to convert to the system encoding here?
-    if (pure_is_tuplev(desc, &size, &elems) && size>0 && size<=3 &&
-	(size==1 || (pure_is_string(elems[0], &spec) &&
-		     pure_is_string(elems[1], &names))) &&
-	(size == 2 ||
-	 (size == 1 && pure_is_string(elems[0], &help)) ||
-	 (size == 3 && pure_is_string(elems[2], &help)))) {
+    if (pure_is_tuplev(desc, &size, &elems) && size>0 && size<=2 &&
+	(size == 1)
+	? (pure_is_string(elems[0], &spec) ||
+	   (help = pure_get_gnm_help(elems[0])))
+	: (pure_is_string(elems[0], &spec) &&
+	   (help = pure_get_gnm_help(elems[1])))) {
       if (spec) arg_spec = g_strdup(spec);
-      if (names) arg_names = g_strdup(names);
-      if (help) help_text = g_strdup(help);
     }
     if (elems) free(elems);
     pure_freenew(desc);
@@ -114,12 +183,8 @@ gplp_func_desc_load(GOPluginService *service,
 
   res->name = g_strdup(name);
   res->arg_spec = arg_spec;
-#ifdef OLD_API // XXXFIXME
-  res->arg_names = arg_names;
-  if (!help_text) help_text = g_strdup_printf(help_template_text, name, name);
-  help_template[0].text = help_text;
-#endif
-  res->help = g_slice_dup(GnmFuncHelp, help_template);
+  if (!help) help = pure_default_gnm_help(name);
+  res->help = help;
   res->fn_args = NULL;
   res->fn_nodes = NULL;
   if (arg_spec)
@@ -164,6 +229,7 @@ gplp_load_base(GOPluginLoader *loader, GOErrorInfo **ret_error)
     if (!interp) {
       // First invocation, create an interpreter instance.
       interp = pure_create_interp(0, 0);
+      if (interp) pure_init_help_consts();
     }
     if (!interp)
       *ret_error = go_error_info_new_printf(_("** Error creating Pure interpreter."));

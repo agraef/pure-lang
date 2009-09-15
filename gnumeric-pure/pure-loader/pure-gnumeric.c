@@ -1,5 +1,6 @@
 #include "pure-gnumeric.h"
-#include <gnumeric-config.h>
+#include "pure-loader.h"
+#include <gnumeric-features.h>
 #include <glib/gi18n-lib.h>
 
 // NOTE: This stuff requires that Pure was built with GSL matrix support.
@@ -414,8 +415,6 @@ pure_gnmcall(const char *name, pure_expr *args)
 }
 
 /* Support for asynchronous data sources (from sample_datasource.c). */
-
-#include "pure-loader.h"
 
 static inline bool is_nil(pure_expr *x)
 {

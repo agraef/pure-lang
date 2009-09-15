@@ -4,6 +4,8 @@
 #include <glib-object.h>
 #include <pure/runtime.h>
 
+#define GETTEXT_PACKAGE "gnumeric"
+
 #ifdef OLD_API
 #define GO_TYPE_PLUGIN_LOADER GO_PLUGIN_LOADER_TYPE
 #define GOErrorInfo ErrorInfo
