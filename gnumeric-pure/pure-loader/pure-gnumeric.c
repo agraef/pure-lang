@@ -1,6 +1,5 @@
 #include "pure-gnumeric.h"
 #include "pure-loader.h"
-#include <gnumeric-features.h>
 #include <glib/gi18n-lib.h>
 
 // NOTE: This stuff requires that Pure was built with GSL matrix support.

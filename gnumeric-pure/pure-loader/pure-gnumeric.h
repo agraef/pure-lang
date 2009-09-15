@@ -1,6 +1,12 @@
 #ifndef _PURE_GNUMERIC_H
 #define _PURE_GNUMERIC_H
 
+#include <gnumeric-features.h>
+
+#if GNM_VERSION_EPOCH <= 1 && GNM_VERSION_MAJOR <= 9 && GNM_VERSION_MINOR < 12
+#define OLD_API
+#endif
+
 /*
  * Interface to Gnumeric internal functions.
  */

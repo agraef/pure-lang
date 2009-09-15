@@ -1,6 +1,12 @@
 #ifndef GNM_PURE_PLUGIN_LOADER_H
 #define GNM_PURE_PLUGIN_LOADER_H
 
+#include <gnumeric-features.h>
+
+#if GNM_VERSION_EPOCH <= 1 && GNM_VERSION_MAJOR <= 9 && GNM_VERSION_MINOR < 12
+#define OLD_API
+#endif
+
 #include <glib-object.h>
 #include <pure/runtime.h>
 

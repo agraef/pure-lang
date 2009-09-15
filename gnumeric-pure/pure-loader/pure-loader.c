@@ -1,7 +1,6 @@
 #include <pure/runtime.h>
 #include "pure-gnumeric.h"
 
-#include <gnumeric-features.h>
 #include "pure-loader.h"
 #include <gnumeric.h>
 
