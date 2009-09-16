@@ -3,7 +3,7 @@
 
 # Package name and version number:
 dist = gnumeric-pure-$(version)
-version = 0.2
+version = 0.3
 
 # Build and installation instructions:
 
@@ -93,7 +93,7 @@ endif
 CFLAGS = -g -O2
 CPPFLAGS = -Wall
 
-DISTFILES = COPYING Makefile README \
+DISTFILES = ChangeLog COPYING Makefile README \
 gnumeric-pure.html pure-examples.gnumeric preamble.tex config.guess \
 pure-loader/boot.c pure-loader/pure-gnumeric.c pure-loader/pure-gnumeric.h \
 pure-loader/pure-loader.c pure-loader/pure-loader.h \
