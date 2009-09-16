@@ -113,7 +113,6 @@ static GnmFuncHelp *pure_get_gnm_help(pure_expr *x)
 #else
 	  iv <= GNM_FUNC_HELP_ODF &&
 #endif
-	  // XXXFIXME: Do we have to convert to the system encoding here?
 	  pure_is_string(b, &s)) {
 	help[j].type = iv;
 	help[j].text = g_strdup(s);
@@ -162,7 +161,6 @@ gplp_func_desc_load(GOPluginService *service,
 		    GnmFuncDescriptor *res)
 {
   pure_expr *descfun = pure_symbol(pure_sym("gnm_info"));
-  // XXXFIXME: Do we have to convert from the system encoding here?
   pure_expr *desc = pure_app(descfun, pure_string_dup(name));
   gchar *arg_spec = NULL;
   GnmFuncHelp *help = NULL;
@@ -171,7 +169,6 @@ gplp_func_desc_load(GOPluginService *service,
     size_t size;
     pure_expr **elems = NULL;
     const char *spec = NULL;
-    // XXXFIXME: Do we have to convert to the system encoding here?
     if (pure_is_tuplev(desc, &size, &elems) && size>0 && size<=2 &&
 	(size == 1)
 	? (pure_is_string(elems[0], &spec) ||

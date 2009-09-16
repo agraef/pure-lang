@@ -82,12 +82,14 @@ create_double_matrix(size_t nrows, size_t ncols)
     return gsl_matrix_alloc(nrows, ncols);
 }
 
+/* NOTE: This assumes that Gnumeric represents all strings as UTF-8 internally
+   (as does Pure), so that no encoding conversions are necessary. */
+
 pure_expr *
 value2pure(const GnmEvalPos *pos, const GnmValue *v)
 {
   switch (v->type) {
   case VALUE_ERROR:
-    // XXXFIXME: Do we have to convert from the system encoding here?
     return pure_app(pure_symbol(pure_sym("gnm_error")),
 		    pure_string_dup(v->v_err.mesg->str));
   case VALUE_EMPTY:
@@ -97,7 +99,6 @@ value2pure(const GnmEvalPos *pos, const GnmValue *v)
   case VALUE_FLOAT:
     return pure_double(value_get_as_float(v));
   case VALUE_STRING:
-    // XXXFIXME: Do we have to convert from the system encoding here?
     return pure_string_dup(v->v_str.val->str);
   case VALUE_ARRAY: {
     size_t nrows = (size_t)v->v_array.y, ncols = (size_t)v->v_array.x, i, j;
@@ -260,28 +261,15 @@ pure2value(const GnmEvalPos *pos, pure_expr *x)
     if (standard_errors[i].C_name)
       v = standard_errors[i].err_fun(pos);
     else
-      // XXXFIXME: Do we have to convert to the system encoding here?
       v = value_new_error(pos, s);
-  } else if (pure_is_tuplev(x, &sz, NULL) && sz==0)
-    v = value_new_empty();
-  else if (pure_is_int(x, &iv))
+  } else if (pure_is_int(x, &iv))
     v = value_new_int(iv);
   else if (pure_is_mpz(x, NULL))
     v = value_new_float((gnm_float)mpz_get_d(x->data.z));
   else if (pure_is_double(x, &dv))
     v = value_new_float((gnm_float)dv);
-  else if (pure_is_string(x, &s))
-    // XXXFIXME: Do we have to convert to the system encoding here?
+  else if (pure_is_string(x, &s)) {
     v = value_new_string(s);
-  else if (pure_is_listv(x, &sz, &xv)) {
-    size_t i;
-    v = value_new_array_empty(sz, 1);
-    for (i = 0; i < sz; i++) {
-      GnmValue *val = pure2value(pos, xv[i]);
-      if (!val) val = value_new_error_VALUE(pos);
-      v->v_array.vals[i][0] = val;
-    }
-    free(xv);
   } else if(pure_is_double_matrix(x, &p)) {
     gsl_matrix *mat = (gsl_matrix*)p;
     double *data = mat->data;
@@ -305,8 +293,38 @@ pure2value(const GnmEvalPos *pos, pure_expr *x)
 	if (!val) val = value_new_error_VALUE(pos);
 	v->v_array.vals[x][y] = val;
       }
-  } else
-    v = NULL;
+  } else if (pure_is_listv(x, &sz, &xv)) {
+    size_t i;
+    v = value_new_array_empty(sz, 1);
+    for (i = 0; i < sz; i++) {
+      GnmValue *val = pure2value(pos, xv[i]);
+      if (!val) val = value_new_error_VALUE(pos);
+      v->v_array.vals[i][0] = val;
+    }
+    free(xv);
+  } else if (pure_is_tuplev(x, &sz, NULL) && (sz==0 || sz>1)) {
+    if (sz==0)
+      v = value_new_empty();
+    else {
+      size_t i;
+      (void)pure_is_tuplev(x, &sz, &xv);
+      v = value_new_array_empty(sz, 1);
+      for (i = 0; i < sz; i++) {
+	GnmValue *val = pure2value(pos, xv[i]);
+	if (!val) val = value_new_error_VALUE(pos);
+	v->v_array.vals[i][0] = val;
+      }
+      free(xv);
+    }
+  } else {
+    /* Convert anything else to a string in Pure syntax. */
+    char *s = str(x);
+    if (s) {
+      v = value_new_string(s);
+      free(s);
+    } else
+      v = NULL;
+  }
   return v;
 }
 
