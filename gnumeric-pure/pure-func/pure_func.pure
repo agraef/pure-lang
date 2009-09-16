@@ -47,88 +47,67 @@ extern expr* pure_datasource(expr* x);
    function becomes variadic and the (optional) parameters are passed as a
    Pure list (in addition to the non-optional parameters). */
 
-// Here's a boilerplate for the function description:
-[GNM_FUNC_HELP_NAME	=> "name:synopsis",
- GNM_FUNC_HELP_ARG	=> "name:description",
- GNM_FUNC_HELP_DESCRIPTION =>
- "Long description.",
- GNM_FUNC_HELP_EXAMPLES	=> "=sample_formula()",
- GNM_FUNC_HELP_SEEALSO	=> "foo,bar"];
+/* The function descriptions are a bit unwieldy, so it's convenient to
+   construct them using this little helper function. */
 
-gnm_info "pure_hello" = "|s",
-[GNM_FUNC_HELP_NAME	=> "pure_hello:Welcome to Gnumeric/Pure!",
- GNM_FUNC_HELP_ARG	=> "name:a string",
- GNM_FUNC_HELP_DESCRIPTION =>
- "This function demonstrates the Gnumeric/Pure interface. The function takes an optional string parameter @{name}. It formats a little text and returns it as a string.",
- GNM_FUNC_HELP_NOTE	=> sprintf "You're running Pure version %s (Gnumeric %s, Pure loader %s)." (version,gnm_version,gnm_pure_version),
- GNM_FUNC_HELP_EXAMPLES	=> "=pure_hello()",
- GNM_FUNC_HELP_EXAMPLES	=> "=pure_hello(\"Kilroy\")"];
+gnm_help name::string args descr::string notes examples see_also =
+  [GNM_FUNC_HELP_NAME		=> name] +
+  [GNM_FUNC_HELP_ARG		=> x | x::string = args ] +
+  [GNM_FUNC_HELP_DESCRIPTION	=> descr ] +
+  [GNM_FUNC_HELP_NOTE		=> x | x::string = notes ] +
+  [GNM_FUNC_HELP_EXAMPLES	=> x | x::string = examples ] +
+  (if null see_also then [] else
+   [GNM_FUNC_HELP_SEEALSO	=> join "," see_also]);
 
-gnm_info "pure_max" = "ff",
-[GNM_FUNC_HELP_NAME	=> "pure_max:maximum of two numbers",
- GNM_FUNC_HELP_ARG	=> "x:number",
- GNM_FUNC_HELP_ARG	=> "y:number",
- GNM_FUNC_HELP_DESCRIPTION =>
- "Computes the maximum of two numbers @{x} and @{y}. This is an example of a function of fixed arity, where arguments are passed in curried form.",
- GNM_FUNC_HELP_EXAMPLES	=> "=pure_max(17,22)"];
+gnm_info "pure_hello" = "|s", gnm_help "pure_hello:Welcome to Gnumeric/Pure!"
+ ["name:a string"]
+ "This function demonstrates the Gnumeric/Pure interface. The function takes an optional string parameter @{name}. It formats a little text and returns it as a string."
+ [sprintf "You're running Pure version %s (Gnumeric %s, Pure loader %s)."
+  (version,gnm_version,gnm_pure_version)]
+ ["=pure_hello()", "=pure_hello(\"Kilroy\")"] [];
 
-gnm_info "pure_sum" = 
-[GNM_FUNC_HELP_NAME	=> "pure_sum:sum a collection of numbers",
- GNM_FUNC_HELP_DESCRIPTION =>
- "Computes the sum of a collection of numbers, using Pure's foldl. Takes any number of scalars or ranges as parameters. This is an example of a variadic function, where arguments are passed as a Pure list.",
- GNM_FUNC_HELP_EXAMPLES	=> "=pure_sum(1,2,3,4,5,6)",
- GNM_FUNC_HELP_SEEALSO	=> "pure_sums"];
+gnm_info "pure_max" = "ff", gnm_help "pure_max:maximum of two numbers"
+ ["x:number", "y:number"]
+ "Computes the maximum of two numbers @{x} and @{y}. This is an example of a function of fixed arity, where arguments are passed in curried form."
+ [] ["=pure_max(17,22)"] [];
 
-gnm_info "pure_sums" = 
-[GNM_FUNC_HELP_NAME	=> "pure_sum:partial sums of a collection of numbers",
- GNM_FUNC_HELP_DESCRIPTION =>
- "Computes the partial sums of a collection of numbers, using Pure's scanl. Takes any number of scalars or ranges as parameters. Returns a Pure list of the results, which becomes an array in Gnumeric land, so you'll have to enter this as an array function.",
- GNM_FUNC_HELP_EXAMPLES	=> "=pure_sums(1,2,3,4,5,6)",
- GNM_FUNC_HELP_SEEALSO	=> "pure_sum"];
+gnm_info "pure_sum" = gnm_help "pure_sum:sum of a collection of numbers" []
+ "Computes the sum of a collection of numbers, using Pure's foldl. Takes any number of scalars or ranges as parameters. This is an example of a variadic function, where arguments are passed as a Pure list."
+ [] ["=pure_sum(1,2,3,4,5,6)"] ["pure_sums"];
 
-gnm_info "pure_echo" = 
-[GNM_FUNC_HELP_NAME	=> "pure_echo:echo all given arguments",
- GNM_FUNC_HELP_DESCRIPTION =>
- "This simply echoes all given arguments as a string in Pure syntax, as Pure sees them. Useful for debugging purposes.",
- GNM_FUNC_HELP_EXAMPLES	=> "=pure_echo(4711,\"abc\")"];
+gnm_info "pure_sums" = gnm_help "pure_sum:sums of a collection of numbers" []
+ "Computes the partial sums of a collection of numbers, using Pure's scanl. Takes any number of scalars or ranges as parameters. Returns a Pure list of the results, which becomes an array in Gnumeric land, so you'll have to enter this as an array function."
+ [] ["=pure_sums(1,2,3,4,5,6)"] ["pure_sum"];
 
-gnm_info "pure_eval" = 
-[GNM_FUNC_HELP_NAME	=> "pure_eval:evaluate a Pure expression",
- GNM_FUNC_HELP_ARG	=> "s:string",
- GNM_FUNC_HELP_DESCRIPTION =>
- "Evaluates a Pure expression, given as a string @{s}. Any remaining parameters are available in the evaluated code as a list x, so x!0 denotes the first argument, x!1 the second, etc. This lets you evaluate any Pure code in a spreadsheet without first having to define a function for it.",
- GNM_FUNC_HELP_EXAMPLES	=> "=pure_eval(\"foldl (*) 1 (1..10)\")",
- GNM_FUNC_HELP_EXAMPLES	=> "=pure_eval(\"x!0*x!1\",2,3)",
- GNM_FUNC_HELP_SEEALSO	=> "pure_calc"];
+gnm_info "pure_echo" = gnm_help "pure_echo:echo all given arguments" []
+ "This simply echoes all given arguments as a string in Pure syntax, as Pure sees them. Useful for debugging purposes."
+ [] ["=pure_echo(4711,\"abc\")"] [];
 
-gnm_info "gnm_bitand" = "ff",
-[GNM_FUNC_HELP_NAME	=> "gnm_bitand:bitwise and",
- GNM_FUNC_HELP_ARG	=> "x:non-negative integer",
- GNM_FUNC_HELP_ARG	=> "y:non-negative integer",
- GNM_FUNC_HELP_DESCRIPTION =>
- "Computes the bitwise and of two numbers @{x} and @{y}, using the corresponding Gnumeric function. This example shows how to call Gnumeric functions from Pure.",
- GNM_FUNC_HELP_EXAMPLES	=> "=gnm_bitand(17,22)"];
+gnm_info "pure_eval" = gnm_help "pure_eval:evaluate a Pure expression"
+ ["s:string"]
+ "Evaluates a Pure expression, given as a string @{s}. Any remaining parameters are available in the evaluated code as a list x, so x!0 denotes the first argument, x!1 the second, etc. This lets you evaluate any Pure code in a spreadsheet without first having to define a function for it."
+ [] ["=pure_eval(\"foldl (*) 1 (1..10)\")","=pure_eval(\"x!0*x!1\",2,3)"]
+ ["pure_calc"];
 
-gnm_info "pure_calc" = 
-[GNM_FUNC_HELP_NAME	=> "pure_calc:evaluate an expression asynchronously",
- GNM_FUNC_HELP_ARG	=> "s:string",
- GNM_FUNC_HELP_DESCRIPTION =>
- "pure_calc evaluates an expression with parameter substitution, like pure_eval, but it uses an asynchronous data source to carry out the calculation as a background task.",
- GNM_FUNC_HELP_SEEALSO	=> "pure_eval,pure_counter"];
+gnm_info "gnm_bitand" = "ff", gnm_help "gnm_bitand:bitwise and"
+ ["x:non-negative integer","y:non-negative integer"]
+ "Computes the bitwise and of two numbers @{x} and @{y}, using the corresponding Gnumeric function. This example shows how to call Gnumeric functions from Pure."
+ [] ["=gnm_bitand(17,22)"] [];
 
-gnm_info "pure_counter" = "f",
-[GNM_FUNC_HELP_NAME	=> "pure_count:count off the seconds",
- GNM_FUNC_HELP_ARG	=> "start:integer",
- GNM_FUNC_HELP_DESCRIPTION =>
- "Counts off the seconds, beginning with the given @{start} value. This example demonstrates the use of an asynchronous data source which draws values from a Pure stream.",
- GNM_FUNC_HELP_SEEALSO	=> "pure_calc"];
+gnm_info "pure_calc" = gnm_help
+ "pure_calc:evaluate an expression asynchronously"
+ ["s:string"]
+ "pure_calc evaluates an expression with parameter substitution, like pure_eval, but it uses an asynchronous data source to carry out the calculation as a background task."
+ [] [] ["pure_eval","pure_counter"];
 
-namespace pure_func;
+gnm_info "pure_counter" = "f", gnm_help "pure_count:count off the seconds"
+ ["start:integer"]
+ "Counts off the seconds, beginning with the given @{start} value. This example demonstrates the use of an asynchronous data source which draws values from a Pure stream."
+ [] [] ["pure_calc"];
 
 /* Helper function to collect the values in a list of scalars and ranges or
    arrays in a single list. */
 
-private ranges;
 ranges xs = cat [ case x of _::matrix = list x; _ = [x] end | x = xs ];
 
 /* The actual Pure function definitions. These must match the descriptions
@@ -177,7 +156,7 @@ pure_calc (s::string:args) =
 
 pure_counter x = pure_datasource [sleep (i>x) $$ i | i = x..inf];
 
-namespace;
+/***************************************************************************/
 
 /* Just add your own definitions below. (You also have to add the function
    names to plugin.xml to have them show up in Gnumeric.) */
