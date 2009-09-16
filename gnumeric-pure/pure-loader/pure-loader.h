@@ -6,7 +6,11 @@
 #if GNM_VERSION_EPOCH <= 1 && GNM_VERSION_MAJOR <= 9 && GNM_VERSION_MINOR < 12
 #define OLD_API
 #ifndef GNM_VERSION_FULL
+#ifdef GNM_VERSION
+#define GNM_VERSION_FULL GNM_VERSION
+#else
 #define GNM_VERSION_FULL "<unknown>"
+#endif
 #endif
 #endif
 

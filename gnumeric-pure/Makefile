@@ -10,8 +10,11 @@ version = 0.2
 # 1.  Make sure that you have gnumeric and the corresponding development
 #     packages installed. You'll also need the gnumeric-features.h file from
 #     the Gnumeric sources, place it into the directory with the gnumeric-pure
-#     sources, or specify the include path needed to locate these files in
-#     step 2 below.
+#     sources, or specify the include path needed to locate this file in step
+#     2 below. (Note that this file is created when configuring the Gnumeric
+#     sources. Also note that older Gnumeric versions don't have this file, in
+#     this case you can just copy gnumeric-config.h and symlink it to
+#     gnumeric-features.h instead.)
 
 # 2.  Adjust the following as needed for your GTK+/GOffice installation:
 
@@ -103,7 +106,7 @@ pure-loader/pure_loader$(DLL): pure-loader/boot.o pure-loader/pure-gnumeric.o pu
 	$(CC) $(shared) -o $@ $(LDFLAGS) $^ $(LIBS) -lpure
 
 %.o: %.c
-	$(CC) $(INCLUDES) -I. -I.. $(CPPFLAGS) -DPLUGIN_VERSION='"$(version)"' $(CFLAGS) $(PIC) -o $@ -c $<
+	$(CC) $(INCLUDES) -I. -I.. $(CPPFLAGS) -DGNM_VERSION='"$(gnmversion)"' -DPLUGIN_VERSION='"$(version)"' $(CFLAGS) $(PIC) -o $@ -c $<
 
 clean:
 	(cd pure-loader/ && rm -f pure_loader$(DLL) *~ *.a *.o)
