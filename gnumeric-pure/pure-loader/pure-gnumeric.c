@@ -86,7 +86,7 @@ create_double_matrix(size_t nrows, size_t ncols)
    (as does Pure), so that no encoding conversions are necessary. */
 
 pure_expr *
-value2pure(const GnmEvalPos *pos, const GnmValue *v)
+value2pure(const GnmEvalPos *pos, const GnmValue *v, const char *spec)
 {
   switch (v->type) {
   case VALUE_ERROR:
@@ -137,7 +137,7 @@ value2pure(const GnmEvalPos *pos, const GnmValue *v)
 	for (i = 0; i < nrows; i++)
 	  for (j = 0; j < ncols; j++) {
 	    gint x = (gint)j, y = (gint)i;
-	    pure_expr *val = value2pure(pos, v->v_array.vals[x][y]);
+	    pure_expr *val = value2pure(pos, v->v_array.vals[x][y], NULL);
 	    if (!val) {
 	      size_t i1, j1;
 	      for (i1 = 0; i1 < i; i1++)
@@ -156,62 +156,83 @@ value2pure(const GnmEvalPos *pos, const GnmValue *v)
   }
   case VALUE_CELLRANGE: {
     GnmRangeRef const *rr = &v->v_range.cell;
-    Sheet *sheet = eval_sheet(rr->a.sheet, pos->sheet);
-    int x, y;
-    int x1 = gnm_cellref_get_col(&rr->a, pos),
-      y1 = gnm_cellref_get_row(&rr->a, pos),
-      x2 = gnm_cellref_get_col(&rr->b, pos),
-      y2 = gnm_cellref_get_row(&rr->b, pos);
-    size_t nrows = y2-y1+1, ncols = x2-x1+1, i, j;
-    bool dblmat = true;
-    if (!sheet) return NULL;
-    for (x = x1; x <= x2; x++)
-      for (y = y1; y <= y2; y++) {
-	const GnmCell *cell = sheet_cell_get(sheet, x, y);
-	if (cell && cell->value->type != VALUE_FLOAT)
-	  dblmat = false;
-      }
-    if (dblmat) {
-      // Double matrix.
-      gsl_matrix *mat = create_double_matrix(nrows, ncols);
-      if (!mat)
-	return NULL;
-      else {
-	double *data = mat->data;
-	size_t tda = mat->tda;
-	for (i = 0, y = y1; i < nrows; i++, y++)
-	  for (j = 0, x = x1; j < ncols; j++, x++) {
-	    const GnmCell *cell = sheet_cell_get(sheet, x, y);
-	    data[i*tda+j] = cell?value_get_as_float(cell->value):0.0;
-	  }
-	return pure_double_matrix(mat);
-      }
+    if (spec && *spec == 'r') {
+      // Pass range reference as string.
+      GnmParsePos pp;
+      GnmConventionsOut out;
+      char *buf, *bufp; const char *p;
+      out.accum = g_string_new(NULL);
+      out.pp    = parse_pos_init_evalpos(&pp, pos);
+      out.convs = gnm_conventions_default;
+      rangeref_as_string(&out, rr);
+      /* Do some cosmetic surgery. Range references are always taken as
+	 absolute here, so we remove the redundant '$' signs. */
+      p = out.accum->str;
+      bufp = buf = alloca(strlen(p)+1);
+      for (; *p; p++)
+	if (*p != '$')
+	  *(bufp++) = *p;
+      *bufp = '\0';
+      g_string_free(out.accum, TRUE);
+      return pure_string_dup(buf);
     } else {
-      // Different value types, create a symbolic matrix.
-      gsl_matrix_symbolic *mat = create_symbolic_matrix(nrows, ncols);
-      if (!mat)
-	return NULL;
-      else {
-	pure_expr **data = mat->data;
-	size_t tda = mat->tda;
-	for (i = 0, y = y1; i < nrows; i++, y++)
-	  for (j = 0, x = x1; j < ncols; j++, x++) {
-	    const GnmCell *cell = sheet_cell_get(sheet, x, y);
-	    pure_expr *val = cell?value2pure(pos, cell->value):
-	      pure_tuplel(0);
-	    if (!val) {
-	      size_t i1, j1;
-	      for (i1 = 0; i1 < i; i1++)
-		for (j1 = 0; j1 < ncols; j1++)
-		  pure_freenew(data[i1*tda+j1]);
-	      for (j1 = 0; j1 < j; j1++)
-		pure_freenew(data[i*tda+j1]);
-	      gsl_matrix_symbolic_free(mat);
-	      return NULL;
+      Sheet *sheet = eval_sheet(rr->a.sheet, pos->sheet);
+      int x, y;
+      int x1 = gnm_cellref_get_col(&rr->a, pos),
+	y1 = gnm_cellref_get_row(&rr->a, pos),
+	x2 = gnm_cellref_get_col(&rr->b, pos),
+	y2 = gnm_cellref_get_row(&rr->b, pos);
+      size_t nrows = y2-y1+1, ncols = x2-x1+1, i, j;
+      bool dblmat = true;
+      if (!sheet) return NULL;
+      for (x = x1; x <= x2; x++)
+	for (y = y1; y <= y2; y++) {
+	  const GnmCell *cell = sheet_cell_get(sheet, x, y);
+	  if (cell && cell->value->type != VALUE_FLOAT)
+	    dblmat = false;
+	}
+      if (dblmat) {
+	// Double matrix.
+	gsl_matrix *mat = create_double_matrix(nrows, ncols);
+	if (!mat)
+	  return NULL;
+	else {
+	  double *data = mat->data;
+	  size_t tda = mat->tda;
+	  for (i = 0, y = y1; i < nrows; i++, y++)
+	    for (j = 0, x = x1; j < ncols; j++, x++) {
+	      const GnmCell *cell = sheet_cell_get(sheet, x, y);
+	      data[i*tda+j] = cell?value_get_as_float(cell->value):0.0;
 	    }
-	    data[i*tda+j] = val;
-	  }
-	return pure_symbolic_matrix(mat);
+	  return pure_double_matrix(mat);
+	}
+      } else {
+	// Different value types, create a symbolic matrix.
+	gsl_matrix_symbolic *mat = create_symbolic_matrix(nrows, ncols);
+	if (!mat)
+	  return NULL;
+	else {
+	  pure_expr **data = mat->data;
+	  size_t tda = mat->tda;
+	  for (i = 0, y = y1; i < nrows; i++, y++)
+	    for (j = 0, x = x1; j < ncols; j++, x++) {
+	      const GnmCell *cell = sheet_cell_get(sheet, x, y);
+	      pure_expr *val = cell?value2pure(pos, cell->value, NULL):
+		pure_tuplel(0);
+	      if (!val) {
+		size_t i1, j1;
+		for (i1 = 0; i1 < i; i1++)
+		  for (j1 = 0; j1 < ncols; j1++)
+		    pure_freenew(data[i1*tda+j1]);
+		for (j1 = 0; j1 < j; j1++)
+		  pure_freenew(data[i*tda+j1]);
+		gsl_matrix_symbolic_free(mat);
+		return NULL;
+	      }
+	      data[i*tda+j] = val;
+	    }
+	  return pure_symbolic_matrix(mat);
+	}
       }
     }
   }
@@ -238,7 +259,7 @@ static struct {
 };
 
 GnmValue *
-pure2value(const GnmEvalPos *pos, pure_expr *x)
+pure2value(const GnmEvalPos *pos, pure_expr *x, const char *spec)
 {
   int32_t iv, f;
   double dv;
@@ -269,7 +290,20 @@ pure2value(const GnmEvalPos *pos, pure_expr *x)
   else if (pure_is_double(x, &dv))
     v = value_new_float((gnm_float)dv);
   else if (pure_is_string(x, &s)) {
-    v = value_new_string(s);
+    if (spec && *spec == 'r') {
+      GnmParsePos pp;
+      GnmValue *res = NULL;
+      GnmConventions const *convs = gnm_conventions_default;
+      GnmExprTop const *texpr = gnm_expr_parse_str
+	(s, parse_pos_init_evalpos(&pp, pos),
+	 GNM_EXPR_PARSE_FORCE_ABSOLUTE_REFERENCES, convs, NULL);
+      if (texpr != NULL) {
+	res = gnm_expr_top_get_range(texpr);
+	gnm_expr_top_unref(texpr);
+      }
+      return (res != NULL) ? res : value_new_error_REF(pos);
+    } else
+      v = value_new_string(s);
   } else if(pure_is_double_matrix(x, &p)) {
     gsl_matrix *mat = (gsl_matrix*)p;
     double *data = mat->data;
@@ -289,7 +323,7 @@ pure2value(const GnmEvalPos *pos, pure_expr *x)
     for (i = 0; i < nrows; i++)
       for (j = 0; j < ncols; j++) {
 	gint x = (gint)j, y = (gint)i;
-	GnmValue *val = pure2value(pos, data[i*tda+j]);
+	GnmValue *val = pure2value(pos, data[i*tda+j], NULL);
 	if (!val) val = value_new_error_VALUE(pos);
 	v->v_array.vals[x][y] = val;
       }
@@ -297,7 +331,7 @@ pure2value(const GnmEvalPos *pos, pure_expr *x)
     size_t i;
     v = value_new_array_empty(sz, 1);
     for (i = 0; i < sz; i++) {
-      GnmValue *val = pure2value(pos, xv[i]);
+      GnmValue *val = pure2value(pos, xv[i], NULL);
       if (!val) val = value_new_error_VALUE(pos);
       v->v_array.vals[i][0] = val;
     }
@@ -310,7 +344,7 @@ pure2value(const GnmEvalPos *pos, pure_expr *x)
       (void)pure_is_tuplev(x, &sz, &xv);
       v = value_new_array_empty(sz, 1);
       for (i = 0; i < sz; i++) {
-	GnmValue *val = pure2value(pos, xv[i]);
+	GnmValue *val = pure2value(pos, xv[i], NULL);
 	if (!val) val = value_new_error_VALUE(pos);
 	v->v_array.vals[i][0] = val;
       }
@@ -333,11 +367,15 @@ static const GnmFuncEvalInfo *eval_info;
 static pure_expr *eval_expr;
 static unsigned id;
 
+#define next(spec) (spec?(*spec?++spec:spec):NULL)
+
 GnmValue *
 call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
 		   GnmValue const * const *argv)
 {
   GnmFunc const *func = ei->func_call->func;
+  const char *spec = (func->fn_type==GNM_FUNC_TYPE_ARGS)
+    ?func->fn.args.arg_spec:NULL;
   int i, j, min, max;
   pure_expr *x, *y, *e, *fun, **args, *save_expr;
   const GnmFuncEvalInfo *save_info;
@@ -356,8 +394,8 @@ call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
 
   args = g_new(pure_expr*, n_args);
 
-  for (i = 0; i < n_args && argv[i] != NULL; i++) {
-    args[i] = value2pure(ei->pos, argv[i]);
+  for (i = 0; i < n_args && argv[i] != NULL; i++, next(spec)) {
+    args[i] = value2pure(ei->pos, argv[i], spec);
     if (!args[i]) {
       for (j = 0; j < i; j++) pure_freenew(args[j]);
       g_free(args);
@@ -388,7 +426,7 @@ call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
   eval_info = save_info; eval_expr = save_expr; if (!save_info) id = 0;
 
   if (y) {
-    ret = pure2value(ei->pos, y);
+    ret = pure2value(ei->pos, y, NULL);
     pure_freenew(y);
     if (!ret) ret = value_new_error_VALUE(ei->pos);
   } else {
@@ -401,17 +439,19 @@ call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
 pure_expr *
 pure_gnmcall(const char *name, pure_expr *args)
 {
-  GnmFunc *fn_def = gnm_func_lookup(name, NULL);
+  GnmFunc *func = gnm_func_lookup(name, NULL);
+  const char *spec = (func->fn_type==GNM_FUNC_TYPE_ARGS)
+    ?func->fn.args.arg_spec:NULL;
   GnmValue **val, *ret_val;
   gint n_args, i, j;
   size_t n;
   pure_expr **xv, *ret;
-  if (!fn_def || !eval_info) return NULL;
+  if (!func || !eval_info) return NULL;
   if (!pure_is_listv(args, &n, &xv)) return NULL;
   n_args = (gint)n;
   val = g_new(GnmValue*, n_args);
-  for (i = 0; i < n_args; i++) {
-    val[i] = pure2value(eval_info->pos, xv[i]);
+  for (i = 0; i < n_args; i++, next(spec)) {
+    val[i] = pure2value(eval_info->pos, xv[i], spec);
     if (!val[i]) {
       for (j = 0; j < i; j++)
 	value_release(val[j]);
@@ -421,9 +461,9 @@ pure_gnmcall(const char *name, pure_expr *args)
     }
   }
   if (xv) free(xv);
-  ret_val = function_def_call_with_values(eval_info->pos, fn_def, n_args,
+  ret_val = function_def_call_with_values(eval_info->pos, func, n_args,
 					  (GnmValue const * const *)val);
-  ret = value2pure(eval_info->pos, ret_val);
+  ret = value2pure(eval_info->pos, ret_val, NULL);
   value_release(ret_val);
   for (i = 0; i < n; i++)
     value_release(val[i]);

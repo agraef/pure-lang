@@ -15,6 +15,7 @@
 #include <cell.h>
 #include <expr.h>
 #include <expr-impl.h>
+#include <parse-util.h>
 #include <func.h>
 #include <sheet.h>
 #include <value.h>
@@ -26,8 +27,9 @@
 #include <string.h>
 #include <pure/runtime.h>
 
-pure_expr* value2pure(const GnmEvalPos *pos, const GnmValue *v);
-GnmValue* pure2value(const GnmEvalPos *pos, pure_expr *x);
+pure_expr* value2pure(const GnmEvalPos *pos, const GnmValue *v,
+		      const char *spec);
+GnmValue* pure2value(const GnmEvalPos *pos, pure_expr *x, const char *spec);
 GnmValue* call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
 			     GnmValue const * const *argv);
 pure_expr* pure_gnmcall(const char *name, pure_expr *args);
