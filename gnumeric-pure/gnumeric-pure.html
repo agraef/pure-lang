@@ -541,20 +541,18 @@ the function hasn't been documented yet.</p>
 parameters of any type. In that case, or if there are optional parameters, the
 function becomes variadic and the (optional) parameters are passed as a Pure
 list (in addition to the non-optional parameters).</p>
-<p>Here's the list of valid parameter types, straight from the
-writing-functions.sgml file in the Gnumeric sources:</p>
+<p>Here's the list of valid parameter types, straight from the Gnumeric sources:</p>
 <pre class="literal-block">
-b : boolean         identical to f
 f : float           no errors, string conversion attempted
-s : string          no errors, blanks accepted and passed as empty
-S : scalar          any scalar non-error, blanks passed as empty
-E : scalar          any scalar non blank value
-B : scalar          any scalar even a blank
+b : boolean         identical to f
+s : string          no errors
+S : scalar          any non-error scalar
+E : scalar          any scalar, including errors
 
-r : cell range      content is _NOT_ guaranteed to have been evaluated yet
-A : area            array, range, (range as above), or scalar
-a : array
-? : anything
+r : cell range      content may not be evaluated yet
+A : area            array, range (as above), or scalar
+a : array           (this doesn't actually seem to work)
+? : anything        any value (scalars, non-scalars, errors, whatever)
 </pre>
 <p>The keys used in the function description may be any of the following, along
 with sample text for each type of field:</p>
@@ -613,8 +611,8 @@ pure_max x y = max x y;
 <p>Conversely, if no signature is given, then the function accepts any number of
 parameters of any type, which are passed as a list. For instance:</p>
 <pre class="literal-block">
-gnm_info &quot;pure_sum&quot; = gnm_help &quot;pure_sum:sum of a collection of numbers&quot; []
-  &quot;Computes the sum of a collection of numbers.&quot;
+gnm_info &quot;pure_sum&quot; = gnm_help &quot;pure_sum:sum of a collection of numbers&quot;
+  [] &quot;Computes the sum of a collection of numbers.&quot;
   [] [&quot;=pure_sum(1,2,3,4,5,6)&quot;] [&quot;pure_sums&quot;];
 </pre>
 <p>Here the function will be called as <tt class="docutils literal"><span class="pre">pure_sum</span> <span class="pre">[x1,x2,...]</span></tt>, where <tt class="docutils literal"><span class="pre">x1</span></tt>,
@@ -682,16 +680,22 @@ conversions:</p>
 <tr><td><tt class="docutils literal"><span class="pre">{1,2,3;4,5,6}</span></tt></td>
 <td>array (or cell range)</td>
 </tr>
+<tr><td><tt class="docutils literal"><span class="pre">&quot;A1:B10&quot;</span></tt></td>
+<td>cell range (<tt class="docutils literal"><span class="pre">&quot;r&quot;</span></tt> conversion)</td>
+</tr>
 </tbody>
 </table>
-<p>These conversions generally work both ways. Note that on input, cell ranges
-are always passed as matrices to Pure functions (i.e., they are passed &quot;by
-value&quot; rather than passing the cell references themselves). Conversely,
-matrices, lists and tuples all become Gnumeric arrays on output, so usually
-you'll want to enter these as array functions (<tt class="docutils literal"><span class="pre">Ctrl-Shift-Enter</span></tt> in
-Gnumeric). As a special case, the empty tuple can be used to denote empty cell
-values (but note that empty Gnumeric values may become zeros when passed as
-float or array arguments to Pure functions).</p>
+<p>These conversions mostly work both ways. Note that on input, cell ranges are
+usually passed as matrices to Pure functions (i.e., they are passed &quot;by
+value&quot;), unless the function signature specifies a <tt class="docutils literal"><span class="pre">&quot;r&quot;</span></tt> conversion in which
+case the cell ranges themselves are passed to the function in string from.
+(Such values can also be passed on to Gnumeric functions which expect a cell
+range (<tt class="docutils literal"><span class="pre">&quot;r&quot;</span></tt> ) parameter, see <a class="reference internal" href="#calling-gnumeric-from-pure">Calling Gnumeric from Pure</a> below.)</p>
+<p>Conversely, matrices, lists and tuples all become Gnumeric arrays on output,
+so usually you'll want to enter these as array functions (<tt class="docutils literal"><span class="pre">Ctrl-Shift-Enter</span></tt>
+in Gnumeric). As a special case, the empty tuple can be used to denote empty
+cell values (but note that empty Gnumeric values may become zeros when passed
+as float or array arguments to Pure functions).</p>
 <p>If a Pure function returns a value that doesn't match any of the above then it
 is converted to a string in Pure expression syntax and that string is returned
 as the result of the function invocation in Gnumeric. This makes it possible
@@ -716,6 +720,9 @@ follows:</p>
 <pre class="literal-block">
 extern expr* pure_gnmcall(char* name, expr* args);
 </pre>
+<p>Also note that <tt class="docutils literal"><span class="pre">pure_gnmcall</span></tt> doesn't do any of Gnumeric's automatic
+conversions on the parameters, so you have to pass the proper types of
+arguments as required by the function.</p>
 </div>
 <div class="section" id="asynchronous-data-sources">
 <h2><a class="toc-backref" href="#id9">4.4&nbsp;&nbsp;&nbsp;Asynchronous Data Sources</a></h2>
@@ -768,16 +775,18 @@ restart the data sources at any time by using <tt class="docutils literal"><span
 recompute the spreadsheet.</p>
 <p>Also note that because of the special way that <tt class="docutils literal"><span class="pre">pure_datasource</span></tt> handles
 list values, you cannot return a list directly as the result of
-<tt class="docutils literal"><span class="pre">pure_datasource</span></tt>; instead, you'll have to wrap it up as a singleton list,
-such as <tt class="docutils literal"><span class="pre">pure_data_source</span> <span class="pre">[[lengthy_calculation</span> <span class="pre">x,lengthy_calculation</span> <span class="pre">y]&amp;]</span></tt>.</p>
+<tt class="docutils literal"><span class="pre">pure_datasource</span></tt>; instead, you'll have to wrap the result in a singleton
+list (<tt class="docutils literal"><span class="pre">pure_datasource</span> <span class="pre">[[lengthy_calculation</span> <span class="pre">x,lengthy_calculation</span> <span class="pre">y]&amp;]</span></tt>),
+or return another aggregate (i.e., a matrix or a tuple).</p>
 <p>Finally, note that when the arguments of a call involving <tt class="docutils literal"><span class="pre">pure_datasource</span></tt>
 change (because they depend on other cells which may have been updated), the
-computation is automatically restarted with the new parameters. This will
-generally redo the entire computation from scratch, but it's also possible to
-wrap up calls to <tt class="docutils literal"><span class="pre">pure_datasource</span></tt> in a manner which enables more elaborate
-communication between Gnumeric and background tasks initiated with
-<tt class="docutils literal"><span class="pre">pure_datasource</span></tt>. This is beyond the scope of this manual, however, so we
-leave this as an exercise to the interested reader.</p>
+computation is automatically restarted with the new parameters. The default
+behaviour in this case is that the entire computation will be redone from
+scratch, but it's also possible to wrap up calls to <tt class="docutils literal"><span class="pre">pure_datasource</span></tt> in a
+manner which enables more elaborate communication between Gnumeric and
+background tasks initiated with <tt class="docutils literal"><span class="pre">pure_datasource</span></tt>. This is beyond the scope
+of this manual, however, so we leave this as an exercise to the interested
+reader.</p>
 </div>
 </div>
 </div>
