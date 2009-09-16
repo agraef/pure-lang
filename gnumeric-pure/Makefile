@@ -93,8 +93,8 @@ endif
 CFLAGS = -g -O2
 CPPFLAGS = -Wall
 
-DISTFILES = COPYING Makefile README gnumeric-pure.html pure-examples.gnumeric \
-config.guess \
+DISTFILES = COPYING Makefile README \
+gnumeric-pure.html pure-examples.gnumeric preamble.tex config.guess \
 pure-loader/boot.c pure-loader/pure-gnumeric.c pure-loader/pure-gnumeric.h \
 pure-loader/pure-loader.c pure-loader/pure-loader.h \
 pure-loader/plugin.xml pure-loader/pure-ui.xml \
@@ -110,7 +110,7 @@ pure-loader/pure_loader$(DLL): pure-loader/boot.o pure-loader/pure-gnumeric.o pu
 
 clean:
 	(cd pure-loader/ && rm -f pure_loader$(DLL) *~ *.a *.o)
-	rm -f *~ *.tex *.dvi *.pdf *.aux *.log *.out
+	rm -f *~ gnumeric-pure.tex *.dvi *.pdf *.aux *.log *.out *.toc
 
 # documentation (this needs docutils)
 
@@ -121,8 +121,11 @@ pdf: gnumeric-pure.pdf
 gnumeric-pure.html: README
 	rst2html.py $< $@
 
+# Adjust these as needed.
+LATEXOPT = --use-latex-toc --use-latex-docinfo --stylesheet=preamble.tex --documentoptions="11pt" --no-section-numbering
+
 gnumeric-pure.tex: README
-	rst2latex.py $< $@
+	rst2latex.py $(LATEXOPT) $< $@
 
 gnumeric-pure.pdf: gnumeric-pure.tex
 	pdflatex $<

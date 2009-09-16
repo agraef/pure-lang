@@ -22,6 +22,7 @@ background.
 .. _Pure: http://pure-lang.googlecode.com/
 
 .. contents::
+.. sectnum::
 
 Installation
 ============
@@ -221,7 +222,12 @@ By default, when a Pure function is called from Gnumeric, it receives its
 arguments in a list. However, it is possible to tell Gnumeric about the
 expected arguments of the function and also specify a help text to be
 displayed in the ``f(x)`` dialog, by giving a definition of the special
-``gnm_info`` function as explained below.
+``gnm_info`` function as explained below. In further subsections we explain
+various other aspects of the Gnumeric/Pure interface that should be useful for
+writing your own functions.
+
+Function Descriptions
+---------------------
 
 To describe a given function to Gnumeric, define ``gnm_info "<name>"`` (where
 ``<name>`` is the name of the function) as a pair with the following elements:
@@ -267,8 +273,8 @@ writing-functions.sgml file in the Gnumeric sources::
     a : array
     ? : anything
 
-The keys to be used in the function description may be any of the following,
-along with sample text for each type of field::
+The keys used in the function description may be any of the following, along
+with sample text for each type of field::
 
     GNM_FUNC_HELP_NAME         => "name:synopsis"
     GNM_FUNC_HELP_ARG	       => "name:parameter description"
@@ -295,6 +301,26 @@ binary function which also includes a help text::
    "Computes the maximum of two numbers @{x} and @{y}.",
    GNM_FUNC_HELP_EXAMPLES => "=pure_max(17,22)"];
 
+As you can see, the function descriptions are a bit unwieldy, so it's
+convenient to construct them using this little helper function defined in
+pure_func.pure::
+
+  gnm_help name::string args descr::string notes examples see_also =
+    [GNM_FUNC_HELP_NAME         => name] +
+    [GNM_FUNC_HELP_ARG          => x | x::string = args ] +
+    [GNM_FUNC_HELP_DESCRIPTION  => descr ] +
+    [GNM_FUNC_HELP_NOTE         => x | x::string = notes ] +
+    [GNM_FUNC_HELP_EXAMPLES     => x | x::string = examples ] +
+    (if null see_also then [] else
+     [GNM_FUNC_HELP_SEEALSO     => join "," see_also]);
+
+Now the description can be written as follows::
+
+  gnm_info "pure_max" = "ff", gnm_help "pure_max:maximum of two numbers"
+    ["x:number", "y:number"]
+    "Computes the maximum of two numbers @{x} and @{y}."
+    [] ["=pure_max(17,22)"] [];
+
 Since this function only has fixed arguments, it will be called in curried
 form, i.e., as ``pure_max x y``. For instance, the actual definition of
 ``pure_max`` may look as follows::
@@ -304,21 +330,29 @@ form, i.e., as ``pure_max x y``. For instance, the actual definition of
 Conversely, if no signature is given, then the function accepts any number of
 parameters of any type, which are passed as a list. For instance::
 
-  gnm_info "pure_sum" = 
-  [GNM_FUNC_HELP_NAME     => "pure_sum:sum a collection of numbers",
-   GNM_FUNC_HELP_DESCRIPTION =>
-   "Computes the sum of a collection of numbers.",
-   GNM_FUNC_HELP_EXAMPLES => "=pure_sum(1,2,3,4,5,6)",
-   GNM_FUNC_HELP_SEEALSO  => "pure_sums"];
+  gnm_info "pure_sum" = gnm_help "pure_sum:sum of a collection of numbers" []
+    "Computes the sum of a collection of numbers."
+    [] ["=pure_sum(1,2,3,4,5,6)"] ["pure_sums"];
 
 Here the function will be called as ``pure_sum [x1,x2,...]``, where ``x1``,
 ``x2``, etc. are the arguments the function is invoked with. Note that in this
 case there may be any number of arguments (including zero) of any type, so
 your function definition must be prepared to handle this. If a function does
 not have a ``gnm_info`` description at all then it is treated in the same
-fashion.
+fashion. The pure_func.pure script contains some examples showing how to write
+functions which can deal with any numbers of scalars, arrays or ranges, see
+the ``pure_sum`` and ``pure_sums`` examples. These employ the following
+``ranges`` function to "flatten" a parameter list to a list holding all
+denoted values::
 
-A function may also have both fixed and optional arguments::
+  ranges xs = cat [ case x of _::matrix = list x; _ = [x] end | x = xs ];
+
+E.g., the ``pure_sum`` function can now be defined as follows::
+
+  pure_sum xs = foldl (+) 0 (ranges xs);
+
+A function may also have both fixed and optional arguments (note that in what
+follows we're going to omit the detailed function descriptions for brevity)::
 
   gnm_info "foo" = "ff|ff";
 
@@ -326,6 +360,9 @@ In this case the fixed arguments are passed in curried form as usual, while
 the optional parameters are passed as a list. That is, ``foo`` may be called
 as ``foo x y []``, ``foo x y [z]`` or ``foo x y [z,t]``, depending on whether
 it is invoked with two, three or four arguments.
+
+Conversions Between Pure and Gnumeric Values
+--------------------------------------------
 
 The marshalling of types between Gnumeric and Pure is pretty straightforward;
 basically, Pure numbers, strings and matrices map to Gnumeric numbers, strings
@@ -336,30 +373,38 @@ conversions:
 Pure                               Gnumeric
 ===============================    ===============================
 ``gnm_error "#N/A"``               error
-``()``                             empty
 ``4711``, ``4711L``, ``4711.0``    scalar (number)
 ``"Hello world"``                  string
+``()``                             empty
+``(1,2,3)``                        array
 ``[1,2,3]``                        array
 ``{1,2,3;4,5,6}``                  array (or cell range)
 ===============================    ===============================
 
-These conversions work both ways. Note that on input, cell ranges are always
-passed as matrices to Pure functions (not the cell references
-themselves). Conversely, both matrices and lists become Gnumeric arrays on
-output, so you'll want to enter this as an array function
-(``Ctrl-Shift-Enter`` in Gnumeric). The empty tuple can be used to denote
-empty cell values, but note that empty Gnumeric values may become zeros when
-passed as float or array arguments.
+These conversions generally work both ways. Note that on input, cell ranges
+are always passed as matrices to Pure functions (i.e., they are passed "by
+value" rather than passing the cell references themselves). Conversely,
+matrices, lists and tuples all become Gnumeric arrays on output, so usually
+you'll want to enter these as array functions (``Ctrl-Shift-Enter`` in
+Gnumeric). As a special case, the empty tuple can be used to denote empty cell
+values (but note that empty Gnumeric values may become zeros when passed as
+float or array arguments to Pure functions).
 
-The pure_func.pure script contains some examples showing how to write
-functions which can deal with any numbers of scalars, arrays or ranges, see
-the ``ranges`` function and the ``pure_sum`` and ``pure_sums`` examples in the
-script for details.
+If a Pure function returns a value that doesn't match any of the above then it
+is converted to a string in Pure expression syntax and that string is returned
+as the result of the function invocation in Gnumeric. This makes it possible
+to return any kind of symbolic Pure value, but note that if such a value is
+then fed into another Pure function, that function will have to convert the
+string value back to the internal representation if needed; this can be done
+very conveniently using Pure's ``eval`` function, see the Pure documentation
+for details.
 
-Last but not least, it is also possible to call Gnumeric functions from Pure
-using the ``pure_gnmcall`` function which takes the name of the function
-(a string) as its first, and the parameters as the second (list) argument. For
-instance::
+Calling Gnumeric from Pure
+--------------------------
+
+It is also possible to call Gnumeric functions from Pure using the
+``pure_gnmcall`` function which takes the name of the function (a string) as
+its first, and the parameters as the second (list) argument. For instance::
 
   gnm_info "gnm_bitand" = "ff";
   gnm_bitand x y = pure_gnmcall "bitand" [x,y];
@@ -371,7 +416,7 @@ follows::
   extern expr* pure_gnmcall(char* name, expr* args);
 
 Asynchronous Data Sources
-=========================
+-------------------------
 
 Gnumeric/Pure makes it easy to set up asynchronous data sources which draw
 values from a Pure computation executed in a background process. This facility
@@ -399,11 +444,13 @@ would wrap up a lengthy calculation as a thunk and submit it to
   pure_frob x = pure_datasource (lengthy_calculation x&);
   lengthy_calculation x = sleep 3 $$ foldl (*) 1 (1..x);
 
-Note that when the arguments of a call involving ``pure_datasource`` change
-(because they depend on other cells which may have been updated), the
-computation is automatically restarted with the new parameters. Also, a cell
-value may draw values from as many independent data sources as you want, so
-the definition of a cell may involve multiple ``pure_datasource`` calls.
+Note that a cell value may draw values from as many independent data sources
+as you want, so the definition of a cell may also involve multiple invocations
+of ``pure_datasource``::
+
+  gnm_info "pure_frob2" = "ff";
+  pure_frob2 x y = pure_datasource (lengthy_calculation x&),
+    pure_datasource (lengthy_calculation y&);
 
 In the case of a (lazy) list, ``pure_datasource`` returns a new value each
 time the next list element becomes available. For instance, the following
@@ -424,3 +471,12 @@ Also note that because of the special way that ``pure_datasource`` handles
 list values, you cannot return a list directly as the result of
 ``pure_datasource``; instead, you'll have to wrap it up as a singleton list,
 such as ``pure_data_source [[lengthy_calculation x,lengthy_calculation y]&]``.
+
+Finally, note that when the arguments of a call involving ``pure_datasource``
+change (because they depend on other cells which may have been updated), the
+computation is automatically restarted with the new parameters. This will
+generally redo the entire computation from scratch, but it's also possible to
+wrap up calls to ``pure_datasource`` in a manner which enables more elaborate
+communication between Gnumeric and background tasks initiated with
+``pure_datasource``. This is beyond the scope of this manual, however, so we
+leave this as an exercise to the interested reader.
