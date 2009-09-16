@@ -144,7 +144,7 @@ pure_sums xs = scanl (+) 0 (ranges xs);
 pure_echo xs = str $ tuple xs;
 
 pure_eval (s::string:args) =
-  case eval (sprintf "'[%s]" s) of
+  case eval (sprintf "'[(%s)]" s) of
     [y] = eval (reduce y) with x = args end;
     _ = throw "pure_eval: syntax error";
   end;
@@ -167,7 +167,7 @@ gnm_bitand x y = pure_gnmcall "bitand" [x,y];
    actually happens in the background. */
 
 pure_calc (s::string:args) =
-  case eval (sprintf "'[%s]" s) of
+  case eval (sprintf "'[(%s)]" s) of
     [y] = pure_datasource $ (eval (reduce y) with x = args end)&;
     _ = throw "pure_eval: syntax error";
   end;
