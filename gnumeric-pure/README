@@ -220,18 +220,37 @@ Gnumeric/Pure Interface
 By default, when a Pure function is called from Gnumeric, it receives its
 arguments in a list. However, it is possible to tell Gnumeric about the
 expected arguments of the function and also specify a help text to be
-displayed in the ``f(x)`` dialog. To describe a given function to Gnumeric,
-all you have to do is to define ``gnm_info "<name>"`` (where ``<name>`` is the
-name of the function) as either:
+displayed in the ``f(x)`` dialog, by giving a definition of the special
+``gnm_info`` function as explained below.
 
-* A pair of strings. The first string gives the parameter types (e.g., ``"f"``
-  for a single float parameter), the second one is a list of parameter names
-  (e.g., ``"x,y,z"``). Optional parameters can be indicated using ``|``, as in
-  ``"ff|s"`` (two fixed float arguments, optionally followed by a string).
+To describe a given function to Gnumeric, define ``gnm_info "<name>"`` (where
+``<name>`` is the name of the function) as a pair with the following elements:
 
-* Just a help string, in the format indicated below.
+* The first element, a string, gives the signature of the function. E.g.,
+  ``""`` denotes a function without arguments, ``"f"`` a function taking a
+  single float parameter, ``"fs"`` a function taking a float and a string
+  argument (in that order), etc. Optional parameters can be indicated using
+  ``|``, as in ``"ff|s"`` (two non-optional floats, followed by an optional
+  string). See below for a complete list of the supported parameter types.
 
-* Both parameter types/names and help string, as a triple.
+* The second element is a list of hash pairs ``key=>text`` which together make
+  up the help text shown in Gnumeric's ``f(x)`` dialog. You should at least
+  specify the function name along with a short synopsis here, e.g.
+  ``GNM_FUNC_HELP_NAME => "frob:the frob function"``. Parameter descriptions
+  take the form ``GNM_FUNC_HELP_ARG => "x:integer"``. There are a number of
+  other useful elements, see below for details.
+
+Both the signature and the function description are optional. That is,
+``gnm_info`` may return either just a signature string, or a list of hash
+pairs with the function description, or both. The signature defaults to a
+variadic function which takes any number of parameters of any type (see
+below), and the description defaults to some boilerplate text which says that
+the function hasn't been documented yet.
+
+Note that if no signature is given, then the function accepts any number of
+parameters of any type. In that case, or if there are optional parameters, the
+function becomes variadic and the (optional) parameters are passed as a Pure
+list (in addition to the non-optional parameters).
 
 Here's the list of valid parameter types, straight from the
 writing-functions.sgml file in the Gnumeric sources::
@@ -248,12 +267,33 @@ writing-functions.sgml file in the Gnumeric sources::
     a : array
     ? : anything
 
-For instance, here's a sample description for a binary function which also
-includes a help text::
+The keys to be used in the function description may be any of the following,
+along with sample text for each type of field::
 
-  gnm_info "pure_max" = "ff","x,y","@FUNCTION=pure_max\n\
-  @SYNTAX=pure_max(x,y)\n\
-  @DESCRIPTION=Computes the maximum of two numbers @x and @y.\n";
+    GNM_FUNC_HELP_NAME         => "name:synopsis"
+    GNM_FUNC_HELP_ARG	       => "name:parameter description"
+    GNM_FUNC_HELP_DESCRIPTION  => "Long description."
+    GNM_FUNC_HELP_NOTE	       => "Note."
+    GNM_FUNC_HELP_EXAMPLES     => "=sample_formula()"
+    GNM_FUNC_HELP_SEEALSO      => "foo,bar,..."
+
+The following keys are only supported in the latest Gnumeric versions::
+
+    GNM_FUNC_HELP_EXTREF       => "wiki:en:Trigonometric_functions"
+    GNM_FUNC_HELP_EXCEL	       => "Excel compatibility information."
+    GNM_FUNC_HELP_ODF	       => "OpenOffice compatibility information."
+
+Note that inside the descriptions, the notation ``@{arg}`` can be used to
+refer to a parameter value. For instance, here's a sample description for a
+binary function which also includes a help text::
+
+  gnm_info "pure_max" = "ff",
+  [GNM_FUNC_HELP_NAME     => "pure_max:maximum of two numbers",
+   GNM_FUNC_HELP_ARG	  => "x:number",
+   GNM_FUNC_HELP_ARG	  => "y:number",
+   GNM_FUNC_HELP_DESCRIPTION =>
+   "Computes the maximum of two numbers @{x} and @{y}.",
+   GNM_FUNC_HELP_EXAMPLES => "=pure_max(17,22)"];
 
 Since this function only has fixed arguments, it will be called in curried
 form, i.e., as ``pure_max x y``. For instance, the actual definition of
@@ -261,13 +301,15 @@ form, i.e., as ``pure_max x y``. For instance, the actual definition of
 
   pure_max x y = max x y;
 
-Conversely, if no parameter types and names are given, then the function
-accepts any number of parameters of any type, which are passed as a list. For
-instance::
+Conversely, if no signature is given, then the function accepts any number of
+parameters of any type, which are passed as a list. For instance::
 
-  gnm_info "pure_sum" = "@FUNCTION=pure_sum\n\
-  @SYNTAX=pure_sum(...)\n\
-  @DESCRIPTION=Computes the sum of a collection of numbers.\n";
+  gnm_info "pure_sum" = 
+  [GNM_FUNC_HELP_NAME     => "pure_sum:sum a collection of numbers",
+   GNM_FUNC_HELP_DESCRIPTION =>
+   "Computes the sum of a collection of numbers.",
+   GNM_FUNC_HELP_EXAMPLES => "=pure_sum(1,2,3,4,5,6)",
+   GNM_FUNC_HELP_SEEALSO  => "pure_sums"];
 
 Here the function will be called as ``pure_sum [x1,x2,...]``, where ``x1``,
 ``x2``, etc. are the arguments the function is invoked with. Note that in this
@@ -278,7 +320,7 @@ fashion.
 
 A function may also have both fixed and optional arguments::
 
-  gnm_info "foo" = "ff|ff","x,y,z,t";
+  gnm_info "foo" = "ff|ff";
 
 In this case the fixed arguments are passed in curried form as usual, while
 the optional parameters are passed as a list. That is, ``foo`` may be called
@@ -293,7 +335,7 @@ conversions:
 ===============================    ===============================
 Pure                               Gnumeric
 ===============================    ===============================
-``gnm_error msg``                  error
+``gnm_error "#N/A"``               error
 ``()``                             empty
 ``4711``, ``4711L``, ``4711.0``    scalar (number)
 ``"Hello world"``                  string
@@ -319,7 +361,7 @@ using the ``pure_gnmcall`` function which takes the name of the function
 (a string) as its first, and the parameters as the second (list) argument. For
 instance::
 
-  gnm_info "gnm_bitand" = "ff", "x,y";
+  gnm_info "gnm_bitand" = "ff";
   gnm_bitand x y = pure_gnmcall "bitand" [x,y];
 
 Note that ``pure_gnmcall`` is an external C function provided by the Pure
@@ -353,9 +395,9 @@ updated automatically as soon as the value becomes available, with
 would wrap up a lengthy calculation as a thunk and submit it to
 ``pure_datasource`` which carries out the computation as a background task::
 
-  gnm_info "pure_calc" = "f", "x";
-  pure_calc x = pure_datasource (lengthy_calculation x&);
-  lengthy_calculation x = sleep 3 $$ foldl (*) 1.0 (1.0..x);
+  gnm_info "pure_frob" = "f";
+  pure_frob x = pure_datasource (lengthy_calculation x&);
+  lengthy_calculation x = sleep 3 $$ foldl (*) 1 (1..x);
 
 Note that when the arguments of a call involving ``pure_datasource`` change
 (because they depend on other cells which may have been updated), the
@@ -368,7 +410,7 @@ time the next list element becomes available. For instance, the following
 function uses an infinite stream to count off the seconds starting from a
 given initial value::
 
-  gnm_info "pure_counter" = "f", "start";
+  gnm_info "pure_counter" = "f";
   pure_counter x = pure_datasource [sleep (i>x) $$ i | i = x..inf];
 
 Note that in this case the cell containing the call will keep changing as long

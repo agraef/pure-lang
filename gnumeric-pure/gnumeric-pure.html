@@ -504,17 +504,34 @@ communicate with each other if necessary.</p>
 <p>By default, when a Pure function is called from Gnumeric, it receives its
 arguments in a list. However, it is possible to tell Gnumeric about the
 expected arguments of the function and also specify a help text to be
-displayed in the <tt class="docutils literal"><span class="pre">f(x)</span></tt> dialog. To describe a given function to Gnumeric,
-all you have to do is to define <tt class="docutils literal"><span class="pre">gnm_info</span> <span class="pre">&quot;&lt;name&gt;&quot;</span></tt> (where <tt class="docutils literal"><span class="pre">&lt;name&gt;</span></tt> is the
-name of the function) as either:</p>
+displayed in the <tt class="docutils literal"><span class="pre">f(x)</span></tt> dialog, by giving a definition of the special
+<tt class="docutils literal"><span class="pre">gnm_info</span></tt> function as explained below.</p>
+<p>To describe a given function to Gnumeric, define <tt class="docutils literal"><span class="pre">gnm_info</span> <span class="pre">&quot;&lt;name&gt;&quot;</span></tt> (where
+<tt class="docutils literal"><span class="pre">&lt;name&gt;</span></tt> is the name of the function) as a pair with the following elements:</p>
 <ul class="simple">
-<li>A pair of strings. The first string gives the parameter types (e.g., <tt class="docutils literal"><span class="pre">&quot;f&quot;</span></tt>
-for a single float parameter), the second one is a list of parameter names
-(e.g., <tt class="docutils literal"><span class="pre">&quot;x,y,z&quot;</span></tt>). Optional parameters can be indicated using <tt class="docutils literal"><span class="pre">|</span></tt>, as in
-<tt class="docutils literal"><span class="pre">&quot;ff|s&quot;</span></tt> (two fixed float arguments, optionally followed by a string).</li>
-<li>Just a help string, in the format indicated below.</li>
-<li>Both parameter types/names and help string, as a triple.</li>
+<li>The first element, a string, gives the signature of the function. E.g.,
+<tt class="docutils literal"><span class="pre">&quot;&quot;</span></tt> denotes a function without arguments, <tt class="docutils literal"><span class="pre">&quot;f&quot;</span></tt> a function taking a
+single float parameter, <tt class="docutils literal"><span class="pre">&quot;fs&quot;</span></tt> a function taking a float and a string
+argument (in that order), etc. Optional parameters can be indicated using
+<tt class="docutils literal"><span class="pre">|</span></tt>, as in <tt class="docutils literal"><span class="pre">&quot;ff|s&quot;</span></tt> (two non-optional floats, followed by an optional
+string). See below for a complete list of the supported parameter types.</li>
+<li>The second element is a list of hash pairs <tt class="docutils literal"><span class="pre">key=&gt;text</span></tt> which together make
+up the help text shown in Gnumeric's <tt class="docutils literal"><span class="pre">f(x)</span></tt> dialog. You should at least
+specify the function name along with a short synopsis here, e.g.
+<tt class="docutils literal"><span class="pre">GNM_FUNC_HELP_NAME</span> <span class="pre">=&gt;</span> <span class="pre">&quot;frob:the</span> <span class="pre">frob</span> <span class="pre">function&quot;</span></tt>. Parameter descriptions
+take the form <tt class="docutils literal"><span class="pre">GNM_FUNC_HELP_ARG</span> <span class="pre">=&gt;</span> <span class="pre">&quot;x:integer&quot;</span></tt>. There are a number of
+other useful elements, see below for details.</li>
 </ul>
+<p>Both the signature and the function description are optional. That is,
+<tt class="docutils literal"><span class="pre">gnm_info</span></tt> may return either just a signature string, or a list of hash
+pairs with the function description, or both. The signature defaults to a
+variadic function which takes any number of parameters of any type (see
+below), and the description defaults to some boilerplate text which says that
+the function hasn't been documented yet.</p>
+<p>Note that if no signature is given, then the function accepts any number of
+parameters of any type. In that case, or if there are optional parameters, the
+function becomes variadic and the (optional) parameters are passed as a Pure
+list (in addition to the non-optional parameters).</p>
 <p>Here's the list of valid parameter types, straight from the
 writing-functions.sgml file in the Gnumeric sources:</p>
 <pre class="literal-block">
@@ -530,12 +547,33 @@ A : area            array, range, (range as above), or scalar
 a : array
 ? : anything
 </pre>
-<p>For instance, here's a sample description for a binary function which also
-includes a help text:</p>
+<p>The keys to be used in the function description may be any of the following,
+along with sample text for each type of field:</p>
 <pre class="literal-block">
-gnm_info &quot;pure_max&quot; = &quot;ff&quot;,&quot;x,y&quot;,&quot;&#64;FUNCTION=pure_max\n\
-&#64;SYNTAX=pure_max(x,y)\n\
-&#64;DESCRIPTION=Computes the maximum of two numbers &#64;x and &#64;y.\n&quot;;
+GNM_FUNC_HELP_NAME         =&gt; &quot;name:synopsis&quot;
+GNM_FUNC_HELP_ARG          =&gt; &quot;name:parameter description&quot;
+GNM_FUNC_HELP_DESCRIPTION  =&gt; &quot;Long description.&quot;
+GNM_FUNC_HELP_NOTE         =&gt; &quot;Note.&quot;
+GNM_FUNC_HELP_EXAMPLES     =&gt; &quot;=sample_formula()&quot;
+GNM_FUNC_HELP_SEEALSO      =&gt; &quot;foo,bar,...&quot;
+</pre>
+<p>The following keys are only supported in the latest Gnumeric versions:</p>
+<pre class="literal-block">
+GNM_FUNC_HELP_EXTREF       =&gt; &quot;wiki:en:Trigonometric_functions&quot;
+GNM_FUNC_HELP_EXCEL        =&gt; &quot;Excel compatibility information.&quot;
+GNM_FUNC_HELP_ODF          =&gt; &quot;OpenOffice compatibility information.&quot;
+</pre>
+<p>Note that inside the descriptions, the notation <tt class="docutils literal"><span class="pre">&#64;{arg}</span></tt> can be used to
+refer to a parameter value. For instance, here's a sample description for a
+binary function which also includes a help text:</p>
+<pre class="literal-block">
+gnm_info &quot;pure_max&quot; = &quot;ff&quot;,
+[GNM_FUNC_HELP_NAME     =&gt; &quot;pure_max:maximum of two numbers&quot;,
+ GNM_FUNC_HELP_ARG      =&gt; &quot;x:number&quot;,
+ GNM_FUNC_HELP_ARG      =&gt; &quot;y:number&quot;,
+ GNM_FUNC_HELP_DESCRIPTION =&gt;
+ &quot;Computes the maximum of two numbers &#64;{x} and &#64;{y}.&quot;,
+ GNM_FUNC_HELP_EXAMPLES =&gt; &quot;=pure_max(17,22)&quot;];
 </pre>
 <p>Since this function only has fixed arguments, it will be called in curried
 form, i.e., as <tt class="docutils literal"><span class="pre">pure_max</span> <span class="pre">x</span> <span class="pre">y</span></tt>. For instance, the actual definition of
@@ -543,13 +581,15 @@ form, i.e., as <tt class="docutils literal"><span class="pre">pure_max</span> <s
 <pre class="literal-block">
 pure_max x y = max x y;
 </pre>
-<p>Conversely, if no parameter types and names are given, then the function
-accepts any number of parameters of any type, which are passed as a list. For
-instance:</p>
+<p>Conversely, if no signature is given, then the function accepts any number of
+parameters of any type, which are passed as a list. For instance:</p>
 <pre class="literal-block">
-gnm_info &quot;pure_sum&quot; = &quot;&#64;FUNCTION=pure_sum\n\
-&#64;SYNTAX=pure_sum(...)\n\
-&#64;DESCRIPTION=Computes the sum of a collection of numbers.\n&quot;;
+gnm_info &quot;pure_sum&quot; =
+[GNM_FUNC_HELP_NAME     =&gt; &quot;pure_sum:sum a collection of numbers&quot;,
+ GNM_FUNC_HELP_DESCRIPTION =&gt;
+ &quot;Computes the sum of a collection of numbers.&quot;,
+ GNM_FUNC_HELP_EXAMPLES =&gt; &quot;=pure_sum(1,2,3,4,5,6)&quot;,
+ GNM_FUNC_HELP_SEEALSO  =&gt; &quot;pure_sums&quot;];
 </pre>
 <p>Here the function will be called as <tt class="docutils literal"><span class="pre">pure_sum</span> <span class="pre">[x1,x2,...]</span></tt>, where <tt class="docutils literal"><span class="pre">x1</span></tt>,
 <tt class="docutils literal"><span class="pre">x2</span></tt>, etc. are the arguments the function is invoked with. Note that in this
@@ -559,7 +599,7 @@ not have a <tt class="docutils literal"><span class="pre">gnm_info</span></tt> d
 fashion.</p>
 <p>A function may also have both fixed and optional arguments:</p>
 <pre class="literal-block">
-gnm_info &quot;foo&quot; = &quot;ff|ff&quot;,&quot;x,y,z,t&quot;;
+gnm_info &quot;foo&quot; = &quot;ff|ff&quot;;
 </pre>
 <p>In this case the fixed arguments are passed in curried form as usual, while
 the optional parameters are passed as a list. That is, <tt class="docutils literal"><span class="pre">foo</span></tt> may be called
@@ -580,7 +620,7 @@ conversions:</p>
 </tr>
 </thead>
 <tbody valign="top">
-<tr><td><tt class="docutils literal"><span class="pre">gnm_error</span> <span class="pre">msg</span></tt></td>
+<tr><td><tt class="docutils literal"><span class="pre">gnm_error</span> <span class="pre">&quot;#N/A&quot;</span></tt></td>
 <td>error</td>
 </tr>
 <tr><td><tt class="docutils literal"><span class="pre">()</span></tt></td>
@@ -616,7 +656,7 @@ using the <tt class="docutils literal"><span class="pre">pure_gnmcall</span></tt
 (a string) as its first, and the parameters as the second (list) argument. For
 instance:</p>
 <pre class="literal-block">
-gnm_info &quot;gnm_bitand&quot; = &quot;ff&quot;, &quot;x,y&quot;;
+gnm_info &quot;gnm_bitand&quot; = &quot;ff&quot;;
 gnm_bitand x y = pure_gnmcall &quot;bitand&quot; [x,y];
 </pre>
 <p>Note that <tt class="docutils literal"><span class="pre">pure_gnmcall</span></tt> is an external C function provided by the Pure
@@ -649,9 +689,9 @@ updated automatically as soon as the value becomes available, with
 would wrap up a lengthy calculation as a thunk and submit it to
 <tt class="docutils literal"><span class="pre">pure_datasource</span></tt> which carries out the computation as a background task:</p>
 <pre class="literal-block">
-gnm_info &quot;pure_calc&quot; = &quot;f&quot;, &quot;x&quot;;
-pure_calc x = pure_datasource (lengthy_calculation x&amp;);
-lengthy_calculation x = sleep 3 $$ foldl (*) 1.0 (1.0..x);
+gnm_info &quot;pure_frob&quot; = &quot;f&quot;;
+pure_frob x = pure_datasource (lengthy_calculation x&amp;);
+lengthy_calculation x = sleep 3 $$ foldl (*) 1 (1..x);
 </pre>
 <p>Note that when the arguments of a call involving <tt class="docutils literal"><span class="pre">pure_datasource</span></tt> change
 (because they depend on other cells which may have been updated), the
@@ -663,7 +703,7 @@ time the next list element becomes available. For instance, the following
 function uses an infinite stream to count off the seconds starting from a
 given initial value:</p>
 <pre class="literal-block">
-gnm_info &quot;pure_counter&quot; = &quot;f&quot;, &quot;start&quot;;
+gnm_info &quot;pure_counter&quot; = &quot;f&quot;;
 pure_counter x = pure_datasource [sleep (i&gt;x) $$ i | i = x..inf];
 </pre>
 <p>Note that in this case the cell containing the call will keep changing as long
