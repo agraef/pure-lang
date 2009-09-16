@@ -367,7 +367,14 @@ static const GnmFuncEvalInfo *eval_info;
 static pure_expr *eval_expr;
 static unsigned id;
 
-#define next(spec) (spec?(*spec?++spec:spec):NULL)
+static inline const char *skip(const char *spec)
+{
+  if (!spec) return NULL;
+  while (*spec == '|') ++spec;
+  return spec;
+}
+
+#define next(spec) (spec?(*spec?skip(++spec):spec):NULL)
 
 GnmValue *
 call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
@@ -375,7 +382,7 @@ call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
 {
   GnmFunc const *func = ei->func_call->func;
   const char *spec = (func->fn_type==GNM_FUNC_TYPE_ARGS)
-    ?func->fn.args.arg_spec:NULL;
+    ?skip(func->fn.args.arg_spec):NULL;
   int i, j, min, max;
   pure_expr *x, *y, *e, *fun, **args, *save_expr;
   const GnmFuncEvalInfo *save_info;
@@ -436,12 +443,52 @@ call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
   return ret;
 }
 
+/* Note that unlike Gnumeric we don't try to coerce anything here, we only
+   check the arguments for compatibility, so the caller has to make sure that
+   argument types really match up. In particular, if a Gnumeric function wants
+   a boolean or a number then you really have to provide one. */
+
+static bool compat(GnmValue *v, const char *spec)
+{
+  // any value
+  if (!spec || !*spec || *spec == '?')
+    return true;
+  // errors or scalars
+  if (*spec == 'E')
+    return v->type != VALUE_ARRAY && v->type != VALUE_CELLRANGE;
+  // we don't allow any errors past this point
+  if (v->type == VALUE_ERROR)
+    return false;
+  // ordinary scalars
+  if (*spec == 'S')
+    return v->type != VALUE_ARRAY && v->type != VALUE_CELLRANGE;
+  // we don't allow any empty values past this point
+  /* XXXFIXME: We should actually allow empty values for optional arguments,
+     but we don't keep track of this right now. */
+  if (v->type == VALUE_EMPTY)
+    return false;
+  switch (v->type) {
+  case VALUE_BOOLEAN:
+  case VALUE_FLOAT:
+    // Gnumeric doesn't actually distinguish these.
+    return *spec == 'b' || *spec == 'f';
+  case VALUE_STRING:
+    return *spec == 's';
+  case VALUE_ARRAY:
+    return *spec == 'A';
+  case VALUE_CELLRANGE:
+    return *spec == 'r';
+  default:
+    return false;
+  }
+}
+
 pure_expr *
 pure_gnmcall(const char *name, pure_expr *args)
 {
   GnmFunc *func = gnm_func_lookup(name, NULL);
   const char *spec = (func->fn_type==GNM_FUNC_TYPE_ARGS)
-    ?func->fn.args.arg_spec:NULL;
+    ?skip(func->fn.args.arg_spec):NULL;
   GnmValue **val, *ret_val;
   gint n_args, i, j;
   size_t n;
@@ -452,9 +499,10 @@ pure_gnmcall(const char *name, pure_expr *args)
   val = g_new(GnmValue*, n_args);
   for (i = 0; i < n_args; i++, next(spec)) {
     val[i] = pure2value(eval_info->pos, xv[i], spec);
-    if (!val[i]) {
+    if (!val[i] || !compat(val[i], spec)) {
       for (j = 0; j < i; j++)
 	value_release(val[j]);
+      if (val[i]) value_release(val[i]);
       if (xv) free(xv);
       g_free(val);
       return NULL;

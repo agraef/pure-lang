@@ -175,7 +175,22 @@ gplp_func_desc_load(GOPluginService *service,
 	   (help = pure_get_gnm_help(elems[0])))
 	: (pure_is_string(elems[0], &spec) &&
 	   (help = pure_get_gnm_help(elems[1])))) {
-      if (spec) arg_spec = g_strdup(spec);
+      if (spec) {
+	/* Gnumeric doesn't like it if we have bad type letters in these
+	   specs, so better check them here. XXXFIXME: 'a' and 'B' are listed
+	   in the documentation but don't actually seem to be supported!? */
+	int i, n = strlen(spec), count = 0;
+	char *s = alloca(n+1), *t = s;
+	for (i = 0; i < n; i++)
+	  if (spec[i] == '|') {
+	    if (count++ == 0) *(t++) = '|';
+	  } else if (strchr("bfsSErA?", spec[i]))
+	    *(t++) = spec[i];
+	  else
+	    *(t++) = '?';
+	*t = '\0';
+	arg_spec = g_strdup(s);
+      }
     }
     if (elems) free(elems);
     pure_freenew(desc);
