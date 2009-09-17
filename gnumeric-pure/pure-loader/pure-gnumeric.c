@@ -901,7 +901,7 @@ pure_expr *pure_datasource(pure_expr *x)
     /* child */
     FILE *pure_async_file = fopen(pure_async_filename, "ab");
     /* evaluate expression, and write results to the pipe */
-    pure_expr *u = pure_new(pure_force(x)), *y, *z;
+    pure_expr *u = pure_force(pure_new(x)), *y, *z;
 #if 0
     fprintf(stderr, "[%d] child: %p-%p-%u\n", getpid(), key.p, key.q, key.id);
 #endif

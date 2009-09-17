@@ -498,10 +498,10 @@ datasource_init(void)
   GIOChannel *channel = NULL;
   char *filename = NULL, nambuf[L_tmpnam];
   // Set up a pipe for asynchronous data processing.
+  if (pure_async_fd >= 0) return; // already initialized
 #if 0
   fprintf(stderr, ">>>>>>>>>>>>>>>>>>>>>>>>>>>> LOAD PURE_ASYNC\n");
 #endif
-  g_return_if_fail(pure_async_fd < 0);
   if (tmpnam(nambuf) && (filename = g_strdup(nambuf)) &&
     unlink(filename) <= 0 &&
     mkfifo(filename, S_IRUSR | S_IWUSR) == 0) {
