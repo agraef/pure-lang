@@ -316,7 +316,7 @@ pure2value(const GnmEvalPos *pos, pure_expr *x, const char *spec)
       return (res != NULL) ? res : value_new_error_REF(pos);
     } else
       v = value_new_string(s);
-  } else if(pure_is_double_matrix(x, &p)) {
+  } else if (pure_is_double_matrix(x, &p)) {
     gsl_matrix *mat = (gsl_matrix*)p;
     double *data = mat->data;
     size_t i, j, nrows = mat->size1, ncols = mat->size2, tda = mat->tda;
@@ -327,7 +327,18 @@ pure2value(const GnmEvalPos *pos, pure_expr *x, const char *spec)
 	GnmValue *val = value_new_float((gnm_float)data[i*tda+j]);
 	v->v_array.vals[x][y] = val;
       }
-  } else if(pure_is_symbolic_matrix(x, &p)) {
+  } else if (pure_is_int_matrix(x, &p)) {
+    gsl_matrix_int *mat = (gsl_matrix_int*)p;
+    int *data = mat->data;
+    size_t i, j, nrows = mat->size1, ncols = mat->size2, tda = mat->tda;
+    v = value_new_array_empty(ncols, nrows);
+    for (i = 0; i < nrows; i++)
+      for (j = 0; j < ncols; j++) {
+	gint x = (gint)j, y = (gint)i;
+	GnmValue *val = value_new_int(data[i*tda+j]);
+	v->v_array.vals[x][y] = val;
+      }
+  } else if (pure_is_symbolic_matrix(x, &p)) {
     gsl_matrix_symbolic *mat = (gsl_matrix_symbolic*)p;
     pure_expr **data = mat->data;
     size_t i, j, nrows = mat->size1, ncols = mat->size2, tda = mat->tda;
@@ -529,6 +540,205 @@ pure_gnmcall(const char *name, pure_expr *args)
     value_release(val[i]);
   g_free(val);
   return ret;
+}
+
+/* Retrieve and manipulate cell ranges. */
+
+pure_expr *pure_get_cell(const char *s)
+{
+  const GnmEvalPos *pos = eval_info?eval_info->pos:NULL;
+  GnmValue *v = pos?str2rangeref(pos, s):NULL;
+  if (v) {
+    pure_expr *ret = NULL;
+    GnmRangeRef const *rr = &v->v_range.cell;
+    Sheet *sheet = eval_sheet(rr->a.sheet, pos->sheet);
+    int x1 = gnm_cellref_get_col(&rr->a, pos),
+      y1 = gnm_cellref_get_row(&rr->a, pos),
+      x2 = gnm_cellref_get_col(&rr->b, pos),
+      y2 = gnm_cellref_get_row(&rr->b, pos);
+    size_t nrows = y2-y1+1, ncols = x2-x1+1;
+    if (sheet && nrows == 1 && ncols == 1) {
+      const GnmCell *cell = sheet_cell_get(sheet, x1, y1);
+      ret = cell?value2pure(pos, cell->value, NULL):pure_tuplel(0);
+    }
+    value_release(v);
+    return ret;
+  } else
+    return NULL;
+}
+
+pure_expr *pure_set_cell(const char *s, pure_expr *x)
+{
+  const GnmEvalPos *pos = eval_info?eval_info->pos:NULL;
+  GnmValue *v = pos?str2rangeref(pos, s):NULL;
+  if (v) {
+    pure_expr *ret = NULL;
+    GnmRangeRef const *rr = &v->v_range.cell;
+    Sheet *sheet = eval_sheet(rr->a.sheet, pos->sheet);
+    int x1 = gnm_cellref_get_col(&rr->a, pos),
+      y1 = gnm_cellref_get_row(&rr->a, pos),
+      x2 = gnm_cellref_get_col(&rr->b, pos),
+      y2 = gnm_cellref_get_row(&rr->b, pos);
+    size_t nrows = y2-y1+1, ncols = x2-x1+1;
+    if (sheet && nrows == 1 && ncols == 1) {
+      GnmCell *cell = sheet_cell_fetch(sheet, x1, y1);
+      if (cell) {
+	GnmValue *v = pure2value(pos, x, NULL);
+	if (!v) v = value_new_error_VALUE(pos);
+	gnm_cell_set_value(cell, v);
+	if (!gnm_cell_needs_recalc(cell))
+	  cell_foreach_dep(cell, (DepFunc)dependent_queue_recalc, NULL);
+	ret = pure_tuplel(0);
+	if (workbook_get_recalcmode(sheet->workbook))
+	  workbook_recalc(sheet->workbook);
+     }
+    }
+    value_release(v);
+    return ret;
+  } else
+    return NULL;
+}
+
+pure_expr *pure_get_range(const char *s)
+{
+  const GnmEvalPos *pos = eval_info?eval_info->pos:NULL;
+  GnmValue *v = pos?str2rangeref(pos, s):NULL;
+  if (v) {
+    pure_expr *ret = NULL;
+    GnmRangeRef const *rr = &v->v_range.cell;
+    Sheet *sheet = eval_sheet(rr->a.sheet, pos->sheet);
+    int x, y, x1 = gnm_cellref_get_col(&rr->a, pos),
+      y1 = gnm_cellref_get_row(&rr->a, pos),
+      x2 = gnm_cellref_get_col(&rr->b, pos),
+      y2 = gnm_cellref_get_row(&rr->b, pos);
+    size_t nrows = y2-y1+1, ncols = x2-x1+1, i, j;
+    if (sheet) {
+      bool dblmat = true;
+      for (x = x1; x <= x2; x++)
+	for (y = y1; y <= y2; y++) {
+	  const GnmCell *cell = sheet_cell_get(sheet, x, y);
+	  if (cell && cell->value->type != VALUE_FLOAT)
+	    dblmat = false;
+	}
+      if (dblmat) {
+	// Double matrix.
+	gsl_matrix *mat = create_double_matrix(nrows, ncols);
+	if (mat) {
+	  double *data = mat->data;
+	  size_t tda = mat->tda;
+	  for (i = 0, y = y1; i < nrows; i++, y++)
+	    for (j = 0, x = x1; j < ncols; j++, x++) {
+	      const GnmCell *cell = sheet_cell_get(sheet, x, y);
+	      data[i*tda+j] = cell?value_get_as_float(cell->value):0.0;
+	    }
+	  ret = pure_double_matrix(mat);
+	}
+      } else {
+	// Different value types, create a symbolic matrix.
+	gsl_matrix_symbolic *mat = create_symbolic_matrix(nrows, ncols);
+	if (mat) {
+	  pure_expr **data = mat->data;
+	  size_t tda = mat->tda;
+	  for (i = 0, y = y1; i < nrows; i++, y++)
+	    for (j = 0, x = x1; j < ncols; j++, x++) {
+	      const GnmCell *cell = sheet_cell_get(sheet, x, y);
+	      pure_expr *val = cell?value2pure(pos, cell->value, NULL):
+		pure_tuplel(0);
+	      if (!val) {
+		size_t i1, j1;
+		for (i1 = 0; i1 < i; i1++)
+		  for (j1 = 0; j1 < ncols; j1++)
+		    pure_freenew(data[i1*tda+j1]);
+		for (j1 = 0; j1 < j; j1++)
+		  pure_freenew(data[i*tda+j1]);
+		gsl_matrix_symbolic_free(mat);
+		goto out;
+	      }
+	      data[i*tda+j] = val;
+	    }
+	  ret = pure_symbolic_matrix(mat);
+	}
+      }
+    }
+ out:
+    value_release(v);
+    return ret;
+  } else
+    return NULL;
+}
+
+pure_expr *pure_set_range(const char *s, pure_expr *xs)
+{
+  const GnmEvalPos *pos = eval_info?eval_info->pos:NULL;
+  GnmValue *v = pos?str2rangeref(pos, s):NULL;
+  if (v) {
+    pure_expr *ret = NULL;
+    void *p;
+    GnmRangeRef const *rr = &v->v_range.cell;
+    Sheet *sheet = eval_sheet(rr->a.sheet, pos->sheet);
+    int x, y, x1 = gnm_cellref_get_col(&rr->a, pos),
+      y1 = gnm_cellref_get_row(&rr->a, pos),
+      x2 = gnm_cellref_get_col(&rr->b, pos),
+      y2 = gnm_cellref_get_row(&rr->b, pos);
+    if (sheet) {
+      if (pure_is_double_matrix(xs, &p)) {
+	gsl_matrix *mat = (gsl_matrix*)p;
+	double *data = mat->data;
+	size_t i, j, nrows = mat->size1, ncols = mat->size2, tda = mat->tda;
+	for (j = 0, x = x1; j < ncols && x <= x2; j++, x++)
+	  for (i = 0, y = y1; i < nrows && y <= y2; i++, y++) {
+	    GnmCell *cell = sheet_cell_fetch(sheet, x, y);
+	    if (cell) {
+	      GnmValue *v = value_new_float((gnm_float)data[i*tda+j]);
+	      gnm_cell_set_value(cell, v);
+	      if (!gnm_cell_needs_recalc(cell))
+		cell_foreach_dep(cell, (DepFunc)dependent_queue_recalc, NULL);
+	    }
+	  }
+	ret = pure_tuplel(0);
+	if (workbook_get_recalcmode(sheet->workbook))
+	  workbook_recalc(sheet->workbook);
+      } else if (pure_is_int_matrix(xs, &p)) {
+	gsl_matrix_int *mat = (gsl_matrix_int*)p;
+	int *data = mat->data;
+	size_t i, j, nrows = mat->size1, ncols = mat->size2, tda = mat->tda;
+	for (j = 0, x = x1; j < ncols && x <= x2; j++, x++)
+	  for (i = 0, y = y1; i < nrows && y <= y2; i++, y++) {
+	    GnmCell *cell = sheet_cell_fetch(sheet, x, y);
+	    if (cell) {
+	      GnmValue *v = value_new_int(data[i*tda+j]);
+	      gnm_cell_set_value(cell, v);
+	      if (!gnm_cell_needs_recalc(cell))
+		cell_foreach_dep(cell, (DepFunc)dependent_queue_recalc, NULL);
+	    }
+	  }
+	ret = pure_tuplel(0);
+	if (workbook_get_recalcmode(sheet->workbook))
+	  workbook_recalc(sheet->workbook);
+      } else if (pure_is_symbolic_matrix(xs, &p)) {
+	gsl_matrix_symbolic *mat = (gsl_matrix_symbolic*)p;
+	pure_expr **data = mat->data;
+	size_t i, j, nrows = mat->size1, ncols = mat->size2, tda = mat->tda;
+	for (j = 0, x = x1; j < ncols && x <= x2; j++, x++)
+	  for (i = 0, y = y1; i < nrows && y <= y2; i++, y++) {
+	    GnmCell *cell = sheet_cell_fetch(sheet, x, y);
+	    if (cell) {
+	      GnmValue *v = pure2value(pos, data[i*tda+j], NULL);
+	      if (!v) v = value_new_error_VALUE(pos);
+	      gnm_cell_set_value(cell, v);
+	      if (!gnm_cell_needs_recalc(cell))
+		cell_foreach_dep(cell, (DepFunc)dependent_queue_recalc, NULL);
+	    }
+	  }
+	ret = pure_tuplel(0);
+	if (workbook_get_recalcmode(sheet->workbook))
+	  workbook_recalc(sheet->workbook);
+      }
+    }
+    value_release(v);
+    return ret;
+  } else
+    return NULL;
 }
 
 /* Support for asynchronous data sources (from sample_datasource.c). */
