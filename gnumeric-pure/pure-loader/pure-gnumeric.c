@@ -544,6 +544,17 @@ pure_gnmcall(const char *name, pure_expr *args)
 
 /* Retrieve and manipulate cell ranges. */
 
+pure_expr *pure_this_cell(void)
+{
+  if (eval_info) {
+    GnmRangeRef rr;
+    gnm_cellref_init(&rr.a, NULL, 0, 0, TRUE);
+    gnm_cellref_init(&rr.b, NULL, 0, 0, TRUE);
+    return pure_string(rangeref2str(eval_info->pos, &rr));
+  } else
+    return NULL;
+}
+
 pure_expr *pure_get_cell(const char *s)
 {
   const GnmEvalPos *pos = eval_info?eval_info->pos:NULL;
