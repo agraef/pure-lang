@@ -1,0 +1,94 @@
+
+/* date.q: some useful date functions */
+
+/* Most of the calendar formulas have been pilfered from Claus Tøndering's
+   calendar FAQ, see: http://www.tondering.dk/claus/cal/ */
+
+/* Get the current date. */
+
+using system;
+
+today = (d,m+1,y+1900)
+  when _,_,_,d,m,y,_ = tuple $ int_matrix 9 $ localtime time end;
+
+/* Julian day number for Gregorian dates (d,m,y). These count the number of
+   days since 1 January 4713 BC in the Julian calendar. */
+
+jul (d,m,y) = d+(153*m+2) div 5+365*y+y div 4-y div 100+y div 400-32045
+  when a = (14-m) div 12; y = y+4800-a; m = m+12*a-3 end;
+
+/* Gregorian date for Julian day number. Please note that these dates are
+   historically correct only after the introduction of the Gregorian calendar
+   in 1582 (even much later in some countries). */
+
+date n::int = (e-(153*m+2) div 5+1,m+3-12*(m div 10),100*b+d-4800+m div 10)
+  when a = n+32044; b = (4*a+3) div 146097; c = a-146097*b div 4;
+       d = (4*c+3) div 1461; e = c-1461*d div 4; m = (5*e+2) div 153;
+  end;
+
+/* Day of the week (0 = Sunday, 1 = Monday, etc.); e.g., to list all Fri 13ths
+   in year y, say `[13,m,y | m = 1..12; wday (13,m,y)==5]'. */
+
+wday (d,m,y) = (jul (d,m,y)+1) mod 7;
+
+/* Week number according to ISO-8601. */
+
+weekno (d,m,y) = d1 div 7+1
+  when j = jul (d,m,y); d4 = (j+31741-j mod 7) mod 146097 mod 36524 mod 1461;
+       l = d4 div 1460; d1 = (d4-l) mod 365+l;
+  end;
+
+/* Calculate Easter. E.g.: easter 2009 ==> (12,4,2009) */
+
+easter y::int = (d,m,y)
+  when g = y mod 19; c = y div 100;
+       h = (c-c div 4-(8*c+13) div 25+19*g+15) mod 30;
+       i = h-h div 28*(1-29 div (h+1)*((21-g) div 11));
+       j = (y+y div 4+i+2-c+c div 4) mod 7;
+       l = i-j; m = 3+(l+40) div 44; d = l+28-31*(m div 4);
+  end;
+
+/* Date arithmetic. Examples:
+   - How many days am I old today? today-(23,4,1962) ==> 17314.
+   - And when will I be 20000 days old? (23,4,1962)+20000 ==> (24,1,2017).
+   - What's the day following 28 Feb 2008? succ (28,2,2008) ==> (29,2,2008).
+   - List all dates from 28 Feb to 1 Mar 2008: (28,2,2008)..(1,3,2008) ==>
+     [(28,2,2004),(29,2,2004),(1,3,2004)]. */
+
+(d1,m1,y1)-(d2,m2,y2)
+		= jul (d1,m1,y1)-jul (d2,m2,y2);
+(d,m,y)+n::int	= date (jul (d,m,y)+n);
+(d,m,y)-n::int	= date (jul (d,m,y)-n);
+
+(d1,m1,y1)<(d2,m2,y2)
+		= jul (d1,m1,y1)<jul (d2,m2,y2);
+(d1,m1,y1)>(d2,m2,y2)
+		= jul (d1,m1,y1)>jul (d2,m2,y2);
+(d1,m1,y1)<=(d2,m2,y2)
+		= jul (d1,m1,y1)<=jul (d2,m2,y2);
+(d1,m1,y1)>=(d2,m2,y2)
+		= jul (d1,m1,y1)>=jul (d2,m2,y2);
+
+/* Format a calendar. cal y m returns month m in year y as a list of lists of
+   strings. The first row is empty, the second row consists of the month name
+   and the year, the third row is again empty, the fourth row has the days of
+   the week, and the remaining rows contain the dates of the month. E.g., you
+   can render all months in 2009 with: map (cal 2009) (1..12). */
+
+const months = ["January","February","March","April","May","June",
+      	        "July","August","September","October","November","December"];
+
+cal y::int m::int =
+  [[], [months!(m-1),str y], [], ["Su","Mo","Tu","We","Th","Fr","Sa"]] +
+  map (map (day m)) (splitmod 7 $ (a-n..a-1)+l)
+  when l = init ((1,m,y)..(1,m+1,y)); a = head l; n = wday a end
+  with
+    day m0::int (d,m,y) = if m==m0 then str d else "";
+    splitmod n xs = [xs] if #xs<=n;
+    	       	  = take n xs : splitmod n (drop n xs) otherwise;
+  end;
+
+/* Apply print to the result of cal to print it. E.g.:
+   do print $ map (cal 2009) (1..12) */
+
+print cal = do (printf "%s\n") $ map (join " ".map (sprintf "%2s")) cal;
