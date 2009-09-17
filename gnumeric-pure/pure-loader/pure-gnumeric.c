@@ -588,13 +588,49 @@ pure_expr *pure_set_cell(const char *s, pure_expr *x)
 	gnm_cell_set_value(cell, v);
 	if (!gnm_cell_needs_recalc(cell))
 	  cell_foreach_dep(cell, (DepFunc)dependent_queue_recalc, NULL);
-	ret = pure_tuplel(0);
 	if (workbook_get_recalcmode(sheet->workbook))
 	  workbook_recalc(sheet->workbook);
+	ret = pure_tuplel(0);
      }
     }
     value_release(v);
     return ret;
+  } else
+    return NULL;
+}
+
+pure_expr *pure_set_text(const char *s, pure_expr *x)
+{
+  const char *text;
+  if (pure_is_string(x, &text)) {
+    const GnmEvalPos *pos = eval_info?eval_info->pos:NULL;
+    GnmValue *v = pos?str2rangeref(pos, s):NULL;
+    if (v) {
+      pure_expr *ret = NULL;
+      GnmRangeRef const *rr = &v->v_range.cell;
+      Sheet *sheet = eval_sheet(rr->a.sheet, pos->sheet);
+      int x1 = gnm_cellref_get_col(&rr->a, pos),
+	y1 = gnm_cellref_get_row(&rr->a, pos),
+	x2 = gnm_cellref_get_col(&rr->b, pos),
+	y2 = gnm_cellref_get_row(&rr->b, pos);
+      size_t nrows = y2-y1+1, ncols = x2-x1+1;
+      if (sheet && nrows == 1 && ncols == 1) {
+	GnmCell *cell = sheet_cell_fetch(sheet, x1, y1);
+	if (cell) {
+	  gnm_cell_set_text(cell, text);
+	  gnm_cell_eval_content(cell);
+	  // XXXFIXME: Is this needed here?
+	  if (!gnm_cell_needs_recalc(cell))
+	    cell_foreach_dep(cell, (DepFunc)dependent_queue_recalc, NULL);
+	  if (workbook_get_recalcmode(sheet->workbook))
+	    workbook_recalc(sheet->workbook);
+	  ret = pure_tuplel(0);
+	}
+      }
+      value_release(v);
+      return ret;
+    } else
+      return NULL;
   } else
     return NULL;
 }
@@ -695,9 +731,9 @@ pure_expr *pure_set_range(const char *s, pure_expr *xs)
 		cell_foreach_dep(cell, (DepFunc)dependent_queue_recalc, NULL);
 	    }
 	  }
-	ret = pure_tuplel(0);
 	if (workbook_get_recalcmode(sheet->workbook))
 	  workbook_recalc(sheet->workbook);
+	ret = pure_tuplel(0);
       } else if (pure_is_int_matrix(xs, &p)) {
 	gsl_matrix_int *mat = (gsl_matrix_int*)p;
 	int *data = mat->data;
@@ -712,9 +748,9 @@ pure_expr *pure_set_range(const char *s, pure_expr *xs)
 		cell_foreach_dep(cell, (DepFunc)dependent_queue_recalc, NULL);
 	    }
 	  }
-	ret = pure_tuplel(0);
 	if (workbook_get_recalcmode(sheet->workbook))
 	  workbook_recalc(sheet->workbook);
+	ret = pure_tuplel(0);
       } else if (pure_is_symbolic_matrix(xs, &p)) {
 	gsl_matrix_symbolic *mat = (gsl_matrix_symbolic*)p;
 	pure_expr **data = mat->data;
@@ -730,9 +766,9 @@ pure_expr *pure_set_range(const char *s, pure_expr *xs)
 		cell_foreach_dep(cell, (DepFunc)dependent_queue_recalc, NULL);
 	    }
 	  }
-	ret = pure_tuplel(0);
 	if (workbook_get_recalcmode(sheet->workbook))
 	  workbook_recalc(sheet->workbook);
+	ret = pure_tuplel(0);
       }
     }
     value_release(v);
