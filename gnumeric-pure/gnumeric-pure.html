@@ -333,25 +333,26 @@ background.</p>
 Gnumeric 0.19.12 are known to work, older versions probably work as well if
 you fiddle a bit with the Makefile and/or the sources. See the beginning of
 the Makefile for detailed instructions. Briefly, you'll have to grab
-gnumeric-features.h from the Gnumeric sources and either place it into the
+<tt class="docutils literal"><span class="pre">gnumeric-features.h</span></tt> from the Gnumeric sources and either place it into the
 directory with the gnumeric-pure sources, or edit the <tt class="docutils literal"><span class="pre">INCLUDE</span></tt> variable at
 the beginning of the Makefile so that gcc finds this header.</p>
 <p>Then run <tt class="docutils literal"><span class="pre">make</span></tt>. You might have to adjust the settings at the beginning of
 the Makefile to make this work. If you're lucky and the compile goes through,
-you should now have a pure_loader.so file in the pure-loader subdirectory. You
-can install the plugin and related stuff with <tt class="docutils literal"><span class="pre">sudo</span> <span class="pre">make</span> <span class="pre">install</span></tt> in the
-global Gnumeric plugin directory, or if you prefer to install it into your
-personal plugin directory then run <tt class="docutils literal"><span class="pre">make</span> <span class="pre">install-local</span></tt> instead.  We
-recommend the latter since it lets you adjust pure_func.pure for your purposes
-more easily. Optionally, you might also want to copy the gnumeric-pure.html
-file to your Pure library directory so that you can read it with the <tt class="docutils literal"><span class="pre">help</span></tt>
-command of the Pure interpreter or in Emacs Pure mode.</p>
+you should now have a <tt class="docutils literal"><span class="pre">pure_loader.so</span></tt> file in the <tt class="docutils literal"><span class="pre">pure-loader</span></tt>
+subdirectory. You can install the plugin and related stuff with <tt class="docutils literal"><span class="pre">sudo</span> <span class="pre">make</span>
+<span class="pre">install</span></tt> in the global Gnumeric plugin directory, or if you prefer to install
+it into your personal plugin directory then run <tt class="docutils literal"><span class="pre">make</span> <span class="pre">install-local</span></tt>
+instead.  (We recommend the latter since it lets you adjust <tt class="docutils literal"><span class="pre">pure_func.pure</span></tt>
+for your purposes more easily.) Optionally, you might also want to copy the
+<tt class="docutils literal"><span class="pre">gnumeric-pure.html</span></tt> file to your Pure library directory so that you can
+read it with the <tt class="docutils literal"><span class="pre">help</span></tt> command of the Pure interpreter or in Emacs Pure
+mode.</p>
 <p>Typically, <tt class="docutils literal"><span class="pre">make</span> <span class="pre">install</span></tt> and <tt class="docutils literal"><span class="pre">make</span> <span class="pre">install-local</span></tt> will install the
 plugins into the following directories by default:</p>
 <ul class="simple">
-<li>System-wide installations go into /usr/local/gnumeric/1.9.x/plugins or
+<li>System-wide installations go into <tt class="docutils literal"><span class="pre">/usr/local/gnumeric/1.9.x/plugins</span></tt> or
 similar, depending on where Gnumeric is installed.</li>
-<li>User-specific installations go into ~/.gnumeric/1.9.x/plugins.</li>
+<li>User-specific installations go into <tt class="docutils literal"><span class="pre">~/.gnumeric/1.9.x/plugins</span></tt>.</li>
 </ul>
 <p>The Makefile tries to guess the installation path and version number of
 Gnumeric on its own. If it guesses wrong, you can change these using the
@@ -360,19 +361,19 @@ Makefile variables <tt class="docutils literal"><span class="pre">prefix</span><
 $ make prefix=/usr gnmversion=1.9.12
 </pre>
 <p>If <tt class="docutils literal"><span class="pre">make</span> <span class="pre">install</span></tt> doesn't work for some reason, you can also just copy the
-pure-func and pure-loader directories manually to your Gnumeric plugin
+<tt class="docutils literal"><span class="pre">pure-func</span></tt> and <tt class="docutils literal"><span class="pre">pure-loader</span></tt> directories manually to your Gnumeric plugin
 directory.</p>
 <div class="section" id="setup">
 <h2><a class="toc-backref" href="#id2">1.1&nbsp;&nbsp;&nbsp;Setup</a></h2>
 <p>Once Gnumeric/Pure has been properly installed, you should see it in
-Gnumeric's <tt class="docutils literal"><span class="pre">Tools</span></tt>/<tt class="docutils literal"><span class="pre">Plug-ins</span></tt> dialog. As with the Perl and Python plugins,
-there are actually two entries, one labelled <tt class="docutils literal"><span class="pre">Pure</span> <span class="pre">functions</span></tt> and the other
-one labelled <tt class="docutils literal"><span class="pre">Pure</span> <span class="pre">plugin</span> <span class="pre">loader</span></tt>. You need to enable both before you can
-start using Pure functions in your Gnumeric spreadsheets.</p>
+Gnumeric's Tools/Plug-ins dialog. As with the Perl and Python plugins, there
+are actually two entries, one labelled &quot;Pure functions&quot; and the other one
+labelled &quot;Pure plugin loader&quot;. You need to enable both before you can start
+using Pure functions in your Gnumeric spreadsheets.</p>
 <p>Gnumeric doesn't provide much in the way of GUI customization options right
 now, but at least it's possible for plugins to install and configure
 additional menu and toolbar options. The Pure plugin loader adds three
-additional options to the <tt class="docutils literal"><span class="pre">Tools</span></tt> menu which allow you to stop asynchronous
+additional options to the Tools menu which allow you to stop asynchronous
 data sources, reload Pure scripts and edit them. After installation, the
 definitions of these items can be found in the pure-loader/pure-ui.xml file in
 your Gnumeric plugin directory. Have a look at this file and edit is as
@@ -404,12 +405,11 @@ look as follows:</p>
 <div class="section" id="basic-usage">
 <h1><a class="toc-backref" href="#id3">2&nbsp;&nbsp;&nbsp;Basic Usage</a></h1>
 <p>With Pure/Gnumeric installed and enabled, you should be ready to join the fun
-now. Start up Gnumeric, click on a cell and invoke the <tt class="docutils literal"><span class="pre">f(x)</span></tt> dialog. The
-Pure functions available for use are shown in the <tt class="docutils literal"><span class="pre">Pure</span></tt> category. E.g.,
-click on <tt class="docutils literal"><span class="pre">pure_hello</span></tt>. Now the Pure interpreter will be loaded and the
-function description displayed. Click <tt class="docutils literal"><span class="pre">Insert</span></tt> and then <tt class="docutils literal"><span class="pre">Ok</span></tt>. You should
-now be able to read the friendly greeting returned by the <tt class="docutils literal"><span class="pre">pure_hello</span></tt>
-function.</p>
+now. Start up Gnumeric, click on a cell and invoke the &quot;f(x)&quot; dialog. The Pure
+functions available for use are shown in the &quot;Pure&quot; category. E.g., click on
+<tt class="docutils literal"><span class="pre">pure_hello</span></tt>. Now the Pure interpreter will be loaded and the function
+description displayed. Click &quot;Insert&quot; and then &quot;Ok&quot;. You should now be able to
+read the friendly greeting returned by the <tt class="docutils literal"><span class="pre">pure_hello</span></tt> function.</p>
 <p>Of course, you can also enter the function call directly as a formula into a
 cell as usual. Click on a cell, then enter the following:</p>
 <pre class="literal-block">
@@ -419,14 +419,13 @@ cell as usual. Click on a cell, then enter the following:</p>
 <p>Play around a bit with the other Pure functions. These functions are nothing
 special; they are just ordinary Pure functions which are defined by the
 pure_func.pure script in the pure-func subdirectory of your Gnumeric plugin
-directory. You can have a look at them by invoking the <tt class="docutils literal"><span class="pre">Edit</span> <span class="pre">Pure</span> <span class="pre">Script</span></tt>
-option which gets added to the <tt class="docutils literal"><span class="pre">Tools</span></tt>/<tt class="docutils literal"><span class="pre">Pure</span></tt> menu once the Pure plugin
-loader is enabled. (This will invoke the emacs editor by default, or the
-editor named by the <tt class="docutils literal"><span class="pre">EDITOR</span></tt> environment variable. You can set this
-environment variable in your shell's startup files.) The <tt class="docutils literal"><span class="pre">Tools</span></tt>/<tt class="docutils literal"><span class="pre">Pure</span></tt>
-menu contains a second Pure-related option, <tt class="docutils literal"><span class="pre">Reload</span> <span class="pre">Pure</span> <span class="pre">Scripts</span></tt> which can
-be used to quickly reload all loaded Pure scripts after edits; more about that
-later.</p>
+directory. You can have a look at them by invoking the &quot;Edit Pure Script&quot;
+option which gets added to the Tools/Pure menu once the Pure plugin loader is
+enabled. (This will invoke the emacs editor by default, or the editor named by
+the <tt class="docutils literal"><span class="pre">EDITOR</span></tt> environment variable. You can set this environment variable in
+your shell's startup files.) The Tools/Pure menu contains a second
+Pure-related option, &quot;Reload Pure Scripts&quot; which can be used to quickly reload
+all loaded Pure scripts after edits; more about that later.</p>
 <p>Please note that most of the functions in pure_func.pure are rather useless,
 they are only provided for illustrative purposes. However, there are some
 useful examples in there, too, in particular:</p>
@@ -447,27 +446,27 @@ found in pure-examples.gnumeric in the Gnumeric/Pure sources.</p>
 <p>After playing around with pure_func.pure for a while, of course you will want
 to write your own functions, that's what this plugin is about after all! For
 the beginning, you can just add your definitions to the existing
-pure_func.pure script. Use the <tt class="docutils literal"><span class="pre">Edit</span> <span class="pre">Pure</span> <span class="pre">Script</span></tt> option to edit the script
-in your favourite editor, and see the comments and the examples in the script
-for guidance. (This document assumes that you're already familiar with Pure,
-if not then you should consult the available Pure documentation.)</p>
+pure_func.pure script. Use the &quot;Edit Pure Script&quot; option to edit the script in
+your favourite editor, and see the comments and the examples in the script for
+guidance. (This document assumes that you're already familiar with Pure, if
+not then you should consult the available Pure documentation.)</p>
 <p>Note that if you delete or rename any functions in this file, or add new ones
 to it, then you also have to change the list of function names in the
 plugin.xml file in the same directory accordingly. This file tells Gnumeric
 which functions are provided by the script. Unfortunately, you'll have to
 restart Gnumeric to make changes in this file take effect. If you only change
 the definition of an existing function then it's usually sufficient to just
-invoke <tt class="docutils literal"><span class="pre">Reload</span> <span class="pre">Pure</span> <span class="pre">Scripts</span></tt> afterwards, and maybe run <tt class="docutils literal"><span class="pre">Recalculate</span></tt>
-(<tt class="docutils literal"><span class="pre">F9</span></tt>) to recompute the spreadsheet. However, if you also made changes to
-the function descriptions provided via <tt class="docutils literal"><span class="pre">gnm_info</span></tt> (see the following section
-for explanation), then you'll also have to restart Gnumeric so that it picks
-up the changes.</p>
+invoke &quot;Reload Pure Scripts&quot; afterwards, and maybe run &quot;Recalculate&quot; (<tt class="docutils literal"><span class="pre">F9</span></tt>)
+to recompute the spreadsheet. However, if you also made changes to the
+function descriptions provided via <tt class="docutils literal"><span class="pre">gnm_info</span></tt> (see the following section for
+explanation), then you'll also have to restart Gnumeric so that it picks up
+the changes.</p>
 <p>Once you understand how this works, you can also create your own plugin
 directories with your personal collections of Gnumeric/Pure functions, using
-the pure-func directory as a template. For instance, assume that your
-Gnumeric/Pure stuff is in a script named gnumeric.pure in the
-$HOME/pure/gnumeric directory, where $HOME is the name of your home
-directory. The plugin.xml file in that directory might look as follows:</p>
+the pure-func directory as a template. For instance, let's assume that your
+Gnumeric/Pure stuff is in a script named <tt class="docutils literal"><span class="pre">gnumeric.pure</span></tt> under
+<tt class="docutils literal"><span class="pre">/some/path/pure/gnumeric</span></tt>. The plugin.xml file in that directory might look
+as follows:</p>
 <pre class="literal-block">
 &lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
 &lt;plugin id=&quot;Gnumeric_MyPureFunc&quot;&gt;
@@ -483,8 +482,8 @@ directory. The plugin.xml file in that directory might look as follows:</p>
     &lt;service type=&quot;function_group&quot; id=&quot;my_pure_func&quot;&gt;
       &lt;category&gt;Pure&lt;/category&gt;
       &lt;functions&gt;
-        &lt;function name=&quot;pure_hello&quot;/&gt;
-        &lt;!-- My Pure functions go here... --&gt;
+        &lt;!-- My Pure functions go here, e.g.: --&gt;
+        &lt;function name=&quot;my_pure_func&quot;/&gt;
       &lt;/functions&gt;
     &lt;/service&gt;
   &lt;/services&gt;
@@ -492,24 +491,26 @@ directory. The plugin.xml file in that directory might look as follows:</p>
 </pre>
 <p>The following steps are needed to tell Gnumeric about your new Pure plugin:</p>
 <ul class="simple">
-<li>Open the <tt class="docutils literal"><span class="pre">Directories</span></tt> tab in the <tt class="docutils literal"><span class="pre">Tools</span></tt>/<tt class="docutils literal"><span class="pre">Plug-ins</span></tt> dialog and add
-the $HOME/pure directory to the plugin search path. You might have to
-restart Gnumeric after that.</li>
-<li>The plugin can now be enabled in the <tt class="docutils literal"><span class="pre">Tools</span></tt>/<tt class="docutils literal"><span class="pre">Plug-ins</span></tt> dialog under
-<tt class="docutils literal"><span class="pre">My</span> <span class="pre">Pure</span> <span class="pre">functions</span></tt>.</li>
+<li>Open the Directories tab in the Tools/Plug-ins dialog and check that the
+<tt class="docutils literal"><span class="pre">/some/path/pure</span></tt> directory is in your plugin search path. Add it if
+necessary, and restart Gnumeric after that. (Note that you really have to
+add the <em>parent</em> directory <tt class="docutils literal"><span class="pre">/some/path/pure</span></tt>, not
+<tt class="docutils literal"><span class="pre">/some/path/pure/gnumeric</span></tt> itself.)</li>
+<li>The new plugin should now be listed as &quot;My Pure functions&quot; on the Plugin
+List tab in the Tools/Plug-ins dialog. Check it to enable it.</li>
 </ul>
 <p>The Pure loader can also load multiple Pure plugins, after creating the
-corresponding plugin directories and scripts just enable the ones that you
-want in <tt class="docutils literal"><span class="pre">Tools</span></tt>/<tt class="docutils literal"><span class="pre">Plug-ins</span></tt>. All scripts are loaded in the same Pure
-interpreter (and thus are treated like one big script) so that they can
-communicate with each other if necessary.</p>
+corresponding plugin directories and scripts and telling Gnumeric about
+them. Just enable the ones that you want in Tools/Plug-ins. All scripts are
+loaded in the same Pure interpreter (and thus are treated like one big script)
+so that they can communicate with each other if necessary.</p>
 </div>
 <div class="section" id="gnumeric-pure-interface">
 <h1><a class="toc-backref" href="#id5">4&nbsp;&nbsp;&nbsp;Gnumeric/Pure Interface</a></h1>
 <p>By default, when a Pure function is called from Gnumeric, it receives its
 arguments in a list. However, it is possible to tell Gnumeric about the
 expected arguments of the function and also specify a help text to be
-displayed in the <tt class="docutils literal"><span class="pre">f(x)</span></tt> dialog, by giving a definition of the special
+displayed in the &quot;f(x)&quot; dialog, by giving a definition of the special
 <tt class="docutils literal"><span class="pre">gnm_info</span></tt> function as explained below. In further subsections we explain
 various other aspects of the Gnumeric/Pure interface that should be useful for
 writing your own functions.</p>
@@ -525,7 +526,7 @@ argument (in that order), etc. Optional parameters can be indicated using
 <tt class="docutils literal"><span class="pre">|</span></tt>, as in <tt class="docutils literal"><span class="pre">&quot;ff|s&quot;</span></tt> (two non-optional floats, followed by an optional
 string). See below for a complete list of the supported parameter types.</li>
 <li>The second element is a list of hash pairs <tt class="docutils literal"><span class="pre">key=&gt;text</span></tt> which together make
-up the help text shown in Gnumeric's <tt class="docutils literal"><span class="pre">f(x)</span></tt> dialog. You should at least
+up the help text shown in Gnumeric's &quot;f(x)&quot; dialog. You should at least
 specify the function name along with a short synopsis here, e.g.
 <tt class="docutils literal"><span class="pre">GNM_FUNC_HELP_NAME</span> <span class="pre">=&gt;</span> <span class="pre">&quot;frob:the</span> <span class="pre">frob</span> <span class="pre">function&quot;</span></tt>. Parameter descriptions
 take the form <tt class="docutils literal"><span class="pre">GNM_FUNC_HELP_ARG</span> <span class="pre">=&gt;</span> <span class="pre">&quot;x:integer&quot;</span></tt>. There are a number of
@@ -541,7 +542,9 @@ the function hasn't been documented yet.</p>
 parameters of any type. In that case, or if there are optional parameters, the
 function becomes variadic and the (optional) parameters are passed as a Pure
 list (in addition to the non-optional parameters).</p>
-<p>Here's the list of valid parameter types, straight from the Gnumeric sources:</p>
+<p>Here's the list of valid parameter types, as they are documented in the
+Gnumeric sources (note that, at least with Gnumeric 1.9.12, the <tt class="docutils literal"><span class="pre">&quot;a&quot;</span></tt> type
+isn't implemented, use <tt class="docutils literal"><span class="pre">&quot;A&quot;</span></tt> instead):</p>
 <pre class="literal-block">
 f : float           no errors, string conversion attempted
 b : boolean         identical to f
@@ -551,7 +554,7 @@ E : scalar          any scalar, including errors
 
 r : cell range      content may not be evaluated yet
 A : area            array, range (as above), or scalar
-a : array           (this doesn't actually seem to work)
+a : array           (not implemented?)
 ? : anything        any value (scalars, non-scalars, errors, whatever)
 </pre>
 <p>The keys used in the function description may be any of the following, along
@@ -768,11 +771,11 @@ gnm_info &quot;pure_counter&quot; = &quot;f&quot;;
 pure_counter x = pure_datasource [sleep (i&gt;x) $$ i | i = x..inf];
 </pre>
 <p>Note that in this case the cell containing the call will keep changing as long
-as new values are produced (i.e., forever in the above example). The <tt class="docutils literal"><span class="pre">Stop</span>
-<span class="pre">Data</span> <span class="pre">Sources</span></tt> option in the <tt class="docutils literal"><span class="pre">Tools</span></tt>/<tt class="docutils literal"><span class="pre">Pure</span></tt> menu can be used to stop all
-active data sources. <tt class="docutils literal"><span class="pre">Reload</span> <span class="pre">Pure</span> <span class="pre">Scripts</span></tt> also does this. You can then
-restart the data sources at any time by using <tt class="docutils literal"><span class="pre">Recalculate</span></tt> (<tt class="docutils literal"><span class="pre">F9</span></tt>) to
-recompute the spreadsheet.</p>
+as new values are produced (i.e., forever in the above example). The &quot;Stop
+Data Sources&quot; option in the Tools/Pure menu can be used to stop all active
+data sources. &quot;Reload Pure Scripts&quot; also does this. You can then restart the
+data sources at any time by using &quot;Recalculate&quot; (<tt class="docutils literal"><span class="pre">F9</span></tt>) to recompute the
+spreadsheet.</p>
 <p>Also note that because of the special way that <tt class="docutils literal"><span class="pre">pure_datasource</span></tt> handles
 list values, you cannot return a list directly as the result of
 <tt class="docutils literal"><span class="pre">pure_datasource</span></tt>; instead, you'll have to wrap the result in a singleton
