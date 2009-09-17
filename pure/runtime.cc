@@ -3913,6 +3913,48 @@ pure_expr *pure_force(pure_expr *x)
     case EXPR::STR:
       x->data.s = strdup(x->data.s);
       break;
+    case EXPR::MATRIX: {
+      // Create a new view of the matrix.
+      gsl_matrix_symbolic *m = (gsl_matrix_symbolic*)x->data.mat.p;
+      gsl_matrix_symbolic *m1 =
+	(gsl_matrix_symbolic*)malloc(sizeof(gsl_matrix_symbolic));
+      assert(m1);
+      *m1 = *m;
+      x->data.mat.p = m1;
+      (*x->data.mat.refc)++;
+      break;
+    }
+#ifdef HAVE_GSL
+    case EXPR::DMATRIX: {
+      gsl_matrix *m = (gsl_matrix*)x->data.mat.p;
+      gsl_matrix *m1 = (gsl_matrix*)malloc(sizeof(gsl_matrix));
+      assert(m1);
+      *m1 = *m;
+      x->data.mat.p = m1;
+      (*x->data.mat.refc)++;
+      break;
+    }
+    case EXPR::CMATRIX: {
+      gsl_matrix_complex *m = (gsl_matrix_complex*)x->data.mat.p;
+      gsl_matrix_complex *m1 =
+	(gsl_matrix_complex*)malloc(sizeof(gsl_matrix_complex));
+      assert(m1);
+      *m1 = *m;
+      x->data.mat.p = m1;
+      (*x->data.mat.refc)++;
+      break;
+    }
+    case EXPR::IMATRIX: {
+      gsl_matrix_int *m = (gsl_matrix_int*)x->data.mat.p;
+      gsl_matrix_int *m1 =
+	(gsl_matrix_int*)malloc(sizeof(gsl_matrix_int));
+      assert(m1);
+      *m1 = *m;
+      x->data.mat.p = m1;
+      (*x->data.mat.refc)++;
+      break;
+    }
+#endif
     default:
       if (x->tag >= 0 && x->data.clos)
 	x->data.clos = pure_copy_clos(x->data.clos);
