@@ -127,10 +127,10 @@ LATEXOPT = --use-latex-toc --use-latex-docinfo --stylesheet=preamble.tex --docum
 gnumeric-pure.tex: README
 	rst2latex.py $(LATEXOPT) $< $@
 
-gnumeric-pure.pdf: gnumeric-pure.tex
+%.pdf: %.tex preamble.tex
 	pdflatex $<
 	pdflatex $<
-	rm -f *.aux *.log *.out
+	rm -f *.aux *.log *.out *.toc
 
 install:
 	test -d "$(DESTDIR)$(gnmplugindir)/pure-func" || mkdir -p "$(DESTDIR)$(gnmplugindir)/pure-func"
