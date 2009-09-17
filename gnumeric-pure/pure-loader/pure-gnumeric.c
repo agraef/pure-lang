@@ -85,6 +85,42 @@ create_double_matrix(size_t nrows, size_t ncols)
 /* NOTE: This assumes that Gnumeric represents all strings as UTF-8 internally
    (as does Pure), so that no encoding conversions are necessary. */
 
+static char *rangeref2str(const GnmEvalPos *pos, const GnmRangeRef *rr)
+{
+  GnmParsePos pp;
+  GnmConventionsOut out;
+  char *buf, *bufp; const char *p;
+  out.accum = g_string_new(NULL);
+  out.pp    = parse_pos_init_evalpos(&pp, pos);
+  out.convs = gnm_conventions_default;
+  rangeref_as_string(&out, rr);
+  /* Do some cosmetic surgery. Range references are always absolute here, so
+     we can remove the redundant '$' signs. */
+  p = out.accum->str;
+  bufp = buf = alloca(strlen(p)+1);
+  for (; *p; p++)
+    if (*p != '$')
+      *(bufp++) = *p;
+  *bufp = '\0';
+  g_string_free(out.accum, TRUE);
+  return strdup(buf);
+}
+
+static GnmValue *str2rangeref(const GnmEvalPos *pos, const char *s)
+{
+  GnmParsePos pp;
+  GnmValue *res = NULL;
+  GnmConventions const *convs = gnm_conventions_default;
+  GnmExprTop const *texpr = gnm_expr_parse_str
+    (s, parse_pos_init_evalpos(&pp, pos),
+     GNM_EXPR_PARSE_FORCE_ABSOLUTE_REFERENCES, convs, NULL);
+  if (texpr != NULL) {
+    res = gnm_expr_top_get_range(texpr);
+    gnm_expr_top_unref(texpr);
+  }
+  return res;
+}
+
 pure_expr *
 value2pure(const GnmEvalPos *pos, const GnmValue *v, const char *spec)
 {
@@ -158,23 +194,8 @@ value2pure(const GnmEvalPos *pos, const GnmValue *v, const char *spec)
     GnmRangeRef const *rr = &v->v_range.cell;
     if (spec && *spec == 'r') {
       // Pass range reference as string.
-      GnmParsePos pp;
-      GnmConventionsOut out;
-      char *buf, *bufp; const char *p;
-      out.accum = g_string_new(NULL);
-      out.pp    = parse_pos_init_evalpos(&pp, pos);
-      out.convs = gnm_conventions_default;
-      rangeref_as_string(&out, rr);
-      /* Do some cosmetic surgery. Range references are always taken as
-	 absolute here, so we remove the redundant '$' signs. */
-      p = out.accum->str;
-      bufp = buf = alloca(strlen(p)+1);
-      for (; *p; p++)
-	if (*p != '$')
-	  *(bufp++) = *p;
-      *bufp = '\0';
-      g_string_free(out.accum, TRUE);
-      return pure_string_dup(buf);
+      char *s = rangeref2str(pos, rr);
+      return s?pure_string(s):NULL;
     } else {
       Sheet *sheet = eval_sheet(rr->a.sheet, pos->sheet);
       int x, y;
@@ -291,16 +312,7 @@ pure2value(const GnmEvalPos *pos, pure_expr *x, const char *spec)
     v = value_new_float((gnm_float)dv);
   else if (pure_is_string(x, &s)) {
     if (spec && *spec == 'r') {
-      GnmParsePos pp;
-      GnmValue *res = NULL;
-      GnmConventions const *convs = gnm_conventions_default;
-      GnmExprTop const *texpr = gnm_expr_parse_str
-	(s, parse_pos_init_evalpos(&pp, pos),
-	 GNM_EXPR_PARSE_FORCE_ABSOLUTE_REFERENCES, convs, NULL);
-      if (texpr != NULL) {
-	res = gnm_expr_top_get_range(texpr);
-	gnm_expr_top_unref(texpr);
-      }
+      GnmValue *res = str2rangeref(pos, s);
       return (res != NULL) ? res : value_new_error_REF(pos);
     } else
       v = value_new_string(s);
