@@ -94,11 +94,11 @@ CFLAGS = -g -O2
 CPPFLAGS = -Wall
 
 DISTFILES = ChangeLog COPYING Makefile README \
-gnumeric-pure.html pure-examples.gnumeric preamble.tex config.guess \
+gnumeric-pure.html preamble.tex config.guess \
 pure-loader/boot.c pure-loader/pure-gnumeric.c pure-loader/pure-gnumeric.h \
 pure-loader/pure-loader.c pure-loader/pure-loader.h \
 pure-loader/plugin.xml pure-loader/pure-ui.xml \
-pure-func/*.pure pure-func/plugin.xml
+pure-func/*.pure pure-func/plugin.xml examples/*.gnumeric
 
 all: pure-loader/pure_loader$(DLL)
 
@@ -152,7 +152,7 @@ uninstall-local:
 
 dist:
 	rm -rf $(dist)
-	mkdir $(dist) && mkdir $(dist)/pure-func && mkdir $(dist)/pure-loader
+	mkdir $(dist) && mkdir $(dist)/examples && mkdir $(dist)/pure-func && mkdir $(dist)/pure-loader
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)

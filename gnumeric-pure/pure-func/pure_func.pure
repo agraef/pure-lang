@@ -106,12 +106,13 @@ gnm_info "pure_calc" = gnm_help
  "pure_calc:evaluate an expression asynchronously"
  ["s:string"]
  "pure_calc evaluates an expression with parameter substitution, like pure_eval, but it uses an asynchronous data source to carry out the calculation as a background task."
- [] [] ["pure_eval","pure_counter"];
+ [] ["pure_calc(\"foo\") executes @{foo} in the background."]
+ ["pure_eval","pure_counter"];
 
 gnm_info "pure_counter" = "f", gnm_help "pure_count:count off the seconds"
  ["start:integer"]
  "Counts off the seconds, beginning with the given @{start} value. This example demonstrates the use of an asynchronous data source which draws values from a Pure stream."
- [] [] ["pure_calc"];
+ [] ["pure_counter(0) counts off the seconds from 0."] ["pure_calc"];
 
 /* Helper function to collect the values in a list of scalars and ranges or
    arrays in a single list. */
@@ -163,6 +164,34 @@ pure_calc (s::string:args) =
    initial value. */
 
 pure_counter x = pure_datasource [sleep (i>x) $$ i | i = x..inf];
+
+/***************************************************************************/
+
+/* A complete calendar example. Please have a look at the calendar spreadsheet
+   in the distribution to see this example in action. NOTE: This requires the
+   date utilities in date.pure, included in the distribution. */
+
+using date;
+
+gnm_info "pure_cal" = "f", gnm_help "pure_cal:calendar example"
+ ["y:integer (year)"]
+ "Computes a calendar for the given year @{y}."
+ ["This returns a 32x24 matrix, so you should select an appropriate range of cells and then enter this as an array formula. See the calendar spreadsheet in the Pure/Gnumeric distribution for a sample."]
+ ["pure_cal(2009) yields the calendar for 2009."] [];
+
+/* The actual computation of the calendar is done using the 'cal' function in
+   date.pure, here we only reformat the calendar nicely in three columns, one
+   for each quarter. */
+
+pure_cal y = matrix $ cat $ map (quarter c) (0..3)
+when c = map (vfill 10 7 . map (hfill 7) . cal y) (1..12) end
+with
+  quarter c i = zipwith (+) m1 $ zipwith (+) m2 m3
+    when [m1,m2,m3] = map month $ c!!(i*3..(i+1)*3-1) end;
+  month (r1:(m:_):_:r2:r) = ("":r1):(m:r2):map ("":) r;
+  hfill n xs = xs+["" | i = #xs..n-1];
+  vfill n m xs = xs+[hfill m [] | i = #xs..n-1];
+end when y = int y end;
 
 /***************************************************************************/
 
