@@ -847,7 +847,7 @@ bool pure_write_blob(FILE *fp, const keyval_t *key, pure_expr *x)
 
 bool pure_read_blob(FILE *fp, keyval_t *key, pure_expr **x)
 {
-  size_t n;
+  size_t n, m;
   void *buf;
   pure_expr *y, **xv = NULL;
   const char *s;
@@ -856,17 +856,28 @@ bool pure_read_blob(FILE *fp, keyval_t *key, pure_expr **x)
   buf = malloc(n);
   if (!buf)
     return false;
-  if (fread(buf, 1, n, fp) != n) {
+  m = 0;
+  while (m < n && !feof(fp)) {
+    size_t k = fread(buf+m, 1, n, fp);
+    m += k;
+    if (k == 0) g_usleep(100);
+  }
+  if (m < n) {
+    fprintf(stderr, "** pure_read_blob: read failed\n");
     free(buf);
     return false;
   }
   y = pure_app(pure_symbol(pure_sym("val")), pure_pointer(buf));
   free(buf);
-  if (!y) return false;
+  if (!y) {
+    fprintf(stderr, "** pure_read_blob: invalid blob\n");
+    return false;
+  }
   if (pure_is_tuplev(y, &n, &xv) && n == 2 && pure_is_string(xv[0], &s)) {
     if (sscanf(s, "%p-%p-%u", &key->p, &key->q, &key->id) < 3) {
       pure_freenew(y);
       if (xv) free(xv);
+      fprintf(stderr, "** pure_read_blob: bad blob format\n");
       return false;
     }
     *x = xv[1];
@@ -878,6 +889,7 @@ bool pure_read_blob(FILE *fp, keyval_t *key, pure_expr **x)
   } else {
     pure_freenew(y);
     if (xv) free(xv);
+    fprintf(stderr, "** pure_read_blob: bad blob format\n");
     return false;
   }
 }
