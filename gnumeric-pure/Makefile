@@ -25,6 +25,9 @@ LIBS = $(shell pkg-config --libs libgoffice-0.8)
 #     The Makefile tries to guess the installation path and version number of
 #     Gnumeric on its own. If it guesses wrong, you'll also have to adjust the
 #     values of the prefix and gnmversion variables (see below) accordingly.
+#     Moreover, you may want to adjust the value of the gnmlocalplugindir
+#     variable below if you'd like the install-local target to go into some
+#     other directory than ~/.gnumeric/$(gnmversion)/plugins.
 
 # 3.  Run 'make' to build the plugin.
 
@@ -63,7 +66,14 @@ gnmlibdir = $(libdir)/gnumeric
 
 # Install dir for the plugin and accompanying stuff.
 gnmplugindir = $(gnmlibdir)/$(gnmversion)/plugins
+ifneq "$(HOME)" ""
 gnmlocalplugindir = $(HOME)/.gnumeric/$(gnmversion)/plugins
+else
+gnmlocalplugindir = $(gnmplugindir)
+endif
+
+pureloaderdir = pure-loader
+purefuncdir = pure-func
 
 # Try to guess the host system type.
 host = $(shell ./config.guess)
@@ -106,7 +116,7 @@ pure-loader/pure_loader$(DLL): pure-loader/boot.o pure-loader/pure-gnumeric.o pu
 	$(CC) $(shared) -o $@ $(LDFLAGS) $^ $(LIBS) -lpure
 
 %.o: %.c
-	$(CC) $(INCLUDES) -I. -I.. $(CPPFLAGS) -DGNM_VERSION='"$(gnmversion)"' -DPLUGIN_VERSION='"$(version)"' $(CFLAGS) $(PIC) -o $@ -c $<
+	$(CC) $(INCLUDES) -I. -I.. $(CPPFLAGS) -DGNM_VERSION='"$(gnmversion)"' -DPLUGIN_VERSION='"$(version)"' -DPURE_INCLUDES='"-I$(gnmplugindir)/$(purefuncdir)","-I$(gnmlocalplugindir)/$(purefuncdir)"' $(CFLAGS) $(PIC) -o $@ -c $<
 
 clean:
 	(cd pure-loader/ && rm -f pure_loader$(DLL) *~ *.a *.o)
@@ -133,22 +143,22 @@ gnumeric-pure.tex: README
 	rm -f *.aux *.log *.out *.toc
 
 install:
-	test -d "$(DESTDIR)$(gnmplugindir)/pure-func" || mkdir -p "$(DESTDIR)$(gnmplugindir)/pure-func"
-	test -d "$(DESTDIR)$(gnmplugindir)/pure-loader" || mkdir -p "$(DESTDIR)$(gnmplugindir)/pure-loader"
-	cp COPYING README gnumeric-pure.html pure-func/*.pure pure-func/plugin.xml "$(DESTDIR)$(gnmplugindir)/pure-func"
-	cp pure-loader/pure_loader$(DLL) pure-loader/plugin.xml pure-loader/pure-ui.xml "$(DESTDIR)$(gnmplugindir)/pure-loader"
+	test -d "$(DESTDIR)$(gnmplugindir)/$(purefuncdir)" || mkdir -p "$(DESTDIR)$(gnmplugindir)/$(purefuncdir)"
+	test -d "$(DESTDIR)$(gnmplugindir)/$(pureloaderdir)" || mkdir -p "$(DESTDIR)$(gnmplugindir)/$(pureloaderdir)"
+	cp COPYING README gnumeric-pure.html pure-func/*.pure pure-func/plugin.xml "$(DESTDIR)$(gnmplugindir)/$(purefuncdir)"
+	cp pure-loader/pure_loader$(DLL) pure-loader/plugin.xml pure-loader/pure-ui.xml "$(DESTDIR)$(gnmplugindir)/$(pureloaderdir)"
 
 install-local:
-	test -d "$(DESTDIR)$(gnmlocalplugindir)/pure-func" || mkdir -p "$(DESTDIR)$(gnmlocalplugindir)/pure-func"
-	test -d "$(DESTDIR)$(gnmlocalplugindir)/pure-loader" || mkdir -p "$(DESTDIR)$(gnmlocalplugindir)/pure-loader"
-	cp COPYING README gnumeric-pure.html pure-func/*.pure pure-func/plugin.xml "$(DESTDIR)$(gnmlocalplugindir)/pure-func"
-	cp pure-loader/pure_loader$(DLL) pure-loader/plugin.xml pure-loader/pure-ui.xml "$(DESTDIR)$(gnmlocalplugindir)/pure-loader"
+	test -d "$(DESTDIR)$(gnmlocalplugindir)/$(purefuncdir)" || mkdir -p "$(DESTDIR)$(gnmlocalplugindir)/$(purefuncdir)"
+	test -d "$(DESTDIR)$(gnmlocalplugindir)/$(pureloaderdir)" || mkdir -p "$(DESTDIR)$(gnmlocalplugindir)/$(pureloaderdir)"
+	cp COPYING README gnumeric-pure.html pure-func/*.pure pure-func/plugin.xml "$(DESTDIR)$(gnmlocalplugindir)/$(purefuncdir)"
+	cp pure-loader/pure_loader$(DLL) pure-loader/plugin.xml pure-loader/pure-ui.xml "$(DESTDIR)$(gnmlocalplugindir)/$(pureloaderdir)"
 
 uninstall:
-	rm -rf "$(DESTDIR)$(gnmplugindir)/pure-func" "$(DESTDIR)$(gnmplugindir)/pure-loader"
+	rm -rf "$(DESTDIR)$(gnmplugindir)/$(purefuncdir)" "$(DESTDIR)$(gnmplugindir)/$(pureloaderdir)"
 
 uninstall-local:
-	rm -rf "$(DESTDIR)$(gnmlocalplugindir)/pure-func" "$(DESTDIR)$(gnmlocalplugindir)/pure-loader"
+	rm -rf "$(DESTDIR)$(gnmlocalplugindir)/$(purefuncdir)" "$(DESTDIR)$(gnmlocalplugindir)/$(pureloaderdir)"
 
 dist:
 	rm -rf $(dist)

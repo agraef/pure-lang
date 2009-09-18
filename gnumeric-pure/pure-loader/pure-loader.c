@@ -243,7 +243,13 @@ gplp_load_base(GOPluginLoader *loader, GOErrorInfo **ret_error)
   if (g_file_test(path, G_FILE_TEST_EXISTS)) {
     if (!interp) {
       // First invocation, create an interpreter instance.
+#ifdef PURE_INCLUDES
+      char *argv[] = { "", PURE_INCLUDES, NULL };
+      int argc = sizeof(argv)/sizeof(char*)-1;
+      interp = pure_create_interp(argc, argv);
+#else
       interp = pure_create_interp(0, 0);
+#endif
       if (interp) pure_init_help_consts();
     }
     if (!interp)
