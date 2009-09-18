@@ -100,18 +100,18 @@ static pure_expr *rangeref2tuple(const GnmEvalPos *pos, const GnmRangeRef *rr)
 
 static GnmValue *tuple2rangeref(const GnmEvalPos *pos, pure_expr *x)
 {
-  pure_expr **xs;
+  pure_expr **xs = NULL;
   size_t n;
   void *p;
   int x1, y1, x2, y2;
   if (pure_is_tuplev(x, &n, &xs) && n >= 3 && pure_is_pointer(xs[0], &p) &&
-      pure_is_int(xs[1], &x1) && pure_is_int(xs[2], &y1)) {
+      pure_is_int(xs[1], &x1) && pure_is_int(xs[2], &y1) && x1>0 && y1>0) {
     Sheet *sheet = eval_sheet((Sheet*)p, pos->sheet);
     GnmRangeRef rr;
     if (n == 3) {
       x2 = x1; y2 = y1;
-    } else if (!(n == 5 &&
-		 pure_is_int(xs[3], &x2) && pure_is_int(xs[4], &y2))) {
+    } else if (!(n == 5 && pure_is_int(xs[3], &x2) &&
+		 pure_is_int(xs[4], &y2) && x2>0 && y2>0)) {
       free(xs);
       return NULL;
     }
@@ -126,8 +126,10 @@ static GnmValue *tuple2rangeref(const GnmEvalPos *pos, pure_expr *x)
     gnm_cellref_init(&rr.a, sheet, x1, y1, FALSE);
     gnm_cellref_init(&rr.b, sheet, x2, y2, FALSE);
     return value_new_cellrange_unsafe(&rr.a, &rr.b);
-  } else
+  } else {
+    if (xs) free(xs);
     return NULL;
+  }
 }
 
 static char *rangeref2str(const GnmEvalPos *pos, const GnmRangeRef *rr)
@@ -153,7 +155,17 @@ static char *rangeref2str(const GnmEvalPos *pos, const GnmRangeRef *rr)
 
 static GnmValue *str2rangeref(const GnmEvalPos *pos, const char *s)
 {
-  return value_new_cellrange_str(pos->sheet, s);
+  GnmParsePos pp;
+  GnmValue *res = NULL;
+  GnmConventions const *convs = gnm_conventions_default;
+  GnmExprTop const *texpr = gnm_expr_parse_str
+    (s, parse_pos_init_evalpos(&pp, pos),
+     GNM_EXPR_PARSE_FORCE_ABSOLUTE_REFERENCES, convs, NULL);
+  if (texpr != NULL) {
+    res = gnm_expr_top_get_range(texpr);
+    gnm_expr_top_unref(texpr);
+  }
+  return res;
 }
 
 pure_expr *
