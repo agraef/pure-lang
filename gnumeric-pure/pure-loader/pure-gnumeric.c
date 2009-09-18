@@ -105,13 +105,13 @@ static GnmValue *tuple2rangeref(const GnmEvalPos *pos, pure_expr *x)
   void *p;
   int x1, y1, x2, y2;
   if (pure_is_tuplev(x, &n, &xs) && n >= 3 && pure_is_pointer(xs[0], &p) &&
-      pure_is_int(xs[1], &x1) && pure_is_int(xs[2], &y1) && x1>0 && y1>0) {
+      pure_is_int(xs[1], &x1) && pure_is_int(xs[2], &y1) && x1>=0 && y1>=0) {
     Sheet *sheet = eval_sheet((Sheet*)p, pos->sheet);
     GnmRangeRef rr;
     if (n == 3) {
       x2 = x1; y2 = y1;
     } else if (!(n == 5 && pure_is_int(xs[3], &x2) &&
-		 pure_is_int(xs[4], &y2) && x2>0 && y2>0)) {
+		 pure_is_int(xs[4], &y2) && x2>=0 && y2>=0)) {
       free(xs);
       return NULL;
     }
