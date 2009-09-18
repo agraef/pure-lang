@@ -36,6 +36,8 @@
 #define GNM_PURE_PLUGIN_LOADER(o)	(G_TYPE_CHECK_INSTANCE_CAST ((o), TYPE_GNM_PURE_PLUGIN_LOADER, GnmPurePluginLoader))
 #define IS_GNM_PURE_PLUGIN_LOADER(o)	(G_TYPE_CHECK_INSTANCE_TYPE ((o), TYPE_GNM_PURE_PLUGIN_LOADER))
 
+static pure_interp *interp;
+
 typedef struct {
   GObject base;
   gchar* module_name;
@@ -130,8 +132,6 @@ static GnmFuncHelp *pure_get_gnm_help(pure_expr *x)
   return help;
 }
 
-static pure_interp *interp;
-
 static GnmValue*
 call_pure_function_args(GnmFuncEvalInfo *ei, GnmValue const * const *args)
 {
@@ -165,6 +165,8 @@ gplp_func_desc_load(GOPluginService *service,
   gchar *arg_spec = NULL;
   GnmFuncHelp *help = NULL;
 
+  g_return_val_if_fail(interp!=NULL,FALSE);
+
   if (desc) {
     size_t size;
     pure_expr **elems = NULL;
@@ -195,6 +197,12 @@ gplp_func_desc_load(GOPluginService *service,
     if (elems) free(elems);
     pure_freenew(desc);
   }
+
+  /* It's a good idea to JIT the function here, beforehand, so that it's ready
+     to go when the user entered his formula. Also, if the function is only
+     invoked in background tasks it may otherwise be compiled over and over
+     again which is wasteful. */
+  pure_interp_compile(interp, pure_sym(name));
 
   res->name = g_strdup(name);
   res->arg_spec = arg_spec;
