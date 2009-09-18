@@ -37,6 +37,8 @@ pure_expr* pure_gnmcall(const char *name, pure_expr *args);
 pure_expr *pure_datasource(pure_expr *x);
 
 pure_expr *pure_this_cell(void);
+pure_expr *pure_parse_range(const char *s);
+pure_expr *pure_make_range(pure_expr *x);
 pure_expr *pure_get_cell(const char *s);
 pure_expr *pure_set_cell(const char *s, pure_expr *x);
 pure_expr *pure_set_text(const char *s, pure_expr *x);

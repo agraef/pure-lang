@@ -1,6 +1,7 @@
 #include "pure-gnumeric.h"
 #include "pure-loader.h"
 #include <glib/gi18n-lib.h>
+#include <assert.h>
 
 // NOTE: This stuff requires that Pure was built with GSL matrix support.
 
@@ -85,6 +86,50 @@ create_double_matrix(size_t nrows, size_t ncols)
 /* NOTE: This assumes that Gnumeric represents all strings as UTF-8 internally
    (as does Pure), so that no encoding conversions are necessary. */
 
+static pure_expr *rangeref2tuple(const GnmEvalPos *pos, const GnmRangeRef *rr)
+{
+  Sheet *sheet = eval_sheet(rr->a.sheet, pos->sheet);
+  if (rr->a.col == rr->b.col && rr->a.row == rr->b.row)
+    return pure_tuplel(3, pure_pointer(sheet),
+		       pure_int(rr->a.col), pure_int(rr->a.row));
+  else
+    return pure_tuplel(5, pure_pointer(sheet),
+		       pure_int(rr->a.col), pure_int(rr->a.row),
+		       pure_int(rr->b.col), pure_int(rr->b.row));
+}
+
+static GnmValue *tuple2rangeref(const GnmEvalPos *pos, pure_expr *x)
+{
+  pure_expr **xs;
+  size_t n;
+  void *p;
+  int x1, y1, x2, y2;
+  if (pure_is_tuplev(x, &n, &xs) && n >= 3 && pure_is_pointer(xs[0], &p) &&
+      pure_is_int(xs[1], &x1) && pure_is_int(xs[2], &y1)) {
+    Sheet *sheet = eval_sheet((Sheet*)p, pos->sheet);
+    GnmRangeRef rr;
+    if (n == 3) {
+      x2 = x1; y2 = y1;
+    } else if (!(n == 5 &&
+		 pure_is_int(xs[3], &x2) && pure_is_int(xs[4], &y2))) {
+      free(xs);
+      return NULL;
+    }
+    free(xs);
+    // handle inversion
+    if (x1 > x2) {
+      int x = x1; x1 = x2; x2 = x;
+    }
+    if (y1 > y2) {
+      int y = y1; y1 = y2; y2 = y;
+    }
+    gnm_cellref_init(&rr.a, sheet, x1, y1, FALSE);
+    gnm_cellref_init(&rr.b, sheet, x2, y2, FALSE);
+    return value_new_cellrange_unsafe(&rr.a, &rr.b);
+  } else
+    return NULL;
+}
+
 static char *rangeref2str(const GnmEvalPos *pos, const GnmRangeRef *rr)
 {
   GnmParsePos pp;
@@ -108,17 +153,7 @@ static char *rangeref2str(const GnmEvalPos *pos, const GnmRangeRef *rr)
 
 static GnmValue *str2rangeref(const GnmEvalPos *pos, const char *s)
 {
-  GnmParsePos pp;
-  GnmValue *res = NULL;
-  GnmConventions const *convs = gnm_conventions_default;
-  GnmExprTop const *texpr = gnm_expr_parse_str
-    (s, parse_pos_init_evalpos(&pp, pos),
-     GNM_EXPR_PARSE_FORCE_ABSOLUTE_REFERENCES, convs, NULL);
-  if (texpr != NULL) {
-    res = gnm_expr_top_get_range(texpr);
-    gnm_expr_top_unref(texpr);
-  }
-  return res;
+  return value_new_cellrange_str(pos->sheet, s);
 }
 
 pure_expr *
@@ -542,15 +577,201 @@ pure_gnmcall(const char *name, pure_expr *args)
   return ret;
 }
 
+/* Support for asynchronous data sources (from sample_datasource.c). */
+
+static inline bool is_nil(pure_expr *x)
+{
+  size_t n;
+  return pure_is_listv(x, &n, NULL) && n==0;
+}
+
+static inline bool is_cons(pure_expr *x, pure_expr **y, pure_expr **z)
+{
+  pure_expr *f;
+  size_t n;
+  if (pure_is_appv(x, &f, &n, NULL) && n==2 &&
+      strcmp(pure_sym_pname(f->tag), ":") == 0) {
+    if (y) *y = x->data.x[0]->data.x[1];
+    if (z) *z = x->data.x[1];
+    return true;
+  } else
+    return false;
+}
+
+bool pure_write_blob(FILE *fp, const keyval_t *key, pure_expr *x)
+{
+  pure_expr *b;
+  // We should maybe encode these in binary.
+  char buf[100];
+  sprintf(buf, "%p-%p-%u", key->p, key->q, key->id);
+  b = pure_app(pure_symbol(pure_sym("blob")),
+	       pure_tuplel(2, pure_cstring_dup(buf), x));
+  void *p;
+  bool ret = false;
+  if (b) pure_new(b);
+  if (b && pure_is_pointer(b, &p)) {
+    pure_expr *size = pure_app(pure_symbol(pure_sym("blob_size")), b);
+    if (size) {
+      size_t n = 0;
+      int32_t iv;
+      if (pure_is_int(size, &iv))
+	n = (unsigned)iv;
+      else if (pure_is_mpz(size, NULL))
+	n = mpz_get_ui(size->data.z);
+      if (n > 0) {
+	ret = fwrite(&n, sizeof(size_t), 1, fp) == 1 &&
+	  fwrite(p, 1, n, fp) == n;
+#if 0
+	fprintf(stderr, "%p-%p-%u: wrote %lu bytes, ret = %d\n",
+		key->p, key->q, key->id, (unsigned long)n, (int)ret);
+#endif
+      }
+      pure_freenew(size);
+    }
+  }
+  if (b) pure_free(b);
+  fflush(fp);
+  return ret;
+}
+
+bool pure_read_blob(FILE *fp, keyval_t *key, pure_expr **x)
+{
+  size_t n, m;
+  void *buf;
+  pure_expr *y, **xv = NULL;
+  const char *s;
+  if (fread(&n, sizeof(size_t), 1, fp) != 1)
+    return false;
+  buf = malloc(n);
+  if (!buf)
+    return false;
+  m = 0;
+  while (m < n && !feof(fp)) {
+    size_t k = fread(buf+m, 1, n, fp);
+    m += k;
+    if (k == 0) g_usleep(100);
+  }
+  if (m < n) {
+    fprintf(stderr, "** pure_read_blob: read failed\n");
+    free(buf);
+    return false;
+  }
+  y = pure_app(pure_symbol(pure_sym("val")), pure_pointer(buf));
+  free(buf);
+  if (!y) {
+    fprintf(stderr, "** pure_read_blob: invalid blob\n");
+    return false;
+  }
+  if (pure_is_tuplev(y, &n, &xv) && n == 2 && pure_is_string(xv[0], &s)) {
+    if (sscanf(s, "%p-%p-%u", &key->p, &key->q, &key->id) < 3) {
+      pure_freenew(y);
+      if (xv) free(xv);
+      fprintf(stderr, "** pure_read_blob: bad blob format\n");
+      return false;
+    }
+    *x = xv[1];
+    pure_ref(*x);
+    pure_freenew(y);
+    free(xv);
+    pure_unref(*x);
+    return true;
+  } else {
+    pure_freenew(y);
+    if (xv) free(xv);
+    fprintf(stderr, "** pure_read_blob: bad blob format\n");
+    return false;
+  }
+}
+
+static void out(FILE *fp, keyval_t *key, pure_expr *x)
+{
+  if (!pure_write_blob(fp, key, x))
+    // Write error, bail out.
+    exit(1);
+}
+
+pure_expr *pure_datasource(pure_expr *x)
+{
+  int pid;
+  pure_expr *ret;
+  keyval_t key = { eval_info->func_call, eval_info->pos->dep, id };
+  if (!x || !eval_info || !pure_async_filename) return NULL;
+  if (!pure_async_func_init(eval_info, eval_expr, id++, &ret))
+    return ret;
+  else if ((pid = fork()) == 0) {
+    /* child */
+    FILE *pure_async_file = fopen(pure_async_filename, "ab");
+    /* evaluate expression, and write results to the pipe */
+    pure_expr *u = pure_force(pure_new(x)), *y, *z;
+#if 0
+    fprintf(stderr, "[%d] child: %p-%p-%u\n", getpid(), key.p, key.q, key.id);
+#endif
+    while (is_cons(u, &y, &z)) {
+      out(pure_async_file, &key, pure_force(y));
+      pure_new(pure_force(z));
+      pure_free(u);
+      u = z;
+    }
+    if (!is_nil(u))
+      out(pure_async_file, &key, u);
+    exit(0);
+  } else if (pid > 0) {
+    /* parent */
+#if 0
+    fprintf(stderr, "[%d] started child [%d]: %p-%p-%u\n", getpid(), pid,
+	    key.p, key.q, key.id);
+#endif
+    pure_async_func_process(eval_info, key.id, pid);
+    return ret;
+  } else {
+    perror("fork");
+    return NULL;
+  }
+}
+
 /* Retrieve and manipulate cell ranges. */
 
 pure_expr *pure_this_cell(void)
 {
   if (eval_info) {
     GnmRangeRef rr;
+    char *s;
     gnm_cellref_init(&rr.a, NULL, 0, 0, TRUE);
     gnm_cellref_init(&rr.b, NULL, 0, 0, TRUE);
-    return pure_string(rangeref2str(eval_info->pos, &rr));
+    s = rangeref2str(eval_info->pos, &rr);
+    return s?pure_string(s):NULL;
+  } else
+    return NULL;
+}
+
+pure_expr *pure_parse_range(const char *s)
+{
+  if (eval_info) {
+    GnmValue *v = str2rangeref(eval_info->pos, s);
+    assert(!v || v->type == VALUE_CELLRANGE);
+    if (v) {
+      GnmRangeRef const *rr = &v->v_range.cell;
+      pure_expr *x = rangeref2tuple(eval_info->pos, rr);
+      value_release(v);
+      return x;
+    } else
+      return NULL;
+  } else
+    return NULL;
+}
+
+pure_expr *pure_make_range(pure_expr *x)
+{
+  if (eval_info) {
+    GnmValue *v = tuple2rangeref(eval_info->pos, x);
+    assert(!v || v->type == VALUE_CELLRANGE);
+    if (v) {
+      GnmRangeRef const *rr = &v->v_range.cell;
+      char *s = rangeref2str(eval_info->pos, rr);
+      value_release(v);
+      return s?pure_string(s):NULL;
+    } else
+      return NULL;
   } else
     return NULL;
 }
@@ -786,156 +1007,4 @@ pure_expr *pure_set_range(const char *s, pure_expr *xs)
     return ret;
   } else
     return NULL;
-}
-
-/* Support for asynchronous data sources (from sample_datasource.c). */
-
-static inline bool is_nil(pure_expr *x)
-{
-  size_t n;
-  return pure_is_listv(x, &n, NULL) && n==0;
-}
-
-static inline bool is_cons(pure_expr *x, pure_expr **y, pure_expr **z)
-{
-  pure_expr *f;
-  size_t n;
-  if (pure_is_appv(x, &f, &n, NULL) && n==2 &&
-      strcmp(pure_sym_pname(f->tag), ":") == 0) {
-    if (y) *y = x->data.x[0]->data.x[1];
-    if (z) *z = x->data.x[1];
-    return true;
-  } else
-    return false;
-}
-
-bool pure_write_blob(FILE *fp, const keyval_t *key, pure_expr *x)
-{
-  pure_expr *b;
-  // We should maybe encode these in binary.
-  char buf[100];
-  sprintf(buf, "%p-%p-%u", key->p, key->q, key->id);
-  b = pure_app(pure_symbol(pure_sym("blob")),
-	       pure_tuplel(2, pure_cstring_dup(buf), x));
-  void *p;
-  bool ret = false;
-  if (b) pure_new(b);
-  if (b && pure_is_pointer(b, &p)) {
-    pure_expr *size = pure_app(pure_symbol(pure_sym("blob_size")), b);
-    if (size) {
-      size_t n = 0;
-      int32_t iv;
-      if (pure_is_int(size, &iv))
-	n = (unsigned)iv;
-      else if (pure_is_mpz(size, NULL))
-	n = mpz_get_ui(size->data.z);
-      if (n > 0) {
-	ret = fwrite(&n, sizeof(size_t), 1, fp) == 1 &&
-	  fwrite(p, 1, n, fp) == n;
-#if 0
-	fprintf(stderr, "%p-%p-%u: wrote %lu bytes, ret = %d\n",
-		key->p, key->q, key->id, (unsigned long)n, (int)ret);
-#endif
-      }
-      pure_freenew(size);
-    }
-  }
-  if (b) pure_free(b);
-  fflush(fp);
-  return ret;
-}
-
-bool pure_read_blob(FILE *fp, keyval_t *key, pure_expr **x)
-{
-  size_t n, m;
-  void *buf;
-  pure_expr *y, **xv = NULL;
-  const char *s;
-  if (fread(&n, sizeof(size_t), 1, fp) != 1)
-    return false;
-  buf = malloc(n);
-  if (!buf)
-    return false;
-  m = 0;
-  while (m < n && !feof(fp)) {
-    size_t k = fread(buf+m, 1, n, fp);
-    m += k;
-    if (k == 0) g_usleep(100);
-  }
-  if (m < n) {
-    fprintf(stderr, "** pure_read_blob: read failed\n");
-    free(buf);
-    return false;
-  }
-  y = pure_app(pure_symbol(pure_sym("val")), pure_pointer(buf));
-  free(buf);
-  if (!y) {
-    fprintf(stderr, "** pure_read_blob: invalid blob\n");
-    return false;
-  }
-  if (pure_is_tuplev(y, &n, &xv) && n == 2 && pure_is_string(xv[0], &s)) {
-    if (sscanf(s, "%p-%p-%u", &key->p, &key->q, &key->id) < 3) {
-      pure_freenew(y);
-      if (xv) free(xv);
-      fprintf(stderr, "** pure_read_blob: bad blob format\n");
-      return false;
-    }
-    *x = xv[1];
-    pure_ref(*x);
-    pure_freenew(y);
-    free(xv);
-    pure_unref(*x);
-    return true;
-  } else {
-    pure_freenew(y);
-    if (xv) free(xv);
-    fprintf(stderr, "** pure_read_blob: bad blob format\n");
-    return false;
-  }
-}
-
-static void out(FILE *fp, keyval_t *key, pure_expr *x)
-{
-  if (!pure_write_blob(fp, key, x))
-    // Write error, bail out.
-    exit(1);
-}
-
-pure_expr *pure_datasource(pure_expr *x)
-{
-  int pid;
-  pure_expr *ret;
-  keyval_t key = { eval_info->func_call, eval_info->pos->dep, id };
-  if (!x || !eval_info || !pure_async_filename) return NULL;
-  if (!pure_async_func_init(eval_info, eval_expr, id++, &ret))
-    return ret;
-  else if ((pid = fork()) == 0) {
-    /* child */
-    FILE *pure_async_file = fopen(pure_async_filename, "ab");
-    /* evaluate expression, and write results to the pipe */
-    pure_expr *u = pure_force(pure_new(x)), *y, *z;
-#if 0
-    fprintf(stderr, "[%d] child: %p-%p-%u\n", getpid(), key.p, key.q, key.id);
-#endif
-    while (is_cons(u, &y, &z)) {
-      out(pure_async_file, &key, pure_force(y));
-      pure_new(pure_force(z));
-      pure_free(u);
-      u = z;
-    }
-    if (!is_nil(u))
-      out(pure_async_file, &key, u);
-    exit(0);
-  } else if (pid > 0) {
-    /* parent */
-#if 0
-    fprintf(stderr, "[%d] started child [%d]: %p-%p-%u\n", getpid(), pid,
-	    key.p, key.q, key.id);
-#endif
-    pure_async_func_process(eval_info, key.id, pid);
-    return ret;
-  } else {
-    perror("fork");
-    return NULL;
-  }
 }
