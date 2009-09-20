@@ -8,13 +8,16 @@ version = 0.3
 # Build and installation instructions:
 
 # 1.  Make sure that you have gnumeric and the corresponding development
-#     packages installed. You'll also need the gnumeric-features.h file from
-#     the Gnumeric sources, place it into the directory with the gnumeric-pure
-#     sources, or specify the include path needed to locate this file in step
-#     2 below. (Note that this file is created when configuring the Gnumeric
-#     sources. Also note that older Gnumeric versions don't have this file, in
-#     this case you can just copy gnumeric-config.h and symlink it to
-#     gnumeric-features.h instead.)
+#     packages installed.
+
+#     NOTE: Older Gnumeric versions (<= 1.9.12) lack the gnumeric-features.h
+#     file or have it installed in the wrong directory. If all else fails then
+#     you'll have to grab the file from the Gnumeric sources and place it into
+#     the directory with the gnumeric-pure sources, or specify the include
+#     path needed to locate this file in step 2 below. (Note that this file is
+#     created when configuring the Gnumeric sources. Also note that very old
+#     Gnumeric versions don't have this file, in this case you can just copy
+#     gnumeric-config.h and symlink it to gnumeric-features.h instead.)
 
 # 2.  Adjust the following as needed for your GTK+/GOffice installation:
 
@@ -23,7 +26,7 @@ INCLUDES = $(shell pkg-config --cflags libgoffice-0.8) \
 LIBS = $(shell pkg-config --libs libgoffice-0.8)
 
 #     The Makefile tries to guess the installation path and version number of
-#     Gnumeric on its own. If it guesses wrong, you'll also have to adjust the
+#     Gnumeric on its own. If it guesses wrong, you'll have to adjust the
 #     values of the prefix and gnmversion variables (see below) accordingly.
 #     Moreover, you may want to adjust the value of the gnmlocalplugindir
 #     variable below if you'd like the install-local target to go into some

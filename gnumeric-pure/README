@@ -28,12 +28,9 @@ Installation
 ============
 
 Obviously, you need to have both Pure and Gnumeric installed. Pure 0.35 and
-Gnumeric 0.19.12 are known to work, older versions probably work as well if
-you fiddle a bit with the Makefile and/or the sources. See the beginning of
-the Makefile for detailed instructions. Briefly, you'll have to grab
-``gnumeric-features.h`` from the Gnumeric sources and either place it into the
-directory with the gnumeric-pure sources, or edit the ``INCLUDE`` variable at
-the beginning of the Makefile so that gcc finds this header.
+Gnumeric >= 0.19.13 are known to work. (Older Gnumeric versions probably work
+as well if you're willing to fiddle with the Makefile and/or the sources. See
+the beginning of the Makefile for related information.)
 
 Then run ``make``. You might have to adjust the settings at the beginning of
 the Makefile to make this work. If you're lucky and the compile goes through,
@@ -50,16 +47,16 @@ mode.
 Typically, ``make install`` and ``make install-local`` will install the
 plugins into the following directories by default:
 
-* System-wide installations go into ``/usr/local/gnumeric/1.9.12/plugins`` or
+* System-wide installations go into ``/usr/local/gnumeric/1.9.13/plugins`` or
   similar, depending on where Gnumeric is installed.
 
-* User-specific installations go into ``~/.gnumeric/1.9.12/plugins``.
+* User-specific installations go into ``~/.gnumeric/1.9.13/plugins``.
 
 The Makefile tries to guess the installation path and version number of
 Gnumeric on its own. If it guesses wrong, you can change these using the
 Makefile variables ``prefix`` and ``gnmversion``, respectively. For instance::
 
-  $ make prefix=/usr gnmversion=1.9.12
+  $ make prefix=/usr gnmversion=1.9.13
 
 If ``make install`` doesn't work for some reason, you can also just copy the
 ``pure-func`` and ``pure-loader`` directories manually to your Gnumeric plugin
@@ -261,8 +258,7 @@ function becomes variadic and the (optional) parameters are passed as a Pure
 list (in addition to the non-optional parameters).
 
 Here's the list of valid parameter types, as they are documented in the
-Gnumeric sources (note that, at least with Gnumeric 1.9.12, the ``"a"`` type
-isn't implemented, use ``"A"`` instead)::
+Gnumeric sources::
 
     f : float 		no errors, string conversion attempted
     b : boolean		identical to f
@@ -272,7 +268,6 @@ isn't implemented, use ``"A"`` instead)::
 
     r : cell range	content may not be evaluated yet
     A : area		array, range (as above), or scalar
-    a : array           (not implemented?)
     ? : anything        any value (scalars, non-scalars, errors, whatever)
 
 The keys used in the function description may be any of the following, along
