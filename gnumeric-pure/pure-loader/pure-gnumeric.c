@@ -1026,6 +1026,9 @@ pure_expr *pure_set_range(const char *s, pure_expr *xs)
 #include <sheet-object.h>
 #include <sheet-object-impl.h>
 #include <sheet-object-widget.h>
+#include <sheet-object-image.h>
+#include <sheet-object-graph.h>
+#include <gnm-so-filled.h>
 
 #define SHEET_WIDGET_FRAME_TYPE		(sheet_widget_frame_get_type ())
 #define SHEET_WIDGET_SCROLLBAR_TYPE	(sheet_widget_scrollbar_get_type ())
@@ -1037,22 +1040,42 @@ pure_expr *pure_set_range(const char *s, pure_expr *xs)
 #define SHEET_WIDGET_LIST_TYPE		(sheet_widget_list_get_type ())
 #define SHEET_WIDGET_COMBO_TYPE		(sheet_widget_combo_get_type ())
 
-static GocWidget *get_goc_widget (SheetObjectView *view)
+static GocItem *get_goc_item (SheetObjectView *view)
 {
   GocGroup *group = GOC_GROUP(view);
-  if (group == NULL || group->children == NULL)
+  if (group == NULL || group->children == NULL ||
+      !GOC_IS_ITEM(group->children->data))
     return NULL;
-  return GOC_WIDGET(group->children->data);
+  return GOC_ITEM(group->children->data);
+}
+
+static char *texpr2str(const GnmEvalPos *pos, const GnmExprTop *e)
+{
+  GnmParsePos pp;
+  GnmConventions const *convs = gnm_conventions_default;
+  char *s = gnm_expr_top_as_string(e, parse_pos_init_evalpos(&pp, pos), convs);
+  char *buf, *bufp; const char *p = s;
+  /* Do some cosmetic surgery. We only deal with absolute range references
+     anyway, so we can remove the redundant '$' signs. */
+  bufp = buf = alloca(strlen(p)+1);
+  for (; *p; p++)
+    if (*p != '$')
+      *(bufp++) = *p;
+  *bufp = '\0';
+  g_free(s);
+  return strdup(buf);
 }
 
 #define window_id(widget) (widget?GDK_WINDOW_XWINDOW(widget->window):0)
 
 pure_expr *pure_sheet_objects(void)
 {
-  Sheet *sheet = eval_info->pos->sheet;
+  const GnmEvalPos *pos = eval_info->pos;
+  Sheet *sheet = pos->sheet;
   GSList *ptr;
-  size_t n;
+  size_t i, n;
   pure_expr **xs = NULL, *ret;
+  const char *descr = NULL;
   for (n = 0, ptr = sheet->sheet_objects; ptr != NULL ; n++, ptr = ptr->next) ;
   if (n > 0) {
     xs = g_new(pure_expr*, n);
@@ -1069,71 +1092,134 @@ pure_expr *pure_sheet_objects(void)
       /* FIXME: In general, any number of widgets can be associated with a
 	 sheet object, but currently we only report the first of these. */
       SheetObjectView *view = w->data;
-      GocWidget *item = get_goc_widget(view);
-      if (item) widget = item->widget;
+      GocItem *item = get_goc_item(view);
+      if (!item)
+	;
+      else if (GOC_IS_WIDGET(item))
+	widget = GOC_WIDGET(item)->widget;
+      else if (GOC_IS_RECTANGLE(item))
+	descr = "rectangle";
+      else if (GOC_IS_CIRCLE(item))
+	descr = "circle";
+      else if (GOC_IS_ELLIPSE(item))
+	descr = "ellipse";
+      else if (GOC_IS_LINE(item))
+	descr = "line";
+      else if (GOC_IS_STYLED_ITEM(item))
+	descr = "styled";
+      else
+	descr = "unkown";
     }
+    /* Gnumeric specific widget types. */
     if (t == SHEET_WIDGET_FRAME_TYPE) {
       /* Frame objects don't expose any properties right now, so we take the
 	 label from the widget if it's available. */
       const gchar *str = widget?gtk_frame_get_label(GTK_FRAME(widget)):NULL;
-      info = pure_tuplel(4, pure_string_dup("frame"),
-			 pure_string_dup(str?str:""),
+      info = pure_tuplel(5, pure_string_dup("frame"),
+			 pure_string_dup(str),
+			 pure_string_dup(""),
 			 pure_pointer(widget),
 			 pure_uint64(window_id(widget)));
     } else if (t == SHEET_WIDGET_SCROLLBAR_TYPE) {
-      gboolean horizontal;
-      g_object_get(obj, "horizontal", &horizontal, NULL);
-      info = pure_tuplel(4, pure_string_dup("scrollbar"),
-			 pure_int(horizontal),
+      const GnmExprTop *e = sheet_widget_adjustment_get_link(so);
+      char *link = e?texpr2str(pos, e):strdup("");
+      info = pure_tuplel(5, pure_string_dup("scrollbar"),
+			 pure_string_dup(""),
+			 pure_string(link),
 			 pure_pointer(widget),
 			 pure_uint64(window_id(widget)));
     } else if (t == SHEET_WIDGET_SPINBUTTON_TYPE) {
-      gboolean horizontal;
-      g_object_get(obj, "horizontal", &horizontal, NULL);
-      info = pure_tuplel(4, pure_string_dup("spinbutton"),
-			 pure_int(horizontal),
+      const GnmExprTop *e = sheet_widget_adjustment_get_link(so);
+      char *link = e?texpr2str(pos, e):strdup("");
+      info = pure_tuplel(5, pure_string_dup("spinbutton"),
+			 pure_string_dup(""),
+			 pure_string(link),
 			 pure_pointer(widget),
 			 pure_uint64(window_id(widget)));
     } else if (t == SHEET_WIDGET_SLIDER_TYPE) {
-      gboolean horizontal;
-      g_object_get(obj, "horizontal", &horizontal, NULL);
-      info = pure_tuplel(4, pure_string_dup("slider"),
-			 pure_int(horizontal),
+      const GnmExprTop *e = sheet_widget_adjustment_get_link(so);
+      char *link = e?texpr2str(pos, e):strdup("");
+      info = pure_tuplel(5, pure_string_dup("slider"),
+			 pure_string_dup(""),
+			 pure_string(link),
 			 pure_pointer(widget),
 			 pure_uint64(window_id(widget)));
     } else if (t == SHEET_WIDGET_BUTTON_TYPE) {
-      gchar *str;
+      gchar *str = NULL;
+      const GnmExprTop *e = sheet_widget_button_get_link(so);
+      char *link = e?texpr2str(pos, e):strdup("");
       g_object_get(obj, "text", &str, NULL);
-      info = pure_tuplel(4, pure_string_dup("button"),
+      info = pure_tuplel(5, pure_string_dup("button"),
 			 pure_string(str),
+			 pure_string(link),
 			 pure_pointer(widget),
 			 pure_uint64(window_id(widget)));
     } else if (t == SHEET_WIDGET_CHECKBOX_TYPE) {
-      gchar *str;
+      gchar *str = NULL;
+      const GnmExprTop *e = sheet_widget_checkbox_get_link(so);
+      char *link = e?texpr2str(pos, e):strdup("");
       g_object_get(obj, "text", &str, NULL);
-      info = pure_tuplel(4, pure_string_dup("checkbox"),
+      info = pure_tuplel(5, pure_string_dup("checkbox"),
 			 pure_string(str),
+			 pure_string(link),
 			 pure_pointer(widget),
 			 pure_uint64(window_id(widget)));
     } else if (t == SHEET_WIDGET_RADIO_BUTTON_TYPE) {
-      gchar *str;
+      gchar *str = NULL;
+      const GnmExprTop *e = sheet_widget_radio_button_get_link(so);
+      char *link = e?texpr2str(pos, e):strdup("");
       g_object_get(obj, "text", &str, NULL);
-      info = pure_tuplel(4, pure_string_dup("radiobutton"),
+      info = pure_tuplel(5, pure_string_dup("radiobutton"),
 			 pure_string(str),
+			 pure_string(link),
 			 pure_pointer(widget),
 			 pure_uint64(window_id(widget)));
     } else if (t == SHEET_WIDGET_LIST_TYPE) {
-      info = pure_tuplel(4, pure_string_dup("list"),
+      info = pure_tuplel(5, pure_string_dup("list"),
+			 pure_string_dup(""),
 			 pure_string_dup(""),
 			 pure_pointer(widget),
 			 pure_uint64(window_id(widget)));
     } else if (t == SHEET_WIDGET_COMBO_TYPE) {
-      info = pure_tuplel(4, pure_string_dup("combo"),
+      info = pure_tuplel(5, pure_string_dup("combo"),
+			 pure_string_dup(""),
+			 pure_string_dup(""),
+			 pure_pointer(widget),
+			 pure_uint64(window_id(widget)));
+    } else if (t == SHEET_OBJECT_IMAGE_TYPE) {
+      gchar *str = NULL;
+      gpointer ptr = NULL;
+      g_object_get(obj, "image-type", &str, "image-data", &ptr, NULL);
+      info = pure_tuplel(5, pure_string_dup("image"),
+			 pure_string_dup(str),
+			 pure_string_dup(""),
+			 pure_pointer(ptr),
+			 pure_uint64(0));
+    } else if (t == SHEET_OBJECT_GRAPH_TYPE) {
+      info = pure_tuplel(5, pure_string_dup("graph"),
+			 pure_string_dup(""),
+			 pure_string_dup(""),
+			 pure_pointer(widget),
+			 pure_uint64(window_id(widget)));
+    } else if (t == GNM_SO_FILLED_TYPE && descr) {
+      /* Other canvas object types that we know about. */
+      gchar *str = NULL;
+      g_object_get(obj, "text", &str, NULL);
+      info = pure_tuplel(5, pure_string_dup(descr),
+			 pure_string(str),
 			 pure_string_dup(""),
 			 pure_pointer(widget),
 			 pure_uint64(window_id(widget)));
     }
+    /* FIXME: Figure out what else might be useful to support. */
     if (info) xs[n++] = info;
+  }
+  /* Apparently the sheet objects are listed with the last added object first,
+     so we reverse the list here. */
+  for (i = 0; i < n/2; i++) {
+    pure_expr *x = xs[i];
+    xs[i] = xs[n-i-1];
+    xs[n-i-1] = x;
   }
   ret = pure_listv(n, xs); g_free(xs);
   return ret;
