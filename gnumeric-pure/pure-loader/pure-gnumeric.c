@@ -1020,3 +1020,121 @@ pure_expr *pure_set_range(const char *s, pure_expr *xs)
   } else
     return NULL;
 }
+
+#include <gtk/gtk.h>
+#include <gdk/gdkx.h>
+#include <sheet-object.h>
+#include <sheet-object-impl.h>
+#include <sheet-object-widget.h>
+
+#define SHEET_WIDGET_FRAME_TYPE		(sheet_widget_frame_get_type ())
+#define SHEET_WIDGET_SCROLLBAR_TYPE	(sheet_widget_scrollbar_get_type ())
+#define SHEET_WIDGET_SPINBUTTON_TYPE	(sheet_widget_spinbutton_get_type ())
+#define SHEET_WIDGET_SLIDER_TYPE	(sheet_widget_slider_get_type ())
+#define SHEET_WIDGET_BUTTON_TYPE	(sheet_widget_button_get_type ())
+#define SHEET_WIDGET_CHECKBOX_TYPE	(sheet_widget_checkbox_get_type ())
+#define SHEET_WIDGET_RADIO_BUTTON_TYPE	(sheet_widget_radio_button_get_type ())
+#define SHEET_WIDGET_LIST_TYPE		(sheet_widget_list_get_type ())
+#define SHEET_WIDGET_COMBO_TYPE		(sheet_widget_combo_get_type ())
+
+static GocWidget *get_goc_widget (SheetObjectView *view)
+{
+  GocGroup *group = GOC_GROUP(view);
+  if (group == NULL || group->children == NULL)
+    return NULL;
+  return GOC_WIDGET(group->children->data);
+}
+
+#define window_id(widget) (widget?GDK_WINDOW_XWINDOW(widget->window):0)
+
+pure_expr *pure_sheet_objects(void)
+{
+  Sheet *sheet = eval_info->pos->sheet;
+  GSList *ptr;
+  size_t n;
+  pure_expr **xs = NULL, *ret;
+  for (n = 0, ptr = sheet->sheet_objects; ptr != NULL ; n++, ptr = ptr->next) ;
+  if (n > 0) {
+    xs = g_new(pure_expr*, n);
+    assert(xs);
+  }
+  for (n = 0, ptr = sheet->sheet_objects; ptr != NULL ; ptr = ptr->next) {
+    pure_expr *info = NULL;
+    GObject *obj = G_OBJECT (ptr->data);
+    SheetObject *so = SHEET_OBJECT(obj);
+    GType t = G_OBJECT_TYPE(obj);
+    GList *w = so->realized_list;
+    GtkWidget *widget = NULL;
+    if (w && w->data) {
+      /* FIXME: In general, any number of widgets can be associated with a
+	 sheet object, but currently we only report the first of these. */
+      SheetObjectView *view = w->data;
+      GocWidget *item = get_goc_widget(view);
+      if (item) widget = item->widget;
+    }
+    if (t == SHEET_WIDGET_FRAME_TYPE) {
+      /* Frame objects don't expose any properties right now, so we take the
+	 label from the widget if it's available. */
+      const gchar *str = widget?gtk_frame_get_label(GTK_FRAME(widget)):NULL;
+      info = pure_tuplel(4, pure_string_dup("frame"),
+			 pure_string_dup(str?str:""),
+			 pure_pointer(widget),
+			 pure_uint64(window_id(widget)));
+    } else if (t == SHEET_WIDGET_SCROLLBAR_TYPE) {
+      gboolean horizontal;
+      g_object_get(obj, "horizontal", &horizontal, NULL);
+      info = pure_tuplel(4, pure_string_dup("scrollbar"),
+			 pure_int(horizontal),
+			 pure_pointer(widget),
+			 pure_uint64(window_id(widget)));
+    } else if (t == SHEET_WIDGET_SPINBUTTON_TYPE) {
+      gboolean horizontal;
+      g_object_get(obj, "horizontal", &horizontal, NULL);
+      info = pure_tuplel(4, pure_string_dup("spinbutton"),
+			 pure_int(horizontal),
+			 pure_pointer(widget),
+			 pure_uint64(window_id(widget)));
+    } else if (t == SHEET_WIDGET_SLIDER_TYPE) {
+      gboolean horizontal;
+      g_object_get(obj, "horizontal", &horizontal, NULL);
+      info = pure_tuplel(4, pure_string_dup("slider"),
+			 pure_int(horizontal),
+			 pure_pointer(widget),
+			 pure_uint64(window_id(widget)));
+    } else if (t == SHEET_WIDGET_BUTTON_TYPE) {
+      gchar *str;
+      g_object_get(obj, "text", &str, NULL);
+      info = pure_tuplel(4, pure_string_dup("button"),
+			 pure_string(str),
+			 pure_pointer(widget),
+			 pure_uint64(window_id(widget)));
+    } else if (t == SHEET_WIDGET_CHECKBOX_TYPE) {
+      gchar *str;
+      g_object_get(obj, "text", &str, NULL);
+      info = pure_tuplel(4, pure_string_dup("checkbox"),
+			 pure_string(str),
+			 pure_pointer(widget),
+			 pure_uint64(window_id(widget)));
+    } else if (t == SHEET_WIDGET_RADIO_BUTTON_TYPE) {
+      gchar *str;
+      g_object_get(obj, "text", &str, NULL);
+      info = pure_tuplel(4, pure_string_dup("radiobutton"),
+			 pure_string(str),
+			 pure_pointer(widget),
+			 pure_uint64(window_id(widget)));
+    } else if (t == SHEET_WIDGET_LIST_TYPE) {
+      info = pure_tuplel(4, pure_string_dup("list"),
+			 pure_string_dup(""),
+			 pure_pointer(widget),
+			 pure_uint64(window_id(widget)));
+    } else if (t == SHEET_WIDGET_COMBO_TYPE) {
+      info = pure_tuplel(4, pure_string_dup("combo"),
+			 pure_string_dup(""),
+			 pure_pointer(widget),
+			 pure_uint64(window_id(widget)));
+    }
+    if (info) xs[n++] = info;
+  }
+  ret = pure_listv(n, xs); g_free(xs);
+  return ret;
+}
