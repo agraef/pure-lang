@@ -1066,8 +1066,6 @@ static char *texpr2str(const GnmEvalPos *pos, const GnmExprTop *e)
   return strdup(buf);
 }
 
-#define window_id(widget) (widget?GDK_WINDOW_XWINDOW(widget->window):0)
-
 pure_expr *pure_sheet_objects(void)
 {
   const GnmEvalPos *pos = eval_info->pos;
@@ -1115,101 +1113,90 @@ pure_expr *pure_sheet_objects(void)
       /* Frame objects don't expose any properties right now, so we take the
 	 label from the widget if it's available. */
       const gchar *str = widget?gtk_frame_get_label(GTK_FRAME(widget)):NULL;
-      info = pure_tuplel(5, pure_string_dup("frame"),
+      info = pure_tuplel(4, pure_string_dup("frame"),
 			 pure_string_dup(str),
 			 pure_string_dup(""),
-			 pure_pointer(widget),
-			 pure_uint64(window_id(widget)));
+			 pure_pointer(widget));
     } else if (t == SHEET_WIDGET_SCROLLBAR_TYPE) {
       const GnmExprTop *e = sheet_widget_adjustment_get_link(so);
       char *link = e?texpr2str(pos, e):strdup("");
-      info = pure_tuplel(5, pure_string_dup("scrollbar"),
+      info = pure_tuplel(4, pure_string_dup("scrollbar"),
 			 pure_string_dup(""),
 			 pure_string(link),
-			 pure_pointer(widget),
-			 pure_uint64(window_id(widget)));
+			 pure_pointer(widget));
     } else if (t == SHEET_WIDGET_SPINBUTTON_TYPE) {
       const GnmExprTop *e = sheet_widget_adjustment_get_link(so);
       char *link = e?texpr2str(pos, e):strdup("");
-      info = pure_tuplel(5, pure_string_dup("spinbutton"),
+      info = pure_tuplel(4, pure_string_dup("spinbutton"),
 			 pure_string_dup(""),
 			 pure_string(link),
-			 pure_pointer(widget),
-			 pure_uint64(window_id(widget)));
+			 pure_pointer(widget));
     } else if (t == SHEET_WIDGET_SLIDER_TYPE) {
       const GnmExprTop *e = sheet_widget_adjustment_get_link(so);
       char *link = e?texpr2str(pos, e):strdup("");
-      info = pure_tuplel(5, pure_string_dup("slider"),
+      info = pure_tuplel(4, pure_string_dup("slider"),
 			 pure_string_dup(""),
 			 pure_string(link),
-			 pure_pointer(widget),
-			 pure_uint64(window_id(widget)));
+			 pure_pointer(widget));
     } else if (t == SHEET_WIDGET_BUTTON_TYPE) {
       gchar *str = NULL;
       const GnmExprTop *e = sheet_widget_button_get_link(so);
       char *link = e?texpr2str(pos, e):strdup("");
       g_object_get(obj, "text", &str, NULL);
-      info = pure_tuplel(5, pure_string_dup("button"),
+      info = pure_tuplel(4, pure_string_dup("button"),
 			 pure_string(str),
 			 pure_string(link),
-			 pure_pointer(widget),
-			 pure_uint64(window_id(widget)));
+			 pure_pointer(widget));
     } else if (t == SHEET_WIDGET_CHECKBOX_TYPE) {
       gchar *str = NULL;
       const GnmExprTop *e = sheet_widget_checkbox_get_link(so);
       char *link = e?texpr2str(pos, e):strdup("");
       g_object_get(obj, "text", &str, NULL);
-      info = pure_tuplel(5, pure_string_dup("checkbox"),
+      info = pure_tuplel(4, pure_string_dup("checkbox"),
 			 pure_string(str),
 			 pure_string(link),
-			 pure_pointer(widget),
-			 pure_uint64(window_id(widget)));
+			 pure_pointer(widget));
     } else if (t == SHEET_WIDGET_RADIO_BUTTON_TYPE) {
       gchar *str = NULL;
       const GnmExprTop *e = sheet_widget_radio_button_get_link(so);
       char *link = e?texpr2str(pos, e):strdup("");
       g_object_get(obj, "text", &str, NULL);
-      info = pure_tuplel(5, pure_string_dup("radiobutton"),
+      info = pure_tuplel(4, pure_string_dup("radiobutton"),
 			 pure_string(str),
 			 pure_string(link),
-			 pure_pointer(widget),
-			 pure_uint64(window_id(widget)));
+			 pure_pointer(widget));
     } else if (t == SHEET_WIDGET_LIST_TYPE) {
-      info = pure_tuplel(5, pure_string_dup("list"),
+      info = pure_tuplel(4, pure_string_dup("list"),
 			 pure_string_dup(""),
 			 pure_string_dup(""),
-			 pure_pointer(widget),
-			 pure_uint64(window_id(widget)));
+			 pure_pointer(widget));
     } else if (t == SHEET_WIDGET_COMBO_TYPE) {
-      info = pure_tuplel(5, pure_string_dup("combo"),
+      info = pure_tuplel(4, pure_string_dup("combo"),
 			 pure_string_dup(""),
 			 pure_string_dup(""),
-			 pure_pointer(widget),
-			 pure_uint64(window_id(widget)));
+			 pure_pointer(widget));
     } else if (t == SHEET_OBJECT_IMAGE_TYPE) {
       gchar *str = NULL;
       gpointer ptr = NULL;
       g_object_get(obj, "image-type", &str, "image-data", &ptr, NULL);
-      info = pure_tuplel(5, pure_string_dup("image"),
+      info = pure_tuplel(4, pure_string_dup("image"),
 			 pure_string_dup(str),
 			 pure_string_dup(""),
 			 pure_pointer(ptr),
 			 pure_uint64(0));
     } else if (t == SHEET_OBJECT_GRAPH_TYPE) {
-      info = pure_tuplel(5, pure_string_dup("graph"),
+      info = pure_tuplel(4, pure_string_dup("graph"),
 			 pure_string_dup(""),
 			 pure_string_dup(""),
-			 pure_pointer(widget),
-			 pure_uint64(window_id(widget)));
+			 pure_pointer(widget));
     } else if (t == GNM_SO_FILLED_TYPE && descr) {
       /* Other canvas object types that we know about. */
       gchar *str = NULL;
       g_object_get(obj, "text", &str, NULL);
-      info = pure_tuplel(5, pure_string_dup(descr),
+      info = pure_tuplel(4, pure_string_dup(descr),
 			 pure_string(str),
 			 pure_string_dup(""),
-			 pure_pointer(widget),
-			 pure_uint64(window_id(widget)));
+			 pure_pointer(widget));
     }
     /* FIXME: Figure out what else might be useful to support. */
     if (info) xs[n++] = info;
