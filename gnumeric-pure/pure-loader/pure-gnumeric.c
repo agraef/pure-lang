@@ -708,9 +708,12 @@ pure_expr *pure_datasource(pure_expr *x)
   pure_expr *ret;
   keyval_t key = { eval_info->func_call, eval_info->pos->dep, id };
   if (!x || !eval_info || !pure_async_filename) return NULL;
-  if (!pure_async_func_init(eval_info, eval_expr, id++, &ret))
+  if (!pure_async_func_init(eval_info, eval_expr, id++, &ret)) {
+    if (!ret)
+      ret = pure_app(pure_symbol(pure_sym("gnm_error")),
+		     pure_string_dup("#N/A"));
     return ret;
-  else if ((pid = fork()) == 0) {
+  } else if ((pid = fork()) == 0) {
     /* child */
     FILE *pure_async_file = fopen(pure_async_filename, "ab");
     /* evaluate expression, and write results to the pipe */
@@ -734,6 +737,9 @@ pure_expr *pure_datasource(pure_expr *x)
 	    key.p, key.q, key.id);
 #endif
     pure_async_func_process(eval_info, key.id, pid);
+    if (!ret)
+      ret = pure_app(pure_symbol(pure_sym("gnm_error")),
+		     pure_string_dup("#N/A"));
     return ret;
   } else {
     perror("fork");

@@ -425,11 +425,7 @@ pure_async_func_init(const GnmFuncEvalInfo *ei, pure_expr *ex,
 		      ei->func_call, ei->pos->dep, id);
 #endif
   }
-  if (ds->value)
-    *x = ds->value;
-  else
-    *x = pure_app(pure_symbol(pure_sym("gnm_error")),
-		  pure_string_dup("#N/A"));
+  *x = ds->value;
   return ret;
 }
 
