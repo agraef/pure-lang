@@ -1152,6 +1152,11 @@ static char *texpr2str(const GnmEvalPos *pos, const GnmExprTop *e)
   return strdup(buf);
 }
 
+static pure_expr *NA_expr(void)
+{
+  return pure_app(pure_symbol(pure_sym("gnm_error")), pure_string_dup("#N/A"));
+}
+
 pure_expr *pure_sheet_objects(void)
 {
   const GnmEvalPos *pos = eval_info->pos;
@@ -1172,6 +1177,7 @@ pure_expr *pure_sheet_objects(void)
     GType t = G_OBJECT_TYPE(obj);
     GList *w = so->realized_list;
     GtkWidget *widget = NULL;
+    gboolean have_widget = FALSE;
     if (w && w->data) {
       /* FIXME: In general, any number of widgets can be associated with a
 	 sheet object, but currently we only report the first of these. */
@@ -1179,9 +1185,10 @@ pure_expr *pure_sheet_objects(void)
       GocItem *item = get_goc_item(view);
       if (!item)
 	;
-      else if (GOC_IS_WIDGET(item))
+      else if (GOC_IS_WIDGET(item)) {
 	widget = GOC_WIDGET(item)->widget;
-      else if (GOC_IS_RECTANGLE(item))
+	have_widget = TRUE;
+      } else if (GOC_IS_RECTANGLE(item))
 	descr = "rectangle";
       else if (GOC_IS_CIRCLE(item))
 	descr = "circle";
@@ -1201,27 +1208,27 @@ pure_expr *pure_sheet_objects(void)
       const gchar *str = widget?gtk_frame_get_label(GTK_FRAME(widget)):NULL;
       info = pure_tuplel(4, pure_string_dup("frame"),
 			 pure_string_dup(str),
-			 pure_string_dup(""),
+			 NA_expr(),
 			 pure_pointer(widget));
     } else if (t == SHEET_WIDGET_SCROLLBAR_TYPE) {
       const GnmExprTop *e = sheet_widget_adjustment_get_link(so);
       char *link = e?texpr2str(pos, e):strdup("");
       info = pure_tuplel(4, pure_string_dup("scrollbar"),
-			 pure_string_dup(""),
+			 NA_expr(),
 			 pure_string(link),
 			 pure_pointer(widget));
     } else if (t == SHEET_WIDGET_SPINBUTTON_TYPE) {
       const GnmExprTop *e = sheet_widget_adjustment_get_link(so);
       char *link = e?texpr2str(pos, e):strdup("");
       info = pure_tuplel(4, pure_string_dup("spinbutton"),
-			 pure_string_dup(""),
+			 NA_expr(),
 			 pure_string(link),
 			 pure_pointer(widget));
     } else if (t == SHEET_WIDGET_SLIDER_TYPE) {
       const GnmExprTop *e = sheet_widget_adjustment_get_link(so);
       char *link = e?texpr2str(pos, e):strdup("");
       info = pure_tuplel(4, pure_string_dup("slider"),
-			 pure_string_dup(""),
+			 NA_expr(),
 			 pure_string(link),
 			 pure_pointer(widget));
     } else if (t == SHEET_WIDGET_BUTTON_TYPE) {
@@ -1253,36 +1260,36 @@ pure_expr *pure_sheet_objects(void)
 			 pure_pointer(widget));
     } else if (t == SHEET_WIDGET_LIST_TYPE) {
       info = pure_tuplel(4, pure_string_dup("list"),
-			 pure_string_dup(""),
-			 pure_string_dup(""),
+			 NA_expr(),
+			 NA_expr(),
 			 pure_pointer(widget));
     } else if (t == SHEET_WIDGET_COMBO_TYPE) {
       info = pure_tuplel(4, pure_string_dup("combo"),
-			 pure_string_dup(""),
-			 pure_string_dup(""),
+			 NA_expr(),
+			 NA_expr(),
 			 pure_pointer(widget));
     } else if (t == SHEET_OBJECT_IMAGE_TYPE) {
       gchar *str = NULL;
       gpointer ptr = NULL;
       g_object_get(obj, "image-type", &str, "image-data", &ptr, NULL);
-      info = pure_tuplel(4, pure_string_dup("image"),
-			 pure_string_dup(str),
-			 pure_string_dup(""),
+      info = pure_tuplel(4, pure_string(str?g_strdup_printf("image/%s", str):
+					strdup("image")),
 			 pure_pointer(ptr),
-			 pure_uint64(0));
+			 NA_expr(),
+			 NA_expr());
     } else if (t == SHEET_OBJECT_GRAPH_TYPE) {
       info = pure_tuplel(4, pure_string_dup("graph"),
-			 pure_string_dup(""),
-			 pure_string_dup(""),
-			 pure_pointer(widget));
+			 NA_expr(),
+			 NA_expr(),
+			 NA_expr());
     } else if (t == GNM_SO_FILLED_TYPE && descr) {
       /* Other canvas object types that we know about. */
       gchar *str = NULL;
       g_object_get(obj, "text", &str, NULL);
       info = pure_tuplel(4, pure_string_dup(descr),
 			 pure_string(str),
-			 pure_string_dup(""),
-			 pure_pointer(widget));
+			 NA_expr(),
+			 have_widget?pure_pointer(widget):NA_expr());
     }
     /* FIXME: Figure out what else might be useful to support. */
     if (info) xs[n++] = info;
