@@ -356,18 +356,17 @@ static void
 update_value(DataSource *ds, pure_expr *x)
 {
   Sheet *sheet = ds->key.dep->sheet;
-  if (ds->value) pure_free(ds->value);
-  if (x)
+  if (x) {
+    if (ds->value) pure_free(ds->value);
     ds->value = pure_new(x);
-  else
-    ds->value = NULL;
+  }
   dependent_queue_recalc(ds->key.dep);
   if (sheet && workbook_get_recalcmode(sheet->workbook))
     workbook_recalc(sheet->workbook);
 #if 0
   {
-    char *s = val?str(val):strdup("#N/A");
-    fprintf(stderr, "%p-%p-%u <= %s\n", key.node, key.dep, key.id, s);
+    char *s = x?str(x):strdup("#N/A");
+    fprintf(stderr, "%p-%p-%u <= %s\n", ds->key.node, ds->key.dep, ds->key.id, s);
     free(s);
   }
 #endif
@@ -439,12 +438,48 @@ pure_async_func_process(const GnmFuncEvalInfo *ei, unsigned id, int pid)
   }
 }
 
+void
+pure_async_func_stop(const GnmFuncEvalInfo *ei, unsigned id)
+{
+  DSKey key = { ei->func_call, ei->pos->dep, id };
+  DataSource *ds;
+  if ((ds = g_hash_table_lookup(datasources, &key)) != NULL) {
+#if 0
+    fprintf(stderr, "stop datasource = %p-%p-%u [%d]\n",
+	    ei->func_call, ei->pos->dep, ds->key.id, ds->pid);
+#endif
+    if (ds->pid > 0) {
+      // get rid of the inferior process
+      int status;
+      kill(ds->pid, SIGTERM);
+      if (waitpid(ds->pid, &status, 0) < 0) perror("waitpid");
+    }
+    if (ds->value) pure_free(ds->value);
+    if (ds->expr) pure_free(ds->expr);
+    g_free(ds);
+  }
+}
+
+void
+pure_async_set_value(const GnmFuncEvalInfo *ei, unsigned id, pure_expr *x)
+{
+  DSKey key = { ei->func_call, ei->pos->dep, id };
+  DataSource *ds;
+  if ((ds = g_hash_table_lookup(datasources, &key)) != NULL) {
+#if 0
+    fprintf(stderr, "change datasource = %p-%p-%u [%d]\n",
+	    ei->func_call, ei->pos->dep, ds->key.id, ds->pid);
+#endif
+    if (x != ds->value) {
+      if (ds->value) pure_free(ds->value);
+      ds->value = pure_new(x);
+    }
+  }
+}
+
 static DependentFlags
 pure_async_func_link(GnmFuncEvalInfo *ei)
 {
-#if 0
-  fprintf(stderr, "link func %p\n", ei);
-#endif
   return DEPENDENT_ALWAYS_UNLINK;
 }
 
@@ -453,9 +488,6 @@ pure_async_func_unlink(GnmFuncEvalInfo *ei)
 {
   DSKey key = { ei->func_call, ei->pos->dep, 0 };
   DataSource *ds;
-#if 0
-  fprintf(stderr, "unlink func %p\n", ei);
-#endif
   while ((ds = g_hash_table_lookup(datasources, &key)) != NULL) {
 #if 0
     fprintf(stderr, "delete datasource = %p-%p-%u [%d]\n",

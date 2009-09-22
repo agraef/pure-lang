@@ -616,8 +616,12 @@ bool pure_write_blob(FILE *fp, const keyval_t *key, pure_expr *x)
   // We should maybe encode these in binary.
   char buf[100];
   sprintf(buf, "%p-%p-%u", key->p, key->q, key->id);
-  b = pure_app(pure_symbol(pure_sym("blob")),
-	       pure_tuplel(2, pure_cstring_dup(buf), x));
+  if (x)
+    b = pure_app(pure_symbol(pure_sym("blob")),
+		 pure_tuplel(2, pure_cstring_dup(buf), x));
+  else
+    b = pure_app(pure_symbol(pure_sym("blob")),
+		 pure_cstring_dup(buf));
   void *p;
   bool ret = false;
   if (b) pure_new(b);
@@ -674,18 +678,22 @@ bool pure_read_blob(FILE *fp, keyval_t *key, pure_expr **x)
     fprintf(stderr, "** pure_read_blob: invalid blob\n");
     return false;
   }
-  if (pure_is_tuplev(y, &n, &xv) && n == 2 && pure_is_string(xv[0], &s)) {
+  if (pure_is_string(y, &s) ||
+      (pure_is_tuplev(y, &n, &xv) && n == 2 && pure_is_string(xv[0], &s))) {
     if (sscanf(s, "%p-%p-%u", &key->p, &key->q, &key->id) < 3) {
       pure_freenew(y);
       if (xv) free(xv);
       fprintf(stderr, "** pure_read_blob: bad blob format\n");
       return false;
     }
-    *x = xv[1];
-    pure_ref(*x);
+    if (xv) {
+      *x = xv[1];
+      pure_ref(*x);
+      free(xv);
+    } else
+      *x = NULL;
     pure_freenew(y);
-    free(xv);
-    pure_unref(*x);
+    if (*x) pure_unref(*x);
     return true;
   } else {
     pure_freenew(y);
@@ -741,6 +749,78 @@ pure_expr *pure_datasource(pure_expr *x)
       ret = pure_app(pure_symbol(pure_sym("gnm_error")),
 		     pure_string_dup("#N/A"));
     return ret;
+  } else {
+    perror("fork");
+    return NULL;
+  }
+}
+
+pure_expr *pure_trigger(int timeout, pure_expr *cond, pure_expr *value)
+{
+  int pid, res;
+  pure_expr *ret, *e;
+  unsigned myid = id;
+  keyval_t key = { eval_info->func_call, eval_info->pos->dep, id };
+  if (!cond || !value || !eval_info || !pure_async_filename) return NULL;
+  if (!pure_async_func_init(eval_info, eval_expr, id++, &ret)) {
+  try:
+    cond = pure_evalx(cond, &e);
+    if (cond) {
+      if (pure_is_int(cond, &res)) {
+	pure_freenew(cond);
+	if (res) {
+	  /* The condition fired. */
+	  value = pure_evalx(value, &e);
+	  if (value) {
+	    if (ret != value)
+	      pure_async_set_value(eval_info, myid, value);
+	    ret = value;
+	  } else {
+	    if (e) pure_freenew(e);
+	    ret = pure_app(pure_symbol(pure_sym("gnm_error")),
+			   pure_string_dup("#NULL"));
+	    pure_async_set_value(eval_info, myid, ret);
+	  }
+	  if (timeout == 0) {
+	    if (ret) pure_ref(ret);
+	    pure_async_func_stop(eval_info, myid);
+	    if (ret) pure_unref(ret);
+	  }
+	}
+      } else
+	pure_freenew(cond);
+    } else if (e)
+      pure_freenew(e);
+    if (!ret)
+      ret = pure_app(pure_symbol(pure_sym("gnm_error")),
+		     pure_string_dup("#N/A"));
+    return ret;
+  } else if ((pid = fork()) == 0) {
+    /* child */
+    FILE *pure_async_file = fopen(pure_async_filename, "ab");
+    /* output a steady stream of messages to the pipe */
+#if 0
+    fprintf(stderr, "[%d] child: %p-%p-%u\n", getpid(), key.p, key.q, key.id);
+#endif
+    if (timeout > 0)
+      while (timeout-- > 0) {
+	sleep(1);
+	out(pure_async_file, &key, NULL);
+      }
+    else
+      while (1) {
+	sleep(1);
+	out(pure_async_file, &key, NULL);
+      }
+    exit(0);
+  } else if (pid > 0) {
+    /* parent */
+#if 0
+    fprintf(stderr, "[%d] started child [%d]: %p-%p-%u\n", getpid(), pid,
+	    key.p, key.q, key.id);
+#endif
+    pure_async_func_process(eval_info, key.id, pid);
+    goto try;
   } else {
     perror("fork");
     return NULL;
