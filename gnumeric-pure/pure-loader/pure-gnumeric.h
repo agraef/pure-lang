@@ -46,6 +46,16 @@ pure_expr *pure_set_text(const char *s, pure_expr *x);
 pure_expr *pure_get_range(const char *s);
 pure_expr *pure_set_range(const char *s, pure_expr *xs);
 
+void pure_gl_init(void);
+void pure_gl_fini(void);
+bool pure_check_window(const char *name);
+pure_expr *pure_gl_window(const char *name, int timeout,
+			  pure_expr *setup_cb,
+			  pure_expr *config_cb,
+			  pure_expr *display_cb,
+			  pure_expr *timer_cb,
+			  pure_expr *user_data);
+
 typedef struct { const void *p, *q; unsigned id; } keyval_t;
 
 bool pure_write_blob(FILE *fp, const keyval_t *key, pure_expr *x);

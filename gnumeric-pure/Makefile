@@ -25,6 +25,12 @@ INCLUDES = $(shell pkg-config --cflags libgoffice-0.8) \
 -I$(prefix)/include/libspreadsheet-1.10/spreadsheet
 LIBS = $(shell pkg-config --libs libgoffice-0.8)
 
+#     Uncomment these if you want OpenGL support (requires GtkGLExt).
+
+GLDEPS=gtkglext-1.0 gtkglext-x11-1.0
+INCLUDES += $(shell pkg-config --cflags $(GLDEPS)) -DUSE_GL
+LIBS += $(shell pkg-config --libs $(GLDEPS))
+
 #     The Makefile tries to guess the installation path and version number of
 #     Gnumeric on its own. If it guesses wrong, you'll have to adjust the
 #     values of the prefix and gnmversion variables (see below) accordingly.

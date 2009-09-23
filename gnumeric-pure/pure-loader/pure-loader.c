@@ -612,6 +612,7 @@ gplp_service_load(GOPluginLoader *l, GOPluginService *s, GOErrorInfo **err)
   else
     return FALSE;
   datasource_init();
+  pure_gl_init();
   return TRUE;
 }
 
@@ -623,6 +624,7 @@ gplp_service_unload(GOPluginLoader *l, GOPluginService *s, GOErrorInfo **err)
   else
     return FALSE;
   datasource_fini();
+  pure_gl_fini();
   return TRUE;
 }
 

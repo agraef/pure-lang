@@ -435,7 +435,7 @@ pure2value(const GnmEvalPos *pos, pure_expr *x, const char *spec)
 // These should be TLD when the Pure interpreter becomes multithreaded.
 static const GnmFuncEvalInfo *eval_info;
 static pure_expr *eval_expr;
-static unsigned id;
+static unsigned ds_id, gl_id;
 
 static inline const char *skip(const char *spec)
 {
@@ -497,10 +497,11 @@ call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
   g_free(args);
   // Save the old context in case we're invoked recursively.
   save_info = eval_info; save_expr = eval_expr;
-  eval_info = ei; eval_expr = x; if (!save_info) id = 0;
+  eval_info = ei; eval_expr = x; if (!save_info) ds_id = 0;
   y = pure_evalx(x, &e);
   // Restore the old context.
-  eval_info = save_info; eval_expr = save_expr; if (!save_info) id = 0;
+  eval_info = save_info; eval_expr = save_expr;
+  if (!save_info) ds_id = gl_id = 0;
 
   if (y) {
     ret = pure2value(ei->pos, y, NULL);
@@ -714,9 +715,9 @@ pure_expr *pure_datasource(pure_expr *x)
 {
   int pid;
   pure_expr *ret;
-  keyval_t key = { eval_info->func_call, eval_info->pos->dep, id };
+  keyval_t key = { eval_info->func_call, eval_info->pos->dep, ds_id };
   if (!x || !eval_info || !pure_async_filename) return NULL;
-  if (!pure_async_func_init(eval_info, eval_expr, id++, &ret)) {
+  if (!pure_async_func_init(eval_info, eval_expr, ds_id++, &ret)) {
     if (!ret)
       ret = pure_app(pure_symbol(pure_sym("gnm_error")),
 		     pure_string_dup("#N/A"));
@@ -759,10 +760,10 @@ pure_expr *pure_trigger(int timeout, pure_expr *cond, pure_expr *value)
 {
   int pid, res;
   pure_expr *ret, *e;
-  unsigned myid = id;
-  keyval_t key = { eval_info->func_call, eval_info->pos->dep, id };
+  unsigned myid = ds_id;
+  keyval_t key = { eval_info->func_call, eval_info->pos->dep, ds_id };
   if (!cond || !value || !eval_info || !pure_async_filename) return NULL;
-  if (!pure_async_func_init(eval_info, eval_expr, id++, &ret)) {
+  if (!pure_async_func_init(eval_info, eval_expr, ds_id++, &ret)) {
   try:
     cond = pure_evalx(cond, &e);
     if (cond) {
@@ -1304,3 +1305,327 @@ pure_expr *pure_sheet_objects(void)
   ret = pure_listv(n, xs); g_free(xs);
   return ret;
 }
+
+/* OpenGL support. This only works when GtkGLExt is available. */
+
+static GtkWidget *get_frame(const GnmEvalPos *pos, const char *name)
+{
+  Sheet *sheet = pos->sheet;
+  GSList *ptr;
+  for (ptr = sheet->sheet_objects; ptr != NULL ; ptr = ptr->next) {
+    GObject *obj = G_OBJECT(ptr->data);
+    SheetObject *so = SHEET_OBJECT(obj);
+    GType t = G_OBJECT_TYPE(obj);
+    GList *w = so->realized_list;
+    if (t == SHEET_WIDGET_FRAME_TYPE && w && w->data) {
+      SheetObjectView *view = w->data;
+      GocItem *item = get_goc_item(view);
+      if (item && GOC_IS_WIDGET(item)) {
+	GtkWidget *widget = GOC_WIDGET(item)->widget;
+	const gchar *label = gtk_frame_get_label(GTK_FRAME(widget));
+	if (label && strcmp(label, name) == 0)
+	  return widget;
+      }
+    }
+  }
+  return NULL;
+}
+
+bool pure_check_window(const char *name)
+{
+  const GnmFuncEvalInfo *ei = eval_info;
+  const GnmEvalPos *pos = ei->pos;
+  GtkWidget *w = get_frame(pos, name);
+  return w != NULL;
+}
+
+#ifdef USE_GL
+
+#include <gtk/gtk.h>
+#include <gtk/gtkgl.h>
+#include <GL/gl.h>
+
+static GHashTable *gl_windows = NULL;
+
+typedef struct {
+  GnmExprFunction const *node; /* Expression node that calls us. */
+  GnmDependent *dep;           /* GnmDependent containing that node. */
+  unsigned id;                 /* id of this GL window. */
+} GLKey;
+
+typedef struct {
+  GLKey key;
+  char *name; /* Name of the frame widget containing the window. */
+  GtkWidget *window; /* The frame widget. */
+  GtkWidget *drawing_area; /* The GL window. */
+  guint timeout, timer_id;
+  pure_expr *setup_cb, *config_cb, *display_cb, *timer_cb; /* Callbacks. */
+  pure_expr *user_data; /* User data supplied to the callbacks. */
+} GLWindow;
+
+static guint
+glkey_hash(GLKey const *k)
+{
+  return
+    (GPOINTER_TO_INT(k->node) << 16) + (GPOINTER_TO_INT(k->dep) << 8) + k->id;
+}
+
+static gint
+glkey_equal(GLKey const *k1, GLKey const *k2)
+{
+  return k1->node == k2->node && k1->dep == k2->dep && k1->id == k2->id;
+}
+
+void pure_gl_init(void)
+{
+  /* Initialize the hash table. */
+  gl_windows = g_hash_table_new((GHashFunc)glkey_hash,
+				(GEqualFunc)glkey_equal);
+  if (!gl_windows) g_assert_not_reached();
+}
+
+static void
+cb_gl_fini(gpointer key, gpointer value, gpointer closure)
+{
+  GLWindow *glw = value;
+  if (glw->timeout > 0) g_source_remove(glw->timer_id);
+  pure_free(glw->setup_cb);
+  pure_free(glw->config_cb);
+  pure_free(glw->display_cb);
+  pure_free(glw->timer_cb);
+  pure_free(glw->user_data);
+  free(glw->name);
+  g_free(glw);
+}
+
+void pure_gl_fini(void)
+{
+  /* Destroy the hash table and all related resources. */
+  g_hash_table_foreach(gl_windows, cb_gl_fini, NULL);
+  g_hash_table_destroy(gl_windows);
+  gl_windows = NULL;
+}
+
+static gboolean gl_destroy_cb(GtkWidget *drawing_area, GLWindow *glw)
+{
+  if (!gl_windows || !glw->drawing_area) return TRUE;
+  if (glw->timeout > 0) g_source_remove(glw->timer_id);
+  pure_free(glw->setup_cb);
+  pure_free(glw->config_cb);
+  pure_free(glw->display_cb);
+  pure_free(glw->timer_cb);
+  pure_free(glw->user_data);
+  free(glw->name);
+  g_hash_table_remove(gl_windows, &glw->key);
+  g_free(glw);
+  return TRUE;
+}
+
+static void do_callback(pure_expr *cb, GtkWidget *drawing_area,
+			pure_expr *user_data, pure_expr *cb_data)
+{
+  pure_expr *ret;
+  if (!cb || !drawing_area || !user_data || !cb_data) return;
+  ret = pure_appl(cb, 2, user_data, cb_data);
+  if (ret) pure_freenew(ret);
+}
+
+static gboolean gl_setup_cb(GtkWidget *drawing_area, GdkEvent *event,
+			     GLWindow *glw)
+{
+  GdkGLContext *glContext = gtk_widget_get_gl_context(drawing_area);
+  GdkGLDrawable *glDrawable = gtk_widget_get_gl_drawable(drawing_area);
+  if (!gdk_gl_drawable_gl_begin(glDrawable, glContext))
+    g_assert_not_reached();
+  do_callback(glw->setup_cb, drawing_area, glw->user_data,
+	      pure_pointer(drawing_area));
+  gdk_gl_drawable_gl_end(glDrawable);
+  return TRUE;
+}
+
+static gboolean gl_config_cb(GtkWidget *drawing_area, GdkEvent *event,
+			     GLWindow *glw)
+{
+  GdkGLContext *glContext = gtk_widget_get_gl_context(drawing_area);
+  GdkGLDrawable *glDrawable = gtk_widget_get_gl_drawable(drawing_area);
+  if (!gdk_gl_drawable_gl_begin(glDrawable, glContext))
+    g_assert_not_reached();
+  do_callback(glw->config_cb, drawing_area, glw->user_data,
+	      pure_tuplel(2, pure_int(drawing_area->allocation.width),
+			  pure_int(drawing_area->allocation.height)));
+  gdk_gl_drawable_gl_end(glDrawable);
+  return TRUE;
+}
+
+static gboolean gl_display_cb(GtkWidget *drawing_area, GdkEvent *event,
+			      GLWindow *glw)
+{
+  GdkGLContext *glContext = gtk_widget_get_gl_context(drawing_area);
+  GdkGLDrawable *glDrawable = gtk_widget_get_gl_drawable(drawing_area);
+  if (!gdk_gl_drawable_gl_begin(glDrawable, glContext))
+    g_assert_not_reached();
+  do_callback(glw->display_cb, drawing_area, glw->user_data, pure_tuplel(0));
+  if (gdk_gl_drawable_is_double_buffered(glDrawable))
+    gdk_gl_drawable_swap_buffers(glDrawable);
+  else
+    glFlush();
+  gdk_gl_drawable_gl_end(glDrawable);
+  return TRUE;
+}
+
+static gboolean gl_timer_cb(GLWindow *glw)
+{
+  GtkWidget *drawing_area = glw->drawing_area;
+  gdk_window_invalidate_rect(drawing_area->window, &drawing_area->allocation, 
+			     FALSE);
+  do_callback(glw->timer_cb, drawing_area, glw->user_data, pure_tuplel(0));
+  return TRUE;
+}
+
+static gboolean init_gl_window(GLWindow *glw, GtkWidget *w, int timeout)
+{
+  /* Check to see whether we already added a drawable to the frame widget. */
+  if (gtk_bin_get_child(GTK_BIN(w)))
+    return false;
+  else {
+    GtkWidget *drawing_area = gtk_drawing_area_new();
+    GdkGLConfig *config;
+    if (!drawing_area) return false;
+    config = gdk_gl_config_new_by_mode(GDK_GL_MODE_RGBA | GDK_GL_MODE_DEPTH |
+				       GDK_GL_MODE_DOUBLE);
+    if (!config) g_assert_not_reached();
+    if (!gtk_widget_set_gl_capability(drawing_area, config, NULL, TRUE,
+				      GDK_GL_RGBA_TYPE)) {
+      gtk_widget_destroy(drawing_area);
+      return false;
+    }
+    glw->window = w;
+    glw->drawing_area = drawing_area;
+    /* Set up the callbacks. */
+    g_signal_connect(drawing_area, "configure-event",
+		     G_CALLBACK(gl_config_cb), glw);
+    g_signal_connect(drawing_area, "expose-event",
+		     G_CALLBACK(gl_display_cb), glw);
+    g_signal_connect(drawing_area, "destroy",
+		     G_CALLBACK(gl_destroy_cb), glw);
+    glw->timer_id = 0;
+    glw->timeout = timeout;
+    if (timeout > 0)
+      glw->timer_id = g_timeout_add(timeout, (GSourceFunc)gl_timer_cb, glw);
+    gtk_container_add(GTK_CONTAINER(w), drawing_area);
+    gtk_widget_show(drawing_area);
+    return true;
+  }
+}
+
+pure_expr *pure_gl_window(const char *name, int timeout,
+			  pure_expr *setup_cb,
+			  pure_expr *config_cb,
+			  pure_expr *display_cb,
+			  pure_expr *timer_cb,
+			  pure_expr *user_data)
+{
+  const GnmFuncEvalInfo *ei = eval_info;
+  const GnmEvalPos *pos = ei->pos;
+  GLKey key = { ei->func_call, ei->pos->dep, gl_id };
+  GLWindow *glw;
+  static gboolean once = TRUE, init = FALSE;
+  g_return_val_if_fail (name && setup_cb && config_cb && display_cb &&
+			timer_cb && user_data, NULL);
+  if (once) {
+    /* This needs to be done exactly once to initialize the GtkGL extension. */
+    int argc = 1;
+    char *argv[] = { "", NULL };
+    init = gtk_init_check(&argc, (char***)&argv);
+    once = FALSE;
+  }
+  if (!init) return NULL; // GtkGL failed to initialize.
+  /* See whether we already have a window for this cell initialized. */
+  if ((glw = g_hash_table_lookup(gl_windows, &key))) {
+    GtkWidget *w = glw->window;
+    gboolean new = FALSE;
+    if (strcmp(name, glw->name) && (w = get_frame(pos, name)) != glw->window) {
+      GtkWidget *drawing_area = glw->drawing_area;
+      /* Destroy the old window. */
+      if (glw->timeout > 0) g_source_remove(glw->timer_id);
+      glw->drawing_area = NULL;
+      gtk_widget_destroy(drawing_area);
+      free(glw->name); glw->name = strdup(name);
+      pure_free(glw->setup_cb);
+      pure_free(glw->config_cb);
+      pure_free(glw->display_cb);
+      pure_free(glw->timer_cb);
+      pure_free(glw->user_data);
+      glw->setup_cb = glw->config_cb = glw->display_cb = glw->timer_cb =
+	glw->user_data = NULL;;
+      new = TRUE;
+    }
+    if (w && (!new || init_gl_window(glw, w, timeout))) {
+      /* Update the callbacks. */
+      glw->setup_cb = pure_new(setup_cb);
+      glw->config_cb = pure_new(config_cb);
+      glw->display_cb = pure_new(display_cb);
+      glw->timer_cb = pure_new(timer_cb);
+      glw->user_data = pure_new(user_data);
+      if (timeout != glw->timeout) {
+	if (glw->timeout > 0) g_source_remove(glw->timer_id);
+	glw->timer_id = 0;
+	glw->timeout = timeout;
+	if (timeout > 0)
+	  glw->timer_id = g_timeout_add(timeout, (GSourceFunc)gl_timer_cb, glw);
+      }
+      if (new) {
+	/* Run the setup callback. */
+	gl_setup_cb(glw->drawing_area, NULL, glw);
+      }
+      return pure_pointer(glw->drawing_area);
+    } else {
+      /* Not valid. Bail out with failure. */
+      g_hash_table_remove(gl_windows, &key);
+      if (glw->timeout > 0) g_source_remove(glw->timer_id);
+      free(glw->name);
+      g_free(glw);
+      return NULL;
+    }
+  } else {
+    GtkWidget *w = get_frame(pos, name);
+    if (w) {
+      glw = g_new(GLWindow, 1);
+      if (!glw) g_assert_not_reached();
+      glw->setup_cb = glw->config_cb = glw->display_cb = glw->timer_cb =
+	glw->user_data = NULL;;
+      if (init_gl_window(glw, w, timeout)) {
+	/* Set the callbacks. */
+	glw->setup_cb = pure_new(setup_cb);
+	glw->config_cb = pure_new(config_cb);
+	glw->display_cb = pure_new(display_cb);
+	glw->timer_cb = pure_new(timer_cb);
+	glw->user_data = pure_new(user_data);
+	glw->name = strdup(name);
+	glw->key = key;
+	g_hash_table_insert(gl_windows, &glw->key, glw);
+	/* Run the setup callback. */
+	gl_setup_cb(glw->drawing_area, NULL, glw);
+	return pure_pointer(glw->drawing_area);
+      } else {
+	g_free(glw);
+	return NULL;
+      }
+    } else
+      return NULL;
+  }
+}
+
+#else
+
+pure_expr *pure_gl_window(const char *name, int timeout,
+			  pure_expr *setup_cb,
+			  pure_expr *config_cb,
+			  pure_expr *display_cb,
+			  pure_expr *timer_cb,
+			  pure_expr *user_data)
+{
+  return NULL;
+}
+
+#endif
