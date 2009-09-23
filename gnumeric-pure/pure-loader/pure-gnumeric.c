@@ -1618,6 +1618,14 @@ pure_expr *pure_gl_window(const char *name, int timeout,
 
 #else
 
+void pure_gl_init(void)
+{
+}
+
+void pure_gl_fini(void)
+{
+}
+
 pure_expr *pure_gl_window(const char *name, int timeout,
 			  pure_expr *setup_cb,
 			  pure_expr *config_cb,
