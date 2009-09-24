@@ -756,47 +756,60 @@ pure_expr *pure_datasource(pure_expr *x)
   }
 }
 
+static pure_expr *try_trigger(int timeout, unsigned id,
+			      pure_expr *cond, pure_expr *value,
+			      pure_expr *ret)
+{
+  int res;
+  pure_expr *e;
+  cond = pure_evalx(cond, &e);
+  if (cond) {
+    if (pure_is_int(cond, &res)) {
+      pure_freenew(cond);
+      if (res) {
+	/* The condition fired. */
+	value = pure_evalx(value, &e);
+	if (value) {
+	  if (ret != value)
+	    pure_async_set_value(eval_info, id, value);
+	  ret = value;
+	} else {
+	  if (e) pure_freenew(e);
+	  ret = pure_app(pure_symbol(pure_sym("gnm_error")),
+			 pure_string_dup("#NULL"));
+	  pure_async_set_value(eval_info, id, ret);
+	}
+	if (timeout == 0) {
+	  if (ret) pure_ref(ret);
+	  pure_async_func_stop(eval_info, id);
+	  if (ret) pure_unref(ret);
+	}
+      }
+    } else
+      pure_freenew(cond);
+  } else if (e)
+    pure_freenew(e);
+  return ret;
+}
+
+static pure_expr *NA_expr(void)
+{
+  return pure_app(pure_symbol(pure_sym("gnm_error")), pure_string_dup("#N/A"));
+}
+
+#define trigger_ret(ret) (ret?ret:NA_expr())
+
 pure_expr *pure_trigger(int timeout, pure_expr *cond, pure_expr *value)
 {
-  int pid, res;
-  pure_expr *ret, *e;
+  int pid;
   unsigned myid = ds_id;
+  pure_expr *ret= try_trigger(timeout, myid, cond, value, NULL);
   keyval_t key = { eval_info->func_call, eval_info->pos->dep, ds_id };
+  if (ret) return ret;
   if (!cond || !value || !eval_info || !pure_async_filename) return NULL;
-  if (!pure_async_func_init(eval_info, eval_expr, ds_id++, &ret)) {
-  try:
-    cond = pure_evalx(cond, &e);
-    if (cond) {
-      if (pure_is_int(cond, &res)) {
-	pure_freenew(cond);
-	if (res) {
-	  /* The condition fired. */
-	  value = pure_evalx(value, &e);
-	  if (value) {
-	    if (ret != value)
-	      pure_async_set_value(eval_info, myid, value);
-	    ret = value;
-	  } else {
-	    if (e) pure_freenew(e);
-	    ret = pure_app(pure_symbol(pure_sym("gnm_error")),
-			   pure_string_dup("#NULL"));
-	    pure_async_set_value(eval_info, myid, ret);
-	  }
-	  if (timeout == 0) {
-	    if (ret) pure_ref(ret);
-	    pure_async_func_stop(eval_info, myid);
-	    if (ret) pure_unref(ret);
-	  }
-	}
-      } else
-	pure_freenew(cond);
-    } else if (e)
-      pure_freenew(e);
-    if (!ret)
-      ret = pure_app(pure_symbol(pure_sym("gnm_error")),
-		     pure_string_dup("#N/A"));
-    return ret;
-  } else if ((pid = fork()) == 0) {
+  if (!pure_async_func_init(eval_info, eval_expr, ds_id++, &ret))
+    return trigger_ret(ret);
+  else if ((pid = fork()) == 0) {
     /* child */
     FILE *pure_async_file = fopen(pure_async_filename, "ab");
     /* output a steady stream of messages to the pipe */
@@ -821,7 +834,7 @@ pure_expr *pure_trigger(int timeout, pure_expr *cond, pure_expr *value)
 	    key.p, key.q, key.id);
 #endif
     pure_async_func_process(eval_info, key.id, pid);
-    goto try;
+    return trigger_ret(ret);
   } else {
     perror("fork");
     return NULL;
@@ -1151,11 +1164,6 @@ static char *texpr2str(const GnmEvalPos *pos, const GnmExprTop *e)
   *bufp = '\0';
   g_free(s);
   return strdup(buf);
-}
-
-static pure_expr *NA_expr(void)
-{
-  return pure_app(pure_symbol(pure_sym("gnm_error")), pure_string_dup("#N/A"));
 }
 
 pure_expr *pure_sheet_objects(void)
