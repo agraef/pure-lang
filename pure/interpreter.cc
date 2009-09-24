@@ -750,9 +750,19 @@ interpreter::error(const yy::location& l, const string& m)
 	<< ": " << m1 << '\n';
     errmsg += msg.str();
   } else {
+    /* KLUDGE: We might be called in circumstances (interpreter embedded in a
+       C application) where the standard I/O streams cout and cerr aren't
+       properly initialized yet. Therefore use plain C stdio here, instead of
+       the corresponding C++ routines. */
+#if 0
     cout.flush();
     cerr << *l.begin.filename << ", line " << l.begin.line
 	 << ": " << m1 << '\n';
+#else
+    fflush(stdout);
+    fprintf(stderr, "%s, line %u: %s\n", l.begin.filename->c_str(),
+	    l.begin.line, m1.c_str());
+#endif
   }
 }
 
