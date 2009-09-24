@@ -1172,146 +1172,158 @@ pure_expr *pure_sheet_objects(void)
 {
   const GnmEvalPos *pos = eval_info->pos;
   Sheet *sheet = pos->sheet;
-  GSList *ptr;
+  Workbook *wb = sheet->workbook;
+  GSList *sheets = workbook_sheets(wb), *sptr, *soptr;
   size_t i, n;
   pure_expr **xs = NULL, *ret;
   const char *descr = NULL;
-  for (n = 0, ptr = sheet->sheet_objects; ptr != NULL ; n++, ptr = ptr->next) ;
+  for (n = 0, sptr = sheets; sptr != NULL; sptr = sptr->next)
+    for (soptr = SHEET(sptr->data)->sheet_objects; soptr != NULL;
+	 n++, soptr = soptr->next) ;
   if (n > 0) {
     xs = g_new(pure_expr*, n);
     assert(xs);
   }
-  for (n = 0, ptr = sheet->sheet_objects; ptr != NULL ; ptr = ptr->next) {
-    pure_expr *info = NULL;
-    GObject *obj = G_OBJECT (ptr->data);
-    SheetObject *so = SHEET_OBJECT(obj);
-    GType t = G_OBJECT_TYPE(obj);
-    GList *w = so->realized_list;
-    GtkWidget *widget = NULL;
-    gboolean have_widget = FALSE;
-    if (w && w->data) {
-      /* FIXME: In general, any number of widgets can be associated with a
-	 sheet object, but currently we only report the first of these. */
-      SheetObjectView *view = w->data;
-      GocItem *item = get_goc_item(view);
-      if (!item)
-	;
-      else if (GOC_IS_WIDGET(item)) {
-	widget = GOC_WIDGET(item)->widget;
-	have_widget = TRUE;
-      } else if (GOC_IS_RECTANGLE(item))
-	descr = "rectangle";
-      else if (GOC_IS_CIRCLE(item))
-	descr = "circle";
-      else if (GOC_IS_ELLIPSE(item))
-	descr = "ellipse";
-      else if (GOC_IS_LINE(item))
-	descr = "line";
-      else if (GOC_IS_STYLED_ITEM(item))
-	descr = "styled";
-      else
-	descr = "unkown";
+  for (n = 0, sptr = sheets; sptr != NULL; sptr = sptr->next) {
+    size_t m = n;
+    const char *sheet_name = SHEET(sptr->data)->name_unquoted;
+    pure_expr *sheet_name_str = pure_string_dup(sheet_name);
+    for (soptr = SHEET(sptr->data)->sheet_objects; soptr != NULL;
+	 soptr = soptr->next) {
+      pure_expr *info = NULL;
+      GObject *obj = G_OBJECT (soptr->data);
+      SheetObject *so = SHEET_OBJECT(obj);
+      GType t = G_OBJECT_TYPE(obj);
+      GList *w = so->realized_list;
+      GtkWidget *widget = NULL;
+      gboolean have_widget = FALSE;
+      if (w && w->data) {
+	/* FIXME: In general, any number of widgets can be associated with a
+	   sheet object, but currently we only report the first of these. */
+	SheetObjectView *view = w->data;
+	GocItem *item = get_goc_item(view);
+	if (!item)
+	  ;
+	else if (GOC_IS_WIDGET(item)) {
+	  widget = GOC_WIDGET(item)->widget;
+	  have_widget = TRUE;
+	} else if (GOC_IS_RECTANGLE(item))
+	  descr = "rectangle";
+	else if (GOC_IS_CIRCLE(item))
+	  descr = "circle";
+	else if (GOC_IS_ELLIPSE(item))
+	  descr = "ellipse";
+	else if (GOC_IS_LINE(item))
+	  descr = "line";
+	else if (GOC_IS_STYLED_ITEM(item))
+	  descr = "styled";
+	else
+	  descr = "unkown";
+      }
+      /* Gnumeric specific widget types. */
+      if (t == SHEET_WIDGET_FRAME_TYPE) {
+	/* Frame objects don't expose any properties right now, so we take the
+	   label from the widget if it's available. */
+	const gchar *str = widget?gtk_frame_get_label(GTK_FRAME(widget)):NULL;
+	info = pure_tuplel(5, sheet_name_str, pure_string_dup("frame"),
+			   pure_string_dup(str),
+			   NA_expr(),
+			   pure_pointer(widget));
+      } else if (t == SHEET_WIDGET_SCROLLBAR_TYPE) {
+	const GnmExprTop *e = sheet_widget_adjustment_get_link(so);
+	char *link = e?texpr2str(pos, e):strdup("");
+	info = pure_tuplel(5, sheet_name_str, pure_string_dup("scrollbar"),
+			   NA_expr(),
+			   pure_string(link),
+			   pure_pointer(widget));
+      } else if (t == SHEET_WIDGET_SPINBUTTON_TYPE) {
+	const GnmExprTop *e = sheet_widget_adjustment_get_link(so);
+	char *link = e?texpr2str(pos, e):strdup("");
+	info = pure_tuplel(5, sheet_name_str, pure_string_dup("spinbutton"),
+			   NA_expr(),
+			   pure_string(link),
+			   pure_pointer(widget));
+      } else if (t == SHEET_WIDGET_SLIDER_TYPE) {
+	const GnmExprTop *e = sheet_widget_adjustment_get_link(so);
+	char *link = e?texpr2str(pos, e):strdup("");
+	info = pure_tuplel(5, sheet_name_str, pure_string_dup("slider"),
+			   NA_expr(),
+			   pure_string(link),
+			   pure_pointer(widget));
+      } else if (t == SHEET_WIDGET_BUTTON_TYPE) {
+	gchar *str = NULL;
+	const GnmExprTop *e = sheet_widget_button_get_link(so);
+	char *link = e?texpr2str(pos, e):strdup("");
+	g_object_get(obj, "text", &str, NULL);
+	info = pure_tuplel(5, sheet_name_str, pure_string_dup("button"),
+			   pure_string(str),
+			   pure_string(link),
+			   pure_pointer(widget));
+      } else if (t == SHEET_WIDGET_CHECKBOX_TYPE) {
+	gchar *str = NULL;
+	const GnmExprTop *e = sheet_widget_checkbox_get_link(so);
+	char *link = e?texpr2str(pos, e):strdup("");
+	g_object_get(obj, "text", &str, NULL);
+	info = pure_tuplel(5, sheet_name_str, pure_string_dup("checkbox"),
+			   pure_string(str),
+			   pure_string(link),
+			   pure_pointer(widget));
+      } else if (t == SHEET_WIDGET_RADIO_BUTTON_TYPE) {
+	gchar *str = NULL;
+	const GnmExprTop *e = sheet_widget_radio_button_get_link(so);
+	char *link = e?texpr2str(pos, e):strdup("");
+	g_object_get(obj, "text", &str, NULL);
+	info = pure_tuplel(5, sheet_name_str, pure_string_dup("radiobutton"),
+			   pure_string(str),
+			   pure_string(link),
+			   pure_pointer(widget));
+      } else if (t == SHEET_WIDGET_LIST_TYPE) {
+	info = pure_tuplel(5, sheet_name_str, pure_string_dup("list"),
+			   NA_expr(),
+			   NA_expr(),
+			   pure_pointer(widget));
+      } else if (t == SHEET_WIDGET_COMBO_TYPE) {
+	info = pure_tuplel(5, sheet_name_str, pure_string_dup("combo"),
+			   NA_expr(),
+			   NA_expr(),
+			   pure_pointer(widget));
+      } else if (t == SHEET_OBJECT_IMAGE_TYPE) {
+	gchar *str = NULL;
+	gpointer ptr = NULL;
+	g_object_get(obj, "image-type", &str, "image-data", &ptr, NULL);
+	info = pure_tuplel(5, sheet_name_str,
+			   pure_string(str?g_strdup_printf("image/%s", str):
+					  strdup("image")),
+			   pure_pointer(ptr),
+			   NA_expr(),
+			   NA_expr());
+      } else if (t == SHEET_OBJECT_GRAPH_TYPE) {
+	info = pure_tuplel(5, sheet_name_str, pure_string_dup("graph"),
+			   NA_expr(),
+			   NA_expr(),
+			   NA_expr());
+      } else if (t == GNM_SO_FILLED_TYPE && descr) {
+	/* Other canvas object types that we know about. */
+	gchar *str = NULL;
+	g_object_get(obj, "text", &str, NULL);
+	info = pure_tuplel(5, sheet_name_str, pure_string_dup(descr),
+			   pure_string(str),
+			   NA_expr(),
+			   have_widget?pure_pointer(widget):NA_expr());
+      }
+      /* FIXME: Figure out what else might be useful to support. */
+      if (info) xs[n++] = info;
     }
-    /* Gnumeric specific widget types. */
-    if (t == SHEET_WIDGET_FRAME_TYPE) {
-      /* Frame objects don't expose any properties right now, so we take the
-	 label from the widget if it's available. */
-      const gchar *str = widget?gtk_frame_get_label(GTK_FRAME(widget)):NULL;
-      info = pure_tuplel(4, pure_string_dup("frame"),
-			 pure_string_dup(str),
-			 NA_expr(),
-			 pure_pointer(widget));
-    } else if (t == SHEET_WIDGET_SCROLLBAR_TYPE) {
-      const GnmExprTop *e = sheet_widget_adjustment_get_link(so);
-      char *link = e?texpr2str(pos, e):strdup("");
-      info = pure_tuplel(4, pure_string_dup("scrollbar"),
-			 NA_expr(),
-			 pure_string(link),
-			 pure_pointer(widget));
-    } else if (t == SHEET_WIDGET_SPINBUTTON_TYPE) {
-      const GnmExprTop *e = sheet_widget_adjustment_get_link(so);
-      char *link = e?texpr2str(pos, e):strdup("");
-      info = pure_tuplel(4, pure_string_dup("spinbutton"),
-			 NA_expr(),
-			 pure_string(link),
-			 pure_pointer(widget));
-    } else if (t == SHEET_WIDGET_SLIDER_TYPE) {
-      const GnmExprTop *e = sheet_widget_adjustment_get_link(so);
-      char *link = e?texpr2str(pos, e):strdup("");
-      info = pure_tuplel(4, pure_string_dup("slider"),
-			 NA_expr(),
-			 pure_string(link),
-			 pure_pointer(widget));
-    } else if (t == SHEET_WIDGET_BUTTON_TYPE) {
-      gchar *str = NULL;
-      const GnmExprTop *e = sheet_widget_button_get_link(so);
-      char *link = e?texpr2str(pos, e):strdup("");
-      g_object_get(obj, "text", &str, NULL);
-      info = pure_tuplel(4, pure_string_dup("button"),
-			 pure_string(str),
-			 pure_string(link),
-			 pure_pointer(widget));
-    } else if (t == SHEET_WIDGET_CHECKBOX_TYPE) {
-      gchar *str = NULL;
-      const GnmExprTop *e = sheet_widget_checkbox_get_link(so);
-      char *link = e?texpr2str(pos, e):strdup("");
-      g_object_get(obj, "text", &str, NULL);
-      info = pure_tuplel(4, pure_string_dup("checkbox"),
-			 pure_string(str),
-			 pure_string(link),
-			 pure_pointer(widget));
-    } else if (t == SHEET_WIDGET_RADIO_BUTTON_TYPE) {
-      gchar *str = NULL;
-      const GnmExprTop *e = sheet_widget_radio_button_get_link(so);
-      char *link = e?texpr2str(pos, e):strdup("");
-      g_object_get(obj, "text", &str, NULL);
-      info = pure_tuplel(4, pure_string_dup("radiobutton"),
-			 pure_string(str),
-			 pure_string(link),
-			 pure_pointer(widget));
-    } else if (t == SHEET_WIDGET_LIST_TYPE) {
-      info = pure_tuplel(4, pure_string_dup("list"),
-			 NA_expr(),
-			 NA_expr(),
-			 pure_pointer(widget));
-    } else if (t == SHEET_WIDGET_COMBO_TYPE) {
-      info = pure_tuplel(4, pure_string_dup("combo"),
-			 NA_expr(),
-			 NA_expr(),
-			 pure_pointer(widget));
-    } else if (t == SHEET_OBJECT_IMAGE_TYPE) {
-      gchar *str = NULL;
-      gpointer ptr = NULL;
-      g_object_get(obj, "image-type", &str, "image-data", &ptr, NULL);
-      info = pure_tuplel(4, pure_string(str?g_strdup_printf("image/%s", str):
-					strdup("image")),
-			 pure_pointer(ptr),
-			 NA_expr(),
-			 NA_expr());
-    } else if (t == SHEET_OBJECT_GRAPH_TYPE) {
-      info = pure_tuplel(4, pure_string_dup("graph"),
-			 NA_expr(),
-			 NA_expr(),
-			 NA_expr());
-    } else if (t == GNM_SO_FILLED_TYPE && descr) {
-      /* Other canvas object types that we know about. */
-      gchar *str = NULL;
-      g_object_get(obj, "text", &str, NULL);
-      info = pure_tuplel(4, pure_string_dup(descr),
-			 pure_string(str),
-			 NA_expr(),
-			 have_widget?pure_pointer(widget):NA_expr());
+    if (sheet_name_str->refc == 0) pure_freenew(sheet_name_str);
+    /* Apparently the objects for each sheet are listed with the last added
+       object first, so we reverse the list here. */
+    for (i = m; i < (n-m)/2; i++) {
+      pure_expr *x = xs[i];
+      xs[i] = xs[n+m-i-1];
+      xs[n+m-i-1] = x;
     }
-    /* FIXME: Figure out what else might be useful to support. */
-    if (info) xs[n++] = info;
   }
-  /* Apparently the sheet objects are listed with the last added object first,
-     so we reverse the list here. */
-  for (i = 0; i < n/2; i++) {
-    pure_expr *x = xs[i];
-    xs[i] = xs[n-i-1];
-    xs[n-i-1] = x;
-  }
+  if (sheets) g_slist_free(sheets);
   ret = pure_listv(n, xs); g_free(xs);
   return ret;
 }

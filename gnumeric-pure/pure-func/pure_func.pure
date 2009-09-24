@@ -6,8 +6,8 @@ using system;
 public gnm_error;
 
 /* Externals provided by the Pure plugin loader. To prevent name clashes,
-   these are all prefixed with 'pure_'. For convenience, we define some
-   shorter aliases below. */
+   these are all prefixed with 'pure_' in the plugin. For convenience, we
+   define some shorter Pure aliases below. */
 
 /* Calling Gnumeric functions and asynchronous processing. */
 
@@ -113,14 +113,15 @@ with
 end when y = int y end;
 
 /* This example renders a little table with information about the graphic
-   objects and widgets in the current sheet. The information for each object
-   is a short description of the type of object, an associated text label if
-   available (for image objects this is the pointer to the image data), the
-   associated cell link (for objects like sliders and buttons which are linked
-   to a cell value), and the pointer to the widget (if any). See the widgets
-   spreadsheet in the distribution for an example. Note that the widget
-   pointer is useful in particular for frame widgets, since it allows you to
-   add custom objects as children of the frame, using Pure's Gtk interface. */
+   objects and widgets in all sheets of the current workbook. The information
+   for each object consists of the sheet name, a short description of the type
+   of object, an associated text label if available (for image objects this is
+   the pointer to the image data), the associated cell link (for objects like
+   sliders and buttons which are linked to a cell value), and the pointer to
+   the widget (if any). See the widgets spreadsheet in the distribution for an
+   example. Note that the widget pointer is useful in particular for frame
+   widgets, since it allows you to add custom objects as children of the
+   frame, using Pure's Gtk interface. */
 
 /* This is a bit tricky to do since the widgets aren't realized yet when the
    spreadsheet is loaded, thus we use the trigger macro to wait until this has
@@ -128,7 +129,7 @@ end when y = int y end;
 
 pure_objects =
   trigger 0 (all realized sheet_objects) (matrix$map list sheet_objects)
-with realized (type,label,link,widget) = ~pointerp widget || ~null widget end;
+with realized (_,_,_,_,widget) = ~pointerp widget || ~null widget end;
 
 /***************************************************************************/
 
