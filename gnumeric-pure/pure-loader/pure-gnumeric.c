@@ -1318,9 +1318,8 @@ pure_expr *pure_sheet_objects(void)
 
 /* OpenGL support. This only works when GtkGLExt is available. */
 
-static GtkWidget *get_frame(const GnmEvalPos *pos, const char *name)
+static GtkWidget *get_frame_sheet(const Sheet *sheet, const char *name)
 {
-  Sheet *sheet = pos->sheet;
   GSList *ptr;
   for (ptr = sheet->sheet_objects; ptr != NULL ; ptr = ptr->next) {
     GObject *obj = G_OBJECT(ptr->data);
@@ -1341,6 +1340,28 @@ static GtkWidget *get_frame(const GnmEvalPos *pos, const char *name)
     }
   }
   return NULL;
+}
+
+static GtkWidget *get_frame(const GnmEvalPos *pos, const char *name)
+{
+  Sheet *sheet = pos->sheet;
+  Workbook *wb = sheet->workbook;
+  GSList *sheets, *ptr;
+  /* We first look for the frame in the current sheet, then in all sheets of
+     its workbook. */
+  GtkWidget *w = get_frame_sheet(sheet, name);
+  if (w) return w;
+  if ((sheets = workbook_sheets(wb))) {
+    for (ptr = sheets; ptr != NULL ; ptr = ptr->next) {
+      Sheet *s = SHEET(ptr->data);
+      if (s != sheet) {
+	w = get_frame_sheet(s, name);
+	if (w) break;
+      }
+    }
+    g_slist_free(sheets);
+  }
+  return w;
 }
 
 bool pure_check_window(const char *name)
