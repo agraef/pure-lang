@@ -16,6 +16,7 @@
 
 #include <glib-object.h>
 #include <pure/runtime.h>
+#include "pure-gnumeric.h"
 
 #define GETTEXT_PACKAGE "gnumeric"
 
@@ -36,11 +37,20 @@ void  gnm_pure_plugin_loader_register_type (GTypeModule *module);
 void  pure_stop(GnmAction const *action, WorkbookControl *wbc);
 void  pure_reload(GnmAction const *action, WorkbookControl *wbc);
 void  pure_edit(GnmAction const *action, WorkbookControl *wbc);
+
+/* asynchronous function interface */
+
 extern char *pure_async_filename;
 gboolean pure_async_func_init(const GnmFuncEvalInfo *ei, pure_expr *ex,
 			      unsigned id, pure_expr **x);
 void pure_async_func_process(const GnmFuncEvalInfo *ei, unsigned id, int pid);
 void pure_async_func_stop(const GnmFuncEvalInfo *ei, unsigned id);
 void pure_async_set_value(const GnmFuncEvalInfo *ei, unsigned id, pure_expr *x);
+
+/* GL window interface */
+
+GLWindow *pure_get_gl_window(const DepKey *key);
+void pure_add_gl_window(const DepKey *key, GLWindow *glw);
+void pure_remove_gl_window(const DepKey *key);
 
 #endif /* GNM_PURE_PLUGIN_LOADER_H */

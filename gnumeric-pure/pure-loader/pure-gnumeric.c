@@ -611,12 +611,12 @@ static inline bool is_cons(pure_expr *x, pure_expr **y, pure_expr **z)
     return false;
 }
 
-bool pure_write_blob(FILE *fp, const keyval_t *key, pure_expr *x)
+bool pure_write_blob(FILE *fp, const DepKey *key, pure_expr *x)
 {
   pure_expr *b;
   // We should maybe encode these in binary.
   char buf[100];
-  sprintf(buf, "%p-%p-%u", key->p, key->q, key->id);
+  sprintf(buf, "%p-%p-%u", key->node, key->dep, key->id);
   if (x)
     b = pure_app(pure_symbol(pure_sym("blob")),
 		 pure_tuplel(2, pure_cstring_dup(buf), x));
@@ -640,7 +640,7 @@ bool pure_write_blob(FILE *fp, const keyval_t *key, pure_expr *x)
 	  fwrite(p, 1, n, fp) == n;
 #if 0
 	fprintf(stderr, "%p-%p-%u: wrote %lu bytes, ret = %d\n",
-		key->p, key->q, key->id, (unsigned long)n, (int)ret);
+		key->node, key->dep, key->id, (unsigned long)n, (int)ret);
 #endif
       }
       pure_freenew(size);
@@ -651,7 +651,7 @@ bool pure_write_blob(FILE *fp, const keyval_t *key, pure_expr *x)
   return ret;
 }
 
-bool pure_read_blob(FILE *fp, keyval_t *key, pure_expr **x)
+bool pure_read_blob(FILE *fp, DepKey *key, pure_expr **x)
 {
   size_t n, m;
   void *buf;
@@ -681,7 +681,7 @@ bool pure_read_blob(FILE *fp, keyval_t *key, pure_expr **x)
   }
   if (pure_is_string(y, &s) ||
       (pure_is_tuplev(y, &n, &xv) && n == 2 && pure_is_string(xv[0], &s))) {
-    if (sscanf(s, "%p-%p-%u", &key->p, &key->q, &key->id) < 3) {
+    if (sscanf(s, "%p-%p-%u", &key->node, &key->dep, &key->id) < 3) {
       pure_freenew(y);
       if (xv) free(xv);
       fprintf(stderr, "** pure_read_blob: bad blob format\n");
@@ -704,7 +704,7 @@ bool pure_read_blob(FILE *fp, keyval_t *key, pure_expr **x)
   }
 }
 
-static void out(FILE *fp, keyval_t *key, pure_expr *x)
+static void out(FILE *fp, DepKey *key, pure_expr *x)
 {
   if (!pure_write_blob(fp, key, x))
     // Write error, bail out.
@@ -715,7 +715,7 @@ pure_expr *pure_datasource(pure_expr *x)
 {
   int pid;
   pure_expr *ret;
-  keyval_t key = { eval_info->func_call, eval_info->pos->dep, ds_id };
+  DepKey key = { eval_info->func_call, eval_info->pos->dep, ds_id };
   if (!x || !eval_info || !pure_async_filename) return NULL;
   if (!pure_async_func_init(eval_info, eval_expr, ds_id++, &ret)) {
     if (!ret)
@@ -728,7 +728,8 @@ pure_expr *pure_datasource(pure_expr *x)
     /* evaluate expression, and write results to the pipe */
     pure_expr *u = pure_force(pure_new(x)), *y, *z;
 #if 0
-    fprintf(stderr, "[%d] child: %p-%p-%u\n", getpid(), key.p, key.q, key.id);
+    fprintf(stderr, "[%d] child: %p-%p-%u\n", getpid(),
+	    key.node, key.dep, key.id);
 #endif
     while (is_cons(u, &y, &z)) {
       out(pure_async_file, &key, pure_force(y));
@@ -743,7 +744,7 @@ pure_expr *pure_datasource(pure_expr *x)
     /* parent */
 #if 0
     fprintf(stderr, "[%d] started child [%d]: %p-%p-%u\n", getpid(), pid,
-	    key.p, key.q, key.id);
+	    key.node, key.dep, key.id);
 #endif
     pure_async_func_process(eval_info, key.id, pid);
     if (!ret)
@@ -804,7 +805,7 @@ pure_expr *pure_trigger(int timeout, pure_expr *cond, pure_expr *value)
   int pid;
   unsigned myid = ds_id;
   pure_expr *ret= try_trigger(timeout, myid, cond, value, NULL);
-  keyval_t key = { eval_info->func_call, eval_info->pos->dep, ds_id };
+  DepKey key = { eval_info->func_call, eval_info->pos->dep, ds_id };
   if (ret) return ret;
   if (!cond || !value || !eval_info || !pure_async_filename) return NULL;
   if (!pure_async_func_init(eval_info, eval_expr, ds_id++, &ret))
@@ -814,7 +815,8 @@ pure_expr *pure_trigger(int timeout, pure_expr *cond, pure_expr *value)
     FILE *pure_async_file = fopen(pure_async_filename, "ab");
     /* output a steady stream of messages to the pipe */
 #if 0
-    fprintf(stderr, "[%d] child: %p-%p-%u\n", getpid(), key.p, key.q, key.id);
+    fprintf(stderr, "[%d] child: %p-%p-%u\n", getpid(),
+	    key.node, key.dep, key.id);
 #endif
     if (timeout > 0)
       while (timeout-- > 0) {
@@ -831,7 +833,7 @@ pure_expr *pure_trigger(int timeout, pure_expr *cond, pure_expr *value)
     /* parent */
 #if 0
     fprintf(stderr, "[%d] started child [%d]: %p-%p-%u\n", getpid(), pid,
-	    key.p, key.q, key.id);
+	    key.node, key.dep, key.id);
 #endif
     pure_async_func_process(eval_info, key.id, pid);
     return trigger_ret(ret);
@@ -1330,8 +1332,10 @@ static GtkWidget *get_frame(const GnmEvalPos *pos, const char *name)
       GocItem *item = get_goc_item(view);
       if (item && GOC_IS_WIDGET(item)) {
 	GtkWidget *widget = GOC_WIDGET(item)->widget;
+	const gchar *id = gtk_widget_get_name(widget);
 	const gchar *label = gtk_frame_get_label(GTK_FRAME(widget));
-	if (label && strcmp(label, name) == 0)
+	if ((id && strcmp(id, name) == 0) ||
+	    (label && strcmp(label, name) == 0))
 	  return widget;
       }
     }
@@ -1353,79 +1357,10 @@ bool pure_check_window(const char *name)
 #include <gtk/gtkgl.h>
 #include <GL/gl.h>
 
-static GHashTable *gl_windows = NULL;
-
-typedef struct {
-  GnmExprFunction const *node; /* Expression node that calls us. */
-  GnmDependent *dep;           /* GnmDependent containing that node. */
-  unsigned id;                 /* id of this GL window. */
-} GLKey;
-
-typedef struct {
-  GLKey key;
-  char *name; /* Name of the frame widget containing the window. */
-  GtkWidget *window; /* The frame widget. */
-  GtkWidget *drawing_area; /* The GL window. */
-  guint timeout, timer_id;
-  pure_expr *setup_cb, *config_cb, *display_cb, *timer_cb; /* Callbacks. */
-  pure_expr *user_data; /* User data supplied to the callbacks. */
-} GLWindow;
-
-static guint
-glkey_hash(GLKey const *k)
-{
-  return
-    (GPOINTER_TO_INT(k->node) << 16) + (GPOINTER_TO_INT(k->dep) << 8) + k->id;
-}
-
-static gint
-glkey_equal(GLKey const *k1, GLKey const *k2)
-{
-  return k1->node == k2->node && k1->dep == k2->dep && k1->id == k2->id;
-}
-
-void pure_gl_init(void)
-{
-  /* Initialize the hash table. */
-  gl_windows = g_hash_table_new((GHashFunc)glkey_hash,
-				(GEqualFunc)glkey_equal);
-  if (!gl_windows) g_assert_not_reached();
-}
-
-static void
-cb_gl_fini(gpointer key, gpointer value, gpointer closure)
-{
-  GLWindow *glw = value;
-  if (glw->timeout > 0) g_source_remove(glw->timer_id);
-  pure_free(glw->setup_cb);
-  pure_free(glw->config_cb);
-  pure_free(glw->display_cb);
-  pure_free(glw->timer_cb);
-  pure_free(glw->user_data);
-  free(glw->name);
-  g_free(glw);
-}
-
-void pure_gl_fini(void)
-{
-  /* Destroy the hash table and all related resources. */
-  g_hash_table_foreach(gl_windows, cb_gl_fini, NULL);
-  g_hash_table_destroy(gl_windows);
-  gl_windows = NULL;
-}
-
 static gboolean gl_destroy_cb(GtkWidget *drawing_area, GLWindow *glw)
 {
-  if (!gl_windows || !glw->drawing_area) return TRUE;
-  if (glw->timeout > 0) g_source_remove(glw->timer_id);
-  pure_free(glw->setup_cb);
-  pure_free(glw->config_cb);
-  pure_free(glw->display_cb);
-  pure_free(glw->timer_cb);
-  pure_free(glw->user_data);
-  free(glw->name);
-  g_hash_table_remove(gl_windows, &glw->key);
-  g_free(glw);
+  if (!glw->drawing_area) return TRUE;
+  pure_remove_gl_window(&glw->key);
   return TRUE;
 }
 
@@ -1484,9 +1419,10 @@ static gboolean gl_display_cb(GtkWidget *drawing_area, GdkEvent *event,
 static gboolean gl_timer_cb(GLWindow *glw)
 {
   GtkWidget *drawing_area = glw->drawing_area;
-  gdk_window_invalidate_rect(drawing_area->window, &drawing_area->allocation, 
-			     FALSE);
+  GdkRectangle r = { 0, 0, drawing_area->allocation.width,
+		     drawing_area->allocation.height };
   do_callback(glw->timer_cb, drawing_area, glw->user_data, pure_tuplel(0));
+  gdk_window_invalidate_rect(drawing_area->window, &r, FALSE);
   return TRUE;
 }
 
@@ -1535,7 +1471,7 @@ pure_expr *pure_gl_window(const char *name, int timeout,
 {
   const GnmFuncEvalInfo *ei = eval_info;
   const GnmEvalPos *pos = ei->pos;
-  GLKey key = { ei->func_call, ei->pos->dep, gl_id };
+  DepKey key = { ei->func_call, ei->pos->dep, gl_id++ };
   GLWindow *glw;
   static gboolean once = TRUE, init = FALSE;
   g_return_val_if_fail (name && setup_cb && config_cb && display_cb &&
@@ -1549,7 +1485,7 @@ pure_expr *pure_gl_window(const char *name, int timeout,
   }
   if (!init) return NULL; // GtkGL failed to initialize.
   /* See whether we already have a window for this cell initialized. */
-  if ((glw = g_hash_table_lookup(gl_windows, &key))) {
+  if ((glw = pure_get_gl_window(&key))) {
     GtkWidget *w = glw->window;
     gboolean new = FALSE;
     if (strcmp(name, glw->name) && (w = get_frame(pos, name)) != glw->window) {
@@ -1589,10 +1525,7 @@ pure_expr *pure_gl_window(const char *name, int timeout,
       return pure_pointer(glw->drawing_area);
     } else {
       /* Not valid. Bail out with failure. */
-      g_hash_table_remove(gl_windows, &key);
-      if (glw->timeout > 0) g_source_remove(glw->timer_id);
-      free(glw->name);
-      g_free(glw);
+      pure_remove_gl_window(&key);
       return NULL;
     }
   } else {
@@ -1610,8 +1543,7 @@ pure_expr *pure_gl_window(const char *name, int timeout,
 	glw->timer_cb = pure_new(timer_cb);
 	glw->user_data = pure_new(user_data);
 	glw->name = strdup(name);
-	glw->key = key;
-	g_hash_table_insert(gl_windows, &glw->key, glw);
+	pure_add_gl_window(&key, glw);
 	/* Run the setup callback. */
 	gl_setup_cb(glw->drawing_area, NULL, glw);
 	return pure_pointer(glw->drawing_area);
@@ -1625,14 +1557,6 @@ pure_expr *pure_gl_window(const char *name, int timeout,
 }
 
 #else
-
-void pure_gl_init(void)
-{
-}
-
-void pure_gl_fini(void)
-{
-}
 
 pure_expr *pure_gl_window(const char *name, int timeout,
 			  pure_expr *setup_cb,

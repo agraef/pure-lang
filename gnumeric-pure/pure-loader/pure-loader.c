@@ -1,9 +1,9 @@
-#include <pure/runtime.h>
-#include "pure-gnumeric.h"
 
 #include "pure-loader.h"
-#include <gnumeric.h>
 
+#include <pure/runtime.h>
+
+#include <gnumeric.h>
 #include <application.h>
 #include <workbook-view.h>
 #include <workbook.h>
@@ -152,8 +152,8 @@ call_pure_function_nodes(GnmFuncEvalInfo *ei, int argc,
   return v;
 }
 
-static DependentFlags pure_async_func_link(GnmFuncEvalInfo *ei);
-static void pure_async_func_unlink(GnmFuncEvalInfo *ei);
+static DependentFlags func_link(GnmFuncEvalInfo *ei);
+static void func_unlink(GnmFuncEvalInfo *ei);
 
 static gboolean
 gplp_func_desc_load(GOPluginService *service,
@@ -214,8 +214,8 @@ gplp_func_desc_load(GOPluginService *service,
     res->fn_args = &call_pure_function_args;
   else
     res->fn_nodes = &call_pure_function_nodes;
-  res->linker = pure_async_func_link;
-  res->unlinker = pure_async_func_unlink;
+  res->linker = func_link;
+  res->unlinker = func_unlink;
   res->impl_status = GNM_FUNC_IMPL_STATUS_UNIQUE_TO_GNUMERIC;
   res->test_status = GNM_FUNC_TEST_STATUS_UNKNOWN;
 
@@ -315,6 +315,22 @@ void pure_edit(GnmAction const *action, WorkbookControl *wbc)
   }
 }
 
+/* GnmDependent -> cell item mappings. These are used to keep track of
+   asynchronous datasources and OpenGL windows associated with a cell. */
+
+static guint
+depkey_hash(DepKey const *k)
+{
+  return
+    (GPOINTER_TO_INT(k->node) << 16) + (GPOINTER_TO_INT(k->dep) << 8) + k->id;
+}
+
+static gint
+depkey_equal(DepKey const *k1, DepKey const *k2)
+{
+  return k1->node == k2->node && k1->dep == k2->dep && k1->id == k2->id;
+}
+
 /* Support for asynchronous data sources (adapted from sample_datasource.c). */
 
 char *pure_async_filename = NULL;
@@ -323,34 +339,8 @@ static FILE *pure_async_file = NULL;
 static guint pure_async_source = 0;
 static GHashTable *datasources = NULL;
 
-typedef struct {
-  GnmExprFunction const *node; /* Expression node that calls us. */
-  GnmDependent *dep;           /* GnmDependent containing that node. */
-  unsigned id;                 /* id of this datasource. */
-} DSKey;
-
-typedef struct {
-  DSKey key;
-  pure_expr *expr;  /* Pure funcall that initiated this datasource. */
-  pure_expr *value; /* Current value of the datasource. */
-  int pid; /* inferior process */
-} DataSource;
-
 #undef G_LOG_DOMAIN
 #define G_LOG_DOMAIN "gnumeric:pure"
-
-static guint
-dskey_hash(DSKey const *k)
-{
-  return
-    (GPOINTER_TO_INT(k->node) << 16) + (GPOINTER_TO_INT(k->dep) << 8) + k->id;
-}
-
-static gint
-dskey_equal(DSKey const *k1, DSKey const *k2)
-{
-  return k1->node == k2->node && k1->dep == k2->dep && k1->id == k2->id;
-}
 
 static void
 update_value(DataSource *ds, pure_expr *x)
@@ -375,9 +365,9 @@ update_value(DataSource *ds, pure_expr *x)
 static gboolean
 cb_pure_async_input(GIOChannel *gioc, GIOCondition cond, gpointer ignored)
 {
-  DSKey key;
+  DepKey key;
   pure_expr *val;
-  while (pure_read_blob(pure_async_file, (keyval_t*)&key, &val)) {
+  while (pure_read_blob(pure_async_file, &key, &val)) {
     DataSource *ds = g_hash_table_lookup(datasources, &key);
     if (ds) update_value(ds, val);
   }
@@ -431,7 +421,7 @@ pure_async_func_init(const GnmFuncEvalInfo *ei, pure_expr *ex,
 void
 pure_async_func_process(const GnmFuncEvalInfo *ei, unsigned id, int pid)
 {
-  DSKey key = { ei->func_call, ei->pos->dep, id };
+  DepKey key = { ei->func_call, ei->pos->dep, id };
   if (key.node != NULL && key.dep != NULL) {
     DataSource *ds = g_hash_table_lookup(datasources, &key);
     if (ds) ds->pid = pid;
@@ -441,7 +431,7 @@ pure_async_func_process(const GnmFuncEvalInfo *ei, unsigned id, int pid)
 void
 pure_async_func_stop(const GnmFuncEvalInfo *ei, unsigned id)
 {
-  DSKey key = { ei->func_call, ei->pos->dep, id };
+  DepKey key = { ei->func_call, ei->pos->dep, id };
   DataSource *ds;
   if ((ds = g_hash_table_lookup(datasources, &key)) != NULL) {
 #if 0
@@ -463,7 +453,7 @@ pure_async_func_stop(const GnmFuncEvalInfo *ei, unsigned id)
 void
 pure_async_set_value(const GnmFuncEvalInfo *ei, unsigned id, pure_expr *x)
 {
-  DSKey key = { ei->func_call, ei->pos->dep, id };
+  DepKey key = { ei->func_call, ei->pos->dep, id };
   DataSource *ds;
   if ((ds = g_hash_table_lookup(datasources, &key)) != NULL) {
 #if 0
@@ -474,35 +464,6 @@ pure_async_set_value(const GnmFuncEvalInfo *ei, unsigned id, pure_expr *x)
       if (ds->value) pure_free(ds->value);
       ds->value = pure_new(x);
     }
-  }
-}
-
-static DependentFlags
-pure_async_func_link(GnmFuncEvalInfo *ei)
-{
-  return DEPENDENT_ALWAYS_UNLINK;
-}
-
-static void
-pure_async_func_unlink(GnmFuncEvalInfo *ei)
-{
-  DSKey key = { ei->func_call, ei->pos->dep, 0 };
-  DataSource *ds;
-  while ((ds = g_hash_table_lookup(datasources, &key)) != NULL) {
-#if 0
-    fprintf(stderr, "delete datasource = %p-%p-%u [%d]\n",
-	    ei->func_call, ei->pos->dep, ds->key.id, ds->pid);
-#endif
-    if (ds->pid > 0) {
-      // get rid of the inferior process
-      int status;
-      kill(ds->pid, SIGTERM);
-      if (waitpid(ds->pid, &status, 0) < 0) perror("waitpid");
-    }
-    if (ds->value) pure_free(ds->value);
-    if (ds->expr) pure_free(ds->expr);
-    g_free(ds);
-    key.id++;
   }
 }
 
@@ -530,8 +491,8 @@ datasource_reinit(void)
 {
   g_hash_table_foreach(datasources, cb_datasource_fini, NULL);
   g_hash_table_destroy(datasources);
-  datasources = g_hash_table_new((GHashFunc)dskey_hash,
-				 (GEqualFunc)dskey_equal);
+  datasources = g_hash_table_new((GHashFunc)depkey_hash,
+				 (GEqualFunc)depkey_equal);
 }
 
 static void
@@ -559,8 +520,8 @@ datasource_init(void)
 		     cb_pure_async_input, NULL);
     g_io_channel_unref(channel);
   }
-  datasources = g_hash_table_new((GHashFunc)dskey_hash,
-				 (GEqualFunc)dskey_equal);
+  datasources = g_hash_table_new((GHashFunc)depkey_hash,
+				 (GEqualFunc)depkey_equal);
 }
 
 static void
@@ -592,6 +553,106 @@ datasource_fini(void)
 
 /****************************************************************************/
 
+static GHashTable *gl_windows = NULL;
+
+static void gl_init(void)
+{
+  /* Initialize the hash table. */
+  gl_windows = g_hash_table_new((GHashFunc)depkey_hash,
+				(GEqualFunc)depkey_equal);
+  if (!gl_windows) g_assert_not_reached();
+}
+
+static void
+cb_gl_fini(gpointer key, gpointer value, gpointer closure)
+{
+  GLWindow *glw = value;
+  if (glw->timeout > 0) g_source_remove(glw->timer_id);
+  if (glw->setup_cb) pure_free(glw->setup_cb);
+  if (glw->config_cb) pure_free(glw->config_cb);
+  if (glw->display_cb) pure_free(glw->display_cb);
+  if (glw->timer_cb) pure_free(glw->timer_cb);
+  if (glw->user_data) pure_free(glw->user_data);
+  if (glw->name) free(glw->name);
+  g_free(glw);
+}
+
+static void gl_fini(void)
+{
+  /* Destroy the hash table and all related resources. */
+  g_hash_table_foreach(gl_windows, cb_gl_fini, NULL);
+  g_hash_table_destroy(gl_windows);
+  gl_windows = NULL;
+}
+
+GLWindow *pure_get_gl_window(const DepKey *key)
+{
+  return g_hash_table_lookup(gl_windows, key);
+}
+
+void pure_add_gl_window(const DepKey *key, GLWindow *glw)
+{
+  glw->key = *key;
+  g_hash_table_insert(gl_windows, &glw->key, glw);
+}
+
+void pure_remove_gl_window(const DepKey *key)
+{
+  GLWindow *glw = g_hash_table_lookup(gl_windows, key);
+  if (glw) {
+    g_hash_table_remove(gl_windows, key);
+    cb_gl_fini(&glw->key, glw, NULL);
+  }
+}
+
+/****************************************************************************/
+
+static DependentFlags
+func_link(GnmFuncEvalInfo *ei)
+{
+  return DEPENDENT_ALWAYS_UNLINK;
+}
+
+static void
+func_unlink(GnmFuncEvalInfo *ei)
+{
+  DepKey key = { ei->func_call, ei->pos->dep, 0 };
+  DataSource *ds;
+  GLWindow *glw;
+  while ((ds = g_hash_table_lookup(datasources, &key)) != NULL) {
+#if 0
+    fprintf(stderr, "delete datasource = %p-%p-%u [%d]\n",
+	    ei->func_call, ei->pos->dep, ds->key.id, ds->pid);
+#endif
+    if (ds->pid > 0) {
+      // get rid of the inferior process
+      int status;
+      kill(ds->pid, SIGTERM);
+      if (waitpid(ds->pid, &status, 0) < 0) perror("waitpid");
+    }
+    if (ds->value) pure_free(ds->value);
+    if (ds->expr) pure_free(ds->expr);
+    g_free(ds);
+    key.id++;
+  }
+  key.id = 0;
+  while ((glw = g_hash_table_lookup(gl_windows, &key)) != NULL) {
+    GtkWidget *drawing_area = glw->drawing_area;
+    /* Destroy the GL window. */
+#if 0
+    fprintf(stderr, "delete GL window = %p-%p-%u [%p]\n",
+	    ei->func_call, ei->pos->dep, glw->key.id, glw->drawing_area);
+#endif
+    if (glw->timeout > 0) g_source_remove(glw->timer_id);
+    glw->timer_id = 0; glw->timeout = 0; glw->drawing_area = NULL;
+    gtk_widget_destroy(drawing_area);
+    pure_remove_gl_window(&key);
+    key.id++;
+  }
+}
+
+/****************************************************************************/
+
 static void
 gplp_load_service_function_group(GOPluginLoader *loader,
 				 GOPluginService *service,
@@ -612,7 +673,7 @@ gplp_service_load(GOPluginLoader *l, GOPluginService *s, GOErrorInfo **err)
   else
     return FALSE;
   datasource_init();
-  pure_gl_init();
+  gl_init();
   return TRUE;
 }
 
@@ -624,7 +685,7 @@ gplp_service_unload(GOPluginLoader *l, GOPluginService *s, GOErrorInfo **err)
   else
     return FALSE;
   datasource_fini();
-  pure_gl_fini();
+  gl_fini();
   return TRUE;
 }
 

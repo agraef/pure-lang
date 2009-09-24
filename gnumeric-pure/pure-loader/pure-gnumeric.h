@@ -46,8 +46,6 @@ pure_expr *pure_set_text(const char *s, pure_expr *x);
 pure_expr *pure_get_range(const char *s);
 pure_expr *pure_set_range(const char *s, pure_expr *xs);
 
-void pure_gl_init(void);
-void pure_gl_fini(void);
 bool pure_check_window(const char *name);
 pure_expr *pure_gl_window(const char *name, int timeout,
 			  pure_expr *setup_cb,
@@ -56,9 +54,30 @@ pure_expr *pure_gl_window(const char *name, int timeout,
 			  pure_expr *timer_cb,
 			  pure_expr *user_data);
 
-typedef struct { const void *p, *q; unsigned id; } keyval_t;
+typedef struct {
+  GnmExprFunction const *node; /* Expression node that calls us. */
+  GnmDependent *dep;           /* GnmDependent containing that node. */
+  unsigned id;                 /* id of this item. */
+} DepKey;
 
-bool pure_write_blob(FILE *fp, const keyval_t *key, pure_expr *x);
-bool pure_read_blob(FILE *fp, keyval_t *key, pure_expr **x);
+typedef struct {
+  DepKey key;
+  pure_expr *expr;  /* Pure funcall that initiated this datasource. */
+  pure_expr *value; /* Current value of the datasource. */
+  int pid; /* inferior process */
+} DataSource;
+
+typedef struct {
+  DepKey key;
+  char *name; /* Name of the frame widget containing the window. */
+  GtkWidget *window; /* The frame widget. */
+  GtkWidget *drawing_area; /* The GL window. */
+  guint timeout, timer_id;
+  pure_expr *setup_cb, *config_cb, *display_cb, *timer_cb; /* Callbacks. */
+  pure_expr *user_data; /* User data supplied to the callbacks. */
+} GLWindow;
+
+bool pure_write_blob(FILE *fp, const DepKey *key, pure_expr *x);
+bool pure_read_blob(FILE *fp, DepKey *key, pure_expr **x);
 
 #endif /* _PURE_GNUMERIC_H */
