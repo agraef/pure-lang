@@ -84,6 +84,7 @@ endif
 
 pureloaderdir = pure-loader
 purefuncdir = pure-func
+pureglfuncdir = pure-glfunc
 
 # Try to guess the host system type.
 host = $(shell ./config.guess)
@@ -124,7 +125,8 @@ gnumeric-pure.html preamble.tex config.guess \
 pure-loader/boot.c pure-loader/pure-gnumeric.c pure-loader/pure-gnumeric.h \
 pure-loader/pure-loader.c pure-loader/pure-loader.h \
 pure-loader/plugin.xml pure-loader/pure-ui.xml \
-pure-func/*.pure pure-func/plugin.xml examples/*.gnumeric
+pure-func/*.pure pure-func/plugin.xml \
+pure-glfunc/*.pure pure-glfunc/plugin.xml examples/*.gnumeric
 
 all: pure-loader/pure_loader$(DLL)
 
@@ -160,25 +162,29 @@ gnumeric-pure.tex: README
 
 install:
 	test -d "$(DESTDIR)$(gnmplugindir)/$(purefuncdir)" || mkdir -p "$(DESTDIR)$(gnmplugindir)/$(purefuncdir)"
+	test -d "$(DESTDIR)$(gnmplugindir)/$(pureglfuncdir)" || mkdir -p "$(DESTDIR)$(gnmplugindir)/$(pureglfuncdir)"
 	test -d "$(DESTDIR)$(gnmplugindir)/$(pureloaderdir)" || mkdir -p "$(DESTDIR)$(gnmplugindir)/$(pureloaderdir)"
 	cp COPYING README gnumeric-pure.html pure-func/*.pure pure-func/plugin.xml "$(DESTDIR)$(gnmplugindir)/$(purefuncdir)"
+	cp pure-glfunc/*.pure pure-glfunc/plugin.xml "$(DESTDIR)$(gnmplugindir)/$(pureglfuncdir)"
 	cp pure-loader/pure_loader$(DLL) pure-loader/plugin.xml pure-loader/pure-ui.xml "$(DESTDIR)$(gnmplugindir)/$(pureloaderdir)"
 
 install-local:
 	test -d "$(DESTDIR)$(gnmlocalplugindir)/$(purefuncdir)" || mkdir -p "$(DESTDIR)$(gnmlocalplugindir)/$(purefuncdir)"
+	test -d "$(DESTDIR)$(gnmlocalplugindir)/$(pureglfuncdir)" || mkdir -p "$(DESTDIR)$(gnmlocalplugindir)/$(pureglfuncdir)"
 	test -d "$(DESTDIR)$(gnmlocalplugindir)/$(pureloaderdir)" || mkdir -p "$(DESTDIR)$(gnmlocalplugindir)/$(pureloaderdir)"
 	cp COPYING README gnumeric-pure.html pure-func/*.pure pure-func/plugin.xml "$(DESTDIR)$(gnmlocalplugindir)/$(purefuncdir)"
+	cp pure-glfunc/*.pure pure-glfunc/plugin.xml "$(DESTDIR)$(gnmlocalplugindir)/$(pureglfuncdir)"
 	cp pure-loader/pure_loader$(DLL) pure-loader/plugin.xml pure-loader/pure-ui.xml "$(DESTDIR)$(gnmlocalplugindir)/$(pureloaderdir)"
 
 uninstall:
-	rm -rf "$(DESTDIR)$(gnmplugindir)/$(purefuncdir)" "$(DESTDIR)$(gnmplugindir)/$(pureloaderdir)"
+	rm -rf "$(DESTDIR)$(gnmplugindir)/$(purefuncdir)" "$(DESTDIR)$(gnmplugindir)/$(pureglfuncdir)" "$(DESTDIR)$(gnmplugindir)/$(pureloaderdir)"
 
 uninstall-local:
-	rm -rf "$(DESTDIR)$(gnmlocalplugindir)/$(purefuncdir)" "$(DESTDIR)$(gnmlocalplugindir)/$(pureloaderdir)"
+	rm -rf "$(DESTDIR)$(gnmlocalplugindir)/$(purefuncdir)" "$(DESTDIR)$(gnmlocalplugindir)/$(pureglfuncdir)" "$(DESTDIR)$(gnmlocalplugindir)/$(pureloaderdir)"
 
 dist:
 	rm -rf $(dist)
-	mkdir $(dist) && mkdir $(dist)/examples && mkdir $(dist)/pure-func && mkdir $(dist)/pure-loader
+	mkdir $(dist) && mkdir $(dist)/examples && mkdir $(dist)/pure-func $(dist)/pure-glfunc && mkdir $(dist)/pure-loader
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)

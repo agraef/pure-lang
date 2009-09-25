@@ -1,0 +1,72 @@
+
+/* Gnumeric/Pure OpenGL example. Please note that this plugin requires that
+   Gnumeric/Pure was built with OpenGL support and that you must also have
+   Pure's OpenGL module installed. See the gl-example.gnumeric spreadsheet for
+   an example how to use the gltest function defined below. */
+
+using pure_func;
+
+using GL, GLU;
+
+extern void gdk_gl_draw_cube		(bool solid, double size);
+extern void gdk_gl_draw_sphere		(bool solid, double radius,
+					 int slices, int stacks);
+extern void gdk_gl_draw_cone		(bool solid, double base, double height,
+					 int slices, int stacks);
+extern void gdk_gl_draw_torus		(bool solid, double inner_radius,
+					 double outer_radius,
+					 int nsides, int rings);
+extern void gdk_gl_draw_tetrahedron	(bool solid);
+extern void gdk_gl_draw_octahedron	(bool solid);
+extern void gdk_gl_draw_dodecahedron	(bool solid);
+extern void gdk_gl_draw_icosahedron	(bool solid);
+extern void gdk_gl_draw_teapot		(bool solid, double scale);
+
+gnm_info "gltest" = "sbfff", gnm_help "gltest:OpenGL example"
+ ["frame:string", "animate:boolean",
+  "a:number (angle)", "b:number (angle)", "c:number (angle)"]
+ "Renders an OpenGL scene in the given @{frame}. The @{a}, @{b} and @{c} parameters are used to rotate the rendered object in the three dimensions; for each of these, the values -100..100 denote one full circle (360 degrees) in clockwise (positive values) or counter-clockwise (negative values) direction. The @{animate} flag, if set, causes the scene to be animated, so that the object rotates at a speed determined by the @{a}, @{b} and @{c} parameters."
+ ["The @{frame} widget to be used for rendering may be specified using either its name or its label. It must be located in the same workbook. See the gl-example spreadsheet in the distribution for an example."]
+ ["gltest(\"opengl\",TRUE,10,0,0) shows a teapot which slowly rotates around the y (vertical) axis. The scene is rendered in the frame named \"opengl\"."] [];
+
+gltest frame m a b c = trigger 0 (check_window frame)
+  (gl_window frame (m*40) setup config display timer ()) with
+  setup _ _ = () when
+    // Initialize.
+    GL::ClearColor 0.1 0.1 0.3 1.0; 
+    GL::ShadeModel GL::SMOOTH;
+    GL::Enable GL::DEPTH_TEST;
+    // Initial projection and modelview matrices.
+    GL::MatrixMode GL::PROJECTION;
+    GL::LoadIdentity;
+    GL::Rotatef 20.0 (-1.0) 0.0 0.0;
+    GL::MatrixMode GL::MODELVIEW;
+    GL::LoadIdentity;
+    // Lighting.
+    GL::Lightfv GL::LIGHT0 GL::DIFFUSE {1.0,0.0,0.0,1.0};
+    GL::Lightfv GL::LIGHT0 GL::POSITION {2.0,2.0,-5.0,1.0};
+    GL::Enable GL::LIGHTING;
+    GL::Enable GL::LIGHT0;
+  end;
+  config _ (w,h) = GL::Viewport 0 0 w h;
+  display _ _ = () when
+    GL::Clear (GL::DEPTH_BUFFER_BIT or GL::COLOR_BUFFER_BIT);
+    gdk_gl_draw_teapot true 0.5;
+    // If the teapot doesn't work then try this one:
+    //gdk_gl_draw_sphere true 0.4 40 32;
+  end if m;
+  display _ _ = () when
+    GL::Clear (GL::DEPTH_BUFFER_BIT or GL::COLOR_BUFFER_BIT);
+    GL::LoadIdentity;
+    GL::Rotatef (scale 360 a) 0.0 1.0 0.0;
+    GL::Rotatef (scale 360 b) 1.0 0.0 0.0;
+    GL::Rotatef (scale 360 c) 0.0 0.0 1.0;
+    gdk_gl_draw_teapot true 0.5;
+  end;
+  timer _ _ = () when
+    GL::Rotatef (scale 36 a) 0.0 1.0 0.0;
+    GL::Rotatef (scale 36 b) 1.0 0.0 0.0;
+    GL::Rotatef (scale 36 c) 0.0 0.0 1.0;
+  end;
+  scale step x = (x/100*step);
+end;
