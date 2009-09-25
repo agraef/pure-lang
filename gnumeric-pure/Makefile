@@ -19,24 +19,25 @@ version = 0.3
 #     Gnumeric versions don't have this file, in this case you can just copy
 #     gnumeric-config.h and symlink it to gnumeric-features.h instead.)
 
-# 2.  Adjust the following as needed for your GTK+/GOffice installation:
-
-INCLUDES = $(shell pkg-config --cflags libgoffice-0.8) \
--I$(prefix)/include/libspreadsheet-1.10/spreadsheet
-LIBS = $(shell pkg-config --libs libgoffice-0.8)
-
-#     Uncomment these if you want OpenGL support (requires GtkGLExt).
-
-GLDEPS=gtkglext-1.0 gtkglext-x11-1.0
-INCLUDES += $(shell pkg-config --cflags $(GLDEPS)) -DUSE_GL
-LIBS += $(shell pkg-config --libs $(GLDEPS))
-
 #     The Makefile tries to guess the installation path and version number of
 #     Gnumeric on its own. If it guesses wrong, you'll have to adjust the
 #     values of the prefix and gnmversion variables (see below) accordingly.
 #     Moreover, you may want to adjust the value of the gnmlocalplugindir
 #     variable below if you'd like the install-local target to go into some
 #     other directory than ~/.gnumeric/$(gnmversion)/plugins.
+
+# 2.  Adjust the following as needed for your GTK+/GOffice installation:
+
+GODEPS=libgoffice-0.8
+
+INCLUDES = `pkg-config --cflags $(GODEPS)` \
+-I$(prefix)/include/libspreadsheet-1.10/spreadsheet
+LIBS = `pkg-config --libs $(GODEPS)`
+
+#     Adjust the following as needed to build with OpenGL support (requires
+#     GtkGLExt). Or comment out the following line if you don't want this.
+
+GLDEPS=gtkglext-1.0 gtkglext-x11-1.0
 
 # 3.  Run 'make' to build the plugin.
 
@@ -106,6 +107,12 @@ endif
 ifneq "$(findstring x86_64-,$(host))" ""
 # 64 bit, needs -fPIC flag
 PIC = -fPIC
+endif
+
+# GtkGLExt support, if requested.
+ifneq "$(GLDEPS)" ""
+INCLUDES += `pkg-config --cflags $(GLDEPS)` -DUSE_GL
+LIBS += `pkg-config --libs $(GLDEPS)`
 endif
 
 # Default CFLAGS and CPPFLAGS, LDFLAGS and LIBS are empty by default.
