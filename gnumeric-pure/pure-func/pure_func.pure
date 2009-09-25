@@ -64,6 +64,12 @@ pure_eval (s::string:args) =
     _ = throw "pure_eval: syntax error";
   end;
 
+pure_evalstr (s::string:args) =
+  case eval (sprintf "'[(%s)]" s) of
+    [y] = str $ eval $ reduce y with x = args end;
+    _ = gnm_error "#ERROR";
+  end;
+
 /* This example shows how to call Gnumeric functions from Pure, using the
    pure_gnmcall (a.k.a. 'call') external defined in the Pure plugin
    loader. The arguments must be given as a list of Pure expressions which are
@@ -207,6 +213,12 @@ gnm_info "pure_eval" = gnm_help "pure_eval:evaluate a Pure expression"
  "Evaluates a Pure expression, given as a string @{s}. Any remaining parameters are available in the evaluated code as a list x, so x!0 denotes the first argument, x!1 the second, etc. This lets you evaluate any Pure code in a spreadsheet without first having to define a function for it."
  [] ["=pure_eval(\"foldl (*) 1 (1..10)\")","=pure_eval(\"x!0*x!1\",2,3)"]
  ["pure_calc"];
+
+gnm_info "pure_evalstr" = gnm_help "pure_evalstr:evaluate a Pure expression"
+ ["s:string"]
+ "Like @{pure_eval}, but returns the result as a string. This is useful to evaluate Pure expressions interactively. (See the \"Interactive Pure Command Line\" in pure-examples.gnumeric for an example.)"
+ [] ["=pure_evalstr(\"foldl (*) 1 (1..10)\")"]
+ ["pure_eval"];
 
 gnm_info "gnm_bitand" = "ff", gnm_help "gnm_bitand:bitwise and"
  ["x:non-negative integer","y:non-negative integer"]
