@@ -1054,7 +1054,8 @@ pure_expr *pure_set_range(const char *s, pure_expr *xs)
   const GnmEvalPos *pos = eval_info?eval_info->pos:NULL;
   GnmValue *v = pos?str2rangeref(pos, s):NULL;
   if (v) {
-    pure_expr *ret = NULL;
+    pure_expr *ret = NULL, **xv;
+    size_t sz;
     void *p;
     GnmRangeRef const *rr = &v->v_range.cell;
     Sheet *sheet = eval_sheet(rr->a.sheet, pos->sheet);
@@ -1077,8 +1078,6 @@ pure_expr *pure_set_range(const char *s, pure_expr *xs)
 		cell_foreach_dep(cell, (DepFunc)dependent_queue_recalc, NULL);
 	    }
 	  }
-	if (workbook_get_recalcmode(sheet->workbook))
-	  workbook_recalc(sheet->workbook);
 	ret = pure_tuplel(0);
       } else if (pure_is_int_matrix(xs, &p)) {
 	gsl_matrix_int *mat = (gsl_matrix_int*)p;
@@ -1094,8 +1093,6 @@ pure_expr *pure_set_range(const char *s, pure_expr *xs)
 		cell_foreach_dep(cell, (DepFunc)dependent_queue_recalc, NULL);
 	    }
 	  }
-	if (workbook_get_recalcmode(sheet->workbook))
-	  workbook_recalc(sheet->workbook);
 	ret = pure_tuplel(0);
       } else if (pure_is_symbolic_matrix(xs, &p)) {
 	gsl_matrix_symbolic *mat = (gsl_matrix_symbolic*)p;
@@ -1112,11 +1109,25 @@ pure_expr *pure_set_range(const char *s, pure_expr *xs)
 		cell_foreach_dep(cell, (DepFunc)dependent_queue_recalc, NULL);
 	    }
 	  }
-	if (workbook_get_recalcmode(sheet->workbook))
-	  workbook_recalc(sheet->workbook);
+	ret = pure_tuplel(0);
+      } else if (pure_is_listv(xs, &sz, &xv) || pure_is_tuplev(xs, &sz, &xv)) {
+	size_t j;
+	for (j = 0, x = x1; j < sz && x <= x2; j++, x++) {
+	  GnmCell *cell = sheet_cell_fetch(sheet, x, y1);
+	  if (cell) {
+	    GnmValue *v = pure2value(pos, xv[j], NULL);
+	    if (!v) v = value_new_error_VALUE(pos);
+	    gnm_cell_set_value(cell, v);
+	    if (!gnm_cell_needs_recalc(cell))
+	      cell_foreach_dep(cell, (DepFunc)dependent_queue_recalc, NULL);
+	  }
+	}
+	if (xv) free(xv);
 	ret = pure_tuplel(0);
       }
     }
+    if (ret && workbook_get_recalcmode(sheet->workbook))
+      workbook_recalc(sheet->workbook);
     value_release(v);
     return ret;
   } else
