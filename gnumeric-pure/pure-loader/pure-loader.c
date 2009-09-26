@@ -148,6 +148,7 @@ call_pure_function_nodes(GnmFuncEvalInfo *ei, int argc,
     args[i] = gnm_expr_eval(argv[i], ei->pos,
 			    GNM_EXPR_EVAL_PERMIT_NON_SCALAR);
   v = call_pure_function(ei, argc, (GnmValue const * const *)args);
+  for (i = 0; i < argc; i++) value_release(args[i]);
   g_free(args);
   return v;
 }
