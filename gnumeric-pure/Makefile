@@ -111,9 +111,12 @@ PIC = -fPIC
 endif
 
 # GtkGLExt support, if requested.
+# IMPORTANT: DON'T REMOVE THE -lstdc++ linker option, it prevents issues with
+# some proprietary graphics card drivers on Linux. See the following URL:
+# http://wiki.fifengine.de/Segfault_in_cxa_allocate_exception#Workaround
 ifneq "$(GLDEPS)" ""
 INCLUDES += `pkg-config --cflags $(GLDEPS)` -DUSE_GL
-LIBS += `pkg-config --libs $(GLDEPS)`
+LIBS += -lstdc++ `pkg-config --libs $(GLDEPS)`
 endif
 
 # Default CFLAGS and CPPFLAGS, LDFLAGS and LIBS are empty by default.
