@@ -941,7 +941,7 @@ pure_expr *pure_set_cell(const char *s, pure_expr *x)
     return NULL;
 }
 
-pure_expr *pure_set_text(const char *s, pure_expr *x)
+pure_expr *pure_set_cell_text(const char *s, pure_expr *x)
 {
   const char *text;
   if (pure_is_string(x, &text)) {
@@ -1102,6 +1102,52 @@ pure_expr *pure_set_range(const char *s, pure_expr *xs)
 	    GnmValue *v = pure2value(pos, xv[j], NULL);
 	    if (!v) v = value_new_error_VALUE(pos);
 	    sheet_cell_set_value(cell, v);
+	  }
+	}
+	if (xv) free(xv);
+	ret = pure_tuplel(0);
+      }
+    }
+    value_release(v);
+    return ret;
+  } else
+    return NULL;
+}
+
+pure_expr *pure_set_range_text(const char *s, pure_expr *xs)
+{
+  const GnmEvalPos *pos = eval_info?eval_info->pos:NULL;
+  GnmValue *v = pos?str2rangeref(pos, s):NULL;
+  if (v) {
+    pure_expr *ret = NULL, **xv;
+    size_t sz;
+    void *p;
+    GnmRangeRef const *rr = &v->v_range.cell;
+    Sheet *sheet = eval_sheet(rr->a.sheet, pos->sheet);
+    int x, y, x1 = gnm_cellref_get_col(&rr->a, pos),
+      y1 = gnm_cellref_get_row(&rr->a, pos),
+      x2 = gnm_cellref_get_col(&rr->b, pos),
+      y2 = gnm_cellref_get_row(&rr->b, pos);
+    const char *text;
+    if (sheet) {
+      if (pure_is_symbolic_matrix(xs, &p)) {
+	gsl_matrix_symbolic *mat = (gsl_matrix_symbolic*)p;
+	pure_expr **data = mat->data;
+	size_t i, j, nrows = mat->size1, ncols = mat->size2, tda = mat->tda;
+	for (j = 0, x = x1; j < ncols && x <= x2; j++, x++)
+	  for (i = 0, y = y1; i < nrows && y <= y2; i++, y++) {
+	    GnmCell *cell = sheet_cell_fetch(sheet, x, y);
+	    if (cell && pure_is_string(data[i*tda+j], &text)) {
+	      sheet_cell_set_text(cell, text, NULL);
+	    }
+	  }
+	ret = pure_tuplel(0);
+      } else if (pure_is_listv(xs, &sz, &xv) || pure_is_tuplev(xs, &sz, &xv)) {
+	size_t j;
+	for (j = 0, x = x1; j < sz && x <= x2; j++, x++) {
+	  GnmCell *cell = sheet_cell_fetch(sheet, x, y1);
+	  if (cell && pure_is_string(xv[j], &text)) {
+	    sheet_cell_set_text(cell, text, NULL);
 	  }
 	}
 	if (xv) free(xv);
