@@ -59,15 +59,15 @@ pure_sums xs = scanl (+) 0 (ranges xs);
 pure_echo xs = str $ tuple xs;
 
 pure_eval (s::string:args) =
-  case eval (sprintf "'[(%s)]" s) of
-    [y] = eval (reduce y) with x = args end;
-    _ = throw "pure_eval: syntax error";
+  case eval (sprintf "'(%s)" s) of
+    y = eval (reduce y) with x = args end if null lasterr;
+    _ = gnm_error "#SYNTAX!";
   end;
 
-pure_evalstr (s::string:args) =
-  case eval (sprintf "'[(%s)]" s) of
-    [y] = str $ eval $ reduce y with x = args end;
-    _ = gnm_error "#ERROR";
+pure_evalstr s::string =
+  case eval s of
+    y = str y if null lasterr;
+    _ = gnm_error lasterr;
   end;
 
 /* This example shows how to call Gnumeric functions from Pure, using the
@@ -88,9 +88,9 @@ gnm_bitand x y = call "bitand" [x,y];
    only that the evaluation actually happens in the background. */
 
 pure_calc (s::string:args) =
-  case eval (sprintf "'[(%s)]" s) of
-    [y] = datasource $ (eval (reduce y) with x = args end)&;
-    _ = throw "pure_eval: syntax error";
+  case eval (sprintf "'(%s)" s) of
+    y = datasource $ (eval (reduce y) with x = args end)& if null lasterr;
+    _ = gnm_error "#SYNTAX!";
   end;
 
 /* Here's another example which counts off the seconds starting from a given
@@ -214,9 +214,10 @@ gnm_info "pure_eval" = gnm_help "pure_eval:evaluate a Pure expression"
  [] ["=pure_eval(\"foldl (*) 1 (1..10)\")","=pure_eval(\"x!0*x!1\",2,3)"]
  ["pure_calc"];
 
-gnm_info "pure_evalstr" = gnm_help "pure_evalstr:evaluate a Pure expression"
+gnm_info "pure_evalstr" = "s", gnm_help
+ "pure_evalstr:evaluate a Pure expression"
  ["s:string"]
- "Like @{pure_eval}, but returns the result as a string. This is useful to evaluate Pure expressions interactively. (See the \"Interactive Pure Command Line\" in pure-examples.gnumeric for an example.)"
+ "Similar to @{pure_eval}, but this function only takes a single string argument which may contain arbitrary Pure code, and returns the last evaluated expression (if any) as a string in Pure syntax. This is useful, in particular, to evaluate Pure expressions interactively. (See the \"Interactive Pure Command Line\" in pure-examples.gnumeric for an example.)"
  [] ["=pure_evalstr(\"foldl (*) 1 (1..10)\")"]
  ["pure_eval"];
 
