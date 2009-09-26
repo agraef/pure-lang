@@ -475,7 +475,10 @@ interpreter sees them. This is useful for debugging purposes. E.g.,
 </ul>
 <p>A little example spreadsheet showing most of the predefined functions in
 action can be found in <tt class="docutils literal"><span class="pre">pure-examples.gnumeric</span></tt> in the Gnumeric/Pure
-sources.</p>
+sources. The spreadsheet also provides a little &quot;Pure command line&quot; which lets
+you evaluate Pure expressions inside Gnumeric. This is useful, in particular,
+to try out the functions described in <a class="reference internal" href="#advanced-features">Advanced Features</a> interactively in
+Gnumeric.</p>
 </div>
 <div class="section" id="defining-your-own-functions">
 <h1><a class="toc-backref" href="#id4">3&nbsp;&nbsp;&nbsp;Defining Your Own Functions</a></h1>
@@ -748,7 +751,9 @@ for details.</p>
 <div class="section" id="advanced-features">
 <h1><a class="toc-backref" href="#id8">5&nbsp;&nbsp;&nbsp;Advanced Features</a></h1>
 <p>This section explains various additional features provided by the
-Gnumeric/Pure interface that should be useful for writing your own functions.</p>
+Gnumeric/Pure interface that should be useful for writing your own functions.
+Note that, for your convenience all functions discussed in this section are
+declared in <tt class="docutils literal"><span class="pre">pure_func.pure</span></tt>.</p>
 <div class="section" id="calling-gnumeric-from-pure">
 <h2><a class="toc-backref" href="#id9">5.1&nbsp;&nbsp;&nbsp;Calling Gnumeric from Pure</a></h2>
 <p>It is possible to call Gnumeric functions from Pure using the <tt class="docutils literal"><span class="pre">call</span></tt>
@@ -772,7 +777,61 @@ by the function.</p>
 </div>
 <div class="section" id="accessing-spreadsheet-cells">
 <h2><a class="toc-backref" href="#id10">5.2&nbsp;&nbsp;&nbsp;Accessing Spreadsheet Cells</a></h2>
-<p>XXXTODO</p>
+<p>Gnumeric/Pure provides the following functions to retrieve and modify the
+contents of spreadsheet cells and ranges of such cells:</p>
+<pre class="literal-block">
+extern expr* pure_get_cell(char* s) = get_cell;
+extern expr* pure_set_cell(char* s, expr *x) = set_cell;
+extern expr* pure_set_cell_text(char* s, expr *x) = set_cell_text;
+extern expr* pure_get_range(char* s) = get_range;
+extern expr* pure_set_range(char* s, expr *x) = set_range;
+extern expr* pure_set_range_text(char* s, expr *x) = set_range_text;
+</pre>
+<p>For instance, here's how you use these functions to write and then read some
+cell values. Note that here and in the following the prompt <tt class="docutils literal"><span class="pre">&gt;</span></tt> indicates a
+Pure expression to be evaluated in <em>Gnumeric</em> (rather than the standalone Pure
+interpreter), which is followed by another line indicating the result. You can
+actually try this yourself using the &quot;interactive Pure command line&quot; of the
+pure-examples.gnumeric spreadsheet distributed with Gnumeric/Pure.</p>
+<pre class="literal-block">
+&gt; set_cell &quot;A14&quot; 42
+()
+&gt; get_cell &quot;A14&quot;
+42.0
+&gt; set_range &quot;A14:G14&quot; $ scanl (*) 1 (1..6)
+()
+&gt; get_range &quot;A14:G14&quot;
+{1.0,1.0,2.0,6.0,24.0,120.0,720.0}
+&gt; set_cell_text &quot;A14&quot; &quot;=sum(B14:G14)&quot;
+()
+&gt; get_cell &quot;A14&quot;
+873.0
+</pre>
+<p>Note that while the <tt class="docutils literal"><span class="pre">set_cell</span></tt> function sets the given cell to a constant
+value, <tt class="docutils literal"><span class="pre">set_cell_text</span></tt> also allows you to store a formula in a cell which
+will then be evaluated as usual. The <tt class="docutils literal"><span class="pre">set_range</span></tt>, <tt class="docutils literal"><span class="pre">set_range_text</span></tt> and
+<tt class="docutils literal"><span class="pre">get_range</span></tt> functions work analogous to <tt class="docutils literal"><span class="pre">set_cell</span></tt>, <tt class="docutils literal"><span class="pre">set_cell_text</span></tt> and
+<tt class="docutils literal"><span class="pre">get_cell</span></tt>, but are used to manipulate entire ranges of cells, which can be
+set from Pure tuples, lists or matrices, and retrieved as Pure matrices.</p>
+<p>There are also functions to get the position of the &quot;current&quot; cell (i.e., the
+cell from which a Pure function was called), and to translate between cell
+ranges in Gnumeric syntax and the corresponding internal representation
+consisting of a pointer to a Gnumeric sheet and the cell or range
+coordinates:</p>
+<pre class="literal-block">
+extern expr* pure_this_cell() = this_cell;
+extern expr* pure_parse_range(char* s) = parse_range;
+extern expr* pure_make_range(expr* x) = make_range;
+</pre>
+<p>Examples:</p>
+<pre class="literal-block">
+&gt; this_cell
+&quot;B4&quot;
+&gt; parse_range this_cell
+#&lt;pointer 0x875220&gt;,1,3
+&gt; make_range (NULL,0,0,10,10)
+&quot;Sheet2!A1:K11&quot;
+</pre>
 </div>
 <div class="section" id="asynchronous-data-sources">
 <h2><a class="toc-backref" href="#id11">5.3&nbsp;&nbsp;&nbsp;Asynchronous Data Sources</a></h2>
@@ -840,7 +899,41 @@ however, so we leave this as an exercise to the interested reader.</p>
 </div>
 <div class="section" id="triggers">
 <h2><a class="toc-backref" href="#id12">5.4&nbsp;&nbsp;&nbsp;Triggers</a></h2>
-<p>XXXTODO</p>
+<p>In addition to asynchronous data sources, the <tt class="docutils literal"><span class="pre">trigger</span></tt> macro is provided to
+compute values or take actions depending on some external condition, such as
+the availability of data on a special device or the creation of some widget
+(see the next section). The <tt class="docutils literal"><span class="pre">trigger</span></tt> macro is invoked as follows:</p>
+<pre class="literal-block">
+trigger timeout condition value
+</pre>
+<p>The <tt class="docutils literal"><span class="pre">condition</span></tt> and <tt class="docutils literal"><span class="pre">value</span></tt> arguments are implicitly quoted. The trigger
+reevaluates the given condition in regular intervals (1 second in the current
+implementation) and, as soon as it becomes <tt class="docutils literal"><span class="pre">true</span></tt>, computes the given value
+and returns that value as the result of the <tt class="docutils literal"><span class="pre">trigger</span></tt> call. As long as the
+condition doesn't hold, <tt class="docutils literal"><span class="pre">trigger</span></tt> returns a <tt class="docutils literal"><span class="pre">#N/A</span></tt> value (<tt class="docutils literal"><span class="pre">gnm_error</span>
+<span class="pre">&quot;#N/A&quot;</span></tt>). Note that, in difference to <tt class="docutils literal"><span class="pre">datasource</span></tt>, both the condition and
+the value are evaluated in Gnumeric (rather than a child process), so that it
+is possible to access the current information in the loaded spreadsheet.</p>
+<p>The <tt class="docutils literal"><span class="pre">timeout</span></tt> value determines how often the condition is checked. If it is
+positive, the condition will be reevaluated <tt class="docutils literal"><span class="pre">timeout+1</span></tt> times (once
+initially, and then once per second for a duration of <tt class="docutils literal"><span class="pre">timeout</span></tt> seconds). If
+it is negative, the trigger never times out and the condition will be checked
+repeatedly until the trigger expression is removed (or Gnumeric is exited). In
+either case the <tt class="docutils literal"><span class="pre">value</span></tt> will be reevaluated each time the <tt class="docutils literal"><span class="pre">condition</span></tt> is
+<tt class="docutils literal"><span class="pre">true</span></tt>. (This is most useful if the computed value, as a side effect,
+arranges for the condition to become <tt class="docutils literal"><span class="pre">false</span></tt> again afterwards.) Finally, if
+<tt class="docutils literal"><span class="pre">timeout</span></tt> is zero then the trigger fires at most once, as soon as the
+condition becomes <tt class="docutils literal"><span class="pre">true</span></tt>, at which point the <tt class="docutils literal"><span class="pre">value</span></tt> is evaluated just
+once.</p>
+<p>Here's a (rather useless) example of a trigger which fires exactly once, as
+soon as a certain cell goes to a certain value, and then modifies another cell
+value accordingly:</p>
+<pre class="literal-block">
+&gt; trigger 0 (get_cell &quot;A14&quot;===&quot;Hello&quot;) (set_cell &quot;A15&quot; &quot;World&quot;)
+</pre>
+<p>Now, as soon as you type <tt class="docutils literal"><span class="pre">Hello</span></tt> in the cell A14, the trigger will print
+<tt class="docutils literal"><span class="pre">World</span></tt> in cell A15. A more useful example will be discussed in the
+following section.</p>
 </div>
 <div class="section" id="sheet-objects">
 <h2><a class="toc-backref" href="#id13">5.5&nbsp;&nbsp;&nbsp;Sheet Objects</a></h2>

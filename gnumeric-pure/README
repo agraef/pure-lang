@@ -183,7 +183,10 @@ some useful examples in there, too, in particular:
 
 A little example spreadsheet showing most of the predefined functions in
 action can be found in ``pure-examples.gnumeric`` in the Gnumeric/Pure
-sources.
+sources. The spreadsheet also provides a little "Pure command line" which lets
+you evaluate Pure expressions inside Gnumeric. This is useful, in particular,
+to try out the functions described in `Advanced Features`_ interactively in
+Gnumeric.
 
 Defining Your Own Functions
 ===========================
@@ -447,6 +450,8 @@ Advanced Features
 
 This section explains various additional features provided by the
 Gnumeric/Pure interface that should be useful for writing your own functions.
+Note that, for your convenience all functions discussed in this section are
+declared in ``pure_func.pure``.
 
 Calling Gnumeric from Pure
 --------------------------
@@ -474,7 +479,63 @@ by the function.
 Accessing Spreadsheet Cells
 ---------------------------
 
-XXXTODO
+Gnumeric/Pure provides the following functions to retrieve and modify the
+contents of spreadsheet cells and ranges of such cells::
+
+  extern expr* pure_get_cell(char* s) = get_cell;
+  extern expr* pure_set_cell(char* s, expr *x) = set_cell;
+  extern expr* pure_set_cell_text(char* s, expr *x) = set_cell_text;
+  extern expr* pure_get_range(char* s) = get_range;
+  extern expr* pure_set_range(char* s, expr *x) = set_range;
+  extern expr* pure_set_range_text(char* s, expr *x) = set_range_text;
+
+For instance, here's how you use these functions to write and then read some
+cell values. Note that here and in the following the prompt ``>`` indicates a
+Pure expression to be evaluated in *Gnumeric* (rather than the standalone Pure
+interpreter), which is followed by another line indicating the result. You can
+actually try this yourself using the "interactive Pure command line" of the
+pure-examples.gnumeric spreadsheet distributed with Gnumeric/Pure.
+
+::
+
+  > set_cell "A14" 42
+  ()
+  > get_cell "A14"
+  42.0
+  > set_range "A14:G14" $ scanl (*) 1 (1..6)
+  ()
+  > get_range "A14:G14"
+  {1.0,1.0,2.0,6.0,24.0,120.0,720.0}
+  > set_cell_text "A14" "=sum(B14:G14)"
+  ()
+  > get_cell "A14"
+  873.0
+
+Note that while the ``set_cell`` function sets the given cell to a constant
+value, ``set_cell_text`` also allows you to store a formula in a cell which
+will then be evaluated as usual. The ``set_range``, ``set_range_text`` and
+``get_range`` functions work analogous to ``set_cell``, ``set_cell_text`` and
+``get_cell``, but are used to manipulate entire ranges of cells, which can be
+set from Pure tuples, lists or matrices, and retrieved as Pure matrices.
+
+There are also functions to get the position of the "current" cell (i.e., the
+cell from which a Pure function was called), and to translate between cell
+ranges in Gnumeric syntax and the corresponding internal representation
+consisting of a pointer to a Gnumeric sheet and the cell or range
+coordinates::
+
+  extern expr* pure_this_cell() = this_cell;
+  extern expr* pure_parse_range(char* s) = parse_range;
+  extern expr* pure_make_range(expr* x) = make_range;
+
+Examples::
+
+  > this_cell
+  "B4"
+  > parse_range this_cell
+  #<pointer 0x875220>,1,3
+  > make_range (NULL,0,0,10,10)
+  "Sheet2!A1:K11"
 
 Asynchronous Data Sources
 -------------------------
@@ -547,7 +608,43 @@ however, so we leave this as an exercise to the interested reader.
 Triggers
 --------
 
-XXXTODO
+In addition to asynchronous data sources, the ``trigger`` macro is provided to
+compute values or take actions depending on some external condition, such as
+the availability of data on a special device or the creation of some widget
+(see the next section). The ``trigger`` macro is invoked as follows::
+
+  trigger timeout condition value
+
+The ``condition`` and ``value`` arguments are implicitly quoted. The trigger
+reevaluates the given condition in regular intervals (1 second in the current
+implementation) and, as soon as it becomes ``true``, computes the given value
+and returns that value as the result of the ``trigger`` call. As long as the
+condition doesn't hold, ``trigger`` returns a ``#N/A`` value (``gnm_error
+"#N/A"``). Note that, in difference to ``datasource``, both the condition and
+the value are evaluated in Gnumeric (rather than a child process), so that it
+is possible to access the current information in the loaded spreadsheet.
+
+The ``timeout`` value determines how often the condition is checked. If it is
+positive, the condition will be reevaluated ``timeout+1`` times (once
+initially, and then once per second for a duration of ``timeout`` seconds). If
+it is negative, the trigger never times out and the condition will be checked
+repeatedly until the trigger expression is removed (or Gnumeric is exited). In
+either case the ``value`` will be reevaluated each time the ``condition`` is
+``true``. (This is most useful if the computed value, as a side effect,
+arranges for the condition to become ``false`` again afterwards.) Finally, if
+``timeout`` is zero then the trigger fires at most once, as soon as the
+condition becomes ``true``, at which point the ``value`` is evaluated just
+once.
+
+Here's a (rather useless) example of a trigger which fires exactly once, as
+soon as a certain cell goes to a certain value, and then modifies another cell
+value accordingly::
+
+  > trigger 0 (get_cell "A14"==="Hello") (set_cell "A15" "World")
+
+Now, as soon as you type ``Hello`` in the cell A14, the trigger will print
+``World`` in cell A15. A more useful example will be discussed in the
+following section.
 
 Sheet Objects
 -------------
