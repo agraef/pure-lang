@@ -931,11 +931,7 @@ pure_expr *pure_set_cell(const char *s, pure_expr *x)
       if (cell) {
 	GnmValue *v = pure2value(pos, x, NULL);
 	if (!v) v = value_new_error_VALUE(pos);
-	gnm_cell_set_value(cell, v);
-	if (!gnm_cell_needs_recalc(cell))
-	  cell_foreach_dep(cell, (DepFunc)dependent_queue_recalc, NULL);
-	if (workbook_get_recalcmode(sheet->workbook))
-	  workbook_recalc(sheet->workbook);
+	sheet_cell_set_value(cell, v);
 	ret = pure_tuplel(0);
      }
     }
@@ -963,13 +959,7 @@ pure_expr *pure_set_text(const char *s, pure_expr *x)
       if (sheet && nrows == 1 && ncols == 1) {
 	GnmCell *cell = sheet_cell_fetch(sheet, x1, y1);
 	if (cell) {
-	  gnm_cell_set_text(cell, text);
-	  gnm_cell_eval_content(cell);
-	  // XXXFIXME: Is this needed here?
-	  if (!gnm_cell_needs_recalc(cell))
-	    cell_foreach_dep(cell, (DepFunc)dependent_queue_recalc, NULL);
-	  if (workbook_get_recalcmode(sheet->workbook))
-	    workbook_recalc(sheet->workbook);
+	  sheet_cell_set_text(cell, text, NULL);
 	  ret = pure_tuplel(0);
 	}
       }
@@ -1073,9 +1063,7 @@ pure_expr *pure_set_range(const char *s, pure_expr *xs)
 	    GnmCell *cell = sheet_cell_fetch(sheet, x, y);
 	    if (cell) {
 	      GnmValue *v = value_new_float((gnm_float)data[i*tda+j]);
-	      gnm_cell_set_value(cell, v);
-	      if (!gnm_cell_needs_recalc(cell))
-		cell_foreach_dep(cell, (DepFunc)dependent_queue_recalc, NULL);
+	      sheet_cell_set_value(cell, v);
 	    }
 	  }
 	ret = pure_tuplel(0);
@@ -1088,9 +1076,7 @@ pure_expr *pure_set_range(const char *s, pure_expr *xs)
 	    GnmCell *cell = sheet_cell_fetch(sheet, x, y);
 	    if (cell) {
 	      GnmValue *v = value_new_int(data[i*tda+j]);
-	      gnm_cell_set_value(cell, v);
-	      if (!gnm_cell_needs_recalc(cell))
-		cell_foreach_dep(cell, (DepFunc)dependent_queue_recalc, NULL);
+	      sheet_cell_set_value(cell, v);
 	    }
 	  }
 	ret = pure_tuplel(0);
@@ -1104,9 +1090,7 @@ pure_expr *pure_set_range(const char *s, pure_expr *xs)
 	    if (cell) {
 	      GnmValue *v = pure2value(pos, data[i*tda+j], NULL);
 	      if (!v) v = value_new_error_VALUE(pos);
-	      gnm_cell_set_value(cell, v);
-	      if (!gnm_cell_needs_recalc(cell))
-		cell_foreach_dep(cell, (DepFunc)dependent_queue_recalc, NULL);
+	      sheet_cell_set_value(cell, v);
 	    }
 	  }
 	ret = pure_tuplel(0);
@@ -1117,17 +1101,13 @@ pure_expr *pure_set_range(const char *s, pure_expr *xs)
 	  if (cell) {
 	    GnmValue *v = pure2value(pos, xv[j], NULL);
 	    if (!v) v = value_new_error_VALUE(pos);
-	    gnm_cell_set_value(cell, v);
-	    if (!gnm_cell_needs_recalc(cell))
-	      cell_foreach_dep(cell, (DepFunc)dependent_queue_recalc, NULL);
+	    sheet_cell_set_value(cell, v);
 	  }
 	}
 	if (xv) free(xv);
 	ret = pure_tuplel(0);
       }
     }
-    if (ret && workbook_get_recalcmode(sheet->workbook))
-      workbook_recalc(sheet->workbook);
     value_release(v);
     return ret;
   } else
