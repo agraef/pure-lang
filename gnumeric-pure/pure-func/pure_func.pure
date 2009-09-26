@@ -65,7 +65,17 @@ pure_eval (s::string:args) =
     _ = gnm_error "#SYNTAX!";
   end;
 
-pure_evalstr s::string =
+/* The interactive Pure shell. This is a variation of pure_eval above, which
+   executes arbitrary Pure code and returns the last evaluated expression (if
+   any) as a string. It doesn't accept additional arguments, so you'll have to
+   use get_cell etc. if you need to access cell values. This is mainly
+   provided as a convenience to create an "interactive shell" which lets you
+   evaluate Pure code inside Gnumeric. To these ends, simply prepare a text
+   cell for entering the code to be evaluated, and then apply pure_shell on
+   this text cell in another cell to display the result. See the pure-examples
+   spreadsheet for an example. */
+
+pure_shell s::string =
   case eval s of
     y = str y if null lasterr;
     _ = gnm_error lasterr;
@@ -215,11 +225,12 @@ gnm_info "pure_eval" = gnm_help "pure_eval:evaluate a Pure expression"
  [] ["=pure_eval(\"foldl (*) 1 (1..10)\")","=pure_eval(\"x!0*x!1\",2,3)"]
  ["pure_calc"];
 
-gnm_info "pure_evalstr" = "s", gnm_help
- "pure_evalstr:evaluate a Pure expression"
+gnm_info "pure_shell" = "s", gnm_help
+ "pure_shell:the interactive Gnumeric/Pure shell"
  ["s:string"]
- "Similar to @{pure_eval}, but this function only takes a single string argument which may contain arbitrary Pure code, and returns the last evaluated expression (if any) as a string in Pure syntax. This is useful, in particular, to evaluate Pure expressions interactively. (See the \"Interactive Pure Command Line\" in pure-examples.gnumeric for an example.)"
- [] ["=pure_evalstr(\"foldl (*) 1 (1..10)\")"]
+ "This is a variation of @{pure_eval} which executes arbitrary Pure code and returns the last evaluated expression (if any) as a string in Pure syntax. It doesn't accept additional arguments, so you'll have to use @{get_cell} etc. if you need to access cell values."
+ ["This is mainly provided as a convenience to build an interactive frontend to the Pure interpreter inside Gnumeric. To these ends, simply prepare a text cell for entering the code to be evaluated, and then apply pure_shell on this text cell in another cell to display the result. See the pure-examples spreadsheet for an example."]
+ ["=pure_shell(\"scanl1 (*) (1..10)\")"]
  ["pure_eval"];
 
 gnm_info "gnm_bitand" = "ff", gnm_help "gnm_bitand:bitwise and"
@@ -230,7 +241,7 @@ gnm_info "gnm_bitand" = "ff", gnm_help "gnm_bitand:bitwise and"
 gnm_info "pure_calc" = gnm_help
  "pure_calc:evaluate an expression asynchronously"
  ["s:string"]
- "pure_calc evaluates an expression with parameter substitution, like pure_eval, but it uses an asynchronous data source to carry out the calculation as a background task."
+ "pure_calc evaluates an expression with parameter substitution, like @{pure_eval}, but it uses an asynchronous data source to carry out the calculation as a background task."
  [] ["pure_calc(\"foo\") executes @{foo} in the background."]
  ["pure_eval","pure_counter"];
 
