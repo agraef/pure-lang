@@ -8,8 +8,24 @@ Gnumeric/Pure: A Pure Plugin for Gnumeric
 :Copyright: Copyright (c) 2009. This software is distributed under the GNU
   Public License V2 or later, see the COPYING file for details.
 
-.. _Gnumeric: http://projects.gnome.org/gnumeric/
+Gnumeric/Pure is a Gnumeric_ extension which lets you use Pure_ functions in
+Gnumeric, the Gnome spreadsheet. It offers better execution speed than the
+existing Perl and Python plugins, and provides some powerful features not
+found in other Gnumeric scripting plugins, such as asynchronous data sources
+created from Pure streams and OpenGL rendering in Gnumeric frame widgets via
+Pure's OpenGL module.
+
+.. _Gnumeric: http://www.gnumeric.org/
 .. _Pure: http://pure-lang.googlecode.com/
+.. _MATLAB: http://www.mathworks.com/
+.. _Octave: http://www.octave.org/
+.. _OpenGL: http://www.opengl.org/
+
+.. contents::
+.. sectnum::
+
+Introduction
+============
 
 This package provides a Gnumeric_ extension which gives you access to the
 Pure_ programming language in Gnumeric. It works pretty much like the Perl and
@@ -23,10 +39,10 @@ plugins:
 * Pure is based on term rewriting and thus enables you to do symbolic
   computations in addition to the usual numeric calculations.
 
-* Pure has a built-in MATLAB/Octave-like matrix data structure which makes it
-  easy to deal with cell ranges in a spreadsheet in an efficient manner.
+* Pure has a built-in MATLAB_/Octave_-like matrix data structure which makes
+  it easy to deal with cell ranges in a spreadsheet in an efficient manner.
 
-* Gnumeric/Pure offers support for rendering OpenGL scenes in Gnumeric frame
+* Gnumeric/Pure offers support for rendering OpenGL_ scenes in Gnumeric frame
   widgets, via Pure's own OpenGL interface.
 
 * Pure also has built-in support for lazy data structures and thus allows you
@@ -36,9 +52,10 @@ plugins:
   automatically as results become available.
 
 * Last but not least, Pure is compiled to native code on the fly. This means
-  that, while startup times are a bit longer (you'll notice this if you open a
-  spreadsheet with Pure functions), the resulting code then typically executes
-  *much* faster than equivalent Perl and Python code.
+  that, while startup times are a bit longer due to Pure's JIT compiler
+  kicking in (you'll notice this if you open a spreadsheet with Pure
+  functions), the resulting compiled code then typically executes *much*
+  faster than equivalent interpreted Perl and Python code.
 
 Adding Pure functions to Gnumeric is quite easy. Once the plugin is installed
 and enabled, you can simply start adding Pure functions to the provided
@@ -49,16 +66,15 @@ of cells with one Pure call, calling Gnumeric functions from Pure, and setting
 up asynchronous data sources and OpenGL frames. This is all explained in
 detail below.
 
-.. contents::
-.. sectnum::
-
 Installation
 ============
 
 Obviously, you need to have both Pure and Gnumeric installed. Pure 0.35 and
-Gnumeric 1.19.13 are known to work. (Older Gnumeric versions probably work as
-well if you're willing to fiddle with the Makefile and/or the sources. See the
-beginning of the Makefile for related information.)
+Gnumeric 1.19.13 are known to work. We recommend Gnumeric 1.19.14 (only
+available in the Gnumeric git repository at the time of this writing) since it
+has improved support for GUI widgets. (Older Gnumeric versions probably work
+as well if you're willing to fiddle with the Makefile and/or the sources. See
+the beginning of the Makefile for related information.)
 
 As shipped, the Makefile is set up to build Gnumeric/Pure with OpenGL support,
 which requires that you have the OpenGL libraries as well as GtkGLExt_ (the
@@ -68,17 +84,17 @@ GLDEPS=``.
 
 .. _GtkGLExt: http://gtkglext.sourceforge.net
 
-Then run ``make``. You might have to adjust the settings at the beginning of
-the Makefile to make this work. If you're lucky and the compile goes through,
-you should now have a ``pure_loader.so`` file in the ``pure-loader``
-subdirectory. You can install the plugin and related stuff with ``sudo make
-install`` in the global Gnumeric plugin directory, or if you prefer to install
-it into your personal plugin directory then run ``make install-local``
-instead.  (We recommend the latter since it lets you adjust ``pure_func.pure``
-for your purposes more easily.) Optionally, you might also want to copy the
-``gnumeric-pure.html`` file to your Pure library directory so that you can
-read it with the ``help`` command of the Pure interpreter or in Emacs Pure
-mode.
+Run ``make`` to compile the software. You might have to adjust the settings at
+the beginning of the Makefile to make this work. If you're lucky and the
+compile goes through, you should now have a ``pure_loader.so`` file in the
+``pure-loader`` subdirectory. You can install the plugin and related stuff
+with ``sudo make install`` in the global Gnumeric plugin directory, or if you
+prefer to install it into your personal plugin directory then run ``make
+install-local`` instead.  (We recommend the latter since it lets you adjust
+``pure_func.pure`` for your purposes more easily.) Optionally, you might also
+want to copy the ``gnumeric-pure.html`` file to your Pure library directory so
+that you can read it with the ``help`` command of the Pure interpreter or in
+Emacs Pure mode.
 
 Typically, ``make install`` and ``make install-local`` will install the
 plugins into the following directories by default:
@@ -779,26 +795,28 @@ rendering until the target frame widget has been realized::
 
   extern bool pure_check_window(char *name) = check_window;
 
-Here's a (slightly abridged) version of the example from ``pure_glfunc.pure``
-which shows how these functions are to be used. Have a look at the
-``gl-example.gnumeric`` spreadsheet included in the distribution to see this
-example in action. (You first need to enable the "Pure OpenGL functions" in
-the Plugin Manager to make this work.) The screenshot below shows how the
-example looks like in Gnumeric.
+Here's an example from ``pure_glfunc.pure`` which shows how these functions
+are to be used. Have a look at the ``gl-example.gnumeric`` spreadsheet
+included in the distribution to see this example in action. (You first need to
+enable the "Pure OpenGL functions" in the Plugin Manager to make this work.)
+The screenshot below shows how the example looks like in Gnumeric.
 
 .. figure:: opengl.png
    :scale: 50
 
    Gnumeric/Pure OpenGL example.
 
-::
+The (slightly abridged) code of the example is as follows::
 
   using pure_func, GL, GLU;
+
   extern void gdk_gl_draw_teapot(bool solid, double scale);
+
   gnm_info "gltest" = "sbfff";
 
   gltest frame m a b c = trigger 0 (check_window frame)
-    (gl_window frame (m*40) setup config display timer ()) with
+    (gl_window frame (m*40) setup config display timer ())
+  with
     setup _ _ = () when
       // Initialize.
       GL::ClearColor 0.1 0.1 0.3 1.0; 
