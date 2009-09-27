@@ -123,8 +123,8 @@ endif
 CFLAGS = -g -O2
 CPPFLAGS = -Wall
 
-DISTFILES = ChangeLog COPYING Makefile README \
-gnumeric-pure.html preamble.tex config.guess \
+DISTFILES = ChangeLog COPYING Makefile README config.guess \
+doc/gnumeric-pure.html doc/preamble.tex doc/*.png \
 pure-loader/boot.c pure-loader/pure-gnumeric.c pure-loader/pure-gnumeric.h \
 pure-loader/pure-loader.c pure-loader/pure-loader.h \
 pure-loader/plugin.xml pure-loader/pure-ui.xml \
@@ -141,34 +141,32 @@ pure-loader/pure_loader$(DLL): pure-loader/boot.o pure-loader/pure-gnumeric.o pu
 
 clean:
 	(cd pure-loader/ && rm -f pure_loader$(DLL) *~ *.a *.o)
-	rm -f *~ gnumeric-pure.tex *.dvi *.pdf *.aux *.log *.out *.toc
+	rm -f *~ doc/gnumeric-pure.tex doc/*.dvi doc/*.aux doc/*.log doc/*.out doc/*.toc
 
 # documentation (this needs docutils)
 
-html: gnumeric-pure.html
-latex: gnumeric-pure.tex
-pdf: gnumeric-pure.pdf
+html: doc/gnumeric-pure.html
+latex: doc/gnumeric-pure.tex
+pdf: doc/gnumeric-pure.pdf
 
-gnumeric-pure.html: README
+doc/gnumeric-pure.html: README
 	rst2html.py $< $@
 
 # Adjust these as needed.
 LATEXOPT = --use-latex-toc --use-latex-docinfo --stylesheet=preamble.tex --documentoptions="11pt" --no-section-numbering
 
-gnumeric-pure.tex: README
+doc/gnumeric-pure.tex: README
 	rst2latex.py $(LATEXOPT) $< $@
 
-%.pdf: %.tex preamble.tex
-	pdflatex $<
-	pdflatex $<
-	pdflatex $<
-	rm -f *.aux *.log *.out *.toc
+doc/%.pdf: doc/%.tex doc/preamble.tex
+	(cd doc && pdflatex ../$< && pdflatex ../$< && pdflatex ../$<)
+	rm -f doc/*.aux doc/*.log doc/*.out doc/*.toc
 
 install:
 	test -d "$(DESTDIR)$(gnmplugindir)/$(purefuncdir)" || mkdir -p "$(DESTDIR)$(gnmplugindir)/$(purefuncdir)"
 	test -d "$(DESTDIR)$(gnmplugindir)/$(pureglfuncdir)" || mkdir -p "$(DESTDIR)$(gnmplugindir)/$(pureglfuncdir)"
 	test -d "$(DESTDIR)$(gnmplugindir)/$(pureloaderdir)" || mkdir -p "$(DESTDIR)$(gnmplugindir)/$(pureloaderdir)"
-	cp COPYING README gnumeric-pure.html pure-func/*.pure pure-func/plugin.xml "$(DESTDIR)$(gnmplugindir)/$(purefuncdir)"
+	cp COPYING README doc/gnumeric-pure.html doc/*.png pure-func/*.pure pure-func/plugin.xml "$(DESTDIR)$(gnmplugindir)/$(purefuncdir)"
 	cp pure-glfunc/*.pure pure-glfunc/plugin.xml "$(DESTDIR)$(gnmplugindir)/$(pureglfuncdir)"
 	cp pure-loader/pure_loader$(DLL) pure-loader/plugin.xml pure-loader/pure-ui.xml "$(DESTDIR)$(gnmplugindir)/$(pureloaderdir)"
 
@@ -176,7 +174,7 @@ install-local:
 	test -d "$(DESTDIR)$(gnmlocalplugindir)/$(purefuncdir)" || mkdir -p "$(DESTDIR)$(gnmlocalplugindir)/$(purefuncdir)"
 	test -d "$(DESTDIR)$(gnmlocalplugindir)/$(pureglfuncdir)" || mkdir -p "$(DESTDIR)$(gnmlocalplugindir)/$(pureglfuncdir)"
 	test -d "$(DESTDIR)$(gnmlocalplugindir)/$(pureloaderdir)" || mkdir -p "$(DESTDIR)$(gnmlocalplugindir)/$(pureloaderdir)"
-	cp COPYING README gnumeric-pure.html pure-func/*.pure pure-func/plugin.xml "$(DESTDIR)$(gnmlocalplugindir)/$(purefuncdir)"
+	cp COPYING README doc/gnumeric-pure.html doc/*.png pure-func/*.pure pure-func/plugin.xml "$(DESTDIR)$(gnmlocalplugindir)/$(purefuncdir)"
 	cp pure-glfunc/*.pure pure-glfunc/plugin.xml "$(DESTDIR)$(gnmlocalplugindir)/$(pureglfuncdir)"
 	cp pure-loader/pure_loader$(DLL) pure-loader/plugin.xml pure-loader/pure-ui.xml "$(DESTDIR)$(gnmlocalplugindir)/$(pureloaderdir)"
 
@@ -188,7 +186,7 @@ uninstall-local:
 
 dist:
 	rm -rf $(dist)
-	mkdir $(dist) && mkdir $(dist)/examples && mkdir $(dist)/pure-func $(dist)/pure-glfunc && mkdir $(dist)/pure-loader
+	mkdir $(dist) && mkdir $(dist)/doc && mkdir $(dist)/examples && mkdir $(dist)/pure-func $(dist)/pure-glfunc && mkdir $(dist)/pure-loader
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)

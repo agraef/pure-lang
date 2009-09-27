@@ -492,21 +492,26 @@ interpreter. You can try this now. Open the <tt class="docutils literal"><span c
 Gnumeric and enter the following into the input cell of the Pure shell:</p>
 <pre class="literal-block">
 &gt; scanl (+) 0 (1..20)
-[0,1,3,6,10,15,21,28,36,45,55,66,78,91,105,120,136,153,171,190,210]
+  [0,1,3,6,10,15,21,28,36,45,55,66,78,91,105,120,136,153,171,190,210]
 </pre>
-<p>(You can find the Pure shell at the bottom of the first sheet in
-<tt class="docutils literal"><span class="pre">pure-examples</span></tt>. For your convenience, there's also a second, bigger one on
-the second sheet. You might want to copy this over to a separate spreadsheet
-which you can use as a scratchpad for experimentation purposes.)</p>
 <p>Note that here and in the following the prompt <tt class="docutils literal"><span class="pre">&gt;</span></tt> indicates a Pure
 expression to be evaluated in <em>Gnumeric</em> (rather than the standalone Pure
 interpreter), which is followed by another line indicating the result (printed
-in the output cell below the input cell of the Pure shell). Also note that
-this in fact <em>Pure code</em> (not a Gnumeric formula) being evaluated there. You
-can execute any Pure code, including Pure declarations, so you can type:</p>
+in the output cell below the input cell of the Pure shell). You can find the
+Pure shell at the bottom of the first sheet in <tt class="docutils literal"><span class="pre">pure-examples</span></tt>, see the
+screenshot below. For your convenience, there's also a second, bigger one on
+the second sheet. You might want to copy this over to a separate spreadsheet
+which you can use as a scratchpad for experimentation purposes.</p>
+<div class="figure">
+<img alt="shell.png" src="shell.png" />
+<p class="caption">The Pure shell.</p>
+</div>
+<p>Also note that this in fact <em>Pure code</em> (not a Gnumeric formula) being
+evaluated there. You can execute any Pure code, including Pure declarations,
+so you can type:</p>
 <pre class="literal-block">
 &gt; using system; puts &quot;Hello, world!&quot;;
-14
+  14
 </pre>
 <p>This prints the string <tt class="docutils literal"><span class="pre">&quot;Hello,</span> <span class="pre">world!&quot;</span></tt> on standard output, visible in the
 terminal window where you launched Gnumeric. Here is another example, showing
@@ -514,7 +519,7 @@ how you can invoke any function from the C library, by declaring it as a Pure
 <tt class="docutils literal"><span class="pre">extern</span></tt> function:</p>
 <pre class="literal-block">
 &gt; extern int rand(); [rand | i = 1..5];
-[1810821799,2106746672,1436605662,1363610028,695042099]
+  [1810821799,2106746672,1436605662,1363610028,695042099]
 </pre>
 <p>All functions in the Pure prelude are readily available in the Gnumeric Pure
 shell, as well as the functions defined in <tt class="docutils literal"><span class="pre">pure_func.pure</span></tt> and its imports,
@@ -522,13 +527,13 @@ including the programming interface described in <a class="reference internal" h
 instance, here's how you can retrieve a cell value from the current sheet:</p>
 <pre class="literal-block">
 &gt; get_cell &quot;A1&quot;
-&quot;Gnumeric/Pure Examples&quot;
+  &quot;Gnumeric/Pure Examples&quot;
 </pre>
 <p>Using <tt class="docutils literal"><span class="pre">call</span></tt> (see <a class="reference internal" href="#calling-gnumeric-from-pure">Calling Gnumeric from Pure</a>), you can also invoke any
 Gnumeric function:</p>
 <pre class="literal-block">
 &gt; call &quot;product&quot; (1..10)
-3628800.0
+  3628800.0
 </pre>
 </div>
 <div class="section" id="defining-your-own-functions">
@@ -843,17 +848,17 @@ extern expr* pure_set_range_text(char* s, expr *x) = set_range_text;
 cell values (try this in the interactive Pure shell):</p>
 <pre class="literal-block">
 &gt; set_cell &quot;A14&quot; 42
-()
+  ()
 &gt; get_cell &quot;A14&quot;
-42.0
+  42.0
 &gt; set_range &quot;A14:G14&quot; $ scanl (*) 1 (1..6)
-()
+  ()
 &gt; get_range &quot;A14:G14&quot;
-{1.0,1.0,2.0,6.0,24.0,120.0,720.0}
+  {1.0,1.0,2.0,6.0,24.0,120.0,720.0}
 &gt; set_cell_text &quot;A14&quot; &quot;=sum(B14:G14)&quot;
-()
+  ()
 &gt; get_cell &quot;A14&quot;
-873.0
+  873.0
 </pre>
 <p>Note that while the <tt class="docutils literal"><span class="pre">set_cell</span></tt> function sets the given cell to a constant
 value, <tt class="docutils literal"><span class="pre">set_cell_text</span></tt> also allows you to store a formula in a cell which
@@ -874,11 +879,11 @@ extern expr* pure_make_range(expr* x) = make_range;
 <p>Examples:</p>
 <pre class="literal-block">
 &gt; this_cell
-&quot;B4&quot;
+  &quot;B4&quot;
 &gt; parse_range this_cell
-#&lt;pointer 0x875220&gt;,1,3
+  #&lt;pointer 0x875220&gt;,1,3
 &gt; make_range (NULL,0,0,10,10)
-&quot;Sheet2!A1:K11&quot;
+  &quot;Sheet2!A1:K11&quot;
 </pre>
 </div>
 <div class="section" id="asynchronous-data-sources">
@@ -927,18 +932,18 @@ pure_counter x = datasource [sleep (i&gt;x) $$ i | i = x..inf];
 <p>You can also try this interactively in the Pure shell:</p>
 <pre class="literal-block">
 &gt; datasource [sleep (i&gt;0) $$ i | i = 0..inf]
-0
-1
-...
+  0
+  1
+  ...
 </pre>
 <p>Here's another example for the Pure shell which prints the prime numbers:</p>
 <pre class="literal-block">
 &gt; datasource primes with primes = sieve (2..inf);
-  sieve (p:qs) = p : (sleep 1 $$ sieve [q | q = qs; q mod p])&amp; end
-2
-3
-5
-...
+    sieve (p:qs) = p : (sleep 1 $$ sieve [q | q = qs; q mod p])&amp; end
+  2
+  3
+  5
+  ...
 </pre>
 <p>Note that when processing a lazy list, the cell containing the call will keep
 changing as long as new values are produced (i.e., forever in this
@@ -1015,7 +1020,7 @@ extern expr* pure_sheet_objects() = sheet_objects;
 <tt class="docutils literal"><span class="pre">sheet_objects</span></tt> might look like this:</p>
 <pre class="literal-block">
 &gt; sheet_objects
-[(&quot;Sheet1&quot;,&quot;button&quot;,&quot;Push Me!&quot;,&quot;A11&quot;,#&lt;pointer 0x2a1dcd0&gt;)]
+  [(&quot;Sheet1&quot;,&quot;button&quot;,&quot;Push Me!&quot;,&quot;A11&quot;,#&lt;pointer 0x2a1dcd0&gt;)]
 </pre>
 <p>Each object is described by a tuple which lists the name of the sheet on which
 the object is located, the type of object, the object's label (if applicable),
@@ -1057,25 +1062,34 @@ rendering until the target frame widget has been realized:</p>
 extern bool pure_check_window(char *name) = check_window;
 </pre>
 <p>Here's a (slightly abridged) version of the example from <tt class="docutils literal"><span class="pre">pure_glfunc.pure</span></tt>
-which shows how these functions are to be used. Please also have a look at the
+which shows how these functions are to be used. Have a look at the
 <tt class="docutils literal"><span class="pre">gl-example.gnumeric</span></tt> spreadsheet included in the distribution to see this
 example in action. (You first need to enable the &quot;Pure OpenGL functions&quot; in
-the Plugin Manager to make this work.)</p>
+the Plugin Manager to make this work.) The screenshot below shows how the
+example looks like in Gnumeric.</p>
+<div class="figure">
+<img alt="opengl.png" src="opengl.png" />
+<p class="caption">Gnumeric/Pure OpenGL example.</p>
+</div>
 <pre class="literal-block">
 using pure_func, GL, GLU;
 extern void gdk_gl_draw_teapot(bool solid, double scale);
 gnm_info &quot;gltest&quot; = &quot;sbfff&quot;;
+
 gltest frame m a b c = trigger 0 (check_window frame)
   (gl_window frame (m*40) setup config display timer ()) with
   setup _ _ = () when
+    // Initialize.
     GL::ClearColor 0.1 0.1 0.3 1.0;
     GL::ShadeModel GL::SMOOTH;
     GL::Enable GL::DEPTH_TEST;
+    // Initial projection and modelview matrices.
     GL::MatrixMode GL::PROJECTION;
     GL::LoadIdentity;
     GL::Rotatef 20.0 (-1.0) 0.0 0.0;
     GL::MatrixMode GL::MODELVIEW;
     GL::LoadIdentity;
+    // Lighting.
     GL::Lightfv GL::LIGHT0 GL::DIFFUSE {1.0,0.0,0.0,1.0};
     GL::Lightfv GL::LIGHT0 GL::POSITION {2.0,2.0,-5.0,1.0};
     GL::Enable GL::LIGHTING;

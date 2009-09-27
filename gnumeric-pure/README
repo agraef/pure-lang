@@ -203,22 +203,28 @@ interpreter. You can try this now. Open the ``pure-examples`` spreadsheet in
 Gnumeric and enter the following into the input cell of the Pure shell::
 
   > scanl (+) 0 (1..20)
-  [0,1,3,6,10,15,21,28,36,45,55,66,78,91,105,120,136,153,171,190,210]
-
-(You can find the Pure shell at the bottom of the first sheet in
-``pure-examples``. For your convenience, there's also a second, bigger one on
-the second sheet. You might want to copy this over to a separate spreadsheet
-which you can use as a scratchpad for experimentation purposes.)
+    [0,1,3,6,10,15,21,28,36,45,55,66,78,91,105,120,136,153,171,190,210]
 
 Note that here and in the following the prompt ``>`` indicates a Pure
 expression to be evaluated in *Gnumeric* (rather than the standalone Pure
 interpreter), which is followed by another line indicating the result (printed
-in the output cell below the input cell of the Pure shell). Also note that
-this in fact *Pure code* (not a Gnumeric formula) being evaluated there. You
-can execute any Pure code, including Pure declarations, so you can type::
+in the output cell below the input cell of the Pure shell). You can find the
+Pure shell at the bottom of the first sheet in ``pure-examples``, see the
+screenshot below. For your convenience, there's also a second, bigger one on
+the second sheet. You might want to copy this over to a separate spreadsheet
+which you can use as a scratchpad for experimentation purposes.
+
+.. figure:: shell.png
+   :scale: 50
+
+   The Pure shell.
+
+Also note that this in fact *Pure code* (not a Gnumeric formula) being
+evaluated there. You can execute any Pure code, including Pure declarations,
+so you can type::
 
   > using system; puts "Hello, world!";
-  14
+    14
 
 This prints the string ``"Hello, world!"`` on standard output, visible in the
 terminal window where you launched Gnumeric. Here is another example, showing
@@ -226,7 +232,7 @@ how you can invoke any function from the C library, by declaring it as a Pure
 ``extern`` function::
 
   > extern int rand(); [rand | i = 1..5];
-  [1810821799,2106746672,1436605662,1363610028,695042099]
+    [1810821799,2106746672,1436605662,1363610028,695042099]
 
 All functions in the Pure prelude are readily available in the Gnumeric Pure
 shell, as well as the functions defined in ``pure_func.pure`` and its imports,
@@ -234,13 +240,13 @@ including the programming interface described in `Advanced Features`_. For
 instance, here's how you can retrieve a cell value from the current sheet::
 
   > get_cell "A1"
-  "Gnumeric/Pure Examples"
+    "Gnumeric/Pure Examples"
 
 Using ``call`` (see `Calling Gnumeric from Pure`_), you can also invoke any
 Gnumeric function::
 
   > call "product" (1..10)
-  3628800.0
+    3628800.0
 
 Defining Your Own Functions
 ===========================
@@ -548,17 +554,17 @@ For instance, here's how you use these functions to write and then read some
 cell values (try this in the interactive Pure shell)::
 
   > set_cell "A14" 42
-  ()
+    ()
   > get_cell "A14"
-  42.0
+    42.0
   > set_range "A14:G14" $ scanl (*) 1 (1..6)
-  ()
+    ()
   > get_range "A14:G14"
-  {1.0,1.0,2.0,6.0,24.0,120.0,720.0}
+    {1.0,1.0,2.0,6.0,24.0,120.0,720.0}
   > set_cell_text "A14" "=sum(B14:G14)"
-  ()
+    ()
   > get_cell "A14"
-  873.0
+    873.0
 
 Note that while the ``set_cell`` function sets the given cell to a constant
 value, ``set_cell_text`` also allows you to store a formula in a cell which
@@ -580,11 +586,11 @@ coordinates::
 Examples::
 
   > this_cell
-  "B4"
+    "B4"
   > parse_range this_cell
-  #<pointer 0x875220>,1,3
+    #<pointer 0x875220>,1,3
   > make_range (NULL,0,0,10,10)
-  "Sheet2!A1:K11"
+    "Sheet2!A1:K11"
 
 Asynchronous Data Sources
 -------------------------
@@ -634,18 +640,18 @@ starting from a given initial value::
 You can also try this interactively in the Pure shell::
 
   > datasource [sleep (i>0) $$ i | i = 0..inf]
-  0
-  1
-  ...
+    0
+    1
+    ...
 
 Here's another example for the Pure shell which prints the prime numbers::
 
   > datasource primes with primes = sieve (2..inf);
-    sieve (p:qs) = p : (sleep 1 $$ sieve [q | q = qs; q mod p])& end
-  2
-  3
-  5
-  ...
+      sieve (p:qs) = p : (sleep 1 $$ sieve [q | q = qs; q mod p])& end
+    2
+    3
+    5
+    ...
 
 Note that when processing a lazy list, the cell containing the call will keep
 changing as long as new values are produced (i.e., forever in this
@@ -729,7 +735,7 @@ For instance, with one button object in your spreadsheet, the output of
 ``sheet_objects`` might look like this::
 
   > sheet_objects
-  [("Sheet1","button","Push Me!","A11",#<pointer 0x2a1dcd0>)]
+    [("Sheet1","button","Push Me!","A11",#<pointer 0x2a1dcd0>)]
 
 Each object is described by a tuple which lists the name of the sheet on which
 the object is located, the type of object, the object's label (if applicable),
@@ -774,27 +780,37 @@ rendering until the target frame widget has been realized::
   extern bool pure_check_window(char *name) = check_window;
 
 Here's a (slightly abridged) version of the example from ``pure_glfunc.pure``
-which shows how these functions are to be used. Please also have a look at the
+which shows how these functions are to be used. Have a look at the
 ``gl-example.gnumeric`` spreadsheet included in the distribution to see this
 example in action. (You first need to enable the "Pure OpenGL functions" in
-the Plugin Manager to make this work.)
+the Plugin Manager to make this work.) The screenshot below shows how the
+example looks like in Gnumeric.
+
+.. figure:: opengl.png
+   :scale: 50
+
+   Gnumeric/Pure OpenGL example.
 
 ::
 
   using pure_func, GL, GLU;
   extern void gdk_gl_draw_teapot(bool solid, double scale);
   gnm_info "gltest" = "sbfff";
+
   gltest frame m a b c = trigger 0 (check_window frame)
     (gl_window frame (m*40) setup config display timer ()) with
     setup _ _ = () when
+      // Initialize.
       GL::ClearColor 0.1 0.1 0.3 1.0; 
       GL::ShadeModel GL::SMOOTH;
       GL::Enable GL::DEPTH_TEST;
+      // Initial projection and modelview matrices.
       GL::MatrixMode GL::PROJECTION;
       GL::LoadIdentity;
       GL::Rotatef 20.0 (-1.0) 0.0 0.0;
       GL::MatrixMode GL::MODELVIEW;
       GL::LoadIdentity;
+      // Lighting.
       GL::Lightfv GL::LIGHT0 GL::DIFFUSE {1.0,0.0,0.0,1.0};
       GL::Lightfv GL::LIGHT0 GL::POSITION {2.0,2.0,-5.0,1.0};
       GL::Enable GL::LIGHTING;
