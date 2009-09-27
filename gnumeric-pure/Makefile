@@ -161,6 +161,7 @@ gnumeric-pure.tex: README
 %.pdf: %.tex preamble.tex
 	pdflatex $<
 	pdflatex $<
+	pdflatex $<
 	rm -f *.aux *.log *.out *.toc
 
 install:

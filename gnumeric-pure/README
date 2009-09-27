@@ -782,25 +782,19 @@ the Plugin Manager to make this work.)
 ::
 
   using pure_func, GL, GLU;
-
   extern void gdk_gl_draw_teapot(bool solid, double scale);
-
   gnm_info "gltest" = "sbfff";
-
   gltest frame m a b c = trigger 0 (check_window frame)
     (gl_window frame (m*40) setup config display timer ()) with
     setup _ _ = () when
-      // Initialize.
       GL::ClearColor 0.1 0.1 0.3 1.0; 
       GL::ShadeModel GL::SMOOTH;
       GL::Enable GL::DEPTH_TEST;
-      // Initial projection and modelview matrices.
       GL::MatrixMode GL::PROJECTION;
       GL::LoadIdentity;
       GL::Rotatef 20.0 (-1.0) 0.0 0.0;
       GL::MatrixMode GL::MODELVIEW;
       GL::LoadIdentity;
-      // Lighting.
       GL::Lightfv GL::LIGHT0 GL::DIFFUSE {1.0,0.0,0.0,1.0};
       GL::Lightfv GL::LIGHT0 GL::POSITION {2.0,2.0,-5.0,1.0};
       GL::Enable GL::LIGHTING;
