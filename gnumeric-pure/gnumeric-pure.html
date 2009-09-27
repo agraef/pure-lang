@@ -335,24 +335,23 @@ detail below.</p>
 <div class="contents topic" id="contents">
 <p class="topic-title first">Contents</p>
 <ul class="auto-toc simple">
-<li><a class="reference internal" href="#installation" id="id1">1&nbsp;&nbsp;&nbsp;Installation</a><ul class="auto-toc">
-<li><a class="reference internal" href="#setup" id="id2">1.1&nbsp;&nbsp;&nbsp;Setup</a></li>
+<li><a class="reference internal" href="#installation" id="id1">1&nbsp;&nbsp;&nbsp;Installation</a></li>
+<li><a class="reference internal" href="#setup" id="id2">2&nbsp;&nbsp;&nbsp;Setup</a></li>
+<li><a class="reference internal" href="#basic-usage" id="id3">3&nbsp;&nbsp;&nbsp;Basic Usage</a></li>
+<li><a class="reference internal" href="#interactive-pure-shell" id="id4">4&nbsp;&nbsp;&nbsp;Interactive Pure Shell</a></li>
+<li><a class="reference internal" href="#defining-your-own-functions" id="id5">5&nbsp;&nbsp;&nbsp;Defining Your Own Functions</a></li>
+<li><a class="reference internal" href="#gnumeric-pure-interface" id="id6">6&nbsp;&nbsp;&nbsp;Gnumeric/Pure Interface</a><ul class="auto-toc">
+<li><a class="reference internal" href="#function-descriptions" id="id7">6.1&nbsp;&nbsp;&nbsp;Function Descriptions</a></li>
+<li><a class="reference internal" href="#conversions-between-pure-and-gnumeric-values" id="id8">6.2&nbsp;&nbsp;&nbsp;Conversions Between Pure and Gnumeric Values</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#basic-usage" id="id3">2&nbsp;&nbsp;&nbsp;Basic Usage</a></li>
-<li><a class="reference internal" href="#defining-your-own-functions" id="id4">3&nbsp;&nbsp;&nbsp;Defining Your Own Functions</a></li>
-<li><a class="reference internal" href="#gnumeric-pure-interface" id="id5">4&nbsp;&nbsp;&nbsp;Gnumeric/Pure Interface</a><ul class="auto-toc">
-<li><a class="reference internal" href="#function-descriptions" id="id6">4.1&nbsp;&nbsp;&nbsp;Function Descriptions</a></li>
-<li><a class="reference internal" href="#conversions-between-pure-and-gnumeric-values" id="id7">4.2&nbsp;&nbsp;&nbsp;Conversions Between Pure and Gnumeric Values</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#advanced-features" id="id8">5&nbsp;&nbsp;&nbsp;Advanced Features</a><ul class="auto-toc">
-<li><a class="reference internal" href="#calling-gnumeric-from-pure" id="id9">5.1&nbsp;&nbsp;&nbsp;Calling Gnumeric from Pure</a></li>
-<li><a class="reference internal" href="#accessing-spreadsheet-cells" id="id10">5.2&nbsp;&nbsp;&nbsp;Accessing Spreadsheet Cells</a></li>
-<li><a class="reference internal" href="#asynchronous-data-sources" id="id11">5.3&nbsp;&nbsp;&nbsp;Asynchronous Data Sources</a></li>
-<li><a class="reference internal" href="#triggers" id="id12">5.4&nbsp;&nbsp;&nbsp;Triggers</a></li>
-<li><a class="reference internal" href="#sheet-objects" id="id13">5.5&nbsp;&nbsp;&nbsp;Sheet Objects</a></li>
-<li><a class="reference internal" href="#opengl-interface" id="id14">5.6&nbsp;&nbsp;&nbsp;OpenGL Interface</a></li>
+<li><a class="reference internal" href="#advanced-features" id="id9">7&nbsp;&nbsp;&nbsp;Advanced Features</a><ul class="auto-toc">
+<li><a class="reference internal" href="#calling-gnumeric-from-pure" id="id10">7.1&nbsp;&nbsp;&nbsp;Calling Gnumeric from Pure</a></li>
+<li><a class="reference internal" href="#accessing-spreadsheet-cells" id="id11">7.2&nbsp;&nbsp;&nbsp;Accessing Spreadsheet Cells</a></li>
+<li><a class="reference internal" href="#asynchronous-data-sources" id="id12">7.3&nbsp;&nbsp;&nbsp;Asynchronous Data Sources</a></li>
+<li><a class="reference internal" href="#triggers" id="id13">7.4&nbsp;&nbsp;&nbsp;Triggers</a></li>
+<li><a class="reference internal" href="#sheet-objects" id="id14">7.5&nbsp;&nbsp;&nbsp;Sheet Objects</a></li>
+<li><a class="reference internal" href="#opengl-interface" id="id15">7.6&nbsp;&nbsp;&nbsp;OpenGL Interface</a></li>
 </ul>
 </li>
 </ul>
@@ -395,8 +394,9 @@ $ make prefix=/usr gnmversion=1.9.13
 <p>If <tt class="docutils literal"><span class="pre">make</span> <span class="pre">install</span></tt> doesn't work for some reason, you can also just copy the
 <tt class="docutils literal"><span class="pre">pure-func</span></tt>, <tt class="docutils literal"><span class="pre">pure-glfunc</span></tt> and <tt class="docutils literal"><span class="pre">pure-loader</span></tt> directories manually to
 your Gnumeric plugin directory.</p>
+</div>
 <div class="section" id="setup">
-<h2><a class="toc-backref" href="#id2">1.1&nbsp;&nbsp;&nbsp;Setup</a></h2>
+<h1><a class="toc-backref" href="#id2">2&nbsp;&nbsp;&nbsp;Setup</a></h1>
 <p>Once Gnumeric/Pure has been properly installed, you should see it in
 Gnumeric's Tools/Plug-ins dialog. There are actually two main entries, one
 labelled &quot;Pure functions&quot; and the other one labelled &quot;Pure plugin loader&quot;. You
@@ -404,16 +404,16 @@ need to enable both before you can start using Pure functions in your Gnumeric
 spreadsheets. There's also a third entry labelled &quot;Pure OpenGL functions&quot;
 which you might want to enable if you want to try the OpenGL capabilities
 (this will only work if you built Gnumeric/Pure with OpenGL support and have
-Pure's OpenGL module installed).</p>
+Pure's OpenGL module installed; see <a class="reference internal" href="#opengl-interface">OpenGL Interface</a> for details).</p>
 <p>Gnumeric doesn't provide much in the way of GUI customization options right
 now, but at least it's possible for plugins to install and configure
-additional menu and toolbar options. The Pure plugin loader adds three
-additional options to the Tools menu which allow you to stop asynchronous data
-sources, reload Pure scripts and edit them. After installation, the
-definitions of these items can be found in the <tt class="docutils literal"><span class="pre">pure-loader/pure-ui.xml</span></tt>
-file in your Gnumeric plugin directory. Have a look at this file and edit is
-as desired. E.g., if you want to put the Pure-related options into a submenu
-and enable toolbar buttons for these options, then your <tt class="docutils literal"><span class="pre">pure-ui.xml</span></tt> file
+additional menu and toolbar options. Gnumeric/Pure adds three additional
+options to the Tools menu which allow you to stop asynchronous data sources,
+reload Pure scripts and edit them. After installation, the definitions of
+these items can be found in the <tt class="docutils literal"><span class="pre">pure-loader/pure-ui.xml</span></tt> file in your
+Gnumeric plugin directory. Have a look at this file and edit is as
+desired. E.g., if you want to put the Pure-related options into a submenu and
+enable toolbar buttons for these options, then your <tt class="docutils literal"><span class="pre">pure-ui.xml</span></tt> file
 should look as follows:</p>
 <pre class="literal-block">
 &lt;ui&gt;
@@ -436,9 +436,8 @@ should look as follows:</p>
 &lt;/ui&gt;
 </pre>
 </div>
-</div>
 <div class="section" id="basic-usage">
-<h1><a class="toc-backref" href="#id3">2&nbsp;&nbsp;&nbsp;Basic Usage</a></h1>
+<h1><a class="toc-backref" href="#id3">3&nbsp;&nbsp;&nbsp;Basic Usage</a></h1>
 <p>With Pure/Gnumeric installed and enabled, you should be ready to join the fun
 now. Start up Gnumeric, click on a cell and invoke the &quot;f(x)&quot; dialog. The Pure
 functions available for use are shown in the &quot;Pure&quot; category. E.g., click on
@@ -472,23 +471,76 @@ etc. For instance: <tt class="docutils literal"><span class="pre">=pure_eval(&qu
 <li><tt class="docutils literal"><span class="pre">pure_echo</span></tt> just displays its arguments as a string in Pure syntax, as the
 interpreter sees them. This is useful for debugging purposes. E.g.,
 <tt class="docutils literal"><span class="pre">=pure_echo(A1:B10)</span></tt> shows the given range as a Pure matrix.</li>
+<li><tt class="docutils literal"><span class="pre">pure_shell</span></tt> is a variation of <tt class="docutils literal"><span class="pre">pure_eval</span></tt> which executes arbitrary Pure
+code and returns the last evaluated expression (if any) as a string. This is
+mainly provided as a convenience to create an &quot;interactive Pure shell&quot; which
+lets you evaluate Pure code inside Gnumeric. To these ends, simply prepare a
+text cell for entering the code to be evaluated, and then apply
+<tt class="docutils literal"><span class="pre">pure_shell</span></tt> on this text cell in another cell to display the result.</li>
 </ul>
-<p>A little example spreadsheet showing most of the predefined functions in
-action can be found in <tt class="docutils literal"><span class="pre">pure-examples.gnumeric</span></tt> in the Gnumeric/Pure
-sources. The spreadsheet also provides a little &quot;Pure command line&quot; which lets
-you evaluate Pure expressions inside Gnumeric. This is useful, in particular,
-to try out the functions described in <a class="reference internal" href="#advanced-features">Advanced Features</a> interactively in
-Gnumeric.</p>
+<p>A spreadsheet showing most of the predefined functions in action can be found
+in <tt class="docutils literal"><span class="pre">pure-examples.gnumeric</span></tt> example distributed with Gnumeric/Pure.</p>
+</div>
+<div class="section" id="interactive-pure-shell">
+<h1><a class="toc-backref" href="#id4">4&nbsp;&nbsp;&nbsp;Interactive Pure Shell</a></h1>
+<p>The <tt class="docutils literal"><span class="pre">pure-examples.gnumeric</span></tt> spreadsheet also includes an instance of
+<tt class="docutils literal"><span class="pre">pure_shell</span></tt> which lets you evaluate arbitrary Pure code in the same
+interpreter instance that executes Gnumeric/Pure functions. This is very
+helpful if you're developing new Pure functions to be used in Gnumeric. It
+also lets you use Gnumeric as a kind of GUI frontend to the Pure
+interpreter. You can try this now. Open the <tt class="docutils literal"><span class="pre">pure-examples</span></tt> spreadsheet in
+Gnumeric and enter the following into the input cell of the Pure shell:</p>
+<pre class="literal-block">
+&gt; scanl (+) 0 (1..20)
+[0,1,3,6,10,15,21,28,36,45,55,66,78,91,105,120,136,153,171,190,210]
+</pre>
+<p>(You can find the Pure shell at the bottom of the first sheet in
+<tt class="docutils literal"><span class="pre">pure-examples</span></tt>. For your convenience, there's also a second, bigger one on
+the second sheet. You might want to copy this over to a separate spreadsheet
+which you can use as a scratchpad for experimentation purposes.)</p>
+<p>Note that here and in the following the prompt <tt class="docutils literal"><span class="pre">&gt;</span></tt> indicates a Pure
+expression to be evaluated in <em>Gnumeric</em> (rather than the standalone Pure
+interpreter), which is followed by another line indicating the result (printed
+in the output cell below the input cell of the Pure shell). Also note that
+this in fact <em>Pure code</em> (not a Gnumeric formula) being evaluated there. You
+can execute any Pure code, including Pure declarations, so you can type:</p>
+<pre class="literal-block">
+&gt; using system; puts &quot;Hello, world!&quot;;
+14
+</pre>
+<p>This prints the string <tt class="docutils literal"><span class="pre">&quot;Hello,</span> <span class="pre">world!&quot;</span></tt> on standard output, visible in the
+terminal window where you launched Gnumeric. Here is another example, showing
+how you can invoke any function from the C library, by declaring it as a Pure
+<tt class="docutils literal"><span class="pre">extern</span></tt> function:</p>
+<pre class="literal-block">
+&gt; extern int rand(); [rand | i = 1..5];
+[1810821799,2106746672,1436605662,1363610028,695042099]
+</pre>
+<p>All functions in the Pure prelude are readily available in the Gnumeric Pure
+shell, as well as the functions defined in <tt class="docutils literal"><span class="pre">pure_func.pure</span></tt> and its imports,
+including the programming interface described in <a class="reference internal" href="#advanced-features">Advanced Features</a>. For
+instance, here's how you can retrieve a cell value from the current sheet:</p>
+<pre class="literal-block">
+&gt; get_cell &quot;A1&quot;
+&quot;Gnumeric/Pure Examples&quot;
+</pre>
+<p>Using <tt class="docutils literal"><span class="pre">call</span></tt> (see <a class="reference internal" href="#calling-gnumeric-from-pure">Calling Gnumeric from Pure</a>), you can also invoke any
+Gnumeric function:</p>
+<pre class="literal-block">
+&gt; call &quot;product&quot; (1..10)
+3628800.0
+</pre>
 </div>
 <div class="section" id="defining-your-own-functions">
-<h1><a class="toc-backref" href="#id4">3&nbsp;&nbsp;&nbsp;Defining Your Own Functions</a></h1>
-<p>After playing around with <tt class="docutils literal"><span class="pre">pure_func.pure</span></tt> for a while, of course you will
-want to write your own functions, that's what this plugin is about after all!
-For the beginning, you can just add your definitions to the existing
-<tt class="docutils literal"><span class="pre">pure_func.pure</span></tt> script. Use the &quot;Edit Pure Script&quot; option to edit the
-script in your favourite editor, and see the comments and the examples in the
-script for guidance. (This document assumes that you're already familiar with
-Pure, if not then you should consult the available Pure documentation.)</p>
+<h1><a class="toc-backref" href="#id5">5&nbsp;&nbsp;&nbsp;Defining Your Own Functions</a></h1>
+<p>After playing around with <tt class="docutils literal"><span class="pre">pure_func.pure</span></tt> and the interactive Pure shell
+for a while, of course you will want to write your own functions, that's what
+this plugin is about after all! For the beginning, you can just add your
+definitions to the existing <tt class="docutils literal"><span class="pre">pure_func.pure</span></tt> script. Use the &quot;Edit Pure
+Script&quot; option to edit the script in your favourite editor, and see the
+comments and the examples in the script for guidance. (This document assumes
+that you're already familiar with Pure, if not then you should consult the
+available Pure documentation.)</p>
 <p>Note that if you delete or rename any functions in this file, or add new ones
 to it, then you also have to change the list of function names in the
 plugin.xml file in the same directory accordingly. This file tells Gnumeric
@@ -548,14 +600,14 @@ definitions in the <tt class="docutils literal"><span class="pre">pure_func.pure
 import it into your scripts with a <tt class="docutils literal"><span class="pre">using</span></tt> clause, i.e.: <tt class="docutils literal"><span class="pre">using</span> <span class="pre">pure_func;</span></tt></p>
 </div>
 <div class="section" id="gnumeric-pure-interface">
-<h1><a class="toc-backref" href="#id5">4&nbsp;&nbsp;&nbsp;Gnumeric/Pure Interface</a></h1>
+<h1><a class="toc-backref" href="#id6">6&nbsp;&nbsp;&nbsp;Gnumeric/Pure Interface</a></h1>
 <p>By default, when a Pure function is called from Gnumeric, it receives its
 arguments in a list. However, it is possible to tell Gnumeric about the
 expected arguments of the function and also specify a help text to be
 displayed in the &quot;f(x)&quot; dialog, by giving a definition of the special
 <tt class="docutils literal"><span class="pre">gnm_info</span></tt> function as explained below.</p>
 <div class="section" id="function-descriptions">
-<h2><a class="toc-backref" href="#id6">4.1&nbsp;&nbsp;&nbsp;Function Descriptions</a></h2>
+<h2><a class="toc-backref" href="#id7">6.1&nbsp;&nbsp;&nbsp;Function Descriptions</a></h2>
 <p>To describe a given function to Gnumeric, define <tt class="docutils literal"><span class="pre">gnm_info</span> <span class="pre">&quot;&lt;name&gt;&quot;</span></tt> (where
 <tt class="docutils literal"><span class="pre">&lt;name&gt;</span></tt> is the name of the function) as a pair with the following elements:</p>
 <ul class="simple">
@@ -685,7 +737,7 @@ as <tt class="docutils literal"><span class="pre">foo</span> <span class="pre">x
 it is invoked with two, three or four arguments.</p>
 </div>
 <div class="section" id="conversions-between-pure-and-gnumeric-values">
-<h2><a class="toc-backref" href="#id7">4.2&nbsp;&nbsp;&nbsp;Conversions Between Pure and Gnumeric Values</a></h2>
+<h2><a class="toc-backref" href="#id8">6.2&nbsp;&nbsp;&nbsp;Conversions Between Pure and Gnumeric Values</a></h2>
 <p>The marshalling of types between Gnumeric and Pure is pretty straightforward;
 basically, Pure numbers, strings and matrices map to Gnumeric numbers, strings
 and arrays, respectively. The following table summarizes the available
@@ -749,13 +801,13 @@ for details.</p>
 </div>
 </div>
 <div class="section" id="advanced-features">
-<h1><a class="toc-backref" href="#id8">5&nbsp;&nbsp;&nbsp;Advanced Features</a></h1>
+<h1><a class="toc-backref" href="#id9">7&nbsp;&nbsp;&nbsp;Advanced Features</a></h1>
 <p>This section explains various additional features provided by the
 Gnumeric/Pure interface that should be useful for writing your own functions.
 Note that, for your convenience all functions discussed in this section are
 declared in <tt class="docutils literal"><span class="pre">pure_func.pure</span></tt>.</p>
 <div class="section" id="calling-gnumeric-from-pure">
-<h2><a class="toc-backref" href="#id9">5.1&nbsp;&nbsp;&nbsp;Calling Gnumeric from Pure</a></h2>
+<h2><a class="toc-backref" href="#id10">7.1&nbsp;&nbsp;&nbsp;Calling Gnumeric from Pure</a></h2>
 <p>It is possible to call Gnumeric functions from Pure using the <tt class="docutils literal"><span class="pre">call</span></tt>
 function which takes the name of the function (a string) as its first, and the
 parameters as the second (list) argument. For instance:</p>
@@ -763,20 +815,20 @@ parameters as the second (list) argument. For instance:</p>
 gnm_info &quot;gnm_bitand&quot; = &quot;ff&quot;;
 gnm_bitand x y = call &quot;bitand&quot; [x,y];
 </pre>
-<p>Note that <tt class="docutils literal"><span class="pre">call</span></tt> is an external C function provided by the Pure loader. If
+<p>Note that <tt class="docutils literal"><span class="pre">call</span></tt> is an external C function provided by Gnumeric/Pure. If
 you want to use it, it must be declared in your Pure script as follows:</p>
 <pre class="literal-block">
 extern expr* pure_gnmcall(char* name, expr* args) = call;
 </pre>
-<p>(However, <tt class="docutils literal"><span class="pre">pure_func.pure</span></tt> already contains the above declaration, so you
+<p>However, <tt class="docutils literal"><span class="pre">pure_func.pure</span></tt> already contains the above declaration, so you
 don't have to do this yourself if you import <tt class="docutils literal"><span class="pre">pure_func.pure</span></tt> in your
-scripts.)</p>
+scripts.</p>
 <p>Also note that <tt class="docutils literal"><span class="pre">call</span></tt> doesn't do any of Gnumeric's automatic conversions on
 the parameters, so you have to pass the proper types of arguments as required
 by the function.</p>
 </div>
 <div class="section" id="accessing-spreadsheet-cells">
-<h2><a class="toc-backref" href="#id10">5.2&nbsp;&nbsp;&nbsp;Accessing Spreadsheet Cells</a></h2>
+<h2><a class="toc-backref" href="#id11">7.2&nbsp;&nbsp;&nbsp;Accessing Spreadsheet Cells</a></h2>
 <p>Gnumeric/Pure provides the following functions to retrieve and modify the
 contents of spreadsheet cells and ranges of such cells:</p>
 <pre class="literal-block">
@@ -788,11 +840,7 @@ extern expr* pure_set_range(char* s, expr *x) = set_range;
 extern expr* pure_set_range_text(char* s, expr *x) = set_range_text;
 </pre>
 <p>For instance, here's how you use these functions to write and then read some
-cell values. Note that here and in the following the prompt <tt class="docutils literal"><span class="pre">&gt;</span></tt> indicates a
-Pure expression to be evaluated in <em>Gnumeric</em> (rather than the standalone Pure
-interpreter), which is followed by another line indicating the result. You can
-actually try this yourself using the &quot;interactive Pure command line&quot; of the
-pure-examples.gnumeric spreadsheet distributed with Gnumeric/Pure.</p>
+cell values (try this in the interactive Pure shell):</p>
 <pre class="literal-block">
 &gt; set_cell &quot;A14&quot; 42
 ()
@@ -834,7 +882,7 @@ extern expr* pure_make_range(expr* x) = make_range;
 </pre>
 </div>
 <div class="section" id="asynchronous-data-sources">
-<h2><a class="toc-backref" href="#id11">5.3&nbsp;&nbsp;&nbsp;Asynchronous Data Sources</a></h2>
+<h2><a class="toc-backref" href="#id12">7.3&nbsp;&nbsp;&nbsp;Asynchronous Data Sources</a></h2>
 <p>Gnumeric/Pure makes it easy to set up asynchronous data sources which draw
 values from a Pure computation executed in a background process. This facility
 is useful to carry out lengthy computations in the background while you can
@@ -842,8 +890,8 @@ continue to work with your spreadsheet. It also allows you to process incoming
 data and asynchronous events from special devices (MIDI, sensors, stock
 tickers, etc.) in (soft) realtime.</p>
 <p>To do this, you simply pass an expression to the <tt class="docutils literal"><span class="pre">datasource</span></tt> function. This
-is another external C function provided by the Pure loader, which is declared
-in <tt class="docutils literal"><span class="pre">pure_func.pure</span></tt> as follows:</p>
+is another external C function provided by Gnumeric/Pure, which is declared in
+<tt class="docutils literal"><span class="pre">pure_func.pure</span></tt> as follows:</p>
 <pre class="literal-block">
 extern expr* pure_datasource(expr* x) = datasource;
 </pre>
@@ -869,22 +917,38 @@ pure_frob2 x y = datasource (lengthy_calculation x&amp;),
   datasource (lengthy_calculation y&amp;);
 </pre>
 <p>Special treatment is given to (lazy) lists, in this case <tt class="docutils literal"><span class="pre">datasource</span></tt>
-returns a new value each time the next list element becomes available. For
-instance, the following function uses an infinite stream to count off the
-seconds starting from a given initial value:</p>
+returns a new value each time a list element becomes available. For instance,
+the following function uses an infinite stream to count off the seconds
+starting from a given initial value:</p>
 <pre class="literal-block">
 gnm_info &quot;pure_counter&quot; = &quot;f&quot;;
 pure_counter x = datasource [sleep (i&gt;x) $$ i | i = x..inf];
 </pre>
-<p>Note that in this case the cell containing the call will keep changing as long
-as new values are produced (i.e., forever in the above example). The &quot;Stop
-Data Sources&quot; option in the Tools/Pure menu can be used to stop all active
-data sources. &quot;Reload Pure Scripts&quot; also does this. You can then restart the
-data sources at any time by using &quot;Recalculate&quot; (<tt class="docutils literal"><span class="pre">F9</span></tt>) to recompute the
-spreadsheet.</p>
+<p>You can also try this interactively in the Pure shell:</p>
+<pre class="literal-block">
+&gt; datasource [sleep (i&gt;0) $$ i | i = 0..inf]
+0
+1
+...
+</pre>
+<p>Here's another example for the Pure shell which prints the prime numbers:</p>
+<pre class="literal-block">
+&gt; datasource primes with primes = sieve (2..inf);
+  sieve (p:qs) = p : (sleep 1 $$ sieve [q | q = qs; q mod p])&amp; end
+2
+3
+5
+...
+</pre>
+<p>Note that when processing a lazy list, the cell containing the call will keep
+changing as long as new values are produced (i.e., forever in this
+example). The &quot;Stop Data Sources&quot; option in the Tools/Pure menu can be used to
+stop all active data sources. &quot;Reload Pure Scripts&quot; also does this. You can
+then restart the data sources at any time by using &quot;Recalculate&quot; (<tt class="docutils literal"><span class="pre">F9</span></tt>) to
+recompute the spreadsheet.</p>
 <p>Also note that because of the special way that <tt class="docutils literal"><span class="pre">datasource</span></tt> handles list
 values, you cannot return a list directly as the result of <tt class="docutils literal"><span class="pre">datasource</span></tt>, if
-it is to be treated as a single result; instead, you'll have to wrap the
+it is to be treated as a single result. Instead, you'll have to wrap the
 result in a singleton list (e.g., <tt class="docutils literal"><span class="pre">datasource</span> <span class="pre">[[lengthy_calculation</span>
 <span class="pre">x,lengthy_calculation</span> <span class="pre">y]&amp;]</span></tt>), or return another aggregate (i.e., a matrix or
 a tuple).</p>
@@ -898,7 +962,7 @@ tasks initiated with <tt class="docutils literal"><span class="pre">datasource</
 however, so we leave this as an exercise to the interested reader.</p>
 </div>
 <div class="section" id="triggers">
-<h2><a class="toc-backref" href="#id12">5.4&nbsp;&nbsp;&nbsp;Triggers</a></h2>
+<h2><a class="toc-backref" href="#id13">7.4&nbsp;&nbsp;&nbsp;Triggers</a></h2>
 <p>In addition to asynchronous data sources, the <tt class="docutils literal"><span class="pre">trigger</span></tt> macro is provided to
 compute values or take actions depending on some external condition, such as
 the availability of data on a special device or the creation of some widget
@@ -916,15 +980,15 @@ the value are evaluated in Gnumeric (rather than a child process), so that it
 is possible to access the current information in the loaded spreadsheet.</p>
 <p>The <tt class="docutils literal"><span class="pre">timeout</span></tt> value determines how often the condition is checked. If it is
 positive, the condition will be reevaluated <tt class="docutils literal"><span class="pre">timeout+1</span></tt> times (once
-initially, and then once per second for a duration of <tt class="docutils literal"><span class="pre">timeout</span></tt> seconds). If
-it is negative, the trigger never times out and the condition will be checked
-repeatedly until the trigger expression is removed (or Gnumeric is exited). In
-either case the <tt class="docutils literal"><span class="pre">value</span></tt> will be reevaluated each time the <tt class="docutils literal"><span class="pre">condition</span></tt> is
-<tt class="docutils literal"><span class="pre">true</span></tt>. (This is most useful if the computed value, as a side effect,
-arranges for the condition to become <tt class="docutils literal"><span class="pre">false</span></tt> again afterwards.) Finally, if
-<tt class="docutils literal"><span class="pre">timeout</span></tt> is zero then the trigger fires at most once, as soon as the
-condition becomes <tt class="docutils literal"><span class="pre">true</span></tt>, at which point the <tt class="docutils literal"><span class="pre">value</span></tt> is evaluated just
-once.</p>
+initially, and then once per second for a total duration of <tt class="docutils literal"><span class="pre">timeout</span></tt>
+seconds). If it is negative, the trigger never times out and the condition
+will be checked repeatedly until the trigger expression is removed (or
+Gnumeric is exited). In either case the <tt class="docutils literal"><span class="pre">value</span></tt> will be reevaluated each
+time the <tt class="docutils literal"><span class="pre">condition</span></tt> is <tt class="docutils literal"><span class="pre">true</span></tt>. (This is most useful if the computed
+value, as a side effect, arranges for the condition to become <tt class="docutils literal"><span class="pre">false</span></tt> again
+afterwards.) Finally, if <tt class="docutils literal"><span class="pre">timeout</span></tt> is zero then the trigger fires at most
+once, as soon as the condition becomes <tt class="docutils literal"><span class="pre">true</span></tt>, at which point the <tt class="docutils literal"><span class="pre">value</span></tt>
+is evaluated just once.</p>
 <p>Here's a (rather useless) example of a trigger which fires exactly once, as
 soon as a certain cell goes to a certain value, and then modifies another cell
 value accordingly:</p>
@@ -936,12 +1000,114 @@ value accordingly:</p>
 following section.</p>
 </div>
 <div class="section" id="sheet-objects">
-<h2><a class="toc-backref" href="#id13">5.5&nbsp;&nbsp;&nbsp;Sheet Objects</a></h2>
-<p>XXXTODO</p>
+<h2><a class="toc-backref" href="#id14">7.5&nbsp;&nbsp;&nbsp;Sheet Objects</a></h2>
+<p>Gnumeric offers some kinds of special objects which can be placed on a
+sheet. This comprises the chart and image objects which can be found in the
+&quot;Insert&quot; menu, as well as a number of useful graphical elements and GUI
+widgets on the &quot;Object&quot; toolbar, accessible via &quot;View/Toolbars&quot;. The latter
+are also useful for providing control input to Pure functions.</p>
+<p>Gnumeric/Pure provides the following function to retrieve information about
+the special objects in a spreadsheet:</p>
+<pre class="literal-block">
+extern expr* pure_sheet_objects() = sheet_objects;
+</pre>
+<p>For instance, with one button object in your spreadsheet, the output of
+<tt class="docutils literal"><span class="pre">sheet_objects</span></tt> might look like this:</p>
+<pre class="literal-block">
+&gt; sheet_objects
+[(&quot;Sheet1&quot;,&quot;button&quot;,&quot;Push Me!&quot;,&quot;A11&quot;,#&lt;pointer 0x2a1dcd0&gt;)]
+</pre>
+<p>Each object is described by a tuple which lists the name of the sheet on which
+the object is located, the type of object, the object's label (if applicable),
+the cell which the object is linked to (if applicable), and a pointer to the
+corresponding <tt class="docutils literal"><span class="pre">GtkWidget</span></tt> (if applicable).</p>
+<p>This function is a bit tricky to use in a spreadsheet, however, since some of
+the objects or their associated widgets might not have been created yet when
+the spreadsheet is loaded. Therefore it is necessary to use a trigger to make
+sure that the information is updated once all objects are fully displayed. The
+<tt class="docutils literal"><span class="pre">pure_func.pure</span></tt> script contains the following little wrapper around
+<tt class="docutils literal"><span class="pre">sheet_objects</span></tt> which does this:</p>
+<pre class="literal-block">
+pure_objects =
+  trigger 0 (all realized sheet_objects) (matrix$map list sheet_objects)
+with realized (_,_,_,_,widget) = ~pointerp widget || ~null widget end;
+</pre>
+<p>See the <tt class="docutils literal"><span class="pre">widgets.gnumeric</span></tt> spreadsheet in the distribution for an example.</p>
+<p>Possible uses of this facility are left to your imagination. Using Pure's Gtk
+interface, you might manipulate the GUI widgets in various ways (add icons to
+buttons, add custom child widgets to frames, etc.). One particularly useful
+case, for which Gnumeric/Pure has built-in support, is rendering an OpenGL
+scene in a Gnumeric frame widget, see below.</p>
 </div>
 <div class="section" id="opengl-interface">
-<h2><a class="toc-backref" href="#id14">5.6&nbsp;&nbsp;&nbsp;OpenGL Interface</a></h2>
-<p>XXXTODO</p>
+<h2><a class="toc-backref" href="#id15">7.6&nbsp;&nbsp;&nbsp;OpenGL Interface</a></h2>
+<p>Gnumeric/Pure provides special support for rendering OpenGL scenes into
+Gnumeric frame widgets. To actually use this, you must have Pure's OpenGL
+module installed. The following function is provided to equip a Gnumeric frame
+with the OpenGL rendering capability:</p>
+<pre class="literal-block">
+extern expr *pure_gl_window(char *name, int timeout,
+                            expr *setup_cb, expr *config_cb,
+                            expr *display_cb, expr *timer_cb,
+                            expr *user_data) = gl_window;
+</pre>
+<p>There's a second function which can be used as a trigger condition to defer
+rendering until the target frame widget has been realized:</p>
+<pre class="literal-block">
+extern bool pure_check_window(char *name) = check_window;
+</pre>
+<p>Here's a (slightly abridged) version of the example from <tt class="docutils literal"><span class="pre">pure_glfunc.pure</span></tt>
+which shows how these functions are to be used. Please also have a look at the
+<tt class="docutils literal"><span class="pre">gl-example.gnumeric</span></tt> spreadsheet included in the distribution to see this
+example in action. (You first need to enable the &quot;Pure OpenGL functions&quot; in
+the Plugin Manager to make this work.)</p>
+<pre class="literal-block">
+using pure_func, GL, GLU;
+
+extern void gdk_gl_draw_teapot(bool solid, double scale);
+
+gnm_info &quot;gltest&quot; = &quot;sbfff&quot;;
+
+gltest frame m a b c = trigger 0 (check_window frame)
+  (gl_window frame (m*40) setup config display timer ()) with
+  setup _ _ = () when
+    // Initialize.
+    GL::ClearColor 0.1 0.1 0.3 1.0;
+    GL::ShadeModel GL::SMOOTH;
+    GL::Enable GL::DEPTH_TEST;
+    // Initial projection and modelview matrices.
+    GL::MatrixMode GL::PROJECTION;
+    GL::LoadIdentity;
+    GL::Rotatef 20.0 (-1.0) 0.0 0.0;
+    GL::MatrixMode GL::MODELVIEW;
+    GL::LoadIdentity;
+    // Lighting.
+    GL::Lightfv GL::LIGHT0 GL::DIFFUSE {1.0,0.0,0.0,1.0};
+    GL::Lightfv GL::LIGHT0 GL::POSITION {2.0,2.0,-5.0,1.0};
+    GL::Enable GL::LIGHTING;
+    GL::Enable GL::LIGHT0;
+  end;
+  config _ (w,h) = GL::Viewport 0 0 w h;
+  display _ _ = () when
+    GL::Clear (GL::DEPTH_BUFFER_BIT or GL::COLOR_BUFFER_BIT);
+    gdk_gl_draw_teapot true 0.5;
+  end if m;
+  display _ _ = () when
+    GL::Clear (GL::DEPTH_BUFFER_BIT or GL::COLOR_BUFFER_BIT);
+    GL::LoadIdentity;
+    GL::Rotatef (scale 360 a) 0.0 1.0 0.0;
+    GL::Rotatef (scale 360 b) 1.0 0.0 0.0;
+    GL::Rotatef (scale 360 c) 0.0 0.0 1.0;
+    gdk_gl_draw_teapot true 0.5;
+  end;
+  timer _ _ = () when
+    GL::Rotatef (scale 36 a) 0.0 1.0 0.0;
+    GL::Rotatef (scale 36 b) 1.0 0.0 0.0;
+    GL::Rotatef (scale 36 c) 0.0 0.0 1.0;
+  end;
+  scale step x = (x/100*step);
+end;
+</pre>
 </div>
 </div>
 </div>

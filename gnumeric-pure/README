@@ -99,7 +99,7 @@ If ``make install`` doesn't work for some reason, you can also just copy the
 your Gnumeric plugin directory.
 
 Setup
------
+=====
 
 Once Gnumeric/Pure has been properly installed, you should see it in
 Gnumeric's Tools/Plug-ins dialog. There are actually two main entries, one
@@ -108,17 +108,17 @@ need to enable both before you can start using Pure functions in your Gnumeric
 spreadsheets. There's also a third entry labelled "Pure OpenGL functions"
 which you might want to enable if you want to try the OpenGL capabilities
 (this will only work if you built Gnumeric/Pure with OpenGL support and have
-Pure's OpenGL module installed).
+Pure's OpenGL module installed; see `OpenGL Interface`_ for details).
 
 Gnumeric doesn't provide much in the way of GUI customization options right
 now, but at least it's possible for plugins to install and configure
-additional menu and toolbar options. The Pure plugin loader adds three
-additional options to the Tools menu which allow you to stop asynchronous data
-sources, reload Pure scripts and edit them. After installation, the
-definitions of these items can be found in the ``pure-loader/pure-ui.xml``
-file in your Gnumeric plugin directory. Have a look at this file and edit is
-as desired. E.g., if you want to put the Pure-related options into a submenu
-and enable toolbar buttons for these options, then your ``pure-ui.xml`` file
+additional menu and toolbar options. Gnumeric/Pure adds three additional
+options to the Tools menu which allow you to stop asynchronous data sources,
+reload Pure scripts and edit them. After installation, the definitions of
+these items can be found in the ``pure-loader/pure-ui.xml`` file in your
+Gnumeric plugin directory. Have a look at this file and edit is as
+desired. E.g., if you want to put the Pure-related options into a submenu and
+enable toolbar buttons for these options, then your ``pure-ui.xml`` file
 should look as follows::
 
   <ui>
@@ -181,23 +181,78 @@ some useful examples in there, too, in particular:
   interpreter sees them. This is useful for debugging purposes. E.g.,
   ``=pure_echo(A1:B10)`` shows the given range as a Pure matrix.
 
-A little example spreadsheet showing most of the predefined functions in
-action can be found in ``pure-examples.gnumeric`` in the Gnumeric/Pure
-sources. The spreadsheet also provides a little "Pure command line" which lets
-you evaluate Pure expressions inside Gnumeric. This is useful, in particular,
-to try out the functions described in `Advanced Features`_ interactively in
-Gnumeric.
+* ``pure_shell`` is a variation of ``pure_eval`` which executes arbitrary Pure
+  code and returns the last evaluated expression (if any) as a string. This is
+  mainly provided as a convenience to create an "interactive Pure shell" which
+  lets you evaluate Pure code inside Gnumeric. To these ends, simply prepare a
+  text cell for entering the code to be evaluated, and then apply
+  ``pure_shell`` on this text cell in another cell to display the result.
+
+A spreadsheet showing most of the predefined functions in action can be found
+in ``pure-examples.gnumeric`` example distributed with Gnumeric/Pure.
+
+Interactive Pure Shell
+======================
+
+The ``pure-examples.gnumeric`` spreadsheet also includes an instance of
+``pure_shell`` which lets you evaluate arbitrary Pure code in the same
+interpreter instance that executes Gnumeric/Pure functions. This is very
+helpful if you're developing new Pure functions to be used in Gnumeric. It
+also lets you use Gnumeric as a kind of GUI frontend to the Pure
+interpreter. You can try this now. Open the ``pure-examples`` spreadsheet in
+Gnumeric and enter the following into the input cell of the Pure shell::
+
+  > scanl (+) 0 (1..20)
+  [0,1,3,6,10,15,21,28,36,45,55,66,78,91,105,120,136,153,171,190,210]
+
+(You can find the Pure shell at the bottom of the first sheet in
+``pure-examples``. For your convenience, there's also a second, bigger one on
+the second sheet. You might want to copy this over to a separate spreadsheet
+which you can use as a scratchpad for experimentation purposes.)
+
+Note that here and in the following the prompt ``>`` indicates a Pure
+expression to be evaluated in *Gnumeric* (rather than the standalone Pure
+interpreter), which is followed by another line indicating the result (printed
+in the output cell below the input cell of the Pure shell). Also note that
+this in fact *Pure code* (not a Gnumeric formula) being evaluated there. You
+can execute any Pure code, including Pure declarations, so you can type::
+
+  > using system; puts "Hello, world!";
+  14
+
+This prints the string ``"Hello, world!"`` on standard output, visible in the
+terminal window where you launched Gnumeric. Here is another example, showing
+how you can invoke any function from the C library, by declaring it as a Pure
+``extern`` function::
+
+  > extern int rand(); [rand | i = 1..5];
+  [1810821799,2106746672,1436605662,1363610028,695042099]
+
+All functions in the Pure prelude are readily available in the Gnumeric Pure
+shell, as well as the functions defined in ``pure_func.pure`` and its imports,
+including the programming interface described in `Advanced Features`_. For
+instance, here's how you can retrieve a cell value from the current sheet::
+
+  > get_cell "A1"
+  "Gnumeric/Pure Examples"
+
+Using ``call`` (see `Calling Gnumeric from Pure`_), you can also invoke any
+Gnumeric function::
+
+  > call "product" (1..10)
+  3628800.0
 
 Defining Your Own Functions
 ===========================
 
-After playing around with ``pure_func.pure`` for a while, of course you will
-want to write your own functions, that's what this plugin is about after all!
-For the beginning, you can just add your definitions to the existing
-``pure_func.pure`` script. Use the "Edit Pure Script" option to edit the
-script in your favourite editor, and see the comments and the examples in the
-script for guidance. (This document assumes that you're already familiar with
-Pure, if not then you should consult the available Pure documentation.)
+After playing around with ``pure_func.pure`` and the interactive Pure shell
+for a while, of course you will want to write your own functions, that's what
+this plugin is about after all! For the beginning, you can just add your
+definitions to the existing ``pure_func.pure`` script. Use the "Edit Pure
+Script" option to edit the script in your favourite editor, and see the
+comments and the examples in the script for guidance. (This document assumes
+that you're already familiar with Pure, if not then you should consult the
+available Pure documentation.)
 
 Note that if you delete or rename any functions in this file, or add new ones
 to it, then you also have to change the list of function names in the
@@ -463,14 +518,14 @@ parameters as the second (list) argument. For instance::
   gnm_info "gnm_bitand" = "ff";
   gnm_bitand x y = call "bitand" [x,y];
 
-Note that ``call`` is an external C function provided by the Pure loader. If
+Note that ``call`` is an external C function provided by Gnumeric/Pure. If
 you want to use it, it must be declared in your Pure script as follows::
 
   extern expr* pure_gnmcall(char* name, expr* args) = call;
 
-(However, ``pure_func.pure`` already contains the above declaration, so you
+However, ``pure_func.pure`` already contains the above declaration, so you
 don't have to do this yourself if you import ``pure_func.pure`` in your
-scripts.)
+scripts.
 
 Also note that ``call`` doesn't do any of Gnumeric's automatic conversions on
 the parameters, so you have to pass the proper types of arguments as required
@@ -490,13 +545,7 @@ contents of spreadsheet cells and ranges of such cells::
   extern expr* pure_set_range_text(char* s, expr *x) = set_range_text;
 
 For instance, here's how you use these functions to write and then read some
-cell values. Note that here and in the following the prompt ``>`` indicates a
-Pure expression to be evaluated in *Gnumeric* (rather than the standalone Pure
-interpreter), which is followed by another line indicating the result. You can
-actually try this yourself using the "interactive Pure command line" of the
-pure-examples.gnumeric spreadsheet distributed with Gnumeric/Pure.
-
-::
+cell values (try this in the interactive Pure shell)::
 
   > set_cell "A14" 42
   ()
@@ -548,8 +597,8 @@ data and asynchronous events from special devices (MIDI, sensors, stock
 tickers, etc.) in (soft) realtime.
 
 To do this, you simply pass an expression to the ``datasource`` function. This
-is another external C function provided by the Pure loader, which is declared
-in ``pure_func.pure`` as follows::
+is another external C function provided by Gnumeric/Pure, which is declared in
+``pure_func.pure`` as follows::
 
   extern expr* pure_datasource(expr* x) = datasource;
 
@@ -575,23 +624,39 @@ of ``datasource``::
     datasource (lengthy_calculation y&);
 
 Special treatment is given to (lazy) lists, in this case ``datasource``
-returns a new value each time the next list element becomes available. For
-instance, the following function uses an infinite stream to count off the
-seconds starting from a given initial value::
+returns a new value each time a list element becomes available. For instance,
+the following function uses an infinite stream to count off the seconds
+starting from a given initial value::
 
   gnm_info "pure_counter" = "f";
   pure_counter x = datasource [sleep (i>x) $$ i | i = x..inf];
 
-Note that in this case the cell containing the call will keep changing as long
-as new values are produced (i.e., forever in the above example). The "Stop
-Data Sources" option in the Tools/Pure menu can be used to stop all active
-data sources. "Reload Pure Scripts" also does this. You can then restart the
-data sources at any time by using "Recalculate" (``F9``) to recompute the
-spreadsheet.
+You can also try this interactively in the Pure shell::
+
+  > datasource [sleep (i>0) $$ i | i = 0..inf]
+  0
+  1
+  ...
+
+Here's another example for the Pure shell which prints the prime numbers::
+
+  > datasource primes with primes = sieve (2..inf);
+    sieve (p:qs) = p : (sleep 1 $$ sieve [q | q = qs; q mod p])& end
+  2
+  3
+  5
+  ...
+
+Note that when processing a lazy list, the cell containing the call will keep
+changing as long as new values are produced (i.e., forever in this
+example). The "Stop Data Sources" option in the Tools/Pure menu can be used to
+stop all active data sources. "Reload Pure Scripts" also does this. You can
+then restart the data sources at any time by using "Recalculate" (``F9``) to
+recompute the spreadsheet.
 
 Also note that because of the special way that ``datasource`` handles list
 values, you cannot return a list directly as the result of ``datasource``, if
-it is to be treated as a single result; instead, you'll have to wrap the
+it is to be treated as a single result. Instead, you'll have to wrap the
 result in a singleton list (e.g., ``datasource [[lengthy_calculation
 x,lengthy_calculation y]&]``), or return another aggregate (i.e., a matrix or
 a tuple).
@@ -626,15 +691,15 @@ is possible to access the current information in the loaded spreadsheet.
 
 The ``timeout`` value determines how often the condition is checked. If it is
 positive, the condition will be reevaluated ``timeout+1`` times (once
-initially, and then once per second for a duration of ``timeout`` seconds). If
-it is negative, the trigger never times out and the condition will be checked
-repeatedly until the trigger expression is removed (or Gnumeric is exited). In
-either case the ``value`` will be reevaluated each time the ``condition`` is
-``true``. (This is most useful if the computed value, as a side effect,
-arranges for the condition to become ``false`` again afterwards.) Finally, if
-``timeout`` is zero then the trigger fires at most once, as soon as the
-condition becomes ``true``, at which point the ``value`` is evaluated just
-once.
+initially, and then once per second for a total duration of ``timeout``
+seconds). If it is negative, the trigger never times out and the condition
+will be checked repeatedly until the trigger expression is removed (or
+Gnumeric is exited). In either case the ``value`` will be reevaluated each
+time the ``condition`` is ``true``. (This is most useful if the computed
+value, as a side effect, arranges for the condition to become ``false`` again
+afterwards.) Finally, if ``timeout`` is zero then the trigger fires at most
+once, as soon as the condition becomes ``true``, at which point the ``value``
+is evaluated just once.
 
 Here's a (rather useless) example of a trigger which fires exactly once, as
 soon as a certain cell goes to a certain value, and then modifies another cell
@@ -649,9 +714,115 @@ following section.
 Sheet Objects
 -------------
 
-XXXTODO
+Gnumeric offers some kinds of special objects which can be placed on a
+sheet. This comprises the chart and image objects which can be found in the
+"Insert" menu, as well as a number of useful graphical elements and GUI
+widgets on the "Object" toolbar, accessible via "View/Toolbars". The latter
+are also useful for providing control input to Pure functions.
+
+Gnumeric/Pure provides the following function to retrieve information about
+the special objects in a spreadsheet::
+
+  extern expr* pure_sheet_objects() = sheet_objects;
+
+For instance, with one button object in your spreadsheet, the output of
+``sheet_objects`` might look like this::
+
+  > sheet_objects
+  [("Sheet1","button","Push Me!","A11",#<pointer 0x2a1dcd0>)]
+
+Each object is described by a tuple which lists the name of the sheet on which
+the object is located, the type of object, the object's label (if applicable),
+the cell which the object is linked to (if applicable), and a pointer to the
+corresponding ``GtkWidget`` (if applicable).
+
+This function is a bit tricky to use in a spreadsheet, however, since some of
+the objects or their associated widgets might not have been created yet when
+the spreadsheet is loaded. Therefore it is necessary to use a trigger to make
+sure that the information is updated once all objects are fully displayed. The
+``pure_func.pure`` script contains the following little wrapper around
+``sheet_objects`` which does this::
+
+  pure_objects =
+    trigger 0 (all realized sheet_objects) (matrix$map list sheet_objects)
+  with realized (_,_,_,_,widget) = ~pointerp widget || ~null widget end;
+
+See the ``widgets.gnumeric`` spreadsheet in the distribution for an example.
+
+Possible uses of this facility are left to your imagination. Using Pure's Gtk
+interface, you might manipulate the GUI widgets in various ways (add icons to
+buttons, add custom child widgets to frames, etc.). One particularly useful
+case, for which Gnumeric/Pure has built-in support, is rendering an OpenGL
+scene in a Gnumeric frame widget, see below.
 
 OpenGL Interface
 ----------------
 
-XXXTODO
+Gnumeric/Pure provides special support for rendering OpenGL scenes into
+Gnumeric frame widgets. To actually use this, you must have Pure's OpenGL
+module installed. The following function is provided to equip a Gnumeric frame
+with the OpenGL rendering capability::
+
+  extern expr *pure_gl_window(char *name, int timeout,
+                              expr *setup_cb, expr *config_cb,
+                              expr *display_cb, expr *timer_cb,
+                              expr *user_data) = gl_window;
+
+There's a second function which can be used as a trigger condition to defer
+rendering until the target frame widget has been realized::
+
+  extern bool pure_check_window(char *name) = check_window;
+
+Here's a (slightly abridged) version of the example from ``pure_glfunc.pure``
+which shows how these functions are to be used. Please also have a look at the
+``gl-example.gnumeric`` spreadsheet included in the distribution to see this
+example in action. (You first need to enable the "Pure OpenGL functions" in
+the Plugin Manager to make this work.)
+
+::
+
+  using pure_func, GL, GLU;
+
+  extern void gdk_gl_draw_teapot(bool solid, double scale);
+
+  gnm_info "gltest" = "sbfff";
+
+  gltest frame m a b c = trigger 0 (check_window frame)
+    (gl_window frame (m*40) setup config display timer ()) with
+    setup _ _ = () when
+      // Initialize.
+      GL::ClearColor 0.1 0.1 0.3 1.0; 
+      GL::ShadeModel GL::SMOOTH;
+      GL::Enable GL::DEPTH_TEST;
+      // Initial projection and modelview matrices.
+      GL::MatrixMode GL::PROJECTION;
+      GL::LoadIdentity;
+      GL::Rotatef 20.0 (-1.0) 0.0 0.0;
+      GL::MatrixMode GL::MODELVIEW;
+      GL::LoadIdentity;
+      // Lighting.
+      GL::Lightfv GL::LIGHT0 GL::DIFFUSE {1.0,0.0,0.0,1.0};
+      GL::Lightfv GL::LIGHT0 GL::POSITION {2.0,2.0,-5.0,1.0};
+      GL::Enable GL::LIGHTING;
+      GL::Enable GL::LIGHT0;
+    end;
+    config _ (w,h) = GL::Viewport 0 0 w h;
+    display _ _ = () when
+      GL::Clear (GL::DEPTH_BUFFER_BIT or GL::COLOR_BUFFER_BIT);
+      gdk_gl_draw_teapot true 0.5;
+    end if m;
+    display _ _ = () when
+      GL::Clear (GL::DEPTH_BUFFER_BIT or GL::COLOR_BUFFER_BIT);
+      GL::LoadIdentity;
+      GL::Rotatef (scale 360 a) 0.0 1.0 0.0;
+      GL::Rotatef (scale 360 b) 1.0 0.0 0.0;
+      GL::Rotatef (scale 360 c) 0.0 0.0 1.0;
+      gdk_gl_draw_teapot true 0.5;
+    end;
+    timer _ _ = () when
+      GL::Rotatef (scale 36 a) 0.0 1.0 0.0;
+      GL::Rotatef (scale 36 b) 1.0 0.0 0.0;
+      GL::Rotatef (scale 36 c) 0.0 0.0 1.0;
+    end;
+    scale step x = (x/100*step);
+  end;
