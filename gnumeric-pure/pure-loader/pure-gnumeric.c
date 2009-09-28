@@ -1207,6 +1207,29 @@ static char *texpr2str(const GnmEvalPos *pos, const GnmExprTop *e)
   return strdup(buf);
 }
 
+/* This one isn't currently implemented by Gnumeric, so we snatch the
+   SheetWidgetListBase struct from sheet-object-widget.c and implement it
+   ourselves. CAVEAT: This needs updating whenever the struct changes!
+   XXXFIXME: This should be removed once Gnumeric provides an API to get this
+   information. */
+
+typedef SheetObject SheetObjectWidget;
+typedef struct {
+  SheetObjectWidget	sow;
+  GnmDependent	content_dep;	/* content of the list */
+  GnmDependent	output_dep;	/* selected element */
+  /* more fields follow, but we're not interested in these */
+} SheetWidgetListBase;
+
+static GnmExprTop const *
+sheet_widget_list_base_get_link(SheetObject *so)
+{
+  SheetWidgetListBase *swlb = (SheetWidgetListBase*)(so);
+  GnmExprTop const *texpr = swlb->output_dep.texpr;
+  if (texpr) gnm_expr_top_ref(texpr);
+  return texpr;
+}
+
 pure_expr *pure_sheet_objects(void)
 {
   const GnmEvalPos *pos = eval_info->pos;
@@ -1285,6 +1308,7 @@ pure_expr *pure_sheet_objects(void)
       } else if (t == SHEET_WIDGET_SCROLLBAR_TYPE) {
 	const GnmExprTop *e = sheet_widget_adjustment_get_link(so);
 	char *link = e?texpr2str(pos, e):strdup("");
+	if (e) gnm_expr_top_unref(e);
 	info = pure_tuplel(5, sheet_name_str, pure_string_dup("scrollbar"),
 			   NA_expr(),
 			   pure_string(link),
@@ -1292,6 +1316,7 @@ pure_expr *pure_sheet_objects(void)
       } else if (t == SHEET_WIDGET_SPINBUTTON_TYPE) {
 	const GnmExprTop *e = sheet_widget_adjustment_get_link(so);
 	char *link = e?texpr2str(pos, e):strdup("");
+	if (e) gnm_expr_top_unref(e);
 	info = pure_tuplel(5, sheet_name_str, pure_string_dup("spinbutton"),
 			   NA_expr(),
 			   pure_string(link),
@@ -1299,6 +1324,7 @@ pure_expr *pure_sheet_objects(void)
       } else if (t == SHEET_WIDGET_SLIDER_TYPE) {
 	const GnmExprTop *e = sheet_widget_adjustment_get_link(so);
 	char *link = e?texpr2str(pos, e):strdup("");
+	if (e) gnm_expr_top_unref(e);
 	info = pure_tuplel(5, sheet_name_str, pure_string_dup("slider"),
 			   NA_expr(),
 			   pure_string(link),
@@ -1307,6 +1333,7 @@ pure_expr *pure_sheet_objects(void)
 	gchar *str = NULL;
 	const GnmExprTop *e = sheet_widget_button_get_link(so);
 	char *link = e?texpr2str(pos, e):strdup("");
+	if (e) gnm_expr_top_unref(e);
 	g_object_get(obj, "text", &str, NULL);
 	info = pure_tuplel(5, sheet_name_str, pure_string_dup("button"),
 			   pure_string(str),
@@ -1316,6 +1343,7 @@ pure_expr *pure_sheet_objects(void)
 	gchar *str = NULL;
 	const GnmExprTop *e = sheet_widget_checkbox_get_link(so);
 	char *link = e?texpr2str(pos, e):strdup("");
+	if (e) gnm_expr_top_unref(e);
 	g_object_get(obj, "text", &str, NULL);
 	info = pure_tuplel(5, sheet_name_str, pure_string_dup("checkbox"),
 			   pure_string(str),
@@ -1325,20 +1353,27 @@ pure_expr *pure_sheet_objects(void)
 	gchar *str = NULL;
 	const GnmExprTop *e = sheet_widget_radio_button_get_link(so);
 	char *link = e?texpr2str(pos, e):strdup("");
+	if (e) gnm_expr_top_unref(e);
 	g_object_get(obj, "text", &str, NULL);
 	info = pure_tuplel(5, sheet_name_str, pure_string_dup("radiobutton"),
 			   pure_string(str),
 			   pure_string(link),
 			   pure_listv(n_widgets, widgets));
       } else if (t == SHEET_WIDGET_LIST_TYPE) {
+	const GnmExprTop *e = sheet_widget_list_base_get_link(so);
+	char *link = e?texpr2str(pos, e):strdup("");
+	if (e) gnm_expr_top_unref(e);
 	info = pure_tuplel(5, sheet_name_str, pure_string_dup("list"),
 			   NA_expr(),
-			   NA_expr(),
+			   pure_string(link),
 			   pure_listv(n_widgets, widgets));
       } else if (t == SHEET_WIDGET_COMBO_TYPE) {
+	const GnmExprTop *e = sheet_widget_list_base_get_link(so);
+	char *link = e?texpr2str(pos, e):strdup("");
+	if (e) gnm_expr_top_unref(e);
 	info = pure_tuplel(5, sheet_name_str, pure_string_dup("combo"),
 			   NA_expr(),
-			   NA_expr(),
+			   pure_string(link),
 			   pure_listv(n_widgets, widgets));
       } else {
 	/* Other canvas object types that we know about. */
