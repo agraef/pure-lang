@@ -72,7 +72,7 @@ typedef struct {
   DepKey key;
   char *name; /* Name of the frame widget containing the window. */
   GtkWidget *window; /* The frame widget. */
-  GtkWidget *drawing_area; /* The GL window. */
+  gboolean being_destroyed;
   guint timeout, timer_id;
   pure_expr *setup_cb, *config_cb, *display_cb, *timer_cb; /* Callbacks. */
   pure_expr *user_data; /* User data supplied to the callbacks. */

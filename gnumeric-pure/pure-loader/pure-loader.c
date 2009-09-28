@@ -638,14 +638,15 @@ func_unlink(GnmFuncEvalInfo *ei)
   }
   key.id = 0;
   while ((glw = g_hash_table_lookup(gl_windows, &key)) != NULL) {
-    GtkWidget *drawing_area = glw->drawing_area;
+    GtkWidget *w = glw->window;
+    GtkWidget *drawing_area = gtk_bin_get_child(GTK_BIN(w));
     /* Destroy the GL window. */
 #if 0
     fprintf(stderr, "delete GL window = %p-%p-%u [%p]\n",
-	    ei->func_call, ei->pos->dep, glw->key.id, glw->drawing_area);
+	    ei->func_call, ei->pos->dep, glw->key.id, drawing_area);
 #endif
     if (glw->timeout > 0) g_source_remove(glw->timer_id);
-    glw->timer_id = 0; glw->timeout = 0; glw->drawing_area = NULL;
+    glw->timer_id = 0; glw->timeout = 0; glw->being_destroyed = TRUE;
     gtk_widget_destroy(drawing_area);
     pure_remove_gl_window(&key);
     key.id++;

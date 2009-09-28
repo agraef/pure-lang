@@ -1490,7 +1490,7 @@ bool pure_check_window(const char *name)
 
 static gboolean gl_destroy_cb(GtkWidget *drawing_area, GLWindow *glw)
 {
-  if (!glw->drawing_area) return TRUE;
+  if (glw->being_destroyed) return TRUE;
   pure_remove_gl_window(&glw->key);
   return TRUE;
 }
@@ -1549,11 +1549,13 @@ static gboolean gl_display_cb(GtkWidget *drawing_area, GdkEvent *event,
 
 static gboolean gl_timer_cb(GLWindow *glw)
 {
-  GtkWidget *drawing_area = glw->drawing_area;
-  GdkRectangle r = { 0, 0, drawing_area->allocation.width,
-		     drawing_area->allocation.height };
-  do_callback(glw->timer_cb, drawing_area, glw->user_data, pure_tuplel(0));
-  gdk_window_invalidate_rect(drawing_area->window, &r, FALSE);
+  GtkWidget *drawing_area = gtk_bin_get_child(GTK_BIN(glw->window));
+  if (drawing_area) {
+    GdkRectangle r = { 0, 0, drawing_area->allocation.width,
+		       drawing_area->allocation.height };
+    do_callback(glw->timer_cb, drawing_area, glw->user_data, pure_tuplel(0));
+    gdk_window_invalidate_rect(drawing_area->window, &r, FALSE);
+  }
   return TRUE;
 }
 
@@ -1575,7 +1577,6 @@ static gboolean init_gl_window(GLWindow *glw, GtkWidget *w, int timeout)
       return false;
     }
     glw->window = w;
-    glw->drawing_area = drawing_area;
     /* Set up the callbacks. */
     g_signal_connect(drawing_area, "configure-event",
 		     G_CALLBACK(gl_config_cb), glw);
@@ -1592,6 +1593,8 @@ static gboolean init_gl_window(GLWindow *glw, GtkWidget *w, int timeout)
     return true;
   }
 }
+
+/* XXXFIXME: This currently works in a single view only. */
 
 pure_expr *pure_gl_window(const char *name, int timeout,
 			  pure_expr *setup_cb,
@@ -1618,13 +1621,14 @@ pure_expr *pure_gl_window(const char *name, int timeout,
   /* See whether we already have a window for this cell initialized. */
   if ((glw = pure_get_gl_window(&key))) {
     GtkWidget *w = glw->window;
+    GtkWidget *drawing_area = gtk_bin_get_child(GTK_BIN(w));
     gboolean new = FALSE;
     if (strcmp(name, glw->name) && (w = get_frame(pos, name)) != glw->window) {
-      GtkWidget *drawing_area = glw->drawing_area;
       /* Destroy the old window. */
       if (glw->timeout > 0) g_source_remove(glw->timer_id);
-      glw->drawing_area = NULL;
+      glw->being_destroyed = TRUE;
       gtk_widget_destroy(drawing_area);
+      drawing_area = NULL;
       free(glw->name); glw->name = strdup(name);
       pure_free(glw->setup_cb);
       pure_free(glw->config_cb);
@@ -1633,9 +1637,11 @@ pure_expr *pure_gl_window(const char *name, int timeout,
       pure_free(glw->user_data);
       glw->setup_cb = glw->config_cb = glw->display_cb = glw->timer_cb =
 	glw->user_data = NULL;;
+      glw->being_destroyed = FALSE;
       new = TRUE;
     }
     if (w && (!new || init_gl_window(glw, w, timeout))) {
+      if (!drawing_area) drawing_area = gtk_bin_get_child(GTK_BIN(w));
       /* Update the callbacks. */
       glw->setup_cb = pure_new(setup_cb);
       glw->config_cb = pure_new(config_cb);
@@ -1651,9 +1657,9 @@ pure_expr *pure_gl_window(const char *name, int timeout,
       }
       if (new) {
 	/* Run the setup callback. */
-	gl_setup_cb(glw->drawing_area, NULL, glw);
+	gl_setup_cb(drawing_area, NULL, glw);
       }
-      return pure_pointer(glw->drawing_area);
+      return pure_pointer(glw->window);
     } else {
       /* Not valid. Bail out with failure. */
       pure_remove_gl_window(&key);
@@ -1664,9 +1670,11 @@ pure_expr *pure_gl_window(const char *name, int timeout,
     if (w) {
       glw = g_new(GLWindow, 1);
       if (!glw) g_assert_not_reached();
+      glw->being_destroyed = FALSE;
       glw->setup_cb = glw->config_cb = glw->display_cb = glw->timer_cb =
 	glw->user_data = NULL;;
       if (init_gl_window(glw, w, timeout)) {
+	GtkWidget *drawing_area = gtk_bin_get_child(GTK_BIN(w));
 	/* Set the callbacks. */
 	glw->setup_cb = pure_new(setup_cb);
 	glw->config_cb = pure_new(config_cb);
@@ -1676,8 +1684,8 @@ pure_expr *pure_gl_window(const char *name, int timeout,
 	glw->name = strdup(name);
 	pure_add_gl_window(&key, glw);
 	/* Run the setup callback. */
-	gl_setup_cb(glw->drawing_area, NULL, glw);
-	return pure_pointer(glw->drawing_area);
+	gl_setup_cb(drawing_area, NULL, glw);
+	return pure_pointer(glw->window);
       } else {
 	g_free(glw);
 	return NULL;
