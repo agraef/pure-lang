@@ -71,7 +71,8 @@ typedef struct {
 typedef struct {
   DepKey key;
   char *name; /* Name of the frame widget containing the window. */
-  GtkWidget *window; /* The frame widget. */
+  SheetObject *so; /* The sheet object of the frame widget. */
+  GSList *windows; /* The corresponding views (frame widgets). */
   gboolean being_destroyed;
   guint timeout, timer_id;
   pure_expr *setup_cb, *config_cb, *display_cb, *timer_cb; /* Callbacks. */

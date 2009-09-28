@@ -1421,7 +1421,7 @@ pure_expr *pure_sheet_objects(void)
       xs[n+m-i-1] = x;
     }
   }
-  if (sheets) g_slist_free(sheets);
+  g_slist_free(sheets);
   ret = pure_listv(n, xs); g_free(xs);
   return ret;
 }
@@ -1474,6 +1474,80 @@ static GtkWidget *get_frame(const GnmEvalPos *pos, const char *name)
   return w;
 }
 
+static gint ptrcmp(gconstpointer a, gconstpointer b)
+{
+  if (a < b)
+    return -1;
+  else if (a > b)
+    return 1;
+  else
+    return 0;
+}
+
+static GSList *search_frame_so(const SheetObject *so, const char *name,
+			       GSList *l)
+{
+  GType t = G_OBJECT_TYPE(so);
+  if (t == SHEET_WIDGET_FRAME_TYPE) {
+    GList *w = so->realized_list;
+    for (; w; w = w->next) {
+      SheetObjectView *view = w->data;
+      GocItem *item = get_goc_item(view);
+      if (item && GOC_IS_WIDGET(item)) {
+	GtkWidget *widget = GOC_WIDGET(item)->widget;
+	const gchar *id = gtk_widget_get_name(widget);
+	const gchar *label = gtk_frame_get_label(GTK_FRAME(widget));
+	if ((id && strcmp(id, name) == 0) ||
+	    (label && strcmp(label, name) == 0))
+	  l = g_slist_insert_sorted(l, widget, ptrcmp);
+      }
+    }
+  }
+  return l;
+}
+
+static GSList *search_frame_sheet(const Sheet *sheet, const char *name,
+				  GSList *l, SheetObject **sop)
+{
+  GSList *ptr;
+  for (ptr = sheet->sheet_objects; ptr != NULL ; ptr = ptr->next) {
+    GObject *obj = G_OBJECT(ptr->data);
+    SheetObject *so = SHEET_OBJECT(obj);
+    l = search_frame_so(so, name, l);
+    if (l) {
+      *sop = so;
+      break;
+    }
+  }
+  return l;
+}
+
+static GSList *get_frames(const GnmEvalPos *pos, const char *name,
+			  SheetObject **sop)
+{
+  Sheet *sheet = pos->sheet;
+  Workbook *wb = sheet->workbook;
+  GSList *sheets, *ptr;
+  /* We first look for the frame in the current object, then in the current
+     sheet, then in all sheets of the workbook. */
+  GSList *l = *sop?search_frame_so(*sop, name, NULL):NULL;
+  if (l) return l;
+  *sop = NULL;
+  l = search_frame_sheet(sheet, name, NULL, sop);
+  if (l) return l;
+  if ((sheets = workbook_sheets(wb))) {
+    for (ptr = sheets; ptr != NULL ; ptr = ptr->next) {
+      Sheet *s = SHEET(ptr->data);
+      if (s != sheet) {
+	l = search_frame_sheet(sheet, name, NULL, sop);
+	if (l) break;
+      }
+    }
+    g_slist_free(sheets);
+  }
+  return l;
+}
+
 bool pure_check_window(const char *name)
 {
   const GnmFuncEvalInfo *ei = eval_info;
@@ -1490,8 +1564,22 @@ bool pure_check_window(const char *name)
 
 static gboolean gl_destroy_cb(GtkWidget *drawing_area, GLWindow *glw)
 {
-  if (glw->being_destroyed) return TRUE;
-  pure_remove_gl_window(&glw->key);
+  if (!glw->being_destroyed) {
+    GSList *windows = g_slist_copy(glw->windows), *l;
+    for (l = windows; l; l = l->next) {
+      GtkWidget *w = GTK_WIDGET(l->data);
+      GtkWidget *drawing_area = gtk_bin_get_child(GTK_BIN(w));
+      if (!drawing_area) {
+	glw->windows = g_slist_remove(glw->windows, w);
+#if 0
+	fprintf(stderr, "removing view %p\n", w);
+#endif
+      }
+    }
+    g_slist_free(windows);
+    if (!glw->windows)
+      pure_remove_gl_window(&glw->key);
+  }
   return TRUE;
 }
 
@@ -1505,7 +1593,7 @@ static void do_callback(pure_expr *cb, GtkWidget *drawing_area,
 }
 
 static gboolean gl_setup_cb(GtkWidget *drawing_area, GdkEvent *event,
-			     GLWindow *glw)
+			    GLWindow *glw)
 {
   GdkGLContext *glContext = gtk_widget_get_gl_context(drawing_area);
   GdkGLDrawable *glDrawable = gtk_widget_get_gl_drawable(drawing_area);
@@ -1549,12 +1637,24 @@ static gboolean gl_display_cb(GtkWidget *drawing_area, GdkEvent *event,
 
 static gboolean gl_timer_cb(GLWindow *glw)
 {
-  GtkWidget *drawing_area = gtk_bin_get_child(GTK_BIN(glw->window));
-  if (drawing_area) {
-    GdkRectangle r = { 0, 0, drawing_area->allocation.width,
-		       drawing_area->allocation.height };
-    do_callback(glw->timer_cb, drawing_area, glw->user_data, pure_tuplel(0));
-    gdk_window_invalidate_rect(drawing_area->window, &r, FALSE);
+  if (!glw->being_destroyed) {
+    GSList *l = glw->windows;
+    for (; l; l = l->next) {
+      GtkWidget *w = GTK_WIDGET(l->data);
+      GtkWidget *drawing_area = gtk_bin_get_child(GTK_BIN(w));
+      if (drawing_area) {
+	GdkRectangle r = { 0, 0, drawing_area->allocation.width,
+			   drawing_area->allocation.height };
+	GdkGLContext *glContext = gtk_widget_get_gl_context(drawing_area);
+	GdkGLDrawable *glDrawable = gtk_widget_get_gl_drawable(drawing_area);
+	if (!gdk_gl_drawable_gl_begin(glDrawable, glContext))
+	  g_assert_not_reached();
+	do_callback(glw->timer_cb, drawing_area, glw->user_data,
+		    pure_tuplel(0));
+	gdk_window_invalidate_rect(drawing_area->window, &r, FALSE);
+	gdk_gl_drawable_gl_end(glDrawable);
+      }
+    }
   }
   return TRUE;
 }
@@ -1576,7 +1676,6 @@ static gboolean init_gl_window(GLWindow *glw, GtkWidget *w)
       gtk_widget_destroy(drawing_area);
       return false;
     }
-    glw->window = w;
     /* Set up the callbacks. */
     g_signal_connect(drawing_area, "configure-event",
 		     G_CALLBACK(gl_config_cb), glw);
@@ -1598,7 +1697,12 @@ static void init_gl_timer(GLWindow *glw, int timeout)
     glw->timer_id = g_timeout_add(timeout, (GSourceFunc)gl_timer_cb, glw);
 }
 
-/* XXXFIXME: This currently works in a single view only. */
+static gboolean g_slist_equal(const GSList *l1, const GSList *l2)
+{
+  if (l1 == l2) return TRUE;
+  for (; l1 && l2 && l1->data==l2->data; l1 = l1->next, l2 = l2->next) ;
+  return l1==l2;
+}
 
 pure_expr *pure_gl_window(const char *name, int timeout,
 			  pure_expr *setup_cb,
@@ -1624,77 +1728,121 @@ pure_expr *pure_gl_window(const char *name, int timeout,
   if (!init) return NULL; // GtkGL failed to initialize.
   /* See whether we already have a window for this instance. */
   if ((glw = pure_get_gl_window(&key))) {
-    GtkWidget *w = glw->window;
-    GtkWidget *drawing_area = gtk_bin_get_child(GTK_BIN(w));
-    gboolean new = FALSE;
-    if (strcmp(name, glw->name) && (w = get_frame(pos, name)) != glw->window) {
-      /* Destroy the old window. */
-      if (glw->timeout > 0) g_source_remove(glw->timer_id);
-      glw->being_destroyed = TRUE;
-      gtk_widget_destroy(drawing_area);
-      drawing_area = NULL;
+    GSList *windows = get_frames(pos, name, &glw->so), *l;
+    if (strcmp(name, glw->name)) {
       free(glw->name); glw->name = strdup(name);
-      pure_free(glw->setup_cb);
-      pure_free(glw->config_cb);
-      pure_free(glw->display_cb);
-      pure_free(glw->timer_cb);
-      pure_free(glw->user_data);
-      glw->setup_cb = glw->config_cb = glw->display_cb = glw->timer_cb =
-	glw->user_data = NULL;;
-      glw->being_destroyed = FALSE;
-      new = TRUE;
     }
-    if (w && (!new || init_gl_window(glw, w))) {
-      if (!drawing_area) drawing_area = gtk_bin_get_child(GTK_BIN(w));
+    pure_free(glw->setup_cb);
+    pure_free(glw->config_cb);
+    pure_free(glw->display_cb);
+    pure_free(glw->timer_cb);
+    pure_free(glw->user_data);
+    glw->setup_cb = glw->config_cb = glw->display_cb = glw->timer_cb =
+      glw->user_data = NULL;
+    if (!g_slist_equal(windows, glw->windows)) {
+      GSList *ws = g_slist_copy(glw->windows);
+      /* Remove old views. */
+      glw->being_destroyed = TRUE;
+      for (l = ws; l; l = l->next) {
+	GtkWidget *w = GTK_WIDGET(l->data);
+	if (!g_slist_find(windows, w)) {
+	  GtkWidget *drawing_area = gtk_bin_get_child(GTK_BIN(w));
+	  /* Destroy the GL window. */
+#if 0
+	  fprintf(stderr, "removing old view %p\n", w);
+#endif
+	  gtk_widget_destroy(drawing_area);
+	  glw->windows = g_slist_remove(glw->windows, w);
+	}
+      }
+      glw->being_destroyed = FALSE;
+      g_slist_free(ws);
+      ws = NULL;
+      /* Add new views. */
+      for (l = windows; l; l = l->next) {
+	GtkWidget *w = GTK_WIDGET(l->data);
+	if (init_gl_window(glw, w)) {
+	  glw->windows = g_slist_insert_sorted(glw->windows, w, ptrcmp);
+	  ws = g_slist_prepend(ws, w);
+#if 0
+	  fprintf(stderr, "adding new view %p\n", w);
+#endif
+	}
+      }
+      g_slist_free(windows);
+      windows = g_slist_reverse(ws);
+    } else {
+      g_slist_free(windows);
+      windows = NULL;
+    }
+    if (glw->windows) {
       /* Update the callbacks. */
       glw->setup_cb = pure_new(setup_cb);
       glw->config_cb = pure_new(config_cb);
       glw->display_cb = pure_new(display_cb);
       glw->timer_cb = pure_new(timer_cb);
       glw->user_data = pure_new(user_data);
-      if (new) {
-	/* Install the timer callback. */
-	init_gl_timer(glw, timeout);
-	/* Run the setup callback. */
-	gl_setup_cb(drawing_area, NULL, glw);
-      } else if (timeout != glw->timeout) {
+      if (timeout != glw->timeout) {
 	/* Reinstall the timer callback. */
 	if (glw->timeout > 0) g_source_remove(glw->timer_id);
 	init_gl_timer(glw, timeout);
       }
-      return pure_pointer(glw->window);
+      /* Run the setup callback on the new views. */
+      for (l = windows; l; l = l->next) {
+	GtkWidget *w = GTK_WIDGET(l->data);
+	GtkWidget *drawing_area = gtk_bin_get_child(GTK_BIN(w));
+	gl_setup_cb(drawing_area, NULL, glw);
+      }
+      g_slist_free(windows);
+      return pure_pointer(glw->windows->data);
     } else {
       /* Not valid. Bail out with failure. */
+      g_slist_free(windows);
       pure_remove_gl_window(&key);
       return NULL;
     }
   } else {
-    GtkWidget *w = get_frame(pos, name);
-    if (w) {
+    SheetObject *so = NULL;
+    GSList *windows = get_frames(pos, name, &so), *l;
+    if (windows) {
       glw = g_new(GLWindow, 1);
       if (!glw) g_assert_not_reached();
       glw->being_destroyed = FALSE;
+      glw->windows = NULL;
+      glw->so = so;
       glw->setup_cb = glw->config_cb = glw->display_cb = glw->timer_cb =
-	glw->user_data = NULL;;
-      if (init_gl_window(glw, w)) {
-	GtkWidget *drawing_area = gtk_bin_get_child(GTK_BIN(w));
-	/* Set the callbacks. */
-	glw->setup_cb = pure_new(setup_cb);
-	glw->config_cb = pure_new(config_cb);
-	glw->display_cb = pure_new(display_cb);
-	glw->timer_cb = pure_new(timer_cb);
-	glw->user_data = pure_new(user_data);
-	glw->name = strdup(name);
-	pure_add_gl_window(&key, glw);
-	/* Install the timer callback. */
-	init_gl_timer(glw, timeout);
-	/* Run the setup callback. */
-	gl_setup_cb(drawing_area, NULL, glw);
-	return pure_pointer(glw->window);
-      } else {
+	glw->user_data = NULL;
+      for (l = windows; l; l = l->next) {
+	GtkWidget *w = GTK_WIDGET(l->data);
+	if (init_gl_window(glw, w)) {
+	  glw->windows = g_slist_insert_sorted(glw->windows, w, ptrcmp);
+#if 0
+	  fprintf(stderr, "adding view %p\n", w);
+#endif
+	}
+      }
+      g_slist_free(windows);
+      if (!glw->windows) {
 	g_free(glw);
 	return NULL;
       }
+      /* Set the callbacks. */
+      glw->setup_cb = pure_new(setup_cb);
+      glw->config_cb = pure_new(config_cb);
+      glw->display_cb = pure_new(display_cb);
+      glw->timer_cb = pure_new(timer_cb);
+      glw->user_data = pure_new(user_data);
+      glw->name = strdup(name);
+      pure_add_gl_window(&key, glw);
+      /* Install the timer callback. */
+      init_gl_timer(glw, timeout);
+      /* Run the setup callback. */
+      for (l = glw->windows; l; l = l->next) {
+	GtkWidget *w = GTK_WIDGET(l->data);
+	GtkWidget *drawing_area = gtk_bin_get_child(GTK_BIN(w));
+	gl_setup_cb(drawing_area, NULL, glw);
+      }
+      return pure_pointer(glw->windows->data);
     } else
       return NULL;
   }

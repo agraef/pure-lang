@@ -575,6 +575,7 @@ cb_gl_fini(gpointer key, gpointer value, gpointer closure)
   if (glw->timer_cb) pure_free(glw->timer_cb);
   if (glw->user_data) pure_free(glw->user_data);
   if (glw->name) free(glw->name);
+  if (glw->windows) g_slist_free(glw->windows);
   g_free(glw);
 }
 
@@ -638,16 +639,20 @@ func_unlink(GnmFuncEvalInfo *ei)
   }
   key.id = 0;
   while ((glw = g_hash_table_lookup(gl_windows, &key)) != NULL) {
-    GtkWidget *w = glw->window;
-    GtkWidget *drawing_area = gtk_bin_get_child(GTK_BIN(w));
-    /* Destroy the GL window. */
-#if 0
-    fprintf(stderr, "delete GL window = %p-%p-%u [%p]\n",
-	    ei->func_call, ei->pos->dep, glw->key.id, drawing_area);
-#endif
+    GSList *l = glw->windows;
     if (glw->timeout > 0) g_source_remove(glw->timer_id);
-    glw->timer_id = 0; glw->timeout = 0; glw->being_destroyed = TRUE;
-    gtk_widget_destroy(drawing_area);
+    glw->timer_id = 0; glw->timeout = 0;
+    glw->being_destroyed = TRUE;
+    for (; l; l = l->next) {
+      GtkWidget *w = GTK_WIDGET(l->data);
+      GtkWidget *drawing_area = gtk_bin_get_child(GTK_BIN(w));
+      /* Destroy the GL window. */
+#if 0
+      fprintf(stderr, "delete GL window = %p-%p-%u [%p]\n",
+	      ei->func_call, ei->pos->dep, glw->key.id, drawing_area);
+#endif
+      gtk_widget_destroy(drawing_area);
+    }
     pure_remove_gl_window(&key);
     key.id++;
   }
