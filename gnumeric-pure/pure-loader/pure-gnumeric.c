@@ -367,45 +367,61 @@ pure2value(const GnmEvalPos *pos, pure_expr *x, const char *spec)
     gsl_matrix *mat = (gsl_matrix*)p;
     double *data = mat->data;
     size_t i, j, nrows = mat->size1, ncols = mat->size2, tda = mat->tda;
-    v = value_new_array_empty(ncols, nrows);
-    for (i = 0; i < nrows; i++)
-      for (j = 0; j < ncols; j++) {
-	gint x = (gint)j, y = (gint)i;
-	GnmValue *val = value_new_float((gnm_float)data[i*tda+j]);
-	v->v_array.vals[x][y] = val;
-      }
+    if (nrows==0 || ncols==0)
+      v = value_new_empty();
+    else {
+      v = value_new_array_empty(ncols, nrows);
+      for (i = 0; i < nrows; i++)
+	for (j = 0; j < ncols; j++) {
+	  gint x = (gint)j, y = (gint)i;
+	  GnmValue *val = value_new_float((gnm_float)data[i*tda+j]);
+	  v->v_array.vals[x][y] = val;
+	}
+    }
   } else if (pure_is_int_matrix(x, &p)) {
     gsl_matrix_int *mat = (gsl_matrix_int*)p;
     int *data = mat->data;
     size_t i, j, nrows = mat->size1, ncols = mat->size2, tda = mat->tda;
-    v = value_new_array_empty(ncols, nrows);
-    for (i = 0; i < nrows; i++)
-      for (j = 0; j < ncols; j++) {
-	gint x = (gint)j, y = (gint)i;
-	GnmValue *val = value_new_int(data[i*tda+j]);
-	v->v_array.vals[x][y] = val;
-      }
+    if (nrows==0 || ncols==0)
+      v = value_new_empty();
+    else {
+      v = value_new_array_empty(ncols, nrows);
+      for (i = 0; i < nrows; i++)
+	for (j = 0; j < ncols; j++) {
+	  gint x = (gint)j, y = (gint)i;
+	  GnmValue *val = value_new_int(data[i*tda+j]);
+	  v->v_array.vals[x][y] = val;
+	}
+    }
   } else if (pure_is_symbolic_matrix(x, &p)) {
     gsl_matrix_symbolic *mat = (gsl_matrix_symbolic*)p;
     pure_expr **data = mat->data;
     size_t i, j, nrows = mat->size1, ncols = mat->size2, tda = mat->tda;
-    v = value_new_array_empty(ncols, nrows);
-    for (i = 0; i < nrows; i++)
-      for (j = 0; j < ncols; j++) {
-	gint x = (gint)j, y = (gint)i;
-	GnmValue *val = pure2value(pos, data[i*tda+j], NULL);
-	if (!val) val = value_new_error_VALUE(pos);
-	v->v_array.vals[x][y] = val;
-      }
-  } else if (pure_is_listv(x, &sz, &xv)) {
-    size_t i;
-    v = value_new_array_empty(sz, 1);
-    for (i = 0; i < sz; i++) {
-      GnmValue *val = pure2value(pos, xv[i], NULL);
-      if (!val) val = value_new_error_VALUE(pos);
-      v->v_array.vals[i][0] = val;
+    if (nrows==0 || ncols==0)
+      v = value_new_empty();
+    else {
+      v = value_new_array_empty(ncols, nrows);
+      for (i = 0; i < nrows; i++)
+	for (j = 0; j < ncols; j++) {
+	  gint x = (gint)j, y = (gint)i;
+	  GnmValue *val = pure2value(pos, data[i*tda+j], NULL);
+	  if (!val) val = value_new_error_VALUE(pos);
+	  v->v_array.vals[x][y] = val;
+	}
     }
-    free(xv);
+  } else if (pure_is_listv(x, &sz, &xv)) {
+    if (sz==0)
+      v = value_new_empty();
+    else {
+      size_t i;
+      v = value_new_array_empty(sz, 1);
+      for (i = 0; i < sz; i++) {
+	GnmValue *val = pure2value(pos, xv[i], NULL);
+	if (!val) val = value_new_error_VALUE(pos);
+	v->v_array.vals[i][0] = val;
+      }
+      free(xv);
+    }
   } else if (pure_is_tuplev(x, &sz, NULL) && (sz==0 || sz>1)) {
     if (sz==0)
       v = value_new_empty();
