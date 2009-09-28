@@ -751,12 +751,15 @@ For instance, with one button object in your spreadsheet, the output of
 ``sheet_objects`` might look like this::
 
   > sheet_objects
-    [("Sheet1","button","Push Me!","A11",#<pointer 0x2a1dcd0>)]
+    [("Sheet1","button","Push Me!","A11",[#<pointer 0x2a1dcd0>])]
 
 Each object is described by a tuple which lists the name of the sheet on which
 the object is located, the type of object, the object's label (if applicable),
-the cell which the object is linked to (if applicable), and a pointer to the
-corresponding ``GtkWidget`` (if applicable).
+the cell which the object is linked to (if applicable), and a list of pointers
+to the corresponding ``GtkWidgets`` (if any). (Note that in general a GUI
+object may be associated with several widgets, as Gnumeric allows you to have
+multiple views on the same spreadsheet. There will be one widget for each view
+an object is visible in.)
 
 This function is a bit tricky to use in a spreadsheet, however, since some of
 the objects or their associated widgets might not have been created yet when
@@ -767,7 +770,7 @@ sure that the information is updated once all objects are fully displayed. The
 
   pure_objects =
     trigger 0 (all realized sheet_objects) (matrix$map list sheet_objects)
-  with realized (_,_,_,_,widget) = ~pointerp widget || ~null widget end;
+  with realized (_,_,_,_,w) = ~listp w || ~null w && ~any null w end;
 
 See the ``widgets.gnumeric`` spreadsheet in the distribution for an example.
 

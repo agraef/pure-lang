@@ -1033,12 +1033,15 @@ extern expr* pure_sheet_objects() = sheet_objects;
 <tt class="docutils literal"><span class="pre">sheet_objects</span></tt> might look like this:</p>
 <pre class="literal-block">
 &gt; sheet_objects
-  [(&quot;Sheet1&quot;,&quot;button&quot;,&quot;Push Me!&quot;,&quot;A11&quot;,#&lt;pointer 0x2a1dcd0&gt;)]
+  [(&quot;Sheet1&quot;,&quot;button&quot;,&quot;Push Me!&quot;,&quot;A11&quot;,[#&lt;pointer 0x2a1dcd0&gt;])]
 </pre>
 <p>Each object is described by a tuple which lists the name of the sheet on which
 the object is located, the type of object, the object's label (if applicable),
-the cell which the object is linked to (if applicable), and a pointer to the
-corresponding <tt class="docutils literal"><span class="pre">GtkWidget</span></tt> (if applicable).</p>
+the cell which the object is linked to (if applicable), and a list of pointers
+to the corresponding <tt class="docutils literal"><span class="pre">GtkWidgets</span></tt> (if any). (Note that in general a GUI
+object may be associated with several widgets, as Gnumeric allows you to have
+multiple views on the same spreadsheet. There will be one widget for each view
+an object is visible in.)</p>
 <p>This function is a bit tricky to use in a spreadsheet, however, since some of
 the objects or their associated widgets might not have been created yet when
 the spreadsheet is loaded. Therefore it is necessary to use a trigger to make
@@ -1048,7 +1051,7 @@ sure that the information is updated once all objects are fully displayed. The
 <pre class="literal-block">
 pure_objects =
   trigger 0 (all realized sheet_objects) (matrix$map list sheet_objects)
-with realized (_,_,_,_,widget) = ~pointerp widget || ~null widget end;
+with realized (_,_,_,_,w) = ~listp w || ~null w &amp;&amp; ~any null w end;
 </pre>
 <p>See the <tt class="docutils literal"><span class="pre">widgets.gnumeric</span></tt> spreadsheet in the distribution for an example.</p>
 <p>Possible uses of this facility are left to your imagination. Using Pure's Gtk
