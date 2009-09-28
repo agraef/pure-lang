@@ -1559,7 +1559,7 @@ static gboolean gl_timer_cb(GLWindow *glw)
   return TRUE;
 }
 
-static gboolean init_gl_window(GLWindow *glw, GtkWidget *w, int timeout)
+static gboolean init_gl_window(GLWindow *glw, GtkWidget *w)
 {
   /* Check to see whether we already added a drawable to the frame widget. */
   if (gtk_bin_get_child(GTK_BIN(w)))
@@ -1584,14 +1584,18 @@ static gboolean init_gl_window(GLWindow *glw, GtkWidget *w, int timeout)
 		     G_CALLBACK(gl_display_cb), glw);
     g_signal_connect(drawing_area, "destroy",
 		     G_CALLBACK(gl_destroy_cb), glw);
-    glw->timer_id = 0;
-    glw->timeout = timeout;
-    if (timeout > 0)
-      glw->timer_id = g_timeout_add(timeout, (GSourceFunc)gl_timer_cb, glw);
     gtk_container_add(GTK_CONTAINER(w), drawing_area);
     gtk_widget_show(drawing_area);
     return true;
   }
+}
+
+static void init_gl_timer(GLWindow *glw, int timeout)
+{
+  glw->timer_id = 0;
+  glw->timeout = timeout;
+  if (timeout > 0)
+    glw->timer_id = g_timeout_add(timeout, (GSourceFunc)gl_timer_cb, glw);
 }
 
 /* XXXFIXME: This currently works in a single view only. */
@@ -1618,7 +1622,7 @@ pure_expr *pure_gl_window(const char *name, int timeout,
     once = FALSE;
   }
   if (!init) return NULL; // GtkGL failed to initialize.
-  /* See whether we already have a window for this cell initialized. */
+  /* See whether we already have a window for this instance. */
   if ((glw = pure_get_gl_window(&key))) {
     GtkWidget *w = glw->window;
     GtkWidget *drawing_area = gtk_bin_get_child(GTK_BIN(w));
@@ -1640,7 +1644,7 @@ pure_expr *pure_gl_window(const char *name, int timeout,
       glw->being_destroyed = FALSE;
       new = TRUE;
     }
-    if (w && (!new || init_gl_window(glw, w, timeout))) {
+    if (w && (!new || init_gl_window(glw, w))) {
       if (!drawing_area) drawing_area = gtk_bin_get_child(GTK_BIN(w));
       /* Update the callbacks. */
       glw->setup_cb = pure_new(setup_cb);
@@ -1648,16 +1652,15 @@ pure_expr *pure_gl_window(const char *name, int timeout,
       glw->display_cb = pure_new(display_cb);
       glw->timer_cb = pure_new(timer_cb);
       glw->user_data = pure_new(user_data);
-      if (timeout != glw->timeout) {
-	if (glw->timeout > 0) g_source_remove(glw->timer_id);
-	glw->timer_id = 0;
-	glw->timeout = timeout;
-	if (timeout > 0)
-	  glw->timer_id = g_timeout_add(timeout, (GSourceFunc)gl_timer_cb, glw);
-      }
       if (new) {
+	/* Install the timer callback. */
+	init_gl_timer(glw, timeout);
 	/* Run the setup callback. */
 	gl_setup_cb(drawing_area, NULL, glw);
+      } else if (timeout != glw->timeout) {
+	/* Reinstall the timer callback. */
+	if (glw->timeout > 0) g_source_remove(glw->timer_id);
+	init_gl_timer(glw, timeout);
       }
       return pure_pointer(glw->window);
     } else {
@@ -1673,7 +1676,7 @@ pure_expr *pure_gl_window(const char *name, int timeout,
       glw->being_destroyed = FALSE;
       glw->setup_cb = glw->config_cb = glw->display_cb = glw->timer_cb =
 	glw->user_data = NULL;;
-      if (init_gl_window(glw, w, timeout)) {
+      if (init_gl_window(glw, w)) {
 	GtkWidget *drawing_area = gtk_bin_get_child(GTK_BIN(w));
 	/* Set the callbacks. */
 	glw->setup_cb = pure_new(setup_cb);
@@ -1683,6 +1686,8 @@ pure_expr *pure_gl_window(const char *name, int timeout,
 	glw->user_data = pure_new(user_data);
 	glw->name = strdup(name);
 	pure_add_gl_window(&key, glw);
+	/* Install the timer callback. */
+	init_gl_timer(glw, timeout);
 	/* Run the setup callback. */
 	gl_setup_cb(drawing_area, NULL, glw);
 	return pure_pointer(glw->window);
