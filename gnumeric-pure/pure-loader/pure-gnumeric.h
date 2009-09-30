@@ -41,9 +41,11 @@ pure_expr *pure_this_cell(void);
 pure_expr *pure_parse_range(const char *s);
 pure_expr *pure_make_range(pure_expr *x);
 pure_expr *pure_get_cell(const char *s);
+pure_expr *pure_get_cell_text(const char *s);
 pure_expr *pure_set_cell(const char *s, pure_expr *x);
 pure_expr *pure_set_cell_text(const char *s, pure_expr *x);
 pure_expr *pure_get_range(const char *s);
+pure_expr *pure_get_range_text(const char *s);
 pure_expr *pure_set_range(const char *s, pure_expr *xs);
 pure_expr *pure_set_range_text(const char *s, pure_expr *xs);
 
