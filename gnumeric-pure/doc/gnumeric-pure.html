@@ -851,9 +851,11 @@ by the function.</p>
 contents of spreadsheet cells and ranges of such cells:</p>
 <pre class="literal-block">
 extern expr* pure_get_cell(char* s) = get_cell;
+extern expr* pure_get_cell_text(char* s) = get_cell_text;
 extern expr* pure_set_cell(char* s, expr *x) = set_cell;
 extern expr* pure_set_cell_text(char* s, expr *x) = set_cell_text;
 extern expr* pure_get_range(char* s) = get_range;
+extern expr* pure_get_range_text(char* s) = get_range_text;
 extern expr* pure_set_range(char* s, expr *x) = set_range;
 extern expr* pure_set_range_text(char* s, expr *x) = set_range_text;
 </pre>
@@ -872,13 +874,20 @@ cell values (try this in the interactive Pure shell):</p>
   ()
 &gt; get_cell &quot;A14&quot;
   873.0
+&gt; get_cell_text &quot;A14&quot;
+  &quot;=sum(B14:G14)&quot;
+&gt; get_range_text &quot;A14:G14&quot;
+  {&quot;=sum(B14:G14)&quot;,&quot;1&quot;,&quot;2&quot;,&quot;6&quot;,&quot;24&quot;,&quot;120&quot;,&quot;720&quot;}
 </pre>
 <p>Note that while the <tt class="docutils literal"><span class="pre">set_cell</span></tt> function sets the given cell to a constant
 value, <tt class="docutils literal"><span class="pre">set_cell_text</span></tt> also allows you to store a formula in a cell which
-will then be evaluated as usual. The <tt class="docutils literal"><span class="pre">set_range</span></tt>, <tt class="docutils literal"><span class="pre">set_range_text</span></tt> and
-<tt class="docutils literal"><span class="pre">get_range</span></tt> functions work analogous to <tt class="docutils literal"><span class="pre">set_cell</span></tt>, <tt class="docutils literal"><span class="pre">set_cell_text</span></tt> and
-<tt class="docutils literal"><span class="pre">get_cell</span></tt>, but are used to manipulate entire ranges of cells, which can be
-set from Pure tuples, lists or matrices, and retrieved as Pure matrices.</p>
+will then be evaluated as usual. Similarly, <tt class="docutils literal"><span class="pre">get_cell</span></tt> retrieves the cell
+value, while <tt class="docutils literal"><span class="pre">get_cell_text</span></tt> yields the text in the cell, as entered by the
+user (which will either be a formula or the textual representation of a
+constant value). The <tt class="docutils literal"><span class="pre">set_range</span></tt>, <tt class="docutils literal"><span class="pre">set_range_text</span></tt>, <tt class="docutils literal"><span class="pre">get_range</span></tt> and
+<tt class="docutils literal"><span class="pre">get_range_text</span></tt> functions work analogously, but are used to manipulate
+entire ranges of cells, which can be set from Pure tuples, lists or matrices,
+and retrieved as Pure matrices.</p>
 <p>There are also functions to get the position of the &quot;current&quot; cell (i.e., the
 cell from which a Pure function was called), and to translate between cell
 ranges in Gnumeric syntax and the corresponding internal representation

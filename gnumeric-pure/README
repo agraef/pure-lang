@@ -560,9 +560,11 @@ Gnumeric/Pure provides the following functions to retrieve and modify the
 contents of spreadsheet cells and ranges of such cells::
 
   extern expr* pure_get_cell(char* s) = get_cell;
+  extern expr* pure_get_cell_text(char* s) = get_cell_text;
   extern expr* pure_set_cell(char* s, expr *x) = set_cell;
   extern expr* pure_set_cell_text(char* s, expr *x) = set_cell_text;
   extern expr* pure_get_range(char* s) = get_range;
+  extern expr* pure_get_range_text(char* s) = get_range_text;
   extern expr* pure_set_range(char* s, expr *x) = set_range;
   extern expr* pure_set_range_text(char* s, expr *x) = set_range_text;
 
@@ -581,13 +583,20 @@ cell values (try this in the interactive Pure shell)::
     ()
   > get_cell "A14"
     873.0
+  > get_cell_text "A14"
+    "=sum(B14:G14)"
+  > get_range_text "A14:G14"
+    {"=sum(B14:G14)","1","2","6","24","120","720"}
 
 Note that while the ``set_cell`` function sets the given cell to a constant
 value, ``set_cell_text`` also allows you to store a formula in a cell which
-will then be evaluated as usual. The ``set_range``, ``set_range_text`` and
-``get_range`` functions work analogous to ``set_cell``, ``set_cell_text`` and
-``get_cell``, but are used to manipulate entire ranges of cells, which can be
-set from Pure tuples, lists or matrices, and retrieved as Pure matrices.
+will then be evaluated as usual. Similarly, ``get_cell`` retrieves the cell
+value, while ``get_cell_text`` yields the text in the cell, as entered by the
+user (which will either be a formula or the textual representation of a
+constant value). The ``set_range``, ``set_range_text``, ``get_range`` and
+``get_range_text`` functions work analogously, but are used to manipulate
+entire ranges of cells, which can be set from Pure tuples, lists or matrices,
+and retrieved as Pure matrices.
 
 There are also functions to get the position of the "current" cell (i.e., the
 cell from which a Pure function was called), and to translate between cell
