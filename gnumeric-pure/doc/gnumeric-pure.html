@@ -1036,16 +1036,27 @@ extern expr* pure_sheet_objects() = sheet_objects;
   [(&quot;Sheet1&quot;,&quot;button&quot;,&quot;Push Me!&quot;,&quot;A11&quot;,[#&lt;pointer 0x2a1dcd0&gt;])]
 </pre>
 <p>Each object is described by a tuple which lists the name of the sheet on which
-the object is located, the type of object, the object's label (if applicable),
-the cell which the object is linked to (if applicable), and a list of pointers
-to the corresponding <tt class="docutils literal"><span class="pre">GtkWidgets</span></tt> (if any). (Note that in general a GUI
-object may be associated with several widgets, as Gnumeric allows you to have
-multiple views on the same spreadsheet. There will be one widget for each view
-an object is visible in.)</p>
-<p>This function is a bit tricky to use in a spreadsheet, however, since some of
-the objects or their associated widgets might not have been created yet when
-the spreadsheet is loaded. Therefore it is necessary to use a trigger to make
-sure that the information is updated once all objects are fully displayed. The
+the object is located, the type of object, the object's content or label (if
+applicable), the cell which the object is linked to (if applicable), and a
+list of pointers to the corresponding <tt class="docutils literal"><span class="pre">GtkWidgets</span></tt> (if any). Note that in
+general a GUI object may be associated with several widgets, as Gnumeric
+allows you to have multiple views on the same spreadsheet, so there will be
+one widget for each view an object is visible in. Also note that the
+content/label information depends on the particular type of object:</p>
+<ul class="simple">
+<li>List and combo widgets return the content link (referring to the cells in
+the spreadsheet holding the items shown in the list).</li>
+<li>Frame and button widgets return the label shown on the widget.</li>
+<li>Graphic objects like rectangles and ellipses return the text content of the
+object.</li>
+<li>Image objects (type <tt class="docutils literal"><span class="pre">&quot;image/xyz&quot;</span></tt>, where <tt class="docutils literal"><span class="pre">xyz</span></tt> is the type of image,
+such as <tt class="docutils literal"><span class="pre">svg</span></tt> or <tt class="docutils literal"><span class="pre">png</span></tt>) return a pointer to the image data in this
+field.</li>
+</ul>
+<p>The <tt class="docutils literal"><span class="pre">sheet_objects</span></tt> function is a bit tricky to use, since some of the
+objects or their associated widgets might not have been created yet when the
+spreadsheet is loaded. Therefore it is necessary to use a trigger to make sure
+that the information is updated once all objects are fully displayed. The
 <tt class="docutils literal"><span class="pre">pure_func.pure</span></tt> script contains the following little wrapper around
 <tt class="docutils literal"><span class="pre">sheet_objects</span></tt> which does this:</p>
 <pre class="literal-block">
@@ -1054,11 +1065,11 @@ pure_objects =
 with realized (_,_,_,_,w) = ~listp w || ~null w &amp;&amp; ~any null w end;
 </pre>
 <p>See the <tt class="docutils literal"><span class="pre">widgets.gnumeric</span></tt> spreadsheet in the distribution for an example.</p>
-<p>Possible uses of this facility are left to your imagination. Using Pure's Gtk
-interface, you might manipulate the GUI widgets in various ways (add icons to
-buttons, add custom child widgets to frames, etc.). One particularly useful
-case, for which Gnumeric/Pure has built-in support, is rendering an OpenGL
-scene in a Gnumeric frame widget, see below.</p>
+<p>Possible uses of this facility are left to your imagination. Using Gnumeric's
+internal APIs and Pure's Gtk interface, you might manipulate the GUI widgets
+in various ways (add icons to buttons or custom child widgets to frames,
+etc.). One particularly useful case, for which Gnumeric/Pure has built-in
+support, is rendering an OpenGL scene in a Gnumeric frame widget, see below.</p>
 </div>
 <div class="section" id="opengl-interface">
 <h2><a class="toc-backref" href="#id16">8.6&nbsp;&nbsp;&nbsp;OpenGL Interface</a></h2>
@@ -1072,10 +1083,57 @@ extern expr *pure_gl_window(char *name, int timeout,
                             expr *display_cb, expr *timer_cb,
                             expr *user_data) = gl_window;
 </pre>
-<p>There's a second function which can be used as a trigger condition to defer
-rendering until the target frame widget has been realized:</p>
+<p>The meaning of the parameters is as follows:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">name</span></tt> is a string which specifies the label of the frame widget into
+which the scene is to be rendered.</li>
+<li><tt class="docutils literal"><span class="pre">timeout</span></tt> is a time value in milliseconds (an integer) which specifies the
+period for invocations of the <tt class="docutils literal"><span class="pre">timer_cb</span></tt> callback, see below. If this
+value is zero or negative then the timer callback is disabled.</li>
+<li><tt class="docutils literal"><span class="pre">setup_cb</span></tt>, <tt class="docutils literal"><span class="pre">config_cb</span></tt>, <tt class="docutils literal"><span class="pre">display_cb</span></tt> and <tt class="docutils literal"><span class="pre">timer_cb</span></tt> are the Pure
+callback functions which are invoked by <tt class="docutils literal"><span class="pre">gl_window</span></tt> to actually render the
+scene. The callbacks are all invoked with two arguments: the <tt class="docutils literal"><span class="pre">user_data</span></tt>
+parameter that <tt class="docutils literal"><span class="pre">gl_window</span></tt> was invoked with, and a second parameter with
+callback-specific information as described below.</li>
+<li><tt class="docutils literal"><span class="pre">user_data</span></tt> is any information that the caller wants to be passed as the
+first argument to the callback functions.</li>
+</ul>
+<p>The different callbacks are:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">setup_cb</span></tt> is called for initializing the scene. It receives the
+<tt class="docutils literal"><span class="pre">GtkDrawingArea</span></tt> widget as the second argument. Typically this is used to
+set the initial projection and modelview matrices, enable lighting, etc.</li>
+<li><tt class="docutils literal"><span class="pre">config_cb</span></tt> is called when width or height of the frame widget changes so
+that the rendering parameters (typically the viewport) can be adjusted
+accordingly. It is invoked with a pair of integers <tt class="docutils literal"><span class="pre">(w,h)</span></tt> as the second
+argument, which denotes the new dimension allocated to the drawing area.</li>
+<li><tt class="docutils literal"><span class="pre">display_cb</span></tt> is called whenever the contents of the drawing area needs to
+be redrawn. This typically does most of the work necessary to render the
+scene. The second callback argument is always <tt class="docutils literal"><span class="pre">()</span></tt>.</li>
+<li><tt class="docutils literal"><span class="pre">timer_cb</span></tt> is called at regular intervals as specified with the
+<tt class="docutils literal"><span class="pre">timeout</span></tt> parameter (see above), unless the <tt class="docutils literal"><span class="pre">timeout</span></tt> value is zero or
+negative in which case this callback is disabled. The second callback
+argument is always <tt class="docutils literal"><span class="pre">()</span></tt>. The timer callback is typically used to
+incrementally adjust some parameters of the scene in order to render
+animations. When invoked, the callback automatically arranges for
+<tt class="docutils literal"><span class="pre">display_cb</span></tt> to be called afterwards, so you don't have to do that
+manually in your callback definition.</li>
+</ul>
+<p>You'll need at least either the <tt class="docutils literal"><span class="pre">display_cb</span></tt> or the <tt class="docutils literal"><span class="pre">timer_cb</span></tt> function to
+render anything, but typically all of these callbacks will be needed for
+animated scenes. Callback functions which aren't needed can be specified as
+<tt class="docutils literal"><span class="pre">()</span></tt>.</p>
+<p>There's also a related helper function which can be used as a trigger
+condition to defer rendering until the target frame widget has been realized:</p>
 <pre class="literal-block">
 extern bool pure_check_window(char *name) = check_window;
+</pre>
+<p>This function returns <tt class="docutils literal"><span class="pre">true</span></tt> as soon as the named frame widget is ready to
+go, at wich time <tt class="docutils literal"><span class="pre">gl_windows</span></tt> can be called on the widget. So your call to
+<tt class="docutils literal"><span class="pre">gl_windows</span></tt> should usually be wrapped up like this:</p>
+<pre class="literal-block">
+trigger 0 (check_window frame)
+(gl_window frame timeout setup config display timer user_data)
 </pre>
 <p>Here's an example from <tt class="docutils literal"><span class="pre">pure_glfunc.pure</span></tt> which shows how these functions
 are to be used. Have a look at the <tt class="docutils literal"><span class="pre">gl-example.gnumeric</span></tt> spreadsheet

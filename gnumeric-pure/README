@@ -754,17 +754,30 @@ For instance, with one button object in your spreadsheet, the output of
     [("Sheet1","button","Push Me!","A11",[#<pointer 0x2a1dcd0>])]
 
 Each object is described by a tuple which lists the name of the sheet on which
-the object is located, the type of object, the object's label (if applicable),
-the cell which the object is linked to (if applicable), and a list of pointers
-to the corresponding ``GtkWidgets`` (if any). (Note that in general a GUI
-object may be associated with several widgets, as Gnumeric allows you to have
-multiple views on the same spreadsheet. There will be one widget for each view
-an object is visible in.)
+the object is located, the type of object, the object's content or label (if
+applicable), the cell which the object is linked to (if applicable), and a
+list of pointers to the corresponding ``GtkWidgets`` (if any). Note that in
+general a GUI object may be associated with several widgets, as Gnumeric
+allows you to have multiple views on the same spreadsheet, so there will be
+one widget for each view an object is visible in. Also note that the
+content/label information depends on the particular type of object:
 
-This function is a bit tricky to use in a spreadsheet, however, since some of
-the objects or their associated widgets might not have been created yet when
-the spreadsheet is loaded. Therefore it is necessary to use a trigger to make
-sure that the information is updated once all objects are fully displayed. The
+* List and combo widgets return the content link (referring to the cells in
+  the spreadsheet holding the items shown in the list).
+
+* Frame and button widgets return the label shown on the widget.
+
+* Graphic objects like rectangles and ellipses return the text content of the
+  object.
+
+* Image objects (type ``"image/xyz"``, where ``xyz`` is the type of image,
+  such as ``svg`` or ``png``) return a pointer to the image data in this
+  field.
+
+The ``sheet_objects`` function is a bit tricky to use, since some of the
+objects or their associated widgets might not have been created yet when the
+spreadsheet is loaded. Therefore it is necessary to use a trigger to make sure
+that the information is updated once all objects are fully displayed. The
 ``pure_func.pure`` script contains the following little wrapper around
 ``sheet_objects`` which does this::
 
@@ -774,11 +787,11 @@ sure that the information is updated once all objects are fully displayed. The
 
 See the ``widgets.gnumeric`` spreadsheet in the distribution for an example.
 
-Possible uses of this facility are left to your imagination. Using Pure's Gtk
-interface, you might manipulate the GUI widgets in various ways (add icons to
-buttons, add custom child widgets to frames, etc.). One particularly useful
-case, for which Gnumeric/Pure has built-in support, is rendering an OpenGL
-scene in a Gnumeric frame widget, see below.
+Possible uses of this facility are left to your imagination. Using Gnumeric's
+internal APIs and Pure's Gtk interface, you might manipulate the GUI widgets
+in various ways (add icons to buttons or custom child widgets to frames,
+etc.). One particularly useful case, for which Gnumeric/Pure has built-in
+support, is rendering an OpenGL scene in a Gnumeric frame widget, see below.
 
 OpenGL Interface
 ----------------
@@ -793,10 +806,64 @@ with the OpenGL rendering capability::
                               expr *display_cb, expr *timer_cb,
                               expr *user_data) = gl_window;
 
-There's a second function which can be used as a trigger condition to defer
-rendering until the target frame widget has been realized::
+The meaning of the parameters is as follows:
+
+* ``name`` is a string which specifies the label of the frame widget into
+  which the scene is to be rendered.
+
+* ``timeout`` is a time value in milliseconds (an integer) which specifies the
+  period for invocations of the ``timer_cb`` callback, see below. If this
+  value is zero or negative then the timer callback is disabled.
+
+* ``setup_cb``, ``config_cb``, ``display_cb`` and ``timer_cb`` are the Pure
+  callback functions which are invoked by ``gl_window`` to actually render the
+  scene. The callbacks are all invoked with two arguments: the ``user_data``
+  parameter that ``gl_window`` was invoked with, and a second parameter with
+  callback-specific information as described below.
+
+* ``user_data`` is any information that the caller wants to be passed as the
+  first argument to the callback functions.
+
+The different callbacks are:
+
+* ``setup_cb`` is called for initializing the scene. It receives the
+  ``GtkDrawingArea`` widget as the second argument. Typically this is used to
+  set the initial projection and modelview matrices, enable lighting, etc.
+
+* ``config_cb`` is called when width or height of the frame widget changes so
+  that the rendering parameters (typically the viewport) can be adjusted
+  accordingly. It is invoked with a pair of integers ``(w,h)`` as the second
+  argument, which denotes the new dimension allocated to the drawing area.
+
+* ``display_cb`` is called whenever the contents of the drawing area needs to
+  be redrawn. This typically does most of the work necessary to render the
+  scene. The second callback argument is always ``()``.
+
+* ``timer_cb`` is called at regular intervals as specified with the
+  ``timeout`` parameter (see above), unless the ``timeout`` value is zero or
+  negative in which case this callback is disabled. The second callback
+  argument is always ``()``. The timer callback is typically used to
+  incrementally adjust some parameters of the scene in order to render
+  animations. When invoked, the callback automatically arranges for
+  ``display_cb`` to be called afterwards, so you don't have to do that
+  manually in your callback definition.
+
+You'll need at least either the ``display_cb`` or the ``timer_cb`` function to
+render anything, but typically all of these callbacks will be needed for
+animated scenes. Callback functions which aren't needed can be specified as
+``()``.
+
+There's also a related helper function which can be used as a trigger
+condition to defer rendering until the target frame widget has been realized::
 
   extern bool pure_check_window(char *name) = check_window;
+
+This function returns ``true`` as soon as the named frame widget is ready to
+go, at wich time ``gl_windows`` can be called on the widget. So your call to
+``gl_windows`` should usually be wrapped up like this::
+
+  trigger 0 (check_window frame)
+  (gl_window frame timeout setup config display timer user_data)
 
 Here's an example from ``pure_glfunc.pure`` which shows how these functions
 are to be used. Have a look at the ``gl-example.gnumeric`` spreadsheet
