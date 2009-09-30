@@ -25,7 +25,7 @@ int Pure_lo_message_add(lo_message msg, const char *types, pure_expr *x)
   double d;
   int ret = 0;
 
-  if (!pure_is_listv(x, &sz, &xs)) return -2;
+  if (!pure_is_listv(x, &sz, &xs) && !pure_is_tuplev(x, &sz, &xs)) return -2;
 
   while (types && *types) {
     pure_expr *x = NULL;
