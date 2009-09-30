@@ -1223,25 +1223,11 @@ static char *texpr2str(const GnmEvalPos *pos, const GnmExprTop *e)
   return strdup(buf);
 }
 
-/* This one isn't currently implemented by Gnumeric, so we snatch the
-   SheetWidgetListBase struct from sheet-object-widget.c and implement it
-   ourselves. CAVEAT: This needs updating whenever the struct changes!
-   XXXFIXME: This should be removed once Gnumeric provides an API to get this
-   information. */
-
-typedef SheetObject SheetObjectWidget;
-typedef struct {
-  SheetObjectWidget	sow;
-  GnmDependent	content_dep;	/* content of the list */
-  GnmDependent	output_dep;	/* selected element */
-  /* more fields follow, but we're not interested in these */
-} SheetWidgetListBase;
-
 static GnmExprTop const *
-sheet_widget_list_base_get_link(SheetObject *so)
+sheet_widget_list_base_get_result_link(SheetObject *so)
 {
-  SheetWidgetListBase *swlb = (SheetWidgetListBase*)(so);
-  GnmExprTop const *texpr = swlb->output_dep.texpr;
+  const GnmDependent *dep = sheet_widget_list_base_get_result_dep(so);
+  GnmExprTop const *texpr = dep?dep->texpr:NULL;
   if (texpr) gnm_expr_top_ref(texpr);
   return texpr;
 }
@@ -1376,7 +1362,7 @@ pure_expr *pure_sheet_objects(void)
 			   pure_string(link),
 			   pure_listv(n_widgets, widgets));
       } else if (t == SHEET_WIDGET_LIST_TYPE) {
-	const GnmExprTop *e = sheet_widget_list_base_get_link(so);
+	const GnmExprTop *e = sheet_widget_list_base_get_result_link(so);
 	char *link = e?texpr2str(pos, e):strdup("");
 	if (e) gnm_expr_top_unref(e);
 	info = pure_tuplel(5, sheet_name_str, pure_string_dup("list"),
@@ -1384,7 +1370,7 @@ pure_expr *pure_sheet_objects(void)
 			   pure_string(link),
 			   pure_listv(n_widgets, widgets));
       } else if (t == SHEET_WIDGET_COMBO_TYPE) {
-	const GnmExprTop *e = sheet_widget_list_base_get_link(so);
+	const GnmExprTop *e = sheet_widget_list_base_get_result_link(so);
 	char *link = e?texpr2str(pos, e):strdup("");
 	if (e) gnm_expr_top_unref(e);
 	info = pure_tuplel(5, sheet_name_str, pure_string_dup("combo"),
