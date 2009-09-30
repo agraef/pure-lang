@@ -1,4 +1,83 @@
 
-using lo;
+/* An OSC server. This is a bit more involved than a client, but can both
+   send and receive OSC messages. */
 
-// XXXTODO
+/* Note that we implement an unthreaded server here (so we use lo::server_new
+   rather than lo::server_thread_new), since the Pure interpreter currently
+   isn't thread-safe. A server thread might be used as well, but then the
+   method callbacks would have to be implemented in C and wouldn't be able to
+   call back into Pure. */
+
+using lo, ffi, system;
+using namespace lo;
+
+/* Convenience macros to create C callbacks via ffi. */
+
+/* The 'method_callback' macro creates a method callback which can be passed
+   to lo::server_add_method and handles a given type of OSC messages. The
+   'error_callback' macro creates an error handler which can be passed to
+   liblo::server_new and will be called if an error condition arises in the
+   server. (liblo::server_new also accepts a NULL pointer for this callback,
+   in which case no error handling is performed.) */
+
+def method_callback cb = fclos cb FFI_DEFAULT_ABI
+  sint_t         // return value, 0 means processing completed
+  (string_t,     // message path
+   string_t,     // message argument types
+   pointer_t,    // message arguments (lo_arg**)
+   sint_t,       // number of message arguments
+   pointer_t,    // raw message data (can be passed to lo::message_get_xyz)
+   pointer_t);   // callback data
+
+def error_callback cb = fclos cb FFI_DEFAULT_ABI void_t
+  (sint_t,       // error number
+   string_t,     // error message
+   string_t);    // error location (typically function call or method path)
+
+/* Callback definitions. */
+
+generic (path, types, argv, argc, msg, user) =
+  printf "generic: path: %s, types: %s, args: %s\n"
+  (path,str types,str (args types argv argc)) $$ 1;
+foo (path, "b", argv, 1, msg, user) =
+  if blobp bb then printf "foo: %s\n" (str (val bb)) $$ 0
+  else printf "foo: blob %s\n" (str (map ubyte (byte_matrix n bb)))
+  when
+    b::pointer = args "b" argv 1;
+    bb = blob_dataptr b; n = blob_datasize b;
+  end;
+quit _ = puts "Exiting." $$ exit 0;
+
+error (num, msg::string, path::string) =
+  fprintf stderr "liblo server error %d in path %s: %s\n" (num, path, msg);
+error (num, msg::string, _) =
+  fprintf stderr "liblo server error %d: %s\n" (num, msg);
+
+/* Turn these into C callbacks so that we can pass them to liblo. */
+
+let generic_cb = method_callback generic;
+let foo_cb = method_callback foo;
+let quit_cb = method_callback quit;
+
+let error_cb = error_callback error;
+
+/* Start a new server on port 7770. */
+
+let s = server_new "7770" error_cb;
+
+if null s then exit 1 else ();
+
+/* Add method callbacks. */
+
+server_add_method s NULL NULL generic_cb NULL;
+server_add_method s "/foo/bla" "b" foo_cb NULL;
+server_add_method s "/quit" "" quit_cb NULL;
+
+/* Loop calling lo::server_recv until we receive a "/quit" message. */
+
+/* Note that lo::server_recv blocks until a message is received, at which
+   point it invokes the appropriate callback, if any. We might also use
+   lo::server_recv_noblock here if we want to do some idle time processing. */
+
+if compiling then () else
+loop with loop = server_recv s $$ loop end;

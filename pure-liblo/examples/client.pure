@@ -1,31 +1,26 @@
 
+/* A simple OSC client. */
+
 using lo;
 using namespace lo;
 
-/* The destination address. NULL means "localhost" here. Note that sometimes
-   it is better to let the server pick a port number for you by passing NULL
-   as the second argument. */
+/* The address of an OSC server to which we send our stuff. NULL as the
+   hostname means "localhost" here. Note that sometimes it is better to let
+   the server pick a port number for you by passing NULL as the second (port)
+   argument. */
 
 let t = address_new NULL "7770";
 
-/* A blob. */
+/* A liblo blob. Note that using Pure's 'blob' function, this allows you to
+   send (almost) any Pure value. */
 
 //let b = blob_new 5 "ABCDE";
 let b = blob_new (#bb) bb
   when bb = blob {"Hello, world!",x+y,1/2,4711,-4711L,NULL} end;
 
-/* Convenience function to create an OSC timetag at a given (nonnegative)
-   offset in seconds. */
-
-timetag offs = {ts!0+secs,ts!1+ticks} when
-  ts = {0,0}; lo::timetag_now ts;
-  secs = int (trunc offs);
-  ticks = int (frac offs*4294967296.0);
-end if offs>=0;
-
 /* Examples for different kinds of messages. See http://opensoundcontrol.org
-   for a description of the OSC type tags. liblo supports them all, except "["
-   and "]". */
+   for a description of the OSC type tags. liblo supports them all (as of
+   liblo 0.26), except "[" and "]". */
 
 // Different kinds of numbers.
 send t "/foo/bla" "f" (1/7);
@@ -49,9 +44,9 @@ send t "/foo/bla" "F" ();
 send t "/foo/bla" "N" ();
 send t "/foo/bla" "I" ();
 
-/* Send a message to /a/b/c/d with a mixture of float and string arguments. */
+/* Send a message with a mixture of float and string arguments. */
 
-send t "/a/b/c/d" "sfsff" ("one", 0.12345678, "three", -0.00000023001, 1.0);
+send t "/foo/bar" "sfsff" ("one", 0.12345678, "three", -0.00000023001, 1.0);
 
 /* A message without parameters, to be delivered immediately. */
 
@@ -60,4 +55,4 @@ send t "/now" "" ();
 /* A quit message, scheduled to be delivered 2 seconds later. (Some OSC
    servers will exit on this.) */
 
-send_timestamped t (timetag 2) "/quit" "" ();
+send_timestamped t (timetag NULL 2) "/quit" "" ();

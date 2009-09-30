@@ -133,13 +133,19 @@ extern void* lo_blob_new(int, void*) = blob_new;
 extern void lo_blob_free(void*) = blob_free;
 extern int lo_blob_datasize(void*) = blob_datasize;
 extern void* lo_blob_dataptr(void*) = blob_dataptr;
+
+/* These are varargs functions in the liblo interface, so we massage them
+   somewhat to make them callable from Pure */
+
 extern int Pure_lo_message_add(void*, char*, expr*) = message_add;
 extern int Pure_lo_send(void*, char*, char*, expr*) = send;
-extern int Pure_lo_send_timestamped(void*, lo_timetag*, char*, char*, expr*) = send_timestamped;
-extern int Pure_lo_send_from(void*, void*, lo_timetag*, char*, char*, expr*) = send_from;
+extern int Pure_lo_send_timestamped(void*, lo_timetag*, char*, char*, expr*)
+ = send_timestamped;
+extern int Pure_lo_send_from(void*, void*, lo_timetag*, char*, char*, expr*)
+ = send_from;
 
-/* liblo allows these to be invoked with NULL pointers, so we emulate that
-   behaviour. */
+/* liblo allows these to be invoked also with NULL pointers as strings, so we
+   emulate this behaviour here. */
 
 private extern void *lo_address_new(void*,void*);
 address_new host::pointer port::pointer = lo_address_new host port
@@ -148,3 +154,77 @@ address_new host::pointer port::string = lo_address_new host (pointer port)
   if host==NULL;
 address_new host::string port::pointer = lo_address_new (pointer host) port
   if port==NULL;
+
+private extern void *lo_server_add_method(void*,void*,void*,void*,void*);
+server_add_method s::pointer path::pointer types::pointer h::pointer
+  data::pointer =
+  lo_server_add_method s path types h data if path==NULL && types==NULL;
+server_add_method s::pointer path::pointer types::string h::pointer
+  data::pointer =
+  lo_server_add_method s path (pointer types) h data if path==NULL;
+server_add_method s::pointer path::string types::pointer h::pointer
+  data::pointer =
+  lo_server_add_method s (pointer path) types h data if types==NULL;
+
+private extern void lo_server_del_method(void*,void*,void*);
+server_del_method s::pointer path::pointer types::string =
+  lo_server_del_method s path types if path==NULL && types==NULL;
+server_del_method s::pointer path::pointer types::string =
+  lo_server_del_method s path (pointer types) if path==NULL;
+server_del_method s::pointer path::string types::string =
+  lo_server_del_method s (pointer path) types if types==NULL;
+
+private extern void *lo_server_thread_add_method(void*,void*,void*,void*,void*);
+server_thread_add_method s::pointer path::pointer types::pointer h::pointer
+  data::pointer =
+  lo_server_thread_add_method s path types h data if path==NULL && types==NULL;
+server_thread_add_method s::pointer path::pointer types::string h::pointer
+  data::pointer =
+  lo_server_thread_add_method s path (pointer types) h data if path==NULL;
+server_thread_add_method s::pointer path::string types::pointer h::pointer
+  data::pointer =
+  lo_server_thread_add_method s (pointer path) types h data if types==NULL;
+
+private extern void lo_server_thread_del_method(void*,void*,void*);
+server_thread_del_method s::pointer path::pointer types::string =
+  lo_server_thread_del_method s path types if path==NULL && types==NULL;
+server_thread_del_method s::pointer path::pointer types::string =
+  lo_server_thread_del_method s path (pointer types) if path==NULL;
+server_thread_del_method s::pointer path::string types::string =
+  lo_server_thread_del_method s (pointer path) types if types==NULL;
+
+/* Convenience functions to decode a lo_arg**, as passed to method
+   callbacks. */
+
+public arg args;
+
+arg "i" p::pointer = get_int p;
+arg "h" p::pointer = get_int64 p;
+arg "c" p::pointer = get_byte p;
+arg "f" p::pointer = get_float p;
+arg "d" p::pointer = get_double p;
+arg "b" p::pointer = p;
+arg "s" p::pointer = cstring_dup p;
+arg "S" p::pointer = cstring_dup p;
+arg "t" p::pointer = int_matrix 2 p;
+arg "m" p::pointer = map ubyte $ byte_matrix 4 p;
+arg "T" p::pointer = ();
+arg "F" p::pointer = ();
+arg "N" p::pointer = ();
+arg "I" p::pointer = ();
+arg _   p::pointer = p; // unknown
+
+args types::string p::pointer n::int = tuple $ zipwith arg (chars types)
+  [get_pointer (p+i*SIZEOF_POINTER) | i = 0..n-1];
+
+/* A convenience function to create an OSC timetag at a given (nonnegative)
+   offset in seconds (a double) from another timetag. If the given timetag is
+   NULL, the current time is assumed (as given by lo::timetag_now). The return
+   value is the timetag as a Pure int vector. */
+
+public timetag;
+
+timetag p::pointer offs = {ts!0+secs,ts!1+ticks} when
+  ts = int_matrix 2 p; if null p then timetag_now ts else ();
+  secs = int (trunc offs); ticks = int (frac offs*4294967296.0);
+end if offs>=0;
