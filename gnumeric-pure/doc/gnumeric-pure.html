@@ -852,12 +852,16 @@ contents of spreadsheet cells and ranges of such cells:</p>
 <pre class="literal-block">
 extern expr* pure_get_cell(char* s) = get_cell;
 extern expr* pure_get_cell_text(char* s) = get_cell_text;
+extern expr* pure_get_cell_format(char* s) = get_cell_format;
 extern expr* pure_set_cell(char* s, expr *x) = set_cell;
 extern expr* pure_set_cell_text(char* s, expr *x) = set_cell_text;
+extern expr* pure_set_cell_format(char* s, expr *x) = set_cell_format;
 extern expr* pure_get_range(char* s) = get_range;
 extern expr* pure_get_range_text(char* s) = get_range_text;
+extern expr* pure_get_range_format(char* s) = get_range_format;
 extern expr* pure_set_range(char* s, expr *x) = set_range;
 extern expr* pure_set_range_text(char* s, expr *x) = set_range_text;
+extern expr* pure_set_range_format(char* s, expr *x) = set_range_format;
 </pre>
 <p>For instance, here's how you use these functions to write and then read some
 cell values (try this in the interactive Pure shell):</p>
@@ -888,6 +892,15 @@ constant value). The <tt class="docutils literal"><span class="pre">set_range</s
 <tt class="docutils literal"><span class="pre">get_range_text</span></tt> functions work analogously, but are used to manipulate
 entire ranges of cells, which can be set from Pure tuples, lists or matrices,
 and retrieved as Pure matrices.</p>
+<p>Functions to retrieve and change the cell format are also provided (watch the
+contents of the cell <tt class="docutils literal"><span class="pre">A14</span></tt> change its color to blue on entering the first
+expression):</p>
+<pre class="literal-block">
+&gt; set_cell_format &quot;A14&quot; &quot;[Blue]0.00&quot;
+  ()
+&gt; get_range_format &quot;A14:C14&quot;
+  {&quot;[Blue]0.00&quot;,&quot;General&quot;,&quot;General&quot;}
+</pre>
 <p>There are also functions to get the position of the &quot;current&quot; cell (i.e., the
 cell from which a Pure function was called), and to translate between cell
 ranges in Gnumeric syntax and the corresponding internal representation
@@ -1145,14 +1158,7 @@ trigger 0 (check_window frame)
 (gl_window frame timeout setup config display timer user_data)
 </pre>
 <p>Here's an example from <tt class="docutils literal"><span class="pre">pure_glfunc.pure</span></tt> which shows how these functions
-are to be used. Have a look at the <tt class="docutils literal"><span class="pre">gl-example.gnumeric</span></tt> spreadsheet
-included in the distribution to see this example in action. (You first need to
-enable the &quot;Pure OpenGL functions&quot; in the Plugin Manager to make this work.)
-The screenshot below shows how the example looks like in Gnumeric.</p>
-<div class="figure">
-<img alt="opengl.png" src="opengl.png" />
-<p class="caption">Gnumeric/Pure OpenGL example.</p>
-</div>
+are to be used:</p>
 <pre class="literal-block">
 using pure_func, GL, GLU;
 extern void gdk_gl_draw_teapot(bool solid, double scale);
@@ -1199,6 +1205,14 @@ with
   scale step x = (x/100*step);
 end;
 </pre>
+<p>Have a look at the <tt class="docutils literal"><span class="pre">gl-example.gnumeric</span></tt> spreadsheet included in the
+distribution to see this example in action. (You first need to enable the
+&quot;Pure OpenGL functions&quot; in the Plugin Manager to make this work.)  The
+screenshot below shows how the example looks like in Gnumeric.</p>
+<div class="figure">
+<img alt="opengl.png" src="opengl.png" />
+<p class="caption">Gnumeric/Pure OpenGL example.</p>
+</div>
 </div>
 </div>
 </div>

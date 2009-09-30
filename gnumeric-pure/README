@@ -561,12 +561,16 @@ contents of spreadsheet cells and ranges of such cells::
 
   extern expr* pure_get_cell(char* s) = get_cell;
   extern expr* pure_get_cell_text(char* s) = get_cell_text;
+  extern expr* pure_get_cell_format(char* s) = get_cell_format;
   extern expr* pure_set_cell(char* s, expr *x) = set_cell;
   extern expr* pure_set_cell_text(char* s, expr *x) = set_cell_text;
+  extern expr* pure_set_cell_format(char* s, expr *x) = set_cell_format;
   extern expr* pure_get_range(char* s) = get_range;
   extern expr* pure_get_range_text(char* s) = get_range_text;
+  extern expr* pure_get_range_format(char* s) = get_range_format;
   extern expr* pure_set_range(char* s, expr *x) = set_range;
   extern expr* pure_set_range_text(char* s, expr *x) = set_range_text;
+  extern expr* pure_set_range_format(char* s, expr *x) = set_range_format;
 
 For instance, here's how you use these functions to write and then read some
 cell values (try this in the interactive Pure shell)::
@@ -597,6 +601,15 @@ constant value). The ``set_range``, ``set_range_text``, ``get_range`` and
 ``get_range_text`` functions work analogously, but are used to manipulate
 entire ranges of cells, which can be set from Pure tuples, lists or matrices,
 and retrieved as Pure matrices.
+
+Functions to retrieve and change the cell format are also provided (watch the
+contents of the cell ``A14`` change its color to blue on entering the first
+expression)::
+
+  > set_cell_format "A14" "[Blue]0.00"
+    ()
+  > get_range_format "A14:C14"
+    {"[Blue]0.00","General","General"}
 
 There are also functions to get the position of the "current" cell (i.e., the
 cell from which a Pure function was called), and to translate between cell
@@ -875,17 +888,7 @@ go, at wich time ``gl_windows`` can be called on the widget. So your call to
   (gl_window frame timeout setup config display timer user_data)
 
 Here's an example from ``pure_glfunc.pure`` which shows how these functions
-are to be used. Have a look at the ``gl-example.gnumeric`` spreadsheet
-included in the distribution to see this example in action. (You first need to
-enable the "Pure OpenGL functions" in the Plugin Manager to make this work.)
-The screenshot below shows how the example looks like in Gnumeric.
-
-.. figure:: opengl.png
-   :scale: 45
-
-   Gnumeric/Pure OpenGL example.
-
-::
+are to be used::
 
   using pure_func, GL, GLU;
   extern void gdk_gl_draw_teapot(bool solid, double scale);
@@ -931,3 +934,13 @@ The screenshot below shows how the example looks like in Gnumeric.
     end;
     scale step x = (x/100*step);
   end;
+
+Have a look at the ``gl-example.gnumeric`` spreadsheet included in the
+distribution to see this example in action. (You first need to enable the
+"Pure OpenGL functions" in the Plugin Manager to make this work.)  The
+screenshot below shows how the example looks like in Gnumeric.
+
+.. figure:: opengl.png
+   :scale: 50
+
+   Gnumeric/Pure OpenGL example.
