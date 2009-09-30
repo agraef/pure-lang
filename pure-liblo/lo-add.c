@@ -60,6 +60,7 @@ int Pure_lo_message_add(lo_message msg, const char *types, pure_expr *x)
 	lo_message_add_blob(msg, b);
       } else
 	goto err;
+      break;
 
     case LO_INT64:
       if (count < sz && (x = xs[count++]) && pure_is_mpz(x, &z)) {
@@ -75,7 +76,7 @@ int Pure_lo_message_add(lo_message msg, const char *types, pure_expr *x)
 	  tt = *(lo_timetag*)p;
 	  lo_message_add_timetag(msg, tt);
 	} else if (pure_is_int_matrix(x, &p)) {
-	  /* We also allow an int vector with two columns here. */
+	  /* We also allow a 1x2 int vector here. */
 	  gsl_matrix_int *mat = (gsl_matrix_int*)p;
 	  int *data = mat->data;
 	  size_t nrows = mat->size1, ncols = mat->size2;
@@ -103,6 +104,7 @@ int Pure_lo_message_add(lo_message msg, const char *types, pure_expr *x)
 	free(s);
       } else
 	goto err;
+      break;
 
     case LO_CHAR:
       if (count < sz && (x = xs[count++]) && pure_is_int(x, &i))
@@ -117,11 +119,11 @@ int Pure_lo_message_add(lo_message msg, const char *types, pure_expr *x)
 	  m = (uint8_t*)p;
 	  lo_message_add_midi(msg, m);
 	} else if (pure_is_int_matrix(x, &p)) {
-	  /* We also allow a nonempty int vector here. */
+	  /* We also allow a 1x4 int vector here. */
 	  gsl_matrix_int *mat = (gsl_matrix_int*)p;
 	  int *data = mat->data;
 	  size_t nrows = mat->size1, ncols = mat->size2;
-	  if (nrows == 1 && ncols > 0) {
+	  if (nrows == 1 && ncols == 4) {
 	    m = (uint8_t*)matrix_to_byte_array(NULL, x);
 	    if (m) {
 	      lo_message_add_midi(msg, m);
@@ -133,6 +135,7 @@ int Pure_lo_message_add(lo_message msg, const char *types, pure_expr *x)
 	  goto err;
       } else
 	goto err;
+      break;
 
     case LO_TRUE:
       lo_message_add_true(msg);

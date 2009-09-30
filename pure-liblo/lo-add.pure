@@ -1,4 +1,14 @@
 extern int Pure_lo_message_add(void*, char*, expr*) = message_add;
-extern int Pure_lo_send(void*, char*, expr*) = send;
+extern int Pure_lo_send(void*, char*, char*, expr*) = send;
 extern int Pure_lo_send_timestamped(void*, lo_timetag*, char*, char*, expr*) = send_timestamped;
 extern int Pure_lo_send_from(void*, void*, lo_timetag*, char*, char*, expr*) = send_from;
+
+/* liblo allows these to be invoked with NULL pointers. Emulate that
+   behaviour. Note that either the hostname or the port may be NULL, but not
+   both. */
+
+private extern void *lo_address_new(void*,void*);
+address_new host::pointer port::string = lo_address_new host (pointer port)
+  if host==NULL;
+address_new host::string port::pointer = lo_address_new (pointer host) port
+  if port==NULL;

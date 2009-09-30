@@ -110,7 +110,7 @@ includedir = /usr/include
 # The following need to be excluded since they are internal and/or varargs
 # functions. We provide Purified wrappers in lo-add.c/pure instead.
 
-excludes = '^(lo_message_add|lo_message_add_varargs|lo_send|lo_send_timestamped|lo_send_from|lo_.+_internal)$$'
+excludes = '^(lo_message_add|lo_message_add_varargs|lo_send|lo_send_timestamped|lo_send_from|lo_.+_internal|LO_MARKER_A|LO_MARKER_B)$$'
 
 ############################################################################
 
