@@ -1232,6 +1232,15 @@ sheet_widget_list_base_get_result_link(SheetObject *so)
   return texpr;
 }
 
+static GnmExprTop const *
+sheet_widget_list_base_get_content_link(SheetObject *so)
+{
+  const GnmDependent *dep = sheet_widget_list_base_get_content_dep(so);
+  GnmExprTop const *texpr = dep?dep->texpr:NULL;
+  if (texpr) gnm_expr_top_ref(texpr);
+  return texpr;
+}
+
 pure_expr *pure_sheet_objects(void)
 {
   const GnmEvalPos *pos = eval_info->pos;
@@ -1363,18 +1372,24 @@ pure_expr *pure_sheet_objects(void)
 			   pure_listv(n_widgets, widgets));
       } else if (t == SHEET_WIDGET_LIST_TYPE) {
 	const GnmExprTop *e = sheet_widget_list_base_get_result_link(so);
+	const GnmExprTop *c = sheet_widget_list_base_get_content_link(so);
 	char *link = e?texpr2str(pos, e):strdup("");
+	char *content_link = c?texpr2str(pos, c):strdup("");
 	if (e) gnm_expr_top_unref(e);
+	if (c) gnm_expr_top_unref(c);
 	info = pure_tuplel(5, sheet_name_str, pure_string_dup("list"),
-			   NA_expr(),
+			   pure_string(content_link),
 			   pure_string(link),
 			   pure_listv(n_widgets, widgets));
       } else if (t == SHEET_WIDGET_COMBO_TYPE) {
 	const GnmExprTop *e = sheet_widget_list_base_get_result_link(so);
+	const GnmExprTop *c = sheet_widget_list_base_get_content_link(so);
 	char *link = e?texpr2str(pos, e):strdup("");
+	char *content_link = c?texpr2str(pos, c):strdup("");
 	if (e) gnm_expr_top_unref(e);
+	if (c) gnm_expr_top_unref(c);
 	info = pure_tuplel(5, sheet_name_str, pure_string_dup("combo"),
-			   NA_expr(),
+			   pure_string(content_link),
 			   pure_string(link),
 			   pure_listv(n_widgets, widgets));
       } else {
