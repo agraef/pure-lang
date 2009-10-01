@@ -498,7 +498,7 @@ static void read_packet(char **host, char **port, int *proto,
   *argc = i;
 }
 			 
-int OSC_receive(const char *path, const char *types, lo_arg **argv,
+int OSC_handler(const char *path, const char *types, lo_arg **argv,
 		int argc, void *msg, void *user_data)
 {
   lo_address src = lo_message_get_source(msg);
@@ -517,7 +517,7 @@ int OSC_receive(const char *path, const char *types, lo_arg **argv,
   return 0;
 }
 
-lo_message OSC_fetch_noblock(void)
+pure_expr *OSC_recv_noblock(void)
 {
   pure_expr *res;
   mylo_address src;
@@ -591,13 +591,13 @@ lo_message OSC_fetch_noblock(void)
   for (i = 0; i < argc; i++)
     free(argv[i]);
   free(argv);
-  return msg;
+  return res;
 }
 
-pure_expr *OSC_fetch(void)
+pure_expr *OSC_recv(void)
 {
   pure_expr *res;
-  while ((res = OSC_fetch_noblock()) == NULL)
+  while ((res = OSC_recv_noblock()) == NULL)
     usleep(10000);
   return res;
 }
