@@ -48,7 +48,7 @@ CFLAGS = -g -O2
 FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 
 DISTFILES = COPYING Makefile README config.guess examples/*.pure lo.c lo.pure \
-lo-add.c lo-add.pure pure-liblo.html
+lo-add.c lo-add.pure osc.pure pure-liblo.html
 
 all: lo$(DLL)
 
@@ -76,10 +76,10 @@ pure-liblo.pdf: pure-liblo.tex
 
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
-	cp lo.pure lo$(DLL) pure-liblo.html "$(DESTDIR)$(libdir)/pure"
+	cp lo.pure lo$(DLL) osc.pure pure-liblo.html "$(DESTDIR)$(libdir)/pure"
 
 uninstall:
-	rm -f "$(DESTDIR)$(libdir)/pure/lo.pure" "$(DESTDIR)$(libdir)/pure/lo$(DLL)" "$(DESTDIR)$(libdir)/pure/pure-liblo.html"
+	rm -f "$(DESTDIR)$(libdir)/pure/lo.pure" "$(DESTDIR)$(libdir)/pure/lo$(DLL)" "$(DESTDIR)$(libdir)/pure/osc.pure" "$(DESTDIR)$(libdir)/pure/pure-liblo.html"
 
 dist:
 	rm -rf $(dist)

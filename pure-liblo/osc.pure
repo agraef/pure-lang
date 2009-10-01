@@ -1,0 +1,107 @@
+
+/* This is a high-level, no-frills wrapper around the liblo functions. It
+   allows you to create an OSC server, as well as receive and send OSC
+   messages from it. For most applications, this is all that you'll ever
+   need. If you need utmost flexibility, however, you'll want to take a look
+   at the lowlevel liblo API. */
+
+using lo;
+using namespace lo;
+
+/* Special C callbacks provided in lo.so. You shouldn't change these, unless
+   you *really* know what you're doing. */
+
+let osc_error = addr "Pure_osc_error";
+let osc_handler = addr "Pure_osc_handler";
+
+/* osc_server: Create a new OSC server thread and do all necessary
+   initializations, so that the server is ready to go. The server is stopped
+   and destroyed automatically when it gets garbage-collected. This function
+   takes a single argument, the port number, which can be specified either as
+   an integer, a string or as the NULL pointer (in the latter case a suitable
+   port number is chosen automatically which can be retrieved with
+   lo::server_thread_get_port if needed). */
+
+/* Please note that a server needs to be created whenever your application
+   wants to receive OSC messages (even if you only want to process replies to
+   messages sent to some other server). OTOH, if just sending OSC messages is
+   good enough, then you can just use osc_send below; no server is required in
+   this case. */
+
+osc_server port::int = osc_server (str port);
+osc_server port = if null s then s else
+  server_thread_add_method s NULL NULL osc_handler NULL $$
+  server_thread_start s $$ sentry server_thread_free s
+when
+  s::pointer = server_thread_new port osc_error;
+end if stringp port || port===NULL;
+
+/* osc_server_with_proto: Like osc_server above, but also specify the desired
+   protocol (lo::UDP, lo::TCP or lo::UNIX, default is UDP). */
+
+osc_server_with_proto port::int proto::int =
+  osc_server_with_proto (str port) proto;
+osc_server_with_proto port proto::int = if null s then s else
+  server_thread_add_method s NULL NULL osc_handler NULL $$
+  server_thread_start s $$ sentry server_thread_free s
+when
+  s::pointer = server_thread_new_with_proto port proto osc_error;
+end if stringp port || port===NULL;
+
+/* osc_server_multicast: Like osc_server above, but also specify the desired
+   multicast group (see the liblo API documentation for details). */
+
+osc_server_multicast group::string port::int = osc_server group (str port);
+osc_server_multicast group::string port = if null s then s else
+  server_thread_add_method s NULL NULL osc_handler NULL $$
+  server_thread_start s $$ sentry server_thread_free s
+when
+  s::pointer = server_thread_new_multicast group port osc_error;
+end if stringp port || port===NULL;
+
+/* osc_send: Send an OSC message msg of the given type to the given path at
+   the given destination address. The latter must be a lo_address pointer
+   which can be created with the make_address function below. Note that this
+   operation can be used without running a server. */
+
+osc_send a::pointer path::string type::string msg = send a path type msg;
+
+/* osc_send_timestamped: Like osc_send above, but also specify a timestamp
+   denoting the time at which the message is to be delivered. */
+
+osc_send_timestamped a::pointer ts path::string type::string msg =
+  send_timestamped a ts path type msg if pointerp ts || imatrixp ts && #ts==2;
+
+/* osc_send_from: Like osc_send_timestamped above, but also specify the server
+   (as returned by osc_server) from which the message is to be sent. (Note
+   that in order to deliver the message immediately, you can pass {0,0} for
+   the timestamp parameter.) */
+
+osc_send_from a::pointer s::pointer ts path::string type::string msg =
+  send_from a (server_thread_get_server s) ts path type msg
+  if pointerp ts || imatrixp ts && #ts==2;
+
+/* osc_recv: Receive an OSC message. This operation blocks until a message is
+   available, and requires a running server. It returns a tuple consisting of
+   the source address, the message path, the type of the message, and the
+   message data itself. The source address is delivered as a self-collecting
+   lo_address pointer holding the address of the client which sent the
+   message, which can be decoded with lo::decode_address. */
+
+namespace osc;
+private extern expr *Pure_osc_recv() = recv;
+private extern expr *Pure_osc_recv_noblock() = recv_noblock;
+
+osc_recv = a, path, types, data when
+  path, m = res; a = message_get_source m;
+  types = message_get_types m; data = message_data m;
+  message_free m;
+end if tuplep res when res = osc::recv end;
+
+/* osc_recv_noblock: Non-blocking version of osc_recv. */
+
+osc_recv_noblock = a, path, types, data when
+  path, m = res; a = message_get_source m;
+  types = message_get_types m; data = message_data m;
+  message_free m;
+end if tuplep res when res = osc::recv_noblock end;
