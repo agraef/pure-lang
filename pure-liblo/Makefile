@@ -53,7 +53,7 @@ lo-add.c lo-add.pure pure-liblo.html
 all: lo$(DLL)
 
 lo$(DLL): lo.c lo-add.c
-	$(CC) $(shared) -o $@ $^ $(FLAGS) -lpure -llo $(LIBS)
+	$(CC) $(shared) -o $@ $^ $(FLAGS) -lpure -llo -ljack $(LIBS)
 
 clean:
 	rm -f *$(DLL) *~ *.a *.o pure-liblo.tex
