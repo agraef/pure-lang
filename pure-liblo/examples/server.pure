@@ -40,12 +40,9 @@ generic (path, types, argv, argc, msg, user) =
   printf "generic: %s, types: %s, args: %s\n"
   (path,str types,str (decode_argv types argv argc)) $$ 1;
 foo (path, "b", argv, 1, msg, user) =
-  if blobp bb then printf "foo: %s\n" (str (val bb)) $$ 0
-  else printf "foo: blob %s\n" (str (map ubyte (byte_matrix n bb)))
-  when
-    b::pointer = decode_argv "b" argv 1;
-    bb = blob_dataptr b; n = blob_datasize b;
-  end;
+  if blobp b then printf "foo: %s\n" (str (val b)) $$ 0
+  else printf "foo: blob %s\n" (str (map ubyte (byte_matrix n b))) $$ 0
+  when n,b = decode_blob $ decode_argv "b" argv 1 end;
 quit _ = puts "Exiting." $$ exit 0;
 
 error (num, msg::string, path::string) =

@@ -193,7 +193,9 @@ server_thread_del_method s::pointer path::pointer types::string =
 server_thread_del_method s::pointer path::string types::string =
   lo_server_thread_del_method s (cooked $ byte_cstring path) types if types==NULL;
 
-/* Convenience functions to decode liblo OSC messages and addresses. */
+/* Convenience functions to decode liblo OSC messages and addresses. Note that
+   all (known) types of data are copied so that the data can still be accessed
+   after the original message holding the data has been destroyed. */
 
 public decode_arg decode_argv;
 
@@ -202,7 +204,8 @@ decode_arg "h" p::pointer = get_int64 p;
 decode_arg "c" p::pointer = get_byte p;
 decode_arg "f" p::pointer = get_float p;
 decode_arg "d" p::pointer = get_double p;
-decode_arg "b" p::pointer = p;
+decode_arg "b" p::pointer = sentry blob_free $ blob_new n p
+  when n, p = blob_datasize p, blob_dataptr p end;
 decode_arg "s" p::pointer = cstring_dup p;
 decode_arg "S" p::pointer = cstring_dup p;
 decode_arg "t" p::pointer = int_matrix 2 p;
@@ -229,7 +232,68 @@ public message_data;
 message_data m::pointer =
   decode_argv (message_get_types m) (message_get_argv m) (message_get_argc m);
 
-/* A convenience function to create an OSC timetag at a given (nonnegative)
+/* Convenience function to create a self-collecting lo_blob from either a Pure
+   blob or a pair consisting of the data size (int) and a raw C pointer. */
+
+public make_blob decode_blob;
+
+make_blob p::pointer = sentry blob_free $ blob_new (#p) p if blobp p;
+make_blob (n::int, p::pointer) = sentry blob_free $ blob_new n p;
+
+/* Convenience function to decode a lo_blob to a pair consisting of the data
+   size (int) and a C pointer. In either case, the returned data pointer is a
+   dynamically allocated copy which frees itself after use. */
+
+public decode_blob;
+
+private extern void *memcpy(void*,void*,size_t);
+private copy_blob;
+copy_blob n::int p::pointer =
+  if null q then throw malloc_error else cooked $ memcpy q p n
+  when n = uint n; q = malloc n end;
+
+decode_blob b::pointer = n,copy_blob n p when
+  /* Don't remove the extra 'b' parameter here, it's required to keep the
+     original blob around while we're still reading it! */
+  _,n,p = b, blob_datasize b, blob_dataptr b;
+end;
+
+/* Convenience function to create a self-collecting lo_address pointer which
+   can be passed to the lo::send function. The argument can be either another
+   liblo_address (denoting the default address if NULL; otherwise a copy of
+   the address pointer is taken), () (same as NULL), a port number or string,
+   a pair consisting of a hostname and a port number/string, or a triple
+   consisting of a hostname, a port number/string and a protocol (the latter
+   requires liblo 0.26 or later). */
+
+public make_address;
+
+make_address a::pointer
+  = sentry address_free $ address_new NULL NULL if null a;
+  = sentry address_free $ address_new_from_url $ address_get_url a;
+
+make_address ()
+  = sentry address_free $ address_new NULL NULL;
+
+make_address port::string
+  = sentry address_free $ address_new NULL port;
+
+make_address port::int
+  = make_address (str port);
+
+make_address (host::string, port::string)
+  = sentry address_free $ address_new host port;
+
+make_address (host::string, port::int)
+  = make_address (host, str port);
+
+make_address (host::string, port::string, proto::int)
+  = sentry address_free $ address_new_with_proto host port proto;
+
+make_address (host::string, port::int, proto::int)
+  = make_address (host, str port, proto);
+
+/* Convenience function to create an OSC timetag at a given (nonnegative)
    offset in seconds (a double) from another timetag, which can be either a
    lo_timetag pointer or a Pure int vector. If the given timetag is NULL, the
    current time is assumed (as given by lo::timetag_now). The return value is
