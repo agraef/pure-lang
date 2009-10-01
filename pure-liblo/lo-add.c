@@ -284,7 +284,7 @@ int Pure_lo_send_from(mylo_address to, lo_server from, lo_timetag *ts,
   } else {
     ret = lo_send_message_from(to, from, path, msg);
   }
-    
+
   // Free-up memory
   lo_message_free(msg);
   if (b) lo_bundle_free(b);
