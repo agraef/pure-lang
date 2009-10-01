@@ -1,0 +1,61 @@
+
+/* This does more or less the same as both client.pure and server.pure
+   together, but using the high-level interface in osc.pure. */
+
+using lo, osc, system;
+using namespace lo;
+
+// Create a server and the target address.
+
+let s = osc_server 7770;
+let t = make_address 7770;
+
+if null s then exit 1 else if compiling then () else
+printf "OSC server running at %s\n" (server_thread_get_url s);
+
+// Output a few messages (cf. client.pure).
+
+//let b = blob_new 5 "ABCDE";
+let b = make_blob $ blob {"Hello, world!",x+y,1/2,4711,-4711L,NULL};
+
+// Different kinds of numbers.
+osc_send t "/foo/bla" "f" (1/7);
+osc_send t "/foo/bla" "d" (1/7);
+osc_send t "/foo/bla" "i" 99;
+osc_send t "/foo/bla" "h" 99L;
+// character
+osc_send t "/foo/bla" "c" 65;
+// strings and symbols
+osc_send t "/foo/bla" "s" "Hello, world!";
+osc_send t "/foo/bla" "S" "Hello";
+// timestamp
+osc_send t "/foo/bla" "t" {0,0};
+// MIDI message (always 4 bytes: port,status,data1,data2)
+osc_send t "/foo/bla" "m" {0,0x90,60,64};
+// blob
+osc_send t "/foo/bla" "b" b;
+// special values, these don't have any data bytes
+osc_send t "/foo/bla" "T" ();
+osc_send t "/foo/bla" "F" ();
+osc_send t "/foo/bla" "N" ();
+osc_send t "/foo/bla" "I" ();
+// a mixture of float and string arguments
+osc_send t "/foo/bar" "sfsff" ("one", 0.12345678, "three", -0.00000023001, 1.0);
+// no parameters
+osc_send t "/now" "" ();
+// quit message, scheduled to be delivered 2 seconds later (makes us exit)
+osc_send_timestamped t (timetag NULL 5) "/quit" "" ();
+
+// Now read them back:
+
+if compiling then () else puts "Reading messages:" $$
+osc_main ["*"=>generic,"/foo/bla"=>foo,"/quit"=>quit] with
+  generic addr path types data =
+    printf "generic: %s, types: %s, args: %s\n"
+    (path,str types,str data) $$ 1;
+  foo addr path "b" data::pointer =
+  if blobp b then printf "foo: %s\n" (str (val b)) $$ 0
+  else printf "foo: blob %s\n" (str (map ubyte (byte_matrix n b))) $$ 0
+  when n,b = decode_blob data end;
+  quit _ _ _ _ = puts "quit: Exiting." $$ exit 0;
+end;

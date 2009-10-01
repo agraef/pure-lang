@@ -2,11 +2,9 @@
 /* An OSC server. This is a bit more involved than the client, but can both
    send and receive OSC messages. */
 
-/* Note that we implement an unthreaded server here (so we use lo::server_new
-   rather than lo::server_thread_new), since the Pure interpreter currently
-   isn't thread-safe. A server thread might be used as well, but then the
-   method callbacks would have to be implemented in C and wouldn't be able to
-   call back into Pure. */
+/* NOTE: This directly uses liblo, which is fairly low-level. Please also have
+   a look at osc_example, which does about the same thing using the high-level
+   interface in osc.pure instead. */
 
 using lo, ffi, system;
 using namespace lo;
@@ -43,7 +41,7 @@ foo (path, "b", argv, 1, msg, user) =
   if blobp b then printf "foo: %s\n" (str (val b)) $$ 0
   else printf "foo: blob %s\n" (str (map ubyte (byte_matrix n b))) $$ 0
   when n,b = decode_blob $ decode_argv "b" argv 1 end;
-quit _ = puts "Exiting." $$ exit 0;
+quit _ = puts "quit: Exiting." $$ exit 0;
 
 error (num, msg::string, path::string) =
   fprintf stderr "liblo server error %d in path %s: %s\n" (num, path, msg);
