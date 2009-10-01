@@ -170,6 +170,30 @@ address_new host::pointer port::string =
 address_new host::string port::pointer =
   lo_address_new (cooked $ byte_cstring host) port if port==NULL;
 
+private extern void *lo_server_new(void*,void*);
+server_new port::pointer cb::pointer =
+  lo_server_new port cb if port==NULL;
+
+private extern void *lo_server_new_with_proto(void*,int,void*);
+server_new_with_proto port::pointer proto::int cb::pointer =
+  lo_server_new_with_proto port proto cb if port==NULL;
+
+private extern void *lo_server_new_multicast(char*,void*,void*);
+server_new_multicast group::string port::pointer cb::pointer =
+  lo_server_new_multicast group port cb if port==NULL;
+
+private extern void *lo_server_thread_new(void*,void*);
+server_thread_new port::pointer cb::pointer =
+  lo_server_thread_new port cb if port==NULL;
+
+private extern void *lo_server_thread_new_with_proto(void*,int,void*);
+server_thread_new_with_proto port::pointer proto::int cb::pointer =
+  lo_server_thread_new_with_proto port proto cb if port==NULL;
+
+private extern void *lo_server_thread_new_multicast(char*,void*,void*);
+server_thread_new_multicast group::string port::pointer cb::pointer =
+  lo_server_thread_new_multicast group port cb if port==NULL;
+
 private extern void *lo_server_add_method(void*,void*,void*,void*,void*);
 server_add_method s::pointer path::pointer types::pointer h::pointer data::pointer =
   lo_server_add_method s path types h data if path==NULL && types==NULL;
