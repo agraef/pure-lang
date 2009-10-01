@@ -15,6 +15,18 @@ extern int Pure_lo_send_timestamped(void*, lo_timetag*, char*, char*, expr*)
 extern int Pure_lo_send_from(void*, void*, lo_timetag*, char*, char*, expr*)
  = send_from;
 
+/* These need special treatment, so that we do not leak memory on the
+   dynamically allocated strings returned by these functions. */
+
+private extern void *lo_address_get_url(void*);
+private extern void *lo_server_get_url(void*);
+private extern void *lo_server_thread_get_url(void*);
+public address_get_url server_get_url server_thread_get_url;
+
+address_get_url s::pointer = cstring $ lo_address_get_url s;
+server_get_url s::pointer = cstring $ lo_server_get_url s;
+server_thread_get_url s::pointer = cstring $ lo_server_thread_get_url s;
+
 /* liblo allows these to be invoked also with NULL pointers as strings, so we
    emulate this behaviour here. */
 

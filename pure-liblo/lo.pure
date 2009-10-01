@@ -67,7 +67,6 @@ extern void* lo_message_deserialise(void*, long, int*) = message_deserialise;
 extern char* lo_address_get_hostname(void*) = address_get_hostname;
 extern char* lo_address_get_port(void*) = address_get_port;
 extern int lo_address_get_protocol(void*) = address_get_protocol;
-extern char* lo_address_get_url(void*) = address_get_url;
 extern void lo_address_set_ttl(void*, int) = address_set_ttl;
 extern int lo_address_get_ttl(void*) = address_get_ttl;
 extern void* Pure_lo_bundle_new(lo_timetag*) = bundle_new;
@@ -91,7 +90,6 @@ extern void lo_server_del_method(void*, char*, char*) = server_del_method;
 extern int lo_server_get_socket_fd(void*) = server_get_socket_fd;
 extern int lo_server_get_port(void*) = server_get_port;
 extern int lo_server_get_protocol(void*) = server_get_protocol;
-extern char* lo_server_get_url(void*) = server_get_url;
 extern int lo_server_events_pending(void*) = server_events_pending;
 extern double lo_server_next_event_delay(void*) = server_next_event_delay;
 extern char* lo_url_get_protocol(char*) = url_get_protocol;
@@ -126,7 +124,6 @@ extern void lo_server_thread_del_method(void*, char*, char*) = server_thread_del
 extern void lo_server_thread_start(void*) = server_thread_start;
 extern void lo_server_thread_stop(void*) = server_thread_stop;
 extern int lo_server_thread_get_port(void*) = server_thread_get_port;
-extern char* lo_server_thread_get_url(void*) = server_thread_get_url;
 extern void* lo_server_thread_get_server(void*) = server_thread_get_server;
 extern int lo_server_thread_events_pending(void*) = server_thread_events_pending;
 extern void* lo_blob_new(int, void*) = blob_new;
@@ -149,6 +146,18 @@ extern int Pure_lo_send_timestamped(void*, lo_timetag*, char*, char*, expr*)
  = send_timestamped;
 extern int Pure_lo_send_from(void*, void*, lo_timetag*, char*, char*, expr*)
  = send_from;
+
+/* These need special treatment, so that we do not leak memory on the
+   dynamically allocated strings returned by these functions. */
+
+private extern void *lo_address_get_url(void*);
+private extern void *lo_server_get_url(void*);
+private extern void *lo_server_thread_get_url(void*);
+public address_get_url server_get_url server_thread_get_url;
+
+address_get_url s::pointer = cstring $ lo_address_get_url s;
+server_get_url s::pointer = cstring $ lo_server_get_url s;
+server_thread_get_url s::pointer = cstring $ lo_server_thread_get_url s;
 
 /* liblo allows these to be invoked also with NULL pointers as strings, so we
    emulate this behaviour here. */
