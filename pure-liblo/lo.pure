@@ -221,21 +221,13 @@ decode_argv types::string p::pointer n::int = tuple $
 
 public decode_address;
 
-decode_adress a::pointer =
+decode_address a::pointer =
   address_get_hostname a, address_get_port a, address_get_protocol a;
 
-public message_args message_source message_timestamp;
+public message_data;
 
-message_args m::pointer =
-  decode_argv (message_get_types m) (message_get_argv m);
-
-message_source m::pointer = decode_address (message_get_source m);
-
-/* This one will only work in liblo 0.26 and later. To work around this, you
-   can explicitly include a timestamp in outgoing messages instead. */
-
-message_timestamp m::pointer = int_matrix 2 p if pointerp p
-  when p = message_get_timestamp m end;
+message_data m::pointer =
+  decode_argv (message_get_types m) (message_get_argv m) (message_get_argc m);
 
 /* A convenience function to create an OSC timetag at a given (nonnegative)
    offset in seconds (a double) from another timetag, which can be either a

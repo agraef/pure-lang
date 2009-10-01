@@ -498,8 +498,8 @@ static void read_packet(char **host, char **port, int *proto,
   *argc = i;
 }
 			 
-int OSC_handler(const char *path, const char *types, lo_arg **argv,
-		int argc, void *msg, void *user_data)
+int Pure_osc_handler(const char *path, const char *types, lo_arg **argv,
+		     int argc, void *msg, void *user_data)
 {
   lo_address src = lo_message_get_source(msg);
   const char *host = lo_address_get_hostname(src);
@@ -517,7 +517,7 @@ int OSC_handler(const char *path, const char *types, lo_arg **argv,
   return 0;
 }
 
-pure_expr *OSC_recv_noblock(void)
+pure_expr *Pure_osc_recv_noblock(void)
 {
   pure_expr *res;
   mylo_address src;
@@ -526,7 +526,7 @@ pure_expr *OSC_recv_noblock(void)
   int proto;
   lo_arg **argv;
   int argc, i = 0;
-  if (jack_ringbuffer_read_space(rb) == 0) return NULL;
+  if (!rb || jack_ringbuffer_read_space(rb) == 0) return NULL;
   read_packet(&host, &port, &proto, &path, &types, &argv, &argc);
   _types = types;
   /* Reconstruct the message. */
@@ -559,7 +559,7 @@ pure_expr *OSC_recv_noblock(void)
       lo_message_add_symbol(msg, (char*)argv[i++]);
       break;
     case LO_BLOB:
-      lo_message_add_symbol(msg, (lo_blob)argv[i++]);
+      lo_message_add_blob(msg, (lo_blob)argv[i++]);
       break;
     case LO_TIMETAG:
       lo_message_add_timetag(msg, argv[i++]->t);
@@ -587,24 +587,24 @@ pure_expr *OSC_recv_noblock(void)
   argc = i;
   msg->source = src;
   res = pure_tuplel(2, pure_cstring_dup(path), pure_pointer(msg));
-  free(host); free(port); free(path); free(types);
+  free(host); free(port); free(path); free(_types);
   for (i = 0; i < argc; i++)
     free(argv[i]);
   free(argv);
   return res;
 }
 
-pure_expr *OSC_recv(void)
+pure_expr *Pure_osc_recv(void)
 {
   pure_expr *res;
-  while ((res = OSC_recv_noblock()) == NULL)
+  while ((res = Pure_osc_recv_noblock()) == NULL)
     usleep(10000);
   return res;
 }
 
 /* Generic error callback. */
 
-void OSC_error(int num, const char *msg, const char *path)
+void Pure_osc_error(int num, const char *msg, const char *path)
 {
   if (path)
     fprintf(stderr, "liblo server error %d: %s (%s)\n", num, msg, path);
