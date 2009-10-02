@@ -114,17 +114,20 @@ end if tuplep res when res = osc::recv_noblock end;
    of the sender, path is the message path, types the type specification of
    the message, and data the message data itself, as a tuple. Different
    methods are tried until one returns the integer 0 to indicate that
-   processing of the message is complete. */
+   processing of the message is complete. To exit from the main loop, a method
+   can throw an exception whose value will be reported as osc_main's return
+   value. */
 
 /* TODO: This is just an example. Maybe we should provide something more
    elaborate here, which also matches the parameter types and does automatic
-   coercions, like what liblo itself does. */
+   coercions, like what liblo does. */
 
 namespace __C;
 // We don't want to pull in the entire system.pure, so just declare this here.
 extern int fnmatch(char* pat, char* s, int flags);
 
-osc_main methods = dispatch osc_recv $$ osc_main methods with
+osc_main methods = catch id loop with
+  loop = dispatch osc_recv $$ loop;
   dispatch msg = any (process (list msg)) methods;
   process msg@(addr::pointer:path::string:types::string:data) (pat => method) =
     fnmatch pat path 0 == 0 && method addr path types (tuple data) === 0;
