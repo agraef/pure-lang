@@ -3,7 +3,7 @@
 
 # Package name and version number:
 dist = gnumeric-pure-$(version)
-version = 0.3
+version = 0.4
 
 # Build and installation instructions:
 
