@@ -635,7 +635,7 @@ bool pure_write_blob(FILE *fp, const DepKey *key, pure_expr *x)
   sprintf(buf, "%p-%p-%u", key->node, key->dep, key->id);
   if (x)
     b = pure_app(pure_symbol(pure_sym("blob")),
-		 pure_tuplel(2, pure_cstring_dup(buf), x));
+		 pure_listl(2, pure_cstring_dup(buf), x));
   else
     b = pure_app(pure_symbol(pure_sym("blob")),
 		 pure_cstring_dup(buf));
@@ -696,7 +696,7 @@ bool pure_read_blob(FILE *fp, DepKey *key, pure_expr **x)
     return false;
   }
   if (pure_is_string(y, &s) ||
-      (pure_is_tuplev(y, &n, &xv) && n == 2 && pure_is_string(xv[0], &s))) {
+      (pure_is_listv(y, &n, &xv) && n == 2 && pure_is_string(xv[0], &s))) {
     if (sscanf(s, "%p-%p-%u", &key->node, &key->dep, &key->id) < 3) {
       pure_freenew(y);
       if (xv) free(xv);
