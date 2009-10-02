@@ -14,19 +14,19 @@ using namespace lo;
 let osc_error = addr "Pure_osc_error";
 let osc_handler = addr "Pure_osc_handler";
 
-/* osc_server: Create a new OSC server thread and do all necessary
-   initializations, so that the server is ready to go. The server is stopped
+/* osc_server: Create a new OSC server thread and perform all necessary
+   initializations so that the server is ready to go. The server is stopped
    and destroyed automatically when it gets garbage-collected. This function
    takes a single argument, the port number, which can be specified either as
    an integer, a string or as the NULL pointer (in the latter case a suitable
-   port number is chosen automatically which can be retrieved with
-   lo::server_thread_get_port if needed). */
+   port number is chosen automatically). In either case the port number can be
+   retrieved with lo::server_thread_get_port if needed. */
 
-/* Please note that a server needs to be created whenever your application
-   wants to receive OSC messages (even if you only want to process replies to
-   messages sent to some other server). OTOH, if just sending OSC messages is
-   good enough, then you can just use osc_send below; no server is required in
-   this case. */
+/* Please note that only one server can receive messages at any one time, and
+   the message input queue is also shared among all servers. So it isn't
+   useful to have multiple servers active at the same time. However, using the
+   corresponding liblo operations, it is possible to switch between different
+   server threads, please see the liblo documentation for details. */
 
 osc_server port::int = osc_server (str port);
 osc_server port = if null s then s else
@@ -90,7 +90,6 @@ osc_send_from a::pointer s::pointer ts path::string type::string msg =
 
 namespace osc;
 private extern expr *Pure_osc_recv() = recv;
-private extern expr *Pure_osc_recv_noblock() = recv_noblock;
 
 osc_recv = a, path, types, data when
   path, m = res; a = message_get_source m;
@@ -100,11 +99,19 @@ end if tuplep res when res = osc::recv end;
 
 /* osc_recv_noblock: Non-blocking version of osc_recv. */
 
+private extern expr *Pure_osc_recv_noblock() = recv_noblock;
+
 osc_recv_noblock = a, path, types, data when
   path, m = res; a = message_get_source m;
   types = message_get_types m; data = message_data m;
   message_free m;
 end if tuplep res when res = osc::recv_noblock end;
+
+/* osc_flush: Empty the OSC input queue. Call this to remove any stale
+   messages from the input queue, e.g., after restarting the server. */
+
+namespace;
+extern void Pure_osc_flush() = osc_flush;
 
 /* osc_main: A simple main loop which repeatedly reads OSC messages and
    dispatches them according to the given list of pattern => method hash

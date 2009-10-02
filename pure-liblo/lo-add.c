@@ -602,6 +602,12 @@ pure_expr *Pure_osc_recv(void)
   return res;
 }
 
+void Pure_osc_flush(void)
+{
+  pure_expr *res;
+  while ((res = Pure_osc_recv_noblock())) pure_freenew(res);
+}
+
 /* Generic error callback. */
 
 void Pure_osc_error(int num, const char *msg, const char *path)
