@@ -130,13 +130,15 @@ int8_t pure_sym_nprec(int32_t sym);
    returns that symbol as a Pure value. If the symbol is a global variable
    bound to a value then that value is returned, if it's a parameterless
    function then it is evaluated, giving the return value of the function as
-   the result. pure_quoted_symbol constructs a symbol expression, too, but
-   doesn't evaluate it. pure_int, pure_mpz, pure_double and pure_pointer
-   construct a Pure machine int, bigint, floating point value and pointer from
-   a 32 bit integer, (copy of a) GMP mpz_t, double and C pointer,
-   respectively. */
+   the result. pure_symbolx works like pure_symbol, but also catches
+   exceptions and returns them in the parameter e. pure_quoted_symbol
+   constructs a symbol expression, too, but doesn't evaluate it. pure_int,
+   pure_mpz, pure_double and pure_pointer construct a Pure machine int,
+   bigint, floating point value and pointer from a 32 bit integer, (copy of a)
+   GMP mpz_t, double and C pointer, respectively. */
 
 pure_expr *pure_symbol(int32_t sym);
+pure_expr *pure_symbolx(int32_t sym, pure_expr **e);
 pure_expr *pure_quoted_symbol(int32_t tag);
 pure_expr *pure_int(int32_t i);
 pure_expr *pure_mpz(const mpz_t z);
@@ -216,9 +218,12 @@ pure_expr *pure_matrix_columnsv(uint32_t n, pure_expr **elems);
    argument must be a pointer to a global Pure function, which is followed by
    the number of arguments and the arguments (pure_expr*) themselves. The
    number of arguments *must* match the number of parameters of the function
-   (no partial applications!), otherwise the results are undefined. */
+   (no partial applications!), otherwise the results are undefined.
+   pure_funcallx works like pure_funcall but also catches and reports
+   exceptions. */
 
 pure_expr *pure_funcall(void *f, uint32_t n, ...);
+pure_expr *pure_funcallx(void *f, pure_expr **e, uint32_t n, ...);
 
 /* Function applications. pure_app applies the given function to the given
    argument. The result is evaluated if possible (i.e., if it is a saturated
@@ -234,6 +239,14 @@ pure_expr *pure_app(pure_expr *fun, pure_expr *arg);
 
 pure_expr *pure_appl(pure_expr *fun, size_t argc, ...);
 pure_expr *pure_appv(pure_expr *fun, size_t argc, pure_expr **args);
+
+/* These work like pure_app, pure_appl and pure_appv above, but also catch and
+   report exceptions. */
+
+pure_expr *pure_appx(pure_expr *fun, pure_expr *arg, pure_expr **e);
+pure_expr *pure_appxl(pure_expr *fun, pure_expr **e, size_t argc, ...);
+pure_expr *pure_appxv(pure_expr *fun, size_t argc, pure_expr **args,
+		      pure_expr **e);
 
 /* Convenience functions to construct Pure list and tuple values from a vector
    or a varargs list of element expressions. (Internally these are actually
@@ -641,7 +654,8 @@ pure_expr *pure_catch(pure_expr *h, pure_expr *x);
 /* Run a Pure function and catch exceptions. If everything goes normal,
    pure_invoke returns the return value of the executed function. Otherwise it
    returns 0 and sets e to the exception value, as given by pure_throw().
-   FIXME: This only supports parameterless functions right now. */
+   NOTE: This is provided for internal purposes and for backward
+   compatibility. Applications should use pure_funcallx instead. */
 
 pure_expr *pure_invoke(void *f, pure_expr** e);
 

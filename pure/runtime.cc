@@ -783,6 +783,14 @@ pure_expr *pure_symbol(int32_t tag)
 }
 
 extern "C"
+pure_expr *pure_symbolx(int32_t tag, pure_expr **e)
+{
+  // XXXTODO
+  *e = NULL;
+  return pure_symbol(tag);
+}
+
+extern "C"
 pure_expr *pure_quoted_symbol(int32_t tag)
 {
   assert(tag>0);
@@ -1899,6 +1907,25 @@ pure_expr *pure_funcall(void *f, uint32_t n, ...)
 }
 
 extern "C"
+pure_expr *pure_funcallx(void *f, pure_expr **e, uint32_t n, ...)
+{
+  // XXXTODO
+  *e = NULL;
+  va_list ap;
+  pure_expr *ret, **argv = (pure_expr**)alloca((n+1)*sizeof(pure_expr*));
+  argv[n] = 0;
+  va_start(ap, n);
+  for (uint32_t i = 0; i < n; i++) {
+    pure_expr *x = va_arg(ap, pure_expr*);
+    argv[i] = x;
+  };
+  va_end(ap);
+  pure_push_argv(n, 0, argv);
+  funcall(ret, f, n, argv)
+  return ret;
+}
+
+extern "C"
 pure_expr *pure_app(pure_expr *fun, pure_expr *arg)
 {
   return pure_apply2(fun, arg);
@@ -1922,6 +1949,37 @@ pure_expr *pure_appv(pure_expr *fun, size_t argc, pure_expr **args)
   pure_expr *y = fun;
   for (size_t i = 0; i < argc; i++)
     y = pure_apply2(y, args[i]);
+  return y;
+}
+
+extern "C"
+pure_expr *pure_appx(pure_expr *fun, pure_expr *arg, pure_expr **e)
+{
+  // XXXTODO
+  *e = NULL;
+  return pure_apply2(fun, arg);
+}
+
+extern "C"
+pure_expr *pure_appxl(pure_expr *fun, pure_expr **e, size_t argc, ...)
+{
+  if (argc == 0) return fun;
+  va_list ap;
+  va_start(ap, argc);
+  pure_expr **args = (pure_expr**)alloca(argc*sizeof(pure_expr*));
+  for (size_t i = 0; i < argc; i++)
+    args[i] = va_arg(ap, pure_expr*);
+  return pure_appxv(fun, argc, args, e);
+}
+
+extern "C"
+pure_expr *pure_appxv(pure_expr *fun, size_t argc, pure_expr **args,
+		      pure_expr **e)
+{
+  pure_expr *y = fun;
+  *e = NULL;
+  for (size_t i = 0; i < argc; i++)
+    if (!(y = pure_appx(y, args[i], e))) break;
   return y;
 }
 
