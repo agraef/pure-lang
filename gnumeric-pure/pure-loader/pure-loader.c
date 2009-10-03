@@ -296,10 +296,18 @@ void pure_stop(GnmAction const *action, WorkbookControl *wbc)
 void pure_reload(GnmAction const *action, WorkbookControl *wbc)
 {
   if (interp && g_list_first(modnames)) {
+#ifdef PURE_INCLUDES
+    char *argv[] = { "", PURE_INCLUDES, NULL };
+    int argc = sizeof(argv)/sizeof(char*)-1;
+#else
+    char **argv = NULL;
+    int argc = 0;
+#endif
     datasource_reinit();
     pure_delete_interp(interp);
-    interp = pure_create_interp(0, 0);
+    interp = pure_create_interp(argc, argv);
     pure_switch_interp(interp);
+    if (interp) pure_init_help_consts();
     g_list_foreach(modnames, pure_reload_script, NULL);
   }
 }
@@ -447,6 +455,7 @@ pure_async_func_stop(const GnmFuncEvalInfo *ei, unsigned id)
     }
     if (ds->value) pure_free(ds->value);
     if (ds->expr) pure_free(ds->expr);
+    g_hash_table_remove(datasources, &key);
     g_free(ds);
   }
 }
