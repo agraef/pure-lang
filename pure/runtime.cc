@@ -782,12 +782,37 @@ pure_expr *pure_symbol(int32_t tag)
   }
 }
 
+// This *must* be executed in the stack frame of the caller, so we implement
+// this as a macro.
+
+#define pure_try_call(x)				\
+  assert(_e);						\
+  pure_expr*& e = *_e;					\
+  interpreter& interp = *interpreter::g_interp;		\
+  pure_exception ex; ex.e = 0; ex.sz = interp.sstk_sz;	\
+  interp.estk.push_front(ex);				\
+  if (setjmp(interp.estk.front().jmp)) {		\
+    size_t sz = interp.estk.front().sz;			\
+    e = interp.estk.front().e;				\
+    interp.estk.pop_front();				\
+    if (e) pure_new_internal(e);			\
+    for (size_t i = interp.sstk_sz; i-- > sz; )		\
+      if (interp.sstk[i] && interp.sstk[i]->refc > 0)	\
+	pure_free_internal(interp.sstk[i]);		\
+    interp.sstk_sz = sz;				\
+    pure_unref_internal(e);				\
+    return 0;						\
+  } else {						\
+    pure_expr *res = x;					\
+    interp.estk.pop_front();				\
+    e = NULL;						\
+    return res;						\
+  }
+
 extern "C"
-pure_expr *pure_symbolx(int32_t tag, pure_expr **e)
+pure_expr *pure_symbolx(int32_t tag, pure_expr **_e)
 {
-  // XXXTODO
-  *e = NULL;
-  return pure_symbol(tag);
+  pure_try_call(pure_symbol(tag));
 }
 
 extern "C"
@@ -1889,30 +1914,19 @@ pure_expr *pure_matrix_columnsv(uint32_t n, pure_expr **xs)
 
 static uint32_t pure_push_argv(uint32_t n, uint32_t m, pure_expr **args);
 
-extern "C"
-pure_expr *pure_funcall(void *f, uint32_t n, ...)
+static pure_expr *myfuncall(void *f, uint32_t n, pure_expr **argv)
 {
-  va_list ap;
-  pure_expr *ret, **argv = (pure_expr**)alloca((n+1)*sizeof(pure_expr*));
-  argv[n] = 0;
-  va_start(ap, n);
-  for (uint32_t i = 0; i < n; i++) {
-    pure_expr *x = va_arg(ap, pure_expr*);
-    argv[i] = x;
-  };
-  va_end(ap);
+  pure_expr *ret;
   pure_push_argv(n, 0, argv);
   funcall(ret, f, n, argv)
   return ret;
 }
 
 extern "C"
-pure_expr *pure_funcallx(void *f, pure_expr **e, uint32_t n, ...)
+pure_expr *pure_funcall(void *f, uint32_t n, ...)
 {
-  // XXXTODO
-  *e = NULL;
   va_list ap;
-  pure_expr *ret, **argv = (pure_expr**)alloca((n+1)*sizeof(pure_expr*));
+  pure_expr **argv = (pure_expr**)alloca((n+1)*sizeof(pure_expr*));
   argv[n] = 0;
   va_start(ap, n);
   for (uint32_t i = 0; i < n; i++) {
@@ -1920,9 +1934,22 @@ pure_expr *pure_funcallx(void *f, pure_expr **e, uint32_t n, ...)
     argv[i] = x;
   };
   va_end(ap);
-  pure_push_argv(n, 0, argv);
-  funcall(ret, f, n, argv)
-  return ret;
+  return myfuncall(f, n, argv);
+}
+
+extern "C"
+pure_expr *pure_funcallx(void *f, pure_expr **_e, uint32_t n, ...)
+{
+  va_list ap;
+  pure_expr **argv = (pure_expr**)alloca((n+1)*sizeof(pure_expr*));
+  argv[n] = 0;
+  va_start(ap, n);
+  for (uint32_t i = 0; i < n; i++) {
+    pure_expr *x = va_arg(ap, pure_expr*);
+    argv[i] = x;
+  };
+  va_end(ap);
+  pure_try_call(myfuncall(f, n, argv));
 }
 
 extern "C"
@@ -1953,11 +1980,9 @@ pure_expr *pure_appv(pure_expr *fun, size_t argc, pure_expr **args)
 }
 
 extern "C"
-pure_expr *pure_appx(pure_expr *fun, pure_expr *arg, pure_expr **e)
+pure_expr *pure_appx(pure_expr *fun, pure_expr *arg, pure_expr **_e)
 {
-  // XXXTODO
-  *e = NULL;
-  return pure_apply2(fun, arg);
+  pure_try_call(pure_apply2(fun, arg));
 }
 
 extern "C"
