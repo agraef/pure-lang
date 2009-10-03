@@ -448,10 +448,32 @@ pure2value(const GnmEvalPos *pos, pure_expr *x, const char *spec)
   return v;
 }
 
+typedef struct {
+  const GnmFuncEvalInfo *ei;
+  pure_expr **args;
+  int nargs, min, max;
+} MyEvalInfo;
+
 // These should be TLD when the Pure interpreter becomes multithreaded.
-static const GnmFuncEvalInfo *eval_info;
-static pure_expr *eval_expr;
+static MyEvalInfo *eval_info;
 static unsigned ds_id, gl_id;
+
+static pure_expr *eval_expr(void)
+{
+  if (eval_info) {
+    GnmFunc const *func = eval_info->ei->func_call->func;
+    pure_expr *x = pure_quoted_symbol(pure_sym(func->name));
+    if (eval_info->min != eval_info->max)
+      x = pure_app
+	(pure_appv(x, eval_info->min, eval_info->args),
+	 pure_listv(eval_info->nargs-eval_info->min,
+		    eval_info->args+eval_info->min));
+    else
+      x = pure_appv(x, eval_info->nargs, eval_info->args);
+    return x;
+  } else
+    return NULL;
+}
 
 static inline const char *skip(const char *spec)
 {
@@ -470,8 +492,7 @@ call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
   const char *spec = (func->fn_type==GNM_FUNC_TYPE_ARGS)
     ?skip(func->fn.args.arg_spec):NULL;
   int i, j, min, max;
-  pure_expr *x, *y, *e, *fun, **args, *save_expr;
-  const GnmFuncEvalInfo *save_info;
+  pure_expr *x, *e, **args;
   GnmValue *ret;
 
   if (n_args < 0) {
@@ -490,43 +511,48 @@ call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
   for (i = 0; i < n_args && argv[i] != NULL; i++, next(spec)) {
     args[i] = value2pure(ei->pos, argv[i], spec);
     if (!args[i]) {
-      for (j = 0; j < i; j++) pure_freenew(args[j]);
+      for (j = 0; j < i; j++) pure_free(args[j]);
       g_free(args);
       ret = value_new_error_VALUE(ei->pos);
       return ret;
-    }
+    } else
+      pure_new(args[i]);
   }
 
   if (i < min) {
     // Not enough arguments. This shouldn't happen, so we just bail out here.
-    for (j = 0; j < i; j++) pure_freenew(args[j]);
+    for (j = 0; j < i; j++) pure_free(args[j]);
     g_free(args);
     return NULL;
   }
 
-  fun = pure_quoted_symbol(pure_sym(func->name));
-  if (min != max)
-    // Variadic function, pass extra arguments as a list.
-    x = pure_app(pure_appv(fun, min, args), pure_listv(i-min, args+min));
-  else
-    x = pure_appv(fun, i, args);
-  g_free(args);
-  // Save the old context in case we're invoked recursively.
-  save_info = eval_info; save_expr = eval_expr;
-  eval_info = ei; eval_expr = x; if (!save_info) ds_id = 0;
-  y = pure_evalx(x, &e);
-  // Restore the old context.
-  eval_info = save_info; eval_expr = save_expr;
-  if (!save_info) ds_id = gl_id = 0;
-
-  if (y) {
-    ret = pure2value(ei->pos, y, NULL);
-    pure_freenew(y);
-    if (!ret) ret = value_new_error_VALUE(ei->pos);
-  } else {
-    if (e) pure_freenew(e);
-    ret = value_new_error_NULL(ei->pos);
+  { MyEvalInfo new_info = { ei, args, i, min, max };
+    // Save the old context in case we're invoked recursively.
+    MyEvalInfo *save_info = eval_info;
+    eval_info = &new_info; if (!save_info) ds_id = gl_id = 0;
+    if ((x = pure_symbolx(pure_sym(func->name), &e))) {
+      if (min != max) {
+	// Variadic function, pass extra arguments as a list.
+	x = pure_appxv(x, min, args, &e);
+	if (x)
+	  x = pure_appx(x, pure_listv(i-min, args+min), &e);
+      } else
+	x = pure_appxv(x, i, args, &e);
+    }
+    if (x) pure_ref(x); else if (e) pure_freenew(e);
+    for (j = 0; j < i; j++) pure_free(args[j]);
+    g_free(args);
+    if (x) pure_unref(x);
+    // Restore the old context.
+    eval_info = save_info; if (!save_info) ds_id = gl_id = 0;
   }
+
+  if (x) {
+    ret = pure2value(ei->pos, x, NULL);
+    pure_freenew(x);
+    if (!ret) ret = value_new_error_VALUE(ei->pos);
+  } else
+    ret = value_new_error_NULL(ei->pos);
   return ret;
 }
 
@@ -580,12 +606,12 @@ pure_gnmcall(const char *name, pure_expr *args)
   gint n_args, i, j;
   size_t n;
   pure_expr **xv, *ret;
-  if (!func || !eval_info) return NULL;
+  if (!func || !eval_info || !eval_info->ei) return NULL;
   if (!pure_is_listv(args, &n, &xv)) return NULL;
   n_args = (gint)n;
   val = g_new(GnmValue*, n_args);
   for (i = 0; i < n_args; i++, next(spec)) {
-    val[i] = pure2value(eval_info->pos, xv[i], spec);
+    val[i] = pure2value(eval_info->ei->pos, xv[i], spec);
     if (!val[i] || !compat(val[i], spec)) {
       for (j = 0; j < i; j++)
 	value_release(val[j]);
@@ -596,9 +622,9 @@ pure_gnmcall(const char *name, pure_expr *args)
     }
   }
   if (xv) free(xv);
-  ret_val = function_def_call_with_values(eval_info->pos, func, n_args,
+  ret_val = function_def_call_with_values(eval_info->ei->pos, func, n_args,
 					  (GnmValue const * const *)val);
-  ret = value2pure(eval_info->pos, ret_val, NULL);
+  ret = value2pure(eval_info->ei->pos, ret_val, NULL);
   value_release(ret_val);
   for (i = 0; i < n; i++)
     value_release(val[i]);
@@ -731,45 +757,48 @@ pure_expr *pure_datasource(pure_expr *x)
 {
   int pid;
   pure_expr *ret;
-  DepKey key = { eval_info->func_call, eval_info->pos->dep, ds_id };
-  if (!x || !eval_info || !pure_async_filename) return NULL;
-  if (!pure_async_func_init(eval_info, eval_expr, ds_id++, &ret)) {
-    if (!ret)
-      ret = pure_app(pure_symbol(pure_sym("gnm_error")),
-		     pure_string_dup("#N/A"));
-    return ret;
-  } else if ((pid = fork()) == 0) {
-    /* child */
-    FILE *pure_async_file = fopen(pure_async_filename, "ab");
-    /* evaluate expression, and write results to the pipe */
-    pure_expr *u = pure_force(pure_new(x)), *y, *z;
-#if 0
-    fprintf(stderr, "[%d] child: %p-%p-%u\n", getpid(),
-	    key.node, key.dep, key.id);
-#endif
-    while (is_cons(u, &y, &z)) {
-      out(pure_async_file, &key, pure_force(y));
-      pure_new(pure_force(z));
-      pure_free(u);
-      u = z;
-    }
-    if (!is_nil(u))
-      out(pure_async_file, &key, u);
-    exit(0);
-  } else if (pid > 0) {
-    /* parent */
-#if 0
-    fprintf(stderr, "[%d] started child [%d]: %p-%p-%u\n", getpid(), pid,
-	    key.node, key.dep, key.id);
-#endif
-    pure_async_func_process(eval_info, key.id, pid);
-    if (!ret)
-      ret = pure_app(pure_symbol(pure_sym("gnm_error")),
-		     pure_string_dup("#N/A"));
-    return ret;
-  } else {
-    perror("fork");
+  if (!x || !eval_info || !eval_info->ei || !pure_async_filename)
     return NULL;
+  else {
+    DepKey key = { eval_info->ei->func_call, eval_info->ei->pos->dep, ds_id };
+    if (!pure_async_func_init(eval_info->ei, eval_expr(), ds_id++, &ret)) {
+      if (!ret)
+	ret = pure_app(pure_symbol(pure_sym("gnm_error")),
+		       pure_string_dup("#N/A"));
+      return ret;
+    } else if ((pid = fork()) == 0) {
+      /* child */
+      FILE *pure_async_file = fopen(pure_async_filename, "ab");
+      /* evaluate expression, and write results to the pipe */
+      pure_expr *u = pure_force(pure_new(x)), *y, *z;
+#if 0
+      fprintf(stderr, "[%d] child: %p-%p-%u\n", getpid(),
+	      key.node, key.dep, key.id);
+#endif
+      while (is_cons(u, &y, &z)) {
+	out(pure_async_file, &key, pure_force(y));
+	pure_new(pure_force(z));
+	pure_free(u);
+	u = z;
+      }
+      if (!is_nil(u))
+	out(pure_async_file, &key, u);
+      exit(0);
+    } else if (pid > 0) {
+      /* parent */
+#if 0
+      fprintf(stderr, "[%d] started child [%d]: %p-%p-%u\n", getpid(), pid,
+	      key.node, key.dep, key.id);
+#endif
+      pure_async_func_process(eval_info->ei, key.id, pid);
+      if (!ret)
+	ret = pure_app(pure_symbol(pure_sym("gnm_error")),
+		       pure_string_dup("#N/A"));
+      return ret;
+    } else {
+      perror("fork");
+      return NULL;
+    }
   }
 }
 
@@ -779,6 +808,8 @@ static pure_expr *try_trigger(int timeout, unsigned id,
 {
   int res;
   pure_expr *e;
+  /* XXXFIXME: pure_evalx is a performance hog since it invokes the JIT. Is
+     there some better way to evaluate cond and value here? */
   cond = pure_evalx(cond, &e);
   if (cond) {
     if (pure_is_int(cond, &res)) {
@@ -788,17 +819,17 @@ static pure_expr *try_trigger(int timeout, unsigned id,
 	value = pure_evalx(value, &e);
 	if (value) {
 	  if (ret != value)
-	    pure_async_set_value(eval_info, id, value);
+	    pure_async_set_value(eval_info->ei, id, value);
 	  ret = value;
 	} else {
 	  if (e) pure_freenew(e);
 	  ret = pure_app(pure_symbol(pure_sym("gnm_error")),
 			 pure_string_dup("#NULL"));
-	  pure_async_set_value(eval_info, id, ret);
+	  pure_async_set_value(eval_info->ei, id, ret);
 	}
 	if (timeout == 0) {
 	  if (ret) pure_ref(ret);
-	  pure_async_func_stop(eval_info, id);
+	  pure_async_func_stop(eval_info->ei, id);
 	  if (ret) pure_unref(ret);
 	}
       }
@@ -821,41 +852,44 @@ pure_expr *pure_trigger(int timeout, pure_expr *cond, pure_expr *value)
   int pid;
   unsigned myid = ds_id;
   pure_expr *ret= try_trigger(timeout, myid, cond, value, NULL);
-  DepKey key = { eval_info->func_call, eval_info->pos->dep, ds_id };
   if (ret) return ret;
-  if (!cond || !value || !eval_info || !pure_async_filename) return NULL;
-  if (!pure_async_func_init(eval_info, eval_expr, ds_id++, &ret))
-    return trigger_ret(ret);
-  else if ((pid = fork()) == 0) {
-    /* child */
-    FILE *pure_async_file = fopen(pure_async_filename, "ab");
-    /* output a steady stream of messages to the pipe */
-#if 0
-    fprintf(stderr, "[%d] child: %p-%p-%u\n", getpid(),
-	    key.node, key.dep, key.id);
-#endif
-    if (timeout > 0)
-      while (timeout-- > 0) {
-	sleep(1);
-	out(pure_async_file, &key, NULL);
-      }
-    else
-      while (1) {
-	sleep(1);
-	out(pure_async_file, &key, NULL);
-      }
-    exit(0);
-  } else if (pid > 0) {
-    /* parent */
-#if 0
-    fprintf(stderr, "[%d] started child [%d]: %p-%p-%u\n", getpid(), pid,
-	    key.node, key.dep, key.id);
-#endif
-    pure_async_func_process(eval_info, key.id, pid);
-    return trigger_ret(ret);
-  } else {
-    perror("fork");
+  if (!cond || !value || !eval_info || !eval_info->ei || !pure_async_filename)
     return NULL;
+  else {
+    DepKey key = { eval_info->ei->func_call, eval_info->ei->pos->dep, ds_id };
+    if (!pure_async_func_init(eval_info->ei, eval_expr(), ds_id++, &ret))
+      return trigger_ret(ret);
+    else if ((pid = fork()) == 0) {
+      /* child */
+      FILE *pure_async_file = fopen(pure_async_filename, "ab");
+      /* output a steady stream of messages to the pipe */
+#if 0
+      fprintf(stderr, "[%d] child: %p-%p-%u\n", getpid(),
+	      key.node, key.dep, key.id);
+#endif
+      if (timeout > 0)
+	while (timeout-- > 0) {
+	  sleep(1);
+	  out(pure_async_file, &key, NULL);
+	}
+      else
+	while (1) {
+	  sleep(1);
+	  out(pure_async_file, &key, NULL);
+	}
+      exit(0);
+    } else if (pid > 0) {
+      /* parent */
+#if 0
+      fprintf(stderr, "[%d] started child [%d]: %p-%p-%u\n", getpid(), pid,
+	      key.node, key.dep, key.id);
+#endif
+      pure_async_func_process(eval_info->ei, key.id, pid);
+      return trigger_ret(ret);
+    } else {
+      perror("fork");
+      return NULL;
+    }
   }
 }
 
@@ -863,12 +897,12 @@ pure_expr *pure_trigger(int timeout, pure_expr *cond, pure_expr *value)
 
 pure_expr *pure_this_cell(void)
 {
-  if (eval_info) {
+  if (eval_info && eval_info->ei) {
     GnmRangeRef rr;
     char *s;
     gnm_cellref_init(&rr.a, NULL, 0, 0, TRUE);
     gnm_cellref_init(&rr.b, NULL, 0, 0, TRUE);
-    s = rangeref2str(eval_info->pos, &rr);
+    s = rangeref2str(eval_info->ei->pos, &rr);
     return s?pure_string(s):NULL;
   } else
     return NULL;
@@ -876,12 +910,12 @@ pure_expr *pure_this_cell(void)
 
 pure_expr *pure_parse_range(const char *s)
 {
-  if (eval_info) {
-    GnmValue *v = str2rangeref(eval_info->pos, s);
+  if (eval_info && eval_info->ei) {
+    GnmValue *v = str2rangeref(eval_info->ei->pos, s);
     assert(!v || v->type == VALUE_CELLRANGE);
     if (v) {
       GnmRangeRef const *rr = &v->v_range.cell;
-      pure_expr *x = rangeref2tuple(eval_info->pos, rr);
+      pure_expr *x = rangeref2tuple(eval_info->ei->pos, rr);
       value_release(v);
       return x;
     } else
@@ -892,12 +926,12 @@ pure_expr *pure_parse_range(const char *s)
 
 pure_expr *pure_make_range(pure_expr *x)
 {
-  if (eval_info) {
-    GnmValue *v = tuple2rangeref(eval_info->pos, x);
+  if (eval_info && eval_info->ei) {
+    GnmValue *v = tuple2rangeref(eval_info->ei->pos, x);
     assert(!v || v->type == VALUE_CELLRANGE);
     if (v) {
       GnmRangeRef const *rr = &v->v_range.cell;
-      char *s = rangeref2str(eval_info->pos, rr);
+      char *s = rangeref2str(eval_info->ei->pos, rr);
       value_release(v);
       return s?pure_string(s):NULL;
     } else
@@ -908,7 +942,8 @@ pure_expr *pure_make_range(pure_expr *x)
 
 pure_expr *pure_get_cell(const char *s)
 {
-  const GnmEvalPos *pos = eval_info?eval_info->pos:NULL;
+  const GnmEvalPos *pos =
+    (eval_info && eval_info->ei)?eval_info->ei->pos:NULL;
   GnmValue *v = pos?str2rangeref(pos, s):NULL;
   if (v) {
     pure_expr *ret = NULL;
@@ -931,7 +966,8 @@ pure_expr *pure_get_cell(const char *s)
 
 pure_expr *pure_get_cell_text(const char *s)
 {
-  const GnmEvalPos *pos = eval_info?eval_info->pos:NULL;
+  const GnmEvalPos *pos =
+    (eval_info && eval_info->ei)?eval_info->ei->pos:NULL;
   GnmValue *v = pos?str2rangeref(pos, s):NULL;
   if (v) {
     pure_expr *ret = NULL;
@@ -955,7 +991,8 @@ pure_expr *pure_get_cell_text(const char *s)
 
 pure_expr *pure_get_cell_format(const char *s)
 {
-  const GnmEvalPos *pos = eval_info?eval_info->pos:NULL;
+  const GnmEvalPos *pos =
+    (eval_info && eval_info->ei)?eval_info->ei->pos:NULL;
   GnmValue *v = pos?str2rangeref(pos, s):NULL;
   if (v) {
     pure_expr *ret = NULL;
@@ -980,7 +1017,8 @@ pure_expr *pure_get_cell_format(const char *s)
 
 pure_expr *pure_set_cell(const char *s, pure_expr *x)
 {
-  const GnmEvalPos *pos = eval_info?eval_info->pos:NULL;
+  const GnmEvalPos *pos =
+    (eval_info && eval_info->ei)?eval_info->ei->pos:NULL;
   GnmValue *v = pos?str2rangeref(pos, s):NULL;
   if (v) {
     pure_expr *ret = NULL;
@@ -1010,7 +1048,8 @@ pure_expr *pure_set_cell_text(const char *s, pure_expr *x)
 {
   const char *text;
   if (pure_is_string(x, &text)) {
-    const GnmEvalPos *pos = eval_info?eval_info->pos:NULL;
+    const GnmEvalPos *pos =
+      (eval_info && eval_info->ei)?eval_info->ei->pos:NULL;
     GnmValue *v = pos?str2rangeref(pos, s):NULL;
     if (v) {
       pure_expr *ret = NULL;
@@ -1040,7 +1079,8 @@ pure_expr *pure_set_cell_format(const char *s, pure_expr *x)
 {
   const char *fmtstr;
   if (pure_is_string(x, &fmtstr)) {
-    const GnmEvalPos *pos = eval_info?eval_info->pos:NULL;
+    const GnmEvalPos *pos =
+      (eval_info && eval_info->ei)?eval_info->ei->pos:NULL;
     GnmValue *v = pos?str2rangeref(pos, s):NULL;
     if (v) {
       pure_expr *ret = NULL;
@@ -1069,7 +1109,7 @@ pure_expr *pure_set_cell_format(const char *s, pure_expr *x)
 
 pure_expr *pure_get_range(const char *s)
 {
-  const GnmEvalPos *pos = eval_info?eval_info->pos:NULL;
+  const GnmEvalPos *pos = (eval_info && eval_info->ei)?eval_info->ei->pos:NULL;
   GnmValue *v = pos?str2rangeref(pos, s):NULL;
   if (v) {
     pure_expr *ret = NULL;
@@ -1137,7 +1177,7 @@ pure_expr *pure_get_range(const char *s)
 
 pure_expr *pure_get_range_text(const char *s)
 {
-  const GnmEvalPos *pos = eval_info?eval_info->pos:NULL;
+  const GnmEvalPos *pos = (eval_info && eval_info->ei)?eval_info->ei->pos:NULL;
   GnmValue *v = pos?str2rangeref(pos, s):NULL;
   if (v) {
     pure_expr *ret = NULL;
@@ -1182,7 +1222,7 @@ pure_expr *pure_get_range_text(const char *s)
 
 pure_expr *pure_get_range_format(const char *s)
 {
-  const GnmEvalPos *pos = eval_info?eval_info->pos:NULL;
+  const GnmEvalPos *pos = (eval_info && eval_info->ei)?eval_info->ei->pos:NULL;
   GnmValue *v = pos?str2rangeref(pos, s):NULL;
   if (v) {
     pure_expr *ret = NULL;
@@ -1228,7 +1268,7 @@ pure_expr *pure_get_range_format(const char *s)
 
 pure_expr *pure_set_range(const char *s, pure_expr *xs)
 {
-  const GnmEvalPos *pos = eval_info?eval_info->pos:NULL;
+  const GnmEvalPos *pos = (eval_info && eval_info->ei)?eval_info->ei->pos:NULL;
   GnmValue *v = pos?str2rangeref(pos, s):NULL;
   if (v) {
     pure_expr *ret = NULL, **xv;
@@ -1303,7 +1343,7 @@ pure_expr *pure_set_range(const char *s, pure_expr *xs)
 
 pure_expr *pure_set_range_text(const char *s, pure_expr *xs)
 {
-  const GnmEvalPos *pos = eval_info?eval_info->pos:NULL;
+  const GnmEvalPos *pos = (eval_info && eval_info->ei)?eval_info->ei->pos:NULL;
   GnmValue *v = pos?str2rangeref(pos, s):NULL;
   if (v) {
     pure_expr *ret = NULL, **xv;
@@ -1349,7 +1389,7 @@ pure_expr *pure_set_range_text(const char *s, pure_expr *xs)
 
 pure_expr *pure_set_range_format(const char *s, pure_expr *xs)
 {
-  const GnmEvalPos *pos = eval_info?eval_info->pos:NULL;
+  const GnmEvalPos *pos = (eval_info && eval_info->ei)?eval_info->ei->pos:NULL;
   GnmValue *v = pos?str2rangeref(pos, s):NULL;
   if (v) {
     pure_expr *ret = NULL, **xv;
@@ -1462,204 +1502,207 @@ sheet_widget_list_base_get_content_link(SheetObject *so)
 
 pure_expr *pure_sheet_objects(void)
 {
-  const GnmEvalPos *pos = eval_info->pos;
-  Sheet *sheet = pos->sheet;
-  Workbook *wb = sheet->workbook;
-  GSList *sheets = workbook_sheets(wb), *sptr, *soptr;
-  size_t i, n;
-  pure_expr **xs = NULL, *ret;
-  for (n = 0, sptr = sheets; sptr != NULL; sptr = sptr->next)
-    for (soptr = SHEET(sptr->data)->sheet_objects; soptr != NULL;
-	 n++, soptr = soptr->next) ;
-  if (n > 0) {
-    xs = g_new(pure_expr*, n);
-    assert(xs);
-  }
-  for (n = 0, sptr = sheets; sptr != NULL; sptr = sptr->next) {
-    size_t m = n;
-    const char *sheet_name = SHEET(sptr->data)->name_unquoted;
-    pure_expr *sheet_name_str = pure_string_dup(sheet_name);
-    for (soptr = SHEET(sptr->data)->sheet_objects; soptr != NULL;
-	 soptr = soptr->next) {
-      const char *descr = NULL;
-      pure_expr *info = NULL, **widgets = NULL;
-      GObject *obj = G_OBJECT (soptr->data);
-      SheetObject *so = SHEET_OBJECT(obj);
-      GType t = G_OBJECT_TYPE(obj);
-      GList *w = so->realized_list;
-      size_t n_widgets = g_list_length(so->realized_list);
-      GtkWidget *widget = NULL;
-      if (w) widgets = g_new(pure_expr*, n_widgets);
-      for (n_widgets = 0; w; w = w->next) {
-	SheetObjectView *view = w->data;
-	GocItem *item = view?get_goc_item(view):NULL;
-	if (!item)
-	  break;
-	else if (GOC_IS_WIDGET(item)) {
-	  /* Note that in general, any number of widgets can be associated
-	     with a sheet object, we collect these in a list. */
-	  widget = GOC_WIDGET(item)->widget;
-	  widgets[n_widgets++] = pure_pointer(widget);
-	} else if (GOC_IS_RECTANGLE(item)) {
-	  descr = "rectangle";
-	  break;
-	} else if (GOC_IS_CIRCLE(item)) {
-	  descr = "circle";
-	  break;
-	} else if (GOC_IS_ELLIPSE(item)) {
-	  descr = "ellipse";
-	  break;
-	} else if (GOC_IS_LINE(item)) {
-	  descr = "line";
-	  break;
-	} else if (GOC_IS_POLYGON(item)) {
-	  descr = "polygon";
-	  break;
-	} else if (GOC_IS_STYLED_ITEM(item)) {
-	  descr = "styled";
-	  break;
-	} else {
-	  descr = "unkown";
-	  break;
-	}
-      }
-      if (n_widgets == 0 && widgets) {
-	g_free(widgets); widgets = NULL;
-      }
-      /* Gnumeric specific widget types. */
-      if (t == SHEET_WIDGET_FRAME_TYPE) {
-	/* Frame objects don't expose any properties right now, so we take the
-	   label from the widget if it's available. */
-	const gchar *str = widget?gtk_frame_get_label(GTK_FRAME(widget)):NULL;
-	info = pure_tuplel(5, sheet_name_str, pure_string_dup("frame"),
-			   pure_string_dup(str),
-			   NA_expr(),
-			   pure_listv(n_widgets, widgets));
-      } else if (t == SHEET_WIDGET_SCROLLBAR_TYPE) {
-	const GnmExprTop *e = sheet_widget_adjustment_get_link(so);
-	char *link = e?texpr2str(pos, e):strdup("");
-	if (e) gnm_expr_top_unref(e);
-	info = pure_tuplel(5, sheet_name_str, pure_string_dup("scrollbar"),
-			   NA_expr(),
-			   pure_string(link),
-			   pure_listv(n_widgets, widgets));
-      } else if (t == SHEET_WIDGET_SPINBUTTON_TYPE) {
-	const GnmExprTop *e = sheet_widget_adjustment_get_link(so);
-	char *link = e?texpr2str(pos, e):strdup("");
-	if (e) gnm_expr_top_unref(e);
-	info = pure_tuplel(5, sheet_name_str, pure_string_dup("spinbutton"),
-			   NA_expr(),
-			   pure_string(link),
-			   pure_listv(n_widgets, widgets));
-      } else if (t == SHEET_WIDGET_SLIDER_TYPE) {
-	const GnmExprTop *e = sheet_widget_adjustment_get_link(so);
-	char *link = e?texpr2str(pos, e):strdup("");
-	if (e) gnm_expr_top_unref(e);
-	info = pure_tuplel(5, sheet_name_str, pure_string_dup("slider"),
-			   NA_expr(),
-			   pure_string(link),
-			   pure_listv(n_widgets, widgets));
-      } else if (t == SHEET_WIDGET_BUTTON_TYPE) {
-	gchar *str = NULL;
-	const GnmExprTop *e = sheet_widget_button_get_link(so);
-	char *link = e?texpr2str(pos, e):strdup("");
-	if (e) gnm_expr_top_unref(e);
-	g_object_get(obj, "text", &str, NULL);
-	info = pure_tuplel(5, sheet_name_str, pure_string_dup("button"),
-			   pure_string(str),
-			   pure_string(link),
-			   pure_listv(n_widgets, widgets));
-      } else if (t == SHEET_WIDGET_CHECKBOX_TYPE) {
-	gchar *str = NULL;
-	const GnmExprTop *e = sheet_widget_checkbox_get_link(so);
-	char *link = e?texpr2str(pos, e):strdup("");
-	if (e) gnm_expr_top_unref(e);
-	g_object_get(obj, "text", &str, NULL);
-	info = pure_tuplel(5, sheet_name_str, pure_string_dup("checkbox"),
-			   pure_string(str),
-			   pure_string(link),
-			   pure_listv(n_widgets, widgets));
-      } else if (t == SHEET_WIDGET_RADIO_BUTTON_TYPE) {
-	gchar *str = NULL;
-	const GnmExprTop *e = sheet_widget_radio_button_get_link(so);
-	char *link = e?texpr2str(pos, e):strdup("");
-	if (e) gnm_expr_top_unref(e);
-	g_object_get(obj, "text", &str, NULL);
-	info = pure_tuplel(5, sheet_name_str, pure_string_dup("radiobutton"),
-			   pure_string(str),
-			   pure_string(link),
-			   pure_listv(n_widgets, widgets));
-      } else if (t == SHEET_WIDGET_LIST_TYPE) {
-	const GnmExprTop *e = sheet_widget_list_base_get_result_link(so);
-	const GnmExprTop *c = sheet_widget_list_base_get_content_link(so);
-	char *link = e?texpr2str(pos, e):strdup("");
-	char *content_link = c?texpr2str(pos, c):strdup("");
-	if (e) gnm_expr_top_unref(e);
-	if (c) gnm_expr_top_unref(c);
-	info = pure_tuplel(5, sheet_name_str, pure_string_dup("list"),
-			   pure_string(content_link),
-			   pure_string(link),
-			   pure_listv(n_widgets, widgets));
-      } else if (t == SHEET_WIDGET_COMBO_TYPE) {
-	const GnmExprTop *e = sheet_widget_list_base_get_result_link(so);
-	const GnmExprTop *c = sheet_widget_list_base_get_content_link(so);
-	char *link = e?texpr2str(pos, e):strdup("");
-	char *content_link = c?texpr2str(pos, c):strdup("");
-	if (e) gnm_expr_top_unref(e);
-	if (c) gnm_expr_top_unref(c);
-	info = pure_tuplel(5, sheet_name_str, pure_string_dup("combo"),
-			   pure_string(content_link),
-			   pure_string(link),
-			   pure_listv(n_widgets, widgets));
-      } else {
-	/* Other canvas object types that we know about. */
-	if (t == SHEET_OBJECT_IMAGE_TYPE) {
-	  gchar *str = NULL;
-	  gpointer ptr = NULL;
-	  g_object_get(obj, "image-type", &str, "image-data", &ptr, NULL);
-	  info = pure_tuplel(5, sheet_name_str,
-			     pure_string(str?g_strdup_printf("image/%s", str):
-					 strdup("image")),
-			     pure_pointer(ptr),
-			     NA_expr(),
-			     NA_expr());
-	} else if (t == SHEET_OBJECT_GRAPH_TYPE) {
-	  info = pure_tuplel(5, sheet_name_str, pure_string_dup("graph"),
-			     NA_expr(),
-			     NA_expr(),
-			     NA_expr());
-	} else if (descr) {
-	  if (t == GNM_SO_FILLED_TYPE) {
-	    gchar *str = NULL;
-	    g_object_get(obj, "text", &str, NULL);
-	    info = pure_tuplel(5, sheet_name_str, pure_string_dup(descr),
-			       pure_string(str),
-			       NA_expr(),
-			       NA_expr());
-	  } else if (t == GNM_SO_LINE_TYPE || t == GNM_SO_POLYGON_TYPE) {
-	    info = pure_tuplel(5, sheet_name_str, pure_string_dup(descr),
-			       NA_expr(),
-			       NA_expr(),
-			       NA_expr());
+  if (eval_info && eval_info->ei) {
+    const GnmEvalPos *pos = eval_info->ei->pos;
+    Sheet *sheet = pos->sheet;
+    Workbook *wb = sheet->workbook;
+    GSList *sheets = workbook_sheets(wb), *sptr, *soptr;
+    size_t i, n;
+    pure_expr **xs = NULL, *ret;
+    for (n = 0, sptr = sheets; sptr != NULL; sptr = sptr->next)
+      for (soptr = SHEET(sptr->data)->sheet_objects; soptr != NULL;
+	   n++, soptr = soptr->next) ;
+    if (n > 0) {
+      xs = g_new(pure_expr*, n);
+      assert(xs);
+    }
+    for (n = 0, sptr = sheets; sptr != NULL; sptr = sptr->next) {
+      size_t m = n;
+      const char *sheet_name = SHEET(sptr->data)->name_unquoted;
+      pure_expr *sheet_name_str = pure_string_dup(sheet_name);
+      for (soptr = SHEET(sptr->data)->sheet_objects; soptr != NULL;
+	   soptr = soptr->next) {
+	const char *descr = NULL;
+	pure_expr *info = NULL, **widgets = NULL;
+	GObject *obj = G_OBJECT (soptr->data);
+	SheetObject *so = SHEET_OBJECT(obj);
+	GType t = G_OBJECT_TYPE(obj);
+	GList *w = so->realized_list;
+	size_t n_widgets = g_list_length(so->realized_list);
+	GtkWidget *widget = NULL;
+	if (w) widgets = g_new(pure_expr*, n_widgets);
+	for (n_widgets = 0; w; w = w->next) {
+	  SheetObjectView *view = w->data;
+	  GocItem *item = view?get_goc_item(view):NULL;
+	  if (!item)
+	    break;
+	  else if (GOC_IS_WIDGET(item)) {
+	    /* Note that in general, any number of widgets can be associated
+	       with a sheet object, we collect these in a list. */
+	    widget = GOC_WIDGET(item)->widget;
+	    widgets[n_widgets++] = pure_pointer(widget);
+	  } else if (GOC_IS_RECTANGLE(item)) {
+	    descr = "rectangle";
+	    break;
+	  } else if (GOC_IS_CIRCLE(item)) {
+	    descr = "circle";
+	    break;
+	  } else if (GOC_IS_ELLIPSE(item)) {
+	    descr = "ellipse";
+	    break;
+	  } else if (GOC_IS_LINE(item)) {
+	    descr = "line";
+	    break;
+	  } else if (GOC_IS_POLYGON(item)) {
+	    descr = "polygon";
+	    break;
+	  } else if (GOC_IS_STYLED_ITEM(item)) {
+	    descr = "styled";
+	    break;
+	  } else {
+	    descr = "unkown";
+	    break;
 	  }
 	}
-	/* FIXME: Figure out what else might be useful to support. */
+	if (n_widgets == 0 && widgets) {
+	  g_free(widgets); widgets = NULL;
+	}
+	/* Gnumeric specific widget types. */
+	if (t == SHEET_WIDGET_FRAME_TYPE) {
+	  /* Frame objects don't expose any properties right now, so we take
+	     the label from the widget if it's available. */
+	  const gchar *str = widget?gtk_frame_get_label(GTK_FRAME(widget)):NULL;
+	  info = pure_tuplel(5, sheet_name_str, pure_string_dup("frame"),
+			     pure_string_dup(str),
+			     NA_expr(),
+			     pure_listv(n_widgets, widgets));
+	} else if (t == SHEET_WIDGET_SCROLLBAR_TYPE) {
+	  const GnmExprTop *e = sheet_widget_adjustment_get_link(so);
+	  char *link = e?texpr2str(pos, e):strdup("");
+	  if (e) gnm_expr_top_unref(e);
+	  info = pure_tuplel(5, sheet_name_str, pure_string_dup("scrollbar"),
+			     NA_expr(),
+			     pure_string(link),
+			     pure_listv(n_widgets, widgets));
+	} else if (t == SHEET_WIDGET_SPINBUTTON_TYPE) {
+	  const GnmExprTop *e = sheet_widget_adjustment_get_link(so);
+	  char *link = e?texpr2str(pos, e):strdup("");
+	  if (e) gnm_expr_top_unref(e);
+	  info = pure_tuplel(5, sheet_name_str, pure_string_dup("spinbutton"),
+			     NA_expr(),
+			     pure_string(link),
+			     pure_listv(n_widgets, widgets));
+	} else if (t == SHEET_WIDGET_SLIDER_TYPE) {
+	  const GnmExprTop *e = sheet_widget_adjustment_get_link(so);
+	  char *link = e?texpr2str(pos, e):strdup("");
+	  if (e) gnm_expr_top_unref(e);
+	  info = pure_tuplel(5, sheet_name_str, pure_string_dup("slider"),
+			     NA_expr(),
+			     pure_string(link),
+			     pure_listv(n_widgets, widgets));
+	} else if (t == SHEET_WIDGET_BUTTON_TYPE) {
+	  gchar *str = NULL;
+	  const GnmExprTop *e = sheet_widget_button_get_link(so);
+	  char *link = e?texpr2str(pos, e):strdup("");
+	  if (e) gnm_expr_top_unref(e);
+	  g_object_get(obj, "text", &str, NULL);
+	  info = pure_tuplel(5, sheet_name_str, pure_string_dup("button"),
+			     pure_string(str),
+			     pure_string(link),
+			     pure_listv(n_widgets, widgets));
+	} else if (t == SHEET_WIDGET_CHECKBOX_TYPE) {
+	  gchar *str = NULL;
+	  const GnmExprTop *e = sheet_widget_checkbox_get_link(so);
+	  char *link = e?texpr2str(pos, e):strdup("");
+	  if (e) gnm_expr_top_unref(e);
+	  g_object_get(obj, "text", &str, NULL);
+	  info = pure_tuplel(5, sheet_name_str, pure_string_dup("checkbox"),
+			     pure_string(str),
+			     pure_string(link),
+			     pure_listv(n_widgets, widgets));
+	} else if (t == SHEET_WIDGET_RADIO_BUTTON_TYPE) {
+	  gchar *str = NULL;
+	  const GnmExprTop *e = sheet_widget_radio_button_get_link(so);
+	  char *link = e?texpr2str(pos, e):strdup("");
+	  if (e) gnm_expr_top_unref(e);
+	  g_object_get(obj, "text", &str, NULL);
+	  info = pure_tuplel(5, sheet_name_str, pure_string_dup("radiobutton"),
+			     pure_string(str),
+			     pure_string(link),
+			     pure_listv(n_widgets, widgets));
+	} else if (t == SHEET_WIDGET_LIST_TYPE) {
+	  const GnmExprTop *e = sheet_widget_list_base_get_result_link(so);
+	  const GnmExprTop *c = sheet_widget_list_base_get_content_link(so);
+	  char *link = e?texpr2str(pos, e):strdup("");
+	  char *content_link = c?texpr2str(pos, c):strdup("");
+	  if (e) gnm_expr_top_unref(e);
+	  if (c) gnm_expr_top_unref(c);
+	  info = pure_tuplel(5, sheet_name_str, pure_string_dup("list"),
+			     pure_string(content_link),
+			     pure_string(link),
+			     pure_listv(n_widgets, widgets));
+	} else if (t == SHEET_WIDGET_COMBO_TYPE) {
+	  const GnmExprTop *e = sheet_widget_list_base_get_result_link(so);
+	  const GnmExprTop *c = sheet_widget_list_base_get_content_link(so);
+	  char *link = e?texpr2str(pos, e):strdup("");
+	  char *content_link = c?texpr2str(pos, c):strdup("");
+	  if (e) gnm_expr_top_unref(e);
+	  if (c) gnm_expr_top_unref(c);
+	  info = pure_tuplel(5, sheet_name_str, pure_string_dup("combo"),
+			     pure_string(content_link),
+			     pure_string(link),
+			     pure_listv(n_widgets, widgets));
+	} else {
+	  /* Other canvas object types that we know about. */
+	  if (t == SHEET_OBJECT_IMAGE_TYPE) {
+	    gchar *str = NULL;
+	    gpointer ptr = NULL;
+	    g_object_get(obj, "image-type", &str, "image-data", &ptr, NULL);
+	    info = pure_tuplel(5, sheet_name_str,
+			       pure_string(str?g_strdup_printf("image/%s", str):
+					   strdup("image")),
+			       pure_pointer(ptr),
+			       NA_expr(),
+			       NA_expr());
+	  } else if (t == SHEET_OBJECT_GRAPH_TYPE) {
+	    info = pure_tuplel(5, sheet_name_str, pure_string_dup("graph"),
+			       NA_expr(),
+			       NA_expr(),
+			       NA_expr());
+	  } else if (descr) {
+	    if (t == GNM_SO_FILLED_TYPE) {
+	      gchar *str = NULL;
+	      g_object_get(obj, "text", &str, NULL);
+	      info = pure_tuplel(5, sheet_name_str, pure_string_dup(descr),
+				 pure_string(str),
+				 NA_expr(),
+				 NA_expr());
+	    } else if (t == GNM_SO_LINE_TYPE || t == GNM_SO_POLYGON_TYPE) {
+	      info = pure_tuplel(5, sheet_name_str, pure_string_dup(descr),
+				 NA_expr(),
+				 NA_expr(),
+				 NA_expr());
+	    }
+	  }
+	  /* FIXME: Figure out what else might be useful to support. */
+	}
+	if (info) xs[n++] = info;
+	if (widgets) g_free(widgets);
       }
-      if (info) xs[n++] = info;
-      if (widgets) g_free(widgets);
+      if (sheet_name_str->refc == 0) pure_freenew(sheet_name_str);
+      /* Apparently the objects for each sheet are listed with the last added
+	 object first, so we reverse the list here. */
+      for (i = m; i < (n-m)/2; i++) {
+	pure_expr *x = xs[i];
+	xs[i] = xs[n+m-i-1];
+	xs[n+m-i-1] = x;
+      }
     }
-    if (sheet_name_str->refc == 0) pure_freenew(sheet_name_str);
-    /* Apparently the objects for each sheet are listed with the last added
-       object first, so we reverse the list here. */
-    for (i = m; i < (n-m)/2; i++) {
-      pure_expr *x = xs[i];
-      xs[i] = xs[n+m-i-1];
-      xs[n+m-i-1] = x;
-    }
-  }
-  g_slist_free(sheets);
-  ret = pure_listv(n, xs); g_free(xs);
-  return ret;
+    g_slist_free(sheets);
+    ret = pure_listv(n, xs); g_free(xs);
+    return ret;
+  } else
+    return NULL;
 }
 
 /* OpenGL support. This only works when GtkGLExt is available. */
@@ -1786,10 +1829,13 @@ static GSList *get_frames(const GnmEvalPos *pos, const char *name,
 
 bool pure_check_window(const char *name)
 {
-  const GnmFuncEvalInfo *ei = eval_info;
-  const GnmEvalPos *pos = ei->pos;
-  GtkWidget *w = get_frame(pos, name);
-  return w != NULL;
+  if (eval_info && eval_info->ei) {
+    const GnmFuncEvalInfo *ei = eval_info->ei;
+    const GnmEvalPos *pos = ei->pos;
+    GtkWidget *w = get_frame(pos, name);
+    return w != NULL;
+  } else
+    return false;
 }
 
 #ifdef USE_GL
@@ -1947,141 +1993,145 @@ pure_expr *pure_gl_window(const char *name, int timeout,
 			  pure_expr *timer_cb,
 			  pure_expr *user_data)
 {
-  const GnmFuncEvalInfo *ei = eval_info;
-  const GnmEvalPos *pos = ei->pos;
-  DepKey key = { ei->func_call, ei->pos->dep, gl_id++ };
-  GLWindow *glw;
-  static gboolean once = TRUE, init = FALSE;
-  g_return_val_if_fail (name && setup_cb && config_cb && display_cb &&
-			timer_cb && user_data, NULL);
-  if (once) {
-    /* This needs to be done exactly once to initialize the GtkGL extension. */
-    int argc = 1;
-    char *argv[] = { "", NULL };
-    init = gtk_init_check(&argc, (char***)&argv);
-    once = FALSE;
-  }
-  if (!init) return NULL; // GtkGL failed to initialize.
-  /* See whether we already have a window for this instance. */
-  if ((glw = pure_get_gl_window(&key))) {
-    GSList *windows = get_frames(pos, name, &glw->so), *l;
-    if (strcmp(name, glw->name)) {
-      free(glw->name); glw->name = strdup(name);
+  if (eval_info && eval_info->ei) {
+    const GnmFuncEvalInfo *ei = eval_info->ei;
+    const GnmEvalPos *pos = ei->pos;
+    DepKey key = { ei->func_call, ei->pos->dep, gl_id++ };
+    GLWindow *glw;
+    static gboolean once = TRUE, init = FALSE;
+    g_return_val_if_fail (name && setup_cb && config_cb && display_cb &&
+			  timer_cb && user_data, NULL);
+    if (once) {
+      /* This needs to be done exactly once to initialize the GtkGL
+	 extension. */
+      int argc = 1;
+      char *argv[] = { "", NULL };
+      init = gtk_init_check(&argc, (char***)&argv);
+      once = FALSE;
     }
-    pure_free(glw->setup_cb);
-    pure_free(glw->config_cb);
-    pure_free(glw->display_cb);
-    pure_free(glw->timer_cb);
-    pure_free(glw->user_data);
-    glw->setup_cb = glw->config_cb = glw->display_cb = glw->timer_cb =
-      glw->user_data = NULL;
-    if (!g_slist_equal(windows, glw->windows)) {
-      GSList *ws = g_slist_copy(glw->windows);
-      /* Remove old views. */
-      glw->being_destroyed = TRUE;
-      for (l = ws; l; l = l->next) {
-	GtkWidget *w = GTK_WIDGET(l->data);
-	if (!g_slist_find(windows, w)) {
-	  GtkWidget *drawing_area = gtk_bin_get_child(GTK_BIN(w));
-	  /* Destroy the GL window. */
-#if 0
-	  fprintf(stderr, "removing old view %p\n", w);
-#endif
-	  gtk_widget_destroy(drawing_area);
-	  glw->windows = g_slist_remove(glw->windows, w);
-	}
+    if (!init) return NULL; // GtkGL failed to initialize.
+    /* See whether we already have a window for this instance. */
+    if ((glw = pure_get_gl_window(&key))) {
+      GSList *windows = get_frames(pos, name, &glw->so), *l;
+      if (strcmp(name, glw->name)) {
+	free(glw->name); glw->name = strdup(name);
       }
-      glw->being_destroyed = FALSE;
-      g_slist_free(ws);
-      ws = NULL;
-      /* Add new views. */
-      for (l = windows; l; l = l->next) {
-	GtkWidget *w = GTK_WIDGET(l->data);
-	if (init_gl_window(glw, w)) {
-	  glw->windows = g_slist_insert_sorted(glw->windows, w, ptrcmp);
-	  ws = g_slist_prepend(ws, w);
-#if 0
-	  fprintf(stderr, "adding new view %p\n", w);
-#endif
-	}
-      }
-      g_slist_free(windows);
-      windows = g_slist_reverse(ws);
-    } else {
-      g_slist_free(windows);
-      windows = NULL;
-    }
-    if (glw->windows) {
-      /* Update the callbacks. */
-      glw->setup_cb = pure_new(setup_cb);
-      glw->config_cb = pure_new(config_cb);
-      glw->display_cb = pure_new(display_cb);
-      glw->timer_cb = pure_new(timer_cb);
-      glw->user_data = pure_new(user_data);
-      if (timeout != glw->timeout) {
-	/* Reinstall the timer callback. */
-	if (glw->timeout > 0) g_source_remove(glw->timer_id);
-	init_gl_timer(glw, timeout);
-      }
-      /* Run the setup callback on the new views. */
-      for (l = windows; l; l = l->next) {
-	GtkWidget *w = GTK_WIDGET(l->data);
-	GtkWidget *drawing_area = gtk_bin_get_child(GTK_BIN(w));
-	gl_setup_cb(drawing_area, NULL, glw);
-      }
-      g_slist_free(windows);
-      return pure_pointer(glw->windows->data);
-    } else {
-      /* Not valid. Bail out with failure. */
-      g_slist_free(windows);
-      pure_remove_gl_window(&key);
-      return NULL;
-    }
-  } else {
-    SheetObject *so = NULL;
-    GSList *windows = get_frames(pos, name, &so), *l;
-    if (windows) {
-      glw = g_new(GLWindow, 1);
-      if (!glw) g_assert_not_reached();
-      glw->being_destroyed = FALSE;
-      glw->windows = NULL;
-      glw->so = so;
+      pure_free(glw->setup_cb);
+      pure_free(glw->config_cb);
+      pure_free(glw->display_cb);
+      pure_free(glw->timer_cb);
+      pure_free(glw->user_data);
       glw->setup_cb = glw->config_cb = glw->display_cb = glw->timer_cb =
 	glw->user_data = NULL;
-      for (l = windows; l; l = l->next) {
-	GtkWidget *w = GTK_WIDGET(l->data);
-	if (init_gl_window(glw, w)) {
-	  glw->windows = g_slist_insert_sorted(glw->windows, w, ptrcmp);
+      if (!g_slist_equal(windows, glw->windows)) {
+	GSList *ws = g_slist_copy(glw->windows);
+	/* Remove old views. */
+	glw->being_destroyed = TRUE;
+	for (l = ws; l; l = l->next) {
+	  GtkWidget *w = GTK_WIDGET(l->data);
+	  if (!g_slist_find(windows, w)) {
+	    GtkWidget *drawing_area = gtk_bin_get_child(GTK_BIN(w));
+	    /* Destroy the GL window. */
 #if 0
-	  fprintf(stderr, "adding view %p\n", w);
+	    fprintf(stderr, "removing old view %p\n", w);
 #endif
+	    gtk_widget_destroy(drawing_area);
+	    glw->windows = g_slist_remove(glw->windows, w);
+	  }
 	}
+	glw->being_destroyed = FALSE;
+	g_slist_free(ws);
+	ws = NULL;
+	/* Add new views. */
+	for (l = windows; l; l = l->next) {
+	  GtkWidget *w = GTK_WIDGET(l->data);
+	  if (init_gl_window(glw, w)) {
+	    glw->windows = g_slist_insert_sorted(glw->windows, w, ptrcmp);
+	    ws = g_slist_prepend(ws, w);
+#if 0
+	    fprintf(stderr, "adding new view %p\n", w);
+#endif
+	  }
+	}
+	g_slist_free(windows);
+	windows = g_slist_reverse(ws);
+      } else {
+	g_slist_free(windows);
+	windows = NULL;
       }
-      g_slist_free(windows);
-      if (!glw->windows) {
-	g_free(glw);
+      if (glw->windows) {
+	/* Update the callbacks. */
+	glw->setup_cb = pure_new(setup_cb);
+	glw->config_cb = pure_new(config_cb);
+	glw->display_cb = pure_new(display_cb);
+	glw->timer_cb = pure_new(timer_cb);
+	glw->user_data = pure_new(user_data);
+	if (timeout != glw->timeout) {
+	  /* Reinstall the timer callback. */
+	  if (glw->timeout > 0) g_source_remove(glw->timer_id);
+	  init_gl_timer(glw, timeout);
+	}
+	/* Run the setup callback on the new views. */
+	for (l = windows; l; l = l->next) {
+	  GtkWidget *w = GTK_WIDGET(l->data);
+	  GtkWidget *drawing_area = gtk_bin_get_child(GTK_BIN(w));
+	  gl_setup_cb(drawing_area, NULL, glw);
+	}
+	g_slist_free(windows);
+	return pure_pointer(glw->windows->data);
+      } else {
+	/* Not valid. Bail out with failure. */
+	g_slist_free(windows);
+	pure_remove_gl_window(&key);
 	return NULL;
       }
-      /* Set the callbacks. */
-      glw->setup_cb = pure_new(setup_cb);
-      glw->config_cb = pure_new(config_cb);
-      glw->display_cb = pure_new(display_cb);
-      glw->timer_cb = pure_new(timer_cb);
-      glw->user_data = pure_new(user_data);
-      glw->name = strdup(name);
-      pure_add_gl_window(&key, glw);
-      /* Install the timer callback. */
-      init_gl_timer(glw, timeout);
-      /* Run the setup callback. */
-      for (l = glw->windows; l; l = l->next) {
-	GtkWidget *w = GTK_WIDGET(l->data);
-	GtkWidget *drawing_area = gtk_bin_get_child(GTK_BIN(w));
-	gl_setup_cb(drawing_area, NULL, glw);
-      }
-      return pure_pointer(glw->windows->data);
-    } else
-      return NULL;
-  }
+    } else {
+      SheetObject *so = NULL;
+      GSList *windows = get_frames(pos, name, &so), *l;
+      if (windows) {
+	glw = g_new(GLWindow, 1);
+	if (!glw) g_assert_not_reached();
+	glw->being_destroyed = FALSE;
+	glw->windows = NULL;
+	glw->so = so;
+	glw->setup_cb = glw->config_cb = glw->display_cb = glw->timer_cb =
+	  glw->user_data = NULL;
+	for (l = windows; l; l = l->next) {
+	  GtkWidget *w = GTK_WIDGET(l->data);
+	  if (init_gl_window(glw, w)) {
+	    glw->windows = g_slist_insert_sorted(glw->windows, w, ptrcmp);
+#if 0
+	    fprintf(stderr, "adding view %p\n", w);
+#endif
+	  }
+	}
+	g_slist_free(windows);
+	if (!glw->windows) {
+	  g_free(glw);
+	  return NULL;
+	}
+	/* Set the callbacks. */
+	glw->setup_cb = pure_new(setup_cb);
+	glw->config_cb = pure_new(config_cb);
+	glw->display_cb = pure_new(display_cb);
+	glw->timer_cb = pure_new(timer_cb);
+	glw->user_data = pure_new(user_data);
+	glw->name = strdup(name);
+	pure_add_gl_window(&key, glw);
+	/* Install the timer callback. */
+	init_gl_timer(glw, timeout);
+	/* Run the setup callback. */
+	for (l = glw->windows; l; l = l->next) {
+	  GtkWidget *w = GTK_WIDGET(l->data);
+	  GtkWidget *drawing_area = gtk_bin_get_child(GTK_BIN(w));
+	  gl_setup_cb(drawing_area, NULL, glw);
+	}
+	return pure_pointer(glw->windows->data);
+      } else
+	return NULL;
+    }
+  } else
+    return NULL;
 }
 
 #else

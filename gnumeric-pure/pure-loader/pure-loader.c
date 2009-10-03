@@ -424,6 +424,7 @@ pure_async_func_init(const GnmFuncEvalInfo *ei, pure_expr *ex,
 #endif
   }
   *x = ds->value;
+  if (ex) pure_freenew(ex);
   return ret;
 }
 
