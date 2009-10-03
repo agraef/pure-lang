@@ -500,8 +500,10 @@ cb_datasource_fini(gpointer key, gpointer value, gpointer closure)
 static void
 datasource_reinit(void)
 {
-  g_hash_table_foreach(datasources, cb_datasource_fini, NULL);
-  g_hash_table_destroy(datasources);
+  if (datasources) {
+    g_hash_table_foreach(datasources, cb_datasource_fini, NULL);
+    g_hash_table_destroy(datasources);
+  }
   datasources = g_hash_table_new((GHashFunc)depkey_hash,
 				 (GEqualFunc)depkey_equal);
 }
@@ -558,7 +560,7 @@ datasource_fini(void)
     fclose(pure_async_file);
     pure_async_file = NULL;
   }
-  g_hash_table_destroy(datasources);
+  if (datasources) g_hash_table_destroy(datasources);
   datasources = NULL;
 }
 
@@ -592,8 +594,10 @@ cb_gl_fini(gpointer key, gpointer value, gpointer closure)
 static void gl_fini(void)
 {
   /* Destroy the hash table and all related resources. */
-  g_hash_table_foreach(gl_windows, cb_gl_fini, NULL);
-  g_hash_table_destroy(gl_windows);
+  if (gl_windows) {
+    g_hash_table_foreach(gl_windows, cb_gl_fini, NULL);
+    g_hash_table_destroy(gl_windows);
+  }
   gl_windows = NULL;
 }
 
