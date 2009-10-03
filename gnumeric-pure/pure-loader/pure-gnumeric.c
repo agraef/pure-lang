@@ -1707,6 +1707,19 @@ pure_expr *pure_sheet_objects(void)
 
 /* OpenGL support. This only works when GtkGLExt is available. */
 
+static gboolean check_name(SheetObject *so, const char *name)
+{
+  gboolean ok = FALSE;
+  gchar *id = NULL;
+  /* NOTE: This requires gnumeric 1.9.14 to work. */
+  g_object_get(so, "name", &id, NULL);
+  if (id) {
+    ok = strcmp(id, name) == 0;
+    g_free(id);
+  }
+  return ok;
+}
+
 static GtkWidget *get_frame_sheet(const Sheet *sheet, const char *name)
 {
   GSList *ptr;
@@ -1720,9 +1733,8 @@ static GtkWidget *get_frame_sheet(const Sheet *sheet, const char *name)
       GocItem *item = get_goc_item(view);
       if (item && GOC_IS_WIDGET(item)) {
 	GtkWidget *widget = GOC_WIDGET(item)->widget;
-	const gchar *id = gtk_widget_get_name(widget);
 	const gchar *label = gtk_frame_get_label(GTK_FRAME(widget));
-	if ((id && strcmp(id, name) == 0) ||
+	if (check_name(so, name) ||
 	    (label && strcmp(label, name) == 0))
 	  return widget;
       }
@@ -1763,21 +1775,20 @@ static gint ptrcmp(gconstpointer a, gconstpointer b)
     return 0;
 }
 
-static GSList *search_frame_so(const SheetObject *so, const char *name,
+static GSList *search_frame_so(SheetObject *so, const char *name,
 			       GSList *l)
 {
   GType t = G_OBJECT_TYPE(so);
   if (t == SHEET_WIDGET_FRAME_TYPE) {
+    gboolean ok = check_name(so, name);
     GList *w = so->realized_list;
     for (; w; w = w->next) {
       SheetObjectView *view = w->data;
       GocItem *item = get_goc_item(view);
       if (item && GOC_IS_WIDGET(item)) {
 	GtkWidget *widget = GOC_WIDGET(item)->widget;
-	const gchar *id = gtk_widget_get_name(widget);
 	const gchar *label = gtk_frame_get_label(GTK_FRAME(widget));
-	if ((id && strcmp(id, name) == 0) ||
-	    (label && strcmp(label, name) == 0))
+	if (ok || (label && strcmp(label, name) == 0))
 	  l = g_slist_insert_sorted(l, widget, ptrcmp);
       }
     }
