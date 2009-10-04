@@ -47,13 +47,16 @@ CFLAGS = -g -O2
 
 FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 
+LO_CFLAGS = $(shell pkg-config --cflags liblo jack)
+LO_LIBS = $(shell pkg-config --libs liblo jack)
+
 DISTFILES = COPYING Makefile README config.guess examples/*.pure lo.c lo.pure \
 lo-add.c lo-add.pure osc.pure pure-liblo.html
 
 all: lo$(DLL)
 
 lo$(DLL): lo.c lo-add.c
-	$(CC) $(shared) -o $@ $^ $(FLAGS) -lpure -llo -ljack $(LIBS)
+	$(CC) $(shared) -o $@ $^ $(LO_CFLAGS) $(FLAGS) -lpure $(LO_LIBS) $(LIBS)
 
 clean:
 	rm -f *$(DLL) *~ *.a *.o pure-liblo.tex
@@ -105,7 +108,7 @@ distcheck: dist
 # source uses a relative path which should work on most systems which have
 # liblo installed.
 
-includedir = /usr/include
+includedir = $(shell pkg-config --variable=prefix liblo)/include
 
 # The following need to be excluded since they are internal or need special
 # treatment. In the latter case we provide Purified wrappers in lo-add.c/pure

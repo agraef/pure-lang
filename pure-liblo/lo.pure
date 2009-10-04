@@ -1,4 +1,4 @@
-/* /usr/include/lo/lo.h: */
+/* /usr/local/include/lo/lo.h: */
 using "lib:lo";
 
 namespace lo;
@@ -43,34 +43,36 @@ extern int lo_send_bundle(void*, void*) = send_bundle;
 extern int lo_send_bundle_from(void*, void*, void*) = send_bundle_from;
 extern void* lo_message_new() = message_new;
 extern void lo_message_free(void*) = message_free;
-extern void lo_message_add_int32(void*, int) = message_add_int32;
-extern void lo_message_add_float(void*, float) = message_add_float;
-extern void lo_message_add_string(void*, char*) = message_add_string;
-extern void lo_message_add_blob(void*, void*) = message_add_blob;
-extern void lo_message_add_int64(void*, int) = message_add_int64;
-extern void Pure_lo_message_add_timetag(void*, lo_timetag*) = message_add_timetag;
-extern void lo_message_add_double(void*, double) = message_add_double;
-extern void lo_message_add_symbol(void*, char*) = message_add_symbol;
-extern void lo_message_add_char(void*, char) = message_add_char;
-extern void lo_message_add_midi(void*, char*) = message_add_midi;
-extern void lo_message_add_true(void*) = message_add_true;
-extern void lo_message_add_false(void*) = message_add_false;
-extern void lo_message_add_nil(void*) = message_add_nil;
-extern void lo_message_add_infinitum(void*) = message_add_infinitum;
+extern int lo_message_add_int32(void*, int) = message_add_int32;
+extern int lo_message_add_float(void*, float) = message_add_float;
+extern int lo_message_add_string(void*, char*) = message_add_string;
+extern int lo_message_add_blob(void*, void*) = message_add_blob;
+extern int lo_message_add_int64(void*, int) = message_add_int64;
+extern int Pure_lo_message_add_timetag(void*, lo_timetag*) = message_add_timetag;
+extern int lo_message_add_double(void*, double) = message_add_double;
+extern int lo_message_add_symbol(void*, char*) = message_add_symbol;
+extern int lo_message_add_char(void*, char) = message_add_char;
+extern int lo_message_add_midi(void*, char*) = message_add_midi;
+extern int lo_message_add_true(void*) = message_add_true;
+extern int lo_message_add_false(void*) = message_add_false;
+extern int lo_message_add_nil(void*) = message_add_nil;
+extern int lo_message_add_infinitum(void*) = message_add_infinitum;
 extern void* lo_message_get_source(void*) = message_get_source;
+extern lo_timetag* Pure_lo_message_get_timestamp(void*) = message_get_timestamp;
 extern char* lo_message_get_types(void*) = message_get_types;
 extern int lo_message_get_argc(void*) = message_get_argc;
 extern lo_arg** lo_message_get_argv(void*) = message_get_argv;
 extern long lo_message_length(void*, char*) = message_length;
 extern void* lo_message_serialise(void*, char*, void*, long*) = message_serialise;
 extern void* lo_message_deserialise(void*, long, int*) = message_deserialise;
+extern int lo_server_dispatch_data(void*, void*, long) = server_dispatch_data;
 extern char* lo_address_get_hostname(void*) = address_get_hostname;
 extern char* lo_address_get_port(void*) = address_get_port;
 extern int lo_address_get_protocol(void*) = address_get_protocol;
 extern void lo_address_set_ttl(void*, int) = address_set_ttl;
 extern int lo_address_get_ttl(void*) = address_get_ttl;
 extern void* Pure_lo_bundle_new(lo_timetag*) = bundle_new;
-extern void lo_bundle_add_message(void*, char*, void*) = bundle_add_message;
+extern int lo_bundle_add_message(void*, char*, void*) = bundle_add_message;
 extern long lo_bundle_length(void*) = bundle_length;
 extern void* lo_bundle_serialise(void*, void*, long*) = bundle_serialise;
 extern void lo_bundle_free(void*) = bundle_free;
@@ -83,6 +85,7 @@ extern void* lo_server_new(char*, void*) = server_new;
 extern void* lo_server_new_with_proto(char*, int, void*) = server_new_with_proto;
 extern void* lo_server_new_multicast(char*, char*, void*) = server_new_multicast;
 extern void lo_server_free(void*) = server_free;
+extern int lo_server_wait(void*, int) = server_wait;
 extern int lo_server_recv_noblock(void*, int) = server_recv_noblock;
 extern int lo_server_recv(void*) = server_recv;
 extern void* lo_server_add_method(void*, char*, char*, void*, void*) = server_add_method;
@@ -93,6 +96,7 @@ extern int lo_server_get_protocol(void*) = server_get_protocol;
 extern int lo_server_events_pending(void*) = server_events_pending;
 extern double lo_server_next_event_delay(void*) = server_next_event_delay;
 extern char* lo_url_get_protocol(char*) = url_get_protocol;
+extern int lo_url_get_protocol_id(char*) = url_get_protocol_id;
 extern char* lo_url_get_hostname(char*) = url_get_hostname;
 extern char* lo_url_get_port(char*) = url_get_port;
 extern char* lo_url_get_path(char*) = url_get_path;
@@ -101,6 +105,10 @@ extern int lo_blobsize(void*) = blobsize;
 extern int lo_pattern_match(char*, char*) = pattern_match;
 extern double Pure_lo_timetag_diff(lo_timetag*, lo_timetag*) = timetag_diff;
 extern void lo_timetag_now(lo_timetag*) = timetag_now;
+extern long lo_arg_size(int, void*) = arg_size;
+extern char* lo_get_path(void*, long) = get_path;
+extern void lo_arg_host_endian(int, void*) = arg_host_endian;
+extern void lo_arg_network_endian(int, void*) = arg_network_endian;
 extern void lo_bundle_pp(void*) = bundle_pp;
 extern void lo_message_pp(void*) = message_pp;
 extern void lo_arg_pp(int, void*) = arg_pp;
@@ -109,6 +117,7 @@ extern void lo_method_pp(void*) = method_pp;
 extern void lo_method_pp_prefix(void*, char*) = method_pp_prefix;
 extern void lo_server_thread_pp(void*) = server_thread_pp;
 extern void* lo_address_new(char*, char*) = address_new;
+extern void* lo_address_new_with_proto(int, char*, char*) = address_new_with_proto;
 extern void* lo_address_new_from_url(char*) = address_new_from_url;
 extern void lo_address_free(void*) = address_free;
 extern void lo_address_set_ttl(void*, int) = address_set_ttl;
@@ -121,8 +130,8 @@ extern void* lo_server_thread_new_with_proto(char*, int, void*) = server_thread_
 extern void lo_server_thread_free(void*) = server_thread_free;
 extern void* lo_server_thread_add_method(void*, char*, char*, void*, void*) = server_thread_add_method;
 extern void lo_server_thread_del_method(void*, char*, char*) = server_thread_del_method;
-extern void lo_server_thread_start(void*) = server_thread_start;
-extern void lo_server_thread_stop(void*) = server_thread_stop;
+extern int lo_server_thread_start(void*) = server_thread_start;
+extern int lo_server_thread_stop(void*) = server_thread_stop;
 extern int lo_server_thread_get_port(void*) = server_thread_get_port;
 extern void* lo_server_thread_get_server(void*) = server_thread_get_server;
 extern int lo_server_thread_events_pending(void*) = server_thread_events_pending;
@@ -135,7 +144,7 @@ extern void* lo_blob_dataptr(void*) = blob_dataptr;
    array constant. Define it as a Pure vector which can readily be passed to
    liblo functions expecting a timestamp value. */
 
-const lo::TT_IMMEDIATE = {0,0};
+const lo::TT_IMMEDIATE = {0,1};
 
 /* These are varargs functions in the liblo interface, so we massage them
    somewhat to make them callable from Pure. */
