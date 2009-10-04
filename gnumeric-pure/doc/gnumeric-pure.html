@@ -1003,41 +1003,47 @@ however, so we leave this as an exercise to the interested reader.</p>
 </div>
 <div class="section" id="triggers">
 <h2><a class="toc-backref" href="#id14">8.4&nbsp;&nbsp;&nbsp;Triggers</a></h2>
-<p>In addition to asynchronous data sources, the <tt class="docutils literal"><span class="pre">trigger</span></tt> macro is provided to
-compute values or take actions depending on some external condition, such as
-the availability of data on a special device or the creation of some widget
-(see the next section). The <tt class="docutils literal"><span class="pre">trigger</span></tt> macro is invoked as follows:</p>
+<p>In addition to asynchronous data sources, the <tt class="docutils literal"><span class="pre">trigger</span></tt> function is provided
+to compute values or take actions depending on some external condition, such
+as the availability of data on a special device or the creation of some widget
+(see the next section):</p>
 <pre class="literal-block">
-trigger timeout condition value
+extern expr* pure_trigger(int timeout, expr* cond, expr *val, expr *data)
+  = trigger;
 </pre>
-<p>The <tt class="docutils literal"><span class="pre">condition</span></tt> and <tt class="docutils literal"><span class="pre">value</span></tt> arguments are implicitly quoted. The trigger
+<p>Thus a typical invocation of the function looks as follows:</p>
+<pre class="literal-block">
+trigger timeout condition value data
+</pre>
+<p>The <tt class="docutils literal"><span class="pre">condition</span></tt> and <tt class="docutils literal"><span class="pre">value</span></tt> arguments are callback functions which get
+invoked by <tt class="docutils literal"><span class="pre">trigger</span></tt>, passing them the given <tt class="docutils literal"><span class="pre">data</span></tt> argument. The trigger
 reevaluates the given condition in regular intervals (1 second in the current
 implementation) and, as soon as it becomes <tt class="docutils literal"><span class="pre">true</span></tt>, computes the given value
 and returns that value as the result of the <tt class="docutils literal"><span class="pre">trigger</span></tt> call. As long as the
 condition doesn't hold, <tt class="docutils literal"><span class="pre">trigger</span></tt> returns a <tt class="docutils literal"><span class="pre">#N/A</span></tt> value (<tt class="docutils literal"><span class="pre">gnm_error</span>
 <span class="pre">&quot;#N/A&quot;</span></tt>). Note that, in difference to <tt class="docutils literal"><span class="pre">datasource</span></tt>, both the condition and
-the value are evaluated in Gnumeric (rather than a child process), so that it
+the value are computed in Gnumeric (rather than a child process), so that it
 is possible to access the current information in the loaded spreadsheet.</p>
 <p>The <tt class="docutils literal"><span class="pre">timeout</span></tt> value determines how often the condition is checked. If it is
 positive, the condition will be reevaluated <tt class="docutils literal"><span class="pre">timeout+1</span></tt> times (once
 initially, and then once per second for a total duration of <tt class="docutils literal"><span class="pre">timeout</span></tt>
 seconds). If it is negative, the trigger never times out and the condition
 will be checked repeatedly until the trigger expression is removed (or
-Gnumeric is exited). In either case the <tt class="docutils literal"><span class="pre">value</span></tt> will be reevaluated each
-time the <tt class="docutils literal"><span class="pre">condition</span></tt> is <tt class="docutils literal"><span class="pre">true</span></tt>. (This is most useful if the computed
+Gnumeric is exited). In either case <tt class="docutils literal"><span class="pre">value</span> <span class="pre">data</span></tt> will be recomputed each
+time <tt class="docutils literal"><span class="pre">condition</span> <span class="pre">data</span></tt> yields <tt class="docutils literal"><span class="pre">true</span></tt>. (This is most useful if the computed
 value, as a side effect, arranges for the condition to become <tt class="docutils literal"><span class="pre">false</span></tt> again
 afterwards.) Finally, if <tt class="docutils literal"><span class="pre">timeout</span></tt> is zero then the trigger fires at most
-once, as soon as the condition becomes <tt class="docutils literal"><span class="pre">true</span></tt>, at which point the <tt class="docutils literal"><span class="pre">value</span></tt>
-is evaluated just once.</p>
+once, as soon as the condition becomes <tt class="docutils literal"><span class="pre">true</span></tt>, at which point <tt class="docutils literal"><span class="pre">value</span> <span class="pre">data</span></tt>
+is computed just once.</p>
 <p>Here's a (rather useless) example of a trigger which fires exactly once, as
 soon as a certain cell goes to a certain value, and then modifies another cell
 value accordingly:</p>
 <pre class="literal-block">
-&gt; trigger 0 (get_cell &quot;A14&quot;===&quot;Hello&quot;) (set_cell &quot;A15&quot; &quot;World&quot;)
+&gt; trigger 0 (\_-&gt;get_cell &quot;A14&quot;===&quot;Hello&quot;) (\_-&gt;set_cell &quot;A15&quot; &quot;World&quot;) ()
 </pre>
 <p>Now, as soon as you type <tt class="docutils literal"><span class="pre">Hello</span></tt> in the cell A14, the trigger will print
-<tt class="docutils literal"><span class="pre">World</span></tt> in cell A15. A more useful example will be discussed in the
-following section.</p>
+<tt class="docutils literal"><span class="pre">World</span></tt> in cell A15. Note that the <tt class="docutils literal"><span class="pre">data</span></tt> argument isn't used here. A
+more useful example will be discussed in the following section.</p>
 </div>
 <div class="section" id="sheet-objects">
 <h2><a class="toc-backref" href="#id15">8.5&nbsp;&nbsp;&nbsp;Sheet Objects</a></h2>
@@ -1082,8 +1088,8 @@ that the information is updated once all objects are fully displayed. The
 <tt class="docutils literal"><span class="pre">pure_func.pure</span></tt> script contains the following little wrapper around
 <tt class="docutils literal"><span class="pre">sheet_objects</span></tt> which does this:</p>
 <pre class="literal-block">
-pure_objects =
-  trigger 0 (all realized sheet_objects) (matrix$map list sheet_objects)
+pure_objects = trigger 0 (\_-&gt;all realized sheet_objects)
+  (\_-&gt;matrix$map list sheet_objects) ()
 with realized (_,_,_,_,w) = ~listp w || ~null w &amp;&amp; ~any null w end;
 </pre>
 <p>See the <tt class="docutils literal"><span class="pre">widgets.gnumeric</span></tt> spreadsheet in the distribution for an example.</p>
@@ -1154,8 +1160,8 @@ extern bool pure_check_window(char *name) = check_window;
 go, at wich time <tt class="docutils literal"><span class="pre">gl_windows</span></tt> can be called on the widget. So your call to
 <tt class="docutils literal"><span class="pre">gl_windows</span></tt> should usually be wrapped up like this:</p>
 <pre class="literal-block">
-trigger 0 (check_window frame)
-(gl_window frame timeout setup config display timer user_data)
+trigger 0 check_window
+(\frame-&gt;gl_window frame timeout setup config display timer user_data) frame
 </pre>
 <p>Here's an example from <tt class="docutils literal"><span class="pre">pure_glfunc.pure</span></tt> which shows how these functions
 are to be used:</p>
@@ -1164,8 +1170,8 @@ using pure_func, GL, GLU;
 extern void gdk_gl_draw_teapot(bool solid, double scale);
 gnm_info &quot;gltest&quot; = &quot;sbfff&quot;;
 
-gltest frame m a b c = trigger 0 (check_window frame)
-  (gl_window frame (m*40) setup config display timer ())
+gltest frame m a b c = trigger 0 check_window
+  (\frame-&gt;gl_window frame (m*40) setup config display timer ()) frame
 with
   setup _ _ = () when
     // Initialize.

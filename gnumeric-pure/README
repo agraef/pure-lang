@@ -717,20 +717,26 @@ however, so we leave this as an exercise to the interested reader.
 Triggers
 --------
 
-In addition to asynchronous data sources, the ``trigger`` macro is provided to
-compute values or take actions depending on some external condition, such as
-the availability of data on a special device or the creation of some widget
-(see the next section). The ``trigger`` macro is invoked as follows::
+In addition to asynchronous data sources, the ``trigger`` function is provided
+to compute values or take actions depending on some external condition, such
+as the availability of data on a special device or the creation of some widget
+(see the next section)::
 
-  trigger timeout condition value
+  extern expr* pure_trigger(int timeout, expr* cond, expr *val, expr *data)
+    = trigger;
 
-The ``condition`` and ``value`` arguments are implicitly quoted. The trigger
+Thus a typical invocation of the function looks as follows::
+
+  trigger timeout condition value data
+
+The ``condition`` and ``value`` arguments are callback functions which get
+invoked by ``trigger``, passing them the given ``data`` argument. The trigger
 reevaluates the given condition in regular intervals (1 second in the current
 implementation) and, as soon as it becomes ``true``, computes the given value
 and returns that value as the result of the ``trigger`` call. As long as the
 condition doesn't hold, ``trigger`` returns a ``#N/A`` value (``gnm_error
 "#N/A"``). Note that, in difference to ``datasource``, both the condition and
-the value are evaluated in Gnumeric (rather than a child process), so that it
+the value are computed in Gnumeric (rather than a child process), so that it
 is possible to access the current information in the loaded spreadsheet.
 
 The ``timeout`` value determines how often the condition is checked. If it is
@@ -738,22 +744,22 @@ positive, the condition will be reevaluated ``timeout+1`` times (once
 initially, and then once per second for a total duration of ``timeout``
 seconds). If it is negative, the trigger never times out and the condition
 will be checked repeatedly until the trigger expression is removed (or
-Gnumeric is exited). In either case the ``value`` will be reevaluated each
-time the ``condition`` is ``true``. (This is most useful if the computed
+Gnumeric is exited). In either case ``value data`` will be recomputed each
+time ``condition data`` yields ``true``. (This is most useful if the computed
 value, as a side effect, arranges for the condition to become ``false`` again
 afterwards.) Finally, if ``timeout`` is zero then the trigger fires at most
-once, as soon as the condition becomes ``true``, at which point the ``value``
-is evaluated just once.
+once, as soon as the condition becomes ``true``, at which point ``value data``
+is computed just once.
 
 Here's a (rather useless) example of a trigger which fires exactly once, as
 soon as a certain cell goes to a certain value, and then modifies another cell
 value accordingly::
 
-  > trigger 0 (get_cell "A14"==="Hello") (set_cell "A15" "World")
+  > trigger 0 (\_->get_cell "A14"==="Hello") (\_->set_cell "A15" "World") ()
 
 Now, as soon as you type ``Hello`` in the cell A14, the trigger will print
-``World`` in cell A15. A more useful example will be discussed in the
-following section.
+``World`` in cell A15. Note that the ``data`` argument isn't used here. A
+more useful example will be discussed in the following section.
 
 Sheet Objects
 -------------
@@ -803,8 +809,8 @@ that the information is updated once all objects are fully displayed. The
 ``pure_func.pure`` script contains the following little wrapper around
 ``sheet_objects`` which does this::
 
-  pure_objects =
-    trigger 0 (all realized sheet_objects) (matrix$map list sheet_objects)
+  pure_objects = trigger 0 (\_->all realized sheet_objects)
+    (\_->matrix$map list sheet_objects) ()
   with realized (_,_,_,_,w) = ~listp w || ~null w && ~any null w end;
 
 See the ``widgets.gnumeric`` spreadsheet in the distribution for an example.
@@ -884,8 +890,8 @@ This function returns ``true`` as soon as the named frame widget is ready to
 go, at wich time ``gl_windows`` can be called on the widget. So your call to
 ``gl_windows`` should usually be wrapped up like this::
 
-  trigger 0 (check_window frame)
-  (gl_window frame timeout setup config display timer user_data)
+  trigger 0 check_window
+  (\frame->gl_window frame timeout setup config display timer user_data) frame
 
 Here's an example from ``pure_glfunc.pure`` which shows how these functions
 are to be used::
@@ -894,8 +900,8 @@ are to be used::
   extern void gdk_gl_draw_teapot(bool solid, double scale);
   gnm_info "gltest" = "sbfff";
 
-  gltest frame m a b c = trigger 0 (check_window frame)
-    (gl_window frame (m*40) setup config display timer ())
+  gltest frame m a b c = trigger 0 check_window
+    (\frame->gl_window frame (m*40) setup config display timer ()) frame
   with
     setup _ _ = () when
       // Initialize.
