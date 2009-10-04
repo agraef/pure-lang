@@ -67,15 +67,16 @@ end if stringp port || port===NULL;
 osc_send a::pointer path::string type::string msg = send a path type msg;
 
 /* osc_send_timestamped: Like osc_send above, but also specify a timestamp
-   denoting the time at which the message is to be delivered. */
+   denoting the time at which the message is to be delivered. The special
+   lo::TT_IMMEDIATE (a.k.a. {0,1}) timetag can be used to indicate that the
+   message is to be delivered immediately, giving the same behaviour as
+   osc_send. */
 
 osc_send_timestamped a::pointer ts path::string type::string msg =
   send_timestamped a ts path type msg if pointerp ts || imatrixp ts && #ts==2;
 
 /* osc_send_from: Like osc_send_timestamped above, but also specify the server
-   (as returned by osc_server) from which the message is to be sent. (Note
-   that in order to deliver the message immediately, you can pass {0,0} for
-   the timestamp parameter.) */
+   (as returned by osc_server) from which the message is to be sent. */
 
 osc_send_from a::pointer s::pointer ts path::string type::string msg =
   send_from a (server_thread_get_server s) ts path type msg
