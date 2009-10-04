@@ -804,22 +804,19 @@ pure_expr *pure_datasource(pure_expr *x)
 
 static pure_expr *try_trigger(int timeout, unsigned id,
 			      pure_expr *cond, pure_expr *value,
-			      pure_expr *ret)
+			      pure_expr *data)
 {
   int res;
-  pure_expr *e;
-  /* XXXFIXME: pure_evalx is a performance hog since it invokes the JIT. Is
-     there some better way to evaluate cond and value here? */
-  cond = pure_evalx(cond, &e);
+  pure_expr *e, *ret = NULL;
+  cond = pure_appx(cond, data, &e);
   if (cond) {
     if (pure_is_int(cond, &res)) {
       pure_freenew(cond);
       if (res) {
 	/* The condition fired. */
-	value = pure_evalx(value, &e);
+	value = pure_appx(value, data, &e);
 	if (value) {
-	  if (ret != value)
-	    pure_async_set_value(eval_info->ei, id, value);
+	  pure_async_set_value(eval_info->ei, id, value);
 	  ret = value;
 	} else {
 	  if (e) pure_freenew(e);
@@ -847,11 +844,12 @@ static pure_expr *NA_expr(void)
 
 #define trigger_ret(ret) (ret?ret:NA_expr())
 
-pure_expr *pure_trigger(int timeout, pure_expr *cond, pure_expr *value)
+pure_expr *pure_trigger(int timeout, pure_expr *cond, pure_expr *value,
+			pure_expr *data)
 {
   int pid;
   unsigned myid = ds_id;
-  pure_expr *ret= try_trigger(timeout, myid, cond, value, NULL);
+  pure_expr *ret= try_trigger(timeout, myid, cond, value, data);
   if (ret) return ret;
   if (!cond || !value || !eval_info || !eval_info->ei || !pure_async_filename)
     return NULL;

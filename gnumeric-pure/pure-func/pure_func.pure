@@ -13,9 +13,8 @@ public gnm_error;
 
 extern expr* pure_gnmcall(char* name, expr* args) = call;
 extern expr* pure_datasource(expr* x) = datasource;
-extern expr* pure_trigger(int timeout, expr* cond, expr *val);
-
-def trigger t x y = pure_trigger t ('x) ('y);
+extern expr* pure_trigger(int timeout, expr* cond, expr *val, expr *data)
+ = trigger;
 
 /* Basic cell inspection and manipulation operations. */
 
@@ -150,8 +149,8 @@ end when y = int y end;
    spreadsheet is loaded, thus we use the trigger macro to wait until this has
    happened. */
 
-pure_objects =
-  trigger 0 (all realized sheet_objects) (matrix$map list sheet_objects)
+pure_objects = trigger 0 (\_->all realized sheet_objects)
+  (\_->matrix$map list sheet_objects) ()
 with realized (_,_,_,_,w) = ~listp w || ~null w && ~any null w end;
 
 /***************************************************************************/

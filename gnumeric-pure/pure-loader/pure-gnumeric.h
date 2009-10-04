@@ -35,7 +35,8 @@ GnmValue* call_pure_function(GnmFuncEvalInfo *ei, gint n_args,
 			     GnmValue const * const *argv);
 pure_expr* pure_gnmcall(const char *name, pure_expr *args);
 pure_expr *pure_datasource(pure_expr *x);
-pure_expr *pure_trigger(int timeout, pure_expr *cond, pure_expr *value);
+pure_expr *pure_trigger(int timeout, pure_expr *cond, pure_expr *value,
+			pure_expr *data);
 
 pure_expr *pure_this_cell(void);
 pure_expr *pure_parse_range(const char *s);
