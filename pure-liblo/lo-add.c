@@ -32,6 +32,10 @@ typedef struct _lo_message {
 	size_t     datasize;
 	lo_address source;
         lo_arg   **argv;
+#if HAVE_TIMETAG
+        /* timestamp from bundle (LO_TT_IMMEDIATE for unbundled messages) */
+        lo_timetag ts;
+#endif
 } *mylo_message;
 
 // #define DEBUG
@@ -300,6 +304,7 @@ static bool init = false;
 static jack_ringbuffer_t *rb = NULL;
 
 static size_t packet_size(const char *host, const char *port, int proto,
+			 lo_timetag *ts,
 			 const char *path, const char *types,
 			 lo_arg **argv, int argc)
 {
@@ -314,6 +319,7 @@ static size_t packet_size(const char *host, const char *port, int proto,
   sz += n;
   sz += sizeof(size_t);
   sz += m;
+  sz += sizeof(lo_timetag);
   while (types && *types) {
     switch (*types++) {
     case LO_CHAR:
@@ -360,11 +366,12 @@ static size_t packet_size(const char *host, const char *port, int proto,
    writer and one reader here. */
 
 static bool write_packet(const char *host, const char *port, int proto,
+			 lo_timetag *ts,
 			 const char *path, const char *types,
 			 lo_arg **argv, int argc)
 {
   size_t i = 0, n = strlen(host), m = strlen(port);
-  if (packet_size(host, port, proto, path, types, argv, argc) >
+  if (packet_size(host, port, proto, ts, path, types, argv, argc) >
       jack_ringbuffer_write_space(rb))
     return false;
   jack_ringbuffer_write(rb, (char*)&n, sizeof(size_t));
@@ -372,6 +379,7 @@ static bool write_packet(const char *host, const char *port, int proto,
   jack_ringbuffer_write(rb, (char*)&m, sizeof(size_t));
   jack_ringbuffer_write(rb, port, m);
   jack_ringbuffer_write(rb, (char*)&proto, sizeof(int));
+  jack_ringbuffer_write(rb, (char*)ts, sizeof(lo_timetag));
   n = strlen(path); m = strlen(types);
   jack_ringbuffer_write(rb, (char*)&n, sizeof(size_t));
   jack_ringbuffer_write(rb, path, n);
@@ -420,6 +428,7 @@ static bool write_packet(const char *host, const char *port, int proto,
 }
 
 static void read_packet(char **host, char **port, int *proto,
+			lo_timetag *ts,
 			char **path, char **_types,
 			lo_arg ***argv, int *argc)
 {
@@ -432,6 +441,7 @@ static void read_packet(char **host, char **port, int *proto,
   *port = calloc(m+1, 1); assert(*port);
   jack_ringbuffer_read(rb, *port, m);
   jack_ringbuffer_read(rb, (char*)proto, sizeof(int));
+  jack_ringbuffer_read(rb, (char*)ts, sizeof(lo_timetag));
   jack_ringbuffer_read(rb, (char*)&n, sizeof(size_t));
   *path = calloc(n+1, 1); assert(*path);
   jack_ringbuffer_read(rb, *path, n);
@@ -505,6 +515,11 @@ int Pure_osc_handler(const char *path, const char *types, lo_arg **argv,
   const char *host = lo_address_get_hostname(src);
   const char *port = lo_address_get_port(src);
   int proto = lo_address_get_protocol(src);
+#if HAVE_TIMETAG
+  lo_timetag ts = lo_message_get_timestamp(msg);
+#else
+  lo_timetag ts = LO_TT_IMMEDIATE;
+#endif
 
   if (!init) {
     rb = jack_ringbuffer_create(0x100000);
@@ -513,7 +528,7 @@ int Pure_osc_handler(const char *path, const char *types, lo_arg **argv,
       fprintf(stderr, "generic_handler: error allocating ringbuffer\n");
   }
   if (rb)
-    write_packet(host, port, proto, path, types, argv, argc);
+    write_packet(host, port, proto, &ts, path, types, argv, argc);
   return 0;
 }
 
@@ -524,10 +539,11 @@ pure_expr *Pure_osc_recv_noblock(void)
   mylo_message msg;
   char *host, *port, *path, *types, *_types;
   int proto;
+  lo_timetag ts;
   lo_arg **argv;
   int argc, i = 0;
   if (!rb || jack_ringbuffer_read_space(rb) == 0) return NULL;
-  read_packet(&host, &port, &proto, &path, &types, &argv, &argc);
+  read_packet(&host, &port, &proto, &ts, &path, &types, &argv, &argc);
   _types = types;
   /* Reconstruct the message. */
   src = lo_address_new(host, port);
@@ -586,6 +602,9 @@ pure_expr *Pure_osc_recv_noblock(void)
   }
   argc = i;
   msg->source = src;
+#if HAVE_TIMETAG
+  msg->ts = ts;
+#endif
   res = pure_tuplel(2, pure_cstring_dup(path), pure_pointer(msg));
   free(host); free(port); free(path); free(_types);
   for (i = 0; i < argc; i++)

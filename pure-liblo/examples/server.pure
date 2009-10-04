@@ -35,8 +35,12 @@ def error_callback cb = fclos cb FFI_DEFAULT_ABI void_t
 /* Callback definitions. */
 
 generic (path, types, argv, argc, msg, user) =
-  printf "generic: %s, types: %s, args: %s\n"
-  (path,str types,str (decode_argv types argv argc)) $$ 1;
+  printf "generic [%08x.%08x]: %s, types: %s, args: %s\n"
+  (ts!0,ts!1,path,str types,str (decode_argv types argv argc)) $$ 1
+  when
+    t = message_get_timestamp msg;
+    ts = if pointerp t then timetag t 0 else TT_IMMEDIATE;
+  end;
 foo (path, "b", argv, 1, msg, user) =
   if blobp b then printf "foo: %s\n" (str (val b)) $$ 0
   else printf "foo: blob %s\n" (str (map ubyte (byte_matrix n b))) $$ 0

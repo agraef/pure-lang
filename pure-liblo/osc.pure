@@ -84,16 +84,21 @@ osc_send_from a::pointer s::pointer ts path::string type::string msg =
 
 /* osc_recv: Receive an OSC message. This operation blocks until a message is
    available, and requires a running server. It returns a tuple consisting of
-   the source address, the message path, the type of the message, and the
-   message data itself. The source address is delivered as a self-collecting
-   lo_address pointer holding the address of the client which sent the
-   message, which can be decoded with lo::decode_address. */
+   the source address, the timestamp, the message path, the type of the
+   message, and the message data itself. The source address is delivered as a
+   self-collecting lo_address pointer holding the address of the client which
+   sent the message, which can be decoded with lo::decode_address. (The
+   timestamp is only available with liblo 0.26 and later, and only if the
+   message was contained in a bundle, such as messages emitted with
+   osc_send_timestamped; otherwise lo::TT_IMMEDIATE is returned.) */
 
 namespace osc;
 private extern expr *Pure_osc_recv() = recv;
 
-osc_recv = a, path, types, data when
+osc_recv = a, ts, path, types, data when
   path, m = res; a = message_get_source m;
+  t = message_get_timestamp m;
+  ts = if pointerp t then timetag t 0 else TT_IMMEDIATE;
   types = message_get_types m; data = message_data m;
   message_free m;
 end if tuplep res when res = osc::recv end;
@@ -102,8 +107,10 @@ end if tuplep res when res = osc::recv end;
 
 private extern expr *Pure_osc_recv_noblock() = recv_noblock;
 
-osc_recv_noblock = a, path, types, data when
+osc_recv_noblock = a, ts, path, types, data when
   path, m = res; a = message_get_source m;
+  t = message_get_timestamp m;
+  ts = if pointerp t then timetag t 0 else TT_IMMEDIATE;
   types = message_get_types m; data = message_data m;
   message_free m;
 end if tuplep res when res = osc::recv_noblock end;
@@ -118,13 +125,13 @@ extern void Pure_osc_flush() = osc_flush;
    dispatches them according to the given list of pattern => method hash
    pairs. Each key in the method table is a glob pattern which is matched
    against the message path; if it matches, the corresponding method is
-   invoked as follows: method addr path types data, where addr is the address
-   of the sender, path is the message path, types the type specification of
-   the message, and data the message data itself, as a tuple. Different
-   methods are tried until one returns the integer 0 to indicate that
-   processing of the message is complete. To exit from the main loop, a method
-   can throw an exception whose value will be reported as osc_main's return
-   value. */
+   invoked as follows: method addr ts path types data, where addr is the
+   address of the sender, ts is the timestamp, path is the message path, types
+   the type specification of the message, and data the message data itself, as
+   a tuple. Different methods are tried until one returns the integer 0 to
+   indicate that processing of the message is complete. To exit from the main
+   loop, a method can throw an exception whose value will be reported as
+   osc_main's return value. */
 
 /* TODO: This is just an example. Maybe we should provide something more
    elaborate here, which also matches the parameter types and does automatic
@@ -137,6 +144,7 @@ extern int fnmatch(char* pat, char* s, int flags);
 osc_main methods = catch id loop with
   loop = dispatch osc_recv $$ loop;
   dispatch msg = any (process (list msg)) methods;
-  process msg@(addr::pointer:path::string:types::string:data) (pat => method) =
-    fnmatch pat path 0 == 0 && method addr path types (tuple data) === 0;
+  process msg@(addr::pointer:ts::matrix:path::string:types::string:data)
+  (pat => method) =
+    fnmatch pat path 0 == 0 && method addr ts path types (tuple data) === 0;
 end;

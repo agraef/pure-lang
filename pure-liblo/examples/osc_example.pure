@@ -29,7 +29,7 @@ osc_send t "/foo/bla" "c" 65;
 osc_send t "/foo/bla" "s" "Hello, world!";
 osc_send t "/foo/bla" "S" "Hello";
 // timestamp
-osc_send t "/foo/bla" "t" {0,0};
+osc_send t "/foo/bla" "t" {0,1};
 // MIDI message (always 4 bytes: port,status,data1,data2)
 osc_send t "/foo/bla" "m" {0,0x90,60,64};
 // blob
@@ -50,12 +50,12 @@ osc_send_timestamped t (timetag NULL 5) "/quit" "" ();
 
 if compiling then () else puts "Reading messages:" $$
 osc_main ["*"=>generic,"/foo/bla"=>foo,"/quit"=>quit] with
-  generic addr path types data =
-    printf "generic: %s, types: %s, args: %s\n"
-    (path,str types,str data) $$ 1;
-  foo addr path "b" data::pointer =
+  generic addr ts path types data =
+    printf "generic [%08x.%08x]: %s, types: %s, args: %s\n"
+    (ts!0,ts!1,path,str types,str data) $$ 1;
+  foo addr ts path "b" data::pointer =
   if blobp b then printf "foo: %s\n" (str (val b)) $$ 0
   else printf "foo: blob %s\n" (str (map ubyte (byte_matrix n b))) $$ 0
   when n,b = decode_blob data end;
-  quit _ _ _ _ = puts "quit: Exiting." $$ exit 0;
+  quit _ _ _ _ _ = puts "quit: Exiting." $$ exit 0;
 end;
