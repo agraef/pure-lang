@@ -2690,10 +2690,10 @@ Eval and Friends
 
 Pure provides some rather powerful operations to convert between Pure
 expressions and their string representation, and to evaluate quoted
-expressions (``'x``). The string conversions ``str`` and ``eval`` also
-provide a convenient means to serialize Pure expressions, e.g., when terms
-are to be transferred to/from persistent storage. (Note, however, that
-this has its limitations. Specifically, some objects like pointers and
+expressions (``'x``). The string conversions ``str``, ``val`` and ``eval``
+also provide a convenient means to serialize Pure expressions, e.g., when
+terms are to be transferred to/from persistent storage. (Note, however,
+that this has its limitations. Specifically, some objects like pointers and
 anonymous functions do not have a parsable string representation. Also see
 the `Expression Serialization`_ section for some dedicated serialization
 operations which provide a more compact binary serialization format.)
@@ -2710,12 +2710,25 @@ operations which provide a more compact binary serialization format.)
 
 .. raw:: html
 
+   <a name="val (string)">
+
+.. _val (string):
+
+``val s``
+  Parses a single simple expression, specified as a string in Pure syntax,
+  and returns the result as is, without evaluating it. Note that this is
+  much more limited than the ``eval`` operation below, as the expression
+  must not contain any of the special constructs (conditional expressions,
+  ``when``, ``with``, etc.).
+
+.. raw:: html
+
    <a name="eval">
 
 .. _eval:
 
 ``eval x``
-  Parses an expression, specified as a string in Pure syntax, and returns
+  Parses any expression, specified as a string in Pure syntax, and returns
   its value. In fact, ``eval`` can also parse and execute arbitrary Pure
   code. In that case it will return the last computed expression, if any.
   Alternatively, ``eval`` can also be invoked on a (quoted) Pure
@@ -2768,6 +2781,8 @@ Examples::
 
   > str (1/3);
   "0.333333333333333"
+  > val "1/3";
+  1/3
   > eval "1/3";
   0.333333333333333
   > eval ('(1/3));
@@ -6526,6 +6541,7 @@ Index
 | `ushort`_
 
 | `val`_
+| `val (string)`_
 | `values`_
 | `varp`_
 | `void`_

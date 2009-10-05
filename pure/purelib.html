@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>Pure Library Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2009-09-03" />
+<meta name="date" content="2009-10-06" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2009-09-03</td></tr>
+<td>2009-10-06</td></tr>
 </tbody>
 </table>
 <!-- We use docutils to produce the documentation. Docstrings are extracted -->
@@ -1741,10 +1741,10 @@ this example. Hence:</p>
 <h3><a class="toc-backref" href="#id90">1.6.5&nbsp;&nbsp;&nbsp;Eval and Friends</a></h3>
 <p>Pure provides some rather powerful operations to convert between Pure
 expressions and their string representation, and to evaluate quoted
-expressions (<tt class="docutils literal"><span class="pre">'x</span></tt>). The string conversions <tt class="docutils literal"><span class="pre">str</span></tt> and <tt class="docutils literal"><span class="pre">eval</span></tt> also
-provide a convenient means to serialize Pure expressions, e.g., when terms
-are to be transferred to/from persistent storage. (Note, however, that
-this has its limitations. Specifically, some objects like pointers and
+expressions (<tt class="docutils literal"><span class="pre">'x</span></tt>). The string conversions <tt class="docutils literal"><span class="pre">str</span></tt>, <tt class="docutils literal"><span class="pre">val</span></tt> and <tt class="docutils literal"><span class="pre">eval</span></tt>
+also provide a convenient means to serialize Pure expressions, e.g., when
+terms are to be transferred to/from persistent storage. (Note, however,
+that this has its limitations. Specifically, some objects like pointers and
 anonymous functions do not have a parsable string representation. Also see
 the <a class="reference internal" href="#expression-serialization">Expression Serialization</a> section for some dedicated serialization
 operations which provide a more compact binary serialization format.)</p>
@@ -1753,9 +1753,17 @@ operations which provide a more compact binary serialization format.)</p>
 <dd>Yields the print representation of an expression in Pure syntax, as a
 string.</dd>
 </dl>
+<a name="val (string)"><dl class="docutils" id="val-string">
+<dt><tt class="docutils literal"><span class="pre">val</span> <span class="pre">s</span></tt></dt>
+<dd>Parses a single simple expression, specified as a string in Pure syntax,
+and returns the result as is, without evaluating it. Note that this is
+much more limited than the <tt class="docutils literal"><span class="pre">eval</span></tt> operation below, as the expression
+must not contain any of the special constructs (conditional expressions,
+<tt class="docutils literal"><span class="pre">when</span></tt>, <tt class="docutils literal"><span class="pre">with</span></tt>, etc.).</dd>
+</dl>
 <a name="eval"><dl class="docutils" id="eval">
 <dt><tt class="docutils literal"><span class="pre">eval</span> <span class="pre">x</span></tt></dt>
-<dd>Parses an expression, specified as a string in Pure syntax, and returns
+<dd>Parses any expression, specified as a string in Pure syntax, and returns
 its value. In fact, <tt class="docutils literal"><span class="pre">eval</span></tt> can also parse and execute arbitrary Pure
 code. In that case it will return the last computed expression, if any.
 Alternatively, <tt class="docutils literal"><span class="pre">eval</span></tt> can also be invoked on a (quoted) Pure
@@ -1791,6 +1799,8 @@ the call site.</dd>
 <pre class="literal-block">
 &gt; str (1/3);
 &quot;0.333333333333333&quot;
+&gt; val &quot;1/3&quot;;
+1/3
 &gt; eval &quot;1/3&quot;;
 0.333333333333333
 &gt; eval ('(1/3));
@@ -4202,6 +4212,7 @@ copied to the result lists as is.</p>
 </div>
 <div class="line-block">
 <div class="line"><a class="reference internal" href="#val">val</a></div>
+<div class="line"><a class="reference internal" href="#val-string">val (string)</a></div>
 <div class="line"><a class="reference internal" href="#values">values</a></div>
 <div class="line"><a class="reference internal" href="#varp">varp</a></div>
 <div class="line"><a class="reference internal" href="#void">void</a></div>
