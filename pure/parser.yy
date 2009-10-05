@@ -127,7 +127,8 @@ static void mangle_fname(string& name);
 %token		EOFTOK 0 "end of file"
 %token		ERRTOK  "invalid character"
 %token		BADTOK  "bad token"
-%token		MAPSTO  "->"
+%token		MAPSTO	"->"
+%token		ESCAPE
 %token <sval>	ID	"identifier"
 %token <csval>	STR	"string"
 %token <ival>	INT	"integer"
@@ -186,6 +187,12 @@ source
 item
 : expr
 { restricted_action(interp.exec($1), delete $1); }
+| ESCAPE expr
+{ restricted_action(interp.parse($2), delete $2);
+  // We only parse a single expression in this mode, bail out.
+  if (yychar > 0 && interp.nerrs == 0)
+    error(yylloc, "syntax error, expected end of file");
+  YYACCEPT; }
 | LET simple_rule
 { action(interp.define($2), delete $2); }
 | CONST simple_rule

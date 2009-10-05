@@ -2688,6 +2688,28 @@ uint32_t pure_savelevel()
 }
 
 extern "C"
+pure_expr *pure_val(const char *s)
+{
+  assert(s);
+  interpreter& interp = *interpreter::g_interp;
+  interp.errmsg.clear();
+  pure_expr *res = interp.parsestr(string(s));
+  interp.result = 0;
+  if (res) {
+    if (interp.errmsg.empty()) {
+      pure_unref_internal(res);
+      return res;
+    } else {
+      pure_free_internal(res);
+      return 0;
+    }
+  } else if (interp.errmsg.empty())
+    return mk_void();
+  else
+    return 0;
+}
+
+extern "C"
 pure_expr *pure_eval(const char *s)
 {
   assert(s);
@@ -2696,8 +2718,13 @@ pure_expr *pure_eval(const char *s)
   pure_expr *res = interp.runstr(string(s)+";");
   interp.result = 0;
   if (res) {
-    pure_unref_internal(res);
-    return res;
+    if (interp.errmsg.empty()) {
+      pure_unref_internal(res);
+      return res;
+    } else {
+      pure_free_internal(res);
+      return 0;
+    }
   } else if (interp.errmsg.empty())
     return mk_void();
   else
@@ -5866,8 +5893,13 @@ pure_expr *eval(pure_expr *x)
     free(s);
     interp.result = 0;
     if (res) {
-      pure_unref_internal(res);
-      return res;
+      if (interp.errmsg.empty()) {
+	pure_unref_internal(res);
+	return res;
+      } else {
+	pure_free_internal(res);
+	return 0;
+      }
     } else if (interp.errmsg.empty())
       return mk_void();
     else
@@ -7181,15 +7213,22 @@ pure_expr *blob(pure_expr *x)
 }
 
 extern "C"
-pure_expr *val(void *x)
+pure_expr *val(pure_expr *x)
 {
-  Blob b(x);
-  if (b.verify()) {
-    //b.print_symtab();
-    map<size_t,pure_expr*> ref;
-    size_t key = 0;
-    return load(b, ref, key);
-  } else
+  void *p;
+  const char *s;
+  if (pure_is_pointer(x, &p)) {
+    Blob b(p);
+    if (b.verify()) {
+      //b.print_symtab();
+      map<size_t,pure_expr*> ref;
+      size_t key = 0;
+      return load(b, ref, key);
+    } else
+      return 0;
+  } else if (pure_is_string(x, &s))
+    return pure_val(s);
+  else
     return 0;
 }
 

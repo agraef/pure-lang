@@ -110,7 +110,7 @@ str    ([^\"\\\n]|\\(.|\n))*
 cmd    (!|help|ls|pwd|break|del|cd|show|dump|clear|save|run|override|underride|stats|quit|completion_matches)
 blank  [ \t\f\v\r]
 
-%x comment xdecl xdecl_comment xusing xusing_comment xtag rescan
+%x escape comment xdecl xdecl_comment xusing xusing_comment xtag rescan
 
 %{
 # define YY_USER_ACTION  yylloc->columns(yyleng);
@@ -129,6 +129,8 @@ blank  [ \t\f\v\r]
 "//".*     yylloc->step();
 
 "/*"       { parse_comment: BEGIN(comment); }
+
+<escape>""            { BEGIN(INITIAL); return token::ESCAPE; }
 
 <comment>[^*\n]*        yylloc->step();
 <comment>"*"+[^*/\n]*   yylloc->step();
@@ -515,7 +517,7 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
 %%
 
 bool
-interpreter::lex_begin(const string& fname)
+interpreter::lex_begin(const string& fname, bool esc)
 {
   yy_flex_debug = (verbose&verbosity::lexer) != 0 && !source_s;
   FILE *fp;
@@ -529,7 +531,7 @@ interpreter::lex_begin(const string& fname)
   if (source_s || fp) {
     yyin = fp;
     yypush_buffer_state(yy_create_buffer(yyin, YY_BUF_SIZE));
-    BEGIN(INITIAL);
+    BEGIN(esc?escape:INITIAL);
     return true;
   } else
     return false;

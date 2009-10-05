@@ -1181,6 +1181,66 @@ pure_expr *interpreter::runstr(const string& s)
   return result;
 }
 
+pure_expr *interpreter::parsestr(const string& s)
+{
+  // save local data
+  bool l_compiling = compiling;
+  bool l_interactive = interactive;
+  string l_source = source;
+  int l_nerrs = nerrs;
+  const char *l_source_s = source_s;
+  string l_srcdir = srcdir;
+  int32_t l_modno = modno;
+  string *l_current_namespace = symtab.current_namespace;
+  set<string> *l_search_namespaces = symtab.search_namespaces;
+  // save global data
+  uint8_t s_verbose = g_verbose;
+  bool s_interactive = g_interactive;
+  interpreter* s_interp = g_interp;
+  g_verbose = 0;
+  g_interactive = interactive = false;
+  g_interp = this;
+  // initialize
+  nerrs = 0;
+  source = ""; declare_op = false;
+  string s1 = "\007"+s;
+  source_s = s1.c_str();
+  srcdir = "";
+  modno = modctr++;
+  symtab.current_namespace = new string;
+  symtab.search_namespaces = new set<string>;
+  errmsg.clear();
+  compiling = false;
+  bool ok = lex_begin("", true);
+  if (ok) {
+    yy::parser parser(*this);
+    // parse
+    if (result) pure_free(result); result = 0;
+    parser.parse();
+    // finalize
+    lex_end();
+  }
+  // restore global data
+  g_verbose = s_verbose;
+  g_interactive = s_interactive;
+  g_interp = s_interp;
+  // restore local data
+  compiling = l_compiling;
+  interactive = l_interactive;
+  source = l_source;
+  source_s = 0;
+  nerrs = l_nerrs;
+  source_s = l_source_s;
+  srcdir = l_srcdir;
+  modno = l_modno;
+  delete symtab.current_namespace;
+  delete symtab.search_namespaces;
+  symtab.current_namespace = l_current_namespace;
+  symtab.search_namespaces = l_search_namespaces;
+  // return last computed result, if any
+  return result;
+}
+
 // Evaluate an expression.
 
 pure_expr *interpreter::eval(expr& x, bool keep)
@@ -1952,6 +2012,21 @@ void interpreter::exec(expr *x)
     cout << result << '\n';
     if (stats)
       cout << ((double)clocks)/(double)CLOCKS_PER_SEC << "s\n";
+  }
+}
+
+void interpreter::parse(expr *x)
+{
+  last.clear();
+  if (result) pure_free(result); result = 0;
+  pure_expr *res = const_value(*x, true);
+  if (!res) throw err("syntax error");
+  result = pure_new(res);
+  delete x;
+  if (interactive) {
+    if (lastres) pure_free(lastres);
+    lastres = pure_new(result);
+    cout << result << '\n';
   }
 }
 

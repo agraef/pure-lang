@@ -408,7 +408,7 @@ public:
   list<string> loaded_libs; // the list of all loaded libs (lib:...)
   ostream *output;   // redirected output stream for interactive commands
   symtable symtab;   // the symbol table
-  pure_expr *result; // last result computed by exec()
+  pure_expr *result; // last result computed by exec() or parse()
   pure_expr *lastres;// last printed result (interactive mode only)
   clock_t clocks;    // last evaluation time, if stats is set
   exprl last;        // last processed lhs collection
@@ -449,8 +449,10 @@ public:
   /* This works like run() above, but takes the source directly from a
      string. No error messages will be printed, instead any errors reported
      during the most recent invokation of this method are available in
-     errmsg. */
+     errmsg. parsestr works like runstr, but only parses a simple expression
+     and returns it as is. */
   pure_expr *runstr(const string& source);
+  pure_expr *parsestr(const string& source);
 
   /* Evaluate a (compile time) expression and return the (runtime expression)
      result. Returns a null pointer if an exception occurred during the
@@ -538,6 +540,7 @@ public:
   void define(rule *r);
   void define_const(rule *r);
   void exec(expr *x);
+  void parse(expr *x);
   void clearsym(int32_t f);
   rulel *default_lhs(exprl &l, rulel *rl);
   void add_rules(rulel &rl, rulel *r, bool b);
@@ -866,7 +869,7 @@ public:
   bool declare_op;
   string srcdir;
 private:
-  bool lex_begin(const string& fname = "");
+  bool lex_begin(const string& fname = "", bool esc = false);
   void lex_end();
 };
 

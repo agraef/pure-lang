@@ -424,6 +424,12 @@ uint32_t pure_restore();
 
 uint32_t pure_savelevel();
 
+/* pure_val() parses the given string, which must conform to the simple
+   expression syntax, and returns the corresponding expression as is, i.e.,
+   without evaluating it. */
+
+pure_expr *pure_val(const char *s);
+
 /* Like eval() and evalcmd() in the library API, the following routines
    evaluate Pure expressions and other Pure code, but, for convenience, the
    input is specified as a string. pure_eval() only executes ordinary Pure
@@ -853,11 +859,12 @@ pure_expr *lastres();
    object (returned as a cooked pointer object which frees itself when
    garbage-collected), val() retrieves the serialized expression. blobp() does
    a quick check for a valid blob object, blob_size() and blob_crc() determine
-   the size (in bytes) and crc checksum of a blob, respectively. (Note that
+   the size (in bytes) and crc checksum of a blob, respectively. Note that
    val() may fail even if blobp() returns true, because for performance
    reasons blobp() only does a quick plausibility check on the header
    information of the blob, whereas val() also performs a crc check and
-   verifies data integrity.) */
+   verifies data integrity. Also note that val() is overloaded; on strings, it
+   invokes pure_val() (see above). */
 
 /* The current implementation has some limitations. Specifically, runtime data
    (local closures and pointers) can't be serialized right now, causing blob()
@@ -871,7 +878,7 @@ pure_expr *lastres();
    declarations in the sending and the receiving script match up. */
 
 pure_expr *blob(pure_expr *x);
-pure_expr *val(void *x);
+pure_expr *val(pure_expr *x);
 bool blobp(pure_expr *x);
 pure_expr *blob_size(pure_expr *x);
 pure_expr *blob_crc(pure_expr *x);

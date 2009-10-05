@@ -405,10 +405,10 @@ using namespace __C;
 
    Pure provides some rather powerful operations to convert between Pure
    expressions and their string representation, and to evaluate quoted
-   expressions (``'x``). The string conversions ``str`` and ``eval`` also
-   provide a convenient means to serialize Pure expressions, e.g., when terms
-   are to be transferred to/from persistent storage. (Note, however, that
-   this has its limitations. Specifically, some objects like pointers and
+   expressions (``'x``). The string conversions ``str``, ``val`` and ``eval``
+   also provide a convenient means to serialize Pure expressions, e.g., when
+   terms are to be transferred to/from persistent storage. (Note, however,
+   that this has its limitations. Specifically, some objects like pointers and
    anonymous functions do not have a parsable string representation. Also see
    the `Expression Serialization`_ section for some dedicated serialization
    operations which provide a more compact binary serialization format.)
@@ -419,10 +419,19 @@ using namespace __C;
      Yields the print representation of an expression in Pure syntax, as a
      string.
 
+   .. _val (string):
+
+   ``val s``
+     Parses a single simple expression, specified as a string in Pure syntax,
+     and returns the result as is, without evaluating it. Note that this is
+     much more limited than the ``eval`` operation below, as the expression
+     must not contain any of the special constructs (conditional expressions,
+     ``when``, ``with``, etc.).
+
    .. _eval:
 
    ``eval x``
-     Parses an expression, specified as a string in Pure syntax, and returns
+     Parses any expression, specified as a string in Pure syntax, and returns
      its value. In fact, ``eval`` can also parse and execute arbitrary Pure
      code. In that case it will return the last computed expression, if any.
      Alternatively, ``eval`` can also be invoked on a (quoted) Pure
@@ -635,7 +644,7 @@ str x = cstring (pure_str x);
 /* Expression serialization. */
 
 extern expr* blob(expr*);
-extern expr* val(void*);
+extern expr* val(expr*);
 extern bool blobp(expr*);
 extern expr* blob_size(expr*);
 extern expr* blob_crc(expr*);
