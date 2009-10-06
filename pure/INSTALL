@@ -115,12 +115,9 @@ the comments on 32/64 bit support in the SYSTEM NOTES section below.
 
 Note that the configure flags are for an optimized (non-debug) build and
 disable all compilation targets but the one for your system. You might wish to
-omit --enable-targets=host-only if you want to enable cross-compilation (this
-isn't directly supported by Pure right now, but the LLVM tools offer this
-capability). To do a debug build of LLVM, simply leave away all the extra
-configure parameters (except possibly --enable-targets=host-only, and
---enable-pic if it is needed). Note, however, that this will have an impact on
-the speed of the Pure compiler.
+play with the configure options, but note that some options (especially
+--enable-expensive-checks) make LLVM very slow and even break the Pure
+interpreter on some systems.
 
 STEP 4. Get and unpack the Pure sources at: http://pure-lang.googlecode.com
 
@@ -595,8 +592,9 @@ need to add -lpthread to the linker options by modifying the LIBS variable,
 see the COMPILER AND LINKER OPTIONS for details.
 
 Note that, at the time of this writing, the LLVM port in the FreeBSD ports
-collection is built with all assertions and checks enabled, so you might want
-to compile LLVM yourself to improve performance.
+collection is built with all assertions and checks enabled, so it's strongly
+recommended that you compile LLVM yourself (in particular, make sure that LLVM
+is built with --disable-expensive-checks).
 
 Also note that building Pure requires GNU make, thus you will have to use
 'gmake' instead of 'make'. In addition to gmake, you'll need recent versions
