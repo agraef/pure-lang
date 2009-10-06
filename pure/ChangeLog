@@ -1,5 +1,18 @@
 2009-10-06  Albert Graef  <Dr.Graef@t-online.de>
 
+	* interpreter.cc, runtime.cc: Back out r2162 from 2009-08-31, so
+	that we do keep track of compile time environment reference counts
+	again, and delete the environments as soon as they are no longer
+	needed. This fixes leaks of JIT function stubs if the environment
+	contained local functions which could eventually cause the JIT to
+	abort the interpreter when running out of function stubs.
+
+	NOTE: This change was originally done to work around some (bogus)
+	failed assertions on some systems if LLVM was compiled with
+	--enable-expensive-checks (reported by Roman Neuhauser). So you
+	should make sure to use --disable-expensive-checks (as recommended
+	in the Pure installation instructions) when compiling LLVM.
+
 	* parser.yy, lexer.ll, interpreter.cc: Add support for pure_val
 	operation.
 
