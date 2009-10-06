@@ -285,6 +285,7 @@ static void pure_reload_script(gpointer data, gpointer unused)
 }
 
 static void datasource_reinit(void);
+static void gl_reinit(void);
 
 void pure_stop(GnmAction const *action, WorkbookControl *wbc)
 {
@@ -304,6 +305,7 @@ void pure_reload(GnmAction const *action, WorkbookControl *wbc)
     int argc = 0;
 #endif
     datasource_reinit();
+    gl_reinit();
     pure_delete_interp(interp);
     interp = pure_create_interp(argc, argv);
     pure_switch_interp(interp);
@@ -599,6 +601,47 @@ static void gl_fini(void)
     g_hash_table_destroy(gl_windows);
   }
   gl_windows = NULL;
+}
+
+static void
+cb_gl_refini(gpointer key, gpointer value, gpointer closure)
+{
+  GLWindow *glw = value;
+  if (glw->timeout > 0) g_source_remove(glw->timer_id);
+  if (glw->setup_cb) pure_free(glw->setup_cb);
+  if (glw->config_cb) pure_free(glw->config_cb);
+  if (glw->display_cb) pure_free(glw->display_cb);
+  if (glw->timer_cb) pure_free(glw->timer_cb);
+  if (glw->user_data) pure_free(glw->user_data);
+  if (glw->name) free(glw->name);
+  glw->setup_cb = glw->config_cb = glw->display_cb = glw->timer_cb =
+    glw->user_data = NULL;
+  glw->timeout = glw->timer_id = 0;
+  /* Get rid of the GL windows. */
+  if (glw->windows) {
+    GSList *l;
+    glw->being_destroyed = TRUE;
+    for (l = glw->windows; l; l = l->next) {
+      GtkWidget *w = GTK_WIDGET(l->data);
+      GtkWidget *drawing_area = gtk_bin_get_child(GTK_BIN(w));
+#if 0
+      fprintf(stderr, "removing view %p\n", w);
+#endif
+      gtk_widget_destroy(drawing_area);
+    }
+    glw->being_destroyed = FALSE;
+    g_slist_free(glw->windows);
+  }
+  g_free(glw);
+}
+
+static void gl_reinit(void)
+{
+  if (gl_windows) {
+    g_hash_table_foreach(gl_windows, cb_gl_refini, NULL);
+    g_hash_table_destroy(gl_windows);
+  }
+  gl_init();
 }
 
 GLWindow *pure_get_gl_window(const DepKey *key)
