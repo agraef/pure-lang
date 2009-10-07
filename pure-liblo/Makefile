@@ -26,6 +26,7 @@ shared = -shared
 ifneq "$(findstring -mingw,$(host))" ""
 # Windows
 DLL = .dll
+LIBS = -lws2_32 -lgmp
 endif
 ifneq "$(findstring -darwin,$(host))" ""
 # OSX (untested)
