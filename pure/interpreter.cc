@@ -762,6 +762,7 @@ interpreter::error(const yy::location& l, const string& m)
     fflush(stdout);
     fprintf(stderr, "%s, line %u: %s\n", l.begin.filename->c_str(),
 	    l.begin.line, m1.c_str());
+    fflush(stderr);
 #endif
   }
 }
