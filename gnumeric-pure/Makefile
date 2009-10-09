@@ -28,11 +28,10 @@ version = 0.5
 
 # 2.  Adjust the following as needed for your GTK+/GOffice installation:
 
-GODEPS=libgoffice-0.8
+GODEPS=libspreadsheet-1.10
 
-INCLUDES = `pkg-config --cflags $(GODEPS)` \
--I$(prefix)/include/libspreadsheet-1.10/spreadsheet
-LIBS = `pkg-config --libs $(GODEPS)`
+INCLUDES = `pkg-config --cflags $(GODEPS)`
+GTKLIBS = `pkg-config --libs $(GODEPS)`
 
 #     Adjust the following as needed to build with OpenGL support (requires
 #     GtkGLExt). Or comment out the following line if you don't want this.
@@ -58,7 +57,8 @@ GLDEPS=gtkglext-1.0 gtkglext-x11-1.0
 # information.
 
 # Try to guess the Gnumeric version number:
-gnmversion=$(shell gnumeric --version | sed -n -e "s/^gnumeric version '\([0-9.]*\)'.*/\1/" -e "/^[0-9.]*$$/p")
+#gnmversion=$(shell gnumeric --version | sed -n -e "s/^gnumeric version '\([0-9.]*\)'.*/\1/" -e "/^[0-9.]*$$/p")
+gnmversion=$(shell pkg-config --modversion libspreadsheet-1.10)
 
 # Try to guess the Gnumeric installation prefix:
 prefix = $(patsubst %/bin/gnumeric,%,$(shell which gnumeric 2>/dev/null))
@@ -96,9 +96,11 @@ shared = -shared
 
 # Take care of some common systems.
 ifneq "$(findstring -mingw,$(host))" ""
-# Windows/mingw (untested)
+# Windows/mingw
 DLL = .dll
 LDFLAGS = -Wl,--enable-auto-import
+LIBS = -lgsl -lgmp
+GLDEPS = gtkglext-1.0 gtkglext-win32-1.0
 endif
 ifneq "$(findstring -darwin,$(host))" ""
 # OSX (untested)
@@ -116,7 +118,7 @@ endif
 # http://wiki.fifengine.de/Segfault_in_cxa_allocate_exception#Workaround
 ifneq "$(GLDEPS)" ""
 INCLUDES += `pkg-config --cflags $(GLDEPS)` -DUSE_GL
-LIBS += -lstdc++ `pkg-config --libs $(GLDEPS)`
+GTKLIBS += -lstdc++ `pkg-config --libs $(GLDEPS)`
 endif
 
 # Default CFLAGS and CPPFLAGS, LDFLAGS and LIBS are empty by default.
@@ -134,7 +136,7 @@ pure-glfunc/*.pure pure-glfunc/plugin.xml examples/*.gnumeric
 all: pure-loader/pure_loader$(DLL)
 
 pure-loader/pure_loader$(DLL): pure-loader/boot.o pure-loader/pure-gnumeric.o pure-loader/pure-loader.o
-	$(CC) $(shared) -o $@ $(LDFLAGS) $^ $(LIBS) -lpure
+	$(CC) $(shared) -o $@ $(LDFLAGS) $^ $(GTKLIBS) -lpure $(LIBS)
 
 %.o: %.c
 	$(CC) $(INCLUDES) -I. -I.. $(CPPFLAGS) -DGNM_VERSION='"$(gnmversion)"' -DPLUGIN_VERSION='"$(version)"' -DPURE_INCLUDES='"-I$(gnmplugindir)/$(purefuncdir)","-I$(gnmlocalplugindir)/$(purefuncdir)"' $(CFLAGS) $(PIC) -o $@ -c $<

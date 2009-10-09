@@ -23,7 +23,9 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifndef _WIN32
 #include <sys/wait.h>
+#endif
 #include <signal.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -284,14 +286,18 @@ static void pure_reload_script(gpointer data, gpointer unused)
   g_free(cmdbuf);
 }
 
+#ifndef _WIN32
 static void datasource_reinit(void);
+#endif
 static void gl_reinit(void);
 
 void pure_stop(GnmAction const *action, WorkbookControl *wbc)
 {
+#ifndef _WIN32
   if (interp && g_list_first(modnames)) {
     datasource_reinit();
   }
+#endif
 }
 
 void pure_reload(GnmAction const *action, WorkbookControl *wbc)
@@ -304,7 +310,9 @@ void pure_reload(GnmAction const *action, WorkbookControl *wbc)
     char **argv = NULL;
     int argc = 0;
 #endif
+#ifndef _WIN32
     datasource_reinit();
+#endif
     gl_reinit();
     pure_delete_interp(interp);
     interp = pure_create_interp(argc, argv);
@@ -341,6 +349,8 @@ depkey_equal(DepKey const *k1, DepKey const *k2)
 {
   return k1->node == k2->node && k1->dep == k2->dep && k1->id == k2->id;
 }
+
+#ifndef _WIN32
 
 /* Support for asynchronous data sources (adapted from sample_datasource.c). */
 
@@ -566,6 +576,8 @@ datasource_fini(void)
   datasources = NULL;
 }
 
+#endif
+
 /****************************************************************************/
 
 static GHashTable *gl_windows = NULL;
@@ -676,8 +688,9 @@ static void
 func_unlink(GnmFuncEvalInfo *ei)
 {
   DepKey key = { ei->func_call, ei->pos->dep, 0 };
-  DataSource *ds;
   GLWindow *glw;
+#ifndef _WIN32
+  DataSource *ds;
   while ((ds = g_hash_table_lookup(datasources, &key)) != NULL) {
 #if 0
     fprintf(stderr, "delete datasource = %p-%p-%u [%d]\n",
@@ -695,6 +708,7 @@ func_unlink(GnmFuncEvalInfo *ei)
     key.id++;
   }
   key.id = 0;
+#endif
   while ((glw = g_hash_table_lookup(gl_windows, &key)) != NULL) {
     GSList *l = glw->windows;
     if (glw->timeout > 0) g_source_remove(glw->timer_id);
@@ -736,7 +750,9 @@ gplp_service_load(GOPluginLoader *l, GOPluginService *s, GOErrorInfo **err)
     gplp_load_service_function_group(l, s, err);
   else
     return FALSE;
+#ifndef _WIN32
   datasource_init();
+#endif
   gl_init();
   return TRUE;
 }
@@ -748,7 +764,9 @@ gplp_service_unload(GOPluginLoader *l, GOPluginService *s, GOErrorInfo **err)
     ;
   else
     return FALSE;
+#ifndef _WIN32
   datasource_fini();
+#endif
   gl_fini();
   return TRUE;
 }

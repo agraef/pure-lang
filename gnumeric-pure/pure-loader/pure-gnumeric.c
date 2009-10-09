@@ -458,6 +458,7 @@ typedef struct {
 static MyEvalInfo *eval_info;
 static unsigned ds_id, gl_id;
 
+#ifndef _WIN32
 static pure_expr *eval_expr(void)
 {
   if (eval_info) {
@@ -474,6 +475,7 @@ static pure_expr *eval_expr(void)
   } else
     return NULL;
 }
+#endif
 
 static inline const char *skip(const char *spec)
 {
@@ -746,15 +748,18 @@ bool pure_read_blob(FILE *fp, DepKey *key, pure_expr **x)
   }
 }
 
+#ifndef _WIN32
 static void out(FILE *fp, DepKey *key, pure_expr *x)
 {
   if (!pure_write_blob(fp, key, x))
     // Write error, bail out.
     exit(1);
 }
+#endif
 
 pure_expr *pure_datasource(pure_expr *x)
 {
+#ifndef _WIN32
   int pid;
   pure_expr *ret;
   if (!x || !eval_info || !eval_info->ei || !pure_async_filename)
@@ -800,8 +805,12 @@ pure_expr *pure_datasource(pure_expr *x)
       return NULL;
     }
   }
+#else
+  return NULL;
+#endif
 }
 
+#ifndef _WIN32
 static pure_expr *try_trigger(int timeout, unsigned id,
 			      pure_expr *cond, pure_expr *value,
 			      pure_expr *data)
@@ -836,6 +845,7 @@ static pure_expr *try_trigger(int timeout, unsigned id,
     pure_freenew(e);
   return ret;
 }
+#endif
 
 static pure_expr *NA_expr(void)
 {
@@ -847,6 +857,7 @@ static pure_expr *NA_expr(void)
 pure_expr *pure_trigger(int timeout, pure_expr *cond, pure_expr *value,
 			pure_expr *data)
 {
+#ifndef _WIN32
   int pid;
   unsigned myid = ds_id;
   pure_expr *ret= try_trigger(timeout, myid, cond, value, data);
@@ -889,6 +900,9 @@ pure_expr *pure_trigger(int timeout, pure_expr *cond, pure_expr *value,
       return NULL;
     }
   }
+#else
+  return NULL;
+#endif
 }
 
 /* Retrieve and manipulate cell ranges. */
@@ -1434,7 +1448,9 @@ pure_expr *pure_set_range_format(const char *s, pure_expr *xs)
 }
 
 #include <gtk/gtk.h>
+#ifndef _WIN32
 #include <gdk/gdkx.h>
+#endif
 #include <sheet-object.h>
 #include <sheet-object-impl.h>
 #include <sheet-object-widget.h>
