@@ -1448,9 +1448,6 @@ pure_expr *pure_set_range_format(const char *s, pure_expr *xs)
 }
 
 #include <gtk/gtk.h>
-#ifndef _WIN32
-#include <gdk/gdkx.h>
-#endif
 #include <sheet-object.h>
 #include <sheet-object-impl.h>
 #include <sheet-object-widget.h>
