@@ -108,10 +108,12 @@ $ ./configure --enable-optimized --disable-assertions --disable-expensive-checks
 $ make
 $ sudo make install
 
-*IMPORTANT:* On x86-64 systems you should add --enable-pic to the configure
-command, so that the static LLVM libraries can be linked into the Pure runtime
-library. Conversely, on 32 bit systems the --disable-pic option is needed. See
-the comments on 32/64 bit support in the SYSTEM NOTES section below.
+*IMPORTANT:* With LLVM 2.5 and earlier, on x86-64 systems you have to add
+--enable-pic to the configure command, so that the static LLVM libraries can
+be linked into the Pure runtime library. (Do *not* add this option when
+compiling on a 32 bit system, it's broken there.) With LLVM 2.6 this option
+isn't needed anymore. See the comments on 32/64 bit support in the SYSTEM
+NOTES section below for details.
 
 Note that the configure flags are for an optimized (non-debug) build and
 disable all compilation targets but the one for your system. You might wish to
@@ -170,15 +172,14 @@ test042.pure will always fail if you built Pure without GSL support; take this
 as a reminder that you need GSL to enjoy full matrix support in Pure.
 
 If Pure appears to be broken on your system ('make check' reports a lot of
-failures), it's usually because of a miscompiled LLVM. Please review the
-instructions under step 3, and make sure the LLVM configure command includes
---enable-pic or --disable-pic as required by your platform. Also check the
-SYSTEM NOTES section to see whether your platform is known to have issues and
-which workarounds may be needed. If all that doesn't help then you might be
-running into LLVM bugs and limitations on not-so-well supported platforms; in
-that case please also report the results of 'make check' as described above,
-so that we can try to figure out what is going on and whether there's a
-fix or workaround for the problem.
+failures), it's usually because of a miscompiled LLVM on 32 bit platforms.
+Please review the instructions under step 3, and check the SYSTEM NOTES
+section to see whether your platform is known to have issues and which
+workarounds may be needed. If all that doesn't help then you might be running
+into LLVM bugs and limitations on not-so-well supported platforms; in that
+case please also report the results of 'make check' as described above, so
+that we can try to figure out what is going on and whether there's a fix or
+workaround for the problem.
 
 STEP 6. The Pure interpreter should be ready to go now.
 
@@ -515,11 +516,9 @@ a stack overflow.
 32 BIT SYSTEMS
 -- --- -------
 
-The LLVM JIT is currently broken on x86-32 if it is built with --enable-pic
-(which is the default in the current svn version of LLVM). Right now, the
-easiest way to work around this is to specify --disable-pic when configuring
-LLVM for x86-32 systems. Please check the following bug report for details on
-this issue: http://llvm.org/bugs/show_bug.cgi?id=3239
+With LLVM 2.5 and earlier, the JIT is broken on x86-32 if it is built with
+--enable-pic, so make sure you do *not* use this option when compiling LLVM
+<=2.5 on 32 bit systems.
 
 The Ubuntu 9.04 LLVM 2.5 package (2.5-0ubuntu1) is broken on x86-32 for this
 reason (the package was built using --enable-pic unconditionally for both 32
@@ -532,10 +531,10 @@ maintainers so that the package gets fixed.
 
 64 bit systems are fully supported by Pure (as far as LLVM supports them).
 
-As of LLVM 2.4, building the Pure runtime library (libpure) works out of the
-box on x86-64 systems, too. To make this work, you have to configure LLVM with
---enable-pic so that the static LLVM libraries can be linked into the runtime
-library. (This is the default in the svn version of LLVM.)
+With LLVM 2.5 and earlier, building the Pure runtime library (libpure)
+requires that you configure LLVM with --enable-pic so that the static LLVM
+libraries can be linked into the runtime library. With LLVM 2.6 and later,
+this option isn't needed anymore.
 
 If you still use LLVM 2.3 on x86-64, there is a patch by Cyrille Berger which
 you need to apply in the llvm-2.3 source directory to make that version link
@@ -630,6 +629,6 @@ compiler work. Just unzip these into some convenient location on your
 harddrive and set up PATH so that it points to the llvm-x.y directory.
 
 
-September 2009
+October 2009
 Albert Graef <Dr.Graef at t-online.de>
 Eddie Rucker <erucker at bmc.edu>
