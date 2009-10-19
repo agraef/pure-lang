@@ -4846,7 +4846,8 @@ ReturnInst *Env::CreateRet(Value *v, const rule *rp)
 	    free_fun = interp.module->getFunction("pure_pop_tail_args");
 	    free1_fun = interp.module->getFunction("pure_pop_tail_arg");
 	    /* Patch up this call to correct the offset of the environment. */
-#ifdef LLVM26
+#if LLVM26 && !NEW_OSTREAM
+	    // This change was reverted in recent svn.
 	    CallInst *c2 = c1->clone(llvm::getGlobalContext());
 #else
 	    CallInst *c2 = c1->clone();
