@@ -314,12 +314,15 @@ static char *get_expr(t_symbol *sym, int argc, t_atom *argv)
   return s;
 }
 
+#define myisalpha(c) (c=='_'||isalpha(c))
+#define myisalnum(c) (c=='_'||isalnum(c))
+
 static inline pure_expr *parse_symbol(t_pure *x, const char *s)
 {
   size_t i, n = strlen(s);
-  if (!isalpha(s[0])) goto err;
+  if (!myisalpha(s[0])) goto err;
   for (i = 1; i < n; i++)
-    if (!isalnum(s[i])) goto err;
+    if (!myisalnum(s[i])) goto err;
   return pure_symbol(pure_sym(s));
  err:
   /* treat as a Pure string */
