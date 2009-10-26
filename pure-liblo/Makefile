@@ -21,6 +21,7 @@ host = $(shell ./config.guess)
 #PIC = -fPIC # uncomment for x86-64 compilation
 DLL = .so
 shared = -shared
+LIBS = -lgmp
 
 # Take care of some common systems.
 ifneq "$(findstring -mingw,$(host))" ""
