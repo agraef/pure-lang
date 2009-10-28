@@ -102,6 +102,25 @@ AC_ARG_ENABLE(warnings,
   [case "${enableval}" in
     yes)  CXXFLAGS="$CXXFLAGS -Wall"; CFLAGS="$CFLAGS -Wall" ;;
   esac])
+dnl Readline/libedit support.
+vl_readline_libs="readline"
+vl_editline_libs="edit editline"
+AC_ARG_WITH(readline,
+  [  --with-readline         readline support, if available (default)],
+  [case "${withval}" in
+     no)  vl_readline_libs="" ;;
+   esac])
+AC_ARG_WITH(editline,
+  [  --with-editline         editline support, if available (default)],
+  [case "${withval}" in
+     no)  vl_editline_libs="" ;;
+   esac])
+if test -z "$vl_readline_libs" -a -z "$vl_editline_libs"; then
+  vl_readline_libs=""
+else
+  vl_readline_libs="$vl_readline_libs $vl_editline_libs"
+fi
+vl_editline_libs=""
 dnl Check for libraries.
 AC_CHECK_LIB(gmp, __gmpz_init)
 AC_CHECK_LIB(m, cos)
@@ -115,7 +134,7 @@ dnl On non-POSIX systems like Windows, we have to get the glob and regex
 dnl functions from separate libraries, too.
 AC_CHECK_LIB(glob, glob)
 AC_CHECK_LIB(regex, regcomp)
-dnl readline needs special treatment (macro by Ville Laurikari).
+dnl readline/editline support (macro by Ville Laurikari).
 AC_CHECK_READLINE
 dnl iconv and nl_langinfo need special treatment (macros by Bruno Haible).
 AM_ICONV
@@ -223,6 +242,7 @@ Pure ${PACKAGE_VERSION} is now configured for LLVM ${llvm_version} on ${host}.
   C compiler:           $CC $CFLAGS $CPPFLAGS
   C++ compiler:         $CXX $CXXFLAGS $CPPFLAGS
   Linker:               $CXX $LDFLAGS $LIBS
+  Readline support:	$rllib
   Build libpure:        $sharedlib
   fastcc/TCO support:   $fastcc
   GSL support:          $gsllib

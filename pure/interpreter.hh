@@ -434,11 +434,11 @@ public:
 
      Returns the last computed expression (if any). (This expression is owned
      by the interpreter and must *not* be freed by the caller.) This is the
-     main interface function. If interactive is true, readline is used to get
-     interactive input from the user, using ps as the prompt string. Please
-     note that due to some global data shared by different interpreter
-     instances, you can't run two interpreters concurrently right now. (It is
-     possible to run them sequentially, though.) */
+     main interface function. If interactive is true, input is read
+     interactively from the user, using ps as the prompt string. Please note
+     that due to some global data shared by different interpreter instances,
+     you can't run two interpreters concurrently right now. (It is possible to
+     run them sequentially, though.) */
   pure_expr *run(const string& source, bool check = true,
 		 bool sticky = false);
   pure_expr *run(const list<string>& sources, bool check = true,

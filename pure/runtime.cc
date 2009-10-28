@@ -22,8 +22,6 @@ char *alloca ();
 #include "expr.hh"
 #include "interpreter.hh"
 #include "util.hh"
-#include <readline/readline.h>
-#include <readline/history.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <unistd.h>
@@ -60,7 +58,6 @@ char *alloca ();
 #endif
 
 #ifdef HAVE_GSL
-#include <gsl/gsl_errno.h>
 #include <gsl/gsl_matrix.h>
 #endif
 
@@ -4987,13 +4984,12 @@ void pure_debug_rule(void *_e, void *_r)
   bool done = false;
   while (!done) {
     string cmdline, cmd, arg;
-    extern bool using_readline;
-    if (!cin.eof() && using_readline) {
-      char *s = readline(": ");
-      if (s) {
+    extern char *(*command_input)(const char *prompt);
+    if (!cin.eof() && command_input) {
+      char *s = command_input(": ");
+      if (s)
 	cmdline = s;
-	if (strlen(s) > 1) add_history(s);
-      } else {
+      else {
 	cmdline = "";
 	cin.clear(ios_base::eofbit);
       }

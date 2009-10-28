@@ -7,8 +7,6 @@
 #include <stdio.h>
 #include <fnmatch.h>
 #include <time.h>
-#include <readline/readline.h>
-#include <readline/history.h>
 #include <string>
 #include <sstream>
 #include <fstream>
@@ -30,7 +28,6 @@
 
 using namespace std;
 
-static void my_readline(const char *prompt, char *buf, int &result, int max_size);
 static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const char *cmd, const char *cmdline);
 static string pstring(const char *s);
 static string format_namespace(const string& name);
@@ -47,6 +44,10 @@ static void check(const yy::location& l, const char* s, bool decl);
 #define check(l, s, decl) 
 #endif
 
+/* Hook for interactive command input. */
+char *(*command_input)(const char *prompt);
+static void lex_input(const char *prompt, char *buf, int &result, int max_size);
+
 #define YY_INPUT(buf,result,max_size)					\
   if (interpreter::g_interp->source_s) {				\
     size_t l = strlen(interpreter::g_interp->source_s);			\
@@ -55,8 +56,8 @@ static void check(const yy::location& l, const char* s, bool decl);
     interpreter::g_interp->source_s += result = l;			\
   } else if ( interpreter::g_interactive &&				\
 	      interpreter::g_interp->ttymode )				\
-    my_readline(interpreter::g_interp->ps.c_str(),			\
-		buf, result, max_size);					\
+    lex_input(interpreter::g_interp->ps.c_str(),			\
+	      buf, result, max_size);					\
   else {								\
     errno=0;								\
     while ((result = fread(buf, 1, max_size, yyin))==0 && ferror(yyin)) \
@@ -516,47 +517,15 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
 
 %%
 
-bool
-interpreter::lex_begin(const string& fname, bool esc)
-{
-  yy_flex_debug = (verbose&verbosity::lexer) != 0 && !source_s;
-  FILE *fp;
-  if (source_s)
-    fp = 0;
-  else if (source.empty())
-    fp = stdin;
-  else if (!(fp = fopen(fname.c_str(), "r")))
-    //error("cannot open '" + source + "'");
-    perror(source.c_str());
-  if (source_s || fp) {
-    yyin = fp;
-    yypush_buffer_state(yy_create_buffer(yyin, YY_BUF_SIZE));
-    BEGIN(esc?escape:INITIAL);
-    return true;
-  } else
-    return false;
-}
-
-void
-interpreter::lex_end()
-{
-  if (!source_s && !source.empty() && yyin)
-    fclose(yyin);
-  yypop_buffer_state();
-}
-
 static char *my_buf = NULL, *my_bufptr = NULL;
 static int len = 0;
 
-bool using_readline = false;
-
-void my_readline(const char *prompt, char *buf, int &result, int max_size)
+static void lex_input(const char *prompt, char *buf, int &result, int max_size)
 {
   if (!my_buf) {
     interpreter::g_interp->debug_init();
-    if (using_readline) {
-      // read a new line using readline()
-      char *s = readline(prompt);
+    if (command_input) {
+      char *s = command_input(prompt);
       if (!s) {
 	// EOF, bail out
 	result = 0;
@@ -569,7 +538,6 @@ void my_readline(const char *prompt, char *buf, int &result, int max_size)
 	result = 0;
 	return;
       }
-      add_history(my_buf);
     } else {
       // read a new line from stdin
       char s[10000];
@@ -605,6 +573,35 @@ void my_readline(const char *prompt, char *buf, int &result, int max_size)
     free(my_buf); my_buf = my_bufptr = NULL; len = 0;
   }
   result = k;
+}
+
+bool
+interpreter::lex_begin(const string& fname, bool esc)
+{
+  yy_flex_debug = (verbose&verbosity::lexer) != 0 && !source_s;
+  FILE *fp;
+  if (source_s)
+    fp = 0;
+  else if (source.empty())
+    fp = stdin;
+  else if (!(fp = fopen(fname.c_str(), "r")))
+    //error("cannot open '" + source + "'");
+    perror(source.c_str());
+  if (source_s || fp) {
+    yyin = fp;
+    yypush_buffer_state(yy_create_buffer(yyin, YY_BUF_SIZE));
+    BEGIN(esc?escape:INITIAL);
+    return true;
+  } else
+    return false;
+}
+
+void
+interpreter::lex_end()
+{
+  if (!source_s && !source.empty() && yyin)
+    fclose(yyin);
+  yypop_buffer_state();
 }
 
 #ifdef HAVE_LLVM_SUPPORT_RAW_OSTREAM_H
@@ -703,7 +700,8 @@ static bool find_namespace(interpreter& interp, const string& name)
    pure-mode.el. This isn't perfect, since it will also complete command names
    when not at the beginning of the line, but since the location inside the
    line isn't passed to completion_matches, it's the best that we can do right
-   now. */
+   now. Also note that this code doesn't need readline in any way, so it will
+   work even if the interpreter is built without readline or libedit support. */
 
 static const char *commands[] = {
   "break", "cd", "clear", "const", "def", "del", "dump", "extern", "help",
@@ -793,14 +791,35 @@ command_generator(const char *text, int state)
 }
 
 static char **
-pure_completion(const char *text, int start, int end)
+pure_completion(const char *text)
 {
-  return rl_completion_matches(text, command_generator);
+  int count = 0, alloc = 1024;
+  char *match, **matches;
+  match = command_generator(text, 0);
+  if (!match) return NULL;
+  matches = (char**)malloc(alloc*sizeof(char*));
+  if (!matches) return NULL;
+  matches[count++] = strdup(text);
+  while (match) {
+    if (count+1 >= alloc) {
+      alloc += 256;
+      char **matches1 = (char**)realloc(matches, alloc*sizeof(char*));
+      if (!matches1) {
+	free(matches);
+	return NULL;
+      }
+      matches = matches1;
+    }
+    matches[count++] = match;
+    match = command_generator(text, 1);
+  }
+  matches[count++] = NULL;
+  return matches;
 }
 
 static void list_completions(ostream& os, const char *s)
 {
-  char **matches = pure_completion(s, 0, strlen(s));
+  char **matches = pure_completion(s);
   if (matches) {
     if (matches[0]) {
       if (!matches[1]) {

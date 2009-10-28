@@ -192,10 +192,12 @@ dnl permitted in any medium without royalty provided the copyright notice
 dnl and this notice are preserved.
 
 AC_DEFUN([AC_CHECK_READLINE], [
+rllib="no"
+if test ! -z "$vl_readline_libs"; then
+  ORIG_LIBS="$LIBS"
   AC_CACHE_CHECK([for a readline compatible library],
                  vl_cv_lib_readline, [
-    ORIG_LIBS="$LIBS"
-    for readline_lib in readline edit editline; do
+    for readline_lib in $vl_readline_libs; do
       for termcap_lib in "" termcap curses ncurses; do
         if test -z "$termcap_lib"; then
           TRY_LIB="-l$readline_lib"
@@ -214,14 +216,16 @@ AC_DEFUN([AC_CHECK_READLINE], [
     done
     if test -z "$vl_cv_lib_readline"; then
       vl_cv_lib_readline="no"
-      LIBS="$ORIG_LIBS"
     fi
   ])
+  rllib="$vl_cv_lib_readline"
 
   if test "$vl_cv_lib_readline" != "no"; then
+    RL_LIBS="$vl_cv_lib_readline"
+    AC_SUBST(RL_LIBS)
     AC_DEFINE(HAVE_LIBREADLINE, 1,
-              [Define if you have a readline compatible library])
-    AC_CHECK_HEADERS(readline.h readline/readline.h)
+              [Define if you have a readline compatible library.])
+    AC_CHECK_HEADERS(readline/readline.h editline/readline.h)
     AC_CACHE_CHECK([whether readline supports history],
                    vl_cv_lib_readline_history, [
       vl_cv_lib_readline_history="no"
@@ -229,8 +233,10 @@ AC_DEFUN([AC_CHECK_READLINE], [
     ])
     if test "$vl_cv_lib_readline_history" = "yes"; then
       AC_DEFINE(HAVE_READLINE_HISTORY, 1,
-                [Define if your readline library has \`add_history'])
-      AC_CHECK_HEADERS(history.h readline/history.h)
+                [Define if your readline library supports history.])
+      AC_CHECK_HEADERS(readline/history.h)
     fi
   fi
+  LIBS="$ORIG_LIBS"
+fi
 ])

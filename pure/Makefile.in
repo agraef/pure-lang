@@ -62,6 +62,8 @@ LLVM_FLAGS = $(shell llvm-config --cppflags | sed -e s/-DNDEBUG//g)
 LLVM_LDFLAGS = $(shell llvm-config --ldflags)
 LLVM_LIBS = `llvm-config --ldflags --libs core bitwriter jit native`
 
+RL_LIBS  = @RL_LIBS@
+
 CPPFLAGS = @CPPFLAGS@
 CFLAGS   = @CFLAGS@
 CXXFLAGS = @CXXFLAGS@
@@ -178,10 +180,10 @@ all: pure$(EXE) pure_main.o etc/pure-mode.el
 
 ifeq ($(sharedlib), yes)
 pure$(EXE): pure.o $(libpure)
-	$(CXX) -o $@ -L. $(LDFLAGS) pure.o -l$(libpure_name) $(LLVM_LDFLAGS) $(LIBS)
+	$(CXX) -o $@ -L. $(LDFLAGS) pure.o -l$(libpure_name) $(LLVM_LDFLAGS) $(LIBS) $(RL_LIBS)
 else
 pure$(EXE): pure.o $(OBJECT)
-	$(CXX) -o $@ $(LDFLAGS) pure.o $(OBJECT) $(LLVM_LIBS) $(LLVM_LDFLAGS) $(LIBS)
+	$(CXX) -o $@ $(LDFLAGS) pure.o $(OBJECT) $(LLVM_LIBS) $(LLVM_LDFLAGS) $(LIBS) $(RL_LIBS)
 endif
 
 $(libpure): $(OBJECT)

@@ -4542,7 +4542,7 @@ to variables should fix this. **\n";
 	string linkopts = quote(obj)+libs+
 #ifdef __MINGW32__
 	  /* Link some extra libs and beef up the stack size on Windows. */
-	  " -Wl,--stack=0x800000 -lregex -lglob -lreadline"+
+	  " -Wl,--stack=0x800000 -lregex -lglob"+
 #endif
 	  " -lpure";
 	if (ext != ".o") {

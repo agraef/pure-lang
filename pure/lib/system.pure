@@ -944,41 +944,6 @@ extern expr* pure_fstat(FILE* fp) = fstat;
 
 /* ..
 
-   Readline
-   --------
-
-   .. _readline:
-
-   ``readline prompt``
-     A simple wrapper around GNU readline which reads a line from ``stdin``
-     with prompt and command line editing.
-
-   .. _add_history:
-
-   ``add_history s``
-     ``readline``\ 's companion, which you need to add strings to readline's
-     history.
-
-   Example::
-
-     > readline "foo> ";
-     foo> bla
-     "bla"
-
-*/
-
-/* Note that we cannot simply use the C readline function directly in Pure
-   since it would leak memory on the return value. */
-
-namespace __C;
-extern void* readline(char* prompt);
-namespace;
-extern void add_history(char* s);
-
-readline prompt::string = cstring $ __C::readline prompt;
-
-/* ..
-
    Readdir
    -------
 

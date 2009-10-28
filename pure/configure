@@ -640,6 +640,7 @@ CXXCPP
 LLVMCONF
 ALLOCA
 LIBICONV
+RL_LIBS
 versioned
 sharedlib
 EGREP
@@ -718,6 +719,8 @@ enable_release
 enable_shared
 enable_versioned
 enable_warnings
+with_readline
+with_editline
 with_libiconv_prefix
 '
       ac_precious_vars='build_alias
@@ -1372,6 +1375,8 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-readline         readline support, if available (default)
+  --with-editline         editline support, if available (default)
   --with-libiconv-prefix=DIR  search for libiconv in DIR/include and DIR/lib
 
 Some influential environment variables:
@@ -5639,6 +5644,30 @@ if test "${enable_warnings+set}" = set; then
   esac
 fi
 
+vl_readline_libs="readline"
+vl_editline_libs="edit editline"
+
+# Check whether --with-readline was given.
+if test "${with_readline+set}" = set; then
+  withval=$with_readline; case "${withval}" in
+     no)  vl_readline_libs="" ;;
+   esac
+fi
+
+
+# Check whether --with-editline was given.
+if test "${with_editline+set}" = set; then
+  withval=$with_editline; case "${withval}" in
+     no)  vl_editline_libs="" ;;
+   esac
+fi
+
+if test -z "$vl_readline_libs" -a -z "$vl_editline_libs"; then
+  vl_readline_libs=""
+else
+  vl_readline_libs="$vl_readline_libs $vl_editline_libs"
+fi
+vl_editline_libs=""
 
 { $as_echo "$as_me:$LINENO: checking for __gmpz_init in -lgmp" >&5
 $as_echo_n "checking for __gmpz_init in -lgmp... " >&6; }
@@ -6092,14 +6121,16 @@ _ACEOF
 fi
 
 
+rllib="no"
+if test ! -z "$vl_readline_libs"; then
+  ORIG_LIBS="$LIBS"
   { $as_echo "$as_me:$LINENO: checking for a readline compatible library" >&5
 $as_echo_n "checking for a readline compatible library... " >&6; }
 if test "${vl_cv_lib_readline+set}" = set; then
   $as_echo_n "(cached) " >&6
 else
 
-    ORIG_LIBS="$LIBS"
-    for readline_lib in readline edit editline; do
+    for readline_lib in $vl_readline_libs; do
       for termcap_lib in "" termcap curses ncurses; do
         if test -z "$termcap_lib"; then
           TRY_LIB="-l$readline_lib"
@@ -6171,14 +6202,16 @@ rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
     done
     if test -z "$vl_cv_lib_readline"; then
       vl_cv_lib_readline="no"
-      LIBS="$ORIG_LIBS"
     fi
 
 fi
 { $as_echo "$as_me:$LINENO: result: $vl_cv_lib_readline" >&5
 $as_echo "$vl_cv_lib_readline" >&6; }
+  rllib="$vl_cv_lib_readline"
 
   if test "$vl_cv_lib_readline" != "no"; then
+    RL_LIBS="$vl_cv_lib_readline"
+
 
 cat >>confdefs.h <<\_ACEOF
 #define HAVE_LIBREADLINE 1
@@ -6186,7 +6219,7 @@ _ACEOF
 
 
 
-for ac_header in readline.h readline/readline.h
+for ac_header in readline/readline.h editline/readline.h
 do
 as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
 if { as_var=$as_ac_Header; eval "test \"\${$as_var+set}\" = set"; }; then
@@ -6403,8 +6436,7 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
-
-for ac_header in history.h readline/history.h
+for ac_header in readline/history.h
 do
 as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
 if { as_var=$as_ac_Header; eval "test \"\${$as_var+set}\" = set"; }; then
@@ -6551,6 +6583,8 @@ done
 
     fi
   fi
+  LIBS="$ORIG_LIBS"
+fi
 
 
 
@@ -10709,6 +10743,7 @@ Pure ${PACKAGE_VERSION} is now configured for LLVM ${llvm_version} on ${host}.
   C compiler:           $CC $CFLAGS $CPPFLAGS
   C++ compiler:         $CXX $CXXFLAGS $CPPFLAGS
   Linker:               $CXX $LDFLAGS $LIBS
+  Readline support:	$rllib
   Build libpure:        $sharedlib
   fastcc/TCO support:   $fastcc
   GSL support:          $gsllib
@@ -10726,6 +10761,7 @@ Pure ${PACKAGE_VERSION} is now configured for LLVM ${llvm_version} on ${host}.
   C compiler:           $CC $CFLAGS $CPPFLAGS
   C++ compiler:         $CXX $CXXFLAGS $CPPFLAGS
   Linker:               $CXX $LDFLAGS $LIBS
+  Readline support:	$rllib
   Build libpure:        $sharedlib
   fastcc/TCO support:   $fastcc
   GSL support:          $gsllib

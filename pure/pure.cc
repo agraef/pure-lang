@@ -10,14 +10,34 @@
 #include <unistd.h>
 #include <locale.h>
 #include <signal.h>
-#include <readline/readline.h>
-#include <readline/history.h>
 #include "interpreter.hh"
 #include "runtime.h"
 #include "util.hh"
 #include <llvm/Target/TargetOptions.h>
 
 #include "config.h"
+
+#ifdef HAVE_LIBREADLINE
+#ifdef HAVE_READLINE_READLINE_H
+
+#include <readline/readline.h>
+#ifdef HAVE_READLINE_HISTORY_H
+#include <readline/history.h>
+#endif /* HAVE_READLINE_HISTORY_H */
+
+#else /* HAVE_READLINE_READLINE_H */
+
+#ifdef HAVE_EDITLINE_READLINE_H
+#include <editline/readline.h>
+#else /*  HAVE_EDITLINE_READLINE_H */
+#warning "readline/libedit available, but no suitable headers found."
+#warning "Consider installing the readline/libedit development package."
+#undef HAVE_LIBREADLINE
+#undef HAVE_READLINE_HISTORY
+#endif /* HAVE_EDITLINE_READLINE_H */
+
+#endif /* HAVE_READLINE_READLINE_H */
+#endif /* HAVE_LIBREADLINE */
 
 #ifdef HAVE_GSL
 #include <gsl/gsl_errno.h>
@@ -47,7 +67,7 @@ using namespace std;
 -I directory     Add directory to search for included source files.\n\
 -L directory     Add directory to search for dynamic libraries.\n\
 -l libname       Library to be linked in batch compilation.\n\
---noediting      Do not use readline for command-line editing.\n\
+--noediting      Disable command-line editing.\n\
 --noprelude, -n  Do not load the prelude.\n\
 --norc           Do not run the interactive startup files.\n\
 -o filename      Output filename for batch compilation.\n\
@@ -59,6 +79,8 @@ using namespace std;
 --               Stop option processing.\n\
 Type 'help' in the interpreter for more help.\n"
 #define LICENSE "This program is free software distributed under the GNU Public License\n(GPL V3 or later). Type 'help copying' for details.\n"
+
+#ifdef HAVE_LIBREADLINE
 
 static const char *commands[] = {
   "break", "cd", "clear", "const", "def", "del", "dump", "extern", "help",
@@ -235,6 +257,21 @@ pure_completion(const char *text, int start, int end)
   return matches;
 }
 
+/* Interactive command line, using readline/libedit. */
+
+extern char *(*command_input)(const char *prompt);
+
+static char *my_command_input(const char *prompt)
+{
+  char *s = readline(prompt);
+#ifdef HAVE_READLINE_HISTORY
+  if (s && *s) add_history(s);
+#endif
+  return s;
+}
+
+#endif
+
 static void sig_handler(int sig)
 {
   interpreter::brkflag = sig;
@@ -243,11 +280,15 @@ static void sig_handler(int sig)
 #endif
 }
 
+#ifdef HAVE_READLINE_HISTORY
 static const char *histfile = 0;
+#endif
 
 static void exit_handler()
 {
+#ifdef HAVE_READLINE_HISTORY
   if (histfile) write_history(histfile);
+#endif
 }
 
 #ifdef _WIN32
@@ -602,17 +643,20 @@ main(int argc, char *argv[])
     interp.compile();
     interp.ttymode = true;
   }
+#ifdef HAVE_LIBREADLINE
   if (want_editing && isatty(fileno(stdin))) {
     // initialize readline
-    extern bool using_readline;
-    using_readline = true;
-    rl_readline_name = "Pure";
+    command_input = my_command_input;
+    rl_readline_name = (char*)"Pure";
     rl_attempted_completion_function = pure_completion;
+#ifdef HAVE_READLINE_HISTORY
     using_history();
     read_history(interp.histfile.c_str());
     stifle_history(600);
     histfile = strdup(interp.histfile.c_str());
+#endif
   }
+#endif
   interp.temp = 1;
   if (last_modno < 0) force_interactive = false;
   // create a new module for the interactive scope
