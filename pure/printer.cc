@@ -8,10 +8,6 @@
 
 #include "config.h"
 
-#ifdef HAVE_GSL
-#include <gsl/gsl_matrix.h>
-#endif
-
 static inline const string& pname(int32_t f)
 {
   assert(f > 0);
@@ -907,7 +903,6 @@ ostream& operator << (ostream& os, const pure_expr *x)
       }
     }
     return os << "}";
-#ifdef HAVE_GSL
   case EXPR::DMATRIX:
     os << "{";
     if (x->data.mat.p) {
@@ -962,14 +957,6 @@ ostream& operator << (ostream& os, const pure_expr *x)
       }
     }
     return os << "}";
-#else
-  case EXPR::DMATRIX:
-    return os << "#<dmatrix " << x->data.mat.p << ">";
-  case EXPR::IMATRIX:
-    return os << "#<imatrix " << x->data.mat.p << ">";
-  case EXPR::CMATRIX:
-    return os << "#<cmatrix " << x->data.mat.p << ">";
-#endif
   case EXPR::APP: {
     list<const pure_expr*> xs;
     const pure_expr *tl;

@@ -39,10 +39,6 @@
 #endif /* HAVE_READLINE_READLINE_H */
 #endif /* HAVE_LIBREADLINE */
 
-#ifdef HAVE_GSL
-#include <gsl/gsl_errno.h>
-#endif
-
 using namespace std;
 
 #ifndef HOST
@@ -429,10 +425,6 @@ main(int argc, char *argv[])
   // This global option is needed to get tail call optimization (you'll also
   // need to have USE_FASTCC in interpreter.hh enabled).
   llvm::PerformTailCallOpt = true;
-#endif
-#if defined(HAVE_GSL) && DEBUG<2
-  // Turn off GSL's own error handler which aborts the program.
-  gsl_set_error_handler_off();
 #endif
   // scan the command line options
   const string prog = *argv;

@@ -26,11 +26,6 @@
 
 #include "config.h"
 
-#ifdef HAVE_GSL
-#include <gsl/gsl_version.h>
-#include <gsl/gsl_matrix.h>
-#endif
-
 uint8_t interpreter::g_verbose = 0;
 bool interpreter::g_interactive = false;
 interpreter* interpreter::g_interp = 0;
@@ -712,9 +707,6 @@ void interpreter::init_sys_vars(const string& version,
   defn("compiling",	pure_int(compiling));
   defn("version",	pure_cstring_dup(version.c_str()));
   defn("sysinfo",	pure_cstring_dup(host.c_str()));
-#ifdef HAVE_GSL
-  defn("gsl_version",	pure_cstring_dup(gsl_version));
-#endif
   // memory sizes
   interpreter& interp = *this;
   cdf(interp, "SIZEOF_BYTE",	pure_int(1));
@@ -1474,7 +1466,6 @@ expr interpreter::pure_expr_to_expr(pure_expr *x)
       return expr(EXPR::MATRIX, new exprll);
   }
   case EXPR::DMATRIX: {
-#ifdef HAVE_GSL
     if (x->data.mat.p) {
       gsl_matrix *m = (gsl_matrix*)x->data.mat.p;
       exprll *xs = new exprll;
@@ -1488,13 +1479,8 @@ expr interpreter::pure_expr_to_expr(pure_expr *x)
       return expr(EXPR::MATRIX, xs);
     } else
       return expr(EXPR::MATRIX, new exprll);
-#else
-    throw err("GSL matrices not supported in this implementation");
-    return expr(EXPR::MATRIX, new exprll);
-#endif
   }
   case EXPR::IMATRIX: {
-#ifdef HAVE_GSL
     if (x->data.mat.p) {
       gsl_matrix_int *m = (gsl_matrix_int*)x->data.mat.p;
       exprll *xs = new exprll;
@@ -1508,13 +1494,8 @@ expr interpreter::pure_expr_to_expr(pure_expr *x)
       return expr(EXPR::MATRIX, xs);
     } else
       return expr(EXPR::MATRIX, new exprll);
-#else
-    throw err("GSL matrices not supported in this implementation");
-    return expr(EXPR::MATRIX, new exprll);
-#endif
   }
   case EXPR::CMATRIX: {
-#ifdef HAVE_GSL
     if (x->data.mat.p) {
       gsl_matrix_complex *m = (gsl_matrix_complex*)x->data.mat.p;
       exprll *xs = new exprll;
@@ -1532,10 +1513,6 @@ expr interpreter::pure_expr_to_expr(pure_expr *x)
       return expr(EXPR::MATRIX, xs);
     } else
       return expr(EXPR::MATRIX, new exprll);
-#else
-    throw err("GSL matrices not supported in this implementation");
-    return expr(EXPR::MATRIX, new exprll);
-#endif
   }
   default:
     assert(x->tag >= 0);

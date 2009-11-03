@@ -61,8 +61,71 @@ typedef struct _pure_expr {
   struct _pure_expr *xp;	// freelist pointer
 } pure_expr;
 
-/* Fake GSL matrix struct used to represent symbolic matrix expressions. These
-   mimic GSL's interface to numeric matrices. */
+/* GSL-compatible matrix structs used to represent various types of matrix
+   expressions, including symbolic matrices (which GSL doesn't support). */
+
+typedef struct _gsl_block
+{
+  size_t size;
+  double *data;
+} gsl_block;
+
+typedef struct _gsl_matrix
+{
+  size_t size1;
+  size_t size2;
+  size_t tda;
+  double *data;
+  gsl_block *block;
+  int owner;
+} gsl_matrix;
+
+typedef struct _gsl_matrix_view
+{
+  gsl_matrix matrix;
+} gsl_matrix_view;
+
+typedef struct _gsl_block_complex
+{
+  size_t size;
+  double *data;
+} gsl_block_complex;
+
+typedef struct _gsl_matrix_complex
+{
+  size_t size1;
+  size_t size2;
+  size_t tda;
+  double *data;
+  gsl_block_complex *block;
+  int owner;
+} gsl_matrix_complex;
+
+typedef struct _gsl_matrix_complex_view
+{
+  gsl_matrix_complex matrix;
+} gsl_matrix_complex_view;
+
+typedef struct _gsl_block_int
+{
+  size_t size;
+  int *data;
+} gsl_block_int;
+
+typedef struct _gsl_matrix_int
+{
+  size_t size1;
+  size_t size2;
+  size_t tda;
+  int *data;
+  gsl_block_int *block;
+  int owner;
+} gsl_matrix_int;
+
+typedef struct _gsl_matrix_int_view
+{
+  gsl_matrix_int matrix;
+} gsl_matrix_int_view;
 
 typedef struct _gsl_block_symbolic
 {

@@ -61,12 +61,6 @@ AC_ARG_ENABLE(fastcc,
   [case "${enableval}" in
     no)   fastcc=no ;;
   esac])
-gsllib=yes
-AC_ARG_ENABLE(gsl,
-  [  --enable-gsl            build with GSL support (default)],
-  [case "${enableval}" in
-    no)   gsllib=no ;;
-  esac])
 AC_ARG_ENABLE(debug,
   [  --enable-debug          enable the debug build],
   [case "${enableval}" in
@@ -157,20 +151,7 @@ dnl Platform specifics of signal handlers.
 AC_REINSTALL_SIGHANDLERS
 dnl Check to see whether we have POSIX/ISOC99 complex numbers.
 AC_CHECK_TYPES([_Complex float, _Complex double])
-dnl Check for GSL support.
-if test $gsllib = yes; then
-  AC_CHECK_LIB(gslcblas, cblas_dgemm)
-  AC_CHECK_LIB(gsl, gsl_blas_dgemm)
-  AC_CHECK_HEADERS([gsl/gsl_version.h])
-  gsllib=no
-  if test $ac_cv_lib_gsl_gsl_blas_dgemm = yes; then
-    if test $ac_cv_header_gsl_gsl_version_h = yes; then
-      AC_DEFINE(HAVE_GSL, 1, [Define when building with GSL vector/matrix support.])
-      AC_MSG_RESULT([Building with GSL support.])
-      gsllib=yes
-    fi
-  fi
-fi
+dnl fastcc/tail call support.
 if test $fastcc = yes; then
   AC_DEFINE(HAVE_FASTCC, 1, [Define to build with fastcc/TCO support (broken on some systems).])
 fi
@@ -245,7 +226,6 @@ Pure ${PACKAGE_VERSION} is now configured for LLVM ${llvm_version} on ${host}.
   Readline support:	$rllib
   Build libpure:        $sharedlib
   fastcc/TCO support:   $fastcc
-  GSL support:          $gsllib
 
 Now run 'make' to build everything, and 'make install' to install this
 software on your system. To remove the installed software at a later
