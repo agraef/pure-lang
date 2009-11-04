@@ -2,7 +2,6 @@
 #include <pure/runtime.h>
 #include <lo/lo.h>
 #include <gmp.h>
-#include <gsl/gsl_matrix.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
