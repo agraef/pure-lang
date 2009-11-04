@@ -3,6 +3,24 @@
 
 /* The Pure runtime interface. */
 
+/* Copyright (c) 2008, 2009 by Albert Graef <Dr.Graef@t-online.de>.
+   Copyright (c) 2008, 2009 by Scott E. Dillard.
+
+   This file is part of the Pure runtime.
+
+   The Pure runtime is free software: you can redistribute it and/or modify it
+   under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or (at your
+   option) any later version.
+
+   Pure is distributed in the hope that it will be useful, but WITHOUT ANY
+   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+   FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
+   more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>. */
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <setjmp.h>
