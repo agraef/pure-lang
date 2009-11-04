@@ -38,6 +38,19 @@
    You should have received a copy of the GNU General Public License along
    with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
+/* Perform necessary initializations. This used to be in the Pure runtime, but
+   has been moved to this module as of Pure 0.37. */
+
+#include <stdio.h>
+
+void pure_gsl_init(void)
+{
+  /* Turn off GSL's own error handler which aborts the program. */
+  gsl_set_error_handler_off();
+  /* Initialize the gsl_version variable. */
+  pure_let(pure_sym("gsl_version"), pure_cstring_dup(gsl_version));
+}
+
 /* GSL number predicates. */
 
 bool gsl_complexp(pure_expr *x)

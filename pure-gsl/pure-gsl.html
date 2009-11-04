@@ -10,7 +10,7 @@
 
 /*
 :Author: David Goodger (goodger@python.org)
-:Id: $Id: html4css1.css 5951 2009-05-18 18:03:10Z milde $
+:Id: $Id: html4css1.css 5631 2008-08-24 13:01:23Z goodger $
 :Copyright: This stylesheet has been placed in the public domain.
 
 Default cascading style sheet for the HTML output of Docutils.
@@ -158,32 +158,11 @@ h2.subtitle {
 hr.docutils {
   width: 75% }
 
-img.align-left, .figure.align-left{
-  clear: left ;
-  float: left ;
-  margin-right: 1em }
+img.align-left {
+  clear: left }
 
-img.align-right, .figure.align-right {
-  clear: right ;
-  float: right ;
-  margin-left: 1em }
-
-.align-left {
-  text-align: left }
-
-.align-center {
-  clear: both ;
-  text-align: center }
-
-.align-right {
-  text-align: right }
-
-/* reset inner alignment in figures */
-div.align-right {
-  text-align: left }
-
-/* div.align-center * { */
-/*   text-align: left } */
+img.align-right {
+  clear: right }
 
 ol.simple, ul.simple {
   margin-bottom: 1em }
@@ -319,10 +298,10 @@ Eddie Rucker &lt;erucker&#64;bmc.edu&gt;</td></tr>
 </tbody>
 </table>
 <!--  -->
-<p>Building on Pure's GSL matrix support, this module aims to provide a
-complete wrapper for the GNU Scientific Library which provides a wide
-range of mathematical routines useful for scientific programming, number
-crunching and signal processing applications.</p>
+<p>Building on Pure's GSL-compatible matrix support, this module aims to
+provide a complete wrapper for the GNU Scientific Library which provides a
+wide range of mathematical routines useful for scientific programming,
+number crunching and signal processing applications.</p>
 <p>This is still work in progress, only a small part of the interface is
 finished right now. Here is a brief summary of the operations which are
 implemented:</p>
@@ -339,22 +318,49 @@ complex SVD.</li>
 <li>Polynomial evaluation and roots.</li>
 <li>Linear least-squares fitting. Multi-fitting is not available yet.</li>
 </ul>
-<p>Installation instructions: Run 'make' to compile the module and
-'make install' (as root) to install it in the Pure library directory.
-This requires GNU make, and of course you need to have Pure and GSL
-installed. The 'make install' step is only necessary for system-wide
-installation.</p>
-<p>'make' tries to guess your Pure installation directory and
-platform-specific setup. If it gets this wrong, you can set some
-variables manually. In particular, 'make install prefix=/usr' sets the
-installation prefix, and 'make PIC=-fPIC' or some similar flag might be
-needed for compilation on 64 bit systems. Please see the Makefile for
-details.</p>
-<p>The current release requires GSL 1.11 or later and Pure 0.26 or
-later. Older GSL versions might still work, but then some operations may be
+<p>Installation instructions: Run <tt class="docutils literal"><span class="pre">make</span></tt> to compile the module and <tt class="docutils literal"><span class="pre">make</span>
+<span class="pre">install</span></tt> (as root) to install it in the Pure library directory.  This
+requires GNU make, and of course you need to have Pure and GSL installed.
+The <tt class="docutils literal"><span class="pre">make</span> <span class="pre">install</span></tt> step is only necessary for system-wide installation.</p>
+<p><tt class="docutils literal"><span class="pre">make</span></tt> tries to guess your Pure installation directory and
+platform-specific setup. If it gets this wrong, you can set some variables
+manually. In particular, <tt class="docutils literal"><span class="pre">make</span> <span class="pre">install</span> <span class="pre">prefix=/usr</span></tt> sets the installation
+prefix, and <tt class="docutils literal"><span class="pre">make</span> <span class="pre">PIC=-fPIC</span></tt> or some similar flag might be needed for
+compilation on 64 bit systems. Please see the Makefile for details.</p>
+<p>The current release requires GSL 1.11 or later and Pure 0.26 or later.
+Older GSL versions might still work, but then some operations may be
 missing. The latest and greatest GSL version is always available from
 <a class="reference external" href="http://www.gnu.org/software/gsl">http://www.gnu.org/software/gsl</a>.</p>
-<p>See the 'examples' folder in the sources for some examples.</p>
+<p>After installation, you can import the entire GSL interface as follows:</p>
+<pre class="literal-block">
+using gsl;
+</pre>
+<p>For convenience, the different parts of the GSL interface are also
+available as separate modules. E.g., if you only need the matrix
+operations:</p>
+<pre class="literal-block">
+using gsl::matrix;
+</pre>
+<p>In either case, the global <tt class="docutils literal"><span class="pre">gsl_version</span></tt> variable reports the installed
+GSL version:</p>
+<pre class="literal-block">
+&gt; show gsl_version
+let gsl_version = &quot;1.11&quot;;
+</pre>
+<p>(This variable used to be defined by the Pure runtime but has been moved
+into pure-gsl as of Pure 0.37.)</p>
+<p>Most other operations are declared in separate namespaces which are in 1-1
+correspondence with the module names. Thus, e.g., the <tt class="docutils literal"><span class="pre">gsl_poly_eval</span></tt>
+routine is named <tt class="docutils literal"><span class="pre">gsl::poly::eval</span></tt> in Pure and can be found in the
+<tt class="docutils literal"><span class="pre">gsl::poly</span></tt> module and namespace. The <tt class="docutils literal"><span class="pre">using</span> <span class="pre">namespace</span></tt> declaration can
+be used to facilitate access to the operations in a given namespace, e.g.:</p>
+<pre class="literal-block">
+&gt; using gsl::poly;
+&gt; using namespace gsl::poly;
+&gt; eval {1,2,3} 2;
+17
+</pre>
+<p>See the <tt class="docutils literal"><span class="pre">examples</span></tt> folder in the sources for some examples.</p>
 <p>If you'd like to contribute, please mail the authors or contact us at
 <a class="reference external" href="http://groups.google.com/group/pure-lang">http://groups.google.com/group/pure-lang</a>.</p>
 <div class="contents topic" id="contents">
@@ -549,7 +555,7 @@ function with <tt class="docutils literal"><span class="pre">mode</span> <span c
 <dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_Ai_scaled_e</span></tt>. The first form computes the
 function with <tt class="docutils literal"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">GSL_PREC_DOUBLE</span></tt>.</dd>
 </dl>
-<a name="airy_Bi: _airy_Bi_e"><dl class="docutils">
+<a name="airy_Bi"><dl class="docutils" id="airy-bi">
 <dt><tt class="docutils literal"><span class="pre">airy_Bi</span> <span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">airy_Bi</span> <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></dt>
 <dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_Bi</span></tt>. The first form computes the function with
 <tt class="docutils literal"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">GSL_PREC_DOUBLE</span></tt>.</dd>
@@ -569,10 +575,83 @@ function with <tt class="docutils literal"><span class="pre">mode</span> <span c
 <dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_Bi_scaled_e</span></tt>. The first form computes the
 function with <tt class="docutils literal"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">GSL_PREC_DOUBLE</span></tt>.</dd>
 </dl>
+<a name="airy_Ai_deriv"><dl class="docutils" id="airy-ai-deriv">
+<dt><tt class="docutils literal"><span class="pre">airy_Ai_deriv</span> <span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">airy_Ai_deriv</span> <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_Ai_deriv</span></tt>. The first form computes the
+function with <tt class="docutils literal"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">GSL_PREC_DOUBLE</span></tt>.</dd>
+</dl>
+<a name="airy_Ai_deriv_e"><dl class="docutils" id="airy-ai-deriv-e">
+<dt><tt class="docutils literal"><span class="pre">airy_Ai_deriv_e</span> <span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">airy_Ai_deriv_e</span> <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_Ai_deriv_e</span></tt>. The first form computes the
+function with <tt class="docutils literal"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">GSL_PREC_DOUBLE</span></tt>.</dd>
+</dl>
+<a name="airy_Ai_deriv_scaled"><dl class="docutils" id="airy-ai-deriv-scaled">
+<dt><tt class="docutils literal"><span class="pre">airy_Ai_deriv_scaled</span> <span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">airy_Ai_deriv_scaled</span> <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_Ai_deriv_scaled</span></tt>. The first form computes
+the function with <tt class="docutils literal"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">GSL_PREC_DOUBLE</span></tt>.</dd>
+</dl>
+<a name="airy_Ai_deriv_scaled_e"><dl class="docutils" id="airy-ai-deriv-scaled-e">
+<dt><tt class="docutils literal"><span class="pre">airy_Ai_deriv_scaled_e</span> <span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">airy_Ai_deriv_scaled_e</span> <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_Ai_deriv_scaled_e</span></tt>. The first form computes
+the function with <tt class="docutils literal"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">GSL_PREC_DOUBLE</span></tt>.</dd>
+</dl>
+<a name="airy_Bi_deriv"><dl class="docutils" id="airy-bi-deriv">
+<dt><tt class="docutils literal"><span class="pre">airy_Bi_deriv</span> <span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">airy_Bi_deriv</span> <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_Bi_deriv</span></tt>. The first form computes the
+function with <tt class="docutils literal"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">GSL_PREC_DOUBLE</span></tt>.</dd>
+</dl>
+<a name="airy_Bi_deriv_e"><dl class="docutils" id="airy-bi-deriv-e">
+<dt><tt class="docutils literal"><span class="pre">airy_Bi_deriv_e</span> <span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">airy_Bi_deriv_e</span> <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_Bi_deriv_e</span></tt>. The first form computes the
+function with <tt class="docutils literal"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">GSL_PREC_DOUBLE</span></tt>.</dd>
+</dl>
+<a name="airy_Bi_deriv_scaled"><dl class="docutils" id="airy-bi-deriv-scaled">
+<dt><tt class="docutils literal"><span class="pre">airy_Bi_deriv_scaled</span> <span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">airy_Bi_deriv_scaled</span> <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_Bi_deriv_scaled</span></tt>. The first form computes the
+function with <tt class="docutils literal"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">GSL_PREC_DOUBLE</span></tt>.</dd>
+</dl>
+<a name="airy_Bi_deriv_scaled_e"><dl class="docutils" id="airy-bi-deriv-scaled-e">
+<dt><tt class="docutils literal"><span class="pre">airy_Bi_deriv_scaled_e</span> <span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">airy_Bi_deriv_scaled_e</span> <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_Bi_deriv_scaled_e</span></tt>. The first form computes
+the function with <tt class="docutils literal"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">GSL_PREC_DOUBLE</span></tt>.</dd>
+</dl>
+<a name="airy_zero_Ai"><dl class="docutils" id="airy-zero-ai">
+<dt><tt class="docutils literal"><span class="pre">airy_zero_Ai</span> <span class="pre">s</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_zero_Ai</span></tt>.</dd>
+</dl>
+<a name="airy_zero_Ai_e"><dl class="docutils" id="airy-zero-ai-e">
+<dt><tt class="docutils literal"><span class="pre">airy_zero_Ai_e</span> <span class="pre">s</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_zero_Ai_e</span></tt>.</dd>
+</dl>
+<a name="airy_zero_Bi"><dl class="docutils" id="airy-zero-bi">
+<dt><tt class="docutils literal"><span class="pre">airy_zero_Bi</span> <span class="pre">s</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_zero_Bi</span></tt>.</dd>
+</dl>
+<a name="airy_zero_Bi_e"><dl class="docutils" id="airy-zero-bi-e">
+<dt><tt class="docutils literal"><span class="pre">airy_zero_Bi_e</span> <span class="pre">s</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_zero_Bi_e</span></tt>.</dd>
+</dl>
+<a name="airy_zero_Ai_deriv"><dl class="docutils" id="airy-zero-ai-deriv">
+<dt><tt class="docutils literal"><span class="pre">airy_zero_Ai_deriv</span> <span class="pre">s</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_zero_Ai_deriv</span></tt>.</dd>
+</dl>
+<a name="airy_zero_Ai_deriv_e"><dl class="docutils" id="airy-zero-ai-deriv-e">
+<dt><tt class="docutils literal"><span class="pre">airy_zero_Ai_deriv_e</span> <span class="pre">s</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_zero_Ai_deriv_e</span></tt>.</dd>
+</dl>
+<a name="airy_zero_Bi_deriv"><dl class="docutils" id="airy-zero-bi-deriv">
+<dt><tt class="docutils literal"><span class="pre">airy_zero_Bi_deriv</span> <span class="pre">s</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_zero_Bi_deriv</span></tt>.</dd>
+</dl>
+<a name="airy_zero_Bi_deriv_e"><dl class="docutils" id="airy-zero-bi-deriv-e">
+<dt><tt class="docutils literal"><span class="pre">airy_zero_Bi_deriv_e</span> <span class="pre">s</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_zero_Bi_deriv_e</span></tt>.</dd>
+</dl>
 <!--  -->
 </div>
 <div class="section" id="id2">
 <h2><a class="toc-backref" href="#id23">Examples</a></h2>
+<p>The following illustrate the Airy functions.</p>
 <pre class="literal-block">
 &gt; using gsl::sf;
 &gt; using namespace gsl::sf;
@@ -587,7 +666,7 @@ function with <tt class="docutils literal"><span class="pre">mode</span> <span c
 &gt; airy_Ai_e (-1.2);
 [0.52619437480212,1.88330586480371e-15]
 &gt; airy_Ai_e (-1.2,GSL_PREC_APPROX);
-{0.526194374771687,1.01942940819652e-08}
+[0.526194374771687,1.01942940819652e-08]
 &gt; airy_Ai_scaled_e (-1.2);
 [0.52619437480212,1.88330586480371e-15]
 &gt; airy_Ai_scaled_e (-1.2,GSL_PREC_APPROX);
@@ -595,19 +674,67 @@ function with <tt class="docutils literal"><span class="pre">mode</span> <span c
 &gt; airy_Bi (-1.2);
 -0.015821370184632
 &gt; airy_Bi_scaled (-1.2);
-0.52619437480212
+-0.015821370184632
 &gt; airy_Bi (-1.2,GSL_PREC_APPROX);
 -0.0158213701898015
 &gt; airy_Bi_scaled (-1.2, GSL_PREC_SINGLE);
-0.526194374771687
+-0.0158213701898015
 &gt; airy_Bi_e (-1.2);
 [-0.015821370184632,1.31448899295896e-16]
-&gt;  airy_Bi_e (-1.2,GSL_PREC_APPROX);
+&gt; airy_Bi_e (-1.2,GSL_PREC_APPROX);
 [-0.0158213701898015,4.10638404843775e-10]
-&gt;  airy_Bi_scaled_e (-1.2);
-[0.52619437480212,1.88330586480371e-15]
+&gt; airy_Bi_scaled_e (-1.2);
+[-0.015821370184632,1.31448899295896e-16]
 &gt; airy_Bi_scaled_e (-1.2,GSL_PREC_APPROX);
-[0.526194374771687,1.01942940819652e-08]
+[-0.0158213701898015,4.10638404843775e-10]
+&gt; airy_Ai_deriv (-1.2); // defaults to GSL_PREC_DOUBLE
+0.107031569272281
+&gt; airy_Ai_deriv_scaled (-1.2);
+0.107031569272281
+&gt; airy_Ai_deriv (-1.2,GSL_PREC_APPROX);
+0.107031569264504
+&gt; airy_Ai_deriv_scaled (-1.2, GSL_PREC_SINGLE);
+0.107031569264504
+&gt; airy_Ai_deriv_e (-1.2);
+[0.107031569272281,3.02919983680384e-16]
+&gt; airy_Ai_deriv_e (-1.2,GSL_PREC_APPROX);
+[0.107031569264504,9.25921017197604e-11]
+&gt; airy_Ai_deriv_scaled_e (-1.2);
+[0.107031569272281,3.02919983680384e-16]
+&gt; airy_Ai_deriv_scaled_e (-1.2,GSL_PREC_APPROX);
+[0.107031569264504,9.25921017197604e-11]
+&gt; airy_Bi_deriv (-1.2);
+0.601710157437464
+&gt; airy_Bi_deriv_scaled (-1.2);
+0.601710157437464
+&gt; airy_Bi_deriv (-1.2,GSL_PREC_APPROX);
+0.601710157441937
+&gt; airy_Bi_deriv_scaled (-1.2, GSL_PREC_SINGLE);
+0.601710157441937
+&gt; airy_Bi_deriv_e (-1.2);
+[0.601710157437464,1.7029557943563e-15]
+&gt; airy_Bi_deriv_e (-1.2,GSL_PREC_APPROX);
+[0.601710157441937,5.20534347823991e-10]
+&gt; airy_Bi_deriv_scaled_e (-1.2);
+[0.601710157437464,1.7029557943563e-15]
+&gt; airy_Bi_deriv_scaled_e (-1.2,GSL_PREC_APPROX);
+[0.601710157441937,5.20534347823991e-10]
+&gt; airy_zero_Ai 2;
+-4.08794944413097
+&gt; airy_zero_Ai_e 3;
+[-5.52055982809555,1.22581052599448e-15]
+&gt; airy_zero_Bi 2;
+-3.27109330283635
+&gt; airy_zero_Bi_e 3;
+[-4.83073784166202,1.07263927554824e-15]
+&gt; airy_zero_Ai_deriv 2;
+-3.24819758217984
+&gt; airy_zero_Ai_deriv_e 3;
+[-4.82009921117874,1.07027702504564e-15]
+&gt; airy_zero_Bi_deriv 2;
+-4.07315508907183
+&gt; airy_zero_Bi_deriv_e 3;
+[-5.5123957296636,1.22399773198358e-15]
 </pre>
 <!--  -->
 </div>
