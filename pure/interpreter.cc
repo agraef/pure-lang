@@ -189,8 +189,8 @@ void interpreter::init()
     ComplexPtrTy = PointerType::get(ComplexTy, 0);
   }
 
-  // GSL matrix types. These are used to marshall GSL matrices in the C
-  // interface.
+  // GSL-compatible matrix types. These are used to marshall GSL matrices in
+  // the C interface.
   {
     std::vector<const Type*> elts;
 #if SIZEOF_SIZE_T==4
