@@ -3,11 +3,47 @@
 #include <glib/gi18n-lib.h>
 #include <assert.h>
 
-// NOTE: This stuff requires that Pure was built with GSL matrix support.
-
-#include <gsl/gsl_errno.h>
-#include <gsl/gsl_matrix.h>
 #include <gmp.h>
+
+static gsl_matrix* 
+gsl_matrix_alloc(const size_t n1, const size_t n2)
+{
+  gsl_block* block;
+  gsl_matrix* m;
+  if (n1 == 0 || n2 == 0)
+    return 0;
+  m = (gsl_matrix*)malloc(sizeof(gsl_matrix));
+  if (m == 0)
+    return 0;
+  block = (gsl_block*)malloc(sizeof(gsl_block));
+  if (block == 0) {
+    free(m);
+    return 0;
+  }
+  block->size = n1*n2;
+  block->data = (double*)malloc(block->size*sizeof(double));
+  if (block->data == 0) {
+    free(m);
+    free(block);
+    return 0;
+  }
+  m->data = block->data;
+  m->size1 = n1;
+  m->size2 = n2;
+  m->tda = n2; 
+  m->block = block;
+  m->owner = 1;
+  return m;
+}
+
+static gsl_matrix*
+gsl_matrix_calloc(const size_t n1, const size_t n2)
+{
+  gsl_matrix* m = gsl_matrix_alloc(n1, n2);
+  if (m == 0) return 0;
+  memset(m->data, 0, m->block->size*sizeof(double));
+  return m;
+}
 
 static gsl_matrix_symbolic* 
 gsl_matrix_symbolic_alloc(const size_t n1, const size_t n2)
