@@ -117,7 +117,7 @@ below:
     Library to be linked in batch compilation.
 
 ``--noediting``
-    Do not use readline for command-line editing.
+    Disable command-line editing.
 
 ``--noprelude``, ``-n``
     Do not load the prelude.
@@ -254,11 +254,12 @@ file in the current directory (containing a dump from a previous interactive
 session) is loaded if it is present.
 
 When the interpreter is in interactive mode and reads from a tty, unless the
---noediting option is specified, commands are read using readline(3)
-(providing completion for all commands listed under `Interactive Usage`_, as
-well as for symbols defined in the running program). When exiting the
-interpreter, the command history is stored in ~/.pure_history, from where it
-is restored the next time you run the interpreter.
+--noediting option is specified, commands are usually read using readline(3)
+or some compatible replacement, providing completion for all commands listed
+under `Interactive Usage`_, as well as for symbols defined in the running
+program. When exiting the interpreter, the command history is stored in
+~/.pure_history, from where it is restored the next time you run the
+interpreter.
 
 As of Pure 0.22, the interpreter also provides a simple source level debugger
 when run in interactive mode, see Debugging_ for details. To enable the
@@ -677,17 +678,18 @@ Matrices: ``{1.0,2.0,3.0}``, ``{1,2;3,4}``, ``{1L,y+1;foo,bar}``
     the special ``matrix`` type tag, see the `Rule Syntax`_ section for
     details).
 
-    If the interpreter was built with support for the `GNU Scientific
-    Library`_ (GSL) then both numeric and symbolic matrices are available. The
-    former are thin wrappers around GSL's homogeneous arrays of double,
-    complex double or (machine) int matrices, while the latter can contain any
-    mixture of Pure expressions. Pure will pick the appropriate type for the
-    data at hand. If a matrix contains values of different types, or Pure
-    values which cannot be stored in a numeric matrix, then a symbolic matrix
-    is created instead (this also includes the case of bigints, which are
-    considered as symbolic values as far as matrix construction is concerned).
-    If the interpreter was built without GSL support then symbolic matrices
-    are the only kind of matrices supported by the interpreter.
+    Pure supports both numeric and symbolic matrices. The former are
+    homogeneous arrays of double, complex double or (machine) int matrices,
+    while the latter can contain any mixture of Pure expressions. Pure will
+    pick the appropriate type for the data at hand. If a matrix contains
+    values of different types, or Pure values which cannot be stored in a
+    numeric matrix, then a symbolic matrix is created instead (this also
+    includes the case of bigints, which are considered as symbolic values as
+    far as matrix construction is concerned). Numeric matrices use an internal
+    data layout that is fully compatible with the `GNU Scientific Library`_
+    (GSL), and can readily be passed to GSL routines via the C interface. (The
+    Pure interpreter does not require GSL, however, so numeric matrices will
+    work even if GSL is not installed.)
 
     More information about matrices and corresponding examples can be found in
     the Examples_ section below.
@@ -2577,6 +2579,7 @@ functions in matrices.pure). For instance, here is how you can quickly wrap up
 GSL's double matrix addition function in a way that preserves value
 semantics::
 
+  > using "lib:gsl";
   > extern int gsl_matrix_add(dmatrix*, dmatrix*);
   > x::matrix + y::matrix = gsl_matrix_add x y $$ x when x = pack x end;
   > let x = dmatrix {1,2,3}; let y = dmatrix {2,3,2}; x; y; x+y;
@@ -3134,11 +3137,11 @@ summary information about all the variable symbols along with their current
 values (using the "long" format)::
 
   > show -lvg *
-  argc         var  argc = 0;
-  argv         var  argv = [];
-  gsl_version  var  gsl_version = "1.9";
-  sysinfo      var  sysinfo = "i686-pc-linux-gnu";
-  version      var  version = "0.17";
+  argc       var  argc = 0;
+  argv       var  argv = [];
+  compiling  var  compiling = 0;
+  sysinfo    var  sysinfo = "x86_64-unknown-linux-gnu";
+  version    var  version = "0.37";
   5 variables
 
 Or you can list just private symbols of the namespace ``foo``, as follows::
@@ -3351,12 +3354,12 @@ anywhere), so it will display the generic names ``x1``, ``x2`` etc. instead.
 At the debugger prompt '``:``' you can enter various special debugger
 commands, or just keep on hitting the carriage return key to walk through an
 evaluation step by step, as we did in the example above. (Command line editing
-using readline works as usual at the debugger prompt, if it is enabled.) The
-usual commands are provided to walk through an evaluation, print and navigate
-the call stack, step over the current call, or continue the evaluation
-unattended until you hit another breakpoint. If you know other source level
-debuggers like gdb then you should feel right at home. You can type ``h`` at
-the debugger prompt to print the following list::
+works as usual at the debugger prompt, if it is enabled.) The usual commands
+are provided to walk through an evaluation, print and navigate the call stack,
+step over the current call, or continue the evaluation unattended until you
+hit another breakpoint. If you know other source level debuggers like gdb then
+you should feel right at home. You can type ``h`` at the debugger prompt to
+print the following list::
 
   : h
   Debugger commands:
@@ -4744,8 +4747,8 @@ GNU Octave
 .. _GSL:
 
 GNU Scientific Library
-    A free software library for numeric applications, required for Pure's
-    numeric matrix support, http://www.gnu.org/software/gsl.
+    A free software library for numeric applications, can be used with Pure's
+    numeric matrices, http://www.gnu.org/software/gsl.
 
 .. _Haskell:
 

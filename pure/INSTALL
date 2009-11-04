@@ -45,10 +45,6 @@ denotes corresponding development packages):
 
 - the GNU multiprecision library (libgmp, -dev);
 
-- the GNU scientific library (libgsl, -dev; this isn't a strict requirement,
-but strongly recommended; you need this library in order to make GSL matrices
-work in Pure);
-
 - the GNU readline library (libreadline, -dev);
 
 - the GNU ltdl library (libltdl, -dev; only required for building some LLVM
@@ -57,8 +53,9 @@ work in Pure);
 - subversion (this is only needed to fetch the SVN sources, see below).
 
 E.g., at the time of this writing the required packages for Ubuntu are: make,
-g++, g++ 4.0 multilib, flex, bison, libgmp3c2, libgmp3-dev, libgsl0,
-libgsl0-dev, readline5-dev, libltdl3, libldtl3-dev, subversion.
+g++, g++ 4.0 multilib, flex, bison, libgmp3c2, libgmp3-dev, libltdl3,
+libldtl3-dev, subversion. (To get command line editing in the interactive
+interpreter, you also might wish to install the readline5-dev package.)
 
 All dependencies are available as free software. Here are some links if you
 need or want to install the dependencies from source:
@@ -73,14 +70,25 @@ need or want to install the dependencies from source:
 
 - GMP: http://www.gnu.org/software/gmp
 
-- GSL: http://www.gnu.org/software/gsl
+- GNU ltdl (part of the libtool software): http://www.gnu.org/software/libtool
+
+- Subversion: http://subversion.tigris.org (There's also a very nice Windows
+  frontend, TortoiseSVN, see http://tortoisesvn.tigris.org.)
+
+NOTE: To make command line editing work in the interactive interpreter, you'll
+also need GNU readline or some compatible replacement such as BSD editline/
+libedit:
 
 - GNU readline: http://cnswww.cns.cwru.edu/php/chet/readline/rltop.html
 
-- GNU ltdl (part of the libtool software): http://www.gnu.org/software/libtool
+- BSD editline/libedit: http://www.thrysoee.dk/editline
 
-Subversion is available from http://subversion.tigris.org. There's also a very
-nice Windows frontend, TortoiseSVN, see http://tortoisesvn.tigris.org.
+We recommend GNU readline because it's easier to use and has full UTF-8
+support, but in some situations BSD editline/libedit may be preferable for
+license reasons or because it's what the operating system provides. Pure's
+configure automatically detects the presence of both packages and also lets
+you disable readline and/or editline support using the --without-readline and
+--without-editline options.
 
 STEP 2. Get and unpack the LLVM 2.5 sources at:
 http://llvm.org/releases/download.html#2.5
@@ -167,9 +175,7 @@ version) is required to make 'make check' work on Windows. Also note that
 under MS Windows this step is expected to fail on some math tests in
 test020.pure; this is nothing to worry about, it just indicates that some math
 routines in Microsoft's C library aren't fully POSIX-compatible. The same
-applies to BSD systems. Moreover, test025.pure as well as test041.pure and
-test042.pure will always fail if you built Pure without GSL support; take this
-as a reminder that you need GSL to enjoy full matrix support in Pure.
+applies to BSD systems.
 
 If Pure appears to be broken on your system ('make check' reports a lot of
 failures), it's usually because of a miscompiled LLVM on 32 bit platforms.
@@ -195,16 +201,6 @@ Check that it works:
 
 > 6*7;
 42
-
-Check that GSL support is available:
-
-> show gsl_version
-let gsl_version = "1.11";
-
-(If this doesn't display anything then please review your installation process
-and make sure that you have GSL installed. The configure program should show
-that GSL support is available in the summary. You can run Pure without this,
-but then the numeric GSL matrices won't be available.)
 
 Read the online documentation:
 
@@ -434,12 +430,6 @@ impossible to use batch compilation and addon modules which require the
 runtime library. We only provide this as a workaround for systems on which
 LLVM refuses to be linked into shared libraries.
 
-GSL support should be enabled automatically, if the GSL libraries and headers
-are available on your system. If configure fails to find these then you may
-have to set CPPFLAGS and LDFLAGS accordingly and/or use --enable-gsl to
-forcibly enable GSL support. You can also specify --disable-gsl if you don't
-want/need the GSL matrices, but this isn't recommended.
-
 In general, the build options can be combined freely with the variables
 described in the previous section, but note that --enable-release and
 --enable-debug will always overwrite the value of CXXFLAGS. If this is a
@@ -597,9 +587,9 @@ is built with --disable-expensive-checks).
 
 Also note that building Pure requires GNU make, thus you will have to use
 'gmake' instead of 'make'. In addition to gmake, you'll need recent versions
-of the following packages: perl5, flex, bison, readline, gmp, and gsl.
-Depending on your system, you might also have to set up some compiler and
-linker paths. E.g., the following does the trick on NetBSD:
+of the following packages: perl5, flex, bison, gmp, and readline (or
+editline). Depending on your system, you might also have to set up some
+compiler and linker paths. E.g., the following does the trick on NetBSD:
 
 export C_INCLUDE_PATH=/usr/local/include:/usr/pkg/include
 export LIBRARY_PATH=/usr/local/lib:/usr/pkg/lib

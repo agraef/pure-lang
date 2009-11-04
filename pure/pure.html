@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>The Pure Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2009-09-03" />
+<meta name="date" content="2009-11-04" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2009-09-03</td></tr>
+<td>2009-11-04</td></tr>
 </tbody>
 </table>
 <!-- Note: This document is formatted using docutils. The Makefile has rules -->
@@ -464,7 +464,7 @@ below:</p>
 <dt><tt class="docutils literal"><span class="pre">-l</span> <span class="pre">libname</span></tt></dt>
 <dd>Library to be linked in batch compilation.</dd>
 <dt><tt class="docutils literal"><span class="pre">--noediting</span></tt></dt>
-<dd>Do not use readline for command-line editing.</dd>
+<dd>Disable command-line editing.</dd>
 <dt><tt class="docutils literal"><span class="pre">--noprelude</span></tt>, <tt class="docutils literal"><span class="pre">-n</span></tt></dt>
 <dd>Do not load the prelude.</dd>
 <dt><tt class="docutils literal"><span class="pre">--norc</span></tt></dt>
@@ -581,11 +581,12 @@ used to provide additional definitions for interactive usage. Finally, a .pure
 file in the current directory (containing a dump from a previous interactive
 session) is loaded if it is present.</p>
 <p>When the interpreter is in interactive mode and reads from a tty, unless the
---noediting option is specified, commands are read using readline(3)
-(providing completion for all commands listed under <a class="reference internal" href="#interactive-usage">Interactive Usage</a>, as
-well as for symbols defined in the running program). When exiting the
-interpreter, the command history is stored in ~/.pure_history, from where it
-is restored the next time you run the interpreter.</p>
+--noediting option is specified, commands are usually read using readline(3)
+or some compatible replacement, providing completion for all commands listed
+under <a class="reference internal" href="#interactive-usage">Interactive Usage</a>, as well as for symbols defined in the running
+program. When exiting the interpreter, the command history is stored in
+~/.pure_history, from where it is restored the next time you run the
+interpreter.</p>
 <p>As of Pure 0.22, the interpreter also provides a simple source level debugger
 when run in interactive mode, see <a class="reference internal" href="#debugging">Debugging</a> for details. To enable the
 interactive debugger, you need to specify the -g option when invoking the
@@ -966,17 +967,18 @@ built-in operation which creates objects of a special matrix type. These
 can <em>not</em> be used as patterns (instead, matrix values can be matched using
 the special <tt class="docutils literal"><span class="pre">matrix</span></tt> type tag, see the <a class="reference internal" href="#rule-syntax">Rule Syntax</a> section for
 details).</p>
-<p>If the interpreter was built with support for the <a class="reference internal" href="#gnu-scientific-library">GNU Scientific
-Library</a> (GSL) then both numeric and symbolic matrices are available. The
-former are thin wrappers around GSL's homogeneous arrays of double,
-complex double or (machine) int matrices, while the latter can contain any
-mixture of Pure expressions. Pure will pick the appropriate type for the
-data at hand. If a matrix contains values of different types, or Pure
-values which cannot be stored in a numeric matrix, then a symbolic matrix
-is created instead (this also includes the case of bigints, which are
-considered as symbolic values as far as matrix construction is concerned).
-If the interpreter was built without GSL support then symbolic matrices
-are the only kind of matrices supported by the interpreter.</p>
+<p>Pure supports both numeric and symbolic matrices. The former are
+homogeneous arrays of double, complex double or (machine) int matrices,
+while the latter can contain any mixture of Pure expressions. Pure will
+pick the appropriate type for the data at hand. If a matrix contains
+values of different types, or Pure values which cannot be stored in a
+numeric matrix, then a symbolic matrix is created instead (this also
+includes the case of bigints, which are considered as symbolic values as
+far as matrix construction is concerned). Numeric matrices use an internal
+data layout that is fully compatible with the <a class="reference internal" href="#gnu-scientific-library">GNU Scientific Library</a>
+(GSL), and can readily be passed to GSL routines via the C interface. (The
+Pure interpreter does not require GSL, however, so numeric matrices will
+work even if GSL is not installed.)</p>
 <p class="last">More information about matrices and corresponding examples can be found in
 the <a class="reference internal" href="#examples">Examples</a> section below.</p>
 </dd>
@@ -2782,6 +2784,7 @@ functions in matrices.pure). For instance, here is how you can quickly wrap up
 GSL's double matrix addition function in a way that preserves value
 semantics:</p>
 <pre class="literal-block">
+&gt; using &quot;lib:gsl&quot;;
 &gt; extern int gsl_matrix_add(dmatrix*, dmatrix*);
 &gt; x::matrix + y::matrix = gsl_matrix_add x y $$ x when x = pack x end;
 &gt; let x = dmatrix {1,2,3}; let y = dmatrix {2,3,2}; x; y; x+y;
@@ -3305,11 +3308,11 @@ summary information about all the variable symbols along with their current
 values (using the &quot;long&quot; format):</p>
 <pre class="literal-block">
 &gt; show -lvg *
-argc         var  argc = 0;
-argv         var  argv = [];
-gsl_version  var  gsl_version = &quot;1.9&quot;;
-sysinfo      var  sysinfo = &quot;i686-pc-linux-gnu&quot;;
-version      var  version = &quot;0.17&quot;;
+argc       var  argc = 0;
+argv       var  argv = [];
+compiling  var  compiling = 0;
+sysinfo    var  sysinfo = &quot;x86_64-unknown-linux-gnu&quot;;
+version    var  version = &quot;0.37&quot;;
 5 variables
 </pre>
 <p>Or you can list just private symbols of the namespace <tt class="docutils literal"><span class="pre">foo</span></tt>, as follows:</p>
@@ -3516,12 +3519,12 @@ anywhere), so it will display the generic names <tt class="docutils literal"><sp
 <p>At the debugger prompt '<tt class="docutils literal"><span class="pre">:</span></tt>' you can enter various special debugger
 commands, or just keep on hitting the carriage return key to walk through an
 evaluation step by step, as we did in the example above. (Command line editing
-using readline works as usual at the debugger prompt, if it is enabled.) The
-usual commands are provided to walk through an evaluation, print and navigate
-the call stack, step over the current call, or continue the evaluation
-unattended until you hit another breakpoint. If you know other source level
-debuggers like gdb then you should feel right at home. You can type <tt class="docutils literal"><span class="pre">h</span></tt> at
-the debugger prompt to print the following list:</p>
+works as usual at the debugger prompt, if it is enabled.) The usual commands
+are provided to walk through an evaluation, print and navigate the call stack,
+step over the current call, or continue the evaluation unattended until you
+hit another breakpoint. If you know other source level debuggers like gdb then
+you should feel right at home. You can type <tt class="docutils literal"><span class="pre">h</span></tt> at the debugger prompt to
+print the following list:</p>
 <pre class="literal-block">
 : h
 Debugger commands:
@@ -4810,8 +4813,8 @@ replacement, <a class="reference external" href="http://www.gnu.org/software/oct
 </dl>
 <dl class="docutils" id="gsl">
 <span id="gnu-scientific-library"></span><dt>GNU Scientific Library</dt>
-<dd>A free software library for numeric applications, required for Pure's
-numeric matrix support, <a class="reference external" href="http://www.gnu.org/software/gsl">http://www.gnu.org/software/gsl</a>.</dd>
+<dd>A free software library for numeric applications, can be used with Pure's
+numeric matrices, <a class="reference external" href="http://www.gnu.org/software/gsl">http://www.gnu.org/software/gsl</a>.</dd>
 </dl>
 <dl class="docutils" id="haskell">
 <dt>Haskell</dt>
