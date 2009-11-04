@@ -89,7 +89,7 @@ using namespace std;
 -x               Execute script with given command line arguments.\n\
 --               Stop option processing.\n\
 Type 'help' in the interpreter for more help.\n"
-#define LICENSE "This program is free software distributed under the GNU Public License\n(GPL V3 or later). Type 'help copying' for details.\n"
+#define LICENSE "This program is free software, and you are welcome to redistribute it\nunder certain conditions. There is ABSOLUTELY NO WARRANTY.\nPlease type 'help copying' for details.\n"
 
 #ifdef HAVE_LIBREADLINE
 
