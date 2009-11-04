@@ -697,11 +697,12 @@ static bool find_namespace(interpreter& interp, const string& name)
 
 /* This is a watered-down version of the command completion routine from
    pure.cc, used to implement the completion_matches command used by
-   pure-mode.el. This isn't perfect, since it will also complete command names
-   when not at the beginning of the line, but since the location inside the
-   line isn't passed to completion_matches, it's the best that we can do right
-   now. Also note that this code doesn't need readline in any way, so it will
-   work even if the interpreter is built without readline or libedit support. */
+   pure-mode.el. This isn't perfect, since it lacks filename completion
+   support and will also complete command names when not at the beginning of
+   the line. But since the location inside the line isn't passed to
+   completion_matches, it's the best that we can do right now. Also note that
+   this code doesn't need readline in any way, so it will work even if the
+   interpreter is built without readline or libedit support. */
 
 static const char *commands[] = {
   "break", "cd", "clear", "const", "def", "del", "dump", "extern", "help",
