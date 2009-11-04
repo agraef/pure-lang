@@ -64,11 +64,31 @@ typedef struct _pure_expr {
 /* GSL-compatible matrix structs used to represent various types of matrix
    expressions, including symbolic matrices (which GSL doesn't support). */
 
+/* NOTE: The struct definitions below are supposed to be drop-in replacements
+   for the corresponding declarations in the GSL headers. To prevent name
+   clashes between the GSL and Pure structs, if you need to include both the
+   GSL headers and this header in your application, make sure that you include
+   the gsl_matrix.h header first. */
+
+#ifndef __GSL_MATRIX_H__
+
 typedef struct _gsl_block
 {
   size_t size;
   double *data;
 } gsl_block;
+
+typedef struct _gsl_block_complex
+{
+  size_t size;
+  double *data;
+} gsl_block_complex;
+
+typedef struct _gsl_block_int
+{
+  size_t size;
+  int *data;
+} gsl_block_int;
 
 typedef struct _gsl_matrix
 {
@@ -85,12 +105,6 @@ typedef struct _gsl_matrix_view
   gsl_matrix matrix;
 } gsl_matrix_view;
 
-typedef struct _gsl_block_complex
-{
-  size_t size;
-  double *data;
-} gsl_block_complex;
-
 typedef struct _gsl_matrix_complex
 {
   size_t size1;
@@ -106,12 +120,6 @@ typedef struct _gsl_matrix_complex_view
   gsl_matrix_complex matrix;
 } gsl_matrix_complex_view;
 
-typedef struct _gsl_block_int
-{
-  size_t size;
-  int *data;
-} gsl_block_int;
-
 typedef struct _gsl_matrix_int
 {
   size_t size1;
@@ -126,6 +134,8 @@ typedef struct _gsl_matrix_int_view
 {
   gsl_matrix_int matrix;
 } gsl_matrix_int_view;
+
+#endif
 
 typedef struct _gsl_block_symbolic
 {
