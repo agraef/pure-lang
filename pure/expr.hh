@@ -156,13 +156,13 @@ struct EXPR {
     WITH	= -13,	// with expression
     // wrapper for embedded runtime expressions
     WRAP	= -14,	// pointer to variable binding (GlobalVar*)
-    // GSL matrix types:
+    // GSL-compatible matrix types:
     MATRIX	= -32,  // generic GSL matrix, symbolic matrices
     DMATRIX	= -31,	// double matrix
     CMATRIX	= -30,	// complex matrix
     IMATRIX	= -29,	// integer matrix
     /* Other values in the range -17..-32 are reserved for later use in the
-       runtime expression data structure. Note that all GSL-related tags,
+       runtime expression data structure. Note that all matrix-related tags,
        taken as an unsigned binary quantity, are of the form 0xffffffe0+t,
        where the least significant nibble t=0x0..0xf denotes corresponding
        subtypes in runtime matrix data. For compile time expressions only the
