@@ -66,7 +66,7 @@ using namespace std;
 #define PURELIB "/usr/local/lib/pure-" PACKAGE_VERSION
 #endif
 
-#define COPYRIGHT "Copyright (c) 2009 by Albert Graef"
+#define COPYRIGHT "Copyright (c) 2008, 2009 by Albert Graef"
 #define USAGE \
 "Usage:           pure [options ...] [script ...] [-- args ...]\n\
                  pure [options ...] -x script [args ...]\n\
@@ -89,7 +89,7 @@ using namespace std;
 -x               Execute script with given command line arguments.\n\
 --               Stop option processing.\n\
 Type 'help' in the interpreter for more help.\n"
-#define LICENSE "This program is free software, and you are welcome to redistribute it\nunder certain conditions. There is ABSOLUTELY NO WARRANTY.\nPlease type 'help copying' for details.\n"
+#define LICENSE "This program is free software, and you are welcome to redistribute it under\ncertain conditions. There is ABSOLUTELY NO WARRANTY. (Type 'help copying'\nfor more information.)\n"
 
 #ifdef HAVE_LIBREADLINE
 
