@@ -3661,6 +3661,15 @@ expr interpreter::parse_simple(list<OpEntry>::iterator& act,
     out.push_arg(a);
     y = out.last_op();
   }
+  if (out.stk.size() > 1) {
+    /* Unprocessed operands remain, most likely this indicates missing
+       parentheses around a postfix op inside an application. We treat this as
+       an error. */
+    ostringstream msg;
+    msg << "syntax error, missing parentheses around '"
+	<< out.stk.front().x << "'";
+    throw err(msg.str());
+  }
 #if 0
   std::cerr << "parsed output:";
   for (list<OpEntry>::iterator it = out.stk.begin(), end = out.stk.end();
