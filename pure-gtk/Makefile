@@ -71,8 +71,8 @@ dlls = $(modules:.pure=$(DLL))
 
 FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 
-DISTFILES = COPYING Makefile README config.guess examples/*.pure \
-examples/*.glade $(modules) $(c-modules)
+DISTFILES = COPYING COPYING.LESSER Makefile README config.guess \
+examples/*.pure examples/*.glade $(modules) $(c-modules)
 
 .PHONY: all clean realclean generate examples install uninstall dist distcheck
 

@@ -52,8 +52,8 @@ FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 LO_CFLAGS = $(shell pkg-config --cflags liblo) $(shell pkg-config --atleast-version=0.26 liblo && echo '-DHAVE_TIMETAG=1')
 LO_LIBS = $(shell pkg-config --libs liblo)
 
-DISTFILES = COPYING Makefile README config.guess examples/*.pure lo.c lo.pure \
-lo-add.c lo-add.pure osc.pure pure-liblo.html
+DISTFILES = COPYING COPYING.LESSER Makefile README config.guess \
+examples/*.pure lo.c lo.pure lo-add.c lo-add.pure osc.pure pure-liblo.html
 
 all: lo$(DLL)
 

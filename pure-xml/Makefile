@@ -56,8 +56,8 @@ CFLAGS = -g -O2
 
 FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 
-DISTFILES = COPYING Makefile README pure-xml.html config.guess xml.c xml.pure \
-examples/*.pure examples/*.xml examples/*.xsl
+DISTFILES = COPYING COPYING.LESSER Makefile README pure-xml.html config.guess \
+xml.c xml.pure examples/*.pure examples/*.xml examples/*.xsl
 
 all: xml$(DLL)
 

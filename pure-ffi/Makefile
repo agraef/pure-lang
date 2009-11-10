@@ -49,7 +49,7 @@ CFLAGS = -g -O2
 
 FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 
-DISTFILES = COPYING Makefile README pure-ffi.html config.guess \
+DISTFILES = COPYING COPYING.LESSER Makefile README pure-ffi.html config.guess \
 examples/*.pure ffi.c ffi.pure
 
 all: ffi$(DLL)

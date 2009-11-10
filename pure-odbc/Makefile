@@ -51,7 +51,7 @@ CFLAGS = -g -O2
 
 FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 
-DISTFILES = COPYING Makefile README pure-odbc.html config.guess \
+DISTFILES = COPYING COPYING.LESSER Makefile README pure-odbc.html config.guess \
 examples/*.pure odbc.c odbc.pure
 
 all: odbc$(DLL)
