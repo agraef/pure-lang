@@ -155,6 +155,7 @@ static void mangle_fname(string& name);
 %token <ival>	TAG	"type tag"
 %type  <sval>	name fname optalias ctype
 %type  <slval>	ids names fnames ctypes opt_ctypes
+%type  <ival>	scope
 %type  <info>	fixity
 %type  <xval>	expr prim
 %type  <opstk>  simple  "simple expression"
@@ -198,7 +199,8 @@ source
 : /* empty */
 | source ';'
 | source item ';'
-| error ';'		{ interp.nerrs = yyerrstatus_ = 0; }
+| error ';'
+{ interp.nerrs = yyerrstatus_ = 0; interp.declare_op = false; }
 ;
 
 item
@@ -254,8 +256,7 @@ item
 { interp.using_namespaces($3); }
 | USING NAMESPACE
 { interp.using_namespaces(); }
-| PUBLIC EXTERN { extern_priv = 0; } prototypes
-| PRIVATE EXTERN { extern_priv = 1; } prototypes
+| scope EXTERN { interp.declare_op = false; extern_priv = $1; } prototypes
 | EXTERN { extern_priv = -1; } prototypes
 ;
 
@@ -263,14 +264,15 @@ fixity
 : FIX INT		{ $$ = new sym_info(true, false,$2,$1); }
 | OUTFIX		{ $$ = new sym_info(true, false,PREC_MAX,outfix); }
 | NONFIX		{ $$ = new sym_info(true, false,PREC_MAX,nonfix); }
-| PUBLIC FIX INT	{ $$ = new sym_info(true, false,$3,$2); }
-| PUBLIC OUTFIX		{ $$ = new sym_info(true, false,PREC_MAX,outfix); }
-| PUBLIC NONFIX		{ $$ = new sym_info(true, false,PREC_MAX,nonfix); }
-| PUBLIC		{ $$ = new sym_info(false, false,PREC_MAX,infix); }
-| PRIVATE FIX INT	{ $$ = new sym_info(true, true,$3,$2); }
-| PRIVATE OUTFIX	{ $$ = new sym_info(true, true,PREC_MAX,outfix); }
-| PRIVATE NONFIX	{ $$ = new sym_info(true, true,PREC_MAX,nonfix); }
-| PRIVATE		{ $$ = new sym_info(false, true,PREC_MAX,infix); }
+| scope FIX INT		{ $$ = new sym_info(true, $1,$3,$2); }
+| scope OUTFIX		{ $$ = new sym_info(true, $1,PREC_MAX,outfix); }
+| scope NONFIX		{ $$ = new sym_info(true, $1,PREC_MAX,nonfix); }
+| scope			{ $$ = new sym_info(false, $1,PREC_MAX,infix); }
+;
+
+scope
+: PUBLIC		{ $$ = false; interp.declare_op = true; }
+| PRIVATE		{ $$ = true;  interp.declare_op = true; }
 ;
 
 ids
