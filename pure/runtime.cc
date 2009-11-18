@@ -6718,7 +6718,7 @@ struct Blob {
       // Fix up header information.
       hdrdata *h = (hdrdata*)buf;
       size_t ofs = align(sizeof(hdrdata));
-      h->crc = cksum(size-ofs, (unsigned char*)buf+ofs);
+      h->crc = cksum(size-ofs, (const unsigned char*)buf+ofs);
       h->n1 = size;
       h->n2 = t_pos;
     }
@@ -6877,7 +6877,7 @@ struct Blob {
     int32_t marker = swap(*(int32_t*)((char*)data+n1-sizeof(int32_t)));
     if (tag != 0 || marker != -4711) return;
     size_t ofs = align(sizeof(hdrdata));
-    uint32_t mycrc = cksum(n1-ofs, (unsigned char*)data+ofs);
+    uint32_t mycrc = cksum(n1-ofs, (const unsigned char*)data+ofs);
     if (mycrc != crc) return; // failed crc check
     data1 *d = (data1*)((char*)data+n2);
     if (swap(d->tag) != 0) return; // invalid symbol table format
