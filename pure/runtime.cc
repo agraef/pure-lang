@@ -5618,6 +5618,53 @@ pure_expr *pure_double_seq(double from, double to, double step)
   return x;
 }
 
+/* C qsort() interface. This is pretty much the same as the implementation in
+   examples/sort.c, massaged slightly to be reentrant. */
+
+static pure_expr* cmp_p; // TLD
+static int cmp(const void *xp, const void *yp)
+{
+  pure_expr *x = *(pure_expr**)xp, *y = *(pure_expr**)yp;
+  pure_expr *p = pure_appl(cmp_p, 2, x, y);
+  int res = pure_is_int(p, &res) && res; /* x<y? */
+  pure_freenew(p); /* collect temporary */
+  if (res)
+    res = -1;
+  else {
+    /* Invoke cmp_p another time to perform the reverse comparison. */
+    p = pure_appl(cmp_p, 2, y, x);
+    res = pure_is_int(p, &res) && res; /* y<x? */
+    pure_freenew(p); /* collect temporary */
+    /* If both tests failed then the elements are either equal or
+       incomparable, in which case res==0. */
+  }
+  return res;
+}
+
+extern "C"
+pure_expr *pure_sort(pure_expr *p, pure_expr *xs)
+{
+  size_t size;
+  pure_expr **elems;
+  /* Deconstruct the list argument which is passed as a pure_expr* value.
+     This yields a vector of pure_expr* elements which can be passed to the
+     qsort() routine. */
+  if (pure_is_listv(xs, &size, &elems)) {
+    /* Save the current predicate, so the we can be invoked recursively. */
+    pure_expr *save_cmp_p = cmp_p;
+    pure_expr *ys;
+    /* Invoke qsort() to sort the elems vector. */
+    cmp_p = p;
+    qsort(elems, size, sizeof(pure_expr*), cmp);
+    /* Restore the previous predicate. */
+    cmp_p = save_cmp_p;
+    ys = pure_listv(size, elems);
+    free(elems);
+    return ys;
+  } else
+    return 0;
+}
+
 extern "C"
 pure_expr *pure_intval(pure_expr *x)
 {

@@ -823,6 +823,10 @@ void pure_trap(int32_t action, int32_t sig);
 pure_expr *pure_int_seq(int32_t from, int32_t to, int32_t step);
 pure_expr *pure_double_seq(double from, double to, double step);
 
+/* Interface to the C qsort() routine. */
+
+pure_expr *pure_sort(pure_expr *p, pure_expr *xs);
+
 /* Conversions between numeric and pointer types. The input argument must be
    an expression denoting an int, double, bigint or pointer value. The numeric
    value of a pointer is its address, cast to a suitably large integer type,

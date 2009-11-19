@@ -19,7 +19,11 @@
    declare the sort function:
 
    > using "lib:sort";
+   > namespace my;
    > extern expr* sort(expr* p, expr *xs);
+
+   (Note that for Pure 0.37 or later the namespace 'my' is needed here to
+   prevent a name clash with the 'sort' function provided in the prelude.)
 
    The sort function is now ready to be called as 'sort p xs', e.g.:
 
