@@ -5619,7 +5619,8 @@ pure_expr *pure_double_seq(double from, double to, double step)
 }
 
 /* C qsort() interface. This is pretty much the same as the implementation in
-   examples/sort.c, massaged slightly to be reentrant. */
+   examples/sort.c, massaged slightly to be reentrant and to also support Pure
+   matrices. */
 
 static pure_expr* cmp_p; // TLD
 static int cmp(const void *xp, const void *yp)
@@ -5642,25 +5643,43 @@ static int cmp(const void *xp, const void *yp)
 }
 
 extern "C"
-pure_expr *pure_sort(pure_expr *p, pure_expr *xs)
+pure_expr *pure_sort(pure_expr *p, pure_expr *x)
 {
   size_t size;
   pure_expr **elems;
   /* Deconstruct the list argument which is passed as a pure_expr* value.
      This yields a vector of pure_expr* elements which can be passed to the
      qsort() routine. */
-  if (pure_is_listv(xs, &size, &elems)) {
+  if (pure_is_listv(x, &size, &elems)) {
     /* Save the current predicate, so the we can be invoked recursively. */
     pure_expr *save_cmp_p = cmp_p;
-    pure_expr *ys;
+    pure_expr *y;
     /* Invoke qsort() to sort the elems vector. */
     cmp_p = p;
     qsort(elems, size, sizeof(pure_expr*), cmp);
     /* Restore the previous predicate. */
     cmp_p = save_cmp_p;
-    ys = pure_listv(size, elems);
+    y = pure_listv(size, elems);
     free(elems);
-    return ys;
+    return y;
+  } else if (x->tag == EXPR::MATRIX) {
+    if (x->data.mat.p) {
+      gsl_matrix_symbolic *m = (gsl_matrix_symbolic*)x->data.mat.p;
+      size_t n1 = m->size1, n2 = m->size2;
+      if (n1 == 0 || n2 == 0) // empty matrix
+	return x;
+      /* Create a copy of the original matrix in contiguous storage. */
+      gsl_matrix_symbolic *m1 = create_symbolic_matrix(n1, n2);
+      gsl_matrix_symbolic_memcpy(m1, m);
+      elems = m1->data; size = n1*n2;
+      /* Sort the new matrix using qsort. Same as above in the list case. */
+      pure_expr *save_cmp_p = cmp_p;
+      cmp_p = p;
+      qsort(elems, size, sizeof(pure_expr*), cmp);
+      cmp_p = save_cmp_p;
+      return pure_symbolic_matrix(m1);
+    } else
+      return x;
   } else
     return 0;
 }
