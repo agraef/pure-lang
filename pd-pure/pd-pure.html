@@ -369,9 +369,9 @@ well. You can find all packages on the Download page at
 <a class="reference external" href="http://pure-lang.googlecode.com">http://pure-lang.googlecode.com</a>. For instance, at the time of this writing,
 the available packages are:</p>
 <ul class="simple">
-<li><a class="reference external" href="http://pure-lang.googlecode.com/files/pure-0.34.msi">http://pure-lang.googlecode.com/files/pure-0.34.msi</a></li>
+<li><a class="reference external" href="http://pure-lang.googlecode.com/files/pure-0.37.msi">http://pure-lang.googlecode.com/files/pure-0.37.msi</a></li>
 <li><a class="reference external" href="http://pure-lang.googlecode.com/files/pd-mingw-0.42-5.msi">http://pure-lang.googlecode.com/files/pd-mingw-0.42-5.msi</a></li>
-<li><a class="reference external" href="http://pure-lang.googlecode.com/files/pd-pure-0.7.msi">http://pure-lang.googlecode.com/files/pd-pure-0.7.msi</a></li>
+<li><a class="reference external" href="http://pure-lang.googlecode.com/files/pd-pure-0.8.msi">http://pure-lang.googlecode.com/files/pd-pure-0.8.msi</a></li>
 </ul>
 <p>Make sure that you get the latest versions of these packages. After installing
 the packages, you still have to configure Pd to load the <tt class="docutils literal"><span class="pre">pure</span></tt> external at
@@ -541,7 +541,7 @@ echo = 1,0,puts.str;
 <tt class="docutils literal"><span class="pre">[counter]</span></tt> object produces the next counter value when receiving a <tt class="docutils literal"><span class="pre">bang</span></tt>
 message:</p>
 <pre class="literal-block">
-nullary bang;
+nonfix bang;
 counter = next (ref 0) with
   next r bang = put r (get r+1);
   next _ _    = () otherwise;
@@ -587,7 +587,7 @@ cancels any existing timer. (Note that you still have to specify the <tt class="
 parameter, but it will be ignored in this case.) We can use this to equip our
 <tt class="docutils literal"><span class="pre">mydelay</span></tt> object with a <tt class="docutils literal"><span class="pre">stop</span></tt> message as follows:</p>
 <pre class="literal-block">
-nullary stop;
+nonfix stop;
 mydelay _ (alarm msg) = msg;
 mydelay _ stop = pd_delay inf ();
 mydelay t msg = pd_delay t (alarm msg) otherwise;
@@ -632,7 +632,7 @@ randf = random/0x7fffffff;
 extern int pd_getbuffersize(char *name);
 extern void pd_setbuffer(char *name, expr* x);
 
-nullary bang;
+nonfix bang;
 
 randomwave name = 1,0,process with
   process bang  = pd_setbuffer name {randf | i = 1..nsamples};
