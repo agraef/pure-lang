@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>Pure Library Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2009-11-19" />
+<meta name="date" content="2009-11-21" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2009-11-19</td></tr>
+<td>2009-11-21</td></tr>
 </tbody>
 </table>
 <!-- We use docutils to produce the documentation. Docstrings are extracted -->
@@ -651,7 +651,7 @@ infinite sequences you have to use an infinite upper bound (<tt class="docutils 
 -1:#&lt;thunk 0x7f696cd2fde8&gt;
 </pre>
 <p>The lower bounds of an arithmetic sequence must always be finite.</p>
-<p>Non-lazy lists can be sorted using the <tt class="docutils literal"><span class="pre">sort</span></tt> function, which provides an
+<a name="sort"><p id="sort">Non-lazy lists can be sorted using the <tt class="docutils literal"><span class="pre">sort</span></tt> function, which provides an
 interface to the C <tt class="docutils literal"><span class="pre">qsort()</span></tt> routine, please see your local qsort(3)
 documentation for details. An order predicate <tt class="docutils literal"><span class="pre">p</span></tt> is specified as the
 first argument, which must return a nonzero integer to indicate that its
@@ -1352,6 +1352,38 @@ row size must divide the total size of the matrix.</p>
 <a name="rowvector"><a name="colvector"><dl class="docutils" id="colvector">
 <span id="rowvector"></span><dt><tt class="docutils literal"><span class="pre">rowvector</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">colvector</span> <span class="pre">x</span></tt></dt>
 <dd>Convenience functions to convert a matrix to a row or column vector.</dd>
+</dl>
+<a name="sort (matrix)"><dl class="docutils" id="sort-matrix">
+<dt><tt class="docutils literal"><span class="pre">sort</span> <span class="pre">p</span> <span class="pre">x</span></tt></dt>
+<dd><p class="first">Sorts the element of a matrix according to the given predicate, using the
+C <tt class="docutils literal"><span class="pre">qsort</span></tt> function. This works just like the corresponding list
+function, see <a class="reference internal" href="#lists-and-tuples">Lists and Tuples</a>. Note that this function sorts <em>all</em>
+elements of the matrix in one go (regardless of the dimensions), as if
+the matrix was a single big vector. The result matrix has the same
+dimensions as the input matrix. Example:</p>
+<pre class="literal-block">
+&gt; sort (&lt;) {10,9;8,7;6,5};
+{5,6;7,8;9,10}
+</pre>
+<p>If you'd like to sort the individual rows instead, you can do that as
+follows:</p>
+<pre class="literal-block">
+&gt; sort_rows p = rowcat . map (sort p) . rows;
+&gt; sort_rows (&lt;) {10,9;8,7;6,5};
+{9,10;7,8;5,6}
+</pre>
+<p>Likewise, to sort the columns of a matrix:</p>
+<pre class="literal-block">
+&gt; sort_cols p = colcat . map (sort p) . cols;
+&gt; sort_cols (&lt;) {10,9;8,7;6,5};
+{6,5;8,7;10,9}
+</pre>
+<p class="last">Also note that the pure-gsl module provides an interface to the GSL
+routines for sorting numeric (int and double) vectors using the standard
+order. These will usually be much faster than <tt class="docutils literal"><span class="pre">sort</span></tt>, whereas <tt class="docutils literal"><span class="pre">sort</span></tt>
+is more flexible in that it also allows you to sort symbolic matrices and
+to choose the order predicate.</p>
+</dd>
 </dl>
 <a name="transpose (matrix)"><dl class="docutils" id="transpose-matrix">
 <dt><tt class="docutils literal"><span class="pre">transpose</span> <span class="pre">x</span></tt></dt>
@@ -4127,6 +4159,8 @@ copied to the result lists as is.</p>
 <div class="line"><a class="reference internal" href="#sinh">sinh</a></div>
 <div class="line"><a class="reference internal" href="#sleep">sleep</a></div>
 <div class="line"><a class="reference internal" href="#smatrix">smatrix</a></div>
+<div class="line"><a class="reference internal" href="#sort">sort</a></div>
+<div class="line"><a class="reference internal" href="#sort-matrix">sort (matrix)</a></div>
 <div class="line"><a class="reference internal" href="#spawnv">spawnv</a></div>
 <div class="line"><a class="reference internal" href="#spawnve">spawnve</a></div>
 <div class="line"><a class="reference internal" href="#spawnvp">spawnvp</a></div>

@@ -477,6 +477,12 @@ infinite sequences you have to use an infinite upper bound (``inf`` or
 
 The lower bounds of an arithmetic sequence must always be finite.
 
+.. raw:: html
+
+   <a name="sort">
+
+.. _sort:
+
 Non-lazy lists can be sorted using the ``sort`` function, which provides an
 interface to the C ``qsort()`` routine, please see your local qsort(3)
 documentation for details. An order predicate ``p`` is specified as the
@@ -1830,6 +1836,42 @@ Matrix Inspection and Manipulation
 
 ``rowvector x``, ``colvector x``
   Convenience functions to convert a matrix to a row or column vector.
+
+.. raw:: html
+
+   <a name="sort (matrix)">
+
+.. _sort (matrix):
+
+``sort p x``
+  Sorts the element of a matrix according to the given predicate, using the
+  C ``qsort`` function. This works just like the corresponding list
+  function, see `Lists and Tuples`_. Note that this function sorts *all*
+  elements of the matrix in one go (regardless of the dimensions), as if
+  the matrix was a single big vector. The result matrix has the same
+  dimensions as the input matrix. Example::
+
+    > sort (<) {10,9;8,7;6,5};
+    {5,6;7,8;9,10}
+
+  If you'd like to sort the individual rows instead, you can do that as
+  follows::
+
+    > sort_rows p = rowcat . map (sort p) . rows;
+    > sort_rows (<) {10,9;8,7;6,5};
+    {9,10;7,8;5,6}
+
+  Likewise, to sort the columns of a matrix::
+
+    > sort_cols p = colcat . map (sort p) . cols;
+    > sort_cols (<) {10,9;8,7;6,5};
+    {6,5;8,7;10,9}
+
+  Also note that the pure-gsl module provides an interface to the GSL
+  routines for sorting numeric (int and double) vectors using the standard
+  order. These will usually be much faster than ``sort``, whereas ``sort``
+  is more flexible in that it also allows you to sort symbolic matrices and
+  to choose the order predicate.
 
 .. raw:: html
 
@@ -6449,6 +6491,8 @@ Index
 | `sinh`_
 | `sleep`_
 | `smatrix`_
+| `sort`_
+| `sort (matrix)`_
 | `spawnv`_
 | `spawnve`_
 | `spawnvp`_
