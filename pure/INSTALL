@@ -89,18 +89,26 @@ configure automatically detects the presence of both packages and also lets
 you disable readline and/or editline support using the --without-readline and
 --without-editline options.
 
-STEP 2. Get and unpack the LLVM 2.5 sources at:
-http://llvm.org/releases/download.html#2.5
+STEP 2. Get and unpack the LLVM 2.6 sources at:
+http://llvm.org/releases/download.html#2.6
 
-You only need the llvm-2.5 tarball which contains the LLVM library as well as
-most of the LLVM toolchain.
+You only need the llvm-2.6 tarball which contains the LLVM library as well as
+most of the LLVM toolchain. (Substitute the proper version number if you are
+using a different LLVM version.)
 
-LLVM from svn (both the 2.6 release branch and the trunk) is fully supported
-as of Pure 0.31. LLVM 2.3 and 2.4 should still work, too, but we really
-recommend the latest stable LLVM release because there have been substantial
+Note that LLVM 2.6 is the latest stable release at the time of this writing.
+Both LLVM 2.5 and LLVM 2.6 have been tested extensively and appear to work
+very well with Pure. LLVM 2.3 and 2.4 should still work, too, but we really
+recommend using LLVM 2.5 or later because there have been substantial
 improvements in the LLVM JIT in recent releases. (Also note that there are
 some x86-64 specific quirks with LLVM 2.3, see the notes on 64 bit support in
 the SYSTEM NOTES section for details.)
+
+LLVM from svn might work, too, but you're on your own. While we're committed
+to make Pure work with new LLVM versions as they become available, currently
+we don't have the manpower to track LLVM development in the trunk very
+closely. So you might run into various compilation problems and other
+incompatibilities when going with the svn version.
 
 NOTE: Some Linux distributions provide LLVM packages which are broken on 32
 bit x86 systems. The symptom usually is that the interpreter segfaults inside
@@ -110,7 +118,7 @@ see the notes on x86-32/64 compilation below.
 
 STEP 3. Configure, build and install LLVM as follows:
 
-$ cd llvm-2.5
+$ cd llvm-2.6
 $ ./configure --enable-optimized --disable-assertions --disable-expensive-checks --enable-targets=host-only
 $ make
 $ sudo make install
@@ -142,9 +150,10 @@ $ make
 $ sudo make install
 
 The last command installs the pure program, the runtime.h header file, the
-runtime library libpure.so and the library scripts under /usr/local; the
-installation prefix can be changed with the --prefix configure option, see
-OTHER BUILD AND INSTALLATION OPTIONS for details.
+runtime library libpure.so and the library scripts in the appropriate
+subdirectories of /usr/local; the installation prefix can be changed with the
+--prefix configure option, see OTHER BUILD AND INSTALLATION OPTIONS for
+details.
 
 (The runtime.h header file is not needed for normal operation, but can be used
 to write C/C++ extensions modules, if you need to access and manipulate Pure
@@ -208,10 +217,10 @@ Read the online documentation:
 
 This invokes the Pure manual; you need to have a html browser installed to
 make this work. By default, the interpreter assumes w3m (a text-based
-browser), you can change this by setting the PURE_HELP variable accordingly.
-For instance:
+browser), you can change this by setting the BROWSER or the PURE_HELP variable
+accordingly. For instance:
 
-$ export PURE_HELP=firefox
+$ export BROWSER=firefox
 
 The manual is also available in a number of other formats (you can find these
 at the Pure website), and the Windows package includes a html help version of
@@ -284,9 +293,10 @@ INSTALLATION PATH
 ------------ ----
 
 By default, the pure program, the runtime.h header file, the runtime library
-and the library scripts are installed in /usr/local/bin, /usr/local/include,
-/usr/local/lib and /usr/local/lib/pure, respectively. This can be changed by
-specifying the desired installation prefix with the --prefix option, e.g.:
+and the library scripts are installed in /usr/local/bin,
+/usr/local/include/pure, /usr/local/lib and /usr/local/lib/pure,
+respectively. This can be changed by specifying the desired installation
+prefix with the --prefix option, e.g.:
 
 $ ./configure --prefix=/usr
 
@@ -513,8 +523,8 @@ With LLVM 2.5 and earlier, the JIT is broken on x86-32 if it is built with
 The Ubuntu 9.04 LLVM 2.5 package (2.5-0ubuntu1) is broken on x86-32 for this
 reason (the package was built using --enable-pic unconditionally for both 32
 and 64 bit; cf. http://packages.ubuntu.com/jaunty/llvm). Don't use that
-package on x86-32, build your own LLVM from source instead. Or complain to the
-maintainers so that the package gets fixed.
+package on x86-32, build your own LLVM from source instead, or try to find a
+newer package which doesn't have this problem.
 
 64 BIT SYSTEMS
 -- --- -------
@@ -535,11 +545,11 @@ applying the patch, configure LLVM with --enable-pic and build it as usual.
 POWERPC
 -------
 
-You'll need Pure >= 0.35 and LLVM >= 2.6 (or current svn). Also make sure that
-you always configure LLVM with --disable-expensive-checks and Pure with
---disable-fastcc. With these settings Pure should work fine on ppc (tested on
-ppc32 running Fedora Core 11 and 12), but note that tail call optimization
-doesn't work on this platform right now because of LLVM limitations.
+You'll need Pure >= 0.35 and LLVM >= 2.6. Also make sure that you always
+configure LLVM with --disable-expensive-checks and Pure with --disable-fastcc.
+With these settings Pure should work fine on ppc (tested on ppc32 running
+Fedora Core 11 and 12), but note that tail call optimization doesn't work on
+this platform right now because of LLVM limitations.
 
 LINUX
 -----
@@ -547,11 +557,13 @@ LINUX
 Linux is the primary development platform for this software, and the sources
 should build out of the box on all recent Linux distributions.
 
-Binary packages for openSUSE are maintained by Toni Graffy as part of the
-Packman project, see: http://packman.links2linux.de/search?scope=name&q=pure-
+Binary packages for all recent openSUSE versions are maintained by Toni Graffy
+as part of the Packman project, see: http://packman.links2linux.de. As a
+convenience, Packman also provides a "pure-complete" package which installs
+both the Pure interpreter and most addon modules in one go.
 
-Michel Salim is working on Fedora packages. A source RPM is available at
-https://bugzilla.redhat.com/show_bug.cgi?id=488563
+Michel Salim has kindly provided packages for all recent Fedora releases, see
+http://koji.fedoraproject.org/koji/packageinfo?packageID=9272
 
 Alvaro Castro Castilla has contributed a Gentoo ebuild, which is currently
 available at http://bugs.gentoo.org/show_bug.cgi?id=231966.
@@ -619,6 +631,6 @@ compiler work. Just unzip these into some convenient location on your
 harddrive and set up PATH so that it points to the llvm-x.y directory.
 
 
-October 2009
+November 2009
 Albert Graef <Dr.Graef at t-online.de>
 Eddie Rucker <erucker at bmc.edu>
