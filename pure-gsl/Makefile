@@ -26,6 +26,7 @@ shared = -shared
 ifneq "$(findstring -mingw,$(host))" ""
 # Windows
 DLL = .dll
+LDFLAGS = -Wl,--enable-auto-import
 endif
 ifneq "$(findstring -darwin,$(host))" ""
 # OSX (untested)
