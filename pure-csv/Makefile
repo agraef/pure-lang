@@ -70,7 +70,7 @@ pure-csv.html: README
 pure-csv.tex: README
 	rst2latex.py $< $@
 
-pure-csv.pdf: README
+pure-csv.pdf: pure-csv.tex
 	pdflatex $<
 	pdflatex $<
 	rm -r *.aux *.log *.out
