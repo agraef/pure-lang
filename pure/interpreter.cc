@@ -44,6 +44,8 @@
 
 #include "config.h"
 
+#include "gsl_structs.h"
+
 uint8_t interpreter::g_verbose = 0;
 bool interpreter::g_interactive = false;
 interpreter* interpreter::g_interp = 0;

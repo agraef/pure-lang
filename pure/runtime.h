@@ -48,10 +48,10 @@ typedef struct {
   uint32_t key;			// key identifying a local closure (0 = none)
 } pure_closure;
 
-/* Matrix data. The GSL matrix data is represented as a void* whose actual
-   type depends on the expression tag. Different expressions may share the
-   same underlying memory block, so we do our own reference counting to manage
-   these. */
+/* Matrix data. The GSL-compatible matrix data is represented as a void* whose
+   actual type depends on the expression tag. Different expressions may share
+   the same underlying memory block, so we do our own reference counting to
+   manage these. */
 
 typedef struct {
   uint32_t *refc;		// reference counter
@@ -78,103 +78,6 @@ typedef struct _pure_expr {
   /* Internal fields (DO NOT TOUCH). The JIT doesn't care about these. */
   struct _pure_expr *xp;	// freelist pointer
 } pure_expr;
-
-/* GSL-compatible matrix structs used to represent various types of matrix
-   expressions, including symbolic matrices (which GSL doesn't support). */
-
-/* NOTE: The struct definitions below are supposed to be drop-in replacements
-   for the corresponding declarations in the GSL headers. To prevent name
-   clashes between the GSL and Pure structs, if you need to include both the
-   GSL headers and this header in your application, make sure that you include
-   the gsl_matrix.h header first. */
-
-#ifndef __GSL_MATRIX_H__
-
-typedef struct _gsl_block
-{
-  size_t size;
-  double *data;
-} gsl_block;
-
-typedef struct _gsl_block_complex
-{
-  size_t size;
-  double *data;
-} gsl_block_complex;
-
-typedef struct _gsl_block_int
-{
-  size_t size;
-  int *data;
-} gsl_block_int;
-
-typedef struct _gsl_matrix
-{
-  size_t size1;
-  size_t size2;
-  size_t tda;
-  double *data;
-  gsl_block *block;
-  int owner;
-} gsl_matrix;
-
-typedef struct _gsl_matrix_view
-{
-  gsl_matrix matrix;
-} gsl_matrix_view;
-
-typedef struct _gsl_matrix_complex
-{
-  size_t size1;
-  size_t size2;
-  size_t tda;
-  double *data;
-  gsl_block_complex *block;
-  int owner;
-} gsl_matrix_complex;
-
-typedef struct _gsl_matrix_complex_view
-{
-  gsl_matrix_complex matrix;
-} gsl_matrix_complex_view;
-
-typedef struct _gsl_matrix_int
-{
-  size_t size1;
-  size_t size2;
-  size_t tda;
-  int *data;
-  gsl_block_int *block;
-  int owner;
-} gsl_matrix_int;
-
-typedef struct _gsl_matrix_int_view
-{
-  gsl_matrix_int matrix;
-} gsl_matrix_int_view;
-
-#endif
-
-typedef struct _gsl_block_symbolic
-{
-  size_t size;
-  pure_expr **data;
-} gsl_block_symbolic;
-
-typedef struct _gsl_matrix_symbolic
-{
-  size_t size1;
-  size_t size2;
-  size_t tda;
-  pure_expr **data;
-  gsl_block_symbolic *block;
-  int owner;
-} gsl_matrix_symbolic;
-
-typedef struct _gsl_matrix_symbolic_view
-{
-  gsl_matrix_symbolic matrix;
-} gsl_matrix_symbolic_view;
 
 /* Blocks of expression memory allocated in one chunk. */
 
@@ -256,16 +159,14 @@ pure_expr *pure_string(char *s);
 pure_expr *pure_cstring(char *s);
 
 /* Matrix constructors. The given pointer must point to a valid GSL matrix
-   struct of the corresponding GSL matrix type (gsl_matrix,
-   gsl_matrix_complex, gsl_matrix_int), or a pointer to the special
-   gsl_matrix_symbolic struct provide by the runtime. (These are just given as
-   void* here to avoid depending on the GSL headers which might not be
-   available for some implementations.) In the case of the _matrix routines,
-   the matrix must be allocated dynamically and Pure takes ownership of the
-   matrix. The matrix_dup routines first take a copy of the matrix, so the
-   ownership of the original matrix remains with the caller. The result is a
-   Pure expression representing the matrix object, or NULL if GSL matrix
-   support is not available or some other error occurs. */
+   struct of the corresponding GSL matrix type or the special symbolic matrix
+   struct provided by the runtime (see gsl_structs.h in the sources). These
+   are just given as void* here to avoid depending on the GSL headers. In the
+   case of the _matrix routines, the matrix must be allocated dynamically and
+   Pure takes ownership of the matrix. The matrix_dup routines first take a
+   copy of the matrix, so the ownership of the original matrix remains with
+   the caller. The result is a Pure expression representing the matrix object,
+   or NULL if some error occurs. */
 
 pure_expr *pure_symbolic_matrix(void *p);
 pure_expr *pure_double_matrix(void *p);

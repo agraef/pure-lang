@@ -155,7 +155,7 @@ endif
 
 # No need to edit below this line. Unless you really have to. :) ############
 
-SOURCE = expr.cc expr.hh funcall.h interpreter.cc interpreter.hh \
+SOURCE = expr.cc expr.hh funcall.h gsl_structs.h interpreter.cc interpreter.hh \
 lexer.ll lexerdefs.hh matcher.cc matcher.hh parser.yy parserdefs.hh \
 printer.cc printer.hh runtime.cc runtime.h symtable.cc symtable.hh \
 util.cc util.hh
@@ -377,41 +377,45 @@ check: pure
 
 # DO NOT DELETE
 
-pure.o: interpreter.hh config.h expr.hh matcher.hh symtable.hh printer.hh
-pure.o: runtime.h parserdefs.hh parser.hh stack.hh location.hh position.hh
-pure.o: util.hh
-expr.o: expr.hh interpreter.hh config.h matcher.hh symtable.hh printer.hh
-expr.o: runtime.h parserdefs.hh parser.hh stack.hh location.hh position.hh
-interpreter.o: interpreter.hh config.h expr.hh matcher.hh symtable.hh
-interpreter.o: printer.hh runtime.h parserdefs.hh parser.hh stack.hh
-interpreter.o: location.hh position.hh util.hh
-interpreter.o: config.h expr.hh matcher.hh symtable.hh printer.hh runtime.h
-interpreter.o: parserdefs.hh parser.hh stack.hh location.hh position.hh
-lexer.o: interpreter.hh config.h expr.hh matcher.hh symtable.hh printer.hh
-lexer.o: runtime.h parserdefs.hh parser.hh stack.hh location.hh position.hh
-lexer.o: lexerdefs.hh util.hh
-lexerdefs.o: parserdefs.hh expr.hh parser.hh stack.hh location.hh position.hh
-matcher.o: matcher.hh expr.hh
-matcher.o: expr.hh
+pure.o: interpreter.hh config.h expr.hh matcher.hh runtime.h symtable.hh
+pure.o: printer.hh parserdefs.hh parser.hh stack.hh util.hh location.hh
+pure.o: position.hh
+expr.o: expr.hh interpreter.hh config.h matcher.hh runtime.h symtable.hh
+expr.o: printer.hh parserdefs.hh parser.hh stack.hh util.hh location.hh
+expr.o: position.hh
+interpreter.o: interpreter.hh config.h expr.hh matcher.hh runtime.h
+interpreter.o: symtable.hh printer.hh parserdefs.hh parser.hh stack.hh
+interpreter.o: util.hh location.hh position.hh gsl_structs.h
+interpreter.o: config.h expr.hh matcher.hh runtime.h symtable.hh printer.hh
+interpreter.o: parserdefs.hh parser.hh stack.hh util.hh location.hh
+interpreter.o: position.hh
+lexer.o: interpreter.hh config.h expr.hh matcher.hh runtime.h symtable.hh
+lexer.o: printer.hh parserdefs.hh parser.hh stack.hh util.hh location.hh
+lexer.o: position.hh lexerdefs.hh
+lexerdefs.o: parserdefs.hh expr.hh parser.hh stack.hh printer.hh matcher.hh
+lexerdefs.o: runtime.h util.hh location.hh position.hh
+matcher.o: matcher.hh expr.hh runtime.h
+matcher.o: expr.hh runtime.h
 parser.o: parserdefs.hh expr.hh printer.hh matcher.hh runtime.h util.hh
 parser.o: lexerdefs.hh parser.hh stack.hh location.hh position.hh
 parser.o: interpreter.hh config.h symtable.hh
 parserdefs.o: expr.hh
 printer.o: printer.hh expr.hh matcher.hh runtime.h interpreter.hh config.h
-printer.o: symtable.hh parserdefs.hh parser.hh stack.hh location.hh
-printer.o: position.hh util.hh
+printer.o: symtable.hh parserdefs.hh parser.hh stack.hh util.hh location.hh
+printer.o: position.hh gsl_structs.h
 printer.o: expr.hh matcher.hh runtime.h
 runtime.o: runtime.h expr.hh interpreter.hh config.h matcher.hh symtable.hh
-runtime.o: printer.hh parserdefs.hh parser.hh stack.hh location.hh
-runtime.o: position.hh util.hh funcall.h
+runtime.o: printer.hh parserdefs.hh parser.hh stack.hh util.hh location.hh
+runtime.o: position.hh funcall.h gsl_structs.h
 symtable.o: symtable.hh expr.hh printer.hh matcher.hh runtime.h util.hh
 symtable.o: expr.hh printer.hh matcher.hh runtime.h
 util.o: util.hh config.h w3centities.c
-lexer.o: interpreter.hh config.h expr.hh matcher.hh symtable.hh printer.hh
-lexer.o: runtime.h parserdefs.hh parser.hh stack.hh location.hh position.hh
-lexer.o: lexerdefs.hh util.hh
-parser.o: parserdefs.hh expr.hh printer.hh matcher.hh runtime.h util.hh
-parser.o: parser.hh stack.hh location.hh position.hh lexerdefs.hh
+lexer.o: interpreter.hh config.h expr.hh matcher.hh runtime.h symtable.hh
+lexer.o: printer.hh parserdefs.hh parser.hh stack.hh util.hh location.hh
+lexer.o: position.hh lexerdefs.hh
+parser.o: parser.hh stack.hh parserdefs.hh expr.hh printer.hh matcher.hh
+parser.o: runtime.h util.hh location.hh position.hh lexerdefs.hh
 parser.o: interpreter.hh config.h symtable.hh
-parser.o: stack.hh location.hh position.hh
+parser.o: stack.hh parserdefs.hh expr.hh printer.hh matcher.hh runtime.h
+parser.o: util.hh location.hh position.hh
 location.o: position.hh

@@ -82,6 +82,8 @@ typedef std::complex<double> Complex;
    Note that this code doesn't depend on GSL in any way, so that the operations
    work all the time even though the runtime isn't linked against GSL. */
 
+#include "gsl_structs.h"
+
 static gsl_matrix* 
 gsl_matrix_alloc(const size_t n1, const size_t n2)
 {

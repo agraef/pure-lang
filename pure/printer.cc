@@ -25,6 +25,8 @@
 
 #include "config.h"
 
+#include "gsl_structs.h"
+
 static inline const string& pname(int32_t f)
 {
   assert(f > 0);
