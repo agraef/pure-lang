@@ -99,9 +99,7 @@ extern double pd_time(void)
 #define garray_getfloatwords(x, size, vec) garray_getfloatarray(x, size, (t_float**)vec)
 #endif
 
-#if 0
-/* This is not needed anymore as of Pure 0.37. */
-/* Declare this here so that we don't depend on GSL being installed. */
+/* GSL-compatible double matrix. */
 typedef struct 
 {
   size_t size1;
@@ -111,7 +109,6 @@ typedef struct
   void* block;
   int owner;
 } gsl_matrix;
-#endif
 
 extern int pd_getbuffersize(const char *name)
 {

@@ -5,6 +5,57 @@
 
 #include <gmp.h>
 
+/* GSL-compatible matrix structs, cf. gsl_structs.h in the interpreter
+   source. */
+
+typedef struct _gsl_block
+{
+  size_t size;
+  double *data;
+} gsl_block;
+
+typedef struct _gsl_matrix
+{
+  size_t size1;
+  size_t size2;
+  size_t tda;
+  double *data;
+  gsl_block *block;
+  int owner;
+} gsl_matrix;
+
+typedef struct _gsl_block_int
+{
+  size_t size;
+  int *data;
+} gsl_block_int;
+
+typedef struct _gsl_matrix_int
+{
+  size_t size1;
+  size_t size2;
+  size_t tda;
+  int *data;
+  gsl_block_int *block;
+  int owner;
+} gsl_matrix_int;
+
+typedef struct _gsl_block_symbolic
+{
+  size_t size;
+  pure_expr **data;
+} gsl_block_symbolic;
+
+typedef struct _gsl_matrix_symbolic
+{
+  size_t size1;
+  size_t size2;
+  size_t tda;
+  pure_expr **data;
+  gsl_block_symbolic *block;
+  int owner;
+} gsl_matrix_symbolic;
+
 static gsl_matrix* 
 gsl_matrix_alloc(const size_t n1, const size_t n2)
 {

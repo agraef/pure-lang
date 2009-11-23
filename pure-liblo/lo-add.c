@@ -39,6 +39,17 @@ typedef struct _lo_message {
 
 // #define DEBUG
 
+/* GSL-compatible int matrix. */
+typedef struct _gsl_matrix_int
+{
+  size_t size1;
+  size_t size2;
+  size_t tda;
+  int *data;
+  void *block;
+  int owner;
+} gsl_matrix_int;
+
 int Pure_lo_message_add(lo_message msg, const char *types, pure_expr *x)
 {
   int count = 0;
