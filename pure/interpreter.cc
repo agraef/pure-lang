@@ -2419,8 +2419,6 @@ expr interpreter::bind(env& vars, expr x, bool b, path p)
   case EXPR::BIGINT:
   case EXPR::DBL:
   case EXPR::STR:
-  case EXPR::PTR:
-  case EXPR::WRAP:
     y = x;
     break;
   // application:
@@ -2433,6 +2431,10 @@ expr interpreter::bind(env& vars, expr x, bool b, path p)
     break;
   }
   // these must not occur on the lhs:
+  case EXPR::PTR:
+  case EXPR::WRAP:
+    throw err("pointer or closure not permitted in pattern");
+    break;
   case EXPR::MATRIX:
     throw err("matrix expression not permitted in pattern");
     break;
@@ -2965,10 +2967,12 @@ expr interpreter::lcsubst(expr x)
   case EXPR::BIGINT:
   case EXPR::DBL:
   case EXPR::STR:
-  case EXPR::PTR:
-  case EXPR::WRAP:
     return x;
   // these must not occur on the lhs:
+  case EXPR::PTR:
+  case EXPR::WRAP:
+    throw err("pointer or closure not permitted in pattern");
+    break;
   case EXPR::MATRIX:
     throw err("matrix expression not permitted in pattern");
     break;
