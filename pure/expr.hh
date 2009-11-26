@@ -239,7 +239,8 @@ struct EXPR {
   static EXPR *newref(EXPR *x) { return x?x->incref():0; }
 
   EXPR(int32_t _tag) :
-    refc(0), tag(_tag), m(0), flags(0), ttag(0), astag(0), aspath(0) { }
+    refc(0), tag(_tag), m(0), flags(0), ttag(0), astag(0), aspath(0)
+  { data.p = 0; }
   EXPR(int32_t _tag, int32_t _vtag, uint8_t _idx,
        int8_t _ttag = 0, const path& _p = path()) :
     refc(0), tag(_tag), m(0), flags(0), ttag(_ttag), astag(0), aspath(0)
@@ -260,7 +261,7 @@ struct EXPR {
   { assert(_tag == STR); data.s = _s; }
   explicit EXPR(int32_t _tag, void *_p) :
     refc(0), tag(_tag), m(0), flags(0), ttag(_tag), astag(0), aspath(0)
-  { assert(_tag == PTR || _tag == WRAP); data.p = _p; }
+  { assert(_tag > 0 || _tag == PTR || _tag == WRAP); data.p = _p; }
   EXPR(int32_t _tag, EXPR *_arg1, EXPR *_arg2, EXPR *_arg3) :
     refc(0), tag(_tag), m(0), flags(0), ttag(0), astag(0), aspath(0)
   { assert(_tag == COND);
@@ -398,7 +399,8 @@ public:
                            return p->data.d; }
   char    *sval()  const { assert(p->tag == EXPR::STR);
                            return p->data.s; }
-  void    *pval()  const { assert(p->tag == EXPR::PTR || p->tag == EXPR::WRAP);
+  void    *pval()  const { assert(p->tag > 0 ||
+				  p->tag == EXPR::PTR || p->tag == EXPR::WRAP);
                            return p->data.p; }
   expr     xval1() const { assert(p->tag == EXPR::APP ||
 				  p->tag == EXPR::COND ||
@@ -594,7 +596,12 @@ struct env_info {
       path *p;
     };
     // constant definition (cvar):
-    expr *cval;
+    struct {
+      expr *cval;
+      // As of Pure 0.38, we cache non-scalar constants in a global variable.
+      // This holds the corresponding runtime expression pointer.
+      void *cval_var;
+    };
     // free variable definition (fvar):
     void *val; // pointer to memory location holding a runtime expression
     // function definition (fun):
@@ -608,7 +615,7 @@ struct env_info {
   env_info(int8_t _ttag, path _p, uint32_t _temp = 0)
     : t(lvar), temp(_temp), ttag(_ttag), p(new path(_p)) { }
   env_info(expr x, uint32_t _temp = 0)
-    : t(cvar), temp(_temp), cval(new expr) { *cval = x; }
+    : t(cvar), temp(_temp), cval(new expr), cval_var(0) { *cval = x; }
   env_info(void *v, uint32_t _temp = 0)
     : t(fvar), temp(_temp), val(v) { }
   env_info(uint32_t c, rulel r, uint32_t _temp = 0)

@@ -74,6 +74,8 @@ static prec_t sym_nprec(int32_t f)
   }
 }
 
+static prec_t pure_expr_nprec(const pure_expr *x);
+
 static prec_t expr_nprec(expr x, bool aspat = true)
 {
   if (x.is_null() || (aspat && x.astag()>0)) return NPREC_MAX;
@@ -139,6 +141,11 @@ static prec_t expr_nprec(expr x, bool aspat = true)
   case EXPR::WITH:
     return NPREC_CASE;
   default:
+    if (x.pval()) {
+      // Constant value, cached in a global read-only variable.
+      pure_expr *v = (pure_expr*)x.pval();
+      return pure_expr_nprec(v);
+    }
     return NPREC_MAX;
   }
 }
@@ -535,6 +542,11 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
     return os << x.xval() << " with " << *x.fenv() << " end";
   default: {
     assert(x.tag() > 0);
+    if (x.pval()) {
+      // Constant value, cached in a global read-only variable.
+      pure_expr *v = (pure_expr*)x.pval();
+      return os << v;
+    }
     const symbol& sym = interpreter::g_interp->symtab.sym(x.tag());
     if (sym.prec < PREC_MAX)
       return os << '(' << sym.s << ')';

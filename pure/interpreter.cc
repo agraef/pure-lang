@@ -1554,8 +1554,34 @@ static expr subterm(expr x, const path& p)
   return x;
 }
 
+static pure_expr *pure_subterm(pure_expr *x, const path& p)
+{
+  for (size_t i = 0, n = p.len(); i < n; i++) {
+    assert(x->tag == EXPR::APP);
+    x = x->data.x[p[i]?1:0];
+  }
+  return x;
+}
+
+static bool is_scalar(expr x)
+{
+  switch (x.tag()) {
+  // constants:
+  case EXPR::INT:
+  case EXPR::BIGINT:
+  case EXPR::DBL:
+  case EXPR::STR:
+  case EXPR::PTR: // should PTR and WRAP really be treated as scalars?
+  case EXPR::WRAP:
+    return true;
+  default:
+    return false;
+  }
+}
+
 pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
 {
+  using namespace llvm;
   globals g;
   save_globals(g);
   compile();
@@ -1606,6 +1632,36 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
       int32_t f = it->first;
       expr v = subterm(u, *it->second.p);
       globenv[f] = env_info(v, temp);
+      if (!is_scalar(v)) {
+	/* As of Pure 0.38, we only inline scalar constants. Aggregate values
+	   are cached in a read-only variable for better efficiency. */
+	// XXXFIXME: To make this work in batch-compiled scripts, we also need
+	// to generate some initialization code for the constant, either here
+	// or in the compiler() function.
+	symbol& sym = symtab.sym(f);
+	pure_expr *x = pure_subterm(res, *it->second.p);
+	/* Create a new entry in the globalvars table. */
+	map<int32_t,GlobalVar>::iterator it = globalvars.find(f);
+	if (it != globalvars.end()) globalvars.erase(it);
+	/* Make sure to allocate the storage location of the variable
+	   dynamically, rather than putting it into the globalvars table.
+	   This leaks memory, but that is intended here because a constant
+	   value, once defined, is never supposed to change, even when the
+	   symbol later gets overwritten. */
+	globalvars.insert(pair<int32_t,GlobalVar>
+			  (f, GlobalVar(new pure_expr*)));
+	it = globalvars.find(f);
+	assert(it != globalvars.end());
+	GlobalVar& v = it->second;
+	v.x = pure_new(x);
+	v.v = global_variable
+	  (module, ExprPtrTy, false, GlobalVariable::InternalLinkage,
+	   ConstantPointerNull::get(ExprPtrTy), "$$const."+sym.s);
+	JIT->addGlobalMapping(v.v, &v.x);
+	/* Also record the value in the globenv entry, so that the frontend
+	   knows that the value of this constant has been cached. */
+	globenv[f].cval_var = v.x;
+      }
     }
   } else {
     pure_freenew(res);
@@ -2080,12 +2136,29 @@ void interpreter::define_const(rule *r)
     cout << ((double)clocks)/(double)CLOCKS_PER_SEC << "s\n";
 }
 
+static string mkvarsym(const string& name);
+
 void interpreter::clearsym(int32_t f)
 {
+  using namespace llvm;
   // Check whether this symbol was already compiled; in that case
   // patch up the global variable table to replace it with a cbox.
   map<int32_t,GlobalVar>::iterator v = globalvars.find(f);
   if (v != globalvars.end()) {
+    env::iterator it = globenv.find(f);
+    if (it->second.t == env_info::cvar && it->second.cval_var) {
+      /* This is a constant value cached in a read-only variable. We need to
+	 keep that variable, so create a new one in its place. */
+      globalvars.erase(v);
+      globalvars.insert(pair<int32_t,GlobalVar>(f, GlobalVar()));
+      v = globalvars.find(f);
+      assert(v != globalvars.end());
+      symbol& sym = symtab.sym(f);
+      v->second.v = global_variable
+	(module, ExprPtrTy, false, GlobalVariable::InternalLinkage,
+	 ConstantPointerNull::get(ExprPtrTy), mkvarsym(sym.s));
+      JIT->addGlobalMapping(v->second.v, &v->second.x);
+    }
     pure_expr *cv = pure_const(f);
     if (v->second.x) pure_free(v->second.x);
     v->second.x = pure_new(cv);
@@ -2113,8 +2186,8 @@ void interpreter::clear(int32_t f)
       if ((it->second.t == env_info::cvar || it->second.t == env_info::fvar) &&
 	  sym.prec == PREC_MAX && sym.fix == nonfix)
 	sym.fix = infix;
-      globenv.erase(it);
       clearsym(f);
+      globenv.erase(it);
     }
   } else if (f == 0 && temp > 0) {
     // purge all temporary symbols
@@ -2127,8 +2200,8 @@ void interpreter::clear(int32_t f)
 	if ((info.t == env_info::cvar || info.t == env_info::fvar) &&
 	    sym.prec == PREC_MAX && sym.fix == nonfix)
 	  sym.fix = infix;
-	globenv.erase(jt);
 	clearsym(f);
+	globenv.erase(jt);
       } else if (info.t == env_info::fun) {
 	// purge temporary rules for non-temporary functions
 	bool d = false;
@@ -2945,8 +3018,24 @@ expr interpreter::csubst(expr x, bool quote)
       const symbol& sym = symtab.sym(x.tag());
       env::const_iterator it = globenv.find(sym.f);
       if (it != globenv.end() && it->second.t == env_info::cvar)
-	// substitute constant value
-	return *it->second.cval;
+	if (it->second.cval_var) {
+	  // cached constant value
+#if 1
+	  /* Record the cached value in the expression, so that the printer
+	     prints the actual value instead of the symbol. This maintains the
+	     illusion that a cached constant is substituted into the rhs of
+	     definitions, even though as of Pure 0.38 the value is actually
+	     stored in a read-only variable at runtime. We recommend to leave
+	     this enabled for backward compatibility with Pure <= 0.37. */
+	  return expr(x.tag(), it->second.cval_var);
+#else
+          /* Print cached constants as symbols; this may be useful for
+	     debugging purposes. */
+          return x;
+#endif
+	} else
+	  // inlined constant value
+	  return *it->second.cval;
       else
 	return x;
     }
@@ -3992,7 +4081,7 @@ static inline bool is_c_sym(const string& name)
   return name=="main" || sys::DynamicLibrary::SearchForAddressOfSymbol(name);
 }
 
-static inline string mkvarsym(const string& name)
+static string mkvarsym(const string& name)
 {
   bool have_c_sym = is_c_sym(name);
   if (have_c_sym)
@@ -6363,15 +6452,6 @@ pure_expr *interpreter::doeval(expr x, pure_expr*& e, bool keep)
   }
   // NOTE: Result (if any) is to be freed by the caller.
   return res;
-}
-
-static pure_expr *pure_subterm(pure_expr *x, const path& p)
-{
-  for (size_t i = 0, n = p.len(); i < n; i++) {
-    assert(x->tag == EXPR::APP);
-    x = x->data.x[p[i]?1:0];
-  }
-  return x;
 }
 
 pure_expr *interpreter::dodefn(env vars, expr lhs, expr rhs, pure_expr*& e,

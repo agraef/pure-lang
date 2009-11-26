@@ -337,6 +337,7 @@ env_info::env_info(const env_info& e) : t(e.t), temp(e.temp) {
   case cvar:
     cval = new expr;
     *cval = *e.cval;
+    cval_var = e.cval_var;
     break;
   case fvar:
     val = e.val;
@@ -383,6 +384,7 @@ env_info& env_info::operator= (const env_info& e)
   case cvar:
     cval = new expr;
     *cval = *e.cval;
+    cval_var = e.cval_var;
     break;
   case fvar:
     val = e.val;
