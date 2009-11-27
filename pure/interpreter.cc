@@ -7645,9 +7645,9 @@ Value *interpreter::matrix_codegen(expr x)
 	(module->getFunction("pure_bigintmatrixv"), args);
       return v;
     } else if (ttag==EXPR::STR) {
-      /* Optimize the case of string lists and tuples. These are coded as a
-	 single char array containing all (0-terminated) strings, together
-	 with an offset table. */
+      /* Optimize the case of string matrices. These are coded as a single
+	 char array containing all (0-terminated) strings, together with an
+	 offset table. */
       size_t N = n*m;
       vector<Constant*> c, offs(N);
       size_t k = 0;
