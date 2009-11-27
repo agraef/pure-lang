@@ -1635,9 +1635,6 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
       if (!is_scalar(v)) {
 	/* As of Pure 0.38, we only inline scalar constants. Aggregate values
 	   are cached in a read-only variable for better efficiency. */
-	// XXXFIXME: To make this work in batch-compiled scripts, we also need
-	// to generate some initialization code for the constant, either here
-	// or in the compiler() function.
 	symbol& sym = symtab.sym(f);
 	pure_expr *x = pure_subterm(res, *it->second.p);
 	/* Create a new entry in the globalvars table. */
@@ -1652,15 +1649,37 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
 			  (f, GlobalVar(new pure_expr*)));
 	it = globalvars.find(f);
 	assert(it != globalvars.end());
-	GlobalVar& v = it->second;
-	v.x = pure_new(x);
-	v.v = global_variable
+	GlobalVar& gv = it->second;
+	gv.x = pure_new(x);
+	gv.v = global_variable
 	  (module, ExprPtrTy, false, GlobalVariable::InternalLinkage,
 	   ConstantPointerNull::get(ExprPtrTy), "$$const."+sym.s);
-	JIT->addGlobalMapping(v.v, &v.x);
+	JIT->addGlobalMapping(gv.v, &gv.x);
 	/* Also record the value in the globenv entry, so that the frontend
 	   knows that the value of this constant has been cached. */
-	globenv[f].cval_var = v.x;
+	globenv[f].cval_var = gv.x;
+	if (compiling) {
+	  /* To make this work in batch-compiled scripts, we also need to
+	     generate some initialization code for the constant value. */
+	  Env *save_fptr = fptr;
+	  fptr = new Env(0, 0, 0, rhs, false); fptr->refc = 1;
+	  Env &e = *fptr;
+	  push("const_defn", &e);
+	  fun_prolog("$$init");
+	  // generate code for the rhs
+	  /* XXXFIXME: This needs to be fixed up so that we generate code for
+	     a literal here, rather than using the standard code generator
+	     which causes the expression to be reevaluated. */
+	  Value *x = codegen(v);
+	  // store the value in the global variable
+	  call("pure_new", x);
+	  e.builder.CreateStore(x, gv.v);
+	  // return the value to indicate success
+	  e.builder.CreateRet(x);
+	  fun_finish();
+	  pop(&e);
+	  fptr = save_fptr;
+	}
       }
     }
   } else {
