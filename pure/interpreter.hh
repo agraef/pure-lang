@@ -196,8 +196,6 @@ public:
   uint32_t n, m;
   // f = the (internal) LLVM function, h = the C-callable stub (if needed)
   llvm::Function *f, *h;
-  // fp = pointer to the JITed function (executable code)
-  void *fp;
   // function arguments (f.n x expr*)
   vector<llvm::Value*> args;
   // environment pointer (expr**)
@@ -259,7 +257,7 @@ public:
   void print(ostream& os) const;
   // default constructor
   Env()
-    : tag(0), key(0), descr(0), n(0), m(0), f(0), h(0), fp(0),
+    : tag(0), key(0), descr(0), n(0), m(0), f(0), h(0),
       args(0), envs(0), rp(0), b(false), local(false),
 #ifdef LLVM26
       builder(llvm::getGlobalContext()),
@@ -269,7 +267,7 @@ public:
   // environment for an anonymous closure with given body x
   Env(int32_t _tag, const char *_descr, uint32_t _n, expr x,
       bool _b, bool _local = false)
-    : tag(_tag), key(0), descr(_descr), n(_n), m(0), f(0), h(0), fp(0),
+    : tag(_tag), key(0), descr(_descr), n(_n), m(0), f(0), h(0),
       args(n), envs(0), rp(0), b(_b), local(_local),
 #ifdef LLVM26
       builder(llvm::getGlobalContext()),
@@ -288,7 +286,7 @@ public:
   }
   // environment for a named closure with given definition info
   Env(int32_t _tag, const env_info& info, bool _b, bool _local = false)
-    : tag(_tag), key(0), descr(0), n(info.argc), m(0), f(0), h(0), fp(0),
+    : tag(_tag), key(0), descr(0), n(info.argc), m(0), f(0), h(0),
       args(n), envs(0), rp(0), b(_b), local(_local),
 #ifdef LLVM26
       builder(llvm::getGlobalContext()),
@@ -307,7 +305,7 @@ public:
   }
   // dummy environment for an external
   Env(int32_t _tag, uint32_t _n, bool _local = false)
-    : tag(_tag), key(0), descr(0), n(_n), m(0), f(0), h(0), fp(0),
+    : tag(_tag), key(0), descr(0), n(_n), m(0), f(0), h(0),
       args(n), envs(0), rp(0), b(false), local(false),
 #ifdef LLVM26
       builder(llvm::getGlobalContext()),
@@ -742,7 +740,7 @@ private:
   Env *__fptr;
   Env *&fptr;
   llvm::GlobalVariable *fptrvar;
-  llvm::Value *envptr(Env *f);
+  llvm::Value *envptr();
   llvm::Value *constptr(const void *p);
   EnvStack envstk;
   void push(const char *msg, Env *e);

@@ -1848,13 +1848,13 @@ void interpreter::compile()
 	fun_body(info.m);
 	pop(&f);
 	// compile to native code (always use the C-callable stub here)
-	assert(!f.fp); f.fp = JIT->getPointerToFunction(f.h);
+	void *fp = JIT->getPointerToFunction(f.h);
 #if DEBUG>1
-	std::cerr << "JIT " << f.f->getNameStr() << " -> " << f.fp << '\n';
+	std::cerr << "JIT " << f.f->getNameStr() << " -> " << fp << '\n';
 #endif
 	// do a direct call to the runtime to create the fbox and cache it in
 	// a global variable
-	pure_expr *fv = pure_clos(false, f.tag, f.getkey(), f.n, f.fp, 0, 0);
+	pure_expr *fv = pure_clos(false, f.tag, f.getkey(), f.n, fp, 0, 0);
 	GlobalVar& v = globalvars[f.tag];
 	if (!v.v) {
 	  v.v = global_variable
@@ -4887,7 +4887,7 @@ Env& Env::operator= (const Env& e)
     clear();
   } else {
     // uninitialized environment; simply copy everything
-    tag = e.tag; name = e.name; n = e.n; f = e.f; h = e.h; fp = e.fp;
+    tag = e.tag; name = e.name; n = e.n; f = e.f; h = e.h;
     args = e.args; envs = e.envs;
     b = e.b; local = e.local; parent = e.parent;
   }
@@ -4911,7 +4911,6 @@ void Env::clear()
     if (h != f) interp.JIT->freeMachineCodeForFunction(h);
     interp.JIT->freeMachineCodeForFunction(f);
     f->dropAllReferences(); if (h != f) h->dropAllReferences();
-    fp = 0;
     fmap.clear();
     to_be_deleted.push_back(f); if (h != f) to_be_deleted.push_back(h);
   } else {
@@ -4927,7 +4926,6 @@ void Env::clear()
       // only delete the body, this keeps existing references intact
       f->deleteBody();
     }
-    fp = 0;
     // delete all nested environments and reinitialize other body-related data
     fmap.clear(); xmap.clear(); xtab.clear(); prop.clear(); m = 0;
     // now that all references have been removed, delete the function pointers
@@ -6249,7 +6247,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   return f;
 }
 
-Value *interpreter::envptr(Env *f)
+Value *interpreter::envptr()
 {
   if (!fptr)
     return NullPtr;
@@ -6484,10 +6482,10 @@ pure_expr *interpreter::doeval(expr x, pure_expr*& e, bool keep)
   // JIT and execute the function. Note that we need to do this even in a
   // batch compilation, since subsequent const definitions and resulting code
   // may depend on the outcome of this computation.
-  f.fp = JIT->getPointerToFunction(f.f);
-  assert(f.fp);
+  void *fp = JIT->getPointerToFunction(f.f);
+  assert(fp);
   t0 = clock();
-  res = pure_invoke(f.fp, &e);
+  res = pure_invoke(fp, &e);
   if (interactive && stats) clocks = clock()-t0;
   // Get rid of our anonymous function.
   JIT->freeMachineCodeForFunction(f.f);
@@ -6637,10 +6635,10 @@ pure_expr *interpreter::dodefn(env vars, expr lhs, expr rhs, pure_expr*& e,
   // JIT and execute the function. Note that we need to do this even in a
   // batch compilation, since subsequent const definitions and resulting code
   // may depend on the outcome of this computation.
-  f.fp = JIT->getPointerToFunction(f.f);
-  assert(f.fp);
+  void *fp = JIT->getPointerToFunction(f.f);
+  assert(fp);
   t0 = clock();
-  res = pure_invoke(f.fp, &e);
+  res = pure_invoke(fp, &e);
   if (interactive && stats) clocks = clock()-t0;
   // Get rid of our anonymous function.
   JIT->freeMachineCodeForFunction(f.f);
@@ -8041,7 +8039,7 @@ Value *interpreter::fbox(Env& f)
       act_env().CreateCall(module->getFunction("pure_new_args"), newargs);
     }
     return call("pure_clos", f.local, f.tag, f.getkey(), f.h,
-		envptr(&f), f.n, x);
+		envptr(), f.n, x);
   }
 }
 
@@ -8305,7 +8303,7 @@ Value *interpreter::fref(int32_t tag, uint8_t idx)
       act_env().CreateCall(module->getFunction("pure_new_args"), newargs);
     }
     return call("pure_clos", f.local, f.tag, f.getkey(), f.h,
-		envptr(&f), f.n, x);
+		envptr(), f.n, x);
   }
 }
 
@@ -8821,7 +8819,7 @@ void interpreter::fun_body(matcher *pm, bool nodefault)
       defaultv = call("pure_clos", false, f.tag, 0, info.f, NullPtr, f.n, x);
     } else
       defaultv =
-	call("pure_clos", f.local, f.tag, f.getkey(), f.h, envptr(&f), f.n, x);
+	call("pure_clos", f.local, f.tag, f.getkey(), f.h, envptr(), f.n, x);
     for (size_t i = 0; i < f.n; ++i) {
       Value *arg = f.args[i];
       assert(arg->getType() == ExprPtrTy);
