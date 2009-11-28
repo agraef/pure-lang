@@ -57,10 +57,10 @@
 #define MEMDEBUG 0
 #endif
 
-/* Experimental support for the "fast" calling convention which is needed to
-   get tail call elimination. As of LLVM 2.6, this is still broken on some
-   systems, specifically ppc. You can also disable this through configure with
-   the --disable-fastcc option. */
+/* Support for the "fast" calling convention which is needed to get tail call
+   elimination. As of LLVM 2.6, this is still broken on some systems,
+   specifically ppc. You can also disable this through configure with the
+   --disable-fastcc option. */
 #ifndef USE_FASTCC
 #ifdef HAVE_FASTCC
 #define USE_FASTCC 1
@@ -69,9 +69,16 @@
 #endif
 #endif
 
+/* Defer JIT compilation of global functions until they're called for the
+   first time. Speeds up compilation of small programs at the expense of some
+   (negligible) runtime overhead. */
+#ifndef LAZY_JIT
+#define LAZY_JIT 1
+#endif
+
 /* Experimental support for fast code generation, at the expense of code
-   quality. As of LLVM 2.4, this doesn't seem to have much effect. We
-   recommend to leave this disabled. */
+   quality. As of LLVM 2.4, this doesn't seem to have much effect, and in LLVM
+   2.6 it doesn't seem to work at all. We recommend to leave this disabled. */
 #ifndef FAST_JIT
 #define FAST_JIT 0
 #endif

@@ -4400,13 +4400,38 @@ pure_expr *pure_matrix_columnsvq(uint32_t n, pure_expr **xs)
   return ret;
 }
 
+#if LAZY_JIT
+static inline void *get_funptr(pure_expr *x)
+{
+  if (!x->data.clos->fp) {
+    // The function hasn't been JITed yet. Do it now.
+    interpreter& interp = *interpreter::g_interp;
+    map<int32_t,Env>::iterator g = interp.globalfuns.find(x->tag);
+    assert(g != interp.globalfuns.end());
+    llvm::Function *h = g->second.h;
+    assert(h);
+    x->data.clos->fp = interp.JIT->getPointerToFunction(h);
+  }
+  return x->data.clos->fp;
+}
+#else
+#define get_funptr(x) x->data.clos->fp
+#endif
+
 extern "C"
 pure_expr *pure_call(pure_expr *x)
 {
   char test;
   assert(x);
-  if (x->tag > 0 && x->data.clos && x->data.clos->n == 0) {
-    void *fp = x->data.clos->fp;
+  if (x->tag <= 0 || !x->data.clos) {
+#if DEBUG>2
+    cerr << "pure_call: returning " << x << endl;
+#endif
+    checkstk(test);
+    return x;
+  }
+  if (x->data.clos->n == 0) {
+    void *fp = get_funptr(x);
 #if DEBUG>1
     cerr << "pure_call: calling " << x << " -> " << fp << endl;
 #endif
@@ -4416,11 +4441,8 @@ pure_expr *pure_call(pure_expr *x)
     return ((pure_expr*(*)())fp)();
   } else {
 #if DEBUG>2
-    if (x->tag >= 0 && x->data.clos)
-      cerr << "pure_call: returning " << x << " -> " << x->data.clos->fp
-	   << " (" << x->data.clos->n << " args)" << endl;
-    else
-      cerr << "pure_call: returning " << x << endl;
+    cerr << "pure_call: returning " << x << " -> " << x->data.clos->fp
+	 << " (" << x->data.clos->n << " args)" << endl;
 #endif
     checkstk(test);
     return x;
@@ -4455,7 +4477,7 @@ pure_expr *pure_force(pure_expr *x)
     void *fp = x->data.clos->fp;
     size_t m = x->data.clos->m;
     uint32_t env = 0;
-    assert(x->refc > 0);
+    assert(fp && x->refc > 0);
     // construct a stack frame for the function call
     if (m>0) {
       size_t sz = interp.sstk_sz;
@@ -4601,7 +4623,7 @@ pure_expr *pure_apply(pure_expr *x, pure_expr *y)
   if (f->tag >= 0 && f->data.clos && f->data.clos->n == n) {
     // saturated call; execute it now
     interpreter& interp = *interpreter::g_interp;
-    void *fp = f->data.clos->fp;
+    void *fp = get_funptr(f);
     size_t m = f->data.clos->m;
     uint32_t env = 0;
     void **argv = (void**)alloca(n*sizeof(void*));
@@ -4745,7 +4767,7 @@ pure_expr *pure_catch(pure_expr *h, pure_expr *x)
   assert(h && x);
   if (x->tag >= 0 && x->data.clos && x->data.clos->n == 0) {
     interpreter& interp = *interpreter::g_interp;
-    void *fp = x->data.clos->fp;
+    void *fp = get_funptr(x);
 #if DEBUG>1
     cerr << "pure_catch: calling " << x << " -> " << fp << endl;
 #endif

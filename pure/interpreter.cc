@@ -1847,10 +1847,15 @@ void interpreter::compile()
 	push("compile", &f);
 	fun_body(info.m);
 	pop(&f);
-	// compile to native code (always use the C-callable stub here)
+#if LAZY_JIT
+	// defer JIT until the function is called somewhere
+	void *fp = 0;
+#else
+	// run the JIT now (always use the C-callable stub here)
 	void *fp = JIT->getPointerToFunction(f.h);
 #if DEBUG>1
 	std::cerr << "JIT " << f.f->getNameStr() << " -> " << fp << '\n';
+#endif
 #endif
 	// do a direct call to the runtime to create the fbox and cache it in
 	// a global variable
