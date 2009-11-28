@@ -153,6 +153,11 @@ void interpreter::init()
     std::cerr << "** Panic: " << error << " Giving up. **\n";
     exit(1);
   }
+  /* Make sure that we get lazy compilation. It looks like eager compilation
+     might become the default in LLVM 2.7, so we explicitly tell the JIT that
+     we don't want this. Also note that eager compilation isn't supported in
+     LLVM <=2.6. */
+  JIT->DisableLazyCompilation(false);
 #else
 #if FAST_JIT
   JIT = ExecutionEngine::create(MP, false, 0, true);
@@ -5007,9 +5012,12 @@ ReturnInst *Env::CreateRet(Value *v, const rule *rp)
 	    free_fun = interp.module->getFunction("pure_pop_tail_args");
 	    free1_fun = interp.module->getFunction("pure_pop_tail_arg");
 	    /* Patch up this call to correct the offset of the environment. */
-#if LLVM26 && !NEW_OSTREAM
-	    // This change was reverted in recent svn.
+#if LLVM26
+#if NEW_OSTREAM
+	    CallInst *c2 = cast<CallInst>(c1->clone());
+#else
 	    CallInst *c2 = c1->clone(llvm::getGlobalContext());
+#endif
 #else
 	    CallInst *c2 = c1->clone();
 #endif
