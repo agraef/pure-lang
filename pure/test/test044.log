@@ -19,19 +19,24 @@ foo 3;
 bar 99;
 [99,1,2,3]
 const p = #<pointer 0>;
-const q = malloc 10;
-const f = \x/*0:*/ -> 2*x/*0:*/ {
-  rule #0: x = 2*x
+const f = g/*0*/ with g x/*0:1*/ = 2*x/*0:1*/ {
+  rule #0: g x = 2*x
   state 0: #0
 	<var> state 1
   state 1: #0
-};
-baz x/*0:1*/ = x/*0:1*/,#<pointer 0>,#<pointer 0x108e2b0>,#<closure 0x2b0ec1258910>;
+} end;
+baz x/*0:1*/ = x/*0:1*/,#<pointer 0>,g;
 {
-  rule #0: baz x = x,#<pointer 0>,#<pointer 0x108e2b0>,#<closure 0x2b0ec1258910>
+  rule #0: baz x = x,#<pointer 0>,g
   state 0: #0
 	<var> state 1
   state 1: #0
 }
 baz 99;
-99,#<pointer 0>,#<pointer 0x108e2b0>,#<closure 0x2b0ec1258910>
+99,#<pointer 0>,g
+<stdin>, line 15: pointer or closure not permitted in pattern
+h #<pointer 0>;
+h #<pointer 0>
+<stdin>, line 19: pointer or closure not permitted in pattern
+h g;
+h g

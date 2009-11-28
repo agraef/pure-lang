@@ -4,7 +4,17 @@ foo x = c*x; bar x = x:d;
 
 foo 3; bar 99;
 
-const p = NULL; const q = malloc 10; const f = \x->2*x;
-baz x = x,p,q,f;
+const p = NULL; const f = g with g x = 2*x end;
+baz x = x,p,f;
 
 baz 99;
+
+nonfix p f;
+
+// This gives an error because pointers are not permitted on the lhs.
+h p = bla;
+h NULL;
+
+// Same error for closures.
+h f = bla;
+h f;
