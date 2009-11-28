@@ -763,7 +763,7 @@ private:
   void toplevel_codegen(expr x, const rule *rp);
   llvm::Value *builtin_codegen(expr x);
   llvm::Value *matrix_codegen(expr x);
-  llvm::Value *list_codegen(expr x);
+  llvm::Value *list_codegen(expr x, bool quote = false);
   llvm::Value *get_int(expr x);
   llvm::Value *get_double(expr x);
   llvm::Value *when_codegen(expr x, matcher *m, rulel::const_iterator r,

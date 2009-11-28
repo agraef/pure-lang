@@ -496,6 +496,46 @@ void interpreter::init()
 		 "pure_strmatrixv", "expr*",  4, "size_t", "size_t",
 		 "char*", "int*");
 
+  declare_extern((void*)pure_listvq,
+		 "pure_listvq",     "expr*",  2, "size_t", "expr**");
+  declare_extern((void*)pure_listv2q,
+		 "pure_listv2q",    "expr*",  3, "size_t", "expr**", "expr*");
+  declare_extern((void*)pure_tuplevq,
+		 "pure_tuplevq",    "expr*",  2, "size_t", "expr**");
+
+  declare_extern((void*)pure_intlistvq,
+		 "pure_intlistvq",  "expr*",  2, "size_t", "int*");
+  declare_extern((void*)pure_intlistv2q,
+		 "pure_intlistv2q", "expr*",  3, "size_t", "int*", "expr*");
+  declare_extern((void*)pure_inttuplevq,
+		 "pure_inttuplevq", "expr*",  2, "size_t", "int*");
+
+  declare_extern((void*)pure_doublelistvq,
+		 "pure_doublelistvq","expr*", 2, "size_t", "double*");
+  declare_extern((void*)pure_doublelistv2q,
+		 "pure_doublelistv2q","expr*", 3, "size_t", "double*", "expr*");
+  declare_extern((void*)pure_doubletuplevq,
+		 "pure_doubletuplevq","expr*", 2, "size_t", "double*");
+
+  declare_extern((void*)pure_bigintlistvq,
+		 "pure_bigintlistvq","expr*", 4, "size_t",
+		 sizeof(mp_limb_t)==8?"int64*":"int*", "int*", "int*");
+  declare_extern((void*)pure_bigintlistv2q,
+		 "pure_bigintlistv2q","expr*", 5, "size_t",
+		 sizeof(mp_limb_t)==8?"int64*":"int*", "int*", "int*",
+		 "expr*");
+  declare_extern((void*)pure_biginttuplevq,
+		 "pure_biginttuplevq","expr*", 4, "size_t",
+		 sizeof(mp_limb_t)==8?"int64*":"int*", "int*", "int*");
+
+  declare_extern((void*)pure_strlistvq,
+		 "pure_strlistvq",  "expr*",  3, "size_t", "char*", "int*");
+  declare_extern((void*)pure_strlistv2q,
+		 "pure_strlistv2q", "expr*",  4, "size_t", "char*", "int*",
+		 "expr*");
+  declare_extern((void*)pure_strtuplevq,
+		 "pure_strtuplevq", "expr*",  3, "size_t", "char*", "int*");
+
   declare_extern((void*)pure_cmp_bigint,
 		 "pure_cmp_bigint", "int",    3, "expr*", "int",
 		 sizeof(mp_limb_t)==8?"int64*":"int*");
@@ -1666,11 +1706,11 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
 	  Env &e = *fptr;
 	  push("const_defn", &e);
 	  fun_prolog("$$init");
-	  // generate code for the rhs
-	  /* XXXFIXME: This needs to be fixed up so that we generate code for
-	     a literal here, rather than using the standard code generator
-	     which causes the expression to be reevaluated. */
-	  Value *x = codegen(v);
+	  /* Generate code for the rhs. Note that we generate a quoted
+	     (literal) value here, because we don't want the value (which
+	     presumably is in weak normal form already, but might contain
+	     quoted subterms) to be reevaluated when constructing it. */
+	  Value *x = codegen(v, true);
 	  // store the value in the global variable
 	  call("pure_new", x);
 	  e.builder.CreateStore(x, gv.v);
@@ -7249,7 +7289,7 @@ static int32_t const_vect(exprl xs)
    speeds up compilation for larger aggregates. See the comments at the
    beginning of interpreter.hh for details. */
 
-Value *interpreter::list_codegen(expr x)
+Value *interpreter::list_codegen(expr x, bool quote)
 {
 #if LIST_OPT>0
   exprl xs;
@@ -7262,12 +7302,15 @@ Value *interpreter::list_codegen(expr x)
     if (ttag==EXPR::INT || ttag==EXPR::DBL) {
       /* Optimize the case of lists and tuples of ints or doubles. These
 	 can be coded directly as array constants. */
-      const char * tuplev_fun = ttag==EXPR::INT?"pure_inttuplev":
-	"pure_doubletuplev";
-      const char * listv_fun = ttag==EXPR::INT?"pure_intlistv":
-	"pure_doublelistv";
-      const char * listv2_fun = ttag==EXPR::INT?"pure_intlistv2":
-	"pure_doublelistv2";
+      const char * tuplev_fun = quote?
+	(ttag==EXPR::INT?"pure_inttuplevq":"pure_doubletuplevq"):
+	(ttag==EXPR::INT?"pure_inttuplev":"pure_doubletuplev");
+      const char * listv_fun = quote?
+	(ttag==EXPR::INT?"pure_intlistvq":"pure_doublelistvq"):
+	(ttag==EXPR::INT?"pure_intlistv":"pure_doublelistv");
+      const char * listv2_fun = quote?
+	(ttag==EXPR::INT?"pure_intlistv2q":"pure_doublelistv2q"):
+	(ttag==EXPR::INT?"pure_intlistv2":"pure_doublelistv2");
       vector<Constant*> c(n);
       if (ttag==EXPR::INT)
 	for (exprl::iterator it = xs.begin(), end = xs.end(); it != end;
@@ -7295,7 +7338,7 @@ Value *interpreter::list_codegen(expr x)
       }
       Value *u = 0;
       if (!x.is_pair() && tl.tag() != symtab.nil_sym().f)
-	u = codegen(tl);
+	u = codegen(tl, quote);
       vector<Value*> args;
       args.push_back(SizeInt(n));
       args.push_back(p);
@@ -7312,9 +7355,9 @@ Value *interpreter::list_codegen(expr x)
 	 as a collection of array constants containing the limbs of all
 	 elements, as well as offsets into the limb array and the bigint
 	 sizes with signs. */
-      const char * tuplev_fun = "pure_biginttuplev";
-      const char * listv_fun = "pure_bigintlistv";
-      const char * listv2_fun = "pure_bigintlistv2";
+      const char * tuplev_fun = quote?"pure_biginttuplevq":"pure_biginttuplev";
+      const char * listv_fun = quote?"pure_bigintlistvq":"pure_bigintlistv";
+      const char * listv2_fun = quote?"pure_bigintlistv2q":"pure_bigintlistv2";
       vector<Constant*> c, offs(n), sz(n);
       size_t k = 0;
       for (exprl::iterator it = xs.begin(), end = xs.end(); it != end;
@@ -7353,7 +7396,7 @@ Value *interpreter::list_codegen(expr x)
       Value *sz_p = act_env().CreateGEP(sz_w, Zero, Zero);
       Value *u = 0;
       if (!x.is_pair() && tl.tag() != symtab.nil_sym().f)
-	u = codegen(tl);
+	u = codegen(tl, quote);
       vector<Value*> args;
       args.push_back(SizeInt(n));
       args.push_back(p);
@@ -7371,9 +7414,9 @@ Value *interpreter::list_codegen(expr x)
       /* Optimize the case of string lists and tuples. These are coded as a
 	 single char array containing all (0-terminated) strings, together
 	 with an offset table. */
-      const char * tuplev_fun = "pure_strtuplev";
-      const char * listv_fun = "pure_strlistv";
-      const char * listv2_fun = "pure_strlistv2";
+      const char * tuplev_fun = quote?"pure_strtuplevq":"pure_strtuplev";
+      const char * listv_fun = quote?"pure_strlistvq":"pure_strlistv";
+      const char * listv2_fun = quote?"pure_strlistv2q":"pure_strlistv2";
       vector<Constant*> c, offs(n);
       size_t k = 0;
       for (exprl::iterator it = xs.begin(), end = xs.end(); it != end;
@@ -7400,7 +7443,7 @@ Value *interpreter::list_codegen(expr x)
       Value *offs_p = act_env().CreateGEP(offs_w, Zero, Zero);
       Value *u = 0;
       if (!x.is_pair() && tl.tag() != symtab.nil_sym().f)
-	u = codegen(tl);
+	u = codegen(tl, quote);
       vector<Value*> args;
       args.push_back(SizeInt(n));
       args.push_back(p);
@@ -7419,7 +7462,7 @@ Value *interpreter::list_codegen(expr x)
     Value *a = act_builder().CreateBitCast(p, ExprPtrPtrTy);
     for (exprl::iterator it = xs.begin(), end = xs.end(); it != end;
 	 it++) {
-      Value *v = codegen(*it);
+      Value *v = codegen(*it, quote);
       Value *idx[1];
       idx[0] = UInt(i++);
       act_builder().CreateStore
@@ -7427,18 +7470,21 @@ Value *interpreter::list_codegen(expr x)
     }
     Value *u = 0;
     if (!x.is_pair() && tl.tag() != symtab.nil_sym().f)
-      u = codegen(tl);
+      u = codegen(tl, quote);
     vector<Value*> args;
     args.push_back(SizeInt(n));
     args.push_back(a);
+    const char * tuplev_fun = quote?"pure_tuplevq":"pure_tuplev";
+    const char * listv_fun = quote?"pure_listvq":"pure_listv";
+    const char * listv2_fun = quote?"pure_listv2q":"pure_listv2";
     if (u == 0)
       v = act_env().CreateCall
-	(module->getFunction(x.is_pair()?"pure_tuplev":"pure_listv"),
+	(module->getFunction(x.is_pair()?tuplev_fun:listv_fun),
 	 args);
     else {
       args.push_back(u);
       v = act_env().CreateCall
-	(module->getFunction("pure_listv2"), args);
+	(module->getFunction(listv2_fun), args);
     }
     act_builder().CreateCall(module->getFunction("free"), p);
     return v;
@@ -7751,6 +7797,13 @@ Value *interpreter::codegen(expr x, bool quote)
   }
   // application:
   case EXPR::APP:
+#if LIST_OPT>0
+    {
+      // special code for lists and tuples
+      Value *w = list_codegen(x, quote);
+      if (w) return w;
+    }
+#endif
     if (quote) {
       // quoted function application
       Value *u = codegen(x.xval1(), true), *v = codegen(x.xval2(), true);
@@ -7824,11 +7877,6 @@ Value *interpreter::codegen(expr x, bool quote)
 	act_env().CreateCall(module->getFunction("pure_new_args"), argv);
 	return call("pure_catch", handler, body);
       } else {
-#if LIST_OPT>0
-	// special code for lists and tuples
-	Value *w = list_codegen(x);
-	if (w) return w;
-#endif
 	// ordinary function application
 	Value *u = codegen(x.xval1()), *v = codegen(x.xval2());
 	return apply(u, v);
@@ -7953,6 +8001,8 @@ Value *interpreter::codegen(expr x, bool quote)
       string msg = "codegen: global "+symtab.sym(x.tag()).s+" -> %p -> %p";
       debug(msg.c_str(), v->second.v, u);
 #endif
+      /* XXXFIXME: Can we eliminate the pure_call here if the symbol is known
+	 to be a variable or a constant? */
       return call(u);
     }
     // not bound yet, return a cbox

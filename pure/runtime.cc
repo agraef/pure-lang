@@ -583,6 +583,13 @@ static inline pure_expr* pure_apply2(pure_expr *x, pure_expr *y)
   return pure_apply(x, y);
 }
 
+static inline pure_expr* pure_applc2(pure_expr *x, pure_expr *y)
+{
+  // Count references and construct a function application.
+  pure_new_args(2, x, y);
+  return pure_applc(x, y);
+}
+
 static inline pure_expr* signal_exception(int sig)
 {
   if (!interpreter::g_interp) return 0;
@@ -2392,6 +2399,81 @@ pure_expr *pure_tuplev(size_t size, pure_expr **elems)
   return y;
 }
 
+static inline pure_expr *mk_nilq()
+{
+  interpreter& interp = *interpreter::g_interp;
+  return pure_const(interp.symtab.nil_sym().f);
+}
+
+static inline pure_expr *mk_voidq()
+{
+  interpreter& interp = *interpreter::g_interp;
+  return pure_const(interp.symtab.void_sym().f);
+}
+
+static inline pure_expr *mk_consq(pure_expr *f, pure_expr *x, pure_expr *y)
+{
+  return pure_applc2(pure_applc2(f, x), y);
+}
+
+extern "C"
+pure_expr *pure_listlq(size_t size, ...)
+{
+  if (size == 0) return mk_nilq();
+  va_list ap;
+  va_start(ap, size);
+  pure_expr **elems = (pure_expr**)alloca(size*sizeof(pure_expr*));
+  for (size_t i = 0; i < size; i++)
+    elems[i] = va_arg(ap, pure_expr*);
+  return pure_listvq(size, elems);
+}
+
+extern "C"
+pure_expr *pure_listvq(size_t size, pure_expr **elems)
+{
+  interpreter& interp = *interpreter::g_interp;
+  pure_expr *f = pure_const(interp.symtab.cons_sym().f);
+  pure_expr *y = mk_nilq();
+  for (size_t i = size; i-- > 0; )
+    y = mk_consq(f, elems[i], y);
+  return y;
+}
+
+extern "C"
+pure_expr *pure_listv2q(size_t size, pure_expr **elems, pure_expr *tail)
+{
+  interpreter& interp = *interpreter::g_interp;
+  pure_expr *f = pure_const(interp.symtab.cons_sym().f);
+  pure_expr *y = tail;
+  for (size_t i = size; i-- > 0; )
+    y = mk_consq(f, elems[i], y);
+  return y;
+}
+
+extern "C"
+pure_expr *pure_tuplelq(size_t size, ...)
+{
+  if (size == 0) return mk_voidq();
+  va_list ap;
+  va_start(ap, size);
+  pure_expr **elems = (pure_expr**)alloca(size*sizeof(pure_expr*));
+  for (size_t i = 0; i < size; i++)
+    elems[i] = va_arg(ap, pure_expr*);
+  return pure_tuplevq(size, elems);
+}
+
+extern "C"
+pure_expr *pure_tuplevq(size_t size, pure_expr **elems)
+{
+  if (size == 0) return mk_voidq();
+  interpreter& interp = *interpreter::g_interp;
+  pure_expr *f = pure_const(interp.symtab.pair_sym().f);
+  pure_expr *y = elems[--size];
+  for (size_t i = size; i-- > 0; )
+    y = mk_consq(f, elems[i], y);
+  return y;
+}
+
 pure_expr *pure_intlistv(size_t size, int32_t *elems)
 {
   if (size == 0) return mk_nil();
@@ -2421,6 +2503,39 @@ pure_expr *pure_inttuplev(size_t size, int32_t *elems)
   for (size_t i = 0; i < size; i++)
     myelems[i] = pure_int(elems[i]);
   pure_expr *res = pure_tuplev(size, myelems);
+  free(myelems);
+  return res;
+}
+
+pure_expr *pure_intlistvq(size_t size, int32_t *elems)
+{
+  if (size == 0) return mk_nil();
+  pure_expr **myelems = (pure_expr**)malloc(size*sizeof(pure_expr*));
+  for (size_t i = 0; i < size; i++)
+    myelems[i] = pure_int(elems[i]);
+  pure_expr *res = pure_listvq(size, myelems);
+  free(myelems);
+  return res;
+}
+
+pure_expr *pure_intlistv2q(size_t size, int32_t *elems, pure_expr *tail)
+{
+  if (size == 0) return tail;
+  pure_expr **myelems = (pure_expr**)malloc(size*sizeof(pure_expr*));
+  for (size_t i = 0; i < size; i++)
+    myelems[i] = pure_int(elems[i]);
+  pure_expr *res = pure_listv2q(size, myelems, tail);
+  free(myelems);
+  return res;
+}
+
+pure_expr *pure_inttuplevq(size_t size, int32_t *elems)
+{
+  if (size == 0) return mk_void();
+  pure_expr **myelems = (pure_expr**)malloc(size*sizeof(pure_expr*));
+  for (size_t i = 0; i < size; i++)
+    myelems[i] = pure_int(elems[i]);
+  pure_expr *res = pure_tuplevq(size, myelems);
   free(myelems);
   return res;
 }
@@ -2458,6 +2573,39 @@ pure_expr *pure_doubletuplev(size_t size, double *elems)
   return res;
 }
 
+pure_expr *pure_doublelistvq(size_t size, double *elems)
+{
+  if (size == 0) return mk_nil();
+  pure_expr **myelems = (pure_expr**)malloc(size*sizeof(pure_expr*));
+  for (size_t i = 0; i < size; i++)
+    myelems[i] = pure_double(elems[i]);
+  pure_expr *res = pure_listvq(size, myelems);
+  free(myelems);
+  return res;
+}
+
+pure_expr *pure_doublelistv2q(size_t size, double *elems, pure_expr *tail)
+{
+  if (size == 0) return tail;
+  pure_expr **myelems = (pure_expr**)malloc(size*sizeof(pure_expr*));
+  for (size_t i = 0; i < size; i++)
+    myelems[i] = pure_double(elems[i]);
+  pure_expr *res = pure_listv2q(size, myelems, tail);
+  free(myelems);
+  return res;
+}
+
+pure_expr *pure_doubletuplevq(size_t size, double *elems)
+{
+  if (size == 0) return mk_void();
+  pure_expr **myelems = (pure_expr**)malloc(size*sizeof(pure_expr*));
+  for (size_t i = 0; i < size; i++)
+    myelems[i] = pure_double(elems[i]);
+  pure_expr *res = pure_tuplevq(size, myelems);
+  free(myelems);
+  return res;
+}
+
 pure_expr *pure_bigintlistv(size_t size, limb_t *limbs,
 			    uint32_t *offs, int32_t *sz)
 {
@@ -2490,6 +2638,42 @@ pure_expr *pure_biginttuplev(size_t size, limb_t *limbs,
   for (size_t i = 0; i < size; i++)
     myelems[i] = pure_bigint(sz[i], limbs+offs[i]);
   pure_expr *res = pure_tuplev(size, myelems);
+  free(myelems);
+  return res;
+}
+
+pure_expr *pure_bigintlistvq(size_t size, limb_t *limbs,
+			     uint32_t *offs, int32_t *sz)
+{
+  if (size == 0) return mk_nil();
+  pure_expr **myelems = (pure_expr**)malloc(size*sizeof(pure_expr*));
+  for (size_t i = 0; i < size; i++)
+    myelems[i] = pure_bigint(sz[i], limbs+offs[i]);
+  pure_expr *res = pure_listvq(size, myelems);
+  free(myelems);
+  return res;
+}
+
+pure_expr *pure_bigintlistv2q(size_t size, limb_t *limbs,
+			      uint32_t *offs, int32_t *sz, pure_expr *tail)
+{
+  if (size == 0) return tail;
+  pure_expr **myelems = (pure_expr**)malloc(size*sizeof(pure_expr*));
+  for (size_t i = 0; i < size; i++)
+    myelems[i] = pure_bigint(sz[i], limbs+offs[i]);
+  pure_expr *res = pure_listv2q(size, myelems, tail);
+  free(myelems);
+  return res;
+}
+
+pure_expr *pure_biginttuplevq(size_t size, limb_t *limbs,
+			      uint32_t *offs, int32_t *sz)
+{
+  if (size == 0) return mk_void();
+  pure_expr **myelems = (pure_expr**)malloc(size*sizeof(pure_expr*));
+  for (size_t i = 0; i < size; i++)
+    myelems[i] = pure_bigint(sz[i], limbs+offs[i]);
+  pure_expr *res = pure_tuplevq(size, myelems);
   free(myelems);
   return res;
 }
@@ -2539,6 +2723,40 @@ pure_expr *pure_strtuplev(size_t size, char *chars, uint32_t *offs)
   for (size_t i = 0; i < size; i++)
     myelems[i] = pure_string_dup(chars+offs[i]);
   pure_expr *res = pure_tuplev(size, myelems);
+  free(myelems);
+  return res;
+}
+
+pure_expr *pure_strlistvq(size_t size, char *chars, uint32_t *offs)
+{
+  if (size == 0) return mk_nil();
+  pure_expr **myelems = (pure_expr**)malloc(size*sizeof(pure_expr*));
+  for (size_t i = 0; i < size; i++)
+    myelems[i] = pure_string_dup(chars+offs[i]);
+  pure_expr *res = pure_listvq(size, myelems);
+  free(myelems);
+  return res;
+}
+
+pure_expr *pure_strlistv2q(size_t size, char *chars, uint32_t *offs,
+			   pure_expr *tail)
+{
+  if (size == 0) return tail;
+  pure_expr **myelems = (pure_expr**)malloc(size*sizeof(pure_expr*));
+  for (size_t i = 0; i < size; i++)
+    myelems[i] = pure_string_dup(chars+offs[i]);
+  pure_expr *res = pure_listv2q(size, myelems, tail);
+  free(myelems);
+  return res;
+}
+
+pure_expr *pure_strtuplevq(size_t size, char *chars, uint32_t *offs)
+{
+  if (size == 0) return mk_void();
+  pure_expr **myelems = (pure_expr**)malloc(size*sizeof(pure_expr*));
+  for (size_t i = 0; i < size; i++)
+    myelems[i] = pure_string_dup(chars+offs[i]);
+  pure_expr *res = pure_tuplevq(size, myelems);
   free(myelems);
   return res;
 }
