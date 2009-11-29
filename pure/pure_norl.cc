@@ -75,6 +75,7 @@ using namespace std;
 --noediting      Disable command-line editing.\n\
 --noprelude, -n  Do not load the prelude.\n\
 --norc           Do not run the interactive startup files.\n\
+--notc           Disable tail call optimization.\n\
 -o filename      Output filename for batch compilation.\n\
 -q               Quiet startup (suppresses sign-on message).\n\
 -s               Strip unused functions (batch compilation).\n\
@@ -231,11 +232,6 @@ main(int argc, char *argv[])
   } else
     interp.libdir = string(PURELIB)+"/";
   string prelude = interp.libdir+string("prelude.pure");
-#if USE_FASTCC
-  // This global option is needed to get tail call optimization (you'll also
-  // need to have USE_FASTCC in interpreter.hh enabled).
-  llvm::PerformTailCallOpt = true;
-#endif
   // scan the command line options
   const string prog = *argv;
   list<string> myargs;
@@ -261,6 +257,8 @@ main(int argc, char *argv[])
       want_prelude = false;
     else if (*args == string("--norc"))
       want_rcfile = false;
+    else if (*args == string("--notc"))
+      interp.use_fastcc = false;
     else if (*args == string("--noediting"))
       /* ignored */;
     else if (*args == string("-q"))
@@ -334,6 +332,11 @@ main(int argc, char *argv[])
       interp.error(prog + ": invalid option " + *args);
       return 1;
     }
+#if USE_FASTCC
+  // This global option is needed to get tail call optimization (you'll also
+  // need to have USE_FASTCC in interpreter.hh enabled).
+  if (interp.use_fastcc) llvm::PerformTailCallOpt = true;
+#endif
   if ((env = getenv("PURE_INCLUDE")))
     add_path(interp.includedirs, unixize(env));
   if ((env = getenv("PURE_LIBRARY")))

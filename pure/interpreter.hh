@@ -60,7 +60,7 @@
 /* Support for the "fast" calling convention which is needed to get tail call
    elimination. As of LLVM 2.6, this is still broken on some systems,
    specifically ppc. You can also disable this through configure with the
-   --disable-fastcc option. */
+   --disable-fastcc option, or at runtime with the --notc option. */
 #ifndef USE_FASTCC
 #ifdef HAVE_FASTCC
 #define USE_FASTCC 1
@@ -401,6 +401,7 @@ public:
   bool compiling;    // batch compiler mode
   bool interactive;  // interactive mode
   bool debugging;    // debugging mode
+  bool use_fastcc;   // fastcc/TCO support (default)
   bool pic;          // create position-independent code (batch compiler)
   bool strip;        // strip unused functions (batch compiler)
   bool restricted;   // restricted mode

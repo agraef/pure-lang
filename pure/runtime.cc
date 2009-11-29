@@ -3387,11 +3387,6 @@ pure_interp *pure_create_interp(int argc, char *argv[])
   } else
     interp.libdir = string(PURELIB)+"/";
   string prelude = interp.libdir+string("prelude.pure");
-#if USE_FASTCC
-  // This global option is needed to get tail call optimization (you'll also
-  // need to have USE_FASTCC in interpreter.hh enabled).
-  llvm::PerformTailCallOpt = true;
-#endif
   // scan the command line options
   list<string> myargs;
   if (argv && *argv) for (char **args = ++argv; *args; ++args)
@@ -3411,6 +3406,8 @@ pure_interp *pure_create_interp(int argc, char *argv[])
       want_prelude = false;
     else if (*args == string("--norc"))
       /* ignored */;
+    else if (*args == string("--notc"))
+      interp.use_fastcc = false;
     else if (*args == string("--noediting"))
       /* ignored */;
     else if (*args == string("-q"))
@@ -3488,6 +3485,11 @@ pure_interp *pure_create_interp(int argc, char *argv[])
       delete _interp;
       return 0;
     }
+#if USE_FASTCC
+  // This global option is needed to get tail call optimization (you'll also
+  // need to have USE_FASTCC in interpreter.hh enabled).
+  if (interp.use_fastcc) llvm::PerformTailCallOpt = true;
+#endif
   if ((env = getenv("PURE_INCLUDE")))
     add_path(interp.includedirs, unixize(env));
   if ((env = getenv("PURE_LIBRARY")))

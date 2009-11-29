@@ -626,9 +626,9 @@ void interpreter::init()
 
 interpreter::interpreter()
   : verbose(0), compiling(false), interactive(false), debugging(false),
-    pic(false), strip(false), restricted(false), ttymode(false),
-    override(false), stats(false), temp(0), ps("> "), libdir(""),
-    histfile("/.pure_history"), modname("pure"),
+    use_fastcc(true), pic(false), strip(false), restricted(false),
+    ttymode(false), override(false), stats(false), temp(0),
+    ps("> "), libdir(""), histfile("/.pure_history"), modname("pure"),
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
     result(0), lastres(0), mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0),
     sstk(__sstk), stoplevel(0), debug_skip(false), fptr(__fptr)
@@ -641,8 +641,9 @@ interpreter::interpreter(int32_t nsyms, char *syms,
 			 int32_t *arities, void **externs,
 			 pure_expr ***_sstk, void **_fptr)
   : verbose(0), compiling(false), interactive(false), debugging(false),
-    pic(false), strip(false), restricted(true), ttymode(false), override(false),
-    stats(false), temp(0), ps("> "), libdir(""), histfile("/.pure_history"),
+    use_fastcc(true), pic(false), strip(false), restricted(true),
+    ttymode(false), override(false), stats(false), temp(0),
+    ps("> "), libdir(""), histfile("/.pure_history"),
     modname("pure"), nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
     result(0), lastres(0), mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0),
     sstk(*_sstk), stoplevel(0), debug_skip(false), fptr(*(Env**)_fptr)
@@ -7235,53 +7236,54 @@ void interpreter::toplevel_codegen(expr x, const rule *rp)
     return;
   }
 #if USE_FASTCC
-  if (x.tag() == EXPR::COND) {
-    toplevel_cond(x.xval1(), x.xval2(), x.xval3(), rp);
-    return;
-  }
-  if (x.tag() == EXPR::COND1) {
-    toplevel_cond(x.xval1(), x.xval2(), expr(), rp);
-    return;
-  }
-  Env& e = act_env();
+  if (use_fastcc) {
+    if (x.tag() == EXPR::COND) {
+      toplevel_cond(x.xval1(), x.xval2(), x.xval3(), rp);
+      return;
+    }
+    if (x.tag() == EXPR::COND1) {
+      toplevel_cond(x.xval1(), x.xval2(), expr(), rp);
+      return;
+    }
+    Env& e = act_env();
 #if TAILOPS
-  Builder& b = act_builder();
-  expr f; uint32_t n = count_args(x, f);
-  if (n == 2 && x.ttag() == EXPR::INT &&
-      x.xval1().xval2().ttag() != EXPR::DBL &&
-      x.xval2().ttag() != EXPR::DBL) {
-    if (f.tag() == symtab.or_sym().f) {
-      Value *u = get_int(x.xval1().xval2());
-      Value *condv = b.CreateICmpNE(u, Zero, "cond");
-      BasicBlock *iftruebb = basic_block("iftrue");
-      BasicBlock *iffalsebb = basic_block("iffalse");
-      b.CreateCondBr(condv, iftruebb, iffalsebb);
-      e.f->getBasicBlockList().push_back(iftruebb);
-      b.SetInsertPoint(iftruebb);
-      e.CreateRet(ibox(One), rp);
-      e.f->getBasicBlockList().push_back(iffalsebb);
-      b.SetInsertPoint(iffalsebb);
-      toplevel_codegen(x.xval2(), rp);
-    } else if (f.tag() == symtab.and_sym().f) {
-      Value *u = get_int(x.xval1().xval2());
-      Value *condv = b.CreateICmpNE(u, Zero, "cond");
-      BasicBlock *iftruebb = basic_block("iftrue");
-      BasicBlock *iffalsebb = basic_block("iffalse");
-      b.CreateCondBr(condv, iftruebb, iffalsebb);
-      e.f->getBasicBlockList().push_back(iffalsebb);
-      b.SetInsertPoint(iffalsebb);
-      e.CreateRet(ibox(Zero), rp);
-      e.f->getBasicBlockList().push_back(iftruebb);
-      b.SetInsertPoint(iftruebb);
-      toplevel_codegen(x.xval2(), rp);
+    Builder& b = act_builder();
+    expr f; uint32_t n = count_args(x, f);
+    if (n == 2 && x.ttag() == EXPR::INT &&
+	x.xval1().xval2().ttag() != EXPR::DBL &&
+	x.xval2().ttag() != EXPR::DBL) {
+      if (f.tag() == symtab.or_sym().f) {
+	Value *u = get_int(x.xval1().xval2());
+	Value *condv = b.CreateICmpNE(u, Zero, "cond");
+	BasicBlock *iftruebb = basic_block("iftrue");
+	BasicBlock *iffalsebb = basic_block("iffalse");
+	b.CreateCondBr(condv, iftruebb, iffalsebb);
+	e.f->getBasicBlockList().push_back(iftruebb);
+	b.SetInsertPoint(iftruebb);
+	e.CreateRet(ibox(One), rp);
+	e.f->getBasicBlockList().push_back(iffalsebb);
+	b.SetInsertPoint(iffalsebb);
+	toplevel_codegen(x.xval2(), rp);
+      } else if (f.tag() == symtab.and_sym().f) {
+	Value *u = get_int(x.xval1().xval2());
+	Value *condv = b.CreateICmpNE(u, Zero, "cond");
+	BasicBlock *iftruebb = basic_block("iftrue");
+	BasicBlock *iffalsebb = basic_block("iffalse");
+	b.CreateCondBr(condv, iftruebb, iffalsebb);
+	e.f->getBasicBlockList().push_back(iffalsebb);
+	b.SetInsertPoint(iffalsebb);
+	e.CreateRet(ibox(Zero), rp);
+	e.f->getBasicBlockList().push_back(iftruebb);
+	b.SetInsertPoint(iftruebb);
+	toplevel_codegen(x.xval2(), rp);
+      } else
+	e.CreateRet(codegen(x), rp);
     } else
+#endif
       e.CreateRet(codegen(x), rp);
   } else
 #endif
-    e.CreateRet(codegen(x), rp);
-#else
-  act_env().CreateRet(codegen(x), rp);
-#endif
+    act_env().CreateRet(codegen(x), rp);
 }
 
 static int32_t const_vect(exprl xs)
@@ -8686,7 +8688,7 @@ Function *interpreter::fun_prolog(string name)
 	symtab.sym(f.tag).prec < PREC_MAX || symtab.sym(f.tag).fix == outfix)
       scope = Function::InternalLinkage;
 #if USE_FASTCC
-    if (!is_init(name)) cc = CallingConv::Fast;
+    if (use_fastcc && !is_init(name)) cc = CallingConv::Fast;
 #endif
     string pure_name = name;
     /* Mangle operator names. */
