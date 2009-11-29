@@ -13,7 +13,10 @@
 # srcdir: Must point to the directory containing the Pure sources.
 # level: The verbosity level (-v) of the interpreter to be used.
 
-# In addition, $* is the list of tests to be run.
+# In addition, $* is the list of tests to be run. You can also set the
+# PURE_FLAGS environment variable to pass extra options to the interpreter.
+# E.g., 'PURE_FLAGS=--notc make check' runs all checks without tail call
+# optimization.
 
 echo Running tests.
 
@@ -22,7 +25,7 @@ rc=0
 export LC_ALL=C
 
 echo ${ECHO_N} "prelude.pure: ${ECHO_C}"
-if ./pure --norc -n -v$level $srcdir/lib/prelude.pure 2>&1 | ${DIFF} -u $srcdir/test/prelude.log - > $srcdir/test/prelude.diff
+if ./pure --norc -n -v$level ${PURE_FLAGS} $srcdir/lib/prelude.pure 2>&1 | ${DIFF} -u $srcdir/test/prelude.log - > $srcdir/test/prelude.diff
 then
   rm -f $srcdir/test/prelude.diff
   echo "${ECHO_T}passed"
@@ -33,7 +36,7 @@ fi
 
 for x in $*; do
   echo ${ECHO_N} "$x: ${ECHO_C}"
-  if ./pure --norc -v$level < $srcdir/test/$x 2>&1 | ${DIFF} -u $srcdir/test/"`basename $x .pure`.log" - > $srcdir/test/"`basename $x .pure`.diff"
+  if ./pure --norc -v$level ${PURE_FLAGS} < $srcdir/test/$x 2>&1 | ${DIFF} -u $srcdir/test/"`basename $x .pure`.log" - > $srcdir/test/"`basename $x .pure`.diff"
   then
     rm -f $srcdir/test/"`basename $x .pure`.diff"
     echo "${ECHO_T}passed"
