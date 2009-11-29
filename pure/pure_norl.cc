@@ -72,6 +72,7 @@ using namespace std;
 -I directory     Add directory to search for included source files.\n\
 -L directory     Add directory to search for dynamic libraries.\n\
 -l libname       Library to be linked in batch compilation.\n\
+--nochecks       Disable extra stack and signal checks.\n\
 --noediting      Disable command-line editing.\n\
 --noprelude, -n  Do not load the prelude.\n\
 --norc           Do not run the interactive startup files.\n\
@@ -225,6 +226,8 @@ main(int argc, char *argv[])
     size_t n = strtoul(env, &end, 0);
     if (!*end) interpreter::stackmax = n*1024;
   }
+  if ((env = getenv("PURE_NOCHECKS")))
+    interp.checks = false;
   if ((env = getenv("PURELIB"))) {
     string s = unixize(env);
     if (!s.empty() && s[s.size()-1] != '/') s.append("/");
@@ -261,6 +264,10 @@ main(int argc, char *argv[])
       interp.use_fastcc = false;
     else if (*args == string("--noediting"))
       /* ignored */;
+    else if (*args == string("--nochecks"))
+      interp.checks = false;
+    else if (*args == string("--checks"))
+      interp.checks = true;
     else if (*args == string("-q"))
       quiet = true;
     else if (*args == string("-s"))

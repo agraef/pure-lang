@@ -611,6 +611,9 @@ void interpreter::init()
   declare_extern((void*)pure_pop_tail_arg,
 		 "pure_pop_tail_arg", "void", 1, "expr*");
 
+  declare_extern((void*)pure_checks,
+		 "pure_checks",    "void",   0);
+
   declare_extern((void*)pure_debug,
 		 "pure_debug",      "void",  -2, "int", "char*");
   declare_extern((void*)pure_debug_rule,
@@ -626,7 +629,7 @@ void interpreter::init()
 
 interpreter::interpreter()
   : verbose(0), compiling(false), interactive(false), debugging(false),
-    use_fastcc(true), pic(false), strip(false), restricted(false),
+    checks(true), use_fastcc(true), pic(false), strip(false), restricted(false),
     ttymode(false), override(false), stats(false), temp(0),
     ps("> "), libdir(""), histfile("/.pure_history"), modname("pure"),
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
@@ -641,7 +644,7 @@ interpreter::interpreter(int32_t nsyms, char *syms,
 			 int32_t *arities, void **externs,
 			 pure_expr ***_sstk, void **_fptr)
   : verbose(0), compiling(false), interactive(false), debugging(false),
-    use_fastcc(true), pic(false), strip(false), restricted(true),
+    checks(true), use_fastcc(true), pic(false), strip(false), restricted(true),
     ttymode(false), override(false), stats(false), temp(0),
     ps("> "), libdir(""), histfile("/.pure_history"),
     modname("pure"), nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
@@ -8785,6 +8788,11 @@ void interpreter::fun_body(matcher *pm, bool nodefault)
     msg << "body " << f.name;
     debug(msg.str().c_str()); }
 #endif
+  // emit extra signal and stack checks, if requested
+  if (checks) {
+    vector<Value*> argv;
+    f.builder.CreateCall(module->getFunction("pure_checks"));
+  }
   BasicBlock *failedbb = basic_block("failed");
   // emit the matching code
   if (debugging && !is_init(f.name)) debug_rule(0);

@@ -3380,6 +3380,8 @@ pure_interp *pure_create_interp(int argc, char *argv[])
     size_t n = strtoul(env, &end, 0);
     if (!*end) interpreter::stackmax = n*1024;
   }
+  if ((env = getenv("PURE_NOCHECKS")))
+    interp.checks = false;
   if ((env = getenv("PURELIB"))) {
     string s = unixize(env);
     if (!s.empty() && s[s.size()-1] != '/') s.append("/");
@@ -3410,6 +3412,10 @@ pure_interp *pure_create_interp(int argc, char *argv[])
       interp.use_fastcc = false;
     else if (*args == string("--noediting"))
       /* ignored */;
+    else if (*args == string("--nochecks"))
+      interp.checks = false;
+    else if (*args == string("--checks"))
+      interp.checks = true;
     else if (*args == string("-q"))
       /* ignored */;
     else if (*args == string("-s"))
@@ -3653,6 +3659,8 @@ pure_interp *pure_interp_main(int argc, char *argv[],
     size_t n = strtoul(env, &end, 0);
     if (!*end) interpreter::stackmax = n*1024;
   }
+  if ((env = getenv("PURE_NOCHECKS")))
+    interp.checks = false;
   if ((env = getenv("PURELIB"))) {
     string s = unixize(env);
     if (!s.empty() && s[s.size()-1] != '/') s.append("/");
@@ -5178,6 +5186,13 @@ void pure_pop_tail_arg(pure_expr *y)
   memmove(sstk+lastsz-2, sstk+lastsz, (oldsz-lastsz)*sizeof(pure_expr*));
   interp.sstk_sz -= 2;
 #endif
+}
+
+extern "C"
+void pure_checks(void)
+{
+  char test;
+  checkall(test);
 }
 
 extern "C"

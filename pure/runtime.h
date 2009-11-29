@@ -727,6 +727,10 @@ void pure_push_arg(pure_expr *x);
 void pure_pop_arg(pure_expr *x);
 void pure_pop_tail_arg(pure_expr *x);
 
+/* Do extra checking for signals and stack overflow. */
+
+void pure_checks(void);
+
 /* Debugging support. Experimental. */
 
 void pure_debug(int32_t tag, const char *format, ...);
