@@ -513,13 +513,20 @@ gsl_matrix_symbolic_memcpy(gsl_matrix_symbolic *dest,
       interpreter::stackdir*(&test - interpreter::baseptr)		\
       >= interpreter::stackmax)						\
     pure_throw(stack_exception())
-#define checkall(test) if (interpreter::stackmax > 0 &&			\
-      interpreter::stackdir*(&test - interpreter::baseptr)		\
-      >= interpreter::stackmax) {					\
+#define checkall(test) if (interpreter::brkmask)			\
     interpreter::brkmask = 0;						\
+  else if (interpreter::stackmax > 0 &&					\
+	   interpreter::stackdir*(&test - interpreter::baseptr)		\
+	   >= interpreter::stackmax)					\
     pure_throw(stack_exception());					\
-  } else if (interpreter::brkmask)					\
-    interpreter::brkmask = 0;						\
+  else if (interpreter::brkflag)					\
+    pure_throw(signal_exception(interpreter::brkflag))
+#define checkmsk(test) if (interpreter::brkmask) {			\
+    if (!interp.checks) interpreter::brkmask = 0;			\
+  } else if (interpreter::stackmax > 0 &&				\
+	   interpreter::stackdir*(&test - interpreter::baseptr)		\
+	   >= interpreter::stackmax)					\
+    pure_throw(stack_exception());					\
   else if (interpreter::brkflag)					\
     pure_throw(signal_exception(interpreter::brkflag))
 
@@ -4689,7 +4696,7 @@ pure_expr *pure_apply(pure_expr *x, pure_expr *y)
     for (size_t j = 0; j < m; j++)
       cerr << "env#" << j << " = " << f0->data.clos->env[j] << " -> " << (void*)f0->data.clos->env[j] << ", refc = " << f0->data.clos->env[j]->refc << '\n';
 #endif
-    checkall(test);
+    checkmsk(test);
     if (m>0)
       xfuncall(ret, fp, n, env, argv)
     else
