@@ -118,6 +118,9 @@ below:
 ``-l libname``
     Library to be linked in batch compilation.
 
+``--nochecks``
+    Disable extra stack and signal checks.
+
 ``--noediting``
     Disable command-line editing.
 
@@ -126,6 +129,9 @@ below:
 
 ``--norc``
     Do not run the interactive startup files.
+
+``--notc``
+    Disable tail call optimization.
 
 ``-o filename``
     Output filename for batch compilation.
@@ -230,8 +236,8 @@ function. Please see `Batch Compilation`_ in the `Caveats and Notes`_ section
 for details.
 
 The -v64 (or -v0100) verbosity option can be used to have the interpreter
-print the commands it executes during compilation, see `Verbosity and
-Debugging Options`_ below. When creating an object file, this also prints the
+print the commands it executes during compilation, see `Code Generation and
+Verbosity Options`_ below. When creating an object file, this also prints the
 suggested linker command (including all the dynamic modules loaded by the
 script, which also have to be linked in to create a working executable), to
 which you only have to add the options describing the desired output file.
@@ -270,10 +276,37 @@ interpreter. This option causes your script to run *much* slower and also
 disables tail call optimization, so you should only use this option if you
 want to run the debugger.
 
-Verbosity and Debugging Options
--------------------------------
+Code Generation and Verbosity Options
+-------------------------------------
 
-The -v option is most useful for debugging the interpreter, or if you are
+There are two global code generation options which can be controlled through
+command line options as well as corresponding environment variables:
+
+* The ``--nochecks`` option disables most stack and signal checks. By default,
+  the interpreter checks for stack overflows (if the ``PURE_STACK``
+  environment variable is set) and pending signals on entry to every function,
+  see `Stack Size and Tail Recursion`_ and `Handling of Asynchronous Signals`_
+  for details. This is needed to catch these conditions in a reliable way, so
+  we recommend to leave this enabled. However, these checks also make programs
+  run a little slower (typically some 5%, YMMV). If performance is critical
+  then you can disable the checks with the ``--nochecks`` option. (Even then,
+  a minimal amount of checking will be done, usually on entry to every global
+  function.) You can also set the ``PURE_NOCHECKS`` environment variable (any
+  value will do, the interpreter only checks whether the variable is set in
+  the environment) to make ``--nochecks`` the default, and then use the
+  ``--checks`` option to selectively reenable the extra checks when needed.
+
+* The ``--notc`` option disables tail call optimization (TCO). TCO is needed
+  to make tail-recursive functions execute in constant stack space, so we
+  recommend to leave this enabled. However, at the time of this writing LLVM's
+  TCO support is still bug-ridden on some platforms, so this option allows you
+  to disable it. The accompanying environment variable is named ``PURE_NOTC``;
+  if it is set, ``--notc`` becomes the default and TCO can be reenabled with
+  the ``--tc`` option. (Note that TCO can also be disabled when compiling the
+  Pure interpreter, in which case none of these options have any effect; see
+  the installation documentation for details.)
+
+The -v option is useful for debugging the interpreter, or if you are
 interested in the code your program gets compiled to. The level argument is
 optional; it defaults to 1. Seven different levels are implemented at this
 time (one more bit is reserved for future extensions). For most purposes, only
@@ -373,6 +406,16 @@ PURE_LIBRARY
 PURE_MORE
     Shell command to be used for paging through output of the show command,
     when the interpreter runs in interactive mode.
+
+PURE_NOCHECKS
+    Setting this variable disables the extra stack and signal checks, i.e.,
+    ``--nochecks`` becomes the default. You can then use the ``--checks``
+    option to reenable the checks.
+
+PURE_NOTC
+    Setting this variable disables tail call optimization, i.e., ``--notc``
+    becomes the default. You can then use the ``--tc`` option to reenable tail
+    call optimization.
 
 PURE_PS
     Command prompt used in the interactive command loop ("> " by default).
@@ -2454,7 +2497,9 @@ signal, see signal(7) for details)::
 Note that when the interpreter runs interactively, for convenience most
 standard termination signals (``SIGINT``, ``SIGTERM``, etc.) are already set
 up to produce corresponding Pure exceptions of the form ``signal SIG`` where
-``SIG`` is the signal number.
+``SIG`` is the signal number. If a script is to be run non-interactively then
+you'll have to do this yourself (otherwise most signals will terminate the
+program).
 
 Last but not least, exceptions can also be used to implement non-local value
 returns. For instance, here's a variation of our n queens algorithm which only
@@ -4605,14 +4650,14 @@ recursive function and macro calls, and the interpreter itself also takes its
 toll. So you should configure your system accordingly (8 MB of stack space is
 recommended for 32 bit systems, systems with 64 bit pointers probably need
 more). If the PURE_STACK environment variable is defined, the interpreter
-performs advisory stack checks and raises a Pure exception if the current
-stack size exceeds the given limit. The value of PURE_STACK should be the
-maximum stack size in kilobytes. Please note that this is only an advisory
-limit which does not change the program's physical stack size. Your operating
-system should supply you with a command such as ulimit(1) to set the real
-process stack size. Also note that this feature isn't 100% foolproof yet,
-since for performance reasons the stack will be checked only on certain
-occasions, such as entry into a global function.
+performs advisory stack checks on function entry and raises a Pure exception
+if the current stack size exceeds the given limit. The value of PURE_STACK
+should be the maximum stack size in kilobytes. Please note that this is only
+an advisory limit which does not change the program's physical stack size.
+Your operating system should supply you with a command such as ulimit(1) to
+set the real process stack size. (The ``PURE_STACK`` limit should be a little
+less than that, to account for temporary stack usage by the interpreter
+itself.)
 
 Fortunately, Pure normally does proper tail calls (if LLVM provides that
 feature on the platform at hand), so most tail-recursive definitions should
@@ -4653,35 +4698,27 @@ Handling of Asynchronous Signals
 --------------------------------
 
 As described in section `Exception Handling`_, signals delivered to the
-process can be caught and handled with Pure's exception handling
-facilities. Like stack checks, checks for pending signals are only performed
-at certain places, such as entry into a global function. This doesn't include
-tail calls, however, so a busy loop like ``loop = loop;`` will *never* be
-interrupted. To work around this, just add a call to another global function
-to your loop to make it interruptible. For instance::
+process can be caught and handled with Pure's exception handling facilities.
+Like stack checks, checks for pending signals are normally done on function
+entry. To handle signals while a loop is executing, you can use code like the
+following::
 
-  loop = check $$ loop;
-  check = ();
+  loop = catch handler process $$ loop
+  with handler (signal k) = catch handler (handle k) end;
 
-To handle signals while the above loop is executing, you can add an exception
-handler like the following::
+Here, ``process`` is the code which does the actual processing, and ``handle``
+is the code which handles the signal. Note the ``catch handler`` around the
+signal processing code which is needed for safety because another signal may
+arrive while the signal handler is being executed.
 
-  loop = catch handle check $$ loop
-  with handle (signal k) = catch handle (...) end;
+Of course, in a real application the loop would most likely have to work on
+some data. In that case you'd probably want the ``loop`` function to carry
+around some "state" argument to be processed by the ``process`` routine, which
+then returns an updated state value for the next iteration. This can be
+implemented as follows::
 
-(Note the ``catch handle`` around the signal processing code which is needed
-for safety because another signal may arrive while the signal handler is being
-executed.)
-
-Of course, in a real application the ``check`` function would most likely have
-to do some actual processing, too. In that case you'd probably want the
-``loop`` function to carry around some "state" argument to be processed by the
-``check`` routine, which then returns an updated state value for the next
-iteration. This can be implemented as follows::
-
-  loop x = loop (catch handle (check x))
-  with handle (signal k) = catch handle (...) end;
-  check x = ...;
+  loop x = loop (catch handler (process x))
+  with handler (signal k) = catch handler (handle k x) end;
 
 Copying
 =======
