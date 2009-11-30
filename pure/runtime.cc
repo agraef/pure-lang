@@ -4855,6 +4855,7 @@ pure_expr *pure_catch(pure_expr *h, pure_expr *x)
       return res;
     } else {
       pure_expr *res;
+      interp.brkmask = 0;
       if (env)
 	// pass environment
 	res = ((pure_expr*(*)(uint32_t))fp)(env-interp.sstk);

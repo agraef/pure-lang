@@ -5803,6 +5803,11 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     *noretbb = basic_block("noret"),
     *failedbb = basic_block("failed");
   b.SetInsertPoint(bb);
+  // emit extra signal and stack checks, if requested
+  if (checks) {
+    vector<Value*> argv;
+    b.CreateCall(module->getFunction("pure_checks"));
+  }
   // unbox arguments
   bool temps = false, vtemps = false;
   for (size_t i = 0; i < n; i++) {
