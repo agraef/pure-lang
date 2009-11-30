@@ -4771,25 +4771,40 @@ not needed.</p>
 <h2><a class="toc-backref" href="#id73">12.19&nbsp;&nbsp;&nbsp;Handling of Asynchronous Signals</a></h2>
 <p>As described in section <a class="reference internal" href="#exception-handling">Exception Handling</a>, signals delivered to the
 process can be caught and handled with Pure's exception handling facilities.
-Like stack checks, checks for pending signals are normally done on function
-entry. To handle signals while a loop is executing, you can use code like the
-following:</p>
+This has its limitations, however. Since Pure code cannot be executed directly
+from a C signal handler, checks for pending signals are only done on function
+entry. This means that in certain situations (such as the execution of an
+external C routine), delivery of a signal may be delayed by an arbitrary
+amount of time. Moreover, if more than one signal arrives between two
+successive signal checks, only the last one will be reported in the current
+implementation.</p>
+<p>When delivering a signal which has been remapped to a Pure exception, the
+corresponding exception handler (if any) will be invoked as usual. Further
+signals are blocked while the exception handler is being executed.</p>
+<p>A fairly typical case is that you have to handle signals in a tail-recursive
+function. This can be done with code like the following:</p>
 <pre class="literal-block">
+using system;
+
+// Remap some common POSIX signals.
+do (trap SIG_TRAP) [SIGHUP, SIGINT, SIGTERM];
+
 loop = catch handler process $$ loop
-with handler (signal k) = catch handler (handle k) end;
+with handler (signal k) = printf &quot;Hey, I got signal %d.\n&quot; k end;
+process = sleep 1; // do something
 </pre>
-<p>Here, <tt class="docutils literal"><span class="pre">process</span></tt> is the code which does the actual processing, and <tt class="docutils literal"><span class="pre">handle</span></tt>
-is the code which handles the signal. Note the <tt class="docutils literal"><span class="pre">catch</span> <span class="pre">handler</span></tt> around the
-signal processing code which is needed for safety because another signal may
-arrive while the signal handler is being executed.</p>
-<p>Of course, in a real application the loop would most likely have to work on
-some data. In that case you'd probably want the <tt class="docutils literal"><span class="pre">loop</span></tt> function to carry
-around some &quot;state&quot; argument to be processed by the <tt class="docutils literal"><span class="pre">process</span></tt> routine, which
-then returns an updated state value for the next iteration. This can be
-implemented as follows:</p>
+<p>Running the above <tt class="docutils literal"><span class="pre">loop</span></tt> function enters an endless loop reporting all
+signals delivered to the process. Note that to make this work, the
+tail-recursive invocation of <tt class="docutils literal"><span class="pre">loop</span></tt> must immediately follow the
+signal-handling code, so that signals don't escape the exception handler.</p>
+<p>Of course, in a real application you'd probably want the <tt class="docutils literal"><span class="pre">loop</span></tt> function to
+carry around some data to be processed by the <tt class="docutils literal"><span class="pre">process</span></tt> routine, which then
+returns an updated value for the next iteration. This can be implemented as
+follows:</p>
 <pre class="literal-block">
 loop x = loop (catch handler (process x))
-with handler (signal k) = catch handler (handle k x) end;
+with handler (signal k) = printf &quot;Hey, I got signal %d.\n&quot; k $$ 0 end;
+process x = printf &quot;counting: %d\n&quot; x $$ sleep 1 $$ x+1;
 </pre>
 </div>
 </div>
