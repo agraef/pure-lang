@@ -287,10 +287,10 @@ static char *my_command_input(const char *prompt)
 
 static void sig_handler(int sig)
 {
-  interpreter::brkflag = sig;
 #ifdef MUST_REINSTALL_SIGHANDLERS
   signal(sig, sig_handler);
 #endif
+  interpreter::brkflag = sig;
 }
 
 #ifdef HAVE_READLINE_HISTORY

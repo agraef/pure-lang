@@ -513,21 +513,13 @@ gsl_matrix_symbolic_memcpy(gsl_matrix_symbolic *dest,
       interpreter::stackdir*(&test - interpreter::baseptr)		\
       >= interpreter::stackmax)						\
     pure_throw(stack_exception())
-#define checkall(test) if (interpreter::brkmask)			\
-    interpreter::brkmask = 0;						\
-  else if (interpreter::stackmax > 0 &&					\
-	   interpreter::stackdir*(&test - interpreter::baseptr)		\
-	   >= interpreter::stackmax)					\
+#define checkall(test) if (interpreter::stackmax > 0 &&			\
+	interpreter::stackdir*(&test - interpreter::baseptr)		\
+	>= interpreter::stackmax)					\
     pure_throw(stack_exception());					\
-  else if (interpreter::brkflag)					\
-    pure_throw(signal_exception(interpreter::brkflag))
-#define checkmsk(test) if (interpreter::brkmask) {			\
-    if (!interp.checks) interpreter::brkmask = 0;			\
-  } else if (interpreter::stackmax > 0 &&				\
-	   interpreter::stackdir*(&test - interpreter::baseptr)		\
-	   >= interpreter::stackmax)					\
-    pure_throw(stack_exception());					\
-  else if (interpreter::brkflag)					\
+  else if (interpreter::brkmask) {					\
+    if (interpreter::brkmask == 2) interpreter::brkmask = 0;		\
+  } else if (interpreter::brkflag)					\
     pure_throw(signal_exception(interpreter::brkflag))
 
 // Debug expression allocations. Warns about expression memory leaks.
@@ -4456,7 +4448,7 @@ pure_expr *pure_call(pure_expr *x)
 #endif
     assert(x->refc > 0 && !x->data.clos->local);
     // parameterless call
-    checkall(test);
+    if (!interpreter::g_interp->checks) { checkall(test); }
     return ((pure_expr*(*)())fp)();
   } else {
 #if DEBUG>2
@@ -4528,7 +4520,7 @@ pure_expr *pure_force(pure_expr *x)
       cerr << "env#" << j << " = " << x->data.clos->env[j] << " -> " << (void*)x->data.clos->env[j] << ", refc = " << x->data.clos->env[j]->refc << '\n';
 #endif
     // parameterless call
-    checkall(test);
+    if (!interp.checks) { checkall(test); }
     if (m>0)
       ret = ((pure_expr*(*)(uint32_t))fp)(env);
     else
@@ -4696,7 +4688,7 @@ pure_expr *pure_apply(pure_expr *x, pure_expr *y)
     for (size_t j = 0; j < m; j++)
       cerr << "env#" << j << " = " << f0->data.clos->env[j] << " -> " << (void*)f0->data.clos->env[j] << ", refc = " << f0->data.clos->env[j]->refc << '\n';
 #endif
-    checkmsk(test);
+    if (!interp.checks) { checkall(test); }
     if (m>0)
       xfuncall(ret, fp, n, env, argv)
     else
@@ -4765,6 +4757,9 @@ void pure_sigfpe(void)
 
 static void sig_handler(int sig)
 {
+#ifdef MUST_REINSTALL_SIGHANDLERS
+  signal(sig, sig_handler);
+#endif
   interpreter::brkflag = sig;
 }
 
@@ -4851,9 +4846,12 @@ pure_expr *pure_catch(pure_expr *h, pure_expr *x)
 	   << "): " << e << endl;
 #endif
       pure_free_internal(x);
-      // mask further breaks until the handler starts executing
+      /* Mask further breaks while the handler is executing. */
       interp.brkmask = 1;
       pure_expr *res = pure_apply(h, e);
+      /* This value indicates that we're done handling the signal. Further
+	 breaks will still be masked until we do the next signal check. */
+      interp.brkmask = 2;
       return res;
     } else {
       pure_expr *res;
@@ -4863,6 +4861,8 @@ pure_expr *pure_catch(pure_expr *h, pure_expr *x)
       else
 	// parameterless call
 	res = ((pure_expr*(*)())fp)();
+      // check for pending signals
+      checkall(test);
       // normal return
       interp.estk.pop_front();
 #if DEBUG>2

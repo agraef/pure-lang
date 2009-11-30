@@ -89,10 +89,10 @@ Type 'help' in the interpreter for more help.\n"
 
 static void sig_handler(int sig)
 {
-  interpreter::brkflag = sig;
 #ifdef MUST_REINSTALL_SIGHANDLERS
   signal(sig, sig_handler);
 #endif
+  interpreter::brkflag = sig;
 }
 
 static void exit_handler()
