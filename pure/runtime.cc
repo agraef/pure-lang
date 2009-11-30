@@ -3380,8 +3380,8 @@ pure_interp *pure_create_interp(int argc, char *argv[])
     size_t n = strtoul(env, &end, 0);
     if (!*end) interpreter::stackmax = n*1024;
   }
-  if ((env = getenv("PURE_NOCHECKS")))
-    interp.checks = false;
+  if ((env = getenv("PURE_NOCHECKS"))) interp.checks = false;
+  if ((env = getenv("PURE_NOTC"))) interp.use_fastcc = false;
   if ((env = getenv("PURELIB"))) {
     string s = unixize(env);
     if (!s.empty() && s[s.size()-1] != '/') s.append("/");
@@ -3410,6 +3410,8 @@ pure_interp *pure_create_interp(int argc, char *argv[])
       /* ignored */;
     else if (*args == string("--notc"))
       interp.use_fastcc = false;
+    else if (*args == string("--tc"))
+      interp.use_fastcc = true;
     else if (*args == string("--noediting"))
       /* ignored */;
     else if (*args == string("--nochecks"))
@@ -3659,8 +3661,8 @@ pure_interp *pure_interp_main(int argc, char *argv[],
     size_t n = strtoul(env, &end, 0);
     if (!*end) interpreter::stackmax = n*1024;
   }
-  if ((env = getenv("PURE_NOCHECKS")))
-    interp.checks = false;
+  if ((env = getenv("PURE_NOCHECKS"))) interp.checks = false;
+  if ((env = getenv("PURE_NOTC"))) interp.use_fastcc = false;
   if ((env = getenv("PURELIB"))) {
     string s = unixize(env);
     if (!s.empty() && s[s.size()-1] != '/') s.append("/");

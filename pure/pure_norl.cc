@@ -226,8 +226,8 @@ main(int argc, char *argv[])
     size_t n = strtoul(env, &end, 0);
     if (!*end) interpreter::stackmax = n*1024;
   }
-  if ((env = getenv("PURE_NOCHECKS")))
-    interp.checks = false;
+  if ((env = getenv("PURE_NOCHECKS"))) interp.checks = false;
+  if ((env = getenv("PURE_NOTC"))) interp.use_fastcc = false;
   if ((env = getenv("PURELIB"))) {
     string s = unixize(env);
     if (!s.empty() && s[s.size()-1] != '/') s.append("/");
@@ -262,6 +262,8 @@ main(int argc, char *argv[])
       want_rcfile = false;
     else if (*args == string("--notc"))
       interp.use_fastcc = false;
+    else if (*args == string("--tc"))
+      interp.use_fastcc = true;
     else if (*args == string("--noediting"))
       /* ignored */;
     else if (*args == string("--nochecks"))
