@@ -1,4 +1,25 @@
 
+** Pure 0.38 2009-12-01
+
+This release sports some bugfixes (see the ChangeLog for details), as well as
+improvements in the handling of const aggregates and signal exceptions. Here
+is a list of the most important user-visible changes:
+
+- Only constant scalars are still inlined, constant aggregates are now cached
+  in a read-only global variable instead. As discussed on the mailing list,
+  this makes the efficient handling of big constant values much easier for the
+  programmer.
+
+- Some extra checks were added to the prolog of Pure functions, so that stack
+  overflows and pending signals are now caught reliably. This is enabled by
+  default, but as it incurs a (typically small) runtime cost, generation of
+  the extra checks can be controlled with the PURE_NOCHECKS environment
+  variable as well as the new --nochecks and --checks command line options of
+  the interpreter.
+
+- The PURE_NOTC environment variable and the --notc/--tc command line switches
+  can now be used to control the use of tail call optimization at runtime.
+
 ** Pure 0.37 2009-11-21
 
 Pure goes LGPL (GNU Lesser General Public license), in order to enable
