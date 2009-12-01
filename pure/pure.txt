@@ -973,9 +973,9 @@ Constant bindings: ``const lhs = rhs;``
     stand for themselves!) Like ``let``, this construct binds the variable
     symbols on the left-hand side to the corresponding values on the
     right-hand side (after evaluation). The difference is that ``const``
-    symbols can only be defined once, after which their values are substituted
-    directly into the right-hand sides of other definitions, rather than being
-    looked up at runtime.
+    symbols can only be defined once, and thus their values do not change
+    during program execution. This also allows the compiler to apply some
+    special optimizations such as constant folding.
 
 Toplevel expressions: ``expr;``
     A singleton expression at the toplevel, terminated with a semicolon,
@@ -2328,7 +2328,7 @@ symbols. For instance, here is how you can create a new ``+`` operation which
 multiplies its operands rather than adding them::
 
   > namespace my;
-  > infixl 6 +;
+  > infixl 2100 +;
   > x+y = x*y;
   > 5+7;
   35
@@ -4257,11 +4257,47 @@ bigints.
 Constant Definitions
 --------------------
 
-When definining a function in terms of constant values which have to be
-computed beforehand, it's usually better to use a ``const`` definition (rather
-than defining a variable or a parameterless function or macro) for that
-purpose, since this will often allow the compiler to generate better code
-using constant folding and similar techniques. Example::
+Constants differ from variables in that they cannot be redefined (that's their
+main purpose after all) and that their values are looked up at compile time
+rather than run time. For instance::
+
+  > const c = 2;
+  > foo x = c*x;
+  > show foo
+  foo x = 2*x;
+  > foo 99;
+  198
+
+As the above example shows, constants are in fact resolved at compile time, so
+the value of a constant never changes after its definition. In contrast, a
+variable can be rebound to a new value at any time. If you try to rebind a
+constant value you will get an error message::
+
+  > const c = 3;
+  <stdin>, line 5: symbol 'c' is already defined as a constant
+
+Note that in interactive mode you can work around this by purging the old
+definition with the ``clear`` command. However, this won't affect any earlier
+uses of the symbol::
+
+  > clear c
+  > const c = 3;
+  > bar x = c*x;
+  > show foo bar
+  bar x = 3*x;
+  foo x = 2*x;
+
+(You'll also have to purge any existing definition of a variable if you want
+to redefine it as a constant, or vice versa, since Pure won't let you redefine
+an existing constant or variable as a different kind of symbol. The same also
+holds if a symbol is currently defined as a function or a macro.)
+
+As the value of a constant is known at compile time, the compiler can apply
+various optimizations to uses of such values. In particular, the Pure compiler
+inlines constant scalars (numbers and strings) by literally substituting their
+values into the output code. In the case of numeric scalars this allows the
+compiler to generate better code using constant folding and similar
+techniques. Example::
 
   > extern double atan(double);
   > const pi = 4*atan 1.0;
@@ -4273,19 +4309,9 @@ using constant folding and similar techniques. Example::
 that the value 2*3.14159265358979 = 6.28318530717959 has actually been
 computed at compile time.)
 
-Note that constant definitions differ from parameterless macros in that the
-right-hand side of the definition is in fact evaluated at definition
-time. E.g., compare the above with the following macro definition::
-
-  > clear pi foo
-  > def pi = 4*atan 1.0;
-  > foo x = 2*pi*x;
-  > show foo
-  foo x = 2*(4*atan 1.0)*x;
-
-The LLVM backend also eliminates dead code automatically, which enables you to
-employ a constant computed at runtime to configure your code for different
-environments, without any runtime penalties::
+The LLVM backend also eliminates dead code automatically, so you can employ a
+constant to configure your code for different environments, without any
+runtime penalties::
 
   const win = index sysinfo "mingw32" >= 0;
   check boy = bad boy if win;
@@ -4294,61 +4320,37 @@ environments, without any runtime penalties::
 In this case the code for one of the branches of ``check`` will be completely
 eliminated, depending on the outcome of the configuration check.
 
-Constants also differ from variables in that they cannot be redefined (that's
-their purpose after all) and will only take effect on subsequent
-definitions. E.g.::
+For efficiency, constant aggregates (lists, tuples, matrices and other kinds
+of terms) are handled a bit differently. Here, the constant is computed once
+and stored in a read-only variable which then gets looked up at runtime, just
+like an ordinary global variable. However, there is still a big difference. If
+a script is batch-compiled (cf. `Batch Compilation`_), the constant value is
+computed at compile time only; when running the compiled executable, the
+constant value is simply reconstructed, which is often much more efficient
+than recomputing its value. For instance, you might use this to precompute a
+large table whose computation may be costly or involve functions with side
+effects::
 
-  > const c = 2;
-  > foo x = c*x;
-  > show foo
-  foo x = 2*x;
-  > foo 99;
-  198
-  > const c = 3;
-  <stdin>, line 5: symbol 'c' is already defined as a constant
+  const table = precompute_my_large_table;
+  do_something_with table;
 
-Well, in fact this not the full truth because in interactive mode it *is*
-possible to redefine constants after all, if the old definition is first
-purged with the ``clear`` command. However, this won't affect any other
-existing definitions::
+Last but not least, constants can also be used in patterns, but only if you
+also declare them as ``nonfix``. This is useful, e.g., if you'd like to use
+constants such as ``true`` and ``false`` on the left-hand side of a
+definition, just like other ``nonfix`` symbols::
 
-  > clear c
-  > const c = 3;
-  > bar x = c*x;
-  > show foo bar
-  foo x = 2*x;
-  bar x = 3*x;
+  > show false true
+  const false = 0;
+  const true = 1;
+  > nonfix false true;
+  > check false = "no"; check true = "yes";
+  > check (5>0);
+  "yes"
 
-(You'll also have to purge any existing definition of a variable if you want
-to redefine it as a constant, or vice versa, since Pure won't let you redefine
-an existing constant or variable as a different kind of symbol. The same also
-holds if a symbol is currently defined as a function or a macro.)
-
-Finally, note that in difference to ``nonfix`` symbols, by default ``const``
-symbols cannot be used on the left-hand side of a rule. E.g., the following
-will not work as expected::
-
-  > const zero = 0; const one = 1;
-  > foo x = case x of one = "one"; zero = "zero"; _ = "???" end;
-  > show foo
-  foo x = case x of one = "one"; zero = "zero"; _ = "???" end;
-  > foo zero, foo one, foo 99;
-  warning: rule never reduced: zero = "zero";
-  warning: rule never reduced: _ = "???";
-  "one","one","one"
-
-This is the same kind of pitfall as discussed in the context of the ``foop``
-predicate in `Head = Function`_ above. As a remedy, Pure allows you to declare
-an existing ``const`` symbol as ``nonfix`` and have it behave as a nonfix
-symbol also on the *left-hand side* of a rule. To these ends, the value of the
-symbol will then be substituted for its occurrences in a pattern::
-
-  > nonfix zero one;
-  > bar x = case x of one = "one"; zero = "zero"; _ = "???" end;
-  > show bar
-  bar x = case x of 1 = "one"; 0 = "zero"; _ = "???" end;
-  > bar zero, bar one, bar 99;
-  "zero","one","???"
+(Note that without the ``nonfix`` declaration, the above definition of
+``check`` wouldn't work as intended, because the ``true`` and ``false``
+symbols on the left-hand side of the two equations would be interpreted as
+local variables.)
 
 External C Functions
 --------------------

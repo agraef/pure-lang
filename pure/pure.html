@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>The Pure Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2009-11-30" />
+<meta name="date" content="2009-12-01" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2009-11-30</td></tr>
+<td>2009-12-01</td></tr>
 </tbody>
 </table>
 <!-- Note: This document is formatted using docutils. The Makefile has rules -->
@@ -1240,9 +1240,9 @@ variables. (These are not to be confused with nonfix symbols which simply
 stand for themselves!) Like <tt class="docutils literal"><span class="pre">let</span></tt>, this construct binds the variable
 symbols on the left-hand side to the corresponding values on the
 right-hand side (after evaluation). The difference is that <tt class="docutils literal"><span class="pre">const</span></tt>
-symbols can only be defined once, after which their values are substituted
-directly into the right-hand sides of other definitions, rather than being
-looked up at runtime.</dd>
+symbols can only be defined once, and thus their values do not change
+during program execution. This also allows the compiler to apply some
+special optimizations such as constant folding.</dd>
 <dt>Toplevel expressions: <tt class="docutils literal"><span class="pre">expr;</span></tt></dt>
 <dd>A singleton expression at the toplevel, terminated with a semicolon,
 simply causes the given value to be evaluated (and the result to be
@@ -2539,7 +2539,7 @@ symbols. For instance, here is how you can create a new <tt class="docutils lite
 multiplies its operands rather than adding them:</p>
 <pre class="literal-block">
 &gt; namespace my;
-&gt; infixl 6 +;
+&gt; infixl 2100 +;
 &gt; x+y = x*y;
 &gt; 5+7;
 35
@@ -4358,11 +4358,46 @@ bigints.</p>
 </div>
 <div class="section" id="constant-definitions">
 <h2><a class="toc-backref" href="#id65">12.11&nbsp;&nbsp;&nbsp;Constant Definitions</a></h2>
-<p>When definining a function in terms of constant values which have to be
-computed beforehand, it's usually better to use a <tt class="docutils literal"><span class="pre">const</span></tt> definition (rather
-than defining a variable or a parameterless function or macro) for that
-purpose, since this will often allow the compiler to generate better code
-using constant folding and similar techniques. Example:</p>
+<p>Constants differ from variables in that they cannot be redefined (that's their
+main purpose after all) and that their values are looked up at compile time
+rather than run time. For instance:</p>
+<pre class="literal-block">
+&gt; const c = 2;
+&gt; foo x = c*x;
+&gt; show foo
+foo x = 2*x;
+&gt; foo 99;
+198
+</pre>
+<p>As the above example shows, constants are in fact resolved at compile time, so
+the value of a constant never changes after its definition. In contrast, a
+variable can be rebound to a new value at any time. If you try to rebind a
+constant value you will get an error message:</p>
+<pre class="literal-block">
+&gt; const c = 3;
+&lt;stdin&gt;, line 5: symbol 'c' is already defined as a constant
+</pre>
+<p>Note that in interactive mode you can work around this by purging the old
+definition with the <tt class="docutils literal"><span class="pre">clear</span></tt> command. However, this won't affect any earlier
+uses of the symbol:</p>
+<pre class="literal-block">
+&gt; clear c
+&gt; const c = 3;
+&gt; bar x = c*x;
+&gt; show foo bar
+bar x = 3*x;
+foo x = 2*x;
+</pre>
+<p>(You'll also have to purge any existing definition of a variable if you want
+to redefine it as a constant, or vice versa, since Pure won't let you redefine
+an existing constant or variable as a different kind of symbol. The same also
+holds if a symbol is currently defined as a function or a macro.)</p>
+<p>As the value of a constant is known at compile time, the compiler can apply
+various optimizations to uses of such values. In particular, the Pure compiler
+inlines constant scalars (numbers and strings) by literally substituting their
+values into the output code. In the case of numeric scalars this allows the
+compiler to generate better code using constant folding and similar
+techniques. Example:</p>
 <pre class="literal-block">
 &gt; extern double atan(double);
 &gt; const pi = 4*atan 1.0;
@@ -4373,19 +4408,9 @@ foo x = 2*3.14159265358979*x;
 <p>(If you take a look at the disassembled code for this function, you will find
 that the value 2*3.14159265358979 = 6.28318530717959 has actually been
 computed at compile time.)</p>
-<p>Note that constant definitions differ from parameterless macros in that the
-right-hand side of the definition is in fact evaluated at definition
-time. E.g., compare the above with the following macro definition:</p>
-<pre class="literal-block">
-&gt; clear pi foo
-&gt; def pi = 4*atan 1.0;
-&gt; foo x = 2*pi*x;
-&gt; show foo
-foo x = 2*(4*atan 1.0)*x;
-</pre>
-<p>The LLVM backend also eliminates dead code automatically, which enables you to
-employ a constant computed at runtime to configure your code for different
-environments, without any runtime penalties:</p>
+<p>The LLVM backend also eliminates dead code automatically, so you can employ a
+constant to configure your code for different environments, without any
+runtime penalties:</p>
 <pre class="literal-block">
 const win = index sysinfo &quot;mingw32&quot; &gt;= 0;
 check boy = bad boy if win;
@@ -4393,61 +4418,37 @@ check boy = bad boy if win;
 </pre>
 <p>In this case the code for one of the branches of <tt class="docutils literal"><span class="pre">check</span></tt> will be completely
 eliminated, depending on the outcome of the configuration check.</p>
-<p>Constants also differ from variables in that they cannot be redefined (that's
-their purpose after all) and will only take effect on subsequent
-definitions. E.g.:</p>
+<p>For efficiency, constant aggregates (lists, tuples, matrices and other kinds
+of terms) are handled a bit differently. Here, the constant is computed once
+and stored in a read-only variable which then gets looked up at runtime, just
+like an ordinary global variable. However, there is still a big difference. If
+a script is batch-compiled (cf. <a class="reference internal" href="#batch-compilation">Batch Compilation</a>), the constant value is
+computed at compile time only; when running the compiled executable, the
+constant value is simply reconstructed, which is often much more efficient
+than recomputing its value. For instance, you might use this to precompute a
+large table whose computation may be costly or involve functions with side
+effects:</p>
 <pre class="literal-block">
-&gt; const c = 2;
-&gt; foo x = c*x;
-&gt; show foo
-foo x = 2*x;
-&gt; foo 99;
-198
-&gt; const c = 3;
-&lt;stdin&gt;, line 5: symbol 'c' is already defined as a constant
+const table = precompute_my_large_table;
+do_something_with table;
 </pre>
-<p>Well, in fact this not the full truth because in interactive mode it <em>is</em>
-possible to redefine constants after all, if the old definition is first
-purged with the <tt class="docutils literal"><span class="pre">clear</span></tt> command. However, this won't affect any other
-existing definitions:</p>
+<p>Last but not least, constants can also be used in patterns, but only if you
+also declare them as <tt class="docutils literal"><span class="pre">nonfix</span></tt>. This is useful, e.g., if you'd like to use
+constants such as <tt class="docutils literal"><span class="pre">true</span></tt> and <tt class="docutils literal"><span class="pre">false</span></tt> on the left-hand side of a
+definition, just like other <tt class="docutils literal"><span class="pre">nonfix</span></tt> symbols:</p>
 <pre class="literal-block">
-&gt; clear c
-&gt; const c = 3;
-&gt; bar x = c*x;
-&gt; show foo bar
-foo x = 2*x;
-bar x = 3*x;
+&gt; show false true
+const false = 0;
+const true = 1;
+&gt; nonfix false true;
+&gt; check false = &quot;no&quot;; check true = &quot;yes&quot;;
+&gt; check (5&gt;0);
+&quot;yes&quot;
 </pre>
-<p>(You'll also have to purge any existing definition of a variable if you want
-to redefine it as a constant, or vice versa, since Pure won't let you redefine
-an existing constant or variable as a different kind of symbol. The same also
-holds if a symbol is currently defined as a function or a macro.)</p>
-<p>Finally, note that in difference to <tt class="docutils literal"><span class="pre">nonfix</span></tt> symbols, by default <tt class="docutils literal"><span class="pre">const</span></tt>
-symbols cannot be used on the left-hand side of a rule. E.g., the following
-will not work as expected:</p>
-<pre class="literal-block">
-&gt; const zero = 0; const one = 1;
-&gt; foo x = case x of one = &quot;one&quot;; zero = &quot;zero&quot;; _ = &quot;???&quot; end;
-&gt; show foo
-foo x = case x of one = &quot;one&quot;; zero = &quot;zero&quot;; _ = &quot;???&quot; end;
-&gt; foo zero, foo one, foo 99;
-warning: rule never reduced: zero = &quot;zero&quot;;
-warning: rule never reduced: _ = &quot;???&quot;;
-&quot;one&quot;,&quot;one&quot;,&quot;one&quot;
-</pre>
-<p>This is the same kind of pitfall as discussed in the context of the <tt class="docutils literal"><span class="pre">foop</span></tt>
-predicate in <a class="reference internal" href="#head-function">Head = Function</a> above. As a remedy, Pure allows you to declare
-an existing <tt class="docutils literal"><span class="pre">const</span></tt> symbol as <tt class="docutils literal"><span class="pre">nonfix</span></tt> and have it behave as a nonfix
-symbol also on the <em>left-hand side</em> of a rule. To these ends, the value of the
-symbol will then be substituted for its occurrences in a pattern:</p>
-<pre class="literal-block">
-&gt; nonfix zero one;
-&gt; bar x = case x of one = &quot;one&quot;; zero = &quot;zero&quot;; _ = &quot;???&quot; end;
-&gt; show bar
-bar x = case x of 1 = &quot;one&quot;; 0 = &quot;zero&quot;; _ = &quot;???&quot; end;
-&gt; bar zero, bar one, bar 99;
-&quot;zero&quot;,&quot;one&quot;,&quot;???&quot;
-</pre>
+<p>(Note that without the <tt class="docutils literal"><span class="pre">nonfix</span></tt> declaration, the above definition of
+<tt class="docutils literal"><span class="pre">check</span></tt> wouldn't work as intended, because the <tt class="docutils literal"><span class="pre">true</span></tt> and <tt class="docutils literal"><span class="pre">false</span></tt>
+symbols on the left-hand side of the two equations would be interpreted as
+local variables.)</p>
 </div>
 <div class="section" id="external-c-functions">
 <h2><a class="toc-backref" href="#id66">12.12&nbsp;&nbsp;&nbsp;External C Functions</a></h2>
