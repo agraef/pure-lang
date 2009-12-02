@@ -577,6 +577,7 @@ public:
   expr bind(env& vars, expr x, bool b = true, path p = path());
   expr subst(const env& vars, expr x, uint8_t idx = 0);
   expr fsubst(const env& funs, expr x, uint8_t idx = 0);
+  expr bsubst(expr x);
   expr csubst(expr x, bool quote = false);
   expr lcsubst(expr x);
   expr macsubst(expr x, bool quote = false);

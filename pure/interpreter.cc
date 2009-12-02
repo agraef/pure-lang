@@ -2966,6 +2966,121 @@ expr interpreter::fsubst(const env& funs, expr x, uint8_t idx)
   }
 }
 
+expr interpreter::bsubst(expr x)
+{
+  expr f; uint32_t n = count_args(x, f);
+  // promote type tags
+  if (n == 1)
+    promote_ttags(f, x, x.xval2());
+  else if (n == 2)
+    promote_ttags(f, x, x.xval1().xval2(), x.xval2());
+  if (x.ttag() != EXPR::INT && x.ttag() != EXPR::DBL)
+    return x;
+  else if (n == 1 && x.xval2().tag() == EXPR::INT) {
+    // unary int operations
+    int32_t u = x.xval2().ival();
+    if (f.tag() == symtab.neg_sym().f)
+      return expr(EXPR::INT, -u);
+    else if (f.tag() == symtab.not_sym().f)
+      return expr(EXPR::INT, !u);
+    else if (f.tag() == symtab.bitnot_sym().f)
+      return expr(EXPR::INT, ~u);
+    else
+      return x;
+  } else if (n == 1 && x.xval2().tag() == EXPR::DBL) {
+    // unary double operations
+    double u = x.xval2().dval();
+    if (f.tag() == symtab.neg_sym().f)
+      return expr(EXPR::DBL, -u);
+    else
+      return x;
+  } else if (n == 2 && x.xval1().xval2().tag() == EXPR::INT &&
+	     x.xval2().tag() == EXPR::INT) {
+    // binary int operations
+    int32_t u = x.xval1().xval2().ival();
+    int32_t v = x.xval2().ival();
+    if (f.tag() == symtab.or_sym().f)
+      return expr(EXPR::INT, u||v);
+    else if (f.tag() == symtab.and_sym().f)
+      return expr(EXPR::INT, u&&v);
+    else if (f.tag() == symtab.bitor_sym().f)
+      return expr(EXPR::INT, u|v);
+    else if (f.tag() == symtab.bitand_sym().f)
+      return expr(EXPR::INT, u&v);
+    else if (f.tag() == symtab.shl_sym().f)
+      return expr(EXPR::INT, u<<v);
+    else if (f.tag() == symtab.shr_sym().f)
+      return expr(EXPR::INT, u>>v);
+    else if (f.tag() == symtab.less_sym().f)
+      return expr(EXPR::INT, u<v);
+    else if (f.tag() == symtab.greater_sym().f)
+      return expr(EXPR::INT, u>v);
+    else if (f.tag() == symtab.lesseq_sym().f)
+      return expr(EXPR::INT, u<=v);
+    else if (f.tag() == symtab.greatereq_sym().f)
+      return expr(EXPR::INT, u>=v);
+    else if (f.tag() == symtab.equal_sym().f)
+      return expr(EXPR::INT, u==v);
+    else if (f.tag() == symtab.notequal_sym().f)
+      return expr(EXPR::INT, u!=v);
+    else if (f.tag() == symtab.plus_sym().f)
+      return expr(EXPR::INT, u+v);
+    else if (f.tag() == symtab.minus_sym().f)
+      return expr(EXPR::INT, u-v);
+    else if (f.tag() == symtab.mult_sym().f)
+      return expr(EXPR::INT, u*v);
+    else if (f.tag() == symtab.div_sym().f) {
+      // catch division by zero
+      if (v == 0)
+	return x;
+      else
+	return expr(EXPR::INT, u/v);
+    } else if (f.tag() == symtab.mod_sym().f) {
+      // catch division by zero
+      if (v == 0)
+	return x;
+      else
+	return expr(EXPR::INT, u%v);
+    } else
+      return x;
+  } else if (n == 2 &&
+	     (x.xval1().xval2().tag() == EXPR::INT ||
+	      x.xval1().xval2().tag() == EXPR::DBL) &&
+	     (x.xval2().tag() == EXPR::INT ||
+	      x.xval2().tag() == EXPR::DBL)) {
+    // binary int/double operations
+    double u = x.xval1().xval2().tag() == EXPR::INT
+      ? (double)x.xval1().xval2().ival()
+      : x.xval1().xval2().dval();
+    double v = x.xval2().tag() == EXPR::INT
+      ? (double)x.xval2().ival()
+      : x.xval2().dval();
+    if (f.tag() == symtab.less_sym().f)
+      return expr(EXPR::INT, u<v);
+    else if (f.tag() == symtab.greater_sym().f)
+      return expr(EXPR::INT, u>v);
+    else if (f.tag() == symtab.lesseq_sym().f)
+      return expr(EXPR::INT, u<=v);
+    else if (f.tag() == symtab.greatereq_sym().f)
+      return expr(EXPR::INT, u>=v);
+    else if (f.tag() == symtab.equal_sym().f)
+      return expr(EXPR::INT, u==v);
+    else if (f.tag() == symtab.notequal_sym().f)
+      return expr(EXPR::INT, u!=v);
+    else if (f.tag() == symtab.plus_sym().f)
+      return expr(EXPR::DBL, u+v);
+    else if (f.tag() == symtab.minus_sym().f)
+      return expr(EXPR::DBL, u-v);
+    else if (f.tag() == symtab.mult_sym().f)
+      return expr(EXPR::DBL, u*v);
+    else if (f.tag() == symtab.fdiv_sym().f)
+      return expr(EXPR::DBL, u/v);
+    else
+      return x;
+  } else
+    return x;
+}
+
 expr interpreter::csubst(expr x, bool quote)
 {
   if (x.is_null()) return x;
@@ -3019,13 +3134,7 @@ expr interpreter::csubst(expr x, bool quote)
       expr u = csubst(x.xval1()),
 	v = csubst(x.xval2(), is_quote(u.tag()));
       expr w = expr(u, v);
-      // promote type tags
-      expr f; uint32_t n = count_args(w, f);
-      if (n == 1)
-	promote_ttags(f, w, w.xval2());
-      else if (n == 2)
-	promote_ttags(f, w, w.xval1().xval2(), w.xval2());
-      return w;
+      return bsubst(w);
     }
   // conditionals:
   case EXPR::COND: {
