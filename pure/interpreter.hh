@@ -402,6 +402,7 @@ public:
   bool interactive;  // interactive mode
   bool debugging;    // debugging mode
   bool checks;	     // extra stack and signal checks (default)
+  bool folding;	     // constant folding (default)
   bool use_fastcc;   // fastcc/TCO support (default)
   bool pic;          // create position-independent code (batch compiler)
   bool strip;        // strip unused functions (batch compiler)

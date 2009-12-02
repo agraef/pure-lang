@@ -629,8 +629,8 @@ void interpreter::init()
 
 interpreter::interpreter()
   : verbose(0), compiling(false), interactive(false), debugging(false),
-    checks(true), use_fastcc(true), pic(false), strip(false), restricted(false),
-    ttymode(false), override(false), stats(false), temp(0),
+    checks(true), folding(true), use_fastcc(true), pic(false), strip(false),
+    restricted(false), ttymode(false), override(false), stats(false), temp(0),
     ps("> "), libdir(""), histfile("/.pure_history"), modname("pure"),
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
     result(0), lastres(0), mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0),
@@ -644,8 +644,8 @@ interpreter::interpreter(int32_t nsyms, char *syms,
 			 int32_t *arities, void **externs,
 			 pure_expr ***_sstk, void **_fptr)
   : verbose(0), compiling(false), interactive(false), debugging(false),
-    checks(true), use_fastcc(true), pic(false), strip(false), restricted(true),
-    ttymode(false), override(false), stats(false), temp(0),
+    checks(true), folding(true), use_fastcc(true), pic(false), strip(false),
+    restricted(true), ttymode(false), override(false), stats(false), temp(0),
     ps("> "), libdir(""), histfile("/.pure_history"),
     modname("pure"), nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
     result(0), lastres(0), mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0),
@@ -2974,7 +2974,7 @@ expr interpreter::bsubst(expr x)
     promote_ttags(f, x, x.xval2());
   else if (n == 2)
     promote_ttags(f, x, x.xval1().xval2(), x.xval2());
-  if (x.ttag() != EXPR::INT && x.ttag() != EXPR::DBL)
+  if (!folding || (x.ttag() != EXPR::INT && x.ttag() != EXPR::DBL))
     return x;
   else if (n == 1 && x.xval2().tag() == EXPR::INT) {
     // unary int operations

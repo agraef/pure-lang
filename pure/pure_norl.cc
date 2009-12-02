@@ -72,11 +72,9 @@ using namespace std;
 -I directory     Add directory to search for included source files.\n\
 -L directory     Add directory to search for dynamic libraries.\n\
 -l libname       Library to be linked in batch compilation.\n\
---nochecks       Disable extra stack and signal checks.\n\
 --noediting      Disable command-line editing.\n\
 --noprelude, -n  Do not load the prelude.\n\
 --norc           Do not run the interactive startup files.\n\
---notc           Disable tail call optimization.\n\
 -o filename      Output filename for batch compilation.\n\
 -q               Quiet startup (suppresses sign-on message).\n\
 -s               Strip unused functions (batch compilation).\n\
@@ -227,6 +225,7 @@ main(int argc, char *argv[])
     if (!*end) interpreter::stackmax = n*1024;
   }
   if ((env = getenv("PURE_NOCHECKS"))) interp.checks = false;
+  if ((env = getenv("PURE_NOFOLD"))) interp.folding = false;
   if ((env = getenv("PURE_NOTC"))) interp.use_fastcc = false;
   if ((env = getenv("PURELIB"))) {
     string s = unixize(env);
@@ -260,16 +259,20 @@ main(int argc, char *argv[])
       want_prelude = false;
     else if (*args == string("--norc"))
       want_rcfile = false;
-    else if (*args == string("--notc"))
-      interp.use_fastcc = false;
-    else if (*args == string("--tc"))
-      interp.use_fastcc = true;
     else if (*args == string("--noediting"))
       /* ignored */;
     else if (*args == string("--nochecks"))
       interp.checks = false;
     else if (*args == string("--checks"))
       interp.checks = true;
+    else if (*args == string("--nofold"))
+      interp.folding = false;
+    else if (*args == string("--fold"))
+      interp.folding = true;
+    else if (*args == string("--notc"))
+      interp.use_fastcc = false;
+    else if (*args == string("--tc"))
+      interp.use_fastcc = true;
     else if (*args == string("-q"))
       quiet = true;
     else if (*args == string("-s"))
