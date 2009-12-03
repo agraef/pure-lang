@@ -118,9 +118,6 @@ below:
 ``-l libname``
     Library to be linked in batch compilation.
 
-``--nochecks``
-    Disable extra stack and signal checks.
-
 ``--noediting``
     Disable command-line editing.
 
@@ -129,9 +126,6 @@ below:
 
 ``--norc``
     Do not run the interactive startup files.
-
-``--notc``
-    Disable tail call optimization.
 
 ``-o filename``
     Output filename for batch compilation.
@@ -154,6 +148,10 @@ below:
 ``--``
     Stop option processing and pass the remaining command line arguments in
     the ``argv`` variable.
+
+(Besides these, the interpreter also understands a number of other command
+line switches for setting various code generation options; please see `Code
+Generation Options`_ below for details.)
 
 Overview of Operation
 ---------------------
@@ -236,8 +234,8 @@ function. Please see `Batch Compilation`_ in the `Caveats and Notes`_ section
 for details.
 
 The -v64 (or -v0100) verbosity option can be used to have the interpreter
-print the commands it executes during compilation, see `Code Generation and
-Verbosity Options`_ below. When creating an object file, this also prints the
+print the commands it executes during compilation, see `Verbosity and
+Debugging Options`_ below. When creating an object file, this also prints the
 suggested linker command (including all the dynamic modules loaded by the
 script, which also have to be linked in to create a working executable), to
 which you only have to add the options describing the desired output file.
@@ -276,35 +274,8 @@ interpreter. This option causes your script to run *much* slower and also
 disables tail call optimization, so you should only use this option if you
 want to run the debugger.
 
-Code Generation and Verbosity Options
--------------------------------------
-
-There are two global code generation options which can be controlled through
-command line options as well as corresponding environment variables:
-
-* The ``--nochecks`` option disables most stack and signal checks. By default,
-  the interpreter checks for stack overflows (if the ``PURE_STACK``
-  environment variable is set) and pending signals on entry to every function,
-  see `Stack Size and Tail Recursion`_ and `Handling of Asynchronous Signals`_
-  for details. This is needed to catch these conditions in a reliable way, so
-  we recommend to leave this enabled. However, these checks also make programs
-  run a little slower (typically some 5%, YMMV). If performance is critical
-  then you can disable the checks with the ``--nochecks`` option. (Even then,
-  a minimal amount of checking will be done, usually on entry to every global
-  function.) You can also set the ``PURE_NOCHECKS`` environment variable (any
-  value will do, the interpreter only checks whether the variable is set in
-  the environment) to make ``--nochecks`` the default, and then use the
-  ``--checks`` option to selectively reenable the extra checks when needed.
-
-* The ``--notc`` option disables tail call optimization (TCO). TCO is needed
-  to make tail-recursive functions execute in constant stack space, so we
-  recommend to leave this enabled. However, at the time of this writing LLVM's
-  TCO support is still bug-ridden on some platforms, so this option allows you
-  to disable it. The accompanying environment variable is named ``PURE_NOTC``;
-  if it is set, ``--notc`` becomes the default and TCO can be reenabled with
-  the ``--tc`` option. (Note that TCO can also be disabled when compiling the
-  Pure interpreter, in which case none of these options have any effect; see
-  the installation documentation for details.)
+Verbosity and Debugging Options
+-------------------------------
 
 The -v option is useful for debugging the interpreter, or if you are
 interested in the code your program gets compiled to. The level argument is
@@ -360,6 +331,74 @@ modules imported through a ``using`` clause. As a remedy, you can use the
 interactive ``show`` command (see the `Interactive Usage`_ section) to list
 definitions along with additional debugging information.
 
+Code Generation Options
+-----------------------
+
+Besides the options listed above, the interpreter also understands some
+additional command line switches and corresponding environment variables to
+control various code generation options. The options take the form ``--opt``
+and ``--noopt``, respectively, where ``opt`` denotes the option name (see
+below for a list of supported options). By default, these options are all
+enabled; ``--noopt`` disables the option, ``--opt`` reenables it. In addition,
+for each option ``opt`` there is also a corresponding environment variable
+``PURE_NOOPT`` (with the option name in uppercase) which, when set, disables
+the option by default. (Setting this variable to any value will do, the
+interpreter only checks whether the variable exists in the environment.)
+
+For instance, the ``checks`` option controls stack and signal checks. Thus
+``--nochecks`` on the command line disables the option, and setting the
+``PURE_NOCHECKS`` environment variable makes this the default, in which case
+you can use ``--checks`` on the command line to reenable the option.
+
+Each code generation option can also be used as a *pragma* (compiler
+directive) in source code so that you can control it on a per-rule basis. The
+pragma must be on a line by itself, starting in column 1, and takes the
+following form (using ``--nochecks`` as an example)::
+
+  #! --nochecks // line-oriented comment may go here
+
+Currently, the following code generation options are recognized:
+
+``--checks``, ``--nochecks``
+    Enable or disable various extra stack and signal checks. By default, the
+    interpreter checks for stack overflows (if the ``PURE_STACK`` environment
+    variable is set) and pending signals on entry to every function, see
+    `Stack Size and Tail Recursion`_ and `Handling of Asynchronous Signals`_
+    for details. This is needed to catch these conditions in a reliable way,
+    so we recommend to leave this enabled. However, these checks also make
+    programs run a little slower (typically some 5%, YMMV). If performance is
+    critical then you can disable the checks with the ``--nochecks``
+    option. (Even then, a minimal amount of checking will be done, usually on
+    entry to every global function.)
+
+``--fold``, ``--nofold``
+    Enable or disable constant folding in the compiler frontend. This means
+    that constant expressions involving int and double values and the usual
+    arithmetic and logical operations on these are precomputed at compile
+    time. (This is mostly for cosmetic purposes; the LLVM backend will perform
+    this optimization anyway when generating machine code.) For instance::
+
+      > foo x = 2*3*x;
+      > show foo
+      foo x = 6*x;
+
+    Disabling constant folding in the frontend causes constant expressions to
+    be shown as you entered them::
+
+      > #! --nofold
+      > bar x = 2*3*x;
+      > show bar
+      bar x = 2*3*x;
+
+``--tc``, ``--notc``
+    Enable or disable tail call optimization (TCO). TCO is needed to make
+    tail-recursive functions execute in constant stack space, so we recommend
+    to leave this enabled. However, at the time of this writing LLVM's TCO
+    support is still bug-ridden on some platforms, so the ``--notc`` option
+    allows you to disable it. (Note that TCO can also be disabled when
+    compiling the Pure interpreter, in which case these options have no
+    effect; see the installation documentation for details.)
+
 Startup Files
 -------------
 
@@ -407,21 +446,15 @@ PURE_MORE
     Shell command to be used for paging through output of the show command,
     when the interpreter runs in interactive mode.
 
-PURE_NOCHECKS
-    Setting this variable disables the extra stack and signal checks, i.e.,
-    ``--nochecks`` becomes the default. You can then use the ``--checks``
-    option to reenable the checks.
-
-PURE_NOTC
-    Setting this variable disables tail call optimization, i.e., ``--notc``
-    becomes the default. You can then use the ``--tc`` option to reenable tail
-    call optimization.
-
 PURE_PS
     Command prompt used in the interactive command loop ("> " by default).
 
 PURE_STACK
     Maximum stack size in kilobytes (default: 0 = unlimited).
+
+(Besides these, the interpreter also understands a number of other environment
+variables for controlling various code generation options; please see `Code
+Generation Options`_ above for details.)
 
 Pure Overview
 =============
@@ -1347,9 +1380,7 @@ function whose value is precomputed at compile time::
   3.14159265358979
   > foo x = 2*pi*x;
   > show foo
-  foo x = 2*3.14159265358979*x;
-  > foo 1;
-  6.28318530717958
+  foo x = 6.28318530717959*x;
 
 List Comprehensions
 -------------------
@@ -2992,6 +3023,13 @@ currently supported operations:
     start out from a clean environment, with no scripts loaded on the command
     line.)
 
+    Also note that namespace and pragma settings of scripts loaded with
+    ``run`` stick around after loading the script. This allows you to quickly
+    set up your environment by just running a script containing the necessary
+    namespace declarations and compiler directives. (Alternatively, you can
+    also use the interpreter's startup files for that purpose, see
+    `Interactive Startup`_ below.)
+
 ``save``
     Begin a new level of temporary definitions. A subsequent ``clear`` command
     (see above) will purge the definitions made since the most recent ``save``
@@ -3552,8 +3590,8 @@ running interactively, while the .purerc file in the current directory can be
 used for project-specific definitions.
 
 Finally, you can also have a .pure initialization file in the current
-directory, which is created by the ``dump`` command (see above) and is loaded
-after the .purerc files if it is present.
+directory, which is usually created with the ``dump`` command (see
+above). This file is loaded after the .purerc files if it is present.
 
 The interpreter processes all these files in the same way as with the ``run``
 command (see above). When invoking the interpreter, you can specify the --norc
@@ -4258,8 +4296,8 @@ Constant Definitions
 --------------------
 
 Constants differ from variables in that they cannot be redefined (that's their
-main purpose after all) and that their values are looked up at compile time
-rather than run time. For instance::
+main purpose after all) and that their values, once defined, are determined at
+compile time rather than run time. For instance::
 
   > const c = 2;
   > foo x = c*x;
@@ -4268,10 +4306,8 @@ rather than run time. For instance::
   > foo 99;
   198
 
-As the above example shows, constants are in fact resolved at compile time, so
-the value of a constant never changes after its definition. In contrast, a
-variable can be rebound to a new value at any time. If you try to rebind a
-constant value you will get an error message::
+While a variable can be rebound to a new value at any time, you will get an
+error message if you try to do this with a constant::
 
   > const c = 3;
   <stdin>, line 5: symbol 'c' is already defined as a constant
@@ -4294,24 +4330,21 @@ holds if a symbol is currently defined as a function or a macro.)
 
 As the value of a constant is known at compile time, the compiler can apply
 various optimizations to uses of such values. In particular, the Pure compiler
-inlines constant scalars (numbers and strings) by literally substituting their
-values into the output code. In the case of numeric scalars this allows the
-compiler to generate better code using constant folding and similar
-techniques. Example::
+inlines constant scalars (numbers, strings and pointers) by literally
+substituting their values into the output code, and it also precomputes simple
+constant expressions involving only integer and double values. Example::
 
   > extern double atan(double);
   > const pi = 4*atan 1.0;
+  > show pi
+  const pi = 3.14159265358979;
   > foo x = 2*pi*x;
   > show foo
-  foo x = 2*3.14159265358979*x;
+  foo x = 6.28318530717959*x;
 
-(If you take a look at the disassembled code for this function, you will find
-that the value 2*3.14159265358979 = 6.28318530717959 has actually been
-computed at compile time.)
-
-The LLVM backend also eliminates dead code automatically, so you can employ a
-constant to configure your code for different environments, without any
-runtime penalties::
+In addition, the LLVM backend eliminates dead code automatically, so you can
+employ a constant to configure your code for different environments, without
+any runtime penalties::
 
   const win = index sysinfo "mingw32" >= 0;
   check boy = bad boy if win;
@@ -4321,18 +4354,18 @@ In this case the code for one of the branches of ``check`` will be completely
 eliminated, depending on the outcome of the configuration check.
 
 For efficiency, constant aggregates (lists, tuples, matrices and other kinds
-of terms) are handled a bit differently. Here, the constant is computed once
-and stored in a read-only variable which then gets looked up at runtime, just
-like an ordinary global variable. However, there is still a big difference. If
-a script is batch-compiled (cf. `Batch Compilation`_), the constant value is
-computed at compile time only; when running the compiled executable, the
-constant value is simply reconstructed, which is often much more efficient
-than recomputing its value. For instance, you might use this to precompute a
-large table whose computation may be costly or involve functions with side
-effects::
+of non-scalar terms) receive special treatment. Here, the constant is computed
+once and stored in a read-only variable which then gets looked up at runtime,
+just like an ordinary global variable. However, there is still a big
+difference. If a script is batch-compiled (cf. `Batch Compilation`_), the
+constant value is computed at compile time only; when running the compiled
+executable, the constant value is simply reconstructed, which is often much
+more efficient than recomputing its value. For instance, you might use this to
+precompute a large table whose computation may be costly or involve functions
+with side effects::
 
-  const table = precompute_my_large_table;
-  do_something_with table;
+  const table = [foo x | x = 1..1000000];
+  process table;
 
 Last but not least, constants can also be used in patterns, but only if you
 also declare them as ``nonfix``. This is useful, e.g., if you'd like to use
@@ -4344,6 +4377,9 @@ definition, just like other ``nonfix`` symbols::
   const true = 1;
   > nonfix false true;
   > check false = "no"; check true = "yes";
+  > show check
+  check 0 = "no";
+  check 1 = "yes";
   > check (5>0);
   "yes"
 
