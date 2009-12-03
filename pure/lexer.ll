@@ -144,6 +144,34 @@ blank  [ \t\f\v\r]
 {blank}+   yylloc->step();
 [\n]+      yylloc->lines(yyleng); yylloc->step();
 
+^"#!"[ \t]*"--"[A-Za-z-]+[ \t]*("//".*)? {
+  /* Pragmas. */
+  char *s = strchr(yytext, '-')+2, *t = s;
+  while (isalpha(*t) || *t == '-') t++;
+  string opt0 = string(s, t-s);
+  bool flag = opt0.substr(0,2) != "no";
+  string opt = flag?opt0:opt0.substr(2);
+  if (opt == "checks") {
+    if (interp.checks != flag) {
+      interp.compile(); interp.checks = flag;
+    }
+  } else if (opt == "tc") {
+    if (interp.use_fastcc != flag) {
+      interp.compile(); interp.use_fastcc = flag;
+    }
+  } else if (opt == "fold") {
+    interp.folding = flag;
+  } else {
+    interp.warning(*yylloc, "warning: unrecognized pragma '--"+opt0+"'");
+  }
+  yylloc->step();
+}
+^"#!"[ \t]*"--".* {
+  char *s = strchr(yytext, '-');
+  interp.warning(*yylloc, "warning: unrecognized pragma '"+string(s)+"'");
+  yylloc->step();
+}
+
 ^"#!".*    |
 "//".*     yylloc->step();
 

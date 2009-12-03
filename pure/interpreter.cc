@@ -1109,6 +1109,7 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
   int32_t l_modno = modno;
   string *l_current_namespace = symtab.current_namespace;
   set<string> *l_search_namespaces = symtab.search_namespaces;
+  bool l_checks = checks, l_folding = folding, l_use_fastcc = use_fastcc;
   // save global data
   uint8_t s_verbose = g_verbose;
   bool s_interactive = g_interactive;
@@ -1162,6 +1163,8 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
     delete symtab.search_namespaces;
     symtab.current_namespace = l_current_namespace;
     symtab.search_namespaces = l_search_namespaces;
+    if (checks != l_checks || use_fastcc != l_use_fastcc) compile();
+    checks = l_checks; folding = l_folding; use_fastcc = l_use_fastcc;
   }
   // return last computed result, if any
   return result;
@@ -1196,6 +1199,7 @@ pure_expr *interpreter::runstr(const string& s)
   int32_t l_modno = modno;
   string *l_current_namespace = symtab.current_namespace;
   set<string> *l_search_namespaces = symtab.search_namespaces;
+  bool l_checks = checks, l_folding = folding, l_use_fastcc = use_fastcc;
   // save global data
   uint8_t s_verbose = g_verbose;
   bool s_interactive = g_interactive;
@@ -1239,6 +1243,8 @@ pure_expr *interpreter::runstr(const string& s)
   delete symtab.search_namespaces;
   symtab.current_namespace = l_current_namespace;
   symtab.search_namespaces = l_search_namespaces;
+  if (checks != l_checks || use_fastcc != l_use_fastcc) compile();
+  checks = l_checks; folding = l_folding; use_fastcc = l_use_fastcc;
   // return last computed result, if any
   return result;
 }
@@ -1255,6 +1261,7 @@ pure_expr *interpreter::parsestr(const string& s)
   int32_t l_modno = modno;
   string *l_current_namespace = symtab.current_namespace;
   set<string> *l_search_namespaces = symtab.search_namespaces;
+  bool l_checks = checks, l_folding = folding, l_use_fastcc = use_fastcc;
   // save global data
   uint8_t s_verbose = g_verbose;
   bool s_interactive = g_interactive;
@@ -1299,6 +1306,8 @@ pure_expr *interpreter::parsestr(const string& s)
   delete symtab.search_namespaces;
   symtab.current_namespace = l_current_namespace;
   symtab.search_namespaces = l_search_namespaces;
+  if (checks != l_checks || use_fastcc != l_use_fastcc) compile();
+  checks = l_checks; folding = l_folding; use_fastcc = l_use_fastcc;
   // return last computed result, if any
   return result;
 }
