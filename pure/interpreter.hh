@@ -455,7 +455,7 @@ public:
      current module scope is kept, otherwise a new scope is created for the
      loaded module. Using this option isn't recommended, but it is used
      internally by the interactive startup and the 'run' command to make
-     namespace settings of the executed script stick when running
+     namespace and pragma settings of the executed script stick when running
      interactively.
 
      Returns the last computed expression (if any). (This expression is owned
