@@ -10158,7 +10158,11 @@ bool thunkp(const pure_expr *x)
 extern "C"
 bool varp(const pure_expr *x)
 {
-  return (x->tag > 0 && !x->data.clos);
+  if (x->tag <= 0 || x->data.clos) return false;
+  // Check that the symbol is a variable.
+  interpreter& interp = *interpreter::g_interp;
+  symbol& sym = interp.symtab.sym(x->tag);
+  return sym.prec == PREC_MAX && sym.fix != nonfix && sym.fix != outfix;
 }
 
 extern "C"
