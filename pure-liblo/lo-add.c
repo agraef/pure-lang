@@ -8,6 +8,12 @@
 #include <unistd.h>
 #include <assert.h>
 
+#ifdef _WIN32
+/* For some reason mingw fails to link in the lo_server_thread stuff.
+   Force it to. */
+static void *dummy = &lo_server_thread_new;
+#endif
+
 /* XXXFIXME: This needs to be crosschecked against the liblo source. We need
    these to hack some fields which aren't provided anywhere in the liblo API. */
 
