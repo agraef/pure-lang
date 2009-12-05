@@ -454,11 +454,19 @@ char *default_encoding()
   return nl_langinfo(CODESET);
 #else
 #ifdef _WIN32
-  /* always use the ANSI codepage on Windows (this might cause lossage if your
-     system uses a different OEM codepage!?) */
-  static char buf[20];
-  sprintf(buf, "cp%d", GetACP());
-  return buf;
+  /* Always use the OEM codepage on Windows. */
+  unsigned cp = GetOEMCP();
+  if (cp == 65001)
+    // codepage 65001 is UTF-8
+    return "UTF-8";
+  else if (cp == 65000)
+    // codepage 65000 is UTF-7
+    return "UTF-7";
+  else {
+    static char buf[20];
+    sprintf(buf, "cp%d", cp);
+    return buf;
+  }
 #else
   /* use our own emulation of nl_langinfo() */
   return my_nl_langinfo(CODESET);
