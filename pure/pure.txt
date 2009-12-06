@@ -1382,6 +1382,10 @@ function whose value is precomputed at compile time::
   > show foo
   foo x = 6.28318530717959*x;
 
+Note that the compiler normally computes constant subexpression at compile
+time, such as ``2*pi`` in the ``foo`` function. This works with all simple
+scalars (machine ints and doubles), see `Constant Definitions`_ for details.
+
 List Comprehensions
 -------------------
 
@@ -3608,14 +3612,12 @@ Purity
 ------
 
 People keep asking me what's so "pure" about Pure. The long and apologetic
-answer is that at its core, Pure is in fact purely algebraic and purely
-functional. However, Pure doesn't get in your way if you want to call external
-operations with side effects; it does allow you to call any C function after
-all. But with a few exceptions the standard library operations are free of
-those. Just stay away from operations marked "IMPURE" in the library sources
-(most notably, ``eval``, ``catch``/``throw``, references, sentries and direct
-pointer manipulations) and avoid the system module, then your program will
-behave according to the semantics of term rewriting.
+answer is that Pure tries to stay as close as possible to the spirit of term
+rewriting without sacrificing practicality. It's possible and in fact quite
+easy to write purely functional programs in Pure, and you're encouraged to use
+it that way when possible. On the other hand, Pure doesn't get in your way if
+you want to call external operations with side effects; it does allow you to
+call any C function after all.
 
 The short answer is that I simply liked the name, and there wasn't any
 programming language named "Pure" yet (quite a feat nowadays), so there's one
@@ -4332,7 +4334,8 @@ As the value of a constant is known at compile time, the compiler can apply
 various optimizations to uses of such values. In particular, the Pure compiler
 inlines constant scalars (numbers, strings and pointers) by literally
 substituting their values into the output code, and it also precomputes simple
-constant expressions involving only integer and double values. Example::
+constant expressions involving only (machine) integer and double
+values. Example::
 
   > extern double atan(double);
   > const pi = 4*atan 1.0;
