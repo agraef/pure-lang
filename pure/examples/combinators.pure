@@ -11,8 +11,12 @@
    which should be efficient enough for most practical purposes, as long as
    the lambda body is small.
 
+   Please note that this is just a very basic implementation which doesn't
+   deal with matrices, lazy data or parameterless functions with side effects
+   in the lambda body. Pattern-matching lambdas aren't supported either.
+
    Here are some examples. Note that we use y and y as lambda variables here,
-   so we first make sure that these are unbound (otherwise you may have to
+   so we first make sure that these are unbound (otherwise you will have to
    quote them).
 
    > clear x y
@@ -32,9 +36,15 @@
    '(6+1)
    '(2*3+1)
 
-   Please note that this is just a very basic implementation which doesn't
-   deal with matrices, lazy data or parameterless functions with side effects
-   in the lambda body. Pattern-matching lambdas aren't supported either. */
+   Of course, you can also play around with the combinators themselves. E.g.,
+   the following combinator expression applies its second argument to its
+   first one:
+
+   > let h = S (K (S I)) K;
+   > h a b;
+   b a
+
+   */
 
 /* Combinator rules, cf. Henson 1987. */
 
