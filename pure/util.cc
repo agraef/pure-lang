@@ -456,17 +456,16 @@ char *default_encoding()
 #ifdef _WIN32
   /* Always use the OEM codepage on Windows. */
   unsigned cp = GetOEMCP();
+  static char buf[20];
   if (cp == 65001)
     // codepage 65001 is UTF-8
-    return "UTF-8";
+    strcpy(buf, "UTF-8");
   else if (cp == 65000)
     // codepage 65000 is UTF-7
-    return "UTF-7";
-  else {
-    static char buf[20];
+    strcpy(buf, "UTF-7");
+  else
     sprintf(buf, "cp%d", cp);
-    return buf;
-  }
+  return buf;
 #else
   /* use our own emulation of nl_langinfo() */
   return my_nl_langinfo(CODESET);
