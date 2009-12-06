@@ -1,0 +1,61 @@
+
+/* A basic implementation of the combinatorial and lambda calculi.
+   Albert Graef, Dec 6 2009. */
+
+/* The lambda function below can be used to create simple kinds of lambdas at
+   runtime. The implementation is based on the combinatorial calculus as
+   described, e.g., in M.C. Henson: "Elements of Functional Languages",
+   Blackwell Scientific Publications, Oxford, 1987. This also includes the B
+   and C combinators which are needed to optimize argument dispatching. The
+   size of a translated lambda is O(n^2) for a lambda expression of size n,
+   which should be efficient enough for most practical purposes, as long as
+   the lambda body is small.
+
+   Here are some examples. Note that we use y and y as lambda variables here,
+   so we first make sure that these are unbound (otherwise you may have to
+   quote them).
+
+   > clear x y
+   > let f = lambda x (x*x); f; f 9;
+   S (*) I
+   81
+   > let f = lambda x $ lambda y $ (1-x)*y; f; f a b; f 0.9 0.5;
+   B (*) ((-) 1)
+   (1-a)*b
+   0.05
+
+   You can also use lambda to bind variables in quoted expressions as follows:
+
+   > let g = lambda x (''(x+1)); g;
+   B (') (C (+) 1)
+   > g (2*3); g ('(2*3));
+   '(6+1)
+   '(2*3+1)
+
+   Please note that this is just a very basic implementation which doesn't
+   deal with matrices, lazy data or parameterless functions with side effects
+   in the lambda body. Pattern-matching lambdas aren't supported either. */
+
+/* Combinator rules, cf. Henson 1987. */
+
+I x		= x;
+K x _		= x;
+S x y z		= (x z) (y z);
+B x y z		= x (y z);
+C x y z		= x z y;
+
+/* Translate lambdas to combinators. */
+
+lambda x y	= throw "lambda: first argument must be a variable" if ~varp x;
+
+lambda x (y@_ z) = S (lambda x y) (lambda x z) with
+  /* Optimization rules for the S combinator. */
+  S (K x) (K y)	= K (x y);
+  S (K x) y	= x if y===I;
+  S (K x) y	= B x y;
+  S x (K y)	= C x y;
+  S x y		= ::S x y otherwise;
+end;
+
+lambda x y	= I if x===y;
+		= K y otherwise;
