@@ -1,0 +1,116 @@
+
+/* huffman.pure: Huffman encoding trees */
+
+/* ported to Pure by Albert Graef, Dec 2009 (see also Abelson/Sussman:
+   Structure and Interpretation of Computer Programs, MIT Press, 1985) */
+
+/* 
+
+NOTE: Alphabets should consist of two symbols at least. Otherwise the single
+symbol will be encoded as the empty list, which leads to infinite recursion
+when decoded. This could be considered a bug. ;-)
+
+For instance, try the following:
+
+> let message = chars "Alice in Wonderland";
+> let h = huffman_tree (weights message);
+> let code = encode h message;
+> string (decode h code);
+
+A more amusing example is perhaps the following exercise from Abelson/Sussman
+1985, p. 125:
+
+"The following eight-symbol alphabet with associated relative frequencies
+was designed to efficiently encode the lyrics of 1950s rock songs. (Note
+that the "symbols" of an "alphabet" need not be individual letters.)
+
+A		2			NA		16
+BOOM		1			SHA		3
+GET		2			YIP		10
+JOB		2			WAH		1
+
+Generate a corresponding Huffman tree, and use it to encode the following
+message:
+
+Get a job
+Sha na na na na na na na na
+Get a job
+Sha na na na na na na na na
+Wah yip yip yip yip yip yip yip yip
+Sha boom
+
+How many bits are required for the encoding? What is the smallest number
+of bits that would be needed to encode this song if we used a fixed-length
+code for the eight-symbol alphabet?"
+
+*/
+
+/* Huffman encoding trees are represented as binary trees whose leaves carry
+   individual symbols and their weights (frequencies), and whose interior
+   nodes store the sets of symbols found in the corresponding subtrees, along
+   with the corresponding weights (which are the sums of the subtree weights).
+
+   Format of the tree data structure:
+
+   - nil: The empty tree.
+
+   - tip x w: Singleton symbol x with weight w.
+
+   - bin xs w h1 h2: List of symbols xs with total weigth w and (left and
+     right) subtrees h1 and h2. */
+
+nonfix nil;
+
+syms (tip x w)		= [x];
+syms (bin xs w h1 h2)	= xs;
+
+weight (tip x w)	= w;
+weight (bin xs w h1 h2)	= w;
+
+/* The decoding algorithm. It takes as its arguments a Huffman tree and a
+   list of zeros and ones, and reconstructs the original message. */
+
+decode h bs		= decode h bs [] with
+  decode (tip x w) bs cs
+			= decode h bs (x:cs);
+  decode (bin xs w h1 h2) (b:bs) cs
+			= decode (if b==0 then h1 else h2) bs cs;
+  decode _ [] cs	= reverse cs;
+end;
+
+/* The encoding algorithm. It takes as its arguments a Huffman tree and
+   a list of symbols, and returns the coded message. */
+
+encode h xs		= catmap (encode h) xs with
+  encode (tip x w) y	= [] if x==y;
+  encode (bin xs w h1 h2) x
+			= 0:encode h1 x if any (==x) (syms h1);
+			= 1:encode h2 x if any (==x) (syms h2);
+end;
+
+/* Construct a Huffman tree, starting from a list of (symbol,weight) pairs. */
+
+huffman_tree xws	= mk_huffman_tree (mk_leaf_set xws) with
+  mk_huffman_tree []	= nil;
+  mk_huffman_tree [h]	= h;
+  mk_huffman_tree (h1:h2:hs)
+			= mk_huffman_tree (add_tree (merge_tree h1 h2) hs);
+
+  mk_leaf_set xws	= foldr add_tree [] (map mk_leaf xws);
+  mk_leaf (x,w)		= tip x w;
+
+  add_tree h1 []	= [h1];
+  add_tree h1 (h2:hs)	= h2:add_tree h1 hs if weight h1 >= weight h2;
+			= h1:h2:hs otherwise;
+
+  merge_tree h1 h2	= bin (syms h1+syms h2) (weight h1+weight h2) h1 h2;
+end;
+
+/* Determine the (symbol,weight) pairs for a particular message: */
+
+weights xs		= foldr add_weight [] (sort (<) xs) with
+  add_weight y []	= [(y,1)];
+  add_weight y ((x,w):xws)
+			= (x,w+1):xws if x==y;
+			= (y,1):(x,w):xws otherwise;
+end;
