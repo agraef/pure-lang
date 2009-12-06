@@ -5575,7 +5575,7 @@ void interpreter::pop(Env *e)
 Env *interpreter::find_stacked(int32_t tag)
 {
   list<Env*>::iterator e = envstk.begin();
-  while (e != envstk.end() && (*e)->tag != tag) ++e;
+  while (e != envstk.end() && ((*e)->local || (*e)->tag != tag)) ++e;
   if (e != envstk.end()) {
     assert((*e)->tag == tag);
     return *e;
