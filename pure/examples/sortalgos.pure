@@ -1,0 +1,50 @@
+
+/* Some classical sorting algorithms in Pure. The comparison predicate is
+   always given as the first argument, the second argument is the list to be
+   sorted. These are not the most efficient implementations, improvements are
+   left as an exercise. 2009-12-08 AG */
+
+/* Bubblesort. Sort by comparing adjacent elements. */
+
+bubblesort p [] = [];
+bubblesort p [x] = [x];
+bubblesort p xs = x:bubblesort p xs when x:xs = bubble xs end with
+  bubble [x] = [x];
+  bubble (x:xs) = if p y x then y:x:ys else x:y:ys when y:ys = bubble xs end;
+end;
+
+/* Insertion sort. Sort by inserting elements into an already ordered
+   sublist. */
+
+insertsort p xs = foldl insert [] xs with
+  insert [] y = [y];
+  insert (x:xs) y = if p y x then y:x:xs else x:insert xs y;
+end;
+
+/* Mergesort. Sort by merging two already ordered sublists. */
+
+mergesort p [] = [];
+mergesort p [x] = [x];
+mergesort p xs = merge (mergesort p ys) (mergesort p zs) when
+  n = #xs div 2; ys = take n xs; zs = drop n xs;
+end with
+  merge [] ys = ys;
+  merge xs [] = xs;
+  merge (x:xs) (y:ys) = if p y x then y:merge (x:xs) ys else x:merge xs (y:ys);
+end;
+
+/* Quicksort. Sort by partitioning a list at the pivot. */
+
+quicksort p [] = [];
+quicksort p (x:xs) = quicksort p [l | l = xs; p l x] +
+      	       	     (x : quicksort p [r | r = xs; ~p r x]);
+
+/* Selection sort. Sort by picking the smallest element from a list. */
+
+selectsort p [] = [];
+selectsort p xs = x:selectsort p (remove x xs) when x = smallest xs end with
+  smallest xs = foldl1 min xs;
+  min x y = if p y x then y else x;
+  remove y [] = [];
+  remove y (x:xs) = if ~p x y && ~p y x then xs else x:remove y xs;
+end;
