@@ -157,7 +157,7 @@ void interpreter::init()
      might become the default in LLVM 2.7, so we explicitly tell the JIT that
      we don't want this. Also note that eager compilation isn't supported in
      LLVM <=2.6. */
-  JIT->DisableLazyCompilation(false);
+  //JIT->DisableLazyCompilation(false); // broken with LLVM r85295+
 #else
 #if FAST_JIT
   JIT = ExecutionEngine::create(MP, false, 0, true);
