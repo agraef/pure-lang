@@ -1,0 +1,54 @@
+
+/* Sudoku example by Peter Bernschneider. */
+
+/* This is an example Sudoku solver inspired by the Queens example which
+   terminates in reasonable time. m1 is ZEIT-Online Sudoku of Dec 6th 2009.
+   Interactive usage example: sudoku1 m1; */
+
+using matrices;
+using system;
+
+m1 = {0,0,3,9,0,2,0,0,0;
+      0,0,0,0,0,0,2,3,1;
+      0,0,0,0,0,3,5,0,9;
+      5,8,0,0,0,0,0,0,0;
+      0,0,6,0,1,7,0,0,0;
+      7,2,1,4,5,0,0,0,0;
+      0,4,5,0,0,1,0,8,0;
+      0,3,9,7,0,0,6,0,0;
+      0,0,0,8,6,4,9,5,0};
+
+m2 = {0,5,0,0,6,0,0,0,1;
+      0,0,4,8,0,0,0,7,0;
+      8,0,0,0,0,0,0,5,2;
+      2,0,0,0,5,7,0,3,0;
+      0,0,0,0,0,0,0,0,0;
+      0,3,0,6,9,0,0,0,5;
+      7,9,0,0,0,0,0,0,8;
+      0,1,0,0,0,6,5,0,0;
+      5,0,0,0,3,0,0,6,0};
+
+sudoku1 m = take 1 (sudoku m);
+
+sudoku m  = search (0,0) m;
+
+search (i,j) m = [m] if i>=9;
+               = search (suc (i,j)) m if m!(i,j)~=0;
+               = cat [ search (suc (i,j)) (set (i,j) n m) |
+	       	       n = 1..9; safe (i,j) n m ];
+
+safe (i,j) n m = all (~=n) (row m i) && all (~=n) (col m j) &&
+     	         all (~=n) (sub (i,j) m);
+
+sub (i,j) m = m!!(spli (i div 3), spli (j div 3));
+
+spli k = 3*k..3*k+2;
+
+set (i0,j0) n0 m = { if (i,j)==(i0,j0) then n0 else m!(i,j) |
+    	       	     i=0..8; j=0..8 };
+
+suc (i,j) = (i,j+1) if j+1<9;
+          = (i+1,0) otherwise;
+
+__show__ x::matrix = strcat [printi j (x!(i,j))|i=0..8; j=0..8] + "\n"
+  with printi 0 = sprintf "\n%1i"; printi _ = sprintf "%1i" end;
