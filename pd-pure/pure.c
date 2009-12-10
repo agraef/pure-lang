@@ -482,7 +482,10 @@ static void send_message(t_pure *x, int k, pure_expr *y)
 static inline void delay_message(t_pure *x, double t, pure_expr *msg)
 {
   const double inf = 1.0e307 * 1.0e307;
-  if (x->msg) pure_free(x->msg);
+  if (x->msg) {
+    pure_free(x->msg);
+    x->msg = NULL;
+  }
   if (t != inf && /* this is false only for nan: */t == t) {
     x->msg = pure_new(msg);
     if (t < 0.0) t = 0.0;
