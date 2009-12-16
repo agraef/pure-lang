@@ -4612,6 +4612,11 @@ to variables should fix this. **\n";
   Function *freefun = module->getFunction("pure_freenew");
   // Eliminate unused functions.
   set<Function*> used = always_used; used.insert(initfun);
+  if (symtab.__show__sym > 0) {
+    // Make sure that we always include the __show__ function if it's defined.
+    Function *__show__fun = module->getFunction("__show__");
+    if (__show__fun) used.insert(__show__fun);
+  }
   map<GlobalVariable*,Function*> varmap;
   if (strip) check_used(used, varmap);
   // Remove unused globals.
