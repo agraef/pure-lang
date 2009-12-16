@@ -1,0 +1,135 @@
+
+/* faust.pure: Load and run Faust signal processors in Pure. */
+
+/* Copyright (c) 2009, Albert Graef
+
+   All rights reserved.
+
+   Redistribution and use in source and binary forms, with or without
+   modification, are permitted provided that the following conditions are met:
+
+   1. Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
+
+   2. Redistributions in binary form must reproduce the above copyright
+      notice, this list of conditions and the following disclaimer in the
+      documentation and/or other materials provided with the distribution.
+
+   3. Neither the name of the author nor the names of its contributors may be
+      used to endorse or promote products derived from this software without
+      specific prior written permission.
+
+   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+   POSSIBILITY OF SUCH DAMAGE. */
+
+using "lib:faust";
+
+/* Constructors for control descriptions. Such descriptions are returned by
+   the faust_info function (see below).
+
+   There are various basic control elements, each associated with a control
+   variable 'ref' and a parameter tuple 'args'. The latter are the arguments
+   of the control element as given in the Faust program. Thus, e.g., 'button
+   ref "Push me!"' would denote a button with label "Push me!", and 'hslider
+   ref ("gain",1.0,0.0,10.0,0.1) a horizontal slider with label "gain" and the
+   given initial, min, max and step size values. The control variable itself
+   is implemented as a C double pointer 'ref'. Changing the double value
+   pointed to by 'ref' using 'put_double' (before invoking the faust_compute
+   function) assigns a new value to the corresponding control element in the
+   Faust DSP. Passive control elements such as 'vbargraph' have their value
+   updated during invocation of the faust_compute function.
+
+   There are also three constructors for denoting groups of controls,
+   'vgroup', 'hgroup' and 'tgroup'. These take a single 'args' argument, which
+   is a pair (label,elems) consisting of the label of the group, as given in
+   the Faust program, and the list of all control elements in that group. The
+   toplevel control element is always a group (a 'vgroup' by default). */
+
+public button checkbox vslider hslider nentry vbargraph hbargraph
+  vgroup hgroup tgroup;
+
+/* Initialize and finalize a Faust DSP object. */
+
+/* We employ some Pure wrappers here for finalization purposes, similar to
+   fopen/fclose in the system module. */
+
+namespace __C;
+extern faust_t *faust_init(char *name, int rate);
+extern faust_t *faust_clone(faust_t *fd);
+extern void faust_exit(faust_t *fd);
+namespace;
+
+extern void faust_reinit(faust_t *fd, int rate);
+
+faust_init name::string rate::int = sentry __C::faust_exit fd if ~null fd
+when fd = __C::faust_init name rate end;
+
+faust_clone fd::pointer = sentry __C::faust_exit fd if ~null fd
+when fd = __C::faust_clone fd end;
+
+faust_exit fd::pointer = clear_sentry fd $$ __C::faust_exit fd;
+
+/* Compute a block of samples. */
+
+extern expr *faust_compute(faust_t *fd, expr *in, expr *out);
+
+/* Retrieve the DSP info. */
+
+extern expr *faust_info(faust_t *fd);
+
+/* Convenience functions to retrieve the components of a control description.
+   The control_type, control_ref and control_label functions return the type
+   (i.e., constructor), reference (a C float* pointer) and label of a control,
+   respectively. control_args yields the remaining control parameters. */
+
+control_type (f@_ ptr args) |
+control_type (f@_ args) = f;
+
+control_ref (_ ptr args) = ptr;
+
+control_label (_ ptr (label,args)) |
+control_label (_ (label,args)) |
+control_label (_ ptr label::string) |
+control_label (_ label::string) = label;
+
+control_args (_ ptr (label,args)) |
+control_args (_ (label,args)) = args;
+control_args (_ ptr label::string) |
+control_args (_ label::string) = ();
+
+/* The following function returns a flat representation of a control group as
+   a list of basic control descriptions, which provides a quick way to access
+   all the control values of a Faust DSP. The grouping controls themselves are
+   omitted. */
+
+controls (_ (_,ctls)) = catmap controls ctls if listp ctls;
+controls x = [x] otherwise;
+
+/* The following function works like the controls function above, but also
+   replaces the label of each basic control with a fully qualified path
+   consisting of all control labels leading up to the given control. Thus,
+   e.g., the label of a slider "gain" inside a group "voice#0" inside the
+   main "faust" group will be denoted by the label "faust/voice#0/gain". */
+
+pcontrols x = controls "" x with
+  controls path x =
+    case x of
+      _ (label::string,ctls) = catmap (controls (join path label)) ctls
+      			         if listp ctls;
+      f@_ ptr (label::string,args) = [f ptr (join path label,args)];
+      f@_ ptr label::string = [f ptr (join path label)];
+      _ = [x]; // bad control description
+    end;
+  join "" s::string |
+  join s::string "" = s;
+  join s::string t::string = s+"/"+t otherwise;
+end;

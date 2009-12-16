@@ -1,0 +1,184 @@
+
+==============================================
+pure-faust: Run Faust programs in Pure scripts
+==============================================
+
+This module lets you load and run Faust-generated signal processing modules in
+Pure_. Faust_ (an acronym for Functional AUdio STreams) is a functional
+programming language for real-time sound processing and synthesis developed at
+Grame_ and distributed as GPL'ed software.
+
+.. _Faust: http://faust.grame.fr/
+.. _Grame: http://www.grame.fr/
+.. _Pure: http://pure-lang.googlecode.com/
+
+Copying
+=======
+
+Unless explicitly stated otherwise, this software is Copyright (c) 2009 by
+Albert Graef. Please also see the source for the copyright and license notes
+pertaining to individual source files.
+
+pure-faust is free software: you can redistribute it and/or modify it under
+the terms of the GNU Lesser General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version.
+
+pure-faust is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
+details.
+
+You should have received a copy of the GNU Lesser General Public License along
+with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+Installation
+============
+
+Binary packages can be found at http://pure-lang.googlecode.com/. To install
+from source, run the usual ``make && sudo make install``. This requires Pure,
+of course. The Makefile tries to guess the installation prefix under which
+Pure is installed. If it guesses wrong, you can tell it the right prefix with
+``make prefix=/some/path``. Or you can specify the exact path of the
+``lib/pure`` directory with ``make libdir=/some/path``; by default the
+Makefile assumes ``$(prefix)/lib/pure``. The Makefile also tries to guess the
+host system type and set up some platform-specific things accordingly. If this
+doesn't work for your system then you'll have to edit the Makefile
+accordingly.
+
+The Faust compiler is not required to compile this module, but of course
+you'll need it to build the examples in the ``examples`` subdirectory and to
+compile your own Faust sources. You'll need Faust 0.9.9.6 or later.
+
+To compile Faust programs for use with this module, you'll also need the
+``pure.cpp`` architecture file. This should be included in recent Faust
+releases. If your Faust version doesn't have it yet, you can find a suitable
+version of this file in the ``examples`` folder. Simply copy the file to your
+Faust library directory (usually ``/usr/local/lib/faust`` or similar) or the
+directory holding the Faust sources to be compiled, and you should be set.
+(Note that ``pure.cpp`` is distributed under a simple all-permissive license,
+so you can use it for pretty much any purpose, including commercial
+applications.)
+
+Usage
+=====
+
+Once Faust and this module have been installed as described above, you should
+be able to compile a Faust DSP to a shared module loadable by pure-faust as
+follows::
+
+  $ faust -a pure.cpp -o mydsp.cpp mydsp.dsp
+  $ g++ -shared -o mydsp.so mydsp.cpp
+
+Note that, by default, Faust generates code which does all internal
+computations with single precision. You can add the ``-double`` flag to the
+Faust command in order to use double precision instead. (In either case, all
+data will be represented as doubles on the Pure side.)
+
+Also note that the above compile command is for a Linux or BSD system using
+``gcc``. Add ``-fPIC`` for 64 bit compilation. For Windows compilation, the
+output filename should be ``mydsp.dll`` instead of ``mydsp.so``; on Mac OSX,
+it should be ``mydsp.dylib``. There's a Makefile in the ``examples`` folder
+which automates this process.
+
+Once the module has been compiled, you can fire up the Pure interpreter and
+load the DSP as follows::
+
+  > using faust;
+  > let dsp = faust_init "mydsp" 48000;
+  > dsp;
+  #<pointer 0xf09220>
+
+The ``faust_init`` function loads the ``"mydsp.so"`` module (the ``.so``
+suffix is supplied automatically) and returns a pointer to the Faust DSP
+object which can then be used in subsequent operations. The second parameter
+of ``faust_init``, 48000 in this example, denotes the sample rate in Hz. This
+can be an arbitrary integer value which is available to the hosted DSP (it's
+up to the DSP whether it actually uses this value in some way). The sample
+rate can also be changed on the fly with the ``faust_reinit`` function::
+
+  > faust_reinit dsp 44100;
+
+It is also possible to create copies of an existing DSP with the
+``faust_clone`` function, which is quite handy if multiple copies of the same
+DSP are needed (a case which commonly arises when implementing polyphonic
+synthesizers)::
+
+  > let dsp2 = faust_clone dsp;
+
+When you're done with a DSP, you can invoke the ``faust_exit`` function to
+unload it (this also happens automatically when a DSP object is
+garbage-collected)::
+
+  > faust_exit dsp2;
+
+Note that after invoking this operation the DSP pointer becomes invalid and
+must not be used any more.
+
+The ``faust_info`` function can be used to determine the number of
+input/output channels as well as the "UI" (a data structure describing the
+available control variables) of the loaded DSP::
+
+  > let n,m,ui = faust_info dsp;
+
+To actually run the DSP, you'll need two buffers capable of holding the
+required number of audio samples for input and output. For convenience, the
+``faust_compute`` routine lets you specify these as Pure double matrices.
+``faust_compute`` is invoked as follows::
+
+  > faust_compute dsp in out;
+
+Here, ``in`` and ``out`` must be double matrices of the same row size (which
+corresponds to the number of samples which will be processed) which have at
+least ``n`` or ``m`` rows, respectively (corresponding to the number of input
+and output channels of the Faust DSP). The ``out`` matrix will be modified
+in-place and also returned as the result of the call.
+
+Some DSPs (e.g., synthesizers) only take control input without processing any
+audio input; others (e.g., pitch detectors) might produce just control output
+without any audio output. In such cases you can just specify an empty ``in``
+or ``out`` matrix, respectively. For instance::
+
+  > faust_compute dsp {} out;
+
+Most DSPs take additional control input. The control variables are listed in
+the "UI" component of the faust_info return value. For instance, suppose that
+there's a ``gain`` parameter listed there, it might look as follows::
+
+  > controls ui!0;
+  hslider #<pointer 0x12780a4> ("gain",1.0,0.0,10.0,0.1)
+
+The constructor itself denotes the type of control, which matches the name of
+the Faust builtin used to create the control (see the Faust documentation for
+more details on this). The second parameter is a tuple which indicates the
+arguments the control was created with in the Faust program. The first
+parameter is a C ``double*`` which points to the current value of the control
+variable. You can inspect and change this value with the ``get_double`` and
+``put_double`` routines available in the Pure prelude. (Note that changes of
+control variables only take effect between different invokations of
+``faust_compute``.) Example::
+
+  > let gain = control_ref (controls ui!0);
+  > get_double gain;
+  1.0
+  > put_double gain 2.0;
+  ()
+  > faust_compute dsp in out;
+
+Output controls such as ``hbargraph`` and ``vbargraph`` are handled in a
+similar fashion, only that the Faust DSP updates these values for each call to
+``faust_compute`` and Pure scripts can then read the values with ``get_double``.
+
+Ok, I hope that this is enough to get you started. Further examples can be
+found in the examples subdirectory. Please send bug reports, patches, comments
+and suggestions to: Dr.Graef@t-online.de.
+
+
+Acknowledgements
+================
+
+Many thanks to Yann Olarey at Grame, the principal author of Faust!
+
+
+.. Enjoy. :)
+.. Albert Graef <Dr.Graef@t-online.de>

@@ -1,0 +1,75 @@
+ 
+// How to call Faust from Pure.
+
+/* Before you run this program, make sure that you have compiled the dsp
+   sources. You can do this by running 'make' in this directory. */
+
+using faust, system;
+
+/* Helper functions to pretty-print matrices and Faust UI descriptions. */
+
+__show__ x::matrix
+= strcat [printd j (x!(i,j))|i=0..n-1; j=0..m-1] + "\n"
+with printd 0 = sprintf "\n%10.5f"; printd _ = sprintf "%10.5f" end
+when n,m = dim x end if dmatrixp x;
+
+__show__ x::double = sprintf "%g" x;
+
+print_info name dsp = () when
+  n,m,ui = faust_info dsp;
+  printf "** dsp %s (%d inputs, %d outputs)\n" (name,n,m);
+  puts "controls (with pathnames):" $$ do (puts.str) (pcontrols ui);
+end;
+
+/* A simple panning control with mono input, stereo output and two controls:
+   master volume and pan. */
+
+let pan = faust_init "pan" 48000;
+
+print_info "pan" pan;
+
+/* Example: set the pan control and process some samples. */
+
+/* Note that the audio buffers are given as Pure double matrices, where the
+   number of columns of the matrices gives the block size (number of samples
+   to be processed in a single call to faust_compute), and the number of rows
+   must be at least the number of input/output channels to be processed. Thus
+   a stereo signal of 64 samples per channel would be represented as a 2x64
+   matrix. The out matrix is modified in-place and also returned by the
+   faust_compute routine. */
+
+let in = {1.0 | i = 1..8}; // mono input signal, 8 samples
+let out = dmatrix (2,8); // stereo output, 8 samples
+
+/* Control variables are represented as C double* pointers (provided in the UI
+   data structure returned by faust_info) which can be manipulated with the
+   get_double and put_double routines available in the prelude. */
+
+let pan_ctl = control_ref $ controls ui!0 when _,_,ui = faust_info pan end;
+put_double pan_ctl 0.25; // changes the 'pan' value to 0.25
+
+printf "pan = %g\n" (get_double pan_ctl);
+
+puts "\ninput:";
+puts $ str in;
+// This should show 0.75 on the left and 0.25 on the right channel.
+puts "output:";
+puts $ str $ faust_compute pan in out;
+
+let in = {i/10 | i = 1..8};
+puts "input:";
+puts $ str in;
+puts "output:";
+puts $ str $ faust_compute pan in out;
+
+/* This one synthesizes pink noise. Zero inputs, stereo output. Uses the same
+   volume and pan controls as above. */
+
+let pink = faust_init "pink" 48000;
+
+print_info "pink" pink;
+// This should show identical random samples on both channels.
+puts "\noutput:";
+puts $ str $ faust_compute pink {} out;
+puts "output:";
+puts $ str $ faust_compute pink {} out;
