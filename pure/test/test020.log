@@ -25,13 +25,13 @@ let f2 = [(+),(-),(*),(/),(^),atan2,pow];
 	<var> state 1
   state 1: #0
 }
-let x2 = catmap (\i/*0:*/ -> listmap (\j/*0:*/ -> i/*1:*/,j/*0:*/ {
-  rule #0: j = i,j
+let x2 = catmap (\i/*0:1*/ -> listmap (\j/*0:1*/ -> i/*1:1*/,j/*0:1*/ {
+  rule #0: _ j = i,j
   state 0: #0
 	<var> state 1
   state 1: #0
 }) x {
-  rule #0: i = listmap (\j -> i,j) x
+  rule #0: _ i = listmap (\j -> i,j) x
   state 0: #0
 	<var> state 1
   state 1: #0
@@ -232,23 +232,23 @@ print (x/*0:101*/+:y/*0:11*/) = print x/*0:101*/+"+:"+print y/*0:11*/;
 print (x/*0:101*/::double<:y/*0:11*/::double) = print x/*0:101*/+"<:"+print 0.0 if abs x/*0:101*/~==0.0&&roundz x/*0:101*/==0.0&&~infp y/*0:11*/&&~nanp y/*0:11*/;
 print (x/*0:101*/<:y/*0:11*/) = print x/*0:101*/+"<:"+print y/*0:11*/;
 print x/*0:1*/ = str x/*0:1*/;
-tests = puts "*** UNARY ***"$$do (\f/*0:*/ -> listmap (\x/*0:*/ -> test (f/*1:*/,x/*0:*/) {
-  rule #0: x = test (f,x)
+tests = puts "*** UNARY ***"$$do (\f/*0:1*/ -> listmap (\x/*0:1*/ -> test (f/*1:1*/,x/*0:1*/) {
+  rule #0: _ x = test (f,x)
   state 0: #0
 	<var> state 1
   state 1: #0
 }) x {
-  rule #0: f = listmap (\x -> test (f,x)) x
+  rule #0: _ f = listmap (\x -> test (f,x)) x
   state 0: #0
 	<var> state 1
   state 1: #0
-}) f$$puts "*** BINARY ***"$$do (\f/*0:*/ -> listmap (\x/*0:*/ -> test (f/*1:*/,x/*0:*/) {
-  rule #0: x = test (f,x)
+}) f$$puts "*** BINARY ***"$$do (\f/*0:1*/ -> listmap (\x/*0:1*/ -> test (f/*1:1*/,x/*0:1*/) {
+  rule #0: _ x = test (f,x)
   state 0: #0
 	<var> state 1
   state 1: #0
 }) x2 {
-  rule #0: f = listmap (\x -> test (f,x)) x2
+  rule #0: _ f = listmap (\x -> test (f,x)) x2
   state 0: #0
 	<var> state 1
   state 1: #0

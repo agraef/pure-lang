@@ -71,15 +71,19 @@ EXPR::~EXPR()
     if (x) x->del();
     break;
   }
-  case LAMBDA:
+  case COND1:
     if (data.x[0]) data.x[0]->del();
     if (data.x[1]) data.x[1]->del();
-    if (m) delete m;
     break;
   case COND:
     if (data.x[0]) data.x[0]->del();
     if (data.x[1]) data.x[1]->del();
     if (data.x[2]) data.x[2]->del();
+    break;
+  case LAMBDA:
+    if (data.l.xs) delete data.l.xs;
+    if (data.l.r) delete data.l.r;
+    if (m) delete m;
     break;
   case MATRIX:
     if (data.xs) delete data.xs;
@@ -129,9 +133,15 @@ void expr::debug(const string &msg)
   if (p) cout << msg << ": " << *this << endl;
 }
 
-expr expr::lambda(expr arg, expr body)
+expr expr::lambda(exprl *args, expr body)
 {
-  return expr(EXPR::LAMBDA, arg, body);
+  assert(!args->empty());
+  // create a fake lhs
+  expr lhs(interpreter::g_interp->symtab.checksym("_").f);
+  for (exprl::const_iterator it = args->begin(), end = args->end();
+       it != end; ++it)
+    lhs = expr(lhs, *it);
+  return expr(EXPR::LAMBDA, args, new rule(lhs, body));
 }
 
 expr expr::cond(expr x, expr y, expr z)

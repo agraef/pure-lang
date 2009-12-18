@@ -600,6 +600,7 @@ public:
 		    prec_t min);
   expr *mkcond_expr(expr *x, expr *y, expr *z);
   expr *mkcond1_expr(expr *x, expr *y);
+  expr lambda_expr(exprl *args, expr body);
   expr *mklambda_expr(exprl *args, expr *body);
   expr *mkcase_expr(expr *x, rulel *rules);
   expr *mkwhen_expr(expr *x, rulel *rules);

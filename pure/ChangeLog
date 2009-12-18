@@ -1,3 +1,19 @@
+2009-12-18  Albert Graef  <Dr.Graef@t-online.de>
+
+	* interpreter.cc/hh, expr.cc/hh, printer.cc: Add support for
+	proper multiple argument lambdas. Thus a multiarg lambda like
+	'\x y z -> x*y+z' is now roughly equivalent to a local function
+	'f with f x y z = x*y+z end' rather than being reduced to nested
+	single-argument lambdas.
+
+	As discussed on the mailing list, this has the advantage that
+	'nargs' now reports the proper argument count. It is also more
+	efficient because a multiarg lambda is now executed as a single
+	function call. OTOH, it means that multiarg lambdas are now
+	subject to the same linearity constraints as named functions, thus
+	'\x x->x*x' is now an error rather than being equivalent to
+	'\y x->x*x'.
+
 2009-12-16  Albert Graef  <Dr.Graef@t-online.de>
 
 	* interpreter.cc (compiler): Make sure that we always include the

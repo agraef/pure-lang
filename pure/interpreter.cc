@@ -1988,8 +1988,8 @@ void interpreter::compile(expr x)
   case EXPR::LAMBDA: {
     matcher *&m = x.pm();
     assert(m == 0);
-    m = new matcher(rule(x.xval1(), x.xval2()));
-    compile(x.xval2());
+    m = new matcher(x.lrule(), x.largs()->size()+1);
+    compile(x.lrule().rhs);
     break;
   }
   case EXPR::CASE: {
@@ -2559,7 +2559,7 @@ expr interpreter::bind(env& vars, expr x, bool b, path p)
   expr y;
   switch (x.tag()) {
   case EXPR::VAR: {
-    // previously bound variable (successor rule)
+    // previously bound variable (e.g., successor rule)
     const symbol& sym = symtab.sym(x.vtag());
     if (sym.s != "_") { // '_' = anonymous variable
       assert(p == x.vpath());
@@ -2784,8 +2784,8 @@ expr interpreter::subst(const env& vars, expr x, uint8_t idx)
   case EXPR::LAMBDA: {
     if (++idx == 0)
       throw err("error in expression (too many nested closures)");
-    expr u = x.xval1(), v = subst(vars, x.xval2(), idx);
-    return expr::lambda(u, v);
+    exprl *u = x.largs(); expr v = subst(vars, x.lrule().rhs, idx);
+    return expr::lambda(new exprl(*u), v);
   }
   case EXPR::CASE: {
     expr u = subst(vars, x.xval(), idx);
@@ -2915,8 +2915,8 @@ expr interpreter::fsubst(const env& funs, expr x, uint8_t idx)
   case EXPR::LAMBDA: {
     if (++idx == 0)
       throw err("error in expression (too many nested closures)");
-    expr u = x.xval1(), v = fsubst(funs, x.xval2(), idx);
-    return expr::lambda(u, v);
+    exprl *u = x.largs(); expr v = fsubst(funs, x.lrule().rhs, idx);
+    return expr::lambda(new exprl(*u), v);
   }
   case EXPR::CASE: {
     expr u = fsubst(funs, x.xval(), idx);
@@ -3159,8 +3159,8 @@ expr interpreter::csubst(expr x, bool quote)
   }
   // nested closures:
   case EXPR::LAMBDA: {
-    expr u = x.xval1(), v = csubst(x.xval2());
-    return expr::lambda(u, v);
+    exprl *u = x.largs(); expr v = csubst(x.lrule().rhs);
+    return expr::lambda(new exprl(*u), v);
   }
   case EXPR::CASE: {
     expr u = csubst(x.xval());
@@ -3365,8 +3365,8 @@ expr interpreter::macsubst(expr x, bool quote)
   }
   // nested closures:
   case EXPR::LAMBDA: {
-    expr u = x.xval1(), v = macsubst(x.xval2());
-    return expr::lambda(u, v);
+    exprl *u = x.largs(); expr v = macsubst(x.lrule().rhs);
+    return expr::lambda(new exprl(*u), v);
   }
   case EXPR::CASE: {
     expr u = macsubst(x.xval());
@@ -3491,8 +3491,8 @@ expr interpreter::varsubst(expr x, uint8_t offs, uint8_t idx)
   case EXPR::LAMBDA: {
     if (++idx == 0)
       throw err("error in expression (too many nested closures)");
-    expr u = x.xval1(), v = varsubst(x.xval2(), offs, idx);
-    return expr::lambda(u, v);
+    exprl *u = x.largs(); expr v = varsubst(x.lrule().rhs, offs, idx);
+    return expr::lambda(new exprl(*u), v);
   }
   case EXPR::CASE: {
     expr u = varsubst(x.xval(), offs, idx);
@@ -3635,8 +3635,8 @@ expr interpreter::macred(expr x, expr y, uint8_t idx)
   case EXPR::LAMBDA: {
     if (++idx == 0)
       throw err("error in expression (too many nested closures)");
-    expr u = y.xval1(), v = macred(x, y.xval2(), idx);
-    return expr::lambda(u, v);
+    exprl *u = x.largs(); expr v = macred(x, y.lrule().rhs, idx);
+    return expr::lambda(new exprl(*u), v);
   }
   case EXPR::CASE: {
     expr u = macred(x, y.xval(), idx);
@@ -3981,34 +3981,33 @@ expr *interpreter::mkcond1_expr(expr *x, expr *y)
   return u;
 }
 
-static inline expr lambda_expr(interpreter& interp, expr arg, expr body)
+expr interpreter::lambda_expr(exprl *args, expr body)
 {
-  interp.closure(arg, body);
-  return expr::lambda(arg, body);
-}
-
-static expr lambda_expr(interpreter& interp, 
-			exprl::iterator it, exprl::iterator end, expr body)
-{
-  if (it == end)
-    return body;
-  else {
-    expr arg = *it;
-    return lambda_expr(interp, arg, lambda_expr(interp, ++it, end, body));
+  try {
+    expr x(expr::lambda(args, body));
+    closure(x.lrule());
+    // rebuild the argument list
+    size_t n = args->size();
+    args->clear();
+    for (expr y = x.lrule().lhs; n>0; y = y.xval1(), n--)
+      args->push_front(y.xval2());
+    return x;
+  } catch (err &e) {
+    throw e;
+    return expr(); // not reached
   }
 }
 
 expr *interpreter::mklambda_expr(exprl *args, expr *body)
 {
-  assert(!args->empty());
   expr *x;
   try {
-    x = new expr(lambda_expr(*this, args->begin(), args->end(), *body));
+    x = new expr(lambda_expr(args, *body));
   } catch (err &e) {
-    delete args; delete body;
+    delete body;
     throw e;
   }
-  delete args; delete body;
+  delete body;
   return x;
 }
 
@@ -4112,13 +4111,13 @@ expr interpreter::mklistcomp_expr(expr x, comp_clause_list::iterator cs,
       return expr::cond(p, mklistcomp_expr(x, next_cs, end), expr::nil());
     } else if (next_cs == end) {
       expr pat = c.first, arg = c.second;
-      closure(pat, x);
-      return expr(symtab.listmap_sym().x, expr::lambda(pat, x), arg);
+      return
+	expr(symtab.listmap_sym().x, lambda_expr(new exprl(1, pat), x), arg);
     } else {
       expr pat = c.first, body = mklistcomp_expr(x, next_cs, end),
 	arg = c.second;
-      closure(pat, body);
-      return expr(symtab.catmap_sym().x, expr::lambda(pat, body), arg);
+      return
+	expr(symtab.catmap_sym().x, lambda_expr(new exprl(1, pat), body), arg);
     }
   }
 }
@@ -4147,15 +4146,13 @@ expr interpreter::mkmatcomp_expr(expr x, size_t n,
 			expr(EXPR::MATRIX, new exprll));
     } else if (next_cs == end) {
       expr pat = c.first, arg = c.second;
-      closure(pat, x);
       expr f = (n&1)?symtab.colmap_sym().x:symtab.rowmap_sym().x;
-      return expr(f, expr::lambda(pat, x), arg);
+      return expr(f, lambda_expr(new exprl(1, pat), x), arg);
     } else {
       expr pat = c.first, body = mkmatcomp_expr(x, n-1, next_cs, end),
 	arg = c.second;
-      closure(pat, body);
       expr f = (n&1)?symtab.colcatmap_sym().x:symtab.rowcatmap_sym().x;
-      return expr(f, expr::lambda(pat, body), arg);
+      return expr(f, lambda_expr(new exprl(1, pat), body), arg);
     }
   }
 }
@@ -5341,9 +5338,9 @@ void Env::build_map(expr x)
   case EXPR::LAMBDA: {
     push("lambda");
     Env* eptr = fmap.act()[-x.hash()] =
-      new Env(0, 0, 1, x.xval2(), true, true);
+      new Env(0, 0, x.largs()->size(), x.lrule().rhs, false, true);
     Env& e = *eptr;
-    e.build_map(x.xval2()); e.promote_map();
+    e.build_map(x.lrule().rhs); e.promote_map();
     pop();
     break;
   }

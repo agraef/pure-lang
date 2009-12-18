@@ -209,8 +209,12 @@ struct EXPR {
       path   *p;    // subterm path (VAR)
       uint8_t idx;  // de Bruin index
     } v;
-    EXPR   *x[3]; // APP, LAMBDA, COND, COND1
+    EXPR   *x[3]; // APP, COND, COND1
     exprll *xs;   // MATRIX
+    struct {      // LAMBDA
+      exprl *xs;  // arguments
+      rule  *r;   // rule (r->rhs is body)
+    } l;
     struct {	  // CASE, WHEN, WITH
       EXPR  *x;   // expression
       union {
@@ -269,8 +273,11 @@ struct EXPR {
     data.x[2] = newref(_arg3); }
   EXPR(int32_t _tag, EXPR *_arg1, EXPR *_arg2) :
     refc(0), tag(_tag), m(0), flags(0), ttag(0), astag(0), aspath(0)
-  { assert(_tag == LAMBDA || _tag == COND1);
+  { assert(_tag == COND1);
     data.x[0] = newref(_arg1); data.x[1] = newref(_arg2); }
+  EXPR(int32_t _tag, exprl *_xs, rule *_r) :
+    refc(0), tag(_tag), m(0), flags(0), ttag(0), astag(0), aspath(0)
+  { assert(_tag == LAMBDA); data.l.xs = _xs; data.l.r = _r; }
   EXPR(int32_t _tag, EXPR *_arg, rulel *_rules) :
     refc(0), tag(_tag), m(0), flags(0), ttag(0), astag(0), aspath(0)
   { assert(_tag == CASE || _tag == WHEN);
@@ -349,6 +356,8 @@ public:
     p(new EXPR(tag, &*arg1, &*arg2)) { p->incref(); }
   expr(int32_t tag, expr arg1, expr arg2, expr arg3) :
     p(new EXPR(tag, &*arg1, &*arg2, &*arg3)) { p->incref(); }
+  expr(int32_t tag, exprl *args, rule *r) :
+    p(new EXPR(tag, args, r)) { p->incref(); }
   expr(int32_t tag, expr arg, rulel *rules) :
     p(new EXPR(tag, &*arg, rules)) { p->incref(); }
   expr(int32_t tag, expr arg, env *e) :
@@ -363,7 +372,7 @@ public:
     p(new EXPR(&*fun, &*arg1, &*arg2, &*arg3)) { p->incref(); }
 
   // static methods to generate special types of expressions
-  static expr lambda(expr x, expr y);
+  static expr lambda(exprl *xs, expr y);
   static expr cond(expr x, expr y, expr z);
   static expr cond1(expr x, expr y);
   static expr cases(expr x, rulel *rules);
@@ -404,16 +413,18 @@ public:
                            return p->data.p; }
   expr     xval1() const { assert(p->tag == EXPR::APP ||
 				  p->tag == EXPR::COND ||
-				  p->tag == EXPR::COND1 ||
-				  p->tag == EXPR::LAMBDA);
+				  p->tag == EXPR::COND1);
                            return expr(p->data.x[0]); }
   expr     xval2() const { assert(p->tag == EXPR::APP ||
 				  p->tag == EXPR::COND ||
-				  p->tag == EXPR::COND1 ||
-				  p->tag == EXPR::LAMBDA);
+				  p->tag == EXPR::COND1);
                            return expr(p->data.x[1]); }
   expr     xval3() const { assert(p->tag == EXPR::COND);
                            return expr(p->data.x[2]); }
+  exprl   *largs() const { assert(p->tag == EXPR::LAMBDA);
+                           return p->data.l.xs; }
+  rule    &lrule() const { assert(p->tag == EXPR::LAMBDA);
+                           return *p->data.l.r; }
   expr     xval()  const { assert(p->tag == EXPR::CASE ||
 				  p->tag == EXPR::WHEN ||
 				  p->tag == EXPR::WITH);
@@ -509,10 +520,10 @@ public:
     } else
       return false;
   }
-  bool is_lambda(expr &x, expr &y, matcher *&m) const
+  bool is_lambda(exprl *&xs, rule *&r, matcher *&m) const
   { if (p->tag == EXPR::LAMBDA) {
-      x = expr(p->data.x[0]);
-      y = expr(p->data.x[1]);
+      xs = p->data.l.xs;
+      r = p->data.l.r;
       m = p->m;
       return true;
     } else

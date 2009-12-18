@@ -88,23 +88,20 @@ nargs (foo x y);
 0
 nargs (foo x y z);
 -1
-bar = \x/*0:*/ -> \y/*0:*/ -> x/*1:*/*y/*0:*/ {
-  rule #0: y = x*y
+bar = \x/*0:01*/ y/*0:1*/ -> x/*0:01*/*y/*0:1*/ {
+  rule #0: _ x y = x*y
   state 0: #0
 	<var> state 1
   state 1: #0
-} {
-  rule #0: x = \y -> x*y
-  state 0: #0
-	<var> state 1
-  state 1: #0
+	<var> state 2
+  state 2: #0
 };
 {
-  rule #0: bar = \x -> \y -> x*y
+  rule #0: bar = \x y -> x*y
   state 0: #0
 }
 nargs bar;
-1
+2
 nargs (bar x);
 1
 nargs (bar x y);

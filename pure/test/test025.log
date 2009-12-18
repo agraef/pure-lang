@@ -170,8 +170,8 @@ dmatrix (0.0..10.0);
 {0.0,1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0}
 imatrix (0..10);
 {0,1,2,3,4,5,6,7,8,9,10}
-cmatrix (listmap (\x/*0:*/ -> x/*0:*/+:0 {
-  rule #0: x = x+:0
+cmatrix (listmap (\x/*0:1*/ -> x/*0:1*/+:0 {
+  rule #0: _ x = x+:0
   state 0: #0
 	<var> state 1
   state 1: #0
@@ -183,8 +183,8 @@ dmatrixp (dmatrix (0.0..10.0));
 1
 imatrixp (imatrix (0..10));
 1
-cmatrixp (cmatrix (listmap (\x/*0:*/ -> x/*0:*/+:0 {
-  rule #0: x = x+:0
+cmatrixp (cmatrix (listmap (\x/*0:1*/ -> x/*0:1*/+:0 {
+  rule #0: _ x = x+:0
   state 0: #0
 	<var> state 1
   state 1: #0
@@ -459,8 +459,8 @@ dim x==reverse (dim y);
 let z = double_matrix_view (2,6) (pointer x);
 z;
 {1.0,0.0,2.0,0.0,3.0,0.0;4.0,0.0,5.0,0.0,6.0,0.0}
-cat (listmap (\(a/*0:01*/+:b/*0:1*/) -> [a/*0:01*/,b/*0:1*/] {
-  rule #0: a+:b = [a,b]
+cat (listmap (\(a/*0:101*/+:b/*0:11*/) -> [a/*0:101*/,b/*0:11*/] {
+  rule #0: _ (a+:b) = [a,b]
   state 0: #0
 	<app> state 1
   state 1: #0
@@ -578,8 +578,8 @@ let x = dmatrix {1,2,3;4,5,6};
 	<var> state 1
   state 1: #0
 }
-let f = \a/*0:*/ -> a/*0:*/ {
-  rule #0: a = a
+let f = \a/*0:1*/ -> a/*0:1*/ {
+  rule #0: _ a = a
   state 0: #0
 	<var> state 1
   state 1: #0
@@ -603,8 +603,8 @@ list y==map f (list x)&&dmatrixp y;
 	<var> state 1
   state 1: #0
 }
-let f = \a/*0:*/ -> int a/*0:*/ {
-  rule #0: a = int a
+let f = \a/*0:1*/ -> int a/*0:1*/ {
+  rule #0: _ a = int a
   state 0: #0
 	<var> state 1
   state 1: #0
@@ -628,8 +628,8 @@ list y==map f (list x)&&imatrixp y;
 	<var> state 1
   state 1: #0
 }
-let f = \a/*0:*/ -> if a/*0:*/<2 then a/*0:*/ else "a" {
-  rule #0: a = if a<2 then a else "a"
+let f = \a/*0:1*/ -> if a/*0:1*/<2 then a/*0:1*/ else "a" {
+  rule #0: _ a = if a<2 then a else "a"
   state 0: #0
 	<var> state 1
   state 1: #0
@@ -653,8 +653,8 @@ list y==map f (list x)&&smatrixp y;
 	<var> state 1
   state 1: #0
 }
-let f = \a/*0:*/ -> if a/*0:*/>2 then a/*0:*/ else "a" {
-  rule #0: a = if a>2 then a else "a"
+let f = \a/*0:1*/ -> if a/*0:1*/>2 then a/*0:1*/ else "a" {
+  rule #0: _ a = if a>2 then a else "a"
   state 0: #0
 	<var> state 1
   state 1: #0
@@ -730,8 +730,8 @@ y==foldr1 (+) (list x);
 	<var> state 1
   state 1: #0
 }
-let f = \a/*0:*/ -> a/*0:*/<4 {
-  rule #0: a = a<4
+let f = \a/*0:1*/ -> a/*0:1*/<4 {
+  rule #0: _ a = a<4
   state 0: #0
 	<var> state 1
   state 1: #0
@@ -750,21 +750,18 @@ y;
 list y==filter f (list x);
 1
 {
-  rule #0: f = \i -> \j -> i+j+1.0
+  rule #0: f = \i j -> i+j+1.0
   state 0: #0
 	<var> state 1
   state 1: #0
 }
-let f = \i/*0:*/ -> \j/*0:*/ -> i/*1:*/+j/*0:*/+1.0 {
-  rule #0: j = i+j+1.0
+let f = \i/*0:01*/ j/*0:1*/ -> i/*0:01*/+j/*0:1*/+1.0 {
+  rule #0: _ i j = i+j+1.0
   state 0: #0
 	<var> state 1
   state 1: #0
-} {
-  rule #0: i = \j -> i+j+1.0
-  state 0: #0
-	<var> state 1
-  state 1: #0
+	<var> state 2
+  state 2: #0
 };
 {
   rule #0: y = scanl f 0.0 x
@@ -780,21 +777,18 @@ y;
 list y==scanl f 0.0 (list x);
 1
 {
-  rule #0: f = \i -> \j -> if doublep i then str (i+j) else 1.0
+  rule #0: f = \i j -> if doublep i then str (i+j) else 1.0
   state 0: #0
 	<var> state 1
   state 1: #0
 }
-let f = \i/*0:*/ -> \j/*0:*/ -> if doublep i/*1:*/ then str (i/*1:*/+j/*0:*/) else 1.0 {
-  rule #0: j = if doublep i then str (i+j) else 1.0
+let f = \i/*0:01*/ j/*0:1*/ -> if doublep i/*0:01*/ then str (i/*0:01*/+j/*0:1*/) else 1.0 {
+  rule #0: _ i j = if doublep i then str (i+j) else 1.0
   state 0: #0
 	<var> state 1
   state 1: #0
-} {
-  rule #0: i = \j -> if doublep i then str (i+j) else 1.0
-  state 0: #0
-	<var> state 1
-  state 1: #0
+	<var> state 2
+  state 2: #0
 };
 {
   rule #0: y = scanl f 0.0 x
@@ -810,21 +804,18 @@ y;
 list y==scanl f 0.0 (list x);
 1
 {
-  rule #0: f = \i -> \j -> i+j+1.0
+  rule #0: f = \i j -> i+j+1.0
   state 0: #0
 	<var> state 1
   state 1: #0
 }
-let f = \i/*0:*/ -> \j/*0:*/ -> i/*1:*/+j/*0:*/+1.0 {
-  rule #0: j = i+j+1.0
+let f = \i/*0:01*/ j/*0:1*/ -> i/*0:01*/+j/*0:1*/+1.0 {
+  rule #0: _ i j = i+j+1.0
   state 0: #0
 	<var> state 1
   state 1: #0
-} {
-  rule #0: i = \j -> i+j+1.0
-  state 0: #0
-	<var> state 1
-  state 1: #0
+	<var> state 2
+  state 2: #0
 };
 {
   rule #0: y = scanl1 f x
@@ -840,21 +831,18 @@ y;
 list y==scanl1 f (list x);
 1
 {
-  rule #0: f = \i -> \j -> if doublep i then str (i+j) else 1.0
+  rule #0: f = \i j -> if doublep i then str (i+j) else 1.0
   state 0: #0
 	<var> state 1
   state 1: #0
 }
-let f = \i/*0:*/ -> \j/*0:*/ -> if doublep i/*1:*/ then str (i/*1:*/+j/*0:*/) else 1.0 {
-  rule #0: j = if doublep i then str (i+j) else 1.0
+let f = \i/*0:01*/ j/*0:1*/ -> if doublep i/*0:01*/ then str (i/*0:01*/+j/*0:1*/) else 1.0 {
+  rule #0: _ i j = if doublep i then str (i+j) else 1.0
   state 0: #0
 	<var> state 1
   state 1: #0
-} {
-  rule #0: i = \j -> if doublep i then str (i+j) else 1.0
-  state 0: #0
-	<var> state 1
-  state 1: #0
+	<var> state 2
+  state 2: #0
 };
 {
   rule #0: y = scanl1 f x
@@ -870,21 +858,18 @@ y;
 list y==scanl1 f (list x);
 1
 {
-  rule #0: f = \i -> \j -> i+j+1.0
+  rule #0: f = \i j -> i+j+1.0
   state 0: #0
 	<var> state 1
   state 1: #0
 }
-let f = \i/*0:*/ -> \j/*0:*/ -> i/*1:*/+j/*0:*/+1.0 {
-  rule #0: j = i+j+1.0
+let f = \i/*0:01*/ j/*0:1*/ -> i/*0:01*/+j/*0:1*/+1.0 {
+  rule #0: _ i j = i+j+1.0
   state 0: #0
 	<var> state 1
   state 1: #0
-} {
-  rule #0: i = \j -> i+j+1.0
-  state 0: #0
-	<var> state 1
-  state 1: #0
+	<var> state 2
+  state 2: #0
 };
 {
   rule #0: y = scanr f 0.0 x
@@ -900,21 +885,18 @@ y;
 list y==scanr f 0.0 (list x);
 1
 {
-  rule #0: f = \i -> \j -> if doublep j then str (i+j) else 1.0
+  rule #0: f = \i j -> if doublep j then str (i+j) else 1.0
   state 0: #0
 	<var> state 1
   state 1: #0
 }
-let f = \i/*0:*/ -> \j/*0:*/ -> if doublep j/*0:*/ then str (i/*1:*/+j/*0:*/) else 1.0 {
-  rule #0: j = if doublep j then str (i+j) else 1.0
+let f = \i/*0:01*/ j/*0:1*/ -> if doublep j/*0:1*/ then str (i/*0:01*/+j/*0:1*/) else 1.0 {
+  rule #0: _ i j = if doublep j then str (i+j) else 1.0
   state 0: #0
 	<var> state 1
   state 1: #0
-} {
-  rule #0: i = \j -> if doublep j then str (i+j) else 1.0
-  state 0: #0
-	<var> state 1
-  state 1: #0
+	<var> state 2
+  state 2: #0
 };
 {
   rule #0: y = scanr f 0.0 x
@@ -930,21 +912,18 @@ y;
 list y==scanr f 0.0 (list x);
 1
 {
-  rule #0: f = \i -> \j -> i+j+1.0
+  rule #0: f = \i j -> i+j+1.0
   state 0: #0
 	<var> state 1
   state 1: #0
 }
-let f = \i/*0:*/ -> \j/*0:*/ -> i/*1:*/+j/*0:*/+1.0 {
-  rule #0: j = i+j+1.0
+let f = \i/*0:01*/ j/*0:1*/ -> i/*0:01*/+j/*0:1*/+1.0 {
+  rule #0: _ i j = i+j+1.0
   state 0: #0
 	<var> state 1
   state 1: #0
-} {
-  rule #0: i = \j -> i+j+1.0
-  state 0: #0
-	<var> state 1
-  state 1: #0
+	<var> state 2
+  state 2: #0
 };
 {
   rule #0: y = scanr1 f x
@@ -960,21 +939,18 @@ y;
 list y==scanr1 f (list x);
 1
 {
-  rule #0: f = \i -> \j -> if doublep j then str (i+j) else 1.0
+  rule #0: f = \i j -> if doublep j then str (i+j) else 1.0
   state 0: #0
 	<var> state 1
   state 1: #0
 }
-let f = \i/*0:*/ -> \j/*0:*/ -> if doublep j/*0:*/ then str (i/*1:*/+j/*0:*/) else 1.0 {
-  rule #0: j = if doublep j then str (i+j) else 1.0
+let f = \i/*0:01*/ j/*0:1*/ -> if doublep j/*0:1*/ then str (i/*0:01*/+j/*0:1*/) else 1.0 {
+  rule #0: _ i j = if doublep j then str (i+j) else 1.0
   state 0: #0
 	<var> state 1
   state 1: #0
-} {
-  rule #0: i = \j -> if doublep j then str (i+j) else 1.0
-  state 0: #0
-	<var> state 1
-  state 1: #0
+	<var> state 2
+  state 2: #0
 };
 {
   rule #0: y = scanr1 f x
@@ -1002,8 +978,8 @@ let x = imatrix {1,2,3;4,5,6};
 	<var> state 1
   state 1: #0
 }
-let f = \a/*0:*/ -> a/*0:*/ {
-  rule #0: a = a
+let f = \a/*0:1*/ -> a/*0:1*/ {
+  rule #0: _ a = a
   state 0: #0
 	<var> state 1
   state 1: #0
@@ -1027,8 +1003,8 @@ list y==map f (list x)&&imatrixp y;
 	<var> state 1
   state 1: #0
 }
-let f = \a/*0:*/ -> double a/*0:*/ {
-  rule #0: a = double a
+let f = \a/*0:1*/ -> double a/*0:1*/ {
+  rule #0: _ a = double a
   state 0: #0
 	<var> state 1
   state 1: #0
@@ -1052,8 +1028,8 @@ list y==map f (list x)&&dmatrixp y;
 	<var> state 1
   state 1: #0
 }
-let f = \a/*0:*/ -> if a/*0:*/<2 then a/*0:*/ else "a" {
-  rule #0: a = if a<2 then a else "a"
+let f = \a/*0:1*/ -> if a/*0:1*/<2 then a/*0:1*/ else "a" {
+  rule #0: _ a = if a<2 then a else "a"
   state 0: #0
 	<var> state 1
   state 1: #0
@@ -1077,8 +1053,8 @@ list y==map f (list x)&&smatrixp y;
 	<var> state 1
   state 1: #0
 }
-let f = \a/*0:*/ -> if a/*0:*/>2 then a/*0:*/ else "a" {
-  rule #0: a = if a>2 then a else "a"
+let f = \a/*0:1*/ -> if a/*0:1*/>2 then a/*0:1*/ else "a" {
+  rule #0: _ a = if a>2 then a else "a"
   state 0: #0
 	<var> state 1
   state 1: #0
@@ -1128,8 +1104,8 @@ y==foldr (:) [] (list x);
 	<var> state 1
   state 1: #0
 }
-let f = \a/*0:*/ -> a/*0:*/<4 {
-  rule #0: a = a<4
+let f = \a/*0:1*/ -> a/*0:1*/<4 {
+  rule #0: _ a = a<4
   state 0: #0
 	<var> state 1
   state 1: #0
@@ -1148,21 +1124,18 @@ y;
 list y==filter f (list x);
 1
 {
-  rule #0: f = \i -> \j -> i+j+1
+  rule #0: f = \i j -> i+j+1
   state 0: #0
 	<var> state 1
   state 1: #0
 }
-let f = \i/*0:*/ -> \j/*0:*/ -> i/*1:*/+j/*0:*/+1 {
-  rule #0: j = i+j+1
+let f = \i/*0:01*/ j/*0:1*/ -> i/*0:01*/+j/*0:1*/+1 {
+  rule #0: _ i j = i+j+1
   state 0: #0
 	<var> state 1
   state 1: #0
-} {
-  rule #0: i = \j -> i+j+1
-  state 0: #0
-	<var> state 1
-  state 1: #0
+	<var> state 2
+  state 2: #0
 };
 {
   rule #0: y = scanl f 0 x
@@ -1178,21 +1151,18 @@ y;
 list y==scanl f 0 (list x);
 1
 {
-  rule #0: f = \i -> \j -> i+j+1
+  rule #0: f = \i j -> i+j+1
   state 0: #0
 	<var> state 1
   state 1: #0
 }
-let f = \i/*0:*/ -> \j/*0:*/ -> i/*1:*/+j/*0:*/+1 {
-  rule #0: j = i+j+1
+let f = \i/*0:01*/ j/*0:1*/ -> i/*0:01*/+j/*0:1*/+1 {
+  rule #0: _ i j = i+j+1
   state 0: #0
 	<var> state 1
   state 1: #0
-} {
-  rule #0: i = \j -> i+j+1
-  state 0: #0
-	<var> state 1
-  state 1: #0
+	<var> state 2
+  state 2: #0
 };
 {
   rule #0: y = scanl f 0 x
@@ -1208,21 +1178,18 @@ y;
 list y==scanl f 0 (list x);
 1
 {
-  rule #0: f = \i -> \j -> i+j+1
+  rule #0: f = \i j -> i+j+1
   state 0: #0
 	<var> state 1
   state 1: #0
 }
-let f = \i/*0:*/ -> \j/*0:*/ -> i/*1:*/+j/*0:*/+1 {
-  rule #0: j = i+j+1
+let f = \i/*0:01*/ j/*0:1*/ -> i/*0:01*/+j/*0:1*/+1 {
+  rule #0: _ i j = i+j+1
   state 0: #0
 	<var> state 1
   state 1: #0
-} {
-  rule #0: i = \j -> i+j+1
-  state 0: #0
-	<var> state 1
-  state 1: #0
+	<var> state 2
+  state 2: #0
 };
 {
   rule #0: y = scanr f 0 x
@@ -1244,8 +1211,8 @@ let x = {"1","2","3";"aa","bb","cc"};
 	<var> state 1
   state 1: #0
 }
-let f = \_/*0:*/ -> 1.0 {
-  rule #0: _ = 1.0
+let f = \_/*0:1*/ -> 1.0 {
+  rule #0: _ _ = 1.0
   state 0: #0
 	<var> state 1
   state 1: #0
@@ -1269,8 +1236,8 @@ list y==map f (list x)&&dmatrixp y;
 	<var> state 1
   state 1: #0
 }
-let f = \_/*0:*/ -> 1 {
-  rule #0: _ = 1
+let f = \_/*0:1*/ -> 1 {
+  rule #0: _ _ = 1
   state 0: #0
 	<var> state 1
   state 1: #0
@@ -1294,8 +1261,8 @@ list y==map f (list x)&&imatrixp y;
 	<var> state 1
   state 1: #0
 }
-let f = \a/*0:*/ -> a/*0:*/ {
-  rule #0: a = a
+let f = \a/*0:1*/ -> a/*0:1*/ {
+  rule #0: _ a = a
   state 0: #0
 	<var> state 1
   state 1: #0
@@ -1345,8 +1312,8 @@ y==foldr (+) "0" (list x);
 	<var> state 1
   state 1: #0
 }
-let f = \a/*0:*/ -> #a/*0:*/==1 {
-  rule #0: a = #a==1
+let f = \a/*0:1*/ -> #a/*0:1*/==1 {
+  rule #0: _ a = #a==1
   state 0: #0
 	<var> state 1
   state 1: #0
@@ -1390,15 +1357,15 @@ y;
 {"123aabbcc","23aabbcc","3aabbcc","aabbcc","bbcc","cc",""}
 list y==scanr (+) "" (list x);
 1
-all (\x/*0:*/ -> x/*0:*/>0 {
-  rule #0: x = x>0
+all (\x/*0:1*/ -> x/*0:1*/>0 {
+  rule #0: _ x = x>0
   state 0: #0
 	<var> state 1
   state 1: #0
 }) {};
 1
-any (\x/*0:*/ -> x/*0:*/>0 {
-  rule #0: x = x>0
+any (\x/*0:1*/ -> x/*0:1*/>0 {
+  rule #0: _ x = x>0
   state 0: #0
 	<var> state 1
   state 1: #0
@@ -1452,59 +1419,59 @@ dim (zipwith (+) {a,b} (redim (0,2) {}));
 0,2
 dim (zipwith (+) (redim (0,2) {}) {a,b});
 0,2
-rowcatmap (\x/*0:*/ -> colmap (\y/*0:*/ -> x/*1:*/,y/*0:*/ {
-  rule #0: y = x,y
+rowcatmap (\x/*0:1*/ -> colmap (\y/*0:1*/ -> x/*1:1*/,y/*0:1*/ {
+  rule #0: _ y = x,y
   state 0: #0
 	<var> state 1
   state 1: #0
 }) [a,b] {
-  rule #0: x = colmap (\y -> x,y) [a,b]
+  rule #0: _ x = colmap (\y -> x,y) [a,b]
   state 0: #0
 	<var> state 1
   state 1: #0
 }) [1,2];
 {(1,a),(1,b);(2,a),(2,b)}
-rowcatmap (\x/*0:*/ -> colmap (\y/*0:*/ -> x/*1:*/,y/*0:*/ {
-  rule #0: y = x,y
+rowcatmap (\x/*0:1*/ -> colmap (\y/*0:1*/ -> x/*1:1*/,y/*0:1*/ {
+  rule #0: _ y = x,y
   state 0: #0
 	<var> state 1
   state 1: #0
 }) {a,b} {
-  rule #0: x = colmap (\y -> x,y) {a,b}
+  rule #0: _ x = colmap (\y -> x,y) {a,b}
   state 0: #0
 	<var> state 1
   state 1: #0
 }) {1;2};
 {(1,a),(1,b);(2,a),(2,b)}
-rowcatmap (\x/*0:*/ -> colmap (\y/*0:*/ -> x/*1:*/,y/*0:*/ {
-  rule #0: y = x,y
+rowcatmap (\x/*0:1*/ -> colmap (\y/*0:1*/ -> x/*1:1*/,y/*0:1*/ {
+  rule #0: _ y = x,y
   state 0: #0
 	<var> state 1
   state 1: #0
 }) {a,b} {
-  rule #0: x = colmap (\y -> x,y) {a,b}
+  rule #0: _ x = colmap (\y -> x,y) {a,b}
   state 0: #0
 	<var> state 1
   state 1: #0
-}) {1;2}===rowcatmap (\x/*0:*/ -> colmap (\y/*0:*/ -> x/*1:*/,y/*0:*/ {
-  rule #0: y = x,y
+}) {1;2}===rowcatmap (\x/*0:1*/ -> colmap (\y/*0:1*/ -> x/*1:1*/,y/*0:1*/ {
+  rule #0: _ y = x,y
   state 0: #0
 	<var> state 1
   state 1: #0
 }) [a,b] {
-  rule #0: x = colmap (\y -> x,y) [a,b]
+  rule #0: _ x = colmap (\y -> x,y) [a,b]
   state 0: #0
 	<var> state 1
   state 1: #0
 }) [1,2];
 1
-rowcatmap (\x/*0:*/ -> colmap (\y/*0:*/ -> x/*1:*/,y/*0:*/ {
-  rule #0: y = x,y
+rowcatmap (\x/*0:1*/ -> colmap (\y/*0:1*/ -> x/*1:1*/,y/*0:1*/ {
+  rule #0: _ y = x,y
   state 0: #0
 	<var> state 1
   state 1: #0
 }) {a,b;c,d} {
-  rule #0: x = colmap (\y -> x,y) {a,b;c,d}
+  rule #0: _ x = colmap (\y -> x,y) {a,b;c,d}
   state 0: #0
 	<var> state 1
   state 1: #0

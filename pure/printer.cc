@@ -502,8 +502,14 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
     }
   }
   case EXPR::LAMBDA: {
-    expr u = x.xval1(), v = x.xval2();
-    os << '\\' << paren(NPREC_MAX, u, true) << " -> " << v;
+    exprl *u = x.largs(); expr v = x.lrule().rhs;
+    os << '\\';
+    for (exprl::const_iterator it = u->begin(), begin = it, end = u->end();
+	 it != end; ++it) {
+      if (it != begin) os << ' ';
+      os << paren(NPREC_MAX, *it, true);
+    }
+    os << " -> " << v;
     if ((interpreter::g_verbose&verbosity::code) && x.pm())
       os << " " << *x.pm();
     return os;

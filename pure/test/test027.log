@@ -1,4 +1,4 @@
-test y/*0:1*/ = (\x/*0:*/ -> \b/*0:*/ -> case b/*0:*/ of () = 99; _/*0:*/ = x/*2:*/ {
+test y/*0:1*/ = (\x/*0:01*/ b/*0:1*/ -> case b/*0:1*/ of () = 99; _/*0:*/ = x/*1:01*/ {
   rule #0: () = 99
   rule #1: _ = x
   state 0: #0 #1
@@ -7,18 +7,15 @@ test y/*0:1*/ = (\x/*0:*/ -> \b/*0:*/ -> case b/*0:*/ of () = 99; _/*0:*/ = x/*2
   state 1: #1
   state 2: #0 #1
 } end {
-  rule #0: b = case b of () = 99; _ = x end
+  rule #0: _ x b = case b of () = 99; _ = x end
   state 0: #0
 	<var> state 1
   state 1: #0
-} {
-  rule #0: x = \b -> case b of () = 99; _ = x end
-  state 0: #0
-	<var> state 1
-  state 1: #0
+	<var> state 2
+  state 2: #0
 }) (1..3) y/*0:1*/;
 {
-  rule #0: test y = (\x -> \b -> case b of () = 99; _ = x end) (1..3) y
+  rule #0: test y = (\x b -> case b of () = 99; _ = x end) (1..3) y
   state 0: #0
 	<var> state 1
   state 1: #0
