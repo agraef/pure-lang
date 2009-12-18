@@ -75,7 +75,7 @@ symtable::symtable()
 {
   // enter any additional predefined symbols here, e.g.:
   //sym("-", 2100, infixl);
-  sym("_"); // anonymous variable
+  anon_sym = sym("_")->f; // anonymous variable
 }
 
 symtable::~symtable()

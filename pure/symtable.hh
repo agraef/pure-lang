@@ -163,7 +163,7 @@ public:
   { assert(f > 0 && (uint32_t)f < rtab.size());
     return visible(*rtab[f]); }
   // retrieve various builtin symbols (create when necessary)
-  int32_t __show__sym; // This is cached here to improve performance.
+  int32_t anon_sym, __show__sym; // Cached here to improve performance.
   symbol& locals_sym()
   { return *sym_p("__locals__", __locals_sym); }
   symbol& nil_sym();

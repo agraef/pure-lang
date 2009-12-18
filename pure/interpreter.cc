@@ -1928,12 +1928,12 @@ void interpreter::build_env(env& vars, expr x)
   assert(!x.is_null());
   if (x.astag() > 0) {
     const symbol& sym = symtab.sym(x.astag());
-    if (sym.s != "_") vars[sym.f] = env_info(0, x.aspath());
+    if (sym.f != symtab.anon_sym) vars[sym.f] = env_info(0, x.aspath());
   }
   switch (x.tag()) {
   case EXPR::VAR: {
     const symbol& sym = symtab.sym(x.vtag());
-    if (sym.s != "_") vars[sym.f] = env_info(x.ttag(), x.vpath());
+    if (sym.f != symtab.anon_sym) vars[sym.f] = env_info(x.ttag(), x.vpath());
     break;
   }
   case EXPR::APP:
@@ -2561,7 +2561,7 @@ expr interpreter::bind(env& vars, expr x, bool b, path p)
   case EXPR::VAR: {
     // previously bound variable (e.g., successor rule)
     const symbol& sym = symtab.sym(x.vtag());
-    if (sym.s != "_") { // '_' = anonymous variable
+    if (sym.f != symtab.anon_sym) { // '_' = anonymous variable
       assert(p == x.vpath());
       vars[sym.f] = env_info(x.ttag(), p);
     }
@@ -2612,7 +2612,7 @@ expr interpreter::bind(env& vars, expr x, bool b, path p)
     assert(x.tag() > 0);
     const symbol& sym = symtab.sym(x.tag());
     if ((!qual && (x.flags()&EXPR::QUAL)) ||
-	(sym.s != "_" &&
+	(sym.f != symtab.anon_sym &&
 	 (sym.prec < PREC_MAX || sym.fix == nonfix || sym.fix == outfix ||
 	  (p.len() == 0 && !b) || (p.len() > 0 && p.last() == 0)))) {
       // constant or constructor
@@ -2621,7 +2621,7 @@ expr interpreter::bind(env& vars, expr x, bool b, path p)
       y = x;
     } else {
       env::iterator it = vars.find(sym.f);
-      if (sym.s != "_") { // '_' = anonymous variable
+      if (sym.f != symtab.anon_sym) { // '_' = anonymous variable
 	if (it != vars.end())
 	  throw err("error in pattern (repeated variable '"+sym.s+"')");
 	vars[sym.f] = env_info(x.ttag(), p);
@@ -2633,7 +2633,7 @@ expr interpreter::bind(env& vars, expr x, bool b, path p)
   // check for "as" patterns
   if (x.astag() > 0) {
     const symbol& sym = symtab.sym(x.astag());
-    if (sym.s != "_") {
+    if (sym.f != symtab.anon_sym) {
       if ((!qual && (x.flags()&EXPR::ASQUAL)) ||
 	  sym.prec < PREC_MAX || sym.fix == nonfix || sym.fix == outfix)
 	throw err("error in  \"as\" pattern (bad variable symbol)");
@@ -3780,7 +3780,7 @@ expr *interpreter::mksym_expr(string *s, int32_t tag)
     if (*s == "_")
       // Return a new instance here, since the anonymous variable may have
       // multiple occurrences on the lhs.
-      x = new expr(sym.f);
+      x = new expr(symtab.anon_sym);
     else if (s->find("::") != string::npos) {
       // Return a new qualified instance here, so that we don't mistake this
       // for a lhs variable.
@@ -3793,9 +3793,9 @@ expr *interpreter::mksym_expr(string *s, int32_t tag)
     throw err("error in expression (misplaced type tag)");
   else if (tag > 0)
     if (*s == "_")
-      x = new expr(expr(tag), expr(symtab.sym("::_")->f));
+      x = new expr(expr(tag), expr(symtab.anon_sym));
     else
-      return mkas_expr(s, new expr(expr(tag), expr(symtab.sym("::_")->f)));
+      return mkas_expr(s, new expr(expr(tag), expr(symtab.anon_sym)));
   else {
     x = new expr(sym.f);
     if (s->find("::") != string::npos) x->flags() |= EXPR::QUAL;

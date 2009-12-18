@@ -137,7 +137,7 @@ expr expr::lambda(exprl *args, expr body)
 {
   assert(!args->empty());
   // create a fake lhs
-  expr lhs(interpreter::g_interp->symtab.checksym("_").f);
+  expr lhs(interpreter::g_interp->symtab.anon_sym);
   for (exprl::const_iterator it = args->begin(), end = args->end();
        it != end; ++it)
     lhs = expr(lhs, *it);
