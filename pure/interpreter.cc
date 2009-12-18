@@ -2537,13 +2537,6 @@ void interpreter::add_macro_rule(rule *r)
   delete r;
 }
 
-void interpreter::closure(expr& l, expr& r, bool b)
-{
-  env vars;
-  expr u = bind(vars, lcsubst(l), b), v = subst(vars, r);
-  l = u; r = v;
-}
-
 void interpreter::closure(rule& r, bool b)
 {
   env vars;

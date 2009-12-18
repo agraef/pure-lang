@@ -585,7 +585,6 @@ public:
   expr varsubst(expr x, uint8_t offs, uint8_t idx = 0);
   expr macred(expr x, expr y, uint8_t idx = 0);
   expr macval(expr x);
-  void closure(expr& l, expr& r, bool b = true);
   void closure(rule& r, bool b = true);
   expr uminop(expr op, expr x);
   expr *mklsect(expr *x, expr *y);
