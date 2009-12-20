@@ -50,6 +50,8 @@
 #define parser_action(task,cleanup) \
   try { task; }	catch (err &e) { cleanup; error(yyloc, e.what()); YYERROR; }
 
+#define dummy_expr expr(interp.symtab.anon_sym)
+
 using namespace std;
 
 class interpreter;
@@ -359,14 +361,16 @@ expr
 { parser_action($$ = interp.mksimple_expr($1), delete $1); }
 | '\\' args MAPSTO expr
 { try { $$ = interp.mklambda_expr($2, $4); }
-  catch (err &e) { interp.error(yyloc, e.what()); $$ = new expr; } }
+  catch (err &e) { interp.error(yyloc, e.what()); $$ = new dummy_expr; } }
 | CASE expr OF pat_rules END
-{ $$ = interp.mkcase_expr($2, new rulel($4->rl)); delete $4; }
+{ try { $$ = interp.mkcase_expr($2, new rulel($4->rl)); delete $4; }
+  catch (err &e) { interp.error(yyloc, e.what()); delete $4; $$ = new dummy_expr; } }
 | expr WHEN simple_rules END
 { try { $$ = interp.mkwhen_expr($1, $3); }
-  catch (err &e) { interp.error(yyloc, e.what()); $$ = new expr; } }
+  catch (err &e) { interp.error(yyloc, e.what()); $$ = new dummy_expr; } }
 | expr WITH rules END
-{ $$ = interp.mkwith_expr($1, new env($3->e)); delete $3; }
+{ try { $$ = interp.mkwith_expr($1, new env($3->e)); delete $3; }
+  catch (err &e) { interp.error(yyloc, e.what()); delete $3; $$ = new dummy_expr; } }
 | IF expr THEN expr ELSE expr
 { $$ = interp.mkcond_expr($2, $4, $6); }
 ;
@@ -400,12 +404,12 @@ prim
 : ID			{ try { $$ = interp.mksym_expr($1); }
 			  catch (err &e) {
 			    interp.error(yyloc, e.what());
-			    $$ = interp.mksym_expr(new string("_"));
+			    $$ = new dummy_expr;
 			  } }
 | ID TAG		{ try { $$ = interp.mksym_expr($1, $2); }
 			  catch (err &e) {
 			    interp.error(yyloc, e.what());
-			    $$ = interp.mksym_expr(new string("_"));
+			    $$ = new dummy_expr;
 			  } }
 | ID '@' prim		{ try { $$ = interp.mkas_expr($1, $3); }
 			  catch (err &e) {
@@ -587,8 +591,12 @@ qual_rhs
   if ($$->q) {
     $$->r = interp.mkcond1_expr($$->q, $$->r); $$->q = 0;
   }
-  expr *x = interp.mkwith_expr($$->r, new env($3->e)); delete $3;
-  $$->r = x;
+  try {
+    expr *x = interp.mkwith_expr($$->r, new env($3->e)); delete $3;
+    $$->r = x;
+  } catch (err &e) {
+    interp.error(yyloc, e.what());
+  }
 }
 ;
 
@@ -649,7 +657,7 @@ simple_rule
 : expr '=' expr
 { $$ = new rule(*$1, *$3); delete $1; delete $3; }
 | expr
-{ expr *x = interp.mksym_expr(new string("_"));
+{ expr *x = new expr(interp.symtab.anon_sym);
   $$ = new rule(*x, *$1); delete x; delete $1; }
 ;
 

@@ -4039,18 +4039,19 @@ expr *interpreter::mkcase_expr(expr *x, rulel *r)
 {
   expr *u;
   if (r->empty()) {
-    u = new expr(); delete r;
-  } else
+    u = x; delete r;
+  } else {
     u = new expr(expr::cases(*x, r));
-  delete x;
+    delete x;
+  }
   return u;
 }
 
 expr *interpreter::mkwhen_expr(expr *x, rulel *r)
 {
   if (r->empty()) {
-    delete x; delete r;
-    return new expr();
+    delete r;
+    return x;
   }
   expr u = *x;
   delete x;
@@ -4080,10 +4081,9 @@ expr *interpreter::mkwhen_expr(expr *x, rulel *r)
 
 expr *interpreter::mkwith_expr(expr *x, env *e)
 {
-  expr *u;
   if (e->empty()) {
-    delete x; delete e;
-    u = new expr();
+    delete e;
+    return x;
   } else {
     expr v = fsubst(*e, *x);
     delete x;
@@ -4095,9 +4095,8 @@ expr *interpreter::mkwith_expr(expr *x, env *e)
 	*jt = rule(jt->lhs, rhs, jt->eqns, qual);
       }
     }
-    u = new expr(expr::with(v, e));
+    return new expr(expr::with(v, e));
   }
-  return u;
 }
 
 exprl *interpreter::mkrow_exprl(expr *x)
