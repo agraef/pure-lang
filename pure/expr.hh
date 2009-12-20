@@ -106,6 +106,16 @@ public:
   { return size == rhs.size && v == rhs.v; }
   bool operator!= (const path& rhs) const
   { return size != rhs.size || v == rhs.v; }
+  // subpath check
+  bool operator<= (const path& rhs) const
+  {
+    if (size <= rhs.size) {
+      for (size_t i = 0; i < size; i++)
+	if (v[i] != rhs.v[i]) return false;
+      return true;
+    } else
+      return false;
+  }
   bool operator[] (size_t i) const
   { assert(i<MAXDEPTH); return v[i]; }
   void set(size_t i, bool n)
@@ -128,6 +138,11 @@ class expr;
 
 typedef list<expr> exprl;
 typedef list<exprl> exprll;
+
+/* Nonlinearities (equalities between local variables. */
+
+struct veqn;
+typedef list<veqn> veqnl;
 
 /* Rule lists are used to encode collections of equations and other rule sets
    in 'case' expressions and the like. See the definition of the rule struct
@@ -372,7 +387,7 @@ public:
     p(new EXPR(&*fun, &*arg1, &*arg2, &*arg3)) { p->incref(); }
 
   // static methods to generate special types of expressions
-  static expr lambda(exprl *xs, expr y);
+  static expr lambda(exprl *xs, expr y, veqnl eqns = veqnl());
   static expr cond(expr x, expr y, expr z);
   static expr cond1(expr x, expr y);
   static expr cases(expr x, rulel *rules);
@@ -586,13 +601,25 @@ public:
   bool is_tuplel(exprl &xs) const;
 };
 
+/* Variable equations (non-linearities). */
+
+struct veqn {
+  int32_t tag;
+  path p, q;
+  veqn(int32_t _tag, path _p, path _q)
+    : tag(_tag), p(_p), q(_q) { }
+};
+
 /* Rules of the form: lhs -> rhs [if qual]. */
 
 struct rule {
   expr lhs, rhs, qual;
+  veqnl eqns;
   uint32_t temp;
   rule(expr l, expr r, expr q = expr(), uint32_t t = 0)
     : lhs(l), rhs(r), qual(q), temp(t) { }
+  rule(expr l, expr r, const veqnl& eqs, expr q = expr(), uint32_t t = 0)
+    : lhs(l), rhs(r), qual(q), eqns(eqs), temp(t) { }
 };
 
 /* Environment entries. */

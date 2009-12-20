@@ -396,6 +396,10 @@ void interpreter::init()
   declare_extern((void*)strcmp,
 		 "strcmp",          "int",    2, "void*", "void*");
 
+  /* This is needed to do equality checks for non-linearities (Pure 0.40+). */
+  declare_extern((void*)same,
+		 "same",            "bool",   2, "expr*", "expr*");
+
   declare_extern((void*)pure_clos,
 		 "pure_clos",       "expr*", -7, "bool", "int", "int", "int",
 		                                 "void*", "void*", "int");
@@ -1355,11 +1359,11 @@ pure_expr *interpreter::defn(expr pat, expr& x, pure_expr*& e)
   globals g;
   save_globals(g);
   compile();
-  env vars;
+  env vars; veqnl eqns;
   // promote type tags and substitute macros and constants:
   qual = true;
   expr rhs = csubst(macsubst(subst(vars, x)));
-  expr lhs = bind(vars, lcsubst(pat));
+  expr lhs = bind(vars, eqns, lcsubst(pat));
   build_env(vars, lhs);
   qual = false;
   for (env::const_iterator it = vars.begin(); it != vars.end(); ++it) {
@@ -1383,7 +1387,7 @@ pure_expr *interpreter::defn(expr pat, expr& x, pure_expr*& e)
   }
   compile(rhs);
   x = rhs;
-  pure_expr *res = dodefn(vars, lhs, rhs, e, compiling);
+  pure_expr *res = dodefn(vars, eqns, lhs, rhs, e, compiling);
   if (!res) return 0;
   for (env::const_iterator it = vars.begin(); it != vars.end(); ++it) {
     int32_t f = it->first;
@@ -1643,11 +1647,11 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
   globals g;
   save_globals(g);
   compile();
-  env vars;
+  env vars; veqnl eqns;
   // promote type tags and substitute macros and constants:
   qual = true;
   expr rhs = csubst(macsubst(subst(vars, x)));
-  expr lhs = bind(vars, lcsubst(pat));
+  expr lhs = bind(vars, eqns, lcsubst(pat));
   build_env(vars, lhs);
   qual = false;
   for (env::const_iterator it = vars.begin(); it != vars.end(); ++it) {
@@ -1684,6 +1688,11 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
   // match against the left-hand side
   matcher m(rule(lhs, rhs));
   if (m.match(u)) {
+    // verify non-linearities
+    for (veqnl::const_iterator it = eqns.begin(); it != eqns.end(); ++it) {
+      pure_expr *x = pure_subterm(res, it->p), *y = pure_subterm(res, it->q);
+      if (!same(x, y)) goto nomatch;
+    }
     // bind variables accordingly
     for (env::const_iterator it = vars.begin(); it != vars.end(); ++it) {
       assert(it->second.t == env_info::lvar && it->second.p);
@@ -1741,6 +1750,7 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
       }
     }
   } else {
+  nomatch:
     pure_freenew(res);
     res = 0;
   }
@@ -2435,7 +2445,7 @@ void interpreter::add_rule(env &e, rule &r, bool toplevel)
     expr u = expr(r.lhs),
       v = expr(csubst(macsubst(r.rhs))),
       w = expr(csubst(macsubst(r.qual)));
-    r = rule(u, v, w);
+    r = rule(u, v, r.eqns, w);
     compile(r.rhs);
     compile(r.qual);
   }
@@ -2539,14 +2549,23 @@ void interpreter::add_macro_rule(rule *r)
 
 void interpreter::closure(rule& r, bool b)
 {
-  env vars;
-  expr u = expr(bind(vars, lcsubst(r.lhs), b)),
+  env vars; veqnl eqns;
+  expr u = expr(bind(vars, eqns, lcsubst(r.lhs), b)),
     v = expr(subst(vars, r.rhs)),
     w = expr(subst(vars, r.qual));
-  r = rule(u, v, w);
+  r = rule(u, v, eqns, w);
 }
 
-expr interpreter::bind(env& vars, expr x, bool b, path p)
+static bool check_occurrences(const veqnl& eqns, int32_t vtag, const path& p)
+{
+  for (veqnl::const_iterator it = eqns.begin(), end = eqns.end();
+       it != end; ++it)
+    if (it->tag == vtag && p <= it->q)
+      return true;
+  return false;
+}
+
+expr interpreter::bind(env& vars, veqnl& eqns, expr x, bool b, path p)
 {
   assert(!x.is_null());
   expr y;
@@ -2573,8 +2592,8 @@ expr interpreter::bind(env& vars, expr x, bool b, path p)
   case EXPR::APP: {
     if (p.len() >= MAXDEPTH)
       throw err("error in pattern (nesting too deep)");
-    expr u = bind(vars, x.xval1(), b, path(p, 0)),
-      v = bind(vars, x.xval2(), 1, path(p, 1));
+    expr u = bind(vars, eqns, x.xval1(), b, path(p, 0)),
+      v = bind(vars, eqns, x.xval2(), 1, path(p, 1));
     y = expr(u, v);
     break;
   }
@@ -2615,9 +2634,14 @@ expr interpreter::bind(env& vars, expr x, bool b, path p)
     } else {
       env::iterator it = vars.find(sym.f);
       if (sym.f != symtab.anon_sym) { // '_' = anonymous variable
-	if (it != vars.end())
-	  throw err("error in pattern (repeated variable '"+sym.s+"')");
-	vars[sym.f] = env_info(x.ttag(), p);
+	if (it != vars.end()) {
+	  env_info& info = it->second;
+	  if (x.ttag() && x.ttag() != info.ttag)
+	    throw err("error in pattern (invalid type tag)");
+	  // non-linearity, record an equality
+	  eqns.push_back(veqn(sym.f, *info.p, p));
+	} else
+	  vars[sym.f] = env_info(x.ttag(), p);
       }
       y = expr(EXPR::VAR, sym.f, 0, x.ttag(), p);
     }
@@ -2637,7 +2661,14 @@ expr interpreter::bind(env& vars, expr x, bool b, path p)
 	throw err("error in pattern (misplaced variable '"+sym.s+"')");
       env::iterator it = vars.find(sym.f);
       if (it != vars.end()) {
-	throw err("error in pattern (repeated variable '"+sym.s+"')");
+	env_info& info = it->second;
+	if (info.ttag)
+	  throw err("error in pattern (invalid type tag)");
+	// Check whether the variable occurs in a subterm, this is an error.
+	if (p <= *info.p || check_occurrences(eqns, sym.f, p))
+	  throw err("error in pattern (recursive variable '"+sym.s+"')");
+	// non-linearity, record an equality
+	eqns.push_back(veqn(sym.f, *info.p, p));
       }
       vars[sym.f] = env_info(0, p);
       y.set_astag(x.astag());
@@ -2778,7 +2809,7 @@ expr interpreter::subst(const env& vars, expr x, uint8_t idx)
     if (++idx == 0)
       throw err("error in expression (too many nested closures)");
     exprl *u = x.largs(); expr v = subst(vars, x.lrule().rhs, idx);
-    return expr::lambda(new exprl(*u), v);
+    return expr::lambda(new exprl(*u), v, x.lrule().eqns);
   }
   case EXPR::CASE: {
     expr u = subst(vars, x.xval(), idx);
@@ -2789,7 +2820,7 @@ expr interpreter::subst(const env& vars, expr x, uint8_t idx)
     for (rulel::const_iterator it = r->begin(); it != r->end(); ++it) {
       expr u = it->lhs,	v = subst(vars, it->rhs, idx),
 	w = subst(vars, it->qual, idx);
-      s->push_back(rule(u, v, w));
+      s->push_back(rule(u, v, it->eqns, w));
     }
     return expr::cases(u, s);
   }
@@ -2802,7 +2833,7 @@ expr interpreter::subst(const env& vars, expr x, uint8_t idx)
     rulel *s = new rulel;
     for (rulel::const_iterator it = r->begin(); it != r->end(); ++it) {
       expr u = it->lhs, v = subst(vars, it->rhs, idx);
-      s->push_back(rule(u, v));
+      s->push_back(rule(u, v, it->eqns));
       if (++idx == 0)
 	throw err("error in expression (too many nested closures)");
     }
@@ -2823,7 +2854,7 @@ expr interpreter::subst(const env& vars, expr x, uint8_t idx)
       for (rulel::const_iterator jt = r->begin(); jt != r->end(); ++jt) {
 	expr u = jt->lhs, v = subst(vars, jt->rhs, idx),
 	  w = subst(vars, jt->qual, idx);
-	s.push_back(rule(u, v, w));
+	s.push_back(rule(u, v, jt->eqns, w));
       }
       (*f)[g] = env_info(info.argc, s, info.temp);
     }
@@ -2909,7 +2940,7 @@ expr interpreter::fsubst(const env& funs, expr x, uint8_t idx)
     if (++idx == 0)
       throw err("error in expression (too many nested closures)");
     exprl *u = x.largs(); expr v = fsubst(funs, x.lrule().rhs, idx);
-    return expr::lambda(new exprl(*u), v);
+    return expr::lambda(new exprl(*u), v, x.lrule().eqns);
   }
   case EXPR::CASE: {
     expr u = fsubst(funs, x.xval(), idx);
@@ -2920,7 +2951,7 @@ expr interpreter::fsubst(const env& funs, expr x, uint8_t idx)
     for (rulel::const_iterator it = r->begin(); it != r->end(); ++it) {
       expr u = it->lhs,	v = fsubst(funs, it->rhs, idx),
 	w = fsubst(funs, it->qual, idx);
-      s->push_back(rule(u, v, w));
+      s->push_back(rule(u, v, it->eqns, w));
     }
     return expr::cases(u, s);
   }
@@ -2929,7 +2960,7 @@ expr interpreter::fsubst(const env& funs, expr x, uint8_t idx)
     rulel *s = new rulel;
     for (rulel::const_iterator it = r->begin(); it != r->end(); ++it) {
       expr u = it->lhs, v = fsubst(funs, it->rhs, idx);
-      s->push_back(rule(u, v));
+      s->push_back(rule(u, v, it->eqns));
       if (++idx == 0)
 	throw err("error in expression (too many nested closures)");
     }
@@ -2950,7 +2981,7 @@ expr interpreter::fsubst(const env& funs, expr x, uint8_t idx)
       for (rulel::const_iterator jt = r->begin(); jt != r->end(); ++jt) {
 	expr u = jt->lhs, v = fsubst(funs, jt->rhs, idx),
 	  w = fsubst(funs, jt->qual, idx);
-	s.push_back(rule(u, v, w));
+	s.push_back(rule(u, v, jt->eqns, w));
       }
       (*f)[g] = env_info(info.argc, s, info.temp);
     }
@@ -3153,7 +3184,7 @@ expr interpreter::csubst(expr x, bool quote)
   // nested closures:
   case EXPR::LAMBDA: {
     exprl *u = x.largs(); expr v = csubst(x.lrule().rhs);
-    return expr::lambda(new exprl(*u), v);
+    return expr::lambda(new exprl(*u), v, x.lrule().eqns);
   }
   case EXPR::CASE: {
     expr u = csubst(x.xval());
@@ -3162,7 +3193,7 @@ expr interpreter::csubst(expr x, bool quote)
     for (rulel::const_iterator it = r->begin(); it != r->end(); ++it) {
       expr u = it->lhs,	v = csubst(it->rhs),
 	w = csubst(it->qual);
-      s->push_back(rule(u, v, w));
+      s->push_back(rule(u, v, it->eqns, w));
     }
     return expr::cases(u, s);
   }
@@ -3171,7 +3202,7 @@ expr interpreter::csubst(expr x, bool quote)
     rulel *s = new rulel;
     for (rulel::const_iterator it = r->begin(); it != r->end(); ++it) {
       expr u = it->lhs, v = csubst(it->rhs);
-      s->push_back(rule(u, v));
+      s->push_back(rule(u, v, it->eqns));
     }
     expr u = csubst(x.xval());
     return expr::when(u, s);
@@ -3188,7 +3219,7 @@ expr interpreter::csubst(expr x, bool quote)
       for (rulel::const_iterator jt = r->begin(); jt != r->end(); ++jt) {
 	expr u = jt->lhs, v = csubst(jt->rhs),
 	  w = csubst(jt->qual);
-	s.push_back(rule(u, v, w));
+	s.push_back(rule(u, v, jt->eqns, w));
       }
       (*f)[g] = env_info(info.argc, s, info.temp);
     }
@@ -3359,7 +3390,7 @@ expr interpreter::macsubst(expr x, bool quote)
   // nested closures:
   case EXPR::LAMBDA: {
     exprl *u = x.largs(); expr v = macsubst(x.lrule().rhs);
-    return expr::lambda(new exprl(*u), v);
+    return expr::lambda(new exprl(*u), v, x.lrule().eqns);
   }
   case EXPR::CASE: {
     expr u = macsubst(x.xval());
@@ -3368,7 +3399,7 @@ expr interpreter::macsubst(expr x, bool quote)
     for (rulel::const_iterator it = r->begin(); it != r->end(); ++it) {
       expr u = it->lhs,	v = macsubst(it->rhs),
 	w = macsubst(it->qual);
-      s->push_back(rule(u, v, w));
+      s->push_back(rule(u, v, it->eqns, w));
     }
     return expr::cases(u, s);
   }
@@ -3377,7 +3408,7 @@ expr interpreter::macsubst(expr x, bool quote)
     rulel *s = new rulel;
     for (rulel::const_iterator it = r->begin(); it != r->end(); ++it) {
       expr u = it->lhs, v = macsubst(it->rhs);
-      s->push_back(rule(u, v));
+      s->push_back(rule(u, v, it->eqns));
     }
     expr u = macsubst(x.xval());
     return expr::when(u, s);
@@ -3394,7 +3425,7 @@ expr interpreter::macsubst(expr x, bool quote)
       for (rulel::const_iterator jt = r->begin(); jt != r->end(); ++jt) {
 	expr u = jt->lhs, v = macsubst(jt->rhs),
 	  w = macsubst(jt->qual);
-	s.push_back(rule(u, v, w));
+	s.push_back(rule(u, v, jt->eqns, w));
       }
       (*f)[g] = env_info(info.argc, s, info.temp);
     }
@@ -3485,7 +3516,7 @@ expr interpreter::varsubst(expr x, uint8_t offs, uint8_t idx)
     if (++idx == 0)
       throw err("error in expression (too many nested closures)");
     exprl *u = x.largs(); expr v = varsubst(x.lrule().rhs, offs, idx);
-    return expr::lambda(new exprl(*u), v);
+    return expr::lambda(new exprl(*u), v, x.lrule().eqns);
   }
   case EXPR::CASE: {
     expr u = varsubst(x.xval(), offs, idx);
@@ -3496,7 +3527,7 @@ expr interpreter::varsubst(expr x, uint8_t offs, uint8_t idx)
     for (rulel::const_iterator it = r->begin(); it != r->end(); ++it) {
       expr u = it->lhs,	v = varsubst(it->rhs, offs, idx),
 	w = varsubst(it->qual, offs, idx);
-      s->push_back(rule(u, v, w));
+      s->push_back(rule(u, v, it->eqns, w));
     }
     return expr::cases(u, s);
   }
@@ -3505,7 +3536,7 @@ expr interpreter::varsubst(expr x, uint8_t offs, uint8_t idx)
     rulel *s = new rulel;
     for (rulel::const_iterator it = r->begin(); it != r->end(); ++it) {
       expr u = it->lhs, v = varsubst(it->rhs, offs, idx);
-      s->push_back(rule(u, v));
+      s->push_back(rule(u, v, it->eqns));
       if (++idx == 0)
 	throw err("error in expression (too many nested closures)");
     }
@@ -3526,7 +3557,7 @@ expr interpreter::varsubst(expr x, uint8_t offs, uint8_t idx)
       for (rulel::const_iterator jt = r->begin(); jt != r->end(); ++jt) {
 	expr u = jt->lhs, v = varsubst(jt->rhs, offs, idx),
 	  w = varsubst(jt->qual, offs, idx);
-	s.push_back(rule(u, v, w));
+	s.push_back(rule(u, v, jt->eqns, w));
       }
       (*f)[g] = env_info(info.argc, s, info.temp);
     }
@@ -3628,8 +3659,8 @@ expr interpreter::macred(expr x, expr y, uint8_t idx)
   case EXPR::LAMBDA: {
     if (++idx == 0)
       throw err("error in expression (too many nested closures)");
-    exprl *u = x.largs(); expr v = macred(x, y.lrule().rhs, idx);
-    return expr::lambda(new exprl(*u), v);
+    exprl *u = y.largs(); expr v = macred(x, y.lrule().rhs, idx);
+    return expr::lambda(new exprl(*u), v, y.lrule().eqns);
   }
   case EXPR::CASE: {
     expr u = macred(x, y.xval(), idx);
@@ -3640,7 +3671,7 @@ expr interpreter::macred(expr x, expr y, uint8_t idx)
     for (rulel::const_iterator it = r->begin(); it != r->end(); ++it) {
       expr u = it->lhs,	v = macred(x, it->rhs, idx),
 	w = macred(x, it->qual, idx);
-      s->push_back(rule(u, v, w));
+      s->push_back(rule(u, v, it->eqns, w));
     }
     return expr::cases(u, s);
   }
@@ -3649,7 +3680,7 @@ expr interpreter::macred(expr x, expr y, uint8_t idx)
     rulel *s = new rulel;
     for (rulel::const_iterator it = r->begin(); it != r->end(); ++it) {
       expr u = it->lhs, v = macred(x, it->rhs, idx);
-      s->push_back(rule(u, v));
+      s->push_back(rule(u, v, it->eqns));
       if (++idx == 0)
 	throw err("error in expression (too many nested closures)");
     }
@@ -3670,7 +3701,7 @@ expr interpreter::macred(expr x, expr y, uint8_t idx)
       for (rulel::const_iterator jt = r->begin(); jt != r->end(); ++jt) {
 	expr u = jt->lhs, v = macred(x, jt->rhs, idx),
 	  w = macred(x, jt->qual, idx);
-	s.push_back(rule(u, v, w));
+	s.push_back(rule(u, v, jt->eqns, w));
       }
       (*f)[g] = env_info(info.argc, s, info.temp);
     }
@@ -4033,15 +4064,15 @@ expr *interpreter::mkwhen_expr(expr *x, rulel *r)
   uint8_t idx = 0;
   for (rulel::reverse_iterator it = r->rbegin();
        it != r->rend(); ++it, ++idx) {
-    env vars;
-    expr v = bind(vars, lcsubst(it->lhs)), w = it->rhs;
+    env vars; veqnl eqns;
+    expr v = bind(vars, eqns, lcsubst(it->lhs)), w = it->rhs;
     u = subst(vars, u, idx);
     uint8_t jdx = 0;
     for (rulel::iterator jt = s->begin(); jt != s->end(); ++jdx, ++jt) {
       expr v = jt->lhs, w = subst(vars, jt->rhs, jdx);
-      *jt = rule(v, w);
+      *jt = rule(v, w, jt->eqns);
     }
-    s->push_front(rule(v, w));
+    s->push_front(rule(v, w, eqns));
   }
   delete r;
   return new expr(expr::when(u, s));
@@ -4061,7 +4092,7 @@ expr *interpreter::mkwith_expr(expr *x, env *e)
       rulel *r = info.rules;
       for (rulel::iterator jt = r->begin(); jt != r->end(); ++jt) {
 	expr rhs = fsubst(*e, jt->rhs, 1), qual = fsubst(*e, jt->qual, 1);
-	*jt = rule(jt->lhs, rhs, qual);
+	*jt = rule(jt->lhs, rhs, jt->eqns, qual);
       }
     }
     u = new expr(expr::with(v, e));
@@ -6646,8 +6677,8 @@ pure_expr *interpreter::doeval(expr x, pure_expr*& e, bool keep)
   return res;
 }
 
-pure_expr *interpreter::dodefn(env vars, expr lhs, expr rhs, pure_expr*& e,
-			       bool keep)
+pure_expr *interpreter::dodefn(env vars, veqnl eqns, expr lhs, expr rhs,
+			       pure_expr*& e, bool keep)
 {
   char test;
   if (stackmax > 0 && stackdir*(&test - baseptr) >= stackmax) {
@@ -6665,6 +6696,12 @@ pure_expr *interpreter::dodefn(env vars, expr lhs, expr rhs, pure_expr*& e,
     if (res) {
       matcher m(rule(lhs, rhs));
       if (m.match(res)) {
+	// verify non-linearities
+	for (veqnl::const_iterator it = eqns.begin(); it != eqns.end(); ++it) {
+	  pure_expr *x = pure_subterm(res, it->p),
+	    *y = pure_subterm(res, it->q);
+	  if (!same(x, y)) goto nomatch;
+	}
 	// Bind the variables.
 	for (env::const_iterator it = vars.begin(); it != vars.end(); ++it) {
 	  int32_t tag = it->first;
@@ -6691,6 +6728,7 @@ pure_expr *interpreter::dodefn(env vars, expr lhs, expr rhs, pure_expr*& e,
 	}
       } else {
 	// Failed match, bail out.
+      nomatch:
 	pure_freenew(res);
 	res = e = 0;
       }
@@ -6722,17 +6760,29 @@ pure_expr *interpreter::dodefn(env vars, expr lhs, expr rhs, pure_expr*& e,
   // matched => emit code for binding the variables
   f.f->getBasicBlockList().push_back(matchedbb);
   f.builder.SetInsertPoint(matchedbb);
+  if (!eqns.empty()) {
+    // check non-linearities
+    for (veqnl::const_iterator it = eqns.begin(), end = eqns.end();
+	 it != end; ++it) {
+      BasicBlock *checkedbb = basic_block("checked");
+      vector<Value*> args(2);
+      args[0] = vref(arg, it->p);
+      args[1] = vref(arg, it->q);
+      Value *check = f.builder.CreateCall(module->getFunction("same"),
+					  args.begin(), args.end());
+      f.builder.CreateCondBr(check, checkedbb, failedbb);
+      f.f->getBasicBlockList().push_back(checkedbb);
+      f.builder.SetInsertPoint(checkedbb);
+    }
+  }
   list<pure_expr*> cache;
   for (env::const_iterator it = vars.begin(); it != vars.end(); ++it) {
     int32_t tag = it->first;
     const env_info& info = it->second;
     assert(info.t == env_info::lvar && info.p);
     // walk the arg value to find the subterm at info.p
-    Value *x = arg;
     path& p = *info.p;
-    size_t n = p.len();
-    for (size_t i = 0; i < n; i++)
-      x = f.CreateLoadGEP(x, Zero, SubFldIndex(p[i]), mklabel("x", i, p[i]+1));
+    Value *x = vref(arg, p);
     // store the value in a global variable of the same name
     const symbol& sym = symtab.sym(tag);
     GlobalVar& v = globalvars[tag];
@@ -6821,7 +6871,7 @@ static rulel *copy_rulel(rulel::const_iterator r,
 {
   rulel *rl = new rulel;
   while (r != end) {
-    rl->push_back(rule(r->lhs, r->rhs, r->qual));
+    rl->push_back(rule(r->lhs, r->rhs, r->eqns, r->qual));
     r++;
   }
   return rl;
@@ -6862,6 +6912,21 @@ Value *interpreter::when_codegen(expr x, matcher *m,
     e.f->getBasicBlockList().push_back(matchedbb);
     e.builder.SetInsertPoint(matchedbb);
     const rule& rr = m->r[0];
+    if (!rr.eqns.empty()) {
+      // check non-linearities
+      for (veqnl::const_iterator it = rr.eqns.begin(),
+	     end = rr.eqns.end(); it != end; ++it) {
+	BasicBlock *checkedbb = basic_block("checked");
+	vector<Value*> args(2);
+	args[0] = vref(it->tag, it->p);
+	args[1] = vref(it->tag, it->q);
+	Value *check = e.builder.CreateCall(module->getFunction("same"),
+					    args.begin(), args.end());
+	e.builder.CreateCondBr(check, checkedbb, failedbb);
+	e.f->getBasicBlockList().push_back(checkedbb);
+	e.builder.SetInsertPoint(checkedbb);
+      }
+    }
     if (debugging) {
       expr y = (s==end)?x:expr::when(x, copy_rulel(s, end));
       e.rp = new rule(rr.lhs, y);
@@ -8358,6 +8423,16 @@ static uint32_t argno(uint32_t n, path &p)
   return k;
 }
 
+Value *interpreter::vref(Value *x, path p)
+{
+  // walk an expression value x to find the subterm at p
+  Env &e = act_env();
+  size_t n = p.len();
+  for (size_t i = 0; i < n; i++)
+    x = e.CreateLoadGEP(x, Zero, SubFldIndex(p[i]), mklabel("x", i, p[i]+1));
+  return x;
+}
+
 Value *interpreter::vref(int32_t tag, path p)
 {
   // local arg reference
@@ -9213,6 +9288,21 @@ void interpreter::complex_match(matcher *pm, BasicBlock *failedbb)
     // matched => emit code for the reduct, and return the result
     f.f->getBasicBlockList().push_back(matchedbb);
     f.builder.SetInsertPoint(matchedbb);
+    if (!pm->r[0].eqns.empty()) {
+      // check non-linearities
+      for (veqnl::const_iterator it = pm->r[0].eqns.begin(),
+	     end = pm->r[0].eqns.end(); it != end; ++it) {
+	BasicBlock *checkedbb = basic_block("checked");
+	vector<Value*> args(2);
+	args[0] = vref(it->tag, it->p);
+	args[1] = vref(it->tag, it->q);
+	Value *check = f.builder.CreateCall(module->getFunction("same"),
+					    args.begin(), args.end());
+	f.builder.CreateCondBr(check, checkedbb, failedbb);
+	f.f->getBasicBlockList().push_back(checkedbb);
+	f.builder.SetInsertPoint(checkedbb);
+      }
+    }
     const rule* rp = 0;
     if (debugging && !is_init(f.name)) {
       const rule& rr = pm->r[0];
@@ -9528,13 +9618,36 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
     f.fmap.select(*r);
     f.f->getBasicBlockList().push_back(rulebb);
     f.builder.SetInsertPoint(rulebb);
+    BasicBlock *okbb = basic_block("ok");
+    // determine the next rule block ('failed' if none)
+    BasicBlock *nextbb;
+    ruleml::const_iterator next_r = r;
+    if (++next_r != rl.end())
+      nextbb = basic_block(mklabel("rule.state", s->s, *next_r));
+    else
+      nextbb = failedbb;
+    if (!rr.eqns.empty()) {
+      // check non-linearities
+      for (veqnl::const_iterator it = rr.eqns.begin(),
+	     end = rr.eqns.end(); it != end; ++it) {
+	BasicBlock *checkedbb = basic_block("checked");
+	vector<Value*> args(2);
+	args[0] = vref(it->tag, it->p);
+	args[1] = vref(it->tag, it->q);
+	Value *check = f.builder.CreateCall(module->getFunction("same"),
+					    args.begin(), args.end());
+	f.builder.CreateCondBr(check, checkedbb, nextbb);
+	f.f->getBasicBlockList().push_back(checkedbb);
+	f.builder.SetInsertPoint(checkedbb);
+      }
+    }
     if (debugging && !is_init(f.name)) debug_rule(&rr);
 #if DEBUG>1
     if (!is_init(f.name)) { ostringstream msg;
       msg << "complex match " << f.name << ", trying rule #" << *r;
       debug(msg.str().c_str()); }
 #endif
-    if (rr.qual.is_null() && !rr.rhs.is_guarded()) {
+    if (rr.eqns.empty() && rr.qual.is_null() && !rr.rhs.is_guarded()) {
       // rule always matches, generate code for the reduct and bail out
       const rule *rp = 0;
       if (debugging && !is_init(f.name)) rp = &rr;
@@ -9547,6 +9660,7 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
       break;
     }
     Value *retv = 0, *condv = 0;
+    r = next_r;
     if (!rr.qual.is_null()) {
       // check the guard
       Value *iv = 0;
@@ -9569,22 +9683,16 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
 	iv = get_int(rr.qual);
       // emit the condition (turn the previous result into a flag)
       condv = f.builder.CreateICmpNE(iv, Zero, "cond");
-    } else {
-      assert(rr.rhs.is_guarded());
+    } else if (rr.rhs.is_guarded()) {
       // guard wrapped in a closure; generate code for the rhs and to check
       // for null results
       retv = codegen(rr.rhs);
       condv = f.builder.CreateICmpNE(retv, NullExprPtr, "cond");
     }
-    assert(condv != 0);
-    BasicBlock *okbb = basic_block("ok");
-    // determine the next rule block ('failed' if none)
-    BasicBlock *nextbb;
-    if (++r != rl.end())
-      nextbb = basic_block(mklabel("rule.state", s->s, *r));
+    if (condv != 0)
+      f.builder.CreateCondBr(condv, okbb, nextbb);
     else
-      nextbb = failedbb;
-    f.builder.CreateCondBr(condv, okbb, nextbb);
+      f.builder.CreateBr(okbb);
     // ok => guard succeeded, return the reduct, otherwise we fall through
     // to the next rule (if any), or bail out with failure
     f.f->getBasicBlockList().push_back(okbb);

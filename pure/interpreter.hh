@@ -575,7 +575,7 @@ public:
   void add_macro_rule(rule *r);
   void promote_ttags(expr f, expr x, expr u);
   void promote_ttags(expr f, expr x, expr u, expr v);
-  expr bind(env& vars, expr x, bool b = true, path p = path());
+  expr bind(env& vars, veqnl& eqns, expr x, bool b = true, path p = path());
   expr subst(const env& vars, expr x, uint8_t idx = 0);
   expr fsubst(const env& funs, expr x, uint8_t idx = 0);
   expr bsubst(expr x);
@@ -766,7 +766,7 @@ private:
   pure_expr *const_matrix_value(expr x, bool quote = false);
   pure_expr *const_app_value(expr x);
   pure_expr *doeval(expr x, pure_expr*& e, bool keep = false);
-  pure_expr *dodefn(env vars, expr lhs, expr rhs, pure_expr*& e,
+  pure_expr *dodefn(env vars, veqnl eqns, expr lhs, expr rhs, pure_expr*& e,
 		    bool keep = false);
   llvm::Value *codegen(expr x, bool quote = false);
   void toplevel_codegen(expr x, const rule *rp);
@@ -795,6 +795,7 @@ private:
   llvm::Value *dbox(double d);
   llvm::Value *sbox(const char *s);
   llvm::Value *pbox(void *p);
+  llvm::Value *vref(llvm::Value *x, path p);
   llvm::Value *vref(int32_t tag, path p);
   llvm::Value *vref(int32_t tag, uint32_t offs);
   llvm::Value *vref(int32_t tag, uint8_t idx, path p);

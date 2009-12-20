@@ -5513,7 +5513,8 @@ void pure_debug_rule(void *_e, void *_r)
   if (r) {
     // build the lhs variable table
     d.vars.clear();
-    interp.bind(d.vars, r->lhs, e->b);
+    veqnl eqns; // ignored
+    interp.bind(d.vars, eqns, r->lhs, e->b);
   }
   if (!stop(interp, e)) return;
   interp.stoplevel = -1;
