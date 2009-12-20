@@ -1,0 +1,39 @@
+
+// Non-linear rules (Pure 0.40+).
+
+foo x x x = x;
+foo x x y = x,y;
+
+foo a b c;
+foo a a b;
+foo a a a;
+
+f a b, f a a with f x x = x end;
+
+f a b when f = \x x -> x end;
+f a a when f = \x x -> x end;
+
+case a,b of x,x = x end;
+case a,a of x,x = x end;
+
+x when x,x = a,b end;
+x when x,x = a,a end;
+
+x when xs = [1,2,3]; x,x = xs,0:xs end;
+x when xs = [1,2,3]; x,x = 0:xs,0:xs end;
+
+let x,x = a,b;
+let x,x = a,a;
+let x,x = foo a a a,foo a a b;
+let x,x = foo a a a,foo a a a;
+
+const y,y = a,b;
+const y,y = a,a;
+const z,z = foo a a a,foo a a b;
+const z,z = foo a a a,foo a a a;
+
+// These are all errors (recursive variable binding).
+case [1,2,3] of xs@(x:xs) = x end;
+x when xs@(x:xs) = [1,2,3] end;
+(f with f xs@(x:xs) = x end) [1,2,3];
+(\xs@(x:xs) -> x) [1,2,3];

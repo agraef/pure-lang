@@ -1,0 +1,200 @@
+foo x/*0:001*/ x/*0:01*/ x/*0:1*/ = x/*0:001*/;
+foo x/*0:001*/ x/*0:01*/ y/*0:1*/ = x/*0:001*/,y/*0:1*/;
+{
+  rule #0: foo x x x = x
+  rule #1: foo x x y = x,y
+  state 0: #0 #1
+	<var> state 1
+  state 1: #0 #1
+	<var> state 2
+  state 2: #0 #1
+	<var> state 3
+  state 3: #0 #1
+}
+foo a b c;
+foo a b c
+foo a a b;
+a,b
+foo a a a;
+a
+f/*0*/ a b,f/*0*/ a a with f x/*0:01*/ x/*0:1*/ = x/*0:01*/ {
+  rule #0: f x x = x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+	<var> state 2
+  state 2: #0
+} end;
+f a b,a
+f/*0:*/ a b when f/*0:*/ = \x/*0:01*/ x/*0:1*/ -> x/*0:01*/ {
+  rule #0: _ x x = x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+	<var> state 2
+  state 2: #0
+} {
+  rule #0: f = \x x -> x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+<stdin>, line 13: unhandled exception 'failed_match' while evaluating 'f/*0:*/ a b when f/*0:*/ = \x/*0:01*/ x/*0:1*/ -> x/*0:01*/ end'
+f/*0:*/ a a when f/*0:*/ = \x/*0:01*/ x/*0:1*/ -> x/*0:01*/ {
+  rule #0: _ x x = x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+	<var> state 2
+  state 2: #0
+} {
+  rule #0: f = \x x -> x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+a
+case a,b of x/*0:01*/,x/*0:1*/ = x/*0:01*/ {
+  rule #0: x,x = x
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+} end;
+<stdin>, line 16: unhandled exception 'failed_match' while evaluating 'case a,b of x/*0:01*/,x/*0:1*/ = x/*0:01*/ end'
+case a,a of x/*0:01*/,x/*0:1*/ = x/*0:01*/ {
+  rule #0: x,x = x
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+} end;
+a
+x/*0:01*/ when x/*0:01*/,x/*0:1*/ = a,b {
+  rule #0: x,x = a,b
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+} end;
+<stdin>, line 19: unhandled exception 'failed_match' while evaluating 'x/*0:01*/ when x/*0:01*/,x/*0:1*/ = a,b end'
+x/*0:01*/ when x/*0:01*/,x/*0:1*/ = a,a {
+  rule #0: x,x = a,a
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+} end;
+a
+x/*0:01*/ when xs/*0:*/ = [1,2,3]; x/*0:01*/,x/*0:1*/ = xs/*0:*/,0:xs/*0:*/ {
+  rule #0: x,x = xs,0:xs
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+} {
+  rule #0: xs = [1,2,3]
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+<stdin>, line 22: unhandled exception 'failed_match' while evaluating 'x/*0:01*/ when xs/*0:*/ = [1,2,3]; x/*0:01*/,x/*0:1*/ = xs/*0:*/,0:xs/*0:*/ end'
+x/*0:01*/ when xs/*0:*/ = [1,2,3]; x/*0:01*/,x/*0:1*/ = 0:xs/*0:*/,0:xs/*0:*/ {
+  rule #0: x,x = 0:xs,0:xs
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+} {
+  rule #0: xs = [1,2,3]
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+[0,1,2,3]
+let x,x = a,b;
+<stdin>, line 25: failed match while evaluating 'let x,x = a,b'
+let x,x = a,a;
+{
+  rule #0: x,x = foo a a a,foo a a b
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+}
+let x,x = foo a a a,foo a a b;
+<stdin>, line 27: failed match while evaluating 'let x,x = foo a a a,foo a a b'
+{
+  rule #0: x,x = foo a a a,foo a a a
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+}
+let x,x = foo a a a,foo a a a;
+const y,y = a,b;
+<stdin>, line 30: failed match while evaluating 'const y,y = a,b'
+const y,y = a,a;
+const z,z = foo a a a,foo a a b;
+<stdin>, line 32: failed match while evaluating 'const z,z = foo a a a,foo a a b'
+const z,z = foo a a a,foo a a a;
+<stdin>, line 36: error in pattern (recursive variable 'xs')
+<stdin>, line 37: error in pattern (recursive variable 'xs')
+<stdin>, line 38: error in pattern (recursive variable 'xs')
+<stdin>, line 39: error in pattern (recursive variable 'xs')
