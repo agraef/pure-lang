@@ -30,3 +30,11 @@ reduce X with x = u+v end; // yields [u+v,(u+v)^2,(u+v)^3]
 
 let Y = 1+x^2+x^4;
 reduce Y with x^p = f p end; // yields 1+f 2+f 4
+
+/* 'reduce' is implemented as a macro which expands to the 'reduce_with'
+   primitive. The latter can also be used directly, specifying the desired
+   replacements as a list of hash pairs. Thus the following are equivalent to
+   the above: */
+
+reduce_with [x => u+v] X;
+reduce_with [(^) => ((^) with x^p = f p end)] Y;
