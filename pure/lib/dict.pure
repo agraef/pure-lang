@@ -276,10 +276,8 @@ with
 	if key > k;
 
   inserth2 [] x  y		= [x => y];
-  inserth2 ((x1 => y):xys) x2 y1
-				= ((x1 => y1):xys) if x1 === x2;
-  inserth2 ((x  => y):xys) x1 y1
-				= ((x  => y ):(inserth2 xys x1 y1));
+  inserth2 ((x => y):xys) x y1	= ((x => y1):xys);
+  inserth2 ((x => y):xys) x1 y1	= ((x  => y ):(inserth2 xys x1 y1));
 
   adjust 0 oldTree _		= [oldTree, 0];
 
@@ -400,7 +398,7 @@ with
 	if key > k;
 
   deleteh2 [] _			= [];
-  deleteh2 ((x1 => _) : xys) x2	= xys if x1 === x2;
+  deleteh2 ((x => _) : xys) x	= xys;
   deleteh2 ((x  => y) : xys) x1	= (x => y) : (deleteh2 xys x1);
 
   rmlast nil			= [nil, 0];
@@ -458,9 +456,9 @@ with
 				= memberk xys x1;
 
   memberk [] _	 		= 0;
-  memberk ((x1 => y):_  ) x2	= 1 if x1 === x2;
-  memberk (        _:xys) x2	= memberk xys x2
-end;;
+  memberk ((x => y):_  ) x	= 1;
+  memberk (       _:xys) x	= memberk xys x
+end;
 
 // get all members of dict or hdict
 members (Dict  d)		= members d
@@ -569,8 +567,8 @@ with
 				= lookupk xys x1;
 
   lookupk []	       _	= throw out_of_bounds;
-  lookupk ((xa => y):_  ) xb	= y if xa === xb;
-  lookupk (       _ :xys) x	= lookupk xys x
+  lookupk ((x => y):_  ) x	= y;
+  lookupk (      _ :xys) x	= lookupk xys x
 end;
 
 // curried version of insert for dict and hdict
