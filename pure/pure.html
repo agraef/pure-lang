@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>The Pure Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2009-12-06" />
+<meta name="date" content="2009-12-21" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2009-12-06</td></tr>
+<td>2009-12-21</td></tr>
 </tbody>
 </table>
 <!-- Note: This document is formatted using docutils. The Makefile has rules -->
@@ -1109,12 +1109,10 @@ nonzero integer). An exception is raised if the condition is not an
 integer.</dd>
 <dt>Lambdas: <tt class="docutils literal"><span class="pre">\x</span> <span class="pre">-&gt;</span> <span class="pre">y</span></tt></dt>
 <dd>These denote anonymous functions and work pretty much like in Haskell.
-More than one variable may be bound (e.g, <tt class="docutils literal"><span class="pre">\x</span> <span class="pre">y</span> <span class="pre">-&gt;</span> <span class="pre">x*y</span></tt>), which is
-equivalent to a nested lambda (<tt class="docutils literal"><span class="pre">\x</span> <span class="pre">-&gt;</span> <span class="pre">\y</span> <span class="pre">-&gt;</span> <span class="pre">x*y</span></tt>). Pure also supports
-pattern-matching lambda abstractions which match a pattern against the
-lambda argument and bind multiple lambda variables in one go, such as
-<tt class="docutils literal"><span class="pre">\(x,y)</span> <span class="pre">-&gt;</span> <span class="pre">x*y</span></tt>. An exception is raised if the actual lambda argument
-doesn't match the pattern.</dd>
+Pure supports multiple-argument lambdas (e.g, <tt class="docutils literal"><span class="pre">\x</span> <span class="pre">y</span> <span class="pre">-&gt;</span> <span class="pre">x*y</span></tt>), as well as
+pattern-matching lambda abstractions which match one or more patterns
+against the lambda arguments, such as <tt class="docutils literal"><span class="pre">\(x,y)</span> <span class="pre">-&gt;</span> <span class="pre">x*y</span></tt>. An exception is
+raised if the actual lambda arguments do not match the given patterns.</dd>
 <dt>Case expressions: <tt class="docutils literal"><span class="pre">case</span> <span class="pre">x</span> <span class="pre">of</span> <span class="pre">rule;</span> <span class="pre">...</span> <span class="pre">end</span></tt></dt>
 <dd>Matches an expression, discriminating over a number of different cases,
 similar to the Haskell case construct. The expression <tt class="docutils literal"><span class="pre">x</span></tt> is matched in
@@ -1379,12 +1377,55 @@ values). <em>Not</em> permitted are any of the special expression types (lambda,
 matrix comprehensions). For technical reasons, the current implementation also
 forbids matrix values in patterns, but it is possible to match a matrix value
 as a whole using the <tt class="docutils literal"><span class="pre">matrix</span></tt> type tag, see below.</p>
-<p>Patterns must not contain repeated variables, i.e., rules must be
-&quot;left-linear&quot;. The only exception to this rule is the <strong class="dfn">anonymous variable</strong>
-'<tt class="docutils literal"><span class="pre">_</span></tt>' which matches an arbitrary value (independently for all occurrences)
-without binding a variable symbol.</p>
-<p>Patterns may contain the following special elements which are not permitted in
-right-hand side expressions:</p>
+<p>Constants in patterns must be matched literally. For instance:</p>
+<pre class="literal-block">
+fact 0 = 1;
+</pre>
+<p>This will only match an application of <tt class="docutils literal"><span class="pre">foo</span></tt> to the machine integer <tt class="docutils literal"><span class="pre">0</span></tt>,
+not <tt class="docutils literal"><span class="pre">0.0</span></tt> or <tt class="docutils literal"><span class="pre">0L</span></tt> (even though these compare equal to <tt class="docutils literal"><span class="pre">0</span></tt> using the
+<tt class="docutils literal"><span class="pre">==</span></tt> operator).</p>
+<p>In difference to Haskell, patterns may contain repeated variables, i.e., they
+may be <strong class="dfn">non-linear</strong>. Thus, e.g., rules like the following are legal in Pure,
+and will only be matched if all occurrences of the same variable in the
+left-hand side pattern are matched to the same value:</p>
+<pre class="literal-block">
+&gt; foo x x = x;
+&gt; foo 1 1;
+1
+&gt; foo 1 2;
+foo 1 2
+</pre>
+<p>The notion of &quot;sameness&quot; employed here is that of syntactical identity, which
+means that the matched subterms must be identical in structure and content.
+The prelude provides syntactic equality as a function <tt class="docutils literal"><span class="pre">same</span></tt> and a
+comparison predicate <tt class="docutils literal"><span class="pre">===</span></tt>, see the the <a class="reference external" href="purelib.html">Pure Library Manual</a> for details.
+These are defined on all terms, in contrast to the &quot;semantic&quot; equality
+operator <tt class="docutils literal"><span class="pre">==</span></tt> which is only available on data where it has been explicitly
+defined, and may assert that two terms are equal even if they are
+syntactically different. Consider, e.g.:</p>
+<pre class="literal-block">
+&gt; 0==0.0;
+1
+&gt; 0===0.0;
+0
+</pre>
+<p>Non-linear patterns are particularly useful for computer algebra where you
+will frequently encounter rules such as the following:</p>
+<pre class="literal-block">
+&gt; x*y+x*z = x*(y+z);
+&gt; a*(3*4)+a*5;
+a*17
+</pre>
+<p>As already mentioned, the '<tt class="docutils literal"><span class="pre">_</span></tt>' symbol is special in patterns; it denotes
+the <strong class="dfn">anonymous variable</strong> which matches an arbitrary value (independently for
+all occurrences) without actually binding a variable. For instance:</p>
+<pre class="literal-block">
+foo _ _ = 0;
+</pre>
+<p>In difference to the <tt class="docutils literal"><span class="pre">foo</span> <span class="pre">x</span> <span class="pre">x</span></tt> pattern above, this will match the
+application of <tt class="docutils literal"><span class="pre">foo</span></tt> to any combination of two arguments.</p>
+<p>Patterns may also contain the following special elements which are not
+permitted in right-hand side expressions:</p>
 <ul class="simple">
 <li>A Haskell-style <strong class="dfn">&quot;as&quot; pattern</strong> of the form <em>variable</em> <tt class="docutils literal"><span class="pre">&#64;</span></tt> <em>pattern</em>
 binds the given variable to the expression matched by the subpattern
@@ -1400,22 +1441,27 @@ only values of the designated type. Thus, for instance, '<tt class="docutils lit
 only matches machine integers. See the <a class="reference internal" href="#type-tags">Type Tags</a> section below for
 details.</li>
 </ul>
+<p>Note that the variable bound by an <tt class="docutils literal"><span class="pre">as</span></tt> pattern must not occur inside the
+subpattern. Thus a definition like the following is illegal:</p>
+<pre class="literal-block">
+&gt; foo xs&#64;(x:xs) = x;
+&lt;stdin&gt;, line 1: error in pattern (recursive variable 'xs')
+</pre>
 <p>Syntactically, both &quot;as&quot; patterns and type tags are primary expressions. If
 the subpattern of an &quot;as&quot; pattern is a compound expression, it <em>must</em> be
 parenthesized. For instance, the following function duplicates the head
 element of a list:</p>
 <pre class="literal-block">
-foo xs &#64; (x:_) = x:xs;
+foo xs&#64;(x:_) = x:xs;
 </pre>
 <p>Note that if you accidentally forget the parentheses around the subpattern
 <tt class="docutils literal"><span class="pre">x:_</span></tt>, you still get a syntactically correct definition:</p>
 <pre class="literal-block">
-foo xs &#64; x:_ = x:xs;
+foo xs&#64;x:_ = x:xs;
 </pre>
-<p>But this gets parsed as <tt class="docutils literal"><span class="pre">(foo</span> <span class="pre">xs&#64;x):_</span> <span class="pre">=</span> <span class="pre">x:xs</span></tt> (despite the spacing which is
-ignored by the parser), which is most certainly <em>not</em> what you want. It is
-thus a good idea to just always enclose the subpattern with parentheses in
-order to prevent such glitches.</p>
+<p>But this gets parsed as <tt class="docutils literal"><span class="pre">(foo</span> <span class="pre">xs&#64;x):_</span> <span class="pre">=</span> <span class="pre">x:xs</span></tt>, which is most certainly <em>not</em>
+what you want. It is thus a good idea to just always enclose the subpattern
+with parentheses in order to prevent such glitches.</p>
 <p>Another potential pitfall is that the notation <tt class="docutils literal"><span class="pre">foo::bar</span></tt> is also used to
 denote &quot;qualified symbols&quot; in Pure, cf. <a class="reference internal" href="#namespaces">Namespaces</a>. Usually this will be
 resolved correctly, but if <tt class="docutils literal"><span class="pre">foo</span></tt> happens to also be a valid namespace then
@@ -4536,10 +4582,10 @@ using the built-in <tt class="docutils literal"><span class="pre">eval</span></t
 differences to the Lisp version of <tt class="docutils literal"><span class="pre">quote</span></tt>:</p>
 <ul class="simple">
 <li>Local variables (i.e., variables bound by the left-hand side of an equation,
-a lambda expression or the <tt class="docutils literal"><span class="pre">when</span></tt> construct) can never be quoted, so the
-corresponding value gets substituted even into quoted expressions. Thus,
-e.g., <tt class="docutils literal"><span class="pre">'(2*42+2^n)</span> <span class="pre">when</span> <span class="pre">n</span> <span class="pre">=</span> <span class="pre">12</span> <span class="pre">end</span></tt> evaluates to <tt class="docutils literal"><span class="pre">2*42+2^12</span></tt> rather than
-<tt class="docutils literal"><span class="pre">2*42+2^n</span></tt>.</li>
+a lambda expression or a <tt class="docutils literal"><span class="pre">case</span></tt> or <tt class="docutils literal"><span class="pre">when</span></tt> construct) can never be
+quoted, so the corresponding value gets substituted even into quoted
+expressions. Thus, e.g., <tt class="docutils literal"><span class="pre">'(2*42+2^n)</span> <span class="pre">when</span> <span class="pre">n</span> <span class="pre">=</span> <span class="pre">12</span> <span class="pre">end</span></tt> evaluates to
+<tt class="docutils literal"><span class="pre">2*42+2^12</span></tt> rather than <tt class="docutils literal"><span class="pre">2*42+2^n</span></tt>.</li>
 <li>Only simple expressions can be quoted in Pure. Special constructs embedded
 in a quoted expression, such as conditionals and local bindings, are
 evaluated as usual. For instance, <tt class="docutils literal"><span class="pre">'(2*42+(2^n</span> <span class="pre">when</span> <span class="pre">n</span> <span class="pre">=</span> <span class="pre">2*6</span> <span class="pre">end))</span></tt>

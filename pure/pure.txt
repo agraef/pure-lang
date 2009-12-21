@@ -829,12 +829,10 @@ Conditional expressions: ``if x then y else z``
 
 Lambdas: ``\x -> y``
     These denote anonymous functions and work pretty much like in Haskell.
-    More than one variable may be bound (e.g, ``\x y -> x*y``), which is
-    equivalent to a nested lambda (``\x -> \y -> x*y``). Pure also supports
-    pattern-matching lambda abstractions which match a pattern against the
-    lambda argument and bind multiple lambda variables in one go, such as
-    ``\(x,y) -> x*y``. An exception is raised if the actual lambda argument
-    doesn't match the pattern.
+    Pure supports multiple-argument lambdas (e.g, ``\x y -> x*y``), as well as
+    pattern-matching lambda abstractions which match one or more patterns
+    against the lambda arguments, such as ``\(x,y) -> x*y``. An exception is
+    raised if the actual lambda arguments do not match the given patterns.
 
 Case expressions: ``case x of rule; ... end``
     Matches an expression, discriminating over a number of different cases,
@@ -1117,13 +1115,57 @@ matrix comprehensions). For technical reasons, the current implementation also
 forbids matrix values in patterns, but it is possible to match a matrix value
 as a whole using the ``matrix`` type tag, see below.
 
-Patterns must not contain repeated variables, i.e., rules must be
-"left-linear". The only exception to this rule is the `anonymous variable`
-'``_``' which matches an arbitrary value (independently for all occurrences)
-without binding a variable symbol.
+Constants in patterns must be matched literally. For instance::
 
-Patterns may contain the following special elements which are not permitted in
-right-hand side expressions:
+  fact 0 = 1;
+
+This will only match an application of ``foo`` to the machine integer ``0``,
+not ``0.0`` or ``0L`` (even though these compare equal to ``0`` using the
+``==`` operator).
+
+In difference to Haskell, patterns may contain repeated variables, i.e., they
+may be `non-linear`. Thus, e.g., rules like the following are legal in Pure,
+and will only be matched if all occurrences of the same variable in the
+left-hand side pattern are matched to the same value::
+
+  > foo x x = x;
+  > foo 1 1;
+  1
+  > foo 1 2;
+  foo 1 2
+
+The notion of "sameness" employed here is that of syntactical identity, which
+means that the matched subterms must be identical in structure and content.
+The prelude provides syntactic equality as a function ``same`` and a
+comparison predicate ``===``, see the the `Pure Library Manual`_ for details.
+These are defined on all terms, in contrast to the "semantic" equality
+operator ``==`` which is only available on data where it has been explicitly
+defined, and may assert that two terms are equal even if they are
+syntactically different. Consider, e.g.::
+
+  > 0==0.0;
+  1
+  > 0===0.0;
+  0
+
+Non-linear patterns are particularly useful for computer algebra where you
+will frequently encounter rules such as the following::
+
+  > x*y+x*z = x*(y+z);
+  > a*(3*4)+a*5;
+  a*17
+
+As already mentioned, the '``_``' symbol is special in patterns; it denotes
+the `anonymous variable` which matches an arbitrary value (independently for
+all occurrences) without actually binding a variable. For instance::
+
+  foo _ _ = 0;
+
+In difference to the ``foo x x`` pattern above, this will match the
+application of ``foo`` to any combination of two arguments.
+
+Patterns may also contain the following special elements which are not
+permitted in right-hand side expressions:
 
 * A Haskell-style `"as" pattern` of the form *variable* ``@`` *pattern*
   binds the given variable to the expression matched by the subpattern
@@ -1140,22 +1182,27 @@ right-hand side expressions:
   only matches machine integers. See the `Type Tags`_ section below for
   details.
 
+Note that the variable bound by an ``as`` pattern must not occur inside the
+subpattern. Thus a definition like the following is illegal::
+
+  > foo xs@(x:xs) = x;
+  <stdin>, line 1: error in pattern (recursive variable 'xs')
+
 Syntactically, both "as" patterns and type tags are primary expressions. If
 the subpattern of an "as" pattern is a compound expression, it *must* be
 parenthesized. For instance, the following function duplicates the head
 element of a list::
 
-  foo xs @ (x:_) = x:xs;
+  foo xs@(x:_) = x:xs;
 
 Note that if you accidentally forget the parentheses around the subpattern
 ``x:_``, you still get a syntactically correct definition::
 
-  foo xs @ x:_ = x:xs;
+  foo xs@x:_ = x:xs;
 
-But this gets parsed as ``(foo xs@x):_ = x:xs`` (despite the spacing which is
-ignored by the parser), which is most certainly *not* what you want. It is
-thus a good idea to just always enclose the subpattern with parentheses in
-order to prevent such glitches.
+But this gets parsed as ``(foo xs@x):_ = x:xs``, which is most certainly *not*
+what you want. It is thus a good idea to just always enclose the subpattern
+with parentheses in order to prevent such glitches.
 
 Another potential pitfall is that the notation ``foo::bar`` is also used to
 denote "qualified symbols" in Pure, cf. Namespaces_. Usually this will be
@@ -4447,10 +4494,10 @@ using the built-in ``eval`` function. However, there are some notable
 differences to the Lisp version of ``quote``:
 
 * Local variables (i.e., variables bound by the left-hand side of an equation,
-  a lambda expression or the ``when`` construct) can never be quoted, so the
-  corresponding value gets substituted even into quoted expressions. Thus,
-  e.g., ``'(2*42+2^n) when n = 12 end`` evaluates to ``2*42+2^12`` rather than
-  ``2*42+2^n``.
+  a lambda expression or a ``case`` or ``when`` construct) can never be
+  quoted, so the corresponding value gets substituted even into quoted
+  expressions. Thus, e.g., ``'(2*42+2^n) when n = 12 end`` evaluates to
+  ``2*42+2^12`` rather than ``2*42+2^n``.
 
 * Only simple expressions can be quoted in Pure. Special constructs embedded
   in a quoted expression, such as conditionals and local bindings, are
