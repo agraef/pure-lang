@@ -2720,26 +2720,6 @@ example of a binary operator which actually takes *three* arguments::
   > map (5 oops 8) (1..5);
   [13,18,23,28,33]
 
-Also note that the argument count of a *named* function will be the actual
-number of arguments, as given in the function definition::
-
-  > foo x y = x*y;
-  > nargs foo;
-  2
-  > nargs (foo x);
-  1
-
-In contrast, *anonymous* functions (lambdas) always yield an argument count
-of 1, because a multi-argument lambda like ``\x y -> x*y`` is in fact just
-a shorthand for several nested 1-argument lambdas, ``\x -> \y -> x*y`` in
-this example. Hence::
-
-  > bar = \x y -> x*y;
-  > nargs bar;
-  1
-  > nargs (bar x);
-  1
-
 Eval and Friends
 ~~~~~~~~~~~~~~~~
 
@@ -2826,9 +2806,20 @@ operations which provide a more compact binary serialization format.)
   Reevaluates an expression in a local environment. This dynamically
   rebinds function symbols in the given expression to whatever local
   definitions are in effect at the point of the ``reduce`` call. Note that
-  ``reduce`` is actually implemented as a macro which uses the
-  |__locals__|_ builtin to enumerate the bindings which are in effect at
-  the call site.
+  ``reduce`` is actually implemented as a macro which expands to the
+  ``reduce_with`` primitive (see below), using the |__locals__|_ builtin to
+  enumerate the bindings which are in effect at the call site.
+
+.. raw:: html
+
+   <a name="reduce_with">
+
+.. _reduce_with:
+
+``reduce_with env x``
+  Like ``reduce`` above, but takes a list of replacements (given as hash
+  pairs ``u=>v``) as the first argument. The ``reduce`` macro expands to
+  ``reduce_with __locals__``.
 
 .. |__locals__| replace:: ``__locals__``
 
@@ -2852,7 +2843,8 @@ Examples::
 
 The ``reduce`` macro provides a restricted form of dynamic binding which is
 useful to implement local rewriting rules. It is invoked without parameters
-and expands to a curried primitive which takes one additional argument, the
+and expands to the curried call ``reduce_with __locals__`` of the
+``reduce_with`` primitive, which takes one additional argument, the
 expression to be rewritten. The following example shows how to expand or
 factorize an expression using local rules for the corresponding laws of
 distributivity::
@@ -2863,8 +2855,8 @@ distributivity::
   end;
 
   factor = reduce with
-    a*c+b*c1 = (a+b)*c if c===c1;
-    a*b+a1*c = a*(b+c) if a===a1;
+    a*c+b*c = (a+b)*c;
+    a*b+a*c = a*(b+c);
   end;
 
   expand ((a+b)*2); // yields a*2+b*2
@@ -2893,10 +2885,16 @@ any way::
   > reduce y when x = u+v end;
   [x,x^2,x^3]
 
-However, in such cases you can perform the desired substitution by just
-turning the ``when`` into a ``with`` clause::
+However, in such cases you can perform the desired substitution by turning
+the ``when`` into a ``with`` clause::
 
   > reduce y with x = u+v end;
+  [u+v,(u+v)^2,(u+v)^3]
+
+Or you can just invoke the underlying ``reduce_with`` builtin directly,
+with the desired substitutions given as hash pairs in the first argument::
+
+  > reduce_with [x=>u+v] y;
   [u+v,(u+v)^2,(u+v)^3]
 
 Expression Serialization
@@ -6438,6 +6436,7 @@ Index
 | `rect`_
 | `redim`_
 | `reduce`_
+| `reduce_with`_
 | `ref`_
 | `refp`_
 | `reg`_
