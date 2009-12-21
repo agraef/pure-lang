@@ -464,9 +464,16 @@ using namespace __C;
      Reevaluates an expression in a local environment. This dynamically
      rebinds function symbols in the given expression to whatever local
      definitions are in effect at the point of the ``reduce`` call. Note that
-     ``reduce`` is actually implemented as a macro which uses the
-     |__locals__|_ builtin to enumerate the bindings which are in effect at
-     the call site.
+     ``reduce`` is actually implemented as a macro which expands to the
+     ``reduce_with`` primitive (see below), using the |__locals__|_ builtin to
+     enumerate the bindings which are in effect at the call site.
+
+   .. _reduce_with:
+
+   ``reduce_with env x``
+     Like ``reduce`` above, but takes a list of replacements (given as hash
+     pairs ``u=>v``) as the first argument. The ``reduce`` macro expands to
+     ``reduce_with __locals__``.
 
    .. |__locals__| replace:: ``__locals__``
 
@@ -490,7 +497,8 @@ using namespace __C;
 
    The ``reduce`` macro provides a restricted form of dynamic binding which is
    useful to implement local rewriting rules. It is invoked without parameters
-   and expands to a curried primitive which takes one additional argument, the
+   and expands to the curried call ``reduce_with __locals__`` of the
+   ``reduce_with`` primitive, which takes one additional argument, the
    expression to be rewritten. The following example shows how to expand or
    factorize an expression using local rules for the corresponding laws of
    distributivity::
@@ -531,10 +539,16 @@ using namespace __C;
      > reduce y when x = u+v end;
      [x,x^2,x^3]
 
-   However, in such cases you can perform the desired substitution by just
-   turning the ``when`` into a ``with`` clause::
+   However, in such cases you can perform the desired substitution by turning
+   the ``when`` into a ``with`` clause::
 
      > reduce y with x = u+v end;
+     [u+v,(u+v)^2,(u+v)^3]
+
+   Or you can just invoke the underlying ``reduce_with`` builtin directly,
+   with the desired substitutions given as hash pairs in the first argument::
+
+     > reduce_with [x=>u+v] y;
      [u+v,(u+v)^2,(u+v)^3]
 
    Expression Serialization
@@ -637,11 +651,11 @@ extern expr* evalcmd(expr*); // IMPURE!
 extern char* lasterr();
 
 namespace __C;
-extern expr *reduce(expr *locals, expr *x);
 extern void* str(expr*) = pure_str;
 namespace;
 
-def ::reduce = reduce __locals__;
+extern expr *reduce(expr *locals, expr *x) = reduce_with;
+def reduce = reduce_with __locals__;
 
 str x = cstring (pure_str x);
 
