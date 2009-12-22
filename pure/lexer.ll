@@ -64,7 +64,8 @@ static void check(const yy::location& l, const char* s, bool decl);
 
 /* Hook for interactive command input. */
 char *(*command_input)(const char *prompt);
-static void lex_input(const char *prompt, char *buf, int &result, int max_size);
+static void lex_input(const char *prompt, char *buf,
+		      size_t &result, size_t max_size);
 
 #define YY_INPUT(buf,result,max_size)					\
   if (interpreter::g_interp->source_s) {				\
@@ -73,10 +74,12 @@ static void lex_input(const char *prompt, char *buf, int &result, int max_size);
     memcpy(buf, interpreter::g_interp->source_s, l);			\
     interpreter::g_interp->source_s += result = l;			\
   } else if ( interpreter::g_interactive &&				\
-	      interpreter::g_interp->ttymode )				\
+	      interpreter::g_interp->ttymode ) {			\
+    size_t l;								\
     lex_input(interpreter::g_interp->ps.c_str(),			\
-	      buf, result, max_size);					\
-  else {								\
+	      buf, l, (size_t)max_size);				\
+    result = l;								\
+ } else {								\
     errno=0;								\
     while ((result = fread(buf, 1, max_size, yyin))==0 && ferror(yyin)) \
     {									\
@@ -337,7 +340,7 @@ blank  [ \t\f\v\r]
   char *msg;
   yytext[yyleng-1] = 0;
   int count = 0;
-  for (int i = 1; i < yyleng-1; i++)
+  for (int i = 1; i < (int)yyleng-1; i++)
     if (yytext[i] == '\n') count++;
   yylloc->lines(count);
   yylval->csval = parsestr(yytext+1, msg);
@@ -350,7 +353,7 @@ blank  [ \t\f\v\r]
 \"{str}      {
   char *msg;
   int count = 0;
-  for (int i = 1; i < yyleng; i++)
+  for (int i = 1; i < (int)yyleng; i++)
     if (yytext[i] == '\n') count++;
   yylloc->lines(count);
   interp.error(*yylloc, "unterminated string constant");
@@ -484,13 +487,13 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     interp.error(*yylloc, msg);
     break;
   }
-  while (yyleng > (int)k+1 && yytext[yyleng-1] == ';') yyless(yyleng-1);
+  while ((int)yyleng > (int)k+1 && yytext[yyleng-1] == ';') yyless(yyleng-1);
   if (interp.declare_op) {
     yylval->sval = new string(yytext);
     return token::ID;
   }
   symbol* sym = interp.symtab.lookup(yytext);
-  while (!sym && yyleng > (int)k+1) {
+  while (!sym && (int)yyleng > (int)k+1) {
     if (yyleng == 2 && yytext[0] == '-' && yytext[1] == '>')
       return token::MAPSTO;
     yyless(yyleng-1);
@@ -566,7 +569,8 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
 static char *my_buf = NULL, *my_bufptr = NULL;
 static int len = 0;
 
-static void lex_input(const char *prompt, char *buf, int &result, int max_size)
+static void lex_input(const char *prompt, char *buf,
+		      size_t &result, size_t max_size)
 {
   if (!my_buf) {
     interpreter::g_interp->debug_init();
@@ -610,7 +614,7 @@ static void lex_input(const char *prompt, char *buf, int &result, int max_size)
   int l = len-(my_bufptr-my_buf);
   // how many chars to copy (+1 for the trailing newline)
   int k = l+1;
-  if (k > max_size) k = max_size;
+  if (k > (int)max_size) k = max_size;
   // copy chars to the buffer
   strncpy(buf, my_bufptr, k);
   if (k > l) {
