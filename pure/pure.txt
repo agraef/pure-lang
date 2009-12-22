@@ -1115,38 +1115,34 @@ matrix comprehensions). For technical reasons, the current implementation also
 forbids matrix values in patterns, but it is possible to match a matrix value
 as a whole using the ``matrix`` type tag, see below.
 
+As already mentioned, the '``_``' symbol is special in patterns; it denotes
+the `anonymous variable` which matches an arbitrary value (independently for
+all occurrences) without actually binding a variable. For instance::
+
+  foo _ _ = 0;
+
+This will match the application of ``foo`` to any combination of two
+arguments (and just ignore the values of these arguments).
+
 Constants in patterns must be matched literally. For instance::
 
-  fact 0 = 1;
+  foo 0 = 1;
 
 This will only match an application of ``foo`` to the machine integer ``0``,
 not ``0.0`` or ``0L`` (even though these compare equal to ``0`` using the
-``==`` operator).
+'``==``' operator).
 
-In difference to Haskell, patterns may contain repeated variables, i.e., they
-may be `non-linear`. Thus, e.g., rules like the following are legal in Pure,
-and will only be matched if all occurrences of the same variable in the
-left-hand side pattern are matched to the same value::
+In difference to Haskell, patterns may contain repeated variables (other than
+the anonymous variable), i.e., they may be `non-linear`. Thus rules like the
+following are legal in Pure, and will only be matched if all occurrences of
+the same variable in the left-hand side pattern are matched to the same
+value::
 
   > foo x x = x;
   > foo 1 1;
   1
   > foo 1 2;
   foo 1 2
-
-The notion of "sameness" employed here is that of syntactical identity, which
-means that the matched subterms must be identical in structure and content.
-The prelude provides syntactic equality as a function ``same`` and a
-comparison predicate ``===``, see the the `Pure Library Manual`_ for details.
-These are defined on all terms, in contrast to the "semantic" equality
-operator ``==`` which is only available on data where it has been explicitly
-defined, and may assert that two terms are equal even if they are
-syntactically different. Consider, e.g.::
-
-  > 0==0.0;
-  1
-  > 0===0.0;
-  0
 
 Non-linear patterns are particularly useful for computer algebra where you
 will frequently encounter rules such as the following::
@@ -1155,14 +1151,33 @@ will frequently encounter rules such as the following::
   > a*(3*4)+a*5;
   a*17
 
-As already mentioned, the '``_``' symbol is special in patterns; it denotes
-the `anonymous variable` which matches an arbitrary value (independently for
-all occurrences) without actually binding a variable. For instance::
+.. _same: purelib.html#same
+.. |same| replace:: ``same``
 
-  foo _ _ = 0;
+The notion of "sameness" employed here is that of syntactical identity, which
+means that the matched subterms must be identical in structure and content.
+The prelude provides syntactic equality as a function |same|_ and a comparison
+predicate '``===``'. Thus the above definition of ``foo`` is roughly
+equivalent to the following::
 
-In difference to the ``foo x x`` pattern above, this will match the
-application of ``foo`` to any combination of two arguments.
+  foo x y = x if same x y;
+
+It is important to note the differences between syntactic equality embodied by
+``same`` and '``===``', and the "semantic" equality operator '``==``'. The
+former are always defined on all terms, whereas '``==``' is only available on
+data where it has been defined explicitly, either in the prelude or by the
+programmer. Also note that '``==``' may assert that two terms are equal even
+if they are syntactically different. Consider, e.g.::
+
+  > 0==0.0;
+  1
+  > 0===0.0;
+  0
+
+This distinction is actually quite useful. It gives the programmer the
+flexibility to define '``==``' in any way that he sees fit, which is
+consistent with the way the other comparison operators like '``<``' and
+'``>``' are handled in Pure.
 
 Patterns may also contain the following special elements which are not
 permitted in right-hand side expressions:
@@ -1181,12 +1196,6 @@ permitted in right-hand side expressions:
   only values of the designated type. Thus, for instance, '``x::int``'
   only matches machine integers. See the `Type Tags`_ section below for
   details.
-
-Note that the variable bound by an ``as`` pattern must not occur inside the
-subpattern. Thus a definition like the following is illegal::
-
-  > foo xs@(x:xs) = x;
-  <stdin>, line 1: error in pattern (recursive variable 'xs')
 
 Syntactically, both "as" patterns and type tags are primary expressions. If
 the subpattern of an "as" pattern is a compound expression, it *must* be
@@ -3734,6 +3743,11 @@ is executed on the "bare metal", without a hosting interpreter. Only a minimal
 runtime system is provided. This considerably reduces startup times, but also
 implies the following quirks and limitations:
 
+.. _eval: purelib.html#eval
+.. _evalcmd: purelib.html#evalcmd
+.. |eval| replace:: ``eval``
+.. |evalcmd| replace:: ``evalcmd``
+
 * All toplevel expressions and ``let`` bindings are evaluated *after* all
   functions have been defined. This might cause inconsistent behaviour with an
   interpreted run of the same program, which executes expressions and variable
@@ -3749,18 +3763,18 @@ implies the following quirks and limitations:
   placed after all the function and variable definitions, at the end of your
   program.
 
-* The eval_ function can only be used to evaluate plain toplevel expressions.
-  You can define local functions and variables in ``with`` and ``when``
-  clauses inside an expression, but you can't use eval_ to define new global
-  variables and functions. In other words, anything which changes the
-  executing program is "verboten".
+* The |eval|_ function can only be used to evaluate plain toplevel
+  expressions.  You can define local functions and variables in ``with`` and
+  ``when`` clauses inside an expression, but you can't use ``eval`` to define
+  new global variables and functions. In other words, anything which changes
+  the executing program is "verboten".
 
-* The introspective capabilities provided by evalcmd_ (discussed under
+* The introspective capabilities provided by |evalcmd|_ (discussed under
   Reflection_ below) won't work either because the interactive commands are
   all disabled.
 
 * Constant and macro definitions, being compile time features, aren't
-  available in the compiled program. If you need to use these with eval_ at
+  available in the compiled program. If you need to use these with |eval|_ at
   run time, you have to provide them through variable and function definitions
   instead.
 
@@ -3773,15 +3787,12 @@ implies the following quirks and limitations:
   not permitted. (If necessary, you can bind such values to variables instead,
   then they will work fine even in a batch-compiled program.)
 
-.. _eval: purelib.html#eval
-.. _evalcmd: purelib.html#evalcmd
-
 What all this boils down to is that anything which requires the compile time
 or interactive facilities of the interpreter, is unavailable. These
 restrictions only apply at run time, of course. At compile time the program
-*is* being executed by the interpreter so you can use eval_ and evalcmd_ in
-any desired way. See the description of the ``compiling`` variable below for
-how to distinguish these cases in your script.
+*is* being executed by the interpreter so you can use |eval|_ and |evalcmd|_
+in any desired way. See the description of the ``compiling`` variable below
+for how to distinguish these cases in your script.
 
 For most kinds of scripts, the above restrictions aren't really that much of
 an obstacle, or can easily be worked around. For the few scripts which
@@ -3798,7 +3809,7 @@ first seem to be a big annoyance, but it actually opens the door for some
 powerful programming techniques like `partial evaluation`_. It is also a
 necessity because of Pure's highly dynamic nature. For instance, Pure allows
 you to define constants by evaluating an arbitrary expression (see `Constant
-Definitions`_ below), and using eval_ a program can easily modify itself in
+Definitions`_ below), and using ``eval`` a program can easily modify itself in
 even more unforeseeable ways. Therefore pretty much anything in your program
 can actually depend on previous computations performed while the program is
 being executed.
@@ -4163,6 +4174,36 @@ Note that if you have a set of definitions for the ``__show__`` function which
 should always be loaded at startup, you can put them into the interpreter's
 interactive startup files, see `Interactive Usage`_.
 
+Non-Linear Patterns
+-------------------
+
+As explained in section Patterns_, Pure allows multiple occurrences of the
+same variable in a pattern (so-called non-linearities)::
+
+  foo x x = x;
+
+This rule will only be matched if both occurrences of ``x`` are bound to the
+same value. More precisely, the two instances of ``x`` will checked for
+syntactic equality during pattern matching, using the |same|_ primitive
+provided by the prelude. This may need time proportional to the sizes of both
+argument terms, and thus become quite costly for big terms. In fact, ``same``
+might not even terminate at all if the compared terms are both infinite lazy
+data structures, such as in ``foo (1..inf) (1..inf)``. So you have to be
+careful to avoid such uses.
+
+When using non-linearities in conjunction with "as" patterns, you also have to
+make sure that the "as" variable does not occur inside the corresponding
+subpattern. Thus a definition like the following is illegal::
+
+  > foo xs@(x:xs) = x;
+  <stdin>, line 1: error in pattern (recursive variable 'xs')
+
+The explanation is that such a pattern couldn't possibly be matched by a
+finite list anyway. Indeed, the only match for ``xs@(x:xs)`` would be an
+infinite list of ``x``\ 's, and there's no way that this condition could be
+verified in a finite amount of time. Therefore the interpreter reports a
+"recursive variable" error in such situations.
+
 "As" Patterns
 -------------
 
@@ -4176,9 +4217,9 @@ message from the compiler::
   a@(foo x y) = a,x,y;
 
 This is because the spine of a function application is not available when the
-function is called at runtime. "As" patterns in pattern bindings (``case``,
-``when``) are not affected by this restriction since the entire value to be
-matched is available at runtime. For instance::
+function is called at runtime. "As" patterns in pattern bindings (``let``,
+``const``, ``case``, ``when``) are not affected by this restriction since the
+entire value to be matched is available at runtime. For instance::
 
   > case bar 99 of y@(bar x) = y,x+1; end;
   bar 99,100

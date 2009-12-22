@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>The Pure Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2009-12-21" />
+<meta name="date" content="2009-12-22" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2009-12-21</td></tr>
+<td>2009-12-22</td></tr>
 </tbody>
 </table>
 <!-- Note: This document is formatted using docutils. The Makefile has rules -->
@@ -391,25 +391,26 @@ Pure can be found under the following URLs:</p>
 <li><a class="reference internal" href="#error-recovery" id="id58">12.3&nbsp;&nbsp;&nbsp;Error Recovery</a></li>
 <li><a class="reference internal" href="#batch-compilation" id="id59">12.4&nbsp;&nbsp;&nbsp;Batch Compilation</a></li>
 <li><a class="reference internal" href="#the-show-function" id="id60">12.5&nbsp;&nbsp;&nbsp;The __show__ Function</a></li>
-<li><a class="reference internal" href="#as-patterns" id="id61">12.6&nbsp;&nbsp;&nbsp;&quot;As&quot; Patterns</a></li>
-<li><a class="reference internal" href="#head-function" id="id62">12.7&nbsp;&nbsp;&nbsp;Head = Function</a></li>
-<li><a class="reference internal" href="#namespaces-and-implicit-declarations" id="id63">12.8&nbsp;&nbsp;&nbsp;Namespaces and Implicit Declarations</a></li>
-<li><a class="reference internal" href="#with-or-when" id="id64">12.9&nbsp;&nbsp;&nbsp;With or when?</a></li>
-<li><a class="reference internal" href="#numeric-calculations" id="id65">12.10&nbsp;&nbsp;&nbsp;Numeric Calculations</a></li>
-<li><a class="reference internal" href="#constant-definitions" id="id66">12.11&nbsp;&nbsp;&nbsp;Constant Definitions</a></li>
-<li><a class="reference internal" href="#external-c-functions" id="id67">12.12&nbsp;&nbsp;&nbsp;External C Functions</a></li>
-<li><a class="reference internal" href="#id2" id="id68">12.13&nbsp;&nbsp;&nbsp;Special Forms</a></li>
-<li><a class="reference internal" href="#the-quote" id="id69">12.14&nbsp;&nbsp;&nbsp;The Quote</a></li>
-<li><a class="reference internal" href="#laziness" id="id70">12.15&nbsp;&nbsp;&nbsp;Laziness</a></li>
-<li><a class="reference internal" href="#reflection" id="id71">12.16&nbsp;&nbsp;&nbsp;Reflection</a></li>
-<li><a class="reference internal" href="#hygienic-macros" id="id72">12.17&nbsp;&nbsp;&nbsp;Hygienic Macros</a></li>
-<li><a class="reference internal" href="#stack-size-and-tail-recursion" id="id73">12.18&nbsp;&nbsp;&nbsp;Stack Size and Tail Recursion</a></li>
-<li><a class="reference internal" href="#handling-of-asynchronous-signals" id="id74">12.19&nbsp;&nbsp;&nbsp;Handling of Asynchronous Signals</a></li>
+<li><a class="reference internal" href="#non-linear-patterns" id="id61">12.6&nbsp;&nbsp;&nbsp;Non-Linear Patterns</a></li>
+<li><a class="reference internal" href="#as-patterns" id="id62">12.7&nbsp;&nbsp;&nbsp;&quot;As&quot; Patterns</a></li>
+<li><a class="reference internal" href="#head-function" id="id63">12.8&nbsp;&nbsp;&nbsp;Head = Function</a></li>
+<li><a class="reference internal" href="#namespaces-and-implicit-declarations" id="id64">12.9&nbsp;&nbsp;&nbsp;Namespaces and Implicit Declarations</a></li>
+<li><a class="reference internal" href="#with-or-when" id="id65">12.10&nbsp;&nbsp;&nbsp;With or when?</a></li>
+<li><a class="reference internal" href="#numeric-calculations" id="id66">12.11&nbsp;&nbsp;&nbsp;Numeric Calculations</a></li>
+<li><a class="reference internal" href="#constant-definitions" id="id67">12.12&nbsp;&nbsp;&nbsp;Constant Definitions</a></li>
+<li><a class="reference internal" href="#external-c-functions" id="id68">12.13&nbsp;&nbsp;&nbsp;External C Functions</a></li>
+<li><a class="reference internal" href="#id2" id="id69">12.14&nbsp;&nbsp;&nbsp;Special Forms</a></li>
+<li><a class="reference internal" href="#the-quote" id="id70">12.15&nbsp;&nbsp;&nbsp;The Quote</a></li>
+<li><a class="reference internal" href="#laziness" id="id71">12.16&nbsp;&nbsp;&nbsp;Laziness</a></li>
+<li><a class="reference internal" href="#reflection" id="id72">12.17&nbsp;&nbsp;&nbsp;Reflection</a></li>
+<li><a class="reference internal" href="#hygienic-macros" id="id73">12.18&nbsp;&nbsp;&nbsp;Hygienic Macros</a></li>
+<li><a class="reference internal" href="#stack-size-and-tail-recursion" id="id74">12.19&nbsp;&nbsp;&nbsp;Stack Size and Tail Recursion</a></li>
+<li><a class="reference internal" href="#handling-of-asynchronous-signals" id="id75">12.20&nbsp;&nbsp;&nbsp;Handling of Asynchronous Signals</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#copying" id="id75">13&nbsp;&nbsp;&nbsp;Copying</a></li>
-<li><a class="reference internal" href="#author" id="id76">14&nbsp;&nbsp;&nbsp;Author</a></li>
-<li><a class="reference internal" href="#see-also" id="id77">15&nbsp;&nbsp;&nbsp;See Also</a></li>
+<li><a class="reference internal" href="#copying" id="id76">13&nbsp;&nbsp;&nbsp;Copying</a></li>
+<li><a class="reference internal" href="#author" id="id77">14&nbsp;&nbsp;&nbsp;Author</a></li>
+<li><a class="reference internal" href="#see-also" id="id78">15&nbsp;&nbsp;&nbsp;See Also</a></li>
 </ul>
 </div>
 <div class="section" id="introduction">
@@ -1377,37 +1378,32 @@ values). <em>Not</em> permitted are any of the special expression types (lambda,
 matrix comprehensions). For technical reasons, the current implementation also
 forbids matrix values in patterns, but it is possible to match a matrix value
 as a whole using the <tt class="docutils literal"><span class="pre">matrix</span></tt> type tag, see below.</p>
+<p>As already mentioned, the '<tt class="docutils literal"><span class="pre">_</span></tt>' symbol is special in patterns; it denotes
+the <strong class="dfn">anonymous variable</strong> which matches an arbitrary value (independently for
+all occurrences) without actually binding a variable. For instance:</p>
+<pre class="literal-block">
+foo _ _ = 0;
+</pre>
+<p>This will match the application of <tt class="docutils literal"><span class="pre">foo</span></tt> to any combination of two
+arguments (and just ignore the values of these arguments).</p>
 <p>Constants in patterns must be matched literally. For instance:</p>
 <pre class="literal-block">
-fact 0 = 1;
+foo 0 = 1;
 </pre>
 <p>This will only match an application of <tt class="docutils literal"><span class="pre">foo</span></tt> to the machine integer <tt class="docutils literal"><span class="pre">0</span></tt>,
 not <tt class="docutils literal"><span class="pre">0.0</span></tt> or <tt class="docutils literal"><span class="pre">0L</span></tt> (even though these compare equal to <tt class="docutils literal"><span class="pre">0</span></tt> using the
-<tt class="docutils literal"><span class="pre">==</span></tt> operator).</p>
-<p>In difference to Haskell, patterns may contain repeated variables, i.e., they
-may be <strong class="dfn">non-linear</strong>. Thus, e.g., rules like the following are legal in Pure,
-and will only be matched if all occurrences of the same variable in the
-left-hand side pattern are matched to the same value:</p>
+'<tt class="docutils literal"><span class="pre">==</span></tt>' operator).</p>
+<p>In difference to Haskell, patterns may contain repeated variables (other than
+the anonymous variable), i.e., they may be <strong class="dfn">non-linear</strong>. Thus rules like the
+following are legal in Pure, and will only be matched if all occurrences of
+the same variable in the left-hand side pattern are matched to the same
+value:</p>
 <pre class="literal-block">
 &gt; foo x x = x;
 &gt; foo 1 1;
 1
 &gt; foo 1 2;
 foo 1 2
-</pre>
-<p>The notion of &quot;sameness&quot; employed here is that of syntactical identity, which
-means that the matched subterms must be identical in structure and content.
-The prelude provides syntactic equality as a function <tt class="docutils literal"><span class="pre">same</span></tt> and a
-comparison predicate <tt class="docutils literal"><span class="pre">===</span></tt>, see the the <a class="reference external" href="purelib.html">Pure Library Manual</a> for details.
-These are defined on all terms, in contrast to the &quot;semantic&quot; equality
-operator <tt class="docutils literal"><span class="pre">==</span></tt> which is only available on data where it has been explicitly
-defined, and may assert that two terms are equal even if they are
-syntactically different. Consider, e.g.:</p>
-<pre class="literal-block">
-&gt; 0==0.0;
-1
-&gt; 0===0.0;
-0
 </pre>
 <p>Non-linear patterns are particularly useful for computer algebra where you
 will frequently encounter rules such as the following:</p>
@@ -1416,14 +1412,30 @@ will frequently encounter rules such as the following:</p>
 &gt; a*(3*4)+a*5;
 a*17
 </pre>
-<p>As already mentioned, the '<tt class="docutils literal"><span class="pre">_</span></tt>' symbol is special in patterns; it denotes
-the <strong class="dfn">anonymous variable</strong> which matches an arbitrary value (independently for
-all occurrences) without actually binding a variable. For instance:</p>
+<p>The notion of &quot;sameness&quot; employed here is that of syntactical identity, which
+means that the matched subterms must be identical in structure and content.
+The prelude provides syntactic equality as a function <a class="reference external" href="purelib.html#same"><tt class="docutils literal"><span class="pre">same</span></tt></a> and a comparison
+predicate '<tt class="docutils literal"><span class="pre">===</span></tt>'. Thus the above definition of <tt class="docutils literal"><span class="pre">foo</span></tt> is roughly
+equivalent to the following:</p>
 <pre class="literal-block">
-foo _ _ = 0;
+foo x y = x if same x y;
 </pre>
-<p>In difference to the <tt class="docutils literal"><span class="pre">foo</span> <span class="pre">x</span> <span class="pre">x</span></tt> pattern above, this will match the
-application of <tt class="docutils literal"><span class="pre">foo</span></tt> to any combination of two arguments.</p>
+<p>It is important to note the differences between syntactic equality embodied by
+<tt class="docutils literal"><span class="pre">same</span></tt> and '<tt class="docutils literal"><span class="pre">===</span></tt>', and the &quot;semantic&quot; equality operator '<tt class="docutils literal"><span class="pre">==</span></tt>'. The
+former are always defined on all terms, whereas '<tt class="docutils literal"><span class="pre">==</span></tt>' is only available on
+data where it has been defined explicitly, either in the prelude or by the
+programmer. Also note that '<tt class="docutils literal"><span class="pre">==</span></tt>' may assert that two terms are equal even
+if they are syntactically different. Consider, e.g.:</p>
+<pre class="literal-block">
+&gt; 0==0.0;
+1
+&gt; 0===0.0;
+0
+</pre>
+<p>This distinction is actually quite useful. It gives the programmer the
+flexibility to define '<tt class="docutils literal"><span class="pre">==</span></tt>' in any way that he sees fit, which is
+consistent with the way the other comparison operators like '<tt class="docutils literal"><span class="pre">&lt;</span></tt>' and
+'<tt class="docutils literal"><span class="pre">&gt;</span></tt>' are handled in Pure.</p>
 <p>Patterns may also contain the following special elements which are not
 permitted in right-hand side expressions:</p>
 <ul class="simple">
@@ -1441,12 +1453,6 @@ only values of the designated type. Thus, for instance, '<tt class="docutils lit
 only matches machine integers. See the <a class="reference internal" href="#type-tags">Type Tags</a> section below for
 details.</li>
 </ul>
-<p>Note that the variable bound by an <tt class="docutils literal"><span class="pre">as</span></tt> pattern must not occur inside the
-subpattern. Thus a definition like the following is illegal:</p>
-<pre class="literal-block">
-&gt; foo xs&#64;(x:xs) = x;
-&lt;stdin&gt;, line 1: error in pattern (recursive variable 'xs')
-</pre>
 <p>Syntactically, both &quot;as&quot; patterns and type tags are primary expressions. If
 the subpattern of an &quot;as&quot; pattern is a compound expression, it <em>must</em> be
 parenthesized. For instance, the following function duplicates the head
@@ -3887,16 +3893,16 @@ program will have to include at least one of these to play the role of the
 &quot;main program&quot; in your script. In most cases these expressions are best
 placed after all the function and variable definitions, at the end of your
 program.</li>
-<li>The <a class="reference external" href="purelib.html#eval">eval</a> function can only be used to evaluate plain toplevel expressions.
-You can define local functions and variables in <tt class="docutils literal"><span class="pre">with</span></tt> and <tt class="docutils literal"><span class="pre">when</span></tt>
-clauses inside an expression, but you can't use <a class="reference external" href="purelib.html#eval">eval</a> to define new global
-variables and functions. In other words, anything which changes the
-executing program is &quot;verboten&quot;.</li>
-<li>The introspective capabilities provided by <a class="reference external" href="purelib.html#evalcmd">evalcmd</a> (discussed under
+<li>The <a class="reference external" href="purelib.html#eval"><tt class="docutils literal"><span class="pre">eval</span></tt></a> function can only be used to evaluate plain toplevel
+expressions.  You can define local functions and variables in <tt class="docutils literal"><span class="pre">with</span></tt> and
+<tt class="docutils literal"><span class="pre">when</span></tt> clauses inside an expression, but you can't use <tt class="docutils literal"><span class="pre">eval</span></tt> to define
+new global variables and functions. In other words, anything which changes
+the executing program is &quot;verboten&quot;.</li>
+<li>The introspective capabilities provided by <a class="reference external" href="purelib.html#evalcmd"><tt class="docutils literal"><span class="pre">evalcmd</span></tt></a> (discussed under
 <a class="reference internal" href="#reflection">Reflection</a> below) won't work either because the interactive commands are
 all disabled.</li>
 <li>Constant and macro definitions, being compile time features, aren't
-available in the compiled program. If you need to use these with <a class="reference external" href="purelib.html#eval">eval</a> at
+available in the compiled program. If you need to use these with <a class="reference external" href="purelib.html#eval"><tt class="docutils literal"><span class="pre">eval</span></tt></a> at
 run time, you have to provide them through variable and function definitions
 instead.</li>
 <li>Code which gets executed to compute constant values at compile time will
@@ -3910,9 +3916,9 @@ then they will work fine even in a batch-compiled program.)</li>
 <p>What all this boils down to is that anything which requires the compile time
 or interactive facilities of the interpreter, is unavailable. These
 restrictions only apply at run time, of course. At compile time the program
-<em>is</em> being executed by the interpreter so you can use <a class="reference external" href="purelib.html#eval">eval</a> and <a class="reference external" href="purelib.html#evalcmd">evalcmd</a> in
-any desired way. See the description of the <tt class="docutils literal"><span class="pre">compiling</span></tt> variable below for
-how to distinguish these cases in your script.</p>
+<em>is</em> being executed by the interpreter so you can use <a class="reference external" href="purelib.html#eval"><tt class="docutils literal"><span class="pre">eval</span></tt></a> and <a class="reference external" href="purelib.html#evalcmd"><tt class="docutils literal"><span class="pre">evalcmd</span></tt></a>
+in any desired way. See the description of the <tt class="docutils literal"><span class="pre">compiling</span></tt> variable below
+for how to distinguish these cases in your script.</p>
 <p>For most kinds of scripts, the above restrictions aren't really that much of
 an obstacle, or can easily be worked around. For the few scripts which
 actually need the full dynamic capabilities of Pure you'll just have to run
@@ -3927,7 +3933,7 @@ first seem to be a big annoyance, but it actually opens the door for some
 powerful programming techniques like <a class="reference external" href="http://en.wikipedia.org/wiki/Partial_evaluation">partial evaluation</a>. It is also a
 necessity because of Pure's highly dynamic nature. For instance, Pure allows
 you to define constants by evaluating an arbitrary expression (see <a class="reference internal" href="#constant-definitions">Constant
-Definitions</a> below), and using <a class="reference external" href="purelib.html#eval">eval</a> a program can easily modify itself in
+Definitions</a> below), and using <tt class="docutils literal"><span class="pre">eval</span></tt> a program can easily modify itself in
 even more unforeseeable ways. Therefore pretty much anything in your program
 can actually depend on previous computations performed while the program is
 being executed.</p>
@@ -4273,8 +4279,36 @@ easily go back to the standard print syntax:</p>
 should always be loaded at startup, you can put them into the interpreter's
 interactive startup files, see <a class="reference internal" href="#interactive-usage">Interactive Usage</a>.</p>
 </div>
+<div class="section" id="non-linear-patterns">
+<h2><a class="toc-backref" href="#id61">12.6&nbsp;&nbsp;&nbsp;Non-Linear Patterns</a></h2>
+<p>As explained in section <a class="reference internal" href="#patterns">Patterns</a>, Pure allows multiple occurrences of the
+same variable in a pattern (so-called non-linearities):</p>
+<pre class="literal-block">
+foo x x = x;
+</pre>
+<p>This rule will only be matched if both occurrences of <tt class="docutils literal"><span class="pre">x</span></tt> are bound to the
+same value. More precisely, the two instances of <tt class="docutils literal"><span class="pre">x</span></tt> will checked for
+syntactic equality during pattern matching, using the <a class="reference external" href="purelib.html#same"><tt class="docutils literal"><span class="pre">same</span></tt></a> primitive
+provided by the prelude. This may need time proportional to the sizes of both
+argument terms, and thus become quite costly for big terms. In fact, <tt class="docutils literal"><span class="pre">same</span></tt>
+might not even terminate at all if the compared terms are both infinite lazy
+data structures, such as in <tt class="docutils literal"><span class="pre">foo</span> <span class="pre">(1..inf)</span> <span class="pre">(1..inf)</span></tt>. So you have to be
+careful to avoid such uses.</p>
+<p>When using non-linearities in conjunction with &quot;as&quot; patterns, you also have to
+make sure that the &quot;as&quot; variable does not occur inside the corresponding
+subpattern. Thus a definition like the following is illegal:</p>
+<pre class="literal-block">
+&gt; foo xs&#64;(x:xs) = x;
+&lt;stdin&gt;, line 1: error in pattern (recursive variable 'xs')
+</pre>
+<p>The explanation is that such a pattern couldn't possibly be matched by a
+finite list anyway. Indeed, the only match for <tt class="docutils literal"><span class="pre">xs&#64;(x:xs)</span></tt> would be an
+infinite list of <tt class="docutils literal"><span class="pre">x</span></tt>'s, and there's no way that this condition could be
+verified in a finite amount of time. Therefore the interpreter reports a
+&quot;recursive variable&quot; error in such situations.</p>
+</div>
 <div class="section" id="as-patterns">
-<h2><a class="toc-backref" href="#id61">12.6&nbsp;&nbsp;&nbsp;&quot;As&quot; Patterns</a></h2>
+<h2><a class="toc-backref" href="#id62">12.7&nbsp;&nbsp;&nbsp;&quot;As&quot; Patterns</a></h2>
 <p>In the current implementation, &quot;as&quot; patterns cannot be placed on the &quot;spine&quot;
 of a function definition. Thus rules like the following, which have the
 pattern somewhere in the head of the left-hand side, will all provoke an error
@@ -4285,16 +4319,16 @@ a&#64;(foo x) y = a,x,y;
 a&#64;(foo x y) = a,x,y;
 </pre>
 <p>This is because the spine of a function application is not available when the
-function is called at runtime. &quot;As&quot; patterns in pattern bindings (<tt class="docutils literal"><span class="pre">case</span></tt>,
-<tt class="docutils literal"><span class="pre">when</span></tt>) are not affected by this restriction since the entire value to be
-matched is available at runtime. For instance:</p>
+function is called at runtime. &quot;As&quot; patterns in pattern bindings (<tt class="docutils literal"><span class="pre">let</span></tt>,
+<tt class="docutils literal"><span class="pre">const</span></tt>, <tt class="docutils literal"><span class="pre">case</span></tt>, <tt class="docutils literal"><span class="pre">when</span></tt>) are not affected by this restriction since the
+entire value to be matched is available at runtime. For instance:</p>
 <pre class="literal-block">
 &gt; case bar 99 of y&#64;(bar x) = y,x+1; end;
 bar 99,100
 </pre>
 </div>
 <div class="section" id="head-function">
-<h2><a class="toc-backref" href="#id62">12.7&nbsp;&nbsp;&nbsp;Head = Function</a></h2>
+<h2><a class="toc-backref" href="#id63">12.8&nbsp;&nbsp;&nbsp;Head = Function</a></h2>
 <p>&quot;As&quot; patterns are also a useful device if you need to manipulate function
 applications in a generic way. Note that the &quot;head = function&quot; rule means that
 the head symbol <tt class="docutils literal"><span class="pre">f</span></tt> of an application <tt class="docutils literal"><span class="pre">f</span> <span class="pre">x1</span> <span class="pre">...</span> <span class="pre">xn</span></tt> occurring on (or
@@ -4364,7 +4398,7 @@ a good idea to avoid that kind of thing, at least for generic symbols, so the
 above solution is preferred in this case.</p>
 </div>
 <div class="section" id="namespaces-and-implicit-declarations">
-<h2><a class="toc-backref" href="#id63">12.8&nbsp;&nbsp;&nbsp;Namespaces and Implicit Declarations</a></h2>
+<h2><a class="toc-backref" href="#id64">12.9&nbsp;&nbsp;&nbsp;Namespaces and Implicit Declarations</a></h2>
 <p>A common pitfall is the implicit declaration of unqualified symbols in
 conjunction with the <tt class="docutils literal"><span class="pre">namespace</span></tt> declaration. For instance, it is tempting
 to write the following, and expect <tt class="docutils literal"><span class="pre">foo</span></tt> to become a member of the <tt class="docutils literal"><span class="pre">bar</span></tt>
@@ -4394,7 +4428,7 @@ foo x = x+1;
 <p>This will tell the compiler about the desired namespace of the symbol.</p>
 </div>
 <div class="section" id="with-or-when">
-<h2><a class="toc-backref" href="#id64">12.9&nbsp;&nbsp;&nbsp;With or when?</a></h2>
+<h2><a class="toc-backref" href="#id65">12.10&nbsp;&nbsp;&nbsp;With or when?</a></h2>
 <p>Another common source of confusion is that Pure provides two different
 constructs to bind local function and variable symbols, respectively. This
 distinction is necessary because Pure does not segregate defined functions and
@@ -4411,7 +4445,7 @@ there, it is helpful to read nested scopes &quot;in reverse&quot; (proceeding fr
 rightmost/outermost to the leftmost/innermost clause).</p>
 </div>
 <div class="section" id="numeric-calculations">
-<h2><a class="toc-backref" href="#id65">12.10&nbsp;&nbsp;&nbsp;Numeric Calculations</a></h2>
+<h2><a class="toc-backref" href="#id66">12.11&nbsp;&nbsp;&nbsp;Numeric Calculations</a></h2>
 <p>If possible, you should decorate numeric variables on the left-hand sides of
 function definitions with the appropriate type tags, like <tt class="docutils literal"><span class="pre">int</span></tt> or
 <tt class="docutils literal"><span class="pre">double</span></tt>. This often helps the compiler to generate better code and makes
@@ -4444,7 +4478,7 @@ integers, not bigints; for the latter you'll have to use the &quot;big L&quot; n
 bigints.</p>
 </div>
 <div class="section" id="constant-definitions">
-<h2><a class="toc-backref" href="#id66">12.11&nbsp;&nbsp;&nbsp;Constant Definitions</a></h2>
+<h2><a class="toc-backref" href="#id67">12.12&nbsp;&nbsp;&nbsp;Constant Definitions</a></h2>
 <p>Constants differ from variables in that they cannot be redefined (that's their
 main purpose after all) and that their values, once defined, are determined at
 compile time rather than run time. For instance:</p>
@@ -4538,7 +4572,7 @@ symbols on the left-hand side of the two equations would be interpreted as
 local variables.)</p>
 </div>
 <div class="section" id="external-c-functions">
-<h2><a class="toc-backref" href="#id67">12.12&nbsp;&nbsp;&nbsp;External C Functions</a></h2>
+<h2><a class="toc-backref" href="#id68">12.13&nbsp;&nbsp;&nbsp;External C Functions</a></h2>
 <p>The interpreter always takes your <tt class="docutils literal"><span class="pre">extern</span></tt> declarations of C routines at
 face value. It will not go and read any C header files to determine whether
 you actually declared the function correctly! So you have to be careful to
@@ -4566,7 +4600,7 @@ functions declared in the header. Please refer to the pure-gen(1) manual page
 for details.</p>
 </div>
 <div class="section" id="id2">
-<h2><a class="toc-backref" href="#id68">12.13&nbsp;&nbsp;&nbsp;Special Forms</a></h2>
+<h2><a class="toc-backref" href="#id69">12.14&nbsp;&nbsp;&nbsp;Special Forms</a></h2>
 <p>Special forms are recognized at compile time only. Thus the <tt class="docutils literal"><span class="pre">catch</span></tt>
 function, as well as <tt class="docutils literal"><span class="pre">quote</span></tt> and the operators <tt class="docutils literal"><span class="pre">&amp;&amp;</span></tt>, <tt class="docutils literal"><span class="pre">||</span></tt>, <tt class="docutils literal"><span class="pre">$$</span></tt> and
 <tt class="docutils literal"><span class="pre">&amp;</span></tt>, are only treated as special forms in direct (saturated) calls. They can
@@ -4575,7 +4609,7 @@ applications, but in this case they lose all their special call-by-name
 argument processing.</p>
 </div>
 <div class="section" id="the-quote">
-<h2><a class="toc-backref" href="#id69">12.14&nbsp;&nbsp;&nbsp;The Quote</a></h2>
+<h2><a class="toc-backref" href="#id70">12.15&nbsp;&nbsp;&nbsp;The Quote</a></h2>
 <p>Like in Lisp, the <tt class="docutils literal"><span class="pre">quote</span></tt> special form can be used to construct literal
 expressions which can then be manipulated before actually evaluating them
 using the built-in <tt class="docutils literal"><span class="pre">eval</span></tt> function. However, there are some notable
@@ -4651,7 +4685,7 @@ lambda x (x+1)
 handled in a similar fashion.</p>
 </div>
 <div class="section" id="laziness">
-<h2><a class="toc-backref" href="#id70">12.15&nbsp;&nbsp;&nbsp;Laziness</a></h2>
+<h2><a class="toc-backref" href="#id71">12.16&nbsp;&nbsp;&nbsp;Laziness</a></h2>
 <p>Pure does lazy evaluation in the same way as <a class="reference internal" href="#alice-ml">Alice ML</a>, providing an
 explicit operation (<tt class="docutils literal"><span class="pre">&amp;</span></tt>) to defer evaluation and create a &quot;future&quot; which is
 called by need. However, note that like any language with a basically eager
@@ -4692,7 +4726,7 @@ the prelude for an example showing how to do this.</li>
 </ul>
 </div>
 <div class="section" id="reflection">
-<h2><a class="toc-backref" href="#id71">12.16&nbsp;&nbsp;&nbsp;Reflection</a></h2>
+<h2><a class="toc-backref" href="#id72">12.17&nbsp;&nbsp;&nbsp;Reflection</a></h2>
 <p>Pure versions since 0.12 offer some basic reflection capabilities via the
 <tt class="docutils literal"><span class="pre">evalcmd</span></tt> primitive. This function provides access to interactive commands
 like <tt class="docutils literal"><span class="pre">clear</span></tt>, <tt class="docutils literal"><span class="pre">save</span></tt> and <tt class="docutils literal"><span class="pre">show</span></tt>, which enable you to inspect and modify
@@ -4744,7 +4778,7 @@ end;
 </pre>
 </div>
 <div class="section" id="hygienic-macros">
-<h2><a class="toc-backref" href="#id72">12.17&nbsp;&nbsp;&nbsp;Hygienic Macros</a></h2>
+<h2><a class="toc-backref" href="#id73">12.18&nbsp;&nbsp;&nbsp;Hygienic Macros</a></h2>
 <p>Macro hygiene is a somewhat esoteric topic for most programmers, so let us
 take a brief look at what it's all about. The problem avoided by hygienic
 macros is that of <em>name capture</em>. There are actually two kinds of name capture
@@ -4808,7 +4842,7 @@ file and read it back with <tt class="docutils literal"><span class="pre">run</s
 definition. Currently you will have to correct this manually.</p>
 </div>
 <div class="section" id="stack-size-and-tail-recursion">
-<h2><a class="toc-backref" href="#id73">12.18&nbsp;&nbsp;&nbsp;Stack Size and Tail Recursion</a></h2>
+<h2><a class="toc-backref" href="#id74">12.19&nbsp;&nbsp;&nbsp;Stack Size and Tail Recursion</a></h2>
 <p>Pure programs may need a considerable amount of stack space to handle
 recursive function and macro calls, and the interpreter itself also takes its
 toll. So you should configure your system accordingly (8 MB of stack space is
@@ -4856,7 +4890,7 @@ means that you should always run your program without -g when the debugger is
 not needed.</p>
 </div>
 <div class="section" id="handling-of-asynchronous-signals">
-<h2><a class="toc-backref" href="#id74">12.19&nbsp;&nbsp;&nbsp;Handling of Asynchronous Signals</a></h2>
+<h2><a class="toc-backref" href="#id75">12.20&nbsp;&nbsp;&nbsp;Handling of Asynchronous Signals</a></h2>
 <p>As described in section <a class="reference internal" href="#exception-handling">Exception Handling</a>, signals delivered to the
 process can be caught and handled with Pure's exception handling facilities.
 This has its limitations, however. Since Pure code cannot be executed directly
@@ -4897,7 +4931,7 @@ process x = printf &quot;counting: %d\n&quot; x $$ sleep 1 $$ x+1;
 </div>
 </div>
 <div class="section" id="copying">
-<h1><a class="toc-backref" href="#id75">13&nbsp;&nbsp;&nbsp;Copying</a></h1>
+<h1><a class="toc-backref" href="#id76">13&nbsp;&nbsp;&nbsp;Copying</a></h1>
 <p>Pure comes with a fairly liberal license which lets you distribute your own
 Pure programs and extensions under a license of your choice and permits
 linking of commercial applications against the Pure runtime and the Pure
@@ -4934,7 +4968,7 @@ distribution for the exact licensing terms. You can also find the LLVM license
 at the <a class="reference internal" href="#llvm">LLVM</a> website.</p>
 </div>
 <div class="section" id="author">
-<h1><a class="toc-backref" href="#id76">14&nbsp;&nbsp;&nbsp;Author</a></h1>
+<h1><a class="toc-backref" href="#id77">14&nbsp;&nbsp;&nbsp;Author</a></h1>
 <p>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;, Dept. of Computer Music, Johannes
 Gutenberg University of Mainz, Germany.</p>
 <p>The author gratefully acknowledges the contributions by Scott E. Dillard,
@@ -4945,7 +4979,7 @@ due to Vili Aapro, Alvaro Castro Castilla, John Cowan, Chris Double, Tim
 Haynes, Roman Neuhauser, Wm Leler, John Lunney and Max Wolf.</p>
 </div>
 <div class="section" id="see-also">
-<h1><a class="toc-backref" href="#id77">15&nbsp;&nbsp;&nbsp;See Also</a></h1>
+<h1><a class="toc-backref" href="#id78">15&nbsp;&nbsp;&nbsp;See Also</a></h1>
 <dl class="docutils" id="aardappel">
 <dt>Aardappel</dt>
 <dd>Wouter van Oortmerssen's functional programming language based on term
