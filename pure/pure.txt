@@ -4802,26 +4802,38 @@ multiple equations, of course. Moreover, conditional expressions
 sequence operator ``$$`` is tail-recursive in its second operand. Note,
 however, that the logical operators ``&&`` and ``||`` are *not* tail-recursive
 in Pure, because they are required to always yield a proper truth value (0 or
-1), which wouldn't be possible with tail call semantics. (The rationale behind
-this design decision is that it allows the compiler to generate much better
-code for logical expressions.)
+1), which wouldn't be possible with tail call semantics. (This allows the
+compiler to generate much better code for logical expressions.) If this is a
+problem then you should use ``if``-``then``-``else`` instead. E.g., ``foo x &&
+bar x`` might be rewritten as: ``if foo x then 1 else bar x``.
 
-There is one additional restriction in the current implementation, namely that
-a tail call will be eliminated only if the call is done directly, i.e.,
-through an explicit call, not through a (global or local) function
-variable. Otherwise the call will be handled by the runtime system which is
-written in C and can't do proper tail calls because C can't (at least not in a
-portable way). This also affects mutually recursive global function calls,
-since there the calls are handled in an indirect way, too, through an
-anonymous global variable. (This is done so that a global function definition
-can be changed at any time during an interactive session, without having to
-recompile the entire program.) However, mutual tail recursion *does* work with
-local functions, so it's easy to work around this limitation.
+Unfortunately, there is one major caveat here, namely that the current
+implementation doesn't support indirect tail calls (i.e., tail calls through a
+function variable, such as in ``foo f x = f x``). This is because such
+indirect calls are handled by the runtime system which is written in C and
+thus can't do proper tail calls because C can't (at least not in a portable
+way). This also affects mutually recursive global function calls, since there
+the calls are handled in an indirect way, too, through an anonymous global
+variable. (This is done so that a global function definition can be changed at
+any time without having to recompile the entire program.) Hence, unlike our
+``loop`` example above, the following *will* overflow the stack::
 
-Also note that tail call optimization is *always* disabled if the debugger is
-enabled (-g). This makes it much easier to debug programs, but of course this
-means that you should always run your program without -g when the debugger is
-not needed.
+  loopa = loopb; loopb = loopa;
+  loopa;
+
+Mutual tail recursion *does* work with local functions, however, so it's
+usually easy to work around this specific limitation. Nevertheless, the lack
+of support for indirect tail calls is one of the sore points of the current
+implementation. Unfortunately, this is not easy to fix and hence unlikely to
+change anytime soon. But it's usually possible to make deep tail recursion
+work by making good use of generic "looping" constructs, such as list and
+matrix comprehensions as well as prelude functions like ``do``, ``map`` and
+``fold``.  (If these don't fit your needs then you can easily roll your own.)
+
+Finally, note that tail call optimization is *always* disabled if the debugger
+is enabled (-g). This makes it much easier to debug programs, but means that
+you may run into stack overflows when debugging a program that does deep tail
+recursion.
 
 Handling of Asynchronous Signals
 --------------------------------
