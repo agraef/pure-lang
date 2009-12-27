@@ -1172,7 +1172,6 @@ public
    
    ``bessel_zero_Jnu_e  nu  s::int``
      implements ``gsl_sf_bessel_zero_Jnu``.
-     
 */
 
 def ap_func_1 f x = f (double x) (pointer m) $$ list m
@@ -1768,7 +1767,6 @@ public
    
    ``coulomb_CL_array  Lmin  kmax  eta``
      implements ``coulomb_wave_CL_array``.
-   
 */
 
 hydrogenicR_1  Z  r = gsl_sf_hydrogenicR_1 (double Z) (double r);
@@ -1881,4 +1879,121 @@ coulomb_CL_array  Lmin  kmax  eta
      
    Coupling Coefficients
    ~~~~~~~~~~~~~~~~~~~~~
+*/
+
+private extern double gsl_sf_coupling_3j(int, int, int, int, int, int);
+private extern int gsl_sf_coupling_3j_e(int, int, int, int, int, int, double*);
+private extern double gsl_sf_coupling_6j(int, int, int, int, int, int);
+private extern int gsl_sf_coupling_6j_e(int, int, int, int, int, int, double*);
+private extern double gsl_sf_coupling_9j(int, int, int, int, int, int,
+	int, int, int);
+private extern int gsl_sf_coupling_9j_e(int, int, int, int, int, int, 
+	int, int, int, double*);
+
+public
+  coupling_3j
+  coupling_3j_e
+  coupling_6j
+  coupling_6j_e
+  coupling_9j
+  coupling_9j_e;
+
+/* .. _coupling_3j:
+   
+   ``coupling_3j  m::matrix``
+     implements ``coupling_3j`` except the input is a 2x3 (row by column) 
+     integer matrix instead of six integer arguments.
+   
+   .. _coupling_3j_e:
+   
+   ``coupling_3j_e  m::matrix``
+     implements ``coupling_3j_e`` except the input is a 2x3 (row by column) 
+     integer matrix instead of six integer arguments.
+   
+   .. _coupling_6j:
+   
+   ``coupling_6j  m::matrix``
+     implements ``coupling_6j`` except the input is a 2x3 (row by column) 
+     integer matrix instead of six integer arguments.
+
+   .. _coupling_6j_e:
+   
+   ``coupling_6j_e  m::matrix``
+     implements ``coupling_6j_e`` except the input is a 2x3 (row by column) 
+     integer matrix instead of six integer arguments.
+   
+      .. _coupling_6j:
+   
+   ``coupling_9j  m::matrix``
+     implements ``coupling_9j`` except the input is a 3x3 integer matrix 
+     instead of six integer arguments.
+
+   .. _coupling_9j_e:
+   
+   ``coupling_9j_e  m::matrix``
+     implements ``coupling_9j_e`` except the input is a 3x3 integer matrix
+     instead of six integer arguments.
+*/
+
+coupling_3j  m::matrix
+  = gsl_sf_coupling_3j (m!(0,0)) (m!(0,1)) (m!(0,2))
+    		       (m!(1,0)) (m!(1,1)) (m!(1,2))
+    if (imatrixp m) && (dim m) == (2,3);
+
+coupling_3j_e  m::matrix
+  = gsl_sf_coupling_3j_e (m!(0,0)) (m!(0,1)) (m!(0,2))
+    		       	 (m!(1,0)) (m!(1,1)) (m!(1,2))
+			 (pointer r) $$ list r
+    when r = {0.0,0.0} end
+    if (imatrixp m) && (dim m) == (2,3);
+
+coupling_6j  m::matrix
+  = gsl_sf_coupling_6j (m!(0,0)) (m!(0,1)) (m!(0,2))
+    		       (m!(1,0)) (m!(1,1)) (m!(1,2))
+    if (imatrixp m) && (dim m) == (2,3);
+
+coupling_6j_e  m::matrix
+  = gsl_sf_coupling_6j_e (m!(0,0)) (m!(0,1)) (m!(0,2))
+    		       	 (m!(1,0)) (m!(1,1)) (m!(1,2))
+			 (pointer r) $$ list r
+    when r = {0.0,0.0} end
+    if (imatrixp m) && (dim m) == (2,3);
+
+coupling_9j  m::matrix
+  = gsl_sf_coupling_9j (m!(0,0)) (m!(0,1)) (m!(0,2))
+    		       (m!(1,0)) (m!(1,1)) (m!(1,2))
+		       (m!(2,0)) (m!(2,1)) (m!(2,2))
+    if (imatrixp m) && (dim m) == (3,3);
+
+coupling_9j_e  m::matrix
+  = gsl_sf_coupling_9j_e (m!(0,0)) (m!(0,1)) (m!(0,2))
+    		       	 (m!(1,0)) (m!(1,1)) (m!(1,2))
+			 (m!(2,0)) (m!(2,1)) (m!(2,2))
+			 (pointer r) $$ list r
+    when r = {0.0,0.0} end
+    if (imatrixp m) && (dim m) == (3,3);
+
+/* ..
+   
+   Examples
+   ~~~~~~~~
+   
+   The following illustrate the coupling coefficient functions.
+
+   ::
+   
+     > using gsl::sf;
+     > using namespace gsl::sf;
+     > coupling_3j {6,4,2;0,0,0};
+     -0.29277002188456
+     > coupling_3j_e {6,4,2;0,0,0};
+     [-0.29277002188456,1.300160076865e-16]
+     > coupling_6j {1,2,3;2,1,2};
+     -0.166666666666667
+     > coupling_6j_e {1,2,3;2,1,2};
+     [-0.166666666666667,2.22044604925031e-16]
+     > coupling_9j {1,2,3;2,1,2;1,1,1};
+     -0.0962250448649376
+     > coupling_9j_e {1,2,3;2,1,2;1,1,1};
+     [-0.0962250448649376,4.84948508304183e-16]
 */
