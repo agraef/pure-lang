@@ -150,7 +150,7 @@ const QUOTE_EMBEDDED = 2;
 /* Defaults are set to RFC 4180 (http://www.ietf.org/rfc/rfc4180.txt) except
    for the \r\n pair */
 private defaults;
-let defaults = [",", "\"", "\"", 1, "\n", 1];
+const defaults = [",", "\"", "\"", 1, "\n", 1];
 
 /* Creates a dialect base on the list of dialect options given above.
    For examples, see RFC4180, UNIX, and EXCEL constants below.
@@ -165,9 +165,9 @@ dialect opts
             opts + [ESCAPE=>(lookup opts QUOTE "\"")];
     end
     with
-      lookup [] k::int v = v;
-      lookup ((x=>y):xs) k::int _ = y if k == x;
-      lookup ((x=>y):xs) k::int v = lookup xs k v;
+      lookup [] k v = v;
+      lookup ((x=>y):xs) x v = y;
+      lookup ((x=>y):xs) k v = lookup xs k v;
     end;
 
 const RFC4180 = dialect [LINETERMINATOR => "\r\n"];

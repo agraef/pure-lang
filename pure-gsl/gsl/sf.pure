@@ -45,10 +45,11 @@
      
      - ``[val, err, e10]`` for the ``gsl_sf_result_e10`` struct.
 
-   Routines
-   ~~~~~~~~ */
+   Airy Functions
+   ~~~~~~~~~~~~~~
+*/
 
-using common;
+using "lib:gsl";
 
 namespace gsl;
 namespace gsl::sf;
@@ -98,42 +99,24 @@ public
      function with ``mode = GSL_PREC_DOUBLE``.
 */
 
-airy_Ai  (x, mode::int)
-  = gsl_sf_airy_Ai (double x) mode;
+def ap_airy f x mode
+  = f (double x) mode (pointer m) $$ list m  when m = {0.0, 0.0} end;
 
-airy_Ai  x
-  = gsl_sf_airy_Ai (double x) GSL_PREC_DOUBLE;
+airy_Ai  (x, mode::int) = gsl_sf_airy_Ai (double x) mode;
 
-airy_Ai_e  (x, mode::int)
-  = gsl_sf_airy_Ai_e (double x) mode (pointer m) $$ list m
-    when
-      m = {0.0, 0.0};
-    end;
+airy_Ai  x = gsl_sf_airy_Ai (double x) GSL_PREC_DOUBLE;
 
-airy_Ai_e  x
-  = gsl_sf_airy_Ai_e (double x) GSL_PREC_DOUBLE (pointer m) $$ list m
-    when
-      m = {0.0, 0.0};
-    end;
+airy_Ai_e  (x, mode::int) = ap_airy gsl_sf_airy_Ai_e x mode;
 
-airy_Ai_scaled  (x, mode::int)
-  = gsl_sf_airy_Ai_scaled (double x) mode;
+airy_Ai_e  x = ap_airy gsl_sf_airy_Ai_e x GSL_PREC_DOUBLE;
 
-airy_Ai_scaled  x
-  = gsl_sf_airy_Ai_scaled (double x) GSL_PREC_DOUBLE;
+airy_Ai_scaled  (x, mode::int) = gsl_sf_airy_Ai_scaled (double x) mode;
 
-airy_Ai_scaled_e  (x, mode::int)
-  = gsl_sf_airy_Ai_scaled_e (double x) mode (pointer m) $$ list m
-    when
-      m = {0.0, 0.0};
-    end;
+airy_Ai_scaled  x = gsl_sf_airy_Ai_scaled (double x) GSL_PREC_DOUBLE;
 
-airy_Ai_scaled_e  x
-  = gsl_sf_airy_Ai_scaled_e (double x) GSL_PREC_DOUBLE (pointer m)
-    $$ list m
-    when
-      m = {0.0, 0.0};
-    end;
+airy_Ai_scaled_e  (x, mode::int) = ap_airy gsl_sf_airy_Ai_scaled_e x mode;
+
+airy_Ai_scaled_e  x = ap_airy gsl_sf_airy_Ai_scaled_e x GSL_PREC_DOUBLE;
 
 private extern double gsl_sf_airy_Bi(double, int);
 private extern int gsl_sf_airy_Bi_e(double, int, double*);
@@ -171,42 +154,21 @@ public
      function with ``mode = GSL_PREC_DOUBLE``.
 */
 
-airy_Bi  (x, mode::int)
-  = gsl_sf_airy_Bi (double x) mode;
+airy_Bi  (x, mode::int) = gsl_sf_airy_Bi (double x) mode;
 
-airy_Bi  x
-  = gsl_sf_airy_Bi (double x) GSL_PREC_DOUBLE;
+airy_Bi  x = gsl_sf_airy_Bi (double x) GSL_PREC_DOUBLE;
 
-airy_Bi_e  (x, mode::int)
-  = gsl_sf_airy_Bi_e (double x) mode (pointer m) $$ list m
-    when
-      m = {0.0, 0.0};
-    end;
+airy_Bi_e  (x, mode::int) = ap_airy gsl_sf_airy_Bi_e x mode;
 
-airy_Bi_e  x
-  = gsl_sf_airy_Bi_e (double x) GSL_PREC_DOUBLE (pointer m) $$ list m
-    when
-      m = {0.0, 0.0};
-    end;
+airy_Bi_e  x = ap_airy gsl_sf_airy_Bi_e x GSL_PREC_DOUBLE;
 
-airy_Bi_scaled  (x, mode::int)
-  = gsl_sf_airy_Bi_scaled (double x) mode;
+airy_Bi_scaled  (x, mode::int) = gsl_sf_airy_Bi_scaled (double x) mode;
 
-airy_Bi_scaled  x
-  = gsl_sf_airy_Bi_scaled (double x) GSL_PREC_DOUBLE;
+airy_Bi_scaled  x = gsl_sf_airy_Bi_scaled (double x) GSL_PREC_DOUBLE;
 
-airy_Bi_scaled_e  (x, mode::int)
-  = gsl_sf_airy_Bi_scaled_e (double x) mode (pointer m) $$ list m
-    when
-      m = {0.0, 0.0};
-    end;
+airy_Bi_scaled_e  (x, mode::int) = ap_airy gsl_sf_airy_Bi_scaled_e x mode;
 
-airy_Bi_scaled_e  x
-  = gsl_sf_airy_Bi_scaled_e (double x) GSL_PREC_DOUBLE (pointer m)
-    $$ list m
-    when
-      m = {0.0, 0.0};
-    end;
+airy_Bi_scaled_e  x = ap_airy gsl_sf_airy_Bi_scaled_e x GSL_PREC_DOUBLE;
 
 private extern double gsl_sf_airy_Ai_deriv(double, int);
 private extern int gsl_sf_airy_Ai_deriv_e(double, int, double*);
@@ -275,23 +237,13 @@ public
      implements ``gsl_sf_airy_Bi_deriv_scaled_e``. The first form computes
      the function with ``mode = GSL_PREC_DOUBLE``.*/
 
-airy_Ai_deriv  (x, mode::int)
-  = gsl_sf_airy_Ai_deriv (double x) mode;
+airy_Ai_deriv  (x, mode::int) = gsl_sf_airy_Ai_deriv (double x) mode;
 
-airy_Ai_deriv  x
-  = gsl_sf_airy_Ai_deriv (double x) GSL_PREC_DOUBLE;
+airy_Ai_deriv  x = gsl_sf_airy_Ai_deriv (double x) GSL_PREC_DOUBLE;
 
-airy_Ai_deriv_e  (x, mode::int)
-  = gsl_sf_airy_Ai_deriv_e (double x) mode (pointer m) $$ list m
-    when
-      m = {0.0, 0.0};
-    end;
+airy_Ai_deriv_e  (x, mode::int) = ap_airy gsl_sf_airy_Ai_deriv_e x mode;
 
-airy_Ai_deriv_e  x
-  = gsl_sf_airy_Ai_deriv_e (double x) GSL_PREC_DOUBLE (pointer m) $$ list m
-    when
-      m = {0.0, 0.0};
-    end;
+airy_Ai_deriv_e  x = ap_airy gsl_sf_airy_Ai_deriv_e x GSL_PREC_DOUBLE;
 
 airy_Ai_deriv_scaled  (x, mode::int)
   = gsl_sf_airy_Ai_deriv_scaled (double x) mode;
@@ -300,54 +252,30 @@ airy_Ai_deriv_scaled  x
   = gsl_sf_airy_Ai_deriv_scaled (double x) GSL_PREC_DOUBLE;
 
 airy_Ai_deriv_scaled_e  (x, mode::int)
-  = gsl_sf_airy_Ai_deriv_scaled_e (double x) mode (pointer m) $$ list m
-    when
-      m = {0.0, 0.0};
-    end;
+  = ap_airy gsl_sf_airy_Ai_deriv_scaled_e (double x) mode;
 
 airy_Ai_deriv_scaled_e  x
-  = gsl_sf_airy_Ai_deriv_scaled_e (double x) GSL_PREC_DOUBLE (pointer m)
-    $$ list m
-    when
-      m = {0.0, 0.0};
-    end;
+  = ap_airy gsl_sf_airy_Ai_deriv_scaled_e (double x) GSL_PREC_DOUBLE;
 
-airy_Bi_deriv  (x, mode::int)
-  = gsl_sf_airy_Bi_deriv (double x) mode;
+airy_Bi_deriv  (x, mode::int) = gsl_sf_airy_Bi_deriv (double x) mode;
 
-airy_Bi_deriv  x
-  = gsl_sf_airy_Bi_deriv (double x) GSL_PREC_DOUBLE;
+airy_Bi_deriv  x = gsl_sf_airy_Bi_deriv (double x) GSL_PREC_DOUBLE;
 
-airy_Bi_deriv_e  (x, mode::int)
-  = gsl_sf_airy_Bi_deriv_e (double x) mode (pointer m) $$ list m
-    when
-      m = {0.0, 0.0};
-    end;
+airy_Bi_deriv_e  (x, mode::int) = ap_airy gsl_sf_airy_Bi_deriv_e x mode;
 
-airy_Bi_deriv_e  x
-  = gsl_sf_airy_Bi_deriv_e (double x) GSL_PREC_DOUBLE (pointer m) $$ list m
-    when
-      m = {0.0, 0.0};
-    end;
+airy_Bi_deriv_e  x = ap_airy gsl_sf_airy_Bi_deriv_e x GSL_PREC_DOUBLE;
 
 airy_Bi_deriv_scaled  (x, mode::int)
   = gsl_sf_airy_Bi_deriv_scaled (double x) mode;
 
-airy_Bi_deriv_scaled  x
+airy_Bi_deriv_scaled  x 
   = gsl_sf_airy_Bi_deriv_scaled (double x) GSL_PREC_DOUBLE;
 
 airy_Bi_deriv_scaled_e  (x, mode::int)
-  = gsl_sf_airy_Bi_deriv_scaled_e (double x) mode (pointer m) $$ list m
-    when
-      m = {0.0, 0.0};
-    end;
+  = ap_airy gsl_sf_airy_Bi_deriv_scaled_e x mode;
 
 airy_Bi_deriv_scaled_e  x
-  = gsl_sf_airy_Bi_deriv_scaled_e (double x) GSL_PREC_DOUBLE (pointer m)
-    $$ list m
-    when
-      m = {0.0, 0.0};
-    end;
+  = ap_airy gsl_sf_airy_Bi_deriv_scaled_e x GSL_PREC_DOUBLE;
 
 private extern double gsl_sf_airy_zero_Ai(int);
 private extern int gsl_sf_airy_zero_Ai_e(int, double*);
@@ -381,25 +309,16 @@ public
      implements ``gsl_sf_airy_zero_Bi_e``.
 */
 
-airy_zero_Ai  s::int
-  = gsl_sf_airy_zero_Ai s if s >= 0;
+def ap_airy_z f s 
+  = f s (pointer m) $$ list m when m = {0.0,0.0} end;
 
-airy_zero_Ai_e  s::int
-  = gsl_sf_airy_zero_Ai_e s (pointer m) $$ list m
-    when
-      m = {0.0, 0.0};
-    end
-    if s >= 0;
+airy_zero_Ai  s::int = gsl_sf_airy_zero_Ai s if s >= 0;
 
-airy_zero_Bi  s::int
-  = gsl_sf_airy_zero_Bi s if s >= 0;
+airy_zero_Ai_e  s::int = ap_airy_z gsl_sf_airy_zero_Ai_e s if s >= 0;
 
-airy_zero_Bi_e  s::int
-  = gsl_sf_airy_zero_Bi_e s (pointer m) $$ list m
-    when
-      m = {0.0, 0.0};
-    end
-    if s >= 0;
+airy_zero_Bi  s::int = gsl_sf_airy_zero_Bi s if s >= 0;
+
+airy_zero_Bi_e  s::int = ap_airy_z gsl_sf_airy_zero_Bi_e s if s >= 0;
 
 private extern double gsl_sf_airy_zero_Ai_deriv(int);
 private extern int gsl_sf_airy_zero_Ai_deriv_e(int, double*);
@@ -414,44 +333,34 @@ public
 
 /* .. _airy_zero_Ai_deriv:
       
-   ``airy_zero_Ai_deriv s``
+   ``airy_zero_Ai_deriv  s``
      implements ``gsl_sf_airy_zero_Ai_deriv``.
      
    .. _airy_zero_Ai_deriv_e:
    
-   ``airy_zero_Ai_deriv_e s``
+   ``airy_zero_Ai_deriv_e  s``
      implements ``gsl_sf_airy_zero_Ai_deriv_e``.
      
  .. _airy_zero_Bi_deriv:
       
-   ``airy_zero_Bi_deriv s``
+   ``airy_zero_Bi_deriv  s``
      implements ``gsl_sf_airy_zero_Bi_deriv``.
      
    .. _airy_zero_Bi_deriv_e:
    
-   ``airy_zero_Bi_deriv_e s``
+   ``airy_zero_Bi_deriv_e  s``
      implements ``gsl_sf_airy_zero_Bi_deriv_e``.
 */
 
-airy_zero_Ai_deriv  s::int
-  = gsl_sf_airy_zero_Ai_deriv s if s >= 0;
+airy_zero_Ai_deriv  s::int = gsl_sf_airy_zero_Ai_deriv s if s >= 0;
 
-airy_zero_Ai_deriv_e  s::int
-  = gsl_sf_airy_zero_Ai_deriv_e s (pointer m) $$ list m
-    when
-      m = {0.0, 0.0};
-    end
-    if s >= 0;
+airy_zero_Ai_deriv_e  s::int 
+  = ap_airy_z gsl_sf_airy_zero_Ai_deriv_e s if s >= 0;
 
-airy_zero_Bi_deriv  s::int
-  = gsl_sf_airy_zero_Bi_deriv s if s >= 0;
+airy_zero_Bi_deriv  s::int = gsl_sf_airy_zero_Bi_deriv s if s >= 0;
 
 airy_zero_Bi_deriv_e  s::int
-  = gsl_sf_airy_zero_Bi_deriv_e s (pointer m) $$ list m
-    when
-      m = {0.0, 0.0};
-    end
-    if s >= 0;
+  = ap_airy_z gsl_sf_airy_zero_Bi_deriv_e s if s >= 0;
 
 /* ..
    
@@ -512,7 +421,7 @@ airy_zero_Bi_deriv_e  s::int
      [0.107031569272281,3.02919983680384e-16]
      > airy_Ai_deriv_scaled_e (-1.2,GSL_PREC_APPROX);
      [0.107031569264504,9.25921017197604e-11]
-     > airy_Bi_deriv (-1.2); 
+     > airy_Bi_deriv (-1.2);
      0.601710157437464
      > airy_Bi_deriv_scaled (-1.2);
      0.601710157437464
@@ -544,4 +453,1189 @@ airy_zero_Bi_deriv_e  s::int
      -4.07315508907183
      > airy_zero_Bi_deriv_e 3;
      [-5.5123957296636,1.22399773198358e-15]
+
+  Bessel Functions
+  ~~~~~~~~~~~~~~~~
+*/
+
+private extern double gsl_sf_bessel_J0(double);
+private extern int gsl_sf_bessel_J0_e(double, double*);
+private extern double gsl_sf_bessel_J1(double);
+private extern int gsl_sf_bessel_J1_e(double, double*);
+private extern double gsl_sf_bessel_Jn(int, double);
+private extern int gsl_sf_bessel_Jn_e(int, double, double*);
+private extern int gsl_sf_bessel_Jn_array(int, int, double, double*);
+
+private extern double gsl_sf_bessel_Y0(double);
+private extern int gsl_sf_bessel_Y0_e(double, double*);
+private extern double gsl_sf_bessel_Y1(double);
+private extern int gsl_sf_bessel_Y1_e(double, double*);
+private extern double gsl_sf_bessel_Yn(int, double);
+private extern int gsl_sf_bessel_Yn_e(int, double, double*);
+private extern int gsl_sf_bessel_Yn_array(int nmin, int nmax, double, double*);
+
+private extern double gsl_sf_bessel_I0(double);
+private extern int gsl_sf_bessel_I0_e(double, double*);
+private extern double gsl_sf_bessel_I1(double);
+private extern int gsl_sf_bessel_I1_e(double, double*);
+private extern double gsl_sf_bessel_In(int, double);
+private extern int gsl_sf_bessel_In_e(int, double, double*);
+private extern int gsl_sf_bessel_In_array(int, int, double, double*);
+private extern double gsl_sf_bessel_I0_scaled(double);
+private extern int gsl_sf_bessel_I0_scaled_e(double, double*);
+private extern double gsl_sf_bessel_I1_scaled(double);
+private extern int gsl_sf_bessel_I1_scaled_e(double, double*);
+private extern double gsl_sf_bessel_In_scaled(int, double);
+private extern int gsl_sf_bessel_In_scaled_e(int, double, double*);
+private extern int gsl_sf_bessel_In_scaled_array(int, int, double, double*);
+
+private extern double gsl_sf_bessel_K0(double);
+private extern int gsl_sf_bessel_K0_e(double, double*);
+private extern double gsl_sf_bessel_K1(double);
+private extern int gsl_sf_bessel_K1_e(double, double*);
+private extern double gsl_sf_bessel_Kn(int, double);
+private extern int gsl_sf_bessel_Kn_e(int, double, double*);
+private extern int gsl_sf_bessel_Kn_array(int, int, double, double*);
+private extern double gsl_sf_bessel_K0_scaled(double);
+private extern int gsl_sf_bessel_K0_scaled_e(double, double*);
+private extern double gsl_sf_bessel_K1_scaled(double);
+private extern int gsl_sf_bessel_K1_scaled_e(double, double*);
+private extern double gsl_sf_bessel_Kn_scaled(int, double);
+private extern int gsl_sf_bessel_Kn_scaled_e(int, double, double*);
+private extern int gsl_sf_bessel_Kn_scaled_array(int, int, double, double*);
+
+private extern double gsl_sf_bessel_j0(double);
+private extern int gsl_sf_bessel_j0_e(double, double*);
+private extern double gsl_sf_bessel_j1(double);
+private extern int gsl_sf_bessel_j1_e(double, double*);
+private extern double gsl_sf_bessel_j2(double);
+private extern int gsl_sf_bessel_j2_e(double, double*);
+private extern double gsl_sf_bessel_jl(int, double);
+private extern int gsl_sf_bessel_jl_e(int, double, double*);
+private extern int gsl_sf_bessel_jl_array(int, double, double*);
+private extern int gsl_sf_bessel_jl_steed_array(int, double, double*);
+
+private extern double gsl_sf_bessel_y0(double);
+private extern int gsl_sf_bessel_y0_e(double, double*);
+private extern double gsl_sf_bessel_y1(double);
+private extern int gsl_sf_bessel_y1_e(double, double*);
+private extern double gsl_sf_bessel_y2(double);
+private extern int gsl_sf_bessel_y2_e(double, double*);
+private extern double gsl_sf_bessel_yl(int, double);
+private extern int gsl_sf_bessel_yl_e(int, double, double*);
+private extern int gsl_sf_bessel_yl_array(int, double, double*);
+
+private extern double gsl_sf_bessel_i0_scaled(double);
+private extern int gsl_sf_bessel_i0_scaled_e(double, double*);
+private extern double gsl_sf_bessel_i1_scaled(double);
+private extern int gsl_sf_bessel_i1_scaled_e(double, double*);
+private extern double gsl_sf_bessel_i2_scaled(double);
+private extern int gsl_sf_bessel_i2_scaled_e(double, double*);
+private extern double gsl_sf_bessel_il_scaled(int, double);
+private extern int gsl_sf_bessel_il_scaled_e(int, double, double*);
+private extern int gsl_sf_bessel_il_scaled_array(int, double, double*);
+
+private extern double gsl_sf_bessel_k0_scaled(double);
+private extern int gsl_sf_bessel_k0_scaled_e(double, double*);
+private extern double gsl_sf_bessel_k1_scaled(double);
+private extern int gsl_sf_bessel_k1_scaled_e(double, double*);
+private extern double gsl_sf_bessel_k2_scaled(double);
+private extern int gsl_sf_bessel_k2_scaled_e(double, double*);
+private extern double gsl_sf_bessel_kl_scaled(int, double);
+private extern int gsl_sf_bessel_kl_scaled_e(int, double, double*);
+private extern int gsl_sf_bessel_kl_scaled_array(int, double, double*);
+
+private extern double gsl_sf_bessel_Jnu(double, double);
+private extern int gsl_sf_bessel_Jnu_e(double, double, double*);
+private extern int gsl_sf_bessel_sequence_Jnu_e(double, int, int, double*);
+
+private extern double gsl_sf_bessel_Ynu(double, double);
+private extern int gsl_sf_bessel_Ynu_e(double, double, double*);
+
+private extern double gsl_sf_bessel_Inu(double, double);
+private extern int gsl_sf_bessel_Inu_e(double, double, double*);
+private extern double gsl_sf_bessel_Inu_scaled(double, double);
+private extern double gsl_sf_bessel_Inu_scaled_e(double, double, double*);
+
+private extern double gsl_sf_bessel_Knu(double, double);
+private extern int gsl_sf_bessel_Knu_e(double, double, double*);
+private extern double gsl_sf_bessel_lnKnu(double, double);
+private extern int gsl_sf_bessel_lnKnu_e(double, double, double*);
+private extern double gsl_sf_bessel_Knu_scaled(double, double);
+private extern int gsl_sf_bessel_Knu_scaled_e(double, double, double*);
+
+private extern double gsl_sf_bessel_zero_J0(int a);
+private extern int gsl_sf_bessel_zero_J0_e(int a, double*);
+private extern double gsl_sf_bessel_zero_J1(int a);
+private extern int gsl_sf_bessel_zero_J1_e(int a, double*);
+private extern double gsl_sf_bessel_zero_Jnu(double, int a);
+private extern int gsl_sf_bessel_zero_Jnu_e(double, int a, double*);
+
+public
+  bessel_J0
+  bessel_J0_e
+  bessel_J1
+  bessel_J1_e
+  bessel_Jn
+  bessel_Jn_e
+  bessel_Jn_array
+  bessel_y0
+  bessel_Y0_e
+  bessel_Y1
+  bessel_Y1_e
+  bessel_Yn
+  bessel_Yn_e
+  bessel_Yn_array
+  bessel_I0
+  bessel_I0_e
+  bessel_I1
+  bessel_I1_e
+  bessel_In
+  bessel_In_e
+  bessel_In_array
+  bessel_I0_scaled
+  bessel_I0_scaled_e
+  bessel_I1_scaled
+  bessel_I1_scaled_e
+  bessel_In_scaled
+  bessel_In_scaled_e
+  bessel_In_scaled_array
+  bessel_K0
+  bessel_K0_e
+  bessel_K1
+  bessel_K1_e
+  bessel_Kn
+  bessel_Kn_e
+  bessel_Kn_array
+  bessel_K0_scaled
+  bessel_K0_scaled_e
+  bessel_K1_scaled
+  bessel_K1_scaled_e
+  bessel_Kn_scaled
+  bessel_Kn_scaled_e
+  bessel_Kn_scaled_array
+  bessel_j0
+  bessel_j0_e
+  bessel_j1
+  bessel_j1_e
+  bessel_j2
+  bessel_j2_e
+  bessel_jl
+  bessel_jl_e
+  bessel_jl_array
+  bessel_jl_steed_array
+  bessel_y0
+  bessel_y0_e
+  bessel_y1
+  bessel_y1_e
+  bessel_y2
+  bessel_y2_e
+  bessel_yl
+  bessel_yl_e
+  bessel_yl_array
+  bessel_i0_scaled
+  bessel_i0_scaled_e
+  bessel_i1_scaled
+  bessel_i1_scaled_e
+  bessel_i2_scaled
+  bessel_i2_scaled_e
+  bessel_il_scaled
+  bessel_il_scaled_e
+  bessel_il_scaled_array
+  bessel_k0_scaled
+  bessel_k0_scaled_e
+  bessel_k1_scaled
+  bessel_k1_scaled_e
+  bessel_k2_scaled
+  bessel_k2_scaled_e
+  bessel_kl_scaled
+  bessel_kl_scaled_e
+  bessel_kl_scaled_array
+  bessel_Jnu
+  bessel_Jnu_e
+  bessel_sequence_Jnu_e
+  bessel_Ynu
+  bessel_Ynu_e
+  bessel_Inu
+  bessel_Inu_e
+  bessel_Inu_scaled
+  bessel_Inu_scaled_e
+  bessel_Knu
+  bessel_Knu_e
+  bessel_lnKnu
+  bessel_lnKnu_e
+  bessel_Knu_scaled
+  bessel_Knu_scaled_e
+  bessel_zero_J0
+  bessel_zero_J0_e
+  bessel_zero_J1
+  bessel_zero_J1_e
+  bessel_zero_Jnu
+  bessel_zero_Jnu_e;
+
+/* .. _bessel_J0:
+      
+   ``bessel_J0  x``
+     implements ``gsl_sf_bessel_J0``.
+     
+   .. _bessel_J0_e:
+   
+   ``bessel_J0_e  x``
+     implements ``gsl_sf_besselJ0_e``.
+     
+   .. _bessel_J1:
+      
+   ``bessel_J1  x``
+     implements ``gsl_sf_bessel_J1``.
+     
+   .. _bessel_J1_e:
+   
+   ``bessel_J1_e  x``
+     implements ``gsl_sf_bessel_J1_e``.
+     
+   .. _bessel_Jn:
+
+   ``bessel_Jn  n  x``
+     implements ``gsl_sf_bessel_Jn``.
+     
+   .. _bessel_Jn_e:
+          
+   ``bessel_Jn_e  n  x``
+     implements ``gsl_sf_bessel_Jn_e``.
+     
+   .. _bessel_Jn_array:
+
+   ``bessel_Jn_array  nmin::int  nmax::int  x``
+     implements ``gsl_sf_bessel_Jn_array``.
+   
+   .. _bessel_Y0:
+     
+   ``bessel_Y0  x``
+     implements ``gsl_sf_bessel_Y0``.
+     
+   .. _bessel_Y0_e:
+     
+   ``bessel_Y0_e  x``
+     implements ``gsl_sf_bessel_Y0_e``.
+   
+   .. _bessel_Y1:
+     
+   ``bessel_Y1  x``
+     implements ``gsl_sf_bessel_Y1``.
+   
+   .. _bessel_Y1_e:
+     
+   ``bessel_Y1_e  x``
+     implements ``gsl_sf_bessel_Y1_e``.
+   
+   .. _bessel_Yn:
+     
+   ``bessel_Yn  x``
+     implements ``gsl_sf_bessel_Yn``.
+   
+   .. _bessel_Yn_e:
+     
+   ``bessel_Yn_e  x``
+     implements ``gsl_sf_bessel_Yn_e``.
+   
+   .. _bessel_Yn_array:
+     
+   ``bessel_Yn_array  nmin::int  nmax::int  x``
+     implements ``gsl_sf_bessel_Yn_array``.
+   
+   .. _bessel_I0:
+     
+   ``bessel_I0  x``
+     implements ``gsl_sf_bessel_I0``.
+   
+   .. _bessel_I0_e:
+     
+   ``bessel_I0_e  x``
+     implements ``gsl_sf_bessel_I0_e``.
+   
+   .. _bessel_I1:
+
+   ``bessel_I1  x``
+     implements ``gsl_sf_bessel_I1``.
+   
+   .. _bessel_I1_e:
+     
+   ``bessel_I1_e  x``
+     implements ``gsl_sf_bessel_I1_e``.
+   
+   .. _bessel_In:
+     
+   ``bessel_In  n::int  x``
+     implements ``gsl_sf_bessel_In``.
+   
+   .. _bessel_In_e:
+     
+   ``bessel_In_e  n::int  x``
+     implements ``gsl_sf_bessel_In_e``
+   
+   .. _bessel_In_array:
+     
+   ``bessel_In_array  nmin::int  nmax::int  x``
+     implements ``gsl_sf_bessel_In_array``.
+   
+   .. _bessel_I0_scaled:
+     
+   ``bessel_I0_scaled  x``
+     implements ``gsl_sf_bessel_I0_scaled``.
+   
+   .. _bessel_I0_scaled_e:
+     
+   ``bessel_I0_scaled_e  x``
+     implements ``gsl_sf_bessel_I0_scaled_e``.
+   
+   .. _bessel_I1_scaled:
+     
+   ``bessel_I1_scaled  x``
+     implements ``gsl_sf_bessel_I1_scaled``.
+   
+   .. _bessel_I1_scaled_e:
+     
+   ``bessel_I1_scaled_e  x``
+     implements ``gsl_sf_bessel_I1_scaled_e``.
+   
+   .. _bessel_In_scaled:
+     
+   ``bessel_In_scaled  n::int  x``
+     implements ``gsl_sf_bessel_In_scaled``.
+   
+   .. _bessel_In_scaled_e:
+     
+   ``bessel_In_scaled_e  n::int  x``
+     implements ``gsl_sf_bessel_In_scaled_e``.
+   
+   .. _bessel_In_scaled_array:
+
+   ``bessel_In_scaled_array  nmin::int  nmax::int  x``
+     implements ``gsl_sf_bessel_In_array``.
+   
+   .. _bessel_K0:
+
+   ``bessel_K0  x``
+     implements ``gsl_sf_bessel_K0``.
+   
+   .. _bessel_K0_e:
+     
+   ``bessel_K0_e  x``
+     implements ``gsl_sf_bessel_K0_e``.
+   
+   .. _bessel_K1:
+
+   ``bessel_K1  x``
+     implements ``gsl_sf_bessel_K1``.
+   
+   .. _bessel_K1_e:
+     
+   ``bessel_K1_e  x``
+     implements ``gsl_sf_bessel_K1_e``.
+   
+   .. _bessel_Kn:
+     
+   ``bessel_Kn  n::int  x``
+     implements ``gsl_sf_bessel_Kn``.
+   
+   .. _bessel_Kn_e:
+     
+   ``bessel_Kn_e  n::int  x``
+     implements ``gsl_sf_bessel_Kn_e``
+   
+   .. _bessel_Kn_array:
+     
+   ``bessel_Kn_array  nmin::int  nmax::int  x``
+     implements ``gsl_sf_bessel_Kn_array``.
+   
+   .. _bessel_K0_scaled:
+     
+   ``bessel_K0_scaled  x``
+     implements ``gsl_sf_bessel_K0_scaled``.
+   
+   .. _bessel_K0_scaled_e:
+     
+   ``bessel_K0_scaled_e  x``
+     implements ``gsl_sf_bessel_K0_scaled_e``.
+   
+   .. _bessel_K1_scaled:
+     
+   ``bessel_K1_scaled  x``
+     implements ``gsl_sf_bessel_K1_scaled``.
+   
+   .. _bessel_K1_scaled_e:
+     
+   ``bessel_K1_scaled_e  x``
+     implements ``gsl_sf_bessel_K1_scaled_e``.
+   
+   .. _bessel_Kn_scaled:
+     
+   ``bessel_Kn_scaled  n::int  x``
+     implements ``gsl_sf_bessel_Kn_scaled``.
+   
+   .. _bessel_Kn_scaled_e:
+     
+   ``bessel_Kn_scaled_e  n::int  x``
+     implements ``gsl_sf_bessel_Kn_scaled_e``.
+   
+   .. _bessel_Kn_scaled_array:
+
+   ``bessel_Kn_scaled_array  nmin::int  nmax::int  x``
+     implements ``gsl_sf_bessel_Kn_array``.
+   
+   .. _bessel_j0:
+
+   ``bessel_j0  x``
+     implements ``gsl_sf_bessel_j0``.
+   
+   .. _bessel_j0_e:
+     
+   ``bessel_j0_e  x``
+     implements ``gsl_sf_bessel_j0_e``.
+   
+   .. _bessel_j1:
+
+   ``bessel_j1  x``
+     implements ``gsl_sf_bessel_j1``.
+   
+   .. _bessel_j1_e:
+     
+   ``bessel_j1_e  x``
+     implements ``gsl_sf_bessel_j1_e``.
+     
+   .. _bessel_j2:
+   
+   ``bessel_j2  x``
+     implements ``gsl_sf_bessel_j2``.
+   
+   .. _bessel_j2_e:
+   
+   ``bessel_j2_e  x``
+     implements ``gsl_sf_bessel_j2_e``.
+   
+   .. _bessel_jl:
+   
+   ``bessel_jl  l::int  x``
+     implements ``gsl_sf_bessel_jl``.
+   
+   .. _bessel_jl_e:
+   
+   ``bessel_jl_e  l::int  x``
+     implements ``gsl_sf_bessel_jl_e``.
+   
+   .. _bessel_jl_array:
+   
+   ``bessel_jl_array  lmax::int  x``
+     implements ``gsl_sf_bessel_jl_array``.
+   
+   .. _bessel_jl_steed_array:
+   
+   ``bessel_jl_steed_array  lmax::int  x``
+     implements ``gsl_sf_bessel_jl_steed_array``.
+   
+   .. _bessel_y0:
+   
+   ``bessel_y0  x``
+     implements ``gsl_sf_bessel_y0``.
+   
+   .. _bessel_y0_e:
+   
+   ``bessel_y0_e  x``
+     implements ``gsl_sf_bessel_y0_e``.
+   
+   .. _bessel_y1:
+   
+   ``bessel_y1  x``
+     implements ``gsl_sf_bessel_y1``.
+   
+   .. _bessel_y1_e:
+   
+   ``bessel_y1_e  x``
+     implements ``gsl_sf_bessel_y1_e``.
+   
+   .. _bessel_y2:
+   
+   ``bessel_y2  x``
+     implements ``gsl_sf_bessel_y2``.
+   
+   .. _bessel_y2_e:
+   
+   ``bessel_y2_e  x``
+     implements ``gsl_sf_bessel_y2_e``.
+   
+   .. _bessel_yl:
+   
+   ``bessel_yl  l::int  x``
+     implements ``gsl_sf_bessel_yl``.
+   
+   .._bessel_yl_e:
+   
+   ``bessel_yl_e  l::int  x``
+     implements ``gsl_sf_bessel_yl_e``.
+   
+   .._bessel_yl_array:
+   
+   ``bessel_yl_array  lmax::int  x``
+     implements ``gsl_sf_bessel_yl_array``.
+   
+   .. _bessel_i0_scaled:
+   
+   ``bessel_i0_scaled  x``
+     implements ``gsl_sf_bessel_i0_scaled``.
+   
+   .. _bessel_i0_scaled_e:
+   
+   ``bessel_i0_scaled_e  x``
+     implements ``gsl_sf_bessel_i0_scaled_e``.
+   
+   .. _bessel_i1_scaled:
+   
+   ``bessel_i1_scaled  x``
+     implements ``gsl_sf_bessel_i1_scaled``.
+   
+   .. _bessel_i1_scaled_e:
+   
+   ``bessel_i1_scaled_e  x``
+     implements ``gsl_sf_bessel_i1_scaled_e``.
+   
+   .. _bessel_i2_scaled:
+   
+   ``bessel_i2_scaled  x``
+     implements ``gsl_sf_bessel_i2_scaled``.
+   
+   .. _bessel_i2_e:
+   
+   ``bessel_i2_scaled_e  x``
+     implements ``gsl_sf_bessel_i2_scaled_e``.
+   
+   .. _bessel_il_scaled:
+   
+   ``bessel_il_scaled  l::int  x``
+     implements ``gsl_sf_bessel_il_scaled``.
+   
+   .._bessel_il_scaled_e:
+   
+   ``bessel_il_scaled_e  l::int  x``
+     implements ``gsl_sf_bessel_il_scaled_e``.
+   
+   .._bessel_il_scaled_array:
+   
+   ``bessel_il_scaled_array  lmax::int  x``
+     implements ``gsl_sf_bessel_il_scaled_array``.
+     
+   .. _bessel_k0_scaled:
+   
+   ``bessel_k0_scaled  x``
+     implements ``gsl_sf_bessel_k0_scaled``.
+   
+   .. _bessel_k0_scaled_e:
+   
+   ``bessel_k0_scaled_e  x``
+     implements ``gsl_sf_bessel_k0_scaled_e``.
+   
+   .. _bessel_k1_scaled:
+   
+   ``bessel_k1_scaled  x``
+     implements ``gsl_sf_bessel_k1_scaled``.
+   
+   .. _bessel_k1_scaled_e:
+   
+   ``bessel_k1_scaled_e  x``
+     implements ``gsl_sf_bessel_ik_scaled_e``.
+   
+   .. _bessel_k2_scaled:
+   
+   ``bessel_k2_scaled  x``
+     implements ``gsl_sf_bessel_k2_scaled``.
+   
+   .. _bessel_k2_e:
+   
+   ``bessel_k2_scaled_e  x``
+     implements ``gsl_sf_bessel_k2_scaled_e``.
+   
+   .. _bessel_kl_scaled:
+   
+   ``bessel_kl_scaled  l::int  x``
+     implements ``gsl_sf_bessel_kl_scaled``.
+   
+   .. _bessel_kl_scaled_e:
+   
+   ``bessel_kl_scaled_e  l::int  x``
+     implements ``gsl_sf_bessel_kl_scaled_e``.
+   
+   .. _bessel_kl_scaled_array:
+   
+   ``bessel_kl_scaled_array  lmax::int  x``
+     implements ``gsl_sf_bessel_il_scaled_array``.
+   
+   .. _bessel_Jnu:
+   
+   ``bessel_Jnu  nu  x``
+     implements ``gsl_sf_bessel_Jnu``.
+   
+   .. _bessel_Jnu_e:
+   
+   ``bessel_Jnu_e  nu  x``
+     implements ``gsl_sf_bessel_Jnu_e``.
+   
+   .. _bessel_sequence_Jnu_e:
+   
+   ``bessel_sequence_Jnu_e  nu  v::matrix``
+     implements ``gsl_sf_bessel_sequence_Jnu_e``.
+   
+   .. _bessel_Ynu:
+   
+   ``bessel_Ynu  nu  x``
+     implements ``gsl_sf_bessel_Ynu``.
+   
+   .. _bessel_Ynu_e:
+   
+   ``bessel_Ynu_e  nu  x``
+     implements ``gsl_sf_bessel_Ynu_e``.
+   
+   .. _bessel_Inu:
+   
+   ``bessel_Inu  nu  x``
+     implements ``gsl_sf_bessel_Inu``.
+   
+   .. _bessel_Inu_e:
+   
+   ``bessel_Inu_e  nu  x``
+     implements ``gsl_sf_bessel_Inu_e``.
+   
+   .. _bessel_Inu_scaled:
+   
+   ``bessel_Inu_scaled  nu  x``
+     implements ``gsl_sf_bessel_Inu_scaled``.
+   
+   .. _bessel_Inu_scaled_e:
+   
+   ``bessel_Inu_scaled_e  nu  x``
+     implements ``gsl_sf_bessel_Inu_scaled_e``.
+   
+   .. _bessel_Knu:
+   
+   ``bessel_Knu  nu  x``
+     implements ``gsl_sf_bessel_Knu``.
+   
+   .. _bessel_Knu_e:
+   
+   ``bessel_Knu_e  nu  x``
+     implements ``gsl_sf_bessel_Knu``.
+   
+   .. _bessel_lnKnu:
+   
+   ``bessel_lnKnu  nu  x``
+     implements ``gsl_sf_bessel_lnKnu``.
+   
+   .. _bessel_lnKnu_e:
+   
+   ``bessel_lnKnu_e  nu  x``
+     implements ``gsl_sf_bessel_lnKnu_e``.
+   
+   .. _bessel_Knu_scaled:
+   
+   ``bessel_Knu_scaled  nu x``
+     implements ``gsl_sf_bessel_Knu_scaled``.
+   
+   .. _bessel_Knu_scaled_e:
+   
+   ``bessel_Knu_scaled_e  nu x``
+     implements ``gsl_sf_bessel_Knu_scaled_e``.
+   
+   .. _bessel_zero_J0:
+   
+   ``bessel_zero_J0  s::int``
+     implements ``gsl_sf_bessel_zero_J0``.
+   
+   .. _bessel_zero_J0_e:
+   
+   ``bessel_zero_J0_e  s::int``
+     implements ``gsl_sf_bessel_zero_J0_e``.
+   
+   .. _bessel_zero_J1:
+   
+   ``bessel_zero_J1  s::int``
+     implements ``gsl_sf_bessel_zero_J1``.
+   
+   .. _bessel_zero_J1_e:
+   
+   ``bessel_zero_J1_e  s::int``
+     implements ``gsl_sf_bessel_zero_J1_e``.
+   
+   .. _bessel_zero_Jnu:
+   
+   ``bessel_zero_Jnu  nu  s::int``
+     implements ``gsl_sf_bessel_zero_Jnu``.
+   
+   .. _bessel_zero_Jnu_e:
+   
+   ``bessel_zero_Jnu_e  nu  s::int``
+     implements ``gsl_sf_bessel_zero_Jnu``.
+     
+*/
+
+def ap_bessel_1 f x = f (double x) (pointer m) $$ list m
+  when m = {0.0,0.0} end;
+
+def ap_bessel_2 f n x = f n (double x) (pointer m) $$ list m
+  when m = {0.0,0.0} end;
+
+def ap_bessel_2l f n x = f n (double x) (pointer m) $$ list m
+  when m = {0.0 | i = 0..n} end;
+
+def ap_bessel_3 f n1 n2 x = f n1 n2 (double x) (pointer m) $$ list m
+  when m = {0.0 | i = n1..n2} end;
+
+def ap_bessel_d2 f nu x = f (double nu) (double x) (pointer m) $$ list m
+  when m = {0.0, 0.0} end;
+
+bessel_J0  x = gsl_sf_bessel_J0 (double x);
+
+bessel_J0_e  x = ap_bessel_1 gsl_sf_bessel_J0_e x;
+
+bessel_J1  x = gsl_sf_bessel_J1 (double x);
+
+bessel_J1_e  x = ap_bessel_1 gsl_sf_bessel_J1_e x;
+
+bessel_Jn  n::int  x = gsl_sf_bessel_Jn n (double x) if n >= 0;
+
+bessel_Jn_e  n::int  x = ap_bessel_2 gsl_sf_bessel_Jn_e n x if n >= 0;
+
+bessel_Jn_array  nmin::int  nmax::int  x
+  = ap_bessel_3 gsl_sf_bessel_Jn_array nmin nmax x if nmin >= 0 && nmax > nmin;
+
+bessel_Y0  x = gsl_sf_bessel_Y0 (double x) if x > 0.0;
+
+bessel_Y0_e  x = ap_bessel_1 gsl_sf_bessel_Y0_e x if x > 0.0;
+
+bessel_Y1  x = gsl_sf_bessel_Y1 (double x) if x > 0.0;
+
+bessel_Y1_e  x = ap_bessel_1 gsl_sf_bessel_Y1_e x if x > 0.0;
+
+bessel_Yn  n::int  x = gsl_sf_bessel_Yn n (double x) if n >= 0 && x > 0.0;
+
+bessel_Yn_e  n::int  x
+  = ap_bessel_2 gsl_sf_bessel_Yn_e n x if n >= 0 && x > 0.0;
+
+bessel_Yn_array  nmin::int  nmax::int  x
+  = ap_bessel_3 gsl_sf_bessel_Yn_array nmin nmax x
+    if nmin >= 0 && nmax > nmin && x > 0.0;
+
+bessel_I0  x = gsl_sf_bessel_I0 (double x);
+
+bessel_I0_e  x = ap_bessel_1 gsl_sf_bessel_I0_e x;
+
+bessel_I1  x = gsl_sf_bessel_I1 (double x);
+
+bessel_I1_e  x = ap_bessel_1 gsl_sf_bessel_I1_e x;
+
+bessel_In  n::int  x = gsl_sf_bessel_In n (double x) if n >= 0;
+
+bessel_In_e  n::int  x = ap_bessel_2 gsl_sf_bessel_In_e n x if n >= 0;
+
+bessel_In_array  nmin::int  nmax::int  x
+  = ap_bessel_3 gsl_sf_bessel_In_array nmin nmax x if nmin >= 0 && nmax > nmin;
+
+bessel_I0_scaled  x = gsl_sf_bessel_I0_scaled (double x);
+
+bessel_I0_scaled_e  x = ap_bessel_1 gsl_sf_bessel_I0_scaled_e x;
+
+bessel_I1_scaled  x = gsl_sf_bessel_I1_scaled (double x);
+
+bessel_I1_scaled_e  x = ap_bessel_1 gsl_sf_bessel_I1_scaled_e x;
+
+bessel_In_scaled  n::int  x = gsl_sf_bessel_In_scaled n (double x) if n >= 0;
+
+bessel_In_scaled_e  n::int  x
+  = ap_bessel_2 gsl_sf_bessel_In_scaled_e n x if n >= 0;
+
+bessel_In_scaled_array  nmin::int  nmax::int  x
+  = ap_bessel_3 gsl_sf_bessel_In_scaled_array nmin nmax x
+    if nmin >= 0 && nmax > nmin;
+
+bessel_K0  x = gsl_sf_bessel_K0 (double x) if x > 0.0;
+
+bessel_K0_e  x = ap_bessel_1 gsl_sf_bessel_K0_e x if x > 0.0;
+
+bessel_K1  x = gsl_sf_bessel_K1 (double x) if x > 0.0;
+
+bessel_K1_e  x = ap_bessel_1 gsl_sf_bessel_K1_e x if x > 0.0;
+
+bessel_Kn  n::int  x = gsl_sf_bessel_Kn n (double x) if n >= 0 && x > 0.0;
+
+bessel_Kn_e  n::int  x
+  = ap_bessel_2 gsl_sf_bessel_Kn_e n x if n >= 0 && x > 0.0;
+
+bessel_Kn_array  nmin::int  nmax::int  x
+  = ap_bessel_3 gsl_sf_bessel_Kn_array nmin nmax x
+    if nmin >= 0 && nmax > nmin && x > 0.0;
+
+bessel_K0_scaled  x = gsl_sf_bessel_I0_scaled (double x) if x > 0.0;
+
+bessel_K0_scaled_e  x = ap_bessel_1 gsl_sf_bessel_K0_scaled_e x if x > 0.0;
+
+bessel_K1_scaled  x = gsl_sf_bessel_K1_scaled (double x) if x > 0.0;
+
+bessel_K1_scaled_e  x = ap_bessel_1 gsl_sf_bessel_K1_scaled_e x if x > 0.0;
+
+bessel_Kn_scaled  n::int  x
+  = gsl_sf_bessel_Kn_scaled n (double x) if n >= 0 && x > 0.0;
+
+bessel_Kn_scaled_e  n::int  x
+  = ap_bessel_2 gsl_sf_bessel_Kn_scaled_e n x if n >= 0 && x > 0.0;
+
+bessel_Kn_scaled_array  nmin::int  nmax::int  x
+  = ap_bessel_3 gsl_sf_bessel_Kn_scaled_array nmin nmax x
+    if nmin >= 0 && nmax > nmin && x > 0.0;
+    
+bessel_j0  x = gsl_sf_bessel_j0 (double x);
+  
+bessel_j0_e  x = ap_bessel_1 gsl_sf_bessel_j0_e x;
+
+bessel_j1  x = gsl_sf_bessel_j1 (double x);
+
+bessel_j1_e  x = ap_bessel_1 gsl_sf_bessel_j1_e x;
+
+bessel_j2  x = gsl_sf_bessel_j2 (double x);
+
+bessel_j2_e  x = ap_bessel_1 gsl_sf_bessel_j2_e x;
+
+bessel_jl  l::int  x = gsl_sf_bessel_jl l (double x) if l >= 0;
+  
+bessel_jl_e  l::int  x 
+  = ap_bessel_2 gsl_sf_bessel_jl_e l x if l >= 0 && x >= 0.0;
+
+bessel_jl_array  lmax::int  x
+  = ap_bessel_2l gsl_sf_bessel_jl_array lmax x if lmax > 0 && x >= 0.0;
+
+bessel_jl_steed_array  lmax::int  x
+  = ap_bessel_2l gsl_sf_bessel_jl_steed_array lmax x
+    if lmax > 0 && x >= 0.0;
+
+bessel_y0  x = gsl_sf_bessel_y0 (double x);
+
+bessel_y0_e  x = ap_bessel_1 gsl_sf_bessel_y0_e x;
+
+bessel_y1  x = gsl_sf_bessel_y1 (double x);
+
+bessel_y1_e  x = ap_bessel_1 gsl_sf_bessel_y1_e x;
+
+bessel_y2  x = gsl_sf_bessel_y2 (double x);
+
+bessel_y2_e  x = ap_bessel_2 gsl_sf_bessel_y2_e x;
+
+bessel_yl  l::int  x = gsl_sf_bessel_yl l (double x) if l >= 0;
+
+bessel_yl_e  l::int  x = ap_bessel_2 gsl_sf_bessel_yl_e l x if l >= 0;
+
+bessel_yl_array  lmax::int  x 
+  = ap_bessel_2l gsl_sf_bessel_yl_array lmax x if lmax >= 0;
+
+bessel_i0_scaled  x = gsl_sf_bessel_i0_scaled (double x);
+
+bessel_i0_scaled_e  x = ap_bessel_1 gsl_sf_bessel_i0_scaled_e x;
+
+bessel_i1_scaled  x = gsl_sf_bessel_i1_scaled (double x);
+
+bessel_i1_scaled_e  x = ap_bessel_1 gsl_sf_bessel_i1_scaled_e x;
+
+bessel_i2_scaled  x = gsl_sf_bessel_i2_scaled (double x);
+
+bessel_i2_scaled_e  x = ap_bessel_1 gsl_sf_bessel_i2_scaled_e x;
+
+bessel_il_scaled  l::int  x = gsl_sf_bessel_il_scaled l (double x) if l >= 0;
+
+bessel_il_scaled_e  l::int  x
+  = ap_bessel_2 gsl_sf_bessel_il_scaled_e l x if l >= 0;
+
+bessel_il_scaled_array  lmax::int  x 
+  = ap_bessel_2l gsl_sf_bessel_il_scaled_array lmax x if lmax >= 0;
+
+bessel_k0_scaled  x = gsl_sf_bessel_k0_scaled (double x);
+
+bessel_k0_scaled_e  x = ap_bessel_1 gsl_sf_bessel_k0_scaled_e x;
+
+bessel_k1_scaled  x = gsl_sf_bessel_k1_scaled (double x);
+
+bessel_k1_scaled_e  x = ap_bessel_1 gsl_sf_bessel_k1_scaled_e x;
+
+bessel_k2_scaled  x = gsl_sf_bessel_k2_scaled (double x);
+
+bessel_k2_scaled_e  x = ap_bessel_1 gsl_sf_bessel_k2_scaled_e x;
+
+bessel_kl_scaled  l::int  x = gsl_sf_bessel_kl_scaled l (double x) if l >= 0;
+
+bessel_kl_scaled_e  l::int  x
+  = ap_bessel_2 gsl_sf_bessel_kl_scaled_e l x if l >= 0;
+
+bessel_kl_scaled_array  lmax::int  x 
+  = ap_bessel_2l gsl_sf_bessel_kl_scaled_array lmax x if lmax >= 0;
+
+bessel_Jnu  nu  x = gsl_sf_bessel_Jnu (double nu) (double x);
+
+bessel_Jnu_e  nu  x = ap_bessel_d2 gsl_sf_bessel_Jnu_e nu x;
+
+bessel_sequence_Jnu_e  nu  v::matrix
+  = gsl_sf_bessel_sequence_Jnu_e (double nu) GSL_PREC_DOUBLE (#v) (pointer m)
+    $$ list m when m = dmatrix v end if rowvectorp v;
+
+bessel_Ynu  nu  x = gsl_sf_bessel_Ynu (double nu) (double x);
+
+bessel_Ynu_e  nu  x = ap_bessel_d2 gsl_sf_bessel_Ynu_e nu x;
+
+bessel_Inu  nu  x
+  = gsl_sf_bessel_Inu (double nu) (double x) if nu > 0.0 && x > 0.0;
+
+bessel_Inu_e  nu  x
+  = ap_bessel_d2 gsl_sf_bessel_Inu_e nu x if nu > 0.0 && x > 0.0;
+
+bessel_Inu_scaled  nu  x
+  = gsl_sf_bessel_Inu_scaled (double nu) (double x) if nu > 0.0 && x > 0.0;
+
+bessel_Inu_scaled_e  nu  x
+  = ap_bessel_d2 gsl_sf_bessel_Inu_scaled_e nu x if nu > 0.0 && x > 0.0;
+
+bessel_Knu  nu  x
+  = gsl_sf_bessel_Knu (double nu) (double x) if nu > 0.0 && x > 0.0;
+
+bessel_Knu_e  nu  x
+  = ap_bessel_d2 gsl_sf_bessel_Knu_e nu x if nu > 0.0 && x > 0.0;
+
+bessel_lnKnu  nu  x
+  = gsl_sf_bessel_lnKnu (double nu) (double x) if nu > 0.0 && x > 0.0;
+
+bessel_lnKnu_e  nu  x
+  = ap_bessel_d2 gsl_sf_bessel_lnKnu_e nu x if nu > 0.0 && x > 0.0;
+
+bessel_Knu_scaled  nu  x
+  = gsl_sf_bessel_Knu_scaled  (double nu) (double x) if nu > 0.0 && x > 0.0;
+
+bessel_Knu_scaled_e  nu  x
+  = ap_bessel_d2 gsl_sf_bessel_Knu_scaled_e nu x if nu > 0.0 && x > 0.0;
+
+bessel_zero_J0  s::int = gsl_sf_bessel_zero_J0 s if s > 0;
+
+bessel_zero_J0_e  s::int = gsl_sf_bessel_zero_J0_e s (pointer m) $$ list m
+  when m = {0.0,0.0} end if s > 0;
+
+bessel_zero_J1  s::int = gsl_sf_bessel_zero_J1 s if s > 0;
+
+bessel_zero_J1_e  s::int = gsl_sf_bessel_zero_J1_e s (pointer m) $$ list m
+  when m =  {0.0,0.0} end if s > 0;
+
+bessel_zero_Jnu  nu  s::int
+  = gsl_sf_bessel_zero_Jnu (double nu) s if nu >= 0.0 && s > 0;
+
+bessel_zero_Jnu_e  nu  s::int
+  = gsl_sf_bessel_zero_Jnu_e (double nu) s (pointer m) $$ list m
+      when m = {0.0,0.0} end if nu >= 0.0 && s > 0;
+
+/* ..
+   
+   Examples
+   ~~~~~~~~
+   
+   The following illustrate the Bessel functions.
+
+   ::
+   
+     > using gsl::sf;
+     > using namespace gsl::sf;
+     > bessel_J0 (-1.2);
+     0.671132744264363
+     > bessel_J0_e 0.75;
+     [0.864242275166649,7.07329111491049e-16]
+     > bessel_J1 1.2;
+     0.498289057567216
+     > bessel_J1_e (-0.2);
+     [-0.099500832639236,5.00768737808415e-17]
+     > bessel_Jn 0 (-1.2);
+     0.671132744264363
+     > bessel_Jn_e 2 0.75;
+     [0.0670739972996506,5.48959386474892e-17]
+     > bessel_Jn_array 0 4 0.5;
+     [0.938469807240813,0.242268457674874,0.0306040234586826,
+      0.00256372999458724,0.000160736476364288]
+     > bessel_Y0 0.25;
+     -0.931573024930059
+     > bessel_Y0_e 0.25;
+     [-0.931573024930059,6.4279898430593e-16]
+     > bessel_Y1 0.125;
+     -5.19993611253477
+     > bessel_Y1_e 4.325;
+     [0.343041276811844,2.74577716760089e-16]
+     > bessel_Yn 3 4.325;
+     -0.0684784962694202
+     > bessel_Yn_e 3 4.325;
+     [-0.0684784962694202,3.37764590906247e-16]
+     > bessel_Yn_array 2 4 1.35;
+     [-1.07379345815726,-2.66813016175689,-10.7845628163178]
+     > bessel_I0 1.35;
+     1.51022709775726
+     > bessel_I0_e 1.35;
+     [1.51022709775726,2.37852166449918e-15]
+     > bessel_I1 0.35;
+     0.177693400031422
+     > bessel_I1_e 0.35;
+     [0.177693400031422,1.55520651386126e-16]
+     > bessel_In 2 3.0;
+     2.24521244092995
+     > bessel_In_e 2 3.0;
+     2.24521244092995,5.98244771302867e-15]
+     > bessel_In_array 3 5 (-0.1);
+     [-2.08463574223272e-05,2.60546902129966e-07,-2.6052519298937e-09]
+     > bessel_I0_scaled 1.05;
+     0.453242541279856
+     > bessel_I0_scaled_e 1.05;
+     [0.453242541279856,4.10118141697477e-16]
+     > bessel_I1_scaled 1.05;
+     0.210226017612868
+     > bessel_I1_scaled_e 1.05;
+     [0.210226017612868,2.12903131803686e-16]
+     > bessel_In_scaled 3 1.05;
+     0.00903732602788281
+     > bessel_In_scaled_e 3 1.05;
+     [0.00903732602788281,2.00668948743994e-17]
+     > bessel_In_scaled_array 3 5 1.05;
+     [0.00903732602788281,0.0011701685245855,0.000121756316755217]
+     > bessel_K0 2.3;
+     0.0791399330020936
+     > bessel_K0_e 2.3;
+     [0.0791399330020936,1.15144454318261e-16]
+     > bessel_K1 2.3;
+     0.0949824438453627
+     > bessel_K1_e 2.3;
+     [0.0949824438453627,9.85583638959967e-17]
+     > bessel_Kn 2 3.4;
+     0.0366633035851529
+     > bessel_Kn_e 2 3.4;
+     [0.0366633035851529,2.01761856558251e-16]
+     > bessel_Kn_array 1 3 2.5;
+     [0.0738908163477471,0.121460206278564,0.268227146393449]
+     > bessel_K0_scaled 1.5;
+     0.367433609054158
+     > bessel_K0_scaled_e 1.5;
+     [0.958210053294896,1.25816573186951e-14]
+     > bessel_K1_scaled 1.5;
+     1.24316587355255
+     > bessel_K1_scaled_e 1.5;
+     [1.24316587355255,2.32370553362606e-15]
+     > bessel_Kn_scaled 4 1.5;
+     35.4899165934682
+     > bessel_Kn_scaled_e 4 1.5;
+     [35.4899165934682,3.89252285021454e-14]
+     > bessel_Kn_scaled_array 4 6 1.5;
+     [35.4899165934682,197.498093175689,1352.14387109806]
+     > bessel_j0 0.01;
+     0.999983333416666
+     > bessel_j0_e 0.01;
+     [0.999983333416666,4.44081808400239e-16]
+     > bessel_j1 0.2;
+     0.0664003806703222
+     > bessel_j1_e 0.2;
+     [0.0664003806703222,2.94876925856268e-17]
+     > bessel_j2 0.3;
+     0.00596152486862022
+     > bessel_j2_e 0.3;
+     [0.00596152486862022,2.64744886840705e-18]
+     > bessel_jl 4 0.3;
+     8.53642426502516e-06
+     > bessel_jl_e 4 0.3;
+     [8.53642426502516e-06,1.02355215483598e-19]
+     > bessel_jl_array 2 1.2;
+     [0.776699238306022,0.34528456985779,0.0865121863384538]
+     > bessel_jl_steed_array 2 1.2;
+     [0.776699238306022,0.34528456985779,0.0865121863384538]
+     > bessel_y0 1;
+     -0.54030230586814
+     > bessel_y0_e 3;
+     [0.329997498866815,2.93096657048522e-16]
+     > bessel_y1 3;
+     0.062959163602316
+     > bessel_y1_e 3.0;
+     [0.062959163602316,1.04609100698801e-16]
+     > bessel_yl 3 5;
+     -0.0154429099129942
+     > bessel_yl_e 3 5;
+     [-0.0154429099129942,2.87258769784673e-17]
+     > bessel_i0_scaled 3;
+     0.166253541303889
+     > bessel_i0_scaled_e 3;
+     [0.166253541303889,7.38314037924188e-17]
+     > bessel_i1_scaled 3;
+     0.111661944928148
+     > bessel_i1_scaled_e 3;
+     [0.111661944928148,4.95878648934625e-17]
+     > bessel_i2_scaled 3;
+     0.0545915963757409
+     > bessel_i2_scaled_e 3;
+     [0.0545915963757409,2.42435388989563e-17]
+     > bessel_il_scaled 3 1;
+     0.0037027398773348
+     > bessel_il_scaled_e 3 1;
+     [0.0037027398773348,8.46838615599053e-17]
+     > bessel_il_scaled_array 3 1;
+     [0.432332358381693,0.135335283236613,0.0263265086718556,0.0037027398773348]
+     > bessel_k0_scaled 3;
+     0.523598775598299
+     > bessel_k0_scaled_e 3;
+     [0.523598775598299,2.32524566533909e-16]
+     > bessel_k1_scaled 4;
+     0.490873852123405
+     > bessel_k1_scaled_e 4;
+     [0.490873852123405,2.17991781125539e-16]
+     > bessel_k2_scaled 4;
+     0.760854470791278
+     > bessel_k2_scaled_e 4;
+     [0.760854470791278,3.37887260744586e-16]
+     > bessel_kl_scaled 2 4;
+     0.760854470791278
+     > bessel_kl_scaled_e 2 4;
+     [0.760854470791278,3.37887260744586e-16]
+     > bessel_kl_scaled_array 2 4;
+     [0.392699081698724,0.490873852123405,0.760854470791278]
+     > bessel_Jnu 2 2.3;
+     0.413914591732062
+     > bessel_Jnu_e 2 2.3;
+     [0.413914591732062,6.43352513956959e-16]
+     > bessel_sequence_Jnu_e 2 {.1,.2,.3};
+     [0.00124895865879992,0.00498335415278356,0.011165861949064]
+     > bessel_Ynu 1 0.5;
+     -1.47147239267024
+     > bessel_Ynu_e 1 0.5;
+     [-1.47147239267024,8.49504515830242e-15]
+     > bessel_Inu 1.2 3.4;
+     5.25626563437082
+     > bessel_Inu_e 1.2 3.4;
+     [5.25626563437082,1.00839636820646e-13]
+     > bessel_Inu_scaled 1.2 3.4;
+     0.175418771999042
+     > bessel_Inu_scaled_e 1.2 3.4;
+     [0.175418771999042,3.15501414592188e-15]
+     > bessel_Knu 3 3;
+     0.122170375757184
+     > bessel_Knu_e 3 3;
+     [0.122170375757184,4.34036365096743e-16]
+     > bessel_lnKnu 3 3;
+     -2.10233868587978
+     > bessel_lnKnu_e 3 3;
+     [-2.10233868587978,4.24157124665032e-15]
+     > bessel_Knu_scaled 3 3;
+     2.45385759319062
+     > bessel_Knu_scaled_e 3 3;
+     [2.45385759319062,7.6281217575122e-15]
+     > bessel_zero_J0 3;
+     8.65372791291102
+     > bessel_zero_J0_e 3;
+     [8.65372791291102,2.59611837387331e-14]
+     > bessel_zero_J1 3;
+     10.1734681350627
+     > bessel_zero_J1_e 3;
+     [10.1734681350627,2.03469362701254e-13]
+     > bessel_zero_Jnu 1.2 3;
+     10.46769
+     > bessel_zero_Jnu_e 1.2 3;
+     [10.4676986203553,2.09353972407105e-14]86203553
+     
 */

@@ -3,14 +3,14 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
+<meta name="generator" content="Docutils 0.5: http://docutils.sourceforge.net/" />
 <title>pure-gsl - GNU Scientific Library Interface for Pure</title>
 <meta name="authors" content="Albert Graef &lt;Dr.Graef&#64;t-online.de&gt; and Eddie Rucker &lt;erucker&#64;bmc.edu&gt;" />
 <style type="text/css">
 
 /*
 :Author: David Goodger (goodger@python.org)
-:Id: $Id: html4css1.css 5631 2008-08-24 13:01:23Z goodger $
+:Id: $Id: html4css1.css 5196 2007-06-03 20:25:28Z wiemann $
 :Copyright: This stylesheet has been placed in the public domain.
 
 Default cascading style sheet for the HTML output of Docutils.
@@ -217,7 +217,8 @@ p.topic-title {
 pre.address {
   margin-bottom: 0 ;
   margin-top: 0 ;
-  font: inherit }
+  font-family: serif ;
+  font-size: 100% }
 
 pre.literal-block, pre.doctest-block {
   margin-left: 2em ;
@@ -293,15 +294,15 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Authors:</th>
 <td>Albert Graef &lt;Dr.Graef&#64;t-online.de&gt; and
 Eddie Rucker &lt;erucker&#64;bmc.edu&gt;</td></tr>
-<tr class="field"><th class="docinfo-name">License:</th><td class="field-body">GPL V3 or later, see the accompanying COPYING file</td>
+<tr class="field"><th class="docinfo-name">License:</th><td class="field-body">GPL V3, see the accompanying COPYING file</td>
 </tr>
 </tbody>
 </table>
 <!--  -->
-<p>Building on Pure's GSL-compatible matrix support, this module aims to
-provide a complete wrapper for the GNU Scientific Library which provides a
-wide range of mathematical routines useful for scientific programming,
-number crunching and signal processing applications.</p>
+<p>Building on Pure's GSL matrix support, this module aims to provide a
+complete wrapper for the GNU Scientific Library which provides a wide
+range of mathematical routines useful for scientific programming, number
+crunching and signal processing applications.</p>
 <p>This is still work in progress, only a small part of the interface is
 finished right now. Here is a brief summary of the operations which are
 implemented:</p>
@@ -318,100 +319,75 @@ complex SVD.</li>
 <li>Polynomial evaluation and roots.</li>
 <li>Linear least-squares fitting. Multi-fitting is not available yet.</li>
 </ul>
-<p>Installation instructions: Run <tt class="docutils literal"><span class="pre">make</span></tt> to compile the module and <tt class="docutils literal"><span class="pre">make</span>
-<span class="pre">install</span></tt> (as root) to install it in the Pure library directory.  This
-requires GNU make, and of course you need to have Pure and GSL installed.
-The <tt class="docutils literal"><span class="pre">make</span> <span class="pre">install</span></tt> step is only necessary for system-wide installation.</p>
-<p><tt class="docutils literal"><span class="pre">make</span></tt> tries to guess your Pure installation directory and
-platform-specific setup. If it gets this wrong, you can set some variables
-manually. In particular, <tt class="docutils literal"><span class="pre">make</span> <span class="pre">install</span> <span class="pre">prefix=/usr</span></tt> sets the installation
-prefix, and <tt class="docutils literal"><span class="pre">make</span> <span class="pre">PIC=-fPIC</span></tt> or some similar flag might be needed for
-compilation on 64 bit systems. Please see the Makefile for details.</p>
-<p>The current release requires GSL 1.11 or later and Pure 0.26 or later.
-Older GSL versions might still work, but then some operations may be
+<p>Installation instructions: Run 'make' to compile the module and
+'make install' (as root) to install it in the Pure library directory.
+This requires GNU make, and of course you need to have Pure and GSL
+installed. The 'make install' step is only necessary for system-wide
+installation.</p>
+<p>'make' tries to guess your Pure installation directory and
+platform-specific setup. If it gets this wrong, you can set some
+variables manually. In particular, 'make install prefix=/usr' sets the
+installation prefix, and 'make PIC=-fPIC' or some similar flag might be
+needed for compilation on 64 bit systems. Please see the Makefile for
+details.</p>
+<p>The current release requires GSL 1.11 or later and Pure 0.26 or
+later. Older GSL versions might still work, but then some operations may be
 missing. The latest and greatest GSL version is always available from
 <a class="reference external" href="http://www.gnu.org/software/gsl">http://www.gnu.org/software/gsl</a>.</p>
-<p>After installation, you can import the entire GSL interface as follows:</p>
-<pre class="literal-block">
-using gsl;
-</pre>
-<p>For convenience, the different parts of the GSL interface are also
-available as separate modules. E.g., if you only need the matrix
-operations:</p>
-<pre class="literal-block">
-using gsl::matrix;
-</pre>
-<p>In either case, the global <tt class="docutils literal"><span class="pre">gsl_version</span></tt> variable reports the installed
-GSL version:</p>
-<pre class="literal-block">
-&gt; show gsl_version
-let gsl_version = &quot;1.11&quot;;
-</pre>
-<p>(This variable used to be defined by the Pure runtime but has been moved
-into pure-gsl as of Pure 0.37.)</p>
-<p>Most other operations are declared in separate namespaces which are in 1-1
-correspondence with the module names. Thus, e.g., the <tt class="docutils literal"><span class="pre">gsl_poly_eval</span></tt>
-routine is named <tt class="docutils literal"><span class="pre">gsl::poly::eval</span></tt> in Pure and can be found in the
-<tt class="docutils literal"><span class="pre">gsl::poly</span></tt> module and namespace. The <tt class="docutils literal"><span class="pre">using</span> <span class="pre">namespace</span></tt> declaration can
-be used to facilitate access to the operations in a given namespace, e.g.:</p>
-<pre class="literal-block">
-&gt; using gsl::poly;
-&gt; using namespace gsl::poly;
-&gt; eval {1,2,3} 2;
-17
-</pre>
-<p>See the <tt class="docutils literal"><span class="pre">examples</span></tt> folder in the sources for some examples.</p>
+<p>See the 'examples' folder in the sources for some examples.</p>
 <p>If you'd like to contribute, please mail the authors or contact us at
 <a class="reference external" href="http://groups.google.com/group/pure-lang">http://groups.google.com/group/pure-lang</a>.</p>
 <div class="contents topic" id="contents">
 <p class="topic-title first">Contents</p>
 <ul class="simple">
-<li><a class="reference internal" href="#polynomials" id="id18">Polynomials</a><ul>
-<li><a class="reference internal" href="#routines" id="id19">Routines</a></li>
-<li><a class="reference internal" href="#examples" id="id20">Examples</a></li>
+<li><a class="reference internal" href="#polynomials" id="id34">Polynomials</a><ul>
+<li><a class="reference internal" href="#routines" id="id35">Routines</a></li>
+<li><a class="reference internal" href="#examples" id="id36">Examples</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#special-functions" id="id21">Special Functions</a><ul>
-<li><a class="reference internal" href="#id1" id="id22">Routines</a></li>
-<li><a class="reference internal" href="#id2" id="id23">Examples</a></li>
+<li><a class="reference internal" href="#special-functions" id="id37">Special Functions</a><ul>
+<li><a class="reference internal" href="#airy-functions" id="id38">Airy Functions</a></li>
+<li><a class="reference internal" href="#id1" id="id39">Examples</a></li>
+<li><a class="reference internal" href="#bessel-functions" id="id40">Bessel Functions</a></li>
+<li><a class="reference internal" href="#id18" id="id41">Examples</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#matrices" id="id24">Matrices</a><ul>
-<li><a class="reference internal" href="#matrix-operators" id="id25">Matrix Operators</a></li>
-<li><a class="reference internal" href="#matrix-utilties-and-functions" id="id26">Matrix Utilties and Functions</a></li>
+<li><a class="reference internal" href="#matrices" id="id42">Matrices</a><ul>
+<li><a class="reference internal" href="#matrix-operators" id="id43">Matrix Operators</a></li>
+<li><a class="reference internal" href="#matrix-utilties-and-functions" id="id44">Matrix Utilties and Functions</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#least-squares-fitting" id="id27">Least-Squares Fitting</a><ul>
-<li><a class="reference internal" href="#id10" id="id28">Routines</a></li>
-<li><a class="reference internal" href="#id11" id="id29">Examples</a></li>
+<li><a class="reference internal" href="#least-squares-fitting" id="id45">Least-Squares Fitting</a><ul>
+<li><a class="reference internal" href="#id26" id="id46">Routines</a></li>
+<li><a class="reference internal" href="#id27" id="id47">Examples</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#statistics" id="id30">Statistics</a><ul>
-<li><a class="reference internal" href="#id12" id="id31">Routines</a></li>
-<li><a class="reference internal" href="#id13" id="id32">Examples</a></li>
+<li><a class="reference internal" href="#statistics" id="id48">Statistics</a><ul>
+<li><a class="reference internal" href="#id28" id="id49">Routines</a></li>
+<li><a class="reference internal" href="#id29" id="id50">Examples</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#random-number-distributions" id="id33">Random Number Distributions</a><ul>
-<li><a class="reference internal" href="#id14" id="id34">Routines</a></li>
-<li><a class="reference internal" href="#id15" id="id35">Examples</a></li>
+<li><a class="reference internal" href="#random-number-distributions" id="id51">Random Number Distributions</a><ul>
+<li><a class="reference internal" href="#id30" id="id52">Routines</a></li>
+<li><a class="reference internal" href="#id31" id="id53">Examples</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#sorting" id="id36">Sorting</a><ul>
-<li><a class="reference internal" href="#id16" id="id37">Routines</a></li>
-<li><a class="reference internal" href="#id17" id="id38">Examples</a></li>
+<li><a class="reference internal" href="#sorting" id="id54">Sorting</a><ul>
+<li><a class="reference internal" href="#id32" id="id55">Routines</a></li>
+<li><a class="reference internal" href="#id33" id="id56">Examples</a></li>
 </ul>
 </li>
 </ul>
 </div>
 <!--  -->
 <div class="section" id="polynomials">
-<h1><a class="toc-backref" href="#id18">Polynomials</a></h1>
+<h1><a class="toc-backref" href="#id34">Polynomials</a></h1>
 <p>This module provides Pure wrappers for the GSL polynomial routines. For
 detail about the routines, see Chapter 6 of the GSL manual,</p>
 <p><a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/Polynomials.html">http://www.gnu.org/software/gsl/manual/html_node/Polynomials.html</a>.</p>
 <p>Polynomials are represented by vectors (one row matrices).</p>
 <div class="section" id="routines">
-<h2><a class="toc-backref" href="#id19">Routines</a></h2>
+<h2><a class="toc-backref" href="#id35">Routines</a></h2>
 <a name="eval"><dl class="docutils" id="eval">
 <dt><tt class="docutils literal"><span class="pre">eval</span>&nbsp; <span class="pre">c::matrix</span>&nbsp; <span class="pre">x</span></tt></dt>
 <dd><p class="first">implements <tt class="docutils literal"><span class="pre">gsl_poly_eval</span></tt>, <tt class="docutils literal"><span class="pre">gsl_poly_complex_eval</span></tt>, and
@@ -467,7 +443,7 @@ handled automatically.</dd>
 <!--  -->
 </div>
 <div class="section" id="examples">
-<h2><a class="toc-backref" href="#id20">Examples</a></h2>
+<h2><a class="toc-backref" href="#id36">Examples</a></h2>
 <p>Usage of each library routine is illustrated below.</p>
 <pre class="literal-block">
 &gt; using gsl::poly;
@@ -512,7 +488,7 @@ handled automatically.</dd>
 </div>
 </div>
 <div class="section" id="special-functions">
-<h1><a class="toc-backref" href="#id21">Special Functions</a></h1>
+<h1><a class="toc-backref" href="#id37">Special Functions</a></h1>
 <p>This module is loaded via the command <tt class="docutils literal"><span class="pre">using</span> <span class="pre">gsl::sf</span></tt> and provides
 Pure wrappers for the GSL Special Functions. For details, see Chapter 7
 of the GSL manual,</p>
@@ -533,8 +509,8 @@ cases, the resulting list is one of the following forms.</p>
 <li><tt class="docutils literal"><span class="pre">[val,</span> <span class="pre">err,</span> <span class="pre">e10]</span></tt> for the <tt class="docutils literal"><span class="pre">gsl_sf_result_e10</span></tt> struct.</li>
 </ul>
 </blockquote>
-<div class="section" id="id1">
-<h2><a class="toc-backref" href="#id22">Routines</a></h2>
+<div class="section" id="airy-functions">
+<h2><a class="toc-backref" href="#id38">Airy Functions</a></h2>
 <a name="airy_Ai"><dl class="docutils" id="airy-ai">
 <dt><tt class="docutils literal"><span class="pre">airy_Ai</span> <span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">airy_Ai</span> <span class="pre">(x,</span> <span class="pre">mode::int)</span></tt></dt>
 <dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_Ai</span></tt>. The first form computes the function with
@@ -632,25 +608,25 @@ the function with <tt class="docutils literal"><span class="pre">mode</span> <sp
 <dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_zero_Bi_e</span></tt>.</dd>
 </dl>
 <a name="airy_zero_Ai_deriv"><dl class="docutils" id="airy-zero-ai-deriv">
-<dt><tt class="docutils literal"><span class="pre">airy_zero_Ai_deriv</span> <span class="pre">s</span></tt></dt>
+<dt><tt class="docutils literal"><span class="pre">airy_zero_Ai_deriv</span>&nbsp; <span class="pre">s</span></tt></dt>
 <dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_zero_Ai_deriv</span></tt>.</dd>
 </dl>
 <a name="airy_zero_Ai_deriv_e"><dl class="docutils" id="airy-zero-ai-deriv-e">
-<dt><tt class="docutils literal"><span class="pre">airy_zero_Ai_deriv_e</span> <span class="pre">s</span></tt></dt>
+<dt><tt class="docutils literal"><span class="pre">airy_zero_Ai_deriv_e</span>&nbsp; <span class="pre">s</span></tt></dt>
 <dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_zero_Ai_deriv_e</span></tt>.</dd>
 </dl>
 <a name="airy_zero_Bi_deriv"><dl class="docutils" id="airy-zero-bi-deriv">
-<dt><tt class="docutils literal"><span class="pre">airy_zero_Bi_deriv</span> <span class="pre">s</span></tt></dt>
+<dt><tt class="docutils literal"><span class="pre">airy_zero_Bi_deriv</span>&nbsp; <span class="pre">s</span></tt></dt>
 <dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_zero_Bi_deriv</span></tt>.</dd>
 </dl>
 <a name="airy_zero_Bi_deriv_e"><dl class="docutils" id="airy-zero-bi-deriv-e">
-<dt><tt class="docutils literal"><span class="pre">airy_zero_Bi_deriv_e</span> <span class="pre">s</span></tt></dt>
+<dt><tt class="docutils literal"><span class="pre">airy_zero_Bi_deriv_e</span>&nbsp; <span class="pre">s</span></tt></dt>
 <dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_airy_zero_Bi_deriv_e</span></tt>.</dd>
 </dl>
 <!--  -->
 </div>
-<div class="section" id="id2">
-<h2><a class="toc-backref" href="#id23">Examples</a></h2>
+<div class="section" id="id1">
+<h2><a class="toc-backref" href="#id39">Examples</a></h2>
 <p>The following illustrate the Airy functions.</p>
 <pre class="literal-block">
 &gt; using gsl::sf;
@@ -736,11 +712,670 @@ the function with <tt class="docutils literal"><span class="pre">mode</span> <sp
 &gt; airy_zero_Bi_deriv_e 3;
 [-5.5123957296636,1.22399773198358e-15]
 </pre>
+</div>
+<div class="section" id="bessel-functions">
+<h2><a class="toc-backref" href="#id40">Bessel Functions</a></h2>
+<a name="bessel_J0"><dl class="docutils" id="bessel-j0">
+<dt><tt class="docutils literal"><span class="pre">bessel_J0</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_J0</span></tt>.</dd>
+</dl>
+<a name="bessel_J0_e"><dl class="docutils" id="bessel-j0-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_J0_e</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_besselJ0_e</span></tt>.</dd>
+</dl>
+<a name="bessel_J1"><dl class="docutils" id="bessel-j1">
+<dt><tt class="docutils literal"><span class="pre">bessel_J1</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_J1</span></tt>.</dd>
+</dl>
+<a name="bessel_J1_e"><dl class="docutils" id="bessel-j1-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_J1_e</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_J1_e</span></tt>.</dd>
+</dl>
+<a name="bessel_Jn"><dl class="docutils" id="bessel-jn">
+<dt><tt class="docutils literal"><span class="pre">bessel_Jn</span>&nbsp; <span class="pre">n</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_Jn</span></tt>.</dd>
+</dl>
+<a name="bessel_Jn_e"><dl class="docutils" id="bessel-jn-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_Jn_e</span>&nbsp; <span class="pre">n</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_Jn_e</span></tt>.</dd>
+</dl>
+<a name="bessel_Jn_array"><dl class="docutils" id="bessel-jn-array">
+<dt><tt class="docutils literal"><span class="pre">bessel_Jn_array</span>&nbsp; <span class="pre">nmin::int</span>&nbsp; <span class="pre">nmax::int</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_Jn_array</span></tt>.</dd>
+</dl>
+<a name="bessel_Y0"><dl class="docutils" id="bessel-y0">
+<dt><tt class="docutils literal"><span class="pre">bessel_Y0</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_Y0</span></tt>.</dd>
+</dl>
+<a name="bessel_Y0_e"><dl class="docutils" id="bessel-y0-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_Y0_e</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_Y0_e</span></tt>.</dd>
+</dl>
+<a name="bessel_Y1"><dl class="docutils" id="bessel-y1">
+<dt><tt class="docutils literal"><span class="pre">bessel_Y1</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_Y1</span></tt>.</dd>
+</dl>
+<a name="bessel_Y1_e"><dl class="docutils" id="bessel-y1-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_Y1_e</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_Y1_e</span></tt>.</dd>
+</dl>
+<a name="bessel_Yn"><dl class="docutils" id="bessel-yn">
+<dt><tt class="docutils literal"><span class="pre">bessel_Yn</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_Yn</span></tt>.</dd>
+</dl>
+<a name="bessel_Yn_e"><dl class="docutils" id="bessel-yn-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_Yn_e</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_Yn_e</span></tt>.</dd>
+</dl>
+<a name="bessel_Yn_array"><dl class="docutils" id="bessel-yn-array">
+<dt><tt class="docutils literal"><span class="pre">bessel_Yn_array</span>&nbsp; <span class="pre">nmin::int</span>&nbsp; <span class="pre">nmax::int</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_Yn_array</span></tt>.</dd>
+</dl>
+<a name="bessel_I0"><dl class="docutils" id="bessel-i0">
+<dt><tt class="docutils literal"><span class="pre">bessel_I0</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_I0</span></tt>.</dd>
+</dl>
+<a name="bessel_I0_e"><dl class="docutils" id="bessel-i0-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_I0_e</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_I0_e</span></tt>.</dd>
+</dl>
+<a name="bessel_I1"><dl class="docutils" id="bessel-i1">
+<dt><tt class="docutils literal"><span class="pre">bessel_I1</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_I1</span></tt>.</dd>
+</dl>
+<a name="bessel_I1_e"><dl class="docutils" id="bessel-i1-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_I1_e</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_I1_e</span></tt>.</dd>
+</dl>
+<a name="bessel_In"><dl class="docutils" id="bessel-in">
+<dt><tt class="docutils literal"><span class="pre">bessel_In</span>&nbsp; <span class="pre">n::int</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_In</span></tt>.</dd>
+</dl>
+<a name="bessel_In_e"><dl class="docutils" id="bessel-in-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_In_e</span>&nbsp; <span class="pre">n::int</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_In_e</span></tt></dd>
+</dl>
+<a name="bessel_In_array"><dl class="docutils" id="bessel-in-array">
+<dt><tt class="docutils literal"><span class="pre">bessel_In_array</span>&nbsp; <span class="pre">nmin::int</span>&nbsp; <span class="pre">nmax::int</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_In_array</span></tt>.</dd>
+</dl>
+<a name="bessel_I0_scaled"><dl class="docutils" id="bessel-i0-scaled">
+<dt><tt class="docutils literal"><span class="pre">bessel_I0_scaled</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_I0_scaled</span></tt>.</dd>
+</dl>
+<a name="bessel_I0_scaled_e"><dl class="docutils" id="bessel-i0-scaled-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_I0_scaled_e</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_I0_scaled_e</span></tt>.</dd>
+</dl>
+<a name="bessel_I1_scaled"><dl class="docutils" id="bessel-i1-scaled">
+<dt><tt class="docutils literal"><span class="pre">bessel_I1_scaled</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_I1_scaled</span></tt>.</dd>
+</dl>
+<a name="bessel_I1_scaled_e"><dl class="docutils" id="bessel-i1-scaled-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_I1_scaled_e</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_I1_scaled_e</span></tt>.</dd>
+</dl>
+<a name="bessel_In_scaled"><dl class="docutils" id="bessel-in-scaled">
+<dt><tt class="docutils literal"><span class="pre">bessel_In_scaled</span>&nbsp; <span class="pre">n::int</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_In_scaled</span></tt>.</dd>
+</dl>
+<a name="bessel_In_scaled_e"><dl class="docutils" id="bessel-in-scaled-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_In_scaled_e</span>&nbsp; <span class="pre">n::int</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_In_scaled_e</span></tt>.</dd>
+</dl>
+<a name="bessel_In_scaled_array"><dl class="docutils" id="bessel-in-scaled-array">
+<dt><tt class="docutils literal"><span class="pre">bessel_In_scaled_array</span>&nbsp; <span class="pre">nmin::int</span>&nbsp; <span class="pre">nmax::int</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_In_array</span></tt>.</dd>
+</dl>
+<a name="bessel_K0"><dl class="docutils" id="bessel-k0">
+<dt><tt class="docutils literal"><span class="pre">bessel_K0</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_K0</span></tt>.</dd>
+</dl>
+<a name="bessel_K0_e"><dl class="docutils" id="bessel-k0-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_K0_e</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_K0_e</span></tt>.</dd>
+</dl>
+<a name="bessel_K1"><dl class="docutils" id="bessel-k1">
+<dt><tt class="docutils literal"><span class="pre">bessel_K1</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_K1</span></tt>.</dd>
+</dl>
+<a name="bessel_K1_e"><dl class="docutils" id="bessel-k1-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_K1_e</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_K1_e</span></tt>.</dd>
+</dl>
+<a name="bessel_Kn"><dl class="docutils" id="bessel-kn">
+<dt><tt class="docutils literal"><span class="pre">bessel_Kn</span>&nbsp; <span class="pre">n::int</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_Kn</span></tt>.</dd>
+</dl>
+<a name="bessel_Kn_e"><dl class="docutils" id="bessel-kn-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_Kn_e</span>&nbsp; <span class="pre">n::int</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_Kn_e</span></tt></dd>
+</dl>
+<a name="bessel_Kn_array"><dl class="docutils" id="bessel-kn-array">
+<dt><tt class="docutils literal"><span class="pre">bessel_Kn_array</span>&nbsp; <span class="pre">nmin::int</span>&nbsp; <span class="pre">nmax::int</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_Kn_array</span></tt>.</dd>
+</dl>
+<a name="bessel_K0_scaled"><dl class="docutils" id="bessel-k0-scaled">
+<dt><tt class="docutils literal"><span class="pre">bessel_K0_scaled</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_K0_scaled</span></tt>.</dd>
+</dl>
+<a name="bessel_K0_scaled_e"><dl class="docutils" id="bessel-k0-scaled-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_K0_scaled_e</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_K0_scaled_e</span></tt>.</dd>
+</dl>
+<a name="bessel_K1_scaled"><dl class="docutils" id="bessel-k1-scaled">
+<dt><tt class="docutils literal"><span class="pre">bessel_K1_scaled</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_K1_scaled</span></tt>.</dd>
+</dl>
+<a name="bessel_K1_scaled_e"><dl class="docutils" id="bessel-k1-scaled-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_K1_scaled_e</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_K1_scaled_e</span></tt>.</dd>
+</dl>
+<a name="bessel_Kn_scaled"><dl class="docutils" id="bessel-kn-scaled">
+<dt><tt class="docutils literal"><span class="pre">bessel_Kn_scaled</span>&nbsp; <span class="pre">n::int</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_Kn_scaled</span></tt>.</dd>
+</dl>
+<a name="bessel_Kn_scaled_e"><dl class="docutils" id="bessel-kn-scaled-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_Kn_scaled_e</span>&nbsp; <span class="pre">n::int</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_Kn_scaled_e</span></tt>.</dd>
+</dl>
+<a name="bessel_Kn_scaled_array"><dl class="docutils" id="bessel-kn-scaled-array">
+<dt><tt class="docutils literal"><span class="pre">bessel_Kn_scaled_array</span>&nbsp; <span class="pre">nmin::int</span>&nbsp; <span class="pre">nmax::int</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_Kn_array</span></tt>.</dd>
+</dl>
+<a name="bessel_j0"><div class="system-message">
+<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">pure-gsl.txt</tt>, line 958); <em><a href="#id2">backlink</a></em></p>
+Duplicate explicit target name: &quot;bessel_j0&quot;.</div>
+<dl class="docutils" id="id2">
+<dt><tt class="docutils literal"><span class="pre">bessel_j0</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_j0</span></tt>.</dd>
+</dl>
+<a name="bessel_j0_e"><div class="system-message">
+<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">pure-gsl.txt</tt>, line 967); <em><a href="#id3">backlink</a></em></p>
+Duplicate explicit target name: &quot;bessel_j0_e&quot;.</div>
+<dl class="docutils" id="id3">
+<dt><tt class="docutils literal"><span class="pre">bessel_j0_e</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_j0_e</span></tt>.</dd>
+</dl>
+<a name="bessel_j1"><div class="system-message">
+<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">pure-gsl.txt</tt>, line 976); <em><a href="#id4">backlink</a></em></p>
+Duplicate explicit target name: &quot;bessel_j1&quot;.</div>
+<dl class="docutils" id="id4">
+<dt><tt class="docutils literal"><span class="pre">bessel_j1</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_j1</span></tt>.</dd>
+</dl>
+<a name="bessel_j1_e"><div class="system-message">
+<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">pure-gsl.txt</tt>, line 985); <em><a href="#id5">backlink</a></em></p>
+Duplicate explicit target name: &quot;bessel_j1_e&quot;.</div>
+<dl class="docutils" id="id5">
+<dt><tt class="docutils literal"><span class="pre">bessel_j1_e</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_j1_e</span></tt>.</dd>
+</dl>
+<a name="bessel_j2"><dl class="docutils" id="bessel-j2">
+<dt><tt class="docutils literal"><span class="pre">bessel_j2</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_j2</span></tt>.</dd>
+</dl>
+<a name="bessel_j2_e"><dl class="docutils" id="bessel-j2-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_j2_e</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_j2_e</span></tt>.</dd>
+</dl>
+<a name="bessel_jl"><dl class="docutils" id="bessel-jl">
+<dt><tt class="docutils literal"><span class="pre">bessel_jl</span>&nbsp; <span class="pre">l::int</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_jl</span></tt>.</dd>
+</dl>
+<a name="bessel_jl_e"><dl class="docutils" id="bessel-jl-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_jl_e</span>&nbsp; <span class="pre">l::int</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_jl_e</span></tt>.</dd>
+</dl>
+<a name="bessel_jl_array"><dl class="docutils" id="bessel-jl-array">
+<dt><tt class="docutils literal"><span class="pre">bessel_jl_array</span>&nbsp; <span class="pre">lmax::int</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_jl_array</span></tt>.</dd>
+</dl>
+<a name="bessel_jl_steed_array"><dl class="docutils" id="bessel-jl-steed-array">
+<dt><tt class="docutils literal"><span class="pre">bessel_jl_steed_array</span>&nbsp; <span class="pre">lmax::int</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_jl_steed_array</span></tt>.</dd>
+</dl>
+<a name="bessel_y0"><div class="system-message">
+<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">pure-gsl.txt</tt>, line 1048); <em><a href="#id6">backlink</a></em></p>
+Duplicate explicit target name: &quot;bessel_y0&quot;.</div>
+<dl class="docutils" id="id6">
+<dt><tt class="docutils literal"><span class="pre">bessel_y0</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_y0</span></tt>.</dd>
+</dl>
+<a name="bessel_y0_e"><div class="system-message">
+<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">pure-gsl.txt</tt>, line 1057); <em><a href="#id7">backlink</a></em></p>
+Duplicate explicit target name: &quot;bessel_y0_e&quot;.</div>
+<dl class="docutils" id="id7">
+<dt><tt class="docutils literal"><span class="pre">bessel_y0_e</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_y0_e</span></tt>.</dd>
+</dl>
+<a name="bessel_y1"><div class="system-message">
+<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">pure-gsl.txt</tt>, line 1066); <em><a href="#id8">backlink</a></em></p>
+Duplicate explicit target name: &quot;bessel_y1&quot;.</div>
+<dl class="docutils" id="id8">
+<dt><tt class="docutils literal"><span class="pre">bessel_y1</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_y1</span></tt>.</dd>
+</dl>
+<a name="bessel_y1_e"><div class="system-message">
+<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">pure-gsl.txt</tt>, line 1075); <em><a href="#id9">backlink</a></em></p>
+Duplicate explicit target name: &quot;bessel_y1_e&quot;.</div>
+<dl class="docutils" id="id9">
+<dt><tt class="docutils literal"><span class="pre">bessel_y1_e</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_y1_e</span></tt>.</dd>
+</dl>
+<a name="bessel_y2"><dl class="docutils" id="bessel-y2">
+<dt><tt class="docutils literal"><span class="pre">bessel_y2</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_y2</span></tt>.</dd>
+</dl>
+<a name="bessel_y2_e"><dl class="docutils" id="bessel-y2-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_y2_e</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_y2_e</span></tt>.</dd>
+</dl>
+<a name="bessel_yl"><dl class="docutils" id="bessel-yl">
+<dt><tt class="docutils literal"><span class="pre">bessel_yl</span>&nbsp; <span class="pre">l::int</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_yl</span></tt>.</dd>
+</dl>
+<p>.._bessel_yl_e:</p>
+<dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">bessel_yl_e</span>&nbsp; <span class="pre">l::int</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_yl_e</span></tt>.</dd>
+</dl>
+<p>.._bessel_yl_array:</p>
+<dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">bessel_yl_array</span>&nbsp; <span class="pre">lmax::int</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_yl_array</span></tt>.</dd>
+</dl>
+<a name="bessel_i0_scaled"><div class="system-message">
+<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">pure-gsl.txt</tt>, line 1121); <em><a href="#id10">backlink</a></em></p>
+Duplicate explicit target name: &quot;bessel_i0_scaled&quot;.</div>
+<dl class="docutils" id="id10">
+<dt><tt class="docutils literal"><span class="pre">bessel_i0_scaled</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_i0_scaled</span></tt>.</dd>
+</dl>
+<a name="bessel_i0_scaled_e"><div class="system-message">
+<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">pure-gsl.txt</tt>, line 1130); <em><a href="#id11">backlink</a></em></p>
+Duplicate explicit target name: &quot;bessel_i0_scaled_e&quot;.</div>
+<dl class="docutils" id="id11">
+<dt><tt class="docutils literal"><span class="pre">bessel_i0_scaled_e</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_i0_scaled_e</span></tt>.</dd>
+</dl>
+<a name="bessel_i1_scaled"><div class="system-message">
+<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">pure-gsl.txt</tt>, line 1139); <em><a href="#id12">backlink</a></em></p>
+Duplicate explicit target name: &quot;bessel_i1_scaled&quot;.</div>
+<dl class="docutils" id="id12">
+<dt><tt class="docutils literal"><span class="pre">bessel_i1_scaled</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_i1_scaled</span></tt>.</dd>
+</dl>
+<a name="bessel_i1_scaled_e"><div class="system-message">
+<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">pure-gsl.txt</tt>, line 1148); <em><a href="#id13">backlink</a></em></p>
+Duplicate explicit target name: &quot;bessel_i1_scaled_e&quot;.</div>
+<dl class="docutils" id="id13">
+<dt><tt class="docutils literal"><span class="pre">bessel_i1_scaled_e</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_i1_scaled_e</span></tt>.</dd>
+</dl>
+<a name="bessel_i2_scaled"><dl class="docutils" id="bessel-i2-scaled">
+<dt><tt class="docutils literal"><span class="pre">bessel_i2_scaled</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_i2_scaled</span></tt>.</dd>
+</dl>
+<a name="bessel_i2_e"><dl class="docutils" id="bessel-i2-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_i2_scaled_e</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_i2_scaled_e</span></tt>.</dd>
+</dl>
+<a name="bessel_il_scaled"><dl class="docutils" id="bessel-il-scaled">
+<dt><tt class="docutils literal"><span class="pre">bessel_il_scaled</span>&nbsp; <span class="pre">l::int</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_il_scaled</span></tt>.</dd>
+</dl>
+<p>.._bessel_il_scaled_e:</p>
+<dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">bessel_il_scaled_e</span>&nbsp; <span class="pre">l::int</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_il_scaled_e</span></tt>.</dd>
+</dl>
+<p>.._bessel_il_scaled_array:</p>
+<dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">bessel_il_scaled_array</span>&nbsp; <span class="pre">lmax::int</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_il_scaled_array</span></tt>.</dd>
+</dl>
+<a name="bessel_k0_scaled"><div class="system-message">
+<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">pure-gsl.txt</tt>, line 1194); <em><a href="#id14">backlink</a></em></p>
+Duplicate explicit target name: &quot;bessel_k0_scaled&quot;.</div>
+<dl class="docutils" id="id14">
+<dt><tt class="docutils literal"><span class="pre">bessel_k0_scaled</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_k0_scaled</span></tt>.</dd>
+</dl>
+<a name="bessel_k0_scaled_e"><div class="system-message">
+<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">pure-gsl.txt</tt>, line 1203); <em><a href="#id15">backlink</a></em></p>
+Duplicate explicit target name: &quot;bessel_k0_scaled_e&quot;.</div>
+<dl class="docutils" id="id15">
+<dt><tt class="docutils literal"><span class="pre">bessel_k0_scaled_e</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_k0_scaled_e</span></tt>.</dd>
+</dl>
+<a name="bessel_k1_scaled"><div class="system-message">
+<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">pure-gsl.txt</tt>, line 1212); <em><a href="#id16">backlink</a></em></p>
+Duplicate explicit target name: &quot;bessel_k1_scaled&quot;.</div>
+<dl class="docutils" id="id16">
+<dt><tt class="docutils literal"><span class="pre">bessel_k1_scaled</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_k1_scaled</span></tt>.</dd>
+</dl>
+<a name="bessel_k1_scaled_e"><div class="system-message">
+<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">pure-gsl.txt</tt>, line 1221); <em><a href="#id17">backlink</a></em></p>
+Duplicate explicit target name: &quot;bessel_k1_scaled_e&quot;.</div>
+<dl class="docutils" id="id17">
+<dt><tt class="docutils literal"><span class="pre">bessel_k1_scaled_e</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_ik_scaled_e</span></tt>.</dd>
+</dl>
+<a name="bessel_k2_scaled"><dl class="docutils" id="bessel-k2-scaled">
+<dt><tt class="docutils literal"><span class="pre">bessel_k2_scaled</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_k2_scaled</span></tt>.</dd>
+</dl>
+<a name="bessel_k2_e"><dl class="docutils" id="bessel-k2-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_k2_scaled_e</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_k2_scaled_e</span></tt>.</dd>
+</dl>
+<a name="bessel_kl_scaled"><dl class="docutils" id="bessel-kl-scaled">
+<dt><tt class="docutils literal"><span class="pre">bessel_kl_scaled</span>&nbsp; <span class="pre">l::int</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_kl_scaled</span></tt>.</dd>
+</dl>
+<a name="bessel_kl_scaled_e"><dl class="docutils" id="bessel-kl-scaled-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_kl_scaled_e</span>&nbsp; <span class="pre">l::int</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_kl_scaled_e</span></tt>.</dd>
+</dl>
+<a name="bessel_kl_scaled_array"><dl class="docutils" id="bessel-kl-scaled-array">
+<dt><tt class="docutils literal"><span class="pre">bessel_kl_scaled_array</span>&nbsp; <span class="pre">lmax::int</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_il_scaled_array</span></tt>.</dd>
+</dl>
+<a name="bessel_Jnu"><dl class="docutils" id="bessel-jnu">
+<dt><tt class="docutils literal"><span class="pre">bessel_Jnu</span>&nbsp; <span class="pre">nu</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_Jnu</span></tt>.</dd>
+</dl>
+<a name="bessel_Jnu_e"><dl class="docutils" id="bessel-jnu-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_Jnu_e</span>&nbsp; <span class="pre">nu</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_Jnu_e</span></tt>.</dd>
+</dl>
+<a name="bessel_sequence_Jnu_e"><dl class="docutils" id="bessel-sequence-jnu-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_sequence_Jnu_e</span>&nbsp; <span class="pre">nu</span>&nbsp; <span class="pre">v::matrix</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_sequence_Jnu_e</span></tt>.</dd>
+</dl>
+<a name="bessel_Ynu"><dl class="docutils" id="bessel-ynu">
+<dt><tt class="docutils literal"><span class="pre">bessel_Ynu</span>&nbsp; <span class="pre">nu</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_Ynu</span></tt>.</dd>
+</dl>
+<a name="bessel_Ynu_e"><dl class="docutils" id="bessel-ynu-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_Ynu_e</span>&nbsp; <span class="pre">nu</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_Ynu_e</span></tt>.</dd>
+</dl>
+<a name="bessel_Inu"><dl class="docutils" id="bessel-inu">
+<dt><tt class="docutils literal"><span class="pre">bessel_Inu</span>&nbsp; <span class="pre">nu</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_Inu</span></tt>.</dd>
+</dl>
+<a name="bessel_Inu_e"><dl class="docutils" id="bessel-inu-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_Inu_e</span>&nbsp; <span class="pre">nu</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_Inu_e</span></tt>.</dd>
+</dl>
+<a name="bessel_Inu_scaled"><dl class="docutils" id="bessel-inu-scaled">
+<dt><tt class="docutils literal"><span class="pre">bessel_Inu_scaled</span>&nbsp; <span class="pre">nu</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_Inu_scaled</span></tt>.</dd>
+</dl>
+<a name="bessel_Inu_scaled_e"><dl class="docutils" id="bessel-inu-scaled-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_Inu_scaled_e</span>&nbsp; <span class="pre">nu</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_Inu_scaled_e</span></tt>.</dd>
+</dl>
+<a name="bessel_Knu"><dl class="docutils" id="bessel-knu">
+<dt><tt class="docutils literal"><span class="pre">bessel_Knu</span>&nbsp; <span class="pre">nu</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_Knu</span></tt>.</dd>
+</dl>
+<a name="bessel_Knu_e"><dl class="docutils" id="bessel-knu-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_Knu_e</span>&nbsp; <span class="pre">nu</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_Knu</span></tt>.</dd>
+</dl>
+<a name="bessel_lnKnu"><dl class="docutils" id="bessel-lnknu">
+<dt><tt class="docutils literal"><span class="pre">bessel_lnKnu</span>&nbsp; <span class="pre">nu</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_lnKnu</span></tt>.</dd>
+</dl>
+<a name="bessel_lnKnu_e"><dl class="docutils" id="bessel-lnknu-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_lnKnu_e</span>&nbsp; <span class="pre">nu</span>&nbsp; <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_lnKnu_e</span></tt>.</dd>
+</dl>
+<a name="bessel_Knu_scaled"><dl class="docutils" id="bessel-knu-scaled">
+<dt><tt class="docutils literal"><span class="pre">bessel_Knu_scaled</span>&nbsp; <span class="pre">nu</span> <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_Knu_scaled</span></tt>.</dd>
+</dl>
+<a name="bessel_Knu_scaled_e"><dl class="docutils" id="bessel-knu-scaled-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_Knu_scaled_e</span>&nbsp; <span class="pre">nu</span> <span class="pre">x</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_Knu_scaled_e</span></tt>.</dd>
+</dl>
+<a name="bessel_zero_J0"><dl class="docutils" id="bessel-zero-j0">
+<dt><tt class="docutils literal"><span class="pre">bessel_zero_J0</span>&nbsp; <span class="pre">s::int</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_zero_J0</span></tt>.</dd>
+</dl>
+<a name="bessel_zero_J0_e"><dl class="docutils" id="bessel-zero-j0-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_zero_J0_e</span>&nbsp; <span class="pre">s::int</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_zero_J0_e</span></tt>.</dd>
+</dl>
+<a name="bessel_zero_J1"><dl class="docutils" id="bessel-zero-j1">
+<dt><tt class="docutils literal"><span class="pre">bessel_zero_J1</span>&nbsp; <span class="pre">s::int</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_zero_J1</span></tt>.</dd>
+</dl>
+<a name="bessel_zero_J1_e"><dl class="docutils" id="bessel-zero-j1-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_zero_J1_e</span>&nbsp; <span class="pre">s::int</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_zero_J1_e</span></tt>.</dd>
+</dl>
+<a name="bessel_zero_Jnu"><dl class="docutils" id="bessel-zero-jnu">
+<dt><tt class="docutils literal"><span class="pre">bessel_zero_Jnu</span>&nbsp; <span class="pre">nu</span>&nbsp; <span class="pre">s::int</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_zero_Jnu</span></tt>.</dd>
+</dl>
+<a name="bessel_zero_Jnu_e"><dl class="docutils" id="bessel-zero-jnu-e">
+<dt><tt class="docutils literal"><span class="pre">bessel_zero_Jnu_e</span>&nbsp; <span class="pre">nu</span>&nbsp; <span class="pre">s::int</span></tt></dt>
+<dd>implements <tt class="docutils literal"><span class="pre">gsl_sf_bessel_zero_Jnu</span></tt>.</dd>
+</dl>
+<!--  -->
+</div>
+<div class="section" id="id18">
+<h2><a class="toc-backref" href="#id41">Examples</a></h2>
+<p>The following illustrate the Bessel functions.</p>
+<pre class="literal-block">
+&gt; using gsl::sf;
+&gt; using namespace gsl::sf;
+&gt; bessel_J0 (-1.2);
+0.671132744264363
+&gt; bessel_J0_e 0.75;
+[0.864242275166649,7.07329111491049e-16]
+&gt; bessel_J1 1.2;
+0.498289057567216
+&gt; bessel_J1_e (-0.2);
+[-0.099500832639236,5.00768737808415e-17]
+&gt; bessel_Jn 0 (-1.2);
+0.671132744264363
+&gt; bessel_Jn_e 2 0.75;
+[0.0670739972996506,5.48959386474892e-17]
+&gt; bessel_Jn_array 0 4 0.5;
+[0.938469807240813,0.242268457674874,0.0306040234586826,
+ 0.00256372999458724,0.000160736476364288]
+&gt; bessel_Y0 0.25;
+-0.931573024930059
+&gt; bessel_Y0_e 0.25;
+[-0.931573024930059,6.4279898430593e-16]
+&gt; bessel_Y1 0.125;
+-5.19993611253477
+&gt; bessel_Y1_e 4.325;
+[0.343041276811844,2.74577716760089e-16]
+&gt; bessel_Yn 3 4.325;
+-0.0684784962694202
+&gt; bessel_Yn_e 3 4.325;
+[-0.0684784962694202,3.37764590906247e-16]
+&gt; bessel_Yn_array 2 4 1.35;
+[-1.07379345815726,-2.66813016175689,-10.7845628163178]
+&gt; bessel_I0 1.35;
+1.51022709775726
+&gt; bessel_I0_e 1.35;
+[1.51022709775726,2.37852166449918e-15]
+&gt; bessel_I1 0.35;
+0.177693400031422
+&gt; bessel_I1_e 0.35;
+[0.177693400031422,1.55520651386126e-16]
+&gt; bessel_In 2 3.0;
+2.24521244092995
+&gt; bessel_In_e 2 3.0;
+2.24521244092995,5.98244771302867e-15]
+&gt; bessel_In_array 3 5 (-0.1);
+[-2.08463574223272e-05,2.60546902129966e-07,-2.6052519298937e-09]
+&gt; bessel_I0_scaled 1.05;
+0.453242541279856
+&gt; bessel_I0_scaled_e 1.05;
+[0.453242541279856,4.10118141697477e-16]
+&gt; bessel_I1_scaled 1.05;
+0.210226017612868
+&gt; bessel_I1_scaled_e 1.05;
+[0.210226017612868,2.12903131803686e-16]
+&gt; bessel_In_scaled 3 1.05;
+0.00903732602788281
+&gt; bessel_In_scaled_e 3 1.05;
+[0.00903732602788281,2.00668948743994e-17]
+&gt; bessel_In_scaled_array 3 5 1.05;
+[0.00903732602788281,0.0011701685245855,0.000121756316755217]
+&gt; bessel_K0 2.3;
+0.0791399330020936
+&gt; bessel_K0_e 2.3;
+[0.0791399330020936,1.15144454318261e-16]
+&gt; bessel_K1 2.3;
+0.0949824438453627
+&gt; bessel_K1_e 2.3;
+[0.0949824438453627,9.85583638959967e-17]
+&gt; bessel_Kn 2 3.4;
+0.0366633035851529
+&gt; bessel_Kn_e 2 3.4;
+[0.0366633035851529,2.01761856558251e-16]
+&gt; bessel_Kn_array 1 3 2.5;
+[0.0738908163477471,0.121460206278564,0.268227146393449]
+&gt; bessel_K0_scaled 1.5;
+0.367433609054158
+&gt; bessel_K0_scaled_e 1.5;
+[0.958210053294896,1.25816573186951e-14]
+&gt; bessel_K1_scaled 1.5;
+1.24316587355255
+&gt; bessel_K1_scaled_e 1.5;
+[1.24316587355255,2.32370553362606e-15]
+&gt; bessel_Kn_scaled 4 1.5;
+35.4899165934682
+&gt; bessel_Kn_scaled_e 4 1.5;
+[35.4899165934682,3.89252285021454e-14]
+&gt; bessel_Kn_scaled_array 4 6 1.5;
+[35.4899165934682,197.498093175689,1352.14387109806]
+&gt; bessel_j0 0.01;
+0.999983333416666
+&gt; bessel_j0_e 0.01;
+[0.999983333416666,4.44081808400239e-16]
+&gt; bessel_j1 0.2;
+0.0664003806703222
+&gt; bessel_j1_e 0.2;
+[0.0664003806703222,2.94876925856268e-17]
+&gt; bessel_j2 0.3;
+0.00596152486862022
+&gt; bessel_j2_e 0.3;
+[0.00596152486862022,2.64744886840705e-18]
+&gt; bessel_jl 4 0.3;
+8.53642426502516e-06
+&gt; bessel_jl_e 4 0.3;
+[8.53642426502516e-06,1.02355215483598e-19]
+&gt; bessel_jl_array 2 1.2;
+[0.776699238306022,0.34528456985779,0.0865121863384538]
+&gt; bessel_jl_steed_array 2 1.2;
+[0.776699238306022,0.34528456985779,0.0865121863384538]
+&gt; bessel_y0 1;
+-0.54030230586814
+&gt; bessel_y0_e 3;
+[0.329997498866815,2.93096657048522e-16]
+&gt; bessel_y1 3;
+0.062959163602316
+&gt; bessel_y1_e 3.0;
+[0.062959163602316,1.04609100698801e-16]
+&gt; bessel_yl 3 5;
+-0.0154429099129942
+&gt; bessel_yl_e 3 5;
+[-0.0154429099129942,2.87258769784673e-17]
+&gt; bessel_i0_scaled 3;
+0.166253541303889
+&gt; bessel_i0_scaled_e 3;
+[0.166253541303889,7.38314037924188e-17]
+&gt; bessel_i1_scaled 3;
+0.111661944928148
+&gt; bessel_i1_scaled_e 3;
+[0.111661944928148,4.95878648934625e-17]
+&gt; bessel_i2_scaled 3;
+0.0545915963757409
+&gt; bessel_i2_scaled_e 3;
+[0.0545915963757409,2.42435388989563e-17]
+&gt; bessel_il_scaled 3 1;
+0.0037027398773348
+&gt; bessel_il_scaled_e 3 1;
+[0.0037027398773348,8.46838615599053e-17]
+&gt; bessel_il_scaled_array 3 1;
+[0.432332358381693,0.135335283236613,0.0263265086718556,0.0037027398773348]
+&gt; bessel_k0_scaled 3;
+0.523598775598299
+&gt; bessel_k0_scaled_e 3;
+[0.523598775598299,2.32524566533909e-16]
+&gt; bessel_k1_scaled 4;
+0.490873852123405
+&gt; bessel_k1_scaled_e 4;
+[0.490873852123405,2.17991781125539e-16]
+&gt; bessel_k2_scaled 4;
+0.760854470791278
+&gt; bessel_k2_scaled_e 4;
+[0.760854470791278,3.37887260744586e-16]
+&gt; bessel_kl_scaled 2 4;
+0.760854470791278
+&gt; bessel_kl_scaled_e 2 4;
+[0.760854470791278,3.37887260744586e-16]
+&gt; bessel_kl_scaled_array 2 4;
+[0.392699081698724,0.490873852123405,0.760854470791278]
+&gt; bessel_Jnu 2 2.3;
+0.413914591732062
+&gt; bessel_Jnu_e 2 2.3;
+[0.413914591732062,6.43352513956959e-16]
+&gt; bessel_sequence_Jnu_e 2 {.1,.2,.3};
+[0.00124895865879992,0.00498335415278356,0.011165861949064]
+&gt; bessel_Ynu 1 0.5;
+-1.47147239267024
+&gt; bessel_Ynu_e 1 0.5;
+[-1.47147239267024,8.49504515830242e-15]
+&gt; bessel_Inu 1.2 3.4;
+5.25626563437082
+&gt; bessel_Inu_e 1.2 3.4;
+[5.25626563437082,1.00839636820646e-13]
+&gt; bessel_Inu_scaled 1.2 3.4;
+0.175418771999042
+&gt; bessel_Inu_scaled_e 1.2 3.4;
+[0.175418771999042,3.15501414592188e-15]
+&gt; bessel_Knu 3 3;
+0.122170375757184
+&gt; bessel_Knu_e 3 3;
+[0.122170375757184,4.34036365096743e-16]
+&gt; bessel_lnKnu 3 3;
+-2.10233868587978
+&gt; bessel_lnKnu_e 3 3;
+[-2.10233868587978,4.24157124665032e-15]
+&gt; bessel_Knu_scaled 3 3;
+2.45385759319062
+&gt; bessel_Knu_scaled_e 3 3;
+[2.45385759319062,7.6281217575122e-15]
+&gt; bessel_zero_J0 3;
+8.65372791291102
+&gt; bessel_zero_J0_e 3;
+[8.65372791291102,2.59611837387331e-14]
+&gt; bessel_zero_J1 3;
+10.1734681350627
+&gt; bessel_zero_J1_e 3;
+[10.1734681350627,2.03469362701254e-13]
+&gt; bessel_zero_Jnu 1.2 3;
+10.46769
+&gt; bessel_zero_Jnu_e 1.2 3;
+[10.4676986203553,2.09353972407105e-14]86203553
+</pre>
 <!--  -->
 </div>
 </div>
 <div class="section" id="matrices">
-<h1><a class="toc-backref" href="#id24">Matrices</a></h1>
+<h1><a class="toc-backref" href="#id42">Matrices</a></h1>
 <p>This module is loaded via the command <tt class="docutils literal"><span class="pre">using</span> <span class="pre">gsl::matrix</span></tt> and provides
 operators and equations for many of the GSL matrix, BLAS, and linear
 algebra routines found in Chapters 8, 12, and 13, respectively of the
@@ -748,17 +1383,17 @@ GSL Reference Manual. Detailed information about the GSL routines may
 be found at</p>
 <p><a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/index.html">http://www.gnu.org/software/gsl/manual/html_node/index.html</a>.</p>
 <div class="section" id="matrix-operators">
-<h2><a class="toc-backref" href="#id25">Matrix Operators</a></h2>
+<h2><a class="toc-backref" href="#id43">Matrix Operators</a></h2>
 <p>The following operations are defined for constant <tt class="docutils literal"><span class="pre">a</span></tt> and matrixces
 <tt class="docutils literal"><span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">y</span></tt>. Some operators are not defined in the GSL library but
 are provided here for convenience.</p>
-<a name="+"><dl class="docutils" id="id3">
+<a name="+"><dl class="docutils" id="id19">
 <dt><tt class="docutils literal"><span class="pre">a</span> <span class="pre">+</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">x</span> <span class="pre">+</span> <span class="pre">a</span></tt></dt>
 <dd>returns a matrix with entries <tt class="docutils literal"><span class="pre">a</span> <span class="pre">+</span> <span class="pre">x!(i,j)</span></tt>.</dd>
 <dt><tt class="docutils literal"><span class="pre">x</span> <span class="pre">+</span> <span class="pre">y</span></tt></dt>
 <dd>adds matrix <tt class="docutils literal"><span class="pre">x</span></tt> to matrix <tt class="docutils literal"><span class="pre">y</span></tt>.</dd>
 </dl>
-<a name="\-"><dl class="docutils" id="id4">
+<a name="\-"><dl class="docutils" id="id20">
 <dt><tt class="docutils literal"><span class="pre">-</span> <span class="pre">x</span></tt></dt>
 <dd>returns a matrix with entries <tt class="docutils literal"><span class="pre">-</span> <span class="pre">x!(i,j)</span></tt>. Note that <tt class="docutils literal"><span class="pre">neg</span> <span class="pre">x</span></tt> is
 equivalent to <tt class="docutils literal"><span class="pre">-</span> <span class="pre">x</span></tt>.</dd>
@@ -833,7 +1468,7 @@ defined as 1.</dd>
 <dt><tt class="docutils literal"><span class="pre">x</span> <span class="pre">^</span> <span class="pre">y</span></tt></dt>
 <dd>returns a matrix with entries <tt class="docutils literal"><span class="pre">x!(i,j)</span> <span class="pre">^</span> <span class="pre">y!(i,j)</span></tt>.</dd>
 </dl>
-<a name="<<"><dl class="docutils" id="id8">
+<a name="<<"><dl class="docutils" id="id24">
 <dt><tt class="docutils literal"><span class="pre">x</span> <span class="pre">&lt;&lt;</span> <span class="pre">a</span></tt></dt>
 <dd>returns an integer matrix with entries <tt class="docutils literal"><span class="pre">x!(i,j)</span> <span class="pre">&lt;&lt;</span> <span class="pre">a</span></tt>. Note that
 <tt class="docutils literal"><span class="pre">a</span></tt> must be an integer and matrix <tt class="docutils literal"><span class="pre">x</span></tt> must have integer entries.</dd>
@@ -841,7 +1476,7 @@ defined as 1.</dd>
 <dd>returns an integer matrix with entries <tt class="docutils literal"><span class="pre">x!(i,j)</span> <span class="pre">&lt;&lt;</span> <span class="pre">y!(i,j)</span></tt>. Note
 that <tt class="docutils literal"><span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">y</span></tt> must have integer entries.</dd>
 </dl>
-<a name=">>"><dl class="docutils" id="id9">
+<a name=">>"><dl class="docutils" id="id25">
 <dt><tt class="docutils literal"><span class="pre">x</span> <span class="pre">&gt;&gt;</span> <span class="pre">a</span></tt></dt>
 <dd>returns an integer matrix with entries <tt class="docutils literal"><span class="pre">x!(i,j)</span> <span class="pre">&gt;&gt;</span> <span class="pre">a</span></tt>. Note that
 <tt class="docutils literal"><span class="pre">a</span></tt> must be an integer and matrix <tt class="docutils literal"><span class="pre">x</span></tt> must have integer entries.</dd>
@@ -869,7 +1504,7 @@ that <tt class="docutils literal"><span class="pre">x</span></tt> and <tt class=
 </dl>
 </div>
 <div class="section" id="matrix-utilties-and-functions">
-<h2><a class="toc-backref" href="#id26">Matrix Utilties and Functions</a></h2>
+<h2><a class="toc-backref" href="#id44">Matrix Utilties and Functions</a></h2>
 <p>The utility functions <tt class="docutils literal"><span class="pre">zeros</span></tt> and <tt class="docutils literal"><span class="pre">ones</span></tt> create matrices with
 all elements zero or one, respectively, and <tt class="docutils literal"><span class="pre">eye</span></tt> creates identity
 matrices. These functions can be invoked either with a pair <cite>(n,m)</cite>
@@ -961,13 +1596,13 @@ least-squares sense).</dd>
 </div>
 </div>
 <div class="section" id="least-squares-fitting">
-<h1><a class="toc-backref" href="#id27">Least-Squares Fitting</a></h1>
+<h1><a class="toc-backref" href="#id45">Least-Squares Fitting</a></h1>
 <p>This module is loaded via the command <tt class="docutils literal"><span class="pre">using</span> <span class="pre">gsl::fit</span></tt> and provides Pure
 wrappers for the GSL least-squares fitting routines found in Chapter 36 of
 the GSL manual,</p>
 <p><a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/Least_002dSquares-Fitting.html">http://www.gnu.org/software/gsl/manual/html_node/Least_002dSquares-Fitting.html</a>.</p>
-<div class="section" id="id10">
-<h2><a class="toc-backref" href="#id28">Routines</a></h2>
+<div class="section" id="id26">
+<h2><a class="toc-backref" href="#id46">Routines</a></h2>
 <a name="linear"><dl class="docutils" id="linear">
 <dt><tt class="docutils literal"><span class="pre">linear</span>&nbsp; <span class="pre">x::matrix</span>&nbsp; <span class="pre">y::matrix</span></tt></dt>
 <dd>implements <tt class="docutils literal"><span class="pre">gsl_fit_linear</span></tt> without the <tt class="docutils literal"><span class="pre">xstride</span></tt>, <tt class="docutils literal"><span class="pre">ystride</span></tt>,
@@ -1004,8 +1639,8 @@ and <tt class="docutils literal"><span class="pre">n</span></tt> parameters. Res
 </dl>
 <!--  -->
 </div>
-<div class="section" id="id11">
-<h2><a class="toc-backref" href="#id29">Examples</a></h2>
+<div class="section" id="id27">
+<h2><a class="toc-backref" href="#id47">Examples</a></h2>
 <p>Usage of each implemented library routine is illustrated below.</p>
 <pre class="literal-block">
 &gt; using gsl::fit;
@@ -1082,13 +1717,13 @@ The approximation of y-values and standard error about <cite>x</cite> = 1, 2, an
 </div>
 </div>
 <div class="section" id="statistics">
-<h1><a class="toc-backref" href="#id30">Statistics</a></h1>
+<h1><a class="toc-backref" href="#id48">Statistics</a></h1>
 <p>This module is loaded via the command <tt class="docutils literal"><span class="pre">using</span> <span class="pre">gsl::stats</span></tt> and provides
 Pure wrappers for the GSL Statistics routines found in Chapter 20 of the
 GSL manual,</p>
 <p><a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/Statistics.html">http://www.gnu.org/software/gsl/manual/html_node/Statistics.html</a>.</p>
-<div class="section" id="id12">
-<h2><a class="toc-backref" href="#id31">Routines</a></h2>
+<div class="section" id="id28">
+<h2><a class="toc-backref" href="#id49">Routines</a></h2>
 <a name="mean"><dl class="docutils" id="mean">
 <dt><tt class="docutils literal"><span class="pre">mean</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
 <dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_mean</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
@@ -1303,8 +1938,8 @@ and <tt class="docutils literal"><span class="pre">n</span></tt> arguments. Resu
 </dl>
 <!--  -->
 </div>
-<div class="section" id="id13">
-<h2><a class="toc-backref" href="#id32">Examples</a></h2>
+<div class="section" id="id29">
+<h2><a class="toc-backref" href="#id50">Examples</a></h2>
 <p>The following illustrates the use of each function in the <tt class="docutils literal"><span class="pre">stats</span></tt> module.</p>
 <pre class="literal-block">
 &gt; using gsl::stats;
@@ -1400,7 +2035,7 @@ and <tt class="docutils literal"><span class="pre">n</span></tt> arguments. Resu
 </div>
 </div>
 <div class="section" id="random-number-distributions">
-<h1><a class="toc-backref" href="#id33">Random Number Distributions</a></h1>
+<h1><a class="toc-backref" href="#id51">Random Number Distributions</a></h1>
 <p>This module is loaded via the command <tt class="docutils literal"><span class="pre">using</span> <span class="pre">gsl::randist</span></tt> and provides
 Pure wrappers for the GSL random distribution routines found in Chapter
 19 of the GSL manual,</p>
@@ -1409,8 +2044,8 @@ Pure wrappers for the GSL random distribution routines found in Chapter
 probability densitity functions and <tt class="docutils literal"><span class="pre">gsl::cdf</span></tt> for cumulative
 distribution functions. The two namespaces minimize typing of the
 prefixes <tt class="docutils literal"><span class="pre">gsl_ran_</span></tt> and <tt class="docutils literal"><span class="pre">gsl_cdf_</span></tt> respectively.</p>
-<div class="section" id="id14">
-<h2><a class="toc-backref" href="#id34">Routines</a></h2>
+<div class="section" id="id30">
+<h2><a class="toc-backref" href="#id52">Routines</a></h2>
 <a name="ugaussian_pdf"><dl class="docutils" id="ugaussian-pdf">
 <dt><tt class="docutils literal"><span class="pre">ugaussian_pdf</span>&nbsp; <span class="pre">x</span></tt></dt>
 <dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_ugaussian</span></tt>.</dd>
@@ -1793,8 +2428,8 @@ prefixes <tt class="docutils literal"><span class="pre">gsl_ran_</span></tt> and
 </dl>
 <!--  -->
 </div>
-<div class="section" id="id15">
-<h2><a class="toc-backref" href="#id35">Examples</a></h2>
+<div class="section" id="id31">
+<h2><a class="toc-backref" href="#id53">Examples</a></h2>
 <p>The following illustrates the use of each function in the <tt class="docutils literal"><span class="pre">randist</span></tt> module.
 The pdf functions are illustrated first.</p>
 <pre class="literal-block">
@@ -2063,13 +2698,13 @@ The pdf functions are illustrated first.</p>
 </div>
 </div>
 <div class="section" id="sorting">
-<h1><a class="toc-backref" href="#id36">Sorting</a></h1>
+<h1><a class="toc-backref" href="#id54">Sorting</a></h1>
 <p>This module is loaded via the command <tt class="docutils literal"><span class="pre">using</span> <span class="pre">gsl::sort</span></tt> and
 provides Pure wrappers for the GSL sorting
 routines found in Chapter 11 of the GSL manual,</p>
 <p><a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/Sorting.html">http://www.gnu.org/software/gsl/manual/html_node/Sorting.html</a>.</p>
-<div class="section" id="id16">
-<h2><a class="toc-backref" href="#id37">Routines</a></h2>
+<div class="section" id="id32">
+<h2><a class="toc-backref" href="#id55">Routines</a></h2>
 <!-- sort_vector: -->
 <dl class="docutils">
 <dt><tt class="docutils literal"><span class="pre">sort_vector</span>&nbsp; <span class="pre">m::matrix</span></tt></dt>
@@ -2083,8 +2718,8 @@ routines found in Chapter 11 of the GSL manual,</p>
 </dl>
 <!--  -->
 </div>
-<div class="section" id="id17">
-<h2><a class="toc-backref" href="#id38">Examples</a></h2>
+<div class="section" id="id33">
+<h2><a class="toc-backref" href="#id56">Examples</a></h2>
 <p>Usage of each library routine is illustrated below.</p>
 <pre class="literal-block">
 &gt; using gsl::sort;
