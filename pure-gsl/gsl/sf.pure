@@ -1716,57 +1716,57 @@ public
 /* .. _hydrogenicR_1:
    
    ``hydrogenicR_1  Z  r``
-     implements ``hydrogenicR_1``.
+     implements ``gsl_sf_hydrogenicR_1``.
    
    .. _hydrogenicR_1_e:
    
    ``hydrogenicR_1_e  Z  r``
-     implements ``hydrogenicR_1_e``.
+     implements ``gsl_sf_hydrogenicR_1_e``.
    
    .. _hydrogenicR:
    
    ``hydrogenicR  n::int  l::int  Z  r``
-     implements ``hydrogenicR_1``.
+     implements ``gsl_sf_hydrogenicR_1``.
    
    .. _hydrogenicR_e:
    
    ``hydrogenicR_e  n::int  l::int  Z  r``
-     implements ``hydrogenicR_1_e``.
+     implements ``gsl_sf_hydrogenicR_1_e``.
    
    .. _coulomb_wave_FG_e:
    
    ``coulomb_wave_FG_e  eta  x  L_F  k::int``
-     implements ``coulomb_wave_FG_e``.
+     implements ``gsl_sf_coulomb_wave_FG_e``.
     
    .. _coulomb_wave_F_array:
    
    ``coulomb_wave_F_array  L_min  kmax::int  eta  x``
-     implements ``coulomb_wave_F_array``.
+     implements ``gsl_sf_coulomb_wave_F_array``.
    
    .. _coulomb_wave_FG_array:
    
    ``coulomb_wave_FG_array  L_min  kmax::int  eta  x``
-     implements ``coulomb_wave_FG_array``.
+     implements ``gsl_sf_coulomb_wave_FG_array``.
    
    .. _coulomb_wave_FGp_array:
    
    ``coulomb_wave_FGp_array  L_min  kmax::int  eta x``
-     implements ``coulomb_wave_FGp_array``.
+     implements ``gsl_sf_coulomb_wave_FGp_array``.
    
    .. _coulomb_wave_sphF_array:
    
    ``coulomb_wave_sphF_array  L_min  kmax::int  eta  x``
-     implements ``coulomb_wave_sphF_array``.
+     implements ``gsl_sf_coulomb_wave_sphF_array``.
    
    .. _coulomb_wave_CL_e:
    
    ``coulomb_CL_e  L  eta``
-     implements ``coulomb_wave_CL_e``.
+     implements ``gsl_sf_coulomb_wave_CL_e``.
    
    .. _coulomb_wave_CL_array:
    
    ``coulomb_CL_array  Lmin  kmax  eta``
-     implements ``coulomb_wave_CL_array``.
+     implements ``gsl_sf_coulomb_wave_CL_array``.
 */
 
 hydrogenicR_1  Z  r = gsl_sf_hydrogenicR_1 (double Z) (double r);
@@ -1901,38 +1901,38 @@ public
 /* .. _coupling_3j:
    
    ``coupling_3j  m::matrix``
-     implements ``coupling_3j`` except the input is a 2x3 (row by column) 
-     integer matrix instead of six integer arguments.
+     implements ``gsl_sf_coupling_3j`` except the input is a 2x3 (row by
+     column) integer matrix instead of six integer arguments.
    
    .. _coupling_3j_e:
    
    ``coupling_3j_e  m::matrix``
-     implements ``coupling_3j_e`` except the input is a 2x3 (row by column) 
-     integer matrix instead of six integer arguments.
+     implements ``gsl_sf_coupling_3j_e`` except the input is a 2x3 (row by
+     column) integer matrix instead of six integer arguments.
    
    .. _coupling_6j:
    
    ``coupling_6j  m::matrix``
-     implements ``coupling_6j`` except the input is a 2x3 (row by column) 
-     integer matrix instead of six integer arguments.
+     implements ``gsl_sf_coupling_6j`` except the input is a 2x3 (row by
+     column) integer matrix instead of six integer arguments.
 
    .. _coupling_6j_e:
    
    ``coupling_6j_e  m::matrix``
-     implements ``coupling_6j_e`` except the input is a 2x3 (row by column) 
-     integer matrix instead of six integer arguments.
+     implements ``gsl_sf_coupling_6j_e`` except the input is a 2x3 (row by
+     column) integer matrix instead of six integer arguments.
    
-      .. _coupling_6j:
+   .. _coupling_9j:
    
    ``coupling_9j  m::matrix``
-     implements ``coupling_9j`` except the input is a 3x3 integer matrix 
+     implements ``gsl_sf_coupling_9j`` except the input is a 3x3 integer matrix 
      instead of six integer arguments.
 
    .. _coupling_9j_e:
    
    ``coupling_9j_e  m::matrix``
-     implements ``coupling_9j_e`` except the input is a 3x3 integer matrix
-     instead of six integer arguments.
+     implements ``gsl_sf_coupling_9j_e`` except the input is a 3x3 integer
+     matrix instead of six integer arguments.
 */
 
 coupling_3j  m::matrix
@@ -1979,7 +1979,7 @@ coupling_9j_e  m::matrix
    ~~~~~~~~
    
    The following illustrate the coupling coefficient functions.
-
+   
    ::
    
      > using gsl::sf;
@@ -1996,4 +1996,44 @@ coupling_9j_e  m::matrix
      -0.0962250448649376
      > coupling_9j_e {1,2,3;2,1,2;1,1,1};
      [-0.0962250448649376,4.84948508304183e-16]
+     
+   Dawson Function
+   ~~~~~~~~~~~~~~~
+*/
+
+private extern double gsl_sf_dawson(double);
+private extern int gsl_sf_dawson_e(double, double*);
+
+public
+  dawson
+  dawson_e;
+
+/* .. _dawson:
+   
+   ``dawson  x``
+     implements ``gsl_sf_dawson``.
+   
+   .. _dawson_e:
+   
+   ``dawson_e  x``
+     implements ``gsl_sf_dawson_e``.
+*/
+
+dawson  x = gsl_sf_dawson (double x);
+
+dawson_e  x = ap_func_1 gsl_sf_dawson_e x;
+
+/* ..
+   
+   Examples
+   ~~~~~~~~
+   
+   The following illustrate the dawson functions.
+   
+   ::
+   
+     > dawson 3;
+     0.178271030610558
+     > dawson_e 3;
+     [0.178271030610558,8.9920386788099e-16]
 */
