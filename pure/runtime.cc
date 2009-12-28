@@ -78,6 +78,15 @@ char *alloca ();
 #include <complex> //only the type is used, not any methods
 typedef std::complex<double> Complex;
 
+#if HAVE__LONGJMP && HAVE__SETJMP
+/* On some systems, setjmp/longjmp can be slow. Use _setjmp/_longjmp if we
+   have it. */
+#undef setjmp
+#undef longjmp
+#define setjmp  _setjmp
+#define longjmp  _longjmp
+#endif
+
 /* Implement the basic GSL-like operations on the matrix types that we need.
    Note that this code doesn't depend on GSL in any way, so that the operations
    work all the time even though the runtime isn't linked against GSL. */

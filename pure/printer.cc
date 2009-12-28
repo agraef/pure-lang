@@ -25,6 +25,15 @@
 
 #include "config.h"
 
+#if HAVE__LONGJMP && HAVE__SETJMP
+/* On some systems, setjmp/longjmp can be slow. Use _setjmp/_longjmp if we
+   have it. */
+#undef setjmp
+#undef longjmp
+#define setjmp  _setjmp
+#define longjmp  _longjmp
+#endif
+
 #include "gsl_structs.h"
 
 static inline const string& pname(int32_t f)

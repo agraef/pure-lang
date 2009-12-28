@@ -145,7 +145,7 @@ AC_CHECK_HEADERS([dirent.h])
 AC_CHECK_FUNCS(readdir)
 # Other platform-specific system functions.
 AC_CHECK_HEADERS([sys/fcntl.h sys/wait.h])
-AC_CHECK_FUNCS(fstat)
+AC_CHECK_FUNCS(fstat _setjmp _longjmp)
 AC_CHECK_MEMBERS([struct stat.st_rdev])
 dnl Platform specifics of signal handlers.
 AC_REINSTALL_SIGHANDLERS
