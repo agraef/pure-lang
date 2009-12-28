@@ -848,13 +848,12 @@ static inline bool pstr(ostream& os, pure_expr *x)
   if (f > 0 && (it = interp.globalvars.find(f)) != interp.globalvars.end() &&
       it->second.x && it->second.x->tag >= 0 && it->second.x->data.clos) {
     assert(x->refc > 0);
-    pure_exception ex; ex.e = 0; ex.sz = interp.sstk_sz;
-    interp.estk.push_front(ex);
-    if (setjmp(interp.estk.front().jmp)) {
+    pure_aframe *ex = interp.push_aframe(interp.sstk_sz);
+    if (setjmp(ex->jmp)) {
       // caught an exception
-      size_t sz = interp.estk.front().sz;
-      pure_expr* e = interp.estk.front().e;
-      interp.estk.pop_front();
+      size_t sz = ex->sz;
+      pure_expr* e = ex->e;
+      interp.pop_aframe();
       if (e) pure_freenew(e);
       for (size_t i = interp.sstk_sz; i-- > sz; )
 	if (interp.sstk[i] && interp.sstk[i]->refc > 0)
@@ -864,7 +863,7 @@ static inline bool pstr(ostream& os, pure_expr *x)
     } else {
       recursive = true;
       pure_expr *y = pure_app(it->second.x, x);
-      interp.estk.pop_front();
+      interp.pop_aframe();
       recursive = false;
       assert(y);
       if (y->tag == EXPR::STR) {

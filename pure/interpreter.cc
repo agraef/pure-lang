@@ -638,7 +638,7 @@ interpreter::interpreter()
     ps("> "), libdir(""), histfile("/.pure_history"), modname("pure"),
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
     result(0), lastres(0), mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0),
-    sstk(__sstk), stoplevel(0), debug_skip(false), fptr(__fptr)
+    astk(0), sstk(__sstk), stoplevel(0), debug_skip(false), fptr(__fptr)
 {
   init();
 }
@@ -653,7 +653,7 @@ interpreter::interpreter(int32_t nsyms, char *syms,
     ps("> "), libdir(""), histfile("/.pure_history"),
     modname("pure"), nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
     result(0), lastres(0), mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0),
-    sstk(*_sstk), stoplevel(0), debug_skip(false), fptr(*(Env**)_fptr)
+    astk(0), sstk(*_sstk), stoplevel(0), debug_skip(false), fptr(*(Env**)_fptr)
 {
   using namespace llvm;
   init();
@@ -731,6 +731,12 @@ interpreter::~interpreter()
   globalfuns.clear(); globalvars.clear();
   // free the shadow stack
   free(sstk);
+  // free the activation stack
+  pure_aframe *astk1 = astk;
+  while (astk1) {
+    pure_aframe *astk2 = astk1->prev;
+    free(astk1); astk1 = astk2;
+  }
   // free expression memory
   pure_mem *m = mem, *n;
   while (m) {
@@ -798,6 +804,23 @@ void interpreter::init_sys_vars(const string& version,
 #endif
   cdf(interp, "SIZEOF_POINTER",	pure_int(sizeof(void*)));
   g_interp = s_interp;
+}
+
+// Activation stack.
+
+pure_aframe *interpreter::push_aframe(size_t sz)
+{
+  pure_aframe *a = (pure_aframe*)malloc(sizeof(pure_aframe));
+  assert(a); a->e = 0; a->sz = sz; a->prev = astk; astk = a;
+  return a;
+}
+
+void interpreter::pop_aframe()
+{
+  pure_aframe *a = astk;
+  assert(a);
+  astk = a->prev;
+  free(a);
 }
 
 // Errors and warnings.
@@ -6663,7 +6686,7 @@ pure_expr *interpreter::doeval(expr x, pure_expr*& e, bool keep)
       fptr->refc--;
   }
   fptr = save_fptr;
-  if (estk.empty()) {
+  if (!astk) {
     // collect garbage
     pure_expr *t = tmps;
     while (t) {
@@ -6852,7 +6875,7 @@ pure_expr *interpreter::dodefn(env vars, veqnl eqns, expr lhs, expr rhs,
       }
     }
   }
-  if (estk.empty()) {
+  if (!astk) {
     // collect garbage
     pure_expr *t = tmps;
     while (t) {

@@ -720,7 +720,7 @@ public:
   set<llvm::Function*> always_used;
   map<int32_t,GlobalVar> globalvars;
   map<int32_t,Env> globalfuns;
-  list<pure_exception> estk;
+  pure_aframe *astk;
   pure_expr **__sstk;
   pure_expr **&sstk;
   size_t sstk_cap, sstk_sz;
@@ -729,6 +729,8 @@ public:
   set<pure_expr*> mem_allocations;
 #endif
   map<int32_t,ExternInfo> externals;
+  pure_aframe *push_aframe(size_t sz);
+  void pop_aframe();
   llvm::Function *declare_extern(void *fp, string name, string restype,
 				 int n, ...);
   llvm::Function *declare_extern(int priv, string name, string restype,

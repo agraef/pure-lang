@@ -664,7 +664,12 @@ pure_expr *pure_force(pure_expr *x);
 
 /* Exception handling stuff. */
 
-typedef struct { jmp_buf jmp; pure_expr* e; size_t sz; } pure_exception;
+typedef struct _pure_aframe {
+  jmp_buf jmp;			// landing pad
+  pure_expr* e;			// exception value (if any)
+  size_t sz;			// size of shadow stack
+  struct _pure_aframe *prev;	// previous frame
+} pure_aframe;
 
 /* NOTE: pure_throw() and pure_trap() are in the library API now. */
 
