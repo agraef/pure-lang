@@ -783,13 +783,17 @@ pure_expr *pure_pointerval(pure_expr *x);
 
 pure_expr *pure_rational(double d);
 
-/* Random number generator. This uses the Mersenne twister, in order to avoid
-   bad generators present in some C libraries. pure_random returns a
-   pseudorandom 32 bit integer, pure_srandom sets the seed of the
-   generator. */
+/* Random number generator (Mersenne twister). See this URL for details:
+   http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/MT2002/emt19937ar.html */
 
-uint32_t pure_random(void);
-void pure_srandom(uint32_t seed);
+void init_genrand(unsigned s);
+void init_genrand_array(unsigned *init_key, int key_length);
+unsigned genrand_int32(void);
+int genrand_int31(void);
+double genrand_real1(void);
+double genrand_real2(void);
+double genrand_real3(void);
+double genrand_res53(void);
 
 /* Construct a "byte string" from a string. The result is a raw pointer object
    pointing to the converted string. The original string is copied (and, in

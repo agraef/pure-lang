@@ -6104,115 +6104,190 @@ pure_expr *pure_rational(double d)
   return pure_tuplel(2, u, v);
 }
 
-// This is the ``Mersenne Twister'' random number generator MT19937, which
-// generates pseudorandom integers uniformly distributed in 0..(2^32 - 1)
-// starting from any odd seed in 0..(2^32 - 1).  This version is a recode
-// by Shawn Cokus (Cokus@math.washington.edu) on March 8, 1998 of a version by
-// Takuji Nishimura (who had suggestions from Topher Cooper and Marc Rieffel in
-// July-August 1997).
-//
-// Effectiveness of the recoding (on Goedel2.math.washington.edu, a DEC Alpha
-// running OSF/1) using GCC -O3 as a compiler: before recoding: 51.6 sec. to
-// generate 300 million random numbers; after recoding: 24.0 sec. for the same
-// (i.e., 46.5% of original time), so speed is now about 12.5 million random
-// number generations per second on this machine.
-//
-// According to the URL <http://www.math.keio.ac.jp/~matumoto/emt.html>
-// (and paraphrasing a bit in places), the Mersenne Twister is ``designed
-// with consideration of the flaws of various existing generators,'' has
-// a period of 2^19937 - 1, gives a sequence that is 623-dimensionally
-// equidistributed, and ``has passed many stringent tests, including the
-// die-hard test of G. Marsaglia and the load test of P. Hellekalek and
-// S. Wegenkittl.''  It is efficient in memory usage (typically using 2506
-// to 5012 bytes of static data, depending on data type sizes, and the code
-// is quite short as well).  It generates random numbers in batches of 624
-// at a time, so the caching and pipelining of modern systems is exploited.
-// It is also divide- and mod-free.
-//
-// This library is free software; you can redistribute it and/or modify it
-// under the terms of the GNU Library General Public License as published by
-// the Free Software Foundation (either version 2 of the License or, at your
-// option, any later version).  This library is distributed in the hope that
-// it will be useful, but WITHOUT ANY WARRANTY, without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
-// the GNU Library General Public License for more details.  You should have
-// received a copy of the GNU Library General Public License along with this
-// library; if not, write to the Free Software Foundation, Inc., 59 Temple
-// Place, Suite 330, Boston, MA 02111-1307, USA.
-//
-// The code as Shawn received it included the following notice:
-//
-//   Copyright (C) 1997 Makoto Matsumoto and Takuji Nishimura.  When
-//   you use this, send an e-mail to <matumoto@math.keio.ac.jp> with
-//   an appropriate reference to your work.
-//
-// It would be nice to CC: <Cokus@math.washington.edu> when you write.
-//
+/* The Mersenne Twister (corrected version from 2002), slightly massaged for
+   use in Pure. The original source is available here:
+   http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/MT2002/CODES/mt19937ar.c */
 
-// See http://www.math.keio.ac.jp/~matumoto/emt.html for the original sources.
+/* 
+   A C-program for MT19937, with initialization improved 2002/1/26.
+   Coded by Takuji Nishimura and Makoto Matsumoto.
 
-#define N              (624)
-#define M              (397)
-#define K              (0x9908B0DFU)
-#define hiBit(u)       ((u) & 0x80000000U)
-#define loBit(u)       ((u) & 0x00000001U)
-#define loBits(u)      ((u) & 0x7FFFFFFFU)
-#define mixBits(u, v)  (hiBit(u)|loBits(v))
+   Before using, initialize the state by using init_genrand(seed)  
+   or init_by_array(init_key, key_length).
 
-// TLD?
-static uint32_t stateMT[N+1];
-static uint32_t *nextMT;
-static int leftMT = -1;
+   Copyright (C) 1997 - 2002, Makoto Matsumoto and Takuji Nishimura,
+   All rights reserved.                          
 
-void pure_srandom(uint32_t seed)
+   Redistribution and use in source and binary forms, with or without
+   modification, are permitted provided that the following conditions
+   are met:
+
+     1. Redistributions of source code must retain the above copyright
+        notice, this list of conditions and the following disclaimer.
+
+     2. Redistributions in binary form must reproduce the above copyright
+        notice, this list of conditions and the following disclaimer in the
+        documentation and/or other materials provided with the distribution.
+
+     3. The names of its contributors may not be used to endorse or promote 
+        products derived from this software without specific prior written 
+        permission.
+
+   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+   Any feedback is very welcome.
+   http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/emt.html
+   email: m-mat @ math.sci.hiroshima-u.ac.jp (remove space)
+*/
+
+/* Period parameters */  
+#define N 624
+#define M 397
+#define MATRIX_A 0x9908b0dfU   /* constant vector a */
+#define UPPER_MASK 0x80000000U /* most significant w-r bits */
+#define LOWER_MASK 0x7fffffffU /* least significant r bits */
+
+static unsigned mt[N]; /* the array for the state vector  */
+static int mti=N+1; /* mti==N+1 means mt[N] is not initialized */
+
+/* initializes mt[N] with a seed */
+extern "C"
+void init_genrand(unsigned s)
 {
-  // MT works best with odd seeds, so we enforce that here.
-  register uint32_t x = (seed | 1U) & 0xFFFFFFFFU, *s = stateMT;
-  register int j;
-
-  for (leftMT=0, *s++=x, j=N; --j; *s++ = (x*=69069U) & 0xFFFFFFFFU);
+    mt[0]= s & 0xffffffffU;
+    for (mti=1; mti<N; mti++) {
+        mt[mti] = 
+	    (1812433253U * (mt[mti-1] ^ (mt[mti-1] >> 30)) + mti); 
+        /* See Knuth TAOCP Vol2. 3rd Ed. P.106 for multiplier. */
+        /* In the previous versions, MSBs of the seed affect   */
+        /* only MSBs of the array mt[].                        */
+        /* 2002/01/09 modified by Makoto Matsumoto             */
+        mt[mti] &= 0xffffffffU;
+        /* for >32 bit machines */
+    }
 }
 
-static uint32_t reloadMT(void)
+/* initialize by an array with array-length */
+/* init_key is the array for initializing keys */
+/* key_length is its length */
+/* slight change for C++, 2004/2/26 */
+extern "C"
+void init_genrand_array(unsigned *init_key, int key_length)
 {
-  register uint32_t *p0=stateMT, *p2=stateMT+2, *pM=stateMT+M, s0, s1;
-  register int j;
+    int i, j, k;
+    init_genrand(19650218U);
+    i=1; j=0;
+    k = (N>key_length ? N : key_length);
+    for (; k; k--) {
+        mt[i] = (mt[i] ^ ((mt[i-1] ^ (mt[i-1] >> 30)) * 1664525U))
+          + init_key[j] + j; /* non linear */
+        mt[i] &= 0xffffffffU; /* for WORDSIZE > 32 machines */
+        i++; j++;
+        if (i>=N) { mt[0] = mt[N-1]; i=1; }
+        if (j>=key_length) j=0;
+    }
+    for (k=N-1; k; k--) {
+        mt[i] = (mt[i] ^ ((mt[i-1] ^ (mt[i-1] >> 30)) * 1566083941U))
+          - i; /* non linear */
+        mt[i] &= 0xffffffffU; /* for WORDSIZE > 32 machines */
+        i++;
+        if (i>=N) { mt[0] = mt[N-1]; i=1; }
+    }
 
-  if (leftMT < -1)
-    pure_srandom(4357U);
-
-  leftMT=N-1, nextMT=stateMT+1;
-
-  for (s0=stateMT[0], s1=stateMT[1], j=N-M+1; --j; s0=s1, s1=*p2++)
-    *p0++ = *pM++ ^ (mixBits(s0, s1) >> 1) ^ (loBit(s1) ? K : 0U);
-
-  for (pM=stateMT, j=M; --j; s0=s1, s1=*p2++)
-    *p0++ = *pM++ ^ (mixBits(s0, s1) >> 1) ^ (loBit(s1) ? K : 0U);
-
-  s1=stateMT[0], *p0 = *pM ^ (mixBits(s0, s1) >> 1) ^ (loBit(s1) ? K : 0U);
-  s1 ^= (s1 >> 11);
-  s1 ^= (s1 <<  7) & 0x9D2C5680U;
-  s1 ^= (s1 << 15) & 0xEFC60000U;
-  return(s1 ^ (s1 >> 18));
+    mt[0] = 0x80000000U; /* MSB is 1; assuring non-zero initial array */ 
 }
 
-uint32_t pure_random(void)
+/* generates a random number on [0,0xffffffff]-interval */
+extern "C"
+unsigned genrand_int32(void)
 {
-  uint32_t y;
+    unsigned y;
+    static unsigned mag01[2]={0x0U, MATRIX_A};
+    /* mag01[x] = x * MATRIX_A  for x=0,1 */
+
+    if (mti >= N) { /* generate N words at one time */
+        int kk;
+
+        if (mti == N+1)   /* if init_genrand() has not been called, */
+            init_genrand(5489U); /* a default initial seed is used */
+
+        for (kk=0;kk<N-M;kk++) {
+            y = (mt[kk]&UPPER_MASK)|(mt[kk+1]&LOWER_MASK);
+            mt[kk] = mt[kk+M] ^ (y >> 1) ^ mag01[y & 0x1U];
+        }
+        for (;kk<N-1;kk++) {
+            y = (mt[kk]&UPPER_MASK)|(mt[kk+1]&LOWER_MASK);
+            mt[kk] = mt[kk+(M-N)] ^ (y >> 1) ^ mag01[y & 0x1U];
+        }
+        y = (mt[N-1]&UPPER_MASK)|(mt[0]&LOWER_MASK);
+        mt[N-1] = mt[M-1] ^ (y >> 1) ^ mag01[y & 0x1U];
+
+        mti = 0;
+    }
   
-  if(--leftMT < 0)
-    return reloadMT();
+    y = mt[mti++];
 
-  y  = *nextMT++;
-  y ^= (y >> 11);
-  y ^= (y <<  7) & 0x9D2C5680U;
-  y ^= (y << 15) & 0xEFC60000U;
-  return (y ^ (y >> 18));
+    /* Tempering */
+    y ^= (y >> 11);
+    y ^= (y << 7) & 0x9d2c5680U;
+    y ^= (y << 15) & 0xefc60000U;
+    y ^= (y >> 18);
+
+    return y;
 }
+
+/* generates a random number on [0,0x7fffffff]-interval */
+extern "C"
+int genrand_int31(void)
+{
+    return (int)(genrand_int32()>>1);
+}
+
+/* generates a random number on [0,1]-real-interval */
+extern "C"
+double genrand_real1(void)
+{
+    return genrand_int32()*(1.0/4294967295.0); 
+    /* divided by 2^32-1 */ 
+}
+
+/* generates a random number on [0,1)-real-interval */
+extern "C"
+double genrand_real2(void)
+{
+    return genrand_int32()*(1.0/4294967296.0); 
+    /* divided by 2^32 */
+}
+
+/* generates a random number on (0,1)-real-interval */
+extern "C"
+double genrand_real3(void)
+{
+    return (((double)genrand_int32()) + 0.5)*(1.0/4294967296.0); 
+    /* divided by 2^32 */
+}
+
+/* generates a random number on [0,1) with 53-bit resolution */
+extern "C"
+double genrand_res53(void)
+{ 
+    unsigned a=genrand_int32()>>5, b=genrand_int32()>>6; 
+    return(a*67108864.0+b)*(1.0/9007199254740992.0); 
+} 
 
 #undef N
 #undef M
-#undef K
 
 extern "C"
 pure_expr *bigint_neg(mpz_t x)

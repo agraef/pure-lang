@@ -39,27 +39,52 @@
 
    The module defines Euler's number ``e = 2.71828...`` and Ludolph's number
    ``pi = 3.1415...`` as constants. It also provides a reasonably
-   comprehensive (pseudo) random number generator:
+   comprehensive (pseudo) random number generator which uses the `Mersenne
+   twister`_ to avoid bad generators present in some C libraries.
+
+   Please note that as of Pure 0.41, the runtime library includes a newer
+   release of the Mersenne twister which fixes issues with some kinds of seed
+   values, and will yield different values for given seeds. Also, the
+   ``random31`` and ``random53`` functions have been added as a convenience to
+   compute unsigned 31 bit integers and 53 bit double values, and the
+   ``srandom`` function now also accepts an ``int`` matrix as seed value.
 
    .. _Mersenne twister: http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/emt.html
 
    .. _random:
 
    ``random``
-     Return pseudo random ints in the range ``-0x80000000..0x7fffffff``. This
-     uses the `Mersenne twister`_, in order to avoid bad generators present in
-     some C libraries.
+     Return 32 bit pseudo random ints in the range ``-0x80000000..0x7fffffff``.
+
+   .. _random31:
+
+   ``random31``
+     Return 31 bit pseudo random ints in the range ``0..0x7fffffff``.
+
+   .. _random53:
+
+   ``random53``
+     Return pseudo random doubles in the range ``[0,1)`` with 53 bits
+     resolution.
 
    .. _srandom:
 
    ``srandom seed``
-     Sets the seed of the generator to the given 32 bit integer. (Note that
-     the Mersenne twister works best with odd seeds, so ``srandom`` enforces
-     that by setting the least significant bit of the seed to 1.)
+     Sets the seed of the generator to the given 32 bit integer. You can also
+     specify longer seeds using a nonempty row vector, e.g.: ``srandom {0x123,
+     0x234, 0x345, 0x456}``.
 
 */
 
-extern int pure_random() = random, void pure_srandom(int) = srandom;
+// We don't supply interfaces to all MT routines here, see runtime.h for the
+// complete list of available routines.
+extern int genrand_int32() = random;
+extern int genrand_int31() = random31;
+extern double genrand_res53() = random53;
+extern void init_genrand(int) = srandom;
+extern void init_genrand_array(int*, int) = srandom_array;
+
+srandom x::matrix = srandom_array x (#x) if imatrixp x && dim x!0 == 1;
 
 /* ..
 
