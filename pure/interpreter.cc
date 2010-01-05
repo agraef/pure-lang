@@ -4821,6 +4821,13 @@ to variables should fix this. **\n";
        it != end; ++it) {
     Function *f = &*it;
     if (f != main && is_init(f->getName())) {
+      if (!debugging) {
+	vector<Value*> argv(2);
+	argv[0] = Zero;
+	argv[1] = Zero;
+	b.CreateCall(module->getFunction("pure_push_args"),
+		     argv.begin(), argv.end());
+      }
       CallInst* v = b.CreateCall(f);
       b.CreateCall(freefun, v);
     }
