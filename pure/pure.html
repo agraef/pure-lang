@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>The Pure Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2009-12-23" />
+<meta name="date" content="2010-01-05" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2009-12-23</td></tr>
+<td>2010-01-05</td></tr>
 </tbody>
 </table>
 <!-- Note: This document is formatted using docutils. The Makefile has rules -->
@@ -1663,10 +1663,10 @@ fib n = a when a,b = fibs n end
           end;
 let fibs = map fib (1..30); fibs;
 </pre>
-<p>It is worth noting here that in most cases Pure performs tail call
-optimization so that tail-recursive definitions like the following will be
-executed in constant stack space (see <a class="reference internal" href="#stack-size-and-tail-recursion">Stack Size and Tail Recursion</a> in the
-<a class="reference internal" href="#caveats-and-notes">Caveats and Notes</a> section for more details on this):</p>
+<p>It is worth noting here that Pure performs tail call optimization so that
+tail-recursive definitions like the following will be executed in constant
+stack space (see <a class="reference internal" href="#stack-size-and-tail-recursion">Stack Size and Tail Recursion</a> in the <a class="reference internal" href="#caveats-and-notes">Caveats and Notes</a>
+section for more details on this):</p>
 <pre class="literal-block">
 // tail-recursive factorial using an &quot;accumulating parameter&quot;
 fact n = loop 1 n with
@@ -4874,31 +4874,9 @@ in Pure, because they are required to always yield a proper truth value (0 or
 compiler to generate much better code for logical expressions.) If this is a
 problem then you should use <tt class="docutils literal"><span class="pre">if</span></tt>-<tt class="docutils literal"><span class="pre">then</span></tt>-<tt class="docutils literal"><span class="pre">else</span></tt> instead. E.g., <tt class="docutils literal"><span class="pre">foo</span> <span class="pre">x</span> <span class="pre">&amp;&amp;</span>
 <span class="pre">bar</span> <span class="pre">x</span></tt> might be rewritten as: <tt class="docutils literal"><span class="pre">if</span> <span class="pre">foo</span> <span class="pre">x</span> <span class="pre">then</span> <span class="pre">1</span> <span class="pre">else</span> <span class="pre">bar</span> <span class="pre">x</span></tt>.</p>
-<p>Unfortunately, there is one major caveat here, namely that the current
-implementation doesn't support indirect tail calls (i.e., tail calls through a
-function variable, such as in <tt class="docutils literal"><span class="pre">foo</span> <span class="pre">f</span> <span class="pre">x</span> <span class="pre">=</span> <span class="pre">f</span> <span class="pre">x</span></tt>). This is because such
-indirect calls are handled by the runtime system which is written in C and
-thus can't do proper tail calls because C can't (at least not in a portable
-way). This also affects mutually recursive global function calls, since there
-the calls are handled in an indirect way, too, through an anonymous global
-variable. (This is done so that a global function definition can be changed at
-any time without having to recompile the entire program.) Hence, unlike our
-<tt class="docutils literal"><span class="pre">loop</span></tt> example above, the following <em>will</em> overflow the stack:</p>
-<pre class="literal-block">
-loopa = loopb; loopb = loopa;
-loopa;
-</pre>
-<p>Mutual tail recursion <em>does</em> work with local functions, however, so it's
-usually easy to work around this specific limitation. Nevertheless, the lack
-of support for indirect tail calls is one of the sore points of the current
-implementation. Unfortunately, this is not easy to fix and hence unlikely to
-change anytime soon. But it's usually possible to make deep tail recursion
-work by making good use of generic &quot;looping&quot; constructs, such as list and
-matrix comprehensions as well as prelude functions like <tt class="docutils literal"><span class="pre">do</span></tt>, <tt class="docutils literal"><span class="pre">map</span></tt> and
-<tt class="docutils literal"><span class="pre">fold</span></tt>.  (If these don't fit your needs then you can easily roll your own.)</p>
-<p>Finally, note that tail call optimization is <em>always</em> disabled if the debugger
-is enabled (-g). This makes it much easier to debug programs, but means that
-you may run into stack overflows when debugging a program that does deep tail
+<p>Also note that tail call optimization is <em>always</em> disabled if the debugger is
+enabled (-g). This makes it much easier to debug programs, but means that you
+may run into stack overflows when debugging a program that does deep tail
 recursion.</p>
 </div>
 <div class="section" id="handling-of-asynchronous-signals">
