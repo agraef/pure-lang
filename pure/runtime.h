@@ -662,13 +662,18 @@ pure_expr *pure_apply(pure_expr *x, pure_expr *y);
 
 pure_expr *pure_force(pure_expr *x);
 
-/* Exception handling stuff. */
+/* Activation records (exceptions and indirect tail calls). */
 
 typedef struct _pure_aframe {
+  struct _pure_aframe *prev;	// previous frame
   jmp_buf jmp;			// landing pad
   pure_expr* e;			// exception value (if any)
   size_t sz;			// size of shadow stack
-  struct _pure_aframe *prev;	// previous frame
+  // information to keep track of indirect tail calls
+  void *fp;			// function pointer
+  uint32_t n, m;		// arg and environment counts
+  pure_expr **argv;		// argument vector
+  uint32_t count;		// trampoline counter
 } pure_aframe;
 
 /* NOTE: pure_throw() and pure_trap() are in the library API now. */

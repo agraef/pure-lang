@@ -121,6 +121,10 @@ void interpreter::init()
   sstk = (pure_expr**)malloc(sstk_cap*sizeof(pure_expr*));
   assert(sstk);
 
+  ap = (pure_aframe*)malloc(ASTACKSZ*sizeof(pure_aframe));
+  assert(ap); aplist.push_back(ap);
+  abp = ap; aep = ap+ASTACKSZ; afreep = 0;
+
   // Initialize the JIT.
 
   using namespace llvm;
@@ -732,11 +736,8 @@ interpreter::~interpreter()
   // free the shadow stack
   free(sstk);
   // free the activation stack
-  pure_aframe *astk1 = astk;
-  while (astk1) {
-    pure_aframe *astk2 = astk1->prev;
-    free(astk1); astk1 = astk2;
-  }
+  for (list<pure_aframe*>::iterator it = aplist.begin(); it != aplist.end();
+       ++it) free(*it);
   // free expression memory
   pure_mem *m = mem, *n;
   while (m) {
@@ -810,8 +811,10 @@ void interpreter::init_sys_vars(const string& version,
 
 pure_aframe *interpreter::push_aframe(size_t sz)
 {
-  pure_aframe *a = (pure_aframe*)malloc(sizeof(pure_aframe));
-  assert(a); a->e = 0; a->sz = sz; a->prev = astk; astk = a;
+  pure_aframe *a = get_aframe();
+  assert(a); a->e = 0; a->sz = sz;
+  a->fp = 0; a->n = a->m = a->count = 0; a->argv = 0;
+  a->prev = astk; astk = a;
   return a;
 }
 
@@ -820,7 +823,7 @@ void interpreter::pop_aframe()
   pure_aframe *a = astk;
   assert(a);
   astk = a->prev;
-  free(a);
+  free_aframe(a);
 }
 
 // Errors and warnings.
@@ -5203,6 +5206,15 @@ ReturnInst *Env::CreateRet(Value *v, const rule *rp)
 	}
       }
       pi = c;
+#if USE_FASTCC
+    } else if (interp.use_fastcc &&
+	       (c->getCalledFunction() ==
+		interp.module->getFunction("pure_call") ||
+		c->getCalledFunction() ==
+		interp.module->getFunction("pure_apply"))) {
+      // Indirect call through the runtime. Treated like a tail call.
+      pi = c;
+#endif
     }
   }
   // We must garbage-collect args and environment here, immediately before the
@@ -5214,7 +5226,7 @@ ReturnInst *Env::CreateRet(Value *v, const rule *rp)
     else
       myargs.push_back(ConstantPointerNull::get(interp.ExprPtrTy));
     CallInst::Create(free1_fun, myargs.begin(), myargs.end(), "", pi);
-  } else if (n+m != 0) {
+  } else if (n+m != 0 || !interp.debugging) {
     vector<Value*> myargs;
     if (pi == ret)
       myargs.push_back(v);
@@ -6362,7 +6374,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   }
   // free arguments (we do that here so that the arguments don't get freed
   // before we know that we don't need them anymore)
-  if (n > 0) {
+  if (n > 0 || !debugging) {
     vector<Value*> freeargs(3);
     freeargs[0] = u;
     freeargs[1] = UInt(n);
@@ -6412,7 +6424,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     defaultv = b.CreateCall(module->getFunction("pure_apply"),
 			    myargs.begin(), myargs.end());
   }
-  if (n > 0) {
+  if (n > 0 || !debugging) {
     vector<Value*> freeargs(3);
     freeargs[0] = defaultv;
     freeargs[1] = UInt(n);
@@ -7333,7 +7345,7 @@ Value *interpreter::external_funcall(int32_t tag, uint32_t n, expr x)
     args[n-++i] = v; x = u;
   }
   vector<Value*> argv(n);
-  if (n>0) {
+  if (n>0 || !debugging) {
     for (i = 0; i < n; i++)
       argv[i] = codegen(args[i]);
     if (n == 1)
@@ -8553,7 +8565,7 @@ Value *interpreter::fcall(Env &f, vector<Value*>& args, vector<Value*>& env)
   Value *argv = 0;
   if (n == 1 && m == 0)
     e.CreateCall(module->getFunction("pure_push_arg"), args);
-  else if (n+m > 0) {
+  else if (n+m > 0 || !debugging) {
     vector<Value*> args1;
     args1.push_back(UInt(n));
     args1.push_back(UInt(m));
@@ -9727,7 +9739,7 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
       debug(msg.str().c_str()); }
 #endif
     if (retv) {
-      if (f.n+f.m != 0) {
+      if (f.n+f.m != 0 || !debugging) {
 	// do cleanup
 	Function *free_fun = module->getFunction("pure_pop_args");
 	f.builder.CreateCall3(free_fun, retv, UInt(f.n), UInt(f.m));

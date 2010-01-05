@@ -4443,37 +4443,6 @@ static inline void *get_funptr(pure_expr *x)
 #define get_funptr(x) x->data.clos->fp
 #endif
 
-extern "C"
-pure_expr *pure_call(pure_expr *x)
-{
-  char test;
-  assert(x);
-  if (x->tag <= 0 || !x->data.clos) {
-#if DEBUG>2
-    cerr << "pure_call: returning " << x << endl;
-#endif
-    checkstk(test);
-    return x;
-  }
-  if (x->data.clos->n == 0) {
-    void *fp = get_funptr(x);
-#if DEBUG>1
-    cerr << "pure_call: calling " << x << " -> " << fp << endl;
-#endif
-    assert(x->refc > 0 && !x->data.clos->local);
-    // parameterless call
-    if (!interpreter::g_interp->checks) { checkall(test); }
-    return ((pure_expr*(*)())fp)();
-  } else {
-#if DEBUG>2
-    cerr << "pure_call: returning " << x << " -> " << x->data.clos->fp
-	 << " (" << x->data.clos->n << " args)" << endl;
-#endif
-    checkstk(test);
-    return x;
-  }
-}
-
 static inline void resize_sstk(pure_expr**& sstk, size_t& cap,
 			       size_t sz, size_t n)
 {
@@ -4486,6 +4455,114 @@ static inline void resize_sstk(pure_expr**& sstk, size_t& cap,
     sstk = (pure_expr**)realloc(sstk, cap*sizeof(pure_expr*));
     assert(sstk);
   }
+}
+
+/* Extended trampoline for doing indirect function calls to prevent tail calls
+   from overflowing the stack. The same technique is also used in Chicken
+   Scheme, cf. http://en.wikipedia.org/wiki/Tail_recursion, except that we use
+   an extended trampoline of fixed size, given below. Smaller sizes use less
+   stack space, larger sizes are faster. Please note that this is only used in
+   indirect calls. Most direct function calls in Pure are translated to
+   corresponding function calls in LLVM IR, which rely on LLVM's built-in TCO
+   capabilities to opimize away tail calls. */
+
+#define TRAMPOLINE_SIZE 1024
+
+static pure_expr *trampoline(interpreter& interp,
+			     pure_expr *x, void *fp, uint32_t n, uint32_t m,
+			     pure_expr **argv)
+{
+  pure_expr *ret;
+  pure_aframe *ex = interp.astk;
+  uint32_t env = 0;
+  bool fini = false;
+  if (ex && ex->count && ex->sz == interp.sstk_sz) {
+    // tail call
+    if (ex->count++ >= TRAMPOLINE_SIZE) {
+      // exceeded the size of the trampoline, so rewind the stack (this is
+      // only done at regular intervals to make things more efficient)
+      ex->count = 1;
+      ex->e = x; ex->fp = fp;
+      ex->n = n; ex->m = m; ex->argv = argv;
+      longjmp(ex->jmp, 1);
+    } else
+      goto call;
+  }
+  // create a new trampoline for handling tail calls
+  fini = true;
+  ex = interp.push_aframe(interp.sstk_sz);
+  ex->count = 1;
+  if (setjmp(ex->jmp)) {
+    // landing pad of tail call
+    x = ex->e; fp = ex->fp;
+    n = ex->n; m = ex->m; argv = ex->argv;
+  }
+ call:
+  if (n+m == 0) {
+    // parameterless call
+    pure_push_args(0, 0);
+    ret = ((pure_expr*(*)())fp)();
+  } else {
+    // construct a stack frame for a function call with parameters
+    {
+      size_t sz = interp.sstk_sz;
+      resize_sstk(interp.sstk, interp.sstk_cap, sz, n+m+1);
+      pure_expr **sstk = interp.sstk;
+      if (m>0) env = sz+n+1;
+      sstk[sz++] = 0;
+      for (size_t j = 0; j < n; j++)
+	sstk[sz++] = (pure_expr*)argv[j];
+      for (size_t j = 0; j < m; j++) {
+	sstk[sz++] = x->data.clos->env[j];
+	assert(x->data.clos->env[j]->refc > 0);
+	x->data.clos->env[j]->refc++;
+      }
+      interp.sstk_sz = sz;
+    }
+    // also keep track of the function object on the activation stack so that
+    // it can be garbage-collected if we hit an exception
+    ex->e = x;
+    if (m>0)
+      xfuncall(ret, fp, n, env, argv)
+    else
+      funcall(ret, fp, n, argv)
+    {
+      // cleanup of the function object
+      bool keep = m>0 && ret->refc>0;
+      if (keep) ret->refc++;
+      pure_free_internal(x);
+      if (keep) pure_unref_internal(ret);
+    }
+    ex->e = 0;
+  }
+  if (fini) interp.pop_aframe();
+  return ret;
+}
+
+extern "C"
+pure_expr *pure_call(pure_expr *x)
+{
+  char test;
+  assert(x);
+  if (x->tag <= 0 || !x->data.clos || x->data.clos->n != 0) {
+#if DEBUG>2
+    cerr << "pure_call: returning " << x << endl;
+#endif
+    checkstk(test);
+    return x;
+  }
+  void *fp = get_funptr(x);
+#if DEBUG>1
+  cerr << "pure_call: calling " << x << " -> " << fp << endl;
+#endif
+  assert(x->refc > 0 && !x->data.clos->local);
+  // parameterless call
+  interpreter& interp = *interpreter::g_interp;
+  if (!interp.checks) { checkall(test); }
+  if (interp.debugging)
+    return ((pure_expr*(*)())fp)();
+  else
+    return trampoline(interp, 0, fp, 0, 0, 0);
 }
 
 #define is_thunk(x) ((x)->tag == 0 && (x)->data.clos && (x)->data.clos->n == 0)
@@ -4504,7 +4581,7 @@ pure_expr *pure_force(pure_expr *x)
     uint32_t env = 0;
     assert(fp && x->refc > 0);
     // construct a stack frame for the function call
-    if (m>0) {
+    if (m>0 || !interp.debugging) {
       size_t sz = interp.sstk_sz;
       resize_sstk(interp.sstk, interp.sstk_cap, sz, m+1);
       pure_expr **sstk = interp.sstk;
@@ -4645,84 +4722,7 @@ pure_expr *pure_apply(pure_expr *x, pure_expr *y)
   uint32_t n = 1;
   while (f->tag == EXPR::APP) { f = f->data.x[0]; n++; }
   f0 = f;
-  if (f->tag >= 0 && f->data.clos && f->data.clos->n == n) {
-    // saturated call; execute it now
-    interpreter& interp = *interpreter::g_interp;
-    void *fp = get_funptr(f);
-    size_t m = f->data.clos->m;
-    uint32_t env = 0;
-    void **argv = (void**)alloca(n*sizeof(void*));
-    assert(argv && "pure_apply: stack overflow");
-    assert(n <= MAXARGS && "pure_apply: function call exceeds maximum #args");
-    assert(f->data.clos->local || m == 0);
-    // collect arguments
-    f = x;
-    for (size_t j = 1; f->tag == EXPR::APP; j++, f = f->data.x[0]) {
-      assert(f->data.x[1]->refc > 0);
-      argv[n-1-j] = f->data.x[1]; f->data.x[1]->refc++;
-    }
-    argv[n-1] = y;
-    // make sure that we do not gc the function before calling it
-    f0->refc++; pure_free_internal(x);
-    // first push the function object on the shadow stack so that it's
-    // garbage-collected in case of an exception
-    resize_sstk(interp.sstk, interp.sstk_cap, interp.sstk_sz, n+m+2);
-    interp.sstk[interp.sstk_sz++] = f0;
-    // construct a stack frame for the function call
-    {
-      size_t sz = interp.sstk_sz;
-      resize_sstk(interp.sstk, interp.sstk_cap, sz, n+m+1);
-      pure_expr **sstk = interp.sstk;
-      if (m>0) env = sz+n+1;
-      sstk[sz++] = 0;
-      for (size_t j = 0; j < n; j++)
-	sstk[sz++] = (pure_expr*)argv[j];
-      for (size_t j = 0; j < m; j++) {
-	sstk[sz++] = f0->data.clos->env[j];
-	assert(f0->data.clos->env[j]->refc > 0);
-	f0->data.clos->env[j]->refc++;
-      }
-#if SSTK_DEBUG
-      cerr << "++ stack: (sz = " << sz << ")\n";
-      for (size_t i = 0; i < sz; i++) {
-	pure_expr *x = sstk[i];
-	if (i == interp.sstk_sz) cerr << "** pushed:\n";
-	if (x)
-	  cerr << i << ": " << (void*)x << ": " << x << '\n';
-	else
-	  cerr << i << ": " << "** frame **\n";
-      }
-#endif
-      interp.sstk_sz = sz;
-    }
-#if DEBUG>1
-    cerr << "pure_apply: calling " << f0 << " -> " << fp << endl;
-    for (size_t j = 0; j < n; j++)
-      cerr << "arg#" << j << " = " << (pure_expr*)argv[j] << " -> " << argv[j] << ", refc = " << ((pure_expr*)argv[j])->refc << '\n';
-    for (size_t j = 0; j < m; j++)
-      cerr << "env#" << j << " = " << f0->data.clos->env[j] << " -> " << (void*)f0->data.clos->env[j] << ", refc = " << f0->data.clos->env[j]->refc << '\n';
-#endif
-    if (!interp.checks) { checkall(test); }
-    if (m>0)
-      xfuncall(ret, fp, n, env, argv)
-    else
-      funcall(ret, fp, n, argv)
-#if DEBUG>1
-	cerr << "pure_apply: result " << f0 << " = " << ret << " -> " << (void*)ret << ", refc = " << ret->refc << endl;
-#endif
-    /* Temporarily increase the reference count on the result in case it comes
-       from the environment, so that we don't gc it with the function object.
-       We only need to do this if the result isn't a temporary and we actually
-       have an environment. */
-    {
-      bool keep = m>0 && ret->refc>0;
-      if (keep) ret->refc++;
-      // pop the function object from the shadow stack
-      pure_free_internal(interp.sstk[--interp.sstk_sz]);
-      if (keep) pure_unref_internal(ret);
-    }
-    return ret;
-  } else {
+  if (f->tag < 0 || !f->data.clos || f->data.clos->n != n) {
     // construct a literal application node
     f = new_expr();
     f->tag = EXPR::APP;
@@ -4731,6 +4731,86 @@ pure_expr *pure_apply(pure_expr *x, pure_expr *y)
     MEMDEBUG_NEW(f)
     return f;
   }
+  // saturated call; execute it now
+  interpreter& interp = *interpreter::g_interp;
+  void *fp = get_funptr(f);
+  size_t m = f->data.clos->m;
+  uint32_t env = 0;
+  static pure_expr *argv[MAXARGS];
+  assert(argv && "pure_apply: stack overflow");
+  assert(n <= MAXARGS && "pure_apply: function call exceeds maximum #args");
+  assert(f->data.clos->local || m == 0);
+  // collect arguments
+  f = x;
+  for (size_t j = 1; f->tag == EXPR::APP; j++, f = f->data.x[0]) {
+    assert(f->data.x[1]->refc > 0);
+    argv[n-1-j] = f->data.x[1]; f->data.x[1]->refc++;
+  }
+  argv[n-1] = y;
+  // make sure that we do not gc the function before calling it
+  f0->refc++; pure_free_internal(x);
+  // if we're not debugging, call the function using a trampoline to prevent
+  // tail calls from overflowing the stack
+  if (!interp.debugging) return trampoline(interp, f0, fp, n, m, argv);
+  // no TCO, call the function directly
+  if (!interp.checks) { checkall(test); }
+  // first push the function object on the shadow stack so that it's
+  // garbage-collected in case of an exception
+  resize_sstk(interp.sstk, interp.sstk_cap, interp.sstk_sz, n+m+2);
+  interp.sstk[interp.sstk_sz++] = f0;
+  // construct a stack frame for the function call
+  {
+    size_t sz = interp.sstk_sz;
+    resize_sstk(interp.sstk, interp.sstk_cap, sz, n+m+1);
+    pure_expr **sstk = interp.sstk;
+    if (m>0) env = sz+n+1;
+    sstk[sz++] = 0;
+    for (size_t j = 0; j < n; j++)
+      sstk[sz++] = (pure_expr*)argv[j];
+    for (size_t j = 0; j < m; j++) {
+      sstk[sz++] = f0->data.clos->env[j];
+      assert(f0->data.clos->env[j]->refc > 0);
+      f0->data.clos->env[j]->refc++;
+    }
+#if SSTK_DEBUG
+    cerr << "++ stack: (sz = " << sz << ")\n";
+    for (size_t i = 0; i < sz; i++) {
+      pure_expr *x = sstk[i];
+      if (i == interp.sstk_sz) cerr << "** pushed:\n";
+      if (x)
+	cerr << i << ": " << (void*)x << ": " << x << '\n';
+      else
+	cerr << i << ": " << "** frame **\n";
+    }
+#endif
+    interp.sstk_sz = sz;
+  }
+#if DEBUG>1
+  cerr << "pure_apply: calling " << f0 << " -> " << fp << endl;
+  for (size_t j = 0; j < n; j++)
+    cerr << "arg#" << j << " = " << (pure_expr*)argv[j] << " -> " << argv[j] << ", refc = " << ((pure_expr*)argv[j])->refc << '\n';
+  for (size_t j = 0; j < m; j++)
+    cerr << "env#" << j << " = " << f0->data.clos->env[j] << " -> " << (void*)f0->data.clos->env[j] << ", refc = " << f0->data.clos->env[j]->refc << '\n';
+#endif
+  if (m>0)
+    xfuncall(ret, fp, n, env, argv)
+    else
+      funcall(ret, fp, n, argv)
+#if DEBUG>1
+	cerr << "pure_apply: result " << f0 << " = " << ret << " -> " << (void*)ret << ", refc = " << ret->refc << endl;
+#endif
+  /* Temporarily increase the reference count on the result in case it comes
+     from the environment, so that we don't gc it with the function object.
+     We only need to do this if the result isn't a temporary and we actually
+     have an environment. */
+  {
+    bool keep = m>0 && ret->refc>0;
+    if (keep) ret->refc++;
+    // pop the function object from the shadow stack
+    pure_free_internal(interp.sstk[--interp.sstk_sz]);
+    if (keep) pure_unref_internal(ret);
+  }
+  return ret;
 }
 
 extern "C"
@@ -4749,6 +4829,11 @@ void pure_throw(pure_expr* e)
 {
   interpreter::brkflag = 0;
   interpreter& interp = *interpreter::g_interp;
+  // get rid of indirect call frames
+  while (interp.astk && interp.astk->count) {
+    if (interp.astk->e) pure_free_internal(interp.astk->e);
+    interp.pop_aframe();
+  }
   if (!interp.astk) {
     if (e)
       cerr << "throw: unhandled exception '" << e << "'\n";
@@ -4804,7 +4889,7 @@ pure_expr *pure_catch(pure_expr *h, pure_expr *x)
     assert(x->data.clos->local || m == 0);
     pure_expr **env = 0;
     size_t oldsz = interp.sstk_sz;;
-    if (m>0) {
+    if (m>0 || !interp.debugging) {
       // construct a stack frame
       size_t sz = oldsz;
       resize_sstk(interp.sstk, interp.sstk_cap, sz, m+1);
@@ -4915,6 +5000,7 @@ pure_expr *pure_invoke(void *f, pure_expr** _e)
   // Push an exception.
   pure_aframe *ex = interp.push_aframe(interp.sstk_sz);
   // Call the function now. Catch exceptions generated by the runtime.
+  if (!interp.debugging) pure_push_args(0, 0);
   if (setjmp(ex->jmp)) {
     // caught an exception
     size_t sz = ex->sz;

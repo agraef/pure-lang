@@ -94,6 +94,13 @@
 #define LIST_OPT 10
 #endif
 
+/* Activation stack block size. This should be large enough to avoid bunches
+   of smaller allocations. The activation stack will be resized automatically
+   in chunks of this size when necessary. */
+#ifndef ASTACKSZ
+#define ASTACKSZ 0x1000
+#endif
+
 using namespace std;
 
 /* The Pure interpreter. */
@@ -889,6 +896,35 @@ private:
       g_interp = g.interp;
       g_verbose = g.verbose;
       g_interactive = g.interactive;
+    }
+  }
+
+  // Activation stack for handling indirect calls and exceptions.
+
+  pure_aframe *ap, *abp, *aep, *afreep; // TLD
+  list<pure_aframe*> aplist;
+
+  pure_aframe *get_aframe()
+  {
+    pure_aframe *a;
+    if (abp < aep)
+      return abp++;
+    else if ((a = afreep)) {
+      afreep = a->prev; return a;
+    } else if ((a = (pure_aframe*)malloc(ASTACKSZ*sizeof(pure_aframe)))) {
+      abp = ap = a; aep = ap+ASTACKSZ;
+      aplist.push_back(ap);
+      return abp++;
+    } else
+      return 0;
+  }
+
+  void free_aframe(pure_aframe *a)
+  {
+    if (a+1 == abp)
+      abp--;
+    else {
+      a->prev = afreep; afreep = a;
     }
   }
 
