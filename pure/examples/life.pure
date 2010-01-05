@@ -1,0 +1,70 @@
+// Conway's game of life in Pure.
+
+/* Set the following flag to true to wrap around at corners (torus topology).
+   (Note that this eventually wreaks havoc with the glider gun example because
+   the gliders destroy the gun after a while.) */
+
+const wrap = true;
+
+/* Two sample boards. Note that a board is denoted by a list of coordinate
+   pairs of the live cells. The algorithm works directly with this
+   representation which is more efficient than a matrix representation unless
+   the board becomes very crowded. */
+
+let two_gliders =
+  [(6,4),(6,5),(6,6),(5,6),(4,5),
+   (30,4),(31,4),(32,4),(32,5),(31,6)];
+
+let glider_gun =
+  [(11,16),(12,16),(11,17),(12,17),
+   (21,16),(21,17),(21,18),
+   (22,15),(22,19),
+   (23,14),(23,20),(24,14),(24,20),
+   (25,17),
+   (26,19),(26,15),
+   (27,16),(27,17),(27,18),(28,17),
+   (31,16),(32,16),(31,15),(32,15),(31,14),(32,14),
+   (33,17),(33,13),
+   (35,17),(35,13),(35,18),(35,12),
+   (45,15),(46,15),(45,14),(46,14)];
+
+/* Define an order on coordinate pairs so that we can use them as keys in
+   dictionaries and sets. */
+
+(x1::int,y1::int)<(x2::int,y2::int) = x1<x2 || x1==x2 && y1<y2;
+(x1::int,y1::int)>(x2::int,y2::int) = x1>x2 || x1==x2 && y1>y2;
+
+using dict, set;
+
+/* The core of the algorithm which, given an nxm board of cells, computes the
+   next generation according to the following rules: (1) A live cell stays
+   alive if it has 2 or 3 live cells in its neighborhood. (2) A dead cell
+   becomes live if it has exactly 3 live neighbors. */
+
+next (n::int,m::int) b = c when
+  counts = list $ foldl (\d p->foldl count d (nb p)) emptydict b;
+  alive = member (set b);
+  c = [x,y | (x::int,y::int)=>k::int = counts; k==3 || k==2 && alive (x,y)];
+end with
+  // count neighbors
+  count d (x::int,y::int) = update d (x,y) (getval d (x,y)+1);
+  getval d x = if member d x then d!x else 0;
+  // compute the neighborhood of a cell
+  nb (x::int,y::int)
+    = [(u+n) mod n,(v+n) mod m | u::int = x-1..x+1; v::int = y-1..y+1;
+      	     	 	         (u,v) ~= (x,y)] if wrap;
+    = [u,v | u::int = x-1..x+1; v::int = y-1..y+1; u<n; v<m; (u,v) ~= (x,y)];
+end;
+
+/* Text output. This requires a terminal big enough to display the chosen
+   board size. */
+
+using system;
+print (n,m) b = puts $ join "\n"
+      	      	[strcat [if alive (x,y) then "*" else " " | x = 0..n-1] |
+      	      	 y = 0..m-1] when alive = member (set b) end;
+
+life (n,m) b = do (print (n,m)) $ iterate (next (n,m)) b;
+
+// Example:
+if compiling then () else life (50,50) glider_gun;
