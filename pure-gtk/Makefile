@@ -24,7 +24,7 @@ host = $(shell ./config.guess)
 DLL = .so
 shared = -shared
 
-PURE_COPTS=-I.. -L..
+PURE_COPTS=-I. -L.
 
 # Take care of some common systems.
 ifneq "$(findstring -mingw,$(host))" ""
@@ -67,6 +67,8 @@ modules = $(core) $(addons)
 c-modules = $(modules:.pure=.c)
 dlls = $(modules:.pure=$(DLL))
 
+examples = examples/hello examples/uiexample examples/life
+
 # No need to edit below this line, usually.
 
 FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
@@ -79,7 +81,7 @@ examples/*.pure examples/*.glade $(modules) $(c-modules)
 all: $(dlls)
 
 clean:
-	rm -f *$(DLL) *~ *.a *.o
+	rm -f *$(DLL) *~ *.a *.o $(examples)
 
 realclean: clean
 	rm -f $(modules) $(c-modules)
@@ -90,8 +92,10 @@ generate:
 
 # Compile the examples.
 
-examples:
-	(cd examples && pure $(PURE_COPTS) -c -s hello.pure -o hello && pure $(PURE_COPTS) -c -s uiexample.pure -o uiexample)
+examples: $(examples)
+
+examples/%: examples/%.pure
+	pure $(PURE_COPTS) -c -s $< -o $@
 
 # Install targets.
 
