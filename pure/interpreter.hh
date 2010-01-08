@@ -772,6 +772,7 @@ private:
   { return f == symtab.quote_sym().f || f == symtab.quoteop_sym().f; }
   expr wrap_expr(pure_expr *x);
   pure_expr *const_value(expr x, bool quote = false);
+  pure_expr *const_value_invoke(expr x, pure_expr*& e, bool quote = false);
   pure_expr *const_matrix_value(expr x, bool quote = false);
   pure_expr *const_app_value(expr x);
   pure_expr *doeval(expr x, pure_expr*& e, bool keep = false);

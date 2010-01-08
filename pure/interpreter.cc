@@ -6487,6 +6487,30 @@ expr interpreter::wrap_expr(pure_expr *x)
   return expr(EXPR::WRAP, v);
 }
 
+pure_expr *interpreter::const_value_invoke(expr x, pure_expr*& e, bool quote)
+{
+  // Wrapper around const_value which catches possible exceptions while
+  // evaluating lists and tuples.
+  pure_aframe *ex = push_aframe(sstk_sz);
+  if (setjmp(ex->jmp)) {
+    // caught an exception
+    size_t sz = ex->sz;
+    e = ex->e;
+    pop_aframe();
+    if (e) pure_new(e);
+    for (size_t i = sstk_sz; i-- > sz; )
+      if (sstk[i] && sstk[i]->refc > 0)
+	pure_free(sstk[i]);
+    sstk_sz = sz;
+    return 0;
+  } else {
+    pure_expr *res = const_value(x);
+    // normal return
+    pop_aframe();
+    return res;
+  }
+}
+
 pure_expr *interpreter::const_value(expr x, bool quote)
 {
   switch (x.tag()) {
@@ -6664,9 +6688,9 @@ pure_expr *interpreter::doeval(expr x, pure_expr*& e, bool keep)
     // First check whether the value is actually a constant, then we can skip
     // the compilation step. (We only do this if we're not batch-compiling,
     // since in a batch compilation we need the generated code.)
-    res = const_value(x);
+    res = const_value_invoke(x, e);
     if (interactive && stats) clocks = clock()-t0;
-    if (res) return res;
+    if (res || e) return res;
   }
   // Create an anonymous function to call in order to evaluate the target
   // expression.
@@ -6733,7 +6757,11 @@ pure_expr *interpreter::dodefn(env vars, veqnl eqns, expr lhs, expr rhs,
     // First check whether the value is actually a constant, then we can skip
     // the compilation step. (We only do this if we're not batch-compiling,
     // since in a batch compilation we need the generated code.)
-    res = const_value(rhs);
+    res = const_value_invoke(rhs, e);
+    if (e) {
+      if (interactive && stats) clocks = clock()-t0;
+      return res;
+    }
     if (res) {
       matcher m(rule(lhs, rhs));
       if (m.match(res)) {
