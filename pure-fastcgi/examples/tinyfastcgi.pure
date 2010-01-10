@@ -1,0 +1,26 @@
+#!/usr/local/bin/pure -x
+
+/* You might have to adjust the shebang above accordingly, so that the shell
+   finds your Pure interpreter. Then throw this script into your fastcgi
+   directory and fire up your browser to run it. (If you're worried about
+   startup times, just compile the script to an executable with 'pure -c -s
+   tinyfastcgi.pure -o tinyfastcgi' beforehand.) */
+
+using fastcgi;
+using namespace fastcgi;
+
+extern char *getenv(char*);
+
+check s::string = s;
+check _ = "(unknown)" otherwise;
+
+main count = main count when
+  count = count+1;
+  printf "Content-type: text/html\n\n\
+<title>FastCGI Hello! (Pure, fcgi_stdio library)</title>\n\
+<h1>FastCGI Hello! (Pure, fcgi_stdio library)</h1>\n\
+Request number %d running on host <i>%s</i>\n"
+  (count,check (getenv "SERVER_NAME"));
+end if accept >= 0;
+
+if compiling then () else main 0;

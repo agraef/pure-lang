@@ -1,0 +1,140 @@
+
+/* fastcgi interface, cf. http://www.fastcgi.com/. */
+
+using "lib:fastcgi";
+namespace fastcgi;
+
+/* FastCGI interface routines. */
+
+extern int FCGI_Accept() = accept;
+extern void FCGI_Finish() = finish;
+extern int FCGI_StartFilterData() = start_filter_data;
+extern void FCGI_SetExitStatus(int status) = set_exit_status;
+
+/* stdio variables and routines which are overwritten by fastcgi. You must use
+   these instead of the stdio routines supplied in the system module in order
+   to obtain input from and supply output to the fastcgi server. NOTE: The
+   following are not currently implemented in system.pure, so we don't provide
+   them here either: fileno, fdopen, freopen, tmpfile, setvbuf, setbuf. Also,
+   fastcgi currently doesn't implement the scanf family, so it is missing as
+   well. */
+
+public stdin stdout stderr;
+// Initialize the stdin, stdout and stderr variables.
+private extern void fastcgi_defs(); fastcgi_defs;
+
+extern void FCGI_perror(char*) = perror;
+
+private extern FCGI_FILE* FCGI_fopen(char* name, char* mode);
+private extern FCGI_FILE* FCGI_popen(char* cmd, char* mode);
+private extern int FCGI_fclose(FCGI_FILE* fp), int FCGI_pclose(FCGI_FILE* fp);
+private extern char* FCGI_fgets(void* buf, int size, FCGI_FILE* fp);
+
+extern int FCGI_fflush(FCGI_FILE* fp) = fflush;
+extern int FCGI_fputs(char* s, FCGI_FILE* fp) = fputs, int FCGI_puts(char* s) = puts;
+extern size_t FCGI_fread(void* ptr, size_t size, size_t nmemb, FCGI_FILE* fp) = fread;
+extern size_t FCGI_fwrite(void* ptr, size_t size, size_t nmemb, FCGI_FILE* fp) = fwrite;
+extern void FCGI_clearerr(FCGI_FILE* fp) = clearerr;
+extern int FCGI_feof(FCGI_FILE* fp) = feof, int FCGI_ferror(FCGI_FILE* fp) = ferror;
+
+extern int FCGI_fseek(FCGI_FILE* fp, long offset, int whence) = fseek;
+extern long FCGI_ftell(FCGI_FILE *fp) = ftell;
+extern void FCGI_rewind(FCGI_FILE *fp) = rewind;
+
+public fopen popen fclose pclose fget fgets gets;
+
+fopen name::string mode::string = sentry FCGI_fclose fp if ~null fp
+when fp = FCGI_fopen name mode end;
+
+popen name::string mode::string = sentry FCGI_pclose fp if ~null fp
+when fp = FCGI_popen name mode end;
+
+fclose fp::pointer = clear_sentry fp $$ FCGI_fclose fp;
+pclose fp::pointer = clear_sentry fp $$ FCGI_pclose fp;
+
+fgets f::pointer = read_a_line f buf "" when buf = malloc 1024 end
+with read_a_line f buf t = check s when s = FCGI_fgets buf 1024 f end
+  with check s::string = return (t+s) if done s;
+		       = read_a_line f buf (t+s) otherwise;
+       check s         = return s if null t;
+                       = return t otherwise;
+       done s::string  = feof f || ferror f || ~null s && last s == "\n";
+       return x        = free buf $$ x;
+  end;
+end;
+
+gets = if null s then s else if last s == "\n" then init s else s
+when s = fgets stdin end;
+
+fget f::pointer = read_a_file f buf "" when buf = malloc 0x10000 end
+with read_a_file f buf t = check s when s = FCGI_fgets buf 0x10000 f end
+  with check s::string = return (t+s) if feof f || ferror f;
+		       = read_a_file f buf (t+s) otherwise;
+       check s         = return s if null t;
+                       = return t otherwise;
+       return x        = free buf $$ x;
+  end;
+end;
+
+private extern int fastcgi_fprintf(FCGI_FILE *fp, char *format);
+private extern int fastcgi_fprintf_int(FCGI_FILE *fp, char *format, int x);
+private extern int fastcgi_fprintf_double(FCGI_FILE *fp, char *format, double x);
+private extern int fastcgi_fprintf_string(FCGI_FILE *fp, char *format, char *x);
+private extern int fastcgi_fprintf_pointer(FCGI_FILE *fp, char *format, void *x);
+
+public printf fprintf;
+private printf_split_format printf_format_spec printf_format_str;
+
+printf format::string args = fprintf stdout format args;
+
+using system; // needed for regex
+
+fprintf fp::pointer format::string args = count when
+  args = if tuplep args then list args else [args];
+  count, _ = catch error_handler
+    (foldl (do_fprintf fp) (0,args) $ printf_split_format format);
+end with
+  error_handler (printf_error res::int) = res, [];
+  error_handler x = throw x otherwise;
+  do_fprintf fp (count,arg:args) (printf_format_spec t s) = count, args
+  when
+    res = case t, arg of
+      "c", x::int | "c", x::bigint |
+      "d", x::int | "d", x::bigint = fastcgi_fprintf_int fp s x;
+      "g", x::double = fastcgi_fprintf_double fp s x;
+      "s", x::string = fastcgi_fprintf_string fp s x;
+      "p", x::string | "p", x::pointer = fastcgi_fprintf_pointer fp s x;
+      _ = throw (printf_value_error s arg);
+    end;
+    count = if res>=0 then count+res else throw (printf_error res);
+  end;
+  do_fprintf fp (count,args) (printf_format_str s) = count, args
+  when
+    res = fastcgi_fprintf fp s;
+    count = if res>=0 then count+res else throw (printf_error res);
+  end;
+  do_fprintf fp (count,[]) (printf_format_spec t s) =
+    throw (printf_value_error s ());
+  do_fprintf fp (count,_) _ = throw (this_cant_happen count);
+end;
+
+printf_split_format format = regexg analyze
+  "(%[-#0 ]?[0-9]*([.][0-9]*)?[cdiouxXeEfgGsp])|(%)|([^%]|%%)+"
+  REG_EXTENDED format 0
+with
+  analyze info =
+    if p>=0 then // format specifier
+      printf_format_spec (format_type (last u)) u
+    else if q>=0 then // error
+      throw (printf_format_error q)
+    else printf_format_str u // literal
+  when
+    _, u = reg 0 info; // matched portion of the format string
+    p, _ = reg 1 info; // p>=0 indicates valid format specifier
+    q, _ = reg 3 info; // q>=0 indicates unrecognized format specifier
+  end;
+  format_type x = 
+    if index "diouxX" x >= 0 then "d"
+    else if index "eEfgG" x >= 0 then "g"
+    else x;
+end;
