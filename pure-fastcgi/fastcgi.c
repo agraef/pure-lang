@@ -2,6 +2,11 @@
 #include <pure/runtime.h>
 #include <fastcgi/fcgi_stdio.h>
 
+extern void *fastcgi_to_file(FILE *fp)
+{
+  return FCGI_ToFILE(fp);
+}
+
 extern void fastcgi_defs(void)
 {
   pure_let(pure_sym("fastcgi::stdin"), pure_pointer(stdin));
