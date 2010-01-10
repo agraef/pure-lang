@@ -26,8 +26,6 @@ shared = -shared
 ifneq "$(findstring -mingw,$(host))" ""
 # Windows
 DLL = .dll
-# This is needed to link with GMP.
-LDFLAGS = -Wl,--enable-auto-import
 endif
 ifneq "$(findstring -darwin,$(host))" ""
 # OSX (untested)
@@ -55,7 +53,7 @@ examples/*.pure fastcgi.c fastcgi.pure
 all: fastcgi$(DLL)
 
 fastcgi$(DLL): fastcgi.c
-	$(CC) $(shared) -o $@ $< $(FLAGS) -lfcgi -lpure -lgmp $(LIBS)
+	$(CC) $(shared) -o $@ $< $(FLAGS) -lfcgi -lpure $(LIBS)
 
 clean:
 	rm -f *$(DLL) *~ *.a *.o *.tex *.pdf *.aux *.log *.out
