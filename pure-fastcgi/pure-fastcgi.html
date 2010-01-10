@@ -299,8 +299,8 @@ ul.auto-toc {
 <p>This module lets you write <a class="reference external" href="http://www.fastcgi.com">FastCGI</a> scripts with Pure, to be run by web
 servers like <a class="reference external" href="http://www.apache.org/">Apache</a>. Compared to normal CGI scripts, this has the advantage
 that the script keeps running and may process as many requests from the web
-server as you like. The required changes to existing ordinary CGI scripts are
-minimal.</p>
+server as you like. Most ordinary CGI scripts can be converted to use FastCGI
+with some minimal changes.</p>
 <div class="section" id="copying">
 <h1>Copying</h1>
 <p>Copyright (c) 2009 by Albert Graef. pure-fastcgi is distributed under a
@@ -321,11 +321,12 @@ your system then you'll have to edit the Makefile accordingly.</p>
 </div>
 <div class="section" id="usage">
 <h1>Usage</h1>
-<p>pure-fastcgi offers the <tt class="docutils literal"><span class="pre">accept</span></tt> function to accept a request from the
-FastCGI server. It also overrides a number of standard I/O functions so that
-they talk to the server instead. These routines are all in the <tt class="docutils literal"><span class="pre">fastcgi</span></tt>
-namespace. In your Pure script, you can set up a simple loop to process
-requests as follows:</p>
+<p>pure-fastcgi provides the <tt class="docutils literal"><span class="pre">accept</span></tt> function with which you tell the FastCGI
+server that your script is ready to accept another request from the FastCGI
+server. It also overrides a number of standard I/O functions so that they talk
+to the server instead. These routines are all in the <tt class="docutils literal"><span class="pre">fastcgi</span></tt> namespace. In
+your Pure script, you can set up a simple loop to process requests as
+follows:</p>
 <pre class="literal-block">
 #!/usr/local/bin/pure -x
 
@@ -345,6 +346,9 @@ end if accept &gt;= 0;
 
 main 0;
 </pre>
+<p>This script keeps running until <tt class="docutils literal"><span class="pre">accept</span></tt> returns <tt class="docutils literal"><span class="pre">-1</span></tt> to indicate that the
+script should exit. (Each call to <tt class="docutils literal"><span class="pre">accept</span></tt> blocks until either a request is
+available or the FastCGI server detects an error or termination condition.)</p>
 <p>A number of other routines are provided to deal with data filters, finish a
 request and set an exit status for a request, see fastcgi.pure. These
 correspond to the corresponding operations provided by the FastCGI library,
@@ -355,7 +359,7 @@ and <tt class="docutils literal"><span class="pre">set_exit_status</span></tt>, 
 namespace.</p>
 <p>To run your FastCGI scripts in a browser, your web server must have the
 FastCGI module loaded and must also be set up to execute the scripts. E.g.,
-when using <a class="reference external" href="http://www.apache.org/">Apache</a>, the following configuration file entry will set up a
+when using Apache, the following configuration file entry will set up a
 directory for FastCGI scripts:</p>
 <pre class="literal-block">
 ScriptAlias /fastcgi-bin/ &quot;/srv/www/fastcgi-bin/&quot;
