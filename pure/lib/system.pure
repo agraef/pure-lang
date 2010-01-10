@@ -390,11 +390,32 @@ spawnve mode::int prog::string argv envp =
      a null pointer) in case of error, so that you can provide any desired
      error handling simply by adding suitable equations.
 
+   .. _fdopen:
+
+   ``fdopen fd mode``
+     Associates a file object with a given existing file descriptor. Otherwise
+     works like ``fopen``, so the resulting file is closed automatically when
+     it's garbage-collected.
+
+   .. _freopen:
+
+   ``freopen path mode fp``
+     Reopens a file object. The existing file object is closed. Otherwise
+     works like ``fopen``, so the resulting file is closed automatically when
+     it's garbage-collected.
+
    .. _fclose:
    .. _pclose:
 
    ``fclose fp``, ``pclose fp``
      Close a file or a pipe.
+
+   .. _tmpfile:
+
+   ``tmpfile``
+     Creates a unique temporary file (opened in ``"w+b"`` mode) which gets
+     deleted automatically when it is closed or the file object gets
+     garbage-collected.
 
    .. _feof:
    .. _ferror:
@@ -402,6 +423,11 @@ spawnve mode::int prog::string argv envp =
 
    ``feof fp``, ``ferror fp``, ``clearerr fp``
      Check the end-of-file and error bits. ``clearerr`` clears the error bit.
+
+   .. _fileno:
+
+   ``fileno fp``
+     Returns the file descriptor associated with the given file.
 
    .. _fflush:
 
@@ -446,11 +472,35 @@ spawnve mode::int prog::string argv envp =
      ``fseek fp 0 SEEK_SET`` (except that the latter also returns a result
      code). See the corresponding manual pages for details.
 
+   .. _setbuf:
+   .. _setvbuf:
+
+   ``setbuf fp buf``, ``setvbuf fp buf mode size``
+     Set the buffering of a file object, given as the first argument. The
+     second argument specifies the buffer, which must be a pointer to suitably
+     allocated memory or ``NULL``. The ``mode`` argument of ``setvbuf``
+     specifies the buffering mode, which may be one of the predefined
+     constants ``_IONBF``, ``_IOLBF`` and ``_IOFBF`` denoting no buffering,
+     line buffering and full (a.k.a. block) buffering, respectively; the
+     ``size`` argument denotes the buffer size.
+
+     For ``setbuf``, the given buffer must be able to hold ``BUFSIZ``
+     characters, where ``BUFSIZ`` is a constant defined by this module.
+     ``setbuf fp buf`` is actually equivalent to the following call (except
+     that ``setvbuf`` also returns an integer return value)::
+
+       setvbuf fp bif (if null buf then _IONBF else _IOFBF) BUFSIZ
+
+     Please see the setbuf(3) manual page for details.
+
    Examples::
 
      > puts "Hello, world!";
      Hello, world!
      14
+
+     > map fileno [stdin,stdout,stderr];
+     [0,1,2]
 
      > let fp = fopen "/etc/passwd" "r";
      > fgets fp;
@@ -474,29 +524,42 @@ spawnve mode::int prog::string argv envp =
 namespace __C;
 extern FILE* fopen(char* name, char* mode);
 extern FILE* popen(char* cmd, char* mode);
+extern FILE* fdopen(int fd, char* mode);
+extern FILE* freopen(char* name, char* mode, FILE* fp);
 extern int fclose(FILE* fp), int pclose(FILE* fp);
 extern char* fgets(void* buf, int size, FILE* fp);
 namespace;
 
+extern FILE* tmpfile();
 extern int fflush(FILE* fp);
 extern int fputs(char* s, FILE* fp), int puts(char* s);
 extern size_t fread(void* ptr, size_t size, size_t nmemb, FILE* fp);
 extern size_t fwrite(void* ptr, size_t size, size_t nmemb, FILE* fp);
 extern void clearerr(FILE* fp);
 extern int feof(FILE* fp), int ferror(FILE* fp);
+extern int fileno(FILE* fp);
 
 extern int fseek(FILE* fp, long offset, int whence);
 extern long ftell(FILE *fp);
 extern void rewind(FILE *fp);
 
-/* Pure wrappers for fopen/popen and fclose/pclose which take care of closing
-   a file object automagically when it's garbage-collected. Please note that
-   these fail (instead of returning a null pointer) in case of error, so that
-   you can provide any desired error handling simply by adding suitable
-   equations. */
+extern void setbuf(FILE* fp, void* buf);
+extern int setvbuf(FILE* fp, void* buf, int mode, size_t size);
+
+/* Pure wrappers for fopen/fdopen/freopen/popen and fclose/pclose which take
+   care of closing a file object automagically when it's garbage-collected.
+   Please note that these fail (instead of returning a null pointer) in case
+   of error, so that you can provide any desired error handling simply by
+   adding suitable equations. */
 
 fopen name::string mode::string = sentry __C::fclose fp if ~null fp
 when fp = __C::fopen name mode end;
+
+fdopen fd::int mode::string = sentry __C::fclose fp if ~null fp
+when fp = __C::fdopen fd mode end;
+
+freopen name::string mode::string fp::pointer = sentry __C::fclose fp
+if ~null fp when clear_sentry fp; fp = __C::freopen name mode fp end;
 
 popen name::string mode::string = sentry __C::pclose fp if ~null fp
 when fp = __C::popen name mode end;

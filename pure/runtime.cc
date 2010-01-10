@@ -11396,6 +11396,18 @@ void pure_sys_vars(void)
 #ifdef SEEK_END
   cdf(interp, "SEEK_END",	pure_int(SEEK_END));
 #endif
+#ifdef BUFSIZ
+  cdf(interp, "BUFSIZ",		pure_int(BUFSIZ));
+#endif
+#ifdef _IONBF
+  cdf(interp, "_IONBF",		pure_int(_IONBF));
+#endif
+#ifdef _IOLBF
+  cdf(interp, "_IOLBF",		pure_int(_IOLBF));
+#endif
+#ifdef _IOFBF
+  cdf(interp, "_IOFBF",		pure_int(_IOFBF));
+#endif
   // file type bits
 #ifdef S_IFMT
   cdf(interp, "S_IFMT",		pure_int(S_IFMT));
