@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>Pure Library Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2010-01-03" />
+<meta name="date" content="2010-01-10" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-01-03</td></tr>
+<td>2010-01-10</td></tr>
 </tbody>
 </table>
 <!-- We use docutils to produce the documentation. Docstrings are extracted -->
@@ -3186,13 +3186,35 @@ automagically when it's garbage-collected, and fail (instead of returning
 a null pointer) in case of error, so that you can provide any desired
 error handling simply by adding suitable equations.</dd>
 </dl>
+<a name="fdopen"><dl class="docutils" id="fdopen">
+<dt><tt class="docutils literal"><span class="pre">fdopen</span> <span class="pre">fd</span> <span class="pre">mode</span></tt></dt>
+<dd>Associates a file object with a given existing file descriptor. Otherwise
+works like <tt class="docutils literal"><span class="pre">fopen</span></tt>, so the resulting file is closed automatically when
+it's garbage-collected.</dd>
+</dl>
+<a name="freopen"><dl class="docutils" id="freopen">
+<dt><tt class="docutils literal"><span class="pre">freopen</span> <span class="pre">path</span> <span class="pre">mode</span> <span class="pre">fp</span></tt></dt>
+<dd>Reopens a file object. The existing file object is closed. Otherwise
+works like <tt class="docutils literal"><span class="pre">fopen</span></tt>, so the resulting file is closed automatically when
+it's garbage-collected.</dd>
+</dl>
 <a name="fclose"><a name="pclose"><dl class="docutils" id="pclose">
 <span id="fclose"></span><dt><tt class="docutils literal"><span class="pre">fclose</span> <span class="pre">fp</span></tt>, <tt class="docutils literal"><span class="pre">pclose</span> <span class="pre">fp</span></tt></dt>
 <dd>Close a file or a pipe.</dd>
 </dl>
+<a name="tmpfile"><dl class="docutils" id="tmpfile">
+<dt><tt class="docutils literal"><span class="pre">tmpfile</span></tt></dt>
+<dd>Creates a unique temporary file (opened in <tt class="docutils literal"><span class="pre">&quot;w+b&quot;</span></tt> mode) which gets
+deleted automatically when it is closed or the file object gets
+garbage-collected.</dd>
+</dl>
 <a name="feof"><a name="ferror"><a name="clearerr"><dl class="docutils" id="clearerr">
 <span id="ferror"></span><span id="feof"></span><dt><tt class="docutils literal"><span class="pre">feof</span> <span class="pre">fp</span></tt>, <tt class="docutils literal"><span class="pre">ferror</span> <span class="pre">fp</span></tt>, <tt class="docutils literal"><span class="pre">clearerr</span> <span class="pre">fp</span></tt></dt>
 <dd>Check the end-of-file and error bits. <tt class="docutils literal"><span class="pre">clearerr</span></tt> clears the error bit.</dd>
+</dl>
+<a name="fileno"><dl class="docutils" id="fileno">
+<dt><tt class="docutils literal"><span class="pre">fileno</span> <span class="pre">fp</span></tt></dt>
+<dd>Returns the file descriptor associated with the given file.</dd>
 </dl>
 <a name="fflush"><dl class="docutils" id="fflush">
 <dt><tt class="docutils literal"><span class="pre">fflush</span> <span class="pre">fp</span></tt></dt>
@@ -3226,11 +3248,33 @@ See the corresponding manual pages for details.</dd>
 <tt class="docutils literal"><span class="pre">fseek</span> <span class="pre">fp</span> <span class="pre">0</span> <span class="pre">SEEK_SET</span></tt> (except that the latter also returns a result
 code). See the corresponding manual pages for details.</dd>
 </dl>
+<a name="setbuf"><a name="setvbuf"><dl class="docutils" id="setvbuf">
+<span id="setbuf"></span><dt><tt class="docutils literal"><span class="pre">setbuf</span> <span class="pre">fp</span> <span class="pre">buf</span></tt>, <tt class="docutils literal"><span class="pre">setvbuf</span> <span class="pre">fp</span> <span class="pre">buf</span> <span class="pre">mode</span> <span class="pre">size</span></tt></dt>
+<dd><p class="first">Set the buffering of a file object, given as the first argument. The
+second argument specifies the buffer, which must be a pointer to suitably
+allocated memory or <tt class="docutils literal"><span class="pre">NULL</span></tt>. The <tt class="docutils literal"><span class="pre">mode</span></tt> argument of <tt class="docutils literal"><span class="pre">setvbuf</span></tt>
+specifies the buffering mode, which may be one of the predefined
+constants <tt class="docutils literal"><span class="pre">_IONBF</span></tt>, <tt class="docutils literal"><span class="pre">_IOLBF</span></tt> and <tt class="docutils literal"><span class="pre">_IOFBF</span></tt> denoting no buffering,
+line buffering and full (a.k.a. block) buffering, respectively; the
+<tt class="docutils literal"><span class="pre">size</span></tt> argument denotes the buffer size.</p>
+<p>For <tt class="docutils literal"><span class="pre">setbuf</span></tt>, the given buffer must be able to hold <tt class="docutils literal"><span class="pre">BUFSIZ</span></tt>
+characters, where <tt class="docutils literal"><span class="pre">BUFSIZ</span></tt> is a constant defined by this module.
+<tt class="docutils literal"><span class="pre">setbuf</span> <span class="pre">fp</span> <span class="pre">buf</span></tt> is actually equivalent to the following call (except
+that <tt class="docutils literal"><span class="pre">setvbuf</span></tt> also returns an integer return value):</p>
+<pre class="literal-block">
+setvbuf fp buf (if null buf then _IONBF else _IOFBF) BUFSIZ
+</pre>
+<p class="last">Please see the setbuf(3) manual page for details.</p>
+</dd>
+</dl>
 <p>Examples:</p>
 <pre class="literal-block">
 &gt; puts &quot;Hello, world!&quot;;
 Hello, world!
 14
+
+&gt; map fileno [stdin,stdout,stderr];
+[0,1,2]
 
 &gt; let fp = fopen &quot;/etc/passwd&quot; &quot;r&quot;;
 &gt; fgets fp;
@@ -3894,11 +3938,13 @@ copied to the result lists as is.</p>
 <div class="line"><a class="reference internal" href="#failed-match">failed_match</a></div>
 <div class="line"><a class="reference internal" href="#false">false</a></div>
 <div class="line"><a class="reference internal" href="#fclose">fclose</a></div>
+<div class="line"><a class="reference internal" href="#fdopen">fdopen</a></div>
 <div class="line"><a class="reference internal" href="#feof">feof</a></div>
 <div class="line"><a class="reference internal" href="#ferror">ferror</a></div>
 <div class="line"><a class="reference internal" href="#fflush">fflush</a></div>
 <div class="line"><a class="reference internal" href="#fget">fget</a></div>
 <div class="line"><a class="reference internal" href="#fgets">fgets</a></div>
+<div class="line"><a class="reference internal" href="#fileno">fileno</a></div>
 <div class="line"><a class="reference internal" href="#filter">filter</a></div>
 <div class="line"><a class="reference internal" href="#first-array">first (array)</a></div>
 <div class="line"><a class="reference internal" href="#first-bag">first (bag)</a></div>
@@ -3923,6 +3969,7 @@ copied to the result lists as is.</p>
 <div class="line"><a class="reference internal" href="#frac">frac</a></div>
 <div class="line"><a class="reference internal" href="#fread">fread</a></div>
 <div class="line"><a class="reference internal" href="#free">free</a></div>
+<div class="line"><a class="reference internal" href="#freopen">freopen</a></div>
 <div class="line"><a class="reference internal" href="#fscanf">fscanf</a></div>
 <div class="line"><a class="reference internal" href="#fseek">fseek</a></div>
 <div class="line"><a class="reference internal" href="#fstat">fstat</a></div>
@@ -4160,8 +4207,10 @@ copied to the result lists as is.</p>
 <div class="line"><a class="reference internal" href="#sentry">sentry</a></div>
 <div class="line"><a class="reference internal" href="#set">set</a></div>
 <div class="line"><a class="reference internal" href="#set-errno">set_errno</a></div>
+<div class="line"><a class="reference internal" href="#setbuf">setbuf</a></div>
 <div class="line"><a class="reference internal" href="#setlocale">setlocale</a></div>
 <div class="line"><a class="reference internal" href="#setp">setp</a></div>
+<div class="line"><a class="reference internal" href="#setvbuf">setvbuf</a></div>
 <div class="line"><a class="reference internal" href="#sgn">sgn</a></div>
 <div class="line"><a class="reference internal" href="#short-matrix">short_matrix</a></div>
 <div class="line"><a class="reference internal" href="#short-pointer">short_pointer</a></div>
@@ -4215,6 +4264,7 @@ copied to the result lists as is.</p>
 <div class="line"><a class="reference internal" href="#throw">throw</a></div>
 <div class="line"><a class="reference internal" href="#thunkp">thunkp</a></div>
 <div class="line"><a class="reference internal" href="#time">time</a></div>
+<div class="line"><a class="reference internal" href="#tmpfile">tmpfile</a></div>
 <div class="line"><a class="reference internal" href="#transpose-matrix">transpose (matrix)</a></div>
 <div class="line"><a class="reference internal" href="#trap">trap</a></div>
 <div class="line"><a class="reference internal" href="#true">true</a></div>

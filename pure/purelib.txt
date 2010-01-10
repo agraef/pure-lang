@@ -5332,6 +5332,28 @@ providing the raw C library routines.
 
 .. raw:: html
 
+   <a name="fdopen">
+
+.. _fdopen:
+
+``fdopen fd mode``
+  Associates a file object with a given existing file descriptor. Otherwise
+  works like ``fopen``, so the resulting file is closed automatically when
+  it's garbage-collected.
+
+.. raw:: html
+
+   <a name="freopen">
+
+.. _freopen:
+
+``freopen path mode fp``
+  Reopens a file object. The existing file object is closed. Otherwise
+  works like ``fopen``, so the resulting file is closed automatically when
+  it's garbage-collected.
+
+.. raw:: html
+
    <a name="fclose">
 
 .. raw:: html
@@ -5343,6 +5365,17 @@ providing the raw C library routines.
 
 ``fclose fp``, ``pclose fp``
   Close a file or a pipe.
+
+.. raw:: html
+
+   <a name="tmpfile">
+
+.. _tmpfile:
+
+``tmpfile``
+  Creates a unique temporary file (opened in ``"w+b"`` mode) which gets
+  deleted automatically when it is closed or the file object gets
+  garbage-collected.
 
 .. raw:: html
 
@@ -5362,6 +5395,15 @@ providing the raw C library routines.
 
 ``feof fp``, ``ferror fp``, ``clearerr fp``
   Check the end-of-file and error bits. ``clearerr`` clears the error bit.
+
+.. raw:: html
+
+   <a name="fileno">
+
+.. _fileno:
+
+``fileno fp``
+  Returns the file descriptor associated with the given file.
 
 .. raw:: html
 
@@ -5450,11 +5492,43 @@ providing the raw C library routines.
   ``fseek fp 0 SEEK_SET`` (except that the latter also returns a result
   code). See the corresponding manual pages for details.
 
+.. raw:: html
+
+   <a name="setbuf">
+
+.. raw:: html
+
+   <a name="setvbuf">
+
+.. _setbuf:
+.. _setvbuf:
+
+``setbuf fp buf``, ``setvbuf fp buf mode size``
+  Set the buffering of a file object, given as the first argument. The
+  second argument specifies the buffer, which must be a pointer to suitably
+  allocated memory or ``NULL``. The ``mode`` argument of ``setvbuf``
+  specifies the buffering mode, which may be one of the predefined
+  constants ``_IONBF``, ``_IOLBF`` and ``_IOFBF`` denoting no buffering,
+  line buffering and full (a.k.a. block) buffering, respectively; the
+  ``size`` argument denotes the buffer size.
+
+  For ``setbuf``, the given buffer must be able to hold ``BUFSIZ``
+  characters, where ``BUFSIZ`` is a constant defined by this module.
+  ``setbuf fp buf`` is actually equivalent to the following call (except
+  that ``setvbuf`` also returns an integer return value)::
+
+    setvbuf fp buf (if null buf then _IONBF else _IOFBF) BUFSIZ
+
+  Please see the setbuf(3) manual page for details.
+
 Examples::
 
   > puts "Hello, world!";
   Hello, world!
   14
+
+  > map fileno [stdin,stdout,stderr];
+  [0,1,2]
 
   > let fp = fopen "/etc/passwd" "r";
   > fgets fp;
@@ -6254,11 +6328,13 @@ Index
 | `failed_match`_
 | `false`_
 | `fclose`_
+| `fdopen`_
 | `feof`_
 | `ferror`_
 | `fflush`_
 | `fget`_
 | `fgets`_
+| `fileno`_
 | `filter`_
 | `first (array)`_
 | `first (bag)`_
@@ -6283,6 +6359,7 @@ Index
 | `frac`_
 | `fread`_
 | `free`_
+| `freopen`_
 | `fscanf`_
 | `fseek`_
 | `fstat`_
@@ -6508,8 +6585,10 @@ Index
 | `sentry`_
 | `set`_
 | `set_errno`_
+| `setbuf`_
 | `setlocale`_
 | `setp`_
+| `setvbuf`_
 | `sgn`_
 | `short_matrix`_
 | `short_pointer`_
@@ -6562,6 +6641,7 @@ Index
 | `throw`_
 | `thunkp`_
 | `time`_
+| `tmpfile`_
 | `transpose (matrix)`_
 | `trap`_
 | `true`_
