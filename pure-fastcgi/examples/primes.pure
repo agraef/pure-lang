@@ -1,0 +1,44 @@
+#!/usr/local/bin/pure -x
+
+/* The sieve of Erathosthenes. */
+
+// Update an int vector in-place (no checks!).
+infix 1000 := ;
+def x!i := a = put_int (pointer x+i*SIZEOF_INT) a;
+
+// The sieve. Returns the number of primes up to n.
+sieve n = foldl sieve 0 (0..n-1) $$ filter ((~=)0) x
+with
+  sieve count i = count+1 when
+                    p = i+1; do (\j -> x!j := 0) (i+p:i+2*p..n-1);
+                  end if x!i; // x!i is prime
+                = count otherwise;
+end when
+  x = imatrix (1..n); x!0 := 0;
+end;
+
+/* FastCGI script. This takes the upper limit n in the query string and prints
+   the primes up to n. The resulting sieve is cached and will only be
+   recomputed when a larger sieve is needed. */
+
+using fastcgi;
+using namespace fastcgi;
+
+extern char *getenv(char*);
+
+const title = "FastCGI Example: Sieve of Eratosthenes";
+
+main n p = main n p when
+  puts "Content-type: text/html\n";
+  printf "<title>%s</title>\n<h1>%s</h1>\n" (title, title);
+  m = val (getenv "QUERY_STRING");
+  ok = intp m && m>=0 && m<=1000000;
+  n, p = if ok && m>n then m, sieve m else n, p;
+  if ok then
+    printf "<p>Primes up to %d:</p>%s.\n"
+      (m,join ", " [str x | x = takewhile (<=m) p])
+  else
+    puts "<b>Usage:</b> primes.pure?<i>n</i> where <i>n</i> is a number between 0 and 1000000.";
+end if accept >= 0;
+
+if compiling then () else main 0 [];
