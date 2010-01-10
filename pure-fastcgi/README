@@ -10,7 +10,7 @@ This module lets you write FastCGI_ scripts with Pure, to be run by web
 servers like Apache_. Compared to normal CGI scripts, this has the advantage
 that the script keeps running and may process as many requests from the web
 server as you like. Most ordinary CGI scripts can be converted to use FastCGI
-with some minimal changes.
+with minimal changes.
 
 .. _FastCGI: http://www.fastcgi.com
 .. _Apache: http://www.apache.org/
@@ -41,11 +41,10 @@ Usage
 =====
 
 pure-fastcgi provides the ``accept`` function with which you tell the FastCGI
-server that your script is ready to accept another request from the FastCGI
-server. It also overrides a number of standard I/O functions so that they talk
-to the server instead. These routines are all in the ``fastcgi`` namespace. In
-your Pure script, you can set up a simple loop to process requests as
-follows::
+server that your script is ready to accept another request. It also overrides
+a number of standard I/O functions so that they talk to the server instead.
+These routines are all in the ``fastcgi`` namespace. In your Pure script, you
+can set up a simple loop to process requests as follows::
 
   #!/usr/local/bin/pure -x
 
@@ -65,18 +64,31 @@ follows::
 
   main 0;
 
+(You might have to adjust the "shebang" in the first line above, so that the
+shell finds the Pure interpreter. Also, remember to make the script executable.
+If you're worried about startup times, or if your operating system doesn't
+support shebangs, then you can also use the Pure interpreter to compile the
+script to a native executable instead.)
+
 This script keeps running until ``accept`` returns ``-1`` to indicate that the
-script should exit. (Each call to ``accept`` blocks until either a request is
-available or the FastCGI server detects an error or termination condition.)
+script should exit. Each call to ``accept`` blocks until either a request is
+available or the FastCGI server detects an error or other kind of termination
+condition. As with ordinary CGI, additional information about the request is
+available through various environment variables. A list of commonly supported
+environment variables and their meaning can be found in `The Common Gateway
+Interface`_ specification.
+
+.. _The Common Gateway Interface: http://hoohoo.ncsa.uiuc.edu/cgi/
 
 A number of other routines are provided to deal with data filters, finish a
-request and set an exit status for a request, see fastcgi.pure. These
-correspond to the corresponding operations provided by the FastCGI library,
-see the FastCGI documentation and the FCGI_Accept(3), FCGI_StartFilterData(3),
-FCGI_Finish(3) and FCGI_SetExitStatus(3) manpages for details. An interface to
-the FCGI_ToFILE macro is also available. Note that in Pure these functions are
-named ``accept``, ``start_filter_data``, ``finish``, ``set_exit_status`` and
+request and set an exit status for a request. These correspond to operations
+provided by the FastCGI library, see the FastCGI documentation and the
+FCGI_Accept(3), FCGI_StartFilterData(3), FCGI_Finish(3) and
+FCGI_SetExitStatus(3) manpages for details. An interface to the FCGI_ToFILE
+macro is also available. Note that in Pure these functions are called
+``accept``, ``start_filter_data``, ``finish``, ``set_exit_status`` and
 ``to_file``, respectively, and are all declared in the ``fastcgi`` namespace.
+A detailed listing of all routines can be found in the fastcgi.pure module.
 
 To run your FastCGI scripts in a browser, your web server must have the
 FastCGI module loaded and must also be set up to execute the scripts. E.g.,
@@ -95,11 +107,6 @@ You'll have to put this into http.conf or a similar file provided by your
 Apache installation (usually under /etc/apache2), and restart Apache. After
 that you can just throw your scripts into the ``fastcgi-bin`` directory to
 have them executed when opening an URL like
-``http://localhost/fastcgi-bin/myscript`` in the browser. (You might have to
-adjust the "shebang" at the beginning of the script above accordingly, so that
-the shell finds your Pure interpreter. Also, remember to make the script
-executable. If you're worried about startup times, or if your operating system
-doesn't support shebangs, then you can also use the Pure interpreter to
-compile the script to a native executable instead.)
+``http://localhost/fastcgi-bin/myscript`` in the browser.
 
-See the examples subdirectory in the sources for some examples.
+See the examples subdirectory in the sources for some more examples.

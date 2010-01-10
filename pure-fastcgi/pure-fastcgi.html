@@ -300,7 +300,7 @@ ul.auto-toc {
 servers like <a class="reference external" href="http://www.apache.org/">Apache</a>. Compared to normal CGI scripts, this has the advantage
 that the script keeps running and may process as many requests from the web
 server as you like. Most ordinary CGI scripts can be converted to use FastCGI
-with some minimal changes.</p>
+with minimal changes.</p>
 <div class="section" id="copying">
 <h1>Copying</h1>
 <p>Copyright (c) 2009 by Albert Graef. pure-fastcgi is distributed under a
@@ -322,11 +322,10 @@ your system then you'll have to edit the Makefile accordingly.</p>
 <div class="section" id="usage">
 <h1>Usage</h1>
 <p>pure-fastcgi provides the <tt class="docutils literal"><span class="pre">accept</span></tt> function with which you tell the FastCGI
-server that your script is ready to accept another request from the FastCGI
-server. It also overrides a number of standard I/O functions so that they talk
-to the server instead. These routines are all in the <tt class="docutils literal"><span class="pre">fastcgi</span></tt> namespace. In
-your Pure script, you can set up a simple loop to process requests as
-follows:</p>
+server that your script is ready to accept another request. It also overrides
+a number of standard I/O functions so that they talk to the server instead.
+These routines are all in the <tt class="docutils literal"><span class="pre">fastcgi</span></tt> namespace. In your Pure script, you
+can set up a simple loop to process requests as follows:</p>
 <pre class="literal-block">
 #!/usr/local/bin/pure -x
 
@@ -346,17 +345,27 @@ end if accept &gt;= 0;
 
 main 0;
 </pre>
+<p>(You might have to adjust the &quot;shebang&quot; in the first line above, so that the
+shell finds the Pure interpreter. Also, remember to make the script executable.
+If you're worried about startup times, or if your operating system doesn't
+support shebangs, then you can also use the Pure interpreter to compile the
+script to a native executable instead.)</p>
 <p>This script keeps running until <tt class="docutils literal"><span class="pre">accept</span></tt> returns <tt class="docutils literal"><span class="pre">-1</span></tt> to indicate that the
-script should exit. (Each call to <tt class="docutils literal"><span class="pre">accept</span></tt> blocks until either a request is
-available or the FastCGI server detects an error or termination condition.)</p>
+script should exit. Each call to <tt class="docutils literal"><span class="pre">accept</span></tt> blocks until either a request is
+available or the FastCGI server detects an error or other kind of termination
+condition. As with ordinary CGI, additional information about the request is
+available through various environment variables. A list of commonly supported
+environment variables and their meaning can be found in <a class="reference external" href="http://hoohoo.ncsa.uiuc.edu/cgi/">The Common Gateway
+Interface</a> specification.</p>
 <p>A number of other routines are provided to deal with data filters, finish a
-request and set an exit status for a request, see fastcgi.pure. These
-correspond to the corresponding operations provided by the FastCGI library,
-see the FastCGI documentation and the FCGI_Accept(3), FCGI_StartFilterData(3),
-FCGI_Finish(3) and FCGI_SetExitStatus(3) manpages for details. An interface to
-the FCGI_ToFILE macro is also available. Note that in Pure these functions are
-named <tt class="docutils literal"><span class="pre">accept</span></tt>, <tt class="docutils literal"><span class="pre">start_filter_data</span></tt>, <tt class="docutils literal"><span class="pre">finish</span></tt>, <tt class="docutils literal"><span class="pre">set_exit_status</span></tt> and
-<tt class="docutils literal"><span class="pre">to_file</span></tt>, respectively, and are all declared in the <tt class="docutils literal"><span class="pre">fastcgi</span></tt> namespace.</p>
+request and set an exit status for a request. These correspond to operations
+provided by the FastCGI library, see the FastCGI documentation and the
+FCGI_Accept(3), FCGI_StartFilterData(3), FCGI_Finish(3) and
+FCGI_SetExitStatus(3) manpages for details. An interface to the FCGI_ToFILE
+macro is also available. Note that in Pure these functions are called
+<tt class="docutils literal"><span class="pre">accept</span></tt>, <tt class="docutils literal"><span class="pre">start_filter_data</span></tt>, <tt class="docutils literal"><span class="pre">finish</span></tt>, <tt class="docutils literal"><span class="pre">set_exit_status</span></tt> and
+<tt class="docutils literal"><span class="pre">to_file</span></tt>, respectively, and are all declared in the <tt class="docutils literal"><span class="pre">fastcgi</span></tt> namespace.
+A detailed listing of all routines can be found in the fastcgi.pure module.</p>
 <p>To run your FastCGI scripts in a browser, your web server must have the
 FastCGI module loaded and must also be set up to execute the scripts. E.g.,
 when using Apache, the following configuration file entry will set up a
@@ -374,13 +383,8 @@ ScriptAlias /fastcgi-bin/ &quot;/srv/www/fastcgi-bin/&quot;
 Apache installation (usually under /etc/apache2), and restart Apache. After
 that you can just throw your scripts into the <tt class="docutils literal"><span class="pre">fastcgi-bin</span></tt> directory to
 have them executed when opening an URL like
-<tt class="docutils literal"><span class="pre">http://localhost/fastcgi-bin/myscript</span></tt> in the browser. (You might have to
-adjust the &quot;shebang&quot; at the beginning of the script above accordingly, so that
-the shell finds your Pure interpreter. Also, remember to make the script
-executable. If you're worried about startup times, or if your operating system
-doesn't support shebangs, then you can also use the Pure interpreter to
-compile the script to a native executable instead.)</p>
-<p>See the examples subdirectory in the sources for some examples.</p>
+<tt class="docutils literal"><span class="pre">http://localhost/fastcgi-bin/myscript</span></tt> in the browser.</p>
+<p>See the examples subdirectory in the sources for some more examples.</p>
 </div>
 </div>
 </body>
