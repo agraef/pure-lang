@@ -26,6 +26,10 @@ using namespace fastcgi;
 
 extern char *getenv(char*);
 
+getenv2 var default = if stringp val then val else default when
+  val = getenv var;
+end;
+
 const title = "FastCGI Example: Sieve of Eratosthenes";
 
 main n p = main n p when
@@ -37,8 +41,14 @@ main n p = main n p when
   if ok then
     printf "<p>Primes up to %d:</p>%s.\n"
       (m,join ", " [str x | x = takewhile (<=m) p])
-  else
-    puts "<b>Usage:</b> primes.pure?<i>n</i> where <i>n</i> is a number between 0 and 1000000.";
+  else usage;
 end if accept >= 0;
+
+usage = printf "<b>Usage:</b> primes.pure?<i>n</i> where <i>n</i> is a number between 0 and 1000000.<p>\n<b>Example:</b> <a href=\"%s?1000\">primes.pure?1000</a>\n" self
+when
+  script = getenv2 "SCRIPT_NAME" "/primes.pure";
+  server = getenv2 "HTTP_HOST" "localhost";
+  self = "http://"+server+script;
+end;
 
 if compiling then () else main 0 [];
