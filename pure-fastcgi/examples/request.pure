@@ -7,10 +7,10 @@
 
    To try this script, copy it to a place where Apache can execute it, fire up
    your browser and type in the script URL (something like http://localhost/
-   fastcgi-bin/request.q, depending on where you put the script). You should
-   then see a page titled "Your Request". If not, then probably you installed
-   the script in the wrong place, or you first have to configure Apache for
-   FastCGI script execution as explained in the documentation.
+   fastcgi-bin/request.pure, depending on where you put the script). You
+   should then see a page titled "Your Request". If not, then probably you
+   installed the script in the wrong place, or you first have to configure
+   Apache for FastCGI script execution as explained in the documentation.
 
    The script is useful for debugging your HTML forms, too. To these ends,
    just use the script URL as the ACTION field of the form, then you can see
@@ -47,7 +47,7 @@ let vars =
 /* Templates for the header and body of the HTML page sent in the response. */
 
 let header = "Content-Type: text/html\n\n\
-<big><big><b>Your Request</b></big></big><p>\n\
+<title>Your Request</title><h1>Your Request</h1>\n\
 Served to you by <a href=%s?source>%s</a> on %s.<p>\n";
 let table_begin = "<table cellpadding=2 cellspacing=2 border=1 \
 style=\"text-align: left; width: 100%;\"><tbody>";
@@ -57,7 +57,7 @@ let table_end = "</tbody></table>";
 
 /* The 'main' function. It generates the result page on stdout, preceded by
    the appropriate header. We first invoke 'fastcgi::accept' to wait for
-   requests from the FastCGI server.  */
+   requests from the FastCGI server. */
 
 main = () if accept < 0; // no more requests
 
@@ -87,13 +87,13 @@ main = main when
   timestr = strftime "%c" (localtime time);
   body = fget stdin;
   printf header (script,self,timestr);
-  puts "<big><b>Environment</b></big><p>";
+  puts "<h2>Environment</h2>";
   puts table_begin;
   do (printf table_row) $ sort (\(x,_) (y,_) -> x<y)
   [x | x@(_,v) = zip vars vals; stringp v && ~null v];
   puts table_end;
   if null body then () else
-    printf "<p><big><b>Request Body</b></big><p>\n<pre>%s\n</pre>\n"
+    printf "<h2>Request Body</h2>\n<pre>%s\n</pre>\n"
     (join "<br>\n" (split "\n" body));
 end;
 
