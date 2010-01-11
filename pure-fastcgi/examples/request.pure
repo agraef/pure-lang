@@ -1,0 +1,103 @@
+#!/usr/local/bin/pure -x
+
+/* This is a little FastCGI script which creates a page showing some
+   information about the current request. It gathers the information from the
+   appropriate environment variables and retrieves the request body from
+   standard input.
+
+   To try this script, copy it to a place where Apache can execute it, fire up
+   your browser and type in the script URL (something like http://localhost/
+   fastcgi-bin/request.q, depending on where you put the script). You should
+   then see a page titled "Your Request". If not, then probably you installed
+   the script in the wrong place, or you first have to configure Apache for
+   FastCGI script execution as explained in the documentation.
+
+   The script is useful for debugging your HTML forms, too. To these ends,
+   just use the script URL as the ACTION field of the form, then you can see
+   exactly which query or request body is transmitted to the server. */
+
+using fastcgi;
+using namespace fastcgi;
+
+extern char *getenv(char*);
+
+getenv2 var default = if stringp val then val else default when
+  val = getenv var;
+end;
+
+// CGI environment variables.
+let vars =
+  [// General CGI vars:
+   "GATEWAY_INTERFACE", "SERVER_SOFTWARE", "SERVER_NAME",
+   // FastCGI-specific:
+   "FCGI_ROLE", "FILE_LAST_MOD", "FCGI_DATA_LENGTH",
+   // Request-specific:
+   "AUTH_TYPE", "CONTENT_TYPE", "CONTENT_LENGTH",
+   "HTTP_HOST", "HTTP_USER_AGENT", "HTTP_ACCEPT", "HTTP_ACCEPT_LANGUAGE",
+   "HTTP_ACCEPT_ENCODING", "HTTP_ACCEPT_CHARSET", "HTTP_KEEP_ALIVE",
+   "HTTP_CONNECTION", "HTTP_CACHE_CONTROL",
+   "PATH_INFO", "PATH_TRANSLATED", "QUERY_STRING",
+   "REQUEST_METHOD", "REQUEST_URI", "SCRIPT_NAME", "SCRIPT_FILENAME",
+   "SERVER_PROTOCOL", "SERVER_ADDR", "SERVER_PORT",
+   "SERVER_ADMIN", "REMOTE_HOST", "REMOTE_ADDR", "REMOTE_PORT",
+   "REMOTE_USER", "REMOTE_IDENT", "PATH", "DOCUMENT_ROOT",
+   // Only set if the request is the result of an error redirect:
+   "REDIRECT_QUERY_STRING", "REDIRECT_URL"];
+
+/* Templates for the header and body of the HTML page sent in the response. */
+
+let header = "Content-Type: text/html\n\n\
+<big><big><b>Your Request</b></big></big><p>\n\
+Served to you by <a href=%s?source>%s</a> on %s.<p>\n";
+let table_begin = "<table cellpadding=2 cellspacing=2 border=1 \
+style=\"text-align: left; width: 100%;\"><tbody>";
+let table_row =
+  "<tr><td><pre><b>%s</b></pre></td><td><pre>%s</pre></td></tr>\n";
+let table_end = "</tbody></table>";
+
+/* The 'main' function. It generates the result page on stdout, preceded by
+   the appropriate header. We first invoke 'fastcgi::accept' to wait for
+   requests from the FastCGI server.  */
+
+main = () if accept < 0; // no more requests
+
+/* We use a quick hack here to serve ourselves as text/plain if we are invoked
+   with the "source" query string. */
+
+main = main when
+  script = getenv2 "SCRIPT_FILENAME" "request.pure";
+  fp = fopen script "r";
+  // Try to guess whether we're actually invoked as the source script.
+  if pointerp fp && fgets fp!![0,1] == "#!" then
+    rewind fp $$ printf "Content-Type: text/plain\n\n%s" (fget fp)
+  else
+    puts "Content-Type: text/html\n\nSorry, no source code available.";
+end if getenv "QUERY_STRING" === "source";
+
+/* The real stuff starts here: compose a page from the environment and the
+   request body in stdin. */
+
+using system; // for the time functions
+
+main = main when
+  vals = map getenv vars;
+  script = getenv2 "SCRIPT_NAME" "/request.pure";
+  server = getenv2 "HTTP_HOST" "localhost";
+  self = "http://"+server+script;
+  timestr = strftime "%c" (localtime time);
+  body = fget stdin;
+  printf header (script,self,timestr);
+  puts "<big><b>Environment</b></big><p>";
+  puts table_begin;
+  do (printf table_row) $ sort (\(x,_) (y,_) -> x<y)
+  [x | x@(_,v) = zip vars vals; stringp v && ~null v];
+  puts table_end;
+  if null body then () else
+    printf "<p><big><b>Request Body</b></big><p>\n<pre>%s\n</pre>\n"
+    (join "<br>\n" (split "\n" body));
+end;
+
+/* Invoke the 'main' function. This has been set up so that you can also
+   compile the script to a native executable. */
+
+if compiling then () else main;
