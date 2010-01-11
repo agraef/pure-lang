@@ -9,8 +9,9 @@ pure-fastcgi: FastCGI module for Pure
 This module lets you write FastCGI_ scripts with Pure, to be run by web
 servers like Apache_. Compared to normal CGI scripts, this has the advantage
 that the script keeps running and may process as many requests from the web
-server as you like. Most ordinary CGI scripts can be converted to use FastCGI
-with minimal changes.
+server as you like, in order to reduce startup times and enable caching
+techniques. Most ordinary CGI scripts can be converted to use FastCGI with
+minimal changes.
 
 .. _FastCGI: http://www.fastcgi.com
 .. _Apache: http://www.apache.org/
@@ -90,23 +91,41 @@ macro is also available. Note that in Pure these functions are called
 ``to_file``, respectively, and are all declared in the ``fastcgi`` namespace.
 A detailed listing of all routines can be found in the fastcgi.pure module.
 
-To run your FastCGI scripts in a browser, your web server must have the
-FastCGI module loaded and must also be set up to execute the scripts. E.g.,
-when using Apache, the following configuration file entry will set up a
-directory for FastCGI scripts::
+Please see the examples subdirectory in the pure-fastcgi sources for some more
+elaborate examples.
+
+Note that to run your FastCGI scripts in a browser, your web server must have
+the FastCGI module loaded and must also be set up to execute the
+scripts. E.g., when using Apache, the following configuration file entry will
+set up a directory for FastCGI scripts::
 
   ScriptAlias /fastcgi-bin/ "/srv/www/fastcgi-bin/"
   <Location /fastcgi-bin/>
       Options ExecCGI 
-      SetHandler fcgid-script
+      SetHandler fastcgi-script
       Order allow,deny
       Allow from all
   </Location>
 
-You'll have to put this into http.conf or a similar file provided by your
-Apache installation (usually under /etc/apache2), and restart Apache. After
-that you can just throw your scripts into the ``fastcgi-bin`` directory to
-have them executed when opening an URL like
-``http://localhost/fastcgi-bin/myscript`` in the browser.
+(Replace ``fastcgi-script`` with ``fcgid-script`` if you're running
+``mod_fcgid`` rather than ``mod_fastcgi``.)
 
-See the examples subdirectory in the sources for some more examples.
+Put this entry into http.conf or a similar file provided by your Apache
+installation (usually under /etc/apache2), and restart Apache. After that you
+can just throw your scripts into the ``fastcgi-bin`` directory to have them
+executed via an URL like ``http://localhost/fastcgi-bin/myscript``.
+
+You can also set up a handler for the ``.pure`` filename extensions as
+follows::
+
+  <IfModule mod_fastcgi.c>
+  <FilesMatch "\.pure$">
+      AddHandler fastcgi-script .pure
+      Options +ExecCGI
+  </FilesMatch>
+  </IfModule>
+
+(Again, you'll have to adjust the ``IfModule`` statement and replace
+``fastcgi-script`` with ``fcgid-script`` if you're running ``mod_fcgid``.)
+After that you should be able to execute scripts with the proper extension
+anywhere under your server's document root.
