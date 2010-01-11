@@ -53,9 +53,15 @@ The usual work flow to generate plot via gnuplot is the following:
 // using stuff
 using system;
 
+private extern char *getenv(char*);
 
-// string containing path to gnuplot exe, might be overwritten by environment var later...
-const GPLOT_EXE = "C:\\Opt\\gnuplot\\bin\\pgnuplot.exe";
+// string containing path to gnuplot exe (taken from GPLOT_EXE environment
+// variable if it exists, otherwise "pgnuplot.exe" on Windows, "gnuplot"
+// otherwise)
+let GPLOT_EXE =
+  if stringp env then env
+  else if index sysinfo "mingw32" >= 0 then "pgnuplot.exe"
+  else "gnuplot" when env = getenv "GPLOT_EXE" end;
 
 /* ..
 
