@@ -1,0 +1,85 @@
+/*
+ * File:			gplot_test.pure
+ * Description:		test gnuplot binding
+ * Author:			Kay-Uwe Kirstein
+ * Version:			0.1_alpha
+ * Date:			work in progress
+ */
+
+using gplot;
+
+let gp = gplot::open gplot::GPLOT_EXE;
+
+gplot::puts "pwd" gp;
+
+// some data:
+let tt = [1, 2, 4, 8, 16, 8, 4, 2, 1];
+let tt2 = [1, 2, 3, 5, 10, 12, 13, 13.8, 14];
+
+let ttx = [1, 2, 4, 8, 16, 32, 64, 128, 256];
+
+// let plot_cmd = gplot::add_newline "plot '-' with lines";
+// gplot::puts (plot_cmd + gplot::gpdata tt + gplot::gpdata_end) gp;
+
+let title = "A simple list of values.";
+gplot::title gp title;
+gplot::plot gp tt ();
+puts title;
+puts "Press any key to proceed...";
+gets;
+
+let title = ".. same as line-plot.";
+gplot::title gp title;
+gplot::plot gp tt ("style", "lines");
+puts title;
+puts "Press any key to proceed...";
+gets;
+
+let title = "XY-plot of two lists.";
+gplot::title gp title;
+gplot::plotxy gp (ttx, tt) ("style", "lines") [];
+puts title;
+puts "Press any key to proceed...";
+gets;
+
+let title = "Histogram with arbitrary tics and labels on the x-axis.";
+gplot::title gp title;
+gplot::xtics gp (zip (0..8) ttx) ();
+gplot::plot gp tt2 ("style", "histogram", "fill solid");
+puts title;
+puts "Press any key to proceed...";
+gets;
+
+let title = ".. and with default x-tics";
+gplot::title gp title;
+gplot::xtics gp [] "default";
+gplot::plot gp tt2 ("style", "histogram", "fill solid");
+puts title;
+puts "Press any key to proceed...";
+gets;
+
+let title = "More than one dataset as xy-plot.";
+gplot::title gp title;
+gplot::plotxy gp (ttx, tt, tt2) ("style", "lines") [];
+puts title;
+puts "Press any key to proceed...";
+gets;
+
+let title = ".. and with additional data titles.";
+gplot::title gp title;
+let legend = ["data_1", "data_2"];
+gplot::plotxy gp (ttx, tt, tt2) ("style", "lines") legend;
+puts title;
+puts "Press any key to proceed...";
+gets;
+
+let title = "More than one dataset as xy-plot, save as PNG-file";
+gplot::output gp "png" "test.png";
+gplot::title gp title;
+gplot::plotxy gp (ttx, tt, tt2) ("style", "lines") [];
+puts title;
+puts "Press any key to proceed...";
+gets;
+
+gplot::close gp;
+

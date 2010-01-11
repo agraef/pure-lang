@@ -1,0 +1,281 @@
+/* ..
+
+================
+Gnuplot bindings
+================
+
+:File:				gplot.pure
+:Description:		gnuplot binding via stdin pipe
+:Author:			Kay-Uwe Kirstein
+:Version:			0.1
+:Date:				11.01.2010
+*/
+
+namespace gplot;
+
+// constants:
+public GPLOT_EXE;
+
+/*// public low-level functions:
+public open close puts_no_echo puts;
+
+// public convenience functions:
+public plot plotxy plotxyt;
+
+// set output terminal and filename
+public output;
+*/
+// conversion functions for data:
+private gpdata gpxydata gpxycmd gpxycmdtitle gpdata_cmd gpdata_end;
+
+// conversion functions for options
+private gpopt gptitle;
+
+// private helper functions
+private add_newline add_dquote;
+
+/* ..
+
+Introduction
+============
+
+This module contains a pure binding to gnuplot. Communication to gnuplot is
+performed via pipes.
+The usual work flow to generate plot via gnuplot is the following:
+
+1. open pipe via ``open``
+
+2. send plot commands, e.g., with ``plot``
+
+3. close pipe with ``close``
+*/
+
+// using stuff
+using system;
+
+
+// string containing path to gnuplot exe, might be overwritten by environment var later...
+const GPLOT_EXE = "C:\\Opt\\gnuplot\\bin\\pgnuplot.exe";
+
+/* ..
+
+Function Reference
+==================
+*/
+
+/* ..
+
+Open / Closing Functions
+------------------------
+
+	``gplot::open cmd;``
+	
+	opens a pipe to gnuplot, using *cmd*. *cmd* usually is something like ``gnuplot``
+	or ``/path/to/gnuplot/bin/gnuplot`` depending on your path configuration.
+	``open`` returns a pointer to the actual pipe for later usage, so a typical call
+	to open might look like this:
+	
+	``let gp = gplot::open "gnuplot";``
+	
+	For windows, gnuplot comes with a special executable ``pgnuplot.exe``,
+	which is capable of stdin pipes in contrast to the normal ``gnuplot.exe`` under windows.
+
+	``gplot::close gp;``
+
+	closes a gnuplot session, given by the handle *gp*.
+*/
+gplot::open cmd = popen cmd "w";
+gplot::close gp = pclose gp;
+
+/* ..
+
+Low-Level Commands
+------------------
+
+	``gplot::puts_no_echo string gp;``
+	
+	sends the string to the gnuplot session *gp* points to. As the name states, there is no echo read back from gnuplot (Don't know whether *gnuplot* or *pgnuplot.exe* supports reading/bidirectional pipes at all).
+*/
+gplot::puts_no_echo cmd::string gp::pointer = ret when
+	fputs (add_newline cmd) gp;
+	ret = fflush gp;
+end;
+
+/* ..
+
+	``gplot::puts string gp;``
+	
+	is a convenience wrapper to ``gplot::puts_no_echo``.
+*/
+gplot::puts cmd gp = puts_no_echo cmd gp;
+
+/* ..
+
+Plot Commands
+-------------
+
+	The main (versatile) function to generate plots is the simple plot command, which expects a list of the data to be plotted.
+
+	``gplot::plot gp data opt;``
+	
+	where *gp* is the pointer to the gnuplot session, *data* is a list containing the data to be plotted and *opt* is a tuple,
+	containing options for the plot. *opt* might be empty () or ``DEFAULT`` for default options (refer to gnuplot for them).
+*/
+gplot::plot gp data opt	= do (\x->puts x gp) ["plot " + _cmd, _gpdata, gpdata_end] when
+						_cmd	= gpdata_cmd + (gpopt opt);
+						_gpdata	= gpdata data;
+					end;
+
+/* ..
+
+	If data for the x-axis (ordinate) should be explicitely given *plotxy* should be used instead:
+
+	``gplot::plotxy_deprecated gp (xdata, ydata) opt;``
+	
+	``gplot::plotxy gp (xdata, ydata) opt [];``	
+*/
+gplot::plotxy_deprecated gp xydata opt	= do (\x->puts (add_newline x) gp) ["plot " + _cmd, _gpdata] when
+							_cmd	= gpxycmd xydata opt;
+							_gpdata = gpxydata xydata;
+						end;
+
+/* ..
+
+	Multiple datasets can be plotted into a single graph by combining them to tuples of lists:
+	
+	``gplot::plotxy gp (xdata, y1data, y2data, ..) opt;``
+	
+	``gplot::plotxy gp (xdata, y1data, y2data, ..) opt [];``
+	
+	``gplot::plotxy gp (xdata, y1data, y2data, ..) opt titles;``
+	
+	where the latter form gives additional titles for each y-data set.
+*/
+gplot::plotxy gp xydata opt []		= do (\x->puts (add_newline x) gp) ["plot " + _cmd, _gpdata] when
+										_cmd	= gpxycmd xydata opt;
+										_gpdata = gpxydata xydata;
+									end;
+gplot::plotxy gp xydata opt titles	= do (\x->puts (add_newline x) gp) ["plot " + _cmd, _gpdata] when
+										_cmd	= gpxycmdtitle xydata opt titles;
+										_gpdata = gpxydata xydata;
+									end;
+
+
+
+
+/* ..
+
+Plot Options
+------------
+
+	``gplot::xtics gp list_of_tic_labels;``
+	
+	Sets the tic labels of the x-axis to the given text labels.
+	The labels can be given aas a simple list of strings, which are taken as successive labels
+	or as a list of tuples with the form ``(value, label)``, in which case each label is placed
+	at its ``value`` position.
+	
+	``gplot::xtics gp ()`` or ``gplot::xtics gp "default";``
+	
+	This restores the default tics on the y-axis
+*/
+gplot::xtics gp []	()			|
+gplot::xtics gp [] "default"	= puts "set xtics autofreq" gp;
+gplot::xtics gp [] opt			= puts (gptics_cmd ts) gp when
+							gptics_cmd = "set xtics " + opt_str;
+							opt_str	= if tuplep opt then join " " $ list opt else opt;
+						end;
+gplot::xtics gp ts opt			= puts (gptics_cmd ts) gp with
+							gptics_cmd tics	= "set xtics " + opt_str + " (" + (join ", " (map gptic tics)) + ")" when
+								opt_str	= if tuplep opt then join " " $ list opt else opt;
+							end;
+							gptic tic 		= if tuplep tic then
+								if stringp (tic!1) then ("\"" + (tic!1) + "\"" + " " + str (tic!0))
+								else ("\"" + str (tic!1) + "\"" + " " + str (tic!0))
+							else if stringp (tic!0) then tic else str tic;
+						end;
+
+/* ..
+
+	``gplot::title t;``
+	
+	Sets a title string on top of the plot (default location)
+*/
+gplot::title gp t = gplot::puts ("set title " + add_dquote t) gp;
+
+/* ..
+
+	``gplot::output gp terminal name;``
+	
+	Sets the terminal and output name for the successive plots. For some terminal additional options might be given:
+	``gplot::output gp (terminal, options) name``.
+	For terminals like x11 or windows, name can be empty ``()``.
+*/
+gplot::output gp term name	= _set_term term + _set_out name with
+						_set_term term	= puts ("set terminal " + term) gp;
+						_set_out name	= puts ("set output " + (add_dquote name)) gp;
+					end;
+//output gp () ()		= puts "set terminal windows" gp;
+
+// private functions
+// =================
+
+// data conversion
+//gpdata ys@(_:_) = join "\n" (map str ys);
+gpdata ys@(yv:_) = (str yv) + "\n" + gpdata (tail ys);
+gpdata [] = "";
+
+gpxydata ds@(xs, ys@(_:_))		= gpxydata (zip xs ys);
+gpxydata ds@(xs, ys1, ysn)		= gpxydata (xs, ys1) + "\n" + gpxydata (xs, ysn);
+gpxydata ds@((xv, yv):_)		= (str xv) + " " + (str yv) + "\n" + gpxydata (tail ds);
+gpxydata [] = gpdata_end;
+
+gpdata_end = "e";
+gpdata_cmd = "'-' ";
+
+gpxycmd ds@(xs, ys@(_:_)) opt	= gpdata_cmd + (gpopt opt);
+gpxycmd ds@(xs, ys1, ysn) opt	= gpxycmd (xs, ys1) opt + "," + gpxycmd (xs, ysn) opt;
+
+// gpxycmdtitle ds@(xs, ys1, ysn) opt []				= ();
+gpxycmdtitle ds@(xs, ys1, ysn) opt titles@(th:tl)	= gpdata_cmd + (gptitle th) + (gpopt opt) + "," + gpxycmdtitle (xs, ysn) opt tl;
+gpxycmdtitle ds@(xs, ys1@(_:_)) opt titles@(th:[])	= gpdata_cmd + (gptitle th) + (gpopt opt);
+// gpxycmdtitle ds@(xs, ys@(_:_)) opt title			= gpdata_cmd + (gptitle title) + (gpopt opt);
+// gpxycmdtitle ds@(xs, ys1, ysn) opt titles@(th:tl)	= gpxycmdtitle (xs, ys1) opt th + "," + gpxycmdtitle (xs, ysn) opt tl;
+
+/* ..
+
+	``gplot::gpopt ("style", style, args);``
+	
+	Internal function to convert a plot style to the respective gnuplot syntax
+*/
+gpopt ()						|
+gpopt "default" 				= "";
+// gpopt opt@(oh:ot)				= gpopt oh + " " + gpopt ot;
+gpopt ("style", style, args)	= " with " + style + " " + args;
+gpopt ("style", style)			= gpopt ("style", style, "");
+
+/* ..
+
+	``gplot::gptitle t;``
+	
+	Internal function to generate title information for individual datasets
+*/
+gptitle []	= "";
+gptitle t	= "title " + (add_dquote t);
+
+
+// add newline at the end of string if missing
+add_newline st = st + "\n" if last ll ~= "\n" when
+						ll = list st;
+					end;
+				= st otherwise;
+
+// add double quotes for string values
+add_dquote st::string	|
+add_dquote st			= _startq $ _endq st with
+							_startq st = if ord (st!0) == 34 then st else "\"" + st;
+							_endq st	= if ord (st!_endpos) == 34 then st else st + "\"" when
+								_endpos = #st - 1;
+							end;
+						end;
+
