@@ -77,7 +77,7 @@ using namespace std;
 --norc           Do not run the interactive startup files.\n\
 -o filename      Output filename for batch compilation.\n\
 -q               Quiet startup (suppresses sign-on message).\n\
--s               Strip unused functions (batch compilation).\n\
+-u               Do not strip unused functions in batch compilation.\n\
 -v[level]        Set debugging level (default: 1).\n\
 --version        Print version information and exit.\n\
 -x               Execute script with given command line arguments.\n\
@@ -277,6 +277,8 @@ main(int argc, char *argv[])
       quiet = true;
     else if (*args == string("-s"))
       interp.strip = true;
+    else if (*args == string("-u"))
+      interp.strip = false;
     else if (string(*args).substr(0,2) == "-o") {
       string s = string(*args).substr(2);
       if (s.empty()) {
