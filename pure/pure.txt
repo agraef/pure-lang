@@ -133,8 +133,8 @@ below:
 ``-q``
     Quiet startup (suppresses sign-on message in interactive mode).
 
-``-s``
-    Strip unused functions (batch compilation).
+``-u``
+    Do not strip unused functions in batch compilation.
 
 ``-v[level]``
     Set verbosity level. See below for details.
@@ -230,8 +230,7 @@ reason to prefer a standalone executable is that it lets you deploy the
 program on systems without a full Pure installation (usually only the runtime
 library is required on the target system). On the other hand, compiled scripts
 also have some limitations, mostly concerning the use of the built-in ``eval``
-function. Please see `Batch Compilation`_ in the `Caveats and Notes`_ section
-for details.
+function. Please see the `Batch Compilation`_ section for details.
 
 The -v64 (or -v0100) verbosity option can be used to have the interpreter
 print the commands it executes during compilation, see `Verbosity and
@@ -3657,83 +3656,8 @@ The interpreter processes all these files in the same way as with the ``run``
 command (see above). When invoking the interpreter, you can specify the --norc
 option on the command line if you wish to skip these initializations.
 
-Caveats and Notes
-=================
-
-This section is a grab bag of casual remarks, useful tips and tricks, and
-information on common pitfalls, quirks and limitations of the current
-implementation and how to deal with them.
-
-Purity
-------
-
-People keep asking me what's so "pure" about Pure. The long and apologetic
-answer is that Pure tries to stay as close as possible to the spirit of term
-rewriting without sacrificing practicality. It's possible and in fact quite
-easy to write purely functional programs in Pure, and you're encouraged to use
-it that way when possible. On the other hand, Pure doesn't get in your way if
-you want to call external operations with side effects; it does allow you to
-call any C function after all.
-
-The short answer is that I simply liked the name, and there wasn't any
-programming language named "Pure" yet (quite a feat nowadays), so there's one
-now. :)
-
-Backward Compatibility
-----------------------
-
-Pure 0.7 introduced built-in matrix structures, which called for some minor
-changes in the syntax of comprehensions and arithmetic
-sequences. Specifically, the template expression and generator/filter clauses
-of a comprehension are now separated with ``|`` instead of ``;``. Moreover,
-arithmetic sequences with arbitrary stepsize are now written ``x:y..z``
-instead of ``x,y..z``, and the '``..``' operator now has a higher precedence
-than the '``,``' operator. This makes writing matrix slices like
-``x!!(i..j,k..l)`` much more convenient.
-
-In Pure 0.13 the naming of the logical and bitwise operations was changed, so
-that these are now called ``~``, ``&&``, ``||`` and ``not``/``and``/``or``,
-respectively. (Previously, ``~`` was used for bitwise, ``not`` for logical
-negation, which was rather inconsistent, albeit compatible with the naming of
-the ``not`` operation in Haskell and ML.) Also, to stay in line with this
-naming scheme, inequality was renamed to ``~=`` (previously ``!=``).
-
-Pure 0.14 introduced the namespaces feature. Consequently, the scope of
-private symbols is now confined to a namespace rather than a source module;
-scripts making use of private symbols need to be adapted accordingly. Also
-note that syntax like ``foo::int`` may now also denote a qualified symbol
-rather than a tagged variable, if ``foo`` has been declared as a
-namespace. You can work around such ambiguities by renaming the variable, or
-by placing spaces around the '``::``' delimiter (these aren't permitted in a
-qualified symbol, so the construct ``foo :: int`` is always interpreted as a
-tagged variable, no matter whether ``foo`` is also a valid namespace).
-
-Pure 0.26 extended the namespaces feature to add support for hierarchical
-namespaces. This means that name lookup works in a slightly different fashion
-now (see `Hierarchical Namespaces`_ for details), but old code which doesn't
-use the new feature should continue to work unchanged.
-
-Pure 0.26 also changed the ``nullary`` keyword to ``nonfix``, which is more
-consistent with the other kinds of fixity declarations. Moreover, the parser
-was enhanced so that it can cope with a theoretically unbounded number of
-precedence levels, and the system of standard operators in the prelude was
-modified so that it becomes possible to sneak in new operator symbols with
-ease; details can be found in the `Symbol Declarations`_ section.
-
-Error Recovery
---------------
-
-The parser uses a fairly simplistic panic mode error recovery which tries to
-catch syntax errors at the toplevel only. This seems to work reasonably well,
-but might catch some errors much too late. Unfortunately, Pure's terseness
-makes it rather difficult to design a better scheme. As a remedy, the parser
-accepts an empty definition (just ``;`` by itself) at the toplevel only. Thus,
-in interactive usage, if the parser seems to eat away your input without doing
-anything, entering an extra semicolon or two should break the spell, putting
-you back at the toplevel where you can start typing the definition again.
-
 Batch Compilation
------------------
+=================
 
 As of Pure 0.21, the interpreter has a new -c option which provides a
 convenient means to turn Pure scripts into standalone executables. This
@@ -3767,25 +3691,27 @@ implies the following quirks and limitations:
   expressions.  You can define local functions and variables in ``with`` and
   ``when`` clauses inside an expression, but you can't use ``eval`` to define
   new global variables and functions. In other words, anything which changes
-  the executing program is "verboten".
-
-* The introspective capabilities provided by |evalcmd|_ (discussed under
-  Reflection_ below) won't work either because the interactive commands are
-  all disabled.
+  the executing program is "verboten". Moreover, the introspective
+  capabilities provided by |evalcmd|_ (discussed under Reflection_ in the
+  `Caveats and Notes`_ section) won't work either because the interactive
+  commands are all disabled. If you need any of these capabilities, you have
+  to run your program with the interpreter.
 
 * Constant and macro definitions, being compile time features, aren't
   available in the compiled program. If you need to use these with |eval|_ at
   run time, you have to provide them through variable and function definitions
-  instead.
+  instead. Also, the compiler usually strips unused functions from the output
+  code, so that only functions which are actually called somewhere in the
+  static program text are available to ``eval``. (The -u option can be used to
+  avoid this, see `Code Size and Unstripped Executables`_ below.)
 
 * Code which gets executed to compute constant values at compile time will
   *not* be executed in the compiled executable, so your program shouldn't rely
   on side-effects of such computations (this would be bad practice anyway).
-
-* Constant values in a batch-compiled script must be real constants, run time
-  data such as pointers (other than the null pointer) and local functions are
-  not permitted. (If necessary, you can bind such values to variables instead,
-  then they will work fine even in a batch-compiled program.)
+  Also, constant values in a batch-compiled script must be real constants, run
+  time data such as pointers (other than the null pointer) and local functions
+  are not permitted. (If necessary, you can bind such values to variables
+  instead, then they will work fine even in a batch-compiled program.)
 
 What all this boils down to is that anything which requires the compile time
 or interactive facilities of the interpreter, is unavailable. These
@@ -3816,6 +3742,9 @@ being executed.
 
 .. _partial evaluation: http://en.wikipedia.org/wiki/Partial_evaluation
 
+Example
+-------
+
 For the sake of a concrete example, consider the following little script::
 
   using system;
@@ -3845,7 +3774,9 @@ specified, so that the program can also be run interactively::
   ()
   > quit
 
-Turning the script into an executable works as follows::
+To turn the script into an executable, we just invoke the Pure interpreter
+with the -c option, using the -o option to specify the desired output file
+name::
 
   $ pure -c hello.pure -o hello
   $ ./hello 10
@@ -3861,11 +3792,11 @@ function into a compile time constant, which can be done as follows::
 (Note that we provide ``10`` as a default if ``n`` isn't specified on the
 command line.)
 
-Moreover, we want to skip the execution of ``main`` at compile time. The Pure
-runtime provides a special system variable ``compiling`` which holds a truth
-value indicating whether the program is actually running under the auspices of
-the batch compiler, so that it can adjust accordingly. In our example, the
-evaluation of ``main`` becomes::
+Moreover, in such a case we usually want to skip the execution of the main
+function at compile time. The Pure runtime provides a special system variable
+``compiling`` which holds a truth value indicating whether the program is
+actually running under the auspices of the batch compiler, so that it can
+adjust accordingly. In our example, the evaluation of ``main`` becomes::
 
   if compiling then () else main n;
 
@@ -3906,39 +3837,45 @@ You'll rarely need an elaborate setup like this, most of the time something
 like our simple first example will do the trick. But, as you've seen, Pure can
 easily do it.
 
-A note on code sizes: Batch-compiled Pure programs tend to be large and take a
-while to compile. This is because, to be on the safe side, the output code
-includes *all* functions defined in the compiled program or imported through a
-``using`` clause, even if they don't seem to be "used" anywhere. As a remedy,
-the batch compiler has an additional -s option to strip unused functions from
-the output code. For instance, on a 64 bit Linux systems with ELF binaries,
-the -s option shaves off some two thirds of the code size from our hello.pure
-example. (Note that, even then the resulting code is fairly large when
-compared to compiled C code, as it still contains the symbol table of the
-entire program, which is needed by the runtime environment.)
+Code Size and Unstripped Executables
+------------------------------------
 
-::
+By default, the batch compiler strips unused functions from the output code,
+to keep the code size small. You can disable this with the -u option, in which
+case the output code includes *all* functions defined in the compiled program
+or imported through a ``using`` clause, even if they don't seem to be used
+anywhere. This considerably increases compilation times and makes the compiled
+executable much larger. For instance, on a 64 bit Linux systems with ELF
+binaries the executable of our hello.pure example is about thrice as large::
 
   $ pure -o hello -c -x hello.pure 7 && ls -l hello
-  -rwxr-xr-x 1 ag users 533334 2009-09-03 01:26 hello
-  $ pure -o hello -c -s -x hello.pure 7 && ls -l hello
-  -rwxr-xr-x 1 ag users 178491 2009-09-03 01:26 hello
-  $ ./hello
-  Hello, world!
-  [1,2,6,24,120,720,5040]
+  -rwxr-xr-x 1 ag users 178484 2010-01-12 06:21 hello
+  $ pure -o hello -c -u -x hello.pure 7 && ls -l hello
+  -rwxr-xr-x 1 ag users 541941 2010-01-12 06:21 hello
 
-Be careful when using this option. The -s option only does a *static* analysis
-of which functions might be reached from the initialization code (i.e.,
-toplevel expressions and ``let`` bindings). It does *not* take into account
-code run via the ``eval`` routine. Thus, functions used only in ``eval``\ ed
-code will be stripped from the executable, as if they were never defined at
-all. If such a function is then being called using ``eval`` at runtime, it
-will evaluate to a plain constructor symbol. However, it is possible to work
-around this limitation by just adding a dummy "call" to functions which are to
-be used with ``eval``, e.g.::
+(Note that even the stripped executable is fairly large when compared to
+compiled C code, as it still contains the symbol table of the entire program,
+which is needed by the runtime environment.)
+
+Stripped executables should be fine for most purposes, but you have to be
+careful when using ``eval`` in your compiled program. The compiler only does a
+*static* analysis of which functions might be reached from the initialization
+code (i.e., toplevel expressions and ``let`` bindings). It does *not* take
+into account code run via the ``eval`` routine. Thus, functions used only in
+``eval``\ ed code will be stripped from the executable, as if they were never
+defined at all. If such a function is then being called using ``eval`` at
+runtime, it will evaluate to a plain constructor symbol.
+
+If this is a problem then you can either use the -u option to produce an
+unstripped executable, or you can force functions to be included in the
+stripped executable by just adding a dummy "call" to functions which are to be
+used with ``eval``, e.g.::
 
   let foo, bar;
   eval "foo (bar 99)";
+
+Other Output Code Formats
+-------------------------
 
 Note that while the batch compiler generates native executables by default, it
 can just as well create object files which can be linked into other C/C++
@@ -4026,10 +3963,31 @@ position-independent code is generated::
 Also note that even when building a shared module, you'll have to supply an
 initialization routine which calls ``__pure_main__`` somewhere.
 
+Last but not least, ``pure -c`` can also generate just plain LLVM assembler
+code::
+
+  pure -c hello.pure -o hello.ll
+
+Note the .ll extension; this tells the compiler that you want an LLVM
+assembler file. An LLVM bitcode file can be created just as easily::
+
+  pure -c hello.pure -o hello.bc
+
+In these cases you'll have to have to handle the rest of the compilation
+yourself. This gives you the opportunity, e.g., to play with special
+optimization and code generation options provided by the LLVM
+toolchain. Please refer to the `LLVM documentation`_ (in particular, the
+description of the opt and llc programs) for details.
+
+.. _LLVM documentation: http://llvm.org/docs/
+
+Calling Pure Functions From C
+-----------------------------
+
 Another point worth mentioning here is that you can't just call Pure functions
 in a batch-compiled module directly. That's because in order to call a Pure
-function, at least in the current implementation, you have to set up a stack
-frame for the function. However, there's a convenience function called
+function, at least in the current implementation, you have to set up a Pure
+stack frame for the function. However, there's a convenience function called
 ``pure_funcall`` in the runtime API to handle this. This function takes a
 pointer to the Pure function, the argument count and the arguments themselves
 (as ``pure_expr*`` objects) as parameters. For instance, here is a pure_main.c
@@ -4053,7 +4011,7 @@ calls the ``fact`` function from the Pure program::
 
 And here's how you can compile, link and run this program::
 
-  $ pure -o hello.o -c -s -x hello.pure 7
+  $ pure -o hello.o -c -x hello.pure 7
   $ gcc -o pure_main.o -c pure_main.c
   $ g++ -o myhello hello.o pure_main.o -lpure
   $ ./myhello
@@ -4064,23 +4022,90 @@ And here's how you can compile, link and run this program::
 Note that the first two lines are output from the Pure program; the last line
 is what gets printed by the ``main`` routine in pure_main.c.
 
-Last but not least, ``pure -c`` can also generate just plain LLVM assembler
-code::
+Caveats and Notes
+=================
 
-  pure -c hello.pure -o hello.ll
+This section is a grab bag of casual remarks, useful tips and tricks, and
+information on common pitfalls, quirks and limitations of the current
+implementation and how to deal with them.
 
-Note the .ll extension; this tells the compiler that you want an LLVM
-assembler file. An LLVM bitcode file can be created just as easily::
+Purity
+------
 
-  pure -c hello.pure -o hello.bc
+People keep asking me what's so "pure" about Pure. The long and apologetic
+answer is that Pure tries to stay as close as possible to the spirit of term
+rewriting without sacrificing practicality. It's possible and in fact quite
+easy to write purely functional programs in Pure, and you're encouraged to use
+it that way when possible. On the other hand, Pure doesn't get in your way if
+you want to call external operations with side effects; it does allow you to
+call any C function after all.
 
-In these cases you'll have to have to handle the rest of the compilation
-yourself. This gives you the opportunity, e.g., to play with special
-optimization and code generation options provided by the LLVM
-toolchain. Please refer to the `LLVM documentation`_ (in particular, the
-description of the opt and llc programs) for details.
+The short answer is that I simply liked the name, and there wasn't any
+programming language named "Pure" yet (quite a feat nowadays), so there's one
+now. :)
 
-.. _LLVM documentation: http://llvm.org/docs/
+Backward Compatibility
+----------------------
+
+Pure 0.7 introduced built-in matrix structures, which called for some minor
+changes in the syntax of comprehensions and arithmetic
+sequences. Specifically, the template expression and generator/filter clauses
+of a comprehension are now separated with ``|`` instead of ``;``. Moreover,
+arithmetic sequences with arbitrary stepsize are now written ``x:y..z``
+instead of ``x,y..z``, and the '``..``' operator now has a higher precedence
+than the '``,``' operator. This makes writing matrix slices like
+``x!!(i..j,k..l)`` much more convenient.
+
+In Pure 0.13 the naming of the logical and bitwise operations was changed, so
+that these are now called ``~``, ``&&``, ``||`` and ``not``/``and``/``or``,
+respectively. (Previously, ``~`` was used for bitwise, ``not`` for logical
+negation, which was rather inconsistent, albeit compatible with the naming of
+the ``not`` operation in Haskell and ML.) Also, to stay in line with this
+naming scheme, inequality was renamed to ``~=`` (previously ``!=``).
+
+Pure 0.14 introduced the namespaces feature. Consequently, the scope of
+private symbols is now confined to a namespace rather than a source module;
+scripts making use of private symbols need to be adapted accordingly. Also
+note that syntax like ``foo::int`` may now also denote a qualified symbol
+rather than a tagged variable, if ``foo`` has been declared as a
+namespace. You can work around such ambiguities by renaming the variable, or
+by placing spaces around the '``::``' delimiter (these aren't permitted in a
+qualified symbol, so the construct ``foo :: int`` is always interpreted as a
+tagged variable, no matter whether ``foo`` is also a valid namespace).
+
+Pure 0.26 extended the namespaces feature to add support for hierarchical
+namespaces. This means that name lookup works in a slightly different fashion
+now (see `Hierarchical Namespaces`_ for details), but old code which doesn't
+use the new feature should continue to work unchanged.
+
+Pure 0.26 also changed the ``nullary`` keyword to ``nonfix``, which is more
+consistent with the other kinds of fixity declarations. Moreover, the parser
+was enhanced so that it can cope with a theoretically unbounded number of
+precedence levels, and the system of standard operators in the prelude was
+modified so that it becomes possible to sneak in new operator symbols with
+ease; details can be found in the `Symbol Declarations`_ section.
+
+Pure 0.41 added support for optimization of indirect tail calls, so that any
+previous restrictions on the use of tail recursion in indirect function calls
+and mutually recursive globals have been removed.
+
+Also, as of Pure 0.41 the batch compiler produces stripped executables by
+default. To create unstripped executables you now have to use the -u option,
+see `Code Size and Unstripped Executables`_ for details. The -s option to
+produce stripped executables is still provided for backward compatibility, but
+it won't have any effect unless you use it to override a previous -u option.
+
+Error Recovery
+--------------
+
+The parser uses a fairly simplistic panic mode error recovery which tries to
+catch syntax errors at the toplevel only. This seems to work reasonably well,
+but might catch some errors much too late. Unfortunately, Pure's terseness
+makes it rather difficult to design a better scheme. As a remedy, the parser
+accepts an empty definition (just ``;`` by itself) at the toplevel only. Thus,
+in interactive usage, if the parser seems to eat away your input without doing
+anything, entering an extra semicolon or two should break the spell, putting
+you back at the toplevel where you can start typing the definition again.
 
 The __show__ Function
 ---------------------
