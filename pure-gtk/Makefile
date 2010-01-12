@@ -95,7 +95,7 @@ generate:
 examples: $(examples)
 
 examples/%: examples/%.pure
-	pure $(PURE_COPTS) -c -s $< -o $@
+	pure $(PURE_COPTS) -c $< -o $@
 
 # Install targets.
 
