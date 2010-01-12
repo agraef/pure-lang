@@ -1,0 +1,36 @@
+
+/* Bidirectional pipe example. */
+
+using system, posix;
+
+extern int close(int), int dup2(int, int), int pipe(void*);
+
+/* popen2 creates a bidirectional pipe to the given command, which is executed
+   via the shell. It returns a pair in,out of files for the read and write
+   ends of the pipe. NOTE: This requires a UNIX-like system. */
+
+popen2 cmd = if fork == 0 then child else parent with
+  child = execv "/bin/sh" ["/bin/sh", "-c", cmd] when
+    // close the parent side fds
+    do close parent_fd;
+    // reassign the child side fds to stdin/out
+    do (\i -> dup2 (child_fd!i) i) [0,1];
+    do close child_fd;
+  end;
+  parent = fdopen (parent_fd!0) "r", fdopen (parent_fd!1) "w" when
+    // close the child side fds
+    do close child_fd;
+  end;
+end when
+  // create a pair of pipes for the parent and the child
+  pipe1 = {0,0}; pipe pipe1; pipe2 = {0,0}; pipe pipe2;
+  parent_fd = {pipe1!0, pipe2!1}; child_fd = {pipe2!0, pipe1!1};
+end;
+
+// Example:
+
+pipe_sort xs = init $ split "\n" $ fget in when
+  in, out = popen2 "sort"; fputs (join "\n" xs) out; fclose out;
+end;
+
+pipe_sort ["the","little","brown","fox","jumps","over","the","lazy","dog"];
