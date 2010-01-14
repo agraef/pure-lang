@@ -4,11 +4,17 @@
 Gnuplot bindings
 ================
 
-:File:				gplot.pure
-:Description:		gnuplot binding via stdin pipe
 :Author:			Kay-Uwe Kirstein
 :Version:			0.1
-:Date:				11.01.2010
+
+Copying
+=======
+
+Copyright (c) 2009, 2010 by Kay-Uwe Kirstein.
+
+pure-gplot is free software: you can redistribute it and/or modify it under the terms of the
+GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License,
+or (at your option) any later version.
 */
 
 namespace gplot;
@@ -16,7 +22,7 @@ namespace gplot;
 // constants:
 public GPLOT_EXE;
 
-/*// public low-level functions:
+/* // public low-level functions:
 public open close puts_no_echo puts;
 
 // public convenience functions:
@@ -81,10 +87,15 @@ Open / Closing Functions
 	``open`` returns a pointer to the actual pipe for later usage, so a typical call
 	to open might look like this:
 	
-	``let gp = gplot::open "gnuplot";``
+	``let gp = gplot::open "/path_to_gnuplot/gnuplot";``
 	
-	For windows, gnuplot comes with a special executable ``pgnuplot.exe``,
-	which is capable of stdin pipes in contrast to the normal ``gnuplot.exe`` under windows.
+	gplot::GPLOT_EXE is a predefined variable with the standard Gnuplot executable.
+	It is set to ``pgnuplot`` on Windows and to ``gnuplot`` otherwise and can be overridden by
+	the GPLOT_EXE environment variable. (``pgnuplot.exe`` is a special executable for Windows, 
+	which is capable of stdin pipes in contrast to the normal ``gnuplot.exe``).
+	Usage of ``gplot::GPLOT_EXE`` might look like this:
+	
+	``let gp = gplot::open gplot::GPLOT_EXE;``
 
 	``gplot::close gp;``
 
@@ -221,13 +232,29 @@ gplot::output gp term name	= _set_term term + _set_out name with
 						_set_term term	= puts ("set terminal " + term) gp;
 						_set_out name	= puts ("set output " + (add_dquote name)) gp;
 					end;
-//output gp () ()		= puts "set terminal windows" gp;
+// output gp () ()		= puts "set terminal windows" gp;
 
-// private functions
-// =================
+/* ..
 
-// data conversion
-//gpdata ys@(_:_) = join "\n" (map str ys);
+	``gplot::xlabel gp name`` or ``gplot::ylabel gp name``
+	
+	Adds labels to the x- or y-axis, respectively. An empty name removes the label for successive plots,
+	e.g., ``gplot::xlabel gp ""``.
+*/
+gplot::xlabel gp name	= gplot::puts ("set xlabel " + add_dquote name) gp;
+gplot::ylabel gp name	= gplot::puts ("set ylabel " + add_dquote name) gp;
+
+/* ..
+
+Private Functions
+-----------------
+
+	``gpdata data``, ``gpxydata (xdata, y1data, ..)``
+	
+	Internal functions to handle lists of data point (``gpdata``) or tuples of lists of data points (``gpxydata``)
+	and convert them to be understood by Gnuplot.
+*/
+// gpdata ys@(_:_) = join "\n" (map str ys);
 gpdata ys@(yv:_) = (str yv) + "\n" + gpdata (tail ys);
 gpdata [] = "";
 
@@ -239,14 +266,18 @@ gpxydata [] = gpdata_end;
 gpdata_end = "e";
 gpdata_cmd = "'-' ";
 
+/* ..
+
+	``gpxycmd``, ``gpxycmdtitle``
+	
+	Internal function to generate the plotting command for multiple datasets. ``gpxycmdtitle`` adds
+	titles to each dataset, a.k.a plot legend.
+*/
 gpxycmd ds@(xs, ys@(_:_)) opt	= gpdata_cmd + (gpopt opt);
 gpxycmd ds@(xs, ys1, ysn) opt	= gpxycmd (xs, ys1) opt + "," + gpxycmd (xs, ysn) opt;
 
-// gpxycmdtitle ds@(xs, ys1, ysn) opt []				= ();
 gpxycmdtitle ds@(xs, ys1, ysn) opt titles@(th:tl)	= gpdata_cmd + (gptitle th) + (gpopt opt) + "," + gpxycmdtitle (xs, ysn) opt tl;
 gpxycmdtitle ds@(xs, ys1@(_:_)) opt titles@(th:[])	= gpdata_cmd + (gptitle th) + (gpopt opt);
-// gpxycmdtitle ds@(xs, ys@(_:_)) opt title			= gpdata_cmd + (gptitle title) + (gpopt opt);
-// gpxycmdtitle ds@(xs, ys1, ysn) opt titles@(th:tl)	= gpxycmdtitle (xs, ys1) opt th + "," + gpxycmdtitle (xs, ysn) opt tl;
 
 /* ..
 
@@ -277,11 +308,11 @@ add_newline st = st + "\n" if last ll ~= "\n" when
 				= st otherwise;
 
 // add double quotes for string values
-add_dquote st::string	|
-add_dquote st			= _startq $ _endq st with
-							_startq st = if ord (st!0) == 34 then st else "\"" + st;
-							_endq st	= if ord (st!_endpos) == 34 then st else st + "\"" when
-								_endpos = #st - 1;
-							end;
-						end;
+add_dquote ""	= "";
+add_dquote st	= _startq $ _endq st with
+					_startq st = if ord (st!0) == 34 then st else "\"" + st;
+					_endq st	= if ord (st!_endpos) == 34 then st else st + "\"" when
+						_endpos = #st - 1;
+					end;
+				end;
 
