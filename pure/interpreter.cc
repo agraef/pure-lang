@@ -2748,9 +2748,7 @@ void interpreter::promote_ttags(expr f, expr x, expr u, expr v)
       }
     } else {
       // binary int/double operations
-      if (f.tag() == symtab.or_sym().f ||
-	  f.tag() == symtab.and_sym().f ||
-	  f.tag() == symtab.less_sym().f ||
+      if (f.tag() == symtab.less_sym().f ||
 	  f.tag() == symtab.greater_sym().f ||
 	  f.tag() == symtab.lesseq_sym().f ||
 	  f.tag() == symtab.greatereq_sym().f ||
@@ -2764,11 +2762,7 @@ void interpreter::promote_ttags(expr f, expr x, expr u, expr v)
 	x.set_ttag(EXPR::DBL);
       }
     }
-  } else if (f.tag() == symtab.or_sym().f || f.tag() == symtab.and_sym().f)
-    /* These two get special treatment, because they have to be evaluated in
-       short-circuit mode. Operand types will be checked at runtime if
-       necessary. */
-    x.set_ttag(EXPR::INT);
+  }
 }
 
 expr interpreter::subst(const env& vars, expr x, uint8_t idx)
@@ -7016,41 +7010,17 @@ Value *interpreter::when_codegen(expr x, matcher *m,
   }
 }
 
-Value *interpreter::get_int_check(expr x)
+Value *interpreter::get_int_check(Value *u, BasicBlock *failedbb)
 {
   Env& e = act_env();
-  if (x.ttag() == EXPR::INT) {
-    if (x.tag() == EXPR::APP) {
-      // embedded int operation, recursively generate unboxed value
-      Value *u = builtin_codegen(x);
-      return u;
-    } else if (x.tag() == EXPR::INT)
-      // integer constant, return "as is"
-      return SInt(x.ival());
-    else {
-      // int variable, needs unboxing
-      assert(x.tag() == EXPR::VAR);
-      Value *u = codegen(x);
-      Value *p = e.builder.CreateBitCast(u, IntExprPtrTy, "intexpr");
-      Value *v = e.CreateLoadGEP(p, Zero, ValFldIndex, "intval");
-#if 0
-      // collect the temporary, it's not needed any more
-      call("pure_freenew", u);
-#endif
-      return v;
-    }
-  } else {
-    // typeless expression; we have to check the computed value at runtime
-    Value *u = codegen(x);
-    // check that it's actually an integer
-    verify_tag(u, EXPR::INT);
-    // get the value
-    Value *p = e.builder.CreateBitCast(u, IntExprPtrTy, "intexpr");
-    Value *v = e.CreateLoadGEP(p, Zero, ValFldIndex, "intval");
-    // collect the temporary, it's not needed any more
-    call("pure_freenew", u);
-    return v;
-  }
+  // bail out if the given value isn't an integer
+  verify_tag(u, EXPR::INT, failedbb);
+  // get the value
+  Value *p = e.builder.CreateBitCast(u, IntExprPtrTy, "intexpr");
+  Value *v = e.CreateLoadGEP(p, Zero, ValFldIndex, "intval");
+  // collect the temporary, it's not needed any more
+  call("pure_freenew", u);
+  return v;
 }
 
 Value *interpreter::get_int(expr x)
@@ -7200,7 +7170,7 @@ Value *interpreter::builtin_codegen(expr x)
     // binary int operations
     // these two need special treatment (short-circuit evaluation)
     if (f.tag() == symtab.or_sym().f) {
-      Value *u = get_int_check(x.xval1().xval2());
+      Value *u = get_int(x.xval1().xval2());
       Env& e = act_env();
       Value *condv = b.CreateICmpNE(u, Zero, "cond");
       BasicBlock *iftruebb = b.GetInsertBlock();
@@ -7209,7 +7179,7 @@ Value *interpreter::builtin_codegen(expr x)
       b.CreateCondBr(condv, endbb, iffalsebb);
       e.f->getBasicBlockList().push_back(iffalsebb);
       b.SetInsertPoint(iffalsebb);
-      Value *v = get_int_check(x.xval2());
+      Value *v = get_int(x.xval2());
 #if DEBUG
       if (u->getType() != v->getType()) {
 	std::cerr << "** operand mismatch!\n";
@@ -7229,7 +7199,7 @@ Value *interpreter::builtin_codegen(expr x)
       phi->addIncoming(condv2, iffalsebb);
       return b.CreateZExt(phi, int32_type());
     } else if (f.tag() == symtab.and_sym().f) {
-      Value *u = get_int_check(x.xval1().xval2());
+      Value *u = get_int(x.xval1().xval2());
       Env& e = act_env();
       Value *condv = b.CreateICmpNE(u, Zero, "cond");
       BasicBlock *iffalsebb = b.GetInsertBlock();
@@ -7238,7 +7208,7 @@ Value *interpreter::builtin_codegen(expr x)
       b.CreateCondBr(condv, iftruebb, endbb);
       e.f->getBasicBlockList().push_back(iftruebb);
       b.SetInsertPoint(iftruebb);
-      Value *v = get_int_check(x.xval2());
+      Value *v = get_int(x.xval2());
 #if DEBUG
       if (u->getType() != v->getType()) {
 	std::cerr << "** operand mismatch!\n";
@@ -7405,6 +7375,77 @@ Value *interpreter::builtin_codegen(expr x)
   }
 }
 
+bool interpreter::logical_tailcall(int32_t tag, uint32_t n, expr x)
+{
+  if (n != 2 || (tag != symtab.or_sym().f && tag != symtab.and_sym().f))
+    return false;
+  bool is_or = tag == symtab.or_sym().f;
+  Env& e = act_env();
+  Builder& b = act_builder();
+  BasicBlock *okbb = basic_block("ok");
+  BasicBlock *nokbb = basic_block("nok");
+  BasicBlock *failedbb = basic_block("failed");
+  Value *u0 = codegen(x.xval1().xval2()), *u = get_int_check(u0, failedbb);
+  Value *condv = b.CreateICmpNE(u, Zero, "cond");
+  if (is_or)
+    b.CreateCondBr(condv, okbb, nokbb);
+  else
+    b.CreateCondBr(condv, nokbb, okbb);
+  e.f->getBasicBlockList().push_back(okbb);
+  b.SetInsertPoint(okbb);
+  Value *okval = ibox(b.CreateZExt(condv, int32_type()));
+  e.CreateRet(okval);
+  e.f->getBasicBlockList().push_back(nokbb);
+  b.SetInsertPoint(nokbb);
+  Value *nokval = codegen(x.xval2());
+  e.CreateRet(nokval);
+  e.f->getBasicBlockList().push_back(failedbb);
+  b.SetInsertPoint(failedbb);
+  Value *failedval = call(tag, u0, codegen(x.xval2()));
+  e.CreateRet(failedval);
+  return true;
+}
+
+Value *interpreter::logical_funcall(int32_t tag, uint32_t n, expr x)
+{
+  if (n != 2 || (tag != symtab.or_sym().f && tag != symtab.and_sym().f))
+    return 0;
+  bool is_or = tag == symtab.or_sym().f;
+  Env& e = act_env();
+  Builder& b = act_builder();
+  BasicBlock *okbb = basic_block("ok");
+  BasicBlock *nokbb = basic_block("nok");
+  BasicBlock *endbb = basic_block("end");
+  BasicBlock *failedbb = basic_block("failed");
+  Value *u0 = codegen(x.xval1().xval2()), *u = get_int_check(u0, failedbb);
+  Value *condv = b.CreateICmpNE(u, Zero, "cond");
+  if (is_or)
+    b.CreateCondBr(condv, okbb, nokbb);
+  else
+    b.CreateCondBr(condv, nokbb, okbb);
+  e.f->getBasicBlockList().push_back(okbb);
+  b.SetInsertPoint(okbb);
+  Value *okval = ibox(b.CreateZExt(condv, int32_type()));
+  b.CreateBr(endbb);
+  e.f->getBasicBlockList().push_back(nokbb);
+  b.SetInsertPoint(nokbb);
+  Value *nokval = codegen(x.xval2());
+  b.CreateBr(endbb);
+  nokbb = b.GetInsertBlock();
+  e.f->getBasicBlockList().push_back(failedbb);
+  b.SetInsertPoint(failedbb);
+  Value *failedval = call(tag, u0, codegen(x.xval2()));
+  b.CreateBr(endbb);
+  failedbb = b.GetInsertBlock();
+  e.f->getBasicBlockList().push_back(endbb);
+  b.SetInsertPoint(endbb);
+  PHINode *phi = b.CreatePHI(ExprPtrTy, "fi");
+  phi->addIncoming(okval, okbb);
+  phi->addIncoming(nokval, nokbb);
+  phi->addIncoming(failedval, failedbb);
+  return phi;
+}
+
 Value *interpreter::external_funcall(int32_t tag, uint32_t n, expr x)
 {
   // check for a saturated external function call
@@ -7519,11 +7560,6 @@ Value *interpreter::funcall(int32_t tag, uint8_t idx, uint32_t n, expr x)
     return 0;
 }
 
-/* Experimental support for tail-recursive logical operators (&& and ||). This
-   works, but is inherently broken (e.g., 0||-1 might return either -1 or 1,
-   depending on whether the code is TCO'ed or not). Never use this. */
-#define TAILOPS 0
-
 void interpreter::toplevel_codegen(expr x, const rule *rp)
 {
   if (x.is_null()) {
@@ -7541,42 +7577,12 @@ void interpreter::toplevel_codegen(expr x, const rule *rp)
       toplevel_cond(x.xval1(), x.xval2(), expr(), rp);
       return;
     }
-    Env& e = act_env();
-#if TAILOPS
-    Builder& b = act_builder();
     expr f; uint32_t n = count_args(x, f);
-    if (n == 2 && x.ttag() == EXPR::INT &&
-	x.xval1().xval2().ttag() != EXPR::DBL &&
-	x.xval2().ttag() != EXPR::DBL) {
-      if (f.tag() == symtab.or_sym().f) {
-	Value *u = get_int(x.xval1().xval2());
-	Value *condv = b.CreateICmpNE(u, Zero, "cond");
-	BasicBlock *iftruebb = basic_block("iftrue");
-	BasicBlock *iffalsebb = basic_block("iffalse");
-	b.CreateCondBr(condv, iftruebb, iffalsebb);
-	e.f->getBasicBlockList().push_back(iftruebb);
-	b.SetInsertPoint(iftruebb);
-	e.CreateRet(ibox(One), rp);
-	e.f->getBasicBlockList().push_back(iffalsebb);
-	b.SetInsertPoint(iffalsebb);
-	toplevel_codegen(x.xval2(), rp);
-      } else if (f.tag() == symtab.and_sym().f) {
-	Value *u = get_int(x.xval1().xval2());
-	Value *condv = b.CreateICmpNE(u, Zero, "cond");
-	BasicBlock *iftruebb = basic_block("iftrue");
-	BasicBlock *iffalsebb = basic_block("iffalse");
-	b.CreateCondBr(condv, iftruebb, iffalsebb);
-	e.f->getBasicBlockList().push_back(iffalsebb);
-	b.SetInsertPoint(iffalsebb);
-	e.CreateRet(ibox(Zero), rp);
-	e.f->getBasicBlockList().push_back(iftruebb);
-	b.SetInsertPoint(iftruebb);
-	toplevel_codegen(x.xval2(), rp);
-      } else
-	e.CreateRet(codegen(x), rp);
-    } else
-#endif
-      e.CreateRet(codegen(x), rp);
+    if (f.tag() > 0 && logical_tailcall(f.tag(), n, x))
+      // built-in short-circuit ops (&& and ||)
+      return;
+    Env& e = act_env();
+    e.CreateRet(codegen(x), rp);
   } else
 #endif
     act_env().CreateRet(codegen(x), rp);
@@ -8138,6 +8144,9 @@ Value *interpreter::codegen(expr x, bool quote)
       if (f.tag() == EXPR::FVAR && (v = funcall(f.vtag(), f.vidx(), n, x)))
 	// local function call
 	return v;
+      else if (f.tag() > 0 && (v = logical_funcall(f.tag(), n, x)))
+	// built-in short-circuit ops (&& and ||)
+	return v;
       else if (f.tag() > 0 && (v = external_funcall(f.tag(), n, x)))
 	// external function call
 	return v;
@@ -8378,6 +8387,24 @@ Value *interpreter::cbox(int32_t tag)
 Value *interpreter::call(Value *x)
 {
   return call("pure_call", x);
+}
+
+// Simple function call with two parameters. This is used to make the
+// built-in short-circuit ops extensible.
+
+Value *interpreter::call(int32_t f, Value *x, Value *y)
+{
+  Value *retv;
+  map<int32_t,GlobalVar>::iterator v = globalvars.find(f);
+  // If we already have a definition then use it, otherwise create a cbox
+  // which can be patched up later.
+  if (v != globalvars.end())
+    retv = act_builder().CreateLoad(v->second.v);
+  else
+    retv = cbox(f);
+  retv = apply(retv, x);
+  retv = apply(retv, y);
+  return retv;
 }
 
 // Execute a function application.
@@ -9224,6 +9251,18 @@ void interpreter::verify_tag(Value *v, int32_t tag)
   // check that the given expression value has the given tag, throw an
   // exception otherwise
   return unwind_iffalse(check_tag(v, tag));
+}
+
+void interpreter::verify_tag(Value *v, int32_t tag, BasicBlock *failedbb)
+{
+  // check that the given expression value has the given tag, jump to the
+  // given label otherwise
+  Env& f = act_env();
+  assert(f.f!=0);
+  BasicBlock *okbb = basic_block("ok");
+  f.builder.CreateCondBr(check_tag(v, tag), okbb, failedbb);
+  f.f->getBasicBlockList().push_back(okbb);
+  f.builder.SetInsertPoint(okbb);
 }
 
 // Emit matching code.

@@ -1,5 +1,21 @@
 2010-01-16  Albert Graef  <Dr.Graef@t-online.de>
 
+	* interpreter.cc/hh: Due to popular demand, the semantics of the
+	short-circuit operators (&& and ||) were reworked so that they are
+	both extensible and tail-recursive now. The builtins are now
+	implemented as if defined by the following equations, where the
+	second operand y is only evaluated if necessary:
+
+	x::int && y = if x then x else y;
+	x::int || y = if x then y else x;
+
+	If the builtin definitions fail then the second operand is
+	evaluated and the resulting symbolic term is handled as usual,
+	i.e., it is reduced using the equations specified by the
+	programmer, and if the term is in normal form then it is returned
+	as is. Thus && and || can now be used in symbolic evaluations just
+	like the other builtins.
+
 	* examples/recursive.pure: Add support for batch compilation.
 
 	* interpreter.cc (builtin_codegen): Fix to make logical operators

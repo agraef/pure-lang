@@ -783,7 +783,7 @@ private:
   llvm::Value *builtin_codegen(expr x);
   llvm::Value *matrix_codegen(expr x);
   llvm::Value *list_codegen(expr x, bool quote = false);
-  llvm::Value *get_int_check(expr x);
+  llvm::Value *get_int_check(llvm::Value *u, llvm::BasicBlock *failedbb);
   llvm::Value *get_int(expr x);
   llvm::Value *get_double(expr x);
   llvm::Value *when_codegen(expr x, matcher *m, rulel::const_iterator r,
@@ -791,8 +791,11 @@ private:
   llvm::Value *funcall(Env *f, llvm::Value *x);
   llvm::Value *funcall(Env *f, uint32_t n, expr x);
   llvm::Value *funcall(int32_t tag, uint8_t idx, uint32_t n, expr x);
+  bool logical_tailcall(int32_t tag, uint32_t n, expr x);
+  llvm::Value *logical_funcall(int32_t tag, uint32_t n, expr x);
   llvm::Value *external_funcall(int32_t tag, uint32_t n, expr x);
   llvm::Value *call(llvm::Value *x);
+  llvm::Value *call(int32_t f, llvm::Value *x, llvm::Value *y);
   llvm::Value *apply(llvm::Value *x, llvm::Value *y);
   llvm::Value *applc(llvm::Value *x, llvm::Value *y);
   llvm::Value *cond(expr x, expr y, expr z);
@@ -853,6 +856,7 @@ private:
   void unwind_iftrue(llvm::Value *v);
   llvm::Value *check_tag(llvm::Value *v, int32_t tag);
   void verify_tag(llvm::Value *v, int32_t tag);
+  void verify_tag(llvm::Value *v, int32_t tag, llvm::BasicBlock *failedbb);
   list<char*> cache;
   const char *mklabel(const char *name, uint32_t i);
   const char *mklabel(const char *name, uint32_t i, uint32_t j);
