@@ -3055,9 +3055,9 @@ expr interpreter::bsubst(expr x)
     int32_t u = x.xval1().xval2().ival();
     int32_t v = x.xval2().ival();
     if (f.tag() == symtab.or_sym().f)
-      return expr(EXPR::INT, u||v);
+      return expr(EXPR::INT, u?u:v);
     else if (f.tag() == symtab.and_sym().f)
-      return expr(EXPR::INT, u&&v);
+      return expr(EXPR::INT, u?v:u);
     else if (f.tag() == symtab.bitor_sym().f)
       return expr(EXPR::INT, u|v);
     else if (f.tag() == symtab.bitand_sym().f)
@@ -7018,8 +7018,6 @@ Value *interpreter::get_int_check(Value *u, BasicBlock *failedbb)
   // get the value
   Value *p = e.builder.CreateBitCast(u, IntExprPtrTy, "intexpr");
   Value *v = e.CreateLoadGEP(p, Zero, ValFldIndex, "intval");
-  // collect the temporary, it's not needed any more
-  call("pure_freenew", u);
   return v;
 }
 
@@ -7189,15 +7187,14 @@ Value *interpreter::builtin_codegen(expr x)
 	assert(0 && "operand mismatch");
       }
 #endif
-      Value *condv2 = b.CreateICmpNE(v, Zero, "cond");
       b.CreateBr(endbb);
       iffalsebb = b.GetInsertBlock();
       e.f->getBasicBlockList().push_back(endbb);
       b.SetInsertPoint(endbb);
-      PHINode *phi = b.CreatePHI(int1_type(), "fi");
-      phi->addIncoming(condv, iftruebb);
-      phi->addIncoming(condv2, iffalsebb);
-      return b.CreateZExt(phi, int32_type());
+      PHINode *phi = b.CreatePHI(int32_type(), "fi");
+      phi->addIncoming(u, iftruebb);
+      phi->addIncoming(v, iffalsebb);
+      return phi;
     } else if (f.tag() == symtab.and_sym().f) {
       Value *u = get_int(x.xval1().xval2());
       Env& e = act_env();
@@ -7218,15 +7215,14 @@ Value *interpreter::builtin_codegen(expr x)
 	assert(0 && "operand mismatch");
       }
 #endif
-      Value *condv2 = b.CreateICmpNE(v, Zero, "cond");
       b.CreateBr(endbb);
       iftruebb = b.GetInsertBlock();
       e.f->getBasicBlockList().push_back(endbb);
       b.SetInsertPoint(endbb);
-      PHINode *phi = b.CreatePHI(int1_type(), "fi");
-      phi->addIncoming(condv, iffalsebb);
-      phi->addIncoming(condv2, iftruebb);
-      return b.CreateZExt(phi, int32_type());
+      PHINode *phi = b.CreatePHI(int32_type(), "fi");
+      phi->addIncoming(u, iffalsebb);
+      phi->addIncoming(v, iftruebb);
+      return phi;
     }
     if (x.xval1().xval2().ttag() == EXPR::DBL || x.xval2().ttag() == EXPR::DBL)
       // This is actually a mixed int/double operation, handled below.
@@ -7393,7 +7389,7 @@ bool interpreter::logical_tailcall(int32_t tag, uint32_t n, expr x)
     b.CreateCondBr(condv, nokbb, okbb);
   e.f->getBasicBlockList().push_back(okbb);
   b.SetInsertPoint(okbb);
-  Value *okval = ibox(b.CreateZExt(condv, int32_type()));
+  Value *okval = u0;
   e.CreateRet(okval);
   e.f->getBasicBlockList().push_back(nokbb);
   b.SetInsertPoint(nokbb);
@@ -7425,7 +7421,7 @@ Value *interpreter::logical_funcall(int32_t tag, uint32_t n, expr x)
     b.CreateCondBr(condv, nokbb, okbb);
   e.f->getBasicBlockList().push_back(okbb);
   b.SetInsertPoint(okbb);
-  Value *okval = ibox(b.CreateZExt(condv, int32_type()));
+  Value *okval = u0;
   b.CreateBr(endbb);
   e.f->getBasicBlockList().push_back(nokbb);
   b.SetInsertPoint(nokbb);
