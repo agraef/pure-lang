@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>The Pure Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2010-01-12" />
+<meta name="date" content="2010-01-16" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-01-12</td></tr>
+<td>2010-01-16</td></tr>
 </tbody>
 </table>
 <!-- Note: This document is formatted using docutils. The Makefile has rules -->
@@ -1167,8 +1167,8 @@ negated equality predicates are named a bit differently: <tt class="docutils lit
 corresponding bitwise operations are named <tt class="docutils literal"><span class="pre">not</span></tt>, <tt class="docutils literal"><span class="pre">and</span></tt> and
 <tt class="docutils literal"><span class="pre">or</span></tt>. Moreover, following these conventions, inequality is denoted
 <tt class="docutils literal"><span class="pre">~=</span></tt>. Also note that <tt class="docutils literal"><span class="pre">&amp;&amp;</span></tt> and <tt class="docutils literal"><span class="pre">||</span></tt> are special forms which are evaluated
-in short-circuit mode like in C (see below), whereas the bitwise connectives
-receive their arguments using call-by-value, just like the other arithmetic
+in short-circuit mode (see below), whereas the bitwise connectives receive
+their arguments using call-by-value, just like the other arithmetic
 operations.</p>
 </div>
 <div class="section" id="special-forms">
@@ -1178,14 +1178,50 @@ forms. In particular, the conditional expression <tt class="docutils literal"><s
 special form with call-by-name arguments <tt class="docutils literal"><span class="pre">y</span></tt> and <tt class="docutils literal"><span class="pre">z</span></tt>; only one of the
 branches is actually evaluated, depending on the value of <tt class="docutils literal"><span class="pre">x</span></tt>. Similarly,
 the logical connectives <tt class="docutils literal"><span class="pre">&amp;&amp;</span></tt> and <tt class="docutils literal"><span class="pre">||</span></tt> evaluate their operands in
-short-circuit mode just like in C. Thus, e.g., <tt class="docutils literal"><span class="pre">x&amp;&amp;y</span></tt> immediately becomes
-false if <tt class="docutils literal"><span class="pre">x</span></tt> evaluates to false, without ever evaluating <tt class="docutils literal"><span class="pre">y</span></tt>. Also note
-that <tt class="docutils literal"><span class="pre">&amp;&amp;</span></tt> and <tt class="docutils literal"><span class="pre">||</span></tt> only work with machine int arguments and always raise
-an exception in case of argument mismatch, so they cannot be used for symbolic
-evaluations. In contrast, the bitwise connectives (<tt class="docutils literal"><span class="pre">not</span></tt>, <tt class="docutils literal"><span class="pre">and</span></tt>, <tt class="docutils literal"><span class="pre">or</span></tt>)
-use the standard call-by-value argument passing, and the prelude defines these
-operations only for machine int and bigint operands, so that they can be used
-in symbolic expressions like <tt class="docutils literal"><span class="pre">a</span> <span class="pre">and</span> <span class="pre">b</span> <span class="pre">or</span> <span class="pre">c</span></tt>.</p>
+short-circuit mode. Thus, e.g., <tt class="docutils literal"><span class="pre">x&amp;&amp;y</span></tt> immediately becomes false if <tt class="docutils literal"><span class="pre">x</span></tt>
+evaluates to false, without ever evaluating <tt class="docutils literal"><span class="pre">y</span></tt>. The built-in definitions of
+these operations work as if they were defined by the following equations (but
+note that the second operand is indeed passed &quot;by name&quot;, so that it isn't
+evaluated unless its value is actually needed):</p>
+<pre class="literal-block">
+x::int &amp;&amp; y = if x then x else y;
+x::int || y = if x then y else x;
+</pre>
+<p>(Note that this isn't quite the same as in C, as the results of these
+operations are <em>not</em> normalized, i.e., they may return nonzero values other
+than 1 to denote &quot;true&quot;. This has the advantage that <tt class="docutils literal"><span class="pre">&amp;&amp;</span></tt> and <tt class="docutils literal"><span class="pre">||</span></tt> can be
+implemented tail-recursively, see <a class="reference internal" href="#stack-size-and-tail-recursion">Stack Size and Tail Recursion</a>. Thus, if
+you need a normalized truth value then you'll have to make sure that either
+both operands are already normalized, or you'll have to normalize the result
+yourself.)</p>
+<p>If the built-in definitions of <tt class="docutils literal"><span class="pre">&amp;&amp;</span></tt> and <tt class="docutils literal"><span class="pre">||</span></tt> fail then both operands are
+evaluated and the resulting symbolic term is reduced using the equations
+specified by the programmer, which allows you to extend the definitions of
+<tt class="docutils literal"><span class="pre">&amp;&amp;</span></tt> and <tt class="docutils literal"><span class="pre">||</span></tt> just as with other builtins. Also note that if the result
+term is in normal form then it is returned as is, thus <tt class="docutils literal"><span class="pre">&amp;&amp;</span></tt> and <tt class="docutils literal"><span class="pre">||</span></tt> can
+be used in symbolic evaluations as usual. For instance, the following
+equations let you compute the disjunctive normal form of logical expressions:</p>
+<pre class="literal-block">
+// eliminate double negations:
+~~a           = a;
+
+// de Morgan's laws:
+~(a || b)     = ~a &amp;&amp; ~b;
+~(a &amp;&amp; b)     = ~a || ~b;
+
+// distributivity:
+a &amp;&amp; (b || c) = a &amp;&amp; b || a &amp;&amp; c;
+(a || b) &amp;&amp; c = a &amp;&amp; c || b &amp;&amp; c;
+
+// associativity:
+(a &amp;&amp; b) &amp;&amp; c = a &amp;&amp; (b &amp;&amp; c);
+(a || b) || c = a || (b || c);
+</pre>
+<p>Example:</p>
+<pre class="literal-block">
+&gt; a || ~(b || (c &amp;&amp; ~d));
+a||~b&amp;&amp;~c||~b&amp;&amp;d
+</pre>
 <p>The sequencing operator <tt class="docutils literal"><span class="pre">$$</span></tt> evaluates its left operand, immediately throws
 the result away and then goes on to evaluate the right operand which gives the
 result of the entire expression. This operator is useful to write
@@ -4204,7 +4240,14 @@ modified so that it becomes possible to sneak in new operator symbols with
 ease; details can be found in the <a class="reference internal" href="#symbol-declarations">Symbol Declarations</a> section.</p>
 <p>Pure 0.41 added support for optimization of indirect tail calls, so that any
 previous restrictions on the use of tail recursion in indirect function calls
-and mutually recursive globals have been removed.</p>
+and mutually recursive globals have been removed. Moreover, the logical
+operators <tt class="docutils literal"><span class="pre">&amp;&amp;</span></tt> and <tt class="docutils literal"><span class="pre">||</span></tt> are now tail-recursive in their second operand and
+can also be extended with user-defined equations, just like the other
+builtins. Note that this implies that the values returned by <tt class="docutils literal"><span class="pre">&amp;&amp;</span></tt> and <tt class="docutils literal"><span class="pre">||</span></tt>
+aren't normalized to the values 0 and 1 any more (this isn't possible with
+tail call semantics). If you need this then you'll have to make sure that
+either the operands are already normalized, or you'll have to normalize the
+result yourself.</p>
 <p>Also, as of Pure 0.41 the batch compiler produces stripped executables by
 default. To create unstripped executables you now have to use the -u option,
 see <a class="reference internal" href="#code-size-and-unstripped-executables">Code Size and Unstripped Executables</a> for details. The -s option to
@@ -4887,10 +4930,10 @@ Your operating system should supply you with a command such as ulimit(1) to
 set the real process stack size. (The <tt class="docutils literal"><span class="pre">PURE_STACK</span></tt> limit should be a little
 less than that, to account for temporary stack usage by the interpreter
 itself.)</p>
-<p>Fortunately, Pure normally does proper tail calls (if LLVM provides that
-feature on the platform at hand), so most tail-recursive definitions should
-work fine in limited stack space. For instance, the following little program
-will loop forever if your platform supports the required optimizations:</p>
+<p>Like Scheme, Pure does proper tail calls (if LLVM provides that feature on the
+platform at hand), so tail-recursive definitions should work fine in limited
+stack space. For instance, the following little program will loop forever if
+your platform supports the required optimizations:</p>
 <pre class="literal-block">
 loop = loop;
 loop;
@@ -4898,13 +4941,8 @@ loop;
 <p>This also works if your definition involves function parameters, guards and
 multiple equations, of course. Moreover, conditional expressions
 (<tt class="docutils literal"><span class="pre">if</span></tt>-<tt class="docutils literal"><span class="pre">then</span></tt>-<tt class="docutils literal"><span class="pre">else</span></tt>) are tail-recursive in both branches, and the
-sequence operator <tt class="docutils literal"><span class="pre">$$</span></tt> is tail-recursive in its second operand. Note,
-however, that the logical operators <tt class="docutils literal"><span class="pre">&amp;&amp;</span></tt> and <tt class="docutils literal"><span class="pre">||</span></tt> are <em>not</em> tail-recursive
-in Pure, because they are required to always yield a proper truth value (0 or
-1), which wouldn't be possible with tail call semantics. (This allows the
-compiler to generate much better code for logical expressions.) If this is a
-problem then you should use <tt class="docutils literal"><span class="pre">if</span></tt>-<tt class="docutils literal"><span class="pre">then</span></tt>-<tt class="docutils literal"><span class="pre">else</span></tt> instead. E.g., <tt class="docutils literal"><span class="pre">foo</span> <span class="pre">x</span> <span class="pre">&amp;&amp;</span>
-<span class="pre">bar</span> <span class="pre">x</span></tt> might be rewritten as: <tt class="docutils literal"><span class="pre">if</span> <span class="pre">foo</span> <span class="pre">x</span> <span class="pre">then</span> <span class="pre">1</span> <span class="pre">else</span> <span class="pre">bar</span> <span class="pre">x</span></tt>.</p>
+logical operators <tt class="docutils literal"><span class="pre">&amp;&amp;</span></tt> and <tt class="docutils literal"><span class="pre">||</span></tt>, as well as the sequence operator <tt class="docutils literal"><span class="pre">$$</span></tt>,
+are tail-recursive in their second operand.</p>
 <p>Also note that tail call optimization is <em>always</em> disabled if the debugger is
 enabled (-g). This makes it much easier to debug programs, but means that you
 may run into stack overflows when debugging a program that does deep tail

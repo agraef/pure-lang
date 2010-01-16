@@ -884,8 +884,8 @@ negated equality predicates are named a bit differently: ``~``, ``&&`` and
 corresponding bitwise operations are named ``not``, ``and`` and
 ``or``. Moreover, following these conventions, inequality is denoted
 ``~=``. Also note that ``&&`` and ``||`` are special forms which are evaluated
-in short-circuit mode like in C (see below), whereas the bitwise connectives
-receive their arguments using call-by-value, just like the other arithmetic
+in short-circuit mode (see below), whereas the bitwise connectives receive
+their arguments using call-by-value, just like the other arithmetic
 operations.
 
 Special Forms
@@ -896,14 +896,50 @@ forms. In particular, the conditional expression ``if x then y else z`` is a
 special form with call-by-name arguments ``y`` and ``z``; only one of the
 branches is actually evaluated, depending on the value of ``x``. Similarly,
 the logical connectives ``&&`` and ``||`` evaluate their operands in
-short-circuit mode just like in C. Thus, e.g., ``x&&y`` immediately becomes
-false if ``x`` evaluates to false, without ever evaluating ``y``. Also note
-that ``&&`` and ``||`` only work with machine int arguments and always raise
-an exception in case of argument mismatch, so they cannot be used for symbolic
-evaluations. In contrast, the bitwise connectives (``not``, ``and``, ``or``)
-use the standard call-by-value argument passing, and the prelude defines these
-operations only for machine int and bigint operands, so that they can be used
-in symbolic expressions like ``a and b or c``.
+short-circuit mode. Thus, e.g., ``x&&y`` immediately becomes false if ``x``
+evaluates to false, without ever evaluating ``y``. The built-in definitions of
+these operations work as if they were defined by the following equations (but
+note that the second operand is indeed passed "by name", so that it isn't
+evaluated unless its value is actually needed)::
+
+  x::int && y = if x then x else y;
+  x::int || y = if x then y else x;
+
+(Note that this isn't quite the same as in C, as the results of these
+operations are *not* normalized, i.e., they may return nonzero values other
+than 1 to denote "true". This has the advantage that ``&&`` and ``||`` can be
+implemented tail-recursively, see `Stack Size and Tail Recursion`_. Thus, if
+you need a normalized truth value then you'll have to make sure that either
+both operands are already normalized, or you'll have to normalize the result
+yourself.)
+
+If the built-in definitions of ``&&`` and ``||`` fail then both operands are
+evaluated and the resulting symbolic term is reduced using the equations
+specified by the programmer, which allows you to extend the definitions of
+``&&`` and ``||`` just as with other builtins. Also note that if the result
+term is in normal form then it is returned as is, thus ``&&`` and ``||`` can
+be used in symbolic evaluations as usual. For instance, the following
+equations let you compute the disjunctive normal form of logical expressions::
+
+  // eliminate double negations:
+  ~~a           = a;
+
+  // de Morgan's laws:
+  ~(a || b)     = ~a && ~b;
+  ~(a && b)     = ~a || ~b;
+
+  // distributivity:
+  a && (b || c) = a && b || a && c;
+  (a || b) && c = a && c || b && c;
+
+  // associativity:
+  (a && b) && c = a && (b && c);
+  (a || b) || c = a || (b || c);
+
+Example::
+
+  > a || ~(b || (c && ~d));
+  a||~b&&~c||~b&&d
 
 The sequencing operator ``$$`` evaluates its left operand, immediately throws
 the result away and then goes on to evaluate the right operand which gives the
@@ -4087,7 +4123,14 @@ ease; details can be found in the `Symbol Declarations`_ section.
 
 Pure 0.41 added support for optimization of indirect tail calls, so that any
 previous restrictions on the use of tail recursion in indirect function calls
-and mutually recursive globals have been removed.
+and mutually recursive globals have been removed. Moreover, the logical
+operators ``&&`` and ``||`` are now tail-recursive in their second operand and
+can also be extended with user-defined equations, just like the other
+builtins. Note that this implies that the values returned by ``&&`` and ``||``
+aren't normalized to the values 0 and 1 any more (this isn't possible with
+tail call semantics). If you need this then you'll have to make sure that
+either the operands are already normalized, or you'll have to normalize the
+result yourself.
 
 Also, as of Pure 0.41 the batch compiler produces stripped executables by
 default. To create unstripped executables you now have to use the -u option,
@@ -4813,10 +4856,10 @@ set the real process stack size. (The ``PURE_STACK`` limit should be a little
 less than that, to account for temporary stack usage by the interpreter
 itself.)
 
-Fortunately, Pure normally does proper tail calls (if LLVM provides that
-feature on the platform at hand), so most tail-recursive definitions should
-work fine in limited stack space. For instance, the following little program
-will loop forever if your platform supports the required optimizations::
+Like Scheme, Pure does proper tail calls (if LLVM provides that feature on the
+platform at hand), so tail-recursive definitions should work fine in limited
+stack space. For instance, the following little program will loop forever if
+your platform supports the required optimizations::
 
   loop = loop;
   loop;
@@ -4824,13 +4867,8 @@ will loop forever if your platform supports the required optimizations::
 This also works if your definition involves function parameters, guards and
 multiple equations, of course. Moreover, conditional expressions
 (``if``-``then``-``else``) are tail-recursive in both branches, and the
-sequence operator ``$$`` is tail-recursive in its second operand. Note,
-however, that the logical operators ``&&`` and ``||`` are *not* tail-recursive
-in Pure, because they are required to always yield a proper truth value (0 or
-1), which wouldn't be possible with tail call semantics. (This allows the
-compiler to generate much better code for logical expressions.) If this is a
-problem then you should use ``if``-``then``-``else`` instead. E.g., ``foo x &&
-bar x`` might be rewritten as: ``if foo x then 1 else bar x``.
+logical operators ``&&`` and ``||``, as well as the sequence operator ``$$``,
+are tail-recursive in their second operand.
 
 Also note that tail call optimization is *always* disabled if the debugger is
 enabled (-g). This makes it much easier to debug programs, but means that you
