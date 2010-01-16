@@ -3399,114 +3399,101 @@ pure_interp *pure_create_interp(int argc, char *argv[])
   string prelude = interp.libdir+string("prelude.pure");
   // scan the command line options
   list<string> myargs;
-  if (argv && *argv) for (char **args = ++argv; *args; ++args)
-    if (*args == string("-h") || *args == string("--help"))
-      /* ignored */;
-    else if (*args == string("--version"))
-      /* ignored */;
-    else if (*args == string("-c"))
-      /* ignored */;
-    else if (*args == string("-fPIC") || *args == string("-fpic"))
-      /* ignored */;
-    else if (*args == string("-g"))
-      /* ignored */;
-    else if (*args == string("-i"))
-      /* ignored */;
-    else if (*args == string("-n") || *args == string("--noprelude"))
-      want_prelude = false;
-    else if (*args == string("--norc"))
-      /* ignored */;
-    else if (*args == string("--noediting"))
-      /* ignored */;
-    else if (*args == string("--nochecks"))
-      interp.checks = false;
-    else if (*args == string("--checks"))
-      interp.checks = true;
-    else if (*args == string("--nofold"))
-      interp.folding = false;
-    else if (*args == string("--fold"))
-      interp.folding = true;
-    else if (*args == string("--notc"))
-      interp.use_fastcc = false;
-    else if (*args == string("--tc"))
-      interp.use_fastcc = true;
-    else if (*args == string("-q"))
-      /* ignored */;
-    else if (*args == string("-s"))
-      /* ignored */;
-    else if (*args == string("-u"))
-      /* ignored */;
-    else if (string(*args).substr(0,2) == "-o") {
-      string s = string(*args).substr(2);
-      if (s.empty()) {
-	if (!*++args) {
-	  cerr << "pure_create_interp: -o lacks filename argument\n";
+  if (argv && *argv) for (char **args = ++argv; *args; ++args) {
+    if (**args == '-') {
+      char *arg = *args;
+      if ((arg[1] && arg[2] == 0 && strchr("hcgiqsu", arg[1])) ||
+	  strcmp(arg, "--help") == 0 || strcmp(arg, "--version") == 0 ||
+	  strcmp(arg, "-fPIC") == 0 || strcmp(arg, "-fpic") == 0 ||
+	  strcmp(arg, "--norc") == 0 || strcmp(arg, "--noediting") == 0)
+	/* ignored */;
+      else if (strcmp(arg, "-n") == 0 || strcmp(arg, "--noprelude") == 0)
+	want_prelude = false;
+      else if (strcmp(arg, "--nochecks") == 0)
+	interp.checks = false;
+      else if (strcmp(arg, "--checks") == 0)
+	interp.checks = true;
+      else if (strcmp(arg, "--nofold") == 0)
+	interp.folding = false;
+      else if (strcmp(arg, "--fold") == 0)
+	interp.folding = true;
+      else if (strcmp(arg, "--notc") == 0)
+	interp.use_fastcc = false;
+      else if (strcmp(arg, "--tc") == 0)
+	interp.use_fastcc = true;
+      else if (strncmp(*args, "-o", 2) == 0) {
+	string s = string(*args).substr(2);
+	if (s.empty()) {
+	  if (!*++args) {
+	    cerr << "pure_create_interp: -o lacks filename argument\n";
+	    delete _interp;
+	    return 0;
+	  }
+	}
+	/* ignored */
+      } else if (strncmp(*args, "-l", 2) == 0) {
+	string s = string(*args).substr(2);
+	if (s.empty()) {
+	  if (!*++args) {
+	    cerr << "pure_create_interp: -l lacks libname argument\n";
+	    delete _interp;
+	    return 0;
+	  }
+	}
+	/* ignored */
+      } else if (strncmp(*args, "-I", 2) == 0) {
+	string s = string(*args).substr(2);
+	if (s.empty()) {
+	  if (!*++args) {
+	    cerr << "pure_create_interp: -I lacks directory argument\n";
+	    delete _interp;
+	    return 0;
+	  }
+	  s = *args;
+	}
+	s = unixize(s);
+	if (!s.empty()) {
+	  if (s[s.size()-1] != '/') s.append("/");
+	  interp.includedirs.push_back(s);
+	}
+      } else if (strncmp(*args, "-L", 2) == 0) {
+	string s = string(*args).substr(2);
+	if (s.empty()) {
+	  if (!*++args) {
+	    cerr << "pure_create_interp: -L lacks directory argument\n";
+	    delete _interp;
+	    return 0;
+	  }
+	  s = *args;
+	}
+	s = unixize(s);
+	if (!s.empty()) {
+	  if (s[s.size()-1] != '/') s.append("/");
+	  interp.librarydirs.push_back(s);
+	}
+      } else if (strncmp(*args, "-v", 2) == 0) {
+	string s = string(*args).substr(2);
+	if (s.empty()) continue;
+	char *end;
+	(void)strtoul(s.c_str(), &end, 0);
+	if (*end) {
+	  cerr << "pure_create_interp: invalid option " << *args << endl;
 	  delete _interp;
 	  return 0;
 	}
-      }
-      /* ignored */
-    } else if (string(*args).substr(0,2) == "-l") {
-      string s = string(*args).substr(2);
-      if (s.empty()) {
-	if (!*++args) {
-	  cerr << "pure_create_interp: -l lacks libname argument\n";
-	  delete _interp;
-	  return 0;
-	}
-      }
-      /* ignored */
-    } else if (string(*args).substr(0,2) == "-I") {
-      string s = string(*args).substr(2);
-      if (s.empty()) {
-	if (!*++args) {
-	  cerr << "pure_create_interp: -I lacks directory argument\n";
-	  delete _interp;
-	  return 0;
-	}
-	s = *args;
-      }
-      s = unixize(s);
-      if (!s.empty()) {
-	if (s[s.size()-1] != '/') s.append("/");
-	interp.includedirs.push_back(s);
-      }
-    } else if (string(*args).substr(0,2) == "-L") {
-      string s = string(*args).substr(2);
-      if (s.empty()) {
-	if (!*++args) {
-	  cerr << "pure_create_interp: -L lacks directory argument\n";
-	  delete _interp;
-	  return 0;
-	}
-	s = *args;
-      }
-      s = unixize(s);
-      if (!s.empty()) {
-	if (s[s.size()-1] != '/') s.append("/");
-	interp.librarydirs.push_back(s);
-      }
-    } else if (string(*args).substr(0,2) == "-v") {
-      string s = string(*args).substr(2);
-      if (s.empty()) continue;
-      char *end;
-      (void)strtoul(s.c_str(), &end, 0);
-      if (*end) {
+      } else if (strcmp(arg, "-x") == 0) {
+	while (*++args) myargs.push_back(*args);
+	break;
+      } else if (strcmp(arg, "--") == 0) {
+	while (*++args) myargs.push_back(*args);
+	break;
+      } else {
 	cerr << "pure_create_interp: invalid option " << *args << endl;
 	delete _interp;
 	return 0;
       }
-    } else if (*args == string("-x")) {
-      while (*++args) myargs.push_back(*args);
-      break;
-    } else if (*args == string("--")) {
-      while (*++args) myargs.push_back(*args);
-      break;
-    } else if (**args == '-') {
-      cerr << "pure_create_interp: invalid option " << *args << endl;
-      delete _interp;
-      return 0;
     }
+  }
 #if USE_FASTCC
   // This global option is needed to get tail call optimization (you'll also
   // need to have USE_FASTCC in interpreter.hh enabled).

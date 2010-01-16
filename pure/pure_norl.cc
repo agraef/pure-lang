@@ -237,115 +237,119 @@ main(int argc, char *argv[])
   // scan the command line options
   const string prog = *argv;
   list<string> myargs;
-  for (char **args = ++argv; *args; ++args)
-    if (*args == string("-h") || *args == string("--help")) {
-      cout << "Pure " << PACKAGE_VERSION << " (" << HOST << ") "
-	   << COPYRIGHT << '\n' << USAGE;
-      return 0;
-    } else if (*args == string("--version")) {
-      cout << "Pure " << PACKAGE_VERSION << " (" << HOST << ") "
-	   << COPYRIGHT << '\n';
-      cout << "Compiled for LLVM " << LLVM_VERSION << " (http://llvm.org)\n";
-      return 0;
-    } else if (*args == string("-c"))
-      interp.compiling = true;
-    else if (*args == string("-fPIC") || *args == string("-fpic"))
-      interp.pic = true;
-    else if (*args == string("-g"))
-      interp.debugging = true;
-    else if (*args == string("-i"))
-      force_interactive = true;
-    else if (*args == string("-n") || *args == string("--noprelude"))
-      want_prelude = false;
-    else if (*args == string("--norc"))
-      want_rcfile = false;
-    else if (*args == string("--noediting"))
-      /* ignored */;
-    else if (*args == string("--nochecks"))
-      interp.checks = false;
-    else if (*args == string("--checks"))
-      interp.checks = true;
-    else if (*args == string("--nofold"))
-      interp.folding = false;
-    else if (*args == string("--fold"))
-      interp.folding = true;
-    else if (*args == string("--notc"))
-      interp.use_fastcc = false;
-    else if (*args == string("--tc"))
-      interp.use_fastcc = true;
-    else if (*args == string("-q"))
-      quiet = true;
-    else if (*args == string("-s"))
-      interp.strip = true;
-    else if (*args == string("-u"))
-      interp.strip = false;
-    else if (string(*args).substr(0,2) == "-o") {
-      string s = string(*args).substr(2);
-      if (s.empty()) {
-	if (!*++args) {
-	  interp.error(prog + ": -o lacks filename argument");
+  for (char **args = ++argv; *args; ++args) {
+    if (**args == '-') {
+      char *arg = *args;
+      if (strcmp(arg, "-h") == 0 || strcmp(arg, "--help") == 0) {
+	cout << "Pure " << PACKAGE_VERSION << " (" << HOST << ") "
+	     << COPYRIGHT << '\n' << USAGE;
+	return 0;
+      } else if (strcmp(arg, "--version") == 0) {
+	cout << "Pure " << PACKAGE_VERSION << " (" << HOST << ") "
+	     << COPYRIGHT << '\n';
+	cout << "Compiled for LLVM " << LLVM_VERSION << " (http://llvm.org)\n";
+	return 0;
+      } else if (strcmp(arg, "-c") == 0)
+	interp.compiling = true;
+      else if (strcmp(arg, "-fPIC") == 0 || strcmp(arg, "-fpic") == 0)
+	interp.pic = true;
+      else if (strcmp(arg, "-g") == 0)
+	interp.debugging = true;
+      else if (strcmp(arg, "-i") == 0)
+	force_interactive = true;
+      else if (strcmp(arg, "-n") == 0 || strcmp(arg, "--noprelude") == 0)
+	want_prelude = false;
+      else if (strcmp(arg, "--norc") == 0)
+	want_rcfile = false;
+      else if (strcmp(arg, "--noediting") == 0)
+	want_editing = false;
+      else if (strcmp(arg, "--nochecks") == 0)
+	interp.checks = false;
+      else if (strcmp(arg, "--checks") == 0)
+	interp.checks = true;
+      else if (strcmp(arg, "--nofold") == 0)
+	interp.folding = false;
+      else if (strcmp(arg, "--fold") == 0)
+	interp.folding = true;
+      else if (strcmp(arg, "--notc") == 0)
+	interp.use_fastcc = false;
+      else if (strcmp(arg, "--tc") == 0)
+	interp.use_fastcc = true;
+      else if (strcmp(arg, "-q") == 0)
+	quiet = true;
+      else if (strcmp(arg, "-s") == 0)
+	interp.strip = true;
+      else if (strcmp(arg, "-u") == 0)
+	interp.strip = false;
+      else if (strncmp(*args, "-o", 2) == 0) {
+	string s = string(*args).substr(2);
+	if (s.empty()) {
+	  if (!*++args) {
+	    interp.error(prog + ": -o lacks filename argument");
+	    return 1;
+	  }
+	  s = *args;
+	}
+	outname = unixize(s);
+      } else if (strncmp(*args, "-l", 2) == 0) {
+	string s = string(*args).substr(2);
+	if (s.empty()) {
+	  if (!*++args) {
+	    interp.error(prog + ": -l lacks libname argument");
+	    return 1;
+	  }
+	  s = *args;
+	}
+	libnames.push_back(unixize(s));
+      } else if (strncmp(*args, "-I", 2) == 0) {
+	string s = string(*args).substr(2);
+	if (s.empty()) {
+	  if (!*++args) {
+	    interp.error(prog + ": -I lacks directory argument");
+	    return 1;
+	  }
+	  s = *args;
+	}
+	s = unixize(s);
+	if (!s.empty()) {
+	  if (s[s.size()-1] != '/') s.append("/");
+	  interp.includedirs.push_back(s);
+	}
+      } else if (strncmp(*args, "-L", 2) == 0) {
+	string s = string(*args).substr(2);
+	if (s.empty()) {
+	  if (!*++args) {
+	    interp.error(prog + ": -L lacks directory argument");
+	    return 1;
+	  }
+	  s = *args;
+	}
+	s = unixize(s);
+	if (!s.empty()) {
+	  if (s[s.size()-1] != '/') s.append("/");
+	  interp.librarydirs.push_back(s);
+	}
+      } else if (strncmp(*args, "-v", 2) == 0) {
+	string s = string(*args).substr(2);
+	if (s.empty()) continue;
+	char *end;
+	(void)strtoul(s.c_str(), &end, 0);
+	if (*end) {
+	  interp.error(prog + ": invalid option " + *args);
 	  return 1;
 	}
-	s = *args;
-      }
-      outname = unixize(s);
-    } else if (string(*args).substr(0,2) == "-l") {
-      string s = string(*args).substr(2);
-      if (s.empty()) {
-	if (!*++args) {
-	  interp.error(prog + ": -l lacks libname argument");
-	  return 1;
-	}
-	s = *args;
-      }
-      libnames.push_back(unixize(s));
-    } else if (string(*args).substr(0,2) == "-I") {
-      string s = string(*args).substr(2);
-      if (s.empty()) {
-	if (!*++args) {
-	  interp.error(prog + ": -I lacks directory argument");
-	  return 1;
-	}
-	s = *args;
-      }
-      s = unixize(s);
-      if (!s.empty()) {
-	if (s[s.size()-1] != '/') s.append("/");
-	interp.includedirs.push_back(s);
-      }
-    } else if (string(*args).substr(0,2) == "-L") {
-      string s = string(*args).substr(2);
-      if (s.empty()) {
-	if (!*++args) {
-	  interp.error(prog + ": -L lacks directory argument");
-	  return 1;
-	}
-	s = *args;
-      }
-      s = unixize(s);
-      if (!s.empty()) {
-	if (s[s.size()-1] != '/') s.append("/");
-	interp.librarydirs.push_back(s);
-      }
-    } else if (string(*args).substr(0,2) == "-v") {
-      string s = string(*args).substr(2);
-      if (s.empty()) continue;
-      char *end;
-      (void)strtoul(s.c_str(), &end, 0);
-      if (*end) {
+      } else if (strcmp(arg, "-x") == 0) {
+	while (*++args) myargs.push_back(*args);
+	break;
+      } else if (strcmp(arg, "--") == 0) {
+	while (*++args) myargs.push_back(*args);
+	break;
+      } else {
 	interp.error(prog + ": invalid option " + *args);
 	return 1;
       }
-    } else if (*args == string("-x")) {
-      while (*++args) myargs.push_back(*args);
-      break;
-    } else if (*args == string("--")) {
-      while (*++args) myargs.push_back(*args);
-      break;
-    } else if (**args == '-') {
-      interp.error(prog + ": invalid option " + *args);
-      return 1;
     }
+  }
 #if USE_FASTCC
   // This global option is needed to get tail call optimization (you'll also
   // need to have USE_FASTCC in interpreter.hh enabled).
