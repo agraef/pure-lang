@@ -2748,7 +2748,9 @@ void interpreter::promote_ttags(expr f, expr x, expr u, expr v)
       }
     } else {
       // binary int/double operations
-      if (f.tag() == symtab.less_sym().f ||
+      if (f.tag() == symtab.or_sym().f ||
+	  f.tag() == symtab.and_sym().f ||
+	  f.tag() == symtab.less_sym().f ||
 	  f.tag() == symtab.greater_sym().f ||
 	  f.tag() == symtab.lesseq_sym().f ||
 	  f.tag() == symtab.greatereq_sym().f ||
@@ -7014,6 +7016,43 @@ Value *interpreter::when_codegen(expr x, matcher *m,
   }
 }
 
+Value *interpreter::get_int_check(expr x)
+{
+  Env& e = act_env();
+  if (x.ttag() == EXPR::INT) {
+    if (x.tag() == EXPR::APP) {
+      // embedded int/float operation, recursively generate unboxed value
+      Value *u = builtin_codegen(x);
+      return u;
+    } else if (x.tag() == EXPR::INT)
+      // integer constant, return "as is"
+      return SInt(x.ival());
+    else {
+      // int variable, needs unboxing
+      assert(x.tag() == EXPR::VAR);
+      Value *u = codegen(x);
+      Value *p = e.builder.CreateBitCast(u, IntExprPtrTy, "intexpr");
+      Value *v = e.CreateLoadGEP(p, Zero, ValFldIndex, "intval");
+#if 0
+      // collect the temporary, it's not needed any more
+      call("pure_freenew", u);
+#endif
+      return v;
+    }
+  } else {
+    // typeless expression; we have to check the computed value at runtime
+    Value *u = codegen(x);
+    // check that it's actually an integer
+    verify_tag(u, EXPR::INT);
+    // get the value
+    Value *p = e.builder.CreateBitCast(u, IntExprPtrTy, "intexpr");
+    Value *v = e.CreateLoadGEP(p, Zero, ValFldIndex, "intval");
+    // collect the temporary, it's not needed any more
+    call("pure_freenew", u);
+    return v;
+  }
+}
+
 Value *interpreter::get_int(expr x)
 {
   Env& e = act_env();
@@ -7157,13 +7196,11 @@ Value *interpreter::builtin_codegen(expr x)
       assert(0 && "error in type checker");
       return 0;
     }
-  } else if (n == 2 && x.ttag() == EXPR::INT &&
-	     x.xval1().xval2().ttag() != EXPR::DBL &&
-	     x.xval2().ttag() != EXPR::DBL) {
+  } else if (n == 2 && x.ttag() == EXPR::INT) {
     // binary int operations
-    Value *u = get_int(x.xval1().xval2());
     // these two need special treatment (short-circuit evaluation)
     if (f.tag() == symtab.or_sym().f) {
+      Value *u = get_int_check(x.xval1().xval2());
       Env& e = act_env();
       Value *condv = b.CreateICmpNE(u, Zero, "cond");
       BasicBlock *iftruebb = b.GetInsertBlock();
@@ -7172,7 +7209,7 @@ Value *interpreter::builtin_codegen(expr x)
       b.CreateCondBr(condv, endbb, iffalsebb);
       e.f->getBasicBlockList().push_back(iffalsebb);
       b.SetInsertPoint(iffalsebb);
-      Value *v = get_int(x.xval2());
+      Value *v = get_int_check(x.xval2());
 #if DEBUG
       if (u->getType() != v->getType()) {
 	std::cerr << "** operand mismatch!\n";
@@ -7192,6 +7229,7 @@ Value *interpreter::builtin_codegen(expr x)
       phi->addIncoming(condv2, iffalsebb);
       return b.CreateZExt(phi, int32_type());
     } else if (f.tag() == symtab.and_sym().f) {
+      Value *u = get_int_check(x.xval1().xval2());
       Env& e = act_env();
       Value *condv = b.CreateICmpNE(u, Zero, "cond");
       BasicBlock *iffalsebb = b.GetInsertBlock();
@@ -7200,7 +7238,7 @@ Value *interpreter::builtin_codegen(expr x)
       b.CreateCondBr(condv, iftruebb, endbb);
       e.f->getBasicBlockList().push_back(iftruebb);
       b.SetInsertPoint(iftruebb);
-      Value *v = get_int(x.xval2());
+      Value *v = get_int_check(x.xval2());
 #if DEBUG
       if (u->getType() != v->getType()) {
 	std::cerr << "** operand mismatch!\n";
@@ -7219,106 +7257,109 @@ Value *interpreter::builtin_codegen(expr x)
       phi->addIncoming(condv, iffalsebb);
       phi->addIncoming(condv2, iftruebb);
       return b.CreateZExt(phi, int32_type());
-    } else {
-      Value *v = get_int(x.xval2());
+    }
+    if (x.xval1().xval2().ttag() == EXPR::DBL || x.xval2().ttag() == EXPR::DBL)
+      // This is actually a mixed int/double operation, handled below.
+      goto mixed;
+    Value *u = get_int(x.xval1().xval2()), *v = get_int(x.xval2());
 #if DEBUG
-      if (u->getType() != v->getType()) {
-	std::cerr << "** operand mismatch!\n";
-	std::cerr << "operator:      " << symtab.sym(f.tag()).s << '\n';
-	std::cerr << "left operand:  "; u->dump();
-	std::cerr << "right operand: "; v->dump();
-	assert(0 && "operand mismatch");
-      }
+    if (u->getType() != v->getType()) {
+      std::cerr << "** operand mismatch!\n";
+      std::cerr << "operator:      " << symtab.sym(f.tag()).s << '\n';
+      std::cerr << "left operand:  "; u->dump();
+      std::cerr << "right operand: "; v->dump();
+      assert(0 && "operand mismatch");
+    }
 #endif
-      if (f.tag() == symtab.bitor_sym().f)
-	return b.CreateOr(u, v);
-      else if (f.tag() == symtab.bitand_sym().f)
-	return b.CreateAnd(u, v);
-      else if (f.tag() == symtab.shl_sym().f) {
-	// result of shl is undefined if u>=#bits, return 0 in that case
+    if (f.tag() == symtab.bitor_sym().f)
+      return b.CreateOr(u, v);
+    else if (f.tag() == symtab.bitand_sym().f)
+      return b.CreateAnd(u, v);
+    else if (f.tag() == symtab.shl_sym().f) {
+      // result of shl is undefined if u>=#bits, return 0 in that case
+      BasicBlock *okbb = basic_block("ok");
+      BasicBlock *zerobb = b.GetInsertBlock();
+      BasicBlock *endbb = basic_block("end");
+      Value *cmp = b.CreateICmpULT(v, UInt(32));
+      b.CreateCondBr(cmp, okbb, endbb);
+      act_env().f->getBasicBlockList().push_back(okbb);
+      b.SetInsertPoint(okbb);
+      Value *ok = b.CreateShl(u, v);
+      b.CreateBr(endbb);
+      act_env().f->getBasicBlockList().push_back(endbb);
+      b.SetInsertPoint(endbb);
+      PHINode *phi = b.CreatePHI(int32_type());
+      phi->addIncoming(ok, okbb);
+      phi->addIncoming(Zero, zerobb);
+      return phi;
+    } else if (f.tag() == symtab.shr_sym().f)
+      return b.CreateAShr(u, v);
+    else if (f.tag() == symtab.less_sym().f)
+      return b.CreateZExt
+	(b.CreateICmpSLT(u, v), int32_type());
+    else if (f.tag() == symtab.greater_sym().f)
+      return b.CreateZExt
+	(b.CreateICmpSGT(u, v), int32_type());
+    else if (f.tag() == symtab.lesseq_sym().f)
+      return b.CreateZExt
+	(b.CreateICmpSLE(u, v), int32_type());
+    else if (f.tag() == symtab.greatereq_sym().f)
+      return b.CreateZExt
+	(b.CreateICmpSGE(u, v), int32_type());
+    else if (f.tag() == symtab.equal_sym().f)
+      return b.CreateZExt
+	(b.CreateICmpEQ(u, v), int32_type());
+    else if (f.tag() == symtab.notequal_sym().f)
+      return b.CreateZExt
+	(b.CreateICmpNE(u, v), int32_type());
+    else if (f.tag() == symtab.plus_sym().f)
+      return b.CreateAdd(u, v);
+    else if (f.tag() == symtab.minus_sym().f)
+      return b.CreateSub(u, v);
+    else if (f.tag() == symtab.mult_sym().f)
+      return b.CreateMul(u, v);
+    else if (f.tag() == symtab.div_sym().f) {
+      // catch division by zero
+      if (x.xval2().tag() == EXPR::INT && x.xval2().ival() == 0) {
+	b.CreateCall(module->getFunction("pure_sigfpe"));
+	return v;
+      } else {
 	BasicBlock *okbb = basic_block("ok");
-	BasicBlock *zerobb = b.GetInsertBlock();
-	BasicBlock *endbb = basic_block("end");
-	Value *cmp = b.CreateICmpULT(v, UInt(32));
-	b.CreateCondBr(cmp, okbb, endbb);
+	BasicBlock *errbb = basic_block("err");
+	Value *cmp = b.CreateICmpEQ(v, Zero);
+	b.CreateCondBr(cmp, errbb, okbb);
+	act_env().f->getBasicBlockList().push_back(errbb);
+	b.SetInsertPoint(errbb);
+	b.CreateCall(module->getFunction("pure_sigfpe"));
+	b.CreateRet(NullExprPtr);
 	act_env().f->getBasicBlockList().push_back(okbb);
 	b.SetInsertPoint(okbb);
-	Value *ok = b.CreateShl(u, v);
-	b.CreateBr(endbb);
-	act_env().f->getBasicBlockList().push_back(endbb);
-	b.SetInsertPoint(endbb);
-	PHINode *phi = b.CreatePHI(int32_type());
-	phi->addIncoming(ok, okbb);
-	phi->addIncoming(Zero, zerobb);
-	return phi;
-      } else if (f.tag() == symtab.shr_sym().f)
-	return b.CreateAShr(u, v);
-      else if (f.tag() == symtab.less_sym().f)
-	return b.CreateZExt
-	  (b.CreateICmpSLT(u, v), int32_type());
-      else if (f.tag() == symtab.greater_sym().f)
-	return b.CreateZExt
-	  (b.CreateICmpSGT(u, v), int32_type());
-      else if (f.tag() == symtab.lesseq_sym().f)
-	return b.CreateZExt
-	  (b.CreateICmpSLE(u, v), int32_type());
-      else if (f.tag() == symtab.greatereq_sym().f)
-	return b.CreateZExt
-	  (b.CreateICmpSGE(u, v), int32_type());
-      else if (f.tag() == symtab.equal_sym().f)
-	return b.CreateZExt
-	  (b.CreateICmpEQ(u, v), int32_type());
-      else if (f.tag() == symtab.notequal_sym().f)
-	return b.CreateZExt
-	  (b.CreateICmpNE(u, v), int32_type());
-      else if (f.tag() == symtab.plus_sym().f)
-	return b.CreateAdd(u, v);
-      else if (f.tag() == symtab.minus_sym().f)
-	return b.CreateSub(u, v);
-      else if (f.tag() == symtab.mult_sym().f)
-	return b.CreateMul(u, v);
-      else if (f.tag() == symtab.div_sym().f) {
-	// catch division by zero
-	if (x.xval2().tag() == EXPR::INT && x.xval2().ival() == 0) {
-	  b.CreateCall(module->getFunction("pure_sigfpe"));
-	  return v;
-	} else {
-	  BasicBlock *okbb = basic_block("ok");
-	  BasicBlock *errbb = basic_block("err");
-	  Value *cmp = b.CreateICmpEQ(v, Zero);
-	  b.CreateCondBr(cmp, errbb, okbb);
-	  act_env().f->getBasicBlockList().push_back(errbb);
-	  b.SetInsertPoint(errbb);
-	  b.CreateCall(module->getFunction("pure_sigfpe"));
-	  b.CreateRet(NullExprPtr);
-	  act_env().f->getBasicBlockList().push_back(okbb);
-	  b.SetInsertPoint(okbb);
-	  return b.CreateSDiv(u, v);
-	}
-      } else if (f.tag() == symtab.mod_sym().f) {
-	// catch division by zero
-	if (x.xval2().tag() == EXPR::INT && x.xval2().ival() == 0) {
-	  b.CreateCall(module->getFunction("pure_sigfpe"));
-	  return v;
-	} else {
-	  BasicBlock *okbb = basic_block("ok");
-	  BasicBlock *errbb = basic_block("err");
-	  Value *cmp = b.CreateICmpEQ(v, Zero);
-	  b.CreateCondBr(cmp, errbb, okbb);
-	  act_env().f->getBasicBlockList().push_back(errbb);
-	  b.SetInsertPoint(errbb);
-	  b.CreateCall(module->getFunction("pure_sigfpe"));
-	  b.CreateRet(NullExprPtr);
-	  act_env().f->getBasicBlockList().push_back(okbb);
-	  b.SetInsertPoint(okbb);
-	  return b.CreateSRem(u, v);
-	}
-      } else {
-	assert(0 && "error in type checker");
-	return 0;
+	return b.CreateSDiv(u, v);
       }
+    } else if (f.tag() == symtab.mod_sym().f) {
+      // catch division by zero
+      if (x.xval2().tag() == EXPR::INT && x.xval2().ival() == 0) {
+	b.CreateCall(module->getFunction("pure_sigfpe"));
+	return v;
+      } else {
+	BasicBlock *okbb = basic_block("ok");
+	BasicBlock *errbb = basic_block("err");
+	Value *cmp = b.CreateICmpEQ(v, Zero);
+	b.CreateCondBr(cmp, errbb, okbb);
+	act_env().f->getBasicBlockList().push_back(errbb);
+	b.SetInsertPoint(errbb);
+	b.CreateCall(module->getFunction("pure_sigfpe"));
+	b.CreateRet(NullExprPtr);
+	act_env().f->getBasicBlockList().push_back(okbb);
+	b.SetInsertPoint(okbb);
+	return b.CreateSRem(u, v);
+      }
+    } else {
+      assert(0 && "error in type checker");
+      return 0;
     }
   } else {
+  mixed:
     // binary int/double operations
     Value *u = get_double(x.xval1().xval2()),
       *v = get_double(x.xval2());
