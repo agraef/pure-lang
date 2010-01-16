@@ -7018,6 +7018,8 @@ Value *interpreter::get_int_check(Value *u, BasicBlock *failedbb)
   // get the value
   Value *p = e.builder.CreateBitCast(u, IntExprPtrTy, "intexpr");
   Value *v = e.CreateLoadGEP(p, Zero, ValFldIndex, "intval");
+  // collect the temporary, it's not needed any more
+  call("pure_freenew", u);
   return v;
 }
 
@@ -7389,7 +7391,7 @@ bool interpreter::logical_tailcall(int32_t tag, uint32_t n, expr x)
     b.CreateCondBr(condv, nokbb, okbb);
   e.f->getBasicBlockList().push_back(okbb);
   b.SetInsertPoint(okbb);
-  Value *okval = u0;
+  Value *okval = ibox(u);
   e.CreateRet(okval);
   e.f->getBasicBlockList().push_back(nokbb);
   b.SetInsertPoint(nokbb);
@@ -7421,7 +7423,7 @@ Value *interpreter::logical_funcall(int32_t tag, uint32_t n, expr x)
     b.CreateCondBr(condv, nokbb, okbb);
   e.f->getBasicBlockList().push_back(okbb);
   b.SetInsertPoint(okbb);
-  Value *okval = u0;
+  Value *okval = ibox(u);
   b.CreateBr(endbb);
   e.f->getBasicBlockList().push_back(nokbb);
   b.SetInsertPoint(nokbb);
