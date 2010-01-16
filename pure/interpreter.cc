@@ -7021,7 +7021,7 @@ Value *interpreter::get_int_check(expr x)
   Env& e = act_env();
   if (x.ttag() == EXPR::INT) {
     if (x.tag() == EXPR::APP) {
-      // embedded int/float operation, recursively generate unboxed value
+      // embedded int operation, recursively generate unboxed value
       Value *u = builtin_codegen(x);
       return u;
     } else if (x.tag() == EXPR::INT)
