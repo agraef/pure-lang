@@ -2166,21 +2166,26 @@ Operator declarations: ``infix level op ...;``
 
     .. _Prelude: purelib.html#prelude
 
-    One thing worth noting here is that unary minus plays a special role in
-    the syntax. Like in Haskell and following mathematical tradition, unary
-    minus is the only prefix operator symbol which is also used as an infix
-    operator, and is always on the same precedence level as binary minus
-    (whose precedence may be chosen freely in the prelude). Thus, with the
-    standard prelude, ``-x+y`` will be parsed as ``(-x)+y``, whereas ``-x*y``
-    is the same as ``-(x*y)``. Also note that the notation ``(-)`` always
-    denotes the binary minus operator; the unary minus operation can be
-    denoted using the built-in ``neg`` function.
+    Instead of denoting the precedence by an explicit integer value, you can
+    also specify an existing operator symbol enclosed in parentheses. Thus the
+    following declaration gives the ``++`` operator the same precedence as
+    ``+``::
+
+      infixl (+) ++ ;
+
+    The given symbol may be of a different fixity than the declaration, but it
+    must have a proper precedence level (i.e., it must be an infix, prefix or
+    postfix symbol). E.g., the following declaration gives ``^^`` the same
+    precedence level as the infix ``^`` symbol, but turns it into a postfix
+    operator::
+
+      postfix (^) ^^ ;
 
 Outfix symbol declarations: ``outfix left right ...;``
     Pure also provides unary outfix operators, which work like in Wm Leler's
     constraint programming language Bertrand_. Outfix operators let you define
     your own bracket structures. The operators must be given as pairs of
-    matching left and right symbols. For instance::
+    matching left and right symbols (which must be distinct). For instance::
 
       outfix |: :| BEGIN END;
 
@@ -2222,6 +2227,17 @@ Examples for all types of symbol declarations can be found in the prelude
 which declares a bunch of standard (arithmetic, relational, logical) operator
 symbols as well as the list and pair constructors '``:``' and '``,``', and a
 few nonfix symbols (mostly for denoting different kinds of exceptions).
+
+One final thing worth noting here is that unary minus plays a special role in
+the syntax. Like in Haskell and following mathematical tradition, unary minus
+is the only prefix operator symbol which is also used as an infix operator,
+and is always on the same precedence level as binary minus, whose precedence
+may be chosen freely in the prelude. (The minus operator is the only symbol
+which gets that special treatment; all other operators must have distinct
+lexical representations.) Thus, with the standard prelude, ``-x+y`` will be
+parsed as ``(-x)+y``, whereas ``-x*y`` is the same as ``-(x*y)``. Also note
+that the notation ``(-)`` always denotes the binary minus operator; the unary
+minus operation can be denoted using the built-in ``neg`` function.
 
 Modules and Imports
 -------------------
