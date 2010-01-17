@@ -2145,7 +2145,8 @@ void interpreter::declare(bool priv, prec_t prec, fix_t fix, list<string> *ids)
 	  throw err("symbol '"+id2+"' already declared with different fixity");
 	else
 	  throw err("left outfix symbol '"+id+"' doesn't match existing declaration");
-      }
+      } else if (absid == absid2)
+	throw err("left and right symbol in outfix declaration must be distinct");
       sym = symtab.sym(absid, prec, fix, priv);
       sym2 = symtab.sym(absid2, prec, fix, priv);
       assert(sym && sym2);
