@@ -6786,7 +6786,9 @@ static bool is_tuple(pure_expr *x, size_t& size,
 }
 
 static pure_expr *subst(map<int32_t,pure_expr*> &env,
-			map<uint32_t,bool> &force, pure_expr *x)
+			map<uint32_t,bool> &force,
+			pure_expr *cons, pure_expr *pair,
+			pure_expr *x)
 {
   char test;
   switch (x->tag) {
@@ -6797,25 +6799,27 @@ static pure_expr *subst(map<int32_t,pure_expr*> &env,
     interpreter& interp = *interpreter::g_interp;
     if (is_list2(x, size, elems, tl)) {
       /* Optimize the list case, so that we don't run out of stack space. */
-      pure_expr *f = pure_symbol(interp.symtab.cons_sym().f);
-      pure_expr *x = subst(env, force, tl);
-      while (size > 0)
-	x = mk_cons(f, subst(env, force, elems[--size]), x);
+      pure_expr *f = cons?cons:pure_symbol(interp.symtab.cons_sym().f);
+      pure_expr *x = subst(env, force, cons, pair, tl);
+      while (size > 0) {
+	pure_expr *y = subst(env, force, cons, pair, elems[--size]);
+	x = mk_cons(f, y, x);
+      }
       free(elems);
       return x;
     } else if (is_tuple(x, size, elems)) {
       /* Optimize the tuple case. */
-      pure_expr *f = pure_symbol(interp.symtab.pair_sym().f);
-      pure_expr *x = subst(env, force, elems[--size]);
+      pure_expr *f = pair?pair:pure_symbol(interp.symtab.pair_sym().f);
+      pure_expr *x = subst(env, force, cons, pair, elems[--size]);
       while (size > 0) {
-	pure_expr *y = subst(env, force, elems[--size]);
+	pure_expr *y = subst(env, force, cons, pair, elems[--size]);
 	x = mk_cons(f, y, x);
       }
       free(elems);
       return x;
     } else
-      return pure_apply2(subst(env, force, x->data.x[0]),
-			 subst(env, force, x->data.x[1]));
+      return pure_apply2(subst(env, force, cons, pair, x->data.x[0]),
+			 subst(env, force, cons, pair, x->data.x[1]));
   }
   case EXPR::INT:
   case EXPR::BIGINT:
@@ -6836,7 +6840,8 @@ static pure_expr *subst(map<int32_t,pure_expr*> &env,
       gsl_matrix_symbolic *m1 = create_symbolic_matrix(n1, n2);
       for (size_t i = 0; i < n1; i++)
 	for (size_t j = 0; j < n2; j++)
-	  m1->data[i*m1->tda+j] = subst(env, force, m->data[i*m->tda+j]);
+	  m1->data[i*m1->tda+j] =
+	    subst(env, force, cons, pair, m->data[i*m->tda+j]);
       return pure_symbolic_matrix(m1);
     } else
       return x;
@@ -6858,7 +6863,8 @@ static pure_expr *subst(map<int32_t,pure_expr*> &env,
 }
 
 static pure_expr *rsubst(map<uint32_t,pure_expr*> &env,
-			 map<uint32_t,bool> &force, pure_expr *x)
+			 map<uint32_t,bool> &force,
+			 pure_expr *x)
 {
   char test;
   switch (x->tag) {
@@ -6871,8 +6877,10 @@ static pure_expr *rsubst(map<uint32_t,pure_expr*> &env,
       /* Optimize the list case, so that we don't run out of stack space. */
       pure_expr *f = pure_symbol(interp.symtab.cons_sym().f);
       pure_expr *x = rsubst(env, force, tl);
-      while (size > 0)
-	x = mk_cons(f, rsubst(env, force, elems[--size]), x);
+      while (size > 0) {
+	pure_expr *y = rsubst(env, force, elems[--size]);
+	x = mk_cons(f, y, x);
+      }
       free(elems);
       return x;
     } else if (is_tuple(x, size, elems)) {
@@ -6908,7 +6916,8 @@ static pure_expr *rsubst(map<uint32_t,pure_expr*> &env,
       gsl_matrix_symbolic *m1 = create_symbolic_matrix(n1, n2);
       for (size_t i = 0; i < n1; i++)
 	for (size_t j = 0; j < n2; j++)
-	  m1->data[i*m1->tda+j] = rsubst(env, force, m->data[i*m->tda+j]);
+	  m1->data[i*m1->tda+j] =
+	    rsubst(env, force, m->data[i*m->tda+j]);
       return pure_symbolic_matrix(m1);
     } else
       return x;
@@ -6938,11 +6947,17 @@ pure_expr *reduce(pure_expr *locals, pure_expr *x)
     map<int32_t,pure_expr*> env;
     map<uint32_t,pure_expr*> renv;
     map<uint32_t,bool> force;
+    pure_expr *cons = 0, *pair = 0;
+    interpreter& interp = *interpreter::g_interp;
     for (size_t i = 0; i < n; i++) {
       pure_expr *x, *y;
       int32_t f;
       if (is_mapsto(xs[i], x, y) && pure_is_symbol(x, &f) && f>0) {
 	env[f] = y;
+	if (f == interp.symtab.cons_sym().f)
+	  cons = y;
+	else if (f == interp.symtab.pair_sym().f)
+	  pair = y;
 	if (y->tag == f && y->data.clos && y->data.clos->local) {
 	  renv[y->data.clos->key] = x;
 	  force[y->data.clos->key] = false;
@@ -6953,7 +6968,7 @@ pure_expr *reduce(pure_expr *locals, pure_expr *x)
       }
     }
     free(xs);
-    return rsubst(renv, force, subst(env, force, x));
+    return rsubst(renv, force, subst(env, force, cons, pair, x));
   } else
     return 0;
 }
