@@ -362,11 +362,11 @@ blank  [ \t\f\v\r]
   return token::STR;
 }
 extern     BEGIN(xdecl); return token::EXTERN;
-infix      yylval->fix = infix; return token::FIX;
-infixl     yylval->fix = infixl; return token::FIX;
-infixr     yylval->fix = infixr; return token::FIX;
-prefix     yylval->fix = prefix; return token::FIX;
-postfix    yylval->fix = postfix; return token::FIX;
+infix      yylval->fix = infix; interp.declare_op = false; return token::FIX;
+infixl     yylval->fix = infixl; interp.declare_op = false; return token::FIX;
+infixr     yylval->fix = infixr; interp.declare_op = false; return token::FIX;
+prefix     yylval->fix = prefix; interp.declare_op = false; return token::FIX;
+postfix    yylval->fix = postfix; interp.declare_op = false; return token::FIX;
 outfix     return token::OUTFIX;
 nonfix     return token::NONFIX;
 private    return token::PRIVATE;

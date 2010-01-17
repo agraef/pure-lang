@@ -253,7 +253,7 @@ item
 { interp.using_namespaces($3); }
 | USING NAMESPACE
 { interp.using_namespaces(); }
-| scope EXTERN { extern_priv = $1; } prototypes
+| scope EXTERN { interp.declare_op = false; extern_priv = $1; } prototypes
 | EXTERN { extern_priv = -1; } prototypes
 ;
 
@@ -276,10 +276,8 @@ fixity
 | scope FIX '(' op ')'	{ symbol& sym = interp.symtab.sym($4);
 			  $$ = new sym_info(true, $1,sym.prec,$2);
 			  interp.declare_op = true; }
-| scope OUTFIX		{ $$ = new sym_info(true, $1,PREC_MAX,outfix);
-			  interp.declare_op = true; }
-| scope NONFIX		{ $$ = new sym_info(true, $1,PREC_MAX,nonfix);
-			  interp.declare_op = true; }
+| scope OUTFIX		{ $$ = new sym_info(true, $1,PREC_MAX,outfix); }
+| scope NONFIX		{ $$ = new sym_info(true, $1,PREC_MAX,nonfix); }
 | scope			{ $$ = new sym_info(false, $1,PREC_MAX,infix); }
 ;
 
@@ -292,8 +290,8 @@ op
 ;
 
 scope
-: PUBLIC		{ $$ = false; }
-| PRIVATE		{ $$ = true; }
+: PUBLIC		{ $$ = false; interp.declare_op = true; }
+| PRIVATE		{ $$ = true;  interp.declare_op = true; }
 ;
 
 ids
