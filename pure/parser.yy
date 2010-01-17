@@ -108,7 +108,6 @@ class interpreter;
 #include "interpreter.hh"
 static int extern_priv;
 static void mangle_fname(string& name);
-static const char *fixity_s(fix_t fix);
 %}
 
 %token		PRIVATE	"private"
@@ -266,15 +265,8 @@ fixity
 : FIX INT		{ $$ = new sym_info(true, false,$2,$1);
 			  interp.declare_op = true; }
 | FIX '(' op ')'	{ symbol& sym = interp.symtab.sym($3);
-			  if ($1 == sym.fix) {
-			    $$ = new sym_info(true, false,sym.prec,$1);
-			    interp.declare_op = true;
-			  } else {
-			    string msg = "symbol '"+sym.s+
-			      "' has wrong fixity, expected "+fixity_s($1);
-			    interp.error(yyloc, msg);
-			    YYERROR;
-			  } }
+			  $$ = new sym_info(true, false,sym.prec,$1);
+			  interp.declare_op = true; }
 | OUTFIX		{ $$ = new sym_info(true, false,PREC_MAX,outfix);
 			  interp.declare_op = true; }
 | NONFIX		{ $$ = new sym_info(true, false,PREC_MAX,nonfix);
@@ -282,15 +274,8 @@ fixity
 | scope FIX INT		{ $$ = new sym_info(true, $1,$3,$2);
 			  interp.declare_op = true; }
 | scope FIX '(' op ')'	{ symbol& sym = interp.symtab.sym($4);
-			  if ($2 == sym.fix) {
-			    $$ = new sym_info(true, $1,sym.prec,$2);
-			    interp.declare_op = true;
-			  } else {
-			    string msg = "symbol '"+sym.s+
-			      "' has wrong fixity, expected "+fixity_s($2);
-			    interp.error(yyloc, msg);
-			    YYERROR;
-			  } }
+			  $$ = new sym_info(true, $1,sym.prec,$2);
+			  interp.declare_op = true; }
 | scope OUTFIX		{ $$ = new sym_info(true, $1,PREC_MAX,outfix);
 			  interp.declare_op = true; }
 | scope NONFIX		{ $$ = new sym_info(true, $1,PREC_MAX,nonfix);
@@ -304,18 +289,6 @@ op
 | RT			{ $$ = $1->tag(); delete $1; }
 | PR			{ $$ = $1->tag(); delete $1; }
 | PO			{ $$ = $1->tag(); delete $1; }
-| LO RO			{ int32_t g = interp.symtab.sym($1->tag()).g;
-			  assert(g != 0);
-			  if (g == $2->tag()) {
-			    $$ = $1->tag(); delete $1;
-			  } else {
-			    string id = interp.symtab.sym($2->tag()).s;
-			    string rid = interp.symtab.sym(g).s;
-			    string msg = "syntax error, unexpected '"+id+
-			      "', expecting '"+rid+"'";
-			    interp.error(yyloc, msg);
-			    YYERROR;
-			  } }
 ;
 
 scope
@@ -722,25 +695,6 @@ yy::parser::error (const yy::parser::location_type& l,
 		   const string& m)
 {
   interp.error(l, m);
-}
-
-static const char *fixity_s(fix_t fix)
-{
-  switch (fix) {
-  case infix:
-    return "infix";
-  case infixl:
-    return "infixl";
-  case infixr:
-    return "infixr";
-  case prefix:
-    return "prefix";
-  case postfix:
-    return "postfix";
-  default:
-    assert(0 && "this can't happen");
-    return 0;
-  }
 }
 
 static void mangle_fname(string& name)
