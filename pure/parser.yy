@@ -108,6 +108,7 @@ class interpreter;
 #include "interpreter.hh"
 static int extern_priv;
 static void mangle_fname(string& name);
+static const char *fixity_s(fix_t fix);
 %}
 
 %token		PRIVATE	"private"
@@ -157,7 +158,7 @@ static void mangle_fname(string& name);
 %token <ival>	TAG	"type tag"
 %type  <sval>	name fname optalias ctype
 %type  <slval>	ids names fnames ctypes opt_ctypes
-%type  <ival>	scope
+%type  <ival>	op scope
 %type  <info>	fixity
 %type  <xval>	expr prim
 %type  <opstk>  simple  "simple expression"
@@ -171,7 +172,7 @@ static void mangle_fname(string& name);
 %type  <rval>	simple_rule
 %type  <rlval>	rule simple_rules simple_rulel
 
-%destructor { delete $$; } ID fixity expr simple prim
+%destructor { delete $$; } ID LO RO NA LT RT PR PO fixity expr simple prim
   comp_clauses comp_clause_list rows row_list row args lhs rhs qual_rhs
   rules rulel rule pat_rules pat_rulel simple_rules simple_rulel simple_rule
   ids fnames fname names name optalias opt_ctypes ctypes ctype
@@ -225,15 +226,10 @@ item
   action(interp.add_rules(interp.globenv,
   (rl = interp.default_lhs(interp.last, $1)), true), if (rl) delete rl); }
 | fixity
-/* Lexical tie-in: We need to tell the lexer that we're defining new operator
-   symbols (interp.declare_op = true) instead of searching for existing ones
-   in the symbol table. */
 { if ($1->special && $1->fix != nonfix && $1->fix != outfix &&
       $1->prec >= PREC_MAX) {
     error(yylloc, "invalid fixity declaration"); $1->prec = 0;
-  }
-  if ($1->fix == nonfix || $1->fix == outfix || $1->prec < PREC_MAX)
-    interp.declare_op = true; }
+  } }
   ids
 { interp.declare_op = false;
   action(interp.declare($1->priv, $1->prec, $1->fix, $3), delete $3);
@@ -258,23 +254,73 @@ item
 { interp.using_namespaces($3); }
 | USING NAMESPACE
 { interp.using_namespaces(); }
-| scope EXTERN { interp.declare_op = false; extern_priv = $1; } prototypes
+| scope EXTERN { extern_priv = $1; } prototypes
 | EXTERN { extern_priv = -1; } prototypes
 ;
 
+/* Lexical tie-in: We need to tell the lexer that we're defining new operator
+   symbols (interp.declare_op = true) instead of searching for existing ones
+   in the symbol table. */
+
 fixity
-: FIX INT		{ $$ = new sym_info(true, false,$2,$1); }
-| OUTFIX		{ $$ = new sym_info(true, false,PREC_MAX,outfix); }
-| NONFIX		{ $$ = new sym_info(true, false,PREC_MAX,nonfix); }
-| scope FIX INT		{ $$ = new sym_info(true, $1,$3,$2); }
-| scope OUTFIX		{ $$ = new sym_info(true, $1,PREC_MAX,outfix); }
-| scope NONFIX		{ $$ = new sym_info(true, $1,PREC_MAX,nonfix); }
+: FIX INT		{ $$ = new sym_info(true, false,$2,$1);
+			  interp.declare_op = true; }
+| FIX '(' op ')'	{ symbol& sym = interp.symtab.sym($3);
+			  if ($1 == sym.fix) {
+			    $$ = new sym_info(true, false,sym.prec,$1);
+			    interp.declare_op = true;
+			  } else {
+			    string msg = "symbol '"+sym.s+
+			      "' has wrong fixity, expected "+fixity_s($1);
+			    interp.error(yyloc, msg);
+			    YYERROR;
+			  } }
+| OUTFIX		{ $$ = new sym_info(true, false,PREC_MAX,outfix);
+			  interp.declare_op = true; }
+| NONFIX		{ $$ = new sym_info(true, false,PREC_MAX,nonfix);
+			  interp.declare_op = true; }
+| scope FIX INT		{ $$ = new sym_info(true, $1,$3,$2);
+			  interp.declare_op = true; }
+| scope FIX '(' op ')'	{ symbol& sym = interp.symtab.sym($4);
+			  if ($2 == sym.fix) {
+			    $$ = new sym_info(true, $1,sym.prec,$2);
+			    interp.declare_op = true;
+			  } else {
+			    string msg = "symbol '"+sym.s+
+			      "' has wrong fixity, expected "+fixity_s($2);
+			    interp.error(yyloc, msg);
+			    YYERROR;
+			  } }
+| scope OUTFIX		{ $$ = new sym_info(true, $1,PREC_MAX,outfix);
+			  interp.declare_op = true; }
+| scope NONFIX		{ $$ = new sym_info(true, $1,PREC_MAX,nonfix);
+			  interp.declare_op = true; }
 | scope			{ $$ = new sym_info(false, $1,PREC_MAX,infix); }
 ;
 
+op
+: NA			{ $$ = $1->tag(); delete $1; }
+| LT			{ $$ = $1->tag(); delete $1; }
+| RT			{ $$ = $1->tag(); delete $1; }
+| PR			{ $$ = $1->tag(); delete $1; }
+| PO			{ $$ = $1->tag(); delete $1; }
+| LO RO			{ int32_t g = interp.symtab.sym($1->tag()).g;
+			  assert(g != 0);
+			  if (g == $2->tag()) {
+			    $$ = $1->tag(); delete $1;
+			  } else {
+			    string id = interp.symtab.sym($2->tag()).s;
+			    string rid = interp.symtab.sym(g).s;
+			    string msg = "syntax error, unexpected '"+id+
+			      "', expecting '"+rid+"'";
+			    interp.error(yyloc, msg);
+			    YYERROR;
+			  } }
+;
+
 scope
-: PUBLIC		{ $$ = false; interp.declare_op = true; }
-| PRIVATE		{ $$ = true;  interp.declare_op = true; }
+: PUBLIC		{ $$ = false; }
+| PRIVATE		{ $$ = true; }
 ;
 
 ids
@@ -676,6 +722,25 @@ yy::parser::error (const yy::parser::location_type& l,
 		   const string& m)
 {
   interp.error(l, m);
+}
+
+static const char *fixity_s(fix_t fix)
+{
+  switch (fix) {
+  case infix:
+    return "infix";
+  case infixl:
+    return "infixl";
+  case infixr:
+    return "infixr";
+  case prefix:
+    return "prefix";
+  case postfix:
+    return "postfix";
+  default:
+    assert(0 && "this can't happen");
+    return 0;
+  }
 }
 
 static void mangle_fname(string& name)
