@@ -897,7 +897,10 @@ static void pure_free_matrix(pure_expr *x)
   default:
     break;
   }
-  if (owner) delete x->data.mat.refc;
+  if (owner) {
+    if (x->data.mat.q) free(x->data.mat.q);
+    delete x->data.mat.refc;
+  }
 }
 
 #if 1
@@ -1345,6 +1348,7 @@ pure_expr *pure_symbolic_matrix(void *p)
   pure_expr *x = new_expr();
   x->tag = EXPR::MATRIX;
   x->data.mat.p = p;
+  x->data.mat.q = 0;
   // count references
   const size_t k = m->size1, l = m->size2, tda = m->tda;
   pure_new_vect2(k, l, tda, m->data);
@@ -1363,6 +1367,7 @@ pure_expr *pure_double_matrix(void *p)
   pure_expr *x = new_expr();
   x->tag = EXPR::DMATRIX;
   x->data.mat.p = p;
+  x->data.mat.q = 0;
   x->data.mat.refc = new uint32_t;
   *x->data.mat.refc = 1;
   MEMDEBUG_NEW(x)
@@ -1378,6 +1383,7 @@ pure_expr *pure_complex_matrix(void *p)
   pure_expr *x = new_expr();
   x->tag = EXPR::CMATRIX;
   x->data.mat.p = p;
+  x->data.mat.q = 0;
   x->data.mat.refc = new uint32_t;
   *x->data.mat.refc = 1;
   MEMDEBUG_NEW(x)
@@ -1393,6 +1399,7 @@ pure_expr *pure_int_matrix(void *p)
   pure_expr *x = new_expr();
   x->tag = EXPR::IMATRIX;
   x->data.mat.p = p;
+  x->data.mat.q = 0;
   x->data.mat.refc = new uint32_t;
   *x->data.mat.refc = 1;
   MEMDEBUG_NEW(x)
@@ -4648,6 +4655,7 @@ pure_expr *pure_force(pure_expr *x)
       assert(m1);
       *m1 = *m;
       x->data.mat.p = m1;
+      x->data.mat.q = 0;
       (*x->data.mat.refc)++;
       break;
     }
@@ -4657,6 +4665,7 @@ pure_expr *pure_force(pure_expr *x)
       assert(m1);
       *m1 = *m;
       x->data.mat.p = m1;
+      x->data.mat.q = 0;
       (*x->data.mat.refc)++;
       break;
     }
@@ -4667,6 +4676,7 @@ pure_expr *pure_force(pure_expr *x)
       assert(m1);
       *m1 = *m;
       x->data.mat.p = m1;
+      x->data.mat.q = 0;
       (*x->data.mat.refc)++;
       break;
     }
@@ -4677,6 +4687,7 @@ pure_expr *pure_force(pure_expr *x)
       assert(m1);
       *m1 = *m;
       x->data.mat.p = m1;
+      x->data.mat.q = 0;
       (*x->data.mat.refc)++;
       break;
     }
@@ -8304,6 +8315,7 @@ pure_expr *matrix_slice(pure_expr *x, int32_t i1, int32_t j1,
   pure_expr *y = new_expr();
   y->tag = x->tag;
   y->data.mat.p = p;
+  x->data.mat.q = 0;
   y->data.mat.refc = x->data.mat.refc;
   (*y->data.mat.refc)++;
   MEMDEBUG_NEW(y)
@@ -8738,6 +8750,7 @@ pure_expr *matrix_redim(pure_expr *x, int32_t n, int32_t m)
   pure_expr *y = new_expr();
   y->tag = x->tag;
   y->data.mat.p = p;
+  x->data.mat.q = 0;
   y->data.mat.refc = x->data.mat.refc;
   (*y->data.mat.refc)++;
   MEMDEBUG_NEW(y)
@@ -9463,6 +9476,7 @@ pure_expr *matrix_from_double_array_nodup(uint32_t n1, uint32_t n2, void *p)
   pure_expr *x = new_expr();
   x->tag = EXPR::DMATRIX;
   x->data.mat.p = m;
+  x->data.mat.q = 0;
   x->data.mat.refc = new uint32_t;
   *x->data.mat.refc = 1;
   MEMDEBUG_NEW(x)
@@ -9485,6 +9499,7 @@ pure_expr *matrix_from_complex_array_nodup(uint32_t n1, uint32_t n2, void *p)
   pure_expr *x = new_expr();
   x->tag = EXPR::CMATRIX;
   x->data.mat.p = m;
+  x->data.mat.q = 0;
   x->data.mat.refc = new uint32_t;
   *x->data.mat.refc = 1;
   MEMDEBUG_NEW(x)
@@ -9505,6 +9520,7 @@ pure_expr *matrix_from_int_array_nodup(uint32_t n1, uint32_t n2, void *p)
   pure_expr *x = new_expr();
   x->tag = EXPR::IMATRIX;
   x->data.mat.p = m;
+  x->data.mat.q = 0;
   x->data.mat.refc = new uint32_t;
   *x->data.mat.refc = 1;
   MEMDEBUG_NEW(x)
@@ -9536,6 +9552,7 @@ pure_expr *matrix_from_double_array(uint32_t n1, uint32_t n2, void *p)
   pure_expr *x = new_expr();
   x->tag = EXPR::DMATRIX;
   x->data.mat.p = m;
+  x->data.mat.q = 0;
   x->data.mat.refc = new uint32_t;
   *x->data.mat.refc = 1;
   MEMDEBUG_NEW(x)
@@ -9569,6 +9586,7 @@ pure_expr *matrix_from_complex_array(uint32_t n1, uint32_t n2, void *p)
   pure_expr *x = new_expr();
   x->tag = EXPR::CMATRIX;
   x->data.mat.p = m;
+  x->data.mat.q = 0;
   x->data.mat.refc = new uint32_t;
   *x->data.mat.refc = 1;
   MEMDEBUG_NEW(x)
@@ -9600,6 +9618,7 @@ pure_expr *matrix_from_int_array(uint32_t n1, uint32_t n2, void *p)
   pure_expr *x = new_expr();
   x->tag = EXPR::IMATRIX;
   x->data.mat.p = m;
+  x->data.mat.q = 0;
   x->data.mat.refc = new uint32_t;
   *x->data.mat.refc = 1;
   MEMDEBUG_NEW(x)
@@ -9789,6 +9808,7 @@ pure_expr *matrix_from_float_array(uint32_t n1, uint32_t n2, void *p)
   pure_expr *x = new_expr();
   x->tag = EXPR::DMATRIX;
   x->data.mat.p = m;
+  x->data.mat.q = 0;
   x->data.mat.refc = new uint32_t;
   *x->data.mat.refc = 1;
   MEMDEBUG_NEW(x)
@@ -9823,6 +9843,7 @@ pure_expr *matrix_from_complex_float_array(uint32_t n1, uint32_t n2, void *p)
   pure_expr *x = new_expr();
   x->tag = EXPR::CMATRIX;
   x->data.mat.p = m;
+  x->data.mat.q = 0;
   x->data.mat.refc = new uint32_t;
   *x->data.mat.refc = 1;
   MEMDEBUG_NEW(x)
@@ -9855,6 +9876,7 @@ pure_expr *matrix_from_short_array(uint32_t n1, uint32_t n2, void *p)
   pure_expr *x = new_expr();
   x->tag = EXPR::IMATRIX;
   x->data.mat.p = m;
+  x->data.mat.q = 0;
   x->data.mat.refc = new uint32_t;
   *x->data.mat.refc = 1;
   MEMDEBUG_NEW(x)
@@ -9887,6 +9909,7 @@ pure_expr *matrix_from_byte_array(uint32_t n1, uint32_t n2, void *p)
   pure_expr *x = new_expr();
   x->tag = EXPR::IMATRIX;
   x->data.mat.p = m;
+  x->data.mat.q = 0;
   x->data.mat.refc = new uint32_t;
   *x->data.mat.refc = 1;
   MEMDEBUG_NEW(x)
@@ -13714,4 +13737,228 @@ pure_expr* matrix_any ( pure_expr *p, pure_expr *x )
     return pure_int( matrix::matrix_any<gsl_matrix_symbolic>(p,x) ); 
   default : return 0;
   }
+}
+
+/* Additional record functions. These deal with symbolic vectors of hash pairs
+   with symbols or strings as keys. */
+
+static inline bool is_hash_pair(interpreter& interp, pure_expr *x)
+{
+  return x->tag == EXPR::APP && x->data.x[0]->tag == EXPR::APP &&
+    x->data.x[0]->data.x[0]->tag == interp.symtab.hash_pair_sym().f;
+}
+
+static inline bool is_hash_pair(interpreter& interp, pure_expr *x,
+				pure_expr*& y, pure_expr*& z)
+{
+  if (x->tag == EXPR::APP && x->data.x[0]->tag == EXPR::APP &&
+      x->data.x[0]->data.x[0]->tag == interp.symtab.hash_pair_sym().f) {
+    y = x->data.x[0]->data.x[1];
+    z = x->data.x[1];
+    return true;
+  } else
+    return false;
+}
+
+/* To speed up field accesses in records, we create an index mapping keys to
+   real member indices, on which we can do binary search. This index is
+   constructed once on first access to the structure and is then stored in a
+   private field of the Pure matrix data structure. */
+
+struct index_t {
+  int32_t tag; // symbol (key)
+  const char *s; // key if tag is EXPR::STR
+  size_t i; // field index in vector
+};
+
+static int indexcmp(const void *m1, const void *m2)
+{
+  index_t *p = (index_t*)m1, *q = (index_t*)m2;
+  if (p->tag != q->tag)
+    return p->tag - q->tag;
+  else if (p->tag == EXPR::STR)
+    return strcmp(p->s, q->s);
+  else
+    return 0;
+}
+
+static bool is_record(pure_expr *x, size_t &n, pure_expr** &data,
+		      index_t* &idx)
+{
+  if (x->tag == EXPR::MATRIX) {
+    gsl_matrix_symbolic *m = (gsl_matrix_symbolic*)x->data.mat.p;
+    const size_t n1 = m->size1, n2 = m->size2;
+    if (x->data.mat.q) {
+      n = n1*n2;
+      data = m->data;
+      idx = (index_t*)x->data.mat.q;
+      return true;
+    } else if (n1 <= 1 || n2 <= 1) {
+      n = n1*n2;
+      data = m->data;
+      idx = 0;
+      if (n > 0) {
+	/* Build the index. */
+	interpreter& interp = *interpreter::g_interp;
+	idx = (index_t*)malloc(n*sizeof(index_t));
+	if (!idx) return false;
+	for (size_t i = 0; i < n; i++) {
+	  pure_expr *u, *v;
+	  if (!is_hash_pair(interp, data[i], u, v) ||
+	      (u->tag <= 0 && u->tag != EXPR::STR)) {
+	    free(idx);
+	    return false;
+	  }
+	  idx[i].tag = u->tag;
+	  idx[i].s = (u->tag == EXPR::STR)?u->data.s:0;
+	  idx[i].i = i;
+	}
+	qsort(idx, n, sizeof(index_t), indexcmp);
+      }
+      x->data.mat.q = idx;
+      return true;
+    } else
+      return false;
+  } else
+    return false;
+}
+
+static bool record_lookup(size_t n, pure_expr **data, index_t *idx,
+			  pure_expr *x, size_t &i)
+{
+  if (x->tag <= 0 && x->tag != EXPR::STR) return false;
+  index_t key = { x->tag, (x->tag == EXPR::STR)?x->data.s:0, 0 };
+  index_t *it = (index_t*)bsearch(&key, idx, n, sizeof(index_t), indexcmp);
+  if (it) {
+    i = it->i;
+    return true;
+  } else
+    return false;
+}
+
+static bool record_lookup(size_t n, pure_expr **data, index_t *idx,
+			  pure_expr *x, pure_expr* &y)
+{
+  if (x->tag <= 0 && x->tag != EXPR::STR) return false;
+  index_t key = { x->tag, (x->tag == EXPR::STR)?x->data.s:0, 0 };
+  index_t *it = (index_t*)bsearch(&key, idx, n, sizeof(index_t), indexcmp);
+  if (it) {
+    pure_expr *u, *v;
+    interpreter& interp = *interpreter::g_interp;
+    if (is_hash_pair(interp, data[it->i], u, v)) {
+      y = v;
+      return true;
+    } else
+      return false;
+  } else
+    return false;
+}
+
+bool record_check(pure_expr *x)
+{
+  size_t n;
+  pure_expr **data;
+  index_t *idx;
+  return is_record(x, n, data, idx);
+}
+
+extern "C"
+bool record_member(pure_expr *x, pure_expr *y)
+{
+  size_t i, n;
+  pure_expr **data;
+  index_t *idx;
+  if (is_record(x, n, data, idx)) {
+    return record_lookup(n, data, idx, y, i);
+  } else
+    return false;
+}
+
+extern "C"
+pure_expr* record_elem_at(pure_expr *x, pure_expr *y)
+{
+  size_t n;
+  pure_expr **data;
+  index_t *idx;
+  if (is_record(x, n, data, idx)) {
+    pure_expr *z;
+    if (record_lookup(n, data, idx, y, z))
+      return z;
+    else
+      return 0;
+  } else
+    return 0;
+}
+
+extern "C"
+pure_expr* record_update(pure_expr *x, pure_expr *u, pure_expr *v)
+{
+  size_t i, n;
+  pure_expr **data;
+  index_t *idx;
+  if (is_record(x, n, data, idx)) {
+    interpreter& interp = *interpreter::g_interp;
+    gsl_matrix_symbolic *m;
+    if (n == 0) {
+      m = create_symbolic_matrix(1, 1);
+      m->data[0] = pure_appl(pure_symbol(interp.symtab.hash_pair_sym().f),
+			     2, u, v);
+      return pure_symbolic_matrix(m);
+    }
+    m = (gsl_matrix_symbolic*)x->data.mat.p;
+    if (record_lookup(n, data, idx, u, i)) {
+      pure_expr *u1, *v1;
+      if (is_hash_pair(interp, m->data[i], u1, v1) && v1 != v) {
+	pure_expr *y = pure_symbolic_matrix_dup(m);
+	if (y) {
+	  m = (gsl_matrix_symbolic*)y->data.mat.p;
+	  pure_expr *w = pure_appl(pure_symbol(interp.symtab.hash_pair_sym().f),
+				   2, u, v);
+	  pure_free_internal(m->data[i]);
+	  m->data[i] = pure_new_internal(w);
+	}
+	return y;
+      } else
+	return x;
+    }
+    const size_t n1 = m->size1, n2 = m->size2;
+    gsl_matrix_symbolic *m2;
+    if (n1 > 1)
+      m2 = create_symbolic_matrix(n1+1, n2);
+    else
+      m2 = create_symbolic_matrix(n1, n2+1);
+    if (!m2) return 0;
+    memcpy(m2->data, m->data, n*sizeof(pure_expr*));
+    m2->data[n] = pure_appl(pure_symbol(interp.symtab.hash_pair_sym().f),
+			    2, u, v);
+    return pure_symbolic_matrix(m2);
+  } else
+    return 0;
+}
+
+extern "C"
+pure_expr* record_delete(pure_expr *x, pure_expr *y)
+{
+  size_t i, n;
+  pure_expr **data;
+  index_t *idx;
+  if (is_record(x, n, data, idx)) {
+    if (!record_lookup(n, data, idx, y, i)) return x;
+    gsl_matrix_symbolic *m = (gsl_matrix_symbolic*)x->data.mat.p;
+    const size_t n1 = m->size1, n2 = m->size2;
+    gsl_matrix_symbolic *m2;
+    if (n == 1)
+      m2 = create_symbolic_matrix(0, 0);
+    else if (n1 > 1)
+      m2 = create_symbolic_matrix(n1-1, n2);
+    else
+      m2 = create_symbolic_matrix(n1, n2-1);
+    if (!m2) return 0;
+    if (i>0)
+      memcpy(m2->data, m->data, i*sizeof(pure_expr*));
+    if (i < n-1)
+      memcpy(m2->data+i, m->data+i+1, (n-i-1)*sizeof(pure_expr*));
+    return pure_symbolic_matrix(m2);
+  } else
+    return 0;
 }

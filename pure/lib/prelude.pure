@@ -116,19 +116,14 @@ public bad_matrix_value bad_list_value bad_tuple_value;
 
    Here's the list of predefined operator symbols. Note that the parser will
    automagically give unary minus the same precedence level as the
-   corresponding binary operator. Also note that the "mapsto" operator
-   a.k.a. "hash rocket" ``=>`` doesn't have a predefined meaning in Pure; the
-   prelude only implements the relations ``==`` and ``~=`` to check such "hash
-   pairs" ``x=>y`` for equality and inequality. The hash rocket is used in
-   several libraries, however, which usually employ it to denote some kind of
-   key-value associations. See, e.g., Dictionaries_ for an example. */
+   corresponding binary operator. */
 
 // >>>
 
 infixl  1000   $$ ;                // sequence operator
 infixr  1000   $ ;                 // right-associative application
 infixr  1100   , ;                 // pair (tuple)
-infix   1200   => ;                // mapsto constructor
+infix   1200   => ;                // key=>value pairs ("hash rocket")
 infix   1300   .. ;                // arithmetic sequences
 infixr  1400   || ;                // logical or (short-circuit)
 infixr  1500   && ;                // logical and (short-circuit)
@@ -157,7 +152,7 @@ const false, true = 0, 1;
    Note that the math and system modules are *not* included here, so you have
    to do that yourself if your program requires any of those operations. */
 
-using primitives, matrices, strings;
+using primitives, matrices, records, strings;
 
 /* ..
 
@@ -322,7 +317,7 @@ def (f . g) x	= f (g x);
 def void (catmap f x) = do f x;
 def void (listmap f x) = do f x;
 
-/* "Mapsto" operator. This constructor is declared here so that it can be used
+/* The hash rocket. This constructor is declared here so that it can be used
    in other standard library modules to denote special kinds of pairs which
    map keys to values. Here we only define equality of such pairs. */
 

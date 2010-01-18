@@ -27,6 +27,7 @@ symtable::symtable()
     __cons_sym(0),
     __void_sym(0),
     __pair_sym(0),
+    __hash_pair_sym(0),
     __seq_sym(0),
     __flip_sym(0),
     __neg_sym(0),
@@ -91,6 +92,7 @@ void symtable::init_builtins()
   cons_sym();
   void_sym();
   pair_sym();
+  hash_pair_sym();
   flip_sym();
   neg_sym();
   not_sym();
@@ -394,6 +396,15 @@ symbol& symtable::pair_sym()
     return *__pair_sym;
   else
     return *sym_p(",", __pair_sym, 1100, infixr);
+}
+
+symbol& symtable::hash_pair_sym()
+{
+  lookup_p("=>", __hash_pair_sym);
+  if (__hash_pair_sym)
+    return *__hash_pair_sym;
+  else
+    return *sym_p(",", __hash_pair_sym, 1200, infix);
 }
 
 symbol& symtable::seq_sym()

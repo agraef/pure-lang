@@ -56,6 +56,7 @@ typedef struct {
 typedef struct {
   uint32_t *refc;		// reference counter
   void *p;			// pointer to GSL matrix struct
+  void *q;			// used internally, do not touch
 } pure_matrix;
 
 /* The runtime expression data structure. Keep this lean and mean. */
@@ -1086,6 +1087,17 @@ pure_expr* matrix_scanl(pure_expr *f, pure_expr *z, pure_expr *x);
 pure_expr* matrix_scanl1(pure_expr *f, pure_expr *x);
 pure_expr* matrix_scanr(pure_expr *f, pure_expr *z, pure_expr *x);
 pure_expr* matrix_scanr1(pure_expr *f, pure_expr *x);
+
+/* Additional record functions. Records are represented as symbolic vectors of
+   hash pairs (key=>value) with symbols or strings as keys. Some specialized
+   functions are provided here to implement element lookup and non-destructive
+   updates of records in a reasonably efficient manner. */
+
+bool record_check(pure_expr *x);
+bool record_member(pure_expr *x, pure_expr *y);
+pure_expr* record_elem_at(pure_expr *x, pure_expr *y);
+pure_expr* record_update(pure_expr *x, pure_expr *y, pure_expr *z);
+pure_expr* record_delete(pure_expr *x, pure_expr *y);
 
 /* Compute a 32 bit hash code of a Pure expression. This makes it possible to
    use arbitary Pure values as keys in a hash table. */

@@ -69,6 +69,7 @@ class symtable {
   symbol* __cons_sym;
   symbol* __void_sym;
   symbol* __pair_sym;
+  symbol* __hash_pair_sym;
   symbol* __seq_sym;
   symbol* __flip_sym;
   symbol* __neg_sym;
@@ -170,6 +171,7 @@ public:
   symbol& cons_sym();
   symbol& void_sym();
   symbol& pair_sym();
+  symbol& hash_pair_sym();
   symbol& seq_sym();
   symbol& flip_sym()
   { return *sym_p("flip", __flip_sym); }
