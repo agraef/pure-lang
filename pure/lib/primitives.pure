@@ -272,8 +272,13 @@ using namespace __C;
    .. _varp:
 
    ``funp x``, ``lambdap x``, ``thunkp x``, ``varp x``
-     Predicates to check for function objects (named, anonymous or thunk) and
-     global (unbound) variables.
+     Predicates to check for various kinds of function objects (named,
+     anonymous or thunk), and global variable symbols.
+
+   .. _atomp:
+   .. _closurep:
+     Convenience functions to check for atoms (named function or variable) and
+     closures (named function or lambda).
 
    Inspection
    ~~~~~~~~~~
@@ -709,11 +714,17 @@ inexactp x      = numberp x &&
 		     _ = doublep x;
 		   end);
 
-/* Predicates to check for function objects (named, anonymous or thunk) and
-   global (unbound) variables. */
+/* Predicates to check for various kinds of function objects (named, anonymous
+   or thunk) and global variable symbols. */
 
 extern bool funp(expr*), bool lambdap(expr*), bool thunkp(expr*);
 extern bool varp(expr*);
+
+/* Convenience functions to check for atoms (named function or variable) and
+   closures (named function or lambda). */
+
+atomp x = varp x || funp x;
+closurep x = funp x || lambdap x;
 
 /* Get the argument count of a function object, i.e., the number of arguments
    it expects. Returns 0 for thunks and saturated applications, -1 for
