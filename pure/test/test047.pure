@@ -18,5 +18,16 @@ let r1 = insert r ("foo"=>88); r1;
 r1!"foo"; r1!"bar"; delete r1 "foo";
 
 // Duplicate entries.
+
 let r = {x=>5, y=>12, x=>7};
 r!x; update r x 3; delete r x;
+
+// Normalization.
+
+record {};
+record {x=>5, y=>12};
+record {y=>12, x=>5};
+
+record {x=>5, y=>12} === record {y=>12, x=>5};
+record {x=>7, x=>5, y=>12} === record {y=>12, x=>5};
+record {x=>5, x=>7, y=>12} === record {y=>12, x=>5};

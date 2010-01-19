@@ -43,6 +43,14 @@
    ``recordp x``
      Check for record values.
 
+   .. record:
+
+   ``record x``
+     Normalizes a record. This removes duplicate keys and orders the record by
+     keys (using an apparently random but well-defined order of the key
+     values), so that normalized records compare equal if and only if they
+     contain the same ``key=>value`` pairs.
+
    .. _# (record):
 
    ``#x``
@@ -102,6 +110,8 @@
      7,3
      > delete r x;               // delete removes the last entry for x
      {x=>5,y=>12,z=>3}
+     > record r;                 // normalize
+     {x=>7,y=>12,z=>3}
 
    .. _Record Data: pure.html#record-data
 
@@ -116,12 +126,17 @@ extern bool record_member(expr *x, expr *y);
 extern expr* record_elem_at(expr *x, expr *y);
 extern expr* record_update(expr *x, expr *y, expr *z);
 extern expr* record_delete(expr *x, expr *y);
+extern expr* record_pack(expr *x);
 record_elem_at x y = throw out_of_bounds;
 namespace;
 
 /* Type check. */
 
 recordp x = __C::record_check x;
+
+/* Normalization. */
+
+record x = __C::record_pack x;
 
 /* Membership test, indexing and non-destructive updates. */
 

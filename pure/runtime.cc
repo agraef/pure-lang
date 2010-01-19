@@ -13831,10 +13831,11 @@ static bool is_record(pure_expr *x, pure_expr** &data, index_t* &idx)
     } else if (n1 <= 1 || n2 <= 1) {
       size_t n = n1*n2;
       data = m->data;
-      if (idx && n > 0) {
+      if (n > 0) {
 	// Allocate a chunk of memory which is big enough to hold both the
 	// header information and the index itself.
 	idx = (index_t*)malloc(sizeof(index_t)+n*sizeof(index_entry_t));
+	if (!idx) return false;
 	idx->n = idx->k = n; idx->ix = &idx->align;
 	/* Build the index. */
 	interpreter& interp = *interpreter::g_interp;
@@ -14015,6 +14016,37 @@ pure_expr* record_delete(pure_expr *x, pure_expr *y)
       memcpy(m2->data, m->data, i*sizeof(pure_expr*));
     if (i < n-1)
       memcpy(m2->data+i, m->data+i+1, (n-i-1)*sizeof(pure_expr*));
+    return pure_symbolic_matrix(m2);
+  } else
+    return 0;
+}
+
+extern "C"
+pure_expr* record_pack(pure_expr *x)
+{
+  pure_expr **data;
+  index_t *idx;
+  if (is_record(x, data, idx)) {
+    const size_t n = idx->n, k = idx->k;
+    if (n == k) {
+      bool same = true;
+      for (size_t i = 0; i < k; i++)
+	if (idx->ix[i].i != i) {
+	  same = false;
+	  break;
+	}
+      if (same) return x;
+    }
+    gsl_matrix_symbolic *m = (gsl_matrix_symbolic*)x->data.mat.p;
+    const size_t n1 = m->size1, n2 = m->size2;
+    gsl_matrix_symbolic *m2;
+    if (n1 == n)
+      m2 = create_symbolic_matrix(k, n2);
+    else
+      m2 = create_symbolic_matrix(n1, k);
+    if (!m2) return 0;
+    for (size_t i = 0; i < k; i++)
+      m2->data[i] = data[idx->ix[i].i];
     return pure_symbolic_matrix(m2);
   } else
     return 0;

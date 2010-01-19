@@ -1098,6 +1098,7 @@ bool record_member(pure_expr *x, pure_expr *y);
 pure_expr* record_elem_at(pure_expr *x, pure_expr *y);
 pure_expr* record_update(pure_expr *x, pure_expr *y, pure_expr *z);
 pure_expr* record_delete(pure_expr *x, pure_expr *y);
+pure_expr* record_pack(pure_expr *x);
 
 /* Compute a 32 bit hash code of a Pure expression. This makes it possible to
    use arbitary Pure values as keys in a hash table. */
