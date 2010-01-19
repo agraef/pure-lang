@@ -380,6 +380,14 @@ Lists and Tuples
 
    <a name=",">
 
+.. raw:: html
+
+   <a name="!">
+
+.. raw:: html
+
+   <a name="!!">
+
 .. _lists:
 .. _tuples:
 .. _list size:
@@ -389,6 +397,8 @@ Lists and Tuples
 .. _#:
 .. _\::
 .. _,:
+.. _!:
+.. _!!:
 
 The prelude defines the list and tuple constructors (``x:y``, ``x,y``), as
 well as equality (``==``) and inequality (``~=``) on these structures. (The
@@ -544,13 +554,8 @@ fashion.
 
    <a name="tuple indexing">
 
-.. raw:: html
-
-   <a name="!">
-
 .. _list indexing:
 .. _tuple indexing:
-.. _!:
 
 Indexing of lists and tuples is always zero-based (i.e., indices run from
 ``0`` to ``#x-1``), and an exception will be raised if the index is out of
@@ -570,13 +575,8 @@ bounds::
 
    <a name="tuple slicing">
 
-.. raw:: html
-
-   <a name="!!">
-
 .. _list slicing:
 .. _tuple slicing:
-.. _!!:
 
 The slicing operator ``!!`` takes a list or tuple and a list of indices and
 returns the list or tuple of the corresponding elements, respectively.
@@ -1494,6 +1494,12 @@ and columns)::
 ``null x`` can be used to check for empty matrices. Note that there are
 various kinds of these, as a matrix may have zero rows or columns, or both.
 
+.. raw:: html
+
+   <a name="! (matrix)">
+
+.. _! (matrix):
+
 Indexing and slicing works pretty much like in MATLAB and Octave, except
 that you use the Pure operators ``!`` and ``!!`` for that. It is possible
 to access elements with a one-dimensional index (in row-major oder)::
@@ -1505,6 +1511,12 @@ Or you can specify a pair of row and column index::
 
   > x!(1,0);
   4
+
+.. raw:: html
+
+   <a name="!! (matrix)">
+
+.. _!! (matrix):
 
 Slicing works accordingly. You can either specify a list of (one- or
 two-dimensional) indices, in which case the result is always a row vector::
@@ -2070,14 +2082,25 @@ be either symbols or strings.
 
 The following operations are provided. Please note that all updates of
 record members are non-destructive and thus involve copying, which might be
-slow for large record values. If this is a problem then you should use
-dictionaries instead, cf. Dictionaries_.
-
+slow for large record values; if this is a problem then you should use
+dictionaries instead, cf. Dictionaries_. Also note that records with
+duplicate keys are permitted; in such a case the following operations will
+always operate on the *last* entry for a given key.
 
 .. recordp:
 
 ``recordp x``
   Check for record values.
+
+.. raw:: html
+
+   <a name="# (record)">
+
+.. _# (record):
+
+``#x``
+  The size of a record (number of entries it contains). Duplicate entries
+  are counted. (This is in fact just the standard matrix size operation.)
 
 .. raw:: html
 
@@ -2087,6 +2110,27 @@ dictionaries instead, cf. Dictionaries_.
 
 ``member x y``
   Check whether ``x`` contains the key ``y``.
+
+.. raw:: html
+
+   <a name="! (record)">
+
+.. _! (record):
+
+``x!y``
+  Retrieves the (last) value associated with the key ``y`` in ``x``, if
+  any, otherwise throws an ``out_of_bound`` exception.
+
+.. raw:: html
+
+   <a name="!! (record)">
+
+.. _!! (record):
+
+``x!!ys``
+  Slicing also works as expected, by virtue of the generic definition of
+  slicing provided by the matrix data structure.
+
 
 .. raw:: html
 
@@ -2101,8 +2145,9 @@ dictionaries instead, cf. Dictionaries_.
 
 ``insert x (y=>z)``, ``update x y z``
   Associate the key ``y`` with the value ``z`` in ``x``. If ``x`` already
-  contains the key ``y`` then the corresponding value is updated, otherwise
-  a new member is inserted at the end of the record.
+  contains the key ``y`` then the corresponding value is updated (the last
+  such value if ``x`` contains more than one association for ``y``),
+  otherwise a new member is inserted at the end of the record.
 
 .. raw:: html
 
@@ -2111,11 +2156,33 @@ dictionaries instead, cf. Dictionaries_.
 .. _delete (record):
 
 ``delete x y``
-  Delete the key ``y`` (and its associated value) from ``x``.
+  Delete the key ``y`` (and its associated value) from ``x``. If ``x``
+  contains more than one entry for ``y`` then the last such entry is
+  removed.
+
+Here are a few basic examples::
+
+  > let r = {x=>5, y=>12};
+  > r!y; r!![y,x];            // indexing and slicing
+  12
+  {12,5}
+  > insert r (x=>99);         // update an existing entry
+  {x=>99,y=>12}
+  > insert ans (z=>77);       // add a new entry
+  {x=>99,y=>12,z=>77}
+  > delete ans z;             // delete an existing entry
+  {x=>99,y=>12}
+  > let r = {r,x=>7,z=>3}; r; // duplicate key x
+  {x=>5,y=>12,x=>7,z=>3}
+  > r!x, r!z;                 // indexing returns the last value of x
+  7,3
+  > delete r x;               // delete removes the last entry for x
+  {x=>5,y=>12,z=>3}
 
 .. _Record Data: pure.html#record-data
 
-Examples can be found in the `Record Data`_ section in the Pure Manual.
+More examples can be found in the `Record Data`_ section in the Pure
+Manual.
 
 ..
 
@@ -6224,8 +6291,12 @@ Index
 | `! (array)`_
 | `! (dict)`_
 | `! (hdict)`_
+| `! (matrix)`_
+| `! (record)`_
 | `! (string)`_
 | `!!`_
+| `!! (matrix)`_
+| `!! (record)`_
 | `!! (string)`_
 | `#`_
 | `# (array)`_
@@ -6234,6 +6305,7 @@ Index
 | `# (hdict)`_
 | `# (heap)`_
 | `# (matrix)`_
+| `# (record)`_
 | `# (set)`_
 | `# (string)`_
 | `$`_

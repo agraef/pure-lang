@@ -33,36 +33,80 @@
 
    The following operations are provided. Please note that all updates of
    record members are non-destructive and thus involve copying, which might be
-   slow for large record values. If this is a problem then you should use
-   dictionaries instead, cf. Dictionaries_.
-
+   slow for large record values; if this is a problem then you should use
+   dictionaries instead, cf. Dictionaries_. Also note that records with
+   duplicate keys are permitted; in such a case the following operations will
+   always operate on the *last* entry for a given key.
 
    .. recordp:
 
    ``recordp x``
      Check for record values.
 
+   .. _# (record):
+
+   ``#x``
+     The size of a record (number of entries it contains). Duplicate entries
+     are counted. (This is in fact just the standard matrix size operation.)
+
    .. _member (record):
 
    ``member x y``
      Check whether ``x`` contains the key ``y``.
+
+   .. _! (record):
+
+   ``x!y``
+     Retrieves the (last) value associated with the key ``y`` in ``x``, if
+     any, otherwise throws an ``out_of_bound`` exception.
+
+   .. _!! (record):
+
+   ``x!!ys``
+     Slicing also works as expected, by virtue of the generic definition of
+     slicing provided by the matrix data structure.
+
+   .. _!! (record):
 
    .. _insert (record):
    .. _update (record):
 
    ``insert x (y=>z)``, ``update x y z``
      Associate the key ``y`` with the value ``z`` in ``x``. If ``x`` already
-     contains the key ``y`` then the corresponding value is updated, otherwise
-     a new member is inserted at the end of the record.
+     contains the key ``y`` then the corresponding value is updated (the last
+     such value if ``x`` contains more than one association for ``y``),
+     otherwise a new member is inserted at the end of the record.
 
    .. _delete (record):
 
    ``delete x y``
-     Delete the key ``y`` (and its associated value) from ``x``.
+     Delete the key ``y`` (and its associated value) from ``x``. If ``x``
+     contains more than one entry for ``y`` then the last such entry is
+     removed.
+
+   Here are a few basic examples::
+
+     > let r = {x=>5, y=>12};
+     > r!y; r!![y,x];            // indexing and slicing
+     12
+     {12,5}
+     > insert r (x=>99);         // update an existing entry
+     {x=>99,y=>12}
+     > insert ans (z=>77);       // add a new entry
+     {x=>99,y=>12,z=>77}
+     > delete ans z;             // delete an existing entry
+     {x=>99,y=>12}
+     > let r = {r,x=>7,z=>3}; r; // duplicate key x
+     {x=>5,y=>12,x=>7,z=>3}
+     > r!x, r!z;                 // indexing returns the last value of x
+     7,3
+     > delete r x;               // delete removes the last entry for x
+     {x=>5,y=>12,z=>3}
 
    .. _Record Data: pure.html#record-data
 
-   Examples can be found in the `Record Data`_ section in the Pure Manual. */
+   More examples can be found in the `Record Data`_ section in the Pure
+   Manual. */
 
 /* These are implemented in the runtime for better performance. */
 

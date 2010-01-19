@@ -2051,10 +2051,10 @@ when n,m = dim x end if dmatrixp x;
 encoding records as symbolic vectors consisting of &quot;hash pairs&quot; of the form
 <tt class="docutils literal"><span class="pre">key</span> <span class="pre">=&gt;</span> <span class="pre">value</span></tt>. This kind of data structure is very convenient to represent
 aggregates with lots of different components. Since the components of records
-can be accessed by indexing, you don't have to remember which components are
-stored in which order, just knowing the keys of the required members is enough.
-In contrast, tuples, lists and other kinds of constructor terms quickly become
-unwieldy for such purposes.</p>
+can be accessed by indexing with key values, you don't have to remember which
+components are stored in which order, just knowing the keys of the required
+members is enough.  In contrast, tuples, lists and other kinds of constructor
+terms quickly become unwieldy for such purposes.</p>
 <p>The keys used for indexing the record data must be either symbols or strings,
 while the corresponding values may be arbitrary Pure values. The prelude
 provides some operations on these special kinds of matrices, which let you
@@ -2078,28 +2078,16 @@ work with them:</p>
 </pre>
 <p>Note the use of the &quot;hash pair&quot; constructor <tt class="docutils literal"><span class="pre">=&gt;</span></tt> which is used to denote the
 key-value associations in a record. This is an infix operator declared in the
-prelude, see the <a class="reference external" href="purelib.html#prelude">Prelude</a> section in the <a class="reference external" href="purelib.html">Pure Library Manual</a>.</p>
-<p>There's one caveat here. Since there's nothing special about the indexing
-operator <tt class="docutils literal"><span class="pre">!</span></tt> or the symbols used to access record elements, symbols used as
-keys in a record are <em>not</em> protected from evaluation, you'll have to do that
-yourself by quoting them if necessary. For instance:</p>
-<pre class="literal-block">
-&gt; let x = 99;
-&gt; let r = {x=&gt;5, y=&gt;12};
-&gt; r; recordp r;
-{99=&gt;5,y=&gt;12}
-0
-&gt; r!x;
-&lt;stdin&gt;, line 15: unhandled exception 'out_of_bounds' while evaluating 'r!x'
-</pre>
-<p>Here's how you can avoid such mishaps:</p>
+prelude, see the <a class="reference external" href="purelib.html#prelude">Prelude</a> section in the <a class="reference external" href="purelib.html">Pure Library Manual</a>. There's one
+caveat here, however. Since neither <tt class="docutils literal"><span class="pre">=&gt;</span></tt> nor <tt class="docutils literal"><span class="pre">!</span></tt> treat its second (key)
+operand in a special way, symbols used as keys must not be bound to a value,
+or you'll have to protect them from being evaluated by quoting them. Thus, to
+be on the safe side, you should actually write:</p>
 <pre class="literal-block">
 &gt; let r = {'x=&gt;5, 'y=&gt;12};
-&gt; r; recordp r;
-{x=&gt;5,y=&gt;12}
-1
-&gt; r!'x;
-5
+&gt; r!'y; r!!['y,'x];
+12
+{12,5}
 </pre>
 <p>In some cases it may actually be more convenient to use strings as keys
 instead:</p>
@@ -2116,14 +2104,36 @@ instead:</p>
 &gt; insert r (y=&gt;99);
 {&quot;x&quot;=&gt;5,&quot;y&quot;=&gt;12,y=&gt;99}
 </pre>
-<p>Last but not least, note that, as records are in fact just special kinds of
-matrices, all generic matrix operations can be applied to them, including
-matrix comprehensions. This makes it easy, e.g., to perform bulk updates of
-record data. For instance, here's how you can define a function <tt class="docutils literal"><span class="pre">maprec</span></tt>
-which applies a function to all values stored in a record:</p>
+<p>As records are in fact just special kinds of matrices, the standard matrix
+operations can be used on record values as well. For instance, the matrix
+constructor provides an alternative way to quickly augment a record with a
+collection of new <tt class="docutils literal"><span class="pre">key=&gt;value</span></tt> associations:</p>
+<pre class="literal-block">
+&gt; let r = {x=&gt;5, y=&gt;12};
+&gt; let r = {r,x=&gt;7,z=&gt;3}; r;
+{x=&gt;5,y=&gt;12,x=&gt;7,z=&gt;3}
+&gt; r!x, r!z;
+7,3
+&gt; delete r x;
+{x=&gt;5,y=&gt;12,z=&gt;3}
+&gt; ans!x;
+5
+</pre>
+<p>As the example shows, this may produce duplicate keys, but these are handled
+gracefully; indexing and updates will always work with the <em>last</em> association
+for a given key in the record. If necessary, you can remove duplicate entries
+from a record as follows; this will only keep the last association for each
+key:</p>
+<pre class="literal-block">
+&gt; foldl insert {} r;
+{x=&gt;7,y=&gt;12,z=&gt;3}
+</pre>
+<p>Other matrix operations can be applied to records just as easily, including
+matrix comprehensions. This enables you to perform bulk updates of record data
+in a straightforward way. For instance, here's how you can define a function
+<tt class="docutils literal"><span class="pre">maprec</span></tt> which applies a function to all values stored in a record:</p>
 <pre class="literal-block">
 &gt; maprec f x = {u=&gt;f v | u=&gt;v = x};
-&gt; clear x y
 &gt; let r = {x=&gt;5, y=&gt;12};
 &gt; maprec (*2) r;
 {x=&gt;10,y=&gt;24}
