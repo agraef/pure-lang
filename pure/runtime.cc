@@ -13779,15 +13779,21 @@ static inline bool is_hash_pair(interpreter& interp, pure_expr *x,
    constructed once on first access to the structure and is then stored in a
    private field of the Pure matrix data structure. */
 
-struct index_t {
+struct index_entry_t {
   int32_t tag; // symbol (key)
   const char *s; // key if tag is EXPR::STR
   size_t i; // field index in vector
+} __attribute__ ((aligned (8)));
+
+struct index_t {
+  size_t n, k; // total record size and number of index entries
+  index_entry_t *ix; // pointer to index data
+  index_entry_t align; // actual data starts here
 };
 
 static int indexcmp(const void *m1, const void *m2)
 {
-  index_t *p = (index_t*)m1, *q = (index_t*)m2;
+  index_entry_t *p = (index_entry_t*)m1, *q = (index_entry_t*)m2;
   if (p->tag != q->tag)
     return p->tag - q->tag;
   else if (p->tag == EXPR::STR)
@@ -13796,26 +13802,42 @@ static int indexcmp(const void *m1, const void *m2)
     return 0;
 }
 
-static bool is_record(pure_expr *x, size_t &n, pure_expr** &data,
-		      index_t* &idx)
+static int indexcmps(const void *m1, const void *m2)
+{
+  // Same as above, but makes sure that duplicate entries are kept in the
+  // right order (by index).
+  index_entry_t *p = (index_entry_t*)m1, *q = (index_entry_t*)m2;
+  if (p->tag != q->tag)
+    return p->tag - q->tag;
+  else if (p->tag == EXPR::STR) {
+    int ret = strcmp(p->s, q->s);
+    if (ret == 0)
+      return (p->i<q->i)?1:(p->i>q->i)?-1:0;
+    else
+      return ret;
+  } else
+    return (p->i<q->i)?1:(p->i>q->i)?-1:0;
+}
+
+static bool is_record(pure_expr *x, pure_expr** &data, index_t* &idx)
 {
   if (x->tag == EXPR::MATRIX) {
     gsl_matrix_symbolic *m = (gsl_matrix_symbolic*)x->data.mat.p;
     const size_t n1 = m->size1, n2 = m->size2;
     if (x->data.mat.q) {
-      n = n1*n2;
       data = m->data;
       idx = (index_t*)x->data.mat.q;
       return true;
     } else if (n1 <= 1 || n2 <= 1) {
-      n = n1*n2;
+      size_t n = n1*n2;
       data = m->data;
-      idx = 0;
-      if (n > 0) {
+      if (idx && n > 0) {
+	// Allocate a chunk of memory which is big enough to hold both the
+	// header information and the index itself.
+	idx = (index_t*)malloc(sizeof(index_t)+n*sizeof(index_entry_t));
+	idx->n = idx->k = n; idx->ix = &idx->align;
 	/* Build the index. */
 	interpreter& interp = *interpreter::g_interp;
-	idx = (index_t*)malloc(n*sizeof(index_t));
-	if (!idx) return false;
 	for (size_t i = 0; i < n; i++) {
 	  pure_expr *u, *v;
 	  if (!is_hash_pair(interp, data[i], u, v) ||
@@ -13823,11 +13845,30 @@ static bool is_record(pure_expr *x, size_t &n, pure_expr** &data,
 	    free(idx);
 	    return false;
 	  }
-	  idx[i].tag = u->tag;
-	  idx[i].s = (u->tag == EXPR::STR)?u->data.s:0;
-	  idx[i].i = i;
+	  idx->ix[i].tag = u->tag;
+	  idx->ix[i].s = (u->tag == EXPR::STR)?u->data.s:0;
+	  idx->ix[i].i = i;
 	}
-	qsort(idx, n, sizeof(index_t), indexcmp);
+	qsort(idx->ix, n, sizeof(index_entry_t), indexcmps);
+	// remove duplicates
+	size_t k = 0;
+	for (size_t i = 0; i < n; k++) {
+	  size_t j = i+1;
+	  while (j < n && indexcmp(idx->ix+i, idx->ix+j) == 0) j++;
+	  if (k < i) idx->ix[k] = idx->ix[i];
+	  i = j;
+	}
+	if (k < n) {
+	  index_t *idx1 =
+	    (index_t*)realloc(idx, sizeof(index_t)+k*sizeof(index_entry_t));
+	  if (idx1) idx = idx1;
+	  idx->k = k;
+	}
+      } else {
+	idx = (index_t*)malloc(sizeof(index_t));
+	if (!idx) return false;
+	idx->n = idx->k = 0;
+	idx->ix = 0;
       }
       x->data.mat.q = idx;
       return true;
@@ -13837,12 +13878,13 @@ static bool is_record(pure_expr *x, size_t &n, pure_expr** &data,
     return false;
 }
 
-static bool record_lookup(size_t n, pure_expr **data, index_t *idx,
+static bool record_lookup(pure_expr **data, index_t *idx,
 			  pure_expr *x, size_t &i)
 {
   if (x->tag <= 0 && x->tag != EXPR::STR) return false;
-  index_t key = { x->tag, (x->tag == EXPR::STR)?x->data.s:0, 0 };
-  index_t *it = (index_t*)bsearch(&key, idx, n, sizeof(index_t), indexcmp);
+  index_entry_t key = { x->tag, (x->tag == EXPR::STR)?x->data.s:0, 0 };
+  index_entry_t *it = (index_entry_t*)bsearch(&key, idx->ix, idx->k,
+					      sizeof(index_entry_t), indexcmp);
   if (it) {
     i = it->i;
     return true;
@@ -13850,12 +13892,13 @@ static bool record_lookup(size_t n, pure_expr **data, index_t *idx,
     return false;
 }
 
-static bool record_lookup(size_t n, pure_expr **data, index_t *idx,
+static bool record_lookup(pure_expr **data, index_t *idx,
 			  pure_expr *x, pure_expr* &y)
 {
   if (x->tag <= 0 && x->tag != EXPR::STR) return false;
-  index_t key = { x->tag, (x->tag == EXPR::STR)?x->data.s:0, 0 };
-  index_t *it = (index_t*)bsearch(&key, idx, n, sizeof(index_t), indexcmp);
+  index_entry_t key = { x->tag, (x->tag == EXPR::STR)?x->data.s:0, 0 };
+  index_entry_t *it = (index_entry_t*)bsearch(&key, idx->ix, idx->k,
+					      sizeof(index_entry_t), indexcmp);
   if (it) {
     pure_expr *u, *v;
     interpreter& interp = *interpreter::g_interp;
@@ -13870,20 +13913,19 @@ static bool record_lookup(size_t n, pure_expr **data, index_t *idx,
 
 bool record_check(pure_expr *x)
 {
-  size_t n;
   pure_expr **data;
   index_t *idx;
-  return is_record(x, n, data, idx);
+  return is_record(x, data, idx);
 }
 
 extern "C"
 bool record_member(pure_expr *x, pure_expr *y)
 {
-  size_t i, n;
   pure_expr **data;
   index_t *idx;
-  if (is_record(x, n, data, idx)) {
-    return record_lookup(n, data, idx, y, i);
+  if (is_record(x, data, idx)) {
+    size_t i;
+    return record_lookup(data, idx, y, i);
   } else
     return false;
 }
@@ -13891,12 +13933,11 @@ bool record_member(pure_expr *x, pure_expr *y)
 extern "C"
 pure_expr* record_elem_at(pure_expr *x, pure_expr *y)
 {
-  size_t n;
   pure_expr **data;
   index_t *idx;
-  if (is_record(x, n, data, idx)) {
+  if (is_record(x, data, idx)) {
     pure_expr *z;
-    if (record_lookup(n, data, idx, y, z))
+    if (record_lookup(data, idx, y, z))
       return z;
     else
       return 0;
@@ -13907,20 +13948,20 @@ pure_expr* record_elem_at(pure_expr *x, pure_expr *y)
 extern "C"
 pure_expr* record_update(pure_expr *x, pure_expr *u, pure_expr *v)
 {
-  size_t i, n;
   pure_expr **data;
   index_t *idx;
-  if (is_record(x, n, data, idx)) {
+  if (is_record(x, data, idx)) {
     interpreter& interp = *interpreter::g_interp;
     gsl_matrix_symbolic *m;
-    if (n == 0) {
+    size_t i;
+    if (idx->n == 0) {
       m = create_symbolic_matrix(1, 1);
       m->data[0] = pure_appl(pure_symbol(interp.symtab.hash_pair_sym().f),
 			     2, u, v);
       return pure_symbolic_matrix(m);
     }
     m = (gsl_matrix_symbolic*)x->data.mat.p;
-    if (record_lookup(n, data, idx, u, i)) {
+    if (record_lookup(data, idx, u, i)) {
       pure_expr *u1, *v1;
       if (is_hash_pair(interp, m->data[i], u1, v1) && v1 != v) {
 	pure_expr *y = pure_symbolic_matrix_dup(m);
@@ -13942,6 +13983,7 @@ pure_expr* record_update(pure_expr *x, pure_expr *u, pure_expr *v)
     else
       m2 = create_symbolic_matrix(n1, n2+1);
     if (!m2) return 0;
+    const size_t n = idx->n;
     memcpy(m2->data, m->data, n*sizeof(pure_expr*));
     m2->data[n] = pure_appl(pure_symbol(interp.symtab.hash_pair_sym().f),
 			    2, u, v);
@@ -13953,14 +13995,15 @@ pure_expr* record_update(pure_expr *x, pure_expr *u, pure_expr *v)
 extern "C"
 pure_expr* record_delete(pure_expr *x, pure_expr *y)
 {
-  size_t i, n;
   pure_expr **data;
   index_t *idx;
-  if (is_record(x, n, data, idx)) {
-    if (!record_lookup(n, data, idx, y, i)) return x;
+  if (is_record(x, data, idx)) {
+    size_t i;
+    if (!record_lookup(data, idx, y, i)) return x;
     gsl_matrix_symbolic *m = (gsl_matrix_symbolic*)x->data.mat.p;
     const size_t n1 = m->size1, n2 = m->size2;
     gsl_matrix_symbolic *m2;
+    const size_t n = idx->n;
     if (n == 1)
       m2 = create_symbolic_matrix(0, 0);
     else if (n1 > 1)
