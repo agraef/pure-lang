@@ -12433,20 +12433,25 @@ numeric_scanl_loop
   if (in->size1 == 0 || in->size2 == 0) return 0;
 
   out_elem_type *outp = (reinterpret_cast<out_elem_type*>(out->data))+1;
+  pure_new(z);
   for (size_t i=0; i<in->size1; ++i) {
     *lasti=i;
     in_elem_type *inp =
       (reinterpret_cast<in_elem_type*>(in->data))+i*in->tda+init; 
     for (size_t j=init; j<in->size2; ++j,++inp,++outp) {
       *lastj=j;
-      pure_expr *zz = pure_new(z);
-      z = pure_appl( f, 2, z, to_expr(*inp) );
-      if (!from_expr(z,v)) return z;
+      pure_expr *zz = z;
+      z = pure_new( pure_appl( f, 2, z, to_expr(*inp) ) );
+      if (!from_expr(z,v)) {
+	pure_unref(z);
+	return z;
+      }
       *outp = v;
       pure_free(zz);
     }
     init = 0;
   }
+  pure_free(z);
   return 0;
 }
 
@@ -12694,20 +12699,25 @@ numeric_scanr_loop
   out_elem_type v;
   out_elem_type *outp = reinterpret_cast<out_elem_type*>(out->data)+
                          in->size1*in->size2-1-init;
+  pure_new(z);
   for (ptrdiff_t i=in->size1-1; i>=0; --i) {
     *lasti=i;
     in_elem_type *inp = reinterpret_cast<in_elem_type*>(in->data)+
                          i*in->tda+in->size2-1-init; 
     for (ptrdiff_t j=in->size2-1-init; j>=0; --j,--inp,--outp) {
       *lastj=j;
-      pure_expr *zz = pure_new(z);
-      z = pure_appl( f, 2, to_expr(*inp), z );
-      if (!from_expr(z,v)) return z;
+      pure_expr *zz = z;
+      z = pure_new( pure_appl( f, 2, to_expr(*inp), z ) );
+      if (!from_expr(z,v)) {
+	pure_unref(z);
+	return z;
+      }
       *outp = v;
       pure_free(zz);
     }
     init = 0;
   }
+  pure_free(z);
   return 0;
 }
 
@@ -12950,16 +12960,18 @@ pure_expr* matrix_foldl( pure_expr *f, pure_expr *z, pure_expr *x )
   matrix_type *xm = static_cast<matrix_type*>(x->data.mat.p);
   typedef typename element_of<matrix_type>::type elem_type;
 
+  pure_new(z);
   for (size_t i=0; i<xm->size1; ++i) {
     elem_type *p = reinterpret_cast<elem_type*>(xm->data)+i*xm->tda;
     for (size_t j=0; j<xm->size2; ++j,++p) {
-      pure_expr *zz = pure_new(z);
-      z = pure_appl( f, 2, z, to_expr(*p)  );
+      pure_expr *zz = z;
+      z = pure_new( pure_appl( f, 2, z, to_expr(*p)  ) );
       pure_free(zz);
     }
   }
   pure_unref(f);
   pure_unref(x);
+  pure_unref(z);
   return z;
 }
 
@@ -12979,14 +12991,15 @@ pure_expr* matrix_foldl1( pure_expr *f, pure_expr *x )
     elem_type *p = reinterpret_cast<elem_type*>(xm->data)+i*xm->tda;
     for (size_t j=0; j<xm->size2; ++j,++p)
       if (z) {
-	pure_expr *zz = pure_new(z);
-	z = pure_appl( f, 2, z, to_expr(*p)  );
+	pure_expr *zz = z;
+	z = pure_new( pure_appl( f, 2, z, to_expr(*p)  ) );
 	pure_free(zz);
       } else
-	z = to_expr(*p);
+	z = pure_new(to_expr(*p));
   }
   pure_unref(f);
   pure_unref(x);
+  pure_unref(z);
   return z;
 }
 
@@ -13000,17 +13013,19 @@ pure_expr* matrix_foldr( pure_expr *f, pure_expr *z, pure_expr *x )
   matrix_type *xm = static_cast<matrix_type*>(x->data.mat.p);
   typedef typename element_of<matrix_type>::type elem_type;
 
+  pure_new(z);
   for (ptrdiff_t i=xm->size1-1; i>=0; --i) {
     elem_type *p =
       reinterpret_cast<elem_type*>(xm->data)+i*xm->tda+xm->size2-1;
     for (ptrdiff_t j=xm->size2-1; j>=0; --j,--p) {
-      pure_expr *zz = pure_new(z);
-      z = pure_appl( f, 2, to_expr(*p), z  );
+      pure_expr *zz = z;
+      z = pure_new( pure_appl( f, 2, to_expr(*p), z  ) );
       pure_free(zz);
     }
   }
   pure_unref(f);
   pure_unref(x);
+  pure_unref(z);
   return z;
 }
 
@@ -13031,14 +13046,15 @@ pure_expr* matrix_foldr1( pure_expr *f, pure_expr *x )
       reinterpret_cast<elem_type*>(xm->data)+i*xm->tda+xm->size2-1;
     for (ptrdiff_t j=xm->size2-1; j>=0; --j,--p)
       if (z) {
-	pure_expr *zz = pure_new(z);
-	z = pure_appl( f, 2, to_expr(*p), z  );
+	pure_expr *zz = z;
+	z = pure_new( pure_appl( f, 2, to_expr(*p), z  ) );
 	pure_free(zz);
       } else
-	z = to_expr(*p);
+	z = pure_new(to_expr(*p));
   }
   pure_unref(f);
   pure_unref(x);
+  pure_unref(z);
   return z;
 }
 
