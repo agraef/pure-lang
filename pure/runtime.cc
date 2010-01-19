@@ -10808,6 +10808,20 @@ int spawnve(int mode, const char* prog, const char* const* argv,
   return _spawnve(mode, prog, argv, envp);
 }
 
+#undef fileno
+
+extern "C"
+int fileno(FILE *fp)
+{
+  return _fileno(fp);
+}
+
+extern "C"
+FILE *fdopen(int fd, const char *mode)
+{
+  return _fdopen(fd, mode);
+}
+
 extern "C"
 FILE *popen(const char *command, const char *type)
 {
