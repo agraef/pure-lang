@@ -1841,18 +1841,18 @@ work with them::
 Note the use of the "hash pair" constructor ``=>`` which is used to denote the
 key-value associations in a record. This is an infix operator declared in the
 prelude, see the Prelude_ section in the `Pure Library Manual`_. There's one
-caveat here, however. Since neither ``=>`` nor ``!`` treat its second (key)
-operand in a special way, symbols used as keys must not be bound to a value,
-or you'll have to protect them from being evaluated by quoting them. Thus, to
-be on the safe side, you should actually write::
+caveat here, however. Since neither ``=>`` nor ``!`` treat their key operand
+in a special way, symbols used as keys must not be bound to a value, or you'll
+have to protect them from being evaluated by quoting them. Thus, to be on the
+safe side, you should actually write::
 
   > let r = {'x=>5, 'y=>12};
   > r!'y; r!!['y,'x];
   12
   {12,5}
 
-In some cases it may actually be more convenient to use strings as keys
-instead::
+It's also possible to use strings as keys instead, which may actually be more
+convenient in some cases::
 
   > let r = {"x"=>5, "y"=>12};
   > keys r; vals r;
@@ -1887,8 +1887,13 @@ for a given key in the record. If necessary, you can remove duplicate entries
 from a record as follows; this will only keep the last association for each
 key::
 
-  > foldl insert {} r;
+  > record r;
   {x=>7,y=>12,z=>3}
+
+(In fact, the ``record`` operation not only removes duplicates, but also
+orders the record entries by keys. This produces a kind of normalized
+representation which is useful if you want to compare or combine corresponding
+members of two record values irrespective of the ordering of the fields.)
 
 Other matrix operations can be applied to records just as easily, including
 matrix comprehensions. This enables you to perform bulk updates of record data
@@ -1904,7 +1909,7 @@ As another example, the following ``ziprec`` function combines values from two
 records. The result contains only keys which are present in both record
 arguments, and collects the pairs of corresponding values for each key::
 
-  > ziprec x y = {u=>(v,y!u) | u=>v = x; member y u};
+  > ziprec x y = {u=>(x!u,y!u) | u = keys x; member y u};
   > ziprec r {x=>10,y=>24,z=>7};
   {x=>(5,10),y=>(12,24)}
 
