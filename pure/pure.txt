@@ -1803,6 +1803,102 @@ Example::
      0.00000   1.00000   0.40000   2.60000
      0.00000   0.00000   1.00000  -1.00000
 
+Record Data
+-----------
+
+Matrices also provide a means to represent simple record-like data, by
+encoding records as symbolic vectors consisting of "hash pairs" of the form
+``key => value``. This kind of data structure is very convenient to represent
+aggregates with lots of different components. Since the components of records
+can be accessed by indexing, you don't have to remember which components are
+stored in which order, just knowing the keys of the required members is enough.
+In contrast, tuples, lists and other kinds of constructor terms quickly become
+unwieldy for such purposes.
+
+.. _Record Functions: purelib.html#record-functions
+
+The keys used for indexing the record data must be either symbols or strings,
+while the corresponding values may be arbitrary Pure values. The prelude
+provides some operations on these special kinds of matrices, which let you
+retrieve vector elements by indexing and perform non-destructive updates, see
+the `Record Functions`_ section in the `Pure Library Manual`_ for
+details. Here are a few examples which illustrate how to create records and
+work with them::
+
+  > let r = {x=>5, y=>12};
+  > recordp r, member r x;
+  1,1
+  > r!y; r!![y,x];
+  12
+  {12,5}
+  > insert r (x=>99);
+  {x=>99,y=>12}
+  > insert ans (z=>77);
+  {x=>99,y=>12,z=>77}
+  > delete ans z;
+  {x=>99,y=>12}
+
+Note the use of the "hash pair" constructor ``=>`` which is used to denote the
+key-value associations in a record. This is an infix operator declared in the
+prelude, see the Prelude_ section in the `Pure Library Manual`_.
+
+There's one caveat here. Since there's nothing special about the indexing
+operator ``!`` or the symbols used to access record elements, symbols used as
+keys in a record are *not* protected from evaluation, you'll have to do that
+yourself by quoting them if necessary. For instance::
+
+  > let x = 99;
+  > let r = {x=>5, y=>12};
+  > r; recordp r;
+  {99=>5,y=>12}
+  0
+  > r!x;
+  <stdin>, line 15: unhandled exception 'out_of_bounds' while evaluating 'r!x'
+
+Here's how you can avoid such mishaps::
+
+  > let r = {'x=>5, 'y=>12};
+  > r; recordp r;
+  {x=>5,y=>12}
+  1
+  > r!'x;
+  5
+
+In some cases it may actually be more convenient to use strings as keys
+instead::
+
+  > let r = {"x"=>5, "y"=>12};
+  > keys r; vals r;
+  {"x","y"}
+  {5,12}
+  > update r "y" (r!"y"+1);
+  {"x"=>5,"y"=>13}
+
+You can also mix strings and symbols as keys in the same record::
+
+  > insert r (y=>99);
+  {"x"=>5,"y"=>12,y=>99}
+
+Last but not least, note that, as records are in fact just special kinds of
+matrices, all generic matrix operations can be applied to them, including
+matrix comprehensions. This makes it easy, e.g., to perform bulk updates of
+record data. For instance, here's how you can define a function ``maprec``
+which applies a function to all values stored in a record::
+
+  > maprec f x = {u=>f v | u=>v = x};
+  > clear x y
+  > let r = {x=>5, y=>12};
+  > maprec (*2) r;
+  {x=>10,y=>24}
+
+As another example, the following ``ziprec`` function combines values from two
+records. The result contains only keys which are present in both record
+arguments, and collects the pairs of corresponding values for each key::
+
+  > ziprec x y = {u=>(v,y!u) | u=>v = x; member y u};
+  > ziprec r {x=>10,y=>24,z=>7};
+  {x=>(5,10),y=>(12,24)}
+
 Macros
 ======
 
