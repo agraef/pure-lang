@@ -36,6 +36,8 @@ r1;
   state 1: #0
 }
 let r1 = delete r1 z;
+r1;
+{x=>99,y=>12}
 {
   rule #0: r1 = insert r ("foo"=>99)
   state 0: #0
@@ -60,6 +62,46 @@ r1!"bar";
 <stdin>, line 18: unhandled exception 'out_of_bounds' while evaluating 'r1!"bar"'
 delete r1 "foo";
 {x=>5,y=>12}
+let r = {x=>5;y=>12};
+recordp r;
+1
+member r x;
+1
+r!y;
+12
+r!![y,x];
+{12,5}
+r!z;
+<stdin>, line 27: unhandled exception 'out_of_bounds' while evaluating 'r!z'
+r!![y,x,z,0];
+{12,5,x=>5}
+{
+  rule #0: r1 = insert r (x=>99)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let r1 = insert r (x=>99);
+r1;
+{x=>99;y=>12}
+{
+  rule #0: r1 = insert r1 (z=>77)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let r1 = insert r1 (z=>77);
+r1;
+{x=>99;y=>12;z=>77}
+{
+  rule #0: r1 = delete r1 z
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let r1 = delete r1 z;
+r1;
+{x=>99;y=>12}
 let r = {x=>5,y=>12,x=>7};
 r!x;
 7
@@ -73,6 +115,10 @@ record {x=>5,y=>12};
 {x=>5,y=>12}
 record {y=>12,x=>5};
 {x=>5,y=>12}
+record {x=>5;y=>12};
+{x=>5;y=>12}
+record {y=>12;x=>5};
+{x=>5;y=>12}
 record {x=>5,y=>12}===record {y=>12,x=>5};
 1
 record {x=>7,x=>5,y=>12}===record {y=>12,x=>5};
