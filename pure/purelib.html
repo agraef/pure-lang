@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>Pure Library Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2010-01-19" />
+<meta name="date" content="2010-01-20" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-01-19</td></tr>
+<td>2010-01-20</td></tr>
 </tbody>
 </table>
 <!-- We use docutils to produce the documentation. Docstrings are extracted -->
@@ -1466,13 +1466,17 @@ dictionary-like operations such as <tt class="docutils literal"><span class="pre
 Records may be represented as row, column or empty vectors (i.e., the
 number of rows or columns must be zero or one). They must be symbolic
 matrices consisting only of &quot;hash pairs&quot; <tt class="docutils literal"><span class="pre">key=&gt;value</span></tt>, where the keys can
-be either symbols or strings.</p>
+be either symbols or strings. The values can be any kind of Pure data; in
+particular, they may themselves be records, so records can be nested.</p>
 <p>The following operations are provided. Please note that all updates of
 record members are non-destructive and thus involve copying, which might be
 slow for large record values; if this is a problem then you should use
-dictionaries instead, cf. <a class="reference internal" href="#dictionaries">Dictionaries</a>. Also note that records with
-duplicate keys are permitted; in such a case the following operations will
-always operate on the <em>last</em> entry for a given key.</p>
+dictionaries instead (cf. <a class="reference internal" href="#dictionaries">Dictionaries</a>). Or you can create mutable records
+by using expression references (cf. <a class="reference internal" href="#expression-references">Expression References</a>) as values,
+which allow you to modify the data in-place.</p>
+<p>Also note that records with duplicate keys are permitted; in such a case
+the following operations will always operate on the <em>last</em> entry for a
+given key.</p>
 <!-- recordp: -->
 <dl class="docutils">
 <dt><tt class="docutils literal"><span class="pre">recordp</span> <span class="pre">x</span></tt></dt>
@@ -1483,8 +1487,10 @@ always operate on the <em>last</em> entry for a given key.</p>
 <dt><tt class="docutils literal"><span class="pre">record</span> <span class="pre">x</span></tt></dt>
 <dd>Normalizes a record. This removes duplicate keys and orders the record by
 keys (using an apparently random but well-defined order of the key
-values), so that normalized records compare equal if and only if they
-contain the same <tt class="docutils literal"><span class="pre">key=&gt;value</span></tt> pairs.</dd>
+values), so that normalized records are syntactically equal (<tt class="docutils literal"><span class="pre">===</span></tt>) if
+and only if they contain the same hash pairs. For convenience, this
+function can also be used directly on lists and tuples of hash pairs to
+convert them to a normalized record value.</dd>
 </dl>
 <a name="# (record)"><dl class="docutils" id="record">
 <dt><tt class="docutils literal"><span class="pre">#x</span></tt></dt>
@@ -1521,23 +1527,30 @@ removed.</dd>
 <p>Here are a few basic examples:</p>
 <pre class="literal-block">
 &gt; let r = {x=&gt;5, y=&gt;12};
-&gt; r!y; r!![y,x];            // indexing and slicing
+&gt; r!y; r!![y,x];              // indexing and slicing
 12
 {12,5}
-&gt; insert r (x=&gt;99);         // update an existing entry
+&gt; keys r; vals r;             // keys and values of a record
+{x,y}
+{5,12}
+&gt; insert r (x=&gt;99);           // update an existing entry
 {x=&gt;99,y=&gt;12}
-&gt; insert ans (z=&gt;77);       // add a new entry
+&gt; insert ans (z=&gt;77);         // add a new entry
 {x=&gt;99,y=&gt;12,z=&gt;77}
-&gt; delete ans z;             // delete an existing entry
+&gt; delete ans z;               // delete an existing entry
 {x=&gt;99,y=&gt;12}
-&gt; let r = {r,x=&gt;7,z=&gt;3}; r; // duplicate key x
+&gt; let r = {r,x=&gt;7,z=&gt;3}; r;   // duplicate key x
 {x=&gt;5,y=&gt;12,x=&gt;7,z=&gt;3}
-&gt; r!x, r!z;                 // indexing returns the last value of x
+&gt; r!x, r!z;                   // indexing returns the last value of x
 7,3
-&gt; delete r x;               // delete removes the last entry for x
+&gt; delete r x;                 // delete removes the last entry for x
 {x=&gt;5,y=&gt;12,z=&gt;3}
-&gt; record r;                 // normalize
+&gt; record r;                   // normalize (remove dups and sort)
 {x=&gt;7,y=&gt;12,z=&gt;3}
+&gt; record [x=&gt;5, x=&gt;7, y=&gt;12]; // construct a normalized record from a list
+{x=&gt;7,y=&gt;12}
+&gt; record (x=&gt;5, x=&gt;7, y=&gt;12); // ... or a tuple
+{x=&gt;7,y=&gt;12}
 </pre>
 <p>More examples can be found in the <a class="reference external" href="pure.html#record-data">Record Data</a> section in the Pure
 Manual.</p>

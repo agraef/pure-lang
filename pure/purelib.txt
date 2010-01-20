@@ -2078,14 +2078,19 @@ dictionary-like operations such as ``member``, ``insert`` and indexing.
 Records may be represented as row, column or empty vectors (i.e., the
 number of rows or columns must be zero or one). They must be symbolic
 matrices consisting only of "hash pairs" ``key=>value``, where the keys can
-be either symbols or strings.
+be either symbols or strings. The values can be any kind of Pure data; in
+particular, they may themselves be records, so records can be nested.
 
 The following operations are provided. Please note that all updates of
 record members are non-destructive and thus involve copying, which might be
 slow for large record values; if this is a problem then you should use
-dictionaries instead, cf. Dictionaries_. Also note that records with
-duplicate keys are permitted; in such a case the following operations will
-always operate on the *last* entry for a given key.
+dictionaries instead (cf. Dictionaries_). Or you can create mutable records
+by using expression references (cf. `Expression References`_) as values,
+which allow you to modify the data in-place.
+
+Also note that records with duplicate keys are permitted; in such a case
+the following operations will always operate on the *last* entry for a
+given key.
 
 .. recordp:
 
@@ -2097,8 +2102,10 @@ always operate on the *last* entry for a given key.
 ``record x``
   Normalizes a record. This removes duplicate keys and orders the record by
   keys (using an apparently random but well-defined order of the key
-  values), so that normalized records compare equal if and only if they
-  contain the same ``key=>value`` pairs.
+  values), so that normalized records are syntactically equal (``===``) if
+  and only if they contain the same hash pairs. For convenience, this
+  function can also be used directly on lists and tuples of hash pairs to
+  convert them to a normalized record value.
 
 .. raw:: html
 
@@ -2171,23 +2178,30 @@ always operate on the *last* entry for a given key.
 Here are a few basic examples::
 
   > let r = {x=>5, y=>12};
-  > r!y; r!![y,x];            // indexing and slicing
+  > r!y; r!![y,x];              // indexing and slicing
   12
   {12,5}
-  > insert r (x=>99);         // update an existing entry
+  > keys r; vals r;             // keys and values of a record
+  {x,y}
+  {5,12}
+  > insert r (x=>99);           // update an existing entry
   {x=>99,y=>12}
-  > insert ans (z=>77);       // add a new entry
+  > insert ans (z=>77);         // add a new entry
   {x=>99,y=>12,z=>77}
-  > delete ans z;             // delete an existing entry
+  > delete ans z;               // delete an existing entry
   {x=>99,y=>12}
-  > let r = {r,x=>7,z=>3}; r; // duplicate key x
+  > let r = {r,x=>7,z=>3}; r;   // duplicate key x
   {x=>5,y=>12,x=>7,z=>3}
-  > r!x, r!z;                 // indexing returns the last value of x
+  > r!x, r!z;                   // indexing returns the last value of x
   7,3
-  > delete r x;               // delete removes the last entry for x
+  > delete r x;                 // delete removes the last entry for x
   {x=>5,y=>12,z=>3}
-  > record r;                 // normalize
+  > record r;                   // normalize (remove dups and sort)
   {x=>7,y=>12,z=>3}
+  > record [x=>5, x=>7, y=>12]; // construct a normalized record from a list
+  {x=>7,y=>12}
+  > record (x=>5, x=>7, y=>12); // ... or a tuple
+  {x=>7,y=>12}
 
 .. _Record Data: pure.html#record-data
 

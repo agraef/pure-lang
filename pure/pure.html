@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>The Pure Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2010-01-19" />
+<meta name="date" content="2010-01-20" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-01-19</td></tr>
+<td>2010-01-20</td></tr>
 </tbody>
 </table>
 <!-- Note: This document is formatted using docutils. The Makefile has rules -->
@@ -2053,7 +2053,7 @@ encoding records as symbolic vectors consisting of &quot;hash pairs&quot; of the
 aggregates with lots of different components. Since the components of records
 can be accessed by indexing with key values, you don't have to remember which
 components are stored in which order, just knowing the keys of the required
-members is enough.  In contrast, tuples, lists and other kinds of constructor
+members is enough. In contrast, tuples, lists and other kinds of constructor
 terms quickly become unwieldy for such purposes.</p>
 <p>The keys used for indexing the record data must be either symbols or strings,
 while the corresponding values may be arbitrary Pure values. The prelude
@@ -2077,12 +2077,13 @@ work with them:</p>
 {x=&gt;99,y=&gt;12}
 </pre>
 <p>Note the use of the &quot;hash pair&quot; constructor <tt class="docutils literal"><span class="pre">=&gt;</span></tt> which is used to denote the
-key-value associations in a record. This is an infix operator declared in the
-prelude, see the <a class="reference external" href="purelib.html#prelude">Prelude</a> section in the <a class="reference external" href="purelib.html">Pure Library Manual</a>. There's one
-caveat here, however. Since neither <tt class="docutils literal"><span class="pre">=&gt;</span></tt> nor <tt class="docutils literal"><span class="pre">!</span></tt> treat their key operand
-in a special way, symbols used as keys must not be bound to a value, or you'll
-have to protect them from being evaluated by quoting them. Thus, to be on the
-safe side, you should actually write:</p>
+<tt class="docutils literal"><span class="pre">key=&gt;value</span></tt> associations in a record. This is an infix operator declared in
+the prelude, see the <a class="reference external" href="purelib.html#prelude">Prelude</a> section in the <a class="reference external" href="purelib.html">Pure Library Manual</a>. There's
+one caveat here, however. Since neither <tt class="docutils literal"><span class="pre">=&gt;</span></tt> nor <tt class="docutils literal"><span class="pre">!</span></tt> treat their key
+operand in a special way, symbols used as keys must not be bound to a value
+(to ensure this, you might want to declare them as <tt class="docutils literal"><span class="pre">nonfix</span></tt>), or you'll have
+to protect them from being evaluated by quoting them. Thus, to be on the safe
+side, you should actually write:</p>
 <pre class="literal-block">
 &gt; let r = {'x=&gt;5, 'y=&gt;12};
 &gt; r!'y; r!!['y,'x];
@@ -2099,7 +2100,9 @@ convenient in some cases:</p>
 &gt; update r &quot;y&quot; (r!&quot;y&quot;+1);
 {&quot;x&quot;=&gt;5,&quot;y&quot;=&gt;13}
 </pre>
-<p>You can also mix strings and symbols as keys in the same record:</p>
+<p>You can also mix strings and symbols as keys in the same record (but note that
+strings and symbols are always distinct, so <tt class="docutils literal"><span class="pre">y</span></tt> and <tt class="docutils literal"><span class="pre">&quot;y&quot;</span></tt> are really two
+different keys here):</p>
 <pre class="literal-block">
 &gt; insert r (y=&gt;99);
 {&quot;x&quot;=&gt;5,&quot;y&quot;=&gt;12,y=&gt;99}
@@ -2110,7 +2113,7 @@ constructor provides an alternative way to quickly augment a record with a
 collection of new <tt class="docutils literal"><span class="pre">key=&gt;value</span></tt> associations:</p>
 <pre class="literal-block">
 &gt; let r = {x=&gt;5, y=&gt;12};
-&gt; let r = {r,x=&gt;7,z=&gt;3}; r;
+&gt; let r = {r, x=&gt;7, z=&gt;3}; r;
 {x=&gt;5,y=&gt;12,x=&gt;7,z=&gt;3}
 &gt; r!x, r!z;
 7,3
@@ -2128,27 +2131,50 @@ key:</p>
 &gt; record r;
 {x=&gt;7,y=&gt;12,z=&gt;3}
 </pre>
-<p>(In fact, the <tt class="docutils literal"><span class="pre">record</span></tt> operation not only removes duplicates, but also
-orders the record entries by keys. This produces a kind of normalized
-representation which is useful if you want to compare or combine corresponding
-members of two record values irrespective of the ordering of the fields.)</p>
-<p>Other matrix operations can be applied to records just as easily, including
-matrix comprehensions. This enables you to perform bulk updates of record data
-in a straightforward way. For instance, here's how you can define a function
-<tt class="docutils literal"><span class="pre">maprec</span></tt> which applies a function to all values stored in a record:</p>
+<p>In fact, the <tt class="docutils literal"><span class="pre">record</span></tt> operation not only removes duplicates, but also orders
+the record entries by keys. This produces a kind of normalized representation
+which is useful if you want to compare or combine two record values
+irrespective of the ordering of the fields. For instance:</p>
 <pre class="literal-block">
-&gt; maprec f x = {u=&gt;f v | u=&gt;v = x};
-&gt; let r = {x=&gt;5, y=&gt;12};
-&gt; maprec (*2) r;
+&gt; record {x=&gt;5, y=&gt;12} === record {y=&gt;12, x=&gt;5};
+1
+</pre>
+<p>The <tt class="docutils literal"><span class="pre">record</span></tt> function can also be used to construct a normalized record
+directly from a list or tuple of hash pairs:</p>
+<pre class="literal-block">
+&gt; record [x=&gt;5, x=&gt;7, y=&gt;12];
+{x=&gt;7,y=&gt;12}
+</pre>
+<p>Other matrix operations such as <tt class="docutils literal"><span class="pre">map</span></tt>, <tt class="docutils literal"><span class="pre">foldl</span></tt>, etc., and matrix
+comprehensions can be applied to records just as easily. This enables you to
+perform bulk updates of record data in a straightforward way. For instance,
+here's how you can define a function <tt class="docutils literal"><span class="pre">maprec</span></tt> which applies a function to
+all values stored in a record:</p>
+<pre class="literal-block">
+&gt; maprec f = map (\(u=&gt;v) -&gt; u=&gt;f v);
+&gt; maprec (*2) {x=&gt;5,y=&gt;12};
 {x=&gt;10,y=&gt;24}
 </pre>
-<p>As another example, the following <tt class="docutils literal"><span class="pre">ziprec</span></tt> function combines values from two
-records. The result contains only keys which are present in both record
-arguments, and collects the pairs of corresponding values for each key:</p>
+<p>Another example: The following <tt class="docutils literal"><span class="pre">ziprec</span></tt> function collects pairs of values
+stored under common keys in two records (we also normalize the result here so
+that duplicate keys are always removed):</p>
 <pre class="literal-block">
-&gt; ziprec x y = {u=&gt;(x!u,y!u) | u = keys x; member y u};
-&gt; ziprec r {x=&gt;10,y=&gt;24,z=&gt;7};
+&gt; ziprec x y = record {u=&gt;(x!u,y!u) | u = keys x; member y u};
+&gt; ziprec {a=&gt;3,x=&gt;5,y=&gt;12} {x=&gt;10,y=&gt;24,z=&gt;7};
 {x=&gt;(5,10),y=&gt;(12,24)}
+</pre>
+<p>Thus the full power of generic matrix operations is available for records,
+which turns them into a very versatile data structure, much more powerful than
+records in conventional programming languages which are usually limited to
+constructing records and accessing or modifying their components. Note that
+since the values stored in records can be arbitrary Pure values, you can also
+have mutable records by making use of Pure's expression references (see
+<a class="reference external" href="purelib.html#expression-references">Expression References</a> in the library manual). And of course records can be
+nested, too:</p>
+<pre class="literal-block">
+&gt; let r = {a =&gt; {b=&gt;1,c=&gt;2}, b =&gt; 2};
+&gt; r!a, r!b, r!a!b;
+{b=&gt;1,c=&gt;2},2,1
 </pre>
 </div>
 </div>

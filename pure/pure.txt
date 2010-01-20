@@ -1812,7 +1812,7 @@ encoding records as symbolic vectors consisting of "hash pairs" of the form
 aggregates with lots of different components. Since the components of records
 can be accessed by indexing with key values, you don't have to remember which
 components are stored in which order, just knowing the keys of the required
-members is enough.  In contrast, tuples, lists and other kinds of constructor
+members is enough. In contrast, tuples, lists and other kinds of constructor
 terms quickly become unwieldy for such purposes.
 
 .. _Record Functions: purelib.html#record-functions
@@ -1839,12 +1839,13 @@ work with them::
   {x=>99,y=>12}
 
 Note the use of the "hash pair" constructor ``=>`` which is used to denote the
-key-value associations in a record. This is an infix operator declared in the
-prelude, see the Prelude_ section in the `Pure Library Manual`_. There's one
-caveat here, however. Since neither ``=>`` nor ``!`` treat their key operand
-in a special way, symbols used as keys must not be bound to a value, or you'll
-have to protect them from being evaluated by quoting them. Thus, to be on the
-safe side, you should actually write::
+``key=>value`` associations in a record. This is an infix operator declared in
+the prelude, see the Prelude_ section in the `Pure Library Manual`_. There's
+one caveat here, however. Since neither ``=>`` nor ``!`` treat their key
+operand in a special way, symbols used as keys must not be bound to a value
+(to ensure this, you might want to declare them as ``nonfix``), or you'll have
+to protect them from being evaluated by quoting them. Thus, to be on the safe
+side, you should actually write::
 
   > let r = {'x=>5, 'y=>12};
   > r!'y; r!!['y,'x];
@@ -1861,7 +1862,9 @@ convenient in some cases::
   > update r "y" (r!"y"+1);
   {"x"=>5,"y"=>13}
 
-You can also mix strings and symbols as keys in the same record::
+You can also mix strings and symbols as keys in the same record (but note that
+strings and symbols are always distinct, so ``y`` and ``"y"`` are really two
+different keys here)::
 
   > insert r (y=>99);
   {"x"=>5,"y"=>12,y=>99}
@@ -1872,7 +1875,7 @@ constructor provides an alternative way to quickly augment a record with a
 collection of new ``key=>value`` associations::
 
   > let r = {x=>5, y=>12};
-  > let r = {r,x=>7,z=>3}; r;
+  > let r = {r, x=>7, z=>3}; r;
   {x=>5,y=>12,x=>7,z=>3}
   > r!x, r!z;
   7,3
@@ -1890,28 +1893,52 @@ key::
   > record r;
   {x=>7,y=>12,z=>3}
 
-(In fact, the ``record`` operation not only removes duplicates, but also
-orders the record entries by keys. This produces a kind of normalized
-representation which is useful if you want to compare or combine corresponding
-members of two record values irrespective of the ordering of the fields.)
+In fact, the ``record`` operation not only removes duplicates, but also orders
+the record entries by keys. This produces a kind of normalized representation
+which is useful if you want to compare or combine two record values
+irrespective of the ordering of the fields. For instance::
 
-Other matrix operations can be applied to records just as easily, including
-matrix comprehensions. This enables you to perform bulk updates of record data
-in a straightforward way. For instance, here's how you can define a function
-``maprec`` which applies a function to all values stored in a record::
+  > record {x=>5, y=>12} === record {y=>12, x=>5};
+  1
 
-  > maprec f x = {u=>f v | u=>v = x};
-  > let r = {x=>5, y=>12};
-  > maprec (*2) r;
+The ``record`` function can also be used to construct a normalized record
+directly from a list or tuple of hash pairs::
+
+  > record [x=>5, x=>7, y=>12];
+  {x=>7,y=>12}
+
+Other matrix operations such as ``map``, ``foldl``, etc., and matrix
+comprehensions can be applied to records just as easily. This enables you to
+perform bulk updates of record data in a straightforward way. For instance,
+here's how you can define a function ``maprec`` which applies a function to
+all values stored in a record::
+
+  > maprec f = map (\(u=>v) -> u=>f v);
+  > maprec (*2) {x=>5,y=>12};
   {x=>10,y=>24}
 
-As another example, the following ``ziprec`` function combines values from two
-records. The result contains only keys which are present in both record
-arguments, and collects the pairs of corresponding values for each key::
+Another example: The following ``ziprec`` function collects pairs of values
+stored under common keys in two records (we also normalize the result here so
+that duplicate keys are always removed)::
 
-  > ziprec x y = {u=>(x!u,y!u) | u = keys x; member y u};
-  > ziprec r {x=>10,y=>24,z=>7};
+  > ziprec x y = record {u=>(x!u,y!u) | u = keys x; member y u};
+  > ziprec {a=>3,x=>5,y=>12} {x=>10,y=>24,z=>7};
   {x=>(5,10),y=>(12,24)}
+
+Thus the full power of generic matrix operations is available for records,
+which turns them into a very versatile data structure, much more powerful than
+records in conventional programming languages which are usually limited to
+constructing records and accessing or modifying their components. Note that
+since the values stored in records can be arbitrary Pure values, you can also
+have mutable records by making use of Pure's expression references (see
+`Expression References`_ in the library manual). And of course records can be
+nested, too::
+
+  > let r = {a => {b=>1,c=>2}, b => 2};
+  > r!a, r!b, r!a!b;
+  {b=>1,c=>2},2,1
+
+.. _Expression References: purelib.html#expression-references
 
 Macros
 ======
