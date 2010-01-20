@@ -1,3 +1,51 @@
+** Pure 0.41 2010-01-20
+
+This release fixes some of the remaining warts of the language and the
+implementation, specifically:
+
+* Indirect tail calls are now fully optimized, so that any remaining
+  limitations concerning the use of tail recursion in indirect function calls
+  and mutually recursive globals have been removed. (This required some slight
+  adjustments in the runtime ABI, so the runtime library version was bumped as
+  well.)
+
+* Due to popular demand, the semantics of the short-circuit logical operators
+  (&& and ||) were changed so that they are both extensible and tail-recursive
+  now. These builtins are now implemented as if defined by the following
+  equations, where the second operand y is only evaluated if necessary:
+
+	x::int && y = if x then x else y;
+	x::int || y = if x then y else x;
+
+* A new syntax for declaring infix/prefix/postfix operators with a precedence
+  given by an existing operator has been added. So you now write declarations
+  like the following,
+
+	infixl (+) ++;
+
+  which declares a new infixl operator ++ at the same precedence level as +.
+
+* The runtime and the prelude now offer some special support for symbolic
+  vectors of the form {key=>value,...}, which provide a convenient
+  representation for record-like data structures.
+
+* Users of the batch compiler (pure -c) should note that stripping of unused
+  functions (-s) is now the default in batch compilation. To get a full,
+  unstripped executable, you have to use the -u option. (The -s option is
+  still supported for backward compatibility, but doesn't have any effect,
+  except that it overrides a previous -u option.)
+
+Detailed information about these changes can be found in the Pure manual.
+
+Also, some bugs were squashed, a few more functions were added to the library,
+and the Mersenne Twister ('random' function) was updated to the 2002 version
+which fixes some issues with certain kinds of seed values.
+
+Last but not least, Hoigaard/autotelicum contributed syntax highlighting for
+BBEdit and TextWrangler (OSX editors), this is now included in the etc
+subdirectory (please see pure.plist).
+
+As usual, all the gory details can be found in the ChangeLog.
 
 ** Pure 0.40 2009-12-23
 
