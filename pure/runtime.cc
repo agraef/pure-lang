@@ -869,7 +869,7 @@ static void pure_free_matrix(pure_expr *x)
   case EXPR::MATRIX: {
     gsl_matrix_symbolic *m = (gsl_matrix_symbolic*)x->data.mat.p;
     if (owner) {
-      const size_t k = m->size1, l = m->size2, tda = m->tda;;
+      const size_t k = m->size1, l = m->size2, tda = m->tda;
       for (size_t i = 0; i < k; i++)
 	for (size_t j = 0; j < l; j++)
 	  pure_free(m->data[i*tda+j]);
@@ -4890,7 +4890,7 @@ pure_expr *pure_catch(pure_expr *h, pure_expr *x)
     size_t m = x->data.clos->m;
     assert(x->data.clos->local || m == 0);
     pure_expr **env = 0;
-    size_t oldsz = interp.sstk_sz;;
+    size_t oldsz = interp.sstk_sz;
     if (m>0 || !interp.debugging) {
       // construct a stack frame
       size_t sz = oldsz;
