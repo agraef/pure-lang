@@ -786,8 +786,10 @@ static inline void pure_new_vect(const size_t n, pure_expr **xs)
 static inline void pure_new_vect2(const size_t n, const size_t m,
 				  const size_t stride, pure_expr **xs)
 {
-  if (stride == m)
+  if (stride == m) {
     pure_new_vect(n*m, xs);
+    return;
+  }
   short rc;
   if (n == 0 || m == 0)
     return;
