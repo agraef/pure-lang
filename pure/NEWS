@@ -1,4 +1,4 @@
-** Pure 0.41 2010-01-20
+** Pure 0.41 2010-01-21
 
 This release fixes some of the remaining warts of the language and the
 implementation, specifically:
@@ -10,15 +10,16 @@ implementation, specifically:
   well.)
 
 * Due to popular demand, the semantics of the short-circuit logical operators
-  (&& and ||) were changed so that they are both extensible and tail-recursive
-  now. These builtins are now implemented as if defined by the following
-  equations, where the second operand y is only evaluated if necessary:
+  (&& and ||) were changed so that these builtins are both extensible and
+  tail-recursive now. The new implementation behaves as if && and || were
+  defined by the following equations (except that the second operand y is only
+  evaluated if necessary):
 
 	x::int && y = if x then x else y;
 	x::int || y = if x then y else x;
 
 * A new syntax for declaring infix/prefix/postfix operators with a precedence
-  given by an existing operator has been added. So you now write declarations
+  given by an existing operator has been added. So you can write declarations
   like the following,
 
 	infixl (+) ++;
