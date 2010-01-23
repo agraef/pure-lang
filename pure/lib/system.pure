@@ -1075,7 +1075,7 @@ when
   globptr = calloc 1 GLOB_SIZE;
   result = __C::glob pat flags (pointer 0) globptr;
   result = if result==0 then __C::globlist globptr else result;
-  _ = __C::globfree globptr $$ free globptr;
+  __C::globfree globptr; free globptr;
 end;
 
 /* ..
@@ -1172,12 +1172,13 @@ regex pat::string cflags::int s::string eflags::int = result
 when
   result = regcomp regptr pat cflags;
   result = if result==0 then match else regerr result (decode result);
-  _ = regfree regptr $$ free regptr;
+  regfree regptr; free regptr;
 end with
   match = result when
     n, matches = regmatches regptr cflags;
     result = regexec regptr s n matches eflags;
     result = if result==0 then (1, reglist regptr s matches) else 0;
+    free matches;
   end;
   decode n::int = cstring buf when
     size = regerror n regptr (pointer 0) 0; 
@@ -1254,12 +1255,12 @@ when
   len    = #s;
   result = regcomp regptr pat cflags;
   result = if result==0 then
-             (match 0 s with
-                match offs _ = [] if offs>len;
-                match offs s = result when
+             (reverse $ match [] 0 s with
+                match xs offs _ = xs if offs>len;
+                match xs offs s = result when
                   result = regexec regptr s n matches eflags;
                   result = if result==0 then
-	                     (f info : match (offs+q) (drop q s)
+	                     (match (f info:xs) (offs+q) (drop q s)
                               when
                                 info = reglist regptr s matches;
                                 p, u = reg 0 info; q = p+#u+null u;
@@ -1271,12 +1272,15 @@ when
 			        xlat_pos offs (p, u) = offs+p, u if p>=0;
 				  = p, u otherwise;
 			      end)
-                           else [];
+                           else xs;
                 end;
-              end when n, matches = regmatches regptr cflags end)
+              end when
+	        n, matches = regmatches regptr cflags;
+		sentry free matches;
+	      end)
            else
              regerr result (decode result);
-  _ = regfree regptr $$ free regptr;
+  regfree regptr; free regptr;
 end with
   decode n::int = cstring buf when
     size = regerror n regptr (pointer 0) 0; 
@@ -1296,12 +1300,12 @@ when
   len    = #s;
   result = regcomp regptr pat cflags;
   result = if result==0 then
-             (match 0 s with
-                match offs _ = [] if offs>len;
-                match offs s = result when
+             (match [] 0 s with
+                match xs offs _ = xs if offs>len;
+                match xs offs s = result when
                   result = regexec regptr s n matches eflags;
                   result = if result==0 then
-	                     (f info : match (offs+q) (drop q s)
+	                     (match (f info:xs) (offs+q) (drop q s)
                               when
                                 info = reglist regptr s matches;
                                 p, u = reg 0 info; q = p+1;
@@ -1313,12 +1317,15 @@ when
 			        xlat_pos offs (p, u) = offs+p, u if p>=0;
 				  = p, u otherwise;
 			      end)
-                           else [];
+                           else xs;
                 end;
-              end when n, matches = regmatches regptr cflags end)
+              end when
+	        n, matches = regmatches regptr cflags;
+		sentry free matches;
+	      end)
            else
              regerr result (decode result);
-  _ = regfree regptr $$ free regptr;
+  regfree regptr; free regptr;
 end with
   decode n::int = cstring buf when
     size = regerror n regptr (pointer 0) 0; 
@@ -1342,16 +1349,17 @@ when
   len    = #s;
   result = regcomp regptr pat cflags;
   result = if result==0 then
-             (match 0 s with
-                match offs _ = "" if offs>len;
-                match offs s = result when
+             (strcat $ reverse $ match [] 0 s with
+                match xs offs _ = xs if offs>len;
+                match xs offs s = result when
                   result = regexec regptr s n matches eflags;
                   result = if result==0 then
 	                     (if null u then
-                                take p s + f info + substr s p 1 +
-			        match (offs+q) (drop q s)
+                                match (substr s p 1:f info:take p s:xs)
+				(offs+q) (drop q s)
                               else
-                                take p s + f info + match (offs+q) (drop q s)
+                                match (f info:take p s:xs)
+				(offs+q) (drop q s)
                               when
                                 info = reglist regptr s matches;
                                 p, u = reg 0 info; q = p+#u+null u;
@@ -1363,12 +1371,15 @@ when
 			        xlat_pos offs (p, u) = offs+p, u if p>=0;
 				  = p, u otherwise;
 			      end)
-                           else s;
+                           else s:xs;
                 end;
-              end when n, matches = regmatches regptr cflags end)
+              end when
+	        n, matches = regmatches regptr cflags;
+		sentry free matches;
+	      end)
            else
              regerr result (decode result);
-  _ = regfree regptr $$ free regptr;
+  regfree regptr; free regptr;
 end with
   decode n::int = cstring buf when
     size = regerror n regptr (pointer 0) 0; 
@@ -1403,7 +1414,10 @@ when
                               end)
                            else s:xs;
                 end;
-              end when n, matches = regmatches regptr cflags end)
+              end when
+	        n, matches = regmatches regptr cflags;
+		sentry free matches;
+	      end)
            else
              regerr result (decode result);
   regfree regptr; free regptr;
