@@ -1388,25 +1388,25 @@ regsplit pat::string cflags::int s::string eflags::int = result
 when
   result = regcomp regptr pat cflags;
   result = if result==0 then
-             (match s with
-                match "" = [""];
-                match s = result when
+             (reverse $ match [] s with
+                match xs "" = "":xs;
+                match xs s = result when
                   result = regexec regptr s n matches eflags;
                   result = if result==0 then
 	                     (if null u then
-                                take q s : match (drop q s)
+                                match (take q s:xs) (drop q s)
 			      else
-                                take p s : match (drop q s)
+                                match (take p s:xs) (drop q s)
                               when
                                 info = reglist regptr s matches;
                                 p, u = reg 0 info; q = p+#u+null u;
                               end)
-                           else [s];
+                           else s:xs;
                 end;
               end when n, matches = regmatches regptr cflags end)
            else
              regerr result (decode result);
-  _ = regfree regptr $$ free regptr;
+  regfree regptr; free regptr;
 end with
   decode n::int = cstring buf when
     size = regerror n regptr (pointer 0) 0; 

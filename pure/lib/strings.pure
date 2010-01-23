@@ -450,11 +450,11 @@ join delim::string (x::string:xs)
 /* Split a string into parts delimited by the given (nonempty) string. */
 
 split delim::string s::string
-			= if null s then [] else split1 delim s
+			= if null s then [] else split1 [] s
 with
-  split1 delim s	= case index s delim of
-			    n = take n s : split1 delim (drop (n+m) s) if n>=0;
-			      = [s] otherwise;
+  split1 xs s		= case index s delim of
+			    n = split1 (take n s:xs) (drop (n+m) s) if n>=0;
+			      = reverse (s:xs) otherwise;
 			  end;
 end when m = #delim end if ~null delim;
 
