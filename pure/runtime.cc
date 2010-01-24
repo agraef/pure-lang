@@ -680,6 +680,27 @@ static inline pure_expr *new_expr()
   return x;
 }
 
+static inline pure_expr *new_ref_expr()
+{
+  interpreter& interp = *interpreter::g_interp;
+  pure_expr *x = interp.exps;
+  if (x)
+    interp.exps = x->xp;
+  else if (interp.mem && interp.mem->p-interp.mem->x < MEMSIZE)
+    x = interp.mem->p++;
+  else {
+    pure_mem *mem = interp.mem;
+    interp.mem = new pure_mem;
+    interp.mem->next = mem;
+    interp.mem->p = interp.mem->x;
+    x = interp.mem->p++;
+  }
+  x->refc = 1;
+  x->xp = 0;
+  x->data.x[2] = 0; // initialize the sentry
+  return x;
+}
+
 static inline void free_expr(pure_expr *x)
 {
   interpreter& interp = *interpreter::g_interp;
@@ -6671,8 +6692,10 @@ extern "C"
 pure_expr *string_split(const char *delim, const char *s)
 {
   assert(delim && s);
-  interpreter& interp = *interpreter::g_interp;
   const size_t k = strlen(delim);
+  if (k == 0) return string_chars(s);
+  interpreter& interp = *interpreter::g_interp;
+  pure_expr *f = pure_new_internal(pure_const(interp.symtab.cons_sym().f));
   pure_expr *xs, **x = &xs;
   const char *t = strstr(s, delim);
   while (t) {
@@ -6680,24 +6703,25 @@ pure_expr *string_split(const char *delim, const char *s)
     char *buf = (char*)malloc(n+1);
     assert(buf);
     strncpy(buf, s, n); buf[n] = 0;
-    pure_expr *y = new_expr(), *z = pure_string(buf);
+    pure_expr *y = new_ref_expr(), *z = pure_new_internal(pure_string(buf));
     y->tag = EXPR::APP;
-    y->data.x[0] = pure_new_internal(pure_const(interp.symtab.cons_sym().f));
-    y->data.x[1] = pure_new_internal(z);
-    *x = pure_new_internal(new_expr());
+    y->data.x[0] = pure_new_internal(f);
+    y->data.x[1] = z;
+    *x = new_ref_expr();
     (*x)->tag = EXPR::APP;
-    (*x)->data.x[0] = pure_new_internal(y);
+    (*x)->data.x[0] = y;
     x = (*x)->data.x+1;
     s = t+k; t = strstr(s, delim);
   }
-  pure_expr *y = new_expr(), *z = pure_string_dup(s);
+  pure_expr *y = new_ref_expr(), *z = pure_new_internal(pure_string_dup(s));
   y->tag = EXPR::APP;
-  y->data.x[0] = pure_new_internal(pure_const(interp.symtab.cons_sym().f));
-  y->data.x[1] = pure_new_internal(z);
-  *x = pure_new_internal(new_expr());
+  y->data.x[0] = f;
+  y->data.x[1] = z;
+  *x = new_ref_expr();
   (*x)->tag = EXPR::APP;
-  (*x)->data.x[0] = pure_new_internal(y);
+  (*x)->data.x[0] = y;
   (*x)->data.x[1] = pure_new_internal(mk_nil());
+  pure_unref_internal(xs);
   return xs;
 }
 
