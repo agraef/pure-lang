@@ -848,10 +848,12 @@ pure_expr *string_char_at(const char *s, uint32_t n);
 
 pure_expr *string_chars(const char *s);
 
-/* Concatenation, substrings and finding a substring in a string. */
+/* Concatenation, splitting, substrings and finding a substring in a string. */
 
 pure_expr *string_concat(const char* s, const char *t);
 pure_expr *string_concat_list(pure_expr *xs);
+pure_expr *string_join(const char *delim, pure_expr *xs);
+pure_expr *string_split(const char *delim, const char *s);
 pure_expr *string_substr(const char* s, uint32_t pos, uint32_t size);
 int32_t string_index(const char* s, const char *t);
 

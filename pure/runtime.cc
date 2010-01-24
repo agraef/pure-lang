@@ -6633,6 +6633,75 @@ pure_expr *string_concat_list(pure_expr *xs)
 }
 
 extern "C"
+pure_expr *string_join(const char *delim, pure_expr *xs)
+{
+  // linear-time concatenation of a list of strings
+  assert(xs);
+  if (is_thunk(xs)) pure_force(xs);
+  // calculate the size of the result string
+  pure_expr *ys = xs, *z, *zs;
+  size_t n = 0, k = 0, l = strlen(delim);
+  while (is_cons(ys, z, zs)) {
+    if (is_thunk(z)) pure_force(z);
+    if (z->tag != EXPR::STR) break;
+    n += k+strlen(z->data.s); k = l;
+    ys = zs;
+    if (is_thunk(ys)) pure_force(ys);
+  }
+  if (!is_nil(ys)) return 0;
+  // allocate the result string
+  char *buf = new char[n+1]; buf[0] = 0;
+  // concatenate
+  ys = xs; n = k = 0;
+  while (is_cons(ys, z, zs) && z->tag == EXPR::STR) {
+    if (k>0) strcpy(buf+n, delim);
+    strcpy(buf+n+k, z->data.s);
+    n += k+strlen(z->data.s); k = l;
+    ys = zs;
+  }
+  // return the result
+  pure_expr *x = new_expr();
+  x->tag = EXPR::STR;
+  x->data.s = buf;
+  MEMDEBUG_NEW(x)
+  return x;
+}
+
+extern "C"
+pure_expr *string_split(const char *delim, const char *s)
+{
+  assert(delim && s);
+  interpreter& interp = *interpreter::g_interp;
+  const size_t k = strlen(delim);
+  pure_expr *xs, **x = &xs;
+  const char *t = strstr(s, delim);
+  while (t) {
+    size_t n = t-s;
+    char *buf = (char*)malloc(n+1);
+    assert(buf);
+    strncpy(buf, s, n); buf[n] = 0;
+    pure_expr *y = new_expr(), *z = pure_string(buf);
+    y->tag = EXPR::APP;
+    y->data.x[0] = pure_new_internal(pure_const(interp.symtab.cons_sym().f));
+    y->data.x[1] = pure_new_internal(z);
+    *x = pure_new_internal(new_expr());
+    (*x)->tag = EXPR::APP;
+    (*x)->data.x[0] = pure_new_internal(y);
+    x = (*x)->data.x+1;
+    s = t+k; t = strstr(s, delim);
+  }
+  pure_expr *y = new_expr(), *z = pure_string_dup(s);
+  y->tag = EXPR::APP;
+  y->data.x[0] = pure_new_internal(pure_const(interp.symtab.cons_sym().f));
+  y->data.x[1] = pure_new_internal(z);
+  *x = pure_new_internal(new_expr());
+  (*x)->tag = EXPR::APP;
+  (*x)->data.x[0] = pure_new_internal(y);
+  (*x)->data.x[1] = pure_new_internal(mk_nil());
+  return xs;
+}
+
+extern "C"
 pure_expr *string_substr(const char* s, uint32_t pos, uint32_t size)
 {
   assert(s);

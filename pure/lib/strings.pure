@@ -438,25 +438,22 @@ s::string!!ns		= case ns of
 namespace __C;
 extern expr* string_concat_list(expr*);
 namespace;
-strcat xs		= string_concat_list xs if listp xs && all stringp xs;
+strcat xs		= s if stringp s when s = string_concat_list xs end;
 
 /* Concatenate a list of strings, interpolating a given delimiter. */
 
-join delim::string []	= "";
-join delim::string (x::string:xs)
-			= x + strcat [delim+x | x = xs]
-			    if listp xs && all stringp xs;
+namespace __C;
+extern expr* string_join(void* delim, expr*);
+namespace;
+join delim::string xs	= s if stringp s when s = string_join delim xs end;
 
 /* Split a string into parts delimited by the given (nonempty) string. */
 
+namespace __C;
+extern expr* string_split(void* delim, void* s);
+namespace;
 split delim::string s::string
-			= if null s then [] else split1 [] s
-with
-  split1 xs s		= case index s delim of
-			    n = split1 (take n s:xs) (drop (n+m) s) if n>=0;
-			      = reverse (s:xs) otherwise;
-			  end;
-end when m = #delim end if ~null delim;
+			= string_split delim s;
 
 /* Conversions between between strings and lists, streams and tuples. */
 
