@@ -1257,23 +1257,20 @@ when
   result = if result==0 then
              (reverse $ match [] 0 s with
                 match xs offs _ = xs if offs>len;
-                match xs offs s = result when
-                  result = regexec regptr s n matches eflags;
-                  result = if result==0 then
-	                     (match (f info:xs) (offs+q) (drop q s)
-                              when
-                                info = reglist regptr s matches;
-                                p, u = reg 0 info; q = p+#u+null u;
-			        info = xlat_pos offs info;
-                              end with
-			        xlat_pos offs (p, u, info)
-			          = offs+p, u, xlat_pos offs info if p>=0;
-			          = p, u, xlat_pos offs info otherwise;
-			        xlat_pos offs (p, u) = offs+p, u if p>=0;
-				  = p, u otherwise;
-			      end)
-                           else xs;
-                end;
+                match xs offs s =
+		  if regexec regptr s n matches eflags==0 then
+	            (match (f info:xs) (offs+q) (drop q s) when
+                       info = reglist regptr s matches;
+                       p, u = reg 0 info; q = p+#u+null u;
+		       info = xlat_pos offs info;
+                     end with
+		       xlat_pos offs (p, u, info)
+			 = offs+p, u, xlat_pos offs info if p>=0;
+			 = p, u, xlat_pos offs info otherwise;
+		       xlat_pos offs (p, u) = offs+p, u if p>=0;
+			 = p, u otherwise;
+		     end)
+                  else xs;
               end when
 	        n, matches = regmatches regptr cflags;
 		sentry free matches;
@@ -1300,25 +1297,22 @@ when
   len    = #s;
   result = regcomp regptr pat cflags;
   result = if result==0 then
-             (match [] 0 s with
+             (reverse $ match [] 0 s with
                 match xs offs _ = xs if offs>len;
-                match xs offs s = result when
-                  result = regexec regptr s n matches eflags;
-                  result = if result==0 then
-	                     (match (f info:xs) (offs+q) (drop q s)
-                              when
-                                info = reglist regptr s matches;
-                                p, u = reg 0 info; q = p+1;
-			        info = xlat_pos offs info;
-                              end with
-			        xlat_pos offs (p, u, info)
-			          = offs+p, u, xlat_pos offs info if p>=0;
-			          = p, u, xlat_pos offs info otherwise;
-			        xlat_pos offs (p, u) = offs+p, u if p>=0;
-				  = p, u otherwise;
-			      end)
-                           else xs;
-                end;
+                match xs offs s =
+		  if regexec regptr s n matches eflags==0 then
+	            (match (f info:xs) (offs+q) (drop q s) when
+                       info = reglist regptr s matches;
+                       p, u = reg 0 info; q = p+1;
+		       info = xlat_pos offs info;
+                     end with
+		       xlat_pos offs (p, u, info)
+		         = offs+p, u, xlat_pos offs info if p>=0;
+		         = p, u, xlat_pos offs info otherwise;
+		       xlat_pos offs (p, u) = offs+p, u if p>=0;
+		         = p, u otherwise;
+		     end)
+                  else xs;
               end when
 	        n, matches = regmatches regptr cflags;
 		sentry free matches;
@@ -1351,28 +1345,26 @@ when
   result = if result==0 then
              (strcat $ reverse $ match [] 0 s with
                 match xs offs _ = xs if offs>len;
-                match xs offs s = result when
-                  result = regexec regptr s n matches eflags;
-                  result = if result==0 then
-	                     (if null u then
-                                match (substr s p 1:f info:take p s:xs)
-				(offs+q) (drop q s)
-                              else
-                                match (f info:take p s:xs)
-				(offs+q) (drop q s)
-                              when
-                                info = reglist regptr s matches;
-                                p, u = reg 0 info; q = p+#u+null u;
-			        info = xlat_pos offs info;
-                              end with
-			        xlat_pos offs (p, u, info)
-			          = offs+p, u, xlat_pos offs info if p>=0;
-			          = p, u, xlat_pos offs info otherwise;
-			        xlat_pos offs (p, u) = offs+p, u if p>=0;
-				  = p, u otherwise;
-			      end)
-                           else s:xs;
-                end;
+                match xs offs s =
+		  if regexec regptr s n matches eflags==0 then
+	            (if null u then
+                       match (substr s p 1:f info:take p s:xs)
+		       (offs+q) (drop q s)
+                     else
+                       match (f info:take p s:xs)
+		       (offs+q) (drop q s)
+                     when
+                       info = reglist regptr s matches;
+                       p, u = reg 0 info; q = p+#u+null u;
+		       info = xlat_pos offs info;
+                     end with
+		       xlat_pos offs (p, u, info)
+			 = offs+p, u, xlat_pos offs info if p>=0;
+			 = p, u, xlat_pos offs info otherwise;
+		       xlat_pos offs (p, u) = offs+p, u if p>=0;
+		         = p, u otherwise;
+		     end)
+                  else s:xs;
               end when
 	        n, matches = regmatches regptr cflags;
 		sentry free matches;
@@ -1401,19 +1393,17 @@ when
   result = if result==0 then
              (reverse $ match [] s with
                 match xs "" = "":xs;
-                match xs s = result when
-                  result = regexec regptr s n matches eflags;
-                  result = if result==0 then
-	                     (if null u then
-                                match (take q s:xs) (drop q s)
-			      else
-                                match (take p s:xs) (drop q s)
-                              when
-                                info = reglist regptr s matches;
-                                p, u = reg 0 info; q = p+#u+null u;
-                              end)
-                           else s:xs;
-                end;
+                match xs s =
+		  if regexec regptr s n matches eflags==0 then
+	            (if null u then
+                       match (take q s:xs) (drop q s)
+		     else
+                       match (take p s:xs) (drop q s)
+                     when
+                       info = reglist regptr s matches;
+                       p, u = reg 0 info; q = p+#u+null u;
+                     end)
+                  else s:xs;
               end when
 	        n, matches = regmatches regptr cflags;
 		sentry free matches;
