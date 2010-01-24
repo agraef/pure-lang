@@ -6756,6 +6756,7 @@ extern "C"
 pure_expr *string_split(const char *delim, const char *s)
 {
   assert(delim && s);
+  if (!*s) return mk_nil();
   const size_t k = strlen(delim);
   if (k == 0) return string_chars(s);
   interpreter& interp = *interpreter::g_interp;
