@@ -95,12 +95,6 @@ char *u8char(char *buf, unsigned long c);
 
 long u8charcode(const char *c);
 
-/* Generic utf-8 string processing. Execute the given function f on the given
-   pointer p and each utf-8 character of the given string s in turn. For each
-   character code c, f is invoked as f(p, c). */
-
-void u8dostr(const char *s, void (*f)(void*, unsigned long), void *p);
-
 /* Conversion between Pure string syntax and plain string values. Also does
    automatic conversion between system encoding and utf-8. The resulting
    string is malloc'ed and must be free'd by the caller. */

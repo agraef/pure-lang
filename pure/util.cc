@@ -677,19 +677,6 @@ long u8charcode(const char *c)
   return u8decodec(c);
 }
 
-void u8dostr(const char *s, void (*f)(void*, unsigned long), void *p)
-{
-  const char *t;
-  for (; *s; s = t) {
-    long c = u8decode(s, &t);
-    if (c < 0) {
-      c = (unsigned char)*s;
-      t = s+1;
-    }
-    f(p, c);
-  }
-}
-
 static char *
 pchar(char *s, long c, char d)
 {

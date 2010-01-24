@@ -6558,29 +6558,93 @@ pure_expr *string_char_at(const char *s, uint32_t n)
   return pure_string_dup(u8char(buf, c));
 }
 
-static void add_char(pure_expr*** x, unsigned long c)
+static inline long
+u8decode(const char *s, const char **t)
 {
-  interpreter& interp = *interpreter::g_interp;
-  char buf[5];
-  pure_expr *y = new_expr(), *z = pure_string_dup(u8char(buf, c));
-  y->tag = EXPR::APP;
-  y->data.x[0] = pure_new_internal(pure_const(interp.symtab.cons_sym().f));
-  y->data.x[1] = pure_new_internal(z);
-  **x = pure_new_internal(new_expr());
-  (**x)->tag = EXPR::APP;
-  (**x)->data.x[0] = pure_new_internal(y);
-  *x = (**x)->data.x+1;
+  size_t n = 0;
+  unsigned p = 0, q = 0;
+  unsigned long c = 0;
+  if (s[0] == 0)
+    return -1;
+  else if (s[1] == 0) {
+    *t = s+1;
+    return (unsigned char)s[0];
+  }
+  for (; n == 0 && *s; s++) {
+    unsigned char uc = (unsigned char)*s;
+    if (q == 0) {
+      if (((signed char)uc) < 0) {
+	switch (uc & 0xf0) {
+	case 0xc0: case 0xd0:
+	  q = 1;
+	  c = uc & 0x1f;
+	  break;
+	case 0xe0:
+	  q = 2;
+	  c = uc & 0xf;
+	  break;
+	case 0xf0:
+	  if ((uc & 0x8) == 0) {
+	    q = 3;
+	    c = uc & 0x7;
+	  } else
+	    c = uc;
+	  break;
+	default:
+	  c = uc;
+	  break;
+	}
+      } else
+	c = uc;
+      p = 0; if (q == 0) n++;
+    } else if ((uc & 0xc0) == 0x80) {
+      /* continuation byte */
+      c = c << 6 | (uc & 0x3f);
+      if (--q == 0)
+	n++;
+      else
+	p++;
+    } else {
+      /* malformed char */
+      return -1;
+    }
+  }
+  if (n == 1) {
+    *t = s;
+    return c;
+  } else
+    return -1;
 }
 
 extern "C"
 pure_expr *string_chars(const char *s)
 {
   assert(s);
-  pure_expr *x, **y = &x, ***z = &y;
-  u8dostr(s, (void(*)(void*,unsigned long))add_char, z);
-  **z = pure_new_internal(mk_nil());
-  pure_unref_internal(x);
-  return x;
+  interpreter& interp = *interpreter::g_interp;
+  pure_expr *f = pure_new_internal(pure_const(interp.symtab.cons_sym().f));
+  pure_expr *xs, **x = &xs;
+  const char *t;
+  for (; *s; s = t) {
+    long c = u8decode(s, &t);
+    if (c < 0) {
+      c = (unsigned char)*s;
+      t = s+1;
+    }
+    char buf[5];
+    pure_expr *y = new_ref_expr(),
+      *z = pure_new_internal(pure_string_dup(u8char(buf, c)));
+    y->tag = EXPR::APP;
+    y->data.x[0] = pure_new_internal(f);
+    y->data.x[1] = z;
+    *x = new_ref_expr();
+    (*x)->tag = EXPR::APP;
+    (*x)->data.x[0] = y;
+    x = (*x)->data.x+1;
+  }
+  *x = pure_new_internal(mk_nil());
+  pure_unref_internal(xs);
+  pure_free_internal(f);
+  return xs;
 }
 
 extern "C"
