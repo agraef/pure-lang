@@ -1126,16 +1126,12 @@ namespace;
      flags accepted by regexec(3)).
 
    Symbolic ``REG_*`` constants are provided for the different flag values,
-   see the regcomp(3) manpage for an explanation of these. (In extension to
-   POSIX, Pure also provides the ``REG_SIZE`` constant which indicates the
-   size needed for the compiled regex buffer, but this is only for internal
-   use.)
-
-   Two particularly important compilation flags (to be included in the
-   ``cflags`` argument) are ``REG_NOSUB``, which prevents submatches to be
-   computed, and ``REG_EXTENDED``, which switches ``regex`` from "basic" to
-   "extended" regular expressions so that it understands all the regular
-   expression elements of egrep(1) in the pattern argument.
+   see the regcomp(3) manpage for an explanation of these. Two particularly
+   important compilation flags (to be included in the ``cflags`` argument) are
+   ``REG_NOSUB``, which prevents submatches to be computed, and
+   ``REG_EXTENDED``, which switches ``regex`` from "basic" to "extended"
+   regular expressions so that it understands all the regular expression
+   elements of egrep(1) in the pattern argument.
 
    Depending on the flags and the outcome of the operation, the result of this
    function can take one of the following forms:
@@ -1249,7 +1245,8 @@ with
   first = if regexec re s eflags then () else f (regmatch re);
   next _ = if regnext re 0 then () else f (regmatch re);
   check _ = regstatus re == 0;
-end when re = sentry regfree (regcomp pat cflags) end;
+end when re = sentry regfree (regcomp pat cflags) end
+if ~(cflags and REG_NOSUB);
 
 /* .. _regexgg:
 
@@ -1263,7 +1260,8 @@ with
   first = if regexec re s eflags then () else f (regmatch re);
   next _ = if regnext re 1 then () else f (regmatch re);
   check _ = regstatus re == 0;
-end when re = sentry regfree (regcomp pat cflags) end;
+end when re = sentry regfree (regcomp pat cflags) end
+if ~(cflags and REG_NOSUB);
 
 /* .. _regsub:
 
@@ -1281,7 +1279,8 @@ with
   first = if regexec re s eflags then () else regskip re+f (regmatch re);
   next _ = if regnext re 0 then () else regskip re+f (regmatch re);
   check _ = regstatus re == 0;
-end when re = sentry regfree (regcomp pat cflags) end;
+end when re = sentry regfree (regcomp pat cflags) end
+if ~(cflags and REG_NOSUB);
 
 /* .. _regsplit:
 
@@ -1297,7 +1296,8 @@ with
   first = if regexec re s eflags then () else regskip re;
   next _ = if regnext re 0 then () else regskip re;
   check _ = regstatus re == 0;
-end when re = sentry regfree (regcomp pat cflags) end;
+end when re = sentry regfree (regcomp pat cflags) end
+if ~(cflags and REG_NOSUB);
 
 /* ..
 
@@ -1411,12 +1411,11 @@ end when re = sentry regfree (regcomp pat cflags) end;
      > head env;
      "BASH"=>"/usr/bin/sh"
 
-   Just for the fun of it, let's employ |dict|_ to convert this to a
-   dictionary, providing easy random access to the environment variables::
+   Just for the fun of it, let's convert this to a record, providing easy
+   random access to the environment variables::
 
-     > using dict;
-     > let env_dict = dict env;
-     > env_dict!!["SHELL","HOME"];
-     ["/bin/bash","/home/ag"]
+     > let env = record env;
+     > env!!["SHELL","HOME"];
+     {"/bin/bash","/home/ag"}
 
 */
