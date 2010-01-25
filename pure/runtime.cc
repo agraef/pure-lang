@@ -662,9 +662,10 @@ static inline pure_expr *new_expr()
 {
   interpreter& interp = *interpreter::g_interp;
   pure_expr *x = interp.exps;
-  if (x)
+  if (x) {
     interp.exps = x->xp;
-  else if (interp.mem && interp.mem->p-interp.mem->x < MEMSIZE)
+    interp.freectr--;
+  } else if (interp.mem && interp.mem->p-interp.mem->x < MEMSIZE)
     x = interp.mem->p++;
   else {
     pure_mem *mem = interp.mem;
@@ -684,9 +685,10 @@ static inline pure_expr *new_ref_expr()
 {
   interpreter& interp = *interpreter::g_interp;
   pure_expr *x = interp.exps;
-  if (x)
+  if (x) {
     interp.exps = x->xp;
-  else if (interp.mem && interp.mem->p-interp.mem->x < MEMSIZE)
+    interp.freectr--;
+  } else if (interp.mem && interp.mem->p-interp.mem->x < MEMSIZE)
     x = interp.mem->p++;
   else {
     pure_mem *mem = interp.mem;
@@ -706,6 +708,7 @@ static inline void free_expr(pure_expr *x)
   interpreter& interp = *interpreter::g_interp;
   x->xp = interp.exps;
   interp.exps = x;
+  interp.freectr++;
   MEMDEBUG_FREE(x)
 }
 

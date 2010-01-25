@@ -449,6 +449,7 @@ public:
   pure_mem *mem;     // runtime expression memory
   pure_expr *exps;   // head of the free list (available expression nodes)
   pure_expr *tmps;   // temporaries list (to be collected after exceptions)
+  size_t freectr;    // size of the free list
 
   /*************************************************************************
              Stuff below is to be used by application programs.
@@ -557,8 +558,7 @@ public:
 
   /* Check memory usage. Reports the total number of used expression nodes, as
      well as the number of free nodes which can be reused before new memory
-     has to be obtained from the system. NOTE: At present, this operation can
-     be slow as it traverses the entire free list. */
+     has to be obtained from the system. */
   void mem_usage(size_t &used, size_t &free);
 
   /*************************************************************************

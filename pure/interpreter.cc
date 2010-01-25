@@ -641,8 +641,9 @@ interpreter::interpreter()
     restricted(false), ttymode(false), override(false), stats(false), temp(0),
     ps("> "), libdir(""), histfile("/.pure_history"), modname("pure"),
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
-    result(0), lastres(0), mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0),
-    astk(0), sstk(__sstk), stoplevel(0), debug_skip(false), fptr(__fptr)
+    result(0), lastres(0), mem(0), exps(0), tmps(0), freectr(0), module(0),
+    JIT(0), FPM(0), astk(0), sstk(__sstk), stoplevel(0), debug_skip(false),
+    fptr(__fptr)
 {
   init();
 }
@@ -656,8 +657,9 @@ interpreter::interpreter(int32_t nsyms, char *syms,
     restricted(true), ttymode(false), override(false), stats(false), temp(0),
     ps("> "), libdir(""), histfile("/.pure_history"),
     modname("pure"), nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
-    result(0), lastres(0), mem(0), exps(0), tmps(0), module(0), JIT(0), FPM(0),
-    astk(0), sstk(*_sstk), stoplevel(0), debug_skip(false), fptr(*(Env**)_fptr)
+    result(0), lastres(0), mem(0), exps(0), tmps(0), freectr(0), module(0),
+    JIT(0), FPM(0), astk(0), sstk(*_sstk), stoplevel(0), debug_skip(false),
+    fptr(*(Env**)_fptr)
 {
   using namespace llvm;
   init();
@@ -904,14 +906,7 @@ void interpreter::mem_usage(size_t &used, size_t &free)
     used += MEMSIZE;
     m = m->next;
   }
-  /* FIXME: We should probably keep track of the length of the free list
-     somewhere. Right now, this can be slow, since we have to traverse the
-     entire free list. */
-  pure_expr *x = exps;
-  while (x) {
-    used--; free++;
-    x = x->xp;
-  }
+  used -= freectr; free += freectr;
 }
 
 /* Search for a source file. Absolute file names (starting with a slash) are
