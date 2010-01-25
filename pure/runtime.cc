@@ -11433,11 +11433,11 @@ struct pure_regex_t {
   int res; // last result
   int n; // number of submatches
   regmatch_t *matches; // submatches, if any
-  char *s, *p; // current string to be matched, p points to current pos
+  char *s, *p, *q; // current string to be matched, match pointers
   int eflags; // current execution flags
   mbstate_t st; // shift state for multibyte processing
   pure_regex_t(const char *pat, int cflags)
-    : n(0), matches(0), s(0), p(0), eflags(0)
+    : n(0), matches(0), s(0), p(0), q(0), eflags(0)
   {
     res = regcomp(&reg, pat, cflags);
     if (res == 0) {
@@ -11457,7 +11457,7 @@ struct pure_regex_t {
   {
     if (res == 0 || res == REG_NOMATCH) {
       if (s) free(s);
-      s = strdup(_s); p = s; assert(s);
+      s = strdup(_s); p = q = s; assert(s);
       eflags = _eflags;
       memset(&st, 0, sizeof(mbstate_t));
       res = regexec(&reg, s, n, matches, eflags);
@@ -11489,12 +11489,13 @@ struct pure_regex_t {
   void end_match()
   {
     if (s) free(s);
-    s = p = 0;
+    s = p = q = 0;
   }
   // advance the pointer by one (multibyte) char
   void nextchar()
   {
     int n = mbrtowc(0, p, MB_LEN_MAX, &st);
+    q = p;
     if (n > 0)
       p += n;
     else if (*p)
@@ -11509,7 +11510,7 @@ struct pure_regex_t {
     const char *s = buf;
     mbsrtowcs(NULL, &s, 0, &st);
     delete[] buf;
-    p += n;
+    p += n; q = p;
   }
   // retrieve error information
   char *error_info()
@@ -11596,10 +11597,10 @@ pure_expr *pure_regex_t::skip_info()
 {
   if (!matches || !s) return 0;
   if (res == REG_NOMATCH) return pure_cstring_dup(p);
-  assert(matches[0].rm_so >= 0);
-  size_t n = matches[0].rm_so;
+  assert(q <= p && matches[0].rm_so >= 0);
+  size_t n = p-q+matches[0].rm_so;
   char *buf = (char*)malloc(n+1); assert(buf);
-  strncpy(buf, p, n); buf[n] = 0;
+  strncpy(buf, q, n); buf[n] = 0;
   return pure_cstring(buf);
 }
 
