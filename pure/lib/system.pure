@@ -1304,6 +1304,56 @@ if ~(cflags and REG_NOSUB);
 
 /* ..
 
+   Please note that these operations all operate in an eager fashion, i.e.,
+   they process the entire input string in one go. This may be unwieldy or at
+   least inefficient for huge amounts of text. As a remedy, the following lazy
+   alternatives are available:
+
+   ``regexgs f pat cflags s eflags``
+
+   ``regexggs f pat cflags s eflags``
+
+   ``regsplits pat cflags s eflags``
+     These work like ``regexg``, ``regexgg`` and ``regsplit`` above, but
+     return a stream result which enables you to process the matches one by
+     one, using "call by need" evaluation. */
+
+regexgs f pat::string cflags::int s::string eflags::int
+= if regstatus re then regerr (regstatus re) (regerror re)
+  else takewhile check (iterate next first)
+with
+  first = if regexec re s eflags then () else f (regmatch re);
+  next _ = if regnext re 0 then () else f (regmatch re);
+  check _ = regstatus re == 0;
+end when re = sentry regfree (regcomp pat cflags) end
+if ~(cflags and REG_NOSUB);
+
+regexggs f pat::string cflags::int s::string eflags::int
+= if regstatus re then regerr (regstatus re) (regerror re)
+  else takewhile check (iterate next first)
+with
+  first = if regexec re s eflags then () else f (regmatch re);
+  next _ = if regnext re 1 then () else f (regmatch re);
+  check _ = regstatus re == 0;
+end when re = sentry regfree (regcomp pat cflags) end
+if ~(cflags and REG_NOSUB);
+
+regsplits pat::string cflags::int s::string eflags::int
+= if regstatus re then regerr (regstatus re) (regerror re)
+  else if null s then []
+  else takewhile check (iterate next first) + [regskip re]&
+with
+  first = if regexec re s eflags then () else regskip re;
+  next _ = if regnext re 0 then () else regskip re;
+  check _ = regstatus re == 0;
+  /* We need fully lazy stream concatenation here. (The standard + operator
+     isn't lazy enough, because it's also used for arithmetic operations.) */
+  []+ys = ys; (x:xs)+ys = x:(xs+ys)&;
+end when re = sentry regfree (regcomp pat cflags) end
+if ~(cflags and REG_NOSUB);
+
+/* ..
+
    Basic Examples
    ~~~~~~~~~~~~~~
 
@@ -1341,6 +1391,33 @@ if ~(cflags and REG_NOSUB);
      > regexg (!1) pat 0 s 0;
      ["var","foo","BAR"]
 
+   Lazy versions of both ``regexg`` and ``regexgg`` are provided which return
+   the result as a stream instead. These can be processed in a "call by need"
+   fashion::
+
+     > regexgs id pat 0 s 0;
+     (1,"var"):#<thunk 0x7fb1b7976750>
+     > last ans;
+     12,"BAR"
+
+   Let's verify that the processing is really done lazily::
+
+     > test x = printf "got: %s\n" (str x) $$ x;
+     > let xs = regexgs test pat 0 s 0;
+     got: 1,"var"
+     > xs!1;
+     got: 5,"foo"
+     5,"foo"
+     > last xs;
+     got: 12,"BAR"
+     12,"BAR"
+
+   As you can see, the first match is produced immediately, while the
+   remaining matches are processed as the result stream is traversed. This is
+   most useful if you have to deal with bigger amounts of text. By processing
+   the result stream in a piecemeal fashion, you can avoid keeping the entire
+   result list in memory.
+
    Regex Substitutions and Splitting
    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1356,6 +1433,13 @@ if ~(cflags and REG_NOSUB);
      ["1var","foo","99","BAR","$%&"]
      > regsplit delim REG_EXTENDED "The   quick brown    fox" 0;
      ["The","quick","brown","fox"]
+
+   The ``regsplit`` operation also has a lazy variation::
+
+     > regsplits "[[:space:]]+" REG_EXTENDED "The   quick brown    fox" 0;
+     "The":#<thunk 0x7fb1b79775b0>
+     > last ans;
+     "fox"
 
    Empty Matches
    ~~~~~~~~~~~~~
