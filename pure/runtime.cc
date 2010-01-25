@@ -11325,6 +11325,10 @@ pure_expr *globlist(const glob_t *pglob)
 #include <sys/types.h>
 #include <regex.h>
 
+/* FIXME: This is the old regex interface helper functions for Pure <= 0.41.
+   These are still provided here for backward compatibility, but should
+   eventually be removed. */
+
 extern "C"
 pure_expr *regmatches(const regex_t *preg, int flags)
 {
@@ -11342,6 +11346,8 @@ static int translate_pos(char *s, int p, int l)
 {
   assert(p >= 0 && p <= l);
   char c = s[p]; s[p] = 0;
+  /* XXXFIXME: This probably won't work for stateful encodings, because we're
+     converting a substring here. */
   char *t = toutf8(s); assert(t);
   int res = strlen(t);
   free(t); s[p] = c;
@@ -11416,6 +11422,243 @@ pure_expr *reglist(const regex_t *preg, const char *s,
   return x;
 }
 
+/* New regex interface (Pure 0.42 and later). We now maintain our own regex
+   pattern buffer which supports additional convenience operations for
+   iterating over matches. (This data structure is *not* compatible with the
+   POSIX regex functions, so don't try passing instances of pure_regex_t to
+   those!) */
+
+struct pure_regex_t {
+  regex_t reg; // compiled pattern
+  int res; // last result
+  int n; // number of submatches
+  regmatch_t *matches; // submatches, if any
+  char *s, *p; // current string to be matched, p points to current pos
+  int eflags; // current execution flags
+  mbstate_t st; // shift state for multibyte processing
+  pure_regex_t(const char *pat, int cflags)
+    : n(0), matches(0), s(0), p(0), eflags(0)
+  {
+    res = regcomp(&reg, pat, cflags);
+    if (res == 0) {
+      memset(&st, 0, sizeof(mbstate_t));
+      n = (cflags&REG_NOSUB)?0:reg.re_nsub+1;
+      if (n > 0) matches = new regmatch_t[n];
+    }
+  }
+  ~pure_regex_t()
+  {
+    regfree(&reg);
+    if (matches) delete[] matches;
+    if (s) free(s);
+  }
+  // start a new match
+  int start_match(const char *_s, int _eflags)
+  {
+    if (res == 0 || res == REG_NOMATCH) {
+      if (s) free(s);
+      s = strdup(_s); p = s; assert(s);
+      eflags = _eflags;
+      memset(&st, 0, sizeof(mbstate_t));
+      res = regexec(&reg, s, n, matches, eflags);
+    }
+    return res;
+  }
+  // next match
+  int next_match(bool overlap = false)
+  {
+    if (res == 0 && s) {
+      if (n > 0) {
+	regoff_t k = overlap?matches[0].rm_so:matches[0].rm_eo;
+	if (k > 0) {
+	  skipchars(k);
+	  if (overlap) nextchar();
+	  res = regexec(&reg, p, n, matches, eflags);
+	} else if (*p) {
+	  nextchar();
+	  res = regexec(&reg, p, n, matches, eflags);
+	} else
+	  res = REG_NOMATCH;
+      } else
+	res = REG_NOMATCH;
+    } else if (res == 0)
+      res = REG_NOMATCH;
+    return res;
+  }
+  // finish match
+  void end_match()
+  {
+    if (s) free(s);
+    s = p = 0;
+  }
+  // advance the pointer by one (multibyte) char
+  void nextchar()
+  {
+    int n = mbrtowc(0, p, MB_LEN_MAX, &st);
+    if (n > 0)
+      p += n;
+    else if (*p)
+      // failed conversion, assume single byte char
+      p++;
+  }
+  // advance the pointer by the given byte count
+  void skipchars(int n)
+  {
+    char *buf = new char[n+1];
+    strncpy(buf, p, n); buf[n] = 0;
+    const char *s = buf;
+    mbsrtowcs(NULL, &s, 0, &st);
+    delete[] buf;
+    p += n;
+  }
+  // retrieve error information
+  char *error_info()
+  {
+    size_t size = regerror(res, &reg, 0, 0);
+    char *buf = (char*)malloc(size);
+    regerror(res, &reg, buf, size);
+    return buf;
+  }
+  // retrieve match information
+  pure_expr *match_info();
+  pure_expr *skip_info();
+};
+
+static inline regoff_t shift_offs(regoff_t x, size_t y)
+{
+  return (x < 0)?x:x+y;
+}
+
+pure_expr *pure_regex_t::match_info()
+{
+  interpreter& interp = *interpreter::g_interp;
+  if (!s || res) return 0;
+  if (!matches || !s) return mk_void();
+  pure_expr *x = 0;
+  int i = n;
+  size_t offs = p-s;
+  if (strcmp(default_encoding(), "UTF-8") == 0) {
+    // Optimize for the case that the system encoding is utf-8. This should be
+    // pretty much standard on Linux/Unix systems these days.
+    while (--i >= 0) {
+      pure_expr *f = pure_symbol(interp.symtab.pair_sym().f);
+      pure_expr *y1 = pure_int(shift_offs(matches[i].rm_so, offs));
+      pure_expr *y2;
+      if (matches[i].rm_so >= 0 && matches[i].rm_eo >= matches[i].rm_so) {
+	size_t n = matches[i].rm_eo - matches[i].rm_so;
+	char *buf = (char*)malloc(n+1); assert(buf);
+	strncpy(buf, p+matches[i].rm_so, n); buf[n] = 0;
+	y2 = pure_cstring(buf);
+      } else
+	y2 = pure_cstring_dup("");
+      if (x)
+	x = pure_apply2(pure_apply2(f, y2), x);
+      else
+	x = y2;
+      x = pure_apply2(pure_apply2(f, y1), x);
+    }
+    return x;
+  }
+  // Compute the position of the first match.
+  char *t = p;
+  assert(matches[0].rm_so >= 0);
+  int l0 = strlen(t), p0 = matches[0].rm_so, q0 = translate_pos(t, p0, l0);
+  char *u = t+p0;
+  int l = l0-p0;
+  while (--i >= 0) {
+    int p = matches[i].rm_so, q;
+    if (p < 0)
+      q = -1;
+    else {
+      assert(p >= p0);
+      q = q0 + translate_pos(u, p-p0, l);
+    }
+    pure_expr *f = pure_symbol(interp.symtab.pair_sym().f);
+    pure_expr *y1 = pure_int(shift_offs(q, offs));
+    pure_expr *y2;
+    if (q >= 0 && matches[i].rm_eo >= matches[i].rm_so) {
+      size_t n = matches[i].rm_eo - matches[i].rm_so;
+      char *buf = (char*)malloc(n+1); assert(buf);
+      strncpy(buf, t+matches[i].rm_so, n); buf[n] = 0;
+      y2 = pure_cstring(buf);
+    } else
+      y2 = pure_cstring_dup("");
+    if (x)
+      x = pure_apply2(pure_apply2(f, y2), x);
+    else
+      x = y2;
+    x = pure_apply2(pure_apply2(f, y1), x);
+  }
+  return x;
+}
+
+pure_expr *pure_regex_t::skip_info()
+{
+  if (!matches || !s) return 0;
+  if (res == REG_NOMATCH) return pure_cstring_dup(p);
+  assert(matches[0].rm_so >= 0);
+  size_t n = matches[0].rm_so;
+  char *buf = (char*)malloc(n+1); assert(buf);
+  strncpy(buf, p, n); buf[n] = 0;
+  return pure_cstring(buf);
+}
+
+// C wrappers.
+
+extern "C"
+pure_regex_t *pure_regcomp(const char *pat, int cflags)
+{
+  return new pure_regex_t(pat, cflags);
+}
+
+extern "C"
+void pure_regfree(pure_regex_t *reg)
+{
+  if (reg) delete reg;
+}
+
+extern "C"
+int pure_regexec(pure_regex_t *reg, const char *s, int eflags)
+{
+  return reg?reg->start_match(s, eflags):-1;
+}
+
+extern "C"
+int pure_regnext(pure_regex_t *reg, int overlap)
+{
+  return reg?reg->next_match(overlap != 0):-1;
+}
+
+extern "C"
+void pure_regdone(pure_regex_t *reg)
+{
+  if (reg) reg->end_match();
+}
+
+extern "C"
+int pure_regstatus(pure_regex_t *reg)
+{
+  return reg?reg->res:-1;
+}
+
+extern "C"
+pure_expr *pure_regerror(pure_regex_t *reg)
+{
+  return reg?pure_cstring(reg->error_info()):0;
+}
+
+extern "C"
+pure_expr *pure_regmatch(pure_regex_t *reg)
+{
+  return reg?reg->match_info():0;
+}
+
+extern "C"
+pure_expr *pure_regskip(pure_regex_t *reg)
+{
+  return reg?reg->skip_info():0;
+}
+
 #include <llvm/System/DynamicLibrary.h>
 
 extern "C"
@@ -11482,6 +11725,8 @@ void pure_sys_vars(void)
   cdf(interp, "GLOB_NOMAGIC",	pure_int(GLOB_NOMAGIC));
   cdf(interp, "GLOB_TILDE",	pure_int(GLOB_TILDE));
   // regex stuff
+  /* FIXME: REG_SIZE is part of the old (Pure <= 0.41) regex interface and
+     isn't needed with Pure 0.42+ any more. It should be removed eventually. */
   cdf(interp, "REG_SIZE",	pure_int(sizeof(regex_t))); // not in POSIX
   cdf(interp, "REG_EXTENDED",	pure_int(REG_EXTENDED));
   cdf(interp, "REG_ICASE",	pure_int(REG_ICASE));

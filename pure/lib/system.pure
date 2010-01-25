@@ -1085,19 +1085,26 @@ end;
 
    The POSIX regex functions (``regcomp`` and ``regexec``) have a somewhat
    difficult calling sequence, hence we provide a couple of rather elaborate
-   high-level wrapper functions for use in Pure programs. */
+   high-level wrapper functions for use in Pure programs. These are
+   implemented in terms of a low-level interface provided in the runtime. (The
+   low-level interface isn't documented here, but these functions are also
+   callable if you want to create your own regular expression engines in Pure.
+   You might wish to take a look at the implementation of the high-level
+   functions in system.pure to see how this can be done.) */
 
 using namespace __C;
 
 namespace __C;
-extern int regcomp(void* regptr, char* pat, int cflags);
-extern int regexec(void* regptr, char* s, int n, void* matches, int eflags);
-extern int regerror(int errcode, void* regptr, void* buf, int size);
-extern void regfree(void* regptr);
-// runtime: return the number of subpatterns and storage for the match result
-extern expr* regmatches(void* regptr, int cflags);
-// runtime: decode the regexec result into a Pure tuple of (pos,substr) pairs
-extern expr* reglist(void* regptr, void* s, void* matches);
+// Lowlevel interface to the POSIX regex functions provided in the runtime.
+extern void* pure_regcomp(char* pat, int cflags) = regcomp;
+extern int pure_regexec(void* reg, char* s, int eflags) = regexec;
+extern int pure_regnext(void* reg, int overlap) = regnext;
+extern void pure_regdone(void* reg) = regdone;
+extern void pure_regfree(void* reg) = regfree;
+extern int pure_regstatus(void* reg) = regstatus;
+extern expr* pure_regerror(void* reg) = regerror;
+extern expr* pure_regmatch(void* reg) = regmatch;
+extern expr* pure_regskip(void* reg) = regskip;
 namespace;
 
 /* .. _regex:
@@ -1168,25 +1175,10 @@ namespace;
    subpattern matched the empty string. Other submatches may not participate
    in the match at all, in which case the pair ``(-1,"")`` is returned. */
 
-regex pat::string cflags::int s::string eflags::int = result
-when
-  result = regcomp regptr pat cflags;
-  result = if result==0 then match else regerr result (decode result);
-  regfree regptr; free regptr;
-end with
-  match = result when
-    n, matches = regmatches regptr cflags;
-    result = regexec regptr s n matches eflags;
-    result = if result==0 then (1, reglist regptr s matches) else 0;
-    free matches;
-  end;
-  decode n::int = cstring buf when
-    size = regerror n regptr (pointer 0) 0; 
-    buf = malloc size; regerror n regptr buf size;
-  end;
-end when
-  regptr = calloc 1 REG_SIZE;
-end;
+regex pat::string cflags::int s::string eflags::int
+= if regstatus re then regerr (regstatus re) (regerror re)
+  else if regexec re s eflags then 0
+  else 1,regmatch re when re = sentry regfree (regcomp pat cflags) end;
 
 /* ..
 
@@ -1250,84 +1242,28 @@ end;
      results in a list. Note: Never specify the ``REG_NOSUB`` flag with this
      function, it needs the submatch info. */
 
-regexg f pat::string cflags::int s::string eflags::int = result
-when
-  len    = #s;
-  result = regcomp regptr pat cflags;
-  result = if result==0 then
-             (reverse $ match [] 0 s with
-                match xs offs _ = xs if offs>len;
-                match xs offs s =
-		  if regexec regptr s n matches eflags==0 then
-	            (match (f info:xs) (offs+q) (drop q s) when
-                       info = reglist regptr s matches;
-                       p, u = reg 0 info; q = p+#u+null u;
-		       info = xlat_pos offs info;
-                     end with
-		       xlat_pos offs (p, u, info)
-			 = offs+p, u, xlat_pos offs info if p>=0;
-			 = p, u, xlat_pos offs info otherwise;
-		       xlat_pos offs (p, u) = offs+p, u if p>=0;
-			 = p, u otherwise;
-		     end)
-                  else xs;
-              end when
-	        n, matches = regmatches regptr cflags;
-		sentry free matches;
-	      end)
-           else
-             regerr result (decode result);
-  regfree regptr; free regptr;
-end with
-  decode n::int = cstring buf when
-    size = regerror n regptr (pointer 0) 0; 
-    buf = malloc size; regerror n regptr buf size;
-  end;
-end when
-  regptr = calloc 1 REG_SIZE;
-end;
+regexg f pat::string cflags::int s::string eflags::int
+= if regstatus re then regerr (regstatus re) (regerror re)
+  else iterwhile check next first
+with
+  first = if regexec re s eflags then () else f (regmatch re);
+  next _ = if regnext re 0 then () else f (regmatch re);
+  check _ = regstatus re == 0;
+end when re = sentry regfree (regcomp pat cflags) end;
 
 /* .. _regexgg:
 
    ``regexgg f pat cflags s eflags``
      This works like ``regexg``, but allows overlapping matches. */
 
-regexgg f pat::string cflags::int s::string eflags::int = result
-when
-  len    = #s;
-  result = regcomp regptr pat cflags;
-  result = if result==0 then
-             (reverse $ match [] 0 s with
-                match xs offs _ = xs if offs>len;
-                match xs offs s =
-		  if regexec regptr s n matches eflags==0 then
-	            (match (f info:xs) (offs+q) (drop q s) when
-                       info = reglist regptr s matches;
-                       p, u = reg 0 info; q = p+1;
-		       info = xlat_pos offs info;
-                     end with
-		       xlat_pos offs (p, u, info)
-		         = offs+p, u, xlat_pos offs info if p>=0;
-		         = p, u, xlat_pos offs info otherwise;
-		       xlat_pos offs (p, u) = offs+p, u if p>=0;
-		         = p, u otherwise;
-		     end)
-                  else xs;
-              end when
-	        n, matches = regmatches regptr cflags;
-		sentry free matches;
-	      end)
-           else
-             regerr result (decode result);
-  regfree regptr; free regptr;
-end with
-  decode n::int = cstring buf when
-    size = regerror n regptr (pointer 0) 0; 
-    buf = malloc size; regerror n regptr buf size;
-  end;
-end when
-  regptr = calloc 1 REG_SIZE;
-end;
+regexgg f pat::string cflags::int s::string eflags::int
+= if regstatus re then regerr (regstatus re) (regerror re)
+  else iterwhile check next first
+with
+  first = if regexec re s eflags then () else f (regmatch re);
+  next _ = if regnext re 1 then () else f (regmatch re);
+  check _ = regstatus re == 0;
+end when re = sentry regfree (regcomp pat cflags) end;
 
 /* .. _regsub:
 
@@ -1338,48 +1274,14 @@ end;
      result string is then obtained by concatenating ``f info`` for all
      matches, with the unmatched portions of the string in between. */
 
-regsub f pat::string cflags::int s::string eflags::int = result
-when
-  len    = #s;
-  result = regcomp regptr pat cflags;
-  result = if result==0 then
-             (strcat $ reverse $ match [] 0 s with
-                match xs offs _ = xs if offs>len;
-                match xs offs s =
-		  if regexec regptr s n matches eflags==0 then
-	            (if null u then
-                       match (substr s p 1:f info:take p s:xs)
-		       (offs+q) (drop q s)
-                     else
-                       match (f info:take p s:xs)
-		       (offs+q) (drop q s)
-                     when
-                       info = reglist regptr s matches;
-                       p, u = reg 0 info; q = p+#u+null u;
-		       info = xlat_pos offs info;
-                     end with
-		       xlat_pos offs (p, u, info)
-			 = offs+p, u, xlat_pos offs info if p>=0;
-			 = p, u, xlat_pos offs info otherwise;
-		       xlat_pos offs (p, u) = offs+p, u if p>=0;
-		         = p, u otherwise;
-		     end)
-                  else s:xs;
-              end when
-	        n, matches = regmatches regptr cflags;
-		sentry free matches;
-	      end)
-           else
-             regerr result (decode result);
-  regfree regptr; free regptr;
-end with
-  decode n::int = cstring buf when
-    size = regerror n regptr (pointer 0) 0; 
-    buf = malloc size; regerror n regptr buf size;
-  end;
-end when
-  regptr = calloc 1 REG_SIZE;
-end;
+regsub f pat::string cflags::int s::string eflags::int
+= if regstatus re then regerr (regstatus re) (regerror re)
+  else strcat (iterwhile check next first) + regskip re
+with
+  first = if regexec re s eflags then () else regskip re+f (regmatch re);
+  next _ = if regnext re 0 then () else regskip re+f (regmatch re);
+  check _ = regstatus re == 0;
+end when re = sentry regfree (regcomp pat cflags) end;
 
 /* .. _regsplit:
 
@@ -1387,38 +1289,15 @@ end;
      Splits a string into constituents delimited by substrings matching the
      given pattern. */
 
-regsplit pat::string cflags::int s::string eflags::int = result
-when
-  result = regcomp regptr pat cflags;
-  result = if result==0 then
-             (reverse $ match [] s with
-                match xs "" = "":xs;
-                match xs s =
-		  if regexec regptr s n matches eflags==0 then
-	            (if null u then
-                       match (take q s:xs) (drop q s)
-		     else
-                       match (take p s:xs) (drop q s)
-                     when
-                       info = reglist regptr s matches;
-                       p, u = reg 0 info; q = p+#u+null u;
-                     end)
-                  else s:xs;
-              end when
-	        n, matches = regmatches regptr cflags;
-		sentry free matches;
-	      end)
-           else
-             regerr result (decode result);
-  regfree regptr; free regptr;
-end with
-  decode n::int = cstring buf when
-    size = regerror n regptr (pointer 0) 0; 
-    buf = malloc size; regerror n regptr buf size;
-  end;
-end when
-  regptr = calloc 1 REG_SIZE;
-end;
+regsplit pat::string cflags::int s::string eflags::int
+= if regstatus re then regerr (regstatus re) (regerror re)
+  else if null s then []
+  else iterwhile check next first + [regskip re]
+with
+  first = if regexec re s eflags then () else regskip re;
+  next _ = if regnext re 0 then () else regskip re;
+  check _ = regstatus re == 0;
+end when re = sentry regfree (regcomp pat cflags) end;
 
 /* ..
 

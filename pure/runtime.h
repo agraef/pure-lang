@@ -1264,12 +1264,35 @@ pure_expr *globlist(const glob_t *pglob);
 #include <sys/types.h>
 #include <regex.h>
 
+/* Old regex interface (Pure 0.41 and earlier). The following support routines
+   are still provided in the library for backward compatibility, but shouldn't
+   be used any more. They may go away at any time. */
+
+#if 0
 /* Return the number of subre's and allocate storage for the matches. */
 pure_expr *regmatches(const regex_t *preg, int flags);
-
 /* Decode the result of regexec into a list of matches. */
 pure_expr *reglist(const regex_t *preg, const char *s,
 		   const regmatch_t *matches);
+#endif
+
+/* New regex interface (Pure 0.42 and later). */
+
+#ifdef __cplusplus
+struct pure_regex_t;
+#else
+typedef struct pure_regex_t pure_regex_t;
+#endif
+
+pure_regex_t *pure_regcomp(const char *pat, int cflags);
+void pure_regfree(pure_regex_t *reg);
+int pure_regexec(pure_regex_t *reg, const char *s, int eflags);
+int pure_regnext(pure_regex_t *reg, int overlap);
+void pure_regdone(pure_regex_t *reg);
+int pure_regstatus(pure_regex_t *reg);
+pure_expr *pure_regerror(pure_regex_t *reg);
+pure_expr *pure_regmatch(pure_regex_t *reg);
+pure_expr *pure_regskip(pure_regex_t *reg);
 
 #ifdef __cplusplus
 }
