@@ -5932,7 +5932,12 @@ Regex Matching
 
 The POSIX regex functions (``regcomp`` and ``regexec``) have a somewhat
 difficult calling sequence, hence we provide a couple of rather elaborate
-high-level wrapper functions for use in Pure programs.
+high-level wrapper functions for use in Pure programs. These are
+implemented in terms of a low-level interface provided in the runtime. (The
+low-level interface isn't documented here, but these functions are also
+callable if you want to create your own regular expression engines in Pure.
+You might wish to take a look at the implementation of the high-level
+functions in system.pure to see how this can be done.)
 
 .. raw:: html
 
@@ -5957,16 +5962,12 @@ The arguments are:
   flags accepted by regexec(3)).
 
 Symbolic ``REG_*`` constants are provided for the different flag values,
-see the regcomp(3) manpage for an explanation of these. (In extension to
-POSIX, Pure also provides the ``REG_SIZE`` constant which indicates the
-size needed for the compiled regex buffer, but this is only for internal
-use.)
-
-Two particularly important compilation flags (to be included in the
-``cflags`` argument) are ``REG_NOSUB``, which prevents submatches to be
-computed, and ``REG_EXTENDED``, which switches ``regex`` from "basic" to
-"extended" regular expressions so that it understands all the regular
-expression elements of egrep(1) in the pattern argument.
+see the regcomp(3) manpage for an explanation of these. Two particularly
+important compilation flags (to be included in the ``cflags`` argument) are
+``REG_NOSUB``, which prevents submatches to be computed, and
+``REG_EXTENDED``, which switches ``regex`` from "basic" to "extended"
+regular expressions so that it understands all the regular expression
+elements of egrep(1) in the pattern argument.
 
 Depending on the flags and the outcome of the operation, the result of this
 function can take one of the following forms:
@@ -6179,9 +6180,9 @@ This also works when substituting or splitting::
   > regsub (cst " ") " ?" REG_EXTENDED "some text" 0;
   " s o m e  t e x t "
   > regsplit "" REG_EXTENDED "some text" 0;
-  ["s","o","m","e"," ","t","e","x","t",""]
+  ["","s","o","m","e"," ","t","e","x","t",""]
   > regsplit " ?" REG_EXTENDED "some text" 0;
-  ["s","o","m","e","","t","e","x","t",""]
+  ["","s","o","m","e","","t","e","x","t",""]
 
 Submatches
 ~~~~~~~~~~
@@ -6214,13 +6215,12 @@ We can get hold of the real process environment as follows::
   > head env;
   "BASH"=>"/usr/bin/sh"
 
-Just for the fun of it, let's employ |dict|_ to convert this to a
-dictionary, providing easy random access to the environment variables::
+Just for the fun of it, let's convert this to a record, providing easy
+random access to the environment variables::
 
-  > using dict;
-  > let env_dict = dict env;
-  > env_dict!!["SHELL","HOME"];
-  ["/bin/bash","/home/ag"]
+  > let env = record env;
+  > env!!["SHELL","HOME"];
+  {"/bin/bash","/home/ag"}
 
 .. 
 
