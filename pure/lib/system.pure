@@ -1268,17 +1268,20 @@ if ~(cflags and REG_NOSUB);
    ``regsub f pat cflags s eflags``
      Replaces all non-overlapping instances of a pattern with a computed
      substitution string. To these ends, the given function ``f`` is applied
-     to the ``reg_info`` for each match; it should return a string value. The
-     result string is then obtained by concatenating ``f info`` for all
-     matches, with the unmatched portions of the string in between. */
+     to the ``reg_info`` for each match. The result string is then obtained by
+     concatenating ``f info`` for all matches, with the unmatched portions of
+     the string in between. To make this work, ``f`` must always return a
+     string value; otherwise, ``regsub`` throws a ``bad_string_value``
+     exception. */
 
 regsub f pat::string cflags::int s::string eflags::int
 = if regstatus re then regerr (regstatus re) (regerror re)
   else strcat (iterwhile check next first) + regskip re
 with
-  first = if regexec re s eflags then () else regskip re+f (regmatch re);
-  next _ = if regnext re 0 then () else regskip re+f (regmatch re);
+  first = if regexec re s eflags then () else regskip re+h (f (regmatch re));
+  next _ = if regnext re 0 then () else regskip re+h (f (regmatch re));
   check _ = regstatus re == 0;
+  h x::string = x; h x = throw (bad_string_value x) otherwise;
 end when re = sentry regfree (regcomp pat cflags) end
 if ~(cflags and REG_NOSUB);
 
