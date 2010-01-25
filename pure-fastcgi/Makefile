@@ -21,6 +21,8 @@ host = $(shell ./config.guess)
 #PIC = -fPIC # uncomment for x86-64 compilation
 DLL = .so
 shared = -shared
+# Some systems have the headers in /usr/include/fastcgi. Adjust as needed.
+INCLUDES = -I/usr/include/fastcgi
 
 # Take care of some common systems.
 ifneq "$(findstring -mingw,$(host))" ""
@@ -53,7 +55,7 @@ examples/*.pure fastcgi.c fastcgi.pure
 all: fastcgi$(DLL)
 
 fastcgi$(DLL): fastcgi.c
-	$(CC) $(shared) -o $@ $< $(FLAGS) -lfcgi -lpure $(LIBS)
+	$(CC) $(shared) -o $@ $(INCLUDES) $< $(FLAGS) -lfcgi -lpure $(LIBS)
 
 clean:
 	rm -f *$(DLL) *~ *.a *.o *.tex *.pdf *.aux *.log *.out

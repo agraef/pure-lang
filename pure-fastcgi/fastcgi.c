@@ -1,6 +1,6 @@
 
 #include <pure/runtime.h>
-#include <fastcgi/fcgi_stdio.h>
+#include <fcgi_stdio.h>
 
 extern void *fastcgi_to_file(FILE *fp)
 {
