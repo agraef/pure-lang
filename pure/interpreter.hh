@@ -555,6 +555,12 @@ public:
   virtual void warning(const yy::location& l, const string& m);
   virtual void warning(const string& m);
 
+  /* Check memory usage. Reports the total number of used expression nodes, as
+     well as the number of free nodes which can be reused before new memory
+     has to be obtained from the system. NOTE: At present, this operation can
+     be slow as it traverses the entire free list. */
+  void mem_usage(size_t &used, size_t &free);
+
   /*************************************************************************
              Stuff below this line is to be used internally only.
    *************************************************************************/

@@ -891,6 +891,29 @@ interpreter::warning(const string& m)
   }
 }
 
+// Report memory usage.
+
+void interpreter::mem_usage(size_t &used, size_t &free)
+{
+  used = free = 0;
+  if (!mem) return;
+  used = mem->p-mem->x;
+  free = MEMSIZE-used;
+  pure_mem *m = mem->next;
+  while (m) {
+    used += MEMSIZE;
+    m = m->next;
+  }
+  /* FIXME: We should probably keep track of the length of the free list
+     somewhere. Right now, this can be slow, since we have to traverse the
+     entire free list. */
+  pure_expr *x = exps;
+  while (x) {
+    used--; free++;
+    x = x->xp;
+  }
+}
+
 /* Search for a source file. Absolute file names (starting with a slash) are
    taken as is. Relative pathnames are resolved using the following algorithm:
    If srcdir is nonempty, search it first, then libdir (if nonempty), then the
