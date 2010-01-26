@@ -897,16 +897,9 @@ interpreter::warning(const string& m)
 
 void interpreter::mem_usage(size_t &used, size_t &free)
 {
-  used = free = 0;
-  if (!mem) return;
-  used = mem->p-mem->x;
-  free = MEMSIZE-used;
-  pure_mem *m = mem->next;
-  while (m) {
-    used += MEMSIZE;
-    m = m->next;
-  }
-  used -= freectr; free += freectr;
+  mem_usage(used);
+  free = freectr;
+  used -= free;
 }
 
 void interpreter::mem_usage(size_t &total)

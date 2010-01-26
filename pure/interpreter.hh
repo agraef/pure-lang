@@ -556,10 +556,11 @@ public:
   virtual void warning(const string& m);
 
   /* Check memory usage. The first variation reports the total number of used
-     expression nodes, as well as the number of free nodes which can be reused
-     before new memory has to be obtained from the system. The second
-     variation reports the total amount of expression memory being in use,
-     including nodes which have been returned to the freelist. */
+     expression nodes, as well as the number of nodes on the freelist. The
+     second variation only calculates the total amount (used+free) of
+     expression memory being in use. Note that the total may be less than the
+     actually allocated size, since the runtime allocates expression memory in
+     bigger chunks (128K cells by default). */
   void mem_usage(size_t &used, size_t &free);
   void mem_usage(size_t &total);
 
