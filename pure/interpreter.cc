@@ -909,6 +909,54 @@ void interpreter::mem_usage(size_t &used, size_t &free)
   used -= freectr; free += freectr;
 }
 
+void interpreter::mem_usage(size_t &total)
+{
+  total = 0;
+  if (!mem) return;
+  total = mem->p-mem->x;
+  pure_mem *m = mem->next;
+  while (m) {
+    total += MEMSIZE;
+    m = m->next;
+  }
+}
+
+// Evaluation statistics.
+
+void interpreter::begin_stats()
+{
+  if (interactive && stats) {
+    clocks = clock();
+    mem_usage(memsize);
+    old_memctr = memctr = freectr;
+  }
+}
+
+void interpreter::end_stats()
+{
+  if (interactive && stats) {
+    clocks = clock()-clocks;
+    size_t new_memsize;
+    mem_usage(new_memsize);
+    /* We either have made new allocations, in which case the freelist must
+       have gone empty at some point (memctr == 0), or all used expression
+       memory came from the freelist. In either case the maximum amount of
+       used memory at any one point is given by the new total amount of memory
+       minus the old total, plus the difference between old and smallest size
+       of the freelist. */
+    assert(new_memsize >= memsize && memctr <= old_memctr);
+    assert(new_memsize <= memsize || memctr == 0);
+    memsize = new_memsize-memsize+old_memctr-memctr;
+  }
+}
+
+void interpreter::report_stats()
+{
+  if (interactive && stats)
+    cout << ((double)clocks)/(double)CLOCKS_PER_SEC << "s, "
+	 << memsize << " cells\n";
+}
+
 /* Search for a source file. Absolute file names (starting with a slash) are
    taken as is. Relative pathnames are resolved using the following algorithm:
    If srcdir is nonempty, search it first, then libdir (if nonempty), then the
@@ -2201,8 +2249,7 @@ void interpreter::exec(expr *x)
     if (lastres) pure_free(lastres);
     lastres = pure_new(result);
     cout << result << '\n';
-    if (stats)
-      cout << ((double)clocks)/(double)CLOCKS_PER_SEC << "s\n";
+    report_stats();
   }
 }
 
@@ -2243,8 +2290,7 @@ void interpreter::define(rule *r)
   }
   delete r;
   pure_freenew(res);
-  if (interactive && stats)
-    cout << ((double)clocks)/(double)CLOCKS_PER_SEC << "s\n";
+  report_stats();
 }
 
 void interpreter::define_const(rule *r)
@@ -2269,8 +2315,7 @@ void interpreter::define_const(rule *r)
   }
   delete r;
   pure_freenew(res);
-  if (interactive && stats)
-    cout << ((double)clocks)/(double)CLOCKS_PER_SEC << "s\n";
+  report_stats();
 }
 
 static string mkvarsym(const string& name);
@@ -6697,15 +6742,17 @@ pure_expr *interpreter::doeval(expr x, pure_expr*& e, bool keep)
     return 0;
   }
   e = 0;
-  clock_t t0 = clock();
+  begin_stats();
   pure_expr *res = 0;
   if (!keep) {
     // First check whether the value is actually a constant, then we can skip
     // the compilation step. (We only do this if we're not batch-compiling,
     // since in a batch compilation we need the generated code.)
     res = const_value_invoke(x, e);
-    if (interactive && stats) clocks = clock()-t0;
-    if (res || e) return res;
+    if (res || e) {
+      end_stats();
+      return res;
+    }
   }
   // Create an anonymous function to call in order to evaluate the target
   // expression.
@@ -6730,9 +6777,9 @@ pure_expr *interpreter::doeval(expr x, pure_expr*& e, bool keep)
   // may depend on the outcome of this computation.
   void *fp = JIT->getPointerToFunction(f.f);
   assert(fp);
-  t0 = clock();
+  begin_stats();
   res = pure_invoke(fp, &e);
-  if (interactive && stats) clocks = clock()-t0;
+  end_stats();
   // Get rid of our anonymous function.
   JIT->freeMachineCodeForFunction(f.f);
   if (!keep) {
@@ -6766,7 +6813,7 @@ pure_expr *interpreter::dodefn(env vars, veqnl eqns, expr lhs, expr rhs,
     return 0;
   }
   e = 0;
-  clock_t t0 = clock();
+  begin_stats();
   pure_expr *res = 0;
   if (!keep) {
     // First check whether the value is actually a constant, then we can skip
@@ -6774,7 +6821,7 @@ pure_expr *interpreter::dodefn(env vars, veqnl eqns, expr lhs, expr rhs,
     // since in a batch compilation we need the generated code.)
     res = const_value_invoke(rhs, e);
     if (e) {
-      if (interactive && stats) clocks = clock()-t0;
+      end_stats();
       return res;
     }
     if (res) {
@@ -6816,7 +6863,7 @@ pure_expr *interpreter::dodefn(env vars, veqnl eqns, expr lhs, expr rhs,
 	pure_freenew(res);
 	res = e = 0;
       }
-      if (interactive && stats) clocks = clock()-t0;
+      end_stats();
       return res;
     }
   }
@@ -6906,9 +6953,9 @@ pure_expr *interpreter::dodefn(env vars, veqnl eqns, expr lhs, expr rhs,
   // may depend on the outcome of this computation.
   void *fp = JIT->getPointerToFunction(f.f);
   assert(fp);
-  t0 = clock();
+  begin_stats();
   res = pure_invoke(fp, &e);
-  if (interactive && stats) clocks = clock()-t0;
+  end_stats();
   // Get rid of our anonymous function.
   JIT->freeMachineCodeForFunction(f.f);
   if (!keep) {

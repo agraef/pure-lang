@@ -441,7 +441,6 @@ public:
   symtable symtab;   // the symbol table
   pure_expr *result; // last result computed by exec() or parse()
   pure_expr *lastres;// last printed result (interactive mode only)
-  clock_t clocks;    // last evaluation time, if stats is set
   exprl last;        // last processed lhs collection
   env globenv;       // global function and variable environment
   env macenv;        // global macro environment
@@ -556,10 +555,13 @@ public:
   virtual void warning(const yy::location& l, const string& m);
   virtual void warning(const string& m);
 
-  /* Check memory usage. Reports the total number of used expression nodes, as
-     well as the number of free nodes which can be reused before new memory
-     has to be obtained from the system. */
+  /* Check memory usage. The first variation reports the total number of used
+     expression nodes, as well as the number of free nodes which can be reused
+     before new memory has to be obtained from the system. The second
+     variation reports the total amount of expression memory being in use,
+     including nodes which have been returned to the freelist. */
   void mem_usage(size_t &used, size_t &free);
+  void mem_usage(size_t &total);
 
   /*************************************************************************
              Stuff below this line is to be used internally only.
@@ -940,10 +942,24 @@ private:
     }
   }
 
+  // Evaluation statistics.
+
+public:
+  size_t memctr;
+  void begin_stats();
+  void end_stats();
+  void report_stats();
+
+private:
+  clock_t clocks;
+  size_t memsize, old_memctr;
+
   // Interface to the lexer.
+
 public:
   bool declare_op;
   string srcdir;
+
 private:
   bool lex_begin(const string& fname = "", bool esc = false);
   void lex_end();
