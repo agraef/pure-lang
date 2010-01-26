@@ -665,18 +665,18 @@ static inline pure_expr *new_expr()
   if (x) {
     interp.exps = x->xp;
     interp.freectr--;
-    if (interp.stats && interp.freectr < interp.memctr)
+    if (interp.stats_mem && interp.freectr < interp.memctr)
       interp.memctr = interp.freectr;
   } else if (interp.mem && interp.mem->p-interp.mem->x < MEMSIZE) {
     x = interp.mem->p++;
-    if (interp.stats) interp.memctr = 0;
+    if (interp.stats_mem) interp.memctr = 0;
   } else {
     pure_mem *mem = interp.mem;
     interp.mem = new pure_mem;
     interp.mem->next = mem;
     interp.mem->p = interp.mem->x;
     x = interp.mem->p++;
-    if (interp.stats) interp.memctr = 0;
+    if (interp.stats_mem) interp.memctr = 0;
   }
   x->refc = 0;
   x->xp = interp.tmps;
@@ -691,18 +691,18 @@ static inline pure_expr *new_ref_expr()
   pure_expr *x = interp.exps;
   if (x) {
     interp.exps = x->xp;
-    if (interp.stats && interp.freectr < interp.memctr)
+    if (interp.stats_mem && interp.freectr < interp.memctr)
       interp.memctr = interp.freectr;
   } else if (interp.mem && interp.mem->p-interp.mem->x < MEMSIZE) {
     x = interp.mem->p++;
-    if (interp.stats) interp.memctr = 0;
+    if (interp.stats_mem) interp.memctr = 0;
   } else {
     pure_mem *mem = interp.mem;
     interp.mem = new pure_mem;
     interp.mem->next = mem;
     interp.mem->p = interp.mem->x;
     x = interp.mem->p++;
-    if (interp.stats) interp.memctr = 0;
+    if (interp.stats_mem) interp.memctr = 0;
   }
   x->refc = 1;
   x->xp = 0;

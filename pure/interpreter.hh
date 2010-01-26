@@ -417,6 +417,7 @@ public:
   bool ttymode;      // connected to a tty
   bool override;     // override mode
   bool stats;        // stats mode (print execution times)
+  bool stats_mem;    // stats mode (print memory usage)
   uint32_t temp;     // temporary level (purgable definitions)
   string ps;         // prompt string
   string libdir;     // library dir to search for source files

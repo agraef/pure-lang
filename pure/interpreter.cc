@@ -638,8 +638,9 @@ void interpreter::init()
 interpreter::interpreter()
   : verbose(0), compiling(false), interactive(false), debugging(false),
     checks(true), folding(true), use_fastcc(true), pic(false), strip(true),
-    restricted(false), ttymode(false), override(false), stats(false), temp(0),
-    ps("> "), libdir(""), histfile("/.pure_history"), modname("pure"),
+    restricted(false), ttymode(false), override(false),
+    stats(false), stats_mem(false), temp(0),  ps("> "), libdir(""),
+    histfile("/.pure_history"), modname("pure"),
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
     result(0), lastres(0), mem(0), exps(0), tmps(0), freectr(0), module(0),
     JIT(0), FPM(0), astk(0), sstk(__sstk), stoplevel(0), debug_skip(false),
@@ -654,9 +655,10 @@ interpreter::interpreter(int32_t nsyms, char *syms,
 			 pure_expr ***_sstk, void **_fptr)
   : verbose(0), compiling(false), interactive(false), debugging(false),
     checks(true), folding(true), use_fastcc(true), pic(false), strip(true),
-    restricted(true), ttymode(false), override(false), stats(false), temp(0),
-    ps("> "), libdir(""), histfile("/.pure_history"),
-    modname("pure"), nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
+    restricted(true), ttymode(false), override(false),
+    stats(false), stats_mem(false), temp(0), ps("> "), libdir(""),
+    histfile("/.pure_history"), modname("pure"),
+    nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
     result(0), lastres(0), mem(0), exps(0), tmps(0), freectr(0), module(0),
     JIT(0), FPM(0), astk(0), sstk(*_sstk), stoplevel(0), debug_skip(false),
     fptr(*(Env**)_fptr)
@@ -920,8 +922,10 @@ void interpreter::begin_stats()
 {
   if (interactive && stats) {
     clocks = clock();
-    mem_usage(memsize);
-    old_memctr = memctr = freectr;
+    if (stats_mem) {
+      mem_usage(memsize);
+      old_memctr = memctr = freectr;
+    }
   }
 }
 
@@ -929,25 +933,30 @@ void interpreter::end_stats()
 {
   if (interactive && stats) {
     clocks = clock()-clocks;
-    size_t new_memsize;
-    mem_usage(new_memsize);
-    /* We either have made new allocations, in which case the freelist must
-       have gone empty at some point (memctr == 0), or all used expression
-       memory came from the freelist. In either case the maximum amount of
-       used memory at any one point is given by the new total amount of memory
-       minus the old total, plus the difference between old and smallest size
-       of the freelist. */
-    assert(new_memsize >= memsize && memctr <= old_memctr);
-    assert(new_memsize <= memsize || memctr == 0);
-    memsize = new_memsize-memsize+old_memctr-memctr;
+    if (stats_mem) {
+      size_t new_memsize;
+      mem_usage(new_memsize);
+      /* We either have made new allocations, in which case the freelist must
+	 have gone empty at some point (memctr == 0), or all used expression
+	 memory came from the freelist. In either case the maximum amount of
+	 used memory at any one point is given by the new total amount of
+	 memory minus the old total, plus the difference between old and
+	 smallest size of the freelist. */
+      assert(new_memsize >= memsize && memctr <= old_memctr);
+      assert(new_memsize <= memsize || memctr == 0);
+      memsize = new_memsize-memsize+old_memctr-memctr;
+    }
   }
 }
 
 void interpreter::report_stats()
 {
-  if (interactive && stats)
-    cout << ((double)clocks)/(double)CLOCKS_PER_SEC << "s, "
-	 << memsize << " cells\n";
+  if (interactive && stats) {
+    cout << ((double)clocks)/(double)CLOCKS_PER_SEC << "s";
+    if (stats_mem)
+      cout << ", " << memsize << " cells";
+    cout << endl;
+  }
 }
 
 /* Search for a source file. Absolute file names (starting with a slash) are

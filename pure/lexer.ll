@@ -2167,23 +2167,57 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
       interp.mem_usage(used, free);
       os << used << " cells (" << free << " free)\n";
     }
-  } else if (strcmp(cmd, "stats") == 0)  {
+  } else if (strcmp(cmd, "stats") == 0) {
     const char *s = cmdline+5;
     argl args(s, "stats");
-    if (!args.ok)
-      ;
-    else if (args.c == 0)
-      interp.stats = true;
-    else if (args.c == 1)
-      if (args.l.front() == "on")
-	interp.stats = true;
-      else if (args.l.front() == "off")
-	interp.stats = false;
-      else
-	cerr << "stats: invalid parameter '" << args.l.front()
+    bool mflag = false, on = true;
+    list<string>::iterator arg;
+    if (!args.ok) goto stats_out;
+    // process option arguments
+    for (arg = args.l.begin(); arg != args.l.end(); arg++) {
+      const char *s = arg->c_str();
+      if (s[0] != '-' || !s[1]) break;
+      while (*++s) {
+	switch (*s) {
+	case 'm': mflag = true; break;
+	case 'h':
+	  cout <<
+"stats command help: stats [-m] [on|off]\n\
+Switches evaluation statistics on (default) or off. The -m option specifies\n\
+that memory usage is to be printed along with the cpu time.\n";
+	  goto stats_out;
+	default:
+	  cerr << "show: invalid option character '" << *s << "'\n";
+	  goto stats_out;
+	}
+      }
+    }
+    if (arg != args.l.end()) {
+      if (*arg == "on")
+	on = true;
+      else if (*arg == "off")
+	on = false;
+      else {
+	cerr << "stats: invalid parameter '" << *arg
 	     << "' (must be 'on' or 'off')\n";
-    else
+	goto stats_out;
+      }
+      ++arg;
+    }
+    if (arg != args.l.end()) {
       cerr << "stats: extra parameter\n";
+      goto stats_out;
+    }
+    if (on) {
+      interp.stats = true;
+      if (mflag) interp.stats_mem = true;
+    } else {
+      if (mflag)
+	interp.stats_mem = false;
+      else
+	interp.stats = interp.stats_mem = false;
+    }
+  stats_out: ;
   } else if (strcmp(cmd, "quit") == 0)  {
     const char *s = cmdline+4;
     argl args(s, "quit");
