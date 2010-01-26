@@ -1309,6 +1309,10 @@ if ~(cflags and REG_NOSUB);
    least inefficient for huge amounts of text. As a remedy, the following lazy
    alternatives are available:
 
+   .. _regexgs:
+   .. _regexggs:
+   .. _regsplits:
+
    ``regexgs f pat cflags s eflags``
 
    ``regexggs f pat cflags s eflags``
@@ -1416,7 +1420,16 @@ if ~(cflags and REG_NOSUB);
    remaining matches are processed as the result stream is traversed. This is
    most useful if you have to deal with bigger amounts of text. By processing
    the result stream in a piecemeal fashion, you can avoid keeping the entire
-   result list in memory.
+   result list in memory. For instance, compare the following::
+
+     > let s2 = fget $ fopen "system.pure" "r";
+     > stats
+     > #regexg id pat 0 s2 0;
+     7977
+     0.18s, 55847 cells
+     > #regexgs id pat 0 s2 0;
+     7977
+     0.12s, 20 cells
 
    Regex Substitutions and Splitting
    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

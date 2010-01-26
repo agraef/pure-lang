@@ -103,11 +103,12 @@ operator symbols.
 .. _out_of_bounds:
 .. _malloc_error:
 
-* Other predefined exceptions: ``bad_list_value x``, ``bad_tuple_value x``
-  (which are thrown by some list and tuple operations when they fail to
-  find an expected list or tuple value), ``out_of_bounds`` (which is thrown
-  by the index operator ``!`` if a list, tuple or matrix index is out of
-  bounds), and ``malloc_error`` which indicates a memory allocation error.
+* Other predefined exceptions: ``bad_string_value x``, ``bad_matrix_value
+  x``, ``bad_list_value x``, ``bad_tuple_value x`` (which are thrown by
+  some operations when they fail to find an expected value of the
+  corresponding type), ``out_of_bounds`` (which is thrown by the index
+  operator ``!`` if a list, tuple or matrix index is out of bounds), and
+  ``malloc_error`` which indicates a memory allocation error.
 
 .. raw:: html
 
@@ -2943,8 +2944,8 @@ operations which provide a more compact binary serialization format.)
   their captured output as a string. No other results are returned, so this
   operation is most useful for executing Pure definitions and interactive
   commands for their side-effects. (At this time, only the regular output
-  of a few commands can be captured, most notably ``clear``, ``save`` and
-  ``show``; otherwise the result string will be empty.)
+  of a few commands can be captured, most notably ``clear``, ``mem``,
+  ``save`` and ``show``; otherwise the result string will be empty.)
 
 .. raw:: html
 
@@ -3440,12 +3441,12 @@ function values::
 
 E.g., consider the naive recursive definition of the Fibonacci function::
 
-  fib n = if n<=1 then 1 else fib (n-1)+fib (n-2);
+  fib n::int = if n<=1 then 1 else fib (n-1)+fib (n-2);
 
 A hashed version of the Fibonacci function can be defined as follows::
 
   let hfib = hashed f with
-    f n = if n<=1 then 1 else hfib (n-1)+hfib (n-2)
+    f n::int = if n<=1 then 1 else hfib (n-1)+hfib (n-2)
   end;
 
 This turns the naive definition of the Fibonacci function (which has
@@ -3454,10 +3455,10 @@ exponential time complexity) into a linear time operation::
   > stats
   > fib 35;
   14930352
-  12.78s
+  4.53s, 54 cells
   > hfib 35;
   14930352
-  0.25s
+  0.25s, 522 cells
 
 ..
 
@@ -6089,9 +6090,11 @@ according to a given delimiter regex.
 ``regsub f pat cflags s eflags``
   Replaces all non-overlapping instances of a pattern with a computed
   substitution string. To these ends, the given function ``f`` is applied
-  to the ``reg_info`` for each match; it should return a string value. The
-  result string is then obtained by concatenating ``f info`` for all
-  matches, with the unmatched portions of the string in between.
+  to the ``reg_info`` for each match. The result string is then obtained by
+  concatenating ``f info`` for all matches, with the unmatched portions of
+  the string in between. To make this work, ``f`` must always return a
+  string value; otherwise, ``regsub`` throws a ``bad_string_value``
+  exception.
 
 .. raw:: html
 
@@ -6102,6 +6105,38 @@ according to a given delimiter regex.
 ``regsplit pat cflags s eflags``
   Splits a string into constituents delimited by substrings matching the
   given pattern.
+
+..
+
+Please note that these operations all operate in an eager fashion, i.e.,
+they process the entire input string in one go. This may be unwieldy or at
+least inefficient for huge amounts of text. As a remedy, the following lazy
+alternatives are available:
+
+.. raw:: html
+
+   <a name="regexgs">
+
+.. raw:: html
+
+   <a name="regexggs">
+
+.. raw:: html
+
+   <a name="regsplits">
+
+.. _regexgs:
+.. _regexggs:
+.. _regsplits:
+
+``regexgs f pat cflags s eflags``
+
+``regexggs f pat cflags s eflags``
+
+``regsplits pat cflags s eflags``
+  These work like ``regexg``, ``regexgg`` and ``regsplit`` above, but
+  return a stream result which enables you to process the matches one by
+  one, using "call by need" evaluation.
 
 ..
 
@@ -6142,6 +6177,42 @@ info::
   > regexg (!1) pat 0 s 0;
   ["var","foo","BAR"]
 
+Lazy versions of both ``regexg`` and ``regexgg`` are provided which return
+the result as a stream instead. These can be processed in a "call by need"
+fashion::
+
+  > regexgs id pat 0 s 0;
+  (1,"var"):#<thunk 0x7fb1b7976750>
+  > last ans;
+  12,"BAR"
+
+Let's verify that the processing is really done lazily::
+
+  > test x = printf "got: %s\n" (str x) $$ x;
+  > let xs = regexgs test pat 0 s 0;
+  got: 1,"var"
+  > xs!1;
+  got: 5,"foo"
+  5,"foo"
+  > last xs;
+  got: 12,"BAR"
+  12,"BAR"
+
+As you can see, the first match is produced immediately, while the
+remaining matches are processed as the result stream is traversed. This is
+most useful if you have to deal with bigger amounts of text. By processing
+the result stream in a piecemeal fashion, you can avoid keeping the entire
+result list in memory. For instance, compare the following::
+
+  > let s2 = fget $ fopen "system.pure" "r";
+  > stats
+  > #regexg id pat 0 s2 0;
+  7977
+  0.18s, 55847 cells
+  > #regexgs id pat 0 s2 0;
+  7977
+  0.12s, 20 cells
+
 Regex Substitutions and Splitting
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -6157,6 +6228,13 @@ Or split a string using a delimiter pattern (this uses an egrep pattern)::
   ["1var","foo","99","BAR","$%&"]
   > regsplit delim REG_EXTENDED "The   quick brown    fox" 0;
   ["The","quick","brown","fox"]
+
+The ``regsplit`` operation also has a lazy variation::
+
+  > regsplits "[[:space:]]+" REG_EXTENDED "The   quick brown    fox" 0;
+  "The":#<thunk 0x7fb1b79775b0>
+  > last ans;
+  "fox"
 
 Empty Matches
 ~~~~~~~~~~~~~
@@ -6724,8 +6802,11 @@ Index
 | `regex`_
 | `regexg`_
 | `regexgg`_
+| `regexggs`_
+| `regexgs`_
 | `regs`_
 | `regsplit`_
+| `regsplits`_
 | `regsub`_
 | `repeat`_
 | `repeatn`_

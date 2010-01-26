@@ -3249,6 +3249,15 @@ currently supported operations:
 ``ls [args]``
     List files (shell ls(1) command).
 
+``mem``
+    Print current memory usage. This reports the number of expression cells
+    currently in use by the program, along with the size of the freelist (the
+    number of allocated but currently unused expression cells). Note that the
+    actual size of the expression storage may be somewhat larger than this,
+    since the runtime always allocates expression memory in bigger chunks.
+    Also, this figure does not reflect other heap-allocated memory in use by
+    the program, such as strings or malloc'ed pointers.
+
 ``override``
     Enter "override" mode. This allows you to add equations "above" existing
     definitions in the source script, possibly overriding existing
@@ -3292,8 +3301,9 @@ currently supported operations:
 ``stats [on|off]``
     Enables (default) or disables "stats" mode, in which various statistics
     are printed after an expression has been evaluated. Currently, this just
-    prints the cpu time in seconds for each evaluation, but in the future
-    additional profiling information may be provided.
+    prints the cpu time in seconds and the memory requirements in terms of
+    expression cells used by each evaluation. In the future additional
+    profiling information may be provided.
 
 underride
     Exits "override" mode. This returns you to the normal mode of operation,

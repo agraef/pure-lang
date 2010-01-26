@@ -432,8 +432,8 @@ using namespace __C;
      their captured output as a string. No other results are returned, so this
      operation is most useful for executing Pure definitions and interactive
      commands for their side-effects. (At this time, only the regular output
-     of a few commands can be captured, most notably ``clear``, ``save`` and
-     ``show``; otherwise the result string will be empty.)
+     of a few commands can be captured, most notably ``clear``, ``mem``,
+     ``save`` and ``show``; otherwise the result string will be empty.)
 
    .. _lasterr:
 
@@ -1345,12 +1345,12 @@ put_pointer x::pointer y::pointer = pointer_put_pointer x y;
 
    E.g., consider the naive recursive definition of the Fibonacci function::
 
-     fib n = if n<=1 then 1 else fib (n-1)+fib (n-2);
+     fib n::int = if n<=1 then 1 else fib (n-1)+fib (n-2);
 
    A hashed version of the Fibonacci function can be defined as follows::
 
      let hfib = hashed f with
-       f n = if n<=1 then 1 else hfib (n-1)+hfib (n-2)
+       f n::int = if n<=1 then 1 else hfib (n-1)+hfib (n-2)
      end;
 
    This turns the naive definition of the Fibonacci function (which has
@@ -1359,10 +1359,10 @@ put_pointer x::pointer y::pointer = pointer_put_pointer x y;
      > stats
      > fib 35;
      14930352
-     12.78s
+     4.53s, 54 cells
      > hfib 35;
      14930352
-     0.25s
+     0.25s, 522 cells
 
 */
 
