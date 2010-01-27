@@ -1,13 +1,26 @@
 
 ** Pure 0.42 (in progress)
 
-* Fixed some performance issues with 'split' and the regex operations, as
-  reported by Jiri Spitz. Also, the regexg, regexgg and regsplit operation now
-  have lazy alternatives which return a stream instead of an eager list.
+This release adds some facilities to inspect memory usage in the interpreter,
+and fixes some performance bugs in the library.
 
-* New 'mem' command which prints current memory usage (in terms of expression
-  cells) in the interpreter. Also, the 'stats' command has a new '-m' option
-  which enables printing of memory usage for evaluations.
+* The new 'mem' command prints current memory usage (in terms of expression
+  cells) in the interpreter, and the 'stats' command has a new '-m' option
+  which enables printing the expression memory used in evaluations. Example:
+
+  > mem
+  413 cells (0 free)
+  > stats -m
+  > let xs = scanl (+) 1 (1..100);
+  0s, 306 cells
+  > mem
+  716 cells (306 free)
+
+* Some performance issues with 'split' and the regex operations (reported by
+  Jiri Spitz) were fixed. Also, the regexg, regexgg and regsplit operation now
+  have lazy alternatives which return a stream instead of an eager list, which
+  makes processing of big strings more efficient. Examples can be found in the
+  library manual.
 
 ** Pure 0.41 2010-01-21
 
