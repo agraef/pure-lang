@@ -34,8 +34,8 @@
 extern "C" {
 #endif
 
-#if GLP_MAJOR_VERSION != 4 || GLP_MINOR_VERSION != 39
-#error GLPK version 4.39 required
+#if GLP_MAJOR_VERSION != 4 || GLP_MINOR_VERSION != 42
+#error GLPK version 4.42 required
 #endif
 
 
@@ -593,6 +593,17 @@ pure_expr *glpk_load_matrix(pure_expr *ptr, pure_expr *matrix)
     free(elems);
     return pure_void;
   }
+}
+
+pure_expr *glpk_sort_matrix(pure_expr *ptr)
+{
+  // Sort elements of the constraint matrix
+  glp_obj *glpobj;
+  if (!is_glp_pointer(ptr, &glpobj)) {
+    return 0;
+  }
+  glp_sort_matrix(glpobj->lp);
+  return pure_void;
 }
 
 pure_expr *glpk_del_rows(pure_expr *ptr, pure_expr *rows)
@@ -2000,6 +2011,46 @@ pure_expr *glpk_write_lp(pure_expr *ptr, const char *fname)
   return pure_int(status);
 }
 
+pure_expr *glpk_read_prob(pure_expr *ptr, const char *fname)
+{
+  // Read LP problem data in GLPK format
+  int status;
+  char *oldlocale;
+  glp_obj *glpobj;
+  if (!is_glp_pointer(ptr, &glpobj)) {
+    return 0;
+  }
+  oldlocale = strdup(setlocale(LC_NUMERIC, NULL));
+  if (!oldlocale) {
+    return pure_err_internal("insufficient memory");
+  }
+  setlocale(LC_NUMERIC, "C");
+  status = glp_read_prob(glpobj->lp, 0, fname);
+  setlocale(LC_NUMERIC, oldlocale);
+  free(oldlocale);
+  return pure_int(status);
+}
+
+pure_expr *glpk_write_prob(pure_expr *ptr, const char *fname)
+{
+  // Write LP problem data in GLPK format
+  int status;
+  char *oldlocale;
+  glp_obj *glpobj;
+  if (!is_glp_pointer(ptr, &glpobj)) {
+    return 0;
+  }
+  oldlocale = strdup(setlocale(LC_NUMERIC, NULL));
+  if (!oldlocale) {
+    return pure_err_internal("insufficient memory");
+  }
+  setlocale(LC_NUMERIC, "C");
+  status = glp_write_prob(glpobj->lp, 0, fname);
+  setlocale(LC_NUMERIC, oldlocale);
+  free(oldlocale);
+  return pure_int(status);
+}
+
 pure_expr *glpk_mpl_alloc_wksp()
 {
   // Create the MathProg translator object
@@ -2184,10 +2235,55 @@ pure_expr *glpk_write_sol(pure_expr *ptr, const char *fname)
   return putfile(glp_write_sol, ptr, fname);
 }
 
-pure_expr *glpx_print_sens_bnds(pure_expr *ptr, const char *fname)
+pure_expr *glpk_print_ranges(pure_expr *ptr, pure_expr *lst, const char *fname)
 {
-  // Write bounds sensitivity information
-  return putfile(lpx_print_sens_bnds, ptr, fname);
+  // Print sensitivity analysis report
+  int status, numcols, numrows;
+  char *oldlocale;
+  int *indices;
+  pure_expr **elems;
+  size_t nelem;
+  glp_obj *glpobj;
+  if (!is_glp_pointer(ptr, &glpobj)) {
+    return 0;
+  }
+  if (!pure_is_listv(lst, &nelem, &elems)) {
+    return 0;
+  }
+  numrows = glp_get_num_rows(glpobj->lp);
+  numcols = glp_get_num_cols(glpobj->lp);
+  if (!(indices = malloc((nelem + 1) * sizeof(int)))) {
+    free(elems);
+    return pure_err_internal("insufficient memory");
+  }
+  switch (pure_is_intlist(elems, nelem, numcols + numrows,
+          "row or column", indices)) {
+  case -1:
+    free(indices);
+    free(elems);
+    return pure_err_internal(errormsg);
+  case 0:
+    free(indices);
+    free(elems);
+    return 0;
+  case 1:
+    oldlocale = strdup(setlocale(LC_NUMERIC, NULL));
+    if (!oldlocale) {
+      free(indices);
+      free(elems);
+      return pure_err_internal("insufficient memory");
+    }
+    setlocale(LC_NUMERIC, "C");
+    if (nelem) 
+      status = glp_print_ranges(glpobj->lp, nelem, indices, 0, fname);
+    else 
+      status = glp_print_ranges(glpobj->lp, 0, NULL, 0, fname);
+    setlocale(LC_NUMERIC, oldlocale);
+    free(oldlocale);
+    free(indices);
+    free(elems);
+    return pure_int(status);
+  }
 }
 
 pure_expr *glpk_print_ipt(pure_expr *ptr, const char *fname)
@@ -2646,7 +2742,7 @@ pure_expr *glpk_eval_tab_col(pure_expr *ptr, int k)
   return res;
 }
 
-pure_expr *glpx_transform_row(pure_expr *ptr, pure_expr *inrow)
+pure_expr *glpk_transform_row(pure_expr *ptr, pure_expr *inrow)
 {
   // Transform explicitly specified row
   int i, *arrayind, colcnt, ind;
@@ -2683,7 +2779,7 @@ pure_expr *glpx_transform_row(pure_expr *ptr, pure_expr *inrow)
     free(list);
     return 0;
   case 1:
-    cnt = lpx_transform_row(glpobj->lp, cnt, arrayind, arrayval);
+    cnt = glp_transform_row(glpobj->lp, cnt, arrayind, arrayval);
     if (!(tlist = (pure_expr **) realloc(list, cnt * sizeof(pure_expr *)))) {
       free(arrayval);
       free(arrayind);
@@ -2703,7 +2799,7 @@ pure_expr *glpx_transform_row(pure_expr *ptr, pure_expr *inrow)
   }
 }
 
-pure_expr *glpx_transform_col(pure_expr *ptr, pure_expr *incol)
+pure_expr *glpk_transform_col(pure_expr *ptr, pure_expr *incol)
 {
   // Transform explicitly specified column
   int i, *arrayind, rowcnt, ind;
@@ -2740,7 +2836,7 @@ pure_expr *glpx_transform_col(pure_expr *ptr, pure_expr *incol)
     free(list);
     return 0;
   case 1:
-    cnt = lpx_transform_col(glpobj->lp, cnt, arrayind, arrayval);
+    cnt = glp_transform_col(glpobj->lp, cnt, arrayind, arrayval);
     if (!(tlist = (pure_expr **) realloc(list, cnt * sizeof(pure_expr *)))) {
       free(arrayval);
       free(arrayind);
@@ -2760,7 +2856,7 @@ pure_expr *glpx_transform_col(pure_expr *ptr, pure_expr *incol)
   }
 }
 
-pure_expr *glpx_prim_ratio_test(pure_expr *ptr, pure_expr *incol,
+pure_expr *glpk_prim_rtest(pure_expr *ptr, pure_expr *incol,
                                 int how, double tol)
 {
   // Perform primal ratio test
@@ -2820,7 +2916,7 @@ pure_expr *glpx_prim_ratio_test(pure_expr *ptr, pure_expr *incol,
     arrayval[i + 1] = val;
     free(tpl);
   }
-  res = pure_int(lpx_prim_ratio_test(glpobj->lp, cnt, arrayind,
+  res = pure_int(glp_prim_rtest(glpobj->lp, cnt, arrayind,
                                      arrayval, how, tol));
 finish:
   free(arrayind);
@@ -2829,7 +2925,7 @@ finish:
   return res;
 }
 
-pure_expr *glpx_dual_ratio_test(pure_expr *ptr, pure_expr *incol,
+pure_expr *glpk_dual_rtest(pure_expr *ptr, pure_expr *incol,
                                 int how, double tol)
 {
   // Perform dual ratio test
@@ -2889,7 +2985,7 @@ pure_expr *glpx_dual_ratio_test(pure_expr *ptr, pure_expr *incol,
     arrayval[i + 1] = val;
     free(tpl);
   }
-  res = pure_int(lpx_dual_ratio_test(glpobj->lp, cnt, arrayind,
+  res = pure_int(glp_dual_rtest(glpobj->lp, cnt, arrayind,
                                      arrayval, how, tol));
 finish:
   free(arrayind);
@@ -3844,6 +3940,23 @@ pure_expr *glpk_mem_limit(int limit)
   // Set memory usage limit
   glp_mem_limit(limit);
   return pure_void;
+}
+
+pure_expr *glpk_time()
+{
+  // Determine current universal time
+  glp_long tim;
+  mpz_t lo, hi;
+  pure_expr *res;
+  tim = glp_time();
+  mpz_init(lo);
+  mpz_init(hi);
+  mpz_set_ui(lo, (unsigned long int)tim.lo);
+  mpz_set_ui(hi, (unsigned long int)tim.hi);
+  res = pure_tuplel(2, pure_mpz(hi), pure_mpz(lo));
+  mpz_clear(lo);
+  mpz_clear(hi);
+  return(res);
 }
 
 pure_expr *glpk_free_env()

@@ -391,7 +391,7 @@ let symlist =
     (branching,    br_lfv,   2),    // last fractional variable
     (branching,    br_mfv,   3),    // most fractional variable
     (branching,    br_dth,   4),    // heuristic by Driebeck and Tomlin
-    (branching,    br_hpc,   5),    // hybrid pseudocost
+    (branching,    br_pch,   5),    // hybrid pseudocost heuristic
 
     /* backtracking technique: */
     (backtracking, bt_dfs,   1),    // depth first search
@@ -672,6 +672,10 @@ glp::set_mat_col lp (colind::int, column) =
 private extern expr *glpk_load_matrix(expr *lp, expr *data);
 glp::load_matrix lp mat =
   glpk_load_matrix lp mat if listp mat;
+
+// Sort elements of the constraint matrix
+public extern expr *glpk_sort_matrix(expr *lp) =
+  sort_matrix;
 
 // Delete rows from the matrix
 private extern expr *glpk_del_rows(expr *lp, expr *data);
@@ -1012,6 +1016,14 @@ public extern expr *glpk_read_lp(expr *lp, char *fname) =
 public extern expr *glpk_write_lp(expr *lp, char *fname) =
   write_lp;
 
+// Read LP problem data in GLPK format
+public extern expr *glpk_read_prob(expr *lp, char *fname) =
+  read_prob;
+
+// Write LP problem data in GLPK format
+public extern expr *glpk_write_prob(expr *lp, char *fname) =
+  write_prob;
+
 // Create the MathProg translator object
 public extern expr *glpk_mpl_alloc_wksp() =
   mpl_alloc_wksp;
@@ -1053,11 +1065,9 @@ public extern expr *glpk_read_sol(expr *lp, char *fname) =
 public extern expr *glpk_write_sol(expr *lp, char *fname) =
   write_sol;
 
-namespace lpx;
-// Write bounds sensitivity information
-public extern expr *glpx_print_sens_bnds(expr *lp, char *fname) =
-  print_sens_bnds;
-namespace glp;
+// Print sensitivity analysis report
+public extern expr *glpk_print_ranges(expr *lp, expr * indices, char *fname) =
+  print_ranges;
 
 // Write interior-point solution in printable format
 public extern expr *glpk_print_ipt(expr *lp, char *fname) =
@@ -1149,25 +1159,23 @@ public extern expr *glpk_eval_tab_row(expr *lp, int k) =
 public extern expr *glpk_eval_tab_col(expr *lp, int k) =
   eval_tab_col;
 
-namespace lpx;
 // Transform explicitly specified row
-public extern expr *glpx_transform_row(expr *lp, expr *inrow) =
+public extern expr *glpk_transform_row(expr *lp, expr *inrow) =
   transform_row;
 
 // Transform explicitly specified column
-public extern expr *glpx_transform_col(expr *lp, expr *incol) =
+public extern expr *glpk_transform_col(expr *lp, expr *incol) =
   transform_col;
 
 // Perform primal ratio test
-public extern expr *glpx_prim_ratio_test(expr *lp, expr *vect,
+public extern expr *glpk_prim_rtest(expr *lp, expr *vect,
                                          int how, double tol) =
-  prim_ratio_test;
+  prim_rtest;
 
 // Perform dual ratio test
-public extern expr *glpx_dual_ratio_test(expr *lp, expr *vect,
+public extern expr *glpk_dual_rtest(expr *lp, expr *vect,
                                          int how, double tol) =
-  dual_ratio_test;
-namespace glp;
+  dual_rtest;
 
 // Determine reason for calling the callback routine
 private extern expr *glpk_ios_reason(expr *tree);
@@ -1407,6 +1415,13 @@ glp::mem_usage =
 // Set memory usage limit
 public extern expr *glpk_mem_limit(int limit) =
   mem_limit;
+
+// Determine current universal time
+private extern expr *glpk_time();
+glp::time = ((pow 2L 32L) - 1L) * high + low
+    when
+      (high, low) = glpk_time;
+    end;
 
 // Free GLPK library environment
 public extern expr *glpk_free_env() =
