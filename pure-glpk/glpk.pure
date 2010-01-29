@@ -673,6 +673,11 @@ private extern expr *glpk_load_matrix(expr *lp, expr *data);
 glp::load_matrix lp mat =
   glpk_load_matrix lp mat if listp mat;
 
+// Check for duplicate elements in sparse matrix
+public extern expr *glpk_check_dup(int numrows, int numcols,
+			           expr *indices) =
+  check_dup;
+
 // Sort elements of the constraint matrix
 public extern expr *glpk_sort_matrix(expr *lp) =
   sort_matrix;
@@ -1066,7 +1071,7 @@ public extern expr *glpk_write_sol(expr *lp, char *fname) =
   write_sol;
 
 // Print sensitivity analysis report
-public extern expr *glpk_print_ranges(expr *lp, expr * indices, char *fname) =
+public extern expr *glpk_print_ranges(expr *lp, expr *indices, char *fname) =
   print_ranges;
 
 // Write interior-point solution in printable format
@@ -1176,6 +1181,14 @@ public extern expr *glpk_prim_rtest(expr *lp, expr *vect,
 public extern expr *glpk_dual_rtest(expr *lp, expr *vect,
                                          int how, double tol) =
   dual_rtest;
+
+// Analyze active bound of non-basic variable
+public extern expr *glpk_analyze_bound(expr *lp, int k) = 
+  analyze_bound;
+
+// Analyze objective coefficient at basic variable
+public extern expr *glpk_analyze_coef(expr *lp, int k) =
+  analyze_coef;
 
 // Determine reason for calling the callback routine
 private extern expr *glpk_ios_reason(expr *tree);

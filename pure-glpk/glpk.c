@@ -197,6 +197,34 @@ static int pure_is_pairlist(pure_expr **elems, const size_t nelem,
   return 1;
 }
 
+static int pure_is_intpairlist(pure_expr **elems, const size_t nelem,
+                            int *indices1, int *indices2)
+{
+  /* Convert a list of pairs (index1, index2) into 2 arrays with indices.
+     The arrays are supplied and it is responsibility of the caller
+     to free them. The arrays use 1-based indices and the zeroth elements are
+     unused */
+  size_t n;
+  pure_expr **tpl;
+  int i, ind1, ind2;
+  indices1[0] = 0;
+  indices2[0] = 0;
+  for (i = 0; i < nelem; i++) {
+    if (!pure_is_tuplev(elems[i], &n, &tpl)) {
+      return 0;
+    }
+    if (n != 2 || !pure_is_int(tpl[0], &ind1) ||
+               !pure_is_int(tpl[1], &ind2)) {
+      free(tpl);
+      return 0;
+    }
+    indices1[i + 1] = ind1;
+    indices2[i + 1] = ind2;
+    free(tpl);
+  }
+  return 1;
+}
+
 static int pure_is_tripletlist(pure_expr **elems, const size_t nelem,
                                const int maxi, const int maxj,
                                int *indi, int *indj, double *values)
@@ -572,7 +600,8 @@ pure_expr *glpk_load_matrix(pure_expr *ptr, pure_expr *matrix)
   };
   numrows = glp_get_num_rows(glpobj->lp);
   numcols = glp_get_num_cols(glpobj->lp);
-  switch (pure_is_tripletlist(elems, nelem, numrows, numcols, irow, icol, values)) {
+  switch (pure_is_tripletlist(elems, nelem, numrows, numcols,
+          irow, icol, values)) {
   case -1:
     free(irow);
     free(icol);
@@ -592,6 +621,43 @@ pure_expr *glpk_load_matrix(pure_expr *ptr, pure_expr *matrix)
     free(values);
     free(elems);
     return pure_void;
+  }
+}
+
+pure_expr *glpk_check_dup(int numrows, int numcols, pure_expr *indices)
+{
+  // Check for duplicate elements in sparse matrix
+  int *irow, *icol, result;
+  pure_expr **elems;
+  size_t nelem;
+  if (!pure_is_listv(indices, &nelem, &elems)) {
+    return 0;
+  }
+  if (nelem == 0) {
+    free(elems);
+    return pure_int(0);
+  }
+  if (!(irow = malloc((nelem + 1) * sizeof(int)))) {
+    free(elems);
+    return pure_err_internal("insufficient memory");
+  };
+  if (!(icol = malloc((nelem + 1) * sizeof(int)))) {
+    free(elems);
+    free(irow);
+    return pure_err_internal("insufficient memory");
+  };
+  switch (pure_is_intpairlist(elems, nelem, irow, icol)) {
+  case 0:
+    free(irow);
+    free(icol);
+    free(elems);
+    return 0;
+  case 1:
+    result = glp_check_dup(numcols, numrows, nelem, irow, icol);
+    free(irow);
+    free(icol);
+    free(elems);
+    return pure_int(result);
   }
 }
 
@@ -2992,6 +3058,68 @@ finish:
   free(arrayval);
   free(list);
   return res;
+}
+
+pure_expr *glpk_analyze_bound(pure_expr *ptr, int k)
+{
+  // Analyze active bound of non-basic variable
+  glp_obj *glpobj;
+  int numrows, numcols;
+  double limit1, limit2;
+  int var1, var2;
+  if (!is_glp_pointer(ptr, &glpobj)) {
+    return 0;
+  }
+  numrows = glp_get_num_rows(glpobj->lp);
+  numcols = glp_get_num_cols(glpobj->lp);
+  if (k < 1 || k > numrows + numcols) {
+    return pure_err_internal("index out bounds");
+  }
+  if (glp_get_status(glpobj->lp) != GLP_OPT) {
+    return pure_err_internal("not at optimal solution");
+  }
+  if (!glp_bf_exists(glpobj->lp)) {
+    return pure_err_internal("basis factorization does not exist");
+  }
+  if ((k <= numrows && glp_get_row_stat(glpobj->lp, k) == GLP_BS) ||
+      (k > numrows && glp_get_col_stat(glpobj->lp, k - numrows) == GLP_BS)) {
+    return pure_err_internal("variable must be non-basic");
+  }
+  glp_analyze_bound(glpobj->lp, k, &limit1, &var1, &limit2, &var2);
+  return pure_tuplel(4, pure_double(limit1), pure_int(var1),
+		        pure_double(limit2), pure_int(var2));
+}
+
+pure_expr *glpk_analyze_coef(pure_expr *ptr, int k)
+{
+  // Analyze objective coefficient at basic variable
+  glp_obj *glpobj;
+  int numrows, numcols;
+  double coef1, coef2, value1, value2;
+  int var1, var2;
+  if (!is_glp_pointer(ptr, &glpobj)) {
+    return 0;
+  }
+  numrows = glp_get_num_rows(glpobj->lp);
+  numcols = glp_get_num_cols(glpobj->lp);
+  if (k < 1 || k > numrows + numcols) {
+    return pure_err_internal("index out bounds");
+  }
+  if (glp_get_status(glpobj->lp) != GLP_OPT) {
+    return pure_err_internal("not at optimal solution");
+  }
+  if (!glp_bf_exists(glpobj->lp)) {
+    return pure_err_internal("basis factorization does not exist");
+  }
+  if ((k <= numrows && glp_get_row_stat(glpobj->lp, k) != GLP_BS) ||
+      (k > numrows && glp_get_col_stat(glpobj->lp, k - numrows) != GLP_BS)) {
+    return pure_err_internal("variable must be basic");
+  }
+  glp_analyze_coef(glpobj->lp, k, &coef1, &var1, &value1,
+		                  &coef2, &var2, &value2);
+  return pure_tuplel(6, pure_double(coef1), pure_int(var1),
+		        pure_double(value1),pure_double(coef2),
+		        pure_int(var2), pure_double(value2));
 }
 
 pure_expr *glpk_ios_reason(pure_expr *ptr)
