@@ -1329,28 +1329,58 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
     {
       size_t maxsize = 0, nfuns = 0, nmacs = 0, nvars = 0, ncsts = 0,
 	nrules = 0, mrules = 0;
-      list<env_sym> l; set<int32_t> syms;
-      for (env::const_iterator it = interp.globenv.begin();
-	   it != interp.globenv.end(); ++it) {
-	int32_t f = it->first;
-	const env_info& e = it->second;
+      list<env_sym> l;
+      for (int32_t f = 1; f <= interp.symtab.nsyms(); f++) {
 	const symbol& sym = interp.symtab.sym(f);
-	if ((pflag >= 0 && (pflag > 0) != sym.priv) ||
-	    !((e.t == env_info::fun)?fflag:
+	bool matches = false;
+	// skip private/public symbols depending on pflag
+	if (pflag >= 0 && (pflag > 0) != sym.priv) continue;
+	// look up symbols in the global environment as well as the macro and
+	// external tables
+	env::const_iterator it = interp.globenv.find(f),
+	  jt = interp.macenv.find(f);
+	extmap::const_iterator xt = interp.externals.find(f);
+	// check for symbols in the global environment
+	if (it != interp.globenv.end()) {
+	  const env_info& e = it->second;
+	  if ((e.t == env_info::fun)?fflag:
 	      (e.t == env_info::cvar)?cflag:
-	      (e.t == env_info::fvar)?vflag:0))
-	  continue;
-	bool matches = e.temp >= tlevel;
-	if (!matches && !sflag &&
-	    e.t == env_info::fun && fflag) {
-	  // if not in summary mode, also list temporary rules for a
-	  // non-temporary symbol
-	  rulel::const_iterator r;
-	  for (r = e.rules->begin(); r != e.rules->end(); r++)
-	    if (r->temp >= tlevel) {
-	      matches = true;
-	      break;
+	      (e.t == env_info::fvar)?vflag:0) {
+	    matches = e.temp >= tlevel;
+	    if (!matches && !sflag &&
+		e.t == env_info::fun && fflag) {
+	      // if not in summary mode, also list temporary rules for a
+	      // non-temporary symbol
+	      rulel::const_iterator r;
+	      for (r = e.rules->begin(); r != e.rules->end(); r++)
+		if (r->temp >= tlevel) {
+		  matches = true;
+		  break;
+		}
 	    }
+	  }
+	}
+	if (!matches && fflag && tlevel == 0) {
+	  // also list declared externals and operator symbols which don't
+	  // have any rules yet
+	  matches = xt != interp.externals.end() ||
+	    sym.fix == nonfix || (sym.fix == outfix && sym.g) ||
+	    sym.prec < PREC_MAX;
+	}
+	if (!matches && mflag && jt != interp.macenv.end()) {
+	  // also list symbols defined as macros
+	  const env_info& e = jt->second;
+	  matches = e.temp >= tlevel;
+	  if (!matches && !sflag) {
+	    // if not in summary mode, also list temporary rules for a
+	    // non-temporary symbol
+	    rulel::const_iterator r;
+	    for (r = e.rules->begin(); r != e.rules->end(); r++)
+	      if (r->temp >= tlevel) {
+		matches = true;
+		break;
+	      }
+	  }
 	}
 	if (!matches) continue;
 	if (!args.l.empty()) {
@@ -1364,77 +1394,8 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	  }
 	}
 	if (!matches) continue;
-	syms.insert(f);
-	l.push_back(env_sym(sym, it, interp.macenv.find(f),
-			    interp.externals.find(f)));
+	l.push_back(env_sym(sym, it, jt, xt));
 	if (sym.s.size() > maxsize) maxsize = sym.s.size();
-      }
-      if (fflag && tlevel == 0) {
-	// also process the declared externals which don't have any rules yet
-	for (extmap::const_iterator it = interp.externals.begin();
-	     it != interp.externals.end(); ++it) {
-	  int32_t f = it->first;
-	  if (syms.find(f) == syms.end()) {
-	    const symbol& sym = interp.symtab.sym(f);
-	    if (pflag >= 0 && (pflag > 0) != sym.priv)
-	      continue;
-	    bool matches = true;
-	    if (!args.l.empty()) {
-	      matches = false;
-	      for (arg = args.l.begin(); arg != args.l.end(); ++arg) {
-		if (sym_match(gflag, *arg, sym.s)) {
-		  matches = true;
-		  break;
-		}
-	      }
-	    }
-	    if (!matches) continue;
-	    l.push_back(env_sym(sym, interp.globenv.end(),
-				interp.macenv.find(f), it));
-	    if (sym.s.size() > maxsize) maxsize = sym.s.size();
-	  }
-	}
-      }
-      if (mflag) {
-	// also list any symbols defined as macros, unless they've already been
-	// considered
-	for (env::const_iterator it = interp.macenv.begin();
-	     it != interp.macenv.end(); ++it) {
-	  int32_t f = it->first;
-	  if (syms.find(f) == syms.end()) {
-	    const env_info& e = it->second;
-	    const symbol& sym = interp.symtab.sym(f);
-	    if (pflag >= 0 && (pflag > 0) != sym.priv)
-	      continue;
-	    bool matches = e.temp >= tlevel;
-	    if (!matches && !sflag) {
-	      // if not in summary mode, also list temporary rules for a
-	      // non-temporary symbol
-	      rulel::const_iterator r;
-	      for (r = e.rules->begin(); r != e.rules->end(); r++)
-		if (r->temp >= tlevel) {
-		  matches = true;
-		  break;
-		}
-	    }
-	    if (!matches) continue;
-	    if (!args.l.empty()) {
-	      // see whether we actually want the defined symbol to be listed
-	      matches = false;
-	      for (arg = args.l.begin(); arg != args.l.end(); ++arg) {
-		if (sym_match(gflag, *arg, sym.s)) {
-		  matches = true;
-		  break;
-		}
-	      }
-	    }
-	    if (!matches) continue;
-	    syms.insert(f);
-	    l.push_back(env_sym(sym, interp.globenv.end(), it,
-				interp.externals.end()));
-	    if (sym.s.size() > maxsize) maxsize = sym.s.size();
-	  }
-	}
       }
       l.sort(env_compare);
       if (!l.empty() && (aflag||dflag)) interp.compile();
@@ -1448,8 +1409,8 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	map<int32_t,Env>::iterator fenv = interp.globalfuns.find(ftag);
 	const env::const_iterator jt = it->it, kt = it->jt;
 	const extmap::const_iterator xt = it->xt;
-	if (jt == interp.globenv.end() && kt == interp.macenv.end()) {
-	  assert(xt != interp.externals.end());
+	if (jt == interp.globenv.end() && kt == interp.macenv.end() &&
+	    xt != interp.externals.end()) {
 	  const ExternInfo& info = xt->second;
 	  if (sym.fix == nonfix)
 	    sout << "nonfix " << sym.s << ";\n";
@@ -1701,31 +1662,60 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
       cflag = fflag = mflag = vflag = true;
     if (!tflag && args.l.empty()) tlevel = 1;
     {
-      list<env_sym> l; set<int32_t> syms;
-      for (env::const_iterator it = interp.globenv.begin();
-	   it != interp.globenv.end(); ++it) {
-	int32_t f = it->first;
-	const env_info& e = it->second;
+      list<env_sym> l;
+      for (int32_t f = 1; f <= interp.symtab.nsyms(); f++) {
 	const symbol& sym = interp.symtab.sym(f);
-	if ((pflag >= 0 && (pflag > 0) != sym.priv) ||
-	    !((e.t == env_info::fun)?fflag:
+	bool matches = false;
+	// skip private/public symbols depending on pflag
+	if (pflag >= 0 && (pflag > 0) != sym.priv) continue;
+	// look up symbols in the global environment as well as the macro and
+	// external tables
+	env::const_iterator it = interp.globenv.find(f),
+	  jt = interp.macenv.find(f);
+	extmap::const_iterator xt = interp.externals.find(f);
+	// check for symbols in the global environment
+	if (it != interp.globenv.end()) {
+	  const env_info& e = it->second;
+	  if ((e.t == env_info::fun)?fflag:
 	      (e.t == env_info::cvar)?cflag:
-	      (e.t == env_info::fvar)?vflag:0))
-	  continue;
-	bool matches = e.temp >= tlevel;
-	if (!matches &&
-	    e.t == env_info::fun && fflag) {
-	  // dump temporary rules for a non-temporary symbol
-	  rulel::const_iterator r;
-	  for (r = e.rules->begin(); r != e.rules->end(); r++)
-	    if (r->temp >= tlevel) {
-	      matches = true;
-	      break;
+	      (e.t == env_info::fvar)?vflag:0) {
+	    matches = e.temp >= tlevel;
+	    if (!matches &&
+		e.t == env_info::fun && fflag) {
+	      // also list temporary rules for a non-temporary symbol
+	      rulel::const_iterator r;
+	      for (r = e.rules->begin(); r != e.rules->end(); r++)
+		if (r->temp >= tlevel) {
+		  matches = true;
+		  break;
+		}
 	    }
+	  }
+	}
+	if (!matches && fflag && tlevel == 0) {
+	  // also list declared externals and operator symbols which don't
+	  // have any rules yet
+	  matches = xt != interp.externals.end() ||
+	    sym.fix == nonfix || (sym.fix == outfix && sym.g) ||
+	    sym.prec < PREC_MAX;
+	}
+	if (!matches && mflag && jt != interp.macenv.end()) {
+	  // also list symbols defined as macros
+	  const env_info& e = jt->second;
+	  matches = e.temp >= tlevel;
+	  if (!matches) {
+	    // also list temporary rules for a non-temporary symbol
+	    rulel::const_iterator r;
+	    for (r = e.rules->begin(); r != e.rules->end(); r++)
+	      if (r->temp >= tlevel) {
+		matches = true;
+		break;
+	      }
+	  }
 	}
 	if (!matches) continue;
 	if (!args.l.empty()) {
-	  // see whether we actually want the defined symbol to be dumped
+	  // see whether we actually want the defined symbol to be listed
 	  matches = false;
 	  for (arg = args.l.begin(); arg != args.l.end(); ++arg) {
 	    if (sym_match(gflag, *arg, sym.s)) {
@@ -1735,73 +1725,7 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	  }
 	}
 	if (!matches) continue;
-	syms.insert(f);
-	l.push_back(env_sym(sym, it, interp.macenv.find(f),
-			    interp.externals.find(f)));
-      }
-      if (fflag && tlevel == 0) {
-	// also process the declared externals which don't have any rules yet
-	for (extmap::const_iterator it = interp.externals.begin();
-	     it != interp.externals.end(); ++it) {
-	  int32_t f = it->first;
-	  if (syms.find(f) == syms.end()) {
-	    const symbol& sym = interp.symtab.sym(f);
-	    if (pflag >= 0 && (pflag > 0) != sym.priv)
-	      continue;
-	    bool matches = true;
-	    if (!args.l.empty()) {
-	      matches = false;
-	      for (arg = args.l.begin(); arg != args.l.end(); ++arg) {
-		if (sym_match(gflag, *arg, sym.s)) {
-		  matches = true;
-		  break;
-		}
-	      }
-	    }
-	    if (!matches) continue;
-	    l.push_back(env_sym(sym, interp.globenv.end(),
-				interp.macenv.find(f), it));
-	  }
-	}
-      }
-      if (mflag) {
-	// also dump any symbols defined as macros, unless they've already been
-	// considered
-	for (env::const_iterator it = interp.macenv.begin();
-	     it != interp.macenv.end(); ++it) {
-	  int32_t f = it->first;
-	  if (syms.find(f) == syms.end()) {
-	    const env_info& e = it->second;
-	    const symbol& sym = interp.symtab.sym(f);
-	    if (pflag >= 0 && (pflag > 0) != sym.priv)
-	      continue;
-	    bool matches = e.temp >= tlevel;
-	    if (!matches) {
-	      // also dump temporary rules for a non-temporary symbol
-	      rulel::const_iterator r;
-	      for (r = e.rules->begin(); r != e.rules->end(); r++)
-		if (r->temp >= tlevel) {
-		  matches = true;
-		  break;
-		}
-	    }
-	    if (!matches) continue;
-	    if (!args.l.empty()) {
-	      // see whether we actually want the defined symbol to be dumped
-	      matches = false;
-	      for (arg = args.l.begin(); arg != args.l.end(); ++arg) {
-		if (sym_match(gflag, *arg, sym.s)) {
-		  matches = true;
-		  break;
-		}
-	      }
-	    }
-	    if (!matches) continue;
-	    syms.insert(f);
-	    l.push_back(env_sym(sym, interp.globenv.end(), it,
-				interp.externals.end()));
-	  }
-	}
+	l.push_back(env_sym(sym, it, jt, xt));
       }
       l.sort(env_compare);
       if (l.empty()) {
@@ -1819,13 +1743,13 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	map<int32_t,Env>::iterator fenv = interp.globalfuns.find(ftag);
 	const env::const_iterator jt = it->it, kt = it->jt;
 	const extmap::const_iterator xt = it->xt;
-	if (jt == interp.globenv.end() && kt == interp.macenv.end()) {
+	if (jt == interp.globenv.end() && kt == interp.macenv.end() &&
+	    xt != interp.externals.end()) {
 	  if (sym.fix == nonfix)
 	    fout << "nonfix " << sym.s << ";\n";
 	  else if (sym.fix == outfix && sym.g)
 	    fout << "outfix " << sym.s << " "
 		 << interp.symtab.sym(sym.g).s << ";\n";
-	  assert(xt != interp.externals.end());
 	  const ExternInfo& info = xt->second;
 	  fout << info << ";\n";
 	} else if (jt != interp.globenv.end() &&
@@ -1999,31 +1923,57 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
       goto out3;
     }
     {
-      list<env_sym> l; set<int32_t> syms;
-      for (env::const_iterator it = interp.globenv.begin();
-	   it != interp.globenv.end(); ++it) {
-	int32_t f = it->first;
-	const env_info& e = it->second;
+      list<env_sym> l;
+      for (int32_t f = 1; f <= interp.symtab.nsyms(); f++) {
 	const symbol& sym = interp.symtab.sym(f);
-	if ((pflag >= 0 && (pflag > 0) != sym.priv) ||
-	    !((e.t == env_info::fun)?fflag:
+	bool matches = false;
+	// skip private/public symbols depending on pflag
+	if (pflag >= 0 && (pflag > 0) != sym.priv) continue;
+	// look up symbols in the global environment as well as the macro and
+	// external tables
+	env::const_iterator it = interp.globenv.find(f),
+	  jt = interp.macenv.find(f);
+	extmap::const_iterator xt = interp.externals.find(f);
+	// check for symbols in the global environment
+	if (it != interp.globenv.end()) {
+	  const env_info& e = it->second;
+	  if ((e.t == env_info::fun)?fflag:
 	      (e.t == env_info::cvar)?cflag:
-	      (e.t == env_info::fvar)?vflag:0))
-	  continue;
-	bool matches = e.temp >= tlevel;
-	if (!matches &&
-	    e.t == env_info::fun && fflag) {
-	  // clear temporary rules for a non-temporary symbol
-	  rulel::const_iterator r;
-	  for (r = e.rules->begin(); r != e.rules->end(); r++)
-	    if (r->temp >= tlevel) {
-	      matches = true;
-	      break;
+	      (e.t == env_info::fvar)?vflag:0) {
+	    matches = e.temp >= tlevel;
+	    if (!matches &&
+		e.t == env_info::fun && fflag) {
+	      // also list temporary rules for a non-temporary symbol
+	      rulel::const_iterator r;
+	      for (r = e.rules->begin(); r != e.rules->end(); r++)
+		if (r->temp >= tlevel) {
+		  matches = true;
+		  break;
+		}
 	    }
+	  }
+	}
+	if (!matches && fflag && tlevel == 0 && xt != interp.externals.end()) {
+	  // also list declared externals which don't have any rules yet
+	  matches = true;
+	}
+	if (!matches && mflag && jt != interp.macenv.end()) {
+	  // also list symbols defined as macros
+	  const env_info& e = jt->second;
+	  matches = e.temp >= tlevel;
+	  if (!matches) {
+	    // also list temporary rules for a non-temporary symbol
+	    rulel::const_iterator r;
+	    for (r = e.rules->begin(); r != e.rules->end(); r++)
+	      if (r->temp >= tlevel) {
+		matches = true;
+		break;
+	      }
+	  }
 	}
 	if (!matches) continue;
 	if (!args.l.empty()) {
-	  // see whether we actually want the defined symbol to be cleared
+	  // see whether we actually want the defined symbol to be listed
 	  matches = false;
 	  for (arg = args.l.begin(); arg != args.l.end(); ++arg) {
 	    if (sym_match(gflag, *arg, sym.s)) {
@@ -2033,48 +1983,7 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
 	  }
 	}
 	if (!matches) continue;
-	syms.insert(f);
-	l.push_back(env_sym(sym, it, interp.macenv.find(f),
-			    interp.externals.find(f)));
-      }
-      if (mflag) {
-	// also clear any symbols defined as macros, unless they've already been
-	// considered
-	for (env::const_iterator it = interp.macenv.begin();
-	     it != interp.macenv.end(); ++it) {
-	  int32_t f = it->first;
-	  if (syms.find(f) == syms.end()) {
-	    const env_info& e = it->second;
-	    const symbol& sym = interp.symtab.sym(f);
-	    if (pflag >= 0 && (pflag > 0) != sym.priv)
-	      continue;
-	    bool matches = e.temp >= tlevel;
-	    if (!matches) {
-	      // also clear temporary rules for a non-temporary symbol
-	      rulel::const_iterator r;
-	      for (r = e.rules->begin(); r != e.rules->end(); r++)
-		if (r->temp >= tlevel) {
-		  matches = true;
-		  break;
-		}
-	    }
-	    if (!matches) continue;
-	    if (!args.l.empty()) {
-	      // see whether we actually want the defined symbol to be cleared
-	      matches = false;
-	      for (arg = args.l.begin(); arg != args.l.end(); ++arg) {
-		if (sym_match(gflag, *arg, sym.s)) {
-		  matches = true;
-		  break;
-		}
-	      }
-	    }
-	    if (!matches) continue;
-	    syms.insert(f);
-	    l.push_back(env_sym(sym, interp.globenv.end(), it,
-				interp.externals.end()));
-	  }
-	}
+	l.push_back(env_sym(sym, it, jt, xt));
       }
       if (l.empty()) goto out3;
       for (list<env_sym>::const_iterator it = l.begin();
