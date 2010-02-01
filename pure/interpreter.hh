@@ -975,6 +975,7 @@ public:
   void tags(rulel *rl);
   void tags(rule *r);
   void tags(const string& id, const string& asid);
+  void tags(list<string> *ids);
   void tag(const string& tagname, const string& file,
 	   unsigned int line, unsigned int column);
   void print_tags();

@@ -243,8 +243,9 @@ item
   } }
   ids
 { interp.declare_op = false;
-  action(interp.declare($1->priv, $1->prec, $1->fix, $3), delete $3);
-  delete $1; }
+  action(interp.declare($1->priv, $1->prec, $1->fix, $3), );
+  if (interp.ctags || interp.etags) interp.tags($3);
+  delete $3; delete $1; }
 | USING fnames
 { action(interp.run(*$2), {}); delete $2; }
 | NAMESPACE name

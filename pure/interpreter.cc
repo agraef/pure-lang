@@ -1002,6 +1002,18 @@ void interpreter::tags(const string& id, const string& asid)
   if (sym) tag(sym->s, srcabs, line, column);
 }
 
+void interpreter::tags(list<string> *ids)
+{
+  if (!ids) return;
+  for (list<string>::iterator it = ids->begin(), end = ids->end();
+       it != end; it++) {
+    string name = *it;
+    string absid = make_absid(name);
+    symbol* sym = symtab.lookup(absid);
+    if (sym) tag(sym->s, srcabs, line, column);
+  }
+}
+
 #define BUFSIZE 1024
 static string unixize(const string& s);
 
@@ -2370,7 +2382,6 @@ void interpreter::declare(bool priv, prec_t prec, fix_t fix, list<string> *ids)
        it != ids->end(); ++it) {
     if (it->find("::") != string::npos) {
       string id = *it;
-      delete ids;
       throw err("qualified symbol '"+id+"' not permitted in declaration");
     }
     string id = make_qualid(*it), absid = make_absid(*it);
@@ -2378,7 +2389,6 @@ void interpreter::declare(bool priv, prec_t prec, fix_t fix, list<string> *ids)
     if (sym) {
       // crosscheck declarations
       if (sym->priv != priv) {
-	delete ids;
 	throw err("symbol '"+id+"' already declared "+
 		  (sym->priv?"'private'":"'public'"));
       } else if (sym->prec != prec || sym->fix != fix ||
@@ -2391,19 +2401,16 @@ void interpreter::declare(bool priv, prec_t prec, fix_t fix, list<string> *ids)
 	if (fix == nonfix && sym->fix != outfix && sym->prec == PREC_MAX)
 	  sym->fix = nonfix;
 	else {
-	  delete ids;
 	  throw err("symbol '"+id+"' already declared with different fixity");
 	}
       } else if (fix == outfix) {
 	list<string>::const_iterator jt = ++it;
 	if (jt == ids->end()) {
-	  delete ids;
 	  throw err("right symbol missing in outfix declaration");
 	}
 	string id2 = make_qualid(*it), absid2 = make_absid(*it);
 	symbol* sym2 = symtab.lookup(absid2);
 	if (!sym2 || sym->g != sym2->f) {
-	  delete ids;
 	  throw err("right outfix symbol '"+id2+"' doesn't match existing declaration");
 	}
 	it = jt;
@@ -2412,13 +2419,11 @@ void interpreter::declare(bool priv, prec_t prec, fix_t fix, list<string> *ids)
       // determine the matching right symbol
       list<string>::const_iterator jt = ++it;
       if (jt == ids->end()) {
-	delete ids;
 	throw err("right symbol missing in outfix declaration");
       }
       string id2 = make_qualid(*it), absid2 = make_absid(*it);
       symbol* sym2 = symtab.lookup(absid2);
       if (sym2) {
-	delete ids;
 	if (sym2->g != 0)
 	  throw err("symbol '"+id2+"' already declared with different fixity");
 	else
@@ -2433,7 +2438,6 @@ void interpreter::declare(bool priv, prec_t prec, fix_t fix, list<string> *ids)
     } else
       symtab.sym(absid, prec, fix, priv);
   }
-  delete ids;
 }
 
 void interpreter::exec(expr *x)
