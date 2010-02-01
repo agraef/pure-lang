@@ -1035,6 +1035,50 @@ void interpreter::tag(const string& tagname, const string& filename,
 
 #include <iostream>
 #include <fstream>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+struct LineInfo {
+  size_t offs;
+  char *s;
+  LineInfo() : offs(0), s(0) {}
+  LineInfo(size_t _offs, char *_s) : offs(_offs), s(_s) {}
+};
+
+static char *readfile(const char *name, map<unsigned,LineInfo>& lines)
+{
+  struct stat st;
+  if (stat(name, &st)) {
+    perror("stat");
+    return 0;
+  }
+  size_t size = st.st_size;
+  FILE *fp = fopen(name, "rb");
+  if (!fp) return 0;
+  char *buf = (char*)malloc(size+1);
+  if (!buf) {
+    fclose(fp);
+    return 0;
+  }
+  size = fread(buf, 1, size, fp);
+  fclose(fp);
+  buf[size] = 0;
+  char *p = buf, *q;
+  unsigned line = 1;
+  size_t offs = 0;
+  lines.clear(); lines[line] = LineInfo(offs, p);
+  while ((q = strchr(p, '\n'))) {
+    /* Pure scripts are encoded in UTF-8 no matter what the current system
+       encoding is, so we compute offsets in terms of UTF-8 multibytes here.
+       NOTE: All the documentation on the etags file format that I could find
+       indicates that Emacs wants byte offsets here, but that doesn't seem to
+       be true; the UTF-8 multibyte offsets appears to work fine. */
+    *q++ = 0; offs += u8strlen(p)+1;
+    lines[++line] = LineInfo(offs, q);
+    p = q;
+  }
+  return buf;
+}
 
 void interpreter::print_tags()
 {
@@ -1046,29 +1090,25 @@ void interpreter::print_tags()
       const list<TagInfo>& tags = tag_list[filename];
       if (tags.empty()) continue;
       ostringstream sout;
-      ifstream in(filename.c_str(), ios_base::in|ios_base::binary);
-      unsigned line = 1;
-      streampos pos;
-      string s;
+      map<unsigned,LineInfo> lines;
+      char *text = readfile(filename.c_str(), lines);
+      if (!text) continue;
       for (list<TagInfo>::const_iterator it = tags.begin(), end = tags.end();
 	   it != end; it++) {
 	const TagInfo& info = *it;
-	while (line < info.line && in.good()) {
-	  getline(in, s);
-	  line++;
-	}
-	if ((pos = in.tellg()) == (streampos)-1 || !in.good()) break;
+	map<unsigned,LineInfo>::iterator tt = lines.find(info.line);
+	if (tt == lines.end()) break;
+	char *act = tt->second.s;
+	size_t offs = tt->second.offs;
 	// try to find the text leading up to the tag
-	s.clear();
-	getline(in, s);
-	in.seekg(pos);
+	string s(act);
 	string t = info.tag;
 	size_t k = s.find(t, info.column);
 	if (k == string::npos && (k = info.tag.rfind("::")) != string::npos) {
 	  // qualified name, may be used unqualified here
 	  t = info.tag.substr(k+2);
 	  k = s.find(t, info.column);
-	} else if (info.tag == "neg") {
+	} else if (k == string::npos && info.tag == "neg") {
 	  // synonym for unary -
 	  t = "-";
 	  k = s.find(t, info.column);
@@ -1079,11 +1119,12 @@ void interpreter::print_tags()
 	  s.clear();
 	if (s.empty())
 	  sout << info.tag << "\x7f" << info.line << ","
-	       << (unsigned)pos+info.column << endl;
+	       << offs+info.column << endl;
 	else
 	  sout << s << "\x7f" << info.tag << "\x01" << info.line << ","
-	       << (unsigned)pos+info.column << endl;
+	       << offs+info.column << endl;
       }
+      free(text);
       out << "\f\n" << filename << "," << sout.str().size() << endl
 	  << sout.str();
     }
