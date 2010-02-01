@@ -645,7 +645,7 @@ interpreter::interpreter()
     result(0), lastres(0), mem(0), exps(0), tmps(0), freectr(0), module(0),
     JIT(0), FPM(0), astk(0), sstk(__sstk), stoplevel(0), debug_skip(false),
     fptr(__fptr), ctags(false), etags(false), line(0), column(0),
-    declare_op(false)
+    tags_init(false), declare_op(false)
 {
   init();
 }
@@ -663,7 +663,7 @@ interpreter::interpreter(int32_t nsyms, char *syms,
     result(0), lastres(0), mem(0), exps(0), tmps(0), freectr(0), module(0),
     JIT(0), FPM(0), astk(0), sstk(*_sstk), stoplevel(0), debug_skip(false),
     fptr(*(Env**)_fptr), ctags(false), etags(false), line(0), column(0),
-    declare_op(false)
+    tags_init(false), declare_op(false)
 {
   using namespace llvm;
   init();
@@ -961,246 +961,6 @@ void interpreter::report_stats()
   }
 }
 
-// Ctags/etags support.
-
-uint32_t count_args(expr x, int32_t& f);
-
-void interpreter::tags(rulel *rl)
-{
-  assert(!rl->empty());
-  if (rl->front().lhs.is_null()) return;
-  set<int32_t> syms;
-  for (rulel::iterator i = rl->begin(), end = rl->end(); i != end; i++) {
-    expr x = i->lhs;
-    int32_t f;
-    count_args(x, f);
-    if (f > 0 && syms.find(f) == syms.end()) {
-      symbol& sym = symtab.sym(f);
-      tag(sym.s, srcabs, line, column);
-      syms.insert(f);
-    }
-  }
-}
-
-void interpreter::tags(rule *r)
-{
-  if (r->lhs.is_null()) return;
-  expr x = r->lhs;
-  int32_t f;
-  count_args(x, f);
-  if (f > 0) {
-    symbol& sym = symtab.sym(f);
-    tag(sym.s, srcabs, line, column);
-  }
-}
-
-void interpreter::tags(const string& id, const string& asid)
-{
-  string name = asid.empty()?id:asid;
-  string absid = make_absid(name);
-  symbol* sym = symtab.lookup(absid);
-  if (sym) tag(sym->s, srcabs, line, column);
-}
-
-void interpreter::tags(list<string> *ids)
-{
-  if (!ids) return;
-  for (list<string>::iterator it = ids->begin(), end = ids->end();
-       it != end; it++) {
-    string name = *it;
-    string absid = make_absid(name);
-    symbol* sym = symtab.lookup(absid);
-    if (sym) tag(sym->s, srcabs, line, column);
-  }
-}
-
-#define BUFSIZE 1024
-static string unixize(const string& s);
-
-static string tagfile(string& tagdir, const string& name)
-{
-  char cwd[BUFSIZE];
-  if (name.empty())
-    return name;
-  else if (tagdir.empty()) {
-    if (!getcwd(cwd, BUFSIZE)) {
-      perror("getcwd");
-      return name;
-    }
-    tagdir = unixize(cwd);
-    if (!tagdir.empty() && tagdir[tagdir.size()-1] != '/')
-      tagdir += "/";
-  }
-  if (strncmp(tagdir.c_str(), name.c_str(), tagdir.size()) == 0)
-    return name.substr(tagdir.size());
-  else
-    return name;
-}
-
-void interpreter::tag(const string& tagname, const string& filename,
-		      unsigned int line, unsigned int column)
-{
-  if (filename.empty()) return;
-  string name = tagfile(tagdir, filename);
-  tag_list[name].push_back(TagInfo(tagname, line, column));
-}
-
-#include <iostream>
-#include <fstream>
-#include <sys/types.h>
-#include <sys/stat.h>
-
-struct LineInfo {
-  size_t offs;
-  char *s;
-  LineInfo() : offs(0), s(0) {}
-  LineInfo(size_t _offs, char *_s) : offs(_offs), s(_s) {}
-};
-
-static char *readfile(const char *name, map<unsigned,LineInfo>& lines)
-{
-  struct stat st;
-  if (stat(name, &st)) {
-    perror("stat");
-    return 0;
-  }
-  size_t size = st.st_size;
-  FILE *fp = fopen(name, "rb");
-  if (!fp) return 0;
-  char *buf = (char*)malloc(size+1);
-  if (!buf) {
-    fclose(fp);
-    return 0;
-  }
-  size = fread(buf, 1, size, fp);
-  fclose(fp);
-  buf[size] = 0;
-  char *p = buf, *q;
-  unsigned line = 1;
-  size_t offs = 0;
-  lines.clear(); lines[line] = LineInfo(offs, p);
-  while ((q = strchr(p, '\n'))) {
-    /* Pure scripts are encoded in UTF-8 no matter what the current system
-       encoding is, so we compute offsets in terms of UTF-8 multibytes here.
-       NOTE: All the documentation on the etags file format that I could find
-       indicates that Emacs wants byte offsets here, but that doesn't seem to
-       be true; the UTF-8 multibyte offsets appear to work fine. */
-    *q++ = 0; offs += u8strlen(p)+1;
-    lines[++line] = LineInfo(offs, q);
-    p = q;
-  }
-  return buf;
-}
-
-struct CtagInfo {
-  const char *tag, *file;
-  unsigned line;
-  CtagInfo(const char *t, const char *f, unsigned l)
-    : tag(t), file(f), line(l) {}
-};
-
-bool ctag_cmp(const CtagInfo& x, const CtagInfo& y)
-{
-  int ret = strcmp(x.tag, y.tag);
-  if (ret != 0) return ret<0;
-  ret = strcmp(x.file, y.file);
-  if (ret != 0) return ret<0;
-  return x.line<y.line;
-}
-
-void interpreter::print_tags()
-{
-  if (etags) {
-    if (tagsfile.empty()) tagsfile = "TAGS";
-    ofstream out(tagsfile.c_str());
-    for (list<string>::const_iterator it = tag_files.begin(),
-	   end = tag_files.end(); it != end; it++) {
-      const string& filename = *it;
-      const list<TagInfo>& tags = tag_list[filename];
-      if (tags.empty()) continue;
-      ostringstream sout;
-      map<unsigned,LineInfo> lines;
-      char *text = readfile(filename.c_str(), lines);
-      if (!text) continue;
-      for (list<TagInfo>::const_iterator it = tags.begin(), end = tags.end();
-	   it != end; it++) {
-	const TagInfo& info = *it;
-	map<unsigned,LineInfo>::iterator tt = lines.find(info.line);
-	if (tt == lines.end()) break;
-	char *act = tt->second.s;
-	size_t offs = tt->second.offs;
-	// try to find the text leading up to the tag
-	string s(act);
-	string t = info.tag;
-	size_t k = s.find(t);
-	unsigned line = info.line;
-	if (k == string::npos && (k = info.tag.rfind("::")) != string::npos) {
-	  // qualified name, may be used unqualified here
-	  t = info.tag.substr(k+2);
-	  k = s.find(t);
-	} else if (k == string::npos && info.tag == "neg") {
-	  // synonym for unary -
-	  k = s.find("-");
-	  if (k != string::npos) t = "-";
-	}
-	if (k == string::npos) {
-	  // Still couldn't find the tag, look for it on a continuation line.
-	  list<TagInfo>::const_iterator jt = it; jt++;
-	  while (jt != end && jt->line == info.line &&
-		 jt->column == info.column) ++jt;
-	  if (jt != end) {
-	    unsigned next_line = jt->line;
-	    for (unsigned l = 1; line+l <= next_line; l++) {
-	      s = lines[line+l].s;
-	      k = s.find(t);
-	      if (k != string::npos) {
-		line += l;
-		offs = lines[line].offs;
-		break;
-	      }
-	    }
-	  }
-	}
-	if (k == string::npos) continue; // give up
-	if (k > 0 || t != info.tag)
-	  s = s.substr(0, k+t.size());
-	else
-	  s.clear();
-	if (s.empty())
-	  sout << info.tag << "\x7f" << line << "," << offs << endl;
-	else
-	  sout << s << "\x7f" << info.tag << "\x01" << line << ","
-	       << offs << endl;
-      }
-      free(text);
-      out << "\f\n" << filename << "," << sout.str().size() << endl
-	  << sout.str();
-    }
-  } else if (ctags) {
-    list<CtagInfo> ctags;
-    for (list<string>::const_iterator it = tag_files.begin(),
-	   end = tag_files.end(); it != end; it++) {
-      const string& filename = *it;
-      const list<TagInfo>& tags = tag_list[filename];
-      if (tags.empty()) continue;
-      for (list<TagInfo>::const_iterator it = tags.begin(), end = tags.end();
-	   it != end; it++) {
-	const TagInfo& info = *it;
-	ctags.push_back(CtagInfo(info.tag.c_str(), filename.c_str(),
-				 info.line));
-      }
-    }
-    ctags.sort(ctag_cmp);
-    if (tagsfile.empty()) tagsfile = "tags";
-    ofstream out(tagsfile.c_str());
-    for (list<CtagInfo>::const_iterator it = ctags.begin(), end = ctags.end();
-	 it != end; it++) {
-      const CtagInfo& info = *it;
-      out << info.tag << "\t" << info.file << "\t" << info.line << endl;
-    }
-  }
-}
-
 /* Search for a source file. Absolute file names (starting with a slash) are
    taken as is. Relative pathnames are resolved using the following algorithm:
    If srcdir is nonempty, search it first, then libdir (if nonempty), then the
@@ -1244,6 +1004,8 @@ static inline bool chklink(const string& s)
   return !lstat(s.c_str(), &st) && S_ISLNK(st.st_mode);
 }
 #endif
+
+#define BUFSIZE 1024
 
 static string unixize(const string& s)
 {
@@ -1388,6 +1150,263 @@ static string searchlib(const string& srcdir, const string& libdir,
   return fname;
 }
 
+// Ctags/etags support.
+
+uint32_t count_args(expr x, int32_t& f);
+
+void interpreter::tags(rulel *rl)
+{
+  assert(!rl->empty());
+  if (rl->front().lhs.is_null()) return;
+  set<int32_t> syms;
+  for (rulel::iterator i = rl->begin(), end = rl->end(); i != end; i++) {
+    expr x = i->lhs;
+    int32_t f;
+    count_args(x, f);
+    if (f > 0 && syms.find(f) == syms.end()) {
+      symbol& sym = symtab.sym(f);
+      tag(sym.s, srcabs, line, column);
+      syms.insert(f);
+    }
+  }
+}
+
+void interpreter::tags(rule *r)
+{
+  if (r->lhs.is_null()) return;
+  expr x = r->lhs;
+  int32_t f;
+  count_args(x, f);
+  if (f > 0) {
+    symbol& sym = symtab.sym(f);
+    tag(sym.s, srcabs, line, column);
+  }
+}
+
+void interpreter::tags(const string& id, const string& asid)
+{
+  string name = asid.empty()?id:asid;
+  string absid = make_absid(name);
+  symbol* sym = symtab.lookup(absid);
+  if (sym) tag(sym->s, srcabs, line, column);
+}
+
+void interpreter::tags(list<string> *ids)
+{
+  if (!ids) return;
+  for (list<string>::iterator it = ids->begin(), end = ids->end();
+       it != end; it++) {
+    string name = *it;
+    string absid = make_absid(name);
+    symbol* sym = symtab.lookup(absid);
+    if (sym) tag(sym->s, srcabs, line, column);
+  }
+}
+
+static string tagfile(const string& tagsdir, const string& name)
+{
+  if (name.empty())
+    return name;
+  else if (strncmp(tagsdir.c_str(), name.c_str(), tagsdir.size()) == 0)
+    return name.substr(tagsdir.size());
+  else
+    return name;
+}
+
+void interpreter::init_tags()
+{
+  if (tags_init) return;
+  char cwdbuf[BUFSIZE];
+  string cwd;
+  if (getcwd(cwdbuf, BUFSIZE))
+    cwd = cwdbuf;
+  else {
+    perror("getcwd");
+    cwd = "";
+  }
+  cwd = unixize(cwd);
+  if (!cwd.empty() && cwd[cwd.size()-1] != '/') cwd += "/";
+  if (tagsfile.empty()) {
+    if (etags)
+      tagsfile = "TAGS";
+    else
+      tagsfile = "tags";
+    tagsdir = cwd;
+  } else {
+    tagsfile = unixize(tagsfile);
+    string s = "";
+    list<string> dirs;
+    tagsfile = searchdir(s, s, dirs, tagsfile, false);
+    tagsdir = dirname(tagsfile);
+  }
+  tags_init = true;
+}
+
+void interpreter::tag(const string& tagname, const string& filename,
+		      unsigned int line, unsigned int column)
+{
+  if (filename.empty()) return;
+  init_tags();
+  string name = tagfile(tagsdir, filename);
+  tag_list[name].push_back(TagInfo(tagname, line, column));
+}
+
+#include <iostream>
+#include <fstream>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+struct LineInfo {
+  size_t offs;
+  char *s;
+  LineInfo() : offs(0), s(0) {}
+  LineInfo(size_t _offs, char *_s) : offs(_offs), s(_s) {}
+};
+
+static char *readfile(const char *name, map<unsigned,LineInfo>& lines)
+{
+  struct stat st;
+  if (stat(name, &st)) {
+    perror("stat");
+    return 0;
+  }
+  size_t size = st.st_size;
+  FILE *fp = fopen(name, "rb");
+  if (!fp) return 0;
+  char *buf = (char*)malloc(size+1);
+  if (!buf) {
+    fclose(fp);
+    return 0;
+  }
+  size = fread(buf, 1, size, fp);
+  fclose(fp);
+  buf[size] = 0;
+  char *p = buf, *q;
+  unsigned line = 1;
+  size_t offs = 0;
+  lines.clear(); lines[line] = LineInfo(offs, p);
+  while ((q = strchr(p, '\n'))) {
+    /* Pure scripts are encoded in UTF-8 no matter what the current system
+       encoding is, so we compute offsets in terms of UTF-8 multibytes here.
+       NOTE: All the documentation on the etags file format that I could find
+       indicates that Emacs wants byte offsets here, but that doesn't seem to
+       be true; the UTF-8 multibyte offsets appear to work fine. */
+    *q++ = 0; offs += u8strlen(p)+1;
+    lines[++line] = LineInfo(offs, q);
+    p = q;
+  }
+  return buf;
+}
+
+struct CtagInfo {
+  const char *tag, *file;
+  unsigned line;
+  CtagInfo(const char *t, const char *f, unsigned l)
+    : tag(t), file(f), line(l) {}
+};
+
+bool ctag_cmp(const CtagInfo& x, const CtagInfo& y)
+{
+  int ret = strcmp(x.tag, y.tag);
+  if (ret != 0) return ret<0;
+  ret = strcmp(x.file, y.file);
+  if (ret != 0) return ret<0;
+  return x.line<y.line;
+}
+
+void interpreter::print_tags()
+{
+  init_tags();
+  if (chdir(tagsdir.c_str())) perror("chdir");
+  if (etags) {
+    ofstream out(tagsfile.c_str());
+    for (list<string>::const_iterator it = tag_files.begin(),
+	   end = tag_files.end(); it != end; it++) {
+      const string& filename = *it;
+      const list<TagInfo>& tags = tag_list[filename];
+      if (tags.empty()) continue;
+      ostringstream sout;
+      map<unsigned,LineInfo> lines;
+      char *text = readfile(filename.c_str(), lines);
+      if (!text) continue;
+      for (list<TagInfo>::const_iterator it = tags.begin(), end = tags.end();
+	   it != end; it++) {
+	const TagInfo& info = *it;
+	map<unsigned,LineInfo>::iterator tt = lines.find(info.line);
+	if (tt == lines.end()) break;
+	char *act = tt->second.s;
+	size_t offs = tt->second.offs;
+	// try to find the text leading up to the tag
+	string s(act);
+	string t = info.tag;
+	size_t k = s.find(t);
+	unsigned line = info.line;
+	if (k == string::npos && (k = info.tag.rfind("::")) != string::npos) {
+	  // qualified name, may be used unqualified here
+	  t = info.tag.substr(k+2);
+	  k = s.find(t);
+	} else if (k == string::npos && info.tag == "neg") {
+	  // synonym for unary -
+	  k = s.find("-");
+	  if (k != string::npos) t = "-";
+	}
+	if (k == string::npos) {
+	  // Still couldn't find the tag, look for it on a continuation line.
+	  list<TagInfo>::const_iterator jt = it; jt++;
+	  while (jt != end && jt->line == info.line &&
+		 jt->column == info.column) ++jt;
+	  if (jt != end) {
+	    unsigned next_line = jt->line;
+	    for (unsigned l = 1; line+l <= next_line; l++) {
+	      s = lines[line+l].s;
+	      k = s.find(t);
+	      if (k != string::npos) {
+		line += l;
+		offs = lines[line].offs;
+		break;
+	      }
+	    }
+	  }
+	}
+	if (k == string::npos) continue; // give up
+	if (k > 0 || t != info.tag)
+	  s = s.substr(0, k+t.size());
+	else
+	  s.clear();
+	if (s.empty())
+	  sout << info.tag << "\x7f" << line << "," << offs << endl;
+	else
+	  sout << s << "\x7f" << info.tag << "\x01" << line << ","
+	       << offs << endl;
+      }
+      free(text);
+      out << "\f\n" << filename << "," << sout.str().size() << endl
+	  << sout.str();
+    }
+  } else if (ctags) {
+    list<CtagInfo> ctags;
+    for (list<string>::const_iterator it = tag_files.begin(),
+	   end = tag_files.end(); it != end; it++) {
+      const string& filename = *it;
+      const list<TagInfo>& tags = tag_list[filename];
+      if (tags.empty()) continue;
+      for (list<TagInfo>::const_iterator it = tags.begin(), end = tags.end();
+	   it != end; it++) {
+	const TagInfo& info = *it;
+	ctags.push_back(CtagInfo(info.tag.c_str(), filename.c_str(),
+				 info.line));
+      }
+    }
+    ctags.sort(ctag_cmp);
+    ofstream out(tagsfile.c_str());
+    for (list<CtagInfo>::const_iterator it = ctags.begin(), end = ctags.end();
+	 it != end; it++) {
+      const CtagInfo& info = *it;
+      out << info.tag << "\t" << info.file << "\t" << info.line << endl;
+    }
+  }
+}
+
 // Run the interpreter on a source file, collection of source files, or on
 // string data.
 
@@ -1461,7 +1480,10 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
   source_s = 0;
   output = 0;
   srcdir = dirname(fname); srcabs = fname;
-  if (ctags || etags) tag_files.push_back(tagfile(tagdir, fname));
+  if (ctags || etags) {
+    init_tags();
+    tag_files.push_back(tagfile(tagsdir, fname));
+  }
   if (sticky)
     ; // keep the current module
   else {

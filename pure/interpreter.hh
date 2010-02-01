@@ -967,9 +967,9 @@ private:
   // ctags/etags support.
 
 public:
-  string tagsfile;
+  string tagsfile, tagsdir;
   bool ctags, etags;
-  string srcabs, tagdir;
+  string srcabs;
   unsigned int line, column;
 
   void tags(rulel *rl);
@@ -981,8 +981,10 @@ public:
   void print_tags();
 
 private:
+  bool tags_init;
   list<string> tag_files;
   map< string, list<TagInfo> > tag_list;
+  void init_tags();
 
   // Interface to the lexer.
 
