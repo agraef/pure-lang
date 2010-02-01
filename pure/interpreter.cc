@@ -1151,7 +1151,6 @@ void interpreter::print_tags()
 	  if (jt != end) {
 	    unsigned next_line = jt->line;
 	    for (unsigned l = 1; line+l <= next_line; l++) {
-	      printf("... %u (%s)\n", l, t.c_str());
 	      s = lines[line+l].s;
 	      k = s.find(t);
 	      if (k != string::npos) {
