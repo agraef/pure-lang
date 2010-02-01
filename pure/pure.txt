@@ -97,6 +97,9 @@ below:
 ``-c``
     Batch compilation.
 
+``--ctags``, ``--etags``
+    Create a tags file in ctags (vi) or etags (emacs) format.
+
 ``-fPIC``, ``-fpic``
     Create position-independent code (batch compilation).
 
@@ -132,6 +135,9 @@ below:
 
 ``-q``
     Quiet startup (suppresses sign-on message in interactive mode).
+
+``-t filename``
+    Tags file to be written by ``--ctags`` or ``--etags``.
 
 ``-u``
     Do not strip unused functions in batch compilation.
@@ -196,6 +202,19 @@ directory. In addition, the executed program may load other scripts and
 libraries via a ``using`` declaration in the source, which are searched for in
 a number of locations, including the directories named with the -I and -L
 options; see the Declarations_ and `C Interface`_ sections for details.
+
+If the --ctags or --etags option is specified, the interpreter enters a
+special mode in which it only parses source files without executing them, and
+collects information about the locations of declarations and definitions of
+macro, function and operator symbols. The collected information is then
+written to a tags file in ctags or etags format, respectively. The desired
+name of the tags file can be specified with the -t option; it defaults to
+``tags`` for --ctags and ``TAGS`` for --etags, respectively. This feature
+substantially facilitates development, as Pure scripts can have equations for
+a given function or macro scattered out over many different source files.
+Using the tags file with emacs, vi and other text editors which support this
+feature, it becomes possible to quickly locate all declarations and
+definitions of a given symbol.
 
 Compiling Scripts
 -----------------
