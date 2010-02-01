@@ -463,6 +463,58 @@ Load or replace the whole problem matrix
   ()
   >
 
+Check for duplicate elements in sparse matrix
+---------------------------------------------
+**Synopsis**::
+
+  glp::check_dup numrows numcols indices
+
+**Parameters**:
+
+  :numrows: number of rows
+  :numcols: number of columns
+  :indices: list of tuples (rowindex, colindex); indices of only non-zero
+            coefficients have to be specified, the order of indices is not
+            important
+
+**Returns**:
+
+  returns one of the following:
+
+    :0:  the matrix has no duplicate elements
+    :-k: rowindex or colindex of the k-th element in indices is out of range
+    :+k: the k-th element in indices is duplicate
+
+**Remark:**
+
+  Notice, that ``k`` counts from 1, whereas list members are counted from 0.
+
+**Example**::
+
+  > glp::check_dup 3 3  [(1, 3), (2, 2), (3, 1), (2, 2)];
+  4
+  >
+
+Sort elements of the constraint matrix 
+--------------------------------------
+**Synopsis**::
+
+  glp::sort_matrix lp
+
+**Parameters**:
+
+  :lp: pointer to the LP problem object
+
+**Returns**:
+
+  ``()``
+
+**Example**::
+
+  > glp::sort_matrix lp;
+  ()
+  >
+
 Delete rows from the matrix
 ---------------------------
 **Synopsis**::
@@ -968,8 +1020,8 @@ Retrive a column from the problem matrix
   >
 
 
-Row and column searchin routines
->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+Row and column searching routines
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
 Create index for searching rows and columns by their names
@@ -2108,6 +2160,7 @@ Solve the MIP problem using branch-and-cut method
                              :glp\:\:br_lfv: last fractional variable
                              :glp\:\:br_mfv: most fractional variable
                              :glp\:\:br_dth: heuristic by Driebeck and Tomlin
+                             :glp\:\:br_pch: hybrid pseudocost heuristic
 
             :glp\:\:bt_tech: (default: glp::pt_pse) - backtracking technique
 
@@ -2478,10 +2531,11 @@ Read LP problem data from a MPS file
 **Example**::
 
   > glp::read_mps lp glp::mps_deck "examples/plan.mps";
-  glp_read_mps: reading problem data from `examples/plan.mps'...
-  glp_read_mps: problem PLAN
-  glp_read_mps: 8 rows, 7 columns, 48 non-zeros
-  glp_read_mps: 54 cards were read
+  Reading problem data from `examples/plan.mps'...
+  Problem PLAN
+  Objective R0000000
+  8 rows, 7 columns, 55 non-zeros
+  63 records were read
   0
   >
 
@@ -2511,7 +2565,8 @@ Write LP problem data into a MPS file
 **Example**::
 
   > glp::write_mps lp glp::mps_file "examples/plan1.mps";
-  glp_write_mps: writing problem data to `examples/plan1.mps'...
+  Writing problem data to `examples/plan1.mps'...
+  63 records were written
   0
   >
 
@@ -2535,9 +2590,9 @@ Read LP problem data from a CPLEX file
 **Example**::
 
   > glp::read_lp lp "examples/plan.lp";
-  glp_read_lp: reading problem data from `examples/plan.lp'...
-  glp_read_lp: 8 rows, 7 columns, 48 non-zeros
-  glp_read_lp: 39 lines were read
+  reading problem data from `examples/plan.lp'...
+  8 rows, 7 columns, 48 non-zeros
+  39 lines were read
   0
   >
 
@@ -2562,7 +2617,60 @@ Write LP problem data into a CPLEX file
 **Example**::
 
   > glp::write_lp lp "examples/plan1.lp";
-  glp_write_lp: writing problem data to `examples/plan1.lp'...
+  writing problem data to `examples/plan1.lp'...
+  29 lines were written
+  0
+  >
+
+Read LP problem data in GLPK format
+-----------------------------------
+**Synopsis**::
+
+  glp::read_prob lp filename
+
+**Parameters**:
+
+  :lp: pointer to the LP problem object
+  :filename: file name - if the ﬁle name ends with suﬃx **.gz**,
+             the ﬁle is assumed to be compressed, in which case
+             the routine glp::read_prob decompresses it “on the ﬂy”
+
+**Returns**:
+
+  **0** if writing went OK; non-zero in case of an error
+
+**Example**::
+
+  > glp::read_prob lp "examples/plan.glpk";
+  reading problem data from `examples/plan.glpk'...
+  8 rows, 7 columns, 48 non-zeros
+  86 lines were read
+  0
+  >
+
+Write LP problem data in GLPK format
+------------------------------------
+**Synopsis**::
+
+  glp::write_prob lp filename
+
+**Parameters**:
+
+  :lp: pointer to the LP problem object
+  :filename: file name - if the ﬁle name ends with suﬃx **.gz**,
+             the ﬁle is assumed to be compressed, in which case
+             the routine glp::write_prob performs automatic
+             compression on writing it
+
+**Returns**:
+
+  **0** if writing went OK; non-zero in case of an error
+
+**Example**::
+
+  > glp::write_prob lp "examples/plan1.glpk";
+  writing problem data to `examples/plan1.glpk'...
+  86 lines were written
   0
   >
 
@@ -2810,26 +2918,32 @@ Write basic solution into a text file
   >
 
 
-Write bounds sensitivity information
-------------------------------------
+Print sensitivity analysis report
+---------------------------------
 **Synopsis**::
 
-  lpx::print_sens_bnds lp filename
+  glp::print_ranges lp indices filename
 
 **Parameters**:
 
   :lp: pointer to the LP problem object
+  :indices: list indices k of of rows and columns to be included in the report.
+            If 1 ≤ k ≤ m, the basic variable is k-th auxiliary variable,
+            and if m + 1 ≤ k ≤ m + n, the non-basic variable is (k − m)-th
+            structural variable, where m is the number of rows and n is the
+            number of columns in the speciﬁed problem object. An empty lists
+            means printing report for all rows and columns.
   :filename: file name
 
 **Returns**:
 
-  **0** if writing went OK; non-zero in case of an error
+  :0:        if the operation was successful
+  :non-zero: if the operation failed
 
 **Example**::
 
-  > lpx::print_sens_bnds lp "examples/test.txt";
-  lpx_print_sens_bnds: writing LP problem solution bounds to
-  `examples/test.txt'...
+  > glp::print_ranges lp [] "sensitivity.rpt";
+  Write sensitivity analysis report to `sensitivity.rpt'...                                                                                                                                                           
   0
   >
 
@@ -3413,7 +3527,7 @@ Transform explicitly specified row
 ----------------------------------
 **Synopsis**::
 
-  lpx::transform_row lp rowvector
+  glp::transform_row lp rowvector
 
 **Parameters**:
 
@@ -3432,7 +3546,7 @@ Transform explicitly specified row
 
 **Example**::
 
-  > lpx::transform_row lp [(1, 3.0), (2, 3.5)];
+  > glp::transform_row lp [(1, 3.0), (2, 3.5)];
   [(1,3.83333333333333),(2,-0.0833333333333333),(6,-3.41666666666667)]
   >
 
@@ -3440,7 +3554,7 @@ Transform explicitly specified column
 -------------------------------------
 **Synopsis**::
 
-  lpx::transform_col lp colvector
+  glp::transform_col lp colvector
 
 **Parameters**:
 
@@ -3459,7 +3573,7 @@ Transform explicitly specified column
 
 **Example**::
 
-  > lpx::transform_col lp [(2, 1.0), (3, 2.3)];
+  > glp::transform_col lp [(2, 1.0), (3, 2.3)];
   [(3,2.3),(4,-0.166666666666667),(5,0.166666666666667)]
   >
 
@@ -3467,7 +3581,7 @@ Perform primal ratio test
 -------------------------
 **Synopsis**::
 
-  lpx::prim_ratio_test lp colvector how tol
+  glp::prim_rtest lp colvector dir eps
 
 **Parameters**:
 
@@ -3479,21 +3593,20 @@ Perform primal ratio test
               of rows and n is the number of columns in the speciﬁed problem
               object (the basis factorization must exist and the primal
               solution must be feasible)
-  :how: speciﬁes in which direction the variable y changes on entering the
+  :dir: speciﬁes in which direction the variable y changes on entering the
         basis: +1 means increasing, −1 means decreasing
-  :tol: relative tolerance (small positive number) used to skip small
+  :eps: relative tolerance (small positive number) used to skip small
         values in the column
 
 **Returns**:
 
-  The routine returns the ordinal number of some basic variable (xB )i,
-  which should leave the basis instead the variable y in order
-  to keep primal feasibility. If the adjacent basic solution is primal
-  unbounded and therefore the choice cannot be made, the routine returns zero.
-
+  The routine returns the index, piv, in the colvector corresponding to the
+  pivot element chosen, 1 ≤ piv ≤ len. If the adjacent basic solution is primal
+  unbounded, and therefore the choice cannot be made, the routine returns zero.
+  
 **Example**::
 
-  > lpx::prim_ratio_test lp [(3, 2.5), (5, 7.0)] 1 1.0e-5;
+  > glp::prim_rtest lp [(3, 2.5), (5, 7.0)] 1 1.0e-5;
   3
   >
 
@@ -3501,7 +3614,7 @@ Perform dual ratio test
 -----------------------
 **Synopsis**::
 
-  lpx::dual_ratio_test lp rowvector how tol
+  glp::dual_rtest lp rowvector dir eps
 
 **Parameters**:
 
@@ -3513,22 +3626,118 @@ Perform dual ratio test
               of rows and n is the number of columns in the speciﬁed problem
               object (the basis factorization must exist and the dual
               solution must be feasible)
-  :how: speciﬁes in which direction the variable y changes on leaving
+  :dir: speciﬁes in which direction the variable y changes on leaving
         the basis: +1 means increasing, −1 means decreasing
-  :tol: relative tolerance (small positive number) used to skip small
+  :eps: relative tolerance (small positive number) used to skip small
         values in the row
 
 **Returns**:
 
-  The routine returns the ordinal number of some non-basic variable (xN )j,
-  which should enter the basis instead the variable y in order to keep dual
-  feasibility. If the adjacent basic solution is dual un-bounded and therefore
-  the choice cannot be made, the routine returns zero.
+  The routine returns the index, piv, in the rowvector corresponding to the
+  pivot element chosen, 1 ≤ piv ≤ len. If the adjacent basic solution is dual
+  unbounded, and therefore the choice cannot be made, the routine returns zero.
 
 **Example**::
 
-  > lpx::dual_ratio_test lp [(1, 1.5), (6, 4.0)] 1 1.0e-5;
+  > glp::dual_rtest lp [(1, 1.5), (6, 4.0)] 1 1.0e-5;
   6
+  >
+
+Analyze active bound of non-basic variable
+------------------------------------------
+**Synopsis**::
+
+  glp::analyze_bound lp k
+
+**Parameters**:
+
+  :lp: pointer to the LP problem object
+  :k: if 1 ≤ k ≤ m, the non-basic variable is k-th auxiliary variable,
+      and if m + 1 ≤ k ≤ m + n, the non-basic variable is (k − m)-th
+      structural variable, where m is the number of rows and n is the
+      number of columns in the speciﬁed problem object (the basis
+      factorization must exist and the solution must be optimal)
+
+**Returns**:
+
+  The routine returns a tuple (limit1, var1, limit2 var2) where:
+
+  :value1: the minimal value of the active bound, at which the basis still
+           remains primal feasible and thus optimal. -DBL_MAX means that the
+           active bound has no lower limit.
+  :var1:   the ordinal number of an auxiliary (1 to m) or structural
+           (m + 1 to m + n) basic variable, which reaches its bound ﬁrst
+           and thereby limits further decreasing the active bound being
+           analyzed. If value1 = -DBL_MAX, var1 is set to 0.
+  :value2: the maximal value of the active bound, at which the basis still
+           remains primal feasible and thus optimal. +DBL_MAX means that the
+           active bound has no upper limit.
+  :var2:   the ordinal number of an auxiliary (1 to m) or structural
+           (m + 1 to m + n) basic variable, which reaches its bound ﬁrst
+           and thereby limits further increasing the active bound being
+           analyzed. If value2 = +DBL_MAX, var2 is set to 0.
+
+**Example**::
+
+  > analyze_bound lp 2;
+  1995.06864446899,12,2014.03478832467,4
+  >
+
+Analyze objective coefficient at basic variable
+-----------------------------------------------
+**Synopsis**::
+
+  glp::analyze_coef lp k
+
+**Parameters**:
+
+  :lp: pointer to the LP problem object
+  :k: if 1 ≤ k ≤ m, the basic variable is k-th auxiliary variable,
+      and if m + 1 ≤ k ≤ m + n, the non-basic variable is (k − m)-th
+      structural variable, where m is the number of rows and n is the
+      number of columns in the speciﬁed problem object (the basis
+      factorization must exist and the solution must be optimal)
+
+**Returns**:
+
+  The routine returns a tuple (coef1, var1, value1, coef2 var2, value2) where:
+
+  :coef1:  the minimal value of the objective coeﬃcient, at which the
+           basis still remains dual feasible and thus optimal.
+           -DBL_MAX means that the objective coeﬃcient has no lower limit.
+  :var1:   is the ordinal number of an auxiliary (1 to m) or structural
+           (m + 1 to m + n) non-basic variable, whose reduced cost reaches
+           its zero bound ﬁrst and thereby limits further decreasing the
+           objective coeﬃcient being analyzed. If coef1 = -DBL_MAX,
+           var1 is set to 0.
+  :value1: value of the basic variable being analyzed in an adjacent basis,
+           which is deﬁned as follows. Let the objective coeﬃcient reaches
+           its minimal value (coef1) and continues decreasing. Then the
+           reduced cost of the limiting non-basic variable (var1) becomes dual
+           infeasible and the current basis becomes non-optimal that forces
+           the limiting non-basic variable to enter the basis replacing there
+           some basic variable that leaves the basis to keep primal
+           feasibility. Should note that on determining the adjacent basis
+           current bounds of the basic variable being analyzed are ignored
+           as if it were free (unbounded) variable, so it cannot leave the
+           basis. It may happen that no dual feasible adjacent basis exists,
+           in which case value1 is set to -DBL_MAX or +DBL_MAX.
+  :coef2:  the maximal value of the objective coeﬃcient, at which the
+           basis still remains dual feasible and thus optimal. +DBL_MAX
+           means that the objective coeﬃcient has no upper limit.
+  :var2:   the ordinal number of an auxiliary (1 to m) or structural
+           (m + 1 to m + n) non-basic variable, whose reduced cost reaches
+           its zero bound ﬁrst and thereby limits further increasing the
+           objective coeﬃcient being analyzed. If coef2 = +DBL_MAX, var2
+           is set to 0.
+  :value2: value of the basic variable being analyzed in an adjacent basis,
+           which is deﬁned exactly in the same way as value1 above with
+           exception that now the objective coeﬃcient is increasing.
+
+**Example**::
+
+  > analyze_coef lp 1;
+  -1.0,3,306.771624713959,1.79769313486232e+308,0,296.216606498195
   >
 
 
