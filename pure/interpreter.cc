@@ -1132,26 +1132,46 @@ void interpreter::print_tags()
 	// try to find the text leading up to the tag
 	string s(act);
 	string t = info.tag;
-	size_t k = s.find(t, info.column);
+	size_t k = s.find(t);
+	unsigned line = info.line;
 	if (k == string::npos && (k = info.tag.rfind("::")) != string::npos) {
 	  // qualified name, may be used unqualified here
 	  t = info.tag.substr(k+2);
-	  k = s.find(t, info.column);
+	  k = s.find(t);
 	} else if (k == string::npos && info.tag == "neg") {
 	  // synonym for unary -
-	  t = "-";
-	  k = s.find(t, info.column);
+	  k = s.find("-");
+	  if (k != string::npos) t = "-";
 	}
-	if (k != string::npos && (k > info.column || t != info.tag))
-	  s = s.substr(info.column, k-info.column+t.size());
+	if (k == string::npos) {
+	  // Still couldn't find the tag, look for it on a continuation line.
+	  list<TagInfo>::const_iterator jt = it; jt++;
+	  while (jt != end && jt->line == info.line &&
+		 jt->column == info.column) ++jt;
+	  if (jt != end) {
+	    unsigned next_line = jt->line;
+	    for (unsigned l = 1; line+l <= next_line; l++) {
+	      printf("... %u (%s)\n", l, t.c_str());
+	      s = lines[line+l].s;
+	      k = s.find(t);
+	      if (k != string::npos) {
+		line += l;
+		offs = lines[line].offs;
+		break;
+	      }
+	    }
+	  }
+	}
+	if (k == string::npos) continue; // give up
+	if (k > 0 || t != info.tag)
+	  s = s.substr(0, k+t.size());
 	else
 	  s.clear();
 	if (s.empty())
-	  sout << info.tag << "\x7f" << info.line << ","
-	       << offs+info.column << endl;
+	  sout << info.tag << "\x7f" << line << "," << offs << endl;
 	else
-	  sout << s << "\x7f" << info.tag << "\x01" << info.line << ","
-	       << offs+info.column << endl;
+	  sout << s << "\x7f" << info.tag << "\x01" << line << ","
+	       << offs << endl;
       }
       free(text);
       out << "\f\n" << filename << "," << sout.str().size() << endl
