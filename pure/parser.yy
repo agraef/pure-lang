@@ -223,11 +223,17 @@ item
     error(yylloc, "syntax error, expected end of file");
   YYACCEPT; }
 | LET simple_rule
-{ if (!interp.ctags && !interp.etags) {
-    action(interp.define($2), delete $2); } }
+{ if (interp.ctags || interp.etags) {
+    interp.tags($2->lhs); delete $2;
+  } else {
+    action(interp.define($2), delete $2);
+  } }
 | CONST simple_rule
-{ if (!interp.ctags && !interp.etags) {
-    action(interp.define_const($2), delete $2); } }
+{ if (interp.ctags || interp.etags) {
+    interp.tags($2->lhs); delete $2;
+  } else {
+    action(interp.define_const($2), delete $2);
+  } }
 | DEF simple_rule
 { if (interp.ctags || interp.etags) interp.tags($2);
   action(interp.add_macro_rule($2), delete $2); }

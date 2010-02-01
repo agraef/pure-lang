@@ -1183,6 +1183,20 @@ void interpreter::tags(rule *r)
   }
 }
 
+void interpreter::tags(expr pat)
+{
+  env vars; veqnl eqns;
+  qual = true;
+  expr lhs = bind(vars, eqns, lcsubst(pat));
+  build_env(vars, lhs);
+  qual = false;
+  for (env::const_iterator it = vars.begin(); it != vars.end(); ++it) {
+    int32_t f = it->first;
+    const symbol& sym = symtab.sym(f);
+    tag(sym.s, srcabs, line, column);
+  }
+}
+
 void interpreter::tags(const string& id, const string& asid)
 {
   string name = asid.empty()?id:asid;
