@@ -203,18 +203,33 @@ libraries via a ``using`` declaration in the source, which are searched for in
 a number of locations, including the directories named with the -I and -L
 options; see the Declarations_ and `C Interface`_ sections for details.
 
+Tagging Scripts
+---------------
+
+Pure scripts often have definitions of global symbols scattered out over many
+different source files. Using the options described in this section, you can
+create a tags file which then allows you to quickly locate all declarations
+and definitions of the global symbols in your script in a reliable manner.
+
 If the --ctags or --etags option is specified, the interpreter enters a
 special mode in which it only parses source files without executing them, and
-collects information about the locations of declarations and definitions of
-macro, function and operator symbols. The collected information is then
-written to a tags file in ctags or etags format, respectively. The desired
-name of the tags file can be specified with the -t option; it defaults to
-``tags`` for --ctags and ``TAGS`` for --etags, respectively. This feature
-substantially facilitates development, as Pure scripts can have equations for
-a given function or macro scattered out over many different source files.
-Using the tags file with emacs, vi and other text editors which support this
-feature, it becomes possible to quickly locate all declarations and
-definitions of a given symbol.
+collects information about the locations of global symbol declarations and
+definitions. The collected information is then written to a tags file in ctags
+or etags format, which can be used with vi, emacs and other text editors which
+support these formats. The desired name of the tags file can be specified with
+the -t option; it defaults to ``tags`` for --ctags and ``TAGS`` for --etags,
+respectively.
+
+The written file contains information about the global constant, variable,
+macro, function and operator symbols of all scripts specified on the command
+line, as well as the prelude and other scripts included via a ``using``
+clause. Tagged scripts which are located in the same directory as the tags
+file (or, recursively, in one of its subdirectories) are specified using
+relative pathnames. Conversely, scripts outside the directory hierarchy of the
+tags file (such as included scripts from the standard library) are specified
+using absolute pathnames. This scheme makes it possible to move an entire
+directory together with its tags file and have the tags information still work
+in the new location.
 
 Compiling Scripts
 -----------------
