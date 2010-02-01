@@ -68,26 +68,27 @@ using namespace std;
 
 #define COPYRIGHT "Copyright (c) 2008, 2009 by Albert Graef"
 #define USAGE \
-"Usage:           pure [options ...] [script ...] [-- args ...]\n\
-                 pure [options ...] -x script [args ...]\n\
--c               Batch compilation.\n\
--fPIC            Create position-independent code (batch compilation).\n\
--g               Enable symbolic debugging.\n\
---help, -h       Print this message and exit.\n\
--i               Force interactive mode (read commands from stdin).\n\
--I directory     Add directory to search for included source files.\n\
--L directory     Add directory to search for dynamic libraries.\n\
--l libname       Library to be linked in batch compilation.\n\
---noediting      Disable command-line editing.\n\
---noprelude, -n  Do not load the prelude.\n\
---norc           Do not run the interactive startup files.\n\
--o filename      Output filename for batch compilation.\n\
--q               Quiet startup (suppresses sign-on message).\n\
--u               Do not strip unused functions in batch compilation.\n\
--v[level]        Set debugging level (default: 1).\n\
---version        Print version information and exit.\n\
--x               Execute script with given command line arguments.\n\
---               Stop option processing.\n\
+"Usage:            pure [options ...] [script ...] [-- args ...]\n\
+                  pure [options ...] -x script [args ...]\n\
+-c                Batch compilation.\n\
+--ctags, --etags  Create a tags file in ctags (vi) or etags (emacs) format.\n\
+-fPIC             Create position-independent code (batch compilation).\n\
+-g                Enable symbolic debugging.\n\
+--help, -h        Print this message and exit.\n\
+-i                Force interactive mode (read commands from stdin).\n\
+-I directory      Add directory to search for included source files.\n\
+-L directory      Add directory to search for dynamic libraries.\n\
+-l libname        Library to be linked in batch compilation.\n\
+--noediting       Disable command-line editing.\n\
+--noprelude, -n   Do not load the prelude.\n\
+--norc            Do not run the interactive startup files.\n\
+-o filename       Output filename for batch compilation.\n\
+-q                Quiet startup (suppresses sign-on message).\n\
+-u                Do not strip unused functions in batch compilation.\n\
+-v[level]         Set debugging level (default: 1).\n\
+--version         Print version information and exit.\n\
+-x                Execute script with given command line arguments.\n\
+--                Stop option processing.\n\
 Type 'help' in the interpreter for more help.\n"
 #define LICENSE "This program is free software, and you are welcome to redistribute it under\ncertain conditions. There is ABSOLUTELY NO WARRANTY. (Type 'help copying'\nfor more information.)\n"
 
@@ -461,6 +462,10 @@ main(int argc, char *argv[])
 	interp.debugging = true;
       else if (strcmp(arg, "-i") == 0)
 	force_interactive = true;
+      else if (strcmp(arg, "--ctags") == 0)
+	interp.ctags = true;
+      else if (strcmp(arg, "--etags") == 0)
+	interp.etags = true;
       else if (strcmp(arg, "-n") == 0 || strcmp(arg, "--noprelude") == 0)
 	want_prelude = false;
       else if (strcmp(arg, "--norc") == 0)
@@ -615,12 +620,17 @@ main(int argc, char *argv[])
 	return 1;
       }
     }
-  if ((count > 0 || interp.compiling) && !force_interactive) {
+  if ((count > 0 || interp.compiling || interp.ctags || interp.etags) &&
+      !force_interactive) {
     int status = 0;
-    if (interp.compiling || interp.verbose&verbosity::dump)
-      interp.compile();
-    if (interp.compiling) status = interp.compiler(outname, libnames);
-    //printf("status = %d\n", status);
+    if (interp.ctags || interp.etags)
+      interp.print_tags();
+    else {
+      if (interp.compiling || interp.verbose&verbosity::dump)
+	interp.compile();
+      if (interp.compiling) status = interp.compiler(outname, libnames);
+      //printf("status = %d\n", status);
+    }
     /* interp.compiler() apparently leaves the code module in a dangling
        state, so make sure that we take the quick way out. There's really no
        need to clean up the interpreter instance if we're exiting anyway. */

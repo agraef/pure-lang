@@ -200,28 +200,40 @@ static void mangle_fname(string& name);
 source
 : /* empty */
 | source ';'
-| source item ';'
+| source item_pos ';'
 | error ';'
 { interp.nerrs = yyerrstatus_ = 0; interp.declare_op = false; }
 ;
 
+item_pos
+: { interp.line = yylloc.begin.line; interp.column = yylloc.begin.column; }
+  item
+;
+
 item
 : expr
-{ restricted_action(interp.exec($1), delete $1); }
+{ if (!interp.ctags && !interp.etags) {
+    restricted_action(interp.exec($1), delete $1); } }
 | ESCAPE expr
-{ restricted_action(interp.parse($2), delete $2);
+{ if (!interp.ctags && !interp.etags) {
+    restricted_action(interp.parse($2), delete $2);
+  }
   // We only parse a single expression in this mode, bail out.
   if (yychar > 0 && interp.nerrs == 0)
     error(yylloc, "syntax error, expected end of file");
   YYACCEPT; }
 | LET simple_rule
-{ action(interp.define($2), delete $2); }
+{ if (!interp.ctags && !interp.etags) {
+    action(interp.define($2), delete $2); } }
 | CONST simple_rule
-{ action(interp.define_const($2), delete $2); }
+{ if (!interp.ctags && !interp.etags) {
+    action(interp.define_const($2), delete $2); } }
 | DEF simple_rule
-{ action(interp.add_macro_rule($2), delete $2); }
+{ if (interp.ctags || interp.etags) interp.tags($2);
+  action(interp.add_macro_rule($2), delete $2); }
 | rule
 { rulel *rl = 0;
+  if (interp.ctags || interp.etags) interp.tags($1);
   action(interp.add_rules(interp.globenv,
   (rl = interp.default_lhs(interp.last, $1)), true), if (rl) delete rl); }
 | fixity
@@ -337,6 +349,7 @@ prototypes
 prototype
 : ctype ID '(' opt_ctypes ')' optalias
 { action(interp.declare_extern(extern_priv, *$2, *$1, *$4, false, 0, *$6), {});
+  if (interp.ctags || interp.etags) interp.tags(*$2, *$6);
   delete $1; delete $2; delete $4; delete $6; }
 ;
 

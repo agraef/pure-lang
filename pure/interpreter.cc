@@ -644,7 +644,8 @@ interpreter::interpreter()
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
     result(0), lastres(0), mem(0), exps(0), tmps(0), freectr(0), module(0),
     JIT(0), FPM(0), astk(0), sstk(__sstk), stoplevel(0), debug_skip(false),
-    fptr(__fptr)
+    fptr(__fptr), ctags(false), etags(false), line(0), column(0),
+    declare_op(false)
 {
   init();
 }
@@ -661,7 +662,8 @@ interpreter::interpreter(int32_t nsyms, char *syms,
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
     result(0), lastres(0), mem(0), exps(0), tmps(0), freectr(0), module(0),
     JIT(0), FPM(0), astk(0), sstk(*_sstk), stoplevel(0), debug_skip(false),
-    fptr(*(Env**)_fptr)
+    fptr(*(Env**)_fptr), ctags(false), etags(false), line(0), column(0),
+    declare_op(false)
 {
   using namespace llvm;
   init();
@@ -959,6 +961,138 @@ void interpreter::report_stats()
   }
 }
 
+// Ctags/etags support.
+
+uint32_t count_args(expr x, int32_t& f);
+
+void interpreter::tags(rulel *rl)
+{
+  assert(!rl->empty());
+  if (rl->front().lhs.is_null()) return;
+  set<int32_t> syms;
+  for (rulel::iterator i = rl->begin(), end = rl->end(); i != end; i++) {
+    expr x = i->lhs;
+    int32_t f;
+    count_args(x, f);
+    if (f > 0 && syms.find(f) == syms.end()) {
+      symbol& sym = symtab.sym(f);
+      tag(sym.s, srcabs, line, column);
+      syms.insert(f);
+    }
+  }
+}
+
+void interpreter::tags(rule *r)
+{
+  if (r->lhs.is_null()) return;
+  expr x = r->lhs;
+  int32_t f;
+  count_args(x, f);
+  if (f > 0) {
+    symbol& sym = symtab.sym(f);
+    tag(sym.s, srcabs, line, column);
+  }
+}
+
+void interpreter::tags(const string& id, const string& asid)
+{
+  string name = asid.empty()?id:asid;
+  string absid = make_absid(name);
+  symbol* sym = symtab.lookup(absid);
+  if (sym) tag(sym->s, srcabs, line, column);
+}
+
+#define BUFSIZE 1024
+static string unixize(const string& s);
+
+static string tagfile(string& tagdir, const string& name)
+{
+  char cwd[BUFSIZE];
+  if (name.empty())
+    return name;
+  else if (tagdir.empty()) {
+    if (!getcwd(cwd, BUFSIZE)) {
+      perror("getcwd");
+      return name;
+    }
+    tagdir = unixize(cwd);
+    if (!tagdir.empty() && tagdir[tagdir.size()-1] != '/')
+      tagdir += "/";
+  }
+  if (strncmp(tagdir.c_str(), name.c_str(), tagdir.size()) == 0)
+    return name.substr(tagdir.size());
+  else
+    return name;
+}
+
+void interpreter::tag(const string& tagname, const string& filename,
+		      unsigned int line, unsigned int column)
+{
+  if (filename.empty()) return;
+  string name = tagfile(tagdir, filename);
+  tag_list[name].push_back(TagInfo(tagname, line, column));
+}
+
+#include <iostream>
+#include <fstream>
+
+void interpreter::print_tags()
+{
+  if (etags) {
+    ofstream out("TAGS");
+    for (list<string>::const_iterator it = tag_files.begin(),
+	   end = tag_files.end(); it != end; it++) {
+      const string& filename = *it;
+      const list<TagInfo>& tags = tag_list[filename];
+      if (tags.empty()) continue;
+      ostringstream sout;
+      ifstream in(filename.c_str(), ios_base::in|ios_base::binary);
+      unsigned line = 1;
+      streampos pos;
+      string s;
+      for (list<TagInfo>::const_iterator it = tags.begin(), end = tags.end();
+	   it != end; it++) {
+	const TagInfo& info = *it;
+	while (line < info.line && in.good()) {
+	  getline(in, s);
+	  line++;
+	}
+	if ((pos = in.tellg()) == (streampos)-1 || !in.good()) break;
+	// try to find the text leading up to the tag
+	s.clear();
+	getline(in, s);
+	in.seekg(pos);
+	string t = info.tag;
+	size_t k = s.find(t, info.column);
+	if (k == string::npos && (k = info.tag.rfind("::")) != string::npos) {
+	  // qualified name, may be used unqualified here
+	  t = info.tag.substr(k+2);
+	  k = s.find(t, info.column);
+	} else if (info.tag == "neg") {
+	  // synonym for unary -
+	  t = "-";
+	  k = s.find(t, info.column);
+	}
+	if (k != string::npos && (k > info.column || t != info.tag))
+	  s = s.substr(info.column, k-info.column+t.size());
+	else
+	  s.clear();
+	if (s.empty())
+	  sout << info.tag << "\x7f" << info.line << ","
+	       << (unsigned)pos+info.column << endl;
+	else
+	  sout << s << "\x7f" << info.tag << "\x01" << info.line << ","
+	       << (unsigned)pos+info.column << endl;
+      }
+      out << "\f\n" << filename << "," << sout.str().size() << endl
+	  << sout.str();
+    }
+  } else if (ctags) {
+    cerr << "ctags format not implemented yet, sorry.\n";
+    exit(1);
+  }
+}
+
 /* Search for a source file. Absolute file names (starting with a slash) are
    taken as is. Relative pathnames are resolved using the following algorithm:
    If srcdir is nonempty, search it first, then libdir (if nonempty), then the
@@ -1025,8 +1159,6 @@ static bool absname(const string& s)
     return s[0]=='/';
 #endif
 }
-
-#define BUFSIZE 1024
 
 static string searchdir(const string& srcdir, const string& libdir,
 			const list<string>& include_dirs,
@@ -1203,7 +1335,7 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
   uint32_t l_temp = temp;
   const char *l_source_s = source_s;
   ostream *l_output = output;
-  string l_srcdir = srcdir;
+  string l_srcdir = srcdir, l_srcabs = srcabs;
   int32_t l_modno = modno;
   string *l_current_namespace = symtab.current_namespace;
   set<string> *l_search_namespaces = symtab.search_namespaces;
@@ -1220,7 +1352,8 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
   source = s; declare_op = false;
   source_s = 0;
   output = 0;
-  srcdir = dirname(fname);
+  srcdir = dirname(fname); srcabs = fname;
+  if (ctags || etags) tag_files.push_back(tagfile(tagdir, fname));
   if (sticky)
     ; // keep the current module
   else {
@@ -1254,7 +1387,7 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
   temp = l_temp;
   source_s = l_source_s;
   output = l_output;
-  srcdir = l_srcdir;
+  srcdir = l_srcdir; srcabs = l_srcabs;
   modno = l_modno;
   if (!sticky) {
     delete symtab.current_namespace;
@@ -1293,7 +1426,7 @@ pure_expr *interpreter::runstr(const string& s)
   string l_source = source;
   int l_nerrs = nerrs;
   const char *l_source_s = source_s;
-  string l_srcdir = srcdir;
+  string l_srcdir = srcdir, l_srcabs = srcabs;
   int32_t l_modno = modno;
   string *l_current_namespace = symtab.current_namespace;
   set<string> *l_search_namespaces = symtab.search_namespaces;
@@ -1309,7 +1442,7 @@ pure_expr *interpreter::runstr(const string& s)
   nerrs = 0;
   source = ""; declare_op = false;
   source_s = s.c_str();
-  srcdir = "";
+  srcdir = ""; srcabs = "";
   modno = modctr++;
   symtab.current_namespace = new string;
   symtab.search_namespaces = new set<string>;
@@ -1335,7 +1468,7 @@ pure_expr *interpreter::runstr(const string& s)
   source_s = 0;
   nerrs = l_nerrs;
   source_s = l_source_s;
-  srcdir = l_srcdir;
+  srcdir = l_srcdir; srcabs = l_srcabs;
   modno = l_modno;
   delete symtab.current_namespace;
   delete symtab.search_namespaces;
@@ -1355,7 +1488,7 @@ pure_expr *interpreter::parsestr(const string& s)
   string l_source = source;
   int l_nerrs = nerrs;
   const char *l_source_s = source_s;
-  string l_srcdir = srcdir;
+  string l_srcdir = srcdir, l_srcabs = srcabs;
   int32_t l_modno = modno;
   string *l_current_namespace = symtab.current_namespace;
   set<string> *l_search_namespaces = symtab.search_namespaces;
@@ -1372,7 +1505,7 @@ pure_expr *interpreter::parsestr(const string& s)
   source = ""; declare_op = false;
   string s1 = "\007"+s;
   source_s = s1.c_str();
-  srcdir = "";
+  srcdir = ""; srcabs = "";
   modno = modctr++;
   symtab.current_namespace = new string;
   symtab.search_namespaces = new set<string>;
@@ -1398,7 +1531,7 @@ pure_expr *interpreter::parsestr(const string& s)
   source_s = 0;
   nerrs = l_nerrs;
   source_s = l_source_s;
-  srcdir = l_srcdir;
+  srcdir = l_srcdir; srcabs = l_srcabs;
   modno = l_modno;
   delete symtab.current_namespace;
   delete symtab.search_namespaces;

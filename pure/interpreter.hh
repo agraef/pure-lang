@@ -382,6 +382,14 @@ struct DebugInfo {
   DebugInfo(size_t _n, Env *_e) : n(_n), e(_e), r(0) {}
 };
 
+struct TagInfo {
+  // tag file entries
+  string tag;
+  unsigned line, column;
+  TagInfo(const string& t, unsigned l, unsigned c)
+    : tag(t), line(l), column(c) {}
+};
+
 /* The interpreter. */
 
 typedef set<int32_t> funset;
@@ -955,6 +963,24 @@ public:
 private:
   clock_t clocks;
   size_t memsize, old_memctr;
+
+  // ctags/etags support.
+
+public:
+  bool ctags, etags;
+  string srcabs, tagdir;
+  unsigned int line, column;
+
+  void tags(rulel *rl);
+  void tags(rule *r);
+  void tags(const string& id, const string& asid);
+  void tag(const string& tagname, const string& file,
+	   unsigned int line, unsigned int column);
+  void print_tags();
+
+private:
+  list<string> tag_files;
+  map< string, list<TagInfo> > tag_list;
 
   // Interface to the lexer.
 
