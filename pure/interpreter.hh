@@ -967,6 +967,7 @@ private:
   // ctags/etags support.
 
 public:
+  string tagsfile;
   bool ctags, etags;
   string srcabs, tagdir;
   unsigned int line, column;

@@ -1099,7 +1099,8 @@ bool ctag_cmp(const CtagInfo& x, const CtagInfo& y)
 void interpreter::print_tags()
 {
   if (etags) {
-    ofstream out("TAGS");
+    if (tagsfile.empty()) tagsfile = "TAGS";
+    ofstream out(tagsfile.c_str());
     for (list<string>::const_iterator it = tag_files.begin(),
 	   end = tag_files.end(); it != end; it++) {
       const string& filename = *it;
@@ -1159,7 +1160,8 @@ void interpreter::print_tags()
       }
     }
     ctags.sort(ctag_cmp);
-    ofstream out("tags");
+    if (tagsfile.empty()) tagsfile = "tags";
+    ofstream out(tagsfile.c_str());
     for (list<CtagInfo>::const_iterator it = ctags.begin(), end = ctags.end();
 	 it != end; it++) {
       const CtagInfo& info = *it;
