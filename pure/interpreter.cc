@@ -1072,12 +1072,28 @@ static char *readfile(const char *name, map<unsigned,LineInfo>& lines)
        encoding is, so we compute offsets in terms of UTF-8 multibytes here.
        NOTE: All the documentation on the etags file format that I could find
        indicates that Emacs wants byte offsets here, but that doesn't seem to
-       be true; the UTF-8 multibyte offsets appears to work fine. */
+       be true; the UTF-8 multibyte offsets appear to work fine. */
     *q++ = 0; offs += u8strlen(p)+1;
     lines[++line] = LineInfo(offs, q);
     p = q;
   }
   return buf;
+}
+
+struct CtagInfo {
+  const char *tag, *file;
+  unsigned line;
+  CtagInfo(const char *t, const char *f, unsigned l)
+    : tag(t), file(f), line(l) {}
+};
+
+bool ctag_cmp(const CtagInfo& x, const CtagInfo& y)
+{
+  int ret = strcmp(x.tag, y.tag);
+  if (ret != 0) return ret<0;
+  ret = strcmp(x.file, y.file);
+  if (ret != 0) return ret<0;
+  return x.line<y.line;
 }
 
 void interpreter::print_tags()
@@ -1129,8 +1145,26 @@ void interpreter::print_tags()
 	  << sout.str();
     }
   } else if (ctags) {
-    cerr << "ctags format not implemented yet, sorry.\n";
-    exit(1);
+    list<CtagInfo> ctags;
+    for (list<string>::const_iterator it = tag_files.begin(),
+	   end = tag_files.end(); it != end; it++) {
+      const string& filename = *it;
+      const list<TagInfo>& tags = tag_list[filename];
+      if (tags.empty()) continue;
+      for (list<TagInfo>::const_iterator it = tags.begin(), end = tags.end();
+	   it != end; it++) {
+	const TagInfo& info = *it;
+	ctags.push_back(CtagInfo(info.tag.c_str(), filename.c_str(),
+				 info.line));
+      }
+    }
+    ctags.sort(ctag_cmp);
+    ofstream out("tags");
+    for (list<CtagInfo>::const_iterator it = ctags.begin(), end = ctags.end();
+	 it != end; it++) {
+      const CtagInfo& info = *it;
+      out << info.tag << "\t" << info.file << "\t" << info.line << endl;
+    }
   }
 }
 
