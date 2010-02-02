@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<meta name="generator" content="Docutils 0.7: http://docutils.sourceforge.net/" />
+<meta name="generator" content="Docutils 0.5: http://docutils.sourceforge.net/" />
 <title>Pure-GLPK - GLPK interface for the Pure programming language</title>
 <meta name="author" content="Jiri Spitz &lt;jiri.spitz&#64;bluetone.cz&gt;" />
 <meta name="date" content="2010-02-02" />
@@ -11,7 +11,7 @@
 
 /*
 :Author: David Goodger (goodger@python.org)
-:Id: $Id: html4css1.css 5951 2009-05-18 18:03:10Z milde $
+:Id: $Id: html4css1.css 5196 2007-06-03 20:25:28Z wiemann $
 :Copyright: This stylesheet has been placed in the public domain.
 
 Default cascading style sheet for the HTML output of Docutils.
@@ -159,32 +159,11 @@ h2.subtitle {
 hr.docutils {
   width: 75% }
 
-img.align-left, .figure.align-left{
-  clear: left ;
-  float: left ;
-  margin-right: 1em }
+img.align-left {
+  clear: left }
 
-img.align-right, .figure.align-right {
-  clear: right ;
-  float: right ;
-  margin-left: 1em }
-
-.align-left {
-  text-align: left }
-
-.align-center {
-  clear: both ;
-  text-align: center }
-
-.align-right {
-  text-align: right }
-
-/* reset inner alignment in figures */
-div.align-right {
-  text-align: left }
-
-/* div.align-center * { */
-/*   text-align: left } */
+img.align-right {
+  clear: right }
 
 ol.simple, ul.simple {
   margin-bottom: 1em }
@@ -239,7 +218,8 @@ p.topic-title {
 pre.address {
   margin-bottom: 0 ;
   margin-top: 0 ;
-  font: inherit }
+  font-family: serif ;
+  font-size: 100% }
 
 pre.literal-block, pre.doctest-block {
   margin-left: 2em ;
@@ -607,7 +587,7 @@ in a variety of formats, using the docutils text formatting system
 (http://docutils.sourceforge.net/). -->
 <div class="section" id="installation">
 <h1><a class="toc-backref" href="#id1">1&nbsp;&nbsp;&nbsp;Installation</a></h1>
-<p>Run <tt class="docutils literal">make</tt> to compile the module and <tt class="docutils literal">make install</tt> (as root) to install
+<p>Run <tt class="docutils literal"><span class="pre">make</span></tt> to compile the module and <tt class="docutils literal"><span class="pre">make</span> <span class="pre">install</span></tt> (as root) to install
 it in the Pure library directory. This requires GNU make, and of course you
 need to have Pure installed.</p>
 <p>The default make options suppose that GLPK was configured with the following
@@ -626,11 +606,11 @@ within the GNU MathProg language translator.</li>
 <li>ltdl dlopen library - must be enabled together with any of ODBC, zlib or
 MySQL.</li>
 </ul>
-<p><tt class="docutils literal">make</tt> tries to guess your Pure installation directory and platform-specific
+<p><tt class="docutils literal"><span class="pre">make</span></tt> tries to guess your Pure installation directory and platform-specific
 setup. If it gets this wrong, you can set some variables manually. In
-particular, <tt class="docutils literal">make install <span class="pre">prefix=/usr</span></tt> sets the installation prefix, and
-<tt class="docutils literal">make <span class="pre">PIC=-fPIC</span></tt> or some similar flag might be needed for compilation on 64
-bit systems. The variable <tt class="docutils literal">ODBCLIB</tt> specifies the ODBC library to be linked
+particular, <tt class="docutils literal"><span class="pre">make</span> <span class="pre">install</span> <span class="pre">prefix=/usr</span></tt> sets the installation prefix, and
+<tt class="docutils literal"><span class="pre">make</span> <span class="pre">PIC=-fPIC</span></tt> or some similar flag might be needed for compilation on 64
+bit systems. The variable <tt class="docutils literal"><span class="pre">ODBCLIB</span></tt> specifies the ODBC library to be linked
 with. The default value is <tt class="docutils literal"><span class="pre">ODBCLIB=-lodbc</span></tt>. Please see the Makefile for
 details.</p>
 </div>
@@ -643,14 +623,14 @@ the most common errors like indices out of bounds. On such an error an
 appropriate message is returned to the interpreter. The less common errors
 are still trapped by the GLPK library.</p>
 <p>When one of the most common errors occurs, an error term of the form
-<tt class="docutils literal"><span class="pre">glp::error</span> message</tt> will be returned, which specifies what kind of error
+<tt class="docutils literal"><span class="pre">glp::error</span> <span class="pre">message</span></tt> will be returned, which specifies what kind of error
 happend. For instance, an index out of boundsd will cause a report like the
 following:</p>
-<p><tt class="docutils literal"><span class="pre">glp::error</span> &quot;[Pure GLPK error] row index out of bounds&quot;</tt></p>
+<p><tt class="docutils literal"><span class="pre">glp::error</span> <span class="pre">&quot;[Pure</span> <span class="pre">GLPK</span> <span class="pre">error]</span> <span class="pre">row</span> <span class="pre">index</span> <span class="pre">out</span> <span class="pre">of</span> <span class="pre">bounds&quot;</span></tt></p>
 <p>You can check for such return values and take some appropriate action. By
 redefining <tt class="docutils literal"><span class="pre">glp::error</span></tt> accordingly, you can also have it generate exceptions
 or print an error message. For instance:</p>
-<p><tt class="docutils literal"><span class="pre">glp::error</span> message = fprintf stderr &quot;%s\n&quot; message $$ ();</tt></p>
+<p><tt class="docutils literal"><span class="pre">glp::error</span> <span class="pre">message</span> <span class="pre">=</span> <span class="pre">fprintf</span> <span class="pre">stderr</span> <span class="pre">&quot;%s\n&quot;</span> <span class="pre">message</span> <span class="pre">$$</span> <span class="pre">();</span></tt></p>
 <p><strong>NOTE:</strong> When redefining <tt class="docutils literal"><span class="pre">glp::error</span></tt> in this manner, you should be aware
 that the return value of <tt class="docutils literal"><span class="pre">glp::error</span></tt> is what will be returned by the other
 operations of this module in case of an error condition. These return values
@@ -670,12 +650,12 @@ can be found in the examples directory.</p>
 </div>
 <div class="section" id="interface-description">
 <h1><a class="toc-backref" href="#id4">4&nbsp;&nbsp;&nbsp;Interface description</a></h1>
-<p>Most GLPK functions and symbols live in the namespace <tt class="docutils literal">glp</tt>. There are a few
-functions and symbols in the namespace <tt class="docutils literal">lpx</tt>. These functions and symbols
+<p>Most GLPK functions and symbols live in the namespace <tt class="docutils literal"><span class="pre">glp</span></tt>. There are a few
+functions and symbols in the namespace <tt class="docutils literal"><span class="pre">lpx</span></tt>. These functions and symbols
 are likely to be removed and replaced by new ones in the future.</p>
-<p>In general, when you replace the <tt class="docutils literal">glp_</tt> prefix from the GLPK Reference Manual
-with the namespace specification <tt class="docutils literal">glp::</tt> then you receive the function name
-in this module. The same is valid for <tt class="docutils literal">lpx_</tt> and <tt class="docutils literal">lpx::</tt>. The symbolic
+<p>In general, when you replace the <tt class="docutils literal"><span class="pre">glp_</span></tt> prefix from the GLPK Reference Manual
+with the namespace specification <tt class="docutils literal"><span class="pre">glp::</span></tt> then you receive the function name
+in this module. The same is valid for <tt class="docutils literal"><span class="pre">lpx_</span></tt> and <tt class="docutils literal"><span class="pre">lpx::</span></tt>. The symbolic
 constants are converted into lower case in this module, again obeying the
 same prefix rules.</p>
 </div>
@@ -726,7 +706,7 @@ glp::set_prob_name lp name
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::set_prob_name lp &quot;Testing problem&quot;;
@@ -755,7 +735,7 @@ glp::set_obj_name lp name
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::set_obj_name lp &quot;Total costs&quot;;
@@ -796,7 +776,7 @@ glp::set_obj_dir lp direction
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::set_obj_dir lp glp::min;
@@ -887,7 +867,7 @@ glp::set_row_name lp (rowindex, rowname)
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::set_row_name lp (3, &quot;The third row&quot;);
@@ -918,7 +898,7 @@ glp::set_col_name lp (colindex, colname)
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::set_col_name lp (3, &quot;The third column&quot;);
@@ -974,9 +954,9 @@ glp::set_row_bnds lp (rowindex, rowtype, lowerbound, upperbound)
 </blockquote>
 <dl class="docutils">
 <dt><strong>Returns</strong>:</dt>
-<dd><tt class="docutils literal">()</tt></dd>
+<dd><tt class="docutils literal"><span class="pre">()</span></tt></dd>
 <dt><strong>Example</strong>::</dt>
-<dd><tt class="docutils literal"><span class="pre">glp::set_row_bnds</span> lp (3, <span class="pre">glp::up,</span> 0.0, 150.0);</tt></dd>
+<dd><tt class="docutils literal"><span class="pre">glp::set_row_bnds</span> <span class="pre">lp</span> <span class="pre">(3,</span> <span class="pre">glp::up,</span> <span class="pre">0.0,</span> <span class="pre">150.0);</span></tt></dd>
 </dl>
 </div>
 <div class="section" id="set-change-column-bounds">
@@ -1027,7 +1007,7 @@ glp::set_col_bnds lp (colindex, coltype, lowerbound, upperbound)
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::set_col_bnds lp (3, glp::db, 100.0, 150.0);
@@ -1057,7 +1037,7 @@ glp::set_obj_coef lp (colindex, coefficient)
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::set_obj_coef lp (3, 15.8);
@@ -1090,7 +1070,7 @@ indices is not important, duplicates are <strong>not</strong> allowed</td>
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::set_mat_row lp (3, [(1, 3.0), (4, 5.2)]);
@@ -1123,7 +1103,7 @@ indices is not important, duplicates are <strong>not</strong> allowed</td>
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::set_mat_col lp (2, [(4, 2.0), (2, 1.5)]);
@@ -1154,7 +1134,7 @@ important, duplicates are <strong>not</strong> allowed</td>
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::load_matrix lp [(1, 3, 5.0), (2, 2, 3.5), (3, 1, -2.0), (3, 2, 1.0)];
@@ -1205,7 +1185,7 @@ important</td>
 </blockquote>
 <p><strong>Remark:</strong></p>
 <blockquote>
-Notice, that <tt class="docutils literal">k</tt> counts from 1, whereas list members are counted from 0.</blockquote>
+Notice, that <tt class="docutils literal"><span class="pre">k</span></tt> counts from 1, whereas list members are counted from 0.</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::check_dup 3 3  [(1, 3), (2, 2), (3, 1), (2, 2)];
@@ -1232,7 +1212,7 @@ glp::sort_matrix lp
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::sort_matrix lp;
@@ -1262,7 +1242,7 @@ important, duplicates are <strong>not</strong> allowed</td>
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Remark:</strong></p>
 <blockquote>
 Deleting rows involves changing ordinal numbers of other rows
@@ -1298,7 +1278,7 @@ important, duplicates are <strong>not</strong> allowed</td>
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Remark:</strong></p>
 <blockquote>
 Deleting columns involves changing ordinal numbers of other columns
@@ -1349,7 +1329,7 @@ exist)</p>
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::copy_prob lp_dest lp_src glp::on;
@@ -1377,7 +1357,7 @@ the function call</td>
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::erase_prob lp;
@@ -1405,7 +1385,7 @@ the function call</td>
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::delete_prob lp;
@@ -1977,7 +1957,7 @@ glp::create_index lp
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::create_index lp;
@@ -2068,7 +2048,7 @@ glp::delete_index lp
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::delete:index lp;
@@ -2102,7 +2082,7 @@ glp::set_rii lp (rowindex, coefficient)
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::set_rii lp (3, 258.6);
@@ -2133,7 +2113,7 @@ glp::set_sjj lp (colindex, coefficient)
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::set_sjj lp (2, 12.8);
@@ -2239,7 +2219,7 @@ by arithmetic <cite>or</cite>; the possible constants are:</p>
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::scale_prob lp (glp::sf_gm || glp::sf_2n);
@@ -2266,7 +2246,7 @@ glp::unscale_prob lp
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::unscale_prob lp;
@@ -2321,7 +2301,7 @@ equivalent to glp::nl (only in the case of this routine)</td>
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::set_row_stat lp (3, glp::nu);
@@ -2373,7 +2353,7 @@ equivalent to glp::nl (only in the case of this routine)</td>
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::set_col_stat lp (2, glp::bs);
@@ -2400,7 +2380,7 @@ glp::std_basis lp
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::std_basis lp;
@@ -2427,7 +2407,7 @@ glp::adv_basis lp
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::adv_basis lp;
@@ -2454,7 +2434,7 @@ glp::cpx_basis lp
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::cpx_basis lp;
@@ -3521,7 +3501,7 @@ glp::set_col_kind lp (colindex, colkind)
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::set_col_kind lp (1, glp::iv);
@@ -3831,7 +3811,7 @@ the user-defined callback routine</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">glp::on:</th><td class="field-body">use user-defined callback function -
-the function <tt class="docutils literal"><span class="pre">glp::mip_cb</span> tree info</tt>
+the function <tt class="docutils literal"><span class="pre">glp::mip_cb</span> <span class="pre">tree</span> <span class="pre">info</span></tt>
 <strong>must</strong> be defined by the user</td>
 </tr>
 <tr class="field"><th class="field-name">glp::off:</th><td class="field-body">do not use user-defined callback
@@ -3842,7 +3822,7 @@ function</td>
 </td>
 </tr>
 <tr class="field"><th class="field-name">glp::cb_info:</th><td class="field-body"><p class="first">(default: NULL) - transit pointer passed to the
-routine <tt class="docutils literal"><span class="pre">glp::mip_cb</span> tree info</tt> (see above)</p>
+routine <tt class="docutils literal"><span class="pre">glp::mip_cb</span> <span class="pre">tree</span> <span class="pre">info</span></tt> (see above)</p>
 </td>
 </tr>
 <tr class="field"><th class="field-name">glp::cb_size:</th><td class="field-body"><p class="first">(default: 0) - the number of extra (up to 256)
@@ -4259,9 +4239,9 @@ glp::read_mps lp format filename
 </table>
 </td>
 </tr>
-<tr class="field"><th class="field-name">filename:</th><td class="field-body"><p class="first last">file name - if the ﬁle name ends with suﬃx <strong>.gz</strong>,
-the ﬁle is assumed to be compressed, in which case
-the routine glp::read_mps decompresses it “on the ﬂy”</p>
+<tr class="field"><th class="field-name">filename:</th><td class="field-body"><p class="first last">file name - if the file name ends with suffix <strong>.gz</strong>,
+the file is assumed to be compressed, in which case
+the routine glp::read_mps decompresses it “on the fly”</p>
 </td>
 </tr>
 </tbody>
@@ -4310,8 +4290,8 @@ glp::write_mps lp format filename
 </table>
 </td>
 </tr>
-<tr class="field"><th class="field-name">filename:</th><td class="field-body"><p class="first last">file name - if the ﬁle name ends with suﬃx <strong>.gz</strong>,
-the ﬁle is assumed to be compressed, in which case
+<tr class="field"><th class="field-name">filename:</th><td class="field-body"><p class="first last">file name - if the file name ends with suffix <strong>.gz</strong>,
+the file is assumed to be compressed, in which case
 the routine glp_write_mps performs automatic
 compression on writing it</p>
 </td>
@@ -4345,9 +4325,9 @@ glp::read_lp lp filename
 <tbody valign="top">
 <tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
 </tr>
-<tr class="field"><th class="field-name">filename:</th><td class="field-body">file name - if the ﬁle name ends with suﬃx <strong>.gz</strong>,
-the ﬁle is assumed to be compressed, in which case
-the routine glp::read_lp decompresses it “on the ﬂy”</td>
+<tr class="field"><th class="field-name">filename:</th><td class="field-body">file name - if the file name ends with suffix <strong>.gz</strong>,
+the file is assumed to be compressed, in which case
+the routine glp::read_lp decompresses it “on the fly”</td>
 </tr>
 </tbody>
 </table>
@@ -4379,8 +4359,8 @@ glp::write_lp lp filename
 <tbody valign="top">
 <tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
 </tr>
-<tr class="field"><th class="field-name">filename:</th><td class="field-body">file name - if the ﬁle name ends with suﬃx <strong>.gz</strong>,
-the ﬁle is assumed to be compressed, in which case
+<tr class="field"><th class="field-name">filename:</th><td class="field-body">file name - if the file name ends with suffix <strong>.gz</strong>,
+the file is assumed to be compressed, in which case
 the routine glp::write_lp performs automatic
 compression on writing it</td>
 </tr>
@@ -4413,9 +4393,9 @@ glp::read_prob lp filename
 <tbody valign="top">
 <tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
 </tr>
-<tr class="field"><th class="field-name">filename:</th><td class="field-body">file name - if the ﬁle name ends with suﬃx <strong>.gz</strong>,
-the ﬁle is assumed to be compressed, in which case
-the routine glp::read_prob decompresses it “on the ﬂy”</td>
+<tr class="field"><th class="field-name">filename:</th><td class="field-body">file name - if the file name ends with suffix <strong>.gz</strong>,
+the file is assumed to be compressed, in which case
+the routine glp::read_prob decompresses it “on the fly”</td>
 </tr>
 </tbody>
 </table>
@@ -4447,8 +4427,8 @@ glp::write_prob lp filename
 <tbody valign="top">
 <tr class="field"><th class="field-name">lp:</th><td class="field-body">pointer to the LP problem object</td>
 </tr>
-<tr class="field"><th class="field-name">filename:</th><td class="field-body">file name - if the ﬁle name ends with suﬃx <strong>.gz</strong>,
-the ﬁle is assumed to be compressed, in which case
+<tr class="field"><th class="field-name">filename:</th><td class="field-body">file name - if the file name ends with suffix <strong>.gz</strong>,
+the file is assumed to be compressed, in which case
 the routine glp::write_prob performs automatic
 compression on writing it</td>
 </tr>
@@ -4612,7 +4592,7 @@ glp::mpl_build_prob tranobject lp
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::mpl_build_prob mpt lp;
@@ -4686,7 +4666,7 @@ glp::mpl_free_wksp tranobject
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::mpl_free_wksp mpt;
@@ -4807,7 +4787,7 @@ glp::print_ranges lp indices filename
 If 1 ≤ k ≤ m, the basic variable is k-th auxiliary variable,
 and if m + 1 ≤ k ≤ m + n, the non-basic variable is (k − m)-th
 structural variable, where m is the number of rows and n is the
-number of columns in the speciﬁed problem object. An empty lists
+number of columns in the specified problem object. An empty lists
 means printing report for all rows and columns.</td>
 </tr>
 <tr class="field"><th class="field-name">filename:</th><td class="field-body">file name</td>
@@ -5186,7 +5166,7 @@ glp::get_bfcp lp
 </tr>
 <tr class="field"><th class="field-name">glp::lu_size:</th><td class="field-body"><p class="first">the initial size of the Sparse Vector Area, in non-zeros,
 used on computing LU-factorization of the basis matrix for
-the ﬁrst time - if this parameter is set to 0, the initial
+the first time - if this parameter is set to 0, the initial
 SVA size is determined automatically</p>
 </td>
 </tr>
@@ -5195,7 +5175,7 @@ used on computing LU-factorization of the basis matrix</p>
 </td>
 </tr>
 <tr class="field"><th class="field-name">glp::piv_lim:</th><td class="field-body"><p class="first">this parameter is used on computing
-LU-factorization of the basis matrix and speciﬁes how many
+LU-factorization of the basis matrix and specifies how many
 pivot candidates needs to be considered on choosing a pivot
 element, piv_lim ≥ 1</p>
 </td>
@@ -5223,7 +5203,7 @@ allowable on computing LU-factorization of the basis matrix</p>
 </td>
 </tr>
 <tr class="field"><th class="field-name">glp::nfs_max:</th><td class="field-body"><p class="first">maximal number of additional row-like factors (entries of
-the eta ﬁle), nfs_max ≥ 1, which can be added to
+the eta file), nfs_max ≥ 1, which can be added to
 LU-factorization of the basis matrix on updating it with
 the Forrest–Tomlin technique</p>
 </td>
@@ -5293,7 +5273,7 @@ glp::set_bfcp lp options
 </tr>
 <tr class="field"><th class="field-name">glp::lu_size:</th><td class="field-body"><p class="first">(default: 0) - the initial size of the Sparse Vector Area,
 in non-zeros, used on computing LU-factorization of the
-basis matrix for the ﬁrst time - if this parameter is set
+basis matrix for the first time - if this parameter is set
 to 0, the initial SVA size is determined automatically</p>
 </td>
 </tr>
@@ -5303,7 +5283,7 @@ basis matrix.</p>
 </td>
 </tr>
 <tr class="field"><th class="field-name">glp::piv_lim:</th><td class="field-body"><p class="first">(default: 4) - this parameter is used on computing
-LU-factorization of the basis matrix and speciﬁes how many
+LU-factorization of the basis matrix and specifies how many
 pivot candidates needs to be considered on choosing a pivot
 element, piv_lim ≥ 1</p>
 </td>
@@ -5332,7 +5312,7 @@ basis matrix.</p>
 </td>
 </tr>
 <tr class="field"><th class="field-name">glp::nfs_max:</th><td class="field-body"><p class="first">(default: 50) - maximal number of additional row-like
-factors (entries of the eta ﬁle), nfs_max ≥ 1, which can
+factors (entries of the eta file), nfs_max ≥ 1, which can
 be added to LU-factorization of the basis matrix
 on updating it with the Forrest–Tomlin technique.</p>
 </td>
@@ -5367,7 +5347,7 @@ is supplied.</p>
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt> if all options are OK, otherwise returns a list of bad options</blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt> if all options are OK, otherwise returns a list of bad options</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp_set_bfcp lp [(glp::type, glp::bf_ft), (glp::piv_tol, 0.15)];
@@ -5431,7 +5411,7 @@ glp::get_row_bind lp rowindex
 This routine returns the index k of basic variable (xB )k, 1 ≤ k ≤ m,
 which is i-th auxiliary variable (that is, the auxiliary variable
 corresponding to i-th row), 1 ≤ i ≤ m, in the current basis associated with
-the speciﬁed problem object, where m is the number of rows. However, if
+the specified problem object, where m is the number of rows. However, if
 i-th auxiliary variable is non-basic, the routine returns zero.</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
@@ -5464,7 +5444,7 @@ glp::get_col_bind lp colindex
 This routine returns the index k of basic variable (xB )k, 1 ≤ k ≤ m,
 which is j-th structural variable (that is, the structural variable
 corresponding to j-th column), 1 ≤ j ≤ n, in the current basis associated
-with the speciﬁed problem object, where m is the number of rows, n is the
+with the specified problem object, where m is the number of rows, n is the
 number of columns. However, if j-th structural variable is non-basic, the
 routine returns zero.</blockquote>
 <p><strong>Example</strong>:</p>
@@ -5601,7 +5581,7 @@ glp::eval_tab_row lp k
 if 1 ≤ k ≤ m, the basic variable is k-th auxiliary variable,
 and if m + 1 ≤ k ≤ m + n, the basic variable is (k − m)-th structural
 variable, where m is the number of rows and n is the number of columns
-in the speciﬁed problem object (the basis factorization must exist)</td>
+in the specified problem object (the basis factorization must exist)</td>
 </tr>
 </tbody>
 </table>
@@ -5635,7 +5615,7 @@ glp::eval_tab_col lp k
 if 1 ≤ k ≤ m, the non-basic variable is k-th auxiliary variable,
 and if m + 1 ≤ k ≤ m + n, the non-basic variable is (k − m)-th
 structural variable, where m is the number of rows and n is the
-number of columns in the speciﬁed problem object (the basis
+number of columns in the specified problem object (the basis
 factorization must exist)</td>
 </tr>
 </tbody>
@@ -5670,7 +5650,7 @@ glp::transform_row lp rowvector
 (k, value): if 1 ≤ k ≤ m, the non-basic variable is k-th
 auxiliary variable, and if m + 1 ≤ k ≤ m + n, the non-basic
 variable is (k − m)-th structural variable, where m is the number
-of rows and n is the number of columns in the speciﬁed problem
+of rows and n is the number of columns in the specified problem
 object (the basis factorization must exist)</td>
 </tr>
 </tbody>
@@ -5705,7 +5685,7 @@ glp::transform_col lp colvector
 tuples (k, value): if 1 ≤ k ≤ m, the non-basic variable is k-th
 auxiliary variable, and if m + 1 ≤ k ≤ m + n, the non-basic
 variable is (k − m)-th structural variable, where m is the number
-of rows and n is the number of columns in the speciﬁed problem
+of rows and n is the number of columns in the specified problem
 object (the basis factorization must exist)</td>
 </tr>
 </tbody>
@@ -5740,11 +5720,11 @@ glp::prim_rtest lp colvector dir eps
 tuples (k, value): if 1 ≤ k ≤ m, the basic variable is k-th
 auxiliary variable, and if m + 1 ≤ k ≤ m + n, the basic variable
 is (k − m)-th structural variable, where m is the number
-of rows and n is the number of columns in the speciﬁed problem
+of rows and n is the number of columns in the specified problem
 object (the basis factorization must exist and the primal
 solution must be feasible)</td>
 </tr>
-<tr class="field"><th class="field-name">dir:</th><td class="field-body">speciﬁes in which direction the variable y changes on entering the
+<tr class="field"><th class="field-name">dir:</th><td class="field-body">specifies in which direction the variable y changes on entering the
 basis: +1 means increasing, −1 means decreasing</td>
 </tr>
 <tr class="field"><th class="field-name">eps:</th><td class="field-body">relative tolerance (small positive number) used to skip small
@@ -5783,11 +5763,11 @@ glp::dual_rtest lp rowvector dir eps
 tuples (k, value): if 1 ≤ k ≤ m, the non-basic variable is k-th
 auxiliary variable, and if m + 1 ≤ k ≤ m + n, the non-basic
 variable is (k − m)-th structural variable, where m is the number
-of rows and n is the number of columns in the speciﬁed problem
+of rows and n is the number of columns in the specified problem
 object (the basis factorization must exist and the dual
 solution must be feasible)</td>
 </tr>
-<tr class="field"><th class="field-name">dir:</th><td class="field-body">speciﬁes in which direction the variable y changes on leaving
+<tr class="field"><th class="field-name">dir:</th><td class="field-body">specifies in which direction the variable y changes on leaving
 the basis: +1 means increasing, −1 means decreasing</td>
 </tr>
 <tr class="field"><th class="field-name">eps:</th><td class="field-body">relative tolerance (small positive number) used to skip small
@@ -5825,7 +5805,7 @@ glp::analyze_bound lp k
 <tr class="field"><th class="field-name">k:</th><td class="field-body">if 1 ≤ k ≤ m, the non-basic variable is k-th auxiliary variable,
 and if m + 1 ≤ k ≤ m + n, the non-basic variable is (k − m)-th
 structural variable, where m is the number of rows and n is the
-number of columns in the speciﬁed problem object (the basis
+number of columns in the specified problem object (the basis
 factorization must exist and the solution must be optimal)</td>
 </tr>
 </tbody>
@@ -5843,7 +5823,7 @@ remains primal feasible and thus optimal. -DBL_MAX means that the
 active bound has no lower limit.</td>
 </tr>
 <tr class="field"><th class="field-name">var1:</th><td class="field-body">the ordinal number of an auxiliary (1 to m) or structural
-(m + 1 to m + n) basic variable, which reaches its bound ﬁrst
+(m + 1 to m + n) basic variable, which reaches its bound first
 and thereby limits further decreasing the active bound being
 analyzed. If value1 = -DBL_MAX, var1 is set to 0.</td>
 </tr>
@@ -5852,7 +5832,7 @@ remains primal feasible and thus optimal. +DBL_MAX means that the
 active bound has no upper limit.</td>
 </tr>
 <tr class="field"><th class="field-name">var2:</th><td class="field-body">the ordinal number of an auxiliary (1 to m) or structural
-(m + 1 to m + n) basic variable, which reaches its bound ﬁrst
+(m + 1 to m + n) basic variable, which reaches its bound first
 and thereby limits further increasing the active bound being
 analyzed. If value2 = +DBL_MAX, var2 is set to 0.</td>
 </tr>
@@ -5883,7 +5863,7 @@ glp::analyze_coef lp k
 <tr class="field"><th class="field-name">k:</th><td class="field-body">if 1 ≤ k ≤ m, the basic variable is k-th auxiliary variable,
 and if m + 1 ≤ k ≤ m + n, the non-basic variable is (k − m)-th
 structural variable, where m is the number of rows and n is the
-number of columns in the speciﬁed problem object (the basis
+number of columns in the specified problem object (the basis
 factorization must exist and the solution must be optimal)</td>
 </tr>
 </tbody>
@@ -5896,18 +5876,18 @@ factorization must exist and the solution must be optimal)</td>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">coef1:</th><td class="field-body">the minimal value of the objective coeﬃcient, at which the
+<tr class="field"><th class="field-name">coef1:</th><td class="field-body">the minimal value of the objective coefficient, at which the
 basis still remains dual feasible and thus optimal.
--DBL_MAX means that the objective coeﬃcient has no lower limit.</td>
+-DBL_MAX means that the objective coefficient has no lower limit.</td>
 </tr>
 <tr class="field"><th class="field-name">var1:</th><td class="field-body">is the ordinal number of an auxiliary (1 to m) or structural
 (m + 1 to m + n) non-basic variable, whose reduced cost reaches
-its zero bound ﬁrst and thereby limits further decreasing the
-objective coeﬃcient being analyzed. If coef1 = -DBL_MAX,
+its zero bound first and thereby limits further decreasing the
+objective coefficient being analyzed. If coef1 = -DBL_MAX,
 var1 is set to 0.</td>
 </tr>
 <tr class="field"><th class="field-name">value1:</th><td class="field-body">value of the basic variable being analyzed in an adjacent basis,
-which is deﬁned as follows. Let the objective coeﬃcient reaches
+which is defined as follows. Let the objective coefficient reaches
 its minimal value (coef1) and continues decreasing. Then the
 reduced cost of the limiting non-basic variable (var1) becomes dual
 infeasible and the current basis becomes non-optimal that forces
@@ -5919,19 +5899,19 @@ as if it were free (unbounded) variable, so it cannot leave the
 basis. It may happen that no dual feasible adjacent basis exists,
 in which case value1 is set to -DBL_MAX or +DBL_MAX.</td>
 </tr>
-<tr class="field"><th class="field-name">coef2:</th><td class="field-body">the maximal value of the objective coeﬃcient, at which the
+<tr class="field"><th class="field-name">coef2:</th><td class="field-body">the maximal value of the objective coefficient, at which the
 basis still remains dual feasible and thus optimal. +DBL_MAX
-means that the objective coeﬃcient has no upper limit.</td>
+means that the objective coefficient has no upper limit.</td>
 </tr>
 <tr class="field"><th class="field-name">var2:</th><td class="field-body">the ordinal number of an auxiliary (1 to m) or structural
 (m + 1 to m + n) non-basic variable, whose reduced cost reaches
-its zero bound ﬁrst and thereby limits further increasing the
-objective coeﬃcient being analyzed. If coef2 = +DBL_MAX, var2
+its zero bound first and thereby limits further increasing the
+objective coefficient being analyzed. If coef2 = +DBL_MAX, var2
 is set to 0.</td>
 </tr>
 <tr class="field"><th class="field-name">value2:</th><td class="field-body">value of the basic variable being analyzed in an adjacent basis,
-which is deﬁned exactly in the same way as value1 above with
-exception that now the objective coeﬃcient is increasing.</td>
+which is defined exactly in the same way as value1 above with
+exception that now the objective coefficient is increasing.</td>
 </tr>
 </tbody>
 </table>
@@ -6053,7 +6033,7 @@ glp::ios_row_attr tree rowindex
 <tr class="field"><th class="field-name">level:</th><td class="field-body"><p class="first">subproblem level at which the row was created</p>
 </td>
 </tr>
-<tr class="field"><th class="field-name">origin:</th><td class="field-body"><p class="first">the row origin ﬂag - one of the following:</p>
+<tr class="field"><th class="field-name">origin:</th><td class="field-body"><p class="first">the row origin flag - one of the following:</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -6491,9 +6471,9 @@ glp::ios_add_row tree (name, klass, flags, row, type, rhs)
 <tr class="field"><th class="field-name">name:</th><td class="field-body"><p class="first">symbolic name of the constraint</p>
 </td>
 </tr>
-<tr class="field"><th class="field-name">klass:</th><td class="field-body"><p class="first">speciﬁes the constraint class, which must be either zero or a number
+<tr class="field"><th class="field-name">klass:</th><td class="field-body"><p class="first">specifies the constraint class, which must be either zero or a number
 in the range from 101 to 200. The application may use this attribute
-to distinguish between cutting plane constraints of diﬀerent classes.</p>
+to distinguish between cutting plane constraints of different classes.</p>
 </td>
 </tr>
 <tr class="field"><th class="field-name">flags:</th><td class="field-body"><p class="first">currently is not used and must be zero</p>
@@ -6674,7 +6654,7 @@ glp::add_vertices graph count
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-The routine returns the ordinal number of the ﬁrst new
+The routine returns the ordinal number of the first new
 vertex added to the graph.</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
@@ -6856,7 +6836,7 @@ glp::weak_comp graph v_num
 <tbody valign="top">
 <tr class="field"><th class="field-name">graph:</th><td class="field-body">pointer to the graph object</td>
 </tr>
-<tr class="field"><th class="field-name">v_num:</th><td class="field-body">oﬀset of the ﬁeld of type int in the vertex data block, to which
+<tr class="field"><th class="field-name">v_num:</th><td class="field-body">offset of the field of type int in the vertex data block, to which
 the routine stores the number of a weakly connected component
 containing that vertex - if v_num &lt; 0, no component numbers are
 stored</td>
@@ -6888,7 +6868,7 @@ glp::strong_comp graph v_num
 <tbody valign="top">
 <tr class="field"><th class="field-name">graph:</th><td class="field-body">pointer to the graph object</td>
 </tr>
-<tr class="field"><th class="field-name">v_num:</th><td class="field-body">oﬀset of the ﬁeld of type int in the vertex data block, to which
+<tr class="field"><th class="field-name">v_num:</th><td class="field-body">offset of the field of type int in the vertex data block, to which
 the routine stores the number of a strongly connected component
 containing that vertex - if v_num &lt; 0, no component numbers are
 stored</td>
@@ -6922,26 +6902,26 @@ glp::read_mincost graph v_rhs a_low a_cap a_cost filename
 <tbody valign="top">
 <tr class="field"><th class="field-name">graph:</th><td class="field-body">pointer to the graph object</td>
 </tr>
-<tr class="field"><th class="field-name">v_rhs:</th><td class="field-body">oﬀset of the ﬁeld of type double in the vertex data block,
+<tr class="field"><th class="field-name">v_rhs:</th><td class="field-body">offset of the field of type double in the vertex data block,
 to which the routine stores bi, the supply/demand value -
 if v_rhs &lt; 0, the value is not stored</td>
 </tr>
-<tr class="field"><th class="field-name">a_low:</th><td class="field-body">oﬀset of the ﬁeld of type double in the arc data block,
+<tr class="field"><th class="field-name">a_low:</th><td class="field-body">offset of the field of type double in the arc data block,
 to which the routine stores lij, the lower bound to the
-arc ﬂow - if a_low &lt; 0, the lower bound is not stored</td>
+arc flow - if a_low &lt; 0, the lower bound is not stored</td>
 </tr>
-<tr class="field"><th class="field-name">a_cap:</th><td class="field-body">oﬀset of the ﬁeld of type double in the arc data block,
+<tr class="field"><th class="field-name">a_cap:</th><td class="field-body">offset of the field of type double in the arc data block,
 to which the routine stores uij, the upper bound to the
-arc ﬂow (the arc capacity) - if a_cap &lt; 0, the upper bound
+arc flow (the arc capacity) - if a_cap &lt; 0, the upper bound
 is not stored</td>
 </tr>
-<tr class="field"><th class="field-name">a_cost:</th><td class="field-body">oﬀset of the ﬁeld of type double in the arc data block,
+<tr class="field"><th class="field-name">a_cost:</th><td class="field-body">offset of the field of type double in the arc data block,
 to which the routine stores cij, the per-unit cost of the
-arc ﬂow - if a_cost &lt; 0, the cost is not stored</td>
+arc flow - if a_cost &lt; 0, the cost is not stored</td>
 </tr>
-<tr class="field"><th class="field-name">fname:</th><td class="field-body">the name of a text ﬁle to be read in - if the ﬁle name name
-ends with the suﬃx ‘.gz’, the ﬁle is assumed to be compressed,
-in which case the routine decompresses it “on the ﬂy”</td>
+<tr class="field"><th class="field-name">fname:</th><td class="field-body">the name of a text file to be read in - if the file name name
+ends with the suffix ‘.gz’, the file is assumed to be compressed,
+in which case the routine decompresses it “on the fly”</td>
 </tr>
 </tbody>
 </table>
@@ -6970,26 +6950,26 @@ glp::write_mincost graph v_rhs a_low a_cap a_cost fname
 <tbody valign="top">
 <tr class="field"><th class="field-name">graph:</th><td class="field-body">pointer to the graph object</td>
 </tr>
-<tr class="field"><th class="field-name">v_rhs:</th><td class="field-body">oﬀset of the ﬁeld of type double in the vertex data block,
+<tr class="field"><th class="field-name">v_rhs:</th><td class="field-body">offset of the field of type double in the vertex data block,
 to which the routine stores bi, the supply/demand value -
 if v_rhs &lt; 0, the value is not stored</td>
 </tr>
-<tr class="field"><th class="field-name">a_low:</th><td class="field-body">oﬀset of the ﬁeld of type double in the arc data block,
+<tr class="field"><th class="field-name">a_low:</th><td class="field-body">offset of the field of type double in the arc data block,
 to which the routine stores lij, the lower bound to the
-arc ﬂow - if a_low &lt; 0, the lower bound is not stored</td>
+arc flow - if a_low &lt; 0, the lower bound is not stored</td>
 </tr>
-<tr class="field"><th class="field-name">a_cap:</th><td class="field-body">oﬀset of the ﬁeld of type double in the arc data block,
+<tr class="field"><th class="field-name">a_cap:</th><td class="field-body">offset of the field of type double in the arc data block,
 to which the routine stores uij, the upper bound to the
-arc ﬂow (the arc capacity) - if a_cap &lt; 0, the upper bound
+arc flow (the arc capacity) - if a_cap &lt; 0, the upper bound
 is not stored</td>
 </tr>
-<tr class="field"><th class="field-name">a_cost:</th><td class="field-body">oﬀset of the ﬁeld of type double in the arc data block,
+<tr class="field"><th class="field-name">a_cost:</th><td class="field-body">offset of the field of type double in the arc data block,
 to which the routine stores cij, the per-unit cost of the
-arc ﬂow - if a_cost &lt; 0, the cost is not stored</td>
+arc flow - if a_cost &lt; 0, the cost is not stored</td>
 </tr>
-<tr class="field"><th class="field-name">fname:</th><td class="field-body">the name of a text ﬁle to be written out - if the ﬁle name name
-ends with the suﬃx ‘.gz’, the ﬁle is assumed to be compressed,
-in which case the routine compresses it “on the ﬂy”</td>
+<tr class="field"><th class="field-name">fname:</th><td class="field-body">the name of a text file to be written out - if the file name name
+ends with the suffix ‘.gz’, the file is assumed to be compressed,
+in which case the routine compresses it “on the fly”</td>
 </tr>
 </tbody>
 </table>
@@ -7036,25 +7016,25 @@ to symbolic names of the LP problem object components</td>
 </table>
 </td>
 </tr>
-<tr class="field"><th class="field-name">v_rhs:</th><td class="field-body"><p class="first">oﬀset of the ﬁeld of type double in the vertex data block,
+<tr class="field"><th class="field-name">v_rhs:</th><td class="field-body"><p class="first">offset of the field of type double in the vertex data block,
 to which the routine stores bi, the supply/demand value -
 if v_rhs &lt; 0, it is assumed bi = 0 for all nodes</p>
 </td>
 </tr>
-<tr class="field"><th class="field-name">a_low:</th><td class="field-body"><p class="first">oﬀset of the ﬁeld of type double in the arc data block,
+<tr class="field"><th class="field-name">a_low:</th><td class="field-body"><p class="first">offset of the field of type double in the arc data block,
 to which the routine stores lij, the lower bound to the
-arc ﬂow - if a_low &lt; 0, it is assumed lij = 0 for all arcs</p>
+arc flow - if a_low &lt; 0, it is assumed lij = 0 for all arcs</p>
 </td>
 </tr>
-<tr class="field"><th class="field-name">a_cap:</th><td class="field-body"><p class="first">oﬀset of the ﬁeld of type double in the arc data block,
+<tr class="field"><th class="field-name">a_cap:</th><td class="field-body"><p class="first">offset of the field of type double in the arc data block,
 to which the routine stores uij, the upper bound to the
-arc ﬂow (the arc capacity) - if a_cap &lt; 0,it is assumed
+arc flow (the arc capacity) - if a_cap &lt; 0,it is assumed
 uij = 1 for all arcs, value of DBL_MAX means an uncapacitated arc</p>
 </td>
 </tr>
-<tr class="field"><th class="field-name">a_cost:</th><td class="field-body"><p class="first last">oﬀset of the ﬁeld of type double in the arc data block,
+<tr class="field"><th class="field-name">a_cost:</th><td class="field-body"><p class="first last">offset of the field of type double in the arc data block,
 to which the routine stores cij, the per-unit cost of the
-arc ﬂow - if a_cost &lt; 0, it is assumed cij = 0 for all arcs</p>
+arc flow - if a_cost &lt; 0, it is assumed cij = 0 for all arcs</p>
 </td>
 </tr>
 </tbody>
@@ -7084,30 +7064,30 @@ glp::mincost_okalg graph v_rhs a_low a_cap a_cost a_x v_pi
 <tbody valign="top">
 <tr class="field"><th class="field-name">graph:</th><td class="field-body">pointer to the graph object</td>
 </tr>
-<tr class="field"><th class="field-name">v_rhs:</th><td class="field-body">oﬀset of the ﬁeld of type double in the vertex data block,
+<tr class="field"><th class="field-name">v_rhs:</th><td class="field-body">offset of the field of type double in the vertex data block,
 to which the routine stores bi, the supply/demand value -
 if v_rhs &lt; 0, it is assumed bi = 0 for all nodes</td>
 </tr>
-<tr class="field"><th class="field-name">a_low:</th><td class="field-body">oﬀset of the ﬁeld of type double in the arc data block,
+<tr class="field"><th class="field-name">a_low:</th><td class="field-body">offset of the field of type double in the arc data block,
 to which the routine stores lij, the lower bound to the
-arc ﬂow - if a_low &lt; 0, it is assumed lij = 0 for all arcs</td>
+arc flow - if a_low &lt; 0, it is assumed lij = 0 for all arcs</td>
 </tr>
-<tr class="field"><th class="field-name">a_cap:</th><td class="field-body">oﬀset of the ﬁeld of type double in the arc data block,
+<tr class="field"><th class="field-name">a_cap:</th><td class="field-body">offset of the field of type double in the arc data block,
 to which the routine stores uij, the upper bound to the
-arc ﬂow (the arc capacity) - if a_cap &lt; 0,it is assumed
+arc flow (the arc capacity) - if a_cap &lt; 0,it is assumed
 uij = 1 for all arcs, value of DBL_MAX means an uncapacitated arc</td>
 </tr>
-<tr class="field"><th class="field-name">a_cost:</th><td class="field-body">oﬀset of the ﬁeld of type double in the arc data block,
+<tr class="field"><th class="field-name">a_cost:</th><td class="field-body">offset of the field of type double in the arc data block,
 to which the routine stores cij, the per-unit cost of the
-arc ﬂow - if a_cost &lt; 0, it is assumed cij = 0 for all arcs</td>
+arc flow - if a_cost &lt; 0, it is assumed cij = 0 for all arcs</td>
 </tr>
-<tr class="field"><th class="field-name">a_x:</th><td class="field-body">oﬀset of the ﬁeld of type double in the arc data block,
-to which the routine stores xij, the arc ﬂow found - if a_x &lt; 0,
-the arc ﬂow value is not stored</td>
+<tr class="field"><th class="field-name">a_x:</th><td class="field-body">offset of the field of type double in the arc data block,
+to which the routine stores xij, the arc flow found - if a_x &lt; 0,
+the arc flow value is not stored</td>
 </tr>
-<tr class="field"><th class="field-name">v_pi:</th><td class="field-body">speciﬁes an oﬀset of the ﬁeld of type double in the vertex data block,
+<tr class="field"><th class="field-name">v_pi:</th><td class="field-body">specifies an offset of the field of type double in the vertex data block,
 to which the routine stores πi, the node potential, which is the
-Lagrange multiplier for the corresponding ﬂow conservation
+Lagrange multiplier for the corresponding flow conservation
 equality constraint</td>
 </tr>
 </tbody>
@@ -7115,7 +7095,7 @@ equality constraint</td>
 </blockquote>
 <p><strong>Remark</strong>:</p>
 <blockquote>
-Note that all solution components (the objective value, arc ﬂows, and
+Note that all solution components (the objective value, arc flows, and
 node potentials) computed by the routine are always integer-valued.</blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
@@ -7167,20 +7147,20 @@ glp::netgen graph v_rhs a_cap a_cost parameters
 <tr class="field"><th class="field-name">graph:</th><td class="field-body"><p class="first">pointer to the graph object</p>
 </td>
 </tr>
-<tr class="field"><th class="field-name">v_rhs:</th><td class="field-body"><p class="first">oﬀset of the ﬁeld of type double in the vertex data block,
+<tr class="field"><th class="field-name">v_rhs:</th><td class="field-body"><p class="first">offset of the field of type double in the vertex data block,
 to which the routine stores bi, the supply/demand value -
 if v_rhs &lt; 0, it is assumed bi = 0 for all nodes</p>
 </td>
 </tr>
-<tr class="field"><th class="field-name">a_cap:</th><td class="field-body"><p class="first">oﬀset of the ﬁeld of type double in the arc data block,
+<tr class="field"><th class="field-name">a_cap:</th><td class="field-body"><p class="first">offset of the field of type double in the arc data block,
 to which the routine stores uij, the upper bound to the
-arc ﬂow (the arc capacity) - if a_cap &lt; 0,it is assumed
+arc flow (the arc capacity) - if a_cap &lt; 0,it is assumed
 uij = 1 for all arcs, value of DBL_MAX means an uncapacitated arc</p>
 </td>
 </tr>
-<tr class="field"><th class="field-name">a_cost:</th><td class="field-body"><p class="first">oﬀset of the ﬁeld of type double in the arc data block,
+<tr class="field"><th class="field-name">a_cost:</th><td class="field-body"><p class="first">offset of the field of type double in the arc data block,
 to which the routine stores cij, the per-unit cost of the
-arc ﬂow - if a_cost &lt; 0, it is assumed cij = 0 for all arcs</p>
+arc flow - if a_cost &lt; 0, it is assumed cij = 0 for all arcs</p>
 </td>
 </tr>
 <tr class="field"><th class="field-name">parameters:</th><td class="field-body"><p class="first">tuple of exactly 15 integer numbers with the following meaning:</p>
@@ -7253,20 +7233,20 @@ glp::gridgen graph v_rhs a_cap a_cost parameters
 <tr class="field"><th class="field-name">graph:</th><td class="field-body"><p class="first">pointer to the graph object</p>
 </td>
 </tr>
-<tr class="field"><th class="field-name">v_rhs:</th><td class="field-body"><p class="first">oﬀset of the ﬁeld of type double in the vertex data block,
+<tr class="field"><th class="field-name">v_rhs:</th><td class="field-body"><p class="first">offset of the field of type double in the vertex data block,
 to which the routine stores bi, the supply/demand value -
 if v_rhs &lt; 0, it is assumed bi = 0 for all nodes</p>
 </td>
 </tr>
-<tr class="field"><th class="field-name">a_cap:</th><td class="field-body"><p class="first">oﬀset of the ﬁeld of type double in the arc data block,
+<tr class="field"><th class="field-name">a_cap:</th><td class="field-body"><p class="first">offset of the field of type double in the arc data block,
 to which the routine stores uij, the upper bound to the
-arc ﬂow (the arc capacity) - if a_cap &lt; 0,it is assumed
+arc flow (the arc capacity) - if a_cap &lt; 0,it is assumed
 uij = 1 for all arcs, value of DBL_MAX means an uncapacitated arc</p>
 </td>
 </tr>
-<tr class="field"><th class="field-name">a_cost:</th><td class="field-body"><p class="first">oﬀset of the ﬁeld of type double in the arc data block,
+<tr class="field"><th class="field-name">a_cost:</th><td class="field-body"><p class="first">offset of the field of type double in the arc data block,
 to which the routine stores cij, the per-unit cost of the
-arc ﬂow - if a_cost &lt; 0, it is assumed cij = 0 for all arcs</p>
+arc flow - if a_cost &lt; 0, it is assumed cij = 0 for all arcs</p>
 </td>
 </tr>
 <tr class="field"><th class="field-name">parameters:</th><td class="field-body"><p class="first">tuple of exactly 14 integer numbers with the following meaning:</p>
@@ -7541,7 +7521,7 @@ glp::term_out switch
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::term_out glp:off;
@@ -7583,7 +7563,7 @@ additional information to the terminal callback function</p>
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::term_hook glp::on NULL;
@@ -7605,12 +7585,12 @@ none</blockquote>
 <p>tuple consisting of four numbers:</p>
 <blockquote>
 <ul class="simple">
-<li><tt class="docutils literal">count</tt> (int) - the number of currently allocated memory blocks</li>
-<li><tt class="docutils literal">cpeak</tt> (int) - the peak value of <tt class="docutils literal">count</tt> reached since the
+<li><tt class="docutils literal"><span class="pre">count</span></tt> (int) - the number of currently allocated memory blocks</li>
+<li><tt class="docutils literal"><span class="pre">cpeak</span></tt> (int) - the peak value of <tt class="docutils literal"><span class="pre">count</span></tt> reached since the
 initialization of the GLPK library environment</li>
-<li><tt class="docutils literal">total</tt> (bigint) - the total amount, in bytes, of currently
+<li><tt class="docutils literal"><span class="pre">total</span></tt> (bigint) - the total amount, in bytes, of currently
 allocated memory blocks</li>
-<li><tt class="docutils literal">tpeak</tt> (bigint) - the peak value of <tt class="docutils literal">total</tt> reached since the
+<li><tt class="docutils literal"><span class="pre">tpeak</span></tt> (bigint) - the peak value of <tt class="docutils literal"><span class="pre">total</span></tt> reached since the
 initialization of the GLPK library envirionment</li>
 </ul>
 </blockquote>
@@ -7641,7 +7621,7 @@ glp::mem_limit limit
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::mem_limit 200;
@@ -7660,7 +7640,7 @@ glp::free_env
 none</blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal">()</tt></blockquote>
+<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp_free_env;
