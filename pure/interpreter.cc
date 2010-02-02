@@ -1312,6 +1312,8 @@ static char *readfile(const char *name, map<unsigned,LineInfo>& lines)
   return buf;
 }
 
+#include <algorithm>
+
 struct CtagInfo {
   const char *tag, *file;
   unsigned line;
@@ -1322,10 +1324,10 @@ struct CtagInfo {
 bool ctag_cmp(const CtagInfo& x, const CtagInfo& y)
 {
   int ret = strcmp(x.tag, y.tag);
-  if (ret != 0) return ret<0;
-  ret = strcmp(x.file, y.file);
-  if (ret != 0) return ret<0;
-  return x.line<y.line;
+  if (ret != 0)
+    return ret<0;
+  else
+    return false;
 }
 
 void interpreter::print_tags()
@@ -1398,7 +1400,14 @@ void interpreter::print_tags()
 	  << sout.str();
     }
   } else if (tags == 1) {
-    list<CtagInfo> ctags;
+    size_t n_entries = 0;
+    for (list<string>::const_iterator it = tag_files.begin(),
+	   end = tag_files.end(); it != end; it++) {
+      const string& filename = *it;
+      const list<TagInfo>& tags = tag_list[filename];
+      n_entries += tags.size();
+    }
+    vector<CtagInfo> ctags; ctags.reserve(n_entries);
     for (list<string>::const_iterator it = tag_files.begin(),
 	   end = tag_files.end(); it != end; it++) {
       const string& filename = *it;
@@ -1411,11 +1420,10 @@ void interpreter::print_tags()
 				 info.line));
       }
     }
-    ctags.sort(ctag_cmp);
+    stable_sort(ctags.begin(), ctags.end(), ctag_cmp);
     ofstream out(tagsfile.c_str());
-    for (list<CtagInfo>::const_iterator it = ctags.begin(), end = ctags.end();
-	 it != end; it++) {
-      const CtagInfo& info = *it;
+    for (size_t i = 0; i < n_entries; i++) {
+      const CtagInfo& info = ctags[i];
       out << info.tag << "\t" << info.file << "\t" << info.line << endl;
     }
   }
