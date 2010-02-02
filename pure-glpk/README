@@ -2221,8 +2221,8 @@ Solve the MIP problem using branch-and-cut method
                              this allows obtainig suboptimal integer feasible
                              solutions if solving the problem to optimality
                              takes too long time
-            :glp\:\:tm lim: (default: INT_MAX) - searching time limit, in
-                            milliseconds
+            :glp\:\:tm lim:  (default: INT_MAX) - searching time limit, in
+                             milliseconds
             :glp\:\:out_frq: (default: 5000) - output frequency, in
                              miliseconds - this parameter specifies how
                              frequently the solver sends information about
@@ -4096,9 +4096,12 @@ Determine current size of the cut pool
 
 **Returns**:
 
+  The routine returns the current size of the cut pool, that is, the number
+  of cutting plane constraints currently added to it.
+
 **Example**::
 
-  > 
+  > glp::ios_pool_size tree;
 
 Add constraint to the cut pool
 ------------------------------
@@ -4109,12 +4112,27 @@ Add constraint to the cut pool
 **Parameters**:
 
   :tree: pointer to the branch-and-cut search tree
+  :name: symbolic name of the constraint
+  :klass: speciﬁes the constraint class, which must be either zero or a number
+          in the range from 101 to 200. The application may use this attribute
+          to distinguish between cutting plane constraints of diﬀerent classes.
+  :flags: currently is not used and must be zero
+  :row: list of pairs (colindex, coefficient)
+  :type: one of the following:
+
+    :glp\:\:lo: Σ(aj.xj) ≥ RHS constraint
+    :glp\:\:up: Σ(aj.xj) ≤ RHS constraint
+
+  :rhs: right hand side of the constraint
 
 **Returns**:
 
+  The routine returns the ordinal number of the cutting plane constraint
+  added, which is the new size of the cut pool.
+
 **Example**::
 
-  > 
+  > glp::ios_add_row tree ("new_constraint", 101, 0, [(3, 15.0), (4, 6.7), (8, 1.25)], glp::up, 152.7);
 
 Remove constraint from the cut pool
 -----------------------------------
@@ -4125,12 +4143,22 @@ Remove constraint from the cut pool
 **Parameters**:
 
   :tree: pointer to the branch-and-cut search tree
+  :rowindex: index of row to be deleted from the cut pool
 
 **Returns**:
 
+ ()
+
+**Remark**:
+
+  Note that deleting a constraint from the cut pool leads to changing
+  ordinal numbers of other constraints remaining in the pool. New ordinal
+  numbers of the remaining constraints are assigned under assumption that
+  the original order of constraints is not changed.
+
 **Example**::
 
-  > 
+  > glp::ios_del_row tree 5;
 
 Remove all constraints from the cut pool
 ----------------------------------------
@@ -4144,9 +4172,12 @@ Remove all constraints from the cut pool
 
 **Returns**:
 
+ ()
+
 **Example**::
 
-  > 
+  > glp::ios_clear_pool tree;
+
 
 
 Graph and network API routines

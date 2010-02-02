@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.7: http://docutils.sourceforge.net/" />
 <title>Pure-GLPK - GLPK interface for the Pure programming language</title>
 <meta name="author" content="Jiri Spitz &lt;jiri.spitz&#64;bluetone.cz&gt;" />
-<meta name="date" content="2010-02-01" />
+<meta name="date" content="2010-02-02" />
 <style type="text/css">
 
 /*
@@ -315,7 +315,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Jiri Spitz &lt;<a class="reference external" href="mailto:jiri.spitz&#64;bluetone.cz">jiri.spitz&#64;bluetone.cz</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-02-01</td></tr>
+<td>2010-02-02</td></tr>
 </tbody>
 </table>
 <p>This module provides a feature complete GLPK interface for the Pure programming
@@ -6465,9 +6465,12 @@ glp::ios_pool_size tree
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+The routine returns the current size of the cut pool, that is, the number
+of cutting plane constraints currently added to it.</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
-&gt;
+&gt; glp::ios_pool_size tree;
 </pre>
 </div>
 <div class="section" id="add-constraint-to-the-cut-pool">
@@ -6482,15 +6485,49 @@ glp::ios_add_row tree (name, klass, flags, row, type, rhs)
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">tree:</th><td class="field-body">pointer to the branch-and-cut search tree</td>
+<tr class="field"><th class="field-name">tree:</th><td class="field-body"><p class="first">pointer to the branch-and-cut search tree</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">name:</th><td class="field-body"><p class="first">symbolic name of the constraint</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">klass:</th><td class="field-body"><p class="first">speciﬁes the constraint class, which must be either zero or a number
+in the range from 101 to 200. The application may use this attribute
+to distinguish between cutting plane constraints of diﬀerent classes.</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">flags:</th><td class="field-body"><p class="first">currently is not used and must be zero</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">row:</th><td class="field-body"><p class="first">list of pairs (colindex, coefficient)</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">type:</th><td class="field-body"><p class="first">one of the following:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::lo:</th><td class="field-body">Σ(aj.xj) ≥ RHS constraint</td>
+</tr>
+<tr class="field"><th class="field-name">glp::up:</th><td class="field-body">Σ(aj.xj) ≤ RHS constraint</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr class="field"><th class="field-name">rhs:</th><td class="field-body"><p class="first last">right hand side of the constraint</p>
+</td>
 </tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+The routine returns the ordinal number of the cutting plane constraint
+added, which is the new size of the cut pool.</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
-&gt;
+&gt; glp::ios_add_row tree (&quot;new_constraint&quot;, 101, 0, [(3, 15.0), (4, 6.7), (8, 1.25)], glp::up, 152.7);
 </pre>
 </div>
 <div class="section" id="remove-constraint-from-the-cut-pool">
@@ -6507,13 +6544,23 @@ glp::ios_del_row tree rowindex
 <tbody valign="top">
 <tr class="field"><th class="field-name">tree:</th><td class="field-body">pointer to the branch-and-cut search tree</td>
 </tr>
+<tr class="field"><th class="field-name">rowindex:</th><td class="field-body">index of row to be deleted from the cut pool</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+()</blockquote>
+<p><strong>Remark</strong>:</p>
+<blockquote>
+Note that deleting a constraint from the cut pool leads to changing
+ordinal numbers of other constraints remaining in the pool. New ordinal
+numbers of the remaining constraints are assigned under assumption that
+the original order of constraints is not changed.</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
-&gt;
+&gt; glp::ios_del_row tree 5;
 </pre>
 </div>
 <div class="section" id="remove-all-constraints-from-the-cut-pool">
@@ -6534,9 +6581,11 @@ glp::ios_clear_pool tree
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+()</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
-&gt;
+&gt; glp::ios_clear_pool tree;
 </pre>
 </div>
 </div>
