@@ -323,8 +323,8 @@ Pure can be found under the following URLs:</p>
 <li><a class="reference internal" href="#invoking-the-pure-interpreter" id="id4">2&nbsp;&nbsp;&nbsp;Invoking the Pure Interpreter</a><ul class="auto-toc">
 <li><a class="reference internal" href="#options" id="id5">2.1&nbsp;&nbsp;&nbsp;Options</a></li>
 <li><a class="reference internal" href="#overview-of-operation" id="id6">2.2&nbsp;&nbsp;&nbsp;Overview of Operation</a></li>
-<li><a class="reference internal" href="#tagging-scripts" id="id7">2.3&nbsp;&nbsp;&nbsp;Tagging Scripts</a></li>
-<li><a class="reference internal" href="#compiling-scripts" id="id8">2.4&nbsp;&nbsp;&nbsp;Compiling Scripts</a></li>
+<li><a class="reference internal" href="#compiling-scripts" id="id7">2.3&nbsp;&nbsp;&nbsp;Compiling Scripts</a></li>
+<li><a class="reference internal" href="#tagging-scripts" id="id8">2.4&nbsp;&nbsp;&nbsp;Tagging Scripts</a></li>
 <li><a class="reference internal" href="#running-interactively" id="id9">2.5&nbsp;&nbsp;&nbsp;Running Interactively</a></li>
 <li><a class="reference internal" href="#verbosity-and-debugging-options" id="id10">2.6&nbsp;&nbsp;&nbsp;Verbosity and Debugging Options</a></li>
 <li><a class="reference internal" href="#code-generation-options" id="id11">2.7&nbsp;&nbsp;&nbsp;Code Generation Options</a></li>
@@ -530,7 +530,7 @@ variable, which provides a string identifying the host system. These are
 useful if parts of your script depend on the particular version of the
 interpreter and the system it runs on. (Moreover, Pure 0.21 and later also
 define the variable <tt class="docutils literal"><span class="pre">compiling</span></tt> which indicates whether the program is
-executed in a batch compilation, see below.)</p>
+executed in a batch compilation, see <a class="reference internal" href="#compiling-scripts">Compiling Scripts</a> below.)</p>
 <p>If available, the prelude script prelude.pure is loaded by the interpreter
 prior to any other definitions, unless the -n or --noprelude option is
 specified. The prelude is searched for in the directory specified with the
@@ -542,33 +542,8 @@ libraries via a <tt class="docutils literal"><span class="pre">using</span></tt>
 a number of locations, including the directories named with the -I and -L
 options; see the <a class="reference internal" href="#declarations">Declarations</a> and <a class="reference internal" href="#c-interface">C Interface</a> sections for details.</p>
 </div>
-<div class="section" id="tagging-scripts">
-<h2><a class="toc-backref" href="#id7">2.3&nbsp;&nbsp;&nbsp;Tagging Scripts</a></h2>
-<p>Pure scripts often have definitions of global symbols scattered out over many
-different source files. Using the options described in this section, you can
-create a tags file which then allows you to quickly locate all declarations
-and definitions of the global symbols in your script in a reliable manner.</p>
-<p>If the --ctags or --etags option is specified, the interpreter enters a
-special mode in which it only parses source files without executing them, and
-collects information about the locations of global symbol declarations and
-definitions. The collected information is then written to a tags file in ctags
-or etags format, which can be used with vi, emacs and other text editors which
-support these formats. The desired name of the tags file can be specified with
-the -t option; it defaults to <tt class="docutils literal"><span class="pre">tags</span></tt> for --ctags and <tt class="docutils literal"><span class="pre">TAGS</span></tt> for --etags,
-respectively.</p>
-<p>The written file contains information about the global constant, variable,
-macro, function and operator symbols of all scripts specified on the command
-line, as well as the prelude and other scripts included via a <tt class="docutils literal"><span class="pre">using</span></tt>
-clause. Tagged scripts which are located in the same directory as the tags
-file (or, recursively, in one of its subdirectories) are specified using
-relative pathnames. Conversely, scripts outside the directory hierarchy of the
-tags file (such as included scripts from the standard library) are specified
-using absolute pathnames. This scheme makes it possible to move an entire
-directory together with its tags file and have the tags information still work
-in the new location.</p>
-</div>
 <div class="section" id="compiling-scripts">
-<h2><a class="toc-backref" href="#id8">2.4&nbsp;&nbsp;&nbsp;Compiling Scripts</a></h2>
+<h2><a class="toc-backref" href="#id7">2.3&nbsp;&nbsp;&nbsp;Compiling Scripts</a></h2>
 <p>If the -c option is specified, it forces the interpreter to non-interactive
 mode (unless -i is specified as well, which overrides -c). Any scripts
 specified on the command line are then executed as usual, but after execution
@@ -604,6 +579,30 @@ Debugging Options</a> below. When creating an object file, this also prints the
 suggested linker command (including all the dynamic modules loaded by the
 script, which also have to be linked in to create a working executable), to
 which you only have to add the options describing the desired output file.</p>
+</div>
+<div class="section" id="tagging-scripts">
+<h2><a class="toc-backref" href="#id8">2.4&nbsp;&nbsp;&nbsp;Tagging Scripts</a></h2>
+<p>Pure programs often have declarations and definitions of global symbols
+scattered out over many different source files. The --ctags and --etags
+options let you create a <a class="reference external" href="http://en.wikipedia.org/wiki/Ctags">tags</a> file which allows you to quickly locate these
+items in text editors such as vi and emacs which support this feature.</p>
+<p>If --ctags or --etags is specified, the interpreter enters a special mode in
+which it only parses source files without executing them and collects
+information about the locations of global symbol declarations and definitions.
+The collected information is then written to a tags file in the ctags or etags
+format used by vi and emacs, respectively. The desired name of the tags file
+can be specified with the -t option; it defaults to <tt class="docutils literal"><span class="pre">tags</span></tt> for --ctags and
+<tt class="docutils literal"><span class="pre">TAGS</span></tt> for --etags (which matches the default tags file names used by vi and
+emacs, respectively).</p>
+<p>The tags file contains information about the global constant, variable, macro,
+function and operator symbols of all scripts specified on the command line, as
+well as the prelude and other scripts included via a <tt class="docutils literal"><span class="pre">using</span></tt> clause. Tagged
+scripts which are located in the same directory as the tags file (or,
+recursively, in one of its subdirectories) are specified using relative
+pathnames, while scripts outside this hierarchy (such as included scripts from
+the standard library) are denoted with absolute pathnames. This scheme makes
+it possible to move an entire directory together with its tags file and have
+the tags information still work in the new location.</p>
 </div>
 <div class="section" id="running-interactively">
 <h2><a class="toc-backref" href="#id9">2.5&nbsp;&nbsp;&nbsp;Running Interactively</a></h2>

@@ -190,7 +190,7 @@ variable, which provides a string identifying the host system. These are
 useful if parts of your script depend on the particular version of the
 interpreter and the system it runs on. (Moreover, Pure 0.21 and later also
 define the variable ``compiling`` which indicates whether the program is
-executed in a batch compilation, see below.)
+executed in a batch compilation, see `Compiling Scripts`_ below.)
 
 If available, the prelude script prelude.pure is loaded by the interpreter
 prior to any other definitions, unless the -n or --noprelude option is
@@ -202,34 +202,6 @@ directory. In addition, the executed program may load other scripts and
 libraries via a ``using`` declaration in the source, which are searched for in
 a number of locations, including the directories named with the -I and -L
 options; see the Declarations_ and `C Interface`_ sections for details.
-
-Tagging Scripts
----------------
-
-Pure scripts often have definitions of global symbols scattered out over many
-different source files. Using the options described in this section, you can
-create a tags file which then allows you to quickly locate all declarations
-and definitions of the global symbols in your script in a reliable manner.
-
-If the --ctags or --etags option is specified, the interpreter enters a
-special mode in which it only parses source files without executing them, and
-collects information about the locations of global symbol declarations and
-definitions. The collected information is then written to a tags file in ctags
-or etags format, which can be used with vi, emacs and other text editors which
-support these formats. The desired name of the tags file can be specified with
-the -t option; it defaults to ``tags`` for --ctags and ``TAGS`` for --etags,
-respectively.
-
-The written file contains information about the global constant, variable,
-macro, function and operator symbols of all scripts specified on the command
-line, as well as the prelude and other scripts included via a ``using``
-clause. Tagged scripts which are located in the same directory as the tags
-file (or, recursively, in one of its subdirectories) are specified using
-relative pathnames. Conversely, scripts outside the directory hierarchy of the
-tags file (such as included scripts from the standard library) are specified
-using absolute pathnames. This scheme makes it possible to move an entire
-directory together with its tags file and have the tags information still work
-in the new location.
 
 Compiling Scripts
 -----------------
@@ -272,6 +244,35 @@ Debugging Options`_ below. When creating an object file, this also prints the
 suggested linker command (including all the dynamic modules loaded by the
 script, which also have to be linked in to create a working executable), to
 which you only have to add the options describing the desired output file.
+
+Tagging Scripts
+---------------
+
+Pure programs often have declarations and definitions of global symbols
+scattered out over many different source files. The --ctags and --etags
+options let you create a tags_ file which allows you to quickly locate these
+items in text editors such as vi and emacs which support this feature.
+
+.. _tags: http://en.wikipedia.org/wiki/Ctags
+
+If --ctags or --etags is specified, the interpreter enters a special mode in
+which it only parses source files without executing them and collects
+information about the locations of global symbol declarations and definitions.
+The collected information is then written to a tags file in the ctags or etags
+format used by vi and emacs, respectively. The desired name of the tags file
+can be specified with the -t option; it defaults to ``tags`` for --ctags and
+``TAGS`` for --etags (which matches the default tags file names used by vi and
+emacs, respectively).
+
+The tags file contains information about the global constant, variable, macro,
+function and operator symbols of all scripts specified on the command line, as
+well as the prelude and other scripts included via a ``using`` clause. Tagged
+scripts which are located in the same directory as the tags file (or,
+recursively, in one of its subdirectories) are specified using relative
+pathnames, while scripts outside this hierarchy (such as included scripts from
+the standard library) are denoted with absolute pathnames. This scheme makes
+it possible to move an entire directory together with its tags file and have
+the tags information still work in the new location.
 
 Running Interactively
 ---------------------
