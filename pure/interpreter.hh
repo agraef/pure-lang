@@ -968,17 +968,17 @@ private:
 
 public:
   string tagsfile, tagsdir;
-  bool ctags, etags;
+  int tags;
   string srcabs;
   unsigned int line, column;
 
-  void tags(rulel *rl);
-  void tags(rule *r);
-  void tags(expr x);
-  void tags(const string& id, const string& asid);
-  void tags(list<string> *ids);
-  void tag(const string& tagname, const string& file,
-	   unsigned int line, unsigned int column);
+  void add_tags(rulel *rl);
+  void add_tags(rule *r);
+  void add_tags(expr x);
+  void add_tags(const string& id, const string& asid);
+  void add_tags(list<string> *ids);
+  void add_tag(const string& tagname, const string& file,
+	       unsigned int line, unsigned int column);
   void print_tags();
 
 private:

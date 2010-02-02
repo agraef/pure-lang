@@ -644,8 +644,8 @@ interpreter::interpreter()
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
     result(0), lastres(0), mem(0), exps(0), tmps(0), freectr(0), module(0),
     JIT(0), FPM(0), astk(0), sstk(__sstk), stoplevel(0), debug_skip(false),
-    fptr(__fptr), ctags(false), etags(false), line(0), column(0),
-    tags_init(false), declare_op(false)
+    fptr(__fptr), tags(0), line(0), column(0), tags_init(false),
+    declare_op(false)
 {
   init();
 }
@@ -662,8 +662,8 @@ interpreter::interpreter(int32_t nsyms, char *syms,
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
     result(0), lastres(0), mem(0), exps(0), tmps(0), freectr(0), module(0),
     JIT(0), FPM(0), astk(0), sstk(*_sstk), stoplevel(0), debug_skip(false),
-    fptr(*(Env**)_fptr), ctags(false), etags(false), line(0), column(0),
-    tags_init(false), declare_op(false)
+    fptr(*(Env**)_fptr), tags(0), line(0), column(0), tags_init(false),
+    declare_op(false)
 {
   using namespace llvm;
   init();
@@ -1154,7 +1154,7 @@ static string searchlib(const string& srcdir, const string& libdir,
 
 uint32_t count_args(expr x, int32_t& f);
 
-void interpreter::tags(rulel *rl)
+void interpreter::add_tags(rulel *rl)
 {
   assert(!rl->empty());
   if (rl->front().lhs.is_null()) return;
@@ -1165,13 +1165,13 @@ void interpreter::tags(rulel *rl)
     count_args(x, f);
     if (f > 0 && syms.find(f) == syms.end()) {
       symbol& sym = symtab.sym(f);
-      tag(sym.s, srcabs, line, column);
+      add_tag(sym.s, srcabs, line, column);
       syms.insert(f);
     }
   }
 }
 
-void interpreter::tags(rule *r)
+void interpreter::add_tags(rule *r)
 {
   if (r->lhs.is_null()) return;
   expr x = r->lhs;
@@ -1179,11 +1179,11 @@ void interpreter::tags(rule *r)
   count_args(x, f);
   if (f > 0) {
     symbol& sym = symtab.sym(f);
-    tag(sym.s, srcabs, line, column);
+    add_tag(sym.s, srcabs, line, column);
   }
 }
 
-void interpreter::tags(expr pat)
+void interpreter::add_tags(expr pat)
 {
   env vars; veqnl eqns;
   qual = true;
@@ -1193,19 +1193,19 @@ void interpreter::tags(expr pat)
   for (env::const_iterator it = vars.begin(); it != vars.end(); ++it) {
     int32_t f = it->first;
     const symbol& sym = symtab.sym(f);
-    tag(sym.s, srcabs, line, column);
+    add_tag(sym.s, srcabs, line, column);
   }
 }
 
-void interpreter::tags(const string& id, const string& asid)
+void interpreter::add_tags(const string& id, const string& asid)
 {
   string name = asid.empty()?id:asid;
   string absid = make_absid(name);
   symbol* sym = symtab.lookup(absid);
-  if (sym) tag(sym->s, srcabs, line, column);
+  if (sym) add_tag(sym->s, srcabs, line, column);
 }
 
-void interpreter::tags(list<string> *ids)
+void interpreter::add_tags(list<string> *ids)
 {
   if (!ids) return;
   for (list<string>::iterator it = ids->begin(), end = ids->end();
@@ -1213,7 +1213,7 @@ void interpreter::tags(list<string> *ids)
     string name = *it;
     string absid = make_absid(name);
     symbol* sym = symtab.lookup(absid);
-    if (sym) tag(sym->s, srcabs, line, column);
+    if (sym) add_tag(sym->s, srcabs, line, column);
   }
 }
 
@@ -1241,7 +1241,7 @@ void interpreter::init_tags()
   cwd = unixize(cwd);
   if (!cwd.empty() && cwd[cwd.size()-1] != '/') cwd += "/";
   if (tagsfile.empty()) {
-    if (etags)
+    if (tags == 2)
       tagsfile = "TAGS";
     else
       tagsfile = "tags";
@@ -1256,8 +1256,8 @@ void interpreter::init_tags()
   tags_init = true;
 }
 
-void interpreter::tag(const string& tagname, const string& filename,
-		      unsigned int line, unsigned int column)
+void interpreter::add_tag(const string& tagname, const string& filename,
+			  unsigned int line, unsigned int column)
 {
   if (filename.empty()) return;
   init_tags();
@@ -1332,7 +1332,7 @@ void interpreter::print_tags()
 {
   init_tags();
   if (chdir(tagsdir.c_str())) perror("chdir");
-  if (etags) {
+  if (tags == 2) {
     ofstream out(tagsfile.c_str());
     for (list<string>::const_iterator it = tag_files.begin(),
 	   end = tag_files.end(); it != end; it++) {
@@ -1397,7 +1397,7 @@ void interpreter::print_tags()
       out << "\f\n" << filename << "," << sout.str().size() << endl
 	  << sout.str();
     }
-  } else if (ctags) {
+  } else if (tags == 1) {
     list<CtagInfo> ctags;
     for (list<string>::const_iterator it = tag_files.begin(),
 	   end = tag_files.end(); it != end; it++) {
@@ -1494,7 +1494,7 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
   source_s = 0;
   output = 0;
   srcdir = dirname(fname); srcabs = fname;
-  if (ctags || etags) {
+  if (tags) {
     init_tags();
     tag_files.push_back(tagfile(tagsdir, fname));
   }

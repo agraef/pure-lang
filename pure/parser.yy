@@ -212,34 +212,33 @@ item_pos
 
 item
 : expr
-{ if (!interp.ctags && !interp.etags) {
-    restricted_action(interp.exec($1), delete $1); } }
+{ if (!interp.tags) { restricted_action(interp.exec($1), delete $1); }
+  else delete $1; }
 | ESCAPE expr
-{ if (!interp.ctags && !interp.etags) {
-    restricted_action(interp.parse($2), delete $2);
-  }
+{ if (!interp.tags) { restricted_action(interp.parse($2), delete $2); }
+  else delete $2;
   // We only parse a single expression in this mode, bail out.
   if (yychar > 0 && interp.nerrs == 0)
     error(yylloc, "syntax error, expected end of file");
   YYACCEPT; }
 | LET simple_rule
-{ if (interp.ctags || interp.etags) {
-    interp.tags($2->lhs); delete $2;
+{ if (interp.tags) {
+    interp.add_tags($2->lhs); delete $2;
   } else {
     action(interp.define($2), delete $2);
   } }
 | CONST simple_rule
-{ if (interp.ctags || interp.etags) {
-    interp.tags($2->lhs); delete $2;
+{ if (interp.tags) {
+    interp.add_tags($2->lhs); delete $2;
   } else {
     action(interp.define_const($2), delete $2);
   } }
 | DEF simple_rule
-{ if (interp.ctags || interp.etags) interp.tags($2);
+{ if (interp.tags) interp.add_tags($2);
   action(interp.add_macro_rule($2), delete $2); }
 | rule
 { rulel *rl = 0;
-  if (interp.ctags || interp.etags) interp.tags($1);
+  if (interp.tags) interp.add_tags($1);
   action(interp.add_rules(interp.globenv,
   (rl = interp.default_lhs(interp.last, $1)), true), if (rl) delete rl); }
 | fixity
@@ -250,7 +249,7 @@ item
   ids
 { interp.declare_op = false;
   action(interp.declare($1->priv, $1->prec, $1->fix, $3), );
-  if (interp.ctags || interp.etags) interp.tags($3);
+  if (interp.tags) interp.add_tags($3);
   delete $3; delete $1; }
 | USING fnames
 { action(interp.run(*$2), {}); delete $2; }
@@ -356,7 +355,7 @@ prototypes
 prototype
 : ctype ID '(' opt_ctypes ')' optalias
 { action(interp.declare_extern(extern_priv, *$2, *$1, *$4, false, 0, *$6), {});
-  if (interp.ctags || interp.etags) interp.tags(*$2, *$6);
+  if (interp.tags) interp.add_tags(*$2, *$6);
   delete $1; delete $2; delete $4; delete $6; }
 ;
 

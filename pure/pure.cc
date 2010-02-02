@@ -464,9 +464,9 @@ main(int argc, char *argv[])
       else if (strcmp(arg, "-i") == 0)
 	force_interactive = true;
       else if (strcmp(arg, "--ctags") == 0)
-	interp.ctags = true;
+	interp.tags = 1;
       else if (strcmp(arg, "--etags") == 0)
-	interp.etags = true;
+	interp.tags = 2;
       else if (strcmp(arg, "-n") == 0 || strcmp(arg, "--noprelude") == 0)
 	want_prelude = false;
       else if (strcmp(arg, "--norc") == 0)
@@ -632,10 +632,9 @@ main(int argc, char *argv[])
 	return 1;
       }
     }
-  if ((count > 0 || interp.compiling || interp.ctags || interp.etags) &&
-      !force_interactive) {
+  if ((count > 0 || interp.compiling || interp.tags) && !force_interactive) {
     int status = 0;
-    if (interp.ctags || interp.etags)
+    if (interp.tags)
       interp.print_tags();
     else {
       if (interp.compiling || interp.verbose&verbosity::dump)
