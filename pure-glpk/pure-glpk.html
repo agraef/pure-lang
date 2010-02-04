@@ -6094,9 +6094,11 @@ glp::ios_mip_gap tree
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+The routine returns the relative MIP gap.</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
-&gt;
+&gt; glp::ios_mip_gap tree;
 </pre>
 </div>
 <div class="section" id="access-application-specific-data">
@@ -6117,9 +6119,13 @@ glp::ios_node_data tree node
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+The routine glp_ios_node_data returns a pointer to the memory block for
+the specified subproblem. Note that if cb_size = 0 was specified in the
+call of the <cite>intopt</cite> function, the routine returns a null pointer.</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
-&gt;
+&gt; glp::ios_node_data tree 23;
 </pre>
 </div>
 <div class="section" id="select-subproblem-to-continue-the-search">
@@ -6136,13 +6142,17 @@ glp::ios_select_node tree node
 <tbody valign="top">
 <tr class="field"><th class="field-name">tree:</th><td class="field-body">pointer to the branch-and-cut search tree</td>
 </tr>
+<tr class="field"><th class="field-name">node:</th><td class="field-body">reference number of the subproblem from which the search will continue</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+()</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
-&gt;
+&gt; glp::ios_select_node tree 23;
 </pre>
 </div>
 <div class="section" id="provide-solution-found-by-heuristic">
@@ -6159,13 +6169,24 @@ glp::ios_heur_sol tree colvector
 <tbody valign="top">
 <tr class="field"><th class="field-name">tree:</th><td class="field-body">pointer to the branch-and-cut search tree</td>
 </tr>
+<tr class="field"><th class="field-name">colvector:</th><td class="field-body">solution found by a primal heuristic. Primal values of all
+variables (columns) found by the heuristic should be placed
+in the list, i. e. the list must contain n numbers where
+n is the number of columns in the original problem object.
+Note that the routine does not check primal feasibility
+of the solution provided.</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+If the provided solution is accepted, the routine returns zero.
+Otherwise, if the provided solution is rejected, the routine returns
+non-zero.</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
-&gt;
+&gt; glp::ios_heur_sol tree [15.7, (-3.1), 2.2];
 </pre>
 </div>
 <div class="section" id="check-whether-can-branch-upon-specified-variable">
@@ -6182,13 +6203,18 @@ glp::ios_can_branch tree j
 <tbody valign="top">
 <tr class="field"><th class="field-name">tree:</th><td class="field-body">pointer to the branch-and-cut search tree</td>
 </tr>
+<tr class="field"><th class="field-name">j:</th><td class="field-body">variable (column) index</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+The function returns non-zero if j-th variable can be used for branching.
+Otherwise, it returns zero.</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
-&gt;
+&gt; glp::ios_can_branch tree 23;
 </pre>
 </div>
 <div class="section" id="choose-variable-to-branch-upon">
@@ -6203,15 +6229,36 @@ glp::ios_branch_upon tree j selection
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">tree:</th><td class="field-body">pointer to the branch-and-cut search tree</td>
+<tr class="field"><th class="field-name">tree:</th><td class="field-body"><p class="first">pointer to the branch-and-cut search tree</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">j:</th><td class="field-body"><p class="first">ordinal number of the selected branching variable</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">selection:</th><td class="field-body"><p class="first">one of the following:</p>
+<table class="last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">glp::dn_brnch:</th><td class="field-body">select down-branch</td>
+</tr>
+<tr class="field"><th class="field-name">glp::up_brnch:</th><td class="field-body">select up-branch</td>
+</tr>
+<tr class="field"><th class="field-name">glp::no_brnch:</th><td class="field-body">use general selection technique</td>
+</tr>
+</tbody>
+</table>
+</td>
 </tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+()</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
-&gt;
+&gt; glp::ios_branch_upon tree 23 glp::up_brnch;
 </pre>
 </div>
 <div class="section" id="terminate-the-solution-process">
@@ -6232,9 +6279,11 @@ glp::ios_terminate tree
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+()</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
-&gt;
+&gt; glp::ios_terminate tree;
 </pre>
 </div>
 </div>

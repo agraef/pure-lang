@@ -3844,11 +3844,11 @@ Compute relative MIP gap
 
 **Returns**:
 
-  
+  The routine returns the relative MIP gap.
 
 **Example**::
 
-  > 
+  > glp::ios_mip_gap tree;
 
 Access application-specific data
 --------------------------------
@@ -3862,9 +3862,13 @@ Access application-specific data
 
 **Returns**:
 
+  The routine glp_ios_node_data returns a pointer to the memory block for
+  the specified subproblem. Note that if cb_size = 0 was specified in the
+  call of the `intopt` function, the routine returns a null pointer.
+
 **Example**::
 
-  > 
+  > glp::ios_node_data tree 23;
 
 Select subproblem to continue the search
 ----------------------------------------
@@ -3875,12 +3879,15 @@ Select subproblem to continue the search
 **Parameters**:
 
   :tree: pointer to the branch-and-cut search tree
+  :node: reference number of the subproblem from which the search will continue
 
 **Returns**:
 
+  ()
+
 **Example**::
 
-  > 
+  > glp::ios_select_node tree 23;
 
 Provide solution found by heuristic
 -----------------------------------
@@ -3891,12 +3898,22 @@ Provide solution found by heuristic
 **Parameters**:
 
   :tree: pointer to the branch-and-cut search tree
+  :colvector: solution found by a primal heuristic. Primal values of all
+              variables (columns) found by the heuristic should be placed
+              in the list, i. e. the list must contain n numbers where
+              n is the number of columns in the original problem object.
+              Note that the routine does not check primal feasibility
+              of the solution provided.
 
 **Returns**:
 
+  If the provided solution is accepted, the routine returns zero.
+  Otherwise, if the provided solution is rejected, the routine returns
+  non-zero.
+
 **Example**::
 
-  > 
+  > glp::ios_heur_sol tree [15.7, (-3.1), 2.2];
 
 Check whether can branch upon specified variable
 ------------------------------------------------
@@ -3907,12 +3924,16 @@ Check whether can branch upon specified variable
 **Parameters**:
 
   :tree: pointer to the branch-and-cut search tree
+  :j: variable (column) index
 
 **Returns**:
 
+  The function returns non-zero if j-th variable can be used for branching.
+  Otherwise, it returns zero.
+
 **Example**::
 
-  > 
+  > glp::ios_can_branch tree 23;
 
 Choose variable to branch upon
 ------------------------------
@@ -3923,12 +3944,20 @@ Choose variable to branch upon
 **Parameters**:
 
   :tree: pointer to the branch-and-cut search tree
+  :j: ordinal number of the selected branching variable
+  :selection: one of the following:
+
+              :glp\:\:dn_brnch: select down-branch
+              :glp\:\:up_brnch: select up-branch
+              :glp\:\:no_brnch: use general selection technique
 
 **Returns**:
 
+  ()
+
 **Example**::
 
-  > 
+  > glp::ios_branch_upon tree 23 glp::up_brnch;
 
 Terminate the solution process
 ------------------------------
@@ -3942,9 +3971,11 @@ Terminate the solution process
 
 **Returns**:
 
+  ()
+
 **Example**::
 
-  > 
+  > glp::ios_terminate tree;
 
 
 The search tree exploring routines
