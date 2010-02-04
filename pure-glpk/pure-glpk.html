@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.5: http://docutils.sourceforge.net/" />
 <title>Pure-GLPK - GLPK interface for the Pure programming language</title>
 <meta name="author" content="Jiri Spitz &lt;jiri.spitz&#64;bluetone.cz&gt;" />
-<meta name="date" content="2010-02-03" />
+<meta name="date" content="2010-02-04" />
 <style type="text/css">
 
 /*
@@ -295,7 +295,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Jiri Spitz &lt;<a class="reference external" href="mailto:jiri.spitz&#64;bluetone.cz">jiri.spitz&#64;bluetone.cz</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-02-03</td></tr>
+<td>2010-02-04</td></tr>
 </tbody>
 </table>
 <p>This module provides a feature complete GLPK interface for the Pure programming
@@ -6258,9 +6258,26 @@ glp::ios_tree_size tree
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+<p>The routine returns a tuple (a_cnt, n_cnt, t_cnt), where</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">a_cnt:</th><td class="field-body">the current number of active nodes</td>
+</tr>
+<tr class="field"><th class="field-name">n_cnt:</th><td class="field-body">the current number of all (active and inactive) nodes</td>
+</tr>
+<tr class="field"><th class="field-name">t_cnt:</th><td class="field-body">the total number of nodes including those which have been
+already removed from the tree. This count is increased
+whenever a new node appears in the tree and never decreased.</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
-&gt;
+&gt; glp::ios_tree_size tree;
 </pre>
 </div>
 <div class="section" id="determine-current-active-subproblem">
@@ -6281,9 +6298,12 @@ glp::ios_curr_node tree
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+The routine returns the reference number of the current active subproblem.
+If the current subproblem does not exist, the routine returns zero.</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
-&gt;
+&gt; glp::ios_curr_node tree;
 </pre>
 </div>
 <div class="section" id="determine-next-active-subproblem">
@@ -6300,13 +6320,24 @@ glp::ios_next_node tree node
 <tbody valign="top">
 <tr class="field"><th class="field-name">tree:</th><td class="field-body">pointer to the branch-and-cut search tree</td>
 </tr>
+<tr class="field"><th class="field-name">node:</th><td class="field-body">reference number of an active subproblem or zero</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+If the parameter p is zero, the routine returns the reference number
+of the first active subproblem. If the tree is empty, zero is returned.
+If the parameter p is not zero, it must specify the reference number of
+some active subproblem, in which case the routine returns the reference
+number of the next active subproblem. If there is no next active subproblem
+in the list, zero is returned. All subproblems in the active list are
+ordered chronologically, i.e. subproblem A precedes subproblem B if A
+was created before B.</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
-&gt;
+&gt; glp::ios_next_node tree 23;
 </pre>
 </div>
 <div class="section" id="determine-previous-active-subproblem">
@@ -6323,13 +6354,24 @@ glp::ios_prev_node tree node
 <tbody valign="top">
 <tr class="field"><th class="field-name">tree:</th><td class="field-body">pointer to the branch-and-cut search tree</td>
 </tr>
+<tr class="field"><th class="field-name">node:</th><td class="field-body">reference number of an active subproblem or zero</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+If the parameter p is zero, the routine returns the reference number
+of the last active subproblem. If the tree is empty, zero is returned.
+If the parameter p is not zero, it must specify the reference number of
+some active subproblem, in which case the routine returns the reference
+number of the previous active subproblem. If there is no previous
+active subproblem in the list, zero is returned. All subproblems in the
+active list are ordered chronologically, i.e. subproblem A precedes
+subproblem B if A was created before B.</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
-&gt;
+&gt; glp::ios_prev_node tree 23;
 </pre>
 </div>
 <div class="section" id="determine-parent-active-subproblem">
@@ -6346,13 +6388,19 @@ glp::ios_up_node tree node
 <tbody valign="top">
 <tr class="field"><th class="field-name">tree:</th><td class="field-body">pointer to the branch-and-cut search tree</td>
 </tr>
+<tr class="field"><th class="field-name">node:</th><td class="field-body">reference number of an active or inactive subproblem</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+The routine returns the reference number of its parent subproblem.
+If the specified subproblem is the root of the tree, the routine
+returns zero.</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
-&gt;
+&gt; glp::ios_up_node tree 23;
 </pre>
 </div>
 <div class="section" id="determine-subproblem-level">
@@ -6369,13 +6417,18 @@ glp::ios_node_level tree node
 <tbody valign="top">
 <tr class="field"><th class="field-name">tree:</th><td class="field-body">pointer to the branch-and-cut search tree</td>
 </tr>
+<tr class="field"><th class="field-name">node:</th><td class="field-body">reference number of an active or inactive subproblem</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+The routine returns the level of the given subproblem in the
+branch-and-bound tree. (The root subproblem has level 0.)</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
-&gt;
+&gt; glp::ios_node_level tree 23;
 </pre>
 </div>
 <div class="section" id="determine-subproblem-local-bound">
@@ -6392,13 +6445,17 @@ glp::ios_node_bound tree node
 <tbody valign="top">
 <tr class="field"><th class="field-name">tree:</th><td class="field-body">pointer to the branch-and-cut search tree</td>
 </tr>
+<tr class="field"><th class="field-name">node:</th><td class="field-body">reference number of an active or inactive subproblem</td>
+</tr>
 </tbody>
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+The routine returns the local bound for the given subproblem.</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
-&gt;
+&gt; glp::ios_node_bound tree 23;
 </pre>
 </div>
 <div class="section" id="find-active-subproblem-with-the-best-local-bound">
@@ -6419,9 +6476,13 @@ glp::ios_best_node tree
 </table>
 </blockquote>
 <p><strong>Returns</strong>:</p>
+<blockquote>
+The routine returns the reference number of the active subproblem, whose
+local bound is best (i.e. smallest in case of minimization or largest
+in case of maximization). If the tree is empty, the routine returns zero.</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
-&gt;
+&gt; glp::ios_best_node tree;
 </pre>
 </div>
 </div>

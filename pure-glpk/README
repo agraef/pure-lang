@@ -3963,9 +3963,17 @@ Determine the search tree size
 
 **Returns**:
 
+  The routine returns a tuple (a_cnt, n_cnt, t_cnt), where
+
+  :a_cnt: the current number of active nodes
+  :n_cnt: the current number of all (active and inactive) nodes
+  :t_cnt: the total number of nodes including those which have been
+          already removed from the tree. This count is increased
+          whenever a new node appears in the tree and never decreased.
+
 **Example**::
 
-  > 
+  > glp::ios_tree_size tree;
 
 Determine current active subproblem
 -----------------------------------
@@ -3979,9 +3987,12 @@ Determine current active subproblem
 
 **Returns**:
 
+  The routine returns the reference number of the current active subproblem.
+  If the current subproblem does not exist, the routine returns zero.
+
 **Example**::
 
-  > 
+  > glp::ios_curr_node tree;
 
 Determine next active subproblem
 --------------------------------
@@ -3992,12 +4003,22 @@ Determine next active subproblem
 **Parameters**:
 
   :tree: pointer to the branch-and-cut search tree
+  :node: reference number of an active subproblem or zero
 
 **Returns**:
 
+  If the parameter p is zero, the routine returns the reference number
+  of the first active subproblem. If the tree is empty, zero is returned.
+  If the parameter p is not zero, it must specify the reference number of
+  some active subproblem, in which case the routine returns the reference
+  number of the next active subproblem. If there is no next active subproblem
+  in the list, zero is returned. All subproblems in the active list are
+  ordered chronologically, i.e. subproblem A precedes subproblem B if A
+  was created before B.
+
 **Example**::
 
-  > 
+  > glp::ios_next_node tree 23;
 
 Determine previous active subproblem
 ------------------------------------
@@ -4008,12 +4029,22 @@ Determine previous active subproblem
 **Parameters**:
 
   :tree: pointer to the branch-and-cut search tree
+  :node: reference number of an active subproblem or zero
 
 **Returns**:
 
+  If the parameter p is zero, the routine returns the reference number
+  of the last active subproblem. If the tree is empty, zero is returned.
+  If the parameter p is not zero, it must specify the reference number of
+  some active subproblem, in which case the routine returns the reference
+  number of the previous active subproblem. If there is no previous
+  active subproblem in the list, zero is returned. All subproblems in the
+  active list are ordered chronologically, i.e. subproblem A precedes
+  subproblem B if A was created before B.
+
 **Example**::
 
-  > 
+  > glp::ios_prev_node tree 23;
 
 Determine parent active subproblem
 ----------------------------------
@@ -4024,12 +4055,17 @@ Determine parent active subproblem
 **Parameters**:
 
   :tree: pointer to the branch-and-cut search tree
+  :node: reference number of an active or inactive subproblem
 
 **Returns**:
 
+  The routine returns the reference number of its parent subproblem.
+  If the specified subproblem is the root of the tree, the routine
+  returns zero.
+
 **Example**::
 
-  > 
+  > glp::ios_up_node tree 23;
 
 Determine subproblem level
 --------------------------
@@ -4040,12 +4076,16 @@ Determine subproblem level
 **Parameters**:
 
   :tree: pointer to the branch-and-cut search tree
+  :node: reference number of an active or inactive subproblem
 
 **Returns**:
 
+  The routine returns the level of the given subproblem in the
+  branch-and-bound tree. (The root subproblem has level 0.)
+
 **Example**::
 
-  > 
+  > glp::ios_node_level tree 23;
 
 Determine subproblem local bound
 --------------------------------
@@ -4056,12 +4096,15 @@ Determine subproblem local bound
 **Parameters**:
 
   :tree: pointer to the branch-and-cut search tree
+  :node: reference number of an active or inactive subproblem
 
 **Returns**:
 
+  The routine returns the local bound for the given subproblem.
+
 **Example**::
 
-  > 
+  > glp::ios_node_bound tree 23;
 
 Find active subproblem with the best local bound
 ------------------------------------------------
@@ -4075,9 +4118,13 @@ Find active subproblem with the best local bound
 
 **Returns**:
 
+  The routine returns the reference number of the active subproblem, whose
+  local bound is best (i.e. smallest in case of minimization or largest
+  in case of maximization). If the tree is empty, the routine returns zero.
+
 **Example**::
 
-  > 
+  > glp::ios_best_node tree;
 
 
 The cut pool routines
