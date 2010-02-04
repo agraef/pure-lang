@@ -125,7 +125,7 @@ letter ([a-zA-Z_]|[\xC4-\xDF][\x80-\xBF]|\xC2[^\x01-\x7F\xA1-\xFF]|\xC3[^\x01-\x
 
 id     ({letter}({letter}|[0-9])*)
 qual   ({id}?::({id}::)*)
-int    [0-9]+|0[0-7]+|0[xX][0-9a-fA-F]+
+int    [0-9]+|0[0-7]+|0[xX][0-9a-fA-F]+|0[bB][01]+
 exp    ([Ee][+-]?[0-9]+)
 float  [0-9]+{exp}|[0-9]+\.{exp}|[0-9]*\.[0-9]+{exp}?
 str    ([^\"\\\n]|\\(.|\n))*

@@ -678,31 +678,34 @@ the corresponding operations are actually defined in the prelude.
 
 Expressions consist of the following elements:
 
-Constants: ``4711``, ``4711L``, ``1.2e-3``, ``"Hello, world!\n"``
-    The usual C'ish notations for integers (decimal: ``1000``, hexadecimal:
-    ``0x3e8``, octal: ``01750``), floating point values and double-quoted
-    strings are all provided, although the Pure syntax differs in some minor
-    ways, as discussed in the following. First, there is a special notation
-    for denoting bigints. Integer constants that are too large to fit into
-    machine integers are promoted to bigints automatically. Moreover, integer
+Numbers: ``4711``, ``4711L``, ``1.2e-3``
+    The usual C notations for integers (decimal: ``1000``, hexadecimal:
+    ``0x3e8``, octal: ``01750``) and floating point values are all provided.
+    Integers can also be denoted in base 2 by using the ``0b`` or ``0B``
+    prefix: ``0b1111101000``. Integer constants that are too large to fit into
+    machine integers are promoted to bigints automatically.  Moreover, integer
     literals immediately followed by the uppercase letter ``L`` are always
     interpreted as bigint constants, even if they fit into machine integers.
-    This notation is also used when printing bigint constants.
+    This notation is also used when printing bigint constants, to distinguish
+    them from machine integers.
 
-    Second, character escapes in Pure strings have a more flexible syntax
-    borrowed from the author's Q language, which provides notations to specify
-    any Unicode character. In particular, the notation ``\``\ *n*, where *n*
-    is an integer literal written in decimal (no prefix), hexadecimal (``0x``
-    prefix) or octal (``0`` prefix) notation, denotes the Unicode character
-    (code point) #\ *n*. Since these escapes may consist of a varying number
-    of digits, parentheses may be used for disambiguation purposes; thus,
-    e.g. ``"\(123)4"`` denotes character #123 followed by the character
-    ``4``. The usual C-like escapes for special non-printable characters such
-    as ``\n`` are also supported. Moreover, you can use symbolic character
-    escapes of the form ``\&``\ *name*\ ``;``, where *name* is any of the XML
-    single character entity names specified in the `XML Entity definitions for
-    Characters`__. Thus, e.g., ``"\&copy;"`` denotes the copyright character
-    (code point 0x000A9).
+Strings: ``"Hello, world!\n"``
+    String constants are double-quoted and terminated with a null character,
+    like in C. In difference to C, strings are always encoded in UTF-8, and
+    character escapes in Pure strings have a more flexible syntax (borrowed
+    from the author's Q language) which provides notations to specify any
+    Unicode character. In particular, the notation ``\``\ *n*, where *n* is an
+    integer literal written in decimal (no prefix), hexadecimal (``0x``
+    prefix), octal (``0`` prefix) or binary (``0b`` prefix) notation, denotes
+    the Unicode character (code point) #\ *n*. Since these escapes may consist
+    of a varying number of digits, parentheses may be used for disambiguation
+    purposes; thus, e.g. ``"\(123)4"`` denotes character #123 followed by the
+    ASCII character ``4``. The usual C-like escapes for special non-printable
+    characters such as ``\n`` are also supported. Moreover, you can use
+    symbolic character escapes of the form ``\&``\ *name*\ ``;``, where *name*
+    is any of the XML single character entity names specified in the `XML
+    Entity definitions for Characters`__. Thus, e.g., ``"\&copy;"`` denotes
+    the copyright character (code point 0x000A9).
 
 __ http://www.w3.org/TR/xml-entity-names/
 

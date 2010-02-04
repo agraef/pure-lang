@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>The Pure Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2010-02-02" />
+<meta name="date" content="2010-02-04" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-02-02</td></tr>
+<td>2010-02-04</td></tr>
 </tbody>
 </table>
 <!-- Note: This document is formatted using docutils. The Makefile has rules -->
@@ -971,31 +971,33 @@ also provides some built-in support for lists and matrices, although most of
 the corresponding operations are actually defined in the prelude.</p>
 <p>Expressions consist of the following elements:</p>
 <dl class="docutils">
-<dt>Constants: <tt class="docutils literal"><span class="pre">4711</span></tt>, <tt class="docutils literal"><span class="pre">4711L</span></tt>, <tt class="docutils literal"><span class="pre">1.2e-3</span></tt>, <tt class="docutils literal"><span class="pre">&quot;Hello,</span> <span class="pre">world!\n&quot;</span></tt></dt>
-<dd><p class="first">The usual C'ish notations for integers (decimal: <tt class="docutils literal"><span class="pre">1000</span></tt>, hexadecimal:
-<tt class="docutils literal"><span class="pre">0x3e8</span></tt>, octal: <tt class="docutils literal"><span class="pre">01750</span></tt>), floating point values and double-quoted
-strings are all provided, although the Pure syntax differs in some minor
-ways, as discussed in the following. First, there is a special notation
-for denoting bigints. Integer constants that are too large to fit into
-machine integers are promoted to bigints automatically. Moreover, integer
+<dt>Numbers: <tt class="docutils literal"><span class="pre">4711</span></tt>, <tt class="docutils literal"><span class="pre">4711L</span></tt>, <tt class="docutils literal"><span class="pre">1.2e-3</span></tt></dt>
+<dd>The usual C notations for integers (decimal: <tt class="docutils literal"><span class="pre">1000</span></tt>, hexadecimal:
+<tt class="docutils literal"><span class="pre">0x3e8</span></tt>, octal: <tt class="docutils literal"><span class="pre">01750</span></tt>) and floating point values are all provided.
+Integers can also be denoted in base 2 by using the <tt class="docutils literal"><span class="pre">0b</span></tt> or <tt class="docutils literal"><span class="pre">0B</span></tt>
+prefix: <tt class="docutils literal"><span class="pre">0b1111101000</span></tt>. Integer constants that are too large to fit into
+machine integers are promoted to bigints automatically.  Moreover, integer
 literals immediately followed by the uppercase letter <tt class="docutils literal"><span class="pre">L</span></tt> are always
 interpreted as bigint constants, even if they fit into machine integers.
-This notation is also used when printing bigint constants.</p>
-<p class="last">Second, character escapes in Pure strings have a more flexible syntax
-borrowed from the author's Q language, which provides notations to specify
-any Unicode character. In particular, the notation <tt class="docutils literal"><span class="pre">\</span></tt><em>n</em>, where <em>n</em>
-is an integer literal written in decimal (no prefix), hexadecimal (<tt class="docutils literal"><span class="pre">0x</span></tt>
-prefix) or octal (<tt class="docutils literal"><span class="pre">0</span></tt> prefix) notation, denotes the Unicode character
-(code point) #<em>n</em>. Since these escapes may consist of a varying number
-of digits, parentheses may be used for disambiguation purposes; thus,
-e.g. <tt class="docutils literal"><span class="pre">&quot;\(123)4&quot;</span></tt> denotes character #123 followed by the character
-<tt class="docutils literal"><span class="pre">4</span></tt>. The usual C-like escapes for special non-printable characters such
-as <tt class="docutils literal"><span class="pre">\n</span></tt> are also supported. Moreover, you can use symbolic character
-escapes of the form <tt class="docutils literal"><span class="pre">\&amp;</span></tt><em>name</em><tt class="docutils literal"><span class="pre">;</span></tt>, where <em>name</em> is any of the XML
-single character entity names specified in the <a class="reference external" href="http://www.w3.org/TR/xml-entity-names/">XML Entity definitions for
-Characters</a>. Thus, e.g., <tt class="docutils literal"><span class="pre">&quot;\&amp;copy;&quot;</span></tt> denotes the copyright character
-(code point 0x000A9).</p>
-</dd>
+This notation is also used when printing bigint constants, to distinguish
+them from machine integers.</dd>
+<dt>Strings: <tt class="docutils literal"><span class="pre">&quot;Hello,</span> <span class="pre">world!\n&quot;</span></tt></dt>
+<dd>String constants are double-quoted and terminated with a null character,
+like in C. In difference to C, strings are always encoded in UTF-8, and
+character escapes in Pure strings have a more flexible syntax (borrowed
+from the author's Q language) which provides notations to specify any
+Unicode character. In particular, the notation <tt class="docutils literal"><span class="pre">\</span></tt><em>n</em>, where <em>n</em> is an
+integer literal written in decimal (no prefix), hexadecimal (<tt class="docutils literal"><span class="pre">0x</span></tt>
+prefix), octal (<tt class="docutils literal"><span class="pre">0</span></tt> prefix) or binary (<tt class="docutils literal"><span class="pre">0b</span></tt> prefix) notation, denotes
+the Unicode character (code point) #<em>n</em>. Since these escapes may consist
+of a varying number of digits, parentheses may be used for disambiguation
+purposes; thus, e.g. <tt class="docutils literal"><span class="pre">&quot;\(123)4&quot;</span></tt> denotes character #123 followed by the
+ASCII character <tt class="docutils literal"><span class="pre">4</span></tt>. The usual C-like escapes for special non-printable
+characters such as <tt class="docutils literal"><span class="pre">\n</span></tt> are also supported. Moreover, you can use
+symbolic character escapes of the form <tt class="docutils literal"><span class="pre">\&amp;</span></tt><em>name</em><tt class="docutils literal"><span class="pre">;</span></tt>, where <em>name</em>
+is any of the XML single character entity names specified in the <a class="reference external" href="http://www.w3.org/TR/xml-entity-names/">XML
+Entity definitions for Characters</a>. Thus, e.g., <tt class="docutils literal"><span class="pre">&quot;\&amp;copy;&quot;</span></tt> denotes
+the copyright character (code point 0x000A9).</dd>
 </dl>
 <dl class="docutils">
 <dt>Function and variable symbols: <tt class="docutils literal"><span class="pre">foo</span></tt>, <tt class="docutils literal"><span class="pre">foo_bar</span></tt>, <tt class="docutils literal"><span class="pre">BAR</span></tt>, <tt class="docutils literal"><span class="pre">foo::bar</span></tt></dt>

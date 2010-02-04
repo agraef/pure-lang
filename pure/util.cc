@@ -757,6 +757,14 @@ static long parse_entity(char *s, char **t)
   return c;
 }
 
+static long int bstrtol(const char *nptr, char **endptr)
+{
+  if (nptr[0] == '0' && (nptr[1] == 'b' || nptr[1] == 'B'))
+    return strtol(nptr+2, endptr, 2);
+  else
+    return strtol(nptr, endptr, 0);
+}
+
 static char *
 scanchar(char *t, char **s, char **p)
 {
@@ -805,7 +813,7 @@ scanchar(char *t, char **s, char **p)
     case '(': {
       if ('0' <= **s && **s <= '9') {
 	char *r;
-	long c = strtol(*s, &r, 0);
+	long c = bstrtol(*s, &r);
 	if (*r == ')') {
 	  *s = r+1;
 	  if (c >= 0x110000)
@@ -824,7 +832,7 @@ scanchar(char *t, char **s, char **p)
     }
     default:
       if ('0' <= c && c <= '9') {
-	long c = strtol(--*s, s, 0);
+	long c = bstrtol(--*s, s);
 	if (c >= 0x110000)
 	  c %=  0x110000;
 	u8encode(t, c);
