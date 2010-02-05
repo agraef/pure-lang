@@ -714,9 +714,10 @@ end with
   do_sprintf (u,arg:args) (printf_format_spec t s) = u, args
   when
     size = case t, arg of
-      "s", x::string = #s+#x+1000; // guestimate
+      "s", x::string = #s+#x; // guestimate
       _ = 64; // should be enough for number formats in any case
     end;
+    size = size+1024; // max padding
     buf = check_buf (malloc size);
     res = case t, arg of
       "c", x::int | "c", x::bigint |
