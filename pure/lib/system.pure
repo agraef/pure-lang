@@ -570,14 +570,15 @@ pclose fp::pointer = clear_sentry fp $$ __C::pclose fp;
 /* Pure wrappers for fgets and gets which handle the necessary buffering
    automatically. */
 
-fgets f::pointer = read_a_line f buf "" when buf = malloc 1024 end
+fgets f::pointer = read_a_line f buf [] when buf = malloc 1024 end
 with read_a_line f buf t = check s when s = __C::fgets buf 1024 f end
-  with check s::string = return (t+s) if done s;
-		       = read_a_line f buf (t+s) otherwise;
-       check s         = return s if null t;
-                       = return t otherwise;
-       done s::string  = feof f || ferror f || ~null s && last s == "\n";
-       return x        = free buf $$ x;
+  with check s::string   = return (s:t) if done s;
+                         = read_a_line f buf (s:t) otherwise;
+       check s           = return s if null t;
+                         = return t otherwise;
+       done s::string    = feof f || ferror f || ~null s && last s == "\n";
+       return x::pointer = free buf $$ x;
+       return x          = free buf $$ strcat $ reverse $ x;
   end;
 end;
 
@@ -586,13 +587,14 @@ when s = fgets stdin end;
 
 /* A variation of fgets which slurps in an entire text file at once. */
 
-fget f::pointer = read_a_file f buf "" when buf = malloc 0x10000 end
+fget f::pointer = read_a_file f buf [] when buf = malloc 0x10000 end
 with read_a_file f buf t = check s when s = __C::fgets buf 0x10000 f end
-  with check s::string = return (t+s) if feof f || ferror f;
-		       = read_a_file f buf (t+s) otherwise;
-       check s         = return s if null t;
-                       = return t otherwise;
-       return x        = free buf $$ x;
+  with check s::string   = return (s:t) if feof f || ferror f;
+                         = read_a_file f buf (s:t) otherwise;
+       check s           = return s if null t;
+                         = return t otherwise;
+       return x::pointer = free buf $$ x;
+       return x          = free buf $$ strcat $ reverse $ x;
   end;
 end;
 
@@ -703,8 +705,9 @@ namespace;
 
 sprintf format::string args = s when
   args = if tuplep args then list args else [args];
-  s, _ = catch error_handler
-    (foldl do_sprintf ("",args) $ printf_split_format format);
+  u, _ = catch error_handler
+    (foldl do_sprintf ([],args) $ printf_split_format format);
+  s = if pointerp u then u else strcat $ reverse u;
 end with
   error_handler (printf_error res::int) = pointer 0, [];
   error_handler x = throw x otherwise;
@@ -723,19 +726,19 @@ end with
       "p", x::string | "p", x::pointer = pure_snprintf_pointer buf size s x;
       _ = free buf $$ throw (printf_value_error s arg);
     end;
-    u = if res>=0 then u + cstring buf
+    u = if res>=0 then cstring buf : u
         else free buf $$ throw (printf_error res);
   end;
   do_sprintf (u,args) (printf_format_str s) = u, args
   when
     size = #s+1000; buf = check_buf (malloc size);
     res = pure_snprintf buf size s;
-    u = if res>=0 then u + cstring buf
+    u = if res>=0 then cstring buf : u
         else free buf $$ throw (printf_error res);
   end;
   do_sprintf (u,[]) (printf_format_spec t s) =
     throw (printf_value_error s ());
-  do_sprintf (u,_) _ = throw (this_cant_happen u);
+  do_sprintf (u,_) _ = throw (this_cant_happen $ strcat $ reverse u);
   check_buf buf = throw malloc_error if null buf;
                 = buf otherwise;
 end;
