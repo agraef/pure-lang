@@ -4770,7 +4770,6 @@ pure_expr *pure_apply(pure_expr *x, pure_expr *y)
   size_t m = f->data.clos->m;
   uint32_t env = 0;
   static pure_expr *argv[MAXARGS];
-  assert(argv && "pure_apply: stack overflow");
   assert(n <= MAXARGS && "pure_apply: function call exceeds maximum #args");
   assert(f->data.clos->local || m == 0);
   // collect arguments
