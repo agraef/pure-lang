@@ -22,7 +22,6 @@
 #include <llvm/DerivedTypes.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/Module.h>
-#include <llvm/ModuleProvider.h>
 #include <llvm/PassManager.h>
 #include <llvm/GlobalValue.h>
 #include <llvm/Analysis/Verifier.h>
@@ -31,6 +30,13 @@
 #include <llvm/Support/IRBuilder.h>
 
 #include "config.h"
+
+#ifdef HAVE_LLVM_MODULEPROVIDER_H
+#include <llvm/ModuleProvider.h>
+#else
+// LLVM 2.7 and later don't have this header any more.
+#define LLVM27 1
+#endif
 
 #if LLVM26
 #include "llvm/LLVMContext.h"
@@ -641,7 +647,9 @@ public:
   // LLVM code generation and execution.
 
   llvm::Module *module;
+#ifdef HAVE_LLVM_MODULEPROVIDER_H
   llvm::ModuleProvider *MP;
+#endif
   llvm::ExecutionEngine *JIT;
   llvm::FunctionPassManager *FPM;
   llvm::StructType  *ExprTy, *IntExprTy, *DblExprTy, *StrExprTy, *PtrExprTy;

@@ -138,10 +138,16 @@ void interpreter::init()
 #else
   module = new Module(modname);
 #endif
+#if !LLVM27
   MP = new ExistingModuleProvider(module);
+#endif
 #if LLVM26
   string error;
+#if LLVM27
+  JIT = ExecutionEngine::create(module, false, &error,
+#else
   JIT = ExecutionEngine::create(MP, false, &error,
+#endif
 #if FAST_JIT
 #warning "You selected FAST_JIT. This isn't recommended!"
 				llvm::CodeGenOpt::None,
@@ -170,7 +176,11 @@ void interpreter::init()
 #endif
 #endif
   assert(JIT);
+#if LLVM27
+  FPM = new FunctionPassManager(module);
+#else
   FPM = new FunctionPassManager(MP);
+#endif
 
   // Set up the optimizer pipeline. Start with registering info about how the
   // target lays out data structures.
@@ -5531,14 +5541,14 @@ ReturnInst *Env::CreateRet(Value *v, const rule *rp)
 	    free_fun = interp.module->getFunction("pure_pop_tail_args");
 	    free1_fun = interp.module->getFunction("pure_pop_tail_arg");
 	    /* Patch up this call to correct the offset of the environment. */
-#if LLVM26
-#if NEW_OSTREAM
+#if LLVM27
 	    CallInst *c2 = cast<CallInst>(c1->clone());
 #else
-	    CallInst *c2 = c1->clone(llvm::getGlobalContext());
+	    CallInst *c2 = c1->clone(
+#if LLVM26
+				     llvm::getGlobalContext()
 #endif
-#else
-	    CallInst *c2 = c1->clone();
+				     );
 #endif
 	    c1->getParent()->getInstList().insert(c1, c2);
 #ifdef NEW_BUILDER
