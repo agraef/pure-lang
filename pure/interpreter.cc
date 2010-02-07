@@ -972,12 +972,15 @@ void interpreter::report_stats()
 }
 
 /* Search for a source file. Absolute file names (starting with a slash) are
-   taken as is. Relative pathnames are resolved using the following algorithm:
-   If srcdir is nonempty, search it first, then libdir (if nonempty), then the
-   current working directory. If srcdir is empty, first search the current
-   directory, then libdir (if nonempty). In either case, if the resulting
-   absolute pathname is a symbolic link, the destination is used instead, and
-   finally the pathname is canonicalized. */
+   taken as is. Otherwise, the 'search' flag determines the way that the
+   search is to be performed. If it is zero, only the current working
+   directory is searched. If it is nonzero, then the directories in
+   include_dirs are searched, followed by libdir (if nonempty), and finally
+   the current working directory. In addition, if 'search' is 1, the "current"
+   directory (either srcdir or, if srcdir is empty, the current working
+   directory) is searched first. In either case, if the resulting absolute
+   pathname is a symbolic link, the destination is used instead, and finally
+   the pathname is canonicalized. */
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -1042,7 +1045,7 @@ static bool absname(const string& s)
 
 static string searchdir(const string& srcdir, const string& libdir,
 			const list<string>& include_dirs,
-			const string& script, bool search = true)
+			const string& script, int search = 1)
 {
   char cwd[BUFSIZE];
   if (script.empty())
@@ -1062,8 +1065,10 @@ static string searchdir(const string& srcdir, const string& libdir,
       if (chkfile(fname)) goto found;
       fname = script;
     } else {
-      fname = (srcdir.empty()?workdir:srcdir)+script;
-      if (chkfile(fname)) goto found;
+      if (search == 1) {
+	fname = (srcdir.empty()?workdir:srcdir)+script;
+	if (chkfile(fname)) goto found;
+      }
       for (list<string>::const_iterator dir = include_dirs.begin(),
 	     end = include_dirs.end(); dir != end; dir++)
 	if (!dir->empty()) {
@@ -1260,7 +1265,7 @@ void interpreter::init_tags()
     tagsfile = unixize(tagsfile);
     string s = "";
     list<string> dirs;
-    tagsfile = searchdir(s, s, dirs, tagsfile, false);
+    tagsfile = searchdir(s, s, dirs, tagsfile, 0);
     tagsdir = dirname(tagsfile);
   }
   tags_init = true;
@@ -1445,6 +1450,9 @@ void interpreter::print_tags()
 #ifndef DLLEXT
 #define DLLEXT ".so"
 #endif
+#ifndef PUREEXT
+#define PUREEXT ".pure"
+#endif
 
 pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
 {
@@ -1474,15 +1482,38 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
     return 0;
   }
   // ordinary source file
-  string fname = searchdir(srcdir, libdir, includedirs, s, check);
-  if (check && sources.find(fname) != sources.end())
-    // already loaded, skip
-    return 0;
-  /* Check that the file exists. We already do that here so that errors are
-     properly reported to eval/evalcmd. */
+  string name = s, fname = s;
   if (!s.empty()) {
-    FILE *fp;
-    if ((fp = fopen(fname.c_str(), "r")))
+    int flag = check;
+    if (p != string::npos && s.substr(0, p) == "sys") {
+      if (p+1 >= s.size()) throw err("empty script name");
+      name = s.substr(p+1); flag <<= 1; // skip search of current directory
+    }
+    // See whether we need to add the PUREEXT suffix.
+    string purename = name;
+    if (name.size() <= strlen(PUREEXT) ||
+	name.substr(name.size()-strlen(PUREEXT)) != PUREEXT)
+      purename += PUREEXT;
+    // First try the name with PUREEXT added.
+    fname = searchdir(srcdir, libdir, includedirs, purename, flag);
+    if (check && sources.find(fname) != sources.end())
+      // already loaded, skip
+      return 0;
+    FILE *fp = fopen(fname.c_str(), "r");
+    if (purename != name) {
+      if (!fp) {
+	// Try the real name.
+	fname = searchdir(srcdir, libdir, includedirs, name, flag);
+	if (check && sources.find(fname) != sources.end())
+	  // already loaded, skip
+	  return 0;
+	fp = fopen(fname.c_str(), "r");
+      } else
+	name = purename;
+    }
+    /* Check that the file exists. We already do that here so that errors are
+       properly reported to eval/evalcmd. */
+    if (fp)
       fclose(fp);
     else
       throw err(s+": "+strerror(errno));
@@ -1508,7 +1539,7 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
   g_interp = this;
   // initialize
   nerrs = 0;
-  source = s; declare_op = false;
+  source = name; declare_op = false;
   source_s = 0;
   output = 0;
   srcdir = dirname(fname); srcabs = fname;
