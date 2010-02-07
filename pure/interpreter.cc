@@ -1057,13 +1057,11 @@ static string searchdir(const string& srcdir, const string& libdir,
   string workdir = unixize(cwd);
   if (!workdir.empty() && workdir[workdir.size()-1] != '/')
     workdir += "/";
-  string fname;
+  string fname = script;
   if (!absname(script)) {
     // resolve relative pathname
     if (!search) {
       fname = workdir+script;
-      if (chkfile(fname)) goto found;
-      fname = script;
     } else {
       if (search == 1) {
 	fname = (srcdir.empty()?workdir:srcdir)+script;
@@ -1079,10 +1077,8 @@ static string searchdir(const string& srcdir, const string& libdir,
 	fname = libdir+script;
 	if (chkfile(fname)) goto found;
       }
-      fname = script;
     }
-  } else
-    fname = script;
+  }
  found:
   if (!absname(fname)) fname = workdir+fname;
   char buf[BUFSIZE];
