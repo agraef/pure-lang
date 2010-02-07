@@ -2447,7 +2447,8 @@ used to denote scripts located in specific package directories, e.g.::
   using examples::libor::bits;
 
 In fact this is equivalent to the following ``using`` clause which spells out
-the real filename of the script::
+the real filename of the script between double quotes (the ``.pure`` suffix
+can also be omitted in which case it is added automatically)::
 
   using "examples/libor/bits.pure";
 
@@ -2471,23 +2472,46 @@ Note the last example, which shows how an absolute pathname can be denoted
 using a qualifier starting with '``::``'.
 
 Unless an absolute pathname is given, the interpreter performs a search to
-locate the script. It first searches the directory of the script containing
-the ``using`` clause (or the current working directory if the clause was read
-from standard input, as is the case, e.g., in an interactive session), then
-the directories named in -I options on the command line (in the given order),
-then the colon-separated list of directories in the PURE_INCLUDE environment
-variable, and finally the directory named by the PURELIB environment
-variable. Note that the current working directory is not searched by default
-(unless the ``using`` clause is read from standard input), but of course you
-can force this by adding the option -I. to the command line, or by including
-'.' in the PURE_INCLUDE variable.
+locate the script. The search algorithm considers the following directories in
+the given order:
 
-For the purpose of comparing script names (to determine whether two scripts
-are actually the same), the interpreter always uses the canonicalized full
-pathname of the script, following symbolic links to the destination file
-(albeit only one level). Thus different scripts with the same basename, such
-as foo/utils.pure and bar/utils.pure can both be included in the same program
-(unless they link to the same file).
+* the directory of the current script, which is the directory of the script
+  containing the ``using`` clause, or the current working directory if the
+  clause was read from standard input (as is the case, e.g., in an interactive
+  session);
+
+* the directories named in -I options on the command line (in the given
+  order);
+
+* the colon-separated list of directories in the PURE_INCLUDE environment
+  variable (in the given order);
+
+* finally the directory named by the PURELIB environment variable.
+
+Note that the current working directory is not searched by default (unless the
+``using`` clause is read from standard input), but of course you can force
+this by adding the option -I. to the command line, or by including '.' in the
+PURE_INCLUDE variable.
+
+The directory of the current script (the first item above) can be skipped by
+specifying the script to be loaded as a filename in double quotes, prefixed
+with the special ``sys:`` tag. The search then starts with the "system"
+directories (-I, PURE_INCLUDE and PURELIB) instead. This is useful, e.g., if
+you want to provide your own custom version of a standard library script which
+in turn imports that library script. For instance, a custom version of
+math.pure might employ the following ``using`` clause to load the math.pure
+script from the Pure library::
+
+  using "sys:math";
+  // custom definitions go here
+  log2 x = ln x/ln 2;
+
+The interpreter compares script names (to determine whether two scripts are
+actually the same) by using the canonicalized full pathname of the script,
+following symbolic links to the destination file (albeit only one level). Thus
+different scripts with the same basename, such as foo/utils.pure and
+bar/utils.pure can both be included in the same program (unless they link to
+the same file).
 
 The directory of the canonicalized pathname is also used when searching other
 scripts included in a script. This makes it possible to have an executable

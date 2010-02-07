@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>The Pure Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2010-02-04" />
+<meta name="date" content="2010-02-07" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-02-04</td></tr>
+<td>2010-02-07</td></tr>
 </tbody>
 </table>
 <!-- Note: This document is formatted using docutils. The Makefile has rules -->
@@ -2647,7 +2647,8 @@ used to denote scripts located in specific package directories, e.g.:</p>
 using examples::libor::bits;
 </pre>
 <p>In fact this is equivalent to the following <tt class="docutils literal"><span class="pre">using</span></tt> clause which spells out
-the real filename of the script:</p>
+the real filename of the script between double quotes (the <tt class="docutils literal"><span class="pre">.pure</span></tt> suffix
+can also be omitted in which case it is added automatically):</p>
 <pre class="literal-block">
 using &quot;examples/libor/bits.pure&quot;;
 </pre>
@@ -2682,22 +2683,42 @@ the '<tt class="docutils literal"><span class="pre">::</span></tt>' symbol with 
 <p>Note the last example, which shows how an absolute pathname can be denoted
 using a qualifier starting with '<tt class="docutils literal"><span class="pre">::</span></tt>'.</p>
 <p>Unless an absolute pathname is given, the interpreter performs a search to
-locate the script. It first searches the directory of the script containing
-the <tt class="docutils literal"><span class="pre">using</span></tt> clause (or the current working directory if the clause was read
-from standard input, as is the case, e.g., in an interactive session), then
-the directories named in -I options on the command line (in the given order),
-then the colon-separated list of directories in the PURE_INCLUDE environment
-variable, and finally the directory named by the PURELIB environment
-variable. Note that the current working directory is not searched by default
-(unless the <tt class="docutils literal"><span class="pre">using</span></tt> clause is read from standard input), but of course you
-can force this by adding the option -I. to the command line, or by including
-'.' in the PURE_INCLUDE variable.</p>
-<p>For the purpose of comparing script names (to determine whether two scripts
-are actually the same), the interpreter always uses the canonicalized full
-pathname of the script, following symbolic links to the destination file
-(albeit only one level). Thus different scripts with the same basename, such
-as foo/utils.pure and bar/utils.pure can both be included in the same program
-(unless they link to the same file).</p>
+locate the script. The search algorithm considers the following directories in
+the given order:</p>
+<ul class="simple">
+<li>the directory of the current script, which is the directory of the script
+containing the <tt class="docutils literal"><span class="pre">using</span></tt> clause, or the current working directory if the
+clause was read from standard input (as is the case, e.g., in an interactive
+session);</li>
+<li>the directories named in -I options on the command line (in the given
+order);</li>
+<li>the colon-separated list of directories in the PURE_INCLUDE environment
+variable (in the given order);</li>
+<li>finally the directory named by the PURELIB environment variable.</li>
+</ul>
+<p>Note that the current working directory is not searched by default (unless the
+<tt class="docutils literal"><span class="pre">using</span></tt> clause is read from standard input), but of course you can force
+this by adding the option -I. to the command line, or by including '.' in the
+PURE_INCLUDE variable.</p>
+<p>The directory of the current script (the first item above) can be skipped by
+specifying the script to be loaded as a filename in double quotes, prefixed
+with the special <tt class="docutils literal"><span class="pre">sys:</span></tt> tag. The search then starts with the &quot;system&quot;
+directories (-I, PURE_INCLUDE and PURELIB) instead. This is useful, e.g., if
+you want to provide your own custom version of a standard library script which
+in turn imports that library script. For instance, a custom version of
+math.pure might employ the following <tt class="docutils literal"><span class="pre">using</span></tt> clause to load the math.pure
+script from the Pure library:</p>
+<pre class="literal-block">
+using &quot;sys:math&quot;;
+// custom definitions go here
+log2 x = ln x/ln 2;
+</pre>
+<p>The interpreter compares script names (to determine whether two scripts are
+actually the same) by using the canonicalized full pathname of the script,
+following symbolic links to the destination file (albeit only one level). Thus
+different scripts with the same basename, such as foo/utils.pure and
+bar/utils.pure can both be included in the same program (unless they link to
+the same file).</p>
 <p>The directory of the canonicalized pathname is also used when searching other
 scripts included in a script. This makes it possible to have an executable
 script with a shebang line in its own directory, which is then executed via a
