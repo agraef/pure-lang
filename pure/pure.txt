@@ -3260,6 +3260,12 @@ currently supported operations:
     that the interpreter was invoked with the -g option to enable debugging
     support. See Debugging_ below for details.
 
+``bt``
+    Prints a full backtrace of the call sequence of the most recent evaluation,
+    if that evaluation ended with an unhandled exception. This requires
+    that the interpreter was invoked with the -g option to enable debugging
+    support. See Debugging_ below for details.
+
 ``cd dir``
     Change the current working dir.
 
@@ -3370,7 +3376,7 @@ currently supported operations:
     disables stats mode, while ``stats -m off`` just disables the printing of
     the memory usage statistics.
 
-underride
+``underride``
     Exits "override" mode. This returns you to the normal mode of operation,
     where new equations are added "below" previous rules of an existing
     function. See `Definition Levels`_ below for details.
@@ -3504,8 +3510,8 @@ to be listed and the format to use.
 
 Symbols are always listed in lexicographic order. Note that some of the
 options (in particular, -a and -d) may produce excessive amounts of
-information. By setting the PURE_MORE environment variable accordingly, you
-can specify a shell command to be used for paging, usually more(1) or less(1).
+information. By setting the PURE_MORE environment variable, you can specify a
+shell command to be used for paging, usually more(1) or less(1).
 
 For instance, to list all temporary definitions made in an interactive
 session, simply say::
@@ -3717,8 +3723,20 @@ debugging code to be generated which will make your program run *much*
 slower. Therefore the -g option should only be used if you actually need the
 debugger.
 
-To debug a given function, just set a breakpoint with the ``break`` command.
-For instance::
+When in debugging mode, the ``bt`` command allows you to print a backtrace of
+the call sequence of the most recent evaluation if it ended in an unhandled
+exception. The output of this command is piped through PURE_MORE if set. For
+instance::
+
+  > fib n = if n>1 then fib (n-2)+fib (n-1) else 1;
+  > fib x;
+  <stdin>, line 5: unhandled exception 'failed_cond' while evaluating 'fib x'
+  > bt
+  >> [1] fib: fib n = if n>1 then fib (n-2)+fib (n-1) else 1;
+       n = x
+
+To debug a given function, you set a breakpoint with the ``break`` command.
+Example::
 
   > fact n::int = if n>0 then n*fact (n-1) else 1;
   > break fact

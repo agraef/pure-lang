@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>The Pure Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2010-02-07" />
+<meta name="date" content="2010-02-08" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-02-07</td></tr>
+<td>2010-02-08</td></tr>
 </tbody>
 </table>
 <!-- Note: This document is formatted using docutils. The Makefile has rules -->
@@ -3425,6 +3425,11 @@ currently supported operations:</p>
 without arguments, prints all currently defined breakpoints. This requires
 that the interpreter was invoked with the -g option to enable debugging
 support. See <a class="reference internal" href="#debugging">Debugging</a> below for details.</dd>
+<dt><tt class="docutils literal"><span class="pre">bt</span></tt></dt>
+<dd>Prints a full backtrace of the call sequence of the most recent evaluation,
+if that evaluation ended with an unhandled exception. This requires
+that the interpreter was invoked with the -g option to enable debugging
+support. See <a class="reference internal" href="#debugging">Debugging</a> below for details.</dd>
 <dt><tt class="docutils literal"><span class="pre">cd</span> <span class="pre">dir</span></tt></dt>
 <dd>Change the current working dir.</dd>
 <dt><tt class="docutils literal"><span class="pre">clear</span> <span class="pre">[option</span> <span class="pre">...]</span> <span class="pre">[symbol</span> <span class="pre">...]</span></tt></dt>
@@ -3521,7 +3526,7 @@ time, which indicates the maximum amount of expression memory (in terms of
 expression cells) used during the computation. Invoking <tt class="docutils literal"><span class="pre">stats</span> <span class="pre">off</span></tt>
 disables stats mode, while <tt class="docutils literal"><span class="pre">stats</span> <span class="pre">-m</span> <span class="pre">off</span></tt> just disables the printing of
 the memory usage statistics.</dd>
-<dt>underride</dt>
+<dt><tt class="docutils literal"><span class="pre">underride</span></tt></dt>
 <dd>Exits &quot;override&quot; mode. This returns you to the normal mode of operation,
 where new equations are added &quot;below&quot; previous rules of an existing
 function. See <a class="reference internal" href="#definition-levels">Definition Levels</a> below for details.</dd>
@@ -3657,8 +3662,8 @@ information. This implies -s.</td></tr>
 </table>
 <p>Symbols are always listed in lexicographic order. Note that some of the
 options (in particular, -a and -d) may produce excessive amounts of
-information. By setting the PURE_MORE environment variable accordingly, you
-can specify a shell command to be used for paging, usually more(1) or less(1).</p>
+information. By setting the PURE_MORE environment variable, you can specify a
+shell command to be used for paging, usually more(1) or less(1).</p>
 <p>For instance, to list all temporary definitions made in an interactive
 session, simply say:</p>
 <pre class="literal-block">
@@ -3865,8 +3870,20 @@ Recursion</a>) to make it easier to debug programs. It also causes special
 debugging code to be generated which will make your program run <em>much</em>
 slower. Therefore the -g option should only be used if you actually need the
 debugger.</p>
-<p>To debug a given function, just set a breakpoint with the <tt class="docutils literal"><span class="pre">break</span></tt> command.
-For instance:</p>
+<p>When in debugging mode, the <tt class="docutils literal"><span class="pre">bt</span></tt> command allows you to print a backtrace of
+the call sequence of the most recent evaluation if it ended in an unhandled
+exception. The output of this command is piped through PURE_MORE if set. For
+instance:</p>
+<pre class="literal-block">
+&gt; fib n = if n&gt;1 then fib (n-2)+fib (n-1) else 1;
+&gt; fib x;
+&lt;stdin&gt;, line 5: unhandled exception 'failed_cond' while evaluating 'fib x'
+&gt; bt
+&gt;&gt; [1] fib: fib n = if n&gt;1 then fib (n-2)+fib (n-1) else 1;
+     n = x
+</pre>
+<p>To debug a given function, you set a breakpoint with the <tt class="docutils literal"><span class="pre">break</span></tt> command.
+Example:</p>
 <pre class="literal-block">
 &gt; fact n::int = if n&gt;0 then n*fact (n-1) else 1;
 &gt; break fact
