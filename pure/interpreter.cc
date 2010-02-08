@@ -4168,7 +4168,7 @@ static bool sameenv(env *xs, env *ys)
     if (it->first != jt->first)
       return false;
     env_info &ex = it->second, &ey = jt->second;
-    assert(ex.t == env::fun && ey.t == env::fun);
+    assert(ex.t == env_info::fun && ey.t == env_info::fun);
     if (ex.argc != ey.argc || !samerulel(ex.rules, ey.rules))
       return false;
   }
