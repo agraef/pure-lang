@@ -96,7 +96,7 @@ Type 'help' in the interpreter for more help.\n"
 #ifdef HAVE_LIBREADLINE
 
 static const char *commands[] = {
-  "break", "cd", "clear", "const", "def", "del", "dump", "extern", "help",
+  "break", "bt", "cd", "clear", "const", "def", "del", "dump", "extern", "help",
   "infix", "infixl", "infixr", "let", "ls", "mem", "namespace", "nonfix",
   "outfix", "override", "postfix", "prefix", "private", "public", "pwd",
   "quit", "run", "save", "show", "stats", "underride", "using", 0

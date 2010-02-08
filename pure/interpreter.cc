@@ -2557,9 +2557,9 @@ void interpreter::exec(expr *x)
       pure_free(e);
     } else
       msg << "unhandled exception while evaluating '" << y << "'";
-    backtrace(msg);
     throw err(msg.str());
-  }
+  } else
+    bt.clear();
   result = pure_new(res);
   delete x;
   if (interactive) {
@@ -2603,9 +2603,9 @@ void interpreter::define(rule *r)
     } else
       msg << "failed match while evaluating '"
 	  << "let " << lhs << " = " << rhs << "'";
-    backtrace(msg);
     throw err(msg.str());
-  }
+  } else
+    bt.clear();
   delete r;
   pure_freenew(res);
   report_stats();
@@ -2629,9 +2629,9 @@ void interpreter::define_const(rule *r)
     } else
       msg << "failed match while evaluating '"
 	  << "const " << lhs << " = " << rhs << "'";
-    backtrace(msg);
     throw err(msg.str());
-  }
+  } else
+    bt.clear();
   delete r;
   pure_freenew(res);
   report_stats();
@@ -9383,9 +9383,7 @@ Value *interpreter::debug_redn(const rule *r, Value *v)
 
 void interpreter::backtrace(ostream& out)
 {
-  if (debugging && !bt.empty()) {
-    out << "\n\n" << bt; bt.clear();
-  }
+  if (debugging && !bt.empty()) out << bt;
 }
 
 Value *interpreter::debug(const char *format)

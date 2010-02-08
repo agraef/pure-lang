@@ -5039,11 +5039,15 @@ pure_expr *pure_invoke(void *f, pure_expr** _e)
     // caught an exception
     size_t sz = ex->sz;
     e = ex->e;
-    if (!interp.astk->prev && interp.debugging && !interp.debug_info.empty()) {
-      // record a backtrace
-      ostringstream out;
-      pure_debug_backtrace(out);
-      interp.bt = out.str();
+    if (!interp.astk->prev && interp.debugging) {
+      if (interp.debug_info.empty())
+	interp.bt.clear();
+      else {
+	// record a backtrace
+	ostringstream out;
+	pure_debug_backtrace(out);
+	interp.bt = out.str();
+      }
     }
     interp.pop_aframe();
     if (e) pure_new_internal(e);
@@ -5614,9 +5618,10 @@ static const char *stacklab(interpreter& interp,
 }
 
 static const char *stacklab(interpreter& interp,
-			    list<DebugInfo>::reverse_iterator it)
+			    list<DebugInfo>::iterator it)
 {
-  return (it == interp.debug_info.rbegin())?">>":"  ";
+  list<DebugInfo>::iterator jt = it;
+  return (++jt == interp.debug_info.end())?">>":"  ";
 }
 
 static const bool yes_or_no(const string& msg)
@@ -5634,12 +5639,12 @@ static const bool yes_or_no(const string& msg)
 static void pure_debug_backtrace(ostream& out)
 {
   interpreter& interp = *interpreter::g_interp;
-  list<DebugInfo>::reverse_iterator it = interp.debug_info.rbegin(),
-    end = interp.debug_info.rend();
+  list<DebugInfo>::iterator it = interp.debug_info.begin(),
+    end = interp.debug_info.end();
   if (it == end) return;
   size_t save_sz = interp.sstk_sz;
-  interp.sstk_sz = it->sz;
-  get_vars(interp, end);
+  interp.sstk_sz = interp.debug_info.back().sz;
+  get_vars(interp, interp.debug_info.rend());
   for (; it != end; ++it) {
     DebugInfo& d = *it;
     if (d.r) {

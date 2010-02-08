@@ -129,7 +129,7 @@ int    [0-9]+|0[0-7]+|0[xX][0-9a-fA-F]+|0[bB][01]+
 exp    ([Ee][+-]?[0-9]+)
 float  [0-9]+{exp}|[0-9]+\.{exp}|[0-9]*\.[0-9]+{exp}?
 str    ([^\"\\\n]|\\(.|\n))*
-cmd    (!|help|ls|pwd|break|del|cd|show|dump|clear|save|run|override|underride|stats|mem|quit|completion_matches)
+cmd    (!|help|ls|pwd|break|bt|del|cd|show|dump|clear|save|run|override|underride|stats|mem|quit|completion_matches)
 blank  [ \t\f\v\r]
 
 %x escape comment xdecl xdecl_comment xusing xusing_comment xtag rescan
@@ -755,7 +755,7 @@ static bool find_namespace(interpreter& interp, const string& name)
    interpreter is built without readline or libedit support. */
 
 static const char *commands[] = {
-  "break", "cd", "clear", "const", "def", "del", "dump", "extern", "help",
+  "break", "bt", "cd", "clear", "const", "def", "del", "dump", "extern", "help",
   "infix", "infixl", "infixr", "let", "ls", "mem", "namespace", "nonfix",
   "outfix", "override", "postfix", "prefix", "private", "public", "pwd",
   "quit", "run", "save", "show", "stats", "underride", "using", 0
@@ -1069,6 +1069,27 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
     const char *s = cmdline+1;
     while (isspace(*s)) ++s;
     if (system(s) == -1) perror("system");
+  } else if (strcmp(cmd, "bt") == 0)  {
+    const char *s = cmdline+2;
+    argl args(s, "bt");
+    if (!args.ok)
+      ;
+    else if (args.c > 0)
+      cerr << "bt: extra parameter\n";
+    else if (interp.output)
+      interp.backtrace(*interp.output);
+    else {
+      FILE *fp;
+      const char *more = getenv("PURE_MORE");
+      // FIXME: We should check that 'more' actually exists here.
+      if (more && *more && isatty(fileno(stdin)) && (fp = popen(more, "w"))) {
+	ostringstream sout;
+	interp.backtrace(sout);
+	fputs(sout.str().c_str(), fp);
+	pclose(fp);
+      } else
+	interp.backtrace(cout);
+    }
   } else if (strcmp(cmd, "break") == 0)  {
     const char *s = cmdline+5;
     argl args(s, "break");
