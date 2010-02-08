@@ -2557,6 +2557,7 @@ void interpreter::exec(expr *x)
       pure_free(e);
     } else
       msg << "unhandled exception while evaluating '" << y << "'";
+    backtrace(msg);
     throw err(msg.str());
   }
   result = pure_new(res);
@@ -2602,6 +2603,7 @@ void interpreter::define(rule *r)
     } else
       msg << "failed match while evaluating '"
 	  << "let " << lhs << " = " << rhs << "'";
+    backtrace(msg);
     throw err(msg.str());
   }
   delete r;
@@ -2627,6 +2629,7 @@ void interpreter::define_const(rule *r)
     } else
       msg << "failed match while evaluating '"
 	  << "const " << lhs << " = " << rhs << "'";
+    backtrace(msg);
     throw err(msg.str());
   }
   delete r;
@@ -9376,6 +9379,13 @@ Value *interpreter::debug_redn(const rule *r, Value *v)
   args.push_back(constptr(r));
   args.push_back(v);
   return e->CreateCall(f, args);
+}
+
+void interpreter::backtrace(ostream& out)
+{
+  if (debugging && !bt.empty()) {
+    out << "\n\n" << bt; bt.clear();
+  }
 }
 
 Value *interpreter::debug(const char *format)

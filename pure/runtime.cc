@@ -5016,6 +5016,8 @@ pure_expr *pure_catch(pure_expr *h, pure_expr *x)
   }
 }
 
+static void pure_debug_backtrace(ostream& out);
+
 extern "C"
 pure_expr *pure_invoke(void *f, pure_expr** _e)
 {
@@ -5037,6 +5039,12 @@ pure_expr *pure_invoke(void *f, pure_expr** _e)
     // caught an exception
     size_t sz = ex->sz;
     e = ex->e;
+    if (!interp.astk->prev && interp.debugging && !interp.debug_info.empty()) {
+      // record a backtrace
+      ostringstream out;
+      pure_debug_backtrace(out);
+      interp.bt = out.str();
+    }
     interp.pop_aframe();
     if (e) pure_new_internal(e);
 #if 0
@@ -5412,7 +5420,8 @@ static void get_vars(interpreter& interp, list<DebugInfo>::reverse_iterator kt)
   // on the shadow stack
   pure_expr **sstk = interp.sstk;
   size_t sz = interp.sstk_sz;
-  list<DebugInfo>::reverse_iterator it = interp.debug_info.rbegin();
+  list<DebugInfo>::reverse_iterator it = interp.debug_info.rbegin(),
+    end = interp.debug_info.rend();
   do {
     DebugInfo& d = *it;
 #if 0
@@ -5427,10 +5436,10 @@ static void get_vars(interpreter& interp, list<DebugInfo>::reverse_iterator kt)
       d.envs = d.args+d.e->n;
     } else
       d.args = d.envs = 0;
-  } while (it++ != kt);
+  } while (it++ != kt && it != end);
 }
 
-static void print_vars(interpreter& interp, DebugInfo& d)
+static void print_vars(ostream& out, interpreter& interp, DebugInfo& d)
 {
   map<string,pure_expr*> vals;
   if (d.r) {
@@ -5458,16 +5467,16 @@ static void print_vars(interpreter& interp, DebugInfo& d)
       vals[buf] = d.args[i];
     }
   }
-  if (!vals.empty()) cout << "     ";
+  if (!vals.empty()) out << "     ";
   size_t count = 0;
   for (map<string,pure_expr*>::iterator it = vals.begin(); it != vals.end();
        ++it, ++count) {
     const string& id = it->first;
     pure_expr *x = it->second;
-    if (count > 0) cout << "; ";
-    cout << id << " = " << printx(x);
+    if (count > 0) out << "; ";
+    out << id << " = " << printx(x);
   }
-  if (count > 0) cout << endl;
+  if (count > 0) out << endl;
 }
 
 static expr localvars(interpreter& interp, DebugInfo& d, pure_expr *x)
@@ -5604,6 +5613,12 @@ static const char *stacklab(interpreter& interp,
   return (it == interp.debug_info.rbegin())?"**":(it == kt)?">>":"  ";
 }
 
+static const char *stacklab(interpreter& interp,
+			    list<DebugInfo>::reverse_iterator it)
+{
+  return (it == interp.debug_info.rbegin())?">>":"  ";
+}
+
 static const bool yes_or_no(const string& msg)
 {
   char ans;
@@ -5616,6 +5631,31 @@ static const bool yes_or_no(const string& msg)
   return res;
 }
 
+static void pure_debug_backtrace(ostream& out)
+{
+  interpreter& interp = *interpreter::g_interp;
+  list<DebugInfo>::reverse_iterator it = interp.debug_info.rbegin(),
+    end = interp.debug_info.rend();
+  if (it == end) return;
+  size_t save_sz = interp.sstk_sz;
+  interp.sstk_sz = it->sz;
+  get_vars(interp, end);
+  for (; it != end; ++it) {
+    DebugInfo& d = *it;
+    if (d.r) {
+      out << stacklab(interp, it) << " [" << d.n << "] "
+	  << pname(interp, d.e) << ": " << *d.r << ";\n";
+    } else if (d.e->tag > 0 &&
+	       interp.externals.find(d.e->tag) != interp.externals.end()) {
+      ExternInfo &info = interp.externals[d.e->tag];
+      out << stacklab(interp, it) << " [" << d.n << "] "
+	  << pname(interp, d.e) << ": " << info << ";\n";
+    }
+    print_vars(out, interp, d);
+  }
+  interp.sstk_sz = save_sz;
+}
+
 extern "C"
 void pure_debug_rule(void *_e, void *_r)
 {
@@ -5625,7 +5665,8 @@ void pure_debug_rule(void *_e, void *_r)
   if (!interp.interactive) return;
   if (!r) {
     // push a new activation record
-    interp.debug_info.push_back(DebugInfo(interp.debug_info.size()+1, e));
+    interp.debug_info.push_back(DebugInfo(interp.debug_info.size()+1,
+					  interp.sstk_sz, e));
     if (e->tag <= 0 ||
 	interp.externals.find(e->tag) == interp.externals.end())
       return;
@@ -5662,7 +5703,7 @@ void pure_debug_rule(void *_e, void *_r)
 	 << pname(interp, e) << ": " << info << ";\n";
   }
   get_vars(interp, interp.debug_info.rbegin());
-  print_vars(interp, d);
+  print_vars(cout, interp, d);
   static bool init = false;
   if (!init) {
     cout << "(Type 'h' for help.)\n";
@@ -5803,7 +5844,7 @@ void pure_debug_rule(void *_e, void *_r)
 	     << pname(interp, d.e) << ": " << info << ";\n";
       }
       get_vars(interp, kt);
-      print_vars(interp, d);
+      print_vars(cout, interp, d);
       break;
     }
     case 'p': {
@@ -5833,7 +5874,7 @@ void pure_debug_rule(void *_e, void *_r)
 	  cout << stacklab(interp, it, kt) << " [" << d.n << "] "
 	       << pname(interp, d.e) << ": " << info << ";\n";
 	}
-	print_vars(interp, d);
+	print_vars(cout, interp, d);
 	if (it == interp.debug_info.rbegin())
 	  break;
 	else
@@ -5889,7 +5930,7 @@ void pure_debug_rule(void *_e, void *_r)
 	       << pname(interp, d.e) << ": " << info << ";\n";
 	}
 	get_vars(interp, kt);
-	print_vars(interp, d);
+	print_vars(cout, interp, d);
       }
       errexit:
       break;
@@ -5947,7 +5988,7 @@ void pure_debug_redn(void *_e, void *_r, pure_expr *x)
     } else
       goto pop;
     get_vars(interp, interp.debug_info.rbegin());
-    print_vars(interp, d);
+    print_vars(cout, interp, d);
     cout << "     --> " << printx(x, 68) << endl;
   }
  pop:

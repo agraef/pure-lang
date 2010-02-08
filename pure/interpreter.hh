@@ -381,11 +381,12 @@ ostream &operator<< (ostream& os, const ExternInfo& info);
 struct DebugInfo {
   // debugger activation record
   size_t n;			// stack level
+  size_t sz;			// shadow stack size
   Env *e;			// environment
   const rule *r;		// executed rule
   env vars;			// lhs variable bindings
   pure_expr **args, **envs;	// pointers to args and environment
-  DebugInfo(size_t _n, Env *_e) : n(_n), e(_e), r(0) {}
+  DebugInfo(size_t _n, size_t _sz, Env *_e) : n(_n), sz(_sz), e(_e), r(0) {}
 };
 
 struct TagInfo {
@@ -777,9 +778,11 @@ public:
   set<int32_t> breakpoints, tmp_breakpoints;
   int32_t stoplevel;
   bool debug_skip;
+  string bt;
   llvm::Value *debug_rule(const rule *r);
   llvm::Value *debug_redn(const rule *r, llvm::Value *v = 0);
   void debug_init();
+  void backtrace(ostream& out);
 private:
   void init();
   void init_llvm_target();
