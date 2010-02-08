@@ -4125,6 +4125,115 @@ static exprl get_args(expr x)
   return xs;
 }
 
+static bool sameexpr(expr x, expr y);
+
+static bool sameexprl(exprl *xs, exprl *ys)
+{
+  exprl::iterator it, jt;
+  for (it = xs->begin(), jt = ys->begin();
+       it != xs->end() && jt != ys->end(); ++it, ++jt)
+    if (!sameexpr(*it, *jt)) return false;
+  return it == xs->end() && jt == ys->end();
+}
+
+static bool sameexprll(exprll *xs, exprll *ys)
+{
+  exprll::iterator it, jt;
+  for (it = xs->begin(), jt = ys->begin();
+       it != xs->end() && jt != ys->end(); ++it, ++jt)
+    if (!sameexprl(&*it, &*jt)) return false;
+  return it == xs->end() && jt == ys->end();
+}
+
+static bool samerule(const rule& x, const rule& y)
+{
+  return sameexpr(x.lhs, y.lhs) && sameexpr(x.rhs, y.rhs) &&
+    sameexpr(x.qual, y.qual);
+}
+
+static bool samerulel(rulel *xs, rulel *ys)
+{
+  rulel::iterator it, jt;
+  for (it = xs->begin(), jt = ys->begin();
+       it != xs->end() && jt != ys->end(); ++it, ++jt)
+    if (!samerule(*it, *jt)) return false;
+  return it == xs->end() && jt == ys->end();
+}
+
+static bool sameenv(env *xs, env *ys)
+{
+  env::iterator it, jt;
+  for (it = xs->begin(), jt = ys->begin();
+       it != xs->end() && jt != ys->end(); ++it, ++jt) {
+    if (it->first != jt->first)
+      return false;
+    env_info &ex = it->second, &ey = jt->second;
+    assert(ex.t == env::fun && ey.t == env::fun);
+    if (ex.argc != ey.argc || !samerulel(ex.rules, ey.rules))
+      return false;
+  }
+  return it == xs->end() && jt == ys->end();
+}
+
+static bool sameexpr(expr x, expr y)
+{
+  char test;
+  if (interpreter::stackmax > 0 &&
+      interpreter::stackdir*(&test - interpreter::baseptr) >=
+      interpreter::stackmax)
+    throw err("recursion too deep in macro expansion");
+ tail:
+  if (x == y) return true;
+  if (x.is_null() || y.is_null() || x.tag() != y.tag()) return false;
+  switch (x.tag()) {
+  case EXPR::VAR:
+  case EXPR::FVAR:
+    return x.vtag() == y.vtag() && x.vidx() == y.vidx();
+  case EXPR::INT:
+    return x.ival() == y.ival();
+  case EXPR::BIGINT:
+    return mpz_cmp(x.zval(), y.zval()) == 0;
+  case EXPR::DBL:
+    return x.dval() == y.dval();
+  case EXPR::STR:
+    return strcmp(x.sval(), y.sval()) == 0;
+  case EXPR::PTR:
+  case EXPR::WRAP:
+    return x.pval() == y.pval();
+  case EXPR::MATRIX:
+    return sameexprll(x.xvals(), y.xvals());
+  case EXPR::APP:
+    if (!sameexpr(x.xval1(), y.xval1())) return false;
+    /* Fake a tail call here, so that we do not run out of stack space when
+       comparing large lists or similar right-recursive structures. */
+    x = x.xval2(); y = y.xval2();
+    goto tail;
+  case EXPR::LAMBDA:
+    return sameexprl(x.largs(), y.largs()) &&
+      sameexpr(x.lrule().rhs, y.lrule().rhs);
+  case EXPR::COND:
+    return sameexpr(x.xval1(), y.xval1()) && sameexpr(x.xval2(), y.xval2()) &&
+      sameexpr(x.xval3(), y.xval3());
+  case EXPR::CASE:
+  case EXPR::WHEN:
+    return sameexpr(x.xval(), y.xval()) && samerulel(x.rules(), y.rules());
+  case EXPR::WITH:
+    return sameexpr(x.xval(), y.xval()) && sameenv(x.fenv(), y.fenv());
+  default:
+    assert(x.tag()>0);
+    return true;
+  }
+}
+
+static bool checkeqns(expr x, const veqnl& eqns)
+{
+  for (veqnl::const_iterator it = eqns.begin(); it != eqns.end(); ++it) {
+    expr u = subterm(x, it->p), v = subterm(x, it->q);
+    if (!sameexpr(u, v)) return false;
+  }
+  return true;
+}
+
 expr interpreter::macval(expr x)
 {
   char test;
@@ -4145,11 +4254,16 @@ expr interpreter::macval(expr x)
   state *st = info.m->match(args);
   if (st) {
     assert(!st->r.empty());
-    expr y = macred(x, info.m->r[st->r.front()].rhs);
+    for (ruleml::iterator rp = st->r.begin(); rp != st->r.end(); ++rp) {
+      rule& r = info.m->r[*rp];
+      if (checkeqns(x, r.eqns)) {
+	expr y = macred(x, r.rhs);
 #if DEBUG>1
-    std::cerr << "macro expansion: " << x << " -> " << y << '\n';
+	std::cerr << "macro expansion: " << x << " -> " << y << '\n';
 #endif
-    return macsubst(y);
+	return macsubst(y);
+      }
+    }
   }
   return x;
 }
