@@ -1,7 +1,21 @@
-using glpk;
+
+/* lp.pure: LP example for the pure-glpk interface to the GLPK LP/MIP solver */
+
+/* This program allows you to setup and calculate a sample LP problem and to
+   print a simple report of the problem solution.
+   
+   Enter "test;" to setup and compute the sample LP problem.
+   Enter "report lp;" to produce a sample report of the optimal solution.
+*/
+
+/*****************************************************************************/
+
+using glpk, system;
 using namespace glp;
 
-// define the problem matrix
+/* define the problem matrix as a list of non-zero coefficients in the form
+   (rowindex, colindex, coefficient)
+*/
 let mat = [(1, 1,  1.0), (1, 2, 1.0), (1, 3, 1.0),
            (2, 1, 10.0), (2, 2, 4.0), (2, 3, 5.0),
            (3, 1,  2.0), (3, 2, 2.0), (3, 3, 6.0)];
@@ -10,25 +24,71 @@ let mat = [(1, 1,  1.0), (1, 2, 1.0), (1, 3, 1.0),
 // create the lp problem object
 let lp = create_prob;
 
-test =  set_prob_name lp "sample" $$			// set problem name
-	set_obj_dir lp max $$				// set maximization
-	add_rows lp 3 $$				// add 3 rows
-	set_row_name lp (1, "p") $$			// set row name
-	set_row_bnds lp (1, up, 0.0, 100.0) $$		// set row bounds
-	set_row_name lp (2, "q") $$
-	set_row_bnds lp (2, up, 0.0, 600.0) $$
-	set_row_name lp (3, "r") $$
-	set_row_bnds lp (3, up, 0.0, 300.0) $$
-	add_cols lp 3,					// add 3 columns
-	set_col_name lp (1, "x1") $$			// set column name
-	set_col_bnds lp (1, lo, 0.0, 0.0) $$		// set column bounds
-	set_obj_coef lp (1, 10.0) $$
-	set_col_name lp (2, "x2") $$
-	set_col_bnds lp (2, lo, 0.0, 0.0) $$
-	set_obj_coef lp (2, 6.0) $$
-	set_col_name lp (3, "x3") $$
-	set_col_bnds lp (3, lo, 0.0, 0.0) $$
-	set_obj_coef lp (3, 4.0) $$			// set objective coeffs
-	load_matrix lp mat $$				// load problem matrix
-	simplex lp [(presolve, on), (meth, primal)] $$	// solve the problem
-	map (get_col_prim lp) (1..get_num_cols lp);	// retrieve solution
+test =
+  /* solve the problem using the primal simplex method with enabled presolver
+     and do some testing of the solver and solution status */
+
+  (if simplex lp [(presolve, on), (meth, primal)] === ok //check solver status
+    then
+      case get_status lp of	// check solution status
+        opt = printf "Optimal solution found. Objective = %f\n"
+                     (get_obj_val lp);
+        unbnd = printf "The problem is unbounded.\n" ();
+        nofeas = printf "The problem has no feasible solution.\n" ();
+        feas = printf "The current solution is feasible.\n" ();
+        infeas = printf "The current solution is infeasible.\n" ()
+      end
+    else printf "The simplex method failed to solve the problem.\n" ())
+  $$ ()		// return () as the function result
+
+  when
+    set_prob_name lp "sample";				// set problem name
+    set_obj_dir lp max;					// set maximization
+
+    firstrow = add_rows lp 3;				// add 3 rows
+    // firstrow contains ordinal number of the first added row
+
+    set_row_name lp (firstrow, "p");			// set row name
+    set_row_bnds lp (firstrow, up, 0.0, 100.0);		// set row bounds
+    set_row_name lp (firstrow + 1, "q");
+    set_row_bnds lp (firstrow + 1, up, 0.0, 600.0);
+    set_row_name lp (firstrow + 2, "r");
+    set_row_bnds lp (firstrow + 2, up, 0.0, 300.0);
+
+    firstcol = add_cols lp 3;				// add 3 columns
+    // firstcol contains ordinal number of the first added column
+
+    set_col_name lp (firstcol, "x1");			// set column name
+    set_col_bnds lp (firstcol, lo, 0.0, 0.0);		// set column bounds
+    set_obj_coef lp (firstcol, 10.0);			// set objective coeffs
+    set_col_name lp (firstcol + 1, "x2");
+    set_col_bnds lp (firstcol + 1, lo, 0.0, 0.0);
+    set_obj_coef lp (firstcol + 1, 6.0);
+    set_col_name lp (firstcol + 2, "x3");
+    set_col_bnds lp (firstcol + 2, lo, 0.0, 0.0);
+    set_obj_coef lp (firstcol + 2, 4.0);
+    load_matrix lp mat					// load the matrix
+  end;
+
+/* print a report containing column number, name, lower bound, 
+   activity, upper bound and dual value */
+
+report lp = 
+  printf "No.         Col          LB    Activity          UB        Dual\n" ()
+  $$ do (\i ->
+       (printf "%3d  %10s  %10s  %10f  %10s  %10f\n"
+               (i, get_col_name lp i, collb lp i, get_col_prim lp i,
+                colup lp i, get_col_dual lp i)))
+     (1..get_num_cols lp)	//iterate over all columns
+  with
+    // print "-inf" for a variable without lower bound
+    collb lp i = case get_col_type lp i of
+                   lo | db | fx = sprintf "%10f" (get_col_lb lp i);
+                   _ = "-inf"
+            end;
+    //print "inf" for a variable without upper bound
+    colup lp i = case get_col_type lp i of
+                   up | db | fx = sprintf "%10f" (get_col_ub lp i);
+                   _ = "inf"
+           end
+  end;
