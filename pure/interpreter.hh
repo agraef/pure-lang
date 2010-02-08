@@ -817,7 +817,7 @@ private:
   llvm::Value *funcall(Env *f, llvm::Value *x);
   llvm::Value *funcall(Env *f, uint32_t n, expr x);
   llvm::Value *funcall(int32_t tag, uint8_t idx, uint32_t n, expr x);
-  bool logical_tailcall(int32_t tag, uint32_t n, expr x);
+  bool logical_tailcall(int32_t tag, uint32_t n, expr x, const rule *rp);
   llvm::Value *logical_funcall(int32_t tag, uint32_t n, expr x);
   llvm::Value *external_funcall(int32_t tag, uint32_t n, expr x);
   llvm::Value *call(llvm::Value *x);

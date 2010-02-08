@@ -5632,6 +5632,15 @@ void pure_debug_rule(void *_e, void *_r)
   }
   assert(!interp.debug_info.empty());
   DebugInfo& d = interp.debug_info.back();
+#if 0
+  if (d.e != e) {
+    cerr << "unexpected environment: stacktop " << d.e << " ("
+	 << pname(interp, d.e) << ") != " << e << endl;
+    assert(r);
+    cerr << "** [" << d.n << "] "
+	 << pname(interp, e) << ": " << *r << ";\n";
+  }
+#endif
   assert(d.e == e);
   d.r = r;
   if (r) {

@@ -7877,7 +7877,8 @@ Value *interpreter::builtin_codegen(expr x)
   }
 }
 
-bool interpreter::logical_tailcall(int32_t tag, uint32_t n, expr x)
+bool interpreter::logical_tailcall(int32_t tag, uint32_t n, expr x,
+				   const rule *rp)
 {
   if (n != 2 || (tag != symtab.or_sym().f && tag != symtab.and_sym().f))
     return false;
@@ -7896,15 +7897,14 @@ bool interpreter::logical_tailcall(int32_t tag, uint32_t n, expr x)
   e.f->getBasicBlockList().push_back(okbb);
   b.SetInsertPoint(okbb);
   Value *okval = ibox(u);
-  e.CreateRet(okval);
+  e.CreateRet(okval, rp);
   e.f->getBasicBlockList().push_back(nokbb);
   b.SetInsertPoint(nokbb);
-  Value *nokval = codegen(x.xval2());
-  e.CreateRet(nokval);
+  toplevel_codegen(x.xval2(), rp);
   e.f->getBasicBlockList().push_back(failedbb);
   b.SetInsertPoint(failedbb);
   Value *failedval = call(tag, u0, codegen(x.xval2()));
-  e.CreateRet(failedval);
+  e.CreateRet(failedval, rp);
   return true;
 }
 
@@ -8080,7 +8080,7 @@ void interpreter::toplevel_codegen(expr x, const rule *rp)
       return;
     }
     expr f; uint32_t n = count_args(x, f);
-    if (f.tag() > 0 && logical_tailcall(f.tag(), n, x))
+    if (f.tag() > 0 && logical_tailcall(f.tag(), n, x, rp))
       // built-in short-circuit ops (&& and ||)
       return;
     Env& e = act_env();
