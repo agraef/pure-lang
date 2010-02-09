@@ -84,7 +84,7 @@ using namespace std;
 --norc            Do not run the interactive startup files.\n\
 -o filename       Output filename for batch compilation.\n\
 -q                Quiet startup (suppresses sign-on message).\n\
--t filename       Tags file to be written by --ctags or --etags.\n\
+-T filename       Tags file to be written by --ctags or --etags.\n\
 -u                Do not strip unused functions in batch compilation.\n\
 -v[level]         Set debugging level (default: 1).\n\
 --version         Print version information and exit.\n\
@@ -491,7 +491,7 @@ main(int argc, char *argv[])
 	interp.strip = true;
       else if (strcmp(arg, "-u") == 0)
 	interp.strip = false;
-      else if (strncmp(*args, "-t", 2) == 0) {
+      else if (strncmp(*args, "-T", 2) == 0) {
 	string s = string(*args).substr(2);
 	if (s.empty()) {
 	  if (!*++args) {
@@ -615,7 +615,7 @@ main(int argc, char *argv[])
       break;
     } else if (*argv == string("--"))
       break;
-    else if (string(*argv).substr(0,2) == "-t" ||
+    else if (string(*argv).substr(0,2) == "-T" ||
 	     string(*argv).substr(0,2) == "-o" ||
 	     string(*argv).substr(0,2) == "-l" ||
 	     string(*argv).substr(0,2) == "-I" ||
