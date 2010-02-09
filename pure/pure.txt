@@ -3723,20 +3723,35 @@ debugging code to be generated which will make your program run *much*
 slower. Therefore the -g option should only be used if you actually need the
 debugger.
 
-When in debugging mode, the ``bt`` command allows you to print a backtrace of
-the call sequence of the most recent evaluation if it ended in an unhandled
-exception. The output of this command is piped through PURE_MORE if set. For
+One common use of the debugger is "post mortem" debugging after an evaluation
+ended with an unhandled exception. In such a case, the ``bt`` command of the
+interpreter prints a backtrace of the call sequence which caused the
+exception. Note that this only works if debugging mode was enabled. For
 instance::
 
-  > fib n = if n>1 then fib (n-2)+fib (n-1) else 1;
-  > fib x;
-  <stdin>, line 5: unhandled exception 'failed_cond' while evaluating 'fib x'
+  > [1,2]!3;
+  <stdin>, line 2: unhandled exception 'out_of_bounds' while evaluating '[1,2]!3'
   > bt
-  >> [1] fib: fib n = if n>1 then fib (n-2)+fib (n-1) else 1;
-       n = x
+     [1] (!): (x:xs)!n::int = xs!(n-1) if n>0;
+       n = 3; x = 1; xs = [2]
+     [2] (!): (x:xs)!n::int = xs!(n-1) if n>0;
+       n = 2; x = 2; xs = []
+     [3] (!): []!n::int = throw out_of_bounds;
+       n = 1
+  >> [4] throw: extern void pure_throw(expr*) = throw;
+       x1 = out_of_bounds
 
-To debug a given function, you set a breakpoint with the ``break`` command.
-Example::
+The last call, which is also marked with the ``>>`` symbol, is the call that
+raised the exception. The format is similar to the ``p`` command of the
+debugger, see below, but ``bt`` always prints a full backtrace. (As with the
+``show`` command of the interpreter, you can set the PURE_MORE environment
+variable to pipe the output through the corresponding command, or use
+|evalcmd|_ to capture the output of ``bt`` in a string, cf. Reflection_.)
+
+The debugger can also be used interactively. To these ends, you can set
+breakpoints on functions with the ``break`` command. The debugger then gets
+invoked as soon as a rule for one of the given functions is
+executed. Example::
 
   > fact n::int = if n>0 then n*fact (n-1) else 1;
   > break fact
