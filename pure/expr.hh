@@ -105,7 +105,7 @@ public:
   bool operator== (const path& rhs) const
   { return size == rhs.size && v == rhs.v; }
   bool operator!= (const path& rhs) const
-  { return size != rhs.size || v == rhs.v; }
+  { return size != rhs.size || v != rhs.v; }
   // subpath check
   bool operator<= (const path& rhs) const
   {

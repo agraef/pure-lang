@@ -83,7 +83,9 @@ EXPR::~EXPR()
   case LAMBDA:
     if (data.l.xs) delete data.l.xs;
     if (data.l.r) delete data.l.r;
-    if (m) delete m;
+    /* We're deliberately leaking memory in debugging mode here, since the
+       rule pointer of the lambda might still be needed by the debugger. */
+    if (m && !interpreter::g_interp->debugging) delete m;
     break;
   case MATRIX:
     if (data.xs) delete data.xs;
