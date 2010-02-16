@@ -691,6 +691,7 @@ static inline pure_expr *new_ref_expr()
   pure_expr *x = interp.exps;
   if (x) {
     interp.exps = x->xp;
+    interp.freectr--;
     if (interp.stats_mem && interp.freectr < interp.memctr)
       interp.memctr = interp.freectr;
   } else if (interp.mem && interp.mem->p-interp.mem->x < MEMSIZE) {
