@@ -48,6 +48,15 @@
 
 #include "config.h"
 
+#if HAVE_DECL_LLVM__GUARANTEEDTAILCALLOPT
+// API breakage in LLVM 2.7.
+#define PerformTailCallOpt GuaranteedTailCallOpt
+#else
+#if !HAVE_DECL_LLVM__PERFORMTAILCALLOPT && USE_FASTCC
+#error "Your LLVM version lacks the llvm::PerformTailCallOpt flag."
+#endif
+#endif
+
 using namespace std;
 
 #ifndef HOST

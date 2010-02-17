@@ -203,6 +203,7 @@ if test "$pure_cv_new_builder" = yes; then
 fi
 fi
 AC_CHECK_HEADERS([llvm/Support/raw_ostream.h llvm/Support/raw_os_ostream.h llvm/ModuleProvider.h])
+AC_CHECK_DECLS([llvm::PerformTailCallOpt, llvm::GuaranteedTailCallOpt], [], [], [[#include <llvm/Target/TargetOptions.h>]])
 CPPFLAGS=$save_CPPFLAGS
 AC_LANG_POP([C++])
 
