@@ -97,6 +97,13 @@ void interpreter::debug_init()
   debug_skip = false;
 }
 
+/* LLVM 2.7+ only: Hack to make lazy JITing work with LLVM 2.7. There's a
+   workaround in place, but it will leak copious amounts of memory, so
+   enabling this isn't recommended. */
+#if LLVM27 && !defined(LAZY_JIT_HACK)
+//#define LAZY_JIT_HACK 1
+#endif
+
 void interpreter::init()
 {
   if (!g_interp) g_interp = this;
@@ -163,11 +170,13 @@ void interpreter::init()
     std::cerr << "** Panic: " << error << " Giving up. **\n";
     exit(1);
   }
-  /* Make sure that we get lazy compilation. It looks like eager compilation
-     might become the default in LLVM 2.7, so we explicitly tell the JIT that
-     we don't want this. Also note that eager compilation isn't supported in
-     LLVM <=2.6. */
-  //JIT->DisableLazyCompilation(false); // broken with LLVM r85295+
+#if LAZY_JIT_HACK
+  /* LLVM 2.7 and later: Make sure that we get lazy compilation. This appears
+     to be broken as of LLVM r85295+. There's a workaround in place (see '#if
+     !LAZY_JIT_HACK' below) but this will leak copious amounts of memory, so
+     it isn't recommended to enable this code. */
+  JIT->DisableLazyCompilation(false);
+#endif
 #else
 #if FAST_JIT
   JIT = ExecutionEngine::create(MP, false, 0, true);
@@ -7225,9 +7234,13 @@ pure_expr *interpreter::doeval(expr x, pure_expr*& e, bool keep)
   res = pure_invoke(fp, &e);
   end_stats();
   // Get rid of our anonymous function.
+#if !LAZY_JIT_HACK
   JIT->freeMachineCodeForFunction(f.f);
+#endif
   if (!keep) {
+#if !LAZY_JIT_HACK
     f.f->eraseFromParent();
+#endif
     // If there are no more references, we can get rid of the environment now.
     if (fptr->refc == 1)
       delete fptr;
@@ -7401,9 +7414,13 @@ pure_expr *interpreter::dodefn(env vars, veqnl eqns, expr lhs, expr rhs,
   res = pure_invoke(fp, &e);
   end_stats();
   // Get rid of our anonymous function.
+#if !LAZY_JIT_HACK
   JIT->freeMachineCodeForFunction(f.f);
+#endif
   if (!keep) {
+#if !LAZY_JIT_HACK
     f.f->eraseFromParent();
+#endif
     // If there are no more references, we can get rid of the environment now.
     if (fptr->refc == 1)
       delete fptr;
