@@ -787,7 +787,10 @@ void pure_trap(int32_t action, int32_t sig);
 pure_expr *pure_int_seq(int32_t from, int32_t to, int32_t step);
 pure_expr *pure_double_seq(double from, double to, double step);
 
-/* Interface to the C qsort() routine. */
+/* Interface to the C qsort() routine. The first argument is the "less-than"
+   predicate to be used, the second argument the list to be sorted. A
+   'failed_cond' exception is thrown if a comparison doesn't evaluate to a
+   machine int. */
 
 pure_expr *pure_sort(pure_expr *p, pure_expr *xs);
 

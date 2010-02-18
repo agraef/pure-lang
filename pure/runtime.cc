@@ -6135,21 +6135,47 @@ pure_expr *pure_double_seq(double from, double to, double step)
 static pure_expr* cmp_p; // TLD
 static int cmp(const void *xp, const void *yp)
 {
+  int res;
   pure_expr *x = *(pure_expr**)xp, *y = *(pure_expr**)yp;
-  pure_expr *p = pure_appl(cmp_p, 2, x, y);
-  int res = pure_is_int(p, &res) && res; /* x<y? */
+  pure_expr *p = pure_appl(cmp_p, 2, x, y); /* x<y? */
+  if (!pure_is_int(p, &res))
+    pure_throw(pure_symbol(interpreter::g_interp->
+			   symtab.failed_cond_sym().f));
   pure_freenew(p); /* collect temporary */
   if (res)
     res = -1;
   else {
     /* Invoke cmp_p another time to perform the reverse comparison. */
-    p = pure_appl(cmp_p, 2, y, x);
-    res = pure_is_int(p, &res) && res; /* y<x? */
+    p = pure_appl(cmp_p, 2, y, x); /* y<x? */
+    if (!pure_is_int(p, &res))
+      pure_throw(pure_symbol(interpreter::g_interp->
+			     symtab.failed_cond_sym().f));
     pure_freenew(p); /* collect temporary */
+    res = res!=0;
     /* If both tests failed then the elements are either equal or
        incomparable, in which case res==0. */
   }
   return res;
+}
+
+/* These wrapper routines are needed to catch exceptions while qsort() is
+   executing, so that we can perform proper cleanup when something nasty
+   happens. */
+
+static pure_expr *sort_worker(size_t size, pure_expr **elems,
+			      gsl_matrix_symbolic *m)
+{
+  qsort(elems, size, sizeof(pure_expr*), cmp);
+  if (m)
+    return pure_symbolic_matrix(m);
+  else
+    return pure_listv(size, elems);
+}
+
+static pure_expr *sort_wrapper(size_t size, pure_expr **elems,
+			       gsl_matrix_symbolic *m, pure_expr **_e)
+{
+  pure_try_call(sort_worker(size, elems, m));
 }
 
 extern "C"
@@ -6163,14 +6189,16 @@ pure_expr *pure_sort(pure_expr *p, pure_expr *x)
   if (pure_is_listv(x, &size, &elems)) {
     /* Save the current predicate, so that we can be invoked recursively. */
     pure_expr *save_cmp_p = cmp_p;
-    pure_expr *y;
+    pure_expr *y = 0, *e = 0;
     /* Invoke qsort() to sort the elems vector. */
     cmp_p = p;
-    qsort(elems, size, sizeof(pure_expr*), cmp);
-    /* Restore the previous predicate. */
+    y = sort_wrapper(size, elems, 0, &e);
+    /* Clean up. */
     cmp_p = save_cmp_p;
-    y = pure_listv(size, elems);
     free(elems);
+    /* If we got an exception, throw it again, otherwise return the sorted
+       list. */
+    if (e) pure_throw(e);
     return y;
   } else if (x->tag == EXPR::MATRIX) {
     if (x->data.mat.p) {
@@ -6182,12 +6210,18 @@ pure_expr *pure_sort(pure_expr *p, pure_expr *x)
       gsl_matrix_symbolic *m1 = create_symbolic_matrix(n1, n2);
       gsl_matrix_symbolic_memcpy(m1, m);
       elems = m1->data; size = n1*n2;
-      /* Sort the new matrix using qsort. Same as above in the list case. */
+      /* Sort the new matrix using qsort(), handle exceptions. Analogous to
+	 the list case. */
       pure_expr *save_cmp_p = cmp_p;
+      pure_expr *y = 0, *e = 0;
       cmp_p = p;
-      qsort(elems, size, sizeof(pure_expr*), cmp);
+      y = sort_wrapper(size, elems, m1, &e);
       cmp_p = save_cmp_p;
-      return pure_symbolic_matrix(m1);
+      if (e) {
+	gsl_matrix_symbolic_free(m1);
+	pure_throw(e);
+      }
+      return y;
     } else
       return x;
   } else
