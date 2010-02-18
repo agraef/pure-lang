@@ -589,10 +589,10 @@ eval_expr d (CBinary CLeqOp e1 e2) = (eval_expr d e1) <=  (eval_expr d e2);
 eval_expr d (CBinary CGeqOp e1 e2) = (eval_expr d e1) >=  (eval_expr d e2);
 eval_expr d (CBinary CEqOp  e1 e2) = (eval_expr d e1) ==  (eval_expr d e2);
 eval_expr d (CBinary CNeqOp e1 e2) = (eval_expr d e1) ~=  (eval_expr d e2);
-eval_expr d (CBinary CAndOp e1 e2) = (eval_expr d e1) &&  (eval_expr d e2);
-eval_expr d (CBinary COrOp  e1 e2) = (eval_expr d e1) ||  (eval_expr d e2);
-eval_expr d (CBinary CLndOp e1 e2) = (eval_expr d e1) and (eval_expr d e2);
-eval_expr d (CBinary CLorOp e1 e2) = (eval_expr d e1) or  (eval_expr d e2);
+eval_expr d (CBinary CAndOp e1 e2) = (eval_expr d e1) and (eval_expr d e2);
+eval_expr d (CBinary COrOp  e1 e2) = (eval_expr d e1) or  (eval_expr d e2);
+eval_expr d (CBinary CLndOp e1 e2) = (eval_expr d e1~=0)&&(eval_expr d e2~=0);
+eval_expr d (CBinary CLorOp e1 e2) = (eval_expr d e1~=0)||(eval_expr d e2~=0);
 eval_expr d (CBinary CXorOp e1 e2) = xor (eval_expr d e1) (eval_expr d e2)
   with 
   xor a b = (a and not b) or (not a and b); // why exclude poor xor?
