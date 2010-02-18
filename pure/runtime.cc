@@ -6161,7 +6161,7 @@ pure_expr *pure_sort(pure_expr *p, pure_expr *x)
      This yields a vector of pure_expr* elements which can be passed to the
      qsort() routine. */
   if (pure_is_listv(x, &size, &elems)) {
-    /* Save the current predicate, so the we can be invoked recursively. */
+    /* Save the current predicate, so that we can be invoked recursively. */
     pure_expr *save_cmp_p = cmp_p;
     pure_expr *y;
     /* Invoke qsort() to sort the elems vector. */

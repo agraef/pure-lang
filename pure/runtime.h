@@ -374,7 +374,8 @@ bool pure_is_rationalz(const pure_expr *x, mpz_t *z);
 pure_expr *pure_new(pure_expr *x);
 
 /* Drop a reference to an expression. This will cause the expression to be
-   garbage-collected when it is no longer needed. */
+   garbage-collected when its reference count drops to zero. The current
+   reference count must be nonzero when calling this function. */
 
 void pure_free(pure_expr *x);
 
@@ -385,8 +386,26 @@ void pure_freenew(pure_expr *x);
 
 /* Increment and decrement the reference counter of an expression. This can be
    used to temporarily protect an expression from being garbage-collected. It
-   doesn't actually change the status of the expression and does not collect
-   it. */
+   doesn't normally change the status (referenced, temporary, to be freed
+   immediately) of the expression and does not collect it.
+
+   This is only for special uses where you need to temporarily modify the
+   reference counter of an expression without actually changing its status. To
+   these ends, the two operations are typically used in concert. For instance,
+   the runtime itself uses pure_ref/pure_unref to temporarily count an extra
+   reference on a return value while collecting other terms (e.g., arguments
+   which might contain the return value as a subterm), to prevent the return
+   value from being garbage-collected.
+
+   In addition, pure_unref can also be used in conjuction with a prior
+   invocation of pure_new. To these ends, pure_unref puts its argument back on
+   the list of temporaries (expressions with a reference count of zero) if it
+   isn't already there and the reference count drops to zero. This provides an
+   alternative to pure_free in cases where you still want to keep the
+   expression around but turn it into a temporary. Such temporaries may be
+   garbage-collected at the toplevel or when an exception is thrown. Don't
+   expect them to survive the lifetime of the current call unless they are
+   used as the return value. */
 
 void pure_ref(pure_expr *x);
 void pure_unref(pure_expr *x);
