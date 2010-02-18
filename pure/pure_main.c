@@ -1,5 +1,5 @@
 
-/* Copyright (c) 2009 by Albert Graef <Dr.Graef@t-online.de>.
+/* Copyright (c) 2009-2010 by Albert Graef <Dr.Graef@t-online.de>.
 
    All rights reserved.
 

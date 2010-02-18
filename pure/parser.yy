@@ -1,6 +1,6 @@
 /* The PURE parser.  -*- C++ -*- */
 
-/* Copyright (c) 2008, 2009 by Albert Graef <Dr.Graef@t-online.de>.
+/* Copyright (c) 2008-2010 by Albert Graef <Dr.Graef@t-online.de>.
 
    This file is part of the Pure runtime.
 

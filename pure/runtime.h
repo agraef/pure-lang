@@ -3,7 +3,7 @@
 
 /* The Pure runtime interface. */
 
-/* Copyright (c) 2008, 2009 by Albert Graef <Dr.Graef@t-online.de>.
+/* Copyright (c) 2008-2010 by Albert Graef <Dr.Graef@t-online.de>.
    Copyright (c) 2008, 2009 by Scott E. Dillard.
 
    This file is part of the Pure runtime.
