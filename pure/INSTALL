@@ -149,15 +149,23 @@ $ ./configure
 $ make
 $ sudo make install
 
-The last command installs the pure program, the runtime.h header file, the
-runtime library libpure.so and the library scripts in the appropriate
-subdirectories of /usr/local; the installation prefix can be changed with the
---prefix configure option, see OTHER BUILD AND INSTALLATION OPTIONS for
-details.
+The './configure' command configures Pure for a default build. This includes
+debgging information and runtime checks which facilitate debugging the
+interpreter. For maximum performance we recommend running configure as follows
+instead:
 
-(The runtime.h header file is not needed for normal operation, but can be used
-to write C/C++ extensions modules, if you need to access and manipulate Pure
-expressions from C/C++.)
+$ ./configure --enable-release
+
+This will do a "release" build which will run considerably faster. To find out
+about other build options, you can invoke configure as './configure --help'.
+
+The 'sudo make install' command installs the pure program, the runtime.h
+header file, the runtime library libpure.so and the library scripts in the
+appropriate subdirectories of /usr/local; the installation prefix can be
+changed with the --prefix configure option, see OTHER BUILD AND INSTALLATION
+OPTIONS for details. (The runtime.h header file is not needed for normal
+operation, but can be used to write C/C++ extensions modules, if you need to
+access and manipulate Pure expressions from C/C++.)
 
 On some systems you have to tell the dynamic linker to update its cache so
 that it finds the Pure runtime library. E.g., on Linux this is done as
@@ -276,8 +284,9 @@ $ ./configure
 $ make
 $ sudo make install
 
-(Don't forget to also run 'make check' to make sure that the interpreter is in
-good working condition.)
+(Replace './configure' with './configure --enable-release' to do a release
+build, and don't forget to also run 'make check' to make sure that the
+interpreter is in good working condition.)
 
 
 OTHER BUILD AND INSTALLATION OPTIONS
@@ -389,21 +398,17 @@ assume gcc right now, so if you use another compiler you'll probably have to
 set up compilation flags manually by using the variables described in the
 previous section instead.
 
-Note that, as of Pure 0.3, the default build already includes most
-optimizations (-O2). This build should be ok for most purposes, and has the
-advantage that it does additional runtime checks which provide diagnostics
-useful for maintainers if anything is wrong with the interpreter. However, you
-can also build a "release" version of the interpreter by running configure as
-follows:
+The default build includes debugging information and additional runtime checks
+which provide diagnostics useful for maintainers if anything is wrong with the
+interpreter. It is also noticeably slower than the "release" build. If you
+want to enjoy maximum performance, you should configure Pure for a release
+build as follows:
 
 $ ./configure --enable-release
 
 This disables all runtime checks and debugging information in the interpreter,
-and uses a higher optimization level (-O3). The release build will usually
-give you faster execution times, but the differences to the default build
-aren't really that big anymore (less than 5% compared to the default flags on
-my Linux system running gcc 4.1, YMMV), so you are encouraged to use the
-default build unless performance is really critical.
+and uses a higher optimization level (-O3), making the interpreter go
+substantially faster on most systems.
 
 To get smaller executables with either the default or the release build, add
 'LDFLAGS=-s' to the 'configure' command (gcc only, other compilers may provide
@@ -415,8 +420,8 @@ You can also do a "debug" build as follows:
 $ ./configure --enable-debug
 
 This is like the default build, but disables all optimizations, so compilation
-is faster but the compiled interpreter is *much* slower (a factor of about 2
-on my Linux box). Hence this build is only recommended for debugging purposes.
+is faster but the compiled interpreter is *much* slower than even the default
+build. Hence this build is only recommended for debugging purposes.
 
 You can combine all build types with the following option to enable compiler
 warnings (-Wall):
@@ -639,6 +644,6 @@ compiler work. Just unzip these into some convenient location on your
 harddrive and set up PATH so that it points to the llvm-x.y directory.
 
 
-November 2009
+February 2010
 Albert Graef <Dr.Graef at t-online.de>
 Eddie Rucker <erucker at bmc.edu>
