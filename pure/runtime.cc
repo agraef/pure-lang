@@ -6129,8 +6129,8 @@ pure_expr *pure_double_seq(double from, double to, double step)
 }
 
 /* C qsort() interface. This is pretty much the same as the implementation in
-   examples/sort.c, massaged slightly to be reentrant and to also support Pure
-   matrices. */
+   examples/sort.c, massaged slightly to be reentrant, to handle exceptions,
+   and to also support Pure matrices. */
 
 static pure_expr* cmp_p; // TLD
 static int cmp(const void *xp, const void *yp)
