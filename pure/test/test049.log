@@ -1,0 +1,38 @@
+test x/*0:1*/ = result/*0:*/ when y/*0:*/ = foo (x/*0:1*/+1); z/*0:*/ = bar y/*0:*/; result/*0:*/ = baz z/*0:*/ {
+  rule #0: result = baz z
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: z = bar y
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: y = foo (x+1)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+test2 x/*0:1*/ = result/*0:*/ when result/*0:*/ = foo (x/*0:1*/+1) {
+  rule #0: result = foo (x+1)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+{
+  rule #0: test x = result when y = foo (x+1); z = bar y; result = baz z end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+{
+  rule #0: test2 x = result when result = foo (x+1) end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+test 99;
+baz (bar (foo 100))
+test2 99;
+foo 100

@@ -8758,8 +8758,19 @@ Value *interpreter::codegen(expr x, bool quote)
     // case z1 of y1 = ... case zn of yn = x end ... end ==>
     // (\y1->...((\yn->x) zn)...) z1
     // we do this translation here on the fly (cf. when_codegen() above)
-    return when_codegen(x.xval(), x.pm(),
-			x.rules()->begin(), x.rules()->end());
+    expr t = x.xval();
+    rulel::iterator begin = x.rules()->begin(), end = x.rules()->end();
+    if (x.xval().tag() == EXPR::VAR &&
+	x.rules()->back().lhs.tag() == EXPR::VAR &&
+	sameexpr(x.xval(), x.rules()->back().lhs)) {
+      /* Handle a "tail binding" of the form 'x when ...; x = y end' where x
+	 is a local variable. In such a case we can always eliminate x by
+	 transforming the expression to 'y when ... end'. If the 'when' clause
+	 consists of a single binding, we can eliminate it altogether. */
+      t = x.rules()->back().rhs; --end;
+      if (end == begin) return codegen(t);
+    }
+    return when_codegen(t, x.pm(), begin, end);
   }
   case EXPR::WITH: {
     // collection of locally bound closures; this is similar to the 'case'
