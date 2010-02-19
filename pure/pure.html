@@ -403,7 +403,7 @@ Pure can be found under the following URLs:</p>
 <li><a class="reference internal" href="#as-patterns" id="id68">13.6&nbsp;&nbsp;&nbsp;&quot;As&quot; Patterns</a></li>
 <li><a class="reference internal" href="#head-function" id="id69">13.7&nbsp;&nbsp;&nbsp;Head = Function</a></li>
 <li><a class="reference internal" href="#namespaces-and-implicit-declarations" id="id70">13.8&nbsp;&nbsp;&nbsp;Namespaces and Implicit Declarations</a></li>
-<li><a class="reference internal" href="#with-or-when" id="id71">13.9&nbsp;&nbsp;&nbsp;With or when?</a></li>
+<li><a class="reference internal" href="#with-and-when" id="id71">13.9&nbsp;&nbsp;&nbsp;With and when</a></li>
 <li><a class="reference internal" href="#numeric-calculations" id="id72">13.10&nbsp;&nbsp;&nbsp;Numeric Calculations</a></li>
 <li><a class="reference internal" href="#constant-definitions" id="id73">13.11&nbsp;&nbsp;&nbsp;Constant Definitions</a></li>
 <li><a class="reference internal" href="#external-c-functions" id="id74">13.12&nbsp;&nbsp;&nbsp;External C Functions</a></li>
@@ -4745,35 +4745,46 @@ foo x = x+1;
 </pre>
 <p>This will tell the compiler about the desired namespace of the symbol.</p>
 </div>
-<div class="section" id="with-or-when">
-<h2><a class="toc-backref" href="#id71">13.9&nbsp;&nbsp;&nbsp;With or when?</a></h2>
+<div class="section" id="with-and-when">
+<h2><a class="toc-backref" href="#id71">13.9&nbsp;&nbsp;&nbsp;With and when</a></h2>
 <p>A common source of confusion is that Pure provides two different constructs to
 bind local function and variable symbols, respectively. This distinction is
 necessary because Pure does not segregate defined functions and constructors,
 and thus there is no magic to figure out whether an equation like <tt class="docutils literal"><span class="pre">foo</span> <span class="pre">x</span> <span class="pre">=</span>
 <span class="pre">y</span></tt> by itself is meant as a definition of a function <tt class="docutils literal"><span class="pre">foo</span></tt> with formal
-parameter <tt class="docutils literal"><span class="pre">x</span></tt> and return value <tt class="docutils literal"><span class="pre">y</span></tt>, or a definition binding the local
-variable <tt class="docutils literal"><span class="pre">x</span></tt> by matching the constructor pattern <tt class="docutils literal"><span class="pre">foo</span> <span class="pre">x</span></tt> against the value
+parameter <tt class="docutils literal"><span class="pre">x</span></tt> and return value <tt class="docutils literal"><span class="pre">y</span></tt>, or a pattern binding defining the
+local variable <tt class="docutils literal"><span class="pre">x</span></tt> by matching the pattern <tt class="docutils literal"><span class="pre">foo</span> <span class="pre">x</span></tt> against the value of
 <tt class="docutils literal"><span class="pre">y</span></tt>. The <tt class="docutils literal"><span class="pre">with</span></tt> construct does the former, <tt class="docutils literal"><span class="pre">when</span></tt> the latter. (As a
 mnemonic, you may consider that <tt class="docutils literal"><span class="pre">when</span></tt> conveys a sense of time, as the
-individual definitions in a <tt class="docutils literal"><span class="pre">when</span></tt> clause are executed in order, while the
-definitions in a <tt class="docutils literal"><span class="pre">with</span></tt> clause are all done simultaneously.)</p>
+individual variable definitions in a <tt class="docutils literal"><span class="pre">when</span></tt> clause are executed in order,
+while the function definitions in a <tt class="docutils literal"><span class="pre">with</span></tt> clause are all done
+simultaneously.)</p>
 <p>Another speciality is that <tt class="docutils literal"><span class="pre">with</span></tt> and <tt class="docutils literal"><span class="pre">when</span></tt> clauses are tacked on to the
 end of the expression they belong to. This mimics mathematical language and
 makes it easy to read and understand a definition in a &quot;top-down&quot; fashion.
-This style differs considerably from other block-structured languages,
-however, which often place local definitions in front of the code they apply
-to. To grasp the operational meaning of such nested definitions, it can be
-helpful to read nested scopes &quot;in reverse&quot; (from bottom to top). Some people
-also prefer to write their programs that way. Pure doesn't provide special
-syntax for this, but note that you can always write <tt class="docutils literal"><span class="pre">when</span></tt> clauses in the
-following style which places the &quot;body&quot; at the bottom of the clause, which
-mimics an ML-like <tt class="docutils literal"><span class="pre">let</span></tt> expression:</p>
+This style differs considerably from other block-structured programming
+languages, however, which often place local definitions in front of the code
+they apply to. To grasp the operational meaning of such nested definitions, it
+can be helpful to read the nested scopes &quot;in reverse&quot; (from bottom to
+top). Some people also prefer to write their programs that way. In difference
+to Haskell and ML which have <tt class="docutils literal"><span class="pre">let</span></tt> expressions to support that kind of
+notation, Pure doesn't provide any special syntax for this. But note that you
+can always write <tt class="docutils literal"><span class="pre">when</span></tt> clauses in the following style which places the
+&quot;body&quot; at the bottom of the clause:</p>
 <pre class="literal-block">
 result when
   y = foo (x+1);
   z = bar y;
   result = baz z;
+end;
+</pre>
+<p>This doesn't incur any overhead, since the compiler will always eliminate the
+trivial &quot;tail binding&quot; for the result value. E.g., the above will compile to
+exactly the same code as:</p>
+<pre class="literal-block">
+baz z when
+  y = foo (x+1);
+  z = bar y;
 end;
 </pre>
 </div>
