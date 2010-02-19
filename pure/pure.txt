@@ -4660,21 +4660,35 @@ This will tell the compiler about the desired namespace of the symbol.
 With or when?
 -------------
 
-Another common source of confusion is that Pure provides two different
-constructs to bind local function and variable symbols, respectively. This
-distinction is necessary because Pure does not segregate defined functions and
-constructors, and thus there is no magic to figure out whether an equation
-like ``foo x = y`` by itself is meant as a definition of a function ``foo``
-with formal parameter ``x`` and return value ``y``, or a definition binding
-the local variable ``x`` by matching the constructor pattern ``foo x`` against
-the value ``y``. The ``with`` construct does the former, ``when`` the latter.
+A common source of confusion is that Pure provides two different constructs to
+bind local function and variable symbols, respectively. This distinction is
+necessary because Pure does not segregate defined functions and constructors,
+and thus there is no magic to figure out whether an equation like ``foo x =
+y`` by itself is meant as a definition of a function ``foo`` with formal
+parameter ``x`` and return value ``y``, or a definition binding the local
+variable ``x`` by matching the constructor pattern ``foo x`` against the value
+``y``. The ``with`` construct does the former, ``when`` the latter. (As a
+mnemonic, you may consider that ``when`` conveys a sense of time, as the
+individual definitions in a ``when`` clause are executed in order, while the
+definitions in a ``with`` clause are all done simultaneously.)
 
 Another speciality is that ``with`` and ``when`` clauses are tacked on to the
-end of the expression they belong to, which mimics mathematical language but
-may be unfamilar if you're more accustomed to programming languages from the
-Algol/Pascal/C family. If you want to figure out what is actually going on
-there, it is helpful to read nested scopes "in reverse" (proceeding from the
-rightmost/outermost to the leftmost/innermost clause).
+end of the expression they belong to. This mimics mathematical language and
+makes it easy to read and understand a definition in a "top-down" fashion.
+This style differs considerably from other block-structured languages,
+however, which often place local definitions in front of the code they apply
+to. To grasp the operational meaning of such nested definitions, it can be
+helpful to read nested scopes "in reverse" (from bottom to top). Some people
+also prefer to write their programs that way. Pure doesn't provide special
+syntax for this, but note that you can always write ``when`` clauses in the
+following style which places the "body" at the bottom of the clause, which
+mimics an ML-like ``let`` expression::
+
+  result when
+    y = foo (x+1);
+    z = bar y;
+    result = baz z;
+  end;
 
 Numeric Calculations
 --------------------
