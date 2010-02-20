@@ -51,6 +51,7 @@ static string pstring(const char *s);
 static string format_namespace(const string& name);
 static bool find_namespace(interpreter& interp, const string& name);
 static int32_t checktag(const char *s);
+static bool checkint(const char *s, string& msg);
 
 /* Uncomment this to enable checking for interactive command names. This is
    rather annoying and hence disabled by default. */
@@ -125,7 +126,7 @@ letter ([a-zA-Z_]|[\xC4-\xDF][\x80-\xBF]|\xC2[^\x01-\x7F\xA1-\xFF]|\xC3[^\x01-\x
 
 id     ({letter}({letter}|[0-9])*)
 qual   ({id}?::({id}::)*)
-int    [0-9]+|0[0-7]+|0[xX][0-9a-fA-F]+|0[bB][01]+
+int    [0-9][0-9A-Za-z]*
 exp    ([Ee][+-]?[0-9]+)
 float  [0-9]+{exp}|[0-9]+\.{exp}|[0-9]*\.[0-9]+{exp}?
 str    ([^\"\\\n]|\\(.|\n))*
@@ -311,28 +312,43 @@ blank  [ \t\f\v\r]
   }
 }
 
-{int}      {
-  mpz_t *z = (mpz_t*)malloc(sizeof(mpz_t));
-  mpz_init(*z);
-  mpz_set_str(*z, yytext, 0);
-  if (mpz_fits_sint_p(*z)) {
-    int n = mpz_get_si(*z);
-    mpz_clear(*z); free(z);
-    yylval->ival = n;
-    return token::INT;
-  } else {
-    yylval->zval = z;
-    return token::CBIGINT;
-  }
-}
 {int}L     {
-  mpz_t *z = (mpz_t*)malloc(sizeof(mpz_t));
-  mpz_init(*z);
-  yytext[yyleng-1] = 0;
-  mpz_set_str(*z, yytext, 0);
-  yytext[yyleng-1] = 'L';
-  yylval->zval = z;
+  string msg;
+  if (checkint(yytext, msg)) {
+    mpz_t *z = (mpz_t*)malloc(sizeof(mpz_t));
+    mpz_init(*z);
+    yytext[yyleng-1] = 0;
+    mpz_set_str(*z, yytext, 0);
+    yytext[yyleng-1] = 'L';
+    yylval->zval = z;
+  } else {
+    mpz_t *z = (mpz_t*)malloc(sizeof(mpz_t));
+    mpz_init_set_si(*z, 0);
+    yylval->zval = z;
+    interp.error(*yylloc, msg);
+  }
   return token::BIGINT;
+}
+{int}      {
+  string msg;
+  if (checkint(yytext, msg)) {
+    mpz_t *z = (mpz_t*)malloc(sizeof(mpz_t));
+    mpz_init(*z);
+    mpz_set_str(*z, yytext, 0);
+    if (mpz_fits_sint_p(*z)) {
+      int n = mpz_get_si(*z);
+      mpz_clear(*z); free(z);
+      yylval->ival = n;
+      return token::INT;
+    } else {
+      yylval->zval = z;
+      return token::CBIGINT;
+    }
+  } else {
+    yylval->ival = 0;
+    interp.error(*yylloc, msg);
+    return token::INT;
+  }
 }
 {float}    yylval->dval = my_strtod(yytext, NULL); return(token::DBL);
 <rescan>\"{str}\" |
@@ -951,6 +967,49 @@ static int32_t checktag(const char *s)
     else
       return 0;
   }
+}
+
+static inline char upcase(char c)
+{
+  if (c < 'a')
+    return c;
+  else
+    return c-32;
+}
+
+static bool checkint(const char *s, string& msg)
+{
+  char maxdigit = '9';
+  if (*s == '0') {
+    ++s;
+    switch (upcase(*s)) {
+    case 'X':
+      maxdigit = 'F';
+      ++s;
+      break;
+    case 'B':
+      maxdigit = '1';
+      ++s;
+      break;
+    default:
+      maxdigit = '7';
+      break;
+    }
+  }
+  while (*s && upcase(*s) <= maxdigit) ++s;
+  if (*s == 'L' && s[1] == 0) return true; // bigint constant
+  if (*s) {
+    msg = "invalid digit '"+string(1, *s)+"' in ";
+    switch (maxdigit) {
+    case '1': msg += "binary"; break;
+    case '7': msg += "octal"; break;
+    case 'F': msg += "hexadecimal"; break;
+    default: msg += "decimal"; break;
+    }
+    msg += " integer constant";
+    return false;
+  } else
+    return true;
 }
 
 /* Interactive command processing. */
