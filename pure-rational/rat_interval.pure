@@ -1,0 +1,267 @@
+
+/* Interval arithmetic module which goes along with ratutils.pure. */
+
+
+/******************************************************************************
+ ******************************************************************************
+ ***
+ ***
+ ***    Interval Arithmetic
+ ***
+ ***
+ ******************************************************************************
+ ******************************************************************************/
+
+/*
+ * Port of Interval Arithmetic Module for the Q Programming Language
+ * into the Pure language.
+ * Copyright (C) 2006  Rob Hubbard
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to
+ * the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
+/******************************************************************************/
+
+
+/******************************************************************************
+ ***
+ *** TYPE / CONSTRUCTORS / TESTS
+ ***
+ ******************************************************************************/
+using math;
+namespace interval;
+
+/*
+ * Construction
+ */
+interval (lo, up) = Ivl lo up if realp lo && realp up && lo <= up;
+interval m = Ivl m m if realp m;
+interval v = v if intervalp v;
+
+/*
+ * 'Deconstruction'
+ */
+public lower upper lo_up;
+lower (Ivl lo _)  = lo;
+upper (Ivl _ up)  = up;
+lo_up (Ivl lo up) = (lo, up);
+
+/*
+ * Type and value tests
+ */
+public intervalp; // is interval
+intervalp (Ivl lo up) = 1 if realp lo && realp up;
+intervalp _           = 0;
+
+public intintervalp; // has integral interval value
+intintervalp x = intervalp x && integerp (lower x) && integerp (upper x);
+
+public ratintervalp; // has rational interval value
+ratintervalp x = intervalp x && rationalp (lower x) && rationalp (upper x);
+
+public exactintervalp;
+exactintervalp x = intervalp x && exactp (lower x) && exactp (upper x);
+
+public inexactintervalp;
+inexactintervalp x = intervalp x && (inexactp (lower x) || inexactp (upper x));
+
+/******************************************************************************
+ ***
+ *** (general utility functions)
+ ***
+ ******************************************************************************/
+
+private merge;
+merge (Ivl lo1 up1) (Ivl lo2 up2)
+	= Ivl (min lo1 lo2) (max up1 up2);
+
+
+/******************************************************************************
+ ***
+ *** ARITHMETIC - OPERATORS / RELATIONS
+ ***
+ *** (+), (-), (*), (/), (%)
+ ***
+ *** ordering and containment relations
+ *** (before), (after), (within), (without)
+ *** (disjoint)
+ *** (strictly_before), (strictly_within), (strictly_without)
+ *** (strictly_disjoint)
+ ***
+ *** "without" is used here in the sense of "outside"
+ ***
+ ******************************************************************************/
+
+/* OPERATORS */
+
+/* public (+) V1 V2, (-) V1 V2, (*) V1 V2; */
+/* 
+public infixl (::+) +;
+public infixl (::-) -;
+public infixl (::*) *;
+public infixl (::/) /;
+public infixl (::%) %;
+*/
+
+/* unary - */
+-(Ivl lo up) = Ivl (-up) (-lo);
+
+(Ivl lo1 up1) + (Ivl lo2 up2) = Ivl (lo1 + lo2) (up1 + up2);
+/* mixed */
+v + o = v + (interval o) if intervalp v;
+o + v = (interval o) + v if intervalp v;
+
+v1 - v2 = v1 + (-v2) if intervalp v1;
+v1 - v2 = v1 + (-v2) if intervalp v2;
+
+(Ivl lo up) * v = merge ((Ivl lo 0) * v) ((Ivl 0 up) * v) if intervalp v && lo < 0 && up > 0;
+v * (Ivl lo up) = merge (v * (Ivl lo 0)) (v * (Ivl 0 up)) if intervalp v && lo < 0 && up > 0;
+(Ivl lo up) * v = -((Ivl (-up) (-lo)) * v) if intervalp v && lo < 0;
+v * (Ivl lo up) = -(v * (Ivl (-up) (-lo))) if intervalp v && lo < 0;
+/* so 0 <= L1 <= U1 and 0 <= L2 <= U2 */
+(Ivl lo1 up1) * (Ivl lo2 up2) = Ivl (lo1 * lo2) (up1 * up2);
+
+/* mixed */
+v * o = v * (interval o) if intervalp v && realp o;
+o * v = (interval o) * v if intervalp v && realp o;
+
+/* interval::reciprocal mimics ratutils::reciprocal */
+private reciprocal;
+
+reciprocal q = 1 % q if rationalp q && q ~= 0;
+reciprocal i = 1 % i if integerp i && i ~= 0;
+reciprocal r = 1.0 / r if doublep r && r ~= 0.0;
+reciprocal v = interval (1 % up, 1 % lo)
+	if intervalp v && ((0 < lo) || (up < 0))
+	when (lo, up) = lo_up v end;
+
+v1 / v2 = float_Ivl (v1 * (reciprocal v2))
+  with
+    float_Ivl v = interval (double lo, double up)
+	when (lo, up) = lo_up v end
+	if intervalp v
+  end
+  if intervalp v1 && intervalp v2;
+v / o = v * (reciprocal (double o)) if intervalp v && realp o;
+o / v = (double o) * (reciprocal v) if intervalp v && realp o;
+
+v1 % v2 = v1 * (reciprocal v2) if intervalp v1 && intervalp v2;
+v % o = v * (reciprocal o) if intervalp v && realp o;
+o % v = o * (reciprocal v) if intervalp v && realp o;
+
+//TODO? pow, (^)
+
+/* RELATIONS */
+
+/* (=), (<>) */
+/*
+public infix (::==) ==;
+public infix (::~=) ~=;
+*/
+
+((Ivl lo1 up1) == (Ivl lo2 up2)) = (lo1 == lo2) && (up1 == up2);
+(v1 ~= v2) = ~(v1 == v2) if intervalp v1 && intervalp v2;
+
+/* ordering */
+public infix (::<) before;
+public infix (::>) after;
+public infix (::<) strictly_before;
+public infix (::>) strictly_after;
+
+/* containment */
+public infix (::<=) within;
+public infix (::>=) without;
+public infix (::<=) strictly_within;
+public infix (::>=) strictly_without;
+
+/* other */
+public infix (::~=) disjoint;
+public infix (::~=) strictly_disjoint;
+
+/* impl. */
+(Ivl _ up) before (Ivl lo _) = (up <= lo);
+(Ivl _ up) strictly_before (Ivl lo _) = (up < lo);
+v1 after v2 = v2 before v1;
+v1 strictly_after v2 = v2 strictly_before v1;
+
+(Ivl lo1 up1) within (Ivl lo2 up2) = (lo1 >= lo2) && (up1 <= up2);
+(Ivl lo1 up1) strictly_within (Ivl lo2 up2) = (lo1 > up2) && (up1 < up2);
+v1 without v2 = v2 within v1;
+v1 strictly_without v2 = v2 strictly_within v1;
+
+v1 disjoint v2 = (v1 before v2) || (v2 before v1);
+v1 strictly_disjoint v2 = (v1 strictly_before v2) || (v2 strictly_before v1);
+
+/* mixed */
+
+v before r = v before (interval r) if intervalp v && realp r;
+v strictly_before r = v _strictly_before (interval r) if intervalp v && realp r;
+
+r before v = (interval r) before v if intervalp v && realp r;
+r strictly_before v = (interval r) strictly_before v if intervalp v && realp r;
+
+/* membership is special mixed case: */
+r within v = (interval r) within v if intervalp v && realp r;
+r strictly_within v = (interval r) strictly_within v if intervalp v && realp r;
+
+
+/******************************************************************************
+ ***
+ *** MATHS (GENERAL)
+ ***
+ ******************************************************************************/
+
+/*
+ * Absolute Value and Sign
+ * abs, sgn
+ */
+
+/* public abs V, sgn V; */
+/*
+public abs sgn;
+*/
+
+abs (Ivl lo up) = merge (abs (Ivl lo 0)) (abs (Ivl 0 up)) if (lo < 0) && (up > 0);
+abs (Ivl lo up) = Ivl (-up) (-lo) if (lo < 0);
+abs v = v if intervalp v;
+
+sgn (Ivl lo up) = merge (sgn (Ivl lo 0)) (sgn (Ivl 0 up)) if (lo < 0) && (up > 0);
+sgn (Ivl lo up) = -(sgn (Ivl (-up) (-lo))) if (lo < 0);
+sgn (Ivl 0 0) = Ivl 0 0;
+sgn (Ivl 0 _) = Ivl 0 1;
+sgn (Ivl _ _) = Ivl 1 1;
+
+
+/******************************************************************************
+ ***
+ *** CASTS AND CONVERSIONS?
+ ***
+ ******************************************************************************/
+
+/* These are not really the right thing to do */
+//float (Ivl L U) = (Ivl (float L) (float U));
+//rational (Ivl L U) = (Ivl (rational L) (rational U));
+
+
+/******************************************************************************
+ ***
+ *** INTERVAL-SPECIFIC
+ ***
+ ******************************************************************************/
+/*
+public prefix (::#) #;
+*/
+#(Ivl lo up) = up - lo;

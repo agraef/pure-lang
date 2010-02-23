@@ -1,0 +1,2281 @@
+
+/* Rob Hubbard's rational number utilities module. Note that the Rational
+   type and basic arithmetic is now in the standard library module rational.q.
+   This module provides additional utility functions such as rational
+   approximation and formatting algorithms. */
+
+
+/******************************************************************************
+ ******************************************************************************
+ ***
+ ***
+ ***    `` Q + Q ''
+ ***
+ ***
+ ******************************************************************************
+ ******************************************************************************/
+
+/*
+ * Port of Rational (Q) Number Utities Module for the Q Programming
+ * Language into the Pure language
+ * Copyright (C) 2005-6  Rob Hubbard
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to
+ * the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
+/******************************************************************************/
+
+/*
+ * ratutils.pure
+ */
+
+using rat_interval, dict;
+using namespace interval;
+namespace rational;
+
+/******************************************************************************
+ ***
+ *** (general utility functions)
+ ***
+ ******************************************************************************/
+
+/* Find position of leftmost occurrence of substring in string */
+private sublist_find_left;
+//LenSub=#Sub
+sublist_find_left _ _ [] = 0;
+sublist_find_left subl lenSub l
+	= 0 if subl == take (lenSub) l;
+	= 1 + sublist_find_left subl lenSub (tail l);
+
+/* Split string at leftmost occurrence of substring */
+private split_str_left;
+split_str_left "" strg::string = (strg, "");
+split_str_left subs::string strg::string
+	= (strcat l, strcat r)
+	  when
+	    ss = chars subs;
+	    cc = chars strg;
+	    pos = sublist_find_left ss (#ss) cc;
+	    l = take pos cc;
+	    r = drop (pos + #subs) cc
+	  end;
+
+/* some string functions */
+private str_dup; /* duplicate */
+str_dup s n::int = strcat (mklist s n);
+
+private str_lsplit_at;
+str_lsplit_at s n
+	= (strcat (take n c), strcat (drop n c))
+	  when c = chars s end;
+
+private str_rsplit_at;
+str_rsplit_at s n
+	= (strcat (reverse (drop n rc)), strcat (reverse (take n rc)))
+	  when rc = reverse (chars s) end;
+
+private num_den;
+num_den q = (num q, den q) if rationalp q;
+
+private isintval;
+isintval x = (frac x) == 0;
+
+/******************************************************************************
+ ***
+ *** FURTHER ARITHMETIC - OPERATORS / RELATIONS
+ *** (further to those in the basic rational.q module)
+ ***
+ *** reciprocal
+ *** (div), (mod)
+ *** (hsum) (hdiff)
+ ***
+ ******************************************************************************/
+
+public reciprocal;
+
+/*
+ * Reciprocal function
+ */
+reciprocal q = 1 % q if rationalp q && q ~= 0;
+reciprocal i = 1 % i if integerp i && i ~= 0;
+reciprocal r = 1.0 / r if doublep r && r ~= 0.0;
+reciprocal v = interval (1 % up, 1 % lo)
+	if intervalp v && ((0 < lo) || (up < 0))
+	when (lo, up) = lo_up v end;
+
+/* FURTHER OPERATORS */
+/* (further to those in the basic rational.q module) */
+
+/*
+ * Division
+ * (div/mod-like operators)
+ * parameterised by a rounding function
+ *
+ * if
+ *   def (Q, R) = quotient Round Q1 Q2
+ * then
+ *   abs (R) < abs (Q2) or better (depending upon Round)
+ *   Q * Q2 + R = Q1
+ */
+
+public divide;
+divide roundfun q1 q2 = (q, r)
+	when
+          q = roundfun (q1 % q2);
+          r = q1 - (q * q2)
+        end;
+
+/* div-like */
+public quotient;
+quotient roundfun q1 q2 = (divide roundfun q1 q2)!0;
+
+/* mod-like */
+public modulus;
+modulus roundfun q1 q2 = (divide roundfun q1 q2)!1;
+
+/*
+ * (div), (mod) ~ builtin
+ * (chosen for consistency with Q builtins)
+ */
+/* public (div) Q1 Q2, (mod) Q1 Q2; */
+q1 div q2 = quotient trunc q1 q2 if rationalp q1 && rationalp q2;
+q1 mod q2 = modulus trunc q1 q2 if rationalp q1 && rationalp q2;
+
+/* Mixed */
+q div z = q div (rational z) if rationalp q && integerp z;
+z div q = (rational z) div q if rationalp q && integerp z;
+q mod z = q mod (rational z) if rationalp q && integerp z;
+z mod q = (rational z) mod q if rationalp q && integerp z;
+
+/* Harmonic sum and difference */
+public infixl (::+) hsum;
+public infixl (::-) hdiff;
+//UNDOCUMENTED
+
+q1 hsum q2 = reciprocal qco
+	if numberp q1 && numberp q2 && (q1 ~= 0) && (q2 ~= 0) && qco ~= 0 /* i.e. if Q1 + Q2 <> 0 */
+	when qco = reciprocal q1 + reciprocal q2 end;
+/* this is commutative and almost-associative (associative when both expression are defined) */
+
+q1 hdiff q2 = q1 hsum (-q2);
+
+//TODO: implement Q pow_rem Q (power and remainder/error)?
+//TODO: implement Q root_rem Q (root and remainder/error)?
+//TODO: implement Q logarithm_rem Q (log and remainder/error)?
+//(in Q, ln, log, lg are base e, 10, 2 respectively)
+
+
+/* FURTHER RELATIONS */
+/* (further to those in the basic rational.q module) */
+
+/*
+ * cmp
+ * Compare
+ *
+ * returns -1 if first < second
+ * returns  0 if first = second
+ * returns +1 if first > second
+ */
+public cmp;
+cmp q1 q2 = sgn (q1 - q2);
+
+//TODO: move to numeric.q ?
+
+
+/******************************************************************************
+ ***
+ *** FURTHER MATHS (GENERAL)
+ *** (further to that in the basic rational.q module)
+ ***
+ ******************************************************************************/
+
+/* public gcd Q1 Q2, lcm Q1 Q2; */
+
+/*
+ * Greatest Common Divisor / Highest Common Factor
+ * gcd/hcf
+ *
+ * Notation
+ * (A,B) = gcd A B
+ * |C| = abs C
+ *
+ * Informal definition for rationals:
+ * The gcd of rationals Q1 and Q2
+ *   is the largest (therefore positive) rational Q
+ *   such that Q divides into both Q1 and Q2 exactly.
+ *
+ * Formal definition for rationals:
+ * (X/Y) is the gcd of (C/M) and (D/N) iff
+ *   (C/M)/(X/Y) = S is an integer
+ *   (D/N)/(X/Y) = T is an integer
+ *   S and T are coprime (i.e. gcd of S and T is 1)
+ *   (X/Y) > 0
+ *
+ * Note that the values of the gcd for integral rationals
+ * is consistent with
+ */
+gcd q1 q2
+	= (gcd (n1 * d2) (n2 * d1)) % (d1 * d2)
+	if rationalp q1 && rationalp q2 && ((n1 ~= 0) || (n2 ~= 0))
+	when
+          (n1, d1) = num_den q1;
+          (n2, d2) = num_den q2
+        end;
+/*
+ * outline proof for formal definition:
+ *   X/Y = (CN,DM)/MN
+ *    (in fact, this should really be (CN,DM)/|MN|)
+ * so
+ *   S = (C/M)/(X/Y) = CMN/(M(CN,DM)) = CN/(CN,DM)
+ *   T = (D/N)/(X/Y) = DMN/(N(CN,DM)) = DM/(CN,DM)
+ *   (S,T) = (CN/(CN,DM),DM/(CN,DM))
+ * so (S,T)(CN,DM) = (CN/(CN,DM),DM/(CN,DM))(CN,DM) = (CN,DM)
+ * so (S,T) = 1
+ */
+
+/* Mixed */
+gcd q i = gcd q (rational i) if rationalp q && integerp i;
+gcd i q = gcd (rational i) q if rationalp q && integerp i;
+
+/*
+ * Least Common Multiple / Lowest Common Multiple
+ * lcm
+ */
+lcm x y = abs (x * y) % (gcd x y);
+
+//TODO: introduce these?
+//public signed_gcd Q1 Q2, signed_lcm Q1 Q2;
+//signed_gcd X Y = (sgn X) * (sgn Y) * (gcd X Y);
+//signed_lcm X Y = (X * Y) % (gcd X Y);
+
+//so that (signed_gcd X Y) * (lcm X Y) = X * Y
+//and (gcd X Y) * (signed_lcm X Y) = X * Y
+
+/*
+ * Maxima and Minima
+ */
+
+/* public min and max already work - nothing to do */
+
+public list_max  list_min;
+list_max = foldl1 max;
+list_min = foldl1 min;
+//TODO: move to numeric.q?
+
+
+/******************************************************************************
+ ***
+ *** RATIONAL-SPECIFIC MATHS
+ ***
+ ******************************************************************************/
+
+/*
+ * COMPLEXITY
+ */
+
+// private type Rational_Complexity = private const Rat_cplx X;
+
+/*
+ * Only allow equality and inequality tests on complexities;
+ * don't allow, for example (+).
+ */
+((Rat_cplx x) == (Rat_cplx y)) = (x == y);
+(Rat_cplx x) ~= (Rat_cplx y) = x ~= y;
+(Rat_cplx x) < (Rat_cplx y) = x < y;
+(Rat_cplx x) <= (Rat_cplx y) = x <= y;
+(Rat_cplx x) > (Rat_cplx y) = x > y;
+(Rat_cplx x) >= (Rat_cplx y) = x >= y;
+sgn ((Rat_cplx x) - (Rat_cplx y)) = sgn (x - y);
+
+/*
+ * An arbitrary measure of complexity;
+ * the greater the value, the more complicated the number
+ *
+ * Note that the definition covers integers, rationals and reals (floats)
+ */
+private complexity;
+complexity q = Rat_cplx (-1 % den q) if rationalp q;
+complexity i = Rat_cplx (-1) if integerp i;
+complexity r = Rat_cplx 0 if doublep r;
+
+/* Arbitrary measures of the `simplicity' of (N % D) might be (1 % D) or (-D) */
+
+/*
+ * Ternary complexity functions
+ */
+
+public complexity_rel;
+complexity_rel left op right = op (complexity left) (complexity right);
+
+public prefix_complexity_rel;
+prefix_complexity_rel op left right = op (complexity left) (complexity right);
+
+/*
+ * Complexity relations
+ */
+
+/* equally complex - complexity eq */
+public infix (::==) eq_cplx;
+(eq_cplx) = prefix_complexity_rel (==);
+
+/* not equally complex - complexity neq */
+public infix (::~=) not_eq_cplx;
+(not_eq_cplx) = prefix_complexity_rel (~=);
+
+/* less complex - complexity lt */
+/* "[is] less complex than; simpler than" */
+public infix (::<) less_cplx;
+(less_cplx) = prefix_complexity_rel (<);
+
+/* less or equally complex - complexity lte */
+/* not more complex - complexity ngt */
+public infix (::<=) less_eq_cplx;
+(less_eq_cplx) = prefix_complexity_rel (<=);
+
+/* more complex - complexity gt */
+/* "[is] more complex than; of greater complexity" */
+public infix (::>) more_cplx;
+(more_cplx) = prefix_complexity_rel (>);
+
+/* more or equally complex - complexity gte */
+/* not less complex - complexity nlt */
+public infix (::>=) more_eq_cplx;
+(more_eq_cplx) = prefix_complexity_rel (>=);
+
+//TODO: if denominators are equal - use numerators?
+
+/*
+ * Complexity (complicatedness) comparison functions
+ */
+
+public cmp_complexity;
+cmp_complexity q1 q2 = sgn ((complexity q1) - (complexity q2));
+
+/*
+ * Complexity extrema
+ * (returns the first operand when equally simple)
+ */
+public least_cplx most_cplx;
+least_cplx q1 q2
+	= q1 if (q1 less_eq_cplx q2);
+	= q2 otherwise;
+
+most_cplx q1 q2
+	= q2 if (q1 less_cplx q2);
+	= q1 otherwise;
+
+/*
+ * List complexity extrema
+ */
+//should these be included?
+public list_least_cplx list_most_cplx;
+list_least_cplx = foldl1 least_cplx;
+list_most_cplx = foldl1 most_cplx;
+
+
+/*
+ * MEDIANTS
+ */
+
+/*
+ * Mediant
+ * (a non-arithmetical averaging function)
+ *
+ * (function defined on rational representations
+ *   thus the value is not unique;
+ *   however, we take the 'canonical' mediant
+ *   i.e. the mediant of simplest, i.e. normalised, representations)
+ *
+ * The mediant Q of Q1 < Q2 is such that Q1 < Q < Q2
+ */
+public mediant;
+mediant q1 q2 = (n1 + n2) % (d1 + d2) if rationalp q1 && rationalp q2
+	when
+          (n1,d1) = num_den q1;
+          (n2,d2) = num_den q2
+        end;
+
+mediant i q = mediant (rational i) q if rationalp q && integerp i;
+mediant q i = mediant q (rational i) if rationalp q && integerp i;
+
+/*
+ * Farey Sequences
+ *
+ * The order K Farey Sequence
+ * is a sorted list of rational numbers
+ * (usually between 0 and 1)
+ * with denominators no more than K.
+ */
+
+private gen_farey;
+gen_farey _ [] rs = rs;
+gen_farey k (l:ls) (r:rs)
+	= gen_farey k ls (l:r:rs)
+		if (den l) + (den r) > k;
+	= gen_farey k (m:l:ls) (r:rs)
+		when m = (mediant l r) end
+		otherwise;
+
+public farey farey_range;
+farey k = gen_farey k [rational 0] [rational 1] if integerp k && k >= 1;
+
+/*
+ * Properties of Mediants and Farey Sequences:
+ *
+ * if n/d < m/c are consecutive terms of a farey sequence,
+ * then d*m - c*n = 1
+ */
+
+
+/*
+ * TYPE SIMPLIFICATION
+ */
+
+/*
+ * Rational -> Int
+ * simplification
+ */
+public rat_simplify;
+rat_simplify q = n
+	if rationalp q && d == 1
+	when (n, d) = num_den q end;
+rat_simplify c = x +: y if complexp c
+	when
+          (cx, cy) = (re c, im c);
+          x = rat_simplify cx;
+          y = rat_simplify cy
+        end;
+rat_simplify other = other;
+
+/*
+ * Complex -> Real
+ * simplification
+ */
+public comp_simplify;
+comp_simplify c = x
+	if exactp y && y == 0
+	when (x, y) = (re c, im c) end;
+comp_simplify other = other;
+
+/*
+ * Combined simplification
+ */
+public ratcomp_simplify;
+ratcomp_simplify c = rat_simplify (comp_simplify c);
+
+
+/******************************************************************************
+ ***
+ *** FURTHER ROUNDING
+ *** (further to that in the basic rational.q module)
+ *** [Q] --> [Z]
+ ***
+ *** Rational -> Integer Conversion
+ ***
+ ******************************************************************************/
+
+/*
+ * Further casts/conversion from Rational - round to Int
+ * (further to that in the basic rational.q module)
+ */
+
+/*
+ * round to nearest integer with
+ * half-integers are rounded to nearest even number
+ *
+ * (a 'half integer' is a number N with frac(N) = .5 )
+ */
+
+public round_unbiased;
+
+round_unbiased q
+	= if n < 0 then
+	    - round_unbiased ((-n) % d)
+	  else if (d == 2) && ((n mod 4) == 1) then
+	    n div 2
+	  else if (d == 2) then
+	    (n div 2) + 1
+	  else
+	    ((2 * n) + d) div (2 * d)
+	  when (n, d) = num_den q end
+          if rationalp q;
+
+/* extend to ints and floats */
+round_unbiased i = i if integerp i;
+round_unbiased f
+	= if f < 0.0 then
+	    - round_unbiased (-f)
+	  else if isintval f then
+	    round f
+	  else if isintval f2 && ((i2 mod 4) == 1) then
+	    I2 div 2
+	  else if isintval F2 then
+	    i2 div 2 + 1
+	  else
+	    round f
+	  when
+            f2 = F * 2;
+            i2 = round (f2)
+          end
+          if doublep f;
+
+/*
+ * round to nearest integer but with
+ * half-integers are rounded towards zero
+ */
+
+public round_zero_bias;
+
+round_zero_bias q
+	= if n < 0 then
+	    - round_zero_bias ((-n) % d)
+	  else if (d == 2) then
+	    (n div 2)
+	  else
+	    ((2 * n) + d) div (2 * d)
+	  when (n, d) = num_den q end
+          if rationalp q;
+
+/* extend to ints and floats */
+round_zero_bias i = i if integerp i;
+round_zero_bias f
+	= if f < 0.0 then
+	    - round_zero_bias (-f)
+	  else if isintval (f * 2) then
+	    trunc f
+	  else
+	    round f
+          if doublep f;
+
+/*
+ * Integer and Fraction Parts
+ * parameterised by a rounding function
+ *
+ * if
+ *   def (Z, F) = integer_and_fraction Round Q
+ * then
+ *   abs (F) < 1 or better (depending upon Round)
+ *   possibly F >= 0 (depending upon Round)
+ *   Z + F = Q
+ *
+ * e.g. if Round = trunc
+ *   then sgn(F) = sgn(Q) or 0
+ *   abs (F) < 1
+ * e.g. if Round = round_to_nearest_*
+ *   abs (F) <= (1/2)
+ * e.g. if Round = floor
+ *   0 <= F < 1
+ */
+public integer_and_fraction;
+integer_and_fraction roundfun q = (z, f)
+	when
+          z = roundfun q;
+          f = q - z
+        end;
+
+/*
+ * Fraction Part
+ */
+public fraction;
+fraction roundfun q = (integer_and_fraction roundfun q)!1;
+
+/*
+ * Integer Part?
+ *
+ * there is no 'integer' function, as
+ *   integer Round Q
+ * would just be
+ *   Round Q
+ */
+
+
+/******************************************************************************
+ ***
+ *** ROUNDING TO MULTIPLES
+ *** [Q] --> [Z]*R
+ ***
+ ******************************************************************************/
+
+public round_to_multiple;
+round_to_multiple roundfun multOf q = multOf * (roundfun (q % multOf));
+
+public floor_multiple;
+floor_multiple multOf q
+	= round_to_multiple floor multOf q;
+
+public ceil_multiple;
+ceil_multiple multOf q
+	= round_to_multiple ceil multOf q;
+
+public trunc_multiple;
+trunc_multiple multOf q
+	= round_to_multiple trunc multOf q;
+
+public round_multiple;
+round_multiple multOf q
+	= round_to_multiple round multOf q;
+
+public round_multiple_zero_bias;
+round_multiple_zero_bias multOf q
+	= round_to_multiple round_zero_bias multOf q;
+
+public round_multiple_unbiased;
+round_multiple_unbiased multOf q
+	= round_to_multiple round_unbiased multOf q;
+
+/*
+ * Note that the round_multiple functions may be used
+ * to find a fixed denominator approximation of a number:
+ *
+ * E.g. nearest Q with D=1000 (actually D|1000) to a float R:
+ *   round_multiple (1 % 1000) R;
+ */
+
+
+/******************************************************************************
+ ***
+ *** (rational approximation helper functions)
+ ***
+ ******************************************************************************/
+
+/* Deal with sums and negations of pair expressions */
+
+private form_neg;
+form_neg (x, y) = (form_neg y, form_neg x); /* note reversal */
+form_neg z = -z;
+
+private form_sum;
+form_sum r (u, v) = (form_sum r u, form_sum r v);
+form_sum (s, t) w = (form_sum s w, form_sum t w);
+form_sum x y = x + y;
+
+/*
+ * Filter list elements leftwards (outwards) pairwise with a binary predicate
+ */
+private filter2l p xx;
+filter2l _ [] = [];
+filter2l _ [x] = [x];
+filter2l p (x : xx) /* (with xx nonempty) */
+	= if (x < px) then (x:px:pxx) else (px:pxx)
+		when (px:pxx) = filter2l p xx end;
+
+/*
+ * Filter list elements rightwards (inwards) pairwise with a binary predicate
+ */
+private filter2r p xx;
+filter2r _ [] = [];
+filter2r _ [x] = [x];
+filter2r p (x1:x2:xx)
+	= (x1:(filter2r p (x2:xx)))
+			if (p x1 x2);
+	= filter2r p (x1:xx) /* removed x2 */
+			otherwise;
+
+//private is_closer_to_than frac q1 q2;
+
+/* (returns whether q1 is further from fract than q2) */
+private is_further_from_than;
+is_further_from_than fract q1 q2
+	= abs (q1 - fract) > abs (q2 - fract);
+
+/* (find a monotonically improving subsequence with the same final value) */
+private filter_better_rational_approxs;
+filter_better_rational_approxs fract qq
+	= filter2l (is_further_from_than fract) qq;
+
+
+/*
+ * Choose the simplest of those of l, u
+ * that are also within epsilon of fract.
+ */
+private simplest_epsilon;
+simplest_epsilon epsilon fract l u
+	= least_cplx l u
+		if (abs (l - fract) <= epsilon) && (abs (u - fract) <= epsilon);
+	= l if abs (l - fract) <= epsilon;
+	= u if abs (u - fract) <= epsilon;
+	= throw "Never" otherwise;
+
+
+/*
+ * find the simplest rational within epsilon of float fract (usually in i = [0,1]),
+ * given the initial bounds [L,U] (not necessarily within i)
+ *
+ * (This works for any real fract with l <= fract <= u,
+ *  but may be slow to converge for badly chosen l, u.)
+ */
+
+private seek_rational_approx_epsilon;
+/* 0 < epsilon << 1 */
+seek_rational_approx_epsilon epsilon fract l u
+	= simplest_epsilon epsilon fract l u
+		if rationalp l && rationalp u && ((abs (l - fract) <= epsilon) || (abs (u - fract) <= epsilon));
+	= seek_rational_approx_epsilon epsilon fract l m
+		if rationalp l && rationalp u && (fract < m)
+		when m = mediant l u end;
+	= seek_rational_approx_epsilon epsilon fract m u
+		if rationalp l && rationalp u
+                when m = mediant l u end; /* if fract >= m */;
+
+/*
+ * find a rational interval no bigger than epsilon containing float fract
+ *   (usually in i = [0,1]),
+ * given the initial bounds [l,u] (not necessarily within i)
+ *
+ * (This works for any real fract with l <= fract <= u,
+ *  but may be slow to converge for badly chosen l, u.)
+ */
+private seek_rational_interval_epsilon;
+/* 0 < Epsilon << 1 */
+seek_rational_interval_epsilon epsilon fract l u
+	= interval (l, u) if rationalp l && rationalp u && (u - l) <= epsilon;
+	= seek_rational_interval_epsilon epsilon fract l m
+		if rationalp l && rationalp u && (fract < m)
+		when m = mediant l u end;
+	= seek_rational_interval_epsilon epsilon fract m u
+		when m = mediant l u end
+		if rationalp l && rationalp u;
+
+/*
+ * given float fract in [0,1],
+ * select suitable initial bounds [l,u]
+ * (possibly trying to optimise
+ * because the basic method can be very slow to converge
+ * for values very near 0 or very near 1)
+ */
+private bound_and_seek_epsilon;
+bound_and_seek_epsilon seek epsilon fract
+/* 0 <= fract <= 1 */
+	/* OPTIONAL */
+	= form_sum 1 (form_neg (bound_and_seek_epsilon seek epsilon (1 - fract)))
+		/* i.e. reflect in 1/2 */
+		if fract > 0.5;
+		/* now 0 <= fract <= 1/2 */
+
+	/* OPTIONAL OPTIMISATION, but requires 0 <= fract <= 1/2 */
+	= seek epsilon fract l u
+		when
+			/*
+			 * determine the smallest K s.t.
+			 *   1/K > fract
+			 *   1/K - fract <= Eps
+			 */
+                        k = max 1 (floor (1.0 / (epsilon + fract)));
+			l = rational 0;
+			u = reciprocal k
+                end
+		if fract >= 0 && fract <= 0.5;
+	/*
+	 * This works without the optimisation,
+	 * but may be inefficient for values close to 0 or 1
+	 * (as convergence to 0 and 1 is very slow)
+	 */
+	= seek epsilon fract (rational 0) (rational 1)
+		otherwise;
+
+/*
+ * return the list of rationals constructed whilst
+ * finding the simplest rational within epsilon of float fract (usually in i = [0,1]),
+ * given the initial bounds [l,u] (not necessarily within i)
+ */
+private seek_rational_approxs_epsilon;
+/* 0 < epsilon << 1 */
+seek_rational_approxs_epsilon epsilon fract l u
+	= [u, l] if rationalp l && rationalp u && ((fract - l) <= epsilon) && ((fract - l) < (u - fract));
+	= [l, u] if rationalp l && rationalp u && ((u - fract) <= epsilon);
+	= (u : seek_rational_approxs_epsilon epsilon fract l m)
+		if rationalp l && rationalp u && (fract < m)
+		when m = mediant l u end;
+	= (l : seek_rational_approxs_epsilon epsilon fract m u)
+		when m = mediant l u end
+		if rationalp l && rationalp u;
+
+//~ private seek_rational_intervals_epsilon epsilon fract l u;
+//~ /* 0 < epsilon << 1 */
+//~ seek_rational_intervals_epsilon epsilon fract l::rational u::rational
+	//~ = [(l, u)] if (u - l) <= epsilon;
+	//~ = [(l, u) | seek_rational_intervals_epsilon epsilon fract l m]
+		//~ if (fract < m)
+		//~ where m = mediant l u;
+	//~ = [(l, u) | seek_rational_intervals_epsilon epsilon frac m u]
+		//~ where m = mediant l u
+		//~ otherwise;
+
+
+/*
+ * Note on max_den algorithms:
+ *
+ * if the mediant M has a denominator that has exceeded the bound MaxDen
+ * we must not use M as an endpoint
+ * because the target value fract may be between the mean and mediant
+ * and therefore on the 'wrong side' of the mediant.
+ *
+ * Example1:
+ * If l=1/3=0.[333...], u=1/2=0.5, maxDen=4 and fract=0.41
+ * then m=2/5=0.4 (exceeding denominator bound)
+ * and a=mean{l,u}=(l+u)/2=5/12=0.41[6...]
+ * then m < fract < u, i.e. fract is bounded by [m,u] rather than [l,m]
+ * but fract < a and fract is therefore nearer to l than u.
+ *
+ * Example2:
+ * If l=0, u=1/4=0.25, maxDen=4 and fract=0.15
+ * then m=1/5=0.2 (exceeding denominator bound)
+ * and a=mean{l,u}=(l+u)/2=1/8=0.125
+ * then l < fract < m, i.e. fract is bounded by [l,m] rather than [m,u]
+ * but fract > a and fract is therefore nearer to u than l.
+ */
+
+/*
+ * find a rational as close to float fract (usually in i = [0,1])
+ * as possible with denominator no greater than maxDen
+ * given the initial bounds [l,u] (not necessarily within i)
+ *
+ * (This works for any real fract with l <= fract <= u,
+ *  but may be slow to converge for badly chosen l, u.)
+ */
+private seek_rational_approx_max_den;
+/* maxDen > 1 */
+seek_rational_approx_max_den maxDen fract l u
+	= seek_rational_approx_max_den MaxDen fract L M
+		if rationalp l && rationalp u && ((den m) <= maxDen) && (fract < m)
+		when m = mediant l u end;
+	= seek_rational_approx_max_den maxDen fract m u
+		if rationalp l && rationalp u && ((den m) <= maxDen) /* and then (fract >= m) */
+		when m = mediant l u end;
+	= l if rationalp l && rationalp u && ((fract - l) < (u - fract));
+	= u if rationalp l && rationalp u;
+
+/*
+ * find a rational interval no bigger than maxDen containing float fract
+ *   (usually in i = [0,1]),
+ * given the initial bounds [l,u] (not necessarily within i)
+ *
+ * (This works for any real fract with l <= fract <= u,
+ *  but may be slow to converge for badly chosen l, u.)
+ */
+private seek_rational_interval_max_den;
+/* 0 < maxDen << 1 */
+seek_rational_interval_max_den maxDen fract l u
+	= seek_rational_interval_max_den MaxDen fract L M
+		if rationalp l && rationalp u && ((den m) <= maxDen) && (fract < m)
+		when m = mediant l u end;
+	= seek_rational_interval_max_den maxDen fract m u
+		if rationalp l && rationalp u && ((den m) <= maxDen) /* and then (fract >= m) */
+		when m = mediant l u end;
+	= interval (l, u) if rationalp l && rationalp u;
+
+/*
+ * given float fract in [0,1],
+ * select suitable initial bounds [l,u]
+ * (possibly trying to optimise
+ * because the basic method can be very slow to converge
+ * for values very near 0 or very near 1)
+ */
+private bound_and_seek_max_den;
+bound_and_seek_max_den seek maxDen fract
+/* maxDen > 0 */
+	/* OPTIONAL */
+	= form_sum 1 (form_neg (bound_and_seek_max_den seek maxDen (1 - fract)))
+		/* i.e. reflect in 1/2 */
+		if fract > 0.5;
+		/* now 0 <= fract <= 1/2 */
+
+	/* OPTIONAL OPTIMISATION, but requires 0 <= fract <= 1/2 */
+	= seek maxDen fract l u
+		when
+		  k = max 1 (min maxDen (trunc (1.0 / fract)));
+		  l = rational 0;
+		  u = reciprocal k
+		end
+		if fract > 0;
+
+	/* This works, but may be inefficient for values close to 0 or 1 */
+	= seek maxDen fract (rational 0) (rational 1)
+		otherwise;
+
+/*
+ * return the list of rationals constructed whilst
+ * finding a rational as close to float fract (usually in i = [0,1])
+ * as possible with denominator no greater than MaxDen
+ * given the initial bounds [l,u] (not necessarily within i)
+ */
+private seek_rational_approxs_max_den;
+/* 0 < maxDen << 1 */
+seek_rational_approxs_max_den maxDen fract l u
+	= [l] if rationalp l && rationalp u && (l == u);
+	= (u : seek_rational_approxs_max_den maxDen fract l m)
+		if rationalp l && rationalp u && ((den m) <= maxDen) && (fract < m)
+		when m = mediant l u end;
+	= (l : seek_rational_approxs_max_den maxDen fract m u)
+		if rationalp l && rationalp u && ((den m) <= maxDen) /* and then (fract >= m) */
+		when m = mediant l u end;
+	= [u, l] if rationalp l && rationalp u && ((fract - l) < (u - fract));
+	= [l, u] if rationalp l && rationalp u;
+
+
+/******************************************************************************
+ ***
+ *** [R] --> [Q]
+ ***
+ *** Real [Float] --> Rational Approximation
+ ***
+ ******************************************************************************/
+
+/*
+ * Find a rational approximation of a float
+ * (via mediants)
+ */
+
+/*
+ * Find a rational to approximate a float (real) to within Epsilon
+ *
+ * i.e. given (usually) float r and (small) epsilon
+ * find rational q s.t. abs (q-r) <= epsilon.
+ */
+public rational_approx_epsilon;
+rational_approx_epsilon epsilon::double r
+	= -(rational_approx_epsilon epsilon (-r)) if r < 0;
+	= (i + q)
+	  when
+	    i = trunc r;
+	    fract = r - i;
+	    q = bound_and_seek_epsilon seek_rational_approx_epsilon epsilon fract
+	  end
+	  if epsilon > 0;
+	// do nothing otherwise;
+
+//~ /* Alternative - need to check the new epsilon is correct */
+//~ 	= bound_and_seek_epsilon seek_rational_approx_epsilon epsilon r if r <= 1;
+//~ 	= reciprocal (bound_and_seek_epsilon seek_rational_approx_epsilon (epsilon % r) (1 % r)) otherwise /* r > 1 */;
+
+/*
+ * Find a list of ever better approximations
+ */
+public rational_approxs_epsilon;
+rational_approxs_epsilon epsilon::double r
+	= filter_better_rational_approxs r qq
+	  when
+	    r_floor = (rational (floor r));
+	    r_ceil = (rational (ceil r));
+	    qq = seek_rational_approxs_epsilon epsilon r r_floor r_ceil
+	  end
+	  if epsilon > 0;
+	// do nothing otherwise;
+
+/*
+ * Find a rational interval no bigger than Epsilon to contain a float (real)
+ *
+ * i.e. given float r and (small) epsilon
+ * find rationals l, u s.t. u-l <= epsilon and j <= r <= u.
+ */
+public rational_interval_epsilon;
+rational_interval_epsilon epsilon::double r
+	= (-v)
+	  when
+	    v = rational_interval_epsilon epsilon (-r)
+	  end
+	  if r < 0;
+	= i + v
+	  when
+	    i = trunc r;
+	    fract = r - i;
+	    v = bound_and_seek_epsilon seek_rational_interval_epsilon epsilon fract
+	  end
+	  if epsilon > 0;
+	// do nothing otherwise;
+
+//TODO? offer different epsilon modes?
+//Absolute: abs (x-y) <= epsilon
+//Relative: abs (1-x/y) <= epsilon
+
+
+/*
+ * Find a rational to approximate a float (real) with bounded denominator
+ *
+ * i.e. given (usually) float r and maxDen
+ * find rational q=n/d with d <= maxDen that minimises abs (q-r).
+ */
+public rational_approx_max_den;
+rational_approx_max_den maxDen::int r
+	= -(rational_approx_max_den maxDen (-r)) if r < 0;
+	= i + q
+	  when
+	    i = trunc r;
+	    fract = r - i;
+	    q = bound_and_seek_max_den seek_rational_approx_max_den maxDen fract
+	  end
+	  if maxDen > 0;
+	// do nothing otherwise;
+
+/*
+ * Find a list of ever better approximations
+ */
+public rational_approxs_max_den;
+rational_approxs_max_den maxDen::int r
+	= filter_better_rational_approxs r qq
+	  when
+	    r_floor = (rational (floor r));
+	    r_ceil = (rational (ceil r));
+	    qq = seek_rational_approxs_max_den maxDen r r_floor r_ceil
+	  end
+	  if maxDen > 0;
+	// do nothing otherwise;
+
+/*
+ * Find the smallest rational interval containing a float (real)
+ * with endpoints having bounded denominators
+ *
+ * i.e. given float r and maxDen
+ * find rationals l = n1/d1, u = n2/d2
+ * s.t. d1, d2 <= maxDen and l <= r <= u and u-l is minimised.
+ */
+public rational_interval_max_den;
+rational_interval_max_den maxDen::int r
+	= (-v)
+	  when
+	    v = rational_interval_max_den maxDen (-r)
+	  end
+	  if R < 0;
+	= i + v
+	  when
+	    i = trunc r;
+	    fract = r - i;
+	    v = bound_and_seek_max_den seek_rational_interval_max_den maxDen fract
+	  end
+	  if maxDen > 0;
+	// do nothing otherwise;
+
+
+/******************************************************************************
+ ***
+ *** Rational Complex Numbers
+ ***
+ ******************************************************************************/
+
+/*
+ * Further type tests
+ * (further to those in primitives.pure):
+ *
+ * Rational complex type value tests
+ */
+
+public isintcompval;	// integral complex value
+public isratcompval;	// rational complex value
+
+isintcompval x	= (complexp x) && (isintval (re x)) && (isintval (im x)) if numberp x;
+isratcompval x	= (complexp x) && (rationalp (re x)) && (rationalp (im x)) if numberp x;
+
+/*
+ * utility routines
+ */
+private i_rot;
+i_rot [z] = [z * i];
+i_rot [x, y] = [x * i, y * i];
+i_rot [x, y, y] = [x * i, y * i, z * i];
+
+private u_neg;
+u_neg [z] = [(-z)];
+u_neg [x, y] = [(-x), (-x)];
+u_neg [x, y, y] = [(-x), (-y), (-z)];
+
+/* ensure that re t!n is +ve and >= im t!n (and also im t!n +ve if possible) */
+private normalise_list;
+normalise_list n t
+	= normalise_list n (i_rot t)
+		if (abs (re (t!n)) < abs (im (t!n)));
+	= normalise_list n (u_neg t)
+		if (re (t!n) < 0);
+	= normalise_list n (i_rot t)
+		if (abs (re (t!n)) == abs (im (t!n))) && (im (t!n) < 0);
+	= t otherwise;
+
+private normalise_singleton;
+normalise_singleton u = (normalise_list 0 [u])!0;
+
+/*
+ * more complex number routines
+ */
+
+/*
+ * Euclidean algorithm for a (not necessarily unique) GCD
+ */
+public euclid_gcd;
+/* isZero is a zero predicate */
+/* modfun is a mod function */
+/* x,y could be numbers, polynomials,.... */
+euclid_gcd isZero modfun x y
+	= x if (isZero y);
+	= euclid_gcd isZero modfun y (modfun x y) otherwise;
+
+/* for K=A*X+B*Y ensure that re.den K is +ve and >= abs.im.den K */
+private normalise_eqn;
+normalise_eqn [k, a, b] = normalise_list 0 [k, a, b];
+
+/*
+ * Generalised Euclidean algorithm
+ * returns [g, a, b]
+ * where g is a (not necessarily unique) GCD of x,y
+ * and a,b are such that
+ * a*x + b*y = g
+ */
+public euclid_alg;
+private euclid_alg_initial;
+/* isZero is a zero predicate */
+/* divfun is a div function */
+/* x,y could be numbers, polynomials,... */
+
+euclid_alg_initial isZero divfun x y
+	= [x, 1, 0] if isZero y;
+	= [k, a, b]
+	  when
+	    q = divfun x y;
+	    r = x - q * y;
+	    [K, I, J] = euclid_alg_initial isZero div y r;
+	    /* e.g. [k, i, j] = euclid d r where r = (n mod d) */
+	    /* i.e. i*y+j*r=k */
+	    /* so i*y+j*(x-q*y)=k */
+	    /* so j*x+(i-j*q)*y=k */
+	    /* want a,b s.t. a*x + b*y = k */
+	    a = j;
+	    b = i - j * q
+	  end
+	  otherwise;
+
+euclid_alg isZero divfun x y
+	= normalise_eqn (euclid_alg_initial isZero divfun x y)
+		if numberp x && numberp y && isratcompval x && isexact x
+		   && isratcompval y && isexact y;
+	= euclid_alg_initial isZero divfun x y
+		otherwise;
+
+/*
+ * Rational complex constructors and deconstructors
+ */
+
+/*
+ * generate some Gaussian integer num,den with no particular properties
+ * except that the denominator is real
+ */
+private num_den_initial;
+num_den_initial c
+	= (xn +: yn, d +: 0)
+	  when
+	    (x, y) = (re c, im c);
+	    (nx, dx) = num_den x;
+	    (ny, dy) = num_den y;
+	    xn = nx * dy;
+	    yn = ny * dx;
+	    d = dx * dy
+	  end
+	  if numberp c;
+
+/*
+ * num_den function with minimal natural (positive integer real) denominator
+ */
+public num_den_nat;
+num_den_nat c
+	= (xn +: yn, d +: 0)
+	  when
+	    (ni, di) = num_den_initial c;
+	    (nix, niy) = (re ni, im ni);
+	    dix = re di; /* diy = im di 0 */
+	    g = gcd (gcd nix niy) dix;
+	    xn = nix div g;
+	    yn = niy div g;
+	    d = dix div g
+	  end
+	  if numberp c;
+
+/* div, mod for Gaussian integers */
+public div_mod_gauss;
+public infixl (::div) div_gauss;
+public infixl (::mod) mod_gauss;
+div_mod_gauss n d = (q, r)
+	when
+	  p = n % d;
+	  (px, py) = (re p, im p);
+	  (qx, qy) = (round_unbiased px, round_unbiased py);
+	  //alternatively, could use round or round_zero_bias
+	  q = qx +: qy;
+	  r = n - d * q
+	end
+	if numberp n && numberp d && isintcompval n && isexact n && isintcompval d && isexact d;
+
+n div_gauss d = q
+	when (q, _) = div_mod_gauss n d end
+	if numberp n && numberp d;
+
+n mod_gauss d = r
+	when (_, r) = div_mod_gauss n d end
+	if numberp n && numberp d;
+
+public gcd_gauss;
+gcd_gauss c1 c2 = normalise_singleton (euclid_gcd (==0) (mod_gauss) c1 c2)
+	if numberp c1 && numberp c2;
+
+/* Gaussian norm */
+public norm_gauss;
+norm_gauss c = x * x + y * y
+	when (x, y) = (re c, im c) end
+	if numberp c && iscompval c;
+
+
+/*
+ * Gaussian num_den:
+ * the absolute value of the denominator is as small as possible
+ * and is a "positive" gaussian integer
+ */
+public num_den_gauss;
+num_den_gauss c
+	= normalise_ratio (n, d)
+	  with
+	    /* ensure that re.den x is +ve and >= abs.im.den x */
+	    normalise_ratio (n, d) = normalise_list 1 [n, d]
+	  end
+	  when
+	    (ni, di) = num_den_initial c;
+	    h = gcd_gauss ni di;
+	    (n, d) = (rat_simplify (ni % h), rat_simplify (di % h))
+	  end
+	  if numberp c && isratcompval c && isexact c;
+
+/* extend num_den to Complex */
+num_den c	= num_den_gauss c if complexp c;
+num c		= n when (n, _) = num_den c end if complexp c;
+den c		= d when (_, d) = num_den c end if complexp c;
+
+
+/******************************************************************************
+ ***
+ *** Continued Fractions
+ ***
+ ******************************************************************************/
+
+/*
+ * Some continued fraction theory:
+ *
+ * [a0,a1,...,an] = a0 + 1 / [a1,...,an] = [a0,[a1,...,an]]
+ * [a0,a1,...,an] = [a0,a1,...,a(i-1),[ai,...,an]]
+ *
+ * [a0,a1,...,an] = pn/qn
+ * where p0 = a0, p1 = a0 a1 + 1, pn = an p(n-1) + p(n-2)
+ * and q0 = 1, q1 = a1, qn = an q(n-1) + q(n-2)
+ *
+ * Definition: a 'simple' continued fraction is one in which
+ * all the ai are integers, and
+ * all the ai (for i > 0) are positive
+ *
+ * Simple continued fractions for rationals are not quite unique
+ * since [a0,a1,...,an,1] = [a0,a1,...,an+1]
+ * The following functions return the RHS form.
+ */
+
+/*
+ * Find 'the' (exact) continued fraction of a rational
+ */
+public continued_fraction;
+continued_fraction q
+	= (a : continued_fraction (reciprocal d))
+	  when
+	    a = floor q;
+	    d = q - a
+	  end
+	  if rationalp q && d ~= 0;
+	= [a]
+	  when
+	    a = floor Q
+	  end
+	  if rationalp q;
+continued_fraction i = [i] if integerp i;
+
+//TODO: could use a special form to allow (non-terminating) continued fractions of (irrational) reals.
+
+/*
+ * Find a specified number of initial terms of continued fraction of any value
+ * with the 'remainder', if any, in the final element.
+ *
+ * (If continued_fraction_max_terms n r
+ * returns a list of length n or less, the result is exact.)
+ */
+public continued_fraction_max_terms;
+continued_fraction_max_terms 0 r = [r];
+continued_fraction_max_terms maxTerms r
+	= (a : continued_fraction_max_terms (maxTerms - 1) (reciprocal d))
+	  when
+	    a = (floor r);
+	    d = r - a
+	  end
+	  if (d ~= 0);
+	= [a]
+	  when a = floor r end
+	  otherwise;
+
+/*
+ * Calculate the continued fraction to within epsilon
+ * by carrying the original value and convergents
+ * as well as the 'remainder'
+ */
+private ctd_frac_eps;
+ctd_frac_eps epsilon r p0 q0 p1 q1 r1
+	= [r1] if abs (r - (p1 % q1)) <= epsilon;
+	= (a : ctd_frac_eps epsilon r p1 q1 p2 q2 (reciprocal d))
+	  if d ~= 0
+	  when
+	    a = (floor r1);
+	    d = r1 - a;
+	    p2 = a * p1 + p0;
+	    q2 = a * q1 + q0
+	  end;
+	= [a]
+	  when a = floor r1 end
+	  otherwise;
+
+/*
+ * Find enough of the initial terms of a continued fraction
+ * to within an epsilon of any value
+ * with the 'remainder', if any, in the final element.
+ */
+public continued_fraction_epsilon;
+continued_fraction_epsilon epsilon r =
+	case continued_fraction_max_terms 2 r of
+	  [a0, a1, r2] = (a0 : a1 : ctd_frac_eps epsilon r a0 1 (a0 * a1 + 1) a1 r2);
+	  x = x /* when a0 or a1 or r2 does not exist */
+	end;
+
+/*
+ * Fold a continued fraction into the value it represents.
+ *
+ * (Exact simple continued fractions are folded into a rational.)
+ */
+public evaluate_continued_fraction;
+evaluate_continued_fraction [] = 0;
+evaluate_continued_fraction [t] = t;
+evaluate_continued_fraction (t : tt) = t + (reciprocal (evaluate_continued_fraction tt));
+
+
+/*
+ * Calculate the convergents of a continued fraction
+ */
+public convergents;
+convergents (a0 : a1 : aa)
+	= cvgts a0 1 (a0 * a1 + 1) a1 aa
+	  with
+	    /*
+	    * Calculate the convergents of a continued fraction
+	    * given the first two
+	    */
+	    cvgts p0 q0 p1 q1 []
+		= [(p0 % q0), (p1 % q1)];
+	    cvgts p0 q0 p1 q1 (a : aa)
+		= ((p0 % q0) : cvgts p1 q1 p2 q2 aa)
+		  when
+		    p2 = a * p1 + p0;
+		    q2 = a * q1 + q0
+		  end
+	  end;
+convergents aa = aa;
+
+
+/******************************************************************************
+ ***
+ *** (internationalisation and general format helper functions)
+ ***
+ ******************************************************************************/
+
+private /* public? */ format_split_left;
+format_split_left = split_str_left;
+
+private /* public? */ format_sign;
+format_sign (_, _, p::string) "+" mant::string = p + mant;
+format_sign (_, z::string, _) ""  mant::string = z + mant;
+format_sign (n::string, _, _) "-" mant::string = n + mant;
+
+private format_unsign_list;
+format_unsign_list ("-" : cc) = ("-", cc);
+format_unsign_list ("+" : cc) = ("+", cc);
+format_unsign_list cc         = ("",  cc);
+
+private /* public? */ format_unsign;
+format_unsign num = (sign, strcat rest)
+	when
+	  (sign, rest) = format_unsign_list (chars num)
+	end;
+
+private left_offset_insert_every;
+left_offset_insert_every _ _ _ [] = [];
+//left_offset_insert_every g::int 0 x ys = (x : left_offset_insert_every g g x ys);
+left_offset_insert_every g 0 x (y : ys) = (x : y : left_offset_insert_every g (g - 1) x ys)
+	if integerp g;
+left_offset_insert_every g c x (y : ys) = (y : left_offset_insert_every g (c - 1) x ys)
+	if integerp g && integerp c;
+
+private right_offset_insert_every;
+right_offset_insert_every g _ [] = (g, []);
+right_offset_insert_every g x (y : ys) =
+	if c == 0 then (g - 1, (y : x : fys)) else (c - 1, (y : fys))
+	when
+	  (c, fys) = right_offset_insert_every g x ys
+	end
+	if integerp g;
+
+private left_insert_every;
+left_insert_every 0 _  ys = ys; /* necessary */
+left_insert_every _ "" ys = ys; /* optimisation */
+left_insert_every g x ys = left_offset_insert_every g g x ys if integerp g;
+
+private right_insert_every;
+right_insert_every 0 _  ys = ys; /* necessary */
+right_insert_every _ "" ys = ys; /* optimisation */
+right_insert_every g x ys = (right_offset_insert_every g x ys)!1 if integerp g;
+
+private /* public? */ format_int_group;
+format_int_group sep::string groupSize i::string
+	= strcat (right_insert_every groupSize sep (chars i)) if integerp groupSize;
+
+private /* public? */ format_frac_group;
+format_frac_group sep::string groupSize fract::string
+	= strcat (left_insert_every groupSize sep (chars fract)) if integerp groupSize;
+
+private /* public? */ format_ungroup;
+format_ungroup sep::string numb::string
+	// only works if #sep=1
+	= strcat (split sep numb);
+	//= strcat (filter (~=sep) (chars fract)); //alternative
+
+private /* public? */ format_zero;
+format_zero z "" = z;
+format_zero _ i::string = i;
+
+private /* public? */ format_join_init_recur;
+format_join_init_recur formatZero (_, _) initial::string "" = formatZero initial;
+format_join_init_recur _ (l, r) initial::string recur::string = initial + l + recur + r;
+
+private /* public? */ format_split_init_recur;
+format_split_init_recur (l, r) numb
+	= (initial, recur)
+	  when
+	    (initial, rest) = format_split_left l numb;
+	    (recur, _) = format_split_left r rest
+	  end;
+
+private /* public? */ format_join;
+format_join sep::string l::string r::string = l + sep + r;
+
+private /* public? */ format_join_if_right;
+format_join_if_right sep::string l::string "" = l;
+format_join_if_right sep::string l::string r::string = l + sep + r;
+
+private error_label;
+error_label (n::string, z::string, p::string) err
+	= n if err < 0;
+	= p if err > 0;
+	= z otherwise; /* err = 0 */
+
+private /* public? */ format_error;
+format_error signs (l::string, r::string) err numb::string
+	= if label == "" then numb else numb + l + label + r
+	  when label = error_label signs err end;
+
+private /* public? */ format_unerror;
+format_unerror (l, r) numb
+	= (numb, label)
+	  when
+	    (numb, rest) = format_split_left l numb;
+	    (label, _) = format_split_left r rest
+	  end;
+
+//TODO: investigate recasting all string join functions with substitution patterns
+//TODO: investigate recasting all string split functions with regexes
+
+
+
+/******************************************************************************
+ ***
+ *** INTERNATIONALISATION
+ ***
+ ******************************************************************************/
+
+/*
+ * Useful function for creating an international format structure
+ * from an options structure
+ */
+
+public create_format;
+create_format options =
+	dict [
+		"sm"  => format_sign (options ! "sign"),
+		"se"  => format_sign (options ! "exponent sign"),
+		"-s"  => format_unsign,
+		"gi"  => format_int_group (options ! "group separator"),
+		"gf"  => format_frac_group (options ! "fraction group separator"),
+		"-g"  => format_ungroup (options ! "group separator"),
+		"zi"  => format_zero (options ! "zero"),
+		"zf"  => format_zero (options ! "fraction zero"),
+		"ir"  => format_join_init_recur	(format_zero (options ! "fraction zero")) (options ! "recur brackets"),
+		"-ir" => format_split_init_recur (options ! "recur brackets"),
+		"if"  => format_join (options ! "radix point"),
+		"-if" => format_split_left (options ! "radix point"),
+		"me"  => format_join_if_right (options ! "exponent"),
+		"-me" => format_split_left (options ! "exponent"),
+		"e"   => format_error (options ! "error sign") (options ! "error brackets"),
+		"-e"  => format_unerror (options ! "error brackets")
+	];
+
+//UK-specific examples
+
+const options_uk =
+	dict [
+		"sign" => ("-","",""), //alternative: ("-"," ","+")
+		"exponent sign" => ("-","",""), //alternative: ("-","","+")
+		"group separator" => ",", //might be " " or "." or "'" elsewhere
+		"zero" => "0",
+		"radix point" => ".", //might be "," elsewhere
+		"fraction group separator" => ",",
+		"fraction zero" => "0", //alternative: ""
+		"recur brackets" => ("[","...]"),
+		"exponent" => "*10^", //alternative: "e"
+		"error sign" => ("-","","+"),
+		"error brackets" => ("(",")")
+		//??? ("separatrix", "/"),
+	];
+
+const format_uk = create_format options_uk;
+
+//TODO:
+//Extension for currency or units
+//with parameters
+//  UnitSymbol = � | m | g | Pa | ...
+//  UnitFix = prefix|signfix|postfix
+//and a supply of ISO/language prefixes
+//e.g. "k"=1000; "M"=1e6 or for "Million"
+
+
+/******************************************************************************
+ ***
+ *** (int <-> string helpers)
+ ***
+ ******************************************************************************/
+
+/*
+ * convert a rational
+ * to string containing a digit (or rather, numeral) expansion
+ *
+ * The intermediate list-of-digit form
+ * is ordered least significant digit first for the integer part
+ * and most significant digit first for the fraction part;
+ * e.g. 123.45 -> [3, 2, 1], [4, 5].
+ *
+ * Not limited to decimal; any radix may be chosen
+ * (from 2 to 36)
+ */
+
+/* Int -> IntDigitList_LeastSigFirst */
+private int_to_expansion;
+int_to_expansion rx 0 = [] if integerp rx;
+int_to_expansion rx:Int z:Int
+	= (d : dd)
+	  when
+	    d = z mod rx;
+	    dd = int_to_expansion rx (z div rx)
+	  end
+	  if integerp rx && integerp z;
+
+/* IntDigitList_LeastSigFirst -> Int */
+private expansion_to_int;
+expansion_to_int rx [] = 0 if integerp rx;
+expansion_to_int rx (d : dd)
+	= d + rx * (expansion_to_int rx dd) if integerp rx;
+
+/* FracDigitList_MostSigFirst -> Rational */
+private expansion_to_frac;
+expansion_to_frac rx [] = rational 0 if integerp rx;
+expansion_to_frac rx (d : dd)
+	= ((expansion_to_frac rx dd) + d) % rx if integerp rx;
+
+/* Digit -> Char */
+private digit_to_char;
+digit_to_char d
+	= chr (d + 48) if d < 10;
+	= chr (d + 55) if d < 36; //55 = 65 - 10
+	= "?" otherwise;
+
+/* Char -> Digit */
+private char_to_digit;
+char_to_digit ch
+	= v if v < 10 when v = ord ch - 48 end;
+	= ord ch - 55 otherwise;
+
+/* FracDigitList_MostSigFirst -> String */
+private frac_digits_to_str;
+frac_digits_to_str dd = strcat (map digit_to_char dd);
+
+/* String -> FracDigitList_MostSigFirst */
+private str_to_frac_digits;
+str_to_frac_digits strg::string = map char_to_digit (chars strg);
+
+/* IntDigitList_LeastSigFirst -> String */
+private int_digits_to_str;
+int_digits_to_str dd = frac_digits_to_str (reverse dd);
+
+/* String -> IntDigitList_LeastSigFirst */
+private str_to_int_digits;
+str_to_int_digits strg::string = reverse (str_to_frac_digits strg);
+
+/* Int -> String */
+private int_to_str;
+int_to_str rx z = int_digits_to_str (int_to_expansion rx z) if integerp rx && integerp z;
+
+/* String -> Int */
+private str_to_int;
+str_to_int rx strg::string = expansion_to_int rx (str_to_int_digits strg) if integerp rx;
+
+/* String -> fract */
+private str_to_frac;
+str_to_frac rx strg::string = expansion_to_frac rx (str_to_frac_digits strg) if integerp rx;
+
+private char_sgn;
+char_sgn ""  = 1;
+char_sgn "+" = 1;
+char_sgn "-" = (-1);
+
+private sign_ch;
+sign_ch x
+	= "-" if (x < 0);
+	= "+" if (x > 0);
+	= "" otherwise /* if x = 0 */;
+
+
+/******************************************************************************
+ ***
+ *** (particular format helper functions)
+ ***
+ ******************************************************************************/
+
+/* RECUR */
+
+/* calculate the value of "0.(pure-recurring-fraction)" */
+private recur_value;
+recur_value _ "" = rational 0;
+recur_value radix strg = rational (n, d - 1)
+	when
+	  n = str_to_int radix strg;
+	  d = pow radix (#strg)
+	end;
+
+/*
+ * Find the recurring radix expansion
+ * produce string "integer.fraction(recurringpart)"
+ */
+
+/* to calculate non-recurring and recurring parts of a rational in [0,1) */
+private small_find_recur_expansion;
+/* for 0 <= (N / D) < 1 */
+/* calculates (Exp=FracDigitList_MostSigFirst, RecurStart, RecurLen) */
+small_find_recur_expansion rx idx modMem expn n d
+/* Idx is the negative index (which digit) */
+/* ModMem is the memory of the remainders seen before (mapped to index) */
+	= (reverse expn, idx, 0)
+		if integerp rx && integerp idx && integerp n && integerp d && n == 0;
+	= (reverse expn, s, idx - s)
+		when s = modMem!n end
+		if integerp rx && integerp idx && integerp n && integerp d && member modMem n;
+		/* i.e. seen this partial remainder before */
+	= small_find_recur_expansion rx (idx + 1) (update modMem n idx) (e : expn) m d
+		when
+		  m = (n * rx) mod d;
+		  e = (n * rx) div d
+		end
+		if  integerp rx && integerp idx && integerp n && integerp d;
+
+/* to handle the sign, and to split the rational into int and frac parts */
+private find_int_and_recur_expansion;
+/* rx >= 2 */
+/* calculates (Sign, Int, Exp=FracDigitList_MostSigFirst, RecurLength) */
+find_int_and_recur_expansion rx q
+	= ("-", i, expn, start, len)
+	  when (s, i, expn, start, len) = find_int_and_recur_expansion rx (-q) end
+	  if integerp rx && rationalp q && q < 0;
+	= ("+", i, expn, start, len)
+	  when
+	    i = trunc q;
+	    fract = q - i;
+	    (n, d) = num_den fract;
+	    (expn, start, len) = small_find_recur_expansion rx 0 emptydict [] n d
+	  end
+	  if integerp rx && rationalp q;
+
+/* DP / SF / SCI / ENG */
+
+private get_frac_scale;
+/* Q must be between 0 and 1 */
+get_frac_scale predct radix q
+	= get_frac_scale predct radix (q * radix) - 1
+		if integerp radix && predct q;
+	= 1
+		if integerp radix;
+
+private get_value_scale;
+get_value_scale radix q
+	= get_value_scale radix (-q)
+		if integerp radix && q < 0;
+	= 0 // rather than - infinity
+		if integerp radix && q == 0;
+	= 1 - (get_frac_scale (<= 1) radix (reciprocal q))
+		if integerp radix && q >= Radix;
+	= get_frac_scale (< 1) radix q
+		if integerp radix;
+
+private get_sf_values_uncorrected;
+get_sf_values_uncorrected radix roundfun sf q
+	= (figures, scale, part)
+	  when
+	    scale = get_value_scale radix q;
+	    t = q * (pow (rational radix) (sf - scale));
+	    // note - Figures0 may contain too many digits if the rounding overflowed
+	    (figures, part) = integer_and_fraction roundfun t
+	  end
+	  if integerp radix && integerp sf;
+
+/* to correct e.g. an N-figure "9999" carry to an (N+1)-figure "10000" */
+private scale_sf_correction;
+scale_sf_correction radix sf figures scale part
+	= (figures div radix, scale + 1, ((figures mod radix) + part) % radix)
+		if integerp radix && integerp sf && (get_value_scale radix figures) > sf;
+	= (figures, scale, part)
+		if integerp radix && integerp sf; /* no overflow correction needed */
+
+private get_sf_values_corrected;
+get_sf_values_corrected radix roundfun sf q
+	= scale_sf_correction radix sf figures scale part
+	  when (figures, scale, part) = get_sf_values_uncorrected radix roundfun sf q end
+	  if  integerp radix && integerp sf;
+
+private /* public? */ join_radix_point_str;
+join_radix_point_str fmt sign i fract
+	= sm sign (yf (zi i) (zf fract))
+	  when
+	    sm = fmt ! "sm";
+	    yf = fmt ! "if";
+	    zi = fmt ! "zi";
+	    zf = fmt ! "zf"
+	  end;
+
+private /* public? */ split_radix_point_str;
+split_radix_point_str fmt strg
+	= (sign, i, fract)
+	  when
+		s = fmt ! "-s";
+		yf = fmt ! "-if";
+		(sign, intFrac) = s strg;
+		(i, fract) = yf intFrac
+	  end;
+
+private /* public? */ join_exponent_str;
+join_exponent_str fmt mantSign mantI mantFrac expSign expI
+	= me (join_radix_point_str fmt mantSign mantI mantFrac) (se expSign expI)
+	  when
+	    me = fmt ! "me";
+	    se = fmt ! "se"
+	  end;
+
+private /* public? */ split_exponent_str;
+split_exponent_str fmt strg
+	= (mantSign, mantI, mantFrac, expSign, expI)
+	  when
+	    (mant, sexp) = me strg;
+	    me = fmt ! "-me";
+	    se = fmt ! "-s";
+	    (expSign, expI) = se sexp;
+	    (mantSign, mantI, mantFrac) = split_radix_point_str fmt mant
+	  end;
+
+private numeric_str_zero_pad;
+numeric_str_zero_pad dp strg
+	= ((str_dup "0" (dp - #strg)) + strg)
+		if integerp dp && (dp >= 0);
+	= strg + (str_dup "0" (-dp))
+		if integerp dp &&  (dp < 0) and (strg ~= "") and (val (strg) ~= 0);
+	= strg  if integerp dp ;
+
+//TODO: value -> numeral, numeral -> value functions?
+
+/*
+ * Given m > 0, split an int i into parts a b with
+ * 0 < a <= m, a + b = i
+ */
+private split_int_modify;
+split_int_modify m a b
+	= split_int_modify m (a + m) (b - m)
+		if a <= 0;
+	= (a, b) otherwise;
+private split_int;
+split_int i m = split_int_modify m (i mod m) ((i div m) * m);
+
+
+/******************************************************************************
+ ***
+ *** [Q] <---> [Mixed-Fraction String]
+ ***
+ *** Vulgar Fractions = Common Fractions
+ *** Improper Fractions / Proper Fractions
+ *** Mixed Fractions
+ ***
+ ******************************************************************************/
+
+//TODO? Radices?
+
+/*
+ * [Q] --> [Mixed-Fraction String]
+ */
+
+public str_vulgar str_vulgar_or_int str_mixed;
+
+/*
+ * convert a rational
+ * to a string containing a vulgar fraction representation:
+ *   "[-]N/D"
+ */
+str_vulgar q = str n + "/" + str d
+	when (n, d) = num_den q end
+	if rationalp q;
+str_vulgar i::int = str i + "/1";
+str_vulgar i::bigint = str i + "/1L";
+
+/*
+ * convert a rational
+ * to a string containing a vulgar fraction or integer representation:
+ *   "[-]n/d"
+ *   "[-]i"
+ */
+str_vulgar_or_int q
+	= if d == 1 then str n else str_vulgar q
+	  when (n, d) = num_den q end
+	  if rationalp q;
+str_vulgar_or_int i = str i if integerp i;
+
+/*
+ * convert to a string containing a mixed fraction representation:
+ *   "I+N/D"
+ *   "-(I+N/D)"
+ *   "[-]N/D"
+ *   "[-]I"
+ */
+str_mixed q
+	= if d == 1 then
+	    str n
+	  else if n < (-d) then
+	    "-(" + (str_mixed (-q)) + ")"
+	  else if n > d then
+	    str (n div d) + "+" + str (n mod d) + "/" + str D
+	  else
+	    str_vulgar q
+	  when (n, d) = num_den q end
+	  if rationalp q;
+str_mixed i = str i if integerp i;
+
+
+/*
+ * [Mixed-Fraction String] --> [Q]
+ */
+
+/*
+ * a string containing a vulgar fraction representation
+ *   "[-]n/d"
+ * to a rational
+ */
+public val_vulgar;
+val_vulgar strg::string
+	= -val_vulgar (sub strg 1 ((#strg) - 1))
+	  if strg ! 0 == "-";
+	= rational (n, d)
+	  if p >= 0
+	  when
+	    p = pos "/" strg;
+	    n = val (sub strg 0 (p - 1));
+	    d = val (sub strg (p + 1) ((#strg) - 1))
+	  end;
+	= rational (val strg)
+	  otherwise;
+
+/*
+ * convert a string containing a mixed fraction representation
+ *   "i+n/d"
+ *   "-(i+n/d)"
+ *   "[-]n/d"
+ *   "[-]i"
+ *  to a rational
+ */
+public val_mixed;
+val_mixed strg::string
+	= - val_mixed (sub strg 1 ((#strg) - 1))
+	  if strg ! 0 == "-";
+	= val_mixed (sub strg 1 ((#strg) - 2))
+	  if Str ! 0 == "(";
+	= z + q
+	  if p >= 0
+	  when
+	    p = pos "+" strg;
+	    z = val_mixed  (sub strg 0 (p - 1));
+	    q = val_mixed (sub strg (p + 1) ((#strg) - 1))
+	  end;
+	= val_vulgar strg
+	  otherwise;
+
+/* see also rational constructors: 'rational_from_int' is just rational */
+
+//TODO? Radices?
+
+
+/******************************************************************************
+ ***
+ *** [Q] <---> [Exact Numeral Expansion String]
+ ***
+ *** Recurring Numeral Expansion
+ ***
+ ******************************************************************************/
+
+/*
+ * [Q] --> [Exact (Recurring) Numeral Expansion String]
+ */
+
+/* join the int and frac substrings to form a recurring decimal string */
+public join_str_real_recur;
+join_str_real_recur fmt intGroup sign i fract recurPart
+	= sm sign (YF (gi intGroup (zi i)) (r fract recurPart))
+	  when
+	    zi = fmt ! "zi";
+	    gi = fmt ! "gi";
+	    r  = fmt ! "ir";
+	    yf = fmt ! "if";
+	    sm = fmt ! "sm"
+	  end
+	  if integerp intGroup;
+
+/*
+ * convert a rational
+ * to a tuple of strings:
+ *   sign,
+ *   integer part,
+ *   initial fraction part,
+ *   recurring fraction part
+ */
+public strs_real_recur;
+strs_real_recur radix q
+	= (s, (int_to_str radix i),
+			(frac_digits_to_str (take start expn)),
+			(frac_digits_to_str (drop start expn)))
+	  when
+	    (s, i, expn, start, len) = find_int_and_recur_expansion radix q
+	  end
+	  if integerp radix && rationalp q && radix >= 2;
+	// do nothing otherwise;
+/*
+ * convert a rational
+ * to a string containing an expansion, possibly with a recurring part:
+ *   "<int>.<fraction>"
+ *   "<int>.<init-frac-part>(<smallest-recurring-frac-part>)"
+ */
+public str_real_recur; /* NB: FracGroup not appropriate here */
+str_real_recur fmt radix intGroup q
+	= join_str_real_recur fmt ontGroup s z initial recur
+	  when
+	    (s, z, initial, recur) = strs_real_recur radix q
+	  end
+	  if integerp radix && integerp intGroup && rationalp q && Radix >= 2;
+	// do nothing otherwise;
+
+/*
+ * [Exact (Recurring) Numeral Expansion String] --> [Q]
+ */
+
+/* split the recurring decimal string into int and frac substrings */
+public split_str_real_recur;
+split_str_real_recur fmt strg::string
+	= (sign, g i, fract, recurPart)
+	  when
+	    g = fmt ! "-g";
+	    r = fmt ! "-ir";
+	    yf = fmt ! "-if";
+	    s = fmt ! "-s";
+	    (signI, fracRecur) = yf strg;
+	    (sign, i) = s signI;
+	    (fract, recurPart) = r fracRecur
+	  end;
+
+/*
+ * convert a string containing an expansion, possibly with a recurring part
+ *   "<int>.<fraction>"
+ *   "<int>.<init-frac-part>(<smallest-recurring-frac-part>)"
+ * to a rational
+ */
+public sval_real_recur;
+sval_real_recur radix sign::string iStr::string fracStr::string recurPartStr::string
+	= (char_sgn sign) * (i + q + s)
+	  when
+	    i = str_to_int radix iStr;
+	    q = str_to_frac radix fracStr;
+	    s = (recur_value radix recurPartStr) * (pow (reciprocal radix) (#fracStr))
+	  end
+	  if integerp radix;
+
+public val_real_recur;
+val_real_recur fmt radix strg::string
+	= sval_real_recur radix sign iStr fracStr recurPartStr
+	  when
+	    (sign, iStr, fracStr, recurPartStr) = split_str_real_recur fmt strg
+	  end
+	  if integerp radix;
+
+
+/******************************************************************************
+ ***
+ *** [Q] <---> [Approximate Numeral Expansion String]
+ ***
+ *** Decimal Places
+ *** Significant Figures
+ *** Scientific Notation
+ *** Engineering Notation
+ ***
+ ******************************************************************************/
+
+/*
+ * [Q] --> [Approximate Numeral Expansion String]
+ */
+
+public join_str_real_approx;
+join_str_real_approx fmt intGroup fracGroup sign intStr fracStr err
+	= e err (join_radix_point_str fmt sign (gi intGroup intStr) (gf fracGroup fracStr))
+	  when
+		e  = fmt!"e";
+		gi = fmt!"gi";
+		gf = fmt!"gf"
+	  end
+	  if integerp intGroup && integerp fracGroup;
+
+/* DP */
+
+/*
+ * convert a rational
+ * to a tuple of strings:
+ *   sign,
+ *   integer part,
+ *   fraction part,
+ * representing an expansion to a number of decimal places
+ * together with the rounding "error":
+ *   a fraction representing the next numeral
+ */
+public strs_real_approx_dp;
+strs_real_approx_dp radix roundfun dp q
+	= (sign_ch q, intStr, fracStr, err)
+	  when
+		scale = pow (rational radix) dp;
+		(i, err) = integer_and_fraction roundfun (q * scale);
+		strg = int_to_str radix (abs i);
+		strPad0 = numeric_str_zero_pad dp strg;
+		(intStr, fracStr) = str_rsplit_at strPad0 dp
+	  end
+	  if integerp radix && integerp dp;
+
+/*
+ * convert a rational to a string expansion with a number of decimal places
+ * (dp may be positive, zero or negative;
+ * non-positive dps may look misleading - use e.g. scientific notation instead)
+ */
+public str_real_approx_dp;
+str_real_approx_dp fmt radix intGroup fracGroup roundfun dp q
+	= join_str_real_approx fmt intGroup fracGroup sign intStr fracStr err
+	  when
+	    (sign, intStr, fracStr, err) = strs_real_approx_dp radix roundfun dp q
+	  end
+	  if integerp radix && integerp intGroup && integerp fracGroup && integerp dp;
+
+
+/* SF */
+
+/*
+ * convert a rational
+ * to a tuple of strings:
+ *   sign,
+ *   integer part,
+ *   fraction part,
+ * representing an expansion to a number of significant figures
+ * together with the rounding "error":
+ *   a fraction representing the next significant numeral
+ */
+public strs_real_approx_sf;
+strs_real_approx_sf radix roundfun sf q
+	= (sign_ch q, intStr, fracStr, err)
+	  when
+		(figs, scale, err) = get_sf_values_corrected radix roundfun sf q;
+		dp = sf - scale;
+		figsStr = int_to_str radix (abs figs);
+		figsStrPad0 = numeric_str_zero_pad dp figsStr;
+		(intStr, fracStr) = str_rsplit_at figsStrPad0 dp
+	  end
+	  if integerp radix && integerp fsf;
+
+/*
+ * convert a rational to a string expansion with a number of significant figures
+ * (sf must be positive)
+ */
+public str_real_approx_sf;
+str_real_approx_sf fmt radix intGroup fracGroup roundfun sf q
+	= join_str_real_approx fmt intGroup fracGroup sign intStr fracStr err
+	  when
+		(sign, intStr, fracStr, err) = strs_real_approx_sf radix roundfun sf q
+	  end
+	  if integerp radix && integerp intGroup && integerp fracGroup && integerp sf;
+
+
+/* SCI / ENG */
+
+/* join the substrings to form an engineering notation decimal string */
+public join_str_real_eng;
+join_str_real_eng fmt intGroup fracGroup mantSign mantI mantFrac expSign expI err
+	= e err (join_exponent_str fmt mantSign (gi intGroup mantI) (gf fracGroup mantFrac) expSign expI)
+	  when
+		e  = fmt!"e";
+		gi = fmt!"gi";
+		gf = fmt!"gf"
+	  end
+	  if integerp intGroup && integerp fracGroup;
+
+/*
+ * convert a rational
+ * to a tuple of strings:
+ *   sign of mantissa,
+ *   integer part of mantissa,
+ *   fraction part of mantissa,
+ *   sign of exponent,
+ *   exponent magnitude
+ * representing an expansion to a number of significant figures
+ * together with the rounding "error":
+ *   a fraction representing the next significant numeral
+ */
+public strs_real_approx_eng;
+strs_real_approx_eng expStep radix roundfun sf q
+	= (sign_ch q, mantI, mantFrac, sign_ch expx, int_to_str radix (abs expx), part)
+           when
+		scaleQ = get_value_scale radix q;
+		scaledQ = q % (pow (rational radix) scaleQ);
+		(figures, adjScale, part)
+			= get_sf_values_corrected radix roundfun sf scaledQ;
+		scale = scaleQ + adjScale;
+		(mantScale, expx) = split_int scale expStep;
+		figStr = int_to_str radix (abs figures);
+		figStrPad = figStr + str_dup "0" (mantScale - #figStr);
+		(mantI, mantFrac) = str_lsplit_at figStrPad mantScale
+           end
+	  if integerp expStep && integerp radix && integerp sf;
+
+public strs_real_approx_sci;
+strs_real_approx_sci = strs_real_approx_eng 1;
+
+/*
+ * convert a rational to a string expansion with a number of significant figures
+ * in engineering notation
+ * (sf must be positive)
+ * (expStep is usually 3, radix usually 10)
+ */
+public str_real_approx_eng;
+str_real_approx_eng fmt expStep radix intGroup fracGroup roundfun sf q
+	= join_str_real_eng fmt intGroup fracGroup mantSign mantI mantFrac expSign expI err
+	  when
+	    (mantSign, mantI, mantFrac, expSign, expI, err)
+		= strs_real_approx_eng expStep radix roundfun sf q
+          end
+	  if integerp expStep && integerp radix && integerp intGroup && integerp fracGroup && integerp sf;
+
+
+public str_real_approx_sci;
+str_real_approx_sci fmt = str_real_approx_eng fmt 1;
+
+
+/*
+ * [Q] --> [Approximate Numeral Expansion String]
+ */
+
+/* split the substrings from an engineering notation decimal string */
+public split_str_real_eng;
+split_str_real_eng fmt strg::string
+	= (sign, g mantI, g mantFrac, expSign, g expx, errSign)
+          when
+		e = fmt ! "-e";
+		g = fmt ! "-g";
+		(mantExp, errSign) = e strg;
+		(sign, mantI, mantFrac, expSign, expx) = split_exponent_str fmt mantExp
+          end;
+
+/*
+ * convert a string containing an expansion, possibly with a recurring part
+ *   "<int>.<fraction>e<exponent>"
+ * to an (exact) rational
+ */
+public sval_real_eng;
+sval_real_eng radix signStr::string mantIStr::string mantFracStr::string expSignStr::string expStr::string
+	= sign * ((mantI + mantFrac) * (pow (rational radix) (expSign * expx)))
+          when
+		sign = char_sgn signStr;
+		mantI = str_to_int radix mantIStr;
+		mantFrac = str_to_frac radix mantFracStr;
+		expSign = char_sgn expSignStr;
+		expx = str_to_int radix expStr
+          end
+	  if integerp radix;
+
+public val_real_eng;
+val_real_eng fmt radix strg::string
+	= sval_real_eng radix sign mantI mantFrac expSign expx
+	  when
+	    (sign, mantI, mantFrac, expSign, expx, err) = split_str_real_eng fmt strg
+	  end
+	  if integerp radix;
+
+//TODO? generalise the GroupSize parameters in dp/sf/sci/eng routines:
+// a negative value could indicate grouping with repect to the unshifted mantissa
+
+//TODO: add variant allowing specification of mantissa shift (or equivalently, exponent)
+//TODO: add variant allowing specification of length of integer part of mantissa
+
+//TODO: add functions to return the mantissa and exponent separately
+// (this is an approximating decomposition)
+
+
+/******************************************************************************
+ ***
+ *** [R String] --> [Q] approximation
+ ***
+ ******************************************************************************/
+
+public val_eng_approx_epsilon;
+val_eng_approx_epsilon fmt radix epsilon strg::string
+	= rational_approx_epsilon epsilon (val_real_eng fmt radix strg)
+	  if integerp radix;
+
+public val_eng_interval_epsilon;
+val_eng_interval_epsilon fmt radix epsilon strg::string
+	= rational_interval_epsilon epsilon (val_real_eng fmt radix strg)
+	  if integerp radix;
+
+public val_eng_approx_max_den;
+val_eng_approx_max_den fmt radix maxDen strg::string
+	= rational_approx_max_den maxDen (val_real_eng fmt radix strg)
+	  if integerp radix;
+
+public val_eng_interval_max_den;
+val_eng_interval_max_den fmt radix maxDen strg::string
+	= rational_interval_max_den maxDen (val_real_eng fmt radix strg)
+	  if integerp radix;
