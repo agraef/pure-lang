@@ -344,114 +344,95 @@ The usual work flow to generate plot via gnuplot is the following:</p>
 <div class="section" id="open-closing-functions">
 <h2>Open / Closing Functions</h2>
 <blockquote>
-<p><tt class="docutils literal"><span class="pre">gplot::open</span> cmd;</tt></p>
-<p>opens a pipe to gnuplot, using <em>cmd</em>. <em>cmd</em> usually is something like <tt class="docutils literal">gnuplot</tt>
-or <tt class="docutils literal">/path/to/gnuplot/bin/gnuplot</tt> depending on your path configuration.
-<tt class="docutils literal">open</tt> returns a pointer to the actual pipe for later usage, so a typical call
-to open might look like this:</p>
-<p><tt class="docutils literal">let gp = <span class="pre">gplot::open</span> &quot;/path_to_gnuplot/gnuplot&quot;;</tt></p>
+<tt class="docutils literal"><span class="pre">gplot::open</span> cmd;</tt></blockquote>
+<p>opens a pipe to gnuplot, using <em>cmd</em>. <em>cmd</em> usually is something like <tt class="docutils literal">gnuplot</tt> or <tt class="docutils literal">/path/to/gnuplot/bin/gnuplot</tt> depending on your path configuration.
+<tt class="docutils literal">open</tt> returns a pointer to the actual pipe for later usage, so a typical call to open might look like this:</p>
+<blockquote>
+<tt class="docutils literal">let gp = <span class="pre">gplot::open</span> &quot;/path_to_gnuplot/gnuplot&quot;;</tt></blockquote>
 <p>gplot::GPLOT_EXE is a predefined variable with the standard Gnuplot executable.
-It is set to <tt class="docutils literal">pgnuplot</tt> on Windows and to <tt class="docutils literal">gnuplot</tt> otherwise and can be overridden by
-the GPLOT_EXE environment variable. (<tt class="docutils literal">pgnuplot.exe</tt> is a special executable for Windows,
-which is capable of stdin pipes in contrast to the normal <tt class="docutils literal">gnuplot.exe</tt>).
+It is set to <tt class="docutils literal">pgnuplot</tt> on Windows and to <tt class="docutils literal">gnuplot</tt> otherwise and can be overridden bythe GPLOT_EXE environment variable. (<tt class="docutils literal">pgnuplot.exe</tt> is a special executable for Windows, which is capable of stdin pipes in contrast to the normal <tt class="docutils literal">gnuplot.exe</tt>).
 Usage of <tt class="docutils literal"><span class="pre">gplot::GPLOT_EXE</span></tt> might look like this:</p>
+<blockquote>
 <p><tt class="docutils literal">let gp = <span class="pre">gplot::open</span> <span class="pre">gplot::GPLOT_EXE;</span></tt></p>
 <p><tt class="docutils literal"><span class="pre">gplot::close</span> gp;</tt></p>
-<p>closes a gnuplot session, given by the handle <em>gp</em>.</p>
 </blockquote>
+<p>closes a gnuplot session, given by the handle <em>gp</em>.</p>
 <!--  -->
 </div>
 <div class="section" id="low-level-commands">
 <h2>Low-Level Commands</h2>
 <blockquote>
-<p><tt class="docutils literal"><span class="pre">gplot::puts_no_echo</span> string gp;</tt></p>
+<tt class="docutils literal"><span class="pre">gplot::puts_no_echo</span> string gp;</tt></blockquote>
 <p>sends the string to the gnuplot session <em>gp</em> points to. As the name states, there is no echo read back from gnuplot (Don't know whether <em>gnuplot</em> or <em>pgnuplot.exe</em> supports reading/bidirectional pipes at all).</p>
-</blockquote>
-<!--  -->
 <blockquote>
-<p><tt class="docutils literal"><span class="pre">gplot::puts</span> string gp;</tt></p>
+<tt class="docutils literal"><span class="pre">gplot::puts</span> string gp;</tt></blockquote>
 <p>is a convenience wrapper to <tt class="docutils literal"><span class="pre">gplot::puts_no_echo</span></tt>.</p>
-</blockquote>
 <!--  -->
 </div>
 <div class="section" id="plot-commands">
 <h2>Plot Commands</h2>
-<blockquote>
 <p>The main (versatile) function to generate plots is the simple plot command, which expects a list of the data to be plotted.</p>
-<p><tt class="docutils literal"><span class="pre">gplot::plot</span> gp data opt;</tt></p>
-<p>where <em>gp</em> is the pointer to the gnuplot session, <em>data</em> is a list containing the data to be plotted and <em>opt</em> is a tuple,
-containing options for the plot. <em>opt</em> might be empty () or <tt class="docutils literal">DEFAULT</tt> for default options (refer to gnuplot for them).</p>
-</blockquote>
-<!--  -->
 <blockquote>
+<tt class="docutils literal"><span class="pre">gplot::plot</span> gp data opt;</tt></blockquote>
+<p>where <em>gp</em> is the pointer to the gnuplot session, <em>data</em> is a list containing the data to be plotted and <em>opt</em> is a tuple, containing options for the plot. <em>opt</em> might be empty () or <tt class="docutils literal">DEFAULT</tt> for default options (refer to gnuplot for them).</p>
+<!--  -->
 <p>If data for the x-axis (ordinate) should be explicitely given <em>plotxy</em> should be used instead:</p>
+<blockquote>
 <p><tt class="docutils literal"><span class="pre">gplot::plotxy_deprecated</span> gp (xdata, ydata) opt;</tt></p>
 <p><tt class="docutils literal"><span class="pre">gplot::plotxy</span> gp (xdata, ydata) opt [];</tt></p>
 </blockquote>
 <!--  -->
-<blockquote>
 <p>Multiple datasets can be plotted into a single graph by combining them to tuples of lists:</p>
+<blockquote>
 <p><tt class="docutils literal"><span class="pre">gplot::plotxy</span> gp (xdata, y1data, y2data, ..) opt;</tt></p>
 <p><tt class="docutils literal"><span class="pre">gplot::plotxy</span> gp (xdata, y1data, y2data, ..) opt [];</tt></p>
 <p><tt class="docutils literal"><span class="pre">gplot::plotxy</span> gp (xdata, y1data, y2data, ..) opt titles;</tt></p>
-<p>where the latter form gives additional titles for each y-data set.</p>
 </blockquote>
+<p>where the latter form gives additional titles for each y-data set.</p>
 <!--  -->
 </div>
 <div class="section" id="plot-options">
 <h2>Plot Options</h2>
 <blockquote>
-<p><tt class="docutils literal"><span class="pre">gplot::xtics</span> gp list_of_tic_labels;</tt></p>
+<tt class="docutils literal"><span class="pre">gplot::xtics</span> gp list_of_tic_labels;</tt></blockquote>
 <p>Sets the tic labels of the x-axis to the given text labels.
-The labels can be given aas a simple list of strings, which are taken as successive labels
-or as a list of tuples with the form <tt class="docutils literal">(value, label)</tt>, in which case each label is placed
-at its <tt class="docutils literal">value</tt> position.</p>
-<p><tt class="docutils literal"><span class="pre">gplot::xtics</span> gp ()</tt> or <tt class="docutils literal"><span class="pre">gplot::xtics</span> gp &quot;default&quot;;</tt></p>
-<p>This restores the default tics on the y-axis</p>
-</blockquote>
+The labels can be given aas a simple list of strings, which are taken as successive labels or as a list of tuples with the form <tt class="docutils literal">(value, label)</tt>, in which case each label is placed at its <tt class="docutils literal">value</tt> position.</p>
+<blockquote>
+<tt class="docutils literal"><span class="pre">gplot::xtics</span> gp ()</tt> or <tt class="docutils literal"><span class="pre">gplot::xtics</span> gp &quot;default&quot;;</tt></blockquote>
+<p>This restores the default tics on the y-axis.</p>
 <!--  -->
 <blockquote>
-<p><tt class="docutils literal"><span class="pre">gplot::title</span> t;</tt></p>
+<tt class="docutils literal"><span class="pre">gplot::title</span> t;</tt></blockquote>
 <p>Sets a title string on top of the plot (default location)</p>
-</blockquote>
 <!--  -->
 <blockquote>
-<p><tt class="docutils literal"><span class="pre">gplot::output</span> gp terminal name;</tt></p>
-<p>Sets the terminal and output name for the successive plots. For some terminal additional options might be given:
-<tt class="docutils literal"><span class="pre">gplot::output</span> gp (terminal, options) name</tt>.
-For terminals like x11 or windows, name can be empty <tt class="docutils literal">()</tt>.</p>
-</blockquote>
+<tt class="docutils literal"><span class="pre">gplot::output</span> gp terminal name;</tt></blockquote>
+<p>Sets the terminal and output name for the successive plots. For some terminal additional options might be given:</p>
+<blockquote>
+<tt class="docutils literal"><span class="pre">gplot::output</span> gp (terminal, options) name</tt>.</blockquote>
+<p>For terminals like x11 or windows, name can be empty <tt class="docutils literal">()</tt>.</p>
 <!--  -->
 <blockquote>
-<p><tt class="docutils literal"><span class="pre">gplot::xlabel</span> gp name</tt> or <tt class="docutils literal"><span class="pre">gplot::ylabel</span> gp name</tt></p>
-<p>Adds labels to the x- or y-axis, respectively. An empty name removes the label for successive plots,
-e.g., <tt class="docutils literal"><span class="pre">gplot::xlabel</span> gp &quot;&quot;</tt>.</p>
-</blockquote>
+<tt class="docutils literal"><span class="pre">gplot::xlabel</span> gp name</tt> or <tt class="docutils literal"><span class="pre">gplot::ylabel</span> gp name</tt></blockquote>
+<p>Adds labels to the x- or y-axis, respectively. An empty name removes the label for successive plots, e.g., <tt class="docutils literal"><span class="pre">gplot::xlabel</span> gp &quot;&quot;</tt>.</p>
 <!--  -->
 </div>
 <div class="section" id="private-functions">
 <h2>Private Functions</h2>
 <blockquote>
-<p><tt class="docutils literal">gpdata data</tt>, <tt class="docutils literal">gpxydata (xdata, y1data, ..)</tt></p>
-<p>Internal functions to handle lists of data point (<tt class="docutils literal">gpdata</tt>) or tuples of lists of data points (<tt class="docutils literal">gpxydata</tt>)
-and convert them to be understood by Gnuplot.</p>
-</blockquote>
+<tt class="docutils literal">gpdata data</tt>, <tt class="docutils literal">gpxydata (xdata, y1data, ..)</tt></blockquote>
+<p>Internal functions to handle lists of data point (<tt class="docutils literal">gpdata</tt>) or tuples of lists of data points (<tt class="docutils literal">gpxydata</tt>) and convert them to be understood by Gnuplot.</p>
 <!--  -->
 <blockquote>
-<p><tt class="docutils literal">gpxycmd</tt>, <tt class="docutils literal">gpxycmdtitle</tt></p>
-<p>Internal function to generate the plotting command for multiple datasets. <tt class="docutils literal">gpxycmdtitle</tt> adds
-titles to each dataset, a.k.a plot legend.</p>
-</blockquote>
+<tt class="docutils literal">gpxycmd</tt>, <tt class="docutils literal">gpxycmdtitle</tt></blockquote>
+<p>Internal function to generate the plotting command for multiple datasets. <tt class="docutils literal">gpxycmdtitle</tt> adds titles to each dataset, a.k.a plot legend.</p>
 <!--  -->
-<blockquote>
 <p><tt class="docutils literal"><span class="pre">gplot::gpopt</span> (&quot;style&quot;, style, args);</tt></p>
 <p>Internal function to convert a plot style to the respective gnuplot syntax</p>
-</blockquote>
 <!--  -->
 <blockquote>
-<p><tt class="docutils literal"><span class="pre">gplot::gptitle</span> t;</tt></p>
+<tt class="docutils literal"><span class="pre">gplot::gptitle</span> t;</tt></blockquote>
 <p>Internal function to generate title information for individual datasets</p>
-</blockquote>
 </div>
 </div>
 </div>

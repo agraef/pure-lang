@@ -82,24 +82,20 @@ Open / Closing Functions
 
 	``gplot::open cmd;``
 	
-	opens a pipe to gnuplot, using *cmd*. *cmd* usually is something like ``gnuplot``
-	or ``/path/to/gnuplot/bin/gnuplot`` depending on your path configuration.
-	``open`` returns a pointer to the actual pipe for later usage, so a typical call
-	to open might look like this:
+opens a pipe to gnuplot, using *cmd*. *cmd* usually is something like ``gnuplot`` or ``/path/to/gnuplot/bin/gnuplot`` depending on your path configuration.
+``open`` returns a pointer to the actual pipe for later usage, so a typical call to open might look like this:
 	
 	``let gp = gplot::open "/path_to_gnuplot/gnuplot";``
 	
-	gplot::GPLOT_EXE is a predefined variable with the standard Gnuplot executable.
-	It is set to ``pgnuplot`` on Windows and to ``gnuplot`` otherwise and can be overridden by
-	the GPLOT_EXE environment variable. (``pgnuplot.exe`` is a special executable for Windows, 
-	which is capable of stdin pipes in contrast to the normal ``gnuplot.exe``).
-	Usage of ``gplot::GPLOT_EXE`` might look like this:
-	
+gplot::GPLOT_EXE is a predefined variable with the standard Gnuplot executable.
+It is set to ``pgnuplot`` on Windows and to ``gnuplot`` otherwise and can be overridden bythe GPLOT_EXE environment variable. (``pgnuplot.exe`` is a special executable for Windows, which is capable of stdin pipes in contrast to the normal ``gnuplot.exe``).
+Usage of ``gplot::GPLOT_EXE`` might look like this:
+
 	``let gp = gplot::open gplot::GPLOT_EXE;``
 
 	``gplot::close gp;``
 
-	closes a gnuplot session, given by the handle *gp*.
+closes a gnuplot session, given by the handle *gp*.
 */
 gplot::open cmd = popen cmd "w";
 gplot::close gp = pclose gp;
@@ -111,19 +107,16 @@ Low-Level Commands
 
 	``gplot::puts_no_echo string gp;``
 	
-	sends the string to the gnuplot session *gp* points to. As the name states, there is no echo read back from gnuplot (Don't know whether *gnuplot* or *pgnuplot.exe* supports reading/bidirectional pipes at all).
+sends the string to the gnuplot session *gp* points to. As the name states, there is no echo read back from gnuplot (Don't know whether *gnuplot* or *pgnuplot.exe* supports reading/bidirectional pipes at all).
+
+	``gplot::puts string gp;``
+
+is a convenience wrapper to ``gplot::puts_no_echo``.
 */
 gplot::puts_no_echo cmd::string gp::pointer = ret when
 	fputs (add_newline cmd) gp;
 	ret = fflush gp;
 end;
-
-/* ..
-
-	``gplot::puts string gp;``
-	
-	is a convenience wrapper to ``gplot::puts_no_echo``.
-*/
 gplot::puts cmd gp = puts_no_echo cmd gp;
 
 /* ..
@@ -131,12 +124,11 @@ gplot::puts cmd gp = puts_no_echo cmd gp;
 Plot Commands
 -------------
 
-	The main (versatile) function to generate plots is the simple plot command, which expects a list of the data to be plotted.
+The main (versatile) function to generate plots is the simple plot command, which expects a list of the data to be plotted.
 
 	``gplot::plot gp data opt;``
 	
-	where *gp* is the pointer to the gnuplot session, *data* is a list containing the data to be plotted and *opt* is a tuple,
-	containing options for the plot. *opt* might be empty () or ``DEFAULT`` for default options (refer to gnuplot for them).
+where *gp* is the pointer to the gnuplot session, *data* is a list containing the data to be plotted and *opt* is a tuple, containing options for the plot. *opt* might be empty () or ``DEFAULT`` for default options (refer to gnuplot for them).
 */
 gplot::plot gp data opt	= do (\x->puts x gp) ["plot " + _cmd, _gpdata, gpdata_end] when
 						_cmd	= gpdata_cmd + (gpopt opt);
@@ -145,7 +137,7 @@ gplot::plot gp data opt	= do (\x->puts x gp) ["plot " + _cmd, _gpdata, gpdata_en
 
 /* ..
 
-	If data for the x-axis (ordinate) should be explicitely given *plotxy* should be used instead:
+If data for the x-axis (ordinate) should be explicitely given *plotxy* should be used instead:
 
 	``gplot::plotxy_deprecated gp (xdata, ydata) opt;``
 	
@@ -158,15 +150,15 @@ gplot::plotxy_deprecated gp xydata opt	= do (\x->puts (add_newline x) gp) ["plot
 
 /* ..
 
-	Multiple datasets can be plotted into a single graph by combining them to tuples of lists:
+Multiple datasets can be plotted into a single graph by combining them to tuples of lists:
 	
 	``gplot::plotxy gp (xdata, y1data, y2data, ..) opt;``
-	
+
 	``gplot::plotxy gp (xdata, y1data, y2data, ..) opt [];``
 	
 	``gplot::plotxy gp (xdata, y1data, y2data, ..) opt titles;``
 	
-	where the latter form gives additional titles for each y-data set.
+where the latter form gives additional titles for each y-data set.
 */
 gplot::plotxy gp xydata opt []		= do (\x->puts (add_newline x) gp) ["plot " + _cmd, _gpdata] when
 										_cmd	= gpxycmd xydata opt;
@@ -187,14 +179,12 @@ Plot Options
 
 	``gplot::xtics gp list_of_tic_labels;``
 	
-	Sets the tic labels of the x-axis to the given text labels.
-	The labels can be given aas a simple list of strings, which are taken as successive labels
-	or as a list of tuples with the form ``(value, label)``, in which case each label is placed
-	at its ``value`` position.
+Sets the tic labels of the x-axis to the given text labels.
+The labels can be given aas a simple list of strings, which are taken as successive labels or as a list of tuples with the form ``(value, label)``, in which case each label is placed at its ``value`` position.
 	
 	``gplot::xtics gp ()`` or ``gplot::xtics gp "default";``
 	
-	This restores the default tics on the y-axis
+This restores the default tics on the y-axis.
 */
 gplot::xtics gp []	()			|
 gplot::xtics gp [] "default"	= puts "set xtics autofreq" gp;
@@ -216,7 +206,7 @@ gplot::xtics gp ts opt			= puts (gptics_cmd ts) gp with
 
 	``gplot::title t;``
 	
-	Sets a title string on top of the plot (default location)
+Sets a title string on top of the plot (default location)
 */
 gplot::title gp t = gplot::puts ("set title " + add_dquote t) gp;
 
@@ -224,9 +214,11 @@ gplot::title gp t = gplot::puts ("set title " + add_dquote t) gp;
 
 	``gplot::output gp terminal name;``
 	
-	Sets the terminal and output name for the successive plots. For some terminal additional options might be given:
+Sets the terminal and output name for the successive plots. For some terminal additional options might be given:
+
 	``gplot::output gp (terminal, options) name``.
-	For terminals like x11 or windows, name can be empty ``()``.
+
+For terminals like x11 or windows, name can be empty ``()``.
 */
 gplot::output gp term name	= _set_term term + _set_out name with
 						_set_term term	= puts ("set terminal " + term) gp;
@@ -238,8 +230,7 @@ gplot::output gp term name	= _set_term term + _set_out name with
 
 	``gplot::xlabel gp name`` or ``gplot::ylabel gp name``
 	
-	Adds labels to the x- or y-axis, respectively. An empty name removes the label for successive plots,
-	e.g., ``gplot::xlabel gp ""``.
+Adds labels to the x- or y-axis, respectively. An empty name removes the label for successive plots, e.g., ``gplot::xlabel gp ""``.
 */
 gplot::xlabel gp name	= gplot::puts ("set xlabel " + add_dquote name) gp;
 gplot::ylabel gp name	= gplot::puts ("set ylabel " + add_dquote name) gp;
@@ -251,8 +242,7 @@ Private Functions
 
 	``gpdata data``, ``gpxydata (xdata, y1data, ..)``
 	
-	Internal functions to handle lists of data point (``gpdata``) or tuples of lists of data points (``gpxydata``)
-	and convert them to be understood by Gnuplot.
+Internal functions to handle lists of data point (``gpdata``) or tuples of lists of data points (``gpxydata``) and convert them to be understood by Gnuplot.
 */
 // gpdata ys@(_:_) = join "\n" (map str ys);
 gpdata ys@(yv:_) = (str yv) + "\n" + gpdata (tail ys);
@@ -270,8 +260,7 @@ gpdata_cmd = "'-' ";
 
 	``gpxycmd``, ``gpxycmdtitle``
 	
-	Internal function to generate the plotting command for multiple datasets. ``gpxycmdtitle`` adds
-	titles to each dataset, a.k.a plot legend.
+Internal function to generate the plotting command for multiple datasets. ``gpxycmdtitle`` adds titles to each dataset, a.k.a plot legend.
 */
 gpxycmd ds@(xs, ys@(_:_)) opt	= gpdata_cmd + (gpopt opt);
 gpxycmd ds@(xs, ys1, ysn) opt	= gpxycmd (xs, ys1) opt + "," + gpxycmd (xs, ysn) opt;
@@ -281,9 +270,9 @@ gpxycmdtitle ds@(xs, ys1@(_:_)) opt titles@(th:[])	= gpdata_cmd + (gptitle th) +
 
 /* ..
 
-	``gplot::gpopt ("style", style, args);``
+   ``gplot::gpopt ("style", style, args);``
 	
-	Internal function to convert a plot style to the respective gnuplot syntax
+Internal function to convert a plot style to the respective gnuplot syntax
 */
 gpopt ()						|
 gpopt "default" 				= "";
@@ -295,7 +284,7 @@ gpopt ("style", style)			= gpopt ("style", style, "");
 
 	``gplot::gptitle t;``
 	
-	Internal function to generate title information for individual datasets
+Internal function to generate title information for individual datasets
 */
 gptitle []	= "";
 gptitle t	= "title " + (add_dquote t);
