@@ -42,7 +42,7 @@
  * ratutils.pure
  */
 
-using rat_interval, dict, strings, system;
+using rat_interval, dict, math, strings, system;
 using namespace interval;
 namespace rational;
 
@@ -393,11 +393,12 @@ list_most_cplx = foldl1 most_cplx;
  * The mediant Q of Q1 < Q2 is such that Q1 < Q < Q2
  */
 public mediant;
-mediant q1 q2 = (n1 + n2) % (d1 + d2) if rationalp q1 && rationalp q2
+mediant q1 q2 = (n1 + n2) % (d1 + d2)
 	when
           (n1,d1) = num_den q1;
           (n2,d2) = num_den q2
-        end;
+        end
+	if rationalp q1 && rationalp q2;
 
 mediant i q = mediant (rational i) q if rationalp q && integerp i;
 mediant q i = mediant q (rational i) if rationalp q && integerp i;
@@ -440,15 +441,15 @@ farey k = gen_farey k [rational 0] [rational 1] if integerp k && k >= 1;
  * simplification
  */
 public rat_simplify;
-rat_simplify q = n
-	if rationalp q && d == 1
-	when (n, d) = num_den q end;
-rat_simplify c = x +: y if complexp c
+rat_simplify q = num q
+	if rationalp q && den q == 1;
+rat_simplify c = x +: y
 	when
           (cx, cy) = (re c, im c);
           x = rat_simplify cx;
           y = rat_simplify cy
-        end;
+        end
+	if complexp c;
 rat_simplify other = other;
 
 /*
@@ -456,9 +457,9 @@ rat_simplify other = other;
  * simplification
  */
 public comp_simplify;
-comp_simplify c = x
+comp_simplify c = re c
 	if exactp y && y == 0
-	when (x, y) = (re c, im c) end;
+	when y = im c end;
 comp_simplify other = other;
 
 /*
@@ -471,7 +472,7 @@ ratcomp_simplify c = rat_simplify (comp_simplify c);
 /******************************************************************************
  ***
  *** FURTHER ROUNDING
- *** (further to that in the basic rational.q module)
+ *** (further to that in the basic math.pure module)
  *** [Q] --> [Z]
  ***
  *** Rational -> Integer Conversion
@@ -695,7 +696,7 @@ filter_better_rational_approxs fract qq
 private simplest_epsilon;
 simplest_epsilon epsilon fract l u
 	= least_cplx l u
-		if (abs (l - fract) <= epsilon) && (abs (u - fract) <= epsilon);
+		if abs (l - fract) <= epsilon && abs (u - fract) <= epsilon;
 	= l if abs (l - fract) <= epsilon;
 	= u if abs (u - fract) <= epsilon;
 	= throw "Never" otherwise;
@@ -766,7 +767,7 @@ bound_and_seek_epsilon seek epsilon fract
 			 */
                         k = max 1 (floor (1.0 / (epsilon + fract)));
 			l = rational 0;
-			u = reciprocal k
+			u = rational $ reciprocal k
                 end
 		if fract >= 0 && fract <= 0.5;
 	/*
@@ -791,8 +792,8 @@ seek_rational_approxs_epsilon epsilon fract l u
 		if rationalp l && rationalp u && (fract < m)
 		when m = mediant l u end;
 	= (l : seek_rational_approxs_epsilon epsilon fract m u)
-		when m = mediant l u end
-		if rationalp l && rationalp u;
+		if rationalp l && rationalp u
+		when m = mediant l u end;
 
 //~ private seek_rational_intervals_epsilon epsilon fract l u;
 //~ /* 0 < epsilon << 1 */
@@ -840,7 +841,7 @@ seek_rational_approxs_epsilon epsilon fract l u
 private seek_rational_approx_max_den;
 /* maxDen > 1 */
 seek_rational_approx_max_den maxDen fract l u
-	= seek_rational_approx_max_den MaxDen fract L M
+	= seek_rational_approx_max_den MaxDen fract l m
 		if rationalp l && rationalp u && ((den m) <= maxDen) && (fract < m)
 		when m = mediant l u end;
 	= seek_rational_approx_max_den maxDen fract m u
@@ -860,7 +861,7 @@ seek_rational_approx_max_den maxDen fract l u
 private seek_rational_interval_max_den;
 /* 0 < maxDen << 1 */
 seek_rational_interval_max_den maxDen fract l u
-	= seek_rational_interval_max_den MaxDen fract L M
+	= seek_rational_interval_max_den MaxDen fract l m
 		if rationalp l && rationalp u && ((den m) <= maxDen) && (fract < m)
 		when m = mediant l u end;
 	= seek_rational_interval_max_den maxDen fract m u
@@ -889,7 +890,7 @@ bound_and_seek_max_den seek maxDen fract
 		when
 		  k = max 1 (min maxDen (trunc (1.0 / fract)));
 		  l = rational 0;
-		  u = reciprocal k
+		  u = rational $ reciprocal k
 		end
 		if fract > 0;
 
@@ -941,8 +942,8 @@ rational_approx_epsilon epsilon::double r
 	= -(rational_approx_epsilon epsilon (-r)) if r < 0;
 	= (i + q)
 	  when
-	    i = trunc r;
-	    fract = r - i;
+	    i = rational $ trunc r;
+	    fract = rational (r - i);
 	    q = bound_and_seek_epsilon seek_rational_approx_epsilon epsilon fract
 	  end
 	  if epsilon > 0;
@@ -981,8 +982,8 @@ rational_interval_epsilon epsilon::double r
 	  if r < 0;
 	= i + v
 	  when
-	    i = trunc r;
-	    fract = r - i;
+	    i = rational $ trunc r;
+	    fract = rational (r - i);
 	    v = bound_and_seek_epsilon seek_rational_interval_epsilon epsilon fract
 	  end
 	  if epsilon > 0;
@@ -1004,8 +1005,8 @@ rational_approx_max_den maxDen::int r
 	= -(rational_approx_max_den maxDen (-r)) if r < 0;
 	= i + q
 	  when
-	    i = trunc r;
-	    fract = r - i;
+	    i = rational $ trunc r;
+	    fract = rational (r - i);
 	    q = bound_and_seek_max_den seek_rational_approx_max_den maxDen fract
 	  end
 	  if maxDen > 0;
@@ -1039,11 +1040,11 @@ rational_interval_max_den maxDen::int r
 	  when
 	    v = rational_interval_max_den maxDen (-r)
 	  end
-	  if R < 0;
+	  if r < 0;
 	= i + v
 	  when
-	    i = trunc r;
-	    fract = r - i;
+	    i = rational $ trunc r;
+	    fract = rational (r - i);
 	    v = bound_and_seek_max_den seek_rational_interval_max_den maxDen fract
 	  end
 	  if maxDen > 0;
