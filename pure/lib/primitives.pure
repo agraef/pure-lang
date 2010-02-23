@@ -273,7 +273,7 @@ using namespace __C;
 
    ``funp x``, ``lambdap x``, ``thunkp x``, ``varp x``
      Predicates to check for various kinds of function objects (named,
-     anonymous or thunk), and global variable symbols.
+     anonymous or thunk), and free variable symbols.
 
    .. _atomp:
    .. _closurep:
@@ -616,6 +616,11 @@ using namespace __C;
    Other Special Primitives
    ~~~~~~~~~~~~~~~~~~~~~~~~
 
+   .. _exit:
+
+   ``exit status``
+     Terminate the program with the given status code.
+
    .. _throw:
 
    ``throw x``
@@ -663,9 +668,9 @@ blobp _ = false;
 extern void pure_throw(expr*) = throw; // IMPURE!
 extern expr* pure_force(expr*) = force;
 
-/* Note that this one is also declared in system.pure (and also documented
-   there), but we also want to have this in the prelude so that programs can
-   bail out without having to import the system module. */
+/* Note that this one should actually be in system.pure, but we want to have
+   it in the prelude so that programs can bail out without having to import
+   the system module. */
 
 extern void exit(int status);
 

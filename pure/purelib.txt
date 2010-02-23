@@ -67,20 +67,14 @@ operator symbols.
 
    <a name="stack_fault">
 
-.. raw:: html
-
-   <a name="bad_matrix_value">
-
 .. _failed_cond:
 .. _failed_match:
 .. _stack_fault:
-.. _bad_matrix_value:
 
 * The built-in exception values ``failed_cond`` (failed conditional in
   guard or if-then-else), ``failed_match`` (failed pattern match in lambda,
-  ``case`` expression, etc.), ``stack_fault`` (not enough stack space,
-  ``PURE_STACK`` limit exceeded) and ``bad_matrix_value x`` (error in
-  matrix construction).
+  ``case`` expression, etc.) and ``stack_fault`` (not enough stack space,
+  ``PURE_STACK`` limit exceeded).
 
 .. raw:: html
 
@@ -92,6 +86,14 @@ operator symbols.
 
 .. raw:: html
 
+   <a name="bad_string_value">
+
+.. raw:: html
+
+   <a name="bad_matrix_value">
+
+.. raw:: html
+
    <a name="out_of_bounds">
 
 .. raw:: html
@@ -100,6 +102,8 @@ operator symbols.
 
 .. _bad_list_value:
 .. _bad_tuple_value:
+.. _bad_string_value:
+.. _bad_matrix_value:
 .. _out_of_bounds:
 .. _malloc_error:
 
@@ -2757,7 +2761,7 @@ predicates.
 
 ``funp x``, ``lambdap x``, ``thunkp x``, ``varp x``
   Predicates to check for various kinds of function objects (named,
-  anonymous or thunk), and global variable symbols.
+  anonymous or thunk), and free variable symbols.
 
 .. raw:: html
 
@@ -3175,6 +3179,15 @@ Please note that the current implementation has some limitations:
 
 Other Special Primitives
 ~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. raw:: html
+
+   <a name="exit">
+
+.. _exit:
+
+``exit status``
+  Terminate the program with the given status code.
 
 .. raw:: html
 
@@ -3777,9 +3790,9 @@ The following operations all work with both the rectangular and the polar
 representation, promoting real (double, int/bigint) inputs to complex where
 appropriate. When the result of an operation is again a complex number, it
 generally uses the same representation as the input (except for explicit
-conversions). Similarly, mixed rect/polar and polar/rect arithmetic always
-return a rect result, and mixed complex/real and real/complex arithmetic
-yields a rect or polar result, depending on what the complex input was.
+conversions). Mixed rect/polar and polar/rect arithmetic always returns a
+rect result, and mixed complex/real and real/complex arithmetic yields a
+rect or polar result, depending on what the complex input was.
 
 .. raw:: html
 
@@ -5128,12 +5141,10 @@ This module offers some useful system routines, straight from the C
 library, as well as some convenience functions for wrapping these up in
 Pure. Even the "purest" program needs to do some basic I/O every once in a
 while, and this module provides the necessary stuff to do just that. The
-interface is rather minimalistic and preliminary right now, but will
-probably grow over time, and it already offers many common system functions
-that Pure programmers might want to use in their scripts.
-
-Most of the following functions are extensively documented in the C library
-manual pages, so we concentrate on the Pure-specific aspects here.
+operations provided in this module should work (if necessary by a suitable
+emulation) on all supported systems. Most of the following functions are
+extensively documented in the C library manual pages, so we concentrate on
+the Pure-specific aspects here.
 
 Imports
 -------
@@ -5384,20 +5395,11 @@ usually offer much better resolution than ``time``.
 Process Functions
 -----------------
 
-The following process functions are available on all systems. Please note
-that, as of Pure 0.28, some additional process-related functions such as
-``fork``, ``kill``, ``wait`` and ``waitpid`` are available in the posix
-module, which can be used together with the system module if the additional
-functionality is required.
-
-.. raw:: html
-
-   <a name="exit">
-
-.. _exit:
-
-``exit status``
-  Terminate the program with the given status code.
+The following process functions are available on all systems. (Some
+additional process-related functions such as ``fork``, ``kill``, ``wait``
+and ``waitpid`` are available in the posix module, which can be used
+together with the system module if the additional functionality is
+required.)
 
 .. raw:: html
 
@@ -5469,6 +5471,10 @@ functionality is required.
   which works like ``P_NOWAIT`` but also turns the child process into a
   background task.)
 
+Note that, in addition, the prelude provides the ``exit`` function which
+terminates the program with a given exit code, cf. `Other Special
+Primitives`_.
+
 Examples::
 
   > system "pwd";
@@ -5481,8 +5487,6 @@ Examples::
   > spawnv P_WAIT "/bin/sh" ["/bin/sh","-c","pwd"];
   /home/ag/svn/pure-lang/trunk/pure/lib
   0
-
-  > exit 0; // This exits from the interpreter with the given status code.
 
 ..
 
@@ -6492,6 +6496,7 @@ Index
 
 | `bad_list_value`_
 | `bad_matrix_value`_
+| `bad_string_value`_
 | `bad_tuple_value`_
 | `bag`_
 | `bagp`_

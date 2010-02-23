@@ -1,9 +1,9 @@
 
 /* Pure system interface. Or at least its beginnings. */
 
-/* NOTE: This module isn't loaded by the standard prelude right now, so you'll
-   have to add the clause 'using system;' to your programs in which you want
-   to use this interface. */
+/* NOTE: This module isn't loaded by the standard prelude, so you'll have to
+   add the clause 'using system;' to your programs in which you want to use
+   this interface. */
 
 /* Copyright (c) 2008-2010 by Albert Graef <Dr.Graef@t-online.de>.
 
@@ -31,12 +31,10 @@
    library, as well as some convenience functions for wrapping these up in
    Pure. Even the "purest" program needs to do some basic I/O every once in a
    while, and this module provides the necessary stuff to do just that. The
-   interface is rather minimalistic and preliminary right now, but will
-   probably grow over time, and it already offers many common system functions
-   that Pure programmers might want to use in their scripts.
-
-   Most of the following functions are extensively documented in the C library
-   manual pages, so we concentrate on the Pure-specific aspects here.
+   operations provided in this module should work (if necessary by a suitable
+   emulation) on all supported systems. Most of the following functions are
+   extensively documented in the C library manual pages, so we concentrate on
+   the Pure-specific aspects here.
 
    Imports
    -------
@@ -273,16 +271,11 @@ nanosleep t::int | nanosleep t::bigint = nanosleep (double t);
    Process Functions
    -----------------
 
-   The following process functions are available on all systems. Please note
-   that, as of Pure 0.28, some additional process-related functions such as
-   ``fork``, ``kill``, ``wait`` and ``waitpid`` are available in the posix
-   module, which can be used together with the system module if the additional
-   functionality is required.
-
-   .. _exit:
-
-   ``exit status``
-     Terminate the program with the given status code.
+   The following process functions are available on all systems. (Some
+   additional process-related functions such as ``fork``, ``kill``, ``wait``
+   and ``waitpid`` are available in the posix module, which can be used
+   together with the system module if the additional functionality is
+   required.)
 
    .. _system:
 
@@ -326,6 +319,10 @@ nanosleep t::int | nanosleep t::bigint = nanosleep (double t);
      which works like ``P_NOWAIT`` but also turns the child process into a
      background task.)
 
+   Note that, in addition, the prelude provides the ``exit`` function which
+   terminates the program with a given exit code, cf. `Other Special
+   Primitives`_.
+
    Examples::
 
      > system "pwd";
@@ -338,8 +335,6 @@ nanosleep t::int | nanosleep t::bigint = nanosleep (double t);
      > spawnv P_WAIT "/bin/sh" ["/bin/sh","-c","pwd"];
      /home/ag/svn/pure-lang/trunk/pure/lib
      0
-
-     > exit 0; // This exits from the interpreter with the given status code.
 
 */
 
