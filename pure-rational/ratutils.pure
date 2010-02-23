@@ -1598,9 +1598,10 @@ expansion_to_frac rx (d : dd)
 
 /* Digit -> Char */
 private digit_to_char;
-digit_to_char d
-	= chr (d + 48) if d < 10;
-	= chr (d + 55) if d < 36; //55 = 65 - 10
+digit_to_char d::int |
+digit_to_char d::bigint
+	= chr $ int (d + 48) if d < 10;
+	= chr $ int (d + 55) if d < 36; //55 = 65 - 10
 	= "?" otherwise;
 
 /* Char -> Digit */
