@@ -42,7 +42,7 @@
  * ratutils.pure
  */
 
-using rat_interval, dict;
+using rat_interval, dict, strings, system;
 using namespace interval;
 namespace rational;
 
@@ -52,40 +52,31 @@ namespace rational;
  ***
  ******************************************************************************/
 
-/* Find position of leftmost occurrence of substring in string */
-private sublist_find_left;
-//LenSub=#Sub
-sublist_find_left _ _ [] = 0;
-sublist_find_left subl lenSub l
-	= 0 if subl == take (lenSub) l;
-	= 1 + sublist_find_left subl lenSub (tail l);
-
 /* Split string at leftmost occurrence of substring */
 private split_str_left;
 split_str_left "" strg::string = (strg, "");
-split_str_left subs::string strg::string
-	= (strcat l, strcat r)
+split_str_left pat::string strg::string
+	= (h, t)
 	  when
-	    ss = chars subs;
-	    cc = chars strg;
-	    pos = sublist_find_left ss (#ss) cc;
-	    l = take pos cc;
-	    r = drop (pos + #subs) cc
+	    pos = index strg pat;
+	    patlen = #pat;
+	    strlen = #strg;
+	    h = substr strg 0 pos;
+	    t = substr strg (pos + patlen) (strlen - pos - patlen)
 	  end;
 
 /* some string functions */
 private str_dup; /* duplicate */
-str_dup s n::int = strcat (mklist s n);
+str_dup s::string n::int = strcat $ repeatn n s;
 
 private str_lsplit_at;
-str_lsplit_at s n
-	= (strcat (take n c), strcat (drop n c))
-	  when c = chars s end;
+str_lsplit_at s::string n::int
+	= (substr s 0 n, substr s n ((#s) - n));
 
 private str_rsplit_at;
-str_rsplit_at s n
-	= (strcat (reverse (drop n rc)), strcat (reverse (take n rc)))
-	  when rc = reverse (chars s) end;
+str_rsplit_at s::string n::int
+	= (substr s 0 pos , substr s pos n)
+	  when pos = (#s) - n end;
 
 private num_den;
 num_den q = (num q, den q) if rationalp q;
