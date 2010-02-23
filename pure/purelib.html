@@ -409,13 +409,14 @@ Pure language and the operation of the Pure interpreter.</p>
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#getopt" id="id143">5&nbsp;&nbsp;&nbsp;Getopt</a><ul class="auto-toc">
-<li><a class="reference internal" href="#id70" id="id144">5.1&nbsp;&nbsp;&nbsp;Imports</a></li>
-<li><a class="reference internal" href="#id71" id="id145">5.2&nbsp;&nbsp;&nbsp;Operations</a></li>
-<li><a class="reference internal" href="#id72" id="id146">5.3&nbsp;&nbsp;&nbsp;Examples</a></li>
+<li><a class="reference internal" href="#additional-posix-functions" id="id143">5&nbsp;&nbsp;&nbsp;Additional POSIX Functions</a></li>
+<li><a class="reference internal" href="#getopt" id="id144">6&nbsp;&nbsp;&nbsp;Getopt</a><ul class="auto-toc">
+<li><a class="reference internal" href="#id70" id="id145">6.1&nbsp;&nbsp;&nbsp;Imports</a></li>
+<li><a class="reference internal" href="#id71" id="id146">6.2&nbsp;&nbsp;&nbsp;Operations</a></li>
+<li><a class="reference internal" href="#id72" id="id147">6.3&nbsp;&nbsp;&nbsp;Examples</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id73" id="id147">6&nbsp;&nbsp;&nbsp;Index</a></li>
+<li><a class="reference internal" href="#id73" id="id148">7&nbsp;&nbsp;&nbsp;Index</a></li>
 </ul>
 </div>
 <div class="section" id="prelude">
@@ -3228,9 +3229,8 @@ which case the time remaining to be slept is returned.</dd>
 <h2><a class="toc-backref" href="#id133">4.6&nbsp;&nbsp;&nbsp;Process Functions</a></h2>
 <p>The following process functions are available on all systems. (Some
 additional process-related functions such as <tt class="docutils literal"><span class="pre">fork</span></tt>, <tt class="docutils literal"><span class="pre">kill</span></tt>, <tt class="docutils literal"><span class="pre">wait</span></tt>
-and <tt class="docutils literal"><span class="pre">waitpid</span></tt> are available in the posix module, which can be used
-together with the system module if the additional functionality is
-required.)</p>
+and <tt class="docutils literal"><span class="pre">waitpid</span></tt> are available in the posix module, see <a class="reference internal" href="#additional-posix-functions">Additional POSIX
+Functions</a>.)</p>
 <a name="system"><dl class="docutils" id="system">
 <dt><tt class="docutils literal"><span class="pre">system</span> <span class="pre">cmd</span></tt></dt>
 <dd>Execute a shell command.</dd>
@@ -3852,12 +3852,49 @@ random access to the environment variables:</p>
 </div>
 </div>
 </div>
+<div class="section" id="additional-posix-functions">
+<h1><a class="toc-backref" href="#id143">5&nbsp;&nbsp;&nbsp;Additional POSIX Functions</a></h1>
+<p>The posix module provides some additional POSIX functions not available on
+all supported systems. (In particular, none of these functions are provided
+on MS Windows.) You can load this module in addition to the system module
+if you need the additional functionality. To use the operations of this
+module, add the following import declaration to your program:</p>
+<pre class="literal-block">
+using posix;
+</pre>
+<p>The following operations are provided. Please see the appropriate POSIX
+manual pages for a closer description of these functions.</p>
+<a name="fork"><dl class="docutils" id="fork">
+<dt><tt class="docutils literal"><span class="pre">fork</span></tt></dt>
+<dd>Fork a new process.</dd>
+</dl>
+<a name="getpid"><a name="getppid"><dl class="docutils" id="getppid">
+<span id="getpid"></span><dt><tt class="docutils literal"><span class="pre">getpid</span></tt>, <tt class="docutils literal"><span class="pre">getppid</span></tt></dt>
+<dd>Get the process id of the current process and its parent process,
+respectively.</dd>
+</dl>
+<a name="wait"><a name="waitpid"><dl class="docutils" id="waitpid">
+<span id="wait"></span><dt><tt class="docutils literal"><span class="pre">wait</span> <span class="pre">status</span></tt>, <tt class="docutils literal"><span class="pre">waitpid</span> <span class="pre">pid</span> <span class="pre">status</span> <span class="pre">options</span></tt></dt>
+<dd>Wait for any child process, or the given one. The <tt class="docutils literal"><span class="pre">status</span></tt> argument
+must be a pointer to an <tt class="docutils literal"><span class="pre">int</span></tt> value, which is used to return the status
+of the child process.</dd>
+</dl>
+<a name="kill"><dl class="docutils" id="kill">
+<dt><tt class="docutils literal"><span class="pre">kill</span> <span class="pre">pid</span> <span class="pre">sig</span></tt></dt>
+<dd>Send the given signal to the given process.</dd>
+</dl>
+<a name="raise"><dl class="docutils" id="raise">
+<dt><tt class="docutils literal"><span class="pre">raise</span> <span class="pre">sig</span></tt></dt>
+<dd>Raise the given signal in the current process.</dd>
+</dl>
+<a name="pause"><!--  -->
+</div>
 <div class="section" id="getopt">
-<h1><a class="toc-backref" href="#id143">5&nbsp;&nbsp;&nbsp;Getopt</a></h1>
+<h1><a class="toc-backref" href="#id144">6&nbsp;&nbsp;&nbsp;Getopt</a></h1>
 <p>This is a quick-and-dirty replacement for the GNU getopt functions, ported
 from the Q library.</p>
 <div class="section" id="id70">
-<h2><a class="toc-backref" href="#id144">5.1&nbsp;&nbsp;&nbsp;Imports</a></h2>
+<h2><a class="toc-backref" href="#id145">6.1&nbsp;&nbsp;&nbsp;Imports</a></h2>
 <p>To use the operations of this module, add the following import declaration
 to your program:</p>
 <pre class="literal-block">
@@ -3865,7 +3902,7 @@ using getopt;
 </pre>
 </div>
 <div class="section" id="id71">
-<h2><a class="toc-backref" href="#id145">5.2&nbsp;&nbsp;&nbsp;Operations</a></h2>
+<h2><a class="toc-backref" href="#id146">6.2&nbsp;&nbsp;&nbsp;Operations</a></h2>
 <p>This module provides one operation: <tt class="docutils literal"><span class="pre">getopt</span> <span class="pre">opts</span> <span class="pre">args</span></tt></p>
 <p>The <tt class="docutils literal"><span class="pre">getopt</span></tt> function takes two arguments: <tt class="docutils literal"><span class="pre">opts</span></tt>, a list of option
 descriptions in the format described below, and <tt class="docutils literal"><span class="pre">args</span></tt>, a list of strings
@@ -3902,7 +3939,7 @@ equivalent, simply specify an empty option string for the <tt class="docutils li
 field.</p>
 </div>
 <div class="section" id="id72">
-<h2><a class="toc-backref" href="#id146">5.3&nbsp;&nbsp;&nbsp;Examples</a></h2>
+<h2><a class="toc-backref" href="#id147">6.3&nbsp;&nbsp;&nbsp;Examples</a></h2>
 <pre class="literal-block">
 &gt; let opts = [(&quot;--help&quot;, &quot;-h&quot;, NOARG),       // no argument
 &gt;             (&quot;--version&quot;, &quot;&quot;, NOARG),      // no short option
@@ -3922,7 +3959,7 @@ copied to the result lists as is.</p>
 </div>
 </div>
 <div class="section" id="id73">
-<h1><a class="toc-backref" href="#id147">6&nbsp;&nbsp;&nbsp;Index</a></h1>
+<h1><a class="toc-backref" href="#id148">7&nbsp;&nbsp;&nbsp;Index</a></h1>
 <div class="line-block">
 <div class="line"><a class="reference internal" href="#id6">!</a></div>
 <div class="line"><a class="reference internal" href="#id42">! (array)</a></div>
@@ -4147,6 +4184,7 @@ copied to the result lists as is.</p>
 <div class="line"><a class="reference internal" href="#foldr">foldr</a></div>
 <div class="line"><a class="reference internal" href="#foldr1">foldr1</a></div>
 <div class="line"><a class="reference internal" href="#fopen">fopen</a></div>
+<div class="line"><a class="reference internal" href="#fork">fork</a></div>
 <div class="line"><a class="reference internal" href="#fprintf">fprintf</a></div>
 <div class="line"><a class="reference internal" href="#fputs">fputs</a></div>
 <div class="line"><a class="reference internal" href="#frac">frac</a></div>
@@ -4173,6 +4211,8 @@ copied to the result lists as is.</p>
 <div class="line"><a class="reference internal" href="#get-sentry">get_sentry</a></div>
 <div class="line"><a class="reference internal" href="#get-short">get_short</a></div>
 <div class="line"><a class="reference internal" href="#get-string">get_string</a></div>
+<div class="line"><a class="reference internal" href="#getpid">getpid</a></div>
+<div class="line"><a class="reference internal" href="#getppid">getppid</a></div>
 <div class="line"><a class="reference internal" href="#gets">gets</a></div>
 <div class="line"><a class="reference internal" href="#gettimeofday">gettimeofday</a></div>
 <div class="line"><a class="reference internal" href="#glob">glob</a></div>
@@ -4218,6 +4258,7 @@ copied to the result lists as is.</p>
 </div>
 <div class="line-block">
 <div class="line"><a class="reference internal" href="#keys">keys</a></div>
+<div class="line"><a class="reference internal" href="#kill">kill</a></div>
 </div>
 <div class="line-block">
 <div class="line"><a class="reference internal" href="#lambdap">lambdap</a></div>
@@ -4308,6 +4349,7 @@ copied to the result lists as is.</p>
 <div class="line-block">
 <div class="line"><a class="reference internal" href="#pack">pack</a></div>
 <div class="line"><a class="reference internal" href="#packed">packed</a></div>
+<div class="line"><a class="reference external" href="Sleepuntilasignaliscaught.">pause</a></div>
 <div class="line"><a class="reference internal" href="#pclose">pclose</a></div>
 <div class="line"><a class="reference internal" href="#perror">perror</a></div>
 <div class="line"><a class="reference internal" href="#pointer">pointer</a></div>
@@ -4331,6 +4373,7 @@ copied to the result lists as is.</p>
 <div class="line"><a class="reference internal" href="#puts">puts</a></div>
 </div>
 <div class="line-block">
+<div class="line"><a class="reference internal" href="#raise">raise</a></div>
 <div class="line"><a class="reference internal" href="#random">random</a></div>
 <div class="line"><a class="reference internal" href="#random31">random31</a></div>
 <div class="line"><a class="reference internal" href="#random53">random53</a></div>
@@ -4490,6 +4533,10 @@ copied to the result lists as is.</p>
 <div class="line"><a class="reference internal" href="#vals">vals</a></div>
 <div class="line"><a class="reference internal" href="#varp">varp</a></div>
 <div class="line"><a class="reference internal" href="#void">void</a></div>
+</div>
+<div class="line-block">
+<div class="line"><a class="reference internal" href="#wait">wait</a></div>
+<div class="line"><a class="reference internal" href="#waitpid">waitpid</a></div>
 </div>
 <div class="line-block">
 <div class="line"><a class="reference internal" href="#zip">zip</a></div>
