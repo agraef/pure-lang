@@ -48,9 +48,13 @@ Prelude
 The prelude defines the basic operations of the Pure language. This
 includes the basic arithmetic and logical operations, string, list and
 matrix functions, as well as the support operations required to implement
-list and matrix comprehensions. (The string and matrix operations are in
-separate modules string.pure and matrix.pure, the primitive arithmetic and
-logical operations can be found in primitives.pure.)
+list and matrix comprehensions. The string, matrix and record operations
+are in separate modules strings.pure, matrices.pure and records.pure, the
+primitive arithmetic and logical operations can be found in
+primitives.pure. Note that since the prelude module gets imported
+automatically (unless the interpreter is invoked with the ``--no-prelude``
+option), all operations discussed in this section are normally available in
+Pure programs without requiring any explicit import declarations.
 
 The prelude also declares a signature of commonly used constant and
 operator symbols.
@@ -5155,7 +5159,7 @@ to your program::
   using system;
 
 Some functions of the system interface are provided in separate modules;
-see `Additional POSIX Functions`_ and Getopt_.
+see `Additional POSIX Functions`_ and `Option Parsing`_.
 
 ..
 
@@ -6408,8 +6412,8 @@ manual pages for a closer description of these functions.
 
 .. 
 
-Getopt
-------
+Option Parsing
+--------------
 
 This is a quick-and-dirty replacement for the GNU getopt functions, ported
 from the Q library. To use the operations of this module, add the following
@@ -6417,7 +6421,18 @@ import declaration to your program::
 
   using getopt;
 
-This module provides one operation: ``getopt opts args``
+The following operation is provided:
+
+.. raw:: html
+
+   <a name="getopt">
+
+.. _getopt:
+
+``getopt opts args``
+  Parse options as given by ``opts`` in the command line arguments
+  ``args``, return the parsed options along with a list of the remaining
+  (non-option) command line arguments.
 
 The ``getopt`` function takes two arguments: ``opts``, a list of option
 descriptions in the format described below, and ``args``, a list of strings
@@ -6727,6 +6742,7 @@ Index
 | `get_sentry`_
 | `get_short`_
 | `get_string`_
+| `getopt`_
 | `getpid`_
 | `getppid`_
 | `gets`_
