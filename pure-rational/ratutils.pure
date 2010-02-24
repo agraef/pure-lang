@@ -1280,15 +1280,10 @@ den c		= d when (_, d) = num_den c end if complexp c;
  */
 public continued_fraction;
 continued_fraction q
-	= (a : continued_fraction (reciprocal d))
+	= if d == 0 then [a] else (a : continued_fraction (reciprocal d))
 	  when
 	    a = floor q;
 	    d = q - a
-	  end
-	  if rationalp q && d ~= 0;
-	= [a]
-	  when
-	    a = floor q
 	  end
 	  if rationalp q;
 continued_fraction i = [i] if integerp i;
@@ -1305,15 +1300,11 @@ continued_fraction i = [i] if integerp i;
 public continued_fraction_max_terms;
 continued_fraction_max_terms 0 r = [r];
 continued_fraction_max_terms maxTerms r
-	= (a : continued_fraction_max_terms (maxTerms - 1) (reciprocal d))
+	= if d == 0 then [a] else (a : continued_fraction_max_terms (maxTerms - 1) (reciprocal d))
 	  when
 	    a = (floor r);
 	    d = r - a
-	  end
-	  if (d ~= 0);
-	= [a]
-	  when a = floor r end
-	  otherwise;
+	  end;
 
 /*
  * Calculate the continued fraction to within epsilon
