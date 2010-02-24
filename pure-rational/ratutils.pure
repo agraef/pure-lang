@@ -1863,7 +1863,7 @@ str_mixed q
 	  else if n < (-d) then
 	    "-(" + (str_mixed (-q)) + ")"
 	  else if n > d then
-	    str (n div d) + "+" + str (n mod d) + "/" + str D
+	    str (n div d) + "+" + str (n mod d) + "/" + str d
 	  else
 	    str_vulgar q
 	  when (n, d) = num_den q end
@@ -1882,14 +1882,14 @@ str_mixed i = str i if integerp i;
  */
 public val_vulgar;
 val_vulgar strg::string
-	= -val_vulgar (sub strg 1 ((#strg) - 1))
+	= -val_vulgar (substr strg 1 ((#strg) - 1))
 	  if strg ! 0 == "-";
-	= rational (n, d)
+	= rational (n%d)
 	  if p >= 0
 	  when
-	    p = pos "/" strg;
-	    n = val (sub strg 0 (p - 1));
-	    d = val (sub strg (p + 1) ((#strg) - 1))
+	    p = index strg "/";
+	    n = val (substr strg 0 p);
+	    d = val (substr strg (p + 1) ((#strg) - 1))
 	  end;
 	= rational (val strg)
 	  otherwise;
@@ -1904,17 +1904,16 @@ val_vulgar strg::string
  */
 public val_mixed;
 val_mixed strg::string
-	= - val_mixed (sub strg 1 ((#strg) - 1))
+	= - val_mixed (substr strg 1 ((#strg) - 1))
 	  if strg ! 0 == "-";
-	= val_mixed (sub strg 1 ((#strg) - 2))
-	  if Str ! 0 == "(";
+	= val_mixed (substr strg 1 ((#strg) - 2))
+	  if strg ! 0 == "(";
 	= z + q
-	  if p >= 0
 	  when
-	    p = pos "+" strg;
-	    z = val_mixed  (sub strg 0 (p - 1));
-	    q = val_mixed (sub strg (p + 1) ((#strg) - 1))
-	  end;
+	    z = val_mixed (substr strg 0 p);
+	    q = val_mixed (substr strg (p + 1) ((#strg) - 1))
+	  end
+	  if p >= 0 when p = index strg "+" end;
 	= val_vulgar strg
 	  otherwise;
 
