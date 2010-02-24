@@ -1,0 +1,541 @@
+/* Generic AVL tree data structure for implementing sets, dictionaries,
+   and the like. */
+
+/* NOTE: This module implements just the raw AVL tree data structure. The
+   provided operations are fairly low-level and not intended to be used
+   directly in applications. You'd rather want to use the high-level
+   interfaces in dict.pure and set.pure instead. */
+
+/* Copyright (c) 2008-2010 by Albert Graef <Dr.Graef@t-online.de>.
+   Copyright (c) 2008-2010 by Jiri Spitz <jiri.spitz@bluetone.cz>.
+
+   This file is part of the Pure standard library.
+
+   The Pure standard library is free software: you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public License as
+   published by the Free Software Foundation, either version 3 of the License,
+   or (at your option) any later version.
+
+   Pure is distributed in the hope that it will be useful, but WITHOUT ANY
+   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+   FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
+   more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>. */
+
+/* The used AVL tree algorithm has its origin in the SWI-Prolog implementation
+   of association lists. The original implementation was created by
+   R. A. O'Keefe and updated for SWI-Prolog by Jan Wielemaker. For the
+   original source see http://www.swi-prolog.org. The port from SWI-Prolog and
+   the deletion stuff (rmfirst, rmlast, delete) missing in the Prolog
+   implementation was provided by Jiri Spitz. */
+
+namespace avl;
+
+/* Tree constructors: 'nil' denotes an empty tree, 'bin x balance left right'
+   an interior node with the given balance factor and left and right subtrees.
+   These are shared by all variations of the data structure. Depending on the
+   particular type of data structure, the data element may take the form of a
+   simple key (set-like), a key=>value pair (dictionary-like), or a
+   key=>bucket pair (hash-like). In the latter case the bucket is a list of
+   the data elements for each hash key. For hash trees no order of the
+   key/data elements is assumed. Keys/elements in non-hash trees must be
+   ordered, i.e., the usual comparison predicates (<, >, ==) must be defined
+   on them. */
+
+private nonfix nil;
+private bin;
+
+/* Private helper functions. */
+
+private adjusti adjustd deletel rotate;
+
+/* Operations to construct an empty tree, and to check for an empty tree.
+   These are the same for all variations of the data structure. */
+
+public emptytree null;
+
+emptytree = nil;
+
+null nil = 1;
+null (bin _ _ _ _) = 0;
+
+/* Basic AVL tree operations for ordered (non-hash) trees. */
+
+public size members keys vals first last rmfirst rmlast;
+
+// Compute the size of a tree.
+
+size t = size t with
+  size nil = 0;
+  size (bin _ _ l r) = size l + size r + 1;
+end;
+
+// Get the list of all members.
+
+members t = members t with
+  members nil = [];
+  members (bin x _ l r) = members l + (x : members r);
+end;
+
+// Get the list of all keys and values. This requires a dictionary-like
+// structure with separate key values.
+
+keys t = keys t with
+  keys nil = [];
+  keys (bin (k=>v) _ l r) = keys l + (k : keys r);
+end;
+
+vals t = vals t with
+  vals nil = [];
+  vals (bin (k=>v) _ l r) = vals l + (v : vals r);
+end;
+
+// Get the first and the last member of a tree.
+
+first t = first t with
+  first (bin x _ nil _) = x;
+  first (bin _ _ l _) = first l;
+end;
+
+last t = last t with
+  last (bin x _ _ nil) = x;
+  last (bin _ _ _ r) = last r;
+end;
+
+// Remove the first and the last member from a tree.
+
+rmfirst t = rmfirst t!0 with
+  rmfirst nil = [nil, 0];
+  rmfirst (bin _ _ nil r) = [r, 1];
+  rmfirst (bin x b l r) = adjustd leftHasChanged (bin x b newl r) (-1)
+    when [newl, leftHasChanged] = rmfirst l end;
+end;
+
+rmlast t = rmlast t!0 with
+  rmlast nil = [nil, 0];
+  rmlast (bin _ _ l nil) = [l, 1];
+  rmlast (bin x b l r) = adjustd rightHasChanged (bin x b l newr) 1
+    when [newr, rightHasChanged] = rmlast r end;
+end;
+
+/* Membership tests for ordered AVL trees. Here we distinguish between
+   set-like and dictionary-like structures. The latter operation has an
+   additional k suffix to indicate that separate keys are used. */
+
+public member memberk;
+
+member t y = member t y with
+  member nil _ = 0;
+  member (bin x _ l r) y
+    = member l y if x > y;
+    = member r y if x < y;
+    = 1;
+end;
+
+memberk t y = member t y with
+  member nil _ = 0;
+  member (bin (x=>v) _ l r) y
+    = member l y if x > y;
+    = member r y if x < y;
+    = 1;
+end;
+
+/* Indexing (get the values stored under a given key). This requires a
+   dictionary-like tree with separate key values. The get operation returns a
+   single value; an out_of_bound exception is thrown if the key doesn't exist
+   in the tree. The getm function returns a list of all values for the given
+   key (which might be empty if the key is not in the tree). */
+
+/* NOTE: getm may return different values for the same key in an apparently
+   random order. Likewise, get may return any matching value. If you have to
+   preserve the order in which the elements were inserted into the tree then
+   you need to use a hashed tree instead. */
+
+public get getm;
+
+get t y = get t y with
+  get nil _ = throw out_of_bounds;
+  get (bin (x=>v) _ l r) y
+    = get l y if x > y;
+    = get r y if x < y;
+    = v;
+end;
+
+getm t y = get t y with
+  get nil _ = [];
+  get (bin (x=>v) _ l r) y
+    = get l y if x > y;
+    = get r y if x < y;
+    = get l y + (v : get r y);
+end;
+
+/* Basic AVL tree operations for hash trees. Please note that the members are
+   in an apparently random order here. However, elements in the same bucket
+   are stored in the order in which they were inserted into the tree. */
+
+public sizeh membersh keysh valsh firsth lasth rmfirsth rmlasth;
+
+sizeh t = size t with
+  size nil = 0;
+  size (bin (k=>xs) _ l r) = size l + size r + #xs;
+end;
+
+membersh t = members t with
+  members nil = [];
+  members (bin (k=>xs) _ l r) = members l + xs + members r;
+end;
+
+keysh t = keys t with
+  keys nil = [];
+  keys (bin (k=>xs) _ l r) = keys l + [k | k=>v = xs] + keys r;
+end;
+
+valsh t = vals t with
+  vals nil = [];
+  vals (bin (k=>xs) _ l r) = vals l + [v | k=>v = xs] + vals r;
+end;
+
+firsth t = first t with
+  first (bin (k=>xs) _ nil _) = head xs;
+  first (bin _ _ l _) = first l;
+end;
+
+lasth t = last t with
+  last (bin (k=>xs) _ _ nil) = ::last xs;
+  last (bin _ _ _ r) = last r;
+end;
+
+rmfirsth t = rmfirst t!0 with
+  rmfirst nil = [nil, 0];
+  rmfirst (bin (k=>xs) b nil r)
+    = if ::null newxs then [r, 1]
+      else [bin (k=>newxs) b nil r, 0]
+      when newxs = tail xs end;
+  rmfirst (bin x b l r) = adjustd leftHasChanged (bin x b newl r) (-1)
+    when [newl, leftHasChanged] = rmfirst l end;
+end;
+
+rmlasth t = rmlast t!0 with
+  rmlast nil = [nil, 0];
+  rmlast (bin (k=>xs) b l nil)
+    = if ::null newxs then [l, 1]
+      else [bin (k=>newxs) b l nil, 0]
+      when newxs = init xs end;
+  rmlast (bin x b l r) = adjustd rightHasChanged (bin x b l newr) 1
+    when [newr, rightHasChanged] = rmlast r end;
+end;
+
+/* Membership tests and indexing for hashed trees. */
+
+public memberh memberhk geth gethm;
+
+memberh t y = member t (hash y) y with
+  member nil _ _ = 0;
+  member (bin (k::int=>xs) _ l r) key::int y
+    = member l key y if k > key;
+    = member r key y if k < key;
+    = any (same y) xs;
+end;
+
+memberhk t y = member t (hash y) y with
+  member nil _ _ = 0;
+  member (bin (k::int=>xs) _ l r) key::int y
+    = member l key y if k > key;
+    = member r key y if k < key;
+    = any (\(x=>_) -> same x y) xs;
+end;
+
+geth t y = get t (hash y) y with
+  get nil _ _ = throw out_of_bounds;
+  get (bin (k::int=>xs) _ l r) key::int y
+    = get l key y if k > key;
+    = get r key y if k < key;
+    = case dropwhile (\(x=>_) -> x~==y) xs of
+        (x=>v):_ = v; _ = throw out_of_bounds;
+      end;
+end;
+
+gethm t y = get t (hash y) y with
+  get nil _ _ = [];
+  get (bin (k::int=>xs) _ l r) key::int y
+    = get l key y if k > key;
+    = get r key y if k < key;
+    = [v | x=>v = xs; x===y];
+end;
+
+/* AVL tree insertion and deletion. Again, there are different variations of
+   these operations, depending on whether you need separate keys like in a
+   dictionary (k suffix) and/or hashing of key values (h suffix). For
+   insertions, there are additional variations depending on whether multiple
+   instances of the same key should be allowed (m suffix). */
+
+public insert insertk inserth inserthk;
+public insertm insertkm inserthm inserthkm;
+public delete deletek deleteh deletehk;
+
+/* Ordered AVL tree operations. A total order must be defined on the key
+   values for these operations. */
+
+insert t y = insert t y!0 with
+  insert nil y = [bin y 0 nil nil, 1];
+  insert (bin x@k b l r) y@key
+    = [bin y b l r, 0] if key == k;
+    = adjusti leftHasChanged (bin x b newl r) (-1)
+      when [newl, leftHasChanged] = insert l y end if key < k;
+    = adjusti rightHasChanged (bin x b l newr) 1
+      when [newr, rightHasChanged] = insert r y end if key > k;
+end;
+
+insertk t y@(key=>val) = insert t y!0 with
+  insert nil y = [bin y 0 nil nil, 1];
+  insert (bin x@(k=>v) b l r) y@(key=>val)
+    = [bin y b l r, 0] if key == k;
+    = adjusti leftHasChanged (bin x b newl r) (-1)
+      when [newl, leftHasChanged] = insert l y end if key < k;
+    = adjusti rightHasChanged (bin x b l newr) 1
+      when [newr, rightHasChanged] = insert r y end if key > k;
+end;
+
+insertm t y = insert t y!0 with
+  insert nil y = [bin y 0 nil nil, 1];
+  insert (bin x@k b l r) y@key
+    = adjusti leftHasChanged (bin x b newl r) (-1)
+      when [newl, leftHasChanged] = insert l y end if key < k;
+    = adjusti rightHasChanged (bin x b l newr) 1
+      when [newr, rightHasChanged] = insert r y end if key >= k;
+end;
+
+insertkm t y@(key=>val) = insert t y!0 with
+  insert nil y = [bin y 0 nil nil, 1];
+  insert (bin x@(k=>v) b l r) y@(key=>val)
+    = adjusti leftHasChanged (bin x b newl r) (-1)
+      when [newl, leftHasChanged] = insert l y end if key < k;
+    = adjusti rightHasChanged (bin x b l newr) 1
+      when [newr, rightHasChanged] = insert r y end if key >= k;
+end;
+
+delete t y = delete t y!0 with
+  delete nil _ = [nil, 0];
+  delete (bin x@k b l r) y@key
+    = if l===nil then [r, 1]
+      else if r===nil then [l, 1]
+      else (adjustd leftHasChanged (bin (last l) b newl r) (-1)
+      	    when [newl, leftHasChanged] = deletel l end) if key == k;
+    = adjustd leftHasChanged (bin x b newl r) (-1)
+      when [newl, leftHasChanged] = delete l y end if key < k;
+    = adjustd rightHasChanged (bin x b l newr) 1
+      when [newr, rightHasChanged] = delete r y end if key > k;
+end;
+
+deletek t y = delete t y!0 with
+  delete nil _ = [nil, 0];
+  delete (bin x@(k=>_) b l r) y@key
+    = if l===nil then [r, 1]
+      else if r===nil then [l, 1]
+      else (adjustd leftHasChanged (bin (last l) b newl r) (-1)
+      	    when [newl, leftHasChanged] = deletel l end) if key == k;
+    = adjustd leftHasChanged (bin x b newl r) (-1)
+      when [newl, leftHasChanged] = delete l y end if key < k;
+    = adjustd rightHasChanged (bin x b l newr) 1
+      when [newr, rightHasChanged] = delete r y end if key > k;
+end;
+
+/* Hashed tree operations. Hash keys are used as ordered key values here.
+   Different keys may be stored in the same bucket which is represented as a
+   list of its members. */
+
+inserth t y = insert t (hash y) y!0 with
+  insert nil k::int y = [bin (k=>[y]) 0 nil nil, 1];
+  insert (bin x@(k::int=>xs) b l r) key::int y
+    = [bin (k=>insertb xs y) b l r, 0] if k == key;
+    = adjusti leftHasChanged (bin x b newl r) (-1)
+      when [newl, leftHasChanged] = insert l key y end if key < k;
+    = adjusti rightHasChanged (bin x b l newr) 1
+      when [newr, rightHasChanged] = insert r key y end if key > k;
+  insertb [] y = [y];
+  insertb (x:xs) y@x = y:xs;
+  insertb (x:xs) y = x:insertb xs y;
+end;
+
+inserthk t y@(key=>val) = insert t (hash key) y!0 with
+  insert nil k::int y = [bin (k=>[y]) 0 nil nil, 1];
+  insert (bin x@(k::int=>xs) b l r) key::int y
+    = [bin (k=>insertb xs y) b l r, 0] if k == key;
+    = adjusti leftHasChanged (bin x b newl r) (-1)
+      when [newl, leftHasChanged] = insert l key y end if key < k;
+    = adjusti rightHasChanged (bin x b l newr) 1
+      when [newr, rightHasChanged] = insert r key y end if key > k;
+  insertb [] y = [y];
+  insertb (x@(k=>v):xs) y@(k=>v1) = y:xs;
+  insertb (x:xs) y = x:insertb xs y;
+end;
+
+inserthm t y = insert t (hash y) y!0 with
+  insert nil k::int y = [bin (k=>[y]) 0 nil nil, 1];
+  insert (bin x@(k::int=>xs) b l r) key::int y
+    = [bin (k=>xs+[y]) b l r, 0] if k == key;
+    = adjusti leftHasChanged (bin x b newl r) (-1)
+      when [newl, leftHasChanged] = insert l key y end if key < k;
+    = adjusti rightHasChanged (bin x b l newr) 1
+      when [newr, rightHasChanged] = insert r key y end if key > k;
+end;
+
+inserthkm t y@(key=>val) = insert t (hash key) y!0 with
+  insert nil k::int y = [bin (k=>[y]) 0 nil nil, 1];
+  insert (bin x@(k::int=>xs) b l r) key::int y
+    = [bin (k=>xs+[y]) b l r, 0] if k == key;
+    = adjusti leftHasChanged (bin x b newl r) (-1)
+      when [newl, leftHasChanged] = insert l key y end if key < k;
+    = adjusti rightHasChanged (bin x b l newr) 1
+      when [newr, rightHasChanged] = insert r key y end if key > k;
+end;
+
+deleteh t y = delete t (hash y) y!0 with
+  delete nil _ _ = [nil, 0];
+  delete (bin x@(k::int=>xs) b l r) key::int y
+    = if ~::null newxs then [bin (k=>newxs) b l r, 0]
+      else if l===nil then [r, 1]
+      else if r===nil then [l, 1]
+      else (adjustd leftHasChanged (bin (last l) b newl r) (-1)
+      	    when [newl, leftHasChanged] = deletel l end)
+      when newxs = deleteb xs y end if k == key;
+    = adjustd leftHasChanged (bin x b newl r) (-1)
+      when [newl, leftHasChanged] = delete l key y end if key < k;
+    = adjustd rightHasChanged (bin x b l newr) 1
+      when [newr, rightHasChanged] = delete r key y end if key > k;
+  deleteb [] y = [];
+  deleteb (x@k:xs) y@k = xs;
+  deleteb (x:xs) y = x:deleteb xs y;
+end;
+
+deletehk t y = delete t (hash y) y!0 with
+  delete nil _ _ = [nil, 0];
+  delete (bin x@(k::int=>xs) b l r) key::int y
+    = if ~::null newxs then [bin (k=>newxs) b l r, 0]
+      else if l===nil then [r, 1]
+      else if r===nil then [l, 1]
+      else (adjustd leftHasChanged (bin (last l) b newl r) (-1)
+      	    when [newl, leftHasChanged] = deletel l end)
+      when newxs = deleteb xs y end if k == key;
+    = adjustd leftHasChanged (bin x b newl r) (-1)
+      when [newl, leftHasChanged] = delete l key y end if key < k;
+    = adjustd rightHasChanged (bin x b l newr) 1
+      when [newr, rightHasChanged] = delete r key y end if key > k;
+  deleteb [] y = [];
+  deleteb (x@(k=>v):xs) y@k = xs;
+  deleteb (x:xs) y = x:deleteb xs y;
+end;
+
+/* Private helper functions. */
+
+// Adjust after insertions.
+
+adjusti 0 oldTree _ = [oldTree, 0];
+
+adjusti 1 t@(bin x b0 l r) LoR = [rebal toBeRebalanced t b1, whatHasChanged]
+when
+  [b1, whatHasChanged, toBeRebalanced] = table b0 LoR
+end with
+  rebal 0 (bin x _ l r) b = bin x b l r;
+  rebal 1 oldTree _ = (rotate oldTree)!0;
+  /*
+  Balance rules for insertions
+  	balance	where		balance	  whole tree	to be
+  	before	inserted	after	  increased	rebalanced
+  table	( 0)	(-1)		= [( 1), 	1,		0;
+  table	( 0)	( 1)		= [(-1),  	1,		0];
+  table	( 1)	(-1)		= [( 0),  	0,		1];
+  table	( 1)	( 1)		= [( 0),  	0,		0];
+  table	(-1)	(-1)		= [( 0),  	0,		0];
+  table	(-1)	( 1)		= [( 0),  	0,		1]
+  */
+  table bb::int wi::int = [ba, wti, tbr] when
+      ba  = if bb == 0 then -wi else 0;
+      wti = bb == 0;
+      tbr = (bb + wi) == 0;
+  end;
+end;
+
+// Adjust after deletions.
+
+adjustd 0 oldTree _ = [oldTree, 0];
+
+adjustd 1 t@(bin _ b0 l r) LoR = rebal toBeRebalanced t b1 whatHasChanged
+when
+  [b1, whatHasChanged, toBeRebalanced] = table b0 LoR;
+end with
+  rebal 0 (bin x _ l r) b whatHasChanged
+    = [bin x b l r, whatHasChanged];
+  rebal 1 oldTree _ _ = rotate oldTree;
+  /*
+  Balance rules for deletions
+	balance	where		balance	  whole tree	to be
+	before	deleted		after	  decreased	rebalanced
+  table	( 0)	( 1)		= [( 1),  0,		0];
+  table	( 0)	(-1)		= [(-1),  0,		0];
+  table	( 1)	( 1)		= [( 0),  1,		1];
+					  ^^^^
+  It depends on the tree pattern in rotate whether it really decreases.
+
+  table	( 1)	(-1)		= [( 0),  1, 		0];
+  table	(-1)	( 1)		= [( 0),  1,		0];
+  table	(-1)	(-1)		= [( 0),  1,		1];
+					  ^^^^
+  It depends on the tree pattern in rotate whether it really decreases.
+  */
+  table bb wd = [ba, wtd, tbr] when
+    ba	= if bb == 0 then wd else 0;
+    wtd	= abs bb;
+    tbr	= bb == wd;
+  end;
+end;
+
+// Delete the last element of a tree.
+
+deletel nil = [nil, 0];
+deletel (bin _ _ l nil) = [l, 1];
+deletel (bin x b::int l r)
+  = adjustd rightHasChanged (bin x b l newr) 1
+    when [newr, rightHasChanged] = deletel r end;
+
+// Single and double tree rotations - these are common for insert and delete.
+
+/* The patterns (-1)-(-1), (-1)-( 1), ( 1)-( 1) and ( 1)-(-1) on the LHS
+   always change the tree height and these are the only patterns which can
+   happen after an insertion. That's the reason why we can use tablei only to
+   decide the needed changes.
+
+   The patterns (-1)-( 0) and ( 1)-( 0) do not change the tree height. After a
+   deletion any pattern can occur and so we return 1 or 0 as a flag of a
+   height change. */
+
+rotate d = rotate d
+with
+  rotate (bin x (-1) alpha (bin y (-1) beta gamma))
+    = [bin y ( 0) (bin x ( 0) alpha beta) gamma, 1];
+  rotate (bin x (-1) alpha (bin y ( 0) beta gamma))
+    = [bin y ( 1) (bin x (-1) alpha beta) gamma, 0];
+      // the tree doesn't decrease with this pattern
+  rotate (bin x (-1) alpha (bin y ( 1) (bin z b1 beta gamma) delta))
+    = [bin z ( 0) (bin x b2 alpha beta) (bin y b3 gamma delta), 1]
+      when [b2, b3] = table b1 end;
+  rotate (bin y ( 1) (bin x ( 1) alpha beta) gamma)
+    = [bin x ( 0) alpha (bin y ( 0) beta  gamma), 1];
+  rotate (bin y ( 1) (bin x ( 0) alpha beta) gamma)
+    = [bin x (-1) alpha (bin y ( 1) beta  gamma), 0];
+      // the tree doesn't decrease with this pattern
+  rotate (bin y ( 1) (bin x (-1) alpha (bin z b1 beta gamma)) delta)
+    = [bin z ( 0) (bin x b2 alpha beta) (bin y b3 gamma delta), 1]
+      when [b2, b3] = table b1 end;
+  /*
+  table ( 1)			= [( 0), (-1)];
+  table (-1)			= [( 1), ( 0)];
+  table ( 0)			= [( 0), ( 0)]
+  */
+  table bal = [b1, b2] when
+    b1 =   bal == (-1);
+    b2 = -(bal ==   1);
+  end;
+end;
