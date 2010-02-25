@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>Pure Library Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2010-02-24" />
+<meta name="date" content="2010-02-25" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-02-24</td></tr>
+<td>2010-02-25</td></tr>
 </tbody>
 </table>
 <!-- We use docutils to produce the documentation. Docstrings are extracted -->
@@ -2153,9 +2153,7 @@ expression.</dd>
 symbols, applications, as well as function and pointer objects, but the
 department of fake statistics has assured us that this covers 99.7% of all
 practical uses. The sentry itself can be any type of object (but usually
-it's a function). There can be only one sentry per expression but, building
-on the operations provided here, it's easy to design a scheme where
-sentries are chained.</p>
+it's a function).</p>
 <p>Example:</p>
 <pre class="literal-block">
 &gt; using system;
@@ -2229,6 +2227,58 @@ exponential time complexity) into a linear time operation:</p>
 &gt; hfib 35;
 14930352
 0.25s
+</pre>
+<p>Finally, note that there can be only one sentry per expression but,
+building on the operations provided here, it's easy to design a scheme
+where sentries are chained. For instance:</p>
+<pre class="literal-block">
+chain_sentry f x = sentry (h (get_sentry x)) x with
+  h g x = g x $$ f x;
+end;
+</pre>
+<p>This invokes the original sentry before the chained one:</p>
+<pre class="literal-block">
+&gt; using system;
+&gt; f _ = puts &quot;sentry#1&quot;; g _ = puts &quot;sentry#2&quot;;
+&gt; let p = chain_sentry g $ sentry f $ malloc 10;
+&gt; clear p
+sentry#1
+sentry#2
+</pre>
+<p>You can chain any number of sentries that way:</p>
+<pre class="literal-block">
+&gt; h _ = puts &quot;sentry#3&quot;;
+&gt; let p = chain_sentry h $ chain_sentry g $ sentry f $ malloc 10;
+&gt; clear p
+sentry#1
+sentry#2
+sentry#3
+</pre>
+<p>This scheme should work in most cases in which sentries are used just as
+finalizers. However, there are other uses, like the &quot;hashed function&quot;
+example above, where you'd like the original sentry to stay intact. This
+can be achieved by placing the new sentry as a sentry on the <em>original
+sentry</em> rather than the expression itself:</p>
+<pre class="literal-block">
+attach_sentry f x = sentry (sentry f (get_sentry x)) x;
+</pre>
+<p>Of course, this assumes the original sentry is something that you can place
+a sentry on. It also requires that the sentry will actually be
+garbage-collected when its hosting expression gets freed, so it will <em>not</em>
+work if the original sentry is a global:</p>
+<pre class="literal-block">
+&gt; let p = chain_sentry g $ sentry f $ malloc 10;
+&gt; clear p
+sentry#1
+</pre>
+<p>However, the attached sentry will work ok if you can ensure that the
+original sentry is a (partial or constructor) application, which also
+encompasses most kinds of aggregate Pure data. E.g.:</p>
+<pre class="literal-block">
+&gt; let p = chain_sentry g $ sentry (f$) $ malloc 10;
+&gt; clear p
+sentry#1
+sentry#2
 </pre>
 <!--  -->
 </div>

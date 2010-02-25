@@ -3408,9 +3408,7 @@ Note that in the current implementation sentries can only be placed at
 symbols, applications, as well as function and pointer objects, but the
 department of fake statistics has assured us that this covers 99.7% of all
 practical uses. The sentry itself can be any type of object (but usually
-it's a function). There can be only one sentry per expression but, building
-on the operations provided here, it's easy to design a scheme where
-sentries are chained.
+it's a function).
 
 Example::
 
@@ -3499,6 +3497,58 @@ exponential time complexity) into a linear time operation::
   > hfib 35;
   14930352
   0.25s
+
+Finally, note that there can be only one sentry per expression but,
+building on the operations provided here, it's easy to design a scheme
+where sentries are chained. For instance::
+
+  chain_sentry f x = sentry (h (get_sentry x)) x with
+    h g x = g x $$ f x;
+  end;
+
+This invokes the original sentry before the chained one::
+
+  > using system;
+  > f _ = puts "sentry#1"; g _ = puts "sentry#2";
+  > let p = chain_sentry g $ sentry f $ malloc 10;
+  > clear p
+  sentry#1
+  sentry#2
+
+You can chain any number of sentries that way::
+
+  > h _ = puts "sentry#3";
+  > let p = chain_sentry h $ chain_sentry g $ sentry f $ malloc 10;
+  > clear p
+  sentry#1
+  sentry#2
+  sentry#3
+
+This scheme should work in most cases in which sentries are used just as
+finalizers. However, there are other uses, like the "hashed function"
+example above, where you'd like the original sentry to stay intact. This
+can be achieved by placing the new sentry as a sentry on the *original
+sentry* rather than the expression itself::
+
+  attach_sentry f x = sentry (sentry f (get_sentry x)) x;
+
+Of course, this assumes the original sentry is something that you can place
+a sentry on. It also requires that the sentry will actually be
+garbage-collected when its hosting expression gets freed, so it will *not*
+work if the original sentry is a global::
+
+  > let p = chain_sentry g $ sentry f $ malloc 10;
+  > clear p
+  sentry#1
+
+However, the attached sentry will work ok if you can ensure that the
+original sentry is a (partial or constructor) application, which also
+encompasses most kinds of aggregate Pure data. E.g.::
+
+  > let p = chain_sentry g $ sentry (f$) $ malloc 10;
+  > clear p
+  sentry#1
+  sentry#2
 
 ..
 
