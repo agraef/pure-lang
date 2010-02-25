@@ -3468,10 +3468,10 @@ function values::
 
   using dict;
   hashed f x = case get_sentry f of
-                 h::Hdict = h!x if member h x;
+                 h::HDict = h!x if member h x;
                  _ = y when y = f x; sentry (update h x y) f
                          when h = case get_sentry f of
-                                    h::Hdict = h; _ = emptyhdict
+                                    h::HDict = h; _ = emptyhdict
                                   end;
                          end;
                        end;
@@ -4554,9 +4554,9 @@ Examples
 Dictionaries
 ------------
 
-The dict.pure module provides Pure's ``Dict`` and ``Hdict`` data types
+The dict.pure module provides Pure's ``Dict`` and ``HDict`` data types
 based on AVL trees. ``Dict`` is an ordered dictionary (assuming an ordered
-key type), ``Hdict`` a hashed dictionary which works with any (mixture of)
+key type), ``HDict`` a hashed dictionary which works with any (mixture of)
 key types but stores members in an apparently random order.
 
 The used AVL tree algorithm has its origin in the SWI-Prolog implementation
@@ -4580,7 +4580,7 @@ Data Structure
 ~~~~~~~~~~~~~~
 
 Dictionaries are represented as balanced tree structures of the form ``Dict
-T`` or ``Hdict T``, respectively, thus ``Dict`` and ``Hdict`` may be used
+T`` or ``HDict T``, respectively, thus ``Dict`` and ``HDict`` may be used
 as type tags to restrict variables in pattern matching.
 
 The internal data structure ``T`` is an AVL tree built with the following
@@ -4867,7 +4867,7 @@ expected::
 A hashed dictionary can be used with any key values, which are stored in a
 seemingly random order::
 
-  > let h::Hdict = hdict [foo=>77,42=>99.1];
+  > let h::HDict = hdict [foo=>77,42=>99.1];
   > keys h; vals h; members h;
   [42,foo]
   [99.1,77]

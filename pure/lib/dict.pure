@@ -23,9 +23,9 @@
    Dictionaries
    ------------
 
-   The dict.pure module provides Pure's ``Dict`` and ``Hdict`` data types
+   The dict.pure module provides Pure's ``Dict`` and ``HDict`` data types
    based on AVL trees. ``Dict`` is an ordered dictionary (assuming an ordered
-   key type), ``Hdict`` a hashed dictionary which works with any (mixture of)
+   key type), ``HDict`` a hashed dictionary which works with any (mixture of)
    key types but stores members in an apparently random order.
 
    The used AVL tree algorithm has its origin in the SWI-Prolog implementation
@@ -49,7 +49,7 @@
    ~~~~~~~~~~~~~~
 
    Dictionaries are represented as balanced tree structures of the form ``Dict
-   T`` or ``Hdict T``, respectively, thus ``Dict`` and ``Hdict`` may be used
+   T`` or ``HDict T``, respectively, thus ``Dict`` and ``HDict`` may be used
    as type tags to restrict variables in pattern matching.
 
    The internal data structure ``T`` is an AVL tree built with the following
@@ -192,7 +192,7 @@
    A hashed dictionary can be used with any key values, which are stored in a
    seemingly random order::
 
-     > let h::Hdict = hdict [foo=>77,42=>99.1];
+     > let h::HDict = hdict [foo=>77,42=>99.1];
      > keys h; vals h; members h;
      [42,foo]
      [99.1,77]
@@ -210,12 +210,12 @@ using avltrees;
 dictp _::Dict	= 1;
 dictp _		= 0;
 
-hdictp _::Hdict	= 1;
+hdictp _::HDict	= 1;
 hdictp _	= 0;
 
 // create an empty dict
 emptydict	= Dict  avl::emptytree;
-emptyhdict	= Hdict avl::emptytree;
+emptyhdict	= HDict avl::emptytree;
 
 // create a dict from a list
 dict  xys	= foldl insert emptydict  xys if listp xys;
@@ -227,58 +227,58 @@ mkhdict y xs	= hdict (zipwith (=>) xs (repeatn (#xs) y)) if listp xs;
 
 // insert a member
 insert (Dict  d) el@(x=>y) = Dict  (avl::insertk  d el);
-insert (Hdict d) el@(x=>y) = Hdict (avl::inserthk d el);
+insert (HDict d) el@(x=>y) = HDict (avl::inserthk d el);
 
 // curried version of insert
-update d@(Dict  _) x y | update d@(Hdict _) x y	= insert d (x=>y);
+update d@(Dict  _) x y | update d@(HDict _) x y	= insert d (x=>y);
 
 // delete a member by key
 delete (Dict  d) x = Dict  (avl::deletek  d x);
-delete (Hdict d) x = Hdict (avl::deletehk d x);
+delete (HDict d) x = HDict (avl::deletehk d x);
 
 // check for the empty dict
 null (Dict d)	|
-null (Hdict d)	= avl::null d;
+null (HDict d)	= avl::null d;
 
 // dict size
 #(Dict  d)	= avl::size  d;
-#(Hdict d)	= avl::sizeh d;
+#(HDict d)	= avl::sizeh d;
 
 // membership test
 member (Dict  d) k = avl::memberk  d k;
-member (Hdict d) k = avl::memberhk d k;
+member (HDict d) k = avl::memberhk d k;
 
 // get the members, keys and values of a dict as a list
 members (Dict  d) = avl::members  d;
-members (Hdict d) = avl::membersh d;
+members (HDict d) = avl::membersh d;
 keys (Dict  d)    = avl::keys  d;
-keys (Hdict d)    = avl::keysh d;
+keys (HDict d)    = avl::keysh d;
 vals (Dict  d)    = avl::vals  d;
-vals (Hdict d)    = avl::valsh d;
+vals (HDict d)    = avl::valsh d;
 
-list d::Dict | list d::Hdict = members d;
+list d::Dict | list d::HDict = members d;
 
 // get the first and last member
 first (Dict d)	= avl::first  d;
 last  (Dict d)	= avl::last   d;
-first (Hdict d)	= avl::firsth d;
-last  (Hdict d)	= avl::lasth  d;
+first (HDict d)	= avl::firsth d;
+last  (HDict d)	= avl::lasth  d;
 
 // remove the first and last member
 rmfirst (Dict d)  = Dict  (avl::rmfirst  d);
 rmlast  (Dict d)  = Dict  (avl::rmlast   d);
-rmfirst (Hdict d) = Hdict (avl::rmfirsth d);
-rmlast  (Hdict d) = Hdict (avl::rmlasth  d);
+rmfirst (HDict d) = HDict (avl::rmfirsth d);
+rmlast  (HDict d) = HDict (avl::rmlasth  d);
 
 // get a value by key
 (Dict d)!k	= avl::get d k;
-(Hdict d)!k	= avl::geth d k;
+(HDict d)!k	= avl::geth d k;
 
 // equality checks
 d1::Dict  == d2::Dict  = (members d1) == (members d2);
-d1::Hdict == d2::Hdict = all (member d1) (keys d2) &&
+d1::HDict == d2::HDict = all (member d1) (keys d2) &&
 	     	       	 all (member d2) (keys d1) &&
 	  		 (vals d1) == (map (d2!) (keys d1));
 
 d1::Dict ~= d2::Dict   = (members d1) ~= (members d2);
-d1::Hdict ~= d2::Hdict = ~(d1 == d2);
+d1::HDict ~= d2::HDict = ~(d1 == d2);

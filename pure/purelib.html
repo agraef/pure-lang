@@ -2198,10 +2198,10 @@ function values:</p>
 <pre class="literal-block">
 using dict;
 hashed f x = case get_sentry f of
-               h::Hdict = h!x if member h x;
+               h::HDict = h!x if member h x;
                _ = y when y = f x; sentry (update h x y) f
                        when h = case get_sentry f of
-                                  h::Hdict = h; _ = emptyhdict
+                                  h::HDict = h; _ = emptyhdict
                                 end;
                        end;
                      end;
@@ -2842,9 +2842,9 @@ private, and client modules must not rely on the internal representation.)</p>
 </div>
 <div class="section" id="dictionaries">
 <h2><a class="toc-backref" href="#id114">3.3&nbsp;&nbsp;&nbsp;Dictionaries</a></h2>
-<p>The dict.pure module provides Pure's <tt class="docutils literal"><span class="pre">Dict</span></tt> and <tt class="docutils literal"><span class="pre">Hdict</span></tt> data types
+<p>The dict.pure module provides Pure's <tt class="docutils literal"><span class="pre">Dict</span></tt> and <tt class="docutils literal"><span class="pre">HDict</span></tt> data types
 based on AVL trees. <tt class="docutils literal"><span class="pre">Dict</span></tt> is an ordered dictionary (assuming an ordered
-key type), <tt class="docutils literal"><span class="pre">Hdict</span></tt> a hashed dictionary which works with any (mixture of)
+key type), <tt class="docutils literal"><span class="pre">HDict</span></tt> a hashed dictionary which works with any (mixture of)
 key types but stores members in an apparently random order.</p>
 <p>The used AVL tree algorithm has its origin in the SWI-Prolog implementation
 of association lists. The original implementation was created by
@@ -2864,7 +2864,7 @@ using dict;
 <div class="section" id="id49">
 <h3><a class="toc-backref" href="#id116">3.3.2&nbsp;&nbsp;&nbsp;Data Structure</a></h3>
 <p>Dictionaries are represented as balanced tree structures of the form <tt class="docutils literal"><span class="pre">Dict</span>
-<span class="pre">T</span></tt> or <tt class="docutils literal"><span class="pre">Hdict</span> <span class="pre">T</span></tt>, respectively, thus <tt class="docutils literal"><span class="pre">Dict</span></tt> and <tt class="docutils literal"><span class="pre">Hdict</span></tt> may be used
+<span class="pre">T</span></tt> or <tt class="docutils literal"><span class="pre">HDict</span> <span class="pre">T</span></tt>, respectively, thus <tt class="docutils literal"><span class="pre">Dict</span></tt> and <tt class="docutils literal"><span class="pre">HDict</span></tt> may be used
 as type tags to restrict variables in pattern matching.</p>
 <p>The internal data structure <tt class="docutils literal"><span class="pre">T</span></tt> is an AVL tree built with the following
 constructors:</p>
@@ -2968,7 +2968,7 @@ expected:</p>
 <p>A hashed dictionary can be used with any key values, which are stored in a
 seemingly random order:</p>
 <pre class="literal-block">
-&gt; let h::Hdict = hdict [foo=&gt;77,42=&gt;99.1];
+&gt; let h::HDict = hdict [foo=&gt;77,42=&gt;99.1];
 &gt; keys h; vals h; members h;
 [42,foo]
 [99.1,77]
