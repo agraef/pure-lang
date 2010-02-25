@@ -101,7 +101,7 @@ static yy::parser::token_type optoken[5] =
 #define optok(_f, _fix) ((_fix<=infixr && _f==interp.symtab.minus_sym().f)?token::PR:optoken[_fix])
 %}
 
-%option noyywrap nounput debug
+%option noyywrap debug
 
  /* Special extended Unicode symbols. Contributed by John Cowan. */
 
@@ -455,6 +455,13 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
  parse_id:
   if (interp.declare_op) {
     yylval->sval = new string(yytext);
+    int c = yyinput(); unput(c);
+    if (ispunct(c) && c != ';') {
+      string id = *yylval->sval, sym = string(1, c);
+      string msg = "warning: dubious trailing punctuation '"+sym+
+	"' at symbol '"+id+"'";
+      interp.warning(*yylloc, msg);
+    }
     return token::ID;
   }
   symbol* sym = interp.symtab.lookup(yytext);
