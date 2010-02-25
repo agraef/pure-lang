@@ -2874,6 +2874,7 @@ void interpreter::add_rule(env &e, rule &r, bool toplevel)
   else if (!toplevel && (fx.flags()&EXPR::QUAL))
     throw err("error in local function definition (qualified head symbol)");
   fx.flags() &= ~EXPR::QUAL;
+  if (!toplevel) fx.flags() |= EXPR::LOCAL;
   env::iterator it = e.find(f);
   const symbol& sym = symtab.sym(f);
   if (it != e.end()) {
@@ -4350,7 +4351,15 @@ expr *interpreter::mksym_expr(string *s, int32_t tag)
       x = new expr(sym.f);
       x->flags() |= EXPR::QUAL;
     } else
+#if 1
+      /* TO BE REVIEWED: This used to be a cached function node, but this
+	 might globber the expression flags if the same function symbol is
+	 used in different contexts (e.g., as both a global and a local
+	 symbol, or in different local environments). */
+      x = new expr(sym.f);
+#else
       x = new expr(sym.x);
+#endif
   else if (sym.f <= 0 || sym.prec < PREC_MAX ||
 	   sym.fix == nonfix || sym.fix == outfix)
     throw err("error in expression (misplaced type tag)");
@@ -4376,6 +4385,7 @@ expr *interpreter::mkas_expr(string *s, expr *x)
     throw err("error in  \"as\" pattern (bad variable symbol)");
   if (x->tag() > 0) {
     // Avoid globbering cached function symbols.
+    // FIXME: Is this needed any more?
     expr *y = new expr(x->tag());
     delete x;
     x = y;

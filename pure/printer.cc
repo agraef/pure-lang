@@ -36,6 +36,18 @@
 
 #include "gsl_structs.h"
 
+static inline string psym(const string& s, bool local = false)
+{
+  if (local) {
+    size_t pos = s.rfind("::");
+    if (pos != string::npos)
+      return s.substr(pos+2);
+    else
+      return s;
+  } else
+    return s;
+}
+
 static inline const string& pname(int32_t f)
 {
   assert(f > 0);
@@ -280,9 +292,10 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
   switch (x.tag()) {
   case EXPR::VAR: {
     const symbol& sym = interpreter::g_interp->symtab.sym(x.vtag());
-    bool pad = interpreter::g_interp->namespaces.find(sym.s) !=
+    string s = psym(sym.s, true);
+    bool pad = interpreter::g_interp->namespaces.find(s) !=
       interpreter::g_interp->namespaces.end();
-    os << sym.s;
+    os << s;
     if ((interpreter::g_verbose&verbosity::envs) != 0) {
       os << "/*" << (unsigned)x.vidx() << ":";
       const path& p = x.vpath();
@@ -311,7 +324,7 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
       }
       os << ')';
     } else {
-      os << sym.s;
+      os << psym(sym.s, true);
       if ((interpreter::g_verbose&verbosity::envs) != 0) {
 	os << "/*" << (unsigned)x.vidx() << "*/";
       }
@@ -570,8 +583,10 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
       return os << '(' << sym.s << ' ' << sym2.s << ')';
     } else if ((x.flags() & EXPR::QUAL) && sym.s.find("::") == string::npos)
       return os << "::" << sym.s;
-    else
-      return os << sym.s;
+    else {
+      bool local = (x.flags()&EXPR::LOCAL) != 0;
+      return os << psym(sym.s, local);
+    }
   }
   }
 }
@@ -1139,17 +1154,19 @@ ostream& operator << (ostream& os, const pure_expr *x)
       return os << "#<" << s << " " << (void*)x << ">";
     }
     const symbol& sym = interpreter::g_interp->symtab.sym(x->tag);
+    bool local = x->data.clos && x->data.clos->local;
 #if 0
-    if (x->data.clos && x->data.clos->local)
+    if (local)
       return os << "#<closure " << sym.s << ">";
 #endif
     if (sym.prec < PREC_MAX)
       return os << '(' << sym.s << ')';
     else if (sym.fix == outfix) {
       const symbol& sym2 = interpreter::g_interp->symtab.sym(sym.g);
-      return os << '(' << sym.s << ' ' << sym2.s << ')';
+      return os << '(' << psym(sym.s, local) << ' '
+		<< psym(sym2.s, local) << ')';
     } else
-      return os << sym.s;
+      return os << psym(sym.s, local);
   }
   }
 }

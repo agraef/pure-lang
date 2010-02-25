@@ -207,6 +207,7 @@ struct EXPR {
     PAREN	= 1<<1,	// parenthesized expression
     QUAL	= 1<<2,	// qualified id
     ASQUAL	= 1<<3,	// qualified id in "as" pattern
+    LOCAL	= 1<<4,	// local (unqualified) function head symbol
   };
 
   uint32_t refc;  // reference counter

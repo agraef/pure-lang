@@ -5616,12 +5616,25 @@ static inline bool stop(interpreter& interp, Env *e)
   return false;
 }
 
+static inline string psym(const string& s, bool local = false)
+{
+  if (local) {
+    size_t pos = s.rfind("::");
+    if (pos != string::npos)
+      return s.substr(pos+2);
+    else
+      return s;
+  } else
+    return s;
+}
+
 static inline string pname(interpreter& interp, Env *e)
 {
   if (e->tag > 0) {
     ostringstream sout;
     sout << interp.symtab.sym(e->tag).x;
-    return sout.str();
+    string s = sout.str();
+    return (s[0]!='(' && e->local)?psym(s, true):s;
   } else if (e->descr)
     return "#<"+string(e->descr)+">";
   else
