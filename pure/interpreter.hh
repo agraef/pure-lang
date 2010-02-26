@@ -616,10 +616,9 @@ public:
   void add_macro_rule(rule *r);
   void promote_ttags(expr f, expr x, expr u);
   void promote_ttags(expr f, expr x, expr u, expr v);
-  expr promote_sym_expr(expr x);
+  expr bind(env& vars, veqnl& eqns, expr x, bool b = true, path p = path());
   expr hsubst(expr x);
   expr vsubst(expr x, bool b = true);
-  expr bind(env& vars, veqnl& eqns, expr x, bool b = true, path p = path());
   expr subst(const env& vars, expr x, uint8_t idx = 0);
   expr fsubst(const env& funs, expr x, uint8_t idx = 0);
   expr bsubst(expr x);

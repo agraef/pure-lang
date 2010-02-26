@@ -3202,11 +3202,8 @@ void interpreter::promote_ttags(expr f, expr x, expr u, expr v)
   }
 }
 
-expr interpreter::promote_sym_expr(expr x)
+static string qualifier(const symbol& sym, string& id)
 {
-  // promote a symbol to the current namespace if necessary
-  assert(x.tag() > 0);
-  const symbol& sym = symtab.sym(x.tag());
   size_t pos = sym.s.rfind("::");
   string qual;
   if (pos == string::npos) {
@@ -3216,25 +3213,8 @@ expr interpreter::promote_sym_expr(expr x)
     qual = sym.s.substr(0, pos);
     pos += 2;
   }
-  if (qual != *symtab.current_namespace) {
-    string id = sym.s.substr(pos), absid = make_absid(id);
-    symbol *newsym = symtab.lookup(absid);
-    if (newsym) {
-      // crosscheck declarations
-      if (newsym->priv != active_namespaces.front().priv) {
-	throw err("symbol '"+id+"' already declared "+
-		  (newsym->priv?"'private'":"'public'"));
-      }
-    } else {
-      // create a new symbol
-      newsym = symtab.sym(absid, active_namespaces.front().priv);
-    }
-    assert(newsym);
-    expr y = expr(newsym->f);
-    if (x.ttag() != 0)  y.set_ttag(x.ttag());
-    return y;
-  } else
-    return x;
+  id = sym.s.substr(pos);
+  return qual;
 }
 
 expr interpreter::hsubst(expr x)
@@ -3246,31 +3226,21 @@ expr interpreter::hsubst(expr x)
   if (f.tag() <= 0 || f.ttag() != 0)
     return x;
   const symbol& sym = symtab.sym(f.tag());
-  size_t pos = sym.s.rfind("::");
-  string qual;
-  if (pos == string::npos) {
-    qual = "";
-    pos = 0;
-  } else {
-    qual = sym.s.substr(0, pos);
-    pos += 2;
-  }
+  string id, qual = qualifier(sym, id);
   if (qual != *symtab.current_namespace) {
     /* EXPR::QUAL in the flags signifies a qualified symbol in another
        namespace; this is OK if the symbol is already declared (otherwise the
-       lexer will complain about it). If this flag isn't set, the symbol isn't
-       qualified and was picked up from elsewhere, which is an error. */
+       lexer will complain about it). However, if this flag isn't set, the
+       symbol isn't qualified and was picked up from elsewhere, which is an
+       error. */
     if ((f.flags()&EXPR::QUAL) == 0)
-      throw err("symbol '"+sym.s.substr(pos)+
-		"' is not declared in the '"+
-		*symtab.current_namespace+"' namespace");
+      throw err("undeclared symbol '"+id+"'");
   }
   return x;
 }
 
 expr interpreter::vsubst(expr x, bool b)
 {
-  expr y;
   if (active_namespaces.empty())
     return x;
   switch (x.tag()) {
@@ -3289,34 +3259,37 @@ expr interpreter::vsubst(expr x, bool b)
   case EXPR::CASE:
   case EXPR::WHEN:
   case EXPR::WITH:
-    y = x;
     break;
   // application:
-  case EXPR::APP: {
-    expr u = vsubst(x.xval1(), false), v = vsubst(x.xval2(), true);
-    y = expr(u, v);
+  case EXPR::APP:
+    vsubst(x.xval1(), false); vsubst(x.xval2(), true);
     break;
-  }
   default:
     assert(x.tag() > 0);
     const symbol& sym = symtab.sym(x.tag());
     if (!b || sym.f == symtab.anon_sym || (x.flags()&EXPR::QUAL) ||
 	(sym.prec < PREC_MAX || sym.fix == nonfix || sym.fix == outfix))
-      y = x;
-    else
-      y = promote_sym_expr(x);
+      ;
+    else {
+      string id, qual = qualifier(sym, id);
+      if (qual != *symtab.current_namespace)
+	throw err("undeclared symbol '"+id+"'");
+    }
     break;
   }
   // check for "as" patterns
   if (x.astag() > 0) {
     const symbol& sym = symtab.sym(x.astag());
-    if (sym.f != symtab.anon_sym &&
-	!(sym.prec < PREC_MAX || sym.fix == nonfix || sym.fix == outfix)) {
-      expr z(x.astag()); z = promote_sym_expr(z);
-      y.set_astag(z.tag());
+    if (sym.f == symtab.anon_sym || (x.flags()&EXPR::ASQUAL) ||
+	sym.prec < PREC_MAX || sym.fix == nonfix || sym.fix == outfix)
+      ;
+    else {
+      string id, qual = qualifier(sym, id);
+      if (qual != *symtab.current_namespace)
+	throw err("undeclared symbol '"+id+"'");
     }
   }
-  return y;
+  return x;
 }
 
 expr interpreter::subst(const env& vars, expr x, uint8_t idx)

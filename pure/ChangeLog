@@ -27,22 +27,22 @@
 	scope. At each matching 'end' the previous search namespaces are
 	restored.
 
-	- Unqualified variable symbols in 'let' and 'const' definitions
-	are implicitly declared as symbols in the current namespace.
+	- Symbol checking is much more strict. *All* unqualified variable
+	symbols in 'let' and 'const' definitions, as well as unqualified
+	head symbols of function and macro rules in the namespace scope
+	*must* be declared previously in the same namespace (either by an
+	explicit symbol declaration or implictly by using its qualified
+	form), otherwise you'll get an error message saying that the
+	symbol was not declared in the current namespace.
 
-	- It is verified that all unqualified head symbols of function and
-	macro rules already exist in the namespace. That is, either they
-	must have been used previously (using the proper namespace
-	qualifier) or there must be a declaration for the symbol.
-
-	The latter is actually the most important feature of the new
-	construct. It fixes an annoying issue with the ordinary
-	'namespace' construct, where an unqualified function name may be
-	accidentally mistyped in a function definition, causing either a
-	global definition elsewhere to be globbered, or a new symbol to be
-	declared implicitly in the default namespace. With the scoped
-	namespace declaration this can never happen, you will always get a
-	sensible error message in such cases.
+	The latter is actually the most important feature. It fixes an
+	annoying issue with the ordinary 'namespace' construct, namely
+	that an unqualified symbol may accidentally be mistyped in a
+	definition, causing either a global definition elsewhere to be
+	globbered, or a new symbol to be declared implicitly in the
+	default namespace. With the scoped namespace declaration this can
+	never happen, you will always get a sensible error message in such
+	cases.
 
 2010-02-25  Albert Graef  <Dr.Graef@t-online.de>
 
