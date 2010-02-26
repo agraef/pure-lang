@@ -1217,7 +1217,7 @@ void interpreter::add_tags(rulel *rl)
   if (rl->front().lhs.is_null()) return;
   set<int32_t> syms;
   for (rulel::iterator i = rl->begin(), end = rl->end(); i != end; i++) {
-    expr x = hsubst(i->lhs);
+    expr x = i->lhs; checkfuns(x);
     int32_t f;
     count_args(x, f);
     if (f > 0 && syms.find(f) == syms.end()) {
@@ -1231,7 +1231,7 @@ void interpreter::add_tags(rulel *rl)
 void interpreter::add_tags(rule *r)
 {
   if (r->lhs.is_null()) return;
-  expr x = hsubst(r->lhs);
+  expr x = r->lhs; checkfuns(x);
   int32_t f;
   count_args(x, f);
   if (f > 0) {
@@ -1243,7 +1243,7 @@ void interpreter::add_tags(rule *r)
 void interpreter::add_tags(expr pat)
 {
   env vars; veqnl eqns;
-  pat = vsubst(pat);
+  checkvars(pat);
   qual = true;
   expr lhs = bind(vars, eqns, lcsubst(pat));
   build_env(vars, lhs);
@@ -2635,7 +2635,7 @@ void interpreter::parse(expr *x)
 void interpreter::define(rule *r)
 {
   last.clear();
-  *r = rule(vsubst(r->lhs), r->rhs, r->eqns);
+  checkvars(r->lhs);
   // Keep a copy of the original rule, so that we can give proper
   // diagnostics below.
   expr lhs = r->lhs, rhs = r->rhs;
@@ -2662,7 +2662,7 @@ void interpreter::define(rule *r)
 void interpreter::define_const(rule *r)
 {
   last.clear();
-  *r = rule(vsubst(r->lhs), r->rhs, r->eqns);
+  checkvars(r->lhs);
   // Keep a copy of the original rule, so that we can give proper
   // diagnostics below.
   expr lhs = r->lhs, rhs = r->rhs;
@@ -2900,7 +2900,8 @@ void interpreter::add_rule(env &e, rule &r, bool toplevel)
   closure(r, false);
   if (toplevel) {
     // substitute macros and constants:
-    expr u = expr(hsubst(r.lhs)),
+    checkfuns(r.lhs);
+    expr u = expr(r.lhs),
       v = expr(csubst(macsubst(r.rhs))),
       w = expr(csubst(macsubst(r.qual)));
     r = rule(u, v, r.eqns, w);
@@ -2968,8 +2969,7 @@ void interpreter::add_simple_rule(rulel &rl, rule *r)
 void interpreter::add_macro_rule(rule *r)
 {
   assert(!r->lhs.is_null() && r->qual.is_null() && !r->rhs.is_guarded());
-  closure(*r, false);
-  *r = rule(hsubst(r->lhs), r->rhs, r->eqns);
+  closure(*r, false); checkfuns(r->lhs);
   expr fx; uint32_t argc = count_args(r->lhs, fx);
   int32_t f = fx.tag();
   if (f <= 0)
@@ -3217,14 +3217,12 @@ static string qualifier(const symbol& sym, string& id)
   return qual;
 }
 
-expr interpreter::hsubst(expr x)
+void interpreter::checkfuns(expr x)
 {
-  if (active_namespaces.empty())
-    return x;
+  if (active_namespaces.empty()) return;
   expr f = x, y, z;
   while (f.is_app(y, z)) f = y;
-  if (f.tag() <= 0 || f.ttag() != 0)
-    return x;
+  if (f.tag() <= 0 || f.ttag() != 0) return;
   const symbol& sym = symtab.sym(f.tag());
   string id, qual = qualifier(sym, id);
   if (qual != *symtab.current_namespace) {
@@ -3236,13 +3234,11 @@ expr interpreter::hsubst(expr x)
     if ((f.flags()&EXPR::QUAL) == 0)
       throw err("undeclared symbol '"+id+"'");
   }
-  return x;
 }
 
-expr interpreter::vsubst(expr x, bool b)
+void interpreter::checkvars(expr x, bool b)
 {
-  if (active_namespaces.empty())
-    return x;
+  if (active_namespaces.empty()) return;
   switch (x.tag()) {
   case EXPR::VAR:
   case EXPR::FVAR:
@@ -3262,7 +3258,7 @@ expr interpreter::vsubst(expr x, bool b)
     break;
   // application:
   case EXPR::APP:
-    vsubst(x.xval1(), false); vsubst(x.xval2(), true);
+    checkvars(x.xval1(), false); checkvars(x.xval2(), true);
     break;
   default:
     assert(x.tag() > 0);
@@ -3289,7 +3285,6 @@ expr interpreter::vsubst(expr x, bool b)
 	throw err("undeclared symbol '"+id+"'");
     }
   }
-  return x;
 }
 
 expr interpreter::subst(const env& vars, expr x, uint8_t idx)

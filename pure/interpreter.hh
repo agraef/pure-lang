@@ -617,8 +617,8 @@ public:
   void promote_ttags(expr f, expr x, expr u);
   void promote_ttags(expr f, expr x, expr u, expr v);
   expr bind(env& vars, veqnl& eqns, expr x, bool b = true, path p = path());
-  expr hsubst(expr x);
-  expr vsubst(expr x, bool b = true);
+  void checkfuns(expr x);
+  void checkvars(expr x, bool b = true);
   expr subst(const env& vars, expr x, uint8_t idx = 0);
   expr fsubst(const env& funs, expr x, uint8_t idx = 0);
   expr bsubst(expr x);
