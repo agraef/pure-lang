@@ -1,0 +1,32 @@
+const foo::c = 99;
+let foo::x,foo::y = 99,100;
+bar::bar x/*0:1*/ = x/*0:1*/+99;
+foo::foo x/*0:1*/ = bar::bar (x/*0:1*/-2);
+{
+  rule #0: bar::bar x = x+99
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+{
+  rule #0: foo::foo x = bar::bar (x-2)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+foo::foo foo::x,foo::foo foo::y;
+196,197
+bar::bar foo::x,bar::bar foo::y;
+198,199
+bar::bar x = x+99;
+const foo::c = 99;
+foo::foo x = bar::bar (x-2);
+let foo::x = 99;
+let foo::y = 100;
+() when printf "%s" (evalcmd "show -g foo::* bar::*") {
+  rule #0: _ = printf "%s" (evalcmd "show -g foo::* bar::*")
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+()

@@ -1,0 +1,24 @@
+// Scoped namespaces (Pure 0.43+).
+
+namespace foo with
+
+  const c = 99;
+  let x,y = c,c+1;
+
+  namespace bar with
+    using namespace foo;
+    bar::bar x = x+c;
+  end;
+
+  using namespace bar;
+
+  private foo;
+  foo x = bar (x-2);
+
+  foo x, foo y;
+  bar x, bar y;
+
+end;
+
+using system;
+() when printf"%s" $ evalcmd "show -g foo::* bar::*" end;
