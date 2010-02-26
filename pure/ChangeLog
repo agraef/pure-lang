@@ -1,3 +1,49 @@
+2010-02-26  Albert Graef  <Dr.Graef@t-online.de>
+
+	* parser.yy, lexer.ll, interpreter.cc/hh: Add support for an
+	alternative, scoped form of the namespace declaration which is
+	more convenient and also does some additional consistency checks
+	which catch some common kinds of silly errors.
+
+	Scoped namespaces take the form
+
+		namespace name with item; ... end
+
+	where 'name' is the namespace id and each 'item' can be any kind
+	of declaration or definition which is allowed at the toplevel. The
+	scope of the namespace extends from the 'namespace ... with'
+	clause up to the matching 'end'. The declarations and definitions
+	inside the scope are used to populate the namespace as detailed
+	below.
+
+	Declaration of symbols works in the same way as with the unscoped
+	'namespace' declaration. Scoped namespaces differ from ordinary
+	'namespace' declarations in the following aspects:
+
+	- Scoped namespaces can be nested to an arbitrary depth. At each
+	matching 'end' the previous namespace is restored.
+	
+	- 'using namespace' declarations are local to the namespace
+	scope. At each matching 'end' the previous search namespaces are
+	restored.
+
+	- Unqualified variable symbols in 'let' and 'const' definitions
+	are implicitly declared as symbols in the current namespace.
+
+	- It is verified that all unqualified head symbols of function and
+	macro rules already exist in the namespace. That is, either they
+	must have been used previously (using the proper namespace
+	qualifier) or there must be a declaration for the symbol.
+
+	The latter is actually the most important feature of the new
+	construct. It fixes an annoying issue with the ordinary
+	'namespace' construct, where an unqualified function name may be
+	accidentally mistyped in a function definition, causing either a
+	global definition elsewhere to be globbered, or a new symbol to be
+	declared implicitly in the default namespace. With the scoped
+	namespace declaration this can never happen, you will always get a
+	sensible error message in such cases.
+
 2010-02-25  Albert Graef  <Dr.Graef@t-online.de>
 
 	* printer.cc: Cosmetic changes in print representation of local

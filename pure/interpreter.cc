@@ -1170,6 +1170,43 @@ static string searchlib(const string& srcdir, const string& libdir,
   return fname;
 }
 
+// Scoped namespaces (Pure 0.43+).
+
+void interpreter::push_namespace(string *ns)
+{
+  string parent = *symtab.current_namespace;
+  set<string> search_namespaces = *symtab.search_namespaces;
+  active_namespaces.push_front(nsinfo(parent, search_namespaces));
+  set_namespace(ns);
+}
+
+void interpreter::pop_namespace()
+{
+  assert(!active_namespaces.empty());
+  *symtab.current_namespace = active_namespaces.front().parent;
+  *symtab.search_namespaces = active_namespaces.front().search_namespaces;
+  active_namespaces.pop_front();
+}
+
+void interpreter::set_namespace(string *ns)
+{
+  size_t k = ns->rfind("::");
+  if (k != string::npos &&
+      namespaces.find(ns->substr(0, k)) == namespaces.end()) {
+    symtab.current_namespace->clear();
+    throw err("unknown namespace '"+ns->substr(0, k)+"'");
+  } else {
+    namespaces.insert(*ns);
+    delete symtab.current_namespace;
+    symtab.current_namespace = ns;
+  }
+}
+
+void interpreter::clear_namespace()
+{
+  symtab.current_namespace->clear();
+}
+
 // Ctags/etags support.
 
 uint32_t count_args(expr x, int32_t& f);
@@ -1180,7 +1217,7 @@ void interpreter::add_tags(rulel *rl)
   if (rl->front().lhs.is_null()) return;
   set<int32_t> syms;
   for (rulel::iterator i = rl->begin(), end = rl->end(); i != end; i++) {
-    expr x = i->lhs;
+    expr x = hsubst(i->lhs);
     int32_t f;
     count_args(x, f);
     if (f > 0 && syms.find(f) == syms.end()) {
@@ -1194,7 +1231,7 @@ void interpreter::add_tags(rulel *rl)
 void interpreter::add_tags(rule *r)
 {
   if (r->lhs.is_null()) return;
-  expr x = r->lhs;
+  expr x = hsubst(r->lhs);
   int32_t f;
   count_args(x, f);
   if (f > 0) {
@@ -1206,6 +1243,7 @@ void interpreter::add_tags(rule *r)
 void interpreter::add_tags(expr pat)
 {
   env vars; veqnl eqns;
+  pat = vsubst(pat);
   qual = true;
   expr lhs = bind(vars, eqns, lcsubst(pat));
   build_env(vars, lhs);
@@ -2597,6 +2635,7 @@ void interpreter::parse(expr *x)
 void interpreter::define(rule *r)
 {
   last.clear();
+  *r = rule(vsubst(r->lhs), r->rhs, r->eqns);
   // Keep a copy of the original rule, so that we can give proper
   // diagnostics below.
   expr lhs = r->lhs, rhs = r->rhs;
@@ -2623,6 +2662,7 @@ void interpreter::define(rule *r)
 void interpreter::define_const(rule *r)
 {
   last.clear();
+  *r = rule(vsubst(r->lhs), r->rhs, r->eqns);
   // Keep a copy of the original rule, so that we can give proper
   // diagnostics below.
   expr lhs = r->lhs, rhs = r->rhs;
@@ -2860,7 +2900,7 @@ void interpreter::add_rule(env &e, rule &r, bool toplevel)
   closure(r, false);
   if (toplevel) {
     // substitute macros and constants:
-    expr u = expr(r.lhs),
+    expr u = expr(hsubst(r.lhs)),
       v = expr(csubst(macsubst(r.rhs))),
       w = expr(csubst(macsubst(r.qual)));
     r = rule(u, v, r.eqns, w);
@@ -2929,6 +2969,7 @@ void interpreter::add_macro_rule(rule *r)
 {
   assert(!r->lhs.is_null() && r->qual.is_null() && !r->rhs.is_guarded());
   closure(*r, false);
+  *r = rule(hsubst(r->lhs), r->rhs, r->eqns);
   expr fx; uint32_t argc = count_args(r->lhs, fx);
   int32_t f = fx.tag();
   if (f <= 0)
@@ -3159,6 +3200,122 @@ void interpreter::promote_ttags(expr f, expr x, expr u, expr v)
       }
     }
   }
+}
+
+expr interpreter::promote_sym_expr(expr x)
+{
+  // promote a symbol to the current namespace if necessary
+  assert(x.tag() > 0);
+  const symbol& sym = symtab.sym(x.tag());
+  size_t pos = sym.s.rfind("::");
+  string qual;
+  if (pos == string::npos) {
+    qual = "";
+    pos = 0;
+  } else {
+    qual = sym.s.substr(0, pos);
+    pos += 2;
+  }
+  if (qual != *symtab.current_namespace) {
+    string id = sym.s.substr(pos), absid = make_absid(id);
+    symbol *newsym = symtab.lookup(absid);
+    if (newsym) {
+      // crosscheck declarations
+      if (newsym->priv != active_namespaces.front().priv) {
+	throw err("symbol '"+id+"' already declared "+
+		  (newsym->priv?"'private'":"'public'"));
+      }
+    } else {
+      // create a new symbol
+      newsym = symtab.sym(absid, active_namespaces.front().priv);
+    }
+    assert(newsym);
+    expr y = expr(newsym->f);
+    if (x.ttag() != 0)  y.set_ttag(x.ttag());
+    return y;
+  } else
+    return x;
+}
+
+expr interpreter::hsubst(expr x)
+{
+  if (active_namespaces.empty())
+    return x;
+  expr f = x, y, z;
+  while (f.is_app(y, z)) f = y;
+  if (f.tag() <= 0 || f.ttag() != 0)
+    return x;
+  const symbol& sym = symtab.sym(f.tag());
+  size_t pos = sym.s.rfind("::");
+  string qual;
+  if (pos == string::npos) {
+    qual = "";
+    pos = 0;
+  } else {
+    qual = sym.s.substr(0, pos);
+    pos += 2;
+  }
+  if (qual != *symtab.current_namespace) {
+    if (f.flags()&EXPR::QUAL)
+      throw err("symbol '"+sym.s+
+		"' is defined in the wrong namespace");
+    else
+      throw err("symbol '"+sym.s.substr(pos)+
+		"' is not declared in the '"+
+		*symtab.current_namespace+"' namespace");
+  }
+  return x;
+}
+
+expr interpreter::vsubst(expr x, bool b)
+{
+  expr y;
+  if (active_namespaces.empty())
+    return x;
+  switch (x.tag()) {
+  case EXPR::VAR:
+  case EXPR::FVAR:
+  case EXPR::INT:
+  case EXPR::BIGINT:
+  case EXPR::DBL:
+  case EXPR::STR:
+  // these must not occur on the lhs:
+  case EXPR::PTR:
+  case EXPR::WRAP:
+  case EXPR::MATRIX:
+  case EXPR::LAMBDA:
+  case EXPR::COND:
+  case EXPR::CASE:
+  case EXPR::WHEN:
+  case EXPR::WITH:
+    y = x;
+    break;
+  // application:
+  case EXPR::APP: {
+    expr u = vsubst(x.xval1(), false), v = vsubst(x.xval2(), true);
+    y = expr(u, v);
+    break;
+  }
+  default:
+    assert(x.tag() > 0);
+    const symbol& sym = symtab.sym(x.tag());
+    if (!b || sym.f == symtab.anon_sym || (x.flags()&EXPR::QUAL) ||
+	(sym.prec < PREC_MAX || sym.fix == nonfix || sym.fix == outfix))
+      y = x;
+    else
+      y = promote_sym_expr(x);
+    break;
+  }
+  // check for "as" patterns
+  if (x.astag() > 0) {
+    const symbol& sym = symtab.sym(x.astag());
+    if (sym.f != symtab.anon_sym &&
+	!(sym.prec < PREC_MAX || sym.fix == nonfix || sym.fix == outfix)) {
+      expr z(x.astag()); z = promote_sym_expr(z);
+      y.set_astag(z.tag());
+    }
+  }
+  return y;
 }
 
 expr interpreter::subst(const env& vars, expr x, uint8_t idx)
@@ -6397,6 +6554,8 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     _sym = symtab.sym(absasid);
     if (priv >= 0)
       _sym->priv = priv;
+    else if (!active_namespaces.empty())
+      _sym->priv = active_namespaces.front().priv;
   }
   assert(_sym);
   symbol& sym = *_sym;

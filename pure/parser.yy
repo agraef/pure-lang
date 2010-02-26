@@ -52,6 +52,8 @@
 
 #define dummy_expr expr(interp.symtab.anon_sym)
 
+#define priv_def (interp.active_namespaces.empty()?false:interp.active_namespaces.front().priv)
+
 using namespace std;
 
 class interpreter;
@@ -205,6 +207,22 @@ source
 { interp.nerrs = yyerrstatus_ = 0; interp.declare_op = false; }
 ;
 
+/* Same as above for namespace scopes. This doesn't allow empty items, but
+   allows the semicolon at the end to be omitted. */
+
+namespace_source
+: /* empty */
+| items
+| items ';'
+;
+
+items
+: item_pos
+| items ';' item_pos
+| error ';'
+{ interp.nerrs = yyerrstatus_ = 0; interp.declare_op = false; }
+;
+
 item_pos
 : { interp.line = yylloc.begin.line; interp.column = yylloc.begin.column; }
   item
@@ -254,19 +272,21 @@ item
 | USING fnames
 { action(interp.run(*$2), {}); delete $2; }
 | NAMESPACE name
-{ size_t k = $2->rfind("::");
-  if (k != string::npos &&
-      interp.namespaces.find($2->substr(0, k)) == interp.namespaces.end()) {
-    error(yylloc, "unknown namespace '"+$2->substr(0, k)+"'");
-    interp.symtab.current_namespace->clear();
-  } else {
-    interp.namespaces.insert(*$2);
-    delete interp.symtab.current_namespace;
-    interp.symtab.current_namespace = $2;
-  }
+{ if (interp.active_namespaces.empty()) {
+    action(interp.set_namespace($2), );
+  } else
+    error(yylloc, "namespace declaration is not permitted here");
 }
 | NAMESPACE
-{ interp.symtab.current_namespace->clear(); }
+{ if (interp.active_namespaces.empty()) {
+    action(interp.clear_namespace(), );
+  } else
+    error(yylloc, "namespace declaration is not permitted here");
+}
+| NAMESPACE name WITH
+{ action(interp.push_namespace(new string(*$2)), ); }
+  namespace_source END
+{ interp.pop_namespace(); delete $2; }
 | USING NAMESPACE names
 { interp.using_namespaces($3); }
 | USING NAMESPACE
@@ -280,14 +300,14 @@ item
    in the symbol table. */
 
 fixity
-: FIX INT		{ $$ = new sym_info(true, false,$2,$1);
+: FIX INT		{ $$ = new sym_info(true, priv_def,$2,$1);
 			  interp.declare_op = true; }
 | FIX '(' op ')'	{ symbol& sym = interp.symtab.sym($3);
-			  $$ = new sym_info(true, false,sym.prec,$1);
+			  $$ = new sym_info(true, priv_def,sym.prec,$1);
 			  interp.declare_op = true; }
-| OUTFIX		{ $$ = new sym_info(true, false,PREC_MAX,outfix);
+| OUTFIX		{ $$ = new sym_info(true, priv_def,PREC_MAX,outfix);
 			  interp.declare_op = true; }
-| NONFIX		{ $$ = new sym_info(true, false,PREC_MAX,nonfix);
+| NONFIX		{ $$ = new sym_info(true, priv_def,PREC_MAX,nonfix);
 			  interp.declare_op = true; }
 | scope FIX INT		{ $$ = new sym_info(true, $1,$3,$2);
 			  interp.declare_op = true; }

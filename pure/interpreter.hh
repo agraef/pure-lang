@@ -404,6 +404,15 @@ typedef set<int32_t> funset;
 typedef pair<expr,expr> comp_clause;
 typedef list<comp_clause> comp_clause_list;
 
+struct nsinfo {
+  // scoped namespaces data
+  bool priv; // private/public flag (currently this isn't used by the parser)
+  string parent; // parent namespace
+  set<string> search_namespaces; // saved search namespaces
+  nsinfo(const string& ns, const set<string>& nss)
+    : priv(false), parent(ns), search_namespaces(nss) {}
+};
+
 class interpreter
 {
 public:
@@ -607,6 +616,9 @@ public:
   void add_macro_rule(rule *r);
   void promote_ttags(expr f, expr x, expr u);
   void promote_ttags(expr f, expr x, expr u, expr v);
+  expr promote_sym_expr(expr x);
+  expr hsubst(expr x);
+  expr vsubst(expr x, bool b = true);
   expr bind(env& vars, veqnl& eqns, expr x, bool b = true, path p = path());
   expr subst(const env& vars, expr x, uint8_t idx = 0);
   expr fsubst(const env& funs, expr x, uint8_t idx = 0);
@@ -997,6 +1009,17 @@ private:
   list<string> tag_files;
   map< string, list<TagInfo> > tag_list;
   void init_tags();
+
+  // Namespaces.
+
+public:
+  void set_namespace(string *ns);
+  void clear_namespace();
+
+  // Stack of scoped namespaces (Pure 0.43+).
+  list<nsinfo> active_namespaces; // namespaces currently in scope
+  void push_namespace(string *ns);
+  void pop_namespace();
 
   // Interface to the lexer.
 
