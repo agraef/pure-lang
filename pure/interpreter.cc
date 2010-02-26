@@ -3232,7 +3232,7 @@ void interpreter::checkfuns(expr x)
        symbol isn't qualified and was picked up from elsewhere, which is an
        error. */
     if ((f.flags()&EXPR::QUAL) == 0)
-      throw err("undeclared symbol '"+id+"'");
+      error(*loc, "undeclared symbol '"+id+"'");
   }
 }
 
@@ -3269,7 +3269,7 @@ void interpreter::checkvars(expr x, bool b)
     else {
       string id, qual = qualifier(sym, id);
       if (qual != *symtab.current_namespace)
-	throw err("undeclared symbol '"+id+"'");
+	error(*loc, "undeclared symbol '"+id+"'");
     }
     break;
   }
@@ -3282,7 +3282,7 @@ void interpreter::checkvars(expr x, bool b)
     else {
       string id, qual = qualifier(sym, id);
       if (qual != *symtab.current_namespace)
-	throw err("undeclared symbol '"+id+"'");
+	error(*loc, "undeclared symbol '"+id+"'");
     }
   }
 }

@@ -240,22 +240,26 @@ item
     error(yylloc, "syntax error, expected end of file");
   YYACCEPT; }
 | LET simple_rule
-{ if (interp.tags) {
+{ interp.loc = &yyloc;
+  if (interp.tags) {
     interp.add_tags($2->lhs); delete $2;
   } else {
     action(interp.define($2), delete $2);
   } }
 | CONST simple_rule
-{ if (interp.tags) {
+{ interp.loc = &yyloc;
+  if (interp.tags) {
     interp.add_tags($2->lhs); delete $2;
   } else {
     action(interp.define_const($2), delete $2);
   } }
 | DEF simple_rule
-{ if (interp.tags) interp.add_tags($2);
+{ interp.loc = &yyloc;
+  if (interp.tags) interp.add_tags($2);
   action(interp.add_macro_rule($2), delete $2); }
 | rule
-{ rulel *rl = 0;
+{ interp.loc = &yyloc;
+  rulel *rl = 0;
   if (interp.tags) interp.add_tags($1);
   action(interp.add_rules(interp.globenv,
   (rl = interp.default_lhs(interp.last, $1)), true), if (rl) delete rl); }

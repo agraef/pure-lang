@@ -595,6 +595,7 @@ public:
 
   // Semantic routines used by the parser.
 
+  yy::location* loc;
   env *build_env(rulel *r);
   env *build_env(expr x);
   void build_env(env& vars, expr x);
