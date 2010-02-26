@@ -3256,10 +3256,11 @@ expr interpreter::hsubst(expr x)
     pos += 2;
   }
   if (qual != *symtab.current_namespace) {
-    if (f.flags()&EXPR::QUAL)
-      throw err("symbol '"+sym.s+
-		"' is defined in the wrong namespace");
-    else
+    /* EXPR::QUAL in the flags signifies a qualified symbol in another
+       namespace; this is OK if the symbol is already declared (otherwise the
+       lexer will complain about it). If this flag isn't set, the symbol isn't
+       qualified and was picked up from elsewhere, which is an error. */
+    if ((f.flags()&EXPR::QUAL) == 0)
       throw err("symbol '"+sym.s.substr(pos)+
 		"' is not declared in the '"+
 		*symtab.current_namespace+"' namespace");
