@@ -802,7 +802,7 @@ private:
   Env *__fptr;
   Env *&fptr;
   llvm::GlobalVariable *fptrvar;
-  llvm::Value *envptr();
+  llvm::Value *envptr(bool local);
   llvm::Value *constptr(const void *p);
   EnvStack envstk;
   void push(const char *msg, Env *e);

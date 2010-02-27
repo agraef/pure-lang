@@ -7122,9 +7122,9 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   return f;
 }
 
-Value *interpreter::envptr()
+Value *interpreter::envptr(bool local)
 {
-  if (!fptr)
+  if (!fptr || !local)
     return NullPtr;
   else
     return act_builder().CreateLoad(fptrvar);
@@ -9054,7 +9054,7 @@ Value *interpreter::fbox(Env& f)
       act_env().CreateCall(module->getFunction("pure_new_args"), newargs);
     }
     return call("pure_clos", f.local, f.tag, f.getkey(), f.h,
-		envptr(), f.n, x);
+		envptr(f.local), f.n, x);
   }
 }
 
@@ -9346,7 +9346,7 @@ Value *interpreter::fref(int32_t tag, uint8_t idx)
       act_env().CreateCall(module->getFunction("pure_new_args"), newargs);
     }
     return call("pure_clos", f.local, f.tag, f.getkey(), f.h,
-		envptr(), f.n, x);
+		envptr(f.local), f.n, x);
   }
 }
 
@@ -9872,7 +9872,8 @@ void interpreter::fun_body(matcher *pm, bool nodefault)
       defaultv = call("pure_clos", false, f.tag, 0, info.f, NullPtr, f.n, x);
     } else
       defaultv =
-	call("pure_clos", f.local, f.tag, f.getkey(), f.h, envptr(), f.n, x);
+	call("pure_clos", f.local, f.tag, f.getkey(), f.h,
+	     envptr(f.local), f.n, x);
     for (size_t i = 0; i < f.n; ++i) {
       Value *arg = f.args[i];
       assert(arg->getType() == ExprPtrTy);
