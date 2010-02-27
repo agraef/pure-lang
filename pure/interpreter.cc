@@ -46,6 +46,15 @@
 
 #include "gsl_structs.h"
 
+#if LLVM27
+/* XXXFIXME: Temporary workarounds for LLVM 2.7 JIT quirks.
+   LLVM 2.7 with lazy JITing currently requires that we keep the IR of
+   anonymous globals (doeval, dodefn) around until the last reference to the
+   global environment is released. This should go away as soon as PR#6360 is
+   fixed, see (http://llvm.org/bugs/show_bug.cgi?id=6360). */
+#define LLVM27_JIT_HACKS 1
+#endif
+
 uint8_t interpreter::g_verbose = 0;
 bool interpreter::g_interactive = false;
 interpreter* interpreter::g_interp = 0;
@@ -175,8 +184,6 @@ void interpreter::init()
   /* LLVM 2.7 and later: Enable lazy compilation if requested. (With earlier
      LLVM versions, JITing is always done lazily, so the eager_jit flag is
      effectively ignored and this call isn't needed.) */
-  // NOTE: Currently this code is disabled since lazy JITing doesn't work with
-  // LLVM 2.7 yet.
   if (!eager_jit) JIT->DisableLazyCompilation(false);
 #endif
 #else
@@ -5760,9 +5767,12 @@ void Env::clear()
 #if DEBUG>2
     std::cerr << "clearing global '" << name << "'\n";
 #endif
-    // In eager JIT mode, the code of anonymous globals (doeval, dodefn) is
-    // taken care of elsewhere.
-    if (!interp.eager_jit || !is_init(name)) {
+    if (
+#if LLVM27_JIT_HACKS
+	!interp.eager_jit ||
+#endif
+	// anonymous globals (doeval, dodefn) are taken care of elsewhere
+	!is_init(name)) {
       // get rid of the machine code
       if (h != f) interp.JIT->freeMachineCodeForFunction(h);
       interp.JIT->freeMachineCodeForFunction(f);
@@ -7378,11 +7388,16 @@ pure_expr *interpreter::doeval(expr x, pure_expr*& e, bool keep)
   begin_stats();
   res = pure_invoke(fp, &e);
   end_stats();
-  // Get rid of our anonymous function. We can only do this here if eager_jit
-  // is enabled, otherwise this will be done when freeing the environment.
-  if (eager_jit) JIT->freeMachineCodeForFunction(f.f);
+  // Get rid of our anonymous function.
+#if LLVM27_JIT_HACKS
+  if (eager_jit)
+#endif
+  JIT->freeMachineCodeForFunction(f.f);
   if (!keep) {
-    if (eager_jit) f.f->eraseFromParent();
+#if LLVM27_JIT_HACKS
+    if (eager_jit)
+#endif
+    f.f->eraseFromParent();
     // If there are no more references, we can get rid of the environment now.
     if (fptr->refc == 1)
       delete fptr;
@@ -7555,11 +7570,16 @@ pure_expr *interpreter::dodefn(env vars, veqnl eqns, expr lhs, expr rhs,
   begin_stats();
   res = pure_invoke(fp, &e);
   end_stats();
-  // Get rid of our anonymous function. We can only do this here if eager_jit
-  // is enabled, otherwise this will be done when freeing the environment.
-  if (eager_jit) JIT->freeMachineCodeForFunction(f.f);
+  // Get rid of our anonymous function.
+#if LLVM27_JIT_HACKS
+  if (eager_jit)
+#endif
+  JIT->freeMachineCodeForFunction(f.f);
   if (!keep) {
-    if (eager_jit) f.f->eraseFromParent();
+#if LLVM27_JIT_HACKS
+    if (eager_jit)
+#endif
+    f.f->eraseFromParent();
     // If there are no more references, we can get rid of the environment now.
     if (fptr->refc == 1)
       delete fptr;
