@@ -78,8 +78,8 @@
 /* Defer JIT compilation of global functions until they're called for the
    first time. Speeds up compilation of small programs at the expense of some
    (negligible) runtime overhead. */
-#ifndef LAZY_JIT
-#define LAZY_JIT 1
+#ifndef DEFER_GLOBALS
+#define DEFER_GLOBALS 1
 #endif
 
 /* Experimental support for fast code generation, at the expense of code

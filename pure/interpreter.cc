@@ -2338,7 +2338,7 @@ void interpreter::compile()
 	push("compile", &f);
 	fun_body(info.m);
 	pop(&f);
-#if LAZY_JIT
+#if DEFER_GLOBALS
 	// defer JIT until the function is called somewhere
 	void *fp = 0;
 #else

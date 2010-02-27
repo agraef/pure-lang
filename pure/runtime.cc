@@ -4480,7 +4480,7 @@ pure_expr *pure_matrix_columnsvq(uint32_t n, pure_expr **xs)
   return ret;
 }
 
-#if LAZY_JIT
+#if DEFER_GLOBALS
 static inline void *get_funptr(pure_expr *x)
 {
   if (!x->data.clos->fp) {
