@@ -97,13 +97,6 @@ void interpreter::debug_init()
   debug_skip = false;
 }
 
-/* LLVM 2.7+ only: Hack to make lazy JITing work with LLVM 2.7. There's a
-   workaround in place, but it will leak copious amounts of memory, so
-   enabling this isn't recommended. */
-#if LLVM27 && !defined(LAZY_JIT_HACK)
-//#define LAZY_JIT_HACK 1
-#endif
-
 void interpreter::init()
 {
   if (!g_interp) g_interp = this;
@@ -135,6 +128,14 @@ void interpreter::init()
   // Initialize the JIT.
 
   using namespace llvm;
+
+#if LLVM27
+  // Lazy JITing doesn't work with LLVM 2.7 yet, make sure that it's disabled.
+  eager_jit = true;
+#else
+  // LLVM 2.6 and earlier always do lazy JITing, so this flag must be false.
+  eager_jit = false;
+#endif
 
   /* Accommodate the major API breakage in recent LLVM versions. This is just
      horrible, maybe we should drop support for anything older than LLVM 2.6
@@ -170,12 +171,13 @@ void interpreter::init()
     std::cerr << "** Panic: " << error << " Giving up. **\n";
     exit(1);
   }
-#if LAZY_JIT_HACK
-  /* LLVM 2.7 and later: Make sure that we get lazy compilation. This appears
-     to be broken as of LLVM r85295+. There's a workaround in place (see '#if
-     !LAZY_JIT_HACK' below) but this will leak copious amounts of memory, so
-     it isn't recommended to enable this code. */
-  JIT->DisableLazyCompilation(false);
+#if LLVM27
+  /* LLVM 2.7 and later: Enable lazy compilation if requested. (With earlier
+     LLVM versions, JITing is always done lazily, so the eager_jit flag is
+     effectively ignored and this call isn't needed.) */
+  // NOTE: Currently this code is disabled since lazy JITing doesn't work with
+  // LLVM 2.7 yet.
+  if (!eager_jit) JIT->DisableLazyCompilation(false);
 #endif
 #else
 #if FAST_JIT
@@ -655,7 +657,8 @@ void interpreter::init()
 }
 
 interpreter::interpreter()
-  : verbose(0), compiling(false), interactive(false), debugging(false),
+  : verbose(0), compiling(false), eager_jit(false), interactive(false),
+    debugging(false),
     checks(true), folding(true), use_fastcc(true), pic(false), strip(true),
     restricted(false), ttymode(false), override(false),
     stats(false), stats_mem(false), temp(0),  ps("> "), libdir(""),
@@ -673,7 +676,8 @@ interpreter::interpreter(int32_t nsyms, char *syms,
 			 pure_expr ***vars, void **vals,
 			 int32_t *arities, void **externs,
 			 pure_expr ***_sstk, void **_fptr)
-  : verbose(0), compiling(false), interactive(false), debugging(false),
+  : verbose(0), compiling(false), eager_jit(false), interactive(false),
+    debugging(false),
     checks(true), folding(true), use_fastcc(true), pic(false), strip(true),
     restricted(true), ttymode(false), override(false),
     stats(false), stats_mem(false), temp(0), ps("> "), libdir(""),
@@ -5756,14 +5760,17 @@ void Env::clear()
 #if DEBUG>2
     std::cerr << "clearing global '" << name << "'\n";
 #endif
-    // The code of anonymous globals (doeval, dodefn) is taken care of
-    // elsewhere, we must not collect that here.
-    if (!is_init(name)) {
-      // named global, get rid of the machine code
+    // In eager JIT mode, the code of anonymous globals (doeval, dodefn) is
+    // taken care of elsewhere.
+    if (!interp.eager_jit || !is_init(name)) {
+      // get rid of the machine code
       if (h != f) interp.JIT->freeMachineCodeForFunction(h);
       interp.JIT->freeMachineCodeForFunction(f);
-      // only delete the body, this keeps existing references intact
-      f->deleteBody();
+      if (is_init(name))
+	f->eraseFromParent();
+      else
+	// only delete the body, this keeps existing references intact
+	f->deleteBody();
     }
     // delete all nested environments and reinitialize other body-related data
     fmap.clear(); xmap.clear(); xtab.clear(); prop.clear(); m = 0;
@@ -7371,14 +7378,11 @@ pure_expr *interpreter::doeval(expr x, pure_expr*& e, bool keep)
   begin_stats();
   res = pure_invoke(fp, &e);
   end_stats();
-  // Get rid of our anonymous function.
-#if !LAZY_JIT_HACK
-  JIT->freeMachineCodeForFunction(f.f);
-#endif
+  // Get rid of our anonymous function. We can only do this here if eager_jit
+  // is enabled, otherwise this will be done when freeing the environment.
+  if (eager_jit) JIT->freeMachineCodeForFunction(f.f);
   if (!keep) {
-#if !LAZY_JIT_HACK
-    f.f->eraseFromParent();
-#endif
+    if (eager_jit) f.f->eraseFromParent();
     // If there are no more references, we can get rid of the environment now.
     if (fptr->refc == 1)
       delete fptr;
@@ -7551,14 +7555,11 @@ pure_expr *interpreter::dodefn(env vars, veqnl eqns, expr lhs, expr rhs,
   begin_stats();
   res = pure_invoke(fp, &e);
   end_stats();
-  // Get rid of our anonymous function.
-#if !LAZY_JIT_HACK
-  JIT->freeMachineCodeForFunction(f.f);
-#endif
+  // Get rid of our anonymous function. We can only do this here if eager_jit
+  // is enabled, otherwise this will be done when freeing the environment.
+  if (eager_jit) JIT->freeMachineCodeForFunction(f.f);
   if (!keep) {
-#if !LAZY_JIT_HACK
-    f.f->eraseFromParent();
-#endif
+    if (eager_jit) f.f->eraseFromParent();
     // If there are no more references, we can get rid of the environment now.
     if (fptr->refc == 1)
       delete fptr;
