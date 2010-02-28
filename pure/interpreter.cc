@@ -5789,12 +5789,8 @@ void Env::clear()
     std::cerr << "clearing global '" << name << "'\n";
 #endif
     bool init_code = is_init(name);
-    if (
-#if LLVM27_JIT_HACKS
-	!interp.eager_jit ||
-#endif
-	// anonymous globals (doeval, dodefn) are taken care of elsewhere
-	!init_code) {
+    // anonymous globals (doeval, dodefn) are taken care of elsewhere
+    if (!init_code) {
       // get rid of the machine code
       bool dead = !refp || *refp == 0;
       if (!dead && *refp == 1) {
@@ -5814,11 +5810,7 @@ void Env::clear()
 	  dead = v.x->refc <= 1;
 	}
       }
-#if LLVM27_JIT_HACKS
-      if (init_code || dead) {
-#else
       if (dead) {
-#endif
 	if (h != f) interp.JIT->freeMachineCodeForFunction(h);
 	interp.JIT->freeMachineCodeForFunction(f);
       } else {
@@ -5827,9 +5819,6 @@ void Env::clear()
 	if (h != f) interp.JIT->updateGlobalMapping(h, 0);
 	interp.JIT->updateGlobalMapping(f, 0);
       }
-#if LLVM27_JIT_HACKS
-      if (init_code) f->eraseFromParent(); else
-#endif
       // only delete the body, this keeps existing references intact
       f->deleteBody();
     }
@@ -7446,14 +7435,8 @@ pure_expr *interpreter::doeval(expr x, pure_expr*& e, bool keep)
   res = pure_invoke(fp, &e);
   end_stats();
   // Get rid of our anonymous function.
-#if LLVM27_JIT_HACKS
-  if (eager_jit)
-#endif
   JIT->freeMachineCodeForFunction(f.f);
   if (!keep) {
-#if LLVM27_JIT_HACKS
-    if (eager_jit)
-#endif
     f.f->eraseFromParent();
     // If there are no more references, we can get rid of the environment now.
     if (fptr->refc == 1)
@@ -7628,36 +7611,14 @@ pure_expr *interpreter::dodefn(env vars, veqnl eqns, expr lhs, expr rhs,
   res = pure_invoke(fp, &e);
   end_stats();
   // Get rid of our anonymous function.
-#if LLVM27_JIT_HACKS
-  if (eager_jit)
-#endif
   JIT->freeMachineCodeForFunction(f.f);
   if (!keep) {
-#if LLVM27_JIT_HACKS
-    if (eager_jit) {
-#endif
     f.f->eraseFromParent();
     // If there are no more references, we can get rid of the environment now.
     if (fptr->refc == 1)
       delete fptr;
     else
       fptr->refc--;
-#if LLVM27_JIT_HACKS
-    } else {
-      /* This is a really awful kludge to work around some deficiencies in the
-	 lazy JIT of LLVM 2.7, which apparently causes it to prematurely
-	 scrape stubs for external C functions if they happen to get called in
-	 IR which goes the way of the dodo before the stub has had a chance to
-	 be realized. Since we don't keep track of whether the body of a
-	 variable definition might yield a closure for an external function
-	 (actually this is undecidable so we shouldn't even bother), we have
-	 to play double-safe here and just make this code permanent. Which may
-	 leak copious amounts of memory, of course. :( */
-      JIT->updateGlobalMapping(f.f, 0);
-      f.f->deleteBody();
-      fptr->refc++; // better safe than sorry
-    }
-#endif
   }
   fptr = save_fptr;
   if (res) {
