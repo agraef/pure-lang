@@ -859,6 +859,11 @@ static void pure_free_clos(pure_expr *x)
     assert(env->refc > 0);
     if (--env->refc == 0) delete env;
   }
+  if (x->data.clos->refp) {
+    uint32_t *refp = (uint32_t*)x->data.clos->refp;
+    assert(*refp > 0);
+    --(*refp);
+  }
   if (x->data.clos->env) {
     for (size_t i = 0; i < x->data.clos->m; i++)
       pure_free(x->data.clos->env[i]);
@@ -878,6 +883,8 @@ static pure_closure *pure_copy_clos(pure_closure *clos)
   ret->fp = clos->fp;
   ret->ep = clos->ep;
   if (clos->ep) ((Env*)clos->ep)->refc++;
+  ret->refp = clos->refp;
+  if (clos->refp) (*(uint32_t*)clos->refp)++;
   if (clos->m == 0)
     ret->env = 0;
   else {
@@ -3782,6 +3789,8 @@ pure_expr *pure_clos(bool local, int32_t tag, uint32_t key, uint32_t n,
   x->data.clos->fp = f;
   x->data.clos->ep = e;
   if (e) ((Env*)e)->refc++;
+  x->data.clos->refp = interpreter::g_interp->get_refp(key);
+  if (x->data.clos->refp) (*(uint32_t*)x->data.clos->refp)++;
   if (m == 0)
     x->data.clos->env = 0;
   else {
@@ -4488,9 +4497,13 @@ static inline void *get_funptr(pure_expr *x)
     interpreter& interp = *interpreter::g_interp;
     map<int32_t,Env>::iterator g = interp.globalfuns.find(x->tag);
     assert(g != interp.globalfuns.end());
-    llvm::Function *h = g->second.h;
+    llvm::Function *f = g->second.f, *h = g->second.h;
     assert(h);
+    if (f != h) interp.JIT->getPointerToFunction(f);
     x->data.clos->fp = interp.JIT->getPointerToFunction(h);
+#if DEBUG>1
+    std::cerr << "JIT " << h->getNameStr() << " -> " << x->data.clos->fp << '\n';
+#endif
   }
   return x->data.clos->fp;
 }
@@ -10562,7 +10575,7 @@ bool same(pure_expr *x, pure_expr *y)
 	 function pointers doesn't work reliably in the JIT-hosted
 	 environment, since the JIT creates stubs which later get replaced
 	 with the real code when a function is first executed. We solve this
-	 by having a unique key assigned to at least to all local closures. */
+	 by having a unique key assigned to at least all local closures. */
       if (!x->data.clos->local || !y->data.clos->local)
 	/* If one of the closures is a global, they can only be equal if the
 	   other is a global, too, and in this case we already know that they

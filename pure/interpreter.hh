@@ -209,6 +209,7 @@ struct Env {
   string name; // LLVM assembly function name
 private:
   uint32_t key; // cached key of a local closure (see getkey() below)
+  void add_key(uint32_t key, uint32_t *refp);
 public:
   // descriptor for type of environment
   const char *descr;
@@ -242,8 +243,8 @@ public:
   Builder builder;
   // parent environment (if any)
   Env *parent;
-  // reference counter
-  uint32_t refc;
+  // reference counters
+  uint32_t refc, *refp;
   // convenience functions for invoking CreateGEP() and CreateLoad()
   llvm::Value *CreateGEP
   (llvm::Value *x, llvm::Value *i, const char* name = "")
@@ -282,8 +283,8 @@ public:
 #ifdef LLVM26
       builder(llvm::getGlobalContext()),
 #endif
-      parent(0), refc(0)
-  {}
+      parent(0), refc(0), refp(new uint32_t)
+  { *refp = 0; add_key(getkey(), refp); }
   // environment for an anonymous closure with given body x
   Env(int32_t _tag, const char *_descr, uint32_t _n, expr x,
       bool _b, bool _local = false)
@@ -292,8 +293,9 @@ public:
 #ifdef LLVM26
       builder(llvm::getGlobalContext()),
 #endif
-      parent(0), refc(0)
+      parent(0), refc(0), refp(new uint32_t)
   {
+    *refp = 0; add_key(getkey(), refp);
     if (envstk.empty()) {
       assert(!local);
       build_map(x);
@@ -311,8 +313,9 @@ public:
 #ifdef LLVM26
       builder(llvm::getGlobalContext()),
 #endif
-      parent(0), refc(0)
+      parent(0), refc(0), refp(new uint32_t)
   {
+    *refp = 0; add_key(getkey(), refp);
     if (envstk.empty()) {
       assert(!local);
       build_map(info);
@@ -330,9 +333,8 @@ public:
 #ifdef LLVM26
       builder(llvm::getGlobalContext()),
 #endif
-      parent(0), refc(0)
-  {
-  }
+      parent(0), refc(0), refp(new uint32_t)
+  { *refp = 0; add_key(getkey(), refp); }
   // assignment -- this is only allowed if the lvalue is an uninitialized
   // environment for which no LLVM function has been created yet, or if it is
   // a global function to be overridden
@@ -356,8 +358,8 @@ private:
   size_t propagate_map();
   static void propagate_maps();
 public:
-  uint32_t getkey() // key which identifies a local closure
-  { if (local && key==0) key = ++act_key; return key; }
+  uint32_t getkey() // key which identifies a closure
+  { if (key==0) key = ++act_key; return key; }
 };
 
 struct ExternInfo {
@@ -861,8 +863,8 @@ private:
   llvm::Value *fcall(Env& f, vector<llvm::Value*>& env)
   { vector<llvm::Value*> args; return fcall(f, args, env); }
   llvm::Value *call(string name, bool local, int32_t tag, uint32_t key,
-		    llvm::Function* f, llvm::Value *e, uint32_t argc,
-		    vector<llvm::Value*>& vars);
+		    llvm::Function* f, llvm::Value *e,
+		    uint32_t argc, vector<llvm::Value*>& vars);
   llvm::Value *call(string name, llvm::Value *x);
   llvm::Value *call(string name, llvm::Value *x, llvm::Value *y);
   llvm::Value *call(string name, llvm::Value *x, llvm::Value *y,
@@ -1021,6 +1023,25 @@ public:
   list<nsinfo> active_namespaces; // namespaces currently in scope
   void push_namespace(string *ns);
   void pop_namespace();
+
+  // Closure keys and associated refcounters.
+
+private:
+  map<uint32_t,uint32_t*> keys;
+
+public:
+  void add_key(uint32_t key, uint32_t *refp)
+  {
+    keys[key] = refp;
+  }
+  uint32_t *get_refp(uint32_t key)
+  {
+    map<uint32_t,uint32_t*>::const_iterator it = keys.find(key);
+    if (it == keys.end())
+      return 0;
+    else
+      return it->second;
+  }
 
   // Interface to the lexer.
 

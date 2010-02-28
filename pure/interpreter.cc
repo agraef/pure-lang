@@ -139,10 +139,10 @@ void interpreter::init()
   using namespace llvm;
 
 #if LLVM27
-  // Lazy JITing doesn't work with LLVM 2.7 yet, make sure that it's disabled.
+  // Lazy JITing doesn't really work with LLVM 2.7 yet, disable it for now.
   eager_jit = true;
 #else
-  // LLVM 2.6 and earlier always do lazy JITing, so this flag must be false.
+  // LLVM 2.6 and earlier always do lazy JITing, so this flag *must* be false.
   eager_jit = false;
 #endif
 
@@ -2354,6 +2354,7 @@ void interpreter::compile()
 	void *fp = 0;
 #else
 	// run the JIT now (always use the C-callable stub here)
+	if (f.f != f.h) interp.JIT->getPointerToFunction(f.f);
 	void *fp = JIT->getPointerToFunction(f.h);
 #if DEBUG>1
 	std::cerr << "JIT " << f.f->getNameStr() << " -> " << fp << '\n';
@@ -5728,6 +5729,12 @@ void FMap::pop()
   lastidx = idx; idx = pred[idx];
 }
 
+void Env::add_key(uint32_t key, uint32_t *refp)
+{
+  interpreter& interp = *interpreter::g_interp;
+  interp.add_key(key, refp);
+}
+
 Env& Env::operator= (const Env& e)
 {
   if (f) {
@@ -5743,12 +5750,15 @@ Env& Env::operator= (const Env& e)
   }
   fmap = e.fmap; xmap = e.xmap; xtab = e.xtab; prop = e.prop; m = e.m;
   if (e.descr) descr = e.descr;
-  key = e.key;
+  key = e.key; refp = e.refp;
   return *this;
 }
 
 void Env::clear()
 {
+  /* Note that we deliberately leak memory on refp here, because it may be
+     shared by any number of different Env objects and runtime closures. That
+     saves us an extra refcounter on the refcounter itself. Oh well. */
   static list<Function*> to_be_deleted;
   if (!f) return; // not initialized
   if (rp) delete rp;
@@ -5758,8 +5768,19 @@ void Env::clear()
 #if DEBUG>2
     std::cerr << "clearing local '" << name << "'\n";
 #endif
-    if (h != f) interp.JIT->freeMachineCodeForFunction(h);
-    interp.JIT->freeMachineCodeForFunction(f);
+    if (!refp || *refp == 0) {
+      if (h != f) interp.JIT->freeMachineCodeForFunction(h);
+      interp.JIT->freeMachineCodeForFunction(f);
+    } else {
+      /* The code for this function is still used in a closure somewhere. To
+	 avoid dangling function pointers, we just unmap the function pointer
+	 instead of really freeing the code. NOTE: This effectively makes the
+	 code permanent and thus leaks memory on the code pointer. But we
+	 can't really help that because we have to get rid of the function IR
+	 at this point. */
+      if (h != f) interp.JIT->updateGlobalMapping(h, 0);
+      interp.JIT->updateGlobalMapping(f, 0);
+    }
     f->dropAllReferences(); if (h != f) h->dropAllReferences();
     fmap.clear();
     to_be_deleted.push_back(f); if (h != f) to_be_deleted.push_back(h);
@@ -5767,27 +5788,63 @@ void Env::clear()
 #if DEBUG>2
     std::cerr << "clearing global '" << name << "'\n";
 #endif
+    bool init_code = is_init(name);
     if (
 #if LLVM27_JIT_HACKS
 	!interp.eager_jit ||
 #endif
 	// anonymous globals (doeval, dodefn) are taken care of elsewhere
-	!is_init(name)) {
+	!init_code) {
       // get rid of the machine code
-      if (h != f) interp.JIT->freeMachineCodeForFunction(h);
-      interp.JIT->freeMachineCodeForFunction(f);
-      if (is_init(name))
-	f->eraseFromParent();
-      else
-	// only delete the body, this keeps existing references intact
-	f->deleteBody();
+      bool dead = !refp || *refp == 0;
+      if (!dead && *refp == 1) {
+	/* The case of global functions (which have their closures cached in
+	   global variables) is a bit more involved than the above, since refp
+	   will always be at least 1 in this case. To avoid leaking memory on
+	   redefined globals, we also check the reference counter of the
+	   closure. If it is at most 1 then the global variable (which, since
+	   we came here, is about to be cleared or redefined) is the only
+	   reference left at this point, hence the code isn't needed any more
+	   and can be freed. */
+	map<int32_t,GlobalVar>::iterator it = interp.globalvars.find(tag);
+	if (it == interp.globalvars.end())
+	  dead = true;
+	else {
+	  GlobalVar& v = it->second;
+	  dead = v.x->refc <= 1;
+	}
+      }
+#if LLVM27_JIT_HACKS
+      if (init_code || dead) {
+#else
+      if (dead) {
+#endif
+	if (h != f) interp.JIT->freeMachineCodeForFunction(h);
+	interp.JIT->freeMachineCodeForFunction(f);
+      } else {
+	/* Keep the code for a function which is still bound by a closure.
+	   See the remarks above. */
+	if (h != f) interp.JIT->updateGlobalMapping(h, 0);
+	interp.JIT->updateGlobalMapping(f, 0);
+      }
+#if LLVM27_JIT_HACKS
+      if (init_code) f->eraseFromParent(); else
+#endif
+      // only delete the body, this keeps existing references intact
+      f->deleteBody();
     }
     // delete all nested environments and reinitialize other body-related data
     fmap.clear(); xmap.clear(); xtab.clear(); prop.clear(); m = 0;
     // now that all references have been removed, delete the function pointers
     for (list<Function*>::iterator fi = to_be_deleted.begin();
 	 fi != to_be_deleted.end(); fi++) {
+#if LLVM27_JIT_HACKS
+      // LLVM 2.7 collects the function code anyway if we erase the IR, so we
+      // just delete the body instead.
+      (*fi)->deleteBody();
+#else
       (*fi)->eraseFromParent();
+#endif
     }
     to_be_deleted.clear();
   }
@@ -7577,7 +7634,7 @@ pure_expr *interpreter::dodefn(env vars, veqnl eqns, expr lhs, expr rhs,
   JIT->freeMachineCodeForFunction(f.f);
   if (!keep) {
 #if LLVM27_JIT_HACKS
-    if (eager_jit)
+    if (eager_jit) {
 #endif
     f.f->eraseFromParent();
     // If there are no more references, we can get rid of the environment now.
@@ -7585,6 +7642,22 @@ pure_expr *interpreter::dodefn(env vars, veqnl eqns, expr lhs, expr rhs,
       delete fptr;
     else
       fptr->refc--;
+#if LLVM27_JIT_HACKS
+    } else {
+      /* This is a really awful kludge to work around some deficiencies in the
+	 lazy JIT of LLVM 2.7, which apparently causes it to prematurely
+	 scrape stubs for external C functions if they happen to get called in
+	 IR which goes the way of the dodo before the stub has had a chance to
+	 be realized. Since we don't keep track of whether the body of a
+	 variable definition might yield a closure for an external function
+	 (actually this is undecidable so we shouldn't even bother), we have
+	 to play double-safe here and just make this code permanent. Which may
+	 leak copious amounts of memory, of course. :( */
+      JIT->updateGlobalMapping(f.f, 0);
+      f.f->deleteBody();
+      fptr->refc++; // better safe than sorry
+    }
+#endif
   }
   fptr = save_fptr;
   if (res) {
@@ -9869,7 +9942,8 @@ void interpreter::fun_body(matcher *pm, bool nodefault)
       const ExternInfo& info = it->second;
       vector<Value*> env;
       assert(f.m==0 && info.argtypes.size() == f.n);
-      defaultv = call("pure_clos", false, f.tag, 0, info.f, NullPtr, f.n, x);
+      defaultv = call("pure_clos", false, f.tag, 0, info.f,
+		      NullPtr, f.n, x);
     } else
       defaultv =
 	call("pure_clos", f.local, f.tag, f.getkey(), f.h,
