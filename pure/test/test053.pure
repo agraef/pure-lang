@@ -1,0 +1,15 @@
+// another JIT test
+
+foo x = x if x>=0;
+let f = foo;
+
+foo x = -x if x<0;
+// This will in fact execute the latest version of foo (giving f (-12) == 12),
+// since JITing is deferred until the closure is first called.
+f 12;
+f (-12);
+
+let f = foo;
+// Same result as above.
+f 12;
+f (-12);

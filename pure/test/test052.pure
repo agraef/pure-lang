@@ -1,0 +1,26 @@
+// segfaults due to stale function pointers (fixed in r3131)
+
+foo x = x if x>=0;
+bar = bar with bar x = x if x>=0 end;
+
+let f = foo;
+let g = bar;
+
+f 12;
+g 12;
+
+foo x = -x if x<0;
+evalcmd "clear bar";
+bar = bar with bar x = x if x>=0; bar x = -x if x<0 end;
+
+f 12;
+g 12;
+
+let f = foo;
+let g = bar;
+
+f 12;
+g 12;
+
+f (-12);
+g (-12);

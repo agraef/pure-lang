@@ -1,0 +1,25 @@
+foo x/*0:1*/ = x/*0:1*/ if x/*0:1*/>=0;
+{
+  rule #0: foo x = x if x>=0
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let f = foo;
+foo x/*0:1*/ = -x/*0:1*/ if x/*0:1*/<0;
+{
+  rule #0: foo x = x if x>=0
+  rule #1: foo x = -x if x<0
+  state 0: #0 #1
+	<var> state 1
+  state 1: #0 #1
+}
+f 12;
+12
+f (-12);
+12
+let f = foo;
+f 12;
+12
+f (-12);
+12
