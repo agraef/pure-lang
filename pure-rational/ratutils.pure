@@ -81,8 +81,34 @@ str_rsplit_at s::string n::int
 private num_den;
 num_den q = (num q, den q) if rationalp q;
 
-private isintval;
-isintval x = (frac x) == 0;
+/* Semantic number predicates */
+public intvalp ratvalp realvalp compvalp intcompvalp ratcompvalp;
+
+intvalp x		= 1 if integerp x;
+intvalp x		= integerp n && integerp d && d == 1 when (n, d) = num_den x end if rationalp x;
+intvalp x::double	= ~ infp x && (frac x == 0.0);
+intvalp x		= compvalp x && (im x == 0) && exactp (im x) && intvalp (re x) if complexp x;
+intvalp _		= 0;
+
+ratvalp x		= 1 if integerp x;
+ratvalp x		= integerp n && integerp d && d ~= 0 when (n, d) = num_den x end if rationalp x;
+ratvalp x::double	= ~ infp x && ~ nanp x;
+ratvalp x		= compvalp x && (im x == 0) && exactp (im x) && ratvalp (re x) if complexp x;
+ratvalp _		= 0;
+
+realvalp x		= 1 if integerp x;
+realvalp x		= integerp n && integerp d && d ~= 0 when (n, d) = num_den x end if rationalp x;
+realvalp _::double	= 1;
+realvalp x		= compvalp x && (im x == 0) && exactp (im x) if complexp x;
+realvalp _		= 0;
+
+compvalp x		= realvalp (re x) && realvalp (im x) if complexp x;
+compvalp x		= 1 if numberp x && realvalp x;
+compvalp _		= 0;
+
+intcompvalp x		= (complexp x) && (intvalp (re x)) && (intvalp (im x)) if numberp x;
+
+ratcompvalp x		= (complexp x) && (rationalp (re x)) && (rationalp (im x)) if numberp x;
 
 /******************************************************************************
  ***
@@ -510,11 +536,11 @@ round_unbiased i = i if integerp i;
 round_unbiased f
 	= if f < 0.0 then
 	    - round_unbiased (-f)
-	  else if isintval f then
+	  else if intvalp f then
 	    round f
-	  else if isintval f2 && ((i2 mod 4) == 1) then
+	  else if intvalp f2 && ((i2 mod 4) == 1) then
 	    I2 div 2
-	  else if isintval F2 then
+	  else if intvalp F2 then
 	    i2 div 2 + 1
 	  else
 	    round f
@@ -546,7 +572,7 @@ round_zero_bias i = i if integerp i;
 round_zero_bias f
 	= if f < 0.0 then
 	    - round_zero_bias (-f)
-	  else if isintval (f * 2) then
+	  else if intvalp (f * 2) then
 	    trunc f
 	  else
 	    round f
@@ -1058,19 +1084,6 @@ rational_interval_max_den maxDen::int r
  ******************************************************************************/
 
 /*
- * Further type tests
- * (further to those in primitives.pure):
- *
- * Rational complex type value tests
- */
-
-public isintcompval;	// integral complex value
-public isratcompval;	// rational complex value
-
-isintcompval x	= (complexp x) && (isintval (re x)) && (isintval (im x)) if numberp x;
-isratcompval x	= (complexp x) && (rationalp (re x)) && (rationalp (im x)) if numberp x;
-
-/*
  * utility routines
  */
 private i_rot;
@@ -1148,8 +1161,8 @@ euclid_alg_initial isZero divfun x y
 
 euclid_alg isZero divfun x y
 	= normalise_eqn (euclid_alg_initial isZero divfun x y)
-		if numberp x && numberp y && isratcompval x && isexact x
-		   && isratcompval y && isexact y;
+		if numberp x && numberp y && ratcompvalp x && exactp x
+		   && ratcompvalp y && exactp y;
 	= euclid_alg_initial isZero divfun x y
 		otherwise;
 
@@ -1204,7 +1217,7 @@ div_mod_gauss n d = (q, r)
 	  q = qx +: qy;
 	  r = n - d * q
 	end
-	if numberp n && numberp d && isintcompval n && isexact n && isintcompval d && isexact d;
+	if numberp n && numberp d && intcompvalp n && exactp n && intcompvalp d && exactp d;
 
 n div_gauss d = q
 	when (q, _) = div_mod_gauss n d end
@@ -1222,7 +1235,7 @@ gcd_gauss c1 c2 = normalise_singleton (euclid_gcd (==0) (mod_gauss) c1 c2)
 public norm_gauss;
 norm_gauss c = x * x + y * y
 	when (x, y) = (re c, im c) end
-	if numberp c && iscompval c;
+	if numberp c && compvalp c;
 
 
 /*
@@ -1242,7 +1255,7 @@ num_den_gauss c
 	    h = gcd_gauss ni di;
 	    (n, d) = (rat_simplify (ni % h), rat_simplify (di % h))
 	  end
-	  if numberp c && isratcompval c && isexact c;
+	  if numberp c && ratcompvalp c && exactp c;
 
 /* extend num_den to Complex */
 num_den c	= num_den_gauss c if complexp c;
