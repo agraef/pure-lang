@@ -132,17 +132,17 @@ private nonfix nil;
 private bin;
 
 // create an empty heap
-emptyheap			= Heap nil;
+::emptyheap			= Heap nil;
 
 // create a heap from a list
-heap xs				= foldl insert emptyheap xs if listp xs;
+::heap xs			= foldl insert emptyheap xs if listp xs;
 
 // check whether h is a heap
-heapp (Heap _)			= 1;
-heapp _				= 0 otherwise;
+::heapp (Heap _)		= 1;
+::heapp _			= 0 otherwise;
 
 // get size of a heap
-#(Heap h)			= #h
+::#(Heap h)			= #h
 with
   #nil				= 0;
   #bin 0 _ h1 _			= #h1 * 2 + 1;
@@ -150,24 +150,24 @@ with
 end;
 
 // test for an empty heap
-null (Heap nil)			= 1;
-null (Heap _)			= 0 otherwise;
+::null (Heap nil)		= 1;
+::null (Heap _)			= 0 otherwise;
 
 // get members of a heap as an ordered list
-members h@(Heap _)		= [] if null h;
+::members h@(Heap _)		= [] if null h;
 				= accum [first h] (rmfirst h)
 with
   accum ys h			= reverse ys if null h;
 				= accum ((first h):ys) (rmfirst h)
 end;
 
-list h@(Heap _)			= members h;
+::list h@(Heap _)		= members h;
 
 // get the first (smallest) member of a heap
-first (Heap (bin _ x _ _))	= x;
+::first (Heap (bin _ x _ _))	= x;
 
 // remove the first (smallest) member of a heap
-rmfirst (Heap h)		= Heap (rmfirst h)
+::rmfirst (Heap h)		= Heap (rmfirst h)
 with
   rmfirst (bin 0 _ nil nil)	= nil;
   rmfirst (bin 0 _ h1  h2 )	= update (bin 1 (last h2) h1 (rmlast h2));
@@ -212,9 +212,9 @@ with
 end;
 
 // insert a new member into a heap
-insert (Heap h) y::int    |
-insert (Heap h) y::string |
-insert (Heap h) y		= Heap (insert h y)
+::insert (Heap h) y::int    |
+::insert (Heap h) y::string |
+::insert (Heap h) y		= Heap (insert h y)
 with
   insert nil y::int    |
   insert nil y::string |
@@ -233,7 +233,7 @@ with
 end;
 
 // equality test
-(Heap h1) == (Heap h2)		=  eq h1 h2
+(Heap h1) ::== (Heap h2)	=  eq h1 h2
 with
   eq nil nil			= 1;
   eq nil (bin _ _ _ _)		= 0;
@@ -251,7 +251,7 @@ with
 end;;
 
 // inequality test
-(Heap h1) ~= (Heap h2)		= neq h1 h2
+(Heap h1) ::~= (Heap h2)	= neq h1 h2
 with
   neq nil nil			= 0;
   neq nil (bin _ _ _ _)		= 1;

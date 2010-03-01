@@ -3231,7 +3231,11 @@ static string qualifier(const symbol& sym, string& id)
 
 void interpreter::checkfuns(expr x)
 {
+#if 0
   if (active_namespaces.empty()) return;
+#else
+  if (symtab.current_namespace->empty()) return;
+#endif
   expr f = x, y, z;
   while (f.is_app(y, z)) f = y;
   if (f.tag() <= 0 || f.ttag() != 0) return;
@@ -3250,7 +3254,11 @@ void interpreter::checkfuns(expr x)
 
 void interpreter::checkvars(expr x, bool b)
 {
+#if 0
   if (active_namespaces.empty()) return;
+#else
+  if (symtab.current_namespace->empty()) return;
+#endif
   switch (x.tag()) {
   case EXPR::VAR:
   case EXPR::FVAR:

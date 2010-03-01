@@ -245,20 +245,20 @@ private tip bin;
 private mkbin;
 
 // array type check
-arrayp (Array _)		= 1;
-arrayp _			= 0;
+::arrayp (Array _)		= 1;
+::arrayp _			= 0;
 
 // create an empty array
-emptyarray			= Array nil;
+::emptyarray			= Array nil;
 
 // create an array from a list
-array xs			= foldl append emptyarray xs if listp xs;
+::array xs			= foldl append emptyarray xs if listp xs;
 
 // create a two-dimensional array from a two-dimensional list
-array2 xs			= array (map array xs);
+::array2 xs			= array (map array xs);
 
 // create an array of a given size filled with a constant value
-mkarray x n::int		= Array (mkarray x n)
+::mkarray x n::int		= Array (mkarray x n)
 with
   mkarray x n::int		= nil if n <= 0;
 				= tip x if n == 1;
@@ -268,10 +268,10 @@ with
 end;
 
 // create a 2D array of given dimensions filled with a constant value
-mkarray2 x (n::int, m::int)	= mkarray (mkarray x m) n;
+::mkarray2 x (n::int, m::int)	= mkarray (mkarray x m) n;
 
 // get array size
-#(Array a)			= #a
+::#(Array a)			= #a
 with
   #nil				= 0;
   #(tip _)			= 1;
@@ -280,7 +280,7 @@ with
 end;
 
 // get value by index
-(Array a)!i::int		= a!i
+(Array a)::!i::int		= a!i
 with
   (tip x)!0			= x;
   (bin _ a1 a2)!i::int		= a1!(i div 2) if i mod 2 == 0;
@@ -289,20 +289,20 @@ with
 end;
 
 // get value by indices from two-dimensional array
-x@(Array _)!(i::int, j::int)	= x!i!j;
+x@(Array _)::!(i::int, j::int)	= x!i!j;
 
 // 2D slicing support
 // NOTE: the (is::int,_) and (_,js::int) cases are handled in matrices.pure
-//x@(Array _)!!(is::int,js)	= x!!([is],js) if ~tuplep js;
-//x@(Array _)!!(is,js::int)	= x!!(is,[js]);
-x@(Array _)!!(is, js)		= [cat [catch (cst []) [x!i!j] | j=js] | i=is];
+//x@(Array _)::!!(is::int,js)	= x!!([is],js) if ~tuplep js;
+//x@(Array _)::!!(is,js::int)	= x!!(is,[js]);
+x@(Array _)::!!(is, js)		= [cat [catch (cst []) [x!i!j] | j=js] | i=is];
 
 // check for an empty array
-null (Array nil)		= 1;
-null (Array _)			= 0;
+::null (Array nil)		= 1;
+::null (Array _)		= 0;
 
 // get all array members in list form
-members (Array a)		= members a
+::members (Array a)		= members a
 with
   members nil			= [];
   members (tip x)		= [x];
@@ -312,22 +312,22 @@ with
   merge (x:xs) ys		= x:merge ys xs;
 end;
 
-list x@(Array _)		= members x;
+::list x@(Array _)		= members x;
 
 // get all members of an two-dimensional array in list form
-members2 x@(Array _)		= map members (members x);
+::members2 x@(Array _)		= map members (members x);
 
-list2 x@(Array _)		= members2 x;
+::list2 x@(Array _)		= members2 x;
 
 // get the first array member
-first (Array a)		= first a
+::first (Array a)		= first a
 with
   first (tip x)			= x;
   first (bin _ a1 _)		= first a1;
 end;
 
 // get the last array member
-last (Array a)			= last a
+::last (Array a)		= last a
 with
   last (tip x)			= x;
   last (bin 0 _ a2)		= last a2;
@@ -335,7 +335,7 @@ with
 end;
 
 // remove the first member from an array
-rmfirst (Array a)		= Array (rmfirst a)
+::rmfirst (Array a)		= Array (rmfirst a)
 with
   rmfirst (tip _)		= nil;
   rmfirst (bin 0 a1 a2)		= mkbin 1 a2 (rmfirst a1);
@@ -343,7 +343,7 @@ with
 end;
 
 // remove the last member from an array
-rmlast (Array a)		= Array (rmlast a)
+::rmlast (Array a)		= Array (rmlast a)
 with
   rmlast (tip _)		= nil;
   rmlast (bin 0 a1 a2)		= mkbin 1 a1 (rmlast a2);
@@ -351,7 +351,7 @@ with
 end;
 
 // insert a new member at the beginning of an array
-insert (Array a) y		= Array (insert a y)
+::insert (Array a) y		= Array (insert a y)
 with
   insert nil y			= tip y;
   insert (tip x) y		= bin 0 (tip y) (tip x);
@@ -360,7 +360,7 @@ with
 end;
 
 // append a new member at the end of an array
-append (Array a) y		= Array (append a y)
+::append (Array a) y		= Array (append a y)
 with
   append nil y			= tip y;
   append (tip x) y		= bin 0 (tip x) (tip y);
@@ -369,7 +369,7 @@ with
 end;
 
 // update a given array position with a new value
-update (Array a) i::int y	= Array (update a i y)
+::update (Array a) i::int y	= Array (update a i y)
 with
   update (tip _) 0 y		= tip y;
   update (bin b::int a1 a2) i::int y
@@ -380,11 +380,11 @@ with
 end;
 
 // update a given position of a two-dimensional array with a new value
-update2 x@(Array a) (i::int, j::int) y
+::update2 x@(Array a) (i::int, j::int) y
 				= update x i (update (x!i) j y);
 
 // compare two arrays for equality
-Array a == Array b		= eq a b
+Array a ::== Array b		= eq a b
 with
   eq nil nil			= 1;
   eq nil (tip _)		= 0;
@@ -399,7 +399,7 @@ with
 end;
 
 // compare two arrays for inequality
-Array a ~= Array b		= neq a b
+Array a ::~= Array b		= neq a b
 with
   neq nil nil			= 0;
   neq nil (tip _)		= 1;
