@@ -581,7 +581,9 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
     else if (sym.fix == outfix) {
       const symbol& sym2 = interpreter::g_interp->symtab.sym(sym.g);
       return os << '(' << sym.s << ' ' << sym2.s << ')';
-    } else if ((x.flags() & EXPR::QUAL) && sym.s.find("::") == string::npos)
+    } else if ((x.flags() & EXPR::QUAL) &&
+	       !(x.flags() & (EXPR::GLOBAL|EXPR::LOCAL)) &&
+	       sym.s.find("::") == string::npos)
       return os << "::" << sym.s;
     else {
       bool local = (x.flags()&EXPR::LOCAL) != 0;

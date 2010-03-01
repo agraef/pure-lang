@@ -2926,8 +2926,7 @@ void interpreter::add_rule(env &e, rule &r, bool toplevel)
     throw err("error in function definition (missing head symbol)");
   else if (!toplevel && (fx.flags()&EXPR::QUAL))
     throw err("error in local function definition (qualified head symbol)");
-  fx.flags() &= ~EXPR::QUAL;
-  if (!toplevel) fx.flags() |= EXPR::LOCAL;
+  fx.flags() |= toplevel?EXPR::GLOBAL:EXPR::LOCAL;
   env::iterator it = e.find(f);
   const symbol& sym = symtab.sym(f);
   if (it != e.end()) {
@@ -2986,7 +2985,7 @@ void interpreter::add_macro_rule(rule *r)
   int32_t f = fx.tag();
   if (f <= 0)
     throw err("error in macro definition (missing head symbol)");
-  fx.flags() &= ~EXPR::QUAL;
+  fx.flags() |= EXPR::GLOBAL;
   env::iterator it = macenv.find(f), jt = globenv.find(f);
   const symbol& sym = symtab.sym(f);
   if (jt != globenv.end()) {
