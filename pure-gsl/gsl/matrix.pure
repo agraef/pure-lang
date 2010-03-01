@@ -25,204 +25,55 @@
    --------
    
    This module is loaded via the command ``using gsl::matrix`` and provides
-   operators and equations for many of the GSL matrix, BLAS, and linear 
-   algebra routines found in Chapters 8, 12, and 13, respectively of the 
-   GSL Reference Manual. Detailed information about the GSL routines may
-   be found at
-      
-   http://www.gnu.org/software/gsl/manual/html_node/index.html.
-   
-   Matrix Operators
-   ~~~~~~~~~~~~~~~~
-   
-   The following operations are defined for constant ``a`` and matrices
-   ``x`` and ``y``. Some operators are not defined in the GSL library but
-   are provided here for convenience.
-   
-   .. _+: 
-   
-   ``a + x``, ``x + a`` 
-     returns a matrix with entries ``a + x!(i,j)``.
-     
-   ``x + y``
-     adds matrix ``x`` to matrix ``y``.
-     
-   .. _\-:
-   
-   ``- x``
-     returns a matrix with entries ``- x!(i,j)``. Note that ``neg x`` is
-     equivalent to ``- x``.
-     
-   ``a - x``
-     returns a matrix with entries ``a - x!(i,j)``.
-     
-   ``x - a``
-     returns a matrix with entries ``x!(i,j) - a``.
-     
-     
-   ``x - y``
-     subtracts matrix ``y`` from matrix ``x``.
-     
-   .. _*:
-   .. _.*:
+   wrappers for many of the GSL matrix, BLAS, and linear algebra routines
+   found in Chapters 8, 12, and 13, respectively of the GSL Reference
+   Manual:
 
-   ``a * x``, ``x * a``
-     returns a matrix with entries ``a * x!(i,j)``.
-     
-   ``x .* y``
-     multiplies, element-wise, matrix ``x`` to matrix ``y``.
-     
-   ``x * y``
-     multiplies matrix ``x`` to matrix ``y``.
-     
-   .. _/:
-   .. _\\:
-   .. _./:
-   
-   ``a / x``
-     returns a matrix with entries ``a / x!(i,j)``. Note that matrix ``x``
-     must not have any zero entries.
-     
-   ``x / a``
-     returns a matrix with entries ``x!(i,j) / a``. Note that ``a`` must be
-     nonzero.
-     
-   ``x ./ y``
-     divides, element-wise, matrix `x` by matrix `y`.
-     
-   ``x / y``
-     right divides matrix `x` by matrix `y`.
-     
-   ``x \\ y``
-     left divides matrix `x` by matrix `y`.
-     
-   .. _div:
-   
-   ``a div x``
-     returns an integer matrix with entries ``a div x!(i,j)``. Note that
-     `a` must be an integer and matrix ``x`` must be an integer matrix 
-     with nonzero entries.
-     
-   ``x div a``
-     returns an integer matrix with entries ``x!(i,j) div a``. Note that
-     ``a`` must be a nonzero integer and matrix ``x`` must have integer
-     entries.
-     
-   ``x div y``
-     computes the quotient integer matrix ``x`` by integer matrix ``y``.
-     
-   .. _mod:
-   
-   ``a mod x``
-     returns an integer matrix with entries ``a mod x!(i,j)``. Note that
-     ``a`` must be an integer and matrix ``x`` must be an integer matrix 
-     with nonzero entries.
-     
-   ``x mod a``
-     returns an integer matrix with entries ``a mod x!(i,j)``. Note that
-     ``a`` must be an integer and matrix ``x`` must be an integer matrix 
-     with nonzero entries.
-     
-   ``x mod y``
-     returns the remainder integer matrix ``x`` mod integer matrix ``y``.
-   
-   .. _not:
-   
-   ``not x``
-     returns a matrix with integer entries ``not x!(i,j)``. Note that ``x``
-     must be a matrix with integer entries and ``not`` is the bitwise
-     negation operation.
-     
-   .. _^:
-   .. _.^:
-   
-   ``a ^ x``
-     returns a matrix with entries ``a ^ x!(i,j)``. Note that ``0^0`` is
-     defined as 1.
-     
-   ``x ^ a``
-     returns a matrix with entries ``x!(i,j) ^ a``. Note that ``0^0`` is
-     defined as 1.
-     
-   ``x .^ y``
-     returns a matrix with entries ``x!(i,j) ^ y!(i,j)``.
-     
-   ``x ^ y``
-     returns a matrix with entries ``x!(i,j) ^ y!(i,j)``.
-     
-   .. _<<:
-   
-   ``x << a``
-     returns an integer matrix with entries ``x!(i,j) << a``. Note that
-     ``a`` must be an integer and matrix ``x`` must have integer entries. 
-     
-   ``x << y``
-     returns an integer matrix with entries ``x!(i,j) << y!(i,j)``. Note
-     that ``x`` and ``y`` must have integer entries.
-     
-   .. _>>:
-   
-   ``x >> a``
-     returns an integer matrix with entries ``x!(i,j) >> a``. Note that
-     ``a`` must be an integer and matrix ``x`` must have integer entries.
-     
-   ``x >> y``
-     returns an integer matrix with entries ``x!(i,j) >> y!(i,j)``. Note
-     that ``x`` and ``y`` must have integer entries.
+   * `Vectors and Matrices`_
 
-   .. _and:
+   * `BLAS Support`_
+
+   * `Linear Algebra`_
+
+   It also contains some general utility functions for creating various types
+   of matrices.
+
+   .. _Vectors and Matrices: http://www.gnu.org/software/gsl/manual/html_node/Vectors-and-Matrices.html
+   .. _BLAS Support: http://www.gnu.org/software/gsl/manual/html_node/BLAS-Support.html
+.. _Linear Algebra: http://www.gnu.org/software/gsl/manual/html_node/Linear-Algebra.html
    
-   ``x and a``, ``a and x``
-     returns an integer matrix with entries ``a and x!(i,j)``. Note that
-     ``a`` must be an integer, matrix ``x`` must have integer entries,
-     and ``and`` is a bitwise operator.
-     
-   ``x and y``
-     returns an integer matrix with entries ``x!(i,j) and y!(i,j)``. Note
-     that ``x`` and ``y`` must be matrices with integer entries.
-     
-   .. _or:
+   Matrix Creation
+   ~~~~~~~~~~~~~~~
    
-   ``x or a``, ``a or x``
-     returns an integer matrix with entries ``a or x!(i,j)``. Note that
-     ``a`` must be an integer, matrix ``x`` must have integer entries,
-     and ``or`` is a bitwise operator.
-     
-   ``x or y``
-     returns an integer matrix with entries ``x!(i,j) or y!(i,j)``. Note
-     that ``x`` and ``y`` must be matrices with integer entries.
-   
-   Matrix Utilties and Functions
-   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-   
-   The utility functions ``zeros`` and ``ones`` create matrices with
-   all elements zero or one, respectively, and ``eye`` creates identity
-   matrices. These functions can be invoked either with a pair `(n,m)` 
-   denoting the desired number of rows or columns, or an integer `n` in
-   which case a square `n` x `n` matrix is created. The result is always
-   a double matrix.
+   The utility functions ``zeros`` and ``ones`` create matrices with all
+   elements zero or one, respectively, and ``eye`` creates identity
+   matrices. These functions can be invoked either with a pair `(n,m)`
+   denoting the desired number of rows or columns, or an integer `n` in which
+   case a square `n` x `n` matrix is created. The result is always a double
+   matrix. Analogous functions ``izeros``, ``czeros``, etc. are provided to
+   create integer and complex matrices, respectively.
 
    .. _zeros:
-   
+
    ``zeros (n :: int, m :: int)``
      creates an `n` x `m` double matrix with all of its entries being zero.
-   
+
    ``zeros n :: int``
      creates an `n` x `n` double matrix with all of its entries being zero.
 
    .. _izeros:
-     
+
    ``izeros (n :: int, m :: int)``
      creates an `n` x `m` integer matrix with all of its entries being zero.
-     
+
    ``izeros n :: int``
      creates an `n`x`n` integer matrix with all of its entries being zero.
 
    .. _czeros:
-     
+
    ``czeros (n :: int, m :: int)``
      creates an `n` x `m` complex matrix with all of its entries being zero.
-     
+
    ``czeros n :: int``
      creates an `n` x `n` complex matrix with all of its entries being zero.
    
@@ -235,21 +86,21 @@
      creates an `n` x `n` double matrix with all of its entries being one.
 
    .. _iones:
-     
+
    ``iones (n :: int, m :: int)``
      creates an `n` x `m` integer matrix with all of its entries being one.
-     
+
    ``iones n :: int``
      creates an `n` x `n` integer matrix with all of its entries being one.
 
    .. _cones:
-     
+
    ``cones (n :: int, m :: int)``
      creates an `n` x `m` complex matrix with all of its entries being one.
-     
+
    ``cones n :: int``
      creates an `n` x `n` complex matrix with all of its entries being one.
-     
+
    .. _eye:
    
    ``eye (n :: int, m :: int)``
@@ -259,25 +110,192 @@
      creates an `n` x `n` identity matrix with double entries.
 
    .. _ieye:
-     
+
    ``ieye (n :: int, m :: int)``
      creates an `n` x `m` identity matrix with integer entries.
-     
+
    ``ieye n :: int``
      creates an `n` x `n` identity matrix with integer entries.
 
    .. _ceye:
-     
+
    ``ceye (n :: int, m :: int)``
      creates an `n` x `m` identity matrix with complex entries.
-     
+
    ``ceye n :: int``
      creates an `n` x `n` identity matrix with complex entries.
-     
+   
+   Matrix Operators and Functions
+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   
+   The following operations are defined for constant ``a`` and matrices
+   ``x`` and ``y``. Some operators are not defined in the GSL library but
+   are provided here for convenience.
+   
+   .. _+: 
+   
+   ``a + x``, ``x + a`` 
+     returns a matrix with entries ``a + x!(i,j)``.
+
+   ``x + y``
+     adds matrix ``x`` to matrix ``y``.
+
+   .. _\-:
+   
+   ``- x``
+     returns a matrix with entries ``- x!(i,j)``. Note that ``neg x`` is
+     equivalent to ``- x``.
+
+   ``a - x``
+     returns a matrix with entries ``a - x!(i,j)``.
+
+   ``x - a``
+     returns a matrix with entries ``x!(i,j) - a``.
+
+   ``x - y``
+     subtracts matrix ``y`` from matrix ``x``.
+
+   .. _*:
+   .. _.*:
+
+   ``a * x``, ``x * a``
+     returns a matrix with entries ``a * x!(i,j)``.
+
+   ``x .* y``
+     multiplies, element-wise, matrix ``x`` to matrix ``y``.
+
+   ``x * y``
+     multiplies matrix ``x`` to matrix ``y``.
+
+   .. _/:
+   .. _\\:
+   .. _./:
+   
+   ``a / x``
+     returns a matrix with entries ``a / x!(i,j)``. Note that matrix ``x``
+     must not have any zero entries.
+
+   ``x / a``
+     returns a matrix with entries ``x!(i,j) / a``. Note that ``a`` must be
+     nonzero.
+
+   ``x ./ y``
+     divides, element-wise, matrix `x` by matrix `y`.
+
+   ``x / y``
+     right divides matrix `x` by matrix `y`.
+
+   ``x \\ y``
+     left divides matrix `x` by matrix `y`.
+
+   .. _div:
+   
+   ``a div x``
+     returns an integer matrix with entries ``a div x!(i,j)``. Note that
+     `a` must be an integer and matrix ``x`` must be an integer matrix 
+     with nonzero entries.
+
+   ``x div a``
+     returns an integer matrix with entries ``x!(i,j) div a``. Note that
+     ``a`` must be a nonzero integer and matrix ``x`` must have integer
+     entries.
+
+   ``x div y``
+     computes the quotient integer matrix ``x`` by integer matrix ``y``.
+
+   .. _mod:
+   
+   ``a mod x``
+     returns an integer matrix with entries ``a mod x!(i,j)``. Note that
+     ``a`` must be an integer and matrix ``x`` must be an integer matrix 
+     with nonzero entries.
+
+   ``x mod a``
+     returns an integer matrix with entries ``a mod x!(i,j)``. Note that
+     ``a`` must be an integer and matrix ``x`` must be an integer matrix 
+     with nonzero entries.
+
+   ``x mod y``
+     returns the remainder integer matrix ``x`` mod integer matrix ``y``.
+   
+   .. _not:
+   
+   ``not x``
+     returns a matrix with integer entries ``not x!(i,j)``. Note that ``x``
+     must be a matrix with integer entries and ``not`` is the bitwise
+     negation operation.
+
+   .. _^:
+   .. _.^:
+   
+   ``a ^ x``
+     returns a matrix with entries ``a ^ x!(i,j)``. Note that ``0^0`` is
+     defined as 1.
+
+   ``x ^ a``
+     returns a matrix with entries ``x!(i,j) ^ a``. Note that ``0^0`` is
+     defined as 1.
+
+   ``x .^ y``
+     returns a matrix with entries ``x!(i,j) ^ y!(i,j)``.
+
+   ``x ^ y``
+     returns a matrix with entries ``x!(i,j) ^ y!(i,j)``.
+
+   .. _<<:
+   
+   ``x << a``
+     returns an integer matrix with entries ``x!(i,j) << a``. Note that
+     ``a`` must be an integer and matrix ``x`` must have integer entries. 
+
+   ``x << y``
+     returns an integer matrix with entries ``x!(i,j) << y!(i,j)``. Note
+     that ``x`` and ``y`` must have integer entries.
+
+   .. _>>:
+   
+   ``x >> a``
+     returns an integer matrix with entries ``x!(i,j) >> a``. Note that
+     ``a`` must be an integer and matrix ``x`` must have integer entries.
+
+   ``x >> y``
+     returns an integer matrix with entries ``x!(i,j) >> y!(i,j)``. Note
+     that ``x`` and ``y`` must have integer entries.
+
+   .. _and:
+   
+   ``x and a``, ``a and x``
+     returns an integer matrix with entries ``a and x!(i,j)``. Note that
+     ``a`` must be an integer, matrix ``x`` must have integer entries,
+     and ``and`` is a bitwise operator.
+
+   ``x and y``
+     returns an integer matrix with entries ``x!(i,j) and y!(i,j)``. Note
+     that ``x`` and ``y`` must be matrices with integer entries.
+
+   .. _or:
+   
+   ``x or a``, ``a or x``
+     returns an integer matrix with entries ``a or x!(i,j)``. Note that
+     ``a`` must be an integer, matrix ``x`` must have integer entries,
+     and ``or`` is a bitwise operator.
+
+   ``x or y``
+     returns an integer matrix with entries ``x!(i,j) or y!(i,j)``. Note
+     that ``x`` and ``y`` must be matrices with integer entries.
+
+   The ``pow`` function computes powers of matrices by repeated matrix
+   multiplication.
+
+   .. _pow:
+
    ``pow x :: matrix  k :: int``, ``pow x :: matrix  k :: bigint``
      Raises matrix ``x`` to the ``k`` th power. Note ``x`` must be a
      square matrix and ``k`` a nonnegative integer.
-     
+   
+   Singular Value Decomposition
+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
    For a given `n` x `m` matrix ``x``, these functions yield a
    singular-value decomposition ``u``, ``s``, ``v`` of the matrix such
    that ``x == u*s*transpose v``, where ``u`` and ``v`` are orthogonal
@@ -293,33 +311,32 @@
    
    ``svd x``
      singular-value decomposition of matrix ``x``.
-     
+
    .. _svd_mod:
    
    ``svd_mod``
      This uses the modified Golub-Reinsch algorithm, which is faster if
      ``n > m`` but needs `O(m^2)` extra memory as internal workspace.
-     
+
    .. _svd_jacobi:
    
    ``svd_jacobi x``
      This uses one-sided Jacobi orthogonalization which provides better
      relative accuracy but is slower.
-     
+
    .. _svd_solve:
    
    ``svd_solve (u, s, v)  b``
-     Solve the system ``Ax=b``, using the SVD of ``A``. Our wrapper 
-     ``svd_solve`` takes the result ``(u,s,v)`` of a ``svd`` call, and
-     a column vector ``b`` of the appropriate dimension. The result is
-     another column vector solving the system (possibly in the 
-     least-squares sense).
-     
+     Solve the system ``Ax=b``, using the SVD of ``A``. ``svd_solve`` takes
+     the result ``(u,s,v)`` of a ``svd`` call, and a column vector ``b`` of
+     the appropriate dimension. The result is another column vector solving
+     the system (possibly in the least-squares sense).
+
    .. _pinv:
    
    ``pinv x``
-     returns the pseudo inverse of a matrix.
-*/
+     Computes the pseudo inverse of a matrix from its singular value
+     decomposition.  */
 
 using common, utils;
 

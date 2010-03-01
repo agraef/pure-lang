@@ -391,28 +391,29 @@ be used to facilitate access to the operations in a given namespace, e.g.:</p>
 </ul>
 </li>
 <li><a class="reference internal" href="#matrices" id="id48">Matrices</a><ul>
-<li><a class="reference internal" href="#matrix-operators" id="id49">Matrix Operators</a></li>
-<li><a class="reference internal" href="#matrix-utilties-and-functions" id="id50">Matrix Utilties and Functions</a></li>
+<li><a class="reference internal" href="#matrix-creation" id="id49">Matrix Creation</a></li>
+<li><a class="reference internal" href="#matrix-operators-and-functions" id="id50">Matrix Operators and Functions</a></li>
+<li><a class="reference internal" href="#singular-value-decomposition" id="id51">Singular Value Decomposition</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#least-squares-fitting" id="id51">Least-Squares Fitting</a><ul>
-<li><a class="reference internal" href="#id20" id="id52">Routines</a></li>
-<li><a class="reference internal" href="#id21" id="id53">Examples</a></li>
+<li><a class="reference internal" href="#least-squares-fitting" id="id52">Least-Squares Fitting</a><ul>
+<li><a class="reference internal" href="#id20" id="id53">Routines</a></li>
+<li><a class="reference internal" href="#id21" id="id54">Examples</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#statistics" id="id54">Statistics</a><ul>
-<li><a class="reference internal" href="#id22" id="id55">Routines</a></li>
-<li><a class="reference internal" href="#id23" id="id56">Examples</a></li>
+<li><a class="reference internal" href="#statistics" id="id55">Statistics</a><ul>
+<li><a class="reference internal" href="#id22" id="id56">Routines</a></li>
+<li><a class="reference internal" href="#id23" id="id57">Examples</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#random-number-distributions" id="id57">Random Number Distributions</a><ul>
-<li><a class="reference internal" href="#id24" id="id58">Routines</a></li>
-<li><a class="reference internal" href="#id25" id="id59">Examples</a></li>
+<li><a class="reference internal" href="#random-number-distributions" id="id58">Random Number Distributions</a><ul>
+<li><a class="reference internal" href="#id24" id="id59">Routines</a></li>
+<li><a class="reference internal" href="#id25" id="id60">Examples</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#sorting" id="id60">Sorting</a><ul>
-<li><a class="reference internal" href="#id26" id="id61">Routines</a></li>
-<li><a class="reference internal" href="#id27" id="id62">Examples</a></li>
+<li><a class="reference internal" href="#sorting" id="id61">Sorting</a><ul>
+<li><a class="reference internal" href="#id26" id="id62">Routines</a></li>
+<li><a class="reference internal" href="#id27" id="id63">Examples</a></li>
 </ul>
 </li>
 </ul>
@@ -1660,13 +1661,82 @@ the list <tt class="docutils literal"><span class="pre">[re+:im,</span> <span cl
 <div class="section" id="matrices">
 <h1><a class="toc-backref" href="#id48">Matrices</a></h1>
 <p>This module is loaded via the command <tt class="docutils literal"><span class="pre">using</span> <span class="pre">gsl::matrix</span></tt> and provides
-operators and equations for many of the GSL matrix, BLAS, and linear
-algebra routines found in Chapters 8, 12, and 13, respectively of the
-GSL Reference Manual. Detailed information about the GSL routines may
-be found at</p>
-<p><a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/index.html">http://www.gnu.org/software/gsl/manual/html_node/index.html</a>.</p>
-<div class="section" id="matrix-operators">
-<h2><a class="toc-backref" href="#id49">Matrix Operators</a></h2>
+wrappers for many of the GSL matrix, BLAS, and linear algebra routines
+found in Chapters 8, 12, and 13, respectively of the GSL Reference
+Manual:</p>
+<ul class="simple">
+<li><a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/Vectors-and-Matrices.html">Vectors and Matrices</a></li>
+<li><a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/BLAS-Support.html">BLAS Support</a></li>
+<li><a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/Linear-Algebra.html">Linear Algebra</a></li>
+</ul>
+<p>It also contains some general utility functions for creating various types
+of matrices.</p>
+<div class="section" id="matrix-creation">
+<h2><a class="toc-backref" href="#id49">Matrix Creation</a></h2>
+<p>The utility functions <tt class="docutils literal"><span class="pre">zeros</span></tt> and <tt class="docutils literal"><span class="pre">ones</span></tt> create matrices with all
+elements zero or one, respectively, and <tt class="docutils literal"><span class="pre">eye</span></tt> creates identity
+matrices. These functions can be invoked either with a pair <cite>(n,m)</cite>
+denoting the desired number of rows or columns, or an integer <cite>n</cite> in which
+case a square <cite>n</cite> x <cite>n</cite> matrix is created. The result is always a double
+matrix. Analogous functions <tt class="docutils literal"><span class="pre">izeros</span></tt>, <tt class="docutils literal"><span class="pre">czeros</span></tt>, etc. are provided to
+create integer and complex matrices, respectively.</p>
+<a name="zeros"><dl class="docutils" id="zeros">
+<dt><tt class="docutils literal"><span class="pre">zeros</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>m</cite> double matrix with all of its entries being zero.</dd>
+<dt><tt class="docutils literal"><span class="pre">zeros</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>n</cite> double matrix with all of its entries being zero.</dd>
+</dl>
+<a name="izeros"><dl class="docutils" id="izeros">
+<dt><tt class="docutils literal"><span class="pre">izeros</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>m</cite> integer matrix with all of its entries being zero.</dd>
+<dt><tt class="docutils literal"><span class="pre">izeros</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></dt>
+<dd>creates an <cite>n`x`n</cite> integer matrix with all of its entries being zero.</dd>
+</dl>
+<a name="czeros"><dl class="docutils" id="czeros">
+<dt><tt class="docutils literal"><span class="pre">czeros</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>m</cite> complex matrix with all of its entries being zero.</dd>
+<dt><tt class="docutils literal"><span class="pre">czeros</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>n</cite> complex matrix with all of its entries being zero.</dd>
+</dl>
+<a name="ones"><dl class="docutils" id="ones">
+<dt><tt class="docutils literal"><span class="pre">ones</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>m</cite> double matrix with all of its entries being one.</dd>
+<dt><tt class="docutils literal"><span class="pre">ones</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>n</cite> double matrix with all of its entries being one.</dd>
+</dl>
+<a name="iones"><dl class="docutils" id="iones">
+<dt><tt class="docutils literal"><span class="pre">iones</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>m</cite> integer matrix with all of its entries being one.</dd>
+<dt><tt class="docutils literal"><span class="pre">iones</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>n</cite> integer matrix with all of its entries being one.</dd>
+</dl>
+<a name="cones"><dl class="docutils" id="cones">
+<dt><tt class="docutils literal"><span class="pre">cones</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>m</cite> complex matrix with all of its entries being one.</dd>
+<dt><tt class="docutils literal"><span class="pre">cones</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>n</cite> complex matrix with all of its entries being one.</dd>
+</dl>
+<a name="eye"><dl class="docutils" id="eye">
+<dt><tt class="docutils literal"><span class="pre">eye</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>m</cite> identity matrix with double entries.</dd>
+<dt><tt class="docutils literal"><span class="pre">eye</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>n</cite> identity matrix with double entries.</dd>
+</dl>
+<a name="ieye"><dl class="docutils" id="ieye">
+<dt><tt class="docutils literal"><span class="pre">ieye</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>m</cite> identity matrix with integer entries.</dd>
+<dt><tt class="docutils literal"><span class="pre">ieye</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>n</cite> identity matrix with integer entries.</dd>
+</dl>
+<a name="ceye"><dl class="docutils" id="ceye">
+<dt><tt class="docutils literal"><span class="pre">ceye</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>m</cite> identity matrix with complex entries.</dd>
+<dt><tt class="docutils literal"><span class="pre">ceye</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></dt>
+<dd>creates an <cite>n</cite> x <cite>n</cite> identity matrix with complex entries.</dd>
+</dl>
+</div>
+<div class="section" id="matrix-operators-and-functions">
+<h2><a class="toc-backref" href="#id50">Matrix Operators and Functions</a></h2>
 <p>The following operations are defined for constant <tt class="docutils literal"><span class="pre">a</span></tt> and matrices
 <tt class="docutils literal"><span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">y</span></tt>. Some operators are not defined in the GSL library but
 are provided here for convenience.</p>
@@ -1785,72 +1855,16 @@ and <tt class="docutils literal"><span class="pre">or</span></tt> is a bitwise o
 <dd>returns an integer matrix with entries <tt class="docutils literal"><span class="pre">x!(i,j)</span> <span class="pre">or</span> <span class="pre">y!(i,j)</span></tt>. Note
 that <tt class="docutils literal"><span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">y</span></tt> must be matrices with integer entries.</dd>
 </dl>
-</div>
-<div class="section" id="matrix-utilties-and-functions">
-<h2><a class="toc-backref" href="#id50">Matrix Utilties and Functions</a></h2>
-<p>The utility functions <tt class="docutils literal"><span class="pre">zeros</span></tt> and <tt class="docutils literal"><span class="pre">ones</span></tt> create matrices with
-all elements zero or one, respectively, and <tt class="docutils literal"><span class="pre">eye</span></tt> creates identity
-matrices. These functions can be invoked either with a pair <cite>(n,m)</cite>
-denoting the desired number of rows or columns, or an integer <cite>n</cite> in
-which case a square <cite>n</cite> x <cite>n</cite> matrix is created. The result is always
-a double matrix.</p>
-<a name="zeros"><dl class="docutils" id="zeros">
-<dt><tt class="docutils literal"><span class="pre">zeros</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></dt>
-<dd>creates an <cite>n</cite> x <cite>m</cite> double matrix with all of its entries being zero.</dd>
-<dt><tt class="docutils literal"><span class="pre">zeros</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></dt>
-<dd>creates an <cite>n</cite> x <cite>n</cite> double matrix with all of its entries being zero.</dd>
-</dl>
-<a name="izeros"><dl class="docutils" id="izeros">
-<dt><tt class="docutils literal"><span class="pre">izeros</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></dt>
-<dd>creates an <cite>n</cite> x <cite>m</cite> integer matrix with all of its entries being zero.</dd>
-<dt><tt class="docutils literal"><span class="pre">izeros</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></dt>
-<dd>creates an <cite>n`x`n</cite> integer matrix with all of its entries being zero.</dd>
-</dl>
-<a name="czeros"><dl class="docutils" id="czeros">
-<dt><tt class="docutils literal"><span class="pre">czeros</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></dt>
-<dd>creates an <cite>n</cite> x <cite>m</cite> complex matrix with all of its entries being zero.</dd>
-<dt><tt class="docutils literal"><span class="pre">czeros</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></dt>
-<dd>creates an <cite>n</cite> x <cite>n</cite> complex matrix with all of its entries being zero.</dd>
-</dl>
-<a name="ones"><dl class="docutils" id="ones">
-<dt><tt class="docutils literal"><span class="pre">ones</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></dt>
-<dd>creates an <cite>n</cite> x <cite>m</cite> double matrix with all of its entries being one.</dd>
-<dt><tt class="docutils literal"><span class="pre">ones</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></dt>
-<dd>creates an <cite>n</cite> x <cite>n</cite> double matrix with all of its entries being one.</dd>
-</dl>
-<a name="iones"><dl class="docutils" id="iones">
-<dt><tt class="docutils literal"><span class="pre">iones</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></dt>
-<dd>creates an <cite>n</cite> x <cite>m</cite> integer matrix with all of its entries being one.</dd>
-<dt><tt class="docutils literal"><span class="pre">iones</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></dt>
-<dd>creates an <cite>n</cite> x <cite>n</cite> integer matrix with all of its entries being one.</dd>
-</dl>
-<a name="cones"><dl class="docutils" id="cones">
-<dt><tt class="docutils literal"><span class="pre">cones</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></dt>
-<dd>creates an <cite>n</cite> x <cite>m</cite> complex matrix with all of its entries being one.</dd>
-<dt><tt class="docutils literal"><span class="pre">cones</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></dt>
-<dd>creates an <cite>n</cite> x <cite>n</cite> complex matrix with all of its entries being one.</dd>
-</dl>
-<a name="eye"><dl class="docutils" id="eye">
-<dt><tt class="docutils literal"><span class="pre">eye</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></dt>
-<dd>creates an <cite>n</cite> x <cite>m</cite> identity matrix with double entries.</dd>
-<dt><tt class="docutils literal"><span class="pre">eye</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></dt>
-<dd>creates an <cite>n</cite> x <cite>n</cite> identity matrix with double entries.</dd>
-</dl>
-<a name="ieye"><dl class="docutils" id="ieye">
-<dt><tt class="docutils literal"><span class="pre">ieye</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></dt>
-<dd>creates an <cite>n</cite> x <cite>m</cite> identity matrix with integer entries.</dd>
-<dt><tt class="docutils literal"><span class="pre">ieye</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></dt>
-<dd>creates an <cite>n</cite> x <cite>n</cite> identity matrix with integer entries.</dd>
-</dl>
-<a name="ceye"><dl class="docutils" id="ceye">
-<dt><tt class="docutils literal"><span class="pre">ceye</span> <span class="pre">(n</span> <span class="pre">::</span> <span class="pre">int,</span> <span class="pre">m</span> <span class="pre">::</span> <span class="pre">int)</span></tt></dt>
-<dd>creates an <cite>n</cite> x <cite>m</cite> identity matrix with complex entries.</dd>
-<dt><tt class="docutils literal"><span class="pre">ceye</span> <span class="pre">n</span> <span class="pre">::</span> <span class="pre">int</span></tt></dt>
-<dd>creates an <cite>n</cite> x <cite>n</cite> identity matrix with complex entries.</dd>
+<p>The <tt class="docutils literal"><span class="pre">pow</span></tt> function computes powers of matrices by repeated matrix
+multiplication.</p>
+<a name="pow"><dl class="docutils" id="pow">
 <dt><tt class="docutils literal"><span class="pre">pow</span> <span class="pre">x</span> <span class="pre">::</span> <span class="pre">matrix</span>&nbsp; <span class="pre">k</span> <span class="pre">::</span> <span class="pre">int</span></tt>, <tt class="docutils literal"><span class="pre">pow</span> <span class="pre">x</span> <span class="pre">::</span> <span class="pre">matrix</span>&nbsp; <span class="pre">k</span> <span class="pre">::</span> <span class="pre">bigint</span></tt></dt>
 <dd>Raises matrix <tt class="docutils literal"><span class="pre">x</span></tt> to the <tt class="docutils literal"><span class="pre">k</span></tt> th power. Note <tt class="docutils literal"><span class="pre">x</span></tt> must be a
 square matrix and <tt class="docutils literal"><span class="pre">k</span></tt> a nonnegative integer.</dd>
 </dl>
+</div>
+<div class="section" id="singular-value-decomposition">
+<h2><a class="toc-backref" href="#id51">Singular Value Decomposition</a></h2>
 <p>For a given <cite>n</cite> x <cite>m</cite> matrix <tt class="docutils literal"><span class="pre">x</span></tt>, these functions yield a
 singular-value decomposition <tt class="docutils literal"><span class="pre">u</span></tt>, <tt class="docutils literal"><span class="pre">s</span></tt>, <tt class="docutils literal"><span class="pre">v</span></tt> of the matrix such
 that <tt class="docutils literal"><span class="pre">x</span> <span class="pre">==</span> <span class="pre">u*s*transpose</span> <span class="pre">v</span></tt>, where <tt class="docutils literal"><span class="pre">u</span></tt> and <tt class="docutils literal"><span class="pre">v</span></tt> are orthogonal
@@ -1877,27 +1891,27 @@ relative accuracy but is slower.</dd>
 </dl>
 <a name="svd_solve"><dl class="docutils" id="svd-solve">
 <dt><tt class="docutils literal"><span class="pre">svd_solve</span> <span class="pre">(u,</span> <span class="pre">s,</span> <span class="pre">v)</span>&nbsp; <span class="pre">b</span></tt></dt>
-<dd>Solve the system <tt class="docutils literal"><span class="pre">Ax=b</span></tt>, using the SVD of <tt class="docutils literal"><span class="pre">A</span></tt>. Our wrapper
-<tt class="docutils literal"><span class="pre">svd_solve</span></tt> takes the result <tt class="docutils literal"><span class="pre">(u,s,v)</span></tt> of a <tt class="docutils literal"><span class="pre">svd</span></tt> call, and
-a column vector <tt class="docutils literal"><span class="pre">b</span></tt> of the appropriate dimension. The result is
-another column vector solving the system (possibly in the
-least-squares sense).</dd>
+<dd>Solve the system <tt class="docutils literal"><span class="pre">Ax=b</span></tt>, using the SVD of <tt class="docutils literal"><span class="pre">A</span></tt>. <tt class="docutils literal"><span class="pre">svd_solve</span></tt> takes
+the result <tt class="docutils literal"><span class="pre">(u,s,v)</span></tt> of a <tt class="docutils literal"><span class="pre">svd</span></tt> call, and a column vector <tt class="docutils literal"><span class="pre">b</span></tt> of
+the appropriate dimension. The result is another column vector solving
+the system (possibly in the least-squares sense).</dd>
 </dl>
 <a name="pinv"><dl class="docutils" id="pinv">
 <dt><tt class="docutils literal"><span class="pre">pinv</span> <span class="pre">x</span></tt></dt>
-<dd>returns the pseudo inverse of a matrix.</dd>
+<dd>Computes the pseudo inverse of a matrix from its singular value
+decomposition.</dd>
 </dl>
 <!--  -->
 </div>
 </div>
 <div class="section" id="least-squares-fitting">
-<h1><a class="toc-backref" href="#id51">Least-Squares Fitting</a></h1>
+<h1><a class="toc-backref" href="#id52">Least-Squares Fitting</a></h1>
 <p>This module is loaded via the command <tt class="docutils literal"><span class="pre">using</span> <span class="pre">gsl::fit</span></tt> and provides Pure
 wrappers for the GSL least-squares fitting routines found in Chapter 36 of
 the GSL manual,</p>
 <p><a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/Least_002dSquares-Fitting.html">http://www.gnu.org/software/gsl/manual/html_node/Least_002dSquares-Fitting.html</a>.</p>
 <div class="section" id="id20">
-<h2><a class="toc-backref" href="#id52">Routines</a></h2>
+<h2><a class="toc-backref" href="#id53">Routines</a></h2>
 <a name="linear"><dl class="docutils" id="linear">
 <dt><tt class="docutils literal"><span class="pre">linear</span>&nbsp; <span class="pre">x::matrix</span>&nbsp; <span class="pre">y::matrix</span></tt></dt>
 <dd>implements <tt class="docutils literal"><span class="pre">gsl_fit_linear</span></tt> without the <tt class="docutils literal"><span class="pre">xstride</span></tt>, <tt class="docutils literal"><span class="pre">ystride</span></tt>,
@@ -1935,7 +1949,7 @@ and <tt class="docutils literal"><span class="pre">n</span></tt> parameters. Res
 <!--  -->
 </div>
 <div class="section" id="id21">
-<h2><a class="toc-backref" href="#id53">Examples</a></h2>
+<h2><a class="toc-backref" href="#id54">Examples</a></h2>
 <p>Usage of each implemented library routine is illustrated below.</p>
 <pre class="literal-block">
 &gt; using gsl::fit;
@@ -2012,13 +2026,13 @@ The approximation of y-values and standard error about <cite>x</cite> = 1, 2, an
 </div>
 </div>
 <div class="section" id="statistics">
-<h1><a class="toc-backref" href="#id54">Statistics</a></h1>
+<h1><a class="toc-backref" href="#id55">Statistics</a></h1>
 <p>This module is loaded via the command <tt class="docutils literal"><span class="pre">using</span> <span class="pre">gsl::stats</span></tt> and provides
 Pure wrappers for the GSL Statistics routines found in Chapter 20 of the
 GSL manual,</p>
 <p><a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/Statistics.html">http://www.gnu.org/software/gsl/manual/html_node/Statistics.html</a>.</p>
 <div class="section" id="id22">
-<h2><a class="toc-backref" href="#id55">Routines</a></h2>
+<h2><a class="toc-backref" href="#id56">Routines</a></h2>
 <a name="mean"><dl class="docutils" id="mean">
 <dt><tt class="docutils literal"><span class="pre">mean</span>&nbsp; <span class="pre">data::matrix</span></tt></dt>
 <dd>implements <tt class="docutils literal"><span class="pre">gsl_stats_mean</span></tt> without <tt class="docutils literal"><span class="pre">stride</span></tt> and <tt class="docutils literal"><span class="pre">n</span></tt> arguments.</dd>
@@ -2234,7 +2248,7 @@ and <tt class="docutils literal"><span class="pre">n</span></tt> arguments. Resu
 <!--  -->
 </div>
 <div class="section" id="id23">
-<h2><a class="toc-backref" href="#id56">Examples</a></h2>
+<h2><a class="toc-backref" href="#id57">Examples</a></h2>
 <p>The following illustrates the use of each function in the <tt class="docutils literal"><span class="pre">stats</span></tt> module.</p>
 <pre class="literal-block">
 &gt; using gsl::stats;
@@ -2330,7 +2344,7 @@ and <tt class="docutils literal"><span class="pre">n</span></tt> arguments. Resu
 </div>
 </div>
 <div class="section" id="random-number-distributions">
-<h1><a class="toc-backref" href="#id57">Random Number Distributions</a></h1>
+<h1><a class="toc-backref" href="#id58">Random Number Distributions</a></h1>
 <p>This module is loaded via the command <tt class="docutils literal"><span class="pre">using</span> <span class="pre">gsl::randist</span></tt> and provides
 Pure wrappers for the GSL random distribution routines found in Chapter
 19 of the GSL manual,</p>
@@ -2340,7 +2354,7 @@ probability densitity functions and <tt class="docutils literal"><span class="pr
 distribution functions. The two namespaces minimize typing of the
 prefixes <tt class="docutils literal"><span class="pre">gsl_ran_</span></tt> and <tt class="docutils literal"><span class="pre">gsl_cdf_</span></tt> respectively.</p>
 <div class="section" id="id24">
-<h2><a class="toc-backref" href="#id58">Routines</a></h2>
+<h2><a class="toc-backref" href="#id59">Routines</a></h2>
 <a name="ugaussian_pdf"><dl class="docutils" id="ugaussian-pdf">
 <dt><tt class="docutils literal"><span class="pre">ugaussian_pdf</span>&nbsp; <span class="pre">x</span></tt></dt>
 <dd>implements <tt class="docutils literal"><span class="pre">gsl_ran_ugaussian</span></tt>.</dd>
@@ -2844,7 +2858,7 @@ prefixes <tt class="docutils literal"><span class="pre">gsl_ran_</span></tt> and
 <!--  -->
 </div>
 <div class="section" id="id25">
-<h2><a class="toc-backref" href="#id59">Examples</a></h2>
+<h2><a class="toc-backref" href="#id60">Examples</a></h2>
 <p>The following illustrates the use of each function in the <tt class="docutils literal"><span class="pre">randist</span></tt> module.
 The pdf functions are illustrated first.</p>
 <pre class="literal-block">
@@ -3113,13 +3127,13 @@ The pdf functions are illustrated first.</p>
 </div>
 </div>
 <div class="section" id="sorting">
-<h1><a class="toc-backref" href="#id60">Sorting</a></h1>
+<h1><a class="toc-backref" href="#id61">Sorting</a></h1>
 <p>This module is loaded via the command <tt class="docutils literal"><span class="pre">using</span> <span class="pre">gsl::sort</span></tt> and
 provides Pure wrappers for the GSL sorting
 routines found in Chapter 11 of the GSL manual,</p>
 <p><a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/Sorting.html">http://www.gnu.org/software/gsl/manual/html_node/Sorting.html</a>.</p>
 <div class="section" id="id26">
-<h2><a class="toc-backref" href="#id61">Routines</a></h2>
+<h2><a class="toc-backref" href="#id62">Routines</a></h2>
 <!-- sort_vector: -->
 <dl class="docutils">
 <dt><tt class="docutils literal"><span class="pre">sort_vector</span>&nbsp; <span class="pre">m::matrix</span></tt></dt>
@@ -3134,7 +3148,7 @@ routines found in Chapter 11 of the GSL manual,</p>
 <!--  -->
 </div>
 <div class="section" id="id27">
-<h2><a class="toc-backref" href="#id62">Examples</a></h2>
+<h2><a class="toc-backref" href="#id63">Examples</a></h2>
 <p>Usage of each library routine is illustrated below.</p>
 <pre class="literal-block">
 &gt; using gsl::sort;
