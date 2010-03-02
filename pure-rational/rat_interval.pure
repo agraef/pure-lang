@@ -47,6 +47,7 @@ namespace interval;
 /*
  * Construction
  */
+public interval;
 interval (lo, up) = Ivl lo up if realp lo && realp up && lo <= up;
 interval m = Ivl m m if realp m;
 interval v = v if intervalp v;
@@ -117,26 +118,26 @@ public infixl (::%) %;
 */
 
 /* unary - */
--(Ivl lo up) = Ivl (-up) (-lo);
+::-(Ivl lo up) = Ivl (-up) (-lo);
 
-(Ivl lo1 up1) + (Ivl lo2 up2) = Ivl (lo1 + lo2) (up1 + up2);
+(Ivl lo1 up1) ::+ (Ivl lo2 up2) = Ivl (lo1 + lo2) (up1 + up2);
 /* mixed */
-v + o = v + (interval o) if intervalp v;
-o + v = (interval o) + v if intervalp v;
+v ::+ o = v + (interval o) if intervalp v;
+o ::+ v = (interval o) + v if intervalp v;
 
-v1 - v2 = v1 + (-v2) if intervalp v1;
-v1 - v2 = v1 + (-v2) if intervalp v2;
+v1 ::- v2 = v1 + (-v2) if intervalp v1;
+v1 ::- v2 = v1 + (-v2) if intervalp v2;
 
-(Ivl lo up) * v = merge ((Ivl lo 0) * v) ((Ivl 0 up) * v) if intervalp v && lo < 0 && up > 0;
-v * (Ivl lo up) = merge (v * (Ivl lo 0)) (v * (Ivl 0 up)) if intervalp v && lo < 0 && up > 0;
-(Ivl lo up) * v = -((Ivl (-up) (-lo)) * v) if intervalp v && lo < 0;
-v * (Ivl lo up) = -(v * (Ivl (-up) (-lo))) if intervalp v && lo < 0;
+(Ivl lo up) ::* v = merge ((Ivl lo 0) * v) ((Ivl 0 up) * v) if intervalp v && lo < 0 && up > 0;
+v ::* (Ivl lo up) = merge (v * (Ivl lo 0)) (v * (Ivl 0 up)) if intervalp v && lo < 0 && up > 0;
+(Ivl lo up) ::* v = -((Ivl (-up) (-lo)) * v) if intervalp v && lo < 0;
+v ::* (Ivl lo up) = -(v * (Ivl (-up) (-lo))) if intervalp v && lo < 0;
 /* so 0 <= L1 <= U1 and 0 <= L2 <= U2 */
-(Ivl lo1 up1) * (Ivl lo2 up2) = Ivl (lo1 * lo2) (up1 * up2);
+(Ivl lo1 up1) ::* (Ivl lo2 up2) = Ivl (lo1 * lo2) (up1 * up2);
 
 /* mixed */
-v * o = v * (interval o) if intervalp v && realp o;
-o * v = (interval o) * v if intervalp v && realp o;
+v ::* o = v * (interval o) if intervalp v && realp o;
+o ::* v = (interval o) * v if intervalp v && realp o;
 
 /* interval::reciprocal mimics ratutils::reciprocal */
 private reciprocal;
@@ -148,19 +149,19 @@ reciprocal v = interval (1 % up, 1 % lo)
 	if intervalp v && ((0 < lo) || (up < 0))
 	when (lo, up) = lo_up v end;
 
-v1 / v2 = float_Ivl (v1 * (reciprocal v2))
+v1 ::/ v2 = float_Ivl (v1 * (reciprocal v2))
   with
     float_Ivl v = interval (double lo, double up)
 	when (lo, up) = lo_up v end
 	if intervalp v
   end
   if intervalp v1 && intervalp v2;
-v / o = v * (reciprocal (double o)) if intervalp v && realp o;
-o / v = (double o) * (reciprocal v) if intervalp v && realp o;
+v ::/ o = v * (reciprocal (double o)) if intervalp v && realp o;
+o ::/ v = (double o) * (reciprocal v) if intervalp v && realp o;
 
-v1 % v2 = v1 * (reciprocal v2) if intervalp v1 && intervalp v2;
-v % o = v * (reciprocal o) if intervalp v && realp o;
-o % v = o * (reciprocal v) if intervalp v && realp o;
+v1 ::% v2 = v1 * (reciprocal v2) if intervalp v1 && intervalp v2;
+v ::% o = v * (reciprocal o) if intervalp v && realp o;
+o ::% v = o * (reciprocal v) if intervalp v && realp o;
 
 //TODO? pow, (^)
 
@@ -172,8 +173,8 @@ public infix (::==) ==;
 public infix (::~=) ~=;
 */
 
-((Ivl lo1 up1) == (Ivl lo2 up2)) = (lo1 == lo2) && (up1 == up2);
-(v1 ~= v2) = ~(v1 == v2) if intervalp v1 && intervalp v2;
+((Ivl lo1 up1) ::== (Ivl lo2 up2)) = (lo1 == lo2) && (up1 == up2);
+(v1 ::~= v2) = ~(v1 == v2) if intervalp v1 && intervalp v2;
 
 /* ordering */
 public infix (::<) before;
@@ -234,15 +235,15 @@ r strictly_within v = (interval r) strictly_within v if intervalp v && realp r;
 public abs sgn;
 */
 
-abs (Ivl lo up) = merge (abs (Ivl lo 0)) (abs (Ivl 0 up)) if (lo < 0) && (up > 0);
-abs (Ivl lo up) = Ivl (-up) (-lo) if (lo < 0);
-abs v = v if intervalp v;
+::abs (Ivl lo up) = merge (abs (Ivl lo 0)) (abs (Ivl 0 up)) if (lo < 0) && (up > 0);
+::abs (Ivl lo up) = Ivl (-up) (-lo) if (lo < 0);
+::abs v = v if intervalp v;
 
-sgn (Ivl lo up) = merge (sgn (Ivl lo 0)) (sgn (Ivl 0 up)) if (lo < 0) && (up > 0);
-sgn (Ivl lo up) = -(sgn (Ivl (-up) (-lo))) if (lo < 0);
-sgn (Ivl 0 0) = Ivl 0 0;
-sgn (Ivl 0 _) = Ivl 0 1;
-sgn (Ivl _ _) = Ivl 1 1;
+::sgn (Ivl lo up) = merge (sgn (Ivl lo 0)) (sgn (Ivl 0 up)) if (lo < 0) && (up > 0);
+::sgn (Ivl lo up) = -(sgn (Ivl (-up) (-lo))) if (lo < 0);
+::sgn (Ivl 0 0) = Ivl 0 0;
+::sgn (Ivl 0 _) = Ivl 0 1;
+::sgn (Ivl _ _) = Ivl 1 1;
 
 
 /******************************************************************************
@@ -264,4 +265,4 @@ sgn (Ivl _ _) = Ivl 1 1;
 /*
 public prefix (::#) #;
 */
-#(Ivl lo up) = up - lo;
+::#(Ivl lo up) = up - lo;

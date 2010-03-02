@@ -82,8 +82,10 @@ private num_den;
 num_den q = (num q, den q) if rationalp q;
 
 /* Semantic number predicates */
-public intvalp ratvalp realvalp compvalp intcompvalp ratcompvalp;
+// public intvalp ratvalp realvalp compvalp;
+public intcompvalp ratcompvalp;
 
+/*
 intvalp x		= 1 if integerp x;
 intvalp x		= integerp n && integerp d && d == 1 when (n, d) = num_den x end if rationalp x;
 intvalp x::double	= ~ infp x && (frac x == 0.0);
@@ -105,6 +107,7 @@ realvalp _		= 0;
 compvalp x		= realvalp (re x) && realvalp (im x) if complexp x;
 compvalp x		= 1 if numberp x && realvalp x;
 compvalp _		= 0;
+*/
 
 intcompvalp x		= (complexp x) && (intvalp (re x)) && (intvalp (im x)) if numberp x;
 
@@ -168,14 +171,14 @@ modulus roundfun q1 q2 = (divide roundfun q1 q2)!1;
  * (chosen for consistency with Q builtins)
  */
 /* public (div) Q1 Q2, (mod) Q1 Q2; */
-q1 div q2 = quotient trunc q1 q2 if rationalp q1 && rationalp q2;
-q1 mod q2 = modulus trunc q1 q2 if rationalp q1 && rationalp q2;
+q1 ::div q2 = quotient trunc q1 q2 if rationalp q1 && rationalp q2;
+q1 ::mod q2 = modulus trunc q1 q2 if rationalp q1 && rationalp q2;
 
 /* Mixed */
-q div z = q div (rational z) if rationalp q && integerp z;
-z div q = (rational z) div q if rationalp q && integerp z;
-q mod z = q mod (rational z) if rationalp q && integerp z;
-z mod q = (rational z) mod q if rationalp q && integerp z;
+q ::div z = q div (rational z) if rationalp q && integerp z;
+z ::div q = (rational z) div q if rationalp q && integerp z;
+q ::mod z = q mod (rational z) if rationalp q && integerp z;
+z ::mod q = (rational z) mod q if rationalp q && integerp z;
 
 /* Harmonic sum and difference */
 public infixl (::+) hsum;
@@ -244,7 +247,7 @@ cmp q1 q2 = sgn (q1 - q2);
  * Note that the values of the gcd for integral rationals
  * is consistent with
  */
-gcd q1 q2
+::gcd q1 q2
 	= (gcd (n1 * d2) (n2 * d1)) % (d1 * d2)
 	if rationalp q1 && rationalp q2 && ((n1 ~= 0) || (n2 ~= 0))
 	when
@@ -264,14 +267,14 @@ gcd q1 q2
  */
 
 /* Mixed */
-gcd q i = gcd q (rational i) if rationalp q && integerp i;
-gcd i q = gcd (rational i) q if rationalp q && integerp i;
+::gcd q i = gcd q (rational i) if rationalp q && integerp i;
+::gcd i q = gcd (rational i) q if rationalp q && integerp i;
 
 /*
  * Least Common Multiple / Lowest Common Multiple
  * lcm
  */
-lcm x y = abs (x * y) % (gcd x y);
+::lcm x y = abs (x * y) % (gcd x y);
 
 //TODO: introduce these?
 //public signed_gcd Q1 Q2, signed_lcm Q1 Q2;
@@ -309,13 +312,13 @@ list_min = foldl1 min;
  * Only allow equality and inequality tests on complexities;
  * don't allow, for example (+).
  */
-((Rat_cplx x) == (Rat_cplx y)) = (x == y);
-(Rat_cplx x) ~= (Rat_cplx y) = x ~= y;
-(Rat_cplx x) < (Rat_cplx y) = x < y;
-(Rat_cplx x) <= (Rat_cplx y) = x <= y;
-(Rat_cplx x) > (Rat_cplx y) = x > y;
-(Rat_cplx x) >= (Rat_cplx y) = x >= y;
-sgn ((Rat_cplx x) - (Rat_cplx y)) = sgn (x - y);
+((Rat_cplx x) ::== (Rat_cplx y)) = (x == y);
+(Rat_cplx x) ::~= (Rat_cplx y) = x ~= y;
+(Rat_cplx x) ::< (Rat_cplx y) = x < y;
+(Rat_cplx x) ::<= (Rat_cplx y) = x <= y;
+(Rat_cplx x) ::> (Rat_cplx y) = x > y;
+(Rat_cplx x) ::>= (Rat_cplx y) = x >= y;
+::sgn ((Rat_cplx x) - (Rat_cplx y)) = sgn (x - y);
 
 /*
  * An arbitrary measure of complexity;
@@ -1259,8 +1262,8 @@ num_den_gauss c
 
 /* extend num_den to Complex */
 num_den c	= num_den_gauss c if complexp c;
-num c		= n when (n, _) = num_den c end if complexp c;
-den c		= d when (_, d) = num_den c end if complexp c;
+::num c		= n when (n, _) = num_den c end if complexp c;
+::den c		= d when (_, d) = num_den c end if complexp c;
 
 
 /******************************************************************************
@@ -1531,7 +1534,7 @@ create_format options =
 	];
 
 //UK-specific examples
-
+public options_uk format_uk;
 const options_uk =
 	dict [
 		"sign" => ("-","",""), //alternative: ("-"," ","+")
@@ -1666,7 +1669,7 @@ sign_ch x
 /* calculate the value of "0.(pure-recurring-fraction)" */
 private recur_value;
 recur_value _ "" = rational 0;
-recur_value radix strg = rational (n, d - 1)
+recur_value radix strg = rational (n%(d - 1))
 	when
 	  n = str_to_int radix strg;
 	  d = pow radix (#strg)
