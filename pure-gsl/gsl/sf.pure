@@ -99,6 +99,8 @@ public
      function with ``mode = GSL_PREC_DOUBLE``.
 */
 
+private ap_airy;
+
 def ap_airy f x mode
   = f (double x) mode (pointer m) $$ list m  when m = {0.0, 0.0} end;
 
@@ -183,7 +185,7 @@ public
   airy_Ai_deriv
   airy_Ai_deriv_e
   airy_Ai_deriv_scaled
-  airy_Ai_deriv_scaled_e;
+  airy_Ai_deriv_scaled_e
   airy_Bi_deriv
   airy_Bi_deriv_e
   airy_Bi_deriv_scaled
@@ -309,6 +311,9 @@ public
      implements ``gsl_sf_airy_zero_Bi_e``.
 */
 
+private
+  ap_airy_z;
+
 def ap_airy_z f s 
   = f s (pointer m) $$ list m when m = {0.0,0.0} end;
 
@@ -327,7 +332,7 @@ private extern int gsl_sf_airy_zero_Bi_deriv_e(int, double*);
 
 public
   airy_zero_Ai_deriv
-  airy_zero_Ai_e_deriv
+  airy_zero_Ai_deriv_e
   airy_zero_Bi_deriv
   airy_zero_Bi_deriv_e;
 
@@ -579,7 +584,7 @@ public
   bessel_Jn
   bessel_Jn_e
   bessel_Jn_array
-  bessel_y0
+  bessel_Y0
   bessel_Y0_e
   bessel_Y1
   bessel_Y1_e
@@ -673,506 +678,513 @@ public
   bessel_zero_Jnu
   bessel_zero_Jnu_e;
 
-/* .. _bessel_J0:
+/* .. _bessel_J0 (cylindrical):
       
    ``bessel_J0  x``
      implements ``gsl_sf_bessel_J0``.
      
-   .. _bessel_J0_e:
+   .. _bessel_J0_e (cylindrical):
    
    ``bessel_J0_e  x``
      implements ``gsl_sf_besselJ0_e``.
      
-   .. _bessel_J1:
+   .. _bessel_J1 (cylindrical):
       
    ``bessel_J1  x``
      implements ``gsl_sf_bessel_J1``.
      
-   .. _bessel_J1_e:
+   .. _bessel_J1_e (cylindrical):
    
    ``bessel_J1_e  x``
      implements ``gsl_sf_bessel_J1_e``.
      
-   .. _bessel_Jn:
+   .. _bessel_Jn (cylindrical):
 
    ``bessel_Jn  n  x``
      implements ``gsl_sf_bessel_Jn``.
      
-   .. _bessel_Jn_e:
+   .. _bessel_Jn_e (cylindrical):
           
    ``bessel_Jn_e  n  x``
      implements ``gsl_sf_bessel_Jn_e``.
      
-   .. _bessel_Jn_array:
+   .. _bessel_Jn_array (cylindrical):
 
    ``bessel_Jn_array  nmin::int  nmax::int  x``
      implements ``gsl_sf_bessel_Jn_array``.
    
-   .. _bessel_Y0:
+   .. _bessel_Y0 (irregular cylindrical):
      
    ``bessel_Y0  x``
      implements ``gsl_sf_bessel_Y0``.
      
-   .. _bessel_Y0_e:
+   .. _bessel_Y0_e (irregular cylindrical):
      
    ``bessel_Y0_e  x``
      implements ``gsl_sf_bessel_Y0_e``.
    
-   .. _bessel_Y1:
+   .. _bessel_Y1 (irregular cylindrical):
      
    ``bessel_Y1  x``
      implements ``gsl_sf_bessel_Y1``.
    
-   .. _bessel_Y1_e:
+   .. _bessel_Y1_e (irregular cylindrical):
      
    ``bessel_Y1_e  x``
      implements ``gsl_sf_bessel_Y1_e``.
    
-   .. _bessel_Yn:
+   .. _bessel_Yn (irregular cylindrical):
      
    ``bessel_Yn  x``
      implements ``gsl_sf_bessel_Yn``.
    
-   .. _bessel_Yn_e:
+   .. _bessel_Yn_e (irregular cylindrical):
      
    ``bessel_Yn_e  x``
      implements ``gsl_sf_bessel_Yn_e``.
    
-   .. _bessel_Yn_array:
+   .. _bessel_Yn_array (irregular cylindrical):
      
    ``bessel_Yn_array  nmin::int  nmax::int  x``
      implements ``gsl_sf_bessel_Yn_array``.
    
-   .. _bessel_I0:
+   .. _bessel_I0 (regular modified cylindrical):
      
    ``bessel_I0  x``
      implements ``gsl_sf_bessel_I0``.
    
-   .. _bessel_I0_e:
+   .. _bessel_I0_e (regular modified cylindrical):
      
    ``bessel_I0_e  x``
      implements ``gsl_sf_bessel_I0_e``.
    
-   .. _bessel_I1:
+   .. _bessel_I1 (regular modified cylindrical):
 
    ``bessel_I1  x``
      implements ``gsl_sf_bessel_I1``.
    
-   .. _bessel_I1_e:
+   .. _bessel_I1_e (regular modified cylindrical):
      
    ``bessel_I1_e  x``
      implements ``gsl_sf_bessel_I1_e``.
    
-   .. _bessel_In:
+   .. _bessel_In (regular modified cylindrical):
      
    ``bessel_In  n::int  x``
      implements ``gsl_sf_bessel_In``.
    
-   .. _bessel_In_e:
+   .. _bessel_In_e (regular modified cylindrical):
      
    ``bessel_In_e  n::int  x``
      implements ``gsl_sf_bessel_In_e``
    
-   .. _bessel_In_array:
+   .. _bessel_In_array (regular modified cylindrical):
      
    ``bessel_In_array  nmin::int  nmax::int  x``
      implements ``gsl_sf_bessel_In_array``.
    
-   .. _bessel_I0_scaled:
+   .. _bessel_I0_scaled (regular modified cylindrical):
      
    ``bessel_I0_scaled  x``
      implements ``gsl_sf_bessel_I0_scaled``.
    
-   .. _bessel_I0_scaled_e:
+   .. _bessel_I0_scaled_e (regular modified cylindrical):
      
    ``bessel_I0_scaled_e  x``
      implements ``gsl_sf_bessel_I0_scaled_e``.
    
-   .. _bessel_I1_scaled:
+   .. _bessel_I1_scaled (regular modified cylindrical):
      
    ``bessel_I1_scaled  x``
      implements ``gsl_sf_bessel_I1_scaled``.
    
-   .. _bessel_I1_scaled_e:
+   .. _bessel_I1_scaled_e: (regular modified cylindrical)
      
    ``bessel_I1_scaled_e  x``
      implements ``gsl_sf_bessel_I1_scaled_e``.
    
-   .. _bessel_In_scaled:
+   .. _bessel_In_scaled (regular modified cylindrical):
      
    ``bessel_In_scaled  n::int  x``
      implements ``gsl_sf_bessel_In_scaled``.
    
-   .. _bessel_In_scaled_e:
+   .. _bessel_In_scaled_e (regular modified cylindrical):
      
    ``bessel_In_scaled_e  n::int  x``
      implements ``gsl_sf_bessel_In_scaled_e``.
    
-   .. _bessel_In_scaled_array:
+   .. _bessel_In_scaled_array (regular modified cylindrical):
 
    ``bessel_In_scaled_array  nmin::int  nmax::int  x``
      implements ``gsl_sf_bessel_In_array``.
    
-   .. _bessel_K0:
+   .. _bessel_K0 (irregular modified cylindrical):
 
    ``bessel_K0  x``
      implements ``gsl_sf_bessel_K0``.
    
-   .. _bessel_K0_e:
+   .. _bessel_K0_e (irregular modified cylindrical):
      
    ``bessel_K0_e  x``
      implements ``gsl_sf_bessel_K0_e``.
    
-   .. _bessel_K1:
+   .. _bessel_K1 (irregular modified cylindrical):
 
    ``bessel_K1  x``
      implements ``gsl_sf_bessel_K1``.
    
-   .. _bessel_K1_e:
+   .. _bessel_K1_e (irregular modified cylindrical):
      
    ``bessel_K1_e  x``
      implements ``gsl_sf_bessel_K1_e``.
    
-   .. _bessel_Kn:
+   .. _bessel_Kn (irregular modified cylindrical):
      
    ``bessel_Kn  n::int  x``
      implements ``gsl_sf_bessel_Kn``.
    
-   .. _bessel_Kn_e:
+   .. _bessel_Kn_e (irregular modified cylindrical):
      
    ``bessel_Kn_e  n::int  x``
      implements ``gsl_sf_bessel_Kn_e``
    
-   .. _bessel_Kn_array:
+   .. _bessel_Kn_array (irregular modified cylindrical):
      
    ``bessel_Kn_array  nmin::int  nmax::int  x``
      implements ``gsl_sf_bessel_Kn_array``.
    
-   .. _bessel_K0_scaled:
+   .. _bessel_K0_scaled (irregular modified cylindrical):
      
    ``bessel_K0_scaled  x``
      implements ``gsl_sf_bessel_K0_scaled``.
    
-   .. _bessel_K0_scaled_e:
+   .. _bessel_K0_scaled_e (irregular modified cylindrical):
      
    ``bessel_K0_scaled_e  x``
      implements ``gsl_sf_bessel_K0_scaled_e``.
    
-   .. _bessel_K1_scaled:
+   .. _bessel_K1_scaled (irregular modified cylindrical):
      
    ``bessel_K1_scaled  x``
      implements ``gsl_sf_bessel_K1_scaled``.
    
-   .. _bessel_K1_scaled_e:
+   .. _bessel_K1_scaled_e (irregular modified cylindrical):
      
    ``bessel_K1_scaled_e  x``
      implements ``gsl_sf_bessel_K1_scaled_e``.
    
-   .. _bessel_Kn_scaled:
+   .. _bessel_Kn_scaled (irregular modified cylindrical):
      
    ``bessel_Kn_scaled  n::int  x``
      implements ``gsl_sf_bessel_Kn_scaled``.
    
-   .. _bessel_Kn_scaled_e:
+   .. _bessel_Kn_scaled_e (irregular modified cylindrical):
      
    ``bessel_Kn_scaled_e  n::int  x``
      implements ``gsl_sf_bessel_Kn_scaled_e``.
    
-   .. _bessel_Kn_scaled_array:
+   .. _bessel_Kn_scaled_array (irregular modified cylindrical):
 
    ``bessel_Kn_scaled_array  nmin::int  nmax::int  x``
      implements ``gsl_sf_bessel_Kn_array``.
    
-   .. _bessel_j0 (spherical):
+   .. _bessel_j0 (regular spherical):
 
    ``bessel_j0  x``
      implements ``gsl_sf_bessel_j0``.
    
-   .. _bessel_j0_e (spherical):
+   .. _bessel_j0_e (regular spherical):
      
    ``bessel_j0_e  x``
      implements ``gsl_sf_bessel_j0_e``.
    
-   .. _bessel_j1 (spherical):
+   .. _bessel_j1 (regular spherical):
 
    ``bessel_j1  x``
      implements ``gsl_sf_bessel_j1``.
    
-   .. _bessel_j1_e (spherical):
+   .. _bessel_j1_e (regular spherical):
      
    ``bessel_j1_e  x``
      implements ``gsl_sf_bessel_j1_e``.
      
-   .. _bessel_j2:
+   .. _bessel_j2 (regular spherical):
    
    ``bessel_j2  x``
      implements ``gsl_sf_bessel_j2``.
    
-   .. _bessel_j2_e:
+   .. _bessel_j2_e (regular spherical):
    
    ``bessel_j2_e  x``
      implements ``gsl_sf_bessel_j2_e``.
    
-   .. _bessel_jl (spherical):
+   .. _bessel_jl (regular spherical):
    
    ``bessel_jl  l::int  x``
      implements ``gsl_sf_bessel_jl``.
    
-   .. _bessel_jl_e (spherical):
+   .. _bessel_jl_e (regular spherical):
    
    ``bessel_jl_e  l::int  x``
      implements ``gsl_sf_bessel_jl_e``.
    
-   .. _bessel_jl_array:
+   .. _bessel_jl_array (regular spherical):
    
    ``bessel_jl_array  lmax::int  x``
      implements ``gsl_sf_bessel_jl_array``.
    
-   .. _bessel_jl_steed_array:
+   .. _bessel_jl_steed_array (regular spherical):
    
    ``bessel_jl_steed_array  lmax::int  x``
      implements ``gsl_sf_bessel_jl_steed_array``.
    
-   .. _bessel_y0 (spherical):
+   .. _bessel_y0 (irregular spherical):
    
    ``bessel_y0  x``
      implements ``gsl_sf_bessel_y0``.
    
-   .. _bessel_y0_e (spherical):
+   .. _bessel_y0_e (irregular spherical):
    
    ``bessel_y0_e  x``
      implements ``gsl_sf_bessel_y0_e``.
    
-   .. _bessel_y1 (spherical):
+   .. _bessel_y1 (irregular spherical):
    
    ``bessel_y1  x``
      implements ``gsl_sf_bessel_y1``.
    
-   .. _bessel_y1_e (spherical):
+   .. _bessel_y1_e (irregular spherical):
    
    ``bessel_y1_e  x``
      implements ``gsl_sf_bessel_y1_e``.
    
-   .. _bessel_y2:
+   .. _bessel_y2 (irregular spherical):
    
    ``bessel_y2  x``
      implements ``gsl_sf_bessel_y2``.
    
-   .. _bessel_y2_e:
+   .. _bessel_y2_e (irregular spherical):
    
    ``bessel_y2_e  x``
      implements ``gsl_sf_bessel_y2_e``.
    
-   .. _bessel_yl:
+   .. _bessel_yl (irregular spherical):
    
    ``bessel_yl  l::int  x``
      implements ``gsl_sf_bessel_yl``.
    
-   .. _bessel_yl_e:
+   .. _bessel_yl_e (irregular spherical):
    
    ``bessel_yl_e  l::int  x``
      implements ``gsl_sf_bessel_yl_e``.
    
-   .. _bessel_yl_array:
+   .. _bessel_yl_array (irregular spherical):
    
    ``bessel_yl_array  lmax::int  x``
      implements ``gsl_sf_bessel_yl_array``.
    
-   .. _bessel_i0_scaled (spherical):
+   .. _bessel_i0_scaled (regular modified spherical):
    
    ``bessel_i0_scaled  x``
      implements ``gsl_sf_bessel_i0_scaled``.
    
-   .. _bessel_i0_scaled_e (spherical):
+   .. _bessel_i0_scaled_e (regular modified spherical):
    
    ``bessel_i0_scaled_e  x``
      implements ``gsl_sf_bessel_i0_scaled_e``.
    
-   .. _bessel_i1_scaled (spherical):
+   .. _bessel_i1_scaled (regular modified spherical):
    
    ``bessel_i1_scaled  x``
      implements ``gsl_sf_bessel_i1_scaled``.
    
-   .. _bessel_i1_scaled_e (spherical):
+   .. _bessel_i1_scaled_e (regular modified spherical):
    
    ``bessel_i1_scaled_e  x``
      implements ``gsl_sf_bessel_i1_scaled_e``.
    
-   .. _bessel_i2_scaled:
+   .. _bessel_i2_scaled (regular modified spherical):
    
    ``bessel_i2_scaled  x``
      implements ``gsl_sf_bessel_i2_scaled``.
    
-   .. _bessel_i2_e:
+   .. _bessel_i2_e (regular modified spherical):
    
    ``bessel_i2_scaled_e  x``
      implements ``gsl_sf_bessel_i2_scaled_e``.
    
-   .. _bessel_il_scaled:
+   .. _bessel_il_scaled (regular modified spherical):
    
    ``bessel_il_scaled  l::int  x``
      implements ``gsl_sf_bessel_il_scaled``.
    
-   .. _bessel_il_scaled_e:
+   .. _bessel_il_scaled_e (regular modified spherical):
    
    ``bessel_il_scaled_e  l::int  x``
      implements ``gsl_sf_bessel_il_scaled_e``.
    
-   .. _bessel_il_scaled_array:
+   .. _bessel_il_scaled_array (regular modified spherical):
    
    ``bessel_il_scaled_array  lmax::int  x``
      implements ``gsl_sf_bessel_il_scaled_array``.
      
-   .. _bessel_k0_scaled (spherical):
+   .. _bessel_k0_scaled (irregular modified spherical):
    
    ``bessel_k0_scaled  x``
      implements ``gsl_sf_bessel_k0_scaled``.
    
-   .. _bessel_k0_scaled_e (spherical):
+   .. _bessel_k0_scaled_e (irregular modified spherical):
    
    ``bessel_k0_scaled_e  x``
      implements ``gsl_sf_bessel_k0_scaled_e``.
    
-   .. _bessel_k1_scaled (spherical):
+   .. _bessel_k1_scaled (irregular modified spherical):
    
    ``bessel_k1_scaled  x``
      implements ``gsl_sf_bessel_k1_scaled``.
    
-   .. _bessel_k1_scaled_e (spherical):
+   .. _bessel_k1_scaled_e (irregular modified spherical):
    
    ``bessel_k1_scaled_e  x``
      implements ``gsl_sf_bessel_ik_scaled_e``.
    
-   .. _bessel_k2_scaled:
+   .. _bessel_k2_scaled (irregular modified spherical):
    
    ``bessel_k2_scaled  x``
      implements ``gsl_sf_bessel_k2_scaled``.
    
-   .. _bessel_k2_e:
+   .. _bessel_k2_e (irregular modified spherical):
    
    ``bessel_k2_scaled_e  x``
      implements ``gsl_sf_bessel_k2_scaled_e``.
    
-   .. _bessel_kl_scaled:
+   .. _bessel_kl_scaled (irregular modified spherical):
    
    ``bessel_kl_scaled  l::int  x``
      implements ``gsl_sf_bessel_kl_scaled``.
    
-   .. _bessel_kl_scaled_e:
+   .. _bessel_kl_scaled_e (irregular modified spherical):
    
    ``bessel_kl_scaled_e  l::int  x``
      implements ``gsl_sf_bessel_kl_scaled_e``.
    
-   .. _bessel_kl_scaled_array:
+   .. _bessel_kl_scaled_array (irregular modified spherical):
    
    ``bessel_kl_scaled_array  lmax::int  x``
      implements ``gsl_sf_bessel_il_scaled_array``.
    
-   .. _bessel_Jnu:
+   .. _bessel_Jnu (regular):
    
    ``bessel_Jnu  nu  x``
      implements ``gsl_sf_bessel_Jnu``.
    
-   .. _bessel_Jnu_e:
+   .. _bessel_Jnu_e (regular):
    
    ``bessel_Jnu_e  nu  x``
      implements ``gsl_sf_bessel_Jnu_e``.
    
-   .. _bessel_sequence_Jnu_e:
+   .. _bessel_sequence_Jnu_e (regular):
    
    ``bessel_sequence_Jnu_e  nu  v::matrix``
      implements ``gsl_sf_bessel_sequence_Jnu_e``.
    
-   .. _bessel_Ynu:
+   .. _bessel_Ynu (irregular):
    
    ``bessel_Ynu  nu  x``
      implements ``gsl_sf_bessel_Ynu``.
    
-   .. _bessel_Ynu_e:
+   .. _bessel_Ynu_e (irregular):
    
    ``bessel_Ynu_e  nu  x``
      implements ``gsl_sf_bessel_Ynu_e``.
    
-   .. _bessel_Inu:
+   .. _bessel_Inu (regular modified):
    
    ``bessel_Inu  nu  x``
      implements ``gsl_sf_bessel_Inu``.
    
-   .. _bessel_Inu_e:
+   .. _bessel_Inu_e (regular modified):
    
    ``bessel_Inu_e  nu  x``
      implements ``gsl_sf_bessel_Inu_e``.
    
-   .. _bessel_Inu_scaled:
+   .. _bessel_Inu_scaled (regular modified):
    
    ``bessel_Inu_scaled  nu  x``
      implements ``gsl_sf_bessel_Inu_scaled``.
    
-   .. _bessel_Inu_scaled_e:
+   .. _bessel_Inu_scaled_e (regular modified):
    
    ``bessel_Inu_scaled_e  nu  x``
      implements ``gsl_sf_bessel_Inu_scaled_e``.
    
-   .. _bessel_Knu:
+   .. _bessel_Knu (irregular modified):
    
    ``bessel_Knu  nu  x``
      implements ``gsl_sf_bessel_Knu``.
    
-   .. _bessel_Knu_e:
+   .. _bessel_Knu_e (irregular modified):
    
    ``bessel_Knu_e  nu  x``
      implements ``gsl_sf_bessel_Knu``.
    
-   .. _bessel_lnKnu:
+   .. _bessel_lnKnu (irregular modified):
    
    ``bessel_lnKnu  nu  x``
      implements ``gsl_sf_bessel_lnKnu``.
    
-   .. _bessel_lnKnu_e:
+   .. _bessel_lnKnu_e (irregular modified):
    
    ``bessel_lnKnu_e  nu  x``
      implements ``gsl_sf_bessel_lnKnu_e``.
    
-   .. _bessel_Knu_scaled:
+   .. _bessel_Knu_scaled (irregular modified):
    
    ``bessel_Knu_scaled  nu x``
      implements ``gsl_sf_bessel_Knu_scaled``.
    
-   .. _bessel_Knu_scaled_e:
+   .. _bessel_Knu_scaled_e (irregular modified):
    
    ``bessel_Knu_scaled_e  nu x``
      implements ``gsl_sf_bessel_Knu_scaled_e``.
    
-   .. _bessel_zero_J0:
+   .. _bessel_zero_J0 (regular):
    
    ``bessel_zero_J0  s::int``
      implements ``gsl_sf_bessel_zero_J0``.
    
-   .. _bessel_zero_J0_e:
+   .. _bessel_zero_J0_e (regular):
    
    ``bessel_zero_J0_e  s::int``
      implements ``gsl_sf_bessel_zero_J0_e``.
    
-   .. _bessel_zero_J1:
+   .. _bessel_zero_J1 (regular):
    
    ``bessel_zero_J1  s::int``
      implements ``gsl_sf_bessel_zero_J1``.
    
-   .. _bessel_zero_J1_e:
+   .. _bessel_zero_J1_e (regular):
    
    ``bessel_zero_J1_e  s::int``
      implements ``gsl_sf_bessel_zero_J1_e``.
    
-   .. _bessel_zero_Jnu:
+   .. _bessel_zero_Jnu (regular):
    
    ``bessel_zero_Jnu  nu  s::int``
      implements ``gsl_sf_bessel_zero_Jnu``.
    
-   .. _bessel_zero_Jnu_e:
+   .. _bessel_zero_Jnu_e (regular):
    
    ``bessel_zero_Jnu_e  nu  s::int``
      implements ``gsl_sf_bessel_zero_Jnu``.
 */
+
+private
+  ap_func_1
+  ap_bessel_2
+  ap_bessel_2l
+  ap_bessel_3
+  ap_func_2;
 
 def ap_func_1 f x = f (double x) (pointer m) $$ list m
   when m = {0.0,0.0} end;
@@ -1714,8 +1726,8 @@ public
   coulomb_wave_FG_array
   coulomb_wave_FGp_array
   coulomb_wave_sphF_array
-  coulomb_wave_CL_e
-  coulomb_wave_CL_array;
+  coulomb_CL_e
+  coulomb_CL_array;
 
 /* .. _hydrogenicR_1:
    
@@ -2264,4 +2276,44 @@ dilog_e  (r<:theta)
      > dilog_e (1<:3);
      [-0.817454913536463+:0.0980262093913011,3.8224192909699e-15,
       1.47247478976757e-15]
+*/
+
+private extern double gsl_sf_multiply_e(double, double, double*);
+private extern int gsl_sf_multiply_err_e(double, double, double, double, 
+	double*);
+
+public
+  multiply_e
+  multiply_err_e;
+
+/* .. _multiply_e:
+   
+   ``multiply_e  x  y``
+     implements ``gsl_sf_multiply_e``.
+   
+   .. _multiply_err_e:
+   
+   ``multiply_err_e  x  dx  y  dy``
+     implements ``gsl_sf_multiply_err_e``.
+*/
+
+multiply_e  x  y  = ap_func_2 gsl_sf_multiply_e  x  y;
+
+multiply_err_e  x  dx  y  dy
+  = gsl_sf_multiply_err_e (double x) (double dx) (double y) (double dy)
+    			  (pointer m) $$ list m  when m = {0.0, 0.0} end;
+
+/* ..
+  
+   Examples
+   ~~~~~~~~
+   
+   The following illustrate the dilog functions.
+   
+   ::
+   
+     > multiply_e 10.0 11.0;
+     [110.0,4.88498130835069e-14]
+     > multiply_err_e 10.0 0.04 11.0 0.002;
+     [110.0,0.460000000000049]
 */
