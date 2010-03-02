@@ -4597,9 +4597,11 @@ expr interpreter::parse_simple(list<OpEntry>::iterator& act,
 		    symtab.sym(f).s+"'");
 	}
 	expr y = parse_simple(act, end, nprec(prec, prefix));
-	if (x.tag() == symtab.minus_sym().f)
-	  y = uminop(symtab.neg_sym().x, y);
-	else
+	if (x.tag() == symtab.minus_sym().f) {
+	  expr op = expr(symtab.neg_sym().f);
+	  op.flags() = x.flags() & (EXPR::QUAL|EXPR::GLOBAL|EXPR::LOCAL);
+	  y = uminop(op, y);
+	} else
 	  y = expr(x, y);
 	out.push_arg(y);
 	continue;
