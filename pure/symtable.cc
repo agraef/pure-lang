@@ -354,7 +354,7 @@ symbol& symtable::sym(int32_t f)
 bool symtable::visible(const symbol& sym)
 {
   if (sym.priv) {
-    size_t k = sym.s.rfind("::");
+    size_t k = symsplit(sym.s);
     if (k == string::npos) k = 0;
     string qual = sym.s.substr(0, k);
     return qual.empty() || qual == *current_namespace;

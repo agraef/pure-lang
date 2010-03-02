@@ -897,6 +897,17 @@ char *printstr(const char *s)
   return t;
 }
 
+size_t symsplit(const std::string& s)
+{
+  size_t pos = s.rfind("::");
+  if (pos != std::string::npos)  {
+    /* As the symbol might actually begin with ':', we might have to back out
+       some more. */
+    while (pos > 0 && s[pos-1] == ':') --pos;
+  }
+  return pos;
+}
+
 /***************************************************************************/
 
 /* POSIX CRC32 checksum algorithm, original source from

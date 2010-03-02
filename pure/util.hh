@@ -102,4 +102,10 @@ long u8charcode(const char *c);
 char *parsestr(const char *s, char*& err);
 char *printstr(const char *s);
 
+/* Split an identifier in Pure namespace::name syntax. Returns the position of
+   the end of the namespace prefix (excluding the '::'), or string::npos for
+   unqualified identifiers. */
+
+size_t symsplit(const std::string& s);
+
 #endif // ! UTIL_HH

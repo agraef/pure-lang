@@ -723,7 +723,7 @@ interpreter::interpreter(int32_t nsyms, char *syms,
   }
   for (int32_t f = 1; f <= nsyms; f++) {
     symbol& sym = symtab.sym(f);
-    size_t p = sym.s.rfind("::");
+    size_t p = symsplit(sym.s);
     if (p != string::npos && p > 0)
       namespaces.insert(sym.s.substr(0, p));
     pure_expr *x;
@@ -1201,7 +1201,7 @@ void interpreter::pop_namespace()
 
 void interpreter::set_namespace(string *ns)
 {
-  size_t k = ns->rfind("::");
+  size_t k = symsplit(*ns);
   if (k != string::npos &&
       namespaces.find(ns->substr(0, k)) == namespaces.end()) {
     symtab.current_namespace->clear();
@@ -1426,7 +1426,7 @@ void interpreter::print_tags()
 	string t = info.tag;
 	size_t k = s.find(t);
 	unsigned line = info.line;
-	if (k == string::npos && (k = info.tag.rfind("::")) != string::npos) {
+	if (k == string::npos && (k = symsplit(info.tag)) != string::npos) {
 	  // qualified name, may be used unqualified here
 	  t = info.tag.substr(k+2);
 	  k = s.find(t);
@@ -3215,7 +3215,7 @@ void interpreter::promote_ttags(expr f, expr x, expr u, expr v)
 
 static string qualifier(const symbol& sym, string& id)
 {
-  size_t pos = sym.s.rfind("::");
+  size_t pos = symsplit(sym.s);
   string qual;
   if (pos == string::npos) {
     qual = "";

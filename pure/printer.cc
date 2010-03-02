@@ -39,7 +39,7 @@
 static inline string psym(const string& s, bool local = false)
 {
   if (local) {
-    size_t pos = s.rfind("::");
+    size_t pos = symsplit(s);
     if (pos != string::npos)
       return s.substr(pos+2);
     else

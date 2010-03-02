@@ -404,7 +404,7 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
 <xtag>::{id} BEGIN(INITIAL); goto parse_tag;
 {qual}{id} {
   string qualid = yytext;
-  size_t k = qualid.rfind("::");
+  size_t k = symsplit(qualid);
   string qual = qualid.substr(0, k), id = qualid.substr(k+2);
   bool might_be_tag = qual.find("::") == string::npos;
   int32_t tag = might_be_tag && checktag(id.c_str());
@@ -439,7 +439,7 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
       return optok(sym->f, sym->fix);
   } else {
     if (!interp.nerrs && !sym && interp.symtab.count != 1 &&
-	(k = qualid.rfind("::")) != string::npos) {
+	(k = symsplit(qualid)) != string::npos) {
       qual = qualid.substr(0, k);
       if (qual.compare(0, 2, "::") == 0) qual.erase(0, 2);
       if (qual != *interp.symtab.current_namespace) {
@@ -494,7 +494,7 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
 "#<"{id}(" "{int})?">" return token::BADTOK;
 {qual}([[:punct:]]|{punct})+  {
   string qualid = yytext;
-  size_t k = qualid.rfind("::");
+  size_t k = symsplit(qualid);
   string qual = qualid.substr(0, k), id = qualid.substr(k+2);
   if (!find_namespace(interp, qualid)) {
     // not a valid namespace prefix
@@ -741,7 +741,7 @@ static string format_namespace(const string& name)
 static bool find_namespace(interpreter& interp, const string& name)
 {
   // determine the namespace prefix
-  size_t k = name.rfind("::");
+  size_t k = symsplit(name);
   if (k == 0 || k == string::npos) return true; // default namespace
   string qual = name.substr(0, k);
   if (qual.compare(0, 2, "::") == 0) {

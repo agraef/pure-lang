@@ -1069,7 +1069,7 @@ int32_t pure_sym(const char *s)
   assert(s);
   interpreter& interp = *interpreter::g_interp;
   string id = (strncmp(s, "::", 2)==0)?s:"::"+string(s);
-  size_t pos = id.rfind("::");
+  size_t pos = symsplit(id);
   string qual = (pos>2)?id.substr(2, pos-2):"";
   const symbol* sym;
   if (qual != *interp.symtab.current_namespace) {
@@ -1093,7 +1093,7 @@ int32_t pure_getsym(const char *s)
   assert(s);
   interpreter& interp = *interpreter::g_interp;
   string id = (strncmp(s, "::", 2)==0)?s:"::"+string(s);
-  size_t pos = id.rfind("::");
+  size_t pos = symsplit(id);
   string qual = (pos>2)?id.substr(2, pos-2):"";
   const symbol* sym;
   if (qual != *interp.symtab.current_namespace) {
@@ -5632,7 +5632,7 @@ static inline bool stop(interpreter& interp, Env *e)
 static inline string psym(const string& s, bool local = false)
 {
   if (local) {
-    size_t pos = s.rfind("::");
+    size_t pos = symsplit(s);
     if (pos != string::npos)
       return s.substr(pos+2);
     else
