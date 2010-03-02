@@ -95,7 +95,7 @@ osc_send_from a::pointer s::pointer ts path::string type::string msg =
 namespace osc;
 private extern expr *Pure_osc_recv() = recv;
 
-osc_recv = a, ts, path, types, data when
+::osc_recv = a, ts, path, types, data when
   path, m = res; a = message_get_source m;
   t = message_get_timestamp m;
   ts = if pointerp t then timetag t 0 else TT_IMMEDIATE;
@@ -107,7 +107,7 @@ end if tuplep res when res = osc::recv end;
 
 private extern expr *Pure_osc_recv_noblock() = recv_noblock;
 
-osc_recv_noblock = a, ts, path, types, data when
+::osc_recv_noblock = a, ts, path, types, data when
   path, m = res; a = message_get_source m;
   t = message_get_timestamp m;
   ts = if pointerp t then timetag t 0 else TT_IMMEDIATE;
@@ -141,7 +141,7 @@ namespace __C;
 // We don't want to pull in the entire system.pure, so just declare this here.
 extern int fnmatch(char* pat, char* s, int flags);
 
-osc_main methods = catch id loop with
+::osc_main methods = catch id loop with
   loop = dispatch osc_recv $$ loop;
   dispatch msg = any (process (list msg)) methods;
   process msg@(addr::pointer:ts::matrix:path::string:types::string:data)
