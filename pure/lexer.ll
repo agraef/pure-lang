@@ -290,11 +290,13 @@ blank  [ \t\f\v\r]
 <xsyms>[\n]+	   yylloc->lines(yyleng); yylloc->step();
 <xsyms>{id}        {
   symbol* sym = interp.symtab.lookup(xsym(interp.xsym_prefix, yytext));
+  bool res = interp.symtab.count > 0;
   if (sym) {
     yylval->ival = sym->f;
     return token::XID;
   }
-  string msg = "undeclared symbol '"+string(yytext)+"'";
+  string msg = res?("symbol '"+string(yytext)+"' is private here"):
+    ("undeclared symbol '")+string(yytext)+"'";
   interp.error(*yylloc, msg);
 }
 <xsyms>([[:punct:]]|{punct})+  {
@@ -304,22 +306,28 @@ blank  [ \t\f\v\r]
   }
   while (yyleng > 1 && yytext[yyleng-1] == ';') yyless(yyleng-1);
   symbol* sym = interp.symtab.lookup(xsym(interp.xsym_prefix, yytext));
-  while (!sym && yyleng > 1) {
+  bool res = interp.symtab.count > 0;
+  while (!sym && !res && yyleng > 1) {
     if (yyleng == 2 && yytext[0] == '-' && yytext[1] == '>')
       return token::MAPSTO;
     yyless(yyleng-1);
     sym = interp.symtab.lookup(xsym(interp.xsym_prefix, yytext));
+    res = interp.symtab.count > 0;
   }
   if (sym) {
     yylval->ival = sym->f;
     return token::XID;
+  } else if (res) {
+    string msg = "symbol '"+string(yytext)+"' is private here";
+    interp.error(*yylloc, msg);
+  } else {
+    assert(yyleng == 1);
+    /* If we come here, we failed to recognize the input as a special symbol
+       and have to rescan everything in a special mode which excludes this
+       rule. This hack is necessary in order to avoid the use of REJECT. */
+    yyless(0);
+    BEGIN(xsyms_rescan);
   }
-  assert(yyleng == 1);
-  /* If we come here, we failed to recognize the input as a special symbol and
-     have to rescan everything in a special mode which excludes this
-     rule. This hack is necessary in order to avoid the use of REJECT. */
-  yyless(0);
-  BEGIN(xsyms_rescan);
 }
 <xsyms_rescan>(.|{punct}|{letter}) {
   string msg = "invalid character '"+pstring(yytext)+"'";
