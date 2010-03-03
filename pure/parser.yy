@@ -99,6 +99,9 @@ class interpreter;
   rule_info *rinfo;
   pat_rule_info *prinfo;
   list<string> *slval;
+  list<int32_t> *ilval;
+  pair< string, list<int32_t> > *smval;
+  list< pair< string, list<int32_t> > > *smlval;
   comp_clause_list *clauselval;
   comp_clause *clauseval;
   fix_t   fix;
@@ -151,6 +154,7 @@ static void mangle_fname(string& name);
 %token		MAPSTO	"->"
 %token		ESCAPE
 %token <sval>	ID	"identifier"
+%token <ival>	XID	"symbol"
 %token <csval>	STR	"string"
 %token <ival>	INT	"integer"
 %token <zval>	BIGINT	"bigint"
@@ -158,7 +162,10 @@ static void mangle_fname(string& name);
 %token <dval>	DBL	"floating point number"
 %token <ival>	TAG	"type tag"
 %type  <sval>	name fname optalias ctype
-%type  <slval>	ids names fnames ctypes opt_ctypes
+%type  <slval>	ids fnames ctypes opt_ctypes
+%type  <ilval>  xsyms
+%type  <smval>	name_xsyms
+%type  <smlval>	name_xsyms_list
 %type  <ival>	op scope
 %type  <info>	fixity
 %type  <xval>	expr prim
@@ -176,7 +183,7 @@ static void mangle_fname(string& name);
 %destructor { delete $$; } ID LO RO NA LT RT PR PO fixity expr simple prim
   comp_clauses comp_clause_list rows row_list row args lhs rhs qual_rhs
   rules rulel rule pat_rules pat_rulel simple_rules simple_rulel simple_rule
-  ids fnames fname names name optalias opt_ctypes ctypes ctype
+  ids fnames fname name_xsyms_list name_xsyms xsyms name optalias opt_ctypes ctypes ctype
 %destructor { mpz_clear(*$$); free($$); } BIGINT CBIGINT
 %destructor { free($$); } STR
 %printer { debug_stream() << *$$; } ID name fname optalias ctype expr
@@ -291,10 +298,10 @@ item
 { action(interp.push_namespace(new string(*$2)), ); }
   namespace_source END
 { interp.pop_namespace(); delete $2; }
-| USING NAMESPACE names
-{ interp.using_namespaces($3); }
+| USING NAMESPACE name_xsyms_list
+{ action(interp.using_namespaces($3), ); }
 | USING NAMESPACE
-{ interp.using_namespaces(); }
+{ action(interp.using_namespaces(), ); }
 | scope EXTERN { interp.declare_op = false; extern_priv = $1; } prototypes
 | EXTERN { extern_priv = -1; } prototypes
 ;
@@ -356,11 +363,26 @@ fname
 			  $$ = new string(s); free(s); }
 ;
 
-names
-: name
-{ $$ = new list<string>; $$->push_back(*$1); delete $1; }
-| names ',' name
+name_xsyms_list
+: name_xsyms
+{ $$ = new list< pair< string, list<int32_t> > >;
+  $$->push_back(*$1); delete $1; }
+| name_xsyms_list ',' name_xsyms
 { $$ = $1; $$->push_back(*$3); delete $3; }
+;
+
+name_xsyms
+: name
+{ $$ = new pair< string, list<int32_t> >(*$1, list<int32_t>()); delete $1; }
+| name '(' { interp.xsym_prefix = *$1; } xsyms ')'
+{ $$ = new pair< string, list<int32_t> >(*$1, *$4); delete $1; delete $4; }
+;
+
+xsyms
+: XID
+{ $$ = new list<int32_t>; $$->push_back($1); }
+| xsyms XID
+{ $$ = $1; $$->push_back($2); }
 ;
 
 name

@@ -482,7 +482,7 @@ main(int argc, char *argv[])
   delete interp.symtab.current_namespace;
   delete interp.symtab.search_namespaces;
   interp.symtab.current_namespace = new string;
-  interp.symtab.search_namespaces = new set<string>;
+  interp.symtab.search_namespaces = new map< string, set<int32_t> >;
   // source the initialization files, if any
   if (want_rcfile) {
     // Avoid reading .purerc twice, if we happen to be invoked from the user's

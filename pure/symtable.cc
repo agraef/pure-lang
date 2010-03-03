@@ -71,7 +71,7 @@ symtable::symtable()
     __complex_polar_sym(0),
     __rational_xdiv_sym(0),
     current_namespace(new string),
-    search_namespaces(new set<string>),
+    search_namespaces(new map< string, set<int32_t> >),
     __show__sym(0)
 {
   // enter any additional predefined symbols here, e.g.:
@@ -270,11 +270,14 @@ symbol* symtable::lookup(const char *s)
   }
   // next scan the search namespaces; if the symbol is ambiguous, bail out
   // with an error here
-  for (set<string>::iterator it = search_namespaces->begin(),
+  for (map< string, set<int32_t> >::iterator it = search_namespaces->begin(),
 	 end = search_namespaces->end(); it != end; it++) {
-    string id = (*it)+"::"+s;
+    string id = it->first+"::"+s;
     int priv2;
     symbol *sym = lookup_p(id.c_str(), priv2);
+    if (sym && !it->second.empty() &&
+	it->second.find(sym->f) == it->second.end())
+      continue;
     if (!sym) priv |= priv2;
     if (sym && ++count > 1) return 0;
     if (!search_sym) search_sym = sym;

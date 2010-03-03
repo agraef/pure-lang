@@ -113,6 +113,11 @@ static const char *commands[] = {
 
 /* Generator functions for command completion. */
 
+static bool inline checksym(int32_t f, const set<int32_t>& syms)
+{
+  return syms.empty() || syms.find(f) != syms.end();
+}
+
 typedef map<string, symbol> symbol_map;
 
 static char *
@@ -177,11 +182,11 @@ command_generator(const char *text, int state)
 	  string prefix = s.substr(0, p?p-2:p),
 	    name = s.substr(p, string::npos);
 	  bool found = prefix==*interp.symtab.current_namespace;
-	  for (set<string>::iterator
+	  for (map< string, set<int32_t> >::iterator
 		 it = interp.symtab.search_namespaces->begin(),
 		 end = interp.symtab.search_namespaces->end();
 	       !found && it != end; it++)
-	    found = prefix==*it;
+	    found = prefix==it->first && checksym(f, it->second);
 	  if (found)
 	    return strdup(name.c_str());
 	}
@@ -245,11 +250,11 @@ symbol_generator(const char *text, int state)
 	  string prefix = s.substr(0, p?p-2:p),
 	    name = s.substr(p, string::npos);
 	  bool found = prefix==*interp.symtab.current_namespace;
-	  for (set<string>::iterator
+	  for (map< string, set<int32_t> >::iterator
 		 it = interp.symtab.search_namespaces->begin(),
 		 end = interp.symtab.search_namespaces->end();
 	       !found && it != end; it++)
-	    found = prefix==*it;
+	    found = prefix==it->first && checksym(f, it->second);
 	  if (found)
 	    return strdup(name.c_str());
 	}
@@ -721,7 +726,7 @@ main(int argc, char *argv[])
   delete interp.symtab.current_namespace;
   delete interp.symtab.search_namespaces;
   interp.symtab.current_namespace = new string;
-  interp.symtab.search_namespaces = new set<string>;
+  interp.symtab.search_namespaces = new map< string, set<int32_t> >;
   // source the initialization files, if any
   if (want_rcfile) {
     // Avoid reading .purerc twice, if we happen to be invoked from the user's

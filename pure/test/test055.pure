@@ -1,0 +1,24 @@
+
+namespace foo with
+  infixr (::^) ^;
+  foo::foo x = x+1;
+  foo::bar x = x-1;
+  x^y = 2*x+y;
+end;
+
+namespace bar with
+  infix 0 &&;
+  outfix <: :>;
+  bar::foo x = x+2;
+  bar::bar x = x-2;
+end;
+
+using namespace foo(^ foo), bar(bar <: :>);
+
+// namespace foo
+foo x;
+x^y;
+
+// namespace bar
+bar x;
+<: x,y :>;

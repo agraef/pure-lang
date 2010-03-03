@@ -118,7 +118,7 @@ public:
   // the current namespace
   string *current_namespace;
   // additional namespaces to be searched for unqualified symbols
-  set<string> *search_namespaces;
+  map< string, set<int32_t> > *search_namespaces;
   // these are for internal use only
   void dump(string& s);
   void restore(const string& s);

@@ -52,6 +52,7 @@ static string format_namespace(const string& name);
 static bool find_namespace(interpreter& interp, const string& name);
 static int32_t checktag(const char *s);
 static bool checkint(const char *s, string& msg);
+static string xsym(const string& ns, const string& s);
 
 /* Uncomment this to enable checking for interactive command names. This is
    rather annoying and hence disabled by default. */
@@ -133,7 +134,7 @@ str    ([^\"\\\n]|\\(.|\n))*
 cmd    (!|help|ls|pwd|break|bt|del|cd|show|dump|clear|save|run|override|underride|stats|mem|quit|completion_matches)
 blank  [ \t\f\v\r]
 
-%x escape comment xdecl xdecl_comment xusing xusing_comment xtag rescan
+%x escape comment xdecl xdecl_comment xusing xusing_comment xsyms xsyms_comment xtag rescan xsyms_rescan
 
 %{
 # define YY_USER_ACTION  yylloc->columns(yyleng);
@@ -256,6 +257,7 @@ blank  [ \t\f\v\r]
 <xusing>using      return token::USING;
 <xusing>namespace  return token::NAMESPACE;
 <xusing>{qual}?{id}  yylval->sval = new string(yytext); return token::ID;
+<xusing>"("        BEGIN(xsyms); return yy::parser::token_type(yytext[0]);
 <xusing>,	   return yy::parser::token_type(yytext[0]);
 <xusing>"//".*	   yylloc->step();
 <xusing>"/*"	   BEGIN(xusing_comment);
@@ -280,12 +282,62 @@ blank  [ \t\f\v\r]
   string msg = "invalid character '"+string(yytext)+"'";
   interp.error(*yylloc, msg);
 }
-     
+
+<xsyms>"//".*	   yylloc->step();
+<xsyms>"/*"	   { xsyms_parse_comment: BEGIN(xsyms_comment); }
+<xsyms,xsyms_rescan>")"	   BEGIN(xusing); return yy::parser::token_type(yytext[0]);
+<xsyms>{blank}+    yylloc->step();
+<xsyms>[\n]+	   yylloc->lines(yyleng); yylloc->step();
+<xsyms>{id}        {
+  symbol* sym = interp.symtab.lookup(xsym(interp.xsym_prefix, yytext));
+  if (sym) {
+    yylval->ival = sym->f;
+    return token::XID;
+  }
+  string msg = "undeclared symbol '"+string(yytext)+"'";
+  interp.error(*yylloc, msg);
+}
+<xsyms>([[:punct:]]|{punct})+  {
+  if (yytext[0] == '/' && yytext[1] == '*') {
+    yyless(2);
+    goto xsyms_parse_comment; // comment starter
+  }
+  while (yyleng > 1 && yytext[yyleng-1] == ';') yyless(yyleng-1);
+  symbol* sym = interp.symtab.lookup(xsym(interp.xsym_prefix, yytext));
+  while (!sym && yyleng > 1) {
+    if (yyleng == 2 && yytext[0] == '-' && yytext[1] == '>')
+      return token::MAPSTO;
+    yyless(yyleng-1);
+    sym = interp.symtab.lookup(xsym(interp.xsym_prefix, yytext));
+  }
+  if (sym) {
+    yylval->ival = sym->f;
+    return token::XID;
+  }
+  assert(yyleng == 1);
+  /* If we come here, we failed to recognize the input as a special symbol and
+     have to rescan everything in a special mode which excludes this
+     rule. This hack is necessary in order to avoid the use of REJECT. */
+  yyless(0);
+  BEGIN(xsyms_rescan);
+}
+<xsyms_rescan>(.|{punct}|{letter}) {
+  string msg = "invalid character '"+pstring(yytext)+"'";
+  interp.error(*yylloc, msg);
+  BEGIN(xsyms);
+}
+
 <xusing_comment>[^*\n]*        yylloc->step();
 <xusing_comment>"*"+[^*/\n]*   yylloc->step();
 <xusing_comment>[\n]+          yylloc->lines(yyleng); yylloc->step();
 <xusing_comment>"*"+"/"        yylloc->step(); BEGIN(xusing);
 <xusing_comment><<EOF>>        interp.error(*yylloc, "open comment at end of file"); BEGIN(xusing);
+
+<xsyms_comment>[^*\n]*        yylloc->step();
+<xsyms_comment>"*"+[^*/\n]*   yylloc->step();
+<xsyms_comment>[\n]+          yylloc->lines(yyleng); yylloc->step();
+<xsyms_comment>"*"+"/"        yylloc->step(); BEGIN(xsyms);
+<xsyms_comment><<EOF>>        interp.error(*yylloc, "open comment at end of file"); BEGIN(xsyms);
 
 ^{cmd} {
   /* These are treated as commands in interactive mode, and as ordinary
@@ -758,9 +810,10 @@ static bool find_namespace(interpreter& interp, const string& name)
       interp.namespaces.find(ns+"::"+qual) != interp.namespaces.end())
     return true;
   // search the search namespaces
-  for (set<string>::iterator it = interp.symtab.search_namespaces->begin(),
+  for (map< string, set<int32_t> >::iterator
+	 it = interp.symtab.search_namespaces->begin(),
 	 end = interp.symtab.search_namespaces->end(); it != end; it++) {
-    const string& ns = *it;
+    const string& ns = it->first;
     if (!ns.empty() &&
 	interp.namespaces.find(ns+"::"+qual) != interp.namespaces.end())
       return true;
@@ -783,6 +836,11 @@ static const char *commands[] = {
   "outfix", "override", "postfix", "prefix", "private", "public", "pwd",
   "quit", "run", "save", "show", "stats", "underride", "using", 0
 };
+
+static bool inline checksym(int32_t f, const set<int32_t>& syms)
+{
+  return syms.empty() || syms.find(f) != syms.end();
+}
 
 typedef map<string, symbol> symbol_map;
 
@@ -848,11 +906,11 @@ command_generator(const char *text, int state)
 	  string prefix = s.substr(0, p?p-2:p),
 	    name = s.substr(p, string::npos);
 	  bool found = prefix==*interp.symtab.current_namespace;
-	  for (set<string>::iterator
+	  for (map< string, set<int32_t> >::iterator
 		 it = interp.symtab.search_namespaces->begin(),
 		 end = interp.symtab.search_namespaces->end();
 	       !found && it != end; it++)
-	    found = prefix==*it;
+	    found = prefix==it->first && checksym(f, it->second);
 	  if (found)
 	    return strdup(name.c_str());
 	}
@@ -1017,6 +1075,14 @@ static bool checkint(const char *s, string& msg)
     return false;
   } else
     return true;
+}
+
+static string xsym(const string& ns, const string& s)
+{
+  if (ns.empty())
+    return "::"+s;
+  else
+    return "::"+ns+"::"+s;
 }
 
 /* Interactive command processing. */
@@ -1303,12 +1369,42 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
     if (!interp.symtab.search_namespaces->empty()) {
       sout << "using namespace ";
       int count = 0;
-      for (set<string>::iterator
+      for (map< string, set<int32_t> >::iterator
 	     it = interp.symtab.search_namespaces->begin(),
 	     end = interp.symtab.search_namespaces->end();
 	   it != end; it++) {
 	if (count++ > 0) sout << ", ";
-	sout << format_namespace(*it);
+	sout << format_namespace(it->first);
+	if (!it->second.empty()) {
+	  set<int32_t> right_parens;
+	  for (set<int32_t>::iterator jt = it->second.begin();
+	       jt != it->second.end(); ++jt) {
+	    const symbol& sym = interp.symtab.sym(*jt);
+	    if (sym.fix == outfix && sym.g > 0)
+	      right_parens.insert(sym.g);
+	  }
+	  sout << " (";
+	  for (set<int32_t>::iterator jt = it->second.begin();
+	       jt != it->second.end(); ++jt) {
+	    if (right_parens.find(*jt) != right_parens.end())
+	      continue;
+	    const symbol& sym = interp.symtab.sym(*jt);
+	    size_t p = symsplit(sym.s);
+	    if (p == string::npos)
+	      sout << " " << sym.s;
+	    else
+	      sout << " " << sym.s.substr(p+2);
+	    if (sym.fix == outfix && sym.g > 0) {
+	      const symbol& sym2 = interp.symtab.sym(sym.g);
+	      size_t p = symsplit(sym2.s);
+	      if (p == string::npos)
+		sout << " " << sym2.s;
+	      else
+		sout << " " << sym2.s.substr(p+2);
+	    }
+	  }
+	  sout << " )";
+	}
       }
       sout << ";\n";
     }

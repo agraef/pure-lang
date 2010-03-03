@@ -410,8 +410,8 @@ struct nsinfo {
   // scoped namespaces data
   bool priv; // private/public flag (currently this isn't used by the parser)
   string parent; // parent namespace
-  set<string> search_namespaces; // saved search namespaces
-  nsinfo(const string& ns, const set<string>& nss)
+  map< string, set<int32_t> > search_namespaces; // saved search namespaces
+  nsinfo(const string& ns, const map< string, set<int32_t> >& nss)
     : priv(false), parent(ns), search_namespaces(nss) {}
 };
 
@@ -604,7 +604,7 @@ public:
   void build_env(env& vars, expr x);
   void mark_dirty(int32_t f);
   void compile(expr x);
-  void using_namespaces(list<string> *ids = 0);
+  void using_namespaces(list< pair< string, list<int32_t> > > *items = 0);
   void declare(bool priv, prec_t prec, fix_t fix, list<string> *ids);
   void define(rule *r);
   void define_const(rule *r);
@@ -1047,7 +1047,7 @@ public:
 
 public:
   bool declare_op;
-  string srcdir;
+  string srcdir, xsym_prefix;
 
 private:
   bool lex_begin(const string& fname = "", bool esc = false);

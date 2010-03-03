@@ -1186,7 +1186,7 @@ static string searchlib(const string& srcdir, const string& libdir,
 void interpreter::push_namespace(string *ns)
 {
   string parent = *symtab.current_namespace;
-  set<string> search_namespaces = *symtab.search_namespaces;
+  map< string, set<int32_t> > search_namespaces = *symtab.search_namespaces;
   active_namespaces.push_front(nsinfo(parent, search_namespaces));
   set_namespace(ns);
 }
@@ -1582,7 +1582,7 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
   string l_srcdir = srcdir, l_srcabs = srcabs;
   int32_t l_modno = modno;
   string *l_current_namespace = symtab.current_namespace;
-  set<string> *l_search_namespaces = symtab.search_namespaces;
+  map< string, set<int32_t> > *l_search_namespaces = symtab.search_namespaces;
   bool l_checks = checks, l_folding = folding, l_use_fastcc = use_fastcc;
   // save global data
   uint8_t s_verbose = g_verbose;
@@ -1606,7 +1606,7 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
   else {
     modno = modctr++;
     symtab.current_namespace = new string;
-    symtab.search_namespaces = new set<string>;
+    symtab.search_namespaces = new map< string, set<int32_t> >;
   }
   errmsg.clear();
   if (check && !interactive) temp = 0;
@@ -1676,7 +1676,7 @@ pure_expr *interpreter::runstr(const string& s)
   string l_srcdir = srcdir, l_srcabs = srcabs;
   int32_t l_modno = modno;
   string *l_current_namespace = symtab.current_namespace;
-  set<string> *l_search_namespaces = symtab.search_namespaces;
+  map< string, set<int32_t> > *l_search_namespaces = symtab.search_namespaces;
   bool l_checks = checks, l_folding = folding, l_use_fastcc = use_fastcc;
   // save global data
   uint8_t s_verbose = g_verbose;
@@ -1692,7 +1692,7 @@ pure_expr *interpreter::runstr(const string& s)
   srcdir = ""; srcabs = "";
   modno = modctr++;
   symtab.current_namespace = new string;
-  symtab.search_namespaces = new set<string>;
+  symtab.search_namespaces = new map< string, set<int32_t> >;
   errmsg.clear();
   compiling = false;
   bool ok = lex_begin();
@@ -1738,7 +1738,7 @@ pure_expr *interpreter::parsestr(const string& s)
   string l_srcdir = srcdir, l_srcabs = srcabs;
   int32_t l_modno = modno;
   string *l_current_namespace = symtab.current_namespace;
-  set<string> *l_search_namespaces = symtab.search_namespaces;
+  map< string, set<int32_t> > *l_search_namespaces = symtab.search_namespaces;
   bool l_checks = checks, l_folding = folding, l_use_fastcc = use_fastcc;
   // save global data
   uint8_t s_verbose = g_verbose;
@@ -1755,7 +1755,7 @@ pure_expr *interpreter::parsestr(const string& s)
   srcdir = ""; srcabs = "";
   modno = modctr++;
   symtab.current_namespace = new string;
-  symtab.search_namespaces = new set<string>;
+  symtab.search_namespaces = new map< string, set<int32_t> >;
   errmsg.clear();
   compiling = false;
   bool ok = lex_begin("", true);
@@ -2522,16 +2522,43 @@ void interpreter::compile(expr x)
   }
 }
 
-void interpreter::using_namespaces(list<string> *ids)
+void interpreter::using_namespaces(list< pair< string, list<int32_t> > > *items)
 {
   symtab.search_namespaces->clear();
-  if (ids) {
-    for (list<string>::iterator it = ids->begin(), end = ids->end();
-	 it != end; it++) {
-      namespaces.insert(*it);
-      symtab.search_namespaces->insert(*it);
+  if (items) {
+    for (list< pair< string, list<int32_t> > >::iterator
+	   it = items->begin(), end = items->end(); it != end; it++) {
+      namespaces.insert(it->first);
+      map< string, set<int32_t> >::iterator jt =
+	symtab.search_namespaces->find(it->first);
+      if (jt == symtab.search_namespaces->end()) {
+	(*symtab.search_namespaces)[it->first].clear();
+	jt = symtab.search_namespaces->find(it->first);
+      }
+      assert(jt != symtab.search_namespaces->end());
+      for (list<int32_t>::iterator kt = it->second.begin();
+	   kt != it->second.end(); ++kt) {
+	const symbol& sym = symtab.sym(*kt);
+	if (sym.fix == outfix) {
+	  if (sym.g == 0)
+	    throw err("left symbol missing for right outfix symbol '"+
+		      sym.s+"'");
+	  list<int32_t>::iterator lt = ++kt;
+	  if (lt == it->second.end())
+	    throw err("right symbol missing for left outfix symbol '"+
+		      sym.s+"'");
+	  const symbol& sym2 = symtab.sym(*lt);
+	  if (sym.g != sym2.f)
+	    throw err("right symbol '"+
+		      sym2.s+"' doesn't match left outfix symbol '"+sym.s+"'");
+	  jt->second.insert(sym.f);
+	  jt->second.insert(sym.g);
+	} else {
+	  jt->second.insert(sym.f);
+	}
+      }
     }
-    delete ids;
+    delete items;
   }
 }
 

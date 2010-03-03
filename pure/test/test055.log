@@ -1,0 +1,45 @@
+foo::foo x/*0:1*/ = x/*0:1*/+1;
+foo::bar x/*0:1*/ = x/*0:1*/-1;
+x/*0:01*/ foo::^ y/*0:1*/ = 2*x/*0:01*/+y/*0:1*/;
+bar::foo x/*0:1*/ = x/*0:1*/+2;
+bar::bar x/*0:1*/ = x/*0:1*/-2;
+{
+  rule #0: x foo::^ y = 2*x+y
+  state 0: #0
+	<var> state 1
+  state 1: #0
+	<var> state 2
+  state 2: #0
+}
+{
+  rule #0: foo::foo x = x+1
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+{
+  rule #0: foo::bar x = x-1
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+{
+  rule #0: bar::foo x = x+2
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+{
+  rule #0: bar::bar x = x-2
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+foo::foo x;
+x+1
+x foo::^ y;
+2*x+y
+bar::bar x;
+x-2
+bar::<: x,y bar:::>;
+bar::<: x,y bar:::>
