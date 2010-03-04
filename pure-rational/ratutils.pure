@@ -1734,7 +1734,7 @@ get_value_scale radix q
 	= 0 // rather than - infinity
 		if integerp radix && q == 0;
 	= 1 - (get_frac_scale (<= 1) radix (reciprocal q))
-		if integerp radix && q >= Radix;
+		if integerp radix && q >= radix;
 	= get_frac_scale (< 1) radix q
 		if integerp radix;
 
@@ -1953,7 +1953,7 @@ val_mixed strg::string
 /* join the int and frac substrings to form a recurring decimal string */
 public join_str_real_recur;
 join_str_real_recur fmt intGroup sign i fract recurPart
-	= sm sign (YF (gi intGroup (zi i)) (r fract recurPart))
+	= sm sign (yf (gi intGroup (zi i)) (r fract recurPart))
 	  when
 	    zi = fmt ! "zi";
 	    gi = fmt ! "gi";
@@ -1989,11 +1989,11 @@ strs_real_recur radix q
  */
 public str_real_recur; /* NB: FracGroup not appropriate here */
 str_real_recur fmt radix intGroup q
-	= join_str_real_recur fmt ontGroup s z initial recur
+	= join_str_real_recur fmt intGroup s z initial recur
 	  when
 	    (s, z, initial, recur) = strs_real_recur radix q
 	  end
-	  if integerp radix && integerp intGroup && rationalp q && Radix >= 2;
+	  if integerp radix && integerp intGroup && rationalp q && radix >= 2;
 	// do nothing otherwise;
 
 /*
