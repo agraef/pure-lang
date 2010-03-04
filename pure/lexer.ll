@@ -190,6 +190,15 @@ blank  [ \t\f\v\r]
 <comment>"*"+"/"        yylloc->step(); BEGIN(INITIAL);
 <comment><<EOF>>	interp.error(*yylloc, "open comment at end of file"); BEGIN(INITIAL);
 
+<xdecl>^{cmd} {
+  if (interp.interactive || interp.output)
+    goto parse_cmd;
+  else if (yytext[0] == '!')
+    goto xdecl_bad_char;
+  else
+    goto xdecl_parse_id;
+}
+
 <xdecl>extern     return token::EXTERN;
 <xdecl>infix      yylval->fix = infix; return token::FIX;
 <xdecl>infixl     yylval->fix = infixl; return token::FIX;
@@ -214,7 +223,7 @@ blank  [ \t\f\v\r]
 <xdecl>with	  return token::WITH;
 <xdecl>using      return token::USING;
 <xdecl>namespace  return token::NAMESPACE;
-<xdecl>{id}	  check(*yylloc, yytext, true); yylval->sval = new string(yytext); return token::ID;
+<xdecl>{id}	  { xdecl_parse_id: check(*yylloc, yytext, true); yylval->sval = new string(yytext); return token::ID; }
 <xdecl>[()*,=]	  return yy::parser::token_type(yytext[0]);
 <xdecl>"//".*	  yylloc->step();
 <xdecl>"/*"	  BEGIN(xdecl_comment);
@@ -222,6 +231,7 @@ blank  [ \t\f\v\r]
 <xdecl>{blank}+	  yylloc->step();
 <xdecl>[\n]+	  yylloc->lines(yyleng); yylloc->step();
 <xdecl>(.|{punct}|{letter})	{
+ xdecl_bad_char:
   string msg = "invalid character '"+string(yytext)+"'";
   interp.error(*yylloc, msg);
 }
@@ -231,6 +241,15 @@ blank  [ \t\f\v\r]
 <xdecl_comment>[\n]+          yylloc->lines(yyleng); yylloc->step();
 <xdecl_comment>"*"+"/"        yylloc->step(); BEGIN(xdecl);
 <xdecl_comment><<EOF>>        interp.error(*yylloc, "open comment at end of file"); BEGIN(xdecl);
+
+<xusing>^{cmd} {
+  if (interp.interactive || interp.output)
+    goto parse_cmd;
+  else if (yytext[0] == '!')
+    goto xusing_bad_char;
+  else
+    goto xusing_parse_id;
+}
 
 <xusing>extern     BEGIN(INITIAL); return token::EXTERN;
 <xusing>infix      BEGIN(INITIAL); yylval->fix = infix; return token::FIX;
@@ -256,7 +275,7 @@ blank  [ \t\f\v\r]
 <xusing>with	   BEGIN(INITIAL); return token::WITH;
 <xusing>using      return token::USING;
 <xusing>namespace  return token::NAMESPACE;
-<xusing>{qual}?{id}  yylval->sval = new string(yytext); return token::ID;
+<xusing>{qual}?{id}  { xusing_parse_id: yylval->sval = new string(yytext); return token::ID; }
 <xusing>"("        BEGIN(xsyms); return yy::parser::token_type(yytext[0]);
 <xusing>,	   return yy::parser::token_type(yytext[0]);
 <xusing>"//".*	   yylloc->step();
@@ -279,8 +298,18 @@ blank  [ \t\f\v\r]
   return token::STR;
 }
 <xusing>(.|{punct}|{letter})	{
+ xusing_bad_char:
   string msg = "invalid character '"+string(yytext)+"'";
   interp.error(*yylloc, msg);
+}
+
+<xsyms>^{cmd} {
+  if (interp.interactive || interp.output)
+    goto parse_cmd;
+  else if (yytext[0] == '!')
+    goto xsyms_parse_op;
+  else
+    goto xsyms_parse_id;
 }
 
 <xsyms>"//".*	   yylloc->step();
@@ -289,6 +318,7 @@ blank  [ \t\f\v\r]
 <xsyms>{blank}+    yylloc->step();
 <xsyms>[\n]+	   yylloc->lines(yyleng); yylloc->step();
 <xsyms>{id}        {
+ xsyms_parse_id:
   symbol* sym = interp.symtab.lookup(xsym(interp.xsym_prefix, yytext));
   bool res = interp.symtab.count > 0;
   if (sym) {
@@ -300,6 +330,7 @@ blank  [ \t\f\v\r]
   interp.error(*yylloc, msg);
 }
 <xsyms>([[:punct:]]|{punct})+  {
+ xsyms_parse_op:
   if (yytext[0] == '/' && yytext[1] == '*') {
     yyless(2);
     goto xsyms_parse_comment; // comment starter
@@ -348,6 +379,7 @@ blank  [ \t\f\v\r]
 <xsyms_comment><<EOF>>        interp.error(*yylloc, "open comment at end of file"); BEGIN(xsyms);
 
 ^{cmd} {
+ parse_cmd:
   /* These are treated as commands in interactive mode, and as ordinary
      (operator or identifier) symbols otherwise. */
   if (interp.interactive || interp.output) {
