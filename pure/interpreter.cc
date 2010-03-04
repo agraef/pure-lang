@@ -1228,7 +1228,7 @@ void interpreter::add_tags(rulel *rl)
   if (rl->front().lhs.is_null()) return;
   set<int32_t> syms;
   for (rulel::iterator i = rl->begin(), end = rl->end(); i != end; i++) {
-    expr x = i->lhs; checkfuns(x);
+    expr x = i->lhs; checkfuns(x); if (nerrs > 0) continue;
     int32_t f;
     count_args(x, f);
     if (f > 0 && syms.find(f) == syms.end()) {
@@ -1242,7 +1242,7 @@ void interpreter::add_tags(rulel *rl)
 void interpreter::add_tags(rule *r)
 {
   if (r->lhs.is_null()) return;
-  expr x = r->lhs; checkfuns(x);
+  expr x = r->lhs; checkfuns(x); if (nerrs > 0) return;
   int32_t f;
   count_args(x, f);
   if (f > 0) {
@@ -1254,7 +1254,7 @@ void interpreter::add_tags(rule *r)
 void interpreter::add_tags(expr pat)
 {
   env vars; veqnl eqns;
-  checkvars(pat);
+  checkvars(pat); if (nerrs > 0) return;
   qual = true;
   expr lhs = bind(vars, eqns, lcsubst(pat));
   build_env(vars, lhs);
@@ -2674,7 +2674,7 @@ void interpreter::parse(expr *x)
 void interpreter::define(rule *r)
 {
   last.clear();
-  checkvars(r->lhs);
+  checkvars(r->lhs); if (nerrs > 0) { delete r; return; }
   // Keep a copy of the original rule, so that we can give proper
   // diagnostics below.
   expr lhs = r->lhs, rhs = r->rhs;
@@ -2701,7 +2701,7 @@ void interpreter::define(rule *r)
 void interpreter::define_const(rule *r)
 {
   last.clear();
-  checkvars(r->lhs);
+  checkvars(r->lhs); if (nerrs > 0) { delete r; return; }
   // Keep a copy of the original rule, so that we can give proper
   // diagnostics below.
   expr lhs = r->lhs, rhs = r->rhs;
@@ -2939,7 +2939,7 @@ void interpreter::add_rule(env &e, rule &r, bool toplevel)
   closure(r, false);
   if (toplevel) {
     // substitute macros and constants:
-    checkfuns(r.lhs);
+    checkfuns(r.lhs); if (nerrs > 0) return;
     expr u = expr(r.lhs),
       v = expr(csubst(macsubst(r.rhs))),
       w = expr(csubst(macsubst(r.qual)));
@@ -3007,7 +3007,7 @@ void interpreter::add_simple_rule(rulel &rl, rule *r)
 void interpreter::add_macro_rule(rule *r)
 {
   assert(!r->lhs.is_null() && r->qual.is_null() && !r->rhs.is_guarded());
-  closure(*r, false); checkfuns(r->lhs);
+  closure(*r, false); checkfuns(r->lhs); if (nerrs > 0) { delete r; return; }
   expr fx; uint32_t argc = count_args(r->lhs, fx);
   int32_t f = fx.tag();
   if (f <= 0)
