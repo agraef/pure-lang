@@ -312,11 +312,11 @@ list_min = foldl1 min;
  * Only allow equality and inequality tests on complexities;
  * don't allow, for example (+).
  */
-((Rat_cplx x) ::== (Rat_cplx y)) = (x == y);
+(Rat_cplx x) ::== (Rat_cplx y) = x == y;
 (Rat_cplx x) ::~= (Rat_cplx y) = x ~= y;
-(Rat_cplx x) ::< (Rat_cplx y) = x < y;
+(Rat_cplx x) ::<  (Rat_cplx y) = x <  y;
 (Rat_cplx x) ::<= (Rat_cplx y) = x <= y;
-(Rat_cplx x) ::> (Rat_cplx y) = x > y;
+(Rat_cplx x) ::>  (Rat_cplx y) = x >  y;
 (Rat_cplx x) ::>= (Rat_cplx y) = x >= y;
 ::sgn ((Rat_cplx x) - (Rat_cplx y)) = sgn (x - y);
 
@@ -429,8 +429,8 @@ mediant q1 q2 = (n1 + n2) % (d1 + d2)
         end
 	if rationalp q1 && rationalp q2;
 
-mediant i q = mediant (rational i) q if rationalp q && integerp i;
-mediant q i = mediant q (rational i) if rationalp q && integerp i;
+mediant i q = mediant (rational i) q if integerp i;
+mediant q i = mediant q (rational i) if integerp i;
 
 /*
  * Farey Sequences
@@ -748,8 +748,8 @@ seek_rational_approx_epsilon epsilon fract l u
 		if rationalp l && rationalp u && (fract < m)
 		when m = mediant l u end;
 	= seek_rational_approx_epsilon epsilon fract m u
-		if rationalp l && rationalp u
-                when m = mediant l u end; /* if fract >= m */;
+                when m = mediant l u end /* if fract >= m */
+		if rationalp l && rationalp u;
 
 /*
  * find a rational interval no bigger than epsilon containing float fract
@@ -794,9 +794,9 @@ bound_and_seek_epsilon seek epsilon fract
 			 *   1/K > fract
 			 *   1/K - fract <= Eps
 			 */
-                        k = max 1 (floor (1.0 / (epsilon + fract)));
+                        k = max 1L (bigint (floor (1.0 / (epsilon + fract))));
 			l = rational 0;
-			u = rational $ reciprocal k
+			u = reciprocal k
                 end
 		if fract >= 0 && fract <= 0.5;
 	/*
@@ -870,11 +870,11 @@ seek_rational_approxs_epsilon epsilon fract l u
 private seek_rational_approx_max_den;
 /* maxDen > 1 */
 seek_rational_approx_max_den maxDen fract l u
-	= seek_rational_approx_max_den MaxDen fract l m
-		if rationalp l && rationalp u && ((den m) <= maxDen) && (fract < m)
+	= seek_rational_approx_max_den maxDen fract l m
+		if rationalp l && rationalp u && (den m <= maxDen) && (fract < m)
 		when m = mediant l u end;
 	= seek_rational_approx_max_den maxDen fract m u
-		if rationalp l && rationalp u && ((den m) <= maxDen) /* and then (fract >= m) */
+		if rationalp l && rationalp u && (den m <= maxDen) /* and then (fract >= m) */
 		when m = mediant l u end;
 	= l if rationalp l && rationalp u && ((fract - l) < (u - fract));
 	= u if rationalp l && rationalp u;
@@ -890,7 +890,7 @@ seek_rational_approx_max_den maxDen fract l u
 private seek_rational_interval_max_den;
 /* 0 < maxDen << 1 */
 seek_rational_interval_max_den maxDen fract l u
-	= seek_rational_interval_max_den MaxDen fract l m
+	= seek_rational_interval_max_den maxDen fract l m
 		if rationalp l && rationalp u && ((den m) <= maxDen) && (fract < m)
 		when m = mediant l u end;
 	= seek_rational_interval_max_den maxDen fract m u
@@ -917,11 +917,11 @@ bound_and_seek_max_den seek maxDen fract
 	/* OPTIONAL OPTIMISATION, but requires 0 <= fract <= 1/2 */
 	= seek maxDen fract l u
 		when
-		  k = max 1 (min maxDen (trunc (1.0 / fract)));
+		  k = max 1L (bigint (min maxDen (trunc (1.0 / fract))));
 		  l = rational 0;
-		  u = rational $ reciprocal k
+		  u = reciprocal k
 		end
-		if fract > 0;
+		if fract >= 0 && fract <= 0.5;
 
 	/* This works, but may be inefficient for values close to 0 or 1 */
 	= seek maxDen fract (rational 0) (rational 1)
