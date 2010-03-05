@@ -249,6 +249,12 @@ non-nil."
   :type 'string
   :group 'pure)
 
+(defcustom pure-prog-opts nil
+  "*List of extra command line options the interpreter is invoked with.
+See the Pure manual for a list of available options."
+  :type '(repeat string)
+  :group 'pure)
+
 (defcustom pure-library-dir pure-libdir
   "*Location of the Pure library directory."
   :type 'string
@@ -601,7 +607,7 @@ manipulating the command history, etc. See `pure-eval-mode'.
       ;; invoke the interpreter
       (setenv "PURE_MORE" nil) ; disable paging in the interpreter
       (comint-exec pure-eval-buffer "pure-eval" pure-prog-name nil
-		   (append (list "-q" "-i") args))
+		   (append (list "-q" "-i") pure-prog-opts args))
       ;; set up process parameters
       (setq pure-output-list nil
 	    pure-output-string nil
