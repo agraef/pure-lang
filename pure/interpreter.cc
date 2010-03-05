@@ -664,8 +664,8 @@ void interpreter::init()
 }
 
 interpreter::interpreter()
-  : verbose(0), compiling(false), eager_jit(false), interactive(false),
-    debugging(false),
+  : verbose(0), compat(false), compiling(false), eager_jit(false),
+    interactive(false), debugging(false),
     checks(true), folding(true), use_fastcc(true), pic(false), strip(true),
     restricted(false), ttymode(false), override(false),
     stats(false), stats_mem(false), temp(0),  ps("> "), libdir(""),
@@ -683,8 +683,8 @@ interpreter::interpreter(int32_t nsyms, char *syms,
 			 pure_expr ***vars, void **vals,
 			 int32_t *arities, void **externs,
 			 pure_expr ***_sstk, void **_fptr)
-  : verbose(0), compiling(false), eager_jit(false), interactive(false),
-    debugging(false),
+  : verbose(0), compat(false), compiling(false), eager_jit(false),
+  interactive(false), debugging(false),
     checks(true), folding(true), use_fastcc(true), pic(false), strip(true),
     restricted(true), ttymode(false), override(false),
     stats(false), stats_mem(false), temp(0), ps("> "), libdir(""),
@@ -2216,8 +2216,7 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
 
 void interpreter::const_defn(const char *varname, pure_expr *x)
 {
-  string id = (strncmp(varname, "::", 2)==0)?varname:"::"+string(varname);
-  symbol& sym = symtab.checksym(id);
+  symbol& sym = symtab.checksym(varname);
   const_defn(sym.f, x);
 }
 
@@ -3323,21 +3322,40 @@ void interpreter::funsubst(expr x, int32_t f, int32_t g, bool b)
     funsubst(x.xval(), f, g);
     for (env::const_iterator it = x.fenv()->begin();
 	 it != x.fenv()->end(); ++it) {
+      int32_t h = it->first;
       const env_info& info = it->second;
       const rulel *r = info.rules;
+      bool unresolved = symtab.sym(h).unresolved;
+      symtab.sym(h).unresolved = false;
       for (rulel::const_iterator jt = r->begin(); jt != r->end(); ++jt) {
 	funsubst(jt->lhs, f, g, true);
 	funsubst(jt->rhs, f, g);
 	funsubst(jt->qual, f, g);
       }
+      symtab.sym(h).unresolved = unresolved;
     }
     break;
   default:
     assert(x.tag() > 0);
-    if (!b && x.tag() == f) {
+    if (!b && x.tag() == f && g != f) {
       // make sure that we don't accidentally clobber a cached symbol node here
       assert(x != symtab.sym(x.tag()).x);
       x.set_tag(g);
+    } else {
+      symbol& sym = symtab.sym(x.tag());
+      if (sym.unresolved) {
+	// unresolved symbol, needs to be promoted to the current namespace
+	assert(strstr(sym.s.c_str(), "::") == 0);
+	if (!symtab.current_namespace->empty()) {
+	  symbol *sym2 = symtab.sym("::"+*symtab.current_namespace+"::"+sym.s);
+	  assert(sym2);
+	  x.set_tag(sym2->f);
+	  if (compat)
+	    warning(*loc, "warning: '"+sym.s+"' resolves to '"+
+		    sym2->s+"' under new symbol lookup rules");
+	} else if (!b)
+	  sym.unresolved = false;
+      }
     }
   }
 }
@@ -3371,22 +3389,25 @@ static string symtype(const symbol& sym)
 
 void interpreter::checkfuns(rule *r)
 {
-  if (symtab.current_namespace->empty()) return;
-  expr f = r->lhs, y, z;
-  while (f.is_app(y, z)) f = y;
-  if (f.tag() <= 0 || f.ttag() != 0) return;
-  const symbol& sym = symtab.sym(f.tag());
-  string id, qual = qualifier(sym, id);
-  if (qual != *symtab.current_namespace) {
+  int32_t f = 0, g = 0;
+  if (!symtab.current_namespace->empty()) {
+    expr x = r->lhs, y, z;
+    while (x.is_app(y, z)) x = y;
+    if (x.tag() <= 0 || x.ttag() != 0) return;
+    const symbol& sym = symtab.sym(x.tag());
+    string id, qual = qualifier(sym, id);
+    f = sym.f; g = f;
     /* EXPR::QUAL in the flags signifies a qualified symbol in another
        namespace; this is OK if the symbol is already declared (otherwise the
        lexer will complain about it). If this flag isn't set, the symbol isn't
-       qualified and was picked up from elsewhere, in which case we promote it
-       to the current namespace. Unfortunately, we can only do this for an
-       ordinary identifier; if the symbol is an operator then presumably our
-       parse is botched already, hence in this case we just give up and flag
-       an undeclared symbol instead. */
-    if ((f.flags()&EXPR::QUAL) == 0) {
+       qualified and might have been picked up from elsewhere, in which case
+       we promote it to the current namespace. Note that we can only do this
+       for an ordinary identifier; if the symbol is an operator then
+       presumably our parse is botched already, hence in this case we just
+       give up and flag an undeclared symbol instead. */
+    bool head_needs_fixing =
+      qual != *symtab.current_namespace && (x.flags()&EXPR::QUAL) == 0;
+    if (head_needs_fixing) {
       if (sym.prec < PREC_MAX || sym.fix == nonfix || sym.fix == outfix) {
 	if (sym.fix == outfix && sym.g) {
 	  const symbol& sym2 =symtab.sym(sym.g);
@@ -3396,17 +3417,23 @@ void interpreter::checkfuns(rule *r)
 	} else
 	  error(*loc, symtype(sym)+" symbol '"+id+
 		"' was not declared in this namespace");
-      } else {
-	// promote the symbol to the current namespace
-	assert(qual.empty());
-	symbol *sym2 = symtab.sym(*symtab.current_namespace+"::"+id);
-	assert(sym2);
-	funsubst(r->lhs, sym.f, sym2->f);
-	funsubst(r->rhs, sym.f, sym2->f);
-	funsubst(r->qual, sym.f, sym2->f);
+	return;
       }
+      // Might have to fix up the head symbol.
+      assert(qual.empty());
+      symbol *sym2 = symtab.sym(*symtab.current_namespace+"::"+id);
+      assert(sym2);
+      g = sym2->f;
+      if (compat && f!=g)
+	warning(*loc, "warning: '"+sym.s+"' resolves to '"+
+		sym2->s+"' under new symbol lookup rules");
     }
   }
+  // Promote the head symbol to the current namespace if necessary, and fix up
+  // all other unresolved symbols along the way.
+  funsubst(r->lhs, f, g);
+  funsubst(r->rhs, f, g);
+  funsubst(r->qual, f, g);
 }
 
 void interpreter::checkvars(expr x, bool b)
@@ -4679,7 +4706,8 @@ expr *interpreter::mksym_expr(string *s, int32_t tag)
       return mkas_expr(s, new expr(expr(tag), expr(symtab.anon_sym)));
   else {
     x = new expr(sym.f);
-    if (s->find("::") != string::npos) x->flags() |= EXPR::QUAL;
+    if (s->find("::") != string::npos)
+      x->flags() |= EXPR::QUAL;
     // record type tag:
     x->set_ttag(tag);
   }
@@ -4692,6 +4720,7 @@ expr *interpreter::mkas_expr(string *s, expr *x)
   const symbol &sym = symtab.checksym(*s);
   if (sym.f <= 0 || sym.prec < PREC_MAX || sym.fix == nonfix || sym.fix == outfix)
     throw err("error in  \"as\" pattern (bad variable symbol)");
+#if 0
   if (x->tag() > 0) {
     // Avoid globbering cached function symbols.
     // FIXME: Is this needed any more?
@@ -4699,8 +4728,10 @@ expr *interpreter::mkas_expr(string *s, expr *x)
     delete x;
     x = y;
   }
+#endif
   x->set_astag(sym.f);
-  if (s->find("::") != string::npos) x->flags() |= EXPR::ASQUAL;
+  if (s->find("::") != string::npos)
+    x->flags() |= EXPR::ASQUAL;
   delete s;
   return x;
 }
@@ -5745,8 +5776,7 @@ to variables should fix this. **\n";
 
 void interpreter::defn(const char *varname, pure_expr *x)
 {
-  string id = (strncmp(varname, "::", 2)==0)?varname:"::"+string(varname);
-  symbol& sym = symtab.checksym(id);
+  symbol& sym = symtab.checksym(varname);
   defn(sym.f, x);
 }
 

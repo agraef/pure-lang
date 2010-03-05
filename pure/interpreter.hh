@@ -431,6 +431,7 @@ public:
 
   // Option data. You can modify these according to your needs.
   uint8_t verbose;   // debugging output from interpreter
+  bool compat;       // enable backward compatibility warnings
   bool compiling;    // batch compiler mode
   bool eager_jit;    // eager JIT (LLVM 2.7 or later)
   bool interactive;  // interactive mode

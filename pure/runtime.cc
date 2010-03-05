@@ -3494,6 +3494,8 @@ pure_interp *pure_create_interp(int argc, char *argv[])
 	interp.use_fastcc = false;
       else if (strcmp(arg, "--tc") == 0)
 	interp.use_fastcc = true;
+      else if (strcmp(arg, "-w") == 0)
+	interp.compat = true;
       else if (strncmp(*args, "-o", 2) == 0) {
 	string s = string(*args).substr(2);
 	if (s.empty()) {

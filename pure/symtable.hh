@@ -40,14 +40,19 @@ public:
   prec_t prec; // precedence level
   fix_t fix; // fixity
   bool priv; // private attribute
+  bool unresolved; // unresolved symbol
   symbol() // constructor for dummy entries
-    : f(0), g(0), s(""), prec(PREC_MAX), fix(infix), priv(false) {}
+    : f(0), g(0), s(""), prec(PREC_MAX), fix(infix), priv(false),
+      unresolved(false)
+  {}
   symbol(const string& _s, int _f, bool _priv = false)
-    : f(_f), g(0), s(_s), prec(PREC_MAX), fix(infix), priv(_priv)
+    : f(_f), g(0), s(_s), prec(PREC_MAX), fix(infix), priv(_priv),
+      unresolved(false)
   { x = expr(f); }
   symbol(const string& _s, int _f, prec_t _prec, fix_t _fix,
 	 bool _priv = false)
-    : f(_f), g(0), s(_s), prec(_prec), fix(_fix), priv(_priv)
+    : f(_f), g(0), s(_s), prec(_prec), fix(_fix), priv(_priv),
+      unresolved(false)
   { x = expr(f); }
 };
 

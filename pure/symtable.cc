@@ -295,9 +295,8 @@ symbol* symtable::sym(const char *s, bool priv)
     return _sym;
   else if (count > 1)
     return 0;
-  const char *p = strstr(s, "::");
-  if (p == s) s+=2; else if (strcmp(s, "_") == 0) p=s;
-  string id = (p||current_namespace->empty())?s:(*current_namespace+"::"+s);
+  if (s[0] == ':' && s[1] == ':') s+=2;
+  string id = s;
   _sym = &tab[id];
   if (_sym->f == 0) {
     if ((uint32_t)++fno >= rtab.size())
@@ -321,9 +320,8 @@ symbol* symtable::sym(const char *s, prec_t prec, fix_t fix, bool priv)
     return _sym;
   else if (count > 1)
     return 0;
-  const char *p = strstr(s, "::");
-  if (p == s) s+=2; else if (strcmp(s, "_") == 0) p=s;
-  string id = (p||current_namespace->empty())?s:(*current_namespace+"::"+s);
+  if (s[0] == ':' && s[1] == ':') s+=2;
+  string id = s;
   _sym = &tab[id];
   if (_sym->f == 0) {
     if ((uint32_t)++fno >= rtab.size())
@@ -341,10 +339,14 @@ symbol* symtable::sym(const char *s, prec_t prec, fix_t fix, bool priv)
 
 symbol& symtable::checksym(const char *s, bool priv)
 {
+  bool exists = strstr(s, "::") || lookup(s);
   symbol *_sym = sym(s, priv);
-  if (_sym)
+  if (_sym) {
+    if (!exists)
+      // symbol was generated on the fly, we need to keep track of these
+      _sym->unresolved = true;
     return *_sym;
-  else if (count > 1)
+  } else if (count > 1)
     throw err("symbol '"+string(s)+"' is ambiguous here");
   else
     throw err("symbol '"+string(s)+"' is private here");
