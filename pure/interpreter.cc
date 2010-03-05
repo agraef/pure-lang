@@ -1222,27 +1222,10 @@ void interpreter::clear_namespace()
 
 uint32_t count_args(expr x, int32_t& f);
 
-void interpreter::add_tags(rulel *rl)
-{
-  assert(!rl->empty());
-  if (rl->front().lhs.is_null()) return;
-  set<int32_t> syms;
-  for (rulel::iterator i = rl->begin(), end = rl->end(); i != end; i++) {
-    expr x = i->lhs; checkfuns(x); if (nerrs > 0) continue;
-    int32_t f;
-    count_args(x, f);
-    if (f > 0 && syms.find(f) == syms.end()) {
-      symbol& sym = symtab.sym(f);
-      add_tag(sym.s, srcabs, line, column);
-      syms.insert(f);
-    }
-  }
-}
-
 void interpreter::add_tags(rule *r)
 {
   if (r->lhs.is_null()) return;
-  expr x = r->lhs; checkfuns(x); if (nerrs > 0) return;
+  expr x = r->lhs;
   int32_t f;
   count_args(x, f);
   if (f > 0) {
@@ -1254,7 +1237,6 @@ void interpreter::add_tags(rule *r)
 void interpreter::add_tags(expr pat)
 {
   env vars; veqnl eqns;
-  checkvars(pat); if (nerrs > 0) return;
   qual = true;
   expr lhs = bind(vars, eqns, lcsubst(pat));
   build_env(vars, lhs);
@@ -2234,7 +2216,8 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
 
 void interpreter::const_defn(const char *varname, pure_expr *x)
 {
-  symbol& sym = symtab.checksym(varname);
+  string id = (strncmp(varname, "::", 2)==0)?varname:"::"+string(varname);
+  symbol& sym = symtab.checksym(id);
   const_defn(sym.f, x);
 }
 
@@ -2674,7 +2657,12 @@ void interpreter::parse(expr *x)
 void interpreter::define(rule *r)
 {
   last.clear();
-  checkvars(r->lhs); if (nerrs > 0) { delete r; return; }
+  checkvars(r->lhs);
+  if (nerrs > 0) {
+    delete r; return;
+  } else if (tags) {
+    add_tags(r->lhs); delete r; return;
+  }
   // Keep a copy of the original rule, so that we can give proper
   // diagnostics below.
   expr lhs = r->lhs, rhs = r->rhs;
@@ -2701,7 +2689,12 @@ void interpreter::define(rule *r)
 void interpreter::define_const(rule *r)
 {
   last.clear();
-  checkvars(r->lhs); if (nerrs > 0) { delete r; return; }
+  checkvars(r->lhs);
+  if (nerrs > 0) {
+    delete r; return;
+  } else if (tags) {
+    add_tags(r->lhs); delete r; return;
+  }
   // Keep a copy of the original rule, so that we can give proper
   // diagnostics below.
   expr lhs = r->lhs, rhs = r->rhs;
@@ -2939,7 +2932,8 @@ void interpreter::add_rule(env &e, rule &r, bool toplevel)
   closure(r, false);
   if (toplevel) {
     // substitute macros and constants:
-    checkfuns(r.lhs); if (nerrs > 0) return;
+    checkfuns(&r); if (nerrs > 0) return;
+    if (tags) add_tags(&r);
     expr u = expr(r.lhs),
       v = expr(csubst(macsubst(r.rhs))),
       w = expr(csubst(macsubst(r.qual)));
@@ -3007,7 +3001,11 @@ void interpreter::add_simple_rule(rulel &rl, rule *r)
 void interpreter::add_macro_rule(rule *r)
 {
   assert(!r->lhs.is_null() && r->qual.is_null() && !r->rhs.is_guarded());
-  closure(*r, false); checkfuns(r->lhs); if (nerrs > 0) { delete r; return; }
+  closure(*r, false); checkfuns(r);
+  if (nerrs > 0) {
+    delete r; return;
+  }
+  if (tags) add_tags(r);
   expr fx; uint32_t argc = count_args(r->lhs, fx);
   int32_t f = fx.tag();
   if (f <= 0)
@@ -3255,14 +3253,126 @@ static string qualifier(const symbol& sym, string& id)
   return qual;
 }
 
-void interpreter::checkfuns(expr x)
+void interpreter::funsubst(expr x, int32_t f, int32_t g, bool b)
 {
-#if 0
-  if (active_namespaces.empty()) return;
-#else
+  if (x.is_null()) return;
+  switch (x.tag()) {
+  // constants:
+  case EXPR::VAR:
+  case EXPR::FVAR:
+  case EXPR::INT:
+  case EXPR::BIGINT:
+  case EXPR::DBL:
+  case EXPR::STR:
+  case EXPR::PTR:
+  case EXPR::WRAP:
+    break;
+  // matrix:
+  case EXPR::MATRIX:
+    for (exprll::iterator xs = x.xvals()->begin(), end = x.xvals()->end();
+	 xs != end; xs++) {
+      for (exprl::iterator ys = xs->begin(), end = xs->end();
+	   ys != end; ys++) {
+	funsubst(*ys, f, g);
+      }
+    }
+    break;
+  // application:
+  case EXPR::APP:
+    funsubst(x.xval1(), f, g, b);
+    funsubst(x.xval2(), f, g);
+    break;
+  // conditionals:
+  case EXPR::COND:
+    funsubst(x.xval1(), f, g);
+    funsubst(x.xval2(), f, g);
+    funsubst(x.xval3(), f, g);
+    break;
+  case EXPR::COND1:
+    funsubst(x.xval1(), f, g);
+    funsubst(x.xval2(), f, g);
+    break;
+  // nested closures:
+  case EXPR::LAMBDA:
+    for (exprl::iterator xs = x.largs()->begin(), end = x.largs()->end();
+	   xs != end; xs++) {
+      funsubst(*xs, f, g);
+    }
+    funsubst(x.lrule().lhs, f, g);
+    funsubst(x.lrule().rhs, f, g);
+    break;
+  case EXPR::CASE:
+    funsubst(x.xval(), f, g);
+    for (rulel::const_iterator it = x.rules()->begin();
+	 it != x.rules()->end(); ++it) {
+      funsubst(it->lhs, f, g);
+      funsubst(it->rhs, f, g);
+      funsubst(it->qual, f, g);
+    }
+    break;
+  case EXPR::WHEN:
+    funsubst(x.xval(), f, g);
+    for (rulel::const_iterator it = x.rules()->begin();
+	 it != x.rules()->end(); ++it) {
+      funsubst(it->lhs, f, g);
+      funsubst(it->rhs, f, g);
+      funsubst(it->qual, f, g);
+    }
+    break;
+  case EXPR::WITH:
+    funsubst(x.xval(), f, g);
+    for (env::const_iterator it = x.fenv()->begin();
+	 it != x.fenv()->end(); ++it) {
+      const env_info& info = it->second;
+      const rulel *r = info.rules;
+      for (rulel::const_iterator jt = r->begin(); jt != r->end(); ++jt) {
+	funsubst(jt->lhs, f, g, true);
+	funsubst(jt->rhs, f, g);
+	funsubst(jt->qual, f, g);
+      }
+    }
+    break;
+  default:
+    assert(x.tag() > 0);
+    if (!b && x.tag() == f) {
+      // make sure that we don't accidentally clobber a cached symbol node here
+      assert(x != symtab.sym(x.tag()).x);
+      x.set_tag(g);
+    }
+  }
+}
+
+static string symtype(const symbol& sym)
+{
+  if (sym.fix == nonfix)
+    return "nonfix";
+  else if (sym.fix == outfix)
+    return "outfix";
+  else if (sym.prec < PREC_MAX) {
+    switch (sym.fix) {
+    case infix:
+      return "infix";
+    case infixl:
+      return "infixl";
+    case infixr:
+      return "infixr";
+    case prefix:
+      return "prefix";
+    case postfix:
+      return "postfix";
+    case nonfix:
+    case outfix:
+      break;
+    }
+  }
+  assert(0 && "this can't happen");
+  return "";
+}
+
+void interpreter::checkfuns(rule *r)
+{
   if (symtab.current_namespace->empty()) return;
-#endif
-  expr f = x, y, z;
+  expr f = r->lhs, y, z;
   while (f.is_app(y, z)) f = y;
   if (f.tag() <= 0 || f.ttag() != 0) return;
   const symbol& sym = symtab.sym(f.tag());
@@ -3270,21 +3380,38 @@ void interpreter::checkfuns(expr x)
   if (qual != *symtab.current_namespace) {
     /* EXPR::QUAL in the flags signifies a qualified symbol in another
        namespace; this is OK if the symbol is already declared (otherwise the
-       lexer will complain about it). However, if this flag isn't set, the
-       symbol isn't qualified and was picked up from elsewhere, which is an
-       error. */
-    if ((f.flags()&EXPR::QUAL) == 0)
-      error(*loc, "undeclared symbol '"+id+"'");
+       lexer will complain about it). If this flag isn't set, the symbol isn't
+       qualified and was picked up from elsewhere, in which case we promote it
+       to the current namespace. Unfortunately, we can only do this for an
+       ordinary identifier; if the symbol is an operator then presumably our
+       parse is botched already, hence in this case we just give up and flag
+       an undeclared symbol instead. */
+    if ((f.flags()&EXPR::QUAL) == 0) {
+      if (sym.prec < PREC_MAX || sym.fix == nonfix || sym.fix == outfix) {
+	if (sym.fix == outfix && sym.g) {
+	  const symbol& sym2 =symtab.sym(sym.g);
+	  string id2, qual2 = qualifier(sym2, id2);
+	  error(*loc, "outfix symbol '"+id+" "+id2+
+		"' was not declared in this namespace");
+	} else
+	  error(*loc, symtype(sym)+" symbol '"+id+
+		"' was not declared in this namespace");
+      } else {
+	// promote the symbol to the current namespace
+	assert(qual.empty());
+	symbol *sym2 = symtab.sym(*symtab.current_namespace+"::"+id);
+	assert(sym2);
+	funsubst(r->lhs, sym.f, sym2->f);
+	funsubst(r->rhs, sym.f, sym2->f);
+	funsubst(r->qual, sym.f, sym2->f);
+      }
+    }
   }
 }
 
 void interpreter::checkvars(expr x, bool b)
 {
-#if 0
-  if (active_namespaces.empty()) return;
-#else
   if (symtab.current_namespace->empty()) return;
-#endif
   switch (x.tag()) {
   case EXPR::VAR:
   case EXPR::FVAR:
@@ -3314,8 +3441,13 @@ void interpreter::checkvars(expr x, bool b)
       ;
     else {
       string id, qual = qualifier(sym, id);
-      if (qual != *symtab.current_namespace)
-	error(*loc, "undeclared symbol '"+id+"'");
+      if (qual != *symtab.current_namespace) {
+	// promote the symbol to the current namespace
+	assert(qual.empty());
+	symbol *sym = symtab.sym(*symtab.current_namespace+"::"+id);
+	assert(sym);
+	x.set_tag(sym->f);
+      }
     }
     break;
   }
@@ -3327,8 +3459,13 @@ void interpreter::checkvars(expr x, bool b)
       ;
     else {
       string id, qual = qualifier(sym, id);
-      if (qual != *symtab.current_namespace)
-	error(*loc, "undeclared symbol '"+id+"'");
+      if (qual != *symtab.current_namespace) {
+	// promote the symbol to the current namespace
+	assert(qual.empty());
+	symbol *sym = symtab.sym(*symtab.current_namespace+"::"+id);
+	assert(sym);
+	x.set_astag(sym->f);
+      }
     }
   }
 }
@@ -5608,7 +5745,8 @@ to variables should fix this. **\n";
 
 void interpreter::defn(const char *varname, pure_expr *x)
 {
-  symbol& sym = symtab.checksym(varname);
+  string id = (strncmp(varname, "::", 2)==0)?varname:"::"+string(varname);
+  symbol& sym = symtab.checksym(id);
   defn(sym.f, x);
 }
 

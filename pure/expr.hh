@@ -462,6 +462,7 @@ public:
   int32_t  astag() const { return p->astag; }
   path   &aspath() const { assert(p->aspath); return *p->aspath; }
 
+  void set_tag(int32_t tag) { p->tag = tag; }
   void set_ttag(int8_t tag) { p->ttag = tag; }
   void set_astag(int32_t tag) { p->astag = tag; }
   void set_aspath(const path& _p)

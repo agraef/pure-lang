@@ -621,7 +621,8 @@ public:
   void promote_ttags(expr f, expr x, expr u);
   void promote_ttags(expr f, expr x, expr u, expr v);
   expr bind(env& vars, veqnl& eqns, expr x, bool b = true, path p = path());
-  void checkfuns(expr x);
+  void funsubst(expr x, int32_t f, int32_t g, bool b = false);
+  void checkfuns(rule *r);
   void checkvars(expr x, bool b = true);
   expr subst(const env& vars, expr x, uint8_t idx = 0);
   expr fsubst(const env& funs, expr x, uint8_t idx = 0);
@@ -998,7 +999,6 @@ public:
   string srcabs;
   unsigned int line, column;
 
-  void add_tags(rulel *rl);
   void add_tags(rule *r);
   void add_tags(expr x);
   void add_tags(const string& id, const string& asid);
