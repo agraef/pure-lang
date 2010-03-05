@@ -2540,27 +2540,26 @@ The global namespace is always available. By default, new symbols are created
 in this namespace, which is also called the `default namespace`. Additional
 namespaces can be created with the ``namespace`` declaration, which also
 switches to the given namespace (makes it the *current* namespace), so that
-subsequent symbol declarations create symbols in that namespace rather than
-the default one. The current namespace applies to all kinds of symbol
-declarations, including operator and constant symbol declarations, as well as
-``extern`` declarations (the latter are described in the `C Interface`_
-section).
+new symbols are then created in that namespace rather than the default
+one. The current namespace also applies to all kinds of symbol declarations,
+including operator and constant symbol declarations, as well as ``extern``
+declarations (the latter are described in the `C Interface`_ section).
 
-The basic form of the ``namespace`` declaration has the following syntax::
+The basic form of the ``namespace`` declaration has the following syntax
+(there's also a "scoped" form of the ``namespace`` declaration which will be
+discussed in `Scoped Namespaces`_ at the end of this section)::
 
   namespace name;
   // declarations and definitions in namespace 'name'
   namespace;
 
 The second form switches back to the default namespace. For instance, in order
-to create two symbols with the same print name ``foo`` in two different
+to define two symbols with the same print name ``foo`` in two different
 namespaces ``foo`` and ``bar``, you can write::
 
   namespace foo;
-  public foo;
   foo x = x+1;
   namespace bar;
-  public foo;
   foo x = x-1;
   namespace;
 
@@ -2598,69 +2597,6 @@ descriptive labels in a direct fashion. The only way to get at the symbols in
 this case is to use a ``namespace`` or ``using namespace`` declaration (for
 the latter see `Using Namespaces`_ below).
 
-Namespaces and Definitions
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-To create a new symbol in a namespace other than the default namespace, you
-*must* first declare the symbol in that namespace, either using an explicit
-symbol declaration (as shown in the example above) or implicitly by using a
-qualified identifier. Thus the example above can also be written more
-succintly as follows::
-
-  namespace foo;
-  foo::foo x = x+1;
-  namespace bar;
-  bar::foo x = x-1;
-  namespace;
-
-Note that this kind of on-the-fly declaration only works for symbols in the
-*current* namespace. You can't create new symbols in other namespaces that
-way; you first have to switch to the other namespace and declare the symbol
-before you can use it elsewhere. The only namespace which is exempt from this
-rule is the default namespace; new symbols in that namespace can be created at
-any time just by writing down the symbol in its qualified or unqualified form,
-see `Symbol Lookup and Creation`_ for details.
-
-To provide some protection against silly mistakes such as mistyped
-identifiers, the compiler also checks that unqualified symbols being *defined*
-in a namespace actually belong to that namespace. Here, a `defining
-occurrence` of a global *function* (or macro) symbol is any occurrence of the
-symbol as the head symbol on the left-hand side of a rewriting rule (like
-``foo`` and ``bar`` in the example above). A defining occurrence of a
-*variable* (or constant) is any occurrence of the symbol in a variable
-position on the left-hand side of a ``let`` or ``const`` definition. All other
-occurrences of global symbols on the left-hand side, as well as *all* symbol
-occurrences on the right-hand side of a definition are `referential
-occurrences`. For instance::
-
-  namespace foo;
-  foo::bar (bar x) = bar x;
-  public x y;
-  let x,y = 1,2;
-  namespace;
-
-Here, the first occurrence of ``bar`` on the left-hand side ``bar (bar x)`` of
-the first rule is a defining occurrence, as are the occurrences of ``x`` and
-``y`` on the left-hand side of the ``let`` definition. Hence these symbols are
-defined in the namespace and must be declared there, either explicitly or
-implicitly. (In the latter case, it is sufficient to add a namespace prefix to
-the first occurrence, which is how we handled the ``bar`` function in the
-above example.)
-
-Note that you can still define (or refine) a global function or variable in
-another namespace, but then you *must* use a qualified symbol (which must
-already be declared in that namespace). This should rarely be necessary, but
-it is useful in some cases, in particular when global symbols are "overloaded"
-and the definition makes use of private symbols of a namespace (which are only
-visible inside that namespace; see `Private Symbols`_ below). For instance::
-
-  public bar;
-  namespace foo;
-  private foo;
-  // ...
-  ::bar x::pointer = foo x;
-  namespace;
-
 Using Namespaces
 ~~~~~~~~~~~~~~~~
 
@@ -2680,10 +2616,10 @@ arguments gets you back to the default empty list of search namespaces.)
 For instance, consider this example::
 
   namespace foo;
-  foo::foo x = x+1;
+  foo x = x+1;
   namespace bar;
-  bar::foo x = x-1;
-  bar::bar x = x+1;
+  foo x = x-1;
+  bar x = x+1;
   namespace;
 
 The symbols in these namespaces can be accessed unqualified as follows::
@@ -2701,19 +2637,20 @@ This method is often to be preferred over opening a namespace with the
 ``namespace`` declaration, since ``using namespace`` only gives you "read
 access" to the imported symbols, so you can't accidentally mess up the
 definitions of the namespace you're using. Another advantage is that the
-``using namespace`` declaration also lets you search multiple namespaces
-simultaneously::
+``using namespace`` declaration also lets you search multiple namespaces at
+once::
 
   using namespace foo, bar;
 
-However, this brings up the issue of name clashes again::
+Be warned, however, that this brings up the very same issue of name clashes
+again::
 
   > using namespace foo, bar;
   > foo 99;
   <stdin>, line 15: symbol 'foo' is ambiguous here
 
-In such a case you're back to using namespace qualifiers in order to resolve
-the name clash::
+In such a case you'll have to resort to using namespace qualifiers again, in
+order to resolve the name clash::
 
   > foo::foo 99;
   100
@@ -2743,59 +2680,83 @@ that ``bar::foo`` has to be denoted with a qualified symbol now.
 Symbol Lookup and Creation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Lookup of existing symbols is rather straightforward. The compiler searches
-for symbols first in the current namespace (if any), then in the currently
-active search namespaces (if any), and finally in the default (i.e., the
-global) namespace, in that order. This automatic lookup can be bypassed by
-using an *absolute* namespace qualifier of the form ``::foo::bar``. In
-particular, ``::bar`` always denotes the symbol ``bar`` in the default
-namespace, while ``::foo::bar`` denotes the symbol ``bar`` in the ``foo``
-namespace. (Normally, the latter kind of notation is only needed if you have
-to deal with nested namespaces, see `Hierarchical Namespaces`_ below.)
+Pure's rules for looking up and creating symbols are fairly straightforward
+and akin to those in other languages featuring namespaces. However, there are
+some intricacies involved, because the rewriting rule format of definitions
+allows "referential" use of symbols not only in the "body" (right-hand side)
+of a definition, but also in the left-hand side patterns. We discuss this in
+detail below.
 
-Pure's rules for creating new symbols are somewhat more involved, because the
-rewriting rule format of definitions allows referential use of symbols not
-only in the "body" (right-hand side) of a definition, but also in the
-left-hand side patterns. Generally, if no existing symbol is found, a new
-symbol is created automatically, by implicitly declaring the identifier as a
-public symbol with default attributes. New *unqualified* symbols are always
-created in the default namespace. As a little safety measure, this requires
-that the default namespace is current, otherwise the compiler complains about
-an undeclared symbol::
+The compiler searches for symbols first in the current namespace (if any),
+then in the currently active search namespaces (if any), and finally in the
+default (i.e., the global) namespace, in that order. This automatic lookup can
+be bypassed by using an *absolute* namespace qualifier of the form
+``::foo::bar``. In particular, ``::bar`` always denotes the symbol ``bar`` in
+the default namespace, while ``::foo::bar`` denotes the symbol ``bar`` in the
+``foo`` namespace. (Normally, the latter kind of notation is only needed if
+you have to deal with nested namespaces, see `Hierarchical Namespaces`_
+below.)
+
+If no existing symbol is found, a new symbol is created automatically, by
+implicitly declaring a public symbol with default attributes. New
+*unqualified* symbols are always created in the current namespace, while new
+*qualified* symbols are created in the namespace given by the namespace prefix
+of the symbol. However, note that in the latter case the compiler always
+checks that the given namespace prefix matches the current namespace::
 
   > namespace foo;
-  > foo::foo (bar x) = 1/x;
-  <stdin>, line 9: undeclared symbol 'bar' 
-
-Similarly, the compiler insists that new *qualified* symbols must be
-introduced in their "home" namespace::
-
   > namespace;
   > foo::bar x = 1/x;
-  <stdin>, line 7: undeclared symbol 'foo::bar' 
+  <stdin>, line 3: undeclared symbol 'foo::bar'
 
-To avoid such errors, you either have to use an explicit declaration or make
-sure that the right namespace is current when introducing the symbol.
+Thus it's only possible to introduce a new symbol in a given namespace if that
+namespace is the current one. These error messages are somewhat annoying, but
+they provide at least some protection against typos and other silly mistakes
+and prevent you from accidentally clobbering the contents of other
+namespaces. To make these errors go away it's enough to just declare the
+symbols in their proper namespaces.
 
-In addition, the compiler also verifies that unqualified symbols being
-*defined* in a namespace are already declared there, cf.  `Namespaces and
-Definitions`_. This is true even if a symbol with the same print name from
-another namespace is currently visible. For instance::
+New symbols are also created if a global unqualified (and yet undeclared)
+symbol is being "defined" in a rewriting rule or ``let``/``const``, even if a
+symbol with the same print name from another namespace is already visible in
+the current scope. To distinguish "defining" from "referring" uses of a global
+symbol, Pure uses the following (purely syntactic) notions:
 
-  > public baz;
-  > namespace foo;
-  > baz x = 1/x;
-  <stdin>, line 3: undeclared symbol 'baz'
+* A `defining occurrence` of a global *function* or *macro symbol* is any
+  occurrence of the symbol as the *head symbol* on the left-hand side of a
+  rewriting rule.
 
-It goes without saying that these error messages are somewhat annoying, but
-they provide at least some protection against typos and other silly mistakes.
+* A `defining occurrence` of a global *variable* or *constant symbol* is any
+  occurrence of the symbol in a *variable position* (as given by the "head =
+  function" rule, cf. `Parameters in Equations`_) on the left-hand side of a
+  ``let`` or ``const`` definition.
 
-Note that in any case explicit declarations *must* be used if you want to
-introduce special operator and nonfix symbols. This works as already discussed
-in the `Symbol Declarations`_ section, except that you first switch to the
-appropriate namespace before declaring the symbols. For instance, here is how
-you can create a new ``+`` operation which multiplies its operands rather than
-adding them::
+* All other occurrences of global symbols on the left-hand side, as well as
+  *all* symbol occurrences on the right-hand side of a definition are
+  `referential occurrences`.
+
+The following example illustrates these notions::
+
+  namespace foo;
+  bar (bar x) = bar x;
+  let x,y = 1,2;
+  namespace;
+
+Here, the first occurrence of ``bar`` on the left-hand side ``bar (bar x)`` of
+the first rule is a *defining* occurrence, as are the occurrences of ``x`` and
+``y`` on the left-hand side of the ``let`` definition. Hence these symbols are
+created as new symbols in the namespace ``foo``. On the other hand, the other
+occurrences of ``bar`` in the first rule, as well as the '\ ``,``\ ' symbol on
+the left-hand side of the `let` definition are *referring* occurrences. In the
+former case, ``bar`` actually refers to the ``bar`` symbol defined by the
+rule, while in the latter case the '\ ``,``\ ' operator is actually declared
+in the prelude and thus imported from the global namespace.
+
+Note that special operator (and nonfix) symbols *always* require an explicit
+declaration. This works as already discussed in the `Symbol Declarations`_
+section, except that you first switch to the appropriate namespace before
+declaring the symbols. For instance, here is how you can create a new ``+``
+operation which multiplies its operands rather than adding them::
 
   > namespace my;
   > infixl 2100 +;
@@ -2814,6 +2775,43 @@ fact you can use qualified symbols to pick the version that you need::
   12
   > 5 my::+ 7;
   35
+
+Here's what you get if you happen to forget the declaration of the ``+``
+operator::
+
+  > namespace my;
+  > x+y = x*y;
+  <stdin>, line 2: infixl symbol '+' was not declared in this namespace
+
+Thus the compiler will never create a new instance of an operator symbol on
+the fly, an explicit declaration is always needed in such cases.
+
+Note that if you *really* wanted to redefine the global ``+`` operator, you
+can do this even while the ``my`` namespace is current. You just have to use a
+qualified identifier in this case, as follows::
+
+  > namespace my;
+  > x ::+ y = x*y;
+  > a+b;
+  a*b
+
+This should rarely be necessary (in the above example you might just as well
+enter this rule while in the global namespace), but it can be useful in some
+circumstances.  Specifically, you might want to "overload" a global function
+or operator with a definition that makes use of private symbols of a namespace
+(which are only visible inside that namespace; see `Private Symbols`_
+below). For instance::
+
+  > namespace my;
+  > private bar;
+  > bar x y = x*y;
+  > x ::+ y = bar x y;
+  > a+b;
+  a*b
+
+(The above is a rather contrived example, since the very same functionality
+can be accomplished much easier, but there are some situations where this
+approach is necessary.)
 
 Private Symbols
 ~~~~~~~~~~~~~~~
@@ -2862,9 +2860,9 @@ group related namespaces together under a common "umbrella" namespace::
 
   namespace my;
   namespace my::old;
-  my::old::foo x = x+1;
+  foo x = x+1;
   namespace my::new;
-  my::new::foo x = x-1;
+  foo x = x-1;
 
 Note that the namespace ``my``, which serves as the parent namespace, must be
 created before the ``my::old`` and ``my::new`` namespaces, even if it does not
@@ -2890,7 +2888,6 @@ that we introduce another *global* ``old`` namespace and define yet another
 version of ``foo`` in that namespace::
 
   namespace old;
-  public foo;
   foo x = 2*x;
   namespace;
 
