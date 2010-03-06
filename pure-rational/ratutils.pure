@@ -329,6 +329,7 @@ list_min
  */
 
 // private type Rational_Complexity = private const rat_cplx x;
+private rat_cplx;
 
 /*
  * Only allow equality and inequality tests on complexities;
@@ -623,14 +624,14 @@ round_unbiased f
 	    round f
 	 else if intvalp f2 && ((i2 mod 4) == 1)
 	      then
-		I2 div 2
-	      else if intvalp F2
+		i2 div 2
+	      else if intvalp f2
 		   then
 		     i2 div 2 + 1
 		   else
 		     round f
     when
-      f2 = F * 2;
+      f2 = f * 2;
       i2 = round (f2)
     end
     if doublep f;
@@ -1245,7 +1246,7 @@ i_rot [z]
   = [z * i];
 i_rot [x, y]
   = [x * i, y * i];
-i_rot [x, y, y]
+i_rot [x, y, z]
   = [x * i, y * i, z * i];
 
 private u_neg;
@@ -1253,7 +1254,7 @@ u_neg [z]
   = [(-z)];
 u_neg [x, y]
   = [(-x), (-x)];
-u_neg [x, y, y]
+u_neg [x, y, z]
   = [(-x), (-y), (-z)];
 
 /* ensure that re t!n is +ve and >= im t!n (and also im t!n +ve if possible) */
@@ -2090,9 +2091,9 @@ private /* public? */ split_exponent_str;
 split_exponent_str fmt strg
   = (mantSign, mantI, mantFrac, expSign, expI)
     when
-      (mant, sexp) = me strg;
       me = fmt ! "-me";
       se = fmt ! "-s";
+      (mant, sexp) = me strg;
       (expSign, expI) = se sexp;
       (mantSign, mantI, mantFrac) = split_radix_point_str fmt mant
     end;
@@ -2449,7 +2450,7 @@ strs_real_approx_sf radix roundfun sf q
       figsStrPad0 = numeric_str_zero_pad dp figsStr;
       (intStr, fracStr) = str_rsplit_at figsStrPad0 dp
     end
-    if integerp radix && integerp fsf;
+    if integerp radix && integerp sf;
 
 /*
  * convert a rational to a string expansion with a number of significant
