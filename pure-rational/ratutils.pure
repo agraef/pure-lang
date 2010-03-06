@@ -56,7 +56,11 @@ namespace rational;
 private split_str_left;
 split_str_left "" strg::string = (strg, "");
 split_str_left pat::string strg::string
-  = (h, t)
+  = if pos == (-1)
+    then
+      (strg, "")
+    else
+      (h, t)
     when
       pos = index strg pat;
       patlen = #pat;
@@ -1799,7 +1803,7 @@ const options_uk
       "radix point" => ".", //might be "," elsewhere
       "fraction group separator" => ",",
       "fraction zero" => "0", //alternative: ""
-      "recur brackets" => ("[","...]"),
+      "recur brackets" => ("[","]"),
       "exponent" => "*10^", //alternative: "e"
       "error sign" => ("-","","+"),
       "error brackets" => ("(",")")
@@ -2332,8 +2336,8 @@ split_str_real_recur fmt strg::string
       yf = fmt ! "-if";
       s = fmt ! "-s";
       (signI, fracRecur) = yf strg;
-      (sign, i) = s signI;
-      (fract, recurPart) = r fracRecur
+      (fract, recurPart) = r fracRecur;
+      (sign, i) = s signI
     end;
 
 /*
