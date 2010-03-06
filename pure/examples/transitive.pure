@@ -69,13 +69,13 @@ end;
 // See The Design and Analysis of Computer Algorithms by Aho, Hopcroft, Ullman.
 
 cl 0			= 0;
-cl (vec ps)		= vec $ foldl update [] ps;
-
-update ps (k=>x)	= foldr f [k=>y] ps with
-  f (l=>z) qs		= (l => z + (z!k)*y) : qs;
-end when
-  y			= x + x (vec ps);
-  y			= y + cl (y!k) * y;
+cl (vec ps)		= vec $ foldl update [] ps with
+  update ps (k=>x)	= foldr f [k=>y] ps with
+    f (l=>z) qs		= (l => z + (z!k)*y) : qs;
+  end when
+    y			= x + x (vec ps);
+    y			= y + cl (y!k) * y;
+  end
 end;
 
 /* Hint for usage:

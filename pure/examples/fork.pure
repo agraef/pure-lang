@@ -14,8 +14,6 @@ using system, posix;
    message queues might be used instead, we leave this as an exercise. :) */
 
 extern int pipe(void *fd);
-extern FILE *fdopen(int fd, char *mode);
-extern void setbuf(FILE *fp, void *buf);
 
 mkpipe = in, out
   when in = fdopen (fd!0) "r"; out = fdopen (fd!1) "w"; setbuf out NULL end
@@ -75,7 +73,7 @@ pfork x =
 
 /* A convenience macro which allows us to write 'x&!' for 'pfork (x&)'. */
 
-postfix 2900 &!;
+postfix (&) &!;
 def x&! = pfork (x&);
 
 /* Example: The stream of all primes. */
