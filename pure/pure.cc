@@ -96,8 +96,8 @@ using namespace std;
 -T filename       Tags file to be written by --ctags or --etags.\n\
 -u                Do not strip unused functions in batch compilation.\n\
 -v[level]         Set debugging level (default: 1).\n\
--w                Enable backward compatibility warnings.\n\
 --version         Print version information and exit.\n\
+-w                Enable compiler warnings.\n\
 -x                Execute script with given command line arguments.\n\
 --                Stop option processing.\n\
 Type 'help' in the interpreter for more help.\n"
