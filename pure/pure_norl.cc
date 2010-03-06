@@ -298,6 +298,8 @@ main(int argc, char *argv[])
 	interp.strip = false;
       else if (strcmp(arg, "-w") == 0)
 	interp.compat = true;
+      else if (strcmp(arg, "-w2") == 0)
+	interp.compat2 = true;
       else if (strncmp(*args, "-o", 2) == 0) {
 	string s = string(*args).substr(2);
 	if (s.empty()) {

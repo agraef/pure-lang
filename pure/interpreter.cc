@@ -2217,6 +2217,7 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
 void interpreter::const_defn(const char *varname, pure_expr *x)
 {
   symbol& sym = symtab.checksym(varname);
+  sym.unresolved = false;
   const_defn(sym.f, x);
 }
 
@@ -2610,7 +2611,7 @@ void interpreter::declare(bool priv, prec_t prec, fix_t fix, list<string> *ids)
 
 void interpreter::exec(expr *x)
 {
-  last.clear();
+  last.clear(); checkfuns(*x);
   if (result) pure_free(result); result = 0;
   // Keep a copy of the original expression, so that we can give proper
   // diagnostics below.
@@ -2640,7 +2641,7 @@ void interpreter::exec(expr *x)
 
 void interpreter::parse(expr *x)
 {
-  last.clear();
+  last.clear(); checkfuns(*x);
   if (result) pure_free(result); result = 0;
   pure_expr *res = const_value(*x, true);
   if (!res) throw err("syntax error");
@@ -2656,7 +2657,7 @@ void interpreter::parse(expr *x)
 void interpreter::define(rule *r)
 {
   last.clear();
-  checkvars(r->lhs);
+  checkvars(r->lhs); checkfuns(r->rhs);
   if (nerrs > 0) {
     delete r; return;
   } else if (tags) {
@@ -2688,7 +2689,7 @@ void interpreter::define(rule *r)
 void interpreter::define_const(rule *r)
 {
   last.clear();
-  checkvars(r->lhs);
+  checkvars(r->lhs); checkfuns(r->rhs);
   if (nerrs > 0) {
     delete r; return;
   } else if (tags) {
@@ -3351,8 +3352,7 @@ void interpreter::funsubst(expr x, int32_t f, int32_t g, bool b)
 	  assert(sym2);
 	  x.set_tag(sym2->f);
 	  if (compat)
-	    warning(*loc, "warning: '"+sym.s+"' resolves to '"+
-		    sym2->s+"' under new symbol lookup rules");
+	    warning(*loc, "warning: implicit declaration of '"+sym2->s+"'");
 	} else if (!b)
 	  sym.unresolved = false;
       }
@@ -3425,9 +3425,10 @@ void interpreter::checkfuns(rule *r)
       assert(sym2);
       g = sym2->f;
       if (compat && f!=g)
-	warning(*loc, "warning: '"+sym.s+"' resolves to '"+
-		sym2->s+"' under new symbol lookup rules");
-    }
+	warning(*loc, "warning: implicit declaration of '"+sym2->s+"'");
+    } else if (compat2 && (x.flags()&EXPR::QUAL) &&
+	       qual == *symtab.current_namespace)
+      warning(*loc, "hint: unneeded qualification in '"+sym.s+"'");
   }
   // Promote the head symbol to the current namespace if necessary, and fix up
   // all other unresolved symbols along the way.
@@ -3436,9 +3437,13 @@ void interpreter::checkfuns(rule *r)
   funsubst(r->qual, f, g);
 }
 
+void interpreter::checkfuns(expr x)
+{
+  funsubst(x, 0, 0);
+}
+
 void interpreter::checkvars(expr x, bool b)
 {
-  if (symtab.current_namespace->empty()) return;
   switch (x.tag()) {
   case EXPR::VAR:
   case EXPR::FVAR:
@@ -3462,37 +3467,49 @@ void interpreter::checkvars(expr x, bool b)
     break;
   default:
     assert(x.tag() > 0);
-    const symbol& sym = symtab.sym(x.tag());
-    if (!b || sym.f == symtab.anon_sym || (x.flags()&EXPR::QUAL) ||
+    symbol& sym = symtab.sym(x.tag());
+    if (!b || symtab.current_namespace->empty() || sym.f == symtab.anon_sym ||
 	(sym.prec < PREC_MAX || sym.fix == nonfix || sym.fix == outfix))
-      ;
-    else {
+      sym.unresolved = false;
+    else if (x.flags()&EXPR::QUAL) {
+      string id, qual = qualifier(sym, id);
+      if (compat2 && qual == *symtab.current_namespace)
+	warning(*loc, "hint: unneeded qualification in '"+sym.s+"'");
+      sym.unresolved = false;
+    } else {
       string id, qual = qualifier(sym, id);
       if (qual != *symtab.current_namespace) {
 	// promote the symbol to the current namespace
 	assert(qual.empty());
-	symbol *sym = symtab.sym(*symtab.current_namespace+"::"+id);
-	assert(sym);
-	x.set_tag(sym->f);
-      }
+	symbol *sym2 = symtab.sym("::"+*symtab.current_namespace+"::"+id);
+	assert(sym2);
+	x.set_tag(sym2->f);
+	if (compat)
+	  warning(*loc, "warning: implicit declaration of '"+sym2->s+"'");
+      } else
+	sym.unresolved = false;
     }
     break;
   }
   // check for "as" patterns
   if (x.astag() > 0) {
-    const symbol& sym = symtab.sym(x.astag());
-    if (sym.f == symtab.anon_sym || (x.flags()&EXPR::ASQUAL) ||
+    symbol& sym = symtab.sym(x.astag());
+    if (symtab.current_namespace->empty() ||
+	sym.f == symtab.anon_sym || (x.flags()&EXPR::ASQUAL) ||
 	sym.prec < PREC_MAX || sym.fix == nonfix || sym.fix == outfix)
-      ;
+      sym.unresolved = false;
     else {
       string id, qual = qualifier(sym, id);
       if (qual != *symtab.current_namespace) {
 	// promote the symbol to the current namespace
 	assert(qual.empty());
-	symbol *sym = symtab.sym(*symtab.current_namespace+"::"+id);
-	assert(sym);
-	x.set_astag(sym->f);
-      }
+	symbol *sym2 = symtab.sym("::"+*symtab.current_namespace+"::"+id);
+	assert(sym2);
+	x.set_astag(sym2->f);
+	if (compat)
+	  warning(*loc, "warning: implicit declaration of '"+sym2->s+"'");
+      } else
+	sym.unresolved = false;
     }
   }
 }
@@ -5777,6 +5794,7 @@ to variables should fix this. **\n";
 void interpreter::defn(const char *varname, pure_expr *x)
 {
   symbol& sym = symtab.checksym(varname);
+  sym.unresolved = false;
   defn(sym.f, x);
 }
 
