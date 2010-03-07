@@ -428,6 +428,8 @@ public:
   void init_sys_vars(const string& version = "",
 		     const string& host = "",
 		     const list<string>& argv = list<string>());
+  // Configure the JIT according to the setting of the eager_jit member.
+  void init_jit_mode();
 
   // Option data. You can modify these according to your needs.
   uint8_t verbose;   // debugging output from interpreter

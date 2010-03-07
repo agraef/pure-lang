@@ -100,6 +100,10 @@ below:
 ``--ctags``, ``--etags``
     Create a tags file in ctags (vi) or etags (emacs) format.
 
+``--eager-jit``
+    Enable eager JIT compilation. This requires LLVM 2.7 or later, otherwise
+    this flag will be ignored.
+
 ``-fPIC``, ``-fpic``
     Create position-independent code (batch compilation).
 
@@ -210,18 +214,41 @@ options; see the Declarations_ and `C Interface`_ sections for details.
 Compiling Scripts
 -----------------
 
-If the -c option is specified, it forces the interpreter to non-interactive
-mode (unless -i is specified as well, which overrides -c). Any scripts
-specified on the command line are then executed as usual, but after execution
-the interpreter takes a snapshot of the program and compiles it to one of
-several supported output formats, LLVM assembler (.ll) or bitcode (.bc),
-native assembler (.s) or object (.o), or a native executable, depending on the
-output filename specified with -o. If the output filename ends in the .ll
-extension, an LLVM assembler file is created which can then be processed with
-the LLVM toolchain. If the output filename is just '-', the assembler file is
-written to standard output, which is useful if you want to pass the generated
-code to the LLVM tools in a pipeline. If the output filename ends in the .bc
-extension, an LLVM bitcode file is created instead.
+The interpreter compiles scripts, as well as definitions that you enter
+interactively, automatically. This is done in an incremental fashion, as the
+code is needed, and is therefore known as JIT (`just in time`) compilation.
+Thus the interpreter never really "interprets" the source program or some
+intermediate representation, it just acts as a frontend to the compiler,
+taking care of compiling source code to native machine code before it gets
+executed.
+
+Pure's LLVM backend does "lazy JIT compilation" by default, meaning that each
+function (global or local) is compiled no sooner than it is run for the first
+time. With the --eager-jit option, however, it will also compile all other
+(global or local) functions that may be called by the compiled function. (The
+PURE_EAGER_JIT environment variable, when set to any value, has the same
+effect, so that you do not have to specify the --eager--jit option each time
+you run the interpreter.) Eager JIT compilation may be more efficient in some
+cases (since bigger chunks of compilation work can be done in one go) and less
+efficient in others (e.g., eager JITing may compile large chunks of code which
+aren't actually called later, except in rare circumstances).
+
+Note that the eager JIT mode is only available with LLVM 2.7 or later;
+otherwise this option will be ignored.
+
+It is also possible to compile your scripts to native code beforehand, using
+the -c batch compilation option. This options forces the interpreter to
+non-interactive mode (unless -i is specified as well, which overrides -c). Any
+scripts specified on the command line are then executed as usual, but after
+execution the interpreter takes a snapshot of the program and compiles it to
+one of several supported output formats, LLVM assembler (.ll) or bitcode
+(.bc), native assembler (.s) or object (.o), or a native executable, depending
+on the output filename specified with -o. If the output filename ends in the
+.ll extension, an LLVM assembler file is created which can then be processed
+with the LLVM toolchain. If the output filename is just '-', the assembler
+file is written to standard output, which is useful if you want to pass the
+generated code to the LLVM tools in a pipeline. If the output filename ends in
+the .bc extension, an LLVM bitcode file is created instead.
 
 The .ll and .bc formats are supported natively by the Pure interpreter, no
 external tools are required to generate these. If the target is an .s, .o or
@@ -467,6 +494,10 @@ BROWSER
 PURELIB
     Directory to search for library scripts, including the prelude. If PURELIB
     is not set, it defaults to some location specified at installation time.
+
+PURE_EAGER_JIT
+    Enable eager JIT compilation (same as ``--eager-jit``), see `Compiling
+    Scripts`_ for details.
 
 PURE_HELP
     Command used to browse the Pure manual. This must be a browser capable of

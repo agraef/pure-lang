@@ -81,6 +81,7 @@ using namespace std;
                   pure [options ...] -x script [args ...]\n\
 -c                Batch compilation.\n\
 --ctags, --etags  Create a tags file in ctags (vi) or etags (emacs) format.\n\
+--eager-jit       Enable eager JIT compilation (LLVM 2.7 or later).\n\
 -fPIC             Create position-independent code (batch compilation).\n\
 -g                Enable symbolic debugging.\n\
 --help, -h        Print this message and exit.\n\
@@ -99,7 +100,6 @@ using namespace std;
 --version         Print version information and exit.\n\
 -w                Enable compiler warnings.\n\
 -x                Execute script with given command line arguments.\n\
---                Stop option processing.\n\
 Type 'help' in the interpreter for more help.\n"
 #define LICENSE "This program is free software, and you are welcome to redistribute it under\ncertain conditions. There is ABSOLUTELY NO WARRANTY. (Type 'help copying'\nfor more information.)\n"
 
@@ -448,6 +448,7 @@ main(int argc, char *argv[])
   if ((env = getenv("PURE_NOCHECKS"))) interp.checks = false;
   if ((env = getenv("PURE_NOFOLD"))) interp.folding = false;
   if ((env = getenv("PURE_NOTC"))) interp.use_fastcc = false;
+  if ((env = getenv("PURE_EAGER_JIT"))) interp.eager_jit = true;
   if ((env = getenv("PURELIB"))) {
     string s = unixize(env);
     if (!s.empty() && s[s.size()-1] != '/') s.append("/");
@@ -482,6 +483,8 @@ main(int argc, char *argv[])
 	interp.tags = 1;
       else if (strcmp(arg, "--etags") == 0)
 	interp.tags = 2;
+      else if (strcmp(arg, "--eager-jit") == 0)
+	interp.eager_jit = true;
       else if (strcmp(arg, "-n") == 0 || strcmp(arg, "--noprelude") == 0)
 	want_prelude = false;
       else if (strcmp(arg, "--norc") == 0)
@@ -594,6 +597,7 @@ main(int argc, char *argv[])
   // need to have USE_FASTCC in interpreter.hh enabled).
   if (interp.use_fastcc) llvm::PerformTailCallOpt = true;
 #endif
+  interp.init_jit_mode();
   if ((env = getenv("PURE_INCLUDE")))
     add_path(interp.includedirs, unixize(env));
   if ((env = getenv("PURE_LIBRARY")))

@@ -106,6 +106,15 @@ void interpreter::debug_init()
   debug_skip = false;
 }
 
+void interpreter::init_jit_mode()
+{
+#if LLVM27
+  JIT->DisableLazyCompilation(eager_jit);
+#else
+  eager_jit = false;
+#endif
+}
+
 void interpreter::init()
 {
   if (!g_interp) g_interp = this;
@@ -681,7 +690,7 @@ interpreter::interpreter(int32_t nsyms, char *syms,
 			 int32_t *arities, void **externs,
 			 pure_expr ***_sstk, void **_fptr)
   : verbose(0), compat(false), compiling(false), eager_jit(false),
-  interactive(false), debugging(false),
+    interactive(false), debugging(false),
     checks(true), folding(true), use_fastcc(true), pic(false), strip(true),
     restricted(true), ttymode(false), override(false),
     stats(false), stats_mem(false), temp(0), ps("> "), libdir(""),

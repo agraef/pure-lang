@@ -3463,6 +3463,7 @@ pure_interp *pure_create_interp(int argc, char *argv[])
   if ((env = getenv("PURE_NOCHECKS"))) interp.checks = false;
   if ((env = getenv("PURE_NOFOLD"))) interp.folding = false;
   if ((env = getenv("PURE_NOTC"))) interp.use_fastcc = false;
+  if ((env = getenv("PURE_EAGER_JIT"))) interp.eager_jit = true;
   if ((env = getenv("PURELIB"))) {
     string s = unixize(env);
     if (!s.empty() && s[s.size()-1] != '/') s.append("/");
@@ -3494,6 +3495,8 @@ pure_interp *pure_create_interp(int argc, char *argv[])
 	interp.use_fastcc = false;
       else if (strcmp(arg, "--tc") == 0)
 	interp.use_fastcc = true;
+      else if (strcmp(arg, "--eager-jit") == 0)
+	interp.eager_jit = true;
       else if (strcmp(arg, "-w") == 0)
 	interp.compat = true;
       else if (strncmp(*args, "-o", 2) == 0) {
@@ -3574,6 +3577,7 @@ pure_interp *pure_create_interp(int argc, char *argv[])
   // need to have USE_FASTCC in interpreter.hh enabled).
   if (interp.use_fastcc) llvm::PerformTailCallOpt = true;
 #endif
+  interp.init_jit_mode();
   if ((env = getenv("PURE_INCLUDE")))
     add_path(interp.includedirs, unixize(env));
   if ((env = getenv("PURE_LIBRARY")))
