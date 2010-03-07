@@ -138,10 +138,7 @@ void interpreter::init()
 
   using namespace llvm;
 
-#if LLVM27
-  // Lazy JITing doesn't really work with LLVM 2.7 yet, disable it for now.
-  eager_jit = true;
-#else
+#if !LLVM27
   // LLVM 2.6 and earlier always do lazy JITing, so this flag *must* be false.
   eager_jit = false;
 #endif
