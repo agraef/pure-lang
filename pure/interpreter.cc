@@ -1228,6 +1228,21 @@ void interpreter::clear_namespace()
 
 uint32_t count_args(expr x, int32_t& f);
 
+void interpreter::add_tags(rulel *rl)
+{
+  set<int32_t> syms;
+  for (rulel::iterator i = rl->begin(), end = rl->end(); i != end; i++) {
+    expr x = i->lhs;
+    int32_t f;
+    count_args(x, f);
+    if (f > 0 && syms.find(f) == syms.end()) {
+      symbol& sym = symtab.sym(f);
+      add_tag(sym.s, srcabs, line, column);
+      syms.insert(f);
+    }
+  }
+}
+
 void interpreter::add_tags(rule *r)
 {
   if (r->lhs.is_null()) return;
@@ -2918,10 +2933,11 @@ void interpreter::add_rules(rulel &rl, rulel *r, bool b)
   delete r;
 }
 
-void interpreter::add_rules(env &e, rulel *r, bool toplevel)
+void interpreter::add_rules(env &e, rulel *r, bool headless, bool toplevel)
 {
   for (rulel::iterator ri = r->begin(), end = r->end(); ri != end; ri++)
     add_rule(e, *ri, toplevel);
+  if (tags && toplevel && !headless) add_tags(r);
   delete r;
 }
 
@@ -2939,7 +2955,6 @@ void interpreter::add_rule(env &e, rule &r, bool toplevel)
   if (toplevel) {
     // substitute macros and constants:
     checkfuns(&r); if (nerrs > 0) return;
-    if (tags) add_tags(&r);
     expr u = expr(r.lhs),
       v = expr(csubst(macsubst(r.rhs))),
       w = expr(csubst(macsubst(r.qual)));

@@ -617,7 +617,7 @@ public:
   void clearsym(int32_t f);
   rulel *default_lhs(exprl &l, rulel *rl);
   void add_rules(rulel &rl, rulel *r, bool b);
-  void add_rules(env &e, rulel *r, bool toplevel = false);
+  void add_rules(env &e, rulel *r, bool headless = false, bool toplevel = false);
   void add_rule(rulel &rl, rule &r, bool b);
   void add_rule(env &e, rule &r, bool toplevel = false);
   void add_simple_rule(rulel &rl, rule *r);
@@ -1004,6 +1004,7 @@ public:
   string srcabs;
   unsigned int line, column;
 
+  void add_tags(rulel *rl);
   void add_tags(rule *r);
   void add_tags(expr x);
   void add_tags(const string& id, const string& asid);

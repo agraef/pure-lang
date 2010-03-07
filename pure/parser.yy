@@ -237,10 +237,12 @@ item_pos
 
 item
 : expr
-{ if (!interp.tags) { restricted_action(interp.exec($1), delete $1); }
+{ interp.loc = &yyloc;
+  if (!interp.tags) { restricted_action(interp.exec($1), delete $1); }
   else delete $1; }
 | ESCAPE expr
-{ if (!interp.tags) { restricted_action(interp.parse($2), delete $2); }
+{ interp.loc = &yyloc;
+  if (!interp.tags) { restricted_action(interp.parse($2), delete $2); }
   else delete $2;
   // We only parse a single expression in this mode, bail out.
   if (yychar > 0 && interp.nerrs == 0)
@@ -255,8 +257,10 @@ item
 | rule
 { interp.loc = &yyloc;
   rulel *rl = 0;
+  bool headless = $1->front().lhs.is_null();
   action(interp.add_rules(interp.globenv,
-  (rl = interp.default_lhs(interp.last, $1)), true), if (rl) delete rl); }
+  (rl = interp.default_lhs(interp.last, $1)), headless, true),
+  if (rl) delete rl); }
 | fixity
 { if ($1->special && $1->fix != nonfix && $1->fix != outfix &&
       $1->prec >= PREC_MAX) {
