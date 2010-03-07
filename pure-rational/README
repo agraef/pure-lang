@@ -1088,6 +1088,7 @@ The standard arithmetic operators (+), (−), (*), (/) and (%) are overloaded fo
 right operand is an interval containing 0.
 
 **Example 36** Some intervals::
+
   > let a = interval (11, 19);
   > let b = interval (16, 24);
   > let c = interval (21, 29);
@@ -1095,6 +1096,7 @@ right operand is an interval containing 0.
   >
 
 **Example 37** ``interval`` arithmetic::
+
   > let p = interval (0, 1);
   > let s = interval (-1, 1);
   > a + b;
@@ -1260,155 +1262,190 @@ provided.
 
 (The symbol d was defined in example 36.)
 
-9.2 Least ``complex`` Approximation within "
-rational approx epsilon
-(U)
-" r — Find the least complex (see §5.1.3) ``rational`` approximation to r
-(usually a ``double``) that is "-close. That is find the q with the smallest
-possible denominator such
-that such that |q − r|  ". (" > 0.)
-Example 42 ``rational`` approximation to   3.142  22/7.
-  > let Pi = 4 * atan 1
-  > rational_approx_epsilon .01 Pi
-22%7
-  > abs (_ - Pi)
-0.00126448926734968
-20
-Example 43 The golden ratio  =
-1 +
-p
-5
-2  1.618.
-  > let Phi = (1 + sqrt 5) / 2
-  > rational_approx_epsilon .001 Phi
-55%34
-  > abs (_ - Phi)
-0.000386929926365465
-rational approxs epsilon
-(U)
-" r — Produce a list of ever better ``rational`` approximations to r (usually
-a ``double``) that is eventually "-close. (" > 0.)
-Example 44 ``rational`` approximations to .
-  > rational_approxs_epsilon .0001 Pi
-[3%1,25%8,47%15,69%22,91%29,113%36,135%43,157%50,179%57,201%64,223%71,245%78,267
-%85,289%92,311%99,333%106]
-(The symbol Pi was defined in example 42.)
-Example 45 ``rational`` approximations to the golden ratio ; these
-approximations are always reverse
-consecutive Fibonacci numbers (from F1: 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, .
-. .).
-  > rational_approxs_epsilon .0001 Phi
-[1%1,3%2,8%5,21%13,55%34,144%89]
-(The symbol Phi was defined in example 43.)
-rational interval epsilon
-(U)
-" r — Find the least complex (see §5.1.3) ``rational`` interval containing
-r (usually a ``double``) that is "-small. That is find the least complex (see
-§5.1.3) q1  q2 such that
-r 2 [q1,q2] and q2 − q1  ". (" > 0.)
-Example 46 ``rational`` interval surrounding .
-  > let I_Pi = rational_interval_epsilon .01 Pi ; I_Pi
-interval (47%15,22%7)
-  > double (lower I_Pi) ; Pi ; double (upper I_Pi)
-3.13333333333333
-3.14159265358979
-3.14285714285714
-(The symbol Pi was defined in example 42. The functions lower and upper are
-described in §9.1.1.)
-Example 47 ``rational`` interval surrounding the golden ratio .
-  > rational_interval_epsilon .001 Phi
-interval (55%34,89%55)
-  > size _
-1%1870
-(The symbol Phi was defined in example 43. The function size is described in
+Least ``complex`` Approximation within ε
+----------------------------------------
+
+:rational_approx_epsilon ε r:
+  Find the least complex (see §5.1.3) ``rational`` approximation to r (usually a
+  ``double``) that is ε-close. That is find the q with the smallest possible
+  denominator such that such that \|q − r\| ≤ ε. (ε > 0.)
+
+**Example 42** ``rational`` approximation to π ≈ 3.142 ≈ 22/7::
+
+  > rational_approx_epsilon .01 pi;
+  22%7
+  > abs (ans - pi);
+  0.00126448926734968
+  >
+
+**Example 43** The golden ratio ɸ = (1 + √5) / 2 ≈ 1.618::
+
+  > let phi = (1 + sqrt 5) / 2;
+  > rational_approx_epsilon .001 phi;
+  55%34
+  > abs (ans - phi);
+  0.000386929926365465
+  >
+
+:rational_approxs_epsilon ε r:
+  Produce a list of ever better ``rational`` approximations to r (usually a
+  ``double``) that is eventually ε-close. (ε > 0.)
+
+**Example 44** ``rational`` approximations to π::
+
+  > rational_approxs_epsilon .0001 pi;
+  [3%1,25%8,47%15,69%22,91%29,113%36,135%43,157%50,179%57,201%64,223%71,245%78,
+  267%85,289%92,311%99,333%106]
+  >
+
+**Example 45** ``rational`` approximations to the golden ratio ɸ; these
+approximations are always reverse consecutive Fibonacci numbers (from f1: 1, 1,
+2, 3, 5, 8, 13, 21, 34, 55, 89, . . .):
+
+  > rational_approxs_epsilon .0001 phi;
+  [1%1,3%2,8%5,21%13,55%34,144%89]
+  >
+
+(The symbol phi was defined in example 43.)
+
+:rational_interval_epsilon ε r:
+  Find the least complex (see §5.1.3) ``rational`` interval containing r
+  (usually a ``double``) that is ε-small. That is find the least complex (see
+  §5.1.3) q1 ≤ q2 such that r ∈ [q1, q2] and q2 − q1 ≤ ε. (ε > 0.)
+
+**Example 46** ``rational`` interval surrounding π::
+
+  > let i_Pi = rational_interval_epsilon .01 pi;
+  > i_Pi;
+  rational::Ivl (47%15) (22%7)
+  > double (lower i_Pi); pi; double (upper i_Pi);
+  3.13333333333333
+  3.14159265358979
+  3.14285714285714
+  >
+
+(The functions lower and upper are described in §9.1.1.)
+
+**Example 47** ``rational`` interval surrounding the golden ratio ɸ::
+
+  > rational_interval_epsilon .001 phi
+  rational::Ivl (55%34) (89%55)
+  > #ans;
+  1%1870
+
+(The symbol Phi was defined in example 43. The function # is described in
 §9.1.4.)
-21
-9.3 Best Approximation with Bounded Denominator
-rational approx max den
-(U)
-MaxDen r — Find the closest ``rational`` approximation to r (usually a
-``double``) that has a denominator no greater than MaxDen. (MaxDen > 0)
-Example 48 ``rational`` approximation to .
-  > rational_approx_max_den 10 Pi
-22%7
-(The symbol Pi was defined in example 42.)
-Example 49 ``rational`` approximation to the golden ratio .
-  > rational_approx_max_den 1000 Phi
-1597%987
-(The symbol Phi was defined in example 43.)
-rational approxs max den
-(U)
-MaxDen r — Produce a list of ever better ``rational`` approximations
-to r (usually a ``double``) while the denominator is bounded by MaxDen. (MaxDen
-> 0)
-Example 50 ``rational`` approximations to .
-  > rational_approxs_max_den 100 Pi
-[3%1,25%8,47%15,69%22,91%29,113%36,135%43,157%50,179%57,201%64,223%71,245%78,267
-%85,289%92,311%99]
-(The symbol Pi was defined in example 42.)
-Example 51 ``rational`` approximations to the golden ratio .
-  > rational_approxs_max_den 100 Phi
-[1%1,3%2,8%5,21%13,55%34,144%89]
-(The symbol Phi was defined in example 43.)
-rational interval max den
-(U)
-MaxDen r — Find the smallest ``rational`` interval containing r (usually
-a ``double``) that has endpoints with denominators no greater than MaxDen.
-(MaxDen > 0)
-Example 52 ``rational`` interval surrounding .
-  > let I_Pi = rational_interval_max_den 100 Pi ; I_Pi
-interval (311%99,22%7)
-  > double (lower I_Pi) ; Pi ; double (upper I_Pi)
-3.14141414141414
-3.14159265358979
-3.14285714285714
-(The symbol Pi was defined in example 42.)
-Example 53 ``rational`` interval surrounding the golden ratio .
-  > rational_interval_max_den 1000 Phi
-interval (987%610,1597%987)
-(The symbol Phi was defined in example 43.)
+
+Best Approximation with Bounded Denominator
+-------------------------------------------
+
+:rational_approx_max_den maxDen r:
+  Find the closest ``rational`` approximation to r (usually a ``double``) that
+  has a denominator no greater than maxDen. (maxDen > 0).
+
+**Example 48** ``rational`` approximation to π::
+
+  > rational_approx_max_den 10 pi;
+  22%7
+  >
+
+**Example 49** ``rational`` approximation to the golden ratio ɸ::
+
+  > rational_approx_max_den 1000 phi;
+  1597%987
+  >
+
+(The symbol phi was defined in example 43.)
+
+:rational_approxs_max_den maxDen r:
+  Produce a list of ever better ``rational`` approximations to r (usually a
+  ``double``) while the denominator is bounded by maxDen (maxDen > 0).
+
+**Example 50** ``rational`` approximations to π::
+  > rational_approxs_max_den 100 pi;
+  [3%1,25%8,47%15,69%22,91%29,113%36,135%43,157%50,179%57,201%64,223%71,245%78,
+  267%85,289%92,311%99]
+  >
+
+**Example 51** ``rational`` approximations to the golden ratio ɸ::
+
+  > rational_approxs_max_den 100 phi;
+  [1%1,3%2,8%5,21%13,55%34,144%89]
+  >
+
+(The symbol phi was defined in example 43.)
+
+:rational_interval_max_den maxDen r:
+  Find the smallest ``rational`` interval containing r (usually a ``double``)
+  that has endpoints with denominators no greater than maxDen (maxDen > 0).
+
+**Example 52** ``rational`` interval surrounding π::
+
+  > let i_Pi = rational_interval_max_den 100 pi ; i_Pi
+  rational::Ivl (311%99) (22%7)
+  > double (lower i_Pi); pi; double (upper i_Pi);
+  3.14141414141414
+  3.14159265358979
+  3.14285714285714
+  >
+
+**Example 53** ``rational`` interval surrounding the golden ratio ɸ::
+
+  > rational_interval_max_den 1000 phi
+  rational::Ivl (987%610) (1597%987)
+  >
+
+(The symbol phi was defined in example 43.)
+
 To approximate for a particular (rather than bounded) denominator, use round to
-multiple instead
-(see §7).
-22
-10 Decomposition
+multiple instead (see §7).
+
+Decomposition
+=============
+
 There is more than one way to ‘decompose’ a rational number into its
-‘components’.
-It might be split into an integer and a fraction part — see §6.2; or sign and
-absolute value — see §4.1;
-or numerator and denominator — see §2.2.
-11 Continued Fractions
-11.1 Introduction
-In “Q+Q”, a continued fraction
-a0 +
-1
-a1 +
-1
-a2 + · · · +
-1
-an
-where 8i > 0 • ai 6= 0, is represented by [a0, a1, a2, . . . , an].
-A ‘simple’ continued fraction is one in which 8i • ai 2 Z and 8i > 0 • ai > 0.
-Simple continued fractions for rationals are not quite unique since [a0, a1, . .
-. , an, 1] = [a0, a1, . . . , an+1].
-We will refer to these as the ‘non-standard’ and ‘standard’ forms, respectively.
-The following functions
-return the standard form.
-11.2 Generating Continued Fractions
-11.2.1 Exact
-continued fraction
-(U)
-q — Find ‘the’ (exact) continued fraction of a rational (including, trivially,
-integer) value q.
-Example 54 The rational
-1234
-1001
-.
-  > continued_fraction (1234%1001)
-[1,4,3,2,1,1,1,8]
-  > evaluate_continued_fraction _
-1234%1001
-11.2.2 Inexact
+‘components’. It might be split into an integer and a fraction part — see §6.2;
+or sign and absolute value — see §4.1; or numerator and denominator — see §2.2.
+
+Continued Fractions
+===================
+
+Introduction
+------------
+
+In "pure-rational", a continued fraction 
+a\ :sub:`0` + (1 / (a\ :sub:`1` + (1/ (a\ :sub:`2` + · · · + 1 / a\ :sub:`n`))))
+where ∀i > 0 • a\ :sub:`i` ≠ 0, is represented by [a\ :sub:`0`, a\ :sub:`1`,
+a\ :sub:`2`, . . . , a\ :sub:`n`].
+
+A ‘simple’ continued fraction is one in which ∀i • a\ :sub:`i` ∈ **Z** and ∀i >
+0 • a\ :sub:`i` > 0.
+
+Simple continued fractions for rationals are not quite unique since [a\
+:sub:`0`, a\ :sub:`1`, . . . , a\ :sub:`n`, 1] = [a\ :sub:`0`, a\ :sub:`1`, . .
+. , a\ :sub:`n+1`]. We will refer to these as the 'non-standard' and 'standard'
+forms, respectively. The following functions return the standard form.
+
+Generating Continued Fractions
+------------------------------
+
+Exact
+~~~~~
+
+:continued_fraction q:
+  Find ‘the’ (exact) continued fraction of a rational (including, trivially,
+  integer) value q.
+
+**Example 54** The rational 1234/1001::
+
+  > continued_fraction (1234%1001);
+  [1,4,3,2,1,1,1,8]
+  > evaluate_continued_fraction ans;
+  1234%1001
+
+Inexact
+~~~~~~~
+
 continued fraction max terms
 (U)
 n r — Find up to n initial terms of continued fraction of the
