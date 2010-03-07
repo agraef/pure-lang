@@ -486,7 +486,8 @@ mixtures of ``integer`` and ``rational``.
 
 **Example 11** With two ``rationals``::
 
-  > let a = 7%12; let b = 21%32;
+  > let a = 7%12;
+  > let b = 21%32;
   > let f = gcd a b;
   > f;
   7%96
@@ -698,7 +699,7 @@ Other Complexity Functions
 
 **Example 23** Complexity relations::
 
-  > complexity_rel (1%3) (=) (100%3);
+  > complexity_rel (1%3) (==) (100%3);
   1
   > complexity_rel (1%4) (<=) (1%5);
   1
@@ -990,244 +991,275 @@ described in §9
 =============================
 
 This section describes functions that approximate a number (usually a
-``double``) by a ``rational``. See §7
-for approximation of a number by a ``rational`` with a fixed denominator. See
-§17 for approximation by
-a ``rational`` of a string representation of a real number.
-9.1 Intervals
-Some of the approximation functions return an ``interval``.
-The file rat interval.q is a basic implementation of interval arithmetic, and is
-not included in the
-default prelude. It is not intended to provide a complete implementation of
-interval arithmetic.
-The notions of ‘open’ and ‘closed’ intervals are not distinguished. Infinite and
-half-infinite intervals are
-not specifically provided. Some operations and functions may be missing.
-The most likely functions to be used are simply the ‘deconstructors’; see
-§9.1.1.
-16
-9.1.1 ``interval`` Constructors and ‘Deconstructors’
+``double``) by a ``rational``. See §7 for approximation of a number by a
+``rational`` with a fixed denominator. See §17 for approximation by a
+``rational`` of a string representation of a real number.
+
+Intervals
+---------
+
+Some of the approximation functions return an ``interval``. The file
+``rat_interval.pure`` is a basic implementation of interval arithmetic, and is
+not included in the default prelude. It is not intended to provide a complete
+implementation of interval arithmetic. The notions of ‘open’ and ‘closed’
+intervals are not distinguished. Infinite and half-infinite intervals are not
+specifically provided. Some operations and functions may be missing. The most
+likely functions to be used are simply the ‘deconstructors’; see §9.1.1.
+
+``interval`` Constructors and 'Deconstructors'
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Intervals are constructed with the function interval.
-interval
-(U) (n1,n2) — given a pair of numbers (Z1 <= Z2), this returns the ``interval``
-Z1..Z2.
-This is the inverse of lo up.
-Example 33 Constructing an interval.
-  > let V = interval (3,8) ; V
-interval (3,8)
-lower
-(U)
-V — returns the infimum (roughly, minimum) of V .
-upper
-(U)
-V — returns the supremum (roughly, maximum) of V .
-lo up
-(U)
-V — returns a pair (L,U) containing the lower L and upper d extrema of the
-interval V .
-This is the inverse of interval as defined on number pairs.
-Example 34 Deconstructing an interval.
-  > lower V; upper V
-3
-8
-  > lo_up V
-(3,8)
-9.1.2 ``interval`` Type Predicate and Tests
-This type may be used as a type predicate in the usual way (Q:Rational).
-isexact
-(U)
-V — returns whether an interval V has exact extrema.
-isinexact
-(U)
-V — returns whether an interval V has an inexact extremum.
-isinterval
-(U)
-X — returns whether X is of type ``interval``.
-isinterval val
-(U)
-X — returns whether X has an interval value.
-isratinterval val
-(U)
-X — returns whether X has an interval value with rational extrema.
-isintinterval val
-(U)
-X — returns whether X has an interval value with integral extrema.
-Example 35 ``interval`` value tests.
-  > let L = [interval(0,1), interval(0,1%1), interval(0,3%2), interval(0,1.5)]
-  > map isexact L
-[true,true,true,false]
-  > map isinexact L
-[false,false,false,true]
-  > map isinterval L
-[true,true,true,true]
-  > map isinterval_val L
-[true,true,true,true]
-  > map isratinterval_val L
-[true,true,true,true]
-  > map isintinterval_val L
-[true,true,false,false]
-17
-9.1.3 ``interval`` Arithmetic Operators and Relations
-The standard arithmetic operators (+)(U) , (−)(U) , ()(U) , (/)(U) and (%)(U)
-are overloaded for Intervals.
-The divide operators (/) and (%) do not produce a result if the right operand is
-an interval containing 0.
-Example 36 Some intervals.
-  > let A = interval (11, 19); let B = interval (16, 24)
-  > let C = interval (21, 29); let d = interval (23, 27)
-11  A  19 21  C  29
-23  d  27
-16  B  24
-Figure 1: Some intervals.
-Example 37 ``interval`` arithmetic.
-  > let P = interval (0, 1); let S = interval (-1, 1)
-  > A + B
-interval (27,43)
-  > A - B
-interval (-13,3)
-  > A * B
-interval (176,456)
-  > P * 2
-interval (0,2)
-  > (-2) * P
-interval (-2,0)
-  > -C
-interval (-29,-21)
-  > S * A
-interval (-19,19)
-  > A % 2
-interval (11%2,19%2)
-  > A / 2
-interval (5.5,9.5)
-  > reciprocal A
-interval (1%19,1%11)
-  > 2 % A
-interval (2%19,2%11)
-  > A % B
-interval (11%24,19%16)
-  > A % A // notice that the intervals are mutually independent here
-interval (11%19,19%11)
-There are also some relations defined for Intervals. The standard relations
-(=)(U)and (<>)(U)are
-overloaded.
+
+:interval (n1, n2):
+  given a pair of numbers (z1 <= z2), this returns the ``interval`` z1..z2. This
+  is the inverse of ``lo_up``.
+
+**Example 33** Constructing an interval::
+
+  > let v = interval (3, 8);
+  > v;
+  rational::Ivl 3 8
+  >
+
+:lower v:
+  returns the infimum (roughly, minimum) of v.
+
+:upper v:
+  returns the supremum (roughly, maximum) of v.
+
+:lo_up v:
+  returns a pair (l, u) containing the lower l and upper u extrema of the
+  interval v. This is the inverse of interval as defined on number pairs.
+
+**Example 34** Deconstructing an interval:
+
+  > lower v;
+  3
+  > upper v;
+  8
+  > lo_up v;
+  (3,8)
+  >
+
+``interval`` Type Tests
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:exactp v:
+  returns whether an interval v has exact extrema.
+
+:inexactp v:
+  returns whether an interval v has an inexact extremum.
+
+:intervalp x:
+  returns whether x is of type ``interval``.
+
+:interval_valp x:
+  returns whether x has an interval value.
+
+:ratinterval_valp x:
+  returns whether x has an interval value with rational extrema.
+
+:intinterval_valp x:
+  returns whether x has an interval value with integral extrema.
+
+
+**Example 35** ``interval`` value tests::
+
+  > let l = [interval(0,1), interval(0,1%1), interval(0,3%2), interval(0,1.5)];
+  > map exactp l;
+  [1,1,1,0]
+  > map inexactp l
+  [0,0,0,1]
+  > map intervalp l;
+  [1,1,1,1]
+  > map interval_valp l;
+  [1,1,1,1,]
+  > map ratinterval_valp l;
+  [1,1,1,1]
+  > map intinterval_valp l;
+  [1,1,0,0]
+
+``interval`` Arithmetic Operators and Relations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The standard arithmetic operators (+), (−), (*), (/) and (%) are overloaded for
+``intervals``. The divide operators (/) and (%) do not produce a result if the
+right operand is an interval containing 0.
+
+**Example 36** Some intervals::
+  > let a = interval (11, 19);
+  > let b = interval (16, 24);
+  > let c = interval (21, 29);
+  > let d = interval (23, 27);
+  >
+
+**Example 37** ``interval`` arithmetic::
+  > let p = interval (0, 1);
+  > let s = interval (-1, 1);
+  > a + b;
+  rational::Ivl 27 43
+  > a - b;
+  rational::Ivl -13 3
+  > a * b;
+  rational::Ivl 176 456
+  > p * 2;
+  rational::Ivl 0 2
+  > (-2) * p;
+  rational::Ivl -2 0
+  > -c;
+  rational::Ivl -29 -21
+  > s * a;
+  rational::Ivl -19 19
+  > a % 2;
+  rational::Ivl (11%2) (19%2)
+  > a / 2;
+  rational::Ivl 5.5 9.5
+  > reciprocal a;
+  rational::Ivl (1%19) (1%11)
+  > 2 % a;
+  rational::Ivl (2%19) (2%11)
+  > a % b
+  rational::Ivl 11%24 19%16
+  > a % a; // notice that the intervals are mutually independent here
+  rational::Ivl (11%19) (19%11)
+  >
+
+There are also some relations defined for ``intervals``. The standard relations
+(==) and (~=) are overloaded.
+
 However, rather than overloading (<), (<=), (>), (>=), which could be used for
-either ordering or
-containment with some ambiguity, the module defines (before), (within), and so
-on.
-‘Strictness’ refers to the properties at the end-points.
-V1 before
-(U)
-V2 — returns whether V1 is entirely before V2.
-18
-V1 strictly before
-(U)
-V2 — returns whether V1 is strictly entirely before V2.
-V1 after
-(U)
-V2
-V1 strictly after
-(U)
-V2
-V1 within
-(U)
-V2 — returns whether V1 is entirely within V2; i.e. whether V1 is subinterval of
-V2.
-V1 strictly within
-(U)
-V2 — returns whether V1 is strictly entirely within V2; i.e. whether V1 is
-proper
-subinterval of V2.
-V1 without
-(U)
-V2 — returns whether V1 entirely contains V2; i.e. whether V1 is superinterval
-of V2.
-‘Without’ is used in the sense of outside or around.
-V1 strictly without
-(U)
-V2 — returns whether V1 strictly entirely contains V2; i.e. whether V1 is proper
-superinterval of V2.
-V1 disjoint
-(U)
-V2
-V1 strictly disjoint
-(U)
-V2
-Example 38 ``interval`` relations.
-  > A = B
-false
-  > A = A
-true
-  > A before B
-false
-  > A before C
-true
-  > C before A
-false
-  > A disjoint B
-false
-  > C disjoint A
-true
-  > A within B
-false
-  > A within C
-false
-  > d within C
-true
-  > C within d
-false
-  > A strictly_within A
-false
-  > A within A
-true
-(The symbols A through d were defined in example 36.)
+either ordering or containment with some ambiguity, the module defines
+``(before)``, ``(within)``, and so on. ‘Strictness’ refers to the properties at
+the end-points.
+
+:v1 before v2:
+  returns whether v1 is entirely before v2.
+
+:v1 strictly_before v2:
+  returns whether v1 is strictly entirely before v2.
+
+:v1 after v2:
+  returns whether v1 is entirely after v2.
+
+:v1 strictly_after v2:
+  returns whether v1 is strictly entirely after v2.
+
+:v1 within v2:
+  returns whether v1 is entirely within v2; i.e. whether v1 is subinterval of
+  v2.
+
+:v1 strictly_within v2:
+  returns whether v1 is strictly entirely within v2; i.e. whether v1 is proper
+  subinterval of v2.
+
+:v1 without v2:
+  returns whether v1 entirely contains v2; i.e. whether v1 is superinterval of
+  v2. 'Without' is used in the sense of outside or around.
+
+:v1 strictly_without v2:
+  returns whether v1 strictly entirely contains v2; i.e. whether v1 is proper
+  superinterval of v2.
+
+:v1 disjoint v2:
+  returns whether v1 and v2 are entirely disjoint.
+
+:v strictly_disjoint v2:
+  returns whether v1 and v2 are entirely strictly disjoint.
+
+**Example 38** ``interval`` relations::
+  
+  > a == b;
+  0
+  > a == a;
+  1
+  > a before b;
+  0
+  > a before c;
+  1
+  > c before a;
+  0
+  > a disjoint b;
+  0
+  > c disjoint a;
+  1
+  > a within b;
+  0
+  > a within c;
+  0
+  > d within c;
+  1
+  > c within d;
+  0
+  > a strictly_within a;
+  0
+  > a within a;
+  1
+  >
+
+(The symbols a through d were defined in example 36.)
+
 These may also be used with a simple (``real``) value, and in particular to test
 membership.
-Example 39 Membership.
-  > 10 within A
-false
-  > 11 within A
-true
-19
-  > 11.0 within A
-true
-  > 12 within A
-true
-  > 12.0 within A
-true
-  > 10 strictly_within A
-false
-  > 11 strictly_within A
-false
-  > (11%1) strictly_within A
-false
-  > 12 strictly_within A
-true
-  > (12%1) strictly_within A
-true
-(The symbol A was defined in example 36.)
-9.1.4 ``interval`` Maths
+
+**Example 39** Membership::
+
+  > 10 within a;
+  0
+  > 11 within a;
+  1
+  > 11.0 within a;
+  1
+  > 12 within a;
+  1
+  > 12.0 within a;
+  1
+  > 10 strictly_within a;
+  0
+  > 11 strictly_within a;
+  0
+  > (11%1) strictly_within a;
+  0
+  > 12 strictly_within a;
+  1
+  > (12%1) strictly_within a;
+  1
+  >
+
+(The symbol a was defined in example 36.)
+
+``interval`` Maths
+~~~~~~~~~~~~~~~~~~
+
 Some standard functions are overloaded for intervals; some new functions are
 provided.
-abs
-(U)
-V — returns the interval representing the range of (X) as X varies over V .
-Example 40 Absolute interval.
-  > abs (interval (1, 5))
-interval (1,5)
-  > abs (interval (-1, 5))
-interval (0,5)
-  > abs (interval (-5, -1))
-interval (1,5)
-sgn
-(U)
-V — returns the interval representing the range of sgn(X) as X varies over V .
-size
-(U)
-V — returns the length of an interval.
-Example 41 Absolute interval.
-  > size d
-4
+
+:abs v:
+  returns the interval representing the range of (x) as x varies over v.
+
+**Example 40** Absolute interval::
+
+  > abs (interval (1, 5));
+  rational::Ivl 1 5
+  > abs (interval (-1, 5));
+  rational::Ivl 0 5
+  > abs (interval (-5, -1));
+  rational::Ivl 1 5
+  >
+
+:sgn v:
+  returns the interval representing the range of sgn(x) as x varies over v.
+
+:#v:
+  returns the length of an interval.
+
+**Example 41** Absolute interval::
+
+  > #d;
+  4
+
 (The symbol d was defined in example 36.)
+
 9.2 Least ``complex`` Approximation within "
 rational approx epsilon
 (U)
