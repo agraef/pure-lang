@@ -3543,10 +3543,11 @@ currently supported operations:
     Shell escape.
 
 ``break [symbol ...]``
-    Sets breakpoints on the given function or operator symbols. If invoked
-    without arguments, prints all currently defined breakpoints. This requires
-    that the interpreter was invoked with the -g option to enable debugging
-    support. See Debugging_ below for details.
+    Sets breakpoints on the given function or operator symbols. All symbols
+    must be specified in fully qualified form, see the remarks below. If
+    invoked without arguments, prints all currently defined breakpoints. This
+    requires that the interpreter was invoked with the -g option to enable
+    debugging support. See Debugging_ below for details.
 
 ``bt``
     Prints a full backtrace of the call sequence of the most recent evaluation,
@@ -3559,25 +3560,28 @@ currently supported operations:
 
 ``clear [option ...] [symbol ...]``
     Purge the definitions of the given symbols (functions, macros, constants
-    or global variables). If invoked as ``clear ans``, clears the ``ans``
-    value (see `Last Result`_ below). When invoked without any arguments,
-    ``clear`` purges all definitions at the current interactive "level" (after
-    confirmation) and returns you to the previous level, if any. (It might be
-    a good idea to first check your current definitions with ``show`` or back
-    them up with ``dump`` before you do that.) The desired level can be
-    specified with the -t option. See the description of the ``save`` command
-    and `Definition Levels`_ below for further details. A description of the
-    common options accepted by the ``clear``, ``dump`` and ``show`` commands
-    can be found in `Specifying Symbol Selections`_ below.
+    or global variables). All symbols must be specified in fully qualified
+    form, see the remarks below. If invoked as ``clear ans``, clears the
+    ``ans`` value (see `Last Result`_ below). When invoked without any
+    arguments, ``clear`` purges all definitions at the current interactive
+    "level" (after confirmation) and returns you to the previous level, if
+    any. (It might be a good idea to first check your current definitions with
+    ``show`` or back them up with ``dump`` before you do that.) The desired
+    level can be specified with the -t option. See the description of the
+    ``save`` command and `Definition Levels`_ below for further details. A
+    description of the common options accepted by the ``clear``, ``dump`` and
+    ``show`` commands can be found in `Specifying Symbol Selections`_ below.
 
 ``del [symbol ...]``
-    Deletes breakpoints on the given function or operator symbols. If invoked
-    without arguments, clears all currently defined breakpoints (after
+    Deletes breakpoints on the given function or operator symbols. All symbols
+    must be specified in fully qualified form, see the remarks below. If
+    invoked without arguments, clears all currently defined breakpoints (after
     confirmation). See Debugging_ below for details.
 
 ``dump [-n filename] [option ...] [symbol ...]``
     Dump a snapshot of the current function, macro, constant and variable
-    definitions in Pure syntax to a text file. This works similar to the
+    definitions in Pure syntax to a text file. All symbols must be specified
+    in fully qualified form, see the remarks below. This works similar to the
     ``show`` command (see below), but writes the definitions to a file. The
     default output file is .pure in the current directory, which is then
     reloaded automatically the next time the interpreter starts up in
@@ -3650,8 +3654,9 @@ currently supported operations:
 
 ``show [option ...] [symbol ...]``
     Show the definitions of symbols in various formats. See `The show
-    Command`_ below for details. A description of the common options accepted
-    by the ``clear``, ``dump`` and ``show`` commands can be found in
+    Command`_ below for details. All symbols must be specified in fully
+    qualified form, see the remarks below. A description of the common options
+    accepted by the ``clear``, ``dump`` and ``show`` commands can be found in
     `Specifying Symbol Selections`_ below.
 
 ``stats [-m] [on|off]``
@@ -3673,6 +3678,11 @@ Note that these special commands are only recognized at the beginning of the
 interactive command line (they are not reserved keywords of the Pure
 language). Thus it's possible to "escape" identifiers looking like commands by
 entering a space at the beginning of the line.
+
+Also note that symbols (identifiers, operators etc.) must always be specified
+in fully qualified form. No form of namespace lookup is performed by these
+commands, so they always work the same no matter what ``namespace`` and
+``using namespace`` declarations are currently in effect.
 
 Last Result
 -----------
@@ -3701,10 +3711,11 @@ Specifying Symbol Selections
 ----------------------------
 
 The ``clear``, ``dump`` and ``show`` commands all accept the following options
-for specifying a subset of symbols and definitions on which to
-operate. Options may be combined, thus, e.g., ``show -mft`` is the same as
-``show -m -f -t``. Some options specify optional numeric parameters; these
-must follow immediately behind the option character if present, as in ``-t0``.
+for specifying a subset of symbols and definitions on which to operate. All
+symbols must be specified in fully qualified form. Options may be combined,
+thus, e.g., ``show -mft`` is the same as ``show -m -f -t``. Some options
+specify optional numeric parameters; these must follow immediately behind the
+option character if present, as in ``-t0``.
 
 -c
     Selects defined constants.
