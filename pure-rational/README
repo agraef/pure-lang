@@ -789,7 +789,7 @@ Farey sequence, then n2d1 − n1d2 = 1.
 See §12 for details about rational complex numbers, and §12.5 for details of
 their type simplification.
 
-**Q** ! **Z** — Rounding
+**Q** → **Z** — Rounding
 ========================
 
 Rounding to Integer
@@ -1414,9 +1414,9 @@ Introduction
 ------------
 
 In "pure-rational", a continued fraction 
-a\ :sub:`0` + (1 / (a\ :sub:`1` + (1/ (a\ :sub:`2` + · · · + 1 / a\ :sub:`n`))))
-where ∀i > 0 • a\ :sub:`i` ≠ 0, is represented by [a\ :sub:`0`, a\ :sub:`1`,
-a\ :sub:`2`, . . . , a\ :sub:`n`].
+a\ :sub:`0` + (1 / (a\ :sub:`1` + (1 / (a\ :sub:`2` + · · · + 1 / a\
+:sub:`n`)))) where ∀i > 0 • a\ :sub:`i` ≠ 0, is represented by [a\ :sub:`0`, a\
+:sub:`1`, a\ :sub:`2`, . . . , a\ :sub:`n`].
 
 A ‘simple’ continued fraction is one in which ∀i • a\ :sub:`i` ∈ **Z** and ∀i >
 0 • a\ :sub:`i` > 0.
@@ -1446,151 +1446,142 @@ Exact
 Inexact
 ~~~~~~~
 
-continued fraction max terms
-(U)
-n r — Find up to n initial terms of continued fraction of the
-value r with the ‘remainder’, if any, in the final element. (If continued
-fraction max terms n r
-returns a list of length n or less, then the result is exact.)
-Example 55 First 5 terms of the continued fraction for the golden ratio .
-  > continued_fraction_max_terms 5 Phi
-[1,1,1,1,1,1.61803398874989]
-  > evaluate_continued_fraction _
-1.61803398874989
-(The symbol Phi was defined in example 43.)
-continued fraction epsilon
-(U)
-" r — Find enough of the initial terms of a continued fraction to
-within " of the value r with the ‘remainder’, if any, in the final element.
-Example 56 First few terms of the value
-p
-2.
-23
-  > continued_fraction_epsilon .001 (sqrt 2)
-[1,2,2,2,2,2.41421356237241]
-  > map double (convergents _)
-[1.0,1.5,1.4,1.41666666666667,1.41379310344828,1.41421356237309]
-11.3 Evaluating Continued Fractions
-evaluate continued fraction
-(U)
-AA —Fold a continued fraction AA into the value it represents. This
-function is not limited to simple continued fractions. (Exact simple continued
-fractions are folded
-into a rational.)
-Example 57 The continued fraction [1, 2, 3, 4] and the non-standard form [4, 3,
-2, 1].
-  > evaluate_continued_fraction [1,2,3,4]
-43%30
-  > continued_fraction _
-[1,2,3,4]
-  > evaluate_continued_fraction [4,3,2,1]
-43%10
-  > continued_fraction _
-[4,3,3]
-11.3.1 Convergents
-convergents
-(U)
-AA — Calculate the convergents of the continued fraction AA. This function is
-not
-limited to simple continued fractions.
-Example 58 Convergents of a continued fraction approximation of the value
-p
-2.
-  > continued_fraction_max_terms 5 (sqrt 2)
-[1,2,2,2,2,2.41421356237241]
-  > convergents _
-[1%1,3%2,7%5,17%12,41%29,1.41421356237309]
-12 ``rational`` ``complex`` Numbers
-Q provides various types of number, including ``integers`` (Z), ``doubles`` (R,
-roughly), ``complex`` numbers (C)
-and Gaussian integers (Z[i]); the rational.q module adds ``rationals`` (Q) and
-rational complex numbers
-(Q[i]).
-Figures 2 and 3 illustrate the relationships between the types.
-C = R[i]
- ?? ?
-Q[i]
- ? ??
-R
-
-Z[i]
-?? ?
-Q
-
-Z
-Figure 2: Numbers.
-Functions concerning ‘complex numbers’ are named with ‘comp’, whereas functions
-concerning ‘complexity’
-(see §5.1) are named with ‘cplx’.
-24
-Num
-rrrrrrrrrrr
-LLL LLL LLL L
-``real``
-ssssssssss
-LLL LLL LLL LL
-``complex``
-``integer`` ``rational`` ``double``
-Figure 3: Types.
-12.1 ``rational`` ``complex`` Constructors and ‘Deconstructors’
+:continued_fraction_max_terms n r:
+  Find up to n initial terms of continued fraction of the value r with the
+  ‘remainder’, if any, in the final element. (If continued_fraction_max_terms n
+  r returns a list of length n or less, then the result is exact.)
+
+**Example 55** First 5 terms of the continued fraction for the golden ratio ɸ::
+
+  > continued_fraction_max_terms 5 phi;
+    [1,1,1,1,1,1.61803398874989]
+  > evaluate_continued_fraction ans;
+  1.61803398874989
+  >
+
+(The symbol phi was defined in example 43.)
+
+:continued_fraction_epsilon ε r:
+  Find enough of the initial terms of a continued fraction to within ε of the
+  value r with the ‘remainder’, if any, in the final element.
+
+**Example 56** First few terms of the value √2::
+
+  > continued_fraction_epsilon .001 (sqrt 2);
+  [1,2,2,2,2,2.41421356237241]
+  > map double (convergents ans);
+  [1.0,1.5,1.4,1.41666666666667,1.41379310344828,1.41421356237309]
+  >
+
+Evaluating Continued Fractions
+------------------------------
+
+:evaluate_continued_fraction aa:
+  Fold a continued fraction aa into the value it represents. This function is
+  not limited to simple continued fractions. (Exact simple continued fractions
+  are folded into a rational.)
+
+**Example 57** The continued fraction [1, 2, 3, 4] and the non-standard form [4,
+3, 2, 1]::
+
+  > evaluate_continued_fraction [1,2,3,4];
+  43%30
+  > continued_fraction ans;
+  [1,2,3,4]
+  > evaluate_continued_fraction [4,3,2,1];
+  43%10
+  > continued_fraction ans;
+  [4,3,3]
+  >
+
+Convergents
+~~~~~~~~~~~
+
+:convergents aa:
+  Calculate the convergents of the continued fraction aa. This function is not
+  limited to simple continued fractions.
+
+**Example 58** Convergents of a continued fraction approximation of the value
+√2::
+
+  > continued_fraction_max_terms 5 (sqrt 2);
+  [1,2,2,2,2,2.41421356237241]
+  > convergents ans;
+  [1%1,3%2,7%5,17%12,41%29,1.41421356237309]
+  >
+
+``rational`` ``complex`` Numbers
+================================
+
+Pure together with ``ratutils.pure`` provide various types of number, including
+``integers`` (**Z**), ``doubles`` (**R**, roughly), ``complex`` numbers (**C**)
+and Gaussian integers (**Z**\ [i]), ``rationals`` (**Q**) and rational complex
+numbers (**Q**\ [i]).
+
+Functions concerning 'complex numbers' are named with 'comp', whereas functions
+concerning 'complexity' (see §5.1) are named with ‘cplx’.
+
+``rational`` ``complex`` Constructors and 'Deconstructors'
+----------------------------------------------------------
+
 ``complex`` numbers can have rational parts.
-Example 59 Forming a rational complex.
-  > 1 + i * (1%2)
-1%1+:1%2
-  > _ * _
-3%4+:1%1
+
+**Example 59** Forming a ``rational`` ``complex``::
+
+  > 1 +: 1 * (1%2);
+  1%1+:1%2
+  > ans * ans;
+  3%4+:1%1
+  >
+
 And rational numbers can be given complex parts.
-Example 60 ``complex`` rationals and complicated rationals.
-  > (1+2*i) % (3+4*i)
-11%25+:2%25
-  > _ * (3+4*i)
-1%1+:2%1
-  > ((4%1)*i) % 2
-0%1+:2%1
-  > ((4%1)*i) % (1%2)
-0%1+:8%1
-  > ((4%1)*i) % (1+(1%2)*i)
-8%5+:16%5
-  > _ * (1+(1%2)*i)
-0%1+:4%1
-  > ((4%1)*i) / (1+(1%2)*i)
-1.6+:3.2
+
+**Example 60** ``complex`` ``rationals`` and complicated ``rationals``::
+
+  > (1 +: 2) % (3 +: 4);
+  11%25+:2%25
+  > ans * (3 +: 4);
+  1%1+:2%1
+  > ((4%1) * (0 +: 1)) % 2;
+  0%1+:2%1
+  > ((4%1) * (0 +: 1)) % (1%2);
+  0%1+:8%1
+  > ((4%1) * (0 +: 1)) % (1 + (1%2) * (0 +: 1));
+  8%5+:16%5
+  > ans * (1+(1%2) * (0 +: 1));
+  0%1+:4%1
+  > ((4%1) * (0 +: 1)) / (1 + (1%2) * (0 +: 1));
+  1.6+:3.2
+  >
+
 The various parts of a complex rational may be deconstructed using combinations
-of num and den and
-the standard functions re and im.
+of num and den and the standard functions re and im.
+
 Thus, taking real and imaginary parts first, a rational complex number may be
-considered to be
-Xn
-Xd
-+ Yn
-Yd
- i
-with Xn,Xd, Yn, Yd 2 Z.
+considered to be (x\ :sub:`n` / x\ :sub:`d`) + (y\ :sub:`n` / y\ :sub:`d`) * i
+with x\ :sub:`n`, x\ :sub:`d`, y\ :sub:`n`, y\ :sub:`d` ∈ **Z**.
+
 A rational complex number may also be decomposed into its ‘numerator’ and
-‘denominator’, where these
-are both integral complex numbers, or ‘Gaussian integers’, and the denominator
-is a minimal choice in
-some sense.
+‘denominator’, where these are both integral complex numbers, or ‘Gaussian
+integers’, and the denominatoris a minimal choice in some sense.
+
 One way to do this is so that the denominator is the minimum positive integer.
-The denominator is a
-complex number with zero imaginary part.
+The denominator is a complex number with zero imaginary part.
+
 Thus, taking numerator and denominator parts first, a rational complex number
-may be considered to
-be
-Nx + Ny  i
-d + 0  i
-with Nx,Ny,d 2 Z.
-25
+may be considered to be (n\ :sub:`x` + n\ :sub:`y` * i) / (d + 0 * i) with n\
+:sub:`x`, n\ :sub:`y`, d ∈ **Z**.
+
 Another way to do this is so that the denominator is a Gaussian integer with
-minimal absolute value.
-Thus, taking numerator and denominator parts first, a rational complex number
-may be considered to
-be
-Nx + Ny  i
-Dx + Dy  i
-with Nx,Ny,Dx,Dy 2 Z.
-The Dx,Dy are not unique, but can be chosen such that Dx > 0 and either |Dy| <
-Dx or Dy = Dx > 0.
+minimal absolute value. Thus, taking numerator and denominator parts first, a
+rational complex number may be considered to be (n\ :sub:`x` + n\ :sub:`y` * i)
+/ (d\ :sub:`x` + d\ :sub:`y` * i) with n\ :sub:`x`, n\ :sub:`y`, d\ :sub:`x`, d\
+:sub:`y` ∈ **Z**.
+
+The d\ :sub:`x`, d\ :sub:`y` are not unique, but can be chosen such that d\
+:sub:`x` > 0 and either \|d\ :sub:`y`\| < d\ :sub:`x` or d\ :sub:`y` = d\
+:sub:`x` > 0.
+
 num den nat
 (U)
 C — given a ``complex`` ``rational`` or ``integer`` C, returns a pair (n,d)
