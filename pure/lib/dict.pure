@@ -1,4 +1,4 @@
-/* Pure's dict and hdict data types based on AVL trees. */
+/* Pure's dictionary data types based on AVL trees. */
 
 /* Copyright (c) 2008-2010 by Albert Graef <Dr.Graef@t-online.de>.
    Copyright (c) 2008-2010 by Jiri Spitz <jiri.spitz@bluetone.cz>.
@@ -23,19 +23,37 @@
    Dictionaries
    ------------
 
-   The dict.pure module provides Pure's ``Dict`` and ``HDict`` data types
-   based on AVL trees. ``Dict`` is an ordered dictionary (assuming an ordered
-   key type), ``HDict`` a hashed dictionary which works with any (mixture of)
-   key types but stores members in an apparently random order.
+   The dict.pure module provides Pure's dictionary data types based on AVL
+   trees. There are actually four different types to choose from, depending on
+   whether you need ordered or hashed dictionaries and whether multiple values
+   for the same key should be allowed or not.
 
-   The used AVL tree algorithm has its origin in the SWI-Prolog implementation
-   of association lists. The original implementation was created by
-   R. A. O'Keefe and updated for SWI-Prolog by Jan Wielemaker. For the
-   original source see http://www.swi-prolog.org.
+   * ``Dict`` is an ordered dictionary (assuming an ordered key type).
+
+   * ``HDict`` a hashed dictionary which works with any (mixture of) key types
+     but stores members in an apparently random order.
+
+   * ``MDict`` is an ordered dictionary, like ``Dict``, which allows multiple
+     values to be associated with the same key.
+
+   * ``HMDict`` is a multi-valued dictionary, like ``MDict``, but uses hashed
+     keys like ``HDict``.
+
+   ``MDict`` and ``HMDict`` are also colloquially referred to as (ordered or
+   hashed) "multidicts".
+
+   The underlying AVL tree data structure can be found in the ``avltrees``
+   module which is included in the library, but not to be invoked directly.
+
+   The AVL tree algorithm has its origin in the SWI-Prolog implementation of
+   association lists. The original implementation was created by R. A. O'Keefe
+   and updated for SWI-Prolog by Jan Wielemaker. For the original source see
+   http://www.swi-prolog.org.
 
    The port from SWI-Prolog and the deletion stuff (``rmfirst``, ``rmlast``,
    ``delete``) missing in the Prolog implementation was provided by Jiri
-   Spitz.
+   Spitz. The generalization of the code to arbitrary combinations of
+   ordered/hashed and single-/multi-valued keys was done by Albert Graef.
 
    Imports
    ~~~~~~~
@@ -48,17 +66,18 @@
    Data Structure
    ~~~~~~~~~~~~~~
 
-   Dictionaries are represented as balanced tree structures of the form ``Dict
-   T`` or ``HDict T``, respectively, thus ``Dict`` and ``HDict`` may be used
-   as type tags to restrict variables in pattern matching.
+   Dictionaries are represented as balanced tree structures of the form ``D
+   T`` where ``D`` may be any of ``Dict``, ``HDict``, ``MDict`` and
+   ``HMDict``. These constructors may be used as type tags to restrict
+   variables in pattern matching.
 
-   The internal data structure ``T`` is an AVL tree built with the following
-   constructors:
+   In any case, the internal data structure ``T`` is an AVL tree built with
+   the following constructors (from the ``avltrees`` module):
 
-   ``nil``
+   ``avl::nil``
      the empty tree.
 
-   ``bin (key=>value) balance left right``
+   ``avl::bin (key=>value) balance left right``
      a nonempty tree with given ``key`` and ``value`` in the root node, where
      ``left`` and ``right`` are the left and right subtree, and ``balance``
      is either 1, 0 or -1, denoting ``|left|-|right|`` = 1, 0, or -1,
@@ -72,101 +91,106 @@
 
    .. _emptydict:
    .. _emptyhdict:
+   .. _emptymdict:
+   .. _emptyhmdict:
 
-   ``emptydict``, ``emptyhdict``
-     return the empty dict or hdict
+   ``emptydict``, ``emptyhdict``, ``emptymdict``, ``emptyhmdict``
+     return an empty dictionary
 
    .. _dict:
    .. _hdict:
+   .. _mdict:
+   .. _hmdict:
 
-   ``dict xs``, ``hdict xs``
-     create a dict or hdict from list ``xs`` of key-value pairs in the form
+   ``dict xs``, ``hdict xs``, ``mdict xs``, ``hmdict xs``
+     create a dictionary from a list ``xs`` of key-value pairs in the form
      ``key=>value``
 
    .. _dictp:
    .. _hdictp:
+   .. _mdictp:
+   .. _hmdictp:
 
-   ``dictp d``, ``hdictp d``
-     check whether ``x`` is a dict or hdict
+   ``dictp d``, ``hdictp d``, ``mdictp d``, ``hmdictp d``
+     check whether ``x`` is a dictionary of the corresponding type
 
    .. _mkdict:
    .. _mkhdict:
+   .. _mkmdict:
+   .. _mkhmdict:
 
-   ``mkdict y xs``, ``mkhdict y xs``
-     create dict or hdict from a list of keys and a constant value
+   ``mkdict y xs``, ``mkhdict y xs``, ``mkmdict y xs``, ``mkhmdict y xs``
+     create a dictionary from a list of keys and a constant value
 
-   .. _# (dict):
-   .. _# (hdict):
+   .. _# (dictionary):
 
    ``#d``
-     size of dict or hdict ``d``
+     size of a dictionary (the number of members it contains)
 
-   .. _! (dict):
-   .. _! (hdict):
+   .. _! (dictionary):
 
    ``d!x``
-     get value from ``d`` by key ``x``
+     get the value from ``d`` by key ``x``; in the case of a multidict this
+     actually returns a list of values (which may be empty if ``d`` doesn't
+     contain ``x``)
 
-   .. _null (dict):
-   .. _null (hdict):
+   .. _null (dictionary):
 
    ``null d``
-     test whether ``d`` is the empty dict or hdict
+     test whether ``d`` is an empty dictionary
 
-   .. _member (dict):
-   .. _member (hdict):
+   .. _member (dictionary):
 
    ``member d x``
      test whether ``d`` contains a member with key ``x``
 
-   .. _members (dict):
-   .. _members (hdict):
-   .. _list (dict):
-   .. _list (hdict):
+   .. _members (dictionary):
+   .. _list (dictionary):
 
    ``members d``, ``list d``
-     list members of ``d`` (in ascending order for dict)
+     list the members of ``d`` (in ascending order for ordered dictionaries)
 
    .. _keys:
 
    ``keys d``
-     list keys of ``d`` (in ascending order for dict)
+     list the keys of ``d`` (in ascending order for ordered dictionaries)
 
    .. _vals:
 
    ``vals d``
-     list values of ``d``
+     list the values of ``d``
 
-   .. _first (dict):
-   .. _first (hdict):
-   .. _last (dict):
-   .. _last (hdict):
+   .. _first (dictionary):
+   .. _last (dictionary):
 
    ``first d``, ``last d``
-     return first and last member of ``d``
+     return the first and the last member of ``d``, respectively
 
-   .. _rmfirst (dict):
-   .. _rmfirst (hdict):
-   .. _rmlast (dict):
-   .. _rmlast (hdict):
+   .. _rmfirst (dictionary):
+   .. _rmlast (dictionary):
 
    ``rmfirst d``, ``rmlast d``
-     remove first and last member from ``d``
+     remove the first and the last member from ``d``, respectively
 
-   .. _insert (dict):
-   .. _insert (hdict):
-   .. _update (dict):
-   .. _update (hdict):
+   .. _insert (dictionary):
+   .. _update (dictionary):
 
    ``insert d (x=>y)``, ``update d x y``
-     insert ``x=>y`` into ``d`` (replace any existing element); ``update`` is
-     a fully curried version of ``insert``
+     insert ``x=>y`` into ``d``
 
-   .. _delete (dict):
-   .. _delete (hdict):
+     Note that in the case of a multidict this operation *always* adds a new
+     member; otherwise it replaces an existing value if there is one. Also
+     note that ``update`` is just a fully curried version of ``insert``, so
+     ``update d x y`` behaves exactly like ``insert d (x=>y)``.
+
+   .. _delete (dictionary):
 
    ``delete d x``
      remove ``x`` from ``d``
+
+     Note that in the case of a multidict this only removes the "first" member
+     for the given key ``x``, i.e., the member which corresponds to the first
+     element in ``d!x``.
 
    Examples
    ~~~~~~~~
@@ -181,12 +205,18 @@
      ["bar"=>99.1,"foo"=>77]
 
    Indexing a dictionary works in the usual way, using Pure's ``!`` operator.
-   By virtue of the prelude, slicing a dictionary with ``!!`` also works as
-   expected::
+   An ``out_of_bound`` exception is thrown if the key is not in the
+   dictionary::
 
      > d!"foo";
      77
-     > d!!["foo","bar"];
+     > d!"baz";
+     <stdin>, line 5: unhandled exception 'out_of_bounds' while evaluating 'd!"baz"'
+
+   By virtue of the prelude, slicing a dictionary with ``!!`` also works as
+   expected::
+
+     > d!!["foo","bar","baz"];
      [77,99.1]
 
    A hashed dictionary can be used with any key values, which are stored in a
@@ -202,6 +232,38 @@
      > h!!keys h;
      [99.1,77]
 
+   Multidicts work in pretty much the same fashion, but allow more than one
+   value for a given key to be stored in the dictionary. In this case, the
+   indexing operation returns a list of all values for the given key, which
+   may be empty if the key is not in the dictionary (rather than throwing an
+   ``out_of_bound`` exception)::
+
+     > let d::MDict = mdict ["foo"=>77,"bar"=>99.1,"foo"=>99];
+     > d!"foo"; d!"baz";
+     [77,99]
+     []
+
+   Slicing thus returns a list of lists of values here::
+
+     > d!!["foo","bar","baz"];
+     [[77,99],[99.1],[]]
+
+   To obtain a flat list you can just concatenate the results::
+
+     > cat $ d!!["foo","bar","baz"];
+     [77,99,99.1]
+
+   Finally, hashed multidicts provide both key hashing and multiple values per
+   key::
+
+     > let h::HMDict = hmdict [foo=>77,42=>99.1,42=>77];
+     > keys h; vals h; members h;
+     [42,42,foo]
+     [99.1,77,77]
+     [42=>99.1,42=>77,foo=>77]
+     > h!42;
+     [99.1,77]
+
 */
 
 using avltrees;
@@ -213,72 +275,103 @@ dictp _		= 0;
 hdictp _::HDict	= 1;
 hdictp _	= 0;
 
+mdictp _::MDict	= 1;
+mdictp _	= 0;
+
+hmdictp _::HMDict = 1;
+hmdictp _	= 0;
+
 // create an empty dict
-emptydict	= Dict  avl::emptytree;
-emptyhdict	= HDict avl::emptytree;
+emptydict	= Dict   avl::emptytree;
+emptyhdict	= HDict  avl::emptytree;
+emptymdict	= MDict  avl::emptytree;
+emptyhmdict	= HMDict avl::emptytree;
 
 // create a dict from a list
-dict  xys	= foldl insert emptydict  xys if listp xys;
-hdict xys	= foldl insert emptyhdict xys if listp xys;
+dict  xys	= foldl insert emptydict   xys if listp xys;
+hdict xys	= foldl insert emptyhdict  xys if listp xys;
+mdict  xys	= foldl insert emptymdict  xys if listp xys;
+hmdict xys	= foldl insert emptyhmdict xys if listp xys;
 
 // create a dict from a list of keys and a constant value
-mkdict  y xs	= dict  (zipwith (=>) xs (repeatn (#xs) y)) if listp xs;
-mkhdict y xs	= hdict (zipwith (=>) xs (repeatn (#xs) y)) if listp xs;
+mkdict  y xs	= dict   (zipwith (=>) xs (repeatn (#xs) y)) if listp xs;
+mkhdict y xs	= hdict  (zipwith (=>) xs (repeatn (#xs) y)) if listp xs;
+mkmdict  y xs	= mdict  (zipwith (=>) xs (repeatn (#xs) y)) if listp xs;
+mkhmdict y xs	= hmdict (zipwith (=>) xs (repeatn (#xs) y)) if listp xs;
 
 // insert a member
-insert (Dict  d) el@(x=>y) = Dict  (avl::insertk  d el);
-insert (HDict d) el@(x=>y) = HDict (avl::inserthk d el);
+insert (Dict  d)  el@(x=>y) = Dict   (avl::insertk   d el);
+insert (HDict d)  el@(x=>y) = HDict  (avl::inserthk  d el);
+insert (MDict  d) el@(x=>y) = MDict  (avl::insertkm  d el);
+insert (HMDict d) el@(x=>y) = HMDict (avl::inserthkm d el);
 
 // curried version of insert
-update d@(Dict  _) x y | update d@(HDict _) x y	= insert d (x=>y);
+update d@(Dict  _) x y | update d@(HDict  _) x y |
+update d@(MDict _) x y | update d@(HMDict _) x y = insert d (x=>y);
 
 // delete a member by key
-delete (Dict  d) x = Dict  (avl::deletek  d x);
-delete (HDict d) x = HDict (avl::deletehk d x);
+delete (Dict   d) x = Dict   (avl::deletek  d x);
+delete (HDict  d) x = HDict  (avl::deletehk d x);
+delete (MDict  d) x = MDict  (avl::deletek  d x);
+delete (HMDict d) x = HMDict (avl::deletehk d x);
 
 // check for the empty dict
-null (Dict d)	|
-null (HDict d)	= avl::null d;
+null (Dict  d) | null (HDict  d) |
+null (MDict d) | null (HMDict d) = avl::null d;
 
 // dict size
-#(Dict  d)	= avl::size  d;
-#(HDict d)	= avl::sizeh d;
+#(Dict  d) | #(MDict  d) = avl::size  d;
+#(HDict d) | #(HMDict d) = avl::sizeh d;
 
 // membership test
-member (Dict  d) k = avl::memberk  d k;
-member (HDict d) k = avl::memberhk d k;
+member (Dict  d) k | member (MDict  d) k = avl::memberk  d k;
+member (HDict d) k | member (HMDict d) k = avl::memberhk d k;
 
 // get the members, keys and values of a dict as a list
-members (Dict  d) = avl::members  d;
-members (HDict d) = avl::membersh d;
-keys (Dict  d)    = avl::keys  d;
-keys (HDict d)    = avl::keysh d;
-vals (Dict  d)    = avl::vals  d;
-vals (HDict d)    = avl::valsh d;
+members (Dict  d) | members (MDict  d) = avl::members  d;
+members (HDict d) | members (HMDict d) = avl::membersh d;
+keys    (Dict  d) | keys    (MDict  d) = avl::keys     d;
+keys    (HDict d) | keys    (HMDict d) = avl::keysh    d;
+vals    (Dict  d) | vals    (MDict  d) = avl::vals     d;
+vals    (HDict d) | vals    (HMDict d) = avl::valsh    d;
 
-list d::Dict | list d::HDict = members d;
+list d::Dict  | list d::MDict |
+list d::HDict | list d::HMDict = members d;
 
 // get the first and last member
-first (Dict d)	= avl::first  d;
-last  (Dict d)	= avl::last   d;
-first (HDict d)	= avl::firsth d;
-last  (HDict d)	= avl::lasth  d;
+first (Dict d)  | first (MDict d)  = avl::first  d;
+last  (Dict d)  | last  (MDict d)  = avl::last   d;
+first (HDict d) | first (HMDict d) = avl::firsth d;
+last  (HDict d) | last  (HMDict d) = avl::lasth  d;
 
 // remove the first and last member
-rmfirst (Dict d)  = Dict  (avl::rmfirst  d);
-rmlast  (Dict d)  = Dict  (avl::rmlast   d);
-rmfirst (HDict d) = HDict (avl::rmfirsth d);
-rmlast  (HDict d) = HDict (avl::rmlasth  d);
+rmfirst (Dict   d) = Dict   (avl::rmfirst  d);
+rmlast  (Dict   d) = Dict   (avl::rmlast   d);
+rmfirst (HDict  d) = HDict  (avl::rmfirsth d);
+rmlast  (HDict  d) = HDict  (avl::rmlasth  d);
+rmfirst (MDict  d) = MDict  (avl::rmfirst  d);
+rmlast  (MDict  d) = MDict  (avl::rmlast   d);
+rmfirst (HMDict d) = HMDict (avl::rmfirsth d);
+rmlast  (HMDict d) = HMDict (avl::rmlasth  d);
 
 // get a value by key
-(Dict d)!k	= avl::get d k;
-(HDict d)!k	= avl::geth d k;
+(Dict d)!k	= avl::get   d k;
+(HDict d)!k	= avl::geth  d k;
+(MDict d)!k	= avl::getm  d k;
+(HMDict d)!k	= avl::gethm d k;
 
 // equality checks
-d1::Dict  == d2::Dict  = (members d1) == (members d2);
-d1::HDict == d2::HDict = all (member d1) (keys d2) &&
-	     	       	 all (member d2) (keys d1) &&
-	  		 (vals d1) == (map (d2!) (keys d1));
+d1::Dict   == d2::Dict   |
+d1::MDict  == d2::MDict  = (members d1) == (members d2);
+d1::HDict  == d2::HDict  = all (member d1) (keys d2) &&
+	     	       	   all (member d2) (keys d1) &&
+	  		   (vals d1) == (map (d2!) (keys d1));
+d1::HMDict == d2::HMDict = all (member d1) (keys d2) &&
+	     	       	   all (member d2) (keys d1) &&
+	  		   (map (d1!) ks) == (map (d2!) ks)
+			   when ks = keys d1 end;
 
-d1::Dict ~= d2::Dict   = (members d1) ~= (members d2);
-d1::HDict ~= d2::HDict = ~(d1 == d2);
+d1::Dict   ~= d2::Dict   |
+d1::MDict  ~= d2::MDict  = (members d1) ~= (members d2);
+d1::HDict  ~= d2::HDict  |
+d1::HMDict ~= d2::HMDict = ~(d1 == d2);

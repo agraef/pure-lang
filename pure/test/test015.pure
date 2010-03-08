@@ -46,7 +46,7 @@ let randlist =
 
 /********************************************
 *                                           *
-*            Set and bag tests              *
+*            Set and Bag tests              *
 *                                           *
 ********************************************/
 // Create data structures
@@ -118,7 +118,7 @@ foldl delete (foldl insert emptybag randlist) randlist;
 
 /********************************************
 *                                           *
-*           Dict and hdict tests            *
+*           Dict and HDict tests            *
 *                                           *
 ********************************************/
 // Create data structures
@@ -201,6 +201,93 @@ c == c; c ~= c;
 // Stress tests
 foldl delete (mkdict 100 randlist) randlist;
 foldl delete (mkhdict 100 randlist) randlist;
+
+
+/********************************************
+*                                           *
+*          MDict and HMDict tests           *
+*                                           *
+********************************************/
+// Create data structures
+
+let a = mdict [i => (double i) | i =  1..10];
+let b = mdict [i => (double i) | i = 11..20];
+ 
+let c = hmdict $ zipwith (=>) [i, double i, str i | i =   1..10] ( 1..10);
+let d = hmdict $ zipwith (=>) [i, double i, str i | i =  11..20] (11..20);
+
+let e = mdict $ zipwith (=>) (map str (1..10)) (map str (1..10));
+
+a; b; c; d; e;
+
+mkmdict 1000 (1..10);
+mkhmdict 1000 [i, double i, str i | i = 1..10];
+
+// Type tests
+
+mdictp a; mdictp c; hmdictp c; hmdictp a;
+
+// Tests for empty data sets
+
+null emptymdict; null emptyhmdict; null a; null c;
+
+// Remove the first and last member
+
+rmfirst a; rmlast a;
+
+// Find the first and last member
+
+first a; last a;
+
+// Size of data set
+
+#a; #c;
+
+// Membership tests
+
+member a 5; member a 50; member e "5"; member e "50";
+member c (5, 5.0, "5"); member c (50, 50.0, "50");
+
+// Get value by index
+
+a!5; e!"5"; c!(5, 5.0, "5"); a!50; c!(50, 50.0, "50");
+
+// Slicing
+a!!(5..15);
+c!![i, double i, str i | i = 5..15];
+
+// Convert data set to list
+
+members a; members c;
+keys a; keys c;
+vals a; vals c;
+
+// Update data (replace and add)
+
+update a 5 5000; update a 5000 5000;
+update c (5, 5.0, "5") 5000; update c (5000, 5000.0, "5000") 5000;
+
+// Delete data
+
+foldl delete a (1..10);
+delete a 5000;
+
+foldl delete c [i, double i, str i | i = 1..10];
+delete c (5000, 5000.0, "5000");
+
+// Relations
+
+a == b; a ~= b;
+
+a == a; a ~= a;
+
+c == d; c ~= d;
+
+c == c; c ~= c;
+
+// Stress tests
+foldl delete (mkmdict 100 randlist) randlist;
+foldl delete (mkhmdict 100 randlist) randlist;
 
 /********************************************
 *                                           *

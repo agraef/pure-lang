@@ -4410,7 +4410,7 @@ Heaps
 -----
 
 Heaps allow quick (constant time) access to the smallest member, and to
-remove the smallest nember and insert new elements in logarithmic time.
+remove the smallest member and insert new elements in logarithmic time.
 This implementation does not allow quick update of heap members; if
 such functionality is required, bags should be used instead
 (see `Sets and Bags`_).
@@ -4554,19 +4554,37 @@ Examples
 Dictionaries
 ------------
 
-The dict.pure module provides Pure's ``Dict`` and ``HDict`` data types
-based on AVL trees. ``Dict`` is an ordered dictionary (assuming an ordered
-key type), ``HDict`` a hashed dictionary which works with any (mixture of)
-key types but stores members in an apparently random order.
+The dict.pure module provides Pure's dictionary data types based on AVL
+trees. There are actually four different types to choose from, depending on
+whether you need ordered or hashed dictionaries and whether multiple values
+for the same key should be allowed or not.
 
-The used AVL tree algorithm has its origin in the SWI-Prolog implementation
-of association lists. The original implementation was created by
-R. A. O'Keefe and updated for SWI-Prolog by Jan Wielemaker. For the
-original source see http://www.swi-prolog.org.
+* ``Dict`` is an ordered dictionary (assuming an ordered key type).
+
+* ``HDict`` a hashed dictionary which works with any (mixture of) key types
+  but stores members in an apparently random order.
+
+* ``MDict`` is an ordered dictionary, like ``Dict``, which allows multiple
+  values to be associated with the same key.
+
+* ``HMDict`` is a multi-valued dictionary, like ``MDict``, but uses hashed
+  keys like ``HDict``.
+
+``MDict`` and ``HMDict`` are also colloquially referred to as (ordered or
+hashed) "multidicts".
+
+The underlying AVL tree data structure can be found in the ``avltrees``
+module which is included in the library, but not to be invoked directly.
+
+The AVL tree algorithm has its origin in the SWI-Prolog implementation of
+association lists. The original implementation was created by R. A. O'Keefe
+and updated for SWI-Prolog by Jan Wielemaker. For the original source see
+http://www.swi-prolog.org.
 
 The port from SWI-Prolog and the deletion stuff (``rmfirst``, ``rmlast``,
 ``delete``) missing in the Prolog implementation was provided by Jiri
-Spitz.
+Spitz. The generalization of the code to arbitrary combinations of
+ordered/hashed and single-/multi-valued keys was done by Albert Graef.
 
 Imports
 ~~~~~~~
@@ -4579,17 +4597,18 @@ to your program::
 Data Structure
 ~~~~~~~~~~~~~~
 
-Dictionaries are represented as balanced tree structures of the form ``Dict
-T`` or ``HDict T``, respectively, thus ``Dict`` and ``HDict`` may be used
-as type tags to restrict variables in pattern matching.
+Dictionaries are represented as balanced tree structures of the form ``D
+T`` where ``D`` may be any of ``Dict``, ``HDict``, ``MDict`` and
+``HMDict``. These constructors may be used as type tags to restrict
+variables in pattern matching.
 
-The internal data structure ``T`` is an AVL tree built with the following
-constructors:
+In any case, the internal data structure ``T`` is an AVL tree built with
+the following constructors (from the ``avltrees`` module):
 
-``nil``
+``avl::nil``
   the empty tree.
 
-``bin (key=>value) balance left right``
+``avl::bin (key=>value) balance left right``
   a nonempty tree with given ``key`` and ``value`` in the root node, where
   ``left`` and ``right`` are the left and right subtree, and ``balance``
   is either 1, 0 or -1, denoting ``|left|-|right|`` = 1, 0, or -1,
@@ -4609,11 +4628,21 @@ Operations
 
    <a name="emptyhdict">
 
+.. raw:: html
+
+   <a name="emptymdict">
+
+.. raw:: html
+
+   <a name="emptyhmdict">
+
 .. _emptydict:
 .. _emptyhdict:
+.. _emptymdict:
+.. _emptyhmdict:
 
-``emptydict``, ``emptyhdict``
-  return the empty dict or hdict
+``emptydict``, ``emptyhdict``, ``emptymdict``, ``emptyhmdict``
+  return an empty dictionary
 
 .. raw:: html
 
@@ -4623,11 +4652,21 @@ Operations
 
    <a name="hdict">
 
+.. raw:: html
+
+   <a name="mdict">
+
+.. raw:: html
+
+   <a name="hmdict">
+
 .. _dict:
 .. _hdict:
+.. _mdict:
+.. _hmdict:
 
-``dict xs``, ``hdict xs``
-  create a dict or hdict from list ``xs`` of key-value pairs in the form
+``dict xs``, ``hdict xs``, ``mdict xs``, ``hmdict xs``
+  create a dictionary from a list ``xs`` of key-value pairs in the form
   ``key=>value``
 
 .. raw:: html
@@ -4638,11 +4677,21 @@ Operations
 
    <a name="hdictp">
 
+.. raw:: html
+
+   <a name="mdictp">
+
+.. raw:: html
+
+   <a name="hmdictp">
+
 .. _dictp:
 .. _hdictp:
+.. _mdictp:
+.. _hmdictp:
 
-``dictp d``, ``hdictp d``
-  check whether ``x`` is a dict or hdict
+``dictp d``, ``hdictp d``, ``mdictp d``, ``hmdictp d``
+  check whether ``x`` is a dictionary of the corresponding type
 
 .. raw:: html
 
@@ -4652,91 +4701,73 @@ Operations
 
    <a name="mkhdict">
 
+.. raw:: html
+
+   <a name="mkmdict">
+
+.. raw:: html
+
+   <a name="mkhmdict">
+
 .. _mkdict:
 .. _mkhdict:
+.. _mkmdict:
+.. _mkhmdict:
 
-``mkdict y xs``, ``mkhdict y xs``
-  create dict or hdict from a list of keys and a constant value
-
-.. raw:: html
-
-   <a name="# (dict)">
+``mkdict y xs``, ``mkhdict y xs``, ``mkmdict y xs``, ``mkhmdict y xs``
+  create a dictionary from a list of keys and a constant value
 
 .. raw:: html
 
-   <a name="# (hdict)">
+   <a name="# (dictionary)">
 
-.. _# (dict):
-.. _# (hdict):
+.. _# (dictionary):
 
 ``#d``
-  size of dict or hdict ``d``
+  size of a dictionary (the number of members it contains)
 
 .. raw:: html
 
-   <a name="! (dict)">
+   <a name="! (dictionary)">
 
-.. raw:: html
-
-   <a name="! (hdict)">
-
-.. _! (dict):
-.. _! (hdict):
+.. _! (dictionary):
 
 ``d!x``
-  get value from ``d`` by key ``x``
+  get the value from ``d`` by key ``x``; in the case of a multidict this
+  actually returns a list of values (which may be empty if ``d`` doesn't
+  contain ``x``)
 
 .. raw:: html
 
-   <a name="null (dict)">
+   <a name="null (dictionary)">
 
-.. raw:: html
-
-   <a name="null (hdict)">
-
-.. _null (dict):
-.. _null (hdict):
+.. _null (dictionary):
 
 ``null d``
-  test whether ``d`` is the empty dict or hdict
+  test whether ``d`` is an empty dictionary
 
 .. raw:: html
 
-   <a name="member (dict)">
+   <a name="member (dictionary)">
 
-.. raw:: html
-
-   <a name="member (hdict)">
-
-.. _member (dict):
-.. _member (hdict):
+.. _member (dictionary):
 
 ``member d x``
   test whether ``d`` contains a member with key ``x``
 
 .. raw:: html
 
-   <a name="members (dict)">
+   <a name="members (dictionary)">
 
 .. raw:: html
 
-   <a name="members (hdict)">
+   <a name="list (dictionary)">
 
-.. raw:: html
-
-   <a name="list (dict)">
-
-.. raw:: html
-
-   <a name="list (hdict)">
-
-.. _members (dict):
-.. _members (hdict):
-.. _list (dict):
-.. _list (hdict):
+.. _members (dictionary):
+.. _list (dictionary):
 
 ``members d``, ``list d``
-  list members of ``d`` (in ascending order for dict)
+  list the members of ``d`` (in ascending order for ordered dictionaries)
 
 .. raw:: html
 
@@ -4745,7 +4776,7 @@ Operations
 .. _keys:
 
 ``keys d``
-  list keys of ``d`` (in ascending order for dict)
+  list the keys of ``d`` (in ascending order for ordered dictionaries)
 
 .. raw:: html
 
@@ -4754,94 +4785,67 @@ Operations
 .. _vals:
 
 ``vals d``
-  list values of ``d``
+  list the values of ``d``
 
 .. raw:: html
 
-   <a name="first (dict)">
+   <a name="first (dictionary)">
 
 .. raw:: html
 
-   <a name="first (hdict)">
+   <a name="last (dictionary)">
 
-.. raw:: html
-
-   <a name="last (dict)">
-
-.. raw:: html
-
-   <a name="last (hdict)">
-
-.. _first (dict):
-.. _first (hdict):
-.. _last (dict):
-.. _last (hdict):
+.. _first (dictionary):
+.. _last (dictionary):
 
 ``first d``, ``last d``
-  return first and last member of ``d``
+  return the first and the last member of ``d``, respectively
 
 .. raw:: html
 
-   <a name="rmfirst (dict)">
+   <a name="rmfirst (dictionary)">
 
 .. raw:: html
 
-   <a name="rmfirst (hdict)">
+   <a name="rmlast (dictionary)">
 
-.. raw:: html
-
-   <a name="rmlast (dict)">
-
-.. raw:: html
-
-   <a name="rmlast (hdict)">
-
-.. _rmfirst (dict):
-.. _rmfirst (hdict):
-.. _rmlast (dict):
-.. _rmlast (hdict):
+.. _rmfirst (dictionary):
+.. _rmlast (dictionary):
 
 ``rmfirst d``, ``rmlast d``
-  remove first and last member from ``d``
+  remove the first and the last member from ``d``, respectively
 
 .. raw:: html
 
-   <a name="insert (dict)">
+   <a name="insert (dictionary)">
 
 .. raw:: html
 
-   <a name="insert (hdict)">
+   <a name="update (dictionary)">
 
-.. raw:: html
-
-   <a name="update (dict)">
-
-.. raw:: html
-
-   <a name="update (hdict)">
-
-.. _insert (dict):
-.. _insert (hdict):
-.. _update (dict):
-.. _update (hdict):
+.. _insert (dictionary):
+.. _update (dictionary):
 
 ``insert d (x=>y)``, ``update d x y``
-  insert ``x=>y`` into ``d`` (replace any existing element); ``update`` is
-  a fully curried version of ``insert``
+  insert ``x=>y`` into ``d``
+
+  Note that in the case of a multidict this operation *always* adds a new
+  member; otherwise it replaces an existing value if there is one. Also
+  note that ``update`` is just a fully curried version of ``insert``, so
+  ``update d x y`` behaves exactly like ``insert d (x=>y)``.
 
 .. raw:: html
 
-   <a name="delete (dict)">
+   <a name="delete (dictionary)">
 
-.. raw:: html
-
-   <a name="delete (hdict)">
-
-.. _delete (dict):
-.. _delete (hdict):
+.. _delete (dictionary):
 
 ``delete d x``
   remove ``x`` from ``d``
+
+  Note that in the case of a multidict this only removes the "first" member
+  for the given key ``x``, i.e., the member which corresponds to the first
+  element in ``d!x``.
 
 Examples
 ~~~~~~~~
@@ -4856,12 +4860,18 @@ A normal (ordered) dictionary::
   ["bar"=>99.1,"foo"=>77]
 
 Indexing a dictionary works in the usual way, using Pure's ``!`` operator.
-By virtue of the prelude, slicing a dictionary with ``!!`` also works as
-expected::
+An ``out_of_bound`` exception is thrown if the key is not in the
+dictionary::
 
   > d!"foo";
   77
-  > d!!["foo","bar"];
+  > d!"baz";
+  <stdin>, line 5: unhandled exception 'out_of_bounds' while evaluating 'd!"baz"'
+
+By virtue of the prelude, slicing a dictionary with ``!!`` also works as
+expected::
+
+  > d!!["foo","bar","baz"];
   [77,99.1]
 
 A hashed dictionary can be used with any key values, which are stored in a
@@ -4875,6 +4885,38 @@ seemingly random order::
   > h!foo;
   77
   > h!!keys h;
+  [99.1,77]
+
+Multidicts work in pretty much the same fashion, but allow more than one
+value for a given key to be stored in the dictionary. In this case, the
+indexing operation returns a list of all values for the given key, which
+may be empty if the key is not in the dictionary (rather than throwing an
+``out_of_bound`` exception)::
+
+  > let d::MDict = mdict ["foo"=>77,"bar"=>99.1,"foo"=>99];
+  > d!"foo"; d!"baz";
+  [77,99]
+  []
+
+Slicing thus returns a list of lists of values here::
+
+  > d!!["foo","bar","baz"];
+  [[77,99],[99.1],[]]
+
+To obtain a flat list you can just concatenate the results::
+
+  > cat $ d!!["foo","bar","baz"];
+  [77,99,99.1]
+
+Finally, hashed multidicts provide both key hashing and multiple values per
+key::
+
+  > let h::HMDict = hmdict [foo=>77,42=>99.1,42=>77];
+  > keys h; vals h; members h;
+  [42,42,foo]
+  [99.1,77,77]
+  [42=>99.1,42=>77,foo=>77]
+  > h!42;
   [99.1,77]
 
 ..
@@ -6551,8 +6593,7 @@ Index
 
 | `!`_
 | `! (array)`_
-| `! (dict)`_
-| `! (hdict)`_
+| `! (dictionary)`_
 | `! (matrix)`_
 | `! (record)`_
 | `! (string)`_
@@ -6563,8 +6604,7 @@ Index
 | `#`_
 | `# (array)`_
 | `# (bag)`_
-| `# (dict)`_
-| `# (hdict)`_
+| `# (dictionary)`_
 | `# (heap)`_
 | `# (matrix)`_
 | `# (record)`_
@@ -6697,8 +6737,7 @@ Index
 | `cyclen`_
 
 | `delete (bag)`_
-| `delete (dict)`_
-| `delete (hdict)`_
+| `delete (dictionary)`_
 | `delete (record)`_
 | `delete (set)`_
 | `den`_
@@ -6725,6 +6764,8 @@ Index
 | `emptydict`_
 | `emptyhdict`_
 | `emptyheap`_
+| `emptyhmdict`_
+| `emptymdict`_
 | `emptyset`_
 | `errno`_
 | `eval`_
@@ -6750,8 +6791,7 @@ Index
 | `filter`_
 | `first (array)`_
 | `first (bag)`_
-| `first (dict)`_
-| `first (hdict)`_
+| `first (dictionary)`_
 | `first (heap)`_
 | `first (set)`_
 | `fix`_
@@ -6806,6 +6846,8 @@ Index
 | `head`_
 | `heap`_
 | `heapp`_
+| `hmdict`_
+| `hmdictp`_
 
 | `id`_
 | `im`_
@@ -6817,8 +6859,7 @@ Index
 | `init`_
 | `insert (array)`_
 | `insert (bag)`_
-| `insert (dict)`_
-| `insert (hdict)`_
+| `insert (dictionary)`_
 | `insert (heap)`_
 | `insert (record)`_
 | `insert (set)`_
@@ -6842,16 +6883,14 @@ Index
 | `last`_
 | `last (array)`_
 | `last (bag)`_
-| `last (dict)`_
-| `last (hdict)`_
+| `last (dictionary)`_
 | `last (set)`_
 | `lasterr`_
 | `lcd`_
 | `list`_
 | `list (array)`_
 | `list (bag)`_
-| `list (dict)`_
-| `list (hdict)`_
+| `list (dictionary)`_
 | `list (heap)`_
 | `list (matrix)`_
 | `list (set)`_
@@ -6881,15 +6920,15 @@ Index
 | `matrix size`_
 | `matrixp`_
 | `max`_
+| `mdict`_
+| `mdictp`_
 | `member (bag)`_
-| `member (dict)`_
-| `member (hdict)`_
+| `member (dictionary)`_
 | `member (record)`_
 | `member (set)`_
 | `members (array)`_
 | `members (bag)`_
-| `members (dict)`_
-| `members (hdict)`_
+| `members (dictionary)`_
 | `members (heap)`_
 | `members (set)`_
 | `members2 (array)`_
@@ -6898,6 +6937,8 @@ Index
 | `mkarray2`_
 | `mkdict`_
 | `mkhdict`_
+| `mkhmdict`_
+| `mkmdict`_
 | `mod`_
 
 | `nanosleep`_
@@ -6906,8 +6947,7 @@ Index
 | `null`_
 | `null (array)`_
 | `null (bag)`_
-| `null (dict)`_
-| `null (hdict)`_
+| `null (dictionary)`_
 | `null (heap)`_
 | `null (matrix)`_
 | `null (set)`_
@@ -6983,14 +7023,12 @@ Index
 | `rewind`_
 | `rmfirst (array)`_
 | `rmfirst (bag)`_
-| `rmfirst (dict)`_
-| `rmfirst (hdict)`_
+| `rmfirst (dictionary)`_
 | `rmfirst (heap)`_
 | `rmfirst (set)`_
 | `rmlast (array)`_
 | `rmlast (bag)`_
-| `rmlast (dict)`_
-| `rmlast (hdict)`_
+| `rmlast (dictionary)`_
 | `rmlast (set)`_
 | `round`_
 | `row`_
@@ -7090,8 +7128,7 @@ Index
 | `unzip`_
 | `unzip3`_
 | `update (array)`_
-| `update (dict)`_
-| `update (hdict)`_
+| `update (dictionary)`_
 | `update (record)`_
 | `update2`_
 | `ushort`_
