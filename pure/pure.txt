@@ -1324,7 +1324,7 @@ with parentheses in order to prevent such glitches.
 Another potential pitfall is that the notation ``foo::bar`` is also used to
 denote "qualified symbols" in Pure, cf. Namespaces_. Usually this will be
 resolved correctly, but if ``foo`` happens to also be a valid namespace then
-most likely you'll get an error message about an undeclared symbol.  You can
+most likely you'll get an error message about an undeclared symbol. You can
 always work around this by adding spaces around the '``::``' symbol, as in
 ``foo :: bar``. Spaces are never permitted in qualified symbols, so this makes
 it clear that the construct denotes a type tag.
@@ -2327,29 +2327,38 @@ programs consisting of several source modules:
 Symbol Declarations
 -------------------
 
-Scope declarations: ``public symbol ...; private symbol ...;``
-    Declares the listed symbols as public or private, respectively. All
-    identifiers without an explicit prior declaration default to public scope,
-    which means that they are visible everywhere in a program. An explicit
-    public declaration of ordinary identifiers is thus rarely needed, unless
-    you want to declare symbols as members of a specific namespace. Symbols
-    can also be declared private, meaning that the symbol is visible only in
-    the namespace it belongs to. This is explained in more detail under
-    Namespaces_ below.
+Scope declarations take the following form::
 
-    The ``public`` and ``private`` keywords can also be used as a prefix in
-    any of the special symbol declarations discussed below, to specify the
-    scope of the declared symbols (if the scope prefix is omitted, it defaults
-    to ``public``). Also note that to declare multiple symbols in a single
-    declaration, you just list them all with whitespace in between. The same
-    applies to the other types of symbol declarations discussed below.
+  public symbol ...;
+  private symbol ...;
+
+This declares the listed symbols as public or private, respectively. Each
+symbol must either be an identifier or a sequence of punctuation characters.
+The latter kind of symbols *must* always be declared before use, whereas
+ordinary identifiers can be used without a prior declaration in which case
+they are declared implicitly and default to public scope, meaning that they
+are visible everywhere in a program. An explicit public declaration of
+ordinary identifiers is thus rarely needed (unless you want to declare symbols
+as members of a specific namespace, see `Namespaces`_ below). Symbols can also
+be declared private, meaning that the symbol is visible only in the namespace
+it belongs to. This is explained in more detail under `Private Symbols`_ in
+the Namespaces_ section below.
+
+Note that to declare several symbols in a single declaration, you can list
+them all with whitespace in between. The same syntax applies to the other
+types of symbol declarations discussed below. (Commas are *not* allowed as
+delimiters here, as they may occur as legal symbol constituents in the list of
+symbols.) The ``public`` and ``private`` keywords can also be used as a prefix
+in any of the special symbol declarations discussed below, to specify the
+scope of the declared symbols (if the scope prefix is omitted, it defaults to
+``public``).
 
 The following "fixity" declarations are available for introducing special
 operator and constant symbols. This changes the way that these symbols are
 parsed and thus provides you with a limited means to extend the Pure language
 at the lexical and syntactical level.
 
-Operator declarations: ``infix level op ...;``
+Operator declarations: ``infix level symbol ...;``
     Pure provides you with a theoretically unlimited number of different
     precedence levels for user-defined infix, prefix and postfix operators.
     Precedence levels are numbered starting at 0; larger numbers indicate
@@ -2454,13 +2463,14 @@ Modules and Imports
 
 While Pure doesn't offer separate compilation, the ``using`` declaration
 provides a simple but effective way to assemble a Pure program from several
-source modules. It takes the following form::
+source modules. It takes the following form (note that in contrast to symbol
+declarations, the comma is used as a delimiter symbol here)::
 
   using name, ...;
 
 This causes each given script to be included in the Pure program at the given
 point (if it wasn't already included before), which makes available all the
-definitions in the included script in your program. Note that each included
+definitions of the included script in your program. Note that each included
 script is loaded only *once*, when the first ``using`` clause for the script
 is encountered. Nested imports are allowed, i.e., an imported module may
 itself import other modules, etc. A Pure program then basically is the
@@ -2546,11 +2556,25 @@ script from the Pure library::
   log2 x = ln x/ln 2;
 
 The interpreter compares script names (to determine whether two scripts are
-actually the same) by using the canonicalized full pathname of the script,
+actually the same) by using the *canonicalized* full pathname of the script,
 following symbolic links to the destination file (albeit only one level). Thus
 different scripts with the same basename, such as foo/utils.pure and
 bar/utils.pure can both be included in the same program (unless they link to
 the same file).
+
+More precisely, canonicalizing a pathname involves the following steps:
+
+* relative pathnames are expanded to absolute ones, using the search rules
+  discussed above;
+
+* the directory part of the pathname is normalized to the form returned by the
+  ``getcwd`` system call;
+
+* the ".pure" suffix is added if needed;
+
+* if the resulting script name is actually a symbolic link, the interpreter
+  follows that link to its destination, albeit only one level. (This is only
+  done on Unix-like systems.)
 
 The directory of the canonicalized pathname is also used when searching other
 scripts included in a script. This makes it possible to have an executable
@@ -2569,7 +2593,10 @@ avoid name clashes between symbols, and to keep the global namespace tidy and
 clean. Namespaces serve as containers holding groups of related identifiers
 and other symbols. Inside each namespace, symbols must be unique, but the same
 symbol may be used to denote different objects (variables, functions, etc.) in
-different namespaces.
+different namespaces. (Pure's namespace system was heavily inspired by C++ and
+works in a very similar fashion. So if you know C++ you should feel right at
+home and skimming this section to pick up Pure's syntax of the namespace
+constructs should be enough to start using it.)
 
 The global namespace is always available. By default, new symbols are created
 in this namespace, which is also called the `default namespace`. Additional
@@ -2752,10 +2779,10 @@ namespaces. To make these errors go away it's enough to just declare the
 symbols in their proper namespaces.
 
 New symbols are also created if a global unqualified (and yet undeclared)
-symbol is being "defined" in a rewriting rule or ``let``/``const``, even if a
-symbol with the same print name from another namespace is already visible in
-the current scope. To distinguish "defining" from "referring" uses of a global
-symbol, Pure uses the following (purely syntactic) notions:
+symbol is being "defined" in a rewriting rule or ``let``/``const`` definition,
+even if a symbol with the same print name from another namespace is already
+visible in the current scope. To distinguish "defining" from "referring" uses
+of a global symbol, Pure uses the following (purely syntactic) notions:
 
 * A `defining occurrence` of a global *function* or *macro symbol* is any
   occurrence of the symbol as the *head symbol* on the left-hand side of a
@@ -2945,7 +2972,102 @@ Also note that, as a special case of the absolute qualifier notation,
 Scoped Namespaces
 ~~~~~~~~~~~~~~~~~
 
-TODO
+Pure also provides an alternative scoped ``namespace`` construct which makes
+nested namespace definitions more convenient. This construct takes the
+following form::
+
+  namespace name with ... end;
+
+The part between ``with`` and ``end`` may contain arbitrary declarations and
+definitions, using the same syntax as the toplevel. These are processed in the
+context of the given namespace, as if you had written::
+
+  namespace name;
+  ...
+  namespace;
+
+However, the scoped namespace construct always returns you to the namespace
+which was active before, and thus these declarations may be nested::
+
+  namespace foo with
+    // declarations and definitions in namespace foo
+    namespace bar with
+      // declarations and definitions in namespace bar
+    end;
+    // more declarations and definitions in namespace foo
+  end;
+
+Note that this kind of nesting does not necessarily imply a namespace
+hierarchy as discussed in `Hierarchical Namespaces`_. However, you can achieve
+this by using the appropriate qualified namespace names::
+
+  namespace foo with
+    // ...
+    namespace foo::bar with
+      // ...
+    end;
+    // ...
+  end;
+
+Another special feature of the scoped namespace construct is that ``using
+namespace`` declarations are always local to the current namespace scope (and
+other nested namespace scopes inside it). Thus the previous setting is
+restored at the end of each scope::
+
+  using namespace foo;
+  namespace foo with
+    // still using namespace foo here
+    using namespace bar;
+    // now using namespace bar
+    namespace bar with
+      // still using namespace bar here
+      using namespace foo;
+      // now using namespace foo
+    end;
+    // back to using namespace bar
+  end;
+  // back to using namespace foo at toplevel
+
+Finally, here's a more concrete example which shows how scoped namespaces
+might be used to declare two namespaces and populate them with various
+functions and operators::
+
+  namespace foo with
+    infixr (::^) ^;
+    foo x = x+1;
+    bar x = x-1;
+    x^y = 2*x+y;
+  end;
+
+  namespace bar with
+    outfix <: :>;
+    foo x = x+2;
+    bar x = x-2;
+  end;
+
+  using namespace foo(^ foo), bar(bar <: :>);
+
+  // namespace foo
+  foo x;
+  x^y;
+
+  // namespace bar
+  bar x;
+  <: x,y :>;
+
+Pure's namespaces can thus be used pretty much like "modules" or "packages" in
+languages like Ada or Modula-2. They provide a structured way to describe
+program components offering collections of related data and operations, which
+can be brought into scope in a controlled way by making judicious use of
+``using namespace`` declarations. They also provide an abstraction barrier,
+since internal operations and data structures can be hidden away employing
+private symbols.
+
+Please note that these facilities are not Pure's main focus and thus they are
+somewhat limited compared to programming languages specifically designed for
+big projects and large teams of developers. Nevertheless they should be useful
+if your programs grow beyond a small collection of simple source modules, and
+enable you to manage most Pure projects with ease.
 
 Exception Handling
 ==================
@@ -4565,6 +4687,12 @@ see `Code Size and Unstripped Executables`_ for details. The -s option to
 produce stripped executables is still provided for backward compatibility, but
 it won't have any effect unless you use it to override a previous -u option.
 
+Pure 0.43 changed the rules for looking up symbols in user-defined namespaces.
+Unqualified symbols are now created in the current (rather than the global)
+namespace by default, see `Symbol Lookup and Creation`_ for details. The -w
+option can be used to get warnings about unqualified symbols which are
+resolved to a different namespace than previously.
+
 Error Recovery
 --------------
 
@@ -4791,37 +4919,6 @@ nonfix symbol. However, this makes the ``foo`` symbol "precious", i.e., after
 such a declaration it cannot be used as a local variable anymore. It's usually
 a good idea to avoid that kind of thing, at least for generic symbols, so the
 above solution is preferred in this case.
-
-Namespaces and Implicit Declarations
-------------------------------------
-
-A common pitfall is the implicit declaration of unqualified symbols in
-conjunction with the ``namespace`` declaration. For instance, it is tempting
-to write the following, and expect ``foo`` to become a member of the ``bar``
-namespace::
-
-  namespace bar;
-  foo x = x+1;
-
-But, assuming that ``foo`` is not already declared or defined elsewhere, it
-will actually become a member of the default namespace instead. This is
-necessary because in Pure it is impossible to distinguish local variables from
-unqualified function symbols at the lexical level, and thus all undeclared and
-unqualified identifiers are implicitly declared in the default
-namespace. Thus, if you really want the ``foo`` symbol to become a member of
-the ``bar`` namespace, you *must* either declare it explicitly or use a
-qualified identifier. That is, you have to write either::
-
-  namespace bar;
-  bar::foo x = x+1;
-
-Or::
-
-  namespace bar;
-  public foo;
-  foo x = x+1;
-
-This will tell the compiler about the desired namespace of the symbol.
 
 With and when
 -------------
@@ -5226,10 +5323,11 @@ E.g., this call retrieves information about all defined macros::
 Hygienic Macros
 ---------------
 
-Macro hygiene is a somewhat esoteric topic for most programmers, so let us
-take a brief look at what it's all about. The problem avoided by hygienic
-macros is that of *name capture*. There are actually two kinds of name capture
-which may occur in unhygienic macro systems:
+As mentioned in the `Macro Hygiene`_ section, Pure macros are lexically scoped
+and thus "hygienic". Macro hygiene is a somewhat esoteric topic for most
+programmers, so let us take a brief look at what it's all about. The problem
+avoided by hygienic macros is that of *name capture*. There are actually two
+kinds of name capture which may occur in unhygienic macro systems:
 
 * A free symbol in the macro *body* inadvertently becomes bound to the value
   of a local symbol in the context in which the macro is called.
