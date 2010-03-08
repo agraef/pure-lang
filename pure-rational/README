@@ -237,7 +237,7 @@ stored exactly.)
 ``rational`` is an exact type. All rational numbers (subject to available
 resources, of course) are stored exactly. The results of the arithmetical
 operations on ``rationals`` are ``rationals`` represented exactly. Beware that
-the standard isintval and isratval may return true even if the value is of
+the standard isintval and isratval may return 1 even if the value is of
 ``double`` type. However, these functions may be combined with isexact.
 
 :exactp x:
@@ -427,7 +427,7 @@ to have at least one ``rational`` operand. The other operand may be
 **Example 9** Inequality::
 
   > 3%8 < 1%3;
-  false
+  0
   >
 
 Comparison Function
@@ -622,7 +622,7 @@ Complexity Relations
 
 :n1 less_cplx n2"
   "[is] less complex [than]" (or "simpler") — returns 1 if n1 is strictly less
-  complex than n2; returns false otherwise. This forms a partial strict ordering
+  complex than n2; returns 0 otherwise. This forms a partial strict ordering
   on ``rationals``.
 
 **Example 20** Complexity inequality test::
@@ -646,7 +646,7 @@ Complexity Relations
 
 :n1 more_eq_cplx n2:
   "more or equally complex" (or "not less complex") — returns 1 if n1 is more
-  complex than or equally complex to n2; returns false otherwise. This forms a
+  complex than or equally complex to n2; returns 0 otherwise. This forms a
   partial non-strict ordering on ``rationals``.
 
 Complexity Comparison Function
@@ -1019,7 +1019,7 @@ Intervals are constructed with the function interval.
 
   > let v = interval (3, 8);
   > v;
-  rational::Ivl 3 8
+  interval::Ivl 3 8
   >
 
 :lower v:
@@ -1100,31 +1100,31 @@ right operand is an interval containing 0.
   > let p = interval (0, 1);
   > let s = interval (-1, 1);
   > a + b;
-  rational::Ivl 27 43
+  interval::Ivl 27 43
   > a - b;
-  rational::Ivl -13 3
+  interval::Ivl -13 3
   > a * b;
-  rational::Ivl 176 456
+  interval::Ivl 176 456
   > p * 2;
-  rational::Ivl 0 2
+  interval::Ivl 0 2
   > (-2) * p;
-  rational::Ivl -2 0
+  interval::Ivl -2 0
   > -c;
-  rational::Ivl -29 -21
+  interval::Ivl -29 -21
   > s * a;
-  rational::Ivl -19 19
+  interval::Ivl -19 19
   > a % 2;
-  rational::Ivl (11%2) (19%2)
+  interval::Ivl (11%2) (19%2)
   > a / 2;
-  rational::Ivl 5.5 9.5
+  interval::Ivl 5.5 9.5
   > reciprocal a;
-  rational::Ivl (1%19) (1%11)
+  interval::Ivl (1%19) (1%11)
   > 2 % a;
-  rational::Ivl (2%19) (2%11)
+  interval::Ivl (2%19) (2%11)
   > a % b
-  rational::Ivl 11%24 19%16
+  interval::Ivl 11%24 19%16
   > a % a; // notice that the intervals are mutually independent here
-  rational::Ivl (11%19) (19%11)
+  interval::Ivl (11%19) (19%11)
   >
 
 There are also some relations defined for ``intervals``. The standard relations
@@ -1242,11 +1242,11 @@ provided.
 **Example 40** Absolute interval::
 
   > abs (interval (1, 5));
-  rational::Ivl 1 5
+  interval::Ivl 1 5
   > abs (interval (-1, 5));
-  rational::Ivl 0 5
+  interval::Ivl 0 5
   > abs (interval (-5, -1));
-  rational::Ivl 1 5
+  interval::Ivl 1 5
   >
 
 :sgn v:
@@ -1317,7 +1317,7 @@ approximations are always reverse consecutive Fibonacci numbers (from f1: 1, 1,
 
   > let i_Pi = rational_interval_epsilon .01 pi;
   > i_Pi;
-  rational::Ivl (47%15) (22%7)
+  interval::Ivl (47%15) (22%7)
   > double (lower i_Pi); pi; double (upper i_Pi);
   3.13333333333333
   3.14159265358979
@@ -1329,7 +1329,7 @@ approximations are always reverse consecutive Fibonacci numbers (from f1: 1, 1,
 **Example 47** ``rational`` interval surrounding the golden ratio ɸ::
 
   > rational_interval_epsilon .001 phi
-  rational::Ivl (55%34) (89%55)
+  interval::Ivl (55%34) (89%55)
   > #ans;
   1%1870
 
@@ -1382,7 +1382,7 @@ Best Approximation with Bounded Denominator
 **Example 52** ``rational`` interval surrounding π::
 
   > let i_Pi = rational_interval_max_den 100 pi ; i_Pi
-  rational::Ivl (311%99) (22%7)
+  interval::Ivl (311%99) (22%7)
   > double (lower i_Pi); pi; double (upper i_Pi);
   3.14141414141414
   3.14159265358979
@@ -1392,7 +1392,7 @@ Best Approximation with Bounded Denominator
 **Example 53** ``rational`` interval surrounding the golden ratio ɸ::
 
   > rational_interval_max_den 1000 phi
-  rational::Ivl (987%610) (1597%987)
+  interval::Ivl (987%610) (1597%987)
   >
 
 (The symbol phi was defined in example 43.)
@@ -1582,255 +1582,291 @@ The d\ :sub:`x`, d\ :sub:`y` are not unique, but can be chosen such that d\
 :sub:`x` > 0 and either \|d\ :sub:`y`\| < d\ :sub:`x` or d\ :sub:`y` = d\
 :sub:`x` > 0.
 
-num den nat
-(U)
-C — given a ``complex`` ``rational`` or ``integer`` C, returns a pair (n,d)
-containing an integral
-complex (Gaussian integral) numerator n, and the smallest natural (i.e. positive
-integral real)
-complex denominator d, i.e. a complex number where <(d) 2 Z, <(d) > 0, =(d) = 0;
-i.e. the
-numerator and denominator of one ‘normalised’ form of C.
-This is an inverse (up to equivalence) of rational as defined on integral
-complex pairs (see §2.1).
-num den gauss
-(U)
-C — given a ``complex`` ``rational`` or ``integer`` C, returns a pair (n,d)
-containing an integral
-complex (Gaussian integral) numerator n, and an absolutely smallest integral
-complex denominator
-d chosen s.t. <(d),=(d) 2 Z, <(d) > 0, and either |=(d)| < <(d) or =(d) = <(d) >
-0; i.e.
-the numerator and denominator of another ‘normalised’ form of C.
-This is an inverse (up to equivalence) of rational as defined on integral
-complex pairs (see §2.1).
-num den
-(U)
-C — synonymous with num den gauss.
-This is an inverse (up to equivalence) of rational as defined on integer pairs
-(see §2.1).
-num
-(U)
-C — given a ``complex`` ``rational`` or ``integer`` C, returns just the
-numerator of the normalised form of C
-given by num den C.
-den
-(U)
-C — given a ``complex`` ``rational`` or ``integer`` C, returns just the
-denominator of the normalised
-form of C given by num den C.
-Example 61 ``rational`` complex number deconstruction.
-  > let CQ = (1+2*i)%(3+3*i); CQ
-1%2+:1%6
-  > (re CQ, im CQ)
-(1%2,1%6)
-  > (num . re) CQ
-1
-  > (den . re) CQ
-2
-  > (num . im) CQ
-1
-  > (den . im) CQ
-6
-  > let (N_nat,D_nat) = num_den_nat CQ; (N_nat, D_nat)
-(3+:1,6+:0)
-  > N_nat % D_nat
-1%2+:1%6
-  > abs D_nat
-6.0
-  > let (n,d) = num_den_gauss CQ; (n, d)
-(1+:2,3+:3)
-  > let (n,d) = num_den CQ; (n, d)
-(1+:2,3+:3)
+:num_den_nat c:
+  given a ``complex`` ``rational`` or ``integer`` c, returns a pair (n, d)
+  containing an integral complex (Gaussian integral) numerator n, and the
+  smallest natural (i.e. positive integral real) complex denominator d, i.e. a
+  complex number where ℜ(d) ∈ **Z**, ℜ(d) > 0, ℑ(d) = 0; i.e. the numerator and
+  denominator of one ‘normalised’ form of c.
+
+  This is an inverse (up to equivalence) of rational as defined on integral
+  complex pairs (see §2.1).
+
+:num_den_gauss c:
+  given a ``complex`` ``rational`` or ``integer`` c, returns a pair (n, d)
+  containing an integral complex (Gaussian integral) numerator n, and an
+  absolutely smallest integral complex denominator d chosen s.t. ℜ(d),=(d) ∈
+  **Z**,  ℜ(d) > 0, and either \|ℜ(d)\| < ℑ(d) or ℜ(d) = ℑ(d) > 0; i.e. the
+  numerator and denominator of another ‘normalised’ form of c.
+
+  This is an inverse (up to equivalence) of rational as defined on integral
+  complex pairs (see §2.1).
+
+:num den c:
+  synonymous with num den gauss.
+
+  This is an inverse (up to equivalence) of rational as defined on integer pairs
+  (see §2.1).
+
+:num c:
+  given a ``complex`` ``rational`` or ``integer`` c, returns just the numerator
+  of the normalised form of c given by num den c.
+
+:den c:
+  given a ``complex`` ``rational`` or ``integer`` c, returns just the
+  denominator of the normalised form of c given by num den c.
+
+**Example 61** ``rational`` complex number deconstruction::
+
+  > let cq = (1+2*i)%(3+3*i);
+  cq;
+  1%2+:1%6
+  > (re cq, im cq);
+  (1%2,1%6)
+  > (num . re) cq;
+  1
+  > (den . re) cq;
+  2
+  > (num . im) cq;
+  1
+  > (den . im) cq;
+  6
+  > let (n_nat,d_nat) = num_den_nat cq;
+  > (n_nat, d_nat);
+  (3+:1,6+:0)
+  > n_nat % d_nat;
+  1%2+:1%6
+  > abs d_nat;
+  6.0
+  > let (n, d) = num_den_gauss cq;
+  (n, d);
+  (1+:2,3+:3)
+  > let (n,d) = num_den cq;
+  (n, d);
+  (1+:2,3+:3)
   > n % d
-1%2+:1%6
+  1%2+:1%6
   > abs d
-4.24264068711928
-26
-  > (re . num) CQ
-1
-  > (im . num) CQ
-2
-  > (re . den) CQ //always > 0
-3
-  > (im . den) CQ //always <= (re.den)
-3
-12.2 ``rational`` ``complex`` Type and Value Tests
-Beware that isintcompval and isratcompval may return true even if the value is
-of ``complex`` type
-with ``double`` parts. However, these functions may be combined with isexact.
-iscomplex X — standard function; returns whether X is of ``complex`` type.
-iscompval X — standard function; returns whether X has a ``complex`` value (2 C
-= R[i]).
-isratcompval
-(U)
-X — returns whether X has a rational complex value (2 Q[i]).
-isintcompval
-(U)
-X — returns whether X has an integral complex value (2 Z[i]), i.e. a Gaussian
-integer
-value.
-Example 62 ``rational`` complex number value tests.
-  > let L = [9, 9%1, 9%2, 4.5, sqrt 2, 1+i, 1%2+i, 0.5+i, inf, nan]
-  > map isexact L
-[true,true,true,false,false,true,true,false,false,false]
-  > map isinexact L
-[false,false,false,true,true,false,false,true,true,true]
-  > map iscomplex L
-[false,false,false,false,false,true,true,true,false,false]
-  > map iscompval L
-[true,true,true,true,true,true,true,true,true,true]
-  > map (lambda X (isexact X and iscompval X)) L // "has exact complex value"
-[true,true,true,false,false,true,true,false,false,false]
-  > map isratcompval L
-[true,true,true,true,true,true,true,true,false,false]
-  > map (lambda X (isexact X and isratcompval X)) L
-[true,true,true,false,false,true,true,false,false,false]
-  > map isintcompval L
-[true,true,false,false,false,true,false,false,false,false]
-  > map (lambda X (isexact X and isintcompval X)) L
-[true,true,false,false,false,true,false,false,false,false]
-  > map isratval L
-[true,true,true,true,true,false,false,false,false,false]
-  > map (lambda X (isexact X and isratval X)) L
-[true,true,true,false,false,false,false,false,false,false]
-  > map isintval L // for comparison
-[true,true,false,false,false,false,false,false,false,false]
-  > map (lambda X (isexact X and isintval X)) L
-[true,true,false,false,false,false,false,false,false,false]
-See §2.4 for some details of rational type and value tests.
-12.3 ``rational`` ``complex`` Arithmetic Operators and Relations
-The standard arithmetic operators (+), (−), (), (/), (%), (), (=) and (<>) are
-overloaded to have at
-least one complex and/or rational operand, but (<), (<=), (>), (>=) are not, as
-complex numbers are
-unordered.
-27
-Example 63 ``rational`` complex arithmetic.
-  > let W = 1%2+3%4*i; let Z = 5%6+7%8*i
-  > W + Z; W % Z
-4%3+:13%8
-618%841+:108%841
-  > W / Z
-0.734839476813318+:0.128418549346017
-  > W ^ 2
--0.3125+:0.75
-  > W = Z
-false
-  > W = W
-true
-12.4 ``rational`` ``complex`` Maths
-The standard functions re and im work with rational complex numbers (see §12.1).
-The standard functions polar, abs and arg work with rational complex numbers,
-but the results are
-inexact.
-Example 64 ``rational`` complex maths.
-  > polar (1%2) (1%2)
-0.438791280945186+:0.239712769302102
-  > abs (4%2 + 3%2*i)
-2.5
-  > arg (-1%1)
-3.14159265358979
+  4.24264068711928
+  > (re . num) cq;
+  1
+  > (im . num) cq;
+  2
+  > (re . den) cq; //always > 0
+  3
+  > (im . den) cq; //always <= (re.den)
+  3
+  >
+
+``rational`` ``complex`` Type and Value Tests
+---------------------------------------------
+
+Beware that ``intcompvalp`` and ``ratcompvapl`` may return 1 even if the value
+is of ``complex`` type with ``double`` parts. However, these functions may be
+combined with ``exactp``.
+
+:complexp x:
+  standard function; returns whether x is of ``complex`` type.
+
+:compvalp x:
+  standard function; returns whether x has a ``complex`` value (∈ **C** =
+  **R**\ [i]).
+
+:ratcompvalp x:
+  returns whether x has a rational complex value (∈ **Q**\ [i]).
+
+:intcompvalp x:
+  returns whether x has an integral complex value (∈ **Z**\ [i]), i.e. a
+  Gaussian  integer value.
+
+**Example 62** ``rational`` complex number value tests::
+
+  > let l = [9, 9%1, 9%2, 4.5, sqrt 2, 1+:1, 1%2+:1, 0.5+:1, inf, nan];
+  > map exactp l;
+  [1,1,1,0,0,1,1,0,0,0]
+  > map inexactp l;
+  [0,0,0,1,1,0,0,1,1,1]
+  > map complexp l;
+  [0,0,0,0,0,1,1,1,0,0]
+  > map compvalp l;
+  [1,1,1,1,1,1,1,1,1,1]
+  > map (\x -> (exactp x and compvalp x)) l; // "has exact complex value"
+  [1,1,1,0,0,1,1,0,0,0]
+  > map ratcompvalp l;
+  [1,1,1,1,1,1,1,1,0,0]
+  > map (\x -> (exactp x and ratcompvalp x)) l;
+  [1,1,1,0,0,1,1,0,0,0]
+  > map intcompvalp l;
+  [1,1,0,0,0,1,0,0,0,0]
+  > map (\x -> (exactp x and intcompvalp x)) l;
+  [1,1,0,0,0,1,0,0,0,0]
+  > map ratvalp l;
+  [1,1,1,1,1,0,0,0,0,0]
+  > map (\x -> (exactp x and ratvalp x)) l;
+  [1,1,1,0,0,0,0,0,0,0]
+  > map intvalp l; // for comparison
+  [1,1,0,0,0,0,0,0,0,0]
+  > map (\x -> (exactp x and intvalp x)) l;
+  [1,1,0,0,0,0,0,0,0,0]
+  >
+
+  See §2.4 for some details of rational type and value tests.
+
+``rational`` ``complex`` Arithmetic Operators and Relations
+-----------------------------------------------------------
+
+The standard arithmetic operators (+), (−), (*), (/), (%), (), (==) and (~=) are
+overloaded to have at least one complex and/or rational operand, but (<), (<=),
+(>), (>=) are not, as complex numbers are unordered.
+
+**Example 63** ``rational`` complex arithmetic::
+
+  > let w = 1%2 +: 3%4;
+  > let z = 5%6 +: 7%8
+  > w + z;
+  4%3+:13%8
+  > w % z;
+  618%841+:108%841
+  > w / z
+  0.734839476813318+:0.128418549346017
+  > w ^ 2;
+  -0.3125+:0.75
+  > w == z
+  0
+  > w == w
+  1
+  >
+
+``rational`` ``complex`` Maths
+------------------------------
+
+The standard functions ``re`` and ``im`` work with rational complex numbers (see
+§12.1).
+
+The standard functions ``polar``, ``abs`` and ``arg`` work with rational complex
+numbers, but the results are inexact.
+
+**Example 64** ``rational`` complex maths::
+
+  > polar (1%2) (1%2);
+  0.438791280945186+:0.239712769302102
+  > abs (4%2 +: 3%2);
+  2.5
+  > arg (-1%1);
+  3.14159265358979
+  >
+
 There are some additional useful functions for calculating with rational complex
-numbers and more
-general mathematical values.
-norm gauss
-(U)
-C — returns the Gaussian norm ||C|| of any ``complex`` (or ``real``) number C;
-this is the
-square of the absolute value, and is returned as an (exact) ``integer``.
-div mod gauss
-(U)
-n d — performs Gaussian integer division, returning (q,r) where q is a (not
-always
-unique) quotient, and r is a (not always unique) remainder. q and r are such
-that n = qd+r
-and ||r|| < ||d|| (equivalently, |r| < |d|).
-n div gauss
-(U)
-d — returns just a quotient from Gaussian integer division as produced by
-div mod gauss n d.
-n mod gauss
-(U)
-d — returns just a remainder from Gaussian integer division as produced by
-div mod gauss n d.
-gcd gauss
-(U)
-C1 C2 — returns a GCD G of the Gaussian integers C1,C2. This is chosen so that
-s.t.
-<(G) > 0, and either |=(G)| < <(G) or =(G) = <(G) > 0;
-euclid gcd
-(U)
-Zero Mod X Y — returns a (non-unique) GCD calculated by performing the Euclidean
-algorithm on the values X and Y (of any type) where Zero is a predicate for
-equality to 0, and
-Mod is a binary modulus (remainder) function.
-euclid alg
-(U)
-Zero Div X Y — returns (G, A,B) where the G is a (non-unique) GCD and A,B are
-(arbitrary, non-unique) values such that AX+BY = G calculated by performing
-the generalised
-Euclidean algorithm on the values X and Y (of any type) where Zero is a
-predicate for equality
-to 0, and Div is a binary quotient function.
-Example 65 More rational complex and other maths.
-28
-  > norm_gauss (1+3*i)
-10
-  > abs (1+3*i)
-3.16227766016838
-  > norm_gauss (-5)
-25
-  > let (q,r) = div_mod_gauss 100 (12+5*i); (q, r)
-(7 +: -3,1+:1)
-  > q*(12+5*i) + r
-100+:0
-  > 100 div_gauss (12+5*i)
-7 +: -3
-  > 100 mod_gauss (12+5*i)
-1+:1
-  > div_mod_gauss 23 5
-(5+:0,-2+:0)
-  > gcd_gauss (1+2*i) (3+4*i)
-1+:0
-  > gcd_gauss 25 15
-5+:0
-  > euclid_gcd (=0) (mod_gauss) (1+2*i) (3+4*i)
-1+:0
-  > euclid_gcd (=0) (mod) 25 15
-5
-  > let (G,A,B) = euclid_alg (=0) (div_gauss) (1+2*i) (3+4*i); G; (A,B)
-1+:0
-(-2+:0,1+:0)
-  > A*(1+2*i)+B*(3+4*i)
-1+:0
-  > let (G,A,B) = euclid_alg (=0) (div) 25 15; G; (A,B)
-5
-(-1,2)
-  > A*25+B*15
-5
-12.5 ``rational`` ``complex`` Type Simplification
-comp simplify
-(U)
-C — returns q with ``complex`` numbers simplified to ``reals``, if possible.
-ratcomp simplify
-(U)
-C — returns q with ``rationals`` simplified to ``integers``, and ``complex``
-numbers simplified
-to ``reals``, if possible.
-Example 66 ``rational`` complex number type simplification.
-  > let L = [9+i, 9%1+i, 9%2+i, 4.5+i, 9%1+0*i, 9%2+0*i, 4.5+0.0*i]; L
-[9+:1,9%1+:1,9%2+:1,4.5+:1,9%1+:0,9%2+:0,4.5+:0.0]
-  > map comp_simplify L
-[9+:1,9%1+:1,9%2+:1,4.5+:1,9%1,9%2,4.5+:0.0]
-  > map ratcomp_simplify L
-[9+:1,9+:1,9%2+:1,4.5+:1,9,9%2,4.5+:0.0]
-See §5.3 for some details of rational type simplification.
-13 String Formatting and Evaluation
-13.1 The Naming of the String Conversion Functions
-There are several families of functions for converting between strings and
+numbers and more general mathematical values.
+
+:norm_gauss c:
+  returns the Gaussian norm \|\|c\|\| of any ``complex`` (or ``real``) number c;
+  this is the square of the absolute value, and is returned as an (exact)
+  ``integer``.
+
+:div_mod_gauss n d:
+  performs Gaussian integer division, returning (q, r) where q is a (not always
+  unique) quotient, and r is a (not always unique) remainder. q and r are such
+  that n = q * d + r and \|\|r\|\| < \|\|d\|\| (equivalently, \|r\| < \|d\|).
+
+:n_div_gauss d:
+  returns just a quotient from Gaussian integer division as produced by
+  div_mod_gauss n d.
+
+:n_mod_gauss d:
+  returns just a remainder from Gaussian integer division as produced by
+  div_mod_gauss n d.
+
+:gcd_gauss c1 c2:
+  returns a GCD G of the Gaussian integers c1,c2. This is chosen so that s.t.
+  ℜ(G) > 0, and either \|ℑ(G)\| < ℜ(G) or ℑ(G) = ℜ(G) > 0;
+
+:euclid_gcd zerofun modfun x y:
+  returns a (non-unique) GCD calculated by performing the Euclidean algorithm on
+  the values x and y (of any type) where zerofun is a predicate for equality to
+  0, and modfun is a binary modulus (remainder) function.
+
+:euclid_alg zerofun divfun x y:
+  returns (g, a, b) where the g is a (non-unique) GCD and a, b are (arbitrary,
+  non-unique) values such that a * x + b * y = g calculated by performing the  
+  generalised Euclidean algorithm on the values x and y (of any type) where 
+  zerofun is a predicate for equality to 0, and div is a binary quotient
+  function.
+
+**Example 65** More rational complex and other maths::
+
+  > norm_gauss (1 +: 3);
+  10
+  > abs (1 +: 3);
+  3.16227766016838
+  > norm_gauss (-5);
+  25
+  > let (q, r) = div_mod_gauss 100 (12 +: 5);
+  > (q, r);
+  (7+:(-3),1+:1)
+  > q * (12 +: 5) + r;
+  100+:0
+  > 100 div_gauss (12 +: 5);
+  7+:(-3)
+  > 100 mod_gauss (12 +: 5);
+  1+:1
+  > div_mod_gauss 23 5;
+  (5+:0,-2+:0)
+  > gcd_gauss (1 +: 2) (3 +: 4);
+  1+:0
+  > gcd_gauss 25 15;
+  5+:0
+  > euclid_gcd (==0) (mod_gauss) (1+: 2) (3 +: 4);
+  1+:0
+  > euclid_gcd (==0) (mod) 25 15;
+  5
+  > let (g, a, c) = euclid_alg (==0) (div_gauss) (1 +: 2) (3 +: 4);
+  g;
+  1+:0
+  >  (a, b);
+  (-2+:0,1+:0)
+  > a * (1 +: 2) + B * (3 +: 4);
+  1+:0
+  > let (g, a, b) = euclid_alg (==0) (div) 25 15;
+  g;
+  5
+  >  (a, b);
+  (-1,2)
+  > a * 25 + b * 15;
+  5
+  >
+
+``rational`` ``complex`` Type Simplification
+--------------------------------------------
+
+:comp_simplify c:
+  returns q with ``complex`` numbers simplified to ``reals``, if possible.
+
+:ratcomp_simplify c:
+  returns q with ``rationals`` simplified to ``integers``, and ``complex``
+  numbers simplified to ``reals``, if possible.
+
+**Example 66** ``rational`` complex number type simplification::
+
+  > let l = [9+:1, 9%1+:1, 9%2+:1, 4.5+:1, 9%1+:0, 9%2+:0, 4.5+:0.0];
+  > l;
+  [9+:1,9%1+:1,9%2+:1,4.5+:1,9%1+:0,9%2+:0,4.5+:0.0]
+  > map_comp_simplify l;
+  [9+:1,9%1+:1,9%2+:1,4.5+:1,9%1,9%2,4.5+:0.0]
+  > map ratcomp_simplify l;
+  [9+:1,9+:1,9%2+:1,4.5+:1,9,9%2,4.5+:0.0]
+
+  See §5.3 for some details of rational type simplification.
+
+String Formatting and Evaluation
+================================
+
+The Naming of the String Conversion Functions
+---------------------------------------------
+
+There are several families of functions for converting between ``strings`` and
 ``rationals``.
-29
+
 The functions that convert from ``rationals`` to strings have names based on
 that of the standard function
 str. The str * functions convert to a formatted string, and depend on a ‘format
