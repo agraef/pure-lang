@@ -165,6 +165,13 @@
      remove ``x`` from ``m`` (in the ``bag`` case, only the first instance of
      ``x`` is removed)
 
+   .. _delete_all (set):
+   .. _delete_all (bag):
+
+   ``delete_all m x``
+     remove all instances of ``x`` from ``m`` (in the set case, this is just
+     the same as ``delete``)
+
    In addition, the infix operators ``+``, ``-`` and ``*`` are defined as
    set/bag union, difference and intersection. Please note that there are no
    implicit conversions, so the operand types must match exactly. (As already
@@ -286,6 +293,13 @@ delete (Set  m) y = Set  (avl::delete  m y);
 delete (Bag  m) y = Bag  (avl::deletem m y);
 delete (HSet m) y = HSet (avl::deleteh m y);
 delete (HBag m) y = HBag (avl::deleteh m y);
+
+// delete all instances of a given member
+delete_all m::Set  y |
+delete_all m::HSet y = delete m y;
+delete_all m::Bag  y |
+delete_all m::HBag y = delete_all (delete m y) y if member m y;
+	   	     = m otherwise;
 
 // check for the empty set
 null (Set  m) | null (Bag  m) |

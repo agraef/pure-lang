@@ -198,6 +198,12 @@
      remove ``x`` from ``d`` (in the multidict case, only the first member
      with the given key ``x`` is removed)
 
+   .. _delete_all (dictionary):
+
+   ``delete_all d x``
+     remove all instances of ``x`` from ``d`` (in the non-multidict case, this
+     is just the same as ``delete``)
+
    Examples
    ~~~~~~~~
 
@@ -320,6 +326,13 @@ delete (Dict   d) x = Dict   (avl::deletek  d x);
 delete (HDict  d) x = HDict  (avl::deletehk d x);
 delete (MDict  d) x = MDict  (avl::deletekm d x);
 delete (HMDict d) x = HMDict (avl::deletehk d x);
+
+// delete all instances of a given key
+delete_all d::Dict   y |
+delete_all d::HDict  y = delete d y;
+delete_all d::MDict  y |
+delete_all d::HMDict y = delete_all (delete d y) y if member d y;
+	   	       = d otherwise;
 
 // check for the empty dict
 null (Dict  d) | null (HDict  d) |
