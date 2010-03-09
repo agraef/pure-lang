@@ -670,8 +670,8 @@ void interpreter::init()
 }
 
 interpreter::interpreter()
-  : verbose(0), compat(false), compiling(false), eager_jit(false),
-    interactive(false), debugging(false),
+  : verbose(0), compat(false), compat2(false), compiling(false),
+    eager_jit(false), interactive(false), debugging(false),
     checks(true), folding(true), use_fastcc(true), pic(false), strip(true),
     restricted(false), ttymode(false), override(false),
     stats(false), stats_mem(false), temp(0),  ps("> "), libdir(""),
@@ -689,8 +689,8 @@ interpreter::interpreter(int32_t nsyms, char *syms,
 			 pure_expr ***vars, void **vals,
 			 int32_t *arities, void **externs,
 			 pure_expr ***_sstk, void **_fptr)
-  : verbose(0), compat(false), compiling(false), eager_jit(false),
-    interactive(false), debugging(false),
+  : verbose(0), compat(false), compat2(false), compiling(false),
+    eager_jit(false), interactive(false), debugging(false),
     checks(true), folding(true), use_fastcc(true), pic(false), strip(true),
     restricted(true), ttymode(false), override(false),
     stats(false), stats_mem(false), temp(0), ps("> "), libdir(""),
