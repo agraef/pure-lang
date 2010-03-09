@@ -34,7 +34,8 @@
      defined on them.
 
    * ``HSet`` and ``HBag`` implement the hashed set types which don't require
-     an order of the members, but store members in an apparently random order.
+     an order of the members, and thus store distinct members in an apparently
+     random order.
 
    The underlying AVL tree data structure can be found in the avltrees.pure
    module which is included in the library, but not to be invoked directly.
@@ -161,7 +162,7 @@
    .. _delete (bag):
 
    ``delete m x``
-     remove ``x`` from ``m`` (in the ``bag`` case, only a single instance of
+     remove ``x`` from ``m`` (in the ``bag`` case, only the first instance of
      ``x`` is removed)
 
    In addition, the infix operators ``+``, ``-`` and ``*`` are defined as
@@ -237,8 +238,8 @@
      [1,3,3,3,4,5,5,6,11]
 
    If set members aren't ordered, hashed sets and bags must be used. These
-   work analogously, but the members are hashed and thus stored in an
-   apparently random order::
+   work analogously, but distinct members are stored in an apparently random
+   order::
 
      > members $ hset [a,b,c] * hset [c,d,e];
      [c]
@@ -282,7 +283,7 @@ insert (HBag m) y = HBag (avl::inserthm m y);
 
 // delete a member
 delete (Set  m) y = Set  (avl::delete  m y);
-delete (Bag  m) y = Bag  (avl::delete  m y);
+delete (Bag  m) y = Bag  (avl::deletem m y);
 delete (HSet m) y = HSet (avl::deleteh m y);
 delete (HBag m) y = HBag (avl::deleteh m y);
 

@@ -41,7 +41,10 @@
      keys like ``HDict``.
 
    ``MDict`` and ``HMDict`` are also colloquially referred to as (ordered or
-   hashed) *multidicts*.
+   hashed) *multidicts*. This implementation guarantees that different members
+   for the same key are always kept in the order in which they were inserted,
+   and this is also the order in which they will be retrieved by the
+   ``members``, ``keys``, ``vals`` and indexing operations.
 
    The underlying AVL tree data structure can be found in the avltrees.pure
    module which is included in the library, but not to be invoked directly.
@@ -192,8 +195,8 @@
    .. _delete (dictionary):
 
    ``delete d x``
-     remove ``x`` from ``d`` (in the multidict case, only one unspecified
-     member with the given key ``x`` is removed)
+     remove ``x`` from ``d`` (in the multidict case, only the first member
+     with the given key ``x`` is removed)
 
    Examples
    ~~~~~~~~
@@ -315,7 +318,7 @@ update d@(MDict _) x y | update d@(HMDict _) x y = insert d (x=>y);
 // delete a member by key
 delete (Dict   d) x = Dict   (avl::deletek  d x);
 delete (HDict  d) x = HDict  (avl::deletehk d x);
-delete (MDict  d) x = MDict  (avl::deletek  d x);
+delete (MDict  d) x = MDict  (avl::deletekm d x);
 delete (HMDict d) x = HMDict (avl::deletehk d x);
 
 // check for the empty dict

@@ -147,10 +147,11 @@ end;
    in the tree. The getm function returns a list of all values for the given
    key (which might be empty if the key is not in the tree). */
 
-/* NOTE: getm may return different values for the same key in an apparently
-   random order. Likewise, get may return any matching value. If you have to
-   preserve the order in which the elements were inserted into the tree then
-   you need to use a hashed tree instead. */
+/* NOTE: 'getm' collects the values for a given key in inorder, which matches
+   the order in which members are inserted, provided that you employ the
+   proper tree insertion and deletion operations, see below. OTOH, 'get' just
+   returns the first value for the given key in preorder, which will not be
+   all that useful if there are different members for the same key. */
 
 public get getm;
 
@@ -172,7 +173,7 @@ end;
 
 /* Basic AVL tree operations for hash trees. Please note that the members are
    in an apparently random order here. However, elements in the same bucket
-   are stored in the order in which they were inserted into the tree. */
+   are always stored in the order in which they were inserted into the tree. */
 
 public sizeh membersh keysh valsh firsth lasth rmfirsth rmlasth;
 
@@ -268,11 +269,20 @@ end;
    these operations, depending on whether you need separate keys like in a
    dictionary (k suffix) and/or hashing of key values (h suffix). For
    insertions, there are additional variations depending on whether multiple
-   instances of the same key should be allowed (m suffix). */
+   instances of the same key should be allowed (m suffix). For deletions,
+   there is a separate deletem operation for multiset trees which guarantees
+   that it's always the first member for a given key (in inorder traversal)
+   which is removed. This is somewhat slower than delete (which may remove
+   multiple elements for the same key in an apparently random order), but is
+   necessary to ensure that distinct members for the same key are always kept
+   in the order in which they were inserted. The deletekm operation does the
+   same for multidict trees. No such special provisions are needed for hashed
+   trees since these always store members for the same key in the same bucket,
+   where they are kept in insertion order anyway. */
 
 public insert insertk inserth inserthk;
 public insertm insertkm inserthm inserthkm;
-public delete deletek deleteh deletehk;
+public delete deletek deletem deletekm deleteh deletehk;
 
 /* Ordered AVL tree operations. A total order must be defined on the key
    values for these operations. */
@@ -339,6 +349,42 @@ deletek t y = delete t y!0 with
       when [newl, leftHasChanged] = delete l y end if key < k;
     = adjustd rightHasChanged (bin x b l newr) 1
       when [newr, rightHasChanged] = delete r y end if key > k;
+end;
+
+deletem t y = delete t y!0 with
+  delete nil _ = [nil, 0];
+  delete (bin x@k b l r) y@key
+    = if l===nil then [r, 1]
+      else if top l==key then
+        (adjustd leftHasChanged (bin x b newl r) (-1)
+      	 when [newl, leftHasChanged] = delete l y end)
+      else if r===nil then [l, 1]
+      else (adjustd leftHasChanged (bin (last l) b newl r) (-1)
+      	    when [newl, leftHasChanged] = deletel l end) if key == k;
+    = adjustd leftHasChanged (bin x b newl r) (-1)
+      when [newl, leftHasChanged] = delete l y end if key < k;
+    = adjustd rightHasChanged (bin x b l newr) 1
+      when [newr, rightHasChanged] = delete r y end if key > k;
+  top (bin k _ _ _) = k;
+end;
+
+deletekm t y = delete t y!0 with
+  delete nil _ = [nil, 0];
+  delete (bin x@(k=>_) b l r) y@key
+    = if l===nil then [r, 1]
+      else if top l==key then
+        (adjustd leftHasChanged (bin x b newl r) (-1)
+      	 when [newl, leftHasChanged] = delete l y end)
+      else if r===nil then [l, 1]
+      else
+        (adjustd leftHasChanged (bin (last l) b newl r) (-1)
+      	 when [newl, leftHasChanged] = deletel l end)
+      if key == k;
+    = adjustd leftHasChanged (bin x b newl r) (-1)
+      when [newl, leftHasChanged] = delete l y end if key < k;
+    = adjustd rightHasChanged (bin x b l newr) 1
+      when [newr, rightHasChanged] = delete r y end if key > k;
+  top (bin (k=>_) _ _ _) = k;
 end;
 
 /* Hashed tree operations. Hash keys are used as ordered key values here.
