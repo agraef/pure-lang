@@ -4111,10 +4111,12 @@ Container Types
 ===============
 
 The standard library provides a variety of efficient container data
-structures for different purposes. Note that these are all purely
-functional, i.e., immutable data structures implemented using different
-flavours of binary trees. Nevertheless operations are performed
-efficiently, in logarithmic time where possible.
+structures for different purposes. These are all purely functional, i.e.,
+immutable data structures implemented using different flavours of binary
+trees. This means that instead of modifying a data structure in-place,
+operations like insertion and deletion return a new instance of the
+container, keeping the previous instance intact. Nevertheless, all
+operations are performed efficiently, in logarithmic time where possible.
 
 The container types are all implemented as abstract data structures, so
 client modules shouldn't rely on the internal representation. Each type
@@ -4128,8 +4130,8 @@ match values of the type, e.g.::
 
 All container types implement the equality predicates ``==`` and ``~=`` by
 recursively comparing their members. In addition, the set and bag data
-structures also implement the other comparison predicates (``<``, ``<=``
-etc.) by checking whether one set/bag is a subset/subbag of another.
+structures also provide the other comparison predicates (``<``, ``<=``
+etc.) which check whether one set/bag is a subset/subbag of another.
 
 Arrays
 ------
@@ -4157,13 +4159,13 @@ matching.
 The internal data structure ``T`` is a binary tree built with the following
 constructors:
 
-``nil``
+``array::nil``
   the empty tree.
 
-``tip value``
+``array::tip value``
   a leaf of the tree, holding the given value.
 
-``bin balance left right``
+``array::bin balance left right``
   a nonempty tree with the given balance flag (0 or 1) and left and right
   subtrees.
 
@@ -4409,11 +4411,11 @@ Converting back from a matrix to an array::
 Heaps
 -----
 
-Heaps allow quick (constant time) access to the smallest member, and to
-remove the smallest member and insert new elements in logarithmic time.
-This implementation does not allow quick update of heap members; if
-such functionality is required, bags should be used instead
-(see `Sets and Bags`_).
+Heaps are a kind of priority queue data structure which allows quick
+(constant time) access to the smallest member, and to remove the smallest
+member and insert new elements in logarithmic time. Our implementation does
+not allow quick update of arbitrary heap members; if such functionality is
+required, bags can be used instead (see `Sets and Bags`_).
 
 Heap members *must* be ordered by the ``<=`` predicate. Multiple instances
 of the same element may be stored in a heap; however, the order in which
@@ -4437,10 +4439,10 @@ matching.
 The internal data structure ``T`` is a binary tree built with the following
 constructors:
 
-``nil``
+``heap::nil``
   the empty tree.
 
-``bin balance value left right``
+``heap::bin balance value left right``
   a nonempty tree holding the given value at its root node, with the given
   balance flag (0 or 1) and left and right subtrees.
 
@@ -4559,7 +4561,8 @@ trees. There are actually four different types to choose from, depending on
 whether you need ordered or hashed dictionaries and whether multiple values
 for the same key should be allowed or not.
 
-* ``Dict`` is an ordered dictionary (assuming an ordered key type).
+* ``Dict`` is an ordered dictionary (assuming an ordered key type, i.e.,
+  the predicates ``==``, ``<`` and ``>`` must be defined on the keys).
 
 * ``HDict`` a hashed dictionary which works with any (mixture of) key types
   but stores members in an apparently random order.
@@ -4571,9 +4574,9 @@ for the same key should be allowed or not.
   keys like ``HDict``.
 
 ``MDict`` and ``HMDict`` are also colloquially referred to as (ordered or
-hashed) "multidicts".
+hashed) *multidicts*.
 
-The underlying AVL tree data structure can be found in the ``avltrees``
+The underlying AVL tree data structure can be found in the avltrees.pure
 module which is included in the library, but not to be invoked directly.
 
 The AVL tree algorithm has its origin in the SWI-Prolog implementation of
@@ -4603,7 +4606,7 @@ T`` where ``D`` may be any of ``Dict``, ``HDict``, ``MDict`` and
 variables in pattern matching.
 
 In any case, the internal data structure ``T`` is an AVL tree built with
-the following constructors (from the ``avltrees`` module):
+the following constructors (from the avltrees module):
 
 ``avl::nil``
   the empty tree.
@@ -4616,6 +4619,13 @@ the following constructors (from the ``avltrees`` module):
 
 (This is for informational purposes only. The tree constructors are
 private, and client modules must not rely on the internal representation.)
+
+All kinds of dictionaries can be compared for equality and inequality
+(``==`` and ``~=``), but note that there are no implicit conversions
+between the different dictionary types and thus the operand types must
+match. Ordered dictionaries compare their members using the ``==``
+predicate, while hashed dictionaries check for syntactical equality (using
+``same``).
 
 Operations
 ~~~~~~~~~~
@@ -4931,13 +4941,13 @@ instances of the same element are allowed (in this case the set is actually
 called a *multiset* or a *bag*).
 
 * ``Set`` and ``Bag`` implement the ordered set types. They require that
-  members are ordered, i.e., the predicates ``==``, ``<`` and ``>`` must be
+  members be ordered, i.e., the predicates ``==``, ``<`` and ``>`` must be
   defined on them.
 
 * ``HSet`` and ``HBag`` implement the hashed set types which don't require
   an order of the members, but store members in an apparently random order.
 
-The underlying AVL tree data structure can be found in the ``avltrees``
+The underlying AVL tree data structure can be found in the avltrees.pure
 module which is included in the library, but not to be invoked directly.
 The AVL tree algorithm has its origin in the SWI-Prolog implementation of
 association lists and was ported to Pure by Jiri Spitz, see Dictionaries_
@@ -4960,7 +4970,7 @@ These constructors may be used as type tags to restrict variables in
 pattern matching.
 
 In any case, the internal data structure ``T`` is an AVL tree built with
-the following constructors (from the ``avltrees`` module):
+the following constructors (from the avltrees module):
 
 ``avl::nil``
   the empty tree.
@@ -4973,6 +4983,15 @@ the following constructors (from the ``avltrees`` module):
 
 (This is for informational purposes only. The tree constructors are
 private, and client modules must not rely on the internal representation.)
+
+All kinds of sets can be compared for equality and inequality (``==`` and
+``~=``), but note that there are no implicit conversions between the
+different set types and thus the operand types must match. Ordered sets
+compare their members using the ``==`` predicate, while hashed sets check
+for syntactical equality (using ``same``).  Operands in subset/subbag
+comparisons must also match up. Here it is checked that all members of one
+set/bag are contained in the other (also taking into account multiplicities
+in the bag case).
 
 Operations
 ~~~~~~~~~~
@@ -5184,8 +5203,9 @@ Operations
 
 In addition, the infix operators ``+``, ``-`` and ``*`` are defined as
 set/bag union, difference and intersection. Please note that there are no
-implicit conversions, so the operand types must match exactly. The same
-restriction applies to the comparison predicates ``==``, ``<=`` etc.
+implicit conversions, so the operand types must match exactly. (As already
+mentioned, the same restriction applies to the comparison predicates
+``==``, ``<=`` etc.)
 
 .. raw:: html
 

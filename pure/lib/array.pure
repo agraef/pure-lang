@@ -25,10 +25,12 @@
    ===============
 
    The standard library provides a variety of efficient container data
-   structures for different purposes. Note that these are all purely
-   functional, i.e., immutable data structures implemented using different
-   flavours of binary trees. Nevertheless operations are performed
-   efficiently, in logarithmic time where possible.
+   structures for different purposes. These are all purely functional, i.e.,
+   immutable data structures implemented using different flavours of binary
+   trees. This means that instead of modifying a data structure in-place,
+   operations like insertion and deletion return a new instance of the
+   container, keeping the previous instance intact. Nevertheless, all
+   operations are performed efficiently, in logarithmic time where possible.
 
    The container types are all implemented as abstract data structures, so
    client modules shouldn't rely on the internal representation. Each type
@@ -42,8 +44,8 @@
 
    All container types implement the equality predicates ``==`` and ``~=`` by
    recursively comparing their members. In addition, the set and bag data
-   structures also implement the other comparison predicates (``<``, ``<=``
-   etc.) by checking whether one set/bag is a subset/subbag of another.
+   structures also provide the other comparison predicates (``<``, ``<=``
+   etc.) which check whether one set/bag is a subset/subbag of another.
 
    Arrays
    ------
@@ -71,13 +73,13 @@
    The internal data structure ``T`` is a binary tree built with the following
    constructors:
 
-   ``nil``
+   ``array::nil``
      the empty tree.
 
-   ``tip value``
+   ``array::tip value``
      a leaf of the tree, holding the given value.
 
-   ``bin balance left right``
+   ``array::bin balance left right``
      a nonempty tree with the given balance flag (0 or 1) and left and right
      subtrees.
 

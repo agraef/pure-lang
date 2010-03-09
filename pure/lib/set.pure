@@ -30,13 +30,13 @@
    called a *multiset* or a *bag*).
 
    * ``Set`` and ``Bag`` implement the ordered set types. They require that
-     members are ordered, i.e., the predicates ``==``, ``<`` and ``>`` must be
+     members be ordered, i.e., the predicates ``==``, ``<`` and ``>`` must be
      defined on them.
 
    * ``HSet`` and ``HBag`` implement the hashed set types which don't require
      an order of the members, but store members in an apparently random order.
 
-   The underlying AVL tree data structure can be found in the ``avltrees``
+   The underlying AVL tree data structure can be found in the avltrees.pure
    module which is included in the library, but not to be invoked directly.
    The AVL tree algorithm has its origin in the SWI-Prolog implementation of
    association lists and was ported to Pure by Jiri Spitz, see Dictionaries_
@@ -59,7 +59,7 @@
    pattern matching.
 
    In any case, the internal data structure ``T`` is an AVL tree built with
-   the following constructors (from the ``avltrees`` module):
+   the following constructors (from the avltrees module):
 
    ``avl::nil``
      the empty tree.
@@ -72,6 +72,15 @@
 
    (This is for informational purposes only. The tree constructors are
    private, and client modules must not rely on the internal representation.)
+
+   All kinds of sets can be compared for equality and inequality (``==`` and
+   ``~=``), but note that there are no implicit conversions between the
+   different set types and thus the operand types must match. Ordered sets
+   compare their members using the ``==`` predicate, while hashed sets check
+   for syntactical equality (using ``same``).  Operands in subset/subbag
+   comparisons must also match up. Here it is checked that all members of one
+   set/bag are contained in the other (also taking into account multiplicities
+   in the bag case).
 
    Operations
    ~~~~~~~~~~
@@ -157,8 +166,9 @@
 
    In addition, the infix operators ``+``, ``-`` and ``*`` are defined as
    set/bag union, difference and intersection. Please note that there are no
-   implicit conversions, so the operand types must match exactly. The same
-   restriction applies to the comparison predicates ``==``, ``<=`` etc.
+   implicit conversions, so the operand types must match exactly. (As already
+   mentioned, the same restriction applies to the comparison predicates
+   ``==``, ``<=`` etc.)
 
    .. _+ (set):
    .. _+ (bag):

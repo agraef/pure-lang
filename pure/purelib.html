@@ -2573,10 +2573,12 @@ int.</dd>
 <div class="section" id="container-types">
 <h1><a class="toc-backref" href="#id100">3&nbsp;&nbsp;&nbsp;Container Types</a></h1>
 <p>The standard library provides a variety of efficient container data
-structures for different purposes. Note that these are all purely
-functional, i.e., immutable data structures implemented using different
-flavours of binary trees. Nevertheless operations are performed
-efficiently, in logarithmic time where possible.</p>
+structures for different purposes. These are all purely functional, i.e.,
+immutable data structures implemented using different flavours of binary
+trees. This means that instead of modifying a data structure in-place,
+operations like insertion and deletion return a new instance of the
+container, keeping the previous instance intact. Nevertheless, all
+operations are performed efficiently, in logarithmic time where possible.</p>
 <p>The container types are all implemented as abstract data structures, so
 client modules shouldn't rely on the internal representation. Each type
 provides a corresponding type tag (cf. <a class="reference external" href="pure.html#type-tags">Type Tags</a> in the Pure Manual), as
@@ -2587,8 +2589,8 @@ shift a::Array = rmfirst a;
 </pre>
 <p>All container types implement the equality predicates <tt class="docutils literal"><span class="pre">==</span></tt> and <tt class="docutils literal"><span class="pre">~=</span></tt> by
 recursively comparing their members. In addition, the set and bag data
-structures also implement the other comparison predicates (<tt class="docutils literal"><span class="pre">&lt;</span></tt>, <tt class="docutils literal"><span class="pre">&lt;=</span></tt>
-etc.) by checking whether one set/bag is a subset/subbag of another.</p>
+structures also provide the other comparison predicates (<tt class="docutils literal"><span class="pre">&lt;</span></tt>, <tt class="docutils literal"><span class="pre">&lt;=</span></tt>
+etc.) which check whether one set/bag is a subset/subbag of another.</p>
 <div class="section" id="arrays">
 <h2><a class="toc-backref" href="#id101">3.1&nbsp;&nbsp;&nbsp;Arrays</a></h2>
 <p>The array.pure module implements an efficient functional array data
@@ -2611,11 +2613,11 @@ matching.</p>
 <p>The internal data structure <tt class="docutils literal"><span class="pre">T</span></tt> is a binary tree built with the following
 constructors:</p>
 <dl class="docutils">
-<dt><tt class="docutils literal"><span class="pre">nil</span></tt></dt>
+<dt><tt class="docutils literal"><span class="pre">array::nil</span></tt></dt>
 <dd>the empty tree.</dd>
-<dt><tt class="docutils literal"><span class="pre">tip</span> <span class="pre">value</span></tt></dt>
+<dt><tt class="docutils literal"><span class="pre">array::tip</span> <span class="pre">value</span></tt></dt>
 <dd>a leaf of the tree, holding the given value.</dd>
-<dt><tt class="docutils literal"><span class="pre">bin</span> <span class="pre">balance</span> <span class="pre">left</span> <span class="pre">right</span></tt></dt>
+<dt><tt class="docutils literal"><span class="pre">array::bin</span> <span class="pre">balance</span> <span class="pre">left</span> <span class="pre">right</span></tt></dt>
 <dd>a nonempty tree with the given balance flag (0 or 1) and left and right
 subtrees.</dd>
 </dl>
@@ -2754,11 +2756,11 @@ lists:</p>
 </div>
 <div class="section" id="heaps">
 <h2><a class="toc-backref" href="#id106">3.2&nbsp;&nbsp;&nbsp;Heaps</a></h2>
-<p>Heaps allow quick (constant time) access to the smallest member, and to
-remove the smallest member and insert new elements in logarithmic time.
-This implementation does not allow quick update of heap members; if
-such functionality is required, bags should be used instead
-(see <a class="reference internal" href="#sets-and-bags">Sets and Bags</a>).</p>
+<p>Heaps are a kind of priority queue data structure which allows quick
+(constant time) access to the smallest member, and to remove the smallest
+member and insert new elements in logarithmic time. Our implementation does
+not allow quick update of arbitrary heap members; if such functionality is
+required, bags can be used instead (see <a class="reference internal" href="#sets-and-bags">Sets and Bags</a>).</p>
 <p>Heap members <em>must</em> be ordered by the <tt class="docutils literal"><span class="pre">&lt;=</span></tt> predicate. Multiple instances
 of the same element may be stored in a heap; however, the order in which
 equal elements are retrieved is not specified.</p>
@@ -2778,9 +2780,9 @@ matching.</p>
 <p>The internal data structure <tt class="docutils literal"><span class="pre">T</span></tt> is a binary tree built with the following
 constructors:</p>
 <dl class="docutils">
-<dt><tt class="docutils literal"><span class="pre">nil</span></tt></dt>
+<dt><tt class="docutils literal"><span class="pre">heap::nil</span></tt></dt>
 <dd>the empty tree.</dd>
-<dt><tt class="docutils literal"><span class="pre">bin</span> <span class="pre">balance</span> <span class="pre">value</span> <span class="pre">left</span> <span class="pre">right</span></tt></dt>
+<dt><tt class="docutils literal"><span class="pre">heap::bin</span> <span class="pre">balance</span> <span class="pre">value</span> <span class="pre">left</span> <span class="pre">right</span></tt></dt>
 <dd>a nonempty tree holding the given value at its root node, with the given
 balance flag (0 or 1) and left and right subtrees.</dd>
 </dl>
@@ -2847,7 +2849,8 @@ trees. There are actually four different types to choose from, depending on
 whether you need ordered or hashed dictionaries and whether multiple values
 for the same key should be allowed or not.</p>
 <ul class="simple">
-<li><tt class="docutils literal"><span class="pre">Dict</span></tt> is an ordered dictionary (assuming an ordered key type).</li>
+<li><tt class="docutils literal"><span class="pre">Dict</span></tt> is an ordered dictionary (assuming an ordered key type, i.e.,
+the predicates <tt class="docutils literal"><span class="pre">==</span></tt>, <tt class="docutils literal"><span class="pre">&lt;</span></tt> and <tt class="docutils literal"><span class="pre">&gt;</span></tt> must be defined on the keys).</li>
 <li><tt class="docutils literal"><span class="pre">HDict</span></tt> a hashed dictionary which works with any (mixture of) key types
 but stores members in an apparently random order.</li>
 <li><tt class="docutils literal"><span class="pre">MDict</span></tt> is an ordered dictionary, like <tt class="docutils literal"><span class="pre">Dict</span></tt>, which allows multiple
@@ -2856,8 +2859,8 @@ values to be associated with the same key.</li>
 keys like <tt class="docutils literal"><span class="pre">HDict</span></tt>.</li>
 </ul>
 <p><tt class="docutils literal"><span class="pre">MDict</span></tt> and <tt class="docutils literal"><span class="pre">HMDict</span></tt> are also colloquially referred to as (ordered or
-hashed) &quot;multidicts&quot;.</p>
-<p>The underlying AVL tree data structure can be found in the <tt class="docutils literal"><span class="pre">avltrees</span></tt>
+hashed) <em>multidicts</em>.</p>
+<p>The underlying AVL tree data structure can be found in the avltrees.pure
 module which is included in the library, but not to be invoked directly.</p>
 <p>The AVL tree algorithm has its origin in the SWI-Prolog implementation of
 association lists. The original implementation was created by R. A. O'Keefe
@@ -2882,7 +2885,7 @@ using dict;
 <tt class="docutils literal"><span class="pre">HMDict</span></tt>. These constructors may be used as type tags to restrict
 variables in pattern matching.</p>
 <p>In any case, the internal data structure <tt class="docutils literal"><span class="pre">T</span></tt> is an AVL tree built with
-the following constructors (from the <tt class="docutils literal"><span class="pre">avltrees</span></tt> module):</p>
+the following constructors (from the avltrees module):</p>
 <dl class="docutils">
 <dt><tt class="docutils literal"><span class="pre">avl::nil</span></tt></dt>
 <dd>the empty tree.</dd>
@@ -2894,6 +2897,12 @@ respectively.</dd>
 </dl>
 <p>(This is for informational purposes only. The tree constructors are
 private, and client modules must not rely on the internal representation.)</p>
+<p>All kinds of dictionaries can be compared for equality and inequality
+(<tt class="docutils literal"><span class="pre">==</span></tt> and <tt class="docutils literal"><span class="pre">~=</span></tt>), but note that there are no implicit conversions
+between the different dictionary types and thus the operand types must
+match. Ordered dictionaries compare their members using the <tt class="docutils literal"><span class="pre">==</span></tt>
+predicate, while hashed dictionaries check for syntactical equality (using
+<tt class="docutils literal"><span class="pre">same</span></tt>).</p>
 </div>
 <div class="section" id="id50">
 <h3><a class="toc-backref" href="#id114">3.3.3&nbsp;&nbsp;&nbsp;Operations</a></h3>
@@ -3053,12 +3062,12 @@ instances of the same element are allowed (in this case the set is actually
 called a <em>multiset</em> or a <em>bag</em>).</p>
 <ul class="simple">
 <li><tt class="docutils literal"><span class="pre">Set</span></tt> and <tt class="docutils literal"><span class="pre">Bag</span></tt> implement the ordered set types. They require that
-members are ordered, i.e., the predicates <tt class="docutils literal"><span class="pre">==</span></tt>, <tt class="docutils literal"><span class="pre">&lt;</span></tt> and <tt class="docutils literal"><span class="pre">&gt;</span></tt> must be
+members be ordered, i.e., the predicates <tt class="docutils literal"><span class="pre">==</span></tt>, <tt class="docutils literal"><span class="pre">&lt;</span></tt> and <tt class="docutils literal"><span class="pre">&gt;</span></tt> must be
 defined on them.</li>
 <li><tt class="docutils literal"><span class="pre">HSet</span></tt> and <tt class="docutils literal"><span class="pre">HBag</span></tt> implement the hashed set types which don't require
 an order of the members, but store members in an apparently random order.</li>
 </ul>
-<p>The underlying AVL tree data structure can be found in the <tt class="docutils literal"><span class="pre">avltrees</span></tt>
+<p>The underlying AVL tree data structure can be found in the avltrees.pure
 module which is included in the library, but not to be invoked directly.
 The AVL tree algorithm has its origin in the SWI-Prolog implementation of
 association lists and was ported to Pure by Jiri Spitz, see <a class="reference internal" href="#dictionaries">Dictionaries</a>
@@ -3078,7 +3087,7 @@ using set;
 These constructors may be used as type tags to restrict variables in
 pattern matching.</p>
 <p>In any case, the internal data structure <tt class="docutils literal"><span class="pre">T</span></tt> is an AVL tree built with
-the following constructors (from the <tt class="docutils literal"><span class="pre">avltrees</span></tt> module):</p>
+the following constructors (from the avltrees module):</p>
 <dl class="docutils">
 <dt><tt class="docutils literal"><span class="pre">avl::nil</span></tt></dt>
 <dd>the empty tree.</dd>
@@ -3090,6 +3099,14 @@ respectively.</dd>
 </dl>
 <p>(This is for informational purposes only. The tree constructors are
 private, and client modules must not rely on the internal representation.)</p>
+<p>All kinds of sets can be compared for equality and inequality (<tt class="docutils literal"><span class="pre">==</span></tt> and
+<tt class="docutils literal"><span class="pre">~=</span></tt>), but note that there are no implicit conversions between the
+different set types and thus the operand types must match. Ordered sets
+compare their members using the <tt class="docutils literal"><span class="pre">==</span></tt> predicate, while hashed sets check
+for syntactical equality (using <tt class="docutils literal"><span class="pre">same</span></tt>).  Operands in subset/subbag
+comparisons must also match up. Here it is checked that all members of one
+set/bag are contained in the other (also taking into account multiplicities
+in the bag case).</p>
 </div>
 <div class="section" id="id55">
 <h3><a class="toc-backref" href="#id119">3.4.3&nbsp;&nbsp;&nbsp;Operations</a></h3>
@@ -3140,8 +3157,9 @@ private, and client modules must not rely on the internal representation.)</p>
 </dl>
 <p>In addition, the infix operators <tt class="docutils literal"><span class="pre">+</span></tt>, <tt class="docutils literal"><span class="pre">-</span></tt> and <tt class="docutils literal"><span class="pre">*</span></tt> are defined as
 set/bag union, difference and intersection. Please note that there are no
-implicit conversions, so the operand types must match exactly. The same
-restriction applies to the comparison predicates <tt class="docutils literal"><span class="pre">==</span></tt>, <tt class="docutils literal"><span class="pre">&lt;=</span></tt> etc.</p>
+implicit conversions, so the operand types must match exactly. (As already
+mentioned, the same restriction applies to the comparison predicates
+<tt class="docutils literal"><span class="pre">==</span></tt>, <tt class="docutils literal"><span class="pre">&lt;=</span></tt> etc.)</p>
 <a name="+ (set)"><a name="+ (bag)"><dl class="docutils" id="id59">
 <span id="id58"></span><dt><tt class="docutils literal"><span class="pre">m1+m2</span></tt></dt>
 <dd>set and bag union: <tt class="docutils literal"><span class="pre">m1+m2</span></tt> adds the members of <tt class="docutils literal"><span class="pre">m2</span></tt> to <tt class="docutils literal"><span class="pre">m1</span></tt></dd>

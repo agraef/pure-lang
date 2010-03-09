@@ -28,7 +28,8 @@
    whether you need ordered or hashed dictionaries and whether multiple values
    for the same key should be allowed or not.
 
-   * ``Dict`` is an ordered dictionary (assuming an ordered key type).
+   * ``Dict`` is an ordered dictionary (assuming an ordered key type, i.e.,
+     the predicates ``==``, ``<`` and ``>`` must be defined on the keys).
 
    * ``HDict`` a hashed dictionary which works with any (mixture of) key types
      but stores members in an apparently random order.
@@ -40,9 +41,9 @@
      keys like ``HDict``.
 
    ``MDict`` and ``HMDict`` are also colloquially referred to as (ordered or
-   hashed) "multidicts".
+   hashed) *multidicts*.
 
-   The underlying AVL tree data structure can be found in the ``avltrees``
+   The underlying AVL tree data structure can be found in the avltrees.pure
    module which is included in the library, but not to be invoked directly.
 
    The AVL tree algorithm has its origin in the SWI-Prolog implementation of
@@ -72,7 +73,7 @@
    variables in pattern matching.
 
    In any case, the internal data structure ``T`` is an AVL tree built with
-   the following constructors (from the ``avltrees`` module):
+   the following constructors (from the avltrees module):
 
    ``avl::nil``
      the empty tree.
@@ -85,6 +86,13 @@
 
    (This is for informational purposes only. The tree constructors are
    private, and client modules must not rely on the internal representation.)
+
+   All kinds of dictionaries can be compared for equality and inequality
+   (``==`` and ``~=``), but note that there are no implicit conversions
+   between the different dictionary types and thus the operand types must
+   match. Ordered dictionaries compare their members using the ``==``
+   predicate, while hashed dictionaries check for syntactical equality (using
+   ``same``).
 
    Operations
    ~~~~~~~~~~
