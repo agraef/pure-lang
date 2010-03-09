@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>Pure Library Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2010-03-08" />
+<meta name="date" content="2010-03-09" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-03-08</td></tr>
+<td>2010-03-09</td></tr>
 </tbody>
 </table>
 <!-- We use docutils to produce the documentation. Docstrings are extracted -->
@@ -3046,10 +3046,21 @@ key:</p>
 </div>
 <div class="section" id="sets-and-bags">
 <h2><a class="toc-backref" href="#id116">3.4&nbsp;&nbsp;&nbsp;Sets and Bags</a></h2>
-<p>The set.pure module implements Pure's <tt class="docutils literal"><span class="pre">Set</span></tt> and <tt class="docutils literal"><span class="pre">Bag</span></tt> (multiset) data
-types based on AVL trees. Set and bag elements must be ordered, i.e., the
-predicates <tt class="docutils literal"><span class="pre">==</span></tt>, <tt class="docutils literal"><span class="pre">&lt;</span></tt> and <tt class="docutils literal"><span class="pre">&gt;</span></tt> must be defined on them. The used AVL
-tree algorithm has its origin in the SWI-Prolog implementation of
+<p>The set.pure module implements Pure's set data types based on AVL trees.
+There are four variations of this data structure to choose from, depending
+on whether the set members are ordered or hashed, and whether multiple
+instances of the same element are allowed (in this case the set is actually
+called a <em>multiset</em> or a <em>bag</em>).</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">Set</span></tt> and <tt class="docutils literal"><span class="pre">Bag</span></tt> implement the ordered set types. They require that
+members are ordered, i.e., the predicates <tt class="docutils literal"><span class="pre">==</span></tt>, <tt class="docutils literal"><span class="pre">&lt;</span></tt> and <tt class="docutils literal"><span class="pre">&gt;</span></tt> must be
+defined on them.</li>
+<li><tt class="docutils literal"><span class="pre">HSet</span></tt> and <tt class="docutils literal"><span class="pre">HBag</span></tt> implement the hashed set types which don't require
+an order of the members, but store members in an apparently random order.</li>
+</ul>
+<p>The underlying AVL tree data structure can be found in the <tt class="docutils literal"><span class="pre">avltrees</span></tt>
+module which is included in the library, but not to be invoked directly.
+The AVL tree algorithm has its origin in the SWI-Prolog implementation of
 association lists and was ported to Pure by Jiri Spitz, see <a class="reference internal" href="#dictionaries">Dictionaries</a>
 for details.</p>
 <div class="section" id="id53">
@@ -3062,15 +3073,16 @@ using set;
 </div>
 <div class="section" id="id54">
 <h3><a class="toc-backref" href="#id118">3.4.2&nbsp;&nbsp;&nbsp;Data Structure</a></h3>
-<p>Sets and bags are represented as balanced tree structures of the form <tt class="docutils literal"><span class="pre">Set</span>
-<span class="pre">T</span></tt> or <tt class="docutils literal"><span class="pre">Bag</span> <span class="pre">T</span></tt>, respectively, thus <tt class="docutils literal"><span class="pre">Set</span></tt> and <tt class="docutils literal"><span class="pre">Bag</span></tt> may be used as
-type tags to restrict variables in pattern matching.</p>
-<p>The internal data structure <tt class="docutils literal"><span class="pre">T</span></tt> is an AVL tree built with the following
-constructors:</p>
+<p>Sets and bags are represented as balanced tree structures of the form <tt class="docutils literal"><span class="pre">S</span>
+<span class="pre">T</span></tt>, where <tt class="docutils literal"><span class="pre">S</span></tt> may be any of <tt class="docutils literal"><span class="pre">Set</span></tt>, <tt class="docutils literal"><span class="pre">Bag</span></tt>, <tt class="docutils literal"><span class="pre">HSet</span></tt> and <tt class="docutils literal"><span class="pre">HBag</span></tt>.
+These constructors may be used as type tags to restrict variables in
+pattern matching.</p>
+<p>In any case, the internal data structure <tt class="docutils literal"><span class="pre">T</span></tt> is an AVL tree built with
+the following constructors (from the <tt class="docutils literal"><span class="pre">avltrees</span></tt> module):</p>
 <dl class="docutils">
-<dt><tt class="docutils literal"><span class="pre">nil</span></tt></dt>
+<dt><tt class="docutils literal"><span class="pre">avl::nil</span></tt></dt>
 <dd>the empty tree.</dd>
-<dt><tt class="docutils literal"><span class="pre">bin</span> <span class="pre">key</span> <span class="pre">balance</span> <span class="pre">left</span> <span class="pre">right</span></tt></dt>
+<dt><tt class="docutils literal"><span class="pre">avl::bin</span> <span class="pre">key</span> <span class="pre">balance</span> <span class="pre">left</span> <span class="pre">right</span></tt></dt>
 <dd>a nonempty tree with given <tt class="docutils literal"><span class="pre">key</span></tt> (set element) in the root node, where
 <tt class="docutils literal"><span class="pre">left</span></tt> and <tt class="docutils literal"><span class="pre">right</span></tt> are the left and right subtree, and <tt class="docutils literal"><span class="pre">balance</span></tt> is
 either 1, 0 or -1, denoting <tt class="docutils literal"><span class="pre">|left|-|right|</span></tt> = 1, 0, or -1,
@@ -3081,22 +3093,55 @@ private, and client modules must not rely on the internal representation.)</p>
 </div>
 <div class="section" id="id55">
 <h3><a class="toc-backref" href="#id119">3.4.3&nbsp;&nbsp;&nbsp;Operations</a></h3>
-<a name="emptyset"><a name="emptybag"><dl class="docutils" id="emptybag">
-<span id="emptyset"></span><dt><tt class="docutils literal"><span class="pre">emptyset</span></tt>, <tt class="docutils literal"><span class="pre">emptybag</span></tt></dt>
-<dd>return the empty set or bag</dd>
+<a name="emptyset"><a name="emptybag"><a name="emptyhset"><a name="emptyhbag"><dl class="docutils" id="emptyhbag">
+<span id="emptyhset"></span><span id="emptybag"></span><span id="emptyset"></span><dt><tt class="docutils literal"><span class="pre">emptyset</span></tt>, <tt class="docutils literal"><span class="pre">emptybag</span></tt>, <tt class="docutils literal"><span class="pre">emptyhset</span></tt>, <tt class="docutils literal"><span class="pre">emptyhbag</span></tt></dt>
+<dd>return an empty set or bag</dd>
 </dl>
-<a name="set"><a name="bag"><dl class="docutils" id="bag">
-<span id="set"></span><dt><tt class="docutils literal"><span class="pre">set</span> <span class="pre">xs</span></tt>, <tt class="docutils literal"><span class="pre">bag</span> <span class="pre">xs</span></tt></dt>
+<a name="set"><a name="bag"><a name="hset"><a name="hbag"><dl class="docutils" id="hbag">
+<span id="hset"></span><span id="bag"></span><span id="set"></span><dt><tt class="docutils literal"><span class="pre">set</span> <span class="pre">xs</span></tt>, <tt class="docutils literal"><span class="pre">bag</span> <span class="pre">xs</span></tt>, <tt class="docutils literal"><span class="pre">hset</span> <span class="pre">xs</span></tt>, <tt class="docutils literal"><span class="pre">hbag</span> <span class="pre">xs</span></tt></dt>
 <dd>create a set or bag from a list <tt class="docutils literal"><span class="pre">xs</span></tt></dd>
 </dl>
 <a name="setp"><a name="bagp"><dl class="docutils" id="bagp">
-<span id="setp"></span><dt><tt class="docutils literal"><span class="pre">setp</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">bagp</span> <span class="pre">x</span></tt></dt>
-<dd>check whether <tt class="docutils literal"><span class="pre">x</span></tt> is a set or bag</dd>
+<span id="setp"></span><dt><tt class="docutils literal"><span class="pre">setp</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">bagp</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">hsetp</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">hbagp</span> <span class="pre">x</span></tt></dt>
+<dd>check whether <tt class="docutils literal"><span class="pre">x</span></tt> is a set or bag of the corresponding type</dd>
 </dl>
 <a name="# (set)"><a name="# (bag)"><dl class="docutils" id="id57">
 <span id="id56"></span><dt><tt class="docutils literal"><span class="pre">#m</span></tt></dt>
-<dd>size of set or bag <tt class="docutils literal"><span class="pre">m</span></tt></dd>
+<dd>size of a set or bag <tt class="docutils literal"><span class="pre">m</span></tt></dd>
 </dl>
+<a name="null (set)"><a name="null (bag)"><dl class="docutils" id="null-bag">
+<span id="null-set"></span><dt><tt class="docutils literal"><span class="pre">null</span> <span class="pre">m</span></tt></dt>
+<dd>test whether <tt class="docutils literal"><span class="pre">m</span></tt> is an empty set or bag</dd>
+</dl>
+<a name="member (set)"><a name="member (bag)"><dl class="docutils" id="member-bag">
+<span id="member-set"></span><dt><tt class="docutils literal"><span class="pre">member</span> <span class="pre">m</span> <span class="pre">x</span></tt></dt>
+<dd>test whether <tt class="docutils literal"><span class="pre">m</span></tt> contains <tt class="docutils literal"><span class="pre">x</span></tt></dd>
+</dl>
+<a name="members (set)"><a name="members (bag)"><a name="list (set)"><a name="list (bag)"><dl class="docutils" id="list-bag">
+<span id="list-set"></span><span id="members-bag"></span><span id="members-set"></span><dt><tt class="docutils literal"><span class="pre">members</span> <span class="pre">m</span></tt>, <tt class="docutils literal"><span class="pre">list</span> <span class="pre">m</span></tt></dt>
+<dd>list the members of <tt class="docutils literal"><span class="pre">m</span></tt> (in ascending order for ordered sets and bags)</dd>
+</dl>
+<a name="first (set)"><a name="first (bag)"><a name="last (set)"><a name="last (bag)"><dl class="docutils" id="last-bag">
+<span id="last-set"></span><span id="first-bag"></span><span id="first-set"></span><dt><tt class="docutils literal"><span class="pre">first</span> <span class="pre">m</span></tt>, <tt class="docutils literal"><span class="pre">last</span> <span class="pre">m</span></tt></dt>
+<dd>return the first and the last member of <tt class="docutils literal"><span class="pre">m</span></tt>, respectively</dd>
+</dl>
+<a name="rmfirst (set)"><a name="rmfirst (bag)"><a name="rmlast (set)"><a name="rmlast (bag)"><dl class="docutils" id="rmlast-bag">
+<span id="rmlast-set"></span><span id="rmfirst-bag"></span><span id="rmfirst-set"></span><dt><tt class="docutils literal"><span class="pre">rmfirst</span> <span class="pre">m</span></tt>, <tt class="docutils literal"><span class="pre">rmlast</span> <span class="pre">m</span></tt></dt>
+<dd>remove the first and the last member from <tt class="docutils literal"><span class="pre">m</span></tt>, respectively</dd>
+</dl>
+<a name="insert (set)"><a name="insert (bag)"><dl class="docutils" id="insert-bag">
+<span id="insert-set"></span><dt><tt class="docutils literal"><span class="pre">insert</span> <span class="pre">m</span> <span class="pre">x</span></tt></dt>
+<dd>insert <tt class="docutils literal"><span class="pre">x</span></tt> into <tt class="docutils literal"><span class="pre">m</span></tt> (replaces an existing element in the case of a set)</dd>
+</dl>
+<a name="delete (set)"><a name="delete (bag)"><dl class="docutils" id="delete-bag">
+<span id="delete-set"></span><dt><tt class="docutils literal"><span class="pre">delete</span> <span class="pre">m</span> <span class="pre">x</span></tt></dt>
+<dd>remove <tt class="docutils literal"><span class="pre">x</span></tt> from <tt class="docutils literal"><span class="pre">m</span></tt> (in the <tt class="docutils literal"><span class="pre">bag</span></tt> case, only a single instance of
+<tt class="docutils literal"><span class="pre">x</span></tt> is removed)</dd>
+</dl>
+<p>In addition, the infix operators <tt class="docutils literal"><span class="pre">+</span></tt>, <tt class="docutils literal"><span class="pre">-</span></tt> and <tt class="docutils literal"><span class="pre">*</span></tt> are defined as
+set/bag union, difference and intersection. Please note that there are no
+implicit conversions, so the operand types must match exactly. The same
+restriction applies to the comparison predicates <tt class="docutils literal"><span class="pre">==</span></tt>, <tt class="docutils literal"><span class="pre">&lt;=</span></tt> etc.</p>
 <a name="+ (set)"><a name="+ (bag)"><dl class="docutils" id="id59">
 <span id="id58"></span><dt><tt class="docutils literal"><span class="pre">m1+m2</span></tt></dt>
 <dd>set and bag union: <tt class="docutils literal"><span class="pre">m1+m2</span></tt> adds the members of <tt class="docutils literal"><span class="pre">m2</span></tt> to <tt class="docutils literal"><span class="pre">m1</span></tt></dd>
@@ -3110,35 +3155,6 @@ private, and client modules must not rely on the internal representation.)</p>
 <span id="id62"></span><dt><tt class="docutils literal"><span class="pre">m1*m2</span></tt></dt>
 <dd>set and bag intersection: <tt class="docutils literal"><span class="pre">m1*m2</span></tt> removes the members <em>not</em> in <tt class="docutils literal"><span class="pre">m2</span></tt>
 from <tt class="docutils literal"><span class="pre">m1</span></tt></dd>
-</dl>
-<a name="null (set)"><a name="null (bag)"><dl class="docutils" id="null-bag">
-<span id="null-set"></span><dt><tt class="docutils literal"><span class="pre">null</span> <span class="pre">m</span></tt></dt>
-<dd>test whether <tt class="docutils literal"><span class="pre">m</span></tt> is the empty set or bag</dd>
-</dl>
-<a name="member (set)"><a name="member (bag)"><dl class="docutils" id="member-bag">
-<span id="member-set"></span><dt><tt class="docutils literal"><span class="pre">member</span> <span class="pre">m</span> <span class="pre">x</span></tt></dt>
-<dd>test whether <tt class="docutils literal"><span class="pre">m</span></tt> contains <tt class="docutils literal"><span class="pre">x</span></tt></dd>
-</dl>
-<a name="members (set)"><a name="members (bag)"><a name="list (set)"><a name="list (bag)"><dl class="docutils" id="list-bag">
-<span id="list-set"></span><span id="members-bag"></span><span id="members-set"></span><dt><tt class="docutils literal"><span class="pre">members</span> <span class="pre">m</span></tt>, <tt class="docutils literal"><span class="pre">list</span> <span class="pre">m</span></tt></dt>
-<dd>list members of <tt class="docutils literal"><span class="pre">m</span></tt> in ascending order</dd>
-</dl>
-<a name="first (set)"><a name="first (bag)"><a name="last (set)"><a name="last (bag)"><dl class="docutils" id="last-bag">
-<span id="last-set"></span><span id="first-bag"></span><span id="first-set"></span><dt><tt class="docutils literal"><span class="pre">first</span> <span class="pre">m</span></tt>, <tt class="docutils literal"><span class="pre">last</span> <span class="pre">m</span></tt></dt>
-<dd>return first and last member of <tt class="docutils literal"><span class="pre">m</span></tt></dd>
-</dl>
-<a name="rmfirst (set)"><a name="rmfirst (bag)"><a name="rmlast (set)"><a name="rmlast (bag)"><dl class="docutils" id="rmlast-bag">
-<span id="rmlast-set"></span><span id="rmfirst-bag"></span><span id="rmfirst-set"></span><dt><tt class="docutils literal"><span class="pre">rmfirst</span> <span class="pre">m</span></tt>, <tt class="docutils literal"><span class="pre">rmlast</span> <span class="pre">m</span></tt></dt>
-<dd>remove first and last member from <tt class="docutils literal"><span class="pre">m</span></tt></dd>
-</dl>
-<a name="insert (set)"><a name="insert (bag)"><dl class="docutils" id="insert-bag">
-<span id="insert-set"></span><dt><tt class="docutils literal"><span class="pre">insert</span> <span class="pre">m</span> <span class="pre">x</span></tt></dt>
-<dd>insert <tt class="docutils literal"><span class="pre">x</span></tt> into <tt class="docutils literal"><span class="pre">m</span></tt> (replaces an existing element in the <tt class="docutils literal"><span class="pre">set</span></tt> case)</dd>
-</dl>
-<a name="delete (set)"><a name="delete (bag)"><dl class="docutils" id="delete-bag">
-<span id="delete-set"></span><dt><tt class="docutils literal"><span class="pre">delete</span> <span class="pre">m</span> <span class="pre">x</span></tt></dt>
-<dd>remove <tt class="docutils literal"><span class="pre">x</span></tt> from <tt class="docutils literal"><span class="pre">m</span></tt> (in the <tt class="docutils literal"><span class="pre">bag</span></tt> case, only a single instance of
-<tt class="docutils literal"><span class="pre">x</span></tt> is removed)</dd>
 </dl>
 </div>
 <div class="section" id="id64">
@@ -3157,9 +3173,8 @@ from <tt class="docutils literal"><span class="pre">m1</span></tt></dd>
 &gt; members $ m*set (3..6);
 [3,5]
 </pre>
-<p>The bag operations work in a similar fashion, but note that multiple
-instances are permitted in this case, and each instance counts as a
-separate member:</p>
+<p>The bag operations work in a similar fashion, but multiple instances are
+permitted in this case, and each instance counts as a separate member:</p>
 <pre class="literal-block">
 &gt; let m::Bag = bag [5,1,3,11,3];
 &gt; members m;
@@ -3174,6 +3189,27 @@ separate member:</p>
 [1,3,11]
 &gt; members $ m*bag (3..6);
 [3,5]
+</pre>
+<p>As already mentioned, operands in set/bag unions, differences and
+intersections as well as the comparison operators must match. If necessary,
+one of the operands can be converted to the desired target type using a
+combination of <tt class="docutils literal"><span class="pre">members</span></tt> and the corresponding construction function.
+E.g., here's how you can add a set to a bag, yielding a bag:</p>
+<pre class="literal-block">
+&gt; let m1::Bag = bag [5,1,3,11,3];
+&gt; let m2::Set = set (3..6);
+&gt; let m::Bag = m1+bag (members m2);
+&gt; members m;
+[1,3,3,3,4,5,5,6,11]
+</pre>
+<p>If set members aren't ordered, hashed sets and bags must be used. These
+work analogously, but the members are hashed and thus stored in an
+apparently random order:</p>
+<pre class="literal-block">
+&gt; members $ hset [a,b,c] * hset [c,d,e];
+[c]
+&gt; members $ hbag [a,b,c] + hbag [c,d,e];
+[a,c,c,b,d,e]
 </pre>
 <!--  -->
 </div>
@@ -4249,9 +4285,11 @@ copied to the result lists as is.</p>
 <div class="line"><a class="reference internal" href="#emptyarray">emptyarray</a></div>
 <div class="line"><a class="reference internal" href="#emptybag">emptybag</a></div>
 <div class="line"><a class="reference internal" href="#emptydict">emptydict</a></div>
+<div class="line"><a class="reference internal" href="#emptyhbag">emptyhbag</a></div>
 <div class="line"><a class="reference internal" href="#emptyhdict">emptyhdict</a></div>
 <div class="line"><a class="reference internal" href="#emptyheap">emptyheap</a></div>
 <div class="line"><a class="reference internal" href="#emptyhmdict">emptyhmdict</a></div>
+<div class="line"><a class="reference internal" href="#emptyhset">emptyhset</a></div>
 <div class="line"><a class="reference internal" href="#emptymdict">emptymdict</a></div>
 <div class="line"><a class="reference internal" href="#emptyset">emptyset</a></div>
 <div class="line"><a class="reference internal" href="#errno">errno</a></div>
@@ -4331,6 +4369,7 @@ copied to the result lists as is.</p>
 </div>
 <div class="line-block">
 <div class="line"><a class="reference internal" href="#hash">hash</a></div>
+<div class="line"><a class="reference internal" href="#hbag">hbag</a></div>
 <div class="line"><a class="reference internal" href="#hdict">hdict</a></div>
 <div class="line"><a class="reference internal" href="#hdictp">hdictp</a></div>
 <div class="line"><a class="reference internal" href="#head">head</a></div>
@@ -4338,6 +4377,7 @@ copied to the result lists as is.</p>
 <div class="line"><a class="reference internal" href="#heapp">heapp</a></div>
 <div class="line"><a class="reference internal" href="#hmdict">hmdict</a></div>
 <div class="line"><a class="reference internal" href="#hmdictp">hmdictp</a></div>
+<div class="line"><a class="reference internal" href="#hset">hset</a></div>
 </div>
 <div class="line-block">
 <div class="line"><a class="reference internal" href="#id">id</a></div>

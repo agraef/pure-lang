@@ -23,10 +23,22 @@
    Sets and Bags
    -------------
 
-   The set.pure module implements Pure's ``Set`` and ``Bag`` (multiset) data
-   types based on AVL trees. Set and bag elements must be ordered, i.e., the
-   predicates ``==``, ``<`` and ``>`` must be defined on them. The used AVL
-   tree algorithm has its origin in the SWI-Prolog implementation of
+   The set.pure module implements Pure's set data types based on AVL trees.
+   There are four variations of this data structure to choose from, depending
+   on whether the set members are ordered or hashed, and whether multiple
+   instances of the same element are allowed (in this case the set is actually
+   called a *multiset* or a *bag*).
+
+   * ``Set`` and ``Bag`` implement the ordered set types. They require that
+     members are ordered, i.e., the predicates ``==``, ``<`` and ``>`` must be
+     defined on them.
+
+   * ``HSet`` and ``HBag`` implement the hashed set types which don't require
+     an order of the members, but store members in an apparently random order.
+
+   The underlying AVL tree data structure can be found in the ``avltrees``
+   module which is included in the library, but not to be invoked directly.
+   The AVL tree algorithm has its origin in the SWI-Prolog implementation of
    association lists and was ported to Pure by Jiri Spitz, see Dictionaries_
    for details.
 
@@ -41,17 +53,18 @@
    Data Structure
    ~~~~~~~~~~~~~~
 
-   Sets and bags are represented as balanced tree structures of the form ``Set
-   T`` or ``Bag T``, respectively, thus ``Set`` and ``Bag`` may be used as
-   type tags to restrict variables in pattern matching.
+   Sets and bags are represented as balanced tree structures of the form ``S
+   T``, where ``S`` may be any of ``Set``, ``Bag``, ``HSet`` and ``HBag``.
+   These constructors may be used as type tags to restrict variables in
+   pattern matching.
 
-   The internal data structure ``T`` is an AVL tree built with the following
-   constructors:
+   In any case, the internal data structure ``T`` is an AVL tree built with
+   the following constructors (from the ``avltrees`` module):
 
-   ``nil``
+   ``avl::nil``
      the empty tree.
 
-   ``bin key balance left right``
+   ``avl::bin key balance left right``
      a nonempty tree with given ``key`` (set element) in the root node, where
      ``left`` and ``right`` are the left and right subtree, and ``balance`` is
      either 1, 0 or -1, denoting ``|left|-|right|`` = 1, 0, or -1,
@@ -65,27 +78,87 @@
 
    .. _emptyset:
    .. _emptybag:
+   .. _emptyhset:
+   .. _emptyhbag:
 
-   ``emptyset``, ``emptybag``
-     return the empty set or bag
+   ``emptyset``, ``emptybag``, ``emptyhset``, ``emptyhbag``
+     return an empty set or bag
 
    .. _set:
    .. _bag:
+   .. _hset:
+   .. _hbag:
 
-   ``set xs``, ``bag xs``
+   ``set xs``, ``bag xs``, ``hset xs``, ``hbag xs``
      create a set or bag from a list ``xs``
 
    .. _setp:
    .. _bagp:
+   .. _setp:
+   .. _bagp:
 
-   ``setp x``, ``bagp x``
-     check whether ``x`` is a set or bag
+   ``setp x``, ``bagp x``, ``hsetp x``, ``hbagp x``
+     check whether ``x`` is a set or bag of the corresponding type
 
    .. _# (set):
    .. _# (bag):
 
    ``#m``
-     size of set or bag ``m``
+     size of a set or bag ``m``
+
+   .. _null (set):
+   .. _null (bag):
+
+   ``null m``
+     test whether ``m`` is an empty set or bag
+
+   .. _member (set):
+   .. _member (bag):
+
+   ``member m x``
+     test whether ``m`` contains ``x``
+
+   .. _members (set):
+   .. _members (bag):
+   .. _list (set):
+   .. _list (bag):
+
+   ``members m``, ``list m``
+     list the members of ``m`` (in ascending order for ordered sets and bags)
+
+   .. _first (set):
+   .. _first (bag):
+   .. _last (set):
+   .. _last (bag):
+
+   ``first m``, ``last m``
+     return the first and the last member of ``m``, respectively
+
+   .. _rmfirst (set):
+   .. _rmfirst (bag):
+   .. _rmlast (set):
+   .. _rmlast (bag):
+
+   ``rmfirst m``, ``rmlast m``
+     remove the first and the last member from ``m``, respectively
+
+   .. _insert (set):
+   .. _insert (bag):
+
+   ``insert m x``
+     insert ``x`` into ``m`` (replaces an existing element in the case of a set)
+
+   .. _delete (set):
+   .. _delete (bag):
+
+   ``delete m x``
+     remove ``x`` from ``m`` (in the ``bag`` case, only a single instance of
+     ``x`` is removed)
+
+   In addition, the infix operators ``+``, ``-`` and ``*`` are defined as
+   set/bag union, difference and intersection. Please note that there are no
+   implicit conversions, so the operand types must match exactly. The same
+   restriction applies to the comparison predicates ``==``, ``<=`` etc.
 
    .. _+ (set):
    .. _+ (bag):
@@ -107,55 +180,6 @@
      set and bag intersection: ``m1*m2`` removes the members *not* in ``m2``
      from ``m1``
 
-   .. _null (set):
-   .. _null (bag):
-
-   ``null m``
-     test whether ``m`` is the empty set or bag
-
-   .. _member (set):
-   .. _member (bag):
-
-   ``member m x``
-     test whether ``m`` contains ``x``
-
-   .. _members (set):
-   .. _members (bag):
-   .. _list (set):
-   .. _list (bag):
-
-   ``members m``, ``list m``
-     list members of ``m`` in ascending order
-
-   .. _first (set):
-   .. _first (bag):
-   .. _last (set):
-   .. _last (bag):
-
-   ``first m``, ``last m``
-     return first and last member of ``m``
-
-   .. _rmfirst (set):
-   .. _rmfirst (bag):
-   .. _rmlast (set):
-   .. _rmlast (bag):
-
-   ``rmfirst m``, ``rmlast m``
-     remove first and last member from ``m``
-
-   .. _insert (set):
-   .. _insert (bag):
-
-   ``insert m x``
-     insert ``x`` into ``m`` (replaces an existing element in the ``set`` case)
-
-   .. _delete (set):
-   .. _delete (bag):
-
-   ``delete m x``
-     remove ``x`` from ``m`` (in the ``bag`` case, only a single instance of
-     ``x`` is removed)
-
    Examples
    ~~~~~~~~
 
@@ -173,9 +197,8 @@
      > members $ m*set (3..6);
      [3,5]
 
-   The bag operations work in a similar fashion, but note that multiple
-   instances are permitted in this case, and each instance counts as a
-   separate member::
+   The bag operations work in a similar fashion, but multiple instances are
+   permitted in this case, and each instance counts as a separate member::
 
      > let m::Bag = bag [5,1,3,11,3];
      > members m;
@@ -191,90 +214,130 @@
      > members $ m*bag (3..6);
      [3,5]
 
+   As already mentioned, operands in set/bag unions, differences and
+   intersections as well as the comparison operators must match. If necessary,
+   one of the operands can be converted to the desired target type using a
+   combination of ``members`` and the corresponding construction function.
+   E.g., here's how you can add a set to a bag, yielding a bag::
+
+     > let m1::Bag = bag [5,1,3,11,3];
+     > let m2::Set = set (3..6);
+     > let m::Bag = m1+bag (members m2);
+     > members m;
+     [1,3,3,3,4,5,5,6,11]
+
+   If set members aren't ordered, hashed sets and bags must be used. These
+   work analogously, but the members are hashed and thus stored in an
+   apparently random order::
+
+     > members $ hset [a,b,c] * hset [c,d,e];
+     [c]
+     > members $ hbag [a,b,c] + hbag [c,d,e];
+     [a,c,c,b,d,e]
+
 */
 
 using avltrees;
 
 // type checks
+setp _::Set	= 1;
+setp _		= 0;
+
 bagp _::Bag	= 1;
 bagp _		= 0;
 
-setp _::Set	= 1;
-setp _		= 0;
+hsetp _::HSet	= 1;
+hsetp _		= 0;
+
+hbagp _::HBag	= 1;
+hbagp _		= 0;
 
 // create an empty set
 emptyset	= Set avl::emptytree;
 emptybag	= Bag avl::emptytree;
+emptyhset	= HSet avl::emptytree;
+emptyhbag	= HBag avl::emptytree;
 
 // create set from a list
-set xs		= foldl insert emptyset xs if listp xs;
-bag xs		= foldl insert emptybag xs if listp xs;
+set  xs		= foldl insert emptyset  xs if listp xs;
+bag  xs		= foldl insert emptybag  xs if listp xs;
+hset xs		= foldl insert emptyhset xs if listp xs;
+hbag xs		= foldl insert emptyhbag xs if listp xs;
 
 // insert a member
-insert (Set m) y = Set (avl::insert  m y);
-insert (Bag m) y = Bag (avl::insertm m y);
+insert (Set  m) y = Set  (avl::insert   m y);
+insert (Bag  m) y = Bag  (avl::insertm  m y);
+insert (HSet m) y = HSet (avl::inserth  m y);
+insert (HBag m) y = HBag (avl::inserthm m y);
 
 // delete a member
-delete (Set m) y = Set (avl::delete m y);
-delete (Bag m) y = Bag (avl::delete m y);
+delete (Set  m) y = Set  (avl::delete  m y);
+delete (Bag  m) y = Bag  (avl::delete  m y);
+delete (HSet m) y = HSet (avl::deleteh m y);
+delete (HBag m) y = HBag (avl::deleteh m y);
 
 // check for the empty set
-null (Set m)	|
-null (Bag m)	= avl::null m;
+null (Set  m) | null (Bag  m) |
+null (HSet m) | null (HBag m) = avl::null m;
 
 // get size
-#(Set m)	|
-#(Bag m)	= avl::size m;
+#(Set  m) | #(Bag  m) = avl::size  m;
+#(HSet m) | #(HBag m) = avl::sizeh m;
 
 // membership test
-member (Set m) y |
-member (Bag m) y = avl::member m y;
+member (Set  m) y | member (Bag  m) y = avl::member  m y;
+member (HSet m) y | member (HBag m) y = avl::memberh m y;
 
 // get all members of a set as a list
-members (Set m) |
-members (Bag m)	= avl::members m;
+members (Set  m) | members (Bag  m) = avl::members  m;
+members (HSet m) | members (HBag m) = avl::membersh m;
 
-list m::Set | list m::Bag = members m;
+list m::Set  | list m::Bag  |
+list m::HSet | list m::HBag = members m;
 
 // get the first and last member
-first (Set m) |
-first (Bag m) = avl::first m;
-last (Set m)  |
-last (Bag m)  = avl::last  m;
+first (Set  m) | first (Bag  m) = avl::first  m;
+last  (Set  m) | last  (Bag  m) = avl::last   m;
+first (HSet m) | first (HBag m) = avl::firsth m;
+last  (HSet m) | last  (HBag m) = avl::lasth  m;
 
 // remove the first and last member
-rmfirst (Set m) = Set (avl::rmfirst m);
-rmfirst (Bag m) = Bag (avl::rmfirst m);
-rmlast  (Set m) = Set (avl::rmlast  m);
-rmlast  (Bag m) = Bag (avl::rmlast  m);
+rmfirst (Set  m) = Set  (avl::rmfirst  m);
+rmfirst (Bag  m) = Bag  (avl::rmfirst  m);
+rmlast  (Set  m) = Set  (avl::rmlast   m);
+rmlast  (Bag  m) = Bag  (avl::rmlast   m);
+rmfirst (HSet m) = HSet (avl::rmfirsth m);
+rmfirst (HBag m) = HBag (avl::rmfirsth m);
+rmlast  (HSet m) = HSet (avl::rmlasth  m);
+rmlast  (HBag m) = HBag (avl::rmlasth  m);
 
 // comparisons
-m1::Set == m2::Set	|
-m1::Bag == m2::Bag	= (members m1 == members m2);
+m1::Set  == m2::Set  | m1::Bag  == m2::Bag  = (members m1 == members m2);
+m1::HSet == m2::HSet | m1::HBag == m2::HBag = m1 <= m2 && m2 <= m1;
 
-m1::Set ~= m2::Set	|
-m1::Bag ~= m2::Bag	= (members m1 ~= members m2);
+m1::Set  ~= m2::Set  | m1::Bag  ~= m2::Bag  = (members m1 ~= members m2);
+m1::HSet ~= m2::HSet | m1::HBag ~= m2::HBag = ~(m1 == m2);
 
-m1::Set <= m2::Set	= all (member m2) (members m1);
-m1::Bag <= m2::Bag	= null (m1 - m2);
+m1::Set  <= m2::Set  | m1::HSet <= m2::HSet = all (member m2) (members m1);
+m1::Bag  <= m2::Bag  | m1::HBag <= m2::HBag = null (m1 - m2);
 
-m1::Set >= m2::Set	= all (member m1) (members m2);
-m1::Bag >= m2::Bag	= null (m2 - m1);
+m1::Set  >= m2::Set  | m1::HSet >= m2::HSet = all (member m1) (members m2);
+m1::Bag  >= m2::Bag  | m1::HBag >= m2::HBag = null (m2 - m1);
 
-m1::Set < m2::Set	|
-m1::Bag < m2::Bag	= m1 <= m2 && m1 ~= m2;
+m1::Set  <  m2::Set  | m1::Bag  <  m2::Bag  |
+m1::HSet <  m2::HSet | m1::HBag <  m2::HBag = m1 <= m2 && ~(m1 >= m2);
 
-m1::Set > m2::Set	|
-m1::Bag > m2::Bag	= m1 >= m2 && m1 ~= m2;
+m1::Set  >  m2::Set  | m1::Bag  >  m2::Bag  |
+m1::HSet >  m2::HSet | m1::HBag >  m2::HBag = m1 >= m2 && ~(m1 <= m2);
 
 // set union
-m1::Set + m2::Set	|
-m1::Bag + m2::Bag	= foldl insert m1 (members m2);
+m1::Set  + m2::Set  | m1::Bag  + m2::Bag  |
+m1::HSet + m2::HSet | m1::HBag + m2::HBag = foldl insert m1 (members m2);
 
 // set difference
-m1::Set - m2::Set	|
-m1::Bag - m2::Bag	= foldl delete m1 (members m2);
+m1::Set  - m2::Set  | m1::Bag  - m2::Bag  |
+m1::HSet - m2::HSet | m1::HBag - m2::HBag = foldl delete m1 (members m2);
 
 // set intersection
-m1::Set * m2::Set	|
-m1::Bag * m2::Bag	= m1 -  (m1 - m2);
+m1::Set  * m2::Set  | m1::Bag  * m2::Bag  |
+m1::HSet * m2::HSet | m1::HBag * m2::HBag = m1 - (m1 - m2);

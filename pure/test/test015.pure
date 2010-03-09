@@ -118,6 +118,78 @@ foldl delete (foldl insert emptybag randlist) randlist;
 
 /********************************************
 *                                           *
+*           HSet and HBag tests             *
+*                                           *
+********************************************/
+// Create data structures
+
+let a = hset (1..10);
+let b = hset (6..10);
+ 
+let c = hbag (1..10);
+let d = hbag (6..10);
+
+let e = hset (map str (1..10));
+let f = hbag (map str (1..10));
+
+a; b; c; d; e; f;
+
+// Type tests
+
+hsetp a; hsetp c; hbagp c; hbagp a;
+
+// Tests for empty data sets
+
+null emptyhset; null emptyhbag; null a; null c;
+
+// Remove the first and last member
+
+rmfirst a; rmfirst c; rmlast a; rmlast c;
+
+// Delete data
+
+foldl delete a (1..10);
+foldl delete c (1..10);
+
+// Find the first and last member
+
+first a; last a; first c; last c;
+
+// Size of data set
+
+#a; #c;
+
+// Membership tests
+
+member a 5; member a 50; member c 5; member c 50;
+
+// Convert data set to list
+
+members a; members c;
+
+// Relations
+
+a == b; a ~= b; a < b; a <= b; a > b; a >= b;
+
+a == a; a ~= a; a < a; a <= a; a > a; a >= a;
+
+c == d; c ~= d; c < d; c <= d; c > d; c >= d;
+
+c == c; c ~= c; c < c; c <= c; c > c; c >= c;
+
+// Set operations
+
+a + b; a * b; a - b;
+
+c + d; c * d; c - d; (c + d) - d;
+
+// Stress tests
+foldl delete (foldl insert emptyhset randlist) randlist;
+foldl delete (foldl insert emptyhbag randlist) randlist;
+
+
+/********************************************
+*                                           *
 *           Dict and HDict tests            *
 *                                           *
 ********************************************/
