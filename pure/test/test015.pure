@@ -123,14 +123,17 @@ foldl delete (foldl insert emptybag randlist) randlist;
 ********************************************/
 // Create data structures
 
-let a = hset (1..10);
-let b = hset (6..10);
- 
-let c = hbag (1..10);
-let d = hbag (6..10);
+let r = zip randlist randlist;
 
-let e = hset (map str (1..10));
-let f = hbag (map str (1..10));
+let a = hset [(i, str i) | i = 1..10];
+let b = hset [(i, str i) | i = 6..10];
+ 
+let c = hbag [(i, str i) | i = 1..10];
+let d = hbag [(i, str i) | i = 6..10];
+
+let e = hset r;
+let f = hbag r;
+
 
 a; b; c; d; e; f;
 
@@ -157,7 +160,7 @@ first a; last a; first c; last c;
 
 // Size of data set
 
-#a; #c;
+#a; #c; #e; #f;
 
 // Membership tests
 
@@ -184,8 +187,8 @@ a + b; a * b; a - b;
 c + d; c * d; c - d; (c + d) - d;
 
 // Stress tests
-foldl delete (foldl insert emptyhset randlist) randlist;
-foldl delete (foldl insert emptyhbag randlist) randlist;
+foldl delete (foldl insert emptyhset r) r;
+foldl delete (foldl insert emptyhbag r) r;
 
 
 /********************************************
@@ -202,6 +205,9 @@ let c = hdict $ zipwith (=>) [i, double i, str i | i =   1..10] ( 1..10);
 let d = hdict $ zipwith (=>) [i, double i, str i | i =  11..20] (11..20);
 
 let e = dict $ zipwith (=>) (map str (1..10)) (map str (1..10));
+
+let f = dict $ zipwith (=>) randlist randlist;
+let g = hdict $ zipwith (=>) (zip randlist randlist) randlist;
 
 a; b; c; d; e;
 
@@ -227,6 +233,10 @@ first a; last a;
 // Size of data set
 
 #a; #c;
+
+// Should return 100
+
+#f; #g;
 
 // Membership tests
 
@@ -290,6 +300,9 @@ let d = hmdict $ zipwith (=>) [i, double i, str i | i =  11..20] (11..20);
 
 let e = mdict $ zipwith (=>) (map str (1..10)) (map str (1..10));
 
+let f = mdict $ zipwith (=>) randlist (1..#randlist);
+let g = hmdict $ zipwith (=>) (zip randlist randlist) (1..#randlist);
+
 a; b; c; d; e;
 
 mkmdict 1000 (1..10);
@@ -315,6 +328,11 @@ first a; last a;
 
 #a; #c;
 
+// Should return 1000
+
+#f; #g;
+
+
 // Membership tests
 
 member a 5; member a 50; member e "5"; member e "50";
@@ -322,7 +340,7 @@ member c (5, 5.0, "5"); member c (50, 50.0, "50");
 
 // Get value by index
 
-a!5; e!"5"; c!(5, 5.0, "5"); a!50; c!(50, 50.0, "50");
+a!5; e!"5"; c!(5, 5.0, "5"); a!50; c!(50, 50.0, "50"); f!50; g!(50, 50);
 
 // Slicing
 a!!(5..15);
@@ -339,6 +357,8 @@ vals a; vals c;
 update a 5 5000; update a 5000 5000;
 update c (5, 5.0, "5") 5000; update c (5000, 5000.0, "5000") 5000;
 
+(update f 50 5000)!50; (update g (50, 50) 5000)!(50, 50);
+
 // Delete data
 
 foldl delete a (1..10);
@@ -346,6 +366,18 @@ delete a 5000;
 
 foldl delete c [i, double i, str i | i = 1..10];
 delete c (5000, 5000.0, "5000");
+
+// Remove only the first occurrence
+
+(delete f 50)!50; (delete g (50, 50))!(50, 50);
+
+// Remove key when all occurrences are deleted
+
+member (foldl delete f (repeatn (#(f!50)) 50)) 50;
+member (foldl delete g (repeatn (#(g!(50, 50))) (50, 50))) (50, 50);
+
+member (delete_all f 50) 50;
+member (delete_all g (50,50)) (50, 50);
 
 // Relations
 
@@ -360,6 +392,7 @@ c == c; c ~= c;
 // Stress tests
 foldl delete (mkmdict 100 randlist) randlist;
 foldl delete (mkhmdict 100 randlist) randlist;
+
 
 /********************************************
 *                                           *

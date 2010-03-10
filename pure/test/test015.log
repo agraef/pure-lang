@@ -172,59 +172,86 @@ Set avl::nil
 foldl delete (foldl insert emptybag randlist) randlist;
 Bag avl::nil
 {
-  rule #0: a = hset (1..10)
+  rule #0: r = zip randlist randlist
   state 0: #0
 	<var> state 1
   state 1: #0
 }
-let a = hset (1..10);
+let r = zip randlist randlist;
 {
-  rule #0: b = hset (6..10)
+  rule #0: a = hset (listmap (\i -> i,str i) (1..10))
   state 0: #0
 	<var> state 1
   state 1: #0
 }
-let b = hset (6..10);
+let a = hset (listmap (\i/*0:1*/ -> i/*0:1*/,str i/*0:1*/ {
+  rule #0: _ i = i,str i
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) (1..10));
 {
-  rule #0: c = hbag (1..10)
+  rule #0: b = hset (listmap (\i -> i,str i) (6..10))
   state 0: #0
 	<var> state 1
   state 1: #0
 }
-let c = hbag (1..10);
+let b = hset (listmap (\i/*0:1*/ -> i/*0:1*/,str i/*0:1*/ {
+  rule #0: _ i = i,str i
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) (6..10));
 {
-  rule #0: d = hbag (6..10)
+  rule #0: c = hbag (listmap (\i -> i,str i) (1..10))
   state 0: #0
 	<var> state 1
   state 1: #0
 }
-let d = hbag (6..10);
+let c = hbag (listmap (\i/*0:1*/ -> i/*0:1*/,str i/*0:1*/ {
+  rule #0: _ i = i,str i
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) (1..10));
 {
-  rule #0: e = hset (map str (1..10))
+  rule #0: d = hbag (listmap (\i -> i,str i) (6..10))
   state 0: #0
 	<var> state 1
   state 1: #0
 }
-let e = hset (map str (1..10));
+let d = hbag (listmap (\i/*0:1*/ -> i/*0:1*/,str i/*0:1*/ {
+  rule #0: _ i = i,str i
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) (6..10));
 {
-  rule #0: f = hbag (map str (1..10))
+  rule #0: e = hset r
   state 0: #0
 	<var> state 1
   state 1: #0
 }
-let f = hbag (map str (1..10));
+let e = hset r;
+{
+  rule #0: f = hbag r
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let f = hbag r;
 a;
-HSet (avl::bin (4=>[4]) (-1) (avl::bin (2=>[2]) 0 (avl::bin (1=>[1]) 0 avl::nil avl::nil) (avl::bin (3=>[3]) 0 avl::nil avl::nil)) (avl::bin (8=>[8]) 0 (avl::bin (6=>[6]) 0 (avl::bin (5=>[5]) 0 avl::nil avl::nil) (avl::bin (7=>[7]) 0 avl::nil avl::nil)) (avl::bin (9=>[9]) (-1) avl::nil (avl::bin (10=>[10]) 0 avl::nil avl::nil))))
+HSet (avl::bin (71=>[(5,"5")]) (-1) (avl::bin (66=>[(6,"6")]) 0 (avl::bin (65=>[(7,"7")]) 0 avl::nil avl::nil) (avl::bin (68=>[(4,"4")]) 0 avl::nil avl::nil)) (avl::bin (80=>[(8,"8")]) 0 (avl::bin (77=>[(3,"3")]) 0 (avl::bin (75=>[(1,"1")]) 0 avl::nil avl::nil) (avl::bin (78=>[(2,"2")]) 0 avl::nil avl::nil)) (avl::bin (83=>[(9,"9")]) (-1) avl::nil (avl::bin (812=>[(10,"10")]) 0 avl::nil avl::nil))))
 b;
-HSet (avl::bin (7=>[7]) (-1) (avl::bin (6=>[6]) 0 avl::nil avl::nil) (avl::bin (9=>[9]) 0 (avl::bin (8=>[8]) 0 avl::nil avl::nil) (avl::bin (10=>[10]) 0 avl::nil avl::nil)))
+HSet (avl::bin (66=>[(6,"6")]) (-1) (avl::bin (65=>[(7,"7")]) 0 avl::nil avl::nil) (avl::bin (83=>[(9,"9")]) 0 (avl::bin (80=>[(8,"8")]) 0 avl::nil avl::nil) (avl::bin (812=>[(10,"10")]) 0 avl::nil avl::nil)))
 c;
-HBag (avl::bin (4=>[4]) (-1) (avl::bin (2=>[2]) 0 (avl::bin (1=>[1]) 0 avl::nil avl::nil) (avl::bin (3=>[3]) 0 avl::nil avl::nil)) (avl::bin (8=>[8]) 0 (avl::bin (6=>[6]) 0 (avl::bin (5=>[5]) 0 avl::nil avl::nil) (avl::bin (7=>[7]) 0 avl::nil avl::nil)) (avl::bin (9=>[9]) (-1) avl::nil (avl::bin (10=>[10]) 0 avl::nil avl::nil))))
+HBag (avl::bin (71=>[(5,"5")]) (-1) (avl::bin (66=>[(6,"6")]) 0 (avl::bin (65=>[(7,"7")]) 0 avl::nil avl::nil) (avl::bin (68=>[(4,"4")]) 0 avl::nil avl::nil)) (avl::bin (80=>[(8,"8")]) 0 (avl::bin (77=>[(3,"3")]) 0 (avl::bin (75=>[(1,"1")]) 0 avl::nil avl::nil) (avl::bin (78=>[(2,"2")]) 0 avl::nil avl::nil)) (avl::bin (83=>[(9,"9")]) (-1) avl::nil (avl::bin (812=>[(10,"10")]) 0 avl::nil avl::nil))))
 d;
-HBag (avl::bin (7=>[7]) (-1) (avl::bin (6=>[6]) 0 avl::nil avl::nil) (avl::bin (9=>[9]) 0 (avl::bin (8=>[8]) 0 avl::nil avl::nil) (avl::bin (10=>[10]) 0 avl::nil avl::nil)))
+HBag (avl::bin (66=>[(6,"6")]) (-1) (avl::bin (65=>[(7,"7")]) 0 avl::nil avl::nil) (avl::bin (83=>[(9,"9")]) 0 (avl::bin (80=>[(8,"8")]) 0 avl::nil avl::nil) (avl::bin (812=>[(10,"10")]) 0 avl::nil avl::nil)))
 e;
-HSet (avl::bin (52=>["4"]) (-1) (avl::bin (50=>["2"]) 0 (avl::bin (49=>["1"]) 0 avl::nil avl::nil) (avl::bin (51=>["3"]) 0 avl::nil avl::nil)) (avl::bin (56=>["8"]) 0 (avl::bin (54=>["6"]) 0 (avl::bin (53=>["5"]) 0 avl::nil avl::nil) (avl::bin (55=>["7"]) 0 avl::nil avl::nil)) (avl::bin (57=>["9"]) (-1) avl::nil (avl::bin (832=>["10"]) 0 avl::nil avl::nil))))
+HSet (avl::bin (130=>[(86,86)]) 1 (avl::bin (65=>[(23,23)]) 0 (avl::bin (36=>[(52,52)]) 0 (avl::bin (12=>[(44,44)]) (-1) (avl::bin (6=>[(42,42)]) 0 (avl::bin (3=>[(41,41)]) 0 (avl::bin (0=>[(40,40)]) 0 avl::nil avl::nil) (avl::bin (5=>[(43,43)]) 0 avl::nil avl::nil)) (avl::bin (9=>[(47,47)]) (-1) avl::nil (avl::bin (10=>[(46,46)]) 0 avl::nil avl::nil))) (avl::bin (27=>[(33,33)]) 0 (avl::bin (20=>[(36,36)]) 0 (avl::bin (17=>[(39,39)]) 0 (avl::bin (15=>[(45,45)]) 0 avl::nil avl::nil) (avl::bin (18=>[(38,38)]) 0 avl::nil avl::nil)) (avl::bin (23=>[(37,37)]) (-1) avl::nil (avl::bin (24=>[(32,32)]) 0 avl::nil avl::nil))) (avl::bin (30=>[(34,34)]) (-1) (avl::bin (29=>[(35,35)]) 0 avl::nil avl::nil) (avl::bin (34=>[(54,54)]) 1 (avl::bin (33=>[(55,55)]) 0 avl::nil avl::nil) avl::nil)))) (avl::bin (46=>[(50,50)]) (-1) (avl::bin (43=>[(49,49)]) 1 (avl::bin (39=>[(53,53)]) (-1) avl::nil (avl::bin (40=>[(48,48)]) 0 avl::nil avl::nil)) (avl::bin (45=>[(51,51)]) 0 avl::nil avl::nil)) (avl::bin (54=>[(58,58)]) (-1) (avl::bin (51=>[(57,57)]) 0 (avl::bin (48=>[(56,56)]) 0 avl::nil avl::nil) (avl::bin (53=>[(59,59)]) 0 avl::nil avl::nil)) (avl::bin (60=>[(60,60)]) 1 (avl::bin (57=>[(63,63)]) (-1) avl::nil (avl::bin (58=>[(62,62)]) 0 avl::nil avl::nil)) (avl::bin (63=>[(61,61)]) 0 avl::nil avl::nil))))) (avl::bin (86=>[(26,26)]) (-1) (avl::bin (72=>[(16,16)]) (-1) (avl::bin (68=>[(20,20)]) 0 (avl::bin (66=>[(22,22)]) 0 avl::nil avl::nil) (avl::bin (71=>[(21,21)]) 0 avl::nil avl::nil)) (avl::bin (78=>[(18,18)]) 0 (avl::bin (77=>[(19,19)]) 1 (avl::bin (75=>[(17,17)]) 0 avl::nil avl::nil) avl::nil) (avl::bin (83=>[(25,25)]) 0 (avl::bin (80=>[(24,24)]) 0 avl::nil avl::nil) (avl::bin (85=>[(27,27)]) 0 avl::nil avl::nil)))) (avl::bin (111=>[(13,13)]) 0 (avl::bin (99=>[(9,9)]) 0 (avl::bin (92=>[(28,28)]) 0 (avl::bin (90=>[(30,30)]) 1 (avl::bin (89=>[(31,31)]) 0 avl::nil avl::nil) avl::nil) (avl::bin (95=>[(29,29)]) (-1) avl::nil (avl::bin (96=>[(8,8)]) 0 avl::nil avl::nil))) (avl::bin (105=>[(15,15)]) 0 (avl::bin (101=>[(11,11)]) (-1) avl::nil (avl::bin (102=>[(10,10)]) 0 avl::nil avl::nil)) (avl::bin (106=>[(14,14)]) (-1) avl::nil (avl::bin (108=>[(12,12)]) 0 avl::nil avl::nil)))) (avl::bin (119=>[(5,5)]) (-1) (avl::bin (114=>[(6,6)]) 0 (avl::bin (113=>[(7,7)]) 0 avl::nil avl::nil) (avl::bin (116=>[(4,4)]) 0 avl::nil avl::nil)) (avl::bin (125=>[(3,3)]) 0 (avl::bin (123=>[(1,1)]) 1 (avl::bin (120=>[(0,0)]) 0 avl::nil avl::nil) avl::nil) (avl::bin (126=>[(2,2)]) (-1) avl::nil (avl::bin (129=>[(87,87)]) 0 avl::nil avl::nil))))))) (avl::bin (160=>[(72,72)]) 0 (avl::bin (144=>[(88,88)]) (-1) (avl::bin (139=>[(81,81)]) 0 (avl::bin (135=>[(85,85)]) 0 (avl::bin (132=>[(84,84)]) 0 avl::nil avl::nil) (avl::bin (136=>[(80,80)]) 0 avl::nil avl::nil)) (avl::bin (142=>[(82,82)]) 1 (avl::bin (141=>[(83,83)]) 0 avl::nil avl::nil) avl::nil)) (avl::bin (150=>[(90,90)]) (-1) (avl::bin (147=>[(89,89)]) (-1) avl::nil (avl::bin (149=>[(91,91)]) 0 avl::nil avl::nil)) (avl::bin (154=>[(94,94)]) (-1) (avl::bin (153=>[(95,95)]) 0 avl::nil avl::nil) (avl::bin (159=>[(93,93)]) 1 (avl::bin (156=>[(92,92)]) 0 avl::nil avl::nil) avl::nil)))) (avl::bin (175=>[(77,77)]) (-1) (avl::bin (169=>[(79,79)]) 0 (avl::bin (165=>[(75,75)]) 0 (avl::bin (163=>[(73,73)]) 0 avl::nil avl::nil) (avl::bin (166=>[(74,74)]) 0 avl::nil avl::nil)) (avl::bin (170=>[(78,78)]) (-1) avl::nil (avl::bin (172=>[(76,76)]) 0 avl::nil avl::nil))) (avl::bin (189=>[(67,67)]) 0 (avl::bin (180=>[(68,68)]) 0 (avl::bin (178=>[(70,70)]) 1 (avl::bin (177=>[(71,71)]) 0 avl::nil avl::nil) avl::nil) (avl::bin (184=>[(64,64)]) 0 (avl::bin (183=>[(69,69)]) 0 avl::nil avl::nil) (avl::bin (187=>[(65,65)]) 0 avl::nil avl::nil))) (avl::bin (219=>[(97,97)]) 0 (avl::bin (216=>[(96,96)]) 1 (avl::bin (190=>[(66,66)]) 0 avl::nil avl::nil) avl::nil) (avl::bin (221=>[(99,99)]) (-1) avl::nil (avl::bin (222=>[(98,98)]) 0 avl::nil avl::nil)))))))
 f;
-HBag (avl::bin (52=>["4"]) (-1) (avl::bin (50=>["2"]) 0 (avl::bin (49=>["1"]) 0 avl::nil avl::nil) (avl::bin (51=>["3"]) 0 avl::nil avl::nil)) (avl::bin (56=>["8"]) 0 (avl::bin (54=>["6"]) 0 (avl::bin (53=>["5"]) 0 avl::nil avl::nil) (avl::bin (55=>["7"]) 0 avl::nil avl::nil)) (avl::bin (57=>["9"]) (-1) avl::nil (avl::bin (832=>["10"]) 0 avl::nil avl::nil))))
+HBag (avl::bin (130=>[(86,86),(86,86),(86,86),(86,86),(86,86),(86,86),(86,86),(86,86),(86,86),(86,86),(86,86),(86,86),(86,86),(86,86),(86,86),(86,86),(86,86),(86,86),(86,86)]) 1 (avl::bin (65=>[(23,23),(23,23),(23,23),(23,23),(23,23),(23,23),(23,23),(23,23),(23,23),(23,23),(23,23),(23,23),(23,23)]) 0 (avl::bin (36=>[(52,52),(52,52),(52,52),(52,52),(52,52),(52,52),(52,52),(52,52),(52,52),(52,52),(52,52),(52,52),(52,52),(52,52),(52,52)]) 0 (avl::bin (12=>[(44,44),(44,44),(44,44),(44,44),(44,44),(44,44),(44,44),(44,44),(44,44),(44,44)]) (-1) (avl::bin (6=>[(42,42),(42,42),(42,42),(42,42),(42,42),(42,42),(42,42),(42,42),(42,42)]) 0 (avl::bin (3=>[(41,41),(41,41),(41,41),(41,41),(41,41),(41,41),(41,41),(41,41),(41,41),(41,41),(41,41),(41,41),(41,41),(41,41)]) 0 (avl::bin (0=>[(40,40),(40,40),(40,40),(40,40),(40,40),(40,40),(40,40),(40,40),(40,40),(40,40)]) 0 avl::nil avl::nil) (avl::bin (5=>[(43,43),(43,43),(43,43),(43,43),(43,43),(43,43),(43,43),(43,43),(43,43),(43,43),(43,43)]) 0 avl::nil avl::nil)) (avl::bin (9=>[(47,47),(47,47),(47,47),(47,47),(47,47),(47,47),(47,47),(47,47),(47,47),(47,47),(47,47),(47,47),(47,47)]) (-1) avl::nil (avl::bin (10=>[(46,46),(46,46),(46,46),(46,46),(46,46),(46,46),(46,46),(46,46),(46,46),(46,46),(46,46),(46,46)]) 0 avl::nil avl::nil))) (avl::bin (27=>[(33,33),(33,33),(33,33),(33,33),(33,33),(33,33)]) 0 (avl::bin (20=>[(36,36),(36,36),(36,36),(36,36),(36,36),(36,36),(36,36)]) 0 (avl::bin (17=>[(39,39),(39,39),(39,39),(39,39),(39,39),(39,39),(39,39),(39,39),(39,39),(39,39)]) 0 (avl::bin (15=>[(45,45),(45,45),(45,45),(45,45),(45,45),(45,45),(45,45),(45,45),(45,45),(45,45),(45,45)]) 0 avl::nil avl::nil) (avl::bin (18=>[(38,38),(38,38),(38,38),(38,38),(38,38),(38,38)]) 0 avl::nil avl::nil)) (avl::bin (23=>[(37,37),(37,37),(37,37),(37,37),(37,37),(37,37)]) (-1) avl::nil (avl::bin (24=>[(32,32),(32,32),(32,32),(32,32),(32,32)]) 0 avl::nil avl::nil))) (avl::bin (30=>[(34,34),(34,34),(34,34),(34,34),(34,34),(34,34),(34,34),(34,34)]) (-1) (avl::bin (29=>[(35,35),(35,35),(35,35),(35,35),(35,35),(35,35),(35,35),(35,35),(35,35),(35,35)]) 0 avl::nil avl::nil) (avl::bin (34=>[(54,54),(54,54),(54,54),(54,54),(54,54),(54,54),(54,54),(54,54),(54,54),(54,54),(54,54),(54,54)]) 1 (avl::bin (33=>[(55,55),(55,55),(55,55),(55,55),(55,55),(55,55),(55,55),(55,55),(55,55),(55,55),(55,55),(55,55)]) 0 avl::nil avl::nil) avl::nil)))) (avl::bin (46=>[(50,50),(50,50),(50,50),(50,50),(50,50),(50,50),(50,50),(50,50),(50,50),(50,50),(50,50),(50,50),(50,50),(50,50)]) (-1) (avl::bin (43=>[(49,49),(49,49),(49,49),(49,49),(49,49),(49,49)]) 1 (avl::bin (39=>[(53,53),(53,53),(53,53),(53,53),(53,53),(53,53),(53,53),(53,53),(53,53)]) (-1) avl::nil (avl::bin (40=>[(48,48),(48,48),(48,48),(48,48),(48,48),(48,48),(48,48),(48,48)]) 0 avl::nil avl::nil)) (avl::bin (45=>[(51,51),(51,51),(51,51),(51,51),(51,51),(51,51)]) 0 avl::nil avl::nil)) (avl::bin (54=>[(58,58),(58,58),(58,58),(58,58),(58,58),(58,58),(58,58),(58,58),(58,58),(58,58),(58,58),(58,58),(58,58)]) (-1) (avl::bin (51=>[(57,57),(57,57),(57,57),(57,57),(57,57),(57,57),(57,57),(57,57),(57,57),(57,57),(57,57),(57,57),(57,57),(57,57),(57,57),(57,57)]) 0 (avl::bin (48=>[(56,56),(56,56),(56,56),(56,56)]) 0 avl::nil avl::nil) (avl::bin (53=>[(59,59),(59,59),(59,59),(59,59),(59,59),(59,59),(59,59),(59,59),(59,59)]) 0 avl::nil avl::nil)) (avl::bin (60=>[(60,60),(60,60),(60,60),(60,60),(60,60),(60,60),(60,60),(60,60),(60,60),(60,60)]) 1 (avl::bin (57=>[(63,63),(63,63),(63,63),(63,63),(63,63),(63,63),(63,63)]) (-1) avl::nil (avl::bin (58=>[(62,62),(62,62),(62,62),(62,62),(62,62),(62,62)]) 0 avl::nil avl::nil)) (avl::bin (63=>[(61,61),(61,61),(61,61),(61,61),(61,61),(61,61),(61,61),(61,61),(61,61)]) 0 avl::nil avl::nil))))) (avl::bin (86=>[(26,26),(26,26),(26,26),(26,26),(26,26),(26,26),(26,26),(26,26),(26,26),(26,26),(26,26)]) (-1) (avl::bin (72=>[(16,16),(16,16),(16,16),(16,16),(16,16),(16,16),(16,16)]) (-1) (avl::bin (68=>[(20,20),(20,20),(20,20),(20,20),(20,20),(20,20),(20,20),(20,20),(20,20),(20,20),(20,20),(20,20)]) 0 (avl::bin (66=>[(22,22),(22,22),(22,22),(22,22)]) 0 avl::nil avl::nil) (avl::bin (71=>[(21,21),(21,21),(21,21),(21,21),(21,21),(21,21),(21,21),(21,21),(21,21),(21,21),(21,21),(21,21),(21,21),(21,21),(21,21),(21,21),(21,21)]) 0 avl::nil avl::nil)) (avl::bin (78=>[(18,18),(18,18),(18,18),(18,18),(18,18),(18,18),(18,18)]) 0 (avl::bin (77=>[(19,19),(19,19),(19,19),(19,19),(19,19),(19,19),(19,19),(19,19),(19,19)]) 1 (avl::bin (75=>[(17,17),(17,17),(17,17),(17,17),(17,17),(17,17),(17,17),(17,17),(17,17),(17,17)]) 0 avl::nil avl::nil) avl::nil) (avl::bin (83=>[(25,25),(25,25),(25,25),(25,25),(25,25),(25,25),(25,25),(25,25),(25,25),(25,25),(25,25)]) 0 (avl::bin (80=>[(24,24),(24,24),(24,24),(24,24),(24,24),(24,24),(24,24),(24,24)]) 0 avl::nil avl::nil) (avl::bin (85=>[(27,27),(27,27),(27,27),(27,27),(27,27),(27,27),(27,27)]) 0 avl::nil avl::nil)))) (avl::bin (111=>[(13,13),(13,13),(13,13),(13,13),(13,13),(13,13),(13,13),(13,13),(13,13),(13,13),(13,13)]) 0 (avl::bin (99=>[(9,9),(9,9),(9,9),(9,9),(9,9),(9,9),(9,9),(9,9),(9,9),(9,9),(9,9),(9,9),(9,9),(9,9),(9,9),(9,9),(9,9),(9,9)]) 0 (avl::bin (92=>[(28,28),(28,28),(28,28),(28,28),(28,28),(28,28),(28,28)]) 0 (avl::bin (90=>[(30,30),(30,30),(30,30),(30,30),(30,30),(30,30),(30,30),(30,30),(30,30),(30,30),(30,30),(30,30)]) 1 (avl::bin (89=>[(31,31),(31,31),(31,31),(31,31),(31,31),(31,31),(31,31),(31,31),(31,31),(31,31),(31,31),(31,31)]) 0 avl::nil avl::nil) avl::nil) (avl::bin (95=>[(29,29),(29,29),(29,29),(29,29),(29,29),(29,29),(29,29),(29,29),(29,29),(29,29),(29,29),(29,29)]) (-1) avl::nil (avl::bin (96=>[(8,8),(8,8),(8,8),(8,8),(8,8),(8,8),(8,8),(8,8)]) 0 avl::nil avl::nil))) (avl::bin (105=>[(15,15),(15,15),(15,15),(15,15),(15,15),(15,15),(15,15)]) 0 (avl::bin (101=>[(11,11),(11,11),(11,11),(11,11),(11,11),(11,11),(11,11)]) (-1) avl::nil (avl::bin (102=>[(10,10),(10,10),(10,10),(10,10),(10,10),(10,10),(10,10),(10,10),(10,10),(10,10),(10,10),(10,10),(10,10)]) 0 avl::nil avl::nil)) (avl::bin (106=>[(14,14),(14,14),(14,14),(14,14),(14,14),(14,14)]) (-1) avl::nil (avl::bin (108=>[(12,12),(12,12),(12,12),(12,12),(12,12),(12,12),(12,12),(12,12),(12,12)]) 0 avl::nil avl::nil)))) (avl::bin (119=>[(5,5),(5,5),(5,5),(5,5),(5,5),(5,5),(5,5),(5,5),(5,5),(5,5)]) (-1) (avl::bin (114=>[(6,6),(6,6),(6,6),(6,6),(6,6),(6,6),(6,6),(6,6),(6,6),(6,6),(6,6),(6,6),(6,6),(6,6)]) 0 (avl::bin (113=>[(7,7),(7,7),(7,7),(7,7),(7,7),(7,7),(7,7),(7,7),(7,7),(7,7)]) 0 avl::nil avl::nil) (avl::bin (116=>[(4,4),(4,4),(4,4),(4,4),(4,4),(4,4),(4,4),(4,4),(4,4)]) 0 avl::nil avl::nil)) (avl::bin (125=>[(3,3),(3,3),(3,3),(3,3),(3,3),(3,3),(3,3),(3,3),(3,3),(3,3),(3,3),(3,3)]) 0 (avl::bin (123=>[(1,1),(1,1),(1,1),(1,1),(1,1),(1,1),(1,1),(1,1),(1,1),(1,1),(1,1),(1,1),(1,1),(1,1),(1,1),(1,1),(1,1),(1,1),(1,1),(1,1)]) 1 (avl::bin (120=>[(0,0),(0,0),(0,0),(0,0),(0,0),(0,0),(0,0),(0,0),(0,0)]) 0 avl::nil avl::nil) avl::nil) (avl::bin (126=>[(2,2),(2,2),(2,2),(2,2),(2,2),(2,2),(2,2),(2,2),(2,2),(2,2),(2,2),(2,2),(2,2)]) (-1) avl::nil (avl::bin (129=>[(87,87),(87,87),(87,87),(87,87),(87,87),(87,87),(87,87),(87,87),(87,87),(87,87)]) 0 avl::nil avl::nil))))))) (avl::bin (160=>[(72,72),(72,72),(72,72),(72,72),(72,72),(72,72),(72,72),(72,72),(72,72),(72,72),(72,72),(72,72),(72,72),(72,72),(72,72),(72,72),(72,72),(72,72),(72,72),(72,72),(72,72)]) 0 (avl::bin (144=>[(88,88),(88,88),(88,88),(88,88),(88,88),(88,88),(88,88),(88,88)]) (-1) (avl::bin (139=>[(81,81),(81,81),(81,81),(81,81),(81,81),(81,81)]) 0 (avl::bin (135=>[(85,85),(85,85),(85,85),(85,85),(85,85),(85,85),(85,85),(85,85),(85,85),(85,85)]) 0 (avl::bin (132=>[(84,84),(84,84),(84,84),(84,84),(84,84),(84,84),(84,84),(84,84),(84,84),(84,84),(84,84)]) 0 avl::nil avl::nil) (avl::bin (136=>[(80,80),(80,80),(80,80),(80,80),(80,80),(80,80),(80,80),(80,80),(80,80),(80,80),(80,80),(80,80)]) 0 avl::nil avl::nil)) (avl::bin (142=>[(82,82),(82,82),(82,82),(82,82),(82,82),(82,82),(82,82),(82,82),(82,82),(82,82),(82,82)]) 1 (avl::bin (141=>[(83,83),(83,83),(83,83),(83,83),(83,83),(83,83),(83,83),(83,83)]) 0 avl::nil avl::nil) avl::nil)) (avl::bin (150=>[(90,90),(90,90),(90,90),(90,90),(90,90),(90,90),(90,90)]) (-1) (avl::bin (147=>[(89,89),(89,89),(89,89),(89,89),(89,89),(89,89),(89,89),(89,89),(89,89),(89,89),(89,89),(89,89),(89,89),(89,89),(89,89)]) (-1) avl::nil (avl::bin (149=>[(91,91),(91,91),(91,91),(91,91),(91,91),(91,91),(91,91),(91,91),(91,91),(91,91),(91,91),(91,91),(91,91),(91,91)]) 0 avl::nil avl::nil)) (avl::bin (154=>[(94,94),(94,94),(94,94),(94,94),(94,94),(94,94),(94,94),(94,94),(94,94),(94,94),(94,94)]) (-1) (avl::bin (153=>[(95,95),(95,95),(95,95),(95,95)]) 0 avl::nil avl::nil) (avl::bin (159=>[(93,93),(93,93),(93,93),(93,93),(93,93),(93,93),(93,93),(93,93)]) 1 (avl::bin (156=>[(92,92),(92,92),(92,92),(92,92),(92,92),(92,92),(92,92),(92,92),(92,92),(92,92),(92,92),(92,92)]) 0 avl::nil avl::nil) avl::nil)))) (avl::bin (175=>[(77,77),(77,77),(77,77),(77,77),(77,77),(77,77),(77,77),(77,77),(77,77),(77,77)]) (-1) (avl::bin (169=>[(79,79),(79,79),(79,79),(79,79),(79,79),(79,79),(79,79),(79,79),(79,79),(79,79)]) 0 (avl::bin (165=>[(75,75),(75,75),(75,75),(75,75),(75,75),(75,75),(75,75),(75,75),(75,75),(75,75),(75,75),(75,75)]) 0 (avl::bin (163=>[(73,73),(73,73),(73,73),(73,73),(73,73),(73,73),(73,73),(73,73)]) 0 avl::nil avl::nil) (avl::bin (166=>[(74,74),(74,74),(74,74),(74,74),(74,74),(74,74),(74,74),(74,74),(74,74),(74,74),(74,74)]) 0 avl::nil avl::nil)) (avl::bin (170=>[(78,78),(78,78),(78,78)]) (-1) avl::nil (avl::bin (172=>[(76,76),(76,76),(76,76),(76,76),(76,76),(76,76),(76,76),(76,76),(76,76),(76,76),(76,76),(76,76)]) 0 avl::nil avl::nil))) (avl::bin (189=>[(67,67),(67,67),(67,67),(67,67),(67,67),(67,67),(67,67)]) 0 (avl::bin (180=>[(68,68),(68,68),(68,68),(68,68),(68,68),(68,68),(68,68),(68,68),(68,68),(68,68),(68,68)]) 0 (avl::bin (178=>[(70,70),(70,70),(70,70),(70,70),(70,70),(70,70),(70,70),(70,70)]) 1 (avl::bin (177=>[(71,71),(71,71),(71,71),(71,71),(71,71),(71,71),(71,71),(71,71),(71,71)]) 0 avl::nil avl::nil) avl::nil) (avl::bin (184=>[(64,64),(64,64),(64,64),(64,64),(64,64),(64,64),(64,64),(64,64)]) 0 (avl::bin (183=>[(69,69),(69,69),(69,69),(69,69),(69,69),(69,69),(69,69),(69,69),(69,69),(69,69),(69,69),(69,69),(69,69)]) 0 avl::nil avl::nil) (avl::bin (187=>[(65,65),(65,65),(65,65),(65,65),(65,65),(65,65),(65,65),(65,65)]) 0 avl::nil avl::nil))) (avl::bin (219=>[(97,97),(97,97),(97,97),(97,97),(97,97),(97,97),(97,97)]) 0 (avl::bin (216=>[(96,96),(96,96),(96,96),(96,96),(96,96),(96,96),(96,96),(96,96),(96,96),(96,96),(96,96)]) 1 (avl::bin (190=>[(66,66),(66,66),(66,66),(66,66),(66,66),(66,66),(66,66),(66,66),(66,66),(66,66)]) 0 avl::nil avl::nil) avl::nil) (avl::bin (221=>[(99,99),(99,99),(99,99),(99,99),(99,99),(99,99),(99,99),(99,99),(99,99),(99,99),(99,99)]) (-1) avl::nil (avl::bin (222=>[(98,98),(98,98),(98,98),(98,98),(98,98)]) 0 avl::nil avl::nil)))))))
 hsetp a;
 1
 hsetp c;
@@ -242,41 +269,45 @@ null a;
 null c;
 0
 rmfirst a;
-HSet (avl::bin (4=>[4]) (-1) (avl::bin (2=>[2]) (-1) avl::nil (avl::bin (3=>[3]) 0 avl::nil avl::nil)) (avl::bin (8=>[8]) 0 (avl::bin (6=>[6]) 0 (avl::bin (5=>[5]) 0 avl::nil avl::nil) (avl::bin (7=>[7]) 0 avl::nil avl::nil)) (avl::bin (9=>[9]) (-1) avl::nil (avl::bin (10=>[10]) 0 avl::nil avl::nil))))
+HSet (avl::bin (71=>[(5,"5")]) (-1) (avl::bin (66=>[(6,"6")]) (-1) avl::nil (avl::bin (68=>[(4,"4")]) 0 avl::nil avl::nil)) (avl::bin (80=>[(8,"8")]) 0 (avl::bin (77=>[(3,"3")]) 0 (avl::bin (75=>[(1,"1")]) 0 avl::nil avl::nil) (avl::bin (78=>[(2,"2")]) 0 avl::nil avl::nil)) (avl::bin (83=>[(9,"9")]) (-1) avl::nil (avl::bin (812=>[(10,"10")]) 0 avl::nil avl::nil))))
 rmfirst c;
-HBag (avl::bin (4=>[4]) (-1) (avl::bin (2=>[2]) (-1) avl::nil (avl::bin (3=>[3]) 0 avl::nil avl::nil)) (avl::bin (8=>[8]) 0 (avl::bin (6=>[6]) 0 (avl::bin (5=>[5]) 0 avl::nil avl::nil) (avl::bin (7=>[7]) 0 avl::nil avl::nil)) (avl::bin (9=>[9]) (-1) avl::nil (avl::bin (10=>[10]) 0 avl::nil avl::nil))))
+HBag (avl::bin (71=>[(5,"5")]) (-1) (avl::bin (66=>[(6,"6")]) (-1) avl::nil (avl::bin (68=>[(4,"4")]) 0 avl::nil avl::nil)) (avl::bin (80=>[(8,"8")]) 0 (avl::bin (77=>[(3,"3")]) 0 (avl::bin (75=>[(1,"1")]) 0 avl::nil avl::nil) (avl::bin (78=>[(2,"2")]) 0 avl::nil avl::nil)) (avl::bin (83=>[(9,"9")]) (-1) avl::nil (avl::bin (812=>[(10,"10")]) 0 avl::nil avl::nil))))
 rmlast a;
-HSet (avl::bin (4=>[4]) (-1) (avl::bin (2=>[2]) 0 (avl::bin (1=>[1]) 0 avl::nil avl::nil) (avl::bin (3=>[3]) 0 avl::nil avl::nil)) (avl::bin (8=>[8]) 1 (avl::bin (6=>[6]) 0 (avl::bin (5=>[5]) 0 avl::nil avl::nil) (avl::bin (7=>[7]) 0 avl::nil avl::nil)) (avl::bin (9=>[9]) 0 avl::nil avl::nil)))
+HSet (avl::bin (71=>[(5,"5")]) (-1) (avl::bin (66=>[(6,"6")]) 0 (avl::bin (65=>[(7,"7")]) 0 avl::nil avl::nil) (avl::bin (68=>[(4,"4")]) 0 avl::nil avl::nil)) (avl::bin (80=>[(8,"8")]) 1 (avl::bin (77=>[(3,"3")]) 0 (avl::bin (75=>[(1,"1")]) 0 avl::nil avl::nil) (avl::bin (78=>[(2,"2")]) 0 avl::nil avl::nil)) (avl::bin (83=>[(9,"9")]) 0 avl::nil avl::nil)))
 rmlast c;
-HBag (avl::bin (4=>[4]) (-1) (avl::bin (2=>[2]) 0 (avl::bin (1=>[1]) 0 avl::nil avl::nil) (avl::bin (3=>[3]) 0 avl::nil avl::nil)) (avl::bin (8=>[8]) 1 (avl::bin (6=>[6]) 0 (avl::bin (5=>[5]) 0 avl::nil avl::nil) (avl::bin (7=>[7]) 0 avl::nil avl::nil)) (avl::bin (9=>[9]) 0 avl::nil avl::nil)))
+HBag (avl::bin (71=>[(5,"5")]) (-1) (avl::bin (66=>[(6,"6")]) 0 (avl::bin (65=>[(7,"7")]) 0 avl::nil avl::nil) (avl::bin (68=>[(4,"4")]) 0 avl::nil avl::nil)) (avl::bin (80=>[(8,"8")]) 1 (avl::bin (77=>[(3,"3")]) 0 (avl::bin (75=>[(1,"1")]) 0 avl::nil avl::nil) (avl::bin (78=>[(2,"2")]) 0 avl::nil avl::nil)) (avl::bin (83=>[(9,"9")]) 0 avl::nil avl::nil)))
 foldl delete a (1..10);
-HSet avl::nil
+HSet (avl::bin (71=>[(5,"5")]) (-1) (avl::bin (66=>[(6,"6")]) 0 (avl::bin (65=>[(7,"7")]) 0 avl::nil avl::nil) (avl::bin (68=>[(4,"4")]) 0 avl::nil avl::nil)) (avl::bin (80=>[(8,"8")]) 0 (avl::bin (77=>[(3,"3")]) 0 (avl::bin (75=>[(1,"1")]) 0 avl::nil avl::nil) (avl::bin (78=>[(2,"2")]) 0 avl::nil avl::nil)) (avl::bin (83=>[(9,"9")]) (-1) avl::nil (avl::bin (812=>[(10,"10")]) 0 avl::nil avl::nil))))
 foldl delete c (1..10);
-HBag avl::nil
+HBag (avl::bin (71=>[(5,"5")]) (-1) (avl::bin (66=>[(6,"6")]) 0 (avl::bin (65=>[(7,"7")]) 0 avl::nil avl::nil) (avl::bin (68=>[(4,"4")]) 0 avl::nil avl::nil)) (avl::bin (80=>[(8,"8")]) 0 (avl::bin (77=>[(3,"3")]) 0 (avl::bin (75=>[(1,"1")]) 0 avl::nil avl::nil) (avl::bin (78=>[(2,"2")]) 0 avl::nil avl::nil)) (avl::bin (83=>[(9,"9")]) (-1) avl::nil (avl::bin (812=>[(10,"10")]) 0 avl::nil avl::nil))))
 first a;
-1
+7,"7"
 last a;
-10
+10,"10"
 first c;
-1
+7,"7"
 last c;
-10
+10,"10"
 #a;
 10
 #c;
 10
+#e;
+100
+#f;
+1000
 member a 5;
-1
+0
 member a 50;
 0
 member c 5;
-1
+0
 member c 50;
 0
 members a;
-[1,2,3,4,5,6,7,8,9,10]
+[(7,"7"),(6,"6"),(4,"4"),(5,"5"),(1,"1"),(3,"3"),(2,"2"),(8,"8"),(9,"9"),(10,"10")]
 members c;
-[1,2,3,4,5,6,7,8,9,10]
+[(7,"7"),(6,"6"),(4,"4"),(5,"5"),(1,"1"),(3,"3"),(2,"2"),(8,"8"),(9,"9"),(10,"10")]
 a==b;
 0
 a~=b;
@@ -326,22 +357,22 @@ c>c;
 c>=c;
 1
 a+b;
-HSet (avl::bin (4=>[4]) (-1) (avl::bin (2=>[2]) 0 (avl::bin (1=>[1]) 0 avl::nil avl::nil) (avl::bin (3=>[3]) 0 avl::nil avl::nil)) (avl::bin (8=>[8]) 0 (avl::bin (6=>[6]) 0 (avl::bin (5=>[5]) 0 avl::nil avl::nil) (avl::bin (7=>[7]) 0 avl::nil avl::nil)) (avl::bin (9=>[9]) (-1) avl::nil (avl::bin (10=>[10]) 0 avl::nil avl::nil))))
+HSet (avl::bin (71=>[(5,"5")]) (-1) (avl::bin (66=>[(6,"6")]) 0 (avl::bin (65=>[(7,"7")]) 0 avl::nil avl::nil) (avl::bin (68=>[(4,"4")]) 0 avl::nil avl::nil)) (avl::bin (80=>[(8,"8")]) 0 (avl::bin (77=>[(3,"3")]) 0 (avl::bin (75=>[(1,"1")]) 0 avl::nil avl::nil) (avl::bin (78=>[(2,"2")]) 0 avl::nil avl::nil)) (avl::bin (83=>[(9,"9")]) (-1) avl::nil (avl::bin (812=>[(10,"10")]) 0 avl::nil avl::nil))))
 a*b;
-HSet (avl::bin (8=>[8]) 0 (avl::bin (6=>[6]) (-1) avl::nil (avl::bin (7=>[7]) 0 avl::nil avl::nil)) (avl::bin (9=>[9]) (-1) avl::nil (avl::bin (10=>[10]) 0 avl::nil avl::nil)))
+HSet (avl::bin (80=>[(8,"8")]) 0 (avl::bin (66=>[(6,"6")]) 1 (avl::bin (65=>[(7,"7")]) 0 avl::nil avl::nil) avl::nil) (avl::bin (83=>[(9,"9")]) (-1) avl::nil (avl::bin (812=>[(10,"10")]) 0 avl::nil avl::nil)))
 a-b;
-HSet (avl::bin (4=>[4]) 1 (avl::bin (2=>[2]) 0 (avl::bin (1=>[1]) 0 avl::nil avl::nil) (avl::bin (3=>[3]) 0 avl::nil avl::nil)) (avl::bin (5=>[5]) 0 avl::nil avl::nil))
+HSet (avl::bin (77=>[(3,"3")]) 1 (avl::bin (71=>[(5,"5")]) 0 (avl::bin (68=>[(4,"4")]) 0 avl::nil avl::nil) (avl::bin (75=>[(1,"1")]) 0 avl::nil avl::nil)) (avl::bin (78=>[(2,"2")]) 0 avl::nil avl::nil))
 c+d;
-HBag (avl::bin (4=>[4]) (-1) (avl::bin (2=>[2]) 0 (avl::bin (1=>[1]) 0 avl::nil avl::nil) (avl::bin (3=>[3]) 0 avl::nil avl::nil)) (avl::bin (8=>[8,8]) 0 (avl::bin (6=>[6,6]) 0 (avl::bin (5=>[5]) 0 avl::nil avl::nil) (avl::bin (7=>[7,7]) 0 avl::nil avl::nil)) (avl::bin (9=>[9,9]) (-1) avl::nil (avl::bin (10=>[10,10]) 0 avl::nil avl::nil))))
+HBag (avl::bin (71=>[(5,"5")]) (-1) (avl::bin (66=>[(6,"6"),(6,"6")]) 0 (avl::bin (65=>[(7,"7"),(7,"7")]) 0 avl::nil avl::nil) (avl::bin (68=>[(4,"4")]) 0 avl::nil avl::nil)) (avl::bin (80=>[(8,"8"),(8,"8")]) 0 (avl::bin (77=>[(3,"3")]) 0 (avl::bin (75=>[(1,"1")]) 0 avl::nil avl::nil) (avl::bin (78=>[(2,"2")]) 0 avl::nil avl::nil)) (avl::bin (83=>[(9,"9"),(9,"9")]) (-1) avl::nil (avl::bin (812=>[(10,"10"),(10,"10")]) 0 avl::nil avl::nil))))
 c*d;
-HBag (avl::bin (8=>[8]) 0 (avl::bin (6=>[6]) (-1) avl::nil (avl::bin (7=>[7]) 0 avl::nil avl::nil)) (avl::bin (9=>[9]) (-1) avl::nil (avl::bin (10=>[10]) 0 avl::nil avl::nil)))
+HBag (avl::bin (80=>[(8,"8")]) 0 (avl::bin (66=>[(6,"6")]) 1 (avl::bin (65=>[(7,"7")]) 0 avl::nil avl::nil) avl::nil) (avl::bin (83=>[(9,"9")]) (-1) avl::nil (avl::bin (812=>[(10,"10")]) 0 avl::nil avl::nil)))
 c-d;
-HBag (avl::bin (4=>[4]) 1 (avl::bin (2=>[2]) 0 (avl::bin (1=>[1]) 0 avl::nil avl::nil) (avl::bin (3=>[3]) 0 avl::nil avl::nil)) (avl::bin (5=>[5]) 0 avl::nil avl::nil))
+HBag (avl::bin (77=>[(3,"3")]) 1 (avl::bin (71=>[(5,"5")]) 0 (avl::bin (68=>[(4,"4")]) 0 avl::nil avl::nil) (avl::bin (75=>[(1,"1")]) 0 avl::nil avl::nil)) (avl::bin (78=>[(2,"2")]) 0 avl::nil avl::nil))
 c+d-d;
-HBag (avl::bin (4=>[4]) (-1) (avl::bin (2=>[2]) 0 (avl::bin (1=>[1]) 0 avl::nil avl::nil) (avl::bin (3=>[3]) 0 avl::nil avl::nil)) (avl::bin (8=>[8]) 0 (avl::bin (6=>[6]) 0 (avl::bin (5=>[5]) 0 avl::nil avl::nil) (avl::bin (7=>[7]) 0 avl::nil avl::nil)) (avl::bin (9=>[9]) (-1) avl::nil (avl::bin (10=>[10]) 0 avl::nil avl::nil))))
-foldl delete (foldl insert emptyhset randlist) randlist;
+HBag (avl::bin (71=>[(5,"5")]) (-1) (avl::bin (66=>[(6,"6")]) 0 (avl::bin (65=>[(7,"7")]) 0 avl::nil avl::nil) (avl::bin (68=>[(4,"4")]) 0 avl::nil avl::nil)) (avl::bin (80=>[(8,"8")]) 0 (avl::bin (77=>[(3,"3")]) 0 (avl::bin (75=>[(1,"1")]) 0 avl::nil avl::nil) (avl::bin (78=>[(2,"2")]) 0 avl::nil avl::nil)) (avl::bin (83=>[(9,"9")]) (-1) avl::nil (avl::bin (812=>[(10,"10")]) 0 avl::nil avl::nil))))
+foldl delete (foldl insert emptyhset r) r;
 HSet avl::nil
-foldl delete (foldl insert emptyhbag randlist) randlist;
+foldl delete (foldl insert emptyhbag r) r;
 HBag avl::nil
 {
   rule #0: a = dict (listmap (\i -> i=>double i) (1..10))
@@ -398,6 +429,20 @@ let d = hdict (zipwith (=>) (listmap (\i/*0:1*/ -> i/*0:1*/,double i/*0:1*/,str 
   state 1: #0
 }
 let e = dict (zipwith (=>) (map str (1..10)) (map str (1..10)));
+{
+  rule #0: f = dict (zipwith (=>) randlist randlist)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let f = dict (zipwith (=>) randlist randlist);
+{
+  rule #0: g = hdict (zipwith (=>) (zip randlist randlist) randlist)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let g = hdict (zipwith (=>) (zip randlist randlist) randlist);
 a;
 Dict (avl::bin (4=>4.0) (-1) (avl::bin (2=>2.0) 0 (avl::bin (1=>1.0) 0 avl::nil avl::nil) (avl::bin (3=>3.0) 0 avl::nil avl::nil)) (avl::bin (8=>8.0) 0 (avl::bin (6=>6.0) 0 (avl::bin (5=>5.0) 0 avl::nil avl::nil) (avl::bin (7=>7.0) 0 avl::nil avl::nil)) (avl::bin (9=>9.0) (-1) avl::nil (avl::bin (10=>10.0) 0 avl::nil avl::nil))))
 b;
@@ -445,6 +490,10 @@ last a;
 10
 #c;
 10
+#f;
+100
+#g;
+100
 member a 5;
 1
 member a 50;
@@ -464,9 +513,9 @@ e!"5";
 c!(5,5.0,"5");
 5
 a!50;
-<stdin>, line 238: unhandled exception 'out_of_bounds' while evaluating 'a!50'
+<stdin>, line 248: unhandled exception 'out_of_bounds' while evaluating 'a!50'
 c!(50,50.0,"50");
-<stdin>, line 238: unhandled exception 'out_of_bounds' while evaluating 'c!(50,50.0,"50")'
+<stdin>, line 248: unhandled exception 'out_of_bounds' while evaluating 'c!(50,50.0,"50")'
 a!!(5..15);
 [5.0,6.0,7.0,8.0,9.0,10.0]
 c!!listmap (\i/*0:1*/ -> i/*0:1*/,double i/*0:1*/,str i/*0:1*/ {
@@ -584,6 +633,20 @@ let d = hmdict (zipwith (=>) (listmap (\i/*0:1*/ -> i/*0:1*/,double i/*0:1*/,str
   state 1: #0
 }
 let e = mdict (zipwith (=>) (map str (1..10)) (map str (1..10)));
+{
+  rule #0: f = mdict (zipwith (=>) randlist (1..#randlist))
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let f = mdict (zipwith (=>) randlist (1..#randlist));
+{
+  rule #0: g = hmdict (zipwith (=>) (zip randlist randlist) (1..#randlist))
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let g = hmdict (zipwith (=>) (zip randlist randlist) (1..#randlist));
 a;
 MDict (avl::bin (4=>4.0) (-1) (avl::bin (2=>2.0) 0 (avl::bin (1=>1.0) 0 avl::nil avl::nil) (avl::bin (3=>3.0) 0 avl::nil avl::nil)) (avl::bin (8=>8.0) 0 (avl::bin (6=>6.0) 0 (avl::bin (5=>5.0) 0 avl::nil avl::nil) (avl::bin (7=>7.0) 0 avl::nil avl::nil)) (avl::bin (9=>9.0) (-1) avl::nil (avl::bin (10=>10.0) 0 avl::nil avl::nil))))
 b;
@@ -631,6 +694,10 @@ last a;
 10
 #c;
 10
+#f;
+1000
+#g;
+1000
 member a 5;
 1
 member a 50;
@@ -653,6 +720,10 @@ a!50;
 []
 c!(50,50.0,"50");
 []
+f!50;
+[172,206,259,283,297,331,338,355,571,672,860,969,976,987]
+g!(50,50);
+[172,206,259,283,297,331,338,355,571,672,860,969,976,987]
 a!!(5..15);
 [[5.0],[6.0],[7.0],[8.0],[9.0],[10.0],[],[],[],[],[]]
 c!!listmap (\i/*0:1*/ -> i/*0:1*/,double i/*0:1*/,str i/*0:1*/ {
@@ -682,6 +753,10 @@ update c (5,5.0,"5") 5000;
 HMDict (avl::bin (38663=>[(5,5.0,"5")=>5,(5,5.0,"5")=>5000]) (-1) (avl::bin (15365=>[(3,3.0,"3")=>3]) 0 (avl::bin (182=>[(2,2.0,"2")=>2]) 0 avl::nil avl::nil) (avl::bin (31196=>[(4,4.0,"4")=>4]) 0 avl::nil avl::nil)) (avl::bin (65863=>[(9,9.0,"9")=>9]) 0 (avl::bin (54481=>[(7,7.0,"7")=>7]) 0 (avl::bin (46762=>[(6,6.0,"6")=>6]) 0 avl::nil avl::nil) (avl::bin (62056=>[(8,8.0,"8")=>8]) 0 avl::nil avl::nil)) (avl::bin (466157=>[(1,1.0,"1")=>1]) 1 (avl::bin (70348=>[(10,10.0,"10")=>10]) 0 avl::nil avl::nil) avl::nil)))
 update c (5000,5000.0,"5000") 5000;
 HMDict (avl::bin (38663=>[(5,5.0,"5")=>5]) (-1) (avl::bin (15365=>[(3,3.0,"3")=>3]) 0 (avl::bin (182=>[(2,2.0,"2")=>2]) 0 avl::nil avl::nil) (avl::bin (31196=>[(4,4.0,"4")=>4]) 0 avl::nil avl::nil)) (avl::bin (65863=>[(9,9.0,"9")=>9]) 0 (avl::bin (54481=>[(7,7.0,"7")=>7]) 0 (avl::bin (46762=>[(6,6.0,"6")=>6]) 0 avl::nil avl::nil) (avl::bin (62056=>[(8,8.0,"8")=>8]) 0 avl::nil avl::nil)) (avl::bin (466157=>[(1,1.0,"1")=>1]) 0 (avl::bin (70348=>[(10,10.0,"10")=>10]) 0 avl::nil avl::nil) (avl::bin (256264466=>[(5000,5000.0,"5000")=>5000]) 0 avl::nil avl::nil))))
+update f 50 5000!50;
+[172,206,259,283,297,331,338,355,571,672,860,969,976,987,5000]
+update g (50,50) 5000!(50,50);
+[172,206,259,283,297,331,338,355,571,672,860,969,976,987,5000]
 foldl delete a (1..10);
 MDict avl::nil
 delete a 5000;
@@ -695,6 +770,18 @@ foldl delete c (listmap (\i/*0:1*/ -> i/*0:1*/,double i/*0:1*/,str i/*0:1*/ {
 HMDict avl::nil
 delete c (5000,5000.0,"5000");
 HMDict (avl::bin (38663=>[(5,5.0,"5")=>5]) (-1) (avl::bin (15365=>[(3,3.0,"3")=>3]) 0 (avl::bin (182=>[(2,2.0,"2")=>2]) 0 avl::nil avl::nil) (avl::bin (31196=>[(4,4.0,"4")=>4]) 0 avl::nil avl::nil)) (avl::bin (65863=>[(9,9.0,"9")=>9]) 0 (avl::bin (54481=>[(7,7.0,"7")=>7]) 0 (avl::bin (46762=>[(6,6.0,"6")=>6]) 0 avl::nil avl::nil) (avl::bin (62056=>[(8,8.0,"8")=>8]) 0 avl::nil avl::nil)) (avl::bin (466157=>[(1,1.0,"1")=>1]) 1 (avl::bin (70348=>[(10,10.0,"10")=>10]) 0 avl::nil avl::nil) avl::nil)))
+delete f 50!50;
+[206,259,283,297,331,338,355,571,672,860,969,976,987]
+delete g (50,50)!(50,50);
+[206,259,283,297,331,338,355,571,672,860,969,976,987]
+member (foldl delete f (repeatn (#f!50) 50)) 50;
+0
+member (foldl delete g (repeatn (#g!(50,50)) (50,50))) (50,50);
+0
+member (delete_all f 50) 50;
+0
+member (delete_all g (50,50)) (50,50);
+0
 a==b;
 0
 a~=b;
@@ -872,9 +959,9 @@ a!5;
 c!(2,3);
 "9"
 a!50;
-<stdin>, line 451: unhandled exception 'out_of_bounds' while evaluating 'a!50'
+<stdin>, line 484: unhandled exception 'out_of_bounds' while evaluating 'a!50'
 c!(20,30);
-<stdin>, line 451: unhandled exception 'out_of_bounds' while evaluating 'c!(20,30)'
+<stdin>, line 484: unhandled exception 'out_of_bounds' while evaluating 'c!(20,30)'
 a!!(5..15);
 [6,7,8,9,10]
 c!!catmap (\i/*0:1*/ -> listmap (\j/*0:1*/ -> i/*1:1*/,j/*0:1*/ {
