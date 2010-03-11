@@ -119,8 +119,10 @@
    .. _hmdict:
 
    ``dict xs``, ``hdict xs``, ``mdict xs``, ``hmdict xs``
-     create a dictionary from a list ``xs`` of key-value pairs in the form
-     ``key=>value``
+     create a dictionary of the corresponding type either from a list ``xs``
+     of key-value pairs in the form ``key=>value``, or from another
+     dictionary; in the latter case the argument is converted to a dictionary
+     of the desired target type
 
    .. _dictp:
    .. _hdictp:
@@ -328,9 +330,9 @@
 
      > let h1 = hmdict [a=>1,b=>2];
      > let h2 = hdict  [b=>3,c=>4];
-     > members (h1+hmdict (members h2));
+     > members (h1+hmdict h2);
      [a=>1,c=>4,b=>2,b=>3]
-     > members (hdict (members h1)+h2);
+     > members (hdict h1+h2);
      [a=>1,c=>4,b=>3]
 
 */
@@ -355,6 +357,13 @@ emptydict	= Dict   avl::emptytree;
 emptyhdict	= HDict  avl::emptytree;
 emptymdict	= MDict  avl::emptytree;
 emptyhmdict	= HMDict avl::emptytree;
+
+// conversions between the different dictionary types
+dict   d::Dict  | hdict  d::HDict | mdict  d::MDict  | hmdict d::HMDict = d;
+dict   d::MDict | dict   d::HDict | dict   d::HMDict = dict   (members d);
+hdict  d::Dict  | hdict  d::MDict | hdict  d::HMDict = hdict  (members d);
+mdict  d::Dict  | mdict  d::HDict | mdict  d::HMDict = mdict  (members d);
+hmdict d::Dict  | hmdict d::MDict | hmdict d::HDict  = hmdict (members d);
 
 // create a dict from a list
 dict   xys	= foldl insert emptydict   xys if listp xys;

@@ -2920,8 +2920,10 @@ must match in the same way as for equality.</p>
 </dl>
 <a name="dict"><a name="hdict"><a name="mdict"><a name="hmdict"><dl class="docutils" id="hmdict">
 <span id="mdict"></span><span id="hdict"></span><span id="dict"></span><dt><tt class="docutils literal"><span class="pre">dict</span> <span class="pre">xs</span></tt>, <tt class="docutils literal"><span class="pre">hdict</span> <span class="pre">xs</span></tt>, <tt class="docutils literal"><span class="pre">mdict</span> <span class="pre">xs</span></tt>, <tt class="docutils literal"><span class="pre">hmdict</span> <span class="pre">xs</span></tt></dt>
-<dd>create a dictionary from a list <tt class="docutils literal"><span class="pre">xs</span></tt> of key-value pairs in the form
-<tt class="docutils literal"><span class="pre">key=&gt;value</span></tt></dd>
+<dd>create a dictionary of the corresponding type either from a list <tt class="docutils literal"><span class="pre">xs</span></tt>
+of key-value pairs in the form <tt class="docutils literal"><span class="pre">key=&gt;value</span></tt>, or from another
+dictionary; in the latter case the argument is converted to a dictionary
+of the desired target type</dd>
 </dl>
 <a name="dictp"><a name="hdictp"><a name="mdictp"><a name="hmdictp"><dl class="docutils" id="hmdictp">
 <span id="mdictp"></span><span id="hdictp"></span><span id="dictp"></span><dt><tt class="docutils literal"><span class="pre">dictp</span> <span class="pre">d</span></tt>, <tt class="docutils literal"><span class="pre">hdictp</span> <span class="pre">d</span></tt>, <tt class="docutils literal"><span class="pre">mdictp</span> <span class="pre">d</span></tt>, <tt class="docutils literal"><span class="pre">hmdictp</span> <span class="pre">d</span></tt></dt>
@@ -3100,9 +3102,9 @@ you'll have to do the necessary conversions manually:</p>
 <pre class="literal-block">
 &gt; let h1 = hmdict [a=&gt;1,b=&gt;2];
 &gt; let h2 = hdict  [b=&gt;3,c=&gt;4];
-&gt; members (h1+hmdict (members h2));
+&gt; members (h1+hmdict h2);
 [a=&gt;1,c=&gt;4,b=&gt;2,b=&gt;3]
-&gt; members (hdict (members h1)+h2);
+&gt; members (hdict h1+h2);
 [a=&gt;1,c=&gt;4,b=&gt;3]
 </pre>
 <!--  -->
@@ -3172,7 +3174,9 @@ in the bag case).</p>
 </dl>
 <a name="set"><a name="bag"><a name="hset"><a name="hbag"><dl class="docutils" id="hbag">
 <span id="hset"></span><span id="bag"></span><span id="set"></span><dt><tt class="docutils literal"><span class="pre">set</span> <span class="pre">xs</span></tt>, <tt class="docutils literal"><span class="pre">bag</span> <span class="pre">xs</span></tt>, <tt class="docutils literal"><span class="pre">hset</span> <span class="pre">xs</span></tt>, <tt class="docutils literal"><span class="pre">hbag</span> <span class="pre">xs</span></tt></dt>
-<dd>create a set or bag from a list <tt class="docutils literal"><span class="pre">xs</span></tt></dd>
+<dd>create a set or bag of the corresponding type from a list or another set
+or bag <tt class="docutils literal"><span class="pre">xs</span></tt>; in the latter case the argument is converted to a set or
+bag of the desired target type</dd>
 </dl>
 <a name="setp"><a name="bagp"><dl class="docutils" id="bagp">
 <span id="setp"></span><dt><tt class="docutils literal"><span class="pre">setp</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">bagp</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">hsetp</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">hbagp</span> <span class="pre">x</span></tt></dt>
@@ -3277,7 +3281,7 @@ E.g., here's how you can add a set to a bag, yielding a bag:</p>
 <pre class="literal-block">
 &gt; let m1::Bag = bag [5,1,3,11,3];
 &gt; let m2::Set = set (3..6);
-&gt; let m::Bag = m1+bag (members m2);
+&gt; let m::Bag = m1+bag m2;
 &gt; members m;
 [1,3,3,3,4,5,5,6,11]
 </pre>
