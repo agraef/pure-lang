@@ -93,9 +93,14 @@
    All kinds of dictionaries can be compared for equality and inequality
    (``==`` and ``~=``), but note that there are no implicit conversions
    between the different dictionary types and thus the operand types must
-   match. Ordered dictionaries compare their members using the ``==``
-   predicate, while hashed dictionaries check for syntactical equality (using
-   ``same``).
+   match. Ordered dictionaries compare keys using the ``==`` predicate, while
+   hashed dictionaries check for syntactical equality (using ``same``); the
+   associated values are always compared syntactically.
+
+   Subset comparisons are also supported. These check that all members
+   (``key=>val`` pairs) of one dictionary are contained in another (also
+   taking into account multiplicities in the multidict case). Operand types
+   must match in the same way as for equality.
 
    Operations
    ~~~~~~~~~~
@@ -195,14 +200,43 @@
    .. _delete (dictionary):
 
    ``delete d x``
-     remove ``x`` from ``d`` (in the multidict case, only the first member
-     with the given key ``x`` is removed)
+     remove ``x`` from ``d`` if present (in the multidict case, only the first
+     member with the given key ``x`` is removed)
+
+   .. _delete_val (dictionary):
+
+   ``delete_val d (x=>y)``
+     remove a specific key-value pair ``x=>y`` from ``d`` if present (in the
+     multidict case, only the first instance of ``x=>y`` is removed)
 
    .. _delete_all (dictionary):
 
    ``delete_all d x``
      remove all instances of ``x`` from ``d`` (in the non-multidict case, this
      is just the same as ``delete``)
+
+   In addition, the infix operators ``+``, ``-`` and ``*`` are defined as the
+   union, difference and intersection of two dictionaries. These work like the
+   corresponding set and bag operations (see `Sets and Bags`_), treating
+   dictionaries as collections of ``key=>val`` pairs. Please note that there
+   are no implicit conversions, so the operand types must match exactly. (As
+   already mentioned, the same restriction applies to the comparison
+   predicates ``==``, ``<=`` etc.)
+
+   .. _+ (dictionary):
+
+   ``d1+d2``
+     union: ``d1+d2`` adds the members of ``d2`` to ``d1``
+
+   .. _- (dictionary):
+
+   ``d1-d2``
+     difference: ``d1-d2`` removes the members of ``d2`` from ``d1``
+
+   .. _* (dictionary):
+
+   ``d1*d2``
+     intersection: ``d1*d2`` removes the members *not* in ``d2`` from ``d1``
 
    Examples
    ~~~~~~~~
@@ -300,97 +334,151 @@ emptymdict	= MDict  avl::emptytree;
 emptyhmdict	= HMDict avl::emptytree;
 
 // create a dict from a list
-dict  xys	= foldl insert emptydict   xys if listp xys;
-hdict xys	= foldl insert emptyhdict  xys if listp xys;
+dict   xys	= foldl insert emptydict   xys if listp xys;
+hdict  xys	= foldl insert emptyhdict  xys if listp xys;
 mdict  xys	= foldl insert emptymdict  xys if listp xys;
 hmdict xys	= foldl insert emptyhmdict xys if listp xys;
 
 // create a dict from a list of keys and a constant value
-mkdict  y xs	= dict   (zipwith (=>) xs (repeatn (#xs) y)) if listp xs;
-mkhdict y xs	= hdict  (zipwith (=>) xs (repeatn (#xs) y)) if listp xs;
+mkdict   y xs	= dict   (zipwith (=>) xs (repeatn (#xs) y)) if listp xs;
+mkhdict  y xs	= hdict  (zipwith (=>) xs (repeatn (#xs) y)) if listp xs;
 mkmdict  y xs	= mdict  (zipwith (=>) xs (repeatn (#xs) y)) if listp xs;
 mkhmdict y xs	= hmdict (zipwith (=>) xs (repeatn (#xs) y)) if listp xs;
 
 // insert a member
-insert (Dict  d)  el@(x=>y) = Dict   (avl::insertk   d el);
-insert (HDict d)  el@(x=>y) = HDict  (avl::inserthk  d el);
-insert (MDict  d) el@(x=>y) = MDict  (avl::insertkm  d el);
-insert (HMDict d) el@(x=>y) = HMDict (avl::inserthkm d el);
+insert (Dict   d) el@(x=>y) = Dict   (avl::insertk   d el);
+insert (HDict  d) el@(x=>y) = HDict  (avl::hinsertk  d el);
+insert (MDict  d) el@(x=>y) = MDict  (avl::minsertk  d el);
+insert (HMDict d) el@(x=>y) = HMDict (avl::mhinsertk d el);
 
 // curried version of insert
 update d@(Dict  _) x y | update d@(HDict  _) x y |
 update d@(MDict _) x y | update d@(HMDict _) x y = insert d (x=>y);
 
 // delete a member by key
-delete (Dict   d) x = Dict   (avl::deletek  d x);
-delete (HDict  d) x = HDict  (avl::deletehk d x);
-delete (MDict  d) x = MDict  (avl::deletekm d x);
-delete (HMDict d) x = HMDict (avl::deletehk d x);
+delete (Dict   d) x = Dict   (avl::deletek   d x);
+delete (HDict  d) x = HDict  (avl::hdeletek  d x);
+delete (MDict  d) x = MDict  (avl::mdeletek  d x);
+delete (HMDict d) x = HMDict (avl::mhdeletek d x);
+
+// delete a member by key=>val
+delete_val (Dict   d) el@(x=>y) = Dict   (avl::deletekv   d el);
+delete_val (HDict  d) el@(x=>y) = HDict  (avl::hdeletekv  d el);
+delete_val (MDict  d) el@(x=>y) = MDict  (avl::mdeletekv  d el);
+delete_val (HMDict d) el@(x=>y) = HMDict (avl::mhdeletekv d el);
 
 // delete all instances of a given key
-delete_all d::Dict   y |
-delete_all d::HDict  y = delete d y;
-delete_all d::MDict  y |
-delete_all d::HMDict y = delete_all (delete d y) y if member d y;
-	   	       = d otherwise;
+delete_all (Dict   d) x = Dict   (avl::deletek    d x);
+delete_all (HDict  d) x = HDict  (avl::hdeletek   d x);
+delete_all (MDict  d) x = MDict  (avl::mdeleteka  d x);
+delete_all (HMDict d) x = HMDict (avl::mhdeleteka d x);
 
 // check for the empty dict
 null (Dict  d) | null (HDict  d) |
 null (MDict d) | null (HMDict d) = avl::null d;
 
 // dict size
-#(Dict  d) | #(MDict  d) = avl::size  d;
-#(HDict d) | #(HMDict d) = avl::sizeh d;
+#(Dict   d) = avl::size  d;
+#(MDict  d) = avl::msize d;
+#(HDict  d) = avl::hsize d;
+#(HMDict d) = avl::hsize d;
 
 // membership test
-member (Dict  d) k | member (MDict  d) k = avl::memberk  d k;
-member (HDict d) k | member (HMDict d) k = avl::memberhk d k;
+member (Dict   d) k = avl::memberk  d k;
+member (MDict  d) k = avl::memberk  d k;
+member (HDict  d) k = avl::hmemberk d k;
+member (HMDict d) k = avl::hmemberk d k;
 
 // get the members, keys and values of a dict as a list
-members (Dict  d) | members (MDict  d) = avl::members  d;
-members (HDict d) | members (HMDict d) = avl::membersh d;
-keys    (Dict  d) | keys    (MDict  d) = avl::keys     d;
-keys    (HDict d) | keys    (HMDict d) = avl::keysh    d;
-vals    (Dict  d) | vals    (MDict  d) = avl::vals     d;
-vals    (HDict d) | vals    (HMDict d) = avl::valsh    d;
+members (Dict   d) = avl::members  d;
+members (MDict  d) = avl::mmembers d;
+members (HDict  d) = avl::hmembers d;
+members (HMDict d) = avl::hmembers d;
+
+keys (Dict   d) = avl::keys  d;
+keys (MDict  d) = avl::mkeys d;
+keys (HDict  d) = avl::hkeys d;
+keys (HMDict d) = avl::hkeys d;
+
+vals (Dict   d) = avl::vals  d;
+vals (MDict  d) = avl::mvals d;
+vals (HDict  d) = avl::hvals d;
+vals (HMDict d) = avl::hvals d;
 
 list d::Dict  | list d::MDict |
 list d::HDict | list d::HMDict = members d;
 
 // get the first and last member
-first (Dict d)  | first (MDict d)  = avl::first  d;
-last  (Dict d)  | last  (MDict d)  = avl::last   d;
-first (HDict d) | first (HMDict d) = avl::firsth d;
-last  (HDict d) | last  (HMDict d) = avl::lasth  d;
+first (Dict   d) = avl::first  d;
+first (MDict  d) = avl::mfirst d;
+last  (Dict   d) = avl::last   d;
+last  (MDict  d) = avl::mlast  d;
+first (HDict  d) = avl::hfirst d;
+first (HMDict d) = avl::hfirst d;
+last  (HDict  d) = avl::hlast  d;
+last  (HMDict d) = avl::hlast  d;
 
 // remove the first and last member
 rmfirst (Dict   d) = Dict   (avl::rmfirst  d);
 rmlast  (Dict   d) = Dict   (avl::rmlast   d);
-rmfirst (HDict  d) = HDict  (avl::rmfirsth d);
-rmlast  (HDict  d) = HDict  (avl::rmlasth  d);
-rmfirst (MDict  d) = MDict  (avl::rmfirst  d);
-rmlast  (MDict  d) = MDict  (avl::rmlast   d);
-rmfirst (HMDict d) = HMDict (avl::rmfirsth d);
-rmlast  (HMDict d) = HMDict (avl::rmlasth  d);
+rmfirst (MDict  d) = MDict  (avl::mrmfirst d);
+rmlast  (MDict  d) = MDict  (avl::mrmlast  d);
+rmfirst (HDict  d) = HDict  (avl::hrmfirst d);
+rmlast  (HDict  d) = HDict  (avl::hrmlast  d);
+rmfirst (HMDict d) = HMDict (avl::hrmfirst d);
+rmlast  (HMDict d) = HMDict (avl::hrmlast  d);
 
 // get a value by key
-(Dict d)!k	= avl::get   d k;
-(HDict d)!k	= avl::geth  d k;
-(MDict d)!k	= avl::getm  d k;
-(HMDict d)!k	= avl::gethm d k;
+(Dict   d)!k = avl::getk   d k;
+(MDict  d)!k = avl::mgetk  d k;
+(HDict  d)!k = avl::hgetk  d k;
+(HMDict d)!k = avl::mhgetk d k;
 
-// equality checks
-d1::Dict   == d2::Dict   |
-d1::MDict  == d2::MDict  = (members d1) == (members d2);
-d1::HDict  == d2::HDict  = all (member d1) (keys d2) &&
-	     	       	   all (member d2) (keys d1) &&
-	  		   (vals d1) == (map (d2!) (keys d1));
-d1::HMDict == d2::HMDict = all (member d1) (keys d2) &&
-	     	       	   all (member d2) (keys d1) &&
-	  		   (map (d1!) ks) == (map (d2!) ks)
-			   when ks = keys d1 end;
+// comparisons
+d1::Dict   == d2::Dict   = members d1 == members d2;
+d1::MDict  == d2::MDict  |
+d1::HDict  == d2::HDict  |
+d1::HMDict == d2::HMDict = d1 <= d2 && d2 <= d1;
 
-d1::Dict   ~= d2::Dict   |
-d1::MDict  ~= d2::MDict  = (members d1) ~= (members d2);
+d1::Dict   ~= d2::Dict   = members d1 ~= members d2;
+d1::MDict  ~= d2::MDict  |
 d1::HDict  ~= d2::HDict  |
 d1::HMDict ~= d2::HMDict = ~(d1 == d2);
+
+d1::Dict   <= d2::Dict   = all (member d2) ks1 && map (d2!) ks1 == vals d1
+	      		   when ks1 = keys d1 end;
+d1::MDict  <= d2::MDict  |
+d1::HDict  <= d2::HDict  |
+d1::HMDict <= d2::HMDict = null (d1 - d2);
+
+d1::Dict   >= d2::Dict   = all (member d1) ks2 && map (d1!) ks2 == vals d2
+	      		   when ks2 = keys d2 end;
+d1::MDict  >= d2::MDict  |
+d1::HDict  >= d2::HDict  |
+d1::HMDict >= d2::HMDict = null (d2 - d1);
+
+d1::Dict   <  d2::Dict   |
+d1::MDict  <  d2::MDict  |
+d1::HDict  <  d2::HDict  |
+d1::HMDict <  d2::HMDict = d1 <= d2 && ~(d1 >= d2);
+
+d1::Dict   >  d2::Dict   |
+d1::MDict  >  d2::MDict  |
+d1::HDict  >  d2::HDict  |
+d1::HMDict >  d2::HMDict = d1 >= d2 && ~(d1 <= d2);
+
+// union, difference, intersection
+d1::Dict   +  d2::Dict   |
+d1::MDict  +  d2::MDict  |
+d1::HDict  +  d2::HDict  |
+d1::HMDict +  d2::HMDict = foldl insert d1 (members d2);
+
+d1::Dict   -  d2::Dict   |
+d1::MDict  -  d2::MDict  |
+d1::HDict  -  d2::HDict  |
+d1::HMDict -  d2::HMDict = foldl delete_val d1 (members d2);
+
+d1::Dict   *  d2::Dict   |
+d1::MDict  *  d2::MDict  |
+d1::HDict  *  d2::HDict  |
+d1::HMDict *  d2::HMDict = d1 - (d1 - d2);

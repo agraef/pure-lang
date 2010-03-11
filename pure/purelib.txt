@@ -4129,9 +4129,10 @@ match values of the type, e.g.::
 .. _Type Tags: pure.html#type-tags
 
 All container types implement the equality predicates ``==`` and ``~=`` by
-recursively comparing their members. In addition, the set and bag data
-structures also provide the other comparison predicates (``<``, ``<=``
-etc.) which check whether one set/bag is a subset/subbag of another.
+recursively comparing their members. In addition, the dictionary, set and
+bag data structures also provide the other comparison predicates (``<``,
+``<=`` etc.) which check whether one dictionary, set or bag is contained in
+another.
 
 Arrays
 ------
@@ -4626,9 +4627,14 @@ private, and client modules must not rely on the internal representation.)
 All kinds of dictionaries can be compared for equality and inequality
 (``==`` and ``~=``), but note that there are no implicit conversions
 between the different dictionary types and thus the operand types must
-match. Ordered dictionaries compare their members using the ``==``
-predicate, while hashed dictionaries check for syntactical equality (using
-``same``).
+match. Ordered dictionaries compare keys using the ``==`` predicate, while
+hashed dictionaries check for syntactical equality (using ``same``); the
+associated values are always compared syntactically.
+
+Subset comparisons are also supported. These check that all members
+(``key=>val`` pairs) of one dictionary are contained in another (also
+taking into account multiplicities in the multidict case). Operand types
+must match in the same way as for equality.
 
 Operations
 ~~~~~~~~~~
@@ -4852,8 +4858,18 @@ Operations
 .. _delete (dictionary):
 
 ``delete d x``
-  remove ``x`` from ``d`` (in the multidict case, only the first member
-  with the given key ``x`` is removed)
+  remove ``x`` from ``d`` if present (in the multidict case, only the first
+  member with the given key ``x`` is removed)
+
+.. raw:: html
+
+   <a name="delete_val (dictionary)">
+
+.. _delete_val (dictionary):
+
+``delete_val d (x=>y)``
+  remove a specific key-value pair ``x=>y`` from ``d`` if present (in the
+  multidict case, only the first instance of ``x=>y`` is removed)
 
 .. raw:: html
 
@@ -4864,6 +4880,41 @@ Operations
 ``delete_all d x``
   remove all instances of ``x`` from ``d`` (in the non-multidict case, this
   is just the same as ``delete``)
+
+In addition, the infix operators ``+``, ``-`` and ``*`` are defined as the
+union, difference and intersection of two dictionaries. These work like the
+corresponding set and bag operations (see `Sets and Bags`_), treating
+dictionaries as collections of ``key=>val`` pairs. Please note that there
+are no implicit conversions, so the operand types must match exactly. (As
+already mentioned, the same restriction applies to the comparison
+predicates ``==``, ``<=`` etc.)
+
+.. raw:: html
+
+   <a name="+ (dictionary)">
+
+.. _+ (dictionary):
+
+``d1+d2``
+  union: ``d1+d2`` adds the members of ``d2`` to ``d1``
+
+.. raw:: html
+
+   <a name="- (dictionary)">
+
+.. _- (dictionary):
+
+``d1-d2``
+  difference: ``d1-d2`` removes the members of ``d2`` from ``d1``
+
+.. raw:: html
+
+   <a name="* (dictionary)">
+
+.. _* (dictionary):
+
+``d1*d2``
+  intersection: ``d1*d2`` removes the members *not* in ``d2`` from ``d1``
 
 Examples
 ~~~~~~~~
@@ -4997,7 +5048,7 @@ All kinds of sets can be compared for equality and inequality (``==`` and
 ``~=``), but note that there are no implicit conversions between the
 different set types and thus the operand types must match. Ordered sets
 compare their members using the ``==`` predicate, while hashed sets check
-for syntactical equality (using ``same``).  Operands in subset/subbag
+for syntactical equality (using ``same``). Operands in subset/subbag
 comparisons must also match up. Here it is checked that all members of one
 set/bag are contained in the other (also taking into account multiplicities
 in the bag case).
@@ -6717,9 +6768,11 @@ Index
 | `&&`_
 | `*`_
 | `* (bag)`_
+| `* (dictionary)`_
 | `* (set)`_
 | `+`_
 | `+ (bag)`_
+| `+ (dictionary)`_
 | `+ (list)`_
 | `+ (set)`_
 | `+ (string)`_
@@ -6727,6 +6780,7 @@ Index
 | `,`_
 | `-`_
 | `- (bag)`_
+| `- (dictionary)`_
 | `- (set)`_
 | `.`_
 | `..`_
@@ -6845,6 +6899,7 @@ Index
 | `delete_all (bag)`_
 | `delete_all (dictionary)`_
 | `delete_all (set)`_
+| `delete_val (dictionary)`_
 | `den`_
 | `diag`_
 | `diagmat`_

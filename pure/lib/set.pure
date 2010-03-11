@@ -78,7 +78,7 @@
    ``~=``), but note that there are no implicit conversions between the
    different set types and thus the operand types must match. Ordered sets
    compare their members using the ``==`` predicate, while hashed sets check
-   for syntactical equality (using ``same``).  Operands in subset/subbag
+   for syntactical equality (using ``same``). Operands in subset/subbag
    comparisons must also match up. Here it is checked that all members of one
    set/bag are contained in the other (also taking into account multiplicities
    in the bag case).
@@ -271,8 +271,8 @@ hbagp _::HBag	= 1;
 hbagp _		= 0;
 
 // create an empty set
-emptyset	= Set avl::emptytree;
-emptybag	= Bag avl::emptytree;
+emptyset	= Set  avl::emptytree;
+emptybag	= Bag  avl::emptytree;
 emptyhset	= HSet avl::emptytree;
 emptyhbag	= HBag avl::emptytree;
 
@@ -284,63 +284,72 @@ hbag xs		= foldl insert emptyhbag xs if listp xs;
 
 // insert a member
 insert (Set  m) y = Set  (avl::insert   m y);
-insert (Bag  m) y = Bag  (avl::insertm  m y);
-insert (HSet m) y = HSet (avl::inserth  m y);
-insert (HBag m) y = HBag (avl::inserthm m y);
+insert (Bag  m) y = Bag  (avl::minsert  m y);
+insert (HSet m) y = HSet (avl::hinsert  m y);
+insert (HBag m) y = HBag (avl::mhinsert m y);
 
 // delete a member
-delete (Set  m) y = Set  (avl::delete  m y);
-delete (Bag  m) y = Bag  (avl::deletem m y);
-delete (HSet m) y = HSet (avl::deleteh m y);
-delete (HBag m) y = HBag (avl::deleteh m y);
+delete (Set  m) y = Set  (avl::delete   m y);
+delete (Bag  m) y = Bag  (avl::mdelete  m y);
+delete (HSet m) y = HSet (avl::hdelete  m y);
+delete (HBag m) y = HBag (avl::mhdelete m y);
 
 // delete all instances of a given member
-delete_all m::Set  y |
-delete_all m::HSet y = delete m y;
-delete_all m::Bag  y |
-delete_all m::HBag y = delete_all (delete m y) y if member m y;
-	   	     = m otherwise;
+delete_all (Set  m) y = Set  (avl::delete    m y);
+delete_all (Bag  m) y = Bag  (avl::mdeletea  m y);
+delete_all (HSet m) y = HSet (avl::hdelete   m y);
+delete_all (HBag m) y = HBag (avl::mhdeletea m y);
 
 // check for the empty set
 null (Set  m) | null (Bag  m) |
 null (HSet m) | null (HBag m) = avl::null m;
 
 // get size
-#(Set  m) | #(Bag  m) = avl::size  m;
-#(HSet m) | #(HBag m) = avl::sizeh m;
+#(Set  m) = avl::size  m;
+#(Bag  m) = avl::msize m;
+#(HSet m) = avl::hsize m;
+#(HBag m) = avl::hsize m;
 
 // membership test
-member (Set  m) y | member (Bag  m) y = avl::member  m y;
-member (HSet m) y | member (HBag m) y = avl::memberh m y;
+member (Set  m) y = avl::member  m y;
+member (Bag  m) y = avl::memberk m y;
+member (HSet m) y = avl::hmember m y;
+member (HBag m) y = avl::hmember m y;
 
 // get all members of a set as a list
-members (Set  m) | members (Bag  m) = avl::members  m;
-members (HSet m) | members (HBag m) = avl::membersh m;
+members (Set  m) = avl::members  m;
+members (Bag  m) = avl::mmembers m;
+members (HSet m) = avl::hmembers m;
+members (HBag m) = avl::hmembers m;
 
 list m::Set  | list m::Bag  |
 list m::HSet | list m::HBag = members m;
 
 // get the first and last member
-first (Set  m) | first (Bag  m) = avl::first  m;
-last  (Set  m) | last  (Bag  m) = avl::last   m;
-first (HSet m) | first (HBag m) = avl::firsth m;
-last  (HSet m) | last  (HBag m) = avl::lasth  m;
+first (Set  m) = avl::first  m;
+first (Bag  m) = avl::mfirst m;
+last  (Set  m) = avl::last   m;
+last  (Bag  m) = avl::mlast  m;
+first (HSet m) = avl::hfirst m;
+first (HBag m) = avl::hfirst m;
+last  (HSet m) = avl::hlast  m;
+last  (HBag m) = avl::hlast  m;
 
 // remove the first and last member
 rmfirst (Set  m) = Set  (avl::rmfirst  m);
-rmfirst (Bag  m) = Bag  (avl::rmfirst  m);
+rmfirst (Bag  m) = Bag  (avl::mrmfirst m);
 rmlast  (Set  m) = Set  (avl::rmlast   m);
-rmlast  (Bag  m) = Bag  (avl::rmlast   m);
-rmfirst (HSet m) = HSet (avl::rmfirsth m);
-rmfirst (HBag m) = HBag (avl::rmfirsth m);
-rmlast  (HSet m) = HSet (avl::rmlasth  m);
-rmlast  (HBag m) = HBag (avl::rmlasth  m);
+rmlast  (Bag  m) = Bag  (avl::mrmlast  m);
+rmfirst (HSet m) = HSet (avl::hrmfirst m);
+rmfirst (HBag m) = HBag (avl::hrmfirst m);
+rmlast  (HSet m) = HSet (avl::hrmlast  m);
+rmlast  (HBag m) = HBag (avl::hrmlast  m);
 
 // comparisons
-m1::Set  == m2::Set  | m1::Bag  == m2::Bag  = (members m1 == members m2);
+m1::Set  == m2::Set  | m1::Bag  == m2::Bag  = members m1 == members m2;
 m1::HSet == m2::HSet | m1::HBag == m2::HBag = m1 <= m2 && m2 <= m1;
 
-m1::Set  ~= m2::Set  | m1::Bag  ~= m2::Bag  = (members m1 ~= members m2);
+m1::Set  ~= m2::Set  | m1::Bag  ~= m2::Bag  = members m1 ~= members m2;
 m1::HSet ~= m2::HSet | m1::HBag ~= m2::HBag = ~(m1 == m2);
 
 m1::Set  <= m2::Set  | m1::HSet <= m2::HSet = all (member m2) (members m1);

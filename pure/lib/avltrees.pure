@@ -38,17 +38,18 @@ namespace avl;
    These are shared by all variations of the data structure. Depending on the
    particular type of data structure, the data element may take the form of a
    simple key (set-like), a key=>value pair (dictionary-like), or a
-   key=>bucket pair (hash-like). In the latter case the bucket is a list of
-   the data elements for each key. For hash trees no order of the key/data
-   elements is assumed. Keys/elements in non-hash trees must be ordered, i.e.,
-   the usual comparison predicates (<, >, ==) must be defined on them. */
+   key=>bucket pair (hash-like). The latter form is also used for multisets
+   and multidicts where multiple elements may be stored under a single key.
+   For hash trees no order of the key elements is assumed. Keys in non-hash
+   trees must be ordered, i.e., the usual comparison predicates (<, >, ==)
+   must be defined on them. */
 
 private nonfix nil;
 private bin;
 
 /* Private helper functions. */
 
-private adjusti adjustd deletel rotate;
+private adjusti adjustd init rotate;
 
 /* Operations to construct an empty tree, and to check for an empty tree.
    These are the same for all variations of the data structure. */
@@ -60,7 +61,13 @@ emptytree = nil;
 null nil = 1;
 null (bin _ _ _ _) = 0;
 
-/* Basic AVL tree operations for ordered (non-hash) trees. */
+/* In the following, different operations are provided for the different kinds
+   of trees, which are designated by corresponding prefixes: m denotes
+   multiple values per key, h stands for hashed trees (m and h may be
+   combined). In addition, the suffix k indicates an operation which is only
+   available for dictionary (key=>value) trees. */
+
+/* Basic AVL tree operations, single value per key. */
 
 public size members keys vals first last rmfirst rmlast;
 
@@ -119,9 +126,75 @@ rmlast t = rmlast t!0 with
     when [newr, rightHasChanged] = rmlast r end;
 end;
 
-/* Membership tests for ordered AVL trees. Here we distinguish between
-   set-like and dictionary-like structures. The latter operation has an
-   additional k suffix to indicate that separate keys are used. */
+/* Basic AVL tree operations, multiple values per key. */
+
+public msize mmembers mkeys mvals mfirst mlast mrmfirst mrmlast;
+
+msize t = size t with
+  size nil = 0;
+  size (bin (k=>xs) _ l r) = size l + size r + #xs;
+end;
+
+mmembers t = members t with
+  members nil = [];
+  members (bin (k=>xs) _ l r) = members l + xs + members r;
+end;
+
+mkeys t = keys t with
+  keys nil = [];
+  keys (bin (k=>xs) _ l r) = keys l + [k | k=>v = xs] + keys r;
+end;
+
+mvals t = vals t with
+  vals nil = [];
+  vals (bin (k=>xs) _ l r) = vals l + [v | k=>v = xs] + vals r;
+end;
+
+mfirst t = first t with
+  first (bin (k=>xs) _ nil _) = head xs;
+  first (bin _ _ l _) = first l;
+end;
+
+mlast t = last t with
+  last (bin (k=>xs) _ _ nil) = ::last xs;
+  last (bin _ _ _ r) = last r;
+end;
+
+mrmfirst t = rmfirst t!0 with
+  rmfirst nil = [nil, 0];
+  rmfirst (bin (k=>xs) b nil r)
+    = if ::null newxs then [r, 1]
+      else [bin (k=>newxs) b nil r, 0]
+      when newxs = tail xs end;
+  rmfirst (bin x b l r) = adjustd leftHasChanged (bin x b newl r) (-1)
+    when [newl, leftHasChanged] = rmfirst l end;
+end;
+
+mrmlast t = rmlast t!0 with
+  rmlast nil = [nil, 0];
+  rmlast (bin (k=>xs) b l nil)
+    = if ::null newxs then [l, 1]
+      else [bin (k=>newxs) b l nil, 0]
+      when newxs = ::init xs end;
+  rmlast (bin x b l r) = adjustd rightHasChanged (bin x b l newr) 1
+    when [newr, rightHasChanged] = rmlast r end;
+end;
+
+/* The above also apply to all kinds of hash trees. For convenience and
+   clarity, we define some corresponding synonyms here. */
+
+public hsize hmembers hkeys hvals hfirst hlast hrmfirst hrmlast;
+
+hsize t    = msize t;
+hmembers t = mmembers t;
+hkeys t    = mkeys t;
+hvals t    = mvals t;
+hfirst t   = mfirst t;
+hlast t    = mlast t;
+hrmfirst t = mrmfirst t;
+hrmlast t  = mrmlast t;
+
+/* Membership test for ordered sets and dictionaries. */
 
 public member memberk;
 
@@ -141,97 +214,11 @@ memberk t y = member t y with
     = 1;
 end;
 
-/* Indexing (get the values stored under a given key). This requires a
-   dictionary-like tree with separate key values. The get operation returns a
-   single value; an out_of_bound exception is thrown if the key doesn't exist
-   in the tree. The getm function returns a list of all values for the given
-   key (which might be empty if the key is not in the tree). */
+/* Membership test for hashed sets and dictionaries. */
 
-/* NOTE: 'getm' collects the values for a given key in inorder, which matches
-   the order in which members are inserted, provided that you employ the
-   proper tree insertion and deletion operations, see below. OTOH, 'get' just
-   returns the first value for the given key in preorder, which will not be
-   all that useful if there are different members for the same key. */
+public hmember hmemberk;
 
-public get getm;
-
-get t y = get t y with
-  get nil _ = throw out_of_bounds;
-  get (bin (x=>v) _ l r) y
-    = get l y if x > y;
-    = get r y if x < y;
-    = v;
-end;
-
-getm t y = get t y with
-  get nil _ = [];
-  get (bin (x=>v) _ l r) y
-    = get l y if x > y;
-    = get r y if x < y;
-    = get l y + (v : get r y);
-end;
-
-/* Basic AVL tree operations for hash trees. Please note that the members are
-   in an apparently random order here. However, elements in the same bucket
-   are always stored in the order in which they were inserted into the tree. */
-
-public sizeh membersh keysh valsh firsth lasth rmfirsth rmlasth;
-
-sizeh t = size t with
-  size nil = 0;
-  size (bin (k=>xs) _ l r) = size l + size r + #xs;
-end;
-
-membersh t = members t with
-  members nil = [];
-  members (bin (k=>xs) _ l r) = members l + xs + members r;
-end;
-
-keysh t = keys t with
-  keys nil = [];
-  keys (bin (k=>xs) _ l r) = keys l + [k | k=>v = xs] + keys r;
-end;
-
-valsh t = vals t with
-  vals nil = [];
-  vals (bin (k=>xs) _ l r) = vals l + [v | k=>v = xs] + vals r;
-end;
-
-firsth t = first t with
-  first (bin (k=>xs) _ nil _) = head xs;
-  first (bin _ _ l _) = first l;
-end;
-
-lasth t = last t with
-  last (bin (k=>xs) _ _ nil) = ::last xs;
-  last (bin _ _ _ r) = last r;
-end;
-
-rmfirsth t = rmfirst t!0 with
-  rmfirst nil = [nil, 0];
-  rmfirst (bin (k=>xs) b nil r)
-    = if ::null newxs then [r, 1]
-      else [bin (k=>newxs) b nil r, 0]
-      when newxs = tail xs end;
-  rmfirst (bin x b l r) = adjustd leftHasChanged (bin x b newl r) (-1)
-    when [newl, leftHasChanged] = rmfirst l end;
-end;
-
-rmlasth t = rmlast t!0 with
-  rmlast nil = [nil, 0];
-  rmlast (bin (k=>xs) b l nil)
-    = if ::null newxs then [l, 1]
-      else [bin (k=>newxs) b l nil, 0]
-      when newxs = init xs end;
-  rmlast (bin x b l r) = adjustd rightHasChanged (bin x b l newr) 1
-    when [newr, rightHasChanged] = rmlast r end;
-end;
-
-/* Membership tests and indexing for hashed trees. */
-
-public memberh memberhk geth gethm;
-
-memberh t y = member t (hash y) y with
+hmember t y = member t (hash y) y with
   member nil _ _ = 0;
   member (bin (k::int=>xs) _ l r) key::int y
     = member l key y if k > key;
@@ -239,7 +226,7 @@ memberh t y = member t (hash y) y with
     = any (same y) xs;
 end;
 
-memberhk t y = member t (hash y) y with
+hmemberk t y = member t (hash y) y with
   member nil _ _ = 0;
   member (bin (k::int=>xs) _ l r) key::int y
     = member l key y if k > key;
@@ -247,7 +234,38 @@ memberhk t y = member t (hash y) y with
     = any (\(x=>_) -> same x y) xs;
 end;
 
-geth t y = get t (hash y) y with
+/* Indexing for ordered dictionaries. An out_of_bound exception is thrown if
+   the key doesn't exist in the tree. */
+
+public getk;
+
+getk t y = get t y with
+  get nil _ = throw out_of_bounds;
+  get (bin (x=>v) _ l r) y
+    = get l y if x > y;
+    = get r y if x < y;
+    = v;
+end;
+
+/* Indexing for ordered multidicts. This always returns the list of all
+   members for the given key, which may be empty if the key is not in the
+   tree. */
+
+public mgetk;
+
+mgetk t y = get t y with
+  get nil _ = [];
+  get (bin (k=>xs) _ l r) key
+    = get l key if k > key;
+    = get r key if k < key;
+    = [v | x=>v = xs];
+end;
+
+/* Indexing for hashed (multi-)dicts. */
+
+public hgetk mhgetk;
+
+hgetk t y = get t (hash y) y with
   get nil _ _ = throw out_of_bounds;
   get (bin (k::int=>xs) _ l r) key::int y
     = get l key y if k > key;
@@ -257,7 +275,7 @@ geth t y = get t (hash y) y with
       end;
 end;
 
-gethm t y = get t (hash y) y with
+mhgetk t y = get t (hash y) y with
   get nil _ _ = [];
   get (bin (k::int=>xs) _ l r) key::int y
     = get l key y if k > key;
@@ -265,27 +283,11 @@ gethm t y = get t (hash y) y with
     = [v | x=>v = xs; x===y];
 end;
 
-/* AVL tree insertion and deletion. Again, there are different variations of
-   these operations, depending on whether you need separate keys like in a
-   dictionary (k suffix) and/or hashing of key values (h suffix). For
-   insertions, there are additional variations depending on whether multiple
-   instances of the same key should be allowed (m suffix). For deletions,
-   there is a separate deletem operation for multiset trees which guarantees
-   that it's always the first member for a given key (in inorder traversal)
-   which is removed. This is somewhat slower than delete (which may remove
-   multiple elements for the same key in an apparently random order), but is
-   necessary to ensure that distinct members for the same key are always kept
-   in the order in which they were inserted. The deletekm operation does the
-   same for multidict trees. No such special provisions are needed for hashed
-   trees since these always store members for the same key in the same bucket,
-   where they are kept in insertion order anyway. */
+/* AVL tree insertion and deletion. */
 
-public insert insertk inserth inserthk;
-public insertm insertkm inserthm inserthkm;
-public delete deletek deletem deletekm deleteh deletehk;
+/* Ordered case, single value. */
 
-/* Ordered AVL tree operations. A total order must be defined on the key
-   values for these operations. */
+public insert insertk;
 
 insert t y = insert t y!0 with
   insert nil y = [bin y 0 nil nil, 1];
@@ -307,23 +309,7 @@ insertk t y@(key=>val) = insert t y!0 with
       when [newr, rightHasChanged] = insert r y end if key > k;
 end;
 
-insertm t y = insert t y!0 with
-  insert nil y = [bin y 0 nil nil, 1];
-  insert (bin x@k b l r) y@key
-    = adjusti leftHasChanged (bin x b newl r) (-1)
-      when [newl, leftHasChanged] = insert l y end if key < k;
-    = adjusti rightHasChanged (bin x b l newr) 1
-      when [newr, rightHasChanged] = insert r y end if key >= k;
-end;
-
-insertkm t y@(key=>val) = insert t y!0 with
-  insert nil y = [bin y 0 nil nil, 1];
-  insert (bin x@(k=>v) b l r) y@(key=>val)
-    = adjusti leftHasChanged (bin x b newl r) (-1)
-      when [newl, leftHasChanged] = insert l y end if key < k;
-    = adjusti rightHasChanged (bin x b l newr) 1
-      when [newr, rightHasChanged] = insert r y end if key >= k;
-end;
+public delete deletek deletekv;
 
 delete t y = delete t y!0 with
   delete nil _ = [nil, 0];
@@ -331,7 +317,7 @@ delete t y = delete t y!0 with
     = if l===nil then [r, 1]
       else if r===nil then [l, 1]
       else (adjustd leftHasChanged (bin (last l) b newl r) (-1)
-      	    when [newl, leftHasChanged] = deletel l end) if key == k;
+      	    when [newl, leftHasChanged] = init l end) if key == k;
     = adjustd leftHasChanged (bin x b newl r) (-1)
       when [newl, leftHasChanged] = delete l y end if key < k;
     = adjustd rightHasChanged (bin x b l newr) 1
@@ -344,54 +330,112 @@ deletek t y = delete t y!0 with
     = if l===nil then [r, 1]
       else if r===nil then [l, 1]
       else (adjustd leftHasChanged (bin (last l) b newl r) (-1)
-      	    when [newl, leftHasChanged] = deletel l end) if key == k;
+      	    when [newl, leftHasChanged] = init l end) if key == k;
     = adjustd leftHasChanged (bin x b newl r) (-1)
       when [newl, leftHasChanged] = delete l y end if key < k;
     = adjustd rightHasChanged (bin x b l newr) 1
       when [newr, rightHasChanged] = delete r y end if key > k;
 end;
 
-deletem t y = delete t y!0 with
+// Delete one specific key=>val pair.
+deletekv t y@(key=>val) = delete t y!0 with
   delete nil _ = [nil, 0];
-  delete (bin x@k b l r) y@key
-    = if l===nil then [r, 1]
-      else if top l==key then
-        (adjustd leftHasChanged (bin x b newl r) (-1)
-      	 when [newl, leftHasChanged] = delete l y end)
+  delete t@(bin x@(k=>v) b l r) y@(key=>val)
+    = if val~==v then [t, 0]
+      else if l===nil then [r, 1]
       else if r===nil then [l, 1]
       else (adjustd leftHasChanged (bin (last l) b newl r) (-1)
-      	    when [newl, leftHasChanged] = deletel l end) if key == k;
+      	    when [newl, leftHasChanged] = init l end) if key == k;
     = adjustd leftHasChanged (bin x b newl r) (-1)
       when [newl, leftHasChanged] = delete l y end if key < k;
     = adjustd rightHasChanged (bin x b l newr) 1
       when [newr, rightHasChanged] = delete r y end if key > k;
-  top (bin k _ _ _) = k;
 end;
 
-deletekm t y = delete t y!0 with
+/* Ordered case, multiple values. */
+
+public minsert minsertk;
+
+minsert t y = insert t y!0 with
+  insert nil y@k = [bin (k=>[y]) 0 nil nil, 1];
+  insert (bin x@(k=>xs) b l r) y@key
+    = [bin (k=>xs+[y]) b l r, 0] if k == key;
+    = adjusti leftHasChanged (bin x b newl r) (-1)
+      when [newl, leftHasChanged] = insert l y end if key < k;
+    = adjusti rightHasChanged (bin x b l newr) 1
+      when [newr, rightHasChanged] = insert r y end if key > k;
+end;
+
+minsertk t y@(key=>val) = insert t y!0 with
+  insert nil y@(k=>v) = [bin (k=>[y]) 0 nil nil, 1];
+  insert (bin x@(k=>xs) b l r) y@(key=>val)
+    = [bin (k=>xs+[y]) b l r, 0] if k == key;
+    = adjusti leftHasChanged (bin x b newl r) (-1)
+      when [newl, leftHasChanged] = insert l y end if key < k;
+    = adjusti rightHasChanged (bin x b l newr) 1
+      when [newr, rightHasChanged] = insert r y end if key > k;
+end;
+
+public mdelete mdeletek mdeletekv;
+
+mdelete t y = delete t y!0 with
   delete nil _ = [nil, 0];
-  delete (bin x@(k=>_) b l r) y@key
-    = if l===nil then [r, 1]
-      else if top l==key then
-        (adjustd leftHasChanged (bin x b newl r) (-1)
-      	 when [newl, leftHasChanged] = delete l y end)
+  delete (bin x@(k=>xs) b l r) y@key
+    = if ~::null newxs then [bin (k=>newxs) b l r, 0]
+      else if l===nil then [r, 1]
       else if r===nil then [l, 1]
-      else
-        (adjustd leftHasChanged (bin (last l) b newl r) (-1)
-      	 when [newl, leftHasChanged] = deletel l end)
-      if key == k;
+      else (adjustd leftHasChanged (bin (last l) b newl r) (-1)
+      	    when [newl, leftHasChanged] = init l end)
+      when newxs = tail xs end if k == key;
     = adjustd leftHasChanged (bin x b newl r) (-1)
       when [newl, leftHasChanged] = delete l y end if key < k;
     = adjustd rightHasChanged (bin x b l newr) 1
       when [newr, rightHasChanged] = delete r y end if key > k;
-  top (bin (k=>_) _ _ _) = k;
 end;
 
-/* Hashed tree operations. Hash keys are used as ordered key values here.
-   Different keys may be stored in the same bucket which is represented as a
-   list of its members. */
+mdeletek t y = mdelete t y;
 
-inserth t y = insert t (hash y) y!0 with
+mdeletekv t y@(key=>val) = delete t y!0 with
+  delete nil _ = [nil, 0];
+  delete (bin x@(k=>xs) b l r) y@(key=>val)
+    = if ~::null newxs then [bin (k=>newxs) b l r, 0]
+      else if l===nil then [r, 1]
+      else if r===nil then [l, 1]
+      else (adjustd leftHasChanged (bin (last l) b newl r) (-1)
+      	    when [newl, leftHasChanged] = init l end)
+      when newxs = deleteb xs y end if k == key;
+    = adjustd leftHasChanged (bin x b newl r) (-1)
+      when [newl, leftHasChanged] = delete l y end if key < k;
+    = adjustd rightHasChanged (bin x b l newr) 1
+      when [newr, rightHasChanged] = delete r y end if key > k;
+  deleteb [] y = [];
+  deleteb (x@(k=>v):xs) y@(key=>val) = xs if k == key && v === val;
+  deleteb (x:xs) y = x:deleteb xs y;
+end;
+
+// Delete all members for a given key.
+public mdeletea mdeleteka;
+
+mdeletea t y = delete t y!0 with
+  delete nil _ = [nil, 0];
+  delete (bin x@(k=>xs) b l r) y@key
+    = if l===nil then [r, 1]
+      else if r===nil then [l, 1]
+      else (adjustd leftHasChanged (bin (last l) b newl r) (-1)
+      	    when [newl, leftHasChanged] = init l end) if k == key;
+    = adjustd leftHasChanged (bin x b newl r) (-1)
+      when [newl, leftHasChanged] = delete l y end if key < k;
+    = adjustd rightHasChanged (bin x b l newr) 1
+      when [newr, rightHasChanged] = delete r y end if key > k;
+end;
+
+mdeleteka t y = mdeletea t y;
+
+/* Hashed trees, single value. */
+
+public hinsert hinsertk;
+
+hinsert t y = insert t (hash y) y!0 with
   insert nil k::int y = [bin (k=>[y]) 0 nil nil, 1];
   insert (bin x@(k::int=>xs) b l r) key::int y
     = [bin (k=>insertb xs y) b l r, 0] if k == key;
@@ -404,7 +448,7 @@ inserth t y = insert t (hash y) y!0 with
   insertb (x:xs) y = x:insertb xs y;
 end;
 
-inserthk t y@(key=>val) = insert t (hash key) y!0 with
+hinsertk t y@(key=>val) = insert t (hash key) y!0 with
   insert nil k::int y = [bin (k=>[y]) 0 nil nil, 1];
   insert (bin x@(k::int=>xs) b l r) key::int y
     = [bin (k=>insertb xs y) b l r, 0] if k == key;
@@ -417,34 +461,17 @@ inserthk t y@(key=>val) = insert t (hash key) y!0 with
   insertb (x:xs) y = x:insertb xs y;
 end;
 
-inserthm t y = insert t (hash y) y!0 with
-  insert nil k::int y = [bin (k=>[y]) 0 nil nil, 1];
-  insert (bin x@(k::int=>xs) b l r) key::int y
-    = [bin (k=>xs+[y]) b l r, 0] if k == key;
-    = adjusti leftHasChanged (bin x b newl r) (-1)
-      when [newl, leftHasChanged] = insert l key y end if key < k;
-    = adjusti rightHasChanged (bin x b l newr) 1
-      when [newr, rightHasChanged] = insert r key y end if key > k;
-end;
+// These are also valid for multi-hashes.
+public hdelete hdeletek hdeletekv;
 
-inserthkm t y@(key=>val) = insert t (hash key) y!0 with
-  insert nil k::int y = [bin (k=>[y]) 0 nil nil, 1];
-  insert (bin x@(k::int=>xs) b l r) key::int y
-    = [bin (k=>xs+[y]) b l r, 0] if k == key;
-    = adjusti leftHasChanged (bin x b newl r) (-1)
-      when [newl, leftHasChanged] = insert l key y end if key < k;
-    = adjusti rightHasChanged (bin x b l newr) 1
-      when [newr, rightHasChanged] = insert r key y end if key > k;
-end;
-
-deleteh t y = delete t (hash y) y!0 with
+hdelete t y = delete t (hash y) y!0 with
   delete nil _ _ = [nil, 0];
   delete (bin x@(k::int=>xs) b l r) key::int y
     = if ~::null newxs then [bin (k=>newxs) b l r, 0]
       else if l===nil then [r, 1]
       else if r===nil then [l, 1]
       else (adjustd leftHasChanged (bin (last l) b newl r) (-1)
-      	    when [newl, leftHasChanged] = deletel l end)
+      	    when [newl, leftHasChanged] = init l end)
       when newxs = deleteb xs y end if k == key;
     = adjustd leftHasChanged (bin x b newl r) (-1)
       when [newl, leftHasChanged] = delete l key y end if key < k;
@@ -455,14 +482,14 @@ deleteh t y = delete t (hash y) y!0 with
   deleteb (x:xs) y = x:deleteb xs y;
 end;
 
-deletehk t y = delete t (hash y) y!0 with
+hdeletek t y = delete t (hash y) y!0 with
   delete nil _ _ = [nil, 0];
   delete (bin x@(k::int=>xs) b l r) key::int y
     = if ~::null newxs then [bin (k=>newxs) b l r, 0]
       else if l===nil then [r, 1]
       else if r===nil then [l, 1]
       else (adjustd leftHasChanged (bin (last l) b newl r) (-1)
-      	    when [newl, leftHasChanged] = deletel l end)
+      	    when [newl, leftHasChanged] = init l end)
       when newxs = deleteb xs y end if k == key;
     = adjustd leftHasChanged (bin x b newl r) (-1)
       when [newl, leftHasChanged] = delete l key y end if key < k;
@@ -471,6 +498,86 @@ deletehk t y = delete t (hash y) y!0 with
   deleteb [] y = [];
   deleteb (x@(k=>v):xs) y@k = xs;
   deleteb (x:xs) y = x:deleteb xs y;
+end;
+
+hdeletekv t y@(key=>val) = delete t (hash key) y!0 with
+  delete nil _ _ = [nil, 0];
+  delete (bin x@(k::int=>xs) b l r) key::int y
+    = if ~::null newxs then [bin (k=>newxs) b l r, 0]
+      else if l===nil then [r, 1]
+      else if r===nil then [l, 1]
+      else (adjustd leftHasChanged (bin (last l) b newl r) (-1)
+      	    when [newl, leftHasChanged] = init l end)
+      when newxs = deleteb xs y end if k == key;
+    = adjustd leftHasChanged (bin x b newl r) (-1)
+      when [newl, leftHasChanged] = delete l key y end if key < k;
+    = adjustd rightHasChanged (bin x b l newr) 1
+      when [newr, rightHasChanged] = delete r key y end if key > k;
+  deleteb [] y = [];
+  deleteb (x@(k=>v):xs) x = xs;
+  deleteb (x:xs) y = x:deleteb xs y;
+end;
+
+/* Hashed trees, multiple values. */
+
+public mhinsert mhinsertk;
+
+mhinsert t y = insert t (hash y) y!0 with
+  insert nil k::int y = [bin (k=>[y]) 0 nil nil, 1];
+  insert (bin x@(k::int=>xs) b l r) key::int y
+    = [bin (k=>xs+[y]) b l r, 0] if k == key;
+    = adjusti leftHasChanged (bin x b newl r) (-1)
+      when [newl, leftHasChanged] = insert l key y end if key < k;
+    = adjusti rightHasChanged (bin x b l newr) 1
+      when [newr, rightHasChanged] = insert r key y end if key > k;
+end;
+
+mhinsertk t y@(key=>val) = insert t (hash key) y!0 with
+  insert nil k::int y = [bin (k=>[y]) 0 nil nil, 1];
+  insert (bin x@(k::int=>xs) b l r) key::int y
+    = [bin (k=>xs+[y]) b l r, 0] if k == key;
+    = adjusti leftHasChanged (bin x b newl r) (-1)
+      when [newl, leftHasChanged] = insert l key y end if key < k;
+    = adjusti rightHasChanged (bin x b l newr) 1
+      when [newr, rightHasChanged] = insert r key y end if key > k;
+end;
+
+public mhdelete mhdeletek mhdeletekv;
+
+mhdelete   t y = hdelete   t y;
+mhdeletek  t y = hdeletek  t y;
+mhdeletekv t y = hdeletekv t y;
+
+public mhdeletea mhdeleteka;
+
+mhdeletea t y = delete t (hash y) y!0 with
+  delete nil _ _ = [nil, 0];
+  delete (bin x@(k::int=>xs) b l r) key::int y
+    = if ~::null newxs then [bin (k=>newxs) b l r, 0]
+      else if l===nil then [r, 1]
+      else if r===nil then [l, 1]
+      else (adjustd leftHasChanged (bin (last l) b newl r) (-1)
+      	    when [newl, leftHasChanged] = init l end)
+      when newxs = filter (~==y) xs end if k == key;
+    = adjustd leftHasChanged (bin x b newl r) (-1)
+      when [newl, leftHasChanged] = delete l key y end if key < k;
+    = adjustd rightHasChanged (bin x b l newr) 1
+      when [newr, rightHasChanged] = delete r key y end if key > k;
+end;
+
+mhdeleteka t y = delete t (hash y) y!0 with
+  delete nil _ _ = [nil, 0];
+  delete (bin x@(k::int=>xs) b l r) key::int y
+    = if ~::null newxs then [bin (k=>newxs) b l r, 0]
+      else if l===nil then [r, 1]
+      else if r===nil then [l, 1]
+      else (adjustd leftHasChanged (bin (last l) b newl r) (-1)
+      	    when [newl, leftHasChanged] = init l end)
+      when newxs = filter (\(k=>v) -> k~==y) xs end if k == key;
+    = adjustd leftHasChanged (bin x b newl r) (-1)
+      when [newl, leftHasChanged] = delete l key y end if key < k;
+    = adjustd rightHasChanged (bin x b l newr) 1
+      when [newr, rightHasChanged] = delete r key y end if key > k;
 end;
 
 /* Private helper functions. */
@@ -539,11 +646,11 @@ end;
 
 // Delete the last element of a tree.
 
-deletel nil = [nil, 0];
-deletel (bin _ _ l nil) = [l, 1];
-deletel (bin x b::int l r)
+init nil = [nil, 0];
+init (bin _ _ l nil) = [l, 1];
+init (bin x b::int l r)
   = adjustd rightHasChanged (bin x b l newr) 1
-    when [newr, rightHasChanged] = deletel r end;
+    when [newr, rightHasChanged] = init r end;
 
 // Single and double tree rotations - these are common for insert and delete.
 
