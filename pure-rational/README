@@ -1868,584 +1868,694 @@ There are several families of functions for converting between ``strings`` and
 ``rationals``.
 
 The functions that convert from ``rationals`` to strings have names based on
-that of the standard function
-str. The str * functions convert to a formatted string, and depend on a ‘format
-structure’ parameter
-(see §13.2). The strs * functions convert to a tuple of string fragments.
+that of the standard function ``str``. The ``str_*`` functions convert to a
+formatted string, and depend on a 'format structure' parameter (see §13.2). The
+``strs_*`` functions convert to a tuple of string fragments.
+
 The functions that convert from strings to ``rationals`` have names based on
-that of the standard function
-val. The val * functions convert from a formatted string, and depend on a format
-structure parameter.
-The sval * functions convert from a tuple of string fragments.
-There are also join * and split * functions to join string fragments into
-formatted strings, and to split
-formatted strings into string fragments, respectively; these depend on a format
-structure parameter.
-These functions are not always invertible, because some of the functions reduce
-an error term to just a
-sign, e.g. str real approx dp may round a value. Thus sometimes the join * and
-split * pairs, and
-the str * and val * pairs are not quite mutual inverses.
-This is illustrated in Figure 4; dotted lined indicate a possibly imperfect
-mapping.
-``rational``
-strs 
+that of the standard function ``val``. The ``val_*`` functions convert from a
+formatted string, and depend on a format structure parameter. The ``sval_*``
+functions convert from a tuple of string fragments.
 
+There are also ``join_*`` and ``split_*`` functions to join string fragments
+into formatted strings, and to split formatted strings into string fragments,
+respectively; these depend on a format structure parameter. These functions are
+not always invertible, because some of the functions reduce an error term to
+just a sign, e.g. str real approx dp may round a value. Thus sometimes the
+``join_*`` and ``split_*`` pairs, and the ``str_*`` and ``val_*`` pairs are not 
+quite mutual inverses.
 
-str 
-x
-String Fragments
-sval 
-I
-join 
+Internationalisation and Format Structures
+------------------------------------------
 
-
-Formatted String
-val 
-8
-split 
-J
-Figure 4: String functions.
-13.2 Internationalisation and Format Structures
 Many of the string formatting functions in the following sections are
-parameterised by a ‘format structure’.
-Throughout this document, the formal parameter for the format structure will be
-Fmt. This is simply a
-map from some string ‘codes’ to functions as follows. The functions are mostly
-from strings to a string,
-or from a string to a tuple of strings.
-"sm": a function mapping a sign and an unsigned mantissa (or integer) strings to
-a signed mantissa (or
-integer) string.
-"se": a function mapping a sign and an unsigned exponent string to a signed
-exponent string.
-"-s": a function mapping a signed number string to a pair containing a sign and
-the unsigned number
-string.
-"gi": a function mapping an integer representing the group size and an integer
-string to a grouped integer
-string
-"gf": a function mapping an integer representing the group size and a
-fraction-part string to a grouped
-fraction-part string
-"-g": a function mapping a grouped number string to an ungrouped number string
-"zi": a function mapping an integer number string to a number string. The input
-string representing
-zero integer part is "", which should be mapped to the desired representation of
-zero. All other
-number strings should be returned unaltered.
-"zf": a function mapping a fraction-part number string to a number string. The
-input string representing
-zero fraction part is "", which should be mapped to the desired representation
-of zero. All other
-number strings should be returned unaltered.
-"ir": a function mapping initial and recurring parts of a fraction part to the
-desired format.
-30
-"-ir": a function mapping a formatted fraction part to the component initial and
-recurring parts.
-"if": a function mapping an integer string and fraction part string to the
-radix-point formatted string
-"-if": a function mapping a radix-point formatted string to the component
-integer fraction part strings
-"me": a function mapping a mantissa string and exponent string to the formatted
-exponential string
-"-me": a function mapping a formatted exponential string to the component
-mantissa and exponent strings
-"e": a function mapping an ‘error’ number (not string) and a number string to a
-formatted number
-string indicating the sign of the error.
-"-e": a function mapping a formatted number string indicating the sign of the
-error to the component
-‘error’ string (not number) and number strings.
+parameterised by a 'format structure'. Throughout this document, the formal
+parameter for the format structure will be ``fmt``. This is simply a map from
+some string 'codes' to functions as follows. The functions are mostly from
+strings to a string, or from a string to a tuple of strings.
+
+:"sm":
+  a function mapping a sign and an unsigned mantissa (or integer) strings to a
+  signed mantissa (or integer) string.
+
+:"se":
+  a function mapping a sign and an unsigned exponent string to a signed exponent
+  string.
+
+:"-s":
+  a function mapping a signed number string to a pair containing a sign and the
+  unsigned number string.
+
+:"gi":
+  a function mapping an integer representing the group size and an integer
+  string to a grouped integer string.
+
+:"gf":
+  a function mapping an integer representing the group size and a fraction-part
+  string to a grouped fraction-part string.
+
+:"-g":
+  a function mapping a grouped number string to an ungrouped number string.
+
+:"zi":
+  a function mapping an integer number string to a number string. The input
+  string representing zero integer part is "", which should be mapped to the
+  desired representation of zero. All other number strings should be returned
+  unaltered.
+
+:"zf":
+  a function mapping a fraction-part number string to a number string. The input
+  string representing zero fraction part is "", which should be mapped to the
+  desired representation of zero. All other number strings should be returned
+  unaltered.
+
+:"ir":
+  a function mapping initial and recurring parts of a fraction part to the
+  desired format.
+
+:"-ir":
+  a function mapping a formatted fraction part to the component initial and
+  recurring parts.
+
+:"if":
+  a function mapping an integer string and fraction part string to the
+  radix-point formatted string.
+
+:"-if":
+  a function mapping a radix-point formatted string to the component integer
+  fraction part strings
+
+:"me":
+  a function mapping a mantissa string and exponent string to the formatted
+  exponential string.
+
+:"-me":
+  a function mapping a formatted exponential string to the component mantissa
+  and exponent strings.
+
+:"e":
+  a function mapping an ‘error’ number (not string) and a number string to a
+  formatted number string indicating the sign of the error.
+
+:"-e":
+  a function mapping a formatted number string indicating the sign of the error
+  to the component ‘error’ string (not number) and number strings.
+
 Depending upon the format structure, some parameters of some of the functions
-taking a format structure
-may have no effect. For example, an IntGroup parameter specifying the size of
-the integer digit groups
-will have no effect if the integer group separator is the empty string.
-create format
-(U)
-Options is a function that provides an easy way to prepare a ‘format structure’
-from
-the simpler ‘options structure’.
-The options structure is another dictionary, but from more descriptive strings
-to a string or tuple
-of strings.
-For example, format uk
-(U) is generated from options uk
-(U) as follows:
-public const var options_uk;
-let options_uk =
-dict [
-("sign", ("-","","")), //alternative: ("-"," ","+")
-("exponent sign", ("-","","")), //alternative: ("-","","+")
-("group separator", ","), //might be " " or "." or "’" elsewhere
-("zero", "0"),
-("radix point", "."), //might be "," elsewhere
-("fraction group separator", ","),
-("fraction zero", "0"), //alternative: ""
-("recur brackets", ("[","...]")),
-("exponent", "*10^"), //(poor) alternative: "e"
-("error sign", ("-","","+")),
-("error brackets", ("(",")")),
-];
-public const var format_uk;
-let format_uk = create_format options_uk;
-The exponent string need not depend on the radix, as the numerals for the number
-radix in that
-radix are always "10".
+taking a format structure may have no effect. For example, an ``intGroup``
+parameter specifying the size of the integer digit groups will have no effect if
+the integer group separator is the empty string.
+
+:create format options:
+  is a function that provides an easy way to prepare a 'format structure' from
+  the simpler ‘options structure’. The options structure is another dictionary,
+  but from more descriptive strings to a string or tuple of strings.
+
+For example, ``format_uk`` is generated from ``options_uk`` as follows::
+
+  public options_uk;
+  const options_uk =
+    dict [
+      ("sign", ("-","","")),             //alternative: ("-"," ","+")
+      ("exponent sign", ("-","","")),    //alternative: ("-","","+")
+      ("group separator", ","),          //might be " " or "." or "’" elsewhere
+      ("zero", "0"),
+      ("radix point", "."),              //might be "," elsewhere
+      ("fraction group separator", ","),
+      ("fraction zero", "0"),            //alternative: ""
+      ("recur brackets", ("[","...]")),
+      ("exponent", "*10^"),              //(poor) alternative: "e"
+      ("error sign", ("-","","+")),
+      ("error brackets", ("(",")")),
+    ];
+
+  public format_uk;
+  const format_uk = create_format options_uk;
+  
+The exponent string need not depend on the radix, as the numerals for the
+number radix in that radix are always "10".
+
 Beware of using "e" or "E" as an exponent string as these have the potential of
-being treated as
-digits in, e.g., hexadecimal.
+being treated as digits in, e.g., hexadecimal.
+
 Format structures do not have to be generated via create format; they may also
 be constructed directly.
-13.3 Digit Grouping
-Some functions take Group parameters. A value of 0 means “don’t group”.
-31
-13.4 Radices
-The functions that produce a decimal expansion take a Radix argument.
-The fraction parts are expanded in that radix (or ‘base’), in addition to the
-integer parts. The parameter
-Radix is not restricted to the usual {2, 8, 10, 16}, but may be any ``integer``
-from 2 to 36; the numerals (‘digits’)
-are chosen from [“0”, . . . , “9”, “A”, . . . , “Z”]. The letter-digits are
-always upper case.
+
+Digit Grouping
+--------------
+
+Some functions take ``group`` parameters. A value of 0 means "don’t group".
+
+Radices
+-------
+
+The functions that produce a decimal expansion take a Radix argument. The
+fraction parts are expanded in that radix (or ‘base’), in addition to the
+integer parts. The parameter Radix is not restricted to the usual {2, 8, 10,
+16}, but may be any ``integer`` from 2 to 36; the numerals (‘digits’) are chosen
+from ["0", . . . , "9", "A", . . . , "Z"]. The letter-digits are always upper
+case.
+
 The functions do not attach a prefix (such as "0x" for hexadecimal) to the
 resulting string.
-13.5 Error Terms
-Some functions return a value including an ‘error’ term (in a tuple) or sign (at
-the end of a string). Such
-an error is represents what the next digit would be as a fraction of the radix.
-Example 67 Error term in the tuple of string ‘fragments’.
-  > strs_real_approx_sf 10 floor 3 (234567%100000)
-("+","2","34",567%1000)
-  > strs_real_approx_sf 10 ceil 3 (234567%100000)
-("+","2","35",-433%1000)
+
+Error Terms
+-----------
+
+Some functions return a value including an 'error' term (in a tuple) or sign (at
+the end of a string). Such an error is represents what the next digit would be
+as a fraction of the radix.
+
+**Example 67** Error term in the tuple of string 'fragments'::
+
+  > strs_real_approx_sf 10 floor 3 (234567%100000);
+  ("+","2","34",567%1000)
+  > strs_real_approx_sf 10 ceil 3 (234567%100000);
+  ("+","2","35",-433%1000)
+  >
+
 (The function strs real approx sf is described in §16.1.2.)
+
 In strings, only the sign of the error term is given. A “+” should be read as
-“and a bit more”; “-” as
-“but a bit less”.
-Example 68 Error sign in the string.
-  > str_real_approx_sf format_uk 10 0 0 floor 3 (234567%100000)
-"2.34(+)"
-  > str_real_approx_sf format_uk 10 0 0 ceil 3 (234567%100000)
-"2.35(-)"
+“and a bit more”; “-” as “but a bit less”.
+
+**Example 68** Error sign in the string::
+
+  > str_real_approx_sf format_uk 10 0 0 floor 3 (234567%100000);
+  "2.34(+)"
+  > str_real_approx_sf format_uk 10 0 0 ceil 3 (234567%100000);
+  "2.35(-)"
+  >
+
 (The function str real approx sf is described in §16.1.2.)
-14 Q $ Fraction String (“i + n/d”)
-14.1 Formatting to Fraction Strings
-str vulgar
-(U)
-q — returns a String representing the ``rational`` (or ``integer``) q in the
-form
-• “[−]n/d”
-str vulgar or int
-(U)
-q — returns a String representing the ``rational`` (or ``integer``) q in one of
-the forms
-• “[−]n/d”
-• “[−]i”
-str mixed
-(U)
-q — returns a String representing the ``rational`` (or ``integer``) q in one of
-the forms
-• “i + n/d”
-• “−(i + n/d)”
-• “[−]n/d”
-• “[−]i”
-Example 69 The fraction string representations.
-32
-  > let L = while (<= 3%2) (+(1%2)) (-3%2); L
-[-3%2,-1%1,-1%2,0%1,1%2,1%1,3%2]
-  > map str_vulgar L
-["-3/2","-1/1","-1/2","0/1","1/2","1/1","3/2"]
-  > map str_vulgar_or_int L
-["-3/2","-1","-1/2","0","1/2","1","3/2"]
-  > map str_mixed L
-["-(1+1/2)","-1","-1/2","0","1/2","1","1+1/2"]
-These might be compared to the behaviour of the standard function str.
-str X — returns a String representing the value X.
-Example 70 The standard function str.
-  > map str L
-["-3%2","-1%1","-1%2","0%1","1%2","1%1","3%2"]
-14.2 Evaluation of Fraction Strings
-val vulgar
-(U)
-Str — returns a ``rational`` q represented by the String Str in the form
-• “[−]n/d”
-Such strings can also be evaluated by the val mixed function.
-val mixed
-(U)
-Str — returns a ``rational`` q represented by the String Str
-• “i + n/d”
-• “−(i + n/d)”
-• “[−]n/d” — thus val mixed strictly extends val vulgar
-• “[−]i”
-Example 71 Evaluating fraction strings.
-  > val_vulgar "-22/7"
--22%7
-  > val_mixed "1+5/6"
-11%6
+
+**Q** ↔ Fraction String (“i + n/d”)
+=====================================
+
+Formatting to Fraction Strings
+------------------------------
+
+:str_vulgar q:
+  returns a String representing the ``rational`` (or ``integer``) q in the
+  form
+
+  * “[−]n/d”
+
+:str_vulgar_or_int q:
+  returns a String representing the ``rational`` (or ``integer``) q in one of
+  the forms 
+
+  * “[−]n/d” 
+  * “[−]i”
+
+:str mixed q:
+  returns a String representing the ``rational`` (or ``integer``) q in one of
+  the forms
+
+  * “i + n/d”
+  * “−(i + n/d)”
+  * “[−]n/d”
+  * “[−]i”
+
+**Example 69** The fraction string representations::
+
+  > let l = while (<= 3%2) (+(1%2)) (-3%2);
+  > l;
+  [-3%2,-1%1,-1%2,0%1,1%2,1%1,3%2]
+  > map str_vulgar l;
+  ["-3/2","-1/1","-1/2","0/1","1/2","1/1","3/2"]
+  > map str_vulgar_or_int l;
+  ["-3/2","-1","-1/2","0","1/2","1","3/2"]
+  > map str_mixed l;
+  ["-(1+1/2)","-1","-1/2","0","1/2","1","1+1/2"]
+  >
+
+These might be compared to the behaviour of the standard function ``str``.
+
+:str x:
+  returns a ``string`` representing the value x.
+
+**Example 70** The standard function str::
+
+  > map str l;
+  ["-3%2","-1%1","-1%2","0%1","1%2","1%1","3%2"]
+  >
+
+Evaluation of Fraction Strings
+------------------------------
+
+:val_vulgar strg:
+  returns a ``rational`` q represented by the string strg in the form
+  
+  * “[−]n/d”
+
+Such strings can also be evaluated by the ``val_mixed`` function.
+
+:val_mixed strg:
+  returns a ``rational`` q represented by the ``string`` strg
+
+  * “i + n/d”
+  * “−(i + n/d)”
+  * “[−]n/d” — thus val_mixed strictly extends val_vulgar
+  * “[−]i”
+
+**Example 71** Evaluating fraction strings::
+
+  > val_vulgar "-22/7";
+  -22%7
+  > val_mixed "1+5/6";
+  11%6
+  >
+
 These might be compared to the behaviour of the standard function val.
-val S — evaluates the String S.
-Example 72 The standard function val.
-  > val "1+5%6"
-11%6
-  > val "1+5/6"
-1.83333333333333
-15 Q $ Recurring Numeral Expansion String (“I.FR”)
+
+:val s:
+  evaluates the ``string`` s.
+
+**Example 72** The standard function val::
+
+  > val "1+5%6";
+  11%6
+  > val "1+5/6";
+  1.83333333333333
+  >
+
+**Q** ↔ Recurring Numeral Expansion String (“I.FR”)
+===================================================
+
 See §13.2 for information about the formatting structure to be supplied in the
-Fmt parameter.
-33
-15.1 Formatting to Recurring Expansion Strings
-str real recur
-(U)
-Fmt Radix IntGroup q — returns a String (exactly) representing the ``rational``
-(or ``integer``) q as base-Radix expansion of one the forms
-• “[−]int.frac”
-• “[−]int.init frac part[smallest recurring frac part. . . ]”
-Note that there is no FracGroup parameter.
+``fmt`` parameter.
+
+Formatting to Recurring Expansion Strings
+-----------------------------------------
+
+:str_real_recur fmt radix intGroup q:
+  returns a ``string`` (exactly) representing the ``rational`` (or ``integer``)
+  q as base-Radix expansion of one the forms
+
+  * “[−]int.frac”
+  * “[−]int.init frac part[smallest recurring frac part. . . ]”
+
+Note that there is no fracGroup parameter.
+
 Beware that the string returned by this function can be very long. The length of
-the recurring part
-of such a decimal expansion may be up to one less than the simplest denominator
-of q.
-Example 73 The recurring radix expansion-type string representations.
-  > str_real_recur format_uk 10 3 (4000001%4) // grouped with commas
-"1,000,000.25"
-  > str_real_recur format_uk 10 0 (4000001%4) // no grouping
-"1000000.25"
-  > str_real_recur format_uk 10 3 (1000000%3)
-"333,333.[3...]"
-  > str_real_recur format_uk 10 3 (1000000%7)
-"142,857.[142857...]"
-  > str_real_recur format_uk 10 3 (-1%700)
-"-0.00[142857...]"
-  > str_real_recur format_uk 10 3 (127%128)
-"0.9921875"
-  > str_real_recur format_uk 2 4 (-127%128)
-"-0.1111111"
-  > str_real_recur format_uk 16 4 (127%128)
-"0.FE"
-  > str_real_recur format_uk 10 0 (70057%350) // 1%7 + 10001%50
-"200.16[285714...]"
+the recurring part of such a decimal expansion may be up to one less than the
+simplest denominator of q.
+
+**Example 73** The recurring radix expansion-type string representations::
+
+  > str_real_recur format_uk 10 3 (4000001%4); // grouped with commas
+  "1,000,000.25"
+  > str_real_recur format_uk 10 0 (4000001%4); // no grouping
+  "1000000.25"
+  > str_real_recur format_uk 10 3 (1000000%3);
+  "333,333.[3...]"
+  > str_real_recur format_uk 10 3 (1000000%7);
+  "142,857.[142857...]"
+  > str_real_recur format_uk 10 3 (-1%700);
+  "-0.00[142857...]"
+  > str_real_recur format_uk 10 3 (127%128);
+  "0.9921875"
+  > str_real_recur format_uk 2 4 (-127%128);
+  "-0.1111111"
+  > str_real_recur format_uk 16 4 (127%128);
+  "0.FE"
+  > str_real_recur format_uk 10 0 (70057%350) // 1%7 + 10001%50;
+  "200.16[285714...]"
+  >
+
 The function allows expansion to different radices (bases).
-Example 74 The recurring radix expansion in decimal and hexadecimal.
-  > str_real_recur format_uk 10 0 (1%100)
-"0.01"
-  > str_real_recur format_uk 16 0 (1%100)
-"0.0[28F5C...]"
-Example 75 The recurring radix expansion in duodecimal.
-  > str_real_recur format_uk 12 0 (1%100)
-"0.0[15343A0B62A68781B059...]"
+
+**Example 74** The recurring radix expansion in decimal and hexadecimal::
+
+  > str_real_recur format_uk 10 0 (1%100);
+  "0.01"
+  > str_real_recur format_uk 16 0 (1%100);
+  "0.0[28F5C...]"
+  >
+
+**Example 75** The recurring radix expansion in duodecimal::
+
+  > str_real_recur format_uk 12 0 (1%100);
+  "0.0[15343A0B62A68781B059...]"
+  >
+
 Note that this bracket notation is not standard in the literature. Usually the
-recurring numerals
-are indicated by a single dot over the initial and final numerals of the
-recurring part, or an overline
-over the recurring part. For example 1/70 = 0.0˙14285˙7 = 0.0142857 and 1/3 =
-0.˙3 = 0.3.
-strs real recur
-(U)
-Radix q — returns a quadruple of the four strings:
-• the sign,
-• integer part (which is empty for 0),
-• initial fraction part
-• and recurring fraction part (either and both of which may be empty).
-34
-Example 76 The recurring radix expansion in decimal — the fragments.
-  > strs_real_recur 10 (100%7)
-("+","14","","285714")
-  > strs_real_recur 10 (-1%700)
-("-","","00","142857")
-  > strs_real_recur 10 (70057%350)
-("+","200","16","285714")
+recurring numerals are indicated by a single dot over the initial and final
+numerals of the recurring part, or an overline over the recurring part. For
+example 1/70 = 0.0˙14285˙7 = 0.0142857 and 1/3 = 0.˙3 = 0.3.
+
+:strs_real_recur radix q:
+  returns a quadruple of the four strings:
+
+  * the sign,
+  * integer part (which is empty for 0),
+  * initial fraction part
+  * and recurring fraction part (either and both of which may be empty).
+
+**Example 76** The recurring radix expansion in decimal — the fragments::
+
+  > strs_real_recur 10 (100%7);
+  ("+","14","","285714")
+  > strs_real_recur 10 (-1%700);
+  ("-","","00","142857")
+  > strs_real_recur 10 (70057%350);
+  ("+","200","16","285714")
+  >
+
 This function may be used to also, e.g. format the integer part with
 comma-separated groupings.
-join str real recur
-(U)
-Fmt IntGroup Sign i FracInit FracRecur —formats the parts in the quadruple
-returned by strs real recur to the sort of string as returned by str real recur.
-15.2 Evaluation of Recurring Expansion Strings
-The str * and val * functions depend on a ‘format structure’ parameter (Fmt)
-such as format uk. Conversions
-may be performed between ``rationals`` and differently formatted strings if a
-suitable alternative
-format structure is supplied. See §13.2 for information about formatting
-structures.
-val real recur
-(U)
-Fmt Radix Str — returns the ``rational`` q represented by the base-Radix
-expansion
-String Str of one the forms
-• “[−]int.frac”
-• “[−]int.init frac part[recurring frac part. . . ]”
-Example 77 Conversion from the recurring radix expansion-type string
-representations.
-  > val_real_recur format_uk 10 "-12.345"
--2469%200
-  > val_real_recur format_uk 10 "0.3"
-3%10
-  > val_real_recur format_uk 10 "0.[3...]"
-1%3
-  > val_real_recur format_uk 10 ".333[33...]"
-1%3
-  > val_real_recur format_uk 10 ".[9...]"
-1%1
-sval real recur
-(U)
-Radix Sign IStr FracStr RecurPartStr — returns the ``rational`` q represented
-by the parts
-• sign
-• integer part
-• initial fraction part
-• recurring fraction part
-split str real recur
-(U)
-Fmt Str — returns a tuple containing the parts
-• sign
-• integer part
-• initial fraction part
-• recurring fraction part
-of one the forms
-• “[−]int.frac”
-• “[−]int.init frac part[recurring frac part. . . ]”
-35
-16 Q $ Numeral Expansion String (“I.F × 10E”)
+
+:join_str_real_recur fmt intGroup sign i fracInit fracRecur"
+  formats the parts in the quadruple returned by strs real recur to the sort of
+  string as returned by str real recur.
+
+Evaluation of Recurring Expansion Strings
+-----------------------------------------
+
+The ``str_*`` and ``val_*`` functions depend on a 'format structure' parameter
+(fmt) such as format uk. Conversions may be performed between ``rationals`` and
+differently formatted strings if a suitable alternative format structure is
+supplied. See §13.2 for information about formatting structures.
+
+:val_real_recur fmt radix strg:
+  returns the ``rational`` q represented by the base-radix expansion ``string``
+  strg of one the forms
+
+  * “[−]int.frac”
+  * “[−]int.init frac part[recurring frac part. . . ]”
+
+**Example 77** Conversion from the recurring radix expansion-type string
+representations::
+
+  > val_real_recur format_uk 10 "-12.345";
+  -2469%200
+  > val_real_recur format_uk 10 "0.3";
+  3%10
+  > val_real_recur format_uk 10 "0.[3...]";
+  1%3
+  > val_real_recur format_uk 10 ".333[33...]";
+  1%3
+  > val_real_recur format_uk 10 ".[9...]";
+  1%1
+
+:sval_real_recur radix sign iStr fracStr recurPartStr:
+  returns the ``rational`` q represented by the parts
+
+  * sign
+  * integer part
+  * initial fraction part
+  * recurring fraction part
+
+:split_str_real_recur Fmt strg:
+  returns a tuple containing the parts
+
+  * sign
+  * integer part
+  * initial fraction part
+  * recurring fraction part
+    of one the forms
+    - “[−]int.frac”
+    - “[−]int.init frac part[recurring frac part. . . ]”
+
+**Q** ↔ Numeral Expansion String (“I.F × 10E”)
+==============================================
+
 See §13.2 for information about the formatting structure to be supplied in the
-Fmt parameter.
-The exponent string "*10^" need not depend on the radix, as the numerals for the
-number radix in that
-radix are always "10".
-16.1 Formatting to Expansion Strings
-16.1.1 Functions for Fixed Decimal Places
-str real approx dp
-(U)
-Fmt Radix IntGroup FracGroup Round DP q — returns a string representing
-a numeral expansion approximation of q to DP decimal places, using rounding mode
-Round
-(see §6.1).
-Round is usually round or round unbiased.
-(DP may be positive, zero or negative; non-positive DPs may look misleading —
-use e.g. scientific
-notation instead.)
-Example 78 Decimal places.
-  > str_real_approx_dp format_uk 10 3 3 round 2 (22%7)
-"3.14(+)"
-  > str_real_approx_dp format_uk 10 3 3 ceil 2 (22%7)
-"3.15(-)"
-strs real approx dp
-(U)
-Radix Round DP q — returns a tuple of strings
-• sign
-• integer part
-• fraction part
-representing an expansion to a number of decimal places, together with
-• the rounding “error”: a fraction representing the next numerals
-Example 79 Decimal places — the fragments.
-  > strs_real_approx_dp 10 round 2 (22%7)
-("+","3","14",2%7)
-  > strs_real_approx_dp 10 ceil 2 (22%7)
-("+","3","15",-5%7)
-join str real approx
-(U)
-Fmt IntGroup FracGroup Sign i Frac Err —formats the parts in the quadruple
-returned by strs real approx dp or strs real approx sf to the sort of string as
-returned by
-str real approx dp or str real approx sf.
-16.1.2 Functions for Significant Figures
-str real approx sf
-(U)
-Fmt Radix IntGroup FracGroup Round SF q — returns a string representing
-a numeral expansion approximation of q to SF significant figures, using rounding
-mode Round
-(see §6.1).
-Round is usually round or round unbiased.
-(SF must be positive.)
-Example 80 Significant figures.
-36
-  > str_real_approx_sf format_uk 10 3 3 floor 2 (22%7)
-"3.1(+)"
-  > str_real_approx_sf format_uk 10 3 3 floor 2 ((-22)%7)
-"-3.2(+)"
-strs real approx sf
-(U)
-Radix Round SF q — returns a tuple of strings
-• sign,
-• integer part,
-• fraction part,
-representing an expansion to a number of significant figures, together with
-• the rounding “error”: a fraction representing the next numerals
-join str real approx
-(U) — see §16.1.1.
-16.1.3 Functions for Scientific Notation and Engineering Notation
-str real approx sci
-(U)
-Fmt Radix IntGroup FracGroup Round SF q — returns a string expansion
-with a number of significant figures in scientific notation, using rounding mode
-Round (see
-§6.1).
-(SF must be positive; ExpStep is usually 3, Radix is usually 10, Round is
-usually round or
-round unbiased; str real approx sci is equivalent to str real approx eng (below)
-with ExpStep =
-1.)
-strs real approx sci
-(U)
-Radix Round SF q — returns a tuple of strings:
-• sign of mantissa,
-• integer part of mantissa,
-• fraction part of mantissa,
-• sign of exponent,
-• exponent magnitude
-representing an expansion to a number of significant figures in scientific
-notation together with
-• the rounding “error”: a fraction representing the next numerals
-str real approx eng
-(U)
-Fmt ExpStep Radix IntGroup FracGroup Round SF q — returns a string
-expansion with a number of significant figures in engineering notation, using
-rounding mode Round.
-The ExpStep parameter specifies the granularity of the exponent; specifically,
-the exponent will
-always be divisible by ExpStep.
-(SF must be positive; ExpStep is usually 3 and must be positive, Radix is
-usually 10, Round is
-usually round or round unbiased.)
-Example 81 Engineering notation.
-  > str_real_approx_eng format_uk 3 10 3 3 round 7 (rational 999950)
-"999.950,0*10^3"
-  > str_real_approx_eng format_uk 3 10 3 3 round 4 999950
-"1.000*10^6(-)"
-strs real approx eng
-(U)
-ExpStep Radix Round SF q — returns a tuple of strings:
-• sign of mantissa,
-• integer part of mantissa,
-• fraction part of mantissa,
-37
-• sign of exponent,
-• exponent magnitude
-representing an expansion to a number of significant figures in engineering
-notation together with
-• the rounding “error”: a fraction representing the next numerals
-Example 82 Engineering notation — the fragments.
-  > strs_real_approx_eng 3 10 round 7 (rational 999950)
-("+","999","9500","+","3",0%1)
-  > strs_real_approx_eng 3 10 round 4 999950
-("+","1","000","+","6",-1%20)
-join str real eng
-(U)
-Fmt IntGroup FracGroup MantSign MantI MantF rac ExpSign ExpI Err
-—formats the parts in the quadruple returned by strs real approx eng or strs
-real approx sci
-to the sort of string as returned by str real approx eng or str real approx sci.
-16.2 Evaluation of Expansion Strings
-The str * and val * functions depend on a ‘format structure’ parameter (Fmt)
-such as format uk. Conversions
-may be performed between ``rationals`` and differently formatted strings if a
-suitable alternative
-format structure is supplied. See §13.2 for information about formatting
-structures.
-val real eng
-(U)
-Fmt Radix Str — returns the ``rational`` q represented by the base-Radix
-expansion
-String Str of one the forms
-• “[−]int.frac”
-• “[−]int.frace[−]exponent”
-Example 83 Conversion from the recurring radix expansion-type string
-representations.
-  > val_real_eng format_uk 10 "-12.345"
--2469%200
-  > val_real_eng format_uk 10 "-12.345*10^2"
--2469%2
-sval real eng
-(U)
-Radix SignStr MantIStr MantF racStr ExpSignStr ExpStr —returns the ``rational``
-q represented by the parts
-• sign
-• integer part of mantissa
-• fraction part of mantissa
-• sign of exponent
-• exponent
-split str real eng
-(U)
-Fmt Str — returns a tuple containing the string parts
-• sign
-• integer part of mantissa
-• fraction part of mantissa
-• sign of exponent
-• exponent
-• the “error” sign
-of one the forms
-• “[−]int.frac”
-• “[−]int.frac ×10^[−]exponent”
+``fmt`` parameter.
+
+The exponent string "\*10^" need not depend on the radix, as the numerals for
+the number radix in that radix are always "10".
+
+Formatting to Expansion Strings
+-------------------------------
+
+Functions for Fixed Decimal Places
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+str_real_approx_dp fmt radix intGroup fracGroup roundfun dp q:
+  returns a string representing a numeral expansion approximation of q to dp
+  decimal places, using rounding mode ``roundfun`` (see §6.1). ``roundfun`` is
+  usually ``round`` or ``round_unbiased``. (dp may be positive, zero or
+  negative; non-positive dps may look misleading — use e.g. scientific notation
+  instead.)
+
+**Example 78** Decimal places::
+
+  > str_real_approx_dp format_uk 10 3 3 round 2 (22%7);
+  "3.14(+)"
+  > str_real_approx_dp format_uk 10 3 3 ceil 2 (22%7);
+  "3.15(-)"
+  >
+
+:strs_real_approx_dp radix roundfun do q:
+  returns a tuple of strings
+
+  * sign
+  * integer part
+  * fraction part
+
+  representing an expansion to a number of decimal places, together with
+
+  * the rounding “error”: a fraction representing the next numerals.
+
+**Example 79** Decimal places — the fragments::
+
+  > strs_real_approx_dp 10 round 2 (22%7);
+  ("+","3","14",2%7)
+  > strs_real_approx_dp 10 ceil 2 (22%7);
+  ("+","3","15",-5%7)
+  >
+
+:join_str_real_approx fmt intGroup fracGroup sign i frac err:
+  formats the parts in the quadruple returned by strs real approx dp or strs
+  real approx sf to the sort of string as returned by ``str_real_approx_dp`` or
+  st_real_approx_sf.
+
+Functions for Significant Figures
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:str_real_approx_sf fmt radix intGroup fracGroup roundfun sf q:
+  returns a string representing a numeral expansion approximation of q to sf
+  significant figures, using rounding mode ``roundfun`` (see §6.1).
+
+Round is usually round or round unbiased. (sf must be positive.)
+
+**Example 80** Significant figures::
+
+  > str_real_approx_sf format_uk 10 3 3 floor 2 (22%7);
+  "3.1(+)"
+  > str_real_approx_sf format_uk 10 3 3 floor 2 ((-22)%7);
+  "-3.2(+)"
+  >
+
+:strs_real_approx_sf radix roundfun sf q:
+  returns a tuple of strings
+
+  * sign,
+  * integer part,
+  * fraction part, representing an expansion to a number of significant figures,
+    together with
+  * the rounding “error”: a fraction representing the next numerals
+
+:join_str_real_approx:
+  see §16.1.1.
+
+Functions for Scientific Notation and Engineering Notation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:str_real_approx_sci fmt radix intGroup fracGroup roundfun sf q:
+  returns a string expansion with a number of significant figures in scientific
+  notation, using rounding mode ``roundfun`` (see §6.1).
+
+  (sf must be positive; expStep is usually 3, radix is usually 10, ``roundfun``
+  is usually round or round_unbiased; str_real_approx_sci is equivalent to
+  str_real_approx_eng (below) with expStep = 1.)
+
+:strs_real_approx_sci radix roundfun sf q:
+  returns a tuple of strings:
+
+  * sign of mantissa,
+  * integer part of mantissa,
+  * fraction part of mantissa,
+  * sign of exponent,
+  * exponent magnitude
+
+  representing an expansion to a number of significant figures in scientific
+  notation together with
+
+  * the rounding "error": a fraction representing the next numerals. 
+
+:str_real_approx_eng fmt expStep radix intGroup fracGroup round sf q:
+  returns a string expansion with a number of significant figures in engineering
+  notation, using rounding mode roundfun.
+
+  The ExpStep parameter specifies the granularity of the exponent; specifically,
+  the exponent will always be divisible by expStep.
+
+  (sf must be positive; expStep is usually 3 and must be positive, radix is
+  usually 10, ``roundfun`` is usually round or round_unbiased.)
+
+**Example 81** Engineering notation::
+
+  > str_real_approx_eng format_uk 3 10 3 3 round 7 (rational 999950);
+  "999.950,0*10^3"
+  > str_real_approx_eng format_uk 3 10 3 3 round 4 999950;
+  "1.000*10^6(-)"
+  >
+
+:strs_real_approx_eng expStep radix roundfun sf q:
+  returns a tuple of strings:
+
+  * sign of mantissa,
+  * integer part of mantissa,
+  * fraction part of mantissa,
+  * sign of exponent,
+  * exponent magnitude
+
+  representing an expansion to a number of significant figures in engineering
+  notation together with
+
+  • the rounding “error”: a fraction representing the next numerals.
+
+**Example 82** Engineering notation — the fragments::
+
+  > strs_real_approx_eng 3 10 round 7 (rational 999950);
+  ("+","999","9500","+","3",0%1)
+  > strs_real_approx_eng 3 10 round 4 999950;
+  ("+","1","000","+","6",-1%20)
+  >
+
+:join_str_real_eng fmt intGroup fracGroup mantSign mantI mantF rac expSign expI err: 
+  formats the parts in the quadruple returned by ``strs_real_approx_eng`` or
+  strs_real_approx_sci to the sort of string as returned by str real approx eng
+  or str real approx sci.
+
+Evaluation of Expansion Strings
+-------------------------------
+
+The ``str_*`` and ``val_*`` functions depend on a 'format structure' parameter
+(fmt) such as format uk. Conversions may be performed between ``rationals`` and
+differently formatted strings if a suitable alternative format structure is
+supplied. See §13.2 for information about formatting structures.
+
+:val_real_eng fmt radix strg:
+  returns the ``rational`` q represented by the base-radix expansion ``string``
+  strg of one the forms
+
+  * “[−]int.frac”
+  * “[−]int.frace[−]exponent”
+
+**Example 83** Conversion from the recurring radix expansion-type string
+representations::
+
+  > val_real_eng format_uk 10 "-12.345";
+  -2469%200
+  > val_real_eng format_uk 10 "-12.345*10^2";
+  -2469%2
+  >
+
+:sval_real_eng radix signStr mantIStr mantF racStr expSignStr expStr:
+  returns the ``rational`` q represented by the parts
+
+  * sign
+  * integer part of mantissa
+  * fraction part of mantissa
+  * sign of exponent
+  * exponent
+
+:split_str_real_eng fmt strg — returns a tuple containing the string parts
+
+  * sign
+  * integer part of mantissa
+  * fraction part of mantissa
+  * sign of exponent
+  * exponent
+  * the “error” sign
+
+  of one the forms
+
+  * “[−]int.frac”
+  * “[−]int.frac ×10^[−]exponent”
+
 These functions can deal with the fixed decimal places, the significant figures
-and the scientific notation
-in addition to the engineering notation.
-38
-17 Numeral String ! Q — Approximation
+and the scientific notation in addition to the engineering notation.
+
+
+Numeral String → **Q** — Approximation
+======================================
+
 This section describes functions to approximate by a ``rational`` a real number
-represented by a string.
-See §9 for approximation by a ``rational`` of a ``double``.
-The str * and val * functions depend on a ‘format structure’ parameter (Fmt)
-such as format uk. Conversions
-may be performed between ``rationals`` and differently formatted strings if a
-suitable alternative
-format structure is supplied. See §13.2 for information about formatting
-structures.
-val eng approx epsilon
-(U)
-Fmt Radix Epsilon Str — Find the least complex ``rational`` approximation
-q to the number represented by the base-Radix expansion String Str in one of the
-forms
-• “[−]int.frac”
-• “[−]int.frac ×10^[−]exponent”
-that is "-close. That is find a q such that |q − val Str|  ".
-Example 84 ``rational`` from a long string.
-  > let Str = "123.456,789,876,543,212,345,678,987,654,321*10^27"
-  > let X = val_real_eng format_uk 10 Str ; X
-123456789876543212345678987654321%1000
-  > let q = val_eng_approx_epsilon format_uk 10 (1%100) Str; q
-1975308638024691397530863802469%16
-  > double (X - q)
-0.0085
-  > str_real_approx_eng format_uk 3 10 3 3 round 30 q
-"123.456,789,876,543,212,345,678,987,654*10^27(+)"
-  > str_real_approx_eng format_uk 3 10 3 3 round 42 q
-"123.456,789,876,543,212,345,678,987,654,312,500,000,000*10^27"
-  > double q
-1.23456789876543e+029
-val eng interval epsilon
-(U)
-Fmt Radix Epsilon Str — Find the least complex ``rational`` interval
-containing the number represented by the base-Radix expansion String Str in one
-of the forms
-• “[−]int.frac”
-• “[−]int.frac ×10^[−]exponent”
-that is "-small.
-val eng approx max den
-(U)
-Fmt Radix MaxDen Str — Find the closest ``rational`` approximation to
-the number represented by the base-Radix expansion String Str in one of the
-forms
-• “[−]int.frac”
-• “[−]int.frac ×10^[−]exponent”
-that has a denominator no greater than MaxDen. (MaxDen > 0)
-val eng interval max den
-(U)
-Fmt Radix MaxDen Str — Find the smallest ``rational`` interval containing
-the number represented by the base-Radix expansion String Str in one of the
-forms
-• “[−]int.frac”
-• “[−]int.frac ×10^[−]exponent”
-that has endpoints with denominators no greater than MaxDen. (MaxDen > 0)
-Example 85 Other ``rationals`` from a long string.
-39
-  > val_eng_approx_epsilon format_uk 10 (1%100) Str
-1975308638024691397530863802469%16
-  > val_eng_interval_epsilon format_uk 10 (1%100) Str
-interval (3086419746913580308641974691358%25,3456790116543209945679011654321%28)
-  > val_eng_approx_max_den format_uk 10 100 Str
-9999999980000000199999998000000%81
-  > val_eng_interval_max_den format_uk 10 100 Str
-interval (9999999980000000199999998000000%81,3456790116543209945679011654321%28)
-40
+represented by a string. See §9 for approximation by a ``rational`` of a
+``double``.
+
+The ``str_*`` and ``val_*`` functions depend on a 'format structure' parameter
+(fmt) such as format uk. Conversions may be performed between ``rationals`` and
+differently formatted strings if a format structure is supplied. See §13.2 for
+information about formatting structures.
+
+:val_eng_approx_epsilon fmt radix epsilon strg
+  Find the least complex ``rational`` approximation q to the number represented
+  by the base-radix expansion ``string`` str in one of the forms
+
+  * “[−]int.frac”
+  * “[−]int.frac ×10^[−]exponent”
+
+  that is "-close. That is find a q such that \|q − val str\| ≤ ε.
+
+**Example 84** ``rational`` from a long string:
+  > let strg = "123.456,789,876,543,212,345,678,987,654,321*10^27";
+  > let x = val_real_eng format_uk 10 str;
+  > x;
+  123456789876543212345678987654321%1000
+  > let q = val_eng_approx_epsilon format_uk 10 (1%100) strg;
+  > q;
+  1975308638024691397530863802469%16
+  > double (x - q);
+  0.0085
+  > str_real_approx_eng format_uk 3 10 3 3 round 30 q;
+  "123.456,789,876,543,212,345,678,987,654*10^27(+)"
+  > str_real_approx_eng format_uk 3 10 3 3 round 42 q;
+  "123.456,789,876,543,212,345,678,987,654,312,500,000,000*10^27"
+  > double q;
+  1.23456789876543e+029
+  >
+
+:val_eng_interval_epsilon fmt radix epsilon strg:
+  Find the least complex ``rational`` interval containing the number represented
+  by the base-radix expansion ``string`` strg in one of the forms
+
+  * “[−]int.frac”
+  * “[−]int.frac ×10^[−]exponent”
+
+  that is "-small.
+
+:val_eng_approx_max_den fmt radix maxDen strg:
+  Find the closest ``rational`` approximation to the number represented by the
+  base-rRadix expansion ``string`` strg in one of the forms
+
+  * “[−]int.frac”
+  * “[−]int.frac ×10^[−]exponent”
+
+  that has a denominator no greater than maxDen. (maxDen > 0)
+
+:val_eng_interval_max_den fmt radix maxDen strg:
+  Find the smallest ``rational`` interval containing the number represented by
+  the base-radix expansion ``string`` strg in one of the forms
+
+  * “[−]int.frac”
+  * “[−]int.frac ×10^[−]exponent”
+
+  that has endpoints with denominators no greater than maxDen. (maxDen > 0)
+
+**Example 85** Other ``rationals`` from a long string::
+
+  > val_eng_approx_epsilon format_uk 10 (1%100) strg;
+  1975308638024691397530863802469%16
+  > val_eng_interval_epsilon format_uk 10 (1%100) strg;
+  interval::Ivl 3086419746913580308641974691358%25 3456790116543209945679011654321%28
+  > val_eng_approx_max_den format_uk 10 100 strg;
+  9999999980000000199999998000000%81
+  > val_eng_interval_max_den format_uk 10 100 strg;
+  interval::Ivl 9999999980000000199999998000000%81 3456790116543209945679011654321%28
+  >
