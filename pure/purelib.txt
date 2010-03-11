@@ -4977,8 +4977,7 @@ To obtain a flat list you can just concatenate the results::
   > cat $ d!!["foo","bar","baz"];
   [77,99,99.1]
 
-Finally, hashed multidicts provide both key hashing and multiple values per
-key::
+Hashed multidicts provide both key hashing and multiple values per key::
 
   > let h::HMDict = hmdict [foo=>77,42=>99.1,42=>77];
   > keys h; vals h; members h;
@@ -4987,6 +4986,30 @@ key::
   [42=>99.1,42=>77,foo=>77]
   > h!42;
   [99.1,77]
+
+There are also some set-like operations which allow you to add/remove the
+members (``key=>val`` pairs) of one dictionary to/from another dictionary,
+and to compute the intersection of two dictionaries. In either case, the
+two operands must have the same type. For instance::
+
+  > let h1 = hmdict [a=>1,b=>2];
+  > let h2 = hmdict [b=>2,c=>3];
+  > members (h1+h2);
+  [a=>1,c=>3,b=>2,b=>2]
+  > members (h1-h2);
+  [a=>1]
+  > members (h1*h2);
+  [b=>2]
+
+Note that if you need to combine two dictionaries of different types,
+you'll have to do the necessary conversions manually::
+
+  > let h1 = hmdict [a=>1,b=>2];
+  > let h2 = hdict  [b=>3,c=>4];
+  > members (h1+hmdict (members h2));
+  [a=>1,c=>4,b=>2,b=>3]
+  > members (hdict (members h1)+h2);
+  [a=>1,c=>4,b=>3]
 
 ..
 

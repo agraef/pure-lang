@@ -3071,8 +3071,7 @@ may be empty if the key is not in the dictionary (rather than throwing an
 &gt; cat $ d!![&quot;foo&quot;,&quot;bar&quot;,&quot;baz&quot;];
 [77,99,99.1]
 </pre>
-<p>Finally, hashed multidicts provide both key hashing and multiple values per
-key:</p>
+<p>Hashed multidicts provide both key hashing and multiple values per key:</p>
 <pre class="literal-block">
 &gt; let h::HMDict = hmdict [foo=&gt;77,42=&gt;99.1,42=&gt;77];
 &gt; keys h; vals h; members h;
@@ -3081,6 +3080,30 @@ key:</p>
 [42=&gt;99.1,42=&gt;77,foo=&gt;77]
 &gt; h!42;
 [99.1,77]
+</pre>
+<p>There are also some set-like operations which allow you to add/remove the
+members (<tt class="docutils literal"><span class="pre">key=&gt;val</span></tt> pairs) of one dictionary to/from another dictionary,
+and to compute the intersection of two dictionaries. In either case, the
+two operands must have the same type. For instance:</p>
+<pre class="literal-block">
+&gt; let h1 = hmdict [a=&gt;1,b=&gt;2];
+&gt; let h2 = hmdict [b=&gt;2,c=&gt;3];
+&gt; members (h1+h2);
+[a=&gt;1,c=&gt;3,b=&gt;2,b=&gt;2]
+&gt; members (h1-h2);
+[a=&gt;1]
+&gt; members (h1*h2);
+[b=&gt;2]
+</pre>
+<p>Note that if you need to combine two dictionaries of different types,
+you'll have to do the necessary conversions manually:</p>
+<pre class="literal-block">
+&gt; let h1 = hmdict [a=&gt;1,b=&gt;2];
+&gt; let h2 = hdict  [b=&gt;3,c=&gt;4];
+&gt; members (h1+hmdict (members h2));
+[a=&gt;1,c=&gt;4,b=&gt;2,b=&gt;3]
+&gt; members (hdict (members h1)+h2);
+[a=&gt;1,c=&gt;4,b=&gt;3]
 </pre>
 <!--  -->
 </div>
