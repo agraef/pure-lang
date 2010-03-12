@@ -739,9 +739,7 @@ with
 end;
 
 // Optimised key comparison. This must return an int.
-private extern int strcmp(void*, void*);
-cmp a::string b::string = strcmp a b;
-cmp a::int b::int |
-cmp a::bigint b::bigint |
-cmp a::double b::double |
-cmp a b = (b<a)-(a<b);
+cmp a::string b::string = __C::strcmp a b;
+cmp a::bigint b::bigint = __C::bigint_cmp a b;
+cmp a::int b::int | cmp a::double b::double |
+cmp a b = if a<b then -1 else b<a;
