@@ -24,18 +24,33 @@
    -------------
 
    The set.pure module implements Pure's set data types based on AVL trees.
+   These work pretty much like dictionaries (cf. Dictionaries_) but only store
+   keys (called "elements" or "members" here) without any associated data
+   values. Hence sets provide membership tests like dictionaries, but no
+   indexing operations.
+
    There are four variations of this data structure to choose from, depending
    on whether the set members are ordered or hashed, and whether multiple
    instances of the same element are allowed (in this case the set is actually
    called a *multiset* or a *bag*).
 
    * ``Set`` and ``Bag`` implement the ordered set types. They require that
-     members be ordered, i.e., the predicates ``==``, ``<`` and ``>`` must be
-     defined on them.
+     members be ordered, i.e., the predicate ``<`` must be defined on them.
 
    * ``HSet`` and ``HBag`` implement the hashed set types which don't require
-     an order of the members, and thus store distinct members in an apparently
+     an order of the members. Distinct members are stored in an apparently
      random order.
+
+   The usual comparison predicates (``==``, ``~=``, ``<=``, ``<`` etc.) are
+   defined on all set and bag types, where two sets or bags are considered
+   "equal" (``m1==m2``) if they both contain the same elements, and ``m1<=m2``
+   means that ``m1`` is a subset or subbag of ``m2``, i.e., all elements of
+   ``m1`` are also contained in ``m2``. Note, however, that there are no
+   implicit conversions between the different set types and thus the operand
+   types in a comparison must match. To compare two sets or bags, ordered sets
+   and bags compare elements using equality (considering two elements ``a``
+   and ``b`` to be equal if neither ``a<b`` nor ``b<a`` holds), while hashed
+   sets and bags check for syntactical equality (using ``===``).
 
    The underlying AVL tree data structure can be found in the avltrees.pure
    module which is included in the library, but not to be invoked directly.
@@ -74,15 +89,6 @@
    (This is for informational purposes only. The tree constructors are
    private, and client modules must not rely on the internal representation.)
 
-   All kinds of sets can be compared for equality and inequality (``==`` and
-   ``~=``), but note that there are no implicit conversions between the
-   different set types and thus the operand types must match. Ordered sets
-   compare their members using the ``==`` predicate, while hashed sets check
-   for syntactical equality (using ``same``). Operands in subset/subbag
-   comparisons must also match up. Here it is checked that all members of one
-   set/bag are contained in the other (also taking into account multiplicities
-   in the bag case).
-
    Operations
    ~~~~~~~~~~
 
@@ -111,6 +117,26 @@
 
    ``setp x``, ``bagp x``, ``hsetp x``, ``hbagp x``
      check whether ``x`` is a set or bag of the corresponding type
+
+   .. _+ (set):
+   .. _+ (bag):
+
+   ``m1+m2``
+     set and bag union: ``m1+m2`` adds the members of ``m2`` to ``m1``
+
+   .. _- (set):
+   .. _- (bag):
+
+   ``m1-m2``
+     set and bag difference: ``m1-m2`` removes the members of ``m2`` from
+     ``m1``
+
+   .. _* (set):
+   .. _* (bag):
+
+   ``m1*m2``
+     set and bag intersection: ``m1*m2`` removes the members *not* in ``m2``
+     from ``m1``
 
    .. _# (set):
    .. _# (bag):
@@ -174,31 +200,10 @@
      remove all instances of ``x`` from ``m`` (in the set case, this is just
      the same as ``delete``)
 
-   In addition, the infix operators ``+``, ``-`` and ``*`` are defined as
-   set/bag union, difference and intersection. Please note that there are no
-   implicit conversions, so the operand types must match exactly. (As already
-   mentioned, the same restriction applies to the comparison predicates
-   ``==``, ``<=`` etc.)
-
-   .. _+ (set):
-   .. _+ (bag):
-
-   ``m1+m2``
-     set and bag union: ``m1+m2`` adds the members of ``m2`` to ``m1``
-
-   .. _- (set):
-   .. _- (bag):
-
-   ``m1-m2``
-     set and bag difference: ``m1-m2`` removes the members of ``m2`` from
-     ``m1``
-
-   .. _* (set):
-   .. _* (bag):
-
-   ``m1*m2``
-     set and bag intersection: ``m1*m2`` removes the members *not* in ``m2``
-     from ``m1``
+   Note that, as for the comparison operators, there are no implicit
+   conversions for the infix operators ``+``, ``-`` and ``*``, so the operand
+   types must match exactly. Explicit conversions must be used if different
+   types of sets and bags are to be combined with any of these operations.
 
    Examples
    ~~~~~~~~

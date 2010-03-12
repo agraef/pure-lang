@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>Pure Library Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2010-03-11" />
+<meta name="date" content="2010-03-12" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-03-11</td></tr>
+<td>2010-03-12</td></tr>
 </tbody>
 </table>
 <!-- We use docutils to produce the documentation. Docstrings are extracted -->
@@ -2850,8 +2850,8 @@ trees. There are actually four different types to choose from, depending on
 whether you need ordered or hashed dictionaries and whether multiple values
 for the same key should be allowed or not.</p>
 <ul class="simple">
-<li><tt class="docutils literal"><span class="pre">Dict</span></tt> is an ordered dictionary (assuming an ordered key type, i.e.,
-the predicates <tt class="docutils literal"><span class="pre">==</span></tt>, <tt class="docutils literal"><span class="pre">&lt;</span></tt> and <tt class="docutils literal"><span class="pre">&gt;</span></tt> must be defined on the keys).</li>
+<li><tt class="docutils literal"><span class="pre">Dict</span></tt> is an ordered dictionary. This assumes an ordered key type,
+i.e., the predicate <tt class="docutils literal"><span class="pre">&lt;</span></tt> must be defined on the keys.</li>
 <li><tt class="docutils literal"><span class="pre">HDict</span></tt> a hashed dictionary which works with any (mixture of) key types
 but stores members in an apparently random order.</li>
 <li><tt class="docutils literal"><span class="pre">MDict</span></tt> is an ordered dictionary, like <tt class="docutils literal"><span class="pre">Dict</span></tt>, which allows multiple
@@ -2864,6 +2864,19 @@ hashed) <em>multidicts</em>. This implementation guarantees that different membe
 for the same key are always kept in the order in which they were inserted,
 and this is also the order in which they will be retrieved by the
 <tt class="docutils literal"><span class="pre">members</span></tt>, <tt class="docutils literal"><span class="pre">keys</span></tt>, <tt class="docutils literal"><span class="pre">vals</span></tt> and indexing operations.</p>
+<p>The usual comparison predicates (<tt class="docutils literal"><span class="pre">==</span></tt>, <tt class="docutils literal"><span class="pre">~=</span></tt>, <tt class="docutils literal"><span class="pre">&lt;=</span></tt>, <tt class="docutils literal"><span class="pre">&lt;</span></tt> etc.) are
+defined on all dictionary types, where two dictionaries are considered
+&quot;equal&quot; (<tt class="docutils literal"><span class="pre">d1==d2</span></tt>) if they both contain the same <tt class="docutils literal"><span class="pre">key=&gt;value</span></tt> pairs,
+and <tt class="docutils literal"><span class="pre">d1&lt;=d2</span></tt> means that <tt class="docutils literal"><span class="pre">d1</span></tt> is a sub-dictionary of <tt class="docutils literal"><span class="pre">d2</span></tt>, i.e., all
+<tt class="docutils literal"><span class="pre">key=&gt;value</span></tt> pairs of <tt class="docutils literal"><span class="pre">d1</span></tt> are also contained in <tt class="docutils literal"><span class="pre">d2</span></tt>. Note, however,
+that there are no implicit conversions between the different dictionary
+types and thus the operand types in a comparison must match. To compare two
+dictionaries, ordered dictionaries compare keys using equality (assuming
+two keys <tt class="docutils literal"><span class="pre">a</span></tt> and <tt class="docutils literal"><span class="pre">b</span></tt> to be equal if neither <tt class="docutils literal"><span class="pre">a&lt;b</span></tt> nor <tt class="docutils literal"><span class="pre">b&lt;a</span></tt> holds),
+while hashed dictionaries check for syntactical equality (using <tt class="docutils literal"><span class="pre">===</span></tt>).
+The associated values are always compared using the <tt class="docutils literal"><span class="pre">==</span></tt> predicate, so
+this needs to be defined if you want to use any of the comparison
+operations.</p>
 <p>The underlying AVL tree data structure can be found in the avltrees.pure
 module which is included in the library, but not to be invoked directly.</p>
 <p>The AVL tree algorithm has its origin in the SWI-Prolog implementation of
@@ -2901,16 +2914,6 @@ respectively.</dd>
 </dl>
 <p>(This is for informational purposes only. The tree constructors are
 private, and client modules must not rely on the internal representation.)</p>
-<p>All kinds of dictionaries can be compared for equality and inequality
-(<tt class="docutils literal"><span class="pre">==</span></tt> and <tt class="docutils literal"><span class="pre">~=</span></tt>), but note that there are no implicit conversions
-between the different dictionary types and thus the operand types must
-match. Ordered dictionaries compare keys using the <tt class="docutils literal"><span class="pre">==</span></tt> predicate, while
-hashed dictionaries check for syntactical equality (using <tt class="docutils literal"><span class="pre">same</span></tt>); the
-associated values are always compared syntactically.</p>
-<p>Subset comparisons are also supported. These check that all members
-(<tt class="docutils literal"><span class="pre">key=&gt;val</span></tt> pairs) of one dictionary are contained in another (also
-taking into account multiplicities in the multidict case). Operand types
-must match in the same way as for equality.</p>
 </div>
 <div class="section" id="id50">
 <h3><a class="toc-backref" href="#id117">3.3.3&nbsp;&nbsp;&nbsp;Operations</a></h3>
@@ -2933,11 +2936,23 @@ of the desired target type</dd>
 <span id="mkmdict"></span><span id="mkhdict"></span><span id="mkdict"></span><dt><tt class="docutils literal"><span class="pre">mkdict</span> <span class="pre">y</span> <span class="pre">xs</span></tt>, <tt class="docutils literal"><span class="pre">mkhdict</span> <span class="pre">y</span> <span class="pre">xs</span></tt>, <tt class="docutils literal"><span class="pre">mkmdict</span> <span class="pre">y</span> <span class="pre">xs</span></tt>, <tt class="docutils literal"><span class="pre">mkhmdict</span> <span class="pre">y</span> <span class="pre">xs</span></tt></dt>
 <dd>create a dictionary from a list of keys and a constant value</dd>
 </dl>
-<a name="# (dictionary)"><dl class="docutils" id="dictionary">
+<a name="+ (dictionary)"><dl class="docutils" id="dictionary">
+<dt><tt class="docutils literal"><span class="pre">d1+d2</span></tt></dt>
+<dd>union: <tt class="docutils literal"><span class="pre">d1+d2</span></tt> adds the members of <tt class="docutils literal"><span class="pre">d2</span></tt> to <tt class="docutils literal"><span class="pre">d1</span></tt></dd>
+</dl>
+<a name="- (dictionary)"><dl class="docutils" id="id51">
+<dt><tt class="docutils literal"><span class="pre">d1-d2</span></tt></dt>
+<dd>difference: <tt class="docutils literal"><span class="pre">d1-d2</span></tt> removes the members of <tt class="docutils literal"><span class="pre">d2</span></tt> from <tt class="docutils literal"><span class="pre">d1</span></tt></dd>
+</dl>
+<a name="* (dictionary)"><dl class="docutils" id="id52">
+<dt><tt class="docutils literal"><span class="pre">d1*d2</span></tt></dt>
+<dd>intersection: <tt class="docutils literal"><span class="pre">d1*d2</span></tt> removes the members <em>not</em> in <tt class="docutils literal"><span class="pre">d2</span></tt> from <tt class="docutils literal"><span class="pre">d1</span></tt></dd>
+</dl>
+<a name="# (dictionary)"><dl class="docutils" id="id53">
 <dt><tt class="docutils literal"><span class="pre">#d</span></tt></dt>
 <dd>size of a dictionary (the number of members it contains)</dd>
 </dl>
-<a name="! (dictionary)"><dl class="docutils" id="id51">
+<a name="! (dictionary)"><dl class="docutils" id="id54">
 <dt><tt class="docutils literal"><span class="pre">d!x</span></tt></dt>
 <dd>get the value from <tt class="docutils literal"><span class="pre">d</span></tt> by key <tt class="docutils literal"><span class="pre">x</span></tt>; in the case of a multidict this
 actually returns a list of values (which may be empty if <tt class="docutils literal"><span class="pre">d</span></tt> doesn't
@@ -2986,32 +3001,35 @@ member with the given key <tt class="docutils literal"><span class="pre">x</span
 <a name="delete_val (dictionary)"><dl class="docutils" id="delete-val-dictionary">
 <dt><tt class="docutils literal"><span class="pre">delete_val</span> <span class="pre">d</span> <span class="pre">(x=&gt;y)</span></tt></dt>
 <dd>remove a specific key-value pair <tt class="docutils literal"><span class="pre">x=&gt;y</span></tt> from <tt class="docutils literal"><span class="pre">d</span></tt> if present (in the
-multidict case, only the first instance of <tt class="docutils literal"><span class="pre">x=&gt;y</span></tt> is removed)</dd>
+multidict case, only the first instance of <tt class="docutils literal"><span class="pre">x=&gt;y</span></tt> is removed); please
+also see the notes below regarding this operation</dd>
 </dl>
 <a name="delete_all (dictionary)"><dl class="docutils" id="delete-all-dictionary">
 <dt><tt class="docutils literal"><span class="pre">delete_all</span> <span class="pre">d</span> <span class="pre">x</span></tt></dt>
 <dd>remove all instances of <tt class="docutils literal"><span class="pre">x</span></tt> from <tt class="docutils literal"><span class="pre">d</span></tt> (in the non-multidict case, this
 is just the same as <tt class="docutils literal"><span class="pre">delete</span></tt>)</dd>
 </dl>
-<p>In addition, the infix operators <tt class="docutils literal"><span class="pre">+</span></tt>, <tt class="docutils literal"><span class="pre">-</span></tt> and <tt class="docutils literal"><span class="pre">*</span></tt> are defined as the
-union, difference and intersection of two dictionaries. These work like the
-corresponding set and bag operations (see <a class="reference internal" href="#sets-and-bags">Sets and Bags</a>), treating
-dictionaries as collections of <tt class="docutils literal"><span class="pre">key=&gt;val</span></tt> pairs. Please note that there
-are no implicit conversions, so the operand types must match exactly. (As
-already mentioned, the same restriction applies to the comparison
-predicates <tt class="docutils literal"><span class="pre">==</span></tt>, <tt class="docutils literal"><span class="pre">&lt;=</span></tt> etc.)</p>
-<a name="+ (dictionary)"><dl class="docutils" id="id52">
-<dt><tt class="docutils literal"><span class="pre">d1+d2</span></tt></dt>
-<dd>union: <tt class="docutils literal"><span class="pre">d1+d2</span></tt> adds the members of <tt class="docutils literal"><span class="pre">d2</span></tt> to <tt class="docutils literal"><span class="pre">d1</span></tt></dd>
-</dl>
-<a name="- (dictionary)"><dl class="docutils" id="id53">
-<dt><tt class="docutils literal"><span class="pre">d1-d2</span></tt></dt>
-<dd>difference: <tt class="docutils literal"><span class="pre">d1-d2</span></tt> removes the members of <tt class="docutils literal"><span class="pre">d2</span></tt> from <tt class="docutils literal"><span class="pre">d1</span></tt></dd>
-</dl>
-<a name="* (dictionary)"><dl class="docutils" id="id54">
-<dt><tt class="docutils literal"><span class="pre">d1*d2</span></tt></dt>
-<dd>intersection: <tt class="docutils literal"><span class="pre">d1*d2</span></tt> removes the members <em>not</em> in <tt class="docutils literal"><span class="pre">d2</span></tt> from <tt class="docutils literal"><span class="pre">d1</span></tt></dd>
-</dl>
+<p>Notes:</p>
+<ul class="simple">
+<li>The infix operators <tt class="docutils literal"><span class="pre">+</span></tt>, <tt class="docutils literal"><span class="pre">-</span></tt> and <tt class="docutils literal"><span class="pre">*</span></tt> work like the corresponding
+set and bag operations (see <a class="reference internal" href="#sets-and-bags">Sets and Bags</a>), treating dictionaries as
+collections of <tt class="docutils literal"><span class="pre">key=&gt;val</span></tt> pairs. Like the comparison predicates, these
+don't do any implicit conversions, so the operand types must match
+exactly. Explicit conversions must be used if different types of
+dictionaries are to be combined with any of these operations.</li>
+<li>The <tt class="docutils literal"><span class="pre">delete_val</span></tt> function always compares values using equality
+(<tt class="docutils literal"><span class="pre">==</span></tt>), so this predicate must be defined on the values stored in the
+dictionary in order to make this operation work. If there is more than
+one instance of the given value under the given key, the first such
+instance will be removed (which may be any instance that compares equal,
+not necessarily an exact match).</li>
+<li>In the multidict case, <tt class="docutils literal"><span class="pre">delete_val</span></tt> may require linear time with
+respect to the number of different values stored for the given key. Since
+this operation is also needed to implement some other multidict
+operations like comparisons, difference and intersection, these may end
+up requiring quadratic running times in degenerate cases (i.e., if the
+majority of members happens to be associated with only very few keys).</li>
+</ul>
 </div>
 <div class="section" id="id55">
 <h3><a class="toc-backref" href="#id118">3.3.4&nbsp;&nbsp;&nbsp;Examples</a></h3>
@@ -3113,18 +3131,31 @@ you'll have to do the necessary conversions manually:</p>
 <div class="section" id="sets-and-bags">
 <h2><a class="toc-backref" href="#id119">3.4&nbsp;&nbsp;&nbsp;Sets and Bags</a></h2>
 <p>The set.pure module implements Pure's set data types based on AVL trees.
-There are four variations of this data structure to choose from, depending
+These work pretty much like dictionaries (cf. <a class="reference internal" href="#dictionaries">Dictionaries</a>) but only store
+keys (called &quot;elements&quot; or &quot;members&quot; here) without any associated data
+values. Hence sets provide membership tests like dictionaries, but no
+indexing operations.</p>
+<p>There are four variations of this data structure to choose from, depending
 on whether the set members are ordered or hashed, and whether multiple
 instances of the same element are allowed (in this case the set is actually
 called a <em>multiset</em> or a <em>bag</em>).</p>
 <ul class="simple">
 <li><tt class="docutils literal"><span class="pre">Set</span></tt> and <tt class="docutils literal"><span class="pre">Bag</span></tt> implement the ordered set types. They require that
-members be ordered, i.e., the predicates <tt class="docutils literal"><span class="pre">==</span></tt>, <tt class="docutils literal"><span class="pre">&lt;</span></tt> and <tt class="docutils literal"><span class="pre">&gt;</span></tt> must be
-defined on them.</li>
+members be ordered, i.e., the predicate <tt class="docutils literal"><span class="pre">&lt;</span></tt> must be defined on them.</li>
 <li><tt class="docutils literal"><span class="pre">HSet</span></tt> and <tt class="docutils literal"><span class="pre">HBag</span></tt> implement the hashed set types which don't require
-an order of the members, and thus store distinct members in an apparently
+an order of the members. Distinct members are stored in an apparently
 random order.</li>
 </ul>
+<p>The usual comparison predicates (<tt class="docutils literal"><span class="pre">==</span></tt>, <tt class="docutils literal"><span class="pre">~=</span></tt>, <tt class="docutils literal"><span class="pre">&lt;=</span></tt>, <tt class="docutils literal"><span class="pre">&lt;</span></tt> etc.) are
+defined on all set and bag types, where two sets or bags are considered
+&quot;equal&quot; (<tt class="docutils literal"><span class="pre">m1==m2</span></tt>) if they both contain the same elements, and <tt class="docutils literal"><span class="pre">m1&lt;=m2</span></tt>
+means that <tt class="docutils literal"><span class="pre">m1</span></tt> is a subset or subbag of <tt class="docutils literal"><span class="pre">m2</span></tt>, i.e., all elements of
+<tt class="docutils literal"><span class="pre">m1</span></tt> are also contained in <tt class="docutils literal"><span class="pre">m2</span></tt>. Note, however, that there are no
+implicit conversions between the different set types and thus the operand
+types in a comparison must match. To compare two sets or bags, ordered sets
+and bags compare elements using equality (considering two elements <tt class="docutils literal"><span class="pre">a</span></tt>
+and <tt class="docutils literal"><span class="pre">b</span></tt> to be equal if neither <tt class="docutils literal"><span class="pre">a&lt;b</span></tt> nor <tt class="docutils literal"><span class="pre">b&lt;a</span></tt> holds), while hashed
+sets and bags check for syntactical equality (using <tt class="docutils literal"><span class="pre">===</span></tt>).</p>
 <p>The underlying AVL tree data structure can be found in the avltrees.pure
 module which is included in the library, but not to be invoked directly.
 The AVL tree algorithm has its origin in the SWI-Prolog implementation of
@@ -3157,14 +3188,6 @@ respectively.</dd>
 </dl>
 <p>(This is for informational purposes only. The tree constructors are
 private, and client modules must not rely on the internal representation.)</p>
-<p>All kinds of sets can be compared for equality and inequality (<tt class="docutils literal"><span class="pre">==</span></tt> and
-<tt class="docutils literal"><span class="pre">~=</span></tt>), but note that there are no implicit conversions between the
-different set types and thus the operand types must match. Ordered sets
-compare their members using the <tt class="docutils literal"><span class="pre">==</span></tt> predicate, while hashed sets check
-for syntactical equality (using <tt class="docutils literal"><span class="pre">same</span></tt>). Operands in subset/subbag
-comparisons must also match up. Here it is checked that all members of one
-set/bag are contained in the other (also taking into account multiplicities
-in the bag case).</p>
 </div>
 <div class="section" id="id58">
 <h3><a class="toc-backref" href="#id122">3.4.3&nbsp;&nbsp;&nbsp;Operations</a></h3>
@@ -3182,8 +3205,22 @@ bag of the desired target type</dd>
 <span id="setp"></span><dt><tt class="docutils literal"><span class="pre">setp</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">bagp</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">hsetp</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">hbagp</span> <span class="pre">x</span></tt></dt>
 <dd>check whether <tt class="docutils literal"><span class="pre">x</span></tt> is a set or bag of the corresponding type</dd>
 </dl>
-<a name="# (set)"><a name="# (bag)"><dl class="docutils" id="id60">
-<span id="id59"></span><dt><tt class="docutils literal"><span class="pre">#m</span></tt></dt>
+<a name="+ (set)"><a name="+ (bag)"><dl class="docutils" id="id60">
+<span id="id59"></span><dt><tt class="docutils literal"><span class="pre">m1+m2</span></tt></dt>
+<dd>set and bag union: <tt class="docutils literal"><span class="pre">m1+m2</span></tt> adds the members of <tt class="docutils literal"><span class="pre">m2</span></tt> to <tt class="docutils literal"><span class="pre">m1</span></tt></dd>
+</dl>
+<a name="- (set)"><a name="- (bag)"><dl class="docutils" id="id62">
+<span id="id61"></span><dt><tt class="docutils literal"><span class="pre">m1-m2</span></tt></dt>
+<dd>set and bag difference: <tt class="docutils literal"><span class="pre">m1-m2</span></tt> removes the members of <tt class="docutils literal"><span class="pre">m2</span></tt> from
+<tt class="docutils literal"><span class="pre">m1</span></tt></dd>
+</dl>
+<a name="* (set)"><a name="* (bag)"><dl class="docutils" id="id64">
+<span id="id63"></span><dt><tt class="docutils literal"><span class="pre">m1*m2</span></tt></dt>
+<dd>set and bag intersection: <tt class="docutils literal"><span class="pre">m1*m2</span></tt> removes the members <em>not</em> in <tt class="docutils literal"><span class="pre">m2</span></tt>
+from <tt class="docutils literal"><span class="pre">m1</span></tt></dd>
+</dl>
+<a name="# (set)"><a name="# (bag)"><dl class="docutils" id="id66">
+<span id="id65"></span><dt><tt class="docutils literal"><span class="pre">#m</span></tt></dt>
 <dd>size of a set or bag <tt class="docutils literal"><span class="pre">m</span></tt></dd>
 </dl>
 <a name="null (set)"><a name="null (bag)"><dl class="docutils" id="null-bag">
@@ -3220,25 +3257,10 @@ bag of the desired target type</dd>
 <dd>remove all instances of <tt class="docutils literal"><span class="pre">x</span></tt> from <tt class="docutils literal"><span class="pre">m</span></tt> (in the set case, this is just
 the same as <tt class="docutils literal"><span class="pre">delete</span></tt>)</dd>
 </dl>
-<p>In addition, the infix operators <tt class="docutils literal"><span class="pre">+</span></tt>, <tt class="docutils literal"><span class="pre">-</span></tt> and <tt class="docutils literal"><span class="pre">*</span></tt> are defined as
-set/bag union, difference and intersection. Please note that there are no
-implicit conversions, so the operand types must match exactly. (As already
-mentioned, the same restriction applies to the comparison predicates
-<tt class="docutils literal"><span class="pre">==</span></tt>, <tt class="docutils literal"><span class="pre">&lt;=</span></tt> etc.)</p>
-<a name="+ (set)"><a name="+ (bag)"><dl class="docutils" id="id62">
-<span id="id61"></span><dt><tt class="docutils literal"><span class="pre">m1+m2</span></tt></dt>
-<dd>set and bag union: <tt class="docutils literal"><span class="pre">m1+m2</span></tt> adds the members of <tt class="docutils literal"><span class="pre">m2</span></tt> to <tt class="docutils literal"><span class="pre">m1</span></tt></dd>
-</dl>
-<a name="- (set)"><a name="- (bag)"><dl class="docutils" id="id64">
-<span id="id63"></span><dt><tt class="docutils literal"><span class="pre">m1-m2</span></tt></dt>
-<dd>set and bag difference: <tt class="docutils literal"><span class="pre">m1-m2</span></tt> removes the members of <tt class="docutils literal"><span class="pre">m2</span></tt> from
-<tt class="docutils literal"><span class="pre">m1</span></tt></dd>
-</dl>
-<a name="* (set)"><a name="* (bag)"><dl class="docutils" id="id66">
-<span id="id65"></span><dt><tt class="docutils literal"><span class="pre">m1*m2</span></tt></dt>
-<dd>set and bag intersection: <tt class="docutils literal"><span class="pre">m1*m2</span></tt> removes the members <em>not</em> in <tt class="docutils literal"><span class="pre">m2</span></tt>
-from <tt class="docutils literal"><span class="pre">m1</span></tt></dd>
-</dl>
+<p>Note that, as for the comparison operators, there are no implicit
+conversions for the infix operators <tt class="docutils literal"><span class="pre">+</span></tt>, <tt class="docutils literal"><span class="pre">-</span></tt> and <tt class="docutils literal"><span class="pre">*</span></tt>, so the operand
+types must match exactly. Explicit conversions must be used if different
+types of sets and bags are to be combined with any of these operations.</p>
 </div>
 <div class="section" id="id67">
 <h3><a class="toc-backref" href="#id123">3.4.4&nbsp;&nbsp;&nbsp;Examples</a></h3>
@@ -4194,7 +4216,7 @@ copied to the result lists as is.</p>
 <div class="line-block">
 <div class="line"><a class="reference internal" href="#id6">!</a></div>
 <div class="line"><a class="reference internal" href="#id42">! (array)</a></div>
-<div class="line"><a class="reference internal" href="#id51">! (dictionary)</a></div>
+<div class="line"><a class="reference internal" href="#id54">! (dictionary)</a></div>
 <div class="line"><a class="reference internal" href="#id14">! (matrix)</a></div>
 <div class="line"><a class="reference internal" href="#id17">! (record)</a></div>
 <div class="line"><a class="reference internal" href="#id10">! (string)</a></div>
@@ -4204,32 +4226,32 @@ copied to the result lists as is.</p>
 <div class="line"><a class="reference internal" href="#id11">!! (string)</a></div>
 <div class="line"><a class="reference internal" href="#id3">#</a></div>
 <div class="line"><a class="reference internal" href="#id41"># (array)</a></div>
-<div class="line"><a class="reference internal" href="#id60"># (bag)</a></div>
-<div class="line"><a class="reference internal" href="#dictionary"># (dictionary)</a></div>
+<div class="line"><a class="reference internal" href="#id66"># (bag)</a></div>
+<div class="line"><a class="reference internal" href="#id53"># (dictionary)</a></div>
 <div class="line"><a class="reference internal" href="#id46"># (heap)</a></div>
 <div class="line"><a class="reference internal" href="#matrix"># (matrix)</a></div>
 <div class="line"><a class="reference internal" href="#record"># (record)</a></div>
-<div class="line"><a class="reference internal" href="#id59"># (set)</a></div>
+<div class="line"><a class="reference internal" href="#id65"># (set)</a></div>
 <div class="line"><a class="reference internal" href="#id12"># (string)</a></div>
 <div class="line"><a class="reference internal" href="#id1">$</a></div>
 <div class="line"><a class="reference internal" href="#id39">%</a></div>
 <div class="line"><a class="reference internal" href="#id31">&amp;&amp;</a></div>
 <div class="line"><a class="reference internal" href="#id21">*</a></div>
-<div class="line"><a class="reference internal" href="#id66">* (bag)</a></div>
-<div class="line"><a class="reference internal" href="#id54">* (dictionary)</a></div>
-<div class="line"><a class="reference internal" href="#id65">* (set)</a></div>
+<div class="line"><a class="reference internal" href="#id64">* (bag)</a></div>
+<div class="line"><a class="reference internal" href="#id52">* (dictionary)</a></div>
+<div class="line"><a class="reference internal" href="#id63">* (set)</a></div>
 <div class="line"><a class="reference internal" href="#id19">+</a></div>
-<div class="line"><a class="reference internal" href="#id62">+ (bag)</a></div>
-<div class="line"><a class="reference internal" href="#id52">+ (dictionary)</a></div>
+<div class="line"><a class="reference internal" href="#id60">+ (bag)</a></div>
+<div class="line"><a class="reference internal" href="#dictionary">+ (dictionary)</a></div>
 <div class="line"><a class="reference internal" href="#list">+ (list)</a></div>
-<div class="line"><a class="reference internal" href="#id61">+ (set)</a></div>
+<div class="line"><a class="reference internal" href="#id59">+ (set)</a></div>
 <div class="line"><a class="reference internal" href="#string">+ (string)</a></div>
 <div class="line"><a class="reference internal" href="#id37">+:</a></div>
 <div class="line"><a class="reference internal" href="#id5">,</a></div>
 <div class="line"><a class="reference internal" href="#id20">-</a></div>
-<div class="line"><a class="reference internal" href="#id64">- (bag)</a></div>
-<div class="line"><a class="reference internal" href="#id53">- (dictionary)</a></div>
-<div class="line"><a class="reference internal" href="#id63">- (set)</a></div>
+<div class="line"><a class="reference internal" href="#id62">- (bag)</a></div>
+<div class="line"><a class="reference internal" href="#id51">- (dictionary)</a></div>
+<div class="line"><a class="reference internal" href="#id61">- (set)</a></div>
 <div class="line"><a class="reference internal" href="#id2">.</a></div>
 <div class="line"><a class="reference internal" href="#id8">..</a></div>
 <div class="line"><a class="reference internal" href="#id22">/</a></div>

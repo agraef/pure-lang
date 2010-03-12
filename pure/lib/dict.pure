@@ -28,8 +28,8 @@
    whether you need ordered or hashed dictionaries and whether multiple values
    for the same key should be allowed or not.
 
-   * ``Dict`` is an ordered dictionary (assuming an ordered key type, i.e.,
-     the predicates ``==``, ``<`` and ``>`` must be defined on the keys).
+   * ``Dict`` is an ordered dictionary. This assumes an ordered key type,
+     i.e., the predicate ``<`` must be defined on the keys.
 
    * ``HDict`` a hashed dictionary which works with any (mixture of) key types
      but stores members in an apparently random order.
@@ -45,6 +45,20 @@
    for the same key are always kept in the order in which they were inserted,
    and this is also the order in which they will be retrieved by the
    ``members``, ``keys``, ``vals`` and indexing operations.
+
+   The usual comparison predicates (``==``, ``~=``, ``<=``, ``<`` etc.) are
+   defined on all dictionary types, where two dictionaries are considered
+   "equal" (``d1==d2``) if they both contain the same ``key=>value`` pairs,
+   and ``d1<=d2`` means that ``d1`` is a sub-dictionary of ``d2``, i.e., all
+   ``key=>value`` pairs of ``d1`` are also contained in ``d2``. Note, however,
+   that there are no implicit conversions between the different dictionary
+   types and thus the operand types in a comparison must match. To compare two
+   dictionaries, ordered dictionaries compare keys using equality (assuming
+   two keys ``a`` and ``b`` to be equal if neither ``a<b`` nor ``b<a`` holds),
+   while hashed dictionaries check for syntactical equality (using ``===``).
+   The associated values are always compared using the ``==`` predicate, so
+   this needs to be defined if you want to use any of the comparison
+   operations.
 
    The underlying AVL tree data structure can be found in the avltrees.pure
    module which is included in the library, but not to be invoked directly.
@@ -90,18 +104,6 @@
    (This is for informational purposes only. The tree constructors are
    private, and client modules must not rely on the internal representation.)
 
-   All kinds of dictionaries can be compared for equality and inequality
-   (``==`` and ``~=``), but note that there are no implicit conversions
-   between the different dictionary types and thus the operand types must
-   match. Ordered dictionaries compare keys using the ``==`` predicate, while
-   hashed dictionaries check for syntactical equality (using ``same``); the
-   associated values are always compared syntactically.
-
-   Subset comparisons are also supported. These check that all members
-   (``key=>val`` pairs) of one dictionary are contained in another (also
-   taking into account multiplicities in the multidict case). Operand types
-   must match in the same way as for equality.
-
    Operations
    ~~~~~~~~~~
 
@@ -139,6 +141,21 @@
 
    ``mkdict y xs``, ``mkhdict y xs``, ``mkmdict y xs``, ``mkhmdict y xs``
      create a dictionary from a list of keys and a constant value
+
+   .. _+ (dictionary):
+
+   ``d1+d2``
+     union: ``d1+d2`` adds the members of ``d2`` to ``d1``
+
+   .. _- (dictionary):
+
+   ``d1-d2``
+     difference: ``d1-d2`` removes the members of ``d2`` from ``d1``
+
+   .. _* (dictionary):
+
+   ``d1*d2``
+     intersection: ``d1*d2`` removes the members *not* in ``d2`` from ``d1``
 
    .. _# (dictionary):
 
@@ -209,7 +226,8 @@
 
    ``delete_val d (x=>y)``
      remove a specific key-value pair ``x=>y`` from ``d`` if present (in the
-     multidict case, only the first instance of ``x=>y`` is removed)
+     multidict case, only the first instance of ``x=>y`` is removed); please
+     also see the notes below regarding this operation
 
    .. _delete_all (dictionary):
 
@@ -217,28 +235,28 @@
      remove all instances of ``x`` from ``d`` (in the non-multidict case, this
      is just the same as ``delete``)
 
-   In addition, the infix operators ``+``, ``-`` and ``*`` are defined as the
-   union, difference and intersection of two dictionaries. These work like the
-   corresponding set and bag operations (see `Sets and Bags`_), treating
-   dictionaries as collections of ``key=>val`` pairs. Please note that there
-   are no implicit conversions, so the operand types must match exactly. (As
-   already mentioned, the same restriction applies to the comparison
-   predicates ``==``, ``<=`` etc.)
+   Notes:
 
-   .. _+ (dictionary):
+   * The infix operators ``+``, ``-`` and ``*`` work like the corresponding
+     set and bag operations (see `Sets and Bags`_), treating dictionaries as
+     collections of ``key=>val`` pairs. Like the comparison predicates, these
+     don't do any implicit conversions, so the operand types must match
+     exactly. Explicit conversions must be used if different types of
+     dictionaries are to be combined with any of these operations.
 
-   ``d1+d2``
-     union: ``d1+d2`` adds the members of ``d2`` to ``d1``
+   * The ``delete_val`` function always compares values using equality
+     (``==``), so this predicate must be defined on the values stored in the
+     dictionary in order to make this operation work. If there is more than
+     one instance of the given value under the given key, the first such
+     instance will be removed (which may be any instance that compares equal,
+     not necessarily an exact match).
 
-   .. _- (dictionary):
-
-   ``d1-d2``
-     difference: ``d1-d2`` removes the members of ``d2`` from ``d1``
-
-   .. _* (dictionary):
-
-   ``d1*d2``
-     intersection: ``d1*d2`` removes the members *not* in ``d2`` from ``d1``
+   * In the multidict case, ``delete_val`` may require linear time with
+     respect to the number of different values stored for the given key. Since
+     this operation is also needed to implement some other multidict
+     operations like comparisons, difference and intersection, these may end
+     up requiring quadratic running times in degenerate cases (i.e., if the
+     majority of members happens to be associated with only very few keys).
 
    Examples
    ~~~~~~~~

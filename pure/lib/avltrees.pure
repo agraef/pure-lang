@@ -29,7 +29,9 @@
    R. A. O'Keefe and updated for SWI-Prolog by Jan Wielemaker. For the
    original source see http://www.swi-prolog.org. The port from SWI-Prolog and
    the deletion stuff (rmfirst, rmlast, delete) missing in the Prolog
-   implementation was provided by Jiri Spitz. */
+   implementation was provided by Jiri Spitz. The generalization of the code
+   to arbitrary combinations of ordered/hashed and single-/multi-valued keys
+   was done by Albert Graef. */
 
 namespace avl;
 
@@ -40,9 +42,11 @@ namespace avl;
    simple key (set-like), a key=>value pair (dictionary-like), or a
    key=>bucket pair (hash-like). The latter form is also used for multisets
    and multidicts where multiple elements may be stored under a single key.
-   For hash trees no order of the key elements is assumed. Keys in non-hash
-   trees must be ordered, i.e., the usual comparison predicates (<, >, ==)
-   must be defined on them. */
+   For hash trees no order of the key elements is assumed, and keys are only
+   compared for syntactical equality. Keys in non-hash trees must be ordered,
+   i.e., at least the comparison predicate '<' must be defined in a consistent
+   fashion on them. In this case keys a and b are considered equal if neither
+   a<b nor b<a holds. */
 
 private nonfix nil;
 private bin;
@@ -201,17 +205,23 @@ public member memberk;
 member t y = member t y with
   member nil _ = 0;
   member (bin x _ l r) y
-    = member l y if x > y;
-    = member r y if x < y;
-    = 1;
+    = case cmp x y of
+        res::int
+          = member l y if res>0;
+          = member r y if res<0;
+          = 1;
+      end;
 end;
 
 memberk t y = member t y with
   member nil _ = 0;
   member (bin (x=>v) _ l r) y
-    = member l y if x > y;
-    = member r y if x < y;
-    = 1;
+    = case cmp x y of
+        res::int
+          = member l y if res>0;
+          = member r y if res<0;
+          = 1;
+      end;
 end;
 
 /* Membership test for hashed sets and dictionaries. */
@@ -242,9 +252,12 @@ public getk;
 getk t y = get t y with
   get nil _ = throw out_of_bounds;
   get (bin (x=>v) _ l r) y
-    = get l y if x > y;
-    = get r y if x < y;
-    = v;
+    = case cmp x y of
+        res::int
+          = get l y if res>0;
+          = get r y if res<0;
+          = v;
+      end;
 end;
 
 /* Indexing for ordered multidicts. This always returns the list of all
@@ -255,10 +268,13 @@ public mgetk;
 
 mgetk t y = get t y with
   get nil _ = [];
-  get (bin (k=>xs) _ l r) key
-    = get l key if k > key;
-    = get r key if k < key;
-    = [v | x=>v = xs];
+  get (bin (x=>xs) _ l r) y
+    = case cmp x y of
+        res::int
+          = get l y if res>0;
+          = get r y if res<0;
+          = [v | x=>v = xs];
+      end;
 end;
 
 /* Indexing for hashed (multi-)dicts. */
@@ -359,7 +375,7 @@ deletekv t y@(key=>val) = delete t y!0 with
             when [newl, leftHasChanged] = delete l y end if res < 0;
           = adjustd rightHasChanged (bin x b l newr) 1
             when [newr, rightHasChanged] = delete r y end if res > 0;
-          = if val~==v then [t, 0]
+          = if ~(val==v) then [t, 0]
             else if l===nil then [r, 1]
             else if r===nil then [l, 1]
             else (adjustd leftHasChanged (bin (last l) b newl r) (-1)
@@ -436,7 +452,7 @@ mdeletekv t y@(key=>val) = delete t y!0 with
             when newxs = deleteb xs y end;
       end;
   deleteb [] y = [];
-  deleteb (x@(k=>v):xs) y@(key=>val) = xs if k == key && v === val;
+  deleteb (x@(k=>v):xs) y@(key=>val) = xs if cmp k key == 0 && v == val;
   deleteb (x:xs) y = x:deleteb xs y;
 end;
 
@@ -544,7 +560,7 @@ hdeletekv t y@(key=>val) = delete t (hash key) y!0 with
     = adjustd rightHasChanged (bin x b l newr) 1
       when [newr, rightHasChanged] = delete r key y end if key > k;
   deleteb [] y = [];
-  deleteb (x@(k=>v):xs) x = xs;
+  deleteb (x@(k=>v):xs) y@(k=>val) = xs if v==val;
   deleteb (x:xs) y = x:deleteb xs y;
 end;
 
@@ -723,10 +739,9 @@ with
 end;
 
 // Optimised key comparison. This must return an int.
-cmp a::string b::string 
-  = __C::strcmp a b;
+private extern int strcmp(void*, void*);
+cmp a::string b::string = strcmp a b;
 cmp a::int b::int |
 cmp a::bigint b::bigint |
 cmp a::double b::double |
-cmp a b
-  = (a>b)-(a<b);
+cmp a b = (b<a)-(a<b);
