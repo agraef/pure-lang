@@ -4584,15 +4584,13 @@ The usual comparison predicates (``==``, ``~=``, ``<=``, ``<`` etc.) are
 defined on all dictionary types, where two dictionaries are considered
 "equal" (``d1==d2``) if they both contain the same ``key=>value`` pairs,
 and ``d1<=d2`` means that ``d1`` is a sub-dictionary of ``d2``, i.e., all
-``key=>value`` pairs of ``d1`` are also contained in ``d2``. Note, however,
-that there are no implicit conversions between the different dictionary
-types and thus the operand types in a comparison must match. To compare two
-dictionaries, ordered dictionaries compare keys using equality (assuming
-two keys ``a`` and ``b`` to be equal if neither ``a<b`` nor ``b<a`` holds),
-while hashed dictionaries check for syntactical equality (using ``===``).
-The associated values are always compared using the ``==`` predicate, so
-this needs to be defined if you want to use any of the comparison
-operations.
+``key=>value`` pairs of ``d1`` are also contained in ``d2`` (taking into
+account multiplicities in the multidict case). Ordered dictionaries compare
+keys using equality (assuming two keys ``a`` and ``b`` to be equal if
+neither ``a<b`` nor ``b<a`` holds), while hashed dictionaries check for
+syntactical equality (using ``===``).  The associated values are always
+compared using the ``==`` predicate, so this needs to be defined if you
+want to use any of the comparison operations.
 
 The underlying AVL tree data structure can be found in the avltrees.pure
 module which is included in the library, but not to be invoked directly.
@@ -4917,10 +4915,11 @@ Notes:
 
 * The infix operators ``+``, ``-`` and ``*`` work like the corresponding
   set and bag operations (see `Sets and Bags`_), treating dictionaries as
-  collections of ``key=>val`` pairs. Like the comparison predicates, these
-  don't do any implicit conversions, so the operand types must match
-  exactly. Explicit conversions must be used if different types of
-  dictionaries are to be combined with any of these operations.
+  collections of ``key=>val`` pairs. You can mix arbitrary operand types
+  with these operations, as well as with the comparison operations; the
+  necessary conversions from less general dictionary types (ordered,
+  single-valued) to more general types (hashed, multi-valued) are handled
+  automatically.
 
 * The ``delete_val`` function always compares values using equality
   (``==``), so this predicate must be defined on the values stored in the
@@ -4930,8 +4929,8 @@ Notes:
   not necessarily an exact match).
 
 * In the multidict case, ``delete_val`` may require linear time with
-  respect to the number of different values stored for the given key. Since
-  this operation is also needed to implement some other multidict
+  respect to the number of different values stored under the given key.
+  Since this operation is also needed to implement some other multidict
   operations like comparisons, difference and intersection, these may end
   up requiring quadratic running times in degenerate cases (i.e., if the
   majority of members happens to be associated with only very few keys).
@@ -4955,7 +4954,8 @@ dictionary::
   > d!"foo";
   77
   > d!"baz";
-  <stdin>, line 5: unhandled exception 'out_of_bounds' while evaluating 'd!"baz"'
+  <stdin>, line 5: unhandled exception 'out_of_bounds' while evaluating
+  'd!"baz"'
 
 By virtue of the prelude, slicing a dictionary with ``!!`` also works as
 expected::
@@ -5009,8 +5009,7 @@ Hashed multidicts provide both key hashing and multiple values per key::
 
 There are also some set-like operations which allow you to add/remove the
 members (``key=>val`` pairs) of one dictionary to/from another dictionary,
-and to compute the intersection of two dictionaries. In either case, the
-two operands must have the same type. For instance::
+and to compute the intersection of two dictionaries. For instance::
 
   > let h1 = hmdict [a=>1,b=>2];
   > let h2 = hmdict [b=>2,c=>3];
@@ -5021,13 +5020,19 @@ two operands must have the same type. For instance::
   > members (h1*h2);
   [b=>2]
 
-Note that if you need to combine two dictionaries of different types,
-you'll have to do the necessary conversions manually::
+It's possible to mix dictionaries of different types in these operations.
+The necessary conversions are handled automatically::
 
   > let h1 = hmdict [a=>1,b=>2];
   > let h2 = hdict  [b=>3,c=>4];
-  > members (h1+hmdict h2);
+  > members (h1+h2);
   [a=>1,c=>4,b=>2,b=>3]
+
+Note that the result will always be promoted to the most general operand
+type in such cases (a hashed multidict in the above example). If this is
+not what you want, you'll have to apply the necessary conversions
+manually::
+
   > members (hdict h1+h2);
   [a=>1,c=>4,b=>3]
 
@@ -5058,12 +5063,11 @@ The usual comparison predicates (``==``, ``~=``, ``<=``, ``<`` etc.) are
 defined on all set and bag types, where two sets or bags are considered
 "equal" (``m1==m2``) if they both contain the same elements, and ``m1<=m2``
 means that ``m1`` is a subset or subbag of ``m2``, i.e., all elements of
-``m1`` are also contained in ``m2``. Note, however, that there are no
-implicit conversions between the different set types and thus the operand
-types in a comparison must match. To compare two sets or bags, ordered sets
-and bags compare elements using equality (considering two elements ``a``
-and ``b`` to be equal if neither ``a<b`` nor ``b<a`` holds), while hashed
-sets and bags check for syntactical equality (using ``===``).
+``m1`` are also contained in ``m2`` (taking into account multiplicities in
+the multiset case). Ordered sets and bags compare elements using equality
+(considering two elements ``a`` and ``b`` to be equal if neither ``a<b``
+nor ``b<a`` holds), while hashed sets and bags check for syntactical
+equality (using ``===``).
 
 The underlying AVL tree data structure can be found in the avltrees.pure
 module which is included in the library, but not to be invoked directly.
@@ -5371,10 +5375,10 @@ Operations
   remove all instances of ``x`` from ``m`` (in the set case, this is just
   the same as ``delete``)
 
-Note that, as for the comparison operators, there are no implicit
-conversions for the infix operators ``+``, ``-`` and ``*``, so the operand
-types must match exactly. Explicit conversions must be used if different
-types of sets and bags are to be combined with any of these operations.
+Note that the infix operators (``+``, ``-``, ``*``, as well as the
+comparison operations) allow you to mix arbitrary operand types; the
+necessary conversions from less general set types (ordered, set) to more
+general types (hashed, multiset) are handled automatically.
 
 Examples
 ~~~~~~~~
@@ -5410,21 +5414,32 @@ permitted in this case, and each instance counts as a separate member::
   > members $ m*bag (3..6);
   [3,5]
 
-As already mentioned, operands in set/bag unions, differences and
-intersections as well as the comparison operators must match. If necessary,
-one of the operands can be converted to the desired target type using a
-combination of ``members`` and the corresponding construction function.
-E.g., here's how you can add a set to a bag, yielding a bag::
+As already mentioned, operands of different types can be mixed with the
+infix operators; the necessary conversions are handled automatically. E.g.,
+here's how you add a set to a bag::
 
   > let m1::Bag = bag [5,1,3,11,3];
   > let m2::Set = set (3..6);
-  > let m::Bag = m1+bag m2;
-  > members m;
+  > members (m1+m2);
   [1,3,3,3,4,5,5,6,11]
 
-If set members aren't ordered, hashed sets and bags must be used. These
-work analogously, but distinct members are stored in an apparently random
-order::
+Note that the result will always be promoted to the most general operand
+type in such cases (a bag in the above example). If this is not what you
+want, you'll have to apply the necessary conversions manually::
+
+  > members (set m1+m2);
+  [1,3,4,5,6,11]
+
+If set members aren't ordered then you'll get an exception when trying to
+create an ordered set or bag from them::
+
+  > set [a,b,c];
+  <stdin>, line 5: unhandled exception 'failed_cond' while evaluating
+  'set [a,b,c]'
+
+In such a case hashed sets and bags must be used instead. These work
+analogously to the ordered sets and bags, but distinct members are stored
+in an apparently random order::
 
   > members $ hset [a,b,c] * hset [c,d,e];
   [c]

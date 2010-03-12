@@ -2868,15 +2868,13 @@ and this is also the order in which they will be retrieved by the
 defined on all dictionary types, where two dictionaries are considered
 &quot;equal&quot; (<tt class="docutils literal"><span class="pre">d1==d2</span></tt>) if they both contain the same <tt class="docutils literal"><span class="pre">key=&gt;value</span></tt> pairs,
 and <tt class="docutils literal"><span class="pre">d1&lt;=d2</span></tt> means that <tt class="docutils literal"><span class="pre">d1</span></tt> is a sub-dictionary of <tt class="docutils literal"><span class="pre">d2</span></tt>, i.e., all
-<tt class="docutils literal"><span class="pre">key=&gt;value</span></tt> pairs of <tt class="docutils literal"><span class="pre">d1</span></tt> are also contained in <tt class="docutils literal"><span class="pre">d2</span></tt>. Note, however,
-that there are no implicit conversions between the different dictionary
-types and thus the operand types in a comparison must match. To compare two
-dictionaries, ordered dictionaries compare keys using equality (assuming
-two keys <tt class="docutils literal"><span class="pre">a</span></tt> and <tt class="docutils literal"><span class="pre">b</span></tt> to be equal if neither <tt class="docutils literal"><span class="pre">a&lt;b</span></tt> nor <tt class="docutils literal"><span class="pre">b&lt;a</span></tt> holds),
-while hashed dictionaries check for syntactical equality (using <tt class="docutils literal"><span class="pre">===</span></tt>).
-The associated values are always compared using the <tt class="docutils literal"><span class="pre">==</span></tt> predicate, so
-this needs to be defined if you want to use any of the comparison
-operations.</p>
+<tt class="docutils literal"><span class="pre">key=&gt;value</span></tt> pairs of <tt class="docutils literal"><span class="pre">d1</span></tt> are also contained in <tt class="docutils literal"><span class="pre">d2</span></tt> (taking into
+account multiplicities in the multidict case). Ordered dictionaries compare
+keys using equality (assuming two keys <tt class="docutils literal"><span class="pre">a</span></tt> and <tt class="docutils literal"><span class="pre">b</span></tt> to be equal if
+neither <tt class="docutils literal"><span class="pre">a&lt;b</span></tt> nor <tt class="docutils literal"><span class="pre">b&lt;a</span></tt> holds), while hashed dictionaries check for
+syntactical equality (using <tt class="docutils literal"><span class="pre">===</span></tt>).  The associated values are always
+compared using the <tt class="docutils literal"><span class="pre">==</span></tt> predicate, so this needs to be defined if you
+want to use any of the comparison operations.</p>
 <p>The underlying AVL tree data structure can be found in the avltrees.pure
 module which is included in the library, but not to be invoked directly.</p>
 <p>The AVL tree algorithm has its origin in the SWI-Prolog implementation of
@@ -3013,10 +3011,11 @@ is just the same as <tt class="docutils literal"><span class="pre">delete</span>
 <ul class="simple">
 <li>The infix operators <tt class="docutils literal"><span class="pre">+</span></tt>, <tt class="docutils literal"><span class="pre">-</span></tt> and <tt class="docutils literal"><span class="pre">*</span></tt> work like the corresponding
 set and bag operations (see <a class="reference internal" href="#sets-and-bags">Sets and Bags</a>), treating dictionaries as
-collections of <tt class="docutils literal"><span class="pre">key=&gt;val</span></tt> pairs. Like the comparison predicates, these
-don't do any implicit conversions, so the operand types must match
-exactly. Explicit conversions must be used if different types of
-dictionaries are to be combined with any of these operations.</li>
+collections of <tt class="docutils literal"><span class="pre">key=&gt;val</span></tt> pairs. You can mix arbitrary operand types
+with these operations, as well as with the comparison operations; the
+necessary conversions from less general dictionary types (ordered,
+single-valued) to more general types (hashed, multi-valued) are handled
+automatically.</li>
 <li>The <tt class="docutils literal"><span class="pre">delete_val</span></tt> function always compares values using equality
 (<tt class="docutils literal"><span class="pre">==</span></tt>), so this predicate must be defined on the values stored in the
 dictionary in order to make this operation work. If there is more than
@@ -3024,8 +3023,8 @@ one instance of the given value under the given key, the first such
 instance will be removed (which may be any instance that compares equal,
 not necessarily an exact match).</li>
 <li>In the multidict case, <tt class="docutils literal"><span class="pre">delete_val</span></tt> may require linear time with
-respect to the number of different values stored for the given key. Since
-this operation is also needed to implement some other multidict
+respect to the number of different values stored under the given key.
+Since this operation is also needed to implement some other multidict
 operations like comparisons, difference and intersection, these may end
 up requiring quadratic running times in degenerate cases (i.e., if the
 majority of members happens to be associated with only very few keys).</li>
@@ -3049,7 +3048,8 @@ dictionary:</p>
 &gt; d!&quot;foo&quot;;
 77
 &gt; d!&quot;baz&quot;;
-&lt;stdin&gt;, line 5: unhandled exception 'out_of_bounds' while evaluating 'd!&quot;baz&quot;'
+&lt;stdin&gt;, line 5: unhandled exception 'out_of_bounds' while evaluating
+'d!&quot;baz&quot;'
 </pre>
 <p>By virtue of the prelude, slicing a dictionary with <tt class="docutils literal"><span class="pre">!!</span></tt> also works as
 expected:</p>
@@ -3103,8 +3103,7 @@ may be empty if the key is not in the dictionary (rather than throwing an
 </pre>
 <p>There are also some set-like operations which allow you to add/remove the
 members (<tt class="docutils literal"><span class="pre">key=&gt;val</span></tt> pairs) of one dictionary to/from another dictionary,
-and to compute the intersection of two dictionaries. In either case, the
-two operands must have the same type. For instance:</p>
+and to compute the intersection of two dictionaries. For instance:</p>
 <pre class="literal-block">
 &gt; let h1 = hmdict [a=&gt;1,b=&gt;2];
 &gt; let h2 = hmdict [b=&gt;2,c=&gt;3];
@@ -3115,13 +3114,19 @@ two operands must have the same type. For instance:</p>
 &gt; members (h1*h2);
 [b=&gt;2]
 </pre>
-<p>Note that if you need to combine two dictionaries of different types,
-you'll have to do the necessary conversions manually:</p>
+<p>It's possible to mix dictionaries of different types in these operations.
+The necessary conversions are handled automatically:</p>
 <pre class="literal-block">
 &gt; let h1 = hmdict [a=&gt;1,b=&gt;2];
 &gt; let h2 = hdict  [b=&gt;3,c=&gt;4];
-&gt; members (h1+hmdict h2);
+&gt; members (h1+h2);
 [a=&gt;1,c=&gt;4,b=&gt;2,b=&gt;3]
+</pre>
+<p>Note that the result will always be promoted to the most general operand
+type in such cases (a hashed multidict in the above example). If this is
+not what you want, you'll have to apply the necessary conversions
+manually:</p>
+<pre class="literal-block">
 &gt; members (hdict h1+h2);
 [a=&gt;1,c=&gt;4,b=&gt;3]
 </pre>
@@ -3150,12 +3155,11 @@ random order.</li>
 defined on all set and bag types, where two sets or bags are considered
 &quot;equal&quot; (<tt class="docutils literal"><span class="pre">m1==m2</span></tt>) if they both contain the same elements, and <tt class="docutils literal"><span class="pre">m1&lt;=m2</span></tt>
 means that <tt class="docutils literal"><span class="pre">m1</span></tt> is a subset or subbag of <tt class="docutils literal"><span class="pre">m2</span></tt>, i.e., all elements of
-<tt class="docutils literal"><span class="pre">m1</span></tt> are also contained in <tt class="docutils literal"><span class="pre">m2</span></tt>. Note, however, that there are no
-implicit conversions between the different set types and thus the operand
-types in a comparison must match. To compare two sets or bags, ordered sets
-and bags compare elements using equality (considering two elements <tt class="docutils literal"><span class="pre">a</span></tt>
-and <tt class="docutils literal"><span class="pre">b</span></tt> to be equal if neither <tt class="docutils literal"><span class="pre">a&lt;b</span></tt> nor <tt class="docutils literal"><span class="pre">b&lt;a</span></tt> holds), while hashed
-sets and bags check for syntactical equality (using <tt class="docutils literal"><span class="pre">===</span></tt>).</p>
+<tt class="docutils literal"><span class="pre">m1</span></tt> are also contained in <tt class="docutils literal"><span class="pre">m2</span></tt> (taking into account multiplicities in
+the multiset case). Ordered sets and bags compare elements using equality
+(considering two elements <tt class="docutils literal"><span class="pre">a</span></tt> and <tt class="docutils literal"><span class="pre">b</span></tt> to be equal if neither <tt class="docutils literal"><span class="pre">a&lt;b</span></tt>
+nor <tt class="docutils literal"><span class="pre">b&lt;a</span></tt> holds), while hashed sets and bags check for syntactical
+equality (using <tt class="docutils literal"><span class="pre">===</span></tt>).</p>
 <p>The underlying AVL tree data structure can be found in the avltrees.pure
 module which is included in the library, but not to be invoked directly.
 The AVL tree algorithm has its origin in the SWI-Prolog implementation of
@@ -3257,10 +3261,10 @@ from <tt class="docutils literal"><span class="pre">m1</span></tt></dd>
 <dd>remove all instances of <tt class="docutils literal"><span class="pre">x</span></tt> from <tt class="docutils literal"><span class="pre">m</span></tt> (in the set case, this is just
 the same as <tt class="docutils literal"><span class="pre">delete</span></tt>)</dd>
 </dl>
-<p>Note that, as for the comparison operators, there are no implicit
-conversions for the infix operators <tt class="docutils literal"><span class="pre">+</span></tt>, <tt class="docutils literal"><span class="pre">-</span></tt> and <tt class="docutils literal"><span class="pre">*</span></tt>, so the operand
-types must match exactly. Explicit conversions must be used if different
-types of sets and bags are to be combined with any of these operations.</p>
+<p>Note that the infix operators (<tt class="docutils literal"><span class="pre">+</span></tt>, <tt class="docutils literal"><span class="pre">-</span></tt>, <tt class="docutils literal"><span class="pre">*</span></tt>, as well as the
+comparison operations) allow you to mix arbitrary operand types; the
+necessary conversions from less general set types (ordered, set) to more
+general types (hashed, multiset) are handled automatically.</p>
 </div>
 <div class="section" id="id67">
 <h3><a class="toc-backref" href="#id123">3.4.4&nbsp;&nbsp;&nbsp;Examples</a></h3>
@@ -3295,21 +3299,32 @@ permitted in this case, and each instance counts as a separate member:</p>
 &gt; members $ m*bag (3..6);
 [3,5]
 </pre>
-<p>As already mentioned, operands in set/bag unions, differences and
-intersections as well as the comparison operators must match. If necessary,
-one of the operands can be converted to the desired target type using a
-combination of <tt class="docutils literal"><span class="pre">members</span></tt> and the corresponding construction function.
-E.g., here's how you can add a set to a bag, yielding a bag:</p>
+<p>As already mentioned, operands of different types can be mixed with the
+infix operators; the necessary conversions are handled automatically. E.g.,
+here's how you add a set to a bag:</p>
 <pre class="literal-block">
 &gt; let m1::Bag = bag [5,1,3,11,3];
 &gt; let m2::Set = set (3..6);
-&gt; let m::Bag = m1+bag m2;
-&gt; members m;
+&gt; members (m1+m2);
 [1,3,3,3,4,5,5,6,11]
 </pre>
-<p>If set members aren't ordered, hashed sets and bags must be used. These
-work analogously, but distinct members are stored in an apparently random
-order:</p>
+<p>Note that the result will always be promoted to the most general operand
+type in such cases (a bag in the above example). If this is not what you
+want, you'll have to apply the necessary conversions manually:</p>
+<pre class="literal-block">
+&gt; members (set m1+m2);
+[1,3,4,5,6,11]
+</pre>
+<p>If set members aren't ordered then you'll get an exception when trying to
+create an ordered set or bag from them:</p>
+<pre class="literal-block">
+&gt; set [a,b,c];
+&lt;stdin&gt;, line 5: unhandled exception 'failed_cond' while evaluating
+'set [a,b,c]'
+</pre>
+<p>In such a case hashed sets and bags must be used instead. These work
+analogously to the ordered sets and bags, but distinct members are stored
+in an apparently random order:</p>
 <pre class="literal-block">
 &gt; members $ hset [a,b,c] * hset [c,d,e];
 [c]
