@@ -247,7 +247,7 @@ static const char *mkname(const char *name, const char *prefix)
   char *buf;
   if (!prefix || !*prefix)
     return name;
-  buf = mkbuf(strlen(name)+strlen(prefix));
+  buf = mkbuf(strlen(name)+strlen(prefix)+1);
   if (buf) sprintf(buf, "%s:%s", prefix, name);
   return buf;
 }
