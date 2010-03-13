@@ -87,7 +87,7 @@ realclean: clean
 	rm -f $(modules) $(c-modules)
 
 generate:
-	rm -f $(modules) $(c-modules)
+	rm -f $(dlls) *.o $(modules) $(c-modules)
 	$(MAKE) all
 
 # Compile the examples.
