@@ -85,7 +85,7 @@ realclean: clean
 # botched, which might be the case when using svn sources.
 
 generate: gl.templ $(wildcard GL/*.h)
-	rm -f  $(modules) $(c-modules)
+	rm -f pure-gl$(DLL) *.o $(modules) $(c-modules)
 	$(MAKE) all
 
 # Install targets.
