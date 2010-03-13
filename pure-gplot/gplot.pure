@@ -188,9 +188,9 @@ This restores the default tics on the y-axis.
 */
 gplot::xtics gp []	()			|
 gplot::xtics gp [] "default"	= puts "set xtics autofreq" gp;
-gplot::xtics gp [] opt			= puts (gptics_cmd ts) gp when
-							gptics_cmd = "set xtics " + opt_str;
+gplot::xtics gp ts@[] opt		= puts (gptics_cmd ts) gp when
 							opt_str	= if tuplep opt then join " " $ list opt else opt;
+							gptics_cmd = "set xtics " + opt_str;
 						end;
 gplot::xtics gp ts opt			= puts (gptics_cmd ts) gp with
 							gptics_cmd tics	= "set xtics " + opt_str + " (" + (join ", " (map gptic tics)) + ")" when
