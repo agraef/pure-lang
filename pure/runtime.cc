@@ -2369,7 +2369,8 @@ pure_expr *pure_appv(pure_expr *fun, size_t argc, pure_expr **args)
 extern "C"
 pure_expr *pure_appx(pure_expr *fun, pure_expr *arg, pure_expr **_e)
 {
-  pure_try_call(pure_apply2(fun, arg));
+  pure_new_args(2, fun, arg);
+  pure_try_call(pure_apply(fun, arg));
 }
 
 extern "C"
