@@ -74,7 +74,7 @@ The Files and the Default Prelude
 The implementation of the ``rational`` type and associated utilities is
 distributed across various files.
 
-``math.pure`` and Other Files
+``Math.pure`` and Other Files
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The file ``math.pure`` defines the type, its constructors and ‘deconstructors’
@@ -88,26 +88,25 @@ It is also possible to create rational complex numbers (in addition to
 'double' complex numbers and integral or Gaussian complex numbers). That is
 ``rational`` plays nicely with ``complex``, as provided by Albert Graef’s
 complex.q in
-the default prelude. This is discussed further in §12.
+the default prelude. This is discussed further in `Rational Complex Numbers`_.
 
-``ratutils.pure``
+``Ratutils.pure``
 ~~~~~~~~~~~~~~~~~
 
 Additional ‘Rational utilities’, not included in the default prelude, are
 defined in ratutils.q. The functions include further arithmetical and
 mathematical operators and functions, continued fraction support, approximation
-routines and string formatting and evaluation. Functions that require ratutils.q
-to be explicitly included are indicated like this (U).
+routines and string formatting and evaluation.
 
 The Rational utilities include some 'rational complex number' functions.
 
-``rat_interval.pure``
+``Rat_interval.pure``
 ~~~~~~~~~~~~~~~~~~~~~
 
 Amongst the Rational utilities are some functions that return a rational
 interval. The file ``rat_interval.pure`` is a partial implementation of interval
 arithmetic, and is not included in the default prelude. Intervals are discussed
-further in §9.1.
+further in `Intervals`_.
 
 Notation
 --------
@@ -123,9 +122,6 @@ The ``reals`` are not just the ``doubles``, but include ``rationals`` and
 ``integers``. The term
 'rational' usually refers to a rational number ∈ **Q** ⊃ **Z**, or an
 expression of type ``rational`` or ``integer``.
-
-Functions that require ``ratutils.pure`` to be explicitly included are indicated
-like this (U).
 
 Acknowledgements
 ----------------
@@ -156,8 +152,8 @@ Constructors
 
 :rational (z1, z2):
   given a pair of integers (z1, z2), this returns the ``rational`` equivalent to
-  the fraction z1/z2. This is the inverse (up to  equivalence) of ``num_den``
-  (see §2.2).
+  the fraction z1/z2. This is the inverse (up to  equivalence) of `num_den`_
+  (see `'Deconstructors'`_).
 
 **Example 1** Constructing a fraction::
 
@@ -177,10 +173,10 @@ Constructors
 
 :(%) n1 n2:
   is a ``rational``-aware division function, which may be used as a constructor
-  (for ``integers`` n1 and n2). This is described in §3.2.
+  (for ``integers`` n1 and n2). This is described in `More on Division`_.
 
-‘Deconstructors’
-------------------
+'Deconstructors'
+----------------
 
 A rational number is in simplest form if the numerator and denominator are
 coprime (i.e. do not have a factor in common) and the denominator is positive
@@ -219,9 +215,9 @@ rational number and not of the number itself.
   given a ``rational`` or ``integer`` q, returns a pair (n, d) containing the
   (signed) simplest numerator n and the (positive) simplest denominator d. This
   is the inverse (up to equivalence) of rational as defined on integer pairs
-  (see §2.1).
+  (see `Constructors`_).
 
-**Example 3** Using num den to obtain a representation in simplest form::
+**Example 3** Using num_den to obtain a representation in simplest form::
 
   > let q = (44%(-14));
   > num q;
@@ -236,17 +232,18 @@ rational number and not of the number itself.
   (-3,1)
   >
 
-Together, num and den are a pair of 'decomposition' operators, and num den is
-also a decomposition operator. There are others (see §10). The integer and
-fraction function (see §6.2) may be used in conjunction with num den to
-decompose a ``rational`` into integer, numerator and denominator parts.
+Together, num and den are a pair of 'decomposition' operators, and `num_den`_ is
+also a decomposition operator. There are others (see `Decomposition`_). The
+integer and fraction function (see `Integer and Fraction Parts`_) may be used in
+conjunction with `num_den_gauss`_ to decompose a ``rational`` into integer,
+numerator and denominator parts.
 
 Type and Value Tests
 --------------------
 
-The functions isrational and isratval and other rational variants are new for
-``rationals`` and the standard functions isexact and isinexact are extended for
-``rationals``.
+The functions `rationalp`_ and `ratvalp`_ and other rational variants are new
+for ``rationals`` and the standard functions `exactp`_ and `inexactp`_ are
+extended for ``rationals``.
 
 A value is 'exact', or of an exact type, if it is of a type that is able to
 represent the values returned by arithmetical operations exactly; in a sense, it
@@ -262,8 +259,8 @@ stored exactly.)
 ``rational`` is an exact type. All rational numbers (subject to available
 resources, of course) are stored exactly. The results of the arithmetical
 operations on ``rationals`` are ``rationals`` represented exactly. Beware that
-the standard isintval and isratval may return 1 even if the value is of
-``double`` type. However, these functions may be combined with isexact.
+the standard ``intvalp`` and `ratvalp`_ may return 1 even if the value is of
+``double`` type. However, these functions may be combined with `exactp`_.
 
 .. raw:: html
 
@@ -320,8 +317,9 @@ the standard isintval and isratval may return 1 even if the value is of
   [1,1,0,0,0,0,0,0]
   >
 
-See §12 for details about rational complex numbers, and §12.2 for details of
-their type and value tests.
+See `Rational Complex Numbers`_ for details about rational complex numbers, and
+`Rational Complex Type and Value Tests`_ for details of their type and value
+tests.
 
 Internal Representation
 -----------------------
@@ -337,8 +335,8 @@ The representation is private, therefore you can not operate on rationals except
 through the public interface. However, it is useful to be able to understand
 responses given by the module when debugging.
 
-See, for example, §2.2 for details of a public interface function providing a
-representation with guaranteed properties.
+See, for example, `'Deconstructors'`_ for details of a public interface function
+providing a representation with guaranteed properties.
 
 Arithmetic
 ==========
@@ -377,7 +375,8 @@ result is ``rational``. If one operand is ``integer``, then the result is
 
 The operators (/) and (%) are overloaded for division on at least one
 ``rational`` operand. The value returned by (/) is always ``inexact`` (in the
-sense of §2.4). The value returned by (%) is ``exact`` (if it exists).
+sense of `Type and Value Tests`_). The value returned by (%) is ``exact`` (if it
+exists).
 
 .. raw:: html
 
@@ -486,7 +485,8 @@ There is a ``rational``-aware divide operator on the numeric types:
   >
 
 The following division functions are parameterised by a rounding mode
-``roundfun``. The available rounding modes are described in §6.1.
+`roundfun`_. The available rounding modes are described in `Rounding to
+Integer`_.
 
 .. raw:: html
 
@@ -498,12 +498,12 @@ The following division functions are parameterised by a rounding mode
   for ``rationals`` n and d returns a pair (q, r) of 'quotient' and 'remainder'
   where q is an ``integer`` and r is a ``rational`` such that \|r\| < \|d\| (or
   better) and n = q * d + r. Further conditions may hold, depending on the
-  chosen rounding mode ``roundfun`` (see §6.1).
-  If ``roundfun`` = floor then 0 ≤ r < d.
-  If ``roundfun`` = ceil then −d < r ≤ 0.
-  If ``roundfun`` = trunc then \|r\| < \|d\| and sgn r ∈ {0, sgn d}.
-  If ``roundfun`` = round, ``roundfun`` = round_zero_bias or ``roundfun`` =
-  round_unbiased then \|r\| ≤ d/2.
+  chosen rounding mode `roundfun`_ (see `Rounding to Integer`_).
+  If `roundfun`_ = `floor`_ then 0 ≤ r < d.
+  If `roundfun`_ = `ceil`_ then −d < r ≤ 0.
+  If `roundfun`_ = `trunc`_ then \|r\| < \|d\| and sgn r ∈ {0, sgn d}.
+  If `roundfun`_ = `round`_, `roundfun`_ = `round_zero_bias`_ or `roundfun`_ =
+  `round_unbiased`_ then \|r\| ≤ d/2.
 
 .. raw:: html
 
@@ -512,7 +512,7 @@ The following division functions are parameterised by a rounding mode
 .. _quotient:
 
 :quotient roundfun nN d:
-  returns just the quotient as produced by divide roundfun n d.
+  returns just the quotient as produced by `divide`_ roundfun n d.
 
 .. raw:: html
 
@@ -521,7 +521,7 @@ The following division functions are parameterised by a rounding mode
 .. _modulus:
 
 :modulus roundfun n d:
-  returns just the remainder as produced by divide roundfun n d.
+  returns just the remainder as produced by `divide`_ roundfun n d.
 
 .. raw:: html
 
@@ -583,8 +583,8 @@ Relations — Equality and Inequality Tests
 
 .. _>=:
 
-The standard arithmetic operators (==), (~=), (<), (<=), (>), (>=) are overloaded
-to have at least one ``rational`` operand. The other operand may be
+The standard arithmetic operators (==), (~=), (<), (<=), (>), (>=) are
+overloaded to have at least one ``rational`` operand. The other operand may be
 ``rational``, ``integer`` or ``double``.
 
 **Example 9** Inequality::
@@ -650,7 +650,7 @@ The standard ``abs`` and ``sgn`` functions are overloaded for ``rationals``.
 
 Together, these functions satisfy the property ∀q • (sgn q) * (abs q) = q (i.e.
 ∀q • (sgn q) * \|q\| = q). Thus these provide a pair of ‘decomposition’
-operators; there are others (see §10).
+operators; there are others (see `Decomposition`_).
 
 Greatest Common Divisor (GCD) and Least Common Multiple (LCM)
 -------------------------------------------------------------
@@ -800,7 +800,8 @@ The complexity functions in this section may be applied to ``integers`` (the
 least complex), ``rationals``, or ``reals`` (``doubles``; the most complex).
 
 Functions concerning 'complexity' are named with 'cplx', whereas functions
-concerning 'complex numbers' (see §12) are named with 'comp'.
+concerning 'complex numbers' (see `Rational Complex Numbers`_) are named with
+'comp'.
 
 Complexity Relations
 ~~~~~~~~~~~~~~~~~~~~
@@ -1075,14 +1076,21 @@ Farey sequence, then n2d1 − n1d2 = 1.
   [9,9,9%2,4.5,9+:1,9%2+:1]
   >
 
-See §12 for details about rational complex numbers, and §12.5 for details of
-their type simplification.
+See `Rational Complex Numbers`_ for details about rational complex numbers, and
+`Rational Complex Type Simplification`_ for details of their type
+simplification.
 
 **Q** → **Z** — Rounding
 ========================
 
 Rounding to Integer
 -------------------
+
+.. raw:: html
+
+   <a name="roundfun">
+
+.. _roundfun:
 
 Some of these are new functions, and some are overloads of standard functions.
 The behaviour of the overloads is consistent with that of the standard
@@ -1168,7 +1176,7 @@ functions.
   [-3,-2,-2,-2,-1,0,0,0,1,2,2,2,3]
   >
 
-(The function ``double`` is described in §8.)
+(See the function `double`_.)
 
 Integer and Fraction Parts
 --------------------------
@@ -1176,7 +1184,7 @@ Integer and Fraction Parts
 :integer_and_fraction roundfun q:
   returns a pair (z, f) where z is the ‘integer part’ as an ``integer``, f is
   the ‘fraction part’ as a ``rational``, where the rounding operations are
-  performed using rounding mode ``roundfun`` (see §6.1).
+  performed using rounding mode `roundfun`_ (see `Rounding to Integer`_).
 
 **Example 28** Integer and fraction parts with the different rounding modes::
 
@@ -1190,12 +1198,13 @@ Integer and Fraction Parts
   >
 
 It is always the case that z and f have the property that q = z + f. However,
-the remaining properties depend upon the choice of ``roundfun``.
-Thus this provides a ‘decomposition’ operator; there are others (see §10).
-If ``roundfun`` = floor then 0 ≤ f < 1. If Round = ceil then −1 < f ≤ 0.
-If ``roundfun`` = trunc then \|f\| < 1 and sgn f ∈ {0, sgn q}.
-If ``roundfun`` = round, ``roundfun`` = round_zero_bias or ``roundfun`` =
-round_unbiased then \|f\| ≤ 1/2.
+the remaining properties depend upon the choice of `roundfun`_.
+Thus this provides a ‘decomposition’ operator; there are others (see
+`Decomposition`_).
+If `roundfun`_ = `floor`_ then 0 ≤ f < 1. If Round = `ceil`_ then −1 < f ≤ 0.
+If `roundfun`_ = `trunc`_ then \|f\| < 1 and sgn f ∈ {0, sgn q}.
+If `roundfun`_ = `round`_, `roundfun`_ = `round_zero_bias`_ or `roundfun`_ =
+`round_unbiased`_ then \|f\| ≤ 1/2.
 
 .. raw:: html
 
@@ -1205,11 +1214,12 @@ round_unbiased then \|f\| ≤ 1/2.
 
 :fraction roundfun q:
   returns just the ‘fraction part’ as a ``rational``, where the rounding
-  operations are performed using ``roundfun``. The corresponding function
-  ‘integer’ is not provided, as integer ``roundfun`` q would be just
-  ``roundfun`` q. The integer and fraction function (probably with trunc or
-  floor rounding mode) may be used in conjunction with num den (see §2.2) to
-  decompose a ``rational`` into integer, numerator and denominator parts.
+  operations are performed using `roundfun`_. The corresponding function
+  ‘integer’ is not provided, as integer `roundfun`_ q would be just
+  `roundfun`_ q. The integer and fraction function (probably with `trunc`_ or
+  `floor`_ rounding mode) may be used in conjunction with `num_den`_ (see
+  `'Deconstructors'`_) to decompose a ``rational`` into integer, numerator and
+  denominator parts.
 
 .. raw:: html
 
@@ -1245,11 +1255,11 @@ Rounding to Multiples
 
 :round_to_multiple roundfun multOf q:
   returns q rounded to an integer multiple of a non-zero value multOf, using
-  ``roundfun`` as the rounding mode (see §6.1). Note that it is the multiple
-  that is rounded in the prescribed way, and not the final result, which may
-  make a difference in the case that multOf is negative. If that is not the
-  desired behaviour, pass this function the absolute value of multOf rather than
-  multOf. Similar comments apply to the following functions.
+  `roundfun`_ as the rounding mode (see `Rounding to Integer`_). Note that it
+  is the multiple that is rounded in the prescribed way, and not the final
+  result, which may make a difference in the case that multOf is negative. If
+  that is not the desired behaviour, pass this function the absolute value of
+  multOf rather than multOf. Similar comments apply to the following functions.
 
 .. raw:: html
 
@@ -1326,12 +1336,13 @@ Rounding to Multiples
   > map (round_multiple_unbiased 10) l;
   [30,40,40,40,40]
 
-(The function ``double`` is described in §8.)
+(See the function `double`_.)
 
 The round multiple functions may be used to find a fixed denominator
 approximation of a number. (The simplest denominator may actually be a proper
 factor of the chosen value.) To approximate for a bounded (rather than
-particular) denominator, use rational approx max den instead (see §9.3).
+particular) denominator, use rational approx max den instead (see `Best
+Approximation with Bounded Denominator`_).
 
 **Example 31** Finding the nearest q = n/d value to 1/e ≈ 0.368 where d = 1000
 (actually, where d\|1000)::
@@ -1354,7 +1365,7 @@ particular) denominator, use rational approx max den instead (see §9.3).
   >
 
 Other methods for obtaining a ``rational`` approximation of a number are
-described in §9
+described in `R → Q — Approximation`_.
 
 **Q** → **R** — Conversion / Casting
 ====================================
@@ -1376,9 +1387,10 @@ described in §9
 =============================
 
 This section describes functions that approximate a number (usually a
-``double``) by a ``rational``. See §7 for approximation of a number by a
-``rational`` with a fixed denominator. See §17 for approximation by a
-``rational`` of a string representation of a real number.
+``double``) by a ``rational``. See `Rounding to Multiples`_ for approximation of
+a number by a ``rational`` with a fixed denominator. See `Numeral String → Q
+— Approximation`_ for approximation by a ``rational`` of a string representation
+of a real number.
 
 Intervals
 ---------
@@ -1389,7 +1401,8 @@ not included in the default prelude. It is not intended to provide a complete
 implementation of interval arithmetic. The notions of ‘open’ and ‘closed’
 intervals are not distinguished. Infinite and half-infinite intervals are not
 specifically provided. Some operations and functions may be missing. The most
-likely functions to be used are simply the ‘deconstructors’; see §9.1.1.
+likely functions to be used are simply the ‘deconstructors’; see `Interval
+Constructors and 'Deconstructors'`_.
 
 ``interval`` Constructors and 'Deconstructors'
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1561,6 +1574,12 @@ Intervals are constructed with the function interval.
 The standard arithmetic operators (+), (−), (*), (/) and (%) are overloaded for
 ``intervals``. The divide operators (/) and (%) do not produce a result if the
 right operand is an interval containing 0.
+
+.. raw:: html
+
+   <a name="Example 36">
+
+.. _Example 36:
 
 **Example 36** Some intervals::
 
@@ -1746,7 +1765,7 @@ the end-points.
   1
   >
 
-(The symbols a through d were defined in example 36.)
+(The symbols a through d were defined in `Example 36`_.)
 
 These may also be used with a simple (``real``) value, and in particular to test
 membership.
@@ -1775,7 +1794,7 @@ membership.
   1
   >
 
-(The symbol a was defined in example 36.)
+(The symbol a was defined in `Example 36`_.)
 
 ``interval`` Maths
 ~~~~~~~~~~~~~~~~~~
@@ -1825,7 +1844,7 @@ provided.
   > #d;
   4
 
-(The symbol d was defined in example 36.)
+(The symbol d was defined in `Example 36`_.)
 
 Least ``complex`` Approximation within ε
 ----------------------------------------
@@ -1837,9 +1856,9 @@ Least ``complex`` Approximation within ε
 .. _rational_approx_epsilon:
 
 :rational_approx_epsilon ε r:
-  Find the least complex (see §5.1.3) ``rational`` approximation to r (usually a
-  ``double``) that is ε-close. That is find the q with the smallest possible
-  denominator such that such that \|q − r\| ≤ ε. (ε > 0.)
+  Find the least complex (see `Complexity Extrema`_) ``rational`` approximation
+  to r (usually a ``double``) that is ε-close. That is find the q with the
+  smallest possible denominator such that such that \|q − r\| ≤ ε. (ε > 0.)
 
 **Example 42** ``rational`` approximation to π ≈ 3.142 ≈ 22/7::
 
@@ -1848,6 +1867,12 @@ Least ``complex`` Approximation within ε
   > abs (ans - pi);
   0.00126448926734968
   >
+
+.. raw:: html
+
+   <a name="Example 43">
+
+.. _Example 43:
 
 **Example 43** The golden ratio ɸ = (1 + √5) / 2 ≈ 1.618::
 
@@ -1883,7 +1908,7 @@ approximations are always reverse consecutive Fibonacci numbers (from f1: 1, 1,
   [1%1,3%2,8%5,21%13,55%34,144%89]
   >
 
-(The symbol phi was defined in example 43.)
+(The symbol phi was defined in `Example 43`_.)
 
 .. raw:: html
 
@@ -1892,9 +1917,10 @@ approximations are always reverse consecutive Fibonacci numbers (from f1: 1, 1,
 .. _rational_interval_epsilon:
 
 :rational_interval_epsilon ε r:
-  Find the least complex (see §5.1.3) ``rational`` interval containing r
-  (usually a ``double``) that is ε-small. That is find the least complex (see
-  §5.1.3) q1 ≤ q2 such that r ∈ [q1, q2] and q2 − q1 ≤ ε. (ε > 0.)
+  Find the least complex (see `Complexity Extrema`_) ``rational`` interval
+  containing r (usually a ``double``) that is ε-small. That is find the least
+  complex (see `Complexity Extrema`_) q1 ≤ q2 such that r ∈ [q1, q2] and
+  q2 − q1 ≤ ε. (ε > 0.)
 
 **Example 46** ``rational`` interval surrounding π::
 
@@ -1907,7 +1933,8 @@ approximations are always reverse consecutive Fibonacci numbers (from f1: 1, 1,
   3.14285714285714
   >
 
-(The functions lower and upper are described in §9.1.1.)
+(The functions lower and upper are described in `Interval Constructors and
+'Deconstructors'`_.)
 
 **Example 47** ``rational`` interval surrounding the golden ratio ɸ::
 
@@ -1916,8 +1943,8 @@ approximations are always reverse consecutive Fibonacci numbers (from f1: 1, 1,
   > #ans;
   1%1870
 
-(The symbol Phi was defined in example 43. The function # is described in
-§9.1.4.)
+(The symbol Phi was defined in `Example 43`_. The function `# (intervals)`_ is
+described in `Interval Maths`_.)
 
 Best Approximation with Bounded Denominator
 -------------------------------------------
@@ -1944,7 +1971,7 @@ Best Approximation with Bounded Denominator
   1597%987
   >
 
-(The symbol phi was defined in example 43.)
+(The symbol phi was defined in `Example 43`_.)
 
 .. raw:: html
 
@@ -1968,7 +1995,7 @@ Best Approximation with Bounded Denominator
   [1%1,3%2,8%5,21%13,55%34,144%89]
   >
 
-(The symbol phi was defined in example 43.)
+(The symbol phi was defined in `Example 43`_.)
 
 .. raw:: html
 
@@ -1996,17 +2023,18 @@ Best Approximation with Bounded Denominator
   interval::Ivl (987%610) (1597%987)
   >
 
-(The symbol phi was defined in example 43.)
+(The symbol phi was defined in `Example 43`_.)
 
 To approximate for a particular (rather than bounded) denominator, use round to
-multiple instead (see §7).
+multiple instead (see `Rounding to Multiples`_).
 
 Decomposition
 =============
 
 There is more than one way to ‘decompose’ a rational number into its
-‘components’. It might be split into an integer and a fraction part — see §6.2;
-or sign and absolute value — see §4.1; or numerator and denominator — see §2.2.
+‘components’. It might be split into an integer and a fraction part — see
+`Integer and Fraction Parts`_; or sign and absolute value — see `Absolute Value
+and Sign`_; or numerator and denominator — see `'Deconstructors'`_.
 
 Continued Fractions
 ===================
@@ -2072,7 +2100,7 @@ Inexact
   1.61803398874989
   >
 
-(The symbol phi was defined in example 43.)
+(The symbol phi was defined in `Example 43`_.)
 
 .. raw:: html
 
@@ -2150,7 +2178,7 @@ and Gaussian integers (**Z**\ [i]), ``rationals`` (**Q**) and rational complex
 numbers (**Q**\ [i]).
 
 Functions concerning 'complex numbers' are named with 'comp', whereas functions
-concerning 'complexity' (see §5.1) are named with ‘cplx’.
+concerning 'complexity' (see `Complexity`_) are named with ‘cplx’.
 
 .. raw:: html
 
@@ -2245,7 +2273,7 @@ The d\ :sub:`x`, d\ :sub:`y` are not unique, but can be chosen such that d\
   denominator of one ‘normalised’ form of c.
 
   This is an inverse (up to equivalence) of rational as defined on integral
-  complex pairs (see §2.1).
+  complex pairs (see `Constructors`_).
 
 .. raw:: html
 
@@ -2261,7 +2289,7 @@ The d\ :sub:`x`, d\ :sub:`y` are not unique, but can be chosen such that d\
   numerator and denominator of another ‘normalised’ form of c.
 
   This is an inverse (up to equivalence) of rational as defined on integral
-  complex pairs (see §2.1).
+  complex pairs (see `Constructors`_).
 
 .. raw:: html
 
@@ -2269,11 +2297,11 @@ The d\ :sub:`x`, d\ :sub:`y` are not unique, but can be chosen such that d\
 
 .. _num_den (complex):
 
-:num den c:
-  synonymous with num den gauss.
+:num_den c:
+  synonymous with num_den_gauss.
 
   This is an inverse (up to equivalence) of rational as defined on integer pairs
-  (see §2.1).
+  (see `Constructors`_).
 
 .. raw:: html
 
@@ -2283,7 +2311,7 @@ The d\ :sub:`x`, d\ :sub:`y` are not unique, but can be chosen such that d\
 
 :num c:
   given a ``complex`` ``rational`` or ``integer`` c, returns just the numerator
-  of the normalised form of c given by num den c.
+  of the normalised form of c given by num_den c.
 
 .. raw:: html
 
@@ -2293,7 +2321,7 @@ The d\ :sub:`x`, d\ :sub:`y` are not unique, but can be chosen such that d\
 
 :den c:
   given a ``complex`` ``rational`` or ``integer`` c, returns just the
-  denominator of the normalised form of c given by num den c.
+  denominator of the normalised form of c given by num_den c.
 
 **Example 61** ``rational`` complex number deconstruction::
 
@@ -2413,7 +2441,7 @@ combined with ``exactp``.
   [1,1,0,0,0,0,0,0,0,0]
   >
 
-  See §2.4 for some details of rational type and value tests.
+  See `Type and Value Tests`_ for some details of rational type and value tests.
 
 ``rational`` ``complex`` Arithmetic Operators and Relations
 -----------------------------------------------------------
@@ -2486,7 +2514,7 @@ overloaded to have at least one complex and/or rational operand, but (<), (<=),
 ------------------------------
 
 The standard functions ``re`` and ``im`` work with rational complex numbers (see
-§12.1).
+`Rational Complex Constructors and 'Deconstructors'`_).
 
 .. raw:: html
 
@@ -2673,7 +2701,8 @@ numbers and more general mathematical values.
   > map ratcomp_simplify l;
   [9+:1,9+:1,9%2+:1,4.5+:1,9,9%2,4.5+:0.0]
 
-  See §5.3 for some details of rational type simplification.
+  See `Rational Type Simplification`_ for some details of rational type
+  simplification.
 
 String Formatting and Evaluation
 ================================
@@ -2686,8 +2715,9 @@ There are several families of functions for converting between ``strings`` and
 
 The functions that convert from ``rationals`` to strings have names based on
 that of the standard function ``str``. The ``str_*`` functions convert to a
-formatted string, and depend on a 'format structure' parameter (see §13.2). The
-``strs_*`` functions convert to a tuple of string fragments.
+formatted string, and depend on a 'format structure' parameter (see
+`Internationalisation and Format Structures`_). The ``strs_*`` functions convert
+to a tuple of string fragments.
 
 The functions that convert from strings to ``rationals`` have names based on
 that of the standard function ``val``. The ``val_*`` functions convert from a
@@ -2698,16 +2728,22 @@ There are also ``join_*`` and ``split_*`` functions to join string fragments
 into formatted strings, and to split formatted strings into string fragments,
 respectively; these depend on a format structure parameter. These functions are
 not always invertible, because some of the functions reduce an error term to
-just a sign, e.g. str real approx dp may round a value. Thus sometimes the
+just a sign, e.g. `str_real_approx_dp`_ may round a value. Thus sometimes the
 ``join_*`` and ``split_*`` pairs, and the ``str_*`` and ``val_*`` pairs are not 
 quite mutual inverses.
+
+.. raw:: html
+
+   <a name="fmt">
+
+.. _fmt:
 
 Internationalisation and Format Structures
 ------------------------------------------
 
 Many of the string formatting functions in the following sections are
 parameterised by a 'format structure'. Throughout this document, the formal
-parameter for the format structure will be ``fmt``. This is simply a map from
+parameter for the format structure will be `fmt`_. This is simply a map from
 some string 'codes' to functions as follows. The functions are mostly from
 strings to a string, or from a string to a tuple of strings.
 
@@ -2857,7 +2893,7 @@ as a fraction of the radix.
   ("+","2","35",-433%1000)
   >
 
-(The function strs_real_approx_sf is described in §16.1.2.)
+(See the function `strs_real_approx_sf`_.)
 
 In strings, only the sign of the error term is given. A “+” should be read as
 “and a bit more”; “-” as “but a bit less”.
@@ -2870,7 +2906,7 @@ In strings, only the sign of the error term is given. A “+” should be read a
   "2.35(-)"
   >
 
-(The function str real approx sf is described in §16.1.2.)
+(See the function `str_real_approx_sf`_.)
 
 **Q** ↔ Fraction String (“i + n/d”)
 =====================================
@@ -3008,8 +3044,8 @@ These might be compared to the behaviour of the standard function val.
 **Q** ↔ Recurring Numeral Expansion String (“I.FR”)
 ===================================================
 
-See §13.2 for information about the formatting structure to be supplied in the
-``fmt`` parameter.
+See `Internationalisation and Format Structures`_ for information about the
+formatting structure to be supplied in the `fmt`_ parameter.
 
 Formatting to Recurring Expansion Strings
 -----------------------------------------
@@ -3110,8 +3146,8 @@ comma-separated groupings.
 .. _join_str_real_recur:
 
 :join_str_real_recur fmt intGroup sign i fracInit fracRecur"
-  formats the parts in the quadruple returned by strs real recur to the sort of
-  string as returned by str real recur.
+  formats the parts in the quadruple returned by `strs_real_recur`_ to the sort
+  of string as returned by `str_real_recur`_.
 
 Evaluation of Recurring Expansion Strings
 -----------------------------------------
@@ -3119,7 +3155,8 @@ Evaluation of Recurring Expansion Strings
 The ``str_*`` and ``val_*`` functions depend on a 'format structure' parameter
 (fmt) such as format uk. Conversions may be performed between ``rationals`` and
 differently formatted strings if a suitable alternative format structure is
-supplied. See §13.2 for information about formatting structures.
+supplied. See `Internationalisation and Format Structures`_ for information
+about formatting structures.
 
 .. raw:: html
 
@@ -3182,8 +3219,8 @@ representations::
 **Q** ↔ Numeral Expansion String (“I.F × 10E”)
 ==============================================
 
-See §13.2 for information about the formatting structure to be supplied in the
-``fmt`` parameter.
+See `Internationalisation and Format Structures`_ for information about the
+formatting structure to be supplied in the `fmt`_ parameter.
 
 The exponent string "\*10^" need not depend on the radix, as the numerals for
 the number radix in that radix are always "10".
@@ -3202,10 +3239,10 @@ Functions for Fixed Decimal Places
 
 :str_real_approx_dp fmt radix intGroup fracGroup roundfun dp q:
   returns a string representing a numeral expansion approximation of q to dp
-  decimal places, using rounding mode ``roundfun`` (see §6.1). ``roundfun`` is
-  usually ``round`` or ``round_unbiased``. (dp may be positive, zero or
-  negative; non-positive dps may look misleading — use e.g. scientific notation
-  instead.)
+  decimal places, using rounding mode `roundfun`_ (see `Rounding to Integer`_)
+  `roundfun`_ is usually `round`_ or `round_unbiased`_. (dp may be positive,
+  zero or negative; non-positive dps may look misleading — use e.g. scientific
+  notation instead.)
 
 **Example 78** Decimal places::
 
@@ -3247,9 +3284,9 @@ Functions for Fixed Decimal Places
 .. _join_str_real_approx:
 
 :join_str_real_approx fmt intGroup fracGroup sign i frac err:
-  formats the parts in the quadruple returned by strs real approx dp or strs
-  real approx sf to the sort of string as returned by ``str_real_approx_dp`` or
-  st_real_approx_sf.
+  formats the parts in the quadruple returned by `strs_real_approx_dp`_ or 
+  `strs_real_approx_sf`_ to the sort of string as returned by
+  `str_real_approx_dp`_ or `str_real_approx_sf`_.
 
 Functions for Significant Figures
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3262,9 +3299,10 @@ Functions for Significant Figures
 
 :str_real_approx_sf fmt radix intGroup fracGroup roundfun sf q:
   returns a string representing a numeral expansion approximation of q to sf
-  significant figures, using rounding mode ``roundfun`` (see §6.1).
+  significant figures, using rounding mode `roundfun`_ (see `Rounding to
+  Integer`_).
 
-Round is usually round or round unbiased. (sf must be positive.)
+Round is usually `round`_ or `round_unbiased`_. (sf must be positive.)
 
 **Example 80** Significant figures::
 
@@ -3303,11 +3341,11 @@ Functions for Scientific Notation and Engineering Notation
 
 :str_real_approx_sci fmt radix intGroup fracGroup roundfun sf q:
   returns a string expansion with a number of significant figures in scientific
-  notation, using rounding mode ``roundfun`` (see §6.1).
+  notation, using rounding mode `roundfun`_ (see `Rounding to Integer`_).
 
-  (sf must be positive; expStep is usually 3, radix is usually 10, ``roundfun``
-  is usually round or round_unbiased; str_real_approx_sci is equivalent to
-  str_real_approx_eng (below) with expStep = 1.)
+  (sf must be positive; expStep is usually 3, radix is usually 10, `roundfun`_
+  is usually `round`_ or `round_unbiased`_; `str_real_approx_sci`_ is equivalent
+  to `str_real_approx_eng`_ (below) with expStep = 1.)
 
 .. raw:: html
 
@@ -3343,7 +3381,7 @@ Functions for Scientific Notation and Engineering Notation
   the exponent will always be divisible by expStep.
 
   (sf must be positive; expStep is usually 3 and must be positive, radix is
-  usually 10, ``roundfun`` is usually round or round_unbiased.)
+  usually 10, `roundfun`_ is usually `round`_ or `round_unbiased`_.)
 
 **Example 81** Engineering notation::
 
@@ -3389,8 +3427,8 @@ Functions for Scientific Notation and Engineering Notation
 
 :join_str_real_eng fmt intGroup fracGroup mantSign mantI mantF rac expSign expI err: 
   formats the parts in the quadruple returned by ``strs_real_approx_eng`` or
-  strs_real_approx_sci to the sort of string as returned by str real approx eng
-  or str real approx sci.
+  strs_real_approx_sci to the sort of string as returned by
+  `str_real_approx_eng`_ or `str_real_approx_sci`.
 
 Evaluation of Expansion Strings
 -------------------------------
@@ -3398,7 +3436,8 @@ Evaluation of Expansion Strings
 The ``str_*`` and ``val_*`` functions depend on a 'format structure' parameter
 (fmt) such as format uk. Conversions may be performed between ``rationals`` and
 differently formatted strings if a suitable alternative format structure is
-supplied. See §13.2 for information about formatting structures.
+supplied. See `Internationalisation and Format Structures`_ for information
+about formatting structures.
 
 .. raw:: html
 
@@ -3465,13 +3504,14 @@ Numeral String → **Q** — Approximation
 ======================================
 
 This section describes functions to approximate by a ``rational`` a real number
-represented by a string. See §9 for approximation by a ``rational`` of a
-``double``.
+represented by a string. See `R → Q — Approximation`_ for approximation
+by a ``rational`` of a ``double``.
 
 The ``str_*`` and ``val_*`` functions depend on a 'format structure' parameter
 (fmt) such as format uk. Conversions may be performed between ``rationals`` and
-differently formatted strings if a format structure is supplied. See §13.2 for
-information about formatting structures.
+differently formatted strings if a format structure is supplied. See
+`Internationalisation and Format Structures`_ for information about formatting
+structures.
 
 .. raw:: html
 
