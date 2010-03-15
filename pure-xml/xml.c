@@ -893,15 +893,35 @@ pure_expr *xml_select(pure_expr *docptr, pure_expr *x)
 {
   xmlDocPtr doc;
   const char *s;
+  pure_expr **xs = NULL, **ys = NULL;
   size_t i, n;
   pure_expr **nodes, *res;
   xmlXPathContextPtr context;
   xmlXPathObjectPtr result;
   xmlNodeSetPtr nodeset;
-  if (!pure_is_doc(docptr, &doc) || !pure_is_string(x, &s))
+  if (!pure_is_doc(docptr, &doc) ||
+      !(pure_is_string(x, &s) ||
+	(pure_is_tuplev(x, &n, &xs) && n==2 && pure_is_string(xs[0], &s) &&
+	 pure_is_listv(xs[1], &n, &ys)))) {
+    if (xs) free(xs);
+    if (ys) free(ys);
     return NULL;
+  }
+  if (xs) free(xs);
   context = xmlXPathNewContext(doc);
   if (!context) return NULL;
+  if (ys) {
+    const char *prefix, *uri;
+    for (i = 0; i < n; i++)
+      if (parse_attr(ys[i], &prefix, &uri))
+	xmlXPathRegisterNs(context, prefix, uri);
+      else {
+	xmlXPathFreeContext(context);
+	free(ys);
+	return NULL;
+      }
+    free(ys);
+  }
   result = xmlXPathEvalExpression((const xmlChar*)s, context);
   xmlXPathFreeContext(context);
   if (!result) return NULL;
