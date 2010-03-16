@@ -495,26 +495,27 @@ node ::! i::int	= children node!i if nodep node;
 
    .. _select:
 
-   * ``xml::select doc xpath``
+   * ``xml::select doc xpath``, ``xml::select doc (xpath,ns)``
 
      Retrieve nodes using an XPath_ specification. Given an XPath (a string)
      ``xpath``, this operation returns the list of all matching nodes in the
-     given document ``doc``.
+     given document ``doc``. You can also specify a node as the first
+     argument, in which case the document of the given node is searched and
+     paths are interpreted relative to the given node (rather than the root
+     node of the document).
 
-     Instead of just an XPath, you can also specify a pair ``(xpath,ns)``
-     consisting of an XPath ``xpath`` and a list ``ns`` of ``prefix=>uri``
-     string pairs which describe the namespaces to be recognized in the XPath
-     expression. This is necessary to select nodes by qualified tag or
-     attribute names.
-
-     Note that only the namespace URIs must match up with those used in the
-     queried document; the corresponding namespace prefixes can be chosen
-     freely, so you can use whatever prefixes are convenient to formulate the
-     XPath query. However, for each namespace prefix used in the XPath
-     expression (not the document!), there *must* be a corresponding binding
-     in the ``ns`` list. Otherwise the underlying libxml2 function will
-     complain about an undefined namespace prefix and ``xml::select`` will
-     fail.
+     Moreover, instead of just an XPath you can also specify a pair
+     ``(xpath,ns)`` consisting of an XPath ``xpath`` and a list ``ns`` of
+     ``prefix=>uri`` string pairs which describe the namespaces to be
+     recognized in the XPath expression. This is necessary to select nodes by
+     qualified tag or attribute names. Note that only the namespace URIs must
+     match up with those used in the queried document; the corresponding
+     namespace prefixes can be chosen freely, so you can use whatever prefixes
+     are convenient to formulate the XPath query. However, for each namespace
+     prefix used in the XPath expression (not the document!), there *must* be
+     a corresponding binding in the ``ns`` list. Otherwise the underlying
+     libxml2 function will complain about an undefined namespace prefix and
+     ``xml::select`` will fail.
 
      .. _XPath: http://www.w3.org/TR/xpath */
 

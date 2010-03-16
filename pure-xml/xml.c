@@ -889,9 +889,10 @@ pure_expr *xml_last_attr(pure_expr *nodeptr)
     return NULL;
 }
 
-pure_expr *xml_select(pure_expr *docptr, pure_expr *x)
+pure_expr *xml_select(pure_expr *doc_or_node, pure_expr *x)
 {
-  xmlDocPtr doc;
+  xmlDocPtr doc = NULL;
+  xmlNodePtr node = NULL;
   const char *s;
   pure_expr **xs = NULL, **ys = NULL;
   size_t i, n;
@@ -899,17 +900,26 @@ pure_expr *xml_select(pure_expr *docptr, pure_expr *x)
   xmlXPathContextPtr context;
   xmlXPathObjectPtr result;
   xmlNodeSetPtr nodeset;
-  if (!pure_is_doc(docptr, &doc) ||
+  if (!(pure_is_doc(doc_or_node, &doc) || pure_is_node(doc_or_node, &node)) ||
       !(pure_is_string(x, &s) ||
-	(pure_is_tuplev(x, &n, &xs) && n==2 && pure_is_string(xs[0], &s) &&
-	 pure_is_listv(xs[1], &n, &ys)))) {
+	(pure_is_tuplev(x, &n, &xs) && n==2 &&
+	 pure_is_string(xs[0], &s) && pure_is_listv(xs[1], &n, &ys)))) {
     if (xs) free(xs);
     if (ys) free(ys);
     return NULL;
   }
   if (xs) free(xs);
+  if (!doc && node) doc = node->doc;
+  if (!doc) {
+    if (ys) free(ys);
+    return NULL;
+  }
   context = xmlXPathNewContext(doc);
-  if (!context) return NULL;
+  if (!context) {
+    if (ys) free(ys);
+    return NULL;
+  }
+  if (node) context->node = node;
   if (ys) {
     const char *prefix, *uri;
     for (i = 0; i < n; i++)

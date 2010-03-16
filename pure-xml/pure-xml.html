@@ -673,23 +673,25 @@ xml::cdata &quot;&lt;greeting&gt;Hello, world!&lt;/greeting&gt;&quot;
 <h2><a class="toc-backref" href="#id11">5.3&nbsp;&nbsp;&nbsp;Node Information</a></h2>
 <p>These operations retrieve information about the nodes of an XML document.</p>
 <a name="select"><ul id="select">
-<li><p class="first"><tt class="docutils literal"><span class="pre">xml::select</span> <span class="pre">doc</span> <span class="pre">xpath</span></tt></p>
+<li><p class="first"><tt class="docutils literal"><span class="pre">xml::select</span> <span class="pre">doc</span> <span class="pre">xpath</span></tt>, <tt class="docutils literal"><span class="pre">xml::select</span> <span class="pre">doc</span> <span class="pre">(xpath,ns)</span></tt></p>
 <p>Retrieve nodes using an <a class="reference external" href="http://www.w3.org/TR/xpath">XPath</a> specification. Given an XPath (a string)
 <tt class="docutils literal"><span class="pre">xpath</span></tt>, this operation returns the list of all matching nodes in the
-given document <tt class="docutils literal"><span class="pre">doc</span></tt>.</p>
-<p>Instead of just an XPath, you can also specify a pair <tt class="docutils literal"><span class="pre">(xpath,ns)</span></tt>
-consisting of an XPath <tt class="docutils literal"><span class="pre">xpath</span></tt> and a list <tt class="docutils literal"><span class="pre">ns</span></tt> of <tt class="docutils literal"><span class="pre">prefix=&gt;uri</span></tt>
-string pairs which describe the namespaces to be recognized in the XPath
-expression. This is necessary to select nodes by qualified tag or
-attribute names.</p>
-<p>Note that only the namespace URIs must match up with those used in the
-queried document; the corresponding namespace prefixes can be chosen
-freely, so you can use whatever prefixes are convenient to formulate the
-XPath query. However, for each namespace prefix used in the XPath
-expression (not the document!), there <em>must</em> be a corresponding binding
-in the <tt class="docutils literal"><span class="pre">ns</span></tt> list. Otherwise the underlying libxml2 function will
-complain about an undefined namespace prefix and <tt class="docutils literal"><span class="pre">xml::select</span></tt> will
-fail.</p>
+given document <tt class="docutils literal"><span class="pre">doc</span></tt>. You can also specify a node as the first
+argument, in which case the document of the given node is searched and
+paths are interpreted relative to the given node (rather than the root
+node of the document).</p>
+<p>Moreover, instead of just an XPath you can also specify a pair
+<tt class="docutils literal"><span class="pre">(xpath,ns)</span></tt> consisting of an XPath <tt class="docutils literal"><span class="pre">xpath</span></tt> and a list <tt class="docutils literal"><span class="pre">ns</span></tt> of
+<tt class="docutils literal"><span class="pre">prefix=&gt;uri</span></tt> string pairs which describe the namespaces to be
+recognized in the XPath expression. This is necessary to select nodes by
+qualified tag or attribute names. Note that only the namespace URIs must
+match up with those used in the queried document; the corresponding
+namespace prefixes can be chosen freely, so you can use whatever prefixes
+are convenient to formulate the XPath query. However, for each namespace
+prefix used in the XPath expression (not the document!), there <em>must</em> be
+a corresponding binding in the <tt class="docutils literal"><span class="pre">ns</span></tt> list. Otherwise the underlying
+libxml2 function will complain about an undefined namespace prefix and
+<tt class="docutils literal"><span class="pre">xml::select</span></tt> will fail.</p>
 </li>
 </ul>
 <a name="node_info"><ul id="id1">
