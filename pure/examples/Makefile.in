@@ -1,10 +1,15 @@
 
-# To compile the C examples in this directory, just type 'make'.
+# To compile the C and Fortran examples in this directory, just type 'make'.
+
+# NOTE: fortran$(DLL) requires GNU Fortran to build; you'll have to delete
+# that item if gfortran isn't installed on your system.
+examples = poor$(EXE) sort$(DLL) fortran$(DLL)
+#examples = poor$(EXE) sort$(DLL)
 
 EXE=@EXEEXT@
 DLL=@DLLEXT@
 CC = @CC@
-CXX = @CXX@
+FC = gfortran
 host = @host@
 shared = -shared
 
@@ -18,7 +23,7 @@ ifneq "$(findstring x86_64-,$(host))" ""
 PIC = -fPIC
 endif
 
-all: poor$(EXE) sort$(DLL)
+all: $(examples)
 
 poor$(EXE): poor.c
 	$(CC) -o $@ $^ -lpure
@@ -26,5 +31,10 @@ poor$(EXE): poor.c
 sort$(DLL): sort.c
 	$(CC) $(shared) $(PIC) -o $@ $^ -lpure
 
+# GNU Fortran example.
+
+fortran$(DLL): fortran.f90
+	$(FC) $(shared) $(PIC) -o $@ $^
+
 clean:
-	rm -f poor$(EXE) sort$(DLL) *.o *~
+	rm -f $(examples) *.o *~
