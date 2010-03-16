@@ -2,9 +2,9 @@
 /* Sort a Pure list using the C qsort() function. 2008-06-25 AG */
 
 /* Another example using the runtime API. It implements an external function
-   'sort' which can be loaded inside the Pure interpreter. The function, to be
-   invoked as 'sort p xs', calls the qsort() routine from the C library to
-   sort a Pure list xs using a given Pure predicate p, which compares two
+   'mysort' which can be loaded inside the Pure interpreter. The function, to
+   be invoked as 'mysort p xs', calls the qsort() routine from the C library
+   to sort a Pure list xs using a given Pure predicate p, which compares two
    elements x and y and returns a truth value indicating whether x is less
    than y. The example illustrates how we can program a C function to be
    called from Pure which in turn calls other Pure functions, and takes
@@ -16,23 +16,19 @@
    respectively. On OSX, you also have to replace -shared with -dynamiclib.)
 
    Now start the interpreter and enter the following to "dlopen" sort.so and
-   declare the sort function:
+   declare the mysort function:
 
    > using "lib:sort";
-   > namespace my;
-   > extern expr* sort(expr* p, expr *xs);
+   > extern expr* mysort(expr* p, expr *xs);
 
-   (Note that for Pure 0.37 or later the namespace 'my' is needed here to
-   prevent a name clash with the 'sort' function provided in the prelude.)
+   The mysort function is now ready to be called as 'mysort p xs', e.g.:
 
-   The sort function is now ready to be called as 'sort p xs', e.g.:
-
-   > sort (<) (1..10);
+   > mysort (<) (1..10);
    [1,2,3,4,5,6,7,8,9,10]
-   > sort (>) (1..10);
+   > mysort (>) (1..10);
    [10,9,8,7,6,5,4,3,2,1]
 
-   Have some fun with random lists, comparing our sort function with the one
+   Have some fun with random lists, comparing our mysort function with the one
    from hello.pure. (The rand function is also declared in hello.pure; it is
    just the rand() function from the C library.)
 
@@ -40,7 +36,7 @@
    Hello, world!
    > let xs = [rand | i = 1..100000];
    > stats
-   > #sort (<) xs;
+   > #mysort (<) xs;
    100000
    1.05s
    > #qsort (<) xs;
@@ -81,7 +77,7 @@ static int cmp(const void *xp, const void *yp)
   return res;
 }
 
-pure_expr *sort(pure_expr *p, pure_expr *xs)
+pure_expr *mysort(pure_expr *p, pure_expr *xs)
 {
   size_t size;
   pure_expr **elems;
@@ -102,6 +98,6 @@ pure_expr *sort(pure_expr *p, pure_expr *xs)
     return ys;
   } else
     /* The xs argument wasn't a proper list value, return a NULL pointer to
-       indicate failure. This will make the 'sort p xs' call a normal form. */
+       indicate failure. This will make the 'mysort p xs' call a normal form. */
     return 0;
 }
