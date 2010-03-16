@@ -212,7 +212,7 @@ llvm_version=`$LLVMCONF --version`
 AC_DEFINE_UNQUOTED(LLVM_VERSION, "${llvm_version}", [Define to the LLVM version string.])
 
 dnl Output files.
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile examples/Makefile])
 AC_OUTPUT
 
 AC_MSG_RESULT([

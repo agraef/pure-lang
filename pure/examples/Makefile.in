@@ -1,0 +1,30 @@
+
+# To compile the C examples in this directory, just type 'make'.
+
+EXE=@EXEEXT@
+DLL=@DLLEXT@
+CC = @CC@
+CXX = @CXX@
+host = @host@
+shared = -shared
+
+# OSX
+ifneq "$(findstring -darwin,$(host))" ""
+shared = -dynamiclib
+endif
+
+# 64 bit, needs -fPIC flag
+ifneq "$(findstring x86_64-,$(host))" ""
+PIC = -fPIC
+endif
+
+all: poor$(EXE) sort$(DLL)
+
+poor$(EXE): poor.c
+	$(CC) -o $@ $^ -lpure
+
+sort$(DLL): sort.c
+	$(CC) $(shared) $(PIC) -o $@ $^ -lpure
+
+clean:
+	rm -f poor$(EXE) sort$(DLL) *.o *~
