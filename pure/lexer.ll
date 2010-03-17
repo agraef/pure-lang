@@ -1246,6 +1246,8 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
     argl args(s, "bt");
     if (!args.ok)
       ;
+    else if (!interp.debugging)
+      cerr << "bt: debugging not enabled (add -g when invoking the interpreter)\n";
     else if (args.c > 0)
       cerr << "bt: extra parameter\n";
     else if (interp.output)
