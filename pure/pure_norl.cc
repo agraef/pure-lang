@@ -88,6 +88,7 @@ using namespace std;
 --norc            Do not run the interactive startup files.\n\
 -o filename       Output filename for batch compilation.\n\
 -q                Quiet startup (suppresses sign-on message).\n\
+-T filename       Tags file to be written by --ctags or --etags.\n\
 -u                Do not strip unused functions in batch compilation.\n\
 -v[level]         Set debugging level (default: 1).\n\
 --version         Print version information and exit.\n\
@@ -303,7 +304,17 @@ main(int argc, char *argv[])
 	interp.compat = true;
       else if (strcmp(arg, "-w2") == 0)
 	interp.compat2 = true;
-      else if (strncmp(*args, "-o", 2) == 0) {
+      else if (strncmp(*args, "-T", 2) == 0) {
+	string s = string(*args).substr(2);
+	if (s.empty()) {
+	  if (!*++args) {
+	    interp.error(prog + ": -T lacks filename argument");
+	    return 1;
+	  }
+	  s = *args;
+	}
+	interp.tagsfile = unixize(s);
+      } else if (strncmp(*args, "-o", 2) == 0) {
 	string s = string(*args).substr(2);
 	if (s.empty()) {
 	  if (!*++args) {
@@ -418,7 +429,8 @@ main(int argc, char *argv[])
       break;
     } else if (*argv == string("--"))
       break;
-    else if (string(*argv).substr(0,2) == "-o" ||
+    else if (string(*argv).substr(0,2) == "-T" ||
+	     string(*argv).substr(0,2) == "-o" ||
 	     string(*argv).substr(0,2) == "-l" ||
 	     string(*argv).substr(0,2) == "-I" ||
 	     string(*argv).substr(0,2) == "-L") {
@@ -434,12 +446,16 @@ main(int argc, char *argv[])
 	return 1;
       }
     }
-  if ((count > 0 || interp.compiling) && !force_interactive) {
+  if ((count > 0 || interp.compiling || interp.tags) && !force_interactive) {
     int status = 0;
-    if (interp.compiling || interp.verbose&verbosity::dump)
-      interp.compile();
-    if (interp.compiling) status = interp.compiler(outname, libnames);
-    //printf("status = %d\n", status);
+    if (interp.tags)
+      interp.print_tags();
+    else {
+      if (interp.compiling || interp.verbose&verbosity::dump)
+	interp.compile();
+      if (interp.compiling) status = interp.compiler(outname, libnames);
+      //printf("status = %d\n", status);
+    }
     /* interp.compiler() apparently leaves the code module in a dangling
        state, so make sure that we take the quick way out. There's really no
        need to clean up the interpreter instance if we're exiting anyway. */
