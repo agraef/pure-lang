@@ -81,21 +81,24 @@ intervalp (Ivl _ _)
 intervalp _
   = 0;
 
-public intintervalp; // has integral interval value
-intintervalp x
-  = intervalp x && integerp (lower x) && integerp (upper x);
+public interval_valp; //has interval value
+interval_valp = intervalp;
 
-public ratintervalp; // has rational interval value
-ratintervalp x
-  = intervalp x && rationalp (lower x) && rationalp (upper x);
+public intinterval_valp; // has integral interval value
+intinterval_valp x
+  = interval_valp x && integerp (lower x) && integerp (upper x);
 
-public exactintervalp;
-exactintervalp x
-  = intervalp x && exactp (lower x) && exactp (upper x);
+public ratinterval_valp; // has rational interval value
+ratinterval_valp x
+  = interval_valp x && rationalp (lower x) && rationalp (upper x);
 
-public inexactintervalp;
-inexactintervalp x
-  = intervalp x && (inexactp (lower x) || inexactp (upper x));
+::exactp x
+  = exactp (lower x) && exactp (upper x)
+    if intervalp x;
+
+::inexactp x
+  = (inexactp (lower x) || inexactp (upper x))
+    if intervalp x;
 
 /*****************************************************************************
  ***
