@@ -517,7 +517,7 @@ main(int argc, char *argv[])
 	string s = string(*args).substr(2);
 	if (s.empty()) {
 	  if (!*++args) {
-	    interp.error(prog + ": -t lacks filename argument");
+	    interp.error(prog + ": -T lacks filename argument");
 	    return 1;
 	  }
 	  s = *args;
