@@ -85,36 +85,33 @@ libedit:
 We recommend GNU readline because it's easier to use and has full UTF-8
 support, but in some situations BSD editline/libedit may be preferable for
 license reasons or because it's what the operating system provides. Pure's
-configure automatically detects the presence of both packages and also lets
-you disable readline and/or editline support using the --without-readline and
---without-editline options.
+configuration script automatically detects the presence of both packages and
+also lets you disable readline and/or editline support using the
+--without-readline and --without-editline options.
 
-STEP 2. Get and unpack the LLVM 2.6 sources at:
-http://llvm.org/releases/download.html#2.6
+STEP 2. Get and unpack the latest LLVM sources at:
+http://llvm.org/releases/download.html
 
-You only need the llvm-2.6 tarball which contains the LLVM library as well as
-most of the LLVM toolchain. (Substitute the proper version number if you are
-using a different LLVM version.)
-
-Note that LLVM 2.6 is the latest stable release at the time of this writing.
-Both LLVM 2.5 and LLVM 2.6 have been tested extensively and appear to work
-very well with Pure. LLVM 2.3 and 2.4 should still work, too, but we really
-recommend using LLVM 2.5 or later because there have been substantial
+You only need the llvm-2.x tarball which contains the LLVM library as well as
+most of the LLVM toolchain. LLVM 2.6 is the latest stable release at the time
+of this writing. LLVM versions 2.5, 2.6 and the upcoming 2.7 release candidate
+have all been tested extensively and are known to work with Pure. LLVM 2.3 and
+2.4 might still work, but you'll probably have to fiddle with the sources. We
+really recommend using LLVM 2.5 or later because there have been substantial
 improvements in the LLVM JIT in recent releases. (Also note that there are
 some x86-64 specific quirks with LLVM 2.3, see the notes on 64 bit support in
 the SYSTEM NOTES section for details.)
 
 LLVM from svn might work, too, but you're on your own. While we're committed
-to make Pure work with new LLVM versions as they become available, currently
-we don't have the manpower to track LLVM development in the trunk very
-closely. So you might run into various compilation problems and other
-incompatibilities when going with the svn version.
+to make Pure work with new LLVM versions as they become available, we're not
+able to track LLVM development in the trunk very closely. So you might run
+into intermittent compilation problems, bugs and other incompatibilities when
+going with the svn version.
 
-NOTE: Some Linux distributions provide LLVM packages which are broken on 32
-bit x86 systems. The symptom usually is that the interpreter segfaults inside
-the LLVM JIT right at startup. This is a known issue on Ubuntu 9.04 and Fedora
-Core 10. If you run into this, you'll have to compile LLVM yourself; please
-see the notes on x86-32/64 compilation below.
+NOTE: Some (older) Linux and *BSD distributions provide LLVM packages and
+ports which are broken. If the Pure interpreter segfaults on startup or fails
+its test suite ('make check') then you should check whether there's a newer
+LLVM package available for your system, or compile LLVM yourself.
 
 STEP 3. Configure, build and install LLVM as follows:
 
@@ -126,9 +123,9 @@ $ sudo make install
 *IMPORTANT:* With LLVM 2.5 and earlier, on x86-64 systems you have to add
 --enable-pic to the configure command, so that the static LLVM libraries can
 be linked into the Pure runtime library. (Do *not* add this option when
-compiling on a 32 bit system, it's broken there.) With LLVM 2.6 this option
-isn't needed anymore. See the comments on 32/64 bit support in the SYSTEM
-NOTES section below for details.
+compiling on a 32 bit system, it's broken there.) With LLVM 2.6 and later this
+option isn't needed anymore. See the comments on 32/64 bit support in the
+SYSTEM NOTES section below for details.
 
 Note that the configure flags are for an optimized (non-debug) build and
 disable all compilation targets but the one for your system. You might wish to
@@ -145,19 +142,17 @@ STEP 5. Configure, build and install Pure as follows (x.y denotes the current
 Pure version number):
 
 $ cd pure-x.y
-$ ./configure
+$ ./configure --enable-release
 $ make
 $ sudo make install
 
-The './configure' command configures Pure for a default build. This includes
-debgging information and runtime checks which facilitate debugging the
-interpreter. For maximum performance we recommend running configure as follows
-instead:
+The --enable-release option configures Pure for a release build. This is
+recommended for maximum performance. If you leave away this option then you'll
+get a default build which includes useful debugging information and runtime
+checks, but also runs considerably slower.
 
-$ ./configure --enable-release
-
-This will do a "release" build which will run considerably faster. To find out
-about other build options, you can invoke configure as './configure --help'.
+To find out about other build options, you can invoke configure as
+'./configure --help'.
 
 The 'sudo make install' command installs the pure program, the runtime.h
 header file, the runtime library libpure.so and the library scripts in the
@@ -191,17 +186,16 @@ version) is required to make 'make check' work on Windows. Also note that
 under MS Windows this step is expected to fail on some math tests in
 test020.pure; this is nothing to worry about, it just indicates that some math
 routines in Microsoft's C library aren't fully POSIX-compatible. The same
-applies to BSD systems.
+applies to *BSD systems.
 
 If Pure appears to be broken on your system ('make check' reports a lot of
-failures), it's usually because of a miscompiled LLVM on 32 bit platforms.
-Please review the instructions under step 3, and check the SYSTEM NOTES
-section to see whether your platform is known to have issues and which
-workarounds may be needed. If all that doesn't help then you might be running
-into LLVM bugs and limitations on not-so-well supported platforms; in that
-case please also report the results of 'make check' as described above, so
-that we can try to figure out what is going on and whether there's a fix or
-workaround for the problem.
+failures), it's often because of a miscompiled LLVM. Please review the
+instructions under step 3, and check the SYSTEM NOTES section to see whether
+your platform is known to have issues and which workarounds may be needed. If
+all that doesn't help then you might be running into LLVM bugs and limitations
+on not-so-well supported platforms; in that case please also report the
+results of 'make check' as described above, so that we can try to figure out
+what is going on and whether there's a fix or workaround for the problem.
 
 STEP 6. The Pure interpreter should be ready to go now.
 
@@ -280,13 +274,12 @@ and wiki files.)
 STEP 5': Configure, build and install Pure:
 
 $ cd pure
-$ ./configure
+$ ./configure --enable-release
 $ make
 $ sudo make install
 
-(Replace './configure' with './configure --enable-release' to do a release
-build, and don't forget to also run 'make check' to make sure that the
-interpreter is in good working condition.)
+(Don't forget to also run 'make check' to make sure that the interpreter is in
+good working condition.)
 
 
 OTHER BUILD AND INSTALLATION OPTIONS
@@ -307,7 +300,7 @@ and the library scripts are installed in /usr/local/bin,
 respectively. This can be changed by specifying the desired installation
 prefix with the --prefix option, e.g.:
 
-$ ./configure --prefix=/usr
+$ ./configure --enable-release --prefix=/usr
 
 Note that if you install Pure into a non-standard location, you may have to
 set LD_LIBRARY_PATH or a similar variable so that the dynamic linker finds the
@@ -333,7 +326,7 @@ Beginning with version 0.4, Pure fully supports parallel installations of
 different versions of the interpreter. As of Pure 0.21, to enable this you
 have to specify --enable-versioned when running configure:
 
-$ ./configure --enable-versioned
+$ ./configure --enable-release --enable-versioned
 
 When this option is enabled, bin/pure, include/pure, lib/pure and
 man/man1/pure.1 are actually symbolic links to the current version
@@ -361,7 +354,7 @@ there, e.g. (this assumes that you start from the source directory):
 
 $ mkdir BUILD
 $ cd BUILD
-$ ../configure
+$ ../configure --enable-release
 $ make
 
 COMPILER AND LINKER OPTIONS
@@ -423,10 +416,10 @@ This is like the default build, but disables all optimizations, so compilation
 is faster but the compiled interpreter is *much* slower than even the default
 build. Hence this build is only recommended for debugging purposes.
 
-You can combine all build types with the following option to enable compiler
-warnings (-Wall):
+You can combine all build types with the --enable-warnings option to enable
+compiler warnings (-Wall):
 
-$ ./configure --enable-warnings
+$ ./configure --enable-release --enable-warnings
 
 This option is useful to check the interpreter sources for questionable
 constructs which might actually be bugs. However, for some older gcc versions
@@ -436,7 +429,7 @@ In addition, there is an option to build a "monolithic" interpreter which is
 linked statically against the LLVM libraries, instead of producing a separate
 runtime library:
 
-$ ./configure --disable-shared
+$ ./configure --enable-release --disable-shared
 
 We strongly discourage from using this option, since it drastically increases
 the size of the executable and thereby the memory footprint of the interpreter
@@ -499,9 +492,7 @@ SYSTEM NOTES
 Pure is known to work on recent Linux, Mac OSX and *BSD versions under x86,
 x86-64 (AMD/Intel x86, 32 and 64 bit) and ppc (PowerPC), as well as on MS
 Windows (AMD/Intel x86, 32 bit). There are a few known system-specific quirks
-and corresponding workarounds which are discussed below. (Please also see the
-"Caveats and Notes" section of the manual for information on other known
-limitations of the current implementation.)
+and corresponding workarounds which are discussed below.
 
 ALL PLATFORMS
 --- ---------
@@ -525,11 +516,11 @@ With LLVM 2.5 and earlier, the JIT is broken on x86-32 if it is built with
 --enable-pic, so make sure you do *not* use this option when compiling LLVM
 <=2.5 on 32 bit systems.
 
-The Ubuntu 9.04 LLVM 2.5 package (2.5-0ubuntu1) is broken on x86-32 for this
-reason (the package was built using --enable-pic unconditionally for both 32
-and 64 bit; cf. http://packages.ubuntu.com/jaunty/llvm). Don't use that
-package on x86-32, build your own LLVM from source instead, or try to find a
-newer package which doesn't have this problem.
+Some older LLVM 2.5 packages for Linux are broken on x86-32 for this reason
+(this has been reported for Ubuntu 9.04 and Fedora Core 10), the symptom being
+that the Pure interpreter fails a lot of checks and/or segfaults right at
+startup. In that case you'll have to find a newer, corrected package or build
+your own LLVM from source instead.
 
 64 BIT SYSTEMS
 -- --- -------
@@ -571,7 +562,9 @@ Michel Salim has kindly provided packages for all recent Fedora releases, see
 http://koji.fedoraproject.org/koji/packageinfo?packageID=9272
 
 Alvaro Castro Castilla has contributed a Gentoo ebuild, which is currently
-available at http://bugs.gentoo.org/show_bug.cgi?id=231966.
+available at http://bugs.gentoo.org/show_bug.cgi?id=231966. (This is rather
+outdated, however, so you're probably better off building Pure from the latest
+source.)
 
 We're still looking for people who can maintain Debian packages, please let us
 know if you want to help with that.
@@ -587,8 +580,8 @@ exists in the MacPorts collection, see http://www.macports.org/.
 
 * Intel: The 32 bit version works fine. Unfortunately, the 64 bit version
   (Intel Core 2) doesn't seem to work right now because of LLVM bugs in code
-  generation. This is being worked on. For the time being, you'll have to use
-  the 32 bit version on OSX x86_64.
+  generation. This is being worked on, and might be fixed in the upcoming LLVM
+  2.7. For the time being, you'll have to use the 32 bit version on OSX x86_64.
 
 Also note that with at least some versions of the Apple gcc compiler, with all
 warnings turned on you may get the (bogus) warning "control reaches end of
@@ -644,6 +637,6 @@ compiler work. Just unzip these into some convenient location on your
 harddrive and set up PATH so that it points to the llvm-x.y directory.
 
 
-February 2010
+March 2010
 Albert Graef <Dr.Graef at t-online.de>
 Eddie Rucker <erucker at bmc.edu>
