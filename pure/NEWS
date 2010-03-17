@@ -1,9 +1,7 @@
 
 ** Pure 0.43 (in progress)
 
-Besides some bugfixes, improvements in the library and general LLVM 2.7
-compatibility fixes (see the ChangeLog for details), this release sports the
-following new features:
+More polishing, bugfixes and general improvements on the road to Pure 1.0.
 
 - Integer literals can now be specified in base 2 (0b or 0B prefix), as
   suggested by Geert Janssen.
@@ -20,13 +18,35 @@ following new features:
   and definitions in Pure scripts. Emacs Pure mode now also supports this
   with a new 'Make Tags' command in the Pure menu.
 
-- The 'using' clause now allows a new 'sys:' tag (e.g., 'using "sys:math";')
+- The 'using' clause now features a new 'sys:' tag (e.g., 'using "sys:math";')
   to bypass the search of the current script directory, which works analogous
   to the C preprocessor's '#include <...>' construct.
 
-NOTE: Thanks to Jeffrey Yasskin, the TCO-related JIT breakage on 64 bit
-systems present in recent LLVM svn revisions seems to be fixed now, so that we
-expect Pure >= 0.43 to work with the forthcoming LLVM 2.7 release.
+- Better programming-in-the-large support. There's a new "scoped" namespace
+  construct ('namespace xyz with ... end') and the rules for creating new
+  symbols in namespaces have been revised. Basically, new global symbols are
+  now always created in the current rather than the default namespace, which
+  is what most people expect. (You can use the new -w option to check existing
+  scripts for backward compatibility issues, where symbols are placed into a
+  different namespace following the new namespace rules.) Also, there's now a
+  restricted form of the 'using namespace' clause which gives full control
+  over which symbols from a namespace should be visible as unqualified
+  symbols. Please see the section on namespaces in the manual for details.
+
+- Complete overhaul of the dictionary and set data types. We now also support
+  multidicts as well as hashed sets and bags. Moreover, set-like operations
+  (union, difference, intersection and subdict comparisons) are now available
+  for dictionaries, and different kinds of dictionaries or sets/bags can now
+  be mixed in infix operations (+, -, *, <, <= etc.). See the "Dictionaries"
+  and "Sets and Bags" sections in the Pure library manual for details.
+
+- LLVM 2.7 compatibility fixes. Thanks to Jeffrey Yasskin, the TCO-related JIT
+  breakage on 64 bit systems present in recent LLVM svn revisions seems to be
+  fixed now, so that we expect Pure >= 0.43 to work with the forthcoming LLVM
+  2.7 release.
+
+Many thanks to all who reported bugs and participated in the mailing list
+discussions leading up to this release!
 
 ** Pure 0.42 2010-01-29
 
