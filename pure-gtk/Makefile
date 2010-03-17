@@ -74,7 +74,8 @@ examples = examples/hello examples/uiexample examples/life
 FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 
 DISTFILES = COPYING COPYING.LESSER Makefile README config.guess \
-examples/*.pure examples/*.glade $(modules) $(c-modules)
+examples/*.pure examples/*.glade examples/flexi-line/*.pure \
+$(modules) $(c-modules)
 
 .PHONY: all clean realclean generate examples install uninstall dist distcheck
 
@@ -110,7 +111,7 @@ uninstall:
 
 dist:
 	rm -rf $(dist)
-	mkdir $(dist) && mkdir $(dist)/examples
+	mkdir $(dist) && mkdir $(dist)/examples $(dist)/examples/flexi-line
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)

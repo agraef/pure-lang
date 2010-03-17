@@ -1,0 +1,140 @@
+//////////////////////////////////////////////////////////////////////
+
+using math , ffi , GL , GLUT ;
+
+//////////////////////////////////////////////////////////////////////
+// initialize_glut
+//////////////////////////////////////////////////////////////////////
+
+initialize_glut = 
+  GLUT::Init {0} NULL $$
+  GLUT::InitDisplayMode ( GLUT::DOUBLE or GLUT::RGB or GLUT::DEPTH ) ;
+
+//////////////////////////////////////////////////////////////////////
+// window
+//////////////////////////////////////////////////////////////////////
+
+invert_y w h =
+  GL::MatrixMode GL::PROJECTION $$
+  GL::LoadIdentity $$
+  GL::Ortho 0.0 (double w) (double h) 0.0 (-1000.0) 1000.0 ;
+
+window data = 
+
+  GLUT::ReshapeFunc reshape_func_cb $$
+
+  { id     => id_ref     ,
+    width  => width_ref  ,
+    height => height_ref , 
+    cb0    => reshape_func_cb }
+    
+  when
+
+    GLUT::InitWindowSize ((data!size)!0) ((data!size)!1) ;
+  
+    id_ref = ref (GLUT::CreateWindow "Flexi Line") ;
+
+    reshape_func_cb = fclos reshape_func FFI_DEFAULT_ABI void_t (sint_t , sint_t) ;
+
+  end
+
+  with
+
+    reshape_func ( w , h ) =
+
+      GL::Viewport 0 0 w h $$
+
+      GL::MatrixMode GL::PROJECTION $$
+
+      GL::LoadIdentity $$
+
+      GL::Ortho 0.0 (double w) 0.0 (double h) (-1000.0) 1000.0 $$
+
+      (data!reshape) w h $$
+
+      put width_ref  w $$
+      put height_ref h ;
+
+  end
+
+  when
+
+    width_ref  = ref ((data!size)!0) ;
+    height_ref = ref ((data!size)!1) ;
+
+  end ;
+
+//////////////////////////////////////////////////////////////////////
+// mouse
+//////////////////////////////////////////////////////////////////////
+
+mouse =
+
+   GLUT::MouseFunc  mouse_func_cb  $$
+
+   GLUT::MotionFunc motion_func_cb $$
+
+   {button => mouse_button  , 
+    state  => mouse_state   , 
+    x      => mouse_x       ,
+    y      => mouse_y       ,
+    cb0    => mouse_func_cb , 
+    cb1    => motion_func_cb}
+
+   when
+
+     mouse_func_cb = 
+       fclos mouse_func FFI_DEFAULT_ABI void_t (sint_t , sint_t , sint_t , sint_t);
+
+     motion_func_cb = fclos motion_func FFI_DEFAULT_ABI void_t (sint_t , sint_t);
+
+   end
+
+   with
+
+      mouse_func (button , state , x , y) =
+       put mouse_button button $$
+       put mouse_state  state $$
+       put mouse_x      x $$
+       put mouse_y      y ;
+
+     motion_func (x , y) = put mouse_x x $$ put mouse_y y ;
+
+   end
+
+   when
+     mouse_button = ref(-1);
+     mouse_state  = ref(-1);
+     mouse_x      = ref(-1);
+     mouse_y      = ref(-1);
+   end;
+
+//////////////////////////////////////////////////////////////////////
+// buffered_display
+//////////////////////////////////////////////////////////////////////
+
+buffered_display_proc proc =
+
+  GLUT::DisplayFunc display_cb $$
+
+  display_cb
+
+  when
+
+    display_cb = fclos display FFI_DEFAULT_ABI void_t void_t ;
+
+  end
+
+  with
+
+    display () =
+
+      GL::MatrixMode GL::MODELVIEW $$
+
+      GL::LoadIdentity $$
+
+      proc () $$
+
+      GLUT::SwapBuffers ;
+
+  end ;

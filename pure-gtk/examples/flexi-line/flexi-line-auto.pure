@@ -1,0 +1,93 @@
+
+//////////////////////////////////////////////////////////////////////
+
+//  Original version in Processing:
+//
+//    http://www.openprocessing.org/visuals/?visualID=323
+
+using system , math , ffi , GL , GLU , GLUT , glamour , vector_math ;
+
+//////////////////////////////////////////////////////////////////////
+
+initialize_glut ;
+
+let window_data = window { size  => { 500 , 500 } ,
+                           title => "Flexi Line"  ,
+                           reshape => invert_y      } ;
+
+get_window elt = get (window_data!elt) ;
+
+let mouse_data = mouse ; 
+
+get_mouse elt = get (mouse_data!elt) ;
+
+mouse_xy = { get_mouse x , get_mouse y } ;
+
+//////////////////////////////////////////////////////////////////////
+
+let button_is_down_ref = ref 0 ; button_is_down = get button_is_down_ref ;
+
+let focus_y_ref = ref 0 ;
+
+focus = {x,y} when x = (get_window width) / 2 ; y = get focus_y_ref ; end ;
+
+point_update (pos,vel) = (new_pos , new_vel)
+  when
+    new_pos = pos + vel ;
+    new_vel = (vel + accel) * friction ;
+    GL::Vertex2d (new_pos!0) (new_pos!1) ;
+  end
+  with
+    friction       = 0.98 ;
+    accel          = if button_is_down then to_mouse else {0.0,0.0} ;
+    to_mouse       = normalize (focus - pos) ;
+  end ;
+
+let points = ref [ ({x,y},{0,0}) | x = 0:x_max/N..x_max ]
+  when
+    x_max = get_window width ;
+    y     = (get_window height)/2 ;
+    N     = 5000 ;
+  end ;
+
+//////////////////////////////////////////////////////////////////////
+
+let last_change = ref 0 ;
+
+display = ()
+  when
+    GL::ClearColor 0.0 0.0 0.0 1.0 ;
+    GL::Clear (GL::DEPTH_BUFFER_BIT or GL::COLOR_BUFFER_BIT) ;
+    GL::Color3f 1.0 1.0 1.0 ;
+    // GL::Begin GL::LINE_STRIP ;
+    GL::Begin GL::POINTS ;
+      put points (map point_update (get points)) ;
+    GL::End ;
+    // put button_is_down_ref (time mod 7 == 0) ;
+    put button_is_down_ref (time mod 5 == 0) ;
+    if time == get last_change 
+      then 
+        0 
+      else 
+        put focus_y_ref ((get_window height)*random53) ;
+        put last_change time ;
+  end ;
+
+let cb = buffered_display_proc (\ _ -> display) ;
+
+//////////////////////////////////////////////////////////////////////
+
+let timer_cb = fclos timer FFI_DEFAULT_ABI void_t sint_t
+with
+  timer n = ()
+  when
+    GLUT::PostRedisplay;
+    GLUT::TimerFunc 40 timer_cb n;
+  end;
+end;
+
+GLUT::TimerFunc 40 timer_cb 0;
+
+//////////////////////////////////////////////////////////////////////
+
+GLUT::MainLoop ;
