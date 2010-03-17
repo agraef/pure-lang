@@ -17,8 +17,8 @@ libdir = $(prefix)/lib
 # Try to guess the host system type.
 host = $(shell ./config.guess)
 
-DISTFILES = COPYING Makefile ratutils.pure rat_interval.pure config.guess \
-rational.pdf
+DISTFILES = COPYING Makefile rational.pure rat_interval.pure config.guess \
+rational.html
 
 all:
 
@@ -26,10 +26,28 @@ clean:
 
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
-	cp ratutils.pure rat_interval.pure rational.pdf "$(DESTDIR)$(libdir)/pure"
+	cp rational.pure rat_interval.pure rational.html "$(DESTDIR)$(libdir)/pure"
 
 uninstall:
-	rm -f "$(DESTDIR)$(libdir)/pure/ratutils.pure" "$(DESTDIR)$(libdir)/pure/rat_interval.pure" "$(DESTDIR)$(libdir)/pure/rational.pdf"
+	rm -f "$(DESTDIR)$(libdir)/pure/rational.pure" "$(DESTDIR)$(libdir)/pure/rat_interval.pure" "$(DESTDIR)$(libdir)/pure/rational.html"
+
+# Generate the documentation. This needs docutils.
+
+html: pure-rational.html
+tex: pure-rational.tex
+pdf: pure-rational.pdf
+
+pure-rational.html: README
+	rst2html.py $< $@
+
+pure-rational.tex: README
+	rst2latex.py -i utf8 -o utf8 $< $@
+
+# This also requires that you have TeX installed.
+
+pure-rational.pdf: pure-rational.tex
+	pdflatex $<
+	rm -f *.aux *.log *.out
 
 dist:
 	rm -rf $(dist)
@@ -43,3 +61,4 @@ distcheck: dist
 	tar xfz $(dist).tar.gz
 	cd $(dist) && make && make install DESTDIR=./BUILD
 	rm -rf $(dist)
+
