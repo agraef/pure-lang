@@ -58,7 +58,8 @@ GLU.pure GLUT.pure
 c-modules = $(patsubst %.pure,%.c,$(modules))
 
 DISTFILES = COPYING Makefile README config.guess gl.templ examples/*.pure \
-examples/*.jpg GL/all_gl.h GL/all_gl_freeglut.h $(modules) $(c-modules)
+examples/*.jpg examples/flexi-line/*.pure \
+GL/all_gl.h GL/all_gl_freeglut.h $(modules) $(c-modules)
 
 .PHONY: all clean realclean generate install uninstall dist distcheck
 
@@ -101,7 +102,7 @@ uninstall:
 
 dist:
 	rm -rf $(dist)
-	mkdir $(dist) && mkdir $(dist)/examples $(dist)/GL
+	mkdir $(dist) && mkdir $(dist)/examples $(dist)/examples/flexi-line $(dist)/GL
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
