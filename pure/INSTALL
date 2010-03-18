@@ -94,24 +94,25 @@ http://llvm.org/releases/download.html
 
 You only need the llvm-2.x tarball which contains the LLVM library as well as
 most of the LLVM toolchain. LLVM 2.6 is the latest stable release at the time
-of this writing. LLVM versions 2.5, 2.6 and the upcoming 2.7 release candidate
-have all been tested extensively and are known to work with Pure. LLVM 2.3 and
-2.4 might still work, but you'll probably have to fiddle with the sources. We
-really recommend using LLVM 2.5 or later because there have been substantial
-improvements in the LLVM JIT in recent releases. (Also note that there are
-some x86-64 specific quirks with LLVM 2.3, see the notes on 64 bit support in
-the SYSTEM NOTES section for details.)
+of this writing. LLVM versions 2.5, 2.6 and 2.7 have all been tested
+extensively and are known to work with Pure. LLVM 2.3 and 2.4 might still
+work, too, but you'll probably have to fiddle with the sources. We really
+recommend using LLVM 2.5 or later, however, because there have been
+substantial improvements in the LLVM JIT in recent releases. (Also note that
+there are some x86-64 specific quirks with LLVM 2.3, see the notes on 64 bit
+support in the SYSTEM NOTES section for details.)
 
-LLVM from svn might work, too, but you're on your own. While we're committed
-to make Pure work with new LLVM versions as they become available, we're not
-able to track LLVM development in the trunk very closely. So you might run
-into intermittent compilation problems, bugs and other incompatibilities when
-going with the svn version.
+LLVM from svn might work as well, but we don't guarantee this. While we're
+committed to make Pure work with new LLVM versions as they become available,
+we're not able to track LLVM development in the trunk very closely. So you
+might run into intermittent compilation problems, bugs and other
+incompatibilities when going with the svn version.
 
 NOTE: Some (older) Linux and *BSD distributions provide LLVM packages and
-ports which are broken. If the Pure interpreter segfaults on startup or fails
-its test suite ('make check') then you should check whether there's a newer
-LLVM package available for your system, or compile LLVM yourself.
+ports which are compiled with wrong configure options and are thus broken. If
+the Pure interpreter segfaults on startup or fails its test suite ('make
+check') then you should check whether there's a newer LLVM package available
+for your system, or compile LLVM yourself.
 
 STEP 3. Configure, build and install LLVM as follows:
 
@@ -130,7 +131,7 @@ SYSTEM NOTES section below for details.
 Note that the configure flags are for an optimized (non-debug) build and
 disable all compilation targets but the one for your system. You might wish to
 play with the configure options, but note that some options (especially
---enable-expensive-checks) make LLVM very slow and even break the Pure
+--enable-expensive-checks) make LLVM very slow and may even break the Pure
 interpreter on some systems.
 
 STEP 4. Get and unpack the Pure sources at: http://pure-lang.googlecode.com
@@ -148,8 +149,8 @@ $ sudo make install
 
 The --enable-release option configures Pure for a release build. This is
 recommended for maximum performance. If you leave away this option then you'll
-get a default build which includes useful debugging information and runtime
-checks, but also runs considerably slower.
+get a default build which includes debugging information and runtime checks
+useful for the Pure maintainers, but also runs considerably slower.
 
 To find out about other build options, you can invoke configure as
 './configure --help'.
@@ -579,9 +580,9 @@ exists in the MacPorts collection, see http://www.macports.org/.
   section above.
 
 * Intel: The 32 bit version works fine. Unfortunately, the 64 bit version
-  (Intel Core 2) doesn't seem to work right now because of LLVM bugs in code
-  generation. This is being worked on, and might be fixed in the upcoming LLVM
-  2.7. For the time being, you'll have to use the 32 bit version on OSX x86_64.
+  (Intel Core 2) causes problems, at least with some LLVM versions, apparently
+  because of LLVM bugs in code generation. If you're running into this, for
+  the time being you'll have to stick to the 32 bit version.
 
 Also note that with at least some versions of the Apple gcc compiler, with all
 warnings turned on you may get the (bogus) warning "control reaches end of
