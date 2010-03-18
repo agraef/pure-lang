@@ -34,7 +34,8 @@ ifneq "$(findstring -mingw,$(host))" ""
 EXE = .exe
 endif
 
-DISTFILES = COPYING Makefile config.guess README README.dump-ast dump-ast.hs pure-gen.pure pure-gen.1 run-tests examples/*.templ
+DISTFILES = COPYING ChangeLog Makefile config.guess README README.dump-ast \
+dump-ast.hs pure-gen.pure pure-gen.1 run-tests examples/*.templ
 
 all: pure-gen dump-ast
 
