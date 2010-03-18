@@ -1,0 +1,134 @@
+/* Conway's game of life. This is the same program as in the Pure
+   distribution, but uses the g2 library for graphical output. */
+
+/* Set the following flag to true to wrap around at corners (torus topology).
+   (Note that this eventually wreaks havoc with the glider gun example because
+   the gliders destroy the gun after a while.) */
+
+const wrap = true;
+
+/* Two sample boards. Note that a board is denoted by a list of coordinate
+   pairs of the live cells. The algorithm works directly with this
+   representation which is more efficient than a matrix representation unless
+   the board becomes very crowded. */
+
+let two_gliders =
+  [(6,4),(6,5),(6,6),(5,6),(4,5),
+   (30,4),(31,4),(32,4),(32,5),(31,6)];
+
+let glider_gun =
+  [(11,16),(12,16),(11,17),(12,17),
+   (21,16),(21,17),(21,18),
+   (22,15),(22,19),
+   (23,14),(23,20),(24,14),(24,20),
+   (25,17),
+   (26,19),(26,15),
+   (27,16),(27,17),(27,18),(28,17),
+   (31,16),(32,16),(31,15),(32,15),(31,14),(32,14),
+   (33,17),(33,13),
+   (35,17),(35,13),(35,18),(35,12),
+   (45,15),(46,15),(45,14),(46,14)];
+
+/* Define an order on coordinate pairs so that we can use them as keys in
+   dictionaries and sets. */
+
+(x1::int,y1::int)<(x2::int,y2::int) = x1<x2 || x1==x2 && y1<y2;
+(x1::int,y1::int)>(x2::int,y2::int) = x1>x2 || x1==x2 && y1>y2;
+
+using dict, set;
+
+/* The core of the algorithm which, given an nxm board of cells, computes the
+   next generation according to the following rules: (1) A live cell stays
+   alive if it has 2 or 3 live cells in its neighborhood. (2) A dead cell
+   becomes live if it has exactly 3 live neighbors. */
+
+next (n::int,m::int) b = c when
+  counts = list $ foldl (\d p->foldl count d (nb p)) emptydict b;
+  alive = member (set b);
+  c = [x,y | (x::int,y::int)=>k::int = counts; k==3 || k==2 && alive (x,y)];
+end with
+  // count neighbors
+  count d (x::int,y::int) = update d (x,y) (getval d (x,y)+1);
+  getval d x = if member d x then d!x else 0;
+  // compute the neighborhood of a cell
+  nb (x::int,y::int)
+    = [(u+n) mod n,(v+n) mod m | u::int = x-1..x+1; v::int = y-1..y+1;
+      	     	 	         (u,v) ~= (x,y)] if wrap;
+    = [u,v | u::int = x-1..x+1; v::int = y-1..y+1; u<n; v<m; (u,v) ~= (x,y)];
+end;
+
+/* Graphics output. */
+
+life (n,m) b = animate "Pure LIFE" draw (next (n,m)) 100 b with
+  draw d@(cr,w::int,h::int) b = () when
+    sx::double = w/n; sy::double = h/n;
+    clr d; do draw_cell b with
+      draw_cell (x::int,y::int) = box d black (x*sx,y*sy) (sx,sy);
+    end;
+  end;
+end;
+
+/****************************************************************************/
+
+/* g2 interface. */
+
+using g2;
+
+// Convenience function to create an X11 window with a custom title.
+g2_open_x11 name::string w::int h::int
+  = g2_open_X11X w h (-1) (-1) name name NULL 0 0;
+
+/* Create a window in which we can draw stuff. The arguments are:
+
+   title: window title.
+
+   draw: draw callback. This gets called as draw (cr,w,h) data, where cr is
+     the drawing contex (actually that's just an X11 window here, as a g2
+     device), (w,h) the current dimensions and data the user-supplied data to
+     be drawn.
+
+   next: animation callback. This gets called as next data where data is the
+     current data element, and is expected to return the next data element to
+     be drawn.
+
+   delta: an integer, denotes the time interval in msecs between successive
+   invocations of the next function.
+
+   The function creates a window in which it draws the initial data, then
+   updates the data in regular intervals using the next function and redraws
+   it using the draw function. */
+
+extern double pure_nanosleep(double) = nanosleep;
+
+animate title draw next delta data = loop d data with
+  loop d data = loop d (next data) when
+    nanosleep delta;
+    draw (d,400,400) data;
+    g2_flush d;
+  end;
+end when
+  delta = delta/1000;
+  d = g2_open_x11 title 400 400;
+  g2_set_auto_flush d 0;
+end;
+
+// Some colors to be used with the drawing operations below.
+let black = 1;
+let white = 0;
+let red   = 19;
+let green = 7;
+let blue  = 3;
+
+// Clear the drawing area.
+clr d@(cr,w,h) = box d white (0.0,0.0) (double w,double h);
+
+// Draw a filled rectangle with the given color and dimensions.
+box (d,W,H) color (x,y) (w,h) = () when
+  g2_pen d color;
+  g2_filled_rectangle d x (H-y) (x+w) (H-y-h);
+end;
+
+/****************************************************************************/
+
+// Sample main program:
+if compiling then () else life (100,100) glider_gun;
