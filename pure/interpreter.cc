@@ -3445,8 +3445,10 @@ void interpreter::checkfuns(rule *r)
       symbol *sym2 = symtab.sym(*symtab.current_namespace+"::"+id);
       assert(sym2);
       g = sym2->f;
+#if 0
       if (compat && f!=g)
 	warning(*loc, "warning: implicit declaration of '"+sym2->s+"'");
+#endif
     } else if (compat2 && (x.flags()&EXPR::QUAL) &&
 	       qual == *symtab.current_namespace)
       warning(*loc, "hint: unneeded qualification in '"+sym.s+"'");
@@ -3505,8 +3507,10 @@ void interpreter::checkvars(expr x, bool b)
 	symbol *sym2 = symtab.sym("::"+*symtab.current_namespace+"::"+id);
 	assert(sym2);
 	x.set_tag(sym2->f);
+#if 0
 	if (compat)
 	  warning(*loc, "warning: implicit declaration of '"+sym2->s+"'");
+#endif
       } else
 	sym.unresolved = false;
     }
@@ -3527,8 +3531,10 @@ void interpreter::checkvars(expr x, bool b)
 	symbol *sym2 = symtab.sym("::"+*symtab.current_namespace+"::"+id);
 	assert(sym2);
 	x.set_astag(sym2->f);
+#if 0
 	if (compat)
 	  warning(*loc, "warning: implicit declaration of '"+sym2->s+"'");
+#endif
       } else
 	sym.unresolved = false;
     }
