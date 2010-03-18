@@ -393,7 +393,7 @@ decl_types2 d@(CDecl decl_specs init_declr_list) fname =
 
 
 // decl_idents : Grab the names of things declared in a declaration. Returns a
-// list of strings (identifiers) which may be empty the the declaration is
+// list of strings (identifiers) which may be empty if the declaration is
 // anonymous (i.e., a function parameter) or may contain multiple identifiers
 // if the declaration declares multiple things, e.g. "int x,y,z;"
 
@@ -413,7 +413,7 @@ is_typedef ( _ : decl_specs) = is_typedef decl_specs;
 is_typedef [] = 0;
 
 
-// typedef : returns a list of (name=>type) bindings, possibly empty if this
+// typedefs : returns a list of (name=>type) bindings, possibly empty if this
 // declaration was not a typedef
 typedefs (CFDefExt _) = [];
 typedefs (CDeclExt d fname) = typedefs1 d fname;
@@ -421,6 +421,19 @@ typedefs1 d@(CDecl decl_specs _) fname =
   if is_typedef decl_specs 
   then zip (decl_idents d) (decl_types1 d fname)
   else [];
+
+// same for implicit enum types (no proper typedef), this returns just the
+// enum type without type name (as a singleton list) or the empty list if none
+enumtypedefs (CFDefExt _) = [];
+enumtypedefs (CDeclExt d fname) = enumtypedefs1 d fname;
+enumtypedefs1 d@(CDecl decl_specs _) fname =
+  case decl_specs of
+    [CTypeSpec (CEnumType (CEnum (Just tag) (Just enum_defs) _))]
+      = [enum_type tag (scan_enums enum_defs) fname];
+    [CTypeSpec (CEnumType (CEnum Nothing (Just enum_defs) _))]
+      = [enum_type "<anonymous>" (scan_enums enum_defs) fname];
+    _ = [];
+  end;
 
 // func_decl : returns the list of triples (name,type,fname) for all
 // function declarations in this declaration.
@@ -1149,12 +1162,14 @@ echo 1 "Building typedef dictionary";
 let tydefs = 
       foldl (\d (n,t) -> insert d (n=>t)) emptydict $
         catmap typedefs declarations;
+// we also need to keep track of enums declared outside a proper typedef
+let enumtydefs = catmap enumtypedefs declarations;
 
 
 echo 1 "Gathering constant definitions";
 let defines = 
   nub $ resolve_indirects $ scrape_defines lines +
-        catmap enum_vals (vals tydefs);
+        catmap enum_vals (vals tydefs+enumtydefs);
 
 
 echo 1 "Gathering function prototypes";
