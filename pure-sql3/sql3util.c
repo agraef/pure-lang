@@ -1,5 +1,4 @@
-/* pdoUtil 
- */
+/* sql3util.c */
 
 #include <stdlib.h>
 #include <pure/runtime.h>
@@ -7,16 +6,12 @@
 #include <string.h>
 #include <sqlite3.h>
 
-/* Utilities to interface with sqlite3 to compile and link:
+/* Utilities to interface with sqlite3. To compile and link (Linux):
+
    gcc -fPIC -c sql3util.c
-   gcc -shared sql3util.o -o sql3util.so
-   cp /usr/local/lib/libsqlite3.so sqlite3.so
+   gcc -shared sql3util.o -o sql3util.so -lsqlite3
  
-   set PURE_LIBRARY, LD_LIBRARY_PATH, etc, or pure -L
-   e.g., pure -q -L./
- 
-   in pure: using "lib:sql3util"
-   in pure: using "lib:sqlite3" */
+   Or just run 'make'. */
 
 sqlite3* sql3util_open(char* path) {
   sqlite3* db;
