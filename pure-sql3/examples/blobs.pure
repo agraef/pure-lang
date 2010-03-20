@@ -1,0 +1,34 @@
+/* How to store blobs holding arbitrary Pure expressions in an SQLite
+   database. 2010-03-20 AG */
+
+using sql3, system;
+
+/* Sql3 represents blobs as a pair n::int,b::pointer in Pure land, where n is
+   the size of the blob. The following helper routines convert between an
+   arbitrary Pure expression and this representation, so that it can be stored
+   in an SQLite database. This uses Pure's built-in serialization features
+   (cf. val and blob in the Pure Library Manual). */
+
+expr2blob x = int (#b), b when b::pointer = blob x end;
+blob2expr (n::int,b::pointer) = val b;
+
+// Open the database.
+let db = sql3::open "abc.db";
+
+// Set up a 'blobs' table.
+sql3::exec db "drop table if exists blobs";
+sql3::exec db "create table blobs (key integer, val blob)";
+
+// Populate the table with some data.
+/* NOTE: Currently we need to use automatic conversions ("v") for blobs here,
+   since the "b" conversion isn't implemented yet. */
+let stm1 = sql3::prep db "iv" "insert into blobs values(?,?)";
+sql3::exec stm1 [1,expr2blob (1,12.0,77L,"Hello, world")];
+sql3::exec stm1 [2,expr2blob (another random pure value)];
+
+// Retrieve all records and show them, converting the blobs back to Pure
+// expressions.
+let stm2 = sql3::prep db "iv:" "select * from blobs";
+do (puts.str.show) $ sql3::exec stm2 () with
+  show [k,b] = [k,blob2expr b];
+end;

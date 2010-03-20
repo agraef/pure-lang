@@ -1,0 +1,137 @@
+
+=========
+pure-sql3
+=========
+
+This document describes Peter Summerland's Sqlite3_ module, named **Sql3**,
+for the Pure_ programming language.
+
+Note: This manual is work in progress and mostly unfinished at this time.
+
+.. _Sqlite3: http://www.sqlite.org/
+.. _Pure: http://pure-lang.googlecode.com
+
+.. contents::
+.. sectnum::
+
+Introduction
+============
+
+Sqlite3_ is an extremely popular embedded database engine Like other database
+programs it has its quirks and has some very powerful features that cannot be
+accessed through the generic OBCD interface.
+
+Sql3 is a minimal wrapper around Sqlite3's C interface that is designed to
+give the developer access to all of Sqlite3's features in a way that is
+convenient for Pure programmers. It provides a handful of convenience
+functions that make the "core" functions in the interface easier to use, while
+at the same time "keeping out of the way" so the user can tap into the rest of
+the C interface directly.
+
+Copying
+=======
+
+Copyright (c) 2010 by Peter Summerland, all rights reserved. Sql3 is
+distributed under a 3-clause BSD license, please see the COPYING file for
+details and pertaining copyright notices.
+
+Installation
+============
+
+You need to have Pure and SQLite3_ installed, obviously. Run ``make`` to
+compile the module, and ``sudo make install`` to install it in the Pure
+library directory.
+
+Usage
+=====
+
+In the following it is assumed that the reader has some familiarity with
+SQLite3 and its C interface, and has read `An Introduction To The SQLite C/C++
+Interface`_.
+
+.. _An Introduction To The SQLite C/C++ Interface: http://www.sqlite.org/cintro.html
+
+Note: Further examples can be found in the examples subdirectory in the
+sources.
+
+Simple Example
+--------------
+
+::
+
+  > using sql3;
+
+  > //open a database
+  > let db1 = sql3::open "abc.db";
+
+  > // add a table
+  > let ec = sql3::dbexec db1 "create table TT (name varchar, age integer)";
+
+  > // populate it
+  > let stm = sql3::prep db1 "ci" "insert into TT values (?,?)";
+  > sql3::exec stm ("Sam",20);
+  > sql3::exec stm ("Fred",22);
+
+  > // query it
+  > let stm = sql3::prep db1 "ci:i" "select * from TT where age > ?";
+  > sql3::exec stm 21;
+  [["Fred",22]]
+  > sql3::exec stm 18;
+  [["Sam",20],["Fred",22]]
+
+The functions used in the example have a one to one correspondence to
+functions in the Sqlite3 C interface.
+
+* ``sql3::dbopen`` is just a wrapper around ``sqlite3_open_v2``. It puts a
+  sentry on the ``sqlite3*`` pointer returned by sqlite3_open to provide for
+  automatic closing and some other stuff.
+
+* ``sql3::dbexec``, applied to a ``db`` is just a convenience function for
+  executing quick and dirty parameterless commands.
+
+* ``sql3::prep`` is just a wrapper around ``sqlite3_prepare_v2``. It puts a
+  sentry on the ``sqlite3_stmt*`` returned by ``sqlite3_prepare_v2`` to
+  provide for automatic finalization, coordanation with its db connection, and
+  some additional functionality. The extra parameter, compared to the
+  underlying C interface function, is a string, referred to as the "type
+  string", that specifies what functions from the ``sqlite3_bind_xxx`` and
+  ``sqlite3_column_xxx`` families are to be applied when the ``stm`` is
+  executed. In second use in the example ``"ci:i"`` means use
+  ``sqlite_bind_int64`` to the ``"?"`` in the sql statement and use
+  ``sqlite_column_text`` and ``sqlite3_column_int64`` to retrieve the results
+  when ``stm`` is executed.
+
+* ``sql3::exec``, applied to ``stm`` is just a convenience function that handles
+  the bind, step, column, reset cycle provided by Sqlite's C interface. As
+  mentioned the programmer controls exactly which members of the
+  ``sqlite3_bind`` and ``sqlite3_column`` are used by specifying them in the
+  extra parameter to ``sql3::prep``.
+
+These basic functions present the core functionality of Sqlite3 and
+in many cases are all you need to know to get up and running.
+
+More Examples
+-------------
+
+Transactions, accessing the underlying API.
+
+Data Structure
+==============
+
+Operations
+==========
+
+Opening and closing db
+----------------------
+
+Preparing, executing and finalizing STMTs
+-----------------------------------------
+
+Transactions
+------------
+
+Callbacks
+---------
+
+Accessing the rest of the SQLite3 C Interface
+=============================================

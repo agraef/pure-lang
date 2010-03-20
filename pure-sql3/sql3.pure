@@ -1,0 +1,300 @@
+/* sql3.pure - sqlite3 wrapper */
+
+/* VERSION 2 - Mar 18, 2010
+   DRAFT - FOR DISCUSSION PURPOSES ONLY */
+
+
+using system ;
+using "lib:sql3util";
+
+namespace sql3;
+
+public 
+STMT SQLNULL bad_sql_value;
+
+public
+is_db_ptr is_stmt_ptr open close exec prep exec finalize
+begin begin_immediate begin_exclusive savepoint release 
+rollback rollback_to commit;
+
+private 
+openp close_db finalize_stmt get_stmt
+bind_chars bind_fns col_chars col_fns
+sql3_err sqlite3_err bind_sp get_rec SHOW_OPEN_CLOSE;
+
+private
+SQLITE_OK SQLITE_ROW SQLITE_DONE;
+
+private extern sqlite3* sql3util_open(void* path);
+private extern expr* sql3util_prepare(sqlite3 *db, void* sql);
+private extern int sql3util_bind_text(sqlite3_stmt* sp, int col, void* text);
+private extern int sql3util_bind_value(sqlite3_stmt* sp, int col, expr* x);
+private extern expr* sql3util_value(sqlite3_value* x);
+private extern int sqlite3_step(sqlite3_stmt*);
+private extern int sqlite3_finalize(sqlite3_stmt*);
+private extern int sqlite3_reset(sqlite3_stmt*);
+private extern int sqlite3_close(sqlite3*);
+private extern sqlite3_stmt* sqlite3_next_stmt(sqlite3*, sqlite3_stmt*);
+private extern void* sqlite3_errmsg(sqlite3*);
+private extern double sqlite3_column_double(sqlite3_stmt*, int);
+private extern int sqlite3_column_int(sqlite3_stmt*, int);
+private extern int64 sqlite3_column_int64(sqlite3_stmt*, int);
+private extern void* sqlite3_column_text(sqlite3_stmt*, int);
+private extern sqlite3_value* sqlite3_column_value(sqlite3_stmt*, int);
+private extern int sqlite3_bind_double(sqlite3_stmt*, int, double);
+private extern int sqlite3_bind_int(sqlite3_stmt*, int, int);
+private extern int sqlite3_bind_int64(sqlite3_stmt*, int, int64);
+private extern int sqlite3_bind_null(sqlite3_stmt*, int);
+private extern int sqlite3_bind_text(sqlite3_stmt*, int, void*, int, void*);
+
+const SQLITE_OK = 0;
+const SQLITE_ROW = 100;
+const SQLITE_DONE = 101;
+const SHOW_OPEN_CLOSE = 0;
+
+/* The sqlite3_errmsg and sqlite3_column_text functions return raw UTF-8
+   strings in volatile storage which must be copied and converted to Pure
+   strings. The following utility functions take care of this. */
+
+private sql3util_errmsg sql3util_column_text;
+sql3util_errmsg dbp::pointer =
+  string_dup (sqlite3_errmsg dbp);
+sql3util_column_text sp::pointer col::int =
+  string_dup (sqlite3_column_text sp col);
+
+/* Additional helper functions used in binding parameters and retrieving
+   column values. */
+
+private sql3util_bind_null sql3util_column_value;
+sql3util_bind_null sp::pointer icol::int _ = sqlite3_bind_null sp icol;
+sql3util_column_value sp::pointer col::int =
+  sql3util_value (sqlite3_column_value sp col);
+
+/* Type checking predicates. */
+
+is_db_ptr x::pointer = case get_sentry x of
+  f@_ _ = f===close_db; _ = false;
+end;
+is_db_ptr _ = false;
+
+is_stmt_ptr x::pointer = case get_sentry x of
+  f@_ _ = f===finalize_stmt; _ = false;
+end;
+is_stmt_ptr _ = false;
+
+/* Describe all these here */
+
+open path::string = res 
+when
+  dbp = sql3util_open path;
+  null dbp && sql3_err (sprintf "Failed to open data base %s" (path));
+  res = sentry (close_db (ref 1)) dbp;
+  SHOW_OPEN_CLOSE && printf "Opened DB: sqlite3* %s\n" (str dbp);
+end;
+
+close dbp::pointer = if openp dbp then (get_sentry dbp) dbp else 0
+  if is_db_ptr dbp;
+
+exec dbp::pointer sql::string = step_ec
+when   
+  openp dbp || sql3_err "Attempt to exec on a closed db.";
+  sp, prep_ec = sql3util_prepare dbp sql;
+  prep_ec == SQLITE_OK || sqlite3_err dbp prep_ec;
+  step_ec = sqlite3_step sp;
+  step_ec == SQLITE_ROW && sql3_err "Attempt to use exec DB with select sql";
+  step_ec == SQLITE_DONE || step_ec == SQLITE_OK || sqlite3_err dbp step_ec;
+  sqlite3_finalize sp;
+end if is_db_ptr dbp;
+
+begin dbp = exec dbp "begin";
+begin_immediate dbp = exec dbp "begin immediate";
+begin_exclusive dbp = exec dbp "begin exclusive";
+savepoint dbp savePoint = exec dbp ("savepoint " + savePoint);
+release dbp savePoint = exec dbp ("release " + savePoint);
+rollback_to dbp savePoint = exec dbp ("rollback to " + savePoint);
+rollback dbp  = exec dbp "rollback";
+commit dbp = exec dbp "commit";
+
+
+/* prep DBP TYPES SQL returns a sentry guarded sqlite3_stmt*. The
+   sentry is finalize_stmt (STMT (rfsp, sel_fns, bind_fns)), a
+   partially applied function.  SQL is a sql statement. TYPES is a
+   string of characters that indicate the types of the items returned
+   by SQL and the types of parameters needed to bind the SQL,
+   separated by ":". E.g.,
+
+   prep dbp "icd:j" "select id, name, val from tbl where day>?"
+  
+   The valid characters are b, c,d,i,l and n which correspond to
+   blob*, char*, double, int, int64 and Null. Null is only valid on
+   the binding side. If TYPES does not contain a ":" the types are
+   treated as binding types. */
+   
+prep dbp::pointer types::string sql::string = res
+when
+  openp dbp || sql3_err "Attempt to prep using closed database.";
+  sel_types, bind_types = ensure_types (split ":" types);
+  types_okp sel_types bind_types || sql3_err "Invalid type specification.";
+  sfns = map (col_fns!) sel_types;
+  bfns = map (bind_fns!) bind_types;
+  (sp, ec) = sql3util_prepare dbp sql;
+  //rfsp = ref 1;
+  stmt = STMT (ref 1, sfns, bfns, dbp);
+  ec == SQLITE_OK || sqlite3_err dbp ec;
+  res = sentry (finalize_stmt stmt) sp;
+  SHOW_OPEN_CLOSE && printf "Prepared Stmt: sqlite3_stmt* %s\n" (str sp);
+end with
+  ensure_types sel_bind_types = 
+  case #sel_bind_types of
+    0 = ("","");
+    1 = ("",sel_bind_types!0);
+    2 = (sel_bind_types!0,sel_bind_types!1);
+    _ = sql3_err "Illegal type specification";
+  end;
+  types_okp b s = all_in bind_chars b && all_in col_chars s;
+  all_in chars s = all (\c->index chars c >= 0) s;
+end if is_db_ptr dbp;
+
+exec sp::pointer args = res
+when
+  res = reverse (recs []);
+  SHOW_OPEN_CLOSE && printf "Executed Stmt: sqlite3* %s\n" (str sp);  
+end with
+  recs rs = res when
+    r = get_rec sel_fns sp dbp;
+    res = if null r then rs else recs (r:rs);
+  end;
+end when
+  stmt = get_stmt sp;
+  sel_fns, bnd_fns, dbp = case stmt of STMT (_, x, y, d) = x,y,d end;
+  bind_sp sp bnd_fns args;
+end if is_stmt_ptr sp;
+
+finalize sp::pointer = finalize_stmt (get_stmt sp) sp if is_stmt_ptr sp;
+
+
+/* Private */
+
+/* close_db rf_is_open dbp closes the database connection, provided
+   that get rf_is_open == 1.  This prevents the connection from being
+   closed twice, which would cause a seg fault. If any prepared
+   statements have not been closed, they will be closed before dbp is
+   closed. If this happens, there are unfreed STMTs around that depend
+   on dbp being open. If exec STMT is called on any such statement a
+   sql3 exception will be thrown. I.e., exec s::STMT checks to see if
+   s's database connection is still good. */
+
+close_db rf_is_open dbp = get rf_is_open if null dbp;
+
+close_db rf_is_open dbp  = if get rf_is_open then close_it else 0
+with
+  close_it = 1
+  when
+    put rf_is_open 0;
+    (n,close_ec) = clear_stmts dbp 0;
+    close_ec == SQLITE_OK || sqlite3_err dbp close_ec;
+    ec = sqlite3_close dbp;
+    ec == SQLITE_OK || sqlite3_err dbp ec;
+    SHOW_OPEN_CLOSE && 
+    printf "Closed DB %s: %d STMTs closed.\n" (str dbp, n);
+  end;
+  clear_stmts dbp n = res
+  when 
+    nxt = sqlite3_next_stmt dbp NULL;
+    err = if null nxt then SQLITE_OK else sqlite3_finalize nxt;
+    res = if null nxt || err ~= SQLITE_OK then (n,err)
+          else clear_stmts dbp (n+1);
+  end
+end;
+
+get_stmt sp::pointer = 
+case (get_sentry sp) NULL of
+  stmt::STMT = stmt;
+  x = printf "dbg::%s: %s\n" ("get_stmt",str x ) $$ 
+      printf "dbg::%s: %s\n" ("get_stmt",str (get_sentry sp) ) $$ 
+      x;
+  //_ = sql3_err "Attempt to use invalid sp";
+end;
+
+/* finalize_stmt is a curried function of two args. Applied
+   to a STMT, it is a closure that takes one pointer as
+   an argument. If the pointer is NULL, finalize_stmt returns
+   the STMT passed to it as its first argument. Otherwise,
+   finalize_stmt finalizes the pointer, provide rf_valid is 1,
+   and sets rf_valid in STMT to 0. It is meant to  be used as
+   sentry on a sqlite3_stmt* */
+
+finalize_stmt stmt::STMT sp::pointer = stmt if null sp;
+finalize_stmt (STMT (rf_valid,_,_,dbp)) sp::pointer = ec
+when
+  openp dbp || sql3_err "finalize: STMT attached to a closed database.";
+  was_valid = get rf_valid;
+  ec = if was_valid then sqlite3_finalize sp else SQLITE_OK;
+  was_valid && SHOW_OPEN_CLOSE && printf 
+      "Finalized Stmt: sqlite3_stmt* %s\n" (str sp);
+  put rf_valid 0;
+end;
+
+bind_chars = "cdilnv";
+bind_fns = record [
+  "c"=>sql3util_bind_text, 
+  "d"=>sqlite3_bind_double, 
+  "i"=>sqlite3_bind_int,
+  "l"=>sqlite3_bind_int64, 
+  "n"=>sql3util_bind_null,
+  "v"=>sql3util_bind_value];
+
+col_chars  = "cdilv";
+col_fns = record [
+  "c"=>sql3util_column_text, 
+  "d"=>sqlite3_column_double,
+  "i"=>sqlite3_column_int,
+  "l"=>sqlite3_column_int64,
+  "v"=>sql3util_column_value];
+
+bind_sp sp funs args = bind_cols funs (argList args) 1
+with 
+  argList args = res
+  when
+    arglst = 
+      if listp args then args else 
+      if tuplep args then list args else
+      if recordp args then recvals (record args) else
+      if matrixp args then list args else
+      [args];
+    res = if #arglst == #funs then arglst
+          else sql3_err "Wrong number of bind arguments.";
+  end;
+  recvals rec = [v | k=>v = rec];
+  bind_cols fs as _ = () if null fs || null as;
+  bind_cols (f:fs) (a:as) icol = (f sp icol a) $$ bind_cols fs as (icol+1);
+end;
+
+get_rec sel_fns sp dbp = res
+when
+  ec = sqlite3_step sp;
+  //printf "debug %s: %s\n" ("get_rec",str ec );
+  res = if ec == SQLITE_DONE then sqlite3_reset sp $$ []
+        else if ec == SQLITE_ROW then rval 
+        else sqlite3_err dbp ec;
+end with
+  rval = cvals sel_fns [] 0 if #sel_fns >= 1;
+       = sql3_err "Missing select functions." otherwise;
+  cvals [] vs icol = reverse vs; 
+  cvals (f:fs) vs icol = cvals fs ((f sp icol) :vs) (icol+1);
+end;
+ 
+openp dbp::pointer = 0 if null dbp;
+openp dbp::pointer = res
+when
+  is_open = (get_sentry dbp) NULL;
+  res = if intp is_open then is_open else 0;
+end;
+
+sql3_err msg::string = throw (sprintf "sql3 error: %s" msg);
+
+sqlite3_err dbp::pointer code::int = throw msg
+when
+  msg1 = sql3util_errmsg dbp;
+  msg = sprintf "sqlite3 error: %d, %s" (code,msg1);
+end if is_db_ptr dbp;

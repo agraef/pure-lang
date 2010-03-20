@@ -1,0 +1,162 @@
+/* sql3_demo.pure Mar 18, 2010 */
+
+using sql3;
+
+
+/* The sql3 functions demo'd:
+
+   open close exec -- interface for db
+   prep exec finalize -- the basic interface for statements
+   begin rollback commit -- basic transactions */
+
+
+/* sql3 functions not demo'd
+
+   begin_immediate begin_exclusive -- advanced usage (not demo'd)
+   savepoint rollback_to release -- nested transactions (not demo'd) */
+ 
+
+/* Helper */
+
+putrows rows = puts "------" $$ do (puts . str) rows;
+
+
+/* Populate the data base */
+
+setup db = () 
+when
+  puts "Begin setup";
+
+  // use exec DB for quick and dirty parameterless sql
+  // (but not select statements)
+  sql3::exec db "drop table if exists TT";
+  printf "dbg::%s: %s\n" ("setup1","drop table");
+  sql3::exec db
+    "create table TT (x integer, y int, z varchar, dt varchar)";
+  sql3::exec db "delete from TT";
+  sql3::exec db "insert into TT values (null,20,'Mark','2010-01-01')";
+  printf "dbg::%s: %s\n" ("setup3","TT set up with Mark");
+  
+
+  // prepare an insert statement with int,int,char*,char* parameters
+  stm1 = sql3::prep db "ilcc" "insert into TT values(?,?,?,?)";
+
+  // apply exec to stm1 to insert some values
+  sql3::exec stm1 (1,11,"Peter","2010-03-15");
+  sql3::exec stm1 (2,12,"Lily","2010-03-16");
+  sql3::exec stm1 (3,13,"Holly","2010-03-17");
+  sql3::exec stm1 (4,14,"Emily","2010-03-18");
+  sql3::exec stm1 (5,15,"Mimi","2010-03-19");
+  sql3::exec stm1 (6,16,"Guonan","2010-03-20");
+
+  // the "v" conversion lets you specify "any parameter"; conversion from the
+  // Pure data is fully automatic in this case
+  stm2 = sql3::prep db "ilcc" "insert into TT values(?,?,?,?)";
+  sql3::exec stm2 (7,17,"Albert","2010-03-21");
+
+  puts "End setup\n";
+end;
+
+
+/* Queries */
+
+show_queries db = ()
+when 
+  puts "Begin show_queries";
+
+  //prepare some random queries
+  stm1 = sql3::prep db "ic:c" "select x,z from TT where z = ?";
+  stm2 = sql3::prep db "i:" "select x from TT";
+  stm3 = sql3::prep db "ilcc:" "select * from TT";
+  stm4 = sql3::prep db "ic:i" "select x,z from TT where x > ?";
+
+  //try them out
+  putrows (sql3::exec stm1 ("Holly"));
+  putrows (sql3::exec stm2 ());
+  putrows (sql3::exec stm3 ());
+  putrows (sql3::exec stm4 2);
+  putrows (sql3::exec stm2 ());
+
+  // Again, you can use "v" for automatic conversions here, both on the input
+  // (parameter) and output (column) side.
+  stm5 = sql3::prep db "vv:v" "select x,z from TT where x > ?";
+  putrows (sql3::exec stm5 4);
+
+  puts "End show_queries\n";
+end;
+
+
+/* Rollback capability */
+
+show_rollback db = ()
+when
+  puts "Begin show_rollback.";
+
+  //Show six records before roll back transaction
+  stm = sql3::prep db "ilcc:" "select * from TT";
+  putrows (sql3::exec stm ());
+
+  //Delete 2 rows, update x, then rollback
+  sql3::begin db;
+  sql3::exec db "delete from TT where dt >= '2010-03-19'";
+  sql3::exec db "update TT set x=2*TT.x";
+  sql3::rollback db;
+  putrows (sql3::exec stm ()); //the same six rows
+
+  //Delete 2 rows, update x in autocommit mode  
+  sql3::exec db "delete from TT where dt >= '2010-03-19'";
+  sql3::exec db "update TT set x=2*TT.x";
+  putrows (sql3::exec stm ()); //four updated rows
+
+  puts "End show_rollback.\n";
+end;
+
+
+/* Adhoc interfaces to Sqlite3 */
+
+extern int sqlite3_changes(sqlite3*);
+extern char *sqlite3_column_name(sqlite3_stmt*, int);
+
+
+show_adhoc db = ()
+when
+  puts "Begin show_adhoc.";
+  stm = sql3::prep db "iicc:" "select * from TT";
+  putrows (sql3::exec stm ());
+  col_name = sqlite3_column_name stm 0;
+  printf "-----\nThe first column for stm is %s\n" col_name;
+  sql3::exec db "delete from TT where z = 'Mark'";
+  num_rows_changed = sqlite3_changes db; //one change
+  printf "-----\n%d row changed\n" num_rows_changed;
+  putrows (sql3::exec stm ());
+  puts "End show_adhoc\n";
+end;  
+
+
+main = ()
+when
+  puts "Begin main."
+  puts "Try messing up the sql to test error handling";
+  puts "Run with sql3.pure compiled with SHOW_OPEN_CLOSE=1";
+  puts "to see when the STMTs and DBs open, exec and finalize.";
+
+  //open a connection
+  db = sql3::open "abc.db";
+  puts "";
+
+  //set up and populate a table
+  sql3::begin db;
+  setup db;
+  sql3::commit db;
+
+  //play with the table
+  show_queries db;
+  show_rollback db;
+  show_adhoc db;
+
+  puts "End main.\n"
+  
+end;
+
+// Run this:
+main;
