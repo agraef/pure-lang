@@ -55,7 +55,7 @@ sql3util.c sql3.pure examples/*.pure
 all: sql3util$(DLL)
 
 sql3util$(DLL): sql3util.c
-	$(CC) $(shared) -o $@ $(INCLUDES) $< $(FLAGS) -lsqlite3 -lpure $(LIBS)
+	$(CC) $(shared) -o $@ $(INCLUDES) -Wall $< $(FLAGS) -lsqlite3 -lpure $(LIBS)
 
 clean:
 	rm -f *$(DLL) *~ *.a *.o *.tex *.pdf *.aux *.log *.out
