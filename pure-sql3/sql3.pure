@@ -13,7 +13,8 @@ public
 STMT SQLNULL bad_sql_value;
 
 public
-is_db_ptr is_stmt_ptr open close exec prep exec finalize
+is_db_ptr is_stmt_ptr
+open close exec prep exec finalize function
 begin begin_immediate begin_exclusive savepoint release 
 rollback rollback_to commit;
 
@@ -30,6 +31,8 @@ private extern expr* sql3util_prepare(sqlite3 *db, void* sql);
 private extern int sql3util_bind_text(sqlite3_stmt* sp, int col, void* text);
 private extern int sql3util_bind_value(sqlite3_stmt* sp, int col, expr* x);
 private extern expr* sql3util_value(sqlite3_value* x);
+private extern int sql3util_create_function(sqlite3 *db, void* name,
+	       	   			    int nargs, expr *x);
 private extern int sqlite3_step(sqlite3_stmt*);
 private extern int sqlite3_finalize(sqlite3_stmt*);
 private extern int sqlite3_reset(sqlite3_stmt*);
@@ -172,6 +175,8 @@ end if is_stmt_ptr sp;
 
 finalize sp::pointer = finalize_stmt (get_stmt sp) sp if is_stmt_ptr sp;
 
+function dbp::pointer name::string nargs::int fun = ()
+  if is_db_ptr dbp && nargs>=-1 && ~sql3util_create_function dbp name nargs fun;
 
 /* Private */
 

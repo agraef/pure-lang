@@ -1,0 +1,89 @@
+/* How to register Pure functions so that they can be called as SQL scalar and
+   aggregate functions in SQL statements. 2010-03-20 AG */
+
+using sql3, system;
+
+// Open the database.
+let db = sql3::open "abc.db";
+
+// Set up a 'data' table, and populate it with some data.
+sql3::exec db "drop table if exists data";
+sql3::exec db "create table data (x integer, y double, z varchar)";
+let stm1 = sql3::prep db "idc" "insert into data values(?,?,?)";
+do (sql3::exec stm1) [[10,1.0,"foo"], [20,2.0,"bar"], [30,3.0,"baz"]];
+
+/* Register a function with the database. This is a scalar function taking one
+   parameter. Note that any kind of Pure closure can be passed here; we mostly
+   employ local functions in the following examples, but you can just as well
+   use global functions, lambdas or partial applications. */
+
+sql3::function db "gizmo" 1 gizmo with
+  gizmo x::int = x+1;
+  gizmo x::double = 2*x;
+  gizmo x::string = "*** "+x+" ***";
+end;
+
+/* Here's another example, a counter which keeps its internal state in a
+   reference. We want to call this as a zero-argument function in SQL. Note
+   that for technical reasons in Pure the function then actually takes one
+   dummy () argument, so it must be defined like this: */
+
+sql3::function db "counter" 0 counter with
+  counter () = put r (get r+1);
+end when r = ref 0 end;
+
+/* Variadic functions can be defined like this. They receive all their
+   arguments in a single list. */
+
+sql3::function db "quasimodo" (-1) quasimodo with
+  quasimodo xs = "quasimodo: "+join ":" [str x | x=xs];
+end;
+
+// Apply the gizmo and counter functions above.
+let stm2 = sql3::prep db "iidc:"
+  "select counter(), gizmo(x), gizmo(y), gizmo(z) from data";
+do (puts.str) $ sql3::exec stm2 ();
+
+// To redefine a function you must first remove it, by passing a NULL pointer
+// for the function argument.
+sql3::function db "counter" 0 NULL;
+sql3::function db "counter" 0 (counter2 (ref 0)) with
+  counter2 r () = put r (get r-1);
+end;
+
+// Call the new counter and the variadic quasimodo function.
+let stm3 = sql3::prep db "ic:" "select counter(), quasimodo(x,y,z) from data";
+do (puts.str) $ sql3::exec stm3 ();
+
+// Note that quasimodo can really be invoked with any number of arguments.
+let stm4 = sql3::prep db "ic:" "select counter(), quasimodo(y,x) from data";
+do (puts.str) $ sql3::exec stm4 ();
+
+/* Aggregate functions can be defined by passing a triple (step,final,start)
+   as the function argument to the sql3::function routine. In this case the
+   'step' function is called repeatedly to accumulate values from the
+   database, starting from the given 'start' value, and finally the 'final'
+   function is applied to the accumulated result. Note that for a
+   single-argument 'step' function, this works exactly as if the functions
+   were invoked as 'final (foldl step start values)', where 'values' is the
+   list of aggregated values from the database. */
+
+// A simple aggregate to just count the given values.
+sql3::function db "mycount" 1 ((\n _ -> n+1),id,0);
+
+// Compute sums.
+sql3::function db "mysum" 1 ((+),id,0);
+
+// Compute products.
+sql3::function db "myprd" 1 ((*),id,1);
+
+// Compute averages.
+sql3::function db "myavg" 1 (step,final,(0,0.0)) with
+  step (n,a) x = n+1, a+x;
+  final (n,a) = a/n;
+end;
+
+// Apply the sample aggregates to our database.
+let stm5 = sql3::prep db "iid:"
+     "select mycount(z), myprd(x), myavg(y) from data";
+do (puts.str) $ sql3::exec stm5 ();
