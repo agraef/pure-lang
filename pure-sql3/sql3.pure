@@ -14,14 +14,14 @@ STMT SQLNULL bad_sql_value;
 
 public
 is_db_ptr is_stmt_ptr
-open close exec prep exec finalize function
+open close prep exec lexec finalize function
 begin begin_immediate begin_exclusive savepoint release 
 rollback rollback_to commit;
 
 private 
 openp close_db finalize_stmt get_stmt
 bind_chars bind_fns col_chars col_fns
-sql3_err sqlite3_err bind_sp get_rec SHOW_OPEN_CLOSE;
+sql3_err sqlite3_err bind_sp get_rec get_recs lget_recs SHOW_OPEN_CLOSE;
 
 private
 SQLITE_OK SQLITE_ROW SQLITE_DONE;
@@ -162,13 +162,20 @@ end if is_db_ptr dbp;
 
 exec sp::pointer args = res
 when
-  res = reverse (recs []);
+  res = get_recs sel_fns sp dbp;
   SHOW_OPEN_CLOSE && printf "Executed Stmt: sqlite3* %s\n" (str sp);  
-end with
-  recs rs = res when
-    r = get_rec sel_fns sp dbp;
-    res = if null r then rs else recs (r:rs);
-  end;
+end when
+  stmt = get_stmt sp;
+  sel_fns, bnd_fns, dbp = case stmt of STMT (_, x, y, d) = x,y,d end;
+  bind_sp sp bnd_fns args;
+end if is_stmt_ptr sp;
+
+// Lazy variation of exec, this returns a lazy list (stream), which is to be
+// preferred for large result sets.
+lexec sp::pointer args = res
+when
+  res = lget_recs sel_fns sp dbp;
+  SHOW_OPEN_CLOSE && printf "Executed Stmt: sqlite3* %s\n" (str sp);  
 end when
   stmt = get_stmt sp;
   sel_fns, bnd_fns, dbp = case stmt of STMT (_, x, y, d) = x,y,d end;
@@ -277,6 +284,20 @@ with
   recvals rec = [v | k=>v = rec];
   bind_cols fs as _ = () if null fs || null as;
   bind_cols (f:fs) (a:as) icol = (f sp icol a) $$ bind_cols fs as (icol+1);
+end;
+
+get_recs sel_fns sp dbp = reverse (recs []) with
+  recs rs = res when
+    r = get_rec sel_fns sp dbp;
+    res = if null r then rs else recs (r:rs);
+  end;
+end;
+
+lget_recs sel_fns sp dbp = recs with
+  recs = res when
+    r = get_rec sel_fns sp dbp;
+    res = if null r then [] else r : recs&;
+  end;
 end;
 
 get_rec sel_fns sp dbp = res

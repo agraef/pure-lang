@@ -1,0 +1,54 @@
+/* Eager versus lazy SQL statement execution. 2010-03-21 AG */
+
+using sql3, system;
+
+// Open the database.
+let db = sql3::open "abc.db";
+
+// Set up a 'data' table, and populate it with some data.
+sql3::exec db "drop table if exists data";
+sql3::exec db "create table data (x integer, y double, z varchar)";
+
+/* This adds a large amount n of records to the table, which will be very slow
+   if each record is committed individually, so we wrap this up in a
+   transaction. */
+
+const n = 10000;
+printf "Adding %d records to the table.\n" n;
+let stm = sql3::prep db "idc" "insert into data values(?,?,?)";
+sql3::begin db;
+do (sql3::exec stm) [[10*i,double i,sprintf "varchar#%d" i] | i=1..n];
+sql3::commit db;
+puts "Done.";
+
+/* Prepare a statement that selects all records from the table. */
+
+let stm = sql3::prep db "idc:" "select * from data";
+
+/* Execute the statement and compute the size of the result list to count the
+   records in the table. Note that sql3::exec returns the entire result list
+   at once, which, depending on the size of the list, may need lots of memory
+   and hence is inefficient for large result sets. */
+
+printf "Count (eager): %d\n" (#sql3::exec stm ());
+
+/* In contrast, sql3::lexec returns a lazy list (see the "Lazy Evaluation and
+   Streams" section in the Pure manual). Only the part of the stream which is
+   processed at any one time needs to be in memory. This will often be slower
+   than eager execution, but will utilize much less memory on large result
+   sets. */
+
+printf "Count (lazy) : %d\n" (#sql3::lexec stm ());
+
+/* To actually see the difference, execute the following commands when running
+   interactively:
+
+   > stats -m
+   > #sql3::exec stm ();
+   10000
+   0.08s, 110003 cells
+   > #sql3::lexec stm ();
+   10000
+   0.11s, 14 cells
+
+*/
