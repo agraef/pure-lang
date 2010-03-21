@@ -28,8 +28,10 @@ SQLITE_OK SQLITE_ROW SQLITE_DONE;
 
 private extern sqlite3* sql3util_open(void* path);
 private extern expr* sql3util_prepare(sqlite3 *db, void* sql);
+private extern int sql3util_bind_blob(sqlite3_stmt *sp, int col, expr* x);
 private extern int sql3util_bind_text(sqlite3_stmt* sp, int col, void* text);
 private extern int sql3util_bind_value(sqlite3_stmt* sp, int col, expr* x);
+private extern expr* sql3util_column_blob(sqlite3_stmt *sp, int col);
 private extern expr* sql3util_value(sqlite3_value* x);
 private extern int sql3util_create_function(sqlite3 *db, void* name,
 	       	   			    int nargs, expr *x);
@@ -240,8 +242,9 @@ when
   put rf_valid 0;
 end;
 
-bind_chars = "cdilnv";
+bind_chars = "bcdilnv";
 bind_fns = record [
+  "b"=>sql3util_bind_blob,
   "c"=>sql3util_bind_text, 
   "d"=>sqlite3_bind_double, 
   "i"=>sqlite3_bind_int,
@@ -249,8 +252,9 @@ bind_fns = record [
   "n"=>sql3util_bind_null,
   "v"=>sql3util_bind_value];
 
-col_chars  = "cdilv";
+col_chars  = "bcdilv";
 col_fns = record [
+  "b"=>sql3util_column_blob,
   "c"=>sql3util_column_text, 
   "d"=>sqlite3_column_double,
   "i"=>sqlite3_column_int,

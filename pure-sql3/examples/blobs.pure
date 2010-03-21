@@ -22,13 +22,13 @@ sql3::exec db "create table blobs (key integer, val blob)";
 // Populate the table with some data.
 /* NOTE: Currently we need to use automatic conversions ("v") for blobs here,
    since the "b" conversion isn't implemented yet. */
-let stm1 = sql3::prep db "iv" "insert into blobs values(?,?)";
+let stm1 = sql3::prep db "ib" "insert into blobs values(?,?)";
 sql3::exec stm1 [1,expr2blob (1,12.0,77L,"Hello, world")];
 sql3::exec stm1 [2,expr2blob (another random pure value)];
 
 // Retrieve all records and show them, converting the blobs back to Pure
 // expressions.
-let stm2 = sql3::prep db "iv:" "select * from blobs";
+let stm2 = sql3::prep db "ib:" "select * from blobs";
 do (puts.str.show) $ sql3::exec stm2 () with
   show [k,b] = [k,blob2expr b];
 end;

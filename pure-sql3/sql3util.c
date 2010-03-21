@@ -37,13 +37,40 @@ pure_expr* sql3util_prepare(sqlite3 *db, char *sql)
   return p_ret;
 }
 
-int sql3util_bind_text(sqlite3_stmt* sp, int col, char* text)
+
+/* Marshalling between Pure and SQLite3 data types (sqlite3_value*).
+   2010-03-19 AG. */
+
+int sql3util_bind_text(sqlite3_stmt *sp, int col, char *text)
 {
   return sqlite3_bind_text(sp, col, text, -1, SQLITE_TRANSIENT);
 }
 
-/* Marshalling between Pure and SQLite3 data types (sqlite3_value*).
-   2010-03-19 AG. */
+int sql3util_bind_blob(sqlite3_stmt *sp, int col, pure_expr *x){
+  int32_t iv; size_t n; void *pv; pure_expr **xs; int res = 0;
+  pure_is_tuplev(x, &n, &xs);
+  if (xs && pure_is_int(xs[0], &iv) && pure_is_pointer(xs[1], &pv))
+    res = sqlite3_bind_blob(sp, col, pv, iv, SQLITE_TRANSIENT);
+  else
+    pure_throw(pure_app(pure_quoted_symbol(pure_sym("sql3::bad_sql_value")),
+			x));
+  if (xs) free(xs);
+  return res;
+}
+
+/* Returns as a pair n::int,p::pointer where n is the number of bytes
+   and p is a cooked pointer holding a copy of the blob's data which
+   frees itself when garbage-collected. */
+pure_expr *sql3util_column_blob(sqlite3_stmt *sp, int col){
+  int n = sqlite3_column_bytes(sp, col);
+  const void *m = sqlite3_column_blob(sp, col);
+  void *p = m?malloc(n):NULL;
+  if (p && n>0) memcpy(p, m, n);
+  return pure_tuplel(2, pure_int(n),
+		     pure_sentry(pure_symbol(pure_sym("free")),
+				 pure_pointer(p)));
+}
+
 
 /* SQL NULL representation. */
 
