@@ -20,8 +20,6 @@ sql3::exec db "drop table if exists blobs";
 sql3::exec db "create table blobs (key integer, val blob)";
 
 // Populate the table with some data.
-/* NOTE: Currently we need to use automatic conversions ("v") for blobs here,
-   since the "b" conversion isn't implemented yet. */
 let stm1 = sql3::prep db "ib" "insert into blobs values(?,?)";
 sql3::exec stm1 [1,expr2blob (1,12.0,77L,"Hello, world")];
 sql3::exec stm1 [2,expr2blob (another random pure value)];

@@ -89,8 +89,44 @@ static inline bool pure_is_sqlnull(pure_expr *x)
   return pure_is_symbol(x, &sym) && sym == sqlnull_sym;
 }
 
-/* Convert a sqlite3_value*, as returned by sqlite3_column_value or passed as
-   a function parameter, to a corresponding Pure expression. */
+/* Convert an SQLite value to a corresponding Pure expression. This provides
+   interfaces for the sqlite3_column_value family and the sqlite3_value
+   function which need these conversions. */
+
+pure_expr *sql3util_column_value(sqlite3_stmt* stm, int col)
+{
+  switch (sqlite3_column_type(stm, col)) {
+  case SQLITE_INTEGER:
+    /* This will always return a machine int, if you want bigints, you'll have
+       to use an explicit conversion. */
+    return pure_int(sqlite3_column_int(stm, col));
+  case SQLITE_FLOAT:
+    return pure_double(sqlite3_column_double(stm, col));
+  case SQLITE_TEXT: {
+    const char *s = (const char*)sqlite3_column_text(stm, col);
+    return pure_string_dup(s);
+  }
+  case SQLITE_BLOB: {
+    /* This gets returned as a pair n::int,p::pointer where n is the number of
+       bytes and p is a cooked pointer holding a copy of the blob's data which
+       frees itself when garbage-collected. */
+    int n = sqlite3_column_bytes(stm, col);
+    const void *m = sqlite3_column_blob(stm, col);
+    void *p = m?malloc(n):NULL;
+    if (p && n>0) memcpy(p, m, n);
+    return pure_tuplel(2, pure_int(n),
+		       pure_sentry(pure_symbol(pure_sym("free")),
+				   pure_pointer(p)));
+  }
+  case SQLITE_NULL:
+    return pure_sqlnull();
+  default: {
+    /* unknown type, convert to string */
+    const char *s = (const char*)sqlite3_column_text(stm, col);
+    return pure_string_dup(s);
+  }
+  }
+}
 
 pure_expr *sql3util_value(sqlite3_value *val)
 {
@@ -127,10 +163,9 @@ pure_expr *sql3util_value(sqlite3_value *val)
   }
 }
 
-/* Convert a Pure expression to a corresponding SQLite value. Note that since
-   SQLite3 doesn't provide any direct means to construct a new sqlite3_value*
-   object, instead we provide interfaces for the sqlite3_bind_value and
-   sqlite3_result_value families which need these conversions. */
+/* Convert a Pure expression to a corresponding SQLite value. This provides
+   interfaces for the sqlite3_bind_value and sqlite3_result_value families
+   which need these conversions. */
 
 int sql3util_bind_value(sqlite3_stmt* stm, int col, pure_expr *x)
 {
