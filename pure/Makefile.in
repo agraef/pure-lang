@@ -148,9 +148,11 @@ soname = -install_name $(libdir)/$(libpure_soname) -compatibility_version $(majo
 LD_LIB_PATH = DYLD_LIBRARY_PATH
 endif
 
-# 64 bit, needs -fPIC flag
+# 64 bit, needs -fPIC flag (apparently not needed on OSX, though)
 ifneq "$(findstring x86_64-,$(host))" ""
+ifeq "$(findstring -darwin,$(host))" ""
 PIC = -fPIC
+endif
 endif
 
 # No need to edit below this line. Unless you really have to. :) ############
