@@ -1,0 +1,72 @@
+/* sql3_types.pure Mar 18, 2010 */
+
+using sql3;
+
+putrows rows = puts "------" $$ do (puts . str) rows;
+expr2blob x = int (#b), b when b::pointer = blob x end;
+blob2expr (n::int,b::pointer) = val b;
+
+setup db = () 
+when
+  puts "Begin setup";
+
+  //The table TC has one column for each type
+  sql_create =    
+    "create table TC (" +
+    "b_blob blob, " +
+    "c_chars varchar, " + 
+    "d_double double, " + 
+    "i_int integer, " +
+//  "j_julian double, " + 
+    "l_int64 integer primary key, " +
+    "s_utf8_expr varchar, " +
+    "x_binary_expr blob) ";
+
+  sql3::exec db "drop table if exists TC";
+  sql3::exec db sql_create;
+
+  puts "End setup";
+end;
+
+push_pull_types db = ()
+when 
+  puts "begin push_pull_types";
+
+  //TODO get rid of the nested stm1 -- could be misleading newcomers
+
+  //Insert some data
+  stm1 = sql3::prep db "bcdilsx" "insert into TC values(?,?,?,?,?,?,?)";
+  sql3::exec stm1 [expr2blob "A","Peter", 120.0, 1, 12, s_expr, x_expr];
+  sql3::exec stm1 [expr2blob "B","Lily", 150.0, 2, 13, [1,2,3], [1,2,3]];
+  sql3::exec stm1 [expr2blob "C","Holly",160.0, 3, 14, ("a",5.0), ("a",5.0)];
+
+  //Query each column of a table that has one column per Sql3 type
+  stm1 = sql3::prep db "b:" "select b_blob from TC";
+  do (puts.str.(map blob2expr)) (sql3::exec stm1 ());
+  stm1 = sql3::prep db "c:" "select c_chars from TC";
+  putrows (sql3::exec stm1 ());
+  stm1 = sql3::prep db "d:" "select d_double  from TC";
+  putrows (sql3::exec stm1 ());
+  stm1 = sql3::prep db "i:" "select i_int from TC";
+  putrows (sql3::exec stm1 ());
+  stm1 = sql3::prep db "l:" "select l_int64 from TC";
+  putrows (sql3::exec stm1 ());  
+  stm1 = sql3::prep db "s:" "select s_utf8_expr from TC";
+  putrows (sql3::exec stm1 ());
+  stm1 = sql3::prep db "x:" "select x_binary_expr from TC";
+  putrows (sql3::exec stm1 ());
+
+  puts "End push_pull_types";
+end;
+
+main = ()
+when
+  db = sql3::open "abc.db";
+  sql3::begin db;
+  setup db;
+  push_pull_types db;
+  sql3::commit db;
+end;
+
+// Run this:
+main;
