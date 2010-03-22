@@ -1,9 +1,5 @@
 /* sql3.pure - sqlite3 wrapper */
 
-/* VERSION 2 - Mar 18, 2010
-   DRAFT - FOR DISCUSSION PURPOSES ONLY */
-
-
 using system ;
 using "lib:sql3util";
 
@@ -19,12 +15,16 @@ begin begin_immediate begin_exclusive savepoint release
 rollback rollback_to commit;
 
 private 
-openp close_db finalize_stmt get_stmt
-bind_chars bind_fns col_chars col_fns
-sql3_err sqlite3_err bind_sp get_rec get_recs lget_recs SHOW_OPEN_CLOSE;
+col_err col_expr_binary col_chars col_julian col_fns 
+bind_err bind_blob bind_chars bind_double bind_int bind_julian
+bind_long bind_null bind_expr_binary bind_fns bind_expr_utf8 bind_sp
+
+openp close_db finalize_stmt get_stmt get_rec get_recs lget_recs
+sql3_err sqlite3_err ;
 
 private
-SQLITE_OK SQLITE_ROW SQLITE_DONE;
+SQLITE_OK SQLITE_ROW SQLITE_DONE SHOW_OPEN_CLOSE
+MAX_INT64 MIN_INT64 TYPE_CHARS;
 
 private extern sqlite3* sql3util_open(void* path);
 private extern expr* sql3util_prepare(sqlite3 *db, void* sql);
@@ -56,35 +56,12 @@ const SQLITE_OK = 0;
 const SQLITE_ROW = 100;
 const SQLITE_DONE = 101;
 const SHOW_OPEN_CLOSE = 0;
+const MAX_INT64 =  9223372036854775807L;
+const MIN_INT64 = -9223372036854775807L;
+const TYPE_CHARS = "bcdijlnsxv";
 
-/* The sqlite3_errmsg and sqlite3_column_text functions return raw UTF-8
-   strings in volatile storage which must be copied and converted to Pure
-   strings. The following utility functions take care of this. */
 
-private sql3util_errmsg sql3util_column_text;
-sql3util_errmsg dbp::pointer =
-  string_dup (sqlite3_errmsg dbp);
-sql3util_column_text sp::pointer col::int =
-  string_dup (sqlite3_column_text sp col);
-
-/* Additional helper functions used in binding parameters. */
-
-private sql3util_bind_null;
-sql3util_bind_null sp::pointer icol::int _ = sqlite3_bind_null sp icol;
-
-/* Type checking predicates. */
-
-is_db_ptr x::pointer = case get_sentry x of
-  f@_ _ = f===close_db; _ = false;
-end;
-is_db_ptr _ = false;
-
-is_stmt_ptr x::pointer = case get_sentry x of
-  f@_ _ = f===finalize_stmt; _ = false;
-end;
-is_stmt_ptr _ = false;
-
-/* Describe all these here */
+/* Public db_ptr functions  */
 
 open path::string = res 
 when
@@ -117,20 +94,16 @@ rollback_to dbp savePoint = exec dbp ("rollback to " + savePoint);
 rollback dbp  = exec dbp "rollback";
 commit dbp = exec dbp "commit";
 
+function dbp::pointer name::string nargs::int fun = ()
+  if is_db_ptr dbp && nargs>=-1 && ~sql3util_create_function dbp name nargs fun;
 
-/* prep DBP TYPES SQL returns a sentry guarded sqlite3_stmt*. The
-   sentry is finalize_stmt (STMT (rfsp, sel_fns, bind_fns)), a
-   partially applied function.  SQL is a sql statement. TYPES is a
-   string of characters that indicate the types of the items returned
-   by SQL and the types of parameters needed to bind the SQL,
-   separated by ":". E.g.,
+is_db_ptr x::pointer = case get_sentry x of
+  f@_ _ = f===close_db; _ = false;
+end;
+is_db_ptr _ = false;
 
-   prep dbp "icd:j" "select id, name, val from tbl where day>?"
-  
-   The valid characters are b, c,d,i,l and n which correspond to
-   blob*, char*, double, int, int64 and Null. Null is only valid on
-   the binding side. If TYPES does not contain a ":" the types are
-   treated as binding types. */
+
+/* Public stmt_ptr functions */
    
 prep dbp::pointer types::string sql::string = res
 when
@@ -140,7 +113,6 @@ when
   sfns = map (col_fns!) sel_types;
   bfns = map (bind_fns!) bind_types;
   (sp, ec) = sql3util_prepare dbp sql;
-  //rfsp = ref 1;
   stmt = STMT (ref 1, sfns, bfns, dbp);
   ec == SQLITE_OK || sqlite3_err dbp ec;
   res = sentry (finalize_stmt stmt) sp;
@@ -153,8 +125,8 @@ end with
     2 = (sel_bind_types!0,sel_bind_types!1);
     _ = sql3_err "Illegal type specification";
   end;
-  types_okp b s = all_in bind_chars b && all_in col_chars s;
-  all_in chars s = all (\c->index chars c >= 0) s;
+  types_okp bs ss = all_in TYPE_CHARS bs && all_in TYPE_CHARS ss;
+  all_in chars cs = all (\c->index chars c >= 0) cs;
 end if is_db_ptr dbp;
 
 exec sp::pointer args = res
@@ -181,8 +153,11 @@ end if is_stmt_ptr sp;
 
 finalize sp::pointer = finalize_stmt (get_stmt sp) sp if is_stmt_ptr sp;
 
-function dbp::pointer name::string nargs::int fun = ()
-  if is_db_ptr dbp && nargs>=-1 && ~sql3util_create_function dbp name nargs fun;
+is_stmt_ptr x::pointer = case get_sentry x of
+  f@_ _ = f===finalize_stmt; _ = false;
+end;
+is_stmt_ptr _ = false;
+
 
 /* Private */
 
@@ -218,14 +193,6 @@ with
   end
 end;
 
-get_stmt sp::pointer = 
-case (get_sentry sp) NULL of
-  stmt::STMT = stmt;
-  x = printf "dbg::%s: %s\n" ("get_stmt",str x ) $$ 
-      printf "dbg::%s: %s\n" ("get_stmt",str (get_sentry sp) ) $$ 
-      x;
-  //_ = sql3_err "Attempt to use invalid sp";
-end;
 
 /* finalize_stmt is a curried function of two args. Applied
    to a STMT, it is a closure that takes one pointer as
@@ -246,24 +213,87 @@ when
   put rf_valid 0;
 end;
 
-bind_chars = "bcdilnv";
-bind_fns = record [
-  "b"=>sql3util_bind_blob,
-  "c"=>sql3util_bind_text, 
-  "d"=>sqlite3_bind_double, 
-  "i"=>sqlite3_bind_int,
-  "l"=>sqlite3_bind_int64, 
-  "n"=>sql3util_bind_null,
-  "v"=>sql3util_bind_value];
+get_stmt sp::pointer = (get_sentry sp) NULL;
 
-col_chars  = "bcdilv";
+
+/* sqlite3_column family wrappers */
+
+col_err x type = sql3_err 
+  (sprintf "Fetched expression %s is not a %s." (str x, type));
+
+col_expr_binary sp col = 
+case sql3util_column_blob sp col of
+  (n::int, b::pointer) = val b;
+  x = col_err x "binary serialized expression.";
+end;
+
+col_chars sp col = string_dup (sqlite3_column_text sp col);
+
 col_fns = record [
   "b"=>sql3util_column_blob,
-  "c"=>sql3util_column_text, 
+  "c"=>col_chars, 
   "d"=>sqlite3_column_double,
   "i"=>sqlite3_column_int,
+  "j"=>col_julian,
   "l"=>sqlite3_column_int64,
+  "s"=>(eval.col_chars),
+  "x"=>col_expr_binary,
   "v"=>sql3util_column_value];
+
+/* sqlite3_bind family wrappers  */
+
+bind_err x type = sql3_err 
+  (sprintf "Attempt to bind a %s as a %s" (str x,type));
+
+bind_blob sp col expr = case expr of
+  (size::int, p::pointer) = sql3util_bind_blob sp col expr;
+  _ = bind_err "blob";
+end;
+
+bind_chars sp col x = 
+  if stringp x then sql3util_bind_text sp col x else bind_err x "chars";
+
+bind_double sp col x =
+  if doublep x then sqlite3_bind_double sp col x else bind_err x "double";
+
+bind_expr_binary sp col x = bind_blob sp col (int (#b), b)
+when b::pointer = blob x end;
+
+bind_expr_utf8 sp col x = bind_chars sp col (str x);
+
+bind_int sp col x = 
+  if intp x then sqlite3_bind_int sp col x else bind_err x "int";
+
+bind_julian sp col x =
+  if doublep x then bind_jd sp col x else bind_err x "julian"
+with
+  bind_jd sp col x = bind_chars sp col "julian not implemented";
+end;
+
+bind_long sp col x = case x of
+  si::int = sqlite3_bind_int64 sp col (bigint si);
+  bi::bigint = if MIN_INT64 <= bi && bi <=MAX_INT64
+               then sqlite3_bind_int64 sp col bi
+               else sql3_err (sprintf 
+                    "Attempt to bind a bigint, %s, that out of int64's range."
+                    (str bi));
+              
+  _ = bind_err x "int64";
+end;
+
+bind_null sp col _ = sqlite3_bind_null sp col;
+
+bind_fns = record [
+  "b"=>bind_blob,
+  "c"=>bind_chars,
+  "d"=>bind_double,
+  "i"=>bind_int,
+  "j"=>bind_julian,
+  "l"=>bind_long,
+  "n"=>bind_null,
+  "s"=>bind_expr_utf8,
+  "x"=>bind_expr_binary,
+  "v"=>sql3util_bind_value];
 
 bind_sp sp funs args = bind_cols funs (argList args) 1
 with 
@@ -300,7 +330,6 @@ end;
 get_rec sel_fns sp dbp = res
 when
   ec = sqlite3_step sp;
-  //printf "debug %s: %s\n" ("get_rec",str ec );
   res = if ec == SQLITE_DONE then sqlite3_reset sp $$ []
         else if ec == SQLITE_ROW then rval 
         else sqlite3_err dbp ec;
@@ -322,6 +351,7 @@ sql3_err msg::string = throw (sprintf "sql3 error: %s" msg);
 
 sqlite3_err dbp::pointer code::int = throw msg
 when
-  msg1 = sql3util_errmsg dbp;
+  msg1 = string_dup (sqlite3_errmsg dbp);
   msg = sprintf "sqlite3 error: %d, %s" (code,msg1);
 end if is_db_ptr dbp;
+
