@@ -5796,10 +5796,16 @@ to variables should fix this. **\n";
       unlink(asmfile.c_str());
       if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
 	// Link.
+#ifdef LIBDIR
+	string auxlibdir = LIBDIR;
+#endif
 	string linkopts = quote(obj)+libs+
 #ifdef __MINGW32__
 	  /* Link some extra libs and beef up the stack size on Windows. */
 	  " -Wl,--stack=0x800000 -lregex -lglob"+
+#endif
+#ifdef LIBDIR
+	  " -L"+quote(auxlibdir)+
 #endif
 	  " -lpure";
 	if (ext != ".o") {
