@@ -325,7 +325,10 @@ create_int_matrix(size_t nrows, size_t ncols)
 
 /* Marshalling between Pure and Octave values. We support all of Octave's
    basic data types, i.e., scalars and matrices of boolean, integer, double,
-   complex and char data.
+   complex and char data. Anything else is just passed through unchanged as a
+   cooked octave_value pointer which frees itself automatically. (This is
+   useful, in particular, for Octave function values which may also be used
+   as the function argument of octave_call, see below.)
 
    Note that all types of Octave boolean and integer matrices are mapped to
    (machine) int matrices in Pure land; when converted back to Octave, these
@@ -333,10 +336,30 @@ create_int_matrix(size_t nrows, size_t ncols)
    values are indistinguishable from 1x1 matrices, so when converting from
    Octave to Pure, we always assume that a 1x1 matrix denotes a scalar.
 
-   Currently, there's no support for Octave's more advanced data types (cell
-   arrays and structures), although converting these to Pure's symbolic
-   matrices and structures should be straightfoward. We might add these in the
-   future. */
+   Currently, there's no marshalling of Octave's more advanced data types
+   (cell arrays and structures), so these will show as opaque pointers in Pure
+   land. Converting these to Pure's symbolic matrices and structures should be
+   straightfoward, though, so we might add these in the future. */
+
+static inline pure_expr *octave_pointer(const octave_value& val)
+{
+  octave_value *v = new octave_value(val);
+  pure_expr *x = pure_pointer(v),
+    *y = pure_symbol(pure_sym("octave_free"));
+  return pure_sentry(y, x);
+}
+
+static inline bool is_octave_pointer(pure_expr *x, octave_value **v)
+{
+  pure_expr *f;
+  return pure_is_pointer(x, (void**)v) && (f = pure_get_sentry(x)) &&
+    f->tag > 0 && strcmp(pure_sym_pname(f->tag), "octave_free") == 0;
+}
+
+bool octave_valuep(pure_expr *x)
+{
+  return is_octave_pointer(x, 0);
+}
 
 static pure_expr *octave_to_pure(const octave_value& val)
 {
@@ -344,7 +367,7 @@ static pure_expr *octave_to_pure(const octave_value& val)
     int n = val.ndims();
     /* We only support Octave's basic scalar and matrix values right now, and
        these are all represented as matrices with two dimensions. */
-    if (n != 2) return 0;
+    if (n != 2) return octave_pointer(val);
     dim_vector dim = val.dims();
     size_t k = dim(0), l = dim(1);
     if (val.is_double_type()) {
@@ -564,8 +587,7 @@ static pure_expr *octave_to_pure(const octave_value& val)
       free(xv);
       return ret;
     } else {
-      // TODO: Might want to convert Octave cell arrays to symbolic matrices.
-      return 0;
+      return octave_pointer(val);
     }
   } else
     return 0;
@@ -577,6 +599,7 @@ static octave_value *pure_to_octave(pure_expr *x)
   int i;
   char *s;
   void *p;
+  octave_value *v;
   if (pure_is_double(x, &d)) {
     return new octave_value(d);
   } else if (pure_is_int(x, &i)) {
@@ -628,6 +651,8 @@ static octave_value *pure_to_octave(pure_expr *x)
 	return 0;
     charMatrix m(v);
     return new octave_value(m, true);
+  } else if (is_octave_pointer(x, &v)) {
+    return new octave_value(*v);
   } else
     // TODO: Might want to convert symbolic matrices to Octave cell arrays.
     return 0;
@@ -654,18 +679,57 @@ pure_expr *octave_set(const char *id, pure_expr *x)
     return 0;
 }
 
+/* Create an Octave function value, either from its name or from its inline
+   function description. In the former case the argument must be a valid
+   Octave function name (as accepted by Octave's str2func function). In the
+   latter case the argument must be an inline description (as accepted by
+   Octave's inline function), and the parameter names may optionally be given
+   along with the description as a tuple of strings. */
+
+pure_expr *octave_func(pure_expr *fun)
+{
+  // First try to find an ordinary function handle.
+  char *s;
+  if (pure_is_cstring_dup(fun, &s)) {
+    octave_value f = symbol_table::find_function(s);
+    free(s);
+    if (f.is_defined()) {
+      pure_expr *f = pure_string_dup("str2func"),
+	*ret = octave_call(f, 1, fun);
+      pure_freenew(f);
+      return ret;
+    }
+  }
+  // Try an inline function.
+  pure_expr *f = pure_string_dup("inline"),
+    *ret = octave_call(f, 1, fun);
+  pure_freenew(f);
+  return ret;
+}
+
 /* Call an Octave function.
 
-   - fun is the name of the function, as a string;
+   - fun is the name of the function (as a string) or an Octave function value
+     (as returned, e.g., by octave_func);
 
    - nargout denotes the desired number of return values;
 
    - args is a list or tuple with the argument values. */
 
-pure_expr *octave_call(const char *fun, int nargout, pure_expr *args)
+pure_expr *octave_call(pure_expr *fun, int nargout, pure_expr *args)
 {
   pure_expr **xs;
   size_t n;
+  octave_value *v;
+  octave_function *f = 0;
+  char *s = 0;
+  if (is_octave_pointer(fun, &v)) {
+    if (v->is_function_handle() || v->is_inline_function())
+      f = v->function_value();
+    else
+      return 0;
+  } else if (!pure_is_cstring_dup(fun, &s))
+    return 0;
   if (nargout < 0) return 0;
   if (pure_is_listv(args, &n, &xs) || pure_is_tuplev(args, &n, &xs)) {
     octave_value_list args, ret;
@@ -680,7 +744,11 @@ pure_expr *octave_call(const char *fun, int nargout, pure_expr *args)
     }
     free(xs);
     reset_error_handler ();
-    ret = feval(fun, args, nargout);
+    if (f)
+      ret = feval(f, args, nargout);
+    else
+      ret = feval(s, args, nargout);
+    if (s) free(s);
     n = ret.length();
     if (n > nargout) n = nargout;
     xs = (pure_expr**)alloca(n*sizeof(pure_expr*));
@@ -695,6 +763,12 @@ pure_expr *octave_call(const char *fun, int nargout, pure_expr *args)
     return pure_tuplev(n, xs);
   } else
     return 0;
+}
+
+void octave_free(void *val)
+{
+  octave_value *v = (octave_value*)val;
+  delete v;
 }
 
 /* Add a builtin to call Pure from Octave. */
