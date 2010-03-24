@@ -323,7 +323,7 @@ static void function_cb(sqlite3_context *ctx, int nargs, sqlite3_value **args)
     } else {
       /* Pure exception. We handle this here so that we can report an error to
 	 the SQLite engine. */
-      if (e) pure_free(e);
+      if (e) pure_freenew(e);
       sqlite3_result_error(ctx, "[pure] exception", -1);
     }
   } else
@@ -383,7 +383,7 @@ static void step_cb(sqlite3_context *ctx, int nargs, sqlite3_value **args)
       pure_free(b);
     } else {
       /* Record an exception in a step function. */
-      if (e) pure_free(e);
+      if (e) pure_freenew(e);
       pure_free(*a);
       cb->except = true;
     }
@@ -411,7 +411,7 @@ static void final_cb(sqlite3_context *ctx)
       sql3util_result_value(ctx, x);
       pure_freenew(x);
     } else {
-      if (e) pure_free(e);
+      if (e) pure_freenew(e);
       sqlite3_result_error(ctx, "[pure] exception", -1);
     }
     pure_free(*a);
