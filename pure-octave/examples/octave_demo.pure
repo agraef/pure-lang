@@ -39,9 +39,28 @@ octave_eval "ls *.pure";
 octave_call "eig" 1 x;
 octave_call "eig" 2 x;
 
-/* Octave code can also call back into Pure by means of an additional builtin
-   'pure_call'. This builtin gets installed into the instance of the Octave
-   interpreter created when loading the 'octave' module. */
+/* Instead of a function name, you can also pass a special function value
+   returned by octave_func. This allows you to specify the function by name
+   (like Octave's str2func builtin) or using an inline expression (like
+   Octave's inline builtin). In either case, the result is a cooked pointer
+   which can be passed as the function argument to octave_call. */
+
+let eig = octave_func "eig";
+let mul = octave_func "x*y";
+
+octave_call eig 1 (octave_call mul 1 (x,x));
+
+/* Note that the inline form allows you to call stuff that is not an Octave
+   function, like an operator. Like Octave's inline builtin, you can also
+   specify the parameter names explicitly, as follows. */
+
+let mul = octave_func ("x*y","x","y");
+octave_call mul 1 (x,x);
+
+/* Last but not least, Octave code can also call back into Pure by means of an
+   additional builtin 'pure_call'. This builtin gets installed into the
+   instance of the Octave interpreter created when loading the 'octave'
+   module. */
 
 //octave_eval "help pure_call";
 even m::matrix = {~(int x mod 2) | x=m};
