@@ -1,0 +1,48 @@
+
+/* octave_demo.pure: Some pure-octave examples. This is best piped into the
+   interpreter with 'pure < pure_demo.pure' or 'pure -v < pure_demo.pure' so
+   that you can see the results. */
+
+using octave;
+
+// Sample matrix.
+let x = dmatrix {1,2;3,4};
+
+// Set a global Octave variable.
+octave_set "x" x;
+
+/* Declare x and ans as globals, so that we can access them in Octave code
+   executed with octave_eval. */
+
+octave_eval "global x ans";
+
+/* Calculate the eigenvalues of x using Octave's eig function. This just
+   returns an error code. Hopefully it's 0, indicating a successful
+   evaluation. Otherwise you'll likely see an error message from Octave. */
+
+octave_eval "eig(x);";
+
+// Get the result of the previous evaluation.
+octave_get "ans";
+
+// Note that octave_eval can execute arbitrary Octave commands.
+octave_eval "ls *.pure";
+
+/* Octave functions can also be called directly with 'octave_call'. This
+   specifies the name of the function, the desired number of return values and
+   the function arguments as a tuple or list. It returns the result of the
+   function (a tuple if there is more than one return value). Note that you
+   have to specify the desired number of *return* values in the second
+   argument. Usually this is just 1, but some Octave functions may return a
+   variable number of results, depending on how they're called. */
+
+octave_call "eig" 1 x;
+octave_call "eig" 2 x;
+
+/* Octave code can also call back into Pure by means of an additional builtin
+   'pure_call'. This builtin gets installed into the instance of the Octave
+   interpreter created when loading the 'octave' module. */
+
+//octave_eval "help pure_call";
+even m::matrix = {~(int x mod 2) | x=m};
+octave_eval "pure_call('even', 1:12)";
