@@ -12,7 +12,8 @@ public
 is_db_ptr is_stmt_ptr
 open close prep exec lexec finalize function
 begin begin_immediate begin_exclusive savepoint release 
-rollback rollback_to commit;
+rollback rollback_to commit
+str2julian julian2str ymd2julian julian2ymd;
 
 private 
 col_err col_expr_binary col_chars col_julian col_fns 
@@ -28,6 +29,8 @@ MAX_INT64 MIN_INT64 TYPE_CHARS;
 
 private extern sqlite3* sql3util_open(void* path);
 private extern expr* sql3util_prepare(sqlite3 *db, void* sql);
+private extern double sql3util_ymd2julian(int Y, int M, int D);
+private extern expr* sql3util_julian2ymd(double jd);
 private extern int sql3util_bind_blob(sqlite3_stmt *sp, int col, expr* x);
 private extern int sql3util_bind_text(sqlite3_stmt* sp, int col, void* text);
 private extern int sql3util_bind_value(sqlite3_stmt* sp, int col, expr* x);
@@ -60,6 +63,21 @@ const MAX_INT64 =  9223372036854775807L;
 const MIN_INT64 = -9223372036854775807L;
 const TYPE_CHARS = "bcdijlnsxv";
 
+/* Public sqlite3 julian day functions */
+
+str2julian s::string = sql3util_ymd2julian y m d when
+  y,m,d,n = sscanf s "%[0-9]%*[/-]%[0-9]%*[/-]%[0-9]%n";
+  n>=#s || col_err s "valid date string";
+  y0 = if #y>2 then 0 else 2000;
+  y,m,d = sscanf s "%u%*[/-]%u%*[/-]%u";
+  y = y0+y;
+end;
+
+julian2str jd::double = sprintf "%04d-%02d-%02d" (sql3util_julian2ymd jd);
+
+ymd2julian y::int m::int d::int = sql3util_ymd2julian y m d;
+
+julian2ymd jd::double = sql3util_julian2ymd jd; //return (y,m,d)
 
 /* Public db_ptr functions  */
 
@@ -221,13 +239,15 @@ get_stmt sp::pointer = (get_sentry sp) NULL;
 col_err x type = sql3_err 
   (sprintf "Fetched expression %s is not a %s." (str x, type));
 
+col_chars sp col = string_dup (sqlite3_column_text sp col);
+
 col_expr_binary sp col = 
 case sql3util_column_blob sp col of
   (n::int, b::pointer) = val b;
   x = col_err x "binary serialized expression.";
 end;
 
-col_chars sp col = string_dup (sqlite3_column_text sp col);
+col_julian sp col = str2julian (col_chars sp col);
 
 col_fns = record [
   "b"=>sql3util_column_blob,
@@ -265,10 +285,7 @@ bind_int sp col x =
   if intp x then sqlite3_bind_int sp col x else bind_err x "int";
 
 bind_julian sp col x =
-  if doublep x then bind_jd sp col x else bind_err x "julian"
-with
-  bind_jd sp col x = bind_chars sp col "julian not implemented";
-end;
+  if doublep x then bind_chars sp col (julian2str x) else bind_err x "julian";
 
 bind_long sp col x = case x of
   si::int = sqlite3_bind_int64 sp col (bigint si);

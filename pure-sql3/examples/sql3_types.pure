@@ -3,7 +3,7 @@
 using sql3;
 
 putrows rows = puts "------" $$ do (puts . str) rows;
-expr2blob x = int (#b), b when b::pointer = blob x end;
+x2b x = int (#b), b when b::pointer = blob x end;
 blob2expr (n::int,b::pointer) = val b;
 
 setup db = () 
@@ -17,7 +17,7 @@ when
     "c_chars varchar, " + 
     "d_double double, " + 
     "i_int integer, " +
-//  "j_julian double, " + 
+    "j_julian varchar, " + 
     "l_int64 integer primary key, " +
     "s_utf8_expr varchar, " +
     "x_binary_expr blob) ";
@@ -32,13 +32,19 @@ push_pull_types db = ()
 when 
   puts "begin push_pull_types";
 
-  //TODO get rid of the nested stm1 -- could be misleading newcomers
+  //get a julian day from sqlite3 and from sql3 make sure they are equal
+  date_str = "2010-03-23";
+  stm1 = sql3::prep db "d:c" "select julianday(?)";
+  [[jd_sqlite3]] = sql3::exec stm1 date_str;
+  jd = sql3::str2julian date_str;
+  jd == jd_sqlite3 || printf "Error jd=%f, jd_per_sqlite3=%f\n"
+                          (jd,jd_sqlite3);
 
   //Insert some data
-  stm1 = sql3::prep db "bcdilsx" "insert into TC values(?,?,?,?,?,?,?)";
-  sql3::exec stm1 [expr2blob "A","Peter", 120.0, 1, 12, s_expr, x_expr];
-  sql3::exec stm1 [expr2blob "B","Lily", 150.0, 2, 13, [1,2,3], [1,2,3]];
-  sql3::exec stm1 [expr2blob "C","Holly",160.0, 3, 14, ("a",5.0), ("a",5.0)];
+  stm1 = sql3::prep db "bcdijlsx" "insert into TC values(?,?,?,?,?,?,?,?)";
+  sql3::exec stm1 [x2b "A","Peter", 120.0, 1, jd, 12L, s_expr, x_expr];
+  sql3::exec stm1 [x2b "B","Lily",  150.0, 2, jd, 13L, [1,2,3], [1,2,3]];
+  sql3::exec stm1 [x2b "C","Holly", 160.0, 3, jd, 14L, ("a",5.0), ("a",5.0)];
 
   //Query each column of a table that has one column per Sql3 type
   stm1 = sql3::prep db "b:" "select b_blob from TC";
@@ -49,6 +55,9 @@ when
   putrows (sql3::exec stm1 ());
   stm1 = sql3::prep db "i:" "select i_int from TC";
   putrows (sql3::exec stm1 ());
+  stm1 = sql3::prep db "j:" "select j_julian from TC";
+  putrows (sql3::exec stm1 ());
+  printf "*Note: %.2f is stored in the database as \"%s\".\n" (jd, date_str);
   stm1 = sql3::prep db "l:" "select l_int64 from TC";
   putrows (sql3::exec stm1 ());  
   stm1 = sql3::prep db "s:" "select s_utf8_expr from TC";
@@ -69,4 +78,16 @@ when
 end;
 
 // Run this:
-main;
+//main;
+
+
+let db1 = sql3::open "abc.db";
+let stm1 = sql3::prep db1 "d:c" "select julianday(?)";
+jday ds = head (sql3::exec stm1 ds);
+
+jday1 db ds = res
+when 
+  stm1 = sql3::prep db  "d:c" "select julianday(?)";
+  res = head (sql3::exec stm1 ds);
+end;
+
