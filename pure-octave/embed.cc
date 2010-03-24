@@ -603,7 +603,7 @@ static octave_value *pure_to_octave(pure_expr *x)
   if (pure_is_double(x, &d)) {
     return new octave_value(d);
   } else if (pure_is_int(x, &i)) {
-    return new octave_value((double)i);
+    return new octave_value(octave_int32(i));
   } else if (pure_is_double_matrix(x, &p)) {
     gsl_matrix *mat = (gsl_matrix*)p;
     size_t k = mat->size1, l = mat->size2;
