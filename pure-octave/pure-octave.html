@@ -304,12 +304,10 @@ ul.auto-toc {
 <li><a class="reference internal" href="#introduction" id="id1">1&nbsp;&nbsp;&nbsp;Introduction</a></li>
 <li><a class="reference internal" href="#copying" id="id2">2&nbsp;&nbsp;&nbsp;Copying</a></li>
 <li><a class="reference internal" href="#installation" id="id3">3&nbsp;&nbsp;&nbsp;Installation</a></li>
-<li><a class="reference internal" href="#usage" id="id4">4&nbsp;&nbsp;&nbsp;Usage</a><ul class="auto-toc">
-<li><a class="reference internal" href="#direct-function-calls" id="id5">4.1&nbsp;&nbsp;&nbsp;Direct Function Calls</a></li>
-<li><a class="reference internal" href="#conversions-between-octave-and-pure-data" id="id6">4.2&nbsp;&nbsp;&nbsp;Conversions Between Octave and Pure Data</a></li>
-<li><a class="reference internal" href="#calling-back-into-pure" id="id7">4.3&nbsp;&nbsp;&nbsp;Calling Back Into Pure</a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#basic-usage" id="id4">4&nbsp;&nbsp;&nbsp;Basic Usage</a></li>
+<li><a class="reference internal" href="#direct-function-calls" id="id5">5&nbsp;&nbsp;&nbsp;Direct Function Calls</a></li>
+<li><a class="reference internal" href="#data-conversions" id="id6">6&nbsp;&nbsp;&nbsp;Data Conversions</a></li>
+<li><a class="reference internal" href="#calling-back-into-pure" id="id7">7&nbsp;&nbsp;&nbsp;Calling Back Into Pure</a></li>
 </ul>
 </div>
 <div class="section" id="introduction">
@@ -345,8 +343,8 @@ see the Makefile for details.</p>
 versions might require some fiddling with the sources to get the embedded
 Octave interface working.</p>
 </div>
-<div class="section" id="usage">
-<h1><a class="toc-backref" href="#id4">4&nbsp;&nbsp;&nbsp;Usage</a></h1>
+<div class="section" id="basic-usage">
+<h1><a class="toc-backref" href="#id4">4&nbsp;&nbsp;&nbsp;Basic Usage</a></h1>
 <p>Import this module into your Pure scripts as follows:</p>
 <pre class="literal-block">
 using octave;
@@ -365,7 +363,7 @@ ans =
 0
 </pre>
 <p>This prints the result on stdout and returns a result code (zero if everything
-went fine). To suppress the printing of the result, simply follow the
+went fine). To suppress the printing of the result, simply terminate the
 Octave statement with a semicolon:</p>
 <pre class="literal-block">
 &gt; octave_eval &quot;eig([1 2;3 4]);&quot;;
@@ -398,13 +396,15 @@ follows:</p>
 &gt; octave_get &quot;y&quot;;
 {-0.372281323269014;5.37228132326901}
 </pre>
+</div>
 <div class="section" id="direct-function-calls">
-<h2><a class="toc-backref" href="#id5">4.1&nbsp;&nbsp;&nbsp;Direct Function Calls</a></h2>
+<h1><a class="toc-backref" href="#id5">5&nbsp;&nbsp;&nbsp;Direct Function Calls</a></h1>
 <p>Octave functions can also be called in a direct fashion with the
 <tt class="docutils literal"><span class="pre">octave_call</span></tt> function, which gets invoked with the name of the function,
 the number of function results and the function arguments:</p>
 <pre class="literal-block">
-&gt; octave_call &quot;eig&quot; 1 {1.0,2.0;3.0,4.0};
+&gt; let x = {1.0,2.0;3.0,4.0};
+&gt; octave_call &quot;eig&quot; 1 x;
 {-0.372281323269014;5.37228132326901}
 </pre>
 <p>Note the second argument, which denotes the desired number of <em>return</em>
@@ -412,29 +412,77 @@ values. This will usually be 1 (or 0 if you don't care about the result), but
 some Octave functions may return a variable number of results, depending on
 how they're called. Multiple values are returned as tuples in Pure:</p>
 <pre class="literal-block">
-&gt; octave_call &quot;eig&quot; 2 {1.0,2.0;3.0,4.0};
+&gt; octave_call &quot;eig&quot; 2 x;
 {-0.824564840132394,-0.415973557919284;0.565767464968992,-0.909376709132124},
 {-0.372281323269014,0.0;0.0,5.37228132326901}
 </pre>
 <p>If there are multiple <em>arguments</em>, you can specify them either as a tuple or a
 list:</p>
 <pre class="literal-block">
-&gt; octave_call &quot;norm&quot; 1 ({1.0,2.0;3.0,4.0}, 2);
+&gt; octave_call &quot;norm&quot; 1 (x, 2);
 5.46498570421904
+&gt; octave_call &quot;norm&quot; 1 [x, 1];
+6.0
+</pre>
+<p>Instead of a function name, you can also specify the function to be called
+using a special kind of Octave object, a function value. These are returned,
+e.g., by Octave's <tt class="docutils literal"><span class="pre">str2func</span></tt> and <tt class="docutils literal"><span class="pre">inline</span></tt> builtins. For your convenience,
+pure-octave provides a frontend to these builtins, the <tt class="docutils literal"><span class="pre">octave_func</span></tt>
+function, which lets you specify an Octave function in one of two ways:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">octave_func</span> <span class="pre">name</span></tt>, where <tt class="docutils literal"><span class="pre">name</span></tt> is the function name as a string,
+returns the Octave function with the given name. This works like Octave's
+<tt class="docutils literal"><span class="pre">str2func</span></tt> builtin.</li>
+<li><tt class="docutils literal"><span class="pre">octave_func</span> <span class="pre">expr</span></tt>, where <tt class="docutils literal"><span class="pre">expr</span></tt> is an Octave expression (as a string)
+describing the function value, returns an &quot;inline&quot; function. This works like
+Octave's <tt class="docutils literal"><span class="pre">inline</span></tt> builtin. Instead of just an Octave expression, you can
+also specify a tuple or a list consisting of the inline expression and the
+parameter names. (Otherwise the parameters are determined automatically, see
+the description of the <tt class="docutils literal"><span class="pre">inline</span></tt> function in the Octave manual for
+details.)</li>
+</ul>
+<p>Note that inline functions allow you to call stuff that is not an Octave
+function and hence cannot be specified directly in <tt class="docutils literal"><span class="pre">pure_call</span></tt>, such as an
+operator. Examples:</p>
+<pre class="literal-block">
+&gt; let eig = octave_func &quot;eig&quot;;
+&gt; let mul = octave_func &quot;x*y&quot;;
+&gt; octave_call eig 1 (octave_call mul 1 (x,x));
+{0.138593383654928;28.8614066163451}
+&gt; let add = octave_func (&quot;x+y&quot;,&quot;x&quot;,&quot;y&quot;);
+&gt; octave_call add 1 (x,x);
+{2.0,4.0;6.0,8.0}
 </pre>
 </div>
-<div class="section" id="conversions-between-octave-and-pure-data">
-<h2><a class="toc-backref" href="#id6">4.2&nbsp;&nbsp;&nbsp;Conversions Between Octave and Pure Data</a></h2>
+<div class="section" id="data-conversions">
+<h1><a class="toc-backref" href="#id6">6&nbsp;&nbsp;&nbsp;Data Conversions</a></h1>
 <p>As shown above, the <tt class="docutils literal"><span class="pre">octave_set</span></tt>, <tt class="docutils literal"><span class="pre">octave_get</span></tt> and <tt class="docutils literal"><span class="pre">octave_call</span></tt>
 functions convert Pure data to corresponding Octave values and vice versa.
-Octave scalars and matrices for boolean, integer, double, complex and
-character data are all supported by this interface, and are mapped to the
-corresponding Pure data types in a straightforward manner (scalars to scalars,
-matrices to matrices and strings to strings). However, you should note the
-following:</p>
+Octave scalars and matrices of boolean, integer, double, complex and character
+data are all supported by this interface, and are mapped to the corresponding
+Pure data types in a straightforward manner (scalars to scalars, matrices to
+matrices and strings to strings). Note that in any case these conversions
+create <em>copies</em> of the data, so modifying, say, an Octave matrix received via
+<tt class="docutils literal"><span class="pre">octave_get</span></tt> in Pure only affects the Pure copy of the matrix and leaves the
+original Octave matrix unchanged.</p>
+<p>Any other kind of Octave object (including Octave function objects, see
+<a class="reference internal" href="#direct-function-calls">Direct Function Calls</a>) is just passed through as is, in the form of a
+cooked pointer to an Octave value which frees itself when garbage-collected.
+You can check for such objects with the <tt class="docutils literal"><span class="pre">octave_valuep</span></tt> predicate:</p>
+<pre class="literal-block">
+&gt; let eig = octave_func &quot;eig&quot;;
+&gt; eig; octave_valuep eig;
+#&lt;pointer 0x230dba0&gt;
+1
+</pre>
+<p>Such Octave value pointers can be used freely whereever an Octave value is
+needed (i.e., in invocations of <tt class="docutils literal"><span class="pre">octave_set</span></tt> and <tt class="docutils literal"><span class="pre">octave_call</span></tt>).</p>
+<p>You should also note the following:</p>
 <ul>
-<li><p class="first">Octave's cell arrays and structures are not supported at this time. They
-might be added in the future.</p>
+<li><p class="first">Octave's cell arrays and structures are not supported at this time, so they
+will show up as opaque Octave value pointers in Pure land. This allows these
+objects to be passed around freely, but you can't inspect or modify them in
+Pure.</p>
 </li>
 <li><p class="first">Scalars and 1x1 matrices are indistinguishable in Octave, thus any 1x1
 matrix will be returned as a scalar from Octave to Pure.</p>
@@ -446,7 +494,7 @@ or other types of matrices in Octave as needed. For instance:</p>
 <pre class="literal-block">
 &gt; octave_set &quot;a&quot; {1,2;3,4};
 {1,2;3,4}
-&gt; octave_eval &quot;global a ans;&quot;;
+&gt; octave_eval &quot;global a ans&quot;;
 0
 &gt; octave_eval &quot;eig(a)&quot;;
 error: eig: wrong type argument `int32 matrix'
@@ -492,7 +540,7 @@ abc
 </ul>
 </div>
 <div class="section" id="calling-back-into-pure">
-<h2><a class="toc-backref" href="#id7">4.3&nbsp;&nbsp;&nbsp;Calling Back Into Pure</a></h2>
+<h1><a class="toc-backref" href="#id7">7&nbsp;&nbsp;&nbsp;Calling Back Into Pure</a></h1>
 <p>The embedded Octave interpreter provides one special builtin, the
 <tt class="docutils literal"><span class="pre">pure_call</span></tt> function which can be used to call any function defined in the
 executing Pure script from Octave. For instance:</p>
@@ -518,7 +566,6 @@ Octave's <tt class="docutils literal"><span class="pre">help</span></tt> command
   double, complex and character data. The Pure function may return multiple
   results as a tuple. Example: pure('succ', 99) =&gt; 100.
 </pre>
-</div>
 </div>
 </div>
 </body>

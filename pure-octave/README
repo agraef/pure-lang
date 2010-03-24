@@ -57,8 +57,8 @@ NOTE: This release of pure-gen has been tested with Octave 3.2.4. Older
 versions might require some fiddling with the sources to get the embedded
 Octave interface working.
 
-Usage
-=====
+Basic Usage
+===========
 
 Import this module into your Pure scripts as follows::
 
@@ -79,7 +79,7 @@ Arbitrary Octave code can be executed with the ``octave_eval`` function::
   0
 
 This prints the result on stdout and returns a result code (zero if everything
-went fine). To suppress the printing of the result, simply follow the
+went fine). To suppress the printing of the result, simply terminate the
 Octave statement with a semicolon::
 
   > octave_eval "eig([1 2;3 4]);";
@@ -113,13 +113,14 @@ follows::
   {-0.372281323269014;5.37228132326901}
 
 Direct Function Calls
----------------------
+=====================
 
 Octave functions can also be called in a direct fashion with the
 ``octave_call`` function, which gets invoked with the name of the function,
 the number of function results and the function arguments::
 
-  > octave_call "eig" 1 {1.0,2.0;3.0,4.0};
+  > let x = {1.0,2.0;3.0,4.0};
+  > octave_call "eig" 1 x;
   {-0.372281323269014;5.37228132326901}
 
 Note the second argument, which denotes the desired number of *return*
@@ -127,29 +128,80 @@ values. This will usually be 1 (or 0 if you don't care about the result), but
 some Octave functions may return a variable number of results, depending on
 how they're called. Multiple values are returned as tuples in Pure::
 
-  > octave_call "eig" 2 {1.0,2.0;3.0,4.0};
+  > octave_call "eig" 2 x;
   {-0.824564840132394,-0.415973557919284;0.565767464968992,-0.909376709132124},
   {-0.372281323269014,0.0;0.0,5.37228132326901}
 
 If there are multiple *arguments*, you can specify them either as a tuple or a
 list::
 
-  > octave_call "norm" 1 ({1.0,2.0;3.0,4.0}, 2);
+  > octave_call "norm" 1 (x, 2);
   5.46498570421904
+  > octave_call "norm" 1 [x, 1];
+  6.0
 
-Conversions Between Octave and Pure Data
-----------------------------------------
+Instead of a function name, you can also specify the function to be called
+using a special kind of Octave object, a function value. These are returned,
+e.g., by Octave's ``str2func`` and ``inline`` builtins. For your convenience,
+pure-octave provides a frontend to these builtins, the ``octave_func``
+function, which lets you specify an Octave function in one of two ways:
+
+* ``octave_func name``, where ``name`` is the function name as a string,
+  returns the Octave function with the given name. This works like Octave's
+  ``str2func`` builtin.
+
+* ``octave_func expr``, where ``expr`` is an Octave expression (as a string)
+  describing the function value, returns an "inline" function. This works like
+  Octave's ``inline`` builtin. Instead of just an Octave expression, you can
+  also specify a tuple or a list consisting of the inline expression and the
+  parameter names. (Otherwise the parameters are determined automatically, see
+  the description of the ``inline`` function in the Octave manual for
+  details.)
+
+Note that inline functions allow you to call stuff that is not an Octave
+function and hence cannot be specified directly in ``pure_call``, such as an
+operator. Examples::
+
+  > let eig = octave_func "eig";
+  > let mul = octave_func "x*y";
+  > octave_call eig 1 (octave_call mul 1 (x,x));
+  {0.138593383654928;28.8614066163451}
+  > let add = octave_func ("x+y","x","y");
+  > octave_call add 1 (x,x);
+  {2.0,4.0;6.0,8.0}
+
+Data Conversions
+================
 
 As shown above, the ``octave_set``, ``octave_get`` and ``octave_call``
 functions convert Pure data to corresponding Octave values and vice versa.
-Octave scalars and matrices for boolean, integer, double, complex and
-character data are all supported by this interface, and are mapped to the
-corresponding Pure data types in a straightforward manner (scalars to scalars,
-matrices to matrices and strings to strings). However, you should note the
-following:
+Octave scalars and matrices of boolean, integer, double, complex and character
+data are all supported by this interface, and are mapped to the corresponding
+Pure data types in a straightforward manner (scalars to scalars, matrices to
+matrices and strings to strings). Note that in any case these conversions
+create *copies* of the data, so modifying, say, an Octave matrix received via
+``octave_get`` in Pure only affects the Pure copy of the matrix and leaves the
+original Octave matrix unchanged.
 
-* Octave's cell arrays and structures are not supported at this time. They
-  might be added in the future.
+Any other kind of Octave object (including Octave function objects, see
+`Direct Function Calls`_) is just passed through as is, in the form of a
+cooked pointer to an Octave value which frees itself when garbage-collected.
+You can check for such objects with the ``octave_valuep`` predicate::
+
+  > let eig = octave_func "eig";
+  > eig; octave_valuep eig;
+  #<pointer 0x230dba0>
+  1
+
+Such Octave value pointers can be used freely whereever an Octave value is
+needed (i.e., in invocations of ``octave_set`` and ``octave_call``).
+
+You should also note the following:
+
+* Octave's cell arrays and structures are not supported at this time, so they
+  will show up as opaque Octave value pointers in Pure land. This allows these
+  objects to be passed around freely, but you can't inspect or modify them in
+  Pure.
 
 * Scalars and 1x1 matrices are indistinguishable in Octave, thus any 1x1
   matrix will be returned as a scalar from Octave to Pure.
@@ -161,7 +213,7 @@ following:
 
     > octave_set "a" {1,2;3,4};
     {1,2;3,4}
-    > octave_eval "global a ans;";
+    > octave_eval "global a ans";
     0
     > octave_eval "eig(a)";
     error: eig: wrong type argument `int32 matrix'
@@ -203,7 +255,7 @@ following:
     {"Hello, world!";"abc          "}
 
 Calling Back Into Pure
-----------------------
+======================
 
 The embedded Octave interpreter provides one special builtin, the
 ``pure_call`` function which can be used to call any function defined in the
