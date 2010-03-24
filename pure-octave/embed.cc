@@ -1,4 +1,22 @@
 
+/* Copyright (c) 1996-2009 by John W. Eaton.
+   Copyright (c) 2003 by Paul Kienzle.
+   Copyright (c) 2010 by Albert Graef.
+
+   This file is part of pure-octave.
+
+   pure-octave is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by the Free
+   Software Foundation, either version 3 of the License, or (at your option)
+   any later version.
+
+   pure-octave is distributed in the hope that it will be useful, but WITHOUT
+   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+   FITNESS FOR A PARTICULAR PURPOSE.
+
+   Please see the accompanying COPYING file for the precise license terms. The
+   GPL are also be read online at http://www.gnu.org/licenses/. */
+
 #include "octave/config.h"
 
 #include <iostream>
