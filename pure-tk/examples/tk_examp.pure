@@ -1,0 +1,68 @@
+
+/* tk_examp.q: simple example using the Tcl/Tk interface */
+
+using tk;
+
+/* Evaluate Pure expressions in a Tk window. */
+
+main = init_app $$ tk_main;
+
+/* Initialize (create the application's widgets). */
+
+init_app = () when
+  // Start a new interpreter.
+  tk_quit;
+  // Unmap the main window (will be shown when all widgets have been created,
+  // to reduce flickering).
+  tk "wm withdraw .";
+  // Set the window title.
+  tk "wm title . \"Pure-Tk Example\"";
+  // Title label.
+  tk "label .title -font 8x13bold -text \"A Simple Pure-Tk Application\"";
+  tk "label .descr -text \
+\"Type in a Pure expression and click Eval to evaluate.\n\
+Click Quit to quit.\"";
+  // Main area: input expression and output result with labels.
+  tk "frame .f";
+  tk "label .f.expr_l -text \"Expression:\"";
+  tk "entry .f.expr_e -textvariable expr_val -width 40";
+  tk "label .f.result_l -text \"Result:\"";
+  tk "entry .f.result_e -textvariable result_val -width 40";
+  // Buttons.
+  tk "frame .buttons";
+  tk "button .buttons.eval -text Eval -command { pure eval_cb }";
+  tk "button .buttons.quit -text Quit -command { pure quit_cb }";
+  // Pack widgets into the main window.
+  // Title and main frame.
+  tk "pack .title .descr";
+  tk "pack .f -fill x";
+  // Grid layout of the main frame.
+  tk "grid config .f.expr_l -column 0 -row 0 -sticky w";
+  tk "grid config .f.expr_e -column 1 -row 0 -sticky we";
+  tk "grid config .f.result_l -column 0 -row 1 -sticky w";
+  tk "grid config .f.result_e -column 1 -row 1 -sticky we";
+  // Make entry widgets expand horizontally to fill main window.
+  tk "grid columnconfigure .f 0 -weight 0";
+  tk "grid columnconfigure .f 1 -weight 1";
+  // Buttons.
+  tk "pack .buttons";
+  tk "pack .buttons.eval .buttons.quit -side left";
+  // Bind Return key in expression entry to the evaluation command.
+  tk "bind .f.expr_e <Return> { pure eval_cb }";
+  // Show the main window.
+  tk "wm deiconify .";
+end;
+
+/* Callback definitions. */
+
+eval_cb = tk_set "result_val" res when
+  res = eval (tk_get "expr_val");
+  res = if null lasterr then str res else "*** syntax error ***";
+end;
+
+quit_cb = tk_quit;
+
+/* The main program. This is set up so that you can compile this script
+   to a native executable as follows: pure -c -u tk_examp.pure -o tk_examp. */
+
+if compiling then () else main;

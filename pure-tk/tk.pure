@@ -1,0 +1,29 @@
+
+/* Pure Tcl/Tk interface. */
+
+using "lib:tk";
+
+// Constructor symbol used in reporting Tcl errors.
+public tk_error;
+
+/* Interface operations. Note that string arguments are generally passed as
+   void* here since Tcl internally uses UTF-8 strings throughout. */
+
+// Execute a Tcl command. This spawns a new interpreter if needed.
+extern expr *tk(void *s);
+
+// Set and get Tcl variables.
+extern expr *tk_set(void *s, void *t);
+extern expr *tk_unset(void *s);
+extern expr *tk_get(void *s);
+
+// Exit the Tcl interpreter.
+extern void tk_quit();
+
+// Check whether the Tcl interpreter is still up an running. This also
+// processes pending events in the interpreter.
+extern bool tk_ready();
+
+// A simple main loop which just keeps processing events until the interpreter
+// is exited or the main window is closed.
+extern expr *tk_main();
