@@ -11,7 +11,7 @@ prefix = /usr/local
 endif
 
 # Try to guess the Tcl version.
-tclvers = $(shell tclsh tclversion.tcl)
+tclvers = $(shell echo 'puts $$tcl_version' | tclsh)
 ifeq ($(strip $(tclvers)),)
 tclvers = 8.5
 endif
@@ -53,7 +53,7 @@ CFLAGS = -g -O2
 
 FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 
-DISTFILES = COPYING Makefile README pure-tk.html config.guess tclversion.tcl \
+DISTFILES = COPYING Makefile README pure-tk.html config.guess \
 tk.c tk.pure examples/*.pure
 
 all: tk$(DLL)
