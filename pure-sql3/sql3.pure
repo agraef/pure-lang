@@ -6,7 +6,10 @@ using "lib:sql3util";
 namespace sql3;
 
 public 
-STMT SQLNULL bad_sql_value;
+STMT SQLNULL bad_sql_value SQLITE_OPEN
+SQLITE_OPEN_READONLY SQLITE_OPEN_READWRITE SQLITE_OPEN_CREATE
+SQLITE_OPEN_NOMUTEX SQLITE_OPEN_FULLMUTEX 
+SQLITE_OPEN_SHAREDCACHE SQLITE_OPEN_PRIVATECACHE;
 
 public
 is_db_ptr is_stmt_ptr
@@ -27,7 +30,7 @@ private
 SQLITE_OK SQLITE_ROW SQLITE_DONE SHOW_OPEN_CLOSE
 MAX_INT64 MIN_INT64 TYPE_CHARS;
 
-private extern sqlite3* sql3util_open(void* path);
+private extern expr* sql3util_open(void* path, int flags);
 private extern expr* sql3util_prepare(sqlite3 *db, void* sql);
 private extern double sql3util_ymd2julian(int Y, int M, int D);
 private extern expr* sql3util_julian2ymd(double jd);
@@ -55,13 +58,27 @@ private extern int sqlite3_bind_int64(sqlite3_stmt*, int, int64);
 private extern int sqlite3_bind_null(sqlite3_stmt*, int);
 private extern int sqlite3_bind_text(sqlite3_stmt*, int, void*, int, void*);
 
+//Sqlite3 error codes
 const SQLITE_OK = 0;
 const SQLITE_ROW = 100;
 const SQLITE_DONE = 101;
+
+//sqlite3_open_v2 flags
+const SQLITE_OPEN_READONLY = 0x00000001;
+const SQLITE_OPEN_READWRITE = 0x00000002;
+const SQLITE_OPEN_CREATE = 0x00000004;
+const SQLITE_OPEN_NOMUTEX = 0x00008000;
+const SQLITE_OPEN_FULLMUTEX = 0x00010000;
+const SQLITE_OPEN_SHAREDCACHE = 0x00020000;
+const SQLITE_OPEN_PRIVATECACHE = 0x00040000;
+const SQLITE_OPEN = SQLITE_OPEN_READWRITE or SQLITE_OPEN_CREATE;
+
+//internal constants
 const SHOW_OPEN_CLOSE = 0;
 const MAX_INT64 =  9223372036854775807L;
 const MIN_INT64 = -9223372036854775807L;
 const TYPE_CHARS = "bcdijlnsxv";
+
 
 /* Public sqlite3 julian day functions */
 
@@ -81,12 +98,25 @@ julian2ymd jd::double = sql3util_julian2ymd jd; //return (y,m,d)
 
 /* Public db_ptr functions  */
 
-open path::string = res 
+open path::string = open(path,SQLITE_OPEN);
+
+open (path::string, flags::int) = res
 when
-  dbp = sql3util_open path;
-  null dbp && sql3_err (sprintf "Failed to open data base %s" (path));
-  res = sentry (close_db (ref 1)) dbp;
-  SHOW_OPEN_CLOSE && printf "Opened DB: sqlite3* %s\n" (str dbp);
+  dbp, ec = sql3util_open path flags;
+  res = if ec == SQLITE_OK then do_ok dbp else do_fail dbp ec;
+end with
+  do_ok dbp = sentry (close_db (ref 1)) dbp
+  when
+    SHOW_OPEN_CLOSE && printf "Opened DB: sqlite3* %s\n" (str dbp);
+  end; 
+  do_fail dbp ec = sqlite3_err msg ec
+  when
+    msg = if null dbp
+    	  then sprintf "Failed to open %s" path
+    	  else sprintf "%s [open %s]" 
+               (string_dup (sqlite3_errmsg dbp), path);
+    sqlite3_close dbp;
+  end;
 end;
 
 close dbp::pointer = if openp dbp then (get_sentry dbp) dbp else 0
@@ -366,9 +396,13 @@ end;
 
 sql3_err msg::string = throw (sprintf "sql3 error: %s" msg);
 
-sqlite3_err dbp::pointer code::int = throw msg
+sqlite3_err dbp::pointer ec::int = sqlite3_err ec msg
 when
-  msg1 = string_dup (sqlite3_errmsg dbp);
-  msg = sprintf "sqlite3 error: %d, %s" (code,msg1);
+  msg = string_dup (sqlite3_errmsg dbp);
 end if is_db_ptr dbp;
+
+sqlite3_err msg::string ec::int = throw msg1
+when
+  msg1 = sprintf "sqlite3 error %d: %s" (ec,msg);
+end;
 

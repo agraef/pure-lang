@@ -1,4 +1,4 @@
-/* sql3util.c */
+/* sql3util.c - Utilities to interface with SQLite3. */
 
 #include <stdlib.h>
 #include <pure/runtime.h>
@@ -6,24 +6,17 @@
 #include <string.h>
 #include <sqlite3.h>
 
-/* Utilities to interface with sqlite3. To compile and link (Linux):
-
-   gcc -fPIC -c sql3util.c
-   gcc -shared sql3util.o -o sql3util.so -lsqlite3
- 
-   Or just run 'make'. */
-
-sqlite3* sql3util_open(char* path) {
-  sqlite3* db;
-  int ec = sqlite3_open(path , &db);
-  if(ec!=SQLITE_OK) {
-    printf("sql3util error %s, ec = %d\n", path, ec); 
-    sqlite3_close(db);
-    db = NULL;
-  }
-  return db;
+//==>(db_ptr,ec)
+pure_expr* sql3util_open(char* path, int flags) {
+  sqlite3* dbp;
+  int ec = sqlite3_open_v2(path , &dbp, flags, NULL);
+  pure_expr *p_dbp = pure_pointer(dbp);
+  pure_expr *p_errCode = pure_int(ec);
+  pure_expr *p_ret = pure_tuplel(2, p_dbp, p_errCode);
+  return p_ret;
 }
 
+//==>(stmt_ptr,ec)
 pure_expr* sql3util_prepare(sqlite3 *db, char *sql)
 {
   sqlite3_stmt* stmtp;
@@ -75,13 +68,6 @@ pure_expr* sql3util_julian2ymd(double jd){
   pure_expr *pret = pure_tuplel(3,pY,pM,pD);
   return pret;
 }
-
-
-
-/*   retD = B - D - X1; */
-/*   retM = E<14 ? E-1 : E-13; */
-/*   retY = p->M>2 ? C - 4716 : C - 4715 */;
-
 
 
 
