@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <malloc.h>
 #include <unistd.h>
 
@@ -34,13 +35,59 @@ static int XErrorProc(ClientData data, XErrorEvent *errEventPtr)
   return 0;
 }
 
+/* Parse a number literal. */
+
+static pure_expr *parse_val(const char *s)
+{
+  const char *t, *s0 = s;
+  if (*s == '-') ++s;
+  if (strncmp(s, "0b", 2) == 0 || strncmp(s, "0B", 2) == 0) {
+    /* binary */
+    for (t = s+2; *t; t++)
+      if (*t != '0' && *t != '1')
+	return NULL;
+  } else if (strncmp(s, "0x", 2) == 0 || strncmp(s, "0X", 2) == 0) {
+    /* hexadecimal */
+    for (t = s+2; *t; t++)
+      if (!isxdigit(*t))
+	return NULL;
+  } else if (*s == '0' && !strchr(s, '.')) {
+    /* octal */
+    for (t = s+1; *t; t++)
+      if (!isdigit(*t) || *t == '8' || *t == '9') {
+	if (*t == 'e' || *t == 'E')
+	  goto decimal;
+	else
+	  return NULL;
+      }
+  } else if (isdigit(*s) || *s == '.') {
+    /* decimal; this may also contain a decimal point and/or a scaling
+       factor */
+  decimal:
+    t = s;
+    while (isdigit(*t)) t++;
+    if (*t == '.') {
+      t++;
+      while (isdigit(*t)) t++;
+    }
+    if (*t == 'e' || *t == 'E') {
+      t++;
+      while (isdigit(*t)) t++;
+    }
+    if (*t) return NULL;
+  } else
+    return NULL;
+  return pure_val(s0);
+}
+
 /* Tcl command to invoke Pure callbacks. */
 
 static int tk_pure(ClientData clientData,
 		   Tcl_Interp *interp,
 		   int argc, char **argv)
 {
-  pure_expr *x, *e = NULL;
+  pure_expr *x, *e = NULL, **xv;
+  size_t n;
   const char *s;
   int i, fno;
 
@@ -62,8 +109,8 @@ static int tk_pure(ClientData clientData,
   if (x && argc > 2) {
     pure_expr **xv = (pure_expr**)malloc((argc-2)*sizeof(pure_expr*));
     for (i = 2; i < argc; i++) {
-      /* Try to parse arguments as Pure expressions. */
-      pure_expr *tmp = pure_val(argv[i]);
+      /* Parse numeric literals, everything else is passed as a string. */
+      pure_expr *tmp = parse_val(argv[i]);
       xv[i-2] = tmp?tmp:pure_string_dup(argv[i]);
     }
     x = pure_appxv(x, argc-2, xv, &e);
@@ -74,9 +121,34 @@ static int tk_pure(ClientData clientData,
     Tcl_AppendResult(interp, "callback error", NULL);
     return TCL_ERROR;
   }
-  /* If there's a string we can return as the result, set it here. */
-  if (pure_is_string(x, &s))
-    Tcl_AppendResult(interp, s, NULL);
+  /* If there's a string or a number that we can return as the result, set it
+     here. */
+  if (pure_is_tuplev(x, &n, NULL) && n>=1) {
+    size_t i;
+    if (n == 1)
+      xv = &x;
+    else
+      pure_is_tuplev(x, &n, &xv);
+    for (i = 0; i < n; i++) {
+      pure_expr *x = xv[i];
+      if (pure_is_string(x, &s)) {
+	if (n==1)
+	  Tcl_AppendResult(interp, s, NULL);
+	else
+	  Tcl_AppendElement(interp, s);
+      } else if (pure_is_int(x, NULL) || pure_is_double(x, NULL)) {
+	char *s = str(x);
+	if (s) {
+	  if (n==1)
+	    Tcl_AppendResult(interp, s, NULL);
+	  else
+	    Tcl_AppendElement(interp, s);
+	  free(s);
+	}
+      }
+    }
+    if (n != 1) free(xv);
+  }
   pure_freenew(x);
   /* Callback was executed successfully. */
   return TCL_OK;
