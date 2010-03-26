@@ -104,9 +104,10 @@ a string. For instance:
 
 Analogous conversions are applied to the result value, so if the callback
 returns a string or a number (int or double) then this becomes the result of
-the ``pure`` command in the Tcl interpreter. The callback can also return
-multiple values as a tuple, which are converted to a corresponding Tcl
-list. Other kinds of Pure values are silently ignored. For instance:
+the ``pure`` command in the Tcl interpreter. The callback can also return a
+collection of such values as a list or a tuple, which are converted to a
+corresponding Tcl list. If the callback result is any other kind of Pure value
+then nothing is returned by the ``pure`` command. For instance:
 
 ``foo = ();``
   returns nothing;
@@ -154,12 +155,25 @@ instance::
   > tk_get "entry_val";
   tk_get "entry_val"
 
-Note that all values are passed as strings here. At the language level, this
-is really the only data type that Tcl/Tk knows. (Internally, modern versions
-of the Tcl interpreter use more elaborate representations of different kinds
-of objects. However, to keep the interface simple, pure-tk doesn't provide
-direct access to these, so you'll have to construct them using the appropriate
-Tcl commands.)
+Note that all values are passed as strings here. (At the language level, this
+is really the only data type that Tcl/Tk knows.) However, pure-tk also offers
+the following convenience functions which convert between Tcl and Pure lists:
+
+``tk_join xs``
+  Converts a Pure list of numbers and strings to a string representing the
+  same list in Tcl syntax.
+
+``tk_split s``
+  Converts a string ``s`` representing a list in Tcl syntax to a corresponding
+  Pure list.
+
+These operations also do automatic conversions for numeric values, similar to
+what the Tcl ``pure`` command does. Example::
+
+  > tk_join [0,1.0,"Hello, world!"];
+  "0 1.0 {Hello, world!}"
+  > tk_split ans;
+  [0,1.0,"Hello, world!"]
 
 Tips and Tricks
 ===============

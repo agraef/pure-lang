@@ -388,9 +388,10 @@ a string. For instance:</p>
 </dl>
 <p>Analogous conversions are applied to the result value, so if the callback
 returns a string or a number (int or double) then this becomes the result of
-the <tt class="docutils literal"><span class="pre">pure</span></tt> command in the Tcl interpreter. The callback can also return
-multiple values as a tuple, which are converted to a corresponding Tcl
-list. Other kinds of Pure values are silently ignored. For instance:</p>
+the <tt class="docutils literal"><span class="pre">pure</span></tt> command in the Tcl interpreter. The callback can also return a
+collection of such values as a list or a tuple, which are converted to a
+corresponding Tcl list. If the callback result is any other kind of Pure value
+then nothing is returned by the <tt class="docutils literal"><span class="pre">pure</span></tt> command. For instance:</p>
 <dl class="docutils">
 <dt><tt class="docutils literal"><span class="pre">foo</span> <span class="pre">=</span> <span class="pre">();</span></tt></dt>
 <dd>returns nothing;</dd>
@@ -435,12 +436,25 @@ instance:</p>
 &gt; tk_get &quot;entry_val&quot;;
 tk_get &quot;entry_val&quot;
 </pre>
-<p>Note that all values are passed as strings here. At the language level, this
-is really the only data type that Tcl/Tk knows. (Internally, modern versions
-of the Tcl interpreter use more elaborate representations of different kinds
-of objects. However, to keep the interface simple, pure-tk doesn't provide
-direct access to these, so you'll have to construct them using the appropriate
-Tcl commands.)</p>
+<p>Note that all values are passed as strings here. (At the language level, this
+is really the only data type that Tcl/Tk knows.) However, pure-tk also offers
+the following convenience functions which convert between Tcl and Pure lists:</p>
+<dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">tk_join</span> <span class="pre">xs</span></tt></dt>
+<dd>Converts a Pure list of numbers and strings to a string representing the
+same list in Tcl syntax.</dd>
+<dt><tt class="docutils literal"><span class="pre">tk_split</span> <span class="pre">s</span></tt></dt>
+<dd>Converts a string <tt class="docutils literal"><span class="pre">s</span></tt> representing a list in Tcl syntax to a corresponding
+Pure list.</dd>
+</dl>
+<p>These operations also do automatic conversions for numeric values, similar to
+what the Tcl <tt class="docutils literal"><span class="pre">pure</span></tt> command does. Example:</p>
+<pre class="literal-block">
+&gt; tk_join [0,1.0,&quot;Hello, world!&quot;];
+&quot;0 1.0 {Hello, world!}&quot;
+&gt; tk_split ans;
+[0,1.0,&quot;Hello, world!&quot;]
+</pre>
 </div>
 <div class="section" id="tips-and-tricks">
 <h1><a class="toc-backref" href="#id8">8&nbsp;&nbsp;&nbsp;Tips and Tricks</a></h1>
