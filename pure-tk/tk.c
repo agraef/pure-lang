@@ -329,6 +329,61 @@ pure_expr *tk_get(const char *s)
     return tk_error();
 }
 
+pure_expr *tk_split(const char *s)
+{
+  int argc, ret;
+  const char **argv;
+  ret = Tcl_SplitList(NULL, s, &argc, &argv);
+  if (ret == TCL_OK) {
+    pure_expr *x;
+    if (argc <= 0)
+      x = pure_listl(0);
+    else {
+      pure_expr **xv = (pure_expr**)malloc(argc*sizeof(pure_expr*));
+      int i;
+      for (i = 0; i < argc; i++) {
+	pure_expr *tmp = parse_val(argv[i]);
+	xv[i] = tmp?tmp:pure_string_dup(argv[i]);
+      }
+      x = pure_listv(argc, xv);
+      free(xv);
+    }
+    Tcl_Free((char *)argv);
+    return x;
+  } else {
+    if (argv) Tcl_Free((char *)argv);
+    return NULL;
+  }
+}
+
+pure_expr *tk_join(pure_expr *x)
+{
+  size_t i, n, m;
+  pure_expr **xv;
+  if (pure_is_listv(x, &n, &xv)) {
+    char *s, *ret;
+    char **argv = (char**)malloc(n*sizeof(char*));
+    pure_expr *x;
+    for (i = m = 0; i < n; i++) {
+      x = xv[i];
+      if (pure_is_string_dup(x, &s))
+	argv[m++] = s;
+      else if (pure_is_int(x, NULL) || pure_is_double(x, NULL)) {
+	char *s = str(x);
+	if (s) argv[m++] = s;
+      }
+    }
+    free(xv);
+    ret = Tcl_Merge(m, (const char**)argv);
+    for (i = 0; i < m; i++) free(argv[i]);
+    free(argv);
+    x = pure_string_dup(ret);
+    Tcl_Free(ret);
+    return x;
+  } else
+    return NULL;
+}
+
 void tk_quit(void)
 {
   tk_stop();
