@@ -1,0 +1,60 @@
+
+/* A simple Gnocl application in Pure. This mimics the Glade UI example in the
+   pure-gtk sources. */
+
+// This script has been set up so that you can compile it to a native
+// executable as follows:
+
+// pure -c uiexample.pure -o uiexample `pkg-config --libs gtk+-2.0`
+
+using tk, gnocl;
+
+/* Load the Glade UI file. Note that we store the resulting data in a constant
+   here, so that it is included verbatim in a batch-compiled executable. By
+   these means, the UI file doesn't have to be present in order to run the
+   compiled program. */
+
+const ui = gnocl::glade_ui "uiexample.glade";
+
+/* Callbacks. The (Pure) names of the callbacks are specified on the "Signals"
+   tab in Glade. If a widget has been specified as "User data" in Glade then
+   this becomes the first argument, and the signaled widget the second.
+   Otherwise the callback is invoked with just one argument, the signaled
+   widget. */
+
+new_cb id _  = () when
+  // Clear the text view.
+  tk $ sprintf "%s set {}" id;
+end;
+file_cb id _ = () when
+  // Read the file and set the text view accordingly.
+  tk_set "textbuf" $ fget $ fopen fname "r";
+  tk $ sprintf "%s set $textbuf" id;
+  tk_unset "textbuf";
+end if ~null fname when
+  // Pick a file, using the GTK+ file chooser dialog.
+  fname = tk "gnocl::fileChooserDialog -action open -title {Choose a file}";
+end;
+
+/* Note that you have to call gnocl::quit to exit from the Gnocl main loop,
+   *not* tk_quit like in an ordinary pure-tk application. The Tcl interpreter
+   keeps running after this, and you can invoke the same application again by
+   just rerunning gnocl::glade_init and gnocl::main on the same UI data. */
+
+destroy_cb _ = gnocl::quit;
+quit_cb id _ = gnocl::delete id;
+
+// Make sure that the callbacks don't get eliminated when batch-compiling.
+new_cb, file_cb, destroy_cb, quit_cb;
+
+/* The main program. */
+
+main = () when
+  // Initialize the GUI. This returns a record mapping symbolic (Glade) widget
+  // names to real (Gnocl) widget ids.
+  w = gnocl::glade_init ui;
+  // Enter the Gnocl main loop after showing the main window.
+  gnocl::main (w!"window1");
+end;
+
+if compiling then () else main;

@@ -1,0 +1,90 @@
+
+/* A simple Pure interface to Gnocl, Peter G. Baum's Tcl extension for
+   creating GTK+/Gnome applications available at http://www.gnocl.org/. */
+
+using tk, xml, system;
+
+// Get rid of the Tk main window and make sure that we have Gnocl loaded.
+tk "wm withdraw .";
+tk "package require Gnocl";
+
+namespace gnocl;
+
+/* gnocl::glade_ui loads the given Glade UI file. The resulting data can then
+   be passed to gnocl::glade_init (see below) to actually create the GUI. */
+
+glade_ui fname::string = ui, cbs when
+  ui = fget (fopen fname "r");
+  stringp ui || throw (sprintf "glade file '%s' not found" fname);
+  doc = xml::load_string ui xml::NOBLANKS;
+  xml::docp doc || throw (sprintf "error reading glade file '%s'" fname);
+  // Glade 3 produces an extra requires-version tag which makes libglade
+  // unhappy. Remove it.
+  do xml::unlink $ xml::select doc "/glade-interface/requires-version";
+  ui = xml::save_string doc;
+  stringp ui || throw (sprintf "error reading glade file '%s'" fname);
+  cbs = [info n | n = xml::select doc "//widget"];
+end with
+  info n = xml::node_attr n "id" =>
+       	   cat [signal_info n | n = xml::select n "signal"];
+  signal_info n = data when
+    name = xml::node_attr n "name";
+    handler = xml::node_attr n "handler";
+    object = xml::node_attr n "object";
+    data = if stringp name then
+    	     if stringp handler then
+    	       if stringp object then [name=>(handler,object)]
+	       else [name=>handler]
+	     else []
+	   else [];
+  end;
+end;
+
+/* gnocl::glade_init is invoked on the UI data returned by gnocl::glade_ui to
+   create the GUI of a Gnocl application, complete with Pure callbacks wired
+   up as specified in the UI file. */
+
+glade_init (ui, cbs) = do config cbs $$ w with
+  config (name=>signals) = do config signals with
+    config (sig=>cb) = tk $ sprintf "%s configure %s" (w!name,makecb sig cb);
+    makecb sig (cb,obj) =
+      sprintf "-on%s {pure %s {%s} {%s}}" (mangle sig,cb,w!obj,w!name);
+    makecb sig cb = sprintf "-on%s {pure %s {%s}}" (mangle sig,cb,w!name);
+    mangle sig = strcat (map cap (split "_" sig));
+    cap s = s if null s; = toupper (s!0) + substr s 1 (#s-1) otherwise;
+    toupper c = if "a"<=c && c<="z" then "A"+(c-"a") else c;
+  end;
+end when
+  tk_set "gladebuf" ui;
+  w = {name=>id | [id,name] = map tk_split $
+       tk_split $ tk "gnocl::glade buffer $gladebuf"};
+  tk_unset "gladebuf";
+  // Reorder the widgets so that they are in the same order as in the XML
+  // file, rather than the apparently random order produced by gnocl::glade.
+  w = {name=>w!name | name=>_ = cbs};
+end;
+
+/* gnocl::show and gnocl::delete show and delete the given Gnocl widget,
+   respectively. These are just shortcuts for the corresponding Gnocl
+   commands. */
+
+show w = () when tk $ w+" show" end;
+
+delete w = () when tk $ w+" delete" end;
+
+/* gnocl::main enters the Gnocl main loop, after showing the given Gnocl
+   widget (usually the main window of the application). */
+
+main w = () when show w; tk "gnocl::mainLoop" end;
+
+/* gnocl::quit exits the GTK main loop. This is intended to be used in
+   callbacks. */
+
+/* Note that Gnocl doesn't provide a means to exit the GTK main loop, so we
+   use gtk_main_quit() to do this here. This function should always be present
+   as Gnocl pulls in the GTK+ libraries. However, if your Pure application is
+   batch-compiled to a native executable then you'll have to take care of
+   linking in the required GTK+ libraries yourself. */
+
+private extern void gtk_main_quit();
+quit = gtk_main_quit;
