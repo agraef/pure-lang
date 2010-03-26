@@ -76,18 +76,50 @@ Other kinds of common dialogs are available; see the Tcl/Tk manual for
 information.
 
 For more elaborate applications you probably have to explicitly create some
-widgets and provide a main loop which takes care of events and callbacks. For
-this purpose, pure-tk installs a special Tcl command named ``pure`` in the
-interpreter which invokes the Pure function given as the first argument. Any
-remaining arguments are passed to the callback. Arguments looking like valid
-Pure expressions will be parsed and passed as unevaluated terms, anything else
-is passed as a Pure string instead. So, for instance, ``pure foo`` calls the
-Pure function ``foo`` without parameters, while ``pure foo bar baz!?`` invokes
-``foo`` as ``foo bar "baz!?"``. If the callback invocation returns a string
-then this becomes the result of the ``pure`` command in the Tcl interpreter.
-(No implicit string conversion is attempted in this case, so if you want to
-return a value to the Tcl script then you *must* convert the result to a
-string value.)
+widgets with the appropriate callbacks, and provide a main loop which takes
+care of processing events in the Tcl/Tk GUI. We discuss this in the following.
+
+Callbacks
+=========
+
+pure-tk installs a special Tcl command named ``pure`` in the interpreter which
+can be used to implement callbacks in Pure. This command is invoked from Tcl
+as follows::
+
+  pure function args ...
+
+It calls the Pure function named by the first argument. Any remaining
+arguments are passed to the callback. Arguments looking like numeric literals
+(int or double) are parsed and passed as numbers, everything else is passed as
+a string. For instance:
+
+``pure foo``
+  calls the Pure function ``foo`` without parameters;
+
+``pure foo bar baz!?``
+  invokes ``foo`` as ``foo "bar" "baz!?"``;
+
+``pure foo 1.0 {Hello, world}``
+  invokes ``foo`` as ``foo 1.0 "Hello, world"``.
+
+Analogous conversions are applied to the result value, so if the callback
+returns a string or a number (int or double) then this becomes the result of
+the ``pure`` command in the Tcl interpreter. The callback can also return
+multiple values as a tuple, which are converted to a corresponding Tcl
+list. Other kinds of Pure values are silently ignored. For instance:
+
+``foo = ();``
+  returns nothing;
+
+``foo = 99;``
+  returns an integer ``99``;
+
+``foo = 0.0, 1.0, "Hello, world";``
+  returns a Tcl list ``0.0 1.0 {Hello, world}`` consisting of two double
+  values and a string.
+
+The Main Loop
+=============
 
 The easiest way to provide a main loop for your application is to just call
 ``tk_main`` which keeps processing events in the Tcl interpreter until the
@@ -100,9 +132,12 @@ look as follows::
   tk_main;
 
 The main loop terminates as soon as the Tcl interpreter is exited, which can
-happen, e.g., in response to a callback which invokes the ``tk_quit``
-function, Tcl code which destroys the main window (``destroy .``), or the user
-closing the main window from the window manager.
+happen, e.g., in response to a callback which invokes the ``tk_quit`` function
+or Tcl code which destroys the main window (``destroy .``). The user can also
+close the main window from the window manager in order to exit the main loop.
+
+Accessing Tcl Variables
+=======================
 
 pure-tk also allows your script to set and retrieve variable values in the Tcl
 interpreter with the ``tk_set``, ``tk_unset`` and ``tk_get`` functions. This
@@ -119,11 +154,17 @@ instance::
   > tk_get "entry_val";
   tk_get "entry_val"
 
-Note that all values are passed as strings here, since this is really the only
-data type that Tcl/Tk knows.
+Note that all values are passed as strings here. At the language level, this
+is really the only data type that Tcl/Tk knows. (Internally, modern versions
+of the Tcl interpreter use more elaborate representations of different kinds
+of objects. However, to keep the interface simple, pure-tk doesn't provide
+direct access to these, so you'll have to construct them using the appropriate
+Tcl commands.)
 
 Tips and Tricks
 ===============
+
+Here are a few other things that are useful when working with pure-tk.
 
 * Errors in Tcl/Tk commands can be handled by giving an appropriate definition
   of the ``tk_error`` function, which is invoked with an error message as its
@@ -188,10 +229,10 @@ Tips and Tricks
 
 * The Tcl ``exit`` procedure, just as in tclsh or wish, causes exit from the
   current process. Since the Tcl interpreter hosted by the pure-tk module runs
-  as part of a Pure program, and not as a separate child process, ``tk
-  "exit"`` will also exit from the Pure program and take you back to the
-  shell. If you'd like ``exit`` to only exit the Tcl interpreter, without
-  exiting Pure, you can redefine the ``exit`` procedure, e.g., as follows::
+  as part of a Pure program and not as a separate child process, ``tk "exit"``
+  will also exit from the Pure program and take you back to the shell. If
+  you'd like ``exit`` to only exit the Tcl interpreter, without exiting Pure,
+  you can redefine the ``exit`` procedure, e.g., as follows::
 
     tk "proc exit { {returnCode 0} } { pure tk_quit }";
 
