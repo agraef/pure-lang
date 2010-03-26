@@ -40,7 +40,13 @@ end;
 
 /* gnocl::glade_init is invoked on the UI data returned by gnocl::glade_ui to
    create the GUI of a Gnocl application, complete with Pure callbacks wired
-   up as specified in the UI file. */
+   up as specified in the UI file. It returns a record mapping the symbolic
+   (Glade) widget names to real (Gnocl) widget ids. */
+
+/* Note that the (Pure) names of the callbacks are specified on the "Signals"
+   tab in Glade. If a widget has been specified as "User data" in Glade then
+   this becomes the first argument and the signaled widget the second.
+   Otherwise the callback is invoked with just the signaled widget. */
 
 glade_init (ui, cbs) = do config cbs $$ w with
   config (name=>signals) = do config signals with

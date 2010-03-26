@@ -16,17 +16,18 @@ using tk, gnocl;
 
 const ui = gnocl::glade_ui "uiexample.glade";
 
-/* Callbacks. The (Pure) names of the callbacks are specified on the "Signals"
-   tab in Glade. If a widget has been specified as "User data" in Glade then
-   this becomes the first argument, and the signaled widget the second.
-   Otherwise the callback is invoked with just one argument, the signaled
-   widget. */
+/* Callbacks, as specified on the "Signals" tab in Glade. If a widget has been
+   entered as "User data" in Glade then this becomes the first argument, and
+   the signaled widget the second. Otherwise the callback is invoked with just
+   one argument, the signaled widget. Thus, no matter how the callbacks have
+   been configured, we can always count on that at least one widget argument
+   is present. */
 
-new_cb id _  = () when
+new_cb id = () when
   // Clear the text view.
   tk $ sprintf "%s set {}" id;
 end;
-file_cb id _ = () when
+file_cb id = () when
   // Read the file and set the text view accordingly.
   tk_set "textbuf" $ fget $ fopen fname "r";
   tk $ sprintf "%s set $textbuf" id;
