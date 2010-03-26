@@ -121,14 +121,21 @@ static int tk_pure(ClientData clientData,
     Tcl_AppendResult(interp, "callback error", NULL);
     return TCL_ERROR;
   }
-  /* If there's a string or a number that we can return as the result, set it
-     here. */
-  if (pure_is_tuplev(x, &n, NULL) && n>=1) {
+  /* If there are some string or number results that we can return, set the
+     result here. */
+  if ((pure_is_listv(x, &n, NULL) || pure_is_tuplev(x, &n, NULL)) && n>=1) {
     size_t i;
-    if (n == 1)
-      xv = &x;
-    else
-      pure_is_tuplev(x, &n, &xv);
+    (void)(pure_is_listv(x, &n, &xv) || pure_is_tuplev(x, &n, &xv));
+    for (i = 0; i < n; i++) {
+      pure_expr *x = xv[i];
+      if (!pure_is_string(x, NULL) &&
+	  !pure_is_int(x, NULL) &&
+	  !pure_is_double(x, NULL)) {
+	free(xv);
+	pure_freenew(x);
+	return TCL_OK;
+      }
+    }
     for (i = 0; i < n; i++) {
       pure_expr *x = xv[i];
       if (pure_is_string(x, &s)) {
@@ -147,7 +154,7 @@ static int tk_pure(ClientData clientData,
 	}
       }
     }
-    if (n != 1) free(xv);
+    free(xv);
   }
   pure_freenew(x);
   /* Callback was executed successfully. */
@@ -358,24 +365,29 @@ pure_expr *tk_split(const char *s)
 
 pure_expr *tk_join(pure_expr *x)
 {
-  size_t i, n, m;
+  size_t i, n;
   pure_expr **xv;
   if (pure_is_listv(x, &n, &xv)) {
     char *s, *ret;
     char **argv = (char**)malloc(n*sizeof(char*));
     pure_expr *x;
-    for (i = m = 0; i < n; i++) {
+    for (i = 0; i < n; i++) {
       x = xv[i];
       if (pure_is_string_dup(x, &s))
-	argv[m++] = s;
-      else if (pure_is_int(x, NULL) || pure_is_double(x, NULL)) {
-	char *s = str(x);
-	if (s) argv[m++] = s;
+	argv[i] = s;
+      else if (pure_is_int(x, NULL) || pure_is_double(x, NULL))
+	argv[i] = str(x);
+      else {
+	size_t j;
+	for (j = 0; j < i; j++) free(argv[j]);
+	free(argv);
+	free(xv);
+	return NULL;
       }
     }
     free(xv);
-    ret = Tcl_Merge(m, (const char**)argv);
-    for (i = 0; i < m; i++) free(argv[i]);
+    ret = Tcl_Merge(n, (const char**)argv);
+    for (i = 0; i < n; i++) free(argv[i]);
     free(argv);
     x = pure_string_dup(ret);
     Tcl_Free(ret);
