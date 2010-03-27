@@ -31,3 +31,32 @@ extern bool tk_ready();
 // A simple main loop which just keeps processing events until the interpreter
 // is exited or the main window is closed.
 extern expr *tk_main();
+
+/* Convenience functions to convert between Pure data (strings, ints and
+   doubles, as well as lists of such values) and strings in Tcl syntax. */
+
+public tk_str tk_val;
+
+tk_str x::string = x;
+tk_str x::int | tk_str x::bigint | tk_str x::double = str x;
+tk_str xs@[]  | tk_str xs@(_:_)  = tk_join ys if all stringp ys when
+  ys = map tk_str1 xs;
+end with
+  tk_str1 x::string = x;
+  tk_str1 x::int | tk_str1 x::bigint | tk_str1 x::double = str x;
+end;
+
+tk_val s::string = case val s of
+  x::int | x::bigint | x::double = x;
+  _ = case tk_split s of
+        []       = [];
+	[x]      = tk_val1 x;
+	xs@(_:_) = map tk_val1 xs;
+	_        = s;
+      end;
+end with
+  tk_val1 s::string = case val s of
+    x::int | x::bigint | x::double = x;
+    _ = s;
+  end;
+end;
