@@ -14,16 +14,6 @@
 
 static Tcl_Interp* interp;
 
-/* The text of Tcl/Tk error messages is recorded in this variable. */
-
-static char *result;
-
-static void set_result(const char *s)
-{
-  result = malloc(strlen(s)+1);
-  if (result) strcpy(result, s);
-}
-
 /* Handle X11 protocol errors */
 
 static int XErrorProc(ClientData data, XErrorEvent *errEventPtr)
@@ -33,6 +23,25 @@ static int XErrorProc(ClientData data, XErrorEvent *errEventPtr)
 	  errEventPtr->error_code, errEventPtr->request_code,
 	  errEventPtr->minor_code);
   return 0;
+}
+
+/* Helper functions for error handling. */
+
+static inline void set_result(char **result, const char *s)
+{
+  *result = malloc(strlen(s)+1);
+  if (*result) strcpy(*result, s);
+}
+
+/* Construct an error term. tk_error is supposed to be defined by the
+   application in order to implement any desired error handling. */
+
+static inline pure_expr *tk_error(char *result)
+{
+  if (result)
+    return pure_app(pure_symbol(pure_sym("tk_error")), pure_string(result));
+  else
+    return 0;
 }
 
 /* Parse a number literal. */
@@ -86,7 +95,7 @@ static int tk_pure(ClientData clientData,
 		   Tcl_Interp *interp,
 		   int argc, char **argv)
 {
-  pure_expr *x, *e = NULL, **xv;
+  pure_expr *x, *e = NULL;
   size_t n;
   const char *s;
   int i, fno;
@@ -97,7 +106,6 @@ static int tk_pure(ClientData clientData,
     Tcl_AppendResult(interp, "missing callback", NULL);
     return TCL_ERROR;
   }
-  Tcl_ResetResult(interp);
   fno = pure_getsym(argv[1]);
   if (fno <= 0) {
     /* Not a valid function name, i.e., the callback hasn't been defined yet.
@@ -114,7 +122,9 @@ static int tk_pure(ClientData clientData,
       xv[i-2] = tmp?tmp:pure_string_dup(argv[i]);
     }
     x = pure_appxv(x, argc-2, xv, &e);
+    free(xv);
   }
+  Tcl_ResetResult(interp);
   if (!x) {
     /* Callback raised an exception. */
     if (e) pure_freenew(e);
@@ -124,13 +134,14 @@ static int tk_pure(ClientData clientData,
   /* If there are some string or number results that we can return, set the
      result here. */
   if ((pure_is_listv(x, &n, NULL) || pure_is_tuplev(x, &n, NULL)) && n>=1) {
+    pure_expr **xv;
     size_t i;
     (void)(pure_is_listv(x, &n, &xv) || pure_is_tuplev(x, &n, &xv));
     for (i = 0; i < n; i++) {
-      pure_expr *x = xv[i];
-      if (!pure_is_string(x, NULL) &&
-	  !pure_is_int(x, NULL) &&
-	  !pure_is_double(x, NULL)) {
+      pure_expr *y = xv[i];
+      if (!pure_is_string(y, NULL) &&
+	  !pure_is_int(y, NULL) &&
+	  !pure_is_double(y, NULL)) {
 	free(xv);
 	pure_freenew(x);
 	return TCL_OK;
@@ -165,7 +176,7 @@ static int tk_pure(ClientData clientData,
 
 static void tk_stop(void);
 
-static bool tk_start(void)
+static bool tk_start(char **result)
 {
   static bool first_init = false;
   Tk_Window mainw;
@@ -176,15 +187,15 @@ static bool tk_start(void)
     /* finalize Tcl at program exit */
     atexit(Tcl_Finalize);
   }
-  result = NULL;
+  *result = NULL;
   if (interp) return true;
   /* start up a new interpreter */
   if (!(interp = Tcl_CreateInterp())) return false;
   if (Tcl_Init(interp) != TCL_OK) {
     if (interp->result && *interp->result)
-      set_result(interp->result);
+      set_result(result, interp->result);
     else
-      set_result("error initializing Tcl");
+      set_result(result, "error initializing Tcl");
     tk_stop();
     return false;
   }
@@ -195,9 +206,9 @@ static bool tk_start(void)
   Tcl_SetVar2(interp, "env", "DISPLAY", getenv("DISPLAY"), TCL_GLOBAL_ONLY);
   if (Tk_Init(interp) != TCL_OK) {
     if (interp->result && *interp->result)
-      set_result(interp->result);
+      set_result(result, interp->result);
     else
-      set_result("error initializing Tk");
+      set_result(result, "error initializing Tk");
     tk_stop();
     return false;
   }
@@ -238,24 +249,24 @@ static bool tk_running(void)
 
 /* Evaluate Tcl commands. */
 
-static bool tk_eval(const char *s)
+static bool tk_eval(const char *s, char **result)
 {
   int status;
   char *cmd;
-  result = NULL;
+  *result = NULL;
   if (!interp) return false;
   cmd = malloc(strlen(s)+1);
   if (!cmd) return false;
   strcpy(cmd, s);
   status = Tcl_Eval(interp, cmd);
   if (interp && interp->result && *interp->result)
-    set_result(interp->result);
+    set_result(result, interp->result);
   else if (status == TCL_BREAK)
-    set_result("invoked \"break\" outside of a loop");
+    set_result(result, "invoked \"break\" outside of a loop");
   else if (status == TCL_CONTINUE)
-    set_result("invoked \"continue\" outside of a loop");
+    set_result(result, "invoked \"continue\" outside of a loop");
   else
-    set_result("");
+    set_result(result, "");
   if (status == TCL_BREAK || status == TCL_CONTINUE)
     status = TCL_ERROR;
   tk_do_events();
@@ -263,27 +274,17 @@ static bool tk_eval(const char *s)
   return status != TCL_ERROR;
 }
 
-/* Construct an error term. tk_error is supposed to be defined by the
-   application in order to implement any desired error handling. */
-
-static inline pure_expr *tk_error(void)
-{
-  if (result)
-    return pure_app(pure_symbol(pure_sym("tk_error")), pure_string(result));
-  else
-    return 0;
-}
-
 /* Interface functions. */
 
 pure_expr *tk(const char *s)
 {
-  if (tk_start()) {
+  char *result = NULL;
+  if (tk_start(&result)) {
     bool res;
     /* Make sure that we don't pull the rug under ourselves. */
     Tcl_Interp* _interp = interp;
     Tcl_Preserve(_interp);
-    res = tk_eval(s);
+    res = tk_eval(s, &result);
     Tcl_Release(_interp);
     if (!result)
       return 0;
@@ -295,45 +296,48 @@ pure_expr *tk(const char *s)
 	return pure_tuplel(0);
       }
     else
-      return tk_error();
+      return tk_error(result);
   } else
-    return tk_error();
+    return tk_error(result);
 }
 
 pure_expr *tk_set(const char *s, const char *t)
 {
-  if (tk_start()) {
+  char *result = NULL;
+  if (tk_start(&result)) {
     const char *res = Tcl_SetVar(interp, s, t, TCL_GLOBAL_ONLY);
     if (res)
       return pure_string_dup(t);
     else
       return 0;
   } else
-    return tk_error();
+    return tk_error(result);
 }
 
 pure_expr *tk_unset(const char *s)
 {
-  if (tk_start()) {
+  char *result = NULL;
+  if (tk_start(&result)) {
     int res = Tcl_UnsetVar(interp, s, TCL_GLOBAL_ONLY);
     if (res == TCL_OK)
       return pure_tuplel(0);
     else
       return 0;
   } else
-    return tk_error();
+    return tk_error(result);
 }
 
 pure_expr *tk_get(const char *s)
 {
-  if (tk_start()) {
+  char *result = NULL;
+  if (tk_start(&result)) {
     const char *res = Tcl_GetVar(interp, s, TCL_GLOBAL_ONLY);
     if (res)
       return pure_string_dup(res);
     else
       return 0;
   } else
-    return tk_error();
+    return tk_error(result);
 }
 
 pure_expr *tk_split(const char *s)
@@ -408,10 +412,11 @@ bool tk_ready(void)
 
 pure_expr *tk_main(void)
 {
-  if (tk_start()) {
+  char *result = NULL;
+  if (tk_start(&result)) {
     while (interp && Tk_MainWindow(interp) && Tcl_DoOneEvent(0)) ;
     if (interp && !Tk_MainWindow(interp)) tk_stop();
     return pure_tuplel(0);
   } else
-    return tk_error();
+    return tk_error(result);
 }
