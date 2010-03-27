@@ -78,8 +78,14 @@ static int tk_pure(ClientData clientData,
   Tcl_ResetResult(interp);
   if (!x) {
     /* Callback raised an exception. */
-    if (e) pure_freenew(e);
-    Tcl_AppendResult(interp, "callback error", NULL);
+    char *s = NULL;
+    if (e) {
+      s = str(e);
+      pure_freenew(e);
+    }
+    Tcl_AppendResult(interp, "exception while executing callback ", argv[1],
+		     "\n", s, NULL);
+    if (s) free(s);
     return TCL_ERROR;
   }
   /* If we got a string result, return it. */
