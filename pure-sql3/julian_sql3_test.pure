@@ -1,0 +1,65 @@
+/* julian_sql3_test.pure - test to see that SQLite3 and julian.pure 
+   conform. */
+
+using system;
+using julian, sql3;
+using namespace julian;
+
+/*  Use SQLite3 to convert from strings to JDs and back. */
+
+let db1 = sql3::open "junk.db";
+let stm_str = sql3::prep db1 "c:d" "select strftime('%Y-%m-%d %H:%M:%f',?)";
+let stm_jd = sql3::prep db1 "d:c" "select julianday(?)";
+
+sql3ymdhms jd = st
+when [[st]] = sql3::exec stm_str jd; end;
+
+sql3jd s::string = jd
+when [[jd]] = sql3::exec stm_jd s; end;
+
+putstr = puts.str;
+
+/* Some dates */
+
+let s1 = "0000-01-01";  // SQlite3 only good from 0000
+let s2 = "1582-10-10";  // The adoption gap.
+let s3 = "2010-03-25 12:00:00";
+let s4 = "2010-03-25 18:00:00";
+
+let jd1 = str_to_jd s1;
+let jd2 = str_to_jd s2;
+let jd3 = str_to_jd s3;
+let jd4 = str_to_jd s4;
+
+let s_jd1 = sql3jd s1;
+let s_jd2 = sql3jd s2;
+let s_jd3 = sql3jd s3; 
+let s_jd4 = sql3jd s4;
+
+/* compare results for the dates using SQLite3 and julian.pure */
+
+puts "compare julian dates";
+putstr jd1;
+putstr s_jd1;
+putstr jd2;
+putstr s_jd2;
+putstr jd3;
+putstr s_jd3;
+putstr jd4;
+putstr s_jd4;
+
+puts "\ncompare greg";
+puts (jd_to_str (jd1,wsecs));
+puts (sql3ymdhms s_jd1);
+puts (jd_to_str (jd2,wsecs));
+puts (sql3ymdhms s_jd2);
+puts (jd_to_str (jd3,wsecs));
+puts (sql3ymdhms s_jd3);
+puts (jd_to_str (jd4,wsecs));
+puts (sql3ymdhms s_jd4);
+
+
+
+
+
+
