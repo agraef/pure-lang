@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>pure-tk</title>
 <meta name="author" content="Albert Graef &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2010-03-26" />
+<meta name="date" content="2010-03-27" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Graef &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-03-26</td></tr>
+<td>2010-03-27</td></tr>
 </tbody>
 </table>
 <p>Pure's <a class="reference external" href="http://www.tcl.tk">Tcl/Tk</a> interface.</p>
@@ -327,8 +327,8 @@ example can be found in tk_hello.pure; a slightly more advanced example of a
 tiny but complete Tk application is in tk_examp.pure.</p>
 <p>pure-tk also offers special support for Peter G. Baum's <a class="reference external" href="http://www.gnocl.org">Gnocl</a> extension which
 turns Tcl into a frontend for <a class="reference external" href="http://www.gtk.org/">GTK+</a> and <a class="reference external" href="http://www.gnome.org/">Gnome</a>. If you have Gnocl installed
-then you can easily create GTK+/Gnome applications from <a class="reference external" href="http://glade.gnome.org/">Glade</a> UI files in a
-very convenient fashion using the provided gnocl.pure module. See the included
+then you can easily create GTK+/Gnome applications, either from Tcl sources or
+from <a class="reference external" href="http://glade.gnome.org/">Glade</a> UI files, using the provided gnocl.pure module. See the included
 uiexample.pure and uiexample.glade for a simple example. Also, some basic
 information on using Gnocl with pure-tk can be found in the <a class="reference internal" href="#tips-and-tricks">Tips and Tricks</a>
 section below.</p>
@@ -384,7 +384,7 @@ pure function args ...
 <p>It calls the Pure function named by the first argument. Any remaining
 arguments are passed to the callback. Arguments looking like numeric literals
 (int or double) are parsed and passed as numbers, everything else is passed as
-a string. For instance:</p>
+a string. For instance (this is Tcl code):</p>
 <dl class="docutils">
 <dt><tt class="docutils literal"><span class="pre">pure</span> <span class="pre">foo</span></tt></dt>
 <dd>calls the Pure function <tt class="docutils literal"><span class="pre">foo</span></tt> without parameters;</dd>
@@ -398,7 +398,8 @@ returns a string or a number (int or double) then this becomes the result of
 the <tt class="docutils literal"><span class="pre">pure</span></tt> command in the Tcl interpreter. The callback can also return a
 collection of such values as a list or a tuple, which are converted to a
 corresponding Tcl list. If the callback result is any other kind of Pure value
-then nothing is returned by the <tt class="docutils literal"><span class="pre">pure</span></tt> command. For instance:</p>
+then nothing is returned by the <tt class="docutils literal"><span class="pre">pure</span></tt> command. For instance (this is Pure
+code):</p>
 <dl class="docutils">
 <dt><tt class="docutils literal"><span class="pre">foo</span> <span class="pre">=</span> <span class="pre">();</span></tt></dt>
 <dd>returns nothing;</dd>
@@ -506,10 +507,29 @@ Pure callback with the Tcl <tt class="docutils literal"><span class="pre">after<
 </li>
 <li><p class="first">The <tt class="docutils literal"><span class="pre">tk</span></tt> function can become rather tedious when coding larger Tk
 applications. Usually, you will prefer to put the commands making up your
-application into a separate Tcl script, and then invoke this script from
-your Pure script using the Tcl <tt class="docutils literal"><span class="pre">source</span></tt> command, e.g.:</p>
+application into a separate Tcl script. One way to incorporate the Tcl
+script into your your Pure program is to use the Tcl <tt class="docutils literal"><span class="pre">source</span></tt> command,
+e.g.:</p>
 <pre class="literal-block">
 tk &quot;source myapp.tcl&quot;;
+</pre>
+<p>However, this always requires the script to be available at runtime. Another
+method is to read the script into a string which is assigned to a Pure
+constant, and then invoke the <tt class="docutils literal"><span class="pre">tk</span></tt> command on this string value:</p>
+<pre class="literal-block">
+using system;
+const ui = fget $ fopen &quot;myapp.tcl&quot; &quot;r&quot;;
+tk ui;
+</pre>
+<p>This still reads the script at runtime if the Pure program is executed using
+the Pure interpreter. However, you can now compile the Pure program to a
+native executable (see the Pure manual for details on this), in which case
+the text of the Tcl script is included verbatim in the executable. The
+compiled program can then be run without having the original Tcl script file
+available:</p>
+<pre class="literal-block">
+$ pure -c myapp.pure -o myapp
+$ ./myapp
 </pre>
 <p>This is also the method to use for running existing Tk applications, e.g.,
 if you create the interface using some interface builder like <a class="reference external" href="http://vtcl.sourceforge.net">vtcl</a>.</p>
@@ -529,10 +549,10 @@ just import the gnocl.pure module into your Pure scripts:</p>
 <pre class="literal-block">
 using gnocl;
 </pre>
-<p>This requires that you have a fairly recent version of Gnocl installed.
-Gnocl 0.9.94g has been tested. Please see the gnocl.pure module and the
-uiexample Pure and Glade sources in the examples folder for more
-information.</p>
+<p>Note that the Glade interface requires that you have a fairly recent version
+of Gnocl installed (Gnocl 0.9.94g has been tested). Please see the
+gnocl.pure module and the uiexample Pure and Glade sources in the examples
+folder for more information.</p>
 </li>
 <li><p class="first">The Tcl <tt class="docutils literal"><span class="pre">exit</span></tt> procedure, just as in tclsh or wish, causes exit from the
 current process. Since the Tcl interpreter hosted by the pure-tk module runs

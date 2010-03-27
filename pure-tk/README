@@ -35,8 +35,8 @@ tiny but complete Tk application is in tk_examp.pure.
 
 pure-tk also offers special support for Peter G. Baum's Gnocl_ extension which
 turns Tcl into a frontend for `GTK+`_ and Gnome_. If you have Gnocl installed
-then you can easily create GTK+/Gnome applications from Glade_ UI files in a
-very convenient fashion using the provided gnocl.pure module. See the included
+then you can easily create GTK+/Gnome applications, either from Tcl sources or
+from Glade_ UI files, using the provided gnocl.pure module. See the included
 uiexample.pure and uiexample.glade for a simple example. Also, some basic
 information on using Gnocl with pure-tk can be found in the `Tips and Tricks`_
 section below.
@@ -104,7 +104,7 @@ as follows::
 It calls the Pure function named by the first argument. Any remaining
 arguments are passed to the callback. Arguments looking like numeric literals
 (int or double) are parsed and passed as numbers, everything else is passed as
-a string. For instance:
+a string. For instance (this is Tcl code):
 
 ``pure foo``
   calls the Pure function ``foo`` without parameters;
@@ -120,7 +120,8 @@ returns a string or a number (int or double) then this becomes the result of
 the ``pure`` command in the Tcl interpreter. The callback can also return a
 collection of such values as a list or a tuple, which are converted to a
 corresponding Tcl list. If the callback result is any other kind of Pure value
-then nothing is returned by the ``pure`` command. For instance:
+then nothing is returned by the ``pure`` command. For instance (this is Pure
+code):
 
 ``foo = ();``
   returns nothing;
@@ -232,10 +233,29 @@ Here are a few other things that are useful when working with pure-tk.
 
 * The ``tk`` function can become rather tedious when coding larger Tk
   applications. Usually, you will prefer to put the commands making up your
-  application into a separate Tcl script, and then invoke this script from
-  your Pure script using the Tcl ``source`` command, e.g.::
+  application into a separate Tcl script. One way to incorporate the Tcl
+  script into your your Pure program is to use the Tcl ``source`` command,
+  e.g.::
 
     tk "source myapp.tcl";
+
+  However, this always requires the script to be available at runtime. Another
+  method is to read the script into a string which is assigned to a Pure
+  constant, and then invoke the ``tk`` command on this string value::
+
+    using system;
+    const ui = fget $ fopen "myapp.tcl" "r";
+    tk ui;
+
+  This still reads the script at runtime if the Pure program is executed using
+  the Pure interpreter. However, you can now compile the Pure program to a
+  native executable (see the Pure manual for details on this), in which case
+  the text of the Tcl script is included verbatim in the executable. The
+  compiled program can then be run without having the original Tcl script file
+  available::
+
+    $ pure -c myapp.pure -o myapp
+    $ ./myapp
 
   This is also the method to use for running existing Tk applications, e.g.,
   if you create the interface using some interface builder like vtcl_.
@@ -255,10 +275,10 @@ Here are a few other things that are useful when working with pure-tk.
 
     using gnocl;
 
-  This requires that you have a fairly recent version of Gnocl installed.
-  Gnocl 0.9.94g has been tested. Please see the gnocl.pure module and the
-  uiexample Pure and Glade sources in the examples folder for more
-  information.
+  Note that the Glade interface requires that you have a fairly recent version
+  of Gnocl installed (Gnocl 0.9.94g has been tested). Please see the
+  gnocl.pure module and the uiexample Pure and Glade sources in the examples
+  folder for more information.
 
 * The Tcl ``exit`` procedure, just as in tclsh or wish, causes exit from the
   current process. Since the Tcl interpreter hosted by the pure-tk module runs

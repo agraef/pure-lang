@@ -2,6 +2,10 @@
 /* A simple Pure interface to Gnocl, Peter G. Baum's Tcl extension for
    creating GTK+/Gnome applications available at http://www.gnocl.org/. */
 
+/* NOTE: The gnocl::glade_init operation requires a recent Gnocl version to
+   work (0.9.94g has been tested). The other operations of this module should
+   still work with older Gnocl versions such as 0.9.91. */
+
 using tk, xml, system;
 
 // Get rid of the Tk main window and make sure that we have Gnocl loaded.
@@ -43,10 +47,10 @@ end;
    up as specified in the UI file. It returns a record mapping the symbolic
    (Glade) widget names to real (Gnocl) widget ids. */
 
-/* Note that the (Pure) names of the callbacks are specified on the "Signals"
-   tab in Glade. If a widget has been specified as "User data" in Glade then
-   this becomes the first argument and the signaled widget the second.
-   Otherwise the callback is invoked with just the signaled widget. */
+/* The (Pure) names of the callbacks are specified on the "Signals" tab in
+   Glade. If a widget has been specified as "User data" in Glade then this
+   becomes the first argument and the signaled widget the second.  Otherwise
+   the callback is invoked with just the signaled widget. */
 
 glade_init (ui, cbs) = do config cbs $$ w with
   config (name=>signals) = do config signals with
