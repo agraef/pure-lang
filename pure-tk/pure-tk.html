@@ -308,7 +308,8 @@ ul.auto-toc {
 <li><a class="reference internal" href="#callbacks" id="id5">5&nbsp;&nbsp;&nbsp;Callbacks</a></li>
 <li><a class="reference internal" href="#the-main-loop" id="id6">6&nbsp;&nbsp;&nbsp;The Main Loop</a></li>
 <li><a class="reference internal" href="#accessing-tcl-variables" id="id7">7&nbsp;&nbsp;&nbsp;Accessing Tcl Variables</a></li>
-<li><a class="reference internal" href="#tips-and-tricks" id="id8">8&nbsp;&nbsp;&nbsp;Tips and Tricks</a></li>
+<li><a class="reference internal" href="#conversions-between-pure-and-tcl-values" id="id8">8&nbsp;&nbsp;&nbsp;Conversions Between Pure and Tcl Values</a></li>
+<li><a class="reference internal" href="#tips-and-tricks" id="id9">9&nbsp;&nbsp;&nbsp;Tips and Tricks</a></li>
 </ul>
 </div>
 <div class="section" id="introduction">
@@ -356,12 +357,14 @@ directories on your system.</p>
 <div class="section" id="basic-usage">
 <h1><a class="toc-backref" href="#id4">4&nbsp;&nbsp;&nbsp;Basic Usage</a></h1>
 <p>You can submit a command to the Tcl interpreter with <tt class="docutils literal"><span class="pre">tk</span> <span class="pre">cmd</span></tt> where <tt class="docutils literal"><span class="pre">cmd</span></tt>
-is a string containing the command to be executed. This also starts a new
-instance of the Tcl interpreter if it is not already running. To stop the Tcl
-interpreter, you can use the <tt class="docutils literal"><span class="pre">tk_quit</span></tt> function. Note that, as far as
-pure-tk is concerned, there's only one Tcl interpreter per process, but of
-course you can create additional interpreter instances using the appropriate
-Tcl commands.</p>
+is a string containing the command to be executed. If the Tcl command returns
+a value (i.e., a nonempty string) then <tt class="docutils literal"><span class="pre">tk</span></tt> returns that string, otherwise
+it returns <tt class="docutils literal"><span class="pre">()</span></tt>.</p>
+<p><tt class="docutils literal"><span class="pre">tk</span></tt> also starts a new instance of the Tcl interpreter if it is not already
+running. To stop the Tcl interpreter, you can use the <tt class="docutils literal"><span class="pre">tk_quit</span></tt> function.
+Note that, as far as pure-tk is concerned, there's only one Tcl interpreter
+per process, but of course you can create secondary interpreter instances in
+the Tcl interpreter using the appropriate Tcl commands.</p>
 <p>Simple dialogs can be created directly using Tk's <tt class="docutils literal"><span class="pre">tk_messageBox</span></tt> and
 <tt class="docutils literal"><span class="pre">tk_dialog</span></tt> functions. For instance:</p>
 <pre class="literal-block">
@@ -370,7 +373,7 @@ tk &quot;tk_dialog .warning \&quot;Warning\&quot; \&quot;Are you sure?\&quot; wa
 <p>Other kinds of common dialogs are available; see the Tcl/Tk manual for
 information.</p>
 <p>For more elaborate applications you probably have to explicitly create some
-widgets with the appropriate callbacks, and provide a main loop which takes
+widgets, add the appropriate callbacks and provide a main loop which takes
 care of processing events in the Tcl/Tk GUI. We discuss this in the following.</p>
 </div>
 <div class="section" id="callbacks">
@@ -381,34 +384,18 @@ as follows:</p>
 <pre class="literal-block">
 pure function args ...
 </pre>
-<p>It calls the Pure function named by the first argument. Any remaining
-arguments are passed to the callback. Arguments looking like numeric literals
-(int or double) are parsed and passed as numbers, everything else is passed as
-a string. For instance (this is Tcl code):</p>
-<dl class="docutils">
-<dt><tt class="docutils literal"><span class="pre">pure</span> <span class="pre">foo</span></tt></dt>
-<dd>calls the Pure function <tt class="docutils literal"><span class="pre">foo</span></tt> without parameters;</dd>
-<dt><tt class="docutils literal"><span class="pre">pure</span> <span class="pre">foo</span> <span class="pre">bar</span> <span class="pre">baz!?</span></tt></dt>
-<dd>invokes <tt class="docutils literal"><span class="pre">foo</span></tt> as <tt class="docutils literal"><span class="pre">foo</span> <span class="pre">&quot;bar&quot;</span> <span class="pre">&quot;baz!?&quot;</span></tt>;</dd>
-<dt><tt class="docutils literal"><span class="pre">pure</span> <span class="pre">foo</span> <span class="pre">1.0</span> <span class="pre">{Hello,</span> <span class="pre">world}</span></tt></dt>
-<dd>invokes <tt class="docutils literal"><span class="pre">foo</span></tt> as <tt class="docutils literal"><span class="pre">foo</span> <span class="pre">1.0</span> <span class="pre">&quot;Hello,</span> <span class="pre">world&quot;</span></tt>.</dd>
-</dl>
-<p>Analogous conversions are applied to the result value, so if the callback
-returns a string or a number (int or double) then this becomes the result of
-the <tt class="docutils literal"><span class="pre">pure</span></tt> command in the Tcl interpreter. The callback can also return a
-collection of such values as a list or a tuple, which are converted to a
-corresponding Tcl list. If the callback result is any other kind of Pure value
-then nothing is returned by the <tt class="docutils literal"><span class="pre">pure</span></tt> command. For instance (this is Pure
-code):</p>
-<dl class="docutils">
-<dt><tt class="docutils literal"><span class="pre">foo</span> <span class="pre">=</span> <span class="pre">();</span></tt></dt>
-<dd>returns nothing;</dd>
-<dt><tt class="docutils literal"><span class="pre">foo</span> <span class="pre">=</span> <span class="pre">99;</span></tt></dt>
-<dd>returns an integer <tt class="docutils literal"><span class="pre">99</span></tt>;</dd>
-<dt><tt class="docutils literal"><span class="pre">foo</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">1.0,</span> <span class="pre">&quot;Hello,</span> <span class="pre">world&quot;;</span></tt></dt>
-<dd>returns a Tcl list <tt class="docutils literal"><span class="pre">0.0</span> <span class="pre">1.0</span> <span class="pre">{Hello,</span> <span class="pre">world}</span></tt> consisting of two double
-values and a string.</dd>
-</dl>
+<p>It calls the Pure function named by the first argument, passing any remaining
+(string) arguments to the callback. If the Pure callback returns a (nonempty)
+string, that value becomes the return value of the <tt class="docutils literal"><span class="pre">pure</span></tt> command, otherwise
+the result returned to the Tcl interpreter is empty.</p>
+<p>Pure callbacks are installed on Tk widgets just like any other, just using the
+<tt class="docutils literal"><span class="pre">pure</span></tt> command as the actual callback command. For instance, you can define
+a callback which gets invoked when a button is pushed as follows:</p>
+<pre class="literal-block">
+using tk, system;
+tk &quot;button .b -text {Hello, world!} -command {pure hello}; pack .b&quot;;
+hello = puts &quot;Hello, world!&quot;;
+</pre>
 </div>
 <div class="section" id="the-main-loop">
 <h1><a class="toc-backref" href="#id6">6&nbsp;&nbsp;&nbsp;The Main Loop</a></h1>
@@ -424,12 +411,13 @@ tk_main;
 </pre>
 <p>The main loop terminates as soon as the Tcl interpreter is exited, which can
 happen, e.g., in response to a callback which invokes the <tt class="docutils literal"><span class="pre">tk_quit</span></tt> function
-or Tcl code which destroys the main window (<tt class="docutils literal"><span class="pre">destroy</span> <span class="pre">.</span></tt>). The user can also
-close the main window from the window manager in order to exit the main loop.</p>
+(as shown above) or Tcl code which destroys the main window (<tt class="docutils literal"><span class="pre">destroy</span> <span class="pre">.</span></tt>).
+The user can also close the main window from the window manager in order to
+exit the main loop.</p>
 </div>
 <div class="section" id="accessing-tcl-variables">
 <h1><a class="toc-backref" href="#id7">7&nbsp;&nbsp;&nbsp;Accessing Tcl Variables</a></h1>
-<p>pure-tk also allows your script to set and retrieve variable values in the Tcl
+<p>pure-tk allows your script to set and retrieve variable values in the Tcl
 interpreter with the <tt class="docutils literal"><span class="pre">tk_set</span></tt>, <tt class="docutils literal"><span class="pre">tk_unset</span></tt> and <tt class="docutils literal"><span class="pre">tk_get</span></tt> functions. This
 is useful, e.g., to change the variables associated with entry and button
 widgets, and to retrieve the current values from the application. For
@@ -444,29 +432,52 @@ instance:</p>
 &gt; tk_get &quot;entry_val&quot;;
 tk_get &quot;entry_val&quot;
 </pre>
-<p>Note that all values are passed as strings here. (At the language level, this
-is really the only data type that Tcl/Tk knows.) However, pure-tk also offers
-the following convenience functions which convert between Tcl and Pure lists:</p>
-<dl class="docutils">
-<dt><tt class="docutils literal"><span class="pre">tk_join</span> <span class="pre">xs</span></tt></dt>
-<dd>Converts a Pure list of numbers and strings to a string representing the
-same list in Tcl syntax.</dd>
-<dt><tt class="docutils literal"><span class="pre">tk_split</span> <span class="pre">s</span></tt></dt>
-<dd>Converts a string <tt class="docutils literal"><span class="pre">s</span></tt> representing a list in Tcl syntax to a corresponding
-Pure list.</dd>
-</dl>
-<p>These operations also do automatic conversions for numeric values, similar to
-what the Tcl <tt class="docutils literal"><span class="pre">pure</span></tt> command does. Example:</p>
+<p>Note that <tt class="docutils literal"><span class="pre">tk_set</span></tt> returns the assigned value, so it is possible to chain
+such calls if several variables have to be set to the same value:</p>
 <pre class="literal-block">
-&gt; tk_join [0,1.0,&quot;Hello, world!&quot;];
+&gt; tk_set &quot;foo&quot; $ tk_set &quot;bar&quot; &quot;yes&quot;;
+&quot;yes&quot;
+&gt; map tk_get [&quot;foo&quot;,&quot;bar&quot;];
+[&quot;yes&quot;,&quot;yes&quot;]
+</pre>
+</div>
+<div class="section" id="conversions-between-pure-and-tcl-values">
+<h1><a class="toc-backref" href="#id8">8&nbsp;&nbsp;&nbsp;Conversions Between Pure and Tcl Values</a></h1>
+<p>As far as pure-tk is concerned, all Tcl values are strings (in fact, that's
+just what they are at the Tcl language level, although the Tcl interpreter
+uses more elaborate representations of objects such as lists internally).
+There are no automatic conversions of any kind. Thus, the arguments passed to
+a Pure callback and the result returned by <tt class="docutils literal"><span class="pre">tk</span></tt> are simply strings in Pure
+land. The same holds for the <tt class="docutils literal"><span class="pre">tk_set</span></tt> and <tt class="docutils literal"><span class="pre">tk_get</span></tt> functions.</p>
+<p>However, there are a few helper functions which can be used to convert between
+Tcl and Pure data. First, the following operations convert Pure lists to
+corresponding Tcl lists and vice versa:</p>
+<pre class="literal-block">
+&gt; tk_join [&quot;0&quot;,&quot;1.0&quot;,&quot;Hello, world!&quot;];
 &quot;0 1.0 {Hello, world!}&quot;
 &gt; tk_split ans;
+[&quot;0&quot;,&quot;1.0&quot;,&quot;Hello, world!&quot;]
+</pre>
+<p>The <tt class="docutils literal"><span class="pre">tk_str</span></tt> and <tt class="docutils literal"><span class="pre">tk_val</span></tt> operations work in a similar fashion, but they
+also do automatic conversions for numeric values (ints, bigints and doubles):</p>
+<pre class="literal-block">
+&gt; tk_str [0,1.0,&quot;Hello, world!&quot;];
+&quot;0 1.0 {Hello, world!}&quot;
+&gt; tk_val ans;
 [0,1.0,&quot;Hello, world!&quot;]
+</pre>
+<p>In addition, these operations also convert single atomic values:</p>
+<pre class="literal-block">
+&gt; tk_str 1.0;
+&quot;1.0&quot;
+&gt; tk_val ans;
+1.0
 </pre>
 </div>
 <div class="section" id="tips-and-tricks">
-<h1><a class="toc-backref" href="#id8">8&nbsp;&nbsp;&nbsp;Tips and Tricks</a></h1>
-<p>Here are a few other things that are useful when working with pure-tk.</p>
+<h1><a class="toc-backref" href="#id9">9&nbsp;&nbsp;&nbsp;Tips and Tricks</a></h1>
+<p>Here are a few other things that are worth keeping in mind when working with
+pure-tk.</p>
 <ul>
 <li><p class="first">Errors in Tcl/Tk commands can be handled by giving an appropriate definition
 of the <tt class="docutils literal"><span class="pre">tk_error</span></tt> function, which is invoked with an error message as its
@@ -550,16 +561,17 @@ just import the gnocl.pure module into your Pure scripts:</p>
 using gnocl;
 </pre>
 <p>Note that the Glade interface requires that you have a fairly recent version
-of Gnocl installed (Gnocl 0.9.94g has been tested). Please see the
-gnocl.pure module and the uiexample Pure and Glade sources in the examples
-folder for more information.</p>
+of Gnocl installed (Gnocl 0.9.94g has been tested). The other facilities
+provided by the gnocl.pure module should also work with older Gnocl versions
+such as Gnocl 0.9.91. Please see the gnocl.pure module and the corresponding
+examples included in the sources for more information.</p>
 </li>
 <li><p class="first">The Tcl <tt class="docutils literal"><span class="pre">exit</span></tt> procedure, just as in tclsh or wish, causes exit from the
 current process. Since the Tcl interpreter hosted by the pure-tk module runs
-as part of a Pure program and not as a separate child process, <tt class="docutils literal"><span class="pre">tk</span> <span class="pre">&quot;exit&quot;</span></tt>
-will also exit from the Pure program and take you back to the shell. If
-you'd like <tt class="docutils literal"><span class="pre">exit</span></tt> to only exit the Tcl interpreter, without exiting Pure,
-you can redefine the <tt class="docutils literal"><span class="pre">exit</span></tt> procedure, e.g., as follows:</p>
+as part of a Pure program and not as a separate child process, this might
+not be what you want. If you'd like <tt class="docutils literal"><span class="pre">exit</span></tt> to only exit the Tcl
+interpreter, without exiting the Pure program, you can redefine the <tt class="docutils literal"><span class="pre">exit</span></tt>
+procedure, e.g., as follows:</p>
 <pre class="literal-block">
 tk &quot;proc exit { {returnCode 0} } { pure tk_quit }&quot;;
 </pre>
