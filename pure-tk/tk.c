@@ -210,17 +210,21 @@ pure_expr *tk(const char *s)
     return tk_error(result);
 }
 
-pure_expr *tk_set(const char *s, const char *t)
+pure_expr *tk_set(const char *s, pure_expr *x)
 {
-  char *result = NULL;
-  if (tk_start(&result)) {
-    const char *res = Tcl_SetVar(interp, s, t, TCL_GLOBAL_ONLY);
-    if (res)
-      return pure_string_dup(t);
-    else
-      return 0;
+  const char *t;
+  if (pure_is_string(x, &t)) {
+    char *result = NULL;
+    if (tk_start(&result)) {
+      const char *res = Tcl_SetVar(interp, s, t, TCL_GLOBAL_ONLY);
+      if (res)
+	return x;
+      else
+	return NULL;
+    } else
+      return tk_error(result);
   } else
-    return tk_error(result);
+    return NULL;
 }
 
 pure_expr *tk_unset(const char *s)
