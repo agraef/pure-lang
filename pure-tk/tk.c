@@ -44,51 +44,6 @@ static inline pure_expr *tk_error(char *result)
     return 0;
 }
 
-/* Parse a number literal. */
-
-static pure_expr *parse_val(const char *s)
-{
-  const char *t, *s0 = s;
-  if (*s == '-') ++s;
-  if (strncmp(s, "0b", 2) == 0 || strncmp(s, "0B", 2) == 0) {
-    /* binary */
-    for (t = s+2; *t; t++)
-      if (*t != '0' && *t != '1')
-	return NULL;
-  } else if (strncmp(s, "0x", 2) == 0 || strncmp(s, "0X", 2) == 0) {
-    /* hexadecimal */
-    for (t = s+2; *t; t++)
-      if (!isxdigit(*t))
-	return NULL;
-  } else if (*s == '0' && !strchr(s, '.')) {
-    /* octal */
-    for (t = s+1; *t; t++)
-      if (!isdigit(*t) || *t == '8' || *t == '9') {
-	if (*t == 'e' || *t == 'E')
-	  goto decimal;
-	else
-	  return NULL;
-      }
-  } else if (isdigit(*s) || *s == '.') {
-    /* decimal; this may also contain a decimal point and/or a scaling
-       factor */
-  decimal:
-    t = s;
-    while (isdigit(*t)) t++;
-    if (*t == '.') {
-      t++;
-      while (isdigit(*t)) t++;
-    }
-    if (*t == 'e' || *t == 'E') {
-      t++;
-      while (isdigit(*t)) t++;
-    }
-    if (*t) return NULL;
-  } else
-    return NULL;
-  return pure_val(s0);
-}
-
 /* Tcl command to invoke Pure callbacks. */
 
 static int tk_pure(ClientData clientData,
@@ -96,7 +51,6 @@ static int tk_pure(ClientData clientData,
 		   int argc, char **argv)
 {
   pure_expr *x, *e = NULL;
-  size_t n;
   const char *s;
   int i, fno;
 
@@ -109,18 +63,15 @@ static int tk_pure(ClientData clientData,
   fno = pure_getsym(argv[1]);
   if (fno <= 0) {
     /* Not a valid function name, i.e., the callback hasn't been defined yet.
-       This isn't an error, though, so just return indicating success. */
+       This isn't an error, so we just return indicating success. */
     return TCL_OK;
   }
   /* Apply the callback to the given arguments. */
   x = pure_symbolx(fno, &e);
   if (x && argc > 2) {
     pure_expr **xv = (pure_expr**)malloc((argc-2)*sizeof(pure_expr*));
-    for (i = 2; i < argc; i++) {
-      /* Parse numeric literals, everything else is passed as a string. */
-      pure_expr *tmp = parse_val(argv[i]);
-      xv[i-2] = tmp?tmp:pure_string_dup(argv[i]);
-    }
+    for (i = 2; i < argc; i++)
+      xv[i-2] = pure_string_dup(argv[i]);
     x = pure_appxv(x, argc-2, xv, &e);
     free(xv);
   }
@@ -131,42 +82,9 @@ static int tk_pure(ClientData clientData,
     Tcl_AppendResult(interp, "callback error", NULL);
     return TCL_ERROR;
   }
-  /* If there are some string or number results that we can return, set the
-     result here. */
-  if ((pure_is_listv(x, &n, NULL) || pure_is_tuplev(x, &n, NULL)) && n>=1) {
-    pure_expr **xv;
-    size_t i;
-    (void)(pure_is_listv(x, &n, &xv) || pure_is_tuplev(x, &n, &xv));
-    for (i = 0; i < n; i++) {
-      pure_expr *y = xv[i];
-      if (!pure_is_string(y, NULL) &&
-	  !pure_is_int(y, NULL) &&
-	  !pure_is_double(y, NULL)) {
-	free(xv);
-	pure_freenew(x);
-	return TCL_OK;
-      }
-    }
-    for (i = 0; i < n; i++) {
-      pure_expr *x = xv[i];
-      if (pure_is_string(x, &s)) {
-	if (n==1)
-	  Tcl_AppendResult(interp, s, NULL);
-	else
-	  Tcl_AppendElement(interp, s);
-      } else if (pure_is_int(x, NULL) || pure_is_double(x, NULL)) {
-	char *s = str(x);
-	if (s) {
-	  if (n==1)
-	    Tcl_AppendResult(interp, s, NULL);
-	  else
-	    Tcl_AppendElement(interp, s);
-	  free(s);
-	}
-      }
-    }
-    free(xv);
-  }
+  /* If we got a string result, return it. */
+  if (pure_is_string(x, &s) && *s)
+    Tcl_AppendResult(interp, s, NULL);
   pure_freenew(x);
   /* Callback was executed successfully. */
   return TCL_OK;
@@ -265,8 +183,6 @@ static bool tk_eval(const char *s, char **result)
     set_result(result, "invoked \"break\" outside of a loop");
   else if (status == TCL_CONTINUE)
     set_result(result, "invoked \"continue\" outside of a loop");
-  else
-    set_result(result, "");
   if (status == TCL_BREAK || status == TCL_CONTINUE)
     status = TCL_ERROR;
   tk_do_events();
@@ -286,15 +202,8 @@ pure_expr *tk(const char *s)
     Tcl_Preserve(_interp);
     res = tk_eval(s, &result);
     Tcl_Release(_interp);
-    if (!result)
-      return 0;
-    else if (res)
-      if (*result)
-	return pure_string(result);
-      else {
-	free(result);
-	return pure_tuplel(0);
-      }
+    if (res)
+      return (result&&*result)?pure_string(result):pure_tuplel(0);
     else
       return tk_error(result);
   } else
@@ -335,7 +244,7 @@ pure_expr *tk_get(const char *s)
     if (res)
       return pure_string_dup(res);
     else
-      return 0;
+      return NULL;
   } else
     return tk_error(result);
 }
@@ -352,10 +261,8 @@ pure_expr *tk_split(const char *s)
     else {
       pure_expr **xv = (pure_expr**)malloc(argc*sizeof(pure_expr*));
       int i;
-      for (i = 0; i < argc; i++) {
-	pure_expr *tmp = parse_val(argv[i]);
-	xv[i] = tmp?tmp:pure_string_dup(argv[i]);
-      }
+      for (i = 0; i < argc; i++)
+	xv[i] = pure_string_dup(argv[i]);
       x = pure_listv(argc, xv);
       free(xv);
     }
@@ -379,8 +286,6 @@ pure_expr *tk_join(pure_expr *x)
       x = xv[i];
       if (pure_is_string_dup(x, &s))
 	argv[i] = s;
-      else if (pure_is_int(x, NULL) || pure_is_double(x, NULL))
-	argv[i] = str(x);
       else {
 	size_t j;
 	for (j = 0; j < i; j++) free(argv[j]);
