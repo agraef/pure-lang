@@ -27,7 +27,7 @@ const double MAX_UNIXTIME = 2465423.5;  //2037_12_31
 const double SUB_UNIXTIME = 2451544.5;  //2000_01_01
 const double SECS_PER_DAY = 86400.0;
 
-static double local_offset(double jd);
+double local_offset(double jd);
 static void setYMD(double jd, int* y, int *m, int *d);
 static double round3(double d);
 
@@ -82,19 +82,19 @@ double ymdhms_to_jd(int Y, int M, int D, int hr, int mn, double sc){
 double l_ymdhms_to_jd(int Y, int M, int D, int hr, int mn, double sc){
   struct tm ltbuf;
   time_t secs;
-  ltbuf.tm_sec = sc;
+  ltbuf.tm_sec = sc; //ltbuf is local time
   ltbuf.tm_min = mn;
   ltbuf.tm_hour = hr;
   ltbuf.tm_mday = D;
   ltbuf.tm_mon = M-1;
   ltbuf.tm_year = Y + 1900;
   ltbuf.tm_isdst = -1;
-  secs = mktime( &ltbuf );
+  secs = mktime( &ltbuf ); //secs is UTC
   if ( secs == -1 ) {
     double local_jd = ymdhms_to_jd(Y,M,D,hr,mn,sc);    
     return local_jd - local_offset(local_jd);
   } else
-    return unixtime_to_jd(secs);
+    return unixtime_to_jd(secs); //TODO check that this is ok
 }
 
 double l_ymd_to_jd(int Y, int M, int D){
@@ -129,7 +129,7 @@ pure_expr* jd_to_ymdhms(double jd){
   secs =  86400.0 * day_frac;
   s = (int) secs;
   secs -= s;
-  H = s/3600;
+  H = s/3600;  //TODO CHANGE TO AVOID 59:60.000
   s -= H*3600;
   M = s/60;
   s -= M*60;
@@ -178,25 +178,20 @@ static void setYMD(double jd, int* y, int *m, int *d){
    jd_to_ymd[hms] functions, when applied to a local JD, return the
    local y,m,... rather than the UTC y,m,... */
 
-static double local_offset(double jd){
-  struct tm ut, lt, *ptr_tm;
-  double jd_ut, jd_lt, ret;
+double local_offset(double jd){
+  struct tm ut, *ptr_tm; 
   time_t rawtime = jd_to_unixtime(jd);
   if (rawtime == LONG_MIN)
     rawtime = jd_to_unixtime(SUB_UNIXTIME);
   ptr_tm = gmtime( &rawtime );
   if (ptr_tm == NULL) return 0.0;
   memcpy( &ut, ptr_tm, sizeof(struct tm) );
-  ptr_tm = localtime( &rawtime );
-  if (ptr_tm == NULL) return 0.0;
-  memcpy( &lt, ptr_tm, sizeof(struct tm) );
-  jd_ut = ymdhms_to_jd(ut.tm_year+1900, ut.tm_mon, ut.tm_mday, ut.tm_hour, 
-		    ut.tm_min, (double)(ut.tm_sec));
-  jd_lt = ymdhms_to_jd(lt.tm_year+1900, lt.tm_mon, lt.tm_mday, lt.tm_hour, 
-		    lt.tm_min, (double)(lt.tm_sec));
-  modf((jd_lt - jd_ut) * SECS_PER_DAY, &ret);
-  return ret / SECS_PER_DAY;
+  ut.tm_isdst = -1;
+  time_t utctime = mktime(&ut);
+  //TO DO if crossing time zone need to adjust.
+  return difftime(rawtime, utctime) / SECS_PER_DAY;
 }
+
 
 double round3(double d){
   return round(d*1000.0)/1000.0;

@@ -89,7 +89,9 @@ private extern expr* l_jd_to_ymd(double jd);
 private extern double l_ymdhms_to_jd(int Y, int M, int D,
                int hr, int mn, double sc);
 private extern expr* l_jd_to_ymdhms(double jd);
-private extern double local_jd(double jd);
+
+extern double local_jd(double jd);
+extern double local_offset(double jd);
 
 private aux_str_to_jd scan_str;
 
@@ -112,9 +114,9 @@ greg_to_jd (Y::int, M::int, D::int, h::int, m::int, s::double) =
            ymdhms_to_jd Y M D h m s;
 greg_to_jd (Y::int, M::int, D) = ymd_to_jd Y M D;
 
-jd_to_greg ("loc", jd,_) = l_jd_to_ymdhms jd;
+jd_to_greg ("loc", jd,"long") = l_jd_to_ymdhms jd;
 jd_to_greg ("loc",jd) = l_jd_to_ymd jd;
-jd_to_greg (jd,_) = jd_to_ymdhms jd;
+jd_to_greg (jd,"long") = jd_to_ymdhms jd;
 jd_to_greg jd = jd_to_ymd jd;
 
 
@@ -124,11 +126,11 @@ jd_to_greg jd = jd_to_ymd jd;
 str_to_jd ("loc", s::string) = aux_str_to_jd 1 s;
 str_to_jd s::string = aux_str_to_jd 0 s;
 
-jd_to_str ("loc",jd,_) = 
+jd_to_str ("loc",jd,"long") = 
    sprintf "%04d-%02d-%02d %02d:%02d:%06.3f" (l_jd_to_ymdhms jd);
 jd_to_str ("loc",jd) = 
    sprintf "%04d-%02d-%02d" (l_jd_to_ymd jd);
-jd_to_str (jd,_) = 
+jd_to_str (jd,"long") = 
    sprintf "%04d-%02d-%02d %02d:%02d:%06.3f" (jd_to_ymdhms jd);
 jd_to_str jd = 
    sprintf "%04d-%02d-%02d" (jd_to_ymd jd);
@@ -170,6 +172,7 @@ end;
 aux_str_to_jd locp s::string = res
 when
   greg = scan_str s;
+  null greg && throw julian_bad_string;
   res = if locp then greg_to_jd ("loc",greg) else greg_to_jd greg;
 end;
 
