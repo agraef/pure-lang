@@ -1,4 +1,4 @@
-/* MARCH 27, 2010 - DRAFT FOR DISCUSSIN PURPOSES ONLY */
+/* julian.pure - functions for dealing with Julian dates */
 
 using system;
 using "lib:julianutil";
@@ -6,15 +6,17 @@ using math;
 
 namespace julian;
 
-/* julian.pure - functions for dealing with Julian dates */
-
 /* The algorithms used in this module reflect the Gregorian proleptic
    calendar (i.e., the Gregorian calendar extended to cover dates
    before its introduction in 1582.) When expressing Gregorian dates
    as yyyy-mm-dd, astronomical year numbering is used, thus 1 BC is 0,
    2 BC is −1, and 4714 BC is −4713. The months (mm) and days (dd)
    start with 1.
-  
+
+   Daylight saving time adjustments for dates before 1971 are assumed
+   to be zero. Those after 1970, except for current dates, are
+   estimates that might not be accurate.
+    
    These algorithms are based on algorithms in SQLite's date.c file
    which are implemented based on descriptions in the following text:
   
@@ -91,7 +93,6 @@ private extern double l_ymdhms_to_jd(int Y, int M, int D,
 private extern expr* l_jd_to_ymdhms(double jd);
 
 extern double local_jd(double jd);
-extern double local_offset(double jd);
 
 private aux_str_to_jd scan_str;
 
