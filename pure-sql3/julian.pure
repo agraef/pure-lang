@@ -29,7 +29,7 @@ namespace julian;
    The date European countries adopted the Gregorian calendar varied
    by country. For the first adopters the last day of the Julian
    calendar was Thursday, 1582-10-4 and this was followed by the first
-   day of the Gregorian calendar, Friday, 15 October 1582.  In
+   day of the Gregorian calendar, Friday, 15 October 1582. 
    Historians usually use the Julian calendar for dates prior to
    1582-10-15 and for some dates afterwards, depending on locale, as
    opposed to the Gregorian proleptic calendar.  Thus, depending on
@@ -79,22 +79,33 @@ namespace julian;
 public 
 jd_to_unixtime jd_to_greg jd_to_str
 unixtime_to_jd greg_to_jd str_to_jd 
-current_jd weekday begmonth endmonth;
+current_jd bump weekday begmonth endmonth
+SEC MIN HOUR DAY;
 
 private extern double ymd_to_jd(int Y, int M, int D);
 private extern expr* jd_to_ymd(double jd);
 private extern double ymdhms_to_jd(int Y, int M, int D,
-               int hr, int mn, double sc);
+                                   int hr, int mn, double sc);
 private extern expr* jd_to_ymdhms(double jd);
 private extern double l_ymd_to_jd(int Y, int M, int D);
 private extern expr* l_jd_to_ymd(double jd);
 private extern double l_ymdhms_to_jd(int Y, int M, int D,
-               int hr, int mn, double sc);
+                                     int hr, int mn, double sc);
 private extern expr* l_jd_to_ymdhms(double jd);
-
-extern double local_jd(double jd);
+private extern double bump_ym(double jd, int y, int m);
+private extern double local_jd(double jd);
 
 private aux_str_to_jd scan_str;
+
+/* Constants */
+
+const DAY = 1.0;
+const SEC = DAY / 86400.0;
+const MIN = DAY / 1440.0;
+const HOUR = DAY / 24.0;
+
+const MIN_YEAR = -4713;
+const MAX_YEAR = 9999;
 
 
 /* Get current UTC time as JD, convert to and from unixtime (seconds
@@ -139,8 +150,10 @@ jd_to_str jd =
 
 /* Convenience functions */
 
-weekday ("loc", jd::double) = ((int (ceil (local_jd jd))) + 1) mod 7;
-weekday jd::double = ((int (ceil jd)) + 1) mod 7;
+
+/* Sunday is 0, ... */
+weekday ("loc", jd::double) = (int (ceil (local_jd jd))) mod 7;
+weekday jd::double = (int (ceil jd)) mod 7;
 
 begmonth ("loc", jd::double) = l_ymdhms_to_jd y m 1 0 0 0.0
 when y,m,d = jd_to_ymd (local_jd jd); end;
@@ -148,11 +161,25 @@ when y,m,d = jd_to_ymd (local_jd jd); end;
 begmonth jd::double = ymdhms_to_jd y m 1 0 0 0.0
 when y,m,d = jd_to_ymd jd; end;
 
-endmonth ("loc", jd::double) = l_ymdhms_to_jd y (m+1) 0 0 0 0.0
-when y,m,d = jd_to_ymd (local_jd jd); end;
+endmonth ("loc", jd::double) = jd
+when 
+  jd1 = local_jd jd;
+  y,m,d = jd_to_ymd jd1;
+  jd = (l_ymdhms_to_jd y (m+1) 1 0 0 0.0) - DAY;
+end;
 
-endmonth jd::double = ymdhms_to_jd y (m+1) 0 0 0 0.0
-when y,m,d = jd_to_ymd jd; end;
+endmonth jd::double = jd
+when
+  y,m,d = jd_to_ymd jd;
+  jd = (ymdhms_to_jd y (m+1) 1 0 0 0.0) - DAY;
+end;
+
+bump (jd::double, ydel::int, mdel::int) = res
+when
+  res = bump_ym jd ydel mdel;
+end; 
+
+
 
 
 /* Helpers */

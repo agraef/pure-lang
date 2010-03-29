@@ -1,30 +1,16 @@
-/* julian_demo.pure . */
+/* julian_date_test.pure -- test "corner case" dates */
 
 using system;
 using julian;
 using namespace julian;
-
-/* Helpers */
-
-utc_show jd = jd_to_str (jd,"long");
-
-loc_show jd = jd_to_str ("loc",jd,"long");
-
-all_show i jd = ()
-when
-  printf "jd%d ----------\n" i;
-  printf "raw: %f\n" jd;
-  printf "utc: %s\n" (utc_show jd);
-  printf "loc: %s\n" (loc_show jd);
-end;
 
 /* Test dates
 
    These are some interesting dates, such as JD 0, 0001-01-01, etc.,
    as well as some corner cases around changes to and from daylight
    saving time. The daylight saving time tests are set up to work for
-   PST and PDT as the local time zones. For your time zone, please
-   substitute appropriate dates. */
+   PST and PDT as the local time zones. For your test2 and test3,
+   please substitute appropriate dates. */
 
 // Various dates to compare UTC and local
 let jd1  = greg_to_jd (       2000, 3, 28); 
@@ -36,7 +22,7 @@ let jd6  = greg_to_jd ("loc", 2010, 3, 28);
 let jd7  = greg_to_jd (       2200, 3, 28);
 let jd8  = greg_to_jd ("loc", 2200, 3, 28);
 
-// From PST to PDT and vis-a-versa
+// From PST to PDT and vis-a-versa - Please edit for your time zone
 let jd9  = greg_to_jd ("loc", 2010, 3, 14, 1, 59, 59.0);
 let jd10 = greg_to_jd ("loc", 2010, 3, 14, 3,  0,  0.0);
 let jd11 = greg_to_jd ("loc", 2010, 3, 14, 3,  0,  1.0);
@@ -44,7 +30,7 @@ let jd12 = greg_to_jd ("loc", 2010,11,  7, 1, 59, 59.0);
 let jd13 = greg_to_jd ("loc", 2010,11,  7, 2,  0,  0.0);
 let jd14 = greg_to_jd ("loc", 2010,11,  7, 2,  0,  1.0);
 
-// Local dates that get skipped
+// Local dates that get skipped due to daylight saving changes
 let jd15 = greg_to_jd ("loc", 2010, 3, 14, 2,  59, 59.0);
 let jd16 = greg_to_jd (       2010,11,  7, 9,  59, 59.0);
 
@@ -60,35 +46,59 @@ let jd24  = greg_to_jd ( 1582, 10, 15);
 let jd25  = greg_to_jd ( 9999, 12, 31);
  
 
-main1 = ()
+/* For the dates listed above, show the julian date, utc gregorian
+   date ("yyyy-mm-dd HH:MM:SS") and local gregorian date (i.e.,
+   adjusted for time zone and, for recent dates, daylight savings
+   time). */
+
+test1 = ()
 when
-  puts "Begin main1 -- Compare UTC and local."; 
+  puts "Begin test1 -- Compare UTC and local."; 
   dowith all_show (1..8) [jd1,jd2,jd3,jd4,jd5,jd6,jd7,jd8];
-  puts "End main1."; 
+  puts "End test1."; 
 end;
 
-main2 = ()
+test2 = ()
 when
-  puts "Begin main2 -- Test around daylight saving time change dates.";
+  puts "Begin test2 -- Test around daylight saving time change dates.";
   dowith all_show (9..14) [jd9,jd10,jd11,jd12,jd13,jd14]; 
-  puts "End main2."; 
+  puts "End test2."; 
 end;
 
-main3 = ()
+test3 = ()
 when
-  puts "Begin main3 -- Show odd dates around daylight saving changes.";
+  puts "Begin test3 -- Show odd dates around daylight saving changes.";
   dowith all_show (15..16) [jd15, jd16]; 
-  puts "End main3."; 
+  puts "End test3."; 
 end;
 
-main4 = ()
+test4 = ()
 when
-  puts "Begin main4 -- Show epoch dates.";
+  puts "Begin test4 -- Show epoch dates.";
   dowith all_show (17..25) [jd17,jd18,jd19,jd20,jd21,jd22,jd23,jd24,jd25];
-  puts "End main4."; 
+  puts "End test4."; 
 end;
 
 
-main = main1 $$ main2 $$ main3 $$ main4;
+/* Helpers */
 
-//main
+utc_show jd = jd_to_str (jd,"long");
+
+loc_show jd = jd_to_str ("loc",jd,"long");
+
+all_show i jd = ()
+when
+  printf "jd%d ----------\n" i;
+  printf "raw: %f\n" jd;
+  printf "utc: %s\n" (utc_show jd);
+  printf "loc: %s\n" (loc_show jd);
+end;
+
+
+/* main - runs shows all sets of dates */
+
+main = test1 $$ test2 $$ test3 $$ test4;
+
+
+
+

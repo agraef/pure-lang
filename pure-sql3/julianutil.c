@@ -37,7 +37,9 @@ static void setHMS(double jd, int* h, int *m, double *s);
 static int proxy_year(int y);
 static double tm_to_jd(struct tm *tmp);
 static int proxy_year(int y);
-time_t proxy_utc_secs(double jd);
+static time_t proxy_utc_secs(double jd);
+static int is_leap_year(int year);
+static int maxday(int month, int year);
 
 /* Current time, unix epoch time conversions */
 
@@ -107,6 +109,23 @@ pure_expr* jd_to_ymdhms(double jd){
   pure_expr *pret = pure_tuplel(6,py,pm,pd,pH,pM,pS);
   return pret;  
 }
+
+double bump_ym(double jd, int y_delta, int m_delta){
+  int y,m,d1,H1,M1; double S1;
+  setYMD(jd, &y, &m, &d1);
+  setHMS(jd, &H1, &M1, &S1);
+  //add months
+  int m1 = m + m_delta;
+  int year_bump = m1 > 12 ? m1/12 : (m1-12)/12;
+  y += year_bump;
+  m1 -= 12 * year_bump;
+  int m1_maxday = maxday(m1,y);
+  if (d1>m1_maxday) d1 = m1_maxday;
+  //add year
+  int y1 = y + y_delta;
+  return ymdhms_to_jd(y1,m1,d1,H1,M1,S1);
+}
+
 
 /* local time functions */
 
@@ -183,6 +202,31 @@ pure_expr* l_jd_to_ymdhms(double jd){
 
 /* Helper functions */
 
+static int is_leap_year(int year){
+  int leap_year = false;
+  if (year % 400 == 0)
+    leap_year = true;
+  else if (year % 100 == 0)
+    leap_year = false;
+  else if (year % 4 == 0)
+    leap_year = true;
+  return leap_year;
+}
+
+static int maxday(int month, int year){
+  switch (month){
+  case  1: 
+  case  3:
+  case  5:
+  case  7:
+  case  8:
+  case 10:
+  case 12: return 31;
+  case  2: return is_leap_year(year) ? 29 : 28;
+  default: return 30;
+  }
+}
+
 static void setHMS(double jd, int *hours, int *mins, double *secs){
   double day, day_frac;
   day_frac = modf(jd, &day);
@@ -233,14 +277,8 @@ static double tm_to_jd(struct tm *tmp){
 }
 
 static int proxy_year(int y){
-  int leap_year = false;
+  int leap_year = is_leap_year(y);
   int py = 0;
-  if (y % 400 == 0)
-    leap_year = true;
-  else if (y % 100 == 0)
-    leap_year = false;
-  else if (y % 4 == 0)
-    leap_year = true;
   // daylight saving time shifts around, so pick accordingly
   if (y <= 1972) {
     py = 1972;
