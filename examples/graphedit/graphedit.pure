@@ -1,0 +1,903 @@
+
+/* graphedit.pure: A simple graph editor. This demonstrates the use of the
+   Gnocl Tcl extension to create a little but complete GTK+ application. The
+   GUI is in the accompanying grapheditr.tcl file. Our implementation doesn't
+   need libglade, so it should work with older Gnocl versions >= 0.9.91, too.
+
+   This script has been set up so that you can compile it to a native
+   executable by running 'make' in this directory. Basically, this executes
+   the following batch compilation command:
+
+     pure -c graphedit.pure -o graphedit `pkg-config --libs gtk+-2.0`
+
+   You need to have Pure (+ gcc and the basic LLVM tools), Tcl/Tk (including
+   Gnocl) and GTK+ installed to do this.
+
+   Usage information can be found in the README. Basically, you run graphedit
+   as follows:
+
+     graphedit [filename]
+
+   If a filename is specified on the command line, the corresponding graph
+   will be loaded when the program starts. */
+
+using tk, gnocl, system;
+using dict, set;
+
+// Magic header for files written by this application.
+const magic = "-*- graphedit -*-";
+
+// Catch Tcl errors.
+tk_error msg = throw ("Tcl error: "+msg);
+
+// Convenience.
+tk_split () = [];
+
+const ui = fget $ fopen "graphedit.tcl" "r";
+
+let current_file = ref ();
+
+error_dg msg::string = () when
+  tk_set "msg" msg;
+  tk "gnocl::dialog -type error -text $msg";
+end;
+
+file_error action::string fname::string = msg when
+  msg = sprintf "Error %s '%s':\n%s" (action,fname,strerror errno);
+end;
+
+format_error fname::string = msg when
+  msg = sprintf "Error reading '%s':\nInvalid format" fname;
+end;
+
+file_check fname::string = true if ~pointerp (fopen fname "r");
+= res=="Yes" when
+  msg = sprintf "File '%s' already exists. Overwrite?" fname;
+  tk_set "msg" msg;
+  res = tk "gnocl::dialog -type warning -text $msg -buttons {%#Yes %#No}";
+end;
+
+modified_check = true if get level == get saved_level;
+= res=="Yes" when
+  msg = "The graph has been modified. Abandon all changes?";
+  tk_set "msg" msg;
+  res = tk "gnocl::dialog -type warning -text $msg -buttons {%#Yes %#No}";
+end;
+
+destroy_cb _ = gnocl::quit;
+deletew_cb _ = str modified_check;
+quit_cb id = gnocl::delete id if modified_check;
+
+new_cb = () when
+  // Clear the canvas.
+  tk "$canv itemDelete !grid";
+  put current_file ();
+  reset_undo;
+end if modified_check;
+
+open_cb = if ~null fname then open_file fname else () when
+  // Pick a file, using the GTK+ file chooser dialog.
+  fname = tk "gnocl::fileChooserDialog -action open -title {Open}";
+end if modified_check;
+
+pop_status x = tk "$statusbar pop" $$ x;
+
+open_file fname = catch (pop_status.error_dg) (() when
+  tk "$statusbar push {Loading, please wait...}";
+  set_errno 0;
+  fp = fopen fname "r";
+  data = fget fp;
+  pointerp fp && errno==0 && stringp data || throw (file_error "reading" fname);
+  V,E = case parse_graph data of
+    () = throw (format_error fname);
+    res = res;
+  end;
+  put current_file fname;
+  make_graph (V,E);
+  reset_undo;
+  pop_status ();
+end);
+
+save_cb = case get current_file of () = save_as_cb; fname = save_file fname end;
+
+save_as_cb = save_file fname if ~null fname && file_check fname when
+  fname = tk "gnocl::fileChooserDialog -action save -title {Save As}";
+end;
+
+save_file fname = catch (pop_status.error_dg) (() when
+  tk "$statusbar push {Saving, please wait...}";
+  V,E = get_graph;
+  // order edges so that they always go from "smaller" to "larger" nodes
+  E = map order E with
+    order (v,w,l) = if v<=w then v,w,l else w,v,l;
+    order (v,w)   = if v<=w then v,w   else w,v;
+  end;
+  // sort edges lexicographically
+  E = sort cmp E with
+    cmp e1 e2 = v1<v2 || v1==v2 && w1<w2 when
+      v1,w1 = e1!![0,1]; v2,w2 = e2!![0,1]
+    end;
+  end;
+  set_errno 0;
+  fp = fopen fname "w";
+  fputs (unparse_graph (V,E)) fp;
+  pointerp fp && errno==0 || throw (file_error "writing" fname);
+  put current_file fname;
+  mark_saved;
+  pop_status ();
+end);
+
+parse_graph data = catch (cst ()) ((V,E) when
+  header:data:_ = split "\n" data;
+  stringp header && stringp data && substr header 0 (#magic) == magic ||
+  throw ();
+  V,E = val data;
+  listp V && all check_node V &&
+  listp E && all (check_edge (set [v|v=>_=V])) E || throw ();
+end) with
+  check_node (v=>(x,y,s,a)) = check_node (v=>(x,y)) && stringp s && stringp a;
+  check_node (v=>(x,y)) = intp v && doublep x && doublep y;
+  check_node _ = false;
+  check_edge node (v,w,s,a) = check_edge node (v,w) && stringp s && stringp a;
+  check_edge node (v,w) = intp v && intp w && member node v && member node w;
+  check_edge _ _ = false;
+end;
+
+unparse_graph (V,E) = sprintf "%s %s%s\n" (magic,ctime time,str (V,E));
+
+get_graph = V,E when
+  nodes = sort (\v w -> val v<val w) all_nodes;
+  nodeno = record $ zipwith (=>) nodes (1..#nodes);
+  points = map coords nodes;
+  V = [nodeno!v=>(p,label_data v) | v,p = zip nodes points];
+  edge_ids = all_edges;
+  edges = map nodes_of edge_ids;
+  E = [nodeno!(e!0),nodeno!(e!1),label_data eid |
+       e,eid = zip edges edge_ids; ~null e];
+end;
+
+make_graph (nodes,edges) = () when
+  tk "$canv itemDelete !grid";
+  nodeid = dict $ map make_node nodes with
+    make_node (v=>(x,y,l)) = res when
+      res@(_=>(id,_)) = make_node (v=>(x,y));
+      make_label id l;
+    end;
+    make_node (v=>(x,y)) = v=>(id,x,y) when
+      id = tk $ sprintf "$canv create ellipse -coords {%g %g 5} -centerRadius 1 -tags node" (x,y);
+    end;
+  end;
+  do make_edge edges with
+    make_edge (v,w,l) = id when
+      id = make_edge (v,w);
+      make_label id l;
+    end;
+    make_edge (v,w) = id when
+      nid1,x1,y1 = nodeid!v; nid2,x2,y2 = nodeid!w;
+      id = tk $ sprintf "$canv create line -width 1 -coords {%g %g %g %g} -tags {edge S%s T%s}" (x1,y1,x2,y2,nid1,nid2);
+    end;
+  end;
+  reset_scroll_region;
+  adjust_scroll_region all_nodes;
+end;
+
+debug msg = () when
+  nodes = all_nodes;
+  edges = all_edges;
+  node_tags = map (filter_tags.tk_split.tk.sprintf "$canv itemCget %s -tags") nodes;
+  edge_tags = map (filter_tags.tk_split.tk.sprintf "$canv itemCget %s -tags") edges;
+  nodes = zipwith (=>) nodes node_tags;
+  edges = zipwith (=>) edges edge_tags;
+  printf "%s: nodes = %s, edges = %s\n" (msg,str nodes,str edges);
+end with
+  filter_tags ts = [t | t = ts; any (==t) ["node","edge","sel"]||t!0=="S"||t!0=="T"];
+end;
+
+const ctrl = 4; // shift state for Ctrl key
+
+coords id = x, y when
+  x, y = (coord.tk_val.tk.sprintf "$canv getBounds %s") id;
+end with
+  coord [x1,y1,x2,y2] = (x1+x2)/2, (y1+y2)/2;
+end;
+
+coords_str (x,y) = str x, str y;
+coords_val (x,y) = double (val x), double (val y);
+
+get_tags tags id::string =
+  filter_tags $ tk_split $ tk $ sprintf "$canv itemCget %s -tags" id
+with
+  filter_tags ts = [t | t = ts;
+  	      	    any (==t) ("node":"edge":tags) || t!0=="S" || t!0=="T"];
+end;
+
+get_tags_str tags id::string = tk_join $ get_tags tags id;
+
+extern double sqrt(double);
+
+find_node (x,y) = res when
+  x,y = coords_val (x,y);
+  ids = all_nodes;
+  d = map (dist (x,y).coords) ids;
+  // Make sure that selected nodes come first (needs lexicographic sort).
+  nodes = sort (\(id1,d1,sel1) (id2,d2,sel2) -> d1<d2 || d1==d2 && sel1>sel2)
+  [id,d,selected id | id,d = zip ids d; d<=10.0];
+  res = case nodes of (id,_):_ = id; _ = () end;
+end with
+  coord [x1,y1,x2,y2] = ((x1+x2)/2,(y1+y2)/2);
+  dist (x1,y1) (x2,y2) = sqrt(sqr(x1-x2)+sqr(y1-y2));
+  sqr x = x*x;
+end;
+
+find_nodes (x1,y1) (x2,y2) = nodes when
+  ids = all_nodes;
+  p = map coords ids;
+  nodes = [id | id,x,y = zip ids p; check (x,y)];
+end with
+  check (x,y) = x1<=x && x<=x2 && y1<=y && y<=y2;
+end when
+  x1,y1 = coords_val (x1,y1); x2,y2 = coords_val (x2,y2);
+  x1,x2 = min x1 x2, max x1 x2; y1,y2 = min y1 y2, max y1 y2;
+end;
+
+find_edge (x,y) = res when
+  ids = tk_split $ tk $ sprintf "$canv findItemAt %s %s" (x,y);
+  res = case ids of id:_ = id if is_edge id; _ = () end;
+end;
+
+find_item (x,y) = case find_node (x,y) of
+  () = res when
+    ids = tk_split $ tk $ sprintf "$canv findItemAt %s %s" (x,y);
+    res = case ids of
+      	    id:_ = id if is_node id || is_edge id;
+	         = labelled_item id if is_label id;
+	    _ = ();
+	  end;
+  end;
+  id = id;
+end;
+
+edges_between nid1::string nid2::string =
+  tk_split $ tk $ sprintf "$canv findWithTag (S%s&T%s)|(T%s&S%s)"
+  (nid1,nid2,nid1,nid2);
+
+edges_of nid::string =
+  tk_split $ tk $ sprintf "$canv findWithTag S%s|T%s" (nid,nid);
+
+// all incident edges
+edges_from ids = list $ set $ catmap edges_of ids;
+
+// all edges between the given nodes (induced subgraph)
+edges_in ids =
+  [eid | eid = edges; all (member nodes) (nodes_of eid)]
+when
+  edges = edges_from ids;
+  nodes = set ids;
+end;
+
+nodes_of eid::string =
+  [tail tag | tag = get_tags [] eid; tag!0=="S" || tag!0=="T"];
+
+clear_selection = () when
+  ids = tk_split $ tk "$canv findWithTag node|edge";
+  tags = map (get_tags_str []) ids;
+  do (tk.sprintf "$canv itemConfigure %s -fill black -tags {%s}") $
+  zip ids tags;
+end;
+
+add_selection ids = () when
+  tags = map (get_tags_str []) ids;
+  do (tk.sprintf "$canv itemConfigure %s -fill red -tags {%s sel}") $
+  zip ids tags;
+  update_selection;
+  update_clipboard;
+end;
+
+del_selection ids = () when
+  tags = map (get_tags_str []) ids;
+  do (tk.sprintf "$canv itemConfigure %s -fill black -tags {%s}") $
+  zip ids tags;
+  update_selection;
+  update_clipboard;
+end;
+
+set_selection ids = () when
+  clear_selection;
+  add_selection ids;
+end;
+
+toggle_selection ids = do toggle ids with
+  toggle id = (if selected id then del_selection else add_selection) [id];
+end;
+
+do_selection b = if b then add_selection else set_selection;
+do_toggle_selection b = if b then toggle_selection else set_selection;
+
+selection = tk_split $ tk "$canv findWithTag sel";
+selected_nodes = tk_split $ tk "$canv findWithTag node&sel";
+selected_edges = tk_split $ tk "$canv findWithTag edge&sel";
+
+all_nodes = tk_split $ tk "$canv findWithTag node";
+all_edges = tk_split $ tk "$canv findWithTag edge";
+
+selected id::string = any (=="sel")   $ get_tags ["sel"] id;
+is_node  id::string = any (=="node")  $ get_tags [] id;
+is_edge  id::string = any (=="edge")  $ get_tags [] id;
+is_label id::string = any (=="label") $ get_tags ["label"] id;
+
+node_color id = if selected id then "red" else "black";
+
+/* Warp coordinates to a grid if requested. */
+
+let grid = ref 0;
+
+make_grid = () when
+  _,_,xmax,ymax = get region;
+  xmax = int xmax; ymax = int ymax;
+  xs = [x | x = 0:n..xmax];
+  ys = [y | y = 0:n..ymax];
+  clear_grid;
+  do (tk.sprintf "$canv create line -coords {%d 0 %d %d} -fill gray -tags grid")
+  [x,x,ymax | x = xs];
+  do (tk.sprintf "$canv create line -coords {0 %d %d %d} -fill gray -tags grid")
+  [y,xmax,y | y = ys];
+  tk "$canv lower grid";
+end if n>0 when n = get grid end;
+make_grid = clear_grid otherwise;
+
+clear_grid = tk "$canv itemDelete grid";
+
+grid_cb v = case val v of
+  n::int | n::double = put grid (int n) $$ make_grid;
+  _ = ();
+end;
+
+warp (x,y) = warp x,warp y with
+  warp x = round (x/n)*n;
+end if n>0 when n = get grid end;
+warp p = p otherwise;
+
+/* Kludge: It appears that sometimes Gnocl fails to report a button release
+   event when a drag operation is in progress. This operation resets
+   everything to a clean state again. */
+
+cleanup = () when
+  tk "$canv configure -onMotion {} -onButtonPress {pure click_cb %b %s %x %y} -onButtonRelease {} -onKeyPress {}";
+  tk "$canv itemDelete rubberband";
+end;
+
+click_cb "3" _ x y = () when
+  cleanup;
+  case find_node (x,y) of
+    () = mark_undo "add node" $$ add_node (x,y);
+    id = start_edge id (coords_str (coords id));
+  end;
+end;
+
+click_cb "2" _ x y = () when
+  cleanup;
+  case find_item (x,y) of
+    id::string = start_move (x,y) if selected id && ~is_edge id;
+    _ = ();
+  end;
+end;
+
+click_cb "1" s x y = () when
+  cleanup;
+  case find_item (x,y) of
+    () = start_select (x,y);
+    id = do_toggle_selection (val s and ctrl) [id] if is_edge id;
+       = if b && selected id then
+       	   (del_selection (id:edges) when
+      	      idset = set (id:selected_nodes);
+      	      edges = [eid | eid = edges_of id;
+	      	      	     all (member idset) (nodes_of eid)];
+	    end)
+       	 else if b then
+	   add_selection (id:edges)
+	 else
+	   set_selection [id]
+	 when b = val s and ctrl end;
+  end;
+end;
+
+edge_motion_cb id x0 y0 x1 y1 = () when
+  tk $ sprintf "$canv itemConfigure %s -coords {%s %s %s %s}"
+  (id,x0,y0,x1,y1);
+end;
+
+edge_cb "3" nid eid x0 y0 x1 y1 = () when
+  tk "$canv configure -onMotion {} -onButtonPress {pure click_cb %b %s %x %y} -onKeyPress {}";
+  mark_undo "add edge";
+  nid2 = find_node (x1,y1);
+  nid2,x1,y1 = case nid2 of
+    () = nid2, coords_str (coords nid2) when nid2 = add_node (x1,y1) end;
+    _  = nid2, coords_str (coords nid2);
+  end;
+  edges = edges_between nid nid2;
+  if null edges && nid ~= nid2 then
+    if selected nid && selected nid2 then
+      tk $ sprintf "$canv itemConfigure %s -coords {%s %s %s %s} -fill red -tags {edge S%s T%s sel}" (eid,x0,y0,x1,y1,nid,nid2)
+    else
+      tk $ sprintf "$canv itemConfigure %s -coords {%s %s %s %s} -fill black -tags {edge S%s T%s}" (eid,x0,y0,x1,y1,nid,nid2)
+  else
+    tk $ sprintf "$canv itemDelete %s" eid;
+  tk $ sprintf "$canv itemConfigure %s -fill %s" (nid, node_color nid);
+  update_selection;
+end;
+
+edge_cb _ nid eid x0 y0 x1 y1 = () when
+  tk "$canv configure -onMotion {} -onButtonPress {pure click_cb %b %s %x %y} -onKeyPress {}";
+  tk $ sprintf "$canv itemDelete %s" eid;
+  tk $ sprintf "$canv itemConfigure %s -fill %s" (nid, node_color nid);
+end;
+
+move_motion_cb id rect orig current = () when
+  [x1,y1,x2,y2] = tk_val rect;
+  [x0,y0] = tk_val orig; [x,y] = tk_val current;
+  [dx,dy] = [x-x0,y-y0];
+  [x1,y1,x2,y2] = [x1+dx,y1+dy,x2+dx,y2+dy];
+  tk $ sprintf "$canv itemConfigure %s -coords {%s %s %s %s}"
+  (id, coords_str (x1,y1), coords_str (x2,y2));
+end;
+
+move_cb id rect orig current = () when
+  tk "$statusbar push {Moving, please wait...}";
+  mark_undo "move";
+  [x0,y0] = tk_val orig; [x,y] = tk_val current;
+  [dx,dy] = [x-x0,y-y0];
+  nodes = selected_nodes;
+  edges = edges_from nodes;
+  do (move_node (dx,dy)) nodes;
+  do move_edge edges;
+  tk "$canv configure -onMotion {} -onButtonRelease {} -onKeyPress {}";
+  tk $ sprintf "$canv itemDelete %s" id;
+  update_selection;
+  adjust_scroll_region nodes;
+  pop_status ();
+end with
+  move_node (dx,dy) id = () when
+    x,y = warp $ coords id;
+    tk $ sprintf "$canv itemConfigure %s -centerRadius 1 -coords {%g %g 5}"
+    (id,x+dx,y+dy);
+    move_label (x+dx,y+dy) (get_label_id id);
+  end;
+  move_edge id = () when
+    [v,w] = nodes_of id;
+    x1,y1 = coords v; x2,y2 = coords w;
+    tk $ sprintf "$canv itemConfigure %s -coords {%g %g %g %g}"
+    (id,x1,y1,x2,y2);
+    x = (x1+x2)/2; y = (y1+y2)/2;
+    move_label (x,y) (get_label_id id);
+  end;
+end;
+
+select_motion_cb id x0 y0 x1 y1 = () when
+  tk $ sprintf "$canv itemConfigure %s -coords {%s %s %s %s}"
+  (id,x0,y0,x1,y1);
+end;
+
+select_cb _ s id x0 y0 x1 y1 = () when
+  tk "$canv configure -onMotion {} -onButtonRelease {} -onKeyPress {}";
+  tk $ sprintf "$canv itemDelete %s" id;
+  nodes = find_nodes (x0,y0) (x1,y1);
+  b = val s and ctrl;
+  do_selection b (nodes+edges_in nodes);
+end;
+
+cancel_cb "Escape" id = case tk_split id of
+  [nid,eid] = () when
+    tk "$canv configure -onMotion {} -onButtonPress {pure click_cb %b %s %x %y} -onKeyPress {}";
+    tk $ sprintf "$canv itemDelete %s" eid;
+    tk $ sprintf "$canv itemConfigure %s -fill %s" (nid, node_color nid);
+  end;
+  _ = () when
+    tk "$canv configure -onMotion {} -onButtonRelease {} -onKeyPress {}";
+    tk $ sprintf "$canv itemDelete %s" id;
+  end;
+end;
+
+add_node (x,y) = id when
+  id = tk $ sprintf "$canv create ellipse -coords {%g %g 5} -centerRadius 1 -tags node" $ warp $ coords_val (x,y);
+  adjust_scroll_region $ coords_val (x,y);
+end;
+
+start_edge nid (x,y) = () when
+  tk $ sprintf "$canv itemConfigure %s -fill blue" nid;
+  eid = tk $ sprintf "$canv create line -width 1 -coords {%s %s %s %s} -fill blue -tags edge" (x,y,x,y);
+  tk $ sprintf "$canv configure -onMotion {pure edge_motion_cb %s %s %s %%x %%y}" (eid,x,y);
+  tk $ sprintf "$canv configure -onButtonPress {pure edge_cb %%b %s %s %s %s %%x %%y}" (nid,eid,x,y);
+  tk $ sprintf "$canv configure -onKeyPress {pure cancel_cb %%K {%s %s}}" (nid,eid);
+end;
+
+start_move (x,y) = () when
+  [x1,y1,x2,y2] = tk_split $ tk "$canv getBounds node&sel";
+  id = tk $ sprintf "$canv create rectangle -coords {%s %s %s %s} -fill {blue 0.1} -outline cyan -tags rubberband" (x1,y1,x2,y2);
+  tk $ sprintf "$canv configure -onMotion {pure move_motion_cb %s {%s %s %s %s} {%s %s} {%%x %%y}}" (id,x1,y1,x2,y2,x,y);
+  tk $ sprintf "$canv configure -onButtonRelease {pure move_cb %s {%s %s %s %s} {%s %s} {%%x %%y}}" (id,x1,y1,x2,y2,x,y);
+  tk $ sprintf "$canv configure -onKeyPress {pure cancel_cb %%K %s}" id;
+end;
+
+start_select (x,y) = () when
+  id = tk $ sprintf "$canv create rectangle -coords {%s %s %s %s} -fill {yellow 0.1} -outline red -tags rubberband" (x,y,x,y);
+  tk $ sprintf "$canv configure -onMotion {pure select_motion_cb %s %s %s %%x %%y}" (id,x,y);
+  tk $ sprintf "$canv configure -onButtonRelease {pure select_cb %%b %%s %s %s %s %%x %%y}" (id,x,y);
+  tk $ sprintf "$canv configure -onKeyPress {pure cancel_cb %%K %s}" id;
+end;
+
+get_label_id () = ();
+get_label_id id = tk $ sprintf "$canv findWithTag L%s" id;
+
+make_label id (s,a) = tk_set "text" s $$ tk $ sprintf "$canv create text -text $text -coords {%g %g} -offset {%d %d} -anchor %s -tags {label L%s}" (coords id,offset a,a,id);
+
+make_label_id id = case get_label_id id of
+  () = make_label id ("",tk_get "align");
+  lid = lid;
+end;
+
+set_label_alignment id::string align::string = () when
+  tk $ sprintf "$canv itemConfigure %s -offset {%d %d} -anchor %s" (id,offset align,align);
+end;
+
+move_label (x,y) () = ();
+move_label (x,y) id = () when
+  tk $ sprintf "$canv itemConfigure %s -coords {%g %g}" (id,x,y);
+end;
+
+label_text () = "";
+label_alignment () = "S";
+label_text id::string = tk $ sprintf "$canv itemCget %s -text" id;
+label_alignment id::string = tk $ sprintf "$canv itemCget %s -anchor" id;
+
+label_data id::string = case get_label_id id of
+  () = ();
+  lid = label_text lid, label_alignment lid;
+end;
+
+labelled_item id::string = tail $ head $
+  filter_tags $ tk_split $ tk $ sprintf "$canv itemCget %s -tags" id
+with
+  filter_tags ts = [t | t = ts; t!0=="L"];
+end;
+
+let offsets = record
+[ "N"  => (   0,  10),
+  "NE" => ( -10,  10),
+  "NW" => (  10,  10),
+  "S"  => (   0, -10),
+  "SE" => ( -10, -10),
+  "SW" => (  10, -10),
+  "E"  => ( -10,   0),
+  "W"  => (  10,   0),
+  "center" => (0,0) ];
+
+offset a::string = offsets!a;
+
+entry_cb text = () when
+  mark_undo "edit label";
+  case text of
+    "" = tk $ sprintf "$canv itemDelete %s" lid;
+    _ = () when
+      lid = make_label_id id;
+      tk $ sprintf "$canv itemConfigure %s -text $entry_text" lid;
+    end;
+  end;
+end if id ~== () && label_text lid ~= text
+when id = get selected_id; lid = get_label_id id end;
+
+align_cb align = () when
+  mark_undo "align";
+  tk $ sprintf "$canv itemConfigure %s -offset {%d %d} -anchor %s" (lid,offset align,align);
+end if lid ~== () && label_alignment lid ~= align
+when lid = get_label_id (get selected_id) end;
+
+select_all_cb = () when
+  set_selection (all_nodes+all_edges);
+end;
+
+delete_cb = () when
+  tk "$statusbar push {Deleting, please wait...}";
+  mark_undo "cut/delete";
+  nodes = selected_nodes;
+  edges = edges_from nodes;
+  do (tk.sprintf "$canv itemDelete %s") nodes;
+  do (tk.sprintf "$canv itemDelete L%s") nodes;
+  do (tk.sprintf "$canv itemDelete %s") edges;
+  do (tk.sprintf "$canv itemDelete L%s") edges;
+  pop_status ();
+end;
+
+let clipcmds = ["cutcmd","copycmd","deletecmd","dupcmd",
+    	        "cuttool","copytool","deletetool"];
+
+clipboard_empty = tk "gnocl::clipboard hasText"=="0";
+get_clipboard = parse_graph $ tk "gnocl::clipboard getText";
+clear_clipboard = tk "gnocl::clipboard clear" $$ update_clipboard;
+set_clipboard (V,E) = update_clipboard when
+  tk_set "data" (unparse_graph (V,E));
+  tk "gnocl::clipboard setText $data";
+end if ~null V;
+set_clipboard _	    = clear_clipboard otherwise;
+
+cut_cb = copy_cb $$ delete_cb;
+
+copy_cb = () when
+  tk "$statusbar push {Copying, please wait...}";
+  nodes = selected_nodes;
+  edge_ids = selected_edges;
+  edges = map nodes_of edge_ids;
+  nodes = list $ set $ nodes+cat edges;
+  nodeno = record $ zipwith (=>) nodes (1..#nodes);
+  points = map coords nodes;
+  V = [nodeno!v=>(p,label_data v) | v,p = zip nodes points];
+  E = [nodeno!v,nodeno!w,label_data eid |
+       [v,w],eid = zip edges edge_ids; all (member nodeno) [v,w]];
+  set_clipboard (V,E);
+  pop_status ();
+end;
+
+paste_cb = catch (\_->(pop_status.error_dg) "Invalid clipboard contents")
+  (() when
+  tk "$statusbar push {Pasting, please wait...}";
+  V,E = get_clipboard; // May fail if clipboard contains some random stuff.
+  clear_selection;
+  mark_undo "paste";
+  do (make_edge nodeid) E when
+    nodeid = dict $ map make_node V;
+  end;
+  tk "$canv itemConfigure sel -fill red";
+  update_selection;
+  adjust_scroll_region selected_nodes;
+  update_clipboard;
+  pop_status ();
+end) with
+  make_node (v=>(x,y,l)) = res when
+    res@(_=>(id,_)) = make_node (v=>(x,y));
+    make_label id l;
+  end;
+  make_node (v=>(x,y)) = v=>(id,x,y) when
+    id = tk $ sprintf "$canv create ellipse -coords {%g %g 5} -centerRadius 1 -tags {node sel}" (x,y);
+  end;
+  make_edge nodeid (v,w,l) = id when
+    id = make_edge nodeid (v,w);
+    make_label id l;
+  end;
+  make_edge nodeid (v,w) = id when
+    nid1,x1,y1 = nodeid!v; nid2,x2,y2 = nodeid!w;
+    id = tk $ sprintf "$canv create line -width 1 -coords {%g %g %g %g} -tags {edge S%s T%s sel}" (x1,y1,x2,y2,nid1,nid2);
+  end;
+end if ~clipboard_empty;
+
+dup_cb = () when
+  tk "$statusbar push {Pasting, please wait...}";
+  nodes = selected_nodes;
+  edge_ids = selected_edges;
+  edges = map nodes_of edge_ids;
+  nodes = list $ set $ nodes+cat edges;
+  nodeno = record $ zipwith (=>) nodes (1..#nodes);
+  points = map coords nodes;
+  // Shift the nodes by a little amount, so that they don't end up at the same
+  // position as the original.
+  points = [x+20,y+20 | x,y = points];
+  V = [nodeno!v=>(p,label_data v) | v,p = zip nodes points];
+  E = [nodeno!v,nodeno!w,label_data eid |
+       [v,w],eid = zip edges edge_ids; all (member nodeno) [v,w]];
+  clear_selection;
+  mark_undo "duplicate";
+  do (make_edge nodeid) E when
+    nodeid = dict $ map make_node V;
+  end;
+  tk "$canv itemConfigure sel -fill red";
+  update_selection;
+  adjust_scroll_region selected_nodes;
+  update_clipboard;
+  pop_status ();
+end with
+  make_node (v=>(x,y,l)) = res when
+    res@(_=>(id,_)) = make_node (v=>(x,y));
+    make_label id l;
+  end;
+  make_node (v=>(x,y)) = v=>(id,x,y) when
+    id = tk $ sprintf "$canv create ellipse -coords {%g %g 5} -centerRadius 1 -tags {node sel}" (x,y);
+  end;
+  make_edge nodeid (v,w,l) = id when
+    id = make_edge nodeid (v,w);
+    make_label id l;
+  end;
+  make_edge nodeid (v,w) = id when
+    nid1,x1,y1 = nodeid!v; nid2,x2,y2 = nodeid!w;
+    id = tk $ sprintf "$canv create line -width 1 -coords {%g %g %g %g} -tags {edge S%s T%s sel}" (x1,y1,x2,y2,nid1,nid2);
+  end;
+end;
+
+/* Undo/redo. FIXME: Too keep things simple, we just store a snapshot of the
+   entire graph for each edit operation. This makes things slow and needs lots
+   of memory when graphs grow large. To mitigate the latter, we place a limit
+   on the size of the undo stack. The "real" undo level is kept in a counter.
+   This also allows us to detect reliably whether the graph has been saved. */
+
+const max_undo = 20;
+let undo_cmds = ref []; let redo_cmds = ref [];
+let level = ref 0; let saved_level = ref 0;
+
+reset_undo = () when
+  put undo_cmds [];
+  put redo_cmds [];
+  put level 0;
+  put saved_level 0;
+  update_undo;
+end;
+
+mark_undo "edit label" = case get undo_cmds of
+  ("label"=>G):_ = ();
+  _ = mark_undo "label";
+end;
+
+mark_undo descr = () when
+  put undo_cmds $ take max_undo ((descr=>get_graph):get undo_cmds);
+  put redo_cmds [];
+  put level (get level+1);
+  update_undo;
+end;
+
+mark_saved = () when
+  put saved_level $ get level;
+  update_undo;
+end;
+
+undo_cb = () when
+  tk "$statusbar push {Undo, please wait...}";
+  (descr=>G):cmds = get undo_cmds;
+  put redo_cmds ((descr=>get_graph):get redo_cmds);
+  make_graph G;
+  put undo_cmds cmds;
+  put level (get level-1);
+  update_undo;
+  update_selection;
+  update_clipboard;
+  pop_status ();
+end if ~null (get undo_cmds);
+
+redo_cb = () when
+  tk "$statusbar push {Redo, please wait...}";
+  (descr=>G):cmds = get redo_cmds;
+  put undo_cmds ((descr=>get_graph):get undo_cmds);
+  make_graph G;
+  put redo_cmds cmds;
+  put level (get level+1);
+  update_undo;
+  update_selection;
+  update_clipboard;
+  pop_status ();
+end if ~null (get redo_cmds);
+
+/* Status updates. */
+
+let selected_id = ref ();
+
+let aligncmds =
+[ "topcmd","bottomcmd","leftcmd","rightcmd",
+  "topleftcmd","bottomleftcmd","toprightcmd","bottomrightcmd",
+  "centercmd" ];
+
+update_selection = () when
+  tk "$canv raise sel&node"; tk "$canv lower sel&edge";
+  tk "$canv raise label";
+  case selection of
+    id:sel = () when
+      put selected_id id;
+      case get_label_id id of
+        ()  = tk_set "entry_text" "";
+	lid = tk_set "entry_text" $ label_text lid $$
+	      tk_set "align" $ label_alignment lid;
+      end;
+      tk "$entry configure -sensitive 1";
+      do (tk.sprintf "$%s configure -sensitive 1") aligncmds;
+    end if null sel;
+    _ = () when
+      put selected_id ();
+      tk_set "entry_text" "";
+      tk "$entry configure -sensitive 0";
+      do (tk.sprintf "$%s configure -sensitive 0") aligncmds;
+    end;
+  end;
+end;
+
+update_clipboard = () when
+  have_selection = tk "$canv findWithTag sel" ~== ();
+  have_clipboard = ~clipboard_empty;
+  do (tk.sprintf ("$%s configure -sensitive "+str have_selection)) clipcmds;
+  tk $ sprintf "$pastecmd configure -sensitive %d" have_clipboard;
+  tk $ sprintf "$pastetool configure -sensitive %d" have_clipboard;
+  //printf "clipboard: %s\n" (str get_clipboard);
+end;
+
+// This also updates the window title.
+update_undo = () when
+  have_undo = ~null (get undo_cmds);
+  have_redo = ~null (get redo_cmds);
+  tk $ sprintf "$undocmd configure -sensitive %d" have_undo;
+  tk $ sprintf "$redocmd configure -sensitive %d" have_redo;
+  tk $ sprintf "$undotool configure -sensitive %d" have_undo;
+  tk $ sprintf "$redotool configure -sensitive %d" have_redo;
+  tk_set "fname" (case get current_file of
+    () = "untitled"; fname = last $ split "/" fname;
+  end);
+  tk_set "modified" (if get level == get saved_level then "" else "*");
+  tk "$top configure -title [list $fname$modified - graphedit]";
+  //printf "undo: %s\n" (str (get undo_cmds));
+  //printf "redo: %s\n" (str (get redo_cmds));
+end;
+
+/* Adjust the scroll region when new nodes get added outside the current
+   region, or the window is resized. Note: Gnocl doesn't provide canvas cget
+   -scrollRegion, so we keep this information in the Pure script. */
+
+let region = ref (0.0,0.0,1000.0,800.0);
+
+reset_scroll_region = () when
+  w = tk "$top cget -width"; h = tk "$top cget -height";
+  w,h = coords_val (w,h);
+  put region (0.0,0.0,max w 1000.0,max h 800.0);
+  tk $ sprintf "$canv configure -scrollRegion {%g %g %g %g}" $ get region;
+end;
+
+adjust_scroll_region (x,y) = () when
+  x1,y1,x2,y2 = get region;
+  if x1<=x && x<=x2 && y1<=y && y<=y2 then ()
+  else (() when
+    // Increase the scroll region so that it includes the given point.
+    // Actually, we make the region a bit larger than actually needed, so that
+    // the user can enlarge the region as required.
+    x1 = min x1 x; y1 = min y1 y; x2 = max x2 (x+500); y2 = max y2 (y+400);
+    put region (x1,y1,x2,y2);
+    tk $ sprintf "$canv configure -scrollRegion {%g %g %g %g}" (x1,y1,x2,y2);
+    make_grid;
+  end);
+end;
+
+adjust_scroll_region ids = () when
+  points = map coords ids;
+  max_x = foldl max 0.0 [x | (x,y) = points];
+  max_y = foldl max 0.0 [y | (x,y) = points];
+  adjust_scroll_region (max_x,max_y);
+end;
+
+resize_cb = () when
+  x1,y1,x2,y2 = get region;
+  w = tk "$top cget -width"; h = tk "$top cget -height";
+  w,h = coords_val (w,h);
+  if w>x2 || h>y2 then (() when
+    x2 = max x2 w; y2 = max y2 h;
+    put region (x1,y1,x2,y2);
+    tk $ sprintf "$canv configure -scrollRegion {%g %g %g %g}" (x1,y1,x2,y2);
+    make_grid;
+  end) else ();
+end;
+
+/* Make sure that the callbacks don't get eliminated when batch-compiling.
+   This is a bit tricky since some of the callbacks have zero arguments and
+   would thus be executed if we just list them here. So we do that in an
+   indirect fashion instead. */
+
+the_callbacks with the_callbacks () =
+  align_cb,cancel_cb,click_cb,copy_cb,cut_cb,delete_cb,deletew_cb,destroy_cb,dup_cb,edge_cb,edge_motion_cb,entry_cb,grid_cb,move_cb,move_motion_cb,new_cb,open_cb,paste_cb,quit_cb,redo_cb,resize_cb,save_as_cb,save_cb,select_all_cb,select_cb,select_motion_cb,undo_cb
+end;
+
+// Helper function to generate the callbacks list.
+callbacks = tuple $ map (val.head.split " ") $ init $ filter (\x->~null x) $ split "\n" $ evalcmd "show -gs *_cb";
+
+/* The main program. */
+
+main fname = () when
+  tk ui;
+  tk "$top configure -onResize {pure resize_cb}";
+  tk "$canv configure -onButtonPress {pure click_cb %b %s %x %y}";
+  tk $ sprintf "$canv configure -scrollRegion {%g %g %g %g}" $ get region;
+  update_selection;
+  update_clipboard;
+  if stringp fname then open_file fname else update_undo;
+  gnocl::main ();
+end;
+
+if compiling then () else main (if argc>1 then argv!1 else ());
