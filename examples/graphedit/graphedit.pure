@@ -462,10 +462,11 @@ move_cb id rect orig current = () when
   pop_status ();
 end with
   move_node (dx,dy) id = () when
-    x,y = warp $ coords id;
+    x,y = coords id;
+    x,y = warp (x+dx,y+dy);
     tk $ sprintf "$canv itemConfigure %s -centerRadius 1 -coords {%g %g 5}"
-    (id,x+dx,y+dy);
-    move_label (x+dx,y+dy) (get_label_id id);
+    (id,x,y);
+    move_label (x,y) (get_label_id id);
   end;
   move_edge id = () when
     [v,w] = nodes_of id;
