@@ -1,0 +1,312 @@
+
+/* Some helper functions and graph algorithm examples for graphedit. */
+
+/* This function reads a graphedit graph and turns it into a pair (V,E) of
+   symbolic vectors indexed by node numbers (ranging from 0..#V-1) for easier
+   access. The first vector V stores the coordinates (and label if any) of
+   each node. The second vector E stores the list of adjacent nodes for each
+   node, along with the corresponding edge labels. Alignment information for
+   the labels ("N", "S", etc.) are removed. In effect, this gives a bidirected
+   adjacency list representation of the graph. */
+
+using system;
+
+read_graph fname::string = V,E when
+  // FIXME: We should do some more error checking here, similar to what
+  // graphedit does.
+  magic:data:_ = split "\n" $ fget $ fopen fname "r";
+  V,E = val data;
+  // The backedges.
+  F = sort cmp [reverse e | e = E] with
+    reverse (v,w,l) = (w,v,l);
+    reverse (v,w)   = (w,v);
+    cmp e1 e2 = v1<v2 || v1==v2 && w1<w2 when
+      v1,w1 = e1!![0,1]; v2,w2 = e2!![0,1];
+    end;
+  end;
+  // Merge forward and backedges.
+  E = merge E F with
+    merge E [] = E;
+    merge [] F = F;
+    merge E@(e:E1) F@(f:F1) = case cmp e f of
+      c = e : merge E1 F if c<0;
+        = f : merge E F1 if c>0;
+	= e : merge E1 F1 otherwise;
+    end;
+    cmp e1 e2 = if v1==v2 then w1-w2 else v1-v2 when
+      v1,w1 = e1!![0,1]; v2,w2 = e2!![0,1];
+    end;
+  end;
+  // Build the node vector.
+  V = {node_label l | v=>l = V} with
+    node_label (x,y,l,a) = x,y,l;
+    node_label (x,y) 	 = x,y;
+  end;
+  // Build the edge vector.
+  E = reverse $ foldl collect [] E with
+    collect [] (v,w) = [v=>[w]];
+    collect ((u=>N):E) (v,w) = (v=>w:N):E if v==u;
+    	    	       	     = (v=>[w]):(u=>reverse N):E otherwise;
+  end;
+  E = {map edge_label N | v=>N = E} with
+    edge_label (v,l,a) = v,l;
+    edge_label v       = v;
+  end;
+end;
+
+/* This does the same but also tries to parse all labels as Pure expressions,
+   using val. Labels which can't be parsed are kept as strings. */
+
+read_graph_val fname::string = V,E when
+  V,E = read_graph fname;
+  V = {node_val v | v = V} with
+    node_val (x,y,l) = x,y,l when
+      l = case val l of
+      	    val _ = l;
+	    x = x;
+	  end;
+    end;
+    node_val (x,y)   = x,y;
+  end;
+  E = {map edge_val e | e = E} with
+    edge_val (v,l) = v,l when
+      l = case val l of
+      	    val _ = l;
+	    x = x;
+	  end;
+    end;
+    edge_val v   = v;
+  end;
+end;
+
+/* Some convenience functions.
+
+   - nodes G returns the nodes of G, edges G its edges.
+
+   - node_info G v returns the information for node v, which is a tuple
+     (v,x,y,l) consisting of the node number v, the node coordinates (x,y)
+     and the node label l (if any). The different components of the node
+     information can then be extracted with the functions node, coords
+     and label (the latter returns () if no label is available).
+
+   - edge_info G v returns all edges incident with v, as a list of tuples
+     (v,w,l) consisting of the source node v, the target node w and the edge
+     label l (if any). The different components of each edge information can
+     then be extracted with the functions source, target and label (the latter
+     returns () if no label is available).
+
+   - adj G v, where v is a node number, returns just the neighborhood (list of
+     adjacent nodes) of a node.
+
+   - adj G (v,w) checks whether node v is adjacent to node w in G. */
+
+nodes (V,E) = V;
+edges (V,E) = E;
+
+node_info (V,E) v::int = v,V!v;
+
+node   (v::int,_) = v;
+coords (_,x,y,_) = x,y;
+coords (_,x,y) = x,y;
+
+edge_info (V,E) v::int = map (v,) (E!v);
+
+source (v::int,_) = v;
+target (v::int,w::int,_) = w;
+target (v::int,w::int) = w;
+
+// The label function is shared netween node and edge infos, so these rules
+// must come in the right order.
+label  (v::int,w::int,l) = l;
+label  (v::int,w::int) = ();
+label  (v::int,_,_,l) = l;
+label  (v::int,_,_) = ();
+
+adj (V,E) v::int = map t (E!v) with
+  t (w,l) = w; t w = w;
+end;
+
+adj G@(V,E) (v::int,w::int) = any (==w) (adj G v);
+
+/* Graph algorithm examples. */
+
+using dict, set;
+
+/*****************************************************************************
+
+   Depth-first search and connected components. This takes an arbitrary graph
+   as input and yields its connected components. Example:
+
+   > let G = read_graph "sample1.graph";
+   > components G;
+   [[0,1,2,3,4,5,6,7,8,9,10,11,12],[13,14,15],[16,17,18,19]]
+
+ ****************************************************************************/
+
+components G = [] if null (nodes G);
+components G = depth_first (set (0..#nodes G-1)) with
+  depth_first V   = [] if null V;
+      		  = C : depth_first V when
+    		      v = first V; V,C = search V [v] [];
+  		    end;
+  search V []     us = V, reverse us;
+  search V (v:vs) us = search V vs us if ~member V v;
+  	   	     = search (delete V v) (adj G v + vs) (v:us);
+end;
+
+/****************************************************************************
+
+   Dijkstra's shortest path algorithm. This algorithm is invoked as:
+
+   dijkstra G s t
+
+   It needs a graph G with edge lengths (numeric labels); a length of 1 is
+   assumed here for edges which don't have such a label. s and t must be the
+   numbers of nodes in G. dijkstra then computes a shortest path p from s to t
+   and its length l (if one exists). It returns l,p if such a path exists, and
+   the value inf otherwise. Example:
+
+   > let G = read_graph "sample2.graph";
+   > dijkstra G 0 11;
+   [0,3,4,5,10,11],5
+
+ ***************************************************************************/
+
+/* We need a priority queue data structure with quick updates here. heap.pure
+   doesn't provide this, so we do our own using bags. */
+
+namespace pqueue with
+  private pq; // private constructor for queue members
+  queue xs = bag $ map pq xs;
+  dequeue q = x, rmfirst q when pq x = first q end;
+  chqueue q x y = insert (delete q (pq x)) (pq y);
+  // Define an order on the queue members.
+  pq (v1=>d1) ::< pq (v2=>d2) = d1 ::< d2 || d1==d2 && v1 ::< v2;
+end;
+
+using namespace pqueue;
+
+dijkstra G s t = search (q,dist,pred) when
+  /* dist is the dictionary of currently known shortest distances from the
+     source node. Initially this is inf everywhere, except for dist!0 == 0. */
+  dist = insert (mkdict inf (0..#nodes G-1)) (s=>0);
+  /* q is the queue of nodes waiting to be processed, ordered by increasing
+     distances. Thus initially s is at the front of the queue. pred is the
+     dictionary of backlinks of the form w=>v where (v,w) is an edge on the
+     shortest path from s to w. Initially this is empty. */
+  q = queue (members dist); pred = emptydict;
+end with
+  /* The search algorithm. At each step, we take the next node v from q and
+     update the dist and pred dictionaries accordingly, considering the
+     outgoing edges of v. */
+  search (q,dist,pred)
+    = if d==inf then inf else if v==t then path pred, d
+      else search $ foldl update (q,dist,pred) (edge_info G v) with
+      /* Process an outgoing edge e = (v,w) of node v, where v is at distance
+      	 d from s. If d+d(v,w) is less than the current shortest distance from
+      	 s to w then we update dist!w and the queue q accordingly and record
+      	 the backlink w=>v in pred. */
+      update info@(q,dist,pred) e
+        = chqueue q (w=>d1) (w=>d2), insert dist (w=>d2), insert pred (w=>v)
+          if d2 < d1 when w = target e; d1 = dist!w; d2 = d+weight e end;
+        = info otherwise;
+    end when (v=>d), q = dequeue q end;
+  /* Edge labels may be missing or invalid, we assume 1 in this case. */
+  weight e = case label e of x,_ | x:_ | x = x if realp x; _ = 1 end;
+  /* Construct the shortest path to the target node from the computed
+     predecessor links. */
+  path pred = s : reverse (iterwhile (~=s) (pred!) t);
+end;
+
+/*****************************************************************************
+
+   Backtracking maximum clique search. (R. Carraghan and P. M. Pardalos: An
+   exact algorithm for the maximum clique problem. Operations Research
+   Letters, 9:375–382, 1990.)
+
+   The algorithm is invoked as:
+
+   maxcliqueN G
+
+   There are different variations of the algorithm (for N=1,2,3), depending on
+   which node order is to be used (see below). The result is the node list of
+   a maximum clique (i.e., a subgraph of maximum size in which all nodes are
+   pairwise adjacent).
+
+   Example:
+
+   > let G = read_graph "sample1.graph";
+   > maxclique3 G;
+   [5,6,7,9,10]
+
+   Note that this is an *exact* clique algorithm and thus it needs exponential
+   running time in the worst case (the maximum clique problem is NP-hard).
+   Carraghan and Pardalos suggest that in order to improve the running time on
+   large dense graphs one should use a recursive "smallest-first" node oder,
+   implemented by maxclique3 (see below).
+
+ *****************************************************************************/
+
+/* The invariant we maintain here is that C is always a clique of G and that V
+   only contains nodes which are adjacent to all nodes in C. Cmax is the
+   maximum clique found so far. We can prune the search tree as soon as we
+   find that #C+#V<=#Cmax; in this case C can't possibly be extended to a
+   clique larger than Cmax. The recursion also ends as soon as V becomes
+   empty. Otherwise, we consider each v in V in turn, adding v to C and
+   removing from V all nodes not adjacent to v (including v itself). */
+
+maxclique ord G = reverse $ search [] ([], ord G) with
+  search Cmax (C,V) = Cmax if #C+#V<=#Cmax; // prune
+    	      	    = C if null V;          // new maximum clique
+    		    = foldl search Cmax [next (C,V) v | v = V]; // recurse
+  next (C,V) v = v:C, [w | w = V; w ~= v; member N w] when
+    N = set (adj G v);
+  end;
+end;
+
+/* Variations of maxclique for the different orders define below. */
+
+maxclique1 = maxclique idorder;
+maxclique2 = maxclique randorder;
+maxclique3 = maxclique sforder;
+
+/* Identity order. This just lists the nodes as is. */
+
+idorder G = 0..#nodes G-1;
+
+/* A random order. */
+
+extern int genrand_int31() = random31;
+
+randorder G = shuffle (idorder G) with
+  shuffle [] = [];
+  shuffle xs = xs!i : shuffle (xs!!(0..i-1)+xs!!(i+1..n-1)) when
+    n = #xs; i = random31 mod n;
+  end;
+end;
+
+/* Recursive smallest-first order (SFO). This is the most sophisticated, but
+   also needs some time to compute, so it depends on the graph whether it's
+   worth the extra effort.  */
+
+/* To compute an SFO, we repeatedly pick a node of smallest degree and remove
+   it from the graph. Note that for reasons of efficiency we don't actually
+   manipulate the graph here, instead we keep track of the current node
+   degrees in the deg dictionary and a priority queue q of nodes ordered by
+   the current degrees. For the latter we employ the same kind of priority
+   queue data structure as in the Dijkstra algorithm above. */
+
+sforder G = pick [] (deg,q) when
+  V = idorder G; deg = [v=>#adj G v | v = V];
+  q = queue deg; deg = dict deg;
+end with
+  pick V (deg,q) = reverse V if null q;
+  pick V (deg,q) = pick (v:V) (deg,q) when
+    v=>d, q = dequeue q; deg = delete deg v;
+    deg,q = foldl update (deg,q) [u | u = adj G v; member deg u] with
+      update (deg,q) u = deg,q when
+        d = deg!u; deg = insert deg (u=>d-1); q = chqueue q (u=>d) (u=>d-1);
+      end;
+    end;
+  end;
+end;
