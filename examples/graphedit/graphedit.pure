@@ -10,8 +10,8 @@
 
      pure -c graphedit.pure -o graphedit `pkg-config --libs gtk+-2.0`
 
-   You need to have Pure (+ gcc and the basic LLVM tools), Tcl/Tk (including
-   Gnocl) and GTK+ installed to do this.
+   You need to have Pure (+ gcc and the basic LLVM tools), the Pure Tk module,
+   Tcl/Tk (including Gnocl) and GTK+ installed to do this.
 
    Usage information can be found in the README. Basically, you run graphedit
    as follows:
@@ -607,9 +607,6 @@ delete_cb = () when
   pop_status ();
 end;
 
-let clipcmds = ["cutcmd","copycmd","deletecmd","dupcmd",
-    	        "cuttool","copytool","deletetool"];
-
 clipboard_empty = tk "gnocl::clipboard hasText"=="0";
 get_clipboard = parse_graph $ tk "gnocl::clipboard getText";
 clear_clipboard = tk "gnocl::clipboard clear" $$ update_clipboard;
@@ -775,6 +772,9 @@ end if ~null (get redo_cmds);
 
 let selected_id = ref ();
 
+let clipcmds = ["cutcmd","copycmd","deletecmd","dupcmd",
+    	        "cuttool","copytool","deletetool"];
+
 let aligncmds =
 [ "topcmd","bottomcmd","leftcmd","rightcmd",
   "topleftcmd","bottomleftcmd","toprightcmd","bottomrightcmd",
@@ -847,8 +847,8 @@ adjust_scroll_region (x,y) = () when
   if x1<=x && x<=x2 && y1<=y && y<=y2 then ()
   else (() when
     // Increase the scroll region so that it includes the given point.
-    // Actually, we make the region a bit larger than actually needed, so that
-    // the user can enlarge the region as required.
+    // Actually, we make the region a bit larger than needed, so that the user
+    // can enlarge the region as required.
     x1 = min x1 x; y1 = min y1 y; x2 = max x2 (x+500); y2 = max y2 (y+400);
     put region (x1,y1,x2,y2);
     tk $ sprintf "$canv configure -scrollRegion {%g %g %g %g}" (x1,y1,x2,y2);
