@@ -26,7 +26,7 @@ set redocmd [gnocl::menuItem -text "%#Redo" -accelerator "<control>Y" -onClicked
 set cutcmd [gnocl::menuItem -text "%#Cut" -onClicked {pure cut_cb}]
 set copycmd [gnocl::menuItem -text "%#Copy" -onClicked {pure copy_cb}]
 set pastecmd [gnocl::menuItem -text "%#Paste" -onClicked {pure paste_cb}]
-set dupcmd [gnocl::menuItem -text "%_Du_plicate" -accelerator "<control>D" -onClicked {pure dup_cb}]
+set dupcmd [gnocl::menuItem -text "%_Dup_licate" -accelerator "<control>D" -onClicked {pure dup_cb}]
 set deletecmd [gnocl::menuItem -text "%#Delete" -onClicked {pure delete_cb}]
 
 set editmenu [gnocl::menu]
@@ -34,6 +34,8 @@ $editmenu add $undocmd
 $editmenu add $redocmd
 $editmenu add [gnocl::menuSeparator]
 $editmenu add [gnocl::menuItem -text "%_Select _All" -accelerator "<control>A" -onClicked {pure select_all_cb}]
+$editmenu add [gnocl::menuItem -text "%_Select Pat_h" -onClicked {pure select_path_cb}]
+$editmenu add [gnocl::menuItem -text "%_Select _Subgraph" -onClicked {pure select_subgraph_cb}]
 $editmenu add [gnocl::menuSeparator]
 $editmenu add $cutcmd
 $editmenu add $copycmd
@@ -67,10 +69,20 @@ $alignmenu add $bottomrightcmd
 $alignmenu add [gnocl::menuSeparator]
 $alignmenu add $centercmd
 
+set viewmenu [gnocl::menu]
+$viewmenu add [gnocl::menuCheckItem -text "%_Show _Node Labels" -variable node_labels -onToggled {pure node_labels_cb %v}]
+$viewmenu add [gnocl::menuCheckItem -text "%_Show _Edge Labels" -variable edge_labels -onToggled {pure edge_labels_cb %v}]
+$viewmenu add [gnocl::menuSeparator]
+$viewmenu add [gnocl::menuItem -text "%__Make Node Labels" -onClicked {pure make_node_labels_cb}]
+
+set node_labels 1
+set edge_labels 1
+
 set menubar [gnocl::menuBar]
 $menubar add [gnocl::menuItem -text "%__File" -submenu $filemenu]
 $menubar add [gnocl::menuItem -text "%__Edit" -submenu $editmenu]
 $menubar add [gnocl::menuItem -text "%__Align" -submenu $alignmenu]
+$menubar add [gnocl::menuItem -text "%__View" -submenu $viewmenu]
 
 set toolbar [gnocl::toolBar]
 $toolbar add item -text "%#New" -tooltip "Create a new graph" -onClicked {pure new_cb}
@@ -104,10 +116,23 @@ set scrolled [gnocl::scrolledWindow -borderWidth 0 -child $canv]
 set statusbar [gnocl::statusBar]
 $statusbar push "Ready."
 
-#$box add [list $menubar $toolbar]
 $box add [list $menubar $toolbar]
 $box add [list $scrolled] -expand 1 -fill 1
 $box add [list $statusbar]
 
 set top [gnocl::window -title "graphedit" -child $box -onDestroy {pure destroy_cb %w} -onDelete {pure deletew_cb %w} -defaultWidth 500 -defaultHeight 400]
 $canv configure -hasFocus 1
+
+proc input_dialog { msg } {
+  set box [gnocl::box -orientation horizontal -spacing big]
+  set label [gnocl::label -text $msg]
+  global entry_value
+  set entry [gnocl::entry -variable entry_value]
+  $box add [list $label $entry]
+  set res [gnocl::dialog -type question -child $box -buttons {%#Cancel %#Ok}]
+  if { $res == "Ok" } {
+    return $entry_value
+  } else {
+    return ""
+  }
+}

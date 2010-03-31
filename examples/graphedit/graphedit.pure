@@ -37,6 +37,11 @@ const ui = fget $ fopen "graphedit.tcl" "r";
 
 let current_file = ref ();
 
+input_dg msg::string = res when
+  tk_set "msg" msg;
+  res = tk "input_dialog $msg";
+end;
+
 error_dg msg::string = () when
   tk_set "msg" msg;
   tk "gnocl::dialog -type error -text $msg";
@@ -528,7 +533,12 @@ end;
 get_label_id () = ();
 get_label_id id = tk $ sprintf "$canv findWithTag L%s" id;
 
-make_label id (s,a) = tk_set "text" s $$ tk $ sprintf "$canv create text -text $text -coords {%g %g} -offset {%d %d} -anchor %s -tags {label L%s}" (coords id,offset a,a,id);
+make_label id (s,a) = lid when
+  tk_set "text" s;
+  lid = tk $ sprintf "$canv create text -text $text -coords {%g %g} -offset {%d %d} -anchor %s -tags {label L%s}" (coords id,offset a,a,id);
+  type = if is_node id then "node" else "edge";
+  tk $ sprintf "$canv itemShow %s $%s_labels" (lid,type);
+end;
 
 make_label_id id = case get_label_id id of
   () = make_label id ("",tk_get "align");
@@ -579,6 +589,8 @@ entry_cb text = () when
     "" = tk $ sprintf "$canv itemDelete %s" lid;
     _ = () when
       lid = make_label_id id;
+      // make sure that the item is visible
+      tk $ sprintf "$canv itemShow %s" lid;
       tk $ sprintf "$canv itemConfigure %s -text $entry_text" lid;
     end;
   end;
@@ -587,12 +599,92 @@ when id = get selected_id; lid = get_label_id id end;
 
 align_cb align = () when
   mark_undo "align";
+  // make sure that the item is visible
+  tk $ sprintf "$canv itemShow %s" lid;
   tk $ sprintf "$canv itemConfigure %s -offset {%d %d} -anchor %s" (lid,offset align,align);
 end if lid ~== () && label_alignment lid ~= align
 when lid = get_label_id (get selected_id) end;
 
+node_labels_cb v::string = () when
+  labels = tk_split $ tk "$canv findWithTag label";
+  labels = filter (is_node.labelled_item) labels;
+  do (\l -> tk $ sprintf "$canv itemShow %s %s" (l,v)) labels;
+end;
+
+edge_labels_cb v::string = () when
+  labels = tk_split $ tk "$canv findWithTag label";
+  labels = filter (is_edge.labelled_item) labels;
+  do (\l -> tk $ sprintf "$canv itemShow %s %s" (l,v)) labels;
+end;
+
+make_node_labels_cb = () when
+  mark_undo "labels";
+  nodes = sort (\v w -> val v<val w) all_nodes;
+  // Keep a record of existing alignments so that we can recreate them later.
+  nodealign = record $ zipwith (=>) nodes $ map align_data nodes with
+    align_data id = case label_data id of
+      () = align_default;
+      _,align = align;
+    end;
+  end when align_default = tk_get "align" end;
+  labels = tk_split $ tk "$canv findWithTag label";
+  labels = filter (is_node.labelled_item) labels;
+  do (tk.sprintf "$canv itemDelete %s") labels;
+  // Make sure that the node labels are visible.
+  tk_set "node_labels" "1";
+  // Generate the new node labels.
+  nodelab = record $ zipwith (=>) nodes $ map str (0..#nodes-1);
+  do (\id -> make_label id (nodelab!id,nodealign!id)) nodes;
+end;
+
 select_all_cb = () when
   set_selection (all_nodes+all_edges);
+end;
+
+select_path_cb = case input_dg "Enter path to select:" of
+  () = ();
+  s  = case val s of
+         () | [] = ();
+	 x::int = do_select [x];
+	 x = do_select x if listp x && all intp x;
+	 x = do_select (list x) if listp x && all intp x when x = list x end;
+	 _ = error_dg "Error in Select Path operation:\nInvalid node list, must be a list or tuple of node numbers";
+       end;
+end with
+  do_select path = catch (error_dg.sprintf "Error in Select Path operation:\n%s") (() when
+    nodes = sort (\v w -> val v<val w) all_nodes;
+    id = smatrix nodes;
+    // check for bad node numbers
+    bad = [v | v = path; v<0 || v>=#id];
+    null bad || throw (sprintf "Invalid node number %d" $ head bad);
+    path = [id!v | v = path];
+    edges = [edges_between id1 id2 | id1,id2 = zip path (tail path)];
+    any null edges && error_dg "Error in Select Path operation:\nNot a valid path (but I'll select it anyway)";
+    edges = cat edges;
+    set_selection (path+edges);
+  end);
+end;
+
+select_subgraph_cb = case input_dg "Enter subgraph to select:" of
+  () = ();
+  s  = case val s of
+         () | [] = ();
+	 x::int = do_select [x];
+	 x = do_select x if listp x && all intp x;
+	 x = do_select (list x) if listp x && all intp x when x = list x end;
+	 _ = error_dg "Error in Select Subgraph operation:\nInvalid node list, must be a list or tuple of node numbers";
+       end;
+end with
+  do_select sub = catch (error_dg.sprintf "Error in Select Subgraph operation:\n%s") (() when
+    nodes = sort (\v w -> val v<val w) all_nodes;
+    id = smatrix nodes;
+    // check for bad node numbers
+    bad = [v | v = sub; v<0 || v>=#id];
+    null bad || throw (sprintf "Invalid node number %d" $ head bad);
+    sub = [id!v | v = sub];
+    edges = edges_in sub;
+    set_selection (sub+edges);
+  end);
 end;
 
 delete_cb = () when
@@ -881,7 +973,7 @@ end;
    indirect fashion instead. */
 
 the_callbacks with the_callbacks () =
-  align_cb,cancel_cb,click_cb,copy_cb,cut_cb,delete_cb,deletew_cb,destroy_cb,dup_cb,edge_cb,edge_motion_cb,entry_cb,grid_cb,move_cb,move_motion_cb,new_cb,open_cb,paste_cb,quit_cb,redo_cb,resize_cb,save_as_cb,save_cb,select_all_cb,select_cb,select_motion_cb,undo_cb
+  align_cb,cancel_cb,click_cb,copy_cb,cut_cb,delete_cb,deletew_cb,destroy_cb,dup_cb,edge_cb,edge_labels_cb,edge_motion_cb,entry_cb,grid_cb,make_node_labels_cb,move_cb,move_motion_cb,new_cb,node_labels_cb,open_cb,paste_cb,quit_cb,redo_cb,resize_cb,save_as_cb,save_cb,select_all_cb,select_cb,select_motion_cb,select_path_cb,select_subgraph_cb,undo_cb
 end;
 
 // Helper function to generate the callbacks list.
