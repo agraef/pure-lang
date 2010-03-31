@@ -147,7 +147,7 @@ unparse_graph (V,E) = sprintf "%s %s%s\n" (magic,ctime time,str (V,E));
 
 get_graph = V,E when
   nodes = sort (\v w -> val v<val w) all_nodes;
-  nodeno = record $ zipwith (=>) nodes (1..#nodes);
+  nodeno = record $ zipwith (=>) nodes (0..#nodes-1);
   points = map coords nodes;
   V = [nodeno!v=>(p,label_data v) | v,p = zip nodes points];
   edge_ids = all_edges;
@@ -624,7 +624,7 @@ copy_cb = () when
   edge_ids = selected_edges;
   edges = map nodes_of edge_ids;
   nodes = list $ set $ nodes+cat edges;
-  nodeno = record $ zipwith (=>) nodes (1..#nodes);
+  nodeno = record $ zipwith (=>) nodes (0..#nodes-1);
   points = map coords nodes;
   V = [nodeno!v=>(p,label_data v) | v,p = zip nodes points];
   E = [nodeno!v,nodeno!w,label_data eid |
@@ -671,7 +671,7 @@ dup_cb = () when
   edge_ids = selected_edges;
   edges = map nodes_of edge_ids;
   nodes = list $ set $ nodes+cat edges;
-  nodeno = record $ zipwith (=>) nodes (1..#nodes);
+  nodeno = record $ zipwith (=>) nodes (0..#nodes-1);
   points = map coords nodes;
   // Shift the nodes by a little amount, so that they don't end up at the same
   // position as the original.
