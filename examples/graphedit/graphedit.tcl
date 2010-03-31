@@ -26,7 +26,7 @@ set redocmd [gnocl::menuItem -text "%#Redo" -accelerator "<control>Y" -onClicked
 set cutcmd [gnocl::menuItem -text "%#Cut" -onClicked {pure cut_cb}]
 set copycmd [gnocl::menuItem -text "%#Copy" -onClicked {pure copy_cb}]
 set pastecmd [gnocl::menuItem -text "%#Paste" -onClicked {pure paste_cb}]
-set dupcmd [gnocl::menuItem -text "%__Duplicate" -accelerator "<control>D" -onClicked {pure dup_cb}]
+set dupcmd [gnocl::menuItem -text "%_Du_plicate" -accelerator "<control>D" -onClicked {pure dup_cb}]
 set deletecmd [gnocl::menuItem -text "%#Delete" -onClicked {pure delete_cb}]
 
 set editmenu [gnocl::menu]
