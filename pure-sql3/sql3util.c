@@ -30,46 +30,6 @@ pure_expr* sql3util_prepare(sqlite3 *db, char *sql)
   return p_ret;
 }
 
-/* algorithm lifted from sqlite3 date.c module */
-
-double sql3util_ymd2julian(int Y, int M, int D){
-  int A, B, X1, X2;
-
-  if( M<=2 ){
-    Y--;
-    M += 12;
-  }
-  A = Y/100;
-  B = 2 - A + (A/4);
-  X1 = 36525*(Y+4716)/100;
-  X2 = 306001*(M+1)/10000;
-  return X1 + X2 + D + B - 1524.5;
-}
-
-/* algorithm lifted from sqlite3 date.c module */
-
-//=>(Y,M,D)
-pure_expr* sql3util_julian2ymd(double jd){
-  int Z, A, B, C, D, E, M, X1;
-
-  Z = (int)(jd+0.5);
-  A = (int)((Z - 1867216.25)/36524.25);
-  A = Z + 1 + A - (A/4);
-  B = A + 1524;
-  C = (int)((B - 122.1)/365.25);
-  D = (36525*C)/100;
-  E = (int)((B-D)/30.6001);
-  X1 = (int)(30.6001*E);
-  M = E<14 ? E-1 : E-13;
-
-  pure_expr *pD = pure_int(B - D - X1);
-  pure_expr *pM = pure_int(M);
-  pure_expr *pY = pure_int(M>2 ? C - 4716 : C - 4715);
-  pure_expr *pret = pure_tuplel(3,pY,pM,pD);
-  return pret;
-}
-
-
 
 /* Marshalling between Pure and SQLite3 data types (sqlite3_value*).
    2010-03-19 AG. */

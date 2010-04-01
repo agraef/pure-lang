@@ -1,20 +1,6 @@
-/* sql3_demo.pure Mar 18, 2010 */
+/* sql3_demo.pure */
 
 using sql3;
-
-
-/* The sql3 functions demo'd:
-
-   open close exec -- interface for db
-   prep exec finalize -- the basic interface for statements
-   begin rollback commit -- basic transactions */
-
-
-/* sql3 functions not demo'd
-
-   begin_immediate begin_exclusive -- advanced usage (not demo'd)
-   savepoint rollback_to release -- nested transactions (not demo'd) */
- 
 
 /* Helper */
 
@@ -42,17 +28,17 @@ when
   stm1 = sql3::prep db "ilcc" "insert into TT values(?,?,?,?)";
 
   // apply exec to stm1 to insert some values
-  sql3::exec stm1 (1,11,"Peter","2010-03-15");
-  sql3::exec stm1 (2,12,"Lily","2010-03-16");
-  sql3::exec stm1 (3,13,"Holly","2010-03-17");
-  sql3::exec stm1 (4,14,"Emily","2010-03-18");
-  sql3::exec stm1 (5,15,"Mimi","2010-03-19");
-  sql3::exec stm1 (6,16,"Guonan","2010-03-20");
+  sql3::exec stm1 (1,11,"Manny","2010-03-15");
+  sql3::exec stm1 (2,12,"Moe","2010-03-16");
+  sql3::exec stm1 (3,13,"Mack","2010-03-17");
+  sql3::exec stm1 (4,14,"Mary","2010-03-18");
+  sql3::exec stm1 (5,15,"Molly","2010-03-19");
+  sql3::exec stm1 (6,16,"Marcy","2010-03-20");
 
   // the "v" conversion lets you specify "any parameter"; conversion from the
   // Pure data is fully automatic in this case
   stm2 = sql3::prep db "vvvv" "insert into TT values(?,?,?,?)";
-  sql3::exec stm2 (7,17,"Albert","2010-03-21");
+  sql3::exec stm2 (7,17,"Mick","2010-03-21");
 
   puts "End setup\n";
 end;
@@ -71,7 +57,7 @@ when
   stm4 = sql3::prep db "ic:i" "select x,z from TT where x > ?";
 
   //try them out
-  putrows (sql3::exec stm1 ("Holly"));
+  putrows (sql3::exec stm1 ("Mack"));
   putrows (sql3::exec stm2 ());
   putrows (sql3::exec stm3 ());
   putrows (sql3::exec stm4 2);

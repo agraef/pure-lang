@@ -1,0 +1,78 @@
+/* sql3_types.pure Mar 18, 2010 */
+
+using system;
+using sql3;
+using julian;
+
+
+putrows rows = puts "------" $$ do (puts . str) rows;
+
+setup db = () 
+when
+  puts "Begin setup";
+
+  //The table TC has one column for each type
+  sql_create =    
+    "create table TC (" +
+    "c_chars varchar, " + 
+    "j_julian varchar, " + 
+    "s_utf8_expr varchar)";
+
+  sql3::exec db "drop table if exists TC";
+  sql3::exec db sql_create;
+
+  puts "End setup";
+end;
+
+push_pull_types db = ()
+when 
+  puts "begin push_pull_types";
+
+  jd = julian::str_to_jd "2010-03-22";
+  //jd = "2010-03-22";
+
+  //Insert some data
+  printf "dbg::%s: %s\n" ("push_pull_types1","" );
+  stm1 = sql3::prep db "cjs" "insert into TC values(?,?,?)";
+  printf "dbg::%s: %s\n" ("push_pull_types2","prep done" );
+  sql3::exec stm1 ["Manny", jd, s_expr];
+  sql3::exec stm1 ["Moe",  jd+1, [1,2,3]];
+  sql3::exec stm1 ["Jack", jd+2, ("a",5.0)];
+  printf "dbg::%s: %s\n" ("push_pull_types2","insert done" );
+
+  //Query each column of a table that has one column per Sql3 type
+  stm1 = sql3::prep db "c:" "select c_chars from TC";
+  putrows (sql3::exec stm1 ());
+  stm1 = sql3::prep db "j:" "select j_julian from TC";
+  putrows (sql3::exec stm1 ());
+  puts "   Note that in the database these are YYYY-MM-DD";
+  stm1 = sql3::prep db "s:" "select s_utf8_expr from TC";
+  putrows (sql3::exec stm1 ());
+
+  puts "End push_pull_types";
+end;
+
+
+/* set up some custom store and retrieve wrappers
+   "j" - julians are doubles for easy date arithmatic but
+         are strings of the form YYYY-MM-DD in the database.
+   "s" - Pure expression stored as text in the database. */
+
+ 
+const custom_binds = record [
+  "j"=>["c", julian::jd_to_str,julian::str_to_jd],
+  "s"=>["c",str,eval]
+];
+
+
+main = ()
+when
+  db = sql3::open ("abc.db", sql3::SQLITE_OPEN, custom_binds);
+  sql3::begin db;
+  setup db;
+  push_pull_types db;
+  sql3::commit db;
+end;
+
+// Run this:
+main;

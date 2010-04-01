@@ -1,6 +1,9 @@
 
+DRAFT FOR DISCUSSION PURPOSES ONLY.
+NOT COMPLETED, NOT CURRENT, NOT WORTH READING AT THIS POINT.
+
 =========
-pure-sql3
+Pure-Sql3
 =========
 
 This document describes Peter Summerland's Sqlite3_ module, named **Sql3**,
@@ -32,8 +35,12 @@ Copying
 =======
 
 Copyright (c) 2010 by Peter Summerland and Albert Graef, all rights
-reserved. Sql3 is distributed under a 3-clause BSD license, please see the
-COPYING file for details and pertaining copyright notices.
+reserved. 
+
+Sql3 is is free software: you can redistribute it and/or modify it
+under the terms of the New BSD License, often referred to as the 3
+clause BSD license. Please see the COPYING file for the actual
+license.
 
 Installation
 ============
@@ -121,17 +128,297 @@ Data Structure
 Operations
 ==========
 
+The principal task of an SQL database engine is to evaluate statements of
+SQL. In order to accomplish this purpose, a SQLite client needs to know
+about two objects:
+
+* The database connection object: sqlite3
+* The prepared statement object: sqlite3_stmt
+
+The SQLite API uses pointers to these objects extensively. ``Sql3::open``
+and `Sql3::prep`` return "sentry-guarded" versions of these pointers,
+referred to herein as ``db_ptr`` and ``stmt_ptr``, respectively. These
+pointers can generally be used in calls to the native SQLite APIs, subject
+to the usual caveats that apply to calls to extern C functions.  HOWEVER,
+USING A DB_PTR OR A STMT_PTR IN CALLS TO CERTAIN NATIVE FUNCTIONS,
+INCLUDING IN PARTICULAR SQLITE3_CLOSE AND SQLITE_FINALIZE, WILL CORRUPT
+DATA HELD BY THE DB_PTR OR STMT_PTR. See ... for a list of SQLite functions that
+are know to corrupt db_ptrsand stm_ptrs.
+
 Opening and closing db
 ----------------------
 
-Preparing, executing and finalizing STMTs
------------------------------------------
+In Sql3 ``open filename`` provides a db_ptr that can be used access
+specified SQLite database.
+
+* ``open (file_path::string [, flags::int])``: opens an SQLite database
+  file whose name is given by the file_path argument and returns a db_ptr
+  for the database connection object created by SQlite.  The optional flags
+  determine the access mode such a read-only for the connection.
+
+If the connection fails, ``open`` closes the db_ptr and throws an
+exception. E.g.,::
+
+  >  let dbp = sql3::open "abc.db"; db1;
+  #<pointer 0x992dff8>
+
+  > catch error (open ("abcx.db",SQLITE_OPEN_READONLY));
+  error "sqlite3 error 14: unable to open database file [open abcx.db]"
+
+
+If the filename is ":memory:", then a private, temporary in-memory database
+is created for the connection. This in-memory database will vanish when the
+database connection is closed. The basic access modes are:
+
+* SQLITE_OPEN_READONLY - the database is opened in read-only mode. If the
+  database does not already exist, an error is returned.
+
+* SQLITE_OPEN_READWRITE - the database is opened for reading and writing if
+  possible, or reading only if the file is write protected by the operating
+  system. In either case the database must already exist, otherwise an
+  error is returned.
+
+* SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE - the database is opened for
+  reading and writing, and is creates it if it does not already exist. This
+  is the default value that is used if the flags argument is omitted.
+
+* SQLITE_OPEN - an alias for SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE
+  provided by Sql3.
+
+These flags can be combined with SQLITE_OPEN_NOMUTEX SQLITE_OPEN_FULLMUTEX
+SQLITE_OPEN_SHAREDCACHE SQLITE_OPEN_PRIVATECACHE to control SQLite's
+threading and shared cache features. See ...
+
+The db_ptr returned by open is a valid sqlite3* with a sentry. Accordingly,
+it can used with the SQLite API.::
+
+  > string_dup (sqlite3_errmsg dbp);
+    "not an error"
+
+This can be a useful feature, but must be used with care. In particular a
+db_ptr returned by open should never be used in a call to ``
+sqlite3_close``. If this were done, a subsequent call to sql3::close (or an
+automagically generated call when the db_ptr goes out of scope) would
+result in undefined behavior (in most cases a seg fault).
+
+* ``is_db_ptr ptr::pointer``: returns 1 if ptr is a db_ptr returned by
+  open, and 0 if it is not.
+
+When a database connection object is no longer needed, it should be closed
+so that SQLite can free the associated resources. 
+
+* ``close dp1::pointer``: - if dp1's database connection is open, calls
+  sqlite_close dp1. Otherwise does nothing. Before calling sqlite_close,
+  close finalizes all "prepared statements" that associated with the
+  connection.::
+
+  > close dbp;
+  1
+  > close dbp; 
+  0
+
+Note that ``close ptr`` only matches when ptr is a db_ptr returned by
+open::
+
+  > sqlite3_errmsg db1;
+  #<pointer 0xb644eee4>
+  > close ans;
+  sql3::close #<pointer 0xb644eee4>
+
+If a db_ptr, say dbp, goes out of scope, close dbp, is called automagically.
+
+
+Constructing Prepared Statements
+--------------------------------
+
+In SQLite3, prepared statement objects are used to execute SQL statements
+using:
+
+    * sqlite3_prepare()
+    * sqlite3_bind()
+    * sqlite3_step()
+    * sqlite3_column()
+    * sqlite3_finalize()
+
+The basic procedure is to prepare a statement, use the appropriate
+sqlite_bind functions to bind its parameters (e.g., sqlite3_bind_text),
+step it one or more times until it is done and then finalize it. If a
+step returns data, use the appropriate sqlite3_column functions (e.g.,
+sqlite3_column_double) to extract the data from each column.
+
+Sql3 captures this basic procedure in four functions: ``prep``, ``exec``
+``lexec`` and ``finalize``.
+
+
+* ``prep dbp::pointer types::string sql::string`` - constructs prepared
+  statement object and returns a stmt_ptr that references it. ``dbp`` must
+  be a db_ptr or the rule will not match. ``sql`` is a string that
+  specifies the sql statement to be executed. It can contain argument
+  placeholders, indicated by "?", "?nnn", ":AAA", etc. See
+  sqlite3_prepare_v2 for further details. The ``types`` parameter tells
+  Sql3 the types of arguments to be used when binding the prepared
+  statement as well as the types of objects returned at each step.
+
+* ``is_stmt_ptr ptr::pointer`` - returns 1 if ptr is a stmt_ptr, otherwise
+  returns 0.
+
+For example in the type 
+
+  > let stmp1 = sql3::prep db1 "ci" "insert into TT values (?,?)";
+
+  > let stmp2 = sql3::prep db1 "ci:i" "select * from TT where age > ?"; stmp;
+  #<pointer 0xa4b43c0>
+
+  > is_stmt_ptr stmp2;
+  1
+
+In general, the letters in the type string before the ":", if any, indicate
+the types in the result set. Those that occur after the ":", if any
+indicate the types of the arguments used to bind the prepared statement
+object. If the type string does not contain a ":", the letters in the type
+string, if any, are the types of binding arguments.
+
+Here is a list of the letters that can appear in a type string along with
+their corresponding pure types and corresponding SQlite types used to store
+them.
+
+::
+  b; raw data; blob
+  c; string; text (utf8)
+  d; double; float;
+  i; int; int64;
+  j; double; text (utf8)
+  l; bigint (in int64 range); int64
+  n; SQLNULL; NULL
+  s; pure expression; text (utf8)
+  x; binary serialized pure expression; blob
+  v; variant; same as b,i,c,d,n as appropriate 
+
+The "l" type, which converts a subset of bigints (and ints actually) into
+int64, (as opposed, say, to a blob that could contain the full range of
+bigints) is useful because SQLite uses int64 types to store "integer
+primary keys" and as well as internally used "rowids". The "j" type ---
+TODO. The "n" type can only appear on the binding side of a type string. A
+binding argument corresponding to a "v" in the type string will be treated
+as bound as if the "v" were a "b", "i", "l", "c", "d",or "n", based on the
+type of the binding argument. An object returned when a prepared statement
+is stepped that corresponding to a "v" type will be fetched according to
+the native SQLite column type of the corresponding column. The "x" type is
+used to store and reconstruct Pure expressions as binary objects, using
+``val`` and ``blob``. The "s" type uses ``str`` and ``eval`` to store and
+recontruct Pure expressions in text format. [[KEEP?? -- no good for batch
+compiled programs]].
+
+The examples directory contains a file sql3_types.pure that has an example
+for each type.
+
+The stmt_p returned by `prep` is a sentry guarded sqlite3_stmt* that will
+automagically be finalized when the stmt_p goes out of scope.
+
+
+Executing Prepared Statements
+-----------------------------
+
+In Sql3, the bind, step, column, step, column ... cyle is encapsulated in
+the exec and lexec functions.
+
+* ``exec`` stmp::pointer args - uses args to bind the prepared statement
+  referenced by stmp, then steps the prepared statement until it is done,
+  collecting the results of the steps in a list. ``args`` is a tuple or
+  list of arguments whose number and type correspond to the bind parameter
+  types specified in the call to prep that produced stmp. This rule matches
+  only if stmp is a stmt_ptr. Throws and error if SQlite returns an error
+  code anywhere in the process.
+
+If the statement does not return values, exec returns [];
+
+  > exec stmp1 ("Tom",30);  //insert Tom
+  []
+
+  > exec stmp2 19;          //select age > 19
+  [["Sam",20],["Tom",30],["Fred",35]]
+
+ An error is thrown if the args do not correspond to the specified types.
+
+  > catch error (exec stmp "a");
+  error "sql3 error: Attempt to bind a \"a\" as a int"
+
+Note that ``exec`` returns result sets as an eager list, which could be
+inefficient or simply not feesible for large result sets. In such cases it
+is preferable to use ``lexec`` instead.
+
+* ``lexec stmp::pointer args`` - same as ``exec`` except that it returns a
+  lazy list.::
+
+  > lexec stmp2 19;
+  ["Sam",20]:#<thunk 0xb6475ab0>
+
+Note that no changes to stmp2 were required. In addition, for most purposes
+the lazy list returned by lexec can be processed by the same code that
+processed the eager list returned by exec (see the "Lazy Evaluation and
+Streams" section in the Pure manual)! The examples directory contains the
+file sql3_lexec.pure that compares memory usage and time for a moderately
+sized result set using ``exec`` and ``lexec``.
+
+For statements that have no parameters and which do not return results,
+`exec` can be applied to a db_ptr.
+
+* ``exec dbp::pointer sql::string`` - constructs a temporary prepared
+  statement using the sql string. The sql string cannot contain parameters
+  (?, ?nnn, etc.). Throws an error if SQLite indicates an error while exec
+  is processing the sql. Otherwise retruns SQLITE_OK.[TODO - BUG Try
+  commit/rollback]::
+
+  > exec db1 "create table if not exists TT (name varchar, age integer)";
+  101 //SQLITE_DONE
+
+
+Finalizing Prepared Statements
+------------------------------
+
+
+
 
 Transactions
 ------------
 
+No changes can be made to a SQLite database except within a
+transaction. Any command that changes the database (basically, any SQL
+command other than SELECT) will automatically start a transaction if one is
+not already in effect. Automatically started transactions are committed
+when the last query finishes. 
+
+Transactions can be started manually using the BEGIN command. Such
+transactions usually persist until the next COMMIT or ROLLBACK
+command. This behavior provides the means make a series a changes on an all
+or nothing basis. In addition, wrapping a long sequence of updates or other
+changes that are logically independent can significantly reduce processing
+time. 
+
+Transactions created using BEGIN...COMMIT do not nest. For nested
+transactions, use the SAVEPOINT and RELEASE commands. 
+
+Sql3 provides the following convenience functions all of which simply exec
+dbp with the appropriate command.
+
+* ``begin dbp``
+* ``begin_exclusive``
+* ``begin_immediate``
+* ``commit dbp``
+
+* ``savepoint dbp``
+* ``release dbp``
+* ``rollback_to``
+* ``rollback dbp``
+
+See the SQLite documentation for further details on the use of these
+commands.
+
+
 Callbacks
 ---------
+
+
 
 Accessing the rest of the SQLite3 C Interface
 =============================================

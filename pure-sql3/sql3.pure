@@ -6,7 +6,7 @@ using "lib:sql3util";
 namespace sql3;
 
 public 
-STMT SQLNULL bad_sql_value SQLITE_OPEN
+SQLNULL SQLITE_OPEN
 SQLITE_OPEN_READONLY SQLITE_OPEN_READWRITE SQLITE_OPEN_CREATE
 SQLITE_OPEN_NOMUTEX SQLITE_OPEN_FULLMUTEX 
 SQLITE_OPEN_SHAREDCACHE SQLITE_OPEN_PRIVATECACHE;
@@ -15,16 +15,17 @@ public
 is_db_ptr is_stmt_ptr
 open close prep exec lexec finalize function
 begin begin_immediate begin_exclusive savepoint release 
-rollback rollback_to commit
-str2julian julian2str ymd2julian julian2ymd;
+rollback rollback_to commit;
 
 private 
-col_err col_expr_binary col_chars col_julian col_fns 
+DB STMT
+col_err col_expr_binary col_chars col_julian core_col_fns 
 bind_err bind_blob bind_chars bind_double bind_int bind_julian
-bind_long bind_null bind_expr_binary bind_fns bind_expr_utf8 bind_sp
+bind_long bind_null bind_expr_binary core_bind_fns bind_expr_utf8 bind_sp
 
-openp close_db finalize_stmt get_stmt get_rec get_recs lget_recs
-sql3_err sqlite3_err ;
+openp close_db finalize_stmt composite_bind composite_sel
+get_db get_stmt get_sel_fns get_bind_fns get_rec get_recs lget_recs
+bad_bind_type sql3_err sqlite3_err ;
 
 private
 SQLITE_OK SQLITE_ROW SQLITE_DONE SHOW_OPEN_CLOSE
@@ -32,8 +33,6 @@ MAX_INT64 MIN_INT64 TYPE_CHARS;
 
 private extern expr* sql3util_open(void* path, int flags);
 private extern expr* sql3util_prepare(sqlite3 *db, void* sql);
-private extern double sql3util_ymd2julian(int Y, int M, int D);
-private extern expr* sql3util_julian2ymd(double jd);
 private extern int sql3util_bind_blob(sqlite3_stmt *sp, int col, expr* x);
 private extern int sql3util_bind_text(sqlite3_stmt* sp, int col, void* text);
 private extern int sql3util_bind_value(sqlite3_stmt* sp, int col, expr* x);
@@ -77,35 +76,21 @@ const SQLITE_OPEN = SQLITE_OPEN_READWRITE or SQLITE_OPEN_CREATE;
 const SHOW_OPEN_CLOSE = 0;
 const MAX_INT64 =  9223372036854775807L;
 const MIN_INT64 = -9223372036854775807L;
-const TYPE_CHARS = "bcdijlnsxv";
-
-
-/* Public sqlite3 julian day functions */
-
-str2julian s::string = sql3util_ymd2julian y m d when
-  y,m,d,n = sscanf s "%[0-9]%*[/-]%[0-9]%*[/-]%[0-9]%n";
-  n>=#s || col_err s "valid date string";
-  y0 = if #y>2 then 0 else 2000;
-  y,m,d = sscanf s "%u%*[/-]%u%*[/-]%u";
-  y = y0+y;
-end;
-
-julian2str jd::double = sprintf "%04d-%02d-%02d" (sql3util_julian2ymd jd);
-
-ymd2julian y::int m::int d::int = sql3util_ymd2julian y m d;
-
-julian2ymd jd::double = sql3util_julian2ymd jd; //return (y,m,d)
+const CORE_TYPES = "bcdilx";
 
 /* Public db_ptr functions  */
 
-open path::string = open(path,SQLITE_OPEN);
+open path::string = open(path, SQLITE_OPEN);
 
-open (path::string, flags::int) = res
+open(path::string, flags::int) = open(path,flags,record []);
+
+open (path::string, flags::int, usr_wrap_fns) = res
 when
+  usr_wrap_fns_ok usr_wrap_fns || sql3_err "Malformed user wrap functions.";
   dbp, ec = sql3util_open path flags;
   res = if ec == SQLITE_OK then do_ok dbp else do_fail dbp ec;
 end with
-  do_ok dbp = sentry (close_db (ref 1)) dbp
+  do_ok dbp = sentry (close_db (DB (ref 1, usr_wrap_fns))) dbp
   when
     SHOW_OPEN_CLOSE && printf "Opened DB: sqlite3* %s\n" (str dbp);
   end; 
@@ -117,19 +102,25 @@ end with
                (string_dup (sqlite3_errmsg dbp), path);
     sqlite3_close dbp;
   end;
+  usr_wrap_fns_ok uwf = catch (cst 0) 
+    (if recordp uwf then all uw_member_ok (list uwf) else 0);
+  uw_member_ok (key=>[ch,store,fetch]) = 
+    charp key && index CORE_TYPES ch >= 0 && is_fun store && is_fun fetch;
+  is_fun x = funp x || applp x || lambdap x;
 end;
 
 close dbp::pointer = if openp dbp then (get_sentry dbp) dbp else 0
   if is_db_ptr dbp;
 
-exec dbp::pointer sql::string = step_ec
+exec dbp::pointer sql::string = res
 when   
   openp dbp || sql3_err "Attempt to exec on a closed db.";
   sp, prep_ec = sql3util_prepare dbp sql;
   prep_ec == SQLITE_OK || sqlite3_err dbp prep_ec;
   step_ec = sqlite3_step sp;
   step_ec == SQLITE_ROW && sql3_err "Attempt to use exec DB with select sql";
-  step_ec == SQLITE_DONE || step_ec == SQLITE_OK || sqlite3_err dbp step_ec;
+  res = if step_ec == SQLITE_DONE then SQLITE_OK else step_ec;
+  res == SQLITE_OK || sqlite3_err dbp step_ec;
   sqlite3_finalize sp;
 end if is_db_ptr dbp;
 
@@ -156,10 +147,10 @@ is_db_ptr _ = false;
 prep dbp::pointer types::string sql::string = res
 when
   openp dbp || sql3_err "Attempt to prep using closed database.";
+  user_wrap_fns = case get_db dbp of (DB (_,uwf)) = uwf end;
   sel_types, bind_types = ensure_types (split ":" types);
-  types_okp sel_types bind_types || sql3_err "Invalid type specification.";
-  sfns = map (col_fns!) sel_types;
-  bfns = map (bind_fns!) bind_types;
+  sfns = get_sel_fns user_wrap_fns sel_types;
+  bfns = get_bind_fns user_wrap_fns bind_types;
   (sp, ec) = sql3util_prepare dbp sql;
   stmt = STMT (ref 1, sfns, bfns, dbp);
   ec == SQLITE_OK || sqlite3_err dbp ec;
@@ -173,30 +164,22 @@ end with
     2 = (sel_bind_types!0,sel_bind_types!1);
     _ = sql3_err "Illegal type specification";
   end;
-  types_okp bs ss = all_in TYPE_CHARS bs && all_in TYPE_CHARS ss;
-  all_in chars cs = all (\c->index chars c >= 0) cs;
-end if is_db_ptr dbp;
+end if is_db_ptr dbp; 
 
 exec sp::pointer args = res
 when
+  sel_fns, sp, dbp = bind_sp sp args;
   res = get_recs sel_fns sp dbp;
   SHOW_OPEN_CLOSE && printf "Executed Stmt: sqlite3* %s\n" (str sp);  
-end when
-  stmt = get_stmt sp;
-  sel_fns, bnd_fns, dbp = case stmt of STMT (_, x, y, d) = x,y,d end;
-  bind_sp sp bnd_fns args;
 end if is_stmt_ptr sp;
 
 // Lazy variation of exec, this returns a lazy list (stream), which is to be
 // preferred for large result sets.
 lexec sp::pointer args = res
 when
+  sel_fns, sp, dbp = bind_sp sp args;
   res = lget_recs sel_fns sp dbp;
   SHOW_OPEN_CLOSE && printf "Executed Stmt: sqlite3* %s\n" (str sp);  
-end when
-  stmt = get_stmt sp;
-  sel_fns, bnd_fns, dbp = case stmt of STMT (_, x, y, d) = x,y,d end;
-  bind_sp sp bnd_fns args;
 end if is_stmt_ptr sp;
 
 finalize sp::pointer = finalize_stmt (get_stmt sp) sp if is_stmt_ptr sp;
@@ -209,18 +192,24 @@ is_stmt_ptr _ = false;
 
 /* Private */
 
-/* close_db rf_is_open dbp closes the database connection, provided
-   that get rf_is_open == 1.  This prevents the connection from being
-   closed twice, which would cause a seg fault. If any prepared
-   statements have not been closed, they will be closed before dbp is
-   closed. If this happens, there are unfreed STMTs around that depend
-   on dbp being open. If exec STMT is called on any such statement a
-   sql3 exception will be thrown. I.e., exec s::STMT checks to see if
-   s's database connection is still good. */
+/* close_db db::DB dbp::pointer. The first arg, db is DB (rf_is_open,
+   user_wrap_fns) the second is NULL or a db_ptr. If dbp is NULL
+   close_db returns its first arg, db. Otherwise it decomposes If the
+   pointer is NULL, close_db returns its first arg, dbp. Otherwise it
+   (a) it closes the database connection referenced by dbp iff (get
+   ref_is_open) == 1 and (b) sets rf_is_open to 0. This prevents the
+   connection from being closed twice, which would cause the DB ( a
+   seg fault. If any prepared statements have not been closed, they
+   will be closed before dbp is closed. If this happens, there are
+   unfreed STMTs around that depend on dbp being open. If exec STMT is
+   called on any such statement a sql3 exception will be thrown. I.e.,
+   exec s::STMT checks to see if s's database connection is still
+   good. */
 
-close_db rf_is_open dbp = get rf_is_open if null dbp;
+close_db db::DB ptr::pointer = db if null ptr;
 
-close_db rf_is_open dbp  = if get rf_is_open then close_it else 0
+close_db (DB (rf_is_open,_)) dbp::pointer  = 
+  if get rf_is_open then close_it else 0
 with
   close_it = 1
   when
@@ -262,6 +251,7 @@ when
 end;
 
 get_stmt sp::pointer = (get_sentry sp) NULL;
+get_db dbp::pointer = (get_sentry dbp) NULL;
 
 
 /* sqlite3_column family wrappers */
@@ -277,16 +267,12 @@ case sql3util_column_blob sp col of
   x = col_err x "binary serialized expression.";
 end;
 
-col_julian sp col = str2julian (col_chars sp col);
-
-col_fns = record [
+core_col_fns = record [
   "b"=>sql3util_column_blob,
   "c"=>col_chars, 
   "d"=>sqlite3_column_double,
   "i"=>sqlite3_column_int,
-  "j"=>col_julian,
   "l"=>sqlite3_column_int64,
-  "s"=>(eval.col_chars),
   "x"=>col_expr_binary,
   "v"=>sql3util_column_value];
 
@@ -314,9 +300,6 @@ bind_expr_utf8 sp col x = bind_chars sp col (str x);
 bind_int sp col x = 
   if intp x then sqlite3_bind_int sp col x else bind_err x "int";
 
-bind_julian sp col x =
-  if doublep x then bind_chars sp col (julian2str x) else bind_err x "julian";
-
 bind_long sp col x = case x of
   si::int = sqlite3_bind_int64 sp col (bigint si);
   bi::bigint = if MIN_INT64 <= bi && bi <=MAX_INT64
@@ -330,21 +313,27 @@ end;
 
 bind_null sp col _ = sqlite3_bind_null sp col;
 
-bind_fns = record [
+core_bind_fns = record [
   "b"=>bind_blob,
   "c"=>bind_chars,
   "d"=>bind_double,
   "i"=>bind_int,
-  "j"=>bind_julian,
   "l"=>bind_long,
   "n"=>bind_null,
-  "s"=>bind_expr_utf8,
   "x"=>bind_expr_binary,
   "v"=>sql3util_bind_value];
 
-bind_sp sp funs args = bind_cols funs (argList args) 1
-with 
-  argList args = res
+//=> (sel_fns, sp, dbp)
+bind_sp sp arguments = (sel_fns, sp, dbp)
+when
+  stmt = get_stmt sp;
+  valid, sel_fns, bnd_fns, dbp = case stmt of STMT (r,x,y,d)=r,x,y,d end;
+  get valid || sql3_err "Attempt to exec on finalized statement.";
+  openp dbp || sql3_err "Attempt to exec on a closed db.";  
+  args1 = arg_list (#bnd_fns) arguments;
+  bind_cols bnd_fns args1 1;
+end with 
+  arg_list num_fns args = res
   when
     arglst = 
       if listp args then args else 
@@ -352,7 +341,7 @@ with
       if recordp args then recvals (record args) else
       if matrixp args then list args else
       [args];
-    res = if #arglst == #funs then arglst
+    res = if #arglst == num_fns then arglst
           else sql3_err "Wrong number of bind arguments.";
   end;
   recvals rec = [v | k=>v = rec];
@@ -388,10 +377,9 @@ end with
 end;
  
 openp dbp::pointer = 0 if null dbp;
-openp dbp::pointer = res
+openp dbp::pointer = get rf_is_open
 when
-  is_open = (get_sentry dbp) NULL;
-  res = if intp is_open then is_open else 0;
+  (DB (rf_is_open, _)) = (get_sentry dbp) NULL;
 end;
 
 sql3_err msg::string = throw (sprintf "sql3 error: %s" msg);
@@ -405,4 +393,28 @@ sqlite3_err msg::string ec::int = throw msg1
 when
   msg1 = sprintf "sqlite3 error %d: %s" (ec,msg);
 end;
+
+
+// each wrap is [core_type bind_fun col_fun]
+
+
+bad_bind_type c = sql3_err(sprintf "'%s' is not a valid binding type" c);
+
+composite_bind usr_fn core_fn sp col x = core_fn sp col (usr_fn x);
+composite_sel usr_fn core_fn sp col = usr_fn (core_fn sp col);
+
+get_bind_fns wrap_fns bind_types = map bind_fn bind_types
+with
+  bind_fn c = if member core_bind_fns c then core_bind_fns!c else wrap c; 
+  wrap c = if member wrap_fns c then wrap1 (wrap_fns!c) else bad_bind_type c;
+  wrap1 (core_c:bind_fn:_) = composite_bind bind_fn (core_bind_fns!core_c);
+end;
+
+get_sel_fns wrap_fns sel_types = map sel_fn sel_types
+with
+  sel_fn c = if member core_col_fns c then core_col_fns!c else wrap c;
+  wrap c = if member wrap_fns c then wrap1 (wrap_fns!c) else bad_bind_type c;
+  wrap1 (core_c:_:sel_fn:_) = composite_sel sel_fn (core_col_fns!core_c);
+end;
+
 
