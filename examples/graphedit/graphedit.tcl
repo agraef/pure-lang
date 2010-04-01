@@ -1,8 +1,3 @@
-#!/bin/sh
-# the next line restarts using tclsh \
-exec tclsh "$0" "$@"
-
-# $Id: canvas-man.tcl,v 1.11 2004/09/23 19:50:04 baum Exp $
 
 # ensure that "." is the decimal point
 unset -nocomplain env(LC_ALL)
