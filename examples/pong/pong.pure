@@ -1,0 +1,314 @@
+
+/* Pure Pong: The game of Pong in Pure. */
+
+using tk, gnocl, system, math;
+
+// Catch Tcl errors.
+//tk_error msg = throw ("Tcl error: "+msg);
+
+const maxscore = 10; // points needed to win game
+
+/* Some settings of the Tcl file which can be modified here. */
+
+let ai_strength = 80; // default AI strength
+let ball_speed  = 50; // default ball speed
+
+let l = 40; // paddle length
+let r =  8; // ball radius
+
+/* Alternate key assignments. Unfortunately, the cursor keys don't work as
+   they interfere with keyboard traversal in the main window. Hence we use
+   Keypad 8 and 2 by default (which means that NumLock must be on), these are
+   hardcoded into the Tcl program. One alternate key configuration can be
+   defined here. */
+
+//let upkey, downkey = "u", "d";
+let upkey, downkey = "j", "n";
+
+// Transfer the above settings to Tcl.
+do init ["ai_strength","ball_speed","l","r","upkey","downkey"] with
+  init x = tk_set x (case eval x of y::string = y; y = tk_set x $ str y end);
+end;
+
+/* Note: The whole GUI is defined in pong.tcl. We only source that here. */
+
+const ui = fget (fopen "pong.tcl" "r");
+
+/* Internal state variables. */
+
+// Demo mode.
+
+let demovar = ref true;
+
+demo_running = get demovar;
+demo_on = put demovar true;
+demo_off = put demovar false;
+
+// Current time and timeouts (pause/resume).
+
+current_time = gettimeofday;
+
+let timevar = ref ();
+
+timeout = get timevar;
+set_timeout () = put timevar ();
+set_timeout 0  = put timevar 0;
+set_timeout t  = put timevar (current_time+t);
+
+paused = timeout ~== ();
+really_paused = if demo_running then timeout === 0 else paused;
+
+// Current ball and paddle positions and velocities.
+
+let statevar = ref (0.0,0.0,0.0,0.0,0.0,0.0);
+
+state = get statevar;
+set_state data = put statevar data;
+
+start_game = () when
+  data@(x,y,vx,vy,yl,yr) = (0.0,ymax/2,rand_vect,ymax/2,ymax/2);
+  //printf "start state: %s\n" $ str data;
+  set_state data;
+  tk $ sprintf "$canv itemConfigure ball -coords {%g %g %d}" (x,y,r);
+  tk $ sprintf "$canv itemConfigure lpaddle -coords {0 %g 0 %g}"
+  (yl-l/2, yl+l/2);
+  tk $ sprintf "$canv itemConfigure rpaddle -coords {%g %g %g %g}"
+  (xmax,yr-l/2,xmax,yr+l/2);
+end;
+
+/* State variables which come from the GUI. We keep a copy of most of these in
+   the Pure program so that we don't have to parse them each time they're
+   needed. */
+
+// Keyboard input.
+
+let inputvar = ref 0;
+
+input = get inputvar;
+input_cb v = put inputvar $ val v;
+
+// Ball speed.
+
+let speedvar = ref 40;
+
+speed = get speedvar/5;
+speed_cb v = put speedvar $ val v;
+
+// AI strength.
+
+let strengthvar = ref 80;
+
+strength = get strengthvar;
+strength_cb v = put strengthvar $ val v;
+
+// Canvas size.
+
+let xmaxvar, ymaxvar = ref 100.0, ref 100.0;
+
+xmax = get xmaxvar;
+ymax = get ymaxvar;
+resize_cb wd ht = () when
+  put xmaxvar $ double $ val wd;
+  put ymaxvar $ double $ val ht;
+end;
+
+// Scores.
+
+lscore = val $ tk "$canv itemCget lscore -text";
+rscore = val $ tk "$canv itemCget rscore -text";
+
+set_lscore n =
+  tk $ sprintf "$canv itemConfigure lscore -text %s" (str n);
+
+set_rscore n =
+  tk $ sprintf "$canv itemConfigure rscore -text %s" (str n);
+
+highlight_lscore n = () when
+  tmax = if demo_running then 10 else 0;
+  c,t = if n>=maxscore then "yellow",tmax else "red",3;
+  tk $ sprintf "$canv itemConfigure lscore -fill %s -text %s" (c,str n);
+  if t == 0 then game_over else ();
+  set_timeout t;
+end;
+
+highlight_rscore n = () when
+  tmax = if demo_running then 10 else 0;
+  c,t = if n>=maxscore then "yellow",tmax else "red",3;
+  tk $ sprintf "$canv itemConfigure rscore -fill %s -text %s" (c,str n);
+  if t == 0 then game_over else ();
+  set_timeout t;
+end;
+
+/* Pause and resume the game. */
+
+pause_game = () when
+  tk $ sprintf "$canv itemConfigure demotext -text $paused_%s_text"
+  (if demo_running then "demo" else "game");
+  tk "$canv itemShow demotext 1";
+  set_timeout 0;
+end;
+
+resume_game = () when
+  set_timeout ();
+  tk "$canv itemConfigure lscore -fill white";
+  tk "$canv itemConfigure rscore -fill white";
+  if demo_running then tk "$canv itemConfigure demotext -text $demo_text"
+  else ();
+  tk $ sprintf "$canv itemShow demotext %d" demo_running;
+end;
+
+restart_game = () when
+  start_game;
+  if max lscore rscore >= maxscore then
+    set_lscore 0 $$ set_rscore 0
+  else ();
+  resume_game;
+end;
+
+game_over = () when
+  tk "$canv itemConfigure demotext -text $game_over_text";
+  tk "$canv itemShow demotext 1";
+end;
+
+// Random initial ball speed.
+
+rand_vect = vx,vy when
+  vx +: vy = rect (speed <: (pi/2*random53-pi/4));
+end;
+
+/* Update the ball speed. This does all the needed collision detection and
+   returns the modified ball speed. () is returned if the game is over or
+   paused. */
+
+reflect (x,y) (vx,vy) = (vx,vy) when
+  vx = if x<0 || x>xmax then -vx else vx;
+  vy = if y<0 || y>ymax then -vy else vy;
+end;
+
+reflectp dy (x,y) (vx,vy) = (vx,vy+0.5*dvy) when
+  vx,vy = reflect (x,y) (vx,vy);
+  /* Here we allow the paddles to give the ball some extra deflection ("spin")
+     according to their relative position to the ball. */
+  dvy = dy/(l+r)*2*speed;
+end;
+
+ball (x,y) (vx,vy) yl yr
+  = (vx,vy) // No collisions, just move.
+       if x>=0 && x<=xmax && y>=0 && y<=ymax;
+  = () when // Player loses.
+      highlight_lscore (lscore+1);
+    end if x>xmax && abs (y-yr) > (l+r)/2;
+  = () when // Player wins.
+      highlight_rscore (rscore+1);
+    end if x<0 && abs (y-yl) > (l+r)/2;
+  = reflectp (y-yl) (x,y) (vx,vy) if x<0;    // reflection at left paddle
+  = reflectp (y-yr) (x,y) (vx,vy) if x>xmax; // reflection at right paddle
+  = reflect (x,y) (vx,vy) otherwise; // simple reflection at borders
+
+/* Move the ball. */
+
+move_ball (x,y) (vx,vy)
+  = x+vx, y+vy;
+
+/* Paddle movements. The left paddle is always operated by the AI, the right
+   paddle can be controlled by the player after exiting demo mode. FIXME: The
+   AI is fairly primitive right now. */
+
+auto (x,y) (vx,vy) yp
+  = v when // automatic movement
+      dy = y-yp;
+      // Allow for some error in estimating the ball position.
+      err = (1-strength/100-0.5)*ymax/50*random53;
+      dy = if abs err > abs dy then double dy else dy+err;
+      v = sgn dy * min (abs dy) (strength/100*speed);
+    end;
+
+manual (x,y) (vx,vy) yr
+  = double v when // manual player movement
+      s = input; v = s*speed;
+      v = if yr<=0 && s<0 then 0 else v;
+      v = if yr>=ymax && s>0 then 0 else v;
+    end;
+
+lpaddle (x,y) (vx,vy) yl
+  = () if paused; // game paused
+  = 0.0 if vx>=0; // player's turn
+  = auto (x,y) (vx,vy) yl; // computer's turn
+
+rpaddle (x,y) (vx,vy) yr
+  = manual (x,y) (vx,vy) yr if ~demo_running;
+  = () if paused; // game paused
+  = 0.0 if vx<=0; // computer's turn
+  = auto (x,y) (vx,vy) yr; // player's turn
+
+move_paddle y v
+  = y+v;
+
+/* Timer callback. */
+
+timer_cb = () when // Game is paused.
+   timeout == 0 || current_time <= timeout || restart_game;
+end if paused;
+
+timer_cb = () when
+  x,y,vx,vy,yl,yr = state;
+  v = ball (x,y) (vx,vy) yl yr;
+  vl = lpaddle (x,y) (vx,vy) yl;
+  vr = rpaddle (x,y) (vx,vy) yr;
+  //printf "paddles: %s %s\n" (str vl,str vr);
+  x,y,vx,vy = case v of
+    () = (x,y,vx,vy);
+    vx,vy = (x,y,vx,vy) when
+      x,y = move_ball (x,y) (vx,vy);
+      tk $ sprintf "$canv itemConfigure ball -coords {%g %g %d}" (x,y,r);
+    end;
+  end;
+  yl = case vl of
+    () = yl;
+    _ = yl when
+      yl = move_paddle yl vl;
+      tk $ sprintf "$canv itemConfigure lpaddle -coords {0 %g 0 %g}"
+      (yl-l/2, yl+l/2);
+    end;
+  end;
+  yr = case vr of
+    () = yr;
+    _ = yr when
+      yr = move_paddle yr vr;
+      tk $ sprintf "$canv itemConfigure rpaddle -coords {%g %g %g %g}"
+      (xmax,yr-l/2,xmax,yr+l/2);
+    end;
+  end;
+  set_state (x,y,vx,vy,yl,yr);
+  //printf "state: %s\n" $ str (x,y,vx,vy,yl,yr);
+end;
+
+new_cb = () when
+  start_game;
+  set_lscore 0; set_rscore 0;
+  demo_off;
+  resume_game;
+end;
+
+pause_cb = if really_paused then resume_game else pause_game;
+
+destroy_cb = gnocl::quit;
+quit_cb id = gnocl::delete id;
+
+the_callbacks with the_callbacks () =
+  destroy_cb,input_cb,new_cb,pause_cb,quit_cb,resize_cb,
+  speed_cb,strength_cb,timer_cb
+end;
+
+// Helper function to generate the callbacks list.
+callbacks = tuple $ map (val.head.split " ") $ init $ filter (\x->~null x) $ split "\n" $ evalcmd "show -gs *_cb";
+
+/* The main program. */
+
+main = () when
+  tk ui;
+  start_game;
+  gnocl::main ();
+end;
+
+if compiling then () else main;
