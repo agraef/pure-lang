@@ -50,7 +50,7 @@ CFLAGS = -g -O2 -std=c99
 FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 
 DISTFILES = COPYING Makefile README pure-sql3.html config.guess \
-sql3util.c julian.c sql3.pure examples/*.pure
+sql3util.c julianutil.c sql3.pure julian.pure julian_readme.txt examples/*.pure
 
 all: sql3util$(DLL) julianutil$(DLL)
 
@@ -86,7 +86,7 @@ install:
 	cp sql3.pure julian.pure sql3util$(DLL) julianutil$(DLL) pure-sql3.html "$(DESTDIR)$(libdir)/pure"
 
 uninstall:
-	rm -f "$(DESTDIR)$(libdir)/pure/sql3.pure" "$(DESTDIR)$(libdir)/pure/julian.pure" "$(DESTDIR)$(libdir)/pure/sql3util$(DLL)" "$(DESTDIR)$(libdir)/pure/julianutil$(DLL)" "$(DESTDIR)$(libdir)/pure/pure-sql3.html" "$(DESTDIR)$(libdir)/pure/julian$(DLL)"
+	rm -f "$(DESTDIR)$(libdir)/pure/sql3.pure" "$(DESTDIR)$(libdir)/pure/julian.pure" "$(DESTDIR)$(libdir)/pure/sql3util$(DLL)" "$(DESTDIR)$(libdir)/pure/julianutil$(DLL)" "$(DESTDIR)$(libdir)/pure/pure-sql3.html"
 
 dist:
 	rm -rf $(dist)
