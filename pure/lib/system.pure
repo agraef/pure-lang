@@ -1111,9 +1111,7 @@ extern expr *pure_readdir(char *name) = readdir;
    The available flag values and glob error codes are available as symbolic
    ``FNM_*`` and ``GLOB_*`` constants defined as variables in the global
    environment. See the fnmatch(3) and glob(3) manpages for the meaning of
-   these. (In extension to POSIX, Pure also provides the constant
-   ``GLOB_SIZE`` which indicates the buffer size required for C ``glob``\ 's
-   ``globptr`` argument, but this is only used internally.)
+   these.
 
    Example::
 
@@ -1136,7 +1134,7 @@ fnmatch pat::string s::string flags::int = __C::fnmatch pat s flags == 0;
 
 glob pat::string flags::int = result
 when
-  globptr = calloc 1 GLOB_SIZE;
+  globptr = calloc 1 SIZEOF_GLOB;
   result = __C::glob pat flags (pointer 0) globptr;
   result = if result==0 then __C::globlist globptr else result;
   __C::globfree globptr; free globptr;

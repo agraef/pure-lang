@@ -11911,7 +11911,8 @@ void pure_sys_vars(void)
   cdf(interp, "FNM_PATHNAME",	pure_int(FNM_PATHNAME));
   cdf(interp, "FNM_PERIOD",	pure_int(FNM_PERIOD));
   cdf(interp, "FNM_CASEFOLD",	pure_int(FNM_CASEFOLD));
-  cdf(interp, "GLOB_SIZE",	pure_int(sizeof(glob_t))); // not in POSIX
+  // We should probably get rid of this one, but system::glob still needs it.
+  cdf(interp, "SIZEOF_GLOB",	pure_int(sizeof(glob_t)));
   cdf(interp, "GLOB_ERR",	pure_int(GLOB_ERR));
   cdf(interp, "GLOB_MARK",	pure_int(GLOB_MARK));
   cdf(interp, "GLOB_NOSORT",	pure_int(GLOB_NOSORT));
@@ -11928,9 +11929,8 @@ void pure_sys_vars(void)
   cdf(interp, "GLOB_NOMAGIC",	pure_int(GLOB_NOMAGIC));
   cdf(interp, "GLOB_TILDE",	pure_int(GLOB_TILDE));
   // regex stuff
-  /* FIXME: REG_SIZE is part of the old (Pure <= 0.41) regex interface and
-     isn't needed with Pure 0.42+ any more. It should be removed eventually. */
-  cdf(interp, "REG_SIZE",	pure_int(sizeof(regex_t))); // not in POSIX
+  // This one isn't actually needed more, we should get rid of it eventually.
+  cdf(interp, "SIZEOF_REGEX",	pure_int(sizeof(regex_t)));
   cdf(interp, "REG_EXTENDED",	pure_int(REG_EXTENDED));
   cdf(interp, "REG_ICASE",	pure_int(REG_ICASE));
   cdf(interp, "REG_NOSUB",	pure_int(REG_NOSUB));
