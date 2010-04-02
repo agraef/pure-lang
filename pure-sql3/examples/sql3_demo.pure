@@ -16,14 +16,11 @@ when
   // use exec DB for quick and dirty parameterless sql
   // (but not select statements)
   sql3::exec db "drop table if exists TT";
-  printf "dbg::%s: %s\n" ("setup1","drop table");
   sql3::exec db
-    "create table TT (x integer, y int, z varchar, dt varchar)";
+    "create table TT (x integer, y int, name varchar, date varchar)";
   sql3::exec db "delete from TT";
   sql3::exec db "insert into TT values (null,20,'Mark','2010-01-01')";
-  printf "dbg::%s: %s\n" ("setup3","TT set up with Mark");
   
-
   // prepare an insert statement with int,int,char*,char* parameters
   stm1 = sql3::prep db "ilcc" "insert into TT values(?,?,?,?)";
 
@@ -51,10 +48,10 @@ when
   puts "Begin show_queries";
 
   //prepare some random queries
-  stm1 = sql3::prep db "ic:c" "select x,z from TT where z = ?";
+  stm1 = sql3::prep db "ic:c" "select x,name from TT where name = ?";
   stm2 = sql3::prep db "i:" "select x from TT";
   stm3 = sql3::prep db "ilcc:" "select * from TT";
-  stm4 = sql3::prep db "ic:i" "select x,z from TT where x > ?";
+  stm4 = sql3::prep db "ic:i" "select x,name from TT where x > ?";
 
   //try them out
   putrows (sql3::exec stm1 ("Mack"));
@@ -65,7 +62,7 @@ when
 
   // Again, you can use "v" for automatic conversions here, both on the input
   // (parameter) and output (column) side.
-  stm5 = sql3::prep db "vv:v" "select x,z from TT where x > ?";
+  stm5 = sql3::prep db "vv:v" "select x,name from TT where x > ?";
   putrows (sql3::exec stm5 4);
 
   puts "End show_queries\n";
@@ -84,13 +81,13 @@ when
 
   //Delete 2 rows, update x, then rollback
   sql3::begin db;
-  sql3::exec db "delete from TT where dt >= '2010-03-19'";
+  sql3::exec db "delete from TT where date >= '2010-03-19'";
   sql3::exec db "update TT set x=2*TT.x";
   sql3::rollback db;
   putrows (sql3::exec stm ()); //the same six rows
 
   //Delete 2 rows, update x in autocommit mode  
-  sql3::exec db "delete from TT where dt >= '2010-03-19'";
+  sql3::exec db "delete from TT where date >= '2010-03-19'";
   sql3::exec db "update TT set x=2*TT.x";
   putrows (sql3::exec stm ()); //four updated rows
 
@@ -111,7 +108,7 @@ when
   putrows (sql3::exec stm ());
   col_name = sqlite3_column_name stm 0;
   printf "-----\nThe first column for stm is %s\n" col_name;
-  sql3::exec db "delete from TT where z = 'Mark'";
+  sql3::exec db "delete from TT where name = 'Mark'";
   num_rows_changed = sqlite3_changes db; //one change
   printf "-----\n%d row changed\n" num_rows_changed;
   putrows (sql3::exec stm ());

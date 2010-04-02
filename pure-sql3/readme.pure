@@ -1,0 +1,26 @@
+/* readme.pure -- examples in README */
+
+
+using sql3; using namespace sql3;
+
+let dbp = open "readme.db";
+
+exec dbp "create table if not exists RM (name text, age integer)";
+
+exec dbp "delete from RM";
+
+let sp1 = prep dbp "ci" "insert into RM values (?,?)";
+
+exec sp1 ("Sam",20);
+
+exec sp1 ("Fred",22);
+
+let sp2 = prep dbp "ci:i" "select * from RM where age > ?";
+
+exec sp2 18;
+
+let sp3 = prep dbp "c:" "select name from RM";
+
+exec sp3 ();
+
+
