@@ -10959,6 +10959,16 @@ char *pure_strftime(const char *format, struct tm *tm)
   return buf;
 }
 
+extern "C"
+pure_expr *pure_strptime(const char *s, const char *format, struct tm *tm)
+{
+  const char *res = strptime(s, format, tm);
+  if (res)
+    return pure_cstring_dup(res);
+  else
+    return 0;
+}
+
 #ifdef HAVE_GETTIMEOFDAY
 #include <sys/time.h>
 extern "C"
@@ -11888,8 +11898,14 @@ void pure_sys_vars(void)
   df(interp, "stdin",	pure_pointer(stdin));
   df(interp, "stdout",	pure_pointer(stdout));
   df(interp, "stderr",	pure_pointer(stderr));
-  // clock
+  // time functions
   cdf(interp, "CLOCKS_PER_SEC",	pure_int(CLOCKS_PER_SEC));
+  cdf(interp, "SIZEOF_TM",	pure_int(sizeof(struct tm)));
+  tzset();
+  df(interp, "timezone",	pure_int(timezone));
+  df(interp, "daylight",	pure_int(daylight));
+  df(interp, "tzname",		pure_listl(2, pure_cstring_dup(tzname[0]),
+					   pure_cstring_dup(tzname[1])));
   // fnmatch, glob
   cdf(interp, "FNM_NOESCAPE",	pure_int(FNM_NOESCAPE));
   cdf(interp, "FNM_PATHNAME",	pure_int(FNM_PATHNAME));
