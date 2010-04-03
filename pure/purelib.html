@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>Pure Library Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2010-04-03" />
+<meta name="date" content="2010-04-04" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-04-03</td></tr>
+<td>2010-04-04</td></tr>
 </tbody>
 </table>
 <!-- We use docutils to produce the documentation. Docstrings are extracted -->
@@ -3557,20 +3557,32 @@ should be properly initialized (zeroed out) before passing it to
 in principle; please consult your local C library documentation for
 details). Also note that while POSIX only specifies nine <tt class="docutils literal"><span class="pre">int</span></tt> fields in
 a <tt class="docutils literal"><span class="pre">tm</span></tt> struct, depending on the host operating system the struct may
-contain additional private fields. The actual size of a <tt class="docutils literal"><span class="pre">tm</span></tt> struct is
-given by the <tt class="docutils literal"><span class="pre">SIZEOF_TM</span></tt> constant, so a safe way to allocate suitable
-dynamic storage for the <tt class="docutils literal"><span class="pre">strptime</span></tt> function is as follows:</p>
+contain additional public and private fields. The actual size of a <tt class="docutils literal"><span class="pre">tm</span></tt>
+struct is given by the <tt class="docutils literal"><span class="pre">SIZEOF_TM</span></tt> constant, so a safe way to allocate
+suitable dynamic storage for the <tt class="docutils literal"><span class="pre">strptime</span></tt> function is as follows:</p>
 <pre class="literal-block">
 &gt; let tm = calloc 1 SIZEOF_TM;
 &gt; strptime &quot;4/2/10&quot; &quot;%D&quot; tm, int_matrix 9 tm;
 &quot;&quot;,{0,0,0,2,3,110,5,91,0}
 </pre>
-<p>Instead of allocating storage dynamically and converting it to an int
-matrix later, you can also invoke <tt class="docutils literal"><span class="pre">strptime</span></tt> directly with a Pure int
+<p>Instead of explicitly allocating dynamic storage and converting it to a
+Pure matrix later, you can also invoke <tt class="docutils literal"><span class="pre">strptime</span></tt> directly with an int
 matrix of sufficient size:</p>
 <pre class="literal-block">
 &gt; let tm = imatrix (SIZEOF_TM div SIZEOF_INT + 1);
 &gt; strptime &quot;4/2/10&quot; &quot;%D&quot; tm, take 9 tm;
+&quot;&quot;,{0,0,0,2,3,110,5,91,0}
+</pre>
+<p>Last but not least, to make calling <tt class="docutils literal"><span class="pre">strptime</span></tt> more convenient, you can
+supply your own little wrapper function which takes care of allocating the
+storage, e.g.:</p>
+<pre class="literal-block">
+mystrptime s format = s,take 9 tm when
+  tm = imatrix (SIZEOF_TM div SIZEOF_INT + 1);
+  s = strptime s format tm;
+end;
+
+&gt; mystrptime &quot;4/2/10&quot; &quot;%D&quot;;
 &quot;&quot;,{0,0,0,2,3,110,5,91,0}
 </pre>
 <p>Here is a list of some common format specifiers which can be used with the

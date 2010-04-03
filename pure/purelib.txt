@@ -5804,20 +5804,32 @@ should be properly initialized (zeroed out) before passing it to
 in principle; please consult your local C library documentation for
 details). Also note that while POSIX only specifies nine ``int`` fields in
 a ``tm`` struct, depending on the host operating system the struct may
-contain additional private fields. The actual size of a ``tm`` struct is
-given by the ``SIZEOF_TM`` constant, so a safe way to allocate suitable
-dynamic storage for the ``strptime`` function is as follows::
+contain additional public and private fields. The actual size of a ``tm``
+struct is given by the ``SIZEOF_TM`` constant, so a safe way to allocate
+suitable dynamic storage for the ``strptime`` function is as follows::
 
   > let tm = calloc 1 SIZEOF_TM;
   > strptime "4/2/10" "%D" tm, int_matrix 9 tm;
   "",{0,0,0,2,3,110,5,91,0}
 
-Instead of allocating storage dynamically and converting it to an int
-matrix later, you can also invoke ``strptime`` directly with a Pure int
+Instead of explicitly allocating dynamic storage and converting it to a
+Pure matrix later, you can also invoke ``strptime`` directly with an int
 matrix of sufficient size::
 
   > let tm = imatrix (SIZEOF_TM div SIZEOF_INT + 1);
   > strptime "4/2/10" "%D" tm, take 9 tm;
+  "",{0,0,0,2,3,110,5,91,0}
+
+Last but not least, to make calling ``strptime`` more convenient, you can
+supply your own little wrapper function which takes care of allocating the
+storage, e.g.::
+
+  mystrptime s format = s,take 9 tm when
+    tm = imatrix (SIZEOF_TM div SIZEOF_INT + 1);
+    s = strptime s format tm;
+  end;
+
+  > mystrptime "4/2/10" "%D";
   "",{0,0,0,2,3,110,5,91,0}
 
 Here is a list of some common format specifiers which can be used with the
