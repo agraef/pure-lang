@@ -372,15 +372,19 @@ Sql3 provides the following set of "core" binding types:
 
 The "k" type, which converts ints and a subset of bigints into int64,
 is useful when dealing with SQLite3's "integer primary keys" and
-"rowids" both of which are 64 bit ints. The "n" type can only appear
-on the binding side of a type string. A binding argument corresponding
-to a "v" in the type string will be treated as bound as if the "v"
-were a "b", "c", "d", "i" or "n", based on the type of the binding
-argument. An object returned when a prepared statement is stepped that
-corresponding to a "v" type will be fetched according to the native
-SQLite column type of the corresponding column. The "x" type is used
-to store and reconstruct Pure expressions as binary objects, using
-``val`` and ``blob``.
+"rowids" both of which are 64 bit ints. It is also useful for storing
+a useful subset fo bigint in a format that can be recognized by SQLite
+in SQL math expressions. The "l" type, in contrast maps the bigints
+onto blobs, which are generally meaningless in SQL math
+expressions. The "n" type can only appear on the binding side of a
+type string. A binding argument corresponding to a "v" in the type
+string will be treated as bound as if the "v" were a "b", "c", "d",
+"i" or "n", based on the type of the binding argument. An object
+returned when a prepared statement is stepped that corresponding to a
+"v" type will be fetched according to the native SQLite column type of
+the corresponding column. The "x" type is used to store and
+reconstruct Pure expressions as binary objects, using ``val`` and
+``blob``.
 
 As mentioned, users can define custom binding types and pass them as a
 third parameter to open. The resulting db_ptr can be used with the
@@ -550,19 +554,174 @@ exactly the same as 'exec dbp "BEGIN"'.
 See the SQLite documentation for further details on the use of these
 SQL statements.
 
+Exceptions
+----------
+
+Sql3 throws two types of exceptions, one for outright errors and one
+for when an exec fails because the database is "busy".
+
+* ``db_error ec msg``: If ec>0, the error was detected by SQLite
+  itself. In this case, ec sqlite3 error code, and msg is the
+  corresponding error message. If ec==0, the error was detected by
+  Sql3 and msg is a Sql3 specific description of the error.
+
+Example: ::
+
+  >db_error_handler (db_error ec msg) = ()
+  >when
+  >  source = if ec > 0 then "SQLite" else "Sql3";
+  >  printf "%s db_error: ec %d, %s\n" (source,ec,msg);
+  >db_error_handler x = throw x;
+
+  >catch db_error_handler (exec dbp "select * from NO_TABLE");
+  SQLite db_error: ec 1, no such table: NO_TABLE
+
+Here is a list, as of April 2, 2010, of the error codes returned by
+the SQLite C interface:
+
+*SQLITE_ERROR        1   /* SQL error or missing database */
+*SQLITE_INTERNAL     2   /* Internal logic error in SQLite */
+*SQLITE_PERM         3   /* Access permission denied */
+*SQLITE_ABORT        4   /* Callback routine requested an abort */
+*SQLITE_BUSY         5   /* The database file is locked */
+*SQLITE_LOCKED       6   /* A table in the database is locked */
+*SQLITE_NOMEM        7   /* A malloc() failed */
+*SQLITE_READONLY     8   /* Attempt to write a readonly database */
+*SQLITE_INTERRUPT    9   /* Operation terminated by sqlite3_interrupt()*/
+*SQLITE_IOERR       10   /* Some kind of disk I/O error occurred */
+*SQLITE_CORRUPT     11   /* The database disk image is malformed */
+*SQLITE_NOTFOUND    12   /* NOT USED. Table or record not found */
+*SQLITE_FULL        13   /* Insertion failed because database is full */
+*SQLITE_CANTOPEN    14   /* Unable to open the database file */
+*SQLITE_PROTOCOL    15   /* NOT USED. Database lock protocol error */
+*SQLITE_EMPTY       16   /* Database is empty */
+*SQLITE_SCHEMA      17   /* The database schema changed */
+*SQLITE_TOOBIG      18   /* String or BLOB exceeds size limit */
+*SQLITE_CONSTRAINT  19   /* Abort due to constraint violation */
+*SQLITE_MISMATCH    20   /* Data type mismatch */
+*SQLITE_MISUSE      21   /* Library used incorrectly */
+*SQLITE_NOLFS       22   /* Uses OS features not supported on host */
+*SQLITE_AUTH        23   /* Authorization denied */
+*SQLITE_FORMAT      24   /* Auxiliary database format error */
+*SQLITE_RANGE       25   /* 2nd parameter to sqlite3_bind out of range */
+*SQLITE_NOTADB      26   /* File opened that is not a database file */
+
+New error codes may be added in future versions of SQLite. See
+http://www.sqlite.org/c3ref/c_abort.html. Note that the SQLite names
+of the error codes are not exported by the Sql3 module.
+
+A database is busy with respect to a call to the SQLite library when
+the database engine is unable to acquire the database locks it needs
+to do its job. For Sql3, this can occur in calls to ``exec`` and
+``lexec``.
+
+*``db_busy dbp::pointer``: dbp is the db_ptr used by Sql3 to access
+ the database when the database was busy.
+
+If the statement is a COMMIT or occurs outside of an explicit
+transaction, then you can retry the statement. If the statement is not
+a COMMIT and occurs within a explicit transaction then you should
+rollback the transaction before continuing. ::
+
+TODO - translate to Sql3...
+     - example
+
 Advanced Usage
 ==============
 
 
-Callbacks
----------
+Custom SQL Functions
+--------------------
 
+An advanced (and complex) feature of the SQLite C interface is the
+ability to add new SQL scalar or aggregate functions. The new
+functions can be used in SQL statements the same as the prepackaged
+functions and aggregates. Sql3 hides the complexity and seamlessly
+integrates all of this functionality, :), into Pure.
 
+*``function dbp::pointer name::string nargs::int fun``: registers the
+ Pure function (or tuple of three Pure functions - see next section),
+ fun, so that it can be called, as "name", as scalar (or aggregate)
+ function of nargs arguments in SQL statements prepared with respect
+ to dbp, a db_ptr. If nargs is (-1), the SQL function "name" is
+ variadic.
 
+Here is an example of a scalar function that takes two parameter. Note
+that any kind of Pure "function" can be passed here; local functions,
+global functions, lambdas or partial applications all work. ::
+
+  >function dbp "p_fn" 2 plus with plus x y = x + y; end;
+
+  >let sp4 = prep dbp "cii:" 
+  >         "select p_fn('Hi ',name), age, p_fn(age,10) from RM";
+
+  >exec sp4 ();
+  [["Hi Sam",20,30],["Hi Fred",22,32]]
+
+A pure function passed to ``function`` to register a variadic SQL
+function receive all of its arguments in a single list. E.g., ::
+
+  >function dbp "p_qm" (-1) quasimodo with
+  >  quasimodo xs = "quasimodo: "+join ":" [str x | x=xs];
+  >end;
+
+If the SQL function takes no arguments, the corresponding Pure
+function must, for technical reasons in Pure, take a single dummy
+argument. E.g.,
+
+  >function dbp "p_count" 0 counter with
+  >  counter () = put r (get r+1);
+  >end when r = ref 0 end;
+
+These two registered SQL functions can now be used in SQL statments.
+
+  >let sp5 = prep dbp "ic:" "select p_count(), p_qm(name,age) from RM";
+
+  > exec sp5 ();
+  [[1,"quasimodo: \"Sam\":20"],[2,"quasimodo: \"Fred\":22"]]
+
+  > exec sp5 ();
+  [[3,"quasimodo: \"Sam\":20"],[4,"quasimodo: \"Fred\":22"]]
+  > 
+
+SQL aggregate functions can be defined by passing a tuple consisting
+of three Pure functions (step,final,start) as the function argument to
+``function``.  In this case the 'step' function is called repeatedly
+to accumulate values from the database, starting from the given
+'start' value, and finally the 'final' function is applied to the
+accumulated result. Note that for a single-argument 'step' function,
+this works exactly as if the functions were invoked as 'final (foldl
+step start values)', where 'values' is the list of aggregated values
+from the database.
+
+  >function dbp "p_avg" 1 (step,final,(0,0.0)) with
+  >  step (n,a) x = n+1, a+x;
+  >  final (n,a) = a/n;
+  >end;
+
+  >let sp6 = prep dbp "id:" "select count(name), p_avg(age) from RM";
+
+  >exec sp6 ();
+   [[2,21.0]]
+
+More examples using ``function`` can be found in sql_funs.pure in the
+examples subdirectory.
+
+It is permitted to register multiple SQL functions with the same name
+if they have differing numbers of arguments. Built-in SQL functions may be
+overloaded or replaced by new application-defined functions.
+
+An application-defined function is permitted to call other SQLite
+interfaces. However, such calls must not close the database connection
+nor finalize or reset the prepared statement in which the function is
+running.
 
 Accessing the rest of the SQLite3 C Interface
 ---------------------------------------------
 
+int sqlite3_busy_timeout(sqlite3*, int ms);
+
+Busy handler 
 
 Example of getting row headers.
 
@@ -570,7 +729,12 @@ Example of getting row headers.
 Custom Binding Types for Prepared Statements
 --------------------------------------------
 
-Pass
+
+
+Threads
+-------
+
+
 
 
 
@@ -583,10 +747,6 @@ db_busy dbp
              --- user can try again or rollback.
              --- need example
 
-BUG -- junk files, step errors not caught.
 
 THREAD SAFE -- modes, note the multi thread. Using for a desktop or
 analysis tool.
-
-db_error ec msg
- -- ec 0 means was an Sql3 error -- e.g., else a SQLITE error, or extended error.

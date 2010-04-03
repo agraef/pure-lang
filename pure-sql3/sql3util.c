@@ -6,6 +6,7 @@
 #include <string.h>
 #include <sqlite3.h>
 
+
 //==>(db_ptr,ec)
 pure_expr* sql3util_open(char* path, int flags) {
   sqlite3* dbp;
@@ -50,6 +51,16 @@ int sql3util_bind_blob(sqlite3_stmt *sp, int col, pure_expr *x){
   if (xs) free(xs);
   return res;
 }
+
+/* returns int or bigint as required */
+pure_expr *sql3util_column_key(sqlite3_stmt *sp, int col){
+  sqlite3_int64 val = sqlite3_column_int64(sp, col);
+  if (val >= INT32_MIN && val <= INT32_MAX)
+    return pure_int((int32_t)val);
+  else
+    return pure_int64(val);
+}
+
 
 /* Returns as a pair n::int,p::pointer where n is the number of bytes
    and p is a cooked pointer holding a copy of the blob's data which

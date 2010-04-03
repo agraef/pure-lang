@@ -17,7 +17,8 @@ when
     "c_chars varchar, " + 
     "d_double double, " + 
     "i_int integer, " +
-    "l_int64 integer primary key, " +
+    "k_key integer primary key, " +
+    "l_int64 integer, " +
     "x_binary_expr blob) ";
 
   sql3::exec db "drop table if exists TC";
@@ -32,11 +33,12 @@ when
 
   //Insert some data
   printf "dbg::%s: %s\n" ("push_pull_types1","" );
-  stm1 = sql3::prep db "bcdilx" "insert into TC values(?,?,?,?,?,?)";
+  stm1 = sql3::prep db "bcdiklx" "insert into TC values(?,?,?,?,?,?,?)";
   printf "dbg::%s: %s\n" ("push_pull_types2","" );
-  sql3::exec stm1 [x2b "Blob A","Manny", 120.0, 1, 12L, x_expr];
-  sql3::exec stm1 [x2b "Blob B","Moe",  150.0, 2, 13L, [1,2,3]];
-  sql3::exec stm1 [x2b "Blob C","Jack", 160.0, 3, 14L, ("a",5.0)];
+  two40 = pow 2 40;
+  sql3::exec stm1 [x2b "Blob A","Manny", 120.0, 1, 100, 12L, x_expr];
+  sql3::exec stm1 [x2b "Blob B","Moe",  150.0, 2, 200L, 13L, [1,2,3]];
+  sql3::exec stm1 [x2b "Blob C","Jack", 160.0, 3, two40,14L, ("a",5.0)];
 
   //Query each column of a table that has one column per Sql3 type
   stm1 = sql3::prep db "b:" "select b_blob from TC";
@@ -46,6 +48,8 @@ when
   stm1 = sql3::prep db "d:" "select d_double  from TC";
   putrows (sql3::exec stm1 ());
   stm1 = sql3::prep db "i:" "select i_int from TC";
+  putrows (sql3::exec stm1 ());
+  stm1 = sql3::prep db "k:" "select k_key from TC";
   putrows (sql3::exec stm1 ());
   stm1 = sql3::prep db "l:" "select l_int64 from TC";
   putrows (sql3::exec stm1 ());  

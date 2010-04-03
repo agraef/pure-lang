@@ -29,7 +29,7 @@ bad_bind_type sql3_err sqlite3_err ;
 
 private
 SQLITE_OK SQLITE_ROW SQLITE_DONE SHOW_OPEN_CLOSE
-MAX_INT64 MIN_INT64 TYPE_CHARS;
+INT64_MAX INT64_MIN TYPE_CHARS;
 
 private extern expr* sql3util_open(void* path, int flags);
 private extern expr* sql3util_prepare(sqlite3 *db, void* sql);
@@ -37,6 +37,7 @@ private extern int sql3util_bind_blob(sqlite3_stmt *sp, int col, expr* x);
 private extern int sql3util_bind_text(sqlite3_stmt* sp, int col, void* text);
 private extern int sql3util_bind_value(sqlite3_stmt* sp, int col, expr* x);
 private extern expr* sql3util_column_blob(sqlite3_stmt *sp, int col);
+private extern expr* sql3util_column_key(sqlite3_stmt *sp, int col);
 private extern expr* sql3util_column_value(sqlite3_stmt *sp, int col);
 private extern int sql3util_create_function(sqlite3 *db, void* name,
 	       	   			    int nargs, expr *x);
@@ -75,8 +76,8 @@ const SQLITE_OPEN = SQLITE_OPEN_READWRITE or SQLITE_OPEN_CREATE;
 
 //internal constants
 const SHOW_OPEN_CLOSE = 0;
-const MAX_INT64 =  9223372036854775807L;
-const MIN_INT64 = -9223372036854775807L;
+const INT64_MAX =  9223372036854775807L;
+const INT64_MIN = -9223372036854775808L;
 const CORE_TYPES = "bcdilx";
 
 /* Public db_ptr functions  */
@@ -270,7 +271,8 @@ core_col_fns = record [
   "c"=>col_chars, 
   "d"=>sqlite3_column_double,
   "i"=>sqlite3_column_int,
-  "l"=>sqlite3_column_int64,
+  "k"=>sql3util_column_key,
+  "l"=>sqlite3_column_int64, //need to FIX 
   "x"=>col_expr_binary,
   "v"=>sql3util_column_value];
 
@@ -298,14 +300,23 @@ bind_expr_utf8 sp col x = bind_chars sp col (str x);
 bind_int sp col x = 
   if intp x then sqlite3_bind_int sp col x else bind_err x "int";
 
+bind_key sp col x = case x of
+  si::int = sqlite3_bind_int sp col si;
+  bi::bigint = if INT64_MIN <= bi && bi <=INT64_MAX
+               then sqlite3_bind_int64 sp col bi
+               else sql3_err (sprintf 
+                    "Attempt to bind a key, %s, that out of int64's range."
+                    (str bi));
+  _ = bind_err x "int64";
+end;
+
+//FIX ME -- need to bind the whole thing
 bind_long sp col x = case x of
-  si::int = sqlite3_bind_int64 sp col (bigint si);
-  bi::bigint = if MIN_INT64 <= bi && bi <=MAX_INT64
+  bi::bigint = if INT64_MIN <= bi && bi <=INT64_MAX
                then sqlite3_bind_int64 sp col bi
                else sql3_err (sprintf 
                     "Attempt to bind a bigint, %s, that out of int64's range."
-                    (str bi));
-              
+                    (str bi));              
   _ = bind_err x "int64";
 end;
 
@@ -316,6 +327,7 @@ core_bind_fns = record [
   "c"=>bind_chars,
   "d"=>bind_double,
   "i"=>bind_int,
+  "k"=>bind_key,
   "l"=>bind_long,
   "n"=>bind_null,
   "x"=>bind_expr_binary,
@@ -337,8 +349,6 @@ end with
     arglst = 
       if listp args then args else 
       if tuplep args then list args else
-      if recordp args then recvals (record args) else
-      if matrixp args then list args else
       [args];
     res = if #arglst == num_fns then arglst
           else sql3_err "Wrong number of bind arguments.";
