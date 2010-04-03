@@ -3550,16 +3550,16 @@ processed, see the example below.</dd>
 &quot;CEST&quot;,{10,23,22,2,3,110,5,91,1}
 </pre>
 <p>In the above example, <tt class="docutils literal"><span class="pre">strptime</span></tt> was given a static pointer to a <tt class="docutils literal"><span class="pre">tm</span></tt>
-struct returned by <tt class="docutils literal"><span class="pre">localtime</span></tt>. In most situations it will be preferable
-to allocate dynamic storage instead. This should be properly initialized
-(zeroed out) before passing it to <tt class="docutils literal"><span class="pre">strptime</span></tt>, since <tt class="docutils literal"><span class="pre">strptime</span></tt> only
-stores the values specified (at least in principle; please consult your
-local C library documentation for details). Also note that while POSIX only
-specifies nine <tt class="docutils literal"><span class="pre">int</span></tt> fields in a <tt class="docutils literal"><span class="pre">tm</span></tt> struct, depending on the host
-operating system the struct may contain additional private fields. The
-actual size of a <tt class="docutils literal"><span class="pre">tm</span></tt> struct is given by the <tt class="docutils literal"><span class="pre">SIZEOF_TM</span></tt> constant, so a
-safe way to allocate suitable dynamic storage for the <tt class="docutils literal"><span class="pre">strptime</span></tt> function
-is as follows:</p>
+struct returned by <tt class="docutils literal"><span class="pre">localtime</span></tt>. This always works, but in some situations
+it may be preferable to allocate dynamic storage instead. This storage
+should be properly initialized (zeroed out) before passing it to
+<tt class="docutils literal"><span class="pre">strptime</span></tt>, since <tt class="docutils literal"><span class="pre">strptime</span></tt> only stores the values specified (at least
+in principle; please consult your local C library documentation for
+details). Also note that while POSIX only specifies nine <tt class="docutils literal"><span class="pre">int</span></tt> fields in
+a <tt class="docutils literal"><span class="pre">tm</span></tt> struct, depending on the host operating system the struct may
+contain additional private fields. The actual size of a <tt class="docutils literal"><span class="pre">tm</span></tt> struct is
+given by the <tt class="docutils literal"><span class="pre">SIZEOF_TM</span></tt> constant, so a safe way to allocate suitable
+dynamic storage for the <tt class="docutils literal"><span class="pre">strptime</span></tt> function is as follows:</p>
 <pre class="literal-block">
 &gt; let tm = calloc 1 SIZEOF_TM;
 &gt; strptime &quot;4/2/10&quot; &quot;%D&quot; tm, int_matrix 9 tm;

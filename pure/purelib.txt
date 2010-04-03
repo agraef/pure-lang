@@ -5797,16 +5797,16 @@ Examples::
   "CEST",{10,23,22,2,3,110,5,91,1}
 
 In the above example, ``strptime`` was given a static pointer to a ``tm``
-struct returned by ``localtime``. In most situations it will be preferable
-to allocate dynamic storage instead. This should be properly initialized
-(zeroed out) before passing it to ``strptime``, since ``strptime`` only
-stores the values specified (at least in principle; please consult your
-local C library documentation for details). Also note that while POSIX only
-specifies nine ``int`` fields in a ``tm`` struct, depending on the host
-operating system the struct may contain additional private fields. The
-actual size of a ``tm`` struct is given by the ``SIZEOF_TM`` constant, so a
-safe way to allocate suitable dynamic storage for the ``strptime`` function
-is as follows::
+struct returned by ``localtime``. This always works, but in some situations
+it may be preferable to allocate dynamic storage instead. This storage
+should be properly initialized (zeroed out) before passing it to
+``strptime``, since ``strptime`` only stores the values specified (at least
+in principle; please consult your local C library documentation for
+details). Also note that while POSIX only specifies nine ``int`` fields in
+a ``tm`` struct, depending on the host operating system the struct may
+contain additional private fields. The actual size of a ``tm`` struct is
+given by the ``SIZEOF_TM`` constant, so a safe way to allocate suitable
+dynamic storage for the ``strptime`` function is as follows::
 
   > let tm = calloc 1 SIZEOF_TM;
   > strptime "4/2/10" "%D" tm, int_matrix 9 tm;
