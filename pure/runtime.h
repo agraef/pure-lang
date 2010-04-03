@@ -1218,6 +1218,7 @@ int64_t pure_time(void);
 char *pure_ctime(int64_t t);
 struct tm *pure_gmtime(int64_t t);
 struct tm *pure_localtime(int64_t t);
+int64_t pure_mktime(struct tm *tm);
 char *pure_strftime(const char *format, struct tm *tm);
 pure_expr *pure_strptime(const char *s, const char *format, struct tm *tm);
 

@@ -3483,7 +3483,8 @@ end;
 <!--  -->
 <p>The following functions deal with date/time values in string and
 &quot;broken-down&quot; time format. See the ctime(3), gmtime(3), localtime(3),
-asctime(3), strftime(3) and strptime(3) manual pages for details.</p>
+mktime(3), asctime(3), strftime(3) and strptime(3) manual pages for
+details.</p>
 <a name="ctime"><dl class="docutils" id="ctime">
 <dt><tt class="docutils literal"><span class="pre">ctime</span> <span class="pre">t</span></tt></dt>
 <dd>Convert a time value as returned by the <tt class="docutils literal"><span class="pre">time</span></tt> function to a string in
@@ -3496,6 +3497,11 @@ pointer to a <tt class="docutils literal"><span class="pre">tm</span></tt> struc
 can then be passed to the <tt class="docutils literal"><span class="pre">asctime</span></tt> and <tt class="docutils literal"><span class="pre">strftime</span></tt> functions, or to
 <a class="reference internal" href="#int-matrix"><tt class="docutils literal"><span class="pre">int_matrix</span></tt></a> if you want to convert the data to a matrix; see the
 example below.</dd>
+</dl>
+<a name="mktime"><dl class="docutils" id="mktime">
+<dt><tt class="docutils literal"><span class="pre">mktime</span> <span class="pre">tm</span></tt></dt>
+<dd>Converts broken-down time to a time value (seconds since the epoch). As
+with <tt class="docutils literal"><span class="pre">time</span></tt>, the result is always a bigint.</dd>
 </dl>
 <a name="asctime"><a name="strftime"><dl class="docutils" id="strftime">
 <span id="asctime"></span><dt><tt class="docutils literal"><span class="pre">asctime</span> <span class="pre">tm</span></tt>, <tt class="docutils literal"><span class="pre">strftime</span> <span class="pre">format</span> <span class="pre">tm</span></tt></dt>
@@ -3513,8 +3519,12 @@ processed, see the example below.</dd>
 </dl>
 <p>Examples:</p>
 <pre class="literal-block">
-&gt; let tm = localtime time; tm;
+&gt; let t = time; let tm = localtime t; t;
+1270239790L
+&gt; let tm = localtime t; tm;
 #&lt;pointer 0x7ff97ecbdde0&gt;
+&gt; mktime tm;
+1270239790L
 &gt; asctime tm;
 &quot;Fri Apr  2 22:23:10 2010\n&quot;
 &gt; int_matrix 9 tm;
@@ -4657,6 +4667,7 @@ copied to the result lists as is.</p>
 <div class="line"><a class="reference internal" href="#mkhdict">mkhdict</a></div>
 <div class="line"><a class="reference internal" href="#mkhmdict">mkhmdict</a></div>
 <div class="line"><a class="reference internal" href="#mkmdict">mkmdict</a></div>
+<div class="line"><a class="reference internal" href="#mktime">mktime</a></div>
 <div class="line"><a class="reference internal" href="#mod">mod</a></div>
 </div>
 <div class="line-block">

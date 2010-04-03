@@ -10947,6 +10947,12 @@ struct tm *pure_localtime(int64_t t)
 }
 
 extern "C"
+int64_t pure_mktime(struct tm *tm)
+{
+  return (int64_t)mktime(tm);
+}
+
+extern "C"
 char *pure_strftime(const char *format, struct tm *tm)
 {
   static char buf[1024];

@@ -5671,7 +5671,8 @@ Example::
 
 The following functions deal with date/time values in string and
 "broken-down" time format. See the ctime(3), gmtime(3), localtime(3),
-asctime(3), strftime(3) and strptime(3) manual pages for details.
+mktime(3), asctime(3), strftime(3) and strptime(3) manual pages for
+details.
 
 .. raw:: html
 
@@ -5705,6 +5706,16 @@ asctime(3), strftime(3) and strptime(3) manual pages for details.
 
 .. raw:: html
 
+   <a name="mktime">
+
+.. _mktime:
+
+``mktime tm``
+  Converts broken-down time to a time value (seconds since the epoch). As
+  with ``time``, the result is always a bigint.
+
+.. raw:: html
+
    <a name="asctime">
 
 .. raw:: html
@@ -5734,8 +5745,12 @@ asctime(3), strftime(3) and strptime(3) manual pages for details.
 
 Examples::
 
-  > let tm = localtime time; tm;
+  > let t = time; let tm = localtime t; t;
+  1270239790L
+  > let tm = localtime t; tm;
   #<pointer 0x7ff97ecbdde0>
+  > mktime tm;
+  1270239790L
   > asctime tm;
   "Fri Apr  2 22:23:10 2010\n"
   > int_matrix 9 tm;
@@ -7233,6 +7248,7 @@ Index
 | `mkhdict`_
 | `mkhmdict`_
 | `mkmdict`_
+| `mktime`_
 | `mod`_
 
 | `nanosleep`_
