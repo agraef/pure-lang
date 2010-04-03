@@ -50,15 +50,12 @@ CFLAGS = -g -O2 -std=c99
 FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 
 DISTFILES = COPYING Makefile README pure-sql3.html config.guess \
-sql3util.c julianutil.c sql3.pure julian.pure julian_readme.txt examples/*.pure
+sql3util.c sql3.pure examples/*.pure
 
-all: sql3util$(DLL) julianutil$(DLL)
+all: sql3util$(DLL)
 
 sql3util$(DLL): sql3util.c
 	$(CC) $(shared) -o $@ $(INCLUDES) -Wall $< $(FLAGS) -lsqlite3 -lpure $(LIBS)
-
-julianutil$(DLL): julianutil.c
-	$(CC) $(shared) -o $@ $(INCLUDES) -Wall $< $(FLAGS) -lpure $(LIBS)
 
 clean:
 	rm -f *$(DLL) *~ *.a *.o *.tex *.pdf *.aux *.log *.out
@@ -83,10 +80,10 @@ pure-sql3.pdf: pure-sql3.tex
 
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
-	cp sql3.pure julian.pure sql3util$(DLL) julianutil$(DLL) pure-sql3.html "$(DESTDIR)$(libdir)/pure"
+	cp sql3.pure sql3util$(DLL) pure-sql3.html "$(DESTDIR)$(libdir)/pure"
 
 uninstall:
-	rm -f "$(DESTDIR)$(libdir)/pure/sql3.pure" "$(DESTDIR)$(libdir)/pure/julian.pure" "$(DESTDIR)$(libdir)/pure/sql3util$(DLL)" "$(DESTDIR)$(libdir)/pure/julianutil$(DLL)" "$(DESTDIR)$(libdir)/pure/pure-sql3.html"
+	rm -f "$(DESTDIR)$(libdir)/pure/sql3.pure"  "$(DESTDIR)$(libdir)/pure/sql3util$(DLL)"  "$(DESTDIR)$(libdir)/pure/pure-sql3.html"
 
 dist:
 	rm -rf $(dist)
