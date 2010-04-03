@@ -3480,7 +3480,16 @@ end;
 &gt; timex (foldl (+) 0 (1..100000));
 705082704,0.07
 </pre>
-<!--  -->
+<a name="tzname"><a name="timezone"><a name="daylight"><p id="daylight"><span id="timezone"></span><span id="tzname"></span>The system module also calls (but does not declare) the C <tt class="docutils literal"><span class="pre">tzset</span></tt> routine
+and initializes the <tt class="docutils literal"><span class="pre">tzname</span></tt>, <tt class="docutils literal"><span class="pre">timezone</span></tt> and <tt class="docutils literal"><span class="pre">daylight</span></tt> variables
+with the corresponding system information. See the tzset(3) manual page for
+details. Example:</p>
+<pre class="literal-block">
+&gt; tzname, timezone, daylight;
+[&quot;CET&quot;,&quot;CEST&quot;],-3600,1
+&gt; tzname!daylight;
+&quot;CEST&quot;
+</pre>
 <p>The following functions deal with date/time values in string and
 &quot;broken-down&quot; time format. See the ctime(3), gmtime(3), localtime(3),
 mktime(3), asctime(3), strftime(3) and strptime(3) manual pages for
@@ -3506,7 +3515,8 @@ with <tt class="docutils literal"><span class="pre">time</span></tt>, the result
 <a name="asctime"><a name="strftime"><dl class="docutils" id="strftime">
 <span id="asctime"></span><dt><tt class="docutils literal"><span class="pre">asctime</span> <span class="pre">tm</span></tt>, <tt class="docutils literal"><span class="pre">strftime</span> <span class="pre">format</span> <span class="pre">tm</span></tt></dt>
 <dd>Format broken-down time as a string. <tt class="docutils literal"><span class="pre">strftime</span></tt> also uses a format
-string supplied by the user.</dd>
+string supplied by the user, see below for a list of the most important
+conversion specifiers.</dd>
 </dl>
 <a name="strptime"><dl class="docutils" id="strptime">
 <dt><tt class="docutils literal"><span class="pre">strptime</span> <span class="pre">s</span> <span class="pre">format</span> <span class="pre">tm</span></tt></dt>
@@ -3552,16 +3562,39 @@ an <tt class="docutils literal"><span class="pre">int</span></tt> matrix as show
 Alternatively, you can also use the static pointer returned by a call to
 <tt class="docutils literal"><span class="pre">localtime</span></tt> or <tt class="docutils literal"><span class="pre">gmtime</span></tt> which is already initialized for some time
 value.</p>
-<p>The system module also calls (but does not declare) the C <tt class="docutils literal"><span class="pre">tzset</span></tt> routine
-and initializes the <tt class="docutils literal"><span class="pre">tzname</span></tt>, <tt class="docutils literal"><span class="pre">timezone</span></tt> and <tt class="docutils literal"><span class="pre">daylight</span></tt> variables
-with the corresponding system information. See the tzset(3) manual page for
-details. Example:</p>
-<pre class="literal-block">
-&gt; tzname, timezone, daylight;
-[&quot;CET&quot;,&quot;CEST&quot;],-3600,1
-&gt; tzname!daylight;
-&quot;CEST&quot;
-</pre>
+<p>Here is a list of some common format specifiers which can be used with the
+<tt class="docutils literal"><span class="pre">strftime</span></tt> and <tt class="docutils literal"><span class="pre">strptime</span></tt> routines. These are all specified by POSIX
+and should thus be available on most platforms. Note that many more formats
+are usually supported than what is listed here, so please consult the
+manual pages for the complete list.</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">%d</span></tt>, <tt class="docutils literal"><span class="pre">%m</span></tt>, <tt class="docutils literal"><span class="pre">%y</span></tt>: Day of the month, month and year as decimal
+two-digit numbers.</li>
+<li><tt class="docutils literal"><span class="pre">%Y</span></tt>: The year as a four-digit number which includes the century.</li>
+<li><tt class="docutils literal"><span class="pre">%H</span></tt>, <tt class="docutils literal"><span class="pre">%M</span></tt>, <tt class="docutils literal"><span class="pre">%S</span></tt>: Hours (range <tt class="docutils literal"><span class="pre">00</span></tt> to <tt class="docutils literal"><span class="pre">23</span></tt>), minutes and
+seconds as decimal two-digit numbers.</li>
+<li><tt class="docutils literal"><span class="pre">%I</span></tt>: The hours on a 12-hour clock (range <tt class="docutils literal"><span class="pre">01</span></tt> to <tt class="docutils literal"><span class="pre">12</span></tt>).</li>
+</ul>
+<p>The following formats are locale-dependent:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">%a</span></tt>, <tt class="docutils literal"><span class="pre">%A</span></tt>: Abbreviated and full weekday name.</li>
+<li><tt class="docutils literal"><span class="pre">%b</span></tt>, <tt class="docutils literal"><span class="pre">%B</span></tt>: Abbreviated and full month name.</li>
+<li><tt class="docutils literal"><span class="pre">%p</span></tt>: AM or PM. <tt class="docutils literal"><span class="pre">%P</span></tt> is the same in lowercase (<tt class="docutils literal"><span class="pre">strftime</span></tt> only).</li>
+</ul>
+<p>There are also some useful meta-formats which specify various combinations
+of the above:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">%c</span></tt>: The preferred date and time representation for the current locale.</li>
+<li><tt class="docutils literal"><span class="pre">%D</span></tt>: The American date format (<tt class="docutils literal"><span class="pre">%m/%d/%y</span></tt>).</li>
+<li><tt class="docutils literal"><span class="pre">%F</span></tt>: The ISO 8601 date format (<tt class="docutils literal"><span class="pre">%Y-%m-%d</span></tt>). (This is generally
+supported by <tt class="docutils literal"><span class="pre">strftime</span></tt> only, but <tt class="docutils literal"><span class="pre">strptime</span></tt> from GNU libc has it.)</li>
+<li><tt class="docutils literal"><span class="pre">%r</span></tt>: The time in AM/PM notation (<tt class="docutils literal"><span class="pre">%I:%M:%S</span> <span class="pre">%p</span></tt>).</li>
+<li><tt class="docutils literal"><span class="pre">%R</span></tt>: The time in 24-hour notation (<tt class="docutils literal"><span class="pre">%H:%M</span></tt>).</li>
+<li><tt class="docutils literal"><span class="pre">%T</span></tt>: The time in 24-hour notation, including seconds (<tt class="docutils literal"><span class="pre">%H:%M:%S</span></tt>).</li>
+</ul>
+<p>In addition, <tt class="docutils literal"><span class="pre">%%</span></tt> denotes a literal <tt class="docutils literal"><span class="pre">%</span></tt> character, <tt class="docutils literal"><span class="pre">%n</span></tt> newlines and
+<tt class="docutils literal"><span class="pre">%t</span></tt> tabs. (For <tt class="docutils literal"><span class="pre">strptime</span></tt> the latter two are synonymous and match
+arbitrary whitespace.)</p>
 <!--  -->
 </div>
 <div class="section" id="process-functions">
@@ -4447,6 +4480,7 @@ copied to the result lists as is.</p>
 <div class="line"><a class="reference internal" href="#cyclen">cyclen</a></div>
 </div>
 <div class="line-block">
+<div class="line"><a class="reference internal" href="#daylight">daylight</a></div>
 <div class="line"><a class="reference internal" href="#delete-bag">delete (bag)</a></div>
 <div class="line"><a class="reference internal" href="#delete-dictionary">delete (dictionary)</a></div>
 <div class="line"><a class="reference internal" href="#delete-record">delete (record)</a></div>
@@ -4841,6 +4875,7 @@ copied to the result lists as is.</p>
 <div class="line"><a class="reference internal" href="#throw">throw</a></div>
 <div class="line"><a class="reference internal" href="#thunkp">thunkp</a></div>
 <div class="line"><a class="reference internal" href="#time">time</a></div>
+<div class="line"><a class="reference internal" href="#timezone">timezone</a></div>
 <div class="line"><a class="reference internal" href="#tmpfile">tmpfile</a></div>
 <div class="line"><a class="reference internal" href="#transpose-matrix">transpose (matrix)</a></div>
 <div class="line"><a class="reference internal" href="#trap">trap</a></div>
@@ -4854,6 +4889,7 @@ copied to the result lists as is.</p>
 <div class="line"><a class="reference internal" href="#tuple-slicing">tuple slicing</a></div>
 <div class="line"><a class="reference internal" href="#tuplep">tuplep</a></div>
 <div class="line"><a class="reference internal" href="#tuples">tuples</a></div>
+<div class="line"><a class="reference internal" href="#tzname">tzname</a></div>
 </div>
 <div class="line-block">
 <div class="line"><a class="reference internal" href="#ubyte">ubyte</a></div>

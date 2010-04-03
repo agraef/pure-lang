@@ -5667,7 +5667,31 @@ Example::
   > timex (foldl (+) 0 (1..100000));
   705082704,0.07
 
-..
+.. raw:: html
+
+   <a name="tzname">
+
+.. raw:: html
+
+   <a name="timezone">
+
+.. raw:: html
+
+   <a name="daylight">
+
+.. _tzname:
+.. _timezone:
+.. _daylight:
+
+The system module also calls (but does not declare) the C ``tzset`` routine
+and initializes the ``tzname``, ``timezone`` and ``daylight`` variables
+with the corresponding system information. See the tzset(3) manual page for
+details. Example::
+
+  > tzname, timezone, daylight;
+  ["CET","CEST"],-3600,1
+  > tzname!daylight;
+  "CEST"
 
 The following functions deal with date/time values in string and
 "broken-down" time format. See the ctime(3), gmtime(3), localtime(3),
@@ -5727,7 +5751,8 @@ details.
 
 ``asctime tm``, ``strftime format tm``
   Format broken-down time as a string. ``strftime`` also uses a format
-  string supplied by the user.
+  string supplied by the user, see below for a list of the most important
+  conversion specifiers.
 
 .. raw:: html
 
@@ -5779,15 +5804,49 @@ Alternatively, you can also use the static pointer returned by a call to
 ``localtime`` or ``gmtime`` which is already initialized for some time
 value.
 
-The system module also calls (but does not declare) the C ``tzset`` routine
-and initializes the ``tzname``, ``timezone`` and ``daylight`` variables
-with the corresponding system information. See the tzset(3) manual page for
-details. Example::
+Here is a list of some common format specifiers which can be used with the
+``strftime`` and ``strptime`` routines. These are all specified by POSIX
+and should thus be available on most platforms. Note that many more formats
+are usually supported than what is listed here, so please consult the
+manual pages for the complete list.
 
-  > tzname, timezone, daylight;
-  ["CET","CEST"],-3600,1
-  > tzname!daylight;
-  "CEST"
+* ``%d``, ``%m``, ``%y``: Day of the month, month and year as decimal
+  two-digit numbers.
+
+* ``%Y``: The year as a four-digit number which includes the century.
+
+* ``%H``, ``%M``, ``%S``: Hours (range ``00`` to ``23``), minutes and
+  seconds as decimal two-digit numbers.
+
+* ``%I``: The hours on a 12-hour clock (range ``01`` to ``12``).
+
+The following formats are locale-dependent:
+
+* ``%a``, ``%A``: Abbreviated and full weekday name.
+
+* ``%b``, ``%B``: Abbreviated and full month name.
+
+* ``%p``: AM or PM. ``%P`` is the same in lowercase (``strftime`` only).
+
+There are also some useful meta-formats which specify various combinations
+of the above:
+
+* ``%c``: The preferred date and time representation for the current locale.
+
+* ``%D``: The American date format (``%m/%d/%y``).
+
+* ``%F``: The ISO 8601 date format (``%Y-%m-%d``). (This is generally
+  supported by ``strftime`` only, but ``strptime`` from GNU libc has it.)
+
+* ``%r``: The time in AM/PM notation (``%I:%M:%S %p``).
+
+* ``%R``: The time in 24-hour notation (``%H:%M``).
+
+* ``%T``: The time in 24-hour notation, including seconds (``%H:%M:%S``).
+
+In addition, ``%%`` denotes a literal ``%`` character, ``%n`` newlines and
+``%t`` tabs. (For ``strptime`` the latter two are synonymous and match
+arbitrary whitespace.)
 
 ..
 
@@ -7037,6 +7096,7 @@ Index
 | `cycle`_
 | `cyclen`_
 
+| `daylight`_
 | `delete (bag)`_
 | `delete (dictionary)`_
 | `delete (record)`_
@@ -7416,6 +7476,7 @@ Index
 | `throw`_
 | `thunkp`_
 | `time`_
+| `timezone`_
 | `tmpfile`_
 | `transpose (matrix)`_
 | `trap`_
@@ -7429,6 +7490,7 @@ Index
 | `tuple slicing`_
 | `tuplep`_
 | `tuples`_
+| `tzname`_
 
 | `ubyte`_
 | `uint`_
