@@ -240,19 +240,30 @@ extern double pure_nanosleep(double) = nanosleep;
 
 nanosleep t::int | nanosleep t::bigint = nanosleep (double t);
 
-/* .. _tzname:
+/* .. _tzset:
+   .. _tzname:
    .. _timezone:
    .. _daylight:
 
-   The system module also calls (but does not declare) the C ``tzset`` routine
-   and initializes the ``tzname``, ``timezone`` and ``daylight`` variables
-   with the corresponding system information. See the tzset(3) manual page for
-   details. Example::
+   The ``tzset`` function calls the corresponding routine from the C library
+   and initializes the (Pure) variables ``tzname``, ``timezone`` and
+   ``daylight`` accordingly. See the tzset(3) manual page for details. This
+   routine is also called automatically when the system module is loaded, so
+   you only have to invoke it to get up-to-date information after changes to
+   the locale or the timezone. Example::
 
+     > tzset;
+     ()
      > tzname, timezone, daylight;
      ["CET","CEST"],-3600,1
      > tzname!daylight;
      "CEST"
+
+*/
+
+extern void tzset();
+
+/* ..
 
    The following functions deal with date/time values in string and
    "broken-down" time format. See the ctime(3), gmtime(3), localtime(3),

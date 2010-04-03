@@ -1211,6 +1211,11 @@ void pure_set_errno(int value);
 
 int64_t pure_time(void);
 
+/* Call the C tzset() routine and initialize the (Pure) variables timezone,
+   daylight and tzname accordingly. */
+
+void pure_tzset(void);
+
 /* The following routines allow you to convert a time value to broken-down
    time or a string, using different formats. See ctime(3), gmtime(3),
    localtime(3), strftime(3) and strptime(3) for details. */

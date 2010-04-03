@@ -10922,6 +10922,20 @@ int64_t pure_time(void)
   return (int64_t)time(NULL);
 }
 
+static inline void
+df(interpreter& interp, const char* s, pure_expr *x);
+
+extern "C"
+void pure_tzset(void)
+{
+  interpreter& interp = *interpreter::g_interp;
+  tzset();
+  df(interp, "timezone",	pure_int(timezone));
+  df(interp, "daylight",	pure_int(daylight));
+  df(interp, "tzname",		pure_listl(2, pure_cstring_dup(tzname[0]),
+					   pure_cstring_dup(tzname[1])));
+}
+
 /* Note that the following are not thread-safe as they use statically
    allocated buffers. */
 
@@ -11907,11 +11921,7 @@ void pure_sys_vars(void)
   // time functions
   cdf(interp, "CLOCKS_PER_SEC",	pure_int(CLOCKS_PER_SEC));
   cdf(interp, "SIZEOF_TM",	pure_int(sizeof(struct tm)));
-  tzset();
-  df(interp, "timezone",	pure_int(timezone));
-  df(interp, "daylight",	pure_int(daylight));
-  df(interp, "tzname",		pure_listl(2, pure_cstring_dup(tzname[0]),
-					   pure_cstring_dup(tzname[1])));
+  pure_tzset();
   // fnmatch, glob
   cdf(interp, "FNM_NOESCAPE",	pure_int(FNM_NOESCAPE));
   cdf(interp, "FNM_PATHNAME",	pure_int(FNM_PATHNAME));
