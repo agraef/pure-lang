@@ -5796,24 +5796,29 @@ Examples::
   > strptime ans "%c" tm, int_matrix 9 tm;
   "CEST",{10,23,22,2,3,110,5,91,1}
 
-Note that while POSIX only specifies nine ``int`` fields in a ``tm``
-struct, depending on the host operating system the struct may contain
-additional private fields. The actual size of a ``tm`` struct is given by
-the ``SIZEOF_TM`` constant, so a safe way to allocate suitable storage for
-the ``strptime`` function is as follows::
+In the above example, ``strptime`` was given a static pointer to a ``tm``
+struct returned by ``localtime``. In most situations it will be preferable
+to allocate dynamic storage instead. This should be properly initialized
+(zeroed out) before passing it to ``strptime``, since ``strptime`` only
+stores the values specified (at least in principle; please consult your
+local C library documentation for details). Also note that while POSIX only
+specifies nine ``int`` fields in a ``tm`` struct, depending on the host
+operating system the struct may contain additional private fields. The
+actual size of a ``tm`` struct is given by the ``SIZEOF_TM`` constant, so a
+safe way to allocate suitable dynamic storage for the ``strptime`` function
+is as follows::
+
+  > let tm = calloc 1 SIZEOF_TM;
+  > strptime "4/2/10" "%D" tm, int_matrix 9 tm;
+  "",{0,0,0,2,3,110,5,91,0}
+
+Instead of allocating storage dynamically and converting it to an int
+matrix later, you can also invoke ``strptime`` directly with a Pure int
+matrix of sufficient size::
 
   > let tm = imatrix (SIZEOF_TM div SIZEOF_INT + 1);
   > strptime "4/2/10" "%D" tm, take 9 tm;
   "",{0,0,0,2,3,110,5,91,0}
-
-Also note that the ``tm`` struct (or equivalent ``int`` matrix) pointer
-*must* point to initialized storage, since ``strptime`` only stores the
-values specified (at least in principle; please consult your local C
-library documentation for details). This is always guaranteed if you pass
-an ``int`` matrix as shown above (which is initialized to zeros).
-Alternatively, you can also use the static pointer returned by a call to
-``localtime`` or ``gmtime`` which is already initialized for some time
-value.
 
 Here is a list of some common format specifiers which can be used with the
 ``strftime`` and ``strptime`` routines. These are all specified by POSIX

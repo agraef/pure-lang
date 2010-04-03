@@ -3549,24 +3549,30 @@ processed, see the example below.</dd>
 &gt; strptime ans &quot;%c&quot; tm, int_matrix 9 tm;
 &quot;CEST&quot;,{10,23,22,2,3,110,5,91,1}
 </pre>
-<p>Note that while POSIX only specifies nine <tt class="docutils literal"><span class="pre">int</span></tt> fields in a <tt class="docutils literal"><span class="pre">tm</span></tt>
-struct, depending on the host operating system the struct may contain
-additional private fields. The actual size of a <tt class="docutils literal"><span class="pre">tm</span></tt> struct is given by
-the <tt class="docutils literal"><span class="pre">SIZEOF_TM</span></tt> constant, so a safe way to allocate suitable storage for
-the <tt class="docutils literal"><span class="pre">strptime</span></tt> function is as follows:</p>
+<p>In the above example, <tt class="docutils literal"><span class="pre">strptime</span></tt> was given a static pointer to a <tt class="docutils literal"><span class="pre">tm</span></tt>
+struct returned by <tt class="docutils literal"><span class="pre">localtime</span></tt>. In most situations it will be preferable
+to allocate dynamic storage instead. This should be properly initialized
+(zeroed out) before passing it to <tt class="docutils literal"><span class="pre">strptime</span></tt>, since <tt class="docutils literal"><span class="pre">strptime</span></tt> only
+stores the values specified (at least in principle; please consult your
+local C library documentation for details). Also note that while POSIX only
+specifies nine <tt class="docutils literal"><span class="pre">int</span></tt> fields in a <tt class="docutils literal"><span class="pre">tm</span></tt> struct, depending on the host
+operating system the struct may contain additional private fields. The
+actual size of a <tt class="docutils literal"><span class="pre">tm</span></tt> struct is given by the <tt class="docutils literal"><span class="pre">SIZEOF_TM</span></tt> constant, so a
+safe way to allocate suitable dynamic storage for the <tt class="docutils literal"><span class="pre">strptime</span></tt> function
+is as follows:</p>
+<pre class="literal-block">
+&gt; let tm = calloc 1 SIZEOF_TM;
+&gt; strptime &quot;4/2/10&quot; &quot;%D&quot; tm, int_matrix 9 tm;
+&quot;&quot;,{0,0,0,2,3,110,5,91,0}
+</pre>
+<p>Instead of allocating storage dynamically and converting it to an int
+matrix later, you can also invoke <tt class="docutils literal"><span class="pre">strptime</span></tt> directly with a Pure int
+matrix of sufficient size:</p>
 <pre class="literal-block">
 &gt; let tm = imatrix (SIZEOF_TM div SIZEOF_INT + 1);
 &gt; strptime &quot;4/2/10&quot; &quot;%D&quot; tm, take 9 tm;
 &quot;&quot;,{0,0,0,2,3,110,5,91,0}
 </pre>
-<p>Also note that the <tt class="docutils literal"><span class="pre">tm</span></tt> struct (or equivalent <tt class="docutils literal"><span class="pre">int</span></tt> matrix) pointer
-<em>must</em> point to initialized storage, since <tt class="docutils literal"><span class="pre">strptime</span></tt> only stores the
-values specified (at least in principle; please consult your local C
-library documentation for details). This is always guaranteed if you pass
-an <tt class="docutils literal"><span class="pre">int</span></tt> matrix as shown above (which is initialized to zeros).
-Alternatively, you can also use the static pointer returned by a call to
-<tt class="docutils literal"><span class="pre">localtime</span></tt> or <tt class="docutils literal"><span class="pre">gmtime</span></tt> which is already initialized for some time
-value.</p>
 <p>Here is a list of some common format specifiers which can be used with the
 <tt class="docutils literal"><span class="pre">strftime</span></tt> and <tt class="docutils literal"><span class="pre">strptime</span></tt> routines. These are all specified by POSIX
 and should thus be available on most platforms. Note that many more formats
