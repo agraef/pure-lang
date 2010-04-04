@@ -10,8 +10,8 @@
 
      pure -c graphedit.pure -o graphedit `pkg-config --libs gtk+-2.0`
 
-   You need to have Pure (+ gcc and the basic LLVM tools), the Pure Tk module,
-   Tcl/Tk (including Gnocl) and GTK+ installed to do this.
+   You need to have Pure (0.44 or later + gcc and the basic LLVM tools), the
+   Pure Tk module, Tcl/Tk (including Gnocl) and GTK+ installed to do this.
 
    Usage information can be found in the README. Basically, you run graphedit
    as follows:
@@ -968,17 +968,15 @@ resize_cb = () when
   end) else ();
 end;
 
-/* Make sure that the callbacks don't get eliminated when batch-compiling.
-   This is a bit tricky since some of the callbacks have zero arguments and
-   would thus be executed if we just list them here. So we do that in an
-   indirect fashion instead. */
+/* Make sure that the callbacks don't get eliminated when batch-compiling. As
+   of Pure 0.44 this can be done by adding the appropriate --required pragmas
+   (see 'Batch Compilation' in the Pure Manual), which the following routine
+   generates automatically. (This assumes that all callbacks follow the xyz_cb
+   naming scheme.) */
 
-the_callbacks with the_callbacks () =
-  align_cb,cancel_cb,click_cb,copy_cb,cut_cb,delete_cb,deletew_cb,destroy_cb,dup_cb,edge_cb,edge_labels_cb,edge_motion_cb,entry_cb,grid_cb,make_node_labels_cb,move_cb,move_motion_cb,new_cb,node_labels_cb,open_cb,paste_cb,quit_cb,redo_cb,resize_cb,save_as_cb,save_cb,select_all_cb,select_cb,select_motion_cb,select_path_cb,select_subgraph_cb,undo_cb
-end;
-
-// Helper function to generate the callbacks list.
-callbacks = tuple $ map (val.head.split " ") $ init $ filter (\x->~null x) $ split "\n" $ evalcmd "show -gs *_cb";
+pragmas =
+  do (evalcmd.sprintf "#! --required %s") $ map (head.split " ") $ init $
+  filter (\x->~null x) $ split "\n" $ evalcmd "show -gs *_cb";
 
 /* The main program. */
 
@@ -993,4 +991,4 @@ main fname = () when
   gnocl::main ();
 end;
 
-if compiling then () else main (if argc>1 then argv!1 else ());
+if compiling then pragmas else main (if argc>1 then argv!1 else ());

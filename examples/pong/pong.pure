@@ -295,13 +295,10 @@ pause_cb = if really_paused then resume_game else pause_game;
 destroy_cb = gnocl::quit;
 quit_cb id = gnocl::delete id;
 
-the_callbacks with the_callbacks () =
-  destroy_cb,input_cb,new_cb,pause_cb,quit_cb,resize_cb,
-  speed_cb,strength_cb,timer_cb
-end;
-
-// Helper function to generate the callbacks list.
-callbacks = tuple $ map (val.head.split " ") $ init $ filter (\x->~null x) $ split "\n" $ evalcmd "show -gs *_cb";
+// Make sure that the callbacks are not stripped in batch compilation.
+pragmas =
+  do (evalcmd.sprintf "#! --required %s") $ map (head.split " ") $ init $
+  filter (\x->~null x) $ split "\n" $ evalcmd "show -gs *_cb";
 
 /* The main program. */
 
@@ -311,4 +308,4 @@ main = () when
   gnocl::main ();
 end;
 
-if compiling then () else main;
+if compiling then pragmas else main;

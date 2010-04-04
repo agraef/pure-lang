@@ -26,10 +26,18 @@ const ui = gnocl::glade_ui "uiexample.glade";
    been configured, we can always count on that at least one widget argument
    is present. */
 
+/* Note the --required pragmas (Pure 0.44+) which ensure that the callbacks
+   aren't stripped when batch-compiling. This is necessary because these
+   functions are only called from Tcl code which the Pure compiler doesn't
+   see. See 'Code Generation Options' and 'Batch Compilation' in the Pure
+   manual for details. */
+
+#! --required new_cb
 new_cb id = () when
   // Clear the text view.
   tk $ sprintf "%s set {}" id;
 end;
+#! --required file_cb
 file_cb id = () when
   // Read the file and set the text view accordingly.
   tk_set "textbuf" $ fget $ fopen fname "r";
@@ -45,11 +53,10 @@ end;
    keeps running after this, and you can invoke the same application again by
    just rerunning gnocl::glade_init and gnocl::main on the same UI data. */
 
+#! --required destroy_cb
 destroy_cb _ = gnocl::quit;
+#! --required quit_cb
 quit_cb id _ = gnocl::delete id;
-
-// Make sure that the callbacks don't get eliminated when batch-compiling.
-new_cb, file_cb, destroy_cb, quit_cb;
 
 /* The main program. */
 
