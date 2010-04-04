@@ -27,14 +27,14 @@ when
   puts "End setup";
 end;
 
-push_pull_types db = ()
+bind_select_types db = ()
 when 
-  puts "begin push_pull_types";
+  puts "begin bind_select_types";
 
   //Insert some data
-  printf "dbg::%s: %s\n" ("push_pull_types1","" );
+  printf "dbg::%s: %s\n" ("bind_select_types1","" );
   stm1 = sql3::prep db "bcdiklx" "insert into TC values(?,?,?,?,?,?,?)";
-  printf "dbg::%s: %s\n" ("push_pull_types2","" );
+  printf "dbg::%s: %s\n" ("bind_select_types2","" );
   two40 = pow 2 40;
   sql3::exec stm1 [x2b "Blob A","Manny", 120.0, 1, 100, 12L, x_expr];
   sql3::exec stm1 [x2b "Blob B","Moe",  150.0, 2, 200L, 13L, [1,2,3]];
@@ -56,7 +56,7 @@ when
   stm1 = sql3::prep db "x:" "select x_binary_expr from TC";
   putrows (sql3::exec stm1 ());
 
-  puts "End push_pull_types";
+  puts "End bind_select_types";
 end;
 
 main = ()
@@ -64,7 +64,7 @@ when
   db = sql3::open "abc.db";
   sql3::begin db;
   setup db;
-  push_pull_types db;
+  bind_select_types db;
   sql3::commit db;
 end;
 

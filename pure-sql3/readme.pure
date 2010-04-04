@@ -40,11 +40,9 @@ let sp4 = prep dbp "cii:"
 
 exec sp4 ();
 
-
 function dbp "p_qm" (-1) quasimodo with
   quasimodo xs = "quasimodo: "+join ":" [str x | x=xs];
 end;
-
 
 function dbp "p_count" 0 counter with
   counter () = put r (get r+1);
@@ -52,8 +50,7 @@ end when r = ref 0 end;
 
 let sp5 = prep dbp "ic:" "select p_count(), p_qm(name,age) from RM";
 
-//exec sp5 ();
-
+exec sp5 ();
 
 function dbp "p_avg" 1 (step,final,(0,0.0)) with
   step (n,a) x = n+1, a+x;
@@ -64,3 +61,21 @@ let sp6 = prep dbp "id:" "select count(name), p_avg(age) from RM";
 
 exec sp6 ();
 
+
+/* Accessing the Rest of the SQLite3 C Interface */
+
+extern int sqlite3_busy_timeout(sqlite3*, int);
+
+sqlite3_busy_timeout dbp 10;
+
+extern int sqlite3_changes(sqlite3*);
+
+exec sp1 ("Harvey",30);
+
+sqlite3_changes dbp;
+
+extern char *sqlite3_column_name(sqlite3_stmt*, int);
+ 
+exec sp2 29;
+
+sqlite3_column_name sp2 1;

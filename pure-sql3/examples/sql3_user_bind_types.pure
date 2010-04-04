@@ -2,102 +2,6 @@
 
 using system;
 using sql3;
-//TEMP BROKEN --- WILL USE NEW SYSTEM TIME FUNCTIONS FOR 
-//USER DEFINED TYPE EXAMPLE
-
-/* ..
-
-   The following functions deal with date/time values in string and
-   "broken-down" time format. See the ctime(3), gmtime(3), localtime(3),
-   asctime(3), strftime(3) and strptime(3) manual pages for details.
-
-   .. _ctime:
-
-   ``ctime t``
-     Convert a time value as returned by the ``time`` function to a string in
-     local time.
-
-   .. _gmtime:
-   .. _localtime:
-
-   ``gmtime t``, ``localtime t``
-     Convert a time value to UTC or local time in "broken-down" form (a static
-     pointer to a ``tm`` struct containing a bunch of ``int`` fields) which
-     can then be passed to the ``asctime`` and ``strftime`` functions, or to
-     |int_matrix|_ if you want to convert the data to a matrix; see the
-     example below.
-
-   .. |int_matrix| replace:: ``int_matrix``
-
-   .. _asctime:
-   .. _strftime:
-
-   ``asctime tm``, ``strftime format tm``
-     Format broken-down time as a string. ``strftime`` also uses a format
-     string supplied by the user.
-
-   .. _strptime:
-
-   ``strptime s format tm``
-     Parse a date/time string ``s`` according to the given format (using more
-     or less the same format specifiers as the ``strftime`` function) and
-     store the broken-down time result in the given ``tm`` struct. This
-     function may fail, e.g., if ``strptime`` finds an error in the format
-     string. Otherwise it returns the part of the string which wasn't
-     processed, see the example below.
-
-   Examples::
-
-     > let tm = localtime time; tm;
-     #<pointer 0x7ff97ecbdde0>
-     > asctime tm;
-     "Fri Apr  2 22:23:10 2010\n"
-     > int_matrix 9 tm;
-     {10,23,22,2,3,110,5,91,1}
-     > strftime "%c" tm;
-     "Fri 02 Apr 2010 10:23:10 PM CEST"
-     > strptime ans "%c" tm, int_matrix 9 tm;
-     "CEST",{10,23,22,2,3,110,5,91,1}
-
-   Note that while POSIX only specifies nine ``int`` fields in a ``tm``
-   struct, depending on the host operating system the struct may contain
-   additional private fields. The actual size of a ``tm`` struct is given by
-   the ``SIZEOF_TM`` constant, so a safe way to allocate suitable storage for
-   the ``strptime`` function is as follows::
-
-     > let tm = imatrix (SIZEOF_TM div SIZEOF_INT + 1);
-     > strptime "4/2/10" "%D" tm, take 9 tm;
-     "",{0,0,0,2,3,110,5,91,0}
-
-   Also note that the ``tm`` struct (or equivalent ``int`` matrix) pointer
-   *must* point to initialized storage, since ``strptime`` only stores the
-   values specified (at least in principle; please consult your local C
-   library documentation for details). This is always guaranteed if you pass
-   an ``int`` matrix as shown above (which is initialized to zeros).
-   Alternatively, you can also use the static pointer returned by a call to
-   ``localtime`` or ``gmtime`` which is already initialized for some time
-   value.
-
-   The system module also calls (but does not declare) the C ``tzset`` routine
-   and initializes the ``tzname``, ``timezone`` and ``daylight`` variables
-   with the corresponding system information. See the tzset(3) manual page for
-   details. Example::
-
-     > tzname, timezone, daylight;
-     ["CET","CEST"],-3600,1
-     > tzname!daylight;
-     "CEST"
-
-
-extern char* pure_ctime(int64) = ctime;
-extern void* pure_gmtime(int64) = gmtime;
-extern void* pure_localtime(int64) = localtime;
-extern char* asctime(void *tm);
-extern char* pure_strftime(char *format, void *tm) = strftime;
-extern expr* pure_strptime(char *s, char *format, void *tm) = strptime;
-
-
-*/
 
 putrows rows = puts "------" $$ do (puts . str) rows;
 
@@ -109,7 +13,7 @@ when
   sql_create =    
     "create table TC (" +
     "c_chars varchar, " + 
-    "j_julian varchar, " + 
+    "t_date varchar, " + 
     "s_utf8_expr varchar)";
 
   sql3::exec db "drop table if exists TC";
@@ -118,43 +22,66 @@ when
   puts "End setup";
 end;
 
-push_pull_types db = ()
+bind_select_types db = ()
 when 
-  puts "begin push_pull_types";
+  puts "begin bind_select_types";
 
-  jd = julian::str_to_jd "2010-03-22";
-  //jd = "2010-03-22";
+  d1 = str_to_day "2010-03-22";
 
   //Insert some data
-  printf "dbg::%s: %s\n" ("push_pull_types1","" );
-  stm1 = sql3::prep db "cjs" "insert into TC values(?,?,?)";
-  printf "dbg::%s: %s\n" ("push_pull_types2","prep done" );
-  sql3::exec stm1 ["Manny", jd, s_expr];
-  sql3::exec stm1 ["Moe",  jd+1, [1,2,3]];
-  sql3::exec stm1 ["Jack", jd+2, ("a",5.0)];
-  printf "dbg::%s: %s\n" ("push_pull_types2","insert done" );
+  stm1 = sql3::prep db "cts" "insert into TC values(?,?,?)";
+  sql3::exec stm1 ["Manny", d1, s_expr];
+  sql3::exec stm1 ["Moe",  d1+1, [1,2,3]];
+  sql3::exec stm1 ["Jack", d1+2, ("a",5.0)];
 
-  //Query each column of a table that has one column per Sql3 type
-  stm1 = sql3::prep db "c:" "select c_chars from TC";
-  putrows (sql3::exec stm1 ());
-  stm1 = sql3::prep db "j:" "select j_julian from TC";
-  putrows (sql3::exec stm1 ());
-  puts "   Note that in the database these are YYYY-MM-DD";
-  stm1 = sql3::prep db "s:" "select s_utf8_expr from TC";
-  putrows (sql3::exec stm1 ());
+  //Select c_chars
+  stm2 = sql3::prep db "c:" "select c_chars from TC";
+  putrows (sql3::exec stm2 ());
 
-  puts "End push_pull_types";
+  //Select t_date as a day, then as a string
+  stm3a = sql3::prep db "t:" "select t_date from TC";
+  putrows (sql3::exec stm3a ());
+  stm3b = sql3::prep db "c:" "select t_date from TC";
+  putrows (sql3::exec stm3b ());
+
+  //Select s_utf8
+  stm4 = sql3::prep db "s:" "select s_utf8_expr from TC";
+  putrows (sql3::exec stm4 ());
+
+  puts "End bind_select_types";
 end;
 
 
-/* set up some custom store and retrieve wrappers
-   "t" - unix time for easy date arithmetic
-         are strings of the form YYYY-MM-DD in the database.
+/* set up some custom store and retrieve wrappers 
+
+   "t" - "unix epoch days" for easy date arithmetic but stored as
+         strings of the form YYYY-MM-DD in the database for easy
+         reading using, say, sqlite3.
+
    "s" - Pure expression stored as text in the database. */
 
- 
+
+const DATE_FORMAT = "%Y-%m-%d";
+const SECS_PER_DAY = 86400L;
+extern int64 mktime(void *tm);
+
+str_to_day s = (secs div SECS_PER_DAY) + 1
+when
+  tm = imatrix (SIZEOF_TM div SIZEOF_INT + 1);
+  secs = if strptime s DATE_FORMAT tm == ""
+         then mktime tm
+         else throw bad_date;
+end;
+
+day_to_str days = strftime DATE_FORMAT tm
+when
+  secs = days * SECS_PER_DAY;
+  tm = localtime secs;
+end;  
+  
+
 const custom_binds = [
-  "j"=>["c", julian::jd_to_str,julian::str_to_jd],
+  "t"=>["c", day_to_str,str_to_day],
   "s"=>["c",str,eval]
 ];
 
@@ -164,7 +91,7 @@ when
   db = sql3::open ("abc.db", sql3::SQLITE_OPEN, custom_binds);
   sql3::begin db;
   setup db;
-  push_pull_types db;
+  bind_select_types db;
   sql3::commit db;
 end;
 

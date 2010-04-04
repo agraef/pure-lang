@@ -12,7 +12,7 @@ SQLITE_OPEN_NOMUTEX SQLITE_OPEN_FULLMUTEX
 SQLITE_OPEN_SHAREDCACHE SQLITE_OPEN_PRIVATECACHE;
 
 public
-openp is_db_ptr is_stmt_ptr db_busy db_error
+is_open is_db_ptr is_stmt_ptr db_busy db_error
 open close prep exec lexec finalize function
 begin begin_immediate begin_exclusive savepoint release 
 rollback rollback_to commit;
@@ -25,7 +25,7 @@ bind_long bind_null bind_expr_binary core_bind_fns bind_expr_utf8 bind_sp
 
 close_db finalize_stmt composite_bind composite_sel
 get_db get_stmt get_sel_fns get_bind_fns get_rec get_recs lget_recs
-bad_bind_type sql3_err sqlite3_err ;
+bad_bind_type throw_busy sql3_err sqlite3_err ;
 
 private
 SQLITE_OK SQLITE_ROW SQLITE_DONE SHOW_OPEN_CLOSE
@@ -110,23 +110,23 @@ end with
   is_fun x = funp x || applp x || lambdap x;
 end;
 
-close dbp::pointer = if openp dbp then (get_sentry dbp) dbp else 0
+close dbp::pointer = if is_open dbp then (get_sentry dbp) dbp else 0
   if is_db_ptr dbp;
 
-openp dbp::pointer = 0 if null dbp;
-openp dbp::pointer = get rf_is_open
+is_open dbp::pointer = 0 if null dbp;
+is_open dbp::pointer = get rf_is_open
 when
   (DB (rf_is_open, _)) = (get_sentry dbp) NULL;
 end;
 
 exec dbp::pointer sql::string = ()
 when   
-  openp dbp || sql3_err "Attempt to exec on a closed db.";
+  is_open dbp || sql3_err "Attempt to exec on a closed db.";
   sp, prep_ec = sql3util_prepare dbp sql; //sp is null if error
   prep_ec == SQLITE_OK || sqlite3_err dbp prep_ec;
   ec = sqlite3_step sp;
   msg = if ec==SQLITE_ROW||ec==SQLITE_BUSY||ec==SQLITE_DONE 
-        then "" else setstring_dup (sqlite3_errmsg dbp);
+        then "" else string_dup (sqlite3_errmsg dbp);
   sqlite3_finalize sp;
   ec == SQLITE_ROW && sql3_err "Attempt to use exec DB with select sql";
   ec == SQLITE_BUSY && throw_busy dbp;
@@ -136,9 +136,9 @@ end if is_db_ptr dbp;
 begin dbp = exec dbp "begin";
 begin_immediate dbp = exec dbp "begin immediate";
 begin_exclusive dbp = exec dbp "begin exclusive";
-savepoint dbp savePoint = exec dbp ("savepoint " + savePoint);
-release dbp savePoint = exec dbp ("release " + savePoint);
-rollback_to dbp savePoint = exec dbp ("rollback to " + savePoint);
+savepoint dbp savepoint = exec dbp ("savepoint " + savepoint);
+release dbp savepoint = exec dbp ("release " + savepoint);
+rollback_to dbp savepoint = exec dbp ("rollback to " + savepoint);
 rollback dbp  = exec dbp "rollback";
 commit dbp = exec dbp "commit";
 
@@ -155,7 +155,7 @@ is_db_ptr _ = false;
    
 prep dbp::pointer types::string sql::string = res
 when
-  openp dbp || sql3_err "Attempt to prep using closed database.";
+  is_open dbp || sql3_err "Attempt to prep using closed database.";
   user_wrap_fns = case get_db dbp of (DB (_,uwf)) = uwf end;
   sel_types, bind_types = ensure_types (split ":" types);
   sfns = get_sel_fns user_wrap_fns sel_types;
@@ -340,7 +340,7 @@ when
   stmt = get_stmt sp;
   valid, sel_fns, bnd_fns, dbp = case stmt of STMT (r,x,y,d)=r,x,y,d end;
   get valid || sql3_err "Attempt to exec on finalized statement.";
-  openp dbp || sql3_err "Attempt to exec on a closed db.";  
+  is_open dbp || sql3_err "Attempt to exec on a closed db.";  
   args1 = arg_list (#bnd_fns) arguments;
   bind_cols bnd_fns args1 1;
 end with 
@@ -406,7 +406,7 @@ end;
 finalize_stmt stmt::STMT sp::pointer = stmt if null sp;
 finalize_stmt (STMT (rf_valid,_,_,dbp)) sp::pointer = ec
 when
-  openp dbp || sql3_err "finalize: STMT attached to a closed database.";
+  is_open dbp || sql3_err "finalize: STMT attached to a closed database.";
   was_valid = get rf_valid;
   ec = if was_valid then sqlite3_finalize sp else SQLITE_OK;
   was_valid && SHOW_OPEN_CLOSE && printf 
@@ -417,7 +417,7 @@ end;
 
 /* Private throw functions  */
 
-throw_sql3_busy dbp::pointer = throw (db_busy dbp);
+throw_busy dbp::pointer = throw (db_busy dbp);
 
 sql3_err msg::string = sqlite3_err msg 0;
 
