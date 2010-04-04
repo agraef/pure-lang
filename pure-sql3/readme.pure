@@ -1,6 +1,8 @@
 /* readme.pure -- examples in README */
 
 
+/* Simple Example */
+
 using sql3; using namespace sql3;
 
 let dbp = open "readme.db";
@@ -17,6 +19,8 @@ exec sp1 ("Fred",22);
 
 let sp2 = prep dbp "ci:i" "select * from RM where age > ?";
 
+/*   */
+
 exec sp2 18;
 
 let sp3 = prep dbp "c:" "select name from RM";
@@ -31,7 +35,7 @@ end;
 
 db_error_handler x = throw x;
 
-catch db_error_handler (exec dbp "select * from NO_TABLE");
+//catch db_error_handler (exec dbp "select * from NO_TABLE");
 
 function dbp "p_fn" 2 plus with plus x y = x + y; end;
 
@@ -50,7 +54,7 @@ end when r = ref 0 end;
 
 let sp5 = prep dbp "ic:" "select p_count(), p_qm(name,age) from RM";
 
-exec sp5 ();
+//exec sp5 ();
 
 function dbp "p_avg" 1 (step,final,(0,0.0)) with
   step (n,a) x = n+1, a+x;
