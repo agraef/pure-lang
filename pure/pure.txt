@@ -464,6 +464,20 @@ Currently, the following code generation options are recognized:
     compiling the Pure interpreter, in which case these options have no
     effect; see the installation documentation for details.)
 
+Besides these, there's also a special pragma for telling the batch compiler
+about "required" functions:
+
+``--required fun``
+    Inform the batch compiler (cf. `Compiling Scripts`_) that the given
+    function symbol ``fun`` should never be stripped from the program. This
+    is useful, e.g., if a function is never called explicitly but only through
+    ``eval``. Adding a ``--required`` pragma for the function then makes sure
+    that the function is always linked into the program.
+
+Note that the ``--required`` pragma can only be used in source code, there's
+no command line option for it. An example showing how to use this option can
+be found in the `Batch Compilation`_ section.
+
 Startup Files
 -------------
 
@@ -4298,8 +4312,9 @@ implies the following quirks and limitations:
   run time, you have to provide them through variable and function definitions
   instead. Also, the compiler usually strips unused functions from the output
   code, so that only functions which are actually called somewhere in the
-  static program text are available to ``eval``. (The -u option can be used to
-  avoid this, see `Code Size and Unstripped Executables`_ below.)
+  static program text are available to ``eval``. (The -u option and the
+  --required pragma can be used to avoid this, see `Code Size and Unstripped
+  Executables`_ below.)
 
 * Code which gets executed to compute constant values at compile time will
   *not* be executed in the compiled executable, so your program shouldn't rely
@@ -4464,11 +4479,12 @@ runtime, it will evaluate to a plain constructor symbol.
 
 If this is a problem then you can either use the -u option to produce an
 unstripped executable, or you can force functions to be included in the
-stripped executable by just adding a dummy "call" to functions which are to be
-used with ``eval``, e.g.::
+stripped executable with the ``--required`` pragma (cf. `Code Generation
+Options`_). For instance::
 
-  let foo, bar;
-  eval "foo (bar 99)";
+  #! --required foo
+  foo x = bar (x-1);
+  eval "foo 99";
 
 Other Output Code Formats
 -------------------------

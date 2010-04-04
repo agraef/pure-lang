@@ -5572,6 +5572,23 @@ to variables should fix this. **\n";
     Function *__show__fun = module->getFunction("__show__");
     if (__show__fun) used.insert(__show__fun);
   }
+  // Always keep required functions (--required pragma).
+  for (list<int>::const_iterator it = required.begin();
+       it != required.end(); ++it) {
+    Function *f = 0;
+    map<int32_t,Env>::iterator jt = globalfuns.find(*it);
+    if (jt != globalfuns.end()) {
+      Env& e = jt->second;
+      f = e.h;
+    } else {
+      map<int32_t,ExternInfo>::iterator kt = externals.find(*it);
+      if (kt != externals.end()) {
+	ExternInfo& info = kt->second;
+	f = info.f;
+      }
+    }
+    if (f) used.insert(f);
+  }
   map<GlobalVariable*,Function*> varmap;
   if (strip) check_used(used, varmap);
   // Remove unused globals.

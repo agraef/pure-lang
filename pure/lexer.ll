@@ -149,6 +149,20 @@ blank  [ \t\f\v\r]
 {blank}+   yylloc->step();
 [\n]+      yylloc->lines(yyleng); yylloc->step();
 
+^"#!"[ \t]*"--required"[ \t]+{qual}?{id}[ \t]*("//".*)? {
+  /* --required pragma. */
+  char *s = strchr(yytext, '-')+strlen("--required"), *t = s;
+  while (isspace(*t)) t++;
+  s = t;
+  while (*t && !isspace(*t)) t++;
+  string sym = string(s, t-s);
+  int32_t f = pure_sym(sym.c_str());
+  if (f > 0)
+    interp.required.push_back(f);
+  else
+    interp.warning(*yylloc, "warning: bad symbol '"+sym+
+		   "' in --required pragma");
+}
 ^"#!"[ \t]*"--"[A-Za-z-]+[ \t]*("//".*)? {
   /* Pragmas. */
   char *s = strchr(yytext, '-')+2, *t = s;

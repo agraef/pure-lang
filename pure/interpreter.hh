@@ -469,6 +469,7 @@ public:
   set<string> sources; // the set of all scripts which have been loaded
   set<string> namespaces; // the set of all declared namespaces
   list<string> loaded_libs; // the list of all loaded libs (lib:...)
+  list<int> required; // required symbols (--required pragma)
   ostream *output;   // redirected output stream for interactive commands
   symtable symtab;   // the symbol table
   pure_expr *result; // last result computed by exec() or parse()
