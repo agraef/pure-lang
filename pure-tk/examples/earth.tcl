@@ -151,7 +151,7 @@ proc key_cb {event shift keycode keysym} {
 
 set box [gnocl::box -orientation vertical -borderWidth 0]
 set top [gnocl::window -title Earth -width 400 -height 430 -child $box \
-	     -onDestroy exit \
+	     -onDestroy ::vtk::cb_exit \
 	     -onKeyPress {key_cb Press %s %k %K} \
 	     -onKeyRelease {key_cb Release %s %k %K}]
 set socket [gnocl::socket]
@@ -163,7 +163,7 @@ $bbox add [gnocl::checkButton -text Wireframe -variable wireframe \
 	       -onToggled {pure wireframe_cb %v}]
 $bbox add [gnocl::checkButton -text Trackball -variable interactor \
 	       -onToggled {pure interactor_cb %v}]
-$bbox add [gnocl::button -text %#Quit -onClicked exit]
+$bbox add [gnocl::button -text %#Quit -onClicked ::vtk::cb_exit]
 $box add $bbox
 gnocl::update
 
