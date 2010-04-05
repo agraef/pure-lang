@@ -17,7 +17,7 @@ do (sql3::exec stm1) [[10,1.0,"foo"], [20,2.0,"bar"], [30,3.0,"baz"]];
    employ local functions in the following examples, but you can just as well
    use global functions, lambdas or partial applications. */
 
-sql3::function db "gizmo" 1 gizmo with
+sql3::create_function db "gizmo" 1 gizmo with
   gizmo x::int = x+1;
   gizmo x::double = 2*x;
   gizmo x::string = "*** "+x+" ***";
@@ -28,14 +28,14 @@ end;
    that for technical reasons in Pure the function then actually takes one
    dummy () argument, so it must be defined like this: */
 
-sql3::function db "counter" 0 counter with
+sql3::create_function db "counter" 0 counter with
   counter () = put r (get r+1);
 end when r = ref 0 end;
 
 /* Variadic functions can be defined like this. They receive all their
    arguments in a single list. */
 
-sql3::function db "quasimodo" (-1) quasimodo with
+sql3::create_function db "quasimodo" (-1) quasimodo with
   quasimodo xs = "quasimodo: "+join ":" [str x | x=xs];
 end;
 
@@ -46,8 +46,8 @@ do (puts.str) $ sql3::exec stm2 ();
 
 // To redefine a function you must first remove it, by passing a NULL pointer
 // for the function argument.
-sql3::function db "counter" 0 NULL;
-sql3::function db "counter" 0 (counter2 (ref 0)) with
+sql3::create_function db "counter" 0 NULL;
+sql3::create_function db "counter" 0 (counter2 (ref 0)) with
   counter2 r () = put r (get r-1);
 end;
 
@@ -59,26 +59,27 @@ do (puts.str) $ sql3::exec stm3 ();
 let stm4 = sql3::prep db "ic:" "select counter(), quasimodo(y,x) from data";
 do (puts.str) $ sql3::exec stm4 ();
 
-/* Aggregate functions can be defined by passing a triple (step,final,start)
-   as the function argument to the sql3::function routine. In this case the
-   'step' function is called repeatedly to accumulate values from the
-   database, starting from the given 'start' value, and finally the 'final'
-   function is applied to the accumulated result. Note that for a
-   single-argument 'step' function, this works exactly as if the functions
-   were invoked as 'final (foldl step start values)', where 'values' is the
+/* Aggregate functions can be defined by passing a triple
+   (step,final,start) as the function argument to the
+   sql3::create_function routine. In this case the 'step' function is
+   called repeatedly to accumulate values from the database, starting
+   from the given 'start' value, and finally the 'final' function is
+   applied to the accumulated result. Note that for a single-argument
+   'step' function, this works exactly as if the functions were
+   invoked as 'final (foldl step start values)', where 'values' is the
    list of aggregated values from the database. */
 
 // A simple aggregate to just count the given values.
-sql3::function db "mycount" 1 ((\n _ -> n+1),id,0);
+sql3::create_function db "mycount" 1 ((\n _ -> n+1),id,0);
 
 // Compute sums.
-sql3::function db "mysum" 1 ((+),id,0);
+sql3::create_function db "mysum" 1 ((+),id,0);
 
 // Compute products.
-sql3::function db "myprd" 1 ((*),id,1);
+sql3::create_function db "myprd" 1 ((*),id,1);
 
 // Compute averages.
-sql3::function db "myavg" 1 (step,final,(0,0.0)) with
+sql3::create_function db "myavg" 1 (step,final,(0,0.0)) with
   step (n,a) x = n+1, a+x;
   final (n,a) = a/n;
 end;

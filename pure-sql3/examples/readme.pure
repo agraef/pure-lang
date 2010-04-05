@@ -27,6 +27,9 @@ let sp3 = prep dbp "c:" "select name from RM";
 
 exec sp3 ();
 
+
+/* Exceptions */
+
 db_error_handler (db_error ec msg) = ()
 when
   source = if ec > 0 then "SQLite" else "Sql3";
@@ -37,18 +40,21 @@ db_error_handler x = throw x;
 
 //catch db_error_handler (exec dbp "select * from NO_TABLE");
 
-function dbp "p_fn" 2 plus with plus x y = x + y; end;
+
+/* Custom SQL Functions */
+
+create_function dbp "p_fn" 2 plus with plus x y = x + y; end;
 
 let sp4 = prep dbp "cii:" 
          "select p_fn('Hi ',name), age, p_fn(age,10) from RM";
 
 exec sp4 ();
 
-function dbp "p_qm" (-1) quasimodo with
+create_function dbp "p_qm" (-1) quasimodo with
   quasimodo xs = "quasimodo: "+join ":" [str x | x=xs];
 end;
 
-function dbp "p_count" 0 counter with
+create_function dbp "p_count" 0 counter with
   counter () = put r (get r+1);
 end when r = ref 0 end;
 
@@ -56,7 +62,7 @@ let sp5 = prep dbp "ic:" "select p_count(), p_qm(name,age) from RM";
 
 //exec sp5 ();
 
-function dbp "p_avg" 1 (step,final,(0,0.0)) with
+create_function dbp "p_avg" 1 (step,final,(0,0.0)) with
   step (n,a) x = n+1, a+x;
   final (n,a) = a/n;
 end;
@@ -83,3 +89,5 @@ extern char *sqlite3_column_name(sqlite3_stmt*, int);
 exec sp2 29;
 
 sqlite3_column_name sp2 1;
+
+

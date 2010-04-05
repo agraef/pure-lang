@@ -13,7 +13,7 @@ SQLITE_OPEN_SHAREDCACHE SQLITE_OPEN_PRIVATECACHE;
 
 public
 is_open is_db_ptr is_stmt_ptr db_busy db_error
-open close prep exec lexec finalize function
+open close prep exec lexec finalize create_function
 begin begin_immediate begin_exclusive savepoint release 
 rollback rollback_to commit;
 
@@ -142,8 +142,9 @@ rollback_to dbp savepoint = exec dbp ("rollback to " + savepoint);
 rollback dbp  = exec dbp "rollback";
 commit dbp = exec dbp "commit";
 
-function dbp::pointer name::string nargs::int fun = ()
-  if is_db_ptr dbp && nargs>=-1 && ~sql3util_create_function dbp name nargs fun;
+create_function dbp::pointer name::string nargs::int fun = ()
+  if is_db_ptr dbp && nargs>=-1 && 
+     ~sql3util_create_function dbp name nargs fun;
 
 is_db_ptr x::pointer = case get_sentry x of
   f@_ _ = f===close_db; _ = false;
