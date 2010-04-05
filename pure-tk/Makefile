@@ -53,8 +53,8 @@ CFLAGS = -g -O2
 
 FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 
-DISTFILES = COPYING Makefile README pure-tk.html config.guess \
-tk.c tk.pure gnocl.pure examples/*.pure examples/*.tcl examples/*.glade
+DISTFILES = COPYING Makefile README pure-tk.html config.guess tk.c tk.pure \
+gnocl.pure examples/Makefile examples/*.pure examples/*.tcl examples/*.glade
 
 all: tk$(DLL)
 
