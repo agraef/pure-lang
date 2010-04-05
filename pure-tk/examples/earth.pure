@@ -1,0 +1,56 @@
+
+/* This is a simple example which shows how to employ the Tcl/Tk bindings of
+   VTK (the "visualization toolkit", http://www.vtk.org/) to render 3D
+   visualizations in Pure, a rotating globe in this example. You need VTK to
+   make this work, and the earth.ppm texture must be in $VTK_DATA_ROOT/Data/
+   (where VTK_DATA_ROOT usually is something like /usr/local/VTKData,
+   depending on where you installed VTK). */
+
+// This script has been set up so that you can compile it with:
+// pure -c earth.pure -o earth
+
+using tk, system;
+
+/* Load the GUI and the rendering pipeline which is defined in the
+   accompanying Tcl script, earth.tcl. NOTE: Depending on whether you have
+   Gnocl installed, you'll either get a GTK+ GUI or just a plain Tk GUI. The
+   Tcl script contains code for both. */
+
+const earth = fget (fopen "earth.tcl" "r");
+
+// Catch Tcl errors.
+tk_error msg = throw msg;
+
+/* The rendering callback, which rotates the representation by 3 degrees every
+   10 milliseconds while the Rotate checkbutton is enabled. This shows how to
+   work with the rendering pipeline from the Pure script. Note that most of
+   the user interaction in the rendering window is handled by VTK itself. In
+   particular, you can press the left, middle and right mouse buttons in the
+   rendering window to rotate, pan and zoom the image, respectively. */
+
+#! --required render_cb
+render_cb v = tk "renWin Render; [ren1 GetActiveCamera] Azimuth 3; \
+after 10 {pure render_cb $rotate}" if val v;
+
+/* Two callbacks to change the object representation and the interaction
+   style. Toggling the 'Wireframe' checkbutton or, equivalently, pressing
+   'w'/'s' in the rendering window changes between wireframe and solid
+   (surface) display. Similarly, toggling the 'Trackball Mode' checkbutton or
+   pressing 't'/'j' switches between the "trackball" and "joystick" style of
+   interaction. (In "trackball" mode, you need to drag the mouse to rotate/
+   pan/zoom the image, while in "joystick" mode just pressing the mouse is
+   enough.) */
+
+#! --required wireframe_cb
+wireframe_cb v = tk $ sprintf "[world GetProperty] SetRepresentationTo%s; \
+renWin Render" (if val v then "Wireframe" else "Surface");
+
+#! --required interactor_cb
+interactor_cb v = tk $ sprintf "[[renWin GetInteractor] GetInteractorStyle] \
+SetCurrentStyleTo%sCamera" (if val v then "Trackball" else "Joystick");
+
+/* The main program: execute the Tcl script and enter the main loop. */
+
+main = tk earth $$ tk_main;
+
+if compiling then () else main;
