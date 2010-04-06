@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.5: http://docutils.sourceforge.net/" />
 <title>Pure-Sql3</title>
 <meta name="authors" content="Peter Summerland  Albert Graef &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2010-04-05" />
+<meta name="date" content="2010-04-06" />
 <style type="text/css">
 
 /*
@@ -296,7 +296,7 @@ ul.auto-toc {
 <td>Peter Summerland
 <br />Albert Graef &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-04-05</td></tr>
+<td>2010-04-06</td></tr>
 </tbody>
 </table>
 <p>DRAFT FOR DISCUSSION PURPOSES ONLY</p>
@@ -393,7 +393,7 @@ pure-sql3$&gt; pure -q
 &gt; exec sp2 18;
 [[&quot;Sam&quot;,20],[&quot;Fred&quot;,22]]
 </pre>
-<p>The Sql3 functions, <strong>open</strong>, <strong>prep</strong> and <strong>exec</strong> encapsulate the
+<p>The Sql3 functions, <tt class="docutils literal"><span class="pre">open</span></tt>, <tt class="docutils literal"><span class="pre">prep</span></tt> and <tt class="docutils literal"><span class="pre">exec</span></tt> encapsulate the
 core functionality of SQLite, and in many cases are all you need to
 use SQLite effectively.</p>
 </div>
@@ -474,17 +474,16 @@ to the following two SQLite objects.</p>
 <li>Database connection object - sqlite3</li>
 <li>Prepared statement object  - sqlite3_stmt</li>
 </ul>
-<p>The Sql3 functions <strong>open</strong> and <strong>prep</strong> return &quot;sentry-guarded&quot;
+<p>The Sql3 functions <tt class="docutils literal"><span class="pre">open</span></tt> and <tt class="docutils literal"><span class="pre">prep</span></tt> return &quot;sentry-guarded&quot;
 pointers to database connection objects and prepared statement
 objects, respectively. The pointers returned by these two functions
-are refered to herein as <strong>db_ptrs</strong> and <strong>stmt_ptrs</strong>.</p>
+are refered to herein as <tt class="docutils literal"><span class="pre">db_ptrs</span></tt> and <tt class="docutils literal"><span class="pre">stmt_ptrs</span></tt>.</p>
 <p>A db_ptr or a stmt_ptr is, as far as SQLite is concerned, the same as
-a the sqlite3* returned by <strong>sqlite3_open_v2</strong> or the sqlite3_stmt*
-<strong>sqlite3_prepare_v2</strong>, the SQLite C interface functions corresponding
-to <strong>open</strong> and <strong>prep</strong>. This allows the programmer to use db_ptrs
-and stmt_ptrs to call functions provided by the SQLite C interface
-just about anywhere a native pointer would be used (See <a class="reference internal" href="#accessing-the-rest-of-sqlite-s-c-interface">Accessing the
-Rest of SQLite's C Interface</a>).</p>
+a sqlite3* returned by <tt class="docutils literal"><span class="pre">sqlite3_open_v2</span></tt> or a sqlite3_stmt* returned
+by <tt class="docutils literal"><span class="pre">sqlite3_prepare_v2</span></tt>, the SQLite C interface functions
+corresponding to <tt class="docutils literal"><span class="pre">open</span></tt> and <tt class="docutils literal"><span class="pre">prep</span></tt>. Thus, db_ptrs and stmt_ptrs
+can be used when calling functions provided by the SQLite C interface
+(See <a class="reference internal" href="#accessing-the-rest-of-sqlite-s-c-interface">Accessing the Rest of SQLite's C Interface</a>).</p>
 </div>
 <div class="section" id="core-database-operations">
 <h1><a class="toc-backref" href="#id15">5&nbsp;&nbsp;&nbsp;Core Database Operations</a></h1>
@@ -493,15 +492,21 @@ connections and (b) preparing, executing and closing prepared
 statements.</p>
 <div class="section" id="database-connections">
 <h2><a class="toc-backref" href="#id16">5.1&nbsp;&nbsp;&nbsp;Database Connections</a></h2>
+<p>Generally speaking, the first step in accessing a database is to open
+a database connection and obtain a db_ptr that references the database
+connection. Once the db_ptr is obtained, it can be used to construct
+prepared statements for updating and querying the database. The last
+step is usually to close the database connection (although this is
+often done automatically by Sql3 when the db_ptr goes out of scope).</p>
 <div class="section" id="opening-a-database-connection">
 <h3><a class="toc-backref" href="#id17">5.1.1&nbsp;&nbsp;&nbsp;Opening a Database Connection</a></h3>
-<p>In Sql3 <strong>open</strong> provides a db_ptr that refers to a SQLite database
-connection object.</p>
+<p>In Sql3 <tt class="docutils literal"><span class="pre">open</span></tt> contructs a database connection and returns a db_ptr
+that refers the connection.</p>
 <a name="open"><dl class="docutils" id="open">
-<dt><strong>open (file_path::string [,access_mode::int,custom_bindings]])</strong></dt>
+<dt><tt class="docutils literal"><span class="pre">open</span> <span class="pre">(file_path::string</span> <span class="pre">[,access_mode::int,custom_bindings]])</span></tt></dt>
 <dd>opens a SQLite database file whose name is given by the file_path
-argument and returns a db_ptr for the database connection object
-created by SQLite.</dd>
+argument and returns a db_ptr for the associated database connection
+object created by SQLite.</dd>
 </dl>
 <p>Example:</p>
 <pre class="literal-block">
@@ -509,8 +514,7 @@ created by SQLite.</dd>
 #&lt;pointer 0x992dff8&gt;
 </pre>
 <p>If the filename is &quot;:memory:&quot;, then a private, temporary in-memory database
-is created for the connection. This in-memory database will vanish when the
-database connection is closed.</p>
+is created for the connection.</p>
 <p>The basic access modes are:</p>
 <ul class="simple">
 <li>SQLITE_OPEN_READONLY - the database is opened in read-only mode. If the
@@ -536,10 +540,10 @@ Prepared Statements</a>)</p>
 </div>
 <div class="section" id="failure-to-open-a-database-connection">
 <h3><a class="toc-backref" href="#id18">5.1.2&nbsp;&nbsp;&nbsp;Failure to Open a Database Connection</a></h3>
-<p>Even if SQLite cannot open the connection, it still returns a pointer
-to a database connection object that must be closed. In this case,
-<strong>open</strong> automatically closes the the connection object and then
-throws an exception. E.g.,:</p>
+<p>If SQLite cannot open the connection, it still returns a pointer to a
+database connection object that must be closed. In this case, <tt class="docutils literal"><span class="pre">open</span></tt>
+automatically closes the the connection object and then throws an
+exception. E.g.,:</p>
 <pre class="literal-block">
 &gt; catch error (open (&quot;RM_zyx.db&quot;,SQLITE_OPEN_READONLY));
 error (sql3::db_error 14 &quot;unable to open database file [open RM_zyx.db]&quot;)
@@ -553,11 +557,11 @@ error when the connection is used.</p>
 <p>For argument checking and other purposes Sql3 provides the following
 functions:</p>
 <a name="is_db_ptr"><dl class="docutils" id="is-db-ptr">
-<dt><strong>is_db_ptr ptr::pointer</strong></dt>
+<dt><tt class="docutils literal"><span class="pre">is_db_ptr</span> <span class="pre">ptr::pointer</span></tt></dt>
 <dd>returns 1 if ptr is a db_ptr returned by open, and 0 if it is not.</dd>
 </dl>
 <a name="is_open"><dl class="docutils" id="is-open">
-<dt><strong>is_open ptr::pointer</strong></dt>
+<dt><tt class="docutils literal"><span class="pre">is_open</span> <span class="pre">ptr::pointer</span></tt></dt>
 <dd>returns 1 if the database connection referenced by by ptr is open.</dd>
 </dl>
 </div>
@@ -566,28 +570,42 @@ functions:</p>
 <p>When a database connection object is no longer needed, it should be closed
 so that SQLite can free the associated resources.</p>
 <a name="close"><dl class="docutils" id="close">
-<dt><strong>close dbp::pointer</strong></dt>
+<dt><tt class="docutils literal"><span class="pre">close</span> <span class="pre">dbp::pointer</span></tt></dt>
 <dd>if the database connection referenced by the db_ptr dbp is open,
-close it using sqlite3_close Otherwise do nothing.</dd>
+close it using sqlite3_close; otherwise do nothing.</dd>
 </dl>
-<p>Before calling <strong>sqlite3_close</strong>, <strong>close</strong> finalizes all prepared
+<p>Before calling <tt class="docutils literal"><span class="pre">sqlite3_close</span></tt>, <tt class="docutils literal"><span class="pre">close</span></tt> finalizes all prepared
 statements associated with the connection being closed. Sql3 will
 detect and throw a db_error if an attempt is subseqently made to
 execute a statement associated with the closed database connection.</p>
+<pre class="literal-block">
+&gt; let dbp2_sp = prep dbp2 &quot;ci:&quot; &quot;select * from RM&quot;;
+
+&gt; exec dbp2_sp ();
+[[&quot;Sam&quot;,20],[&quot;Fred&quot;,22]]
+
+&gt; close dbp2;
+
+&gt; catch error (exec dbp2_sp);
+error (sql3::db_error 0 &quot;Attempt to exec on a closed db.&quot;)
+</pre>
 <p>If a db_ptr goes out of scope, Sql3 will automatically call
-<strong>sqlite3_close</strong> to close the referenced database connection, but
-only if the connection has not already been closed by <strong>close</strong>.</p>
+<tt class="docutils literal"><span class="pre">sqlite3_close</span></tt> to close the referenced database connection, but
+only if the connection has not already been closed by <tt class="docutils literal"><span class="pre">close</span></tt>.</p>
 <p>When debugging, this activity can be observed by editing sql3.pure,
 changing &quot;const SHOW_OPEN_CLOSE = 0;&quot; to &quot;const SHOW_OPEN_CLOSE = 1;&quot;
 and running sudo make install in the pure-sql3 directory. This will
 cause a message to be printed whenever a db_ptr or stmt_ptr is created
 or finalized.</p>
+<p>N.B. You should never call <tt class="docutils literal"><span class="pre">sqlite3_close</span></tt> with a db_ptr. If the
+referenced database connectin is closed by such a call, a subsequent
+call to <tt class="docutils literal"><span class="pre">close</span></tt> on this db+ptr (including the call that will
+automatically occur when the db_ptr goes out of scope) will cause a
+seg fault.</p>
 </div>
 </div>
 <div class="section" id="prepared-statements">
 <h2><a class="toc-backref" href="#id21">5.2&nbsp;&nbsp;&nbsp;Prepared Statements</a></h2>
-<div class="section" id="constructing-prepared-statements">
-<h3><a class="toc-backref" href="#id22">5.2.1&nbsp;&nbsp;&nbsp;Constructing Prepared Statements</a></h3>
 <p>In SQLite, prepared statement objects are used to execute SQL
 statements using the following SQLite C interface functions.</p>
 <ul class="simple">
@@ -597,30 +615,40 @@ statements using the following SQLite C interface functions.</p>
 <li>sqlite3_column</li>
 <li>sqlite3_finalize</li>
 </ul>
-<p>The basic procedure is to prepare a statement, bind its parameters,
-step it using <strong>sqlite3_step</strong> one or more times until it is done and
-then finalize it. Each time <strong>sqlite3_step</strong> returns SQLITE_ROW, use
-<strong>sqlite3_column</strong> to fetch the row's values.</p>
-<p>In the SQLite C Interface, <strong>sqlite3_bind</strong> and <strong>sqlite3_column</strong>
-represent families of bind and column functions, with one member for
-each of the basic data types recognized by SQLite. Thus, for example,
-<strong>sqlite_bind_double</strong> is the function one would use to bind a
-prepared statement with an argument of type double.</p>
-<p>Sql3 captures these procedures in four functions: <strong>prep</strong>, <strong>exec</strong>,
-<strong>lexec</strong> and <strong>finalize</strong>.</p>
-<a name="prep"><dl class="docutils" id="prep">
-<dt><strong>prep dbp::pointer binding_string::string sql_statement::string</strong></dt>
-<dd>constructs a prepared statement object and returns a stmt_ptr that
+<p>Using the C interface, the basic procedure is to prepare a statement
+using <tt class="docutils literal"><span class="pre">sqlite3_prepare_v2',</span> <span class="pre">bind</span> <span class="pre">its</span> <span class="pre">parameters</span> <span class="pre">using</span> <span class="pre">`sqlite3_bind`,</span>
+<span class="pre">step</span> <span class="pre">it</span> <span class="pre">using</span> <span class="pre">``sqlite3_step</span></tt> one or more times until it is done and
+then finalize it using <tt class="docutils literal"><span class="pre">sqlite3_finalize</span></tt>. Each time
+<tt class="docutils literal"><span class="pre">sqlite3_step</span></tt> returns SQLITE_ROW, use <tt class="docutils literal"><span class="pre">sqlite3_column</span></tt> to fetch
+the row's values. Here <tt class="docutils literal"><span class="pre">sqlite3_bind</span></tt> and <tt class="docutils literal"><span class="pre">sqlite3_column</span></tt>
+represent families of bind and column functions, rather than actual
+functions, with one member for each of the basic data types recognized
+by SQLite. Thus, for example, <tt class="docutils literal"><span class="pre">sqlite_bind_double</span></tt> is the function
+one would use to bind a prepared statement with an argument of type
+double.</p>
+<p>Sql3 captures these procedures in four functions: <tt class="docutils literal"><span class="pre">prep</span></tt>, <tt class="docutils literal"><span class="pre">exec</span></tt>,
+<tt class="docutils literal"><span class="pre">lexec</span></tt> and <tt class="docutils literal"><span class="pre">finalize</span></tt>.</p>
+<div class="section" id="constructing-prepared-statements">
+<h3><a class="toc-backref" href="#id22">5.2.1&nbsp;&nbsp;&nbsp;Constructing Prepared Statements</a></h3>
+<p>In Sql3 use <tt class="docutils literal"><span class="pre">prep</span></tt> to construct a prepared statement and obtain a
+stmt_ptr that refers to it.</p>
+<a name="prep"><p id="prep"><tt class="docutils literal"><span class="pre">prep</span> <span class="pre">dbp::pointer</span> <span class="pre">binding_string::string</span> <span class="pre">sql_statement::string</span></tt></p>
+<blockquote>
+constructs a prepared statement object and returns a stmt_ptr that
 references it. &quot;dbp&quot; must be a db_ptr or the rule will not
-match.</dd>
-</dl>
-<p>Basically, <strong>prep</strong> just passes dbp and sql_statement on to
-argument placeholders, indicated by &quot;?&quot;, &quot;?nnn&quot;, &quot;:AAA&quot;, etc.</p>
-<p>The binding_string argument is not passed to
-<strong>sqlite3_prepare_v2</strong>. Instead it is used by Sql3 to determine how to
-bind the prepared statement's argument placeholders, if any, in the
-<strong>sqlite3_bind</strong> step and how to fetch values in the
-<strong>sqlite3_column</strong> step of the basic prepare, bind, step, fetch,
+match. &quot;sql_statement&quot; is the SQL statement that will be executed
+when the prepared statement is passed to <tt class="docutils literal"><span class="pre">exec</span></tt>.</blockquote>
+<p>Basically, <tt class="docutils literal"><span class="pre">prep</span></tt> just passes dbp and sql_statement on to
+<tt class="docutils literal"><span class="pre">sqlite3_prepare_v2</span> <span class="pre">and</span> <span class="pre">returns</span> <span class="pre">a</span> <span class="pre">sentry</span> <span class="pre">guarded</span> <span class="pre">version</span> <span class="pre">of</span> <span class="pre">the</span>
+<span class="pre">sqlite3_stmt*</span> <span class="pre">it</span> <span class="pre">receives</span> <span class="pre">back</span> <span class="pre">from</span> <span class="pre">``sqlite3_prepare_v2</span></tt>. SQL
+statements passed to <tt class="docutils literal"><span class="pre">prep</span></tt> (and <tt class="docutils literal"><span class="pre">sqlite3_prepare_v2</span></tt>) can have
+argument placeholders, indicated by &quot;?&quot;, &quot;?nnn&quot;, &quot;:AAA&quot;, etc, in which
+case the argument placeholders must be bound to values using
+<tt class="docutils literal"><span class="pre">sqlite_bind</span></tt> before the prepared statement is passed to
+<tt class="docutils literal"><span class="pre">sqlite3_step</span></tt>.  Hence the binding_string, which is used by Sql3 to
+determine how to bind the prepared statement's argument placeholders,
+if any. The binding string also tells Sql3 how to fetch values in the
+<tt class="docutils literal"><span class="pre">sqlite3_column</span></tt> step of the basic prepare, bind, step, fetch,
 finalize cycle dictated by the SQlite C interface.</p>
 <p>In the following two examples, the &quot;c&quot; and &quot;i&quot; in the binding strings
 indicate that a string and an int will be used to bind sp1, an int
@@ -630,14 +658,7 @@ string and an int.</p>
 <pre class="literal-block">
 &gt; let sp1 = prep dbp &quot;ci&quot; &quot;insert into RM values (?,?)&quot;;
 
-&gt; let sp2 = prep dbp &quot;ci:i&quot; &quot;select * from RM where age &gt; ?&quot;; stmp;
-#&lt;pointer 0xa4b43c0&gt;
-
-&gt; exec sp1 (&quot;Tom&quot;,30);  //insert Tom
-[]
-
-&gt; exec sp2 19;          //select age &gt; 19
-[[&quot;Sam&quot;,20],[&quot;Tom&quot;,30],[&quot;Fred&quot;,35]]
+&gt; let sp2 = prep dbp &quot;ci:i&quot; &quot;select * from RM where age &gt; ?&quot;;
 </pre>
 <p>In general, the characters in the type string before the &quot;:&quot;, if any,
 indicate the types in the result set. Those that occur after the &quot;:&quot;,
@@ -698,55 +719,59 @@ arguments.</p>
 </tbody>
 </table>
 <p>The &quot;<strong>b</strong>&quot; or blob type is different from the rest in that the Pure
-argument is specified as a pair, which indcates the length in bytes of
-the boject to be stored and its location in memory. The &quot;<strong>c</strong>&quot; type
+argument is specified as a pair. The first element of the pair
+indicates the length in bytes of the object to be stored and the
+second element indicates its location in memory. The &quot;<strong>c</strong>&quot; type
 stands for string (as in &quot;char*&quot;), &quot;<strong>d</strong>&quot; stands for double and
-&quot;<strong>i</strong>&quot; stands for int.  The &quot;<strong>k</strong>&quot; type stands for ints and bigints
-within the range of int64.  This type is useful when dealing with
-SQLite's &quot;integer primary keys&quot; and &quot;rowids&quot; both of which are int64.
-The &quot;<strong>l</strong>&quot; type, in contrast maps the bigints onto blobs, which are
-generally meaningless in SQL math expressions.  The &quot;<strong>n</strong>&quot; type can
-only appear on the binding side of a type string. The &quot;<strong>v</strong>&quot; type
-stands fo any of &quot;b&quot;, &quot;c&quot;, &quot;d&quot;, &quot;i&quot; or &quot;n&quot;, based on the type of the
-binding argument. A &quot;v&quot; type will be fetched from SQLite according to
-the native SQLite column type of the corresponding column.  The
-&quot;<strong>x</strong>&quot; type is used to store and reconstruct Pure expressions as
-binary objects, using the <strong>val</strong> and <strong>blob</strong> functions provided by
-the Pure system module.</p>
+&quot;<strong>i</strong>&quot; stands for int.  The &quot;<strong>k</strong>&quot; type stands for &quot;key&quot; and maps
+Pure ints and bigints within the range of int64 to int64 values in the
+database.  This type is useful when dealing with SQLite's &quot;integer
+primary keys&quot; and &quot;rowids&quot; both of which are int64.  The &quot;<strong>l</strong>&quot; type,
+in contrast applies to all bigints (and not to ints) and it maps
+bigints onto blobs, which are generally meaningless in SQL math
+expressions.  The &quot;<strong>n</strong>&quot; type can only appear on the binding side of
+a type string. The &quot;<strong>v</strong>&quot; type stands for any of &quot;b&quot;, &quot;c&quot;, &quot;d&quot;, &quot;i&quot;
+or &quot;n&quot;, based on the type of the binding argument. A &quot;v&quot; type will be
+fetched from SQLite according to the native SQLite column type of the
+corresponding column.  The &quot;<strong>x</strong>&quot; type is used to store and
+reconstruct Pure expressions as binary objects, using the <tt class="docutils literal"><span class="pre">val</span></tt> and
+<tt class="docutils literal"><span class="pre">blob</span></tt> functions provided by the Pure system module.</p>
 <p>Users can define custom binding types and pass them as a third
-parameter to <strong>open</strong>. The resulting db_ptr can be used with the
+parameter to <tt class="docutils literal"><span class="pre">open</span></tt>. The resulting db_ptr can be used with the
 additional binding types to construct prepared statements that can be
-executed with customized arguments.</p>
+executed with the  customized argument types.</p>
 </div>
 <div class="section" id="testing-a-stmt-ptr">
 <h3><a class="toc-backref" href="#id23">5.2.2&nbsp;&nbsp;&nbsp;Testing a stmt_ptr</a></h3>
 <p>For argument checking and other purposes it is sometimes useful to
 determine if a given expression is a valid stmt_ptr.</p>
 <a name="is_stmt_ptr"><dl class="docutils" id="is-stmt-ptr">
-<dt><strong>is_stmt_ptr ptr::pointer</strong></dt>
+<dt><tt class="docutils literal"><span class="pre">is_stmt_ptr</span> <span class="pre">ptr::pointer</span></tt></dt>
 <dd>returns 1 if ptr is a stmt_ptr, otherwise returns 0.</dd>
 </dl>
 </div>
 <div class="section" id="executing-prepared-statements">
 <h3><a class="toc-backref" href="#id24">5.2.3&nbsp;&nbsp;&nbsp;Executing Prepared Statements</a></h3>
 <p>In Sql3, the bind, step, column, step, column ... cycle is encapsulated in
-the <strong>exec</strong> and <strong>lexec</strong> functions.</p>
+the <tt class="docutils literal"><span class="pre">exec</span></tt> and <tt class="docutils literal"><span class="pre">lexec</span></tt> functions.</p>
 <a name="exec"><dl class="docutils" id="exec">
-<dt><strong>exec sp::pointer args</strong></dt>
+<dt><tt class="docutils literal"><span class="pre">exec</span> <span class="pre">sp::pointer</span> <span class="pre">args</span></tt></dt>
 <dd>use args to bind the prepared statement referenced by sp, execute it
 and return the result set as a list. The first parameter, &quot;sp&quot; must
 be a valid stmt_ptr or the rule will fail.</dd>
 </dl>
 <p>The second, &quot;args&quot; parameter is a tuple or list of arguments whose
 number and type correspond to the bind parameter types specified in
-the call to <strong>prep</strong> that produced the first parmenter &quot;sp&quot;.</p>
+the call to <tt class="docutils literal"><span class="pre">prep</span></tt> that produced the first parmenter &quot;sp&quot;.</p>
 <p>Example:</p>
 <pre class="literal-block">
 &gt; exec sp1 (&quot;Tom&quot;,30);  //insert Tom
 []
 
 &gt; exec sp2 19;          //select age &gt; 19
-[[&quot;Sam&quot;,20],[&quot;Tom&quot;,30],[&quot;Fred&quot;,35]]
+[[&quot;Sam&quot;,20],[&quot;Fred&quot;,22],[&quot;Tom&quot;,30]]
+
+&gt; exec dbp &quot;delete from RM where name='Tom'&quot;;
 </pre>
 <p>An error is thrown if the args do not correspond to the specified types.</p>
 <pre class="literal-block">
@@ -780,13 +805,13 @@ stpx (a,blb,c)&quot; would produce a Sql3 binding exception.</p>
 </div>
 <div class="section" id="executing-lazily">
 <h3><a class="toc-backref" href="#id25">5.2.4&nbsp;&nbsp;&nbsp;Executing Lazily</a></h3>
-<p>The <strong>exec</strong> function returns result sets as eager lists which can
+<p>The <tt class="docutils literal"><span class="pre">exec</span></tt> function returns result sets as eager lists which can
 sometimes be inefficient or simply not feasible for large result
-sets. In such cases it is preferable to use <strong>lexec</strong> instead of
-<strong>exec</strong>.</p>
+sets. In such cases it is preferable to use <tt class="docutils literal"><span class="pre">lexec</span></tt> instead of
+<tt class="docutils literal"><span class="pre">exec</span></tt>.</p>
 <a name="lexec"><dl class="docutils" id="lexec">
-<dt><strong>lexec stmp::pointer args</strong></dt>
-<dd>same as <strong>exec</strong> except that it returns a lazy list.</dd>
+<dt><tt class="docutils literal"><span class="pre">lexec</span> <span class="pre">stmp::pointer</span> <span class="pre">args</span></tt></dt>
+<dd>same as <tt class="docutils literal"><span class="pre">exec</span></tt> except that it returns a lazy list.</dd>
 </dl>
 <p>Example:</p>
 <pre class="literal-block">
@@ -794,21 +819,21 @@ sets. In such cases it is preferable to use <strong>lexec</strong> instead of
 [&quot;Sam&quot;,20]:#&lt;thunk 0xb6475ab0&gt;
 </pre>
 <p>Note that no changes to sp2 were required. In addition, for most
-purposes the lazy list returned by <strong>lexec</strong> can be processed by the
-same code that processed the eager list returned by <strong>exec</strong>.</p>
+purposes the lazy list returned by <tt class="docutils literal"><span class="pre">lexec</span></tt> can be processed by the
+same code that processed the eager list returned by <tt class="docutils literal"><span class="pre">exec</span></tt>.</p>
 </div>
 <div class="section" id="executing-directly-on-a-db-ptr">
 <h3><a class="toc-backref" href="#id26">5.2.5&nbsp;&nbsp;&nbsp;Executing Directly on a db_ptr</a></h3>
 <p>For statements that have no parameters and which do not return results,
-<strong>exec</strong> can be applied to a db_ptr.</p>
+<tt class="docutils literal"><span class="pre">exec</span></tt> can be applied to a db_ptr.</p>
 <a name="exec_db dbp"><dl class="docutils" id="exec-dbp">
-<dt><strong>exec dbp::pointer sql_statement::string</strong></dt>
+<dt><tt class="docutils literal"><span class="pre">exec</span> <span class="pre">dbp::pointer</span> <span class="pre">sql_statement::string</span></tt></dt>
 <dd>constructs a temporary prepared statement using the sql_statement,
 which cannot contain argument placeholders.</dd>
 </dl>
 <p>Example:</p>
 <pre class="literal-block">
-&gt; exec db1 &quot;create table if not exists RM (name varchar, age integer)&quot;;
+&gt; exec dbp &quot;create table if not exists RM (name varchar, age integer)&quot;;
 </pre>
 </div>
 <div class="section" id="id1">
@@ -816,12 +841,12 @@ which cannot contain argument placeholders.</dd>
 <p>SQLite allows multiple processes to concurrently read a single
 database, but when any process wants to write, it locks the entire
 database file for the duration of its update.</p>
-<p>When <strong>sqlite3_step</strong> tries to access a file that is locked by another
+<p>When <tt class="docutils literal"><span class="pre">sqlite3_step</span></tt> tries to access a file that is locked by another
 process, it treats the database as &quot;busy and returns the SQLITE_BUSY
-error code. If this happens in a call to <strong>exec</strong> or <strong>lexec</strong>, a
+error code. If this happens in a call to <tt class="docutils literal"><span class="pre">exec</span></tt> or <tt class="docutils literal"><span class="pre">lexec</span></tt>, a
 <a class="reference internal" href="#db-busy">db_busy</a> exception will be thrown.</p>
-<p>You can adjust SQLite's behavior using <strong>sqlite3_busy_handler</strong> or
-<strong>sqlite3_busy_timeout</strong>.</p>
+<p>You can adjust SQLite's behavior using <tt class="docutils literal"><span class="pre">sqlite3_busy_handler</span></tt> or
+<tt class="docutils literal"><span class="pre">sqlite3_busy_timeout</span></tt>.</p>
 <p>If the statement is a COMMIT or occurs outside of an explicit
 transaction, then you can retry the statement. If the statement is not
 a COMMIT and occurs within a explicit transaction then you should
@@ -843,15 +868,15 @@ already in effect. As opposed to manually started transactions,
 automatically started transactions are committed as soon as the
 execution of the related statement completes.</p>
 <p>The upshot of this, in Sql3 terms, is that unless a transaction is
-started manually, the database will be updated each time <strong>exec</strong> is
+started manually, the database will be updated each time <tt class="docutils literal"><span class="pre">exec</span></tt> is
 called. For a long series of updates or inserts this a can be very
 slow. The way to avoid this problem is to manually begin and end
 transactions manually.</p>
 <p>Transactions created using BEGIN...COMMIT do not nest. For nested
 transactions, use the SAVEPOINT and RELEASE statements.</p>
 <p>Sql3 provides the following convenience functions all of which simply
-call <strong>exec</strong> with the appropriate statement. For example <strong>begin</strong>
-dbp is exactly the same as <strong>exec</strong> dbp &quot;BEGIN&quot;.</p>
+call <tt class="docutils literal"><span class="pre">exec</span></tt> with the appropriate statement. For example <tt class="docutils literal"><span class="pre">begin</span></tt>
+dbp is exactly the same as <tt class="docutils literal"><span class="pre">exec</span></tt> dbp &quot;BEGIN&quot;.</p>
 <ul class="simple" id="rollback">
 <span id="rollback-to"></span><span id="release"></span><span id="savepoint"></span><span id="commit"></span><span id="begin-immediate"></span><span id="begin-exclusive"></span><span id="begin"></span><li>begin dbp::pointer</li>
 <li>begin_exclusive dbp::pointer</li>
@@ -868,19 +893,29 @@ dbp is exactly the same as <strong>exec</strong> dbp &quot;BEGIN&quot;.</p>
 <p>When a prepared statement is no longer needed it should be finalized
 so that SQLite can free the associated resources.</p>
 <a name="finalize"><dl class="docutils" id="finalize">
-<dt><strong>finalize sp::pointer</strong></dt>
+<dt><tt class="docutils literal"><span class="pre">finalize</span> <span class="pre">sp::pointer</span></tt></dt>
 <dd>finalize the prepared statement referenced by sp, which must be a
-stmt_ptr previously returned by <strong>prep</strong>.</dd>
+stmt_ptr previously returned by <tt class="docutils literal"><span class="pre">prep</span></tt>.</dd>
 </dl>
-<p>Often there is no need to call <strong>finalize</strong> for a given stmt_ptr
+<p>Often there is no need to call <tt class="docutils literal"><span class="pre">finalize</span></tt> for a given stmt_ptr
 because it will be automatically called when the stmt_ptr goes out of
 scope.</p>
-<p>In contrast to the corresponding native C interface function,
-causing a seg fault).</p>
-<p>N.B. You should never call <strong>sqlite3_finalize</strong> with a stmt_ptr. If a
-stmt_ptr is finalized by such a call, a subsequent call to
-<strong>finalize</strong> (including the call that will automatically occur when
-the stmt_ptr goes out of scope) will cause a seg fault.</p>
+<p>If the stmt_ptr is associated with a database connection that has been
+closed (which would have caused an exception to be thrown), an attempt
+to finalize it, including the automatic finalization can occur when
+stmt_ptr goes out of scope, will cause and exception to be thrown.</p>
+<blockquote>
+&gt; catch error (finalize dbp2_sp);
+error (sql3::db_error 0 &quot;finalize: STMT attached to a closed database.&quot;)</blockquote>
+<p>Multiple calls to <tt class="docutils literal"><span class="pre">finalize</span></tt> are fine. In contrast the corresponding
+native C interface function, <tt class="docutils literal"><span class="pre">sqlite3_finalize</span></tt> will cause a seg
+fault if called with a pointer to a finalized prepared statement
+object. This is the main reason why you should never call
+<tt class="docutils literal"><span class="pre">sqlite3_finalize</span></tt> with a stmt_ptr. If the prepared statement
+referenced by the stmt_ptr is finalized by such a call, a subsequent
+call to <tt class="docutils literal"><span class="pre">finalize</span></tt> with the stmt_ptr (including the call that will
+automatically occur when the stmt_ptr goes out of scope) will cause a
+seg fault.</p>
 </div>
 </div>
 <div class="section" id="exceptions">
@@ -908,7 +943,7 @@ SQLite db_error: ec 1, no such table: NO_TABLE
 <a name="db_busy"></div>
 <div class="section" id="id3">
 <span id="db-busy"></span><h3><a class="toc-backref" href="#id32">5.3.2&nbsp;&nbsp;&nbsp;db_busy</a></h3>
-<p>Sql3 functions <strong>exec</strong> and <strong>lexec</strong> throw exceptions of the form
+<p>Sql3 functions <tt class="docutils literal"><span class="pre">exec</span></tt> and <tt class="docutils literal"><span class="pre">lexec</span></tt> throw exceptions of the form
 &quot;db_busy dbp&quot;, where dbp is a db_ptr, if they are prevented from
 executing succesfully because the database referenced by dbp is
 locked (See <a class="reference internal" href="#executing-against-a-busy-database">Executing Against a Busy Database</a>).</p>
@@ -962,15 +997,14 @@ interface is the ability to add new SQL scalar or aggregate
 functions. The new functions can be used in SQL statements the same as
 the prepackaged functions and aggregates. Sql3 hides the complexity
 and seamlessly integrates all of this functionality, :), into Pure via
-the <strong>function</strong> function. <strong>function</strong> has two forms: one for
-registering scalar SQL functions and one for registering aggregate SQL
-functions.</p>
+<tt class="docutils literal"><span class="pre">create_function</span></tt>. This function is used to register both scalar SQL
+functions and aggregate SQL functions with SQlite.</p>
 <div class="section" id="scalar-sql-functions">
 <h3><a class="toc-backref" href="#id36">6.1.1&nbsp;&nbsp;&nbsp;Scalar SQL Functions</a></h3>
-<p>You can add a custom SQL scalar function to SQLite using the following
-form:</p>
+<p>You can add a custom SQL scalar function to SQLite by passing a single
+Pure function to <tt class="docutils literal"><span class="pre">create_function</span></tt>.</p>
 <a name="create_function"><dl class="docutils" id="create-function">
-<dt><strong>create_function dbp::pointer name::string nargs::int pure_fun</strong></dt>
+<dt><tt class="docutils literal"><span class="pre">create_function</span> <span class="pre">dbp::pointer</span> <span class="pre">name::string</span> <span class="pre">nargs::int</span> <span class="pre">pure_fun</span></tt></dt>
 <dd>registers a new SQL scalar function of nargs arguments that can be
 called, as &quot;name&quot;, in SQL statements prepared with respect to dbp, a
 db_ptr. When the SQL function is called in a SQL statement, control
@@ -978,7 +1012,7 @@ is passed to pure_fun, a curried function written in Pure. If nargs
 is (-1), the SQL function &quot;name&quot; is variadic, and the arguments will
 be passed to pure_fun as a single list.</dd>
 </dl>
-<p>Note that <strong>create_function</strong> can also register aggregate functions (See
+<p>Note that <tt class="docutils literal"><span class="pre">create_function</span></tt> can also register aggregate functions (See
 <a class="reference internal" href="#aggregate-sql-functions">Aggregate SQL Functions</a>).</p>
 <p>Here is an example of a scalar function that takes two parameters. Note
 that any kind of Pure &quot;function&quot; can be passed here; local functions,
@@ -1026,19 +1060,20 @@ statement in which the function is running.</p>
 </div>
 <div class="section" id="id4">
 <span id="aggregate-sql-functions"></span><h3><a class="toc-backref" href="#id37">6.1.2&nbsp;&nbsp;&nbsp;Aggregate SQL Functions</a></h3>
-<p>If the fourth argument passed to <strong>create_function</strong> is a triple, the
-registered SQL function will be an aggregate function.</p>
+<p>You can use <tt class="docutils literal"><span class="pre">create_function</span></tt> to register an aggregate SQL function
+with SQLIT by passing a triple consisting of two Pure functions and a
+start value, in place of a single Pure function.</p>
 <dl class="docutils">
-<dt><strong>create_function dbp::pointer name::string nargs::int (step,final,start)</strong></dt>
-<dd>registers a new SQL aggregate function of nargs arguments that can
+<dt><tt class="docutils literal"><span class="pre">create_function</span> <span class="pre">dbp::pointer</span> <span class="pre">name::string</span> <span class="pre">nargs::int</span> <span class="pre">(step,final,start)</span></tt></dt>
+<dd>register a new SQL aggregate function of nargs arguments that can
 be called, as &quot;name&quot; in SQL statements prepared with respect to dbp,
-a db_ptr.  Step and final are curried Pure functions and start is
+a db_ptr.  &quot;step&quot; and &quot;final&quot; are curried Pure functions and &quot;start&quot; is
 the initial value for the aggregation. The 'step' function is called
 repeatedly to accumulate values from the database, starting from the
 given 'start' value, and finally the 'final' function is applied to
 the accumulated result.</dd>
 </dl>
-<p>Note that for a single-argument 'step' function, this works exactly as
+<p>Note that for a single-argument step function, this works exactly as
 if the functions were invoked as 'final (foldl step start values)',
 where 'values' is the list of aggregated values from the database.</p>
 <pre class="literal-block">
@@ -1056,14 +1091,17 @@ where 'values' is the list of aggregated values from the database.</p>
 </div>
 <div class="section" id="id5">
 <span id="accessing-the-rest-of-sqlite-s-c-interface"></span><h2><a class="toc-backref" href="#id38">6.2&nbsp;&nbsp;&nbsp;Accessing the Rest of SQLite's C Interface</a></h2>
-<p>The db_ptrs returned by <strong>open</strong> and stmt_ptrs returned by <strong>prep</strong> are
-the actual pointers to the data base connection objects and prepared
-statement objects returned by the the corresponding native C interface
-functions <strong>sqlite3_open_v2</strong> and <strong>sqlite3_prepare_v2</strong> (except that
-they have sentries attached). Accordingly, it is easy to call almost
-any native C function in SQLite's C interface.</p>
+<p>The db_ptrs returned by <tt class="docutils literal"><span class="pre">open</span></tt> and stmt_ptrs returned by <tt class="docutils literal"><span class="pre">prep</span></tt>
+are the sentry guarded versions of the actual pointers to the data
+base connection objects and prepared statement objects returned by the
+their corresponding native C interface functions <tt class="docutils literal"><span class="pre">sqlite3_open_v2</span></tt>
+and <tt class="docutils literal"><span class="pre">sqlite3_prepare_v2</span></tt>.  This makes it easy to call almost any
+external function in SQLite's C interface directly, passing it the
+same db_ptr or stmt_ptr that is passed to Sql3's functions, such as
+<tt class="docutils literal"><span class="pre">prep</span></tt> or <tt class="docutils literal"><span class="pre">exec</span></tt>.</p>
 <p>For example, you can override SQLite's default behavior with respect
-to busy databases as follows:</p>
+to busy databases for the database connection referenced by a db_ptr,
+say db, as follows:</p>
 <pre class="literal-block">
 &gt; extern int sqlite3_busy_timeout(sqlite3*, int);
 
@@ -1085,7 +1123,7 @@ statement executed on a given database connection:</p>
 1
 </pre>
 <p>As a final example, in this case using a stmt_ptr, you can determine
-name assigned to a column in a result using <strong>sqlite3_column_name</strong>:</p>
+name assigned to a column in a result using <tt class="docutils literal"><span class="pre">sqlite3_column_name</span></tt>:</p>
 <pre class="literal-block">
 &gt; extern char *sqlite3_column_name(sqlite3_stmt*, int);
 
@@ -1102,7 +1140,7 @@ interface can be dangerous, as is the case with any call from Pure code
 to an external C function.  Sql3 users should be especially careful in
 this regard because using a db_ptr or a stmt_ptr in calls to certain
 native C interface functions, including in particular
-<strong>sqlite3_close</strong> and <strong>sqlite3_finalize</strong>, will corrupt data held by
+<tt class="docutils literal"><span class="pre">sqlite3_close</span></tt> and <tt class="docutils literal"><span class="pre">sqlite3_finalize</span></tt>, will corrupt data held by
 the db_ptr or stmt_ptr, leading to undefined behavior.</p>
 <p>The reason for this restriction is that Sql3 uses sentries to insure
 that the resources associated with a db_ptr or a stmt_ptr are
@@ -1112,8 +1150,8 @@ other purposes.</p>
 </div>
 <div class="section" id="id6">
 <span id="custom-binding-types-for-prepared-statements"></span><h2><a class="toc-backref" href="#id39">6.3&nbsp;&nbsp;&nbsp;Custom Binding Types for Prepared Statements</a></h2>
-<p>Your can add your own binding types for preparing and executing
-prepared statemts by specifying a third argument to <strong>open</strong>.  The
+<p>You can add your own binding types for preparing and executing
+prepared statemts by specifying a third argument to <tt class="docutils literal"><span class="pre">open</span></tt>.  The
 third argument must be a list of &quot;hash rocket pairs&quot; in which the left
 side is a character for the custom binding type and the right side is
 a list with three members. The second and third members of the list
@@ -1174,15 +1212,17 @@ are using SQLite as the on-disk file format for a desktop application.</p>
 <p>If your version of SQLite was compiled with support for
 multithreading, you can switch to single-thread mode at runtime by calling
 sqlite3_config() with the verb SQLITE_CONFIG_SINGLETHREAD.</p>
-<p>If you must use threads, using Sql3 probably will not interfere,
-assuming that you apply the same precautions to a db_ptr or stm_ptr
-that you would apply to the underlying sqlite* and sqlite_stmt*s if
-you were not using Sql3. Since everything that is imposed between the
-raw pointers returned by the SQlite interface and the corresponding
-db_ptr and stmt_ptrs is written in Pure, it should be relatively easy
-to determine how Sql3 and your multithreading strategy will
-interact. See <a class="reference external" href="http://www.sqlite.org/faq.html#q6">Is SQLite threadsafe?</a> , <a class="reference external" href="http://www.sqlite.org/c3ref/open.html">Opening A New Database
-Connection</a> and <a class="reference external" href="http://www.sqlite.org/c3ref/threadsafe.html">Test To See If The Library Is Threadsafe</a>.</p>
+<p>If you must use threads, it is anticipated that Sql3 probably will not
+impose an additional burden. Hopefully, you will be fine if you apply
+the same precautions to a db_ptr or stm_ptr that you would apply to
+the underlying sqlite* and sqlite_stmt*s if you were not using
+Sql3. It is strongly advised however that you look at the underlying
+Sql3 code to verify that this will work. Since everything that is
+imposed between the raw pointers returned by the SQlite interface and
+the corresponding db_ptr and stmt_ptrs is written in Pure, it should
+be relatively easy to determine how Sql3 and your multithreading
+strategy will interact. See <a class="reference external" href="http://www.sqlite.org/faq.html#q6">Is SQLite threadsafe?</a> , <a class="reference external" href="http://www.sqlite.org/c3ref/open.html">Opening A New
+Database Connection</a> and <a class="reference external" href="http://www.sqlite.org/c3ref/threadsafe.html">Test To See If The Library Is Threadsafe</a>.</p>
 </div>
 </div>
 </body>

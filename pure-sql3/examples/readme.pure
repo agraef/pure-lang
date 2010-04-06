@@ -1,7 +1,14 @@
 /* readme.pure -- examples in README */
 
+/* NOTE - because of the intentional errors illustrated with dbp2 and
+   dbp2_sp, typing "clear" and "y" will cause an automatic call to
+   finalize when dbp2_sp goes out of scope. This throws an exception
+   that causes the Pure interpreter to abort. Please use "quit"
+   and restart the Pure interpreter rather than use "clear" to avoid
+   this behavior. */
 
-/* Simple Example */
+
+/* SIMPLE EXAMPLE */
 
 using sql3; using namespace sql3;
 
@@ -19,13 +26,45 @@ exec sp1 ("Fred",22);
 
 let sp2 = prep dbp "ci:i" "select * from RM where age > ?";
 
-/*   */
 
-exec sp2 18;
+/* DATABASE CONNECTIONS  */
+
+let dbp2 = open "readme.db"; dbp2; 
+
+catch error (open ("RM_zyx.db",SQLITE_OPEN_READONLY));
+
+let dbp2_sp = prep dbp2 "ci:" "select * from RM";
+
+exec dbp2_sp ();
+
+close dbp2;
+
+catch error (exec dbp2_sp);
+
+
+/* PREPARED STATEMENTS */
+
+let sp1 = prep dbp "ci" "insert into RM values (?,?)";
+
+let sp2 = prep dbp "ci:i" "select * from RM where age > ?";
+
+exec sp1 ("Tom",30);
+
+exec sp2 19;
+
+exec dbp "delete from RM where name='Tom'";
+
+catch error (exec sp2 "a");
 
 let sp3 = prep dbp "c:" "select name from RM";
 
 exec sp3 ();
+
+exec dbp "create table if not exists RM (name varchar, age integer)";
+
+lexec sp2 19;
+
+catch error (finalize dbp2_sp);
 
 
 /* Exceptions */
@@ -38,10 +77,12 @@ end;
 
 db_error_handler x = throw x;
 
-//catch db_error_handler (exec dbp "select * from NO_TABLE");
+catch db_error_handler (exec dbp "select * from NO_TABLE");
 
 
-/* Custom SQL Functions */
+/* CUSTOM SQL FUNCTIONS */
+
+exec dbp "delete from RM where name='Tom'";
 
 create_function dbp "p_fn" 2 plus with plus x y = x + y; end;
 
@@ -72,7 +113,7 @@ let sp6 = prep dbp "id:" "select count(name), p_avg(age) from RM";
 exec sp6 ();
 
 
-/* Accessing the Rest of the SQLite3 C Interface */
+/* ACCESSING THE REST OF THE SQLITE3 C INTERFACE */
 
 extern int sqlite3_busy_timeout(sqlite3*, int);
 
@@ -80,7 +121,7 @@ sqlite3_busy_timeout dbp 10;
 
 extern int sqlite3_changes(sqlite3*);
 
-exec sp1 ("Harvey",30);
+exec sp1 ("Harvey",12);
 
 sqlite3_changes dbp;
 
@@ -90,4 +131,5 @@ exec sp2 29;
 
 sqlite3_column_name sp2 1;
 
+exec dbp "delete from RM where name='Harvey'";
 
