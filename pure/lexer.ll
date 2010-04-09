@@ -418,6 +418,7 @@ blank  [ \t\f\v\r]
   }
 }
 
+{float}    yylval->dval = my_strtod(yytext, NULL); return(token::DBL);
 {int}L     {
   string msg;
   if (checkint(yytext, msg)) {
@@ -456,7 +457,6 @@ blank  [ \t\f\v\r]
     return token::INT;
   }
 }
-{float}    yylval->dval = my_strtod(yytext, NULL); return(token::DBL);
 <rescan>\"{str}\" |
 \"{str}\"   {
   char *msg;
