@@ -3,15 +3,15 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<meta name="generator" content="Docutils 0.5: http://docutils.sourceforge.net/" />
+<meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>Pure-Sql3</title>
 <meta name="authors" content="Peter Summerland  Albert Graef &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2010-04-06" />
+<meta name="date" content="2010-04-13" />
 <style type="text/css">
 
 /*
 :Author: David Goodger (goodger@python.org)
-:Id: $Id: html4css1.css 5196 2007-06-03 20:25:28Z wiemann $
+:Id: $Id: html4css1.css 5631 2008-08-24 13:01:23Z goodger $
 :Copyright: This stylesheet has been placed in the public domain.
 
 Default cascading style sheet for the HTML output of Docutils.
@@ -218,8 +218,7 @@ p.topic-title {
 pre.address {
   margin-bottom: 0 ;
   margin-top: 0 ;
-  font-family: serif ;
-  font-size: 100% }
+  font: inherit }
 
 pre.literal-block, pre.doctest-block {
   margin-left: 2em ;
@@ -296,7 +295,7 @@ ul.auto-toc {
 <td>Peter Summerland
 <br />Albert Graef &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-04-06</td></tr>
+<td>2010-04-13</td></tr>
 </tbody>
 </table>
 <p>DRAFT FOR DISCUSSION PURPOSES ONLY</p>
@@ -462,8 +461,8 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.</p>
 <h1><a class="toc-backref" href="#id13">3&nbsp;&nbsp;&nbsp;Installation</a></h1>
 <p>Unless you already have them on your machine, download SQLite and
 sqlite3 from the SQLite website and install as indicated. To install
-Sql3, cd to the pure-sql3 directory, run &quot;&quot;make&quot;&quot;, and then run &quot;&quot;sudo
-make install&quot;&quot; (on Linux).</p>
+Sql3, cd to the pure-sql3 directory, run <tt class="docutils literal"><span class="pre">make</span></tt>, and then run <tt class="docutils literal"><span class="pre">sudo</span>
+<span class="pre">make</span> <span class="pre">install</span></tt> (on Linux).</p>
 </div>
 <div class="section" id="data-structure">
 <h1><a class="toc-backref" href="#id14">4&nbsp;&nbsp;&nbsp;Data Structure</a></h1>
@@ -599,7 +598,7 @@ cause a message to be printed whenever a db_ptr or stmt_ptr is created
 or finalized.</p>
 <p>N.B. You should never call <tt class="docutils literal"><span class="pre">sqlite3_close</span></tt> with a db_ptr. If the
 referenced database connectin is closed by such a call, a subsequent
-call to <tt class="docutils literal"><span class="pre">close</span></tt> on this db+ptr (including the call that will
+call to <tt class="docutils literal"><span class="pre">close</span></tt> on this db_ptr (including the call that will
 automatically occur when the db_ptr goes out of scope) will cause a
 seg fault.</p>
 </div>
@@ -615,16 +614,15 @@ statements using the following SQLite C interface functions.</p>
 <li>sqlite3_column</li>
 <li>sqlite3_finalize</li>
 </ul>
-<p>Using the C interface, the basic procedure is to prepare a statement
-using <tt class="docutils literal"><span class="pre">sqlite3_prepare_v2',</span> <span class="pre">bind</span> <span class="pre">its</span> <span class="pre">parameters</span> <span class="pre">using</span> <span class="pre">`sqlite3_bind`,</span>
-<span class="pre">step</span> <span class="pre">it</span> <span class="pre">using</span> <span class="pre">``sqlite3_step</span></tt> one or more times until it is done and
-then finalize it using <tt class="docutils literal"><span class="pre">sqlite3_finalize</span></tt>. Each time
-<tt class="docutils literal"><span class="pre">sqlite3_step</span></tt> returns SQLITE_ROW, use <tt class="docutils literal"><span class="pre">sqlite3_column</span></tt> to fetch
-the row's values. Here <tt class="docutils literal"><span class="pre">sqlite3_bind</span></tt> and <tt class="docutils literal"><span class="pre">sqlite3_column</span></tt>
-represent families of bind and column functions, rather than actual
-functions, with one member for each of the basic data types recognized
-by SQLite. Thus, for example, <tt class="docutils literal"><span class="pre">sqlite_bind_double</span></tt> is the function
-one would use to bind a prepared statement with an argument of type
+<p>Using the C interface, the basic procedure is to prepare a statement using
+<tt class="docutils literal"><span class="pre">sqlite3_prepare_v2</span></tt>, bind its parameters using <tt class="docutils literal"><span class="pre">sqlite3_bind</span></tt>, step it
+using <tt class="docutils literal"><span class="pre">sqlite3_step</span></tt> one or more times until it is done and then finalize it
+using <tt class="docutils literal"><span class="pre">sqlite3_finalize</span></tt>. Each time <tt class="docutils literal"><span class="pre">sqlite3_step</span></tt> returns SQLITE_ROW, use
+<tt class="docutils literal"><span class="pre">sqlite3_column</span></tt> to fetch the row's values. Here <tt class="docutils literal"><span class="pre">sqlite3_bind</span></tt> and
+<tt class="docutils literal"><span class="pre">sqlite3_column</span></tt> represent families of bind and column functions, rather
+than actual functions, with one member for each of the basic data types
+recognized by SQLite. Thus, for example, <tt class="docutils literal"><span class="pre">sqlite_bind_double</span></tt> is the
+function one would use to bind a prepared statement with an argument of type
 double.</p>
 <p>Sql3 captures these procedures in four functions: <tt class="docutils literal"><span class="pre">prep</span></tt>, <tt class="docutils literal"><span class="pre">exec</span></tt>,
 <tt class="docutils literal"><span class="pre">lexec</span></tt> and <tt class="docutils literal"><span class="pre">finalize</span></tt>.</p>
@@ -635,24 +633,23 @@ stmt_ptr that refers to it.</p>
 <a name="prep"><p id="prep"><tt class="docutils literal"><span class="pre">prep</span> <span class="pre">dbp::pointer</span> <span class="pre">binding_string::string</span> <span class="pre">sql_statement::string</span></tt></p>
 <blockquote>
 constructs a prepared statement object and returns a stmt_ptr that
-references it. &quot;dbp&quot; must be a db_ptr or the rule will not
-match. &quot;sql_statement&quot; is the SQL statement that will be executed
+references it. <tt class="docutils literal"><span class="pre">dbp</span></tt> must be a db_ptr or the rule will not
+match. <tt class="docutils literal"><span class="pre">sql_statement</span></tt> is the SQL statement that will be executed
 when the prepared statement is passed to <tt class="docutils literal"><span class="pre">exec</span></tt>.</blockquote>
-<p>Basically, <tt class="docutils literal"><span class="pre">prep</span></tt> just passes dbp and sql_statement on to
-<tt class="docutils literal"><span class="pre">sqlite3_prepare_v2</span> <span class="pre">and</span> <span class="pre">returns</span> <span class="pre">a</span> <span class="pre">sentry</span> <span class="pre">guarded</span> <span class="pre">version</span> <span class="pre">of</span> <span class="pre">the</span>
-<span class="pre">sqlite3_stmt*</span> <span class="pre">it</span> <span class="pre">receives</span> <span class="pre">back</span> <span class="pre">from</span> <span class="pre">``sqlite3_prepare_v2</span></tt>. SQL
-statements passed to <tt class="docutils literal"><span class="pre">prep</span></tt> (and <tt class="docutils literal"><span class="pre">sqlite3_prepare_v2</span></tt>) can have
-argument placeholders, indicated by &quot;?&quot;, &quot;?nnn&quot;, &quot;:AAA&quot;, etc, in which
-case the argument placeholders must be bound to values using
-<tt class="docutils literal"><span class="pre">sqlite_bind</span></tt> before the prepared statement is passed to
-<tt class="docutils literal"><span class="pre">sqlite3_step</span></tt>.  Hence the binding_string, which is used by Sql3 to
-determine how to bind the prepared statement's argument placeholders,
-if any. The binding string also tells Sql3 how to fetch values in the
-<tt class="docutils literal"><span class="pre">sqlite3_column</span></tt> step of the basic prepare, bind, step, fetch,
-finalize cycle dictated by the SQlite C interface.</p>
+<p>Basically, <tt class="docutils literal"><span class="pre">prep</span></tt> just passes <tt class="docutils literal"><span class="pre">dbp</span></tt> and <tt class="docutils literal"><span class="pre">sql_statement</span></tt> on to
+<tt class="docutils literal"><span class="pre">sqlite3_prepare_v2</span></tt> and returns a sentry guarded version of the
+sqlite3_stmt* it receives back from <tt class="docutils literal"><span class="pre">sqlite3_prepare_v2</span></tt>. SQL statements
+passed to <tt class="docutils literal"><span class="pre">prep</span></tt> (and <tt class="docutils literal"><span class="pre">sqlite3_prepare_v2</span></tt>) can have argument
+placeholders, indicated by &quot;?&quot;, &quot;?nnn&quot;, &quot;:AAA&quot;, etc, in which case the
+argument placeholders must be bound to values using <tt class="docutils literal"><span class="pre">sqlite_bind</span></tt> before the
+prepared statement is passed to <tt class="docutils literal"><span class="pre">sqlite3_step</span></tt>.  Hence the
+<tt class="docutils literal"><span class="pre">binding_string</span></tt>, which is used by Sql3 to determine how to bind the
+prepared statement's argument placeholders, if any. The binding string also
+tells Sql3 how to fetch values in the <tt class="docutils literal"><span class="pre">sqlite3_column</span></tt> step of the basic
+prepare, bind, step, fetch, finalize cycle dictated by the SQlite C interface.</p>
 <p>In the following two examples, the &quot;c&quot; and &quot;i&quot; in the binding strings
-indicate that a string and an int will be used to bind sp1, an int
-will be used to bind sp2 and that sp2, when executed, will return a
+indicate that a string and an int will be used to bind <tt class="docutils literal"><span class="pre">sp1</span></tt>, an int
+will be used to bind <tt class="docutils literal"><span class="pre">sp2</span></tt> and that <tt class="docutils literal"><span class="pre">sp2</span></tt>, when executed, will return a
 result set in the form of a list of sublists each of which contains a
 string and an int.</p>
 <pre class="literal-block">
@@ -747,7 +744,7 @@ executed with the  customized argument types.</p>
 determine if a given expression is a valid stmt_ptr.</p>
 <a name="is_stmt_ptr"><dl class="docutils" id="is-stmt-ptr">
 <dt><tt class="docutils literal"><span class="pre">is_stmt_ptr</span> <span class="pre">ptr::pointer</span></tt></dt>
-<dd>returns 1 if ptr is a stmt_ptr, otherwise returns 0.</dd>
+<dd>returns 1 if <tt class="docutils literal"><span class="pre">ptr</span></tt> is a stmt_ptr, otherwise returns 0.</dd>
 </dl>
 </div>
 <div class="section" id="executing-prepared-statements">
@@ -756,13 +753,13 @@ determine if a given expression is a valid stmt_ptr.</p>
 the <tt class="docutils literal"><span class="pre">exec</span></tt> and <tt class="docutils literal"><span class="pre">lexec</span></tt> functions.</p>
 <a name="exec"><dl class="docutils" id="exec">
 <dt><tt class="docutils literal"><span class="pre">exec</span> <span class="pre">sp::pointer</span> <span class="pre">args</span></tt></dt>
-<dd>use args to bind the prepared statement referenced by sp, execute it
-and return the result set as a list. The first parameter, &quot;sp&quot; must
+<dd>use <tt class="docutils literal"><span class="pre">args</span></tt> to bind the prepared statement referenced by <tt class="docutils literal"><span class="pre">sp</span></tt>, execute it
+and return the result set as a list. The first parameter, <tt class="docutils literal"><span class="pre">sp</span></tt> must
 be a valid stmt_ptr or the rule will fail.</dd>
 </dl>
-<p>The second, &quot;args&quot; parameter is a tuple or list of arguments whose
+<p>The second, <tt class="docutils literal"><span class="pre">args</span></tt> parameter is a tuple or list of arguments whose
 number and type correspond to the bind parameter types specified in
-the call to <tt class="docutils literal"><span class="pre">prep</span></tt> that produced the first parmenter &quot;sp&quot;.</p>
+the call to <tt class="docutils literal"><span class="pre">prep</span></tt> that produced the first parmenter <tt class="docutils literal"><span class="pre">sp</span></tt>.</p>
 <p>Example:</p>
 <pre class="literal-block">
 &gt; exec sp1 (&quot;Tom&quot;,30);  //insert Tom
@@ -779,7 +776,7 @@ the call to <tt class="docutils literal"><span class="pre">prep</span></tt> that
 error (sql3::db_error 0 &quot;Attempt to bind a \&quot;a\&quot; as a int&quot;)
 </pre>
 <p>If a prepared statement does not have any binding parameters,
-the call to exec should use () as the binding argument.</p>
+the call to <tt class="docutils literal"><span class="pre">exec</span></tt> should use <tt class="docutils literal"><span class="pre">()</span></tt> as the binding argument.</p>
 <pre class="literal-block">
 &gt; let sp3 = prep dbp &quot;c:&quot; &quot;select name from RM&quot;;
 
@@ -800,8 +797,8 @@ a,100,ptr,c
 &gt; [a,blb,c];
 [a,(100,ptr),c]
 </pre>
-<p>Thus something like &quot;exec stpx [a,blb,c]&quot; would work fine, while &quot;exec
-stpx (a,blb,c)&quot; would produce a Sql3 binding exception.</p>
+<p>Thus something like &quot;<tt class="docutils literal"><span class="pre">exec</span> <span class="pre">stpx</span> <span class="pre">[a,blb,c]</span></tt>&quot; would work fine, while &quot;<tt class="docutils literal"><span class="pre">exec</span>
+<span class="pre">stpx</span> <span class="pre">(a,blb,c)</span></tt>&quot; would produce a Sql3 binding exception.</p>
 </div>
 <div class="section" id="executing-lazily">
 <h3><a class="toc-backref" href="#id25">5.2.4&nbsp;&nbsp;&nbsp;Executing Lazily</a></h3>
@@ -818,7 +815,7 @@ sets. In such cases it is preferable to use <tt class="docutils literal"><span c
 &gt; lexec sp2 19;
 [&quot;Sam&quot;,20]:#&lt;thunk 0xb6475ab0&gt;
 </pre>
-<p>Note that no changes to sp2 were required. In addition, for most
+<p>Note that no changes to <tt class="docutils literal"><span class="pre">sp2</span></tt> were required. In addition, for most
 purposes the lazy list returned by <tt class="docutils literal"><span class="pre">lexec</span></tt> can be processed by the
 same code that processed the eager list returned by <tt class="docutils literal"><span class="pre">exec</span></tt>.</p>
 </div>
@@ -828,7 +825,7 @@ same code that processed the eager list returned by <tt class="docutils literal"
 <tt class="docutils literal"><span class="pre">exec</span></tt> can be applied to a db_ptr.</p>
 <a name="exec_db dbp"><dl class="docutils" id="exec-dbp">
 <dt><tt class="docutils literal"><span class="pre">exec</span> <span class="pre">dbp::pointer</span> <span class="pre">sql_statement::string</span></tt></dt>
-<dd>constructs a temporary prepared statement using the sql_statement,
+<dd>constructs a temporary prepared statement using the <tt class="docutils literal"><span class="pre">sql_statement</span></tt>,
 which cannot contain argument placeholders.</dd>
 </dl>
 <p>Example:</p>
@@ -842,7 +839,7 @@ which cannot contain argument placeholders.</dd>
 database, but when any process wants to write, it locks the entire
 database file for the duration of its update.</p>
 <p>When <tt class="docutils literal"><span class="pre">sqlite3_step</span></tt> tries to access a file that is locked by another
-process, it treats the database as &quot;busy and returns the SQLITE_BUSY
+process, it treats the database as &quot;busy&quot; and returns the SQLITE_BUSY
 error code. If this happens in a call to <tt class="docutils literal"><span class="pre">exec</span></tt> or <tt class="docutils literal"><span class="pre">lexec</span></tt>, a
 <a class="reference internal" href="#db-busy">db_busy</a> exception will be thrown.</p>
 <p>You can adjust SQLite's behavior using <tt class="docutils literal"><span class="pre">sqlite3_busy_handler</span></tt> or
@@ -875,17 +872,17 @@ transactions manually.</p>
 <p>Transactions created using BEGIN...COMMIT do not nest. For nested
 transactions, use the SAVEPOINT and RELEASE statements.</p>
 <p>Sql3 provides the following convenience functions all of which simply
-call <tt class="docutils literal"><span class="pre">exec</span></tt> with the appropriate statement. For example <tt class="docutils literal"><span class="pre">begin</span></tt>
-dbp is exactly the same as <tt class="docutils literal"><span class="pre">exec</span></tt> dbp &quot;BEGIN&quot;.</p>
+call <tt class="docutils literal"><span class="pre">exec</span></tt> with the appropriate statement. For example <tt class="docutils literal"><span class="pre">begin</span>
+<span class="pre">dbp</span></tt> is exactly the same as <tt class="docutils literal"><span class="pre">exec</span> <span class="pre">dbp</span> <span class="pre">&quot;BEGIN&quot;</span></tt>.</p>
 <ul class="simple" id="rollback">
-<span id="rollback-to"></span><span id="release"></span><span id="savepoint"></span><span id="commit"></span><span id="begin-immediate"></span><span id="begin-exclusive"></span><span id="begin"></span><li>begin dbp::pointer</li>
-<li>begin_exclusive dbp::pointer</li>
-<li>begin_immediate dbp::pointer</li>
-<li>commit dbp::pointer</li>
-<li>rollback dbp::pointer</li>
-<li>savepoint dbp::pointer save_point::string</li>
-<li>release dbp::pointer  save_point::string</li>
-<li>rollback_to dbp::pointer  save_point::string</li>
+<span id="rollback-to"></span><span id="release"></span><span id="savepoint"></span><span id="commit"></span><span id="begin-immediate"></span><span id="begin-exclusive"></span><span id="begin"></span><li><tt class="docutils literal"><span class="pre">begin</span> <span class="pre">dbp::pointer</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">begin_exclusive</span> <span class="pre">dbp::pointer</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">begin_immediate</span> <span class="pre">dbp::pointer</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">commit</span> <span class="pre">dbp::pointer</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">rollback</span> <span class="pre">dbp::pointer</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">savepoint</span> <span class="pre">dbp::pointer</span> <span class="pre">save_point::string</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">release</span> <span class="pre">dbp::pointer</span> <span class="pre">save_point::string</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">rollback_to</span> <span class="pre">dbp::pointer</span> <span class="pre">save_point::string</span></tt></li>
 </ul>
 </div>
 <div class="section" id="finalizing-prepared-statements">
@@ -894,7 +891,7 @@ dbp is exactly the same as <tt class="docutils literal"><span class="pre">exec</
 so that SQLite can free the associated resources.</p>
 <a name="finalize"><dl class="docutils" id="finalize">
 <dt><tt class="docutils literal"><span class="pre">finalize</span> <span class="pre">sp::pointer</span></tt></dt>
-<dd>finalize the prepared statement referenced by sp, which must be a
+<dd>finalize the prepared statement referenced by <tt class="docutils literal"><span class="pre">sp</span></tt>, which must be a
 stmt_ptr previously returned by <tt class="docutils literal"><span class="pre">prep</span></tt>.</dd>
 </dl>
 <p>Often there is no need to call <tt class="docutils literal"><span class="pre">finalize</span></tt> for a given stmt_ptr
@@ -903,10 +900,11 @@ scope.</p>
 <p>If the stmt_ptr is associated with a database connection that has been
 closed (which would have caused an exception to be thrown), an attempt
 to finalize it, including the automatic finalization can occur when
-stmt_ptr goes out of scope, will cause and exception to be thrown.</p>
-<blockquote>
+stmt_ptr goes out of scope, will cause an exception to be thrown.</p>
+<pre class="literal-block">
 &gt; catch error (finalize dbp2_sp);
-error (sql3::db_error 0 &quot;finalize: STMT attached to a closed database.&quot;)</blockquote>
+error (sql3::db_error 0 &quot;finalize: STMT attached to a closed database.&quot;)
+</pre>
 <p>Multiple calls to <tt class="docutils literal"><span class="pre">finalize</span></tt> are fine. In contrast the corresponding
 native C interface function, <tt class="docutils literal"><span class="pre">sqlite3_finalize</span></tt> will cause a seg
 fault if called with a pointer to a finalized prepared statement
@@ -925,27 +923,28 @@ for database &quot;busy&quot; conditions.</p>
 <a name="db_error"><div class="section" id="id2">
 <span id="db-error"></span><h3><a class="toc-backref" href="#id31">5.3.1&nbsp;&nbsp;&nbsp;db_error</a></h3>
 <p>When a Sql3 function detects an error it throws an exception of the
-form &quot;db_error ec msg&quot; where ec is and error code and msg is the
+form &quot;<tt class="docutils literal"><span class="pre">db_error</span> <span class="pre">ec</span> <span class="pre">msg</span></tt>&quot; where ec is and error code and msg is the
 corresponding error message. If ec&gt;0, the error was detected by SQLite
 itself, and ec and msg are those returned by SQLite. If ec==0, the
 error was detected by Sql3 and msg is a Sql3 specific description of
 the error. E.g.,</p>
 <pre class="literal-block">
-&gt;db_error_handler (db_error ec msg) = ()
-&gt;when
-&gt;  source = if ec &gt; 0 then &quot;SQLite&quot; else &quot;Sql3&quot;;
-&gt;  printf &quot;%s db_error: ec %d, %s\n&quot; (source,ec,msg);
-&gt;db_error_handler x = throw x;
+&gt; db_error_handler (db_error ec msg) = ()
+&gt; when
+&gt;   source = if ec &gt; 0 then &quot;SQLite&quot; else &quot;Sql3&quot;;
+&gt;   printf &quot;%s db_error: ec %d, %s\n&quot; (source,ec,msg);
+&gt; end;
+&gt; db_error_handler x = throw x;
 
-&gt;catch db_error_handler (exec dbp &quot;select * from NO_TABLE&quot;);
+&gt; catch db_error_handler (exec dbp &quot;select * from NO_TABLE&quot;);
 SQLite db_error: ec 1, no such table: NO_TABLE
 </pre>
 <a name="db_busy"></div>
 <div class="section" id="id3">
 <span id="db-busy"></span><h3><a class="toc-backref" href="#id32">5.3.2&nbsp;&nbsp;&nbsp;db_busy</a></h3>
 <p>Sql3 functions <tt class="docutils literal"><span class="pre">exec</span></tt> and <tt class="docutils literal"><span class="pre">lexec</span></tt> throw exceptions of the form
-&quot;db_busy dbp&quot;, where dbp is a db_ptr, if they are prevented from
-executing succesfully because the database referenced by dbp is
+&quot;<tt class="docutils literal"><span class="pre">db_busy</span> <span class="pre">dbp</span></tt>&quot;, where <tt class="docutils literal"><span class="pre">dbp</span></tt> is a db_ptr, if they are prevented from
+executing successfully because the database referenced by <tt class="docutils literal"><span class="pre">dbp</span></tt> is
 locked (See <a class="reference internal" href="#executing-against-a-busy-database">Executing Against a Busy Database</a>).</p>
 </div>
 <div class="section" id="sqlite-error-codes">
@@ -1005,44 +1004,44 @@ functions and aggregate SQL functions with SQlite.</p>
 Pure function to <tt class="docutils literal"><span class="pre">create_function</span></tt>.</p>
 <a name="create_function"><dl class="docutils" id="create-function">
 <dt><tt class="docutils literal"><span class="pre">create_function</span> <span class="pre">dbp::pointer</span> <span class="pre">name::string</span> <span class="pre">nargs::int</span> <span class="pre">pure_fun</span></tt></dt>
-<dd>registers a new SQL scalar function of nargs arguments that can be
-called, as &quot;name&quot;, in SQL statements prepared with respect to dbp, a
+<dd>registers a new SQL scalar function of <tt class="docutils literal"><span class="pre">nargs</span></tt> arguments that can be
+called, as <tt class="docutils literal"><span class="pre">name</span></tt>, in SQL statements prepared with respect to <tt class="docutils literal"><span class="pre">dbp</span></tt>, a
 db_ptr. When the SQL function is called in a SQL statement, control
-is passed to pure_fun, a curried function written in Pure. If nargs
-is (-1), the SQL function &quot;name&quot; is variadic, and the arguments will
-be passed to pure_fun as a single list.</dd>
+is passed to <tt class="docutils literal"><span class="pre">pure_fun</span></tt>, a curried function written in Pure. If <tt class="docutils literal"><span class="pre">nargs</span></tt>
+is <tt class="docutils literal"><span class="pre">(-1)</span></tt>, the SQL function <tt class="docutils literal"><span class="pre">name</span></tt> is variadic, and the arguments will
+be passed to <tt class="docutils literal"><span class="pre">pure_fun</span></tt> as a single list.</dd>
 </dl>
-<p>Note that <tt class="docutils literal"><span class="pre">create_function</span></tt> can also register aggregate functions (See
+<p>Note that <tt class="docutils literal"><span class="pre">create_function</span></tt> can also register aggregate functions (see
 <a class="reference internal" href="#aggregate-sql-functions">Aggregate SQL Functions</a>).</p>
 <p>Here is an example of a scalar function that takes two parameters. Note
 that any kind of Pure &quot;function&quot; can be passed here; local functions,
 global functions, lambdas or partial applications all work.</p>
 <pre class="literal-block">
-&gt;create_function dbp &quot;p_fn&quot; 2 plus with plus x y = x + y; end;
+&gt; create_function dbp &quot;p_fn&quot; 2 plus with plus x y = x + y; end;
 
-&gt;let sp4 = prep dbp &quot;cii:&quot;
-&gt;         &quot;select p_fn('Hi ',name), age, p_fn(age,10) from RM&quot;;
+&gt; let sp4 = prep dbp &quot;cii:&quot;
+&gt;           &quot;select p_fn('Hi ',name), age, p_fn(age,10) from RM&quot;;
 
-&gt;exec sp4 ();
+&gt; exec sp4 ();
 [[&quot;Hi Sam&quot;,20,30],[&quot;Hi Fred&quot;,22,32]]
 </pre>
 <p>Here is an example of a variadic function:</p>
 <pre class="literal-block">
-&gt;create_function dbp &quot;p_qm&quot; (-1) quasimodo with
-&gt;  quasimodo xs = &quot;quasimodo: &quot;+join &quot;:&quot; [str x | x=xs];
-&gt;end;
+&gt; create_function dbp &quot;p_qm&quot; (-1) quasimodo with
+&gt;   quasimodo xs = &quot;quasimodo: &quot;+join &quot;:&quot; [str x | x=xs];
+&gt; end;
 </pre>
 <p>If the SQL function takes no arguments, the corresponding Pure
 function must, for technical reasons in Pure, take a single dummy
 argument. E.g.,</p>
 <pre class="literal-block">
-&gt;create_function dbp &quot;p_count&quot; 0 counter with
-&gt;  counter () = put r (get r+1);
-&gt;end when r = ref 0 end;
+&gt; create_function dbp &quot;p_count&quot; 0 counter with
+&gt;   counter () = put r (get r+1);
+&gt; end when r = ref 0 end;
 </pre>
-<p>Here is how &quot;count&quot; and &quot;quasimodo&quot; might be used:</p>
+<p>Here is how <tt class="docutils literal"><span class="pre">count</span></tt> and <tt class="docutils literal"><span class="pre">quasimodo</span></tt> might be used:</p>
 <pre class="literal-block">
-&gt;let sp5 = prep dbp &quot;ic:&quot; &quot;select p_count(), p_qm(name,age) from RM&quot;;
+&gt; let sp5 = prep dbp &quot;ic:&quot; &quot;select p_count(), p_qm(name,age) from RM&quot;;
 
 &gt; exec sp5 ();
 [[1,&quot;quasimodo: \&quot;Sam\&quot;:20&quot;],[2,&quot;quasimodo: \&quot;Fred\&quot;:22&quot;]]
@@ -1061,31 +1060,31 @@ statement in which the function is running.</p>
 <div class="section" id="id4">
 <span id="aggregate-sql-functions"></span><h3><a class="toc-backref" href="#id37">6.1.2&nbsp;&nbsp;&nbsp;Aggregate SQL Functions</a></h3>
 <p>You can use <tt class="docutils literal"><span class="pre">create_function</span></tt> to register an aggregate SQL function
-with SQLIT by passing a triple consisting of two Pure functions and a
+with SQLite by passing a triple consisting of two Pure functions and a
 start value, in place of a single Pure function.</p>
 <dl class="docutils">
 <dt><tt class="docutils literal"><span class="pre">create_function</span> <span class="pre">dbp::pointer</span> <span class="pre">name::string</span> <span class="pre">nargs::int</span> <span class="pre">(step,final,start)</span></tt></dt>
-<dd>register a new SQL aggregate function of nargs arguments that can
-be called, as &quot;name&quot; in SQL statements prepared with respect to dbp,
-a db_ptr.  &quot;step&quot; and &quot;final&quot; are curried Pure functions and &quot;start&quot; is
-the initial value for the aggregation. The 'step' function is called
+<dd>register a new SQL aggregate function of <tt class="docutils literal"><span class="pre">nargs</span></tt> arguments that can
+be called, as <tt class="docutils literal"><span class="pre">name</span></tt> in SQL statements prepared with respect to <tt class="docutils literal"><span class="pre">dbp</span></tt>,
+a db_ptr.  <tt class="docutils literal"><span class="pre">step</span></tt> and <tt class="docutils literal"><span class="pre">final</span></tt> are curried Pure functions and <tt class="docutils literal"><span class="pre">start</span></tt> is
+the initial value for the aggregation. The <tt class="docutils literal"><span class="pre">step</span></tt> function is called
 repeatedly to accumulate values from the database, starting from the
-given 'start' value, and finally the 'final' function is applied to
+given <tt class="docutils literal"><span class="pre">start</span></tt> value, and finally the <tt class="docutils literal"><span class="pre">final</span></tt> function is applied to
 the accumulated result.</dd>
 </dl>
 <p>Note that for a single-argument step function, this works exactly as
-if the functions were invoked as 'final (foldl step start values)',
-where 'values' is the list of aggregated values from the database.</p>
+if the functions were invoked as &quot;<tt class="docutils literal"><span class="pre">final</span> <span class="pre">(foldl</span> <span class="pre">step</span> <span class="pre">start</span> <span class="pre">values)</span></tt>&quot;,
+where <tt class="docutils literal"><span class="pre">values</span></tt> is the list of aggregated values from the database.</p>
 <pre class="literal-block">
-&gt;create_function dbp &quot;p_avg&quot; 1 (step,final,(0,0.0)) with
-&gt;  step (n,a) x = n+1, a+x;
-&gt;  final (n,a) = a/n;
-&gt;end;
+&gt; create_function dbp &quot;p_avg&quot; 1 (step,final,(0,0.0)) with
+&gt;   step (n,a) x = n+1, a+x;
+&gt;   final (n,a) = a/n;
+&gt; end;
 
-&gt;let sp6 = prep dbp &quot;id:&quot; &quot;select count(name), p_avg(age) from RM&quot;;
+&gt; let sp6 = prep dbp &quot;id:&quot; &quot;select count(name), p_avg(age) from RM&quot;;
 
-&gt;exec sp6 ();
- [[2,21.0]]
+&gt; exec sp6 ();
+[[2,21.0]]
 </pre>
 </div>
 </div>
@@ -1101,7 +1100,7 @@ same db_ptr or stmt_ptr that is passed to Sql3's functions, such as
 <tt class="docutils literal"><span class="pre">prep</span></tt> or <tt class="docutils literal"><span class="pre">exec</span></tt>.</p>
 <p>For example, you can override SQLite's default behavior with respect
 to busy databases for the database connection referenced by a db_ptr,
-say db, as follows:</p>
+say <tt class="docutils literal"><span class="pre">db</span></tt>, as follows:</p>
 <pre class="literal-block">
 &gt; extern int sqlite3_busy_timeout(sqlite3*, int);
 
@@ -1111,7 +1110,7 @@ say db, as follows:</p>
 until at least 10 milliseconds of sleeping have accumulated.  Calling
 this routine with an argument less than or equal to zero turns off all
 busy handlers.</p>
-<p>Or you might be interested in the the number of database rows that
+<p>Or you might be interested in the number of database rows that
 were changed, inserted or deleted by the most recently completed SQL
 statement executed on a given database connection:</p>
 <pre class="literal-block">
@@ -1161,12 +1160,12 @@ the Sql3 core types referenced by the mapping functions.</p>
 <p>The file sql3_user_bind_types.pure in the examples subdirectory shows
 how this might be done for a couple of user defined types. The example
 script deals with dates and certain Pure expressions as bigints and
-native Pure expressions, while the database stores these in utf_8
+native Pure expressions, while the database stores these in utf-8
 text. The following snippets show parts of the script that are
 relevant to this discussion:</p>
 <pre class="literal-block">
 const custom_binds = [
-  &quot;t&quot;=&gt;[&quot;c&quot;, day_to_str,str_to_day],
+  &quot;t&quot;=&gt;[&quot;c&quot;,day_to_str,str_to_day],
   &quot;s&quot;=&gt;[&quot;c&quot;,str,eval]
 ];
 
@@ -1214,7 +1213,7 @@ multithreading, you can switch to single-thread mode at runtime by calling
 sqlite3_config() with the verb SQLITE_CONFIG_SINGLETHREAD.</p>
 <p>If you must use threads, it is anticipated that Sql3 probably will not
 impose an additional burden. Hopefully, you will be fine if you apply
-the same precautions to a db_ptr or stm_ptr that you would apply to
+the same precautions to a db_ptr or stmt_ptr that you would apply to
 the underlying sqlite* and sqlite_stmt*s if you were not using
 Sql3. It is strongly advised however that you look at the underlying
 Sql3 code to verify that this will work. Since everything that is
