@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>Pure-Sql3</title>
 <meta name="authors" content="Peter Summerland  Albert Graef &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2010-04-13" />
+<meta name="date" content="2010-04-14" />
 <style type="text/css">
 
 /*
@@ -295,10 +295,9 @@ ul.auto-toc {
 <td>Peter Summerland
 <br />Albert Graef &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-04-13</td></tr>
+<td>2010-04-14</td></tr>
 </tbody>
 </table>
-<p>DRAFT FOR DISCUSSION PURPOSES ONLY</p>
 <p>This document describes <strong>Sql3</strong>, a <a class="reference external" href="http://www.sqlite.org">SQLite</a> module for the <a class="reference external" href="http://pure-lang.googlecode.com">Pure</a>
 programming language.</p>
 <div class="contents topic" id="contents">
@@ -630,12 +629,13 @@ double.</p>
 <h3><a class="toc-backref" href="#id22">5.2.1&nbsp;&nbsp;&nbsp;Constructing Prepared Statements</a></h3>
 <p>In Sql3 use <tt class="docutils literal"><span class="pre">prep</span></tt> to construct a prepared statement and obtain a
 stmt_ptr that refers to it.</p>
-<a name="prep"><p id="prep"><tt class="docutils literal"><span class="pre">prep</span> <span class="pre">dbp::pointer</span> <span class="pre">binding_string::string</span> <span class="pre">sql_statement::string</span></tt></p>
-<blockquote>
-constructs a prepared statement object and returns a stmt_ptr that
+<a name="prep"><dl class="docutils" id="prep">
+<dt><tt class="docutils literal"><span class="pre">prep</span> <span class="pre">dbp::pointer</span> <span class="pre">binding_string::string</span> <span class="pre">sql_statement::string</span></tt></dt>
+<dd>constructs a prepared statement object and returns a stmt_ptr that
 references it. <tt class="docutils literal"><span class="pre">dbp</span></tt> must be a db_ptr or the rule will not
 match. <tt class="docutils literal"><span class="pre">sql_statement</span></tt> is the SQL statement that will be executed
-when the prepared statement is passed to <tt class="docutils literal"><span class="pre">exec</span></tt>.</blockquote>
+when the prepared statement is passed to <tt class="docutils literal"><span class="pre">exec</span></tt>.</dd>
+</dl>
 <p>Basically, <tt class="docutils literal"><span class="pre">prep</span></tt> just passes <tt class="docutils literal"><span class="pre">dbp</span></tt> and <tt class="docutils literal"><span class="pre">sql_statement</span></tt> on to
 <tt class="docutils literal"><span class="pre">sqlite3_prepare_v2</span></tt> and returns a sentry guarded version of the
 sqlite3_stmt* it receives back from <tt class="docutils literal"><span class="pre">sqlite3_prepare_v2</span></tt>. SQL statements
@@ -923,7 +923,7 @@ for database &quot;busy&quot; conditions.</p>
 <a name="db_error"><div class="section" id="id2">
 <span id="db-error"></span><h3><a class="toc-backref" href="#id31">5.3.1&nbsp;&nbsp;&nbsp;db_error</a></h3>
 <p>When a Sql3 function detects an error it throws an exception of the
-form &quot;<tt class="docutils literal"><span class="pre">db_error</span> <span class="pre">ec</span> <span class="pre">msg</span></tt>&quot; where ec is and error code and msg is the
+form &quot;<tt class="docutils literal"><span class="pre">db_error</span> <span class="pre">ec</span> <span class="pre">msg</span></tt>&quot; where ec is an error code and msg is the
 corresponding error message. If ec&gt;0, the error was detected by SQLite
 itself, and ec and msg are those returned by SQLite. If ec==0, the
 error was detected by Sql3 and msg is a Sql3 specific description of
@@ -1091,10 +1091,10 @@ where <tt class="docutils literal"><span class="pre">values</span></tt> is the l
 <div class="section" id="id5">
 <span id="accessing-the-rest-of-sqlite-s-c-interface"></span><h2><a class="toc-backref" href="#id38">6.2&nbsp;&nbsp;&nbsp;Accessing the Rest of SQLite's C Interface</a></h2>
 <p>The db_ptrs returned by <tt class="docutils literal"><span class="pre">open</span></tt> and stmt_ptrs returned by <tt class="docutils literal"><span class="pre">prep</span></tt>
-are the sentry guarded versions of the actual pointers to the data
-base connection objects and prepared statement objects returned by the
-their corresponding native C interface functions <tt class="docutils literal"><span class="pre">sqlite3_open_v2</span></tt>
-and <tt class="docutils literal"><span class="pre">sqlite3_prepare_v2</span></tt>.  This makes it easy to call almost any
+are sentry guarded versions of the actual pointers to the data base
+connection objects and prepared statement objects returned by their
+corresponding native C interface functions <tt class="docutils literal"><span class="pre">sqlite3_open_v2</span></tt> and
+<tt class="docutils literal"><span class="pre">sqlite3_prepare_v2</span></tt>.  This makes it easy to call almost any
 external function in SQLite's C interface directly, passing it the
 same db_ptr or stmt_ptr that is passed to Sql3's functions, such as
 <tt class="docutils literal"><span class="pre">prep</span></tt> or <tt class="docutils literal"><span class="pre">exec</span></tt>.</p>
@@ -1160,7 +1160,7 @@ the Sql3 core types referenced by the mapping functions.</p>
 <p>The file sql3_user_bind_types.pure in the examples subdirectory shows
 how this might be done for a couple of user defined types. The example
 script deals with dates and certain Pure expressions as bigints and
-native Pure expressions, while the database stores these in utf-8
+native Pure expressions, while the database stores these as utf-8
 text. The following snippets show parts of the script that are
 relevant to this discussion:</p>
 <pre class="literal-block">
