@@ -370,7 +370,6 @@ stmt_ptr that refers to it.
 .. _prep:
 
 ``prep dbp::pointer binding_string::string sql_statement::string``
-
   constructs a prepared statement object and returns a stmt_ptr that
   references it. ``dbp`` must be a db_ptr or the rule will not
   match. ``sql_statement`` is the SQL statement that will be executed
@@ -696,7 +695,7 @@ db_error
 ~~~~~~~~
 
 When a Sql3 function detects an error it throws an exception of the
-form "``db_error ec msg``" where ec is and error code and msg is the
+form "``db_error ec msg``" where ec is an error code and msg is the
 corresponding error message. If ec>0, the error was detected by SQLite
 itself, and ec and msg are those returned by SQLite. If ec==0, the
 error was detected by Sql3 and msg is a Sql3 specific description of
@@ -889,10 +888,10 @@ Accessing the Rest of SQLite's C Interface
 ------------------------------------------
 
 The db_ptrs returned by ``open`` and stmt_ptrs returned by ``prep``
-are the sentry guarded versions of the actual pointers to the data
-base connection objects and prepared statement objects returned by the
-their corresponding native C interface functions ``sqlite3_open_v2``
-and ``sqlite3_prepare_v2``.  This makes it easy to call almost any
+are sentry guarded versions of the actual pointers to the data base
+connection objects and prepared statement objects returned by their
+corresponding native C interface functions ``sqlite3_open_v2`` and
+``sqlite3_prepare_v2``.  This makes it easy to call almost any
 external function in SQLite's C interface directly, passing it the
 same db_ptr or stmt_ptr that is passed to Sql3's functions, such as
 ``prep`` or ``exec``.
@@ -967,7 +966,7 @@ the Sql3 core types referenced by the mapping functions.
 The file sql3_user_bind_types.pure in the examples subdirectory shows
 how this might be done for a couple of user defined types. The example
 script deals with dates and certain Pure expressions as bigints and
-native Pure expressions, while the database stores these in utf-8
+native Pure expressions, while the database stores these as utf-8
 text. The following snippets show parts of the script that are
 relevant to this discussion::
 
