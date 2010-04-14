@@ -121,14 +121,14 @@ end;
 
 exec dbp::pointer sql::string = ()
 when   
-  is_open dbp || sql3_err "Attempt to exec on a closed db.";
+  is_open dbp || sql3_err "Attempt to exec on a closed db_ptr.";
   sp, prep_ec = sql3util_prepare dbp sql; //sp is null if error
   prep_ec == SQLITE_OK || sqlite3_err dbp prep_ec;
   ec = sqlite3_step sp;
   msg = if ec==SQLITE_ROW||ec==SQLITE_BUSY||ec==SQLITE_DONE 
         then "" else string_dup (sqlite3_errmsg dbp);
   sqlite3_finalize sp;
-  ec == SQLITE_ROW && sql3_err "Attempt to use exec DB with select sql";
+  ec == SQLITE_ROW && sql3_err "Attempt to use exec DB with select SQL";
   ec == SQLITE_BUSY && throw_busy dbp;
   ec == SQLITE_DONE || sqlite3_err msg ec;
 end if is_db_ptr dbp;
@@ -156,7 +156,7 @@ is_db_ptr _ = false;
    
 prep dbp::pointer types::string sql::string = res
 when
-  is_open dbp || sql3_err "Attempt to prep using closed database.";
+  is_open dbp || sql3_err "Attempt to prep using closed db_ptr.";
   user_wrap_fns = case get_db dbp of (DB (_,uwf)) = uwf end;
   sel_types, bind_types = ensure_types (split ":" types);
   sfns = get_sel_fns user_wrap_fns sel_types;
@@ -340,8 +340,8 @@ bind_sp sp arguments = (sel_fns, sp, dbp)
 when
   stmt = get_stmt sp;
   valid, sel_fns, bnd_fns, dbp = case stmt of STMT (r,x,y,d)=r,x,y,d end;
-  get valid || sql3_err "Attempt to exec on finalized statement.";
-  is_open dbp || sql3_err "Attempt to exec on a closed db.";  
+  get valid || sql3_err "Attempt to exec on finalized stm_ptr.";
+  is_open dbp || sql3_err "Attempt to exec on a closed db_ptr.";  
   args1 = arg_list (#bnd_fns) arguments;
   bind_cols bnd_fns args1 1;
 end with 
@@ -407,7 +407,7 @@ end;
 finalize_stmt stmt::STMT sp::pointer = stmt if null sp;
 finalize_stmt (STMT (rf_valid,_,_,dbp)) sp::pointer = ec
 when
-  is_open dbp || sql3_err "finalize: STMT attached to a closed database.";
+  is_open dbp || sql3_err "finalize: STMT attached to a closed db_ptr.";
   was_valid = get rf_valid;
   ec = if was_valid then sqlite3_finalize sp else SQLITE_OK;
   was_valid && SHOW_OPEN_CLOSE && printf 
