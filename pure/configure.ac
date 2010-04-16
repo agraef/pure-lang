@@ -139,9 +139,11 @@ AM_LANGINFO_CODESET
 dnl Determine how to get alloca.
 AC_FUNC_ALLOCA
 dnl Platform-dependent time functions.
-AC_CHECK_FUNCS(strptime ftime gettimeofday nanosleep usleep)
+AC_CHECK_FUNCS(ftime gettimeofday nanosleep usleep)
 AC_STRUCT_TM_GMTOFF
 AC_STRUCT_TM_ZONE
+# We have a replacement for this one if it isn't available.
+AC_REPLACE_FUNCS(strptime)
 dnl Check for the dirent.h header and the readdir() function.
 AC_CHECK_HEADERS([dirent.h])
 AC_CHECK_FUNCS(readdir)

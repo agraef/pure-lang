@@ -58,6 +58,13 @@ char *default_encoding();
 double my_strtod(const char  *nptr, char **endptr);
 char *my_formatd(char *buffer, const char  *format, double d);
 
+/* Windows doesn't have strptime, so we provide a suitable replacement from
+   GNU libc (see strptime.c). */
+
+#ifndef HAVE_STRPTIME
+char *strptime(const char *s, const char *format, struct tm *tm);
+#endif
+
 /* utf-8 string helpers. */
 
 /* Convert between utf-8 and the given encoding (the system encoding by
