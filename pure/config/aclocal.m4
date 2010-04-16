@@ -240,27 +240,3 @@ if test ! -z "$vl_readline_libs"; then
   LIBS="$ORIG_LIBS"
 fi
 ])
-
-dnl Macros to check for struct tm.tm_gmtoff and tm_zone by Russ Allbery.
-
-AC_DEFUN([AC_STRUCT_TM_GMTOFF],
-[AC_CACHE_CHECK(for tm_gmtoff in struct tm, ac_cv_struct_tm_gmtoff,
-    AC_TRY_LINK([#include <time.h>],
-        [struct tm t; t.tm_gmtoff = 3600],
-        ac_cv_struct_tm_gmtoff=yes,
-        ac_cv_struct_tm_gmtoff=no))
-if test x"$ac_cv_struct_tm_gmtoff" = xyes ; then
-    AC_DEFINE([HAVE_TM_GMTOFF], 1,
-        [Define if your struct tm has a tm_gmtoff member.])
-fi])
-
-AC_DEFUN([AC_STRUCT_TM_ZONE],
-[AC_CACHE_CHECK(for tm_zone in struct tm, ac_cv_struct_tm_zone,
-    AC_TRY_LINK([#include <time.h>],
-        [struct tm t; t.tm_zone = "UTC"],
-        ac_cv_struct_tm_zone=yes,
-        ac_cv_struct_tm_zone=no))
-if test x"$ac_cv_struct_tm_zone" = xyes ; then
-    AC_DEFINE([HAVE_TM_ZONE], 1,
-        [Define if your struct tm has a tm_zone member.])
-fi])
