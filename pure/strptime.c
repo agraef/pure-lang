@@ -24,12 +24,10 @@
    some of them in the same format (such as year, week and weekday)
    this is enough information for determining the date.  */
 
-#ifdef HAVE_CONFIG_H
-# include <config.h>
-#endif
-
 #include <ctype.h>
+#ifndef _WIN32
 #include <langinfo.h>
+#endif
 #include <limits.h>
 #include <string.h>
 #include <time.h>

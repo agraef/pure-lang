@@ -62,6 +62,7 @@ char *my_formatd(char *buffer, const char  *format, double d);
    GNU libc (see strptime.c). */
 
 #ifndef HAVE_STRPTIME
+extern "C"
 char *strptime(const char *s, const char *format, struct tm *tm);
 #endif
 
