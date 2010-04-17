@@ -25,29 +25,6 @@ using namespace __C;
    Matrix Functions
    ----------------
 
-   Most of the generic list operations are implemented on matrices as well,
-   see `Common List Functions`_. Hence stuff like ``map`` and ``zipwith``
-   works as expected::
-
-     > map succ {1,2,3;4,5,6};
-     {2,3,4;5,6,7}
-     > zipwith (+) {1,2,3;4,5,6} {1,0,1;0,2,0};
-     {2,2,4;4,7,6}
-
-   The matrix module also provides a bunch of other specialized matrix
-   operations, including all the necessary operations for matrix
-   comprehensions. We briefly summarize the most important operations below;
-   please refer to matrices.pure for all the gory details.
-
-   Also make sure you check `Matrix Computations`_ in the Pure Manual for some
-   more examples, and the `Record Functions`_ section for an implementation of
-   records using symbolic vectors.
-
-   .. _Matrix Computations: pure.html#matrix-computations
-
-   Matrix Dimension and Indexing
-   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
    .. _matrix size:
    .. _matrix dimensions:
    .. _# (matrix):
@@ -57,9 +34,9 @@ using namespace __C;
    the ``dim`` function can be used to return its dimensions (number of rows
    and columns)::
 
-     > #{1,2,3;4,5,6};
+     > let x = {1,2,3;4,5,6}; #x;
      6
-     > dim {1,2,3;4,5,6};
+     > dim x;
      2,3
 
    .. _null (matrix):
@@ -70,8 +47,9 @@ using namespace __C;
    .. _! (matrix):
 
    Indexing and slicing works pretty much like in MATLAB and Octave, except
-   that you use the Pure operators ``!`` and ``!!`` for that. It is possible
-   to access elements with a one-dimensional index (in row-major oder)::
+   that the Pure operators ``!`` and ``!!`` are used (and indices are
+   zero-based). It is possible to access elements with a one-dimensional index
+   (in row-major oder)::
 
      > x!3;
      4
@@ -102,6 +80,116 @@ using namespace __C;
      > x!!(0..1,1);
      {2;5}
 
+   Matrices can be compared with the ``==`` and ``~=`` operators which check
+   the dimensions and the matrix elements for equality::
+
+     > x == transpose x;
+     0
+
+   Most of the generic list operations are implemented on matrices, see
+   `Common List Functions`_. Hence operations like ``map`` and ``zipwith``
+   work as expected::
+
+     > map succ {1,2,3;4,5,6};
+     {2,3,4;5,6,7}
+     > zipwith (+) {1,2,3;4,5,6} {1,0,1;0,2,0};
+     {2,2,4;4,7,6}
+
+   The matrix module also provides a bunch of other specialized matrix
+   operations, including all the necessary operations for matrix
+   comprehensions. We briefly summarize the most important operations below;
+   please refer to matrices.pure for all the gory details. Also make sure you
+   check `Matrix Computations`_ in the Pure Manual for some more examples, and
+   the `Record Functions`_ section for an implementation of records using
+   symbolic vectors.
+
+   .. _Matrix Computations: pure.html#matrix-computations
+
+   Matrix Construction and Conversions
+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   .. _matrix:
+
+   .. |matrix| replace:: ``matrix``
+
+   The ``matrix`` function converts a list or tuple to a corresponding matrix.
+   ``matrix`` also turns a list of lists or matrices specifying the rows of
+   the matrix to the corresponding rectangular matrix; otherwise, the result
+   is a row vector. (In the former case, the ``matrix`` function may throw a
+   ``bad_matrix_value x`` exception in case of dimension mismatch, where ``x``
+   denotes the offending submatrix.) ::
+
+     > matrix [1,2,3];
+     {1,2,3}
+     > matrix [[1,2,3],[4,5,6]];
+     {1,2,3;4,5,6}
+
+   .. _rowvector:
+   .. _colvector:
+
+   The ``rowvector`` and ``colvector`` functions work in a similar fashion,
+   but expect a list, tuple or matrix of elements and always return a row or
+   column vector, respectively (i.e., a 1xn or nx1 matrix, where n is the size
+   of the converted aggregate). Also, the ``vector`` function is a synonym for
+   ``rowvector``. These functions can also be used to create recursive
+   (symbolic) matrix structures of arbitrary depth, which provide a nested
+   array data structure with efficient (constant time) element access. ::
+
+     > rowvector [1,2,3];
+     {1,2,3}
+     > colvector [1,2,3];
+     {1;2;3}
+     > vector [rowvector [1,2,3],colvector [4,5,6]];
+     {{1,2,3},{4;5;6}}
+
+   .. _dmatrix:
+   .. _cmatrix:
+   .. _imatrix:
+   .. _smatrix:
+
+   The ``dmatrix``, ``cmatrix``, ``imatrix`` and ``smatrix`` functions convert
+   a list or matrix to a matrix of the corresponding type (integer, double,
+   complex or symbolic). If the input is a list, the result is always a row
+   vector; this is usually faster than the ``matrix`` and ``rowvector``
+   operations, but requires that the elements already are of the appropriate
+   type. ::
+
+     > imatrix [1,2,3];
+     {1,2,3}
+     > dmatrix {1,2,3;4,5,6};
+     {1.0,2.0,3.0;4.0,5.0,6.0}
+
+   The ``dmatrix``, ``cmatrix`` and ``imatrix`` functions can also be invoked
+   with either an int ``n`` or a pair ``(n,m)`` of ints as argument, in which
+   case they construct a zero rowvector or matrix with the corresponding
+   dimensions. ::
+
+     > imatrix 3;
+     {0,0,0}
+     > imatrix (2,3);
+     {0,0,0;0,0,0}
+
+   There's also a number of more specialized conversions operations which are
+   discussed under `Matrix Inspection and Manipulation`_ below.
+
+   .. _list (matrix):
+   .. _list2 (matrix):
+   .. _tuple (matrix):
+
+   Conversely, a matrix can be converted back to a flat list or tuple with the
+   ``list`` and ``tuple`` functions. In addition, the ``list2`` function
+   converts a matrix to a list of lists (one sublist for each row of the
+   matrix). ::
+
+     > tuple {1,2,3;4,5,6};
+     1,2,3,4,5,6
+     > list {1,2,3;4,5,6};
+     [1,2,3,4,5,6]
+     > list2 {1,2,3;4,5,6};
+     [[1,2,3],[4,5,6]]
+     > list2 {1,2,3};
+     [[1,2,3]]
+
    Matrix Inspection and Manipulation
    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -112,11 +200,6 @@ using namespace __C;
    ``vectorp x``, ``rowvectorp x``, ``colvectorp x``
      Check for different kinds of vectors (these are just matrices with one
      row or column). */
-
-/* Additional matrix predicates. The numeric matrix types will only be
-   available if the interpreter was built with support for the GNU Scientific
-   Library (GSL). This is the case iff the global gsl_version variable is
-   predefined by the interpreter. */
 
 extern int matrix_type(expr* x);
 
@@ -269,23 +352,7 @@ rows x::matrix		= map (row x) (0..n-1) when n::int,_ = dim x end;
 
 cols x::matrix		= map (col x) (0..m-1) when _,m::int = dim x end;
 
-/* .. _list (matrix):
-   .. _list2 (matrix):
-   .. _tuple (matrix):
-   .. _matrix:
-
-   ``list x``, ``list2 x``, ``tuple x``, ``matrix xs``
-     Convert a matrix to a list or tuple, and vice versa. ``list x`` converts
-     a matrix ``x`` to a flat list of its elements, while ``list2`` converts
-     it to a list of lists. Likewise, ``tuple x`` converts the matrix ``x`` to
-     a tuple. Conversely, ``matrix xs`` converts a list or tuple to a
-     corresponding matrix.
-
-     Note that ``matrix`` turns a list of lists or matrices specifying the
-     rows of the matrix to the corresponding rectangular matrix; otherwise,
-     the result is a row vector. Also note that the matrix function may throw
-     a ``bad_matrix_value x`` in case of dimension mismatch, where ``x``
-     denotes the offending submatrix. */
+/* Matrix conversions (see description above). */
 
 list x::matrix		= [x!i|i=0..#x-1];
 list2 x::matrix		= [[x!(i,j)|j=0..m-1]|i=0..n-1]
@@ -303,6 +370,56 @@ tuple x::matrix		= tuple (list x);
 
 matrix ()		= {};
 matrix xs@(_,_)		= matrix (list xs);
+
+/* Create zero matrices of different types. */
+
+dmatrix (n::int,m::int)	= double_matrix (n,m) (pointer 0);
+cmatrix (n::int,m::int)	= complex_matrix (n,m) (pointer 0);
+imatrix (n::int,m::int)	= int_matrix (n,m) (pointer 0);
+
+dmatrix n::int		= dmatrix (1,n);
+cmatrix n::int		= cmatrix (1,n);
+imatrix n::int		= imatrix (1,n);
+
+/* Convert between different matrix types. */
+
+namespace __C;
+extern expr* matrix_double(expr *x), expr* matrix_complex(expr *x),
+  expr* matrix_int(expr *x), expr* matrix_symbolic(expr *x);
+namespace;
+
+dmatrix x		= y if matrixp y when y = matrix_double x end;
+imatrix x		= y if matrixp y when y = matrix_int x end;
+cmatrix x		= y if matrixp y when y = matrix_complex x end;
+smatrix x		= y if matrixp y when y = matrix_symbolic x end;
+
+/* Conversions to row and column vectors. */
+
+rowvector x::matrix	= redim (1,#x) x;
+colvector x::matrix	= redim (#x,1) x;
+
+rowvector ()		= redim (1,0) {};
+rowvector xs@(_,_)	= rowvector (list xs);
+
+colvector ()		= redim (0,1) {};
+colvector xs@(_,_)	= colvector (list xs);
+
+rowvector []		= redim (1,0) {};
+rowvector xs		= case cmatrix xs of
+  	  		    x::matrix = x;
+  			    _ = case dmatrix xs of
+    			      x::matrix = x;
+    			      _ = case imatrix xs of
+      			        x::matrix = x;
+      				_ = smatrix xs;
+    			      end;
+  			    end;
+			  end if listp xs;
+
+colvector xs		= redim (#x,1) x if matrixp x
+	  		  when x = rowvector xs end;
+
+vector xs		= x if matrixp x when x = rowvector xs end;
 
 /* .. _diag:
    .. _subdiag:
@@ -380,21 +497,6 @@ def void (colcatmap f x) = do f x;
 def void (rowmap f x) = do f x;
 def void (colmap f x) = do f x;
 
-/* ..
-
-   ``dmatrix (n,m)``, ``cmatrix (n,m)``, ``imatrix (n,m)``
-     Convenience functions to create zero matrices with the given dimensions
-     (either a pair denoting the number of rows and columns, or just the row
-     size in order to create a row vector). */
-
-dmatrix (n::int,m::int)	= double_matrix (n,m) (pointer 0);
-cmatrix (n::int,m::int)	= complex_matrix (n,m) (pointer 0);
-imatrix (n::int,m::int)	= int_matrix (n,m) (pointer 0);
-
-dmatrix n::int		= dmatrix (1,n);
-cmatrix n::int		= cmatrix (1,n);
-imatrix n::int		= imatrix (1,n);
-
 /* .. _diagmat:
    .. _subdiagmat:
    .. _supdiagmat:
@@ -410,30 +512,6 @@ imatrix n::int		= imatrix (1,n);
 extern expr* matrix_diagm(expr* x) = diagmat;
 extern expr* matrix_subdiagm(expr* x, int k) = subdiagmat;
 extern expr* matrix_supdiagm(expr* x, int k) = supdiagmat;
-
-/* .. _dmatrix:
-   .. _cmatrix:
-   .. _imatrix:
-   .. _smatrix:
-
-   .. |matrix| replace:: ``matrix``
-
-   ``dmatrix x``, ``cmatrix x``, ``imatrix x``, ``smatrix x``
-     Matrix conversions. These convert between different types of numeric and
-     symbolic matrices. The same operations also convert a list directly to a
-     row vector; this is usually much faster than the generic |matrix|_
-     operation, but requires that the elements already are of the appropriate
-     type. */
-
-namespace __C;
-extern expr* matrix_double(expr *x), expr* matrix_complex(expr *x),
-  expr* matrix_int(expr *x), expr* matrix_symbolic(expr *x);
-namespace;
-
-dmatrix x		= y if matrixp y when y = matrix_double x end;
-imatrix x		= y if matrixp y when y = matrix_int x end;
-cmatrix x		= y if matrixp y when y = matrix_complex x end;
-smatrix x		= y if matrixp y when y = matrix_symbolic x end;
 
 /* .. _re (matrix):
    .. _im (matrix):
@@ -463,13 +541,11 @@ conj x::matrix		= matrix_conj x if nmatrixp x;
      Pack a matrix. This creates a copy of the matrix which has the data in
      contiguous storage. It also frees up extra memory if the matrix was
      created as a slice from a bigger matrix (see |submat|_ above) which has
-     since gone the way of the dodo.
-
-     The ``packed`` predicate can be used to verify whether a matrix is
-     already packed. Note that even if a matrix is already packed, ``pack``
-     will make a copy of it anyway, so ``pack`` also provides a quick way
-     to copy a matrix, e.g., if you want to pass it as an input/output
-     parameter to a GSL routine. */
+     since gone the way of the dodo. The ``packed`` predicate can be used to
+     verify whether a matrix is already packed. Note that even if a matrix is
+     already packed, ``pack`` will make a copy of it anyway, so ``pack`` also
+     provides a quick way to copy a matrix, e.g., if you want to pass it as an
+     input/output parameter to a GSL routine. */
 
 pack x::matrix		= colcat [x,{}];
 packed x::matrix	= stride x==dim x!1;
@@ -480,10 +556,8 @@ packed x::matrix	= stride x==dim x!1;
      Change the dimensions of a matrix without changing its size. The total
      number of elements must match that of the input matrix. Reuses the
      underlying storage of the input matrix if possible (i.e., if the matrix
-     is |packed|_).
-
-     You can also redim a matrix to a given row size ``n``. In this case the
-     row size must divide the total size of the matrix. */
+     is |packed|_). You can also redim a matrix to a given row size ``n``. In
+     this case the row size must divide the total size of the matrix. */
 
 namespace __C;
 extern expr* matrix_redim(expr* x, int n, int m);
@@ -494,15 +568,6 @@ redim (n::int,m::int) x::matrix
 
 redim m::int x::matrix	= redim (#x div m,m) x if m>0 && #x mod m==0;
 			= x if m==0 && #x==0;
-
-/* .. _rowvector:
-   .. _colvector:
-
-   ``rowvector x``, ``colvector x``
-     Convenience functions to convert a matrix to a row or column vector. */
-
-rowvector x::matrix	= redim (1,#x) x;
-colvector x::matrix	= redim (#x,1) x;
 
 /* .. _sort (matrix):
 
@@ -687,11 +752,12 @@ unzip3 x::matrix	= {u | u,_ = x},{v | _,v,_ = x},{w | _,_,w = x}
    Pointers and Matrices
    ~~~~~~~~~~~~~~~~~~~~~
 
-   The matrix module offers a bunch of low-level operations for converting
-   between matrices and raw pointers. These are typically used to shovel
-   around massive amounts of numeric data between Pure and external C
-   routines, when performance and throughput is an important consideration
-   (e.g., graphics, video and audio applications). The usual caveats apply.
+   Last but not least, the matrix module also offers a bunch of low-level
+   operations for converting between matrices and raw pointers. These are
+   typically used to shovel around massive amounts of numeric data between
+   Pure and external C routines, when performance and throughput is an
+   important consideration (e.g., graphics, video and audio applications). The
+   usual caveats concerning direct pointer manipulations apply.
 
    .. _pointer (matrix):
 

@@ -329,7 +329,7 @@ Pure language and the operation of the Pure interpreter.</p>
 </ul>
 </li>
 <li><a class="reference internal" href="#matrix-functions" id="id82">1.5&nbsp;&nbsp;&nbsp;Matrix Functions</a><ul class="auto-toc">
-<li><a class="reference internal" href="#matrix-dimension-and-indexing" id="id83">1.5.1&nbsp;&nbsp;&nbsp;Matrix Dimension and Indexing</a></li>
+<li><a class="reference internal" href="#matrix-construction-and-conversions" id="id83">1.5.1&nbsp;&nbsp;&nbsp;Matrix Construction and Conversions</a></li>
 <li><a class="reference internal" href="#matrix-inspection-and-manipulation" id="id84">1.5.2&nbsp;&nbsp;&nbsp;Matrix Inspection and Manipulation</a></li>
 <li><a class="reference internal" href="#pointers-and-matrices" id="id85">1.5.3&nbsp;&nbsp;&nbsp;Pointers and Matrices</a></li>
 </ul>
@@ -1165,38 +1165,21 @@ Processing always stops at the first <tt class="docutils literal"><span class="p
 </div>
 <div class="section" id="matrix-functions">
 <h2><a class="toc-backref" href="#id82">1.5&nbsp;&nbsp;&nbsp;Matrix Functions</a></h2>
-<p>Most of the generic list operations are implemented on matrices as well,
-see <a class="reference internal" href="#common-list-functions">Common List Functions</a>. Hence stuff like <tt class="docutils literal"><span class="pre">map</span></tt> and <tt class="docutils literal"><span class="pre">zipwith</span></tt>
-works as expected:</p>
-<pre class="literal-block">
-&gt; map succ {1,2,3;4,5,6};
-{2,3,4;5,6,7}
-&gt; zipwith (+) {1,2,3;4,5,6} {1,0,1;0,2,0};
-{2,2,4;4,7,6}
-</pre>
-<p>The matrix module also provides a bunch of other specialized matrix
-operations, including all the necessary operations for matrix
-comprehensions. We briefly summarize the most important operations below;
-please refer to matrices.pure for all the gory details.</p>
-<p>Also make sure you check <a class="reference external" href="pure.html#matrix-computations">Matrix Computations</a> in the Pure Manual for some
-more examples, and the <a class="reference internal" href="#record-functions">Record Functions</a> section for an implementation of
-records using symbolic vectors.</p>
-<div class="section" id="matrix-dimension-and-indexing">
-<h3><a class="toc-backref" href="#id83">1.5.1&nbsp;&nbsp;&nbsp;Matrix Dimension and Indexing</a></h3>
 <a name="matrix size"><a name="matrix dimensions"><a name="# (matrix)"><a name="dim"><p id="dim"><span id="matrix"></span><span id="matrix-dimensions"></span><span id="matrix-size"></span>The size of a matrix (number of elements) can be obtained using <tt class="docutils literal"><span class="pre">#</span></tt>, and
 the <tt class="docutils literal"><span class="pre">dim</span></tt> function can be used to return its dimensions (number of rows
 and columns):</p>
 <pre class="literal-block">
-&gt; #{1,2,3;4,5,6};
+&gt; let x = {1,2,3;4,5,6}; #x;
 6
-&gt; dim {1,2,3;4,5,6};
+&gt; dim x;
 2,3
 </pre>
 <a name="null (matrix)"><p id="null-matrix"><tt class="docutils literal"><span class="pre">null</span> <span class="pre">x</span></tt> can be used to check for empty matrices. Note that there are
 various kinds of these, as a matrix may have zero rows or columns, or both.</p>
 <a name="! (matrix)"><p id="id14">Indexing and slicing works pretty much like in MATLAB and Octave, except
-that you use the Pure operators <tt class="docutils literal"><span class="pre">!</span></tt> and <tt class="docutils literal"><span class="pre">!!</span></tt> for that. It is possible
-to access elements with a one-dimensional index (in row-major oder):</p>
+that the Pure operators <tt class="docutils literal"><span class="pre">!</span></tt> and <tt class="docutils literal"><span class="pre">!!</span></tt> are used (and indices are
+zero-based). It is possible to access elements with a one-dimensional index
+(in row-major oder):</p>
 <pre class="literal-block">
 &gt; x!3;
 4
@@ -1225,6 +1208,95 @@ column:</p>
 &gt; x!!(0..1,1);
 {2;5}
 </pre>
+<p>Matrices can be compared with the <tt class="docutils literal"><span class="pre">==</span></tt> and <tt class="docutils literal"><span class="pre">~=</span></tt> operators which check
+the dimensions and the matrix elements for equality:</p>
+<pre class="literal-block">
+&gt; x == transpose x;
+0
+</pre>
+<p>Most of the generic list operations are implemented on matrices, see
+<a class="reference internal" href="#common-list-functions">Common List Functions</a>. Hence operations like <tt class="docutils literal"><span class="pre">map</span></tt> and <tt class="docutils literal"><span class="pre">zipwith</span></tt>
+work as expected:</p>
+<pre class="literal-block">
+&gt; map succ {1,2,3;4,5,6};
+{2,3,4;5,6,7}
+&gt; zipwith (+) {1,2,3;4,5,6} {1,0,1;0,2,0};
+{2,2,4;4,7,6}
+</pre>
+<p>The matrix module also provides a bunch of other specialized matrix
+operations, including all the necessary operations for matrix
+comprehensions. We briefly summarize the most important operations below;
+please refer to matrices.pure for all the gory details. Also make sure you
+check <a class="reference external" href="pure.html#matrix-computations">Matrix Computations</a> in the Pure Manual for some more examples, and
+the <a class="reference internal" href="#record-functions">Record Functions</a> section for an implementation of records using
+symbolic vectors.</p>
+<div class="section" id="matrix-construction-and-conversions">
+<h3><a class="toc-backref" href="#id83">1.5.1&nbsp;&nbsp;&nbsp;Matrix Construction and Conversions</a></h3>
+<a name="matrix"><span class="target" id="id16"></span><p>The <tt class="docutils literal"><span class="pre">matrix</span></tt> function converts a list or tuple to a corresponding matrix.
+<tt class="docutils literal"><span class="pre">matrix</span></tt> also turns a list of lists or matrices specifying the rows of
+the matrix to the corresponding rectangular matrix; otherwise, the result
+is a row vector. (In the former case, the <tt class="docutils literal"><span class="pre">matrix</span></tt> function may throw a
+<tt class="docutils literal"><span class="pre">bad_matrix_value</span> <span class="pre">x</span></tt> exception in case of dimension mismatch, where <tt class="docutils literal"><span class="pre">x</span></tt>
+denotes the offending submatrix.)</p>
+<pre class="literal-block">
+&gt; matrix [1,2,3];
+{1,2,3}
+&gt; matrix [[1,2,3],[4,5,6]];
+{1,2,3;4,5,6}
+</pre>
+<a name="rowvector"><a name="colvector"><p id="colvector"><span id="rowvector"></span>The <tt class="docutils literal"><span class="pre">rowvector</span></tt> and <tt class="docutils literal"><span class="pre">colvector</span></tt> functions work in a similar fashion,
+but expect a list, tuple or matrix of elements and always return a row or
+column vector, respectively (i.e., a 1xn or nx1 matrix, where n is the size
+of the converted aggregate). Also, the <tt class="docutils literal"><span class="pre">vector</span></tt> function is a synonym for
+<tt class="docutils literal"><span class="pre">rowvector</span></tt>. These functions can also be used to create recursive
+(symbolic) matrix structures of arbitrary depth, which provide a nested
+array data structure with efficient (constant time) element access.</p>
+<pre class="literal-block">
+&gt; rowvector [1,2,3];
+{1,2,3}
+&gt; colvector [1,2,3];
+{1;2;3}
+&gt; vector [rowvector [1,2,3],colvector [4,5,6]];
+{{1,2,3},{4;5;6}}
+</pre>
+<a name="dmatrix"><a name="cmatrix"><a name="imatrix"><a name="smatrix"><p id="smatrix"><span id="imatrix"></span><span id="cmatrix"></span><span id="dmatrix"></span>The <tt class="docutils literal"><span class="pre">dmatrix</span></tt>, <tt class="docutils literal"><span class="pre">cmatrix</span></tt>, <tt class="docutils literal"><span class="pre">imatrix</span></tt> and <tt class="docutils literal"><span class="pre">smatrix</span></tt> functions convert
+a list or matrix to a matrix of the corresponding type (integer, double,
+complex or symbolic). If the input is a list, the result is always a row
+vector; this is usually faster than the <tt class="docutils literal"><span class="pre">matrix</span></tt> and <tt class="docutils literal"><span class="pre">rowvector</span></tt>
+operations, but requires that the elements already are of the appropriate
+type.</p>
+<pre class="literal-block">
+&gt; imatrix [1,2,3];
+{1,2,3}
+&gt; dmatrix {1,2,3;4,5,6};
+{1.0,2.0,3.0;4.0,5.0,6.0}
+</pre>
+<p>The <tt class="docutils literal"><span class="pre">dmatrix</span></tt>, <tt class="docutils literal"><span class="pre">cmatrix</span></tt> and <tt class="docutils literal"><span class="pre">imatrix</span></tt> functions can also be invoked
+with either an int <tt class="docutils literal"><span class="pre">n</span></tt> or a pair <tt class="docutils literal"><span class="pre">(n,m)</span></tt> of ints as argument, in which
+case they construct a zero rowvector or matrix with the corresponding
+dimensions.</p>
+<pre class="literal-block">
+&gt; imatrix 3;
+{0,0,0}
+&gt; imatrix (2,3);
+{0,0,0;0,0,0}
+</pre>
+<p>There's also a number of more specialized conversions operations which are
+discussed under <a class="reference internal" href="#matrix-inspection-and-manipulation">Matrix Inspection and Manipulation</a> below.</p>
+<a name="list (matrix)"><a name="list2 (matrix)"><a name="tuple (matrix)"><p id="tuple-matrix"><span id="list2-matrix"></span><span id="list-matrix"></span>Conversely, a matrix can be converted back to a flat list or tuple with the
+<tt class="docutils literal"><span class="pre">list</span></tt> and <tt class="docutils literal"><span class="pre">tuple</span></tt> functions. In addition, the <tt class="docutils literal"><span class="pre">list2</span></tt> function
+converts a matrix to a list of lists (one sublist for each row of the
+matrix).</p>
+<pre class="literal-block">
+&gt; tuple {1,2,3;4,5,6};
+1,2,3,4,5,6
+&gt; list {1,2,3;4,5,6};
+[1,2,3,4,5,6]
+&gt; list2 {1,2,3;4,5,6};
+[[1,2,3],[4,5,6]]
+&gt; list2 {1,2,3};
+[[1,2,3]]
+</pre>
 </div>
 <div class="section" id="matrix-inspection-and-manipulation">
 <h3><a class="toc-backref" href="#id84">1.5.2&nbsp;&nbsp;&nbsp;Matrix Inspection and Manipulation</a></h3>
@@ -1250,20 +1322,6 @@ when interfacing to C.</dd>
 <a name="rows"><a name="cols"><dl class="docutils" id="cols">
 <span id="rows"></span><dt><tt class="docutils literal"><span class="pre">rows</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">cols</span> <span class="pre">x</span></tt></dt>
 <dd>Return the list of all rows or columns of a matrix.</dd>
-</dl>
-<a name="list (matrix)"><a name="list2 (matrix)"><a name="tuple (matrix)"><a name="matrix"><dl class="docutils" id="id16">
-<span id="tuple-matrix"></span><span id="list2-matrix"></span><span id="list-matrix"></span><dt><tt class="docutils literal"><span class="pre">list</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">list2</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">tuple</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">matrix</span> <span class="pre">xs</span></tt></dt>
-<dd><p class="first">Convert a matrix to a list or tuple, and vice versa. <tt class="docutils literal"><span class="pre">list</span> <span class="pre">x</span></tt> converts
-a matrix <tt class="docutils literal"><span class="pre">x</span></tt> to a flat list of its elements, while <tt class="docutils literal"><span class="pre">list2</span></tt> converts
-it to a list of lists. Likewise, <tt class="docutils literal"><span class="pre">tuple</span> <span class="pre">x</span></tt> converts the matrix <tt class="docutils literal"><span class="pre">x</span></tt> to
-a tuple. Conversely, <tt class="docutils literal"><span class="pre">matrix</span> <span class="pre">xs</span></tt> converts a list or tuple to a
-corresponding matrix.</p>
-<p class="last">Note that <tt class="docutils literal"><span class="pre">matrix</span></tt> turns a list of lists or matrices specifying the
-rows of the matrix to the corresponding rectangular matrix; otherwise,
-the result is a row vector. Also note that the matrix function may throw
-a <tt class="docutils literal"><span class="pre">bad_matrix_value</span> <span class="pre">x</span></tt> in case of dimension mismatch, where <tt class="docutils literal"><span class="pre">x</span></tt>
-denotes the offending submatrix.</p>
-</dd>
 </dl>
 <a name="diag"><a name="subdiag"><a name="supdiag"><dl class="docutils" id="supdiag">
 <span id="subdiag"></span><span id="diag"></span><dt><tt class="docutils literal"><span class="pre">diag</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">subdiag</span> <span class="pre">x</span> <span class="pre">k</span></tt>, <tt class="docutils literal"><span class="pre">supdiag</span> <span class="pre">x</span> <span class="pre">k</span></tt>:</dt>
@@ -1303,13 +1361,6 @@ scalars already, the input matrix is returned unchanged.</dd>
 <dd>Combinations of <a class="reference internal" href="#rowcat"><tt class="docutils literal"><span class="pre">rowcat</span></tt></a>, <a class="reference internal" href="#colcat"><tt class="docutils literal"><span class="pre">colcat</span></tt></a> and <a class="reference internal" href="#map"><tt class="docutils literal"><span class="pre">map</span></tt></a>. These are used, in
 particular, for implementing matrix comprehensions.</dd>
 </dl>
-<!--  -->
-<dl class="docutils">
-<dt><tt class="docutils literal"><span class="pre">dmatrix</span> <span class="pre">(n,m)</span></tt>, <tt class="docutils literal"><span class="pre">cmatrix</span> <span class="pre">(n,m)</span></tt>, <tt class="docutils literal"><span class="pre">imatrix</span> <span class="pre">(n,m)</span></tt></dt>
-<dd>Convenience functions to create zero matrices with the given dimensions
-(either a pair denoting the number of rows and columns, or just the row
-size in order to create a row vector).</dd>
-</dl>
 <a name="diagmat"><a name="subdiagmat"><a name="supdiagmat"><dl class="docutils" id="supdiagmat">
 <span id="subdiagmat"></span><span id="diagmat"></span><dt><tt class="docutils literal"><span class="pre">diagmat</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">subdiagmat</span> <span class="pre">x</span> <span class="pre">k</span></tt>, <tt class="docutils literal"><span class="pre">supdiagmat</span> <span class="pre">x</span> <span class="pre">k</span></tt></dt>
 <dd>Create a (sub-,super-) diagonal matrix from a row vector <tt class="docutils literal"><span class="pre">x</span></tt> of size
@@ -1319,14 +1370,6 @@ input and has the elements of the vector on its <tt class="docutils literal"><sp
 super-diagonal, with all other elements zero. A negative value for <tt class="docutils literal"><span class="pre">k</span></tt>
 turns a sub- into a super-diagonal matrix and vice versa.</dd>
 </dl>
-<a name="dmatrix"><a name="cmatrix"><a name="imatrix"><a name="smatrix"><span class="target" id="smatrix"><span id="imatrix"></span><span id="cmatrix"></span><span id="dmatrix"></span></span><dl class="docutils">
-<dt><tt class="docutils literal"><span class="pre">dmatrix</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">cmatrix</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">imatrix</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">smatrix</span> <span class="pre">x</span></tt></dt>
-<dd>Matrix conversions. These convert between different types of numeric and
-symbolic matrices. The same operations also convert a list directly to a
-row vector; this is usually much faster than the generic <a class="reference internal" href="#id16"><tt class="docutils literal"><span class="pre">matrix</span></tt></a>
-operation, but requires that the elements already are of the appropriate
-type.</dd>
-</dl>
 <a name="re (matrix)"><a name="im (matrix)"><a name="conj (matrix)"><dl class="docutils" id="conj-matrix">
 <span id="im-matrix"></span><span id="re-matrix"></span><dt><tt class="docutils literal"><span class="pre">re</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">im</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">conj</span> <span class="pre">x</span></tt></dt>
 <dd>Extract the real and imaginary parts and compute the conjugate of a
@@ -1334,30 +1377,22 @@ numeric matrix.</dd>
 </dl>
 <a name="pack"><a name="packed"><span class="target" id="packed"><span id="pack"></span></span><dl class="docutils">
 <dt><tt class="docutils literal"><span class="pre">pack</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">packed</span> <span class="pre">x</span></tt></dt>
-<dd><p class="first">Pack a matrix. This creates a copy of the matrix which has the data in
+<dd>Pack a matrix. This creates a copy of the matrix which has the data in
 contiguous storage. It also frees up extra memory if the matrix was
 created as a slice from a bigger matrix (see <a class="reference internal" href="#submat"><tt class="docutils literal"><span class="pre">submat</span></tt></a> above) which has
-since gone the way of the dodo.</p>
-<p class="last">The <tt class="docutils literal"><span class="pre">packed</span></tt> predicate can be used to verify whether a matrix is
-already packed. Note that even if a matrix is already packed, <tt class="docutils literal"><span class="pre">pack</span></tt>
-will make a copy of it anyway, so <tt class="docutils literal"><span class="pre">pack</span></tt> also provides a quick way
-to copy a matrix, e.g., if you want to pass it as an input/output
-parameter to a GSL routine.</p>
-</dd>
+since gone the way of the dodo. The <tt class="docutils literal"><span class="pre">packed</span></tt> predicate can be used to
+verify whether a matrix is already packed. Note that even if a matrix is
+already packed, <tt class="docutils literal"><span class="pre">pack</span></tt> will make a copy of it anyway, so <tt class="docutils literal"><span class="pre">pack</span></tt> also
+provides a quick way to copy a matrix, e.g., if you want to pass it as an
+input/output parameter to a GSL routine.</dd>
 </dl>
 <a name="redim"><dl class="docutils" id="redim">
 <dt><tt class="docutils literal"><span class="pre">redim</span> <span class="pre">(n,m)</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">redim</span> <span class="pre">n</span> <span class="pre">x</span></tt></dt>
-<dd><p class="first">Change the dimensions of a matrix without changing its size. The total
+<dd>Change the dimensions of a matrix without changing its size. The total
 number of elements must match that of the input matrix. Reuses the
 underlying storage of the input matrix if possible (i.e., if the matrix
-is <a class="reference internal" href="#packed"><tt class="docutils literal"><span class="pre">packed</span></tt></a>).</p>
-<p class="last">You can also redim a matrix to a given row size <tt class="docutils literal"><span class="pre">n</span></tt>. In this case the
-row size must divide the total size of the matrix.</p>
-</dd>
-</dl>
-<a name="rowvector"><a name="colvector"><dl class="docutils" id="colvector">
-<span id="rowvector"></span><dt><tt class="docutils literal"><span class="pre">rowvector</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">colvector</span> <span class="pre">x</span></tt></dt>
-<dd>Convenience functions to convert a matrix to a row or column vector.</dd>
+is <a class="reference internal" href="#packed"><tt class="docutils literal"><span class="pre">packed</span></tt></a>). You can also redim a matrix to a given row size <tt class="docutils literal"><span class="pre">n</span></tt>. In
+this case the row size must divide the total size of the matrix.</dd>
 </dl>
 <a name="sort (matrix)"><dl class="docutils" id="sort-matrix">
 <dt><tt class="docutils literal"><span class="pre">sort</span> <span class="pre">p</span> <span class="pre">x</span></tt></dt>
@@ -1411,11 +1446,12 @@ to choose the order predicate.</p>
 </div>
 <div class="section" id="pointers-and-matrices">
 <h3><a class="toc-backref" href="#id85">1.5.3&nbsp;&nbsp;&nbsp;Pointers and Matrices</a></h3>
-<p>The matrix module offers a bunch of low-level operations for converting
-between matrices and raw pointers. These are typically used to shovel
-around massive amounts of numeric data between Pure and external C
-routines, when performance and throughput is an important consideration
-(e.g., graphics, video and audio applications). The usual caveats apply.</p>
+<p>Last but not least, the matrix module also offers a bunch of low-level
+operations for converting between matrices and raw pointers. These are
+typically used to shovel around massive amounts of numeric data between
+Pure and external C routines, when performance and throughput is an
+important consideration (e.g., graphics, video and audio applications). The
+usual caveats concerning direct pointer manipulations apply.</p>
 <a name="pointer (matrix)"><dl class="docutils" id="pointer-matrix">
 <dt><tt class="docutils literal"><span class="pre">pointer</span> <span class="pre">x</span></tt></dt>
 <dd>Get a pointer to the underlying C array of a matrix. The data is <em>not</em>
@@ -3534,7 +3570,7 @@ processed, see the example below.</dd>
 </dl>
 <p>Examples:</p>
 <pre class="literal-block">
-&gt; let t = time; let tm = localtime t; t;
+&gt; let t = time; t;
 1270239790L
 &gt; let tm = localtime t; tm;
 #&lt;pointer 0x7ff97ecbdde0&gt;

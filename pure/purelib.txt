@@ -1455,29 +1455,6 @@ Processing always stops at the first ``NULL`` pointer encountered.
 Matrix Functions
 ----------------
 
-Most of the generic list operations are implemented on matrices as well,
-see `Common List Functions`_. Hence stuff like ``map`` and ``zipwith``
-works as expected::
-
-  > map succ {1,2,3;4,5,6};
-  {2,3,4;5,6,7}
-  > zipwith (+) {1,2,3;4,5,6} {1,0,1;0,2,0};
-  {2,2,4;4,7,6}
-
-The matrix module also provides a bunch of other specialized matrix
-operations, including all the necessary operations for matrix
-comprehensions. We briefly summarize the most important operations below;
-please refer to matrices.pure for all the gory details.
-
-Also make sure you check `Matrix Computations`_ in the Pure Manual for some
-more examples, and the `Record Functions`_ section for an implementation of
-records using symbolic vectors.
-
-.. _Matrix Computations: pure.html#matrix-computations
-
-Matrix Dimension and Indexing
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 .. raw:: html
 
    <a name="matrix size">
@@ -1503,9 +1480,9 @@ The size of a matrix (number of elements) can be obtained using ``#``, and
 the ``dim`` function can be used to return its dimensions (number of rows
 and columns)::
 
-  > #{1,2,3;4,5,6};
+  > let x = {1,2,3;4,5,6}; #x;
   6
-  > dim {1,2,3;4,5,6};
+  > dim x;
   2,3
 
 .. raw:: html
@@ -1524,8 +1501,9 @@ various kinds of these, as a matrix may have zero rows or columns, or both.
 .. _! (matrix):
 
 Indexing and slicing works pretty much like in MATLAB and Octave, except
-that you use the Pure operators ``!`` and ``!!`` for that. It is possible
-to access elements with a one-dimensional index (in row-major oder)::
+that the Pure operators ``!`` and ``!!`` are used (and indices are
+zero-based). It is possible to access elements with a one-dimensional index
+(in row-major oder)::
 
   > x!3;
   4
@@ -1559,6 +1537,156 @@ column::
   {5,6}
   > x!!(0..1,1);
   {2;5}
+
+Matrices can be compared with the ``==`` and ``~=`` operators which check
+the dimensions and the matrix elements for equality::
+
+  > x == transpose x;
+  0
+
+Most of the generic list operations are implemented on matrices, see
+`Common List Functions`_. Hence operations like ``map`` and ``zipwith``
+work as expected::
+
+  > map succ {1,2,3;4,5,6};
+  {2,3,4;5,6,7}
+  > zipwith (+) {1,2,3;4,5,6} {1,0,1;0,2,0};
+  {2,2,4;4,7,6}
+
+The matrix module also provides a bunch of other specialized matrix
+operations, including all the necessary operations for matrix
+comprehensions. We briefly summarize the most important operations below;
+please refer to matrices.pure for all the gory details. Also make sure you
+check `Matrix Computations`_ in the Pure Manual for some more examples, and
+the `Record Functions`_ section for an implementation of records using
+symbolic vectors.
+
+.. _Matrix Computations: pure.html#matrix-computations
+
+Matrix Construction and Conversions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. raw:: html
+
+   <a name="matrix">
+
+.. _matrix:
+
+.. |matrix| replace:: ``matrix``
+
+The ``matrix`` function converts a list or tuple to a corresponding matrix.
+``matrix`` also turns a list of lists or matrices specifying the rows of
+the matrix to the corresponding rectangular matrix; otherwise, the result
+is a row vector. (In the former case, the ``matrix`` function may throw a
+``bad_matrix_value x`` exception in case of dimension mismatch, where ``x``
+denotes the offending submatrix.) ::
+
+  > matrix [1,2,3];
+  {1,2,3}
+  > matrix [[1,2,3],[4,5,6]];
+  {1,2,3;4,5,6}
+
+.. raw:: html
+
+   <a name="rowvector">
+
+.. raw:: html
+
+   <a name="colvector">
+
+.. _rowvector:
+.. _colvector:
+
+The ``rowvector`` and ``colvector`` functions work in a similar fashion,
+but expect a list, tuple or matrix of elements and always return a row or
+column vector, respectively (i.e., a 1xn or nx1 matrix, where n is the size
+of the converted aggregate). Also, the ``vector`` function is a synonym for
+``rowvector``. These functions can also be used to create recursive
+(symbolic) matrix structures of arbitrary depth, which provide a nested
+array data structure with efficient (constant time) element access. ::
+
+  > rowvector [1,2,3];
+  {1,2,3}
+  > colvector [1,2,3];
+  {1;2;3}
+  > vector [rowvector [1,2,3],colvector [4,5,6]];
+  {{1,2,3},{4;5;6}}
+
+.. raw:: html
+
+   <a name="dmatrix">
+
+.. raw:: html
+
+   <a name="cmatrix">
+
+.. raw:: html
+
+   <a name="imatrix">
+
+.. raw:: html
+
+   <a name="smatrix">
+
+.. _dmatrix:
+.. _cmatrix:
+.. _imatrix:
+.. _smatrix:
+
+The ``dmatrix``, ``cmatrix``, ``imatrix`` and ``smatrix`` functions convert
+a list or matrix to a matrix of the corresponding type (integer, double,
+complex or symbolic). If the input is a list, the result is always a row
+vector; this is usually faster than the ``matrix`` and ``rowvector``
+operations, but requires that the elements already are of the appropriate
+type. ::
+
+  > imatrix [1,2,3];
+  {1,2,3}
+  > dmatrix {1,2,3;4,5,6};
+  {1.0,2.0,3.0;4.0,5.0,6.0}
+
+The ``dmatrix``, ``cmatrix`` and ``imatrix`` functions can also be invoked
+with either an int ``n`` or a pair ``(n,m)`` of ints as argument, in which
+case they construct a zero rowvector or matrix with the corresponding
+dimensions. ::
+
+  > imatrix 3;
+  {0,0,0}
+  > imatrix (2,3);
+  {0,0,0;0,0,0}
+
+There's also a number of more specialized conversions operations which are
+discussed under `Matrix Inspection and Manipulation`_ below.
+
+.. raw:: html
+
+   <a name="list (matrix)">
+
+.. raw:: html
+
+   <a name="list2 (matrix)">
+
+.. raw:: html
+
+   <a name="tuple (matrix)">
+
+.. _list (matrix):
+.. _list2 (matrix):
+.. _tuple (matrix):
+
+Conversely, a matrix can be converted back to a flat list or tuple with the
+``list`` and ``tuple`` functions. In addition, the ``list2`` function
+converts a matrix to a list of lists (one sublist for each row of the
+matrix). ::
+
+  > tuple {1,2,3;4,5,6};
+  1,2,3,4,5,6
+  > list {1,2,3;4,5,6};
+  [1,2,3,4,5,6]
+  > list2 {1,2,3;4,5,6};
+  [[1,2,3],[4,5,6]]
+  > list2 {1,2,3};
+  [[1,2,3]]
 
 Matrix Inspection and Manipulation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1610,40 +1738,6 @@ Matrix Inspection and Manipulation
 
 ``rows x``, ``cols x``
   Return the list of all rows or columns of a matrix.
-
-.. raw:: html
-
-   <a name="list (matrix)">
-
-.. raw:: html
-
-   <a name="list2 (matrix)">
-
-.. raw:: html
-
-   <a name="tuple (matrix)">
-
-.. raw:: html
-
-   <a name="matrix">
-
-.. _list (matrix):
-.. _list2 (matrix):
-.. _tuple (matrix):
-.. _matrix:
-
-``list x``, ``list2 x``, ``tuple x``, ``matrix xs``
-  Convert a matrix to a list or tuple, and vice versa. ``list x`` converts
-  a matrix ``x`` to a flat list of its elements, while ``list2`` converts
-  it to a list of lists. Likewise, ``tuple x`` converts the matrix ``x`` to
-  a tuple. Conversely, ``matrix xs`` converts a list or tuple to a
-  corresponding matrix.
-
-  Note that ``matrix`` turns a list of lists or matrices specifying the
-  rows of the matrix to the corresponding rectangular matrix; otherwise,
-  the result is a row vector. Also note that the matrix function may throw
-  a ``bad_matrix_value x`` in case of dimension mismatch, where ``x``
-  denotes the offending submatrix.
 
 .. raw:: html
 
@@ -1731,13 +1825,6 @@ Matrix Inspection and Manipulation
   Combinations of |rowcat|_, |colcat|_ and |map|_. These are used, in
   particular, for implementing matrix comprehensions.
 
-..
-
-``dmatrix (n,m)``, ``cmatrix (n,m)``, ``imatrix (n,m)``
-  Convenience functions to create zero matrices with the given dimensions
-  (either a pair denoting the number of rows and columns, or just the row
-  size in order to create a row vector).
-
 .. raw:: html
 
    <a name="diagmat">
@@ -1761,36 +1848,6 @@ Matrix Inspection and Manipulation
   input and has the elements of the vector on its ``k``\ th sub- or
   super-diagonal, with all other elements zero. A negative value for ``k``
   turns a sub- into a super-diagonal matrix and vice versa.
-
-.. raw:: html
-
-   <a name="dmatrix">
-
-.. raw:: html
-
-   <a name="cmatrix">
-
-.. raw:: html
-
-   <a name="imatrix">
-
-.. raw:: html
-
-   <a name="smatrix">
-
-.. _dmatrix:
-.. _cmatrix:
-.. _imatrix:
-.. _smatrix:
-
-.. |matrix| replace:: ``matrix``
-
-``dmatrix x``, ``cmatrix x``, ``imatrix x``, ``smatrix x``
-  Matrix conversions. These convert between different types of numeric and
-  symbolic matrices. The same operations also convert a list directly to a
-  row vector; this is usually much faster than the generic |matrix|_
-  operation, but requires that the elements already are of the appropriate
-  type.
 
 .. raw:: html
 
@@ -1831,13 +1888,11 @@ Matrix Inspection and Manipulation
   Pack a matrix. This creates a copy of the matrix which has the data in
   contiguous storage. It also frees up extra memory if the matrix was
   created as a slice from a bigger matrix (see |submat|_ above) which has
-  since gone the way of the dodo.
-
-  The ``packed`` predicate can be used to verify whether a matrix is
-  already packed. Note that even if a matrix is already packed, ``pack``
-  will make a copy of it anyway, so ``pack`` also provides a quick way
-  to copy a matrix, e.g., if you want to pass it as an input/output
-  parameter to a GSL routine.
+  since gone the way of the dodo. The ``packed`` predicate can be used to
+  verify whether a matrix is already packed. Note that even if a matrix is
+  already packed, ``pack`` will make a copy of it anyway, so ``pack`` also
+  provides a quick way to copy a matrix, e.g., if you want to pass it as an
+  input/output parameter to a GSL routine.
 
 .. raw:: html
 
@@ -1849,24 +1904,8 @@ Matrix Inspection and Manipulation
   Change the dimensions of a matrix without changing its size. The total
   number of elements must match that of the input matrix. Reuses the
   underlying storage of the input matrix if possible (i.e., if the matrix
-  is |packed|_).
-
-  You can also redim a matrix to a given row size ``n``. In this case the
-  row size must divide the total size of the matrix.
-
-.. raw:: html
-
-   <a name="rowvector">
-
-.. raw:: html
-
-   <a name="colvector">
-
-.. _rowvector:
-.. _colvector:
-
-``rowvector x``, ``colvector x``
-  Convenience functions to convert a matrix to a row or column vector.
+  is |packed|_). You can also redim a matrix to a given row size ``n``. In
+  this case the row size must divide the total size of the matrix.
 
 .. raw:: html
 
@@ -1943,11 +1982,12 @@ Matrix Inspection and Manipulation
 Pointers and Matrices
 ~~~~~~~~~~~~~~~~~~~~~
 
-The matrix module offers a bunch of low-level operations for converting
-between matrices and raw pointers. These are typically used to shovel
-around massive amounts of numeric data between Pure and external C
-routines, when performance and throughput is an important consideration
-(e.g., graphics, video and audio applications). The usual caveats apply.
+Last but not least, the matrix module also offers a bunch of low-level
+operations for converting between matrices and raw pointers. These are
+typically used to shovel around massive amounts of numeric data between
+Pure and external C routines, when performance and throughput is an
+important consideration (e.g., graphics, video and audio applications). The
+usual caveats concerning direct pointer manipulations apply.
 
 .. raw:: html
 
@@ -5781,7 +5821,7 @@ details.
 
 Examples::
 
-  > let t = time; let tm = localtime t; t;
+  > let t = time; t;
   1270239790L
   > let tm = localtime t; tm;
   #<pointer 0x7ff97ecbdde0>
