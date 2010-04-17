@@ -116,7 +116,10 @@ else
 fi
 vl_editline_libs=""
 dnl Check for libraries.
-AC_CHECK_LIB(gmp, __gmpz_init)
+AC_CHECK_LIB(gmp, __gmpz_init, ,
+[AC_MSG_ERROR([Cannot find the GMP library, please install libgmp.])])
+AC_CHECK_HEADERS([gmp.h], ,
+[AC_MSG_ERROR([Cannot find the GMP header file, please install libgmp.])])
 AC_CHECK_LIB(m, cos)
 dnl On some systems iconv is in a separate library, and may actually be named
 dnl libiconv.
