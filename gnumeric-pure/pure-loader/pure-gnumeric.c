@@ -1580,6 +1580,10 @@ static char *texpr2str(const GnmEvalPos *pos, const GnmExprTop *e)
   return strdup(buf);
 }
 
+#if GNM_VERSION_EPOCH <= 1 && GNM_VERSION_MAJOR <= 9
+
+/* Older Gnumeric versions lack these. */
+
 static GnmExprTop const *
 sheet_widget_list_base_get_result_link(SheetObject *so)
 {
@@ -1597,6 +1601,8 @@ sheet_widget_list_base_get_content_link(SheetObject *so)
   if (texpr) gnm_expr_top_ref(texpr);
   return texpr;
 }
+
+#endif
 
 pure_expr *pure_sheet_objects(void)
 {
