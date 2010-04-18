@@ -576,8 +576,10 @@ public:
      automatically when eval() or defn()/const_defn() is invoked. */
   void compile();
 
-  /* Convert a runtime to a compile time expression. */
-  expr pure_expr_to_expr(pure_expr *x);
+  /* Convert a runtime to a compile time expression. If 'check' is true then
+     attempts to convert non-const values (non-NULL pointers and closures)
+     throw an error message. */
+  expr pure_expr_to_expr(pure_expr *x, bool check = false);
 
   /* Errors and warnings. These are for various types of messages from the
      compiler. Default is to write error messages to stdout. You might wish to
@@ -808,6 +810,7 @@ public:
 private:
   void init();
   void init_llvm_target();
+  int nwrapped;
   Env *__fptr;
   Env *&fptr;
   llvm::GlobalVariable *fptrvar;
@@ -821,7 +824,7 @@ private:
   Builder& act_builder() { return act_env().builder; }
   bool is_quote(int32_t f)
   { return f == symtab.quote_sym().f || f == symtab.quoteop_sym().f; }
-  expr wrap_expr(pure_expr *x);
+  expr wrap_expr(pure_expr *x, bool check = false);
   pure_expr *const_value(expr x, bool quote = false);
   pure_expr *const_value_invoke(expr x, pure_expr*& e, bool quote = false);
   pure_expr *const_matrix_value(expr x, bool quote = false);

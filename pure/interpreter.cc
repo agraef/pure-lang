@@ -134,7 +134,7 @@ void interpreter::init()
     g_init = true;
   }
 
-  fptr = 0;
+  nwrapped = 0; fptr = 0;
   sstk_sz = 0; sstk_cap = 0x10000; // 64K
   sstk = (pure_expr**)malloc(sstk_cap*sizeof(pure_expr*));
   assert(sstk);
@@ -1961,7 +1961,7 @@ static bool is_tuple(interpreter& interp,
   return true;
 }
 
-expr interpreter::pure_expr_to_expr(pure_expr *x)
+expr interpreter::pure_expr_to_expr(pure_expr *x, bool check)
 {
   char test;
   if (stackmax > 0 && stackdir*(&test - baseptr) >= stackmax)
@@ -1972,23 +1972,23 @@ expr interpreter::pure_expr_to_expr(pure_expr *x)
     pure_expr **elems, *tl;
     if (is_list2(*this, x, size, elems, tl)) {
       /* Optimize the list case, so that we don't run out of stack space. */
-      expr x = pure_expr_to_expr(tl);
+      expr x = pure_expr_to_expr(tl, check);
       while (size > 0)
-	x = expr::cons(pure_expr_to_expr(elems[--size]), x);
+	x = expr::cons(pure_expr_to_expr(elems[--size], check), x);
       free(elems);
       return x;
     } else if (is_tuple(*this, x, size, elems)) {
       /* Optimize the tuple case. */
-      expr x = pure_expr_to_expr(elems[--size]);
+      expr x = pure_expr_to_expr(elems[--size], check);
       while (size > 0) {
-	expr y = pure_expr_to_expr(elems[--size]);
+	expr y = pure_expr_to_expr(elems[--size], check);
 	x = expr::pair(y, x);
       }
       free(elems);
       return x;
     } else
-      return expr(pure_expr_to_expr(x->data.x[0]),
-		  pure_expr_to_expr(x->data.x[1]));
+      return expr(pure_expr_to_expr(x->data.x[0], check),
+		  pure_expr_to_expr(x->data.x[1], check));
   }
   case EXPR::INT:
     return expr(EXPR::INT, x->data.i);
@@ -2008,7 +2008,7 @@ expr interpreter::pure_expr_to_expr(pure_expr *x)
     else
       /* A non-null pointer isn't representable at compile time, so we wrap it
 	 up in a global variable. */
-      return wrap_expr(x);
+      return wrap_expr(x, check);
   case EXPR::MATRIX: {
     if (x->data.mat.p) {
       gsl_matrix_symbolic *m = (gsl_matrix_symbolic*)x->data.mat.p;
@@ -2017,7 +2017,7 @@ expr interpreter::pure_expr_to_expr(pure_expr *x)
 	xs->push_back(exprl());
 	exprl& ys = xs->back();
 	for (size_t j = 0; j < m->size2; j++) {
-	  ys.push_back(pure_expr_to_expr(m->data[i * m->tda + j]));
+	  ys.push_back(pure_expr_to_expr(m->data[i * m->tda + j], check));
 	}
       }
       return expr(EXPR::MATRIX, xs);
@@ -2075,10 +2075,11 @@ expr interpreter::pure_expr_to_expr(pure_expr *x)
   }
   default:
     assert(x->tag >= 0);
-    if (x->data.clos && x->data.clos->local)
+    if (x->data.clos && (compiling || x->data.clos->local))
       /* A local closure isn't representable at compile time, so we wrap it up
-	 in a global variable. */
-      return wrap_expr(x);
+	 in a global variable. We also do this for global closures when
+	 batch-compiling. */
+      return wrap_expr(x, check);
     else
       return expr(x->tag);
   }
@@ -2161,7 +2162,7 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
   pure_expr *res = doeval(rhs, e, false);
   if (!res) return 0;
   // convert the result back to a compile time expression
-  expr u = pure_expr_to_expr(res);
+  expr u = pure_expr_to_expr(res, compiling);
   // match against the left-hand side
   matcher m(rule(lhs, rhs));
   if (m.match(u)) {
@@ -2267,7 +2268,7 @@ void interpreter::const_defn(int32_t tag, pure_expr *x)
 	      "' is already declared as an extern function");
   }
   // convert the value to a compile time expression
-  expr u = pure_expr_to_expr(x);
+  expr u = pure_expr_to_expr(x, compiling);
   // bind the variable
   globenv[tag] = env_info(u, temp);
   restore_globals(g);
@@ -5534,21 +5535,9 @@ int interpreter::compiler(string out, list<string> libnames)
   /* Verify the global variables. This includes the special $$sstk$$ (shadow
      stack) and $$fptr$$ (environment pointer) globals, as well as all the
      expression pointers for the global symbols of the Pure program. Here we
-     do a first scan of the global variables, checking for any unresolvable
-     constant values (wrapped pointers or local closures). */
-  int nerrs = 0;
-  for (Module::global_iterator it = module->global_begin(),
-	 end = module->global_end(); it != end; ++it) {
-    GlobalVariable &v = *it;
-    if (!v.hasName()) continue;
-    string label;
-    if (is_tmpvar(v.getName(), label)) {
-      // We can't handle these, sorry.
-      std::cerr << "'" << label << "' is not a constant value" << '\n';
-      nerrs++;
-    }
-  }
-  if (nerrs > 0) {
+     check for any unresolvable constant values (wrapped pointers or local
+     closures). */
+  if (nwrapped > 0) {
     unlink(target.c_str());
     std::cerr << 
 "** Your program contains one or more constants referring to run time\n\
@@ -7460,7 +7449,7 @@ Value *interpreter::constptr(const void *p)
 #endif
 }
 
-expr interpreter::wrap_expr(pure_expr *x)
+expr interpreter::wrap_expr(pure_expr *x, bool check)
 {
   ostringstream label;
   label << x;
@@ -7470,6 +7459,14 @@ expr interpreter::wrap_expr(pure_expr *x)
      llvm::ConstantPointerNull::get(ExprPtrTy), "$$tmpvar"+label.str());
   v->x = pure_new(x);
   JIT->addGlobalMapping(v->v, &v->x);
+  if (check && (x->tag == EXPR::PTR ||
+		(x->tag >= 0 && x->data.clos && x->data.clos->local))) {
+    /* These values can't be handled in a batch compilation. */
+    nwrapped++;
+    ostringstream msg;
+    msg << "non-const value in const definition: " << v->x;
+    throw err(msg.str());
+  }
   return expr(EXPR::WRAP, v);
 }
 
@@ -9066,6 +9063,24 @@ Value *interpreter::codegen(expr x, bool quote)
   case EXPR::WRAP: {
     assert(x.pval());
     GlobalVar *v = (GlobalVar*)x.pval();
+    if (v->x->tag > 0 && v->x->data.clos && !v->x->data.clos->local) {
+      /* A global named closure. We eliminate these on the fly. (This case can
+	 only arise during batch compilation.) */
+      // check for an external
+      map<int32_t,ExternInfo>::const_iterator it = externals.find(v->x->tag);
+      if (it != externals.end()) {
+	const ExternInfo& info = it->second;
+	vector<Value*> env;
+	// build an fbox for the external
+	return call("pure_clos", false, v->x->tag, 0, info.f,
+		    NullPtr, info.argtypes.size(), env);
+      }
+      // check for an existing global variable (if the symbol is bound to a
+      // global function, its cbox must exist already)
+      map<int32_t,GlobalVar>::iterator v2 = globalvars.find(v->x->tag);
+      if (v2 != globalvars.end()) 
+	return act_builder().CreateLoad(v2->second.v);
+    }
     return act_builder().CreateLoad(v->v);
   }
   // matrix:
