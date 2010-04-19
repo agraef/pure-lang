@@ -1,0 +1,51 @@
+
+/* Determine the prime factors of an integer. The result is a list with the
+   prime factors in non-decreasing order. */
+
+factor 0	  |
+factor 0L	  = [];
+
+factor n::int	  = factor (-n) if n<0;
+		  = 2 : factor (n div 2) if n mod 2 == 0; // even number
+		  = factor_from 3 n otherwise;
+
+factor n::bigint  = factor (-n) if n<0;
+		  = 2L : factor (n div 2) if n mod 2 == 0; // even number
+		  = factor_from 3L n otherwise;
+
+factor_from p n	  = [] if p>n;
+		  = p : factor_from p (n div p)
+		    if n mod p == 0; // p divides n (must be prime)
+		  = factor_from (p+2) n
+		    otherwise; // not a factor, try the next one
+
+/* Collect the factors and return them as a list of pairs (p,k) where p are
+   the prime factors in ascending order and k the corresponding (nonzero)
+   multiplicities. */
+
+factors n::int	  |
+factors n::bigint =
+  case factor n of
+    [] = [];
+    p:ps = collect (p,1) ps with
+      collect (q,k) [] = [(q,k)];
+      collect (q,k) (p:ps) = collect (q,k+1) ps if p==q;
+                           = (q,k):collect (p,1) ps otherwise;
+    end;
+  end;
+
+/* Collect the prime factors in a rational number given as a numerator/
+   denominator pair (n,m). As above, prime factors are listed in ascending
+   order with their positive or negative multiplicities, depending on whether
+   the prime factor occurs in the numerator or the denominator (after
+   cancelling out common factors). */
+
+factors (n,m) = merge (factors n) (factors m) with
+  merge ps [] = ps;
+  merge [] qs = [q,-l | q,l = qs];
+  merge ps@((p,k):ps1) qs@((q,l):qs1) =
+    if p<q then (p,k):merge ps1 qs
+    else if p>q then (q,-l):merge ps qs1
+    else if k~=l then (p,k-l):merge ps1 qs1
+    else merge ps1 qs1;
+end;

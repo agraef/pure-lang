@@ -1,0 +1,16 @@
+
+using octave, system, hrm;
+
+const script = fget (fopen "scale.m" "r");
+octave_eval script;
+//octave_set "smacof_maxiter" 0; // no bound on number of iterations
+//octave_set "smacof_eps" 1e-12; // eps bound for termination
+
+logging b = octave_set "logging" b;
+
+mds pv scale = M,V,s when
+  // NOTE: We must calculate with bigints here.
+  M = hrm pv (map (\(p/q)->(bigint p,bigint q)) scale);
+  V,s = if null M then dmatrix {},0.0 else if #M==1 then {0.0,0.0,0.0},0.0
+      	else octave_call "mds" 2 (M,3);
+end;

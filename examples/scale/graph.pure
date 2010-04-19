@@ -1,0 +1,55 @@
+
+// Scale graph and rationalization algorithm.
+
+using hrm, set;
+
+let T = [[(1,1)], [],
+	 reverse [(9,8),(10,9),(8,7)],
+	 reverse [(6,5),(32,27),(8,7)],
+	 reverse [(5,4),(81,64),(32,25)]];
+
+scale_graph dmax pv T = k,M,colcat V,colcat E when
+  V = cat T;
+  m = #T; n = #V;
+  k = matrix $ cat $ zipwith (\i xs->map (cst i) xs) (0..m-1) T;
+  M = hrm pv V;
+  E = [[j | j = 0..n-1; k!i ~= k!j; M!(i,j) <= dmax] | i = 0..n-1];
+end;
+
+using tk;
+let break = ref false;
+
+rationalize heur dmax pv T = T when
+  C = if null V then [] else maxclique (U,E);
+  l = scanl (+) 0 $ map (#) T;
+  T = [(j,i-l!j) => V!i when j = k!i end | i = C];
+end with
+  maxclique (V,E) = reverse $ search h [] ([], h [] V) when h = sel heur end
+  with
+    search h Cmax (C,V)
+      = if #C>#Cmax then C else Cmax if ~tk_ready || get break;
+      	  // interrupt, return the largest clique found so far
+      = Cmax if #Cmax>=n || #C+#V<=#Cmax; // prune
+      = log2_cb (#C/n) $$ C if null V; // new maximum clique
+      = foldl (search h) Cmax [next (C,V) v | v = h C V]; // recurse
+    next (C,V) v = v:C, [w | w = V; w ~= v; member (E!v) w];
+    // Search heuristic. "First" just considers the nodes in the natural
+    // order. "Best" tries to minimize the total harmonic distance.
+    sel "First" = first with
+      first _ V = V;
+    end;
+    sel "Best" = best with
+      // Minimize the sum of the harmonic distances.
+      best C V = map (!0) $ sort cmp [v,dist C v | v = V];
+      cmp (v,x) (w,y) = x<y || x==y &&
+        // if the distance totals are equal, compare based on plain weights
+        (x<y || x==y && v<w when x = M0!v; y = M0!w end);
+      dist C v = foldl (+) 0.0 $ row M v!!C;
+    end;
+  end;
+end when
+  k,M,V,E = scale_graph dmax pv T;
+  M0 = map (hrm pv) V;
+  n = #filter (\t->~null t) T;
+  U = 0..#V-1; E = map set E;
+end;

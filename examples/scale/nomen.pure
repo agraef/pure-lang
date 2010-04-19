@@ -1,0 +1,62 @@
+
+/* nomen.pure: 11-limit nomenclature 11-16-02 AG (pilfered from Clarence
+   Barlow's nomen.pas) */
+
+/* Calculate a note name given the name of the base note and an 11-limit
+   interval. Note names are specified using a string like "C", "C#", "Cb" etc.
+   The interval is given as a frequency ratio, specified using a (NUM,DENOM)
+   pair. Note that only 11-limit ratios are recognized, i.e., ratios
+   consisting of the prime factors 2,3,5,7,11 only. */
+
+/* Bitset operations. *******************************************************/
+
+bitset ns = foldl (or) 0 (map bit ns);
+bit n = 1<<n;
+
+/* Tables. ******************************************************************/
+
+using dict;
+
+let nomen = hdict
+  [ (2,-1) => bitset [],	     (2,1) => bitset [],
+    (3,-1) => bitset [3],	     (3,1) => bitset [6],
+    (5,-1) => bitset [0,1,3,4],	     (5,1) => bitset [1,2,5,6],
+    (7,-1) => bitset [2,6],	     (7,1) => bitset [0,3],
+   (11,-1) => bitset [0,1,2,3,4,5], (11,1) => bitset [0,1,2,4,5,6]];
+let steps = dict [2=>7, 3=>4, 5=>2, 7=>-6, 11=>3];
+
+/* Internally we encode note names as pairs (n,a) where n is the note number
+   (0=C, 1=D, etc.) and a the number of accidentals (<0: flats, >0: sharps). */
+
+let base = {"Cb" => (0,-1), "C" => (0,0), "C#" => (0,1),
+    	    "Db" => (1,-1), "D" => (1,0), "D#" => (1,1),
+	    "Eb" => (2,-1), "E" => (2,0), "E#" => (2,1),
+	    "Fb" => (3,-1), "F" => (3,0), "F#" => (3,1),
+	    "Gb" => (4,-1), "G" => (4,0), "G#" => (4,1),
+	    "Ab" => (5,-1), "A" => (5,0), "A#" => (5,1),
+	    "Bb" => (6,-1), "B" => (6,0), "B#" => (6,1)};
+
+/* Shift note name and accidental for given prime factor. *******************/
+
+leap note@(n,a) f@(p,k)
+  = leap (leap note (p, 1)) (p,k-1) if k > 1;
+  = leap (leap note (p,-1)) (p,k+1) if k < -1;
+  = (leap_note n f,leap_acc note f) if k ~= 0 with
+      leap_acc (n,a) (p,k)
+        = a+k*sgn (steps!p) if nomen!(p,k) and bit n;
+        = a otherwise;
+      leap_note n (p,k) = normalize_note (n+k*abs (steps!p));
+      normalize_note n  = if n<0 then n+7 else n when n = n mod 7 end;
+    end;
+  = note otherwise;
+
+/* The main function. *******************************************************/
+
+using factor;
+
+let notes = {"C","D","E","F","G","A","B"};
+
+note_name b (n,d) = notes!n+strcat [c | i = 1..k] when
+  n,a = foldl leap (base!b) fs;
+  k,c = if a<0 then -a,"b" else a,"#";
+end if null (dropwhile (\(p,k) -> p<=11) fs) when fs = factors (n,d) end;

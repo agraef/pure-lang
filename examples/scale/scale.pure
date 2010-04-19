@@ -1,0 +1,831 @@
+
+using math, dict, set, hrm, graph, mds, nomen, tk, system;
+
+tk "wm withdraw .";
+
+const prog_version = "0.1";
+
+const ui = fget (fopen "scale.tcl" "r");
+
+let state0 = {"M"=>{},"V"=>{},"s"=>0.0,"dmax"=>0.0,"PV"=>barlow,"scale"=>[]};
+let state = ref state0;
+
+let pval_funs  = {"Barlow"     => barlow,
+    	       	  "Euler"      => euler,
+	     	  "Barlow/2"   => barlow2,
+	     	  "Euler/2"    => euler2,
+	     	  "Log Barlow" => logbarlow,
+	     	  "Log Euler"  => logeuler};
+
+let pval_names = {val (str fun) => name | name=>fun = pval_funs};
+
+const intnam_par = intnames $ fget (fopen "intnam.par" "r") with
+  intnames s::string = names when
+    names = catmap name $ split "\n" s;
+  end;
+  intnames _ = emptyhdict;
+  name s::string = regexg (\info -> val (info!3) => info!5)
+    "^[ \t]*([0-9]+[/][0-9]+)[ \t]+(.*)$" REG_EXTENDED s 0;
+end;
+
+let intnam = hdict (reverse intnam_par);
+let interv = [r | r=>_ = intnam_par];
+
+// Catch Tcl errors.
+tk_error msg = throw msg;
+
+// Convenience.
+tk_split () = [];
+tk_val   () = [];
+
+// Compute a scale factor for the node glyphs.
+scale_factor V = 1.0 if null V;
+  = if d>0.0 then d else 1.0 when
+    n,m = dim V;
+    xmin = foldl1 min [V!(i,0) | i=0..n-1];
+    xmax = foldl1 max [V!(i,0) | i=0..n-1];
+    ymin = foldl1 min [V!(i,1) | i=0..n-1];
+    ymax = foldl1 max [V!(i,1) | i=0..n-1];
+    zmin = foldl1 min [V!(i,2) | i=0..n-1];
+    zmax = foldl1 max [V!(i,2) | i=0..n-1];
+    dx = xmax-xmin; dy = ymax-ymin; dz = zmax-zmin;
+    d = max dx (max dy dz);
+  end;
+
+// Map ratios to cent values.
+cent (p/q) = 1200*ln (p/q)/ln 2;
+cent (p,q) = 1200*ln (p/q)/ln 2;
+cent x = x otherwise;
+
+// Map ratios to note names.
+name x@(p/q) = case note_name "C" (p,q) of
+  x::string = x;
+  _ = "" otherwise; // not 11-limit
+end;
+name _ = "" otherwise;
+
+// Map ratios to interval descriptions.
+descr x@(p/q) = intnam!x if member intnam x;
+descr _ = "" otherwise;
+
+// Map ratios to factors.
+facts (p/q) = join " " (map (sprintf "%d^%d")   [p, k | p,k = fs; k >= 0] +
+      	      	        map (sprintf "/ %d^%d") [p,-k | p,k = fs; k <  0])
+  when fs = factors (p,q); fs = if null fs then [(1,1)] else fs end;
+facts _ = "" otherwise;
+
+// Compute node labels.
+node_labels "0" _ = [];
+node_labels _ "Ordinal" = lbls when
+  k = #get state!"V";
+  lbls = map str (0..k-1);
+end;
+node_labels _ "Pitch" = lbls when
+  scale = get state!"scale";
+  lbls = map str scale;
+end;
+node_labels _ "Cent" = lbls when
+  scale = get state!"scale";
+  lbls = map (format.cent) scale with
+    format x = str $ round (x*100)/100;
+  end;
+end;
+node_labels _ "Note" = lbls when
+  scale = get state!"scale";
+  lbls = map name scale;
+end;
+node_labels _ "Factors" = lbls when
+  scale = get state!"scale";
+  lbls = map facts scale;
+end;
+node_labels _ "Interval" = lbls when
+  scale = get state!"scale";
+  lbls = map descr scale;
+end;
+
+// Parse and pretty-print scales.
+
+const bad_scale = "Bad scale syntax\n\n\
+Please enter a list of ratios (1/1, 3/2, etc.) and cent values \
+(0.0, 100.0 etc.) into the scale field.\n\n\
+Example: 1/1 100.0 200.0 5/4 4/3 3/2 2/1";
+
+parse_scale = scale when
+  scale = tk_split (tk_get "scale");
+  scale = map scale_val scale;
+  // Add the base tone if needed.
+  scale = '(1/1) : dropwhile (\x -> x===0.0 || x === '(1/1)) scale;
+  tk_set "scale" $ unparse_scale scale;
+end;
+
+// We assume the Scala format here. That is, each scale point is either a
+// floating point value, indicating cents, or an integer ratio p/q, or a
+// single integer x (meaning the ratio x/1). Cent values must be nonnegative,
+// integers positive. Integers must be representable as signed 32 bit ints.
+// NOTE: We don't enforce that ratios are >1 even though it makes sense, since
+// that requirement isn't in the Scala file format spec.
+
+scale_val s::string = reduce (val s) with
+  reduce (p::int/q::int) = '(p/q) when
+    g = gcd p q; p = p div g; q = q div g;
+  end if p>0 && q>0;
+  reduce x::int = '(x/1) if x>0;
+  reduce x::double = x if x>=0.0;
+  reduce _ = throw bad_scale;
+end;
+
+unparse_scale scale = tk_join $ map str scale;
+
+// Attenuation factor for the Gaussian bell curve used to scale harmonicity
+// values, see below. 0.05 seems to be a resonable value, but you can change
+// this here as needed.
+const att = 0.05;
+
+// Compute scale descriptions.
+scale_descr = zipwith info (0..#scale-1) scale with
+  info n x = [sel x, n, str x, facts x, cent x, h x, name x, descr x, cand n x];
+  sel (p/q) = 1; sel _ = 0;
+  h (p/q) = hrm pv (p,q); h _ = 0.0;
+  // Candidate tuning selection, a la Barlow. tol is the tuning tolerance (in
+  // cent). The nominal weights (disharmonicities) are scaled by superimposing
+  // a Gaussian bell curve with attenuation att. The attenuation (defined as a
+  // constant in this implementation, see above) determines the scaling factor
+  // at the edges of the tolerance interval (actually its inverse, as we're
+  // dealing with disharmonicities rather than harmonicity values here).
+  cand n r = map item $ takewhile good $ take nmax $
+  sort cmp $ map weight intv with
+    weight (h,x,r) = (if d <= tol then h/wt d else inf),r
+      when d = abs (x-y) end;
+    wt x = exp (-x*x*ln (1/att)/(tol*tol));
+    cmp (x,_) (y,_) = x<y;
+    good (x,_) = ~infp x;
+    item (_,r) = [0, n, str r, facts r, cent r, h r, name r, descr r]
+  end when y = cent r end;
+end when
+  scale = get state!"scale";
+  pv = get state!"PV";
+  dmax = get state!"dmax";
+  nmax = val (tk_get "nmax");
+  tol = double $ val (tk_get "tol");
+  intv = takewhile good $ sort cmp
+  [hrm pv (p,q),cent r,r | r@(p/q) = interv] with
+    cmp (x,_) (y,_) = x<y;
+    good (x,_) = x<=dmax;
+  end;
+end;
+
+// Compute metric descriptions.
+metric_descr = zipwith3 info (0..n-1) scale (rows M) with
+  info n r xs = n : str r : list xs;
+end when
+  M = get state!"M";
+  n,m = dim M; // assert n==m
+  scale = get state!"scale"; // assert #scale==n
+end;
+
+clear_scale_descr = () when
+  tk "$list erase 0 end";
+  tk "$metric erase 0 end";
+  n = val $ tk_get "maxcols";
+  do (tk.sprintf "$metric columnConfigure %d -visible 0") (2..n+1);
+end;
+
+make_scale_descr = () when
+  /* This is ugly. Gnocl's tree widget doesn't give us any programmatic
+     control over the order of the view, which might have been changed by the
+     user. However, the rest of the code depends on that the rows are inserted
+     in the proper order here. So we have to recreate the entire view to
+     ensure that no custom order is in effect. Otherwise we would have to
+     forbid changing the order which we don't want since this feature is
+     pretty useful at times. */
+  tk "reinit_list";
+  k = tk_val $ tk $ sprintf "$list add {} {%s}" $
+  tk_str $ map (tk_str.init) descr;
+  dowith make_children (0..#descr-1) $ map last descr with
+    make_children n d = catch (puts.str) $ tk $ sprintf "$list add %d {%s}"
+    (n,tk_str (map tk_str d));
+  end;
+  n = val $ tk_get "maxcols";
+  if null mdescr then () else (() when
+    m = #head mdescr;
+    padding = [0.0 | i = m..n];
+    tk $ sprintf "$metric add {%s}" $ tk_str $ map (tk_str.mkcol) mdescr with
+      mkcol xs = take n $ xs+padding;
+    end;
+    do (tk.sprintf "$metric columnConfigure %d -visible 1 -title {%s}") $
+    zip (2..m) scale;
+  end);
+end if ~null descr when
+  clear_scale_descr;
+  descr = scale_descr;
+  mdescr = metric_descr;
+  scale = map (!1) mdescr;
+end;
+
+// Rationalize the scale.
+rat_scale scale = catch id (#C when
+  pv = get state!"PV";
+  dmax = get state!"dmax";
+  heur = tk_get "heur";
+  // Get the selected candidate tunings.
+  ns = 0..n-1;
+  ns = zip ns $ map ((0..).pred.val.tk.sprintf "$list getNumChildren %d") ns;
+  T = [[j=>ratio (i,j) | j = js; selected (i,j)] | i,js = ns] with
+    selected (i,j) = val $ tk $ sprintf "$list get {%d %d} 0" (i,j);
+    ratio (i,j) = ratval $ val $ tk $ sprintf "$list get {%d %d} 2" (i,j);
+    ratval (p/q) = p,q; ratval x = x otherwise;
+  end;
+  // Remove candidates which are already fixed or which exceed the weight
+  // threshold for any of the fixed tunings.
+  T0 = [i=>ratio i | i = 0..n-1; selected i] with
+    selected i = val $ tk $ sprintf "$list get %d 0" i;
+    ratio i = ratval $ val $ tk $ sprintf "$list get %d 2" i;
+    ratval (p/q) = p,q; ratval x = x otherwise;
+  end;
+  T0 = filter (\(_=>x)->~doublep x) T0; T0 = dict T0;
+  T = [if member T0 i then [] else C | i,C = zip (0..n-1) T];
+  any (\C->#C>1) T || throw (-1); // Nothing to do.
+  T = [filter check C | C = T] with
+    check (_=>x) = all (<=dmax) [hrm_dist pv x y | y = vals T0];
+  end;
+  // Build a node index, we need it later.
+  index = map smatrix {[j | j=>_ = r] | r = T};
+  T = [[x | _=>x = C] | C = T];
+  // Perform the rationalization.
+  C = catch this_cant_happen $ rationalize heur dmax pv T with
+    this_cant_happen x = err $ sprintf
+"The rationalization routine raised exception <b>%s</b>.\n\n\
+This is a bug. Please consider sending a bug report with the text of this \
+message to the author at <span foreground=\"blue\" underline=\"single\">\
+Dr.Graef@t-online.de</span>."
+    (str x) $$ [];
+  end;
+  C = map reindex C with
+    reindex ((i,j)=>x) = i,index!i!j;
+  end;
+  end_log;
+  ~null C || throw 0; // Nothing found (most likely we were interrupted).
+  // Update the selection.
+  do (tk.sprintf "$list cellConfigure {%d %d} 0 -value 0")
+  [i,j | i,js = ns; j = js];
+  do (tk.sprintf "$list cellConfigure {%d %d} 0 -value 1") C;
+end) if n==m when
+  n = #scale;
+  m = val $ tk "$list getNumChildren {}";
+end;
+rat_scale _ = -1 otherwise;
+
+// Get the selected scale points and update the scale accordingly.
+update_scale scale = scale when
+  ns = map (val.tk.sprintf "$list getNumChildren %d") (0..n-1);
+  items = map (\[i,x]->i=>x) $ cat $ zipwith get_row (0..n-1) ns with
+    get_row n m = map tail $ take 1 $ filter head $
+      map (val.tk.sprintf ("$list get "+str n+" %d")) (0..2) :
+      [[val $ tk $ sprintf ("$list get {"+str n+" %d} %d") (k,c) | c = 0..2] |
+       k = 0..m-1];
+  end;
+  scale = vals $ foldl insert (dict $ zipwith (=>) (0..n-1) scale) items;
+  tk_set "scale" $ unparse_scale scale;
+end if n==m when
+  n = #scale;
+  m = val $ tk "$list getNumChildren {}";
+end;
+update_scale scale = scale otherwise;
+
+name_plate = tk $
+  sprintf "$progress configure -fraction 0 -text \"Scale Version %s\""
+  prog_version;
+
+err msg::string = false when
+  tk_set "msg" msg; tk "error_dg $msg";
+end;
+err _ = false when
+  tk "error_dg \"Unknown Error\"";
+end;
+
+information msg::string = () when
+  tk_set "msg" msg; tk "info_dg $msg";
+end;
+
+#! --required about_cb
+about_cb = () when
+  tk_set "about" $ sprintf
+"This is <b>scale version %s</b>, a program for musical scale visualization \
+and rationalization.\n\n\
+Copyright (c) 2010 by Albert Gräf, \
+<span foreground=\"blue\" underline=\"single\">Dr.Graef@t-online.de</span>. \
+The source of this program is available from the Pure website, see \
+<span foreground=\"blue\" underline=\"single\">\
+http://pure-lang.googlecode.com</span>.\n\
+\n\
+The scale program is free software: you can redistribute it and/or modify it \
+under the terms of the GNU General Public License as published by the Free \
+Software Foundation, either version 3 of the License, or (at your option) \
+any later version.\n\
+\n\
+The scale program is distributed in the hope that it will be useful, but \
+<b>without any warranty</b>; without even the implied warranty of \
+<b>merchantability</b> or <b>fitness for a particular purpose</b>.\n\
+\n\
+Please see the COPYING file accompanying this program for the precise \
+license terms. The GPL can also be read online at \
+<span foreground=\"blue\" underline=\"single\">\
+http://www.gnu.org/licenses</span>.\n\n\
+Documentation can be found in the html manual accompanying this software."
+  prog_version;
+  tk "about_dg $about";
+end;
+
+#! --required collapse_cb
+#! --required expand_cb
+let expanded = ref emptyset;
+collapse_cb p = put expanded (delete (get expanded) (val p));
+expand_cb p = put expanded (insert (get expanded) (val p));
+
+#! --required key_cb
+key_cb s keysym = case keysym of
+  _        = () if val s and 8; // Alt key combinations, used by the GUI.
+  "Escape" = escape_cb;
+  "r"	   = tk "reset_camera; renWin Render";
+  "t"	   = interactor_cb "1";
+  "j"	   = interactor_cb "0";
+  _	   = () otherwise;
+end;
+
+#! --required log_cb
+logging 1;
+let last_s = ref 0.0;
+start_log = put last_s 0.0;
+end_log = name_plate;
+log_cb n s = tk $
+  sprintf "$progress configure -fraction %.4f -text \"%.0f%%\"" (p,p*100) when
+  old = get last_s; new = put last_s s; p = progress old new;
+end with
+  progress old new = round (perc (old-new)*100.0)/100.0;
+  perc d = 1.0 if d == 0.0;
+       	 = min 1.0 $ max 0.0 $ (log (100.0/abs d))/8 otherwise;
+end;
+#! --required log2_cb
+log2_cb p = tk $
+  sprintf "$progress configure -fraction %.4f -text \"%.0f%%\"" (p,p*100);
+
+#! --required node_labels_cb
+node_labels_cb v t = () when
+  lbls = node_labels v t;
+  tk_set "lbls" $ tk_join lbls;
+  tk "captions $lbls; renWin Render";
+end;
+
+#! --required edge_labels_cb
+edge_labels_cb v = tk $ sprintf "edge_labels SetVisibility %s; renWin Render" v;
+
+#! --required axes_cb
+axes_cb v = tk $ sprintf "axes SetVisibility %s; renWin Render" v;
+
+#! --required interactor_cb
+interactor_cb v = tk $ sprintf "[[renWin GetInteractor] GetInteractorStyle] \
+SetCurrentStyleTo%sCamera" (if val v then "Trackball" else "Joystick");
+
+#! --required new_cb
+new_cb = tk "new_file \"\"; reload_data 1; renWin Render" if new_scale;
+
+#! --required open_cb
+open_cb = () when
+  tk "$status push {Loading scale...}";
+  tk_set "fname" name;
+  if read_scale true name then
+    tk "new_file $fname; reload_data 1; renWin Render"
+  else ();
+  tk "$status pop";
+end if ~null name when name = tk "open_dg" end;
+
+#! --required revert_cb
+revert_cb = () when
+  tk "$status push {Reverting scale...}";
+  if read_scale true name then tk "reload_data 1; renWin Render" else ();
+  tk "$status pop";
+end if ~null name when name = tk_get "lastfile" end;
+
+#! --required save_cb
+save_cb = () when
+  tk "$status push {Saving scale...}";
+  save_scale name;
+  tk_set "fname" name; tk "new_file $fname";
+  tk "$status pop";
+end if ~null name when name = tk "save_dg" end;
+
+#! --required draw_cb
+draw_cb = tk "reload_data 1; renWin Render" if draw_scale;
+
+#! --required rat_cb
+rat_cb = catch err (res when
+  scale = parse_scale;
+  scale === get state!"scale" ||
+  throw "The scale has been edited. Please first do a Refresh to update the \
+scale information.";
+  n = #scale;
+  n>0 || throw "Empty scale. You need to load or enter a scale first.";
+  put break false;
+  tk "$status push {Rationalizing scale, please wait... (Esc to interrupt)}";
+  tk "$ratbut configure -sensitive 0";
+  res = rat_scale scale;
+  tk "$ratbut configure -sensitive 1";
+  tk "$status pop";
+  fin = if get break then "interrupted" else "finished";
+  put break false;
+  // Give some hopefully helpful diagnostics about the result.
+  res || throw (sprintf
+"%%<<b>Rationalization %s, no solutions were found.</b>\n\n\
+You might want to increase the weight threshold to enable larger harmonic \
+distances and/or additional candidate tunings." fin);
+  none, done = check with
+    check = all sel1 (0..n-1), all sel (0..n-1) with
+      sel1 i = val $ tk $ sprintf "$list get %d 0" i;
+      sel2 i j = val $ tk $ sprintf "$list get {%d %d} 0" (i,j);
+      sel i = sel1 i || any (sel2 i)
+        (0..(val $ tk $ sprintf "$list getNumChildren %d" i)-1);
+    end;
+  end;
+  res > 0 || throw
+  (if none then
+"The scale is already rational, so there is nothing to do. To compute an \
+alternative rationalization, you should first unselect some scale points \
+and select some alternative tunings. Then run <i>Rationalize</i> again."
+   else
+"There's nothing to do, because at most one tuning alternative was selected \
+for each scale point. You might want to generate and/or select some \
+additional candidate tunings first.");
+  if done then
+    information $
+    sprintf
+"%%<<b>Rationalization %s, %d scale points were rationalized.</b>\n\n\
+The entire scale has been rationalized, so after reviewing the results \
+you may now proceed with <i>Update</i> to update and redraw the scale. To \
+perform a new rationalization, just select some new tuning alternatives and \
+run <i>Rationalize</i> again."
+    (fin,res)
+  else
+    information $
+    sprintf
+"%%<<b>Rationalization %s, %d scale points were rationalized.</b>\n\n\
+Some scale points are still not rationalized, so you might have to select \
+some more tuning alternatives, or try to increase the weight threshold to \
+enable larger harmonic distances and/or additional candidate tunings. You \
+may also proceed with <i>Update</i> to update the scale and fix the partial \
+rationalization obtained so far."
+    (fin,res);
+end);
+
+#! --required escape_cb
+escape_cb = put break true;
+
+#! --required update_cb
+update_cb = catch err (res when
+  scale = parse_scale;
+  scale === get state!"scale" ||
+  throw "The scale has been edited. Please first do a Refresh to update the \
+scale information.";
+  res = if scale === get state!"scale" then res when
+    // Check selections in the Scale list and update the scale accordingly.
+    scale = update_scale scale;
+    // Redraw the scale if anything has changed.
+    res = if scale ~== get state!"scale" then draw_scale else false;
+    if res then tk "reload_data 1; renWin Render" else ();
+  end else ();
+end);
+
+#! --required refresh_cb
+refresh_cb = catch err
+(if parse_scale === get state!"scale" then () when
+  x = list $ get expanded;
+  n = val $ tk "$list getNumChildren {}";
+  x = filter (<n) x;
+  make_scale_descr;
+  do (tk.sprintf "$list expand -path %d") x;
+  put expanded (set x);
+end else draw_cb);
+
+#! --required select_all_cb
+select_all_cb = () when
+  n = val $ tk "$list getNumChildren {}";
+  ns = filter check (0..n-1) with
+    check n = ~(val $ tk $ sprintf "$list get %d 0" n);
+  end;
+  ns = zip ns $ map ((0..).pred.val.tk.sprintf "$list getNumChildren %d") ns;
+  do (tk.sprintf "$list cellConfigure {%d %d} 0 -value 1")
+  [i,j | i,js = ns; j = js];
+  do (tk.sprintf "$list cellConfigure %d 0 -value 0; $list expand -path %d")
+  [i,i | i,js = ns; ~null js];
+end;
+
+#! --required unselect_all_cb
+unselect_all_cb = () when
+  n = val $ tk "$list getNumChildren {}";
+  ns = 0..n-1;
+  do (tk.sprintf "$list cellConfigure %d 0 -value 0; $list collapse -path %d") $
+  zip ns ns;
+  ns = zip ns $ map ((0..).pred.val.tk.sprintf "$list getNumChildren %d") ns;
+  do (tk.sprintf "$list cellConfigure {%d %d} 0 -value 0")
+  [i,j | i,js = ns; j = js];
+end;
+
+#! --required dmax_cb
+let recursive = ref false;
+dmax_cb v = tk "reload_data 0; renWin Render" when
+  put recursive true;
+  data,wmin,wmax = vtk_data dmax (info!"V") (info!"M");
+  tk_set "data"  data;
+  tk_set "wmin"  $ str wmin;
+  tk_set "wmax"  $ str wmax;
+  tk_set "dmax"  $ str dmax;
+  // Update the state information.
+  put state $ record {info, "dmax"=>dmax};
+  put last_dmax dmax;
+  put recursive false;
+end if ~get recursive && doublep dmax && dmax ~= info!"dmax"
+when info = get state; dmax = dblval v end;
+
+#! --required pval_cb
+pval_cb v = catch (cst ().err) (() when
+  scale = parse_scale;
+  dmax = dblval $ tk_get "dmax";
+  doublep dmax || throw "Bad weight threshold";
+  res,info = draw_if_needed
+"The weight function has been changed.\nDo you wish to redraw the scale now?"
+  scale;
+  if res then () when
+    data,wmin,wmax = vtk_data dmax (info!"V") (info!"M");
+    fact = scale_factor (info!"V");
+    tk_set "data"  data;
+    tk_set "wmin"  $ str wmin;
+    tk_set "wmax"  $ str wmax;
+    tk_set "dmax"  $ str dmax;
+    tk_set "fact"  $ str fact;
+    tk_set "title" $ sprintf "stress = %g" (info!"s");
+    put state info; put expanded emptyset;
+    make_scale_descr;
+    tk "reload_data 1; renWin Render";
+  end else ();
+end) if ~get recursive && v ~= pval_names!(get state!"PV");
+
+dblval x = case val x of
+  x::int = double x;
+  x::double = x;
+  x = inf if x==='inf;
+  _ = x;
+end;
+
+get_title name::string = res when
+  tk_set "fname" name;
+  res = tk "file tail $fname";
+end;
+
+set_title name::string = () when
+  tk_set "fname" name;
+  tk "$top configure -title \"[file tail $fname] - scale\"";
+end;
+
+new_scale = true when
+  info = state0;
+  put state info; put expanded emptyset;
+  dmax = info!"dmax";
+  data,wmin,wmax = vtk_data dmax (info!"V") (info!"M");
+  tk_set "scale" "";
+  tk_set "descr" "";
+  tk_set "data"  data;
+  tk_set "wmin"  $ str wmin;
+  tk_set "wmax"  $ str wmax;
+  tk_set "dmax"  $ str dmax;
+  tk_set "fact"  "1.0";
+  tk_set "lbls"  "";
+  tk_set "title" "";
+  clear_scale_descr;
+  set_title "Unnamed";
+end;
+
+read_scale gui name::string = catch file_err (parse_scala_file data when
+  data::string = fget (fopen name "r");
+end) with
+  parse_scala_file data::string = catch format_err (true when
+    // See http://www.huygens-fokker.org/scala/scl_format.html for a
+    // description of the file format we parse here.
+    data = map trim $ split "\n" data with
+      // Remove leading whitespace.
+      trim s::string = strcat $ regsplit "^[[:space:]]+" REG_EXTENDED s 0;
+    end;
+    // The Scala data is in all non-comment lines (comments starting with
+    // '!'). It begins with the description of the scale and the number of
+    // following scale points, each on a single line.
+    descr:n:scale = [s | s = data; null s || head s ~= "!"];
+    scale = [s | s = scale; ~null s];
+    n = val n; n === #scale || throw ();
+    // Scala permits trailing comments after each scale point, delimited by
+    // whitespace, we ignore those here.
+    scale = map (scale_val.head.split) scale with
+      split s::string = regsplit "[[:space:]]+" REG_EXTENDED s 0;
+    end;
+    // Scala also mandates that the start point 1/1 = 0.0 is implicit and
+    // should not be in the file, so add it back in. (The format spec doesn't
+    // require that scale points are in a particular order, so we just take
+    // the given order as is.)
+    scale = '(1/1) : scale; n = n+1;
+    // The part specific to the scale program starts here. This data is
+    // optional. If present, the data should be in additional comment lines of
+    // the form '! id = val'. The supported values are 'M' (disharmonicity
+    // metric), 'V' (3D embedding), 'PV' (prime valuation function used to
+    // define the metric, 's' (stress-1 value of the embedding) and 'dmax'
+    // (maximum disharmonicity value used as a threshold, e.g., when drawing
+    // the scale).
+    info = info when
+      // We simply ignore the data if it is not in good shape.
+      info = catch (cst {}) $ record $
+        cat [parse s | s = data; ~null s && head s == "!"];
+      info = if null info || all (member info) ["M","V","PV","s","dmax"]
+      	     then info else {};
+      _,info = if null info then draw_if_needed
+"The scale hasn't been drawn yet.\nDo you wish to draw it now?" scale
+      	       else false,record {info, "scale"=>scale};
+    end with
+      parse s = regexg (get_info) "! ([A-Za-z]+) = (.*)" REG_EXTENDED s 0;
+      get_info (_,_,_,id,_,x) = id=>x when
+        x = val x;
+	x = if x === 'inf then inf
+	    else if listp x && all listp x then matrix (map (map double) x)
+	    else x;
+	x = case id of
+	  "M" = dmatrix x if null x;
+	      = x if dmatrixp x && dim x == (n,n);
+	  "V" = x if dmatrixp x && dim x == (n,3);
+	  "dmax" = round (x*100)/100 if doublep x;
+	  "s" = x if doublep x;
+	  "PV" = x when
+	    name = pval_names!x;
+	    put recursive true;
+	    tk_set "pval" name;
+	    put recursive false;
+	    x = pval_funs!name;
+	  end;
+	end;
+      end;
+    end;
+    put state info; put expanded emptyset;
+    scale = unparse_scale scale;
+    dmax = info!"dmax";
+    data,wmin,wmax = vtk_data dmax (info!"V") (info!"M");
+    fact = scale_factor (info!"V");
+    tk_set "scale" scale;
+    tk_set "descr" descr;
+    tk_set "data"  data;
+    tk_set "wmin"  $ str wmin;
+    tk_set "wmax"  $ str wmax;
+    tk_set "dmax"  $ str dmax;
+    tk_set "fact"  $ str fact;
+    make_scale_descr;
+    tk_set "title" $ sprintf "stress = %g" (info!"s");
+    lbls = node_labels (tk_get "node_labels") (tk_get "label_type");
+    tk_set "lbls" $ tk_join lbls;
+    set_title name;
+  end);
+  file_err _ = false when
+    tk_set "msg" $ sprintf "Error reading %s\n%s" (name, strerror errno);
+    if gui then tk "error_dg $msg" else fprintf stderr "scale: %s\n" msg;
+  end if gui;
+  = false when
+    fprintf stderr "scale: %s: %s\n" (name, strerror errno);
+  end;
+  format_err _ = false when
+    tk_set "msg" $ sprintf "Error reading %s\n%s"
+    (name, "Invalid format (not a scale file)");
+    if gui then tk "error_dg $msg" else fprintf stderr "scale: %s\n" msg;
+  end if gui;
+  = false when
+    fprintf stderr "scale: %s: Invalid format (not a scale file)\n" name;
+  end;
+end;
+
+save_scale name::string = catch err (true when
+  fp = fopen name "w";
+  pointerp fp || throw $ sprintf "Error writing file\n%s" name;
+  descr = tk_get "descr";
+  scale = tail parse_scale;
+  pv = pval_funs!tk_get "pval";
+  M = get state!"M"; V = get state!"V";
+  s = get state!"s"; dmax = get state!"dmax";
+  fprintf fp "! %s\n\
+!\n\
+%s\n\
+%d\n\
+!\n\
+%s\n\
+!!! information added by scale program -- DO NOT EDIT !!!\n\
+! PV = %s\n\
+! M = %s\n\
+! V = %s\n\
+! s = %s\n\
+! dmax = %s\n"
+  (get_title name,descr,#scale,join "\n" (map str scale),
+   str pv,str (list2 M),str (list2 V),str s,str dmax);
+  // Update the state information.
+  put state $ record {get state, "PV"=>pv, "scale"=>'(1/1):scale};
+  set_title name;
+end);
+
+vtk_data dmax V M = data,wmin,wmax when
+  n,m = dim M;
+  E = [i,j,M!(i,j) | i = 0..n-1; j = 0..m-1; i ~= j; M!(i,j) <= dmax];
+  k = #E;
+  data = sprintf "# vtk DataFile Version 2.0\n\
+Unstructured Grid Example\n\
+ASCII\n\
+\n\
+DATASET UNSTRUCTURED_GRID\n\
+POINTS %d float\n\
+%s\n\
+CELLS %d %d\n\
+%s\n\
+CELL_TYPES %d\n\
+%s\n\
+CELL_DATA %d\n\
+SCALARS weights float\n\
+LOOKUP_TABLE default\n\
+%s\n"
+  (dim V!0,join " " [str x | x = V],
+   k,3*k,join "\n" [sprintf "2 %d %d" (i,j) | i,j,w = E],
+   k,join "\n" ["3" | i=1..k],
+   k,join "\n" [str w | i,j,w = E]);
+  W = sort (<) [w | i,j,w = E];
+  W = case W of [] = [0.0,1.0]; [w] = [0.0,w]; _ = W otherwise end;
+  wmin = head W; wmax = last W;
+end;
+
+draw_scale = catch err (true when
+  scale = parse_scale;
+  dmax = dblval $ tk_get "dmax";
+  doublep dmax || throw "Bad weight threshold";
+  pv = pval_funs!tk_get "pval";
+  // Compute the embedding.
+  tk "$status push {Drawing scale, please wait...}";
+  tk "$drawbut configure -sensitive 0";
+  M,V,s = embed_scale pv scale;
+  tk "$drawbut configure -sensitive 1";
+  tk "$status pop";
+  // Update the state information.
+  put state {"M"=>M,"V"=>V,"s"=>s,"dmax"=>dmax,"PV"=>pv,"scale"=>scale};
+  put expanded emptyset;
+  // Redraw.
+  data,wmin,wmax = vtk_data dmax V M;
+  fact = scale_factor V;
+  tk_set "data"  data;
+  tk_set "wmin"  $ str wmin;
+  tk_set "wmax"  $ str wmax;
+  tk_set "dmax"  $ str dmax;
+  tk_set "fact"  $ str fact;
+  make_scale_descr;
+  tk_set "title" $ sprintf "stress = %g" s;
+  lbls = node_labels (tk_get "node_labels") (tk_get "label_type");
+  tk_set "lbls" $ tk_join lbls;
+end);
+
+draw_if_needed msg scale = true,record res when
+  pv = pval_funs!tk_get "pval";
+  tk "$status push {Drawing scale, please wait...}";
+  tk "$drawbut configure -sensitive 0";
+  M,V,s = embed_scale pv scale;
+  tk "$drawbut configure -sensitive 1";
+  tk "$status pop";
+  dmax = dblval $ tk_get "dmax";
+  doublep dmax || throw "Bad weight threshold";
+  res = {"M"=>M,"V"=>V,"s"=>s,"dmax"=>dmax,"PV"=>pv,"scale"=>scale};
+end if tk (sprintf "question_dg \"%s\"" msg) == "Yes";
+= false,record {state0,"scale"=>scale} otherwise;
+
+embed_scale pv scale = M,V,0.0 when
+  // We have irrational scale points, just render them as a chain in ascending
+  // order.
+  n = #scale;
+  s = sort cmp $ zip (0..n-1) $ map cent scale with
+    cmp (i,x) (j,y) = x<y || x==y && i<j;
+  end;
+  p = [{i/(n-1),0.0,0.0} | i = 0..n-1];
+  s = zipwith (=>) s p;
+  s = sort cmp s with cmp ((i,x)=>p) ((j,y)=>q) = i<j end;
+  V = rowcat [p | _=>p = s]; M = {}; //M = dmatrix {i~=j | i = 1..n; j = 1..n};
+end if any doublep scale;
+
+embed_scale pv scale = res when
+  start_log; res = mds pv scale; end_log;
+end;
+
+/* The main program: execute the Tcl script and enter the main loop. */
+
+main = () when
+  fname = if argc>1 then argv!1 else "";
+  tk ui;
+  tk_set "fname" fname; tk "new_file $fname";
+  name_plate;
+  res = if null fname then new_scale else read_scale false fname;
+  if res && ~null fname then tk "reload_data 1; renWin Render" else ();
+  tk_main;
+end;
+
+if compiling then () else main;

@@ -1,0 +1,45 @@
+
+/* hrm.q: generic Barlow disharmonicities of rational pitches and intervals */
+
+using factor, math;
+
+/* The input to all these functions are rational pitches/intervals specified
+   as (num,denom) pairs. The pv ("prime valuation") function is used to
+   determine the basic prime indigestibilities. It is expected to take a prime
+   number as argument, and return the corresponding indigestibility value as
+   the result. */
+
+/* Some "standard" prime valuation functions to play with. Add others as
+   needed. */
+
+barlow p	= 2*(p-1)*(p-1)/p;
+euler p		= p-1;
+
+// "mod 2" versions (octave is eliminated)
+
+barlow2 p	= if p==2 then 0 else barlow p;
+euler2 p	= if p==2 then 0 else euler p;
+
+// logarithmized versions
+
+logbarlow p	= log (barlow p);
+logeuler p	= log (euler p);
+
+/* Harmonicity computation.
+
+   - hrm pv (p,q) computes the disharmonicity of the interval p/q using the
+     prime valuation function pv.
+
+   - hrm pv S computes the disharmonicity metric of a scale S, i.e., the
+     pairwise disharmonicities of all intervals in the scale. The input can be
+     a list or vector of intervals as (p,q) pairs, the output is the distance
+     matrix.
+
+   - hrm_dist pv (p1,q1) (p2,q2) computes the harmonic distance between two
+     pitches, i.e., the disharmonicity of the interval between (p1,q1) and
+     (p2,q2). */
+
+hrm pv (p,q)	= double $ foldl (+) 0 [abs k*pv p | (p,k) = factors (p,q)];
+hrm pv S	= dmatrix {hrm_dist pv s t | s = S; t = S};
+hrm_dist pv (p1,q1) (p2,q2)
+		= hrm pv (p1*q2,p2*q1);
