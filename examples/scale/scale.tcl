@@ -239,14 +239,44 @@ package require Gnocl
 # Unfortunately, this addon package is missing in recent Gnocl versions. The
 # version included in the 0.9.94e tarball seems to work ok with Gnocl 0.9.94g,
 # however. If you don't have this package installed, we'll survive, but then
-# the program won't be able to remember its window position.
+# the program won't be able to remember its window size.
 set GCONF 1
 if {$GCONF && [catch {package require GnoclGconf}]} { set GCONF 0 }
 
-# Once Gnocl's WebKit package works, we'll use that for browsing the
+# Once Gnocl's WebKit package works, we can use it for browsing the
 # documentation. Disabled for now.
 set WEBKIT 0
 if {$WEBKIT && [catch {package require GnoclWebKit}]} { set WEBKIT 0 }
+
+# For the time being, set this variable to your favourite browser in order to
+# read the documentation. If the program exists then it will be invoked on the
+# html manual.
+set browser "firefox"
+
+if {[info exists browser]} {
+    set browser [auto_execok $browser]
+}
+
+set helpfile "scale.html"
+if {[info exists argv0]} {
+    # try to locate the help file
+    set dir [file dirname $argv0]
+    if {![file exists $argv0]} {
+	set progname [auto_execok $argv0]
+	if {$progname != ""} {
+	    set dir [file dirname $progname]
+	}
+    }
+    foreach d [list $dir [file join $dir "doc"] \
+		   [file join $dir "../share/doc/scale"]] {
+	set fname [file join $d "scale.html"]
+	if {[file exists $fname]} {
+	    set helpfile $fname
+	    break
+	}
+    }
+}
+set helpfile [file normalize $helpfile]
 
 set wd 500
 set ht 400
@@ -268,14 +298,17 @@ proc question_dg {msg} {
 }
 
 proc about_dg {text} {
-    global about WEBKIT
-    if {$WEBKIT} {
-	# Show the html manual. FIXME: Must specify a path to the manual here.
-	set wk [gnocl::webKit -url "file:scale.html"]
+    global WEBKIT about helpfile browser
+    if {$WEBKIT && [file exists $helpfile]} {
+	# Show the html manual using WebKit.
+	set wk [gnocl::webKit -url "file:$helpfile"]
 	set about [gnocl::window -title "Help" -child $wk \
 		       -width 500 -height 500 -onDestroy {$about delete}]
+    } elseif {[info exists browser] && $browser != ""} {
+	# Show the html manual using an external browser.
+	exec $browser $helpfile &
     } else {
-	# Show a simple About box for now.
+	# Fallback: Show a simple About box.
 	set about [gnocl::dialog -title "About" -type info \
 		       -child [gnocl::label -wrap 1 -text $text] \
 		       -modal 0 -onResponse {$about delete}]

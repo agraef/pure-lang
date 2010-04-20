@@ -7,6 +7,7 @@ version = 0.1
 prefix = /usr/local
 
 bindir = $(prefix)/bin
+docdir = $(prefix)/share/doc/scale
 
 DISTFILES = COPYING Makefile README scale.html *.pure intnam.par *.m *.tcl \
 scl/*.scl
@@ -41,9 +42,11 @@ scale.pdf: scale.tex
 install:
 	test -d "$(DESTDIR)$(bindir)" || mkdir -p "$(DESTDIR)$(bindir)"
 	cp scale "$(DESTDIR)$(bindir)"
+	test -d "$(DESTDIR)$(docdir)" || mkdir -p "$(DESTDIR)$(docdir)"
+	cp scale.html "$(DESTDIR)$(docdir)"
 
 uninstall:
-	rm -f "$(DESTDIR)$(bindir)/scale"
+	rm -rf "$(DESTDIR)$(bindir)/scale" "$(DESTDIR)$(docdir)"
 
 dist:
 	rm -rf $(dist)
