@@ -281,3 +281,43 @@ Octave's ``help`` command::
     Arguments and result types may be scalars and matrices of boolean, integer,
     double, complex and character data. The Pure function may return multiple
     results as a tuple. Example: pure('succ', 99) => 100.
+
+Caveats and Notes
+=================
+
+Directly embedding Octave in Pure programs is convenient because it allows
+easy exchange of data between Pure and Octave, and you can also call Octave
+functions directly from Pure and vice versa. However, it also comes at a
+cost. A default build of Octave pulls in quite a few dependencies of its own
+which might conflict with other modules loaded in a Pure script. Specifically,
+we have found that building Octave with native graphics support (as is
+included in the latest Octave versions) may give problems with third-party
+graphics libraries such as VTK_ (which segfaults, apparently due to FreeType
+library compatibility issues, if used in the same program as Octave).
+
+.. _VTK: http://www.vtk.org/
+
+We're not sure whether Octave or VTK is to blame here, but until these quirks
+get ironed out you can work around them by disabling native graphics support
+in Octave. Unfortunately, Octave currently doesn't provide an option to do so,
+but the following patches available at the Pure website will do the trick
+(there are different versions of the patch, corresponding to the current
+stable and development versions of Octave):
+
+* Octave 3.2.4: http://pure-lang.googlecode.com/svn/wiki/octave-3.2.4.patch
+
+* Octave 3.3.51: http://pure-lang.googlecode.com/svn/wiki/octave-3.3.51.patch
+
+The patch is to be applied to Octave's configure.in (configure.ac for the
+latest development versions) by running a command like the following in the
+Octave source directory::
+
+  patch -p0 < octave-3.2.4.patch
+
+Then just rerun ``autoconf`` and ``configure`` and compile Octave as usual.
+The resulting version of Octave will have native graphics disabled and should
+work ok with third party libraries such as VTK.
+
+(If you have an Octave version which differs considerably from what we provide
+here then you may have to rework the patch accordingly or apply the necessary
+changes to configure.in or configure.ac manually.)
