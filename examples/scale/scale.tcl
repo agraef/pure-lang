@@ -440,7 +440,7 @@ $cbox add [gnocl::comboBox -variable pval \
 	   -tooltip "Pick an edge weight function"] \
     -expand 1 -fill 0 -align center
 $vbox add $cbox
-$notebook addPage $vbox "%__View"
+$notebook addPage $vbox "%__Graph"
 set sbox [gnocl::box -orientation vertical -borderWidth 0]
 init_list
 set rbox [gnocl::box]
