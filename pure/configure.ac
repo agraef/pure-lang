@@ -43,7 +43,7 @@ fi
 if test "$FLEX" = flex-missing; then
   AC_MSG_WARN([Cannot find flex, won't be able to regenerate lexer.cc.])
 else
-  flexminor=`"$FLEX" --version 2>&1 | sed -e 's,^flex 2\.5\.\(.*\),\1,'`
+  flexminor=`"$FLEX" --version 2>&1 | sed -e 's,^flex \(version \)*2\.5\.\(.*\),\2,'`
   if test "$flexminor" = "3" -o "$flexminor" = "4" -o "$flexminor" = "4a"; then
     AC_MSG_WARN([Your flex version is too old, consider installing flex 2.5.31 or newer.])
   fi
