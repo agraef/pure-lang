@@ -1,3 +1,23 @@
+AC_DEFUN([PURE_LIBGMP_PREFIX],
+[
+  pure_cv_lib_gmp_incdir=
+  pure_cv_lib_gmp_ldpath=
+  AC_ARG_WITH([libgmp-prefix],
+[  --with-libgmp-prefix=DIR  search for libgmp in DIR/include and DIR/lib], [
+    for dir in `echo "$withval" | tr : ' '`; do
+      if test -d $dir/include; then pure_cv_lib_gmp_incdir="$dir/include"; fi
+      if test -d $dir/lib; then pure_cv_lib_gmp_ldpath="$dir/lib"; fi
+    done
+   ])
+
+  if test -n "$pure_cv_lib_gmp_incdir"; then
+    CPPFLAGS="$CPPFLAGS -I$pure_cv_lib_gmp_incdir"
+  fi
+  if test -n "$pure_cv_lib_gmp_ldpath"; then
+    LIBS="$LIBS -L$pure_cv_lib_gmp_ldpath -lgmp"
+  fi
+])
+
 dnl iconv check from Bruno Haible.
 
 AC_DEFUN([AM_ICONV],

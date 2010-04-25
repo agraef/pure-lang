@@ -720,6 +720,7 @@ enable_versioned
 enable_warnings
 with_readline
 with_editline
+with_libgmp_prefix
 with_libiconv_prefix
 '
       ac_precious_vars='build_alias
@@ -1375,6 +1376,7 @@ Optional Packages:
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-readline         readline support, if available (default)
   --with-editline         editline support, if available (default)
+  --with-libgmp-prefix=DIR  search for libgmp in DIR/include and DIR/lib
   --with-libiconv-prefix=DIR  search for libiconv in DIR/include and DIR/lib
 
 Some influential environment variables:
@@ -5658,6 +5660,28 @@ else
   vl_readline_libs="$vl_readline_libs $vl_editline_libs"
 fi
 vl_editline_libs=""
+
+  pure_cv_lib_gmp_incdir=
+  pure_cv_lib_gmp_ldpath=
+
+# Check whether --with-libgmp-prefix was given.
+if test "${with_libgmp_prefix+set}" = set; then
+  withval=$with_libgmp_prefix;
+    for dir in `echo "$withval" | tr : ' '`; do
+      if test -d $dir/include; then pure_cv_lib_gmp_incdir="$dir/include"; fi
+      if test -d $dir/lib; then pure_cv_lib_gmp_ldpath="$dir/lib"; fi
+    done
+
+fi
+
+
+  if test -n "$pure_cv_lib_gmp_incdir"; then
+    CPPFLAGS="$CPPFLAGS -I$pure_cv_lib_gmp_incdir"
+  fi
+  if test -n "$pure_cv_lib_gmp_ldpath"; then
+    LIBS="$LIBS -L$pure_cv_lib_gmp_ldpath -lgmp"
+  fi
+
 
 { $as_echo "$as_me:$LINENO: checking for __gmpz_init in -lgmp" >&5
 $as_echo_n "checking for __gmpz_init in -lgmp... " >&6; }

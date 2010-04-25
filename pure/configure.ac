@@ -116,6 +116,7 @@ else
 fi
 vl_editline_libs=""
 dnl Check for libraries.
+PURE_LIBGMP_PREFIX
 AC_CHECK_LIB(gmp, __gmpz_init, ,
 [AC_MSG_ERROR([Cannot find the GMP library, please install libgmp.])])
 AC_CHECK_HEADERS([gmp.h], ,
