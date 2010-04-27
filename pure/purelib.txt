@@ -56,8 +56,27 @@ automatically (unless the interpreter is invoked with the ``--no-prelude``
 option), all operations discussed in this section are normally available in
 Pure programs without requiring any explicit import declarations.
 
+.. raw:: html
+
+   <a name="true">
+
+.. raw:: html
+
+   <a name="false">
+
+.. _true:
+.. _false:
+
 The prelude also declares a signature of commonly used constant and
-operator symbols.
+operator symbols. This includes the truth values ``true`` and ``false``.
+These are actually just integers in Pure, but sometimes it's convenient to
+refer to them using these symbolic constants. Note that if you also want to
+use these on the left-hand side of equations, you still have to declare
+them as ``nonfix`` symbols yourself, using a declaration like::
+
+  nonfix false true;
+
+In addition, the following special exception symbols are provided:
 
 .. raw:: html
 
@@ -71,14 +90,20 @@ operator symbols.
 
    <a name="stack_fault">
 
+.. raw:: html
+
+   <a name="malloc_error">
+
 .. _failed_cond:
 .. _failed_match:
 .. _stack_fault:
+.. _malloc_error:
 
-* The built-in exception values ``failed_cond`` (failed conditional in
-  guard or if-then-else), ``failed_match`` (failed pattern match in lambda,
-  ``case`` expression, etc.) and ``stack_fault`` (not enough stack space,
-  ``PURE_STACK`` limit exceeded).
+* Built-in exception values: ``failed_cond`` (failed conditional in guard
+  or if-then-else), ``failed_match`` (failed pattern match in lambda,
+  ``case`` expression, etc.), ``stack_fault`` (not enough stack space,
+  ``PURE_STACK`` limit exceeded) and ``malloc_error`` (memory allocation
+  error).
 
 .. raw:: html
 
@@ -96,45 +121,24 @@ operator symbols.
 
    <a name="bad_matrix_value">
 
-.. raw:: html
-
-   <a name="out_of_bounds">
-
-.. raw:: html
-
-   <a name="malloc_error">
-
 .. _bad_list_value:
 .. _bad_tuple_value:
 .. _bad_string_value:
 .. _bad_matrix_value:
+
+* Value mismatches a.k.a. dynamic typing errors: ``bad_string_value x``,
+  ``bad_matrix_value x``, ``bad_list_value x``, ``bad_tuple_value x``.
+  These are thrown by some operations when they fail to find an expected
+  value of the corresponding type.
+
+.. raw:: html
+
+   <a name="out_of_bounds">
+
 .. _out_of_bounds:
-.. _malloc_error:
 
-* Other predefined exceptions: ``bad_string_value x``, ``bad_matrix_value
-  x``, ``bad_list_value x``, ``bad_tuple_value x`` (which are thrown by
-  some operations when they fail to find an expected value of the
-  corresponding type), ``out_of_bounds`` (which is thrown by the index
-  operator ``!`` if a list, tuple or matrix index is out of bounds), and
-  ``malloc_error`` which indicates a memory allocation error.
-
-.. raw:: html
-
-   <a name="true">
-
-.. raw:: html
-
-   <a name="false">
-
-.. _true:
-.. _false:
-
-* The truth values ``true`` and ``false``. These are actually just integers
-  in Pure, but sometimes it's convenient to refer to them using these
-  symbolic constants. Note that if you also want to use these on the
-  left-hand side of equations, you still have to declare them as
-  ``nonfix`` symbols yourself, using a declaration like: ``nonfix false
-  true;``
+* Index range exceptions: ``out_of_bounds`` is thrown by the index operator
+  ``!`` if a list, tuple or matrix index is out of bounds.
 
 .. raw:: html
 

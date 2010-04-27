@@ -426,29 +426,32 @@ primitives.pure. Note that since the prelude module gets imported
 automatically (unless the interpreter is invoked with the <tt class="docutils literal"><span class="pre">--no-prelude</span></tt>
 option), all operations discussed in this section are normally available in
 Pure programs without requiring any explicit import declarations.</p>
-<p>The prelude also declares a signature of commonly used constant and
-operator symbols.</p>
-<a name="failed_cond"><a name="failed_match"><a name="stack_fault"><ul class="simple" id="stack-fault">
-<span id="failed-match"></span><span id="failed-cond"></span><li>The built-in exception values <tt class="docutils literal"><span class="pre">failed_cond</span></tt> (failed conditional in
-guard or if-then-else), <tt class="docutils literal"><span class="pre">failed_match</span></tt> (failed pattern match in lambda,
-<tt class="docutils literal"><span class="pre">case</span></tt> expression, etc.) and <tt class="docutils literal"><span class="pre">stack_fault</span></tt> (not enough stack space,
-<tt class="docutils literal"><span class="pre">PURE_STACK</span></tt> limit exceeded).</li>
+<a name="true"><a name="false"><p id="false"><span id="true"></span>The prelude also declares a signature of commonly used constant and
+operator symbols. This includes the truth values <tt class="docutils literal"><span class="pre">true</span></tt> and <tt class="docutils literal"><span class="pre">false</span></tt>.
+These are actually just integers in Pure, but sometimes it's convenient to
+refer to them using these symbolic constants. Note that if you also want to
+use these on the left-hand side of equations, you still have to declare
+them as <tt class="docutils literal"><span class="pre">nonfix</span></tt> symbols yourself, using a declaration like:</p>
+<pre class="literal-block">
+nonfix false true;
+</pre>
+<p>In addition, the following special exception symbols are provided:</p>
+<a name="failed_cond"><a name="failed_match"><a name="stack_fault"><a name="malloc_error"><ul class="simple" id="malloc-error">
+<span id="stack-fault"></span><span id="failed-match"></span><span id="failed-cond"></span><li>Built-in exception values: <tt class="docutils literal"><span class="pre">failed_cond</span></tt> (failed conditional in guard
+or if-then-else), <tt class="docutils literal"><span class="pre">failed_match</span></tt> (failed pattern match in lambda,
+<tt class="docutils literal"><span class="pre">case</span></tt> expression, etc.), <tt class="docutils literal"><span class="pre">stack_fault</span></tt> (not enough stack space,
+<tt class="docutils literal"><span class="pre">PURE_STACK</span></tt> limit exceeded) and <tt class="docutils literal"><span class="pre">malloc_error</span></tt> (memory allocation
+error).</li>
 </ul>
-<a name="bad_list_value"><a name="bad_tuple_value"><a name="bad_string_value"><a name="bad_matrix_value"><a name="out_of_bounds"><a name="malloc_error"><ul class="simple" id="malloc-error">
-<span id="out-of-bounds"></span><span id="bad-matrix-value"></span><span id="bad-string-value"></span><span id="bad-tuple-value"></span><span id="bad-list-value"></span><li>Other predefined exceptions: <tt class="docutils literal"><span class="pre">bad_string_value</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">bad_matrix_value</span>
-<span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">bad_list_value</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">bad_tuple_value</span> <span class="pre">x</span></tt> (which are thrown by
-some operations when they fail to find an expected value of the
-corresponding type), <tt class="docutils literal"><span class="pre">out_of_bounds</span></tt> (which is thrown by the index
-operator <tt class="docutils literal"><span class="pre">!</span></tt> if a list, tuple or matrix index is out of bounds), and
-<tt class="docutils literal"><span class="pre">malloc_error</span></tt> which indicates a memory allocation error.</li>
+<a name="bad_list_value"><a name="bad_tuple_value"><a name="bad_string_value"><a name="bad_matrix_value"><ul class="simple" id="bad-matrix-value">
+<span id="bad-string-value"></span><span id="bad-tuple-value"></span><span id="bad-list-value"></span><li>Value mismatches a.k.a. dynamic typing errors: <tt class="docutils literal"><span class="pre">bad_string_value</span> <span class="pre">x</span></tt>,
+<tt class="docutils literal"><span class="pre">bad_matrix_value</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">bad_list_value</span> <span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">bad_tuple_value</span> <span class="pre">x</span></tt>.
+These are thrown by some operations when they fail to find an expected
+value of the corresponding type.</li>
 </ul>
-<a name="true"><a name="false"><ul class="simple" id="false">
-<span id="true"></span><li>The truth values <tt class="docutils literal"><span class="pre">true</span></tt> and <tt class="docutils literal"><span class="pre">false</span></tt>. These are actually just integers
-in Pure, but sometimes it's convenient to refer to them using these
-symbolic constants. Note that if you also want to use these on the
-left-hand side of equations, you still have to declare them as
-<tt class="docutils literal"><span class="pre">nonfix</span></tt> symbols yourself, using a declaration like: <tt class="docutils literal"><span class="pre">nonfix</span> <span class="pre">false</span>
-<span class="pre">true;</span></tt></li>
+<a name="out_of_bounds"><ul class="simple" id="out-of-bounds">
+<li>Index range exceptions: <tt class="docutils literal"><span class="pre">out_of_bounds</span></tt> is thrown by the index operator
+<tt class="docutils literal"><span class="pre">!</span></tt> if a list, tuple or matrix index is out of bounds.</li>
 </ul>
 <a name="operators"><p id="operators">Here's the list of predefined operator symbols. Note that the parser will
 automagically give unary minus the same precedence level as the
