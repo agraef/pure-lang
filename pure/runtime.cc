@@ -10929,6 +10929,22 @@ extern "C"
 void pure_tzset(void)
 {
   interpreter& interp = *interpreter::g_interp;
+#ifndef HAVE_DAYLIGHT_IN_TIME_H
+  int32_t timezone = 0;
+  int32_t daylight = 0;
+# ifdef HAVE_TM_GMTOFF_IN_TM
+  time_t t = time(NULL);
+  tm* lt = localtime(&t);
+  // SUSv3: The value of tm_isdst shall be
+  // positive if Daylight Savings Time is in effect,
+  // 0 if Daylight Savings Time is not in effect,
+  // and negative if the information is not available.
+  //
+  // We treat "Not available" as "not in effect".
+  timezone = (lt->tm_isdst > 0) * 3600 - lt->tm_gmtoff;
+  daylight = lt->tm_isdst;
+# endif
+#endif
   tzset();
   df(interp, "timezone",	pure_int(timezone));
   df(interp, "daylight",	pure_int(daylight));

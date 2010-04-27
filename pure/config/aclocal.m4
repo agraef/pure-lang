@@ -1,3 +1,52 @@
+AC_DEFUN([PURE_CHECK_TIME_H_DECLARES_DAYLIGHT], [
+  AC_CACHE_CHECK(
+    [whether time.h declares the daylight variable],
+    pure_cv_daylight_in_time_h,
+    [AC_LINK_IFELSE([
+      AC_LANG_PROGRAM([
+        #include <time.h>
+      ], [
+        int dst = daylight;
+        int tz = timezone;
+      ])
+    ],
+    pure_cv_daylight_in_time_h=yes,
+    pure_cv_daylight_in_time_h=no
+    )]
+  )
+  if test "x$pure_cv_daylight_in_time_h" = xyes; then
+    AC_DEFINE(
+      HAVE_DAYLIGHT_IN_TIME_H,
+      1,
+      [Define if time.h defines the daylight and timezone variables.])
+  fi
+])
+
+AC_DEFUN([PURE_CHECK_TM_INCLUDES_TM_GMTOFF], [
+  AC_CACHE_CHECK(
+    [whether struct tm has tm_gmtoff member],
+    pure_cv_tm_includes_tm_gmtoff,
+    [AC_LINK_IFELSE([
+      AC_LANG_PROGRAM([
+        #include <time.h>
+      ], [
+        time_t t = time(NULL);
+        struct tm* lt = localtime(&t);
+        int off = lt->tm_gmtoff;
+      ])
+    ],
+    pure_cv_tm_includes_tm_gmtoff=yes,
+    pure_cv_tm_includes_tm_gmtoff=no
+    )]
+  )
+  if test "x$pure_cv_tm_includes_tm_gmtoff" = xyes; then
+    AC_DEFINE(
+      HAVE_TM_GMTOFF_IN_TM,
+      1,
+      [Define if struct tm has tm_gmtoff member.])
+  fi
+])
+
 AC_DEFUN([PURE_LIBGMP_PREFIX],
 [
   pure_cv_lib_gmp_incdir=

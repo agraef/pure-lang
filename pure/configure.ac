@@ -144,6 +144,8 @@ dnl Determine how to get alloca.
 AC_FUNC_ALLOCA
 dnl Platform-dependent time functions.
 AC_CHECK_FUNCS(ftime gettimeofday nanosleep usleep)
+PURE_CHECK_TIME_H_DECLARES_DAYLIGHT
+PURE_CHECK_TM_INCLUDES_TM_GMTOFF
 # We have a replacement for this one if it isn't available.
 AC_REPLACE_FUNCS(strptime)
 dnl Check for the dirent.h header and the readdir() function.
