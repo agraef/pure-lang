@@ -322,13 +322,6 @@ def (f . g) x	= f (g x);
 def void (catmap f x) = do f x;
 def void (listmap f x) = do f x;
 
-/* The hash rocket. This constructor is declared here so that it can be used
-   in other standard library modules to denote special kinds of pairs which
-   map keys to values. Here we only define equality of such pairs. */
-
-(x=>v)==(y=>w)	= x==y && v==w;
-(x=>v)~=(y=>w)	= x~=y || v~=w;
-
 /* ..
 
    Lists and Tuples
@@ -370,6 +363,29 @@ def void (listmap f x) = do f x;
      a,b,c
      > (a,b,c),();
      a,b,c
+
+   .. _key:
+   .. _val:
+
+   The prelude also provides another special kind of pairs called "hash
+   pairs", which take the form ``key=>value``. These are used in various
+   contexts to denote key-value associations. The only operations on hash
+   pairs provided by the prelude are equality testing (which recursively
+   compares the components) and the functions ``key`` and ``val`` which
+   extract the components of a hash pair::
+
+     > ("foo"=>99) == ("bar"=>99);
+     0
+     > key ("foo"=>99), val ("foo"=>99);
+     "foo",99
+
+   Note that in difference to the tuple operator ``(,)``, the "hash rocket"
+   ``(=>)`` is non-associative, so nested applications *must* be
+   parenthesized, and ``(x=>y)=>z`` is generally *not* the same as
+   ``x=>(y=>z)``. Also note that ``(,)`` has lower precedence than ``(=>)``,
+   so to include a tuple as key or value in a hash pair, the tuple must be
+   parenthesized, as in ``"foo"=>(1,2)`` (whereas ``"foo"=>1,2`` denotes a
+   tuple whose first element happens to be a hash pair).
 
    .. _list concatenation:
    .. _+ (list):
@@ -505,6 +521,17 @@ def void (listmap f x) = do f x;
    defines ``!`` in such a manner that it throws an exception when the index
    is out of bounds. It also works with any kind of index container that
    implements the |catmap|_ operation.) */
+
+/* The hash rocket. This constructor is declared here so that it can be used
+   in other standard library modules to denote special kinds of pairs which
+   map keys to values. Here we only define equality of such pairs, as well as
+   the key and val operations for extracting the components of a hash pair. */
+
+(x=>v)==(y=>w)	= x==y && v==w;
+(x=>v)~=(y=>w)	= x~=y || v~=w;
+
+key (x=>v)	= x;
+val (x=>v)	= v;
 
 /* Poor man's tuples(TM). These are constructed with the pairing operator ',',
    are always flat and associate to the right. The empty tuple, denoted (), is

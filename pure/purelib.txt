@@ -436,6 +436,37 @@ element with respect to ``(,)``::
 
 .. raw:: html
 
+   <a name="key">
+
+.. raw:: html
+
+   <a name="val">
+
+.. _key:
+.. _val:
+
+The prelude also provides another special kind of pairs called "hash
+pairs", which take the form ``key=>value``. These are used in various
+contexts to denote key-value associations. The only operations on hash
+pairs provided by the prelude are equality testing (which recursively
+compares the components) and the functions ``key`` and ``val`` which
+extract the components of a hash pair::
+
+  > ("foo"=>99) == ("bar"=>99);
+  0
+  > key ("foo"=>99), val ("foo"=>99);
+  "foo",99
+
+Note that in difference to the tuple operator ``(,)``, the "hash rocket"
+``(=>)`` is non-associative, so nested applications *must* be
+parenthesized, and ``(x=>y)=>z`` is generally *not* the same as
+``x=>(y=>z)``. Also note that ``(,)`` has lower precedence than ``(=>)``,
+so to include a tuple as key or value in a hash pair, the tuple must be
+parenthesized, as in ``"foo"=>(1,2)`` (whereas ``"foo"=>1,2`` denotes a
+tuple whose first element happens to be a hash pair).
+
+.. raw:: html
+
    <a name="list concatenation">
 
 .. raw:: html
@@ -7379,6 +7410,7 @@ Index
 
 | `join`_
 
+| `key`_
 | `keys (dictionary)`_
 | `keys (record)`_
 | `kill`_
@@ -7646,6 +7678,7 @@ Index
 | `update2`_
 | `ushort`_
 
+| `val`_
 | `val (blob)`_
 | `val (string)`_
 | `vals (dictionary)`_
