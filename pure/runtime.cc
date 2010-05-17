@@ -6168,7 +6168,7 @@ pure_expr *pure_double_seq(double from, double to, double step)
 static pure_expr* cmp_p; // TLD
 static int cmp(const void *xp, const void *yp)
 {
-  int res;
+  int res = 0;
   pure_expr *x = *(pure_expr**)xp, *y = *(pure_expr**)yp;
   pure_expr *p = pure_appl(cmp_p, 2, x, y); /* x<y? */
   if (!pure_is_int(p, &res))
