@@ -296,16 +296,23 @@ config:
 
 # installation
 
+ifeq ($(versioned), yes)
+pure_includedir = $(includedir)/pure-$(version)
+pure_libdir = $(libdir)/pure-$(version)
+pure_exe = pure-$(version)$(EXE)
+pure_1 = pure-$(version).1
+else
+pure_includedir = $(includedir)/pure
+pure_libdir = $(libdir)/pure
+pure_exe = pure$(EXE)
+pure_1 = pure.1
+endif
+
 install: pure$(EXE) etc/pure-mode.el pure.1
 ifeq ($(versioned), yes)
 	rm -rf $(addprefix $(DESTDIR), $(includedir)/pure $(libdir)/pure)
-	for x in $(addprefix $(DESTDIR), $(bindir) $(includedir)/pure-$(version) $(libdir)/pure-$(version) $(man1dir)); do $(INSTALL) -d $$x; done
-	$(INSTALL) pure$(EXE) $(DESTDIR)$(bindir)/pure-$(version)$(EXE)
-	ln -sf $(bindir)/pure-$(version)$(EXE) $(DESTDIR)$(bindir)/pure$(EXE)
-else
-	for x in $(addprefix $(DESTDIR), $(bindir) $(includedir)/pure $(libdir)/pure $(man1dir)); do $(INSTALL) -d $$x; done
-	$(INSTALL) pure$(EXE) $(DESTDIR)$(bindir)/pure$(EXE)
 endif
+	for x in $(addprefix $(DESTDIR), $(bindir) $(pure_includedir) $(pure_libdir) $(man1dir)); do $(INSTALL) -d $$x; done
 ifeq ($(sharedlib), yes)
 	$(INSTALL) $(libpure) $(DESTDIR)$(libdir)/$(libpure)
 ifneq ($(libpure), $(libpure_soname))
@@ -315,27 +322,23 @@ ifneq ($(libpure), $(libpure_lnkname))
 	ln -sf $(libdir)/$(libpure) $(DESTDIR)$(libdir)/$(libpure_lnkname)
 endif
 endif
+	$(INSTALL) pure$(EXE) $(DESTDIR)$(bindir)/$(pure_exe)
+	$(INSTALL) -m 644 $(srcdir)/runtime.h $(DESTDIR)$(pure_includedir)
+	$(INSTALL) -m 644 $(srcdir)/pure_main.c pure_main.o $(DESTDIR)$(pure_libdir)
+	for x in $(srcdir)/lib/*.pure; do $(INSTALL) -m 644 $$x $(DESTDIR)$(pure_libdir); done
+	$(INSTALL) -m 644 $(srcdir)/pure.html $(srcdir)/purelib.html $(DESTDIR)$(pure_libdir)
+	$(INSTALL) -m 644 $(srcdir)/pure.1 $(DESTDIR)$(man1dir)/$(pure_1)
 ifeq ($(versioned), yes)
-	$(INSTALL) -m 644 $(srcdir)/runtime.h $(DESTDIR)$(includedir)/pure-$(version)
-	ln -sf $(includedir)/pure-$(version) $(DESTDIR)$(includedir)/pure
-	$(INSTALL) -m 644 $(srcdir)/pure_main.c pure_main.o $(DESTDIR)$(libdir)/pure-$(version)
-	for x in $(srcdir)/lib/*.pure; do $(INSTALL) -m 644 $$x $(DESTDIR)$(libdir)/pure-$(version); done
-	$(INSTALL) -m 644 $(srcdir)/pure.html $(srcdir)/purelib.html $(DESTDIR)$(libdir)/pure-$(version)
-	ln -sf $(libdir)/pure-$(version) $(DESTDIR)$(libdir)/pure
-	$(INSTALL) -m 644 $(srcdir)/pure.1 $(DESTDIR)$(man1dir)/pure-$(version).1
-	ln -sf $(man1dir)/pure-$(version).1 $(DESTDIR)$(man1dir)/pure.1
-else
-	$(INSTALL) -m 644 $(srcdir)/runtime.h $(DESTDIR)$(includedir)/pure
-	$(INSTALL) -m 644 $(srcdir)/pure_main.c pure_main.o $(DESTDIR)$(libdir)/pure
-	for x in $(srcdir)/lib/*.pure; do $(INSTALL) -m 644 $$x $(DESTDIR)$(libdir)/pure; done
-	$(INSTALL) -m 644 $(srcdir)/pure.html $(srcdir)/purelib.html $(DESTDIR)$(libdir)/pure
-	$(INSTALL) -m 644 $(srcdir)/pure.1 $(DESTDIR)$(man1dir)/pure.1
+	ln -sf $(bindir)/$(pure_exe) $(DESTDIR)$(bindir)/pure$(EXE)
+	ln -sf $(pure_includedir) $(DESTDIR)$(includedir)/pure
+	ln -sf $(pure_libdir) $(DESTDIR)$(libdir)/pure
+	ln -sf $(man1dir)/$(pure_1) $(DESTDIR)$(man1dir)/pure.1
 endif
 
 uninstall:
 	rm -rf $(addprefix $(DESTDIR), $(bindir)/pure$(EXE) $(libdir)/$(libpure_lnkname) $(libdir)/$(libpure_soname) $(libdir)/$(libpure) $(includedir)/pure $(libdir)/pure $(man1dir)/pure.1)
 ifeq ($(versioned), yes)
-	rm -rf $(addprefix $(DESTDIR), $(bindir)/pure-$(version)$(EXE) $(includedir)/pure-$(version) $(libdir)/pure-$(version) $(man1dir)/pure-$(version).1)
+	rm -rf $(addprefix $(DESTDIR), $(bindir)/$(pure_exe) $(pure_includedir) $(pure_libdir) $(man1dir)/$(pure_1))
 endif
 
 # roll a distribution tarball
