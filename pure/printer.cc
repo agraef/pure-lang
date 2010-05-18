@@ -478,17 +478,22 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
 	u = y; // u is the operator now, w the left, v the right operand
 	string blank = sym_padding(u.ftag());
 	prec_t l = p, r = p;
+	/* As of Pure 0.44, we simply parenthesize operands for
+	   non-associative operators, this looks nicer. */
 	// check left subexpr
 	prec_t q = expr_nprec(w);
 	if (p == q) {
 	  // operators of same precedence, associativity decides
 	  switch (prec(p)) {
 	  case 0:
+#if 0
 	    // infix (non-associative) will give a syntax error, use a plain
 	    // application instead
 	    u = x.xval1(); v = x.xval2();
 	    return os << paren(NPREC_APP, u, pat) << " "
 		      << paren(NPREC_MAX, v, pat);
+#endif
+	    // falls through
 	  case 2:
 	    // infixr, need parens
 	    l++;
@@ -500,11 +505,14 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
 	  // operators of same precedence, associativity decides
 	  switch (prec(p)) {
 	  case 0:
+#if 0
 	    // infix (non-associative) will give a syntax error, use a plain
 	    // application instead
 	    u = x.xval1(); v = x.xval2();
 	    return os << paren(NPREC_APP, u, pat) << " "
 		      << paren(NPREC_MAX, v, pat);
+#endif
+	    // falls through
 	  case 1:
 	    // infixl, need parens
 	    r++;
@@ -1112,17 +1120,22 @@ ostream& operator << (ostream& os, const pure_expr *x)
       // u is the operator now, w the left, v the right operand
       string blank = sym_padding(u->tag);
       prec_t l = p, r = p;
+      /* As of Pure 0.44, we simply parenthesize operands for non-associative
+	 operators, this looks nicer. */
       // check left subexpr
       prec_t q = pure_expr_nprec(w);
       if (p == q) {
 	// operators of same precedence, associativity decides
 	switch (prec(p)) {
 	case 0:
+#if 0
 	  // infix (non-associative) will give a syntax error, use a plain
 	  // application instead
 	  u = x->data.x[0]; v = x->data.x[1];
 	  return os << pure_paren(NPREC_APP, u) << " "
 		    << pure_paren(NPREC_MAX, v);
+#endif
+	  // falls through
 	case 2:
 	  // infixr, need parens
 	  l++;
@@ -1134,11 +1147,14 @@ ostream& operator << (ostream& os, const pure_expr *x)
 	// operators of same precedence, associativity decides
 	switch (prec(p)) {
 	case 0:
+#if 0
 	  // infix (non-associative) will give a syntax error, use a plain
 	  // application instead
 	  u = x->data.x[0]; v = x->data.x[1];
 	  return os << pure_paren(NPREC_APP, u) << " "
 		    << pure_paren(NPREC_MAX, v);
+#endif
+	  // falls through
 	case 1:
 	  // infixl, need parens
 	  r++;
