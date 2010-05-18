@@ -340,9 +340,11 @@ endif
 
 # roll a distribution tarball
 
+distdirs = config etc examples examples/libor lib test
 dist: $(DISTFILES)
 	rm -rf $(dist)
-	mkdir $(dist) && mkdir $(dist)/config && mkdir $(dist)/etc && mkdir $(dist)/examples && mkdir $(dist)/examples/libor && mkdir $(dist)/lib && mkdir $(dist)/test
+	mkdir $(dist)
+	for d in $(distdirs); do mkdir $(dist)/$$d || exit 1; done
 	(builddir=$$PWD; cd $(srcdir); for x in $(DISTFILES); do ln -sf $$PWD/$$x $$builddir/$(dist)/$$x; done)
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
