@@ -350,7 +350,11 @@ dist: pure.1
 
 distcheck: dist
 	tar xfz $(dist).tar.gz
-	cd $(dist) && ./configure && make && make check && make install DESTDIR=./BUILD
+	cd $(dist) \
+	  && ./configure $(DISTCHECK_CONFIGURE_FLAGS) \
+	  && $(MAKE) \
+	  && $(MAKE) check \
+	  && $(MAKE) install DESTDIR=./BUILD
 	rm -rf $(dist)
 
 # test logs, make check
