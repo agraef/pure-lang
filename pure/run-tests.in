@@ -1,0 +1,85 @@
+#!/bin/sh
+# vim: ft=sh sw=2 sts=2 et
+#
+# Run a few tests to verify that the Pure interpreter works correctly.
+# Invoke this as 'make check' from the build directory.
+
+# $* is the list of tests to be run. You can also set the
+# PURE_FLAGS environment variable to pass extra options to the interpreter.
+# E.g., 'PURE_FLAGS=--notc make check' runs all checks without tail call
+# optimization.
+
+DIFF="@DIFF@"
+ECHO_N="@ECHO_N@"
+ECHO_C="@ECHO_C@"
+ECHO_T="@ECHO_T@"
+srcdir="@srcdir@"
+testdir="$srcdir/test"
+outdir="./test"
+
+failed=0
+usage=0
+
+while getopts :fh opt; do
+  case $opt in
+  f) failed=1
+    ;;
+  \?|h) usage=1
+    ;;
+  esac
+done
+
+shift $(($OPTIND - 1))
+
+if test 0 -ne $failed && test 0 -ne $#; then
+  usage=1
+fi
+
+if test 0 -ne $usage; then
+  echo "usage: $0 [-h|-f|test...]"
+  echo "  -h          display this help"
+  echo "  -f          run previously failed tests"
+  echo "  test...     test file(s) to run"
+  exit 1
+fi >&2
+
+if test 0 -eq $failed; then
+  if test 0 -eq $#; then
+    set "$srcdir/lib/prelude.pure" $(find $testdir -name test\*.pure | sort)
+  fi
+else
+  set fnord $(cd $outdir && find . -name test\*.diff | sort | sed 's,^\.\(.*\)\.diff$,'$testdir'/\1.pure,')
+  shift
+  if test 0 -eq $#; then
+    exit
+  fi
+fi
+
+rc=0
+
+echo Running tests.
+
+test -d "$outdir" || mkdir -p "$outdir"
+
+for t in "$@"; do
+  fname="${t##*/}"
+  bname="${fname%.*}"
+  diff="$outdir/$bname.diff"
+  tmp="$diff.$$"
+  log="$testdir/$bname.log"
+  pufs="$PURE_FLAGS"
+  test "x$bname" = "xprelude" && pufs="$pufs -n"
+  echo ${ECHO_N} "$fname: ${ECHO_C}"
+  trap 'x=$?; rm -f '$tmp'; exit $x;' ALRM HUP INT TERM
+  if ./run-test ${pufs} < "$t" 2>&1 | ${DIFF} -u "$log" - > "$tmp"
+  then
+    rm -f "$tmp"
+    echo "${ECHO_T}passed"
+  else
+    rc=1
+    mv "$tmp" "$diff"
+    echo "${ECHO_T}FAILED"
+  fi
+done
+
+exit $rc

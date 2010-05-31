@@ -17,14 +17,18 @@ dnl Figure out special programs and filename extensions for various systems.
 dnl XXXFIXME: This is probably incomplete.
 DIFF="diff"
 DLLEXT=".so"
+LD_LIB_PATH="LD_LIBRARY_PATH"
 rdynamic="-rdynamic"
 case "$host" in
     *-*-mingw*)       DLLEXT=".dll"; DIFF="diff --strip-trailing-cr";;
-    *-*-darwin*)      rdynamic=""; DLLEXT=".dylib";;
+    *-*-darwin*)      rdynamic=""; DLLEXT=".dylib";
+                      LD_LIB_PATH="DYLD_LIBRARY_PATH";
+                      ;;
     hppa*-hp-hpux*)   rdynamic=""; DLLEXT=".sl";;
 esac
 AC_SUBST(DIFF)
 AC_SUBST(DLLEXT)
+AC_SUBST(LD_LIB_PATH)
 AC_DEFINE_UNQUOTED(DLLEXT, "${DLLEXT}", [Define to the filename extension for shared libraries.])
 dnl Check for programs.
 AC_PROG_INSTALL
@@ -221,6 +225,8 @@ AC_DEFINE_UNQUOTED(LLVM_VERSION, "${llvm_version}", [Define to the LLVM version 
 
 dnl Output files.
 AC_CONFIG_FILES([Makefile examples/Makefile])
+AC_CONFIG_FILES([run-test], [chmod +x run-test])
+AC_CONFIG_FILES([run-tests], [chmod +x run-tests])
 AC_OUTPUT
 
 AC_MSG_RESULT([

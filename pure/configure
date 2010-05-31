@@ -661,6 +661,7 @@ CC
 INSTALL_DATA
 INSTALL_SCRIPT
 INSTALL_PROGRAM
+LD_LIB_PATH
 DLLEXT
 DIFF
 host_os
@@ -1968,12 +1969,16 @@ _ACEOF
 
 DIFF="diff"
 DLLEXT=".so"
+LD_LIB_PATH="LD_LIBRARY_PATH"
 rdynamic="-rdynamic"
 case "$host" in
     *-*-mingw*)       DLLEXT=".dll"; DIFF="diff --strip-trailing-cr";;
-    *-*-darwin*)      rdynamic=""; DLLEXT=".dylib";;
+    *-*-darwin*)      rdynamic=""; DLLEXT=".dylib";
+                      LD_LIB_PATH="DYLD_LIBRARY_PATH";
+                      ;;
     hppa*-hp-hpux*)   rdynamic=""; DLLEXT=".sl";;
 esac
+
 
 
 
@@ -9743,6 +9748,10 @@ _ACEOF
 
 ac_config_files="$ac_config_files Makefile examples/Makefile"
 
+ac_config_files="$ac_config_files run-test"
+
+ac_config_files="$ac_config_files run-tests"
+
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure
@@ -10341,6 +10350,8 @@ do
     "config.h") CONFIG_HEADERS="$CONFIG_HEADERS config.h" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "examples/Makefile") CONFIG_FILES="$CONFIG_FILES examples/Makefile" ;;
+    "run-test") CONFIG_FILES="$CONFIG_FILES run-test" ;;
+    "run-tests") CONFIG_FILES="$CONFIG_FILES run-tests" ;;
 
   *) { { $as_echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 $as_echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
@@ -10950,6 +10961,12 @@ $as_echo "$as_me: error: could not create -" >&2;}
 
   esac
 
+
+  case $ac_file$ac_mode in
+    "run-test":F) chmod +x run-test ;;
+    "run-tests":F) chmod +x run-tests ;;
+
+  esac
 done # for ac_tag
 
 

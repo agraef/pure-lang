@@ -1,0 +1,30 @@
+#!/bin/sh
+# vim: ft=sh sw=2 sts=2 et
+#
+# LD_LIBRARY_PATH (or equivalent), so that the Pure runtime is found.
+#
+export @LD_LIB_PATH@=".:$@LD_LIB_PATH@"
+
+# srcdir is used is test/test042.pure.
+#
+export srcdir="@srcdir@"
+
+# PURELIB, so that the interpreter finds the library scripts.
+#
+export PURELIB="$srcdir/lib"
+
+# PURE_INCLUDE, the directory containing the test scripts,
+# so that imports in the test directory can be found.
+#
+export PURE_INCLUDE="$srcdir/test"
+
+# A few tests may produce varying results with different locales,
+# so we have to make sure that we set up a neutral environment here.
+# LC_ALL=C should do the job on Linux and other glibc-based systems.
+# Other systems might require some work.
+#
+export LC_ALL=C
+
+: ${level:=7}
+
+exec ./pure --norc -v$level "$@"

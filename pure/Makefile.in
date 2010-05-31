@@ -42,13 +42,8 @@ DLL=@DLLEXT@
 CC = @CC@
 CXX = @CXX@
 INSTALL = @INSTALL@
-DIFF = @DIFF@
 FLEX = @FLEX@
 BISON = @BISON@
-
-ECHO_C = @ECHO_C@
-ECHO_N = @ECHO_N@
-ECHO_T = @ECHO_T@
 
 # Linker flags and required libraries. These are determined automatically by
 # configure, but if necessary you can also change these on the command line.
@@ -125,7 +120,7 @@ endif
 #PIC = -fPIC
 shared = -shared
 soname = -Wl,-soname,$(libpure_soname)
-LD_LIB_PATH = LD_LIBRARY_PATH
+LD_LIB_PATH = @LD_LIB_PATH@
 
 # Take care of some common systems.
 
@@ -146,7 +141,6 @@ libpure_soname = lib$(libpure_name).$(major)$(DLL)
 libpure = lib$(libpure_name).$(major).$(minor)$(DLL)
 shared = -dynamiclib
 soname = -install_name $(libdir)/$(libpure_soname) -compatibility_version $(major) -current_version $(major).$(minor)
-LD_LIB_PATH = DYLD_LIBRARY_PATH
 endif
 
 # 64 bit, needs -fPIC flag (apparently not needed on OSX, though)
@@ -170,7 +164,8 @@ ChangeLog INSTALL NEWS README TODO \
 Makefile.in configure.ac configure config.h.in \
 config/aclocal.m4 config/config.guess config/config.sub config/install-sh \
 $(SOURCE) $(EXTRA_SOURCE) w3centities.c strptime.c pure.cc pure_main.c \
-pure.1 pure.txt pure.html purelib.txt purelib.html preamble.tex run-tests \
+pure.1 pure.txt pure.html purelib.txt purelib.html preamble.tex run-tests.in \
+run-test.in \
 etc/pure-mode.el.in etc/pure.* etc/gpure.lang \
 examples/COPYING examples/Makefile.in examples/*.pure examples/*.purerc \
 examples/*.c examples/*.f90 examples/libor/COPYING examples/libor/*.pure \
@@ -364,8 +359,6 @@ distcheck: dist
 
 # test logs, make check
 
-level=7
-
 tests = $(wildcard $(srcdir)/test/test*.pure)
 logs  = $(srcdir)/test/prelude.log $(tests:.pure=.log)
 
@@ -374,19 +367,17 @@ logs: $(logs)
 cleanlogs:
 	rm -f $(srcdir)/test/*.log
 
-# Note: Unfortunately, a few tests may produce varying results with different
-# locales, so we have to make sure that we set up a neutral environment
-# here. We therefore set LC_ALL=C below, which should do the job on Linux and
-# other glibc-based systems. Other systems might require some work.
-
 $(srcdir)/test/prelude.log: lib/prelude.pure lib/primitives.pure lib/strings.pure
-	LC_ALL=C $(LD_LIB_PATH)=".:$$$(LD_LIB_PATH)" PURELIB=$(srcdir)/lib PURE_INCLUDE=$(srcdir)/test ./pure --norc -n -v$(level) $< > $@ 2>&1
+	./run-test -n $< > $@ 2>&1
 
 %.log: %.pure
-	LC_ALL=C $(LD_LIB_PATH)=".:$$$(LD_LIB_PATH)" PURELIB=$(srcdir)/lib PURE_INCLUDE=$(srcdir)/test srcdir="$(srcdir)" ./pure --norc -v$(level) < $< > $@ 2>&1
+	./run-test  < $< > $@ 2>&1
 
 check: pure
-	@ $(LD_LIB_PATH)=".:$$$(LD_LIB_PATH)" PURELIB=$(srcdir)/lib PURE_INCLUDE=$(srcdir)/test DIFF="$(DIFF)" ECHO_N="$(ECHO_N)" ECHO_C="$(ECHO_C)" ECHO_T="$(ECHO_T)" srcdir="$(srcdir)" level="$(level)" $(srcdir)/run-tests $(notdir $(tests))
+	./run-tests
+
+recheck: pure
+	./run-tests -f
 
 # DO NOT DELETE
 
