@@ -40,24 +40,31 @@ denotes corresponding development packages):
 
 - GNU make, GNU C/C++ and the corresponding libraries;
 
-- flex and bison (these are only required when compiling the Pure SVN sources,
-  see the INSTALLING FROM SVN SOURCES section below);
-
 - the GNU multiprecision library (libgmp, -dev);
 
-- the GNU ltdl library (libltdl, -dev; only required for building some LLVM
-  versions);
+In addition, the following will be required to compile the svn version (see
+the INSTALLING FROM SVN SOURCES section below):
 
-- subversion (this is only needed to fetch the SVN sources, see below).
+- autoconf;
 
-E.g., at the time of this writing the required packages for Ubuntu are: make,
-g++, g++ 4.0 multilib, flex, bison, libgmp3c2, libgmp3-dev, libltdl3,
-libldtl3-dev, subversion. (To get command line editing in the interactive
-interpreter, you also might wish to install the readline5-dev package; see the
-comments on readline support below.)
+- flex and bison;
+
+- subversion (needed to fetch the SVN sources).
+
+The following may be required to build some LLVM versions:
+
+- GNU ltdl library (libltdl, -dev).
+
+E.g., at the time of this writing the required packages for Ubuntu are:
+autoconf, make, g++, g++ 4.0 multilib, flex, bison, libgmp3c2, libgmp3-dev,
+libltdl3, libldtl3-dev, subversion. (To get command line editing in the
+interactive interpreter, you also might wish to install the readline5-dev
+package; see the comments on readline support below.)
 
 All dependencies are available as free software. Here are some links if you
 need or want to install the dependencies from source:
+
+- Autoconf: http://www.gnu.org/software/autoconf
 
 - GNU C/C++: http://gcc.gnu.org
 
@@ -257,8 +264,8 @@ http://code.google.com/p/pure-lang/source/browse/
 (See the trunk/pure subdirectory for the latest Pure sources.)
 
 Note that if you're going with the development sources, you'll also need
-fairly recent versions of the flex and bison utilities (flex 2.5.31 and bison
-2.3 should be ok).
+fairly recent versions of autoconf, flex and bison (autoconf 2.63, flex 2.5.31
+and bison 2.3 should be ok).
 
 To compile from the development sources, replace steps 4 and 5 above with:
 
@@ -281,12 +288,16 @@ and wiki files.)
 STEP 5': Configure, build and install Pure:
 
 $ cd pure
+$ autoreconf
 $ ./configure --enable-release
 $ make
 $ sudo make install
 
-(Don't forget to also run 'make check' to make sure that the interpreter is in
-good working condition.)
+Don't forget to also run 'make check' to make sure that the interpreter is in
+good working condition.
+
+Note that 'autoreconf' needs to be rerun any time you check out a new revision
+of Pure which modifies configure.ac or acinclude.m4.
 
 
 OTHER BUILD AND INSTALLATION OPTIONS
