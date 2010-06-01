@@ -1,6 +1,6 @@
 
 dnl To regenerate the configury after changes:
-dnl autoconf -I config && autoheader -I config  (or just: make config)
+dnl aclocal && autoconf && autoheader  (or just: make config)
 
 AC_INIT(pure, 0.44)
 AC_CONFIG_AUX_DIR(config)
