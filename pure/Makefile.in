@@ -161,7 +161,7 @@ OBJECT = $(subst .cc,.o,$(filter %.cc,$(SOURCE) $(EXTRA_SOURCE))) $(LIBOBJS)
 
 DISTFILES = COPYING COPYING.LESSER COPYING.LLVM \
 ChangeLog INSTALL NEWS README TODO \
-Makefile.in acinclude.m4 configure.ac configure config.h.in \
+Makefile.in acinclude.m4 aclocal.m4 configure.ac configure config.h.in \
 config/config.guess config/config.sub config/install-sh \
 $(SOURCE) $(EXTRA_SOURCE) w3centities.c strptime.c pure.cc pure_main.c \
 pure.1 pure.txt pure.html purelib.txt purelib.html preamble.tex run-tests.in \
@@ -287,7 +287,14 @@ depend: $(SOURCE) $(EXTRA_SOURCE)
 
 # regenerate configure et al
 
-config: $(srcdir)/configure
+config:
+	cd '$(srcdir)' && autoreconf
+
+Makefile: Makefile.in config.status
+	./config.status
+
+config.status: configure
+	./config.status --recheck
 
 $(srcdir)/configure: configure.ac acinclude.m4
 	cd '$(srcdir)' && autoreconf
