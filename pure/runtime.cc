@@ -898,6 +898,8 @@ static pure_closure *pure_copy_clos(pure_closure *clos)
   return ret;
 }
 
+static void free_record(void *q);
+
 static void pure_free_matrix(pure_expr *x)
 {
   if (!x->data.mat.p) return;
@@ -939,7 +941,7 @@ static void pure_free_matrix(pure_expr *x)
     break;
   }
   if (owner) {
-    if (x->data.mat.q) free(x->data.mat.q);
+    if (x->data.mat.q) free_record(x->data.mat.q);
     delete x->data.mat.refc;
   }
 }
@@ -14439,12 +14441,11 @@ struct index_entry_t {
   int32_t tag; // symbol (key)
   const char *s; // key if tag is EXPR::STR
   size_t i; // field index in vector
-} __attribute__ ((aligned (8)));
+};
 
 struct index_t {
   size_t n, k; // total record size and number of index entries
   index_entry_t *ix; // pointer to index data
-  index_entry_t align; // actual data starts here
 };
 
 static int indexcmp(const void *m1, const void *m2)
@@ -14475,6 +14476,13 @@ static int indexcmps(const void *m1, const void *m2)
     return (p->i<q->i)?1:(p->i>q->i)?-1:0;
 }
 
+static void free_record(void *q)
+{
+  index_t *idx = (index_t*)q;
+  if (idx->ix) free(idx->ix);
+  free(q);
+}
+
 static bool is_record(pure_expr *x, pure_expr** &data, index_t* &idx)
 {
   if (x->tag == EXPR::MATRIX) {
@@ -14488,18 +14496,22 @@ static bool is_record(pure_expr *x, pure_expr** &data, index_t* &idx)
       size_t n = n1*n2;
       data = m->data;
       if (n > 0) {
-	// Allocate a chunk of memory which is big enough to hold both the
-	// header information and the index itself.
-	idx = (index_t*)malloc(sizeof(index_t)+n*sizeof(index_entry_t));
+	// Allocate the index.
+	idx = (index_t*)malloc(sizeof(index_t));
 	if (!idx) return false;
-	idx->n = idx->k = n; idx->ix = &idx->align;
+	idx->ix = (index_entry_t*)malloc(n*sizeof(index_entry_t));
+	if (!idx->ix) {
+	  free(idx);
+	  return false;
+	}
+	idx->n = idx->k = n;
 	/* Build the index. */
 	interpreter& interp = *interpreter::g_interp;
 	for (size_t i = 0; i < n; i++) {
 	  pure_expr *u, *v;
 	  if (!is_hash_pair(interp, data[i], u, v) ||
 	      (u->tag <= 0 && u->tag != EXPR::STR)) {
-	    free(idx);
+	    free(idx); free(idx->ix);
 	    return false;
 	  }
 	  idx->ix[i].tag = u->tag;
@@ -14516,9 +14528,9 @@ static bool is_record(pure_expr *x, pure_expr** &data, index_t* &idx)
 	  i = j;
 	}
 	if (k < n) {
-	  index_t *idx1 =
-	    (index_t*)realloc(idx, sizeof(index_t)+k*sizeof(index_entry_t));
-	  if (idx1) idx = idx1;
+	  index_entry_t *ix1 =
+	    (index_entry_t*)realloc(idx->ix, k*sizeof(index_entry_t));
+	  if (ix1) idx->ix = ix1;
 	  idx->k = k;
 	}
       } else {
