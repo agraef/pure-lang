@@ -384,7 +384,7 @@ symbol& symtable::cons_sym()
   if (__cons_sym)
     return *__cons_sym;
   else
-    return *sym_p(":", __cons_sym, 1800, infixr);
+    return *sym_p(":", __cons_sym, 1900, infixr);
 }
 
 symbol& symtable::void_sym()
@@ -402,7 +402,7 @@ symbol& symtable::pair_sym()
   if (__pair_sym)
     return *__pair_sym;
   else
-    return *sym_p(",", __pair_sym, 1100, infixr);
+    return *sym_p(",", __pair_sym, 1200, infixr);
 }
 
 symbol& symtable::hash_pair_sym()
@@ -411,7 +411,7 @@ symbol& symtable::hash_pair_sym()
   if (__hash_pair_sym)
     return *__hash_pair_sym;
   else
-    return *sym_p(",", __hash_pair_sym, 1200, infix);
+    return *sym_p("=>", __hash_pair_sym, 1300, infix);
 }
 
 symbol& symtable::seq_sym()
@@ -429,7 +429,7 @@ symbol& symtable::not_sym()
   if (__not_sym)
     return *__not_sym;
   else
-    return *sym_p("~", __not_sym, 1600, prefix);
+    return *sym_p("~", __not_sym, 1700, prefix);
 }
 
 symbol& symtable::bitnot_sym()
@@ -438,7 +438,7 @@ symbol& symtable::bitnot_sym()
   if (__bitnot_sym)
     return *__bitnot_sym;
   else
-    return *sym_p("not", __bitnot_sym, 2300, prefix);
+    return *sym_p("not", __bitnot_sym, 2400, prefix);
 }
 
 symbol& symtable::or_sym()
@@ -447,7 +447,7 @@ symbol& symtable::or_sym()
   if (__or_sym)
     return *__or_sym;
   else
-    return *sym_p("||", __or_sym, 1400, infixr);
+    return *sym_p("||", __or_sym, 1500, infixr);
 }
 
 symbol& symtable::and_sym()
@@ -456,7 +456,7 @@ symbol& symtable::and_sym()
   if (__and_sym)
     return *__and_sym;
   else
-    return *sym_p("&&", __and_sym, 1500, infixr);
+    return *sym_p("&&", __and_sym, 1600, infixr);
 }
 
 symbol& symtable::bitor_sym()
@@ -465,7 +465,7 @@ symbol& symtable::bitor_sym()
   if (__bitor_sym)
     return *__bitor_sym;
   else
-    return *sym_p("or", __bitor_sym, 2100, infixl);
+    return *sym_p("or", __bitor_sym, 2200, infixl);
 }
 
 symbol& symtable::bitand_sym()
@@ -474,7 +474,7 @@ symbol& symtable::bitand_sym()
   if (__bitand_sym)
     return *__bitand_sym;
   else
-    return *sym_p("and", __bitand_sym, 2200, infixl);
+    return *sym_p("and", __bitand_sym, 2300, infixl);
 }
 
 symbol& symtable::shl_sym()
@@ -483,7 +483,7 @@ symbol& symtable::shl_sym()
   if (__shl_sym)
     return *__shl_sym;
   else
-    return *sym_p("<<", __shl_sym, 2000, infixl);
+    return *sym_p("<<", __shl_sym, 2100, infixl);
 }
 
 symbol& symtable::shr_sym()
@@ -492,7 +492,7 @@ symbol& symtable::shr_sym()
   if (__shr_sym)
     return *__shr_sym;
   else
-    return *sym_p(">>", __shr_sym, 2000, infixl);
+    return *sym_p(">>", __shr_sym, 2100, infixl);
 }
 
 symbol& symtable::less_sym()
@@ -501,7 +501,7 @@ symbol& symtable::less_sym()
   if (__less_sym)
     return *__less_sym;
   else
-    return *sym_p("<", __less_sym, 1700, infix);
+    return *sym_p("<", __less_sym, 1800, infix);
 }
 
 symbol& symtable::greater_sym()
@@ -510,7 +510,7 @@ symbol& symtable::greater_sym()
   if (__greater_sym)
     return *__greater_sym;
   else
-    return *sym_p(">", __greater_sym, 1700, infix);
+    return *sym_p(">", __greater_sym, 1800, infix);
 }
 
 symbol& symtable::lesseq_sym()
@@ -519,7 +519,7 @@ symbol& symtable::lesseq_sym()
   if (__lesseq_sym)
     return *__lesseq_sym;
   else
-    return *sym_p("<=", __lesseq_sym, 1700, infix);
+    return *sym_p("<=", __lesseq_sym, 1800, infix);
 }
 
 symbol& symtable::greatereq_sym()
@@ -528,7 +528,7 @@ symbol& symtable::greatereq_sym()
   if (__greatereq_sym)
     return *__greatereq_sym;
   else
-    return *sym_p(">=", __greatereq_sym, 1700, infix);
+    return *sym_p(">=", __greatereq_sym, 1800, infix);
 }
 
 symbol& symtable::equal_sym()
@@ -537,7 +537,7 @@ symbol& symtable::equal_sym()
   if (__equal_sym)
     return *__equal_sym;
   else
-    return *sym_p("==", __equal_sym, 1700, infix);
+    return *sym_p("==", __equal_sym, 1800, infix);
 }
 
 symbol& symtable::notequal_sym()
@@ -546,7 +546,7 @@ symbol& symtable::notequal_sym()
   if (__notequal_sym)
     return *__notequal_sym;
   else
-    return *sym_p("~=", __notequal_sym, 1700, infix);
+    return *sym_p("~=", __notequal_sym, 1800, infix);
 }
 
 symbol& symtable::plus_sym()
@@ -555,7 +555,7 @@ symbol& symtable::plus_sym()
   if (__plus_sym)
     return *__plus_sym;
   else
-    return *sym_p("+", __plus_sym, 2100, infixl);
+    return *sym_p("+", __plus_sym, 2200, infixl);
 }
 
 symbol& symtable::minus_sym()
@@ -564,7 +564,7 @@ symbol& symtable::minus_sym()
   if (__minus_sym)
     return *__minus_sym;
   else
-    return *sym_p("-", __minus_sym, 2100, infixl);
+    return *sym_p("-", __minus_sym, 2200, infixl);
 }
 
 symbol& symtable::mult_sym()
@@ -573,7 +573,7 @@ symbol& symtable::mult_sym()
   if (__mult_sym)
     return *__mult_sym;
   else
-    return *sym_p("*", __mult_sym, 2200, infixl);
+    return *sym_p("*", __mult_sym, 2300, infixl);
 }
 
 symbol& symtable::fdiv_sym()
@@ -582,7 +582,7 @@ symbol& symtable::fdiv_sym()
   if (__fdiv_sym)
     return *__fdiv_sym;
   else
-    return *sym_p("/", __fdiv_sym, 2200, infixl);
+    return *sym_p("/", __fdiv_sym, 2300, infixl);
 }
 
 symbol& symtable::div_sym()
@@ -591,7 +591,7 @@ symbol& symtable::div_sym()
   if (__div_sym)
     return *__div_sym;
   else
-    return *sym_p("div", __div_sym, 2200, infixl);
+    return *sym_p("div", __div_sym, 2300, infixl);
 }
 
 symbol& symtable::mod_sym()
@@ -600,7 +600,7 @@ symbol& symtable::mod_sym()
   if (__mod_sym)
     return *__mod_sym;
   else
-    return *sym_p("mod", __mod_sym, 2200, infixl);
+    return *sym_p("mod", __mod_sym, 2300, infixl);
 }
 
 symbol& symtable::amp_sym()
@@ -609,7 +609,7 @@ symbol& symtable::amp_sym()
   if (__amp_sym)
     return *__amp_sym;
   else
-    return *sym_p("&", __amp_sym, 2900, postfix);
+    return *sym_p("&", __amp_sym, 3000, postfix);
 }
 
 symbol& symtable::quoteop_sym()
@@ -618,7 +618,7 @@ symbol& symtable::quoteop_sym()
   if (__quoteop_sym)
     return *__quoteop_sym;
   else
-    return *sym_p("'", __quoteop_sym, 2800, prefix);
+    return *sym_p("'", __quoteop_sym, 2900, prefix);
 }
 
 symbol& symtable::mapsto_sym()
@@ -627,7 +627,7 @@ symbol& symtable::mapsto_sym()
   if (__mapsto_sym)
     return *__mapsto_sym;
   else
-    return *sym_p("=>", __mapsto_sym, 1200, infix);
+    return *sym_p("=>", __mapsto_sym, 1300, infix);
 }
 
 symbol& symtable::complex_rect_sym()
@@ -636,7 +636,7 @@ symbol& symtable::complex_rect_sym()
   if (__complex_rect_sym)
     return *__complex_rect_sym;
   else
-    return *sym_p("+:", __complex_rect_sym, 1900, infix);
+    return *sym_p("+:", __complex_rect_sym, 2000, infix);
 }
 
 symbol& symtable::complex_polar_sym()
@@ -645,7 +645,7 @@ symbol& symtable::complex_polar_sym()
   if (__complex_polar_sym)
     return *__complex_polar_sym;
   else
-    return *sym_p("<:", __complex_polar_sym, 1900, infix);
+    return *sym_p("<:", __complex_polar_sym, 2000, infix);
 }
 
 symbol& symtable::rational_xdiv_sym()
@@ -654,5 +654,5 @@ symbol& symtable::rational_xdiv_sym()
   if (__rational_xdiv_sym)
     return *__rational_xdiv_sym;
   else
-    return *sym_p("%", __rational_xdiv_sym, 2200, infixl);
+    return *sym_p("%", __rational_xdiv_sym, 2300, infixl);
 }
