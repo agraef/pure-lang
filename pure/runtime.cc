@@ -14417,14 +14417,14 @@ pure_expr* matrix_any ( pure_expr *p, pure_expr *x )
 static inline bool is_hash_pair(interpreter& interp, pure_expr *x)
 {
   return x->tag == EXPR::APP && x->data.x[0]->tag == EXPR::APP &&
-    x->data.x[0]->data.x[0]->tag == interp.symtab.hash_pair_sym().f;
+    x->data.x[0]->data.x[0]->tag == interp.symtab.mapsto_sym().f;
 }
 
 static inline bool is_hash_pair(interpreter& interp, pure_expr *x,
 				pure_expr*& y, pure_expr*& z)
 {
   if (x->tag == EXPR::APP && x->data.x[0]->tag == EXPR::APP &&
-      x->data.x[0]->data.x[0]->tag == interp.symtab.hash_pair_sym().f) {
+      x->data.x[0]->data.x[0]->tag == interp.symtab.mapsto_sym().f) {
     y = x->data.x[0]->data.x[1];
     z = x->data.x[1];
     return true;
@@ -14625,7 +14625,7 @@ pure_expr* record_update(pure_expr *x, pure_expr *u, pure_expr *v)
     size_t i;
     if (idx->n == 0) {
       m = create_symbolic_matrix(1, 1);
-      m->data[0] = pure_appl(pure_symbol(interp.symtab.hash_pair_sym().f),
+      m->data[0] = pure_appl(pure_symbol(interp.symtab.mapsto_sym().f),
 			     2, u, v);
       return pure_symbolic_matrix(m);
     }
@@ -14636,7 +14636,7 @@ pure_expr* record_update(pure_expr *x, pure_expr *u, pure_expr *v)
 	pure_expr *y = pure_symbolic_matrix_dup(m);
 	if (y) {
 	  m = (gsl_matrix_symbolic*)y->data.mat.p;
-	  pure_expr *w = pure_appl(pure_symbol(interp.symtab.hash_pair_sym().f),
+	  pure_expr *w = pure_appl(pure_symbol(interp.symtab.mapsto_sym().f),
 				   2, u, v);
 	  pure_free_internal(m->data[i]);
 	  m->data[i] = pure_new_internal(w);
@@ -14654,7 +14654,7 @@ pure_expr* record_update(pure_expr *x, pure_expr *u, pure_expr *v)
     if (!m2) return 0;
     const size_t n = idx->n;
     memcpy(m2->data, m->data, n*sizeof(pure_expr*));
-    m2->data[n] = pure_appl(pure_symbol(interp.symtab.hash_pair_sym().f),
+    m2->data[n] = pure_appl(pure_symbol(interp.symtab.mapsto_sym().f),
 			    2, u, v);
     return pure_symbolic_matrix(m2);
   } else

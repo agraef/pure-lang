@@ -74,7 +74,7 @@ class symtable {
   symbol* __cons_sym;
   symbol* __void_sym;
   symbol* __pair_sym;
-  symbol* __hash_pair_sym;
+  symbol* __mapsto_sym;
   symbol* __seq_sym;
   symbol* __flip_sym;
   symbol* __neg_sym;
@@ -113,7 +113,6 @@ class symtable {
   symbol* __bad_matrix_sym;
   symbol* __amp_sym;
   symbol* __quoteop_sym;
-  symbol* __mapsto_sym;
   symbol* __complex_rect_sym;
   symbol* __complex_polar_sym;
   symbol* __rational_xdiv_sym;
@@ -176,7 +175,7 @@ public:
   symbol& cons_sym();
   symbol& void_sym();
   symbol& pair_sym();
-  symbol& hash_pair_sym();
+  symbol& mapsto_sym();
   symbol& seq_sym();
   symbol& flip_sym()
   { return *sym_p("flip", __flip_sym); }
@@ -230,7 +229,6 @@ public:
   { return *sym_p("bad_matrix_value", __bad_matrix_sym); }
   symbol& amp_sym();
   symbol& quoteop_sym();
-  symbol& mapsto_sym();
   symbol& complex_rect_sym();
   symbol& complex_polar_sym();
   symbol& rational_xdiv_sym();
