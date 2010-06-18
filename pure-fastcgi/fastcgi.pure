@@ -57,13 +57,19 @@ fdopen fd::int mode::string = sentry FCGI_fclose fp if ~null fp
 when fp = FCGI_fdopen fd mode end;
 
 freopen name::string mode::string fp::pointer = sentry FCGI_fclose fp
-if ~null fp when clear_sentry fp; fp = FCGI_freopen name mode fp end;
+if ~null fp when
+  fp = if get_sentry fp === FCGI_fclose then
+         clear_sentry fp $$ FCGI_freopen name mode fp
+       else NULL;
+end;
 
 popen name::string mode::string = sentry FCGI_pclose fp if ~null fp
 when fp = FCGI_popen name mode end;
 
-fclose fp::pointer = clear_sentry fp $$ FCGI_fclose fp;
-pclose fp::pointer = clear_sentry fp $$ FCGI_pclose fp;
+fclose fp::pointer = clear_sentry fp $$ FCGI_fclose fp
+if get_sentry fp === FCGI_fclose;
+pclose fp::pointer = clear_sentry fp $$ FCGI_pclose fp
+if get_sentry fp === FCGI_pclose;
 
 fgets f::pointer = read_a_line f buf "" when buf = malloc 1024 end
 with read_a_line f buf t = check s when s = FCGI_fgets buf 1024 f end

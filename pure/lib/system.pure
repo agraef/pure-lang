@@ -708,13 +708,19 @@ fdopen fd::int mode::string = sentry __C::fclose fp if ~null fp
 when fp = __C::fdopen fd mode end;
 
 freopen name::string mode::string fp::pointer = sentry __C::fclose fp
-if ~null fp when clear_sentry fp; fp = __C::freopen name mode fp end;
+if ~null fp when
+  fp = if get_sentry fp === __C::fclose then
+         clear_sentry fp $$ __C::freopen name mode fp
+       else NULL;
+end;
 
 popen name::string mode::string = sentry __C::pclose fp if ~null fp
 when fp = __C::popen name mode end;
 
-fclose fp::pointer = clear_sentry fp $$ __C::fclose fp;
-pclose fp::pointer = clear_sentry fp $$ __C::pclose fp;
+fclose fp::pointer = clear_sentry fp $$ __C::fclose fp
+if get_sentry fp === __C::fclose;
+pclose fp::pointer = clear_sentry fp $$ __C::pclose fp
+if get_sentry fp === __C::pclose;
 
 /* Pure wrappers for fgets and gets which handle the necessary buffering
    automatically. */
