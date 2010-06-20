@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.5: http://docutils.sourceforge.net/" />
 <title>Pure-Sql3</title>
 <meta name="authors" content="Peter Summerland  Albert Graef &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2010-04-14" />
+<meta name="date" content="2010-06-20" />
 <style type="text/css">
 
 /*
@@ -296,7 +296,7 @@ ul.auto-toc {
 <td>Peter Summerland
 <br />Albert Graef &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-04-14</td></tr>
+<td>2010-06-20</td></tr>
 </tbody>
 </table>
 <p>This document describes <strong>Sql3</strong>, a <a class="reference external" href="http://www.sqlite.org">SQLite</a> module for the <a class="reference external" href="http://pure-lang.googlecode.com">Pure</a>
@@ -362,8 +362,8 @@ database engine. SQLite is not intended to be an enterprise database
 engine like Oracle or PostgreSQL. Instead, SQLite strives to be small,
 fast, reliable, and above all simple. See <a class="reference external" href="http://www.sqlite.org/whentouse.html">Appropriate Uses For SQLite</a>.</p>
 <p>Sql3 is a wrapper around SQLite's C interface that provides Pure
-programers access to almost all of SQLite's features, including many
-that are not available through Pure's generic OBCD interface.</p>
+programmers access to almost all of SQLite's features, including many
+that are not available through Pure's generic ODBC interface.</p>
 <div class="section" id="simple-example">
 <h2><a class="toc-backref" href="#id8">1.1&nbsp;&nbsp;&nbsp;Simple Example</a></h2>
 <p>Here is a simple example that opens a database file &quot;readme.db&quot;
@@ -476,7 +476,7 @@ to the following two SQLite objects.</p>
 <p>The Sql3 functions <tt class="docutils literal"><span class="pre">open</span></tt> and <tt class="docutils literal"><span class="pre">prep</span></tt> return &quot;sentry-guarded&quot;
 pointers to database connection objects and prepared statement
 objects, respectively. The pointers returned by these two functions
-are refered to herein as <tt class="docutils literal"><span class="pre">db_ptrs</span></tt> and <tt class="docutils literal"><span class="pre">stmt_ptrs</span></tt>.</p>
+are referred to herein as <tt class="docutils literal"><span class="pre">db_ptrs</span></tt> and <tt class="docutils literal"><span class="pre">stmt_ptrs</span></tt>.</p>
 <p>A db_ptr or a stmt_ptr is, as far as SQLite is concerned, the same as
 a sqlite3* returned by <tt class="docutils literal"><span class="pre">sqlite3_open_v2</span></tt> or a sqlite3_stmt* returned
 by <tt class="docutils literal"><span class="pre">sqlite3_prepare_v2</span></tt>, the SQLite C interface functions
@@ -491,15 +491,15 @@ connections and (b) preparing, executing and closing prepared
 statements.</p>
 <div class="section" id="database-connections">
 <h2><a class="toc-backref" href="#id16">5.1&nbsp;&nbsp;&nbsp;Database Connections</a></h2>
-<p>Generally speaking, the first step in accessing a database is to open
-a database connection and obtain a db_ptr that references the database
-connection. Once the db_ptr is obtained, it can be used to construct
-prepared statements for updating and querying the database. The last
-step is usually to close the database connection (although this is
-often done automatically by Sql3 when the db_ptr goes out of scope).</p>
+<p>Generally speaking, the first step in accessing a database is to
+obtain a db_ptr that references a database connection object. Once the
+db_ptr is obtained, it can be used to construct prepared statements
+for updating and querying the underlying database. The last step is
+usually to close the database connection (although this is often done
+automatically by Sql3 when the db_ptr goes out of scope).</p>
 <div class="section" id="opening-a-database-connection">
 <h3><a class="toc-backref" href="#id17">5.1.1&nbsp;&nbsp;&nbsp;Opening a Database Connection</a></h3>
-<p>In Sql3 <tt class="docutils literal"><span class="pre">open</span></tt> contructs a database connection and returns a db_ptr
+<p>In Sql3 <tt class="docutils literal"><span class="pre">open</span></tt> constructs a database connection and returns a db_ptr
 that refers to the connection.</p>
 <a name="open"><dl class="docutils" id="open">
 <dt><tt class="docutils literal"><span class="pre">open</span> <span class="pre">(file_path::string</span> <span class="pre">[,access_mode::int,custom_bindings]])</span></tt></dt>
@@ -575,7 +575,7 @@ close it using sqlite3_close; otherwise do nothing.</dd>
 </dl>
 <p>Before calling <tt class="docutils literal"><span class="pre">sqlite3_close</span></tt>, <tt class="docutils literal"><span class="pre">close</span></tt> finalizes all prepared
 statements associated with the connection being closed. Sql3 will
-detect and throw a db_error if an attempt is subseqently made to
+detect and throw a db_error if an attempt is subsequently made to
 execute a statement associated with the closed database connection.</p>
 <pre class="literal-block">
 &gt; let dbp2_sp = prep dbp2 &quot;ci:&quot; &quot;select * from RM&quot;;
@@ -597,7 +597,7 @@ and running sudo make install in the pure-sql3 directory. This will
 cause a message to be printed whenever a db_ptr or stmt_ptr is created
 or finalized.</p>
 <p>N.B. You should never call <tt class="docutils literal"><span class="pre">sqlite3_close</span></tt> with a db_ptr. If the
-referenced database connectin is closed by such a call, a subsequent
+referenced database connection is closed by such a call, a subsequent
 call to <tt class="docutils literal"><span class="pre">close</span></tt> on this db_ptr (including the call that will
 automatically occur when the db_ptr goes out of scope) will cause a
 seg fault.</p>
@@ -624,8 +624,8 @@ than actual functions, with one member for each of the basic data types
 recognized by SQLite. Thus, for example, <tt class="docutils literal"><span class="pre">sqlite_bind_double</span></tt> is the
 function one would use to bind a prepared statement with an argument of type
 double.</p>
-<p>Sql3 captures these procedures in four functions: <tt class="docutils literal"><span class="pre">prep</span></tt>, <tt class="docutils literal"><span class="pre">exec</span></tt>,
-<tt class="docutils literal"><span class="pre">lexec</span></tt> and <tt class="docutils literal"><span class="pre">finalize</span></tt>.</p>
+<p>Sql3 encapsulates these procedures in four functions: <tt class="docutils literal"><span class="pre">prep</span></tt>,
+<tt class="docutils literal"><span class="pre">exec</span></tt>, <tt class="docutils literal"><span class="pre">lexec</span></tt> and <tt class="docutils literal"><span class="pre">finalize</span></tt>.</p>
 <div class="section" id="constructing-prepared-statements">
 <h3><a class="toc-backref" href="#id22">5.2.1&nbsp;&nbsp;&nbsp;Constructing Prepared Statements</a></h3>
 <p>In Sql3 you can use <tt class="docutils literal"><span class="pre">prep</span></tt> to construct a prepared statement and
@@ -760,7 +760,7 @@ be a valid stmt_ptr or the rule will fail.</dd>
 </dl>
 <p>The second parameter, <tt class="docutils literal"><span class="pre">args</span></tt>, is a tuple or list of arguments whose
 number and type correspond to the bind parameter types specified in
-the call to <tt class="docutils literal"><span class="pre">prep</span></tt> that produced the first parmenter <tt class="docutils literal"><span class="pre">sp</span></tt>.</p>
+the call to <tt class="docutils literal"><span class="pre">prep</span></tt> that produced the first parameter <tt class="docutils literal"><span class="pre">sp</span></tt>.</p>
 <p>Example:</p>
 <pre class="literal-block">
 &gt; exec sp1 (&quot;Tom&quot;,30);  //insert Tom
@@ -774,7 +774,7 @@ the call to <tt class="docutils literal"><span class="pre">prep</span></tt> that
 <p>An error is thrown if the args do not correspond to the specified types.</p>
 <pre class="literal-block">
 &gt; catch error (exec sp2 &quot;a&quot;);
-error (sql3::db_error 0 &quot;Attempt to bind a \&quot;a\&quot; as a int&quot;)
+error (sql3::db_error 0 &quot;\&quot;a\&quot; does not have type int&quot;)
 </pre>
 <p>If a prepared statement does not have any binding parameters,
 the call to <tt class="docutils literal"><span class="pre">exec</span></tt> should use <tt class="docutils literal"><span class="pre">()</span></tt> as the binding argument.</p>
@@ -825,10 +825,10 @@ same code that processed the eager list returned by <tt class="docutils literal"
 <p>For statements that have no parameters and which do not return results,
 <tt class="docutils literal"><span class="pre">exec</span></tt> can be applied to a db_ptr.</p>
 <a name="exec_db dbp"><dl class="docutils" id="exec-dbp">
-<dt><tt class="docutils literal"><span class="pre">exec</span> <span class="pre">dbp::pointer</span> <span class="pre">sql_statement::string</span></tt></dt>
-<dd>constructs a temporary prepared statement using the
-<tt class="docutils literal"><span class="pre">sql_statement</span></tt>.  The SQL statement cannot contain argument
-placeholders and cannot be a select statement.</dd>
+<dt><tt class="docutils literal"><span class="pre">exec</span> <span class="pre">dbp::pointer</span> <span class="pre">sql_statement::string</span></tt> constructs a temporary</dt>
+<dd>prepared statement using <tt class="docutils literal"><span class="pre">sql_statement</span></tt>.  The SQL statement
+cannot contain argument placeholders and cannot be a select
+statement.</dd>
 </dl>
 <p>Example:</p>
 <pre class="literal-block">
@@ -907,7 +907,7 @@ stmt_ptr goes out of scope, will cause an exception to be thrown.</p>
 &gt; catch error (finalize dbp2_sp);
 error (sql3::db_error 0 &quot;finalize: STMT attached to a closed db_ptr.&quot;)
 </pre>
-<p>Multiple calls to <tt class="docutils literal"><span class="pre">finalize</span></tt> are fine. In contrast the corresponding
+<p>Multiple calls to <tt class="docutils literal"><span class="pre">finalize</span></tt> are fine. In contrast, the corresponding
 native C interface function, <tt class="docutils literal"><span class="pre">sqlite3_finalize</span></tt> will cause a seg
 fault if called with a pointer to a finalized prepared statement
 object. This is the main reason why you should never call
@@ -996,10 +996,10 @@ custom binding types.</p>
 <p>An extremely powerful (albeit complex) feature of the SQLite C
 interface is the ability to add new SQL scalar or aggregate
 functions. The new functions can be used in SQL statements the in same
-way as the prepackaged functions and aggregates. Sql3 hides the
-complexity and seamlessly integrates all of this functionality, :),
-into Pure via <tt class="docutils literal"><span class="pre">create_function</span></tt>. This function is used to register
-both scalar SQL functions and aggregate SQL functions with SQlite.</p>
+way as SQLites's prepackaged functions. Sql3 hides the complexity and
+seamlessly integrates all of this functionality, :), into Pure via
+<tt class="docutils literal"><span class="pre">create_function</span></tt>. This function is used to register both scalar SQL
+functions and aggregate SQL functions with SQlite.</p>
 <div class="section" id="scalar-sql-functions">
 <h3><a class="toc-backref" href="#id36">6.1.1&nbsp;&nbsp;&nbsp;Scalar SQL Functions</a></h3>
 <p>You can add a custom SQL scalar function to SQLite by passing a single
@@ -1066,7 +1066,7 @@ with SQLite by passing a triple consisting of two Pure functions and a
 start value, in lieu of a single Pure function.</p>
 <dl class="docutils">
 <dt><tt class="docutils literal"><span class="pre">create_function</span> <span class="pre">dbp::pointer</span> <span class="pre">name::string</span> <span class="pre">nargs::int</span> <span class="pre">(step,final,start)</span></tt></dt>
-<dd>register a new SQL aggregate function of <tt class="docutils literal"><span class="pre">nargs</span></tt> arguments that can
+<dd>registers a new SQL aggregate function of <tt class="docutils literal"><span class="pre">nargs</span></tt> arguments that can
 be called, as <tt class="docutils literal"><span class="pre">name</span></tt> in SQL statements prepared with respect to <tt class="docutils literal"><span class="pre">dbp</span></tt>,
 a db_ptr.  <tt class="docutils literal"><span class="pre">step</span></tt> and <tt class="docutils literal"><span class="pre">final</span></tt> are curried Pure functions and <tt class="docutils literal"><span class="pre">start</span></tt> is
 the initial value for the aggregation. The <tt class="docutils literal"><span class="pre">step</span></tt> function is called
@@ -1101,8 +1101,7 @@ external function in SQLite's C interface directly, passing it the
 same db_ptr or stmt_ptr that is passed to Sql3's functions, such as
 <tt class="docutils literal"><span class="pre">prep</span></tt> or <tt class="docutils literal"><span class="pre">exec</span></tt>.</p>
 <p>For example, you can override SQLite's default behavior with respect
-to busy databases for the database connection referenced by a db_ptr,
-say <tt class="docutils literal"><span class="pre">dbp</span></tt>, as follows:</p>
+to a busy database as follows:</p>
 <pre class="literal-block">
 &gt; extern int sqlite3_busy_timeout(sqlite3*, int);
 
@@ -1112,8 +1111,8 @@ say <tt class="docutils literal"><span class="pre">dbp</span></tt>, as follows:<
 until at least 10 milliseconds of sleeping have accumulated.  Calling
 this routine with an argument less than or equal to zero turns off all
 busy handlers.</p>
-<p>Or you might be interested in the number of database rows that
-were changed, inserted or deleted by the most recently completed SQL
+<p>Another example is to query the number of database rows that were
+changed, inserted or deleted by the most recently completed SQL
 statement executed on a given database connection:</p>
 <pre class="literal-block">
 &gt; extern int sqlite3_changes(sqlite3*);
@@ -1134,20 +1133,19 @@ name assigned to a column in a result using <tt class="docutils literal"><span c
 &gt; sqlite3_column_name sp2 1;
 &quot;age&quot;
 </pre>
-<p>Note that in order to call a native C function you must first make it
-accessible using an extern statement.</p>
-<p>Note also that directly calling a function provided by the SQLite C
-interface can be dangerous, as is the case with any call from Pure code
-to an external C function.  Sql3 users should be especially careful in
-this regard because using a db_ptr or a stmt_ptr in calls to certain
-native C interface functions, including in particular
+<p>In order to call a native C function you must first make it accessible
+using an extern statement.</p>
+<p>Please note also that directly calling a function provided by the
+SQLite C interface can be dangerous, as is the case with any call from
+Pure code to an external C function.  Sql3 users should be especially
+careful in this regard because using a db_ptr or a stmt_ptr in calls
+to certain native C interface functions, including in particular
 <tt class="docutils literal"><span class="pre">sqlite3_close</span></tt> and <tt class="docutils literal"><span class="pre">sqlite3_finalize</span></tt>, will corrupt data held by
-the db_ptr or stmt_ptr, leading to undefined behavior.</p>
-<p>The reason for this restriction is that Sql3 uses sentries to insure
-that the resources associated with a db_ptr or a stmt_ptr are
-automatically finalized by SQLite when they go out of scope. In
-addition, the sentries carry internal information used by Sql3 for
-other purposes.</p>
+the db_ptr or stmt_ptr, leading to undefined behavior. The reason for
+this restriction is that Sql3 uses sentries to insure that the
+resources associated with a db_ptr or a stmt_ptr are automatically
+finalized by SQLite when they go out of scope. In addition, the
+sentries carry internal information used by Sql3 for other purposes.</p>
 </div>
 <div class="section" id="id6">
 <span id="custom-binding-types-for-prepared-statements"></span><h2><a class="toc-backref" href="#id39">6.3&nbsp;&nbsp;&nbsp;Custom Binding Types for Prepared Statements</a></h2>

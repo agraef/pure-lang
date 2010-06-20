@@ -19,7 +19,7 @@ rollback rollback_to commit;
 
 private 
 DB STMT
-col_err col_expr_binary col_chars col_julian core_col_fns 
+col_err col_expr_binary col_chars core_col_fns 
 bind_err bind_blob bind_chars bind_double bind_int bind_julian
 bind_long bind_null bind_expr_binary core_bind_fns bind_expr_utf8 bind_sp
 
@@ -257,7 +257,7 @@ end;
 /* Private sqlite3_column family wrappers */
 
 col_err x type = sql3_err 
-  (sprintf "Fetched expression %s is not a %s." (str x, type));
+  (sprintf "Fetched expression %s is not of type %s." (str x, type));
 
 col_chars sp col = string_dup (sqlite3_column_text sp col);
 
@@ -280,7 +280,7 @@ core_col_fns = record [
 /* Private sqlite3_bind family wrappers  */
 
 bind_err x type = sql3_err 
-  (sprintf "Attempt to bind a %s as a %s" (str x,type));
+  (sprintf "bind error: %s does not have type %s" (str x,type));
 
 bind_blob sp col expr = case expr of
   (size::int, p::pointer) = sql3util_bind_blob sp col expr;
@@ -359,19 +359,23 @@ end with
   bind_cols (f:fs) (a:as) icol = (f sp icol a) $$ bind_cols fs as (icol+1);
 end;
 
-/* Private close_db db::DB dbp::pointer. The first arg, db is DB
-   (rf_is_open, user_wrap_fns) the second is NULL or a db_ptr. If dbp
-   is NULL close_db returns its first arg, db. Otherwise it decomposes
-   If the pointer is NULL, close_db returns its first arg,
-   dbp. Otherwise it (a) it closes the database connection referenced
-   by dbp iff (get ref_is_open) == 1 and (b) sets rf_is_open to
-   0. This prevents the connection from being closed twice, which
-   would cause the DB ( a seg fault. If any prepared statements have
-   not been closed, they will be closed before dbp is closed. If this
-   happens, there are unfreed STMTs around that depend on dbp being
-   open. If exec STMT is called on any such statement a sql3 exception
-   will be thrown. I.e., exec s::STMT checks to see if s's database
-   connection is still good. */
+/* Private close_db db::DB dbp::pointer. The first argument, db, is a
+   DB constructor, i.e., DB (rf_is_open, user_wrap_fns) and the second
+   argument is NULL or a db_ptr.  This function is meant to be used
+   with sentry to guard a live sqlite3*. The idea is to call the
+   curried function (close_db db) with NULL to get the state
+   associated with the sqlite3*, and to call it with a dp_ptr to
+   proceed with a closing. 
+
+   If dbp is NULL, close_db returns its first arg, db. Otherwise
+   close_db (a) closes the database connection referenced by dbp iff
+   (get ref_is_open) == 1 and (b) sets rf_is_open to 0. This prevents
+   the connection from being closed twice, which would cause a seg
+   fault. If any prepared statements that were opened on this dbp have
+   not been finalized, they will be finalized by close_db before dbp
+   is closed. If exec is called on any such statement a sql3 exception
+   will be thrown. I.e., exec sp::pointer args checks to see if sp's
+   database connection is still good. */
 
 close_db db::DB ptr::pointer = db if null ptr;
 
@@ -401,8 +405,8 @@ end;
    a STMT, it is a closure that takes one pointer as an argument. If
    the pointer is NULL, finalize_stmt returns the STMT passed to it as
    its first argument. Otherwise, finalize_stmt finalizes the pointer,
-   provide rf_valid is 1, and sets rf_valid in STMT to 0. It is meant
-   to be used as sentry on a sqlite3_stmt* */
+   provided rf_valid is 1, and sets rf_valid in STMT to 0. It is meant
+   to be used with sentry to guard a sqlite3_stmt* */
 
 finalize_stmt stmt::STMT sp::pointer = stmt if null sp;
 finalize_stmt (STMT (rf_valid,_,_,dbp)) sp::pointer = ec

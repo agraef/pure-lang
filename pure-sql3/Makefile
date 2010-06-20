@@ -33,6 +33,7 @@ ifneq "$(findstring -darwin,$(host))" ""
 # OSX (untested)
 DLL = .dylib
 shared = -dynamiclib
+LIBS = -lgmp
 endif
 ifneq "$(findstring x86_64-,$(host))" ""
 # 64 bit, needs -fPIC flag
