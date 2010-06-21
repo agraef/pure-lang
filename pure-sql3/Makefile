@@ -33,7 +33,6 @@ ifneq "$(findstring -darwin,$(host))" ""
 # OSX (untested)
 DLL = .dylib
 shared = -dynamiclib
-LIBS = -lgmp
 endif
 ifneq "$(findstring x86_64-,$(host))" ""
 # 64 bit, needs -fPIC flag
@@ -53,10 +52,12 @@ FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 DISTFILES = COPYING Makefile README pure-sql3.html config.guess \
 sql3util.c sql3.pure examples/*.pure
 
+LIBS = -lpure -lsqlite3 -lgmp
+
 all: sql3util$(DLL)
 
 sql3util$(DLL): sql3util.c
-	$(CC) $(shared) -o $@ $(INCLUDES) -Wall $< $(FLAGS) -lsqlite3 -lpure $(LIBS)
+	$(CC) $(shared) -o $@ $(INCLUDES) -Wall $< $(FLAGS) $(LIBS)
 
 clean:
 	rm -f *$(DLL) *~ *.a *.o *.tex *.pdf *.aux *.log *.out
