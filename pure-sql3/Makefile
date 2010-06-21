@@ -52,12 +52,11 @@ FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 DISTFILES = COPYING Makefile README pure-sql3.html config.guess \
 sql3util.c sql3.pure examples/*.pure
 
-LIBS = -lpure -lsqlite3 -lgmp
-
 all: sql3util$(DLL)
 
-sql3util$(DLL): sql3util.c
-	$(CC) $(shared) -o $@ $(INCLUDES) -Wall $< $(FLAGS) $(LIBS)
+sql3util$(DLL): sql3util.c 
+	$(CC) $(shared) -o $@ $(INCLUDES) -Wall $< $(FLAGS) \
+	-lpure -lsqlite3 -lgmp $(LIBS)
 
 clean:
 	rm -f *$(DLL) *~ *.a *.o *.tex *.pdf *.aux *.log *.out
