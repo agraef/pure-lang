@@ -43,16 +43,36 @@ if test 0 -ne $usage; then
   exit 1
 fi >&2
 
-if test 0 -eq $failed; then
-  if test 0 -eq $#; then
-    set "$srcdir/lib/prelude.pure" $(find $testdir -name test\*.pure | sort)
-  fi
-else
-  set fnord $(cd $outdir && find . -name test\*.diff | sort | sed 's,^\.\(.*\)\.diff$,'$testdir'/\1.pure,')
-  shift
-  if test 0 -eq $#; then
-    exit
-  fi
+pathops()
+{
+  local mode=$1 arg=$2
+
+  local _fname="${arg##*/}"
+  local _bname="${_fname%.*}"
+  local _diff="$outdir/$_bname.diff"
+  local _tmp="$_diff.$$"
+  local _log="$testdir/$_bname.log"
+
+  case "$mode" in
+  -A) fname="$_fname" \
+      bname="$_bname" \
+      diff="$_diff" \
+      tmp="$_tmp" \
+      log="$_log"
+    ;;
+  -d) echo $_diff
+    ;;
+  esac
+}
+
+if test 0 -eq $#; then
+  tests=
+  for s in "$srcdir/lib/prelude.pure" $(find "$testdir" -name test\*.pure | sort); do
+    if test 0 -eq $failed || test -e $(pathops -d "$s"); then
+      tests="$tests $s"
+    fi
+  done
+  set fnord $tests; shift
 fi
 
 rc=0
@@ -62,18 +82,14 @@ echo Running tests.
 test -d "$outdir" || mkdir -p "$outdir"
 
 for t in "$@"; do
-  fname="${t##*/}"
-  bname="${fname%.*}"
-  diff="$outdir/$bname.diff"
-  tmp="$diff.$$"
-  log="$testdir/$bname.log"
+  pathops -A "$t"
   pufs="$PURE_FLAGS"
   test "x$bname" = "xprelude" && pufs="$pufs -n"
   echo ${ECHO_N} "$fname: ${ECHO_C}"
   trap 'x=$?; rm -f '$tmp'; exit $x;' ALRM HUP INT TERM
   if ./run-test ${pufs} < "$t" 2>&1 | ${DIFF} -u "$log" - > "$tmp"
   then
-    rm -f "$tmp"
+    rm -f "$tmp" "$diff"
     echo "${ECHO_T}passed"
   else
     rc=1
