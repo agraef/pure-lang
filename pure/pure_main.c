@@ -29,12 +29,15 @@
    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
    POSSIBILITY OF SUCH DAMAGE. */
 
+#include <locale.h>
+
 /* Minimal main() to run a standalone Pure module compiled with -c. */
 
 extern void __pure_main__(int argc, char** argv);
 
 int main(int argc, char** argv)
 {
+  setlocale(LC_ALL, "");
   __pure_main__(argc, argv);
   return 0;
 }
