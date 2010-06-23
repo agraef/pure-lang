@@ -5,14 +5,14 @@ Pure-CSV - Comma Separated Value Interface for the Pure Programming Language
 
 :Author: Eddie Rucker <erucker@bmc.edu>
 :Date: |date|
-:Copyright: 2008, 2009 by Eddie Rucker
+:Copyright: 2008, 2009, 2010 by Eddie Rucker
 :License: 3-clause BSD license, see the accompanying COPYING file for details
 
 .. |date| date::
 
 The CSV library provides an interface for reading and writing comma 
-separated value files that is loosely based on Python's CSV module 
-(http://docs.python.org/lib/module-csv.html).
+separated value files. The module is very loosely based on Python's CSV
+module (http://docs.python.org/lib/module-csv.html).
 
 .. contents::
 .. sectnum::
@@ -34,15 +34,12 @@ Makefile for details.
 Usage
 -----
 
-Data records are represented as lists of strings, integers, and 
-doubles. Three predefined dialects are provided; RFC4180 (default for
-Windows), UNIX (default for Linux, \*BSD, and Unix), and EXCEL; and
+Data records are represented as matrices of strings, integers, and 
+doubles. Two predefined dialects are provided; default (record 
+terminator="\n") and RFC4180 (record terminator="\r\n"); and
 procedures are provided to create other CSV dialects. See
 (http://www.ietf.org/rfc/rfc4180.txt) for more details about the 
 RFC4180 standard.
-
-Examples of reading and writing CSV files are provided in the file
-"samples.pure" located in the examples subdirectory.
 
 Handling Errors
 ~~~~~~~~~~~~~~~
@@ -58,72 +55,45 @@ Handling Errors
   handle errors in some way (e.g., provide a default value, or raise an 
   exception).
 
-.. _example_error:
-
-Examples
-
-::
-    
-  > using system, csv;
-  > csv::str [1%4, 1%3]; // rational numbers are not allowed
-  csv::error "field 1: invalid conversion type."
-  > /* Now, print a message and
-  >    perform an exit action on the error */
-  > csv::error msg = printf "CSV Error: %s\n" msg $$ exit 0;
-  > csv::str [1%4, 1%3];
-  CSV Error: field 1: invalid conversion type.
-  $
-
 Creating Dialects
 ~~~~~~~~~~~~~~~~~
 
 .. _dialect:
 
-``dialect list``
-  creates a dialect from a list of dialect option pairs. Option pairs 
-  are denoted ``a=>b`` where ``a`` is the option and ``b`` is the 
-  option's value. The list of possible options and option values are 
-  presented below.
+``dialect record``
+  creates a dialect from a record of dialect option pairs. The dialect
+  object is freed automatically when exiting the pure script. The list of
+  possible options and option values are presented below.
 
-  - ``DELIMITER`` - Field delimiter.
+  - ``delimiter`` - Field delimiter.
 
     * Value - any string.
     * Default - ``","``.
 
-  - ``ESCAPE`` - Embedded escape character.
+  - ``escape`` - Embedded escape character used to embed a delimiter, 
+    escape, or terminator into unquoted fields.
 
+    * Value - any string.
+    * Default - ``""``.
+    * Notes - When defined, the quote value is ignored.
+  
+  - ``quote`` - Quotes are used to embed delimiters, quotes, or
+    terminators into a field.
+  
     * Value - any string.
     * Default - ``"\""``.
-    * Notes - When reading, the escape character is dropped and the next 
-      char is inserted into the field. When writing, the escape 
-      character is written into the output stream.
+    * Notes - If embedded quotes are doubled, ``escape`` must be the 
+      null string.
   
-  - ``QUOTE`` - Quote character.
-  
-    * Value - any string.
-    * Default - ``"\""``.
-    * Notes - If embedded quotes are doubled, ``ESCAPE`` must equal the 
-      value of ``QUOTE``. The dialect function will automatically set 
-      the ``ESCAPE`` string to that of ``QUOTE`` if ``ESCAPE`` is not 
-      specified in the dialect argument list.
-  
-  - ``QUOTING_STYLE`` - Sets the quoting style of strings and/or 
-    numbers.
+  - ``quote_flag`` - Sets the quoting style of strings and/or numbers.
 
-    * Value - One of {``QUOTE_ALL``, ``QUOTE_STRINGS``, 
-      ``QUOTE_EMBEDDED``}.
-    * Default - ``QUOTE_STRINGS``.
+    * Value - One of {``ALL``, ``STRINGS``, ``MINIMAL``}.
+    * Default - ``ALL``.
 
-  - ``LINETERMINATOR`` - Record termination value.
+  - ``terminator`` - Record termination string.
 
-    * Value - any string.
-    * Default: ``"\r\n"``.
-
-  -  ``SKIPSPACE`` - Skip leading white space flag.
-
-    * Value - boolean {1=true, 0=false}.
-    * Default - 1.
-    * Note - Quoted fields always retain white space.
+    * Value - One of {``"\r\n"'', ``"\n"``}.
+    * Default: ``"\n"``.
 
   The following example illustrates the construction of a dialect for 
   reading tab delimited files without quoted strings.
@@ -135,104 +105,70 @@ Examples
 ::
     
   > using csv;
-  > /* Use the predefined EXCEL dialect */
-  > csv::list ("\"=\"\"004\",23\r\n", csv::EXCEL);
-  ["=\"004",23]
-  > const d = csv::dialect [
-  >   csv::DELIMITER => "\t", 
-  >   csv::QUOTING_STYLE => csv::QUOTE_EMBEDDED];
-  > csv::list ("\"John\tSmith\"\t23\t4.5\tfreshman", d);
-  ["John\tSmith",23,4.5,"freshman"]
-  >
+  > using namespace csv;
+  > let d = dialect {delimiter=>"\t"};
+  > d;
+  #<pointer 0x9d75280>
+  > 
 
-String and List Functions
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Opening CSV Files
+~~~~~~~~~~~~~~~~~
 
-.. _str:
+.. _open:
 
-``str list|(list, dialect)``
-  converts a list to a CSV formatted string. If the argument is a list,
-  ``str`` converts the list using RFC 4180 rules 
-  (http://www.ietf.org/rfc/rfc4180.txt). If the argument is given as a 
-  tuple, then ``str`` converts the list using the rules specified in the 
-  user's dialect. A ``csv::error msg`` term is invoked if a fields 
-  contains data other than a string, integer, or a double types.
+``open name::string``
+  opens a CSV file for reading using the default dialect. If the file does
+  not exist, the ``error msg`` rule is invoked.
 
-.. _examples_str:
+``open (name::string, rw_flag::string)``
+  opens a CSV file for reading, writing, or appending using the default
+  dialect. Valid "rw_flag" values are ``"r"`` for reading, ``"w"`` for
+  writing, and ``"a"`` for appending. If the file does not exits when
+  opened for reading, the ``error msg`` rule is invoked. When a file is
+  opened for writing and the file exists, the old file is overwritten. If
+  the file does not exist, a new empty file is created. When a file is
+  opened for appending and the file exists, new records are appended to
+  the end of the file, otherwise a new empty file is created.
 
-Examples
+``open (name::string, rw_flag::string, d::pointer)``
+  exactly as above except according to a user defined dialect ``d``.
+
+.. _examples_open:
+
+Example
 
 ::
-    
-  > using csv;
-  > csv::str [1,"",3.00,"bob \"plays drums\""];
-  "1,\"\",3,\"bob \"\"plays drums\"\"\"\n"
-  > const d = csv::dialect [csv::DELIMITER => "\t"];
-  > csv::str ([1,"",3.00,"bob \"plays drums\""], d);
-  "1\t\"\"\t3\t\"bob \"\"plays drums\"\"\"\n"
-  >     
-
-.. _list:
-
-``list string|(string, dialect)``
-  creates a list of string or numeric fields from a CSV formatted
-  string. If the argument is given as a string, then the conversion 
-  is performed using RFC 4180 rules 
-  (http://www.ietf.org/rfc/rfc4180.txt). If the argument is given as
-  a tuple, then the conversion is performed according to the rules 
-  specified by the dialect. An invalidly formatted CSV string returns
-  a ``csv::error msg`` term.
   
-.. _example_list:
-
-Examples
-
-::
-    
   > using csv;
-  > csv::list "1,\"\",3,\"bob \"\"plays drums\"\"\"\n";
-  [1,"",3,"bob \"plays drums\""]
-  > const d = csv::dialect [csv::DELIMITER => "\t"];
-  > csv::list ("1\t\"\"\t3\t\"bob \"\"plays drums\"\"\"\n", d);
-  [1,"",3,"bob \"plays drums\""]
+  > using namespace csv;
+  > let d = dialect {delimiter=>"\t"};
+  > let f = open ("junk.csv", "w", d);
+  > putr f {"hello",123,"",3+:4,world};
+  ()
+  > close f;
+  ()
+  > let f = open ("junk.csv", "r", d);
+  > getr f;
+  {"hello","123","","3+:4","world"}
   >
 
 File Reading Functions
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. _fgets:
+.. _getr:
 
-``fgets file|(file, dialect)``
-  is equivalent to ``csv::list`` except that reading is from a file. 
-  The file must first be opened using ``fopen`` which is defined in the 
-  system library (system.pure).
+``getr csv_file::pointer``
+  reads from a ``csv_file`` opened by ``csv::open`` and returns a record
+  represented as a row matrix. Reading from a file opened for writing or
+  appending invokes the ``error msg`` rule.
 
-.. _fget:
+.. _fgetr:
 
-``fget file|(file, dialect)``
+``fget csv_file::pointer``
   reads a whole file and returns a list of records. This procedure 
   should only be used on data files that are small enough to fit in the 
-  computer's primary memory.
-
-.. _examples_fget:
-
-Examples
-
-::
-    
-  > using system, csv;
-  > /* Write a file to test */
-  > let f = fopen "test.csv" "w";
-  > csv::fput [[1,"a"], [2,"b"], [3,"c"]] f;
-  ()
-  > fclose f;
-  0
-  > let f = fopen "test.csv" "r";
-  > csv::fgets f;
-  [1,"a"]
-  > fclose f;
-  0
-  >
+  computer's primary memory. Reading from a file opened for writing or
+  appending invokes the ``error msg`` rule.
 
 File Writing Functions
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -243,39 +179,34 @@ fields with significant leading 0s should be written using a
 preserving leading space too. Again, this quirk should only be
 necessary for files to be imported into MS Excel. 
 
-.. _fputs:
+.. _putr:
 
-``fputs list file|(file, dialect)``
-  is equivalent to ``csv::str`` except that writing is to a file. The 
-  file must first be opened using ``fopen`` which can be found in the 
-  system library.
+``putr csv_file::pointer rec::matrix``
+  writes a record in row matrix format to ``csv_file``. Writing to a file
+  opened for reading invokes the ``error msg`` rule.
 
-.. _fput:
+.. _fputr:
 
-``fput list file|(file, dialect)``
-  writes a list of records to a file. Each record is converted 
-  according to the rules stated in the ``csv::str`` procedure.
+``fputr csv_file::pointer l@(_:_)``
+  writes a list of records where each record is a row matrix to ``csv_file``.
+  Writing to a file opened for reading invokes the ``error msg`` rule.
 
-.. _examples_fput:
+.. _examples:
 
 Examples
+~~~~~~~~
 
 ::
   
-  > using system, csv;
-  > /* Write a file to test */
-  > let f = fopen "test.csv" "w";
-  > csv::fput [[1,"a"], [2,"b"], [3,"c"]] f;
+  > using csv;
+  > using namespace csv;
+  > let f = open ("testing.csv","w");
+  > fputr f [{"bob",3.9,"",-2},{"fred",-11.8,"",0},{"mary",2.3,"$",11}];
   ()
-  > fclose f;
-  0
-  > let f = fopen "test.csv" "r";
-  > /* Read the first record */
-  > csv::fgets f;
-  [1,"a"]
-  > /* Read the next record */
-  > csv::fgets f;
-  [2,"b"]
-  > fclose f;
-  0
+  > close f;
+  ()
+  > let f = open "testing.csv";
+  > fgetr f;
+  [{"bob","3.9","","-2"},{"fred","-11.8","","0"},{"mary","2.3","$","11"}]
+  > close f;
   >

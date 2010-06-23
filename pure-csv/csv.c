@@ -3,11 +3,12 @@
    Author: Eddie Rucker
    Date: July 3, 2008
    Modified: November 21, 2008 to handle namespaces
+   Rewritten: June 11, 2010
 */
 
 /*
 
-Copyright (c) 2008, 2009, Robert E. Rucker
+Copyright (c) 2008, 2009, 2010, Robert E. Rucker
 
 All rights reserved.
 
@@ -39,451 +40,571 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <pure/runtime.h>
+#define BUFFSIZE 1024
+#define RECSIZE 128
 
-#define STRSIZE 128
-#define BUFSIZE 1024
+#define FILE_END 1
+#define ERR_MEM -1
+#define ERR_READ -2
+#define ERR_WRITE -3
+#define ERR_PARSE -4
 
-#define QUOTE_ALL 0
-#define QUOTE_STRINGS 1
-#define QUOTE_EMBEDDED 2
+/* quote_flag style */
 
-#define error_handler(msg) \
-  return pure_app(pure_symbol(pure_sym("csv::error")), pure_cstring_dup(msg))
+#define MINIMAL 1
+#define STRING  2
+#define ALL     3
 
-/* Return a CSV record as a Pure string.
-   Input:
-     fp:    File pointer to read from
-     quote: Pure string representing CSV quotes
+#define error(msg) \
+  pure_app(pure_symbol(pure_sym("csv::error")), pure_cstring_dup(msg))
 
-   Output:
-     pure_string representing a CSV record. The string may have embedded '\n's.
-     Does not check for badly formated records.
+typedef struct {
+  char *quote;
+  size_t quote_n;
+  char *escape;    
+  size_t escape_n;
+  char *delimiter;
+  size_t delimiter_n;
+  char *terminator;
+  size_t terminator_n;
+  int quote_flag;
+} dialect_t;
 
-   Exceptions:
-     csv::error msg is invoked f there is a system memory allocation  error,
-     beyond end of file, or a file error is encountered.
-*/
+typedef struct {
+  size_t growto;
+  size_t len;
+  pure_expr **x;
+} record_t;
 
-pure_expr *csv_fgets(FILE *fp, char *quote) {
-  char *bf, *tb, *s;
-  int quote_count = 0, n_quote;
-  size_t sz = BUFSIZE, n = 0;
-  pure_expr *ret;
+typedef struct {
+  size_t growto;
+  size_t len;
+  char *c;
+} buffer_t;
 
-  if (!(s = bf = malloc(sz))) {
-    error_handler("malloc error");
+typedef struct {
+  buffer_t *buffer;
+  record_t *record;
+  dialect_t *dialect;
+  char rw;  // read, write, or append char
+  FILE *fp;
+  unsigned long line; // line number for errors
+} csv_t;
+
+void dialect_free(dialect_t *d)
+{
+  free(d->quote);
+  free(d->escape);
+  free(d->delimiter);
+  free(d->terminator);
+  free(d);
+}
+
+dialect_t *dialect_new(char *quote,
+		       char *escape,
+		       char *delimiter,
+		       char *terminator,
+		       int quote_flag)
+{
+  dialect_t *d;
+  if (d = (dialect_t *)malloc(sizeof(dialect_t))) {
+    d->quote = d->escape = d->delimiter = d->terminator = NULL;
+    if ((d->quote = strdup(quote)) &&
+	(d->escape = strdup(escape)) &&
+	(d->delimiter = strdup(delimiter)) &&
+	(d->terminator = strdup(terminator))) {
+      d->quote_n = strlen(quote);
+      d->escape_n = strlen(escape);
+      d->delimiter_n = strlen(delimiter);
+      d->terminator_n = strlen(terminator);
+      d->quote_flag = quote_flag;
+      return d;
+    }
+    dialect_free(d);
   }
+  return NULL;
+}
 
-  n_quote = strlen(quote);
-  while (1) {
-    s = bf + n;
-    if (n+BUFSIZE > sz) {
-      if (!(tb = realloc(bf, sz <<= 1))) {
-        free(bf);
-        error_handler("realloc error");
-      }
-      s = (bf = tb) + n;
-    }
-    tb = fgets(s, BUFSIZE, fp);
-    if (ferror(fp)) {
-      free(bf);
-      return 0;
-    }
-    if (tb == NULL) {
-      if (n == 0)
-        return NULL;
-      else
-        return pure_cstring(bf);
-    }
-    n += strlen(s);
-    if (*(bf+n-1) != '\n')
-      continue;
-    while (*s) {
-      if (!strncmp(s, quote, n_quote)) {
-        ++quote_count;
-        s += n_quote;
-      } else
-      ++s;
-    }
-    if (!(quote_count & 1))
-      /* let pure handle freeing bf */
-      return pure_cstring(bf);
+/*** Record functions ***/
+
+static record_t *record_new(void)
+{
+  record_t *r;
+  if (r = (record_t *)malloc(sizeof(record_t))) {
+    r->len = 0;
+    r->growto = RECSIZE;
+    if (r->x = (pure_expr **)malloc(r->growto*sizeof(pure_expr *)))
+      return r;
+    free(r);
+  }
+  return NULL;
+}
+
+static void record_clear(record_t *r)
+{
+  if (r) r->len = 0;
+}
+
+static void record_free(record_t *r)
+{
+  if (r) { // avoid double free errors
+    free(r->x);
+    free(r);
   }
 }
 
-/* Convert a string to a number.
-   Input:
-     s: string to be converted.
-     cvt_flag: 0 -> no conversion, 1 -> attempt conversion
+/* links a list pointer to x */
 
-   Output:
-     Pure int, Pure double, or Pure string depending on cvt_flag=1 and
-     s obeys strtol and strtod specs.
-*/
-static pure_expr *convert_string(char *s, int cvt_flag) {
-  long i;
-  double d;
-  char *p;
+static record_t *record_add(record_t *r, pure_expr *x)
+{
+  if (r) {
+    if (r->len == r->growto) {
+      r->growto <<= 1;
+      pure_expr **t;
+      if (t = (pure_expr **)realloc(r->x, r->growto*sizeof(pure_expr *)))
+	r->x = t;
+      else {
+	record_free(r);
+	return NULL;
+      }
+    }
+    *(r->x + r->len) = x;
+    ++r->len;
+  }
+  return r;
+}
 
-  if (cvt_flag) {
-    i = strtol(s, &p, 0);
+static buffer_t *buffer_new(void)
+{
+  buffer_t *t;
+  if (t = (buffer_t *)malloc(sizeof(buffer_t))) {
+    t->len = 0;
+    t->growto = BUFFSIZE;
+    if (t->c = (char *)malloc(t->growto*sizeof(char)))
+      return t;
+    free(t);
+  }
+  return NULL;
+}
+
+static void buffer_clear(buffer_t *b)
+{
+  if (b) b->len = 0;
+}
+
+static void buffer_free(buffer_t *b)
+{
+  if (b) {
+    free(b->c);
+    free(b);
+  }
+}
+
+static buffer_t *buffer_add(buffer_t *b, char *s, int count)
+{
+  if (b) {
+    if (b->len + count >= b->growto) {
+      while (b->len + count >= b->growto)
+	b->growto <<= 1;
+      char *t;
+      if (t = (char *)realloc(b->c, b->growto*sizeof(char)))
+	b->c = t;
+      else {
+	buffer_free(b);
+	return b;
+      }
+    }
+    memcpy(b->c + b->len, s, count);
+    b->len += count;
+  }
+  return b;
+}
+
+static buffer_t *buffer_del(buffer_t *b, size_t pos, int count)
+{
+  if (b) {
+    b->len -= count;
+    memcpy(b->c + pos, b->c + pos + count, b->len);
+  }
+  return b;
+}
+
+/* Reads from file past buffer->len. If buffer address changes, offset
+   is the difference between the old and new address. */
+
+static int buffer_fill(csv_t *csv, long *offset)
+{
+  buffer_t *b = csv->buffer;
+  int ch, n = b->growto - b->len;
+  char *s = b->c + b->len;
+  char *ofs = b->c;
+  while (1) {
+    while (n-- > 0) {
+      if ((ch = getc(csv->fp)) == EOF)
+	return FILE_END;
+      if ((*s++ = ch) == '\n') {
+	*offset = b->c - ofs;
+	b->len = s - b->c;
+	return 0;
+      }
+    }
+    char *t;
+    n = b->growto;
+    b->growto <<= 1;
+    if (t = (char *)realloc(b->c, b->growto)) {
+      b->c = t;
+      s = b->c + n;
+    } else
+      return ERR_MEM;
+  }
+}
+
+void csv_close(csv_t *csv)
+{
+  if (csv) {
+    if (csv->buffer) {
+      buffer_free(csv->buffer);
+      csv->buffer = NULL;
+    }
+    if (csv->record) {
+      record_free(csv->record);
+      csv->record = NULL;
+    }
+    if (csv->fp) {
+      fclose(csv->fp);
+      csv->fp = NULL;
+    }
+  }
+}
+
+void csv_free(csv_t *csv)
+{
+  csv_close(csv);
+  free(csv);
+}
+
+csv_t *csv_open(char *fname, char *rw, dialect_t *d)
+{
+  csv_t *t;
+  if (t = (csv_t *)malloc(sizeof(csv_t))) {
+    t->line = 1;
+    t->buffer = NULL;
+    t->record = NULL;
+    if (t->buffer = buffer_new()) {
+      t->dialect = d;
+      t->rw = *rw; // get first char since rw is one of "r", "w", "a".
+      if (t->fp = fopen(fname, rw))
+	if (t->record = record_new())
+	  return t;
+    }
+    csv_free(t);
+  }
+  return NULL;
+}
+
+static int write_quoted(csv_t *csv, pure_expr **xs, size_t len)
+{
+  int i;
+  char *ts;
+  dialect_t *d = csv->dialect;
+  buffer_t *b = csv->buffer;
+  buffer_clear(b);
+  for (i = 0; i < len && b; ++i) {
+    if (pure_is_string(xs[i], &ts)) {
+      buffer_add(b, d->quote, d->quote_n);
+      char *p, *tp;
+      unsigned qflag = 0;
+      p = tp = ts;
+      while (*p) {
+	if (!strncmp(p, d->quote, d->quote_n)) {
+	  qflag = 1;
+	  buffer_add(b, tp, p-tp+1);
+	  buffer_add(b, d->quote, d->quote_n);
+	  tp = p += d->quote_n;
+	} else if (!strncmp(p, d->delimiter, d->delimiter_n)) {
+	  qflag = 1;
+	  p += d->delimiter_n;
+	} else if (*p == '\n') {
+	  ++csv->line;
+	  qflag = 1;
+	  ++p;
+	} else
+	  ++p;
+      }
+      buffer_add(b, tp, p-tp);
+      if (!qflag && d->quote_flag == MINIMAL) // kill leading quote
+	buffer_del(b, b->len-(p-ts)-1, d->quote_n);
+      else
+	buffer_add(b, d->quote, d->quote_n);
+    } else {
+      ts = str(xs[i]);
+      if (d->quote_flag == ALL) {
+	buffer_add(b, d->quote, d->quote_n);
+	buffer_add(b, ts, strlen(ts));
+	buffer_add(b, d->quote, d->quote_n);
+      } else
+	buffer_add(b, ts, strlen(ts));
+      free(ts);
+    }
+    if (i+1 < len) 
+      buffer_add(b, d->delimiter, d->delimiter_n);
+  }
+  buffer_add(b, d->terminator, d->terminator_n);
+  ++csv->line;
+  if (!b)
+    return ERR_MEM;
+  else if (fwrite(b->c, 1, b->len, csv->fp) == b->len)
+    return 0;
+  else // don't free buffers because of sentry
+    return ERR_WRITE;
+}
+
+static int write_escaped(csv_t *csv, pure_expr **xs, size_t len)
+{
+  int i;
+  char *ts;
+  dialect_t *d = csv->dialect;
+  buffer_t *b = csv->buffer;
+  buffer_clear(b);
+  for (i = 0; i < len && b; ++i) {
+    if (pure_is_string(xs[i], &ts)) {
+      char *p, *tp;
+      p = tp = ts;
+      while (*p) {
+	if (!strncmp(p, d->escape, d->escape_n)) {
+	  buffer_add(b, tp, p-tp);
+	  buffer_add(b, d->escape, d->escape_n);
+	  tp = p;
+	  p += d->escape_n;
+	} else if (!strncmp(p, d->delimiter, d->delimiter_n)) {
+	  buffer_add(b, tp, p-tp);
+	  buffer_add(b, d->escape, d->escape_n);
+	  tp = p;
+	  p += d->delimiter_n;
+	} else if (!strncmp(p, d->terminator, d->terminator_n)) {
+	  buffer_add(b, tp, p-tp);
+	  buffer_add(b, d->escape, d->escape_n);
+	  ++csv->line;
+	  tp = p;
+	  p += d->terminator_n;
+	} else
+	  ++p;
+      }
+      buffer_add(b, tp, p-tp);
+    } else {
+      ts = str(xs[i]);
+      buffer_add(b, ts, strlen(ts));
+      free(ts);
+    }
+    if (i+1 < len) 
+      buffer_add(b, d->delimiter, d->delimiter_n);
+  }
+  buffer_add(b, d->terminator, d->terminator_n);
+  if (!b)
+    return ERR_MEM;
+  else if (fwrite(b->c, 1, b->len, csv->fp) == b->len)
+    return 0;
+  else // don't free buffers because of sentry
+    return ERR_WRITE;
+}
+
+pure_expr *csv_write(csv_t *csv, pure_expr **xs, size_t len)
+{
+  char msg[50];
+
+  if (csv->rw == 'r') // we can be sure rw is one of 'r', 'w', 'a'
+    return error("cannot write on a file opened for reading");
+  int err = csv->dialect->escape_n ?
+    write_escaped(csv, xs, len) : write_quoted(csv, xs, len);
+  switch (err) {
+  case ERR_MEM: 
+    return error("out of memory");
+  case ERR_WRITE:
+    sprintf(msg, "error writing line %ld", csv->line);
+    return error(msg);
+  default:
+    return pure_tuplev(0, NULL);
+  }
+}
+
+static pure_expr *char_to_expr(char *s, dialect_t *d)
+{
+  if (!strncmp(s, d->quote, d->quote_n)) { // skip quote this is a string
+    s += d->quote_n;
+    return pure_cstring_dup(s);
+  }
+  if (d->quote_flag != ALL) {
+    char *p;
+    long i = strtol(s, &p, 0);
     if (*p == 0)
       return pure_int(i);
-    d = strtod(s, &p);
+    double f = strtod(s, &p);
     if (*p == 0)
-      return pure_double(d);
+      return pure_double(f);
   }
   return pure_cstring_dup(s);
 }
 
-#define putfld(len) \
-  if (n_fld + len >= fld_sz) { \
-    if (!(tfld = (char *)realloc(fld, fld_sz <<= 1))) \
-      goto done; \
-    fld = tfld; \
-  } \
-  fldp = fld + n_fld; \
-  strncpy(fldp, s, len); \
-  n_fld += len \
-
-
-#define putrec(qt) \
-  *(fldp + 1) = 0; \
-  if (n_rec >= rec_sz - 1) { \
-    if (!(trec = (pure_expr **)realloc(rec, (rec_sz+=64)*sizeof(pure_expr)))) \
-      goto done; \
-    rec = trec; \
-  } \
-  rec[n_rec++] = convert_string(fld, qt)
-
-#define free_params				\
-  free(delimiter);				\
-  free(escape);					\
-  free(quote);					\
-  free(lineterm);				\
-  free(elems)
-
-/* Convert a CSV string to a list of fields
-   input:
-     dialect: (Conversion flag, field delimeter char, string delimeter char)
-     s: CSV formatted string
-
-   Output: record of fields
-
-   Exceptions:
-     Invokes 'csv::error MSG' if the string is badly formatted, or memory
-     error
-
-   Notes:
-     \r char is treated as white space except inside ""
-*/
-pure_expr *csvstr_to_list(char *s, pure_expr *dialect) {
-  size_t n_elems;
-  pure_expr **elems, **rec, **trec;
-  int n, st = 0, fld_sz = 256, n_fld, rec_sz = 64, n_ws = 0, n_rec = 0,
-    n_delimiter, n_escape, n_quote, n_lineterm, skipspace_f, esc_eq_quote,
-    quoting_style;
-  char *fld, *tfld, *fldp, errmsg[80], *delimiter, *escape, *quote, *lineterm;
-
-  if (!(pure_is_listv(dialect, &n_elems, &elems)
-	&& n_elems == 6
-	&& pure_is_cstring_dup(elems[0], &delimiter)
-	&& pure_is_cstring_dup(elems[1], &escape)
-	&& pure_is_cstring_dup(elems[2], &quote)
-	&& pure_is_int(elems[3], &quoting_style)
-	&& pure_is_cstring_dup(elems[4], &lineterm)
-	&& pure_is_int(elems[5], &skipspace_f)))
-    return 0;
-
-  if (!(fld = (char *)malloc(fld_sz))) {
-    free_params;
-    error_handler("malloc error");
+static int read_quoted(csv_t *csv)
+{
+  char *s;
+  char *t, *w; // field start, overwrite
+  dialect_t *d = csv->dialect;
+  long offset;
+  int res, more = 1;
+  record_clear(csv->record);
+  buffer_clear(csv->buffer);
+  if ((res = buffer_fill(csv, &offset)) != 0)
+    return res;
+  s = csv->buffer->c; 
+  while (more) {
+    t = w = s;
+    if (!strncmp(s, d->quote, d->quote_n)) { // quoted field
+      w = s += d->quote_n; // leave quote as a flag for string conversion
+      while (1)
+	if (!strncmp(s, d->quote, d->quote_n)) {
+	  s += d->quote_n; // skip escape quote
+	  if (*s == '\n') {
+	    ++csv->line;
+	    more = 0;
+	    break;
+	  } else if (!strncmp(s, d->delimiter, d->delimiter_n)) {
+	    s += d->delimiter_n;
+	    break;
+	  } else if (!strncmp(s, d->quote, d->quote_n)) {
+	    memcpy(w, s, d->quote_n);
+	    w += d->quote_n;
+	    s += d->quote_n;
+	  } else {
+	    return ERR_PARSE;
+	  }
+	} else if (*s == '\n') { // inside quotes
+	  ++csv->line;
+	  *w++ = *s++;
+	  if ((res = buffer_fill(csv, &offset)) != 0) // get more data
+	    return res;
+	  w += offset;
+	  s += offset;
+	  t += offset;
+	} else
+	  *w++ = *s++; // copy over escape quote
+    } else if (strncmp(s, d->delimiter, d->delimiter_n)) // not delimiter
+      while (1)
+	if (!strncmp(s, "\r\n", 2)) {
+	  s += 2;
+	  ++csv->line;
+	  more = 0;
+	  break;
+	} else if (*s == '\n') {
+	  ++s;
+	  ++csv->line;
+	  more = 0;
+	  break;
+	} else if (!strncmp(s, d->delimiter, d->delimiter_n)) {
+	  s += d->delimiter_n;
+	  break;
+	} else if (!strncmp(s, d->quote, d->quote_n))
+	  return ERR_PARSE;
+	else
+	  *w++ = *s++;
+    else // s is the delimiter
+      s += d->delimiter_n;
+    *w = '\0'; // terminate field
+    if (!record_add(csv->record, char_to_expr(t, d)))
+      return ERR_MEM;
   }
-
-  if (!(rec = (pure_expr **)malloc(rec_sz*sizeof(pure_expr)))) {
-    free(fld);
-    free_params;
-    error_handler("malloc error");
-  }
-  n_delimiter = strlen(delimiter);
-  n_escape = strlen(escape);
-  n_quote = strlen(quote);
-  esc_eq_quote = !strcmp(escape, quote);
-  n_lineterm = strlen(lineterm);
-  fldp = fld;
-  while (st < 10) {
-    switch (st) {
-    case 0:
-      fldp = fld;
-      *fldp = 0;
-      n_fld = 0;
-      if (!strncmp(s, delimiter, n_delimiter)) {
-	putrec(QUOTE_ALL);
-	s += n_delimiter;
-      } else if (!strncmp(s, quote, n_quote)) {
-	s += n_quote;
-	st = 1;
-      } else if (!*s || *s == EOF || !strncmp(s, lineterm, n_lineterm)) {
-	putrec(QUOTE_ALL);
-	st = 10;
-      } else if (isspace(*s) && skipspace_f) {
-	++s;
-      } else if (!strncmp(s, escape, n_escape)) {
-	sprintf(errmsg, "column %d: unexpected escape.", n_fld+1);
-	st = 20;
-      } else {
-	putfld(1);
-	++s;
-	st = 4;
-      }
-      break;
-    case 1:
-      if (!strncmp(s, quote, n_quote)) {
-	s += n_quote;
-	st = 2;
-      } else if (!*s || *s == EOF) {
-	sprintf(errmsg, "column %d: expected {%s}.",
-		n_fld+1, quote);
-	st = 20;
-      } else if (!strncmp(s, escape, n_escape)) {
-	s += n_escape;
-	putfld(n_escape);
-	++s;
-      } else {
-	putfld(1);
-	++s;
-      }
-      break;
-    case 2:
-      if (!strncmp(s, quote, n_quote) && esc_eq_quote) {
-	putfld(n_quote);
-	s += n_quote;
-	st = 1;
-      } else if (!strncmp(s, delimiter, n_delimiter)) {
-	putrec(QUOTE_ALL);
-	s += n_delimiter;
-	st = 0;
-      } else if (!*s || *s == EOF || !strncmp(s, lineterm, n_lineterm)) {
-	putrec(QUOTE_ALL);
-	st = 10;
-      } else if (isspace(*s)) {
-	++s;
-	st = 3;
-      } else {
-	sprintf(errmsg, "column %d: expected {%s}.",
-		n_fld+1, delimiter);
-	st = 20;
-      }
-      break;
-    case 3:
-      if (!strncmp(s, delimiter, n_delimiter)) {
-	putrec(QUOTE_ALL);
-	s += n_delimiter;
-	st = 0;
-      } else if (!*s || *s == '\n' || *s == EOF) {
-	putrec(QUOTE_ALL);
-	st = 10;
-      } else if (isspace(*s)) {
-	++s;
-      } else {
-	sprintf(errmsg, "column %d: expected {%s}.",
-		n_fld+1, delimiter);
-	st = 20;
-      }
-      break;
-    case 4:
-      if (!strncmp(s, quote, n_quote) || !strncmp(s, escape, n_escape)) {
-	sprintf(errmsg, "column %d: expected {%s}.",
-		n_fld+1, delimiter);
-	st = 20;
-      } else if (!strncmp(s, delimiter, n_delimiter)) {
-	fldp -= n_ws;
-	n_fld -= n_ws;
-	putrec(quoting_style);
-	s += n_delimiter;
-	st = 0;
-      } else if (!*s || *s == EOF || !strncmp(s, lineterm, n_lineterm)) {
-	putrec(quoting_style);
-	st = 10;
-      } else if (isspace(*s)) {
-	n_ws = n_ws ? n_ws+1 : 1;
-	putfld(1);
-	++s;
-      } else {
-	n_ws = 0;
-	putfld(1);
-	++s;
-      }
-      break;
-    }
-  }
- done:
-  free(fld);
-  free_params;
-  if (st == 10)
-    return pure_listv(n_rec, realloc(rec, sizeof(pure_expr)*n_rec));
-  else {
-    for (n = 0; n < n_rec; ++n)
-      pure_free(rec[n]);
-    free(rec);
-    if (st==20)
-      error_handler(errmsg);
-    error_handler("malloc error");
-
-  }
+  return 0;
 }
 
-#define resize_str \
-  if (len > sz) { \
-    if (!(ts = (char *)realloc(s, sz <<= 1))) { \
-      free(s); \
-      error_handler("realloc error"); \
-    } \
-    s = ts; \
-  } \
-  t = s + mrk
-
-
-#define insert					\
-  mrk = len;					\
-  len += strlen(tb);				\
-  resize_str;					\
-  strncpy(t, tb, len - mrk)
-
-/* Convert list to a CSV formated string
-   Input:
-     dialect: (Conversion flag, field delimeter char, string delimeter char)
-     list: record to be converted
-
-   Output: CSV formatted string
-
-   Exceptions:
-     Invokes csv_error if no more memory is available or if field cannot be
-     converted.
-
-   Notes:
-     \r char is treated as white space except inside ""
-*/
-pure_expr *list_to_csvstr(pure_expr *list, pure_expr *dialect) {
-  size_t n_elems;
-  int i, n, k, sz = 256, mrk, quote_cnt, delim_cnt, lineterm_cnt, len = 0,
-    skipspace_f, n_escape, n_quote, n_delimiter, n_lineterm, quoting_style,
-    ival;
-  char *s, *ts, *p, *sval, tb[48], errmsg[80], *escape, *quote, *delimiter,
-    *lineterm;
-  double dval;
-  pure_expr **elems, **xs;
-  register char *t;
-
-  if (!(pure_is_listv(dialect, &n_elems, &elems)
-	&& n_elems == 6
-	&& pure_is_string_dup(elems[0], &delimiter)
-	&& pure_is_string_dup(elems[1], &escape)
-	&& pure_is_string_dup(elems[2], &quote)
-	&& pure_is_int(elems[3], &quoting_style)
-	&& pure_is_string_dup(elems[4], &lineterm)
-	&& pure_is_int(elems[5], &skipspace_f)
-	&& pure_is_listv(list, &n_elems, &xs))) {
-    return 0;
-  }
-
-  if (!(s = (char *)malloc(sz))) {
-    free_params;
-    error_handler("malloc error");
-  }
-
-  n_escape = strlen(escape);
-  n_quote = strlen(quote);
-  n_delimiter = strlen(delimiter);
-  n_lineterm = strlen(lineterm);
-  for (i = 0; i < n_elems; ++i) {
-    if (pure_is_int(xs[i], &ival)) {
-      if (!quoting_style)
-        sprintf(tb, "%s%d%s%s", quote, ival, quote, delimiter);
-      else
-        sprintf(tb, "%d%s", ival, delimiter);
-      insert;
-    } else if (pure_is_double(xs[i], &dval)) {
-      if (!quoting_style)
-        sprintf(tb, "%s%.16g%s%s", quote, dval, quote, delimiter);
-      else
-        sprintf(tb, "%.16g%s", dval, delimiter);
-      insert;
-    } else if (pure_is_cstring_dup(xs[i], &sval)) {
-      quote_cnt = 0;
-      delim_cnt = 0;
-      lineterm_cnt = 0;
-      p = sval;
-      if (skipspace_f && quoting_style == QUOTE_EMBEDDED)
-        while (isspace(*p)
-               && strncmp(p, quote, n_delimiter)
-               && strncmp(p, delimiter, n_delimiter)
-               && strncmp(p, lineterm, n_lineterm))
-          ++p;
-      k = p - sval;
-      mrk = len;
-      while (*p) {
-        if (!strncmp(p, quote, n_quote)) {
-          ++quote_cnt;
-          p += n_quote;
-          len += n_escape + n_quote;
-        } else if (!strncmp(p, delimiter, n_delimiter)) {
-          ++delim_cnt;
-          p += n_delimiter;
-          len += n_delimiter;
-        } else if (!strncmp(p, lineterm, n_lineterm)) {
-          ++lineterm_cnt;
-          p += n_lineterm;
-          len += n_lineterm;
-        } else {
-          ++len;
-          ++p;
-        }
-      }
-      len += n_delimiter;
-      p = sval + k;
-      if (quoting_style == QUOTE_EMBEDDED
-	  && !(quote_cnt+delim_cnt+lineterm_cnt)) {
-        resize_str;
-        k = len - mrk - 1;
-        strncpy(t, p, k);
-        t += k;
-      } else {
-        /* Add space for surrounding quotes */
-        len += n_quote << 1;
-        resize_str;
-        strncpy(t, quote, n_quote);
-        t += n_quote;
-        while (*p) {
-          if (!strncmp(p, quote, n_quote)) {
-            strncpy(t, escape, n_escape);
-            t += n_escape;
-            strncpy(t, quote, n_quote);
-            t += n_quote;
-            p += n_quote;
-          } else
-            *t++ = *p++;
-        }
-        strncpy(t, quote, n_quote);
-        t += n_quote;
-      }
-      strncpy(t, delimiter, n_delimiter);
-      t += n_delimiter;
-    } else {
-      sprintf(errmsg, "field %d: invalid conversion type.",
-	      i+1);
-      free_params;
-      error_handler(errmsg);
+static int read_escaped(csv_t *csv)
+{
+  char *s;
+  char *t, *w; // field start, overwrite
+  dialect_t *d = csv->dialect;
+  long offset;
+  int res, more = 1;
+  record_clear(csv->record);
+  buffer_clear(csv->buffer);
+  if ((res = buffer_fill(csv, &offset)) != 0)
+    return res;
+  s = csv->buffer->c;
+  while (more) {
+    t = w = s;
+    while (1) {
+      if (!strncmp(s, d->escape, d->escape_n)) {
+	s += d->escape_n;
+	if (!strncmp(s, d->escape, d->escape_n)) {
+	  memcpy(w, s, d->escape_n);
+	  w += d->escape_n;
+	  s += d->escape_n;
+	} else if (!strncmp(s, d->delimiter, d->delimiter_n)) {
+	  memcpy(w, s, d->delimiter_n);
+	  w += d->delimiter_n;
+	  s += d->delimiter_n;
+	} else if (!strncmp(s, "\r\n", 2)) {
+	  ++csv->line;
+	  memcpy(w, "\r\n", 2);
+	  w += 2;
+	  s += 2;
+	  if ((res = buffer_fill(csv, &offset)) != 0) // read some more data
+	    return res;
+	  w += offset;
+	  s += offset;
+	  t += offset;
+	} else if (*s == '\n') {
+	  ++csv->line;
+	  *s++ = *t++;
+	  if ((res = buffer_fill(csv, &offset)) != 0) // read some more data
+	    return res;
+	  w += offset;
+	  s += offset;
+	  t += offset;
+	}
+      } else if (!strncmp(s, "\r\n", 2)) {
+	s += 2;
+	++csv->line;
+	more = 0;
+	break;
+      } else if (*s == '\n') {
+	++s;
+	++csv->line;
+	more = 0;
+	break;
+      } else if (!strncmp(s, d->delimiter, d->delimiter_n)) {
+	s += d->delimiter_n;
+	break;
+      } else
+	*w++ = *s++;
     }
+    *w = '\0'; // terminate field
+    if (!(record_add(csv->record, char_to_expr(t, d))))
+      return ERR_MEM;
   }
-  mrk = (len -= n_delimiter); /* write over last delimiter */
-  len += n_lineterm;
-  resize_str;
-  strcpy(t, lineterm);
-  free_params;
-  return pure_cstring((char *)realloc(s, len+1));
+  return 0;
+}
+
+pure_expr *csv_read(csv_t *csv)
+{
+  if (csv->rw == 'w' || csv->rw == 'a')
+    return error("cannot read from a file opened for writing");
+  int err = csv->dialect->escape_n ? read_escaped(csv) : read_quoted(csv);
+  char msg[50];
+  switch (err) {
+  case ERR_MEM:
+    return error("out of memory");
+  case ERR_READ:
+    sprintf(msg, "read error at line %ld", csv->line);
+    return error(msg);
+  case ERR_PARSE:
+    sprintf(msg, "parse error at line %ld", csv->line);
+    return error(msg);
+  case 0:
+    return pure_matrix_columnsvq(csv->record->len, csv->record->x);
+  case FILE_END:
+    return pure_tuplev(0, NULL);
+  }
 }

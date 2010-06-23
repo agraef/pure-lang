@@ -1,241 +1,159 @@
+/* CSV library interface
 
-/* The CSV library provides an interface to read and write comma separated
-   value files. The reading and writing functions are loosely based on
-   Python's csv module (http://docs.python.org/lib/module-csv.html)
-
-   Author: Robert E. Rucker
-   Email: erucker@bmc.edu
    Date: July 15, 2008
    Updated: November 21,22, 2008 to use namespaces.
    Updated: December 22, 2009: changed the default dialect to a const and 
             modified lookup to take advantage of nonlinear pattern matching.
-*/
-
-/*
-
-Copyright (c) 2008, 2009, Robert E. Rucker
-
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-1. Redistributions of source code must retain the above copyright notice,
-   this list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright
-   notice, this list of conditions and the following disclaimer in the
-   documentation and/or other materials provided with the distribution.
-
-3. Neither the name of the author nor the names of its contributors may be
-   used to endorse or promote products derived from this software without
-   specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-POSSIBILITY OF SUCH DAMAGE.
-
+   Updated: July 11, 2010 to make use of rewritten C module and Pure's built
+            in records.
 */
 
 namespace csv;
 
 using "lib:csv";
 
-/* Read a string with embedded '\n's within quotes. No error checking! */
-private extern expr *csv_fgets(FILE *fp, char *quote);
-
-/* Convert a CSV string to a list (record).
-   s: CSV formated string to be converted to a list of fields.
-   Dialect: CSV format specification. Unless specified, defaults to RFC4180
-            for Windows and UNIX for all other OSs.
-   NOTE: Rec must contain strings, integers, and floating point numbers. If a
-         field is some other type, the 'csv::error msg' rule is invoked.
-*/
-private extern expr *csvstr_to_list(char *str, expr *dialect);
-
-/* Convert a list (record) to a CSV string.
-   Rec: List of fields to be converted to CSV format.
-   Dialect: CSV format specification. Unless specified, defaults to RFC4180
-            for Windows and UNIX for all other OSs.
-   NOTE: Rec must contain strings, integers, and floating point numbers. If a
-         field is some other type, the 'csv::error msg' rule is invoked.
-*/
-private extern expr *list_to_csvstr(expr *list, expr *dialect);
-
-private extern int fputs(char *s, FILE *fp) = c_fputs;
+private extern dialect_t *dialect_new(char *, char *, char *, char *, int);
+private extern void dialect_free(dialect_t *);
+private extern csv_t *csv_open(char *, char *, void *);
+private extern void csv_close(csv_t *t);
+private extern void csv_free(csv_t *t);
+private extern expr *csv_write(csv_t *, expr **, int);
+private extern expr *csv_read(csv_t *csv);
 
 public
-/* Public dialect options
-  DELIMITER:      Field delimiter.
-                  Type: string
-                  Default: ","
-
-  ESCAPE:         Embedded escape character.
-                  Type: string
-                  Defaults: "\""
-                  Notes:
-                    Reading: The escape character is dropped and the next char
-                    is inserted into the field.
-                    Writing: The escape character is written into the output
-                             stream.
-
-  QUOTE:          Quote character.
-                  Type: string
-                  Default: "\""
-                  Note:
-                    If embedded quotes are doubled, ESCAPE must equal the value
-                    of QUOTE. The dialect function will automatically set the
-                    ESCAPE value to that of QUOTE if ESCAPE is not specified.
-
-  QUOTING_STYLE:  Sets whether strings or numbers should be quoted.
-                  Type: One of {QUOTE_ALL, QUOTE_STRINGS, QUOTE_EMBEDDED}
-                  Default: QUOTE_STRINGS
-
-  LINETERMINATOR: Value use for record termination.
-                  Type: string
-                  Default: "\r\n"
-
-  SKIPSPACE:      Skip white space flag.
-                  Type: boolean {1=true, 0=false}
-                  Default: true
-                  Note:
-                    If true, white spaces before fields are removed. However,
-                    quoted fields always retain white space.
-*/
-  DELIMITER
-  ESCAPE
-  QUOTE
-  QUOTING_STYLE
-  LINETERMINATOR
-  SKIPSPACE
-
-/* Public quote style constants */
-  QUOTE_ALL
-  QUOTE_STRINGS
-  QUOTE_EMBEDDED
-
-/* Public CSV dialects */
-  RFC4180
-  UNIX
-  EXCEL
-  DEFAULTS
-
-/* Public equations */
-  error
+  MINIMAL
+  STRING
+  ALL
   dialect
-  str
-  list
-  fgets
-  fputs
-  fget
-  fput;
+  quote
+  escape
+  delimiter
+  terminator
+  quote_flag
+  default
+  open
+  close
+  getr
+  putr;
 
-const DELIMITER = 0;
-const ESCAPE = 1;
-const QUOTE = 2;
-const QUOTING_STYLE = 3;
-const LINETERMINATOR = 4;
-const SKIPSPACE = 5;
+/* Public dialect options
 
-const QUOTE_ALL = 0;
-const QUOTE_STRINGS = 1;
-const QUOTE_EMBEDDED = 2;
+  delimiter:  Character used to separates fields.
+              Type: string
+              Default: ","
 
-/* Defaults are set to RFC 4180 (http://www.ietf.org/rfc/rfc4180.txt) except
-   for the \r\n pair */
-private defaults;
-const defaults = [",", "\"", "\"", 1, "\n", 1];
+  escape:     Escape character used to embed delimiter, escape, or return
+              characters. If the escape character is not null, then the
+              quote character is ignored.
+              Type: string
+              Default: ""
+              Notes:
+                Reading: The escape character is dropped and the next char
+                         is inserted into the field.
+                Writing: The escape character is written into the output
+                         stream before the delimiter, escape, or return
+                         character.
 
-/* Creates a dialect base on the list of dialect options given above.
-   For examples, see RFC4180, UNIX, and EXCEL constants below.
+  quote:      Quote character for embedding delimiters, quotes, and
+              returns. The quote character is ignored if the escape
+              character is defined.
+              Type: string
+              Default: "\""
+
+  quote_flag: Sets whether strings or numbers should be quoted.
+              Type: One of {ALL, STRING, MINIMAL}
+              Default: ALL
+	      Notes:
+	        Reading: ALL     - all fields are returned as strings.
+			 STRING  - 
+                         MINIMAL - non quoted integer and double fields are
+			           converted.
+                Writing: ALL     - all fields are written enclosed in quotes.
+                         STRING  - only string fields are written enclosed in
+                                   quotes.
+                         MINIMAL - only fields containing quote, delimiter,
+                                   or return characters are written with
+                                   enclosing quotes.
+
+  terminator: Value use for record termination.
+              Type: One of {"\r\n", "\n"}
+              Default: "\n"
+	      Notes:
+                Reading: "\r" are always ignored except when embedded in
+                         fields.
 */
-dialect opts
-  = zipwith ((lookup) opts2) (0..5) defaults
-    when
-      opts2
-        = if any (\(x=>y) -> x == ESCAPE) opts then
-            opts
-          else
-            opts + [ESCAPE=>(lookup opts QUOTE "\"")];
-    end
-    with
-      lookup [] k v = v;
-      lookup ((x=>y):xs) x v = y;
-      lookup ((x=>y):xs) k v = lookup xs k v;
-    end;
 
-const RFC4180 = dialect [LINETERMINATOR => "\r\n"];
-const UNIX = defaults;
-const EXCEL = dialect [QUOTING_STYLE => QUOTE_EMBEDDED,
-                       LINETERMINATOR => "\r\n"];
-const DEFAULTS
-  = if (substr sysinfo 0 5) == "mingw" then
-      RFC4180
+const MINIMAL = 1;
+const STRING = 2;
+const ALL = 3;
+
+dialect d::matrix
+  = if null r then
+      error "out of memory"
     else
-      UNIX;
-
-/* The following routines return csv::error msg in case of an error condition,
-   where msg is the error message (a string). This function isn't defined by
-   this module, so csv::error is simply a constructor by default. Clients may
-   define csv::error to implement custom error handling. */
-
-/* List to CSV string conversion */
-str record@[] |
-str record@(_:_)
-  = list_to_csvstr record DEFAULTS;
-
-str (recordc@[], dialect@(_:_)) |
-str (record@(_:_), dialect@(_:_))
-  = list_to_csvstr record dialect;
-
-/* Write a record to a file */
-fputs record@[] f::pointer |
-fputs record@(_:_) f::pointer
-  = c_fputs (str (record, DEFAULTS)) f;
-
-fputs record@[] (f::pointer, dialect@(_:_)) |
-fputs record@(_:_) (f::pointer, dialect@(_:_))
-  = c_fputs (str (record, dialect)) f;
-
-/* CSV string to list conversion */
-list s::string
-  = csvstr_to_list s DEFAULTS;
-list (s::string, dialect@(_:_))
-  = csvstr_to_list s dialect;
-list (csv_fgets s _,_)
-  = s;
-
-/* Read a record from a file */
-fgets (f::pointer, dialect@(_:_))
-  = list (csv_fgets f (dialect!QUOTE), dialect);
-fgets f::pointer
-  = fgets (f, DEFAULTS);
-
-/* Read a whole file at one time */
-fget (f::pointer, dialect@(_:_))
-  = read (fgets (f, dialect)) []
-    with
-      read x acc = reverse acc if ~listp x;
-      read x acc = read (fgets (f, dialect)) (x:acc);
-    end;
-fget f::pointer
-  = fget (f, DEFAULTS);
-
-/* Write a whole file at one time */
-fput records@(_:_) (f::pointer, dialect@(_:_))
-  = write records f
-    with
-      write [] f = ();
-      write (x:xs) f = fputs x (f, dialect) $$ write xs f;
+      sentry dialect_free r
+    when
+      s = {quote=>"\"", escape=>"", delimiter=>",", terminator=>"\n",
+      	   quote_flag=>ALL};
+      v = if check_dialect d then
+            record {s, d}
+          else
+            error "invalid dialect"
+	  with
+      	    check_dialect d::matrix
+              = all (\(x=>y) -> member s x) d &&
+	        (~ member d terminator ||  d!terminator == "\n" || 
+		 d!terminator == "\r\n") &&
+                all stringp (d!![quote,escape,delimiter]) &&
+                (~ member d quote_flag || any (=== d!quote_flag) [1,2,3]);
+          end;
+      r = dialect_new (v!quote) (v!escape) (v!delimiter) (v!terminator)
+                      (v!quote_flag);
     end;
 
-fput records@(_:_) f::pointer
-  = fput records (f, DEFAULTS);
+/* Predefined dialects */
+const default = dialect {};
+const RFC4180 = dialect {terminator=>"\r\n"};
+const EXCEL = dialect {quote_flag=>MINIMAL, terminator=>"\r\n"};
+
+/* Open a CSV file for reading, "r", writing, "w", or appending, "a",
+   with dialect d */
+open (fname::string, rw_flag::string, d::pointer)
+  = if rw_flag!0 ~= "r" && rw_flag!0 ~= "w" && rw_flag!0 ~= "a" then
+      error "bad read/write/append flag"
+    else if ~ null d && ~ null f then
+      (sentry csv_free f $$ sentry csv_close f)
+    else
+      error "cannot open file"
+    when
+      f = csv_open fname rw_flag d;
+    end;
+
+/* Open a CSV file like above but with the library default dialect */
+open (fname::string, rw_flag::string) = open (fname, rw_flag, default);
+
+/* Open a CSV file for reading with the library default dialect */
+open fname::string = open (fname, "r", default);
+
+/* Close a CSV file. Sentries ensure files will automatically be closed
+   and internal buffers will be freed when the file pointer goes out of
+   scope. */
+close f::pointer = clear_sentry f $$ csv_close f;
+
+/* Write a record represented as a vector to a CSV file */
+putr f::pointer r::matrix = csv_write f r (#r) if rowvectorp r;
+
+/* Write a list of records to a CSV file */
+fputr f::pointer xs@(_:_) = loop xs with
+  loop [] = ();
+  loop (x:xs) = (putr f x) $$ loop xs;
+end;
+
+/* Read a record represented as a vector from a CSV file */
+getr f::pointer = csv_read f;
+
+/* Read a list of records from a CSV file */
+fgetr f::pointer = loop (getr f) [] with
+  loop () xs = reverse xs;
+  loop x xs = loop (getr f) (x:xs);
+end;
