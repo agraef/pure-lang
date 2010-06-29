@@ -172,6 +172,27 @@ AC_CHECK_PROG(LLVMCONF,llvm-config,llvm-config,no)
 if test "$LLVMCONF" = no; then
   AC_MSG_ERROR([Cannot find LLVM.])
 fi
+
+LLVM_FLAGS=$($LLVMCONF --cppflags | sed -e s/-DNDEBUG//g)
+AC_SUBST(LLVM_FLAGS)
+LLVM_LDFLAGS=$($LLVMCONF --ldflags)
+AC_SUBST(LLVM_LDFLAGS)
+LLVM_LIBS=$($LLVMCONF --ldflags --libs core bitwriter jit native | tr '\r\n' '  ')
+AC_SUBST(LLVM_LIBS)
+
+# 64 bit needs -fPIC flag (apparently not needed on OSX, though)
+# FIXME: this should be set based on a check
+PIC=
+case $host in
+*x86_64-*)
+  case $host in
+  *-darwin*) ;;
+  *) PIC=-fPIC ;;
+  esac
+  ;;
+esac
+AC_SUBST(PIC)
+
 dnl Check for the new-style template arguments of the IRBuilder class.
 AC_LANG_PUSH([C++])
 save_CPPFLAGS=$CPPFLAGS

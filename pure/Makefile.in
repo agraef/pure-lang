@@ -54,9 +54,9 @@ LIBOBJS = @LIBOBJS@
 
 # Compilation flags.
 
-LLVM_FLAGS = $(shell llvm-config --cppflags | sed -e s/-DNDEBUG//g)
-LLVM_LDFLAGS = $(shell llvm-config --ldflags)
-LLVM_LIBS = `llvm-config --ldflags --libs core bitwriter jit native`
+LLVM_FLAGS = @LLVM_FLAGS@
+LLVM_LDFLAGS = @LLVM_LDFLAGS@
+LLVM_LIBS = @LLVM_LIBS@
 
 RL_LIBS  = @RL_LIBS@
 
@@ -117,7 +117,8 @@ endif
 
 # Generic defaults for gcc/elf-based systems.
 
-#PIC = -fPIC
+PIC = @PIC@
+
 shared = -shared
 soname = -Wl,-soname,$(libpure_soname)
 LD_LIB_PATH = @LD_LIB_PATH@
@@ -141,13 +142,6 @@ libpure_soname = lib$(libpure_name).$(major)$(DLL)
 libpure = lib$(libpure_name).$(major).$(minor)$(DLL)
 shared = -dynamiclib
 soname = -install_name $(libdir)/$(libpure_soname) -compatibility_version $(major) -current_version $(major).$(minor)
-endif
-
-# 64 bit, needs -fPIC flag (apparently not needed on OSX, though)
-ifneq "$(findstring x86_64-,$(host))" ""
-ifeq "$(findstring -darwin,$(host))" ""
-PIC = -fPIC
-endif
 endif
 
 # No need to edit below this line. Unless you really have to. :) ############
