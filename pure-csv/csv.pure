@@ -119,12 +119,12 @@ const EXCEL = dialect {quote_flag=>MINIMAL, terminator=>"\r\n"};
 /* Open a CSV file for reading, "r", writing, "w", or appending, "a",
    with dialect d */
 open (fname::string, rw_flag::string, d::pointer)
-  = if rw_flag!0 ~= "r" && rw_flag!0 ~= "w" && rw_flag!0 ~= "a" then
-      error "bad read/write/append flag"
-    else if ~ null d && ~ null f then
-      (sentry csv_free f $$ sentry csv_close f)
+  = if rw_flag ~= "r" && rw_flag ~= "w" && rw_flag ~= "a" then
+      throw error "bad read/write/append flag"
+    else if null d || null f then
+      throw error "cannot open file"    
     else
-      error "cannot open file"
+      (sentry csv_free f $$ sentry csv_close f)
     when
       f = csv_open fname rw_flag d;
     end;

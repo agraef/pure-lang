@@ -146,35 +146,31 @@ static record_t *record_new(void)
 
 static void record_clear(record_t *r)
 {
-  if (r) r->len = 0;
+  r->len = 0;
 }
 
 static void record_free(record_t *r)
 {
-  if (r) { // avoid double free errors
-    free(r->x);
-    free(r);
-  }
+  free(r->x);
+  free(r);
 }
 
 /* links a list pointer to x */
 
 static record_t *record_add(record_t *r, pure_expr *x)
 {
-  if (r) {
-    if (r->len == r->growto) {
-      r->growto <<= 1;
-      pure_expr **t;
-      if (t = (pure_expr **)realloc(r->x, r->growto*sizeof(pure_expr *)))
-	r->x = t;
-      else {
-	record_free(r);
-	return NULL;
-      }
+  if (r->len == r->growto) {
+    r->growto <<= 1;
+    pure_expr **t;
+    if (t = (pure_expr **)realloc(r->x, r->growto*sizeof(pure_expr *)))
+      r->x = t;
+    else {
+      record_free(r);
+      return NULL;
     }
-    *(r->x + r->len) = x;
-    ++r->len;
   }
+  *(r->x + r->len) = x;
+  ++r->len;
   return r;
 }
 
@@ -193,43 +189,37 @@ static buffer_t *buffer_new(void)
 
 static void buffer_clear(buffer_t *b)
 {
-  if (b) b->len = 0;
+  b->len = 0;
 }
 
 static void buffer_free(buffer_t *b)
 {
-  if (b) {
-    free(b->c);
-    free(b);
-  }
+  free(b->c);
+  free(b);
 }
 
 static buffer_t *buffer_add(buffer_t *b, char *s, int count)
 {
-  if (b) {
-    if (b->len + count >= b->growto) {
-      while (b->len + count >= b->growto)
-	b->growto <<= 1;
-      char *t;
-      if (t = (char *)realloc(b->c, b->growto*sizeof(char)))
-	b->c = t;
-      else {
-	buffer_free(b);
-	return b;
-      }
+  if (b->len + count >= b->growto) {
+    while (b->len + count >= b->growto)
+      b->growto <<= 1;
+    char *t;
+    if (t = (char *)realloc(b->c, b->growto*sizeof(char)))
+      b->c = t;
+    else {
+      buffer_free(b);
+      return NULL;
     }
-    memcpy(b->c + b->len, s, count);
-    b->len += count;
   }
+  memcpy(b->c + b->len, s, count);
+  b->len += count;
   return b;
 }
 
 static buffer_t *buffer_del(buffer_t *b, size_t pos, int count)
 {
-  if (b) {
-    b->len -= count;
-    memcpy(b->c + pos, b->c + pos + count, b->len);
-  }
+  b->len -= count;
+  memcpy(b->c + pos, b->c + pos + count, b->len);
   return b;
 }
 
@@ -239,11 +229,12 @@ static buffer_t *buffer_del(buffer_t *b, size_t pos, int count)
 static int buffer_fill(csv_t *csv, long *offset)
 {
   buffer_t *b = csv->buffer;
-  int ch, n = b->growto - b->len;
+  int ch;
+  size_t n = b->growto - b->len;
   char *s = b->c + b->len;
   char *ofs = b->c;
   while (1) {
-    while (n-- > 0) {
+    while (n--) {
       if ((ch = getc(csv->fp)) == EOF)
 	return FILE_END;
       if ((*s++ = ch) == '\n') {
@@ -265,19 +256,17 @@ static int buffer_fill(csv_t *csv, long *offset)
 
 void csv_close(csv_t *csv)
 {
-  if (csv) {
-    if (csv->buffer) {
-      buffer_free(csv->buffer);
-      csv->buffer = NULL;
-    }
-    if (csv->record) {
-      record_free(csv->record);
-      csv->record = NULL;
-    }
-    if (csv->fp) {
-      fclose(csv->fp);
-      csv->fp = NULL;
-    }
+  if (csv->buffer) {
+    buffer_free(csv->buffer);
+    csv->buffer = NULL;
+  }
+  if (csv->record) {
+    record_free(csv->record);
+    csv->record = NULL;
+  }
+  if (csv->fp) {
+    fclose(csv->fp);
+    csv->fp = NULL;
   }
 }
 
@@ -316,7 +305,7 @@ static int write_quoted(csv_t *csv, pure_expr **xs, size_t len)
   for (i = 0; i < len && b; ++i) {
     if (pure_is_string(xs[i], &ts)) {
       buffer_add(b, d->quote, d->quote_n);
-      char *p, *tp;
+      char *p, *tp; // p == current pointer, tp = starting point for copy
       unsigned qflag = 0;
       p = tp = ts;
       while (*p) {
@@ -373,7 +362,7 @@ static int write_escaped(csv_t *csv, pure_expr **xs, size_t len)
   for (i = 0; i < len && b; ++i) {
     if (pure_is_string(xs[i], &ts)) {
       char *p, *tp;
-      p = tp = ts;
+      p = tp = ts; // p == current pointer, tp = starting point for copy
       while (*p) {
 	if (!strncmp(p, d->escape, d->escape_n)) {
 	  buffer_add(b, tp, p-tp);
@@ -421,13 +410,13 @@ pure_expr *csv_write(csv_t *csv, pure_expr **xs, size_t len)
   int err = csv->dialect->escape_n ?
     write_escaped(csv, xs, len) : write_quoted(csv, xs, len);
   switch (err) {
+  case 0: // this happens most so should be first
+    return pure_tuplev(0, NULL);
   case ERR_MEM: 
     return error("out of memory");
   case ERR_WRITE:
     sprintf(msg, "error writing line %ld", csv->line);
     return error(msg);
-  default:
-    return pure_tuplev(0, NULL);
   }
 }
 
@@ -440,11 +429,9 @@ static pure_expr *char_to_expr(char *s, dialect_t *d)
   if (d->quote_flag != ALL) {
     char *p;
     long i = strtol(s, &p, 0);
-    if (*p == 0)
-      return pure_int(i);
+    if (*p == 0) return pure_int(i);
     double f = strtod(s, &p);
-    if (*p == 0)
-      return pure_double(f);
+    if (*p == 0) return pure_double(f);
   }
   return pure_cstring_dup(s);
 }
@@ -594,6 +581,10 @@ pure_expr *csv_read(csv_t *csv)
   int err = csv->dialect->escape_n ? read_escaped(csv) : read_quoted(csv);
   char msg[50];
   switch (err) {
+  case 0: // this happens most so should be first
+    return pure_matrix_columnsvq(csv->record->len, csv->record->x);
+  case FILE_END:
+    return pure_tuplev(0, NULL);
   case ERR_MEM:
     return error("out of memory");
   case ERR_READ:
@@ -602,9 +593,5 @@ pure_expr *csv_read(csv_t *csv)
   case ERR_PARSE:
     sprintf(msg, "parse error at line %ld", csv->line);
     return error(msg);
-  case 0:
-    return pure_matrix_columnsvq(csv->record->len, csv->record->x);
-  case FILE_END:
-    return pure_tuplev(0, NULL);
   }
 }
