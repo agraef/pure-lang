@@ -47,7 +47,7 @@ CFLAGS = -g -O2
 
 FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 
-DISTFILES = COPYING Makefile README config.guess examples/*.pure csv.c \
+DISTFILES = COPYING Makefile README config.guess csv.c \
 csv.pure pure-csv.html
 
 all: csv$(DLL)
@@ -84,7 +84,7 @@ uninstall:
 
 dist:
 	rm -rf $(dist)
-	mkdir $(dist) && mkdir $(dist)/examples
+	mkdir $(dist)
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
