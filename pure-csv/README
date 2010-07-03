@@ -34,12 +34,13 @@ Makefile for details.
 Usage
 -----
 
-Data records are represented as matrices or optionally lists of strings,
-integers, and doubles. Two predefined dialects are provided; default 
-(record terminator="\n") and RFC4180 (record terminator="\r\n"); and
-procedures are provided to create other CSV dialects. See
-(http://www.ietf.org/rfc/rfc4180.txt) for more details about the 
-RFC4180 standard.
+Data records are represented as vectors or lists of any Pure values. Values
+are converted as necessary and written as a group of strings, integers, or
+doubles separated by a delimiter. Three predefined dialects are provided; 
+``default`` (record terminator="\n"), ``RFC4180``(record terminator="\r\n"),
+and ``Excel``. Procedures are provided to create other CSV dialects. See 
+(http://www.ietf.org/rfc/rfc4180.txt) for more details about the RFC4180
+standard.
 
 Handling Errors
 ~~~~~~~~~~~~~~~
@@ -47,13 +48,12 @@ Handling Errors
 .. _error:
 
 ``error msg``
-  is an error handling term. Input that does not abide by dialect 
-  rules or records containing field types other than strings, integers, 
-  and doubles produce a special ``csv::error msg`` term, where ``msg`` 
-  is a string describing the particular error. Your application should 
-  either check for these or have ``csv::error`` defined to directly 
-  handle errors in some way (e.g., provide a default value, or raise an 
-  exception).
+  is an error handling term. Operations producing parse errors, memory 
+  errors, or read/write errors produce a special ``csv::error msg`` term,
+  where ``msg`` is a string describing the particular error. Your 
+  application should either check for these or have ``csv::error`` defined
+  to directly handle errors in some way (e.g., provide a default value, or
+  raise an exception).
 
 Creating Dialects
 ~~~~~~~~~~~~~~~~~
@@ -100,13 +100,13 @@ Creating Dialects
 
 .. _example_dialect:
 
-Examples
+Example
 
 ::
     
   > using csv;
   > using namespace csv;
-  > let d = dialect {delimiter=>"\t"};
+  > let d = dialect {delimiter=>"\t", quote_flag=>STRING};
   > d;
   #<pointer 0x9d75280>
   > 
@@ -132,6 +132,11 @@ Opening CSV Files
 
 ``open (name::string, rw_flag::string, d::pointer)``
   exactly as above except according to a user defined dialect ``d``.
+
+``open (name::string, rw_flag::string, d::pointer, list_flag::int)``
+  exactly as above except if ``list_flag`` is set to ``1`` or ``LIST``, the
+  output of ``putr``, ``fputr``, and ``fputr_lazy`` is a list instead of a
+  vector.
 
 .. _examples_open:
 
@@ -164,11 +169,14 @@ File Reading Functions
 
 .. _fgetr:
 
-``fget csv_file::pointer``
+``fgetr csv_file::pointer``
   reads a whole file and returns a list of records. This procedure 
   should only be used on data files that are small enough to fit in the 
   computer's primary memory. Reading from a file opened for writing or
   appending invokes the ``error msg`` rule.
+
+``fgetr_lazy csv_file::pointer``
+  Lazy version of ``fgetr``.
 
 File Writing Functions
 ~~~~~~~~~~~~~~~~~~~~~~
