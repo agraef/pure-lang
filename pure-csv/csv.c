@@ -90,7 +90,8 @@ typedef struct {
   buffer_t *buffer;
   record_t *record;
   dialect_t *dialect;
-  char rw;  // read, write, or append char
+  int list_flag;      // output a list instead of a vector
+  char rw;            // read, write, or append char
   FILE *fp;
   unsigned long line; // line number for errors
 } csv_t;
@@ -234,14 +235,21 @@ static int buffer_fill(csv_t *csv, long *offset)
   char *s = b->c + b->len;
   char *ofs = b->c;
   while (1) {
-    while (n--) {
-      if ((ch = getc(csv->fp)) == EOF)
+    // be sure there is room for at least two chars
+    while (n-2 > 0 && (ch = getc(csv->fp)) != '\n' && ch != EOF) {
+      --n;
+      *s++ = ch;
+    }
+    *s++ = '\n';
+    *s = '\0';
+    n += 2;
+    if (ferror(csv->fp)) return ERR_READ;
+    if (ch == '\n')
+      break;
+    else if (ch == EOF) {
+      if (s-1 == b->c)
 	return FILE_END;
-      if ((*s++ = ch) == '\n') {
-	*offset = b->c - ofs;
-	b->len = s - b->c;
-	return 0;
-      }
+      break;
     }
     char *t;
     n = b->growto;
@@ -252,6 +260,9 @@ static int buffer_fill(csv_t *csv, long *offset)
     } else
       return ERR_MEM;
   }
+  *offset = b->c - ofs;
+  b->len = s - b->c;
+  return 0;
 }
 
 void csv_close(csv_t *csv)
@@ -276,11 +287,12 @@ void csv_free(csv_t *csv)
   free(csv);
 }
 
-csv_t *csv_open(char *fname, char *rw, dialect_t *d)
+csv_t *csv_open(char *fname, char *rw, dialect_t *d, int list_flag)
 {
   csv_t *t;
   if (t = (csv_t *)malloc(sizeof(csv_t))) {
     t->line = 1;
+    t->list_flag = list_flag;
     t->buffer = NULL;
     t->record = NULL;
     if (t->buffer = buffer_new()) {
@@ -425,8 +437,7 @@ static pure_expr *char_to_expr(char *s, dialect_t *d)
   if (!strncmp(s, d->quote, d->quote_n)) { // skip quote this is a string
     s += d->quote_n;
     return pure_cstring_dup(s);
-  }
-  if (d->quote_flag != ALL) {
+  } else if (*s && d->quote_flag != ALL) {
     char *p;
     long i = strtol(s, &p, 0);
     if (*p == 0) return pure_int(i);
@@ -442,22 +453,26 @@ static int read_quoted(csv_t *csv)
   char *t, *w; // field start, overwrite
   dialect_t *d = csv->dialect;
   long offset;
-  int res, more = 1;
+  int res;
   record_clear(csv->record);
   buffer_clear(csv->buffer);
-  if ((res = buffer_fill(csv, &offset)) != 0)
+  if (res = buffer_fill(csv, &offset))
     return res;
   s = csv->buffer->c; 
-  while (more) {
+  while (*s) {
     t = w = s;
     if (!strncmp(s, d->quote, d->quote_n)) { // quoted field
       w = s += d->quote_n; // leave quote as a flag for string conversion
-      while (1)
+      while (*s)
 	if (!strncmp(s, d->quote, d->quote_n)) {
 	  s += d->quote_n; // skip escape quote
 	  if (*s == '\n') {
+	    ++s;
 	    ++csv->line;
-	    more = 0;
+	    break;
+	  } else if (!strncmp(s, "\r\n", 2)) {
+	    s += 2;
+	    ++csv->line;
 	    break;
 	  } else if (!strncmp(s, d->delimiter, d->delimiter_n)) {
 	    s += d->delimiter_n;
@@ -466,9 +481,8 @@ static int read_quoted(csv_t *csv)
 	    memcpy(w, s, d->quote_n);
 	    w += d->quote_n;
 	    s += d->quote_n;
-	  } else {
+	  } else 
 	    return ERR_PARSE;
-	  }
 	} else if (*s == '\n') { // inside quotes
 	  ++csv->line;
 	  *w++ = *s++;
@@ -480,16 +494,14 @@ static int read_quoted(csv_t *csv)
 	} else
 	  *w++ = *s++; // copy over escape quote
     } else if (strncmp(s, d->delimiter, d->delimiter_n)) // not delimiter
-      while (1)
+      while (*s)
 	if (!strncmp(s, "\r\n", 2)) {
 	  s += 2;
 	  ++csv->line;
-	  more = 0;
 	  break;
 	} else if (*s == '\n') {
 	  ++s;
 	  ++csv->line;
-	  more = 0;
 	  break;
 	} else if (!strncmp(s, d->delimiter, d->delimiter_n)) {
 	  s += d->delimiter_n;
@@ -513,15 +525,15 @@ static int read_escaped(csv_t *csv)
   char *t, *w; // field start, overwrite
   dialect_t *d = csv->dialect;
   long offset;
-  int res, more = 1;
+  int res;
   record_clear(csv->record);
   buffer_clear(csv->buffer);
   if ((res = buffer_fill(csv, &offset)) != 0)
     return res;
   s = csv->buffer->c;
-  while (more) {
+  while (*s) {
     t = w = s;
-    while (1) {
+    while (*s) {
       if (!strncmp(s, d->escape, d->escape_n)) {
 	s += d->escape_n;
 	if (!strncmp(s, d->escape, d->escape_n)) {
@@ -554,12 +566,10 @@ static int read_escaped(csv_t *csv)
       } else if (!strncmp(s, "\r\n", 2)) {
 	s += 2;
 	++csv->line;
-	more = 0;
 	break;
       } else if (*s == '\n') {
 	++s;
 	++csv->line;
-	more = 0;
 	break;
       } else if (!strncmp(s, d->delimiter, d->delimiter_n)) {
 	s += d->delimiter_n;
@@ -582,7 +592,10 @@ pure_expr *csv_read(csv_t *csv)
   char msg[50];
   switch (err) {
   case 0: // this happens most so should be first
-    return pure_matrix_columnsvq(csv->record->len, csv->record->x);
+    if (csv->list_flag)
+      return pure_listv(csv->record->len, csv->record->x);
+    else
+      return pure_matrix_columnsvq(csv->record->len, csv->record->x);
   case FILE_END:
     return pure_tuplev(0, NULL);
   case ERR_MEM:

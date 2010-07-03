@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.5: http://docutils.sourceforge.net/" />
 <title>Pure-CSV - Comma Separated Value Interface for the Pure Programming Language</title>
 <meta name="author" content="Eddie Rucker &lt;erucker&#64;bmc.edu&gt;" />
-<meta name="date" content="2010-06-23" />
+<meta name="date" content="2010-07-02" />
 <meta name="copyright" content="2008, 2009, 2010 by Eddie Rucker" />
 <style type="text/css">
 
@@ -296,7 +296,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Eddie Rucker &lt;<a class="reference external" href="mailto:erucker&#64;bmc.edu">erucker&#64;bmc.edu</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-06-23</td></tr>
+<td>2010-07-02</td></tr>
 <tr><th class="docinfo-name">Copyright:</th>
 <td>2008, 2009, 2010 by Eddie Rucker</td></tr>
 <tr class="field"><th class="docinfo-name">License:</th><td class="field-body">3-clause BSD license, see the accompanying COPYING file for details</td>
@@ -335,9 +335,9 @@ Makefile for details.</p>
 </div>
 <div class="section" id="usage">
 <h1><a class="toc-backref" href="#id3">2&nbsp;&nbsp;&nbsp;Usage</a></h1>
-<p>Data records are represented as matrices of strings, integers, and
-doubles. Two predefined dialects are provided; default (record
-terminator=&quot;n&quot;) and RFC4180 (record terminator=&quot;rn&quot;); and
+<p>Data records are represented as matrices or optionally lists of strings,
+integers, and doubles. Two predefined dialects are provided; default
+(record terminator=&quot;n&quot;) and RFC4180 (record terminator=&quot;rn&quot;); and
 procedures are provided to create other CSV dialects. See
 (<a class="reference external" href="http://www.ietf.org/rfc/rfc4180.txt">http://www.ietf.org/rfc/rfc4180.txt</a>) for more details about the
 RFC4180 standard.</p>
@@ -477,6 +477,7 @@ Writing to a file opened for reading invokes the <tt class="docutils literal"><s
 </div>
 <div class="section" id="id1">
 <span id="examples"></span><h2><a class="toc-backref" href="#id9">2.6&nbsp;&nbsp;&nbsp;Examples</a></h2>
+<p>The first example shows how to write and read a default CSV file.</p>
 <pre class="literal-block">
 &gt; using csv;
 &gt; using namespace csv;
@@ -489,7 +490,71 @@ Writing to a file opened for reading invokes the <tt class="docutils literal"><s
 &gt; fgetr f;
 [{&quot;bob&quot;,&quot;3.9&quot;,&quot;&quot;,&quot;-2&quot;},{&quot;fred&quot;,&quot;-11.8&quot;,&quot;&quot;,&quot;0&quot;},{&quot;mary&quot;,&quot;2.3&quot;,&quot;$&quot;,&quot;11&quot;}]
 &gt; close f;
-&gt;
+&gt; quit
+</pre>
+<p>The second example illustrates how to write and read a CSV file using
+automatic conversions.</p>
+<pre class="literal-block">
+&gt; using csv;
+&gt; using namespace csv;
+&gt; let d = dialect {quote_flag =&gt; MINIMAL};
+&gt; let f = open (&quot;test.csv&quot;,&quot;w&quot;,d);
+&gt; putr f {&quot;I&quot;,&quot;&quot;,-4,1.2,2%4,like};
+()
+&gt; putr f {&quot;playing&quot;,&quot;the&quot;,0,-0.2,1+:4,drums};
+()
+&gt; close f;
+()
+&gt; let f = open (&quot;test.csv&quot;,&quot;r&quot;,d);
+&gt; fgetr f;
+[{&quot;I&quot;,&quot;&quot;,-4,1.2,&quot;2%4&quot;,&quot;like&quot;},{&quot;playing&quot;,&quot;the&quot;,0,-0.2,&quot;1+:4&quot;,&quot;drums&quot;}]
+&gt; close f;
+()
+</pre>
+<p>Records containing quotes, delimiters, and line breaks are also properly
+handled.</p>
+<pre class="literal-block">
+&gt; using csv;
+&gt; using namespace csv;
+&gt; let d = dialect {quote_flag=&gt;STRING};
+&gt; let f = open (&quot;test.csv&quot;,&quot;w&quot;,d);
+&gt; fputr f [{&quot;this\nis\n&quot;,1},{&quot;a \&quot;test\&quot;&quot;,2}];
+()
+&gt; close f;
+()
+&gt; let f = open (&quot;test.csv&quot;,&quot;r&quot;,d);
+&gt; fgetr f;
+[{&quot;this\nis\n&quot;,1},{&quot;a \&quot;test\&quot;&quot;,2}]
+&gt; close f;
+()
+&gt; quit
+</pre>
+<p>If we look at the file, we see the files are properly written.</p>
+<pre class="literal-block">
+erucker:$ more test.csv
+&quot;this
+is
+&quot;,1
+&quot;a &quot;&quot;test&quot;&quot;&quot;,2
+erucker:$ more test.csv
+</pre>
+<p>For the last example a tab delimiter is used, automatic conversions is on,
+and records are represented as lists. Note that files are automatically
+closed when the script is finished.</p>
+<pre class="literal-block">
+&gt; using csv;
+&gt; using namespace csv;
+&gt; let d = dialect {quote_flag =&gt; MINIMAL};
+&gt; let d = dialect {quote_flag=&gt;MINIMAL, delimiter=&gt;&quot;\t&quot;};
+&gt; let f = open (&quot;test.csv&quot;,&quot;w&quot;,d,LIST);
+&gt; fputr f [[&quot;a&quot;,&quot;b&quot;,-4.5,&quot;&quot;],[&quot;c&quot;,&quot;d&quot;,2.3,&quot;-&quot;]];
+()
+&gt; close f;
+()
+&gt; let f = open (&quot;test.csv&quot;,&quot;r&quot;,d,LIST);
+&gt; fgetr f;
+[[&quot;a&quot;,&quot;b&quot;,-4.5,&quot;&quot;],[&quot;c&quot;,&quot;d&quot;,2.3,&quot;-&quot;]]
+&gt; quit
 </pre>
 </div>
 </div>

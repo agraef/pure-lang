@@ -14,7 +14,7 @@ using "lib:csv";
 
 private extern dialect_t *dialect_new(char *, char *, char *, char *, int);
 private extern void dialect_free(dialect_t *);
-private extern csv_t *csv_open(char *, char *, void *);
+private extern csv_t *csv_open(char *, char *, void *, int);
 private extern void csv_close(csv_t *t);
 private extern void csv_free(csv_t *t);
 private extern expr *csv_write(csv_t *, expr **, int);
@@ -24,6 +24,8 @@ public
   MINIMAL
   STRING
   ALL
+  LIST
+  VECTOR
   dialect
   quote
   escape
@@ -116,9 +118,12 @@ const default = dialect {};
 const RFC4180 = dialect {terminator=>"\r\n"};
 const EXCEL = dialect {quote_flag=>MINIMAL, terminator=>"\r\n"};
 
+const LIST = 1;
+const VECTOR = 0;
+
 /* Open a CSV file for reading, "r", writing, "w", or appending, "a",
    with dialect d */
-open (fname::string, rw_flag::string, d::pointer)
+open (fname::string, rw_flag::string, d::pointer, list_flag::int)
   = if rw_flag ~= "r" && rw_flag ~= "w" && rw_flag ~= "a" then
       throw error "bad read/write/append flag"
     else if null d || null f then
@@ -126,22 +131,27 @@ open (fname::string, rw_flag::string, d::pointer)
     else
       (sentry csv_free f $$ sentry csv_close f)
     when
-      f = csv_open fname rw_flag d;
+      f = csv_open fname rw_flag d list_flag;
     end;
 
+/* Open a CSV file like above but with the library but output is a vector */
+open (fname::string, rw_flag::string, d::pointer)
+  = open (fname, rw_flag, d, 0);
+
 /* Open a CSV file like above but with the library default dialect */
-open (fname::string, rw_flag::string) = open (fname, rw_flag, default);
+open (fname::string, rw_flag::string) = open (fname, rw_flag, default, 0);
 
 /* Open a CSV file for reading with the library default dialect */
-open fname::string = open (fname, "r", default);
+open fname::string = open (fname, "r", default, 0);
 
 /* Close a CSV file. Sentries ensure files will automatically be closed
    and internal buffers will be freed when the file pointer goes out of
    scope. */
 close f::pointer = clear_sentry f $$ csv_close f;
 
-/* Write a record represented as a vector to a CSV file */
+/* Write a record to a CSV file */
 putr f::pointer r::matrix = csv_write f r (#r) if rowvectorp r;
+putr f::pointer r@(_:_) = csv_write f m (#m) when m = matrix r; end;
 
 /* Write a list of records to a CSV file */
 fputr f::pointer xs@(_:_) = loop xs with
@@ -149,11 +159,16 @@ fputr f::pointer xs@(_:_) = loop xs with
   loop (x:xs) = (putr f x) $$ loop xs;
 end;
 
-/* Read a record represented as a vector from a CSV file */
+/* Read a record from a CSV file */
 getr f::pointer = csv_read f;
 
 /* Read a list of records from a CSV file */
 fgetr f::pointer = loop (getr f) [] with
   loop () xs = reverse xs;
   loop x xs = loop (getr f) (x:xs);
+end;
+
+/* Lazily read a list of records from a CSV file */
+fgetr_lazy f::pointer = if null r then [] else r:fgetr_lazy f & when
+  r = getr f;
 end;

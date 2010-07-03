@@ -34,9 +34,9 @@ Makefile for details.
 Usage
 -----
 
-Data records are represented as matrices of strings, integers, and 
-doubles. Two predefined dialects are provided; default (record 
-terminator="\n") and RFC4180 (record terminator="\r\n"); and
+Data records are represented as matrices or optionally lists of strings,
+integers, and doubles. Two predefined dialects are provided; default 
+(record terminator="\n") and RFC4180 (record terminator="\r\n"); and
 procedures are provided to create other CSV dialects. See
 (http://www.ietf.org/rfc/rfc4180.txt) for more details about the 
 RFC4180 standard.
@@ -196,6 +196,8 @@ necessary for files to be imported into MS Excel.
 Examples
 ~~~~~~~~
 
+The first example shows how to write and read a default CSV file.
+
 ::
   
   > using csv;
@@ -209,4 +211,76 @@ Examples
   > fgetr f;
   [{"bob","3.9","","-2"},{"fred","-11.8","","0"},{"mary","2.3","$","11"}]
   > close f;
-  >
+  > quit
+
+The second example illustrates how to write and read a CSV file using
+automatic conversions.
+
+::
+
+  > using csv;
+  > using namespace csv;
+  > let d = dialect {quote_flag => MINIMAL};
+  > let f = open ("test.csv","w",d);
+  > putr f {"I","",-4,1.2,2%4,like};
+  ()
+  > putr f {"playing","the",0,-0.2,1+:4,drums};
+  ()
+  > close f;
+  ()
+  > let f = open ("test.csv","r",d);
+  > fgetr f;
+  [{"I","",-4,1.2,"2%4","like"},{"playing","the",0,-0.2,"1+:4","drums"}]
+  > close f;
+  ()
+
+Records containing quotes, delimiters, and line breaks are also properly
+handled.
+
+::
+
+  > using csv;
+  > using namespace csv;
+  > let d = dialect {quote_flag=>STRING};
+  > let f = open ("test.csv","w",d);
+  > fputr f [{"this\nis\n",1},{"a \"test\"",2}];
+  ()
+  > close f;
+  ()
+  > let f = open ("test.csv","r",d);
+  > fgetr f;
+  [{"this\nis\n",1},{"a \"test\"",2}]
+  > close f;
+  ()
+  > quit
+
+If we look at the file, we see the files are properly written.
+
+::
+
+  erucker:$ more test.csv
+  "this
+  is
+  ",1
+  "a ""test""",2
+  erucker:$ more test.csv
+
+For the last example a tab delimiter is used, automatic conversions is on,
+and records are represented as lists. Note that files are automatically 
+closed when the script is finished.
+
+::
+
+  > using csv;
+  > using namespace csv;
+  > let d = dialect {quote_flag => MINIMAL};
+  > let d = dialect {quote_flag=>MINIMAL, delimiter=>"\t"};
+  > let f = open ("test.csv","w",d,LIST);
+  > fputr f [["a","b",-4.5,""],["c","d",2.3,"-"]];
+  ()
+  > close f;
+  ()
+  > let f = open ("test.csv","r",d,LIST);
+  > fgetr f;                             
+  [["a","b",-4.5,""],["c","d",2.3,"-"]]
+  > quit
