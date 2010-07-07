@@ -6,13 +6,14 @@
             modified lookup to take advantage of nonlinear pattern matching.
    Updated: July 11, 2010 to make use of rewritten C module and Pure's built
             in records.
+   Updated: July 7, 2010 added space_before_quote_flag
 */
 
 namespace csv;
 
 using "lib:csv";
 
-private extern dialect_t *dialect_new(char *, char *, char *, char *, int);
+private extern dialect_t *dialect_new(char *, char *, char *, char *, int, int);
 private extern void dialect_free(dialect_t *);
 private extern csv_t *csv_open(char *, char *, void *, int);
 private extern void csv_close(csv_t *t);
@@ -85,38 +86,46 @@ public
                          fields.
 */
 
-const MINIMAL = 1;
-const STRING = 2;
-const ALL = 3;
+const QUOTE_MINIMAL = 1;
+const QUOTE_STRING = 2;
+const QUOTE_ALL = 3;
+
+const OFF = 0;
+const ON = 1;
+
+private in;
+
+in dict key lst = ~ member dict key || any (=== dict!key) lst;
 
 dialect d::matrix
   = if null r then
-      error "out of memory"
+      throw error "out of memory"
     else
       sentry dialect_free r
     when
       s = {quote=>"\"", escape=>"", delimiter=>",", terminator=>"\n",
-      	   quote_flag=>ALL};
+      	   quote_flag=>QUOTE_ALL, space_before_quote_flag=>OFF};
       v = if check_dialect d then
             record {s, d}
           else
-            error "invalid dialect"
+            throw error "invalid dialect"
 	  with
       	    check_dialect d::matrix
               = all (\(x=>y) -> member s x) d &&
 	        (~ member d terminator ||  d!terminator == "\n" || 
 		 d!terminator == "\r\n") &&
                 all stringp (d!![quote,escape,delimiter]) &&
-                (~ member d quote_flag || any (=== d!quote_flag) [1,2,3]);
+                in d quote_flag [1,2,3] &&
+		in d space_before_quote_flag [0,1];
           end;
       r = dialect_new (v!quote) (v!escape) (v!delimiter) (v!terminator)
-                      (v!quote_flag);
+                      (v!quote_flag) (v!space_before_quote_flag);
     end;
 
 /* Predefined dialects */
 const default = dialect {};
 const RFC4180 = dialect {terminator=>"\r\n"};
-const EXCEL = dialect {quote_flag=>MINIMAL, terminator=>"\r\n"};
+const EXCEL = dialect {quote_flag=>QUOTE_MINIMAL, terminator=>"\r\n"};
 
 const LIST = 1;
 const VECTOR = 0;
