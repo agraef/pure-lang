@@ -4,7 +4,7 @@
    Date: July 3, 2008
    Modified: November 21, 2008 to handle namespaces
    Rewritten: June 11, 2010
-   Updated: July 7, 2010 add space_before_quote_flag
+   updated: July 7, 2010 add space_before_quote_flag and trim_space_flag
 */
 
 /*
@@ -48,11 +48,11 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <pure/runtime.h>
 
 #define BUFFSIZE 1024
-#define RECSIZE 128
+#define RECSIZE   128
 
-#define FILE_END 1
-#define ERR_MEM -1
-#define ERR_READ -2
+#define FILE_END   1
+#define ERR_MEM   -1
+#define ERR_READ  -2
 #define ERR_WRITE -3
 #define ERR_PARSE -4
 
@@ -62,9 +62,15 @@ POSSIBILITY OF SUCH DAMAGE.
 #define QUOTE_STRING  2
 #define QUOTE_ALL     3
 
+/* trim_space style */
+
+#define TRIM_RIGHT 1
+#define TRIM_LEFT  2
+#define TRIM_BOTH  3
+
 /* general purpose values */
-#define ON            1
-#define OFF           0
+#define ON  1
+#define OFF 0
 
 #define error(msg) \
   pure_app(pure_symbol(pure_sym("csv::error")), pure_cstring_dup(msg))
@@ -80,6 +86,7 @@ typedef struct {
   size_t terminator_n;
   int quote_flag;
   int space_before_quote_flag;
+  int trim_space_flag;
 } dialect_t;
 
 typedef struct {
@@ -118,7 +125,8 @@ dialect_t *dialect_new(char *quote,
 		       char *delimiter,
 		       char *terminator,
 		       int quote_flag,
-		       int space_before_quote_flag)
+		       int space_before_quote_flag,
+		       int trim_space_flag)
 {
   dialect_t *d;
   if (d = (dialect_t *)malloc(sizeof(dialect_t))) {
@@ -133,6 +141,7 @@ dialect_t *dialect_new(char *quote,
       d->terminator_n = strlen(terminator);
       d->quote_flag = quote_flag;
       d->space_before_quote_flag = space_before_quote_flag;
+      d->trim_space_flag = trim_space_flag;
       return d;
     }
     dialect_free(d);
@@ -317,6 +326,21 @@ csv_t *csv_open(char *fname, char *rw, dialect_t *d, int list_flag)
   return NULL;
 }
 
+static char *trim_space(char *s, unsigned side)
+{
+  if (side & TRIM_LEFT) {
+    while (isspace(*s))
+      ++s;
+  }
+  if (side & TRIM_RIGHT) {
+    char *t = s + strlen(s) - 1;
+    while (isspace(*t))
+      --t;
+    *++t = '\0';
+  }
+  return s;
+}
+
 static int write_quoted(csv_t *csv, pure_expr **xs, size_t len)
 {
   int i;
@@ -326,6 +350,7 @@ static int write_quoted(csv_t *csv, pure_expr **xs, size_t len)
   buffer_clear(b);
   for (i = 0; i < len && b; ++i) {
     if (pure_is_string(xs[i], &ts)) {
+      ts = trim_space(ts, d->trim_space_flag);
       buffer_add(b, d->quote, d->quote_n);
       char *p, *tp; // p == current pointer, tp = starting point for copy
       unsigned qflag = 0;
@@ -383,6 +408,7 @@ static int write_escaped(csv_t *csv, pure_expr **xs, size_t len)
   buffer_clear(b);
   for (i = 0; i < len && b; ++i) {
     if (pure_is_string(xs[i], &ts)) {
+      ts = trim_space(ts, d->trim_space_flag);
       char *p, *tp;
       p = tp = ts; // p == current pointer, tp = starting point for copy
       while (*p) {
@@ -442,12 +468,22 @@ pure_expr *csv_write(csv_t *csv, pure_expr **xs, size_t len)
   }
 }
 
+static int is_space(char *start, char *end)
+{
+  while (start < end && isspace(*start))
+    ++start;
+  return start == end;
+}
+
 static pure_expr *char_to_expr(char *s, dialect_t *d)
 {
   if (!strncmp(s, d->quote, d->quote_n)) { // skip quote this is a string
     s += d->quote_n;
+    s = trim_space(s, d->trim_space_flag);
     return pure_cstring_dup(s);
-  } else if (*s && d->quote_flag != QUOTE_ALL) {
+  }
+  s = trim_space(s, d->trim_space_flag);
+  if (*s && d->quote_flag != QUOTE_ALL) {
     char *p;
     long i = strtol(s, &p, 0);
     if (*p == 0) return pure_int(i);
@@ -455,13 +491,6 @@ static pure_expr *char_to_expr(char *s, dialect_t *d)
     if (*p == 0) return pure_double(f);
   }
   return pure_cstring_dup(s);
-}
-
-static int is_space(char *start, char *end)
-{
-  while (start < end && isspace(*start))
-    ++start;
-  return start == end;
 }
 
 static int read_quoted(csv_t *csv)

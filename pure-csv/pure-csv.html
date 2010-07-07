@@ -408,17 +408,17 @@ null string.</li>
 </ul>
 </li>
 <li><tt class="docutils literal">quote_flag</tt> - Sets the quoting style of strings and/or numbers.<ul>
-<li>Value - One of {<tt class="docutils literal">ALL</tt>, <tt class="docutils literal">STRINGS</tt>, <tt class="docutils literal">MINIMAL</tt>}.</li>
+<li>Value - One of {<tt class="docutils literal">QUOTE_ALL</tt>, <tt class="docutils literal">QUOTE_STRINGS</tt>, <tt class="docutils literal">QUOTE_MINIMAL</tt>}.</li>
 <li>Default - <tt class="docutils literal">ALL</tt>.</li>
 <li>Notes -<ol class="arabic">
-<li><tt class="docutils literal">ALL</tt> - every field is read/written as a string.</li>
-<li><tt class="docutils literal">STRING</tt> - When reading, fields within quotes are read as strings.
-Also fields that are not integers or doubles are converted to strings.
-When writing, only fields that are of type <tt class="docutils literal">string</tt> are quoted when
-written to the file.</li>
-<li><tt class="docutils literal">MINIMAL</tt> - When reading, acts like the <tt class="docutils literal">STRING</tt> flag. When
-writing, only fields containing embedded quotes, terminators, or
-delimiters are written with quotes.</li>
+<li><tt class="docutils literal">QUOTE_ALL</tt> - every field is read/written as a string.</li>
+<li><tt class="docutils literal">QUOTE_STRING</tt> - When reading, fields within quotes are read as
+strings. Also fields that are not integers or doubles are converted
+to strings. When writing, only fields that are of type <tt class="docutils literal">string</tt>
+are quoted when written to the file.</li>
+<li><tt class="docutils literal">QUOTE_MINIMAL</tt> - When reading, acts like the <tt class="docutils literal">STRING</tt> flag.
+When writing, only fields containing embedded quotes, terminators,
+or delimiters are written with quotes.</li>
 </ol>
 </li>
 </ul>
@@ -427,6 +427,21 @@ delimiters are written with quotes.</li>
 quoted field.
 * Value - One of {<tt class="docutils literal">On</tt>, <tt class="docutils literal">Off</tt>}.
 * Default - <tt class="docutils literal">Off</tt>.</li>
+<li><tt class="docutils literal">trim_space_flag</tt> - trim space before or after field contents.<ul>
+<li>Value - One of {OFF, TRIM_LEFT, TRIM_RIGHT, TRIM_BOTH}</li>
+<li>Default - <tt class="docutils literal">OFF</tt>.</li>
+<li>Notes -<ol class="arabic">
+<li>When the flag is <tt class="docutils literal">OFF</tt>, reading and writing follows RFC4180 rules.</li>
+<li>When the flag is one of <tt class="docutils literal">TRIM_LEFT</tt>, <tt class="docutils literal">TRIM_RIGHT</tt>, or
+<tt class="docutils literal">TRIM_BOTH</tt> - the field is trimed accordingly. Use <em>caution</em> when
+reading because trimming may allow conversion of numbers if the
+<tt class="docutils literal">quote_flag</tt> is set to <tt class="docutils literal">QUOTE_MINIMAL</tt>. Also, when writing,
+trimming space is probably a bad idea since leading or trailing
+space may be significant for another application.</li>
+</ol>
+</li>
+</ul>
+</li>
 </ul>
 <p class="last">The following example illustrates the construction of a dialect for
 reading tab delimited files without quoted strings.</p>
@@ -436,7 +451,7 @@ reading tab delimited files without quoted strings.</p>
 <pre class="literal-block">
 &gt; using csv;
 &gt; using namespace csv;
-&gt; let d = dialect {delimiter=&gt;&quot;\t&quot;, quote_flag=&gt;STRING};
+&gt; let d = dialect {delimiter=&gt;&quot;\t&quot;, quote_flag=&gt;QUOTE_STRING};
 &gt; d;
 #&lt;pointer 0x9d75280&gt;
 &gt;
@@ -537,7 +552,7 @@ automatic conversions.</p>
 <pre class="literal-block">
 &gt; using csv;
 &gt; using namespace csv;
-&gt; let d = dialect {quote_flag =&gt; MINIMAL};
+&gt; let d = dialect {quote_flag =&gt; QUOTE_MINIMAL};
 &gt; let f = open (&quot;test.csv&quot;,&quot;w&quot;,d);
 &gt; putr f {&quot;I&quot;,&quot;&quot;,-4,1.2,2%4,like};
 ()
@@ -556,7 +571,7 @@ handled.</p>
 <pre class="literal-block">
 &gt; using csv;
 &gt; using namespace csv;
-&gt; let d = dialect {quote_flag=&gt;STRING};
+&gt; let d = dialect {quote_flag=&gt;QUOTE_STRING};
 &gt; let f = open (&quot;test.csv&quot;,&quot;w&quot;,d);
 &gt; fputr f [{&quot;this\nis\n&quot;,1},{&quot;a \&quot;test\&quot;&quot;,2}];
 ()
@@ -595,14 +610,48 @@ csv::error &quot;parse error at line 1&quot;
 &gt; getr f;
 {&quot;this&quot;,&quot;is&quot;,&quot;not&quot;,&quot;valid&quot;}</dd>
 </dl>
+<p>The <tt class="docutils literal">trim_space_flag</tt> should be used with caution. A field with space in
+font of a number should be interpreted as a string. For instance, consider
+the following file.</p>
+<pre class="literal-block">
+erucker:$ more test.csv
+&quot;  this   &quot;, 45 ,23,  hello
+</pre>
+<p>Now consider what happens for the two dialects below.</p>
+<pre class="literal-block">
+&gt; using csv;
+&gt; using namespace csv;
+&gt; let d = dialect {trim_space_flag=&gt;TRIM_BOTH};
+&gt; let f = open (&quot;test.csv&quot;,&quot;r&quot;,d);
+&gt; getr f;
+{&quot;this&quot;,&quot;45&quot;,&quot;23&quot;,&quot;hello&quot;}
+&gt; let d = dialect {trim_space_flag=&gt;TRIM_BOTH, quote_flag=&gt;QUOTE_MINIMAL};
+&gt; let f = open (&quot;test.csv&quot;, &quot;r&quot;, d);
+&gt; getr f;
+{&quot;this&quot;,45,23,&quot;hello&quot;}
+</pre>
+<p>The <tt class="docutils literal">trim_space_flag</tt> also affects writing.</p>
+<pre class="literal-block">
+&gt; using csv;
+&gt; using namespace csv;
+&gt; let d = dialect {trim_space_flag=&gt;TRIM_BOTH};
+&gt; let f = open (&quot;test.csv&quot;, &quot;w&quot;, d);
+&gt; putr f {&quot;   this   &quot;,&quot;   45 &quot;};
+()
+&gt; close f;
+()
+&gt; quit
+
+erucker:$ more test.csv
+&quot;this&quot;,&quot;45&quot;
+</pre>
 <p>For the last example a tab delimiter is used, automatic conversions is on,
 and records are represented as lists. Note that files are automatically
 closed when the script is finished.</p>
 <pre class="literal-block">
 &gt; using csv;
 &gt; using namespace csv;
-&gt; let d = dialect {quote_flag =&gt; MINIMAL};
-&gt; let d = dialect {quote_flag=&gt;MINIMAL, delimiter=&gt;&quot;\t&quot;};
+&gt; let d = dialect {quote_flag=&gt;QUOTE_MINIMAL, delimiter=&gt;&quot;\t&quot;};
 &gt; let f = open (&quot;test.csv&quot;,&quot;w&quot;,d,LIST);
 &gt; fputr f [[&quot;a&quot;,&quot;b&quot;,-4.5,&quot;&quot;],[&quot;c&quot;,&quot;d&quot;,2.3,&quot;-&quot;]];
 ()

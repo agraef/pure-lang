@@ -92,26 +92,41 @@ Creating Dialects
 
   - ``quote_flag`` - Sets the quoting style of strings and/or numbers.
 
-    * Value - One of {``ALL``, ``STRINGS``, ``MINIMAL``}.
+    * Value - One of {``QUOTE_ALL``, ``QUOTE_STRINGS``, ``QUOTE_MINIMAL``}.
     * Default - ``ALL``.
     * Notes -
 
-      1. ``ALL`` - every field is read/written as a string.
+      1. ``QUOTE_ALL`` - every field is read/written as a string.
 
-      2. ``STRING`` - When reading, fields within quotes are read as strings.
-         Also fields that are not integers or doubles are converted to strings.
-         When writing, only fields that are of type ``string`` are quoted when
-         written to the file.
+      2. ``QUOTE_STRING`` - When reading, fields within quotes are read as
+         strings. Also fields that are not integers or doubles are converted
+         to strings. When writing, only fields that are of type ``string`` 
+         are quoted when written to the file.
 
-      3. ``MINIMAL`` - When reading, acts like the ``STRING`` flag. When
-         writing, only fields containing embedded quotes, terminators, or 
-         delimiters are written with quotes.
+      3. ``QUOTE_MINIMAL`` - When reading, acts like the ``STRING`` flag. 
+         When writing, only fields containing embedded quotes, terminators,
+         or delimiters are written with quotes.
 
   - ``space_before_quote_flag`` - Determines if space is acceptable before a
     quoted field.
     * Value - One of {``On``, ``Off``}.
     * Default - ``Off``.
   
+  - ``trim_space_flag`` - trim space before or after field contents.
+
+    * Value - One of {OFF, TRIM_LEFT, TRIM_RIGHT, TRIM_BOTH}
+    * Default - ``OFF``.
+    * Notes -
+    
+      1. When the flag is ``OFF``, reading and writing follows RFC4180 rules.
+
+      2. When the flag is one of ``TRIM_LEFT``, ``TRIM_RIGHT``, or 
+         ``TRIM_BOTH`` - the field is trimed accordingly. Use *caution* when
+         reading because trimming may allow conversion of numbers if the
+         ``quote_flag`` is set to ``QUOTE_MINIMAL``. Also, when writing, 
+         trimming space is probably a bad idea since leading or trailing 
+         space may be significant for another application.
+
   The following example illustrates the construction of a dialect for 
   reading tab delimited files without quoted strings.
 
@@ -123,7 +138,7 @@ Example
     
   > using csv;
   > using namespace csv;
-  > let d = dialect {delimiter=>"\t", quote_flag=>STRING};
+  > let d = dialect {delimiter=>"\t", quote_flag=>QUOTE_STRING};
   > d;
   #<pointer 0x9d75280>
   > 
@@ -244,7 +259,7 @@ automatic conversions.
 
   > using csv;
   > using namespace csv;
-  > let d = dialect {quote_flag => MINIMAL};
+  > let d = dialect {quote_flag => QUOTE_MINIMAL};
   > let f = open ("test.csv","w",d);
   > putr f {"I","",-4,1.2,2%4,like};
   ()
@@ -265,7 +280,7 @@ handled.
 
   > using csv;
   > using namespace csv;
-  > let d = dialect {quote_flag=>STRING};
+  > let d = dialect {quote_flag=>QUOTE_STRING};
   > let f = open ("test.csv","w",d);
   > fputr f [{"this\nis\n",1},{"a \"test\"",2}];
   ()
@@ -307,6 +322,47 @@ can still be read.
   > getr f;
   {"this","is","not","valid"}
 
+The ``trim_space_flag`` should be used with caution. A field with space in
+font of a number should be interpreted as a string. For instance, consider
+the following file.
+
+::
+  
+  erucker:$ more test.csv
+  "  this   ", 45 ,23,  hello
+
+Now consider what happens for the two dialects below.
+
+::
+  
+  > using csv;
+  > using namespace csv;
+  > let d = dialect {trim_space_flag=>TRIM_BOTH};
+  > let f = open ("test.csv","r",d);
+  > getr f;
+  {"this","45","23","hello"}
+  > let d = dialect {trim_space_flag=>TRIM_BOTH, quote_flag=>QUOTE_MINIMAL};
+  > let f = open ("test.csv", "r", d);
+  > getr f;
+  {"this",45,23,"hello"}
+
+The ``trim_space_flag`` also affects writing.
+
+::
+  
+  > using csv;
+  > using namespace csv;
+  > let d = dialect {trim_space_flag=>TRIM_BOTH};
+  > let f = open ("test.csv", "w", d);
+  > putr f {"   this   ","   45 "};
+  ()
+  > close f;
+  ()
+  > quit
+  
+  erucker:$ more test.csv
+  "this","45"
+
 For the last example a tab delimiter is used, automatic conversions is on,
 and records are represented as lists. Note that files are automatically 
 closed when the script is finished.
@@ -315,8 +371,7 @@ closed when the script is finished.
 
   > using csv;
   > using namespace csv;
-  > let d = dialect {quote_flag => MINIMAL};
-  > let d = dialect {quote_flag=>MINIMAL, delimiter=>"\t"};
+  > let d = dialect {quote_flag=>QUOTE_MINIMAL, delimiter=>"\t"};
   > let f = open ("test.csv","w",d,LIST);
   > fputr f [["a","b",-4.5,""],["c","d",2.3,"-"]];
   ()

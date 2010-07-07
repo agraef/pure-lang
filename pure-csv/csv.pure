@@ -4,16 +4,17 @@
    Updated: November 21,22, 2008 to use namespaces.
    Updated: December 22, 2009: changed the default dialect to a const and 
             modified lookup to take advantage of nonlinear pattern matching.
-   Updated: July 11, 2010 to make use of rewritten C module and Pure's built
+   Updated: June 11, 2010 to make use of rewritten C module and Pure's built
             in records.
-   Updated: July 7, 2010 added space_before_quote_flag
+   Updated: July 7, 2010 added space_before_quote_flag and trim_space_flag.
 */
 
 namespace csv;
 
 using "lib:csv";
 
-private extern dialect_t *dialect_new(char *, char *, char *, char *, int, int);
+private extern dialect_t *dialect_new(char *, char *, char *, char *,
+	                              int, int, int);
 private extern void dialect_free(dialect_t *);
 private extern csv_t *csv_open(char *, char *, void *, int);
 private extern void csv_close(csv_t *t);
@@ -22,9 +23,14 @@ private extern expr *csv_write(csv_t *, expr **, int);
 private extern expr *csv_read(csv_t *csv);
 
 public
-  MINIMAL
-  STRING
-  ALL
+  QUOTE_MINIMAL
+  QUOTE_STRING
+  QUOTE_ALL
+  ON
+  OFF
+  TRIM_LEFT
+  TRIM_RIGHT
+  TRIM_BOTH
   LIST
   VECTOR
   dialect
@@ -33,11 +39,16 @@ public
   delimiter
   terminator
   quote_flag
+  quote_before_space_flag
+  trim_space_flag
   default
   open
   close
   getr
-  putr;
+  fgetr
+  fgetr_lazy
+  putr
+  fputr;
 
 /* Public dialect options
 
@@ -63,27 +74,48 @@ public
               Type: string
               Default: "\""
 
-  quote_flag: Sets whether strings or numbers should be quoted.
-              Type: One of {ALL, STRING, MINIMAL}
-              Default: ALL
-	      Notes:
-	        Reading: ALL     - all fields are returned as strings.
-			 STRING  - 
-                         MINIMAL - non quoted integer and double fields are
-			           converted.
-                Writing: ALL     - all fields are written enclosed in quotes.
-                         STRING  - only string fields are written enclosed in
-                                   quotes.
-                         MINIMAL - only fields containing quote, delimiter,
-                                   or return characters are written with
-                                   enclosing quotes.
-
   terminator: Value use for record termination.
               Type: One of {"\r\n", "\n"}
               Default: "\n"
 	      Notes:
                 Reading: "\r" are always ignored except when embedded in
                          fields.
+
+  quote_flag: Sets whether strings or numbers should be quoted.
+              Type: One of {QUOTE_ALL, QUOTE_STRING, QUOTE_MINIMAL}
+              Default: QUOTE_ALL
+	      Notes:
+	        Reading: QUOTE_ALL     - all fields are returned as strings.
+			 QUOTE_STRING  - 
+                         QUOTE_MINIMAL - non quoted integer and double fields
+                                         are converted.
+                Writing: QUOTE_ALL     - all fields are written enclosed in
+                                         quotes.
+                         QUOTE_STRING  - only string fields are written
+                                         enclosed in quotes.
+                         QUOTE_MINIMAL - only fields containing quote, 
+                                         delimiter, or return characters are
+                                         written with enclosing quotes.
+
+  space_before_quote_flag:
+              Type: One of {ON, OFF}
+	      Default: OFF
+	      Notes:
+	        Reading: ON  - allows space before a field.
+                         OFF - follows RFC4180 rules.
+  
+  trim_space_flag:
+             Type: One of {OFF, TRIM_LEFT, TRIM_RIGHT, TRIM_BOTH}
+             Default: OFF
+             Notes:
+               Reading: OFF        - follows RFC4180 rules.
+                        TRIM_LEFT,
+			TRIM_RIGHT,
+			TRIM_BOTH  - may allow conversion of numbers if
+                                     quote_flag = QUOTE_MINIMAL since space
+				     before a number is interpreted as a
+                                     string.
+                                      
 */
 
 const QUOTE_MINIMAL = 1;
@@ -92,6 +124,10 @@ const QUOTE_ALL = 3;
 
 const OFF = 0;
 const ON = 1;
+
+const TRIM_RIGHT = 1;
+const TRIM_LEFT  = 2;
+const TRIM_BOTH  = 3;
 
 private in;
 
@@ -104,7 +140,8 @@ dialect d::matrix
       sentry dialect_free r
     when
       s = {quote=>"\"", escape=>"", delimiter=>",", terminator=>"\n",
-      	   quote_flag=>QUOTE_ALL, space_before_quote_flag=>OFF};
+      	   quote_flag=>QUOTE_ALL, space_before_quote_flag=>OFF,
+	   trim_space_flag=>OFF};
       v = if check_dialect d then
             record {s, d}
           else
@@ -116,16 +153,21 @@ dialect d::matrix
 		 d!terminator == "\r\n") &&
                 all stringp (d!![quote,escape,delimiter]) &&
                 in d quote_flag [1,2,3] &&
-		in d space_before_quote_flag [0,1];
+		in d space_before_quote_flag [0,1] &&
+                in d trim_space_flag [0,1,2,3];
           end;
       r = dialect_new (v!quote) (v!escape) (v!delimiter) (v!terminator)
-                      (v!quote_flag) (v!space_before_quote_flag);
+                      (v!quote_flag) (v!space_before_quote_flag)
+                      (v!trim_space_flag);
     end;
 
 /* Predefined dialects */
 const default = dialect {};
 const RFC4180 = dialect {terminator=>"\r\n"};
-const EXCEL = dialect {quote_flag=>QUOTE_MINIMAL, terminator=>"\r\n"};
+const EXCEL = dialect {quote_flag=>QUOTE_MINIMAL, 
+                       terminator=>"\r\n",
+		       space_before_quote_flag=>ON,
+		       trim_space_flag=>TRIM_BOTH};
 
 const LIST = 1;
 const VECTOR = 0;
