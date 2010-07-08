@@ -55,6 +55,9 @@ distcheck: dist
 
 # Generate the documentation. This needs docutils.
 
+rst2html = $(shell which rst2html 2>/dev/null || which rst2html.py 2>/dev/null || echo rst2html)
+rst2latex = $(shell which rst2latex 2>/dev/null || which rst2latex.py 2>/dev/null || echo rst2latex)
+
 target = pure-doc
 
 .PHONY: html tex pdf
@@ -64,10 +67,10 @@ tex: $(target).tex
 pdf: $(target).pdf
 
 $(target).html: README
-	rst2html.py $< $@
+	$(rst2html) $< $@
 
 $(target).tex: README
-	rst2latex.py $< $@
+	$(rst2latex) $< $@
 
 # This also requires that you have TeX installed.
 

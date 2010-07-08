@@ -219,6 +219,9 @@ etc/pure-mode.el: Makefile etc/pure-mode.el.in
 
 # documentation in various formats (this requires docutils and pure-doc)
 
+rst2html = $(shell which rst2html 2>/dev/null || which rst2html.py 2>/dev/null || echo rst2html)
+rst2latex = $(shell which rst2latex 2>/dev/null || which rst2latex.py 2>/dev/null || echo rst2latex)
+
 # make sure to get these into the right order
 libsources = prelude.pure strings.pure matrices.pure records.pure \
 primitives.pure math.pure array.pure heap.pure dict.pure set.pure system.pure \
@@ -233,7 +236,7 @@ purelib.txt: $(libfiles)
 	pure-doc $(libfiles) > $@
 
 %.html: %.txt
-	rst2html.py $< $@
+	$(rst2html) $< $@
 
 # Note: This requires a fairly recent (>= 07-2009) svn version of rst2latex.
 # For older rst2latex versions, you might have to remove some or all of the
@@ -242,7 +245,7 @@ purelib.txt: $(libfiles)
 LATEXOPT=--use-latex-toc --use-latex-docinfo --stylesheet=preamble.tex --documentoptions="11pt" --literal-block-env=lstlisting
 
 %.tex: %.txt
-	rst2latex.py $(LATEXOPT) $< > $@
+	$(rst2latex) $(LATEXOPT) $< > $@
 
 %.pdf: %.tex preamble.tex
 	pdflatex $<
@@ -258,7 +261,7 @@ LATEXOPT=--use-latex-toc --use-latex-docinfo --stylesheet=preamble.tex --documen
 pdf-fixed: pure-fixed.pdf purelib-fixed.pdf
 
 %-fixed.tex: %.txt
-	rst2latex.py --no-section-numbering $(LATEXOPT) $< | fixdoc > $@
+	$(rst2latex) --no-section-numbering $(LATEXOPT) $< | fixdoc > $@
 
 # cleaning
 

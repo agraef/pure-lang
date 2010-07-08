@@ -89,6 +89,9 @@ distcheck: dist
 
 # Generate the documentation. This needs docutils.
 
+rst2html = $(shell which rst2html 2>/dev/null || which rst2html.py 2>/dev/null || echo rst2html)
+rst2latex = $(shell which rst2latex 2>/dev/null || which rst2latex.py 2>/dev/null || echo rst2latex)
+
 sources = xml.pure
 target = pure-xml
 
@@ -102,10 +105,10 @@ tex: $(target).tex
 pdf: $(target).pdf
 
 %.html: %.txt
-	rst2html.py $< $@
+	$(rst2html) $< $@
 
 %.tex: %.txt
-	rst2latex.py $< $@
+	$(rst2latex) $< $@
 
 # This also requires that you have TeX installed.
 

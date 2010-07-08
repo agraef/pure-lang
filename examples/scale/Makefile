@@ -24,15 +24,18 @@ clean:
 
 # documentation (this needs docutils)
 
+rst2html = $(shell which rst2html 2>/dev/null || which rst2html.py 2>/dev/null || echo rst2html)
+rst2latex = $(shell which rst2latex 2>/dev/null || which rst2latex.py 2>/dev/null || echo rst2latex)
+
 html: scale.html
 latex: scale.tex
 pdf: scale.pdf
 
 scale.html: README
-	rst2html.py $< $@
+	$(rst2html) $< $@
 
 scale.tex: README
-	rst2latex.py $< $@
+	$(rst2latex) $< $@
 
 scale.pdf: scale.tex
 	pdflatex $<

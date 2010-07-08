@@ -8,8 +8,10 @@ pong: pong.pure pong.tcl
 
 html: pong.html
 
+rst2html = $(shell which rst2html 2>/dev/null || which rst2html.py 2>/dev/null || echo rst2html)
+
 pong.html: README
-	rst2html.py $< $@
+	$(rst2html) $< $@
 
 clean:
 	rm -f pong

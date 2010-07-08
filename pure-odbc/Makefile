@@ -64,15 +64,18 @@ clean:
 
 # documentation (this needs docutils)
 
+rst2html = $(shell which rst2html 2>/dev/null || which rst2html.py 2>/dev/null || echo rst2html)
+rst2latex = $(shell which rst2latex 2>/dev/null || which rst2latex.py 2>/dev/null || echo rst2latex)
+
 html: pure-odbc.html
 latex: pure-odbc.tex
 pdf: pure-odbc.pdf
 
 pure-odbc.html: README
-	rst2html.py $< $@
+	$(rst2html) $< $@
 
 pure-odbc.tex: README
-	rst2latex.py $< $@
+	$(rst2latex) $< $@
 
 pure-odbc.pdf: pure-odbc.tex
 	pdflatex $<

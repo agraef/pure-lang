@@ -147,18 +147,21 @@ clean:
 
 # documentation (this needs docutils)
 
+rst2html = $(shell which rst2html 2>/dev/null || which rst2html.py 2>/dev/null || echo rst2html)
+rst2latex = $(shell which rst2latex 2>/dev/null || which rst2latex.py 2>/dev/null || echo rst2latex)
+
 html: doc/gnumeric-pure.html
 latex: doc/gnumeric-pure.tex
 pdf: doc/gnumeric-pure.pdf
 
 doc/gnumeric-pure.html: README
-	rst2html.py $< $@
+	$(rst2html) $< $@
 
 # Adjust these as needed.
 LATEXOPT = --use-latex-toc --use-latex-docinfo --stylesheet=preamble.tex --documentoptions="11pt" --no-section-numbering
 
 doc/gnumeric-pure.tex: README
-	rst2latex.py $(LATEXOPT) $< $@
+	$(rst2latex) $(LATEXOPT) $< $@
 
 doc/%.pdf: doc/%.tex doc/preamble.tex
 	(cd doc && pdflatex ../$< && pdflatex ../$< && pdflatex ../$<)

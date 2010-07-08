@@ -96,6 +96,9 @@ distcheck: dist
 
 # Generate the documentation. This needs docutils.
 
+rst2html = $(shell which rst2html 2>/dev/null || which rst2html.py 2>/dev/null || echo rst2html)
+rst2latex = $(shell which rst2latex 2>/dev/null || which rst2latex.py 2>/dev/null || echo rst2latex)
+
 sources = faustxml.pure
 target = faust2pd
 
@@ -109,10 +112,10 @@ $(target).txt: README $(sources)
 	pure-doc $(sources) | cat README - > $@
 
 %.html: %.txt
-	rst2html.py $< $@
+	$(rst2html) $< $@
 
 %.tex: %.txt
-	rst2latex.py $< $@
+	$(rst2latex) $< $@
 
 # This also requires that you have TeX installed.
 

@@ -33,15 +33,18 @@ uninstall:
 
 # Generate the documentation. This needs docutils.
 
+rst2html = $(shell which rst2html 2>/dev/null || which rst2html.py 2>/dev/null || echo rst2html)
+rst2latex = $(shell which rst2latex 2>/dev/null || which rst2latex.py 2>/dev/null || echo rst2latex)
+
 html: pure-rational.html
 tex: pure-rational.tex
 pdf: pure-rational.pdf
 
 pure-rational.html: README
-	rst2html.py $< $@
+	$(rst2html) $< $@
 
 pure-rational.tex: README
-	rst2latex.py -i utf8 -o utf8 $< $@
+	$(rst2latex) -i utf8 -o utf8 $< $@
 
 # This also requires that you have TeX installed.
 

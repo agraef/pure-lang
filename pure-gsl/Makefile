@@ -91,6 +91,9 @@ target = pure-gsl
 $(target).txt: $(sources)
 	pure-doc $(sources) > $@
 
+rst2html = $(shell which rst2html 2>/dev/null || which rst2html.py 2>/dev/null || echo rst2html)
+rst2latex = $(shell which rst2latex 2>/dev/null || which rst2latex.py 2>/dev/null || echo rst2latex)
+
 .PHONY: html tex pdf
 
 html: $(target).html
@@ -98,10 +101,10 @@ tex: $(target).tex
 pdf: $(target).pdf
 
 %.html: %.txt
-	rst2html.py $< $@
+	$(rst2html) $< $@
 
 %.tex: %.txt
-	rst2latex.py $< $@
+	$(rst2latex) $< $@
 
 # This also requires that you have TeX installed.
 

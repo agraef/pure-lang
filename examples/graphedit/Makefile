@@ -8,8 +8,10 @@ graphedit: graphedit.pure graphedit.tcl
 
 html: graphedit.html
 
+rst2html = $(shell which rst2html 2>/dev/null || which rst2html.py 2>/dev/null || echo rst2html)
+
 graphedit.html: README
-	rst2html.py $< $@
+	$(rst2html) $< $@
 
 clean:
 	rm -f graphedit

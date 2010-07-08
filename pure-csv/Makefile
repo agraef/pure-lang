@@ -60,15 +60,18 @@ clean:
 
 # documentation (this needs docutils)
 
+rst2html = $(shell which rst2html 2>/dev/null || which rst2html.py 2>/dev/null || echo rst2html)
+rst2latex = $(shell which rst2latex 2>/dev/null || which rst2latex.py 2>/dev/null || echo rst2latex)
+
 html: pure-csv.html
 latex: pure-csv.tex
 pdf: pure-csv.pdf
 
 pure-csv.html: README
-	rst2html.py $< $@
+	$(rst2html) $< $@
 
 pure-csv.tex: README
-	rst2latex.py $< $@
+	$(rst2latex) $< $@
 
 pure-csv.pdf: pure-csv.tex
 	pdflatex $<
