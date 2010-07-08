@@ -2224,11 +2224,15 @@ be either symbols or strings. The values can be any kind of Pure data; in
 particular, they may themselves be records, so records can be nested.
 
 The following operations are provided. Please note that all updates of
-record members are non-destructive and thus involve copying, which might be
-slow for large record values; if this is a problem then you should use
-dictionaries instead (cf. Dictionaries_). Or you can create mutable records
-by using expression references (cf. `Expression References`_) as values,
-which allow you to modify the data in-place.
+record members are non-destructive and thus involve copying, which takes
+linear time (and space) and thus might be slow for large record values; if
+this is a problem then you should use dictionaries instead
+(cf. Dictionaries_). Or you can create mutable records by using expression
+references (cf. `Expression References`_) as values, which allow you to
+modify the data in-place. Element lookup (indexing) uses binary search on
+an internal index data structure and thus takes logarithmic time once the
+index has been constructed (which is done automatically when needed, or
+when calling ``recordp`` on a fresh record value).
 
 Also note that records with duplicate keys are permitted; in such a case
 the following operations will always operate on the *last* entry for a

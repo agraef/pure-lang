@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>Pure Library Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2010-06-29" />
+<meta name="date" content="2010-07-08" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-06-29</td></tr>
+<td>2010-07-08</td></tr>
 </tbody>
 </table>
 <!-- We use docutils to produce the documentation. Docstrings are extracted -->
@@ -1540,11 +1540,15 @@ matrices consisting only of &quot;hash pairs&quot; <tt class="docutils literal">
 be either symbols or strings. The values can be any kind of Pure data; in
 particular, they may themselves be records, so records can be nested.</p>
 <p>The following operations are provided. Please note that all updates of
-record members are non-destructive and thus involve copying, which might be
-slow for large record values; if this is a problem then you should use
-dictionaries instead (cf. <a class="reference internal" href="#dictionaries">Dictionaries</a>). Or you can create mutable records
-by using expression references (cf. <a class="reference internal" href="#expression-references">Expression References</a>) as values,
-which allow you to modify the data in-place.</p>
+record members are non-destructive and thus involve copying, which takes
+linear time (and space) and thus might be slow for large record values; if
+this is a problem then you should use dictionaries instead
+(cf. <a class="reference internal" href="#dictionaries">Dictionaries</a>). Or you can create mutable records by using expression
+references (cf. <a class="reference internal" href="#expression-references">Expression References</a>) as values, which allow you to
+modify the data in-place. Element lookup (indexing) uses binary search on
+an internal index data structure and thus takes logarithmic time once the
+index has been constructed (which is done automatically when needed, or
+when calling <tt class="docutils literal"><span class="pre">recordp</span></tt> on a fresh record value).</p>
 <p>Also note that records with duplicate keys are permitted; in such a case
 the following operations will always operate on the <em>last</em> entry for a
 given key.</p>
