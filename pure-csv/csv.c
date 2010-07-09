@@ -51,6 +51,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #define RECSIZE   128
 
 #define FILE_END   1
+
+/* error types */
+
 #define ERR_MEM   -1
 #define ERR_READ  -2
 #define ERR_WRITE -3
@@ -207,7 +210,7 @@ static buffer_t *buffer_new(void)
   return NULL;
 }
 
-static void buffer_clear(buffer_t *b)
+static inline void buffer_clear(buffer_t *b)
 {
   b->len = 0;
 }
@@ -286,18 +289,12 @@ static int buffer_fill(csv_t *csv, long *offset)
 
 void csv_close(csv_t *csv)
 {
-  if (csv->buffer) {
-    buffer_free(csv->buffer);
-    csv->buffer = NULL;
-  }
-  if (csv->record) {
-    record_free(csv->record);
-    csv->record = NULL;
-  }
-  if (csv->fp) {
-    fclose(csv->fp);
-    csv->fp = NULL;
-  }
+  if (csv->buffer) buffer_free(csv->buffer);
+  if (csv->record) record_free(csv->record);
+  if (csv->fp) fclose(csv->fp);
+  csv->buffer = NULL;
+  csv->record = NULL;
+  csv->fp = NULL;
 }
 
 void csv_free(csv_t *csv)
@@ -458,13 +455,13 @@ pure_expr *csv_write(csv_t *csv, pure_expr **xs, size_t len)
   int err = csv->dialect->escape_n ?
     write_escaped(csv, xs, len) : write_quoted(csv, xs, len);
   switch (err) {
-  case 0: // this happens most so should be first
+  case 0:
     return pure_tuplev(0, NULL);
-  case ERR_MEM: 
-    return error("out of memory");
   case ERR_WRITE:
     sprintf(msg, "error writing line %ld", csv->line);
     return error(msg);
+  case ERR_MEM: 
+    return error("out of memory");
   }
 }
 
@@ -641,20 +638,20 @@ pure_expr *csv_read(csv_t *csv)
   int err = csv->dialect->escape_n ? read_escaped(csv) : read_quoted(csv);
   char msg[50];
   switch (err) {
-  case 0: // this happens most so should be first
+  case 0:
     if (csv->list_flag)
       return pure_listv(csv->record->len, csv->record->x);
     else
       return pure_matrix_columnsvq(csv->record->len, csv->record->x);
-  case FILE_END:
-    return pure_tuplev(0, NULL);
-  case ERR_MEM:
-    return error("out of memory");
-  case ERR_READ:
-    sprintf(msg, "read error at line %ld", csv->line);
-    return error(msg);
   case ERR_PARSE:
     sprintf(msg, "parse error at line %ld", csv->line);
     return error(msg);
+  case FILE_END:
+    return pure_tuplev(0, NULL);
+  case ERR_READ:
+    sprintf(msg, "read error at line %ld", csv->line);
+    return error(msg);
+  case ERR_MEM:
+    return error("out of memory");
   }
 }

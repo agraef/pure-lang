@@ -33,6 +33,8 @@ public
   TRIM_BOTH
   LIST
   VECTOR
+  CRLF
+  LF
   dialect
   quote
   escape
@@ -52,7 +54,7 @@ public
 
 /* Public dialect options
 
-  delimiter:  Character used to separates fields.
+  delimiter:  Character used to separate fields.
               Type: string
               Default: ","
 
@@ -74,10 +76,10 @@ public
               Type: string
               Default: "\""
 
-  terminator: Value use for record termination.
-              Type: One of {"\r\n", "\n"}
-              Default: "\n"
-	      Notes:
+  terminator: Value used for record termination when writing.
+              Type: One of {LF, CRLF}. LF = "\n" and CRLF = "\r\n".
+              Default: LF
+	      Notes: 
                 Reading: "\r" are always ignored except when embedded in
                          fields.
 
@@ -86,9 +88,9 @@ public
               Default: QUOTE_ALL
 	      Notes:
 	        Reading: QUOTE_ALL     - all fields are returned as strings.
-			 QUOTE_STRING  - 
-                         QUOTE_MINIMAL - non quoted integer and double fields
+			 QUOTE_STRING  - non quoted integer and double fields
                                          are converted.
+                         QUOTE_MINIMAL - same as QUOTE_STRING.
                 Writing: QUOTE_ALL     - all fields are written enclosed in
                                          quotes.
                          QUOTE_STRING  - only string fields are written
@@ -118,62 +120,74 @@ public
                                       
 */
 
-const QUOTE_MINIMAL = 1;
-const QUOTE_STRING = 2;
-const QUOTE_ALL = 3;
-
-const OFF = 0;
-const ON = 1;
-
-const TRIM_RIGHT = 1;
-const TRIM_LEFT  = 2;
-const TRIM_BOTH  = 3;
-
-private in;
-
-in dict key lst = ~ member dict key || any (=== dict!key) lst;
+const terminator_opts = {LF=>1, CRLF=>2};
+const quote_flag_opts = {QUOTE_MINIMAL=>1, QUOTE_STRING=>2, QUOTE_ALL=>3};
+const space_before_quote_opts = {OFF=>0, ON=>1};
+const trim_space_opts = {OFF=>0, TRIM_RIGHT=>1, TRIM_LEFT=>2, TRIM_BOTH=>3};
 
 dialect d::matrix
-  = if null r then
-      throw error "out of memory"
-    else
-      sentry dialect_free r
-    when
-      s = {quote=>"\"", escape=>"", delimiter=>",", terminator=>"\n",
-      	   quote_flag=>QUOTE_ALL, space_before_quote_flag=>OFF,
-	   trim_space_flag=>OFF};
-      v = if check_dialect d then
-            record {s, d}
+  = if ~null opts then
+      throw (error ("invalid dialect option(s) " + str opts))
+    else if ~install_str quote then
+      throw (error ("dialect [quote] must be a string"))
+    else if ~install_str escape then
+      throw (error ("dialect [escape] must be a string"))
+    else if ~install_str delimiter then
+      throw (error ("dialect [delimiter] must be a string"))
+    else if ~install_sym terminator terminator_opts then
+      throw (error ("dialect [terminator] must be one of " +
+                    str (keys terminator_opts)))
+    else if ~install_sym quote_flag quote_flag_opts then
+      throw (error ("dialect [quote_flag] must be one of " +
+                    str (keys quote_flag_opts)))
+    else if ~install_sym space_before_quote_flag space_before_quote_opts then
+      throw (error ("dialect [space_before_quote_flag] must be one of " +
+                    str (keys space_before_quote_opts)))
+    else if ~install_sym trim_space_flag trim_space_opts then
+      throw (error ("dialect [trim_space_flag] must be one of " +
+                    str (keys trim_space_opts)))
+    else 
+      sentry dialect_free (dialect_new (m!quote) (m!escape) (m!delimiter)
+                                       (m!terminator) (m!quote_flag)
+                                       (m!space_before_quote_flag)
+                                       (m!trim_space_flag)
+                           when m = get df end)
+    with 
+      install_str k
+        = if ~member d k then
+            1
+          else if stringp (d!k) then
+            put df (update (get df) k (d!k)) $$ 1
           else
-            throw error "invalid dialect"
-	  with
-      	    check_dialect d::matrix
-              = all (\(x=>y) -> member s x) d &&
-	        (~ member d terminator ||  d!terminator == "\n" || 
-		 d!terminator == "\r\n") &&
-                all stringp (d!![quote,escape,delimiter]) &&
-                in d quote_flag [1,2,3] &&
-		in d space_before_quote_flag [0,1] &&
-                in d trim_space_flag [0,1,2,3];
-          end;
-      r = dialect_new (v!quote) (v!escape) (v!delimiter) (v!terminator)
-                      (v!quote_flag) (v!space_before_quote_flag)
-                      (v!trim_space_flag);
+            0;
+      install_sym k sd
+        = if ~member d k then
+            1
+          else if member sd (d!k) then
+            put df (update (get df) k (sd!(d!k))) $$ 1
+          else
+            0;
+    end when
+      df = ref {quote=>"\"", escape=>"", delimiter=>",", terminator=>"\n",
+                quote_flag=>3, space_before_quote_flag=>0, 
+                trim_space_flag=>0};
+      opts = filter (\(x=>y) -> ~member m x) d when m = get df end;
     end;
 
 /* Predefined dialects */
-const default = dialect {};
-const RFC4180 = dialect {terminator=>"\r\n"};
-const EXCEL = dialect {quote_flag=>QUOTE_MINIMAL, 
-                       terminator=>"\r\n",
-		       space_before_quote_flag=>ON,
-		       trim_space_flag=>TRIM_BOTH};
+let default = dialect {};
+let RFC4180 = dialect {terminator=>CRLF};
+let EXCEL = dialect {quote_flag=>QUOTE_MINIMAL, 
+                     terminator=>CRLF,
+                     space_before_quote_flag=>ON,
+                     trim_space_flag=>TRIM_BOTH};
 
 const LIST = 1;
 const VECTOR = 0;
 
 /* Open a CSV file for reading, "r", writing, "w", or appending, "a",
-   with dialect d */
+   with dialect d, and if list_flag ~= 0 then a list is returned when
+   reading */
 open (fname::string, rw_flag::string, d::pointer, list_flag::int)
   = if rw_flag ~= "r" && rw_flag ~= "w" && rw_flag ~= "a" then
       throw error "bad read/write/append flag"

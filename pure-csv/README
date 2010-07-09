@@ -3,6 +3,7 @@
 Pure-CSV - Comma Separated Value Interface for the Pure Programming Language
 ============================================================================
 
+:Version: 1.3
 :Author: Eddie Rucker <erucker@bmc.edu>
 :Date: |date|
 :Copyright: 2008, 2009, 2010 by Eddie Rucker
@@ -65,67 +66,84 @@ Creating Dialects
   object is freed automatically when exiting the pure script. The list of
   possible options and option values are presented below.
 
-  - ``delimiter`` - Field delimiter.
+  - ``delimiter`` - Character used to separate fields.
 
     * Value - any string.
     * Default - ``","``.
 
   - ``escape`` - Embedded escape character used to embed a delimiter, 
-    escape, or terminator into unquoted fields.
+    escape, or terminator into unquoted fields. If the escape character is
+    not null, then the quote character is ignored.
 
     * Value - any string.
     * Default - ``""``.
-    * Notes - When defined, the quote value is ignored.
-  
+    * Reading - The escape character is dropped and the next char is inserted
+      into the field.
+    * Writing - The escape character is written into the output stream before
+      the delimiter, escape, or return character.
+    
   - ``quote`` - Quotes are used to embed delimiters, quotes, or
     terminators into a field.
   
     * Value - any string.
     * Default - ``"\""``.
-    * Notes - If embedded quotes are doubled, ``escape`` must be the 
+    * Notes - Embedded quotes are doubled. The ``escape`` option must be the 
       null string.
 
   - ``terminator`` - Record termination string.
 
-    * Value - One of {``"\r\n"'', ``"\n"``}.
-    * Default: ``"\n"``.
+    * Value - One of {``LF``, ``CRLF``} where ``LF = "\n"`` and 
+      ``CRLF = "\r\n"``.
+    * Default - ``LF``.
+    * Reading - Carriage returns, "\r", are always ignored except when
+      embedded in quotes are escaped.
 
   - ``quote_flag`` - Sets the quoting style of strings and/or numbers.
 
     * Value - One of {``QUOTE_ALL``, ``QUOTE_STRINGS``, ``QUOTE_MINIMAL``}.
     * Default - ``ALL``.
-    * Notes -
-
-      1. ``QUOTE_ALL`` - every field is read/written as a string.
-
-      2. ``QUOTE_STRING`` - When reading, fields within quotes are read as
-         strings. Also fields that are not integers or doubles are converted
-         to strings. When writing, only fields that are of type ``string`` 
-         are quoted when written to the file.
-
-      3. ``QUOTE_MINIMAL`` - When reading, acts like the ``STRING`` flag. 
-         When writing, only fields containing embedded quotes, terminators,
-         or delimiters are written with quotes.
+    * Reading -
+    
+      1. ``QUOTE_ALL`` - Every field is read as a string.
+      2. ``QUOTE_STRING`` - Fields within quotes and fields that will not 
+         convert to integers or doubles are read as strings.
+      3. ``QUOTE_MINIMAL`` - Fields are read exactly as ``QUOTE_STRING``. 
+    
+    * Writing - 
+    
+      1. ``QUOTE_ALL`` - Every field is writen within quotes.
+      2. ``QUOTE_STRING`` - Only fields of type ``string`` are quoted.
+      3. ``QUOTE_MINIMAL`` - Only fields containing embedded quotes, 
+         terminators, or delimiters are written within quotes.
 
   - ``space_before_quote_flag`` - Determines if space is acceptable before a
     quoted field.
-    * Value - One of {``On``, ``Off``}.
+    
+    * Value - One of {``ON``, ``OFF``}.
     * Default - ``Off``.
+    * Reading - 
+    
+      1. OFF - Follows RFC4180 rules.
+      2. ON - Useful for handwritten CSV files where space may preceed fields.
   
   - ``trim_space_flag`` - trim space before or after field contents.
 
     * Value - One of {OFF, TRIM_LEFT, TRIM_RIGHT, TRIM_BOTH}
     * Default - ``OFF``.
-    * Notes -
+    * Reading -
     
-      1. When the flag is ``OFF``, reading and writing follows RFC4180 rules.
-
-      2. When the flag is one of ``TRIM_LEFT``, ``TRIM_RIGHT``, or 
-         ``TRIM_BOTH`` - the field is trimed accordingly. Use *caution* when
-         reading because trimming may allow conversion of numbers if the
-         ``quote_flag`` is set to ``QUOTE_MINIMAL``. Also, when writing, 
-         trimming space is probably a bad idea since leading or trailing 
-         space may be significant for another application.
+      1. ``OFF`` - Reading follows RFC4180 rules.
+      2. ``TRIM_LEFT``, ``TRIM_RIGHT``, or ``TRIM_BOTH`` - The field is 
+         trimed accordingly. Use *caution* when reading because trimming
+         may allow conversion of numbers if the ``quote_flag`` is set to
+         ``QUOTE_MINIMAL``.
+    
+    * Writing -
+    
+      1. ``OFF`` - Reading follows RFC4180 rules
+      2. ``TRIM_LEFT``, ``TRIM_RIGHT``, or ``TRIM_BOTH`` - Trimming space
+         is probably a bad idea since leading or trailing space may be 
+         significant for another application.
 
   The following example illustrates the construction of a dialect for 
   reading tab delimited files without quoted strings.
@@ -166,7 +184,7 @@ Opening CSV Files
   exactly as above except according to a user defined dialect ``d``.
 
 ``open (name::string, rw_flag::string, d::pointer, list_flag::int)``
-  exactly as above except if ``list_flag`` is set to ``1`` or ``LIST``, the
+  exactly as above except if ``list_flag`` is set to ``LIST`` or ``1``, the
   output of ``putr``, ``fputr``, and ``fputr_lazy`` is a list instead of a
   vector.
 
@@ -242,7 +260,7 @@ The first example shows how to write and read a default CSV file.
   
   > using csv;
   > using namespace csv;
-  > let f = open ("testing.csv","w");
+  > let f = open ("testing.csv", "w");
   > fputr f [{"bob",3.9,"",-2},{"fred",-11.8,"",0},{"mary",2.3,"$",11}];
   ()
   > close f;
@@ -259,15 +277,15 @@ automatic conversions.
 
   > using csv;
   > using namespace csv;
-  > let d = dialect {quote_flag => QUOTE_MINIMAL};
-  > let f = open ("test.csv","w",d);
+  > let d = dialect {quote_flag=>QUOTE_MINIMAL};
+  > let f = open ("test.csv", "w", d);
   > putr f {"I","",-4,1.2,2%4,like};
   ()
   > putr f {"playing","the",0,-0.2,1+:4,drums};
   ()
   > close f;
   ()
-  > let f = open ("test.csv","r",d);
+  > let f = open ("test.csv", "r", d);
   > fgetr f;
   [{"I","",-4,1.2,"2%4","like"},{"playing","the",0,-0.2,"1+:4","drums"}]
   > close f;
@@ -281,12 +299,12 @@ handled.
   > using csv;
   > using namespace csv;
   > let d = dialect {quote_flag=>QUOTE_STRING};
-  > let f = open ("test.csv","w",d);
+  > let f = open ("test.csv", "w", d);
   > fputr f [{"this\nis\n",1},{"a \"test\"",2}];
   ()
   > close f;
   ()
-  > let f = open ("test.csv","r",d);
+  > let f = open ("test.csv", "r", d);
   > fgetr f;
   [{"this\nis\n",1},{"a \"test\"",2}]
   > close f;
@@ -372,12 +390,12 @@ closed when the script is finished.
   > using csv;
   > using namespace csv;
   > let d = dialect {quote_flag=>QUOTE_MINIMAL, delimiter=>"\t"};
-  > let f = open ("test.csv","w",d,LIST);
+  > let f = open ("test.csv", "w", d, LIST);
   > fputr f [["a","b",-4.5,""],["c","d",2.3,"-"]];
   ()
   > close f;
   ()
-  > let f = open ("test.csv","r",d,LIST);
+  > let f = open ("test.csv", "r", d, LIST);
   > fgetr f;                             
   [["a","b",-4.5,""],["c","d",2.3,"-"]]
   > quit

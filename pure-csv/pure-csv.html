@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>Pure-CSV - Comma Separated Value Interface for the Pure Programming Language</title>
 <meta name="author" content="Eddie Rucker &lt;erucker&#64;bmc.edu&gt;" />
-<meta name="date" content="2010-07-07" />
+<meta name="date" content="2010-07-09" />
 <meta name="copyright" content="2008, 2009, 2010 by Eddie Rucker" />
 <style type="text/css">
 
@@ -313,10 +313,12 @@ ul.auto-toc {
 <col class="docinfo-name" />
 <col class="docinfo-content" />
 <tbody valign="top">
+<tr><th class="docinfo-name">Version:</th>
+<td>1.3</td></tr>
 <tr><th class="docinfo-name">Author:</th>
 <td>Eddie Rucker &lt;<a class="reference external" href="mailto:erucker&#64;bmc.edu">erucker&#64;bmc.edu</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-07-07</td></tr>
+<td>2010-07-09</td></tr>
 <tr><th class="docinfo-name">Copyright:</th>
 <td>2008, 2009, 2010 by Eddie Rucker</td></tr>
 <tr class="field"><th class="docinfo-name">License:</th><td class="field-body">3-clause BSD license, see the accompanying COPYING file for details</td>
@@ -382,62 +384,84 @@ raise an exception).</dd>
 object is freed automatically when exiting the pure script. The list of
 possible options and option values are presented below.</p>
 <ul class="simple">
-<li><tt class="docutils literal">delimiter</tt> - Field delimiter.<ul>
+<li><tt class="docutils literal">delimiter</tt> - Character used to separate fields.<ul>
 <li>Value - any string.</li>
 <li>Default - <tt class="docutils literal">&quot;,&quot;</tt>.</li>
 </ul>
 </li>
 <li><tt class="docutils literal">escape</tt> - Embedded escape character used to embed a delimiter,
-escape, or terminator into unquoted fields.<ul>
+escape, or terminator into unquoted fields. If the escape character is
+not null, then the quote character is ignored.<ul>
 <li>Value - any string.</li>
 <li>Default - <tt class="docutils literal">&quot;&quot;</tt>.</li>
-<li>Notes - When defined, the quote value is ignored.</li>
+<li>Reading - The escape character is dropped and the next char is inserted
+into the field.</li>
+<li>Writing - The escape character is written into the output stream before
+the delimiter, escape, or return character.</li>
 </ul>
 </li>
 <li><tt class="docutils literal">quote</tt> - Quotes are used to embed delimiters, quotes, or
 terminators into a field.<ul>
 <li>Value - any string.</li>
 <li>Default - <tt class="docutils literal"><span class="pre">&quot;\&quot;&quot;</span></tt>.</li>
-<li>Notes - If embedded quotes are doubled, <tt class="docutils literal">escape</tt> must be the
+<li>Notes - Embedded quotes are doubled. The <tt class="docutils literal">escape</tt> option must be the
 null string.</li>
 </ul>
 </li>
 <li><tt class="docutils literal">terminator</tt> - Record termination string.<ul>
-<li>Value - One of {<tt class="docutils literal"><span class="pre">&quot;\r\n&quot;'',</span> <span class="pre">``&quot;\n&quot;</span></tt>}.</li>
-<li>Default: <tt class="docutils literal">&quot;\n&quot;</tt>.</li>
+<li>Value - One of {<tt class="docutils literal">LF</tt>, <tt class="docutils literal">CRLF</tt>} where <tt class="docutils literal">LF = &quot;\n&quot;</tt> and
+<tt class="docutils literal">CRLF = &quot;\r\n&quot;</tt>.</li>
+<li>Default - <tt class="docutils literal">LF</tt>.</li>
+<li>Reading - Carriage returns, &quot;r&quot;, are always ignored except when
+embedded in quotes are escaped.</li>
 </ul>
 </li>
 <li><tt class="docutils literal">quote_flag</tt> - Sets the quoting style of strings and/or numbers.<ul>
 <li>Value - One of {<tt class="docutils literal">QUOTE_ALL</tt>, <tt class="docutils literal">QUOTE_STRINGS</tt>, <tt class="docutils literal">QUOTE_MINIMAL</tt>}.</li>
 <li>Default - <tt class="docutils literal">ALL</tt>.</li>
-<li>Notes -<ol class="arabic">
-<li><tt class="docutils literal">QUOTE_ALL</tt> - every field is read/written as a string.</li>
-<li><tt class="docutils literal">QUOTE_STRING</tt> - When reading, fields within quotes are read as
-strings. Also fields that are not integers or doubles are converted
-to strings. When writing, only fields that are of type <tt class="docutils literal">string</tt>
-are quoted when written to the file.</li>
-<li><tt class="docutils literal">QUOTE_MINIMAL</tt> - When reading, acts like the <tt class="docutils literal">STRING</tt> flag.
-When writing, only fields containing embedded quotes, terminators,
-or delimiters are written with quotes.</li>
+<li>Reading -<ol class="arabic">
+<li><tt class="docutils literal">QUOTE_ALL</tt> - Every field is read as a string.</li>
+<li><tt class="docutils literal">QUOTE_STRING</tt> - Fields within quotes and fields that will not
+convert to integers or doubles are read as strings.</li>
+<li><tt class="docutils literal">QUOTE_MINIMAL</tt> - Fields are read exactly as <tt class="docutils literal">QUOTE_STRING</tt>.</li>
+</ol>
+</li>
+<li>Writing -<ol class="arabic">
+<li><tt class="docutils literal">QUOTE_ALL</tt> - Every field is writen within quotes.</li>
+<li><tt class="docutils literal">QUOTE_STRING</tt> - Only fields of type <tt class="docutils literal">string</tt> are quoted.</li>
+<li><tt class="docutils literal">QUOTE_MINIMAL</tt> - Only fields containing embedded quotes,
+terminators, or delimiters are written within quotes.</li>
 </ol>
 </li>
 </ul>
 </li>
 <li><tt class="docutils literal">space_before_quote_flag</tt> - Determines if space is acceptable before a
-quoted field.
-* Value - One of {<tt class="docutils literal">On</tt>, <tt class="docutils literal">Off</tt>}.
-* Default - <tt class="docutils literal">Off</tt>.</li>
+quoted field.<ul>
+<li>Value - One of {<tt class="docutils literal">ON</tt>, <tt class="docutils literal">OFF</tt>}.</li>
+<li>Default - <tt class="docutils literal">Off</tt>.</li>
+<li>Reading -<ol class="arabic">
+<li>OFF - Follows RFC4180 rules.</li>
+<li>ON - Useful for handwritten CSV files where space may preceed fields.</li>
+</ol>
+</li>
+</ul>
+</li>
 <li><tt class="docutils literal">trim_space_flag</tt> - trim space before or after field contents.<ul>
 <li>Value - One of {OFF, TRIM_LEFT, TRIM_RIGHT, TRIM_BOTH}</li>
 <li>Default - <tt class="docutils literal">OFF</tt>.</li>
-<li>Notes -<ol class="arabic">
-<li>When the flag is <tt class="docutils literal">OFF</tt>, reading and writing follows RFC4180 rules.</li>
-<li>When the flag is one of <tt class="docutils literal">TRIM_LEFT</tt>, <tt class="docutils literal">TRIM_RIGHT</tt>, or
-<tt class="docutils literal">TRIM_BOTH</tt> - the field is trimed accordingly. Use <em>caution</em> when
-reading because trimming may allow conversion of numbers if the
-<tt class="docutils literal">quote_flag</tt> is set to <tt class="docutils literal">QUOTE_MINIMAL</tt>. Also, when writing,
-trimming space is probably a bad idea since leading or trailing
-space may be significant for another application.</li>
+<li>Reading -<ol class="arabic">
+<li><tt class="docutils literal">OFF</tt> - Reading follows RFC4180 rules.</li>
+<li><tt class="docutils literal">TRIM_LEFT</tt>, <tt class="docutils literal">TRIM_RIGHT</tt>, or <tt class="docutils literal">TRIM_BOTH</tt> - The field is
+trimed accordingly. Use <em>caution</em> when reading because trimming
+may allow conversion of numbers if the <tt class="docutils literal">quote_flag</tt> is set to
+<tt class="docutils literal">QUOTE_MINIMAL</tt>.</li>
+</ol>
+</li>
+<li>Writing -<ol class="arabic">
+<li><tt class="docutils literal">OFF</tt> - Reading follows RFC4180 rules</li>
+<li><tt class="docutils literal">TRIM_LEFT</tt>, <tt class="docutils literal">TRIM_RIGHT</tt>, or <tt class="docutils literal">TRIM_BOTH</tt> - Trimming space
+is probably a bad idea since leading or trailing space may be
+significant for another application.</li>
 </ol>
 </li>
 </ul>
@@ -475,7 +499,7 @@ the end of the file, otherwise a new empty file is created.</dd>
 <dt><tt class="docutils literal">open <span class="pre">(name::string,</span> <span class="pre">rw_flag::string,</span> <span class="pre">d::pointer)</span></tt></dt>
 <dd>exactly as above except according to a user defined dialect <tt class="docutils literal">d</tt>.</dd>
 <dt><tt class="docutils literal">open <span class="pre">(name::string,</span> <span class="pre">rw_flag::string,</span> <span class="pre">d::pointer,</span> <span class="pre">list_flag::int)</span></tt></dt>
-<dd>exactly as above except if <tt class="docutils literal">list_flag</tt> is set to <tt class="docutils literal">1</tt> or <tt class="docutils literal">LIST</tt>, the
+<dd>exactly as above except if <tt class="docutils literal">list_flag</tt> is set to <tt class="docutils literal">LIST</tt> or <tt class="docutils literal">1</tt>, the
 output of <tt class="docutils literal">putr</tt>, <tt class="docutils literal">fputr</tt>, and <tt class="docutils literal">fputr_lazy</tt> is a list instead of a
 vector.</dd>
 </dl>
@@ -537,7 +561,7 @@ Writing to a file opened for reading invokes the <tt class="docutils literal">er
 <pre class="literal-block">
 &gt; using csv;
 &gt; using namespace csv;
-&gt; let f = open (&quot;testing.csv&quot;,&quot;w&quot;);
+&gt; let f = open (&quot;testing.csv&quot;, &quot;w&quot;);
 &gt; fputr f [{&quot;bob&quot;,3.9,&quot;&quot;,-2},{&quot;fred&quot;,-11.8,&quot;&quot;,0},{&quot;mary&quot;,2.3,&quot;$&quot;,11}];
 ()
 &gt; close f;
@@ -552,15 +576,15 @@ automatic conversions.</p>
 <pre class="literal-block">
 &gt; using csv;
 &gt; using namespace csv;
-&gt; let d = dialect {quote_flag =&gt; QUOTE_MINIMAL};
-&gt; let f = open (&quot;test.csv&quot;,&quot;w&quot;,d);
+&gt; let d = dialect {quote_flag=&gt;QUOTE_MINIMAL};
+&gt; let f = open (&quot;test.csv&quot;, &quot;w&quot;, d);
 &gt; putr f {&quot;I&quot;,&quot;&quot;,-4,1.2,2%4,like};
 ()
 &gt; putr f {&quot;playing&quot;,&quot;the&quot;,0,-0.2,1+:4,drums};
 ()
 &gt; close f;
 ()
-&gt; let f = open (&quot;test.csv&quot;,&quot;r&quot;,d);
+&gt; let f = open (&quot;test.csv&quot;, &quot;r&quot;, d);
 &gt; fgetr f;
 [{&quot;I&quot;,&quot;&quot;,-4,1.2,&quot;2%4&quot;,&quot;like&quot;},{&quot;playing&quot;,&quot;the&quot;,0,-0.2,&quot;1+:4&quot;,&quot;drums&quot;}]
 &gt; close f;
@@ -572,12 +596,12 @@ handled.</p>
 &gt; using csv;
 &gt; using namespace csv;
 &gt; let d = dialect {quote_flag=&gt;QUOTE_STRING};
-&gt; let f = open (&quot;test.csv&quot;,&quot;w&quot;,d);
+&gt; let f = open (&quot;test.csv&quot;, &quot;w&quot;, d);
 &gt; fputr f [{&quot;this\nis\n&quot;,1},{&quot;a \&quot;test\&quot;&quot;,2}];
 ()
 &gt; close f;
 ()
-&gt; let f = open (&quot;test.csv&quot;,&quot;r&quot;,d);
+&gt; let f = open (&quot;test.csv&quot;, &quot;r&quot;, d);
 &gt; fgetr f;
 [{&quot;this\nis\n&quot;,1},{&quot;a \&quot;test\&quot;&quot;,2}]
 &gt; close f;
@@ -652,12 +676,12 @@ closed when the script is finished.</p>
 &gt; using csv;
 &gt; using namespace csv;
 &gt; let d = dialect {quote_flag=&gt;QUOTE_MINIMAL, delimiter=&gt;&quot;\t&quot;};
-&gt; let f = open (&quot;test.csv&quot;,&quot;w&quot;,d,LIST);
+&gt; let f = open (&quot;test.csv&quot;, &quot;w&quot;, d, LIST);
 &gt; fputr f [[&quot;a&quot;,&quot;b&quot;,-4.5,&quot;&quot;],[&quot;c&quot;,&quot;d&quot;,2.3,&quot;-&quot;]];
 ()
 &gt; close f;
 ()
-&gt; let f = open (&quot;test.csv&quot;,&quot;r&quot;,d,LIST);
+&gt; let f = open (&quot;test.csv&quot;, &quot;r&quot;, d, LIST);
 &gt; fgetr f;
 [[&quot;a&quot;,&quot;b&quot;,-4.5,&quot;&quot;],[&quot;c&quot;,&quot;d&quot;,2.3,&quot;-&quot;]]
 &gt; quit
