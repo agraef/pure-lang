@@ -5,6 +5,7 @@
    Modified: November 21, 2008 to handle namespaces
    Rewritten: June 11, 2010
    updated: July 7, 2010 add space_before_quote_flag and trim_space_flag
+   updated: July 15, 2010 handle space after quote and code cleanup
 */
 
 /*
@@ -59,21 +60,25 @@ POSSIBILITY OF SUCH DAMAGE.
 #define ERR_WRITE -3
 #define ERR_PARSE -4
 
-/* quote_flag style */
+/* quote styles */
 
-#define QUOTE_MINIMAL 1
-#define QUOTE_STRING  2
-#define QUOTE_ALL     3
+#define QUOTE_ALL     0
+#define QUOTE_MINIMAL 2
+#define QUOTE_MASK    3
 
-/* trim_space style */
+/* trim field space flags */
 
-#define TRIM_RIGHT 1
-#define TRIM_LEFT  2
-#define TRIM_BOTH  3
+#define TRIM_RIGHT  4
+#define TRIM_LEFT   8
 
-/* general purpose values */
-#define ON  1
-#define OFF 0
+/* quote space flags */
+
+#define SPACE_AFTER_QUOTE  16
+#define SPACE_BEFORE_QUOTE 32
+
+/* file options */
+#define LIST 1
+#define HEADER 2
 
 #define error(msg) \
   pure_app(pure_symbol(pure_sym("csv::error")), pure_cstring_dup(msg))
@@ -87,9 +92,7 @@ typedef struct {
   size_t delimiter_n;
   char *terminator;
   size_t terminator_n;
-  int quote_flag;
-  int space_before_quote_flag;
-  int trim_space_flag;
+  unsigned int flags;
 } dialect_t;
 
 typedef struct {
@@ -108,7 +111,8 @@ typedef struct {
   buffer_t *buffer;
   record_t *record;
   dialect_t *dialect;
-  int list_flag;      // output a list instead of a vector
+  pure_expr *header;  // header keys for optional field indexing by string
+  unsigned int opts;  // output a list/vector, has header
   char rw;            // read, write, or append char
   FILE *fp;
   unsigned long line; // line number for errors
@@ -127,9 +131,7 @@ dialect_t *dialect_new(char *quote,
 		       char *escape,
 		       char *delimiter,
 		       char *terminator,
-		       int quote_flag,
-		       int space_before_quote_flag,
-		       int trim_space_flag)
+		       int flags)
 {
   dialect_t *d;
   if (d = (dialect_t *)malloc(sizeof(dialect_t))) {
@@ -142,9 +144,7 @@ dialect_t *dialect_new(char *quote,
       d->escape_n = strlen(escape);
       d->delimiter_n = strlen(delimiter);
       d->terminator_n = strlen(terminator);
-      d->quote_flag = quote_flag;
-      d->space_before_quote_flag = space_before_quote_flag;
-      d->trim_space_flag = trim_space_flag;
+      d->flags = flags;
       return d;
     }
     dialect_free(d);
@@ -210,7 +210,7 @@ static buffer_t *buffer_new(void)
   return NULL;
 }
 
-static inline void buffer_clear(buffer_t *b)
+static void buffer_clear(buffer_t *b)
 {
   b->len = 0;
 }
@@ -291,9 +291,11 @@ void csv_close(csv_t *csv)
 {
   if (csv->buffer) buffer_free(csv->buffer);
   if (csv->record) record_free(csv->record);
+  if (csv->header) pure_free(csv->header);
   if (csv->fp) fclose(csv->fp);
   csv->buffer = NULL;
   csv->record = NULL;
+  csv->header = NULL;
   csv->fp = NULL;
 }
 
@@ -303,27 +305,57 @@ void csv_free(csv_t *csv)
   free(csv);
 }
 
-csv_t *csv_open(char *fname, char *rw, dialect_t *d, int list_flag)
+pure_expr *csv_read(csv_t *csv);
+
+static pure_expr *create_header(csv_t *csv)
+{
+  pure_expr *t = csv_read(csv);
+  pure_expr *f = pure_symbol(pure_getsym("=>"));
+  pure_expr *xs[csv->record->len];
+  int i;
+  for (i = 0; i < csv->record->len; ++i)
+    xs[i] = pure_appl(f, 2, csv->record->x[i], pure_int(i));
+  return pure_matrix_columnsvq(csv->record->len, xs);
+}
+
+csv_t *csv_open(char *fname, char *rw, dialect_t *d, unsigned int opts)
 {
   csv_t *t;
   if (t = (csv_t *)malloc(sizeof(csv_t))) {
     t->line = 1;
-    t->list_flag = list_flag;
     t->buffer = NULL;
     t->record = NULL;
+    t->header = NULL;
     if (t->buffer = buffer_new()) {
-      t->dialect = d;
       t->rw = *rw; // get first char since rw is one of "r", "w", "a".
       if (t->fp = fopen(fname, rw))
-	if (t->record = record_new())
+	if (t->record = record_new()) {
+	  t->dialect = d;
+	  if ((opts & HEADER) && *rw == 'r') {
+	    unsigned int temp_flags = d->flags;
+	    t->dialect->flags &= 0xFFFC; // header must return strings
+	    t->opts = 0; // cut options off
+	    t->header = (opts & HEADER) ? pure_new(create_header(t)) : NULL;
+	    t->dialect->flags = temp_flags; // reset quote style
+	  }
+	  t->opts = opts;
 	  return t;
+	}
     }
     csv_free(t);
   }
   return NULL;
 }
 
-static char *trim_space(char *s, unsigned side)
+pure_expr *csv_getkeys(csv_t *csv)
+{
+  if (csv->header)
+    return csv->header;
+  else
+    return pure_listv(0, NULL);
+}
+
+static char *trim_space(char *s, unsigned int side)
 {
   if (side & TRIM_LEFT) {
     while (isspace(*s))
@@ -347,7 +379,7 @@ static int write_quoted(csv_t *csv, pure_expr **xs, size_t len)
   buffer_clear(b);
   for (i = 0; i < len && b; ++i) {
     if (pure_is_string(xs[i], &ts)) {
-      ts = trim_space(ts, d->trim_space_flag);
+      ts = trim_space(ts, d->flags);
       buffer_add(b, d->quote, d->quote_n);
       char *p, *tp; // p == current pointer, tp = starting point for copy
       unsigned qflag = 0;
@@ -369,13 +401,14 @@ static int write_quoted(csv_t *csv, pure_expr **xs, size_t len)
 	  ++p;
       }
       buffer_add(b, tp, p-tp);
-      if (!qflag && d->quote_flag == QUOTE_MINIMAL) // kill leading quote
+      // kill leading quote
+      if (!qflag && (d->flags & QUOTE_MASK) == QUOTE_MINIMAL)
 	buffer_del(b, b->len-(p-ts)-1, d->quote_n);
       else
 	buffer_add(b, d->quote, d->quote_n);
     } else {
       ts = str(xs[i]);
-      if (d->quote_flag == QUOTE_ALL) {
+      if ((d->flags & QUOTE_MASK) == QUOTE_ALL) {
 	buffer_add(b, d->quote, d->quote_n);
 	buffer_add(b, ts, strlen(ts));
 	buffer_add(b, d->quote, d->quote_n);
@@ -405,7 +438,7 @@ static int write_escaped(csv_t *csv, pure_expr **xs, size_t len)
   buffer_clear(b);
   for (i = 0; i < len && b; ++i) {
     if (pure_is_string(xs[i], &ts)) {
-      ts = trim_space(ts, d->trim_space_flag);
+      ts = trim_space(ts, d->flags);
       char *p, *tp;
       p = tp = ts; // p == current pointer, tp = starting point for copy
       while (*p) {
@@ -465,9 +498,16 @@ pure_expr *csv_write(csv_t *csv, pure_expr **xs, size_t len)
   }
 }
 
-static int is_space(char *start, char *end)
+static int is_space(char *s, dialect_t *d)
 {
-  while (start < end && isspace(*start))
+  // Other unicode white space is probably significant
+  return strncmp(s, d->delimiter, d->delimiter_n) && 
+    (*s == ' ' || *s == '\v' || *s == '\t');
+}
+
+static int is_space_string(char *start, char *end, dialect_t *d)
+{
+  while (start < end && is_space(start, d))
     ++start;
   return start == end;
 }
@@ -476,11 +516,11 @@ static pure_expr *char_to_expr(char *s, dialect_t *d)
 {
   if (!strncmp(s, d->quote, d->quote_n)) { // skip quote this is a string
     s += d->quote_n;
-    s = trim_space(s, d->trim_space_flag);
+    s = trim_space(s, d->flags);
     return pure_cstring_dup(s);
   }
-  s = trim_space(s, d->trim_space_flag);
-  if (*s && d->quote_flag != QUOTE_ALL) {
+  s = trim_space(s, d->flags);
+  if (*s && (d->flags & QUOTE_MASK) != QUOTE_ALL) {
     char *p;
     long i = strtol(s, &p, 0);
     if (*p == 0) return pure_int(i);
@@ -510,6 +550,10 @@ static int read_quoted(csv_t *csv)
       while (*s)
 	if (!strncmp(s, d->quote, d->quote_n)) {
 	  s += d->quote_n; // skip escape quote
+	  if (is_space(s, d) && (d->flags & SPACE_AFTER_QUOTE)) {
+	    ++s;
+	    while (is_space(s, d)) ++s;
+	  }
 	  if (*s == '\n') {
 	    ++s;
 	    ++csv->line;
@@ -551,7 +595,7 @@ static int read_quoted(csv_t *csv)
 	  s += d->delimiter_n;
 	  break;
 	} else if (!strncmp(s, d->quote, d->quote_n)) {
-	  if (d->space_before_quote_flag && is_space(t, s))
+	  if ((d->flags & SPACE_BEFORE_QUOTE) && is_space_string(t, s, d))
 	    goto outer_loop;
 	  else
 	    return ERR_PARSE;
@@ -639,10 +683,8 @@ pure_expr *csv_read(csv_t *csv)
   char msg[50];
   switch (err) {
   case 0:
-    if (csv->list_flag)
-      return pure_listv(csv->record->len, csv->record->x);
-    else
-      return pure_matrix_columnsvq(csv->record->len, csv->record->x);
+    return (csv->opts & LIST) ? pure_listv(csv->record->len, csv->record->x) :
+    pure_matrix_columnsvq(csv->record->len, csv->record->x);
   case ERR_PARSE:
     sprintf(msg, "parse error at line %ld", csv->line);
     return error(msg);

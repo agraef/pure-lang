@@ -7,45 +7,48 @@
    Updated: June 11, 2010 to make use of rewritten C module and Pure's built
             in records.
    Updated: July 7, 2010 added space_before_quote_flag and trim_space_flag.
+   Updated: July 15, 2010 changed the flags to allow space between before a
+            quote or after a quote.
+   Updated: July 16, 2010 added optional optional key selection of fields
 */
 
 namespace csv;
 
 using "lib:csv";
 
-private extern dialect_t *dialect_new(char *, char *, char *, char *,
-	                              int, int, int);
+private extern dialect_t *dialect_new(char *, char *, char *, char *, int);
 private extern void dialect_free(dialect_t *);
 private extern csv_t *csv_open(char *, char *, void *, int);
 private extern void csv_close(csv_t *t);
 private extern void csv_free(csv_t *t);
 private extern expr *csv_write(csv_t *, expr **, int);
 private extern expr *csv_read(csv_t *csv);
+private extern expr *csv_getkeys(csv_t *csv);
 
 public
-  QUOTE_MINIMAL
-  QUOTE_STRING
-  QUOTE_ALL
-  ON
-  OFF
-  TRIM_LEFT
-  TRIM_RIGHT
-  TRIM_BOTH
-  LIST
-  VECTOR
+  MINIMAL
+  STRING
+  ALL
+  NO
+  LEFT
+  RIGHT
+  BOTH
   CRLF
   LF
+  LIST
+  HEADER
   dialect
   quote
   escape
   delimiter
   terminator
   quote_flag
-  quote_before_space_flag
+  space_around_quoted_field_flag
   trim_space_flag
   default
   open
   close
+  getkeys
   getr
   fgetr
   fgetr_lazy
@@ -84,46 +87,56 @@ public
                          fields.
 
   quote_flag: Sets whether strings or numbers should be quoted.
-              Type: One of {QUOTE_ALL, QUOTE_STRING, QUOTE_MINIMAL}
-              Default: QUOTE_ALL
+              Type: One of {ALL, STRING, MINIMAL}
+              Default: ALL
 	      Notes:
-	        Reading: QUOTE_ALL     - all fields are returned as strings.
-			 QUOTE_STRING  - non quoted integer and double fields
+	        Reading: ALL     - all fields are returned as strings.
+			 STRING  - non quoted integer and double fields
                                          are converted.
-                         QUOTE_MINIMAL - same as QUOTE_STRING.
-                Writing: QUOTE_ALL     - all fields are written enclosed in
+                         MINIMAL - same as QUOTE_STRING.
+                Writing: ALL     - all fields are written enclosed in
                                          quotes.
-                         QUOTE_STRING  - only string fields are written
+                         STRING  - only string fields are written
                                          enclosed in quotes.
-                         QUOTE_MINIMAL - only fields containing quote, 
+                         MINIMAL - only fields containing quote, 
                                          delimiter, or return characters are
                                          written with enclosing quotes.
 
-  space_before_quote_flag:
-              Type: One of {ON, OFF}
-	      Default: OFF
+  space_around_quoted_field: Determines how whitespace between quotes and 
+              delimiters should be treated.
+              Type: One of {NO, LEFT, RIGHT, BOTH}
+	      Default: NO
 	      Notes:
-	        Reading: ON  - allows space before a field.
-                         OFF - follows RFC4180 rules.
+	        Reading: NO    - follows RFC4180 rules.
+                         LEFT  - allows space before a quoted field.
+                         RIGHT - allows space after a quoted field.
+			 BOTH  - allows space before and after a quoted field.
   
-  trim_space_flag:
-             Type: One of {OFF, TRIM_LEFT, TRIM_RIGHT, TRIM_BOTH}
-             Default: OFF
+  trim_space: Determines whether leading or trailing whitespace inside a field
+              should be removed.
+             Type: One of {NO, LEFT, RIGHT, BOTH}
+             Default: NO
              Notes:
-               Reading: OFF        - follows RFC4180 rules.
-                        TRIM_LEFT,
-			TRIM_RIGHT,
-			TRIM_BOTH  - may allow conversion of numbers if
-                                     quote_flag = QUOTE_MINIMAL since space
-				     before a number is interpreted as a
-                                     string.
-                                      
+               Reading: NO    - follows RFC4180 rules.
+                        LEFT  - trims leading whitespace from a field.
+			RIGHT - trims trailing whitespace from a field.
+			BOTH  - trims both leading and trailing whitespace
+                                from a field. 
+               CAUTION: Trimming space may allow conversion of numbers if
+                        quote_flag = MINIMAL since space before a number in a
+                        field is normally interpreted as a string.
 */
 
+private
+  terminator_opts
+  quote_flag_opts
+  allow_space_opts
+  trim_space_opts;
+
 const terminator_opts = {LF=>1, CRLF=>2};
-const quote_flag_opts = {QUOTE_MINIMAL=>1, QUOTE_STRING=>2, QUOTE_ALL=>3};
-const space_before_quote_opts = {OFF=>0, ON=>1};
-const trim_space_opts = {OFF=>0, TRIM_RIGHT=>1, TRIM_LEFT=>2, TRIM_BOTH=>3};
+const quote_flag_opts = {ALL=>0, STRING=>1, MINIMAL=>2};
+const allow_space_opts = {NO=>0, LEFT=>32, RIGHT=>16, BOTH=>48};
+const trim_space_opts = {NO=>0, LEFT=>8, RIGHT=>4, BOTH=>12};
 
 dialect d::matrix
   = if ~null opts then
@@ -140,17 +153,17 @@ dialect d::matrix
     else if ~install_sym quote_flag quote_flag_opts then
       throw (error ("dialect [quote_flag] must be one of " +
                     str (keys quote_flag_opts)))
-    else if ~install_sym space_before_quote_flag space_before_quote_opts then
-      throw (error ("dialect [space_before_quote_flag] must be one of " +
-                    str (keys space_before_quote_opts)))
-    else if ~install_sym trim_space_flag trim_space_opts then
-      throw (error ("dialect [trim_space_flag] must be one of " +
+    else if ~install_sym space_around_quoted_field allow_space_opts then
+      throw (error ("dialect [space_around_quoted_field] must be one of " +
+                    str (keys allow_space_opts)))
+    else if ~install_sym trim_space trim_space_opts then
+      throw (error ("dialect [trim_space] must be one of " +
                     str (keys trim_space_opts)))
     else 
-      sentry dialect_free (dialect_new (m!quote) (m!escape) (m!delimiter)
-                                       (m!terminator) (m!quote_flag)
-                                       (m!space_before_quote_flag)
-                                       (m!trim_space_flag)
+      sentry dialect_free 
+        (dialect_new (m!quote) (m!escape) (m!delimiter) (m!terminator)
+                     (m!quote_flag or m!space_around_quoted_field
+                                   or m!trim_space)
                            when m = get df end)
     with 
       install_str k
@@ -169,50 +182,72 @@ dialect d::matrix
             0;
     end when
       df = ref {quote=>"\"", escape=>"", delimiter=>",", terminator=>"\n",
-                quote_flag=>3, space_before_quote_flag=>0, 
-                trim_space_flag=>0};
+                quote_flag=>0, space_around_quoted_field=>0, 
+                trim_space=>0};
       opts = filter (\(x=>y) -> ~member m x) d when m = get df end;
     end;
 
 /* Predefined dialects */
 let default = dialect {};
 let RFC4180 = dialect {terminator=>CRLF};
-let EXCEL = dialect {quote_flag=>QUOTE_MINIMAL, 
+let EXCEL = dialect {quote_flag=>MINIMAL, 
                      terminator=>CRLF,
-                     space_before_quote_flag=>ON,
-                     trim_space_flag=>TRIM_BOTH};
+                     space_around_quoted_field=>BOTH,
+                     trim_space=>BOTH};
 
-const LIST = 1;
-const VECTOR = 0;
+private file_opts CSV;
+
+const file_opts = {LIST=>1, HEADER=>2};
 
 /* Open a CSV file for reading, "r", writing, "w", or appending, "a",
-   with dialect d, and if list_flag ~= 0 then a list is returned when
-   reading */
-open (fname::string, rw_flag::string, d::pointer, list_flag::int)
+   with dialect d. For list output, put LIST in the options list and for
+   using a header when reading, put HEADER in the options list
+*/
+open (fname::string, rw_flag::string, d::pointer, opts)
   = if rw_flag ~= "r" && rw_flag ~= "w" && rw_flag ~= "a" then
-      throw error "bad read/write/append flag"
+      throw (error "bad read/write/append flag")
     else if null d || null f then
-      throw error "cannot open file"    
+      throw (error ("cannot open file [" + fname + "]"))
     else
       (sentry csv_free f $$ sentry csv_close f)
     when
-      f = csv_open fname rw_flag d list_flag;
+      badopts = filter (\x -> ~member file_opts x) opts;
+      flags = if null badopts then
+                foldl (or) 0 (map ((!) file_opts) opts)
+	      else
+	        throw (error ("bad option(s) " + (str badopts)));
+      f = csv_open fname rw_flag d flags;
     end;
 
 /* Open a CSV file like above but with the library but output is a vector */
 open (fname::string, rw_flag::string, d::pointer)
-  = open (fname, rw_flag, d, 0);
+  = open (fname, rw_flag, d, []);
 
 /* Open a CSV file like above but with the library default dialect */
-open (fname::string, rw_flag::string) = open (fname, rw_flag, default, 0);
+open (fname::string, rw_flag::string) = open (fname, rw_flag, default, []);
 
 /* Open a CSV file for reading with the library default dialect */
-open fname::string = open (fname, "r", default, 0);
+open fname::string = open (fname, "r", default, []);
 
 /* Close a CSV file. Sentries ensure files will automatically be closed
    and internal buffers will be freed when the file pointer goes out of
    scope. */
 close f::pointer = clear_sentry f $$ csv_close f;
+
+/* Get keys through header as an optional way of indexing fields. The
+   CSV file must contain a header for this to work. */
+getkeys f::pointer 
+  = if null keys then [] else list $ keys when keys = csv_getkeys f end;
+
+/* CSV field selection */
+infixl 2600 ! ;
+r!k::string = r ::! ((csv_getkeys f) ::! k);
+r!k::int = r ::! k;
+
+infixl 2600 !! ;
+(r@(_:_))!!(ks@(_:_)) | (r::matrix)!!ks::matrix = map ((!) r) ks;
+(r::matrix)!!(ks@(_:_)) = map ((!) r) (matrix ks);
+(r@(_:_))!!(ks::matrix) = map ((!) r) (list ks);
 
 /* Write a record to a CSV file */
 putr f::pointer r::matrix = csv_write f r (#r) if rowvectorp r;
