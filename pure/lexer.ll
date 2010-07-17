@@ -128,8 +128,8 @@ letter ([a-zA-Z_]|[\xC4-\xDF][\x80-\xBF]|\xC2[^\x01-\x7F\xA1-\xFF]|\xC3[^\x01-\x
 id     ({letter}({letter}|[0-9])*)
 qual   ({id}?::({id}::)*)
 int    [0-9][0-9A-Za-z]*
-exp    ([Ee][+-]?[0-9]+)
-float  [0-9]+{exp}|[0-9]+\.{exp}|[0-9]*\.[0-9]+{exp}?
+exp    ([Ee][+-]?{int})
+float  {int}{exp}|{int}\.{exp}|({int})?\.{int}{exp}?
 str    ([^\"\\\n]|\\(.|\n))*
 cmd    (!|help|ls|pwd|break|bt|del|cd|show|dump|clear|save|run|override|underride|stats|mem|quit|completion_matches)
 blank  [ \t\f\v\r]
@@ -418,7 +418,15 @@ blank  [ \t\f\v\r]
   }
 }
 
-{float}    yylval->dval = my_strtod(yytext, NULL); return(token::DBL);
+{float}    {
+  char *p = NULL;
+  yylval->dval = my_strtod(yytext, &p);
+  if (p && *p) {
+    string msg = "invalid digit '"+string(1, *p)+"' in floating point constant";
+    interp.error(*yylloc, msg);
+  }
+  return token::DBL;
+}
 {int}L     {
   string msg;
   if (checkint(yytext, msg)) {
