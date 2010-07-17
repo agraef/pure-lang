@@ -2656,7 +2656,21 @@ void interpreter::exec(expr *x)
   if (interactive) {
     if (lastres) pure_free(lastres);
     lastres = pure_new(result);
-    cout << result << '\n';
+    static bool more_init = false;
+    static const char *more;
+    if (!more_init) {
+      more = getenv("PURE_LESS");
+      more_init = true;
+    }
+    /* If PURE_LESS is set then we pipe the printed expression through it. */
+    FILE *fp;
+    if (more && *more && isatty(fileno(stdin)) && (fp = popen(more, "w"))) {
+      ostringstream sout;
+      sout << result << '\n';
+      fputs(sout.str().c_str(), fp);
+      pclose(fp);
+    } else
+      cout << result << '\n';
     report_stats();
   }
 }
