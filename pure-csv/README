@@ -190,9 +190,10 @@ Opening CSV Files
   1. If ``opts`` contains ``LIST``, the output of ``getr``, ``fgetr``, and 
      ``fgetr_lazy`` is a list instead of a vector.
   2. If ``opts`` contains ``HEADER``, the first line of the file is 
-     automatically read and parsed as a list of keys of type string. Records
-     retrieved from ``getr``, ``fgetr``, and ``fgetr_lazy`` may be indexed
-     by the header string or by position.
+     automatically read and parsed as a record where entries are 
+     ``key=>position`` pairs where ``key`` is a string and ``position`` 
+     is an integer denoting the location of a field in the record. 
+     The header record may be accessed by ``getkeys``.
 
 .. _examples_open:
 
@@ -229,16 +230,13 @@ Now consider the following code.
   > using namespace csv;
   > let d = dialect {quote_flag=>MINIMAL};
   > let f = open ("test.csv", "r", d, [LIST,HEADER]);
-  > getkeys f;
-  ["NAME","TEST1","TEST2"]
-  > let k = getr f;
-  > k!"NAME";
+  > let k = getkeys f;
+  > k;
+  ["NAME"=>0,"TEST1"=>1,"TEST2"=>2]
+  > let r = getr f;
+  > r!(k!"NAME");
   "HOPE, BOB"
-  > k!![0,2];
-  ["HOPE, BOB",95]
-  > k!!["NAME","TEST2"];
-  ["HOPE, BOB",95]
-  > k!!{"NAME","TEST2"};
+  > r!!(k!!["NAME","TEST1"]);
   ["HOPE, BOB",95]
   >
 
@@ -248,8 +246,9 @@ File Reading Functions
 .. _getkeys:
 
 ``getkeys csv_file::pointer``
-  returns the list of keys from ``csv_file`` when opened by ``csv::open``.
-  If the file was opened without ``HEADER`` as an option, ``[]`` is returned.
+  returns the record of ``key=>position`` pairs from when opened by 
+  ``csv::open`` using the header option. If the file was opened without
+  ``HEADER`` as an option, ``{}`` is returned.
 
 .. _getr:
 
