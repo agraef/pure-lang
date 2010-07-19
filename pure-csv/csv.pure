@@ -43,8 +43,8 @@ public
   delimiter
   terminator
   quote_flag
-  space_around_quoted_field
-  trim_space
+  space_around_quoted_field_flag
+  trim_space_flag
   default
   open
   close
@@ -236,12 +236,22 @@ close f::pointer = clear_sentry f $$ csv_close f;
 
 /* Get keys through header as an optional way of indexing fields. The
    CSV file must contain a header for this to work. */
-getkeys f::pointer
-  = if null keys then {} else keys when keys = csv_getkeys f end;
+getkeys f::pointer 
+  = if null keys then [] else list $ keys when keys = csv_getkeys f end;
+
+/* CSV field selection */
+infixl 2600 ! ;
+r!k::string = r ::! ((csv_getkeys f) ::! k);
+r!k::int = r ::! k;
+
+infixl 2600 !! ;
+(r@(_:_))!!(ks@(_:_)) | (r::matrix)!!ks::matrix = map ((!) r) ks;
+(r::matrix)!!(ks@(_:_)) = map ((!) r) (matrix ks);
+(r@(_:_))!!(ks::matrix) = map ((!) r) (list ks);
 
 /* Write a record to a CSV file */
 putr f::pointer r::matrix = csv_write f r (#r) if rowvectorp r;
-putr f::pointer r@(_:_) = csv_write f m (#m) when m = vector r; end;
+putr f::pointer r@(_:_) = csv_write f m (#m) when m = matrix r; end;
 
 /* Write a list of records to a CSV file */
 fputr f::pointer xs@(_:_) = loop xs with

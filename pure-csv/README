@@ -38,10 +38,10 @@ Usage
 Data records are represented as vectors or lists of any Pure values. Values
 are converted as necessary and written as a group of strings, integers, or
 doubles separated by a delimiter. Three predefined dialects are provided; 
-``default`` (record terminator="\n"), ``RFC4180``(record terminator="\r\n"),
-and ``Excel``. Procedures are provided to create other CSV dialects. See 
-(http://www.ietf.org/rfc/rfc4180.txt) for more details about the RFC4180
-standard.
+``default`` (record terminator= ``\n`` ), ``RFC4180`` (record terminator=
+``\r\n`` ), and ``Excel``. Procedures are provided to create other
+CSV dialects. See (http://www.ietf.org/rfc/rfc4180.txt) for more details about
+the RFC4180 standard.
 
 Handling Errors
 ~~~~~~~~~~~~~~~
@@ -49,7 +49,7 @@ Handling Errors
 .. _error:
 
 ``error msg``
-  is an error handling term. Operations producing parse errors, memory 
+  is an error handling term. Operations resulting in parse errors, memory 
   errors, or read/write errors produce a special ``csv::error msg`` term,
   where ``msg`` is a string describing the particular error. Your 
   application should either check for these or have ``csv::error`` defined
@@ -95,8 +95,10 @@ Creating Dialects
     * Value - One of {``LF``, ``CRLF``} where ``LF = "\n"`` and 
       ``CRLF = "\r\n"``.
     * Default - ``LF``.
-    * Reading - Carriage returns, "\r", are always ignored except when
-      embedded in quotes are escaped.
+    * Reading - Carriage returns, ``"\r"``, are always ignored except when
+      embedded in quotes or escaped.
+    * Writing - Every writen record is terminated with the the defined 
+      terminator string.
 
   - ``quote_flag`` - Sets the quoting style of strings and/or numbers.
 
@@ -105,16 +107,15 @@ Creating Dialects
     * Reading -
     
       1. ``ALL`` - Every field is read as a string.
-      2. ``STRING`` - Fields within quotes and fields that will not 
-         convert to integers or doubles are read as strings.
-      3. ``MINIMAL`` - Fields are read exactly as ``STRING``. 
+      2. ``STRING``, ``MINIMAL`` - Fields within quotes and fields that cannot
+         be converted to integers or doubles are read as strings.
     
     * Writing - 
     
       1. ``ALL`` - Every field is written within quotes.
       2. ``STRING`` - Only fields of type ``string`` are quoted.
-      3. ``MINIMAL`` - Only fields containing embedded quotes, 
-         terminators, or delimiters are written within quotes.
+      3. ``MINIMAL`` - Only fields containing embedded quotes, terminators, or
+         delimiters are written within quotes.
 
   - ``space_around_quoted_field`` - Determines how white space between quotes
     and delimiters should be treated.
@@ -125,8 +126,13 @@ Creating Dialects
     
       1. ``NO`` - Follows RFC4180 rules.
       2. ``LEFT`` - Allows space before a quoted field.
-      3. ``RIGHT`` - Allows space after a quoted field.
+      3. ``RIGHT`` - Allows space between a quoted field and a delimiter.
       4. ``BOTH`` - Allows space before and after a quoted field.
+    
+    * Writing - fields are never written with space before a quoted field or
+      between a quoted field and a delimiter.
+    * Notes this option does not affect space within quotes or fields written
+      using the ``escape`` string option.
   
   - ``trim_space`` - trim white space before or after field contents.
 
@@ -173,8 +179,8 @@ Opening CSV Files
 
 ``open (name::string, rw_flag::string)``
   opens a CSV file for reading, writing, or appending using the default
-  dialect. Valid "rw_flag" values are ``"r"`` for reading, ``"w"`` for
-  writing, and ``"a"`` for appending. If the file does not exits when
+  dialect. Valid ``rw_flag`` values are ``"r"`` for reading, ``"w"`` for
+  writing, and ``"a"`` for appending. If the file does not exist when
   opened for reading, the ``error msg`` rule is invoked. When a file is
   opened for writing and the file exists, the old file is overwritten. If
   the file does not exist, a new empty file is created. When a file is
@@ -182,17 +188,19 @@ Opening CSV Files
   the end of the file, otherwise a new empty file is created.
 
 ``open (name::string, rw_flag::string, d::pointer)``
-  exactly as above except according to a user defined dialect ``d``.
+  exactly as above except reading/writing is done according to a user defined
+  dialect ``d``.
 
 ``open (name::string, rw_flag::string, d::pointer, opts@(_:_))``
-  exactly as above except allows for list output or header options.
+  exactly as above except allows for list output or header options when 
+  reading.
   
   1. If ``opts`` contains ``LIST``, the output of ``getr``, ``fgetr``, and 
      ``fgetr_lazy`` is a list instead of a vector.
   2. If ``opts`` contains ``HEADER``, the first line of the file is 
      automatically read and parsed as a record where entries are 
      ``key=>position`` pairs where ``key`` is a string and ``position`` 
-     is an integer denoting the location of a field in the record. 
+     is an integer denoting the location of a field within the record. 
      The header record may be accessed by ``getkeys``.
 
 .. _examples_open:
@@ -214,7 +222,7 @@ Examples
   {"hello","123","","3+:4","world"}
   >
 
-Suppose our file "test.csv" looks like the file below.
+Suppose our file "test.csv" is as presented below.
 
 ::
   
@@ -224,8 +232,11 @@ Suppose our file "test.csv" looks like the file below.
   "JONES, SALLY",88,72
   "RED, FEEFEE",45,52
 
-Now consider the following code.
-    
+Notice how the ``LIST`` option affects the return of ``getr`` and how the
+``HEADER`` option may be used to index records.
+
+::
+  
   > using csv;
   > using namespace csv;
   > let d = dialect {quote_flag=>MINIMAL};
@@ -246,9 +257,9 @@ File Reading Functions
 .. _getkeys:
 
 ``getkeys csv_file::pointer``
-  returns the record of ``key=>position`` pairs from when opened by 
-  ``csv::open`` using the header option. If the file was opened without
-  ``HEADER`` as an option, ``{}`` is returned.
+  returns the record of ``key=>position`` pairs when opened by 
+  ``csv::open`` using the header option. If the file was opened without the
+  ``HEADER`` option, ``{}`` is returned.
 
 .. _getr:
 
@@ -309,6 +320,7 @@ The first example shows how to write and read a default CSV file.
   > fgetr f;
   [{"bob","3.9","","-2"},{"fred","-11.8","","0"},{"mary","2.3","$","11"}]
   > close f;
+  >
 
 The second example illustrates how to write and read a CSV file using
 automatic conversions.
@@ -330,6 +342,7 @@ automatic conversions.
   [{"I","",-4,1.2,"2%4","like"},{"playing","the",0,-0.2,"1+:4","drums"}]
   > close f;
   ()
+  >
 
 Records containing quotes, delimiters, and line breaks are also properly
 handled.
@@ -349,20 +362,11 @@ handled.
   [{"this\nis\n",1},{"a \"test\"",2}]
   > close f;
   ()
-
-If we look at the file, we see the files are properly written.
-
-::
-
-  erucker:$ more test.csv
-  "this
-  is
-  ",1
-  "a ""test""",2
+  >
 
 Consider the following hand written CSV file. According to RFC4180, this is
-not a valid CSV file. By using the ``space_around_quoted_field``, the file
-can still be read.
+not a valid CSV file. However, by using the ``space_around_quoted_field``, the
+file can still be read.
 
 ::
   
@@ -380,17 +384,18 @@ can still be read.
   > let f = open ("test.csv", "r", d);
   > getr f;
   {"this","is","not","valid"}
+  >
 
 The ``trim_space`` flag should be used with caution. A field with space in
-font of a number should be interpreted as a string. For instance, consider
-the following file.
+font of a number should be interpreted as a string, but consider the following
+file.
 
 ::
   
   erucker:$ more test.csv
   "  this   ", 45 ,23,  hello
 
-Now consider what happens for the two dialects below.
+Now observe the differences for the two dialects below.
 
 ::
   
@@ -404,8 +409,9 @@ Now consider what happens for the two dialects below.
   > let f = open ("test.csv", "r", d);
   > getr f;
   {"this",45,23,"hello"}
+  >
 
-The ``trim_space`` also affects writing.
+The ``trim_space`` flag also affects writing.
 
 ::
   
@@ -423,8 +429,8 @@ The ``trim_space`` also affects writing.
   "this","45"
 
 For the last example a tab delimiter is used, automatic conversions is on,
-and records are represented as lists. Note that files are automatically 
-closed when the script is finished.
+and records are represented as lists. Files are automatically closed when 
+the script is finished.
 
 ::
 
