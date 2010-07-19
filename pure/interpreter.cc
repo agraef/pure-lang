@@ -3355,23 +3355,35 @@ void interpreter::funsubst(expr x, int32_t f, int32_t g, bool b)
       funsubst(it->qual, f, g);
     }
     break;
-  case EXPR::WITH:
-    funsubst(x.xval(), f, g);
+  case EXPR::WITH: {
+    map<int32_t,bool> locals;
     for (env::const_iterator it = x.fenv()->begin();
 	 it != x.fenv()->end(); ++it) {
       int32_t h = it->first;
+      if (locals.find(h) == locals.end()) {
+	locals[h] = symtab.sym(h).unresolved;
+	symtab.sym(h).unresolved = false;
+      }
+    }
+    for (env::const_iterator it = x.fenv()->begin();
+	 it != x.fenv()->end(); ++it) {
       const env_info& info = it->second;
       const rulel *r = info.rules;
-      bool unresolved = symtab.sym(h).unresolved;
-      symtab.sym(h).unresolved = false;
       for (rulel::const_iterator jt = r->begin(); jt != r->end(); ++jt) {
 	funsubst(jt->lhs, f, g, true);
 	funsubst(jt->rhs, f, g);
 	funsubst(jt->qual, f, g);
       }
+    }
+    funsubst(x.xval(), f, g);
+    for (map<int32_t,bool>::const_iterator it = locals.begin(),
+	   end = locals.end(); it != end; ++it) {
+      int32_t h = it->first;
+      bool unresolved = it->second;
       symtab.sym(h).unresolved = unresolved;
     }
     break;
+  }
   default:
     assert(x.tag() > 0);
     if (!b && x.tag() == f && g != f) {
@@ -3389,8 +3401,13 @@ void interpreter::funsubst(expr x, int32_t f, int32_t g, bool b)
 	  x.set_tag(sym2->f);
 	  if (compat)
 	    warning(*loc, "warning: implicit declaration of '"+sym2->s+"'");
-	} else if (!b)
+	} else if (!b) {
 	  sym.unresolved = false;
+	  /* Experimental: Warn about unknown symbol references in the default
+	     namespace, too. */
+	  if (compat && x.tag() != f)
+	    warning(*loc, "warning: implicit declaration of '"+sym.s+"'");
+	}
       }
     }
   }
@@ -3426,13 +3443,13 @@ static string symtype(const symbol& sym)
 void interpreter::checkfuns(rule *r)
 {
   int32_t f = 0, g = 0;
+  expr x = r->lhs, y, z;
+  while (x.is_app(y, z)) x = y;
+  if (x.tag() <= 0 || x.ttag() != 0) return;
+  const symbol& sym = symtab.sym(x.tag());
+  string id, qual = qualifier(sym, id);
+  f = sym.f; g = f;
   if (!symtab.current_namespace->empty()) {
-    expr x = r->lhs, y, z;
-    while (x.is_app(y, z)) x = y;
-    if (x.tag() <= 0 || x.ttag() != 0) return;
-    const symbol& sym = symtab.sym(x.tag());
-    string id, qual = qualifier(sym, id);
-    f = sym.f; g = f;
     /* EXPR::QUAL in the flags signifies a qualified symbol in another
        namespace; this is OK if the symbol is already declared (otherwise the
        lexer will complain about it). If this flag isn't set, the symbol isn't

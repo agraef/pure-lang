@@ -652,8 +652,10 @@ extern void* str(expr*) = pure_str;
 namespace;
 
 extern expr *reduce(expr *locals, expr *x) = reduce_with;
+public __locals__; // builtin
 def reduce = reduce_with __locals__;
 
+public cstring; // this comes from strings.pure
 str x = cstring (pure_str x);
 
 /* Expression serialization. */
@@ -697,16 +699,17 @@ matrixp x	= case x of _::matrix  = 1; _ = 0 end;
    general *much* faster than the naive solution 'stringp x && #x==1', because
    it's guaranteed to run in constant time. */
 
+public ord; // this comes from strings.pure
 charp x		= case x of _::string  = intp (ord x); _ = 0 end;
 
 /* Additional number predicates. */
 
-numberp x	= realp x || complexp x;
-complexp x	= case x of x+:y | x<:y = realp x && realp y; _ = 0 end;
+integerp x	= case x of _::int | _::bigint = 1; _ = 0 end;
+rationalp x	= case x of x%y = integerp x && integerp y; _ = 0 end;
 realp x		= case x of _::int | _::bigint | _::double = 1;
 		            x%y = realp x && realp y; _ = 0 end;
-rationalp x	= case x of x%y = integerp x && integerp y; _ = 0 end;
-integerp x	= case x of _::int | _::bigint = 1; _ = 0 end;
+complexp x	= case x of x+:y | x<:y = realp x && realp y; _ = 0 end;
+numberp x	= realp x || complexp x;
 
 /* Check whether a number is exact (i.e., doesn't contain any double
    components. */
@@ -1491,6 +1494,8 @@ extern expr* pure_new(expr*), expr* pure_expr_pointer();
 extern void pure_free(expr*);
 extern expr* pointer_get_expr(void*), void pointer_put_expr(void*, expr*);
 namespace;
+
+public ref unref refp;
 
 ref x = pointer_put_expr r (pure_new x) $$
 	sentry unref r when r::pointer = pure_expr_pointer end;

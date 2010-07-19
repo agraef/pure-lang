@@ -794,9 +794,14 @@ extern int pure_fprintf_string(FILE *fp, char *format, char *x);
 extern int pure_fprintf_pointer(FILE *fp, char *format, void *x);
 namespace;
 
+public printf_error printf_value_error printf_format_error;
+public this_cant_happen;
+
 namespace system;
-private printf_split_format printf_format_spec printf_format_str;
+public printf_split_format printf_format_spec printf_format_str;
 namespace;
+
+public fprintf;
 
 printf format::string args = fprintf stdout format args;
 
@@ -828,6 +833,8 @@ end with
     throw (printf_value_error s ());
   do_fprintf fp (count,_) _ = throw (this_cant_happen count);
 end;
+
+public regex regexg reg regerr; // see below
 
 printf_split_format format = regexg analyze
   "(%[-#0 ]?[0-9]*([.][0-9]*)?[cdiouxXeEfgGsp])|(%)|([^%]|%%)+"
@@ -924,9 +931,13 @@ extern int pure_fscanf_string(FILE *fp, char *format, void *x);
 extern int pure_fscanf_pointer(FILE *fp, char *format, void **x);
 namespace;
 
+public scanf_error scanf_format_error;
+
 namespace system;
-private scanf_split_format scanf_format_spec scanf_format_str;
+public scanf_split_format scanf_format_spec scanf_format_str;
 namespace;
+
+public fscanf;
 
 scanf format::string = fscanf stdin format;
 

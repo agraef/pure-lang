@@ -20,6 +20,11 @@
 
 using namespace __C;
 
+// Forward declarations for stuff needed from prelude.pure, to make pure -w
+// happy.
+
+public all any cat cst do list map reverse uncurry uncurry3;
+
 /* ..
 
    Matrix Functions
@@ -227,12 +232,14 @@ smatrixp x	= case x of _::matrix = matrix_type x==0; _ = 0 end;
    respectively. The following predicates allow you to check for these special
    kinds of matrices. */
 
+public dim;
 vectorp x	= matrixp x && (n==1 || m==1 when n::int,m::int = dim x end);
 rowvectorp x	= matrixp x && dim x!0==1;
 colvectorp x	= matrixp x && dim x!1==1;
 
 /* Matrix comparisons. */
 
+public imatrix dmatrix cmatrix;
 x::matrix == y::matrix	= x === y
 			    if nmatrixp x && matrix_type x == matrix_type y;
 // mixed numeric cases
@@ -315,6 +322,9 @@ x!!(ns,ms::matrix)	= x!!(ns,list ms);
 x!!(ns::int,ms)		= x!!([ns],ms) if ~tuplep ms;
 x!!(ns,ms::int)		= x!!(ns,[ms]);
 
+public col row colcat rowcat colmap rowmap colcatmap rowcatmap rowvector;
+public submat packed;
+
 x::matrix!!(ns,ms)	= case ns,ms of
 			    ns@(n:_),ms@(m:_) = submat x (n,m) (#ns,#ms)
 			      if cont ns && cont ms;
@@ -387,6 +397,8 @@ matrix x::matrix	= x;
 
 /* Create zero matrices of different types. */
 
+public int_matrix double_matrix complex_matrix; // see below
+
 dmatrix (n::int,m::int)	= double_matrix (n,m) (pointer 0);
 cmatrix (n::int,m::int)	= complex_matrix (n,m) (pointer 0);
 imatrix (n::int,m::int)	= int_matrix (n,m) (pointer 0);
@@ -408,6 +420,8 @@ cmatrix x		= y if matrixp y when y = matrix_complex x end;
 smatrix x		= y if matrixp y when y = matrix_symbolic x end;
 
 /* Conversions to row and column vectors. */
+
+public redim;
 
 rowvector x::matrix	= redim (1,#x) x;
 colvector x::matrix	= redim (#x,1) x;
