@@ -153,8 +153,7 @@ below:
     Print version information and exit.
 
 ``-w``
-    Enable compiler warnings about various dubious constructs and backward
-    compatibility issues.
+    Enable compiler warnings.
 
 ``-x``
     Execute script with given command line arguments.
@@ -395,6 +394,11 @@ file explicitly on the command line. Verbose output is also suppressed for
 modules imported through a ``using`` clause. As a remedy, you can use the
 interactive ``show`` command (see the `Interactive Usage`_ section) to list
 definitions along with additional debugging information.
+
+The -w option enables some additional warnings which are useful to check your
+scripts for possible errors. Right now it will report implicit declarations of
+function symbols which might indicate missing or mistyped symbols that need to
+be fixed, see `Symbol Lookup and Creation`_ for details.
 
 Code Generation Options
 -----------------------
@@ -2828,6 +2832,18 @@ the former case, ``bar`` refers to the ``bar`` symbol defined by the rule,
 while in the latter case the '\ ``,``\ ' operator is actually declared in the
 prelude and thus imported from the global namespace.
 
+As an additional safety measure against missing or mistyped symbols, the
+interpreter provides the option -w (see Options_) to check your scripts for
+non-defining uses of undeclared unqualified function symbols. For instance::
+
+  $ pure -w
+  > puts "bla"; // missing import of system module
+  <stdin>, line 1: warning: implicit declaration of 'puts'
+  puts "bla"
+
+For legitimate uses (such as forward uses of a symbol which is defined later),
+you can make these warnings go away by declaring the symbol before using it.
+
 Note that special operator (and nonfix) symbols *always* require an explicit
 declaration. This works as already discussed in the `Symbol Declarations`_
 section, except that you first switch to the appropriate namespace before
@@ -4718,7 +4734,9 @@ Pure 0.43 changed the rules for looking up symbols in user-defined namespaces.
 Unqualified symbols are now created in the current (rather than the global)
 namespace by default, see `Symbol Lookup and Creation`_ for details. The -w
 option can be used to get warnings about unqualified symbols which are
-resolved to a different namespace than previously.
+resolved to a different namespace than previously. It also provides a means to
+check your scripts for implicit declarations which might indicate missing or
+mistyped function symbols.
 
 Error Recovery
 --------------

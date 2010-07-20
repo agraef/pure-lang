@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>The Pure Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2010-06-29" />
+<meta name="date" content="2010-07-20" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-06-29</td></tr>
+<td>2010-07-20</td></tr>
 </tbody>
 </table>
 <!-- Note: This document is formatted using docutils. The Makefile has rules -->
@@ -500,8 +500,7 @@ this flag will be ignored.</dd>
 <dt><tt class="docutils literal"><span class="pre">--version</span></tt></dt>
 <dd>Print version information and exit.</dd>
 <dt><tt class="docutils literal"><span class="pre">-w</span></tt></dt>
-<dd>Enable compiler warnings about various dubious constructs and backward
-compatibility issues.</dd>
+<dd>Enable compiler warnings.</dd>
 <dt><tt class="docutils literal"><span class="pre">-x</span></tt></dt>
 <dd>Execute script with given command line arguments.</dd>
 <dt><tt class="docutils literal"><span class="pre">--</span></tt></dt>
@@ -711,6 +710,10 @@ file explicitly on the command line. Verbose output is also suppressed for
 modules imported through a <tt class="docutils literal"><span class="pre">using</span></tt> clause. As a remedy, you can use the
 interactive <tt class="docutils literal"><span class="pre">show</span></tt> command (see the <a class="reference internal" href="#interactive-usage">Interactive Usage</a> section) to list
 definitions along with additional debugging information.</p>
+<p>The -w option enables some additional warnings which are useful to check your
+scripts for possible errors. Right now it will report implicit declarations of
+function symbols which might indicate missing or mistyped symbols that need to
+be fixed, see <a class="reference internal" href="#symbol-lookup-and-creation">Symbol Lookup and Creation</a> for details.</p>
 </div>
 <div class="section" id="code-generation-options">
 <h2><a class="toc-backref" href="#id11">2.7&nbsp;&nbsp;&nbsp;Code Generation Options</a></h2>
@@ -3007,6 +3010,17 @@ the left-hand side of the <tt class="docutils literal"><span class="pre">let</sp
 the former case, <tt class="docutils literal"><span class="pre">bar</span></tt> refers to the <tt class="docutils literal"><span class="pre">bar</span></tt> symbol defined by the rule,
 while in the latter case the '<tt class="docutils literal"><span class="pre">,</span></tt>' operator is actually declared in the
 prelude and thus imported from the global namespace.</p>
+<p>As an additional safety measure against missing or mistyped symbols, the
+interpreter provides the option -w (see <a class="reference internal" href="#options">Options</a>) to check your scripts for
+non-defining uses of undeclared unqualified function symbols. For instance:</p>
+<pre class="literal-block">
+$ pure -w
+&gt; puts &quot;bla&quot;; // missing import of system module
+&lt;stdin&gt;, line 1: warning: implicit declaration of 'puts'
+puts &quot;bla&quot;
+</pre>
+<p>For legitimate uses (such as forward uses of a symbol which is defined later),
+you can make these warnings go away by declaring the symbol before using it.</p>
 <p>Note that special operator (and nonfix) symbols <em>always</em> require an explicit
 declaration. This works as already discussed in the <a class="reference internal" href="#symbol-declarations">Symbol Declarations</a>
 section, except that you first switch to the appropriate namespace before
@@ -4791,7 +4805,9 @@ it won't have any effect unless you use it to override a previous -u option.</p>
 Unqualified symbols are now created in the current (rather than the global)
 namespace by default, see <a class="reference internal" href="#symbol-lookup-and-creation">Symbol Lookup and Creation</a> for details. The -w
 option can be used to get warnings about unqualified symbols which are
-resolved to a different namespace than previously.</p>
+resolved to a different namespace than previously. It also provides a means to
+check your scripts for implicit declarations which might indicate missing or
+mistyped function symbols.</p>
 </div>
 <div class="section" id="error-recovery">
 <h2><a class="toc-backref" href="#id67">13.3&nbsp;&nbsp;&nbsp;Error Recovery</a></h2>
