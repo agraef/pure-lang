@@ -338,8 +338,9 @@ symbol* symtable::sym(const char *s, prec_t prec, fix_t fix, bool priv)
 
 symbol& symtable::checksym(const char *s, bool priv)
 {
-  bool exists = strstr(s, "::") || lookup(s);
-  symbol *_sym = sym(s, priv);
+  symbol *_sym;
+  bool exists = strstr(s, "::") || ((_sym = lookup(s)) && !_sym->unresolved);
+  _sym = sym(s, priv);
   if (_sym) {
     if (!exists)
       // symbol was generated on the fly, we need to keep track of these

@@ -2578,6 +2578,8 @@ void interpreter::declare(bool priv, prec_t prec, fix_t fix, list<string> *ids)
     string id = make_qualid(*it), absid = make_absid(*it);
     symbol* sym = symtab.lookup(absid);
     if (sym) {
+      // Make sure that the symbol is marked as resolved.
+      sym->unresolved = false;
       // crosscheck declarations
       if (sym->priv != priv) {
 	throw err("symbol '"+id+"' already declared "+
@@ -6883,6 +6885,8 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   }
   assert(_sym);
   symbol& sym = *_sym;
+  // Make sure that the symbol is marked as resolved.
+  sym.unresolved = false;
   if (globenv.find(sym.f) != globenv.end() &&
       externals.find(sym.f) == externals.end())
     // There already is a Pure function or global variable for this symbol.
