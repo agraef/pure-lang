@@ -5349,6 +5349,37 @@ need something like Haskell's irrefutable matches, you'll have to code them
 explicitly using futures. See the definition of the <tt class="docutils literal"><span class="pre">unzip</span></tt> function in
 the prelude for an example showing how to do this.</li>
 </ul>
+<p>Here are some common pitfalls with lazy data structures in Pure that you
+should be aware of:</p>
+<ul>
+<li><p class="first">Laziness and side effects don't go well together, as most of the time you
+can't be sure when a given thunk will be executed. So as a general guideline
+you should avoid side effects in thunked data structures. If you can't avoid
+them, then at least make sure that all accesses to the affected resources
+are done through a single instance of the thunked data structure. E.g., the
+following definition lets you create a stream of random numbers:</p>
+<pre class="literal-block">
+&gt; using math;
+&gt; let xs = [random | _ = 1..inf];
+</pre>
+<p>This works as expected if only a single stream created with <tt class="docutils literal"><span class="pre">random</span></tt>
+exists in your program. However, as the <tt class="docutils literal"><span class="pre">random</span></tt> function in the <tt class="docutils literal"><span class="pre">math</span></tt>
+module modifies an internal data structure to produce a sequence of
+pseudorandom numbers, using two or more such streams in your program will in
+fact modify the same underlying data structure and thus produce two disjoint
+subsequences of the same underlying pseudorandom sequence which might not
+be distributed uniformly any more.</p>
+</li>
+<li><p class="first">You should avoid keeping references to potentially big (or even infinite)
+thunked data structures when traversing them (unless you specifically need
+to memoize the entire data structure). In particular, if you assign such a
+data structure to a local variable, the traversal of the data structure
+should then be invoked as a tail call. If you fail to do this, it forces the
+entire memoized part of the data structure to stay in main memory while it
+is being traversed, leading to rather nasty memory leaks. Please see the
+<tt class="docutils literal"><span class="pre">all_primes</span></tt> function in <a class="reference internal" href="#lazy-evaluation-and-streams">Lazy Evaluation and Streams</a> for an example.</p>
+</li>
+</ul>
 </div>
 <div class="section" id="reflection">
 <h2><a class="toc-backref" href="#id79">13.15&nbsp;&nbsp;&nbsp;Reflection</a></h2>

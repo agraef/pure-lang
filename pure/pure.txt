@@ -5310,6 +5310,36 @@ Haskell. However, there are some notable differences:
   explicitly using futures. See the definition of the ``unzip`` function in
   the prelude for an example showing how to do this.
 
+Here are some common pitfalls with lazy data structures in Pure that you
+should be aware of:
+
+* Laziness and side effects don't go well together, as most of the time you
+  can't be sure when a given thunk will be executed. So as a general guideline
+  you should avoid side effects in thunked data structures. If you can't avoid
+  them, then at least make sure that all accesses to the affected resources
+  are done through a single instance of the thunked data structure. E.g., the
+  following definition lets you create a stream of random numbers::
+
+    > using math;
+    > let xs = [random | _ = 1..inf];
+
+  This works as expected if only a single stream created with ``random``
+  exists in your program. However, as the ``random`` function in the ``math``
+  module modifies an internal data structure to produce a sequence of
+  pseudorandom numbers, using two or more such streams in your program will in
+  fact modify the same underlying data structure and thus produce two disjoint
+  subsequences of the same underlying pseudorandom sequence which might not
+  be distributed uniformly any more.
+
+* You should avoid keeping references to potentially big (or even infinite)
+  thunked data structures when traversing them (unless you specifically need
+  to memoize the entire data structure). In particular, if you assign such a
+  data structure to a local variable, the traversal of the data structure
+  should then be invoked as a tail call. If you fail to do this, it forces the
+  entire memoized part of the data structure to stay in main memory while it
+  is being traversed, leading to rather nasty memory leaks. Please see the
+  ``all_primes`` function in `Lazy Evaluation and Streams`_ for an example.
+
 Reflection
 ----------
 
