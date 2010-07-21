@@ -2159,6 +2159,7 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
   // We *don't* want to keep the generated code here. This means that
   // batch-compiled programs shouldn't rely on any side-effects of the code
   // executed to compute a constant value.
+  nwrapped = 0;
   pure_expr *res = doeval(rhs, e, false);
   if (!res) return 0;
   // convert the result back to a compile time expression
@@ -2177,25 +2178,28 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
       int32_t f = it->first;
       expr v = subterm(u, *it->second.p);
       globenv[f] = env_info(v, temp);
-      if (!is_scalar(v)) {
+      if (!is_scalar(v) || (compiling && nwrapped)) {
 	/* As of Pure 0.38, we only inline scalar constants. Aggregate values
-	   are cached in a read-only variable for better efficiency. */
+	   are cached in a read-only variable for better efficiency. As of
+	   Pure 0.44, we actually do this for all variables bound in the
+	   definition, if we're batch compiling and the result contains
+	   wrapped runtime data. (This case is then handled further below.) */
 	symbol& sym = symtab.sym(f);
 	pure_expr *x = pure_subterm(res, *it->second.p);
 	/* Create a new entry in the globalvars table. */
 	map<int32_t,GlobalVar>::iterator it = globalvars.find(f);
 	GlobalVariable *oldv = 0;
 	if (it != globalvars.end()) {
+	  /* We already have a global for this symbol. Make sure that the
+	     binding persists after removing the globalvars entry, since
+	     previous definitions may still depend on it. */
 	  oldv = it->second.v;
+	  pure_expr **x = new pure_expr*;
+	  *x = it->second.x;
 	  globalvars.erase(it);
+	  JIT->addGlobalMapping(oldv, x);
 	}
-	/* Make sure to allocate the storage location of the variable
-	   dynamically, rather than putting it into the globalvars table.
-	   This leaks memory, but that is intended here because a constant
-	   value, once defined, is never supposed to change, even when the
-	   symbol later gets overwritten. */
-	globalvars.insert(pair<int32_t,GlobalVar>
-			  (f, GlobalVar(new pure_expr*)));
+	globalvars.insert(pair<int32_t,GlobalVar>(f, GlobalVar()));
 	it = globalvars.find(f);
 	assert(it != globalvars.end());
 	GlobalVar& gv = it->second;
@@ -2207,12 +2211,14 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
 	/* Also record the value in the globenv entry, so that the frontend
 	   knows that the value of this constant has been cached. */
 	globenv[f].cval_var = gv.x;
-	if (compiling) {
-	  /* To make this work in batch-compiled scripts, we also need to
-	     record the shadowed variable (which might still be referred to in
-	     earlier definitions) and generate some initialization code for
-	     the constant value. */
-	  globenv[f].cval_v = oldv;
+	/* In batch compilation we need to record the shadowed variable (which
+	   might still be referred to in earlier definitions). */
+	if (compiling) globenv[f].cval_v = oldv;
+	if (compiling && !nwrapped) {
+	  /* In batch-compiled scripts we also need to generate some
+	     initialization code for the constant value. (But note that the
+	     case of wrapped runtime data, which needs a full initialization
+	     at runtime, is handled below.) */
 	  Env *save_fptr = fptr;
 	  fptr = new Env(0, 0, 0, rhs, false); fptr->refc = 1;
 	  Env &e = *fptr;
@@ -2233,6 +2239,67 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
 	  fptr = save_fptr;
 	}
       }
+    }
+    if (compiling && nwrapped) {
+      /* To handle consts with wrapped runtime objects in a batch compilation,
+	 we need to generate the appropriate runtime initialization code. This
+	 is done here in the same fashion as for an ordinary variable
+	 (cf. dodefn). */
+      Env *save_fptr = fptr;
+      fptr = new Env(0, 0, 0, rhs, false); fptr->refc = 1;
+      Env &f = *fptr;
+      push("const_defn", &f);
+      fun_prolog("$$init");
+      // compute the matchee
+      Value *arg = codegen(rhs);
+      // emit the matching code
+      BasicBlock *matchedbb = basic_block("matched");
+      BasicBlock *failedbb = basic_block("failed");
+      matcher m(rule(lhs, rhs));
+      state *start = m.start;
+      simple_match(arg, start, matchedbb, failedbb);
+      // matched => emit code for binding the variables
+      f.f->getBasicBlockList().push_back(matchedbb);
+      f.builder.SetInsertPoint(matchedbb);
+      if (!eqns.empty()) {
+	// check non-linearities
+	for (veqnl::const_iterator it = eqns.begin(), end = eqns.end();
+	     it != end; ++it) {
+	  BasicBlock *checkedbb = basic_block("checked");
+	  vector<Value*> args(2);
+	  args[0] = vref(arg, it->p);
+	  args[1] = vref(arg, it->q);
+	  Value *check = f.builder.CreateCall(module->getFunction("same"),
+					      args.begin(), args.end());
+	  f.builder.CreateCondBr(check, checkedbb, failedbb);
+	  f.f->getBasicBlockList().push_back(checkedbb);
+	  f.builder.SetInsertPoint(checkedbb);
+	}
+      }
+      for (env::const_iterator it = vars.begin(); it != vars.end(); ++it) {
+	int32_t tag = it->first;
+	const env_info& info = it->second;
+	assert(info.t == env_info::lvar && info.p);
+	// walk the arg value to find the subterm at info.p
+	path& p = *info.p;
+	Value *x = vref(arg, p);
+	/* Store the value in a global variable. In difference to dodefn,
+	   these variables will always be new and uninitialized, since we just
+	   created them in the compile time binding code above. */
+	GlobalVar& v = globalvars[tag];
+	assert(v.v);
+	call("pure_new", x);
+	f.builder.CreateStore(x, v.v);
+      }
+      // return the matchee to indicate success
+      f.builder.CreateRet(arg);
+      // failed => throw an exception
+      f.f->getBasicBlockList().push_back(failedbb);
+      f.builder.SetInsertPoint(failedbb);
+      unwind();
+      fun_finish();
+      pop(&f);
+      fptr = save_fptr;
     }
   } else {
   nomatch:
@@ -5576,19 +5643,6 @@ int interpreter::compiler(string out, list<string> libnames)
     std::cerr << "Error opening " << target << '\n';
     exit(1);
   }
-  /* Verify the global variables. This includes the special $$sstk$$ (shadow
-     stack) and $$fptr$$ (environment pointer) globals, as well as all the
-     expression pointers for the global symbols of the Pure program. Here we
-     check for any unresolvable constant values (wrapped pointers or local
-     closures). */
-  if (nwrapped > 0) {
-    unlink(target.c_str());
-    std::cerr << 
-"** Your program contains one or more constants referring to run time\n\
-data such as pointers and closures. Changing the offending constants\n\
-to variables should fix this. **\n";
-    exit(1);
-  }
   // Set the module data layout and triple for the target. FIXME: Maybe we
   // should allow overriding these, but the user can also use the LLVM
   // toolchain to cross-compile for different architectures.
@@ -7518,11 +7572,8 @@ expr interpreter::wrap_expr(pure_expr *x, bool check)
   JIT->addGlobalMapping(v->v, &v->x);
   if (check && (x->tag == EXPR::PTR ||
 		(x->tag >= 0 && x->data.clos && x->data.clos->local))) {
-    /* These values can't be handled in a batch compilation. */
+    /* These values need special treatment in a batch compilation. */
     nwrapped++;
-    ostringstream msg;
-    msg << "non-const value in const definition: " << v->x;
-    throw err(msg.str());
   }
   return expr(EXPR::WRAP, v);
 }
