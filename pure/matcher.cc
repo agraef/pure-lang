@@ -102,8 +102,17 @@ trans::~trans()
 
 /* TA matching algorithm. */
 
+// This is needed to get access to the GlobalVar struct.
+#include "interpreter.hh"
+
 state *matcher::match(state *st, expr x)
 {
+  if (x.tag() == EXPR::WRAP) {
+    // Wrapped runtime expression, defer to the corresponding matcher.
+    assert(x.pval());
+    GlobalVar *v = (GlobalVar*)x.pval();
+    return match(st, v->x);
+  }
   // look for a matching transition
   transl::const_iterator t;
   for (t = st->tr.begin(); t != st->tr.end(); t++)
