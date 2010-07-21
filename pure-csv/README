@@ -201,7 +201,7 @@ Opening CSV Files
      automatically read and parsed as a record where entries are 
      ``key=>position`` pairs where ``key`` is a string and ``position`` 
      is an integer denoting the location of a field within the record. 
-     The header record may be accessed by ``getkeys``.
+     The header record may be accessed by ``header``.
 
 .. _examples_open:
 
@@ -241,10 +241,12 @@ Notice how the ``LIST`` option affects the return of ``getr`` and how the
   > using namespace csv;
   > let d = dialect {quote_flag=>MINIMAL};
   > let f = open ("test.csv", "r", d, [LIST,HEADER]);
-  > let k = getkeys f;
+  > let r = getr f;
+  > r!0;
+  "HOPE, BOB"
+  > let k = header f;
   > k;
   ["NAME"=>0,"TEST1"=>1,"TEST2"=>2]
-  > let r = getr f;
   > r!(k!"NAME");
   "HOPE, BOB"
   > r!!(k!!["NAME","TEST1"]);
@@ -254,9 +256,9 @@ Notice how the ``LIST`` option affects the return of ``getr`` and how the
 File Reading Functions
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. _getkeys:
+.. _header:
 
-``getkeys csv_file::pointer``
+``header csv_file::pointer``
   returns the record of ``key=>position`` pairs when opened by 
   ``csv::open`` using the header option. If the file was opened without the
   ``HEADER`` option, ``{}`` is returned.
