@@ -38,6 +38,8 @@ public
   LF
   LIST
   HEADER
+  RFC4180
+  EXCEL
   error
   dialect
   quote
@@ -135,7 +137,7 @@ private
   allow_space_opts
   trim_space_opts;
 
-const terminator_opts = {LF=>1, CRLF=>2};
+const terminator_opts = {LF=>"\n", CRLF=>"\r\n"};
 const quote_flag_opts = {ALL=>0, STRING=>1, MINIMAL=>2};
 const allow_space_opts = {NO=>0, LEFT=>32, RIGHT=>16, BOTH=>48};
 const trim_space_opts = {NO=>0, LEFT=>8, RIGHT=>4, BOTH=>12};
@@ -190,12 +192,12 @@ dialect d::matrix
     end;
 
 /* Predefined dialects */
-let default = dialect {};
-let RFC4180 = dialect {terminator=>CRLF};
-let EXCEL = dialect {quote_flag=>MINIMAL, 
-                     terminator=>CRLF,
-                     space_around_quoted_field=>BOTH,
-                     trim_space=>BOTH};
+const default = dialect {};
+const RFC4180 = dialect {terminator=>CRLF};
+const EXCEL = dialect {quote_flag=>MINIMAL, 
+                       terminator=>CRLF,
+                       space_around_quoted_field=>BOTH,
+                       trim_space=>BOTH};
 
 private file_opts CSV;
 
