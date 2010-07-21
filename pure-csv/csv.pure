@@ -10,6 +10,7 @@
    Updated: July 15, 2010 changed the flags to allow space between before a
             quote or after a quote.
    Updated: July 16, 2010 added optional optional key selection of fields
+   Updated: July 21, 2010 fixed write_escaped and write_quoted warnings
 */
 
 namespace csv;
@@ -23,7 +24,7 @@ private extern void csv_close(csv_t *t);
 private extern void csv_free(csv_t *t);
 private extern expr *csv_write(csv_t *, expr **, int);
 private extern expr *csv_read(csv_t *csv);
-private extern expr *csv_getkeys(csv_t *csv);
+private extern expr *csv_getheader(csv_t *csv);
 
 public
   MINIMAL
@@ -235,10 +236,10 @@ open fname::string = open (fname, "r", default, []);
    scope. */
 close f::pointer = clear_sentry f $$ csv_close f;
 
-/* Get keys through header as an optional way of indexing fields. The
+/* Header record as an optional way of indexing fields. The
    CSV file must contain a header for this to work. */
-getkeys f::pointer 
-  = if null keys then {} else keys when keys = csv_getkeys f end;
+header f::pointer 
+  = if null h then {} else h when h = csv_getheader f end;
 
 /* Write a record to a CSV file */
 putr f::pointer r::matrix = csv_write f r (#r) if rowvectorp r;

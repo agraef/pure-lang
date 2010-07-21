@@ -347,7 +347,7 @@ csv_t *csv_open(char *fname, char *rw, dialect_t *d, unsigned int opts)
   return NULL;
 }
 
-pure_expr *csv_getkeys(csv_t *csv)
+pure_expr *csv_getheader(csv_t *csv)
 {
   if (csv->header)
     return csv->header;
@@ -378,7 +378,7 @@ static int write_quoted(csv_t *csv, pure_expr **xs, size_t len)
   buffer_t *b = csv->buffer;
   buffer_clear(b);
   for (i = 0; i < len && b; ++i) {
-    if (pure_is_string(xs[i], &ts)) {
+    if (pure_is_cstring_dup(xs[i], &ts)) {
       ts = trim_space(ts, d->flags);
       buffer_add(b, d->quote, d->quote_n);
       char *p, *tp; // p == current pointer, tp = starting point for copy
@@ -406,6 +406,7 @@ static int write_quoted(csv_t *csv, pure_expr **xs, size_t len)
 	buffer_del(b, b->len-(p-ts)-1, d->quote_n);
       else
 	buffer_add(b, d->quote, d->quote_n);
+      free(ts);
     } else {
       ts = str(xs[i]);
       if ((d->flags & QUOTE_MASK) == QUOTE_ALL) {
@@ -437,7 +438,7 @@ static int write_escaped(csv_t *csv, pure_expr **xs, size_t len)
   buffer_t *b = csv->buffer;
   buffer_clear(b);
   for (i = 0; i < len && b; ++i) {
-    if (pure_is_string(xs[i], &ts)) {
+    if (pure_is_cstring_dup(xs[i], &ts)) {
       ts = trim_space(ts, d->flags);
       char *p, *tp;
       p = tp = ts; // p == current pointer, tp = starting point for copy
@@ -462,6 +463,7 @@ static int write_escaped(csv_t *csv, pure_expr **xs, size_t len)
 	  ++p;
       }
       buffer_add(b, tp, p-tp);
+      free(ts);
     } else {
       ts = str(xs[i]);
       buffer_add(b, ts, strlen(ts));
