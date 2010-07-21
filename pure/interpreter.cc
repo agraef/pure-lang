@@ -3298,7 +3298,8 @@ static string qualifier(const symbol& sym, string& id)
   return qual;
 }
 
-void interpreter::funsubst(expr x, int32_t f, int32_t g, bool b)
+void interpreter::funsubstw(set<int32_t>& warned,
+			    expr x, int32_t f, int32_t g, bool b)
 {
   if (x.is_null()) return;
   switch (x.tag()) {
@@ -3318,50 +3319,50 @@ void interpreter::funsubst(expr x, int32_t f, int32_t g, bool b)
 	 xs != end; xs++) {
       for (exprl::iterator ys = xs->begin(), end = xs->end();
 	   ys != end; ys++) {
-	funsubst(*ys, f, g);
+	funsubstw(warned, *ys, f, g);
       }
     }
     break;
   // application:
   case EXPR::APP:
-    funsubst(x.xval1(), f, g, b);
-    funsubst(x.xval2(), f, g);
+    funsubstw(warned, x.xval1(), f, g, b);
+    funsubstw(warned, x.xval2(), f, g);
     break;
   // conditionals:
   case EXPR::COND:
-    funsubst(x.xval1(), f, g);
-    funsubst(x.xval2(), f, g);
-    funsubst(x.xval3(), f, g);
+    funsubstw(warned, x.xval1(), f, g);
+    funsubstw(warned, x.xval2(), f, g);
+    funsubstw(warned, x.xval3(), f, g);
     break;
   case EXPR::COND1:
-    funsubst(x.xval1(), f, g);
-    funsubst(x.xval2(), f, g);
+    funsubstw(warned, x.xval1(), f, g);
+    funsubstw(warned, x.xval2(), f, g);
     break;
   // nested closures:
   case EXPR::LAMBDA:
     for (exprl::iterator xs = x.largs()->begin(), end = x.largs()->end();
 	   xs != end; xs++) {
-      funsubst(*xs, f, g);
+      funsubstw(warned, *xs, f, g);
     }
-    funsubst(x.lrule().lhs, f, g);
-    funsubst(x.lrule().rhs, f, g);
+    funsubstw(warned, x.lrule().lhs, f, g);
+    funsubstw(warned, x.lrule().rhs, f, g);
     break;
   case EXPR::CASE:
-    funsubst(x.xval(), f, g);
+    funsubstw(warned, x.xval(), f, g);
     for (rulel::const_iterator it = x.rules()->begin();
 	 it != x.rules()->end(); ++it) {
-      funsubst(it->lhs, f, g);
-      funsubst(it->rhs, f, g);
-      funsubst(it->qual, f, g);
+      funsubstw(warned, it->lhs, f, g);
+      funsubstw(warned, it->rhs, f, g);
+      funsubstw(warned, it->qual, f, g);
     }
     break;
   case EXPR::WHEN:
-    funsubst(x.xval(), f, g);
+    funsubstw(warned, x.xval(), f, g);
     for (rulel::const_iterator it = x.rules()->begin();
 	 it != x.rules()->end(); ++it) {
-      funsubst(it->lhs, f, g);
-      funsubst(it->rhs, f, g);
-      funsubst(it->qual, f, g);
+      funsubstw(warned, it->lhs, f, g);
+      funsubstw(warned, it->rhs, f, g);
+      funsubstw(warned, it->qual, f, g);
     }
     break;
   case EXPR::WITH: {
@@ -3379,12 +3380,12 @@ void interpreter::funsubst(expr x, int32_t f, int32_t g, bool b)
       const env_info& info = it->second;
       const rulel *r = info.rules;
       for (rulel::const_iterator jt = r->begin(); jt != r->end(); ++jt) {
-	funsubst(jt->lhs, f, g, true);
-	funsubst(jt->rhs, f, g);
-	funsubst(jt->qual, f, g);
+	funsubstw(warned, jt->lhs, f, g, true);
+	funsubstw(warned, jt->rhs, f, g);
+	funsubstw(warned, jt->qual, f, g);
       }
     }
-    funsubst(x.xval(), f, g);
+    funsubstw(warned, x.xval(), f, g);
     for (map<int32_t,bool>::const_iterator it = locals.begin(),
 	   end = locals.end(); it != end; ++it) {
       int32_t h = it->first;
@@ -3408,8 +3409,11 @@ void interpreter::funsubst(expr x, int32_t f, int32_t g, bool b)
 	  symbol *sym2 = symtab.sym("::"+*symtab.current_namespace+"::"+sym.s);
 	  assert(sym2);
 	  x.set_tag(sym2->f);
-	  if (compat)
+	  if (compat && warned.find(sym.f) == warned.end()) {
 	    warning(*loc, "warning: implicit declaration of '"+sym2->s+"'");
+	    // prevent cascades of warnings for the same symbol
+	    warned.insert(sym.f);
+	  }
 	} else if (!b) {
 	  sym.unresolved = false;
 	  /* Experimental: Warn about unknown symbol references in the default
