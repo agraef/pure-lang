@@ -2184,7 +2184,11 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
 	pure_expr *x = pure_subterm(res, *it->second.p);
 	/* Create a new entry in the globalvars table. */
 	map<int32_t,GlobalVar>::iterator it = globalvars.find(f);
-	if (it != globalvars.end()) globalvars.erase(it);
+	GlobalVariable *oldv = 0;
+	if (it != globalvars.end()) {
+	  oldv = it->second.v;
+	  globalvars.erase(it);
+	}
 	/* Make sure to allocate the storage location of the variable
 	   dynamically, rather than putting it into the globalvars table.
 	   This leaks memory, but that is intended here because a constant
@@ -2205,7 +2209,10 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
 	globenv[f].cval_var = gv.x;
 	if (compiling) {
 	  /* To make this work in batch-compiled scripts, we also need to
-	     generate some initialization code for the constant value. */
+	     record the shadowed variable (which might still be referred to in
+	     earlier definitions) and generate some initialization code for
+	     the constant value. */
+	  globenv[f].cval_v = oldv;
 	  Env *save_fptr = fptr;
 	  fptr = new Env(0, 0, 0, rhs, false); fptr->refc = 1;
 	  Env &e = *fptr;
@@ -5687,30 +5694,41 @@ to variables should fix this. **\n";
        it != globalvars.end(); ++it) {
     int32_t f = it->first;
     GlobalVar& v = it->second;
-    if (v.v && v.x) {
-      map<int32_t,Env>::iterator jt = globalfuns.find(f);
-      if (jt != globalfuns.end()) {
-	Env& e = jt->second;
-	if (!strip || used.find(e.h) != used.end()) {
-	  vals[f] = ConstantExpr::getPointerCast(e.h, VoidPtrTy);
-	  arity[f] = SInt(e.n);
-	  vars[f] = v.v;
-	}
-      } else {
-	map<int32_t,ExternInfo>::iterator kt = externals.find(f);
-	if (kt != externals.end()) {
-	  ExternInfo& info = kt->second;
-	  if (!strip || used.find(info.f) != used.end()) {
-	    externs[f] = ConstantExpr::getPointerCast(info.f, VoidPtrTy);
-	    sout << info.tag << " " << info.name << " " << type_name(info.type)
-		 << " " << info.argtypes.size();
-	    for (size_t i = 0; i < info.argtypes.size(); i++)
-	      sout << " " << type_name(info.argtypes[i]);
-	    sout << '\n';
+    if (v.v) {
+      if (v.x) {
+	map<int32_t,Env>::iterator jt = globalfuns.find(f);
+	if (jt != globalfuns.end()) {
+	  Env& e = jt->second;
+	  if (!strip || used.find(e.h) != used.end()) {
+	    vals[f] = ConstantExpr::getPointerCast(e.h, VoidPtrTy);
+	    arity[f] = SInt(e.n);
 	    vars[f] = v.v;
 	  }
-	} else
-	  vars[f] = v.v;
+	} else {
+	  map<int32_t,ExternInfo>::iterator kt = externals.find(f);
+	  if (kt != externals.end()) {
+	    ExternInfo& info = kt->second;
+	    if (!strip || used.find(info.f) != used.end()) {
+	      externs[f] = ConstantExpr::getPointerCast(info.f, VoidPtrTy);
+	      sout << info.tag << " " << info.name << " " << type_name(info.type)
+		   << " " << info.argtypes.size();
+	      for (size_t i = 0; i < info.argtypes.size(); i++)
+		sout << " " << type_name(info.argtypes[i]);
+	      sout << '\n';
+	      vars[f] = v.v;
+	    }
+	  } else
+	    vars[f] = v.v;
+	}
+      }
+      env::const_iterator e = globenv.find(f);
+      if (e != globenv.end() && e->second.t == env_info::cvar &&
+	  e->second.cval_v) {
+	/* This is a cached constant aggregate. Earlier definitions might
+	   still contain dangling references to this symbol, however, so we
+	   also need to add the shadowed symbol to the vars table. */
+	GlobalVariable *v = (GlobalVariable*)e->second.cval_v;
+	vars[f] = v;
       }
     }
   }

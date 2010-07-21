@@ -641,8 +641,9 @@ struct env_info {
     struct {
       expr *cval;
       // As of Pure 0.38, we cache non-scalar constants in a global variable.
-      // This holds the corresponding runtime expression pointer.
-      void *cval_var;
+      // This holds the runtime expression pointer and the corresponding
+      // shadowed variable.
+      void *cval_var, *cval_v;
     };
     // free variable definition (fvar):
     void *val; // pointer to memory location holding a runtime expression
@@ -657,7 +658,8 @@ struct env_info {
   env_info(int8_t _ttag, path _p, uint32_t _temp = 0)
     : t(lvar), temp(_temp), ttag(_ttag), p(new path(_p)) { }
   env_info(expr x, uint32_t _temp = 0)
-    : t(cvar), temp(_temp), cval(new expr), cval_var(0) { *cval = x; }
+    : t(cvar), temp(_temp), cval(new expr), cval_var(0), cval_v(0)
+  { *cval = x; }
   env_info(void *v, uint32_t _temp = 0)
     : t(fvar), temp(_temp), val(v) { }
   env_info(uint32_t c, rulel r, uint32_t _temp = 0)
