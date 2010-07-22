@@ -440,6 +440,15 @@ Currently, the following code generation options are recognized:
     option. (Even then, a minimal amount of checking will be done, usually on
     entry to every global function.)
 
+``--const``, ``--noconst``
+    Enable or disable the precomputing of constant values in batch compilation
+    (cf. `Compiling Scripts`_). If enabled (which is the default), the values
+    of constants in ``const`` definitions are precomputed at compile time (if
+    possible) and then stored in the generated executable. This usually yields
+    faster startup times but bigger executables. You can disable this option
+    with ``--noconst`` to get smaller executables at the expense of slower
+    startup times. Please see the `Batch Compilation`_ section for an example.
+
 ``--fold``, ``--nofold``
     Enable or disable constant folding in the compiler frontend. This means
     that constant expressions involving int and double values and the usual
@@ -4333,12 +4342,14 @@ implies the following quirks and limitations:
   Executables`_ below.)
 
 * Code which gets executed to compute constant values at compile time will
-  *not* be executed in the compiled executable, so your program shouldn't rely
-  on side-effects of such computations (this would be bad practice anyway).
-  Also, constant values in a batch-compiled script must be real constants, run
-  time data such as pointers (other than the null pointer) and local functions
-  are not permitted. (If necessary, you can bind such values to variables
-  instead, then they will work fine even in a batch-compiled program.)
+  generally *not* be executed in the compiled executable, so your program
+  shouldn't rely on side-effects of such computations (this would be bad
+  practice anyway). There is an exception to this rule, however, namely if a
+  constant value contains run time data such as pointers and local functions
+  then it *has* to be recomputed at run time, so the batch compiler will
+  generate code for that. The same happens if the --noconst option is used to
+  force computation of constant values at run time, see `Code Size and
+  Unstripped Executables`_.
 
 What all this boils down to is that anything which requires the compile time
 or interactive facilities of the interpreter, is unavailable. These
@@ -4501,6 +4512,34 @@ Options`_). For instance::
   #! --required foo
   foo x = bar (x-1);
   eval "foo 99";
+
+There is another code generation option which may have a substantial effect on
+code size, namely the ``--noconst`` option. Normally, constant values defined
+in a ``const`` definition are precomputed at compile time and then stored in
+the generated executable; this reduces startup times but may increase the code
+size considerably if your program contains big constant values such as lists.
+If you prefer smaller executables then you can use the ``--noconst`` option to
+force the value of the constant to be recomputed at run time (which
+effectively turns the constant into a kind of read-only variable). For
+instance::
+
+  #! --noconst
+  const xs = 1L..100000L;
+  sum = foldl (+) 0;
+
+  using system;
+  puts $ str $ sum xs;
+
+On my 64 bit Linux system this produces a 187115 bytes executable. Without
+``--noconst`` the code becomes almost an order of magnitude larger in this
+case (1788699 bytes). On the other hand, the smaller executable also takes a
+little longer to run since it must first recompute the value of the list
+constant at startup. So you have to consider the tradeoffs in a given
+situation. Usually big executables aren't much of a problem on modern
+operating systems, but if your program contains a lot of big constants then
+this may become an important consideration. However, if a constant value takes
+a long time to compute then you'll be better off with the default behaviour of
+precomputing the value at compile time.
 
 Other Output Code Formats
 -------------------------
