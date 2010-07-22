@@ -2189,7 +2189,8 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
 	   are cached in a read-only variable for better efficiency. As of
 	   Pure 0.44, we actually do this for all variables bound in the
 	   definition, if we're batch compiling and the result contains
-	   wrapped runtime data. (This case is then handled further below.) */
+	   wrapped runtime data, or if the programmer specified the --noconst
+	   option. (This case is then handled further below.) */
 	symbol& sym = symtab.sym(f);
 	pure_expr *x = pure_subterm(res, *it->second.p);
 	/* Create a new entry in the globalvars table. */
@@ -2223,8 +2224,8 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
 	if (compiling && !(nwrapped||!consts)) {
 	  /* In batch-compiled scripts we also need to generate some
 	     initialization code for the constant value. (But note that the
-	     case of wrapped runtime data, which needs a full initialization
-	     at runtime, is handled below.) */
+	     case of wrapped runtime data or --noconst, which needs a full
+	     initialization at runtime, is handled below.) */
 	  Env *save_fptr = fptr;
 	  fptr = new Env(0, 0, 0, rhs, false); fptr->refc = 1;
 	  Env &e = *fptr;
@@ -2247,10 +2248,10 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
       }
     }
     if (compiling && (nwrapped||!consts)) {
-      /* To handle consts with wrapped runtime objects in a batch compilation,
-	 we need to generate the appropriate runtime initialization code. This
-	 is done here in the same fashion as for an ordinary variable
-	 (cf. dodefn). */
+      /* To handle consts with --noconst or wrapped runtime objects in a batch
+	 compilation, we need to generate the appropriate runtime
+	 initialization code. This is done here in the same fashion as for an
+	 ordinary variable (cf. dodefn). */
       Env *save_fptr = fptr;
       fptr = new Env(0, 0, 0, rhs, false); fptr->refc = 1;
       Env &f = *fptr;
