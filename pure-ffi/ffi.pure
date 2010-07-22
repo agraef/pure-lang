@@ -31,6 +31,7 @@ extern expr *ffi_struct_members(expr *x);
 extern expr *ffi_struct_pointers(expr *x);
 extern expr *ffi_struct_member(expr *x, int i);
 extern expr *ffi_struct_pointer(expr *x, int i);
+extern expr *ffi_struct_offsetof(ffi_type *type, int i);
 extern expr *ffi_put_struct_member(expr *x, int i, expr *y);
 
 /* Define the ABIs and the type numbers known to this libffi implementation.
@@ -107,8 +108,10 @@ when type = ffi_new_struct_t (ffi_typevect elements) end;
 
 extern expr *ffi_type_info(ffi_type *type) = type_info;
 
-/* Convenience function to get the size of a type. */
+/* Convenience function to get the size of a struct. The function accepts
+   either a struct type or a struct instance. */
 
+sizeof x::pointer = sizeof (typeof x) if structp x;
 sizeof type::pointer = size when size,_ = type_info type end;
 
 /* Interface functions to create Pure functions from C functions and vice
@@ -175,8 +178,15 @@ get (x::pointer!i::int) = ffi_struct_member x i if structp x;
 put (x::pointer!i::int) y = () if structp x && ffi_put_struct_member x i y;
 pointer (x::pointer!i::int) = ffi_struct_pointer x i if structp x;
 
+/* Get offset of an individual struct member. The function accepts either
+   a struct type or a struct instance. */
+
+offsetof (x::pointer!i::int) = ffi_struct_offsetof (typeof x) i if structp x;
+offsetof (x::pointer!i::int) = ffi_struct_offsetof x i;
+
 /* Fallback rules (index out of bounds). */
 
 ffi_struct_member x::pointer i::int = throw out_of_bounds if structp x;
 ffi_put_struct_member x::pointer i::int y = throw out_of_bounds if structp x;
 ffi_struct_pointer x::pointer i::int = throw out_of_bounds if structp x;
+ffi_struct_offsetof x::pointer i::int = throw out_of_bounds;

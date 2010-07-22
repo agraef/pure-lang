@@ -303,6 +303,24 @@ static void *offset(void *data, unsigned n, ffi_type **types)
   return data+ofs;
 }
 
+/* Function to compute a single offset on the fly -
+   equivalent of the C macro offsetof. */
+
+pure_expr *ffi_struct_offsetof(ffi_type *type, int i)
+{
+  if (i < 0) return 0;
+  pure_expr *x;
+  void *v;
+  void *data = NULL + 2; // make a non-null pointer
+  if (type->type != FFI_TYPE_STRUCT) return 0;
+  v = offset(data, i, type->elements);
+  if (v) {
+    x = pure_int(v - data);
+    return x;
+  } else
+    return 0;
+}
+
 static void *ffi_to_c(void *v, ffi_type *type, pure_expr *x);
 static pure_expr *ffi_from_c(ffi_type *type, void *v);
 static pure_expr *ffi_from_cvect(ffi_cif *cif, void **v);
