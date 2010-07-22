@@ -4445,10 +4445,10 @@ generally <em>not</em> be executed in the compiled executable, so your program
 shouldn't rely on side-effects of such computations (this would be bad
 practice anyway). There is an exception to this rule, however, namely if a
 constant value contains run time data such as pointers and local functions
-then it <em>has</em> to be recomputed at run time, so the batch compiler will
-generate code for that. The same happens if the --noconst option is used to
+which requires an initialization at run time, then the batch compiler will
+generate code for that. (The same happens if the --noconst option is used to
 force computation of constant values at run time, see <a class="reference internal" href="#code-size-and-unstripped-executables">Code Size and
-Unstripped Executables</a>.</li>
+Unstripped Executables</a>.)</li>
 </ul>
 <p>What all this boils down to is that anything which requires the compile time
 or interactive facilities of the interpreter, is unavailable. These
@@ -5142,8 +5142,8 @@ bigints.</p>
 <div class="section" id="constant-definitions">
 <h2><a class="toc-backref" href="#id74">13.10&nbsp;&nbsp;&nbsp;Constant Definitions</a></h2>
 <p>Constants differ from variables in that they cannot be redefined (that's their
-main purpose after all) and that their values, once defined, are determined at
-compile time rather than run time. For instance:</p>
+main purpose after all) so that their values, once defined, can be substituted
+into other definitions which use them. For instance:</p>
 <pre class="literal-block">
 &gt; const c = 2;
 &gt; foo x = c*x;
@@ -5173,6 +5173,29 @@ foo x = 2*x;
 to redefine it as a constant, or vice versa, since Pure won't let you redefine
 an existing constant or variable as a different kind of symbol. The same also
 holds if a symbol is currently defined as a function or a macro.)</p>
+<p>Constants can also be used in patterns (i.e., on the left-hand side of a rule
+in a definition or a <tt class="docutils literal"><span class="pre">case</span></tt> expression), but only if you also declare the
+corresponding symbol as <tt class="docutils literal"><span class="pre">nonfix</span></tt>. This is useful, e.g., if you'd like to use
+constants such as <tt class="docutils literal"><span class="pre">true</span></tt> and <tt class="docutils literal"><span class="pre">false</span></tt> on the left-hand side of a
+definition, just like other <tt class="docutils literal"><span class="pre">nonfix</span></tt> symbols:</p>
+<pre class="literal-block">
+&gt; show false true
+const false = 0;
+const true = 1;
+&gt; nonfix false true;
+&gt; check false = &quot;no&quot;; check true = &quot;yes&quot;;
+&gt; show check
+check 0 = &quot;no&quot;;
+check 1 = &quot;yes&quot;;
+&gt; check (5&gt;0);
+&quot;yes&quot;
+</pre>
+<p>Note that without the <tt class="docutils literal"><span class="pre">nonfix</span></tt> declaration, the above definition of
+<tt class="docutils literal"><span class="pre">check</span></tt> wouldn't work as intended, because the <tt class="docutils literal"><span class="pre">true</span></tt> and <tt class="docutils literal"><span class="pre">false</span></tt>
+symbols on the left-hand side of the two equations would be interpreted as
+local variables. Also note that the standard library never declares any
+constant symbols as <tt class="docutils literal"><span class="pre">nonfix</span></tt>, since once a symbol is <tt class="docutils literal"><span class="pre">nonfix</span></tt> there's no
+going back. Thus the library leaves this to the programmer to decide.</p>
 <p>As the value of a constant is known at compile time, the compiler can apply
 various optimizations to uses of such values. In particular, the Pure compiler
 inlines constant scalars (numbers, strings and pointers) by literally
@@ -5201,37 +5224,36 @@ eliminated, depending on the outcome of the configuration check.</p>
 <p>For efficiency, constant aggregates (lists, tuples, matrices and other kinds
 of non-scalar terms) receive special treatment. Here, the constant is computed
 once and stored in a read-only variable which then gets looked up at runtime,
-just like an ordinary global variable. However, there is still a big
-difference. If a script is batch-compiled (cf. <a class="reference internal" href="#batch-compilation">Batch Compilation</a>), the
-constant value is computed at compile time only; when running the compiled
-executable, the constant value is simply reconstructed, which is often much
-more efficient than recomputing its value. For instance, you might use this to
-precompute a large table whose computation may be costly or involve functions
-with side effects:</p>
+just like an ordinary global variable. However, there's an important
+difference: If a script is batch-compiled (cf. <a class="reference internal" href="#batch-compilation">Batch Compilation</a>), the
+constant value is normally computed <em>at compile time only</em>; when running the
+compiled executable, the constant value is simply reconstructed, which is
+often much more efficient than recomputing its value. For instance, you might
+use this to precompute a large table whose computation may be costly or
+involve functions with side effects:</p>
 <pre class="literal-block">
 const table = [foo x | x = 1..1000000];
 process table;
 </pre>
-<p>Last but not least, constants can also be used in patterns, but only if you
-also declare them as <tt class="docutils literal"><span class="pre">nonfix</span></tt>. This is useful, e.g., if you'd like to use
-constants such as <tt class="docutils literal"><span class="pre">true</span></tt> and <tt class="docutils literal"><span class="pre">false</span></tt> on the left-hand side of a
-definition, just like other <tt class="docutils literal"><span class="pre">nonfix</span></tt> symbols:</p>
+<p>Note that this only works with <tt class="docutils literal"><span class="pre">const</span></tt> values which are completely
+determined at compile time. If a constant contains run time objects such as
+pointers and (local) functions, this is impossible, and the batch compiler
+will instead create code to recompute the value of the constant at run time.
+For instance, consider:</p>
 <pre class="literal-block">
-&gt; show false true
-const false = 0;
-const true = 1;
-&gt; nonfix false true;
-&gt; check false = &quot;no&quot;; check true = &quot;yes&quot;;
-&gt; show check
-check 0 = &quot;no&quot;;
-check 1 = &quot;yes&quot;;
-&gt; check (5&gt;0);
-&quot;yes&quot;
+using system;
+const p = malloc 100;
+foo p;
 </pre>
-<p>(Note that without the <tt class="docutils literal"><span class="pre">nonfix</span></tt> declaration, the above definition of
-<tt class="docutils literal"><span class="pre">check</span></tt> wouldn't work as intended, because the <tt class="docutils literal"><span class="pre">true</span></tt> and <tt class="docutils literal"><span class="pre">false</span></tt>
-symbols on the left-hand side of the two equations would be interpreted as
-local variables.)</p>
+<p>Here, the value of the pointer <tt class="docutils literal"><span class="pre">p</span></tt> of course critically depends on its
+computation (involving a side effect which sets aside a corresponding chunk of
+memory). It would become unusable without actually executing the
+initialization, so the compiler generates the appropriate run time
+initialization code in this case. For all practical purposes, this turns the
+constant into a read-only variable. (There's also a code generation option to
+force this behaviour even for &quot;normal&quot; constants for which it's not strictly
+necessary, in order to create smaller executables; see <a class="reference internal" href="#code-size-and-unstripped-executables">Code Size and
+Unstripped Executables</a> for details.)</p>
 </div>
 <div class="section" id="external-c-functions">
 <h2><a class="toc-backref" href="#id75">13.11&nbsp;&nbsp;&nbsp;External C Functions</a></h2>

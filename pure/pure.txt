@@ -4346,10 +4346,10 @@ implies the following quirks and limitations:
   shouldn't rely on side-effects of such computations (this would be bad
   practice anyway). There is an exception to this rule, however, namely if a
   constant value contains run time data such as pointers and local functions
-  then it *has* to be recomputed at run time, so the batch compiler will
-  generate code for that. The same happens if the --noconst option is used to
+  which requires an initialization at run time, then the batch compiler will
+  generate code for that. (The same happens if the --noconst option is used to
   force computation of constant values at run time, see `Code Size and
-  Unstripped Executables`_.
+  Unstripped Executables`_.)
 
 What all this boils down to is that anything which requires the compile time
 or interactive facilities of the interpreter, is unavailable. These
@@ -5087,8 +5087,8 @@ Constant Definitions
 --------------------
 
 Constants differ from variables in that they cannot be redefined (that's their
-main purpose after all) and that their values, once defined, are determined at
-compile time rather than run time. For instance::
+main purpose after all) so that their values, once defined, can be substituted
+into other definitions which use them. For instance::
 
   > const c = 2;
   > foo x = c*x;
@@ -5119,6 +5119,30 @@ to redefine it as a constant, or vice versa, since Pure won't let you redefine
 an existing constant or variable as a different kind of symbol. The same also
 holds if a symbol is currently defined as a function or a macro.)
 
+Constants can also be used in patterns (i.e., on the left-hand side of a rule
+in a definition or a ``case`` expression), but only if you also declare the
+corresponding symbol as ``nonfix``. This is useful, e.g., if you'd like to use
+constants such as ``true`` and ``false`` on the left-hand side of a
+definition, just like other ``nonfix`` symbols::
+
+  > show false true
+  const false = 0;
+  const true = 1;
+  > nonfix false true;
+  > check false = "no"; check true = "yes";
+  > show check
+  check 0 = "no";
+  check 1 = "yes";
+  > check (5>0);
+  "yes"
+
+Note that without the ``nonfix`` declaration, the above definition of
+``check`` wouldn't work as intended, because the ``true`` and ``false``
+symbols on the left-hand side of the two equations would be interpreted as
+local variables. Also note that the standard library never declares any
+constant symbols as ``nonfix``, since once a symbol is ``nonfix`` there's no
+going back. Thus the library leaves this to the programmer to decide.
+
 As the value of a constant is known at compile time, the compiler can apply
 various optimizations to uses of such values. In particular, the Pure compiler
 inlines constant scalars (numbers, strings and pointers) by literally
@@ -5148,37 +5172,36 @@ eliminated, depending on the outcome of the configuration check.
 For efficiency, constant aggregates (lists, tuples, matrices and other kinds
 of non-scalar terms) receive special treatment. Here, the constant is computed
 once and stored in a read-only variable which then gets looked up at runtime,
-just like an ordinary global variable. However, there is still a big
-difference. If a script is batch-compiled (cf. `Batch Compilation`_), the
-constant value is computed at compile time only; when running the compiled
-executable, the constant value is simply reconstructed, which is often much
-more efficient than recomputing its value. For instance, you might use this to
-precompute a large table whose computation may be costly or involve functions
-with side effects::
+just like an ordinary global variable. However, there's an important
+difference: If a script is batch-compiled (cf. `Batch Compilation`_), the
+constant value is normally computed *at compile time only*; when running the
+compiled executable, the constant value is simply reconstructed, which is
+often much more efficient than recomputing its value. For instance, you might
+use this to precompute a large table whose computation may be costly or
+involve functions with side effects::
 
   const table = [foo x | x = 1..1000000];
   process table;
 
-Last but not least, constants can also be used in patterns, but only if you
-also declare them as ``nonfix``. This is useful, e.g., if you'd like to use
-constants such as ``true`` and ``false`` on the left-hand side of a
-definition, just like other ``nonfix`` symbols::
+Note that this only works with ``const`` values which are completely
+determined at compile time. If a constant contains run time objects such as
+pointers and (local) functions, this is impossible, and the batch compiler
+will instead create code to recompute the value of the constant at run time.
+For instance, consider::
 
-  > show false true
-  const false = 0;
-  const true = 1;
-  > nonfix false true;
-  > check false = "no"; check true = "yes";
-  > show check
-  check 0 = "no";
-  check 1 = "yes";
-  > check (5>0);
-  "yes"
+  using system;
+  const p = malloc 100;
+  foo p;
 
-(Note that without the ``nonfix`` declaration, the above definition of
-``check`` wouldn't work as intended, because the ``true`` and ``false``
-symbols on the left-hand side of the two equations would be interpreted as
-local variables.)
+Here, the value of the pointer ``p`` of course critically depends on its
+computation (involving a side effect which sets aside a corresponding chunk of
+memory). It would become unusable without actually executing the
+initialization, so the compiler generates the appropriate run time
+initialization code in this case. For all practical purposes, this turns the
+constant into a read-only variable. (There's also a code generation option to
+force this behaviour even for "normal" constants for which it's not strictly
+necessary, in order to create smaller executables; see `Code Size and
+Unstripped Executables`_ for details.)
 
 External C Functions
 --------------------
