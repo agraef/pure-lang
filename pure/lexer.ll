@@ -178,6 +178,8 @@ blank  [ \t\f\v\r]
     if (interp.use_fastcc != flag) {
       interp.compile(); interp.use_fastcc = flag;
     }
+  } else if (opt == "const") {
+    interp.consts = flag;
   } else if (opt == "fold") {
     interp.folding = flag;
   } else {

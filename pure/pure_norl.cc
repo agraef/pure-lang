@@ -237,6 +237,7 @@ main(int argc, char *argv[])
     if (!*end) interpreter::stackmax = n*1024;
   }
   if ((env = getenv("PURE_NOCHECKS"))) interp.checks = false;
+  if ((env = getenv("PURE_NOCONST"))) interp.consts = false;
   if ((env = getenv("PURE_NOFOLD"))) interp.folding = false;
   if ((env = getenv("PURE_NOTC"))) interp.use_fastcc = false;
   if ((env = getenv("PURE_EAGER_JIT"))) interp.eager_jit = true;
@@ -286,6 +287,10 @@ main(int argc, char *argv[])
 	interp.checks = false;
       else if (strcmp(arg, "--checks") == 0)
 	interp.checks = true;
+      else if (strcmp(arg, "--noconst") == 0)
+	interp.consts = false;
+      else if (strcmp(arg, "--const") == 0)
+	interp.consts = true;
       else if (strcmp(arg, "--nofold") == 0)
 	interp.folding = false;
       else if (strcmp(arg, "--fold") == 0)

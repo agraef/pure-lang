@@ -672,8 +672,8 @@ void interpreter::init()
 interpreter::interpreter()
   : verbose(0), compat(false), compat2(false), compiling(false),
     eager_jit(false), interactive(false), debugging(false),
-    checks(true), folding(true), use_fastcc(true), pic(false), strip(true),
-    restricted(false), ttymode(false), override(false),
+    checks(true), folding(true), consts(true), use_fastcc(true),
+    pic(false), strip(true), restricted(false), ttymode(false), override(false),
     stats(false), stats_mem(false), temp(0),  ps("> "), libdir(""),
     histfile("/.pure_history"), modname("pure"),
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
@@ -691,8 +691,8 @@ interpreter::interpreter(int32_t nsyms, char *syms,
 			 pure_expr ***_sstk, void **_fptr)
   : verbose(0), compat(false), compat2(false), compiling(false),
     eager_jit(false), interactive(false), debugging(false),
-    checks(true), folding(true), use_fastcc(true), pic(false), strip(true),
-    restricted(true), ttymode(false), override(false),
+    checks(true), folding(true), consts(true), use_fastcc(true),
+    pic(false), strip(true), restricted(true), ttymode(false), override(false),
     stats(false), stats_mem(false), temp(0), ps("> "), libdir(""),
     histfile("/.pure_history"), modname("pure"),
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
@@ -1586,7 +1586,8 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
   int32_t l_modno = modno;
   string *l_current_namespace = symtab.current_namespace;
   map< string, set<int32_t> > *l_search_namespaces = symtab.search_namespaces;
-  bool l_checks = checks, l_folding = folding, l_use_fastcc = use_fastcc;
+  bool l_checks = checks, l_folding = folding, l_consts = consts,
+    l_use_fastcc = use_fastcc;
   // save global data
   uint8_t s_verbose = g_verbose;
   bool s_interactive = g_interactive;
@@ -1645,7 +1646,8 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
     symtab.current_namespace = l_current_namespace;
     symtab.search_namespaces = l_search_namespaces;
     if (checks != l_checks || use_fastcc != l_use_fastcc) compile();
-    checks = l_checks; folding = l_folding; use_fastcc = l_use_fastcc;
+    checks = l_checks; folding = l_folding; consts = l_consts;
+    use_fastcc = l_use_fastcc;
   }
   // return last computed result, if any
   return result;
@@ -1680,7 +1682,8 @@ pure_expr *interpreter::runstr(const string& s)
   int32_t l_modno = modno;
   string *l_current_namespace = symtab.current_namespace;
   map< string, set<int32_t> > *l_search_namespaces = symtab.search_namespaces;
-  bool l_checks = checks, l_folding = folding, l_use_fastcc = use_fastcc;
+  bool l_checks = checks, l_folding = folding, l_consts = consts,
+    l_use_fastcc = use_fastcc;
   // save global data
   uint8_t s_verbose = g_verbose;
   bool s_interactive = g_interactive;
@@ -1725,7 +1728,8 @@ pure_expr *interpreter::runstr(const string& s)
   symtab.current_namespace = l_current_namespace;
   symtab.search_namespaces = l_search_namespaces;
   if (checks != l_checks || use_fastcc != l_use_fastcc) compile();
-  checks = l_checks; folding = l_folding; use_fastcc = l_use_fastcc;
+  checks = l_checks; folding = l_folding; consts = l_consts;
+  use_fastcc = l_use_fastcc;
   // return last computed result, if any
   return result;
 }
@@ -1742,7 +1746,8 @@ pure_expr *interpreter::parsestr(const string& s)
   int32_t l_modno = modno;
   string *l_current_namespace = symtab.current_namespace;
   map< string, set<int32_t> > *l_search_namespaces = symtab.search_namespaces;
-  bool l_checks = checks, l_folding = folding, l_use_fastcc = use_fastcc;
+  bool l_checks = checks, l_folding = folding, l_consts = consts,
+    l_use_fastcc = use_fastcc;
   // save global data
   uint8_t s_verbose = g_verbose;
   bool s_interactive = g_interactive;
@@ -1788,7 +1793,8 @@ pure_expr *interpreter::parsestr(const string& s)
   symtab.current_namespace = l_current_namespace;
   symtab.search_namespaces = l_search_namespaces;
   if (checks != l_checks || use_fastcc != l_use_fastcc) compile();
-  checks = l_checks; folding = l_folding; use_fastcc = l_use_fastcc;
+  checks = l_checks; folding = l_folding; consts = l_consts;
+  use_fastcc = l_use_fastcc;
   // return last computed result, if any
   return result;
 }
@@ -2178,7 +2184,7 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
       int32_t f = it->first;
       expr v = subterm(u, *it->second.p);
       globenv[f] = env_info(v, temp);
-      if (!is_scalar(v) || (compiling && nwrapped)) {
+      if (!is_scalar(v) || (compiling && (nwrapped||!consts))) {
 	/* As of Pure 0.38, we only inline scalar constants. Aggregate values
 	   are cached in a read-only variable for better efficiency. As of
 	   Pure 0.44, we actually do this for all variables bound in the
@@ -2214,7 +2220,7 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
 	/* In batch compilation we need to record the shadowed variable (which
 	   might still be referred to in earlier definitions). */
 	if (compiling) globenv[f].cval_v = oldv;
-	if (compiling && !nwrapped) {
+	if (compiling && !(nwrapped||!consts)) {
 	  /* In batch-compiled scripts we also need to generate some
 	     initialization code for the constant value. (But note that the
 	     case of wrapped runtime data, which needs a full initialization
@@ -2240,7 +2246,7 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
 	}
       }
     }
-    if (compiling && nwrapped) {
+    if (compiling && (nwrapped||!consts)) {
       /* To handle consts with wrapped runtime objects in a batch compilation,
 	 we need to generate the appropriate runtime initialization code. This
 	 is done here in the same fashion as for an ordinary variable

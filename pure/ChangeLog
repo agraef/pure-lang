@@ -1,3 +1,22 @@
+2010-07-22  Albert Graef  <Dr.Graef@t-online.de>
+
+	* pure.cc, lexer.ll, interpreter.cc, runtime.cc: Add a new
+	--noconst/--const option which allows you to control the
+	precomputing of const values in a batch compilation. Like the
+	other code generation options, this option can be set on a
+	per-definition basis.
+
+	--const (default): If the value of a const can be precomputed at
+	compile time, the compiler will do that and store the computed
+	value in the generated executable. This usually yields faster
+	startup times at the expense of bigger executables.
+
+	--noconst: The compiler generates code to recompute the constant
+	value at runtime instead. This usually means slower startup times
+	but smaller executables. Note that this also happens automatically
+	for consts containing runtime data (pointers and local functions)
+	which need to be recomputed at runtime anyway.
+
 2010-07-21  Albert Graef  <Dr.Graef@t-online.de>
 
 	* interpreter.cc (const_defn, wrap_expr, compiler): Add
