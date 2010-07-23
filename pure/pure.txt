@@ -3612,10 +3612,11 @@ currently supported operations:
     ``show`` commands can be found in `Specifying Symbol Selections`_ below.
 
 ``del [symbol ...]``
-    Deletes breakpoints on the given function or operator symbols. All symbols
-    must be specified in fully qualified form, see the remarks below. If
-    invoked without arguments, clears all currently defined breakpoints (after
-    confirmation). See Debugging_ below for details.
+    Deletes breakpoints and tracepoints on the given function or operator
+    symbols. All symbols must be specified in fully qualified form, see the
+    remarks below. If invoked without arguments, clears all currently defined
+    breakpoints and tracepoints (after confirmation). See Debugging_ below for
+    details.
 
 ``dump [-n filename] [option ...] [symbol ...]``
     Dump a snapshot of the current function, macro, constant and variable
@@ -3707,6 +3708,12 @@ currently supported operations:
     expression cells) used during the computation. Invoking ``stats off``
     disables stats mode, while ``stats -m off`` just disables the printing of
     the memory usage statistics.
+
+``trace [symbol ...]``
+    Sets tracepoints on the given function or operator symbols. This works
+    like the the ``break`` command (see above) but only prints rule
+    invocations and reductions without actually interrupting the
+    evaluation. See Debugging_ below for details.
 
 ``underride``
     Exits "override" mode. This returns you to the normal mode of operation,
@@ -4260,13 +4267,39 @@ instance::
   : n>0, fact n
   1,1
 
-Note that the current set of breakpoints can only be changed with the
-``break`` and ``del`` commands of the interpreter, see `Interactive Commands`_
-above. Use ``break`` without arguments to list the currently defined
-breakpoints. Breakpoints can be deleted with the ``del`` command, which is
-followed by the function and operator symbols to be removed from the
-breakpoint list. If ``del`` is invoked without arguments, it clears all
-breakpoints (after confirmation).
+A third use of the debugger is to trace function calls. For that the
+interpreter provides the ``trace`` command which works similarly to ``break``,
+but sets so-called "tracepoints" which only print rule invocations and
+reductions instead of actually interrupting the evaluation. For instance,
+assuming the same example as above, let's first remove the breakpoint on
+``fact`` (using the ``del`` command) and then set it as a tracepoint instead::
+
+  > del fact
+  > trace fact
+  > fact 1;
+  ** [1] fact: fact n::int = if n>0 then n*fact (n-1) else 1;
+       n = 1
+  ** [2] fact: fact n::int = if n>0 then n*fact (n-1) else 1;
+       n = 0
+  ++ [2] fact: fact n::int = if n>0 then n*fact (n-1) else 1;
+       n = 0
+       --> 1
+  ++ [1] fact: fact n::int = if n>0 then n*fact (n-1) else 1;
+       n = 1
+       --> 1
+  1
+
+(The ``break`` and ``trace`` commands can also be used in concert if you want
+to debug some functions while only tracing others.)
+
+Note that the current sets of breakpoints and tracepoints can only be changed
+with the ``break``, ``trace`` and ``del`` commands of the interpreter, see
+`Interactive Commands`_ above. Use ``break`` (or ``trace``) without arguments
+to list the currently defined breakpoints (or tracepoints). Breakpoints and
+tracepoints can be deleted with the ``del`` command, which is followed by the
+function and operator symbols to be removed from the breakpoint and tracepoint
+lists. If ``del`` is invoked without arguments, it clears all breakpoints and
+tracepoints (after confirmation).
 
 Interactive Startup
 -------------------
