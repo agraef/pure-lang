@@ -5644,6 +5644,12 @@ static inline bool stop(interpreter& interp, Env *e)
   return false;
 }
 
+static inline bool traced(interpreter& interp, Env *e)
+{
+  return interp.interactive && e->tag>0 &&
+    interp.tracepoints.find(e->tag) != interp.tracepoints.end();
+}
+
 static inline string psym(const string& s, bool local = false)
 {
   if (local) {
@@ -5791,9 +5797,8 @@ void pure_debug_rule(void *_e, void *_r)
     veqnl eqns; // ignored
     interp.bind(d.vars, eqns, r->lhs, e->b);
   }
-  if (!stop(interp, e)) return;
-  interp.stoplevel = -1;
-  interp.debug_skip = false;
+  bool stp = stop(interp, e);
+  if (!stp && !traced(interp, e)) return;
   if (r) {
     cout << "** [" << d.n << "] "
 	 << pname(interp, e) << ": " << *r << ";\n";
@@ -5805,6 +5810,9 @@ void pure_debug_rule(void *_e, void *_r)
   }
   get_vars(interp, interp.debug_info.rbegin());
   print_vars(cout, interp, d);
+  if (!stp) return;
+  interp.stoplevel = -1;
+  interp.debug_skip = false;
   static bool init = false;
   if (!init) {
     cout << "(Type 'h' for help.)\n";
@@ -6075,7 +6083,7 @@ void pure_debug_redn(void *_e, void *_r, pure_expr *x)
   interpreter& interp = *interpreter::g_interp;
   if (!interp.interactive) return;
   assert(!interp.debug_info.empty());
-  if (x && stop(interp, e)) {
+  if (x && (stop(interp, e) || traced(interp, e))) {
     DebugInfo& d = interp.debug_info.back();
     assert(d.e == e);
     if (r) {

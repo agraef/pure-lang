@@ -803,7 +803,7 @@ public:
 		  map<llvm::GlobalVariable*,llvm::Function*>& varmap);
   int compiler(string out, list<string> libnames);
   list<DebugInfo> debug_info;
-  set<int32_t> breakpoints, tmp_breakpoints;
+  set<int32_t> breakpoints, tmp_breakpoints, tracepoints;
   int32_t stoplevel;
   bool debug_skip;
   string bt;

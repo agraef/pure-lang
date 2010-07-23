@@ -131,7 +131,7 @@ int    [0-9][0-9A-Za-z]*
 exp    ([Ee][+-]?{int})
 float  {int}{exp}|{int}\.{exp}|({int})?\.{int}{exp}?
 str    ([^\"\\\n]|\\(.|\n))*
-cmd    (!|help|ls|pwd|break|bt|del|cd|show|dump|clear|save|run|override|underride|stats|mem|quit|completion_matches)
+cmd    (!|help|ls|pwd|break|trace|bt|del|cd|show|dump|clear|save|run|override|underride|stats|mem|quit|completion_matches)
 blank  [ \t\f\v\r]
 
 %x escape comment xdecl xdecl_comment xusing xusing_comment xsyms xsyms_comment xtag rescan xsyms_rescan
@@ -898,7 +898,7 @@ static const char *commands[] = {
   "break", "bt", "cd", "clear", "const", "def", "del", "dump", "extern", "help",
   "infix", "infixl", "infixr", "let", "ls", "mem", "namespace", "nonfix",
   "outfix", "override", "postfix", "prefix", "private", "public", "pwd",
-  "quit", "run", "save", "show", "stats", "underride", "using", 0
+  "quit", "run", "save", "show", "stats", "trace", "underride", "using", 0
 };
 
 static bool inline checksym(int32_t f, const set<int32_t>& syms)
@@ -1328,15 +1328,57 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
 	  cerr << "break: unknown function symbol '" << s << "'\n";
       }
     }
+  } else if (strcmp(cmd, "trace") == 0)  {
+    const char *s = cmdline+5;
+    argl args(s, "trace");
+    if (!args.ok)
+      ;
+    else if (!interp.debugging)
+      cerr << "trace: debugging not enabled (add -g when invoking the interpreter)\n";
+    else if (args.c == 0) {
+      ostringstream sout;
+      list<string> syms;
+      for (set<int32_t>::iterator it = interp.tracepoints.begin();
+	   it != interp.tracepoints.end(); ++it)
+	syms.push_back(interp.symtab.sym(*it).s);
+      syms.sort();
+      for (list<string>::iterator it = syms.begin(); it != syms.end(); ++it)
+	sout << *it << '\n';
+      if (interp.output)
+	(*interp.output) << sout.str();
+      else
+	cout << sout.str();
+    } else {
+      for (list<string>::iterator it = args.l.begin();
+	   it != args.l.end(); ++it) {
+	const char *s = it->c_str();
+	int32_t f = pure_getsym(s);
+	if (f > 0) {
+	  env::const_iterator jt = interp.globenv.find(f);
+	  if ((jt != interp.globenv.end() && jt->second.t == env_info::fun) ||
+	      interp.externals.find(f) != interp.externals.end())
+	    if (interp.tracepoints.find(f) == interp.tracepoints.end())
+	      interp.tracepoints.insert(f);
+	    else
+	      cerr << "trace: tracepoint '" << s << "' already set\n";
+	  else
+	    f = 0;
+	}
+	if (f == 0)
+	  cerr << "trace: unknown function symbol '" << s << "'\n";
+      }
+    }
   } else if (strcmp(cmd, "del") == 0)  {
     const char *s = cmdline+3;
     argl args(s, "del");
     if (!args.ok)
       ;
     else if (args.c == 0) {
-      if (!interp.breakpoints.empty()) {
-	if (yes_or_no("This will clear all breakpoints. Continue (y/n)?"))
+      if (!interp.breakpoints.empty() || !interp.tracepoints.empty()) {
+	if (yes_or_no("This will clear all breakpoints. Continue (y/n)?")) {
 	  interp.breakpoints.clear();
+	  interp.tracepoints.clear();
+	}
       } else
 	cerr << "del: no breakpoints\n";
     } else {
@@ -1346,8 +1388,11 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
 	int32_t f = pure_getsym(s);
 	if (f > 0) {
 	  env::const_iterator jt = interp.globenv.find(f);
-	  if (interp.breakpoints.find(f) != interp.breakpoints.end())
+	  if (interp.breakpoints.find(f) != interp.breakpoints.end()) {
 	    interp.breakpoints.erase(f);
+	    interp.tracepoints.erase(f);
+	  } else if (interp.tracepoints.find(f) != interp.tracepoints.end())
+	    interp.tracepoints.erase(f);
 	  else
 	    cerr << "del: unknown breakpoint '" << s << "'\n";
 	} else

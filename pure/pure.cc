@@ -109,7 +109,7 @@ static const char *commands[] = {
   "break", "bt", "cd", "clear", "const", "def", "del", "dump", "extern", "help",
   "infix", "infixl", "infixr", "let", "ls", "mem", "namespace", "nonfix",
   "outfix", "override", "postfix", "prefix", "private", "public", "pwd",
-  "quit", "run", "save", "show", "stats", "underride", "using", 0
+  "quit", "run", "save", "show", "stats", "trace", "underride", "using", 0
 };
 
 /* Generator functions for command completion. */
