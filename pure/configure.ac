@@ -177,7 +177,7 @@ LLVM_FLAGS=$($LLVMCONF --cppflags | sed -e s/-DNDEBUG//g)
 AC_SUBST(LLVM_FLAGS)
 LLVM_LDFLAGS=$($LLVMCONF --ldflags)
 AC_SUBST(LLVM_LDFLAGS)
-LLVM_LIBS=$($LLVMCONF --ldflags --libs core bitwriter jit native | tr '\r\n' '  ')
+LLVM_LIBS=$($LLVMCONF --ldflags --libs core bitreader bitwriter linker jit native | tr '\r\n' '  ')
 AC_SUBST(LLVM_LIBS)
 
 # 64 bit needs -fPIC flag (apparently not needed on OSX, though)

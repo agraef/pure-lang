@@ -3993,49 +3993,142 @@ void *pure_get_matrix_data(pure_expr *x)
   }
 }
 
-list<void*> cvector_temps; // XXXFIXME: This should be TLD.
+struct cvector_data {
+  pure_expr *x;
+  void *v;
+  bool t;
+  cvector_data(pure_expr *_x, void *_v, bool _t) : x(_x), v(_v), t(_t) {}
+  cvector_data(void *_v) : x(0), v(_v), t(false) {}
+};
+
+list<cvector_data> cvector_temps; // XXXFIXME: This should be TLD.
 
 void *pure_get_matrix_data_byte(pure_expr *x)
 {
   void *v = matrix_to_byte_array(0, x);
-  cvector_temps.push_back(v);
+  cvector_temps.push_back(cvector_data(v));
   return v;
 }
 
 void *pure_get_matrix_data_short(pure_expr *x)
 {
   void *v = matrix_to_short_array(0, x);
-  cvector_temps.push_back(v);
+  cvector_temps.push_back(cvector_data(v));
   return v;
 }
 
 void *pure_get_matrix_data_int(pure_expr *x)
 {
   void *v = matrix_to_int_array(0, x);
-  cvector_temps.push_back(v);
+  cvector_temps.push_back(cvector_data(v));
   return v;
 }
 
 void *pure_get_matrix_data_float(pure_expr *x)
 {
   void *v = matrix_to_float_array(0, x);
-  cvector_temps.push_back(v);
+  cvector_temps.push_back(cvector_data(v));
   return v;
 }
 
 void *pure_get_matrix_data_double(pure_expr *x)
 {
   void *v = matrix_to_double_array(0, x);
-  cvector_temps.push_back(v);
+  cvector_temps.push_back(cvector_data(v));
+  return v;
+}
+
+static void *matrix_to_double_vector(pure_expr *x)
+{
+  switch (x->tag) {
+  case EXPR::DMATRIX: {
+    gsl_matrix *m1 = (gsl_matrix*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2;
+    if (n==0 || m==0) return 0;
+    double **p = (double**)malloc(n*sizeof(double*));
+    if (!p) return 0;
+    for (size_t i = 0; i < n; i++)
+      p[i] = m1->data+(i*m1->tda);
+    return p;
+  }
+  default:
+    return 0;
+  }
+}
+
+static void *matrix_to_float_vector(pure_expr *x)
+{
+  switch (x->tag) {
+  case EXPR::DMATRIX: {
+    gsl_matrix *m1 = (gsl_matrix*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2;
+    if (n==0 || m==0) return 0;
+    float **p = (float**)malloc(n*sizeof(float*));
+    if (!p) return 0;
+    for (size_t i = 0; i < n; i++) {
+      p[i] = (float*)malloc(m*sizeof(float));
+      if (!p[i]) {
+	for (size_t j = 0; j < i; j++) free(p[j]);
+	free(p); p = 0;
+	break;
+      }
+    }
+    if (!p) return 0;
+    for (size_t i = 0; i < n; i++)
+      for (size_t j = 0; j < m; j++)
+	p[i][j] = (float)m1->data[i*m1->tda+j];
+    return p;
+  }
+  default:
+    return 0;
+  }
+}
+
+static void *float_vector_to_matrix(pure_expr *x, void *q)
+{
+  float **p = (float**)q;
+  if (!p) return 0;
+  switch (x->tag) {
+  case EXPR::DMATRIX: {
+    gsl_matrix *m1 = (gsl_matrix*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2;
+    if (n==0 || m==0) return p;
+    for (size_t i = 0; i < n; i++) {
+      for (size_t j = 0; j < m; j++)
+	m1->data[i*m1->tda+j] = (double)p[i][j];
+      free(p[i]);
+    }
+    return p;
+  }
+  default:
+    return 0;
+  }
+}
+
+void *pure_get_matrix_vector_float(pure_expr *x)
+{
+  void *v = matrix_to_float_vector(x);
+  cvector_temps.push_back(cvector_data(x, v, true));
+  return v;
+}
+
+void *pure_get_matrix_vector_double(pure_expr *x)
+{
+  void *v = matrix_to_double_vector(x);
+  cvector_temps.push_back(cvector_data(x, v, false));
   return v;
 }
 
 extern "C"
 void pure_free_cvectors()
 {
-  for (list<void*>::iterator t = cvector_temps.begin();
-       t != cvector_temps.end(); t++)
-    if (*t) free(*t);
+  for (list<cvector_data>::iterator t = cvector_temps.begin();
+       t != cvector_temps.end(); t++) {
+    if (t->v) {
+      if (t->x && t->t) float_vector_to_matrix(t->x, t->v);
+      free(t->v);
+    }
+  }
   cvector_temps.clear();
 }
 

@@ -41,6 +41,8 @@
 #include <llvm/ExecutionEngine/JIT.h>
 #include <llvm/Target/TargetData.h>
 #include <llvm/Bitcode/ReaderWriter.h>
+#include <llvm/Support/MemoryBuffer.h>
+#include <llvm/Linker.h>
 
 #include "config.h"
 
@@ -613,6 +615,10 @@ void interpreter::init()
 		 "pure_get_matrix_data_float", "void*", 1, "expr*");
   declare_extern((void*)pure_get_matrix_data_double,
 		 "pure_get_matrix_data_double", "void*", 1, "expr*");
+  declare_extern((void*)pure_get_matrix_vector_float,
+		 "pure_get_matrix_vector_float", "void*", 1, "expr*");
+  declare_extern((void*)pure_get_matrix_vector_double,
+		 "pure_get_matrix_vector_double", "void*", 1, "expr*");
   declare_extern((void*)pure_free_cvectors,
 		 "pure_free_cvectors","void", 0);
 
@@ -1507,9 +1513,118 @@ void interpreter::print_tags()
 #ifndef DLLEXT
 #define DLLEXT ".so"
 #endif
+#ifndef DSPEXT
+// These are dsp modules which reside in bitcode files created with the Faust
+// compiler.
+#define DSPEXT ".bc"
+#endif
 #ifndef PUREEXT
 #define PUREEXT ".pure"
 #endif
+
+static void dsp_errmsg(string name, string* msg)
+{
+  // Give more elaborate diagnostics for failed attempts to load a Faust DSP.
+  if (!msg) return;
+  if (!msg->empty())
+    *msg = name+": cannot open dsp file: "+*msg;
+  else
+    *msg = name+": cannot open dsp file";
+}
+
+static string faust_modname(const string& name)
+{
+  string modname = name;
+  size_t p = modname.rfind(".");
+  if (p != string::npos) modname.erase(p);
+  p = modname.find_last_of("/\\:");
+  if (p != string::npos) modname.erase(0, p+1);
+  return modname;
+}
+
+bool interpreter::LoadFaustDSP(const char *name, string *msg)
+{
+  // Determine the basename of the Faust module. This will be used to mangle
+  // the Faust functions and give the namespace of the Faust functions in Pure
+  // land (so for easy access it's better if the basename is a valid Pure
+  // identifier).
+  string modname = faust_modname(name);
+  if (loaded_dsps.find(modname) != loaded_dsps.end())
+    // Module already loaded.
+    return true;
+  llvm::MemoryBuffer *buf = llvm::MemoryBuffer::getFile(name, msg);
+  if (!buf) {
+    dsp_errmsg(name, msg);
+    return false;
+  }
+  llvm::Module *M = llvm::ParseBitcodeFile(buf, llvm::getGlobalContext(), msg);
+  delete buf;
+  if (!M) {
+    dsp_errmsg(name, msg);
+    return false;
+  }
+  // Fix up the target layout and triple set by the Faust compiler, in case
+  // the dsp module was created on a different platform. (FIXME: We assume
+  // that the Faust code itself is platform-agnostic.)
+  string layout = JIT->getTargetData()->getStringRepresentation(),
+    triple = HOST;
+  M->setDataLayout(layout); M->setTargetTriple(triple);
+  // Mangle the names of the Faust module since they are the same for every
+  // module.
+  list<string> funs;
+  for (llvm::Module::iterator it = M->begin(), end = M->end();
+       it != end; ) {
+    llvm::Function &f = *(it++);
+    string name = f.getName();
+    // Faust interface routines are stropped with the '_llvm' suffix.
+    size_t p = name.find("_llvm");
+    if (p != string::npos) {
+      string fname = name.substr(0, p);
+      f.setName("$$faust$"+modname+"$"+fname);
+      funs.push_back(fname);
+    }
+  }
+  // Link the mangled module into the Pure module.
+  if (llvm::Linker::LinkModules(module, M, msg)) {
+    dsp_errmsg(name, msg);
+    return false;
+  }
+  // Create the namespace if necessary.
+  namespaces.insert(modname);
+  // Create wrappers.
+  for (list<string>::iterator it = funs.begin(), end = funs.end();
+       it != end; ++it) {
+    string fname = "$$faust$"+modname+"$"+*it;
+    llvm::Function *f = module->getFunction(fname);
+    assert(f);
+    // The name under which the function is accessible in Pure.
+    string asname = modname+"::"+*it;
+    // The function type.
+    const llvm::FunctionType *ft = f->getFunctionType();
+    const llvm::Type* rest = ft->getReturnType();
+    size_t n = ft->getNumParams();
+    vector<const llvm::Type*> argt(n);
+    for (size_t i = 0; i < n; i++) argt[i] = ft->getParamType(i);
+    string restype = type_name(rest);
+    list<string> argtypes;
+    for (size_t i = 0; i < n; i++) argtypes.push_back(type_name(argt[i]));
+    // Manufacture an extern declaration for the function so that it
+    // can be called in Pure land.
+    declare_extern(0, fname, restype, argtypes, false, 0, asname);
+#if 0 // debugging
+    symbol *sym = symtab.sym(asname);
+    if (!sym) continue;
+    ExternInfo info(sym->f, fname, rest, argt, f);
+    cerr << "\n" << info << ";\n";
+    verifyFunction(*f);
+    if (FPM) FPM->run(*f);
+    llvm::raw_stdout_ostream out;
+    f->print(out);
+#endif
+  }
+  loaded_dsps.insert(modname);
+  return true;
+}
 
 pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
 {
@@ -1536,6 +1651,18 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
     if (llvm::sys::DynamicLibrary::LoadLibraryPermanently(aname.c_str(), &msg))
       throw err(msg);
     loaded_libs.push_back(aname);
+    return 0;
+  }
+  if (p != string::npos && s.substr(0, p) == "dsp") {
+    if (p+1 >= s.size()) throw err("empty dsp name");
+    string msg, name = s.substr(p+1), dspname = name;
+    // See whether we need to add the DSPEXT suffix.
+    if (name.size() <= strlen(DSPEXT) ||
+	name.substr(name.size()-strlen(DSPEXT)) != DSPEXT)
+      dspname += DSPEXT;
+    string aname = searchlib(srcdir, libdir, librarydirs, dspname);
+    if (!LoadFaustDSP(aname.c_str(), &msg))
+      throw err(msg);
     return 0;
   }
   // ordinary source file
@@ -5361,6 +5488,11 @@ static inline bool is_init(const string& name)
     name.find_first_not_of("0123456789", 6) == string::npos;
 }
 
+static inline bool is_faust(const string& name)
+{
+  return name.compare(0, 8, "$$faust$") == 0;
+}
+
 static inline bool is_tmpvar(const string& name, string& label)
 {
   if (name.compare(0, 8, "$$tmpvar") == 0) {
@@ -6881,7 +7013,11 @@ const char *interpreter::type_name(const Type *type)
   else if (type == VoidPtrTy)
     return "void*";
   else if (type->getTypeID() == Type::PointerTyID)
+#if 0
     return "<unknown C pointer type>";
+#else
+    return "void*";
+#endif
   else
     return "<unknown C type>";
 }
@@ -6997,9 +7133,10 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   // Handle the case that the C function was imported through a dll *after*
   // the definition of a Pure function of the same name. In this case the C
   // function won't be accessible in the Pure program at all.
-  if (it == externals.end() && g && !g->isDeclaration())
+  bool is_faust_fun = is_faust(name);
+  if (it == externals.end() && g && !g->isDeclaration() && !is_faust_fun)
     throw err("symbol '"+name+"' is already defined as a Pure function");
-  if (it == externals.end() && g) {
+  if (it == externals.end() && g && !is_faust_fun) {
     // Cross-check with a builtin declaration.
     assert(g->isDeclaration() && gt);
     if (gt != ft) {
@@ -7042,7 +7179,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   }
   // Check that the external function actually exists by searching the program
   // and resident libraries.
-  if (!sys::DynamicLibrary::SearchForAddressOfSymbol(name))
+  if (!sys::DynamicLibrary::SearchForAddressOfSymbol(name) && !is_faust_fun)
     throw err("external symbol '"+name+"' cannot be found");
   // If we come here, we have a new external symbol for which we create a
   // declaration (if needed), as well as a Pure wrapper function which is
@@ -7335,6 +7472,52 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     } else if (argt[i] == ExprPtrTy) {
       // passed through
       unboxed[i] = x;
+    } else if (argt[i] == VoidPtrTy && is_faust_fun) {
+      /* Here we have to cast a generic pointer to whatever the interface of
+	 the Faust function requires. This only supports either plain pointers
+	 or double matrices. The latter case requires that the Faust interface
+	 actually expects a double** or float** vector of pointers. Otherwise
+	 we just skip the matrix case. */
+      const Type *type = gt->getParamType(i);
+      bool is_double = type ==
+	PointerType::get(PointerType::get(double_type(), 0), 0);
+      bool is_float = type ==
+	PointerType::get(PointerType::get(float_type(), 0), 0);
+      BasicBlock *ptrbb = basic_block("ptr");
+      BasicBlock *matrixbb = (is_double||is_float)?basic_block("matrix"):0;
+      BasicBlock *okbb = basic_block("ok");
+      Value *idx[2] = { Zero, Zero };
+      Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
+      SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 2);
+      sw->addCase(SInt(EXPR::PTR), ptrbb);
+      if (matrixbb) sw->addCase(SInt(EXPR::DMATRIX), matrixbb);
+      f->getBasicBlockList().push_back(ptrbb);
+      b.SetInsertPoint(ptrbb);
+      // The following will work with pointer expressions.
+      Value *pv = b.CreateBitCast(x, PtrExprPtrTy, "ptrexpr");
+      idx[1] = ValFldIndex;
+      Value *ptrv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "ptrval");
+      b.CreateBr(okbb);
+      // Handle the case of a matrix (gsl_matrix*).
+      Value *matrixv = 0;
+      if (matrixbb) {
+	f->getBasicBlockList().push_back(matrixbb);
+	b.SetInsertPoint(matrixbb);
+	Function *get_fun = is_double ?
+	  module->getFunction("pure_get_matrix_vector_double") :
+	  module->getFunction("pure_get_matrix_vector_float");
+	matrixv = b.CreateCall(get_fun, x);
+	b.CreateBr(okbb);
+	vtemps = true;
+      }
+      f->getBasicBlockList().push_back(okbb);
+      b.SetInsertPoint(okbb);
+      PHINode *phi = b.CreatePHI(VoidPtrTy);
+      phi->addIncoming(ptrv, ptrbb);
+      if (matrixbb) phi->addIncoming(matrixv, matrixbb);
+      unboxed[i] = phi;
+      // Cast the pointer to the proper target type.
+      unboxed[i] = b.CreateBitCast(unboxed[i], type);
     } else if (argt[i] == VoidPtrTy) {
       BasicBlock *ptrbb = basic_block("ptr");
       BasicBlock *mpzbb = basic_block("mpz");
@@ -7459,9 +7642,12 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     f->getBasicBlockList().push_back(okbb);
     b.SetInsertPoint(okbb);
     // value is passed through
-  } else if (type == VoidPtrTy)
+  } else if (type == VoidPtrTy) {
+    if (is_faust_fun)
+      // bitcast the pointer result to a void*
+      u = b.CreateBitCast(u, VoidPtrTy);
     u = b.CreateCall(module->getFunction("pure_pointer"), u);
-  else
+  } else
     assert(0 && "invalid C type");
   if (debugging) {
     Function *f = module->getFunction("pure_debug_redn");

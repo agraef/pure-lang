@@ -654,6 +654,17 @@ void *pure_get_matrix_data_float(pure_expr *x);
 void *pure_get_matrix_data_double(pure_expr *x);
 void pure_free_cvectors();
 
+/* These allow matrices of the appropriate type to be passed for a vector of
+   pointers (pointing to the rows of the matrix) in temporary storage which
+   allows the matrices to be modified in-place. Any necessary data type
+   conversions are done on the fly. pure_free_cvectors is to be called
+   afterwards to free the temporary storage and convert back results.
+   NOTE: Currently this is implemented only for the float** and double**
+   arguments used in the Faust interface. */
+
+void *pure_get_matrix_vector_float(pure_expr *x);
+void *pure_get_matrix_vector_double(pure_expr *x);
+
 /* Additional matrix constructors. These work like pure_matrix_rowsl and
    pure_matrix_columnsl in the public API, but are intended to be called
    directly from generated code and raise the appropriate Pure exceptions in
