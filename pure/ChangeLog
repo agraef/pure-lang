@@ -1,3 +1,43 @@
+2010-08-06  Albert Graef  <Dr.Graef@t-online.de>
+
+	* configure.ac: Link with the LLVM bitreader and linker modules
+	required by the Faust interface.
+
+	* interpreter.cc/hh, runtime.cc/hh: Experimental direct Faust/LLVM
+	interface.
+
+	This allows DSP modules created with Faust's forthcoming LLVM
+	backend to be imported directly in Pure, using a special form of
+	the 'using' clause: using "dsp:name". Here, 'name' is the basename
+	of the bitcode file of the Faust module (the .bc suffix is
+	supplied automatically). The Faust interface routines are declared
+	as special externs in the 'name' namespace (which is created if
+	necessary), so that different Faust modules can be used in the
+	same Pure program.
+
+	Currently the provided interface is simply a 1-1 mapping of the
+	routines provided by the compiled Faust module. Special support is
+	provided for marshalling the float** or double** input/output
+	arguments of the 'compute' routine, so that Pure double matrices
+	can be passed for the required sample buffers. Each row of a Pure
+	matrix corresponds to one block of samples. The number of rows of
+	the input/output matrices must match the number of input/output
+	channels of the 'process' routine of the Faust program. (It is
+	recommended that you build your Faust bitcode modules with the
+	-double option of the Faust compiler so that the rows of a Pure
+	double matrix can be passed directly to the Faust module. When
+	using Faust's default single precision mode, the required
+	conversions between double and float sample data will be handled
+	automatically, but this will be less efficient.)
+
+	The Faust interface also works in batch compilation, in which case
+	the imported Faust modules are embedded in the program generated
+	with 'pure -c'.
+
+	Please note that, at this time, the LLVM backend is not yet
+	included in the official Faust sources, so you'll need a special
+	Faust version which can be obtained from Stephane Letz at Grame.
+
 2010-07-26  Albert Graef  <Dr.Graef@t-online.de>
 
 	* lib/primitives.pure (^): Add a rule to work around POSIX
