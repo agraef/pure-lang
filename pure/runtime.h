@@ -457,7 +457,9 @@ uint32_t pure_savelevel();
 
 /* pure_val() parses the given string, which must conform to the simple
    expression syntax, and returns the corresponding expression as is, i.e.,
-   without evaluating it. */
+   without evaluating it. NULL is returned in case of an error, in which case
+   you can use lasterr() in the library API to check for error messages from
+   the interpreter. */
 
 pure_expr *pure_val(const char *s);
 
