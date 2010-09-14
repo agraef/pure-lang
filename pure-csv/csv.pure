@@ -11,6 +11,7 @@
             quote or after a quote.
    Updated: July 16, 2010 added optional optional key selection of fields
    Updated: July 21, 2010 fixed write_escaped and write_quoted warnings
+   Updated: Sep. 13, 2010 fixed problem writing integer or double matrices
 */
 
 namespace csv;
@@ -244,8 +245,8 @@ header f::pointer
   = if null h then {} else h when h = csv_getheader f end;
 
 /* Write a record to a CSV file */
-putr f::pointer r::matrix = csv_write f r (#r) if rowvectorp r;
-putr f::pointer r@(_:_) = csv_write f m (#m) when m = vector r; end;
+putr f::pointer r::matrix = csv_write f (smatrix r) (#r) if rowvectorp r;
+putr f::pointer r@(_:_) = csv_write f m (#m) when m = smatrix r; end;
 
 /* Write a list of records to a CSV file */
 fputr f::pointer xs@(_:_) = loop xs with
