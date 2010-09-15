@@ -14826,3 +14826,635 @@ pure_expr* record_pack(pure_expr *x)
   } else
     return 0;
 }
+
+/* Direct Faust interface. These data structures and routines are used to
+   handle the control parameters in a Faust DSP. (This is basically the same
+   as in the pure-faust module, but tailored for faust -lang llvm.) */
+
+class FaustUI
+{
+  bool	fStopped;
+public:
+		
+  FaustUI() : fStopped(false) {}
+  virtual ~FaustUI() {}
+
+  virtual void addButton(const char* label, double* zone) = 0;
+  virtual void addToggleButton(const char* label, double* zone) = 0;
+  virtual void addCheckButton(const char* label, double* zone) = 0;
+  virtual void addVerticalSlider(const char* label, double* zone, double init, double min, double max, double step) = 0;
+  virtual void addHorizontalSlider(const char* label, double* zone, double init, double min, double max, double step) = 0;
+  virtual void addNumEntry(const char* label, double* zone, double init, double min, double max, double step) = 0;
+
+  virtual void addNumDisplay(const char* label, double* zone, int precision) = 0;
+  virtual void addTextDisplay(const char* label, double* zone, const char* names[], double min, double max) = 0;
+  virtual void addHorizontalBargraph(const char* label, double* zone, double min, double max) = 0;
+  virtual void addVerticalBargraph(const char* label, double* zone, double min, double max) = 0;
+	
+  virtual void openFrameBox(const char* label) = 0;
+  virtual void openTabBox(const char* label) = 0;
+  virtual void openHorizontalBox(const char* label) = 0;
+  virtual void openVerticalBox(const char* label) = 0;
+  virtual void closeBox() = 0;
+	
+  virtual void run() = 0;
+	
+  void stop()	{ fStopped = true; }
+  bool stopped() 	{ return fStopped; }
+
+  virtual void declare(double* zone, const char* key, const char* value) {}
+};
+
+enum ui_elem_type_t {
+  UI_BUTTON, UI_TOGGLE_BUTTON, UI_CHECK_BUTTON,
+  UI_V_SLIDER, UI_H_SLIDER, UI_NUM_ENTRY,
+  UI_V_BARGRAPH, UI_H_BARGRAPH,
+  UI_END_GROUP, UI_V_GROUP, UI_H_GROUP, UI_T_GROUP
+};
+
+struct ui_elem_t {
+  ui_elem_type_t type;
+  const char *label;
+  double *zone;
+  double init, min, max, step;
+};
+
+class PureFaustUI : public FaustUI
+{
+public:
+  int nelems;
+  ui_elem_t *elems;
+		
+  PureFaustUI();
+  virtual ~PureFaustUI();
+
+protected:
+  void add_elem(ui_elem_type_t type, const char *label = NULL);
+  void add_elem(ui_elem_type_t type, const char *label, double *zone);
+  void add_elem(ui_elem_type_t type, const char *label, double *zone,
+		double init, double min, double max, double step);
+  void add_elem(ui_elem_type_t type, const char *label, double *zone,
+		double min, double max);
+
+public:
+  virtual void addButton(const char* label, double* zone);
+  virtual void addToggleButton(const char* label, double* zone);
+  virtual void addCheckButton(const char* label, double* zone);
+  virtual void addVerticalSlider(const char* label, double* zone, double init, double min, double max, double step);
+  virtual void addHorizontalSlider(const char* label, double* zone, double init, double min, double max, double step);
+  virtual void addNumEntry(const char* label, double* zone, double init, double min, double max, double step);
+
+  virtual void addNumDisplay(const char* label, double* zone, int precision);
+  virtual void addTextDisplay(const char* label, double* zone, const char* names[], double min, double max);
+  virtual void addHorizontalBargraph(const char* label, double* zone, double min, double max);
+  virtual void addVerticalBargraph(const char* label, double* zone, double min, double max);
+  
+  virtual void openFrameBox(const char* label);
+  virtual void openTabBox(const char* label);
+  virtual void openHorizontalBox(const char* label);
+  virtual void openVerticalBox(const char* label);
+  virtual void closeBox();
+	
+  virtual void run();
+
+  /* NOTE: This method is supposed to take care of interpreting meta data
+     associated with a control variable, such as size, tooltip etc. We simply
+     ignore these for now. It might be useful to implement this in the future,
+     in order to make meta data available to the application. */
+  // virtual void declare(double* zone, const char* key, const char* value) {}
+};
+
+PureFaustUI::PureFaustUI()
+{
+  nelems = 0;
+  elems = NULL;
+}
+
+PureFaustUI::~PureFaustUI()
+{
+  if (elems) free(elems);
+}
+
+inline void PureFaustUI::add_elem(ui_elem_type_t type, const char *label)
+{
+  ui_elem_t *elems1 = (ui_elem_t*)realloc(elems, (nelems+1)*sizeof(ui_elem_t));
+  if (elems1)
+    elems = elems1;
+  else
+    return;
+  elems[nelems].type = type;
+  elems[nelems].label = label;
+  elems[nelems].zone = NULL;
+  elems[nelems].init = 0.0;
+  elems[nelems].min = 0.0;
+  elems[nelems].max = 0.0;
+  elems[nelems].step = 0.0;
+  nelems++;
+}
+
+inline void PureFaustUI::add_elem(ui_elem_type_t type, const char *label, double *zone)
+{
+  ui_elem_t *elems1 = (ui_elem_t*)realloc(elems, (nelems+1)*sizeof(ui_elem_t));
+  if (elems1)
+    elems = elems1;
+  else
+    return;
+  elems[nelems].type = type;
+  elems[nelems].label = label;
+  elems[nelems].zone = zone;
+  elems[nelems].init = 0.0;
+  elems[nelems].min = 0.0;
+  elems[nelems].max = 0.0;
+  elems[nelems].step = 0.0;
+  nelems++;
+}
+
+inline void PureFaustUI::add_elem(ui_elem_type_t type, const char *label, double *zone,
+			     double init, double min, double max, double step)
+{
+  ui_elem_t *elems1 = (ui_elem_t*)realloc(elems, (nelems+1)*sizeof(ui_elem_t));
+  if (elems1)
+    elems = elems1;
+  else
+    return;
+  elems[nelems].type = type;
+  elems[nelems].label = label;
+  elems[nelems].zone = zone;
+  elems[nelems].init = init;
+  elems[nelems].min = min;
+  elems[nelems].max = max;
+  elems[nelems].step = step;
+  nelems++;
+}
+
+inline void PureFaustUI::add_elem(ui_elem_type_t type, const char *label, double *zone,
+			     double min, double max)
+{
+  ui_elem_t *elems1 = (ui_elem_t*)realloc(elems, (nelems+1)*sizeof(ui_elem_t));
+  if (elems1)
+    elems = elems1;
+  else
+    return;
+  elems[nelems].type = type;
+  elems[nelems].label = label;
+  elems[nelems].zone = zone;
+  elems[nelems].init = 0.0;
+  elems[nelems].min = min;
+  elems[nelems].max = max;
+  elems[nelems].step = 0.0;
+  nelems++;
+}
+
+void PureFaustUI::addButton(const char* label, double* zone)
+{ add_elem(UI_BUTTON, label, zone); }
+void PureFaustUI::addToggleButton(const char* label, double* zone)
+{ add_elem(UI_TOGGLE_BUTTON, label, zone); }
+void PureFaustUI::addCheckButton(const char* label, double* zone)
+{ add_elem(UI_CHECK_BUTTON, label, zone); }
+void PureFaustUI::addVerticalSlider(const char* label, double* zone, double init, double min, double max, double step)
+{ add_elem(UI_V_SLIDER, label, zone, init, min, max, step); }
+void PureFaustUI::addHorizontalSlider(const char* label, double* zone, double init, double min, double max, double step)
+{ add_elem(UI_H_SLIDER, label, zone, init, min, max, step); }
+void PureFaustUI::addNumEntry(const char* label, double* zone, double init, double min, double max, double step)
+{ add_elem(UI_NUM_ENTRY, label, zone, init, min, max, step); }
+
+// FIXME: addNumDisplay and addTextDisplay not implemented in Faust yet?
+void PureFaustUI::addNumDisplay(const char* label, double* zone, int precision) {}
+void PureFaustUI::addTextDisplay(const char* label, double* zone, const char* names[], double min, double max) {}
+void PureFaustUI::addHorizontalBargraph(const char* label, double* zone, double min, double max)
+{ add_elem(UI_H_BARGRAPH, label, zone, min, max); }
+void PureFaustUI::addVerticalBargraph(const char* label, double* zone, double min, double max)
+{ add_elem(UI_V_BARGRAPH, label, zone, min, max); }
+
+// FIXME: openFrameBox ignored for now, do we need this?
+void PureFaustUI::openFrameBox(const char* label) {}
+void PureFaustUI::openTabBox(const char* label)
+{ add_elem(UI_T_GROUP, label); }
+void PureFaustUI::openHorizontalBox(const char* label)
+{ add_elem(UI_H_GROUP, label); }
+void PureFaustUI::openVerticalBox(const char* label)
+{ add_elem(UI_V_GROUP, label); }
+void PureFaustUI::closeBox()
+{ add_elem(UI_END_GROUP); }
+
+void PureFaustUI::run() {}
+
+/* C callbacks for the UI construction methods. These are called in the
+   Faust-generated LLVM code (buildUserInterface routine). Note that for some
+   of these there are two variations, depending on whether floating point
+   paramaters are passed as double (faust -double) or not. */
+
+extern "C" {
+
+struct UIGlue {
+
+  void* uiInterface;
+    
+  void *openFrameBox;
+  void *openTabBox;
+  void *openHorizontalBox;
+  void *openVerticalBox;
+  void *closeBox;
+  void *addButton;
+  void *addToggleButton;
+  void *addCheckButton;
+  void *addVerticalSlider;
+  void *addHorizontalSlider;
+  void *addNumEntry;
+  void *addNumDisplay;
+  void *addTextDisplay;
+  void *addHorizontalBargraph;
+  void *addVerticalBargraph;
+  void *declare;
+
+};
+
+static void openFrameBoxGlue(void* cpp_interface, const char* label)
+{
+    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
+    interface->openFrameBox(label);
+}
+
+static void openTabBoxGlue(void* cpp_interface, const char* label)
+{
+    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
+    interface->openTabBox(label);
+}
+
+static void openHorizontalBoxGlue(void* cpp_interface, const char* label)
+{
+    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
+    interface->openHorizontalBox(label);
+}
+
+static void openVerticalBoxGlue(void* cpp_interface, const char* label)
+{
+    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
+    interface->openVerticalBox(label);
+}
+
+static void closeBoxGlue(void* cpp_interface)
+{
+    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
+    interface->closeBox();
+}
+
+static void addButtonFloatGlue(void* cpp_interface, const char* label, float* zone)
+{
+    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
+    interface->addButton(label, (double*)zone);
+}
+
+static void addToggleButtonFloatGlue(void* cpp_interface, const char* label, float* zone)
+{
+    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
+    interface->addToggleButton(label, (double*)zone);
+}
+
+static void addCheckButtonFloatGlue(void* cpp_interface, const char* label, float* zone)
+{
+    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
+    interface->addCheckButton(label, (double*)zone);
+}
+
+static void addVerticalSliderFloatGlue(void* cpp_interface, const char* label, float* zone, float init, float min, float max, float step)
+{
+    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
+    interface->addVerticalSlider(label, (double*)zone, init, min, max, step);
+}
+
+static void addHorizontalSliderFloatGlue(void* cpp_interface, const char* label, float* zone, float init, float min, float max, float step)
+{
+    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
+    interface->addHorizontalSlider(label, (double*)zone, init, min, max, step);
+}
+
+static void addNumEntryFloatGlue(void* cpp_interface, const char* label, float* zone, float init, float min, float max, float step)
+{
+    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
+    interface->addNumEntry(label, (double*)zone, init, min, max, step);
+}
+
+static void addNumDisplayFloatGlue(void* cpp_interface, const char* label, float* zone, int precision)
+{
+    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
+    interface->addNumDisplay(label, (double*)zone, precision);
+}
+
+static void addTextDisplayFloatGlue(void* cpp_interface, const char* label, float* zone, const char* names[], float min, float max)
+{
+    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
+    interface->addTextDisplay(label, (double*)zone, names, min, max);
+}
+
+static void addHorizontalBargraphFloatGlue(void* cpp_interface, const char* label, float* zone, float min, float max)
+{
+    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
+    interface->addHorizontalBargraph(label, (double*)zone, min, max);
+}
+
+static void addVerticalBargraphFloatGlue(void* cpp_interface, const char* label, float* zone, float min, float max)
+{
+    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
+    interface->addVerticalBargraph(label, (double*)zone, min, max);
+}
+
+static void declareFloatGlue(void* cpp_interface, float* zone, const char* key, const char* value)
+{
+    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
+    interface->declare((double*)zone, key, value);
+}
+
+static void addButtonDoubleGlue(void* cpp_interface, const char* label, double* zone)
+{
+    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
+    interface->addButton(label, zone);
+}
+
+static void addToggleButtonDoubleGlue(void* cpp_interface, const char* label, double* zone)
+{
+    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
+    interface->addToggleButton(label, zone);
+}
+
+static void addCheckButtonDoubleGlue(void* cpp_interface, const char* label, double* zone)
+{
+    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
+    interface->addCheckButton(label, zone);
+}
+
+static void addVerticalSliderDoubleGlue(void* cpp_interface, const char* label, double* zone, double init, double min, double max, double step)
+{
+    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
+    interface->addVerticalSlider(label, zone, init, min, max, step);
+}
+
+static void addHorizontalSliderDoubleGlue(void* cpp_interface, const char* label, double* zone, double init, double min, double max, double step)
+{
+    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
+    interface->addHorizontalSlider(label, zone, init, min, max, step);
+}
+
+static void addNumEntryDoubleGlue(void* cpp_interface, const char* label, double* zone, double init, double min, double max, double step)
+{
+    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
+    interface->addNumEntry(label, zone, init, min, max, step);
+}
+
+static void addNumDisplayDoubleGlue(void* cpp_interface, const char* label, double* zone, int precision)
+{
+    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
+    interface->addNumDisplay(label, zone, precision);
+}
+
+static void addTextDisplayDoubleGlue(void* cpp_interface, const char* label, double* zone, const char* names[], double min, double max)
+{
+    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
+    interface->addTextDisplay(label, zone, names, min, max);
+}
+
+static void addHorizontalBargraphDoubleGlue(void* cpp_interface, const char* label, double* zone, double min, double max)
+{
+    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
+    interface->addHorizontalBargraph(label, zone, min, max);
+}
+
+static void addVerticalBargraphDoubleGlue(void* cpp_interface, const char* label, double* zone, double min, double max)
+{
+    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
+    interface->addVerticalBargraph(label, zone, min, max);
+}
+
+static void declareDoubleGlue(void* cpp_interface, double* zone, const char* key, const char* value)
+{
+    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
+    interface->declare(zone, key, value);
+}
+
+/* Set up a Faust UI data structure, ready to be used as the second argument
+   of the Faust-generated buildUserInterface routine. The returned data
+   objects are allocated dynamically and must be freed by the caller when no
+   longer needed, using the faust_free_ui routine provided below. */
+
+void *faust_float_ui()
+{
+  UIGlue *glue = (UIGlue*)malloc(sizeof(UIGlue));
+  PureFaustUI *ui = new PureFaustUI;
+  assert(glue && ui);
+  glue->uiInterface = ui;
+  glue->openFrameBox = (void*)openFrameBoxGlue;
+  glue->openTabBox = (void*)openTabBoxGlue;
+  glue->openHorizontalBox = (void*)openHorizontalBoxGlue;
+  glue->openVerticalBox = (void*)openVerticalBoxGlue;
+  glue->closeBox = (void*)closeBoxGlue;
+  glue->addButton = (void*)addButtonFloatGlue;
+  glue->addToggleButton = (void*)addToggleButtonFloatGlue;
+  glue->addCheckButton = (void*)addCheckButtonFloatGlue;
+  glue->addVerticalSlider = (void*)addVerticalSliderFloatGlue;
+  glue->addHorizontalSlider = (void*)addHorizontalSliderFloatGlue;
+  glue->addNumEntry = (void*)addNumEntryFloatGlue;
+  glue->addNumDisplay = (void*)addNumDisplayFloatGlue;
+  glue->addTextDisplay = (void*)addTextDisplayFloatGlue;
+  glue->addHorizontalBargraph = (void*)addHorizontalBargraphFloatGlue;
+  glue->addVerticalBargraph = (void*)addVerticalBargraphFloatGlue;
+  glue->declare = (void*)declareFloatGlue;
+  return glue;
+}
+
+void *faust_double_ui()
+{
+  UIGlue *glue = (UIGlue*)malloc(sizeof(UIGlue));
+  PureFaustUI *ui = new PureFaustUI;
+  assert(glue && ui);
+  glue->uiInterface = ui;
+  glue->openFrameBox = (void*)openFrameBoxGlue;
+  glue->openTabBox = (void*)openTabBoxGlue;
+  glue->openHorizontalBox = (void*)openHorizontalBoxGlue;
+  glue->openVerticalBox = (void*)openVerticalBoxGlue;
+  glue->closeBox = (void*)closeBoxGlue;
+  glue->addButton = (void*)addButtonDoubleGlue;
+  glue->addToggleButton = (void*)addToggleButtonDoubleGlue;
+  glue->addCheckButton = (void*)addCheckButtonDoubleGlue;
+  glue->addVerticalSlider = (void*)addVerticalSliderDoubleGlue;
+  glue->addHorizontalSlider = (void*)addHorizontalSliderDoubleGlue;
+  glue->addNumEntry = (void*)addNumEntryDoubleGlue;
+  glue->addNumDisplay = (void*)addNumDisplayDoubleGlue;
+  glue->addTextDisplay = (void*)addTextDisplayDoubleGlue;
+  glue->addHorizontalBargraph = (void*)addHorizontalBargraphDoubleGlue;
+  glue->addVerticalBargraph = (void*)addVerticalBargraphDoubleGlue;
+  glue->declare = (void*)declareDoubleGlue;
+  return glue;
+}
+
+void faust_free_ui(void *p)
+{
+  UIGlue *glue = (UIGlue*)p;
+  FaustUI* ui = static_cast<FaustUI*>(glue->uiInterface);
+  delete ui;
+  free(glue);
+}
+
+/* Grab the control descriptions from a UI data structure, as returned by
+   faust_float_ui or faust_double_ui, and return it as a Pure expression. This
+   is analogous to the faust_info routine in the pure-faust module. */
+
+static struct stack_elem_t {
+  int type;
+  const char *label;
+  int n;
+  pure_expr **xv;
+} *stack = NULL; // TLD
+
+static int astacksz = 0, stacksz = 0; // TLD
+
+static void clear()
+{
+  for (int i = 0; i < stacksz; i++)
+    if (stack[i].xv) free(stack[i].xv);
+  free(stack); stack = NULL; astacksz = stacksz = 0;
+}
+
+static int push(int type, const char *label, int n, pure_expr **xv)
+{
+  if (stacksz+1 >= astacksz) {
+    stack_elem_t *stack1 =
+      (stack_elem_t*)realloc(stack, (astacksz+100)*sizeof(stack_elem_t));
+    if (!stack1) return 0;
+    stack = stack1;
+    astacksz += 100;
+  }
+  stack[stacksz].type = type;
+  stack[stacksz].label = label;
+  stack[stacksz].n = n;
+  stack[stacksz].xv = xv;
+  stacksz++;
+  return 1;
+}
+
+static int pop(int &type, const char *&label, int &n, pure_expr **&xv)
+{
+  if (stacksz <= 0) return 0;
+  stacksz--;
+  type = stack[stacksz].type;
+  label = stack[stacksz].label;
+  n = stack[stacksz].n;
+  xv = stack[stacksz].xv;
+  return 1;
+}
+
+pure_expr *faust_get_ui(void *p)
+{
+  UIGlue *glue = (UIGlue*)p;
+  PureFaustUI *ui = static_cast<PureFaustUI*>(glue->uiInterface);
+  if (ui->nelems <= 0) return pure_tuplel(0);
+  pure_expr **xv = NULL;
+  int n = 0;
+  for (int i = 0; i < ui->nelems; i++) {
+    pure_expr *x;
+    int type = 0;
+    const char *label = NULL;
+    pure_expr **xv1 = (pure_expr**)realloc(xv, (n+1)*sizeof(pure_expr*));
+    if (xv1)
+      xv = xv1;
+    else {
+      free(xv);
+      clear();
+      return NULL;
+    }
+    switch (ui->elems[i].type) {
+    case UI_BUTTON:
+      xv[n++] = pure_appl(pure_symbol(pure_sym("button")), 2,
+			  pure_pointer(ui->elems[i].zone),
+			  pure_cstring_dup(ui->elems[i].label));
+      break;
+    case UI_TOGGLE_BUTTON:
+      /* FIXME: What's the toggle button supposed to be? Taken to mean a
+	 checkbox for now. */
+    case UI_CHECK_BUTTON:
+      xv[n++] = pure_appl(pure_symbol(pure_sym("checkbox")), 2,
+			  pure_pointer(ui->elems[i].zone),
+			  pure_cstring_dup(ui->elems[i].label));
+      break;
+    case UI_V_SLIDER:
+      xv[n++] = pure_appl(pure_symbol(pure_sym("vslider")), 2,
+			  pure_pointer(ui->elems[i].zone),
+			  pure_tuplel(5, pure_cstring_dup(ui->elems[i].label),
+				      pure_double(ui->elems[i].init),
+				      pure_double(ui->elems[i].min),
+				      pure_double(ui->elems[i].max),
+				      pure_double(ui->elems[i].step)));
+      break;
+    case UI_H_SLIDER:
+      xv[n++] = pure_appl(pure_symbol(pure_sym("hslider")), 2,
+			  pure_pointer(ui->elems[i].zone),
+			  pure_tuplel(5, pure_cstring_dup(ui->elems[i].label),
+				      pure_double(ui->elems[i].init),
+				      pure_double(ui->elems[i].min),
+				      pure_double(ui->elems[i].max),
+				      pure_double(ui->elems[i].step)));
+      break;
+    case UI_NUM_ENTRY:
+      xv[n++] = pure_appl(pure_symbol(pure_sym("nentry")), 2,
+			    pure_pointer(ui->elems[i].zone),
+			  pure_tuplel(5, pure_cstring_dup(ui->elems[i].label),
+				      pure_double(ui->elems[i].init),
+				      pure_double(ui->elems[i].min),
+				      pure_double(ui->elems[i].max),
+				      pure_double(ui->elems[i].step)));
+      break;
+    case UI_V_BARGRAPH:
+      xv[n++] = pure_appl(pure_symbol(pure_sym("vbargraph")), 2,
+			  pure_pointer(ui->elems[i].zone),
+			  pure_tuplel(3, pure_cstring_dup(ui->elems[i].label),
+				      pure_double(ui->elems[i].min),
+				      pure_double(ui->elems[i].max)));
+      break;
+    case UI_H_BARGRAPH:
+      xv[n++] = pure_appl(pure_symbol(pure_sym("hbargraph")), 2,
+			  pure_pointer(ui->elems[i].zone),
+			  pure_tuplel(3, pure_cstring_dup(ui->elems[i].label),
+				      pure_double(ui->elems[i].min),
+				      pure_double(ui->elems[i].max)));
+      break;
+    case UI_T_GROUP:
+    case UI_V_GROUP:
+    case UI_H_GROUP:
+      push(ui->elems[i].type, ui->elems[i].label, n, xv);
+      n = 0; xv = NULL;
+      break;
+    case UI_END_GROUP:
+      x = pure_listv(n, xv); free(xv);
+      pop(type, label, n, xv);
+      switch (type) {
+      case UI_T_GROUP:
+	xv[n++] = pure_app(pure_symbol(pure_sym("tgroup")),
+			   pure_tuplel(2, pure_cstring_dup(label), x));
+	break;
+      case UI_V_GROUP:
+	xv[n++] = pure_app(pure_symbol(pure_sym("vgroup")),
+			   pure_tuplel(2, pure_cstring_dup(label), x));
+	break;
+      case UI_H_GROUP:
+	xv[n++] = pure_app(pure_symbol(pure_sym("hgroup")),
+			   pure_tuplel(2, pure_cstring_dup(label), x));
+	break;
+      default:
+	/* can't happen */
+	xv[n++] = NULL;
+	break;
+      }
+      break;
+    default:
+      /* can't happen */
+      xv[n++] = NULL;
+      break;
+    }
+  }
+  clear();
+  assert(n==1);
+  pure_expr *x = xv[0];
+  free(xv);
+  return x;
+}
+
+}

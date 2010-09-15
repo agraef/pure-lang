@@ -673,6 +673,15 @@ void interpreter::init()
 		 "pure_interp_main","void*",  10, "int", "void*",
 		 "int", "char*", "void*", "void*", "int*", "void*",
 		 "void*", "void*");
+
+  declare_extern((void*)faust_float_ui,
+		 "faust_float_ui",  "void*",  0);
+  declare_extern((void*)faust_double_ui,
+		 "faust_double_ui", "void*",  0);
+  declare_extern((void*)faust_get_ui,
+		 "faust_get_ui",  "expr*",    1, "void*");
+  declare_extern((void*)faust_free_ui,
+		 "faust_free_ui", "void",     1, "void*");
 }
 
 interpreter::interpreter()
@@ -1588,6 +1597,52 @@ bool interpreter::LoadFaustDSP(const char *name, string *msg)
   if (llvm::Linker::LinkModules(module, M, msg)) {
     dsp_errmsg(name, msg);
     return false;
+  }
+  // Add an interface function to create the UI description.
+  {
+    using namespace llvm;
+    vector<const Type*> argt(1, VoidPtrTy);
+    FunctionType *ft = FunctionType::get(ExprPtrTy, argt, false);
+    Function *f = Function::Create(ft, Function::ExternalLinkage,
+				   "$$faust$"+modname+"$ui", module);
+    funs.push_back("ui");
+    BasicBlock *bb = basic_block("entry", f);
+#ifdef LLVM26
+    Builder b(llvm::getGlobalContext());
+#else
+    Builder b;
+#endif
+    b.SetInsertPoint(bb);
+    // First we need to figure out whether our dsp uses float or double values.
+    Function *compute = module->getFunction("$$faust$"+modname+"$compute");
+    const Type *type = compute->getFunctionType()->getParamType(2);
+    bool is_double = type ==
+      PointerType::get(PointerType::get(double_type(), 0), 0);
+    // Call the runtime function to create the internal UI data structure.
+    Function *uifun = module->getFunction
+      (is_double?"faust_double_ui":"faust_float_ui");
+    vector<Value*> args;
+    Value *v = b.CreateCall(uifun, args.begin(), args.end());
+    // Call the Faust function to initialize the UI data structure.
+    Function *buildUserInterface = module->getFunction
+      ("$$faust$"+modname+"$buildUserInterface");
+    // We need to cast the void* arguments to the proper pointer types
+    // expected by the buildUserInterface routine.
+    const FunctionType *gt = buildUserInterface->getFunctionType();
+    Function::arg_iterator a = f->arg_begin();
+    args.push_back(b.CreateBitCast(a++, gt->getParamType(0)));
+    args.push_back(b.CreateBitCast(v, gt->getParamType(1)));
+    b.CreateCall(buildUserInterface, args.begin(), args.end());
+    // Construct the UI description.
+    Function *infofun = module->getFunction("faust_get_ui");
+    args.clear();
+    args.push_back(v);
+    Value *u = b.CreateCall(infofun, args.begin(), args.end());
+    // Get rid of the internal UI data structure.
+    Function *freefun = module->getFunction("faust_free_ui");
+    b.CreateCall(freefun, args.begin(), args.end());
+    // Return the result.
+    b.CreateRet(u);
   }
   // Create the namespace if necessary.
   namespaces.insert(modname);
