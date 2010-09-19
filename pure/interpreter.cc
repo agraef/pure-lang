@@ -1527,21 +1527,15 @@ void interpreter::print_tags()
 // compiler.
 #define DSPEXT ".bc"
 #endif
+#ifndef BCEXT
+// Standard LLVM bitcode modules.
+#define BCEXT ".bc"
+#endif
 #ifndef PUREEXT
 #define PUREEXT ".pure"
 #endif
 
-static void dsp_errmsg(string name, string* msg)
-{
-  // Give more elaborate diagnostics for failed attempts to load a Faust DSP.
-  if (!msg) return;
-  if (!msg->empty())
-    *msg = name+": cannot open dsp file: "+*msg;
-  else
-    *msg = name+": cannot open dsp file";
-}
-
-static string faust_modname(const string& name)
+static string strip_modname(const string& name)
 {
   string modname = name;
   size_t p = modname.rfind(".");
@@ -1551,13 +1545,32 @@ static string faust_modname(const string& name)
   return modname;
 }
 
+static string strip_filename(const string& name)
+{
+  string fname = name;
+  size_t p = fname.find_last_of("/\\:");
+  if (p != string::npos) fname.erase(0, p+1);
+  return fname;
+}
+
+static void dsp_errmsg(string name, string* msg)
+{
+  // Give more elaborate diagnostics for failed attempts to load a Faust DSP.
+  if (!msg) return;
+  name = strip_filename(name);
+  if (!msg->empty())
+    *msg = name+": "+*msg;
+  else
+    *msg = name+": Error linking dsp file";
+}
+
 bool interpreter::LoadFaustDSP(const char *name, string *msg)
 {
   // Determine the basename of the Faust module. This will be used to mangle
   // the Faust functions and give the namespace of the Faust functions in Pure
   // land (so for easy access it's better if the basename is a valid Pure
   // identifier).
-  string modname = faust_modname(name);
+  string modname = strip_modname(name);
   if (loaded_dsps.find(modname) != loaded_dsps.end())
     // Module already loaded.
     return true;
@@ -1665,7 +1678,7 @@ bool interpreter::LoadFaustDSP(const char *name, string *msg)
     for (size_t i = 0; i < n; i++) argtypes.push_back(type_name(argt[i]));
     // Manufacture an extern declaration for the function so that it
     // can be called in Pure land.
-    declare_extern(0, fname, restype, argtypes, false, 0, asname);
+    declare_extern(0, fname, restype, argtypes, false, 0, asname, false);
 #if 0 // debugging
     symbol *sym = symtab.sym(asname);
     if (!sym) continue;
@@ -1678,6 +1691,122 @@ bool interpreter::LoadFaustDSP(const char *name, string *msg)
 #endif
   }
   loaded_dsps.insert(modname);
+  return true;
+}
+
+static void bc_errmsg(string name, string* msg)
+{
+  if (!msg) return;
+  name = strip_filename(name);
+  if (!msg->empty())
+    *msg = name+": "+*msg;
+  else
+    *msg = name+": Error linking bitcode file";
+}
+
+bool interpreter::LoadBitcode(const char *name, string *msg)
+{
+  string modname = strip_modname(name);
+  if (loaded_bcs.find(modname) != loaded_bcs.end())
+    // Module already loaded.
+    return true;
+  llvm::MemoryBuffer *buf = llvm::MemoryBuffer::getFile(name, msg);
+  if (!buf) {
+    bc_errmsg(name, msg);
+    return false;
+  }
+  llvm::Module *M = llvm::ParseBitcodeFile(buf, llvm::getGlobalContext(), msg);
+  delete buf;
+  if (!M) {
+    bc_errmsg(name, msg);
+    return false;
+  }
+  // Check the target layout and triple of the module against our target and
+  // give diagnostics in case of a mismatch. NOTE: Currently this only gives a
+  // warning and fixes up layout and triple anyway. Note that the module may
+  // be unusable on the target if the linked code was generated for a
+  // different system.
+  string layout = JIT->getTargetData()->getStringRepresentation(),
+    triple = HOST;
+  // FIXME: Currently we ignore mismatches in the target triple and just
+  // assume that bitcode files are ok if the data layouts match. Not sure
+  // whether this assumption is always valid.
+  if ((!M->getDataLayout().empty() && M->getDataLayout() != layout)
+#if 0
+      || (!M->getTargetTriple().empty() && M->getTargetTriple() != triple)
+#endif
+      ) {
+    warning(strip_filename(name)+": mismatch in target architecture '"+
+	    M->getTargetTriple()+"'");
+  }
+  M->setDataLayout(layout); M->setTargetTriple(triple);
+  // Build a list of the external functions of the module so that we can wrap
+  // them later.
+  list<string> funs;
+  for (llvm::Module::iterator it = M->begin(), end = M->end(); it != end; ) {
+    llvm::Function &f = *(it++);
+    if (!f.isDeclaration() &&
+	f.getLinkage() == llvm::Function::ExternalLinkage) {
+      funs.push_back(f.getName());
+    }
+  }
+  // Link the bitcode module into the Pure module.
+  if (llvm::Linker::LinkModules(module, M, msg)) {
+    bc_errmsg(name, msg);
+    return false;
+  }
+  // Create wrappers.
+  for (list<string>::iterator it = funs.begin(), end = funs.end();
+       it != end; ++it) {
+    string fname = *it;
+    llvm::Function *f = module->getFunction(fname);
+    assert(f);
+    // The function type.
+    const llvm::FunctionType *ft = f->getFunctionType();
+    const llvm::Type* rest = ft->getReturnType();
+    size_t n = ft->getNumParams();
+    vector<const llvm::Type*> argt(n);
+    for (size_t i = 0; i < n; i++) argt[i] = ft->getParamType(i);
+    string restype = type_name(rest);
+    list<string> argtypes;
+    // Check the result type for compatibility with Pure.
+    bool ok = restype != "<unknown C type>";
+    for (size_t i = 0; i < n; i++) {
+      string argtype = type_name(argt[i]);
+      // Check the argument type.
+      if (argtype == "<unknown C type>") {
+	ok = false;
+	break;
+      }
+      argtypes.push_back(argtype);
+    }
+    if (ok) {
+      // Manufacture an extern declaration for the function so that it
+      // can be called in Pure land.
+      declare_extern(0, fname, restype, argtypes, false, 0, "", false);
+#if 0 // debugging
+      symbol *sym = symtab.sym(fname);
+      if (!sym) continue;
+      ExternInfo info(sym->f, fname, rest, argt, f);
+      cerr << "\n" << info << ";\n";
+      verifyFunction(*f);
+      if (FPM) FPM->run(*f);
+      llvm::raw_stdout_ostream out;
+      f->print(out);
+#endif
+    } else {
+      // Bad argument or result type (probably a struct-by-val). Print a
+      // warning in such cases.
+      symbol *sym = symtab.sym(fname);
+      if (!sym) continue;
+      ExternInfo info(sym->f, fname, rest, argt, f);
+      ostringstream msg;
+      msg << strip_filename(name) << ": extern function '" << fname
+	  << "' with bad prototype: " << info;
+      warning(msg.str());
+    }
+  }
+  loaded_bcs.insert(modname);
   return true;
 }
 
@@ -1706,6 +1835,18 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
     if (llvm::sys::DynamicLibrary::LoadLibraryPermanently(aname.c_str(), &msg))
       throw err(msg);
     loaded_libs.push_back(aname);
+    return 0;
+  }
+  if (p != string::npos && s.substr(0, p) == "bc") {
+    if (p+1 >= s.size()) throw err("empty bitcode file name");
+    string msg, name = s.substr(p+1), bcname = name;
+    // See whether we need to add the BCEXT suffix.
+    if (name.size() <= strlen(BCEXT) ||
+	name.substr(name.size()-strlen(BCEXT)) != BCEXT)
+      bcname += BCEXT;
+    string aname = searchlib(srcdir, libdir, librarydirs, bcname);
+    if (!LoadBitcode(aname.c_str(), &msg))
+      throw err(msg);
     return 0;
   }
   if (p != string::npos && s.substr(0, p) == "dsp") {
@@ -7096,7 +7237,7 @@ Function *interpreter::declare_extern(void *fp, string name, string restype,
 Function *interpreter::declare_extern(int priv, string name, string restype,
 				      const list<string>& argtypes,
 				      bool varargs, void *fp,
-				      string asname)
+				      string asname, bool dll_check)
 {
   // translate type names to LLVM types
   size_t n = argtypes.size();
@@ -7188,10 +7329,9 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   // Handle the case that the C function was imported through a dll *after*
   // the definition of a Pure function of the same name. In this case the C
   // function won't be accessible in the Pure program at all.
-  bool is_faust_fun = is_faust(name);
-  if (it == externals.end() && g && !g->isDeclaration() && !is_faust_fun)
+  if (it == externals.end() && g && !g->isDeclaration() && dll_check)
     throw err("symbol '"+name+"' is already defined as a Pure function");
-  if (it == externals.end() && g && !is_faust_fun) {
+  if (it == externals.end() && g && dll_check) {
     // Cross-check with a builtin declaration.
     assert(g->isDeclaration() && gt);
     if (gt != ft) {
@@ -7234,7 +7374,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   }
   // Check that the external function actually exists by searching the program
   // and resident libraries.
-  if (!sys::DynamicLibrary::SearchForAddressOfSymbol(name) && !is_faust_fun)
+  if (!sys::DynamicLibrary::SearchForAddressOfSymbol(name) && dll_check)
     throw err("external symbol '"+name+"' cannot be found");
   // If we come here, we have a new external symbol for which we create a
   // declaration (if needed), as well as a Pure wrapper function which is
@@ -7280,6 +7420,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   }
   // unbox arguments
   bool temps = false, vtemps = false;
+  bool is_faust_fun = is_faust(name);
   for (size_t i = 0; i < n; i++) {
     Value *x = args[i];
     // check for thunks which must be forced

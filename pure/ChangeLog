@@ -1,3 +1,23 @@
+2010-09-19  Albert Graef  <Dr.Graef@t-online.de>
+
+	* interpreter.cc (LoadBitcode): Generic bitcode interface. This
+	allows you to load any LLVM bitcode file and makes the external
+	functions defined in the bitcode module callable from Pure. The
+	necessary extern declarations are created automagically. To these
+	ends, the following special form of the 'using' clause is
+	provided: using "bc:name", where 'name' is the basename of the
+	bitcode module. (The default '.bc' suffix is supplied
+	automatically, and the bitcode module is searched along the usual
+	library search path.)
+
+	This is still experimental, but it should work with most kinds of
+	C and Fortran functions which can be compiled with llvm-gcc or
+	clang, provided that the data types of return values and arguments
+	are understood by Pure. Currently no attempt is made to handle the
+	name mangling in other languages like C++, so functions will only
+	be callable if the function names in the bitcode module follow
+	Pure conventions.
+
 2010-09-15  Albert Graef  <Dr.Graef@t-online.de>
 
 	* interpreter.cc (LoadFaustDSP), runtime.cc/hh: Add the necessary

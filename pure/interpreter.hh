@@ -470,6 +470,7 @@ public:
   set<string> sources; // the set of all scripts which have been loaded
   set<string> namespaces; // the set of all declared namespaces
   list<string> loaded_libs; // the list of all loaded libs (lib:...)
+  set<string> loaded_bcs; // the set of all loaded bitcode modules (bc:...)
   set<string> loaded_dsps; // the set of all loaded Faust dsps (dsp:...)
   list<int> required; // required symbols (--required pragma)
   ostream *output;   // redirected output stream for interactive commands
@@ -799,7 +800,7 @@ public:
   llvm::Function *declare_extern(int priv, string name, string restype,
 				 const list<string>& argtypes,
 				 bool varargs = false, void *fp = 0,
-				 string asname = "");
+				 string asname = "", bool dll_check = true);
   void check_used(set<llvm::Function*>& used,
 		  map<llvm::GlobalVariable*,llvm::Function*>& varmap);
   int compiler(string out, list<string> libnames);
@@ -814,6 +815,8 @@ public:
   void backtrace(ostream& out);
   // Faust interface.
   bool LoadFaustDSP(const char *name, string *msg = 0);
+  // Generic LLVM bitcode interface.
+  bool LoadBitcode(const char *name, string *msg = 0);
 private:
   void init();
   void init_llvm_target();
