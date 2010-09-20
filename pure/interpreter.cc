@@ -1658,7 +1658,10 @@ bool interpreter::LoadFaustDSP(const char *name, string *msg)
     b.CreateRet(u);
   }
   // Create the namespace if necessary.
-  namespaces.insert(modname);
+  if (symtab.current_namespace->empty())
+    namespaces.insert(modname);
+  else
+    namespaces.insert(*symtab.current_namespace+"::"+modname);
   // Create wrappers.
   for (list<string>::iterator it = funs.begin(), end = funs.end();
        it != end; ++it) {
@@ -1760,6 +1763,8 @@ bool interpreter::LoadBitcode(const char *name, string *msg)
     string fname = *it;
     llvm::Function *f = module->getFunction(fname);
     assert(f);
+    // The name under which the function is accessible in Pure.
+    string asname = fname;
     // The function type.
     const llvm::FunctionType *ft = f->getFunctionType();
     const llvm::Type* rest = ft->getReturnType();
@@ -1782,9 +1787,9 @@ bool interpreter::LoadBitcode(const char *name, string *msg)
     if (ok) {
       // Manufacture an extern declaration for the function so that it
       // can be called in Pure land.
-      declare_extern(0, fname, restype, argtypes, false, 0, "", false);
+      declare_extern(0, fname, restype, argtypes, false, 0, asname, false);
 #if 0 // debugging
-      symbol *sym = symtab.sym(fname);
+      symbol *sym = symtab.sym(asname);
       if (!sym) continue;
       ExternInfo info(sym->f, fname, rest, argt, f);
       cerr << "\n" << info << ";\n";
@@ -1796,7 +1801,7 @@ bool interpreter::LoadBitcode(const char *name, string *msg)
     } else {
       // Bad argument or result type (probably a struct-by-val). Print a
       // warning in such cases.
-      symbol *sym = symtab.sym(fname);
+      symbol *sym = symtab.sym(asname);
       if (!sym) continue;
       ExternInfo info(sym->f, fname, rest, argt, f);
       ostringstream msg;
