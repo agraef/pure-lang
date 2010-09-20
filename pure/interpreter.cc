@@ -7220,7 +7220,6 @@ const char *interpreter::type_name(const Type *type)
 
 const char *interpreter::bctype_name(const Type *type)
 {
-  const Type *xtype = module->getTypeByName("struct.pure_expr");
   if (type == void_type())
     return "void";
   else if (type == int1_type())
@@ -7249,27 +7248,29 @@ const char *interpreter::bctype_name(const Type *type)
 #else
     return "void*";
 #endif
-  else if (type == PointerType::get(int16_type(), 0))
-    return "short*";
-  else if (type == PointerType::get(int32_type(), 0))
-    return "int*";
-  else if (type == PointerType::get(int64_type(), 0))
-#if SIZEOF_LONG==8
-    return "long*";
-#else
-    return "int64*";
-#endif
-  else if (type == PointerType::get(float_type(), 0))
-    return "float*";
-  else if (type == PointerType::get(double_type(), 0))
-    return "double*";
-  else if (xtype && type == PointerType::get(xtype, 0))
-    return "expr*";
   else if (type == VoidPtrTy)
     return "void*";
-  else if (type->getTypeID() == Type::PointerTyID)
-    return "void*";
-  else
+  else if (type->getTypeID() == Type::PointerTyID) {
+    const Type *elem_type = type->getContainedType(0);
+    if (elem_type == int16_type())
+      return "short*";
+    else if (elem_type == int32_type())
+      return "int*";
+    else if (elem_type == int64_type())
+#if SIZEOF_LONG==8
+      return "long*";
+#else
+      return "int64*";
+#endif
+    else if (elem_type == float_type())
+      return "float*";
+    else if (elem_type == double_type())
+      return "double*";
+    else if (elem_type == module->getTypeByName("struct.pure_expr"))
+      return "expr*";
+    else
+      return "void*";
+  } else
     return "<unknown C type>";
 }
 
@@ -7296,13 +7297,7 @@ const char *interpreter::dsptype_name(const Type *type)
   else if (type == double_type())
     return "double";
   else if (type == CharPtrTy)
-  /* Unfortunately, LLVM doesn't distinguish between void* and char* in
-     bitcode files, so char* is always interpreted as void* right now. */
-#if 0
-    return "char*";
-#else
     return "void*";
-#endif
   else if (type == PointerType::get(int16_type(), 0))
     return "short*";
   else if (type == PointerType::get(int32_type(), 0))
