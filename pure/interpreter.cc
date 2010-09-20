@@ -271,7 +271,7 @@ void interpreter::init()
     elts.push_back(VoidPtrTy);		// block
     elts.push_back(int32_type());	// owner
     GSLMatrixTy = struct_type(elts);
-    module->addTypeName("struct.gsl_matrix", GSLMatrixTy);
+    module->addTypeName("struct._gsl_matrix", GSLMatrixTy);
     GSLMatrixPtrTy = PointerType::get(GSLMatrixTy, 0);
   }
   {
@@ -289,7 +289,7 @@ void interpreter::init()
     elts.push_back(VoidPtrTy);		// block
     elts.push_back(int32_type());	// owner
     GSLDoubleMatrixTy = struct_type(elts);
-    module->addTypeName("struct.gsl_matrix_double", GSLDoubleMatrixTy);
+    module->addTypeName("struct._gsl_matrix_double", GSLDoubleMatrixTy);
     GSLDoubleMatrixPtrTy = PointerType::get(GSLDoubleMatrixTy, 0);
   }
   {
@@ -307,7 +307,7 @@ void interpreter::init()
     elts.push_back(VoidPtrTy);		// block
     elts.push_back(int32_type());	// owner
     GSLComplexMatrixTy = struct_type(elts);
-    module->addTypeName("struct.gsl_matrix_complex", GSLComplexMatrixTy);
+    module->addTypeName("struct._gsl_matrix_complex", GSLComplexMatrixTy);
     GSLComplexMatrixPtrTy = PointerType::get(GSLComplexMatrixTy, 0);
   }
   {
@@ -325,7 +325,7 @@ void interpreter::init()
     elts.push_back(VoidPtrTy);		// block
     elts.push_back(int32_type());	// owner
     GSLIntMatrixTy = struct_type(elts);
-    module->addTypeName("struct.gsl_matrix_int", GSLIntMatrixTy);
+    module->addTypeName("struct._gsl_matrix_int", GSLIntMatrixTy);
     GSLIntMatrixPtrTy = PointerType::get(GSLIntMatrixTy, 0);
   }
 
@@ -7266,8 +7266,17 @@ const char *interpreter::bctype_name(const Type *type)
       return "float*";
     else if (elem_type == double_type())
       return "double*";
+    /* Special support for Pure expression pointers which are passed through
+       unchanged. */
     else if (elem_type == module->getTypeByName("struct.pure_expr"))
       return "expr*";
+    /* Special support for the GSL matrix types. */
+    else if (elem_type == module->getTypeByName("struct.gsl_matrix"))
+      return "dmatrix*";
+    else if (elem_type == module->getTypeByName("struct.gsl_matrix_int"))
+      return "imatrix*";
+    else if (elem_type == module->getTypeByName("struct.gsl_matrix_complex"))
+      return "cmatrix*";
     else
       return "void*";
   } else
@@ -7768,7 +7777,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       f->getBasicBlockList().push_back(okbb);
       b.SetInsertPoint(okbb);
       Value *matv = b.CreateCall(module->getFunction("pure_get_matrix"), x);
-      unboxed[i] = b.CreateBitCast(matv, argt[i]);
+      unboxed[i] = b.CreateBitCast(matv, gt->getParamType(i));
     } else if (argt[i] == ExprPtrTy) {
       // passed through
       unboxed[i] = x;
