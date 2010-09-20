@@ -1673,9 +1673,9 @@ bool interpreter::LoadFaustDSP(const char *name, string *msg)
     size_t n = ft->getNumParams();
     vector<const llvm::Type*> argt(n);
     for (size_t i = 0; i < n; i++) argt[i] = ft->getParamType(i);
-    string restype = type_name(rest);
+    string restype = dsptype_name(rest);
     list<string> argtypes;
-    for (size_t i = 0; i < n; i++) argtypes.push_back(type_name(argt[i]));
+    for (size_t i = 0; i < n; i++) argtypes.push_back(dsptype_name(argt[i]));
     // Manufacture an extern declaration for the function so that it
     // can be called in Pure land.
     declare_extern(0, fname, restype, argtypes, false, 0, asname, false);
@@ -1722,22 +1722,21 @@ bool interpreter::LoadBitcode(const char *name, string *msg)
     return false;
   }
   // Check the target layout and triple of the module against our target and
-  // give diagnostics in case of a mismatch. NOTE: Currently this only gives a
-  // warning and fixes up layout and triple anyway. Note that the module may
-  // be unusable on the target if the linked code was generated for a
-  // different system.
+  // give diagnostics in case of a mismatch. NOTE: Currently we ignore
+  // mismatches in the target triple and just assume that bitcode files are ok
+  // if the data layouts match. Not sure whether this assumption is always
+  // valid.
   string layout = JIT->getTargetData()->getStringRepresentation(),
     triple = HOST;
-  // FIXME: Currently we ignore mismatches in the target triple and just
-  // assume that bitcode files are ok if the data layouts match. Not sure
-  // whether this assumption is always valid.
   if ((!M->getDataLayout().empty() && M->getDataLayout() != layout)
 #if 0
       || (!M->getTargetTriple().empty() && M->getTargetTriple() != triple)
 #endif
       ) {
-    warning(strip_filename(name)+": mismatch in target architecture '"+
-	    M->getTargetTriple()+"'");
+    if (msg)
+      *msg = "Mismatch in target architecture '"+M->getTargetTriple()+"'";
+    bc_errmsg(name, msg);
+    return false;
   }
   M->setDataLayout(layout); M->setTargetTriple(triple);
   // Build a list of the external functions of the module so that we can wrap
@@ -1767,12 +1766,12 @@ bool interpreter::LoadBitcode(const char *name, string *msg)
     size_t n = ft->getNumParams();
     vector<const llvm::Type*> argt(n);
     for (size_t i = 0; i < n; i++) argt[i] = ft->getParamType(i);
-    string restype = type_name(rest);
+    string restype = bctype_name(rest);
     list<string> argtypes;
     // Check the result type for compatibility with Pure.
     bool ok = restype != "<unknown C type>";
     for (size_t i = 0; i < n; i++) {
-      string argtype = type_name(argt[i]);
+      string argtype = bctype_name(argt[i]);
       // Check the argument type.
       if (argtype == "<unknown C type>") {
 	ok = false;
@@ -1801,7 +1800,7 @@ bool interpreter::LoadBitcode(const char *name, string *msg)
       if (!sym) continue;
       ExternInfo info(sym->f, fname, rest, argt, f);
       ostringstream msg;
-      msg << strip_filename(name) << ": extern function '" << fname
+      msg << strip_filename(name) << ": warning: extern function '" << fname
 	  << "' with bad prototype: " << info;
       warning(msg.str());
     }
@@ -7209,11 +7208,116 @@ const char *interpreter::type_name(const Type *type)
   else if (type == VoidPtrTy)
     return "void*";
   else if (type->getTypeID() == Type::PointerTyID)
-#if 0
     return "<unknown C pointer type>";
+  else
+    return "<unknown C type>";
+}
+
+const char *interpreter::bctype_name(const Type *type)
+{
+  const Type *xtype = module->getTypeByName("struct.pure_expr");
+  if (type == void_type())
+    return "void";
+  else if (type == int1_type())
+    return "bool";
+  else if (type == int8_type())
+    return "char";
+  else if (type == int16_type())
+    return "short";
+  else if (type == int32_type())
+    return "int";
+  else if (type == int64_type())
+#if SIZEOF_LONG==8
+    return "long";
+#else
+    return "int64";
+#endif
+  else if (type == float_type())
+    return "float";
+  else if (type == double_type())
+    return "double";
+  else if (type == CharPtrTy)
+  /* Unfortunately, LLVM doesn't distinguish between void* and char* in
+     bitcode files, so char* is always interpreted as void* right now. */
+#if 0
+    return "char*";
 #else
     return "void*";
 #endif
+  else if (type == PointerType::get(int16_type(), 0))
+    return "short*";
+  else if (type == PointerType::get(int32_type(), 0))
+    return "int*";
+  else if (type == PointerType::get(int64_type(), 0))
+#if SIZEOF_LONG==8
+    return "long*";
+#else
+    return "int64*";
+#endif
+  else if (type == PointerType::get(float_type(), 0))
+    return "float*";
+  else if (type == PointerType::get(double_type(), 0))
+    return "double*";
+  else if (xtype && type == PointerType::get(xtype, 0))
+    return "expr*";
+  else if (type == VoidPtrTy)
+    return "void*";
+  else if (type->getTypeID() == Type::PointerTyID)
+    return "void*";
+  else
+    return "<unknown C type>";
+}
+
+const char *interpreter::dsptype_name(const Type *type)
+{
+  if (type == void_type())
+    return "void";
+  else if (type == int1_type())
+    return "bool";
+  else if (type == int8_type())
+    return "char";
+  else if (type == int16_type())
+    return "short";
+  else if (type == int32_type())
+    return "int";
+  else if (type == int64_type())
+#if SIZEOF_LONG==8
+    return "long";
+#else
+    return "int64";
+#endif
+  else if (type == float_type())
+    return "float";
+  else if (type == double_type())
+    return "double";
+  else if (type == CharPtrTy)
+  /* Unfortunately, LLVM doesn't distinguish between void* and char* in
+     bitcode files, so char* is always interpreted as void* right now. */
+#if 0
+    return "char*";
+#else
+    return "void*";
+#endif
+  else if (type == PointerType::get(int16_type(), 0))
+    return "short*";
+  else if (type == PointerType::get(int32_type(), 0))
+    return "int*";
+  else if (type == PointerType::get(int64_type(), 0))
+#if SIZEOF_LONG==8
+    return "long*";
+#else
+    return "int64*";
+#endif
+  else if (type == PointerType::get(float_type(), 0))
+    return "float*";
+  else if (type == PointerType::get(double_type(), 0))
+    return "double*";
+  else if (type == ExprPtrTy)
+    return "expr*";
+  else if (type == VoidPtrTy)
+    return "void*";
+  else if (type->getTypeID() == Type::PointerTyID)
+    return "void*";
   else
     return "<unknown C type>";
 }
@@ -7668,6 +7772,12 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     } else if (argt[i] == ExprPtrTy) {
       // passed through
       unboxed[i] = x;
+      // Cast the pointer to the proper target type if necessary. This is only
+      // necessary in the bitcode interface, since the Pure interpreter uses
+      // its own internal representation of the expression data type.
+      const Type *type = gt->getParamType(i);
+      if (type != ExprPtrTy)
+	unboxed[i] = b.CreateBitCast(unboxed[i], type);
     } else if (argt[i] == VoidPtrTy && is_faust_fun) {
       /* Here we have to cast a generic pointer to whatever the interface of
 	 the Faust function requires. This only supports either plain pointers
@@ -7712,8 +7822,9 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       phi->addIncoming(ptrv, ptrbb);
       if (matrixbb) phi->addIncoming(matrixv, matrixbb);
       unboxed[i] = phi;
-      // Cast the pointer to the proper target type.
-      unboxed[i] = b.CreateBitCast(unboxed[i], type);
+      // Cast the pointer to the proper target type if necessary.
+      if (type != VoidPtrTy)
+	unboxed[i] = b.CreateBitCast(unboxed[i], type);
     } else if (argt[i] == VoidPtrTy) {
       BasicBlock *ptrbb = basic_block("ptr");
       BasicBlock *mpzbb = basic_block("mpz");
@@ -7762,11 +7873,10 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       phi->addIncoming(mpzv, mpzbb);
       phi->addIncoming(matrixv, matrixbb);
       unboxed[i] = phi;
-      if (gt->getParamType(i)==CharPtrTy)
-	// An external builtin already has this parameter declared as char*.
-	// We allow void* to be passed anyway, so just cast it to char* to
-	// make the LLVM typechecker happy.
-	unboxed[i] = b.CreateBitCast(unboxed[i], CharPtrTy);
+      // Cast the pointer to the proper target type if necessary.
+      const Type *type = gt->getParamType(i);
+      if (type != VoidPtrTy)
+	unboxed[i] = b.CreateBitCast(unboxed[i], type);
     } else
       assert(0 && "invalid C type");
   }
@@ -7831,6 +7941,9 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     u = b.CreateCall(module->getFunction("pure_int_matrix"),
 		     b.CreateBitCast(u, VoidPtrTy));
   else if (type == ExprPtrTy) {
+    if (gt->getReturnType() != ExprPtrTy)
+      // bitcast the result to an expr*
+      u = b.CreateBitCast(u, ExprPtrTy);
     // check that we actually got a valid pointer; otherwise the call failed
     BasicBlock *okbb = basic_block("ok");
     b.CreateCondBr
@@ -7839,7 +7952,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     b.SetInsertPoint(okbb);
     // value is passed through
   } else if (type == VoidPtrTy) {
-    if (is_faust_fun)
+    if (gt->getReturnType() != VoidPtrTy)
       // bitcast the pointer result to a void*
       u = b.CreateBitCast(u, VoidPtrTy);
     u = b.CreateCall(module->getFunction("pure_pointer"), u);

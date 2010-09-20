@@ -781,6 +781,8 @@ public:
 
   const llvm::Type *named_type(string name);
   const char *type_name(const llvm::Type *type);
+  const char *bctype_name(const llvm::Type *type);
+  const char *dsptype_name(const llvm::Type *type);
   set<llvm::Function*> always_used;
   map<int32_t,GlobalVar> globalvars;
   map<int32_t,Env> globalfuns;
