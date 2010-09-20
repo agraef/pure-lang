@@ -1,0 +1,19 @@
+
+/* How to use the new bitcode interface to run a C function. The C source code
+   can be found in mygcd.c and is to be compiled with:
+   llvm-gcc -emit-llvm -c mygcd.c -o mygcd.bc
+
+   This creates a little LLVM bitcode file defining the 'mygcd' function. The
+   following 'using' declaration imports the bitcode module and makes the
+   'mygcd' function available in Pure. (Note the 'bc' tag which indicates to
+   the Pure interpreter that this is a bitcode module; the .bc suffix is then
+   supplied automatically.) */
+
+using "bc:mygcd";
+
+/* Note that no explicit extern declarations are necessary on the Pure side,
+   these are all done automatically. (As usual, you can display the extern
+   declaration created by the bitcode loader with the interactive command
+   'show mygcd'.) The 'mygcd' function can now simply be called as follows: */
+
+mygcd 75 105; // yields 15

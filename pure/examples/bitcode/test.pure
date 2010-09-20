@@ -1,0 +1,44 @@
+
+// Manifest constants.
+const SR = 44100; // samplerate for the DSP
+const n  = 10;    // #samples per block
+
+// Import the Faust module. Note that this creates a number of different
+// operations in the 'test' namespace. When running interactively, you can
+// use 'show -g test::*' to see which operations are provided.
+using "dsp:test";
+
+// Create the Faust DSP and initialize it.
+let dsp = test::new;
+test::init dsp SR;
+
+// Get the number of I/O channels.
+let k,l = test::getNumInputs dsp, test::getNumOutputs dsp;
+
+// Input and output buffers.
+let in  = {i*10.0+j | i = 1..k; j = 1..n};
+let out = {0.0 | i = 1..l; j = 1..n};
+
+// Example: Print the number of I/O channels and process some samples.
+using system;
+puts "-- test dsp --";
+printf "#inputs:  %d\n" k;    // => 2
+printf "#outputs: %d\n" l;    // => 1
+test::compute dsp n in out;
+printf "in:  %s\n" $ str in;  // => {11.0,12.0,13.0;21.0,22.0,23.0,...}
+printf "out: %s\n" $ str out; // => {9.6,10.2,10.8,...}
+
+// Create the UI description (control variables). This takes the same form as
+// with the external pure-faust module (see the documentation of pure-faust on
+// the Pure website for details).
+let ui = test::ui dsp;
+printf "controls: %s\n" $ str ui;
+
+// Grab a control variable (a double*) and manipulate it.
+let vgroup (_,[nentry gain _]) = ui;
+put_double gain 1.0;
+printf "new gain: %s\n" $ str $ get_double gain;
+test::compute dsp n in out;
+// Compute some more samples with the new gain value.
+printf "in:  %s\n" $ str in;  // => {11.0,12.0,13.0;21.0,22.0,23.0,...}
+printf "out: %s\n" $ str out; // => {32.0,34.0,36.0,...}

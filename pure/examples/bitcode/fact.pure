@@ -1,0 +1,22 @@
+
+/* This shows how to interface to a simple Fortran function, using the new
+   bitcode interface. To compile the Fortran example to a bitcode file:
+   llvm-gfortran -emit-llvm -c fact.f90 -o fact.bc
+
+   The following line imports the resulting bitcode module. Note that no
+   explicit extern declarations are necessary on the Pure side, these are all
+   done automatically. */
+
+using "bc:fact";
+
+/* The Fortran function 'fact' in fact.f90 is available as 'fact_' (note
+   the trailing underscore). Unfortunately, the current version of
+   llvm-gfortran doesn't seem to support the 'value' attribute (as of LLVM
+   2.7, YMMV), so the integer argument of 'fact_' needs to be passed by
+   reference. This can be done most conveniently using a temporary int
+   matrix. The following little wrapper function shows how to do this. */
+
+fact n::int = fact_ {n};
+
+// Example:
+map fact (1..10);
