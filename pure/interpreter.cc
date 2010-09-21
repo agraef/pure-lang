@@ -5970,12 +5970,13 @@ int interpreter::compiler(string out, list<string> libnames)
   // As of LLVM 2.7 (svn), these need to be wrapped up in a raw_ostream.
   string error;
   // Note: raw_fd_ostream already handles "-".
-  llvm::raw_ostream *codep = new_raw_fd_ostream(target.c_str(),bc_target,error);
+  llvm::raw_fd_ostream *codep =
+    new_raw_fd_ostream(target.c_str(),bc_target,error);
   if (!error.empty()) {
     std::cerr << "Error opening " << target << '\n';
     exit(1);
   }
-  llvm::raw_ostream &code = *codep;
+  llvm::raw_fd_ostream &code = *codep;
 #else
   std::ostream *codep =
     bc_target?
@@ -6244,9 +6245,10 @@ int interpreter::compiler(string out, list<string> libnames)
        passed to gcc to handle assembly and linkage (if requested). */
     string asmfile = (ext==".s")?out:out+".s";
     string cmd = "opt -f -std-compile-opts "+quote(target)+
-      " | llc -f "+string(pic?"-relocation-model=pic ":"")+
+      " | llc "+string(pic?"-relocation-model=pic ":"")+
       "-o "+quote(asmfile);
     if (vflag) std::cerr << cmd << '\n';
+    unlink(asmfile.c_str());
     int status = system(cmd.c_str());
     unlink(target.c_str());
     if (WIFEXITED(status) && WEXITSTATUS(status) == 0 && ext!=".s") {
@@ -8049,7 +8051,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   if (FPM) FPM->run(*f);
   if (verbose&verbosity::dump) {
 #if RAW_STREAM
-    raw_stdout_ostream out;
+    raw_ostream& out = outs();
 #else
     ostream& out = std::cout;
 #endif
@@ -8777,7 +8779,11 @@ Value *interpreter::builtin_codegen(expr x)
     // unary double operations
     Value *u = get_double(x.xval2());
     if (f.tag() == symtab.neg_sym().f)
+#ifdef LLVM26
+      return b.CreateFSub(Dbl(0.0), u);
+#else
       return b.CreateSub(Dbl(0.0), u);
+#endif
     else {
       assert(0 && "error in type checker");
       return 0;
@@ -8974,12 +8980,21 @@ Value *interpreter::builtin_codegen(expr x)
     else if (f.tag() == symtab.notequal_sym().f)
       return b.CreateZExt
 	(b.CreateFCmpONE(u, v), int32_type());
+#ifdef LLVM26
+    else if (f.tag() == symtab.plus_sym().f)
+      return b.CreateFAdd(u, v);
+    else if (f.tag() == symtab.minus_sym().f)
+      return b.CreateFSub(u, v);
+    else if (f.tag() == symtab.mult_sym().f)
+      return b.CreateFMul(u, v);
+#else
     else if (f.tag() == symtab.plus_sym().f)
       return b.CreateAdd(u, v);
     else if (f.tag() == symtab.minus_sym().f)
       return b.CreateSub(u, v);
     else if (f.tag() == symtab.mult_sym().f)
       return b.CreateMul(u, v);
+#endif
     else if (f.tag() == symtab.fdiv_sym().f)
       return b.CreateFDiv(u, v);
     else {
@@ -10727,7 +10742,7 @@ Function *interpreter::fun_prolog(string name)
       // show output code, if requested
       if (verbose&verbosity::dump) {
 #if RAW_STREAM
-	raw_stdout_ostream out;
+	raw_ostream& out = outs();
 #else
 	ostream& out = std::cout;
 #endif
@@ -10844,7 +10859,7 @@ void interpreter::fun_finish()
   // show output code, if requested
   if (verbose&verbosity::dump)  {
 #if RAW_STREAM
-    raw_stdout_ostream out;
+    raw_ostream& out = outs();
 #else
     ostream& out = std::cout;
 #endif
