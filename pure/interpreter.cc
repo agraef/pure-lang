@@ -1579,7 +1579,11 @@ bool interpreter::LoadFaustDSP(const char *name, string *msg)
     dsp_errmsg(name, msg);
     return false;
   }
-  llvm::Module *M = llvm::ParseBitcodeFile(buf, llvm::getGlobalContext(), msg);
+  llvm::Module *M = llvm::ParseBitcodeFile(buf,
+#ifdef LLVM26
+					   llvm::getGlobalContext(),
+#endif
+					   msg);
   delete buf;
   if (!M) {
     dsp_errmsg(name, msg);
@@ -1718,7 +1722,11 @@ bool interpreter::LoadBitcode(const char *name, string *msg)
     bc_errmsg(name, msg);
     return false;
   }
-  llvm::Module *M = llvm::ParseBitcodeFile(buf, llvm::getGlobalContext(), msg);
+  llvm::Module *M = llvm::ParseBitcodeFile(buf,
+#ifdef LLVM26
+					   llvm::getGlobalContext(),
+#endif
+					   msg);
   delete buf;
   if (!M) {
     bc_errmsg(name, msg);
