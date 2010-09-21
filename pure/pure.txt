@@ -3460,6 +3460,91 @@ the library if you prefer that. If a library file cannot be found, or if an
 ``extern`` declaration names a function symbol which cannot be resolved, an
 appropriate error message is printed.
 
+LLVM Bitcode Interface
+----------------------
+
+As of Pure 0.44, the interpreter now also provides a direct way to import LLVM
+bitcode modules in Pure scripts. The main advantage of this method over the
+"plain" C interface explained above is that the bitcode loader knows all the
+call interfaces and can generate the necessary ``extern`` declarations
+automatically.
+
+LLVM bitcode is loaded in a Pure script using the following special format of
+the ``using`` clause::
+
+  using "bc:mycfun";
+
+(Here the ``bc`` tag indicates a bitcode file, and the default ``.bc`` bitcode
+filename extension is supplied automatically. Also, the bitcode file is
+searched for on the usual library search path.)
+
+That's it, no explicit ``extern`` declarations are required on the Pure
+side. The Pure interpreter automatically creates ``extern`` declarations (in
+the current namespace) for all the external functions defined in the LLVM
+bitcode module, and generates the corresponding wrappers to make the functions
+callable from Pure. (This also works when batch-compiling a Pure script. In
+this case, the bitcode file actually gets linked into the output code, so the
+loaded bitcode module only needs to be present at compile time.)
+
+Let's take a look at a concrete example to see how this actually
+works. Consider the following C code which defines a little function to
+compute the greatest common divisor of two (machine) integers::
+
+  int mygcd(int x, int y)
+  {
+    if (y == 0)
+      return x;
+    else
+      return mygcd(y, x%y);
+  }
+
+Let's say that this code is in the file ``mygcd.c``, then you'd compile it to
+a bitcode module using llvm-gcc as follows::
+
+  llvm-gcc -emit-llvm -c mygcd.c -o mygcd.bc
+
+Note that the ``-emit-llvm -c`` options instruct llvm-gcc to build an LLVM
+bitcode module. (Of course, you can also add optimizations and other options
+to the compile command as desired.)
+
+You can now load the resulting bitcode module and run the ``mygcd`` function
+in the Pure interpreter simply as follows::
+
+  > using "bc:mygcd";
+  > mygcd 75 105;
+  15
+
+Some more examples showing how to use the bitcode interface can be found in
+the Pure sources. In particular, the interface also works with Fortran (using
+llvm-gfortran), and there is special support for interfacing to Grame's Faust_
+(a functional programming language for digital signal processing). Please
+refer to the corresponding examples in the distribution for further details.
+
+Caveat: The LLVM bitcode interface is still considered somewhat experimental.
+It already seems to works fairly well with simple C and Fortran code, but
+there are some known limitations:
+
+* LLVM doesn't distinguish between ``char*`` and ``void*`` in bitcode, so all
+  ``char*`` parameters and return values in C code will be promoted to
+  ``void*`` on the Pure side. This means that string values won't be converted
+  between Pure's internal UTF-8 encoding and the system encoding. If this is
+  required then you'll have to do the conversions manually (e.g., using the
+  appropriate functions from the Pure runtime).
+
+* The bitcode interface is limited to the same range of C types as Pure's
+  plain C interface. In practice, this should cover most C code, but it's
+  certainly possible that you run into unsupported types for arguments and
+  return values (such as C structs passed by value). The compiler will then
+  print a warning; the affected functions will still be linked in, but they
+  will not be callable from Pure.
+
+* The bitcode linker doesn't verify loaded modules for self-containedness. It
+  will try to resolve external references from loaded libraries and other
+  bitcode modules when the code is JIT-compiled, but if this fails then you'll
+  get a fatal error message from the LLVM runtime. So you'll have to make sure
+  that all required libraries and bitcode modules have been loaded before
+  trying to execute the loaded functions.
+
 Standard Library
 ================
 
@@ -5781,6 +5866,11 @@ Bertrand
     http://groups.google.com/group/bertrand-constraint. See Wm Leler:
     Constraint Programming Languages: Their Specification and Generation.
     Addison-Wesley, 1988.
+
+.. _Faust:
+
+Faust
+    Grame's functional DSP programming language, http://faust.grame.fr.
 
 .. _GNU Multiprecision Library:
 .. _GMP:
