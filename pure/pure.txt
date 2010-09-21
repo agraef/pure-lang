@@ -835,25 +835,35 @@ Tuples: ``x,y,z``
     single element, the tuple ``1,2,3``.
 
 Matrices: ``{1.0,2.0,3.0}``, ``{1,2;3,4}``, ``{1L,y+1;foo,bar}``
-    Pure also offers matrices, a kind of arrays, as a built-in data structure
-    which provides efficient storage and element access. These work more or
-    less like their Octave/MATLAB equivalents, but using curly braces instead
-    of brackets. As indicated, commas are used to separate the columns of a
-    matrix, semicolons for its rows. In fact, the ``{...}`` construct is
-    rather general, allowing you to construct new matrices from individual
-    elements and/or submatrices, provided that all dimensions match up. E.g.,
-    ``{{1;3},{2;4}}`` is another way to write a 2x2 matrix in "column-major"
-    form (however, internally all matrices are stored in C's row-major
-    format).
+    Pure also offers matrices, a kind of two-dimensional arrays, as a built-in
+    data structure which provides efficient storage and element access. These
+    work more or less like their Octave/MATLAB equivalents, but using curly
+    braces instead of brackets. As indicated, commas are used to separate the
+    columns of a matrix, semicolons for its rows. In fact, the ``{...}``
+    construct is rather general and allows you to construct new matrices from
+    any collection of individual elements ("scalars") and submatrices,
+    provided that all dimensions match up. Here, any expression which doesn't
+    yield a matrix denotes a scalar, which is considered to be a 1x1 matrix
+    for the purpose of matrix construction. The comma arranges submatrices in
+    columns, while the semicolon arranges them in rows. So, if both ``x`` and
+    ``y`` are ``n``\ x\ ``m`` matrices, then ``{x,y}`` becomes an ``n`` x
+    ``2*n`` matrix consisting of all the columns of ``x`` followed by all the
+    columns of ``y``. Likewise, ``{x;y}`` becomes a ``2*n`` x ``m`` matrix
+    (all the rows of ``x`` above of all rows of ``y``). In addition, ``{...}``
+    constructs can be nested to an arbitrary depth. Thus ``{{1;3},{2;4}}`` is
+    another way to write the 2x2 matrix ``{1,2;3,4}`` in a kind of
+    "column-major" format (however, internally all matrices are stored in C's
+    row-major format).
 
-    Note that, while the ``[...]`` and ``{...}`` constructs look superficially
-    similar, they work in very different ways. The former is just syntactic
-    sugar for a corresponding constructor term and can thus be used as a
-    pattern on the left-hand side of an equation. In contrast, the latter is a
-    built-in operation which creates objects of a special matrix type. These
-    can *not* be used as patterns (instead, matrix values can be matched using
-    the special ``matrix`` type tag, see the `Rule Syntax`_ section for
-    details).
+    It is important to note here that, while the ``[...]`` and ``{...}``
+    constructs look superficially similar, they work in very different
+    ways. The former is just syntactic sugar for a corresponding constructor
+    term and can thus be used as a pattern on the left-hand side of an
+    equation. In contrast, the latter is special syntax for a built-in
+    operation which creates objects of a special matrix type. Thus matrix
+    expressions can *not* be used as patterns (instead, matrix values can be
+    matched as a whole using the special ``matrix`` type tag, see the `Rule
+    Syntax`_ section for details).
 
     Pure supports both numeric and symbolic matrices. The former are
     homogeneous arrays of double, complex double or (machine) int matrices,
@@ -1903,11 +1913,66 @@ Example::
      0.00000   1.00000   0.40000   2.60000
      0.00000   0.00000   1.00000  -1.00000
 
+Symbolic Matrices
+-----------------
+
+As already mentioned, matrices may contain not just numbers but any kind of
+Pure value, in which case they become *symbolic* matrices. Symbolic matrices
+are a convenient data structure for storing arbitrary collections of values
+which provides fast random access to its members. In particular, symbolic
+matrices can also be nested, and thus arrays of arbitrary dimension can be
+realized as nested symbolic vectors. However, you have to be careful when
+constructing such values, as the ``{...}`` construct normally combines
+submatrices to larger matrices. For instance::
+
+  > {{1,2},{3,4}};
+  {1,2,3,4}
+
+As already mentioned, one way to inhibit this "splicing" of the submatrices in
+a larger matrix is to use the "quote" operator (cf. `Special Forms`_)::
+
+  > '{{1,2},{3,4}};
+  {{1,2},{3,4}}
+
+(Note that this result is really different from ``{1,2;3,4}``. The latter is a
+2x2 integer matrix, while the former is a symbolic vector a.k.a. 1x2 matrix
+whose elements happen to be two integer vectors.)
+
+Unfortunately, the quote operator in fact inhibits evaluation of *all*
+embedded subterms which may be undesirable if the matrix expression contains
+arithmetic (as in ``'{{1+1,2*3}}``), so this method works best for constant
+matrices. A more general way to create a symbolic vector of matrices is
+provided by the ``vector`` function from the prelude, which is applied to a
+list of the vector elements as follows::
+
+  > vector [{1,2},{3,4}];
+  {{1,2},{3,4}}
+
+Calls to the ``vector`` function can be nested to an arbitrary depth to obtain
+higher-dimensional "arrays"::
+
+  > vector [vector [{1,2}],vector [{3,4}]];
+  {{{1,2}},{{3,4}}}
+
+This obviously becomes a bit unwieldy for higher dimensions, but in Pure you
+can easily define yourself some more convenient notation if you like. For
+instance, the following macro may be used to define a pair of "non-splicing"
+vector brackets::
+
+  > outfix {: :};
+  > def {: xs@(_,_) :} = vector (list xs);
+  > def {: x :} = vector [x];
+  > {:{:{1,2}:},{:{3,4}:}:};
+  {{{1,2}},{{3,4}}}
+
+(Both macros and ``outfix`` symbol declarations are described later in the
+appropriate sections, see Macros_ and `Symbol Declarations`_.)
+
 Record Data
 -----------
 
-Matrices also provide a means to represent simple record-like data, by
-encoding records as symbolic vectors consisting of "hash pairs" of the form
+Symbolic matrices also provide a means to represent simple record-like data,
+by encoding records as symbolic vectors consisting of "hash pairs" of the form
 ``key => value``. This kind of data structure is very convenient to represent
 aggregates with lots of different components. Since the components of records
 can be accessed by indexing with key values, you don't have to remember which
@@ -1943,9 +2008,8 @@ associations in a record. The hash rocket is a constructor declared as an
 infix operator in the prelude, see the Prelude_ section in the `Pure Library
 Manual`_. There's one caveat here, however. Since neither ``=>`` nor ``!``
 treat their key operand in a special way, symbols used as keys must not be
-bound to a value (to ensure this, you might want to declare them as
-``nonfix``), or you'll have to protect them from being evaluated by quoting
-them. Thus, to be on the safe side, you should actually write::
+bound to a value, or you'll have to protect them from being evaluated by
+quoting them. Thus, to be on the safe side, you should actually write::
 
   > let r = {'x=>5, 'y=>12};
   > r!'y; r!!['y,'x];
@@ -5273,8 +5337,8 @@ for details.
 
 .. _pure-gen: http://code.google.com/p/pure-lang/wiki/Addons#pure-gen
 
-Special Forms
--------------
+Calling Special Forms
+---------------------
 
 Special forms are recognized at compile time only. Thus the ``catch``
 function, as well as ``quote`` and the operators ``&&``, ``||``, ``$$`` and
