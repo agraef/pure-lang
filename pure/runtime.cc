@@ -15071,164 +15071,164 @@ struct UIGlue {
 
 static void openFrameBoxGlue(void* cpp_interface, const char* label)
 {
-    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
-    interface->openFrameBox(label);
+    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
+    fstinterface->openFrameBox(label);
 }
 
 static void openTabBoxGlue(void* cpp_interface, const char* label)
 {
-    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
-    interface->openTabBox(label);
+    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
+    fstinterface->openTabBox(label);
 }
 
 static void openHorizontalBoxGlue(void* cpp_interface, const char* label)
 {
-    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
-    interface->openHorizontalBox(label);
+    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
+    fstinterface->openHorizontalBox(label);
 }
 
 static void openVerticalBoxGlue(void* cpp_interface, const char* label)
 {
-    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
-    interface->openVerticalBox(label);
+    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
+    fstinterface->openVerticalBox(label);
 }
 
 static void closeBoxGlue(void* cpp_interface)
 {
-    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
-    interface->closeBox();
+    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
+    fstinterface->closeBox();
 }
 
 static void addButtonFloatGlue(void* cpp_interface, const char* label, float* zone)
 {
-    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
-    interface->addButton(label, (double*)zone);
+    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
+    fstinterface->addButton(label, (double*)zone);
 }
 
 static void addToggleButtonFloatGlue(void* cpp_interface, const char* label, float* zone)
 {
-    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
-    interface->addToggleButton(label, (double*)zone);
+    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
+    fstinterface->addToggleButton(label, (double*)zone);
 }
 
 static void addCheckButtonFloatGlue(void* cpp_interface, const char* label, float* zone)
 {
-    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
-    interface->addCheckButton(label, (double*)zone);
+    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
+    fstinterface->addCheckButton(label, (double*)zone);
 }
 
 static void addVerticalSliderFloatGlue(void* cpp_interface, const char* label, float* zone, float init, float min, float max, float step)
 {
-    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
-    interface->addVerticalSlider(label, (double*)zone, init, min, max, step);
+    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
+    fstinterface->addVerticalSlider(label, (double*)zone, init, min, max, step);
 }
 
 static void addHorizontalSliderFloatGlue(void* cpp_interface, const char* label, float* zone, float init, float min, float max, float step)
 {
-    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
-    interface->addHorizontalSlider(label, (double*)zone, init, min, max, step);
+    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
+    fstinterface->addHorizontalSlider(label, (double*)zone, init, min, max, step);
 }
 
 static void addNumEntryFloatGlue(void* cpp_interface, const char* label, float* zone, float init, float min, float max, float step)
 {
-    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
-    interface->addNumEntry(label, (double*)zone, init, min, max, step);
+    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
+    fstinterface->addNumEntry(label, (double*)zone, init, min, max, step);
 }
 
 static void addNumDisplayFloatGlue(void* cpp_interface, const char* label, float* zone, int precision)
 {
-    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
-    interface->addNumDisplay(label, (double*)zone, precision);
+    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
+    fstinterface->addNumDisplay(label, (double*)zone, precision);
 }
 
 static void addTextDisplayFloatGlue(void* cpp_interface, const char* label, float* zone, const char* names[], float min, float max)
 {
-    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
-    interface->addTextDisplay(label, (double*)zone, names, min, max);
+    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
+    fstinterface->addTextDisplay(label, (double*)zone, names, min, max);
 }
 
 static void addHorizontalBargraphFloatGlue(void* cpp_interface, const char* label, float* zone, float min, float max)
 {
-    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
-    interface->addHorizontalBargraph(label, (double*)zone, min, max);
+    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
+    fstinterface->addHorizontalBargraph(label, (double*)zone, min, max);
 }
 
 static void addVerticalBargraphFloatGlue(void* cpp_interface, const char* label, float* zone, float min, float max)
 {
-    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
-    interface->addVerticalBargraph(label, (double*)zone, min, max);
+    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
+    fstinterface->addVerticalBargraph(label, (double*)zone, min, max);
 }
 
 static void declareFloatGlue(void* cpp_interface, float* zone, const char* key, const char* value)
 {
-    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
-    interface->declare((double*)zone, key, value);
+    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
+    fstinterface->declare((double*)zone, key, value);
 }
 
 static void addButtonDoubleGlue(void* cpp_interface, const char* label, double* zone)
 {
-    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
-    interface->addButton(label, zone);
+    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
+    fstinterface->addButton(label, zone);
 }
 
 static void addToggleButtonDoubleGlue(void* cpp_interface, const char* label, double* zone)
 {
-    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
-    interface->addToggleButton(label, zone);
+    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
+    fstinterface->addToggleButton(label, zone);
 }
 
 static void addCheckButtonDoubleGlue(void* cpp_interface, const char* label, double* zone)
 {
-    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
-    interface->addCheckButton(label, zone);
+    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
+    fstinterface->addCheckButton(label, zone);
 }
 
 static void addVerticalSliderDoubleGlue(void* cpp_interface, const char* label, double* zone, double init, double min, double max, double step)
 {
-    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
-    interface->addVerticalSlider(label, zone, init, min, max, step);
+    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
+    fstinterface->addVerticalSlider(label, zone, init, min, max, step);
 }
 
 static void addHorizontalSliderDoubleGlue(void* cpp_interface, const char* label, double* zone, double init, double min, double max, double step)
 {
-    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
-    interface->addHorizontalSlider(label, zone, init, min, max, step);
+    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
+    fstinterface->addHorizontalSlider(label, zone, init, min, max, step);
 }
 
 static void addNumEntryDoubleGlue(void* cpp_interface, const char* label, double* zone, double init, double min, double max, double step)
 {
-    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
-    interface->addNumEntry(label, zone, init, min, max, step);
+    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
+    fstinterface->addNumEntry(label, zone, init, min, max, step);
 }
 
 static void addNumDisplayDoubleGlue(void* cpp_interface, const char* label, double* zone, int precision)
 {
-    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
-    interface->addNumDisplay(label, zone, precision);
+    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
+    fstinterface->addNumDisplay(label, zone, precision);
 }
 
 static void addTextDisplayDoubleGlue(void* cpp_interface, const char* label, double* zone, const char* names[], double min, double max)
 {
-    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
-    interface->addTextDisplay(label, zone, names, min, max);
+    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
+    fstinterface->addTextDisplay(label, zone, names, min, max);
 }
 
 static void addHorizontalBargraphDoubleGlue(void* cpp_interface, const char* label, double* zone, double min, double max)
 {
-    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
-    interface->addHorizontalBargraph(label, zone, min, max);
+    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
+    fstinterface->addHorizontalBargraph(label, zone, min, max);
 }
 
 static void addVerticalBargraphDoubleGlue(void* cpp_interface, const char* label, double* zone, double min, double max)
 {
-    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
-    interface->addVerticalBargraph(label, zone, min, max);
+    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
+    fstinterface->addVerticalBargraph(label, zone, min, max);
 }
 
 static void declareDoubleGlue(void* cpp_interface, double* zone, const char* key, const char* value)
 {
-    FaustUI* interface = static_cast<FaustUI*>(cpp_interface);
-    interface->declare(zone, key, value);
+    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
+    fstinterface->declare(zone, key, value);
 }
 
 /* Set up a Faust UI data structure, ready to be used as the second argument
