@@ -101,18 +101,18 @@ http://llvm.org/releases/download.html
 
 You only need the llvm-2.x tarball which contains the LLVM library as well as
 most of the LLVM toolchain. LLVM 2.7 is the latest stable release at the time
-of this writing. LLVM versions 2.5, 2.6 and 2.7 have all been tested
-extensively and are known to work with Pure. LLVM 2.3 and 2.4 might still
-work, too, but you'll probably have to fiddle with the sources. We really
-recommend using LLVM 2.5 or later, however, because there have been
-substantial improvements in the LLVM JIT in recent releases. (Also note that
-there are some x86-64 specific quirks with LLVM 2.3, see the notes on 64 bit
-support in the SYSTEM NOTES section for details.)
+of this writing. LLVM versions 2.5 thru 2.8 have all been tested and are known
+to work with Pure. LLVM 2.3 and 2.4 might still work, too, but you'll probably
+have to fiddle with the sources. We really recommend using LLVM 2.5 or later,
+however, because there have been substantial improvements in the LLVM JIT in
+recent releases. (Also note that there are some x86-64 specific quirks with
+LLVM 2.3, see the notes on 64 bit support in the SYSTEM NOTES section for
+details if you really have to use that LLVM version.)
 
-LLVM from svn might work as well, but we don't guarantee this. While we're
-committed to make Pure work with new LLVM versions as they become available,
-we're not able to track LLVM development in the trunk very closely. So you
-might run into intermittent compilation problems, bugs and other
+The latest LLVM from svn might work as well, but we don't guarantee this.
+While we're committed to make Pure work with new LLVM versions as they become
+available, we're not able to track LLVM development in the trunk very closely.
+So you might run into intermittent compilation problems, bugs and other
 incompatibilities when going with the svn version.
 
 NOTE: Some (older) Linux and *BSD distributions provide LLVM packages and
@@ -140,6 +140,26 @@ disable all compilation targets but the one for your system. You might wish to
 play with the configure options, but note that some options (especially
 --enable-expensive-checks) make LLVM very slow and may even break the Pure
 interpreter on some systems.
+
+*OPTIONAL:* Finally, you may also want to install llvm-gcc. This is completely
+optional (Pure doesn't rely on llvm-gcc in any way), but if you plan to use
+the bitcode interface in Pure 0.44 and later, then you'll probably need a
+C/C++ compiler capable of producing LLVM bitcode output, and at present
+llvm-gcc is the most mature option for that. Assuming that you have unpacked
+both the LLVM and the llvm-gcc sources in the same directory, you can build
+and install llvm-gcc as follows:
+
+$ cd llvm-gcc4.2-2.7.source
+$ mkdir obj
+$ cd obj
+$ ../configure --program-prefix=llvm- --enable-llvm=$PWD/../../llvm-2.7 --enable-languages=c,c++
+$ make
+$ sudo make install
+
+(You might wish to add 'fortran' to --enable-languages if you also want to
+build the Fortran compiler, and, likewise, 'ada' for the Ada compiler.)
+
+Be patient, this takes a while.
 
 STEP 4. Get and unpack the Pure sources at: http://pure-lang.googlecode.com
 
