@@ -10,9 +10,9 @@
 
 # For the Faust signal processing examples (.dsp programs), you'll need a
 # special version of Grame's Faust compiler (http://faust.grame.fr). Until
-# Faust's new LLVM backend becomes part of the mainline Faust compiler,
-# Stephane Letz from Grame has made a suitable version of the Faust compiler
-# available here: http://rd.grame.fr/~letz/faust.zip
+# Faust's new LLVM backend becomes part of the mainline Faust compiler, you
+# can find this on the special 'faust2' branch in Faust's git repository at:
+# git://faudiostream.git.sourceforge.net/gitroot/faudiostream/faudiostream
 
 # If your system lacks any of the above then some of the examples will refuse
 # to build. Compilation will proceed anyway, so that you should be able to
