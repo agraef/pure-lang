@@ -1629,8 +1629,13 @@ denotes the offending submatrix.) ::
 
    <a name="colvector">
 
+.. raw:: html
+
+   <a name="vector">
+
 .. _rowvector:
 .. _colvector:
+.. _vector:
 
 The ``rowvector`` and ``colvector`` functions work in a similar fashion,
 but expect a list, tuple or matrix of elements and always return a row or
@@ -1646,6 +1651,52 @@ array data structure with efficient (constant time) element access. ::
   {1;2;3}
   > vector [rowvector [1,2,3],colvector [4,5,6]];
   {{1,2,3},{4;5;6}}
+
+.. raw:: html
+
+   <a name="rowvectorseq">
+
+.. raw:: html
+
+   <a name="colvectorseq">
+
+.. raw:: html
+
+   <a name="vectorseq">
+
+.. _rowvectorseq:
+.. _colvectorseq:
+.. _vectorseq:
+
+It's also possible to create a row or column vector from an arithmetic
+sequence using the ``rowvectorseq`` and ``colvectorseq`` functions. Again,
+``vectorseq`` is provided as a synonym for ``rowvectorseq``. These
+operations are optimized for the case of int and double ranges. ::
+
+  > rowvectorseq 0 10 1;
+  {0,1,2,3,4,5,6,7,8,9,10}
+  > colvectorseq 0 10 1;
+  {0;1;2;3;4;5;6;7;8;9;10}
+  > vectorseq 0.0 0.9 0.1;
+  {0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9}
+
+These operations are also handy to define macros which optimize the
+construction of vectors from list ranges, so that the intermediate list
+values are actually never constructed. For instance::
+
+  > def vector (n1:n2..m) = vectorseq n1 m (n2-n1);
+  > def vector (n..m) = vectorseq n m 1;
+  > foo = vector (1..10);
+  > bar = vector (0.0:0.1..0.9);
+  > show foo bar
+  bar = vectorseq 0.0 0.9 0.1;
+  foo = vectorseq 1 10 1;
+  > foo; bar;
+  {1,2,3,4,5,6,7,8,9,10}
+  {0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9}
+
+(Note that the library doesn't contain any such macro rules, so you'll have
+to add them yourself if you want to take advantage of these optimizations.)
 
 .. raw:: html
 
@@ -7242,6 +7293,7 @@ Index
 | `cols`_
 | `colvector`_
 | `colvectorp`_
+| `colvectorseq`_
 | `combinators`_
 | `complex`_
 | `complex_float_matrix`_
@@ -7585,6 +7637,7 @@ Index
 | `rows`_
 | `rowvector`_
 | `rowvectorp`_
+| `rowvectorseq`_
 
 | `same`_
 | `scanf`_
@@ -7692,7 +7745,9 @@ Index
 | `vals (dictionary)`_
 | `vals (record)`_
 | `varp`_
+| `vector`_
 | `vectorp`_
+| `vectorseq`_
 | `void`_
 
 | `wait`_

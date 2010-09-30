@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>Pure Library Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2010-09-20" />
+<meta name="date" content="2010-09-30" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-09-20</td></tr>
+<td>2010-09-30</td></tr>
 </tbody>
 </table>
 <!-- We use docutils to produce the documentation. Docstrings are extracted -->
@@ -1266,7 +1266,7 @@ denotes the offending submatrix.)</p>
 &gt; matrix [[1,2,3],[4,5,6]];
 {1,2,3;4,5,6}
 </pre>
-<a name="rowvector"><a name="colvector"><p id="colvector"><span id="rowvector"></span>The <tt class="docutils literal"><span class="pre">rowvector</span></tt> and <tt class="docutils literal"><span class="pre">colvector</span></tt> functions work in a similar fashion,
+<a name="rowvector"><a name="colvector"><a name="vector"><p id="vector"><span id="colvector"></span><span id="rowvector"></span>The <tt class="docutils literal"><span class="pre">rowvector</span></tt> and <tt class="docutils literal"><span class="pre">colvector</span></tt> functions work in a similar fashion,
 but expect a list, tuple or matrix of elements and always return a row or
 column vector, respectively (i.e., a 1xn or nx1 matrix, where n is the size
 of the converted aggregate). Also, the <tt class="docutils literal"><span class="pre">vector</span></tt> function is a synonym for
@@ -1281,6 +1281,35 @@ array data structure with efficient (constant time) element access.</p>
 &gt; vector [rowvector [1,2,3],colvector [4,5,6]];
 {{1,2,3},{4;5;6}}
 </pre>
+<a name="rowvectorseq"><a name="colvectorseq"><a name="vectorseq"><p id="vectorseq"><span id="colvectorseq"></span><span id="rowvectorseq"></span>It's also possible to create a row or column vector from an arithmetic
+sequence using the <tt class="docutils literal"><span class="pre">rowvectorseq</span></tt> and <tt class="docutils literal"><span class="pre">colvectorseq</span></tt> functions. Again,
+<tt class="docutils literal"><span class="pre">vectorseq</span></tt> is provided as a synonym for <tt class="docutils literal"><span class="pre">rowvectorseq</span></tt>. These
+operations are optimized for the case of int and double ranges.</p>
+<pre class="literal-block">
+&gt; rowvectorseq 0 10 1;
+{0,1,2,3,4,5,6,7,8,9,10}
+&gt; colvectorseq 0 10 1;
+{0;1;2;3;4;5;6;7;8;9;10}
+&gt; vectorseq 0.0 0.9 0.1;
+{0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9}
+</pre>
+<p>These operations are also handy to define macros which optimize the
+construction of vectors from list ranges, so that the intermediate list
+values are actually never constructed. For instance:</p>
+<pre class="literal-block">
+&gt; def vector (n1:n2..m) = vectorseq n1 m (n2-n1);
+&gt; def vector (n..m) = vectorseq n m 1;
+&gt; foo = vector (1..10);
+&gt; bar = vector (0.0:0.1..0.9);
+&gt; show foo bar
+bar = vectorseq 0.0 0.9 0.1;
+foo = vectorseq 1 10 1;
+&gt; foo; bar;
+{1,2,3,4,5,6,7,8,9,10}
+{0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9}
+</pre>
+<p>(Note that the library doesn't contain any such macro rules, so you'll have
+to add them yourself if you want to take advantage of these optimizations.)</p>
 <a name="dmatrix"><a name="cmatrix"><a name="imatrix"><a name="smatrix"><p id="smatrix"><span id="imatrix"></span><span id="cmatrix"></span><span id="dmatrix"></span>The <tt class="docutils literal"><span class="pre">dmatrix</span></tt>, <tt class="docutils literal"><span class="pre">cmatrix</span></tt>, <tt class="docutils literal"><span class="pre">imatrix</span></tt> and <tt class="docutils literal"><span class="pre">smatrix</span></tt> functions convert
 a list or matrix to a matrix of the corresponding type (integer, double,
 complex or symbolic). If the input is a list, the result is always a row
@@ -4552,6 +4581,7 @@ copied to the result lists as is.</p>
 <div class="line"><a class="reference internal" href="#cols">cols</a></div>
 <div class="line"><a class="reference internal" href="#colvector">colvector</a></div>
 <div class="line"><a class="reference internal" href="#colvectorp">colvectorp</a></div>
+<div class="line"><a class="reference internal" href="#colvectorseq">colvectorseq</a></div>
 <div class="line"><a class="reference internal" href="#combinators">combinators</a></div>
 <div class="line"><a class="reference internal" href="#complex">complex</a></div>
 <div class="line"><a class="reference internal" href="#complex-float-matrix">complex_float_matrix</a></div>
@@ -4909,6 +4939,7 @@ copied to the result lists as is.</p>
 <div class="line"><a class="reference internal" href="#rows">rows</a></div>
 <div class="line"><a class="reference internal" href="#rowvector">rowvector</a></div>
 <div class="line"><a class="reference internal" href="#rowvectorp">rowvectorp</a></div>
+<div class="line"><a class="reference internal" href="#rowvectorseq">rowvectorseq</a></div>
 </div>
 <div class="line-block">
 <div class="line"><a class="reference internal" href="#same">same</a></div>
@@ -5020,7 +5051,9 @@ copied to the result lists as is.</p>
 <div class="line"><a class="reference internal" href="#vals-dictionary">vals (dictionary)</a></div>
 <div class="line"><a class="reference internal" href="#vals-record">vals (record)</a></div>
 <div class="line"><a class="reference internal" href="#varp">varp</a></div>
+<div class="line"><a class="reference internal" href="#vector">vector</a></div>
 <div class="line"><a class="reference internal" href="#vectorp">vectorp</a></div>
+<div class="line"><a class="reference internal" href="#vectorseq">vectorseq</a></div>
 <div class="line"><a class="reference internal" href="#void">void</a></div>
 </div>
 <div class="line-block">
