@@ -1,0 +1,84 @@
+
+/* Operate SC3 over the OSC interface. You need to have SuperCollider3
+   installed to run this program. See http://supercollider.sourceforge.net/. */
+
+/* This demonstrates how to drive sclang, the SuperCollider language frontend,
+   from Pure, and how to send OSC messages to scsynth, the SuperCollider sound
+   server, and receive replies from it. */
+
+using lo, osc, system;
+using namespace lo;
+
+/* You might have to adjust the following port numbers according to your local
+   setup. Normally, the sound server will be accepting messages at port 57110.
+   We also run our own OSC server at port 57770, so that we can receive
+   replies from the sound server. */
+
+const server = 57110;
+const client = 57770;
+
+let s = osc_server client; // that's us
+let t = make_address server; // liblo adress of the sound server
+
+/* Create a pipe to sclang (the -i option disables sclang's readline support).
+   NOTE: This should print a bunch of messages. If not then something's wrong,
+   and you should check your SuperCollider installation. */
+
+let p = popen "sclang -i pure" "w";
+
+/* Some convenience functions. */
+
+// Send a command to sclang.
+sc cmd::string = fprintf p "%s\0x1b" cmd $$ fflush p;
+
+// Send an OSC message to the server.
+sc_send path::string type::string msg =
+  osc_send_from t s TT_IMMEDIATE path type msg;
+
+// Get a reply from the server.
+sc_recv = osc_recv;
+
+// Same without blocking (fails if no message available).
+sc_recvnb = osc_recv_noblock;
+
+/* Now for some real action... NOTE: The OSC messages understood by
+   SuperCollider are documented in the "Server Command Reference", please see
+   the Documentation section at SuperCollider website for details. */
+
+// Boot up the default server. (Presumably this is localhost:57110.) This also
+// notifies us when the server is done booting.
+sc $ sprintf
+  "s.waitForBoot { NetAddr(\"localhost\", %d).sendMsg(\"/done\"); }"
+  client;
+
+// Wait for the reply.
+sc_recv;
+// The sound server is up and running now.
+puts "** Ready.";
+
+// Send a /status message to the server and print the reply.
+sc_send "/status" "" ();
+let st = sc_recv;
+printf "Server: %s:%s\nStatus reply: %s\n" (ip,port,str st) when
+  a,_,st = st; ip,port,_ = decode_address a;
+end;
+
+// If you have a GUI available then you might want to try this.
+//sc "s.scope";
+
+// Use sclang to transmit a synthdef to the server.
+sc "SynthDef(\"DecaySin\", { arg out = 0, amp = 0.5; var source;\
+  source = amp*Decay2.ar(Impulse.ar(1.0, 0.25), 0.3, 1, \
+    SinOsc.ar(SinOsc.kr(0.2, 0, 110, 440)));\
+  Out.ar(out, [source, source]);\
+}).send(s);";
+
+// Wait until the server has processed the synthdef.
+sc_send "/sync" "i" 0; sc_recv;
+
+// Play the synth.
+sc_send "/s_new" "siii" ("DecaySin",4711,0,1);
+nanosleep 6.6;
+sc_send "/n_free" "i" 4711;
+
+// That's all for now.
