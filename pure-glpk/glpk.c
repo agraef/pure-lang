@@ -34,8 +34,8 @@
 extern "C" {
 #endif
 
-#if GLP_MAJOR_VERSION != 4 || GLP_MINOR_VERSION != 42
-#error GLPK version 4.42 required
+#if GLP_MAJOR_VERSION != 4 || GLP_MINOR_VERSION < 42
+#error GLPK version 4.42 or higher required
 #endif
 
 
@@ -128,7 +128,7 @@ static inline int pure_is_intordouble(pure_expr *x, double *val)
     *val = (double)tmp;
     return 1;
   }
-  if (pure_is_mpz, &z) {
+  if (pure_is_mpz(x, &z)) {
     *val = mpz_get_d(z);
     mpz_clear(z);
     return 1;
@@ -462,7 +462,7 @@ pure_expr *glpk_set_col_bnds(pure_expr *ptr, int colind, int coltype,
 
 pure_expr *glpk_set_obj_coef(pure_expr *ptr, int colind, double coef)
 {
-  // Set (change) objective coeﬃcient or constant term
+  // Set (change) objective coefficient or constant term
   glp_obj *glpobj;
   if (!is_glp_pointer(ptr, &glpobj)) {
     return 0;
@@ -520,6 +520,7 @@ pure_expr *glpk_set_mat_row(pure_expr *ptr, int rowind, pure_expr *row)
     free(elems);
     return pure_void;    
   }
+  return pure_err_internal("internal error - please report");
 }
 
 pure_expr *glpk_set_mat_col(pure_expr *ptr, int colind, pure_expr *col)
@@ -567,6 +568,7 @@ pure_expr *glpk_set_mat_col(pure_expr *ptr, int colind, pure_expr *col)
     free(elems);
     return pure_void;
   }
+  return pure_err_internal("internal error - please report");
 }
 
 pure_expr *glpk_load_matrix(pure_expr *ptr, pure_expr *matrix)
@@ -622,6 +624,7 @@ pure_expr *glpk_load_matrix(pure_expr *ptr, pure_expr *matrix)
     free(elems);
     return pure_void;
   }
+  return pure_err_internal("internal error - please report");
 }
 
 pure_expr *glpk_check_dup(int numrows, int numcols, pure_expr *indices)
@@ -659,6 +662,7 @@ pure_expr *glpk_check_dup(int numrows, int numcols, pure_expr *indices)
     free(elems);
     return pure_int(result);
   }
+  return pure_err_internal("internal error - please report");
 }
 
 pure_expr *glpk_sort_matrix(pure_expr *ptr)
@@ -705,6 +709,7 @@ pure_expr *glpk_del_rows(pure_expr *ptr, pure_expr *rows)
     free(elems);
     return pure_void;
   }
+  return pure_err_internal("internal error - please report");
 }
 
 pure_expr *glpk_del_cols(pure_expr *ptr, pure_expr *rows)
@@ -740,6 +745,7 @@ pure_expr *glpk_del_cols(pure_expr *ptr, pure_expr *rows)
     free(elems);
     return pure_void;
   }
+  return pure_err_internal("internal error - please report");
 }
 
 pure_expr *glpk_copy_prob(pure_expr *dest, pure_expr *src, const int names)
@@ -2350,6 +2356,7 @@ pure_expr *glpk_print_ranges(pure_expr *ptr, pure_expr *lst, const char *fname)
     free(elems);
     return pure_int(status);
   }
+  return pure_err_internal("internal error - please report");
 }
 
 pure_expr *glpk_print_ipt(pure_expr *ptr, const char *fname)
@@ -2863,6 +2870,7 @@ pure_expr *glpk_transform_row(pure_expr *ptr, pure_expr *inrow)
     free(list);
     return res;
   }
+  return pure_err_internal("internal error - please report");
 }
 
 pure_expr *glpk_transform_col(pure_expr *ptr, pure_expr *incol)
@@ -2920,6 +2928,7 @@ pure_expr *glpk_transform_col(pure_expr *ptr, pure_expr *incol)
     free(list);
     return res;
   }
+  return pure_err_internal("internal error - please report");
 }
 
 pure_expr *glpk_prim_rtest(pure_expr *ptr, pure_expr *incol,
@@ -3466,6 +3475,7 @@ pure_expr *glpk_ios_add_row(pure_expr *ptr, const char *name, int klass,
     free(elems);
     return res;
   }
+  return pure_err_internal("internal error - please report");
 }
 
 pure_expr *glpk_ios_del_row(pure_expr *ptr, int irow)
@@ -4015,6 +4025,7 @@ pure_expr *glpk_version()
 pure_expr *glpk_term_out(int sw)
 {
   // Enable/disable terminal output
+  return pure_int(glp_term_out(sw));
 }
 
 static int term_callback(void *info, const char *s)
