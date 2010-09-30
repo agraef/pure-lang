@@ -1,0 +1,27 @@
+// Load the dsp bitcode module.
+using "dsp:freeverb";
+
+// Create a new dsp instance.
+let dsp = freeverb::new;
+// This returns the control interface in Pure format.
+let ui = freeverb::ui dsp;
+
+// Get the number of input and output channels.
+let k,l = freeverb::getNumInputs dsp, freeverb::getNumOutputs dsp;
+
+// Initialize the dsp with the given sample rate.
+freeverb::init dsp 44100;
+
+// Create suitable Pure matrices to hold the input and output samples. There's
+// one row for each channel and one column for each frame of samples, so a 2xn
+// matrix is used for stereo signals with block size n.
+const n = 5000; // #samples per block
+let in  = {double (j==1) | i = 1..k; j = 1..n}; // a pulse
+let out = {0.0 | i = 1..l; j = 1..n}; // zero matrix for output
+
+// The above Pure matrices can readily be passed as input and output buffers
+// to the dsps's compute routine.
+freeverb::compute dsp n in out;
+
+// Have a look at some of the computed output samples at the end of the buffer.
+out!!(0..1,n-10..n-1);
