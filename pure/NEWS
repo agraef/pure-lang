@@ -1,10 +1,63 @@
 
 ** Pure 0.44 (in progress)
 
-This release sports some bugfixes and fixes for OSX and FreeBSD compatibility,
-please check the ChangeLog for details. Some new time-related functions were
-added to the system module, and the prelude defines two new functions 'key'
-and 'val' to extract the components of key=>val hash pairs.
+This release sports a bunch of bugfixes and OSX and FreeBSD compatibility
+fixes. The build system was also improved, and the sources are now compatible
+with the forthcoming LLVM 2.8 release. As usual, please check the ChangeLog
+and the manual for details. The most important user-visible changes are listed
+below.
+
+- Experimental support for importing LLVM bitcode files ('using "bc:..."').
+  This also includes special support for importing Faust bitcode modules
+  ('using "dsp:..."'). See the manual section "LLVM Bitcode Interface" for
+  details. Some examples can be found in examples/bitcode.
+
+- Constants holding runtime data such as pointers are now properly handled by
+  the batch compiler.
+
+- New --const, --noconst code generation options. These allow you to tell the
+  batch compiler whether constants should be computed at compile time or at
+  run time.
+
+- New --required pragma. This allows you to tell the batch compiler about
+  functions which should always be linked into the output code.
+
+- Cosmetic changes in the expression printer. Combinations of non-associative
+  operators on the same precedence level are now properly parenthesized. So,
+  e.g., '(x=>y)=>z' unparses as is now, rather than '(=>) (x=>y) z'.
+
+- Fixed up treatment of floating point constants in the lexer so that typos
+  are now treated in a manner consistent with integer constants.
+
+- New 'trace' debugging command. This enables you to trace reductions by
+  certain functions without actually interrupting the evaluation.
+
+- Allow printed expression results to be piped through the program named with
+  the PURE_LESS environment variable (similar to what 'show' does with
+  PURE_MORE).
+
+- As discussed on the mailing list, -w now also warns about implicit
+  declarations of symbols in the default namespace.
+
+Standard library:
+
+- New time-related functions, 'key' and 'val', vector functions.
+
+- Overhaul of the precedence table so that $$ and $ are now on different
+  precedence levels.
+
+- Prevent segfaults due to 'fclose' et al being run twice on the same file
+  pointer.
+
+- 'tuple', 'string' and 'matrix' now act as the identity if the argument is
+  already of the corresponding type.
+
+Thanks to Michael Ashton, asitdepends, John Cowan, Masahiro Miura, Eddie
+Rucker and Peter Summerland for their bug reports and suggestions. Also,
+special thanks are due to Roman Neuhauser for his work on improving the build
+system, to Stephane Letz for the joint work on the Pure-Faust bitcode
+interface, and to Yann Orlarey for his hospitality and fruitful discussions
+while visiting Grame.
 
 ** Pure 0.43 2010-03-17
 
