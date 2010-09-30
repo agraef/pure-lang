@@ -6270,6 +6270,112 @@ pure_expr *pure_double_seq(double from, double to, double step)
   return x;
 }
 
+extern "C"
+pure_expr *pure_int_rowvect(int32_t from, int32_t to, int32_t step)
+{
+  if (step == 0)
+    return 0;
+  if ((step > 0 && from > to) || (step < 0 && from < to))
+    return pure_int_matrix(create_int_matrix(1, 0));
+  int32_t count = (to-from)/step;
+  if (count < 0) count = 0;
+  count++;
+  size_t n = count;
+  gsl_matrix_int *mat = create_int_matrix(1, n);
+  for (size_t i = 0; i < n; i++) {
+    mat->data[i] = from;
+    from += step;
+  }
+  return pure_int_matrix(mat);
+}
+
+extern "C"
+pure_expr *pure_double_rowvect(double from, double to, double step)
+{
+  if (step == 0.0)
+    return 0;
+  double to2 = to+0.5*step;
+  if ((step > 0.0 && from > to2) || (step < 0.0 && from < to2) ||
+      is_nan(from) || is_nan(to))
+    return pure_double_matrix(create_double_matrix(1, 0));
+  else if (is_nan(step)) {
+    gsl_matrix *mat = create_double_matrix(1, 1);
+    mat->data[0] = from;
+    return pure_double_matrix(mat);
+  }
+  int32_t count = (int32_t)((to-from)/step+0.5);
+  if (count < 0) count = 0;
+  count++;
+  double from1 = from;
+  for (int32_t i = 0; i < count; i++) {
+    if ((step > 0.0 && from1 > to2) || (step < 0.0 && from1 < to2)) {
+      count = i;
+      break;
+    }
+    from1 += step;
+  }
+  size_t n = count;
+  gsl_matrix *mat = create_double_matrix(1, n);
+  for (size_t i = 0; i < n; i++) {
+    mat->data[i] = from;
+    from += step;
+  }
+  return pure_double_matrix(mat);
+}
+
+extern "C"
+pure_expr *pure_int_colvect(int32_t from, int32_t to, int32_t step)
+{
+  if (step == 0)
+    return 0;
+  if ((step > 0 && from > to) || (step < 0 && from < to))
+    return pure_int_matrix(create_int_matrix(0, 1));
+  int32_t count = (to-from)/step;
+  if (count < 0) count = 0;
+  count++;
+  size_t n = count;
+  gsl_matrix_int *mat = create_int_matrix(n, 1);
+  for (size_t i = 0; i < n; i++) {
+    mat->data[i] = from;
+    from += step;
+  }
+  return pure_int_matrix(mat);
+}
+
+extern "C"
+pure_expr *pure_double_colvect(double from, double to, double step)
+{
+  if (step == 0.0)
+    return 0;
+  double to2 = to+0.5*step;
+  if ((step > 0.0 && from > to2) || (step < 0.0 && from < to2) ||
+      is_nan(from) || is_nan(to))
+    return pure_double_matrix(create_double_matrix(0, 1));
+  else if (is_nan(step)) {
+    gsl_matrix *mat = create_double_matrix(1, 1);
+    mat->data[0] = from;
+    return pure_double_matrix(mat);
+  }
+  int32_t count = (int32_t)((to-from)/step+0.5);
+  if (count < 0) count = 0;
+  count++;
+  double from1 = from;
+  for (int32_t i = 0; i < count; i++) {
+    if ((step > 0.0 && from1 > to2) || (step < 0.0 && from1 < to2)) {
+      count = i;
+      break;
+    }
+    from1 += step;
+  }
+  size_t n = count;
+  gsl_matrix *mat = create_double_matrix(n, 1);
+  for (size_t i = 0; i < n; i++) {
+    mat->data[i] = from;
+    from += step;
+  }
+  return pure_double_matrix(mat);
+}
+
 /* C qsort() interface. This is pretty much the same as the implementation in
    examples/sort.c, massaged slightly to be reentrant, to handle exceptions,
    and to also support Pure matrices. */

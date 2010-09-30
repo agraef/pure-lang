@@ -812,6 +812,13 @@ void pure_trap(int32_t action, int32_t sig);
 pure_expr *pure_int_seq(int32_t from, int32_t to, int32_t step);
 pure_expr *pure_double_seq(double from, double to, double step);
 
+/* Same for row and column vectors. */
+
+pure_expr *pure_int_rowvect(int32_t from, int32_t to, int32_t step);
+pure_expr *pure_double_rowvect(double from, double to, double step);
+pure_expr *pure_int_colvect(int32_t from, int32_t to, int32_t step);
+pure_expr *pure_double_colvect(double from, double to, double step);
+
 /* Interface to the C qsort() routine. The first argument is the "less-than"
    predicate to be used, the second argument the list to be sorted. A
    'failed_cond' exception is thrown if a comparison doesn't evaluate to a
