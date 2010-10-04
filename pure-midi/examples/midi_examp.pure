@@ -1,0 +1,120 @@
+
+using midi, system;
+using namespace midi;
+
+// Uncomment this to get realtime priority.
+//using realtime; realtime SCHED_RR 10;
+
+// Have a look at this to see which devices are available on your system.
+let devs = map device_info (0..device_count-1);
+
+/* Default input and output device. These can be set with the pmdefaults
+   program distributed with PortMidi. */
+
+let in = open_input default_input 512;
+let out = open_output default_output 512 0;
+
+/* A little helper function to print MIDI messages and events in hexadecimal
+   format. */
+
+printmsg (t::int,msg::matrix) = () when
+  printf "%d: %s\n" (t, (join " " (map (sprintf "%0x") (list msg))));
+end;
+
+printmsg msg::matrix = () when
+  printf "%s\n" (join " " (map (sprintf "%0x") (list msg)));
+end;
+
+/* Here's a little example showing how to send and receive sysex messages.
+   Run 'idrequest' to write an "identity request" message to the default
+   output device. Then run 'idreply' to receive the corresponding "identity
+   reply" message. E.g., here's what I get on my Yamaha CBXK1XG:
+   {0xf0,126,0,6,2,67,0,65,107,1,0,0,0,1,0xf7,0}. NOTE: To make this work,
+   your default input and output must both be connected to the same piece of
+   MIDI equipment capable of answering this kind of message. */
+
+idrequest = writemsg out 0 {0xf0,0x7e,0,6,1,0xf7};
+idreply = readmsg in;
+
+/* Try to reset the default output device to a sane state. This sends a MIDI
+   reset message. As some devices just ignore these, we also send all notes
+   off controller messages and reset program changes as well as the pitch
+   wheel on all channels. */
+
+reset = do (writemsg out 0) $ [{0xff}] +
+	[{0xb0+i,123,0} | i = 0..15] +
+	[{0xc0+i,0} | i = 0..15] +
+	[{0xe0+i,0,0x40} | i = 0..15];
+
+/* Record a MIDI sequence from the default input device. You can either type
+   Ctrl-C or send a stop message when you're done. The result is returned as a
+   list of timestamp,message pairs, where the timestamps are in milliseconds
+   and messages are encoded as vectors of byte values (the format used by
+   midi::readmsg and midi::writemsg). */
+
+rec = rec [] with
+  rec seq = catch (\_->reverse seq) (case readmsg in of
+    ev@(t,msg) = reverse seq if msg!0==0xfc; // stop
+    	       = rec (ev:seq);
+  end);
+end;
+
+/* Play back a sequence on the default output device. The sequence is given as
+   a list of timestamp,message pairs (with timestamps in msecs), as returned
+   by 'rec'. So, e.g., 'play rec' will first record a sequence and then play
+   it back immediately. */
+
+play [] = ();
+play ((s0,msg):seq) = catch (\_->reset) $ play s0 t0 seq when
+  t0 = time;
+  puts $ str (time,msg);
+  writemsg out t0 msg;
+end with
+  play s0 t0 [] = ();
+  play s0 t0 ((s1,msg):seq) = play s1 t1 seq when
+    t1 = t0+s1-s0; sleep $ max 0 (t1-time);
+    puts $ str (time,msg);
+    writemsg out t1 msg;
+  end;
+end;
+
+/* Load a sequence from a (type 0 or 1) MIDI file. All tracks are mixed down
+   to a single sequence, meta events are removed, and timestamps are converted
+   to milliseconds, according to the division and the tempo map of the file.
+   The result can be fed directly into the 'play' function for playback.
+   For instance, try: play $ load "prelude3.mid"; */
+
+using midifile;
+
+load name::string = filter not_meta $ convert $
+  foldl mix [] $ midifile::get_tracks mf
+with
+  // Check for meta events.
+  not_meta (_,msg) = msg!0~=0xff;
+  // Convert to msec timestamps. NOTE: We assume a default tempo of 120 BPM
+  // (500000 msecs per quarter note) here.
+  convert = convert_ppqn resolution (500000,0,0)
+  	      if division == midifile::DIVISION_TYPE_PPQ;
+  	  = convert_smpte ({24,25,29,30}!division*resolution) otherwise;
+  // Convert SMPTE timestamps.
+  convert_smpte 1000 xs = xs; // timestamps are msecs already
+  convert_smpte f xs = [int (round (t/f*1000)),msg | t,msg = xs];
+  // Convert musical time.
+  convert_ppqn _ _ [] = [];
+  convert_ppqn ppqn (tempo,t0,ms0) ((t,msg):xs)
+    = (ms,msg) : convert_ppqn ppqn (tempo,t,ms) xs when
+        ms = int $ round (ms0+tempo/ppqn*(t-t0)/1000);
+	tempo = (msg!2<<16)+(msg!3<<8)+msg!4; // new tempo
+      end if msg!0 == 0xff && msg!1 == 0x51; // tempo message?
+    = (ms,msg) : convert_ppqn ppqn (tempo,t,ms) xs when
+        ms = int $ round (ms0+tempo/ppqn*(t-t0)/1000);
+      end;
+  mix xs [] = xs;
+  mix [] ys = ys;
+  mix xs@(x1@(t1,msg1):xs1) ys@(y2@(t2,msg2):ys2)
+    = x1 : mix xs1 ys if t1<=t2;
+    = y2 : mix xs ys2 otherwise;
+end when
+  mf::pointer = midifile::load name;
+  type,division,resolution,ntracks = midifile::info mf;
+end;

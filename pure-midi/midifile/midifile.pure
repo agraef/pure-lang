@@ -1,0 +1,63 @@
+
+/* Basic MIDI file interface for Pure. Copyright (c) 2010 by Albert Graef.
+   The midifile library is part of David G. Slomin's midi utilities, see
+   http://public.sreal.com:8000/~div/midi-utilities/, Copyright (c) 2003-2006
+   by David G. Slomin, all rights reserved. The entire package is released
+   under the 3-clause BSD license, see the COPYING file included in the
+   distribution for details. */
+
+using "lib:midifile";
+
+namespace midifile;
+
+/* These constants come from midifile.h. They are used to specify the desired
+   division type when creating a new MIDI file, see midifile::new below. */
+
+const midifile::DIVISION_TYPE_INVALID = -1;
+const midifile::DIVISION_TYPE_PPQ = 0;
+const midifile::DIVISION_TYPE_SMPTE24 = 1;
+const midifile::DIVISION_TYPE_SMPTE25 = 2;
+const midifile::DIVISION_TYPE_SMPTE30DROP = 3;
+const midifile::DIVISION_TYPE_SMPTE30 = 4;
+
+/* Interface operations. These are implemented in mf.c. They let you read type
+   0, 1 or 2 standard MIDI files into memory and retrieve its tracks as lists
+   of MIDI events (timestamp,message pairs) in the same format as understood
+   by the midi::readmsg and midi::writemsg routines. Conversely, new MIDI
+   files can be constructed from the Pure representation of their tracks and
+   written to a disk file.
+
+   - midifile::new is used to create a new MIDI file object in memory, while
+     midifile::load loads an existing MIDI file from disk. (Both operations
+     return cooked pointers which free themselves using midifile::free when
+     they are garbage-collected.)
+
+   - midifile::save saves a MIDI file object in memory to a standard MIDI file
+     on disk.
+
+   - midifile::new destroys a MIDI file object. (This also happens
+     automatically when the objectz is garbage-collected.)
+
+   - midifile::info returns information about a MIDI file in the format
+     (format,division_type,resolution,number_of_tracks).
+
+   - midifile::get_track and midifile::get_tracks are used to retrieve a
+     single track, or a list of all tracks from the MIDI file, respectively.
+
+   - midifile::put_track and midifile::put_tracks are used to add a track or a
+     list of tracks to the MIDI file, respectively.
+
+   (Note that if you create a new MIDI file object with midifile::new and/or
+   modify a MIDI file with midifile::put_track and midifile::put_tracks, this
+   only affects the in-memory representation. You still have to write the file
+   to disk using midifile::save to make the changes permanent.) */
+
+extern expr* mf_new(int, int, int) = new;
+extern expr* mf_load(char*) = load;
+extern int mf_save(expr*, char*) = save;
+extern int mf_free(expr*) = free;
+extern expr* mf_info(expr*) = info;
+extern expr* mf_get_track(expr*, int) = get_track;
+extern expr* mf_get_tracks(expr*) = get_tracks;
+extern int mf_put_track(expr*, expr*) = put_track;
+extern int mf_put_tracks(expr*, expr*) = put_tracks;

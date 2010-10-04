@@ -1,0 +1,287 @@
+
+/* High-level interface to PortMidi for the Pure programmer. */
+
+// pure-ffi is needed to deal with C structs.
+using ffi, portmidi;
+
+namespace Pm;
+
+/* PortMidi device info and MIDI event structs. */
+
+let Pm::DeviceInfo = struct_t (
+  sint_t,    // structVersion
+  string_t,  // interface (underlying MIDI API such as ALSA or MMSystem)
+  string_t,  // name (device name)
+  sint_t,    // input (flag: is input device?)
+  sint_t,    // output (flag: is output device?)
+  sint_t     // opened (flag: is device currently open?)
+);
+
+let Pm::Event = struct_t (
+  sint_t, // message
+  sint_t  // timestamp
+);
+
+/* Some additional convenience functions which are provided as macros in
+   portmidi.h. In particular, Pm::Message encodes a short MIDI message into a
+   single 32 bit word. (If a message needs less than two data bytes, fill up
+   with zeros.) */
+
+Pm::Before t1::int t2::int = t1-t2 < 0;
+Pm::Channel channel::int = 1<<channel;
+Pm::Message status::int data1::int data2::int =
+  (data2<<16) and 0xff0000 or (data1<<8) and 0xff00 or status and 0xff;
+Pm::MessageStatus msg::int = msg and 0xff;
+Pm::MessageData1 msg::int = (msg>>8) and 0xff;
+Pm::MessageData2 msg::int = (msg>>16) and 0xff;
+
+/*****************************************************************************/
+
+/* High-level convenience functions. These are dumbed-down, more Pure-friendly
+   versions of the PortMidi operations. We place these in their own namespace
+   to keep them separate from the lowlevel API. */
+
+namespace midi;
+
+/* Initialization and device enumeration. */
+
+midi::initialize = Pm::Initialize;
+midi::terminate = Pm::Terminate;
+
+/* The default MIDI devices for input and output. These can be set with
+   PortMidi's pmdefaults application. */
+
+midi::default_input = Pm::GetDefaultInputDeviceID;
+midi::default_output = Pm::GetDefaultOutputDeviceID;
+
+/* The number of available devices, and the information for a given device id,
+   decoded as a Pure tuple. Note that the legal device ids run from 0 to
+   midi::device_count-1, so map midi::device_info (0..midi::device_count-1)
+   gives you the entire list. */
+
+midi::device_count = Pm::CountDevices;
+midi::device_info id::int = info when
+  // The first field is useless and seems to be bogus anyway, skip it.
+  _,info = members $ copy_struct Pm::DeviceInfo $ Pm::GetDeviceInfo id;
+end;
+
+/* Use this to get a human-readable message for PortMidi's error codes. */
+
+midi::errmsg errno::int = Pm::GetErrorText errno;
+
+/* Provide a default timebase for input and output streams. You may want to
+   adjust these, e.g., in order to use your own custom time source, see the
+   PortMidi documentation for details. You can also set both time_proc and
+   time_info to NULL in which case PortMidi uses a default timebase (which
+   usually is PortTime for output anyway, but may employ more accurate
+   driver-specific timestamps for input streams on some systems). */
+
+let midi::input_time_proc,  midi::input_time_info  = addr "Pt_Time", NULL;
+let midi::output_time_proc, midi::output_time_info = addr "Pt_Time", NULL;
+
+/* PortMidi encodes MIDI messages as 4 byte words. In Pure land, it's usally
+   more convenient to represent such byte sequences as int vectors in which
+   each element denotes a single byte value. E.g., a note on message would
+   then be encoded as something like {0x90,60,127}. This encoding is also used
+   in some of the MIDI I/O operations below. The following helper functions
+   can be used to convert between this representation and the PortMidi
+   encoding. */
+
+midi::bytes msg::int = vector $ map (and 0xff) $ scanl (>>) msg [8,8,8];
+midi::word data::matrix = foldr (\x y->x+(y<<8)) 0 data if imatrixp data;
+
+/* Opening and closing MIDI devices. The open_input and open_output routines
+   return either a pointer to the PortMidi stream, or an error code which can
+   be translated with midi::errmsg above. The midi::streamp predicate can be
+   used to check that the given pointer is an open stream object. Streams
+   close themselves automatically using midi::close when garbage-collected. */
+
+public close;
+midi::streamp stream::pointer = get_sentry stream === midi::close;
+
+/* Open a stream for input. id is the index of the device, and the bufsize
+   argument determines how many MIDI events can be buffered on input (if zero
+   then a reasonable default is used). If you're processing incoming messages
+   in realtime then the default should be good enough. OTOH, if you expect
+   PortMidi to buffer large input sequences which are then to be read in one
+   go, then you'll have to make the buffer large enough so that it can hold the
+   entire sequence. */
+
+midi::open_input id::int bufsize::int =
+  case Pm::OpenInput stream id NULL bufsize
+       midi::input_time_proc midi::input_time_info of
+    0 = sentry midi::close $ get_pointer stream;
+    res = res;
+  end when
+    stream = cooked $ malloc SIZEOF_POINTER;
+  end;
+
+/* Open a stream for output. Here the bufsize arguments determines how many
+   MIDI events can be buffered on output, if they are scheduled for later
+   delivery. Again, you can also just pass zero here to indicate that a
+   reasonable default is to be used. (On some systems, the necessary buffering
+   is actually handled by the underlying driver, in which case this value is
+   simply ignored.) The latency value determines the time (in ms) for which
+   output should be further delayed. If this is zero or negative, then no
+   scheduling is done at all and all messages are output immediately -- see
+   MIDI I/O below for details. */
+
+midi::open_output id::int bufsize::int latency::int =
+  case Pm::OpenOutput stream id NULL bufsize
+       midi::output_time_proc midi::output_time_info latency of
+    0 = sentry midi::close $ get_pointer stream;
+    res = res;
+  end when
+    stream = cooked $ malloc SIZEOF_POINTER;
+  end;
+
+/* Close a stream. This is also done automatically when a stream object is
+   garbage-collected. */
+
+midi::close stream::pointer = clear_sentry stream $$ Pm::Close stream
+  if midi::streamp stream;
+
+/* This terminates outgoing messages immediately. (According to the PortMidi
+   documentation, the stream should be closed afterwards.) */
+
+midi::abort stream::pointer = Pm::Abort stream;
+
+/* Message filtering. PortMidi allows you to filter incoming messages based on
+   message types and/or channel numbers. midi::set_filter accepts an integer
+   mask of the Pm::FILT_* constants in portmidi.pure, denoting which message
+   types should be filtered out. midi::set_channel_mask accepts a 16 bit mask
+   indicating the MIDI channels to be received. Thus, e.g., 'midi::set_filter
+   stream Pm::FILT_ACTIVE' filters out active sensing messages, while
+   'midi::set_channel_mask stream 1' only accepts messages from the first MIDI
+   channel. */
+
+midi::set_filter stream::pointer filters::int =
+  Pm::SetFilter stream filters;
+
+midi::set_channel_mask stream::pointer channels::int =
+  Pm::SetChannelMask stream channels;
+
+/* MIDI I/O. PortMidi encodes MIDI sequences as vectors of Pm::Event structs,
+   which are in fact alternating sequences of messages and timestamps, where
+   both messages and timestamps are encoded as 32 bit words (machine ints in
+   Pure). In Pure, these are most conveniently encoded as 2xn int matrices,
+   where each row represents a single MIDI event, with the MIDI message in the
+   first and the timestamp in the second column. This is also the encoding
+   assumed by the buffered I/O routines below, which are just thin wrappers
+   around the corresponding PortMidi operations.
+
+   Timestamps are montonously increasing values which are relative to some
+   internal time source. By default, the highlevel routines provided in this
+   API use PortTime as their time source, which can be read using the
+   midi::time function (see below). If necessary, you can adjust this by
+   setting the time_proc and time_info variables above.
+
+   On output, a timestamp of zero always means "now", i.e., immediate
+   delivery. Other values are interpreted relative to midi::time. (It is the
+   programmer's responsibility to send messages in the right order, such that
+   the timestamps are non-decreasing. PortMidi will not reorder the messages
+   in any way.) In addition, if a positive latency has been specified when
+   opening the device, that value will be added to the time at which the
+   message is delivered. Finally, if the latency is zero (or negative) then
+   timestamps are generally ignored and *all* messages are output immediately.
+
+   Regular MIDI messages have the status byte in the least significant byte,
+   followed by any data bytes in the more significant bytes (i.e., they are
+   encoded in little-endian order, with unused bytes being filled with zeros).
+   The midi::word and midi::bytes functions can be used to convert between
+   this representation and a Pure byte vector, see above.
+
+   Sysex messages are encoded as sequences of messages, where each message
+   holds 4 bytes of the message; the first message starts with the sysex
+   status byte (0xf0), and the last message ends with the EOX (0xf7) status
+   byte. (Again, any surplus bytes are filled with zeros.) */
+
+/* Check whether an input message is currently available. This returns either
+   true, false or a PortMidi error code. */
+
+midi::poll stream::pointer = Pm::Poll stream;
+
+/* Read MIDI events into a buffer. This modifies the given int matrix in
+   place, and returns either the number of events actually read, or a negative
+   error code. The latter can be decoded using midi::errmsg. This operation is
+   non-blocking; it returns zero if no message is currently available. */
+
+midi::read stream::pointer buf::matrix =
+  Pm::Read stream buf (#buf>>1) if imatrixp buf;
+
+/* Output MIDI events from a buffer. Zero (a.k.a. Pm::NoError) is returned if
+   successful, otherwise the return code denotes an error which can be decoded
+   using midi::errmsg. Please note that this routine will return immediately
+   after scheduling events to be delivered later. */
+
+midi::write stream::pointer buf::matrix =
+  Pm::Write stream buf (#buf>>1) if imatrixp buf;
+
+/* Convenience functions to read and write single MIDI messages. Here, a MIDI
+   message is represented using Pure byte vectors, as given by midi::bytes. */
+
+/* midi::readmsg blocks until a message is actually available. It will either
+   return a pair consisting of the timestamp and the data of the message
+   itself, or an error code which can be interpreted with midi::errmsg.
+
+   NOTE: This will also make an attempt to read an entire sysex message if it
+   sees an 0xf0 status in the input. However, at present the error handling is
+   fairly simplistic in this case. If midi::readmsg encounters any status but
+   EOX while reading a sysex message, it will simply give up and return what's
+   been read. (In this case, the next message will be lost, so beware.) */
+
+midi::readmsg stream::pointer = case Pm::Read stream buf 1 of
+  0 = midi::sleep 1 $$ midi::readmsg stream;
+  1 = if data!0 == 0xf0 then read_sysex time data [] else time, data when
+        msg, time = buf!0, buf!1;
+	data = midi::bytes msg;
+      end with
+	// Keep reading until we see an EOX or a new status.
+        read_sysex time data parts
+	  = data if intp data; // error
+	  = time, make_sysex (data:parts) if any (==0xf7) data; // EOX => done
+	  = time, make_sysex parts if data!0 ~= 0xf0 && data!0 >> 7;
+	      // other status => bail out
+	  = read_sysex time next_sysex (data:parts); // keep reading
+	// Grab the next part of the sysex message.
+	next_sysex
+	  = case Pm::Read stream buf 1 of
+  	      0 = midi::sleep 1 $$ next_sysex;
+	      1 = midi::bytes msg when msg,_ = buf!0, buf!1 end;
+	      ret = ret;
+	    end;
+	// Assemble the sysex message from its parts.
+	make_sysex parts = colcat $ reverse parts;
+      end;
+  ret = ret;
+end when buf = {0,0} end;
+
+/* midi::writemsg can be used to output either a single regular MIDI message
+   or an entire sysex message at the given time. In either case the return
+   value is zero if successful, or an error code otherwise. */
+
+midi::writemsg stream::pointer time::int data::matrix =
+  Pm::WriteShort stream time (midi::word data)
+  if imatrixp data && ~null data && #data<=4;
+
+midi::writemsg stream::pointer time::int data::matrix =
+  Pm::WriteSysEx stream time msg when
+    msg = cooked $ byte_pointer NULL data;
+  end if imatrixp data && ~null data && data!0==0xf0;
+
+/*****************************************************************************/
+
+/* Timer functions. These come from the PortTime API, and by default are used
+   for the timestamps in the highlevel MIDI I/O API above. They allow you to
+   get the current time in msecs and to sleep for a given number of msecs. */
+
+midi::time = Pt::Time;
+
+midi::sleep dur::int = Pt::Sleep dur;
+
+/*****************************************************************************/
+
+/* Initialization. Initialize PortMidi and kick off the timer. */
+
+midi::initialize;
+Pt::Start 1 NULL NULL;
