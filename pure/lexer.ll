@@ -420,15 +420,6 @@ blank  [ \t\f\v\r]
   }
 }
 
-{float}    {
-  char *p = NULL;
-  yylval->dval = my_strtod(yytext, &p);
-  if (p && *p) {
-    string msg = "invalid digit '"+string(1, *p)+"' in floating point constant";
-    interp.error(*yylloc, msg);
-  }
-  return token::DBL;
-}
 {int}L     {
   string msg;
   if (checkint(yytext, msg)) {
@@ -466,6 +457,15 @@ blank  [ \t\f\v\r]
     interp.error(*yylloc, msg);
     return token::INT;
   }
+}
+{float}    {
+  char *p = NULL;
+  yylval->dval = my_strtod(yytext, &p);
+  if (p && *p) {
+    string msg = "invalid digit '"+string(1, *p)+"' in floating point constant";
+    interp.error(*yylloc, msg);
+  }
+  return token::DBL;
 }
 <rescan>\"{str}\" |
 \"{str}\"   {
