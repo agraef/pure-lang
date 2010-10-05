@@ -38,4 +38,4 @@ clean:
 	rm -f *.o *$(DLL)
 
 realtime$(DLL): realtime.c
-	$(CC) $(shared) -o $@ $< $(FLAGS) -lpthread $(LIBS)
+	$(CC) $(shared) -o $@ $< $(FLAGS) -lpthread -lpure $(LIBS)

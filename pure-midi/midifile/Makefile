@@ -38,7 +38,7 @@ clean:
 	rm -f *.o *$(DLL)
 
 midifile$(DLL): midifile.c mf.c
-	$(CC) $(shared) -o $@ $^ $(FLAGS) $(LIBS)
+	$(CC) $(shared) -o $@ $^ $(FLAGS) -lpure $(LIBS)
 
 # You can use this to regenerate midifile.pure from midifile.h and mf.h using
 # pure-gen. CAVEAT: This is for maintainers only and shouldn't normally be
