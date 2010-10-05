@@ -268,6 +268,7 @@ static bool encode_event(MidiFileTrack_t track, pure_expr *x)
     free(xv);
     return false;
   }
+  x = xv[1];
   free(xv);
   n = mat->size1*mat->size2;
   if (n == 0) return false; // no data
