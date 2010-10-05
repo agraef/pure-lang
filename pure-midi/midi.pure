@@ -1,26 +1,9 @@
 
 /* High-level interface to PortMidi for the Pure programmer. */
 
-// pure-ffi is needed to deal with C structs.
-using ffi, portmidi;
+using portmidi;
 
 namespace Pm;
-
-/* PortMidi device info and MIDI event structs. */
-
-let Pm::DeviceInfo = struct_t (
-  sint_t,    // structVersion
-  string_t,  // interface (underlying MIDI API such as ALSA or MMSystem)
-  string_t,  // name (device name)
-  sint_t,    // input (flag: is input device?)
-  sint_t,    // output (flag: is output device?)
-  sint_t     // opened (flag: is device currently open?)
-);
-
-let Pm::Event = struct_t (
-  sint_t, // message
-  sint_t  // timestamp
-);
 
 /* Some additional convenience functions which are provided as macros in
    portmidi.h. In particular, Pm::Message encodes a short MIDI message into a
@@ -60,10 +43,8 @@ midi::default_output = Pm::GetDefaultOutputDeviceID;
    gives you the entire list. */
 
 midi::device_count = Pm::CountDevices;
-midi::device_info id::int = info when
-  // The first field is useless and seems to be bogus anyway, skip it.
-  _,info = members $ copy_struct Pm::DeviceInfo $ Pm::GetDeviceInfo id;
-end;
+// This comes from pmdev.c.
+extern expr* pm_device_info(int) = device_info;
 
 /* Use this to get a human-readable message for PortMidi's error codes. */
 
@@ -161,7 +142,7 @@ midi::set_filter stream::pointer filters::int =
 midi::set_channel_mask stream::pointer channels::int =
   Pm::SetChannelMask stream channels;
 
-/* MIDI I/O. PortMidi encodes MIDI sequences as vectors of Pm::Event structs,
+/* MIDI I/O. PortMidi encodes MIDI sequences as vectors of PmEvent structs,
    which are in fact alternating sequences of messages and timestamps, where
    both messages and timestamps are encoded as 32 bit words (machine ints in
    Pure). In Pure, these are most conveniently encoded as 2xn int matrices,

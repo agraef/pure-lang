@@ -3,21 +3,6 @@
 dist = pure-midi-$(version)
 version = 0.1
 
-# Platform-specific defaults, edit this as needed.
-#PIC = -fPIC # uncomment for x86-64 compilation
-DLL = .so
-
-# Take care of some common systems.
-host = $(shell ./config.guess)
-ifneq "$(findstring -mingw,$(host))" ""
-# Windows
-DLL = .dll
-endif
-ifneq "$(findstring -darwin,$(host))" ""
-# OSX
-DLL = .dylib
-endif
-
 # Try to guess the installation prefix (this needs GNU make):
 prefix = $(patsubst %/bin/pure,%,$(shell which pure 2>/dev/null))
 ifeq ($(strip $(prefix)),)
@@ -29,8 +14,41 @@ endif
 # instead of $(prefix).
 libdir = $(prefix)/lib
 
+# Try to guess the host system type.
+host = $(shell ./config.guess)
+
+# Platform-specific defaults, edit this as needed.
+#PIC = -fPIC # uncomment for x86-64 compilation
+DLL = .so
+shared = -shared
+
+# Take care of some common systems.
+ifneq "$(findstring -mingw,$(host))" ""
+# Windows (untested)
+DLL = .dll
+endif
+ifneq "$(findstring -darwin,$(host))" ""
+# OSX (untested)
+DLL = .dylib
+shared = -dynamiclib
+endif
+ifneq "$(findstring x86_64-,$(host))" ""
+# 64 bit, needs -fPIC flag
+PIC = -fPIC
+endif
+
+# Default CFLAGS are -g -O2, CPPFLAGS, LDFLAGS and LIBS are empty by default.
+# These can be set from the command line as usual. Use CFLAGS, CPPFLAGS and
+# LDFLAGS for compiler (-O etc.), preprocessor (-I etc.) and linker (-L etc.) 
+# options, respectively. LIBS is to be used for additional libraries to be
+# linked (-l etc.).
+
+CFLAGS = -g -O2
+
+FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
+
 DISTFILES = COPYING Makefile README config.guess \
-examples/*.pure examples/*.mid \
+examples/*.pure examples/*.mid pmdev.h pmdev.c \
 midi.pure portmidi.pure portmidi.h porttime.h \
 midifile/Makefile midifile/midifile.c midifile/midifile.h midifile/mf.c midifile/mf.h midifile/midifile.pure \
 realtime/Makefile realtime/realtime.c realtime/realtime.pure
@@ -40,18 +58,22 @@ realtime/Makefile realtime/realtime.c realtime/realtime.pure
 
 .PHONY: all clean realclean subdirs generate install uninstall dist distcheck
 
-all: portmidi.pure subdirs
+all: pmlib$(DLL) portmidi.pure subdirs
 
 subdirs:
 	$(MAKE) -C midifile all
 	$(MAKE) -C realtime all
 
 clean:
+	rm -f *.o *$(DLL)
 	$(MAKE) -C midifile clean
 	$(MAKE) -C realtime clean
 
 realclean: clean
 	rm -f portmidi.pure
+
+pmlib$(DLL): pmdev.c
+	$(CC) $(shared) -o $@ $< $(FLAGS) -lportmidi -lpure $(LIBS)
 
 # Type 'make generate' to force a rebuild of the PortMidi wrapper. This
 # requires pure-gen and that you have portmidi.h and porttime.h in the current
@@ -65,19 +87,20 @@ generate:
 # char* in the last argument, which we really want to be a void* in Pure. We
 # fix this on the fly.
 
-portmidi.pure: portmidi.h porttime.h
-	pure-gen -m Pm -p Pm -sportmidi.h:: portmidi.h -llibportmidi -o portmidi.orig
+portmidi.pure: portmidi.h porttime.h pmdev.h
+	pure-gen -m Pm -p Pm -sportmidi.h:: portmidi.h -lpmlib -o portmidi.orig
 	pure-gen -N -m Pt -p Pt -sporttime.h:: porttime.h -o portmidi.orig
+	pure-gen -N -m midi -p pm -spmdev.h:: pmdev.h -o portmidi.orig
 # Fix up the botched Pm_WriteSysEx prototype.
 	sed -e 's/Pm_WriteSysEx(void\*, int, char\*)/Pm_WriteSysEx(void\*, int, void\*)/' < portmidi.orig > $@
 	rm -f portmidi.orig
 
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
-	cp midi.pure portmidi.pure midifile/midifile.pure midifile/midifile$(DLL) realtime/realtime.pure realtime/realtime$(DLL) "$(DESTDIR)$(libdir)/pure"
+	cp midi.pure portmidi.pure pmlib$(DLL) midifile/midifile.pure midifile/midifile$(DLL) realtime/realtime.pure realtime/realtime$(DLL) "$(DESTDIR)$(libdir)/pure"
 
 uninstall:
-	rm -f "$(DESTDIR)$(libdir)/pure/midi.pure" "$(DESTDIR)$(libdir)/pure/portmidi.pure" "$(DESTDIR)$(libdir)/pure/midifile.pure" "$(DESTDIR)$(libdir)/pure/midifile$(DLL)" "$(DESTDIR)$(libdir)/pure/realtime.pure" "$(DESTDIR)$(libdir)/pure/realtime$(DLL)"
+	rm -f "$(DESTDIR)$(libdir)/pure/midi.pure" "$(DESTDIR)$(libdir)/pure/portmidi.pure" "$(DESTDIR)$(libdir)/pure/midifile.pure" "$(DESTDIR)$(libdir)/pure/pmlib$(DLL)" "$(DESTDIR)$(libdir)/pure/midifile$(DLL)" "$(DESTDIR)$(libdir)/pure/realtime.pure" "$(DESTDIR)$(libdir)/pure/realtime$(DLL)"
 
 dist:
 	rm -rf $(dist)
