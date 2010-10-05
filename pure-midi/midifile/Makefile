@@ -40,14 +40,10 @@ clean:
 midifile$(DLL): midifile.c mf.c
 	$(CC) $(shared) -o $@ $^ $(FLAGS) -lpure $(LIBS)
 
-# You can use this to regenerate midifile.pure from midifile.h and mf.h using
-# pure-gen. CAVEAT: This is for maintainers only and shouldn't normally be
-# necessary. Note that the midifile.pure distributed with this package has
-# been hand-edited; when regenerating the wrapper you will loose these edits.
+# You can use this to regenerate midifile.pure from mf.h using pure-gen.
+# CAVEAT: This is for maintainers only and shouldn't normally be necessary.
+# Note that the midifile.pure distributed with this package has been
+# hand-edited; when regenerating the wrapper you will loose these edits.
 
 midifile.pure: midifile.h mf.h
-# only grab the DIVISION_TYPE constants, these are needed to interpret the
-# header data
-	pure-gen -m midifile -p MIDI_FILE -lmidifile -smidifile.h::MIDI_FILE_DIVISION_TYPE midifile.h -o $@
-# the actual Pure interface operations are in mf.c
-	pure-gen -N -m midifile -p mf -smf.h:: mf.h -o $@
+	pure-gen -m midifile -p mf -smf.h:: mf.h -o $@

@@ -10,16 +10,6 @@ using "lib:midifile";
 
 namespace midifile;
 
-/* These constants come from midifile.h. They are used to specify the desired
-   division type when creating a new MIDI file, see midifile::new below. */
-
-const midifile::DIVISION_TYPE_INVALID = -1;
-const midifile::DIVISION_TYPE_PPQ = 0;
-const midifile::DIVISION_TYPE_SMPTE24 = 1;
-const midifile::DIVISION_TYPE_SMPTE25 = 2;
-const midifile::DIVISION_TYPE_SMPTE30DROP = 3;
-const midifile::DIVISION_TYPE_SMPTE30 = 4;
-
 /* Interface operations. These are implemented in mf.c. They let you read type
    0, 1 or 2 standard MIDI files into memory and retrieve its tracks as lists
    of MIDI events (timestamp,message pairs) in the same format as understood
@@ -36,10 +26,24 @@ const midifile::DIVISION_TYPE_SMPTE30 = 4;
      on disk.
 
    - midifile::new destroys a MIDI file object. (This also happens
-     automatically when the objectz is garbage-collected.)
+     automatically when the object is garbage-collected.)
 
    - midifile::info returns information about a MIDI file in the format
-     (format,division_type,resolution,number_of_tracks).
+     (format,division,resolution,number), where:
+
+     - format is the type of MIDI file (0, 1 or 2).
+
+     - division is the type of timestamps. This can be 0 to denote musical
+       time, or one of 24, 25, 29 and 30 to denote the corresponding SMPTE
+       standard a.k.a. number of "frames" per second.
+
+     - resolution is the number of subdivisions. If division = 0, then this
+       denotes the number pules per quarter note = ppqn, otherwise it denotes
+       the number of ticks per frame. Hence a division,resolution pair of
+       0,960 means that 960 ticks are a quarter note, whereas 25,40 indicates
+       that each tick is a millisecond.
+
+     - number is the number of tracks in the file.
 
    - midifile::get_track and midifile::get_tracks are used to retrieve a
      single track, or a list of all tracks from the MIDI file, respectively.
@@ -47,17 +51,17 @@ const midifile::DIVISION_TYPE_SMPTE30 = 4;
    - midifile::put_track and midifile::put_tracks are used to add a track or a
      list of tracks to the MIDI file, respectively.
 
-   (Note that if you create a new MIDI file object with midifile::new and/or
+   Note that if you create a new MIDI file object with midifile::new and/or
    modify a MIDI file with midifile::put_track and midifile::put_tracks, this
    only affects the in-memory representation. You still have to write the file
-   to disk using midifile::save to make the changes permanent.) */
+   to disk using midifile::save to make the changes permanent. */
 
-extern expr* mf_new(int, int, int) = new;
-extern expr* mf_load(char*) = load;
-extern int mf_save(expr*, char*) = save;
-extern int mf_free(expr*) = free;
-extern expr* mf_info(expr*) = info;
-extern expr* mf_get_track(expr*, int) = get_track;
-extern expr* mf_get_tracks(expr*) = get_tracks;
-extern int mf_put_track(expr*, expr*) = put_track;
-extern int mf_put_tracks(expr*, expr*) = put_tracks;
+extern expr* mf_new(int format, int division, int resolution) = new;
+extern expr* mf_load(char* filename) = load;
+extern int mf_save(expr* mf, char* filename) = save;
+extern int mf_free(expr* mf) = free;
+extern expr* mf_info(expr* mf) = info;
+extern expr* mf_get_track(expr* mf, int number) = get_track;
+extern expr* mf_get_tracks(expr* mf) = get_tracks;
+extern int mf_put_track(expr* mf, expr* track) = put_track;
+extern int mf_put_tracks(expr* mf, expr* tracks) = put_tracks;

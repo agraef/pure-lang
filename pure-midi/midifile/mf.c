@@ -1,6 +1,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include "midifile.h"
 #include "mf.h"
 
 /* GSL matrix data types and operations needed to represent MIDI data. */
@@ -95,10 +96,28 @@ static bool is_file(pure_expr *x, MidiFile_t *mf)
 
 /* Interface operations. */
 
-pure_expr *mf_new(int file_format,
-		  MidiFileDivisionType_t division_type,
-		  int resolution)
+pure_expr *mf_new(int file_format, int division, int resolution)
 {
+  MidiFileDivisionType_t division_type = MIDI_FILE_DIVISION_TYPE_INVALID;
+  switch (division) {
+  case 0:
+    division_type = MIDI_FILE_DIVISION_TYPE_PPQ;
+    break;
+  case 24:
+    division_type = MIDI_FILE_DIVISION_TYPE_SMPTE24;
+    break;
+  case 25:
+    division_type = MIDI_FILE_DIVISION_TYPE_SMPTE25;
+    break;
+  case 29:
+    division_type = MIDI_FILE_DIVISION_TYPE_SMPTE30DROP;
+    break;
+  case 30:
+    division_type = MIDI_FILE_DIVISION_TYPE_SMPTE30;
+    break;
+  default:
+    break;
+  }
   return make_file(MidiFile_new(file_format, division_type, resolution));
 }
 
@@ -122,13 +141,17 @@ bool mf_free(pure_expr *x)
   return MidiFile_free(mf) == 0;
 }
 
+static const int divisions[] = {0, 24, 25, 29, 30};
+
 pure_expr *mf_info(pure_expr *x)
 {
   MidiFile_t mf;
   if (!is_file(x, &mf)) return 0;
+  MidiFileDivisionType_t type = MidiFile_getDivisionType(mf);
+  int division = (type>=0 && type<5)?divisions[type]:-1;
   return pure_tuplel(4,
 		     pure_int(MidiFile_getFileFormat(mf)),
-		     pure_int(MidiFile_getDivisionType(mf)),
+		     pure_int(division),
 		     pure_int(MidiFile_getResolution(mf)),
 		     pure_int(MidiFile_getNumberOfTracks(mf)));
 }

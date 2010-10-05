@@ -93,9 +93,8 @@ with
   not_meta (_,msg) = msg!0~=0xff;
   // Convert to msec timestamps. NOTE: We assume a default tempo of 120 BPM
   // (500000 msecs per quarter note) here.
-  convert = convert_ppqn resolution (500000,0,0)
-  	      if division == midifile::DIVISION_TYPE_PPQ;
-  	  = convert_smpte ({24,25,29,30}!division*resolution) otherwise;
+  convert = convert_smpte (division*resolution) if division > 0;
+  	  = convert_ppqn resolution (500000,0,0);
   // Convert SMPTE timestamps.
   convert_smpte 1000 xs = xs; // timestamps are msecs already
   convert_smpte f xs = [int (round (t/f*1000)),msg | t,msg = xs];
