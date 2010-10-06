@@ -1571,9 +1571,18 @@ bool interpreter::LoadFaustDSP(const char *name, string *msg)
   // land (so for easy access it's better if the basename is a valid Pure
   // identifier).
   string modname = strip_modname(name);
-  if (loaded_dsps.find(modname) != loaded_dsps.end())
-    // Module already loaded.
-    return true;
+  // Keep track of module timestamps (modification times). Note that in
+  // difference to the general bitcode interface we allow the module to be
+  // reloaded here, if it has been modified since the last load.
+  time_t mtime = 0;
+  struct stat st;
+  if (!stat(name, &st)) mtime = st.st_mtime;
+  // Check whether the module has already been loaded.
+  bool loaded = loaded_dsps.find(modname) != loaded_dsps.end();
+  if (loaded) {
+    // Module already loaded, check the modification time.
+    if (loaded_dsps[modname] >= mtime) return true;
+  }
   llvm::MemoryBuffer *buf = llvm::MemoryBuffer::getFile(name, msg);
   if (!buf) {
     dsp_errmsg(name, msg);
@@ -1608,6 +1617,14 @@ bool interpreter::LoadFaustDSP(const char *name, string *msg)
       string fname = name.substr(0, p);
       f.setName("$$faust$"+modname+"$"+fname);
       funs.push_back(fname);
+      if (loaded) {
+	/* Get rid of a previously loaded function. */
+	llvm::Function *g = module->getFunction("$$faust$"+modname+"$"+fname);
+	if (g) {
+	  JIT->freeMachineCodeForFunction(g);
+	  g->eraseFromParent();
+	}
+      }
     }
   }
   // Link the mangled module into the Pure module.
@@ -1618,6 +1635,13 @@ bool interpreter::LoadFaustDSP(const char *name, string *msg)
   // Add an interface function to create the UI description.
   {
     using namespace llvm;
+    if (loaded) {
+      Function *g = module->getFunction("$$faust$"+modname+"$ui");
+      if (g) {
+	JIT->freeMachineCodeForFunction(g);
+	g->eraseFromParent();
+      }
+    }
     vector<const Type*> argt(1, VoidPtrTy);
     FunctionType *ft = FunctionType::get(ExprPtrTy, argt, false);
     Function *f = Function::Create(ft, Function::ExternalLinkage,
@@ -1676,6 +1700,18 @@ bool interpreter::LoadFaustDSP(const char *name, string *msg)
     string asname = modname+"::"+*it;
     // The function type.
     const llvm::FunctionType *ft = f->getFunctionType();
+    if (loaded) {
+      /* No need to regenerate the wrapper, we only need to patch up the
+         function pointer. NOTE: This requires that the ABI doesn't change
+         when reloading the module, so you shouldn't suddenly switch, say,
+         from -double to -single when recompiling the Faust program. */
+      llvm::GlobalVariable *v = module->getNamedGlobal("$"+fname);
+      assert(v);
+      void **fp = (void**)JIT->getPointerToGlobal(v);
+      assert(fp);
+      *fp = JIT->getPointerToFunction(f);
+      continue;
+    }
     const llvm::Type* rest = ft->getReturnType();
     size_t n = ft->getNumParams();
     vector<const llvm::Type*> argt(n);
@@ -1697,7 +1733,7 @@ bool interpreter::LoadFaustDSP(const char *name, string *msg)
     f->print(out);
 #endif
   }
-  loaded_dsps.insert(modname);
+  loaded_dsps[modname] = mtime;
   return true;
 }
 
@@ -5701,6 +5737,11 @@ static inline bool is_faust(const string& name)
   return name.compare(0, 8, "$$faust$") == 0;
 }
 
+static inline bool is_faust_var(const string& name)
+{
+  return name.compare(0, 9, "$$$faust$") == 0;
+}
+
 static inline bool is_tmpvar(const string& name, string& label)
 {
   if (name.compare(0, 8, "$$tmpvar") == 0) {
@@ -6035,6 +6076,15 @@ int interpreter::compiler(string out, list<string> libnames)
       var_to_be_deleted.push_back(&v);
       continue;
     }
+    // While we're at it, also check for variables pointing to Faust functions
+    // and update their initializations.
+    string name = v.getNameStr();
+    if (is_faust_var(name)) {
+      Function *f = module->getFunction(name.substr(1));
+      assert(f);
+      v.setInitializer(f);
+      continue;
+    }
     map<GlobalVariable*,Function*>::iterator jt = varmap.find(&v);
     if (jt != varmap.end()) {
       // Strip variables holding unused function pointers.
@@ -6048,7 +6098,11 @@ int interpreter::compiler(string out, list<string> libnames)
   for (Module::iterator it = module->begin(), end = module->end();
        it != end; ) {
     Function &f = *(it++);
-    if (strip && used.find(&f) == used.end()) {
+    /* FIXME: At present, Faust functions are just always included. We might
+       want to check their usage, too, but the current algorithm doesn't do
+       this, as the wrappers call the Faust functions indirectly through a
+       global variable. */
+    if (strip && used.find(&f) == used.end() && !is_faust(f.getName())) {
       f.dropAllReferences();
       fun_to_be_deleted.push_back(&f);
     }
@@ -7912,7 +7966,23 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     b.CreateCall(f, args.begin(), args.end());
   }
   // call the function
-  Value* u = b.CreateCall(g, unboxed.begin(), unboxed.end());
+  Value* u = 0;
+  if (is_faust_fun) {
+    /* We do an indirect call here, so that it can be patched up later when a
+       Faust dsp gets reloaded. (This works similar to global Pure functions
+       which are also invoked indirectly through global variables.) */
+    PointerType *fptype = PointerType::get(gt, 0);
+    GlobalVariable *v = global_variable
+      (module, fptype, false, GlobalVariable::InternalLinkage,
+       ConstantPointerNull::get(fptype),
+       "$"+name);
+    void **fp = (void**)malloc(sizeof(void*));
+    assert(fp);
+    *fp = JIT->getPointerToFunction(g);
+    JIT->addGlobalMapping(v, fp);
+    u = b.CreateCall(b.CreateLoad(v), unboxed.begin(), unboxed.end());
+  } else
+    u = b.CreateCall(g, unboxed.begin(), unboxed.end());
   // free temporaries
   if (temps) b.CreateCall(module->getFunction("pure_free_cstrings"));
   if (vtemps) b.CreateCall(module->getFunction("pure_free_cvectors"));

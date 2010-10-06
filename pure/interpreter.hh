@@ -471,7 +471,7 @@ public:
   set<string> namespaces; // the set of all declared namespaces
   list<string> loaded_libs; // the list of all loaded libs (lib:...)
   set<string> loaded_bcs; // the set of all loaded bitcode modules (bc:...)
-  set<string> loaded_dsps; // the set of all loaded Faust dsps (dsp:...)
+  map<string,time_t> loaded_dsps; // the set of all loaded Faust dsps (dsp:...)
   list<int> required; // required symbols (--required pragma)
   ostream *output;   // redirected output stream for interactive commands
   symtable symtab;   // the symbol table
