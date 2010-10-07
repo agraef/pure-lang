@@ -258,74 +258,50 @@ void interpreter::init()
   // the C interface.
   {
     std::vector<const Type*> elts;
-#if SIZEOF_SIZE_T==4
-    elts.push_back(int32_type());	// size1
-    elts.push_back(int32_type());	// size2
-    elts.push_back(int32_type());	// tda
-#else
-    elts.push_back(int64_type());	// size1
-    elts.push_back(int64_type());	// size2
-    elts.push_back(int64_type());	// tda
-#endif
+    elts.push_back(size_t_type());	// size1
+    elts.push_back(size_t_type());	// size2
+    elts.push_back(size_t_type());	// tda
     elts.push_back(VoidPtrTy);		// data
     elts.push_back(VoidPtrTy);		// block
     elts.push_back(int32_type());	// owner
     GSLMatrixTy = struct_type(elts);
-    module->addTypeName("struct._gsl_matrix", GSLMatrixTy);
+    module->addTypeName("struct.__gsl__matrix", GSLMatrixTy);
     GSLMatrixPtrTy = PointerType::get(GSLMatrixTy, 0);
   }
   {
     std::vector<const Type*> elts;
-#if SIZEOF_SIZE_T==4
-    elts.push_back(int32_type());	// size1
-    elts.push_back(int32_type());	// size2
-    elts.push_back(int32_type());	// tda
-#else
-    elts.push_back(int64_type());	// size1
-    elts.push_back(int64_type());	// size2
-    elts.push_back(int64_type());	// tda
-#endif
+    elts.push_back(size_t_type());	// size1
+    elts.push_back(size_t_type());	// size2
+    elts.push_back(size_t_type());	// tda
     elts.push_back(DoublePtrTy);	// data
     elts.push_back(VoidPtrTy);		// block
     elts.push_back(int32_type());	// owner
     GSLDoubleMatrixTy = struct_type(elts);
-    module->addTypeName("struct._gsl_matrix_double", GSLDoubleMatrixTy);
+    module->addTypeName("struct.__gsl__matrix_double", GSLDoubleMatrixTy);
     GSLDoubleMatrixPtrTy = PointerType::get(GSLDoubleMatrixTy, 0);
   }
   {
     std::vector<const Type*> elts;
-#if SIZEOF_SIZE_T==4
-    elts.push_back(int32_type());	// size1
-    elts.push_back(int32_type());	// size2
-    elts.push_back(int32_type());	// tda
-#else
-    elts.push_back(int64_type());	// size1
-    elts.push_back(int64_type());	// size2
-    elts.push_back(int64_type());	// tda
-#endif
+    elts.push_back(size_t_type());	// size1
+    elts.push_back(size_t_type());	// size2
+    elts.push_back(size_t_type());	// tda
     elts.push_back(ComplexPtrTy);	// data
     elts.push_back(VoidPtrTy);		// block
     elts.push_back(int32_type());	// owner
     GSLComplexMatrixTy = struct_type(elts);
-    module->addTypeName("struct._gsl_matrix_complex", GSLComplexMatrixTy);
+    module->addTypeName("struct.__gsl__matrix_complex", GSLComplexMatrixTy);
     GSLComplexMatrixPtrTy = PointerType::get(GSLComplexMatrixTy, 0);
   }
   {
     std::vector<const Type*> elts;
-#if SIZEOF_SIZE_T==4
-    elts.push_back(int32_type());	// size1
-    elts.push_back(int32_type());	// size2
-    elts.push_back(int32_type());	// tda
-#else
-    elts.push_back(int64_type());	// size1
-    elts.push_back(int64_type());	// size2
-    elts.push_back(int64_type());	// tda
-#endif
+    elts.push_back(size_t_type());	// size1
+    elts.push_back(size_t_type());	// size2
+    elts.push_back(size_t_type());	// tda
     elts.push_back(IntPtrTy);		// data
     elts.push_back(VoidPtrTy);		// block
     elts.push_back(int32_type());	// owner
     GSLIntMatrixTy = struct_type(elts);
-    module->addTypeName("struct._gsl_matrix_int", GSLIntMatrixTy);
+    module->addTypeName("struct.__gsl__matrix_int", GSLIntMatrixTy);
     GSLIntMatrixPtrTy = PointerType::get(GSLIntMatrixTy, 0);
   }
 
@@ -368,7 +344,7 @@ void interpreter::init()
     ExprTy = struct_type(elts);
     cast<OpaqueType>(StructTy.get())->refineAbstractTypeTo(ExprTy);
     ExprTy = cast<StructType>(StructTy.get());
-    module->addTypeName("struct.expr", ExprTy);
+    module->addTypeName("struct.__pure__expr", ExprTy);
   }
   {
     std::vector<const Type*> elts;
@@ -376,7 +352,7 @@ void interpreter::init()
     elts.push_back(int32_type());
     elts.push_back(int32_type());
     IntExprTy = struct_type(elts);
-    module->addTypeName("struct.intexpr", IntExprTy);
+    module->addTypeName("struct.__pure__intexpr", IntExprTy);
   }
   {
     std::vector<const Type*> elts;
@@ -384,7 +360,7 @@ void interpreter::init()
     elts.push_back(int32_type());
     elts.push_back(double_type());
     DblExprTy = struct_type(elts);
-    module->addTypeName("struct.dblexpr", DblExprTy);
+    module->addTypeName("struct.__pure__dblexpr", DblExprTy);
   }
   {
     std::vector<const Type*> elts;
@@ -392,7 +368,7 @@ void interpreter::init()
     elts.push_back(int32_type());
     elts.push_back(CharPtrTy);
     StrExprTy = struct_type(elts);
-    module->addTypeName("struct.strexpr", StrExprTy);
+    module->addTypeName("struct.__pure__strexpr", StrExprTy);
   }
   {
     std::vector<const Type*> elts;
@@ -400,7 +376,7 @@ void interpreter::init()
     elts.push_back(int32_type());
     elts.push_back(VoidPtrTy);
     PtrExprTy = struct_type(elts);
-    module->addTypeName("struct.ptrexpr", PtrExprTy);
+    module->addTypeName("struct.__pure__ptrexpr", PtrExprTy);
   }
 
   // Corresponding pointer types.
@@ -7150,23 +7126,9 @@ const Type *interpreter::named_type(string name)
   else if (name == "int64")
     return int64_type();
   else if (name == "long")
-#if SIZEOF_LONG==4
-    return int32_type();
-#else
-#if SIZEOF_LONG!=8
-#error "Unknown size of long type."
-#endif
-    return int64_type();
-#endif
+    return long_type();
   else if (name == "size_t")
-#if SIZEOF_SIZE_T==4
-    return int32_type();
-#else
-#if SIZEOF_SIZE_T!=8
-#error "Unknown size of size_t type."
-#endif
-    return int64_type();
-#endif
+    return size_t_type();
   else if (name == "float")
     return float_type();
   else if (name == "double")
@@ -7180,17 +7142,9 @@ const Type *interpreter::named_type(string name)
   else if (name == "int64*")
     return PointerType::get(int64_type(), 0);
   else if (name == "long*")
-#if SIZEOF_LONG==4
-    return PointerType::get(int32_type(), 0);
-#else
-    return PointerType::get(int64_type(), 0);
-#endif
+    return PointerType::get(long_type(), 0);
   else if (name == "size_t*")
-#if SIZEOF_SIZE_T==4
-    return PointerType::get(int32_type(), 0);
-#else
-    return PointerType::get(int64_type(), 0);
-#endif
+    return PointerType::get(size_t_type(), 0);
   else if (name == "float*")
     return PointerType::get(float_type(), 0);
   else if (name == "double*")
@@ -7330,11 +7284,10 @@ const char *interpreter::bctype_name(const Type *type)
       return "float*";
     else if (elem_type == double_type())
       return "double*";
-    /* Special support for Pure expression pointers which are passed through
-       unchanged. */
+    // Special support for Pure expression pointers, passed through unchanged.
     else if (elem_type == module->getTypeByName("struct.pure_expr"))
       return "expr*";
-    /* Special support for the GSL matrix types. */
+    // Special support for the GSL matrix types.
     else if (elem_type == module->getTypeByName("struct.gsl_matrix"))
       return "dmatrix*";
     else if (elem_type == module->getTypeByName("struct.gsl_matrix_int"))

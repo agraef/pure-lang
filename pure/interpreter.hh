@@ -107,6 +107,14 @@
 #define ASTACKSZ 0x1000
 #endif
 
+/* Some of our code currently assumes that these must be either 32 or 64 bit. */
+#if SIZEOF_LONG!=4 && SIZEOF_LONG!=8
+#error "Unknown size of long type."
+#endif
+#if SIZEOF_SIZE_T!=4 && SIZEOF_SIZE_T!=8
+#error "Unknown size of size_t type."
+#endif
+
 using namespace std;
 
 /* The Pure interpreter. */
@@ -722,6 +730,18 @@ public:
   { return llvm::Type::getInt64Ty(llvm::getGlobalContext()); }
 #else
   { return llvm::Type::Int64Ty; }
+#endif
+  static const llvm::IntegerType* long_type()
+#if SIZEOF_LONG==4
+  { return int32_type(); }
+#else
+  { return int64_type(); }
+#endif
+  static const llvm::IntegerType* size_t_type()
+#if SIZEOF_SIZE_T==4
+  { return int32_type(); }
+#else
+  { return int64_type(); }
 #endif
   static const llvm::Type* float_type()
 #ifdef LLVM26
