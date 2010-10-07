@@ -1,12 +1,21 @@
 
 # GNU Makefile to compile the C, Fortran and Faust examples to LLVM bitcode.
 
+# Edit these as needed. CC is the C compiler (llvm-gcc by default), FC the
+# Fortran compiler (llvm-fortran), FAUST the Faust compiler, including any
+# options for bitcode generation that they may need.
+
+CC = llvm-gcc -emit-llvm
+#CC = clang -emit-llvm
+FC = llvm-gfortran -emit-llvm
+FAUST = faust -double -lang llvm
+
 # Prerequisites:
 
 # For the C and Fortran examples, you need to have a version of llvm-gcc with
-# both C and Fortran support installed. Also, the headers and libraries of the
-# GNU Scientific Library (GSL) are needed to compile and run the gslsort.c
-# example.
+# both C and Fortran support installed. (Clang can be used instead of llvm-gcc
+# if you have it.) Also, the headers and libraries of the GNU Scientific
+# Library (GSL) are needed to compile and run the gslsort.c example.
 
 # For the Faust signal processing examples (.dsp programs), you'll need a
 # special version of Grame's Faust compiler (http://faust.grame.fr). Until
@@ -48,24 +57,24 @@ clean:
 
 # compile C source to LLVM bitcode
 %.bc: %.c
-	-llvm-gcc -emit-llvm -c $< -o $@
+	-$(CC) -c $< -o $@
 
 # compile C source to LLVM assembler
 %.ll: %.c
-	-llvm-gcc -emit-llvm -S $< -o $@
+	-$(CC) -S $< -o $@
 
 # compile Fortran source to LLVM bitcode
 %.bc: %.f90
-	-llvm-gfortran -emit-llvm -c $< -o $@
+	-$(FC) -c $< -o $@
 
 # compile Fortran source to LLVM assembler
 %.ll: %.f90
-	-llvm-gfortran -emit-llvm -S $< -o $@
+	-$(FC) -S $< -o $@
 
 # compile Faust source to LLVM bitcode
 %.bc: %.dsp
-	-faust -double -lang llvm $< -o $@
+	-$(FAUST) $< -o $@
 
 # compile Faust source to LLVM assembler
 %.ll: %.dsp
-	-faust -double -lang llvm $< 2> $@
+	-$(FAUST) $< 2> $@
