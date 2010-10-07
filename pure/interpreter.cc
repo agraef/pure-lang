@@ -1705,8 +1705,7 @@ bool interpreter::LoadFaustDSP(const char *name, string *msg)
     cerr << "\n" << info << ";\n";
     verifyFunction(*f);
     if (FPM) FPM->run(*f);
-    llvm::raw_stdout_ostream out;
-    f->print(out);
+    f->dump();
 #endif
   }
   loaded_dsps[modname] = mtime;
@@ -1815,8 +1814,7 @@ bool interpreter::LoadBitcode(const char *name, string *msg)
       cerr << "\n" << info << ";\n";
       verifyFunction(*f);
       if (FPM) FPM->run(*f);
-      llvm::raw_stdout_ostream out;
-      f->print(out);
+      f->dump();
 #endif
     } else {
       // Bad argument or result type (probably a struct-by-val). Print a
@@ -7236,6 +7234,20 @@ const char *interpreter::type_name(const Type *type)
     return "<unknown C type>";
 }
 
+const Type *interpreter::gslmatrix_type(const Type *elem_ty,
+					const Type *block_ty)
+{
+  if (!elem_ty || !block_ty) return 0;
+  std::vector<const Type*> elts;
+  elts.push_back(size_t_type());			// size1
+  elts.push_back(size_t_type());			// size2
+  elts.push_back(size_t_type());			// tda
+  elts.push_back(PointerType::get(elem_ty, 0));		// data
+  elts.push_back(PointerType::get(block_ty, 0));	// block
+  elts.push_back(int32_type());				// owner
+  return struct_type(elts);
+}
+
 const char *interpreter::bctype_name(const Type *type)
 {
   if (type == void_type())
@@ -7284,15 +7296,31 @@ const char *interpreter::bctype_name(const Type *type)
       return "float*";
     else if (elem_type == double_type())
       return "double*";
+    /* XXXFIXME: These checks really need to be rewritten so that they're less
+       compiler-specific. Currently they only work with recent llvm-gcc and
+       clang versions. */
     // Special support for Pure expression pointers, passed through unchanged.
-    else if (elem_type == module->getTypeByName("struct.pure_expr"))
+    else if (elem_type == module->getTypeByName("struct.pure_expr") ||
+	     elem_type == module->getTypeByName("struct._pure_expr"))
       return "expr*";
     // Special support for the GSL matrix types.
-    else if (elem_type == module->getTypeByName("struct.gsl_matrix"))
+    else if (elem_type == module->getTypeByName("struct.gsl_matrix") ||
+	     elem_type == module->getTypeByName("struct._gsl_matrix") ||
+	     elem_type == gslmatrix_type
+	     (double_type(),
+	      module->getTypeByName("struct.gsl_block_struct")))
       return "dmatrix*";
-    else if (elem_type == module->getTypeByName("struct.gsl_matrix_int"))
+    else if (elem_type == module->getTypeByName("struct.gsl_matrix_int") ||
+	     elem_type == module->getTypeByName("struct._gsl_matrix_int") ||
+	     elem_type == gslmatrix_type
+	     (int32_type(),
+	      module->getTypeByName("struct.gsl_block_int_struct")))
       return "imatrix*";
-    else if (elem_type == module->getTypeByName("struct.gsl_matrix_complex"))
+    else if (elem_type == module->getTypeByName("struct.gsl_matrix_complex") ||
+	     elem_type == module->getTypeByName("struct._gsl_matrix_complex") ||
+	     elem_type == gslmatrix_type
+	     (double_type(),
+	      module->getTypeByName("struct.gsl_block_complex_struct")))
       return "cmatrix*";
     else
       return "void*";
