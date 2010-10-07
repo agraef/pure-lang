@@ -167,18 +167,26 @@ dnl fastcc/tail call support.
 if test $fastcc = yes; then
   AC_DEFINE(HAVE_FASTCC, 1, [Define to build with fastcc/TCO support (broken on some systems).])
 fi
+
 dnl Check for LLVM.
 AC_CHECK_PROG(LLVMCONF,llvm-config,llvm-config,no)
 if test "$LLVMCONF" = no; then
   AC_MSG_ERROR([Cannot find LLVM.])
 fi
 
+dnl Determine the LLVM version.
+llvm_version=`$LLVMCONF --version`
+AC_DEFINE_UNQUOTED(LLVM_VERSION, "${llvm_version}", [Define to the LLVM version string.])
+
+dnl If we got LLVM installed as a shared library, use that.
+AC_CHECK_LIB(LLVM-${llvm_version}, LLVMFreeMachineCodeForFunction,
+[LLVM_LIBS=-lLLVM-${llvm_version}], [LLVM_LIBS=$($LLVMCONF --ldflags --libs core bitreader bitwriter linker jit native | tr '\r\n' '  ')])
+AC_SUBST(LLVM_LIBS)
+
 LLVM_FLAGS=$($LLVMCONF --cppflags | sed -e s/-DNDEBUG//g)
 AC_SUBST(LLVM_FLAGS)
 LLVM_LDFLAGS=$($LLVMCONF --ldflags)
 AC_SUBST(LLVM_LDFLAGS)
-LLVM_LIBS=$($LLVMCONF --ldflags --libs core bitreader bitwriter linker jit native | tr '\r\n' '  ')
-AC_SUBST(LLVM_LIBS)
 
 # 64 bit needs -fPIC flag (apparently not needed on OSX, though)
 # FIXME: this should be set based on a check
@@ -239,10 +247,6 @@ AC_CHECK_HEADERS([llvm/Support/raw_ostream.h llvm/Support/raw_os_ostream.h llvm/
 AC_CHECK_DECLS([llvm::PerformTailCallOpt, llvm::GuaranteedTailCallOpt], [], [], [[#include <llvm/Target/TargetOptions.h>]])
 CPPFLAGS=$save_CPPFLAGS
 AC_LANG_POP([C++])
-
-dnl Determine the LLVM version.
-llvm_version=`$LLVMCONF --version`
-AC_DEFINE_UNQUOTED(LLVM_VERSION, "${llvm_version}", [Define to the LLVM version string.])
 
 dnl Output files.
 AC_CONFIG_FILES([Makefile examples/Makefile])
