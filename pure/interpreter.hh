@@ -803,6 +803,7 @@ public:
   const char *type_name(const llvm::Type *type);
   const char *bctype_name(const llvm::Type *type);
   const char *dsptype_name(const llvm::Type *type);
+  bool compatible_types(const llvm::Type *type1, const llvm::Type *type2);
   const llvm::Type *gslmatrix_type(const llvm::Type *elem_ty,
 				   const llvm::Type *block_ty);
   set<llvm::Function*> always_used;

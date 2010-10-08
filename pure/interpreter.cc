@@ -6364,8 +6364,6 @@ void interpreter::defn(int32_t tag, pure_expr *x)
 ostream &operator<< (ostream& os, const ExternInfo& info)
 {
   interpreter& interp = *interpreter::g_interp;
-  assert(info.tag > 0);
-  const symbol& sym = interp.symtab.sym(info.tag);
   os << "extern " << interp.type_name(info.type) << " " << info.name << "(";
   size_t n = info.argtypes.size();
   for (size_t i = 0; i < n; i++) {
@@ -6373,7 +6371,10 @@ ostream &operator<< (ostream& os, const ExternInfo& info)
     os << interp.type_name(info.argtypes[i]);
   }
   os << ")";
-  if (sym.s != info.name) os << " = " << sym.s;
+  if (info.tag > 0) {
+    const symbol& sym = interp.symtab.sym(info.tag);
+    if (sym.s != info.name) os << " = " << sym.s;
+  }
   return os;
 }
 
@@ -7376,6 +7377,16 @@ const char *interpreter::dsptype_name(const Type *type)
     return "<unknown C type>";
 }
 
+bool interpreter::compatible_types(const Type *type1, const Type *type2)
+{
+  if (type1 == type2)
+    return true;
+  else {
+    bool t1 = type1->isPointerTy(), t2 = type2->isPointerTy();
+    return t1 && t1 == t2;
+  }
+}
+
 Function *interpreter::declare_extern(void *fp, string name, string restype,
 				      int n, ...)
 {
@@ -7484,23 +7495,32 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   const FunctionType *gt = g?g->getFunctionType():0;
   // Check whether we already have an external declaration for this symbol.
   map<int32_t,ExternInfo>::const_iterator it = externals.find(sym.f);
-  // Handle the case that the C function was imported through a dll *after*
-  // the definition of a Pure function of the same name. In this case the C
-  // function won't be accessible in the Pure program at all.
-  if (it == externals.end() && g && !g->isDeclaration() && dll_check)
+  // Handle the case that the C function was imported *after* the definition
+  // of a Pure function of the same name. In this case the C function won't be
+  // accessible in the Pure program at all.
+  symbol* _fsym = symtab.lookup(name);
+  if (_fsym && globenv.find(_fsym->f) != globenv.end() &&
+      globenv[_fsym->f].t == env_info::fun &&
+      externals.find(_fsym->f) == externals.end())
     throw err("symbol '"+name+"' is already defined as a Pure function");
   if (it == externals.end() && g && dll_check) {
-    // Cross-check with a builtin declaration.
-    assert(g->isDeclaration() && gt);
+    // Cross-check with a previous declaration under a different name (might
+    // also be a builtin declaration).
+    assert(gt);
     if (gt != ft) {
-      bool ok = gt->getReturnType()==type && gt->getNumParams()==n &&
-	gt->isVarArg()==varargs;
+      // If there's a literal type mismatch, we still check types for
+      // compatibility here, in the sense that two C types might be used
+      // interchangeably for the same kind of data in Pure if they are both
+      // pointer types (such as char* instead of void* and vice versa for
+      // strings). As of Pure 0.45, we allow such venial mismatches (and just
+      // generate a new wrapper), as long as the function is accessed under a
+      // new alias. This gives the programmer some leeway (and some rope to
+      // hang himself), e.g., to fix up declarations which the bitcode loader
+      // didn't get right.
+      bool ok = compatible_types(gt->getReturnType(), type) &&
+	gt->getNumParams()==n && gt->isVarArg()==varargs;
       for (size_t i = 0; ok && i < n; i++) {
-	// In Pure, we allow void* to be passed for a char*, to bypass the
-	// automatic marshalling from Pure to C strings. Oh well.
-	ok = gt->getParamType(i)==argt[i] ||
-	  (gt->getParamType(i)==CharPtrTy &&
-	   argt[i] == VoidPtrTy);
+	ok = compatible_types(gt->getParamType(i), argt[i]);
       }
       if (!ok) {
 	// Give some reasonable diagnostic. gt itself shows as LLVM assembler
@@ -7511,16 +7531,17 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 	vector<const Type*> argt(n);
 	for (size_t i = 0; i < n; i++)
 	  argt[i] = gt->getParamType(i);
-	ExternInfo info(sym.f, name, gt->getReturnType(), argt, g);
+	ExternInfo info(0, name, gt->getReturnType(), argt, g);
 	ostringstream msg;
 	msg << "declaration of extern function '" << name
-	    << "' does not match builtin declaration: " << info;
+	    << "' does not match previous declaration: " << info;
 	throw err(msg.str());
       }
     }
   }
   if (it != externals.end()) {
-    // already declared, check that declarations match
+    // Already declared under the same name, check that declarations
+    // match. Here we require the types to be literally the same.
     const ExternInfo& info = it->second;
     if (type != info.type || argt != info.argtypes) {
       ostringstream msg;
@@ -7531,8 +7552,11 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     return info.f;
   }
   // Check that the external function actually exists by searching the program
-  // and resident libraries.
-  if (!sys::DynamicLibrary::SearchForAddressOfSymbol(name) && dll_check)
+  // and resident libraries. (As of Pure 0.44, the function may now also come
+  // from a bitcode module, in which case it's to be found in the Pure program
+  // module.)
+  if (dll_check && !(g && !g->isDeclaration()) &&
+      !sys::DynamicLibrary::SearchForAddressOfSymbol(name))
     throw err("external symbol '"+name+"' cannot be found");
   // If we come here, we have a new external symbol for which we create a
   // declaration (if needed), as well as a Pure wrapper function which is
@@ -7749,6 +7773,9 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       b.SetInsertPoint(okbb);
       Value *sv = b.CreateCall(module->getFunction("pure_get_cstring"), x);
       unboxed[i] = sv; temps = true;
+      const Type *type = gt->getParamType(i);
+      if (type != CharPtrTy)
+	unboxed[i] = b.CreateBitCast(unboxed[i], type);
     } else if (argt[i] == PointerType::get(int64_type(), 0)) {
       BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
@@ -7760,7 +7787,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       Value *pv = b.CreateBitCast(x, PtrExprPtrTy, "ptrexpr");
       idx[1] = ValFldIndex;
       Value *ptrv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "ptrval");
-      unboxed[i] = b.CreateBitCast(ptrv, argt[i]);
+      unboxed[i] = b.CreateBitCast(ptrv, gt->getParamType(i));
     } else if (argt[i] == PointerType::get(int16_type(), 0) ||
 	       argt[i] == PointerType::get(int32_type(), 0) ||
 	       argt[i] == PointerType::get(double_type(), 0) ||
@@ -7800,7 +7827,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       PHINode *phi = b.CreatePHI(VoidPtrTy);
       phi->addIncoming(ptrv, ptrbb);
       phi->addIncoming(matrixv, matrixbb);
-      unboxed[i] = b.CreateBitCast(phi, argt[i]); vtemps = true;
+      unboxed[i] = b.CreateBitCast(phi, gt->getParamType(i)); vtemps = true;
     } else if (argt[i] == GSLMatrixPtrTy ||
 	       argt[i] == GSLDoubleMatrixPtrTy ||
 	       argt[i] == GSLComplexMatrixPtrTy ||
