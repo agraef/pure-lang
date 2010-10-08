@@ -839,9 +839,11 @@ public:
   void debug_init();
   void backtrace(ostream& out);
   // Faust interface.
-  bool LoadFaustDSP(const char *name, string *msg = 0);
+  bool LoadFaustDSP(const char *name, string *msg, const char *modnm = 0);
   // Generic LLVM bitcode interface.
-  bool LoadBitcode(const char *name, string *msg = 0);
+  bool LoadBitcode(const char *name, string *msg);
+  // Handle inline code.
+  void inline_code(string &code);
 private:
   void init();
   void init_llvm_target();
@@ -1092,7 +1094,10 @@ public:
 
 public:
   bool declare_op;
-  string srcdir, xsym_prefix;
+  string srcdir, xsym_prefix, xcode;
+  void begin_code() { xcode.clear(); }
+  void add_code(const char *s) { xcode.append(s); }
+  void end_code() { }
 
 private:
   bool lex_begin(const string& fname = "", bool esc = false);

@@ -134,7 +134,7 @@ str    ([^\"\\\n]|\\(.|\n))*
 cmd    (!|help|ls|pwd|break|trace|bt|del|cd|show|dump|clear|save|run|override|underride|stats|mem|quit|completion_matches)
 blank  [ \t\f\v\r]
 
-%x escape comment xdecl xdecl_comment xusing xusing_comment xsyms xsyms_comment xtag rescan xsyms_rescan
+%x escape comment xcode xcode_comment xdecl xdecl_comment xusing xusing_comment xsyms xsyms_comment xtag rescan xsyms_rescan
 
 %{
 # define YY_USER_ACTION  yylloc->columns(yyleng);
@@ -205,6 +205,28 @@ blank  [ \t\f\v\r]
 <comment>[\n]+          yylloc->lines(yyleng); yylloc->step();
 <comment>"*"+"/"        yylloc->step(); BEGIN(INITIAL);
 <comment><<EOF>>	interp.error(*yylloc, "open comment at end of file"); BEGIN(INITIAL);
+
+"%{"       { interp.begin_code(); BEGIN(xcode); }
+
+<xcode>"//".*	interp.add_code(yytext);
+<xcode>"/*"	interp.add_code(yytext); BEGIN(xcode_comment);
+<xcode>\"{str}\"	{
+  interp.add_code(yytext);
+  int count = 0;
+  for (int i = 1; i < (int)yyleng-1; i++)
+    if (yytext[i] == '\n') count++;
+  yylloc->lines(count);
+}
+<xcode>[\n]+	interp.add_code(yytext); yylloc->lines(yyleng);
+<xcode>.	interp.add_code(yytext);
+<xcode>"%}"	interp.end_code(); BEGIN(INITIAL); return token::CODE;
+<xcode><<EOF>>	interp.error(*yylloc, "open code section at end of file"); interp.end_code(); BEGIN(INITIAL); return token::CODE;
+
+<xcode_comment>[^*\n]*		interp.add_code(yytext); yylloc->step();
+<xcode_comment>"*"+[^*/\n]*	interp.add_code(yytext); yylloc->step();
+<xcode_comment>[\n]+		interp.add_code(yytext); yylloc->lines(yyleng); yylloc->step();
+<xcode_comment>"*"+"/"		interp.add_code(yytext); yylloc->step(); BEGIN(xcode);
+<xcode_comment><<EOF>>		interp.error(*yylloc, "open comment at end of file"); BEGIN(xcode);
 
 <xdecl>^{cmd} {
   if (interp.interactive || interp.output)

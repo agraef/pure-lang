@@ -1540,13 +1540,13 @@ static void dsp_errmsg(string name, string* msg)
     *msg = name+": Error linking dsp file";
 }
 
-bool interpreter::LoadFaustDSP(const char *name, string *msg)
+bool interpreter::LoadFaustDSP(const char *name, string *msg, const char *modnm)
 {
   // Determine the basename of the Faust module. This will be used to mangle
   // the Faust functions and give the namespace of the Faust functions in Pure
   // land (so for easy access it's better if the basename is a valid Pure
   // identifier).
-  string modname = strip_modname(name);
+  string modname = modnm?string(modnm):strip_modname(name);
   // Keep track of module timestamps (modification times). Note that in
   // difference to the general bitcode interface we allow the module to be
   // reloaded here, if it has been modified since the last load.
@@ -1834,6 +1834,153 @@ bool interpreter::LoadBitcode(const char *name, string *msg)
   }
   loaded_bcs.insert(modname);
   return true;
+}
+
+/* Compile a bit of inline code on the fly. This is done by invoking a
+   suitable compiler and loading the resulting bitcode. By default, C code is
+   assumed. Other languages can be selected by placing a corresponding tag
+   into the first line of the code (right behind the opening bracket):
+
+   - "-*- c -*-" (or "-*- C -*-", case is insignificant in the language label)
+     selects the C language, which is also the default. The command with which
+     the compiler is to be invoked can be set with the PURE_CC environment
+     variable, by default this is llvm-gcc. The necessary options to switch
+     llvm-gcc to bitcode output are supplied automatically.
+
+   - "-*- fortran -*-" selects Fortran (PURE_FC environment variable,
+     llvm-gfortran by default). Optionally, the fortran tag may be followed by
+     a two-digit sequence denoting the desired Fortran standard (as of this
+     writing, gfortran recognizes the Fortran 90, 95, 03 and 08 standards). If
+     this is omitted, the default is old-style (fixed form) Fortran.
+
+   - "-*- dsp:name -*-" selects Faust (PURE_FAUST environment variable, faust
+     by default), where 'name' denotes the name of the Faust dsp, which is
+     used as the namespace for the dsp interface functions.
+
+   The language tag itself is removed from the code before it is submitted for
+   compilation. */
+
+static string lang_tag(string &code, string &modname)
+{
+  size_t p = code.find_first_not_of(" \t\r\n"), q = 0;
+  modname.clear();
+  if (p == string::npos || code.compare(p, 3, "-*-") != 0) return "c";
+  p += 3;
+  p = code.find_first_not_of(" \t", p);
+  if (p == string::npos) return "c";
+  q = p; p = code.find("-*-", p);
+  if (p == string::npos) return "c";
+  string tag = code.substr(q, p-q);
+  code.erase(0, p+3);
+  p = tag.find(":");
+  if (p != string::npos) {
+    modname = tag.substr(p+1);
+    tag.erase(p);
+    p = modname.find_last_not_of(" \t");
+    if (p == string::npos)
+      modname.clear();
+    else
+      modname.erase(p+1);
+  }
+  p = tag.find_last_not_of(" \t");
+  if (p == string::npos)
+    tag.clear();
+  else
+    tag.erase(p+1);
+  for (size_t i = 0; i < tag.size(); i++)
+    tag[i] = tolower(tag[i]);
+  return tag;
+}
+
+void interpreter::inline_code(string &code)
+{
+  // Get the language tag and configure accordingly.
+  string modname, tag = lang_tag(code, modname), ext = "";
+  const char *env, *drv, *args;
+  if (tag == "c") {
+    env = "PURE_CC"; drv = "llvm-gcc";
+    args = " -x c -emit-llvm -c ";
+  } else if (tag.compare(0, 7, "fortran") == 0) {
+    string std = tag.substr(7);
+    if (!std.empty() &&
+	std != "90" && std != "95" && std != "03" && std != "08")
+      throw err("unknown Fortran dialect in inline code (try one of 90, 95, 03, 08)");
+    env = "PURE_FC"; drv = "llvm-gfortran";
+    // gfortran doesn't understand -x, so we have to do some trickery with
+    // filename extensions instead.
+    args = " -emit-llvm -c "; ext = ".f"+std;
+  } else if (tag == "dsp") {
+    env = "PURE_FAUST"; drv = "faust -double";
+    args = " -lang llvm ";
+    if (modname.empty())
+      throw err("missing Faust module name in inline code (try dsp:name)");
+  } else {
+    throw err("bad tag '"+tag+
+	      "' in inline code (try one of c, fortran, dsp:name)");
+  }
+  // Create a temporary file holding the code.
+  size_t n = code.size();
+  string src = (!modname.empty())?modname:
+    source.empty()?string("stdin"):source;
+  string tmpl = src+".XXXXXX";
+  char *fnm = (char*)malloc(tmpl.size()+1);
+  strcpy(fnm, tmpl.c_str());
+  int fd = mkstemp(fnm);
+  string nm = fnm;
+  if (fd<0) goto err;
+  if (write(fd, code.c_str(), n) < (ssize_t)n) {
+    close(fd);
+    unlink(fnm);
+    goto err;
+  }
+  code.clear();
+  close(fd);
+  if (!ext.empty()) {
+    // Add the given filename extension so that the compiler knows what kind
+    // of input it gets.
+    nm += ext;
+    if (rename(fnm, nm.c_str())) {
+      unlink(fnm);
+      goto err;
+    }
+  }
+  {
+    // Invoke the compiler.
+    const char *pure_cc = getenv(env);
+    if (!pure_cc) pure_cc = drv;
+    string fname = nm, bcname = string(fnm)+".bc",
+      cmd = string(pure_cc)+args+fname+" -o "+bcname;
+    const char *bcnm = bcname.c_str();
+    bool vflag = (verbose&verbosity::compiler) != 0;
+    if (vflag) std::cerr << cmd << '\n';
+    int status = system(cmd.c_str());
+    unlink(nm.c_str());
+    if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+      string msg;
+      // Load the resulting bitcode.
+      if (tag == "dsp") {
+	// Faust bitcode loader
+	if (!LoadFaustDSP(bcnm, &msg, modname.c_str())) {
+	  unlink(bcnm);
+	  throw err(msg);
+	}
+      } else {
+	// generic bitcode loader
+	if (!LoadBitcode(bcnm, &msg)) {
+	  unlink(bcnm);
+	  throw err(msg);
+	}
+      }
+    } else {
+      unlink(bcnm);
+      goto err;
+    }
+    unlink(bcnm);
+  }
+  return;
+ err:
+  // general error
+  throw err("error compiling inline code");
 }
 
 pure_expr* interpreter::run(const string &_s, bool check, bool sticky)

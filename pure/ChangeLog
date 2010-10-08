@@ -1,5 +1,41 @@
 2010-10-08  Albert Graef  <Dr.Graef@t-online.de>
 
+	* parser.yy, lexer.ll: Syntax support for inline code. The format
+	is simply '%{ code %}' which can be placed whereever a toplevel
+	item is allowed. Target language selection is done with a tag of
+	the form '-*- lang -*-' where 'lang' can currently be any of 'c',
+	'fortran' and 'dsp' (the latter is for Faust). The tag, if
+	present, must follow the open brace (leading whitespace is
+	allowed). By default, 'c' is assumed. Case is insignificant in the
+	language tags, so you can also write 'C', 'Fortran', 'DSP'
+	etc. For the 'fortran' tag, you may also have to specify the
+	appropriate dialect, i.e., 'fortran90' etc.
+
+	The language tag can also be followed by an optional "module
+	name", using the format '-*- lang:name -*-'. This is optional for
+	C and Fortran, but mandatory for Faust (where it specifies the
+	namespace for the DSP routines). So, e.g., a Faust DSP named
+	'test' would be specified with a 'dsp:test' tag. Case is
+	significant in the module name.
+
+	NOTE: Since the %{...%} construct isn't terminated by a semicolon,
+	the grammar had to be massaged to some extent to accommodate for
+	the new syntax. Specifically, toplevel items in a 'namespace ns
+	with ... end' construct must now always be terminated with a
+	semicolon (which seems to be good practice anyway).
+
+	* interpreter.cc (inline_code): Support for inline code which gets
+	translated to and then loaded from a bitcode module on the
+	fly. Currently supported languages are C, Fortran and Faust. This
+	requires that you have the corresponding LLVM-capable compilers
+	installed: llvm-gcc or clang for C, llvm-gfortran for Fortran,
+	Faust2 (i.e., the Faust compiler from the faust2 branch) for
+	Faust. You can adjust the compilation commands with the PURE_CC,
+	PURE_FC and PURE_FAUST environment variables, respectively. (E.g.,
+	to use clang -O3 instead of the default llvm-gcc, set PURE_CC to
+	"clang -O3".) Also, you can check the compilation commands which
+	are actually executed by running Pure with the -v0100 option.
+
 	* interpreter.cc (declare_extern): Bugfix: Free temporary C
 	strings and vectors *after* the result of an extern has been
 	boxed, in case the result involves these temporaries. This makes

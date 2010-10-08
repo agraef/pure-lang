@@ -153,6 +153,7 @@ static void mangle_fname(string& name);
 %token		BADTOK  "bad token"
 %token		MAPSTO	"->"
 %token		ESCAPE
+%token		CODE	"code section"
 %token <sval>	ID	"identifier"
 %token <ival>	XID	"symbol"
 %token <csval>	STR	"string"
@@ -209,30 +210,29 @@ static void mangle_fname(string& name);
 source
 : /* empty */
 | source ';'
-| source item_pos ';'
+| source item_pos
 | error ';'
 { interp.nerrs = yyerrstatus_ = 0; interp.declare_op = false; }
 ;
 
-/* Same as above for namespace scopes. This doesn't allow empty items, but
-   allows the semicolon at the end to be omitted. */
-
-namespace_source
-: /* empty */
-| items
-| items ';'
-;
+/* Same as above for namespace scopes. This doesn't allow empty items. */
 
 items
 : item_pos
-| items ';' item_pos
+| items item_pos
 | error ';'
 { interp.nerrs = yyerrstatus_ = 0; interp.declare_op = false; }
 ;
 
 item_pos
 : { interp.line = yylloc.begin.line; interp.column = yylloc.begin.column; }
-  item
+  item1
+;
+
+item1
+: item ';'
+| CODE
+{ action(interp.inline_code(interp.xcode), interp.xcode.clear()); }
 ;
 
 item
@@ -287,7 +287,7 @@ item
 }
 | NAMESPACE name WITH
 { action(interp.push_namespace(new string(*$2)), ); }
-  namespace_source END
+  items END
 { interp.pop_namespace(); delete $2; }
 | USING NAMESPACE name_xsyms_list
 { action(interp.using_namespaces($3), ); }
