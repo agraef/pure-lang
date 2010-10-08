@@ -1605,9 +1605,11 @@ bool interpreter::LoadFaustDSP(const char *name, string *msg)
   }
   // Link the mangled module into the Pure module.
   if (llvm::Linker::LinkModules(module, M, msg)) {
+    delete M;
     dsp_errmsg(name, msg);
     return false;
   }
+  delete M;
   // Add an interface function to create the UI description.
   {
     using namespace llvm;
@@ -1773,9 +1775,11 @@ bool interpreter::LoadBitcode(const char *name, string *msg)
   }
   // Link the bitcode module into the Pure module.
   if (llvm::Linker::LinkModules(module, M, msg)) {
+    delete M;
     bc_errmsg(name, msg);
     return false;
   }
+  delete M;
   // Create wrappers.
   for (list<string>::iterator it = funs.begin(), end = funs.end();
        it != end; ++it) {
