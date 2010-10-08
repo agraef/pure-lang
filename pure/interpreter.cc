@@ -7991,9 +7991,6 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     u = b.CreateCall(b.CreateLoad(v), unboxed.begin(), unboxed.end());
   } else
     u = b.CreateCall(g, unboxed.begin(), unboxed.end());
-  // free temporaries
-  if (temps) b.CreateCall(module->getFunction("pure_free_cstrings"));
-  if (vtemps) b.CreateCall(module->getFunction("pure_free_cvectors"));
   // box the result
   if (type == void_type())
     u = b.CreateCall(module->getFunction("pure_const"),
@@ -8055,6 +8052,9 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     u = b.CreateCall(module->getFunction("pure_pointer"), u);
   } else
     assert(0 && "invalid C type");
+  // free temporaries
+  if (temps) b.CreateCall(module->getFunction("pure_free_cstrings"));
+  if (vtemps) b.CreateCall(module->getFunction("pure_free_cvectors"));
   if (debugging) {
     Function *f = module->getFunction("pure_debug_redn");
     assert(f);
