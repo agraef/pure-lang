@@ -1,0 +1,9 @@
+
+// cf. r3589. This fixes a bug in which C string and vector temporaries were
+// collected too early after calling an external function.
+
+extern char *strchr(char *s, int c) = foo;
+foo "bla bla" 97;
+
+extern char *strchr(void *s, int c) = bar;
+bar "bla bla" 97;
