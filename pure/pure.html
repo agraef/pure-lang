@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>The Pure Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2010-09-30" />
+<meta name="date" content="2010-10-08" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-09-30</td></tr>
+<td>2010-10-08</td></tr>
 </tbody>
 </table>
 <!-- Note: This document is formatted using docutils. The Makefile has rules -->
@@ -3588,6 +3588,20 @@ also possible to combine a namespace qualifier with an alias:</p>
 &gt; c::mysin 0.3;
 0.29552020666134
 </pre>
+<p>Different aliases of the same external function can be declared in slightly
+different ways, which makes it possible to adjust the interpretation of
+pointer arguments and return values on the Pure side. This is particularly
+useful for string arguments which, as already noted, may be passed both as
+<tt class="docutils literal"><span class="pre">char*</span></tt> (which implies copying and conversion to or from the system
+encoding) and as <tt class="docutils literal"><span class="pre">void*</span></tt> (which simply passes through the character
+pointers). For instance:</p>
+<pre class="literal-block">
+&gt; extern char *strchr(char *s, int c) = foo;
+&gt; extern void *strchr(void *s, int c) = bar;
+&gt; foo &quot;bar bar&quot; 97; bar &quot;bar bar&quot; 97;
+&quot;ar bar&quot;
+#&lt;pointer 0xb415a1&gt;
+</pre>
 <p>External C functions are resolved by the LLVM runtime, which first looks for
 the symbol in the C library and Pure's runtime library (or the interpreter
 executable, if the interpreter was linked statically). Thus all C library and
@@ -3684,11 +3698,12 @@ It already seems to works fairly well with simple C and Fortran code, but
 there are some known limitations:</p>
 <ul class="simple">
 <li>LLVM doesn't distinguish between <tt class="docutils literal"><span class="pre">char*</span></tt> and <tt class="docutils literal"><span class="pre">void*</span></tt> in bitcode, so all
-<tt class="docutils literal"><span class="pre">char*</span></tt> parameters and return values in C code will be promoted to
-<tt class="docutils literal"><span class="pre">void*</span></tt> on the Pure side. This means that string values won't be converted
-between Pure's internal UTF-8 encoding and the system encoding. If this is
-required then you'll have to do the conversions manually (e.g., using the
-appropriate functions from the Pure runtime).</li>
+<tt class="docutils literal"><span class="pre">char*</span></tt> parameters and return values in C code will by default be promoted
+to <tt class="docutils literal"><span class="pre">void*</span></tt> on the Pure side. This means that string values won't be
+converted between Pure's internal UTF-8 encoding and the system encoding. If
+this is a problem then you can redeclare the function with the proper
+parameter and result types under a different name (alias and/or namespace)
+after loading the bitcode module.</li>
 <li>The bitcode interface is limited to the same range of C types as Pure's
 plain C interface. In practice, this should cover most C code, but it's
 certainly possible that you run into unsupported types for arguments and
