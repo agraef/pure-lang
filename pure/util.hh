@@ -66,6 +66,13 @@ extern "C"
 char *strptime(const char *s, const char *format, struct tm *tm);
 #endif
 
+/* Windows doesn't have mkstemp, so we provide a suitable replacement. */
+
+#ifndef HAVE_MKSTEMP
+extern "C"
+int mkstemp(char *tmpl);
+#endif
+
 /* utf-8 string helpers. */
 
 /* Convert between utf-8 and the given encoding (the system encoding by

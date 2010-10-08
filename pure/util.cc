@@ -50,6 +50,26 @@
 #include <windows.h>
 #endif
 
+// Windows doesn't have this. Fake it.
+
+#ifndef HAVE_MKSTEMP
+
+#include <fcntl.h>
+#define _S_IREAD 256
+#define _S_IWRITE 128
+
+extern "C"
+int mkstemp(char *tmpl)
+{
+  int ret = -1;
+  mktemp(tmpl);
+  ret = open(tmpl, O_RDWR|O_BINARY|O_CREAT|O_EXCL|_O_SHORT_LIVED,
+	     _S_IREAD|_S_IWRITE);
+  return ret;
+}
+
+#endif
+
 /* some utf-8 helpers pilfered from the Q source ***************************/
 
 #if !defined(_WIN32) && !defined(HAVE_LANGINFO_CODESET)
