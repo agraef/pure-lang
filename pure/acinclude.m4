@@ -1,4 +1,5 @@
 AC_DEFUN([PURE_CHECK_TIME_H_DECLARES_DAYLIGHT], [
+  AC_LANG_PUSH([C++])
   AC_CACHE_CHECK(
     [whether time.h declares the daylight variable],
     pure_cv_daylight_in_time_h,
@@ -14,6 +15,7 @@ AC_DEFUN([PURE_CHECK_TIME_H_DECLARES_DAYLIGHT], [
     pure_cv_daylight_in_time_h=no
     )]
   )
+  AC_LANG_POP([C++])
   if test "x$pure_cv_daylight_in_time_h" = xyes; then
     AC_DEFINE(
       HAVE_DAYLIGHT_IN_TIME_H,
