@@ -3271,10 +3271,10 @@ as described below. By these means, all functions in the standard C library
 and the Pure runtime are readily available to Pure scripts. Functions can also
 be loaded from dynamic libraries and LLVM bitcode files at runtime. In the
 latter case, you don't even need to write any ``extern`` declarations, the
-interpreter will do that for you. As of Pure 0.45, you can even add inline C
-and Fortran code to your Pure scripts and have the Pure interpreter compile
-them on the fly, provided that you have the corresponding compilers from the
-LLVM project installed.
+interpreter will do that for you. As of Pure 0.45, you can even add inline
+C/C++ and Fortran code to your Pure scripts and have the Pure interpreter
+compile them on the fly, provided that you have the corresponding compilers
+from the LLVM project installed.
 
 In some cases you will still have to rely on big and complicated third-party
 and system libraries which aren't readily available in bitcode form. It goes
@@ -3694,12 +3694,18 @@ scripts which include all required external functions. The downside is that
 the inline code sections will have to be recompiled every time you run the
 script with the interpreter.
 
-Currently, C, Fortran and Faust are supported as foreign source languages,
-with llvm-gcc (or clang), llvm-gfortran and faust2 as the corresponding
-compilers. C is the default language. The desired source language can be
-selected by placing an appropriate tag into the inline code section,
-immediately after the opening brace. (The tag is removed before the code is
-submitted to compilation.) For instance::
+Currently, C, C++, Fortran and Faust are supported as foreign source
+languages, with llvm-gcc, llvm-g++, llvm-gfortran and faust2 as the
+corresponding compilers. Alternatively, the LLVM clang and clang++ compilers
+can be used for C/C++ compilation. Please note that C++ support hasn't been
+tested yet and should thus be considered very experimental. In any case,
+you'll need to call into C++ code via functions using C binding, as Pure
+really only knows how to call C functions.
+
+C is the default language. The desired source language can be selected by
+placing an appropriate tag into the inline code section, immediately after the
+opening brace. (The tag is removed before the code is submitted to
+compilation.) For instance::
 
   %{ -*- Fortran90 -*-
   function fact(n) result(p)
@@ -3715,15 +3721,16 @@ submitted to compilation.) For instance::
   map fact (1..10);
 
 As indicated, the language tag takes the form ``-*- lang -*-`` where ``lang``
-can currently be any of ``c``, ``fortran`` and ``dsp`` (the latter indicates
-the Faust language). Case is insignificant here, so you can also write ``C``,
-``Fortran``, ``DSP`` etc. For the ``fortran`` tag, you may also have to
-specify the appropriate language standard, such as ``fortran90`` which is used
-in the example above. The language tag can also be followed by a module name,
-using the format ``-*- lang:name -*-``. This is optional for C and Fortran,
-but mandatory for Faust (where it specifies the namespace for the interface
-routines of the Faust module). So, e.g., a Faust DSP named ``test`` would be
-specified with a ``dsp:test`` tag. Case is *significant* in the module name.
+can currently be any of ``c``, ``c++``, ``fortran`` and ``dsp`` (the latter
+indicates the Faust language). Case is insignificant here, so you can also
+write ``C``, ``C++``, ``Fortran``, ``DSP`` etc. For the ``fortran`` tag, you
+may also have to specify the appropriate language standard, such as
+``fortran90`` which is used in the example above. The language tag can also be
+followed by a module name, using the format ``-*- lang:name -*-``. This is
+optional for all languages except Faust (where the module name specifies the
+namespace for the interface routines of the Faust module). So, e.g., a Faust
+DSP named ``test`` would be specified with a ``dsp:test`` tag. Case is
+*significant* in the module name.
 
 The Pure interpreter has some built-in knowledge on how to invoke the LLVM
 compilers to produce a working bitcode file ready to be loaded by the
@@ -3732,12 +3739,12 @@ required compilers installed on your PATH. However, there are also some
 environment variables you can set for customization purposes. Specifically,
 PURE_CC is the command to invoke the C compiler. This variable lets you
 specify the exact name of the executable along with any debugging and
-optimization options that you may want to add. Likewise, PURE_FC is used for
-the Fortran and PURE_FAUST for the Faust compiler, respectively. For instance,
-if you prefer to use clang as your C compiler, and you'd like to invoke it
-with the -O3 optimization option, you would set PURE_CC to ``"clang -O3"``.
-(To verify the settings you made, you can have the interpreter print the
-compilation commands which are actually executed by running Pure with the
+optimization options that you may want to add. Likewise, PURE_CXX, PURE_FC and
+PURE_FAUST are used for the C++, Fortran and Faust compilers, respectively.
+For instance, if you prefer to use clang as your C compiler, and you'd like to
+invoke it with the -O3 optimization option, you would set PURE_CC to ``"clang
+-O3"``. (To verify the settings you made, you can have the interpreter echo
+the compilation commands which are actually executed, by running Pure with the
 -v0100 option, see `Verbosity and Debugging Options`_.)
 
 Standard Library
