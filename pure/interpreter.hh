@@ -423,6 +423,14 @@ struct nsinfo {
     : priv(false), parent(ns), search_namespaces(nss) {}
 };
 
+typedef bool bcdata_t;
+struct dspdata_t {
+  bool priv; // private flag
+  time_t t; // timestamp
+  dspdata_t() : priv(false), t(0) {}
+  dspdata_t(bool _priv, time_t _t) : priv(_priv), t(_t) {}
+};
+
 class interpreter
 {
 public:
@@ -478,8 +486,8 @@ public:
   set<string> sources; // the set of all scripts which have been loaded
   set<string> namespaces; // the set of all declared namespaces
   list<string> loaded_libs; // the list of all loaded libs (lib:...)
-  set<string> loaded_bcs; // the set of all loaded bitcode modules (bc:...)
-  map<string,time_t> loaded_dsps; // the set of all loaded Faust dsps (dsp:...)
+  map<string,bcdata_t> loaded_bcs; // the set of all loaded bitcode modules
+  map<string,dspdata_t> loaded_dsps; // the set of all loaded Faust dsps
   list<int> required; // required symbols (--required pragma)
   ostream *output;   // redirected output stream for interactive commands
   symtable symtab;   // the symbol table
@@ -509,8 +517,9 @@ public:
      namespace and pragma settings of the executed script stick when running
      interactively.
 
-     The 'priv' flag is only used for bitcode imports, in which case it
-     indicates whether imported symbols should be private.
+     The 'priv' flag should only be used for bitcode imports, in which case it
+     should be either true or false to indicate whether imported symbols
+     should be private.
 
      Returns the last computed expression (if any). (This expression is owned
      by the interpreter and must *not* be freed by the caller.) This is the
@@ -519,10 +528,16 @@ public:
      that due to some global data shared by different interpreter instances,
      you can't run two interpreters concurrently right now. (It is possible to
      run them sequentially, though.) */
-  pure_expr *run(bool priv, const string& source, bool check = true,
+  pure_expr *run(int priv, const string& source, bool check = true,
 		 bool sticky = false);
-  pure_expr *run(bool priv, const list<string>& sources, bool check = true,
+  pure_expr *run(int priv, const list<string>& sources, bool check = true,
 		 bool sticky = false);
+  pure_expr *run(const string& source, bool check = true,
+		 bool sticky = false)
+  { return run(-1, source, check, sticky); }
+  pure_expr *run(const list<string>& sources, bool check = true,
+		 bool sticky = false)
+  { return run(-1, sources, check, sticky); }
 
   /* This works like run() above, but takes the source directly from a
      string. No error messages will be printed, instead any errors reported

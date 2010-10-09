@@ -274,7 +274,7 @@ item
   if (interp.tags) interp.add_tags($3);
   delete $3; delete $1; }
 | USING fnames
-{ action(interp.run(false, *$2), {}); delete $2; }
+{ action(interp.run(*$2), {}); delete $2; }
 | USING scope { interp.declare_op = false; } fnames
 { action(interp.run($2, *$4), {}); delete $4; }
 | NAMESPACE name

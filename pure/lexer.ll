@@ -2356,7 +2356,7 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
     else if (args.c > 1)
       cerr << "run: extra parameter\n";
     else {
-      try { interp.run(false, *args.l.begin(), false, true); } catch (err &e) {
+      try { interp.run(*args.l.begin(), false, true); } catch (err &e) {
 	interp.error(*yylloc, e.what());
 	interp.nerrs = 0;
       }

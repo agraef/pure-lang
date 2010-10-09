@@ -1557,8 +1557,16 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
   // Check whether the module has already been loaded.
   bool loaded = loaded_dsps.find(modname) != loaded_dsps.end();
   if (loaded) {
-    // Module already loaded, check the modification time.
-    if (loaded_dsps[modname] >= mtime) return true;
+    // Module already loaded.
+    if (loaded_dsps[modname].priv != priv) {
+      const char *scope = loaded_dsps[modname].priv?"private":"public";
+      ostringstream msg;
+      msg << "module '" << modname
+	  << "' was previously a " << scope << " import";
+      throw err(msg.str());
+    }
+    // Check the modification time.
+    if (loaded_dsps[modname].t >= mtime) return true;
   }
   llvm::MemoryBuffer *buf = llvm::MemoryBuffer::getFile(name, msg);
   if (!buf) {
@@ -1711,7 +1719,7 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
     f->dump();
 #endif
   }
-  loaded_dsps[modname] = mtime;
+  loaded_dsps[modname] = dspdata_t(priv, mtime);
   return true;
 }
 
@@ -1728,9 +1736,17 @@ static void bc_errmsg(string name, string* msg)
 bool interpreter::LoadBitcode(bool priv, const char *name, string *msg)
 {
   string modname = strip_modname(name);
-  if (loaded_bcs.find(modname) != loaded_bcs.end())
+  if (loaded_bcs.find(modname) != loaded_bcs.end()) {
     // Module already loaded.
+    if (loaded_bcs[modname] != priv) {
+      const char *scope = loaded_bcs[modname]?"private":"public";
+      ostringstream msg;
+      msg << "module '" << modname
+	  << "' was previously a " << scope << " import";
+      throw err(msg.str());
+    }
     return true;
+  }
   llvm::MemoryBuffer *buf = llvm::MemoryBuffer::getFile(name, msg);
   if (!buf) {
     bc_errmsg(name, msg);
@@ -1833,7 +1849,7 @@ bool interpreter::LoadBitcode(bool priv, const char *name, string *msg)
       warning(msg.str());
     }
   }
-  loaded_bcs.insert(modname);
+  loaded_bcs[modname] = priv;
   return true;
 }
 
@@ -1984,13 +2000,17 @@ void interpreter::inline_code(bool priv, string &code)
   throw err("error compiling inline code");
 }
 
-pure_expr* interpreter::run(bool priv, const string &_s,
+pure_expr* interpreter::run(int priv, const string &_s,
 			    bool check, bool sticky)
 {
   string s = unixize(_s);
   // check for library modules
   size_t p = s.find(":");
   if (p != string::npos && s.substr(0, p) == "lib") {
+    if (priv>=0) {
+      string scope = priv?"private":"public";
+      throw err("invalid '"+scope+"' specifier");
+    }
     if (p+1 >= s.size()) throw err("empty lib name");
     string msg, name = s.substr(p+1), dllname = name;
     // See whether we need to add the DLLEXT suffix.
@@ -2020,7 +2040,7 @@ pure_expr* interpreter::run(bool priv, const string &_s,
 	name.substr(name.size()-strlen(BCEXT)) != BCEXT)
       bcname += BCEXT;
     string aname = searchlib(srcdir, libdir, librarydirs, bcname);
-    if (!LoadBitcode(priv, aname.c_str(), &msg))
+    if (!LoadBitcode(priv==1, aname.c_str(), &msg))
       throw err(msg);
     return 0;
   }
@@ -2032,11 +2052,15 @@ pure_expr* interpreter::run(bool priv, const string &_s,
 	name.substr(name.size()-strlen(DSPEXT)) != DSPEXT)
       dspname += DSPEXT;
     string aname = searchlib(srcdir, libdir, librarydirs, dspname);
-    if (!LoadFaustDSP(priv, aname.c_str(), &msg))
+    if (!LoadFaustDSP(priv==1, aname.c_str(), &msg))
       throw err(msg);
     return 0;
   }
   // ordinary source file
+  if (priv>=0) {
+    string scope = priv?"private":"public";
+    throw err("invalid '"+scope+"' specifier");
+  }
   string name = s, fname = s;
   if (!s.empty()) {
     int flag = check;
@@ -2151,7 +2175,7 @@ pure_expr* interpreter::run(bool priv, const string &_s,
   return result;
 }
 
-pure_expr* interpreter::run(bool priv, const list<string> &sl,
+pure_expr* interpreter::run(int priv, const list<string> &sl,
 			    bool check, bool sticky)
 {
   uint8_t s_verbose = verbose;
