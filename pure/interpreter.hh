@@ -509,6 +509,9 @@ public:
      namespace and pragma settings of the executed script stick when running
      interactively.
 
+     The 'priv' flag is only used for bitcode imports, in which case it
+     indicates whether imported symbols should be private.
+
      Returns the last computed expression (if any). (This expression is owned
      by the interpreter and must *not* be freed by the caller.) This is the
      main interface function. If interactive is true, input is read
@@ -516,9 +519,9 @@ public:
      that due to some global data shared by different interpreter instances,
      you can't run two interpreters concurrently right now. (It is possible to
      run them sequentially, though.) */
-  pure_expr *run(const string& source, bool check = true,
+  pure_expr *run(bool priv, const string& source, bool check = true,
 		 bool sticky = false);
-  pure_expr *run(const list<string>& sources, bool check = true,
+  pure_expr *run(bool priv, const list<string>& sources, bool check = true,
 		 bool sticky = false);
 
   /* This works like run() above, but takes the source directly from a
@@ -839,11 +842,12 @@ public:
   void debug_init();
   void backtrace(ostream& out);
   // Faust interface.
-  bool LoadFaustDSP(const char *name, string *msg, const char *modnm = 0);
+  bool LoadFaustDSP(bool priv, const char *name, string *msg,
+		    const char *modnm = 0);
   // Generic LLVM bitcode interface.
-  bool LoadBitcode(const char *name, string *msg);
+  bool LoadBitcode(bool priv, const char *name, string *msg);
   // Handle inline code.
-  void inline_code(string &code);
+  void inline_code(bool priv, string &code);
 private:
   void init();
   void init_llvm_target();

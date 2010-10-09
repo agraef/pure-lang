@@ -232,7 +232,9 @@ item_pos
 item1
 : item ';'
 | CODE
-{ action(interp.inline_code(interp.xcode), interp.xcode.clear()); }
+{ action(interp.inline_code(false, interp.xcode), {}); interp.xcode.clear(); }
+| scope { interp.declare_op = false; } CODE
+{ action(interp.inline_code($1, interp.xcode), {}); interp.xcode.clear(); }
 ;
 
 item
@@ -272,7 +274,9 @@ item
   if (interp.tags) interp.add_tags($3);
   delete $3; delete $1; }
 | USING fnames
-{ action(interp.run(*$2), {}); delete $2; }
+{ action(interp.run(false, *$2), {}); delete $2; }
+| USING scope { interp.declare_op = false; } fnames
+{ action(interp.run($2, *$4), {}); delete $4; }
 | NAMESPACE name
 { if (interp.active_namespaces.empty()) {
     action(interp.set_namespace($2), );

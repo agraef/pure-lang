@@ -1540,7 +1540,8 @@ static void dsp_errmsg(string name, string* msg)
     *msg = name+": Error linking dsp file";
 }
 
-bool interpreter::LoadFaustDSP(const char *name, string *msg, const char *modnm)
+bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
+			       const char *modnm)
 {
   // Determine the basename of the Faust module. This will be used to mangle
   // the Faust functions and give the namespace of the Faust functions in Pure
@@ -1699,7 +1700,7 @@ bool interpreter::LoadFaustDSP(const char *name, string *msg, const char *modnm)
     for (size_t i = 0; i < n; i++) argtypes.push_back(dsptype_name(argt[i]));
     // Manufacture an extern declaration for the function so that it
     // can be called in Pure land.
-    declare_extern(0, fname, restype, argtypes, false, 0, asname, false);
+    declare_extern(priv, fname, restype, argtypes, false, 0, asname, false);
 #if 0 // debugging
     symbol *sym = symtab.sym(asname);
     if (!sym) continue;
@@ -1724,7 +1725,7 @@ static void bc_errmsg(string name, string* msg)
     *msg = name+": Error linking bitcode file";
 }
 
-bool interpreter::LoadBitcode(const char *name, string *msg)
+bool interpreter::LoadBitcode(bool priv, const char *name, string *msg)
 {
   string modname = strip_modname(name);
   if (loaded_bcs.find(modname) != loaded_bcs.end())
@@ -1810,7 +1811,7 @@ bool interpreter::LoadBitcode(const char *name, string *msg)
     if (ok) {
       // Manufacture an extern declaration for the function so that it
       // can be called in Pure land.
-      declare_extern(0, fname, restype, argtypes, false, 0, asname, false);
+      declare_extern(priv, fname, restype, argtypes, false, 0, asname, false);
 #if 0 // debugging
       symbol *sym = symtab.sym(asname);
       if (!sym) continue;
@@ -1892,7 +1893,7 @@ static string lang_tag(string &code, string &modname)
   return tag;
 }
 
-void interpreter::inline_code(string &code)
+void interpreter::inline_code(bool priv, string &code)
 {
   // Get the language tag and configure accordingly.
   string modname, tag = lang_tag(code, modname), ext = "";
@@ -1960,13 +1961,13 @@ void interpreter::inline_code(string &code)
       // Load the resulting bitcode.
       if (tag == "dsp") {
 	// Faust bitcode loader
-	if (!LoadFaustDSP(bcnm, &msg, modname.c_str())) {
+	if (!LoadFaustDSP(priv, bcnm, &msg, modname.c_str())) {
 	  unlink(bcnm);
 	  throw err(msg);
 	}
       } else {
 	// generic bitcode loader
-	if (!LoadBitcode(bcnm, &msg)) {
+	if (!LoadBitcode(priv, bcnm, &msg)) {
 	  unlink(bcnm);
 	  throw err(msg);
 	}
@@ -1983,7 +1984,8 @@ void interpreter::inline_code(string &code)
   throw err("error compiling inline code");
 }
 
-pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
+pure_expr* interpreter::run(bool priv, const string &_s,
+			    bool check, bool sticky)
 {
   string s = unixize(_s);
   // check for library modules
@@ -2018,7 +2020,7 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
 	name.substr(name.size()-strlen(BCEXT)) != BCEXT)
       bcname += BCEXT;
     string aname = searchlib(srcdir, libdir, librarydirs, bcname);
-    if (!LoadBitcode(aname.c_str(), &msg))
+    if (!LoadBitcode(priv, aname.c_str(), &msg))
       throw err(msg);
     return 0;
   }
@@ -2030,7 +2032,7 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
 	name.substr(name.size()-strlen(DSPEXT)) != DSPEXT)
       dspname += DSPEXT;
     string aname = searchlib(srcdir, libdir, librarydirs, dspname);
-    if (!LoadFaustDSP(aname.c_str(), &msg))
+    if (!LoadFaustDSP(priv, aname.c_str(), &msg))
       throw err(msg);
     return 0;
   }
@@ -2149,7 +2151,8 @@ pure_expr* interpreter::run(const string &_s, bool check, bool sticky)
   return result;
 }
 
-pure_expr* interpreter::run(const list<string> &sl, bool check, bool sticky)
+pure_expr* interpreter::run(bool priv, const list<string> &sl,
+			    bool check, bool sticky)
 {
   uint8_t s_verbose = verbose;
   // Temporarily suppress verbose output for using clause.
@@ -2158,7 +2161,7 @@ pure_expr* interpreter::run(const list<string> &sl, bool check, bool sticky)
     verbose = 0;
   }
   for (list<string>::const_iterator s = sl.begin(); s != sl.end(); s++)
-    run(*s, check, sticky);
+    run(priv, *s, check, sticky);
   if (s_verbose) {
     compile();
     verbose = s_verbose;

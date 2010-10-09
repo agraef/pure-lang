@@ -613,7 +613,7 @@ main(int argc, char *argv[])
     // load the prelude if we can find it
     if (chkfile(prelude)) {
       have_prelude = true;
-      try { interp.run(prelude, false); } catch (err &e) {
+      try { interp.run(false, prelude, false); } catch (err &e) {
 	interp.error(prog + ": " + e.what());
 	return 1;
       }
@@ -632,7 +632,7 @@ main(int argc, char *argv[])
       if (*++argv) {
 	count++; interp.modname = *argv;
 	last_modno = interp.modctr;
-	try { interp.run(*argv, false); } catch (err &e) {
+	try { interp.run(false, *argv, false); } catch (err &e) {
 	  interp.error(prog + ": " + e.what());
 	  return 1;
 	}
@@ -655,7 +655,7 @@ main(int argc, char *argv[])
     else if (**argv) {
       if (count++ == 0) interp.modname = *argv;
       last_modno = interp.modctr;
-      try { interp.run(*argv, false); } catch (err &e) {
+      try { interp.run(false, *argv, false); } catch (err &e) {
 	interp.error(prog + ": " + e.what());
 	return 1;
       }
@@ -755,13 +755,13 @@ main(int argc, char *argv[])
       if (chdir(cwd)) perror("chdir");
     }
     if (!rcfile.empty() && chkfile(rcfile))
-      interp.run(rcfile, false, true);
+      interp.run(false, rcfile, false, true);
     if (want_both && chkfile(".purerc"))
-      interp.run(".purerc", false, true);
+      interp.run(false, ".purerc", false, true);
     if (chkfile(".pure"))
-      interp.run(".pure", false, true);
+      interp.run(false, ".pure", false, true);
   }
-  interp.run("", false, true);
+  interp.run(false, "", false, true);
   if (interp.ttymode) cout << endl;
   /* Take the quick way out. There's really no need to clean up the
      interpreter instance if we're exiting anyway. */

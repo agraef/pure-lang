@@ -297,8 +297,6 @@ blank  [ \t\f\v\r]
 <xusing>postfix    BEGIN(INITIAL); yylval->fix = postfix; return token::FIX;
 <xusing>outfix     BEGIN(INITIAL); return token::OUTFIX;
 <xusing>nonfix     BEGIN(INITIAL); return token::NONFIX;
-<xusing>private    BEGIN(INITIAL); return token::PRIVATE;
-<xusing>public     BEGIN(INITIAL); return token::PUBLIC;
 <xusing>const      BEGIN(INITIAL); return token::CONST;
 <xusing>def        BEGIN(INITIAL); return token::DEF;
 <xusing>let        BEGIN(INITIAL); return token::LET;
@@ -313,6 +311,8 @@ blank  [ \t\f\v\r]
 <xusing>with	   BEGIN(INITIAL); return token::WITH;
 <xusing>using      return token::USING;
 <xusing>namespace  return token::NAMESPACE;
+<xusing>private    return token::PRIVATE;
+<xusing>public     return token::PUBLIC;
 <xusing>{qual}?{id}  { xusing_parse_id: yylval->sval = new string(yytext); return token::ID; }
 <xusing>"("        BEGIN(xsyms); return yy::parser::token_type(yytext[0]);
 <xusing>,	   return yy::parser::token_type(yytext[0]);
@@ -2356,7 +2356,7 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
     else if (args.c > 1)
       cerr << "run: extra parameter\n";
     else {
-      try { interp.run(*args.l.begin(), false, true); } catch (err &e) {
+      try { interp.run(false, *args.l.begin(), false, true); } catch (err &e) {
 	interp.error(*yylloc, e.what());
 	interp.nerrs = 0;
       }
