@@ -2570,7 +2570,8 @@ other modules listed in ``using`` clauses inserted at the corresponding source
 locations.
 
 (The ``using`` clause also has an alternative form which allows dynamic
-libraries to be loaded, this will be discussed in the `C Interface`_ section.)
+libraries and LLVM bitcode modules to be loaded, this will be discussed in the
+`C Interface`_ section.)
 
 For instance, the following declaration causes the math.pure script from the
 standard library to be included in your program::
@@ -3261,12 +3262,27 @@ E.g., let's compute a solution for a standard 8x8 board::
 C Interface
 ===========
 
-Accessing C functions from Pure programs is dead simple. You just need an
-``extern`` declaration of the function, which is a simplified kind of C
-prototype. The function can then be called in Pure just like any other. For
-instance, the following commands, entered interactively in the interpreter,
-let you use the ``sin`` function from the C library (of course you could just
-as well put the ``extern`` declaration into a script)::
+Pure makes it very easy to call C functions (as well as functions in a number
+of other languages supported by the GNU compiler collection). To call an
+existing C function, you just need an ``extern`` declaration of the function,
+as described below. By these means, all functions in the standard C library
+and the Pure runtime are readily available to Pure scripts. Functions can also
+be loaded from dynamic libraries and LLVM bitcode files at runtime. In the
+latter case, you don't even need to write any ``extern`` declarations, the
+interpreter will do that for you. As of Pure 0.45, you can even add inline C
+and Fortran code to your Pure scripts and have the Pure interpreter compile
+them on the fly, provided that you have the corresponding compilers from the
+LLVM project installed.
+
+Extern Declarations
+-------------------
+
+To access an existing C function in Pure, you need an ``extern`` declaration
+of the function, which is a simplified kind of C prototype. The function can
+then be called in Pure just like any other. For instance, the following
+commands, entered interactively in the interpreter, let you use the ``sin``
+function from the C library (of course you could just as well put the
+``extern`` declaration into a script)::
 
   > extern double sin(double);
   > sin 0.3;
@@ -3282,116 +3298,39 @@ them with commas::
 
   extern double sin(double), double cos(double), double tan(double);
 
-For clarity, the parameter types can also be annotated with parameter names,
-e.g.::
+For clarity, the parameter types can also be annotated with parameter names
+(these only serve informational purposes and are for the human reader; they
+are effectively treated as comments by the compiler)::
 
   extern double sin(double x);
 
-Parameter names in prototypes only serve informational purposes and are for
-the human reader; they are effectively treated as comments by the compiler.
+Pointer types are indicated by following the name of the element type with one
+or more asterisks, as in C. For instance::
 
-The interpreter makes sure that the parameters in a call match; if not, the
-call is treated as a normal form expression by default, which gives you the
-opportunity to extend the external function with your own Pure equations (see
-below). The range of supported C types is a bit limited right now (``void``,
-``bool``, ``char``, ``short``, ``int``, ``long``, ``float``, ``double``, as
-well as arbitrary pointer types, i.e.: ``void*``, ``char*``, etc.), but in
-practice these should cover most kinds of calls that need to be done when
-interfacing to C libraries.
+  > extern char* strchr(char *s, int c);
+  > strchr "foo bar" (ord "b");
+  "bar"
 
-Single precision float arguments and return values are converted from/to
-Pure's double precision floating point numbers automatically.
+Pure essentially lumps all pointer types together (basically, they're all
+equivalent to ``void*``), but, as you can see in the previous example, some
+pointer types get special treatment, allowing you to pass certain kinds of
+Pure data (such as Pure strings as ``char*`` in this example). This is
+discussed in more detail in `C Types`_ below.
 
-A variety of C integer types (``char``, ``short``, ``int``, ``long``) are
-provided which are converted from/to the available Pure integer types in a
-straightforward way. In addition, the synonyms ``int8``, ``int16`` and
-``int32`` are provided for ``char``, ``short`` and ``int``, respectively, and
-``int64`` denotes 64 bit integers (a.k.a. ISO C99 ``long long``). Note that
-``long`` is equivalent to ``int32`` on 32 bit systems, whereas it is the same
-as ``int64`` on most 64 bit systems. All integer parameters take both Pure
-ints and bigints as actual arguments; truncation or sign extension is
-performed as needed, so that the C interface behaves as if the argument was
-"cast" to the C target type. Returned integers use the smallest Pure type
-capable of holding the result, i.e., int for the C ``char``, ``short`` and
-``int`` types, bigint for ``int64``.
-
-To make it easier to interface to various system routines, there's also a
-special ``size_t`` integer type which usually is 4 bytes on 32 bit and 8 bytes
-on 64 bit systems.
-
-Pure considers all integers as signed quantities, but it is possible to pass
-unsigned integers as well (if necessary, you can use a bigint to pass positive
-values which are too big to fit into a machine int). Also note that when an
-unsigned integer is returned by a C routine, which is too big to fit into the
-corresponding signed integer type, it will "wrap around" and become
-negative. In this case, depending on the target type, you can use the
-``ubyte``, ``ushort``, ``uint``, ``ulong`` and ``uint64`` functions provided
-by the prelude to convert the result back to an unsigned quantity.
-
-Concerning the pointer types, ``char*`` is for string arguments and return
-values which need translation between Pure's internal utf-8 representation and
-the system encoding, while ``void*`` is for any generic kind of pointer
-(including strings, which are not translated when passed/returned as
-``void*``). Any other kind of pointer (except ``expr*`` and the GSL matrix
-pointer types, which are discussed below) is effectively treated as ``void*``
-right now, although in a future version the interpreter may keep track of the
-type names for the purpose of checking parameter types.
-
-The ``expr*`` pointer type is special; it indicates a Pure expression
-parameter or return value which is just passed through unchanged. All other
-types of values have to be "unboxed" when they are passed as arguments (i.e.,
-from Pure to C) and "boxed" again when they are returned as function results
-(from C to Pure). All of this is handled by the runtime system in a
-transparent way, of course.
-
-The matrix pointer types ``dmatrix*``, ``cmatrix*`` and ``imatrix*`` can be
-used to pass double, complex double and int matrices to GSL functions taking
-pointers to the corresponding GSL types (``gsl_matrix``,
-``gsl_matrix_complex`` and ``gsl_matrix_int``) as arguments or returning them
-as results. Note that there is no marshalling of Pure's symbolic matrix type,
-as these aren't supported by GSL anyway. Also note that matrices are always
-passed by reference. If you need to pass a matrix as an output parameter of a
-GSL matrix routine, you can either create a zero matrix or a copy of an
-existing matrix. The prelude provides various operations for that purpose (in
-particular, see the ``dmatrix``, ``cmatrix``, ``imatrix`` and ``pack``
-functions in matrices.pure). For instance, here is how you can quickly wrap up
-GSL's double matrix addition function in a way that preserves value
-semantics::
-
-  > using "lib:gsl";
-  > extern int gsl_matrix_add(dmatrix*, dmatrix*);
-  > x::matrix + y::matrix = gsl_matrix_add x y $$ x when x = pack x end;
-  > let x = dmatrix {1,2,3}; let y = dmatrix {2,3,2}; x; y; x+y;
-  {1.0,2.0,3.0}
-  {2.0,3.0,2.0}
-  {3.0,5.0,5.0}
-
-Most GSL matrix routines can be wrapped in this fashion quite easily. A
-ready-made GSL interface providing access to all of GSL's numeric functions is
-in the works; please check the Pure website for details.
-
-For convenience, it is also possible to pass a numeric matrix for a
-``short*``, ``int*``, ``float*`` or ``double*`` parameter. The required
-conversions are done automatically, on the fly, and the matrix data is copied
-to temporary storage in order to preserve value sematics.
-
-In addition, any kind of matrix (including symbolic matrices) can also be
-passed for a generic ``void*`` pointer. In this case no conversions are done
-and a pointer to the raw matrix data is passed, which allows the matrix to be
-modified in-place. Similarly, ``void*`` also allows you to pass a bigint
-argument as a raw ``mpz_t`` value. This makes it possible to call most GMP
-integer routines directly from Pure.
-
-As already mentioned, it is possible to augment an external C function with
-ordinary Pure equations, but in this case you have to make sure that the
-``extern`` declaration of the function comes first. For instance, we might
-want to extend our imported ``sin`` function with a rule to handle integers::
+The interpreter makes sure that the parameters in a call match; if not, then
+by default the call is treated as a normal form expression::
 
   > extern double sin(double);
   > sin 0.3;
   0.29552020666134
   > sin 0;
   sin 0
+
+This gives you the opportunity to augment the external function with your own
+Pure equations. To make this work, you have to make sure that the ``extern``
+declaration of the function comes first. For instance, we might want to extend
+the ``sin`` function with a rule to handle integers::
+
   > sin x::int = sin (double x);
   > sin 0;
   0.0
@@ -3431,25 +3370,138 @@ also possible to combine a namespace qualifier with an alias::
 
 Different aliases of the same external function can be declared in slightly
 different ways, which makes it possible to adjust the interpretation of
-pointer arguments and return values on the Pure side. This is particularly
-useful for string arguments which, as already noted, may be passed both as
-``char*`` (which implies copying and conversion to or from the system
-encoding) and as ``void*`` (which simply passes through the character
-pointers). For instance::
+pointer values on the Pure side. This is particularly useful for string
+arguments which, as described below, may be passed both as ``char*`` (which
+implies copying and conversion to or from the system encoding) and as
+``void*`` (which simply passes through the character pointers). For instance::
 
   > extern char *strchr(char *s, int c) = foo;
   > extern void *strchr(void *s, int c) = bar;
-  > foo "bar bar" 97; bar "bar bar" 97;
-  "ar bar"
-  #<pointer 0xb415a1>
+  > foo "foo bar" 98; bar "foo bar" 98;
+  "bar"
+  #<pointer 0x12c2f24>
 
-External C functions are resolved by the LLVM runtime, which first looks for
-the symbol in the C library and Pure's runtime library (or the interpreter
-executable, if the interpreter was linked statically). Thus all C library and
-Pure runtime functions are readily available in Pure programs. Other functions
-can be provided by adding them to the runtime, or by linking them into the
-runtime or the interpreter executable. Better yet, you can just "dlopen"
-shared libraries at runtime with a special form of the ``using`` clause::
+It goes without saying that writing all the ``extern`` declarations for large
+and complicated libraries can be a daunting task. Fortunately, there is a
+utility to help with this, by extracting the ``extern`` declarations
+automatically from C headers. Please see `External C Functions`_ in the
+`Caveats and Notes`_ section for details.
+
+C Types
+-------
+
+As indicated in the previous section, the data types in ``external``
+declarations are either C type names or pointer types derived from these. To
+keep things simple, Pure does *not* provide any notations for C structs or
+function types, although it is possible to represent pointers to such objects
+using ``void*``. (In practice, this simplified system should cover most kinds
+of calls that need to be done when interfacing to C libraries. However, there
+are ways to work around these limitations if you need to access C structs or
+call back from C to Pure, see `External C Functions`_ in the `Caveats and
+Notes`_ section for details.)
+
+Pure supports the usual range of basic C types: ``void``, ``bool``, ``char``,
+``short``, ``int``, ``long``, ``float``, ``double``, as well as arbitrary
+pointer types, such as ``void*`` and ``char*``, and provides rules for
+"marshalling" (converting) between Pure data and these types.
+
+Single precision float arguments and return values are converted from/to
+Pure's double precision floating point numbers automatically.
+
+A variety of C integer types (``char``, ``short``, ``int``, ``long``) are
+provided which are converted from/to the available Pure integer types in a
+straightforward way. In addition, the synonyms ``int8``, ``int16`` and
+``int32`` are provided for ``char``, ``short`` and ``int``, respectively, and
+``int64`` denotes 64 bit integers (a.k.a. ISO C99 ``long long``). Note that
+``long`` is equivalent to ``int32`` on 32 bit systems, whereas it is the same
+as ``int64`` on most 64 bit systems. All integer parameters take both Pure
+ints and bigints as actual arguments; truncation or sign extension is
+performed as needed, so that the C interface behaves as if the argument was
+"cast" to the C target type. Returned integers use the smallest Pure type
+capable of holding the result, i.e., int for the C ``char``, ``short`` and
+``int`` types, bigint for ``int64``.
+
+To make it easier to interface to various system routines, there's also a
+special ``size_t`` integer type which usually is 4 bytes on 32 bit and 8 bytes
+on 64 bit systems.
+
+Pure considers all integers as signed quantities, but it is possible to pass
+unsigned integers as well (if necessary, you can use a bigint to pass positive
+values which are too big to fit into a machine int). Also note that when an
+unsigned integer is returned by a C routine, which is too big to fit into the
+corresponding signed integer type, it will "wrap around" and become
+negative. In this case, depending on the target type, you can use the
+``ubyte``, ``ushort``, ``uint``, ``ulong`` and ``uint64`` functions provided
+by the prelude to convert the result back to an unsigned quantity.
+
+Concerning the pointer types, ``char*`` is for string arguments and return
+values which need translation between Pure's internal utf-8 representation and
+the system encoding, while ``void*`` is for any generic kind of pointer
+(including strings, which are not translated when passed/returned as
+``void*``). Any other kind of pointer (except ``expr*`` and the GSL matrix
+pointer types, which are discussed below) is effectively treated as ``void*``.
+This also includes "pointers to pointers", such as ``void**``, as well as
+pointers to arbitrary named types which don't have a predefined meaning in
+Pure, such as ``FILE*``. (In the future the interpreter may keep track of the
+element types for the purpose of checking parameter types, but this isn't the
+case right now.)
+
+The ``expr*`` pointer type is special; it indicates a Pure expression
+parameter or return value which is just passed through unchanged. All other
+types of values have to be "unboxed" when they are passed as arguments (i.e.,
+from Pure to C) and "boxed" again when they are returned as function results
+(from C to Pure). All of this is handled by the runtime system in a
+transparent way, of course.
+
+The matrix pointer types ``dmatrix*``, ``cmatrix*`` and ``imatrix*`` can be
+used to pass double, complex double and int matrices to GSL functions taking
+pointers to the corresponding GSL types (``gsl_matrix``,
+``gsl_matrix_complex`` and ``gsl_matrix_int``) as arguments or returning them
+as results. (Note that there is no marshalling of Pure's symbolic matrix type,
+as these aren't supported by GSL anyway.) Also note that matrices are always
+passed by reference. Thus, if you need to pass a matrix as an output parameter
+of a GSL matrix routine, you can either create a zero matrix or a copy of an
+existing matrix to hold the result. The prelude provides various operations
+for that purpose (in particular, see the ``dmatrix``, ``cmatrix``, ``imatrix``
+and ``pack`` functions in matrices.pure). For instance, here is how you can
+quickly wrap up GSL's double matrix addition function in a way that preserves
+value semantics::
+
+  > using "lib:gsl";
+  > extern int gsl_matrix_add(dmatrix*, dmatrix*);
+  > x::matrix + y::matrix = gsl_matrix_add x y $$ x when x = pack x end;
+  > let x = dmatrix {1,2,3}; let y = dmatrix {2,3,2}; x; y; x+y;
+  {1.0,2.0,3.0}
+  {2.0,3.0,2.0}
+  {3.0,5.0,5.0}
+
+Most GSL matrix routines can be wrapped in this fashion quite easily. A
+ready-made GSL interface providing access to all of GSL's numeric functions is
+in the works; please check the Pure website for details.
+
+For convenience, it is also possible to pass a numeric matrix for a
+``short*``, ``int*``, ``float*`` or ``double*`` parameter. The required
+conversions are then done automatically, on the fly, and the matrix data is
+copied to temporary storage in order to preserve value sematics.
+
+In addition, any kind of matrix (including symbolic matrices) can also be
+passed for a generic ``void*`` pointer. In this case no conversions are done
+and a pointer to the raw matrix data is passed, which allows the matrix to be
+modified in-place. Similarly, ``void*`` also allows you to pass a bigint
+argument as a raw ``mpz_t`` value. This makes it possible to call most GMP
+integer routines directly from Pure.
+
+Importing Dynamic Libraries
+---------------------------
+
+By default, external C functions are resolved by the LLVM runtime, which first
+looks for the symbol in the C library and Pure's runtime library (or the
+interpreter executable, if the interpreter was linked statically). Thus all C
+library and Pure runtime functions are readily available in Pure programs.
+Other functions can be provided by adding them to the runtime, or by linking
+them into the runtime or the interpreter executable. Better yet, you can just
+"dlopen" shared libraries at runtime with a special form of the ``using``
+clause::
 
   using "lib:libname[.ext]";
 
@@ -3474,19 +3526,21 @@ the library if you prefer that. If a library file cannot be found, or if an
 ``extern`` declaration names a function symbol which cannot be resolved, an
 appropriate error message is printed.
 
-LLVM Bitcode Interface
+Importing LLVM Bitcode
 ----------------------
 
-As of Pure 0.44, the interpreter now also provides a direct way to import LLVM
+As of Pure 0.44, the interpreter also provides a direct way to import LLVM
 bitcode modules in Pure scripts. The main advantage of this method over the
 "plain" C interface explained above is that the bitcode loader knows all the
-call interfaces and can generate the necessary ``extern`` declarations
-automatically.
+call interfaces and generates the necessary ``extern`` declarations
+automatically. This is more than just a convenience, as it also eliminates any
+mistakes in ``extern`` declarations that you may make when importing functions
+manually from dynamic libraries.
 
 LLVM bitcode is loaded in a Pure script using the following special format of
 the ``using`` clause::
 
-  using "bc:mycfun";
+  using "bc:modname[.bc]";
 
 (Here the ``bc`` tag indicates a bitcode file, and the default ``.bc`` bitcode
 filename extension is supplied automatically. Also, the bitcode file is
@@ -3517,9 +3571,13 @@ a bitcode module using llvm-gcc as follows::
 
   llvm-gcc -emit-llvm -c mygcd.c -o mygcd.bc
 
-Note that the ``-emit-llvm -c`` options instruct llvm-gcc to build an LLVM
-bitcode module. (Of course, you can also add optimizations and other options
-to the compile command as desired.)
+Or, if you prefer to use clang_, the new LLVM-based C/C++ compiler::
+
+  clang -emit-llvm -c mygcd.c -o mygcd.bc
+
+Note that the ``-emit-llvm -c`` options instruct llvm-gcc or clang to build an
+LLVM bitcode module. Of course, you can also add optimizations and other
+options to the compile command as desired.
 
 You can now load the resulting bitcode module and run the ``mygcd`` function
 in the Pure interpreter simply as follows::
@@ -3543,8 +3601,8 @@ clause). Please refer to the corresponding examples in the distribution for
 further details.
 
 Caveat: The LLVM bitcode interface is still considered somewhat experimental.
-It already seems to works fairly well with simple C and Fortran code, but
-there are some known limitations:
+It already works fairly well with simple C and Fortran code, but there are
+some known limitations:
 
 * LLVM doesn't distinguish between ``char*`` and ``void*`` in bitcode, so all
   ``char*`` parameters and return values in C code will by default be promoted
@@ -3567,6 +3625,11 @@ there are some known limitations:
   this fails then you'll get a fatal error message from the LLVM runtime. So
   you'll have to make sure that all required libraries and bitcode modules
   have been loaded before trying to execute the loaded functions.
+
+Inline Code
+-----------
+
+TODO
 
 Standard Library
 ================
@@ -5889,6 +5952,14 @@ Bertrand
     http://groups.google.com/group/bertrand-constraint. See Wm Leler:
     Constraint Programming Languages: Their Specification and Generation.
     Addison-Wesley, 1988.
+
+.. _Clang:
+
+Clang
+    The new C/C++/Objective C compiler designed specifically to work on top of
+    LLVM, http://clang.llvm.org. Clang provides a comparatively light-weight
+    alternative to llvm-gcc which is faster and has better and more friendly
+    diagnostics than gcc.
 
 .. _Faust:
 
